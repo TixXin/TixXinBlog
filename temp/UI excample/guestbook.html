@@ -1,0 +1,729 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="TixXin的个人博客留言板，欢迎留下你的足迹。">
+    <meta name="keywords" content="留言板, 留言, 博客, TixXin">
+    <meta name="author" content="TixXin">
+    <title>留言板 - TixXin Blog</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="./css/base.css">
+    <link rel="stylesheet" href="./css/components.css">
+    
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#1e293b',
+                        primaryHover: '#0f172a',
+                        background: '#f8fafc',
+                        card: '#ffffff',
+                        textMain: '#1e293b',
+                        textMuted: '#64748b'
+                    },
+                    fontFamily: {
+                        sans: ['Inter', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'Helvetica Neue', 'Arial', 'sans-serif'],
+                    },
+                    keyframes: {
+                        'fade-in-up': {
+                            '0%': { opacity: '0', transform: 'translateY(20px)' },
+                            '100%': { opacity: '1', transform: 'translateY(0)' },
+                        }
+                    },
+                    animation: {
+                        'fade-in-up': 'fade-in-up 0.6s ease-out forwards',
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        /* ======== 聊天组件样式 ======== */
+
+        .chat-bubble { max-width: 80%; border-radius: 1rem; padding: 0.625rem 1rem; font-size: 13px; line-height: 1.625; box-shadow: 0 1px 2px 0 rgba(0,0,0,0.05); }
+        .chat-bubble-left { background: #fff; color: #334155; border: 1px solid #f1f5f9; border-top-left-radius: 0.375rem; }
+        .dark .chat-bubble-left { background: rgba(49,55,65,0.92); color: var(--dark-text-muted); border-color: var(--dark-border-soft); }
+        .chat-bubble-right { background: #1e293b; color: #f1f5f9; border-top-right-radius: 0.375rem; }
+        .dark .chat-bubble-right { background: rgba(91,124,250,0.18); color: var(--dark-text-main); border: 1px solid rgba(91,124,250,0.22); }
+
+        .chat-avatar { width: 2rem; height: 2rem; border-radius: 9999px; object-fit: cover; flex-shrink: 0; box-shadow: 0 0 0 2px #fff, 0 1px 2px 0 rgba(0,0,0,0.05); }
+        .dark .chat-avatar { box-shadow: 0 0 0 2px #313741, 0 1px 2px 0 rgba(0,0,0,0.05); }
+
+        .chat-name { font-size: 11px; font-weight: 600; color: #64748b; }
+        .dark .chat-name { color: var(--dark-text-soft); }
+        .chat-time { font-size: 10px; color: #cbd5e1; margin-left: 0.75rem; flex-shrink: 0; }
+        .dark .chat-time { color: var(--dark-text-faint); }
+
+        .chat-date-badge { font-size: 10px; font-weight: 500; color: #94a3b8; background: rgba(241,245,249,0.8); padding: 0.25rem 0.75rem; border-radius: 9999px; user-select: none; }
+        .dark .chat-date-badge { color: var(--dark-text-soft); background: rgba(49,55,65,0.9); border: 1px solid var(--dark-border-soft); }
+
+        .chat-owner-badge { font-size: 9px; background: linear-gradient(135deg, #3b82f6, #6366f1); color: #fff; padding: 2px 6px; border-radius: 4px; font-weight: 700; margin-left: 6px; display: inline-block; letter-spacing: 0.5px; box-shadow: 0 1px 3px rgba(99,102,241,0.3); }
+        .dark .chat-owner-badge { background: linear-gradient(135deg, #5b7cfa, #7b95ff); color: #fff; box-shadow: 0 1px 3px rgba(91,124,250,0.3); }
+
+        .chat-msg-row-left { display: flex; align-items: flex-start; gap: 0.625rem; }
+        .chat-msg-row-right { display: flex; align-items: flex-start; gap: 0.625rem; flex-direction: row-reverse; }
+        .chat-msg-row-right .chat-time { margin-left: 0; margin-right: 0.75rem; }
+
+        /* 消息元信息：浏览器 + IP地址 */
+        .chat-meta { display: flex; align-items: center; gap: 6px; font-size: 10px; color: #94a3b8; margin-top: 4px; flex-wrap: wrap; }
+        .dark .chat-meta { color: var(--dark-text-faint); }
+        .chat-meta-right { justify-content: flex-end; }
+
+        .chat-browser { display: inline-flex; align-items: center; gap: 3px; }
+        .chat-browser-icon { width: 12px; height: 12px; flex-shrink: 0; vertical-align: middle; }
+
+        .chat-loc::before { content: ''; display: inline-block; width: 0; height: 0; border-left: 3px solid transparent; border-right: 3px solid transparent; border-bottom: 5px solid currentColor; margin-right: 2px; position: relative; top: -1px; }
+
+        /* 富文本工具栏 */
+        .chat-toolbar { display: flex; align-items: center; gap: 2px; padding: 6px 8px; border-bottom: 1px solid #e2e8f0; flex-wrap: wrap; }
+        .dark .chat-toolbar { border-color: var(--dark-border-soft); }
+        .chat-toolbar button:not(.chat-send-btn) { display: flex; align-items: center; justify-content: center; width: 30px; height: 28px; border-radius: 6px; border: none; background: transparent; color: #94a3b8; cursor: pointer; transition: all 0.15s; flex-shrink: 0; }
+        .chat-toolbar button:not(.chat-send-btn):hover { background: #f1f5f9; color: #475569; }
+        .dark .chat-toolbar button:not(.chat-send-btn):hover { background: rgba(255,255,255,0.05); color: var(--dark-text-main); }
+        .chat-toolbar-sep { width: 1px; height: 16px; background: #e2e8f0; margin: 0 4px; flex-shrink: 0; }
+        .dark .chat-toolbar-sep { background: var(--dark-border-soft); }
+
+        .chat-editor { width: 100%; min-height: 100px; max-height: 160px; padding: 10px 12px; font-size: 0.875rem; color: #334155; outline: none; resize: none; background: transparent; border: none; line-height: 1.6; overflow-y: auto; }
+        .chat-editor:empty::before { content: attr(data-placeholder); color: #94a3b8; pointer-events: none; }
+        .dark .chat-editor { color: var(--dark-text-main); }
+        .dark .chat-editor:empty::before { color: var(--dark-text-faint); }
+
+        .chat-send-btn { display: inline-flex; align-items: center; justify-content: center; gap: 0.375rem; background: #1e293b; color: #fff; font-weight: 700; font-size: 12px; padding: 5px 14px; border-radius: 8px; transition: all 0.2s; box-shadow: 0 1px 2px 0 rgba(0,0,0,0.05); border: none; cursor: pointer; white-space: nowrap; width: auto; height: 28px; }
+        .chat-send-btn:hover { background: #0f172a; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); }
+        .chat-send-btn:active { transform: scale(0.95); }
+        .dark .chat-send-btn { background: var(--dark-accent); color: #fff; }
+        .dark .chat-send-btn:hover { background: #6d89ff; }
+
+        /* 返回底部按钮 */
+        .scroll-bottom-btn { position: absolute; bottom: 16px; right: 16px; width: 36px; height: 36px; border-radius: 50%; background: rgba(255,255,255,0.9); border: 1px solid #e2e8f0; box-shadow: 0 2px 8px rgba(0,0,0,0.1); display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.2s; z-index: 10; opacity: 0; pointer-events: none; transform: translateY(8px); color: #64748b; }
+        .scroll-bottom-btn.visible { opacity: 1; pointer-events: auto; transform: translateY(0); }
+        .scroll-bottom-btn:hover { background: #fff; box-shadow: 0 4px 12px rgba(0,0,0,0.15); color: #1e293b; }
+        .dark .scroll-bottom-btn { background: rgba(49,55,65,0.96); border-color: var(--dark-border-soft); color: var(--dark-text-soft); }
+        .dark .scroll-bottom-btn:hover { background: rgba(56,63,74,0.98); color: var(--dark-text-main); }
+        .scroll-bottom-btn .unread-dot { position: absolute; top: -2px; right: -2px; width: 8px; height: 8px; background: #3b82f6; border-radius: 50%; border: 2px solid #fff; }
+        .dark .scroll-bottom-btn .unread-dot { border-color: #2a2f37; }
+
+        /* 侧边栏卡片 */
+        .chat-sidebar-card { background: rgba(255,255,255,0.8); border-radius: 1.5rem; padding: 1.25rem; transition: color 0.3s, background-color 0.3s; flex-shrink: 0; box-shadow: 0 1px 3px rgba(0,0,0,0.04), 0 4px 12px rgba(0,0,0,0.06); border: 1px solid rgba(226,232,240,0.6); }
+        .dark .chat-sidebar-card { background: rgba(42,47,55,0.92); box-shadow: 0 10px 30px rgba(10,14,20,0.28); border-color: var(--dark-border-soft); }
+
+        /* 在线状态脉冲 */
+        .online-pulse { display: inline-flex; align-items: center; gap: 6px; background: rgba(16,185,129,0.08); border: 1px solid rgba(16,185,129,0.15); border-radius: 9999px; padding: 3px 10px 3px 8px; font-size: 11px; font-weight: 600; color: #059669; }
+        .dark .online-pulse { background: rgba(16,185,129,0.08); border-color: rgba(16,185,129,0.15); color: #34d399; }
+    </style>
+</head>
+
+<body class="p-4 md:p-8 text-textMain dark:text-slate-200 selection:bg-slate-700 selection:text-white xl:h-screen xl:overflow-hidden xl:flex xl:flex-col xl:gap-6 transition-colors duration-300">
+
+    <div class="main-container xl:flex-1 xl:min-h-0 grid grid-cols-1 lg:grid-cols-[280px_1fr] xl:grid-cols-[280px_1fr_300px] gap-6 items-start pb-20 lg:pb-0 w-full max-w-[1400px] mx-auto">
+        
+        <!-- ======================= 左侧栏：导航 ======================= -->
+        <aside class="flex flex-col gap-6 xl:h-full xl:overflow-y-auto -m-4 p-4 opacity-0 animate-fade-in-up delay-100">
+            <nav class="hidden lg:block bg-card/80 dark:bg-slate-800/80 rounded-3xl p-4 card-shadow transition-colors duration-300 shrink-0" aria-label="Main Navigation">
+                <ul class="flex flex-col gap-1.5 list-none m-0 p-0">
+                    <li class="m-0 p-0"><a href="./index.html" class="nav-item flex items-center gap-4 px-6 py-3.5 rounded-2xl transition-all duration-300 text-textMuted dark:text-slate-400"><i data-lucide="home" class="w-5 h-5"></i><span class="font-medium">主页</span></a></li>
+                    <li class="m-0 p-0"><a href="./articles.html" class="nav-item flex items-center gap-4 px-6 py-3.5 rounded-2xl transition-all duration-300 text-textMuted dark:text-slate-400"><i data-lucide="pen-tool" class="w-5 h-5"></i><span class="font-medium">文章</span></a></li>
+                    <li class="m-0 p-0"><a href="./projects.html" class="nav-item flex items-center gap-4 px-6 py-3.5 rounded-2xl transition-all duration-300 text-textMuted dark:text-slate-400"><i data-lucide="layers" class="w-5 h-5"></i><span class="font-medium">项目</span></a></li>
+                    <li class="m-0 p-0"><a href="./gallery.html" class="nav-item flex items-center gap-4 px-6 py-3.5 rounded-2xl transition-all duration-300 text-textMuted dark:text-slate-400"><i data-lucide="image" class="w-5 h-5"></i><span class="font-medium">画廊</span></a></li>
+                    <li class="m-0 p-0"><a href="./links.html" class="nav-item flex items-center gap-4 px-6 py-3.5 rounded-2xl transition-all duration-300 text-textMuted dark:text-slate-400"><i data-lucide="link" class="w-5 h-5"></i><span class="font-medium">友链</span></a></li>
+                    <li class="m-0 p-0"><a href="./about.html" class="nav-item flex items-center gap-4 px-6 py-3.5 rounded-2xl transition-all duration-300 text-textMuted dark:text-slate-400"><i data-lucide="user" class="w-5 h-5"></i><span class="font-medium">关于</span></a></li>
+                </ul>
+            </nav>
+            <div class="hidden lg:flex items-center justify-between w-full bg-card/80 dark:bg-slate-800/80 p-1.5 rounded-3xl border border-slate-100 dark:border-slate-700/50 card-shadow transition-colors duration-300 shrink-0">
+                <button class="theme-toggle-btn w-1/3 flex justify-center py-2.5 rounded-2xl transition-all duration-300 text-slate-500 hover:text-slate-800 dark:hover:text-slate-200" data-theme="light" title="浅色模式"><i data-lucide="sun" class="w-4 h-4"></i></button>
+                <button class="theme-toggle-btn w-1/3 flex justify-center py-2.5 rounded-2xl transition-all duration-300 text-slate-500 hover:text-slate-800 dark:hover:text-slate-200" data-theme="system" title="跟随系统"><i data-lucide="monitor" class="w-4 h-4"></i></button>
+                <button class="theme-toggle-btn w-1/3 flex justify-center py-2.5 rounded-2xl transition-all duration-300 text-slate-500 hover:text-slate-800 dark:hover:text-slate-200" data-theme="dark" title="深色模式"><i data-lucide="moon" class="w-4 h-4"></i></button>
+            </div>
+        </aside>
+
+        <!-- ======================= 中间核心：聊天式留言板 ======================= -->
+        <main class="bg-card/90 dark:bg-slate-800/90 backdrop-blur-md rounded-3xl xl:h-full flex flex-col card-shadow overflow-hidden transition-colors duration-300 opacity-0 animate-fade-in-up delay-200">
+            
+            <!-- 聊天室顶栏 -->
+            <header class="px-6 py-4 border-b border-slate-100 dark:border-slate-700/50 flex items-center justify-between shrink-0">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 bg-slate-100 dark:bg-slate-700 rounded-xl flex items-center justify-center">
+                        <i data-lucide="message-circle" class="w-5 h-5 text-slate-600 dark:text-slate-400"></i>
+                    </div>
+                    <div>
+                        <h2 class="text-base font-bold text-slate-800 dark:text-slate-200 leading-tight">留言板</h2>
+                        <div class="flex items-center gap-2 mt-0.5">
+                            <span class="text-[10px] text-slate-400 dark:text-slate-500">56 人参与 · 128 条留言</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="flex items-center gap-3">
+                    <div class="online-pulse">
+                        <span class="relative flex h-2 w-2">
+                            <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                            <span class="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                        </span>
+                        <span id="online-count">12 人在线</span>
+                    </div>
+                    <div class="hidden sm:flex -space-x-2">
+                        <img src="https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=40&q=80" class="w-6 h-6 rounded-full ring-2 ring-white dark:ring-slate-800 object-cover" alt="">
+                        <img src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=40&q=80" class="w-6 h-6 rounded-full ring-2 ring-white dark:ring-slate-800 object-cover" alt="">
+                        <img src="https://images.unsplash.com/photo-1438761681033-6461ffad8d80?auto=format&fit=crop&w=40&q=80" class="w-6 h-6 rounded-full ring-2 ring-white dark:ring-slate-800 object-cover" alt="">
+                        <div class="w-6 h-6 rounded-full ring-2 ring-white dark:ring-slate-800 bg-slate-200 dark:bg-slate-600 flex items-center justify-center text-[9px] font-bold text-slate-500 dark:text-slate-300">+9</div>
+                    </div>
+                </div>
+            </header>
+
+            <!-- 聊天消息区（含返回底部按钮） -->
+            <div class="relative flex-1 min-h-0">
+                <div id="chat-messages" class="absolute inset-0 px-5 py-4 overflow-y-auto flex flex-col gap-4">
+                
+                <!-- ── 2024-01-15 ── -->
+                <div class="flex justify-center py-2"><span class="chat-date-badge">2024年1月15日</span></div>
+
+                <div class="chat-msg-row-left">
+                    <img src="https://images.unsplash.com/photo-1599566150163-29194dcabd9c?auto=format&fit=crop&w=80&q=80" class="chat-avatar" alt="">
+                    <div class="flex flex-col gap-1">
+                        <div class="flex items-center"><span class="chat-name">开心果_小明</span><span class="chat-time">01-15 09:23</span></div>
+                        <div class="chat-bubble chat-bubble-left">第一次来到这个博客，界面太好看了吧！暗色模式下像一个赛博朋克风的太空舱 🚀 收藏了！</div>
+                        <div class="chat-meta"><span class="chat-browser"><img src="https://cdnjs.cloudflare.com/ajax/libs/browser-logos/75.0.1/chrome/chrome_24x24.png" class="chat-browser-icon" alt="Chrome">Chrome 120</span><span>·</span><span class="chat-loc">广东广州</span></div>
+                    </div>
+                </div>
+
+                <div class="chat-msg-row-right">
+                    <img src="https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=80&q=80" class="chat-avatar" alt="">
+                    <div class="flex flex-col gap-1 items-end">
+                        <div class="flex items-center"><span class="chat-time">01-15 10:05</span><span class="chat-name">TixXin</span><span class="chat-owner-badge">博主</span></div>
+                        <div class="chat-bubble chat-bubble-right">欢迎欢迎！哈哈太空舱这个比喻很有意思，希望你能在这里找到有用的内容~ 😊</div>
+                        <div class="chat-meta chat-meta-right"><span class="chat-browser"><img src="https://cdnjs.cloudflare.com/ajax/libs/browser-logos/75.0.1/edge/edge_24x24.png" class="chat-browser-icon" alt="Edge">Edge 120</span><span>·</span><span class="chat-loc">浙江杭州</span></div>
+                    </div>
+                </div>
+
+                <!-- ── 2024-01-20 ── -->
+                <div class="flex justify-center py-2"><span class="chat-date-badge">2024年1月20日</span></div>
+
+                <div class="chat-msg-row-left">
+                    <img src="https://images.unsplash.com/photo-1570295999919-56ceb5ecca61?auto=format&fit=crop&w=80&q=80" class="chat-avatar" alt="">
+                    <div class="flex flex-col gap-1">
+                        <div class="flex items-center"><span class="chat-name">前端小李</span><span class="chat-time">01-20 14:18</span></div>
+                        <div class="chat-bubble chat-bubble-left">Vue3 响应式原理那篇文章写得真好，配合源码分析一看就懂了。比官方文档友好多了，期待 Pinia 的源码解析！</div>
+                        <div class="chat-meta"><span class="chat-browser"><img src="https://cdnjs.cloudflare.com/ajax/libs/browser-logos/75.0.1/chrome/chrome_24x24.png" class="chat-browser-icon" alt="Chrome">Chrome 121</span><span>·</span><span class="chat-loc">北京</span></div>
+                    </div>
+                </div>
+
+                <!-- ── 2024-01-25 ── -->
+                <div class="flex justify-center py-2"><span class="chat-date-badge">2024年1月25日</span></div>
+
+                <div class="chat-msg-row-left">
+                    <img src="https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?auto=format&fit=crop&w=80&q=80" class="chat-avatar" alt="">
+                    <div class="flex flex-col gap-1">
+                        <div class="flex items-center"><span class="chat-name">摄影爱好者阿杰</span><span class="chat-time">01-25 20:31</span></div>
+                        <div class="chat-bubble chat-bubble-left">画廊里的照片都好美啊，色调处理得很高级！请问是用什么相机拍的？后期用的 Lightroom 吗？</div>
+                        <div class="chat-meta"><span class="chat-browser"><img src="https://cdnjs.cloudflare.com/ajax/libs/browser-logos/75.0.1/firefox/firefox_24x24.png" class="chat-browser-icon" alt="Firefox">Firefox 121</span><span>·</span><span class="chat-loc">上海</span></div>
+                    </div>
+                </div>
+
+                <div class="chat-msg-row-right">
+                    <img src="https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=80&q=80" class="chat-avatar" alt="">
+                    <div class="flex flex-col gap-1 items-end">
+                        <div class="flex items-center"><span class="chat-time">01-25 21:15</span><span class="chat-name">TixXin</span><span class="chat-owner-badge">博主</span></div>
+                        <div class="chat-bubble chat-bubble-right">谢谢喜欢！主要用的富士 X-T4，直出色彩就很不错。后期偶尔用 Lightroom 微调，大部分靠机内胶片模拟 📷</div>
+                        <div class="chat-meta chat-meta-right"><span class="chat-browser"><img src="https://cdnjs.cloudflare.com/ajax/libs/browser-logos/75.0.1/edge/edge_24x24.png" class="chat-browser-icon" alt="Edge">Edge 120</span><span>·</span><span class="chat-loc">浙江杭州</span></div>
+                    </div>
+                </div>
+
+                <!-- ── 2024-02-01 ── -->
+                <div class="flex justify-center py-2"><span class="chat-date-badge">2024年2月1日</span></div>
+
+                <div class="chat-msg-row-left">
+                    <img src="https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&fit=crop&w=80&q=80" class="chat-avatar" alt="">
+                    <div class="flex flex-col gap-1">
+                        <div class="flex items-center"><span class="chat-name">后端大叔</span><span class="chat-time">02-01 08:42</span></div>
+                        <div class="chat-bubble chat-bubble-left">虽然我是写 Java 的，但前端变化太快了，每次来这里都能学到新东西。特别是那篇 Tailwind CSS 实战，让我对 CSS 有了新认知 👍</div>
+                        <div class="chat-meta"><span class="chat-browser"><img src="https://cdnjs.cloudflare.com/ajax/libs/browser-logos/75.0.1/chrome/chrome_24x24.png" class="chat-browser-icon" alt="Chrome">Chrome 120</span><span>·</span><span class="chat-loc">四川成都</span></div>
+                    </div>
+                </div>
+
+                <!-- ── 2024-02-05 ── -->
+                <div class="flex justify-center py-2"><span class="chat-date-badge">2024年2月5日</span></div>
+
+                <div class="chat-msg-row-left">
+                    <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=80&q=80" class="chat-avatar" alt="">
+                    <div class="flex flex-col gap-1">
+                        <div class="flex items-center"><span class="chat-name">CSS魔法师</span><span class="chat-time">02-05 15:07</span></div>
+                        <div class="chat-bubble chat-bubble-left">首页那个 GitHub 风格的活跃度热力图实现好巧妙！用纯 JS 生成的吗？代码结构很优雅，学习了 ✨</div>
+                        <div class="chat-meta"><span class="chat-browser"><img src="https://cdnjs.cloudflare.com/ajax/libs/browser-logos/75.0.1/safari/safari_24x24.png" class="chat-browser-icon" alt="Safari">Safari 17.2</span><span>·</span><span class="chat-loc">江苏南京</span></div>
+                    </div>
+                </div>
+
+                <div class="chat-msg-row-right">
+                    <img src="https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=80&q=80" class="chat-avatar" alt="">
+                    <div class="flex flex-col gap-1 items-end">
+                        <div class="flex items-center"><span class="chat-time">02-05 16:20</span><span class="chat-name">TixXin</span><span class="chat-owner-badge">博主</span></div>
+                        <div class="chat-bubble chat-bubble-right">过奖了！是的，纯 JS + CSS Grid 实现的，没有用任何图表库。核心就是一个二维循环加颜色映射，后面可以考虑出个教程~</div>
+                        <div class="chat-meta chat-meta-right"><span class="chat-browser"><img src="https://cdnjs.cloudflare.com/ajax/libs/browser-logos/75.0.1/edge/edge_24x24.png" class="chat-browser-icon" alt="Edge">Edge 121</span><span>·</span><span class="chat-loc">浙江杭州</span></div>
+                    </div>
+                </div>
+
+                <!-- ── 2024-02-10 ── -->
+                <div class="flex justify-center py-2"><span class="chat-date-badge">2024年2月10日</span></div>
+
+                <div class="chat-msg-row-left">
+                    <img src="https://images.unsplash.com/photo-1488426862026-3ee34a7d66df?auto=format&fit=crop&w=80&q=80" class="chat-avatar" alt="">
+                    <div class="flex flex-col gap-1">
+                        <div class="flex items-center"><span class="chat-name">产品经理小刘</span><span class="chat-time">02-10 11:33</span></div>
+                        <div class="chat-bubble chat-bubble-left">博主能不能写一篇关于前端工程师和产品经理高效协作的文章？感觉这个话题很少有人聊但又很实用</div>
+                        <div class="chat-meta"><span class="chat-browser"><img src="https://cdnjs.cloudflare.com/ajax/libs/browser-logos/75.0.1/chrome/chrome_24x24.png" class="chat-browser-icon" alt="Chrome">Chrome 121</span><span>·</span><span class="chat-loc">北京</span></div>
+                    </div>
+                </div>
+
+                <!-- ── 2024-02-14 ── -->
+                <div class="flex justify-center py-2"><span class="chat-date-badge">2024年2月14日 💝</span></div>
+
+                <div class="chat-msg-row-left">
+                    <img src="https://images.unsplash.com/photo-1580489944761-15a19d654956?auto=format&fit=crop&w=80&q=80" class="chat-avatar" alt="">
+                    <div class="flex flex-col gap-1">
+                        <div class="flex items-center"><span class="chat-name">Luna 🌙</span><span class="chat-time">02-14 00:01</span></div>
+                        <div class="chat-bubble chat-bubble-left">情人节第一时间来留言！祝博主和所有看到这条留言的人情人节快乐，早日脱单！😄🌹</div>
+                        <div class="chat-meta"><span class="chat-browser"><img src="https://cdnjs.cloudflare.com/ajax/libs/browser-logos/75.0.1/safari/safari_24x24.png" class="chat-browser-icon" alt="Safari">Safari 17.3</span><span>·</span><span class="chat-loc">福建厦门</span></div>
+                    </div>
+                </div>
+
+                <div class="chat-msg-row-right">
+                    <img src="https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=80&q=80" class="chat-avatar" alt="">
+                    <div class="flex flex-col gap-1 items-end">
+                        <div class="flex items-center"><span class="chat-time">02-14 08:30</span><span class="chat-name">TixXin</span><span class="chat-owner-badge">博主</span></div>
+                        <div class="chat-bubble chat-bubble-right">哈哈谢谢 Luna！程序员嘛...先脱贫再脱单吧 😂 也祝你情人节快乐！</div>
+                        <div class="chat-meta chat-meta-right"><span class="chat-browser"><img src="https://cdnjs.cloudflare.com/ajax/libs/browser-logos/75.0.1/edge/edge_24x24.png" class="chat-browser-icon" alt="Edge">Edge 121</span><span>·</span><span class="chat-loc">浙江杭州</span></div>
+                    </div>
+                </div>
+
+                <!-- ── 2024-02-18 ── -->
+                <div class="flex justify-center py-2"><span class="chat-date-badge">2024年2月18日</span></div>
+
+                <div class="chat-msg-row-left">
+                    <img src="https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=80&q=80" class="chat-avatar" alt="">
+                    <div class="flex flex-col gap-1">
+                        <div class="flex items-center"><span class="chat-name">小鱼儿</span><span class="chat-time">02-18 14:32</span></div>
+                        <div class="chat-bubble chat-bubble-left">博客设计得太好看了！这个 UI 风格好喜欢，简洁又不失细节。请问是用什么技术栈搭建的呀？想学习一下 🤩</div>
+                        <div class="chat-meta"><span class="chat-browser"><img src="https://cdnjs.cloudflare.com/ajax/libs/browser-logos/75.0.1/chrome/chrome_24x24.png" class="chat-browser-icon" alt="Chrome">Chrome 122</span><span>·</span><span class="chat-loc">广东深圳</span></div>
+                    </div>
+                </div>
+
+                <!-- ── 2024-02-20 ── -->
+                <div class="flex justify-center py-2"><span class="chat-date-badge">2024年2月20日</span></div>
+
+                <div class="chat-msg-row-left">
+                    <img src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=80&q=80" class="chat-avatar" alt="">
+                    <div class="flex flex-col gap-1">
+                        <div class="flex items-center"><span class="chat-name">CodeMaster_张</span><span class="chat-time">02-20 09:15</span></div>
+                        <div class="chat-bubble chat-bubble-left">请问 Vue3 那篇文章里提到的 Proxy 拦截方案，在生产环境中有遇到过兼容性问题吗？我最近在项目里也想用，有点担心 IE 的兼容性。</div>
+                        <div class="chat-meta"><span class="chat-browser"><img src="https://cdnjs.cloudflare.com/ajax/libs/browser-logos/75.0.1/firefox/firefox_24x24.png" class="chat-browser-icon" alt="Firefox">Firefox 122</span><span>·</span><span class="chat-loc">湖北武汉</span></div>
+                    </div>
+                </div>
+
+                <div class="chat-msg-row-right">
+                    <img src="https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=80&q=80" class="chat-avatar" alt="">
+                    <div class="flex flex-col gap-1 items-end">
+                        <div class="flex items-center"><span class="chat-time">02-20 10:22</span><span class="chat-name">TixXin</span><span class="chat-owner-badge">博主</span></div>
+                        <div class="chat-bubble chat-bubble-right">Proxy 不支持 IE，如果项目需要兼容 IE 可以考虑 Vue2 或者加 polyfill。不过现在大部分项目已经可以放弃 IE 了，建议直接用 Vue3 全家桶~</div>
+                        <div class="chat-meta chat-meta-right"><span class="chat-browser"><img src="https://cdnjs.cloudflare.com/ajax/libs/browser-logos/75.0.1/edge/edge_24x24.png" class="chat-browser-icon" alt="Edge">Edge 122</span><span>·</span><span class="chat-loc">浙江杭州</span></div>
+                    </div>
+                </div>
+
+                <!-- ── 2024-02-22 ── -->
+                <div class="flex justify-center py-2"><span class="chat-date-badge">2024年2月22日</span></div>
+
+                <div class="chat-msg-row-left">
+                    <img src="https://images.unsplash.com/photo-1570295999919-56ceb5ecca61?auto=format&fit=crop&w=80&q=80" class="chat-avatar" alt="">
+                    <div class="flex flex-col gap-1">
+                        <div class="flex items-center"><span class="chat-name">全栈工程师阿伟</span><span class="chat-time">02-22 22:10</span></div>
+                        <div class="chat-bubble chat-bubble-left">Docker 部署那篇看了三遍才完全搞懂，不过确实学到了很多！现在项目里已经用上了 Docker Compose 多容器编排，太方便了 🐳</div>
+                        <div class="chat-meta"><span class="chat-browser"><img src="https://cdnjs.cloudflare.com/ajax/libs/browser-logos/75.0.1/chrome/chrome_24x24.png" class="chat-browser-icon" alt="Chrome">Chrome 121</span><span>·</span><span class="chat-loc">山东济南</span></div>
+                    </div>
+                </div>
+
+                <!-- ── 2024-02-25 ── -->
+                <div class="flex justify-center py-2"><span class="chat-date-badge">2024年2月25日</span></div>
+
+                <div class="chat-msg-row-left">
+                    <img src="https://images.unsplash.com/photo-1438761681033-6461ffad8d80?auto=format&fit=crop&w=80&q=80" class="chat-avatar" alt="">
+                    <div class="flex flex-col gap-1">
+                        <div class="flex items-center"><span class="chat-name">Alice_前端小白</span><span class="chat-time">02-25 20:48</span></div>
+                        <div class="chat-bubble chat-bubble-left">感谢博主分享的 GitHub Actions 教程！按照步骤一步步做下来，成功部署了自己的第一个项目，太有成就感了！🎉</div>
+                        <div class="chat-meta"><span class="chat-browser"><img src="https://cdnjs.cloudflare.com/ajax/libs/browser-logos/75.0.1/chrome/chrome_24x24.png" class="chat-browser-icon" alt="Chrome">Chrome 122</span><span>·</span><span class="chat-loc">浙江温州</span></div>
+                    </div>
+                </div>
+
+                <!-- ── 2024-02-27 ── -->
+                <div class="flex justify-center py-2"><span class="chat-date-badge">2024年2月27日</span></div>
+
+                <div class="chat-msg-row-left">
+                    <img src="https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=80&q=80" class="chat-avatar" alt="">
+                    <div class="flex flex-col gap-1">
+                        <div class="flex items-center"><span class="chat-name">Mia_设计师</span><span class="chat-time">02-27 22:17</span></div>
+                        <div class="chat-bubble chat-bubble-left">作为一个 UI 设计师，必须夸一下这个博客的视觉设计！配色很舒服，圆角和阴影的处理恰到好处。暗色模式的对比度也控制得很好 ✨</div>
+                        <div class="chat-meta"><span class="chat-browser"><img src="https://cdnjs.cloudflare.com/ajax/libs/browser-logos/75.0.1/safari/safari_24x24.png" class="chat-browser-icon" alt="Safari">Safari 17.3</span><span>·</span><span class="chat-loc">上海</span></div>
+                    </div>
+                </div>
+
+                <!-- ── 2024-03-01 ── -->
+                <div class="flex justify-center py-2"><span class="chat-date-badge">2024年3月1日</span></div>
+
+                <div class="chat-msg-row-left">
+                    <img src="https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=80&q=80" class="chat-avatar" alt="">
+                    <div class="flex flex-col gap-1">
+                        <div class="flex items-center"><span class="chat-name">技术小黑</span><span class="chat-time">03-01 08:42</span></div>
+                        <div class="chat-bubble chat-bubble-left">大佬你好！我是一名即将毕业的计算机专业学生，想问一下对于刚入行的前端新人，有什么学习路线推荐吗？感觉现在框架太多不知道从哪里开始 😅</div>
+                        <div class="chat-meta"><span class="chat-browser"><img src="https://cdnjs.cloudflare.com/ajax/libs/browser-logos/75.0.1/edge/edge_24x24.png" class="chat-browser-icon" alt="Edge">Edge 122</span><span>·</span><span class="chat-loc">河南郑州</span></div>
+                    </div>
+                </div>
+
+                <div class="chat-msg-row-right">
+                    <img src="https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=80&q=80" class="chat-avatar" alt="">
+                    <div class="flex flex-col gap-1 items-end">
+                        <div class="flex items-center"><span class="chat-time">03-01 12:30</span><span class="chat-name">TixXin</span><span class="chat-owner-badge">博主</span></div>
+                        <div class="chat-bubble chat-bubble-right">先把 HTML/CSS/JS 基础打牢，然后选一个框架深入学（推荐 Vue 或 React），同时学习 Git 和基础的工程化。不要贪多，一个技术栈吃透比什么都会一点强！加油 💪</div>
+                        <div class="chat-meta chat-meta-right"><span class="chat-browser"><img src="https://cdnjs.cloudflare.com/ajax/libs/browser-logos/75.0.1/edge/edge_24x24.png" class="chat-browser-icon" alt="Edge">Edge 122</span><span>·</span><span class="chat-loc">浙江杭州</span></div>
+                    </div>
+                </div>
+
+                <!-- ── 2024-03-02 ── -->
+                <div class="flex justify-center py-2"><span class="chat-date-badge">2024年3月2日</span></div>
+
+                <div class="chat-msg-row-left">
+                    <img src="https://images.unsplash.com/photo-1527980965255-d3b416303d12?auto=format&fit=crop&w=80&q=80" class="chat-avatar" alt="">
+                    <div class="flex flex-col gap-1">
+                        <div class="flex items-center"><span class="chat-name">DevDream</span><span class="chat-time">03-02 11:05</span></div>
+                        <div class="chat-bubble chat-bubble-left">这个暗色模式的切换效果做得很丝滑！请问 dark mode 的持久化是用 localStorage 还是 Cookie 实现的？</div>
+                        <div class="chat-meta"><span class="chat-browser"><img src="https://cdnjs.cloudflare.com/ajax/libs/browser-logos/75.0.1/chrome/chrome_24x24.png" class="chat-browser-icon" alt="Chrome">Chrome 122</span><span>·</span><span class="chat-loc">江苏苏州</span></div>
+                    </div>
+                </div>
+
+                <div class="chat-msg-row-right">
+                    <img src="https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=80&q=80" class="chat-avatar" alt="">
+                    <div class="flex flex-col gap-1 items-end">
+                        <div class="flex items-center"><span class="chat-time">03-02 13:18</span><span class="chat-name">TixXin</span><span class="chat-owner-badge">博主</span></div>
+                        <div class="chat-bubble chat-bubble-right">用的 localStorage + prefers-color-scheme 媒体查询联合方案，默认跟随系统，手动切换后缓存到本地。代码在 darkmode.js 里可以参考~</div>
+                        <div class="chat-meta chat-meta-right"><span class="chat-browser"><img src="https://cdnjs.cloudflare.com/ajax/libs/browser-logos/75.0.1/edge/edge_24x24.png" class="chat-browser-icon" alt="Edge">Edge 122</span><span>·</span><span class="chat-loc">浙江杭州</span></div>
+                    </div>
+                </div>
+
+                <!-- ── 2024-03-03 ── -->
+                <div class="flex justify-center py-2"><span class="chat-date-badge">2024年3月3日</span></div>
+
+                <div class="chat-msg-row-left">
+                    <img src="https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&fit=crop&w=80&q=80" class="chat-avatar" alt="">
+                    <div class="flex flex-col gap-1">
+                        <div class="flex items-center"><span class="chat-name">老王同学</span><span class="chat-time">03-03 16:30</span></div>
+                        <div class="chat-bubble chat-bubble-left">路过打卡！从掘金看到推荐过来的，收藏了好几篇文章准备周末慢慢消化。加油更新鸭 💪</div>
+                        <div class="chat-meta"><span class="chat-browser"><img src="https://cdnjs.cloudflare.com/ajax/libs/browser-logos/75.0.1/chrome/chrome_24x24.png" class="chat-browser-icon" alt="Chrome">Chrome 121</span><span>·</span><span class="chat-loc">重庆</span></div>
+                    </div>
+                </div>
+
+                <!-- ── 2024-03-04 ── -->
+                <div class="flex justify-center py-2"><span class="chat-date-badge">2024年3月4日</span></div>
+
+                <div class="chat-msg-row-left">
+                    <img src="https://images.unsplash.com/photo-1531746020798-e6953c6e8e04?auto=format&fit=crop&w=80&q=80" class="chat-avatar" alt="">
+                    <div class="flex flex-col gap-1">
+                        <div class="flex items-center"><span class="chat-name">React粉丝小赵</span><span class="chat-time">03-04 19:45</span></div>
+                        <div class="chat-bubble chat-bubble-left">博主啥时候写 React 相关的文章呀？看你 Vue 写得这么好，很期待你从另一个视角来分析 React 的设计思路！</div>
+                        <div class="chat-meta"><span class="chat-browser"><img src="https://cdnjs.cloudflare.com/ajax/libs/browser-logos/75.0.1/firefox/firefox_24x24.png" class="chat-browser-icon" alt="Firefox">Firefox 123</span><span>·</span><span class="chat-loc">天津</span></div>
+                    </div>
+                </div>
+
+                <!-- ── 2024-03-05 ── -->
+                <div class="flex justify-center py-2"><span class="chat-date-badge">2024年3月5日</span></div>
+
+                <div class="chat-msg-row-left">
+                    <img src="https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?auto=format&fit=crop&w=80&q=80" class="chat-avatar" alt="">
+                    <div class="flex flex-col gap-1">
+                        <div class="flex items-center"><span class="chat-name">运维小哥</span><span class="chat-time">03-05 10:20</span></div>
+                        <div class="chat-bubble chat-bubble-left">CI/CD 那篇帮了大忙！上周给公司项目也配上了 GitHub Actions 自动部署，老板还夸我效率高哈哈 😎</div>
+                        <div class="chat-meta"><span class="chat-browser"><img src="https://cdnjs.cloudflare.com/ajax/libs/browser-logos/75.0.1/chrome/chrome_24x24.png" class="chat-browser-icon" alt="Chrome">Chrome 122</span><span>·</span><span class="chat-loc">广东广州</span></div>
+                    </div>
+                </div>
+
+                <div class="chat-msg-row-right">
+                    <img src="https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=80&q=80" class="chat-avatar" alt="">
+                    <div class="flex flex-col gap-1 items-end">
+                        <div class="flex items-center"><span class="chat-time">03-05 11:05</span><span class="chat-name">TixXin</span><span class="chat-owner-badge">博主</span></div>
+                        <div class="chat-bubble chat-bubble-right">太好了，能帮到实际项目就值了！DevOps 是提效神器，后续还会写 GitHub Actions 进阶用法 🚀</div>
+                        <div class="chat-meta chat-meta-right"><span class="chat-browser"><img src="https://cdnjs.cloudflare.com/ajax/libs/browser-logos/75.0.1/edge/edge_24x24.png" class="chat-browser-icon" alt="Edge">Edge 122</span><span>·</span><span class="chat-loc">浙江杭州</span></div>
+                    </div>
+                </div>
+
+                <!-- ── 2024-03-06 ── -->
+                <div class="flex justify-center py-2"><span class="chat-date-badge">2024年3月6日</span></div>
+
+                <div class="chat-msg-row-left">
+                    <img src="https://images.unsplash.com/photo-1599566150163-29194dcabd9c?auto=format&fit=crop&w=80&q=80" class="chat-avatar" alt="">
+                    <div class="flex flex-col gap-1">
+                        <div class="flex items-center"><span class="chat-name">数据库选手阿明</span><span class="chat-time">03-06 17:55</span></div>
+                        <div class="chat-bubble chat-bubble-left">能不能出一期 SQL 性能优化的教程？最近在做大数据量查询，慢查询快把我搞疯了 😭</div>
+                        <div class="chat-meta"><span class="chat-browser"><img src="https://cdnjs.cloudflare.com/ajax/libs/browser-logos/75.0.1/edge/edge_24x24.png" class="chat-browser-icon" alt="Edge">Edge 121</span><span>·</span><span class="chat-loc">辽宁大连</span></div>
+                    </div>
+                </div>
+
+                <!-- ── 2024-03-07 ── -->
+                <div class="flex justify-center py-2"><span class="chat-date-badge">2024年3月7日</span></div>
+
+                <div class="chat-msg-row-left">
+                    <img src="https://images.unsplash.com/photo-1488426862026-3ee34a7d66df?auto=format&fit=crop&w=80&q=80" class="chat-avatar" alt="">
+                    <div class="flex flex-col gap-1">
+                        <div class="flex items-center"><span class="chat-name">独立开发者小陈</span><span class="chat-time">03-07 14:28</span></div>
+                        <div class="chat-bubble chat-bubble-left">参考你的博客设计风格，给自己的独立产品做了一版新的落地页，效果拔群！感谢分享设计思路的那篇文章 🙏</div>
+                        <div class="chat-meta"><span class="chat-browser"><img src="https://cdnjs.cloudflare.com/ajax/libs/browser-logos/75.0.1/chrome/chrome_24x24.png" class="chat-browser-icon" alt="Chrome">Chrome 122</span><span>·</span><span class="chat-loc">湖南长沙</span></div>
+                    </div>
+                </div>
+
+                <!-- ── 2024-03-08 ── -->
+                <div class="flex justify-center py-2"><span class="chat-date-badge">2024年3月8日</span></div>
+
+                <div class="chat-msg-row-left">
+                    <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=80&q=80" class="chat-avatar" alt="">
+                    <div class="flex flex-col gap-1">
+                        <div class="flex items-center"><span class="chat-name">写bug的小王</span><span class="chat-time">03-08 21:03</span></div>
+                        <div class="chat-bubble chat-bubble-left">请问首页那个滚动的标签云效果是怎么实现的？用了什么库吗？想在自己的项目里也加一个类似的效果</div>
+                        <div class="chat-meta"><span class="chat-browser"><img src="https://cdnjs.cloudflare.com/ajax/libs/browser-logos/75.0.1/firefox/firefox_24x24.png" class="chat-browser-icon" alt="Firefox">Firefox 123</span><span>·</span><span class="chat-loc">安徽合肥</span></div>
+                    </div>
+                </div>
+
+                <div class="chat-msg-row-right">
+                    <img src="https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=80&q=80" class="chat-avatar" alt="">
+                    <div class="flex flex-col gap-1 items-end">
+                        <div class="flex items-center"><span class="chat-time">03-08 22:15</span><span class="chat-name">TixXin</span><span class="chat-owner-badge">博主</span></div>
+                        <div class="chat-bubble chat-bubble-right">没用库，纯 CSS animation 实现的 marquee 效果，核心是 translateX 配合 infinite loop。会出个详细教程的，敬请期待~</div>
+                        <div class="chat-meta chat-meta-right"><span class="chat-browser"><img src="https://cdnjs.cloudflare.com/ajax/libs/browser-logos/75.0.1/edge/edge_24x24.png" class="chat-browser-icon" alt="Edge">Edge 122</span><span>·</span><span class="chat-loc">浙江杭州</span></div>
+                    </div>
+                </div>
+
+                <!-- ── 2024-03-10 ── -->
+                <div class="flex justify-center py-2"><span class="chat-date-badge">2024年3月10日</span></div>
+
+                <div class="chat-msg-row-left">
+                    <img src="https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=80&q=80" class="chat-avatar" alt="">
+                    <div class="flex flex-col gap-1">
+                        <div class="flex items-center"><span class="chat-name">Rust爱好者</span><span class="chat-time">03-10 16:42</span></div>
+                        <div class="chat-bubble chat-bubble-left">有考虑过用 Rust 写后端 API 吗？Actix-web 或者 Axum 的性能绝对起飞！搭配 WebAssembly 前端也能用上 Rust，一鱼两吃 🦀</div>
+                        <div class="chat-meta"><span class="chat-browser"><img src="https://cdnjs.cloudflare.com/ajax/libs/browser-logos/75.0.1/chrome/chrome_24x24.png" class="chat-browser-icon" alt="Chrome">Chrome 123</span><span>·</span><span class="chat-loc">陕西西安</span></div>
+                    </div>
+                </div>
+
+                </div>
+
+                <!-- 返回底部按钮 -->
+                <button id="scroll-bottom-btn" class="scroll-bottom-btn" title="返回底部">
+                    <i data-lucide="arrow-down" class="w-4 h-4"></i>
+                    <span class="unread-dot"></span>
+                </button>
+            </div>
+
+            <!-- 底部富文本输入区 -->
+            <div class="border-t border-slate-100 dark:border-slate-700/50 bg-white/50 dark:bg-slate-800/50 backdrop-blur-sm shrink-0">
+                <div class="chat-toolbar">
+                    <button title="加粗 Ctrl+B"><i data-lucide="bold" class="w-4 h-4"></i></button>
+                    <button title="斜体 Ctrl+I"><i data-lucide="italic" class="w-4 h-4"></i></button>
+                    <button title="删除线"><i data-lucide="strikethrough" class="w-4 h-4"></i></button>
+                    <button title="行内代码"><i data-lucide="code" class="w-4 h-4"></i></button>
+                    <button title="代码块"><i data-lucide="terminal" class="w-4 h-4"></i></button>
+                    <span class="chat-toolbar-sep"></span>
+                    <button title="插入链接"><i data-lucide="link" class="w-4 h-4"></i></button>
+                    <button title="插入图片"><i data-lucide="image" class="w-4 h-4"></i></button>
+                    <button title="引用"><i data-lucide="quote" class="w-4 h-4"></i></button>
+                    <span class="chat-toolbar-sep"></span>
+                    <button title="表情"><i data-lucide="smile" class="w-4 h-4"></i></button>
+                    <button title="提及 @"><i data-lucide="at-sign" class="w-4 h-4"></i></button>
+                    <div class="flex-1"></div>
+                    <button class="chat-send-btn">
+                        <i data-lucide="send" class="w-3.5 h-3.5"></i>
+                        发送
+                    </button>
+                </div>
+                <div class="px-4 py-3">
+                    <div class="bg-slate-50 dark:bg-slate-700/30 rounded-xl border border-slate-200 dark:border-slate-600/40 focus-within:border-slate-400 dark:focus-within:border-slate-500 focus-within:ring-2 focus-within:ring-slate-200 dark:focus-within:ring-slate-500/20 transition-all overflow-hidden">
+                        <div id="chat-editor" class="chat-editor" contenteditable="true" data-placeholder="输入留言内容... 支持 Markdown、@提及、表情"></div>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <!-- ======================= 右侧栏：聊天信息 ======================= -->
+        <aside class="flex flex-col gap-5 xl:h-full xl:overflow-y-auto -m-4 p-4 opacity-0 animate-fade-in-up delay-300 lg:col-start-2 xl:col-start-auto">
+            
+            <!-- 留言统计 -->
+            <section class="chat-sidebar-card">
+                <h3 class="text-sm font-bold text-textMain dark:text-slate-200 mb-5 flex items-center gap-2 uppercase tracking-wide">
+                    <i data-lucide="bar-chart-2" class="w-4 h-4 text-slate-600 dark:text-slate-400"></i> 对话统计
+                </h3>
+                <div class="grid grid-cols-3 gap-3">
+                    <div class="text-center group cursor-default bg-slate-50 dark:bg-slate-700/30 rounded-xl py-3">
+                        <p class="text-xl font-bold text-textMain dark:text-slate-200 group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors leading-tight">128</p>
+                        <p class="text-[10px] text-slate-400 dark:text-slate-500 font-medium mt-1">总留言</p>
+                    </div>
+                    <div class="text-center group cursor-default bg-slate-50 dark:bg-slate-700/30 rounded-xl py-3">
+                        <p class="text-xl font-bold text-textMain dark:text-slate-200 group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors leading-tight">3</p>
+                        <p class="text-[10px] text-slate-400 dark:text-slate-500 font-medium mt-1">今日新增</p>
+                    </div>
+                    <div class="text-center group cursor-default bg-slate-50 dark:bg-slate-700/30 rounded-xl py-3">
+                        <p class="text-xl font-bold text-textMain dark:text-slate-200 group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors leading-tight">56</p>
+                        <p class="text-[10px] text-slate-400 dark:text-slate-500 font-medium mt-1">参与者</p>
+                    </div>
+                </div>
+                <div class="mt-4 flex items-center gap-2 text-[11px] text-slate-400 dark:text-slate-500">
+                    <i data-lucide="clock" class="w-3 h-3"></i>
+                    <span>博主平均回复时间：<strong class="text-slate-600 dark:text-slate-300">2 小时内</strong></span>
+                </div>
+            </section>
+
+            <!-- 留言须知 -->
+            <section class="chat-sidebar-card relative overflow-hidden opacity-0 animate-fade-in-up delay-400">
+                <div class="absolute -right-6 -top-6 w-24 h-24 bg-slate-200/40 dark:bg-slate-600/20 rounded-full blur-xl"></div>
+                <div class="relative z-10">
+                    <h3 class="text-sm font-bold mb-4 flex items-center gap-2 text-textMain dark:text-slate-200 uppercase tracking-wide">
+                        <i data-lucide="shield" class="w-4 h-4 text-slate-600 dark:text-slate-400"></i> 对话守则
+                    </h3>
+                    <ul class="space-y-2.5">
+                        <li class="flex items-start gap-2.5 text-xs text-slate-500 dark:text-slate-300 leading-relaxed">
+                            <span class="w-5 h-5 rounded-lg bg-emerald-50 dark:bg-emerald-500/10 flex items-center justify-center shrink-0 mt-0.5"><i data-lucide="check" class="w-3 h-3 text-emerald-500 dark:text-emerald-400"></i></span>
+                            友善交流，尊重每一位参与者
+                        </li>
+                        <li class="flex items-start gap-2.5 text-xs text-slate-500 dark:text-slate-300 leading-relaxed">
+                            <span class="w-5 h-5 rounded-lg bg-emerald-50 dark:bg-emerald-500/10 flex items-center justify-center shrink-0 mt-0.5"><i data-lucide="check" class="w-3 h-3 text-emerald-500 dark:text-emerald-400"></i></span>
+                            支持 Markdown 语法和代码块
+                        </li>
+                        <li class="flex items-start gap-2.5 text-xs text-slate-500 dark:text-slate-300 leading-relaxed">
+                            <span class="w-5 h-5 rounded-lg bg-emerald-50 dark:bg-emerald-500/10 flex items-center justify-center shrink-0 mt-0.5"><i data-lucide="check" class="w-3 h-3 text-emerald-500 dark:text-emerald-400"></i></span>
+                            博主会尽量回复每条留言
+                        </li>
+                        <li class="flex items-start gap-2.5 text-xs text-slate-500 dark:text-slate-300 leading-relaxed">
+                            <span class="w-5 h-5 rounded-lg bg-rose-50 dark:bg-rose-500/10 flex items-center justify-center shrink-0 mt-0.5"><i data-lucide="x" class="w-3 h-3 text-rose-400 dark:text-rose-400"></i></span>
+                            禁止广告、垃圾信息和不当内容
+                        </li>
+                    </ul>
+                </div>
+            </section>
+
+            <!-- 活跃成员 -->
+            <section class="chat-sidebar-card opacity-0 animate-fade-in-up delay-500">
+                <h3 class="text-sm font-bold text-textMain dark:text-slate-200 mb-4 flex items-center gap-2 uppercase tracking-wide">
+                    <i data-lucide="users" class="w-4 h-4 text-slate-600 dark:text-slate-400"></i> 活跃成员
+                </h3>
+                <div class="space-y-2.5">
+                    <div class="flex items-center gap-3 p-2 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-700/30 transition-colors cursor-pointer">
+                        <div class="relative">
+                            <img src="https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=80&q=80" class="w-9 h-9 rounded-full object-cover ring-2 ring-white dark:ring-slate-700" alt="">
+                            <span class="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-emerald-500 rounded-full ring-2 ring-white dark:ring-slate-800"></span>
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <div class="flex items-center gap-1.5"><span class="text-xs font-bold text-slate-700 dark:text-slate-200 truncate">TixXin</span><span class="chat-owner-badge">博主</span></div>
+                            <p class="text-[10px] text-slate-400 dark:text-slate-500 truncate">回复了 42 条留言</p>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-3 p-2 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-700/30 transition-colors cursor-pointer">
+                        <img src="https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=80&q=80" class="w-9 h-9 rounded-full object-cover ring-2 ring-white dark:ring-slate-700" alt="">
+                        <div class="flex-1 min-w-0"><span class="text-xs font-bold text-slate-700 dark:text-slate-200 truncate block">小鱼儿</span><p class="text-[10px] text-slate-400 dark:text-slate-500 truncate">发送了 8 条留言</p></div>
+                    </div>
+                    <div class="flex items-center gap-3 p-2 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-700/30 transition-colors cursor-pointer">
+                        <img src="https://images.unsplash.com/photo-1580489944761-15a19d654956?auto=format&fit=crop&w=80&q=80" class="w-9 h-9 rounded-full object-cover ring-2 ring-white dark:ring-slate-700" alt="">
+                        <div class="flex-1 min-w-0"><span class="text-xs font-bold text-slate-700 dark:text-slate-200 truncate block">Luna 🌙</span><p class="text-[10px] text-slate-400 dark:text-slate-500 truncate">发送了 6 条留言</p></div>
+                    </div>
+                    <div class="flex items-center gap-3 p-2 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-700/30 transition-colors cursor-pointer">
+                        <img src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=80&q=80" class="w-9 h-9 rounded-full object-cover ring-2 ring-white dark:ring-slate-700" alt="">
+                        <div class="flex-1 min-w-0"><span class="text-xs font-bold text-slate-700 dark:text-slate-200 truncate block">CodeMaster_张</span><p class="text-[10px] text-slate-400 dark:text-slate-500 truncate">发送了 5 条留言</p></div>
+                    </div>
+                    <div class="flex items-center gap-3 p-2 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-700/30 transition-colors cursor-pointer">
+                        <img src="https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=80&q=80" class="w-9 h-9 rounded-full object-cover ring-2 ring-white dark:ring-slate-700" alt="">
+                        <div class="flex-1 min-w-0"><span class="text-xs font-bold text-slate-700 dark:text-slate-200 truncate block">技术小黑</span><p class="text-[10px] text-slate-400 dark:text-slate-500 truncate">发送了 4 条留言</p></div>
+                    </div>
+                </div>
+                <p class="text-center text-[10px] text-slate-400 dark:text-slate-500 mt-4 pt-3 border-t border-slate-100 dark:border-slate-700/50">共 56 位朋友参与过对话</p>
+            </section>
+        </aside>
+    </div>
+
+    <!-- 全局底部状态栏 -->
+    <footer class="hidden xl:flex bg-card/80 dark:bg-slate-800/80 backdrop-blur-md rounded-3xl py-3 px-6 card-shadow justify-between items-center text-xs transition-colors duration-300 shrink-0 opacity-0 animate-fade-in-up delay-500 w-full max-w-[1400px] mx-auto">
+        <div class="flex items-center gap-6 text-slate-500 dark:text-slate-400">
+            <span>&copy; 2024 TixXin Blog. All rights reserved.</span>
+            <div class="flex items-center gap-4">
+                <a href="#" class="hover:text-slate-800 dark:hover:text-slate-200 transition-colors">关于本站</a>
+                <a href="#" class="hover:text-slate-800 dark:hover:text-slate-200 transition-colors">隐私政策</a>
+                <a href="#" class="hover:text-slate-800 dark:hover:text-slate-200 transition-colors">RSS 订阅</a>
+                <a href="#" class="hover:text-slate-800 dark:hover:text-slate-200 transition-colors">站点地图</a>
+            </div>
+        </div>
+        <div class="flex items-center gap-6">
+            <div class="flex items-center gap-2 text-slate-500 dark:text-slate-400">
+                <span>Powered by</span>
+                <a href="#" class="font-semibold text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white transition-colors">Cursor</a>
+                <span>&amp;</span>
+                <a href="#" class="font-semibold text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white transition-colors">Tailwind</a>
+            </div>
+            <div class="w-px h-4 bg-slate-200 dark:bg-slate-700"></div>
+            <div class="flex items-center gap-4">
+                <div class="flex items-center gap-2 text-[10px] text-slate-500 dark:text-slate-400 font-mono tracking-widest bg-white dark:bg-slate-700/50 px-3 py-1 rounded-full border border-slate-100 dark:border-slate-600/50 shadow-sm hover:shadow-md transition-shadow cursor-help">
+                    <i data-lucide="activity" class="w-3 h-3 text-emerald-500 dark:text-emerald-400"></i><span>PING 18ms</span>
+                </div>
+                <div class="flex items-center gap-1.5 tooltip cursor-help">
+                    <div class="relative flex h-2 w-2"><span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span><span class="relative inline-flex rounded-full h-2 w-2 bg-emerald-500 dark:bg-emerald-400"></span></div>
+                    <span class="text-emerald-600 dark:text-emerald-400 font-medium hover:text-emerald-700 dark:hover:text-emerald-300 transition-colors">All Systems Operational</span>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- 移动端底部导航栏 -->
+    <nav class="lg:hidden fixed bottom-0 left-0 right-0 bg-white/90 dark:bg-slate-900/90 backdrop-blur-md border-t border-slate-100 dark:border-slate-800 z-50 pb-safe">
+        <ul class="flex items-center justify-around p-2 m-0 list-none">
+            <li><a href="./index.html" class="mobile-nav-item flex flex-col items-center gap-1 p-2 text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 transition-colors"><i data-lucide="home" class="w-5 h-5"></i><span class="text-[10px] font-medium">主页</span></a></li>
+            <li><a href="./articles.html" class="mobile-nav-item flex flex-col items-center gap-1 p-2 text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 transition-colors"><i data-lucide="pen-tool" class="w-5 h-5"></i><span class="text-[10px] font-medium">文章</span></a></li>
+            <li><a href="./projects.html" class="mobile-nav-item flex flex-col items-center gap-1 p-2 text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 transition-colors"><i data-lucide="layers" class="w-5 h-5"></i><span class="text-[10px] font-medium">项目</span></a></li>
+            <li><a href="./gallery.html" class="mobile-nav-item flex flex-col items-center gap-1 p-2 text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 transition-colors"><i data-lucide="image" class="w-5 h-5"></i><span class="text-[10px] font-medium">画廊</span></a></li>
+            <li><a href="./about.html" class="mobile-nav-item flex flex-col items-center gap-1 p-2 text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 transition-colors"><i data-lucide="user" class="w-5 h-5"></i><span class="text-[10px] font-medium">关于</span></a></li>
+        </ul>
+    </nav>
+
+    <script>
+    (function() {
+        var chatEl = document.getElementById('chat-messages');
+        var scrollBtn = document.getElementById('scroll-bottom-btn');
+        if (!chatEl || !scrollBtn) return;
+
+        chatEl.scrollTop = chatEl.scrollHeight;
+
+        function checkScroll() {
+            var atBottom = chatEl.scrollHeight - chatEl.scrollTop - chatEl.clientHeight < 80;
+            scrollBtn.classList.toggle('visible', !atBottom);
+        }
+        chatEl.addEventListener('scroll', checkScroll);
+        checkScroll();
+
+        scrollBtn.addEventListener('click', function() {
+            chatEl.scrollTo({ top: chatEl.scrollHeight, behavior: 'smooth' });
+        });
+
+        // Simulate online count fluctuation
+        var onlineEl = document.getElementById('online-count');
+        if (onlineEl) {
+            setInterval(function() {
+                var base = 12;
+                var delta = Math.floor(Math.random() * 5) - 2;
+                var count = Math.max(3, base + delta);
+                onlineEl.textContent = count + ' 人在线';
+            }, 8000);
+        }
+    })();
+    </script>
+    <script src="./js/darkmode.js"></script>
+    <script src="./js/navigation.js"></script>
+    <script src="./js/tabs.js"></script>
+    <script src="./js/interactions.js"></script>
+    <script src="./js/app.js"></script>
+</body>
+
+</html>

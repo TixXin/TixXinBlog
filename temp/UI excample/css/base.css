@@ -1,0 +1,272 @@
+/* ========================================
+   base.css — 基础样式：背景、滚动条、动画、工具类
+   ======================================== */
+
+/* 暗色主题 token */
+:root {
+    --dark-bg: #23272f;
+    --dark-bg-dot: rgba(126, 138, 156, 0.16);
+    --dark-surface-1: #2a2f37;
+    --dark-surface-2: #313741;
+    --dark-surface-3: #383f4a;
+    --dark-surface-code: #1c2128;
+    --dark-border: #414956;
+    --dark-border-soft: rgba(116, 128, 145, 0.28);
+    --dark-text-main: #eef2f6;
+    --dark-text-muted: #c5ced9;
+    --dark-text-soft: #8b95a3;
+    --dark-text-faint: #6f7a88;
+    --dark-accent: #5b7cfa;
+    --dark-accent-soft: rgba(91, 124, 250, 0.16);
+    --dark-accent-strong: rgba(91, 124, 250, 0.24);
+}
+
+/* 动画延迟类 */
+.delay-100 { animation-delay: 100ms; }
+.delay-200 { animation-delay: 200ms; }
+.delay-300 { animation-delay: 300ms; }
+.delay-400 { animation-delay: 400ms; }
+.delay-500 { animation-delay: 500ms; }
+
+/* 页面背景 */
+body {
+    background-color: #ebeff4;
+    background-image: radial-gradient(#bcc6d3 1px, transparent 1px);
+    background-size: 24px 24px;
+    scroll-behavior: smooth;
+    transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+.dark body {
+    background-color: var(--dark-bg);
+    background-image: radial-gradient(var(--dark-bg-dot) 0.9px, transparent 0.9px);
+    background-size: 28px 28px;
+    color: var(--dark-text-muted);
+}
+
+/* 全局焦点样式 */
+:focus-visible {
+    outline: 2px solid #94a3b8;
+    outline-offset: 2px;
+    border-radius: 4px;
+}
+.dark :focus-visible {
+    outline-color: var(--dark-accent);
+}
+
+/* 布局容器 */
+.main-container {
+    max-width: 1440px;
+    width: 100%;
+    margin: 0 auto;
+    position: relative;
+    z-index: 10;
+}
+
+/* 自定义滚动条 */
+::-webkit-scrollbar,
+html::-webkit-scrollbar,
+body::-webkit-scrollbar {
+    width: 6px !important;
+    height: 6px !important;
+}
+
+::-webkit-scrollbar-button,
+html::-webkit-scrollbar-button,
+body::-webkit-scrollbar-button,
+::-webkit-scrollbar-button:start:decrement,
+::-webkit-scrollbar-button:end:increment {
+    display: none !important;
+    width: 0 !important;
+    height: 0 !important;
+    opacity: 0 !important;
+}
+
+::-webkit-scrollbar-track {
+    background: transparent !important;
+    border-radius: 10px !important;
+}
+
+::-webkit-scrollbar-track-piece {
+    background: transparent !important;
+}
+
+::-webkit-scrollbar-corner {
+    display: none !important;
+    background: transparent !important;
+}
+
+::-webkit-scrollbar-thumb {
+    background: rgba(203, 213, 225, 0.6) !important; /* slate-300 with opacity */
+    border-radius: 10px !important;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: rgba(148, 163, 184, 0.8) !important; /* slate-400 with opacity */
+}
+
+.dark ::-webkit-scrollbar-thumb {
+    background: rgba(111, 122, 136, 0.72) !important;
+}
+
+.dark ::-webkit-scrollbar-thumb:hover {
+    background: rgba(139, 149, 163, 0.88) !important;
+}
+
+/* Firefox scrollbar styling */
+* {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(203, 213, 225, 0.6) transparent;
+}
+
+.dark * {
+    scrollbar-color: rgba(111, 122, 136, 0.72) transparent;
+}
+
+.dark ::selection {
+    background: rgba(91, 124, 250, 0.32);
+    color: #f8fbff;
+}
+
+/* 常见 Tailwind 暗色工具类覆盖 */
+.dark .dark\:bg-slate-900 {
+    background-color: var(--dark-surface-code) !important;
+}
+
+.dark .dark\:bg-slate-800,
+.dark .dark\:bg-slate-800\/95,
+.dark .dark\:bg-slate-800\/90,
+.dark .dark\:bg-slate-800\/80,
+.dark .dark\:bg-slate-800\/70,
+.dark .dark\:bg-slate-800\/60 {
+    background-color: var(--dark-surface-1) !important;
+}
+
+.dark .dark\:bg-slate-800\/50,
+.dark .dark\:bg-slate-700\/80,
+.dark .dark\:bg-slate-700\/70,
+.dark .dark\:bg-slate-700\/60,
+.dark .dark\:bg-slate-700\/50,
+.dark .dark\:bg-slate-700\/40,
+.dark .dark\:bg-slate-700\/30,
+.dark .dark\:bg-slate-700 {
+    background-color: var(--dark-surface-2) !important;
+}
+
+.dark .dark\:bg-slate-600,
+.dark .dark\:bg-slate-600\/50,
+.dark .dark\:bg-slate-600\/20,
+.dark .dark\:bg-slate-500 {
+    background-color: var(--dark-surface-3) !important;
+}
+
+.dark .dark\:bg-slate-200 {
+    background-color: rgba(91, 124, 250, 0.18) !important;
+}
+
+.dark .dark\:text-slate-100,
+.dark .dark\:text-slate-200 {
+    color: var(--dark-text-main) !important;
+}
+
+.dark .dark\:text-slate-800,
+.dark .dark\:text-slate-900 {
+    color: var(--dark-text-main) !important;
+}
+
+.dark .dark\:text-slate-300 {
+    color: var(--dark-text-muted) !important;
+}
+
+.dark .dark\:text-slate-400,
+.dark .dark\:text-slate-500 {
+    color: var(--dark-text-soft) !important;
+}
+
+.dark .dark\:border-slate-700,
+.dark .dark\:border-slate-700\/80,
+.dark .dark\:border-slate-700\/50,
+.dark .dark\:border-slate-700\/30,
+.dark .dark\:border-slate-600,
+.dark .dark\:border-slate-600\/50 {
+    border-color: var(--dark-border-soft) !important;
+}
+
+.dark .dark\:hover\:text-slate-200:hover,
+.dark .dark\:hover\:text-slate-300:hover,
+.dark .dark\:group-hover\:text-white:hover,
+.dark .group:hover .dark\:group-hover\:text-white,
+.dark .group:hover .dark\:group-hover\:text-slate-200 {
+    color: var(--dark-text-main) !important;
+}
+
+.dark .dark\:hover\:bg-slate-600:hover,
+.dark .dark\:hover\:bg-slate-700:hover,
+.dark .dark\:hover\:bg-slate-700\/50:hover,
+.dark .dark\:focus\:bg-slate-800:focus,
+.dark .dark\:focus\:bg-slate-700:focus {
+    background-color: var(--dark-surface-3) !important;
+}
+
+.dark .dark\:hover\:border-slate-500\/30:hover,
+.dark .dark\:focus\:border-slate-500:focus {
+    border-color: rgba(91, 124, 250, 0.26) !important;
+}
+
+.dark .dark\:focus\:ring-slate-500\/20:focus {
+    --tw-ring-color: rgba(91, 124, 250, 0.18) !important;
+}
+
+.dark .dark\:bg-emerald-500\/10,
+.dark .dark\:bg-rose-500\/10,
+.dark .dark\:bg-orange-500\/10,
+.dark .dark\:bg-amber-500\/10,
+.dark .dark\:bg-sky-500\/10,
+.dark .dark\:bg-blue-500\/10 {
+    background-color: rgba(91, 124, 250, 0.12) !important;
+}
+
+.dark .dark\:text-emerald-400,
+.dark .dark\:text-rose-400,
+.dark .dark\:text-orange-400,
+.dark .dark\:text-amber-400,
+.dark .dark\:text-sky-400,
+.dark .dark\:text-blue-400 {
+    color: #9fb2ff !important;
+}
+
+.dark .dark\:border-emerald-500\/20,
+.dark .dark\:border-rose-500\/20,
+.dark .dark\:border-orange-500\/20,
+.dark .dark\:border-amber-500\/20,
+.dark .dark\:border-sky-500\/20,
+.dark .dark\:border-blue-500\/20 {
+    border-color: rgba(91, 124, 250, 0.18) !important;
+}
+
+.dark #reading-progress {
+    background: linear-gradient(90deg, #5b7cfa, #7e98ff) !important;
+}
+
+/* 文本截断 */
+.line-clamp-2 {
+    display: -webkit-box;
+    line-clamp: 2;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+/* 安全区底部内边距 */
+.pb-safe {
+    padding-bottom: env(safe-area-inset-bottom);
+}
+
+/* 隐藏滚动条但保留滚动功能 */
+.no-scrollbar {
+    -ms-overflow-style: none;  /* IE and Edge */
+    scrollbar-width: none;  /* Firefox */
+}
+.no-scrollbar::-webkit-scrollbar {
+    display: none; /* Chrome, Safari and Opera */
+}
