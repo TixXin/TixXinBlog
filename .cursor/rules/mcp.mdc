@@ -1,0 +1,71 @@
+---
+description: 项目 MCP 服务器使用规范
+alwaysApply: true
+---
+
+# MCP 服务器使用规则
+
+本项目配置了 4 个 MCP 服务器，各有明确职责。使用前必须先读取对应工具的 schema 描述。
+
+## 1. Context7 — 库文档查询
+
+**用途**：查询第三方库的最新文档和用法示例，避免使用过时 API。
+
+- 当不确定某个库的 API 用法（如 Nuxt、Vue、Vite、pnpm 等）时，优先通过 Context7 查询最新文档，而非凭记忆作答。
+- 必须先调用 `resolve-library-id` 获取库 ID，再调用 `get-library-docs` 获取文档。
+- 可指定 `topic` 参数聚焦特定主题（如 `routing`、`composables`），减少无关内容。
+- 本项目核心依赖的常用库 ID：
+  - Nuxt：`/nuxt/nuxt`
+  - Vue：`/vuejs/core`
+  - Vite：`/vitejs/vite`
+
+## 2. Git MCP Server — Git 版本控制
+
+**用途**：执行 Git 操作，仓库路径固定为 `E:\Projects\TixXinBlog`。
+
+- 所有 git 工具调用必须传入 `repo_path: "E:\\Projects\\TixXinBlog"`。
+- 提供的工具包括：`git_status`、`git_log`、`git_diff`、`git_diff_staged`、`git_diff_unstaged`、`git_add`、`git_commit`、`git_show`、`git_branch`、`git_checkout`、`git_create_branch`、`git_reset`。
+- 仅在用户明确要求时执行写操作（commit、reset、checkout）。
+- 查看变更、日志等只读操作可主动使用。
+- 不要通过此 MCP 执行 force push、hard reset 等危险操作。
+
+## 3. Playwright — 浏览器自动化
+
+**用途**：在真实浏览器中验证页面渲染、交互和视觉效果。
+
+- 适用场景：验证页面布局、检查主题切换效果、确认组件渲染是否正确、截图对比 UI。
+- 验证本项目页面时，先通过 `browser_navigate` 访问开发服务器地址（当前通常为 `http://localhost:3456` 或备用端口）。
+- 使用 `browser_snapshot` 获取页面 DOM 结构用于分析。
+- 使用 `browser_take_screenshot` 截图用于视觉对比。
+- 使用 `browser_click` 测试交互（如主题切换、Tab 切换、导航跳转）。
+- 使用 `browser_console_messages` 检查浏览器控制台是否有错误或警告。
+- 使用 `browser_network_requests` 排查资源加载失败问题。
+- 测试完成后调用 `browser_close` 关闭浏览器，释放资源。
+- 不要在无需浏览器验证的纯代码修改场景中启动 Playwright。
+
+## 4. Server Memory — 知识图谱记忆
+
+**用途**：跨会话持久化存储项目关键决策、架构约定和问题解决方案。
+
+- 记忆文件位于 `E:\Projects\TixXinBlog\.cursor\mcp\memory.jsonl`。
+- **应当记录的内容**：
+  - 重要架构决策及其原因（如选择 SCSS 而非 TailwindCSS）
+  - 反复出现的问题及其最终解决方案（如 Nuxt 组件自动导入命名规则、IPC 连接问题）
+  - 用户偏好和项目约定（如端口配置、图标库选择）
+  - 关键技术选型（如 `@nuxt/icon` + Lucide、`@nuxtjs/color-mode`）
+- **不应记录的内容**：
+  - 临时调试信息、一次性修改、琐碎的代码变更
+- 实体命名使用清晰的中文或英文标识，`entityType` 使用以下分类：
+  - `Decision`：架构决策
+  - `Convention`：项目约定
+  - `Issue`：已知问题及解决方案
+  - `Preference`：用户偏好
+  - `TechStack`：技术栈选型
+- 新会话开始时，如果任务涉及架构变更或之前讨论过的问题，优先通过 `read_graph` 或 `search_nodes` 检索已有记忆。
+- 完成重要决策后，主动通过 `create_entities` / `add_observations` 将结论写入记忆。
+
+## 通用原则
+
+- 使用任何 MCP 工具前，先确认操作的必要性，不要为了使用而使用。
+- 优先使用 Cursor 内置工具（Read、Write、Grep、Shell 等），MCP 作为补充能力。
+- MCP 调用失败时，回退到内置工具完成任务，不要阻塞在 MCP 错误上。

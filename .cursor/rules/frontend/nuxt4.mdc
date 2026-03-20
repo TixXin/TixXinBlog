@@ -1,0 +1,51 @@
+---
+description: web-blog 与 web-admin 共用的 Nuxt 4 前端规范
+globs: src/frontend/**/*
+alwaysApply: false
+---
+
+# Nuxt 4 前端规则
+
+- 前端实现默认遵循 `Nuxt 4 + Vue 3 Composition API + TypeScript`。
+- 路由页面优先放在 `app/pages/`，默认采用文件系统路由。
+- 目录职责保持清晰：
+  - `components/` 放可复用 UI
+  - `composables/` 放跨页面逻辑
+  - `features/` 放业务域逻辑、接口封装、model、schema、constants
+  - `layouts/` 放页面布局
+  - `middleware/` 放路由守卫
+  - `utils/` 放纯函数工具
+  - `types/` 放跨域共享类型
+- 页面命名规则：
+  - 独立页面使用 `xxx.vue`
+  - 只有存在子页面时才使用 `xxx/index.vue`
+  - 简单动态详情优先 `[id].vue`
+  - 详情还有子流程时再使用 `[id]/index.vue`
+- 页面保持轻量，只负责组装 UI 和页面级交互，不承载大段业务逻辑。
+- 页面私有 UI 不要放进 `pages/`，应下沉到 `components/<domain>/`。
+- 前端优先采用组件化开发，页面由可复用组件和业务模块组合而成。
+- 单个文件尽量保持单一职责；复杂页面应拆分为页面、组件、composables、features 内部模块。
+- 相同或相似逻辑不要重复实现，优先抽取为共享组件、`composables`、`utils` 或 `features/<domain>/` 能力。
+- 新增实现时优先选择更易维护的拆分方式，而不是把短期可跑的代码集中写在一个大文件里。
+- 内容型路由尽量与文档保持一致，例如 `posts`、`categories`、`tags`、`search`、`admin`。
+- 优先编写兼容 SSR/SSG 且对 SEO 友好的实现；需要时使用 `useSeoMeta()` 等页面元信息 API。
+- 前端图标统一使用 `@nuxt/icon` 模块，通过 `<Icon name="lucide:xxx" />` 引用 Lucide 图标。
+- 不要在模板或数据中使用 emoji 字符作为图标。
+- 新增图标时优先从 Lucide 图标集选取，图标名格式为 `lucide:icon-name`。
+- 不要把数据库、搜索、评论、部署等尚未定案的架构选择写死到前端目录决策里。
+
+## Mock 数据规范（UI 打磨阶段）
+
+- 当前阶段所有业务数据必须使用 mock，不得在组件模板或 `<script>` 中硬编码业务数据。
+- Mock 数据统一放在 `features/<domain>/mock.ts`，配套类型放 `features/<domain>/types.ts`。
+- 组件通过 props 接收数据，不直接 import mock 文件（保持组件与数据源解耦）。
+- 页面层（`pages/*.vue`）负责引入 mock 数据并传入组件。
+- 多个组件共用的配置数据（如导航项）只定义一次，通过统一 import 共享，避免重复维护。
+- 新增功能模块时同步创建 `features/<domain>/mock.ts` 和 `types.ts`。
+
+## 文件头注释
+
+- Vue 文件的文件头注释使用 `<!-- -->` HTML 注释格式，放在 `<template>` 标签之前（而非 `<script>` 内部）。
+- TypeScript 文件的文件头注释使用 `/** */` JSDoc 格式，放在文件最顶部，import 语句之前。
+- SCSS 文件的文件头注释使用 `/** */` JSDoc 格式，放在文件最顶部，`@use` 语句之前。
+- 新建任何代码文件时必须包含文件头注释。

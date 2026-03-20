@@ -1,0 +1,16 @@
+{
+    // 设置文件夹图标 vscode插件：material icon theme
+    "material-icon-theme.folders.associations": {
+        "architecture": "docs",
+        "miniapp": "mobile",
+        "infra": "server",
+        "server-main": "server",
+        "flow": "flow",
+        "desktop-studio": "desktop",
+        "collaboration": "docs",
+        "web-admin": "server",
+        "web-blog": "server"
+    },
+    // 统一行尾符为 LF（避免 CRLF/LF 转换导致的大量文件变更）
+    "files.eol": "\n"
+}
