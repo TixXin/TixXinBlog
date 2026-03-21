@@ -180,11 +180,12 @@
     box-shadow: var(--shadow-card-hover);
   }
 
-  /* 移动端：固定于右下角，作为面板的定位参照 */
+  /* 移动端：固定于右上角，作为面板的定位参照 */
   @media (max-width: #{$breakpoint-xl - 0.02}) {
     position: fixed;
+    top: calc(1rem + env(safe-area-inset-top));
     right: 1rem;
-    bottom: calc(4.5rem + env(safe-area-inset-bottom));
+    bottom: auto;
     width: 2.75rem;
     height: 2.75rem;
   }

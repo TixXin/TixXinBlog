@@ -1,6 +1,6 @@
 <!--
   @file AppearanceEntry.vue
-  @description 界面设置齿轮按钮，桌面端嵌入底部栏右侧，移动端固定浮动
+  @description 界面设置齿轮按钮，桌面端嵌入底部栏右侧，移动端固定于右上角
   @author TixXin
   @since 2026-03-20
 -->

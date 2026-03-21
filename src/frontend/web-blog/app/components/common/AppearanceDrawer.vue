@@ -1,13 +1,13 @@
 <!--
   @file AppearanceDrawer.vue
-  @description 全局界面设置弹出面板，从底部栏设置按钮上方弹出，集中管理颜色主题、主内容动画与右侧栏动画
+  @description 全局界面设置弹出面板，视口居中显示，集中管理颜色主题、主内容动画与右侧栏动画
   @author TixXin
   @since 2026-03-20
 -->
 
 <template>
   <ClientOnly>
-    <!-- 遮罩独立 Teleport，设置区（按钮+面板）在 .footer-appearance 内保持同一叠层 -->
+    <!-- 遮罩与面板 Teleport 到 body，面板固定定位视口居中避免溢出 -->
     <Teleport to="body">
       <Transition name="drawer-overlay">
         <div
@@ -16,10 +16,9 @@
           @click="closeDrawer"
         />
       </Transition>
-    </Teleport>
 
-    <Transition name="drawer-panel">
-      <aside v-if="isDrawerOpen" class="appearance-drawer card">
+      <Transition name="drawer-panel">
+        <aside v-if="isDrawerOpen" class="appearance-drawer card">
           <section class="appearance-section appearance-section--first">
             <div class="appearance-section__head">
               <h3 class="appearance-section__title">颜色主题</h3>
@@ -86,7 +85,8 @@
             </button>
           </footer>
         </aside>
-    </Transition>
+      </Transition>
+    </Teleport>
   </ClientOnly>
 </template>
 
@@ -143,20 +143,19 @@ onBeforeUnmount(() => {
   z-index: 79;
 }
 
-/* 相对 .footer-appearance 锚定，水平居中对齐设置按钮，从按钮上方弹出 */
+/* 固定定位、视口居中，避免任意分辨率下溢出 */
 .appearance-drawer {
-  position: absolute;
+  position: fixed;
   left: 50%;
-  bottom: calc(100% + 0.75rem);
-  transform: translateX(-50%);
+  top: 50%;
+  transform: translate(-50%, -50%);
   width: min(29rem, calc(100vw - 2rem));
-  max-height: min(70vh, 28rem);
+  max-height: min(70vh, 28rem, calc(100dvh - 4rem));
   display: flex;
   flex-direction: column;
   padding: 1rem 1.25rem;
   overflow-y: auto;
-  /* 高于同容器内的设置按钮，避免被遮挡 */
-  z-index: 2;
+  z-index: 80;
 }
 
 .appearance-section {
@@ -203,6 +202,10 @@ onBeforeUnmount(() => {
 
 .appearance-option-grid--anim {
   grid-template-columns: repeat(4, 1fr);
+
+  @media (max-width: 480px) {
+    grid-template-columns: repeat(2, 1fr);
+  }
 }
 
 .appearance-option {
@@ -269,7 +272,7 @@ onBeforeUnmount(() => {
   opacity: 0;
 }
 
-/* 面板从下方向上弹出，保持水平居中（translateX(-50%)） */
+/* 面板弹出动画：自下而上浮入，最终视口居中 */
 :global(.drawer-panel-enter-active),
 :global(.drawer-panel-leave-active) {
   transition: opacity 0.2s ease, transform 0.2s ease;
@@ -283,6 +286,6 @@ onBeforeUnmount(() => {
 
 :global(.drawer-panel-enter-to),
 :global(.drawer-panel-leave-from) {
-  transform: translate(-50%, 0);
+  transform: translate(-50%, -50%);
 }
 </style>
