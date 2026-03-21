@@ -9,6 +9,8 @@ TixXinBlog/
 ├── .cursor/              # Cursor IDE 规则配置
 ├── .vscode/              # VSCode 编辑器配置
 ├── docs/                 # 项目文档与设计说明
+├── LICENSE               # GPL-3.0 开源协议
+├── README.md             # 项目说明与快速开始
 ├── src/                  # 源代码根目录
 │   ├── backend/          # 后端服务
 │   └── frontend/         # 前端应用
