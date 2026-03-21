@@ -5,11 +5,12 @@
  * @since 2025-03-17
  */
 
+import type { ThemeOption } from '~/features/theme/types'
+import { COLOR_MODE_OPTIONS } from '~/features/theme/types'
+
 export function useTheme() {
   const colorMode = useColorMode()
-
-  const themeOptions = ['light', 'system', 'dark'] as const
-  type ThemeOption = typeof themeOptions[number]
+  const themeOptions = COLOR_MODE_OPTIONS
 
   const currentPreference = computed(() => colorMode.preference as ThemeOption)
 
