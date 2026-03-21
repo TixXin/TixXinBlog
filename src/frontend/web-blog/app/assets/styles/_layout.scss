@@ -119,13 +119,10 @@
   display: flex;
   flex-direction: column;
   gap: $grid-gap;
+  min-height: 0;
 
   @media (min-width: $breakpoint-xl) {
     overflow-y: auto;
-    padding-left: calc(2rem + 16px);
-    padding-right: calc(2rem + 16px);
-    margin-left: -16px;
-    margin-right: -16px;
   }
 }
 
