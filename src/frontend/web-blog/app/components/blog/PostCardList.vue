@@ -124,6 +124,17 @@ watch(sentinelRef, (el) => {
   }
 })
 
+// viewport 可能晚于 onMounted 就绪（如 Teleport 影响挂载顺序），就绪后重建 observer
+watch(
+  () => [getScrollRoot(), sentinelRef.value] as const,
+  ([root, sentinel]) => {
+    if (root && sentinel) {
+      setupObserver()
+    }
+  },
+  { immediate: true },
+)
+
 onMounted(() => {
   nextTick(() => setupObserver())
 })
