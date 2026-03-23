@@ -13,6 +13,8 @@ TixXinBlog/
 ├── package.json          # 根 package.json，pnpm 工作区编排
 ├── pnpm-workspace.yaml   # pnpm 工作区：packages 含 src/frontend/*、src/backend/*
 ├── README.md             # 项目说明与快速开始
+├── scripts/              # 构建与维护脚本
+│   └── clear.js          # 清理依赖：删除 node_modules、pnpm-lock.yaml 并执行 pnpm store prune
 ├── src/                  # 源代码根目录
 │   ├── backend/          # 后端服务
 │   └── frontend/         # 前端应用
@@ -53,6 +55,7 @@ src/backend/
 src/frontend/web-blog/
 ├── app/                       # Nuxt 4 应用目录
 │   ├── app.vue                # 应用根组件（配置页面切换过渡动画）
+│   ├── error.vue              # Nuxt 全局错误页面（404、500 等）
 │   ├── assets/                # 静态资源
 │   │   └── styles/            # SCSS 样式文件
 │   ├── components/            # 可复用 UI 组件
@@ -94,7 +97,7 @@ src/frontend/web-blog/
 app/assets/styles/
 ├── main.scss              # 全局样式入口，按顺序引入各模块
 ├── _tokens.scss           # SCSS 编译时变量（断点、圆角、间距、字体）
-├── _variables.scss        # CSS 自定义属性；封面叠层、置顶徽标（--pin-badge-*）、页面玻璃态（--surface-1-alpha*）
+├── _variables.scss        # CSS 自定义属性；封面叠层、置顶徽标（--pin-badge-*）、页面玻璃态（--surface-1-alpha*）、Tooltip 浮层（--tooltip-*）
 ├── _base.scss             # 全局基础样式（重置、排版、滚动条、选区）
 ├── _components.scss       # 全局共享组件样式（卡片、导航、Tab、按钮等）
 ├── _layout.scss           # 页面布局样式（两级网格、断点响应、滚动行为）
@@ -149,6 +152,8 @@ app/assets/styles/
 | PageHeader.vue | 通用页面标题组件，带图标、标题和副标题 |
 | ReadingProgress.vue | 固定在视口顶部的阅读进度条（3px，强调色） |
 | SearchBox.vue | 通用搜索框组件，多页面复用 |
+| StateBlock.vue | 通用状态提示组件，用于空态、404、500 等场景 |
+| Tooltip.vue | 通用 Tooltip 提示组件，支持自动定位、明暗适配与方向箭头 |
 
 ### components/gallery/ — 画廊组件
 
@@ -243,8 +248,8 @@ app/assets/styles/
 
 | 文件 | 路由 | 职责 |
 |------|------|------|
-| pages/index.vue | `/` | 博客首页，组装三栏布局并引入 mock 数据 |
-| pages/articles.vue | `/articles` | 文章归档页，时间线与侧栏统计 |
+| pages/index.vue | `/` | 博客首页，主内容区暂为空态提示，右侧栏站点统计 |
+| pages/articles/index.vue | `/articles` | 文章页，支持列表与归档两种视图模式切换 |
 | pages/articles/[id].vue | `/articles/:id` | 文章详情页：正文、目录、评论、相关文章与打赏卡片 |
 | pages/gallery.vue | `/gallery` | 画廊页，分类筛选、瀑布流与灯箱 |
 | pages/guestbook.vue | `/guestbook` | 留言板页，聊天式列表与侧栏统计/守则/活跃成员 |
