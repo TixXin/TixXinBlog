@@ -121,9 +121,9 @@ const tagRows = computed(() => {
   border-radius: 9px;
   font-size: 11px;
   font-weight: 600;
-  background: var(--surface-2);
+  background: var(--surface-1);
   color: var(--text-muted);
-  border: 1px solid var(--border-soft);
+  border: 1px solid var(--border);
   transition: $transition-fast;
   cursor: pointer;
 
