@@ -1,6 +1,6 @@
 /**
  * @file _variables.scss
- * @description CSS 自定义属性（运行时主题变量），定义亮色和暗色主题的颜色体系；封面叠层（--surface-cover-overlay、--text-on-cover*、--cover-overlay-*）、置顶徽标（--pin-badge-*）
+ * @description CSS 自定义属性（运行时主题变量），定义亮色和暗色主题的颜色体系；封面叠层（--surface-cover-overlay、--text-on-cover*、--cover-overlay-*）、置顶徽标（--pin-badge-*）、Tooltip 浮层（--tooltip-*）
  * @author TixXin
  * @since 2025-03-17
  */
@@ -101,6 +101,11 @@
     /* --- 热力图容器 --- */
     --heatmap-bg: rgba(248, 250, 252, 0.8);
     --heatmap-border: #f1f5f9;
+  
+    /* --- Tooltip 浮层 --- */
+    --tooltip-bg: #1e293b;
+    --tooltip-text: #f8fafc;
+    --tooltip-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
   }
   
   /* ========================
@@ -199,4 +204,9 @@
     /* --- 热力图容器 --- */
     --heatmap-bg: rgba(30, 41, 59, 0.4);
     --heatmap-border: rgba(51, 65, 85, 0.5);
+  
+    /* --- Tooltip 浮层 --- */
+    --tooltip-bg: #e2e8f0;
+    --tooltip-text: #1e293b;
+    --tooltip-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
   }
