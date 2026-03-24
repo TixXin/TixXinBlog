@@ -80,8 +80,15 @@ src/frontend/web-blog/
 │   │   ├── post/              # 文章模块
 │   │   ├── project/           # 项目展示模块
 │   │   ├── site/              # 站点模块
-│   │   └── stats/             # 统计模块
-│   ├── layouts/               # 页面布局（default.vue 持有持久化左侧栏）
+│   │   ├── stats/             # 统计模块
+│   │   └── theme/             # 主题与外观模块
+│   ├── layouts/               # 页面布局（default.vue 作为薄代理层动态渲染主题布局）
+│   ├── themes/                # 布局主题系统
+│   │   ├── types.ts           # 主题契约接口 BlogLayoutTheme
+│   │   ├── registry.ts        # 主题注册表与解析
+│   │   ├── classic/           # 经典三栏主题（默认）
+│   │   ├── docs/              # 双栏文档风格主题
+│   │   └── minimal/           # 单栏极简风格主题
 │   └── pages/                 # 文件系统路由页面
 │       └── articles/          # 文章子路由
 ├── public/                    # 公共静态资源（不经编译）
@@ -233,14 +240,16 @@ app/assets/styles/
 | 项目展示 | `features/project/` | `mockProjects`、`mockProjectStats`、`mockTechStack` 及 `ProjectItem`、`ProjectStats`、`TechStackItem`、`ProjectTag`、`ProjectLink` |
 | 站点 | `features/site/` | `mockFooterLinks`、`mockPoweredBy`、`mockSiteStatus`、`FooterLink`、`PoweredByItem`、`SiteStatus` |
 | 统计 | `features/stats/` | `mockSiteStats`、`mockTags`、`mockCategories`、`SiteStats`、`TagItem`、`CategoryItem` |
-| 主题与外观 | `features/theme/` | `COLOR_MODE_OPTIONS`、`CONTENT_TRANSITION_PRESETS`、`SIDEBAR_ANIMATION_PRESETS` 及 `ThemeOption`、`ContentTransitionPreset`、`SidebarAnimationPreset` |
+| 主题与外观 | `features/theme/` | `COLOR_MODE_OPTIONS`、`CONTENT_TRANSITION_PRESETS`、`SIDEBAR_ANIMATION_PRESETS`、`LAYOUT_THEME_PRESETS` 及对应类型 |
 
 ## 组合式函数
 
 | 文件 | 职责 |
 |------|------|
 | composables/useAppearanceSettings.ts | 管理界面设置抽屉状态、动画偏好与本地持久化，并复用主题切换能力 |
-| composables/useTheme.ts | 主题切换逻辑，封装 colorMode 的读取与设置 |
+| composables/useTheme.ts | 颜色主题切换逻辑，封装 colorMode 的读取与设置 |
+| composables/useLayoutTheme.ts | 布局主题管理，运行时切换三栏/双栏/单栏布局并通过 cookie 持久化 |
+| composables/useSidebarExitAnimation.ts | 右侧栏页面切换退出动画，导航前克隆内容播放离场动画，供各布局主题复用 |
 | composables/useReadingProgress.ts | 阅读进度 0–100，支持可选滚动根节点或文档滚动 |
 | composables/useTableOfContents.ts | 根据标题锚点 Intersection Observer 高亮当前目录项 |
 
