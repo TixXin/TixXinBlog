@@ -7,7 +7,7 @@
 
 <template>
   <div class="page-root theme-docs">
-    <header class="docs-topbar anim-fade-in-up">
+    <header class="docs-topbar anim-fade-in-up" :class="{ 'docs-topbar--scrolled': isScrolled }">
       <div class="docs-topbar__inner">
         <NuxtLink to="/" class="docs-topbar__brand">
           <Icon name="lucide:pen-tool" size="20" />
@@ -75,6 +75,21 @@ const {
 
 useSidebarExitAnimation('.docs-aside')
 
+const isScrolled = ref(false)
+
+function onScroll() {
+  isScrolled.value = window.scrollY > 20
+}
+
+onMounted(() => {
+  onScroll()
+  window.addEventListener('scroll', onScroll, { passive: true })
+})
+
+onBeforeUnmount(() => {
+  window.removeEventListener('scroll', onScroll)
+})
+
 const contentTransition = computed(() => ({
   name: contentTransitionName.value,
   mode: 'out-in' as const,
@@ -87,10 +102,29 @@ const contentTransition = computed(() => ({
   position: sticky;
   top: 0;
   z-index: 40;
+  width: 100%;
+  max-width: 100%;
+  margin-left: auto;
+  margin-right: auto;
   background: var(--surface-1-alpha-90);
   backdrop-filter: blur(12px);
   border-bottom: 1px solid var(--border-soft);
-  transition: $transition-colors;
+  transition:
+    width 0.35s cubic-bezier(0.4, 0, 0.2, 1),
+    max-width 0.35s cubic-bezier(0.4, 0, 0.2, 1),
+    border-radius 0.35s cubic-bezier(0.4, 0, 0.2, 1),
+    box-shadow 0.35s cubic-bezier(0.4, 0, 0.2, 1),
+    color 0.3s ease,
+    background-color 0.3s ease,
+    border-color 0.3s ease;
+
+  &--scrolled {
+    width: calc(100% - 4rem);
+    max-width: calc(#{$container-max-width} - 4rem);
+    border-bottom-left-radius: $radius-card;
+    border-bottom-right-radius: $radius-card;
+    box-shadow: var(--shadow-card);
+  }
 }
 
 .docs-topbar__inner {
