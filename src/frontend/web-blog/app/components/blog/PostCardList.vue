@@ -90,13 +90,21 @@ function loadMore() {
   }, 400)
 }
 
+const BREAKPOINT_XL = 1280
 let observer: IntersectionObserver | null = null
+let resizeCleanup: (() => void) | null = null
 
 function getScrollRoot(): Element | null {
   if (import.meta.server) return null
   const vp = scrollbarRef.value?.viewport
   const el = unref(vp)
   return el instanceof HTMLElement ? el : null
+}
+
+function getObserverRoot(): Element | null {
+  if (import.meta.server) return null
+  if (window.innerWidth < BREAKPOINT_XL) return null
+  return getScrollRoot()
 }
 
 function setupObserver() {
@@ -109,7 +117,7 @@ function setupObserver() {
       }
     },
     {
-      root: getScrollRoot(),
+      root: getObserverRoot(),
       rootMargin: '0px 0px 200px 0px',
     },
   )
@@ -138,11 +146,24 @@ watch(
 
 onMounted(() => {
   nextTick(() => setupObserver())
+
+  let prevIsXl = window.innerWidth >= BREAKPOINT_XL
+  const onResize = () => {
+    const nowIsXl = window.innerWidth >= BREAKPOINT_XL
+    if (nowIsXl !== prevIsXl) {
+      prevIsXl = nowIsXl
+      setupObserver()
+    }
+  }
+  window.addEventListener('resize', onResize)
+  resizeCleanup = () => window.removeEventListener('resize', onResize)
 })
 
 onUnmounted(() => {
   observer?.disconnect()
   observer = null
+  resizeCleanup?.()
+  resizeCleanup = null
 })
 </script>
 
