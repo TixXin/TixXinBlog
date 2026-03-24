@@ -77,7 +77,25 @@
 
   @media (min-width: $breakpoint-xl) {
     height: 100%;
-    overflow-y: auto;
+    overflow: hidden;
+    padding: 2rem;
+    margin: -2rem;
+  }
+}
+
+.aside-left__scroll {
+  @media (min-width: $breakpoint-xl) {
+    height: 100%;
+    overflow: visible !important;
+  }
+}
+
+.aside-left__viewport {
+  display: flex;
+  flex-direction: column;
+  gap: $grid-gap;
+
+  @media (min-width: $breakpoint-xl) {
     padding: 2rem;
     margin: -2rem;
   }
@@ -129,11 +147,25 @@
 .aside-right {
   display: flex;
   flex-direction: column;
-  gap: 1.25rem;
+  position: relative;
 
   @media (min-width: $breakpoint-xl) {
     height: 100%;
-    overflow-y: auto;
+    overflow: visible;
+    padding: 2rem;
+    margin: -2rem;
+  }
+}
+
+.aside-right__scroll {
+  @media (min-width: $breakpoint-xl) {
+    height: 100%;
+    overflow: visible !important;
+  }
+}
+
+.aside-right__viewport {
+  @media (min-width: $breakpoint-xl) {
     padding: 2rem;
     margin: -2rem;
   }

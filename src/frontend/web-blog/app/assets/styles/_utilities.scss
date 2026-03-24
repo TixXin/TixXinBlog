@@ -99,14 +99,10 @@
 }
 
 // 右侧栏容器：relative 支持克隆元素绝对定位；
-// clip 仅在 xl 桌面端生效，防止退场 translateX 产生溢出滚动条，
-// < xl 时侧栏在正常文档流中排列，不需要裁剪，否则会截断子卡片阴影
+// 入场动画 translateX 溢出由 CustomScrollbar viewport 的 overflow-x:hidden 裁剪，
+// 退场克隆 append 到 .aside-right，由 .page-root 的 overflow:clip 兜底，此处无需额外裁剪
 #right-sidebar-target {
   position: relative;
-
-  @media (min-width: $breakpoint-xl) {
-    overflow-x: clip;
-  }
 }
 
 // 右侧栏退出动画（router.beforeEach 克隆的元素）：纯淡出，避免 translateX 导致卡片宽度变化

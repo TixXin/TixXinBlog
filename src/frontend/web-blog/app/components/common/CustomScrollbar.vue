@@ -51,22 +51,23 @@
       </div>
     </Transition>
 
-    <!-- 返回顶部 -->
+    <!-- 返回顶部：包裹 div 为 Transition 提供单元素根节点（CommonTooltip 渲染 fragment） -->
     <Transition name="back-to-top">
-      <CommonTooltip
+      <div
         v-if="showBackToTop && showBackToTopBtn"
-        content="返回顶部"
-        placement="left"
+        class="custom-scrollbar__back-to-top"
       >
-        <button
-          type="button"
-          class="custom-scrollbar__back-to-top"
-          aria-label="返回顶部"
-          @click="scrollToTop(true)"
-        >
-          <Icon name="lucide:chevron-up" size="20" />
-        </button>
-      </CommonTooltip>
+        <CommonTooltip content="返回顶部" placement="left">
+          <button
+            type="button"
+            class="custom-scrollbar__back-to-top-btn"
+            aria-label="返回顶部"
+            @click="scrollToTop(true)"
+          >
+            <Icon name="lucide:chevron-up" size="20" />
+          </button>
+        </CommonTooltip>
+      </div>
     </Transition>
   </div>
 </template>
@@ -86,7 +87,7 @@ const props = withDefaults(defineProps<{
 }>(), {
   autoHideDelay: 1500,
   showProgress: false,
-  showBackToTop: false,
+  showBackToTop: true,
   backToTopThreshold: 300,
 })
 
@@ -303,6 +304,14 @@ onUnmounted(() => {
   bottom: 20px;
   right: 20px;
   z-index: 20;
+
+  @media (max-width: #{$breakpoint-sm - 0.02}) {
+    bottom: 16px;
+    right: 16px;
+  }
+}
+
+.custom-scrollbar__back-to-top-btn {
   width: 40px;
   height: 40px;
   border-radius: $radius-full;
@@ -330,8 +339,6 @@ onUnmounted(() => {
   @media (max-width: #{$breakpoint-sm - 0.02}) {
     width: 36px;
     height: 36px;
-    bottom: 16px;
-    right: 16px;
   }
 }
 

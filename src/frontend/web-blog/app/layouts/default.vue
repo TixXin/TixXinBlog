@@ -9,15 +9,25 @@
   <div class="page-root">
     <div class="blog-grid">
       <aside class="aside-left anim-fade-in-up anim-delay-1">
-        <LayoutSidebarNav />
-        <BlogSubscribeCard />
+        <CommonCustomScrollbar :show-back-to-top="false" class="aside-left__scroll" viewport-class="aside-left__viewport">
+          <LayoutSidebarNav />
+          <BlogSubscribeCard />
+        </CommonCustomScrollbar>
       </aside>
 
       <div class="page-columns anim-fade-in-up anim-delay-2">
         <main class="main-content">
           <NuxtPage :transition="contentTransition" />
         </main>
-        <aside id="right-sidebar-target" class="aside-right" :class="sidebarAnimationClass" />
+        <aside class="aside-right">
+          <CommonCustomScrollbar
+            :show-back-to-top="false"
+            class="aside-right__scroll"
+            viewport-class="aside-right__viewport"
+          >
+            <div id="right-sidebar-target" :class="sidebarAnimationClass" />
+          </CommonCustomScrollbar>
+        </aside>
       </div>
     </div>
 
@@ -47,25 +57,26 @@ const {
  * 因此必须在 router.beforeEach 中提前捕获。
  */
 router.beforeEach(() => {
+  const aside = document.querySelector('.aside-right') as HTMLElement | null
   const target = document.getElementById('right-sidebar-target')
   const source = target?.firstElementChild as HTMLElement | null
 
-  if (!target || !source) return
+  if (!aside || !target || !source) return
 
   const sourceRect = source.getBoundingClientRect()
-  const targetRect = target.getBoundingClientRect()
+  const asideRect = aside.getBoundingClientRect()
   const clone = source.cloneNode(true) as HTMLElement
   clone.classList.add('sidebar-leaving-clone')
   if (sidebarAnimationPreset.value === 'fade-in-up') {
     clone.classList.add('sidebar-leave-slide-right')
   }
-  clone.style.left = `${sourceRect.left - targetRect.left}px`
-  clone.style.top = `${sourceRect.top - targetRect.top}px`
+  clone.style.left = `${sourceRect.left - asideRect.left}px`
+  clone.style.top = `${sourceRect.top - asideRect.top}px`
   clone.style.width = `${sourceRect.width}px`
   clone.style.height = `${sourceRect.height}px`
   clone.style.right = 'auto'
   source.style.visibility = 'hidden'
-  target.appendChild(clone)
+  aside.appendChild(clone)
 
   clone.addEventListener('animationend', () => {
     clone.remove()

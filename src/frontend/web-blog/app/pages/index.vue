@@ -7,11 +7,13 @@
 
 <template>
   <div class="main-inner home-page">
-    <CommonStateBlock
-      icon="lucide:construction"
-      title="页面建设中"
-      description="主页内容正在设计，敬请期待..."
-    />
+    <CommonCustomScrollbar class="home-body">
+      <CommonStateBlock
+        icon="lucide:construction"
+        title="页面建设中"
+        description="主页内容正在设计，敬请期待..."
+      />
+    </CommonCustomScrollbar>
     <ClientOnly>
       <Teleport to="#right-sidebar-target">
         <SidebarRightSidebar>
@@ -32,5 +34,10 @@ const siteStats = mockSiteStats
 .home-page {
   display: flex;
   flex-direction: column;
+}
+
+.home-body {
+  flex: 1;
+  min-height: 0;
 }
 </style>
