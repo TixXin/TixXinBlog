@@ -178,65 +178,12 @@
   }
 }
 
-// 底部栏容器：footer + 设置按钮并排（移动端仅显示设置入口）
+// 底部栏容器：仅承载 StatusFooter
 .footer-row {
-  display: flex;
-  align-items: stretch;
-  justify-content: flex-end;
-  gap: 0.75rem;
   width: 100%;
   max-width: $container-max-width;
   margin: 0 auto;
   flex-shrink: 0;
-
-  @media (min-width: $breakpoint-xl) {
-    justify-content: flex-start;
-  }
-}
-
-// 设置按钮 + 弹出面板锚点：高于遮罩层，与面板同属一层
-// 卡片样式写在容器上，避免全局 button 重置（background/border:none）吃掉按钮外观
-.footer-appearance {
-  position: relative;
-  z-index: 82;
-  flex-shrink: 0;
-  isolation: isolate;
-  border-radius: $radius-md;
-  border: 1px solid var(--border);
-  box-shadow: var(--shadow-card);
-  background: var(--surface-1-alpha);
-  backdrop-filter: blur(12px);
-  /* 必须为 visible：设置面板在容器上方绝对定位，hidden 会把整块弹窗裁掉 */
-  overflow: visible;
-  transition: border-color 0.15s ease, box-shadow 0.15s ease;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-
-  &:hover {
-    border-color: var(--border-hover);
-    box-shadow: var(--shadow-card-hover);
-  }
-
-  /* 移动端：固定于右上角，作为面板的定位参照 */
-  @media (max-width: #{$breakpoint-xl - 0.02}) {
-    position: fixed;
-    top: calc(1rem + env(safe-area-inset-top));
-    right: 1rem;
-    bottom: auto;
-    width: 2.75rem;
-    height: 2.75rem;
-  }
-
-  /* 桌面端：与左侧底部栏同高，宽度随正方形按钮收缩（避免竖条窄卡） */
-  @media (min-width: $breakpoint-xl) {
-    display: inline-flex;
-    align-self: stretch;
-    width: auto;
-    min-width: 0;
-    flex: 0 0 auto;
-  }
 }
 
 .site-footer {

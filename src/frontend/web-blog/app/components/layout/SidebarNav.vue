@@ -19,6 +19,9 @@
         </NuxtLink>
       </li>
     </ul>
+    <div v-if="$slots.footer" class="sidebar-nav__footer">
+      <slot name="footer" />
+    </div>
   </nav>
 </template>
 
@@ -53,5 +56,15 @@ function isActive(to: string) {
   width: 1.25rem;
   height: 1.25rem;
   flex-shrink: 0;
+}
+
+.sidebar-nav__footer {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.25rem;
+  margin-top: 0.75rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--border-soft);
 }
 </style>

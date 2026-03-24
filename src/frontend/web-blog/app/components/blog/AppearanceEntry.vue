@@ -1,6 +1,6 @@
 <!--
   @file AppearanceEntry.vue
-  @description 界面设置齿轮按钮，经典主题嵌入底部栏，docs/minimal 主题嵌入顶栏
+  @description 界面设置齿轮按钮，点击打开外观设置面板
   @author TixXin
   @since 2026-03-20
 -->
@@ -60,29 +60,6 @@ button.appearance-fab {
 
   &--open {
     color: var(--text-main);
-  }
-
-  // 经典主题 footer 内：填满 .footer-appearance 容器
-  :global(.footer-appearance) & {
-    width: 100%;
-    height: 100%;
-    border-radius: 0;
-    background: transparent;
-
-    &:hover {
-      background: transparent;
-    }
-
-    @media (min-width: $breakpoint-xl) {
-      position: static;
-      flex: 0 0 auto;
-      align-self: center;
-      width: auto;
-      height: 100%;
-      max-height: 100%;
-      aspect-ratio: 1;
-      min-width: 0;
-    }
   }
 }
 
