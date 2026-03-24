@@ -5,6 +5,8 @@
  * @since 2025-03-17
  */
 
+@use 'tokens' as *;
+
 .line-clamp-2 {
   display: -webkit-box;
   -webkit-line-clamp: 2;
@@ -96,10 +98,15 @@
   transition: none;
 }
 
-// 右侧栏容器：relative 支持克隆元素绝对定位，clip 防止退场 translateX 产生溢出滚动条
+// 右侧栏容器：relative 支持克隆元素绝对定位；
+// clip 仅在 xl 桌面端生效，防止退场 translateX 产生溢出滚动条，
+// < xl 时侧栏在正常文档流中排列，不需要裁剪，否则会截断子卡片阴影
 #right-sidebar-target {
   position: relative;
-  overflow-x: clip;
+
+  @media (min-width: $breakpoint-xl) {
+    overflow-x: clip;
+  }
 }
 
 // 右侧栏退出动画（router.beforeEach 克隆的元素）：纯淡出，避免 translateX 导致卡片宽度变化
@@ -187,4 +194,53 @@
     opacity: 1;
     transform: scale(1);
   }
+}
+
+// 右侧栏 Vue Transition 过渡类：右侧退出和进入
+.sidebar-slide-enter-active,
+.sidebar-slide-leave-active {
+  transition: opacity 0.25s ease, transform 0.25s ease;
+}
+
+.sidebar-slide-enter-from {
+  opacity: 0;
+  transform: translateX(24px);
+}
+
+.sidebar-slide-leave-to {
+  opacity: 0;
+  transform: translateX(24px);
+}
+
+// 右侧栏 Vue Transition 过渡类：缩放淡入
+.sidebar-scale-enter-active,
+.sidebar-scale-leave-active {
+  transition: opacity 0.25s ease, transform 0.25s ease;
+}
+
+.sidebar-scale-enter-from {
+  opacity: 0;
+  transform: scale(0.92);
+}
+
+.sidebar-scale-leave-to {
+  opacity: 0;
+  transform: scale(0.92);
+}
+
+// 右侧栏 Vue Transition 过渡类：柔和淡入
+.sidebar-fade-enter-active,
+.sidebar-fade-leave-active {
+  transition: opacity 0.2s ease;
+}
+
+.sidebar-fade-enter-from,
+.sidebar-fade-leave-to {
+  opacity: 0;
+}
+
+// 右侧栏 Vue Transition 过渡类：关闭动画
+.sidebar-none-enter-active,
+.sidebar-none-leave-active {
+  transition: none;
 }

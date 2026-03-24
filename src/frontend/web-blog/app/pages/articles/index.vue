@@ -9,7 +9,7 @@
   <div class="main-inner articles-page">
     <!-- 头部区域 -->
     <div class="main-content__header">
-      <Transition name="view-switch" mode="out-in">
+      <Transition :name="contentTransitionName" mode="out-in">
         <!-- 列表模式：Tab 栏 -->
         <div v-if="viewMode === 'list'" key="tabs" class="articles-tabs no-scrollbar">
           <button
@@ -61,7 +61,7 @@
       </div>
     </div>
 
-    <Transition name="view-switch" mode="out-in">
+    <Transition :name="contentTransitionName" mode="out-in">
       <!-- 列表模式：文章卡片列表 -->
       <BlogPostCardList
         v-if="viewMode === 'list'"
@@ -86,7 +86,7 @@
     <ClientOnly>
       <Teleport to="#right-sidebar-target">
         <SidebarRightSidebar>
-          <Transition name="view-switch" mode="out-in">
+          <Transition :name="sidebarTransitionName" mode="out-in">
             <div v-if="viewMode === 'list'" key="sidebar-list" class="sidebar-list-group">
               <SidebarTagCloudCard :tags="tags" />
               <SidebarCategoryCard :categories="categories" />
@@ -112,6 +112,8 @@ import {
   mockArchiveYears,
   mockCategoryDistribution,
 } from '~/features/article/mock'
+
+const { contentTransitionName, sidebarTransitionName } = useAppearanceSettings()
 
 const viewMode = ref<'list' | 'archive'>('list')
 const activeTab = ref('all')
@@ -225,19 +227,4 @@ const categoryDistribution = mockCategoryDistribution
   gap: 1.25rem;
 }
 
-/* 视图切换过渡 */
-.view-switch-enter-active,
-.view-switch-leave-active {
-  transition: opacity 0.2s ease, transform 0.2s ease;
-}
-
-.view-switch-enter-from {
-  opacity: 0;
-  transform: translateY(-8px);
-}
-
-.view-switch-leave-to {
-  opacity: 0;
-  transform: translateY(8px);
-}
 </style>

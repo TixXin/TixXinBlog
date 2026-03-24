@@ -105,6 +105,20 @@ export function useAppearanceSettings() {
     })
   }
 
+  const sidebarTransitionName = computed(() => {
+    switch (sidebarAnimationPreset.value) {
+      case 'scale':
+        return 'sidebar-scale'
+      case 'fade':
+        return 'sidebar-fade'
+      case 'none':
+        return 'sidebar-none'
+      case 'fade-in-up':
+      default:
+        return 'sidebar-slide'
+    }
+  })
+
   const sidebarAnimationClass = computed(() => {
     if (!hydrated.value) return ''
 
@@ -209,6 +223,7 @@ export function useAppearanceSettings() {
     sidebarAnimationOptions: SIDEBAR_ANIMATION_OPTIONS,
     sidebarAnimationLabel,
     sidebarAnimationClass,
+    sidebarTransitionName,
     setSidebarAnimationPreset,
     openDrawer,
     closeDrawer,
