@@ -119,6 +119,7 @@ onMounted(() => {
       viewport.addEventListener('scroll', onViewportScroll, { passive: true })
       onViewportScroll()
     }
+
   })
 })
 
@@ -138,12 +139,14 @@ const contentTransition = computed(() => ({
 .theme-docs {
   height: 100vh;
   overflow: hidden;
-  display: flex;
-  flex-direction: column;
+  position: relative;
 }
 
 .docs-topbar {
-  flex-shrink: 0;
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
   z-index: 40;
   width: 100%;
   max-width: 100%;
@@ -153,10 +156,10 @@ const contentTransition = computed(() => ({
   backdrop-filter: blur(12px);
   border-bottom: 1px solid var(--border-soft);
   transition:
-    width 0.35s cubic-bezier(0.4, 0, 0.2, 1),
-    max-width 0.35s cubic-bezier(0.4, 0, 0.2, 1),
-    border-radius 0.35s cubic-bezier(0.4, 0, 0.2, 1),
-    box-shadow 0.35s cubic-bezier(0.4, 0, 0.2, 1),
+    width 0.4s cubic-bezier(0.25, 0.1, 0.25, 1),
+    max-width 0.4s cubic-bezier(0.25, 0.1, 0.25, 1),
+    border-radius 0.4s cubic-bezier(0.25, 0.1, 0.25, 1),
+    box-shadow 0.4s cubic-bezier(0.25, 0.1, 0.25, 1),
     color 0.3s ease,
     background-color 0.3s ease,
     border-color 0.3s ease;
@@ -166,7 +169,8 @@ const contentTransition = computed(() => ({
     max-width: calc(#{$container-max-width} - 4rem);
     border-bottom-left-radius: $radius-card;
     border-bottom-right-radius: $radius-card;
-    box-shadow: var(--shadow-card);
+    border-bottom-color: transparent;
+    box-shadow: 0 4px 12px -2px rgba(0, 0, 0, 0.1);
   }
 }
 
@@ -204,6 +208,7 @@ const contentTransition = computed(() => ({
 .docs-topbar__nav {
   display: none;
   align-items: center;
+  justify-content: flex-end;
   gap: 0.25rem;
   flex: 1;
   min-width: 0;
@@ -240,8 +245,13 @@ const contentTransition = computed(() => ({
 .docs-topbar__actions {
   display: flex;
   align-items: center;
+  justify-content: flex-end;
   gap: 0.5rem;
   flex-shrink: 0;
+
+  @media (min-width: $breakpoint-xl) {
+    width: $sidebar-right-width;
+  }
 }
 
 // 滚动进度百分比按钮
@@ -283,10 +293,13 @@ const contentTransition = computed(() => ({
   transform: translateX(8px);
 }
 
-// 外层滚动区域
+// 外层滚动区域（填满整个视口，内容通过 padding-top 避开顶部栏）
 .docs-scroll-area {
-  flex: 1;
-  min-height: 0;
+  height: 100%;
+}
+
+:deep(.docs-scroll-viewport) {
+  padding-top: 3.5rem;
 }
 
 .docs-body {
