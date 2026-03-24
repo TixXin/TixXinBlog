@@ -26,6 +26,17 @@
           </NuxtLink>
         </nav>
         <div class="docs-topbar__actions">
+          <Transition name="progress-fade">
+            <button
+              v-if="showProgress"
+              class="docs-scroll-progress"
+              type="button"
+              aria-label="返回顶部"
+              @click="scrollToTop"
+            >
+              {{ displayProgress }}%
+            </button>
+          </Transition>
           <BlogThemeSwitcher />
           <BlogAppearanceEntry />
           <CommonAppearanceDrawer />
@@ -33,26 +44,34 @@
       </div>
     </header>
 
-    <div class="docs-body anim-fade-in-up anim-delay-2">
-      <main class="docs-main">
-        <div class="main-content">
-          <NuxtPage :transition="contentTransition" />
-        </div>
-      </main>
-      <aside class="docs-aside">
-        <CommonCustomScrollbar
-          :show-back-to-top="false"
-          class="docs-aside__scroll"
-          viewport-class="docs-aside__viewport"
-        >
-          <div id="right-sidebar-target" :class="sidebarAnimationClass" />
-        </CommonCustomScrollbar>
-      </aside>
-    </div>
+    <CommonCustomScrollbar
+      ref="scrollbarRef"
+      :show-back-to-top="true"
+      class="docs-scroll-area anim-fade-in-up anim-delay-2"
+      viewport-class="docs-scroll-viewport"
+    >
+      <div class="docs-body">
+        <main class="docs-main">
+          <div class="main-content">
+            <NuxtPage :transition="contentTransition" />
+          </div>
+        </main>
+        <aside class="docs-aside">
+          <CommonCustomScrollbar
+            :show-back-to-top="false"
+            class="docs-aside__scroll"
+            viewport-class="docs-aside__viewport"
+          >
+            <div id="right-sidebar-target" :class="sidebarAnimationClass" />
+          </CommonCustomScrollbar>
+        </aside>
+      </div>
 
-    <footer class="docs-footer">
-      <LayoutStatusFooter />
-    </footer>
+      <footer class="docs-footer">
+        <LayoutStatusFooter />
+      </footer>
+    </CommonCustomScrollbar>
+
     <LayoutMobileNav />
   </div>
 </template>
@@ -75,19 +94,37 @@ const {
 
 useSidebarExitAnimation('.docs-aside')
 
+const scrollbarRef = ref<{ viewport: HTMLElement | null; scrollProgress: number; scrollToTop: (smooth?: boolean) => void } | null>(null)
 const isScrolled = ref(false)
+const scrollProgress = ref(0)
 
-function onScroll() {
-  isScrolled.value = window.scrollY > 20
+const showProgress = computed(() => scrollProgress.value > 0)
+const displayProgress = computed(() => Math.round(scrollProgress.value))
+
+function onViewportScroll() {
+  const viewport = scrollbarRef.value?.viewport
+  if (!viewport) return
+  isScrolled.value = viewport.scrollTop > 20
+  scrollProgress.value = scrollbarRef.value?.scrollProgress ?? 0
+}
+
+function scrollToTop() {
+  scrollbarRef.value?.scrollToTop(true)
 }
 
 onMounted(() => {
-  onScroll()
-  window.addEventListener('scroll', onScroll, { passive: true })
+  nextTick(() => {
+    const viewport = scrollbarRef.value?.viewport
+    if (viewport) {
+      viewport.addEventListener('scroll', onViewportScroll, { passive: true })
+      onViewportScroll()
+    }
+  })
 })
 
 onBeforeUnmount(() => {
-  window.removeEventListener('scroll', onScroll)
+  const viewport = scrollbarRef.value?.viewport
+  viewport?.removeEventListener('scroll', onViewportScroll)
 })
 
 const contentTransition = computed(() => ({
@@ -98,9 +135,15 @@ const contentTransition = computed(() => ({
 </script>
 
 <style lang="scss" scoped>
+.theme-docs {
+  height: 100vh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
 .docs-topbar {
-  position: sticky;
-  top: 0;
+  flex-shrink: 0;
   z-index: 40;
   width: 100%;
   max-width: 100%;
@@ -201,6 +244,51 @@ const contentTransition = computed(() => ({
   flex-shrink: 0;
 }
 
+// 滚动进度百分比按钮
+.docs-scroll-progress {
+  font-size: 0.75rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-soft);
+  cursor: pointer;
+  padding: 0.25rem 0.5rem;
+  border-radius: $radius-sm;
+  border: none;
+  background: transparent;
+  transition: color 0.2s ease, background 0.2s ease;
+  white-space: nowrap;
+
+  &:hover {
+    color: var(--accent);
+    background: var(--surface-2);
+  }
+
+  &:active {
+    transform: scale(0.95);
+  }
+}
+
+// 进度百分比出入动画
+.progress-fade-enter-active {
+  transition: opacity 0.25s ease-out, transform 0.25s ease-out;
+}
+
+.progress-fade-leave-active {
+  transition: opacity 0.2s ease-in, transform 0.2s ease-in;
+}
+
+.progress-fade-enter-from,
+.progress-fade-leave-to {
+  opacity: 0;
+  transform: translateX(8px);
+}
+
+// 外层滚动区域
+.docs-scroll-area {
+  flex: 1;
+  min-height: 0;
+}
+
 .docs-body {
   max-width: $container-max-width;
   margin: 0 auto;
@@ -231,8 +319,8 @@ const contentTransition = computed(() => ({
     width: $sidebar-right-width;
     flex-shrink: 0;
     position: sticky;
-    top: calc(3.5rem + 2rem);
-    max-height: calc(100vh - 3.5rem - 4rem);
+    top: 2rem;
+    max-height: calc(100vh - 3.5rem - 6rem);
     overflow: visible;
   }
 }
@@ -265,5 +353,20 @@ const contentTransition = computed(() => ({
       display: flex;
     }
   }
+}
+
+// 返回顶部按钮动画覆盖：从右侧滑入
+:deep(.back-to-top-enter-active) {
+  transition: opacity 0.3s ease-out, transform 0.3s ease-out;
+}
+
+:deep(.back-to-top-leave-active) {
+  transition: opacity 0.25s ease-in, transform 0.25s ease-in;
+}
+
+:deep(.back-to-top-enter-from),
+:deep(.back-to-top-leave-to) {
+  opacity: 0;
+  transform: translateX(calc(100% + 20px));
 }
 </style>

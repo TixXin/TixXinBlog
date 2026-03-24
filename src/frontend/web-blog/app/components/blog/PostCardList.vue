@@ -13,13 +13,34 @@
       :show-progress="displayMode === 'waterfall'"
       show-back-to-top
     >
-    <div class="post-list">
+
+    <!-- 瀑布流模式：TransitionGroup 实现新卡片渐入动画 -->
+    <TransitionGroup
+      v-if="displayMode === 'waterfall'"
+      tag="div"
+      class="post-list"
+      name="post-enter"
+      :css="false"
+      @enter="onItemEnter"
+    >
       <BlogPostCard
-        v-for="post in displayedPosts"
+        v-for="(post, index) in displayedPosts"
         :key="post.id"
         :post="post"
+        :data-index="index"
       />
-    </div>
+    </TransitionGroup>
+
+    <!-- 分页模式：Transition 实现翻页淡入淡出 -->
+    <Transition v-else name="page-fade" mode="out-in">
+      <div :key="paginationKey" class="post-list">
+        <BlogPostCard
+          v-for="post in displayedPosts"
+          :key="post.id"
+          :post="post"
+        />
+      </div>
+    </Transition>
 
     <p v-if="filteredPosts.length === 0" class="post-list__empty">
       暂无相关文章
@@ -27,16 +48,21 @@
 
     <!-- 瀑布流模式：触底懒加载 -->
     <template v-if="displayMode === 'waterfall'">
-      <div v-if="hasMore && loading" class="post-list__loader">
-        <Icon name="lucide:loader-2" size="20" class="post-list__spinner" />
-        <span class="post-list__loader-text">加载中...</span>
-      </div>
-      <div v-if="hasMore && !loading" ref="sentinelRef" class="post-list__sentinel" />
-      <div v-if="!hasMore && filteredPosts.length > 0" class="post-list__end">
-        <span class="post-list__end-line" />
-        <span class="post-list__end-text">已经到底了</span>
-        <span class="post-list__end-line" />
-      </div>
+      <!-- 哨兵始终存在（不受 loading 影响），避免 observer 反复断开重连 -->
+      <div v-if="hasMore" ref="sentinelRef" class="post-list__sentinel" />
+      <Transition name="loader-fade">
+        <div v-if="hasMore && showSpinner" class="post-list__loader">
+          <Icon name="lucide:loader-2" size="20" class="post-list__spinner" />
+          <span class="post-list__loader-text">加载中...</span>
+        </div>
+      </Transition>
+      <Transition name="loader-fade">
+        <div v-if="!hasMore && filteredPosts.length > 0" class="post-list__end">
+          <span class="post-list__end-line" />
+          <span class="post-list__end-text">已经到底了</span>
+          <span class="post-list__end-line" />
+        </div>
+      </Transition>
     </template>
 
     <!-- 分页模式：底部分页控件 -->
@@ -78,6 +104,7 @@
 import type { PostItem } from '~/features/post/types'
 
 const PAGE_SIZE = 15
+const SPINNER_DELAY = 250
 
 const props = withDefaults(defineProps<{
   posts: PostItem[]
@@ -97,16 +124,20 @@ const filteredPosts = computed(() => {
 // ---- 瀑布流模式状态 ----
 const displayCount = ref(PAGE_SIZE)
 const loading = ref(false)
+const showSpinner = ref(false)
 const sentinelRef = ref<HTMLElement | null>(null)
+let spinnerTimer: ReturnType<typeof setTimeout> | null = null
 
 // ---- 分页模式状态 ----
 const currentPage = ref(1)
+
+// 分页模式 Transition 的 key：页码 + Tab 组合，确保切 Tab 时也有动画
+const paginationKey = computed(() => `${props.activeTab}-${currentPage.value}`)
 
 const totalPages = computed(() =>
   Math.ceil(filteredPosts.value.length / PAGE_SIZE),
 )
 
-// 根据显示模式切换不同的数据切片策略
 const displayedPosts = computed(() => {
   if (props.displayMode === 'pagination') {
     const start = (currentPage.value - 1) * PAGE_SIZE
@@ -155,16 +186,74 @@ watch(() => props.displayMode, () => {
   scrollbarRef.value?.scrollToTop(false)
 })
 
+// ---- 瀑布流：加载逻辑 ----
+function clearSpinnerTimer() {
+  if (spinnerTimer) {
+    clearTimeout(spinnerTimer)
+    spinnerTimer = null
+  }
+}
+
 function loadMore() {
   if (loading.value || !hasMore.value) return
   loading.value = true
-  setTimeout(() => {
+
+  // 延迟显示 spinner，快速加载不会看到闪烁
+  clearSpinnerTimer()
+  spinnerTimer = setTimeout(() => {
+    if (loading.value) showSpinner.value = true
+  }, SPINNER_DELAY)
+
+  // rAF 保证在下一帧完成数据更新，新卡片由 TransitionGroup 处理入场动画
+  requestAnimationFrame(() => {
     displayCount.value = Math.min(
       displayCount.value + PAGE_SIZE,
       filteredPosts.value.length,
     )
     loading.value = false
-  }, 400)
+    showSpinner.value = false
+    clearSpinnerTimer()
+  })
+}
+
+// ---- 瀑布流：新卡片交错入场动画（JS hook，精确控制 stagger） ----
+// prevCount 记录上次渲染的数量，仅对新增卡片执行动画
+let prevCount = PAGE_SIZE
+
+watch(displayCount, (_new, old) => {
+  prevCount = old
+})
+
+function onItemEnter(el: Element, done: () => void) {
+  const htmlEl = el as HTMLElement
+  const index = Number(htmlEl.dataset.index ?? 0)
+
+  // 已在视口内的旧卡片不做动画
+  if (index < prevCount) {
+    done()
+    return
+  }
+
+  // 新增卡片的序号（从 0 开始），用于交错延迟
+  const offset = index - prevCount
+  const delay = offset * 50
+  const duration = 350
+
+  htmlEl.style.opacity = '0'
+  htmlEl.style.transform = 'translateY(20px)'
+
+  requestAnimationFrame(() => {
+    htmlEl.style.transition = `opacity ${duration}ms ease ${delay}ms, transform ${duration}ms ease ${delay}ms`
+    htmlEl.style.opacity = '1'
+    htmlEl.style.transform = 'translateY(0)'
+
+    setTimeout(() => {
+      htmlEl.style.transition = ''
+      htmlEl.style.transform = ''
+      htmlEl.style.opacity = ''
+      done()
+    }, duration + delay)
+  })
 }
 
 // ---- IntersectionObserver（仅瀑布流模式使用） ----
@@ -184,7 +273,6 @@ function getObserverRoot(): Element | null {
   if (window.innerWidth < BREAKPOINT_XL) return null
   const root = getScrollRoot()
   if (!root) return null
-  // 如果 viewport 没有产生溢出滚动，说明页面使用窗口滚动（如双栏/单栏主题），回退到 null
   if (root.scrollHeight <= root.clientHeight + 1) return null
   return root
 }
@@ -201,7 +289,7 @@ function setupObserver() {
     },
     {
       root: getObserverRoot(),
-      rootMargin: '0px 0px 200px 0px',
+      rootMargin: '0px 0px 600px 0px',
     },
   )
 
@@ -216,7 +304,6 @@ watch(sentinelRef, (el) => {
   }
 })
 
-// viewport 可能晚于 onMounted 就绪（如 Teleport 影响挂载顺序），就绪后重建 observer
 watch(
   () => [getScrollRoot(), sentinelRef.value] as const,
   ([root, sentinel]) => {
@@ -227,7 +314,6 @@ watch(
   { immediate: true },
 )
 
-// 显示模式切换时重建/销毁 observer
 watch(() => props.displayMode, () => {
   if (props.displayMode === 'waterfall') {
     nextTick(() => setupObserver())
@@ -257,6 +343,7 @@ onUnmounted(() => {
   observer = null
   resizeCleanup?.()
   resizeCleanup = null
+  clearSpinnerTimer()
 })
 </script>
 
@@ -332,6 +419,36 @@ onUnmounted(() => {
   color: var(--text-soft);
   font-size: 0.8125rem;
   white-space: nowrap;
+}
+
+/* ---- 分页翻页过渡 ---- */
+.page-fade-enter-active {
+  transition: opacity 0.25s ease, transform 0.25s ease;
+}
+
+.page-fade-leave-active {
+  transition: opacity 0.15s ease, transform 0.15s ease;
+}
+
+.page-fade-enter-from {
+  opacity: 0;
+  transform: translateY(12px);
+}
+
+.page-fade-leave-to {
+  opacity: 0;
+  transform: translateY(-8px);
+}
+
+/* ---- 加载指示器渐隐渐现 ---- */
+.loader-fade-enter-active,
+.loader-fade-leave-active {
+  transition: opacity 0.25s ease;
+}
+
+.loader-fade-enter-from,
+.loader-fade-leave-to {
+  opacity: 0;
 }
 
 /* ---- 分页控件 ---- */
