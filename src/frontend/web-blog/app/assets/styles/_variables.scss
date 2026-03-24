@@ -128,7 +128,7 @@
        --text-on-cover: #f8fafc;
        --text-on-cover-muted: rgba(203, 213, 225, 0.9);
        --cover-overlay-backdrop: blur(12px);
-       --cover-overlay-border: none;
+       --cover-overlay-border: 1px solid transparent;
        --cover-overlay-shadow: none;
        --surface-2: #313741;
        --surface-3: #383f4a;

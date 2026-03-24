@@ -170,6 +170,8 @@ const contentTransition = computed(() => ({
   width: 100%;
   margin: 0 auto;
   padding: 2rem 1rem;
+  --post-card-min-h: 140px;
+  --post-card-max-h: 190px;
 
   @media (min-width: $breakpoint-md) {
     padding: 2.5rem 2rem;

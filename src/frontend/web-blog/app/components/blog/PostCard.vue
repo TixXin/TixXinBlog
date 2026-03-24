@@ -88,46 +88,38 @@ function tagStyle(color: string) {
 .post-item {
   position: relative;
   display: flex;
-  gap: 1rem;
-  padding: 1.25rem 1rem; /* 恢复固定的内边距 */
+  gap: 0.75rem;
+  padding: 0.75rem 1rem;
+  min-height: var(--post-card-min-h, 112px);
+  max-height: var(--post-card-max-h, 155px);
   cursor: pointer;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   background-color: transparent;
+  border: 1px solid var(--border-soft);
   border-radius: $radius-md;
   overflow: hidden;
 
-  /* 非首项：在间隔区域显示分割线（通过 ::before 上移实现） */
-  &:not(:first-child)::before {
-    content: '';
-    position: absolute;
-    top: -0.4rem;
-    left: 10%;
-    width: 80%;
-    height: 1px;
-    background-color: var(--border-soft);
-  }
-
   &:hover {
     background-color: var(--surface-2);
+    border-color: transparent;
     box-shadow: var(--shadow-card);
 
     .post-item__title {
       color: var(--accent);
     }
 
-    /* 有封面时标题叠在封面叠层上，悬停仍用强调色 */
     &:has(.post-item__cover-bg) .post-item__title {
       color: var(--accent);
     }
-    
+
     .post-item__cover-bg img {
       transform: scale(1.05);
     }
   }
 
   @media (min-width: $breakpoint-sm) {
-    padding: 1.5rem; /* 桌面端固定内边距 */
-    gap: 1.5rem;
+    padding: 1rem 1.25rem;
+    gap: 1rem;
   }
 }
 
@@ -172,15 +164,15 @@ function tagStyle(color: string) {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
-  gap: 1rem;
-  margin-bottom: 0.5rem;
+  gap: 0.75rem;
+  margin-bottom: 0.25rem;
 }
 
 .post-item__title-wrapper {
   display: flex;
-  align-items: flex-start; /* 顶部对齐，防止置顶标签和多行标题错位 */
+  align-items: flex-start;
   flex-wrap: wrap;
-  gap: 0.75rem;
+  gap: 0.5rem;
   flex: 1;
   min-width: 0;
 }
@@ -212,10 +204,10 @@ function tagStyle(color: string) {
   gap: 0.25rem;
   color: #ef4444;
   font-weight: 600;
-  font-size: 0.75rem;
+  font-size: 0.6875rem;
   flex-shrink: 0;
-  margin-top: 0.25rem; /* 微调对齐标题文本 */
-  padding: 0.2rem 0.5rem;
+  margin-top: 0.15rem;
+  padding: 0.15rem 0.4rem;
   border-radius: $radius-sm;
   line-height: 1.2;
   background: var(--pin-badge-bg);
@@ -231,17 +223,16 @@ function tagStyle(color: string) {
 
 .post-item__title {
   margin: 0;
-  font-size: 1.125rem;
+  font-size: 1rem;
   font-weight: 700;
-  line-height: 1.4;
+  line-height: 1.35;
   color: var(--text-main);
   transition: color 0.2s;
   position: relative;
-  z-index: 2; /* 确保标题在最上层 */
+  z-index: 2;
 
   .post-item:has(.post-item__cover-bg) & {
     color: var(--text-on-cover);
-    /* 避免块级占满 flex 行宽导致行框过宽，clone 背景被拉满整行 */
     flex: 0 1 auto;
     align-self: flex-start;
     width: fit-content;
@@ -249,8 +240,8 @@ function tagStyle(color: string) {
   }
 
   @media (min-width: $breakpoint-sm) {
-    font-size: 1.25rem;
-    max-width: 85%; /* 允许标题向右延伸到图片上 */
+    font-size: 1.125rem;
+    max-width: 85%;
 
     .post-item:has(.post-item__cover-bg) & {
       max-width: 85%;
@@ -280,10 +271,10 @@ function tagStyle(color: string) {
 }
 
 .post-item__summary {
-  font-size: 0.875rem;
+  font-size: 0.8125rem;
   color: var(--text-muted);
-  line-height: 1.6;
-  margin-bottom: 1rem;
+  line-height: 1.5;
+  margin-bottom: 0.25rem;
   position: relative;
   z-index: 2;
   
@@ -301,7 +292,7 @@ function tagStyle(color: string) {
 .post-item__footer {
   display: flex;
   flex-direction: column;
-  gap: 0.75rem;
+  gap: 0.25rem;
   margin-top: auto;
 
   @media (min-width: $breakpoint-sm) {
@@ -315,20 +306,19 @@ function tagStyle(color: string) {
 .post-item__tags {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.375rem;
-  padding: 0.5rem 0;
-  /* 左侧标签不需要半透明背景 */
+  gap: 0.25rem;
+  padding: 0.125rem 0;
 }
 
 .post-item__meta-bottom {
   display: flex;
   align-items: center;
   flex-wrap: wrap;
-  gap: 0.75rem;
-  font-size: 0.75rem;
+  gap: 0.5rem;
+  font-size: 0.6875rem;
   color: var(--text-soft);
-  padding: 0.5rem 0.75rem;
-  border-radius: $radius-md;
+  padding: 0.3rem 0.625rem;
+  border-radius: $radius-sm;
   background: var(--surface-2);
   border: 1px solid transparent;
   box-shadow: none;

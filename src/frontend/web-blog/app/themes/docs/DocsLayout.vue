@@ -183,6 +183,8 @@ const contentTransition = computed(() => ({
 .docs-main {
   flex: 1;
   min-width: 0;
+  --post-card-min-h: 140px;
+  --post-card-max-h: 190px;
 }
 
 .docs-aside {
@@ -198,19 +200,17 @@ const contentTransition = computed(() => ({
     top: calc(3.5rem + 2rem);
     max-height: calc(100vh - 3.5rem - 4rem);
     overflow: visible;
-    padding: 2rem;
-    margin: -2rem;
   }
 }
 
-.docs-aside__scroll {
+:deep(.docs-aside__scroll) {
   @media (min-width: $breakpoint-xl) {
     height: 100%;
     overflow: visible !important;
   }
 }
 
-.docs-aside__viewport {
+:deep(.docs-aside__viewport) {
   @media (min-width: $breakpoint-xl) {
     padding: 2rem;
     margin: -2rem;
