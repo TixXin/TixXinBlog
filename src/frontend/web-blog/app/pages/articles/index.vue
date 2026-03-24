@@ -33,11 +33,31 @@
         </div>
       </Transition>
 
-      <!-- 右侧操作区：搜索 + 视图切换 -->
+      <!-- 右侧操作区：搜索 + 显示模式 + 视图切换 -->
       <div class="articles-actions">
         <CommonSearchBox
           :placeholder="viewMode === 'list' ? '搜索站内文章、标签...' : '搜索文章标题、内容...'"
         />
+        <div v-if="viewMode === 'list'" class="display-mode-toggle">
+          <CommonTooltip content="瀑布流">
+            <button
+              class="display-mode-toggle__btn"
+              :class="{ 'display-mode-toggle__btn--active': listDisplayMode === 'waterfall' }"
+              @click="listDisplayMode = 'waterfall'"
+            >
+              <Icon name="lucide:scroll-text" size="15" />
+            </button>
+          </CommonTooltip>
+          <CommonTooltip content="分页显示">
+            <button
+              class="display-mode-toggle__btn"
+              :class="{ 'display-mode-toggle__btn--active': listDisplayMode === 'pagination' }"
+              @click="listDisplayMode = 'pagination'"
+            >
+              <Icon name="lucide:book-open" size="15" />
+            </button>
+          </CommonTooltip>
+        </div>
         <div class="view-toggle">
           <CommonTooltip content="列表视图">
             <button
@@ -68,6 +88,7 @@
         key="list"
         :posts="posts"
         :active-tab="activeTab"
+        :display-mode="listDisplayMode"
       />
 
       <!-- 归档模式：时间线 -->
@@ -117,6 +138,7 @@ const { contentTransitionName, sidebarTransitionName } = useAppearanceSettings()
 
 const viewMode = ref<'list' | 'archive'>('list')
 const activeTab = ref('all')
+const listDisplayMode = ref<'waterfall' | 'pagination'>('waterfall')
 
 const tabs = mockPostTabs
 const posts = mockPosts
@@ -175,8 +197,9 @@ const categoryDistribution = mockCategoryDistribution
   }
 }
 
-/* 视图切换按钮组 */
-.view-toggle {
+/* 按钮组通用基础样式 */
+.view-toggle,
+.display-mode-toggle {
   display: flex;
   border: 1px solid var(--border);
   border-radius: $radius-md;
@@ -184,7 +207,8 @@ const categoryDistribution = mockCategoryDistribution
   flex-shrink: 0;
 }
 
-.view-toggle__btn {
+.view-toggle__btn,
+.display-mode-toggle__btn {
   display: flex;
   align-items: center;
   justify-content: center;
