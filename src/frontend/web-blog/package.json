@@ -8,8 +8,7 @@
     "generate": "nuxt generate",
     "preview": "nuxt preview",
     "postinstall": "nuxt prepare",
-    "approve-builds": "pnpm approve-builds",
-    "start": "pnpm approve-builds && pnpm build && node .output/server/index.mjs"
+    "start": "pnpm build && node .output/server/index.mjs"
   },
   "dependencies": {
     "@nuxt/icon": "^2.2.1",
