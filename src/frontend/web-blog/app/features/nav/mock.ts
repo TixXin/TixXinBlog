@@ -13,6 +13,6 @@ export const mockNavItems: NavItem[] = [
   { icon: 'lucide:layers', label: '项目', to: '/projects' },
   { icon: 'lucide:image', label: '画廊', to: '/gallery' },
   { icon: 'lucide:link', label: '友链', to: '/links', desktopOnly: true },
-  { icon: 'lucide:message-circle', label: '留言板', to: '/guestbook' },
+  { icon: 'lucide:message-circle', label: '留言', to: '/guestbook' },
   { icon: 'lucide:user', label: '关于', to: '/about' },
 ]
