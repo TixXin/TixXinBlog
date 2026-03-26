@@ -14,6 +14,17 @@ export default defineNuxtConfig({
   modules: ['@nuxtjs/color-mode', '@nuxt/icon'],
   app: {
     head: {
+      charset: 'utf-8',
+      viewport: 'width=device-width, initial-scale=1',
+      titleTemplate: '%s - TixXin Blog',
+      meta: [
+        { name: 'description', content: 'TixXin 的个人博客，分享技术文章、项目经验与生活随笔' },
+        { property: 'og:site_name', content: 'TixXin Blog' },
+        { property: 'og:type', content: 'website' },
+        { property: 'og:locale', content: 'zh_CN' },
+        { name: 'twitter:card', content: 'summary_large_image' },
+        { name: 'twitter:site', content: '@TixXin' },
+      ],
       link: [
         { rel: 'preconnect', href: 'https://fonts.googleapis.com' },
         { rel: 'preconnect', href: 'https://fonts.gstatic.com', crossorigin: '' },

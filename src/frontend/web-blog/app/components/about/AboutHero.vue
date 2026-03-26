@@ -7,7 +7,7 @@
 
 <template>
   <div class="about-hero">
-    <img :src="profile.avatar" :alt="profile.name" class="about-hero__avatar" />
+    <img :src="profile.avatar" :alt="profile.name" class="about-hero__avatar" width="112" height="112" @error="onAvatarError" />
     <h2 class="about-hero__name">{{ profile.name }}</h2>
     <p class="about-hero__bio">{{ profile.bio }}</p>
     <div class="about-hero__socials">
@@ -32,6 +32,13 @@ import type { Profile } from '~/features/about/types'
 defineProps<{
   profile: Profile
 }>()
+
+const AVATAR_FALLBACK = 'data:image/svg+xml,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 112 112" fill="%23666"><rect width="112" height="112" rx="56" fill="%23333"/><text x="56" y="62" text-anchor="middle" font-size="40" fill="%23888">?</text></svg>')
+
+function onAvatarError(e: Event) {
+  const img = e.target as HTMLImageElement
+  img.src = AVATAR_FALLBACK
+}
 </script>
 
 <style lang="scss" scoped>

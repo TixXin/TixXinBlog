@@ -33,6 +33,13 @@
 <script setup lang="ts">
 import { mockProjects, mockProjectStats, mockTechStack } from '~/features/project/mock'
 
+useSeoMeta({
+  title: '项目展示',
+  description: '个人参与或独立开发的开源项目与技术栈信息',
+  ogTitle: '项目展示 - TixXin Blog',
+  ogDescription: '个人参与或独立开发的开源项目与技术栈信息',
+})
+
 const projects = mockProjects
 const projectStats = mockProjectStats
 const techStack = mockTechStack

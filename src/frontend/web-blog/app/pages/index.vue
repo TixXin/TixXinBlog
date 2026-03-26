@@ -27,6 +27,13 @@
 <script setup lang="ts">
 import { mockSiteStats } from '~/features/stats/mock'
 
+useSeoMeta({
+  title: '首页',
+  description: 'TixXin 的个人博客，分享技术文章、项目经验与生活随笔',
+  ogTitle: '首页 - TixXin Blog',
+  ogDescription: 'TixXin 的个人博客，分享技术文章、项目经验与生活随笔',
+})
+
 const siteStats = mockSiteStats
 </script>
 

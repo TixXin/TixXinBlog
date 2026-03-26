@@ -34,6 +34,13 @@ import {
   mockDateGroups,
 } from '~/features/guestbook/mock'
 
+useSeoMeta({
+  title: '留言板',
+  description: '在这里留下你的足迹，和博主聊聊天',
+  ogTitle: '留言板 - TixXin Blog',
+  ogDescription: '在这里留下你的足迹，和博主聊聊天',
+})
+
 const dateGroups = mockDateGroups
 const chatStats = mockChatStats
 const chatRules = mockChatRules

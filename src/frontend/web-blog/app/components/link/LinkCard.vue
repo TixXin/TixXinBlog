@@ -18,6 +18,9 @@
       :alt="link.name"
       class="link-card__avatar"
       loading="lazy"
+      width="64"
+      height="64"
+      @error="onImgError"
     />
     <h4 class="link-card__name">{{ link.name }}</h4>
     <p class="link-card__desc">{{ link.description }}</p>
@@ -34,6 +37,13 @@ import type { LinkItem } from '~/features/link/types'
 defineProps<{
   link: LinkItem
 }>()
+
+const AVATAR_FALLBACK = 'data:image/svg+xml,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="%23666"><rect width="64" height="64" rx="12" fill="%23333"/><text x="32" y="38" text-anchor="middle" font-size="24" fill="%23888">?</text></svg>')
+
+function onImgError(e: Event) {
+  const img = e.target as HTMLImageElement
+  img.src = AVATAR_FALLBACK
+}
 </script>
 
 <style lang="scss" scoped>

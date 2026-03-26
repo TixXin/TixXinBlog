@@ -34,6 +34,13 @@
 <script setup lang="ts">
 import { mockLinks, mockLinkRules, mockSiteInfo } from '~/features/link/mock'
 
+useSeoMeta({
+  title: '友情链接',
+  description: '互联网上志同道合的伙伴们，欢迎交换友链',
+  ogTitle: '友情链接 - TixXin Blog',
+  ogDescription: '互联网上志同道合的伙伴们，欢迎交换友链',
+})
+
 const links = mockLinks
 const linkRules = mockLinkRules
 const siteInfo = mockSiteInfo

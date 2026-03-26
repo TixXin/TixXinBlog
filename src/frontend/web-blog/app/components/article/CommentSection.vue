@@ -38,6 +38,8 @@
             :alt="item.author"
             class="comment-section__avatar-img"
             loading="lazy"
+            width="36"
+            height="36"
           >
           <div class="comment-section__body">
             <div class="comment-section__meta">
@@ -63,6 +65,8 @@
                   :alt="reply.author"
                   class="comment-section__avatar-img comment-section__avatar-img--sm"
                   loading="lazy"
+                  width="32"
+                  height="32"
                 >
                 <div class="comment-section__body">
                   <div class="comment-section__meta">

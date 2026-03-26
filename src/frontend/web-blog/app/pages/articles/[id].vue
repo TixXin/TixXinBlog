@@ -16,12 +16,13 @@
         :read-time="article.readTime"
       />
       <div class="article-page__inner">
-        <div class="article-page__cover-wrap">
+        <div v-if="!coverError" class="article-page__cover-wrap">
           <img
             :src="article.cover"
             :alt="article.title"
             class="article-page__cover"
-            loading="lazy"
+            fetchpriority="high"
+            @error="coverError = true"
           >
         </div>
         <div class="article-page__stats">
@@ -64,8 +65,9 @@ import {
 } from '~/features/post/mock'
 
 const route = useRoute()
-const scrollbarRef = ref<{ viewport: Ref<HTMLElement | null> } | null>(null)
-const scrollRoot = computed(() => scrollbarRef.value?.viewport.value ?? null)
+const coverError = ref(false)
+const scrollbarRef = ref<{ viewport: HTMLElement | null } | null>(null)
+const scrollRoot = computed(() => scrollbarRef.value?.viewport ?? null)
 
 const article = computed(() => {
   void route.params.id
@@ -83,9 +85,22 @@ function formatCount(n: number) {
   return n.toLocaleString('zh-CN')
 }
 
-useHead(() => ({
-  title: `${article.value.title} - TixXin Blog`,
-}))
+const articleExcerpt = computed(() => {
+  const firstParagraph = article.value.content?.find(s => s.type === 'paragraph')
+  return firstParagraph?.text?.slice(0, 160) ?? '阅读 TixXin Blog 上的文章'
+})
+
+useSeoMeta({
+  title: () => article.value.title,
+  description: () => articleExcerpt.value,
+  ogTitle: () => `${article.value.title} - TixXin Blog`,
+  ogDescription: () => articleExcerpt.value,
+  ogType: 'article',
+  ogImage: () => article.value.cover,
+  twitterCard: 'summary_large_image',
+  twitterTitle: () => `${article.value.title} - TixXin Blog`,
+  twitterDescription: () => articleExcerpt.value,
+})
 </script>
 
 <style lang="scss" scoped>

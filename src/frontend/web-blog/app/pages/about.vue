@@ -35,6 +35,13 @@ import {
   mockReadings,
 } from '~/features/about/mock'
 
+useSeoMeta({
+  title: '关于我',
+  description: '了解 TixXin — 个人简介、技能栈、职业经历与联系方式',
+  ogTitle: '关于我 - TixXin Blog',
+  ogDescription: '了解 TixXin — 个人简介、技能栈、职业经历与联系方式',
+})
+
 const profile = mockProfile
 const skills = mockSkills
 const experiences = mockExperiences

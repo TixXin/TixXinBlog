@@ -134,6 +134,13 @@ import {
   mockCategoryDistribution,
 } from '~/features/article/mock'
 
+useSeoMeta({
+  title: '文章',
+  description: '浏览全部技术文章与生活随笔，支持分类筛选与归档视图',
+  ogTitle: '文章 - TixXin Blog',
+  ogDescription: '浏览全部技术文章与生活随笔，支持分类筛选与归档视图',
+})
+
 const { contentTransitionName, sidebarTransitionName } = useAppearanceSettings()
 
 const viewMode = ref<'list' | 'archive'>('list')

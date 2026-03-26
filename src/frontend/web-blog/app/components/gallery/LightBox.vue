@@ -28,7 +28,6 @@
           :src="photo.srcLarge"
           :alt="photo.title"
           class="lightbox__img"
-          loading="lazy"
         />
         <div class="lightbox__caption">
           <h4 class="lightbox__title">{{ photo.title }}</h4>

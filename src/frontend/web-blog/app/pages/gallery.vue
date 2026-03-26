@@ -51,6 +51,13 @@ import {
   mockPhotos,
 } from '~/features/gallery/mock'
 
+useSeoMeta({
+  title: '画廊',
+  description: '用镜头记录生活的美好瞬间，支持分类筛选与灯箱预览',
+  ogTitle: '画廊 - TixXin Blog',
+  ogDescription: '用镜头记录生活的美好瞬间，支持分类筛选与灯箱预览',
+})
+
 const categories = mockGalleryCategories
 const galleryStats = mockGalleryStats
 const gearList = mockGearList

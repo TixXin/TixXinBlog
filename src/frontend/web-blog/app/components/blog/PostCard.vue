@@ -7,8 +7,8 @@
 
 <template>
   <article class="post-item" @click="navigateToPost">
-    <div v-if="post.cover" class="post-item__cover-bg">
-      <img :src="post.cover" alt="Cover" loading="lazy" />
+    <div v-if="post.cover && !coverError" class="post-item__cover-bg">
+      <img :src="post.cover" :alt="`${post.title} 封面`" loading="lazy" @error="coverError = true" />
     </div>
 
     <div class="post-item__content">
@@ -59,6 +59,7 @@ const props = defineProps<{
   post: PostItem
 }>()
 
+const coverError = ref(false)
 const formattedDate = computed(() => formatRelativeDate(props.post.date))
 
 function navigateToPost() {
