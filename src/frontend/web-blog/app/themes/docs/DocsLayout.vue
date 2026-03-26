@@ -26,17 +26,21 @@
           </NuxtLink>
         </nav>
         <div class="docs-topbar__actions">
-          <Transition name="progress-fade">
-            <button
-              v-if="showProgress"
-              class="docs-scroll-progress"
-              type="button"
-              aria-label="返回顶部"
-              @click="scrollToTop"
-            >
-              {{ displayProgress }}%
-            </button>
-          </Transition>
+          <CommonTooltip content="阅读进度 · 点击返回顶部" placement="bottom" :disabled="progressClicked">
+            <Transition name="progress-fade">
+              <button
+                v-if="showProgress"
+                class="docs-scroll-progress"
+                :class="{ 'is-clicked': progressClicked }"
+                type="button"
+                aria-label="返回顶部"
+                @click="onProgressClick"
+              >
+                <span class="docs-scroll-progress__text">{{ displayProgress }}%</span>
+                <Icon name="lucide:arrow-up" size="14" class="docs-scroll-progress__icon" />
+              </button>
+            </Transition>
+          </CommonTooltip>
           <BlogThemeSwitcher />
           <BlogAppearanceEntry />
           <CommonAppearanceDrawer />
@@ -108,9 +112,20 @@ function onViewportScroll() {
   scrollProgress.value = scrollbarRef.value?.scrollProgress ?? 0
 }
 
+const progressClicked = ref(false)
+
 function scrollToTop() {
   scrollbarRef.value?.scrollToTop(true)
 }
+
+function onProgressClick() {
+  progressClicked.value = true
+  scrollToTop()
+}
+
+watch(showProgress, (val) => {
+  if (!val) progressClicked.value = false
+})
 
 onMounted(() => {
   nextTick(() => {
@@ -256,12 +271,17 @@ const contentTransition = computed(() => ({
 
 // 滚动进度百分比按钮
 .docs-scroll-progress {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   font-size: 0.75rem;
   font-weight: 600;
   font-variant-numeric: tabular-nums;
   color: var(--text-soft);
   cursor: pointer;
   padding: 0.25rem 0.5rem;
+  min-width: 2.75rem;
   border-radius: $radius-sm;
   border: none;
   background: transparent;
@@ -271,11 +291,52 @@ const contentTransition = computed(() => ({
   &:hover {
     color: var(--accent);
     background: var(--surface-2);
+
+    .docs-scroll-progress__text {
+      opacity: 0;
+      transform: scale(0.6);
+    }
+
+    .docs-scroll-progress__icon {
+      opacity: 1;
+      transform: translateY(0);
+      animation: progress-bounce 0.6s ease infinite;
+    }
   }
 
   &:active {
     transform: scale(0.95);
   }
+
+  &.is-clicked:hover {
+    .docs-scroll-progress__text {
+      opacity: 1;
+      transform: none;
+    }
+
+    .docs-scroll-progress__icon {
+      opacity: 0;
+      transform: translateY(4px);
+      animation: none;
+    }
+  }
+}
+
+.docs-scroll-progress__text {
+  transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+.docs-scroll-progress__icon {
+  position: absolute;
+  opacity: 0;
+  transform: translateY(4px);
+  transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+@keyframes progress-bounce {
+  0%, 100% { transform: translateY(0); }
+  40% { transform: translateY(-3px); }
+  60% { transform: translateY(1px); }
 }
 
 // 进度百分比出入动画
