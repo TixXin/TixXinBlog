@@ -39,6 +39,7 @@ TixXinBlog/
 docs/
 ├── project-architecture.md    # 项目架构基线文档（统一参考）
 ├── directory-structure.md     # 项目目录结构说明（本文档）
+├── theme-development-guide.md # 主题开发指南（契约体系、开发流程、注册与最佳实践）
 └── README.md                  # 文档目录说明
 ```
 
@@ -84,8 +85,9 @@ src/frontend/web-blog/
 │   │   └── theme/             # 主题与外观模块
 │   ├── layouts/               # 页面布局（default.vue 作为薄代理层动态渲染主题布局）
 │   ├── themes/                # 布局主题系统
-│   │   ├── types.ts           # 主题契约接口 BlogLayoutTheme
-│   │   ├── registry.ts        # 主题注册表与解析
+│   │   ├── contracts.ts       # 主题契约体系（BlogThemeManifest、BlogThemeRuntime、ThemeCapabilities 等）
+│   │   ├── types.ts           # 主题类型入口（重导出 contracts + 旧接口别名兼容）
+│   │   ├── registry.ts        # 主题注册中心（manifest 注册、runtime 缓存、父子合并）
 │   │   ├── classic/           # 经典三栏主题（默认）
 │   │   ├── docs/              # 双栏文档风格主题
 │   │   └── minimal/           # 单栏极简风格主题
@@ -94,6 +96,7 @@ src/frontend/web-blog/
 ├── public/                    # 公共静态资源（不经编译）
 ├── nuxt.config.ts             # Nuxt 配置文件
 ├── package.json               # 依赖与脚本
+├── todo.md                    # web-blog 开发待办文档，维护当前任务清单与总进度
 ├── tsconfig.json              # TypeScript 配置
 └── .npmrc                     # npm/pnpm 配置
 ```
@@ -249,6 +252,8 @@ app/assets/styles/
 | composables/useAppearanceSettings.ts | 管理界面设置抽屉状态、动画偏好与本地持久化，并复用主题切换能力 |
 | composables/useTheme.ts | 颜色主题切换逻辑，封装 colorMode 的读取与设置 |
 | composables/useLayoutTheme.ts | 布局主题管理，运行时切换三栏/双栏/单栏布局并通过 cookie 持久化 |
+| composables/useNavItems.ts | 导航数据源，封装导航菜单项获取逻辑（当前返回 mock，后续替换为 API） |
+| composables/useSiteInfo.ts | 站点信息数据源，封装页脚链接、技术栈和状态获取逻辑（当前返回 mock） |
 | composables/useSidebarExitAnimation.ts | 右侧栏页面切换退出动画，导航前克隆内容播放离场动画，供各布局主题复用 |
 | composables/useReadingProgress.ts | 阅读进度 0–100，支持可选滚动根节点或文档滚动 |
 | composables/useTableOfContents.ts | 根据标题锚点 Intersection Observer 高亮当前目录项 |
