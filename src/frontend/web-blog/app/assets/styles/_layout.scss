@@ -145,10 +145,6 @@
   flex-direction: column;
   gap: $grid-gap;
   min-height: 0;
-
-  @media (min-width: $breakpoint-xl) {
-    overflow-y: auto;
-  }
 }
 
 .aside-right {

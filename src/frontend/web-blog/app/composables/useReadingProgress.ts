@@ -44,9 +44,13 @@ export function useReadingProgress(scrollRoot?: Ref<HTMLElement | null | undefin
     update()
     attachedRoot = scrollRoot?.value ?? null
     if (attachedRoot) {
+      // 使用内部滚动容器时，仅监听该容器的 scroll 事件
       attachedRoot.addEventListener('scroll', onScroll, { passive: true })
     }
-    window.addEventListener('scroll', onScroll, { passive: true })
+    else {
+      // 无自定义滚动根时，回退到 window/document 滚动
+      window.addEventListener('scroll', onScroll, { passive: true })
+    }
     window.addEventListener('resize', onScroll, { passive: true })
   })
 
@@ -55,7 +59,9 @@ export function useReadingProgress(scrollRoot?: Ref<HTMLElement | null | undefin
       attachedRoot.removeEventListener('scroll', onScroll)
       attachedRoot = null
     }
-    window.removeEventListener('scroll', onScroll)
+    else {
+      window.removeEventListener('scroll', onScroll)
+    }
     window.removeEventListener('resize', onScroll)
   })
 
