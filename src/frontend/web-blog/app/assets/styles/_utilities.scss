@@ -246,3 +246,9 @@
 .sidebar-none-leave-active {
   transition: none;
 }
+
+// 通用旋转动画（加载指示器等）
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}

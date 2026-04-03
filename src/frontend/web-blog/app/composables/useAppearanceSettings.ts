@@ -9,7 +9,6 @@ import type {
   ContentTransitionPreset,
   SidebarAnimationPreset,
 } from '~/features/theme/types'
-import { nextTick } from 'vue'
 import type { ThemeCustomizerCapability } from '~/features/theme/layoutThemes'
 import {
   COLOR_MODE_LABELS,
@@ -42,7 +41,7 @@ function blurAppearanceTrigger() {
 
 export function useAppearanceSettings() {
   const { currentPreference, themeOptions, setTheme } = useTheme()
-  const { activeTheme } = useLayoutTheme()
+  const { activeTheme, setLayoutTheme } = useLayoutTheme()
 
   /** 查询当前主题是否支持指定的设置面板定制项 */
   function isCapabilitySupported(cap: ThemeCustomizerCapability): boolean {
@@ -103,12 +102,12 @@ export function useAppearanceSettings() {
    * SSR 期间无法读 localStorage，若直接输出动画类会按默认值播放，
    * 等客户端还原设置后再切换类已来不及（动画已播完）。
    * 因此 SSR 阶段和 hydration 期间均返回空字符串，
-   * hydration 完成后（nextTick）再输出正确的动画类，避免类名不匹配警告。
+   * 水合完成后（onNuxtReady）再输出正确的动画类，避免类名不匹配警告。
    */
   const hydrated = useState('appearance-hydrated', () => false)
 
   if (import.meta.client && !hydrated.value) {
-    nextTick(() => {
+    onNuxtReady(() => {
       hydrated.value = true
     })
   }
@@ -173,8 +172,6 @@ export function useAppearanceSettings() {
     setTheme('system')
     contentTransitionPreset.value = DEFAULT_CONTENT_TRANSITION_PRESET
     sidebarAnimationPreset.value = DEFAULT_SIDEBAR_ANIMATION_PRESET
-
-    const { setLayoutTheme } = useLayoutTheme()
     setLayoutTheme(DEFAULT_LAYOUT_THEME_ID)
   }
 

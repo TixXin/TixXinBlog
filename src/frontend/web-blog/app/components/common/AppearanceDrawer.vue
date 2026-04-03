@@ -305,10 +305,6 @@ onBeforeUnmount(() => {
   pointer-events: none;
 }
 
-@keyframes spin {
-  to { transform: rotate(360deg); }
-}
-
 .appearance-option__spinner {
   animation: spin 0.8s linear infinite;
 }
