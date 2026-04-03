@@ -105,9 +105,6 @@
 <script setup lang="ts">
 import type { PostItem } from '~/features/post/types'
 
-const PAGE_SIZE = 15
-const SPINNER_DELAY = 250
-
 const props = withDefaults(defineProps<{
   posts: PostItem[]
   activeTab: string
@@ -118,235 +115,26 @@ const props = withDefaults(defineProps<{
 
 const scrollbarRef = ref<{ viewport: HTMLElement | null; scrollToTop: (smooth?: boolean) => void } | null>(null)
 
-const filteredPosts = computed(() => {
-  if (props.activeTab === 'all') return props.posts
-  return props.posts.filter(p => p.category === props.activeTab)
+const {
+  filteredPosts,
+  displayedPosts,
+  displayCount,
+  hasMore,
+  showSpinner,
+  sentinelRef,
+  currentPage,
+  totalPages,
+  paginationKey,
+  pageList,
+  goToPage,
+} = usePostListPagination({
+  posts: toRef(props, 'posts'),
+  activeTab: toRef(props, 'activeTab'),
+  displayMode: toRef(props, 'displayMode'),
+  scrollbarRef,
 })
 
-// ---- 瀑布流模式状态 ----
-const displayCount = ref(PAGE_SIZE)
-const loading = ref(false)
-const showSpinner = ref(false)
-const sentinelRef = ref<HTMLElement | null>(null)
-let spinnerTimer: ReturnType<typeof setTimeout> | null = null
-
-// ---- 分页模式状态 ----
-const currentPage = ref(1)
-
-// 分页模式 Transition 的 key：页码 + Tab 组合，确保切 Tab 时也有动画
-const paginationKey = computed(() => `${props.activeTab}-${currentPage.value}`)
-
-const totalPages = computed(() =>
-  Math.ceil(filteredPosts.value.length / PAGE_SIZE),
-)
-
-const displayedPosts = computed(() => {
-  if (props.displayMode === 'pagination') {
-    const start = (currentPage.value - 1) * PAGE_SIZE
-    return filteredPosts.value.slice(start, start + PAGE_SIZE)
-  }
-  return filteredPosts.value.slice(0, displayCount.value)
-})
-
-const hasMore = computed(() =>
-  displayCount.value < filteredPosts.value.length,
-)
-
-// 生成分页页码列表（含省略号）
-const pageList = computed(() => {
-  const total = totalPages.value
-  const current = currentPage.value
-  if (total <= 7) {
-    return Array.from({ length: total }, (_, i) => i + 1)
-  }
-  const pages: (number | string)[] = [1]
-  if (current > 3) pages.push('...')
-  const start = Math.max(2, current - 1)
-  const end = Math.min(total - 1, current + 1)
-  for (let i = start; i <= end; i++) pages.push(i)
-  if (current < total - 2) pages.push('...')
-  pages.push(total)
-  return pages
-})
-
-function goToPage(page: number) {
-  if (page < 1 || page > totalPages.value || page === currentPage.value) return
-  currentPage.value = page
-  scrollbarRef.value?.scrollToTop(true)
-}
-
-// Tab 切换或显示模式切换时重置状态
-watch(() => props.activeTab, () => {
-  displayCount.value = PAGE_SIZE
-  currentPage.value = 1
-  scrollbarRef.value?.scrollToTop(false)
-})
-
-watch(() => props.displayMode, () => {
-  displayCount.value = PAGE_SIZE
-  currentPage.value = 1
-  scrollbarRef.value?.scrollToTop(false)
-})
-
-// ---- 瀑布流：加载逻辑 ----
-function clearSpinnerTimer() {
-  if (spinnerTimer) {
-    clearTimeout(spinnerTimer)
-    spinnerTimer = null
-  }
-}
-
-function loadMore() {
-  if (loading.value || !hasMore.value) return
-  loading.value = true
-
-  // 延迟显示 spinner，快速加载不会看到闪烁
-  clearSpinnerTimer()
-  spinnerTimer = setTimeout(() => {
-    if (loading.value) showSpinner.value = true
-  }, SPINNER_DELAY)
-
-  // rAF 保证在下一帧完成数据更新，新卡片由 TransitionGroup 处理入场动画
-  requestAnimationFrame(() => {
-    displayCount.value = Math.min(
-      displayCount.value + PAGE_SIZE,
-      filteredPosts.value.length,
-    )
-    loading.value = false
-    showSpinner.value = false
-    clearSpinnerTimer()
-  })
-}
-
-// ---- 瀑布流：新卡片交错入场动画（JS hook，精确控制 stagger） ----
-// prevCount 记录上次渲染的数量，仅对新增卡片执行动画
-let prevCount = PAGE_SIZE
-
-watch(displayCount, (_new, old) => {
-  prevCount = old
-})
-
-function onItemEnter(el: Element, done: () => void) {
-  const htmlEl = el as HTMLElement
-  const index = Number(htmlEl.dataset.index ?? 0)
-
-  // 已在视口内的旧卡片不做动画
-  if (index < prevCount) {
-    done()
-    return
-  }
-
-  // 新增卡片的序号（从 0 开始），用于交错延迟
-  const offset = index - prevCount
-  const delay = offset * 50
-  const duration = 350
-
-  htmlEl.style.opacity = '0'
-  htmlEl.style.transform = 'translateY(20px)'
-
-  requestAnimationFrame(() => {
-    htmlEl.style.transition = `opacity ${duration}ms ease ${delay}ms, transform ${duration}ms ease ${delay}ms`
-    htmlEl.style.opacity = '1'
-    htmlEl.style.transform = 'translateY(0)'
-
-    setTimeout(() => {
-      htmlEl.style.transition = ''
-      htmlEl.style.transform = ''
-      htmlEl.style.opacity = ''
-      done()
-    }, duration + delay)
-  })
-}
-
-// ---- IntersectionObserver（仅瀑布流模式使用） ----
-const BREAKPOINT_XL = 1280
-let observer: IntersectionObserver | null = null
-let resizeCleanup: (() => void) | null = null
-
-function getScrollRoot(): Element | null {
-  if (import.meta.server) return null
-  const vp = scrollbarRef.value?.viewport
-  const el = unref(vp)
-  return el instanceof HTMLElement ? el : null
-}
-
-function getObserverRoot(): Element | null {
-  if (import.meta.server) return null
-  if (window.innerWidth < BREAKPOINT_XL) return null
-  const root = getScrollRoot()
-  if (!root) return null
-  if (root.scrollHeight <= root.clientHeight + 1) return null
-  return root
-}
-
-function setupObserver() {
-  observer?.disconnect()
-  if (props.displayMode !== 'waterfall') return
-
-  observer = new IntersectionObserver(
-    (entries) => {
-      if (entries[0]?.isIntersecting) {
-        loadMore()
-      }
-    },
-    {
-      root: getObserverRoot(),
-      rootMargin: '0px 0px 600px 0px',
-    },
-  )
-
-  if (sentinelRef.value) {
-    observer.observe(sentinelRef.value)
-  }
-}
-
-watch(sentinelRef, (el) => {
-  if (el && observer) {
-    observer.observe(el)
-  }
-})
-
-watch(
-  () => [getScrollRoot(), sentinelRef.value] as const,
-  ([root, sentinel]) => {
-    if (root && sentinel) {
-      setupObserver()
-    }
-  },
-  { immediate: true },
-)
-
-watch(() => props.displayMode, () => {
-  if (props.displayMode === 'waterfall') {
-    nextTick(() => setupObserver())
-  } else {
-    observer?.disconnect()
-    observer = null
-  }
-})
-
-onMounted(() => {
-  nextTick(() => setupObserver())
-
-  let prevIsXl = window.innerWidth >= BREAKPOINT_XL
-  const onResize = () => {
-    const nowIsXl = window.innerWidth >= BREAKPOINT_XL
-    if (nowIsXl !== prevIsXl) {
-      prevIsXl = nowIsXl
-      setupObserver()
-    }
-  }
-  window.addEventListener('resize', onResize)
-  resizeCleanup = () => window.removeEventListener('resize', onResize)
-})
-
-onUnmounted(() => {
-  observer?.disconnect()
-  observer = null
-  resizeCleanup?.()
-  resizeCleanup = null
-  clearSpinnerTimer()
-})
+const { onItemEnter } = usePostListAnimation(displayCount)
 </script>
 
 <style lang="scss" scoped>
@@ -364,7 +152,7 @@ onUnmounted(() => {
     padding: 1.5rem 1.5rem 0;
   }
 
-  @media (min-width: 1280px) {
+  @media (min-width: $breakpoint-xl) {
     padding: 1rem 2rem 0;
   }
 }
@@ -524,8 +312,4 @@ onUnmounted(() => {
   white-space: nowrap;
 }
 
-@keyframes spin {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
-}
 </style>

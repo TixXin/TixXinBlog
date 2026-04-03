@@ -12,7 +12,12 @@
     :aria-label="`切换主题（当前：${label}）`"
     @click="cycleTheme"
   >
-    <Icon :name="icon" size="18" />
+    <ClientOnly>
+      <Icon :name="icon" size="18" />
+      <template #fallback>
+        <Icon name="lucide:moon" size="18" />
+      </template>
+    </ClientOnly>
   </button>
 </template>
 

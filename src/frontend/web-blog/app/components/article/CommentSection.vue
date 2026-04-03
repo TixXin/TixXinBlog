@@ -32,64 +32,13 @@
 
     <ul class="comment-section__list">
       <li v-for="item in comments" :key="item.id" class="comment-section__thread">
-        <div class="comment-section__row">
-          <img
-            :src="item.avatar"
-            :alt="item.author"
-            class="comment-section__avatar-img"
-            loading="lazy"
-            width="36"
-            height="36"
-          >
-          <div class="comment-section__body">
-            <div class="comment-section__meta">
-              <span class="comment-section__author">{{ item.author }}</span>
-              <span v-if="item.isOwner" class="comment-section__badge">作者</span>
-              <span class="comment-section__time">{{ item.time }}</span>
-            </div>
-            <p class="comment-section__content">{{ item.content }}</p>
-            <div class="comment-section__toolbar">
-              <button type="button" class="comment-section__tool">
-                <Icon name="lucide:thumbs-up" size="14" />
-                {{ item.likes }}
-              </button>
-              <button type="button" class="comment-section__tool">
-                <Icon name="lucide:message-square" size="14" />
-                回复
-              </button>
-            </div>
-            <ul v-if="item.replies?.length" class="comment-section__replies">
-              <li v-for="reply in item.replies" :key="reply.id" class="comment-section__reply">
-                <img
-                  :src="reply.avatar"
-                  :alt="reply.author"
-                  class="comment-section__avatar-img comment-section__avatar-img--sm"
-                  loading="lazy"
-                  width="32"
-                  height="32"
-                >
-                <div class="comment-section__body">
-                  <div class="comment-section__meta">
-                    <span class="comment-section__author">{{ reply.author }}</span>
-                    <span v-if="reply.isOwner" class="comment-section__badge">作者</span>
-                    <span class="comment-section__time">{{ reply.time }}</span>
-                  </div>
-                  <p class="comment-section__content">{{ reply.content }}</p>
-                  <div class="comment-section__toolbar">
-                    <button type="button" class="comment-section__tool">
-                      <Icon name="lucide:thumbs-up" size="14" />
-                      {{ reply.likes }}
-                    </button>
-                    <button type="button" class="comment-section__tool">
-                      <Icon name="lucide:message-square" size="14" />
-                      回复
-                    </button>
-                  </div>
-                </div>
-              </li>
-            </ul>
-          </div>
-        </div>
+        <ArticleCommentBubble :comment="item">
+          <ul v-if="item.replies?.length" class="comment-section__replies">
+            <li v-for="reply in item.replies" :key="reply.id">
+              <ArticleCommentBubble :comment="reply" small />
+            </li>
+          </ul>
+        </ArticleCommentBubble>
       </li>
     </ul>
   </section>
@@ -213,88 +162,6 @@ const draft = ref('')
   margin: 0;
 }
 
-.comment-section__row {
-  display: flex;
-  gap: 0.75rem;
-}
-
-.comment-section__avatar-img {
-  width: 2.25rem;
-  height: 2.25rem;
-  border-radius: $radius-full;
-  object-fit: cover;
-  flex-shrink: 0;
-
-  &--sm {
-    width: 2rem;
-    height: 2rem;
-  }
-}
-
-.comment-section__body {
-  flex: 1;
-  min-width: 0;
-}
-
-.comment-section__meta {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 0.5rem;
-  margin-bottom: 0.25rem;
-}
-
-.comment-section__author {
-  font-size: 0.875rem;
-  font-weight: 600;
-  color: var(--text-muted);
-}
-
-.comment-section__badge {
-  font-size: 0.625rem;
-  font-weight: 600;
-  padding: 0.125rem 0.375rem;
-  border-radius: $radius-sm;
-  background: var(--accent-soft);
-  color: var(--accent);
-}
-
-.comment-section__time {
-  font-size: 0.6875rem;
-  color: var(--text-soft);
-}
-
-.comment-section__content {
-  margin: 0;
-  font-size: 0.875rem;
-  line-height: 1.65;
-  color: var(--text-muted);
-}
-
-.comment-section__toolbar {
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-  margin-top: 0.5rem;
-}
-
-.comment-section__tool {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.25rem;
-  padding: 0;
-  border: none;
-  background: none;
-  font-size: 0.75rem;
-  color: var(--text-soft);
-  cursor: pointer;
-  transition: $transition-fast;
-
-  &:hover {
-    color: var(--text-muted);
-  }
-}
-
 .comment-section__replies {
   list-style: none;
   margin: 1rem 0 0;
@@ -305,8 +172,4 @@ const draft = ref('')
   gap: 1rem;
 }
 
-.comment-section__reply {
-  display: flex;
-  gap: 0.75rem;
-}
 </style>

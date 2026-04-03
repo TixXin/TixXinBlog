@@ -17,13 +17,14 @@
       />
       <div class="article-page__inner">
         <div v-if="!coverError" class="article-page__cover-wrap">
-          <img
+          <NuxtImg
             :src="article.cover"
             :alt="article.title"
             class="article-page__cover"
             fetchpriority="high"
+            format="webp"
             @error="coverError = true"
-          >
+          />
         </div>
         <div class="article-page__stats">
           <span class="article-page__stat">
@@ -57,38 +58,25 @@
 </template>
 
 <script setup lang="ts">
-import {
-  mockArticleDetail,
-  mockComments,
-  mockRelatedPosts,
-  mockTocItems,
-} from '~/features/post/mock'
-
 const route = useRoute()
 const coverError = ref(false)
 const scrollbarRef = ref<{ viewport: HTMLElement | null } | null>(null)
 const scrollRoot = computed(() => scrollbarRef.value?.viewport ?? null)
 
-const article = computed(() => {
-  void route.params.id
-  return mockArticleDetail
-})
-
-const comments = mockComments
-const tocItems = mockTocItems
-const relatedPosts = mockRelatedPosts
+const {
+  article,
+  comments,
+  relatedPosts,
+  tocItems,
+  articleExcerpt,
+} = useArticleDetail(route.params.id as string)
 
 const { progress } = useReadingProgress(scrollRoot)
-const { activeId } = useTableOfContents(tocItems)
+const { activeId } = useTableOfContents(tocItems.value)
 
 function formatCount(n: number) {
   return n.toLocaleString('zh-CN')
 }
-
-const articleExcerpt = computed(() => {
-  const firstParagraph = article.value.content?.find(s => s.type === 'paragraph')
-  return firstParagraph?.text?.slice(0, 160) ?? '阅读 TixXin Blog 上的文章'
-})
 
 useSeoMeta({
   title: () => article.value.title,
@@ -100,6 +88,31 @@ useSeoMeta({
   twitterCard: 'summary_large_image',
   twitterTitle: () => `${article.value.title} - TixXin Blog`,
   twitterDescription: () => articleExcerpt.value,
+})
+
+useHead({
+  script: [
+    {
+      type: 'application/ld+json',
+      innerHTML: computed(() => JSON.stringify({
+        '@context': 'https://schema.org',
+        '@type': 'Article',
+        'headline': article.value.title,
+        'image': article.value.cover,
+        'datePublished': article.value.date,
+        'author': {
+          '@type': 'Person',
+          'name': 'TixXin',
+          'url': 'https://tixxin.dev',
+        },
+        'publisher': {
+          '@type': 'Organization',
+          'name': 'TixXin Blog',
+        },
+        'description': articleExcerpt.value,
+      })),
+    },
+  ],
 })
 </script>
 
