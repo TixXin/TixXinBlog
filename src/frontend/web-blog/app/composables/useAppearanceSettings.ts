@@ -9,12 +9,12 @@ import type {
   ContentTransitionPreset,
   SidebarAnimationPreset,
 } from '~/features/theme/types'
-import type { ThemeCustomizerCapability } from '~/themes/contracts'
 import { nextTick } from 'vue'
-import { DEFAULT_THEME_ID } from '~/themes/contracts'
+import type { ThemeCustomizerCapability } from '~/features/theme/layoutThemes'
 import {
   COLOR_MODE_LABELS,
   CONTENT_TRANSITION_OPTIONS,
+  DEFAULT_LAYOUT_THEME_ID,
   DEFAULT_CONTENT_TRANSITION_PRESET,
   DEFAULT_SIDEBAR_ANIMATION_PRESET,
   SIDEBAR_ANIMATION_OPTIONS,
@@ -175,7 +175,7 @@ export function useAppearanceSettings() {
     sidebarAnimationPreset.value = DEFAULT_SIDEBAR_ANIMATION_PRESET
 
     const { setLayoutTheme } = useLayoutTheme()
-    setLayoutTheme(DEFAULT_THEME_ID)
+    setLayoutTheme(DEFAULT_LAYOUT_THEME_ID)
   }
 
   if (import.meta.client && !initialized.value) {

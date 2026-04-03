@@ -9,17 +9,19 @@ export const COLOR_MODE_OPTIONS = ['light', 'system', 'dark'] as const
 export type ThemeOption = typeof COLOR_MODE_OPTIONS[number]
 
 export type {
-  BlogThemeManifest,
-  BlogThemeRuntime,
+  LayoutThemeMeta,
+  LayoutThemePreset,
   ThemeCapabilities,
   ThemeCustomizerCapability,
-  ThemeCustomizerState,
-} from '~/themes/contracts'
+} from './layoutThemes'
 
-/** @deprecated 使用 BlogThemeManifest 替代 */
-export type { BlogLayoutTheme, LayoutThemePreset } from '~/themes/types'
-export { LAYOUT_THEME_PRESETS, DEFAULT_LAYOUT_THEME } from '~/themes/types'
-export { DEFAULT_THEME_ID } from '~/themes/contracts'
+export {
+  DEFAULT_LAYOUT_THEME_ID,
+  LAYOUT_THEME_PRESETS,
+  getLayoutThemeMeta,
+  isKnownLayoutThemeId,
+  layoutThemeMetas,
+} from './layoutThemes'
 
 export const CONTENT_TRANSITION_PRESETS = [
   'vertical-slide',
