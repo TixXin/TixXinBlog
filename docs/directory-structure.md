@@ -11,7 +11,7 @@ TixXinBlog/
 ├── docs/                 # 项目文档与设计说明
 ├── LICENSE               # GPL-3.0 开源协议
 ├── package.json          # 根 package.json，pnpm 工作区编排
-├── pnpm-workspace.yaml   # pnpm 工作区：packages 含 src/frontend/*、src/backend/*
+├── pnpm-workspace.yaml   # pnpm 工作区：包含 src/frontend/*、src/backend/*
 ├── README.md             # 项目说明与快速开始
 ├── scripts/              # 构建与维护脚本
 │   └── clear.js          # 清理依赖：删除 node_modules、pnpm-lock.yaml 并执行 pnpm store prune
@@ -25,7 +25,7 @@ TixXinBlog/
 
 根目录 `package.json` 通过 `pnpm --filter <package-name>` 调用各子项目。新增子项目时：
 
-1. **无需修改** `pnpm-workspace.yaml`：已配置 `src/frontend/*`、`src/backend/*`，新目录自动纳入
+1. 将目录创建在已纳入 workspace 的位置：`src/frontend/*` 或 `src/backend/*`
 2. 在 `src/frontend/` 或 `src/backend/` 下创建子目录，并包含 `package.json` 且设置唯一 `name`
 3. 在根 `package.json` 的 `scripts` 中新增对应脚本，例如：
    - `dev:admin` → `pnpm --filter web-admin dev`
@@ -83,17 +83,22 @@ src/frontend/web-blog/
 │   │   ├── site/              # 站点模块
 │   │   ├── stats/             # 统计模块
 │   │   └── theme/             # 主题与外观模块
-│   ├── layouts/               # 页面布局（default.vue 作为薄代理层动态渲染主题布局）
-│   ├── themes/                # 布局主题系统
-│   │   ├── contracts.ts       # 主题契约体系（BlogThemeManifest、BlogThemeRuntime、ThemeCapabilities 等）
-│   │   ├── types.ts           # 主题类型入口（重导出 contracts + 旧接口别名兼容）
-│   │   ├── registry.ts        # 主题注册中心（manifest 注册、runtime 缓存、父子合并）
-│   │   ├── classic/           # 经典三栏主题（默认）
-│   │   ├── docs/              # 双栏文档风格主题
-│   │   └── minimal/           # 单栏极简风格主题
+│   ├── layouts/               # 页面布局（default.vue 将 NuxtPage 作为 slot 传入主题布局）
+│   ├── themes/                # 旧布局组件目录（作为主题引擎桥接层的来源组件）
+│   │   ├── contracts.ts       # 旧主题契约（兼容保留，新增主题不再基于此扩展）
+│   │   ├── types.ts           # 旧主题类型入口（兼容保留）
+│   │   ├── registry.ts        # 旧主题注册中心（兼容保留，已不再作为当前运行时入口）
+│   │   ├── classic/           # 经典三栏布局组件
+│   │   ├── docs/              # 双栏文档布局组件
+│   │   └── minimal/           # 单栏极简布局组件
 │   └── pages/                 # 文件系统路由页面
 │       └── articles/          # 文章子路由
 ├── public/                    # 公共静态资源（不经编译）
+├── theme-contracts/           # 本地主题契约入口（当前包含 RootLayout、ThemeAccessory 两个逻辑组件）
+├── themes/                    # 主题引擎主题目录（theme.json + app/components）
+│   ├── classic/               # 经典三栏主题定义
+│   ├── docs/                  # 双栏文档主题定义
+│   └── minimal/               # 单栏极简主题定义
 ├── nuxt.config.ts             # Nuxt 配置文件
 ├── package.json               # 依赖与脚本
 ├── todo.md                    # web-blog 开发待办文档，维护当前任务清单与总进度
