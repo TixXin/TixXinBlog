@@ -21,14 +21,14 @@ app/features/theme/layoutThemes.ts
 - `theme-contracts/index.ts` 负责声明当前博客允许主题实现哪些逻辑组件
 - `themes/` 目录负责放置引擎真正识别的主题定义
 - `app/features/theme/layoutThemes.ts` 负责宿主博客自己的主题元信息与设置面板能力声明
-- `app/themes/` 目录中的旧布局组件目前作为桥接来源保留，不再是新增主题的标准入口
+- 所有布局实现直接位于 `themes/<theme>/app/components/RootLayout.vue` 中，不存在额外的桥接层
 
 ## 运行流程
 
 1. `nuxt.config.ts` 注册 `@tixxin/nuxt-theme-engine`
 2. 模块扫描 `themes/` 目录下每个主题的 `theme.json` 和 `app/components`
 3. `app/layouts/default.vue` 通过 `<ThemeComponent name="RootLayout">` 渲染当前主题根布局，`NuxtPage` 作为 slot 子节点传入
-4. 各主题 `RootLayout` 桥接组件透传 `<slot />`，实际布局组件在合适位置用 `<slot />` 渲染页面内容
+4. 各主题 `RootLayout.vue` 直接包含完整布局实现，在合适位置用 `<slot />` 渲染页面内容
 5. `useLayoutTheme()` 通过 `useThemeEngine()` 读写当前主题，并补齐博客自己的 icon、版本和能力信息
 6. `AppearanceDrawer` 与 `LayoutMobileNav` 由宿主稳定渲染，不再跟随主题布局整树重挂
 
@@ -53,7 +53,7 @@ export const themeContractNames = ['RootLayout', 'ThemeAccessory'] as const
 - `SidebarNav.vue`（可选）：侧边导航栏，仅提供左侧栏的主题需要实现
 - `PostCard.vue`（推荐）：文章卡片，文章列表通过 `<ThemeComponent name="PostCard" />` 渲染
 
-当前三套主题的分发组件均桥接到 `app/components/` 下的共享实现。如需自定义某个主题的组件外观，直接替换该主题目录下的对应文件即可。
+当前三套主题中 `StatusFooter`、`SidebarNav`、`PostCard` 分发组件桥接到 `app/components/` 下的共享实现，而 `RootLayout` 直接包含完整布局实现。如需自定义某个主题的组件外观，直接替换该主题目录下的对应文件即可。
 
 ## 创建一个新主题
 
@@ -110,16 +110,6 @@ themes/magazine/
       <div id="right-sidebar-target" />
     </aside>
   </div>
-</template>
-```
-
-如果你只是迁移旧布局，也可以先桥接到 `app/themes/` 下的老组件。桥接组件需透传 slot：
-
-```vue
-<template>
-  <MagazineLayout>
-    <slot />
-  </MagazineLayout>
 </template>
 ```
 
