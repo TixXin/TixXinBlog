@@ -58,7 +58,7 @@ themes/<theme>/app/components/RootLayout.vue       # 完整布局实现
 themes/<theme>/app/components/ThemeAccessory.vue    # 主题附件
 themes/<theme>/app/components/StatusFooter.vue      # 页脚（桥接到共享实现）
 themes/<theme>/app/components/PostCard.vue          # 文章卡片（桥接）
-themes/classic/app/components/SidebarNav.vue        # 侧边导航（仅 classic）
+themes/nexus/app/components/SidebarNav.vue          # 侧边导航（仅 Nexus）
 app/layouts/default.vue                            # NuxtPage 作为 slot 传入 RootLayout
 app/composables/useLayoutTheme.ts                  # 引擎适配层
 app/features/theme/layoutThemes.ts                 # 宿主主题元信息
@@ -437,7 +437,7 @@ app/features/theme/layoutThemes.ts                 # 宿主主题元信息
 | 页面（`app/pages/`） | 8 |
 | Composable（`app/composables/`） | 13 |
 | Features 模块（`app/features/`） | 11 域 / 22 文件 |
-| 主题（`themes/`） | 3（classic / docs / minimal） |
+| 主题（`themes/`） | 3（nexus / aurora / dock） |
 | 契约组件 | 5（RootLayout / ThemeAccessory / StatusFooter / SidebarNav / PostCard） |
 | SCSS 文件（`app/assets/styles/`） | 7 |
 | 文档（`docs/`） | 4（含分析报告） |

@@ -91,9 +91,9 @@ src/frontend/web-blog/
 ├── public/                    # 公共静态资源（不经编译）
 ├── theme-contracts/           # 本地主题契约入口（RootLayout、ThemeAccessory、StatusFooter、SidebarNav、PostCard）
 ├── themes/                    # 主题引擎主题目录（theme.json + app/components，布局实现直接在 RootLayout.vue 中）
-│   ├── classic/               # 经典三栏主题（RootLayout 含完整布局、ThemeAccessory、StatusFooter、SidebarNav、PostCard）
-│   ├── docs/                  # 双栏文档主题（RootLayout 含完整布局、ThemeAccessory、StatusFooter、PostCard）
-│   └── minimal/               # 单栏极简主题（RootLayout 含完整布局、ThemeAccessory、StatusFooter、PostCard）
+│   ├── nexus/                 # Nexus 三栏主题（RootLayout 含完整布局、ThemeAccessory、StatusFooter、SidebarNav、PostCard）
+│   ├── aurora/                # Aurora 双栏主题（RootLayout 含 Hero 区域 + 毛玻璃顶栏、ThemeAccessory、StatusFooter、PostCard）
+│   └── dock/                  # Dock 浮岛主题（RootLayout 含底部浮岛导航、ThemeAccessory、StatusFooter、PostCard）
 ├── nuxt.config.ts             # Nuxt 配置文件
 ├── package.json               # 依赖与脚本
 ├── todo.md                    # web-blog 开发待办文档，维护当前任务清单与总进度

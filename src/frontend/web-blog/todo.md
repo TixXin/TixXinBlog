@@ -4,12 +4,12 @@
 
 ## 总进度
 
-- 总任务数：37
-- 已完成：36
+- 总任务数：42
+- 已完成：41
 - 进行中：0
 - 未开始：0
 - 暂缓：1
-- 完成率：97%
+- 完成率：98%
 
 ## 维护约定
 
@@ -67,6 +67,11 @@
 - [x] 项目全面改进阶段3：接入 @nuxt/fonts + @nuxt/image + JSON-LD + sitemap/robots + routeRules
 - [x] 项目全面改进阶段4：创建 .env.example + Dockerfile + CSP + CI 依赖审计
 - [x] 项目全面改进阶段5：PostCardList 拆分为 composable、提炼 CommentBubble、修复 SSR 水合警告、创建 useArticleDetail composable
+- [x] 主题重命名：classic → nexus、docs → aurora、minimal → dock，更新所有引用与元数据
+- [x] Nexus 主题增强：响应式断点下调至 lg/md、微交互克制化、CSS 变量体系（--theme-bg-surface 等）
+- [x] Aurora 主题增强：新增 Hero 视觉区域（仅首页）、毛玻璃吸顶动态顶栏、滚动视差效果、渐变/模糊 CSS 变量
+- [x] Dock 主题大改：底部浮岛式 Dock 导航（spring 弹性动画 + 图标联动缩放）、隐藏全局 MobileNav
+- [x] 主题重构收尾：更新 directory-structure.md、theme-development-guide.md、project-analysis-report.md
 
 ## 暂缓 / 阻塞
 
