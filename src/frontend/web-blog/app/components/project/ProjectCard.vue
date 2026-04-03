@@ -8,7 +8,7 @@
 <template>
   <div class="project-card">
     <div class="project-card__cover">
-      <img :src="project.cover" :alt="project.title" loading="lazy" />
+      <NuxtImg :src="project.cover" :alt="project.title" loading="lazy" format="webp" />
       <div class="project-card__overlay" />
       <div class="project-card__badges">
         <span class="project-card__status" :class="`project-card__status--${project.status}`">

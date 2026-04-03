@@ -7,7 +7,7 @@
 
 <template>
   <div class="about-hero">
-    <img :src="profile.avatar" :alt="profile.name" class="about-hero__avatar" width="112" height="112" @error="onAvatarError" />
+    <NuxtImg :src="profile.avatar" :alt="profile.name" class="about-hero__avatar" width="112" height="112" format="webp" @error="onAvatarError" />
     <h2 class="about-hero__name">{{ profile.name }}</h2>
     <p class="about-hero__bio">{{ profile.bio }}</p>
     <div class="about-hero__socials">

@@ -8,7 +8,7 @@
 <template>
   <article class="post-item" @click="navigateToPost">
     <div v-if="post.cover && !coverError" class="post-item__cover-bg">
-      <img :src="post.cover" :alt="`${post.title} 封面`" loading="lazy" @error="coverError = true" />
+      <NuxtImg :src="post.cover" :alt="`${post.title} 封面`" loading="lazy" format="webp" @error="coverError = true" />
     </div>
 
     <div class="post-item__content">
