@@ -1,12 +1,12 @@
 <!--
   @file RootLayout.vue
-  @description 经典三栏布局主题：左侧导航栏 + 中间主内容 + 右侧信息栏
+  @description Nexus 三栏布局主题：左侧导航栏 + 中间主内容 + 右侧侧边栏
   @author TixXin
   @since 2026-03-24
 -->
 
 <template>
-  <div class="page-root theme-classic">
+  <div class="page-root theme-nexus">
     <div class="blog-grid">
       <aside class="aside-left anim-fade-in-up anim-delay-1">
         <CommonCustomScrollbar :show-back-to-top="false" class="aside-left__scroll" viewport-class="aside-left__viewport">
@@ -30,7 +30,7 @@
             class="aside-right__scroll"
             viewport-class="aside-right__viewport"
           >
-            <div id="right-sidebar-target" :class="sidebarAnimationClass" />
+            <div id="right-sidebar-target" />
           </CommonCustomScrollbar>
         </aside>
       </div>
@@ -43,7 +43,14 @@
 </template>
 
 <script setup lang="ts">
-const { sidebarAnimationClass } = useAppearanceSettings()
-
-useSidebarExitAnimation('.aside-right')
 </script>
+
+<style lang="scss" scoped>
+.theme-nexus {
+  --theme-bg-surface: var(--surface-1);
+  --theme-bg-surface-elevated: var(--surface-2);
+  --theme-bg-surface-sunken: var(--surface-3);
+  --theme-border-default: var(--border);
+  --theme-border-subtle: var(--border-soft);
+}
+</style>

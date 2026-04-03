@@ -1,18 +1,18 @@
 <!--
   @file ThemeAccessory.vue
-  @description 经典三栏主题的额外浮动入口，保留移动端界面设置按钮
+  @description Nexus 三栏主题的额外浮动入口，保留移动端界面设置按钮
   @author TixXin
   @since 2026-04-03
 -->
 
 <template>
-  <div class="classic-mobile-fab">
+  <div class="nexus-mobile-fab">
     <BlogAppearanceEntry />
   </div>
 </template>
 
 <style lang="scss" scoped>
-.classic-mobile-fab {
+.nexus-mobile-fab {
   position: fixed;
   top: calc(1rem + env(safe-area-inset-top));
   right: 1rem;

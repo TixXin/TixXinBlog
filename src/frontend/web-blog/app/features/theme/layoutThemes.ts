@@ -26,35 +26,35 @@ export interface LayoutThemeMeta {
   capabilities: ThemeCapabilities
 }
 
-export const DEFAULT_LAYOUT_THEME_ID = 'classic'
+export const DEFAULT_LAYOUT_THEME_ID = 'nexus'
 
 export const LAYOUT_THEME_PRESETS = [
-  'classic',
-  'docs',
-  'minimal',
+  'nexus',
+  'aurora',
+  'dock',
 ] as const
 
 export type LayoutThemePreset = typeof LAYOUT_THEME_PRESETS[number]
 
 export const layoutThemeMetas: LayoutThemeMeta[] = [
   {
-    id: 'classic',
-    name: '经典三栏',
-    version: '1.0.0',
-    description: '左侧导航 + 中间内容 + 右侧信息栏',
+    id: 'nexus',
+    name: 'Nexus 三栏',
+    version: '2.0.0',
+    description: '经典三栏 App-Shell：左侧导航 + 中间内容 + 右侧侧边栏',
     icon: 'lucide:layout-dashboard',
     capabilities: {
       leftSidebar: true,
       rightSidebar: true,
-      customizer: ['colorMode', 'contentTransition', 'sidebarAnimation'],
+      customizer: ['colorMode', 'contentTransition'],
     },
   },
   {
-    id: 'docs',
-    name: '双栏文档',
-    version: '1.0.0',
-    description: '顶部导航 + 宽内容区 + 可选右栏',
-    icon: 'lucide:book-open',
+    id: 'aurora',
+    name: 'Aurora 双栏',
+    version: '2.0.0',
+    description: '大型 Hero 视觉区域 + 动态毛玻璃顶栏 + 双栏内容',
+    icon: 'lucide:sunrise',
     capabilities: {
       leftSidebar: false,
       rightSidebar: true,
@@ -62,11 +62,11 @@ export const layoutThemeMetas: LayoutThemeMeta[] = [
     },
   },
   {
-    id: 'minimal',
-    name: '单栏极简',
-    version: '1.0.0',
-    description: '顶部导航 + 居中单列内容',
-    icon: 'lucide:minimize-2',
+    id: 'dock',
+    name: 'Dock 浮岛',
+    version: '2.0.0',
+    description: '底部浮岛式导航 + 居中单栏内容',
+    icon: 'lucide:panel-bottom',
     capabilities: {
       leftSidebar: false,
       rightSidebar: false,

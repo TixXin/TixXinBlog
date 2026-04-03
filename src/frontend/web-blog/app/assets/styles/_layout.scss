@@ -12,15 +12,15 @@
   min-height: 100vh;
 }
 
-// 经典三栏主题：间距 + 固定视口高度，禁止文档滚动（由各栏内部独立滚动）
-.theme-classic {
+// Nexus 三栏主题：间距 + 固定视口高度，禁止文档滚动（由各栏内部独立滚动）
+.theme-nexus {
   padding: 1rem;
 
   @media (min-width: $breakpoint-md) {
     padding: 2rem;
   }
 
-  @media (min-width: $breakpoint-xl) {
+  @media (min-width: $breakpoint-lg) {
     height: 100vh;
     overflow: clip;
     display: flex;
@@ -40,12 +40,12 @@
   align-items: start;
   padding-bottom: 5rem;
 
-  @media (min-width: $breakpoint-lg) {
+  @media (min-width: $breakpoint-md) {
     grid-template-columns: #{$sidebar-left-width} 1fr;
     padding-bottom: 0;
   }
 
-  @media (min-width: $breakpoint-xl) {
+  @media (min-width: $breakpoint-lg) {
     flex: 1;
     min-height: 0;
   }
@@ -59,7 +59,7 @@
   min-width: 0;
   height: 100%;
 
-  @media (min-width: $breakpoint-xl) {
+  @media (min-width: $breakpoint-lg) {
     display: grid;
     grid-template-columns: 1fr #{$sidebar-right-width};
     gap: $grid-gap;
@@ -76,11 +76,15 @@
 }
 
 .aside-left {
-  display: flex;
+  display: none;
   flex-direction: column;
   gap: $grid-gap;
 
-  @media (min-width: $breakpoint-xl) {
+  @media (min-width: $breakpoint-md) {
+    display: flex;
+  }
+
+  @media (min-width: $breakpoint-lg) {
     height: 100%;
     overflow: hidden;
     padding: 2rem;
@@ -89,7 +93,7 @@
 }
 
 .aside-left__scroll {
-  @media (min-width: $breakpoint-xl) {
+  @media (min-width: $breakpoint-lg) {
     height: 100%;
     overflow: visible !important;
   }
@@ -100,7 +104,7 @@
   flex-direction: column;
   gap: $grid-gap;
 
-  @media (min-width: $breakpoint-xl) {
+  @media (min-width: $breakpoint-lg) {
     padding: 2rem;
     margin: -2rem;
   }
@@ -118,8 +122,8 @@
   overflow: hidden;
   transition: $transition-colors;
 
-  .theme-classic & {
-    @media (min-width: $breakpoint-xl) {
+  .theme-nexus & {
+    @media (min-width: $breakpoint-lg) {
       height: 100%;
     }
   }
@@ -150,11 +154,12 @@
 }
 
 .aside-right {
-  display: flex;
+  display: none;
   flex-direction: column;
   position: relative;
 
-  @media (min-width: $breakpoint-xl) {
+  @media (min-width: $breakpoint-lg) {
+    display: flex;
     height: 100%;
     overflow: visible;
     padding: 2rem;
@@ -163,14 +168,14 @@
 }
 
 .aside-right__scroll {
-  @media (min-width: $breakpoint-xl) {
+  @media (min-width: $breakpoint-lg) {
     height: 100%;
     overflow: visible !important;
   }
 }
 
 .aside-right__viewport {
-  @media (min-width: $breakpoint-xl) {
+  @media (min-width: $breakpoint-lg) {
     padding: 2rem;
     margin: -2rem;
   }
@@ -187,7 +192,7 @@
 .site-footer {
   display: none;
 
-  @media (min-width: $breakpoint-xl) {
+  @media (min-width: $breakpoint-lg) {
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -216,7 +221,12 @@
   z-index: 50;
   padding-bottom: env(safe-area-inset-bottom);
 
-  @media (min-width: $breakpoint-lg) {
+  @media (min-width: $breakpoint-md) {
+    display: none;
+  }
+
+  // Dock 主题自带导航栏，不需要全局 MobileNav
+  .theme-dock ~ & {
     display: none;
   }
 }

@@ -50,7 +50,7 @@ export default {
   },
   themeEngine: {
     themesDir: './themes',
-    defaultTheme: 'classic',
+    defaultTheme: 'nexus',
     cookieKey: 'tixxin-blog-layout-theme',
     lazyLoadThemes: true,
     contractsEntry: '#theme-contracts',
