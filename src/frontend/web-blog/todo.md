@@ -4,12 +4,12 @@
 
 ## 总进度
 
-- 总任务数：17
-- 已完成：16
+- 总任务数：29
+- 已完成：28
 - 进行中：0
 - 未开始：0
 - 暂缓：1
-- 完成率：94%
+- 完成率：97%
 
 ## 维护约定
 
@@ -47,6 +47,18 @@
 - [x] 图片与首屏性能优化：文章详情封面 fetchpriority="high" 优化 LCP，PostCard alt 动态化，关键图片补 width/height 减 CLS，灯箱去 lazy，封面/头像/友链 @error 兜底（后续可引入 @nuxt/image 做 srcset/格式优化）
 - [x] 主题动态加载机制：setLayoutTheme 异步化支持第三方主题加载，新增 switchingState 状态机、preloadTheme hover 预热、AppearanceDrawer loading/error 态与切换防竞态
 - [x] 后台主题管理方案：registry 新增 unregisterTheme 卸载接口 + checkCompatibility 兼容性校验 + satisfiesSemver 版本匹配，useLayoutTheme 新增 disableCurrentTheme 回退能力，后端 API 路由设计已记录于方案文档
+- [x] 引入 `nuxt-theme-engine`：`nuxt.config.ts` 接入模块，补齐 `theme-contracts/index.ts` 本地契约入口与 `themes/` 主题目录
+- [x] 布局主题适配层迁移：`useLayoutTheme` 改为基于 `useThemeEngine()` 驱动，保留切换状态与 hover 预热能力
+- [x] 根布局切换迁移：`layouts/default.vue` 改为通过 `<ThemeComponent name="RootLayout" />` 渲染当前主题根布局
+- [x] 宿主主题边界拆分：新增 `features/theme/layoutThemes.ts` 承载图标、版本与 capabilities，`useAppearanceSettings` 和 `features/theme/types.ts` 不再依赖旧主题契约
+- [x] 文档同步主题引擎方案：重写 `docs/theme-development-guide.md`，并更新 `docs/directory-structure.md` 中的 `theme-contracts/` 与 `themes/` 结构说明
+- [x] 安装兼容修复：补充 `packages/theme-contracts` 工作区兼容包，并将 `packages/*` 纳入 `pnpm-workspace.yaml`，用于兜底 `@tixxin/nuxt-theme-engine@0.0.1` 发布包中错误的 `workspace:*` 依赖
+- [x] 升级 `nuxt-theme-engine` 至 `0.0.2`：移除 `0.0.1` 临时兼容包与 workspace 补丁，恢复仓库到正常依赖结构
+- [x] 主题主内容稳定挂载：`default.vue` 稳定持有 `NuxtPage`，并通过 `Teleport` 将页面内容挂到主题布局中的 `#theme-main-target`
+- [x] 主题壳层去重：classic/docs/minimal 布局移除内嵌 `NuxtPage`、`CommonAppearanceDrawer` 与 `LayoutMobileNav`，只保留主题差异壳层与挂载目标
+- [x] 切换防闪屏增强：新增本地 `ThemeComponent.vue` 覆盖主题引擎默认实现，在新主题组件 ready 前继续保留旧组件渲染
+- [x] 升级至 `nuxt-theme-engine@0.0.3`：移除本地 `ThemeComponent.vue` 覆盖（防闪屏已内置于引擎），修复 classic 主题 `theme.json` 位置错误导致引擎未发现该主题
+- [x] 主内容交付方式改为 slot 透传：将 `NuxtPage` 从 `Teleport` 改为 `ThemeComponent` 的 slot 子节点，由布局组件通过 `<slot />` 接收，解决引擎异步组件导致 Teleport 目标不就绪的问题
 
 ## 暂缓 / 阻塞
 
