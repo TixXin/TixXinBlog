@@ -10,121 +10,137 @@
     <!-- 遮罩与面板 Teleport 到 body，面板固定定位视口居中避免溢出 -->
     <Teleport to="body">
       <Transition name="drawer-overlay">
-        <div
-          v-if="isDrawerOpen"
-          class="appearance-drawer__overlay"
-          @click="closeDrawer"
-        />
+        <div v-if="isDrawerOpen" class="appearance-drawer__overlay" @click="closeDrawer" />
       </Transition>
 
       <Transition name="drawer-panel">
         <aside v-if="isDrawerOpen" class="appearance-drawer card">
-          <section
-            v-if="isCapabilitySupported('colorMode')"
-            class="appearance-section appearance-section--first"
-          >
-            <div class="appearance-section__head">
-              <h3 class="appearance-section__title">颜色主题</h3>
-              <span class="appearance-section__value">{{ themeLabel }}</span>
-            </div>
-            <div class="appearance-option-grid appearance-option-grid--theme">
-              <button
-                v-for="option in themeOptions"
-                :key="option"
-                type="button"
-                class="appearance-option"
-                :class="{ 'appearance-option--active': currentPreference === option }"
-                @click="setTheme(option)"
-              >
-                <Icon :name="themeIcons[option]" size="18" />
-                <span class="appearance-option__label">{{ themeLabels[option] }}</span>
-              </button>
-            </div>
-          </section>
+          <div class="appearance-drawer__body">
+            <section v-if="isCapabilitySupported('colorMode')" class="appearance-section appearance-section--first">
+              <div class="appearance-section__head">
+                <h3 class="appearance-section__title">颜色主题</h3>
+                <span class="appearance-section__value">{{ themeLabel }}</span>
+              </div>
+              <div class="appearance-option-grid appearance-option-grid--theme">
+                <button
+                  v-for="option in themeOptions"
+                  :key="option"
+                  type="button"
+                  class="appearance-option"
+                  :class="{ 'appearance-option--active': currentPreference === option }"
+                  @click="setTheme(option)"
+                >
+                  <Icon :name="themeIcons[option]" size="18" />
+                  <span class="appearance-option__label">{{ themeLabels[option] }}</span>
+                </button>
+              </div>
+            </section>
 
-          <section class="appearance-section">
-            <div class="appearance-section__head">
-              <h3 class="appearance-section__title">布局主题</h3>
-              <span class="appearance-section__value">
-                {{ layoutThemeLabel }}
-                <span v-if="switchingState === 'loading'" class="appearance-section__status">切换中…</span>
-                <span v-else-if="switchingState === 'error'" class="appearance-section__status appearance-section__status--error">切换失败</span>
-              </span>
-            </div>
-            <div class="appearance-option-grid appearance-option-grid--theme">
-              <button
-                v-for="theme in availableThemes"
-                :key="theme.id"
-                type="button"
-                class="appearance-option"
-                :class="{
-                  'appearance-option--active': currentThemeId === theme.id,
-                  'appearance-option--disabled': switchingState === 'loading' && currentThemeId !== theme.id,
-                }"
-                :disabled="switchingState === 'loading'"
-                @click="setLayoutTheme(theme.id)"
-                @mouseenter="preloadTheme(theme.id)"
-              >
-                <Icon v-if="switchingState !== 'loading' || currentThemeId === theme.id" :name="theme.icon" size="18" />
-                <Icon v-else name="lucide:loader-2" size="18" class="appearance-option__spinner" />
-                <span class="appearance-option__label">{{ theme.name }}</span>
-                <span class="appearance-option__version">v{{ theme.version }}</span>
-              </button>
-            </div>
-          </section>
+            <section class="appearance-section">
+              <div class="appearance-section__head">
+                <h3 class="appearance-section__title">
+                  布局主题
+                  <a
+                    ref="engineBadgeRef"
+                    href="https://github.com/AYumeRNA/nuxt-theme-engine"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    class="appearance-engine-badge"
+                    @mouseenter="showEngineTip"
+                    @mouseleave="hideEngineTip"
+                  >
+                    <Icon name="lucide:info" size="13" />
+                  </a>
+                </h3>
+                <span class="appearance-section__value">
+                  {{ layoutThemeLabel }}
+                  <span v-if="switchingState === 'loading'" class="appearance-section__status">切换中…</span>
+                  <span
+                    v-else-if="switchingState === 'error'"
+                    class="appearance-section__status appearance-section__status--error"
+                    >切换失败</span
+                  >
+                </span>
+              </div>
+              <div class="appearance-option-grid appearance-option-grid--theme">
+                <button
+                  v-for="theme in availableThemes"
+                  :key="theme.id"
+                  type="button"
+                  class="appearance-option"
+                  :class="{
+                    'appearance-option--active': currentThemeId === theme.id,
+                    'appearance-option--disabled': switchingState === 'loading' && currentThemeId !== theme.id,
+                  }"
+                  :disabled="switchingState === 'loading'"
+                  @click="setLayoutTheme(theme.id)"
+                  @mouseenter="preloadTheme(theme.id)"
+                >
+                  <Icon
+                    v-if="switchingState !== 'loading' || currentThemeId === theme.id"
+                    :name="theme.icon"
+                    size="18"
+                  />
+                  <Icon v-else name="lucide:loader-2" size="18" class="appearance-option__spinner" />
+                  <span class="appearance-option__label">{{ theme.name }}</span>
+                  <span class="appearance-option__version">v{{ theme.version }}</span>
+                </button>
+              </div>
+            </section>
 
-          <section
-            v-if="isCapabilitySupported('contentTransition')"
-            class="appearance-section"
-          >
-            <div class="appearance-section__head">
-              <h3 class="appearance-section__title">主内容切换</h3>
-              <span class="appearance-section__value">{{ contentTransitionLabel }}</span>
-            </div>
-            <div class="appearance-option-grid appearance-option-grid--anim">
-              <button
-                v-for="option in contentTransitionOptions"
-                :key="option.value"
-                type="button"
-                class="appearance-option"
-                :class="{ 'appearance-option--active': contentTransitionPreset === option.value }"
-                @click="setContentTransitionPreset(option.value)"
-              >
-                <Icon :name="option.icon || 'lucide:sparkles'" size="18" />
-                <span class="appearance-option__label">{{ option.label }}</span>
-              </button>
-            </div>
-          </section>
+            <section v-if="isCapabilitySupported('contentTransition')" class="appearance-section">
+              <div class="appearance-section__head">
+                <h3 class="appearance-section__title">主内容切换</h3>
+                <span class="appearance-section__value">{{ contentTransitionLabel }}</span>
+              </div>
+              <div class="appearance-option-grid appearance-option-grid--anim">
+                <button
+                  v-for="option in contentTransitionOptions"
+                  :key="option.value"
+                  type="button"
+                  class="appearance-option"
+                  :class="{ 'appearance-option--active': contentTransitionPreset === option.value }"
+                  @click="setContentTransitionPreset(option.value)"
+                >
+                  <Icon :name="option.icon || 'lucide:sparkles'" size="18" />
+                  <span class="appearance-option__label">{{ option.label }}</span>
+                </button>
+              </div>
+            </section>
 
-          <section
-            v-if="isCapabilitySupported('sidebarAnimation')"
-            class="appearance-section"
-          >
-            <div class="appearance-section__head">
-              <h3 class="appearance-section__title">右侧栏动画</h3>
-              <span class="appearance-section__value">{{ sidebarAnimationLabel }}</span>
-            </div>
-            <div class="appearance-option-grid appearance-option-grid--anim">
-              <button
-                v-for="option in sidebarAnimationOptions"
-                :key="option.value"
-                type="button"
-                class="appearance-option"
-                :class="{ 'appearance-option--active': sidebarAnimationPreset === option.value }"
-                @click="setSidebarAnimationPreset(option.value)"
-              >
-                <Icon :name="option.icon || 'lucide:panel-left-open'" size="18" />
-                <span class="appearance-option__label">{{ option.label }}</span>
-              </button>
-            </div>
-          </section>
+            <section v-if="isCapabilitySupported('sidebarAnimation')" class="appearance-section">
+              <div class="appearance-section__head">
+                <h3 class="appearance-section__title">右侧栏动画</h3>
+                <span class="appearance-section__value">{{ sidebarAnimationLabel }}</span>
+              </div>
+              <div class="appearance-option-grid appearance-option-grid--anim">
+                <button
+                  v-for="option in sidebarAnimationOptions"
+                  :key="option.value"
+                  type="button"
+                  class="appearance-option"
+                  :class="{ 'appearance-option--active': sidebarAnimationPreset === option.value }"
+                  @click="setSidebarAnimationPreset(option.value)"
+                >
+                  <Icon :name="option.icon || 'lucide:panel-left-open'" size="18" />
+                  <span class="appearance-option__label">{{ option.label }}</span>
+                </button>
+              </div>
+            </section>
+          </div>
 
           <footer class="appearance-drawer__footer">
-            <button type="button" class="appearance-drawer__reset" @click="resetAppearanceSettings">
-              恢复默认
-            </button>
+            <button type="button" class="appearance-drawer__reset" @click="resetAppearanceSettings">恢复默认</button>
           </footer>
         </aside>
+      </Transition>
+    </Teleport>
+
+    <Teleport to="body">
+      <Transition name="tooltip">
+        <div v-if="engineTipVisible" class="engine-tip-floating" :style="engineTipStyle">
+          由 @tixxin/nuxt-theme-engine 驱动（MIT License）
+        </div>
       </Transition>
     </Teleport>
   </ClientOnly>
@@ -152,14 +168,7 @@ const {
   resetAppearanceSettings,
 } = useAppearanceSettings()
 
-const {
-  currentThemeId,
-  activeTheme,
-  availableThemes,
-  switchingState,
-  setLayoutTheme,
-  preloadTheme,
-} = useLayoutTheme()
+const { currentThemeId, activeTheme, availableThemes, switchingState, setLayoutTheme, preloadTheme } = useLayoutTheme()
 
 const layoutThemeLabel = computed(() => activeTheme.value.name)
 
@@ -169,6 +178,43 @@ const themeIcons = {
   light: 'lucide:sun',
   system: 'lucide:monitor',
   dark: 'lucide:moon',
+}
+
+const engineBadgeRef = ref<HTMLElement | null>(null)
+const engineTipVisible = ref(false)
+const engineTipStyle = ref<Record<string, string>>({})
+let engineTipTimer: ReturnType<typeof setTimeout> | null = null
+
+function showEngineTip() {
+  if (engineTipTimer) {
+    clearTimeout(engineTipTimer)
+    engineTipTimer = null
+  }
+  engineTipTimer = setTimeout(() => {
+    const el = engineBadgeRef.value
+    if (!el) return
+    const rect = el.getBoundingClientRect()
+    const margin = 8
+    const top = rect.top - margin
+    let left = rect.left + rect.width / 2
+
+    left = Math.max(margin, Math.min(left, window.innerWidth - margin))
+
+    engineTipStyle.value = {
+      top: `${top}px`,
+      left: `${left}px`,
+      transform: 'translate(-50%, -100%)',
+    }
+    engineTipVisible.value = true
+  }, 200)
+}
+
+function hideEngineTip() {
+  if (engineTipTimer) {
+    clearTimeout(engineTipTimer)
+    engineTipTimer = null
+  }
+  engineTipVisible.value = false
 }
 
 function onKeydown(event: KeyboardEvent) {
@@ -182,6 +228,7 @@ onMounted(() => {
 })
 
 onBeforeUnmount(() => {
+  if (engineTipTimer) clearTimeout(engineTipTimer)
   window.removeEventListener('keydown', onKeydown)
 })
 </script>
@@ -202,12 +249,19 @@ onBeforeUnmount(() => {
   top: 50%;
   transform: translate(-50%, -50%);
   width: min(29rem, calc(100vw - 2rem));
-  max-height: min(70vh, 28rem, calc(100dvh - 4rem));
+  max-height: calc(100dvh - 4rem);
   display: flex;
   flex-direction: column;
   padding: 1rem 1.25rem;
-  overflow-y: auto;
+  overflow: hidden;
   z-index: 80;
+}
+
+.appearance-drawer__body {
+  flex: 1 1 auto;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  min-height: 0;
 }
 
 .appearance-section {
@@ -233,6 +287,8 @@ onBeforeUnmount(() => {
 }
 
 .appearance-section__title {
+  display: flex;
+  align-items: center;
   font-size: 0.8125rem;
   font-weight: 700;
   color: var(--text-main);
@@ -319,6 +375,7 @@ onBeforeUnmount(() => {
 }
 
 .appearance-drawer__footer {
+  flex-shrink: 0;
   margin-top: 0.75rem;
   padding-top: 0.625rem;
   border-top: 1px solid var(--border-soft);
@@ -339,6 +396,36 @@ onBeforeUnmount(() => {
   }
 }
 
+.appearance-engine-badge {
+  display: inline-flex;
+  align-items: center;
+  margin-left: 0.25rem;
+  color: var(--text-soft);
+  vertical-align: middle;
+  opacity: 0.55;
+  transition: $transition-fast;
+
+  &:hover {
+    color: var(--accent);
+    opacity: 1;
+  }
+}
+
+:global(.engine-tip-floating) {
+  position: fixed;
+  z-index: 9999;
+  width: max-content;
+  max-width: min(320px, calc(100vw - 1.5rem));
+  padding: 5px 10px;
+  border-radius: 6px;
+  font-size: 12px;
+  line-height: 1.5;
+  pointer-events: none;
+  background: var(--tooltip-bg);
+  color: var(--tooltip-text);
+  box-shadow: var(--tooltip-shadow);
+}
+
 :global(.drawer-overlay-enter-active),
 :global(.drawer-overlay-leave-active) {
   transition: opacity 0.18s ease;
@@ -352,7 +439,9 @@ onBeforeUnmount(() => {
 /* 面板弹出动画：自下而上浮入，最终视口居中 */
 :global(.drawer-panel-enter-active),
 :global(.drawer-panel-leave-active) {
-  transition: opacity 0.2s ease, transform 0.2s ease;
+  transition:
+    opacity 0.2s ease,
+    transform 0.2s ease;
 }
 
 :global(.drawer-panel-enter-from),
