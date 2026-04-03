@@ -43,7 +43,6 @@
           </CommonTooltip>
           <BlogThemeSwitcher />
           <BlogAppearanceEntry />
-          <CommonAppearanceDrawer />
         </div>
       </div>
     </header>
@@ -57,7 +56,7 @@
       <div class="docs-body">
         <main class="docs-main">
           <div class="main-content">
-            <NuxtPage :transition="contentTransition" />
+            <slot />
           </div>
         </main>
         <aside class="docs-aside">
@@ -75,8 +74,6 @@
         <LayoutStatusFooter />
       </footer>
     </CommonCustomScrollbar>
-
-    <LayoutMobileNav />
   </div>
 </template>
 
@@ -89,8 +86,6 @@ function isActive(to: string) {
 }
 
 const {
-  contentTransitionName,
-  contentTransitionDuration,
   sidebarAnimationClass,
 } = useAppearanceSettings()
 
@@ -140,12 +135,6 @@ onBeforeUnmount(() => {
   const viewport = scrollbarRef.value?.viewport
   viewport?.removeEventListener('scroll', onViewportScroll)
 })
-
-const contentTransition = computed(() => ({
-  name: contentTransitionName.value,
-  mode: 'out-in' as const,
-  duration: contentTransitionDuration.value,
-}))
 </script>
 
 <style lang="scss" scoped>

@@ -1,14 +1,25 @@
 <!--
   @file default.vue
-  @description 博客默认布局，作为薄代理层动态渲染当前激活的布局主题组件
+  @description 博客默认布局，稳定持有页面实例并将主题差异壳层委托给主题引擎渲染
   @author TixXin
-  @since 2025-03-17
+  @since 2026-04-03
 -->
 
 <template>
-  <component :is="activeLayout" :key="activeTheme.id" />
+  <ThemeComponent name="RootLayout">
+    <NuxtPage :transition="contentTransition" />
+  </ThemeComponent>
+  <ThemeComponent name="ThemeAccessory" />
+  <CommonAppearanceDrawer />
+  <LayoutMobileNav />
 </template>
 
 <script setup lang="ts">
-const { activeTheme, activeLayout } = useLayoutTheme()
+const { contentTransitionName, contentTransitionDuration } = useAppearanceSettings()
+
+const contentTransition = computed(() => ({
+  name: contentTransitionName.value,
+  mode: 'out-in' as const,
+  duration: contentTransitionDuration.value,
+}))
 </script>

@@ -1,78 +1,94 @@
 /**
  * @file useLayoutTheme.ts
- * @description 管理当前激活的布局主题，支持运行时切换和 cookie 持久化
+ * @description 对接主题引擎并补齐博客宿主所需的主题元信息、切换状态与预热能力
  * @author TixXin
- * @since 2026-03-24
+ * @since 2026-04-03
  */
 
-import type { Component } from 'vue'
-import type { BlogThemeManifest } from '~/themes/contracts'
-import { DEFAULT_THEME_ID } from '~/themes/contracts'
 import {
-  getCachedRuntime,
-  getRegisteredThemes,
-  isThemeRegistered,
-  registerBuiltinThemesSync,
-  resolveManifest,
-  resolveRuntime,
-} from '~/themes/registry'
+  DEFAULT_LAYOUT_THEME_ID,
+  getLayoutThemeMeta,
+  isKnownLayoutThemeId,
+  type LayoutThemeMeta,
+} from '~/features/theme/layoutThemes'
+import { themeComponentLoaders } from '#build/theme-engine.registry.mjs'
+
+type ThemeLoader = () => Promise<unknown>
 
 export type ThemeSwitchState = 'idle' | 'loading' | 'error'
 
-const COOKIE_KEY = 'tixxin-blog-layout-theme'
+const preloadedThemes = new Set<string>()
+const preloadTasks = new Map<string, Promise<void>>()
 
-function ensureThemesRegistered() {
-  if (!isThemeRegistered('classic')) {
-    registerBuiltinThemesSync()
+function ensureKnownThemeId(id: string): string {
+  return isKnownLayoutThemeId(id) ? id : DEFAULT_LAYOUT_THEME_ID
+}
+
+function getThemeLoaders(id: string): ThemeLoader[] {
+  const loaderMap = themeComponentLoaders[id as keyof typeof themeComponentLoaders]
+  if (!loaderMap) return []
+
+  return Object.values(loaderMap) as ThemeLoader[]
+}
+
+async function preloadThemeRuntime(id: string) {
+  const themeId = ensureKnownThemeId(id)
+
+  if (preloadedThemes.has(themeId)) return
+
+  const currentTask = preloadTasks.get(themeId)
+  if (currentTask) {
+    await currentTask
+    return
   }
+
+  const nextTask = Promise.all(getThemeLoaders(themeId).map(loader => loader()))
+    .then(() => {
+      preloadedThemes.add(themeId)
+    })
+    .finally(() => {
+      preloadTasks.delete(themeId)
+    })
+
+  preloadTasks.set(themeId, nextTask)
+
+  await nextTask
 }
 
 export function useLayoutTheme() {
-  ensureThemesRegistered()
-
-  const currentThemeId = useCookie<string>(COOKIE_KEY, {
-    default: () => DEFAULT_THEME_ID,
-    maxAge: 60 * 60 * 24 * 365,
-    sameSite: 'lax',
-    watch: true,
-  })
-
-  if (!isThemeRegistered(currentThemeId.value)) {
-    currentThemeId.value = DEFAULT_THEME_ID
-  }
+  const {
+    currentTheme,
+    availableThemes: engineThemeIds,
+    setTheme,
+  } = useThemeEngine()
 
   /** 主题切换状态：idle / loading / error */
   const switchingState = useState<ThemeSwitchState>('layout-theme-switch-state', () => 'idle')
 
-  const activeTheme = computed<BlogThemeManifest>(() => resolveManifest(currentThemeId.value))
+  const currentThemeId = computed(() => ensureKnownThemeId(currentTheme.value))
 
-  const availableThemes = computed<BlogThemeManifest[]>(() => getRegisteredThemes())
+  const activeTheme = computed<LayoutThemeMeta>(() => getLayoutThemeMeta(currentThemeId.value))
 
-  /** 当前激活主题的布局组件（内置主题同步可用） */
-  const activeLayout = computed<Component>(() => {
-    const runtime = getCachedRuntime(currentThemeId.value)
-    if (runtime) return runtime.layout
-    return getCachedRuntime(DEFAULT_THEME_ID)!.layout
-  })
+  const availableThemes = computed<LayoutThemeMeta[]>(() =>
+    engineThemeIds.value.map(themeId => getLayoutThemeMeta(themeId)),
+  )
 
   /**
-   * 切换布局主题：已缓存时同步切换，未缓存时异步加载。
-   * 加载期间 switchingState 为 'loading'，失败则为 'error'，
-   * 保持当前主题不变，不会闪白屏。
+   * 切换布局主题：先预热目标主题组件，再切换当前主题。
+   * 这样可以保留原先的 loading/error 状态与 hover 预热体验。
    */
   async function setLayoutTheme(id: string) {
-    if (!isThemeRegistered(id)) return
+    const themeId = ensureKnownThemeId(id)
 
-    if (getCachedRuntime(id)) {
-      currentThemeId.value = id
+    if (themeId === currentThemeId.value) {
       switchingState.value = 'idle'
       return
     }
 
     switchingState.value = 'loading'
     try {
-      await resolveRuntime(id)
-      currentThemeId.value = id
+      await preloadThemeRuntime(themeId)
+      setTheme(themeId)
       switchingState.value = 'idle'
     }
     catch {
@@ -81,24 +97,22 @@ export function useLayoutTheme() {
   }
 
   /**
-   * 预加载主题 runtime（hover 预热）。
+   * 预加载主题运行时代码（hover 预热）。
    * 静默执行，不影响当前主题，失败不抛出。
    */
   function preloadTheme(id: string) {
-    if (getCachedRuntime(id)) return
-    resolveRuntime(id).catch(() => {})
+    preloadThemeRuntime(id).catch(() => {})
   }
 
   /** 禁用当前主题并回退到默认 */
   function disableCurrentTheme() {
-    currentThemeId.value = DEFAULT_THEME_ID
+    setTheme(DEFAULT_LAYOUT_THEME_ID)
     switchingState.value = 'idle'
   }
 
   return {
     currentThemeId,
     activeTheme,
-    activeLayout,
     availableThemes,
     switchingState,
     setLayoutTheme,

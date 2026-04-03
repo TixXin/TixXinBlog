@@ -112,6 +112,8 @@
   border: 1px solid var(--border);
   box-shadow: var(--shadow-card);
   display: flex;
+  flex: 1;
+  min-height: 0;
   flex-direction: column;
   overflow: hidden;
   transition: $transition-colors;

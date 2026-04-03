@@ -27,14 +27,13 @@
         <div class="minimal-topbar__actions">
           <BlogThemeSwitcher />
           <BlogAppearanceEntry />
-          <CommonAppearanceDrawer />
         </div>
       </div>
     </header>
 
     <main class="minimal-body anim-fade-in-up anim-delay-2">
       <div class="main-content">
-        <NuxtPage :transition="contentTransition" />
+        <slot />
       </div>
     </main>
 
@@ -45,7 +44,6 @@
     <footer class="minimal-footer">
       <LayoutStatusFooter />
     </footer>
-    <LayoutMobileNav />
   </div>
 </template>
 
@@ -57,16 +55,6 @@ function isActive(to: string) {
   return route.path === to
 }
 
-const {
-  contentTransitionName,
-  contentTransitionDuration,
-} = useAppearanceSettings()
-
-const contentTransition = computed(() => ({
-  name: contentTransitionName.value,
-  mode: 'out-in' as const,
-  duration: contentTransitionDuration.value,
-}))
 </script>
 
 <style lang="scss" scoped>
