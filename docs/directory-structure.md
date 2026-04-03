@@ -84,13 +84,10 @@ src/frontend/web-blog/
 │   │   ├── stats/             # 统计模块
 │   │   └── theme/             # 主题与外观模块
 │   ├── layouts/               # 页面布局（default.vue 将 NuxtPage 作为 slot 传入主题布局）
-│   ├── themes/                # 旧布局组件目录（作为主题引擎桥接层的来源组件）
-│   │   ├── contracts.ts       # 旧主题契约（兼容保留，新增主题不再基于此扩展）
-│   │   ├── types.ts           # 旧主题类型入口（兼容保留）
-│   │   ├── registry.ts        # 旧主题注册中心（兼容保留，已不再作为当前运行时入口）
-│   │   ├── classic/           # 经典三栏布局组件
-│   │   ├── docs/              # 双栏文档布局组件
-│   │   └── minimal/           # 单栏极简布局组件
+│   ├── themes/                # 布局组件目录（作为主题引擎桥接层的来源组件）
+│   │   ├── classic/           # 经典三栏布局组件（ClassicLayout.vue）
+│   │   ├── docs/              # 双栏文档布局组件（DocsLayout.vue）
+│   │   └── minimal/           # 单栏极简布局组件（MinimalLayout.vue）
 │   └── pages/                 # 文件系统路由页面
 │       └── articles/          # 文章子路由
 ├── public/                    # 公共静态资源（不经编译）

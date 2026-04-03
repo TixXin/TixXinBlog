@@ -1,7 +1,7 @@
 # TixXin Blog 主题开发指南
 
 当前 `web-blog` 已切换为基于 `@tixxin/nuxt-theme-engine` 的主题方案。
-新主题开发不再通过 `app/themes/registry.ts` 手工注册，而是通过项目根目录下的 `themes/` 目录和本地契约入口自动接入。
+新主题通过项目根目录下的 `themes/` 目录和本地契约入口自动接入，旧的手工注册代码已移除。
 
 ## 当前架构
 
@@ -152,8 +152,6 @@ themes/magazine/
 ## 当前注意事项
 
 - 新增主题时，优先修改 `themes/` 与 `app/features/theme/layoutThemes.ts`
-- 不要再向 `app/themes/registry.ts` 注册新主题
-- `app/themes/contracts.ts` 与 `app/themes/registry.ts` 目前仅作为兼容保留
 - 当前博客已使用 `RootLayout` 与 `ThemeAccessory` 两个契约组件
 - 主题主内容通过 `<slot />` 承接宿主传入的 `NuxtPage`，不再使用 Teleport 或直接渲染 NuxtPage
 
