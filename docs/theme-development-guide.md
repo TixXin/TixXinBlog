@@ -48,7 +48,7 @@ export const themeContractNames = ['RootLayout', 'ThemeAccessory'] as const
 这意味着当前每个主题可以提供以下组件：
 
 - `RootLayout.vue`（必需）：主题壳层，通过 `<slot />` 接收页面内容，并提供 `#right-sidebar-target`
-- `ThemeAccessory.vue`（必需）：主题额外挂件，例如 classic 的移动端浮动设置按钮
+- `ThemeAccessory.vue`（必需）：主题额外挂件，例如 Nexus 的移动端浮动设置按钮
 - `StatusFooter.vue`（推荐）：页脚状态栏，各主题布局通过 `<ThemeComponent name="StatusFooter" />` 渲染
 - `SidebarNav.vue`（可选）：侧边导航栏，仅提供左侧栏的主题需要实现
 - `PostCard.vue`（推荐）：文章卡片，文章列表通过 `<ThemeComponent name="PostCard" />` 渲染
@@ -85,9 +85,9 @@ themes/magazine/
 ```json
 {
   "name": "magazine",
-  "extends": "classic",
+  "extends": "nexus",
   "label": "杂志风格",
-  "description": "基于 classic 的杂志化变体"
+  "description": "基于 Nexus 的杂志化变体"
 }
 ```
 
