@@ -5,11 +5,7 @@
  * @since 2026-04-03
  */
 
-export type ThemeCustomizerCapability =
-  | 'colorMode'
-  | 'contentTransition'
-  | 'sidebarAnimation'
-  | 'layoutDensity'
+export type ThemeCustomizerCapability = 'colorMode' | 'contentTransition' | 'sidebarAnimation' | 'layoutDensity'
 
 export interface ThemeCapabilities {
   leftSidebar: boolean
@@ -28,13 +24,9 @@ export interface LayoutThemeMeta {
 
 export const DEFAULT_LAYOUT_THEME_ID = 'nexus'
 
-export const LAYOUT_THEME_PRESETS = [
-  'nexus',
-  'aurora',
-  'dock',
-] as const
+export const LAYOUT_THEME_PRESETS = ['nexus', 'aurora', 'dock'] as const
 
-export type LayoutThemePreset = typeof LAYOUT_THEME_PRESETS[number]
+export type LayoutThemePreset = (typeof LAYOUT_THEME_PRESETS)[number]
 
 export const layoutThemeMetas: LayoutThemeMeta[] = [
   {
@@ -46,7 +38,7 @@ export const layoutThemeMetas: LayoutThemeMeta[] = [
     capabilities: {
       leftSidebar: true,
       rightSidebar: true,
-      customizer: ['colorMode', 'contentTransition'],
+      customizer: ['colorMode', 'contentTransition', 'sidebarAnimation'],
     },
   },
   {
@@ -75,9 +67,7 @@ export const layoutThemeMetas: LayoutThemeMeta[] = [
   },
 ]
 
-const layoutThemeMetaMap = new Map(
-  layoutThemeMetas.map(meta => [meta.id, meta]),
-)
+const layoutThemeMetaMap = new Map(layoutThemeMetas.map((meta) => [meta.id, meta]))
 
 export function getLayoutThemeMeta(id: string): LayoutThemeMeta {
   return layoutThemeMetaMap.get(id) ?? layoutThemeMetaMap.get(DEFAULT_LAYOUT_THEME_ID)!

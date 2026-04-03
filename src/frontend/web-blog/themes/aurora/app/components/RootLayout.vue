@@ -7,7 +7,10 @@
 
 <template>
   <div class="page-root theme-aurora">
-    <header class="aurora-topbar" :class="{ 'aurora-topbar--scrolled': isScrolled, 'aurora-topbar--transparent': isHeroVisible }">
+    <header
+      class="aurora-topbar"
+      :class="{ 'aurora-topbar--scrolled': isScrolled, 'aurora-topbar--transparent': isHeroVisible }"
+    >
       <div class="aurora-topbar__inner">
         <NuxtLink to="/" class="aurora-topbar__brand">
           <Icon name="lucide:pen-tool" size="20" />
@@ -26,21 +29,19 @@
           </NuxtLink>
         </nav>
         <div class="aurora-topbar__actions">
-          <CommonTooltip content="阅读进度 · 点击返回顶部" placement="bottom" :disabled="progressClicked">
-            <Transition name="progress-fade">
-              <button
-                v-if="showProgress"
-                class="aurora-scroll-progress"
-                :class="{ 'is-clicked': progressClicked }"
-                type="button"
-                aria-label="返回顶部"
-                @click="onProgressClick"
-              >
-                <span class="aurora-scroll-progress__text">{{ displayProgress }}%</span>
-                <Icon name="lucide:arrow-up" size="14" class="aurora-scroll-progress__icon" />
-              </button>
-            </Transition>
-          </CommonTooltip>
+          <Transition name="progress-fade">
+            <button
+              v-if="showProgress"
+              class="aurora-scroll-progress"
+              :class="{ 'is-clicked': progressClicked }"
+              type="button"
+              aria-label="返回顶部"
+              @click="onProgressClick"
+            >
+              <span class="aurora-scroll-progress__text">{{ displayProgress }}%</span>
+              <Icon name="lucide:arrow-up" size="14" class="aurora-scroll-progress__icon" />
+            </button>
+          </Transition>
           <BlogThemeSwitcher />
           <BlogAppearanceEntry />
         </div>
@@ -95,13 +96,15 @@ function isActive(to: string) {
 
 const isHomePage = computed(() => route.path === '/')
 
-const {
-  sidebarAnimationClass,
-} = useAppearanceSettings()
+const { sidebarAnimationClass } = useAppearanceSettings()
 
 useSidebarExitAnimation('.aurora-aside')
 
-const scrollbarRef = ref<{ viewport: HTMLElement | null; scrollProgress: number; scrollToTop: (smooth?: boolean) => void } | null>(null)
+const scrollbarRef = ref<{
+  viewport: HTMLElement | null
+  scrollProgress: number
+  scrollToTop: (smooth?: boolean) => void
+} | null>(null)
 const isScrolled = ref(false)
 const scrollProgress = ref(0)
 const scrollY = ref(0)
@@ -197,7 +200,7 @@ onBeforeUnmount(() => {
     border-color 0.4s ease;
 
   &--transparent {
-    background: transparent;
+    background: linear-gradient(135deg, var(--aurora-gradient-start), var(--aurora-gradient-end));
     backdrop-filter: none;
     border-bottom-color: transparent;
   }
@@ -307,6 +310,20 @@ onBeforeUnmount(() => {
   gap: 0.5rem;
   flex-shrink: 0;
 
+  .aurora-topbar--transparent & {
+    color: rgba(255, 255, 255, 0.8);
+
+    :deep(button),
+    :deep(a) {
+      color: rgba(255, 255, 255, 0.8);
+
+      &:hover {
+        color: #fff;
+        background: rgba(255, 255, 255, 0.12);
+      }
+    }
+  }
+
   @media (min-width: $breakpoint-xl) {
     width: $sidebar-right-width;
   }
@@ -381,7 +398,9 @@ onBeforeUnmount(() => {
   border-radius: $radius-sm;
   border: none;
   background: transparent;
-  transition: color 0.2s ease, background 0.2s ease;
+  transition:
+    color 0.2s ease,
+    background 0.2s ease;
   white-space: nowrap;
 
   &:hover {
@@ -419,28 +438,43 @@ onBeforeUnmount(() => {
 }
 
 .aurora-scroll-progress__text {
-  transition: opacity 0.2s ease, transform 0.2s ease;
+  transition:
+    opacity 0.2s ease,
+    transform 0.2s ease;
 }
 
 .aurora-scroll-progress__icon {
   position: absolute;
   opacity: 0;
   transform: translateY(4px);
-  transition: opacity 0.2s ease, transform 0.2s ease;
+  transition:
+    opacity 0.2s ease,
+    transform 0.2s ease;
 }
 
 @keyframes aurora-progress-bounce {
-  0%, 100% { transform: translateY(0); }
-  40% { transform: translateY(-3px); }
-  60% { transform: translateY(1px); }
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  40% {
+    transform: translateY(-3px);
+  }
+  60% {
+    transform: translateY(1px);
+  }
 }
 
 .progress-fade-enter-active {
-  transition: opacity 0.25s ease-out, transform 0.25s ease-out;
+  transition:
+    opacity 0.25s ease-out,
+    transform 0.25s ease-out;
 }
 
 .progress-fade-leave-active {
-  transition: opacity 0.2s ease-in, transform 0.2s ease-in;
+  transition:
+    opacity 0.2s ease-in,
+    transform 0.2s ease-in;
 }
 
 .progress-fade-enter-from,
@@ -526,11 +560,15 @@ onBeforeUnmount(() => {
 }
 
 :deep(.back-to-top-enter-active) {
-  transition: opacity 0.3s ease-out, transform 0.3s ease-out;
+  transition:
+    opacity 0.3s ease-out,
+    transform 0.3s ease-out;
 }
 
 :deep(.back-to-top-leave-active) {
-  transition: opacity 0.25s ease-in, transform 0.25s ease-in;
+  transition:
+    opacity 0.25s ease-in,
+    transform 0.25s ease-in;
 }
 
 :deep(.back-to-top-enter-from),

@@ -9,6 +9,7 @@ import {
   DEFAULT_LAYOUT_THEME_ID,
   getLayoutThemeMeta,
   isKnownLayoutThemeId,
+  layoutThemeMetas,
   type LayoutThemeMeta,
 } from '~/features/theme/layoutThemes'
 import { themeComponentLoaders } from '#build/theme-engine.registry.mjs'
@@ -42,7 +43,7 @@ async function preloadThemeRuntime(id: string) {
     return
   }
 
-  const nextTask = Promise.all(getThemeLoaders(themeId).map(loader => loader()))
+  const nextTask = Promise.all(getThemeLoaders(themeId).map((loader) => loader()))
     .then(() => {
       preloadedThemes.add(themeId)
     })
@@ -56,11 +57,7 @@ async function preloadThemeRuntime(id: string) {
 }
 
 export function useLayoutTheme() {
-  const {
-    currentTheme,
-    availableThemes: engineThemeIds,
-    setTheme,
-  } = useThemeEngine()
+  const { currentTheme, availableThemes: engineThemeIds, setTheme } = useThemeEngine()
 
   /** 主题切换状态：idle / loading / error */
   const switchingState = useState<ThemeSwitchState>('layout-theme-switch-state', () => 'idle')
@@ -69,9 +66,10 @@ export function useLayoutTheme() {
 
   const activeTheme = computed<LayoutThemeMeta>(() => getLayoutThemeMeta(currentThemeId.value))
 
-  const availableThemes = computed<LayoutThemeMeta[]>(() =>
-    engineThemeIds.value.map(themeId => getLayoutThemeMeta(themeId)),
-  )
+  const availableThemes = computed<LayoutThemeMeta[]>(() => {
+    const engineIds = new Set(engineThemeIds.value)
+    return layoutThemeMetas.filter((meta) => engineIds.has(meta.id))
+  })
 
   /**
    * 切换布局主题：先预热目标主题组件，再切换当前主题。
@@ -90,8 +88,7 @@ export function useLayoutTheme() {
       await preloadThemeRuntime(themeId)
       setTheme(themeId)
       switchingState.value = 'idle'
-    }
-    catch {
+    } catch {
       switchingState.value = 'error'
     }
   }
