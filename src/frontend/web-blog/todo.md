@@ -4,8 +4,8 @@
 
 ## 总进度
 
-- 总任务数：32
-- 已完成：31
+- 总任务数：37
+- 已完成：36
 - 进行中：0
 - 未开始：0
 - 暂缓：1
@@ -62,6 +62,11 @@
 - [x] 旧主题注册代码清理：删除 `contracts.ts`、`registry.ts`、`types.ts` 及三个 `theme.ts`（已无任何引用，引擎完全接管主题注册与分发）
 - [x] 组件分发迁移：StatusFooter、SidebarNav、PostCard 纳入主题契约，三个主题提供桥接组件，布局和 PostCardList 改用 `<ThemeComponent>` 渲染
 - [x] 合并主题目录消除桥接层：将 `app/themes/` 下的 ClassicLayout、DocsLayout、MinimalLayout 直接合并到 `themes/*/app/components/RootLayout.vue`，删除 `app/themes/` 目录
+- [x] 项目全面改进阶段1：修复文档不准确处、删除子包 lockfile、修复 composable 调用位置、提取重复样式、清理冗余依赖
+- [x] 项目全面改进阶段2：接入 @nuxt/eslint + Prettier + Husky + lint-staged + Vitest，创建 CI workflow
+- [x] 项目全面改进阶段3：接入 @nuxt/fonts + @nuxt/image + JSON-LD + sitemap/robots + routeRules
+- [x] 项目全面改进阶段4：创建 .env.example + Dockerfile + CSP + CI 依赖审计
+- [x] 项目全面改进阶段5：PostCardList 拆分为 composable、提炼 CommentBubble、修复 SSR 水合警告、创建 useArticleDetail composable
 
 ## 暂缓 / 阻塞
 

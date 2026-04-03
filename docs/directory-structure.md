@@ -37,17 +37,19 @@ TixXinBlog/
 
 ```
 docs/
-├── project-architecture.md    # 项目架构基线文档（统一参考）
-├── directory-structure.md     # 项目目录结构说明（本文档）
-├── theme-development-guide.md # 主题开发指南（契约体系、开发流程、注册与最佳实践）
-└── README.md                  # 文档目录说明
+├── project-architecture.md      # 项目架构基线文档（统一参考）
+├── directory-structure.md       # 项目目录结构说明（本文档）
+├── theme-development-guide.md   # 主题开发指南（契约体系、开发流程、注册与最佳实践）
+└── project-analysis-report.md   # 项目全面分析报告（维度评分与改进路线图）
 ```
 
-## src/backend/ — 后端服务
+## src/backend/ — 后端服务（规划中）
+
+后端目录尚未创建，以下为规划结构：
 
 ```
-src/backend/
-└── server-main/               # 主后端服务（NestJS，暂未开发）
+src/backend/                       # 规划中，目录尚未创建
+└── server-main/               # 主后端服务（NestJS）
 ```
 
 ## src/frontend/web-blog/ — 博客前台
@@ -255,6 +257,10 @@ app/assets/styles/
 | composables/useSidebarExitAnimation.ts | 右侧栏页面切换退出动画，导航前克隆内容播放离场动画，供各布局主题复用 |
 | composables/useReadingProgress.ts | 阅读进度 0–100，支持可选滚动根节点或文档滚动 |
 | composables/useTableOfContents.ts | 根据标题锚点 Intersection Observer 高亮当前目录项 |
+| composables/useArticleDetail.ts | 文章详情数据获取，当前使用 mock 数据，后续替换为 useAsyncData |
+| composables/usePostListPagination.ts | 文章列表分页与瀑布流懒加载逻辑，含 IntersectionObserver 管理 |
+| composables/usePostListAnimation.ts | 文章列表瀑布流模式下新卡片交错入场动画控制 |
+| composables/useRelativeDate.ts | 日期相对时间格式化工具，7 天内显示相对时间，否则显示完整日期 |
 
 ## 页面
 
@@ -273,9 +279,11 @@ app/assets/styles/
 
 ```
 .cursor/rules/
-├── main.mdc               # 项目级架构约束（全局生效）
+├── main.mdc                   # 项目级架构约束（全局生效）
+├── mcp.mdc                    # MCP 服务器使用规则（全局生效）
+├── git-commit-message.mdc     # Git 提交消息规范（全局生效）
 └── frontend/
-    └── nuxt4.mdc          # Nuxt 4 前端规范（src/frontend/** 生效）
+    └── nuxt4.mdc              # Nuxt 4 前端规范（src/frontend/** 生效）
 ```
 
 ## src/frontend/web-admin/ — 后台管理前端
