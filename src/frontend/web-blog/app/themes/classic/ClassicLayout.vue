@@ -10,12 +10,12 @@
     <div class="blog-grid">
       <aside class="aside-left anim-fade-in-up anim-delay-1">
         <CommonCustomScrollbar :show-back-to-top="false" class="aside-left__scroll" viewport-class="aside-left__viewport">
-          <LayoutSidebarNav>
+          <ThemeComponent name="SidebarNav">
             <template #footer>
               <BlogThemeSwitcher />
               <BlogAppearanceEntry />
             </template>
-          </LayoutSidebarNav>
+          </ThemeComponent>
           <BlogSubscribeCard />
         </CommonCustomScrollbar>
       </aside>
@@ -37,7 +37,7 @@
     </div>
 
     <div class="footer-row">
-      <LayoutStatusFooter class="anim-fade-in-up anim-delay-5" />
+      <ThemeComponent name="StatusFooter" class="anim-fade-in-up anim-delay-5" />
     </div>
   </div>
 </template>

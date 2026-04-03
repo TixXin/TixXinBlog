@@ -23,9 +23,10 @@
       :css="false"
       @enter="onItemEnter"
     >
-      <BlogPostCard
+      <ThemeComponent
         v-for="(post, index) in displayedPosts"
         :key="post.id"
+        name="PostCard"
         :post="post"
         :data-index="index"
       />
@@ -34,9 +35,10 @@
     <!-- 分页模式：Transition 实现翻页淡入淡出 -->
     <Transition v-else name="page-fade" mode="out-in">
       <div :key="paginationKey" class="post-list">
-        <BlogPostCard
+        <ThemeComponent
           v-for="post in displayedPosts"
           :key="post.id"
+          name="PostCard"
           :post="post"
         />
       </div>

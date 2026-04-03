@@ -42,7 +42,7 @@
     <div id="right-sidebar-target" class="minimal-sidebar-sink" />
 
     <footer class="minimal-footer">
-      <LayoutStatusFooter />
+      <ThemeComponent name="StatusFooter" />
     </footer>
   </div>
 </template>

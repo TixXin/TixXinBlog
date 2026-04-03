@@ -45,12 +45,15 @@ export interface ThemeComponentContracts {
 export const themeContractNames = ['RootLayout', 'ThemeAccessory'] as const
 ```
 
-这意味着当前每个主题至少需要提供：
+这意味着当前每个主题可以提供以下组件：
 
-- `RootLayout.vue`：主题壳层，通过 `<slot />` 接收页面内容，并提供 `#right-sidebar-target`
-- `ThemeAccessory.vue`：主题额外挂件，例如 classic 的移动端浮动设置按钮
+- `RootLayout.vue`（必需）：主题壳层，通过 `<slot />` 接收页面内容，并提供 `#right-sidebar-target`
+- `ThemeAccessory.vue`（必需）：主题额外挂件，例如 classic 的移动端浮动设置按钮
+- `StatusFooter.vue`（推荐）：页脚状态栏，各主题布局通过 `<ThemeComponent name="StatusFooter" />` 渲染
+- `SidebarNav.vue`（可选）：侧边导航栏，仅提供左侧栏的主题需要实现
+- `PostCard.vue`（推荐）：文章卡片，文章列表通过 `<ThemeComponent name="PostCard" />` 渲染
 
-后续如果要把 `PostCard`、`SidebarNav`、`StatusFooter` 等也纳入主题分发，应先扩展这里的契约，再为每个主题补齐对应组件文件。
+当前三套主题的分发组件均桥接到 `app/components/` 下的共享实现。如需自定义某个主题的组件外观，直接替换该主题目录下的对应文件即可。
 
 ## 创建一个新主题
 

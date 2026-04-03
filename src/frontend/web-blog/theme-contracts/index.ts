@@ -8,8 +8,17 @@
 export interface ThemeComponentContracts {
   RootLayout: Record<string, never>
   ThemeAccessory: Record<string, never>
+  StatusFooter: Record<string, never>
+  SidebarNav: Record<string, never>
+  PostCard: Record<string, never>
 }
 
-export const themeContractNames = ['RootLayout', 'ThemeAccessory'] as const
+export const themeContractNames = [
+  'RootLayout',
+  'ThemeAccessory',
+  'StatusFooter',
+  'SidebarNav',
+  'PostCard',
+] as const
 
 export type ThemeContractName = typeof themeContractNames[number]
