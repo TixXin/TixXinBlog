@@ -71,7 +71,7 @@
       </div>
 
       <footer class="docs-footer">
-        <LayoutStatusFooter />
+        <ThemeComponent name="StatusFooter" />
       </footer>
     </CommonCustomScrollbar>
   </div>
@@ -116,7 +116,7 @@ function onProgressClick() {
   scrollToTop()
 }
 
-watch(showProgress, (val) => {
+watch(showProgress, (val: any) => {
   if (!val) progressClicked.value = false
 })
 

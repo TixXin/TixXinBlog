@@ -4,8 +4,8 @@
 
 ## 总进度
 
-- 总任务数：30
-- 已完成：29
+- 总任务数：31
+- 已完成：30
 - 进行中：0
 - 未开始：0
 - 暂缓：1
@@ -60,6 +60,7 @@
 - [x] 升级至 `nuxt-theme-engine@0.0.3`：移除本地 `ThemeComponent.vue` 覆盖（防闪屏已内置于引擎），修复 classic 主题 `theme.json` 位置错误导致引擎未发现该主题
 - [x] 主内容交付方式改为 slot 透传：将 `NuxtPage` 从 `Teleport` 改为 `ThemeComponent` 的 slot 子节点，由布局组件通过 `<slot />` 接收，解决引擎异步组件导致 Teleport 目标不就绪的问题
 - [x] 旧主题注册代码清理：删除 `contracts.ts`、`registry.ts`、`types.ts` 及三个 `theme.ts`（已无任何引用，引擎完全接管主题注册与分发）
+- [x] 组件分发迁移：StatusFooter、SidebarNav、PostCard 纳入主题契约，三个主题提供桥接组件，布局和 PostCardList 改用 `<ThemeComponent>` 渲染
 
 ## 暂缓 / 阻塞
 
