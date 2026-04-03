@@ -1,6 +1,6 @@
 {
-  "src/**/*.{vue,ts,js,mjs}": [
-    "eslint --fix"
+  "src/frontend/web-blog/**/*.{vue,ts,js,mjs}": [
+    "pnpm --filter web-blog exec eslint --fix"
   ],
   "src/**/*.{vue,ts,js,scss,json,md}": [
     "prettier --write"
