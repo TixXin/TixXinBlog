@@ -13,6 +13,7 @@
   "dependencies": {
     "@nuxt/icon": "^2.2.1",
     "@nuxtjs/color-mode": "^4.0.0",
+    "@tixxin/nuxt-theme-engine": "^0.0.3",
     "nuxt": "^4.4.2",
     "vue": "^3.5.30",
     "vue-router": "^5.0.3"

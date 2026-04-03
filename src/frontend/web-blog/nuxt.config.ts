@@ -5,13 +5,16 @@
  * @since 2025-03-17
  */
 
-export default defineNuxtConfig({
+export default {
   compatibilityDate: '2025-07-15',
   devtools: { enabled: true },
   devServer: {
     port: 3456,
   },
-  modules: ['@nuxtjs/color-mode', '@nuxt/icon'],
+  alias: {
+    '#theme-contracts': './theme-contracts/index.ts',
+  },
+  modules: ['@nuxtjs/color-mode', '@nuxt/icon', '@tixxin/nuxt-theme-engine'],
   app: {
     head: {
       charset: 'utf-8',
@@ -40,6 +43,14 @@ export default defineNuxtConfig({
     preference: 'dark',
     fallback: 'dark',
   },
+  themeEngine: {
+    themesDir: './themes',
+    defaultTheme: 'classic',
+    cookieKey: 'tixxin-blog-layout-theme',
+    lazyLoadThemes: true,
+    contractsEntry: '#theme-contracts',
+    contractsImportId: '#theme-contracts',
+  },
   css: ['~/assets/styles/main.scss'],
   vite: {
     css: {
@@ -50,4 +61,4 @@ export default defineNuxtConfig({
       },
     },
   },
-})
+}
