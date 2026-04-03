@@ -1,0 +1,9 @@
+node_modules
+.nuxt
+.output
+.git
+*.md
+docs
+.cursor
+.husky
+.github
