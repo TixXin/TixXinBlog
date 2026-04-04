@@ -261,7 +261,7 @@ onBeforeUnmount(() => {
   min-width: 0;
   overflow-x: auto;
 
-  @media (min-width: $breakpoint-lg) {
+  @media (min-width: $breakpoint-md) {
     display: flex;
   }
 }
@@ -497,12 +497,14 @@ onBeforeUnmount(() => {
   max-width: $container-max-width;
   margin: 0 auto;
   padding: 1.5rem 1rem;
+  padding-bottom: calc(4rem + env(safe-area-inset-bottom));
   display: flex;
   gap: $grid-gap;
   min-height: calc(100vh - 3.5rem - 4rem);
 
   @media (min-width: $breakpoint-md) {
     padding: 2rem;
+    padding-bottom: 2rem;
   }
 }
 
