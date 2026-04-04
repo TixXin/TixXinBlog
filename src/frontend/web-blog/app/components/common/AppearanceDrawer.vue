@@ -42,7 +42,7 @@
                   布局主题
                   <a
                     ref="engineBadgeRef"
-                    href="https://github.com/AYumeRNA/nuxt-theme-engine"
+                    href="https://github.com/TixXin/nuxt-theme-engine"
                     target="_blank"
                     rel="noopener noreferrer"
                     class="appearance-engine-badge"
