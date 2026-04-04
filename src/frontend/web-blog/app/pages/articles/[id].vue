@@ -48,7 +48,7 @@
     <ClientOnly>
       <Teleport to="#right-sidebar-target">
         <SidebarRightSidebar>
-          <ArticleTableOfContents :items="tocItems" :active-id="activeId" />
+          <ArticleTableOfContents :items="tocItems" :active-id="activeId" :progress="progress" />
           <ArticleRelatedPosts :posts="relatedPosts" />
           <AboutDonateCard />
         </SidebarRightSidebar>
@@ -63,16 +63,10 @@ const coverError = ref(false)
 const scrollbarRef = ref<{ viewport: HTMLElement | null } | null>(null)
 const scrollRoot = computed(() => scrollbarRef.value?.viewport ?? null)
 
-const {
-  article,
-  comments,
-  relatedPosts,
-  tocItems,
-  articleExcerpt,
-} = useArticleDetail(route.params.id as string)
+const { article, comments, relatedPosts, tocItems, articleExcerpt } = useArticleDetail(route.params.id as string)
 
 const { progress } = useReadingProgress(scrollRoot)
-const { activeId } = useTableOfContents(tocItems.value)
+const { activeId } = useTableOfContents(() => tocItems.value)
 
 function formatCount(n: number) {
   return n.toLocaleString('zh-CN')
@@ -94,23 +88,25 @@ useHead({
   script: [
     {
       type: 'application/ld+json',
-      innerHTML: computed(() => JSON.stringify({
-        '@context': 'https://schema.org',
-        '@type': 'Article',
-        'headline': article.value.title,
-        'image': article.value.cover,
-        'datePublished': article.value.date,
-        'author': {
-          '@type': 'Person',
-          'name': 'TixXin',
-          'url': 'https://tixxin.dev',
-        },
-        'publisher': {
-          '@type': 'Organization',
-          'name': 'TixXin Blog',
-        },
-        'description': articleExcerpt.value,
-      })),
+      innerHTML: computed(() =>
+        JSON.stringify({
+          '@context': 'https://schema.org',
+          '@type': 'Article',
+          headline: article.value.title,
+          image: article.value.cover,
+          datePublished: article.value.date,
+          author: {
+            '@type': 'Person',
+            name: 'TixXin',
+            url: 'https://tixxin.dev',
+          },
+          publisher: {
+            '@type': 'Organization',
+            name: 'TixXin Blog',
+          },
+          description: articleExcerpt.value,
+        }),
+      ),
     },
   ],
 })

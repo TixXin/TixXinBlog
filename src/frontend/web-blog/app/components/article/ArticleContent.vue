@@ -8,25 +8,18 @@
 <template>
   <article class="article-content">
     <template v-for="(section, index) in sections" :key="index">
-      <component :is="headingTag(section)" v-if="section.type === 'heading'" :id="section.id" class="article-content__heading">
+      <component
+        :is="headingTag(section)"
+        v-if="section.type === 'heading'"
+        :id="section.id"
+        class="article-content__heading"
+      >
         {{ section.text }}
       </component>
       <p v-else-if="section.type === 'paragraph'" class="article-content__paragraph">
         {{ section.text }}
       </p>
-      <div v-else-if="section.type === 'code'" class="article-content__code-wrap">
-        <CommonTooltip content="复制代码" placement="top">
-          <button
-            type="button"
-            class="article-content__copy"
-            aria-label="复制代码"
-            @click="copyCode(section.text ?? '')"
-          >
-            <Icon name="lucide:copy" size="16" />
-          </button>
-        </CommonTooltip>
-        <pre class="article-content__pre"><code>{{ section.text }}</code></pre>
-      </div>
+      <CommonCodeBlock v-else-if="section.type === 'code'" :code="section.text ?? ''" :language="section.language" />
       <blockquote v-else-if="section.type === 'quote'" class="article-content__quote">
         <p>{{ section.text }}</p>
       </blockquote>
@@ -49,14 +42,6 @@ defineProps<{
 
 function headingTag(section: ArticleSection): 'h2' | 'h3' {
   return section.level === 3 ? 'h3' : 'h2'
-}
-
-async function copyCode(text: string) {
-  try {
-    await navigator.clipboard.writeText(text)
-  } catch {
-    /* 剪贴板不可用时不打断阅读 */
-  }
 }
 </script>
 
@@ -95,54 +80,6 @@ async function copyCode(text: string) {
   line-height: 1.75;
   color: var(--text-muted);
   margin: 0 0 1rem;
-}
-
-.article-content__code-wrap {
-  position: relative;
-  margin: 0 0 1.5rem;
-  border-radius: $radius-md;
-  border: 1px solid var(--border);
-  background: var(--text-main);
-  color: #f1f5f9;
-
-  .dark & {
-    background: #0f172a;
-    border-color: rgba(51, 65, 85, 0.5);
-  }
-}
-
-.article-content__copy {
-  position: absolute;
-  top: 0.75rem;
-  right: 0.75rem;
-  z-index: 2;
-  padding: 0.5rem;
-  border: none;
-  border-radius: $radius-sm;
-  background: rgba(255, 255, 255, 0.1);
-  color: var(--text-faint);
-  cursor: pointer;
-  opacity: 0;
-  transition: $transition-fast;
-
-  .article-content__code-wrap:hover &,
-  &:focus-visible {
-    opacity: 1;
-  }
-
-  &:hover {
-    background: rgba(255, 255, 255, 0.18);
-    color: var(--surface-1);
-  }
-}
-
-.article-content__pre {
-  margin: 0;
-  padding: 1.25rem;
-  overflow-x: auto;
-  font-size: 0.8125rem;
-  line-height: 1.65;
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
 }
 
 .article-content__quote {
