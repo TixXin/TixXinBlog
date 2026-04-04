@@ -12,6 +12,7 @@
     "generate": "pnpm --filter web-blog generate",
     "preview": "pnpm --filter web-blog preview",
     "start": "pnpm --filter web-blog start",
+    "deploy": "pnpm install && pnpm start",
     "clear": "node scripts/clear.js",
     "lint": "pnpm --filter web-blog eslint .",
     "lint:fix": "pnpm --filter web-blog eslint . --fix",
