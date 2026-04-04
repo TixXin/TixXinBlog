@@ -5,22 +5,26 @@
  * @since 2026-04-03
  */
 
-import {
-  mockArticleDetail,
-  mockComments,
-  mockRelatedPosts,
-  mockTocItems,
-} from '~/features/post/mock'
-import type {
-  ArticleDetail,
-  CommentItem,
-  RelatedPost,
-  TocItem,
-} from '~/features/post/types'
+import { mockArticleDetail, mockComments, mockRelatedPosts, mockTocItems, mockPosts } from '~/features/post/mock'
+import type { ArticleDetail, CommentItem, RelatedPost, TocItem } from '~/features/post/types'
 
-export function useArticleDetail(_id: string) {
+export function useArticleDetail(id: string) {
   // TODO: 后续替换为 useAsyncData(`article-${id}`, () => $fetch(`/api/articles/${id}`))
-  const article = computed<ArticleDetail>(() => mockArticleDetail)
+  const article = computed<ArticleDetail>(() => {
+    const post = mockPosts.find((p) => p.id.toString() === id)
+    if (post) {
+      return {
+        ...mockArticleDetail,
+        id: post.id.toString(),
+        title: post.title,
+        cover: post.cover || mockArticleDetail.cover,
+        date: post.date,
+        category: post.category,
+      }
+    }
+    return mockArticleDetail
+  })
+
   const comments = ref<CommentItem[]>(mockComments)
   const relatedPosts = ref<RelatedPost[]>(mockRelatedPosts)
   const tocItems = ref<TocItem[]>(mockTocItems)
