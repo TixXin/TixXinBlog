@@ -7,30 +7,16 @@
 
 <template>
   <div class="main-inner">
-    <CommonPageHeader
-      title="画廊"
-      subtitle="用镜头记录生活的美好瞬间"
-      icon="lucide:image"
-    >
+    <CommonPageHeader title="画廊" subtitle="用镜头记录生活的美好瞬间" icon="lucide:image">
       <template #action>
-        <CommonSearchBox placeholder="搜索照片..." />
+        <CommonSearchBox placeholder="搜索照片..." disabled />
       </template>
     </CommonPageHeader>
     <CommonCustomScrollbar class="gallery-body" viewport-class="gallery-viewport" show-back-to-top>
-      <GalleryFilter
-        v-model="activeFilter"
-        :categories="categories"
-      />
-      <GalleryGrid
-        :photos="filteredPhotos"
-        @select="openLightBox"
-      />
+      <GalleryFilter v-model="activeFilter" :categories="categories" />
+      <GalleryGrid :photos="filteredPhotos" @select="openLightBox" />
     </CommonCustomScrollbar>
-    <GalleryLightBox
-      :photo="selectedPhoto"
-      :visible="lightBoxVisible"
-      @close="closeLightBox"
-    />
+    <GalleryLightBox :photo="selectedPhoto" :visible="lightBoxVisible" @close="closeLightBox" />
     <ClientOnly>
       <Teleport to="#right-sidebar-target">
         <SidebarRightSidebar>
@@ -44,12 +30,7 @@
 
 <script setup lang="ts">
 import type { PhotoItem } from '~/features/gallery/types'
-import {
-  mockGalleryCategories,
-  mockGalleryStats,
-  mockGearList,
-  mockPhotos,
-} from '~/features/gallery/mock'
+import { mockGalleryCategories, mockGalleryStats, mockGearList, mockPhotos } from '~/features/gallery/mock'
 
 useSeoMeta({
   title: '画廊',
@@ -71,7 +52,7 @@ const filteredPhotos = computed(() => {
   if (activeFilter.value === 'all') {
     return photos
   }
-  return photos.filter(p => p.category === activeFilter.value)
+  return photos.filter((p) => p.category === activeFilter.value)
 })
 
 function openLightBox(photo: PhotoItem) {

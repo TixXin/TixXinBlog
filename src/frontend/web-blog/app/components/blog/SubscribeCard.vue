@@ -16,19 +16,31 @@
         订阅更新
       </h3>
       <p class="subscribe-card__desc">获取最新文章和技术分享，不会发送垃圾邮件。</p>
-      <form class="subscribe-card__form" @submit.prevent>
+      <form class="subscribe-card__form" @submit.prevent="handleSubscribe">
         <input
+          v-model="email"
           type="email"
           class="input-field subscribe-card__input"
           placeholder="输入您的邮箱..."
-        />
-        <button type="submit" class="btn-primary subscribe-card__btn">
-          立即订阅
-        </button>
+          required
+        >
+        <button type="submit" class="btn-primary subscribe-card__btn">立即订阅</button>
       </form>
     </div>
   </section>
 </template>
+
+<script setup lang="ts">
+const email = ref('')
+const { info } = useToast()
+
+function handleSubscribe() {
+  if (email.value) {
+    info('邮件订阅功能开发中，敬请期待！')
+    email.value = ''
+  }
+}
+</script>
 
 <style lang="scss" scoped>
 .subscribe-card {

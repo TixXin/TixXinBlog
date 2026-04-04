@@ -7,13 +7,9 @@
 
 <template>
   <div class="main-inner">
-    <CommonPageHeader
-      title="项目展示"
-      subtitle="这里是我参与或独立开发的开源项目"
-      icon="lucide:layers"
-    >
+    <CommonPageHeader title="项目展示" subtitle="这里是我参与或独立开发的开源项目" icon="lucide:layers">
       <template #action>
-        <CommonSearchBox placeholder="搜索项目..." />
+        <CommonSearchBox placeholder="搜索项目..." disabled />
       </template>
     </CommonPageHeader>
     <CommonCustomScrollbar class="projects-body" viewport-class="projects-viewport" show-back-to-top>

@@ -7,13 +7,9 @@
 
 <template>
   <div class="main-inner">
-    <CommonPageHeader
-      title="友情链接"
-      subtitle="互联网上志同道合的伙伴们"
-      icon="lucide:link"
-    >
+    <CommonPageHeader title="友情链接" subtitle="互联网上志同道合的伙伴们" icon="lucide:link">
       <template #action>
-        <CommonSearchBox placeholder="搜索友链..." />
+        <CommonSearchBox placeholder="搜索友链..." disabled />
       </template>
     </CommonPageHeader>
     <CommonCustomScrollbar class="links-body" viewport-class="links-viewport" show-back-to-top>

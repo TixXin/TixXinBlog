@@ -29,7 +29,7 @@
             <Icon name="lucide:archive" size="18" class="articles-title__icon" />
             文章归档
           </h2>
-          <p class="articles-title__sub">共 86 篇文章，持续记录中...</p>
+          <p class="articles-title__sub">共 {{ posts.length }} 篇文章，持续记录中...</p>
         </div>
       </Transition>
 
@@ -37,6 +37,7 @@
       <div class="articles-actions">
         <CommonSearchBox
           :placeholder="viewMode === 'list' ? '搜索站内文章、标签...' : '搜索文章标题、内容...'"
+          disabled
         />
         <div v-if="viewMode === 'list'" class="display-mode-toggle">
           <CommonTooltip content="瀑布流">
@@ -128,11 +129,7 @@
 <script setup lang="ts">
 import { mockPosts, mockPostTabs } from '~/features/post/mock'
 import { mockTags, mockCategories } from '~/features/stats/mock'
-import {
-  mockArchiveStats,
-  mockArchiveYears,
-  mockCategoryDistribution,
-} from '~/features/article/mock'
+import { mockArchiveStats, mockArchiveYears, mockCategoryDistribution } from '~/features/article/mock'
 
 useSeoMeta({
   title: '文章',
@@ -257,5 +254,4 @@ const categoryDistribution = mockCategoryDistribution
   flex-direction: column;
   gap: 1.25rem;
 }
-
 </style>

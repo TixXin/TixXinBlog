@@ -7,4 +7,11 @@
 
 <template>
   <NuxtLayout />
+  <ClientOnly>
+    <CommonToastContainer />
+  </ClientOnly>
 </template>
+
+<script setup lang="ts">
+useKeyboardShortcuts()
+</script>

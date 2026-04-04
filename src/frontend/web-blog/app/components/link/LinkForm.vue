@@ -14,38 +14,22 @@
     <p class="link-form__desc">
       欢迎互换友链！请填写以下信息，我会尽快审核添加。要求：网站正常运行、内容健康、有定期更新。
     </p>
-    <form class="link-form__fields" @submit.prevent>
+    <form class="link-form__fields" @submit.prevent="handleSubmit">
       <div class="link-form__field">
         <label class="link-form__label">站点名称</label>
-        <input
-          type="text"
-          class="input-field"
-          placeholder="例如：TixXin Blog"
-        />
+        <input type="text" class="input-field" placeholder="例如：TixXin Blog" >
       </div>
       <div class="link-form__field">
         <label class="link-form__label">站点地址</label>
-        <input
-          type="url"
-          class="input-field"
-          placeholder="https://example.com"
-        />
+        <input type="url" class="input-field" placeholder="https://example.com" >
       </div>
       <div class="link-form__field">
         <label class="link-form__label">头像地址</label>
-        <input
-          type="url"
-          class="input-field"
-          placeholder="https://example.com/avatar.png"
-        />
+        <input type="url" class="input-field" placeholder="https://example.com/avatar.png" >
       </div>
       <div class="link-form__field">
         <label class="link-form__label">一句话描述</label>
-        <input
-          type="text"
-          class="input-field"
-          placeholder="简要介绍你的站点"
-        />
+        <input type="text" class="input-field" placeholder="简要介绍你的站点" >
       </div>
       <div class="link-form__submit">
         <button type="submit" class="btn-primary">提交申请</button>
@@ -53,6 +37,14 @@
     </form>
   </div>
 </template>
+
+<script setup lang="ts">
+const { info } = useToast()
+
+function handleSubmit() {
+  info('友链申请功能开发中，敬请期待！')
+}
+</script>
 
 <style lang="scss" scoped>
 .link-form {

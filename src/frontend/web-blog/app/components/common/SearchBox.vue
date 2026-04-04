@@ -6,26 +6,32 @@
 -->
 
 <template>
-  <div class="search-box">
+  <div class="search-box" :class="{ 'is-disabled': disabled }">
     <Icon name="lucide:search" size="14" class="search-box__icon" />
     <input
       type="text"
-      :placeholder="placeholder"
+      :placeholder="disabled ? '搜索功能即将上线' : placeholder"
       :value="modelValue"
+      :disabled="disabled"
       class="search-box__input"
       @input="$emit('update:modelValue', ($event.target as HTMLInputElement).value)"
-    />
+    >
   </div>
 </template>
 
 <script setup lang="ts">
-withDefaults(defineProps<{
-  modelValue?: string
-  placeholder?: string
-}>(), {
-  modelValue: '',
-  placeholder: '搜索...',
-})
+withDefaults(
+  defineProps<{
+    modelValue?: string
+    placeholder?: string
+    disabled?: boolean
+  }>(),
+  {
+    modelValue: '',
+    placeholder: '搜索...',
+    disabled: false,
+  },
+)
 
 defineEmits<{
   'update:modelValue': [value: string]
@@ -75,6 +81,16 @@ defineEmits<{
       color: var(--text-muted);
     }
   }
+
+  &:disabled {
+    cursor: not-allowed;
+    opacity: 0.7;
+    background: var(--surface-3);
+  }
+}
+
+.search-box.is-disabled {
+  cursor: not-allowed;
 }
 
 .search-box:focus-within .search-box__icon {

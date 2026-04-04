@@ -7,36 +7,15 @@
 
 <template>
   <div class="card message-input">
-    <div
-      class="message-input__toolbar"
-      role="toolbar"
-      aria-label="格式工具栏（占位）"
-    >
-      <CommonTooltip
-        v-for="btn in toolbarButtons"
-        :key="btn.icon"
-        :content="btn.title"
-      >
-        <button
-          type="button"
-          class="message-input__tool"
-          tabindex="-1"
-        >
-          <Icon
-            :name="btn.icon"
-            size="16"
-          />
+    <div class="message-input__toolbar" role="toolbar" aria-label="格式工具栏（占位）">
+      <CommonTooltip v-for="btn in toolbarButtons" :key="btn.icon" :content="btn.title">
+        <button type="button" class="message-input__tool" tabindex="-1">
+          <Icon :name="btn.icon" size="16" />
         </button>
       </CommonTooltip>
       <div class="message-input__toolbar-spacer" />
-      <button
-        type="button"
-        class="message-input__send"
-      >
-        <Icon
-          name="lucide:send"
-          size="14"
-        />
+      <button type="button" class="message-input__send" @click="handleAction">
+        <Icon name="lucide:send" size="14" />
         发送
       </button>
     </div>
@@ -54,6 +33,12 @@
 </template>
 
 <script setup lang="ts">
+const { info } = useToast()
+
+function handleAction() {
+  info('留言功能开发中，敬请期待！')
+}
+
 const toolbarButtons = [
   { icon: 'lucide:bold', title: '加粗' },
   { icon: 'lucide:italic', title: '斜体' },
@@ -100,7 +85,9 @@ const toolbarButtons = [
   background: transparent;
   color: var(--text-soft);
   cursor: default;
-  transition: background 0.15s, color 0.15s;
+  transition:
+    background 0.15s,
+    color 0.15s;
 
   &:hover {
     background: var(--surface-2);
