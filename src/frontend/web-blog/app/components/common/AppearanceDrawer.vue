@@ -147,7 +147,7 @@
 </template>
 
 <script setup lang="ts">
-import { COLOR_MODE_LABELS } from '~/features/theme/types'
+import { COLOR_MODE_LABELS } from '~/features/appearance/types'
 
 const {
   isDrawerOpen,

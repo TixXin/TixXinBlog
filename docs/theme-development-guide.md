@@ -6,13 +6,15 @@
 ## 当前架构
 
 ```text
-theme-contracts/index.ts        # 本地契约入口
-themes/<theme-name>/theme.json  # 主题元数据
+theme-contracts/index.ts                # 本地契约入口
+themes/<theme-name>/theme.json          # 主题元数据（name/label/description + meta）
+themes/<theme-name>/theme.config.ts     # 宿主侧配置（capabilities、version、icon 回退值）
 themes/<theme-name>/app/components/RootLayout.vue
 themes/<theme-name>/app/components/ThemeAccessory.vue
-app/layouts/default.vue         # 稳定持有 NuxtPage，作为 ThemeComponent slot 透传给布局
-app/composables/useLayoutTheme.ts
-app/features/theme/layoutThemes.ts
+app/layouts/default.vue                 # 稳定持有 NuxtPage，作为 ThemeComponent slot 透传给布局
+app/composables/useLayoutTheme.ts       # 合并引擎定义 + 宿主配置，提供统一主题 API
+app/features/appearance/themeRegistry.ts # 主题注册表：导入各 theme.config.ts，声明类型与常量
+app/features/appearance/types.ts        # 纯外观偏好常量（颜色模式、动画预设）
 ```
 
 职责边界如下：
@@ -20,7 +22,8 @@ app/features/theme/layoutThemes.ts
 - `nuxt-theme-engine`（>= 0.0.3）负责主题扫描、主题切换、组件分发、类型生成，以及切换防闪屏（旧树保留直到新组件就绪）
 - `theme-contracts/index.ts` 负责声明当前博客允许主题实现哪些逻辑组件
 - `themes/` 目录负责放置引擎真正识别的主题定义
-- `app/features/theme/layoutThemes.ts` 负责宿主博客自己的主题元信息与设置面板能力声明
+- `themes/<theme>/theme.config.ts` 声明宿主侧能力（leftSidebar、rightSidebar、customizer 等），跟随主题走
+- `app/features/appearance/themeRegistry.ts` 导入各主题的 `theme.config.ts` 并提供统一的注册查询 API
 - 所有布局实现直接位于 `themes/<theme>/app/components/RootLayout.vue` 中，不存在额外的桥接层
 
 ## 运行流程
@@ -76,9 +79,15 @@ themes/magazine/
 {
   "name": "magazine",
   "label": "杂志风格",
-  "description": "宽幅图文混排首页"
+  "description": "宽幅图文混排首页",
+  "meta": {
+    "version": "1.0.0",
+    "icon": "lucide:newspaper"
+  }
 }
 ```
+
+`meta` 字段为引擎 v0.0.4+ 支持的扩展元数据，可放入 `version`、`icon` 等任意键值对。引擎会将 `meta` 原样透传到运行时。
 
 如需继承父主题，可增加 `extends`：
 
@@ -87,11 +96,48 @@ themes/magazine/
   "name": "magazine",
   "extends": "nexus",
   "label": "杂志风格",
-  "description": "基于 Nexus 的杂志化变体"
+  "description": "基于 Nexus 的杂志化变体",
+  "meta": {
+    "version": "1.0.0",
+    "icon": "lucide:newspaper"
+  }
 }
 ```
 
-### 3. 编写 `RootLayout.vue`
+### 3. 编写 `theme.config.ts`
+
+在主题目录根部创建 `theme.config.ts`，声明宿主侧能力：
+
+```typescript
+export default {
+  version: '1.0.0',
+  icon: 'lucide:newspaper',
+  capabilities: {
+    leftSidebar: false,
+    rightSidebar: true,
+    customizer: ['colorMode', 'contentTransition'] as const,
+  },
+}
+```
+
+`version` 和 `icon` 在此处作为回退值，优先从引擎的 `theme.json` meta 获取。`capabilities` 声明该主题支持的侧栏和设置面板定制项。
+
+### 4. 在 `themeRegistry.ts` 中注册
+
+在 `app/features/appearance/themeRegistry.ts` 中添加导入：
+
+```typescript
+import magazineConfig from '@@/themes/magazine/theme.config'
+
+export const themeHostConfigs: Record<string, ThemeHostConfig> = {
+  nexus: nexusConfig,
+  aurora: auroraConfig,
+  dock: dockConfig,
+  magazine: magazineConfig,  // 新增
+}
+```
+
+### 5. 编写 `RootLayout.vue`
 
 新的 `RootLayout.vue` 不再直接渲染 `NuxtPage`，而是通过 `<slot />` 接收宿主传入的页面内容：
 
@@ -113,7 +159,7 @@ themes/magazine/
 </template>
 ```
 
-### 4. 编写 `ThemeAccessory.vue`
+### 6. 编写 `ThemeAccessory.vue`
 
 如果主题有额外悬浮入口，可以写在这里；如果没有，可以提供一个空占位组件。
 
@@ -128,23 +174,21 @@ themes/magazine/
 
 ## 宿主元信息同步
 
-仅把主题文件放进 `themes/` 还不够。为了让博客设置面板正常显示图标、版本和能力说明，还需要同步更新：
+仅把主题文件放进 `themes/` 还不够。为了让博客设置面板正常显示图标、版本和能力说明，还需要：
 
-- `app/features/theme/layoutThemes.ts`
+1. **`theme.json`** 中声明 `meta.version` 和 `meta.icon`（引擎透传到运行时）
+2. **`theme.config.ts`** 中声明 `capabilities` 和 `version`/`icon` 回退值
+3. **`themeRegistry.ts`** 中添加一行导入
 
-这里维护的是宿主层数据，例如：
+数据单一来源：
 
-- 主题显示名
-- 主题图标
-- 版本号
-- `leftSidebar` / `rightSidebar`
-- 该主题支持哪些自定义项
-
-如果不更新这个文件，主题引擎可以识别主题，但博客自己的设置面板无法完整展示它。
+- `name` / `label` / `description` / `version` / `icon` → 唯一定义在 `theme.json` 中（通过 meta 字段）
+- `capabilities` → 唯一定义在 `theme.config.ts` 中
+- 宿主的 `themeRegistry.ts` 只做导入和查询，不重复声明任何主题元信息
 
 ## 当前注意事项
 
-- 新增主题时，优先修改 `themes/` 与 `app/features/theme/layoutThemes.ts`
+- 新增主题时，创建 `theme.json` + `theme.config.ts` + 组件，然后在 `themeRegistry.ts` 加一行 import
 - 当前博客已使用 `RootLayout` 与 `ThemeAccessory` 两个契约组件
 - 主题主内容通过 `<slot />` 承接宿主传入的 `NuxtPage`，不再使用 Teleport 或直接渲染 NuxtPage
 

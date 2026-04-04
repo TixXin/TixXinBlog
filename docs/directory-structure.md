@@ -84,16 +84,16 @@ src/frontend/web-blog/
 │   │   ├── project/           # 项目展示模块
 │   │   ├── site/              # 站点模块
 │   │   ├── stats/             # 统计模块
-│   │   └── theme/             # 主题与外观模块
+│   │   └── appearance/        # 外观设置模块（主题注册表 + UI 偏好常量）
 │   ├── layouts/               # 页面布局（default.vue 将 NuxtPage 作为 slot 传入主题布局）
 │   └── pages/                 # 文件系统路由页面
 │       └── articles/          # 文章子路由
 ├── public/                    # 公共静态资源（不经编译）
 ├── theme-contracts/           # 本地主题契约入口（RootLayout、ThemeAccessory、StatusFooter、SidebarNav、PostCard）
 ├── themes/                    # 主题引擎主题目录（theme.json + app/components，布局实现直接在 RootLayout.vue 中）
-│   ├── nexus/                 # Nexus 三栏主题（RootLayout 含完整布局、ThemeAccessory、StatusFooter、SidebarNav、PostCard）
-│   ├── aurora/                # Aurora 双栏主题（RootLayout 含 Hero 区域 + 毛玻璃顶栏、ThemeAccessory、StatusFooter、PostCard）
-│   └── dock/                  # Dock 浮岛主题（RootLayout 含底部浮岛导航、ThemeAccessory、StatusFooter、PostCard）
+│   ├── nexus/                 # Nexus 三栏主题（theme.json + theme.config.ts + RootLayout、ThemeAccessory、StatusFooter、SidebarNav、PostCard）
+│   ├── aurora/                # Aurora 双栏主题（theme.json + theme.config.ts + RootLayout、ThemeAccessory、StatusFooter、PostCard）
+│   └── dock/                  # Dock 浮岛主题（theme.json + theme.config.ts + RootLayout、ThemeAccessory、StatusFooter、PostCard）
 ├── nuxt.config.ts             # Nuxt 配置文件
 ├── package.json               # 依赖与脚本
 ├── todo.md                    # web-blog 开发待办文档，维护当前任务清单与总进度
@@ -243,7 +243,7 @@ app/assets/styles/
 | 项目展示 | `features/project/` | `mockProjects`、`mockProjectStats`、`mockTechStack` 及 `ProjectItem`、`ProjectStats`、`TechStackItem`、`ProjectTag`、`ProjectLink` |
 | 站点 | `features/site/` | `mockFooterLinks`、`mockPoweredBy`、`mockSiteStatus`、`FooterLink`、`PoweredByItem`、`SiteStatus` |
 | 统计 | `features/stats/` | `mockSiteStats`、`mockTags`、`mockCategories`、`SiteStats`、`TagItem`、`CategoryItem` |
-| 主题与外观 | `features/theme/` | `COLOR_MODE_OPTIONS`、`CONTENT_TRANSITION_PRESETS`、`SIDEBAR_ANIMATION_PRESETS`、`LAYOUT_THEME_PRESETS` 及对应类型 |
+| 外观设置 | `features/appearance/` | `themeRegistry.ts`（主题注册表：ThemeHostConfig 导入、LayoutThemeMeta 类型、工具函数）、`types.ts`（COLOR_MODE_OPTIONS、CONTENT_TRANSITION_PRESETS、SIDEBAR_ANIMATION_PRESETS 及对应类型） |
 
 ## 组合式函数
 

@@ -5,19 +5,16 @@
  * @since 2026-03-20
  */
 
-import type {
-  ContentTransitionPreset,
-  SidebarAnimationPreset,
-} from '~/features/theme/types'
-import type { ThemeCustomizerCapability } from '~/features/theme/layoutThemes'
+import type { ContentTransitionPreset, SidebarAnimationPreset } from '~/features/appearance/types'
+import type { ThemeCustomizerCapability } from '~/features/appearance/themeRegistry'
 import {
   COLOR_MODE_LABELS,
   CONTENT_TRANSITION_OPTIONS,
-  DEFAULT_LAYOUT_THEME_ID,
   DEFAULT_CONTENT_TRANSITION_PRESET,
   DEFAULT_SIDEBAR_ANIMATION_PRESET,
   SIDEBAR_ANIMATION_OPTIONS,
-} from '~/features/theme/types'
+} from '~/features/appearance/types'
+import { DEFAULT_LAYOUT_THEME_ID } from '~/features/appearance/themeRegistry'
 
 const STORAGE_KEY = 'tixxin-blog-appearance'
 
@@ -61,13 +58,14 @@ export function useAppearanceSettings() {
   const persistenceBound = useState('appearance-settings-persistence-bound', () => false)
 
   const themeLabel = computed(() => COLOR_MODE_LABELS[currentPreference.value])
-  const contentTransitionLabel = computed(() =>
-    CONTENT_TRANSITION_OPTIONS.find(option => option.value === contentTransitionPreset.value)?.label
-      ?? '纵向滑动',
+  const contentTransitionLabel = computed(
+    () =>
+      CONTENT_TRANSITION_OPTIONS.find((option) => option.value === contentTransitionPreset.value)?.label ?? '纵向滑动',
   )
-  const sidebarAnimationLabel = computed(() =>
-    SIDEBAR_ANIMATION_OPTIONS.find(option => option.value === sidebarAnimationPreset.value)?.label
-      ?? '右侧退出和进入',
+  const sidebarAnimationLabel = computed(
+    () =>
+      SIDEBAR_ANIMATION_OPTIONS.find((option) => option.value === sidebarAnimationPreset.value)?.label ??
+      '右侧退出和进入',
   )
 
   const contentTransitionName = computed(() => {
@@ -192,8 +190,7 @@ export function useAppearanceSettings() {
           sidebarAnimationPreset.value = parsed.sidebarAnimationPreset
         }
       }
-    }
-    catch {
+    } catch {
       localStorage.removeItem(STORAGE_KEY)
     }
   }

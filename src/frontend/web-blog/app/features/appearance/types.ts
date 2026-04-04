@@ -1,43 +1,18 @@
 /**
  * @file types.ts
- * @description 外观设置相关类型、默认值与选项常量
+ * @description 外观设置相关类型、默认值与选项常量（纯 UI 偏好配置，不含主题元信息）
  * @author TixXin
  * @since 2026-03-20
  */
 
 export const COLOR_MODE_OPTIONS = ['light', 'system', 'dark'] as const
-export type ThemeOption = typeof COLOR_MODE_OPTIONS[number]
+export type ThemeOption = (typeof COLOR_MODE_OPTIONS)[number]
 
-export type {
-  LayoutThemeMeta,
-  LayoutThemePreset,
-  ThemeCapabilities,
-  ThemeCustomizerCapability,
-} from './layoutThemes'
+export const CONTENT_TRANSITION_PRESETS = ['vertical-slide', 'soft-slide', 'fade', 'none'] as const
+export type ContentTransitionPreset = (typeof CONTENT_TRANSITION_PRESETS)[number]
 
-export {
-  DEFAULT_LAYOUT_THEME_ID,
-  LAYOUT_THEME_PRESETS,
-  getLayoutThemeMeta,
-  isKnownLayoutThemeId,
-  layoutThemeMetas,
-} from './layoutThemes'
-
-export const CONTENT_TRANSITION_PRESETS = [
-  'vertical-slide',
-  'soft-slide',
-  'fade',
-  'none',
-] as const
-export type ContentTransitionPreset = typeof CONTENT_TRANSITION_PRESETS[number]
-
-export const SIDEBAR_ANIMATION_PRESETS = [
-  'fade-in-up',
-  'scale',
-  'fade',
-  'none',
-] as const
-export type SidebarAnimationPreset = typeof SIDEBAR_ANIMATION_PRESETS[number]
+export const SIDEBAR_ANIMATION_PRESETS = ['fade-in-up', 'scale', 'fade', 'none'] as const
+export type SidebarAnimationPreset = (typeof SIDEBAR_ANIMATION_PRESETS)[number]
 
 export interface AppearanceOption<T extends string> {
   value: T

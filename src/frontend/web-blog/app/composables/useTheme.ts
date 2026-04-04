@@ -5,8 +5,8 @@
  * @since 2025-03-17
  */
 
-import type { ThemeOption } from '~/features/theme/types'
-import { COLOR_MODE_OPTIONS } from '~/features/theme/types'
+import type { ThemeOption } from '~/features/appearance/types'
+import { COLOR_MODE_OPTIONS } from '~/features/appearance/types'
 
 export function useTheme() {
   const colorMode = useColorMode()

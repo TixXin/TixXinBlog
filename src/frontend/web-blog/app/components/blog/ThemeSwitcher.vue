@@ -6,12 +6,7 @@
 -->
 
 <template>
-  <button
-    type="button"
-    class="theme-switcher"
-    :aria-label="`切换主题（当前：${label}）`"
-    @click="cycleTheme"
-  >
+  <button type="button" class="theme-switcher" :aria-label="`切换主题（当前：${label}）`" @click="cycleTheme">
     <ClientOnly>
       <Icon :name="icon" size="18" />
       <template #fallback>
@@ -22,13 +17,11 @@
 </template>
 
 <script setup lang="ts">
-import { COLOR_MODE_LABELS } from '~/features/theme/types'
+import { COLOR_MODE_LABELS } from '~/features/appearance/types'
 
 const { currentPreference, setTheme } = useTheme()
 
-const icon = computed(() =>
-  currentPreference.value === 'dark' ? 'lucide:moon' : 'lucide:sun',
-)
+const icon = computed(() => (currentPreference.value === 'dark' ? 'lucide:moon' : 'lucide:sun'))
 
 const label = computed(() => COLOR_MODE_LABELS[currentPreference.value])
 

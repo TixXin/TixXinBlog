@@ -1,5 +1,9 @@
 {
   "name": "nexus",
   "label": "Nexus 三栏",
-  "description": "经典三栏 App-Shell：左侧导航 + 中间内容 + 右侧侧边栏"
+  "description": "经典三栏 App-Shell：左侧导航 + 中间内容 + 右侧侧边栏",
+  "meta": {
+    "version": "2.0.0",
+    "icon": "lucide:layout-dashboard"
+  }
 }

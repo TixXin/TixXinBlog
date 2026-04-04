@@ -1,17 +1,16 @@
 /**
  * @file useLayoutTheme.ts
- * @description 对接主题引擎并补齐博客宿主所需的主题元信息、切换状态与预热能力
+ * @description 对接主题引擎并合并宿主侧配置，提供主题元信息、切换状态与预热能力
  * @author TixXin
  * @since 2026-04-03
  */
 
 import {
   DEFAULT_LAYOUT_THEME_ID,
-  getLayoutThemeMeta,
-  isKnownLayoutThemeId,
-  layoutThemeMetas,
+  ensureKnownThemeId,
+  themeHostConfigs,
   type LayoutThemeMeta,
-} from '~/features/theme/layoutThemes'
+} from '~/features/appearance/themeRegistry'
 import { themeComponentLoaders } from '#build/theme-engine.registry.mjs'
 
 type ThemeLoader = () => Promise<unknown>
@@ -20,10 +19,6 @@ export type ThemeSwitchState = 'idle' | 'loading' | 'error'
 
 const preloadedThemes = new Set<string>()
 const preloadTasks = new Map<string, Promise<void>>()
-
-function ensureKnownThemeId(id: string): string {
-  return isKnownLayoutThemeId(id) ? id : DEFAULT_LAYOUT_THEME_ID
-}
 
 function getThemeLoaders(id: string): ThemeLoader[] {
   const loaderMap = themeComponentLoaders[id as keyof typeof themeComponentLoaders]
@@ -57,24 +52,45 @@ async function preloadThemeRuntime(id: string) {
 }
 
 export function useLayoutTheme() {
-  const { currentTheme, availableThemes: engineThemeIds, setTheme } = useThemeEngine()
+  const { currentTheme, availableThemes: engineThemeIds, setTheme, themeDefinitions } = useThemeEngine()
 
-  /** 主题切换状态：idle / loading / error */
   const switchingState = useState<ThemeSwitchState>('layout-theme-switch-state', () => 'idle')
 
   const currentThemeId = computed(() => ensureKnownThemeId(currentTheme.value))
 
-  const activeTheme = computed<LayoutThemeMeta>(() => getLayoutThemeMeta(currentThemeId.value))
+  /**
+   * 合并引擎发现的主题定义与宿主侧配置，生成统一的 LayoutThemeMeta。
+   * 优先使用引擎提供的 label/description/meta，
+   * 引擎未提供时回退到 theme.config.ts 中的值。
+   */
+  function buildThemeMeta(id: string): LayoutThemeMeta {
+    const hostConfig = themeHostConfigs[id]
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const engineDef = (themeDefinitions as any)?.value?.find((d: any) => d.name === id)
 
-  const availableThemes = computed<LayoutThemeMeta[]>(() => {
-    const engineIds = new Set(engineThemeIds.value)
-    return layoutThemeMetas.filter((meta) => engineIds.has(meta.id))
-  })
+    return {
+      id,
+      name: engineDef?.label ?? id,
+      description: engineDef?.description ?? '',
+      version: (engineDef?.meta?.version as string) ?? hostConfig?.version ?? '0.0.0',
+      icon: (engineDef?.meta?.icon as string) ?? hostConfig?.icon ?? 'lucide:layout',
+      capabilities: hostConfig?.capabilities ?? { leftSidebar: false, rightSidebar: false },
+    }
+  }
+
+  const activeTheme = computed<LayoutThemeMeta>(() => buildThemeMeta(currentThemeId.value))
 
   /**
-   * 切换布局主题：先预热目标主题组件，再切换当前主题。
-   * 这样可以保留原先的 loading/error 状态与 hover 预热体验。
+   * 按 themeHostConfigs 定义顺序返回可用主题列表，
+   * 仅包含引擎已注册（可激活）的主题。
    */
+  const availableThemes = computed<LayoutThemeMeta[]>(() => {
+    const engineIds = new Set(engineThemeIds.value)
+    return Object.keys(themeHostConfigs)
+      .filter((id) => engineIds.has(id))
+      .map((id) => buildThemeMeta(id))
+  })
+
   async function setLayoutTheme(id: string) {
     const themeId = ensureKnownThemeId(id)
 
@@ -93,15 +109,10 @@ export function useLayoutTheme() {
     }
   }
 
-  /**
-   * 预加载主题运行时代码（hover 预热）。
-   * 静默执行，不影响当前主题，失败不抛出。
-   */
   function preloadTheme(id: string) {
     preloadThemeRuntime(id).catch(() => {})
   }
 
-  /** 禁用当前主题并回退到默认 */
   function disableCurrentTheme() {
     setTheme(DEFAULT_LAYOUT_THEME_ID)
     switchingState.value = 'idle'

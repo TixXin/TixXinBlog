@@ -4,8 +4,8 @@
 
 ## 总进度
 
-- 总任务数：42
-- 已完成：41
+- 总任务数：43
+- 已完成：42
 - 进行中：0
 - 未开始：0
 - 暂缓：1
@@ -42,7 +42,7 @@
 - [x] 默认三套主题迁移：classic、docs、minimal 已迁移为 `BlogThemeManifest` 格式，含 version、compatibility、capabilities 与 load()
 - [x] 主题设置面板重构：面板根据 capabilities.customizer 动态显隐区段，布局主题按钮增加版本标签，resetAppearanceSettings 改用 DEFAULT_THEME_ID
 - [x] mock 边界清理：新增 useNavItems/useSiteInfo composable 抽象数据源，SidebarNav、MobileNav、StatusFooter、DocsLayout、MinimalLayout 改用 composable，PostTabs 改为 props
-- [x] 滚动与布局容器梳理：修复 useReadingProgress 冗余 window 监听，清理 _layout.scss 中 main-content__body 与 CustomScrollbar 的 overflow 职责冲突
+- [x] 滚动与布局容器梳理：修复 useReadingProgress 冗余 window 监听，清理 \_layout.scss 中 main-content\_\_body 与 CustomScrollbar 的 overflow 职责冲突
 - [x] SEO / Meta 补齐：nuxt.config.ts 全局 title 模板 + charset + viewport + OG/Twitter 默认值，8 个页面全部补充 useSeoMeta，文章详情页 useHead 升级为 useSeoMeta 并补齐 OG + Twitter Card
 - [x] 图片与首屏性能优化：文章详情封面 fetchpriority="high" 优化 LCP，PostCard alt 动态化，关键图片补 width/height 减 CLS，灯箱去 lazy，封面/头像/友链 @error 兜底（后续可引入 @nuxt/image 做 srcset/格式优化）
 - [x] 主题动态加载机制：setLayoutTheme 异步化支持第三方主题加载，新增 switchingState 状态机、preloadTheme hover 预热、AppearanceDrawer loading/error 态与切换防竞态
@@ -50,7 +50,7 @@
 - [x] 引入 `nuxt-theme-engine`：`nuxt.config.ts` 接入模块，补齐 `theme-contracts/index.ts` 本地契约入口与 `themes/` 主题目录
 - [x] 布局主题适配层迁移：`useLayoutTheme` 改为基于 `useThemeEngine()` 驱动，保留切换状态与 hover 预热能力
 - [x] 根布局切换迁移：`layouts/default.vue` 改为通过 `<ThemeComponent name="RootLayout" />` 渲染当前主题根布局
-- [x] 宿主主题边界拆分：新增 `features/theme/layoutThemes.ts` 承载图标、版本与 capabilities，`useAppearanceSettings` 和 `features/theme/types.ts` 不再依赖旧主题契约
+- [x] 宿主主题边界拆分：新增 `features/appearance/themeRegistry.ts` 承载图标、版本与 capabilities，各主题通过 `theme.config.ts` 声明能力
 - [x] 文档同步主题引擎方案：重写 `docs/theme-development-guide.md`，并更新 `docs/directory-structure.md` 中的 `theme-contracts/` 与 `themes/` 结构说明
 - [x] 安装兼容修复：补充 `packages/theme-contracts` 工作区兼容包，并将 `packages/*` 纳入 `pnpm-workspace.yaml`，用于兜底 `@tixxin/nuxt-theme-engine@0.0.1` 发布包中错误的 `workspace:*` 依赖
 - [x] 升级 `nuxt-theme-engine` 至 `0.0.2`：移除 `0.0.1` 临时兼容包与 workspace 补丁，恢复仓库到正常依赖结构
@@ -72,6 +72,7 @@
 - [x] Aurora 主题增强：新增 Hero 视觉区域（仅首页）、毛玻璃吸顶动态顶栏、滚动视差效果、渐变/模糊 CSS 变量
 - [x] Dock 主题大改：底部浮岛式 Dock 导航（spring 弹性动画 + 图标联动缩放）、隐藏全局 MobileNav
 - [x] 主题重构收尾：更新 directory-structure.md、theme-development-guide.md、project-analysis-report.md
+- [x] 主题元信息职责分离：消除 layoutThemes.ts 与 theme.json 的重复声明，theme.json 增加 meta 字段，各主题新增 theme.config.ts 声明 capabilities，features/theme/ 重命名为 features/appearance/，新建 themeRegistry.ts 替代 layoutThemes.ts
 
 ## 暂缓 / 阻塞
 

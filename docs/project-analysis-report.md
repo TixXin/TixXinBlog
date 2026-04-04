@@ -46,7 +46,7 @@
 
 ### 不足
 
-- `features/theme/` 同时承载业务域 mock 配置（`layoutThemes.ts`）和主题元信息，职责略杂
+- ~~`features/theme/` 同时承载业务域 mock 配置（`layoutThemes.ts`）和主题元信息，职责略杂~~ → ✅ 已重构为 `features/appearance/`，`themeRegistry.ts` 仅做注册导入，各主题通过 `theme.config.ts` 声明能力
 - ~~个别页面（如 `articles/[id].vue`）仍直接 import mock 数据，未通过 composable 抽象~~ → ✅ 已通过 `useArticleDetail` composable 解决
 
 ### 当前架构图
@@ -58,10 +58,12 @@ themes/<theme>/app/components/RootLayout.vue       # 完整布局实现
 themes/<theme>/app/components/ThemeAccessory.vue    # 主题附件
 themes/<theme>/app/components/StatusFooter.vue      # 页脚（桥接到共享实现）
 themes/<theme>/app/components/PostCard.vue          # 文章卡片（桥接）
+themes/<theme>/theme.config.ts                      # 宿主侧能力声明
 themes/nexus/app/components/SidebarNav.vue          # 侧边导航（仅 Nexus）
 app/layouts/default.vue                            # NuxtPage 作为 slot 传入 RootLayout
-app/composables/useLayoutTheme.ts                  # 引擎适配层
-app/features/theme/layoutThemes.ts                 # 宿主主题元信息
+app/composables/useLayoutTheme.ts                  # 引擎适配层（合并引擎定义 + 宿主配置）
+app/features/appearance/themeRegistry.ts            # 主题注册表（导入各 theme.config.ts）
+app/features/appearance/types.ts                    # 外观偏好常量
 ```
 
 ---

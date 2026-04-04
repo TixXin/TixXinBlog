@@ -20,7 +20,7 @@
     "@nuxtjs/color-mode": "^4.0.0",
     "@nuxtjs/robots": "^6.0.6",
     "@nuxtjs/sitemap": "^8.0.11",
-    "@tixxin/nuxt-theme-engine": "^0.0.3",
+    "@tixxin/nuxt-theme-engine": "^0.0.4",
     "nuxt": "^4.4.2",
     "vue": "^3.5.30"
   },
