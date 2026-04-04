@@ -237,7 +237,7 @@ onBeforeUnmount(() => {
 .appearance-drawer__overlay {
   position: fixed;
   inset: 0;
-  background: rgba(15, 23, 42, 0.42);
+  background: var(--overlay-bg);
   backdrop-filter: blur(6px);
   z-index: 79;
 }
@@ -311,7 +311,7 @@ onBeforeUnmount(() => {
 .appearance-option-grid--anim {
   grid-template-columns: repeat(4, 1fr);
 
-  @media (max-width: 480px) {
+  @media (max-width: $breakpoint-xs) {
     grid-template-columns: repeat(2, 1fr);
   }
 }
@@ -340,7 +340,7 @@ onBeforeUnmount(() => {
   border-color: var(--accent);
   background: var(--accent-soft);
   color: var(--text-main);
-  box-shadow: inset 0 0 0 1px rgba(91, 124, 250, 0.16);
+  box-shadow: inset 0 0 0 1px var(--accent-soft-active, rgba(91, 124, 250, 0.16));
 }
 
 .appearance-option__label {

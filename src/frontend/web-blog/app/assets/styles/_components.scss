@@ -12,12 +12,16 @@
   border: 1px solid var(--border);
   border-radius: $radius-card;
   box-shadow: var(--shadow-card);
-  transition: $transition-colors, box-shadow 0.3s ease;
+  transition:
+    $transition-colors,
+    box-shadow 0.3s ease,
+    transform 0.3s ease;
 }
 
 .card--hover:hover {
   box-shadow: var(--shadow-card-hover);
   border-color: var(--border-hover);
+  transform: translateY(-2px);
 }
 
 // Navigation item
@@ -96,7 +100,9 @@
   &.theme-active {
     background: var(--surface-3);
     color: var(--text-main);
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08), inset 0 0 0 1px rgba(0, 0, 0, 0.06);
+    box-shadow:
+      0 1px 3px rgba(0, 0, 0, 0.08),
+      inset 0 0 0 1px rgba(0, 0, 0, 0.06);
 
     .dark & {
       background: var(--accent-soft);

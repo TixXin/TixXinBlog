@@ -8,205 +8,211 @@
 /* ========================
    亮色主题
    ======================== */
-   :root {
+:root {
+  /* --- 页面背景 --- */
+  --bg: #ebeff4;
+  --bg-dot: #bcc6d3;
+  --bg-dot-size: 24px;
+  --overlay-bg: rgba(15, 23, 42, 0.42);
+  --code-bg: var(--text-main);
+  --code-text: #f1f5f9;
+  --danger: #ef4444;
 
-    /* --- 页面背景 --- */
-    --bg: #ebeff4;
-    --bg-dot: #bcc6d3;
-    --bg-dot-size: 24px;
-  
-    /* --- 表面/卡片层级 --- */
-    --surface-1: #ffffff;
-    /* 页面上玻璃态（顶栏/底栏等）：提高不透明度减轻发灰感 */
-    --surface-1-alpha: rgba(255, 255, 255, 0.94);
-    --surface-1-alpha-90: rgba(255, 255, 255, 0.96);
-    /* 文章卡片封面叠层：亮色用磨砂白 + 深字 + 玻璃边缘 */
-    --surface-cover-overlay: rgba(255, 255, 255, 0.82);
-    --text-on-cover: #1e293b;
-    --text-on-cover-muted: #64748b;
-    --cover-overlay-backdrop: blur(16px) saturate(1.15);
-    --cover-overlay-border: 1px solid rgba(255, 255, 255, 0.92);
-    --cover-overlay-shadow: 0 1px 2px rgba(15, 23, 42, 0.06);
-    --surface-2: #f8fafc;
-    --surface-3: #f1f5f9;
-  
-    /* --- 边框 --- */
-    --border: rgba(226, 232, 240, 0.8);
-    --border-soft: rgba(226, 232, 240, 0.9);
-    --border-hover: #cbd5e1;
-  
-    /* --- 文字 --- */
-    --text-main: #1e293b;
-    --text-muted: #64748b;
-    --text-soft: #94a3b8;
-    --text-faint: #cbd5e1;
-  
-    /* --- 强调色 --- */
-    --accent: #334155;
-    --accent-soft: rgba(51, 65, 85, 0.08);
-    --accent-bg: #f1f5f9;
-  
-    /* --- 卡片阴影 --- */
-    --shadow-card: 0 1px 3px rgba(0, 0, 0, 0.06), 0 4px 12px rgba(0, 0, 0, 0.08);
-    --shadow-card-hover: 0 4px 20px rgba(0, 0, 0, 0.12);
-  
-    /* --- 选区 --- */
-    --selection-bg: rgba(51, 65, 85, 0.2);
-    --selection-color: inherit;
-  
-    /* --- 滚动条 --- */
-    --scrollbar-thumb: rgba(203, 213, 225, 0.6);
-    --scrollbar-thumb-hover: rgba(148, 163, 184, 0.8);
-  
-    /* --- 焦点环 --- */
-    --focus-ring: #94a3b8;
+  /* --- 表面/卡片层级 --- */
+  --surface-1: #ffffff;
+  /* 页面上玻璃态（顶栏/底栏等）：提高不透明度减轻发灰感 */
+  --surface-1-alpha: rgba(255, 255, 255, 0.94);
+  --surface-1-alpha-90: rgba(255, 255, 255, 0.96);
+  /* 文章卡片封面叠层：亮色用磨砂白 + 深字 + 玻璃边缘 */
+  --surface-cover-overlay: rgba(255, 255, 255, 0.82);
+  --text-on-cover: #1e293b;
+  --text-on-cover-muted: #64748b;
+  --cover-overlay-backdrop: blur(16px) saturate(1.15);
+  --cover-overlay-border: 1px solid rgba(255, 255, 255, 0.92);
+  --cover-overlay-shadow: 0 1px 2px rgba(15, 23, 42, 0.06);
+  --surface-2: #f8fafc;
+  --surface-3: #f1f5f9;
 
-    /* --- 文章列表置顶徽标 --- */
-    --pin-badge-bg: rgba(239, 68, 68, 0.1);
-    --pin-badge-border: rgba(239, 68, 68, 0.32);
-  
-    /* --- 标签颜色（各色系：背景/文字/边框） --- */
-    --tag-emerald-bg: #ecfdf5;
-    --tag-emerald-text: #059669;
-    --tag-emerald-border: #d1fae5;
-    --tag-rose-bg: #fff1f2;
-    --tag-rose-text: #e11d48;
-    --tag-rose-border: #ffe4e6;
-    --tag-sky-bg: #f0f9ff;
-    --tag-sky-text: #0284c7;
-    --tag-sky-border: #e0f2fe;
-    --tag-orange-bg: #fff7ed;
-    --tag-orange-text: #ea580c;
-    --tag-orange-border: #fed7aa;
-    --tag-blue-bg: #eff6ff;
-    --tag-blue-text: #2563eb;
-    --tag-blue-border: #dbeafe;
-    --tag-amber-bg: #fffbeb;
-    --tag-amber-text: #d97706;
-    --tag-amber-border: #fde68a;
-  
-    /* --- 统计模块绿色系 --- */
-    --stat-green: #059669;
-    --stat-green-bg: rgba(5, 150, 105, 0.08);
-    --stat-green-border: rgba(5, 150, 105, 0.15);
-    --stat-green-dot: #10b981;
-  
-    /* --- 热力图色阶 --- */
-    --heatmap-0: #ebedf0;
-    --heatmap-1: #9be9a8;
-    --heatmap-2: #40c463;
-    --heatmap-3: #30a14e;
-    --heatmap-4: #216e39;
-  
-    /* --- 热力图容器 --- */
-    --heatmap-bg: rgba(248, 250, 252, 0.8);
-    --heatmap-border: #f1f5f9;
-  
-    /* --- Tooltip 浮层 --- */
-    --tooltip-bg: #1e293b;
-    --tooltip-text: #f8fafc;
-    --tooltip-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-  }
-  
-  /* ========================
+  /* --- 边框 --- */
+  --border: rgba(226, 232, 240, 0.8);
+  --border-soft: rgba(226, 232, 240, 0.9);
+  --border-hover: #cbd5e1;
+
+  /* --- 文字 --- */
+  --text-main: #1e293b;
+  --text-muted: #64748b;
+  --text-soft: #94a3b8;
+  --text-faint: #cbd5e1;
+
+  /* --- 强调色 --- */
+  --accent: #334155;
+  --accent-soft: rgba(51, 65, 85, 0.08);
+  --accent-bg: #f1f5f9;
+
+  /* --- 卡片阴影 --- */
+  --shadow-card: 0 1px 3px rgba(0, 0, 0, 0.06), 0 4px 12px rgba(0, 0, 0, 0.08);
+  --shadow-card-hover: 0 4px 20px rgba(0, 0, 0, 0.12);
+
+  /* --- 选区 --- */
+  --selection-bg: rgba(51, 65, 85, 0.2);
+  --selection-color: inherit;
+
+  /* --- 滚动条 --- */
+  --scrollbar-thumb: rgba(203, 213, 225, 0.6);
+  --scrollbar-thumb-hover: rgba(148, 163, 184, 0.8);
+
+  /* --- 焦点环 --- */
+  --focus-ring: #94a3b8;
+
+  /* --- 文章列表置顶徽标 --- */
+  --pin-badge-bg: rgba(239, 68, 68, 0.1);
+  --pin-badge-border: rgba(239, 68, 68, 0.32);
+
+  /* --- 标签颜色（各色系：背景/文字/边框） --- */
+  --tag-emerald-bg: #ecfdf5;
+  --tag-emerald-text: #059669;
+  --tag-emerald-border: #d1fae5;
+  --tag-rose-bg: #fff1f2;
+  --tag-rose-text: #e11d48;
+  --tag-rose-border: #ffe4e6;
+  --tag-sky-bg: #f0f9ff;
+  --tag-sky-text: #0284c7;
+  --tag-sky-border: #e0f2fe;
+  --tag-orange-bg: #fff7ed;
+  --tag-orange-text: #ea580c;
+  --tag-orange-border: #fed7aa;
+  --tag-blue-bg: #eff6ff;
+  --tag-blue-text: #2563eb;
+  --tag-blue-border: #dbeafe;
+  --tag-amber-bg: #fffbeb;
+  --tag-amber-text: #d97706;
+  --tag-amber-border: #fde68a;
+
+  /* --- 统计模块绿色系 --- */
+  --stat-green: #059669;
+  --stat-green-bg: rgba(5, 150, 105, 0.08);
+  --stat-green-border: rgba(5, 150, 105, 0.15);
+  --stat-green-dot: #10b981;
+
+  /* --- 热力图色阶 --- */
+  --heatmap-0: #ebedf0;
+  --heatmap-1: #9be9a8;
+  --heatmap-2: #40c463;
+  --heatmap-3: #30a14e;
+  --heatmap-4: #216e39;
+
+  /* --- 热力图容器 --- */
+  --heatmap-bg: rgba(248, 250, 252, 0.8);
+  --heatmap-border: #f1f5f9;
+
+  /* --- Tooltip 浮层 --- */
+  --tooltip-bg: #1e293b;
+  --tooltip-text: #f8fafc;
+  --tooltip-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+/* ========================
      暗色主题
      ======================== */
-  .dark {
-  
-    /* --- 页面背景 --- */
-    --bg: #23272f;
-    --bg-dot: rgba(126, 138, 156, 0.16);
-    --bg-dot-size: 28px;
-  
-    /* --- 表面/卡片层级 ---
+.dark {
+  /* --- 页面背景 --- */
+  --bg: #23272f;
+  --bg-dot: rgba(126, 138, 156, 0.16);
+  --bg-dot-size: 28px;
+  --overlay-bg: rgba(0, 0, 0, 0.6);
+  --code-bg: #0f172a;
+  --code-text: #e2e8f0;
+  --danger: #f87171;
+
+  /* --- 表面/卡片层级 ---
        实色用于不需要透明度的场景；
         */
-       --surface-1: #2a2f37;
-       --surface-1-alpha: rgba(42, 47, 55, 0.3);
-       --surface-1-alpha-90: rgba(42, 47, 55, 0.3);
-       --surface-cover-overlay: rgba(42, 47, 55, 0.36);
-       --text-on-cover: #f8fafc;
-       --text-on-cover-muted: rgba(203, 213, 225, 0.9);
-       --cover-overlay-backdrop: blur(12px);
-       --cover-overlay-border: 1px solid transparent;
-       --cover-overlay-shadow: none;
-       --surface-2: #313741;
-       --surface-3: #383f4a;
-  
-    /* --- 边框 --- */
-    --border: rgba(51, 65, 85, 0.5);
-    --border-soft: rgba(51, 65, 85, 0.35);
-    --border-hover: rgba(100, 116, 139, 0.4);
-  
-    /* --- 文字 --- */
-    --text-main: #e2e8f0;
-    --text-muted: #cbd5e1;
-    --text-soft: #94a3b8;
-    --text-faint: #64748b;
-  
-    /* --- 强调色 --- */
-    --accent: #5b7cfa;
-    --accent-soft: rgba(91, 124, 250, 0.16);
-    --accent-bg: rgba(91, 124, 250, 0.12);
-  
-    /* --- 卡片阴影 --- */
-    --shadow-card: 0 4px 16px rgba(0, 0, 0, 0.3), 0 8px 32px rgba(0, 0, 0, 0.2);
-    --shadow-card-hover: 0 8px 40px rgba(0, 0, 0, 0.4);
-  
-    /* --- 选区 --- */
-    --selection-bg: rgba(91, 124, 250, 0.32);
-    --selection-color: #f8fbff;
-  
-    /* --- 滚动条 --- */
-    --scrollbar-thumb: rgba(100, 116, 139, 0.5);
-    --scrollbar-thumb-hover: rgba(148, 163, 184, 0.6);
-  
-    /* --- 焦点环 --- */
-    --focus-ring: #5b7cfa;
+  --surface-1: #2a2f37;
+  --surface-1-alpha: rgba(42, 47, 55, 0.3);
+  --surface-1-alpha-90: rgba(42, 47, 55, 0.3);
+  --surface-cover-overlay: rgba(42, 47, 55, 0.36);
+  --text-on-cover: #f8fafc;
+  --text-on-cover-muted: rgba(203, 213, 225, 0.9);
+  --cover-overlay-backdrop: blur(12px);
+  --cover-overlay-border: 1px solid transparent;
+  --cover-overlay-shadow: none;
+  --surface-2: #313741;
+  --surface-3: #383f4a;
 
-    /* --- 文章列表置顶徽标 --- */
-    --pin-badge-bg: rgba(239, 68, 68, 0.16);
-    --pin-badge-border: rgba(248, 113, 113, 0.45);
-  
-    /* --- 标签颜色（暗色适配：低饱和度背景 + 高亮文字） --- */
-    --tag-emerald-bg: rgba(16, 185, 129, 0.12);
-    --tag-emerald-text: #6ee7b7;
-    --tag-emerald-border: rgba(16, 185, 129, 0.2);
-    --tag-rose-bg: rgba(244, 63, 94, 0.12);
-    --tag-rose-text: #fda4af;
-    --tag-rose-border: rgba(244, 63, 94, 0.2);
-    --tag-sky-bg: rgba(14, 165, 233, 0.12);
-    --tag-sky-text: #7dd3fc;
-    --tag-sky-border: rgba(14, 165, 233, 0.2);
-    --tag-orange-bg: rgba(249, 115, 22, 0.12);
-    --tag-orange-text: #fdba74;
-    --tag-orange-border: rgba(249, 115, 22, 0.2);
-    --tag-blue-bg: rgba(59, 130, 246, 0.12);
-    --tag-blue-text: #93c5fd;
-    --tag-blue-border: rgba(59, 130, 246, 0.2);
-    --tag-amber-bg: rgba(245, 158, 11, 0.12);
-    --tag-amber-text: #fcd34d;
-    --tag-amber-border: rgba(245, 158, 11, 0.2);
-  
-    /* --- 统计模块绿色系 --- */
-    --stat-green: #34d399;
-    --stat-green-bg: rgba(5, 150, 105, 0.08);
-    --stat-green-border: rgba(5, 150, 105, 0.15);
-    --stat-green-dot: #34d399;
-  
-    /* --- 热力图色阶 --- */
-    --heatmap-0: rgba(100, 116, 139, 0.2);
-    --heatmap-1: rgba(6, 95, 70, 0.5);
-    --heatmap-2: rgba(5, 150, 105, 0.6);
-    --heatmap-3: #059669;
-    --heatmap-4: #34d399;
-  
-    /* --- 热力图容器 --- */
-    --heatmap-bg: rgba(30, 41, 59, 0.4);
-    --heatmap-border: rgba(51, 65, 85, 0.5);
-  
-    /* --- Tooltip 浮层 --- */
-    --tooltip-bg: #e2e8f0;
-    --tooltip-text: #1e293b;
-    --tooltip-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-  }
+  /* --- 边框 --- */
+  --border: rgba(51, 65, 85, 0.5);
+  --border-soft: rgba(51, 65, 85, 0.35);
+  --border-hover: rgba(100, 116, 139, 0.4);
+
+  /* --- 文字 --- */
+  --text-main: #e2e8f0;
+  --text-muted: #cbd5e1;
+  --text-soft: #94a3b8;
+  --text-faint: #64748b;
+
+  /* --- 强调色 --- */
+  --accent: #5b7cfa;
+  --accent-soft: rgba(91, 124, 250, 0.16);
+  --accent-bg: rgba(91, 124, 250, 0.12);
+
+  /* --- 卡片阴影 --- */
+  --shadow-card: 0 4px 16px rgba(0, 0, 0, 0.3), 0 8px 32px rgba(0, 0, 0, 0.2);
+  --shadow-card-hover: 0 8px 40px rgba(0, 0, 0, 0.4);
+
+  /* --- 选区 --- */
+  --selection-bg: rgba(91, 124, 250, 0.32);
+  --selection-color: #f8fbff;
+
+  /* --- 滚动条 --- */
+  --scrollbar-thumb: rgba(100, 116, 139, 0.5);
+  --scrollbar-thumb-hover: rgba(148, 163, 184, 0.6);
+
+  /* --- 焦点环 --- */
+  --focus-ring: #5b7cfa;
+
+  /* --- 文章列表置顶徽标 --- */
+  --pin-badge-bg: rgba(239, 68, 68, 0.16);
+  --pin-badge-border: rgba(248, 113, 113, 0.45);
+
+  /* --- 标签颜色（暗色适配：低饱和度背景 + 高亮文字） --- */
+  --tag-emerald-bg: rgba(16, 185, 129, 0.12);
+  --tag-emerald-text: #6ee7b7;
+  --tag-emerald-border: rgba(16, 185, 129, 0.2);
+  --tag-rose-bg: rgba(244, 63, 94, 0.12);
+  --tag-rose-text: #fda4af;
+  --tag-rose-border: rgba(244, 63, 94, 0.2);
+  --tag-sky-bg: rgba(14, 165, 233, 0.12);
+  --tag-sky-text: #7dd3fc;
+  --tag-sky-border: rgba(14, 165, 233, 0.2);
+  --tag-orange-bg: rgba(249, 115, 22, 0.12);
+  --tag-orange-text: #fdba74;
+  --tag-orange-border: rgba(249, 115, 22, 0.2);
+  --tag-blue-bg: rgba(59, 130, 246, 0.12);
+  --tag-blue-text: #93c5fd;
+  --tag-blue-border: rgba(59, 130, 246, 0.2);
+  --tag-amber-bg: rgba(245, 158, 11, 0.12);
+  --tag-amber-text: #fcd34d;
+  --tag-amber-border: rgba(245, 158, 11, 0.2);
+
+  /* --- 统计模块绿色系 --- */
+  --stat-green: #34d399;
+  --stat-green-bg: rgba(5, 150, 105, 0.08);
+  --stat-green-border: rgba(5, 150, 105, 0.15);
+  --stat-green-dot: #34d399;
+
+  /* --- 热力图色阶 --- */
+  --heatmap-0: rgba(100, 116, 139, 0.2);
+  --heatmap-1: rgba(6, 95, 70, 0.5);
+  --heatmap-2: rgba(5, 150, 105, 0.6);
+  --heatmap-3: #059669;
+  --heatmap-4: #34d399;
+
+  /* --- 热力图容器 --- */
+  --heatmap-bg: rgba(30, 41, 59, 0.4);
+  --heatmap-border: rgba(51, 65, 85, 0.5);
+
+  /* --- Tooltip 浮层 --- */
+  --tooltip-bg: #e2e8f0;
+  --tooltip-text: #1e293b;
+  --tooltip-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
