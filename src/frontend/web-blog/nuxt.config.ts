@@ -44,7 +44,7 @@ export default {
     serverBundle: 'local',
   },
   colorMode: {
-    classSuffix: '',       // html 上直接加 class="dark"，与原型一致
+    classSuffix: '', // html 上直接加 class="dark"，与原型一致
     preference: 'dark',
     fallback: 'dark',
   },
@@ -67,23 +67,24 @@ export default {
     allow: '/',
   },
   fonts: {
-    families: [
-      { name: 'Inter', provider: 'google', weights: [300, 400, 500, 600, 700, 800] },
-    ],
+    families: [{ name: 'Inter', provider: 'google', weights: [300, 400, 500, 600, 700, 800] }],
     defaults: {
       fallbacks: ['system-ui', 'sans-serif'],
     },
   },
-  // routeRules 在生产部署时启用，开发模式下 payload 缓存目录不自动创建会导致 ENOENT
-  // routeRules: {
-  //   '/': { prerender: true },
-  //   '/about': { prerender: true },
-  //   '/links': { prerender: true },
-  //   '/projects': { prerender: true },
-  //   '/articles': { isr: 3600 },
-  //   '/articles/**': { isr: 3600 },
-  // },
+  routeRules:
+    process.env.NODE_ENV === 'production'
+      ? {
+          '/': { prerender: true },
+          '/about': { prerender: true },
+          '/links': { prerender: true },
+          '/projects': { prerender: true },
+          '/articles': { isr: 3600 },
+          '/articles/**': { isr: 3600 },
+        }
+      : {},
   nitro: {
+    compressPublicAssets: true,
     routeRules: {
       '/**': {
         headers: {
