@@ -15,6 +15,7 @@
 // Nexus 三栏主题：间距 + 固定视口高度，禁止文档滚动（由各栏内部独立滚动）
 .theme-nexus {
   padding: 1rem;
+  padding-bottom: calc(4rem + env(safe-area-inset-bottom)); // 给 MobileNav 留空间
 
   @media (min-width: $breakpoint-md) {
     padding: 2rem;
