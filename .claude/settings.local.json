@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(wc -l /e/Projects/TixXinBlog/src/frontend/web-blog/app/assets/styles/*.scss)",
+      "Bash(find \"e:/Projects/TixXinBlog/src/frontend/web-blog/app/pages\" -name \"*.vue\" -exec basename {} \\\\;)",
+      "Bash(xargs ls:*)"
+    ]
+  }
+}
