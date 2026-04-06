@@ -3,7 +3,17 @@
     "allow": [
       "Bash(wc -l /e/Projects/TixXinBlog/src/frontend/web-blog/app/assets/styles/*.scss)",
       "Bash(find \"e:/Projects/TixXinBlog/src/frontend/web-blog/app/pages\" -name \"*.vue\" -exec basename {} \\\\;)",
-      "Bash(xargs ls:*)"
+      "Bash(xargs ls:*)",
+      "Bash(npx eslint:*)",
+      "Bash(git diff:*)",
+      "Bash(git add:*)",
+      "Bash(git commit -m ':*)"
     ]
-  }
+  },
+  "enabledMcpjsonServers": [
+    "playwright",
+    "context7",
+    "git-mcp-server",
+    "server-memory"
+  ]
 }
