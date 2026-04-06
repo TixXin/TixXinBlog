@@ -1,0 +1,43 @@
+{
+  "mcpServers": {
+    "playwright": {
+      "command": "cmd",
+      "args": [
+        "/c",
+        "npx",
+        "@playwright/mcp@latest"
+      ]
+    },
+    "context7": {
+      "command": "cmd",
+      "args": [
+        "/c",
+        "npx",
+        "-y",
+        "@upstash/context7-mcp",
+        "--api-key",
+        "ctx7sk-a7921c64-c480-46ba-a57d-9e97f4a9376d"
+      ]
+    },
+    "git-mcp-server": {
+      "command": "uvx",
+      "args": [
+        "mcp-server-git",
+        "--repository",
+        "E:\\Projects\\TixXinBlog"
+      ]
+    },
+    "server-memory": {
+      "command": "cmd",
+      "args": [
+        "/c",
+        "npx",
+        "-y",
+        "@modelcontextprotocol/server-memory"
+      ],
+      "env": {
+        "MEMORY_FILE_PATH": "E:\\Projects\\TixXinBlog\\.cursor\\mcp\\memory.jsonl"
+      }
+    }
+  }
+}
