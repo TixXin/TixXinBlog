@@ -12,21 +12,13 @@
       <span class="tag-cloud-card__count text-xs">{{ tags.length }} 个标签</span>
     </div>
     <div class="tag-cloud-card__rows">
-      <div
-        v-for="(row, rowIdx) in tagRows"
-        :key="rowIdx"
-        class="tag-cloud-card__row"
-      >
+      <div v-for="(row, rowIdx) in tagRows" :key="rowIdx" class="tag-cloud-card__row">
         <div
           class="tag-cloud-card__track"
           :class="rowIdx % 2 === 0 ? 'tag-cloud-card__track--left' : 'tag-cloud-card__track--right'"
           :style="{ animationDuration: rowSpeeds[rowIdx] }"
         >
-          <span
-            v-for="(tag, i) in [...row, ...row]"
-            :key="`${rowIdx}-${i}`"
-            class="tag-cloud-card__tag"
-          >
+          <span v-for="(tag, i) in [...row, ...row]" :key="`${rowIdx}-${i}`" class="tag-cloud-card__tag">
             <span class="tag-cloud-card__hash" :style="{ color: tag.color }">#</span>
             {{ tag.name }}
             <span class="tag-cloud-card__tag-count">{{ tag.count }}</span>
@@ -105,10 +97,12 @@ const tagRows = computed(() => {
 
   &--left {
     animation: marquee-l linear infinite;
+    will-change: transform;
   }
 
   &--right {
     animation: marquee-r linear infinite;
+    will-change: transform;
   }
 }
 
@@ -145,12 +139,20 @@ const tagRows = computed(() => {
 }
 
 @keyframes marquee-l {
-  0% { transform: translateX(0); }
-  100% { transform: translateX(-50%); }
+  0% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(-50%);
+  }
 }
 
 @keyframes marquee-r {
-  0% { transform: translateX(-50%); }
-  100% { transform: translateX(0); }
+  0% {
+    transform: translateX(-50%);
+  }
+  100% {
+    transform: translateX(0);
+  }
 }
 </style>

@@ -13,6 +13,7 @@
           :to="item.to"
           class="nav-item"
           :class="{ active: isActive(item.to) }"
+          :aria-current="isActive(item.to) ? 'page' : undefined"
         >
           <Icon :name="item.icon" class="nav-item__icon" size="20" />
           <span class="font-medium">{{ item.label }}</span>
@@ -30,7 +31,9 @@ const route = useRoute()
 const { navItems } = useNavItems()
 
 function isActive(to: string) {
-  return route.path === to
+  const path = route.path.replace(/\/$/, '') || '/'
+  const target = to.replace(/\/$/, '') || '/'
+  return path === target || (target !== '/' && path.startsWith(target + '/'))
 }
 </script>
 

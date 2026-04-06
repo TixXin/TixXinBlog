@@ -73,6 +73,7 @@
                     'appearance-option--disabled': switchingState === 'loading' && currentThemeId !== theme.id,
                   }"
                   :disabled="switchingState === 'loading'"
+                  :aria-label="`${theme.name} 布局主题`"
                   @click="setLayoutTheme(theme.id)"
                   @mouseenter="preloadTheme(theme.id)"
                 >
