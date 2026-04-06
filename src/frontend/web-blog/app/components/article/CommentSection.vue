@@ -18,14 +18,11 @@
         <Icon name="lucide:user" size="16" />
       </div>
       <div class="comment-section__form">
-        <textarea
-          v-model="draft"
-          class="comment-section__textarea"
-          rows="3"
-          placeholder="写下你的评论..."
-        />
+        <textarea v-model="draft" class="comment-section__textarea" rows="3" placeholder="写下你的评论..." />
         <div class="comment-section__actions">
-          <button type="button" class="comment-section__submit">发布评论</button>
+          <button type="button" class="comment-section__submit" :disabled="!draft.trim()" @click="submitComment">
+            发布评论
+          </button>
         </div>
       </div>
     </div>
@@ -51,7 +48,30 @@ defineProps<{
   comments: CommentItem[]
 }>()
 
+const emit = defineEmits<{
+  submit: [comment: CommentItem]
+}>()
+
 const draft = ref('')
+const { info } = useToast()
+
+function submitComment() {
+  const text = draft.value.trim()
+  if (!text) return
+
+  const newComment: CommentItem = {
+    id: Date.now(),
+    author: '访客',
+    avatar: '',
+    content: text,
+    time: '刚刚',
+    likes: 0,
+  }
+
+  emit('submit', newComment)
+  draft.value = ''
+  info('评论发布成功')
+}
 </script>
 
 <style lang="scss" scoped>
@@ -144,8 +164,13 @@ const draft = ref('')
   color: var(--surface-1);
   transition: $transition-fast;
 
-  &:hover {
+  &:hover:not(:disabled) {
     opacity: 0.92;
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
   }
 }
 
@@ -171,5 +196,4 @@ const draft = ref('')
   flex-direction: column;
   gap: 1rem;
 }
-
 </style>
