@@ -9,21 +9,22 @@ export function useKeyboardShortcuts() {
   const route = useRoute()
   const { isDrawerOpen, closeDrawer } = useAppearanceSettings()
   const { info } = useToast()
+  const searchModal = inject<{ open: () => void } | null>('searchModal', null)
 
-  function handleKeydown(e: KeyboardEvent) {
+  async function handleKeydown(e: KeyboardEvent) {
+    // Ctrl/Cmd + K: 唤起搜索（优先响应，不受输入框限制）
+    if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+      e.preventDefault()
+      searchModal?.open()
+      return
+    }
+
     // 忽略在输入框内的按键
     if (
       e.target instanceof HTMLInputElement ||
       e.target instanceof HTMLTextAreaElement ||
       (e.target as HTMLElement).isContentEditable
     ) {
-      return
-    }
-
-    // Ctrl/Cmd + K: 唤起搜索
-    if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
-      e.preventDefault()
-      info('全局搜索功能开发中...')
       return
     }
 
@@ -54,11 +55,19 @@ export function useKeyboardShortcuts() {
         window.scrollTo({ top: 0, behavior: 'smooth' })
         e.preventDefault()
       }
-      // [ / ]: 上下篇 (这里只是占位，实际需要获取上下篇的 ID)
-      else if (e.key === '[') {
-        info('上一篇功能开发中...')
-      } else if (e.key === ']') {
-        info('下一篇功能开发中...')
+      // [ / ]: 上下篇导航
+      else if (e.key === '[' || e.key === ']') {
+        const currentId = route.params.id as string
+        const { mockPosts } = await import('~/features/post/mock')
+        const idx = mockPosts.findIndex((p) => p.id.toString() === currentId)
+        if (idx === -1) return
+        const targetIdx = e.key === '[' ? idx - 1 : idx + 1
+        const target = mockPosts[targetIdx]
+        if (target) {
+          navigateTo(`/articles/${target.id}`)
+        } else {
+          info(e.key === '[' ? '已经是第一篇了' : '已经是最后一篇了')
+        }
       }
     }
   }

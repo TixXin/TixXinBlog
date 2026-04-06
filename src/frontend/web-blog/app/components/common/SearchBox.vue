@@ -6,14 +6,16 @@
 -->
 
 <template>
-  <div class="search-box" :class="{ 'is-disabled': disabled }">
+  <div class="search-box" :class="{ 'is-disabled': disabled }" @click="$emit('click')">
     <Icon name="lucide:search" size="14" class="search-box__icon" />
     <input
       type="text"
       :placeholder="disabled ? '搜索功能即将上线' : placeholder"
       :value="modelValue"
       :disabled="disabled"
+      :readonly="readonly"
       class="search-box__input"
+      :class="{ 'is-readonly': readonly }"
       @input="$emit('update:modelValue', ($event.target as HTMLInputElement).value)"
     >
   </div>
@@ -25,16 +27,19 @@ withDefaults(
     modelValue?: string
     placeholder?: string
     disabled?: boolean
+    readonly?: boolean
   }>(),
   {
     modelValue: '',
     placeholder: '搜索...',
     disabled: false,
+    readonly: false,
   },
 )
 
 defineEmits<{
   'update:modelValue': [value: string]
+  click: []
 }>()
 </script>
 
@@ -86,6 +91,10 @@ defineEmits<{
     cursor: not-allowed;
     opacity: 0.7;
     background: var(--surface-3);
+  }
+
+  &.is-readonly {
+    cursor: pointer;
   }
 }
 
