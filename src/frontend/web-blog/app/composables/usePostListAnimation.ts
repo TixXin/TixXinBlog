@@ -5,14 +5,12 @@
  * @since 2026-04-03
  */
 
-const PAGE_SIZE = 15
-
 /**
  * 管理瀑布流新卡片的交错入场动画。
  * 仅对新增卡片执行动画，已有卡片直接跳过。
  */
 export function usePostListAnimation(displayCount: Ref<number>) {
-  let prevCount = PAGE_SIZE
+  let prevCount = displayCount.value
 
   watch(displayCount, (_new, old) => {
     prevCount = old

@@ -6,43 +6,49 @@
 -->
 
 <template>
-  <article class="post-item" @click="navigateToPost">
+  <article class="post-item">
     <div v-if="post.cover && !coverError" class="post-item__cover-bg">
-      <NuxtImg :src="post.cover" :alt="`${post.title} 封面`" loading="lazy" format="webp" @error="coverError = true" />
+      <NuxtImg
+        :src="post.cover"
+        :alt="`${post.title} 封面`"
+        loading="lazy"
+        format="webp"
+        width="400"
+        height="155"
+        sizes="(min-width: 640px) 45vw, 100vw"
+        @error="coverError = true"
+      />
     </div>
 
     <div class="post-item__content">
       <div class="post-item__header">
         <div class="post-item__title-wrapper">
-          <span v-if="post.pinned" class="post-item__pin">
-            <Icon name="lucide:pin" size="12" /> 置顶
-          </span>
+          <span v-if="post.pinned" class="post-item__pin"> <Icon name="lucide:pin" size="12" /> 置顶 </span>
           <h2 class="post-item__title">
-            <span :class="{ 'post-item__title-highlight': !!post.cover }">{{ post.title }}</span>
+            <NuxtLink :to="`/articles/${post.id}`" class="post-item__link">
+              <span :class="{ 'post-item__title-highlight': !!post.cover }">{{ post.title }}</span>
+            </NuxtLink>
           </h2>
         </div>
         <div class="post-item__date">{{ formattedDate }}</div>
       </div>
-      
+
       <p class="post-item__summary line-clamp-2">{{ post.summary }}</p>
-      
+
       <div class="post-item__footer">
         <div class="post-item__tags">
-          <span
-            v-for="tag in post.tags"
-            :key="tag.label"
-            class="tag-badge"
-            :style="tagStyle(tag.color)"
-          >
+          <span v-for="tag in post.tags" :key="tag.label" class="tag-badge" :style="tagStyle(tag.color)">
             # {{ tag.label }}
           </span>
         </div>
-        
+
         <div class="post-item__meta-bottom">
           <span class="post-item__meta-item">{{ post.folder }}</span>
           <span class="post-item__dot" />
           <span class="post-item__meta-item"><Icon name="lucide:clock" size="12" /> {{ post.readTime }} min</span>
-          <span class="post-item__meta-item"><Icon name="lucide:eye" size="12" /> {{ post.views.toLocaleString() }}</span>
+          <span class="post-item__meta-item"
+            ><Icon name="lucide:eye" size="12" /> {{ post.views.toLocaleString() }}</span
+          >
           <span class="post-item__meta-item"><Icon name="lucide:heart" size="12" /> {{ post.likes }}</span>
           <span class="post-item__meta-item"><Icon name="lucide:message-square" size="12" /> {{ post.comments }}</span>
         </div>
@@ -62,26 +68,20 @@ const props = defineProps<{
 const coverError = ref(false)
 const formattedDate = computed(() => formatRelativeDate(props.post.date))
 
-function navigateToPost() {
-  // placeholder for future navigation
-}
-
-const tagColorMap: Record<string, { bg: string; text: string; border: string }> = {
-  emerald: { bg: 'var(--tag-emerald-bg)', text: 'var(--tag-emerald-text)', border: 'var(--tag-emerald-border)' },
-  rose: { bg: 'var(--tag-rose-bg)', text: 'var(--tag-rose-text)', border: 'var(--tag-rose-border)' },
-  sky: { bg: 'var(--tag-sky-bg)', text: 'var(--tag-sky-text)', border: 'var(--tag-sky-border)' },
-  orange: { bg: 'var(--tag-orange-bg)', text: 'var(--tag-orange-text)', border: 'var(--tag-orange-border)' },
-  blue: { bg: 'var(--tag-blue-bg)', text: 'var(--tag-blue-text)', border: 'var(--tag-blue-border)' },
-  amber: { bg: 'var(--tag-amber-bg)', text: 'var(--tag-amber-text)', border: 'var(--tag-amber-border)' },
-}
+const tagColors = ['emerald', 'rose', 'sky', 'orange', 'blue', 'amber'] as const
+const tagStyles: Record<string, { background: string; color: string; borderColor: string }> = Object.fromEntries(
+  tagColors.map((c) => [
+    c,
+    {
+      background: `var(--tag-${c}-bg)`,
+      color: `var(--tag-${c}-text)`,
+      borderColor: `var(--tag-${c}-border)`,
+    },
+  ]),
+)
 
 function tagStyle(color: string) {
-  const c = tagColorMap[color] ?? tagColorMap.blue!
-  return {
-    background: c!.bg,
-    color: c!.text,
-    borderColor: c!.border,
-  }
+  return tagStyles[color] ?? tagStyles.blue!
 }
 </script>
 
@@ -186,7 +186,7 @@ function tagStyle(color: string) {
   padding-top: 0.25rem;
   position: relative;
   z-index: 2;
-  
+
   /* 有封面：磨砂叠层（亮色浅玻璃 / 暗色暗底，由全局 token 控制） */
   .post-item:has(.post-item__cover-bg) & {
     background: var(--surface-cover-overlay);
@@ -220,6 +220,19 @@ function tagStyle(color: string) {
   height: 3px;
   border-radius: 50%;
   background: var(--text-faint);
+}
+
+.post-item__link {
+  color: inherit;
+  text-decoration: none;
+
+  /* stretched-link: 让整张卡片都可点击 */
+  &::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: 3;
+  }
 }
 
 .post-item__title {
@@ -278,11 +291,11 @@ function tagStyle(color: string) {
   margin-bottom: 0.25rem;
   position: relative;
   z-index: 2;
-  
+
   @media (min-width: $breakpoint-sm) {
     /* 有封面图时限制宽度，避免文字跑到图片区域 */
-    max-width: 55%; 
-    
+    max-width: 55%;
+
     /* 当没有封面图时，允许简介占满全宽 */
     .post-item:not(:has(.post-item__cover-bg)) & {
       max-width: 100%;
@@ -338,11 +351,13 @@ function tagStyle(color: string) {
   }
 }
 
-/* 标签徽章：仅保留文字色，无背景 */
+/* 标签徽章：仅保留文字色，无背景；z-index 高于 stretched-link */
 .tag-badge {
   background: transparent !important;
   border: none !important;
   padding: 0.125rem 0;
+  position: relative;
+  z-index: 4;
 }
 
 .post-item__meta-item {
