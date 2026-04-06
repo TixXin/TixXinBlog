@@ -9,7 +9,7 @@
   <div class="main-inner">
     <CommonPageHeader title="项目展示" subtitle="这里是我参与或独立开发的开源项目" icon="lucide:layers">
       <template #action>
-        <CommonSearchBox placeholder="搜索项目..." disabled />
+        <CommonSearchBox placeholder="搜索项目..." readonly @click="openSearch" />
       </template>
     </CommonPageHeader>
     <CommonCustomScrollbar class="projects-body" viewport-class="projects-viewport" show-back-to-top>
@@ -29,11 +29,17 @@
 <script setup lang="ts">
 import { mockProjects, mockProjectStats, mockTechStack } from '~/features/project/mock'
 
+const searchModal = inject<{ open: () => void } | null>('searchModal', null)
+function openSearch() {
+  searchModal?.open()
+}
+
 useSeoMeta({
   title: '项目展示',
   description: '个人参与或独立开发的开源项目与技术栈信息',
   ogTitle: '项目展示 - TixXin Blog',
   ogDescription: '个人参与或独立开发的开源项目与技术栈信息',
+  ogType: 'website',
 })
 
 const projects = mockProjects

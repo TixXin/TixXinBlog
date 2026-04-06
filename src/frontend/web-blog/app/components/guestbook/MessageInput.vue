@@ -9,7 +9,7 @@
   <div class="card message-input">
     <div class="message-input__toolbar" role="toolbar" aria-label="格式工具栏（占位）">
       <CommonTooltip v-for="btn in toolbarButtons" :key="btn.icon" :content="btn.title">
-        <button type="button" class="message-input__tool" tabindex="-1">
+        <button type="button" class="message-input__tool" :aria-label="btn.title">
           <Icon :name="btn.icon" size="16" />
         </button>
       </CommonTooltip>
@@ -21,11 +21,12 @@
     </div>
     <div class="message-input__editor-wrap">
       <div
+        ref="editorRef"
         class="message-input__editor"
         contenteditable="true"
         role="textbox"
         aria-multiline="true"
-        data-placeholder="输入留言内容...（当前为 UI 演示，发送未接入接口）"
+        data-placeholder="输入留言内容..."
         spellcheck="false"
       />
     </div>
@@ -34,9 +35,21 @@
 
 <script setup lang="ts">
 const { info } = useToast()
+const editorRef = ref<HTMLElement | null>(null)
+
+const emit = defineEmits<{
+  send: [content: string]
+}>()
 
 function handleAction() {
-  info('留言功能开发中，敬请期待！')
+  const content = editorRef.value?.innerText?.trim()
+  if (!content) {
+    info('请输入留言内容')
+    return
+  }
+  emit('send', content)
+  if (editorRef.value) editorRef.value.innerText = ''
+  info('留言发送成功')
 }
 
 const toolbarButtons = [
@@ -114,7 +127,7 @@ const toolbarButtons = [
   color: #fff;
   background: #1e293b;
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
-  cursor: default;
+  cursor: pointer;
   transition:
     background 0.2s,
     box-shadow 0.2s,

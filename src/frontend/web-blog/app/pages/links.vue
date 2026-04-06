@@ -9,7 +9,7 @@
   <div class="main-inner">
     <CommonPageHeader title="友情链接" subtitle="互联网上志同道合的伙伴们" icon="lucide:link">
       <template #action>
-        <CommonSearchBox placeholder="搜索友链..." disabled />
+        <CommonSearchBox placeholder="搜索友链..." readonly @click="openSearch" />
       </template>
     </CommonPageHeader>
     <CommonCustomScrollbar class="links-body" viewport-class="links-viewport" show-back-to-top>
@@ -30,11 +30,17 @@
 <script setup lang="ts">
 import { mockLinks, mockLinkRules, mockSiteInfo } from '~/features/link/mock'
 
+const searchModal = inject<{ open: () => void } | null>('searchModal', null)
+function openSearch() {
+  searchModal?.open()
+}
+
 useSeoMeta({
   title: '友情链接',
   description: '互联网上志同道合的伙伴们，欢迎交换友链',
   ogTitle: '友情链接 - TixXin Blog',
   ogDescription: '互联网上志同道合的伙伴们，欢迎交换友链',
+  ogType: 'website',
 })
 
 const links = mockLinks

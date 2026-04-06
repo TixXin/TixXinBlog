@@ -9,7 +9,7 @@
   <div class="main-inner">
     <CommonPageHeader title="画廊" subtitle="用镜头记录生活的美好瞬间" icon="lucide:image">
       <template #action>
-        <CommonSearchBox placeholder="搜索照片..." disabled />
+        <CommonSearchBox placeholder="搜索照片..." readonly @click="openSearch" />
       </template>
     </CommonPageHeader>
     <CommonCustomScrollbar class="gallery-body" viewport-class="gallery-viewport" show-back-to-top>
@@ -32,11 +32,18 @@
 import type { PhotoItem } from '~/features/gallery/types'
 import { mockGalleryCategories, mockGalleryStats, mockGearList, mockPhotos } from '~/features/gallery/mock'
 
+const searchModal = inject<{ open: () => void } | null>('searchModal', null)
+function openSearch() {
+  searchModal?.open()
+}
+
 useSeoMeta({
   title: '画廊',
   description: '用镜头记录生活的美好瞬间，支持分类筛选与灯箱预览',
   ogTitle: '画廊 - TixXin Blog',
   ogDescription: '用镜头记录生活的美好瞬间，支持分类筛选与灯箱预览',
+  ogType: 'website',
+  ogImage: '/og-gallery.jpg',
 })
 
 const categories = mockGalleryCategories

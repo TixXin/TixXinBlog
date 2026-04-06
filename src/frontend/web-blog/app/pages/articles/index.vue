@@ -11,10 +11,13 @@
     <div class="main-content__header">
       <Transition :name="contentTransitionName" mode="out-in">
         <!-- 列表模式：Tab 栏 -->
-        <div v-if="viewMode === 'list'" key="tabs" class="articles-tabs no-scrollbar">
+        <div v-if="viewMode === 'list'" key="tabs" class="articles-tabs no-scrollbar" role="tablist">
           <button
             v-for="tab in tabs"
             :key="tab.value"
+            role="tab"
+            :aria-selected="activeTab === tab.value"
+            :aria-controls="`panel-${tab.value}`"
             class="tab-btn"
             :class="{ 'tab-active': activeTab === tab.value }"
             @click="activeTab = tab.value"
@@ -37,7 +40,8 @@
       <div class="articles-actions">
         <CommonSearchBox
           :placeholder="viewMode === 'list' ? '搜索站内文章、标签...' : '搜索文章标题、内容...'"
-          disabled
+          readonly
+          @click="openSearch"
         />
         <div v-if="viewMode === 'list'" class="display-mode-toggle">
           <CommonTooltip content="瀑布流">
@@ -139,6 +143,10 @@ useSeoMeta({
 })
 
 const { contentTransitionName, sidebarTransitionName } = useAppearanceSettings()
+const searchModal = inject<{ open: () => void } | null>('searchModal', null)
+function openSearch() {
+  searchModal?.open()
+}
 
 const viewMode = ref<'list' | 'archive'>('list')
 const activeTab = ref('all')
