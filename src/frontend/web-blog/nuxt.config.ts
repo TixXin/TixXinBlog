@@ -37,7 +37,7 @@ export default {
         { name: 'twitter:card', content: 'summary_large_image' },
         { name: 'twitter:site', content: '@TixXin' },
       ],
-      link: [],
+      link: [{ rel: 'alternate', type: 'application/rss+xml', title: 'TixXin Blog RSS', href: '/rss.xml' }],
     },
   },
   icon: {
@@ -56,6 +56,15 @@ export default {
     contractsEntry: '#theme-contracts',
     contractsImportId: '#theme-contracts',
   },
+  runtimeConfig: {
+    public: {
+      analytics: {
+        provider: '',
+        siteId: '',
+        scriptUrl: '',
+      },
+    },
+  },
   site: {
     url: 'https://tix.xin',
     name: 'TixXin Blog',
@@ -67,7 +76,7 @@ export default {
     allow: '/',
   },
   fonts: {
-    families: [{ name: 'Inter', provider: 'google', weights: [300, 400, 500, 600, 700, 800] }],
+    families: [{ name: 'Inter', provider: 'bunny', weights: [300, 400, 500, 600, 700, 800] }],
     defaults: {
       fallbacks: ['system-ui', 'sans-serif'],
     },

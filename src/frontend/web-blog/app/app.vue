@@ -9,9 +9,13 @@
   <NuxtLayout />
   <ClientOnly>
     <CommonToastContainer />
+    <CommonSearchModal v-model:visible="isSearchOpen" />
   </ClientOnly>
 </template>
 
 <script setup lang="ts">
+const isSearchOpen = ref(false)
+provide('searchModal', { open: () => (isSearchOpen.value = true) })
 useKeyboardShortcuts()
+useAnalytics()
 </script>
