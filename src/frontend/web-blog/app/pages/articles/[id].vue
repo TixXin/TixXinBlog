@@ -16,33 +16,58 @@
         :read-time="article.readTime"
       />
       <div class="article-page__inner">
-        <div v-if="!coverError" class="article-page__cover-wrap">
+        <div class="article-page__cover-wrap">
           <NuxtImg
+            v-if="!coverError"
             :src="article.cover"
             :alt="article.title"
             class="article-page__cover"
             fetchpriority="high"
             format="webp"
+            width="800"
+            height="320"
+            sizes="(min-width: 640px) 80vw, 100vw"
             @error="coverError = true"
           />
+          <div v-else class="article-page__cover-fallback">
+            <Icon name="lucide:image-off" size="32" />
+            <span>封面加载失败</span>
+          </div>
         </div>
         <div class="article-page__stats">
           <span class="article-page__stat">
             <Icon name="lucide:eye" size="14" />
             {{ formatCount(article.views) }}
           </span>
-          <span class="article-page__stat">
-            <Icon name="lucide:heart" size="14" />
-            {{ article.likes }}
-          </span>
+          <button
+            type="button"
+            class="article-page__stat article-page__stat--btn"
+            :class="{ 'is-liked': isLiked(article.id) }"
+            @click="toggleLike(article.id)"
+          >
+            <Icon :name="isLiked(article.id) ? 'lucide:heart' : 'lucide:heart'" size="14" />
+            {{ article.likes + (isLiked(article.id) ? 1 : 0) }}
+          </button>
+          <button
+            type="button"
+            class="article-page__stat article-page__stat--btn"
+            :class="{ 'is-favorited': isFavorited(article.id) }"
+            @click="toggleFavorite(article.id)"
+          >
+            <Icon :name="isFavorited(article.id) ? 'lucide:bookmark-check' : 'lucide:bookmark'" size="14" />
+            {{ isFavorited(article.id) ? '已收藏' : '收藏' }}
+          </button>
           <span class="article-page__stat">
             <Icon name="lucide:message-circle" size="14" />
             {{ article.comments }}
           </span>
+          <ClientOnly>
+            <CommonShareButtons :title="article.title" class="article-page__share" />
+          </ClientOnly>
         </div>
         <ArticleContent :sections="article.content" />
         <ArticleNav />
-        <ArticleCommentSection :comments="comments" />
+        <ArticleCommentSection :comments="comments" @submit="(c) => comments.unshift(c)" />
       </div>
     </CommonCustomScrollbar>
     <ClientOnly>
@@ -50,6 +75,7 @@
         <SidebarRightSidebar>
           <ArticleTableOfContents :items="tocItems" :active-id="activeId" :progress="progress" />
           <ArticleRelatedPosts :posts="relatedPosts" />
+          <SidebarReadingHistoryCard />
           <AboutDonateCard />
         </SidebarRightSidebar>
       </Teleport>
@@ -64,9 +90,20 @@ const scrollbarRef = ref<{ viewport: HTMLElement | null } | null>(null)
 const scrollRoot = computed(() => scrollbarRef.value?.viewport ?? null)
 
 const { article, comments, relatedPosts, tocItems, articleExcerpt } = useArticleDetail(route.params.id as string)
+const { isLiked, toggleLike, isFavorited, toggleFavorite } = useLikes()
+const { addToHistory } = useReadingHistory()
 
 const { progress } = useReadingProgress(scrollRoot)
 const { activeId } = useTableOfContents(() => tocItems.value)
+
+onMounted(() => {
+  addToHistory({
+    id: article.value.id,
+    title: article.value.title,
+    cover: article.value.cover,
+    date: article.value.date,
+  })
+})
 
 function formatCount(n: number) {
   return n.toLocaleString('zh-CN')
@@ -140,6 +177,19 @@ useHead({
   object-fit: cover;
 }
 
+.article-page__cover-fallback {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  background: var(--surface-2);
+  color: var(--text-faint);
+  font-size: 0.8125rem;
+}
+
 .article-page__stats {
   display: flex;
   flex-wrap: wrap;
@@ -154,5 +204,33 @@ useHead({
   display: inline-flex;
   align-items: center;
   gap: 0.375rem;
+
+  &--btn {
+    border: none;
+    background: none;
+    cursor: pointer;
+    padding: 0.25rem 0.5rem;
+    border-radius: $radius-sm;
+    transition: all 0.2s;
+    font-size: inherit;
+    color: inherit;
+
+    &:hover {
+      background: var(--surface-2);
+      color: var(--text-main);
+    }
+
+    &.is-liked {
+      color: #ef4444;
+    }
+
+    &.is-favorited {
+      color: var(--accent);
+    }
+  }
+}
+
+.article-page__share {
+  margin-left: auto;
 }
 </style>
