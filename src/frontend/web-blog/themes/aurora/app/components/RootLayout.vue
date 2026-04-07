@@ -9,7 +9,10 @@
   <div class="page-root theme-aurora">
     <header
       class="aurora-topbar"
-      :class="{ 'aurora-topbar--scrolled': isScrolled, 'aurora-topbar--transparent': isHeroVisible }"
+      :class="{
+        'aurora-topbar--scrolled': isScrolled,
+        'aurora-topbar--transparent': isHeroVisible,
+      }"
     >
       <div class="aurora-topbar__inner">
         <NuxtLink to="/" class="aurora-topbar__brand">
@@ -54,8 +57,20 @@
       class="aurora-scroll-area"
       viewport-class="aurora-scroll-viewport"
     >
-      <section v-if="isHomePage" class="aurora-hero">
-        <div class="aurora-hero__bg" :style="heroParallaxStyle" />
+      <section v-if="isHomePage" class="aurora-hero" @wheel="onHeroWheel">
+        <div class="aurora-hero__bg-container">
+          <Transition name="hero-fade">
+            <div
+              :key="currentHeroImage"
+              class="aurora-hero__bg"
+              :style="{
+                ...heroParallaxStyle,
+                backgroundImage: `url(${currentHeroImage})`,
+              }"
+            />
+          </Transition>
+          <div class="aurora-hero__overlay" />
+        </div>
         <div class="aurora-hero__inner">
           <h1 class="aurora-hero__title">TixXin Blog</h1>
           <p class="aurora-hero__subtitle">技术探索 · 项目实践 · 生活随笔</p>
@@ -109,7 +124,42 @@ const isScrolled = ref(false)
 const scrollProgress = ref(0)
 const scrollY = ref(0)
 
-const isHeroVisible = computed(() => isHomePage.value && !isScrolled.value)
+const isHeroVisible = computed(() => isHomePage.value && scrollY.value < 100)
+
+// --- 动态背景图 ---
+const heroImages = [
+  'https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?auto=format&fit=crop&q=80&w=2670',
+  'https://images.unsplash.com/photo-1501785888041-af3ef285b470?auto=format&fit=crop&q=80&w=2670',
+  'https://images.unsplash.com/photo-1434725039720-abb26ce89892?auto=format&fit=crop&q=80&w=2670',
+  'https://images.unsplash.com/photo-1470770841072-f978cf4d019e?auto=format&fit=crop&q=80&w=2670',
+]
+const currentImageIndex = ref(0)
+const currentHeroImage = computed(() => heroImages[currentImageIndex.value])
+
+let imageTimer: ReturnType<typeof setInterval> | null = null
+function startImageRotation() {
+  imageTimer = setInterval(() => {
+    currentImageIndex.value = (currentImageIndex.value + 1) % heroImages.length
+  }, 3000)
+}
+
+// --- 智能滚动跳转 ---
+function onHeroWheel(e: WheelEvent) {
+  if (e.deltaY > 0 && scrollY.value < 10) {
+    // 向下滚动且在顶部时，跳过 Hero
+    const viewport = scrollbarRef.value?.viewport
+    if (viewport) {
+      const heroEl = viewport.querySelector('.aurora-hero') as HTMLElement
+      if (heroEl) {
+        viewport.scrollTo({
+          top: heroEl.offsetHeight,
+          behavior: 'smooth',
+        })
+        e.preventDefault()
+      }
+    }
+  }
+}
 
 const heroParallaxStyle = computed(() => ({
   transform: `translateY(${scrollY.value * 0.4}px)`,
@@ -121,8 +171,9 @@ const displayProgress = computed(() => Math.round(scrollProgress.value))
 function onViewportScroll() {
   const viewport = scrollbarRef.value?.viewport
   if (!viewport) return
-  scrollY.value = viewport.scrollTop
-  isScrolled.value = viewport.scrollTop > 20
+  const currentScrollTop = viewport.scrollTop
+  scrollY.value = currentScrollTop
+  isScrolled.value = currentScrollTop > 20
   scrollProgress.value = scrollbarRef.value?.scrollProgress ?? 0
 }
 
@@ -142,6 +193,7 @@ watch(showProgress, (val: boolean) => {
 })
 
 onMounted(() => {
+  startImageRotation()
   nextTick(() => {
     const viewport = scrollbarRef.value?.viewport
     if (viewport) {
@@ -152,6 +204,7 @@ onMounted(() => {
 })
 
 onBeforeUnmount(() => {
+  if (imageTimer) clearInterval(imageTimer)
   const viewport = scrollbarRef.value?.viewport
   viewport?.removeEventListener('scroll', onViewportScroll)
 })
@@ -200,8 +253,8 @@ onBeforeUnmount(() => {
     border-color 0.4s ease;
 
   &--transparent {
-    background: linear-gradient(135deg, var(--aurora-gradient-start), var(--aurora-gradient-end));
-    backdrop-filter: none;
+    background: var(--aurora-topbar-bg-scrolled);
+    backdrop-filter: blur(var(--aurora-blur-strength));
     border-bottom-color: transparent;
   }
 
@@ -236,10 +289,6 @@ onBeforeUnmount(() => {
   font-size: 1rem;
   flex-shrink: 0;
   transition: $transition-fast;
-
-  .aurora-topbar--transparent & {
-    color: #fff;
-  }
 
   &:hover {
     color: var(--accent);
@@ -278,20 +327,6 @@ onBeforeUnmount(() => {
   white-space: nowrap;
   transition: $transition-fast;
 
-  .aurora-topbar--transparent & {
-    color: rgba(255, 255, 255, 0.8);
-
-    &:hover {
-      color: #fff;
-      background: rgba(255, 255, 255, 0.12);
-    }
-
-    &.active {
-      color: #fff;
-      background: rgba(255, 255, 255, 0.18);
-    }
-  }
-
   &:hover {
     color: var(--text-main);
     background: var(--surface-2);
@@ -310,20 +345,6 @@ onBeforeUnmount(() => {
   gap: 0.5rem;
   flex-shrink: 0;
 
-  .aurora-topbar--transparent & {
-    color: rgba(255, 255, 255, 0.8);
-
-    :deep(button),
-    :deep(a) {
-      color: rgba(255, 255, 255, 0.8);
-
-      &:hover {
-        color: #fff;
-        background: rgba(255, 255, 255, 0.12);
-      }
-    }
-  }
-
   @media (min-width: $breakpoint-xl) {
     width: $sidebar-right-width;
   }
@@ -338,17 +359,51 @@ onBeforeUnmount(() => {
   display: flex;
   align-items: center;
   justify-content: center;
+  background: #000; // 容器设为黑色防止切换时闪白
 
   @media (max-width: #{$breakpoint-md - 0.02}) {
     height: calc(var(--aurora-hero-height) / 2);
   }
 }
 
+.aurora-hero__bg-container {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  background: #000;
+}
+
 .aurora-hero__bg {
   position: absolute;
   inset: -20%;
-  background: linear-gradient(135deg, var(--aurora-gradient-start), var(--aurora-gradient-end));
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
   will-change: transform;
+  // 确保切换时的背景能完全覆盖
+  z-index: 1;
+}
+
+.aurora-hero__overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, rgba(26, 26, 46, 0.4), rgba(22, 33, 62, 0.6));
+  z-index: 2; // 必须高于背景图
+}
+
+.hero-fade-enter-active {
+  transition: opacity 2s ease-in-out;
+  z-index: 2; // 新进入的图在上方
+}
+
+.hero-fade-leave-active {
+  transition: opacity 2s ease-in-out;
+  z-index: 1;
+}
+
+.hero-fade-enter-from,
+.hero-fade-leave-to {
+  opacity: 0;
 }
 
 .aurora-hero__inner {

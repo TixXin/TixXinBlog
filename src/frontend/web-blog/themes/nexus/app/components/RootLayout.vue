@@ -9,7 +9,11 @@
   <div class="page-root theme-nexus">
     <div class="blog-grid">
       <aside class="aside-left anim-fade-in-up anim-delay-1">
-        <CommonCustomScrollbar :show-back-to-top="false" class="aside-left__scroll" viewport-class="aside-left__viewport">
+        <CommonCustomScrollbar
+          :show-back-to-top="false"
+          class="aside-left__scroll"
+          viewport-class="aside-left__viewport"
+        >
           <ThemeComponent name="SidebarNav">
             <template #footer>
               <BlogThemeSwitcher />
@@ -17,6 +21,7 @@
             </template>
           </ThemeComponent>
           <BlogSubscribeCard />
+          <SidebarSiteStatsCard :stats="siteStats" />
         </CommonCustomScrollbar>
       </aside>
 
@@ -43,6 +48,9 @@
 </template>
 
 <script setup lang="ts">
+import { mockSiteStats } from '~/features/stats/mock'
+
+const siteStats = mockSiteStats
 </script>
 
 <style lang="scss" scoped>

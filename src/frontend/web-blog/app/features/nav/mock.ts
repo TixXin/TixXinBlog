@@ -9,7 +9,7 @@ import type { NavItem } from './types'
 
 export const mockNavItems: NavItem[] = [
   { icon: 'lucide:home', label: '主页', to: '/' },
-  { icon: 'lucide:pen-tool', label: '文章', to: '/articles' },
+  { icon: 'lucide:message-circle', label: '动态', to: '/moments' },
   { icon: 'lucide:layers', label: '项目', to: '/projects' },
   { icon: 'lucide:image', label: '画廊', to: '/gallery' },
   { icon: 'lucide:link', label: '友链', to: '/links', desktopOnly: true },
