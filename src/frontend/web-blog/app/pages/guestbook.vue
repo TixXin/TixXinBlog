@@ -27,6 +27,22 @@
 
         <GuestbookMessageList :groups="visibleGroups" />
       </CommonCustomScrollbar>
+
+      <!-- 返回底部浮动按钮：不在底部时显示，带新消息计数 -->
+      <Transition name="scroll-btn-fade">
+        <button
+          v-if="!isAtBottom"
+          type="button"
+          class="guestbook-scroll-bottom"
+          @click="scrollToBottom()"
+        >
+          <span v-if="newMessageCount > 0" class="guestbook-scroll-bottom__badge">
+            {{ newMessageCount > 99 ? '99+' : newMessageCount }}
+          </span>
+          <Icon name="lucide:arrow-down" size="16" />
+        </button>
+      </Transition>
+
       <GuestbookMessageInput @send="addMessage" />
     </div>
     <ClientOnly>
@@ -149,8 +165,24 @@ function addMessage(content: string) {
     loadedGroupCount.value = Math.min(loadedGroupCount.value + 1, allDateGroups.length)
   }
 
-  // 发送后滚动到底部
-  nextTick(() => scrollToBottom())
+  // 自己发送的消息始终滚动到底部；模拟他人消息时累加计数
+  nextTick(() => {
+    scrollToBottom()
+    newMessageCount.value = 0
+  })
+}
+
+// ---- 滚动位置检测 & 新消息计数 ----
+const isAtBottom = ref(true)
+const newMessageCount = ref(0)
+
+function checkIsAtBottom() {
+  const viewport = scrollbarRef.value?.viewport
+  if (!viewport) return
+  const { scrollTop, scrollHeight, clientHeight } = viewport
+  isAtBottom.value = scrollHeight - scrollTop - clientHeight < 60
+  // 回到底部时清零新消息计数
+  if (isAtBottom.value) newMessageCount.value = 0
 }
 
 // ---- 滚动到底部 ----
@@ -171,9 +203,20 @@ onMounted(() => {
     // 等滚动完成后再设置 observer，避免初始触发加载
     setTimeout(() => setupObserver(), 100)
   })
+
+  // 监听滚动检测是否在底部
+  watch(
+    () => scrollbarRef.value?.viewport,
+    (vp, oldVp) => {
+      oldVp?.removeEventListener('scroll', checkIsAtBottom)
+      vp?.addEventListener('scroll', checkIsAtBottom, { passive: true })
+    },
+    { immediate: true },
+  )
 })
 
 onUnmounted(() => {
+  scrollbarRef.value?.viewport?.removeEventListener('scroll', checkIsAtBottom)
   observer?.disconnect()
   observer = null
 })
@@ -186,6 +229,7 @@ onUnmounted(() => {
   display: flex;
   flex-direction: column;
   overflow: hidden;
+  position: relative;
 }
 
 .guestbook-center__messages {
@@ -223,5 +267,70 @@ onUnmounted(() => {
 .loader-fade-enter-from,
 .loader-fade-leave-to {
   opacity: 0;
+}
+
+/* ---- 返回底部浮动按钮 ---- */
+.guestbook-scroll-bottom {
+  position: absolute;
+  right: 1.25rem;
+  bottom: 5rem;
+  z-index: 8;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: $radius-full;
+  border: 1px solid var(--border);
+  background: color-mix(in srgb, var(--surface-1) 80%, transparent);
+  backdrop-filter: blur(12px);
+  color: var(--text-soft);
+  box-shadow: var(--shadow-card);
+  cursor: pointer;
+  transition: all 0.2s ease;
+
+  &:hover {
+    color: var(--text-main);
+    border-color: var(--border-hover);
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-card-hover, 0 4px 12px rgba(0, 0, 0, 0.12));
+  }
+}
+
+.guestbook-scroll-bottom__badge {
+  position: absolute;
+  top: -0.375rem;
+  right: -0.375rem;
+  min-width: 1.125rem;
+  height: 1.125rem;
+  padding: 0 0.25rem;
+  border-radius: $radius-full;
+  background: var(--accent, #5b7cfa);
+  color: #fff;
+  font-size: 0.5625rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+  box-shadow: 0 1px 3px rgba(91, 124, 250, 0.4);
+}
+
+.scroll-btn-fade-enter-active {
+  transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+.scroll-btn-fade-leave-active {
+  transition: opacity 0.15s ease, transform 0.15s ease;
+}
+
+.scroll-btn-fade-enter-from {
+  opacity: 0;
+  transform: translateY(8px);
+}
+
+.scroll-btn-fade-leave-to {
+  opacity: 0;
+  transform: translateY(8px);
 }
 </style>

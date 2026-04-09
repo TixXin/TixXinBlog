@@ -35,11 +35,33 @@
           <span class="message-bubble__time">{{ message.time }}</span>
         </template>
       </div>
-      <div
-        class="message-bubble__content"
-        :class="message.isOwner ? 'message-bubble__content--owner' : 'message-bubble__content--guest'"
-      >
-        {{ message.content }}
+      <div class="message-bubble__body">
+        <div
+          class="message-bubble__content"
+          :class="message.isOwner ? 'message-bubble__content--owner' : 'message-bubble__content--guest'"
+        >
+          {{ message.content }}
+        </div>
+        <div
+          class="message-bubble__actions"
+          :class="{ 'message-bubble__actions--left': message.isOwner }"
+        >
+          <CommonTooltip content="复制">
+            <button type="button" class="message-bubble__action" @click="copyContent">
+              <Icon :name="copied ? 'lucide:check' : 'lucide:copy'" size="13" />
+            </button>
+          </CommonTooltip>
+          <CommonTooltip content="点赞">
+            <button
+              type="button"
+              class="message-bubble__action"
+              :class="{ 'message-bubble__action--liked': liked }"
+              @click="toggleLike"
+            >
+              <Icon :name="liked ? 'lucide:heart' : 'lucide:heart'" size="13" />
+            </button>
+          </CommonTooltip>
+        </div>
       </div>
       <div
         v-if="message.browser || message.region"
@@ -79,9 +101,28 @@
 <script setup lang="ts">
 import type { GuestMessage } from '~/features/guestbook/types'
 
-defineProps<{
+const props = defineProps<{
   message: GuestMessage
 }>()
+
+const copied = ref(false)
+const liked = ref(false)
+let copyTimer: ReturnType<typeof setTimeout> | null = null
+
+function copyContent() {
+  navigator.clipboard.writeText(props.message.content)
+  copied.value = true
+  if (copyTimer) clearTimeout(copyTimer)
+  copyTimer = setTimeout(() => { copied.value = false }, 1500)
+}
+
+function toggleLike() {
+  liked.value = !liked.value
+}
+
+onBeforeUnmount(() => {
+  if (copyTimer) clearTimeout(copyTimer)
+})
 </script>
 
 <style lang="scss" scoped>
@@ -193,6 +234,59 @@ defineProps<{
   color: var(--text-main);
   background: rgba(91, 124, 250, 0.18);
   border: 1px solid rgba(91, 124, 250, 0.22);
+}
+
+.message-bubble__body {
+  display: flex;
+  align-items: flex-end;
+  gap: 0.25rem;
+  position: relative;
+}
+
+.message-bubble__actions {
+  display: flex;
+  gap: 0.125rem;
+  opacity: 0;
+  transition: opacity 0.15s ease;
+  flex-shrink: 0;
+
+  /* 默认：操作栏在气泡右侧（访客消息） */
+  .message-bubble:hover & {
+    opacity: 1;
+  }
+
+  /* 博主消息时操作栏放左侧 */
+  &--left {
+    order: -1;
+  }
+}
+
+.message-bubble__action {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.5rem;
+  height: 1.5rem;
+  border-radius: $radius-sm;
+  border: 1px solid var(--border-soft);
+  background: var(--surface-1);
+  color: var(--text-faint);
+  cursor: pointer;
+  transition: all 0.15s ease;
+
+  &:hover {
+    color: var(--text-main);
+    background: var(--surface-2);
+    border-color: var(--border);
+  }
+
+  &--liked {
+    color: #ef4444;
+
+    &:hover {
+      color: #dc2626;
+    }
+  }
 }
 
 .message-bubble__foot {

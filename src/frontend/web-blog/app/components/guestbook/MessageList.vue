@@ -14,11 +14,13 @@
       <div class="message-list__date-row">
         <span class="message-list__date-badge">{{ group.date }}</span>
       </div>
-      <GuestbookMessageBubble
-        v-for="msg in group.messages"
-        :key="msg.id"
-        :message="msg"
-      />
+      <TransitionGroup name="msg-enter" :css="false" @enter="onMsgEnter">
+        <GuestbookMessageBubble
+          v-for="msg in group.messages"
+          :key="msg.id"
+          :message="msg"
+        />
+      </TransitionGroup>
     </template>
   </div>
 </template>
@@ -29,6 +31,27 @@ import type { DateGroup } from '~/features/guestbook/types'
 defineProps<{
   groups: DateGroup[]
 }>()
+
+/** 新消息渐入 + 轻微上移动画 */
+function onMsgEnter(el: Element, done: () => void) {
+  const htmlEl = el as HTMLElement
+  htmlEl.style.opacity = '0'
+  htmlEl.style.transform = 'translateY(8px)'
+
+  requestAnimationFrame(() => {
+    htmlEl.style.transition = 'opacity 0.25s ease, transform 0.25s ease'
+    htmlEl.style.opacity = '1'
+    htmlEl.style.transform = 'translateY(0)'
+
+    const onEnd = () => {
+      htmlEl.style.transition = ''
+      htmlEl.style.transform = ''
+      htmlEl.removeEventListener('transitionend', onEnd)
+      done()
+    }
+    htmlEl.addEventListener('transitionend', onEnd, { once: true })
+  })
+}
 </script>
 
 <style lang="scss" scoped>
