@@ -6,12 +6,14 @@
 -->
 
 <template>
+  <div class="post-card-list-root">
     <CommonCustomScrollbar
       ref="scrollbarRef"
       class="main-content__body"
       viewport-class="post-list-viewport"
       :show-progress="displayMode === 'waterfall'"
-      show-back-to-top
+      :show-back-to-top="false"
+      primary
     >
 
     <!-- 瀑布流模式：TransitionGroup 实现新卡片渐入动画 -->
@@ -67,8 +69,11 @@
       </Transition>
     </template>
 
-    <!-- 分页模式：底部分页控件 -->
-    <div v-if="displayMode === 'pagination' && totalPages > 1" class="pagination">
+  </CommonCustomScrollbar>
+
+  <!-- 分页模式：悬浮在主内容区底部，向下滚动隐藏，向上滚动显示 -->
+  <Transition name="pagination-slide">
+    <div v-if="displayMode === 'pagination' && totalPages > 1 && paginationVisible" class="pagination-bar">
       <button
         class="pagination__btn"
         :disabled="currentPage <= 1"
@@ -99,7 +104,8 @@
 
       <span class="pagination__info">{{ currentPage }} / {{ totalPages }}</span>
     </div>
-  </CommonCustomScrollbar>
+  </Transition>
+  </div>
 </template>
 
 <script setup lang="ts">
@@ -135,25 +141,74 @@ const {
 })
 
 const { onItemEnter } = usePostListAnimation(displayCount)
+
+// ---- 滚动方向检测：向下隐藏分页，向上显示分页（受界面设置开关控制） ----
+const { paginationAutoHide } = useAppearanceSettings()
+const paginationVisible = ref(true)
+let lastScrollTop = 0
+
+function onViewportScroll() {
+  if (!paginationAutoHide.value) return
+  const viewport = scrollbarRef.value?.viewport
+  if (!viewport) return
+  const { scrollTop } = viewport
+  // 向上滚动 → 显示，向下滚动 → 隐藏
+  if (scrollTop < lastScrollTop || scrollTop <= 10) {
+    paginationVisible.value = true
+  } else if (scrollTop > lastScrollTop && scrollTop > 50) {
+    paginationVisible.value = false
+  }
+  lastScrollTop = scrollTop
+}
+
+// 关闭自动隐藏时，立即恢复分页栏显示
+watch(paginationAutoHide, (enabled) => {
+  if (!enabled) paginationVisible.value = true
+})
+
+onMounted(() => {
+  // 监听 scrollbar viewport 的滚动事件
+  watch(
+    () => scrollbarRef.value?.viewport,
+    (vp, oldVp) => {
+      oldVp?.removeEventListener('scroll', onViewportScroll)
+      vp?.addEventListener('scroll', onViewportScroll, { passive: true })
+    },
+    { immediate: true },
+  )
+})
+
+onUnmounted(() => {
+  scrollbarRef.value?.viewport?.removeEventListener('scroll', onViewportScroll)
+})
 </script>
 
 <style lang="scss" scoped>
+/* 根容器：撑满父级，支持分页悬浮 */
+.post-card-list-root {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  position: relative;
+}
+
 /* 外层容器：重置 .main-content__body 自带的 padding，将间距交给视口层控制 */
 .main-content__body {
   padding: 0;
   gap: 0;
 }
 
-/* 视口层：承载实际的内边距 */
+/* 视口层：承载实际的内边距，底部留出悬浮分页栏空间 */
 :deep(.post-list-viewport) {
-  padding: 1rem 1rem 0;
+  padding: 1rem 1rem 3.5rem;
 
   @media (min-width: $breakpoint-sm) {
-    padding: 1.5rem 1.5rem 0;
+    padding: 1.5rem 1.5rem 3.5rem;
   }
 
   @media (min-width: $breakpoint-xl) {
-    padding: 1rem 2rem 0;
+    padding: 1rem 2rem 3.5rem;
   }
 }
 
@@ -241,23 +296,35 @@ const { onItemEnter } = usePostListAnimation(displayCount)
   opacity: 0;
 }
 
-/* ---- 分页控件 ---- */
-.pagination {
+/* ---- 悬浮分页栏 ---- */
+.pagination-bar {
+  position: absolute;
+  bottom: 0.75rem;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 10;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 0.375rem;
-  padding: 1.5rem 0 2rem;
-  flex-wrap: wrap;
+  gap: 0.25rem;
+  padding: 0.25rem 0.75rem;
+  background: color-mix(in srgb, var(--surface-1) 72%, transparent);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid var(--border);
+  border-radius: $radius-full;
+  box-shadow: var(--shadow-card);
+  flex-wrap: nowrap;
+  white-space: nowrap;
 }
 
 .pagination__btn {
   display: flex;
   align-items: center;
   justify-content: center;
-  min-width: 2rem;
-  height: 2rem;
-  padding: 0 0.25rem;
+  min-width: 1.625rem;
+  height: 1.625rem;
+  padding: 0 0.125rem;
   border-radius: $radius-sm;
   color: var(--text-soft);
   background: transparent;
@@ -278,7 +345,7 @@ const { onItemEnter } = usePostListAnimation(displayCount)
 }
 
 .pagination__page {
-  font-size: 0.8125rem;
+  font-size: 0.75rem;
   font-weight: 500;
 
   &--active {
@@ -298,18 +365,37 @@ const { onItemEnter } = usePostListAnimation(displayCount)
   display: flex;
   align-items: center;
   justify-content: center;
-  min-width: 1.5rem;
-  height: 2rem;
+  min-width: 1rem;
+  height: 1.625rem;
   color: var(--text-soft);
-  font-size: 0.8125rem;
+  font-size: 0.75rem;
   user-select: none;
 }
 
 .pagination__info {
   color: var(--text-soft);
-  font-size: 0.75rem;
-  margin-left: 0.75rem;
+  font-size: 0.6875rem;
+  margin-left: 0.5rem;
   white-space: nowrap;
+}
+
+/* ---- 分页栏滑动动画：向上弹出显示 / 向下退出隐藏 ---- */
+.pagination-slide-enter-active {
+  transition: opacity 0.25s ease-out, transform 0.25s ease-out;
+}
+
+.pagination-slide-leave-active {
+  transition: opacity 0.2s ease-in, transform 0.2s ease-in;
+}
+
+.pagination-slide-enter-from {
+  opacity: 0;
+  transform: translateX(-50%) translateY(100%);
+}
+
+.pagination-slide-leave-to {
+  opacity: 0;
+  transform: translateX(-50%) translateY(100%);
 }
 
 </style>

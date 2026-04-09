@@ -130,6 +130,25 @@
             </section>
           </div>
 
+          <section class="appearance-section">
+            <div class="appearance-section__head">
+              <h3 class="appearance-section__title">其他</h3>
+            </div>
+            <label class="appearance-toggle">
+              <span class="appearance-toggle__label">分页栏随滚动自动隐藏</span>
+              <button
+                type="button"
+                class="appearance-toggle__switch"
+                :class="{ 'appearance-toggle__switch--on': paginationAutoHide }"
+                role="switch"
+                :aria-checked="paginationAutoHide"
+                @click="togglePaginationAutoHide"
+              >
+                <span class="appearance-toggle__thumb" />
+              </button>
+            </label>
+          </section>
+
           <footer class="appearance-drawer__footer">
             <button type="button" class="appearance-drawer__reset" @click="resetAppearanceSettings">恢复默认</button>
           </footer>
@@ -166,6 +185,8 @@ const {
   sidebarAnimationOptions,
   sidebarAnimationLabel,
   setSidebarAnimationPreset,
+  paginationAutoHide,
+  togglePaginationAutoHide,
   resetAppearanceSettings,
 } = useAppearanceSettings()
 
@@ -394,6 +415,53 @@ onBeforeUnmount(() => {
 
   &:hover {
     background: var(--surface-3);
+  }
+}
+
+// ---- 开关切换 ----
+.appearance-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  cursor: pointer;
+}
+
+.appearance-toggle__label {
+  font-size: 0.75rem;
+  color: var(--text-main);
+}
+
+.appearance-toggle__switch {
+  position: relative;
+  flex-shrink: 0;
+  width: 2.25rem;
+  height: 1.25rem;
+  border-radius: $radius-full;
+  background: var(--surface-3);
+  border: 1px solid var(--border);
+  cursor: pointer;
+  transition: background 0.2s, border-color 0.2s;
+
+  &--on {
+    background: var(--accent);
+    border-color: var(--accent);
+  }
+}
+
+.appearance-toggle__thumb {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 0.875rem;
+  height: 0.875rem;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
+  transition: transform 0.2s ease;
+
+  .appearance-toggle__switch--on & {
+    transform: translateX(1rem);
   }
 }
 

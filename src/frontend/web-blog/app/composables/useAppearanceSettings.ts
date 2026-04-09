@@ -21,6 +21,7 @@ const STORAGE_KEY = 'tixxin-blog-appearance'
 interface AppearanceStorage {
   contentTransitionPreset: ContentTransitionPreset
   sidebarAnimationPreset: SidebarAnimationPreset
+  paginationAutoHide: boolean
 }
 
 /** 关闭抽屉后让触发按钮失焦，避免 ESC/点击关闭后残留浏览器默认 focus 轮廓 */
@@ -54,6 +55,8 @@ export function useAppearanceSettings() {
     'appearance-sidebar-animation-preset',
     () => DEFAULT_SIDEBAR_ANIMATION_PRESET,
   )
+  /** 分页栏滚动自动隐藏（默认关闭） */
+  const paginationAutoHide = useState('appearance-pagination-auto-hide', () => false)
   const initialized = useState('appearance-settings-initialized', () => false)
   const persistenceBound = useState('appearance-settings-persistence-bound', () => false)
 
@@ -166,10 +169,15 @@ export function useAppearanceSettings() {
     sidebarAnimationPreset.value = preset
   }
 
+  function togglePaginationAutoHide() {
+    paginationAutoHide.value = !paginationAutoHide.value
+  }
+
   function resetAppearanceSettings() {
     setTheme('system')
     contentTransitionPreset.value = DEFAULT_CONTENT_TRANSITION_PRESET
     sidebarAnimationPreset.value = DEFAULT_SIDEBAR_ANIMATION_PRESET
+    paginationAutoHide.value = false
     setLayoutTheme(DEFAULT_LAYOUT_THEME_ID)
   }
 
@@ -189,6 +197,10 @@ export function useAppearanceSettings() {
         if (parsed.sidebarAnimationPreset) {
           sidebarAnimationPreset.value = parsed.sidebarAnimationPreset
         }
+
+        if (parsed.paginationAutoHide !== undefined) {
+          paginationAutoHide.value = parsed.paginationAutoHide
+        }
       }
     } catch {
       localStorage.removeItem(STORAGE_KEY)
@@ -199,11 +211,12 @@ export function useAppearanceSettings() {
     persistenceBound.value = true
 
     watch(
-      [contentTransitionPreset, sidebarAnimationPreset],
+      [contentTransitionPreset, sidebarAnimationPreset, paginationAutoHide],
       () => {
         const payload: AppearanceStorage = {
           contentTransitionPreset: contentTransitionPreset.value,
           sidebarAnimationPreset: sidebarAnimationPreset.value,
+          paginationAutoHide: paginationAutoHide.value,
         }
 
         localStorage.setItem(STORAGE_KEY, JSON.stringify(payload))
@@ -231,6 +244,8 @@ export function useAppearanceSettings() {
     sidebarAnimationClass,
     sidebarTransitionName,
     setSidebarAnimationPreset,
+    paginationAutoHide,
+    togglePaginationAutoHide,
     openDrawer,
     closeDrawer,
     toggleDrawer,

@@ -102,7 +102,8 @@
         key="archive"
         class="articles-body"
         viewport-class="articles-viewport"
-        show-back-to-top
+        :show-back-to-top="false"
+        primary
       >
         <ArticleArchiveTimeline :years="archiveYears" />
       </CommonCustomScrollbar>
@@ -150,7 +151,7 @@ function openSearch() {
 
 const viewMode = ref<'list' | 'archive'>('list')
 const activeTab = ref('all')
-const listDisplayMode = ref<'waterfall' | 'pagination'>('waterfall')
+const listDisplayMode = ref<'waterfall' | 'pagination'>('pagination')
 
 const tabs = mockPostTabs
 const posts = mockPosts
