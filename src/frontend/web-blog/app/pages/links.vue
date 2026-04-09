@@ -12,7 +12,7 @@
         <CommonSearchBox placeholder="搜索友链..." readonly @click="openSearch" />
       </template>
     </CommonPageHeader>
-    <CommonCustomScrollbar class="links-body" viewport-class="links-viewport" show-back-to-top>
+    <CommonCustomScrollbar class="links-body" viewport-class="links-viewport" :show-back-to-top="false" primary>
       <LinkGrid :links="links" />
       <LinkForm />
     </CommonCustomScrollbar>
