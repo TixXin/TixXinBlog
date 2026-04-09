@@ -163,9 +163,11 @@ function onScroll() {
   scrollProgress.value = scrollRange > 0 ? (scrollTop / scrollRange) * 100 : 0
   showBackToTopBtn.value = scrollTop > props.backToTopThreshold
 
-  // 主滚动区域：同步到全局滚动进度
+  // 主滚动区域：同步到全局滚动进度（聊天页面反转：底部0%，顶部100%）
   if (props.primary) {
-    globalProgress.value = scrollProgress.value
+    globalProgress.value = globalScrollDirection.value === 'down'
+      ? 100 - scrollProgress.value
+      : scrollProgress.value
   }
 
   // 用户滚动后重置点击状态
