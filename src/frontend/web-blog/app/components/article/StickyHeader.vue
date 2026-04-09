@@ -43,7 +43,7 @@ defineProps<{
 <style lang="scss" scoped>
 .article-sticky-header {
   position: sticky;
-  top: 3px;
+  top: 0;
   z-index: 20;
   padding: 0 2rem;
   background: var(--surface-1-alpha-90);
