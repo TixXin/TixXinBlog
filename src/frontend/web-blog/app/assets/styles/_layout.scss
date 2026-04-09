@@ -182,12 +182,19 @@
   }
 }
 
-// 底部栏容器：仅承载 StatusFooter
+// 底部栏容器：沿用三栏外层总宽度，与上方整体容器对齐
 .footer-row {
   width: 100%;
   max-width: $container-max-width;
   margin: 0 auto;
   flex-shrink: 0;
+  position: relative;
+  overflow: visible; // 允许头像溢出到 flex gap 区域
+}
+
+.footer-row__content {
+  width: 100%;
+  min-width: 0;
 }
 
 .site-footer {

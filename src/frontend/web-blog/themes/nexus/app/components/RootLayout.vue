@@ -1,6 +1,6 @@
 <!--
   @file RootLayout.vue
-  @description Nexus 三栏布局主题：左侧导航栏 + 中间主内容 + 右侧侧边栏
+  @description Nexus 三栏布局主题：左侧信息栏 + 中间主内容 + 右侧侧边栏，底部导航栏
   @author TixXin
   @since 2026-03-24
 -->
@@ -14,14 +14,9 @@
           class="aside-left__scroll"
           viewport-class="aside-left__viewport"
         >
-          <ThemeComponent name="SidebarNav">
-            <template #footer>
-              <BlogThemeSwitcher />
-              <BlogAppearanceEntry />
-            </template>
-          </ThemeComponent>
-          <BlogSubscribeCard />
           <SidebarSiteStatsCard :stats="siteStats" />
+          <BlogSubscribeCard />
+          <SidebarFooterCard />
         </CommonCustomScrollbar>
       </aside>
 
@@ -42,13 +37,14 @@
     </div>
 
     <div class="footer-row">
-      <ThemeComponent name="StatusFooter" class="anim-fade-in-up anim-delay-5" />
+      <ThemeComponent name="StatusFooter" class="footer-row__content anim-fade-in-up anim-delay-5" />
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
 import { mockSiteStats } from '~/features/stats/mock'
+import SidebarFooterCard from './SidebarFooterCard.vue'
 
 const siteStats = mockSiteStats
 </script>
