@@ -30,7 +30,7 @@
             class="aside-right__scroll"
             viewport-class="aside-right__viewport"
           >
-            <div id="right-sidebar-target" />
+            <div id="right-sidebar-target" :class="sidebarAnimationClass" />
           </CommonCustomScrollbar>
         </aside>
       </div>
@@ -47,6 +47,7 @@ import { mockSiteStats } from '~/features/stats/mock'
 import SidebarFooterCard from './SidebarFooterCard.vue'
 
 const siteStats = mockSiteStats
+const { sidebarAnimationClass } = useAppearanceSettings()
 </script>
 
 <style lang="scss" scoped>
