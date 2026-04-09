@@ -12,7 +12,7 @@
         <CommonSearchBox placeholder="搜索照片..." readonly @click="openSearch" />
       </template>
     </CommonPageHeader>
-    <CommonCustomScrollbar class="gallery-body" viewport-class="gallery-viewport" show-back-to-top>
+    <CommonCustomScrollbar class="gallery-body" viewport-class="gallery-viewport" :show-back-to-top="false" primary>
       <GalleryFilter v-model="activeFilter" :categories="categories" />
       <GalleryGrid :photos="filteredPhotos" @select="openLightBox" />
     </CommonCustomScrollbar>

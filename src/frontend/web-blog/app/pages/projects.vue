@@ -12,7 +12,7 @@
         <CommonSearchBox placeholder="搜索项目..." readonly @click="openSearch" />
       </template>
     </CommonPageHeader>
-    <CommonCustomScrollbar class="projects-body" viewport-class="projects-viewport" show-back-to-top>
+    <CommonCustomScrollbar class="projects-body" viewport-class="projects-viewport" :show-back-to-top="false" primary>
       <ProjectGrid :projects="projects" />
     </CommonCustomScrollbar>
     <ClientOnly>

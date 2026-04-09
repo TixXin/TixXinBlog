@@ -102,7 +102,8 @@
         key="archive"
         class="articles-body"
         viewport-class="articles-viewport"
-        show-back-to-top
+        :show-back-to-top="false"
+        primary
       >
         <ArticleArchiveTimeline :years="archiveYears" />
       </CommonCustomScrollbar>

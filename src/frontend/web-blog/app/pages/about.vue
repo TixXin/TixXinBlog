@@ -7,7 +7,7 @@
 
 <template>
   <div class="main-inner">
-    <CommonCustomScrollbar class="about-body" viewport-class="about-viewport" show-back-to-top>
+    <CommonCustomScrollbar class="about-body" viewport-class="about-viewport" :show-back-to-top="false" primary>
       <AboutHero :profile="profile" />
       <AboutSkillBars :skills="skills" />
       <AboutExperienceTimeline :experiences="experiences" />

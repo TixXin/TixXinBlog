@@ -232,7 +232,7 @@ function getDockItemStyle(index: number): Record<string, string> {
 
   :deep(.site-footer) {
     @media (min-width: $breakpoint-md) {
-      display: flex;
+      display: grid;
     }
   }
 }

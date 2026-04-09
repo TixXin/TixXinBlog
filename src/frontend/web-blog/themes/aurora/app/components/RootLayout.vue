@@ -53,7 +53,7 @@
 
     <CommonCustomScrollbar
       ref="scrollbarRef"
-      :show-back-to-top="true"
+      :show-back-to-top="false"
       class="aurora-scroll-area"
       viewport-class="aurora-scroll-viewport"
     >
@@ -611,7 +611,7 @@ onBeforeUnmount(() => {
 
   :deep(.site-footer) {
     @media (min-width: $breakpoint-md) {
-      display: flex;
+      display: grid;
     }
   }
 }

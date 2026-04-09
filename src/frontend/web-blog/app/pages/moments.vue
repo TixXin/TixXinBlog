@@ -7,7 +7,7 @@
 
 <template>
   <div class="main-inner moments-page">
-    <CommonCustomScrollbar class="moments-body" viewport-class="moments-viewport">
+    <CommonCustomScrollbar class="moments-body" viewport-class="moments-viewport" primary>
       <div class="moments-content">
         <div class="moments-header">
           <h2 class="moments-header__title">
