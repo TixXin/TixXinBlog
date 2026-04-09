@@ -464,8 +464,8 @@ onUnmounted(() => {
 .custom-scrollbar__track {
   position: absolute;
   right: 4px;
-  top: 4px;
-  bottom: 4px;
+  top: var(--scrollbar-track-inset, 4px);
+  bottom: var(--scrollbar-track-inset, 4px);
   width: 6px;
   border-radius: 3px;
   z-index: 20;
