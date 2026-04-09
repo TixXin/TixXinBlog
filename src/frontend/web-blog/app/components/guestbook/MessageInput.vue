@@ -28,7 +28,23 @@
         aria-multiline="true"
         data-placeholder="输入留言内容..."
         spellcheck="false"
+        @input="updateCharCount"
+        @keydown="onEditorKeydown"
       />
+      <div class="message-input__footer">
+        <span class="message-input__hint">
+          <kbd class="message-input__kbd">Ctrl</kbd>
+          <span class="message-input__kbd-plus">+</span>
+          <kbd class="message-input__kbd">Enter</kbd>
+          <span class="message-input__hint-text">发送</span>
+        </span>
+        <span
+          class="message-input__char-count"
+          :class="{ 'message-input__char-count--warn': charCount > MAX_CHARS * 0.9, 'message-input__char-count--over': charCount > MAX_CHARS }"
+        >
+          {{ charCount }} / {{ MAX_CHARS }}
+        </span>
+      </div>
     </div>
   </div>
 </template>
@@ -36,10 +52,16 @@
 <script setup lang="ts">
 const { info } = useToast()
 const editorRef = ref<HTMLElement | null>(null)
+const charCount = ref(0)
+const MAX_CHARS = 500
 
 const emit = defineEmits<{
   send: [content: string]
 }>()
+
+function updateCharCount() {
+  charCount.value = editorRef.value?.innerText?.length ?? 0
+}
 
 function handleAction() {
   const content = editorRef.value?.innerText?.trim()
@@ -47,9 +69,22 @@ function handleAction() {
     info('请输入留言内容')
     return
   }
+  if (content.length > MAX_CHARS) {
+    info(`留言不能超过 ${MAX_CHARS} 字`)
+    return
+  }
   emit('send', content)
   if (editorRef.value) editorRef.value.innerText = ''
+  charCount.value = 0
   info('留言发送成功')
+}
+
+/** Ctrl/Cmd+Enter 快捷发送 */
+function onEditorKeydown(e: KeyboardEvent) {
+  if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
+    e.preventDefault()
+    handleAction()
+  }
 }
 
 const toolbarButtons = [
@@ -153,7 +188,7 @@ const toolbarButtons = [
 }
 
 .message-input__editor-wrap {
-  padding: 0.75rem 1rem 1rem;
+  padding: 0.75rem 1rem 0.5rem;
 }
 
 .message-input__editor {
@@ -182,6 +217,62 @@ const toolbarButtons = [
     content: attr(data-placeholder);
     color: var(--text-faint);
     pointer-events: none;
+  }
+}
+
+.message-input__footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.375rem 0.25rem 0.25rem;
+}
+
+.message-input__hint {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  color: var(--text-faint);
+  font-size: 0.625rem;
+}
+
+.message-input__kbd {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 1.125rem;
+  min-width: 1.25rem;
+  padding: 0 0.25rem;
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  background: var(--surface-2);
+  font-size: 0.5625rem;
+  font-family: inherit;
+  color: var(--text-soft);
+  line-height: 1;
+}
+
+.message-input__kbd-plus {
+  color: var(--text-faint);
+  font-size: 0.5625rem;
+}
+
+.message-input__hint-text {
+  margin-left: 0.25rem;
+}
+
+.message-input__char-count {
+  font-size: 0.625rem;
+  color: var(--text-faint);
+  font-variant-numeric: tabular-nums;
+  transition: color 0.2s;
+
+  &--warn {
+    color: var(--warning, #f59e0b);
+  }
+
+  &--over {
+    color: var(--danger, #ef4444);
+    font-weight: 600;
   }
 }
 </style>
