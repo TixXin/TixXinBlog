@@ -10,7 +10,10 @@
       "Bash(git commit -m ':*)",
       "Bash(pnpm lint:*)",
       "Bash(xargs grep:*)",
-      "mcp__git-mcp-server__git_add"
+      "mcp__git-mcp-server__git_add",
+      "mcp__git-mcp-server__git_commit",
+      "mcp__git-mcp-server__git_status",
+      "Bash(find \"e:\\\\Projects\\\\TixXinBlog\\\\src\\\\frontend\\\\web-blog\\\\app\" -type f \\\\\\( -name \"*.vue\" -o -name \"*.ts\" -o -name \"*.tsx\" \\\\\\) -exec grep -l \"displayProgress\\\\|scrollProgress.*%\" {} \\\\;)"
     ]
   },
   "enabledMcpjsonServers": [

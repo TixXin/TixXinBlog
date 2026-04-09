@@ -22,3 +22,6 @@ temp/*.js
 
 # Playwright MCP 临时文件
 .playwright-mcp/
+
+# Claude Code 本地设置
+.claude/settings.local.json
