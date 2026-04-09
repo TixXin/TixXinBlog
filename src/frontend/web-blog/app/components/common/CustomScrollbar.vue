@@ -51,7 +51,7 @@
       </div>
     </Transition>
 
-    <!-- 返回顶部：包裹 div 为 Transition 提供单元素根节点（CommonTooltip 渲染 fragment） -->
+    <!-- 滚动进度 / 返回顶部按钮 -->
     <Transition name="back-to-top">
       <div
         v-if="showBackToTop && showBackToTopBtn"
@@ -61,10 +61,12 @@
           <button
             type="button"
             class="custom-scrollbar__back-to-top-btn"
+            :class="{ 'is-clicked': progressClicked }"
             aria-label="返回顶部"
-            @click="scrollToTop(true)"
+            @click="onProgressClick"
           >
-            <Icon name="lucide:chevron-up" size="20" />
+            <span class="custom-scrollbar__progress-text">{{ displayProgress }}%</span>
+            <Icon name="lucide:arrow-up" size="16" class="custom-scrollbar__progress-icon" />
           </button>
         </CommonTooltip>
       </div>
@@ -84,12 +86,17 @@ const props = withDefaults(defineProps<{
   showBackToTop?: boolean
   /** 返回顶部按钮出现阈值（px） */
   backToTopThreshold?: number
+  /** 是否为当前页面的主滚动区域（写入全局滚动进度） */
+  primary?: boolean
 }>(), {
   autoHideDelay: 1500,
   showProgress: false,
   showBackToTop: true,
   backToTopThreshold: 300,
+  primary: false,
 })
+
+const { scrollProgress: globalProgress, scrollToTopFn: globalScrollToTopFn } = useScrollProgress()
 
 const rootRef = ref<HTMLElement | null>(null)
 const viewportRef = ref<HTMLElement | null>(null)
@@ -102,6 +109,14 @@ const thumbHeight = ref(0)
 const thumbTop = ref(0)
 const scrollProgress = ref(0)
 const showBackToTopBtn = ref(false)
+
+const progressClicked = ref(false)
+const displayProgress = computed(() => Math.round(scrollProgress.value))
+
+function onProgressClick() {
+  scrollToTop(true)
+  progressClicked.value = true
+}
 
 let hideTimer: ReturnType<typeof setTimeout> | null = null
 let resizeObserver: ResizeObserver | null = null
@@ -147,6 +162,16 @@ function onScroll() {
   const scrollRange = scrollHeight - clientHeight
   scrollProgress.value = scrollRange > 0 ? (scrollTop / scrollRange) * 100 : 0
   showBackToTopBtn.value = scrollTop > props.backToTopThreshold
+
+  // 主滚动区域：同步到全局滚动进度
+  if (props.primary) {
+    globalProgress.value = scrollProgress.value
+  }
+
+  // 用户滚动后重置点击状态
+  if (progressClicked.value && scrollProgress.value > 1) {
+    progressClicked.value = false
+  }
 }
 
 function reveal() {
@@ -248,6 +273,11 @@ onMounted(() => {
       subtree: true,
     })
   }
+
+  // 主滚动区域：注册全局回到顶部方法
+  if (props.primary) {
+    globalScrollToTopFn.value = () => scrollToTop(true)
+  }
 })
 
 onUnmounted(() => {
@@ -256,6 +286,12 @@ onUnmounted(() => {
   mutationObserver?.disconnect()
   document.removeEventListener('mousemove', onDragMove)
   document.removeEventListener('mouseup', onDragEnd)
+
+  // 主滚动区域：清理全局状态
+  if (props.primary) {
+    globalProgress.value = 0
+    globalScrollToTopFn.value = null
+  }
 })
 </script>
 
@@ -312,33 +348,98 @@ onUnmounted(() => {
 }
 
 .custom-scrollbar__back-to-top-btn {
-  width: 40px;
-  height: 40px;
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 2.75rem;
+  height: 2.25rem;
+  padding: 0.25rem 0.625rem;
   border-radius: $radius-full;
   border: 1px solid var(--border);
   background: var(--surface-1-alpha);
   backdrop-filter: blur(12px);
   color: var(--text-soft);
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  font-size: 0.75rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
   cursor: pointer;
-  transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease, box-shadow 0.2s ease, transform 0.15s ease;
+  transition:
+    background-color 0.2s ease,
+    border-color 0.2s ease,
+    color 0.2s ease,
+    box-shadow 0.2s ease,
+    transform 0.15s ease;
 
   &:hover {
+    color: var(--accent);
     background: var(--surface-2);
     border-color: var(--border-hover);
-    color: var(--text-main);
     box-shadow: var(--shadow-card);
+
+    .custom-scrollbar__progress-text {
+      opacity: 0;
+      transform: scale(0.6);
+    }
+
+    .custom-scrollbar__progress-icon {
+      opacity: 1;
+      transform: translateY(0);
+      animation: scrollbar-progress-bounce 0.6s ease infinite;
+    }
   }
 
   &:active {
     transform: scale(0.95);
   }
 
+  // 点击回顶后 hover 不再切换图标
+  &.is-clicked:hover {
+    .custom-scrollbar__progress-text {
+      opacity: 1;
+      transform: none;
+    }
+
+    .custom-scrollbar__progress-icon {
+      opacity: 0;
+      transform: translateY(4px);
+      animation: none;
+    }
+  }
+
   @media (max-width: #{$breakpoint-sm - 0.02}) {
-    width: 36px;
-    height: 36px;
+    min-width: 2.5rem;
+    height: 2rem;
+    font-size: 0.6875rem;
+  }
+}
+
+.custom-scrollbar__progress-text {
+  transition:
+    opacity 0.2s ease,
+    transform 0.2s ease;
+}
+
+.custom-scrollbar__progress-icon {
+  position: absolute;
+  opacity: 0;
+  transform: translateY(4px);
+  transition:
+    opacity 0.2s ease,
+    transform 0.2s ease;
+}
+
+@keyframes scrollbar-progress-bounce {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  40% {
+    transform: translateY(-3px);
+  }
+  60% {
+    transform: translateY(1px);
   }
 }
 
