@@ -1,0 +1,22 @@
+#!/bin/sh
+
+# 读取 commit message，过滤掉注释行和空行
+msg=$(sed '/^#/d' "$1")
+subject=$(echo "$msg" | head -n 1)
+body=$(echo "$msg" | tail -n +3 | sed '/^$/d')
+
+# 校验 subject 非空
+if [ -z "$subject" ]; then
+  echo "❌ commit 缺少 subject"
+  exit 1
+fi
+
+# 校验 body 非空
+if [ -z "$body" ]; then
+  echo "❌ commit 缺少 body，请在 subject 后空一行写明本次变更的原因"
+  echo "   格式："
+  echo "   <type>(<scope>): <subject>"
+  echo ""
+  echo "   <body: 解释为什么做这次变更>"
+  exit 1
+fi
