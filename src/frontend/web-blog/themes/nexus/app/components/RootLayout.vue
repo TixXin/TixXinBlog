@@ -48,6 +48,7 @@ import SidebarFooterCard from './SidebarFooterCard.vue'
 
 const siteStats = mockSiteStats
 const { sidebarAnimationClass } = useAppearanceSettings()
+useSidebarExitAnimation('.aside-right')
 </script>
 
 <style lang="scss" scoped>

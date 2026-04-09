@@ -7,7 +7,9 @@
 
 <template>
   <div class="main-inner">
-    <CommonReadingProgress :progress="progress" />
+    <Teleport to="body">
+      <CommonReadingProgress :progress="progress" />
+    </Teleport>
     <CommonCustomScrollbar ref="scrollbarRef" class="article-page" viewport-class="article-viewport" :show-back-to-top="false" primary>
       <ArticleStickyHeader
         :title="article.title"
