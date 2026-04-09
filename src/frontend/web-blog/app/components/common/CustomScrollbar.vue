@@ -96,7 +96,7 @@ const props = withDefaults(defineProps<{
   primary: false,
 })
 
-const { scrollProgress: globalProgress, scrollToTopFn: globalScrollToTopFn } = useScrollProgress()
+const { scrollProgress: globalProgress, scrollResetFn: globalScrollResetFn, scrollDirection: globalScrollDirection } = useScrollProgress()
 
 const rootRef = ref<HTMLElement | null>(null)
 const viewportRef = ref<HTMLElement | null>(null)
@@ -274,9 +274,10 @@ onMounted(() => {
     })
   }
 
-  // 主滚动区域：注册全局回到顶部方法
+  // 主滚动区域：注册全局回到起始位置方法（默认回到顶部）
   if (props.primary) {
-    globalScrollToTopFn.value = () => scrollToTop(true)
+    globalScrollResetFn.value = () => scrollToTop(true)
+    globalScrollDirection.value = 'up'
   }
 })
 
@@ -290,7 +291,8 @@ onUnmounted(() => {
   // 主滚动区域：清理全局状态
   if (props.primary) {
     globalProgress.value = 0
-    globalScrollToTopFn.value = null
+    globalScrollResetFn.value = null
+    globalScrollDirection.value = 'up'
   }
 })
 </script>

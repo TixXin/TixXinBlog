@@ -53,11 +53,11 @@
         class="nexus-bar__progress"
         :class="{ 'is-clicked': progressClicked }"
         type="button"
-        aria-label="返回顶部"
+        :aria-label="scrollDirection === 'down' ? '返回底部' : '返回顶部'"
         @click="onProgressClick"
       >
         <span class="nexus-bar__progress-text">{{ displayProgress }}%</span>
-        <Icon name="lucide:arrow-up" size="14" class="nexus-bar__progress-icon" />
+        <Icon :name="scrollDirection === 'down' ? 'lucide:arrow-down' : 'lucide:arrow-up'" size="14" class="nexus-bar__progress-icon" />
       </button>
     </Transition>
   </div>
@@ -66,7 +66,7 @@
 <script setup lang="ts">
 const route = useRoute()
 const { navItems } = useNavItems()
-const { scrollProgress, scrollToTopFn } = useScrollProgress()
+const { scrollProgress, scrollResetFn, scrollDirection } = useScrollProgress()
 
 const avatarUrl =
   'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=200&q=80&sat=-12'
@@ -74,7 +74,14 @@ const avatarUrl =
 const avatarError = ref(false)
 const progressClicked = ref(false)
 
-const showProgress = computed(() => scrollProgress.value > 0)
+const showProgress = computed(() => {
+  if (scrollDirection.value === 'down') {
+    // 聊天模式：不在底部时显示（progress < 99）
+    return scrollProgress.value > 0 && scrollProgress.value < 99
+  }
+  // 普通模式：不在顶部时显示
+  return scrollProgress.value > 0
+})
 const displayProgress = computed(() => Math.round(scrollProgress.value))
 
 function onAvatarError() {
@@ -88,7 +95,7 @@ function isActive(to: string) {
 }
 
 function onProgressClick() {
-  scrollToTopFn.value?.()
+  scrollResetFn.value?.()
   progressClicked.value = true
 }
 

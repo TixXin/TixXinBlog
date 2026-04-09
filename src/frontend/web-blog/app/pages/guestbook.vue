@@ -9,39 +9,42 @@
   <div class="main-inner">
     <div class="guestbook-center">
       <GuestbookHeader :member-count="totalMessageCount" />
-      <CommonCustomScrollbar
-        ref="scrollbarRef"
-        class="guestbook-center__messages"
-        viewport-class="guestbook-viewport"
-        :show-back-to-top="false"
-        primary
-      >
-        <!-- 向上滚动加载历史消息 -->
-        <Transition name="loader-fade">
-          <div v-if="hasOlderMessages && showLoadingOlder" class="guestbook-loader">
-            <Icon name="lucide:loader-2" size="18" class="guestbook-loader__spinner" />
-            <span class="guestbook-loader__text">加载历史消息...</span>
-          </div>
-        </Transition>
-        <div ref="topSentinelRef" class="guestbook-sentinel" />
-
-        <GuestbookMessageList :groups="visibleGroups" />
-      </CommonCustomScrollbar>
-
-      <!-- 返回底部浮动按钮：不在底部时显示，带新消息计数 -->
-      <Transition name="scroll-btn-fade">
-        <button
-          v-if="!isAtBottom"
-          type="button"
-          class="guestbook-scroll-bottom"
-          @click="scrollToBottom()"
+      <!-- 消息区域 wrapper：浮动按钮的定位基准 -->
+      <div class="guestbook-center__messages-wrap">
+        <CommonCustomScrollbar
+          ref="scrollbarRef"
+          class="guestbook-center__messages"
+          viewport-class="guestbook-viewport"
+          :show-back-to-top="false"
+          primary
         >
-          <span v-if="newMessageCount > 0" class="guestbook-scroll-bottom__badge">
-            {{ newMessageCount > 99 ? '99+' : newMessageCount }}
-          </span>
-          <Icon name="lucide:arrow-down" size="16" />
-        </button>
-      </Transition>
+          <!-- 向上滚动加载历史消息 -->
+          <Transition name="loader-fade">
+            <div v-if="hasOlderMessages && showLoadingOlder" class="guestbook-loader">
+              <Icon name="lucide:loader-2" size="18" class="guestbook-loader__spinner" />
+              <span class="guestbook-loader__text">加载历史消息...</span>
+            </div>
+          </Transition>
+          <div ref="topSentinelRef" class="guestbook-sentinel" />
+
+          <GuestbookMessageList :groups="visibleGroups" />
+        </CommonCustomScrollbar>
+
+        <!-- 返回底部浮动按钮：锚定在消息区域右下角 -->
+        <Transition name="scroll-btn-fade">
+          <button
+            v-if="!isAtBottom"
+            type="button"
+            class="guestbook-scroll-bottom"
+            @click="scrollToBottom()"
+          >
+            <span v-if="newMessageCount > 0" class="guestbook-scroll-bottom__badge">
+              {{ newMessageCount > 99 ? '99+' : newMessageCount }}
+            </span>
+            <Icon name="lucide:arrow-down" size="16" />
+          </button>
+        </Transition>
+      </div>
 
       <GuestbookMessageInput @send="addMessage" />
     </div>
@@ -195,6 +198,9 @@ function scrollToBottom(smooth = true) {
   })
 }
 
+// ---- 全局滚动方向覆写：留言板为"返回底部" ----
+const { scrollResetFn, scrollDirection } = useScrollProgress()
+
 // ---- 生命周期 ----
 onMounted(() => {
   // 默认显示最底部（最新消息）
@@ -203,6 +209,10 @@ onMounted(() => {
     // 等滚动完成后再设置 observer，避免初始触发加载
     setTimeout(() => setupObserver(), 100)
   })
+
+  // 覆写全局滚动行为：留言板回到底部而非顶部
+  scrollResetFn.value = () => scrollToBottom(true)
+  scrollDirection.value = 'down'
 
   // 监听滚动检测是否在底部
   watch(
@@ -217,6 +227,7 @@ onMounted(() => {
 
 onUnmounted(() => {
   scrollbarRef.value?.viewport?.removeEventListener('scroll', checkIsAtBottom)
+  scrollDirection.value = 'up'
   observer?.disconnect()
   observer = null
 })
@@ -229,7 +240,14 @@ onUnmounted(() => {
   display: flex;
   flex-direction: column;
   overflow: hidden;
+}
+
+.guestbook-center__messages-wrap {
   position: relative;
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
 }
 
 .guestbook-center__messages {
@@ -273,7 +291,7 @@ onUnmounted(() => {
 .guestbook-scroll-bottom {
   position: absolute;
   right: 1.25rem;
-  bottom: 5rem;
+  bottom: 1rem;
   z-index: 8;
   display: flex;
   align-items: center;
