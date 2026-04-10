@@ -10,7 +10,7 @@
     <div class="moment-author-card__profile">
       <div class="moment-author-card__avatar-ring">
         <NuxtImg
-          src="/avatar.jpg"
+          src="/avatar.svg"
           alt="TixXin"
           width="64"
           height="64"

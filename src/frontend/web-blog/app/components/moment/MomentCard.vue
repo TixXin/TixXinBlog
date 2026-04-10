@@ -9,7 +9,7 @@
   <div class="moment-card">
     <div class="moment-card__avatar">
       <NuxtImg
-        src="/avatar.jpg"
+        src="/avatar.svg"
         alt="TixXin"
         width="44"
         height="44"
@@ -33,15 +33,12 @@
 
       <div v-if="moment.images && moment.images.length > 0" class="moment-card__images" :class="gridClass">
         <div v-for="(img, idx) in moment.images" :key="idx" class="moment-card__image-wrap" @click="openLightBox(idx)">
-          <NuxtImg
+          <img
             :src="img"
             alt="图片"
-            width="400"
-            height="400"
             class="moment-card__image"
-            format="webp"
             loading="lazy"
-          />
+          >
         </div>
       </div>
 

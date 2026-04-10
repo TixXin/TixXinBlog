@@ -15,6 +15,8 @@
         v-for="cat in categories"
         :key="cat.name"
         class="category-card__item"
+        :class="{ 'is-active': activeCategory === cat.name }"
+        @click="$emit('select', cat.name)"
       >
         <div class="category-card__left">
           <span
@@ -39,6 +41,12 @@ import type { CategoryItem } from '~/features/stats/types'
 
 defineProps<{
   categories: CategoryItem[]
+  /** 当前选中的分类名 */
+  activeCategory?: string | null
+}>()
+
+defineEmits<{
+  select: [categoryName: string]
 }>()
 </script>
 
@@ -76,6 +84,20 @@ defineProps<{
 
   &:hover {
     background: var(--accent-soft);
+  }
+
+  &.is-active {
+    background: var(--accent-soft);
+    color: var(--accent);
+
+    .category-card__badge {
+      background: var(--accent);
+      color: #fff;
+    }
+
+    .category-card__arrow {
+      color: var(--accent);
+    }
   }
 }
 

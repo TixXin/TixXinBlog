@@ -15,14 +15,24 @@ interface PostListPaginationOptions {
   activeTab: Ref<string>
   displayMode: Ref<'waterfall' | 'pagination'>
   scrollbarRef: Ref<{ viewport: HTMLElement | null; scrollToTop: (smooth?: boolean) => void } | null>
+  /** 按标签名过滤 */
+  selectedTag?: Ref<string | null>
+  /** 按分类名（folder）过滤 */
+  selectedCategory?: Ref<string | null>
 }
 
 export function usePostListPagination(options: PostListPaginationOptions) {
-  const { posts, activeTab, displayMode, scrollbarRef } = options
+  const { posts, activeTab, displayMode, scrollbarRef, selectedTag, selectedCategory } = options
 
   const filteredPosts = computed(() => {
-    if (activeTab.value === 'all') return posts.value
-    return posts.value.filter(p => p.category === activeTab.value)
+    let result = posts.value
+    if (selectedTag?.value) {
+      result = result.filter(p => p.tags.some(t => t.label === selectedTag.value))
+    }
+    if (selectedCategory?.value) {
+      result = result.filter(p => p.folder === selectedCategory.value)
+    }
+    return result
   })
 
   // 瀑布流模式状态
@@ -74,7 +84,7 @@ export function usePostListPagination(options: PostListPaginationOptions) {
     scrollbarRef.value?.scrollToTop(true)
   }
 
-  // Tab / 显示模式切换时重置
+  // Tab / 显示模式 / 过滤条件切换时重置
   watch(activeTab, () => {
     displayCount.value = PAGE_SIZE
     currentPage.value = 1
@@ -86,6 +96,22 @@ export function usePostListPagination(options: PostListPaginationOptions) {
     currentPage.value = 1
     scrollbarRef.value?.scrollToTop(false)
   })
+
+  if (selectedTag) {
+    watch(selectedTag, () => {
+      displayCount.value = PAGE_SIZE
+      currentPage.value = 1
+      scrollbarRef.value?.scrollToTop(false)
+    })
+  }
+
+  if (selectedCategory) {
+    watch(selectedCategory, () => {
+      displayCount.value = PAGE_SIZE
+      currentPage.value = 1
+      scrollbarRef.value?.scrollToTop(false)
+    })
+  }
 
   // 瀑布流加载逻辑
   function clearSpinnerTimer() {

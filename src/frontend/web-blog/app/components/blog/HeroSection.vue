@@ -10,7 +10,7 @@
     <div class="hero-section__content">
       <div class="hero-section__avatar">
         <NuxtImg
-          src="/avatar.jpg"
+          src="/avatar.svg"
           alt="TixXin"
           width="80"
           height="80"

@@ -12,7 +12,7 @@ export const mockMoments: MomentItem[] = [
     id: 'm-1',
     content: '今天天气真好，去公园散了步，拍了些照片。',
     images: [
-      'https://images.unsplash.com/photo-1506744626753-edaeb5d4c82a?w=800&q=80',
+      'https://images.unsplash.com/photo-1501854140801-50d01698950b?w=800&q=80',
       'https://images.unsplash.com/photo-1469474968028-56623f02e42e?w=800&q=80',
     ],
     date: '2026-04-04T10:30:00Z',
