@@ -115,8 +115,14 @@ const props = withDefaults(defineProps<{
   posts: PostItem[]
   activeTab: string
   displayMode?: 'waterfall' | 'pagination'
+  /** 按标签名过滤 */
+  selectedTag?: string | null
+  /** 按分类名过滤 */
+  selectedCategory?: string | null
 }>(), {
   displayMode: 'waterfall',
+  selectedTag: null,
+  selectedCategory: null,
 })
 
 const scrollbarRef = ref<{ viewport: HTMLElement | null; scrollToTop: (smooth?: boolean) => void } | null>(null)
@@ -138,6 +144,8 @@ const {
   activeTab: toRef(props, 'activeTab'),
   displayMode: toRef(props, 'displayMode'),
   scrollbarRef,
+  selectedTag: toRef(props, 'selectedTag'),
+  selectedCategory: toRef(props, 'selectedCategory'),
 })
 
 const { onItemEnter } = usePostListAnimation(displayCount)

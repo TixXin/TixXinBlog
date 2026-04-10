@@ -18,7 +18,13 @@
           :class="rowIdx % 2 === 0 ? 'tag-cloud-card__track--left' : 'tag-cloud-card__track--right'"
           :style="{ animationDuration: rowSpeeds[rowIdx] }"
         >
-          <span v-for="(tag, i) in [...row, ...row]" :key="`${rowIdx}-${i}`" class="tag-cloud-card__tag">
+          <span
+            v-for="(tag, i) in [...row, ...row]"
+            :key="`${rowIdx}-${i}`"
+            class="tag-cloud-card__tag"
+            :class="{ 'is-active': activeTag === tag.name }"
+            @click="$emit('select', tag.name)"
+          >
             <span class="tag-cloud-card__hash" :style="{ color: tag.color }">#</span>
             {{ tag.name }}
             <span class="tag-cloud-card__tag-count">{{ tag.count }}</span>
@@ -34,6 +40,12 @@ import type { TagItem } from '~/features/stats/types'
 
 const props = defineProps<{
   tags: TagItem[]
+  /** 当前选中的标签名 */
+  activeTag?: string | null
+}>()
+
+defineEmits<{
+  select: [tagName: string]
 }>()
 
 const rowSpeeds = ['22s', '18s', '25s', '20s']
@@ -125,6 +137,12 @@ const tagRows = computed(() => {
     background: var(--accent-soft);
     color: var(--text-main);
     border-color: var(--border-hover);
+  }
+
+  &.is-active {
+    background: var(--accent-soft);
+    color: var(--accent);
+    border-color: var(--accent);
   }
 }
 

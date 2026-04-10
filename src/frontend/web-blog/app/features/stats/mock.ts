@@ -39,9 +39,9 @@ export const mockTags: TagItem[] = [
 ]
 
 export const mockCategories: CategoryItem[] = [
-  { name: '随笔日记', count: 10, icon: 'lucide:flame', iconColor: '#f97316', iconBg: 'rgba(249, 115, 22, 0.1)' },
-  { name: '前端开发', count: 28, icon: 'lucide:code', iconColor: '#3b82f6', iconBg: 'rgba(59, 130, 246, 0.1)' },
-  { name: '工作复盘', count: 15, icon: 'lucide:briefcase', iconColor: '#64748b', iconBg: 'rgba(100, 116, 139, 0.1)' },
-  { name: '后端技术', count: 8, icon: 'lucide:server', iconColor: '#10b981', iconBg: 'rgba(16, 185, 129, 0.1)' },
-  { name: 'DevOps', count: 5, icon: 'lucide:terminal', iconColor: '#06b6d4', iconBg: 'rgba(6, 182, 212, 0.1)' },
+  { name: '前端开发', count: 20, icon: 'lucide:code', iconColor: '#3b82f6', iconBg: 'rgba(59, 130, 246, 0.1)' },
+  { name: '随笔日记', count: 17, icon: 'lucide:flame', iconColor: '#f97316', iconBg: 'rgba(249, 115, 22, 0.1)' },
+  { name: 'DevOps', count: 9, icon: 'lucide:terminal', iconColor: '#06b6d4', iconBg: 'rgba(6, 182, 212, 0.1)' },
+  { name: '后端技术', count: 7, icon: 'lucide:server', iconColor: '#10b981', iconBg: 'rgba(16, 185, 129, 0.1)' },
+  { name: '工作复盘', count: 2, icon: 'lucide:briefcase', iconColor: '#64748b', iconBg: 'rgba(100, 116, 139, 0.1)' },
 ]
