@@ -122,7 +122,7 @@
   flex-direction: column;
   overflow: hidden;
   transition: $transition-colors;
-  --scrollbar-track-inset: 10%;
+  --scrollbar-track-inset: #{$radius-card};
 
   .theme-nexus & {
     @media (min-width: $breakpoint-lg) {
