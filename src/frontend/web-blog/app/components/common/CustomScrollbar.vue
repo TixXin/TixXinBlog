@@ -101,6 +101,9 @@ const props = withDefaults(defineProps<{
 
 const { scrollProgress: globalProgress, scrollResetFn: globalScrollResetFn, scrollDirection: globalScrollDirection } = useScrollProgress()
 
+// 记录本实例注册的 resetFn，用于 unmount 时判断是否仍为当前活跃的主滚动条
+let myResetFn: (() => void) | null = null
+
 const rootRef = ref<HTMLElement | null>(null)
 const viewportRef = ref<HTMLElement | null>(null)
 const trackRef = ref<HTMLElement | null>(null)
@@ -291,9 +294,10 @@ onMounted(() => {
   // 主滚动区域：根据方向注册全局回到起始位置方法
   if (props.primary) {
     globalScrollDirection.value = props.primaryDirection
-    globalScrollResetFn.value = props.primaryDirection === 'down'
+    myResetFn = props.primaryDirection === 'down'
       ? () => scrollToBottom(true)
       : () => scrollToTop(true)
+    globalScrollResetFn.value = myResetFn
   }
 })
 
@@ -304,8 +308,9 @@ onUnmounted(() => {
   document.removeEventListener('mousemove', onDragMove)
   document.removeEventListener('mouseup', onDragEnd)
 
-  // 主滚动区域：清理全局状态
-  if (props.primary) {
+  // 主滚动区域：仅在本实例仍为活跃主滚动条时清理全局状态
+  // out-in 页面过渡中新页面先 mount 再旧页面 unmount，需避免覆盖新页面已设置的值
+  if (props.primary && globalScrollResetFn.value === myResetFn) {
     globalProgress.value = 0
     globalScrollResetFn.value = null
     globalScrollDirection.value = 'up'
