@@ -94,6 +94,12 @@
   --stat-green-border: rgba(5, 150, 105, 0.15);
   --stat-green-dot: #10b981;
 
+  /* --- 博主在线状态 --- */
+  --presence-online: #10b981;
+  --presence-idle: #f59e0b;
+  --presence-busy: #ef4444;
+  --presence-offline: #9ca3af;
+
   /* --- 热力图色阶 --- */
   --heatmap-0: #ebedf0;
   --heatmap-1: #9be9a8;
@@ -199,6 +205,12 @@
   --stat-green-bg: rgba(5, 150, 105, 0.08);
   --stat-green-border: rgba(5, 150, 105, 0.15);
   --stat-green-dot: #34d399;
+
+  /* --- 博主在线状态 --- */
+  --presence-online: #34d399;
+  --presence-idle: #fbbf24;
+  --presence-busy: #f87171;
+  --presence-offline: #6b7280;
 
   /* --- 热力图色阶 --- */
   --heatmap-0: rgba(100, 116, 139, 0.2);
