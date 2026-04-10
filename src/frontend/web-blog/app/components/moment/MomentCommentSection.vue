@@ -10,22 +10,26 @@
     <!-- 评论列表 -->
     <div v-if="comments.length > 0" class="moment-comments__list">
       <div v-for="c in visibleComments" :key="c.id" class="moment-comments__item">
-        <div class="moment-comments__avatar">
-          <NuxtImg
-            v-if="c.avatar"
-            :src="c.avatar"
-            :alt="c.author"
-            width="24"
-            height="24"
-            class="moment-comments__avatar-img"
-            format="webp"
-          />
-          <Icon v-else name="lucide:user" size="14" class="moment-comments__avatar-fallback" />
-        </div>
+        <MomentUserPopover :profile="c.profile" :is-owner="c.isOwner">
+          <div class="moment-comments__avatar">
+            <NuxtImg
+              v-if="c.avatar"
+              :src="c.avatar"
+              :alt="c.author"
+              width="24"
+              height="24"
+              class="moment-comments__avatar-img"
+              format="webp"
+            />
+            <Icon v-else name="lucide:user" size="14" class="moment-comments__avatar-fallback" />
+          </div>
+        </MomentUserPopover>
         <div class="moment-comments__body">
-          <span class="moment-comments__author" :class="{ 'is-owner': c.isOwner }">{{ c.author }}</span>
+          <MomentUserPopover :profile="c.profile" :is-owner="c.isOwner">
+            <span class="moment-comments__author" :class="{ 'is-owner': c.isOwner }">{{ c.author }}</span>
+          </MomentUserPopover>
           <span class="moment-comments__sep">：</span>
-          <span class="moment-comments__text">{{ c.content }}</span>
+          <span class="moment-comments__text" v-html="renderMentions(c.content)" />
         </div>
       </div>
 
@@ -79,6 +83,11 @@ const expanded = ref(false)
 
 const hasMoreComments = computed(() => props.comments.length > maxVisible)
 const visibleComments = computed(() => (expanded.value ? props.comments : props.comments.slice(0, maxVisible)))
+
+/** 将评论文本中的 @xxx 转换为高亮 span */
+function renderMentions(text: string): string {
+  return text.replace(/@(\S+)/g, '<span class="mention">@$1</span>')
+}
 
 const draft = ref('')
 
@@ -182,6 +191,16 @@ function submit() {
 
 .moment-comments__text {
   color: var(--text-main);
+
+  :deep(.mention) {
+    color: var(--accent);
+    font-weight: 500;
+    cursor: pointer;
+
+    &:hover {
+      text-decoration: underline;
+    }
+  }
 }
 
 .moment-comments__expand {

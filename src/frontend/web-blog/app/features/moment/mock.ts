@@ -5,7 +5,26 @@
  * @since 2026-04-04
  */
 
-import type { MomentItem } from './types'
+import type { MomentItem, MomentUserProfile } from './types'
+
+/** 生成 mock 评论者头像 — 使用 UI Avatars 服务按名字生成 */
+function mockAvatar(name: string, bg: string): string {
+  return `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=${bg}&color=fff&size=64&font-size=0.4&rounded=true`
+}
+
+/** 评论者 profile 数据 */
+const profiles: Record<string, MomentUserProfile> = {
+  小林: { name: '小林', avatar: mockAvatar('小林', '4ade80'), bio: '摄影爱好者，喜欢用镜头记录生活' },
+  代码小哥: { name: '代码小哥', avatar: mockAvatar('代码小哥', '60a5fa'), bio: '全栈开发，开源爱好者', link: 'https://github.com' },
+  前端菜鸟: { name: '前端菜鸟', avatar: mockAvatar('前端菜鸟', 'f472b6'), bio: '正在学习前端的大三学生' },
+  美食家小王: { name: '美食家小王', avatar: mockAvatar('美食家小王', 'fb923c'), bio: '吃遍深圳，一个认真的美食博主' },
+  读书人: { name: '读书人', avatar: mockAvatar('读书人', 'a78bfa'), bio: '每年阅读 50+ 本书的文学爱好者' },
+  驴友阿杰: { name: '驴友阿杰', avatar: mockAvatar('驴友阿杰', '34d399'), bio: '户外运动达人，已登顶 30+ 座山', link: 'https://example.com' },
+  户外小白: { name: '户外小白', avatar: mockAvatar('户外小白', 'fbbf24'), bio: '刚入坑户外的打工人' },
+  咖啡控: { name: '咖啡控', avatar: mockAvatar('咖啡控', 'c084fc'), bio: '每天一杯手冲咖啡' },
+  摄影师老张: { name: '摄影师老张', avatar: mockAvatar('摄影师老张', '38bdf8'), bio: '十年风光摄影经验，索尼用户', link: 'https://example.com' },
+  Nuxt爱好者: { name: 'Nuxt爱好者', avatar: mockAvatar('Nuxt爱好者', '2dd4bf'), bio: 'Vue/Nuxt 生态贡献者' },
+}
 
 export const mockMoments: MomentItem[] = [
   {
@@ -25,10 +44,11 @@ export const mockMoments: MomentItem[] = [
       {
         id: 'c-1-1',
         author: '小林',
-        avatar: '',
+        avatar: mockAvatar('小林', '4ade80'),
         content: '好美啊！这个季节去植物园最合适了',
         time: '3小时前',
         isOwner: false,
+        profile: profiles['小林'],
       },
       {
         id: 'c-1-2',
@@ -49,14 +69,22 @@ export const mockMoments: MomentItem[] = [
     isLiked: true,
     device: 'MacBook Pro',
     topics: ['技术分享'],
+    linkedArticle: {
+      id: 'a-1',
+      title: '从零搭建博客主题引擎：基于 Slot Contract 的可插拔架构',
+      summary: '本文介绍如何设计一套灵活的主题引擎，通过 slot contract 模式实现主题的热切换和懒加载。',
+      cover: 'https://images.unsplash.com/photo-1461749280684-dccba630e2f6?w=600&q=80',
+      url: '/posts/theme-engine-design',
+    },
     comments: [
       {
         id: 'c-2-1',
         author: '代码小哥',
-        avatar: '',
+        avatar: mockAvatar('代码小哥', '60a5fa'),
         content: '期待文章，主题引擎是怎么做的？',
         time: '昨天',
         isOwner: false,
+        profile: profiles['代码小哥'],
       },
       {
         id: 'c-2-2',
@@ -66,7 +94,7 @@ export const mockMoments: MomentItem[] = [
         time: '昨天',
         isOwner: true,
       },
-      { id: 'c-2-3', author: '前端菜鸟', avatar: '', content: '大佬带带我', time: '10小时前', isOwner: false },
+      { id: 'c-2-3', author: '前端菜鸟', avatar: mockAvatar('前端菜鸟', 'f472b6'), content: '@代码小哥 大佬带带我', time: '10小时前', isOwner: false, profile: profiles['前端菜鸟'] },
     ],
   },
   {
@@ -101,16 +129,17 @@ export const mockMoments: MomentItem[] = [
       {
         id: 'c-4-1',
         author: '美食家小王',
-        avatar: '',
+        avatar: mockAvatar('美食家小王', 'fb923c'),
         content: '这家我也去过，确实不错！',
         time: '4天前',
         isOwner: false,
+        profile: profiles['美食家小王'],
       },
       {
         id: 'c-4-2',
         author: 'TixXin',
         avatar: '/avatar-photo.webp',
-        content: '强烈推荐鳗鱼饭，一定要试',
+        content: '@美食家小王 强烈推荐鳗鱼饭，一定要试',
         time: '4天前',
         isOwner: true,
       },
@@ -125,7 +154,7 @@ export const mockMoments: MomentItem[] = [
     isLiked: false,
     topics: ['读书笔记', '技术分享'],
     comments: [
-      { id: 'c-5-1', author: '读书人', avatar: '', content: '这本书是经典，值得反复看', time: '6天前', isOwner: false },
+      { id: 'c-5-1', author: '读书人', avatar: mockAvatar('读书人', 'a78bfa'), content: '这本书是经典，值得反复看', time: '6天前', isOwner: false, profile: profiles['读书人'] },
     ],
   },
   {
@@ -137,6 +166,13 @@ export const mockMoments: MomentItem[] = [
     isLiked: true,
     device: 'MacBook Pro',
     topics: ['技术分享'],
+    linkedArticle: {
+      id: 'a-2',
+      title: 'Vue 3 Transition 实战：打造丝滑的微交互动画',
+      summary: '详解 CSS animation 与 JS hooks 的组合技巧，从基础过渡到复杂编排动画。',
+      cover: 'https://images.unsplash.com/photo-1550439062-609e1531270e?w=600&q=80',
+      url: '/posts/vue3-transition-animations',
+    },
   },
   {
     id: 'm-7',
@@ -158,10 +194,11 @@ export const mockMoments: MomentItem[] = [
       {
         id: 'c-7-1',
         author: '驴友阿杰',
-        avatar: '',
+        avatar: mockAvatar('驴友阿杰', '34d399'),
         content: '梧桐山的云海确实绝了！几点上去的？',
         time: '10天前',
         isOwner: false,
+        profile: profiles['驴友阿杰'],
       },
       {
         id: 'c-7-2',
@@ -171,12 +208,12 @@ export const mockMoments: MomentItem[] = [
         time: '10天前',
         isOwner: true,
       },
-      { id: 'c-7-3', author: '户外小白', avatar: '', content: '难度大吗？新手能去吗', time: '9天前', isOwner: false },
+      { id: 'c-7-3', author: '户外小白', avatar: mockAvatar('户外小白', 'fbbf24'), content: '@驴友阿杰 难度大吗？新手能去吗', time: '9天前', isOwner: false, profile: profiles['户外小白'] },
       {
         id: 'c-7-4',
         author: 'TixXin',
         avatar: '/avatar-photo.webp',
-        content: '主要路线不难，就是有点长，带够水就行',
+        content: '@户外小白 主要路线不难，就是有点长，带够水就行',
         time: '9天前',
         isOwner: true,
       },
@@ -204,7 +241,7 @@ export const mockMoments: MomentItem[] = [
     location: '深圳·南山',
     topics: ['美食探店', '生活日常'],
     comments: [
-      { id: 'c-9-1', author: '咖啡控', avatar: '', content: '在哪里呀，求地址！', time: '15天前', isOwner: false },
+      { id: 'c-9-1', author: '咖啡控', avatar: mockAvatar('咖啡控', 'c084fc'), content: '在哪里呀，求地址！', time: '15天前', isOwner: false, profile: profiles['咖啡控'] },
       {
         id: 'c-9-2',
         author: 'TixXin',
@@ -252,10 +289,11 @@ export const mockMoments: MomentItem[] = [
       {
         id: 'c-12-1',
         author: '摄影师老张',
-        avatar: '',
+        avatar: mockAvatar('摄影师老张', '38bdf8'),
         content: '手持长曝？快门速度多少？',
         time: '23天前',
         isOwner: false,
+        profile: profiles['摄影师老张'],
       },
       {
         id: 'c-12-2',
@@ -293,10 +331,11 @@ export const mockMoments: MomentItem[] = [
       {
         id: 'c-14-1',
         author: 'Nuxt爱好者',
-        avatar: '',
+        avatar: mockAvatar('Nuxt爱好者', '2dd4bf'),
         content: '升级麻烦吗？有 breaking changes 吗？',
         time: '30天前',
         isOwner: false,
+        profile: profiles['Nuxt爱好者'],
       },
       {
         id: 'c-14-2',

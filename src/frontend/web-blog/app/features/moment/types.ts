@@ -5,6 +5,14 @@
  * @since 2026-04-04
  */
 
+/** 用户简要信息，用于 hover 信息卡展示 */
+export interface MomentUserProfile {
+  name: string
+  avatar: string
+  bio?: string
+  link?: string
+}
+
 /** 朋友圈评论项 */
 export interface MomentCommentItem {
   id: string
@@ -13,6 +21,17 @@ export interface MomentCommentItem {
   content: string
   time: string
   isOwner?: boolean
+  /** 评论者详细信息，用于 hover 卡片 */
+  profile?: MomentUserProfile
+}
+
+/** 引用的文章信息 */
+export interface MomentLinkedArticle {
+  id: string
+  title: string
+  summary: string
+  cover?: string
+  url: string
 }
 
 export interface MomentItem {
@@ -26,4 +45,6 @@ export interface MomentItem {
   device?: string
   topics?: string[]
   comments?: MomentCommentItem[]
+  /** 引用的文章 */
+  linkedArticle?: MomentLinkedArticle
 }
