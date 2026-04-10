@@ -9,6 +9,10 @@
   <div class="main-inner">
     <div class="guestbook-center">
       <GuestbookHeader :member-count="totalMessageCount" />
+
+      <!-- 论坛模式：输入框在消息列表上方 -->
+      <GuestbookMessageInput v-if="!isChatMode" @send="addMessage" />
+
       <!-- 消息区域 wrapper：浮动按钮的定位基准 -->
       <div class="guestbook-center__messages-wrap">
         <CommonCustomScrollbar
@@ -17,24 +21,37 @@
           viewport-class="guestbook-viewport"
           :show-back-to-top="false"
           primary
-          primary-direction="down"
+          :primary-direction="isChatMode ? 'down' : 'up'"
         >
-          <!-- 向上滚动加载历史消息 -->
-          <Transition name="loader-fade">
-            <div v-if="hasOlderMessages && showLoadingOlder" class="guestbook-loader">
-              <Icon name="lucide:loader-2" size="18" class="guestbook-loader__spinner" />
-              <span class="guestbook-loader__text">加载历史消息...</span>
-            </div>
-          </Transition>
-          <div ref="topSentinelRef" class="guestbook-sentinel" />
+          <!-- 聊天模式：顶部哨兵，向上滚动加载历史消息 -->
+          <template v-if="isChatMode">
+            <Transition name="loader-fade">
+              <div v-if="hasOlderMessages && showLoadingOlder" class="guestbook-loader">
+                <Icon name="lucide:loader-2" size="18" class="guestbook-loader__spinner" />
+                <span class="guestbook-loader__text">加载历史消息...</span>
+              </div>
+            </Transition>
+            <div ref="topSentinelRef" class="guestbook-sentinel" />
+          </template>
 
           <GuestbookMessageList :groups="visibleGroups" />
+
+          <!-- 论坛模式：底部哨兵，向下滚动加载更早消息 -->
+          <template v-if="!isChatMode">
+            <div ref="bottomSentinelRef" class="guestbook-sentinel" />
+            <Transition name="loader-fade">
+              <div v-if="hasOlderMessages && showLoadingOlder" class="guestbook-loader">
+                <Icon name="lucide:loader-2" size="18" class="guestbook-loader__spinner" />
+                <span class="guestbook-loader__text">加载更多消息...</span>
+              </div>
+            </Transition>
+          </template>
         </CommonCustomScrollbar>
 
-        <!-- 返回底部浮动按钮：锚定在消息区域右下角 -->
+        <!-- 聊天模式：返回底部浮动按钮 -->
         <Transition name="scroll-btn-fade">
           <button
-            v-if="!isAtBottom"
+            v-if="isChatMode && !isAtBottom"
             type="button"
             class="guestbook-scroll-bottom"
             @click="scrollToBottom()"
@@ -47,7 +64,8 @@
         </Transition>
       </div>
 
-      <GuestbookMessageInput @send="addMessage" />
+      <!-- 聊天模式：输入框在消息列表下方 -->
+      <GuestbookMessageInput v-if="isChatMode" @send="addMessage" />
     </div>
     <ClientOnly>
       <Teleport to="#right-sidebar-target">
@@ -64,6 +82,12 @@
 <script setup lang="ts">
 import type { DateGroup, GuestMessage } from '~/features/guestbook/types'
 import { mockActiveMembers, mockChatRules, mockChatStats, mockDateGroups } from '~/features/guestbook/mock'
+
+// ---- 主题模式检测 ----
+// 三栏主题（leftSidebar）为聊天模式：输入框在底部，最新消息在底部
+// 双栏/单栏主题为论坛模式：输入框在顶部，最新消息在顶部
+const { activeTheme } = useLayoutTheme()
+const isChatMode = computed(() => activeTheme.value.capabilities.leftSidebar)
 
 useSeoMeta({
   title: '留言板',
@@ -88,12 +112,23 @@ const loadedGroupCount = ref(Math.min(INITIAL_GROUPS, allDateGroups.length))
 const loadingOlder = ref(false)
 const showLoadingOlder = ref(false)
 const topSentinelRef = ref<HTMLElement | null>(null)
+const bottomSentinelRef = ref<HTMLElement | null>(null)
 const scrollbarRef = ref<{ viewport: HTMLElement | null; scrollToTop: (smooth?: boolean) => void } | null>(null)
 
-// 可见的日期组（从最新开始，逐步加载更早的）
+// 可见的日期组（从最新的 N 组开始，逐步加载更早的）
 const visibleGroups = computed(() => {
-  // allDateGroups[0] 是最新的，取最后 loadedGroupCount 个作为可见
-  return allDateGroups.slice(0, loadedGroupCount.value)
+  const start = Math.max(0, allDateGroups.length - loadedGroupCount.value)
+  const groups = allDateGroups.slice(start)
+
+  if (isChatMode.value) {
+    // 聊天模式：旧→新（上→下），数据原始顺序即可
+    return groups
+  }
+  // 论坛模式：新→旧（上→下），反转日期组和组内消息
+  return [...groups].reverse().map(g => ({
+    ...g,
+    messages: [...g.messages].reverse(),
+  }))
 })
 
 const hasOlderMessages = computed(() => loadedGroupCount.value < allDateGroups.length)
@@ -117,9 +152,9 @@ function loadOlderMessages() {
       allDateGroups.length,
     )
 
-    // 保持滚动位置：加载旧消息后，内容向上增长，维持用户当前视图
+    // 聊天模式：旧消息从顶部长出，需要保持当前视图位置
     nextTick(() => {
-      if (viewport) {
+      if (isChatMode.value && viewport) {
         const newScrollHeight = viewport.scrollHeight
         viewport.scrollTop += newScrollHeight - prevScrollHeight
       }
@@ -135,7 +170,13 @@ let observer: IntersectionObserver | null = null
 function setupObserver() {
   observer?.disconnect()
   const viewport = scrollbarRef.value?.viewport
-  if (!viewport || !topSentinelRef.value) return
+  // 聊天模式用顶部哨兵（向上加载），论坛模式用底部哨兵（向下加载）
+  const sentinel = isChatMode.value ? topSentinelRef.value : bottomSentinelRef.value
+  if (!viewport || !sentinel) return
+
+  const rootMargin = isChatMode.value
+    ? '200px 0px 0px 0px'
+    : '0px 0px 200px 0px'
 
   observer = new IntersectionObserver(
     (entries) => {
@@ -143,9 +184,9 @@ function setupObserver() {
         loadOlderMessages()
       }
     },
-    { root: viewport, rootMargin: '200px 0px 0px 0px' },
+    { root: viewport, rootMargin },
   )
-  observer.observe(topSentinelRef.value)
+  observer.observe(sentinel)
 }
 
 // ---- 发送消息 ----
@@ -162,16 +203,20 @@ function addMessage(content: string) {
 
   const todayGroup = allDateGroups.find((g) => g.date === today)
   if (todayGroup) {
-    todayGroup.messages.unshift(newMsg)
+    todayGroup.messages.push(newMsg)
   } else {
-    allDateGroups.unshift({ date: today, messages: [newMsg] })
+    allDateGroups.push({ date: today, messages: [newMsg] })
     // 新增日期组也要显示
     loadedGroupCount.value = Math.min(loadedGroupCount.value + 1, allDateGroups.length)
   }
 
-  // 自己发送的消息始终滚动到底部；模拟他人消息时累加计数
+  // 发送后滚动到可见新消息的位置
   nextTick(() => {
-    scrollToBottom()
+    if (isChatMode.value) {
+      scrollToBottom()
+    } else {
+      scrollbarRef.value?.scrollToTop(true)
+    }
     newMessageCount.value = 0
   })
 }
@@ -201,9 +246,11 @@ function scrollToBottom(smooth = true) {
 
 // ---- 生命周期 ----
 onMounted(() => {
-  // 默认显示最底部（最新消息）
   nextTick(() => {
-    scrollToBottom(false)
+    // 聊天模式默认显示最底部（最新消息），论坛模式保持顶部
+    if (isChatMode.value) {
+      scrollToBottom(false)
+    }
     // 等滚动完成后再设置 observer，避免初始触发加载
     setTimeout(() => setupObserver(), 100)
   })
