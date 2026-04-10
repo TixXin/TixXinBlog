@@ -1,12 +1,12 @@
 <!--
   @file ChatStats.vue
-  @description 留言板右侧栏对话统计卡片
+  @description 留言板右侧栏对话统计卡片，数字首次出现时有 count-up 动效
   @author TixXin
   @since 2026-03-20
 -->
 
 <template>
-  <section class="card chat-stats">
+  <section ref="containerRef" class="card chat-stats">
     <h3 class="chat-stats__title">
       <Icon
         name="lucide:bar-chart-2"
@@ -16,12 +16,12 @@
     </h3>
     <div class="chat-stats__grid">
       <div
-        v-for="item in stats"
+        v-for="(item, index) in stats"
         :key="item.label"
         class="chat-stats__cell"
       >
         <p class="chat-stats__value">
-          {{ item.value }}
+          {{ animatedValues[index] ?? item.value }}
         </p>
         <p class="chat-stats__label">
           {{ item.label }}
@@ -34,9 +34,68 @@
 <script setup lang="ts">
 import type { ChatStat } from '~/features/guestbook/types'
 
-defineProps<{
+const props = defineProps<{
   stats: ChatStat[]
 }>()
+
+const containerRef = ref<HTMLElement | null>(null)
+const animatedValues = ref<string[]>(props.stats.map(() => '0'))
+const hasAnimated = ref(false)
+
+/** 从字符串中提取数字部分（如 "1,234" → 1234） */
+function parseStatValue(val: string): number {
+  return parseInt(val.replace(/,/g, ''), 10) || 0
+}
+
+/** 格式化数字为千分位 */
+function formatNumber(n: number): string {
+  return n.toLocaleString('zh-CN')
+}
+
+/** 数字递增动画 */
+function animateCountUp() {
+  if (hasAnimated.value) return
+  hasAnimated.value = true
+
+  props.stats.forEach((stat, index) => {
+    const target = parseStatValue(stat.value)
+    const duration = 800
+    const startTime = performance.now()
+
+    function step(now: number) {
+      const elapsed = now - startTime
+      const progress = Math.min(elapsed / duration, 1)
+      // easeOutCubic
+      const eased = 1 - (1 - progress) ** 3
+      const current = Math.round(target * eased)
+      animatedValues.value[index] = formatNumber(current)
+      if (progress < 1) {
+        requestAnimationFrame(step)
+      } else {
+        // 最终确保显示原始值（保持格式一致）
+        animatedValues.value[index] = stat.value
+      }
+    }
+
+    requestAnimationFrame(step)
+  })
+}
+
+onMounted(() => {
+  if (!containerRef.value) return
+  const observer = new IntersectionObserver(
+    (entries) => {
+      if (entries[0]?.isIntersecting) {
+        animateCountUp()
+        observer.disconnect()
+      }
+    },
+    { threshold: 0.3 },
+  )
+  observer.observe(containerRef.value)
+
+  onBeforeUnmount(() => observer.disconnect())
+})
 </script>
 
 <style lang="scss" scoped>
@@ -90,6 +149,7 @@ defineProps<{
   line-height: 1.2;
   color: var(--text-main);
   transition: color 0.2s;
+  font-variant-numeric: tabular-nums;
 }
 
 .chat-stats__label {

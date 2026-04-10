@@ -10,8 +10,16 @@
     <div class="guestbook-center">
       <GuestbookHeader :member-count="totalMessageCount" />
 
+      <!-- 置顶公告 -->
+      <GuestbookPinnedMessage :message="pinnedMessage" />
+
       <!-- 论坛模式：输入框在消息列表上方 -->
-      <GuestbookMessageInput v-if="!isChatMode" @send="addMessage" />
+      <GuestbookMessageInput
+        v-if="!isChatMode"
+        :reply-to="replyTarget"
+        @send="addMessage"
+        @cancel-reply="replyTarget = null"
+      />
 
       <!-- 消息区域 wrapper：浮动按钮的定位基准 -->
       <div class="guestbook-center__messages-wrap">
@@ -34,7 +42,14 @@
             <div ref="topSentinelRef" class="guestbook-sentinel" />
           </template>
 
-          <GuestbookMessageList :groups="visibleGroups" />
+          <!-- 骨架屏 -->
+          <GuestbookMessageSkeleton v-if="isLoading" />
+
+          <!-- 空状态 -->
+          <GuestbookEmptyState v-else-if="totalMessageCount === 0" @compose="focusInput" />
+
+          <!-- 消息列表 -->
+          <GuestbookMessageList v-else :groups="visibleGroups" @reply="onReply" />
 
           <!-- 论坛模式：底部哨兵，向下滚动加载更早消息 -->
           <template v-if="!isChatMode">
@@ -65,7 +80,12 @@
       </div>
 
       <!-- 聊天模式：输入框在消息列表下方 -->
-      <GuestbookMessageInput v-if="isChatMode" @send="addMessage" />
+      <GuestbookMessageInput
+        v-if="isChatMode"
+        :reply-to="replyTarget"
+        @send="addMessage"
+        @cancel-reply="replyTarget = null"
+      />
     </div>
     <ClientOnly>
       <Teleport to="#right-sidebar-target">
@@ -80,8 +100,14 @@
 </template>
 
 <script setup lang="ts">
-import type { DateGroup, GuestMessage } from '~/features/guestbook/types'
-import { mockActiveMembers, mockChatRules, mockChatStats, mockDateGroups } from '~/features/guestbook/mock'
+import type { DateGroup, GuestMessage, VisitorIdentity } from '~/features/guestbook/types'
+import {
+  mockActiveMembers,
+  mockChatRules,
+  mockChatStats,
+  mockDateGroups,
+  mockPinnedMessage,
+} from '~/features/guestbook/mock'
 
 // ---- 主题模式检测 ----
 // 三栏主题（leftSidebar）为聊天模式：输入框在底部，最新消息在底部
@@ -103,6 +129,28 @@ const allDateGroups: DateGroup[] = JSON.parse(JSON.stringify(mockDateGroups))
 const chatStats = mockChatStats
 const chatRules = mockChatRules
 const activeMembers = mockActiveMembers
+const pinnedMessage = mockPinnedMessage
+
+// ---- 模拟加载态 ----
+const isLoading = ref(true)
+onMounted(() => {
+  setTimeout(() => { isLoading.value = false }, 600)
+})
+
+// ---- 回复引用交互 ----
+const replyTarget = ref<GuestMessage | null>(null)
+
+function onReply(message: GuestMessage) {
+  replyTarget.value = message
+}
+
+function focusInput() {
+  // 聚焦输入框（空状态 CTA 按钮）
+  nextTick(() => {
+    const textarea = document.querySelector('.message-input__editor') as HTMLTextAreaElement
+    textarea?.focus()
+  })
+}
 
 // ---- 懒加载：从最新消息开始，向上滚动加载更早的日期组 ----
 const INITIAL_GROUPS = 3
@@ -190,15 +238,21 @@ function setupObserver() {
 }
 
 // ---- 发送消息 ----
-function addMessage(content: string) {
+function addMessage(content: string, identity: VisitorIdentity) {
   const today = new Date().toLocaleDateString('zh-CN', { year: 'numeric', month: '2-digit', day: '2-digit' })
+  const nickname = identity.nickname.trim() || '匿名访客'
+
   const newMsg: GuestMessage = {
     id: Date.now(),
-    author: '访客',
+    author: nickname,
     avatar: '',
     content,
     time: new Date().toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' }),
     isOwner: false,
+    status: 'sending',
+    replyTo: replyTarget.value
+      ? { id: replyTarget.value.id, author: replyTarget.value.author, content: replyTarget.value.content }
+      : undefined,
   }
 
   const todayGroup = allDateGroups.find((g) => g.date === today)
@@ -209,6 +263,13 @@ function addMessage(content: string) {
     // 新增日期组也要显示
     loadedGroupCount.value = Math.min(loadedGroupCount.value + 1, allDateGroups.length)
   }
+
+  // 清除回复引用
+  replyTarget.value = null
+
+  // 模拟发送状态变化
+  setTimeout(() => { newMsg.status = 'sent' }, 500)
+  setTimeout(() => { newMsg.status = 'read' }, 1500)
 
   // 发送后滚动到可见新消息的位置
   nextTick(() => {
@@ -390,5 +451,11 @@ onUnmounted(() => {
 .scroll-btn-fade-leave-to {
   opacity: 0;
   transform: translateY(8px);
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
 }
 </style>

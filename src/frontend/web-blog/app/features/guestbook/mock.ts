@@ -5,7 +5,7 @@
  * @since 2026-03-20
  */
 
-import type { ActiveMember, ChatRule, ChatStat, DateGroup } from './types'
+import type { ActiveMember, ChatRule, ChatStat, DateGroup, PinnedMessage } from './types'
 
 const ownerAvatar =
   'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=80&q=80'
@@ -26,6 +26,14 @@ const avatars = {
   devops: 'https://images.unsplash.com/photo-1560250097-0b93528c311a?auto=format&fit=crop&w=80&q=80',
 }
 
+/** 置顶公告消息 */
+export const mockPinnedMessage: PinnedMessage = {
+  id: 0,
+  content: '欢迎来到留言板！这里是技术交流、闲聊灌水的空间，请文明留言。博客新功能建议也欢迎提出~',
+  author: 'TixXin',
+  time: '2024-03-18',
+}
+
 export const mockDateGroups: DateGroup[] = [
   {
     date: '2024年3月18日',
@@ -39,6 +47,11 @@ export const mockDateGroups: DateGroup[] = [
         isOwner: false,
         browser: 'Chrome 120',
         region: '广东广州',
+        reactions: [
+          { emoji: '👍', count: 5, reacted: false },
+          { emoji: '❤️', count: 2, reacted: true },
+        ],
+        status: 'read',
       },
       {
         id: 2,
@@ -49,6 +62,8 @@ export const mockDateGroups: DateGroup[] = [
         isOwner: true,
         browser: 'Edge 120',
         region: '浙江杭州',
+        replyTo: { id: 1, author: '开心果_小明', content: '第一次来到这个博客，界面太好看了吧！暗色模式下阅读很舒服，已经收藏了。' },
+        status: 'read',
       },
       {
         id: 3,
@@ -59,6 +74,10 @@ export const mockDateGroups: DateGroup[] = [
         isOwner: false,
         browser: 'Chrome 121',
         region: '北京',
+        reactions: [
+          { emoji: '🎉', count: 3, reacted: false },
+        ],
+        status: 'read',
       },
       {
         id: 4,
@@ -69,6 +88,7 @@ export const mockDateGroups: DateGroup[] = [
         isOwner: false,
         browser: 'Firefox 121',
         region: '上海',
+        status: 'read',
       },
       {
         id: 5,
@@ -79,6 +99,10 @@ export const mockDateGroups: DateGroup[] = [
         isOwner: false,
         browser: 'Safari 17.3',
         region: '台湾台北',
+        reactions: [
+          { emoji: '😄', count: 1, reacted: false },
+        ],
+        status: 'read',
       },
     ],
   },
@@ -94,6 +118,8 @@ export const mockDateGroups: DateGroup[] = [
         isOwner: true,
         browser: 'Edge 120',
         region: '浙江杭州',
+        replyTo: { id: 4, author: '摄影爱好者阿杰', content: '画廊里的照片色调很高级，请问主要用什么相机？后期是 Lightroom 吗？' },
+        status: 'read',
       },
       {
         id: 7,
@@ -104,6 +130,7 @@ export const mockDateGroups: DateGroup[] = [
         isOwner: false,
         browser: 'Chrome 120',
         region: '四川成都',
+        status: 'read',
       },
       {
         id: 8,
@@ -114,16 +141,22 @@ export const mockDateGroups: DateGroup[] = [
         isOwner: false,
         browser: 'Safari 17.2',
         region: '江苏南京',
+        reactions: [
+          { emoji: '👍', count: 4, reacted: true },
+        ],
+        status: 'read',
       },
       {
         id: 9,
         author: 'TixXin',
         avatar: ownerAvatar,
-        content: '@Miko 没有用框架，纯手写的 Vue 组件 + SCSS，有空可以看看源码~',
+        content: '没有用框架，纯手写的 Vue 组件 + SCSS，有空可以看看源码~',
         time: '03-19 16:20',
         isOwner: true,
         browser: 'Edge 120',
         region: '浙江杭州',
+        replyTo: { id: 5, author: 'Miko', content: '留言板的聊天气泡设计好可爱！请问是用什么 UI 框架做的？' },
+        status: 'read',
       },
       {
         id: 10,
@@ -134,6 +167,11 @@ export const mockDateGroups: DateGroup[] = [
         isOwner: false,
         browser: 'Chrome 121',
         region: '山东济南',
+        reactions: [
+          { emoji: '🎉', count: 2, reacted: false },
+          { emoji: '👍', count: 6, reacted: true },
+        ],
+        status: 'read',
       },
       {
         id: 11,
@@ -144,6 +182,7 @@ export const mockDateGroups: DateGroup[] = [
         isOwner: false,
         browser: 'Chrome 120',
         region: '湖北武汉',
+        status: 'read',
       },
     ],
   },
@@ -159,6 +198,8 @@ export const mockDateGroups: DateGroup[] = [
         isOwner: true,
         browser: 'Edge 120',
         region: '浙江杭州',
+        replyTo: { id: 11, author: '小鱼儿', content: '博主更新频率好高！请问是全职博主吗？每篇质量都很高诶。' },
+        status: 'read',
       },
       {
         id: 13,
@@ -169,6 +210,7 @@ export const mockDateGroups: DateGroup[] = [
         isOwner: false,
         browser: 'Chrome 121',
         region: '广东深圳',
+        status: 'read',
       },
       {
         id: 14,
@@ -179,6 +221,11 @@ export const mockDateGroups: DateGroup[] = [
         isOwner: false,
         browser: 'Firefox 122',
         region: '浙江杭州',
+        reactions: [
+          { emoji: '🔥', count: 7, reacted: false },
+          { emoji: '👍', count: 3, reacted: false },
+        ],
+        status: 'read',
       },
       {
         id: 15,
@@ -189,16 +236,19 @@ export const mockDateGroups: DateGroup[] = [
         isOwner: false,
         browser: 'Chrome 120',
         region: '北京',
+        status: 'read',
       },
       {
         id: 16,
         author: 'TixXin',
         avatar: ownerAvatar,
-        content: '@Luna 已通过，欢迎互链！@CodeMaster_张 TS 进阶系列在规划中了，敬请期待。',
+        content: '已通过，欢迎互链！TS 进阶系列在规划中了，敬请期待。',
         time: '03-20 15:00',
         isOwner: true,
         browser: 'Edge 120',
         region: '浙江杭州',
+        replyTo: { id: 13, author: 'Luna', content: '友链页做得好精致，已经提交申请了，希望能通过！我的博客主要写设计相关内容。' },
+        status: 'read',
       },
       {
         id: 17,
@@ -209,6 +259,7 @@ export const mockDateGroups: DateGroup[] = [
         isOwner: false,
         browser: 'Safari 17.3',
         region: '福建厦门',
+        status: 'read',
       },
       {
         id: 18,
@@ -219,6 +270,11 @@ export const mockDateGroups: DateGroup[] = [
         isOwner: false,
         browser: 'Firefox 121',
         region: '上海',
+        replyTo: { id: 6, author: 'TixXin', content: '谢谢喜欢！主力是富士 X-T4，直出色彩就不错；后期偶尔用 Lightroom 微调。' },
+        reactions: [
+          { emoji: '📷', count: 2, reacted: false },
+        ],
+        status: 'read',
       },
     ],
   },
@@ -234,6 +290,7 @@ export const mockDateGroups: DateGroup[] = [
         isOwner: false,
         browser: 'Chrome 121',
         region: '北京',
+        status: 'read',
       },
       {
         id: 20,
@@ -244,6 +301,7 @@ export const mockDateGroups: DateGroup[] = [
         isOwner: false,
         browser: 'Chrome 122',
         region: '上海',
+        status: 'read',
       },
       {
         id: 21,
@@ -254,6 +312,8 @@ export const mockDateGroups: DateGroup[] = [
         isOwner: true,
         browser: 'Edge 120',
         region: '浙江杭州',
+        replyTo: { id: 20, author: 'DevOps老王', content: '博客的加载速度很快，用了 CDN 还是边缘计算？Lighthouse 跑分多少？' },
+        status: 'read',
       },
       {
         id: 22,
@@ -264,6 +324,11 @@ export const mockDateGroups: DateGroup[] = [
         isOwner: false,
         browser: 'Safari 17.3',
         region: '台湾台北',
+        replyTo: { id: 9, author: 'TixXin', content: '没有用框架，纯手写的 Vue 组件 + SCSS，有空可以看看源码~' },
+        reactions: [
+          { emoji: '👍', count: 2, reacted: false },
+        ],
+        status: 'read',
       },
       {
         id: 23,
@@ -274,6 +339,11 @@ export const mockDateGroups: DateGroup[] = [
         isOwner: false,
         browser: 'Chrome 120',
         region: '四川成都',
+        reactions: [
+          { emoji: '🙏', count: 8, reacted: true },
+          { emoji: '👍', count: 3, reacted: false },
+        ],
+        status: 'read',
       },
       {
         id: 24,
@@ -284,6 +354,7 @@ export const mockDateGroups: DateGroup[] = [
         isOwner: false,
         browser: 'Safari 17.2',
         region: '江苏南京',
+        status: 'read',
       },
       {
         id: 25,
@@ -294,6 +365,8 @@ export const mockDateGroups: DateGroup[] = [
         isOwner: true,
         browser: 'Edge 120',
         region: '浙江杭州',
+        replyTo: { id: 23, author: '后端大叔', content: '能不能出一个 Node.js + Nuxt 全栈实战系列？从前到后完整走一遍那种。' },
+        status: 'read',
       },
     ],
   },
@@ -309,6 +382,10 @@ export const mockDateGroups: DateGroup[] = [
         isOwner: false,
         browser: 'Chrome 121',
         region: '山东济南',
+        reactions: [
+          { emoji: '🎉', count: 4, reacted: false },
+        ],
+        status: 'read',
       },
       {
         id: 27,
@@ -319,6 +396,8 @@ export const mockDateGroups: DateGroup[] = [
         isOwner: false,
         browser: 'Chrome 121',
         region: '广东深圳',
+        replyTo: { id: 16, author: 'TixXin', content: '已通过，欢迎互链！TS 进阶系列在规划中了，敬请期待。' },
+        status: 'read',
       },
       {
         id: 28,
@@ -329,6 +408,10 @@ export const mockDateGroups: DateGroup[] = [
         isOwner: false,
         browser: 'Safari 17.3',
         region: '福建厦门',
+        reactions: [
+          { emoji: '😄', count: 3, reacted: false },
+        ],
+        status: 'read',
       },
       {
         id: 29,
@@ -339,16 +422,19 @@ export const mockDateGroups: DateGroup[] = [
         isOwner: false,
         browser: 'Firefox 122',
         region: '浙江杭州',
+        status: 'read',
       },
       {
         id: 30,
         author: 'TixXin',
         avatar: ownerAvatar,
-        content: '@Luna 对，在陆家嘴拍的！@CodeMaster_张 感谢反馈，我排查一下 Safari 的兼容问题。',
+        content: '对，在陆家嘴拍的！感谢反馈，我排查一下 Safari 的兼容问题。',
         time: '03-22 17:30',
         isOwner: true,
         browser: 'Edge 120',
         region: '浙江杭州',
+        replyTo: { id: 29, author: 'CodeMaster_张', content: '发现一个小问题：文章详情页在 Safari 下目录定位偶尔不准，可能是 Intersection Observer 兼容性。' },
+        status: 'read',
       },
       {
         id: 31,
@@ -359,6 +445,10 @@ export const mockDateGroups: DateGroup[] = [
         isOwner: false,
         browser: 'Chrome 120',
         region: '湖北武汉',
+        reactions: [
+          { emoji: '🙏', count: 5, reacted: false },
+        ],
+        status: 'read',
       },
       {
         id: 32,
@@ -369,6 +459,7 @@ export const mockDateGroups: DateGroup[] = [
         isOwner: false,
         browser: 'Chrome 120',
         region: '北京',
+        status: 'sent',
       },
     ],
   },
@@ -392,40 +483,48 @@ export const mockActiveMembers: ActiveMember[] = [
     name: 'TixXin',
     avatar: ownerAvatar,
     messageCount: 42,
+    isOnline: true,
   },
   {
     name: '小鱼儿',
     avatar: avatars.xiaoyu,
     messageCount: 18,
+    isOnline: true,
   },
   {
     name: 'Luna',
     avatar: avatars.luna,
     messageCount: 15,
+    isOnline: false,
   },
   {
     name: 'CodeMaster_张',
     avatar: avatars.codemaster,
     messageCount: 12,
+    isOnline: true,
   },
   {
     name: '前端小李',
     avatar: avatars.xiaoli,
     messageCount: 10,
+    isOnline: false,
   },
   {
     name: 'CSS魔法师',
     avatar: avatars.css,
     messageCount: 9,
+    isOnline: false,
   },
   {
     name: '摄影爱好者阿杰',
     avatar: avatars.ajie,
     messageCount: 8,
+    isOnline: true,
   },
   {
     name: 'Miko',
     avatar: avatars.miko,
     messageCount: 7,
+    isOnline: false,
   },
 ]
