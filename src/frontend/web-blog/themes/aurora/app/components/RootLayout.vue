@@ -47,6 +47,14 @@
           </Transition>
           <BlogThemeSwitcher />
           <BlogAppearanceEntry />
+          <button
+            class="aurora-topbar__login"
+            type="button"
+            aria-label="登录"
+            @click="openLogin"
+          >
+            <Icon name="lucide:circle-user" size="18" />
+          </button>
         </div>
       </div>
     </header>
@@ -98,6 +106,9 @@
         <ThemeComponent name="StatusFooter" />
       </footer>
     </CommonCustomScrollbar>
+
+    <!-- 登录弹窗 -->
+    <AuthModal />
   </div>
 </template>
 
@@ -106,12 +117,15 @@ const route = useRoute()
 const { navItems } = useNavItems()
 
 function isActive(to: string) {
-  return route.path === to
+  if (route.path === to) return true
+  if (to === '/' && route.path === '/moments') return true
+  return false
 }
 
-const isHomePage = computed(() => route.path === '/')
+const isHomePage = computed(() => route.path === '/' || route.path === '/moments')
 
 const { sidebarAnimationClass } = useAppearanceSettings()
+const { open: openLogin } = useLoginDrawer()
 
 useSidebarExitAnimation('.aurora-aside')
 
@@ -347,6 +361,31 @@ onBeforeUnmount(() => {
 
   @media (min-width: $breakpoint-xl) {
     width: $sidebar-right-width;
+  }
+}
+
+// --- 登录按钮 ---
+.aurora-topbar__login {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  border-radius: $radius-full;
+  border: 1px solid var(--border-soft);
+  background: transparent;
+  color: var(--text-soft);
+  cursor: pointer;
+  transition: all 0.2s ease;
+
+  &:hover {
+    color: var(--accent);
+    background: var(--surface-2);
+    border-color: var(--accent-alpha-20, rgba(99, 102, 241, 0.15));
+  }
+
+  &:active {
+    transform: scale(0.92);
   }
 }
 

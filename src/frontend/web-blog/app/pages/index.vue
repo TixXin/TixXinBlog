@@ -118,26 +118,19 @@
         <ArticleArchiveTimeline :years="archiveYears" />
       </CommonCustomScrollbar>
 
-      <!-- 朋友圈 Tab -->
+      <!-- 朋友圈 -->
       <CommonCustomScrollbar
-        v-else
+        v-else-if="activeTab === 'moments'"
         key="moments"
         class="moments-body"
         viewport-class="moments-viewport"
-        :show-back-to-top="false"
         primary
       >
         <div class="moments-content">
-          <div class="moments-header">
-            <h2 class="moments-header__title">
-              <Icon name="lucide:message-circle" size="20" class="moments-header__icon" />
-              朋友圈
-            </h2>
-            <p class="moments-header__sub">记录生活点滴，分享日常碎片</p>
-          </div>
-          <MomentList :moments="moments" />
+          <MomentList :moments="moments" :selected-topic="selectedTopic" :selected-date="selectedDate" />
         </div>
       </CommonCustomScrollbar>
+
     </Transition>
 
     <!-- 右侧栏 -->
@@ -160,11 +153,18 @@
             />
 
             <!-- 朋友圈侧栏 -->
-            <div v-else key="sidebar-moments" class="sidebar-list-group">
+            <div v-else-if="activeTab === 'moments'" key="sidebar-moments" class="sidebar-list-group">
               <SidebarMomentAuthorCard :stats="authorStats" />
-              <SidebarMomentCalendarCard :moment-dates="momentDates" />
-              <SidebarMomentTopicCard :topics="momentTopics" />
+              <SidebarMomentPhotoWallCard :images="photoWallImages" @select-moment="onPhotoSelect" />
+              <SidebarMomentCalendarCard
+                :moment-dates="momentDates"
+                :selected-date="selectedDate"
+                @select-date="onDateSelect"
+              />
+              <SidebarMomentTopicCard :topics="momentTopics" :active-topic="selectedTopic" @select="onTopicSelect" />
+              <SidebarMomentInteractionCard :users="activeUsers" :total-users="totalInteractionUsers" />
             </div>
+
           </Transition>
         </SidebarRightSidebar>
       </Teleport>
@@ -179,6 +179,8 @@ import { mockArchiveStats, mockArchiveYears, mockCategoryDistribution } from '~/
 import { mockMoments } from '~/features/moment/mock'
 import type { MomentAuthorStats } from '~/components/sidebar/MomentAuthorCard.vue'
 import type { MomentTopic } from '~/components/sidebar/MomentTopicCard.vue'
+import type { MomentPhotoItem } from '~/components/sidebar/MomentPhotoWallCard.vue'
+import type { MomentActiveUser } from '~/components/sidebar/MomentInteractionCard.vue'
 
 useSeoMeta({
   title: '首页',
@@ -207,25 +209,6 @@ const archiveYears = mockArchiveYears
 const archiveStats = mockArchiveStats
 const categoryDistribution = mockCategoryDistribution
 
-// ---- 朋友圈数据 ----
-const moments = computed(() => mockMoments)
-
-const authorStats: MomentAuthorStats = {
-  totalMoments: mockMoments.length,
-  totalLikes: mockMoments.reduce((sum, m) => sum + m.likes, 0),
-  totalDays: 128,
-  currentMood: '今天阳光正好，适合写代码 🌞',
-}
-
-const momentDates = computed(() => mockMoments.map(m => m.date.slice(0, 10)))
-
-const momentTopics: MomentTopic[] = [
-  { name: '生活日常', icon: 'lucide:sun', color: '#f59e0b', count: 24, description: '记录每一天的小确幸' },
-  { name: '技术分享', icon: 'lucide:code', color: '#3b82f6', count: 18, description: '代码与灵感的碰撞' },
-  { name: '读书笔记', icon: 'lucide:book-open', color: '#8b5cf6', count: 12, description: '阅读中的思考片段' },
-  { name: '摄影记录', icon: 'lucide:camera', color: '#ec4899', count: 9, description: '用镜头捕捉瞬间' },
-  { name: '美食探店', icon: 'lucide:utensils', color: '#ef4444', count: 7, description: '味蕾的冒险旅程' },
-]
 
 // ---- 标签/分类过滤 ----
 const selectedTag = ref<string | null>(null)
@@ -264,6 +247,106 @@ function switchTab(value: string) {
     viewMode.value = 'list'
   }
 }
+
+// ---- 朋友圈数据 ----
+const moments = computed(() => mockMoments)
+
+// 话题筛选
+const selectedTopic = ref<string | null>(null)
+
+function onTopicSelect(topicName: string | null) {
+  selectedTopic.value = topicName
+}
+
+// 日期筛选
+const selectedDate = ref<string | null>(null)
+
+function onDateSelect(date: string | null) {
+  selectedDate.value = date
+}
+
+// 照片点击 — 滚动到对应动态
+function onPhotoSelect(momentId: string) {
+  const el = document.getElementById(`moment-${momentId}`)
+  el?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+}
+
+// 作者名片数据
+const totalComments = mockMoments.reduce((sum, m) => sum + (m.comments?.length || 0), 0)
+
+const authorStats: MomentAuthorStats = {
+  totalMoments: mockMoments.length,
+  totalLikes: mockMoments.reduce((sum, m) => sum + m.likes, 0),
+  totalComments,
+  currentMood: '今天阳光正好，适合写代码 🌞',
+  moodUpdatedAt: '2小时前',
+  socialLinks: [
+    { icon: 'lucide:github', url: 'https://github.com', label: 'GitHub' },
+    { icon: 'lucide:twitter', url: 'https://twitter.com', label: 'Twitter' },
+    { icon: 'lucide:mail', url: 'mailto:hi@tixxin.com', label: '邮箱' },
+  ],
+}
+
+// 日历数据 — 从动态列表提取日期
+const momentDates = computed(() => mockMoments.map((m) => m.date.slice(0, 10)))
+
+// 精选照片墙 — 按获赞数排序，取带图片的动态的首张图
+const photoWallImages = computed<MomentPhotoItem[]>(() => {
+  return mockMoments
+    .filter((m) => m.images && m.images.length > 0)
+    .sort((a, b) => b.likes - a.likes)
+    .slice(0, 9)
+    .map((m) => ({
+      src: m.images![0],
+      momentId: m.id,
+    }))
+})
+
+// 互动之星 — 聚合评论者排行（排除博主自己）
+const activeUsers = computed<MomentActiveUser[]>(() => {
+  const countMap = new Map<string, { avatar: string; count: number }>()
+  mockMoments.forEach((m) => {
+    m.comments?.forEach((c) => {
+      if (c.isOwner) return
+      const existing = countMap.get(c.author)
+      if (existing) {
+        existing.count++
+      } else {
+        countMap.set(c.author, { avatar: c.avatar, count: 1 })
+      }
+    })
+  })
+  return [...countMap.entries()]
+    .map(([name, { avatar, count }]) => ({ name, avatar, commentCount: count }))
+    .sort((a, b) => b.commentCount - a.commentCount)
+    .slice(0, 5)
+})
+
+const totalInteractionUsers = computed(() => {
+  const users = new Set<string>()
+  mockMoments.forEach((m) => {
+    m.comments?.forEach((c) => {
+      if (!c.isOwner) users.add(c.author)
+    })
+  })
+  return users.size
+})
+
+// 热门话题 — 话题定义与动态计数
+const TOPIC_DEFINITIONS: Omit<MomentTopic, 'count'>[] = [
+  { name: '生活日常', icon: 'lucide:sun', color: '#f59e0b', description: '记录每一天的小确幸' },
+  { name: '技术分享', icon: 'lucide:code', color: '#3b82f6', description: '代码与灵感的碰撞' },
+  { name: '读书笔记', icon: 'lucide:book-open', color: '#8b5cf6', description: '阅读中的思考片段' },
+  { name: '摄影记录', icon: 'lucide:camera', color: '#ec4899', description: '用镜头捕捉瞬间' },
+  { name: '美食探店', icon: 'lucide:utensils', color: '#ef4444', description: '味蕾的冒险旅程' },
+]
+
+const momentTopics = computed<MomentTopic[]>(() =>
+  TOPIC_DEFINITIONS.map((t) => ({
+    ...t,
+    count: mockMoments.filter((m) => m.topics?.includes(t.name)).length,
+  })),
+)
 </script>
 
 <style lang="scss" scoped>
@@ -397,6 +480,25 @@ function switchTab(value: string) {
   }
 }
 
+/* 朋友圈内容区 */
+.moments-body {
+  flex: 1;
+  min-height: 0;
+}
+
+:deep(.moments-viewport) {
+  padding: 1.5rem 1rem;
+
+  @media (min-width: $breakpoint-md) {
+    padding: 2rem;
+  }
+}
+
+.moments-content {
+  max-width: 800px;
+  margin: 0 auto;
+}
+
 /* ---- Tab 内容区过渡动画 ---- */
 .tab-fade-enter-active {
   transition: opacity 0.2s ease;
@@ -429,40 +531,4 @@ function switchTab(value: string) {
   transform: translateX(-8px);
 }
 
-/* ---- 朋友圈内嵌样式 ---- */
-.moments-body {
-  flex: 1;
-  min-height: 0;
-}
-
-:deep(.moments-viewport) {
-  padding: 1.5rem 1rem;
-
-  @media (min-width: $breakpoint-md) {
-    padding: 2rem;
-  }
-}
-
-.moments-header {
-  margin-bottom: 1.5rem;
-}
-
-.moments-header__title {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  font-size: 1.25rem;
-  font-weight: 700;
-  margin: 0;
-}
-
-.moments-header__icon {
-  color: var(--accent);
-}
-
-.moments-header__sub {
-  font-size: 0.875rem;
-  color: var(--text-soft);
-  margin-top: 0.25rem;
-}
 </style>

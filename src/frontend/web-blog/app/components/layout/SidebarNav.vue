@@ -33,7 +33,10 @@ const { navItems } = useNavItems()
 function isActive(to: string) {
   const path = route.path.replace(/\/$/, '') || '/'
   const target = to.replace(/\/$/, '') || '/'
-  return path === target || (target !== '/' && path.startsWith(target + '/'))
+  if (path === target) return true
+  if (target === '/' && path === '/moments') return true
+  if (target !== '/' && path.startsWith(target + '/')) return true
+  return false
 }
 </script>
 

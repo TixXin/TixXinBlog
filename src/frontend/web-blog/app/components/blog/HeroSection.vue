@@ -170,7 +170,7 @@ onMounted(() => {
 .hitokoto-icon {
   flex-shrink: 0;
   margin-top: 0.125rem;
-  color: var(--accent-soft);
+  color: var(--text-soft);
 }
 
 .hitokoto-text {

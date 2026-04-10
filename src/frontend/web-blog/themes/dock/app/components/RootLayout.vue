@@ -50,7 +50,9 @@ const route = useRoute()
 const { navItems } = useNavItems()
 
 function isActive(to: string) {
-  return route.path === to
+  if (route.path === to) return true
+  if (to === '/' && route.path === '/moments') return true
+  return false
 }
 
 const hoveredIndex = ref(-1)

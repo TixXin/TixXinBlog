@@ -7,9 +7,26 @@
 
 <template>
   <div class="main-inner moments-page">
+    <!-- 头部 Tab 栏 -->
+    <div class="main-content__header">
+      <div class="articles-tabs no-scrollbar" role="tablist">
+        <button
+          v-for="tab in tabs"
+          :key="tab.value"
+          role="tab"
+          :aria-selected="tab.value === 'moments'"
+          class="tab-btn"
+          :class="{ 'tab-active': tab.value === 'moments' }"
+          @click="switchTab(tab.value)"
+        >
+          {{ tab.label }}
+        </button>
+      </div>
+    </div>
+
     <CommonCustomScrollbar class="moments-body" viewport-class="moments-viewport" primary>
       <div class="moments-content">
-        <MomentList :moments="moments" :selected-topic="selectedTopic" />
+        <MomentList :moments="moments" :selected-topic="selectedTopic" :selected-date="selectedDate" />
       </div>
     </CommonCustomScrollbar>
 
@@ -17,7 +34,12 @@
       <Teleport to="#right-sidebar-target">
         <SidebarRightSidebar>
           <SidebarMomentAuthorCard :stats="authorStats" />
-          <SidebarMomentCalendarCard :moment-dates="momentDates" />
+          <SidebarMomentPhotoWallCard :images="photoWallImages" @select-moment="onPhotoSelect" />
+          <SidebarMomentCalendarCard
+            :moment-dates="momentDates"
+            :selected-date="selectedDate"
+            @select-date="onDateSelect"
+          />
           <SidebarMomentTopicCard :topics="momentTopics" :active-topic="selectedTopic" @select="onTopicSelect" />
         </SidebarRightSidebar>
       </Teleport>
@@ -27,8 +49,18 @@
 
 <script setup lang="ts">
 import { mockMoments } from '~/features/moment/mock'
+import { mockPostTabs } from '~/features/post/mock'
 import type { MomentAuthorStats } from '~/components/sidebar/MomentAuthorCard.vue'
 import type { MomentTopic } from '~/components/sidebar/MomentTopicCard.vue'
+import type { MomentPhotoItem } from '~/components/sidebar/MomentPhotoWallCard.vue'
+
+const tabs = mockPostTabs
+
+function switchTab(value: string) {
+  if (value !== 'moments') {
+    navigateTo('/')
+  }
+}
 
 useSeoMeta({
   title: '朋友圈',
@@ -46,16 +78,49 @@ function onTopicSelect(topicName: string | null) {
   selectedTopic.value = topicName
 }
 
+// 日期筛选
+const selectedDate = ref<string | null>(null)
+
+function onDateSelect(date: string | null) {
+  selectedDate.value = date
+}
+
+// 照片点击 — 滚动到对应动态
+function onPhotoSelect(momentId: string) {
+  const el = document.getElementById(`moment-${momentId}`)
+  el?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+}
+
 // 作者名片数据
+const totalComments = mockMoments.reduce((sum, m) => sum + (m.comments?.length || 0), 0)
+
 const authorStats: MomentAuthorStats = {
   totalMoments: mockMoments.length,
   totalLikes: mockMoments.reduce((sum, m) => sum + m.likes, 0),
-  totalDays: 128,
+  totalComments,
   currentMood: '今天阳光正好，适合写代码 🌞',
+  moodUpdatedAt: '2小时前',
+  socialLinks: [
+    { icon: 'lucide:github', url: 'https://github.com', label: 'GitHub' },
+    { icon: 'lucide:twitter', url: 'https://twitter.com', label: 'Twitter' },
+    { icon: 'lucide:mail', url: 'mailto:hi@tixxin.com', label: '邮箱' },
+  ],
 }
 
 // 日历数据 — 从动态列表提取日期
 const momentDates = computed(() => mockMoments.map((m) => m.date.slice(0, 10)))
+
+// 精选照片墙 — 按获赞数排序，取带图片的动态的首张图
+const photoWallImages = computed<MomentPhotoItem[]>(() => {
+  return mockMoments
+    .filter((m) => m.images && m.images.length > 0)
+    .sort((a, b) => b.likes - a.likes)
+    .slice(0, 9)
+    .map((m) => ({
+      src: m.images![0],
+      momentId: m.id,
+    }))
+})
 
 // 热门话题 — 话题定义与动态计数
 const TOPIC_DEFINITIONS: Omit<MomentTopic, 'count'>[] = [
