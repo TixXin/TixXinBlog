@@ -1,6 +1,6 @@
 <!--
   @file MomentAuthorCard.vue
-  @description 朋友圈右侧栏作者名片卡，展示博主信息和动态统计
+  @description 朋友圈右侧栏作者名片卡，展示博主信息、动态统计和社交链接
   @author TixXin
   @since 2026-04-07
 -->
@@ -34,14 +34,30 @@
       </div>
       <div class="moment-author-card__stat-divider" />
       <div class="moment-author-card__stat">
-        <span class="moment-author-card__stat-value">{{ stats.totalDays }}</span>
-        <span class="moment-author-card__stat-label">天</span>
+        <span class="moment-author-card__stat-value">{{ stats.totalComments }}</span>
+        <span class="moment-author-card__stat-label">评论</span>
       </div>
     </div>
 
     <div class="moment-author-card__mood">
       <Icon name="lucide:cloud-sun" size="14" class="moment-author-card__mood-icon" />
       <span class="moment-author-card__mood-text">{{ stats.currentMood }}</span>
+      <span class="moment-author-card__mood-time">{{ stats.moodUpdatedAt }}</span>
+    </div>
+
+    <!-- 社交链接 -->
+    <div v-if="stats.socialLinks?.length" class="moment-author-card__social">
+      <a
+        v-for="link in stats.socialLinks"
+        :key="link.label"
+        :href="link.url"
+        :aria-label="link.label"
+        class="moment-author-card__social-btn"
+        target="_blank"
+        rel="noopener noreferrer"
+      >
+        <Icon :name="link.icon" size="15" />
+      </a>
     </div>
   </section>
 </template>
@@ -50,8 +66,10 @@
 export interface MomentAuthorStats {
   totalMoments: number
   totalLikes: number
-  totalDays: number
+  totalComments: number
   currentMood: string
+  moodUpdatedAt: string
+  socialLinks?: { icon: string; url: string; label: string }[]
 }
 
 defineProps<{
@@ -77,9 +95,8 @@ defineProps<{
   height: 68px;
   border-radius: 50%;
   padding: 2px;
-  background: linear-gradient(135deg, var(--accent), #f59e0b, #ec4899);
+  background: linear-gradient(135deg, var(--accent), #5b7cfa);
   margin-bottom: 0.75rem;
-  animation: ring-rotate 4s linear infinite;
 }
 
 .moment-author-card__avatar {
@@ -157,6 +174,7 @@ defineProps<{
   justify-content: center;
   gap: 0.375rem;
   padding: 0.5rem 0.75rem;
+  margin-bottom: 0.75rem;
   border-radius: $radius-full;
   background: var(--accent-soft);
   font-size: 0.75rem;
@@ -165,18 +183,46 @@ defineProps<{
 
 .moment-author-card__mood-icon {
   color: var(--accent);
+  flex-shrink: 0;
 }
 
 .moment-author-card__mood-text {
   font-weight: 500;
 }
 
-@keyframes ring-rotate {
-  0% {
-    filter: hue-rotate(0deg);
+.moment-author-card__mood-time {
+  color: var(--text-faint);
+  font-size: 0.6875rem;
+  flex-shrink: 0;
+
+  &::before {
+    content: '·';
+    margin-right: 0.25rem;
   }
-  100% {
-    filter: hue-rotate(360deg);
+}
+
+.moment-author-card__social {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+}
+
+.moment-author-card__social-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  border-radius: 50%;
+  color: var(--text-soft);
+  background: var(--surface-2);
+  transition: all 0.2s ease;
+
+  &:hover {
+    color: var(--accent);
+    background: var(--accent-soft);
+    transform: translateY(-1px);
   }
 }
 </style>

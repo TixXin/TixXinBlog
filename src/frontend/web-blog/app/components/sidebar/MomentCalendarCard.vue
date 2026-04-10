@@ -1,6 +1,6 @@
 <!--
   @file MomentCalendarCard.vue
-  @description 朋友圈右侧栏动态日历卡，按月展示发布日期标记
+  @description 朋友圈右侧栏动态日历卡，按月展示发布日期标记，支持点击日期筛选
   @author TixXin
   @since 2026-04-07
 -->
@@ -43,7 +43,10 @@
           'is-today': day?.isToday,
           'has-moment': day?.hasMoment,
           'is-future': day?.isFuture,
+          'is-selected': day?.dateStr === selectedDate,
         }"
+        :data-tooltip="day?.hasMoment ? dayTooltip(day) : undefined"
+        @click="day?.hasMoment && onDayClick(day)"
       >
         <template v-if="day">
           {{ day.num }}
@@ -53,10 +56,28 @@
     </div>
 
     <div class="moment-calendar-card__footer">
-      <span class="moment-calendar-card__legend">
-        <span class="moment-calendar-card__legend-dot" />
-        本月 {{ monthMomentCount }} 条动态
-      </span>
+      <!-- 回到今天按钮 -->
+      <button
+        v-if="!isCurrentMonth"
+        type="button"
+        class="moment-calendar-card__today-btn"
+        @click="goToday"
+      >
+        <Icon name="lucide:calendar-check" size="12" />
+        今天
+      </button>
+
+      <div class="moment-calendar-card__footer-right">
+        <!-- 连续发布天数 -->
+        <span v-if="streak > 0" class="moment-calendar-card__streak">
+          <Icon name="lucide:flame" size="12" class="moment-calendar-card__streak-icon" />
+          连续 {{ streak }} 天
+        </span>
+        <span class="moment-calendar-card__legend">
+          <span class="moment-calendar-card__legend-dot" />
+          本月 {{ monthMomentCount }} 条动态
+        </span>
+      </div>
     </div>
   </section>
 </template>
@@ -64,6 +85,11 @@
 <script setup lang="ts">
 const props = defineProps<{
   momentDates: string[] // ISO 日期字符串数组, e.g. ['2026-04-04', '2026-04-03']
+  selectedDate?: string | null
+}>()
+
+const emit = defineEmits<{
+  'select-date': [date: string | null]
 }>()
 
 const weekdays = ['一', '二', '三', '四', '五', '六', '日']
@@ -97,19 +123,30 @@ function nextMonth() {
   }
 }
 
+/** 回到今天 */
+function goToday() {
+  const now = new Date()
+  viewYear.value = now.getFullYear()
+  viewMonth.value = now.getMonth()
+}
+
 interface CalendarDay {
   num: number
+  dateStr: string
   isToday: boolean
   hasMoment: boolean
   isFuture: boolean
+  momentCount: number
 }
 
-const momentDateSet = computed(() => {
-  const set = new Set<string>()
+/** 按日期聚合动态数量 */
+const momentDateMap = computed(() => {
+  const map = new Map<string, number>()
   props.momentDates.forEach((d) => {
-    set.add(d.slice(0, 10)) // normalize to YYYY-MM-DD
+    const key = d.slice(0, 10)
+    map.set(key, (map.get(key) || 0) + 1)
   })
-  return set
+  return map
 })
 
 const calendarDays = computed<(CalendarDay | null)[]>(() => {
@@ -133,11 +170,14 @@ const calendarDays = computed<(CalendarDay | null)[]>(() => {
   for (let d = 1; d <= daysInMonth; d++) {
     const dateStr = `${y}-${String(m + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`
     const isFuture = new Date(y, m, d) > today
+    const momentCount = momentDateMap.value.get(dateStr) || 0
     result.push({
       num: d,
+      dateStr,
       isToday: dateStr === todayStr,
-      hasMoment: momentDateSet.value.has(dateStr),
+      hasMoment: momentCount > 0,
       isFuture,
+      momentCount,
     })
   }
 
@@ -148,6 +188,48 @@ const monthMomentCount = computed(() => {
   const prefix = `${viewYear.value}-${String(viewMonth.value + 1).padStart(2, '0')}`
   return props.momentDates.filter((d) => d.startsWith(prefix)).length
 })
+
+/** 计算最近连续发布天数 */
+const streak = computed(() => {
+  const sortedDates = [...new Set(props.momentDates.map((d) => d.slice(0, 10)))].sort().reverse()
+  if (sortedDates.length === 0) return 0
+
+  const today = new Date()
+  today.setHours(0, 0, 0, 0)
+
+  // 从今天或最近一条动态开始往回数
+  let count = 0
+  const startDate = new Date(sortedDates[0])
+  startDate.setHours(0, 0, 0, 0)
+
+  // 如果最近的动态不是今天或昨天，不算连续
+  const diffDays = Math.floor((today.getTime() - startDate.getTime()) / 86400000)
+  if (diffDays > 1) return 0
+
+  const dateSet = new Set(sortedDates)
+  const checkDate = new Date(startDate)
+  while (dateSet.has(checkDate.toISOString().slice(0, 10))) {
+    count++
+    checkDate.setDate(checkDate.getDate() - 1)
+  }
+
+  return count
+})
+
+/** 日期 hover tooltip 内容 */
+function dayTooltip(day: CalendarDay): string {
+  const m = viewMonth.value + 1
+  return `${m}月${day.num}日 · ${day.momentCount}条动态`
+}
+
+/** 点击日期，切换筛选 */
+function onDayClick(day: CalendarDay) {
+  if (props.selectedDate === day.dateStr) {
+    emit('select-date', null) // 再次点击取消筛选
+  } else {
+    emit('select-date', day.dateStr)
+  }
+}
 </script>
 
 <style lang="scss" scoped>
@@ -263,6 +345,37 @@ const monthMomentCount = computed(() => {
     color: var(--accent);
     background: var(--accent-soft);
     border-radius: 50%;
+    cursor: pointer;
+  }
+
+  &.has-moment.is-today {
+    cursor: pointer;
+  }
+
+  &.is-selected {
+    outline: 2px solid var(--accent);
+    outline-offset: 1px;
+  }
+
+  /* CSS tooltip */
+  &[data-tooltip] {
+    &:hover::after {
+      content: attr(data-tooltip);
+      position: absolute;
+      bottom: calc(100% + 6px);
+      left: 50%;
+      transform: translateX(-50%);
+      padding: 0.25rem 0.5rem;
+      border-radius: $radius-sm;
+      background: var(--surface-3);
+      color: var(--text-main);
+      font-size: 0.625rem;
+      font-weight: 500;
+      white-space: nowrap;
+      pointer-events: none;
+      z-index: 10;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+    }
   }
 
   &:hover:not(.is-empty):not(.is-future) {
@@ -271,6 +384,10 @@ const monthMomentCount = computed(() => {
 
     &.is-today {
       background: var(--accent);
+    }
+
+    &.has-moment:not(.is-today) {
+      background: var(--accent-soft);
     }
   }
 }
@@ -292,7 +409,46 @@ const monthMomentCount = computed(() => {
   margin-top: 0.625rem;
   display: flex;
   align-items: center;
-  justify-content: flex-end;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.moment-calendar-card__today-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  border: none;
+  background: none;
+  color: var(--accent);
+  font-size: 0.6875rem;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 0.125rem 0;
+  transition: opacity 0.15s;
+
+  &:hover {
+    opacity: 0.8;
+  }
+}
+
+.moment-calendar-card__footer-right {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-left: auto;
+}
+
+.moment-calendar-card__streak {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  color: #f59e0b;
+}
+
+.moment-calendar-card__streak-icon {
+  color: #f59e0b;
 }
 
 .moment-calendar-card__legend {
