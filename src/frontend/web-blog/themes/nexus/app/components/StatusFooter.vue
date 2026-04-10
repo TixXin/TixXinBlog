@@ -13,7 +13,7 @@
     @mouseleave="onBarLeave"
   >
     <!-- 头像：半悬浮 → 展开时居中，hover 触发展开 + 在线状态 Tooltip -->
-    <CommonTooltip :disabled="isExpanded" rich placement="top">
+    <CommonTooltip rich placement="top">
       <NuxtLink
         to="/"
         class="nexus-bar__avatar-wrap"
@@ -245,12 +245,11 @@ $bar-expanded: 150px;
   }
 }
 
-// ---- 头像（半悬浮 → 展开时居中） ----
+// ---- 头像（半悬浮，展开时位置不变） ----
 .nexus-bar__avatar-wrap {
   position: absolute;
   left: 1rem;
-  top: 50%;
-  transform: translateY(-75%);
+  bottom: 16px;
   width: 80px;
   height: 80px;
   border-radius: 50%;
@@ -270,20 +269,11 @@ $bar-expanded: 150px;
     box-shadow:
       0 4px 20px rgba(0, 0, 0, 0.15),
       0 0 0 3px var(--accent-alpha-20, rgba(99, 102, 241, 0.15));
+    transform: scale(1.06);
   }
 
-  // 收起态 hover 缩放
-  .nexus-bar:not(.is-expanded) &:hover {
-    transform: translateY(-75%) scale(1.06);
-  }
-
-  .nexus-bar:not(.is-expanded) &:active {
-    transform: translateY(-75%) scale(1.02);
-  }
-
-  // 展开时居中
-  .nexus-bar.is-expanded & {
-    transform: translateY(-50%);
+  &:active {
+    transform: scale(1.02);
   }
 
   &:focus-visible {

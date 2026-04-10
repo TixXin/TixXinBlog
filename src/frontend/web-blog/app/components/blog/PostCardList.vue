@@ -181,7 +181,7 @@ const paginationBounce = ref(false)
 watch(isFooterExpanded, (expanded) => {
   if (expanded) {
     paginationBounce.value = true
-    setTimeout(() => { paginationBounce.value = false }, 400)
+    setTimeout(() => { paginationBounce.value = false }, 500)
   }
 })
 
@@ -400,13 +400,14 @@ onUnmounted(() => {
 
 /* ---- 分页栏弹跳（底部栏展开时联动） ---- */
 .pagination-bar.is-bounced {
-  animation: pagination-bump 0.4s cubic-bezier(0.22, 0.68, 0.35, 1.0);
+  animation: pagination-bump 0.5s cubic-bezier(0.22, 0.68, 0.35, 1.0);
 }
 
 @keyframes pagination-bump {
   0%   { transform: translateX(-50%) translateY(0); }
-  30%  { transform: translateX(-50%) translateY(-12px); }
-  60%  { transform: translateX(-50%) translateY(2px); }
+  30%  { transform: translateX(-50%) translateY(-24px); }
+  55%  { transform: translateX(-50%) translateY(4px); }
+  75%  { transform: translateX(-50%) translateY(-6px); }
   100% { transform: translateX(-50%) translateY(0); }
 }
 
