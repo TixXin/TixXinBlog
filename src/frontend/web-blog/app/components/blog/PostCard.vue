@@ -6,7 +6,7 @@
 -->
 
 <template>
-  <article class="post-item">
+  <NuxtLink :to="`/articles/${post.id}`" class="post-item">
     <div v-if="post.cover && !coverError" class="post-item__cover-bg">
       <NuxtImg
         :src="post.cover"
@@ -25,9 +25,7 @@
         <div class="post-item__title-wrapper">
           <span v-if="post.pinned" class="post-item__pin"> <Icon name="lucide:pin" size="12" /> 置顶 </span>
           <h2 class="post-item__title">
-            <NuxtLink :to="`/articles/${post.id}`" class="post-item__link">
-              <span :class="{ 'post-item__title-highlight': !!post.cover }">{{ post.title }}</span>
-            </NuxtLink>
+            <span :class="{ 'post-item__title-highlight': !!post.cover }">{{ post.title }}</span>
           </h2>
         </div>
         <div class="post-item__date">{{ formattedDate }}</div>
@@ -54,7 +52,7 @@
         </div>
       </div>
     </div>
-  </article>
+  </NuxtLink>
 </template>
 
 <script setup lang="ts">
@@ -99,6 +97,8 @@ function tagStyle(color: string) {
   border: 1px solid var(--border-soft);
   border-radius: $radius-md;
   overflow: hidden;
+  text-decoration: none;
+  color: inherit;
 
   &:hover {
     background-color: var(--surface-2);
@@ -222,18 +222,6 @@ function tagStyle(color: string) {
   background: var(--text-faint);
 }
 
-.post-item__link {
-  color: inherit;
-  text-decoration: none;
-
-  /* stretched-link: 让整张卡片都可点击 */
-  &::after {
-    content: '';
-    position: absolute;
-    inset: 0;
-    z-index: 3;
-  }
-}
 
 .post-item__title {
   margin: 0;
@@ -351,13 +339,11 @@ function tagStyle(color: string) {
   }
 }
 
-/* 标签徽章：仅保留文字色，无背景；z-index 高于 stretched-link */
+/* 标签徽章：仅保留文字色，无背景 */
 .tag-badge {
   background: transparent !important;
   border: none !important;
   padding: 0.125rem 0;
-  position: relative;
-  z-index: 4;
 }
 
 .post-item__meta-item {

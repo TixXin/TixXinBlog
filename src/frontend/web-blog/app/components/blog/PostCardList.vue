@@ -73,7 +73,7 @@
 
   <!-- 分页模式：悬浮在主内容区底部，向下滚动隐藏，向上滚动显示 -->
   <Transition name="pagination-slide">
-    <div v-if="displayMode === 'pagination' && totalPages > 1 && paginationVisible" class="pagination-bar">
+    <div v-if="displayMode === 'pagination' && totalPages > 1 && paginationVisible" class="pagination-bar" :class="{ 'is-bounced': paginationBounce }">
       <button
         class="pagination__btn"
         :disabled="currentPage <= 1"
@@ -172,6 +172,17 @@ function onViewportScroll() {
 // 关闭自动隐藏时，立即恢复分页栏显示
 watch(paginationAutoHide, (enabled) => {
   if (!enabled) paginationVisible.value = true
+})
+
+// ---- 底部栏展开时分页栏弹跳 ----
+const { isFooterExpanded } = useFooterExpand()
+const paginationBounce = ref(false)
+
+watch(isFooterExpanded, (expanded) => {
+  if (expanded) {
+    paginationBounce.value = true
+    setTimeout(() => { paginationBounce.value = false }, 400)
+  }
 })
 
 onMounted(() => {
@@ -385,6 +396,18 @@ onUnmounted(() => {
   font-size: 0.6875rem;
   margin-left: 0.5rem;
   white-space: nowrap;
+}
+
+/* ---- 分页栏弹跳（底部栏展开时联动） ---- */
+.pagination-bar.is-bounced {
+  animation: pagination-bump 0.4s cubic-bezier(0.22, 0.68, 0.35, 1.0);
+}
+
+@keyframes pagination-bump {
+  0%   { transform: translateX(-50%) translateY(0); }
+  30%  { transform: translateX(-50%) translateY(-12px); }
+  60%  { transform: translateX(-50%) translateY(2px); }
+  100% { transform: translateX(-50%) translateY(0); }
 }
 
 /* ---- 分页栏滑动动画：向上弹出显示 / 向下退出隐藏 ---- */

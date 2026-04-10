@@ -5,7 +5,9 @@
       "args": [
         "/c",
         "npx",
-        "@playwright/mcp@latest"
+        "@playwright/mcp@latest",
+        "--output-dir",
+        ".playwright-mcp"
       ]
     },
     "context7": {

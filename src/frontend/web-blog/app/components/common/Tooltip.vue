@@ -20,14 +20,14 @@
   <Teleport to="body">
     <Transition name="tooltip">
       <div
-        v-if="visible && content"
+        v-if="visible && (content || hasContentSlot)"
         ref="floatingRef"
         class="tooltip-floating"
-        :class="`tooltip-floating--${resolvedPlacement}`"
+        :class="[`tooltip-floating--${resolvedPlacement}`, { 'tooltip-floating--rich': rich }]"
         :style="floatingStyle"
         role="tooltip"
       >
-        {{ content }}
+        <slot name="content">{{ content }}</slot>
         <span class="tooltip-floating__arrow" />
       </div>
     </Transition>
@@ -38,17 +38,23 @@
 type Placement = 'top' | 'bottom' | 'left' | 'right'
 
 const props = withDefaults(defineProps<{
-  content: string
+  content?: string
   placement?: Placement
   offset?: number
   delay?: number
   disabled?: boolean
+  rich?: boolean
 }>(), {
+  content: undefined,
   placement: undefined,
   offset: 8,
   delay: 200,
   disabled: false,
+  rich: false,
 })
+
+const slots = useSlots()
+const hasContentSlot = computed(() => !!slots.content)
 
 const triggerRef = ref<HTMLElement | null>(null)
 const floatingRef = ref<HTMLElement | null>(null)
@@ -77,6 +83,7 @@ function onEnter() {
   if (props.disabled) return
   if (hideTimer) { clearTimeout(hideTimer); hideTimer = null }
   showTimer = setTimeout(() => {
+    if (props.disabled) return
     visible.value = true
     nextTick(updatePosition)
   }, props.delay)
@@ -183,6 +190,12 @@ onBeforeUnmount(() => {
   background: var(--tooltip-bg);
   color: var(--tooltip-text);
   box-shadow: var(--tooltip-shadow);
+
+  &--rich {
+    white-space: normal;
+    max-width: 280px;
+    padding: 8px 14px;
+  }
 }
 
 .tooltip-floating__arrow {
