@@ -9,14 +9,7 @@
   <div class="main-inner moments-page">
     <CommonCustomScrollbar class="moments-body" viewport-class="moments-viewport" primary>
       <div class="moments-content">
-        <div class="moments-header">
-          <h2 class="moments-header__title">
-            <Icon name="lucide:message-circle" size="20" class="moments-header__icon" />
-            朋友圈
-          </h2>
-          <p class="moments-header__sub">记录生活点滴，分享日常碎片</p>
-        </div>
-        <MomentList :moments="moments" />
+        <MomentList :moments="moments" :selected-topic="selectedTopic" />
       </div>
     </CommonCustomScrollbar>
 
@@ -25,7 +18,7 @@
         <SidebarRightSidebar>
           <SidebarMomentAuthorCard :stats="authorStats" />
           <SidebarMomentCalendarCard :moment-dates="momentDates" />
-          <SidebarMomentTopicCard :topics="momentTopics" />
+          <SidebarMomentTopicCard :topics="momentTopics" :active-topic="selectedTopic" @select="onTopicSelect" />
         </SidebarRightSidebar>
       </Teleport>
     </ClientOnly>
@@ -46,6 +39,13 @@ useSeoMeta({
 
 const moments = computed(() => mockMoments)
 
+// 话题筛选
+const selectedTopic = ref<string | null>(null)
+
+function onTopicSelect(topicName: string | null) {
+  selectedTopic.value = topicName
+}
+
 // 作者名片数据
 const authorStats: MomentAuthorStats = {
   totalMoments: mockMoments.length,
@@ -57,14 +57,21 @@ const authorStats: MomentAuthorStats = {
 // 日历数据 — 从动态列表提取日期
 const momentDates = computed(() => mockMoments.map((m) => m.date.slice(0, 10)))
 
-// 热门话题数据
-const momentTopics: MomentTopic[] = [
-  { name: '生活日常', icon: 'lucide:sun', color: '#f59e0b', count: 24, description: '记录每一天的小确幸' },
-  { name: '技术分享', icon: 'lucide:code', color: '#3b82f6', count: 18, description: '代码与灵感的碰撞' },
-  { name: '读书笔记', icon: 'lucide:book-open', color: '#8b5cf6', count: 12, description: '阅读中的思考片段' },
-  { name: '摄影记录', icon: 'lucide:camera', color: '#ec4899', count: 9, description: '用镜头捕捉瞬间' },
-  { name: '美食探店', icon: 'lucide:utensils', color: '#ef4444', count: 7, description: '味蕾的冒险旅程' },
+// 热门话题 — 话题定义与动态计数
+const TOPIC_DEFINITIONS: Omit<MomentTopic, 'count'>[] = [
+  { name: '生活日常', icon: 'lucide:sun', color: '#f59e0b', description: '记录每一天的小确幸' },
+  { name: '技术分享', icon: 'lucide:code', color: '#3b82f6', description: '代码与灵感的碰撞' },
+  { name: '读书笔记', icon: 'lucide:book-open', color: '#8b5cf6', description: '阅读中的思考片段' },
+  { name: '摄影记录', icon: 'lucide:camera', color: '#ec4899', description: '用镜头捕捉瞬间' },
+  { name: '美食探店', icon: 'lucide:utensils', color: '#ef4444', description: '味蕾的冒险旅程' },
 ]
+
+const momentTopics = computed<MomentTopic[]>(() =>
+  TOPIC_DEFINITIONS.map((t) => ({
+    ...t,
+    count: mockMoments.filter((m) => m.topics?.includes(t.name)).length,
+  })),
+)
 </script>
 
 <style lang="scss" scoped>
@@ -90,34 +97,5 @@ const momentTopics: MomentTopic[] = [
 .moments-content {
   max-width: 800px;
   margin: 0 auto;
-}
-
-.moments-header {
-  background: var(--surface-1);
-  border-radius: $radius-lg;
-  border: 1px solid var(--border-soft);
-  padding: 1.5rem;
-  box-shadow: var(--shadow-card);
-  margin-bottom: 1.5rem;
-}
-
-.moments-header__title {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  font-size: 1.25rem;
-  font-weight: 700;
-  color: var(--text-main);
-  margin: 0;
-}
-
-.moments-header__icon {
-  color: var(--accent);
-}
-
-.moments-header__sub {
-  font-size: 0.875rem;
-  color: var(--text-soft);
-  margin: 0.375rem 0 0 0;
 }
 </style>

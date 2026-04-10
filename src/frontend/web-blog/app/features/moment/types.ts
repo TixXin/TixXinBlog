@@ -5,6 +5,16 @@
  * @since 2026-04-04
  */
 
+/** 朋友圈评论项 */
+export interface MomentCommentItem {
+  id: string
+  author: string
+  avatar: string
+  content: string
+  time: string
+  isOwner?: boolean
+}
+
 export interface MomentItem {
   id: string
   content: string
@@ -14,4 +24,6 @@ export interface MomentItem {
   isLiked: boolean
   location?: string
   device?: string
+  topics?: string[]
+  comments?: MomentCommentItem[]
 }

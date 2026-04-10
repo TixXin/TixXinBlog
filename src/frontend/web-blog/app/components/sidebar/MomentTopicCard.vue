@@ -1,6 +1,6 @@
 <!--
   @file MomentTopicCard.vue
-  @description 朋友圈右侧栏热门话题卡，展示常用话题标签
+  @description 朋友圈右侧栏热门话题卡，支持点击筛选
   @author TixXin
   @since 2026-04-07
 -->
@@ -15,7 +15,26 @@
     </div>
 
     <ul class="moment-topic-card__list">
-      <li v-for="topic in topics" :key="topic.name" class="moment-topic-card__item">
+      <!-- 全部选项 -->
+      <li class="moment-topic-card__item" :class="{ 'is-active': !activeTopic }" @click="emit('select', null)">
+        <div class="moment-topic-card__item-left">
+          <span class="moment-topic-card__tag-icon moment-topic-card__tag-icon--all">
+            <Icon name="lucide:layers" size="14" />
+          </span>
+          <div class="moment-topic-card__item-info">
+            <span class="moment-topic-card__tag-name">#全部</span>
+            <span class="moment-topic-card__tag-desc">查看所有动态</span>
+          </div>
+        </div>
+      </li>
+
+      <li
+        v-for="topic in topics"
+        :key="topic.name"
+        class="moment-topic-card__item"
+        :class="{ 'is-active': activeTopic === topic.name }"
+        @click="emit('select', topic.name)"
+      >
         <div class="moment-topic-card__item-left">
           <span class="moment-topic-card__tag-icon" :style="{ background: topic.color + '18', color: topic.color }">
             <Icon :name="topic.icon" size="14" />
@@ -42,6 +61,11 @@ export interface MomentTopic {
 
 defineProps<{
   topics: MomentTopic[]
+  activeTopic?: string | null
+}>()
+
+const emit = defineEmits<{
+  select: [topicName: string | null]
 }>()
 </script>
 
@@ -87,6 +111,15 @@ defineProps<{
       color: var(--accent);
     }
   }
+
+  &.is-active {
+    background: var(--accent-soft);
+
+    .moment-topic-card__tag-name {
+      color: var(--accent);
+      font-weight: 700;
+    }
+  }
 }
 
 .moment-topic-card__item-left {
@@ -104,6 +137,11 @@ defineProps<{
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
+
+  &--all {
+    background: var(--accent-soft);
+    color: var(--accent);
+  }
 }
 
 .moment-topic-card__item-info {
