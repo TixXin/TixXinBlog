@@ -19,6 +19,8 @@ export function useReadingProgress(scrollRoot?: Ref<HTMLElement | null | undefin
   const progress = ref(0)
 
   function update() {
+    if (import.meta.server) return
+
     const root = scrollRoot?.value ?? null
     if (root) {
       const max = root.scrollHeight - root.clientHeight

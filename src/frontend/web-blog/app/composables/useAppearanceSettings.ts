@@ -184,27 +184,31 @@ export function useAppearanceSettings() {
   if (import.meta.client && !initialized.value) {
     initialized.value = true
 
-    try {
-      const stored = localStorage.getItem(STORAGE_KEY)
+    // 延迟到水合完成后再从 localStorage 恢复设置，
+    // 避免水合期间修改 useState 导致 SSR/客户端状态不一致
+    onNuxtReady(() => {
+      try {
+        const stored = localStorage.getItem(STORAGE_KEY)
 
-      if (stored) {
-        const parsed = JSON.parse(stored) as Partial<AppearanceStorage>
+        if (stored) {
+          const parsed = JSON.parse(stored) as Partial<AppearanceStorage>
 
-        if (parsed.contentTransitionPreset) {
-          contentTransitionPreset.value = parsed.contentTransitionPreset
+          if (parsed.contentTransitionPreset) {
+            contentTransitionPreset.value = parsed.contentTransitionPreset
+          }
+
+          if (parsed.sidebarAnimationPreset) {
+            sidebarAnimationPreset.value = parsed.sidebarAnimationPreset
+          }
+
+          if (parsed.paginationAutoHide !== undefined) {
+            paginationAutoHide.value = parsed.paginationAutoHide
+          }
         }
-
-        if (parsed.sidebarAnimationPreset) {
-          sidebarAnimationPreset.value = parsed.sidebarAnimationPreset
-        }
-
-        if (parsed.paginationAutoHide !== undefined) {
-          paginationAutoHide.value = parsed.paginationAutoHide
-        }
+      } catch {
+        localStorage.removeItem(STORAGE_KEY)
       }
-    } catch {
-      localStorage.removeItem(STORAGE_KEY)
-    }
+    })
   }
 
   if (import.meta.client && !persistenceBound.value) {
