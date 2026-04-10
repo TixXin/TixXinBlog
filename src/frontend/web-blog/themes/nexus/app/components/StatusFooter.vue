@@ -12,39 +12,34 @@
     @mouseenter="onBarEnter"
     @mouseleave="onBarLeave"
   >
-    <!-- 头像：半悬浮 → 展开时居中，hover 触发展开 + 在线状态 Tooltip -->
-    <CommonTooltip rich placement="top">
-      <NuxtLink
-        to="/"
-        class="nexus-bar__avatar-wrap"
-        aria-label="返回首页"
-        @mouseenter="onAvatarEnter"
+    <!-- 头像：半悬浮，hover 触发展开 + 在线状态微标签 -->
+    <NuxtLink
+      to="/"
+      class="nexus-bar__avatar-wrap"
+      :style="{ '--avatar-glow-color': avatarGlowColor }"
+      aria-label="返回首页"
+      @mouseenter="onAvatarEnter"
+    >
+      <NuxtImg
+        v-if="!avatarError"
+        :src="avatarUrl"
+        alt="TixXin"
+        :width="80"
+        :height="80"
+        class="nexus-bar__avatar-img"
+        format="webp"
+        @error="onAvatarError"
+      />
+      <span v-else class="nexus-bar__avatar-fallback">TX</span>
+      <span
+        class="nexus-bar__presence-badge"
+        :class="`nexus-bar__presence-badge--${ownerPresence.status}`"
+        :aria-label="`状态：${ownerPresence.label}`"
       >
-        <NuxtImg
-          v-if="!avatarError"
-          :src="avatarUrl"
-          alt="TixXin"
-          :width="80"
-          :height="80"
-          class="nexus-bar__avatar-img"
-          format="webp"
-          @error="onAvatarError"
-        />
-        <span v-else class="nexus-bar__avatar-fallback">TX</span>
-        <span
-          class="nexus-bar__presence-dot"
-          :class="`nexus-bar__presence-dot--${ownerPresence.status}`"
-          :aria-label="`状态：${ownerPresence.label}`"
-        />
-      </NuxtLink>
-      <template #content>
-        <div class="nexus-bar__presence-tip">
-          <span class="nexus-bar__presence-tip-status">{{ presenceEmoji }} {{ ownerPresence.label }}</span>
-          <span v-if="ownerPresence.signature" class="nexus-bar__presence-tip-sig">{{ ownerPresence.signature }}</span>
-          <span class="nexus-bar__presence-tip-since">{{ presenceDuration }}</span>
-        </div>
-      </template>
-    </CommonTooltip>
+        <span class="nexus-bar__presence-badge-dot" />
+        <span class="nexus-bar__presence-badge-text">{{ ownerPresence.label.slice(0, 2) }}</span>
+      </span>
+    </NuxtLink>
 
     <!-- 内容切换区域 -->
     <div class="nexus-bar__body">
@@ -72,40 +67,84 @@
           <button
             v-if="showProgress"
             class="nexus-bar__progress"
-            :class="{ 'is-clicked': progressClicked }"
             type="button"
             :aria-label="scrollDirection === 'down' ? '返回底部' : '返回顶部'"
             @click="onProgressClick"
           >
-            <span class="nexus-bar__progress-text">{{ displayProgress }}%</span>
-            <Icon :name="scrollDirection === 'down' ? 'lucide:arrow-down' : 'lucide:arrow-up'" size="14" class="nexus-bar__progress-icon" />
+            <svg class="nexus-bar__progress-ring" viewBox="0 0 28 28" width="28" height="28">
+              <circle class="nexus-bar__progress-ring-bg" cx="14" cy="14" r="12" />
+              <circle
+                class="nexus-bar__progress-ring-fill"
+                cx="14" cy="14" r="12"
+                :style="{ strokeDashoffset: progressRingOffset }"
+              />
+            </svg>
+            <span class="nexus-bar__progress-center">
+              <span class="nexus-bar__progress-text">{{ displayProgress }}</span>
+              <Icon
+                :name="scrollDirection === 'down' ? 'lucide:arrow-down' : 'lucide:arrow-up'"
+                size="12"
+                class="nexus-bar__progress-icon"
+              />
+            </span>
           </button>
         </Transition>
       </div>
 
-      <!-- 展开态：左侧博主信息 + 右侧在线状态 -->
+      <!-- 展开态：横向布局 — 左侧身份信息 | 右侧一言+社交 -->
       <div class="nexus-bar__row-owner">
         <div class="nexus-bar__owner-card">
-          <div class="nexus-bar__owner-header">
-            <span class="nexus-bar__owner-name">{{ ownerCard.name }}</span>
-            <span class="nexus-bar__owner-title">{{ ownerCard.title }}</span>
+          <!-- 左列：名字、头衔、在线状态 -->
+          <div class="nexus-bar__owner-left">
+            <div class="nexus-bar__owner-header">
+              <span class="nexus-bar__owner-name">{{ ownerCard.name }}</span>
+              <span class="nexus-bar__owner-title">{{ ownerCard.title }}</span>
+            </div>
+            <div class="nexus-bar__owner-status-line">
+              <span
+                class="nexus-bar__owner-status-dot"
+                :class="`nexus-bar__owner-status-dot--${ownerPresence.status}`"
+              />
+              <span class="nexus-bar__owner-status-label">{{ ownerPresence.label }}</span>
+              <span v-if="ownerPresence.signature" class="nexus-bar__owner-status-sig">
+                · {{ ownerPresence.signature }}
+              </span>
+            </div>
           </div>
-          <p class="nexus-bar__owner-quote">「{{ dailyQuote }}」</p>
-          <div class="nexus-bar__owner-socials">
-            <a
-              v-for="social in ownerCard.socials"
-              :key="social.href"
-              :href="social.href"
-              target="_blank"
-              rel="noopener noreferrer"
-              class="nexus-bar__social-link"
-            >
-              <Icon :name="social.icon" size="14" />
-              <span>{{ social.label }}</span>
-            </a>
+          <!-- 分隔线 -->
+          <div class="nexus-bar__owner-divider" />
+          <!-- 右列：一言 + 社交链接 -->
+          <div class="nexus-bar__owner-right">
+            <div class="nexus-bar__owner-quote-row">
+              <p class="nexus-bar__owner-quote">
+                <Transition name="nexus-quote-swap" mode="out-in">
+                  <span :key="dailyQuote">「{{ dailyQuote }}」</span>
+                </Transition>
+              </p>
+              <button
+                class="nexus-bar__quote-refresh"
+                type="button"
+                aria-label="换一条"
+                @click="refreshQuote"
+              >
+                <Icon name="lucide:refresh-cw" size="12" />
+              </button>
+            </div>
+            <div class="nexus-bar__owner-socials">
+              <a
+                v-for="social in ownerCard.socials"
+                :key="social.href"
+                :href="social.href"
+                target="_blank"
+                rel="noopener noreferrer"
+                class="nexus-bar__social-link"
+              >
+                <Icon :name="social.icon" size="14" />
+                <span>{{ social.label }}</span>
+              </a>
+            </div>
           </div>
         </div>
-
       </div>
     </div>
 
@@ -122,24 +161,28 @@ import type { OwnerPresence } from '~/features/site/types'
 const route = useRoute()
 const { navItems } = useNavItems()
 const { scrollProgress, scrollResetFn, scrollDirection } = useScrollProgress()
-const { ownerPresence, presenceDuration, ownerCard, dailyQuote } = useSiteInfo()
+const { ownerPresence, ownerCard, dailyQuote } = useSiteInfo()
 
-const PRESENCE_EMOJI: Record<OwnerPresence, string> = {
-  online: '🟢',
-  idle: '🟡',
-  busy: '🔴',
-  offline: '⚫',
+// 头像呼吸光晕颜色映射
+const GLOW_COLOR_MAP: Record<OwnerPresence, string> = {
+  online: 'var(--accent-alpha-20, rgba(99, 102, 241, 0.2))',
+  idle: 'rgba(234, 179, 8, 0.15)',
+  busy: 'rgba(239, 68, 68, 0.15)',
+  offline: 'transparent',
 }
-const presenceEmoji = computed(() => PRESENCE_EMOJI[ownerPresence.value.status])
+const avatarGlowColor = computed(() => GLOW_COLOR_MAP[ownerPresence.value.status])
 
 const avatarUrl =
   'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=200&q=80&sat=-12'
 
 const avatarError = ref(false)
-const progressClicked = ref(false)
 
 const showProgress = computed(() => scrollProgress.value > 1)
 const displayProgress = computed(() => Math.round(scrollProgress.value))
+
+// 环形进度条 dashoffset 计算
+const RING_CIRCUMFERENCE = 2 * Math.PI * 12
+const progressRingOffset = computed(() => RING_CIRCUMFERENCE * (1 - scrollProgress.value / 100))
 
 function onAvatarError() {
   avatarError.value = true
@@ -153,14 +196,18 @@ function isActive(to: string) {
 
 function onProgressClick() {
   scrollResetFn.value?.()
-  progressClicked.value = true
 }
 
-watch(scrollProgress, (val) => {
-  if (progressClicked.value && val > 1) {
-    progressClicked.value = false
-  }
-})
+/** 刷新每日一言（避免与当前相同） */
+function refreshQuote() {
+  const quotes = ownerCard.value.quotes
+  if (quotes.length <= 1) return
+  let next: string
+  do {
+    next = quotes[Math.floor(Math.random() * quotes.length)]
+  } while (next === dailyQuote.value)
+  dailyQuote.value = next
+}
 
 // ---- 展开/收起逻辑 ----
 const { isFooterExpanded } = useFooterExpand()
@@ -190,7 +237,7 @@ function onBarLeave() {
   collapseTimer = setTimeout(() => {
     isExpanded.value = false
     collapseTimer = null
-  }, 300)
+  }, 150)
 }
 
 onBeforeUnmount(() => {
@@ -201,7 +248,7 @@ onBeforeUnmount(() => {
 
 <style lang="scss" scoped>
 $bar-height: 72px;
-$bar-expanded: 150px;
+$bar-expanded: 112px;
 
 .nexus-bar {
   position: relative;
@@ -220,12 +267,12 @@ $bar-expanded: 150px;
     0 4px 24px rgba(0, 0, 0, 0.06);
   overflow: visible;
 
-  // 收起动画
+  // 收起动画（快速响应）
   transition:
-    height 0.22s cubic-bezier(0.4, 0, 0.6, 1),
-    transform 0.22s cubic-bezier(0.4, 0, 0.6, 1),
-    background 0.3s ease,
-    box-shadow 0.3s ease;
+    height 0.18s cubic-bezier(0.4, 0, 0.6, 1),
+    transform 0.18s cubic-bezier(0.4, 0, 0.6, 1),
+    background 0.25s ease,
+    box-shadow 0.25s ease;
 
   &.is-expanded {
     height: $bar-expanded;
@@ -269,7 +316,8 @@ $bar-expanded: 150px;
     box-shadow:
       0 4px 20px rgba(0, 0, 0, 0.15),
       0 0 0 3px var(--accent-alpha-20, rgba(99, 102, 241, 0.15));
-    transform: scale(1.06);
+    transform: scale(1.05);
+    transition: transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.3s ease, border-color 0.3s ease;
   }
 
   &:active {
@@ -309,42 +357,70 @@ $bar-expanded: 150px;
   letter-spacing: 0.08em;
 }
 
-// ---- 在线状态圆点 ----
-.nexus-bar__presence-dot {
+// ---- 头像呼吸光晕 ----
+.nexus-bar__avatar-wrap::after {
+  content: '';
   position: absolute;
-  right: 2px;
-  bottom: 2px;
-  width: 10px;
-  height: 10px;
-  border-radius: $radius-full;
-  box-shadow: 0 0 0 2.5px var(--surface-1);
-  z-index: 2;
+  inset: -4px;
+  border-radius: 50%;
+  opacity: 0;
   pointer-events: none;
-
-  &--online {
-    background: var(--presence-online);
-
-    &::before {
-      content: '';
-      position: absolute;
-      inset: 0;
-      border-radius: inherit;
-      background: var(--presence-online);
-      animation: nexus-presence-ping 1.5s cubic-bezier(0, 0, 0.2, 1) infinite;
-    }
-  }
-
-  &--idle { background: var(--presence-idle); }
-  &--busy { background: var(--presence-busy); }
-  &--offline { background: var(--presence-offline); }
+  transition: opacity 0.6s ease;
 }
 
-@keyframes nexus-presence-ping {
-  75%,
-  100% {
-    transform: scale(2.2);
+.nexus-bar:not(.is-expanded) .nexus-bar__avatar-wrap::after {
+  opacity: 1;
+  animation: nexus-avatar-glow 3s ease-in-out infinite;
+}
+
+@keyframes nexus-avatar-glow {
+  0%,
+  100% { box-shadow: 0 0 0 0 var(--avatar-glow-color, transparent); }
+  50% { box-shadow: 0 0 12px 2px var(--avatar-glow-color, transparent); }
+}
+
+// ---- 在线状态微标签 ----
+.nexus-bar__presence-badge {
+  position: absolute;
+  right: -8px;
+  bottom: -2px;
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  padding: 1px 6px 1px 4px;
+  border-radius: $radius-full;
+  background: var(--surface-1);
+  border: 1.5px solid var(--border-soft);
+  font-size: 0.5625rem;
+  font-weight: 600;
+  color: var(--text-soft);
+  white-space: nowrap;
+  z-index: 2;
+  pointer-events: none;
+  transition:
+    opacity 0.2s ease,
+    transform 0.2s ease;
+
+  .nexus-bar.is-expanded & {
     opacity: 0;
+    transform: scale(0.8);
   }
+}
+
+.nexus-bar__presence-badge-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.nexus-bar__presence-badge--online .nexus-bar__presence-badge-dot { background: var(--presence-online); }
+.nexus-bar__presence-badge--idle .nexus-bar__presence-badge-dot { background: var(--presence-idle); }
+.nexus-bar__presence-badge--busy .nexus-bar__presence-badge-dot { background: var(--presence-busy); }
+.nexus-bar__presence-badge--offline .nexus-bar__presence-badge-dot { background: var(--presence-offline); }
+
+.nexus-bar__presence-badge-text {
+  line-height: 1;
 }
 
 // ---- 内容切换区域 ----
@@ -362,7 +438,7 @@ $bar-expanded: 150px;
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  transition: opacity 0.15s ease;
+  transition: opacity 0.12s ease;
 
   .nexus-bar.is-expanded & {
     opacity: 0;
@@ -378,7 +454,7 @@ $bar-expanded: 150px;
   align-items: center;
   opacity: 0;
   pointer-events: none;
-  transition: opacity 0.2s ease 0.05s;
+  transition: opacity 0.15s ease 0.04s;
 
   .nexus-bar.is-expanded & {
     opacity: 1;
@@ -397,10 +473,10 @@ $bar-expanded: 150px;
 // ---- 分隔线 ----
 .nexus-bar__separator {
   width: 1px;
-  height: 1.25rem;
+  height: 1.5rem;
   flex-shrink: 0;
   background: var(--border-soft);
-  opacity: 0.6;
+  opacity: 0.8;
 }
 
 // ---- 导航链接 ----
@@ -446,25 +522,25 @@ $bar-expanded: 150px;
 
   &.is-active {
     color: var(--accent);
-    background: var(--surface-3);
+    background: var(--accent-alpha-5, rgba(99, 102, 241, 0.05));
     font-weight: 600;
 
     &::after {
       content: '';
       position: absolute;
-      bottom: 0.125rem;
+      bottom: 0.1875rem;
       left: 50%;
       transform: translateX(-50%);
-      width: 1rem;
+      width: 1.25rem;
       height: 2px;
       border-radius: 1px;
       background: var(--accent);
-      opacity: 0.8;
+      opacity: 0.9;
     }
   }
 }
 
-// ---- 滚动进度按钮 ----
+// ---- 环形滚动进度按钮 ----
 .nexus-bar__progress {
   position: relative;
   display: inline-flex;
@@ -472,27 +548,18 @@ $bar-expanded: 150px;
   justify-content: center;
   flex-shrink: 0;
   margin-left: auto;
-  min-width: 2.75rem;
-  padding: 0.3rem 0.625rem;
-  border-radius: $radius-full;
-  border: 1px solid var(--border-soft);
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: 50%;
+  border: none;
   background: var(--surface-2);
-  font-size: 0.6875rem;
-  font-weight: 600;
-  font-variant-numeric: tabular-nums;
-  color: var(--text-soft);
   cursor: pointer;
-  white-space: nowrap;
   transition:
-    color 0.2s ease,
     background 0.2s ease,
-    border-color 0.2s ease,
     transform 0.15s ease;
 
   &:hover {
-    color: var(--accent);
     background: var(--surface-3);
-    border-color: var(--accent-alpha-20, rgba(99, 102, 241, 0.2));
 
     .nexus-bar__progress-text {
       opacity: 0;
@@ -507,24 +574,43 @@ $bar-expanded: 150px;
   }
 
   &:active {
-    transform: scale(0.92);
-  }
-
-  &.is-clicked:hover {
-    .nexus-bar__progress-text {
-      opacity: 1;
-      transform: none;
-    }
-
-    .nexus-bar__progress-icon {
-      opacity: 0;
-      transform: translateY(4px);
-      animation: none;
-    }
+    transform: scale(0.9);
   }
 }
 
+.nexus-bar__progress-ring {
+  position: absolute;
+  inset: 0;
+  transform: rotate(-90deg);
+}
+
+.nexus-bar__progress-ring-bg {
+  fill: none;
+  stroke: var(--border-soft);
+  stroke-width: 2;
+}
+
+.nexus-bar__progress-ring-fill {
+  fill: none;
+  stroke: var(--accent);
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-dasharray: 75.4;
+  transition: stroke-dashoffset 0.3s cubic-bezier(0.22, 0.68, 0.35, 1.0);
+}
+
+.nexus-bar__progress-center {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
 .nexus-bar__progress-text {
+  font-size: 0.625rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-soft);
   transition:
     opacity 0.2s ease,
     transform 0.2s ease;
@@ -533,7 +619,8 @@ $bar-expanded: 150px;
 .nexus-bar__progress-icon {
   position: absolute;
   opacity: 0;
-  transform: translateY(4px);
+  color: var(--accent);
+  transform: translateY(3px);
   transition:
     opacity 0.2s ease,
     transform 0.2s ease;
@@ -557,15 +644,66 @@ $bar-expanded: 150px;
 .nexus-progress-fade-enter-from,
 .nexus-progress-fade-leave-to {
   opacity: 0;
-  transform: scale(0.8);
+  transform: translateY(8px) scale(0.85);
 }
 
-// ---- 博主信息卡片 ----
+// ---- 博主信息卡片（横向布局） ----
 .nexus-bar__owner-card {
   display: flex;
+  align-items: center;
+  gap: 1rem;
+  width: 100%;
+}
+
+// 展开态子元素交错入场动画
+.nexus-bar__owner-card > * {
+  opacity: 0;
+  transform: translateX(-8px);
+  transition: opacity 0.18s ease, transform 0.18s ease;
+}
+
+.nexus-bar.is-expanded .nexus-bar__owner-card > :nth-child(1) {
+  opacity: 1;
+  transform: translateX(0);
+  transition-delay: 0.06s;
+}
+
+.nexus-bar.is-expanded .nexus-bar__owner-card > :nth-child(2) {
+  opacity: 1;
+  transform: translateX(0);
+  transition-delay: 0.10s;
+}
+
+.nexus-bar.is-expanded .nexus-bar__owner-card > :nth-child(3) {
+  opacity: 1;
+  transform: translateX(0);
+  transition-delay: 0.14s;
+}
+
+// 左列：身份 + 状态
+.nexus-bar__owner-left {
+  display: flex;
   flex-direction: column;
-  gap: 0.375rem;
-  padding: 0.25rem 0;
+  gap: 0.25rem;
+  flex-shrink: 0;
+}
+
+// 中间分隔线
+.nexus-bar__owner-divider {
+  width: 1px;
+  height: 2rem;
+  flex-shrink: 0;
+  background: var(--border-soft);
+  opacity: 0.6;
+}
+
+// 右列：一言 + 社交
+.nexus-bar__owner-right {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  flex: 1;
+  min-width: 0;
 }
 
 .nexus-bar__owner-header {
@@ -586,11 +724,95 @@ $bar-expanded: 150px;
   color: var(--text-soft);
 }
 
+// 在线状态行
+.nexus-bar__owner-status-line {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  font-size: 0.6875rem;
+  color: var(--text-soft);
+}
+
+.nexus-bar__owner-status-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  flex-shrink: 0;
+
+  &--online { background: var(--presence-online); }
+  &--idle { background: var(--presence-idle); }
+  &--busy { background: var(--presence-busy); }
+  &--offline { background: var(--presence-offline); }
+}
+
+.nexus-bar__owner-status-label {
+  font-weight: 600;
+}
+
+.nexus-bar__owner-status-sig {
+  color: var(--text-muted);
+  font-style: italic;
+}
+
+// 一言行（含刷新按钮）
+.nexus-bar__owner-quote-row {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+}
+
 .nexus-bar__owner-quote {
   font-size: 0.75rem;
   color: var(--text-muted);
   font-style: italic;
   margin: 0;
+}
+
+.nexus-bar__quote-refresh {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.25rem;
+  height: 1.25rem;
+  flex-shrink: 0;
+  border-radius: $radius-full;
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  opacity: 0;
+  transition:
+    opacity 0.2s ease,
+    color 0.2s ease,
+    transform 0.3s ease;
+
+  .nexus-bar__owner-quote-row:hover & {
+    opacity: 1;
+  }
+
+  &:hover {
+    color: var(--accent);
+  }
+
+  &:active {
+    transform: rotate(180deg);
+  }
+}
+
+// 一言切换动画
+.nexus-quote-swap-enter-active,
+.nexus-quote-swap-leave-active {
+  transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+.nexus-quote-swap-enter-from {
+  opacity: 0;
+  transform: translateY(4px);
+}
+
+.nexus-quote-swap-leave-to {
+  opacity: 0;
+  transform: translateY(-4px);
 }
 
 .nexus-bar__owner-socials {
@@ -613,32 +835,6 @@ $bar-expanded: 150px;
   }
 }
 
-// ---- 在线状态 Tooltip 内容 ----
-.nexus-bar__presence-tip {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 0.25rem;
-  padding: 0.125rem 0;
-}
-
-.nexus-bar__presence-tip-status {
-  font-weight: 600;
-  font-size: 0.8125rem;
-}
-
-.nexus-bar__presence-tip-sig {
-  font-size: 0.75rem;
-  color: var(--text-soft);
-  opacity: 0.85;
-}
-
-.nexus-bar__presence-tip-since {
-  font-size: 0.6875rem;
-  color: var(--text-muted);
-  opacity: 0.65;
-}
-
 // ---- 登录按钮（始终显示） ----
 .nexus-bar__login {
   display: flex;
@@ -647,16 +843,21 @@ $bar-expanded: 150px;
   width: 2rem;
   height: 2rem;
   flex-shrink: 0;
-  border-radius: $radius-sm;
+  border-radius: $radius-full;
   color: var(--text-soft);
   background: transparent;
-  border: none;
+  border: 1px solid var(--border-soft);
   cursor: pointer;
-  transition: $transition-fast;
+  transition:
+    color 0.2s ease,
+    background 0.2s ease,
+    border-color 0.2s ease,
+    transform 0.15s ease;
 
   &:hover {
-    color: var(--text-main);
+    color: var(--accent);
     background: var(--surface-2);
+    border-color: var(--accent-alpha-20, rgba(99, 102, 241, 0.15));
   }
 
   &:active {

@@ -32,6 +32,18 @@ export interface OwnerCardInfo {
   quotes: string[]
 }
 
+/** 站点公告 */
+export interface SiteAnnouncement {
+  /** 公告唯一标识 */
+  id: string
+  /** 公告内容 */
+  content: string
+  /** 发布日期 */
+  date: string
+  /** 是否置顶 */
+  pinned?: boolean
+}
+
 /** 博主在线状态枚举 */
 export type OwnerPresence = 'online' | 'idle' | 'busy' | 'offline'
 
