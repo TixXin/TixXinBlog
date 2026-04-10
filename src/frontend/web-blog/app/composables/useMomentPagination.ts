@@ -13,16 +13,23 @@ const SPINNER_DELAY = 250
 interface MomentPaginationOptions {
   allMoments: Ref<MomentItem[]>
   selectedTopic: Ref<string | null>
+  selectedDate: Ref<string | null>
   pageSize?: number
 }
 
 export function useMomentPagination(options: MomentPaginationOptions) {
-  const { allMoments, selectedTopic, pageSize = PAGE_SIZE } = options
+  const { allMoments, selectedTopic, selectedDate, pageSize = PAGE_SIZE } = options
 
-  // 根据话题筛选
+  // 根据话题和日期筛选
   const filteredMoments = computed(() => {
-    if (!selectedTopic.value) return allMoments.value
-    return allMoments.value.filter((m) => m.topics?.includes(selectedTopic.value!))
+    let result = allMoments.value
+    if (selectedTopic.value) {
+      result = result.filter((m) => m.topics?.includes(selectedTopic.value!))
+    }
+    if (selectedDate.value) {
+      result = result.filter((m) => m.date.slice(0, 10) === selectedDate.value)
+    }
+    return result
   })
 
   const displayCount = ref(pageSize)
@@ -35,8 +42,8 @@ export function useMomentPagination(options: MomentPaginationOptions) {
 
   const hasMore = computed(() => displayCount.value < filteredMoments.value.length)
 
-  // 话题切换时重置
-  watch(selectedTopic, () => {
+  // 话题或日期切换时重置
+  watch([selectedTopic, selectedDate], () => {
     displayCount.value = pageSize
   })
 

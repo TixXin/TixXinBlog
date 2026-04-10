@@ -7,7 +7,7 @@
 
 <template>
   <div class="moment-list">
-    <MomentCard v-for="moment in displayedMoments" :key="moment.id" :moment="moment" />
+    <MomentCard v-for="moment in displayedMoments" :id="`moment-${moment.id}`" :key="moment.id" :moment="moment" />
 
     <!-- 加载哨兵 -->
     <div v-if="hasMore" ref="sentinelRef" class="moment-list__sentinel">
@@ -38,14 +38,17 @@ import { useMomentPagination } from '~/composables/useMomentPagination'
 const props = defineProps<{
   moments: MomentItem[]
   selectedTopic?: string | null
+  selectedDate?: string | null
 }>()
 
 const allMoments = computed(() => props.moments)
 const selectedTopic = computed(() => props.selectedTopic ?? null)
+const selectedDate = computed(() => props.selectedDate ?? null)
 
 const { displayedMoments, hasMore, showSpinner, sentinelRef } = useMomentPagination({
   allMoments,
   selectedTopic,
+  selectedDate,
 })
 </script>
 

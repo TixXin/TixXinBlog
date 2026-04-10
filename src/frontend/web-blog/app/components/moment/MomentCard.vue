@@ -7,20 +7,22 @@
 
 <template>
   <div class="moment-card">
-    <div class="moment-card__avatar">
-      <NuxtImg
-        src="/avatar-photo.webp"
-        alt="TixXin"
-        width="44"
-        height="44"
-        class="moment-card__avatar-img"
-        format="webp"
-        @error="avatarError = true"
-      />
-      <div v-if="avatarError" class="moment-card__avatar-fallback">
-        <Icon name="lucide:user" size="24" />
+    <MomentUserPopover :profile="ownerProfile" is-owner placement="top">
+      <div class="moment-card__avatar">
+        <NuxtImg
+          src="/avatar-photo.webp"
+          alt="TixXin"
+          width="44"
+          height="44"
+          class="moment-card__avatar-img"
+          format="webp"
+          @error="avatarError = true"
+        />
+        <div v-if="avatarError" class="moment-card__avatar-fallback">
+          <Icon name="lucide:user" size="24" />
+        </div>
       </div>
-    </div>
+    </MomentUserPopover>
 
     <div class="moment-card__body">
       <div class="moment-card__header">
@@ -42,6 +44,9 @@
           <img :src="img" alt="图片" class="moment-card__image" loading="lazy" >
         </div>
       </div>
+
+      <!-- 引用文章卡片 -->
+      <MomentArticleCard v-if="moment.linkedArticle" :article="moment.linkedArticle" />
 
       <!-- 底部元信息 + 操作 -->
       <div class="moment-card__footer">
@@ -109,8 +114,16 @@
 </template>
 
 <script setup lang="ts">
-import type { MomentItem, MomentCommentItem } from '~/features/moment/types'
+import type { MomentItem, MomentCommentItem, MomentUserProfile } from '~/features/moment/types'
 import { formatRelativeDate } from '~/composables/useRelativeDate'
+
+/** 博主信息，用于头像 hover 卡片 */
+const ownerProfile: MomentUserProfile = {
+  name: 'TixXin',
+  avatar: '/avatar-photo.webp',
+  bio: '记录生活点滴，分享技术与日常',
+  link: '/',
+}
 
 const props = defineProps<{
   moment: MomentItem
@@ -317,7 +330,7 @@ function onLightBoxChange(index: number) {
   display: flex;
   align-items: center;
   gap: 0.25rem;
-  color: var(--accent-soft);
+  color: var(--text-soft);
 }
 
 // 操作按钮
