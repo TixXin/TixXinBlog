@@ -14,8 +14,10 @@
     </CommonPageHeader>
     <CommonCustomScrollbar class="links-body" viewport-class="links-viewport" :show-back-to-top="false" primary>
       <LinkGrid :links="links" />
-      <LinkForm />
     </CommonCustomScrollbar>
+    <div class="links-footer">
+      <LinkForm />
+    </div>
     <ClientOnly>
       <Teleport to="#right-sidebar-target">
         <SidebarRightSidebar>
@@ -56,5 +58,12 @@ const siteInfo = mockSiteInfo
 
 :deep(.links-viewport) {
   padding: 2rem;
+}
+
+.links-footer {
+  flex-shrink: 0;
+  padding: 0 2rem 2rem;
+  border-top: 1px solid var(--border);
+  padding-top: 1.5rem;
 }
 </style>

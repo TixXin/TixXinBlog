@@ -28,7 +28,7 @@ defineProps<{
   display: grid;
   grid-template-columns: repeat(1, 1fr);
   gap: 1.25rem;
-  margin-bottom: 2.5rem;
+  margin-bottom: 0;
 
   @media (min-width: $breakpoint-sm) {
     grid-template-columns: repeat(2, 1fr);
