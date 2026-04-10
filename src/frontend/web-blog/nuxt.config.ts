@@ -52,7 +52,7 @@ export default {
     themesDir: './themes',
     defaultTheme: 'nexus',
     cookieKey: 'tixxin-blog-layout-theme',
-    lazyLoadThemes: true,
+    lazyLoadThemes: false,
     contractsEntry: '#theme-contracts',
     contractsImportId: '#theme-contracts',
   },
