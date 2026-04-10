@@ -14,6 +14,9 @@
           class="aside-left__scroll"
           viewport-class="aside-left__viewport"
         >
+          <OwnerProfileCard />
+          <SiteAnnouncementCard />
+          <DailyQuoteCard />
           <SidebarSiteStatsCard :stats="siteStats" />
           <BlogSubscribeCard />
           <SidebarFooterCard />
@@ -44,6 +47,9 @@
 
 <script setup lang="ts">
 import { mockSiteStats } from '~/features/stats/mock'
+import OwnerProfileCard from './OwnerProfileCard.vue'
+import SiteAnnouncementCard from './SiteAnnouncementCard.vue'
+import DailyQuoteCard from './DailyQuoteCard.vue'
 import SidebarFooterCard from './SidebarFooterCard.vue'
 
 const siteStats = mockSiteStats

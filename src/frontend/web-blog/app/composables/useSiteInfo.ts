@@ -5,8 +5,8 @@
  * @since 2026-03-26
  */
 
-import type { FooterLink, OwnerCardInfo, OwnerPresenceInfo, PoweredByItem, SiteStatus } from '~/features/site/types'
-import { mockFooterLinks, mockOwnerCard, mockOwnerPresence, mockPoweredBy, mockSiteStatus } from '~/features/site/mock'
+import type { FooterLink, OwnerCardInfo, OwnerPresenceInfo, PoweredByItem, SiteAnnouncement, SiteStatus } from '~/features/site/types'
+import { mockAnnouncements, mockFooterLinks, mockOwnerCard, mockOwnerPresence, mockPoweredBy, mockSiteStatus } from '~/features/site/mock'
 
 /** 将 ISO 时间字符串转为相对时间描述 */
 function formatDuration(since: string): string {
@@ -37,6 +37,9 @@ export function useSiteInfo() {
     return quotes[Math.floor(Math.random() * quotes.length)]
   })
 
+  /** 站点公告（最多 3 条） */
+  const announcements = computed<SiteAnnouncement[]>(() => mockAnnouncements.slice(0, 3))
+
   return {
     footerLinks,
     poweredBy,
@@ -45,5 +48,6 @@ export function useSiteInfo() {
     presenceDuration,
     ownerCard,
     dailyQuote,
+    announcements,
   }
 }

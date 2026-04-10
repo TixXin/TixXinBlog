@@ -74,8 +74,8 @@
                   }"
                   :disabled="switchingState === 'loading'"
                   :aria-label="`${theme.name} 布局主题`"
-                  @click="setLayoutTheme(theme.id)"
-                  @mouseenter="preloadTheme(theme.id)"
+                  @click="onLayoutThemeClick(theme.id)"
+                  @mouseenter="theme.id !== 'dock' && preloadTheme(theme.id)"
                 >
                   <Icon
                     v-if="switchingState !== 'loading' || currentThemeId === theme.id"
@@ -87,6 +87,12 @@
                   <span class="appearance-option__version">v{{ theme.version }}</span>
                 </button>
               </div>
+              <Transition name="dock-tip">
+                <p v-if="dockTipVisible" class="appearance-dock-tip">
+                  <Icon name="lucide:construction" size="14" />
+                  主题开发中，敬请期待~
+                </p>
+              </Transition>
             </section>
 
             <section v-if="isCapabilitySupported('contentTransition')" class="appearance-section">
@@ -194,6 +200,22 @@ const { currentThemeId, activeTheme, availableThemes, switchingState, setLayoutT
 
 const layoutThemeLabel = computed(() => activeTheme.value.name)
 
+// Dock 主题尚未开发，拦截点击并显示提示
+const dockTipVisible = ref(false)
+let dockTipTimer: ReturnType<typeof setTimeout> | null = null
+
+function onLayoutThemeClick(id: string) {
+  if (id === 'dock') {
+    dockTipVisible.value = true
+    if (dockTipTimer) clearTimeout(dockTipTimer)
+    dockTipTimer = setTimeout(() => {
+      dockTipVisible.value = false
+    }, 2500)
+    return
+  }
+  setLayoutTheme(id)
+}
+
 const themeLabels = COLOR_MODE_LABELS
 
 const themeIcons = {
@@ -251,6 +273,7 @@ onMounted(() => {
 
 onBeforeUnmount(() => {
   if (engineTipTimer) clearTimeout(engineTipTimer)
+  if (dockTipTimer) clearTimeout(dockTipTimer)
   window.removeEventListener('keydown', onKeydown)
 })
 </script>
@@ -493,6 +516,34 @@ onBeforeUnmount(() => {
   background: var(--tooltip-bg);
   color: var(--tooltip-text);
   box-shadow: var(--tooltip-shadow);
+}
+
+// Dock 主题开发中提示
+.appearance-dock-tip {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  margin: 0.5rem 0 0;
+  padding: 0.4rem 0.75rem;
+  border-radius: $radius-md;
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
+:global(.dock-tip-enter-active) {
+  transition: all 0.2s ease-out;
+}
+
+:global(.dock-tip-leave-active) {
+  transition: all 0.15s ease-in;
+}
+
+:global(.dock-tip-enter-from),
+:global(.dock-tip-leave-to) {
+  opacity: 0;
+  transform: translateY(-4px);
 }
 
 :global(.drawer-overlay-enter-active),
