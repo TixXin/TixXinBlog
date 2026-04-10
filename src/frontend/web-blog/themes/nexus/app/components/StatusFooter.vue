@@ -75,12 +75,9 @@ const avatarError = ref(false)
 const progressClicked = ref(false)
 
 const showProgress = computed(() => {
-  if (scrollDirection.value === 'down') {
-    // 聊天模式：不在底部时显示（progress < 99）
-    return scrollProgress.value > 0 && scrollProgress.value < 99
-  }
-  // 普通模式：不在顶部时显示
-  return scrollProgress.value > 0
+  // 进度已在 CustomScrollbar 中统一处理（聊天模式反转：底部=0，顶部=100）
+  // 不在起始位置（普通页面顶部 / 聊天页面底部）时显示
+  return scrollProgress.value > 1
 })
 const displayProgress = computed(() => Math.round(scrollProgress.value))
 

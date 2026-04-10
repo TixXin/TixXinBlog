@@ -17,6 +17,7 @@
           viewport-class="guestbook-viewport"
           :show-back-to-top="false"
           primary
+          primary-direction="down"
         >
           <!-- 向上滚动加载历史消息 -->
           <Transition name="loader-fade">
@@ -198,9 +199,6 @@ function scrollToBottom(smooth = true) {
   })
 }
 
-// ---- 全局滚动方向覆写：留言板为"返回底部" ----
-const { scrollResetFn, scrollDirection } = useScrollProgress()
-
 // ---- 生命周期 ----
 onMounted(() => {
   // 默认显示最底部（最新消息）
@@ -209,10 +207,6 @@ onMounted(() => {
     // 等滚动完成后再设置 observer，避免初始触发加载
     setTimeout(() => setupObserver(), 100)
   })
-
-  // 覆写全局滚动行为：留言板回到底部而非顶部
-  scrollResetFn.value = () => scrollToBottom(true)
-  scrollDirection.value = 'down'
 
   // 监听滚动检测是否在底部
   watch(
@@ -227,7 +221,6 @@ onMounted(() => {
 
 onUnmounted(() => {
   scrollbarRef.value?.viewport?.removeEventListener('scroll', checkIsAtBottom)
-  scrollDirection.value = 'up'
   observer?.disconnect()
   observer = null
 })

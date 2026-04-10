@@ -88,12 +88,15 @@ const props = withDefaults(defineProps<{
   backToTopThreshold?: number
   /** 是否为当前页面的主滚动区域（写入全局滚动进度） */
   primary?: boolean
+  /** 主滚动区域的滚动方向：'up' 回到顶部（默认），'down' 回到底部（聊天模式） */
+  primaryDirection?: 'up' | 'down'
 }>(), {
   autoHideDelay: 1500,
   showProgress: false,
   showBackToTop: true,
   backToTopThreshold: 300,
   primary: false,
+  primaryDirection: 'up',
 })
 
 const { scrollProgress: globalProgress, scrollResetFn: globalScrollResetFn, scrollDirection: globalScrollDirection } = useScrollProgress()
@@ -165,7 +168,7 @@ function onScroll() {
 
   // 主滚动区域：同步到全局滚动进度（聊天页面反转：底部0%，顶部100%）
   if (props.primary) {
-    globalProgress.value = globalScrollDirection.value === 'down'
+    globalProgress.value = props.primaryDirection === 'down'
       ? 100 - scrollProgress.value
       : scrollProgress.value
   }
@@ -252,6 +255,15 @@ function scrollToTop(smooth = true) {
   })
 }
 
+function scrollToBottom(smooth = true) {
+  const el = viewportRef.value
+  if (!el) return
+  el.scrollTo({
+    top: el.scrollHeight,
+    behavior: smooth ? 'smooth' : 'instant',
+  })
+}
+
 defineExpose({
   /** 滚动视口元素 */
   viewport: viewportRef,
@@ -276,10 +288,12 @@ onMounted(() => {
     })
   }
 
-  // 主滚动区域：注册全局回到起始位置方法（默认回到顶部）
+  // 主滚动区域：根据方向注册全局回到起始位置方法
   if (props.primary) {
-    globalScrollResetFn.value = () => scrollToTop(true)
-    globalScrollDirection.value = 'up'
+    globalScrollDirection.value = props.primaryDirection
+    globalScrollResetFn.value = props.primaryDirection === 'down'
+      ? () => scrollToBottom(true)
+      : () => scrollToTop(true)
   }
 })
 
