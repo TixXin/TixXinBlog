@@ -26,7 +26,7 @@ export interface AppearanceOption<T extends string> {
 
 export const DEFAULT_CONTENT_TRANSITION_PRESET: ContentTransitionPreset = 'vertical-slide'
 export const DEFAULT_SIDEBAR_ANIMATION_PRESET: SidebarAnimationPreset = 'fade-in-up'
-export const DEFAULT_COLOR_MODE_TRANSITION_PRESET: ColorModeTransitionPreset = 'fade'
+export const DEFAULT_COLOR_MODE_TRANSITION_PRESET: ColorModeTransitionPreset = 'circle'
 
 export const COLOR_MODE_LABELS: Record<ThemeOption, string> = {
   light: '浅色',
