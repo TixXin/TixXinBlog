@@ -78,6 +78,9 @@ export default {
       // 构建期常量：dev 调试面板「环境」tab 显示用，prod 时面板被 tree-shake，字段闲置
       buildTime: new Date().toISOString(),
       nuxtVersion: '4',
+      // 数据仓库切换：true=LocalStorage mock 实现；false=HTTP 实现（待后端就绪）
+      // 详见 app/plugins/repositories.ts
+      useMockRepo: true,
     },
   },
   site: {
@@ -91,7 +94,10 @@ export default {
     allow: '/',
   },
   fonts: {
-    families: [{ name: 'Inter', provider: 'bunny', weights: [300, 400, 500, 600, 700, 800] }],
+    // 单 provider 模式：仅初始化 bunny，跳过 google/googleicons 等其他内置 provider
+    // 避免服务器无网络环境下启动时卡 30s 拉取 fonts.google.com 元数据并报红
+    provider: 'bunny',
+    families: [{ name: 'Inter', weights: [300, 400, 500, 600, 700, 800] }],
     defaults: {
       fallbacks: ['system-ui', 'sans-serif'],
     },
