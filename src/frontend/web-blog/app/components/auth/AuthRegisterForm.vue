@@ -110,12 +110,15 @@
 
 <script setup lang="ts">
 import type { AuthView, RegisterForm } from '~/features/auth/types'
+import { mockVisitorUser } from '~/features/auth/mock'
 
 const emit = defineEmits<{
   switchView: [view: AuthView]
 }>()
 
 const { success, warning } = useToast()
+const { setUser } = useCurrentUser()
+const { close: closeLogin } = useLoginDrawer()
 
 const form = reactive<RegisterForm>({
   nickname: '',
@@ -178,7 +181,15 @@ async function onSubmit() {
   submitting.value = true
   await new Promise((resolve) => setTimeout(resolve, 1200))
   submitting.value = false
-  success('注册成功！请查收验证邮件')
+
+  // mock：注册即登录，使用表单中的昵称/邮箱覆盖样例访客
+  setUser({
+    ...mockVisitorUser,
+    nickname: form.nickname,
+    email: form.email,
+  })
+  success('注册成功！欢迎加入')
+  closeLogin()
 }
 </script>
 

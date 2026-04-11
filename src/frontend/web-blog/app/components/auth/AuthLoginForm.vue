@@ -91,12 +91,15 @@
 
 <script setup lang="ts">
 import type { AuthView, LoginForm } from '~/features/auth/types'
+import { mockVisitorUser } from '~/features/auth/mock'
 
 const emit = defineEmits<{
   switchView: [view: AuthView]
 }>()
 
 const { success, warning } = useToast()
+const { setUser } = useCurrentUser()
+const { close: closeLogin } = useLoginDrawer()
 
 const form = reactive<LoginForm>({
   email: '',
@@ -129,7 +132,14 @@ async function onSubmit() {
   // Mock 登录延迟
   await new Promise((resolve) => setTimeout(resolve, 1200))
   submitting.value = false
+
+  // mock：使用样例访客用户写入登录态，邮箱替换为表单输入值，方便联调
+  setUser({
+    ...mockVisitorUser,
+    email: form.email,
+  })
   success('登录成功，欢迎回来！')
+  closeLogin()
 }
 
 function onSocialLogin(provider: 'github' | 'google') {
