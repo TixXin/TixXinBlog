@@ -76,12 +76,28 @@ export function useTheme() {
     const root = document.documentElement
     root.dataset.colorModeAnim = preset
 
+    // circle 预设需要根据「当前实际模式 → 目标实际模式」决定动画方向：
+    //   明 → 暗：expand（暗色新层从点击点扩张覆盖）— 动画 ::view-transition-new(root)
+    //   暗 → 明：retract（暗色旧层从外向点击点收缩消失）— 动画 ::view-transition-old(root)
+    // colorMode.value 是已解析的当前模式（'light' | 'dark'），preference='system' 时也会解析；
+    // 目标 preference='system' 时需要再用 matchMedia 解析一次
+    let direction: 'expand' | 'retract' = 'expand'
+    if (preset === 'circle') {
+      const currentEffective = colorMode.value
+      const targetEffective =
+        theme === 'system' ? (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light') : theme
+      if (currentEffective === 'dark' && targetEffective === 'light') {
+        direction = 'retract'
+      }
+      root.dataset.colorModeAnimDir = direction
+    }
+
     const transition = document.startViewTransition(async () => {
       colorMode.preference = theme
       await nextTick()
     })
 
-    // circle 预设：JS 驱动 clip-path 从点击点展开（圆心用百分比对齐 VT 伪元素参考盒）
+    // circle 预设：JS 驱动 clip-path 实现展开 / 收回（圆心用百分比对齐 VT 伪元素参考盒）
     if (preset === 'circle') {
       const { x, y } = getEventOrigin(event)
       const vw = window.innerWidth || 1
@@ -89,16 +105,23 @@ export function useTheme() {
       const xPct = (x / vw) * 100
       const yPct = (y / vh) * 100
       const endRadius = Math.hypot(Math.max(x, vw - x), Math.max(y, vh - y))
+      const fromCircle = `circle(0 at ${xPct}% ${yPct}%)`
+      const toCircle = `circle(${endRadius}px at ${xPct}% ${yPct}%)`
+      // retract 方向：动画作用在 old 层（CSS 配套把 old 提到 new 之上），从大圆收缩到点击点
+      const pseudoElement = direction === 'retract' ? '::view-transition-old(root)' : '::view-transition-new(root)'
+      const clipPathFrames = direction === 'retract' ? [toCircle, fromCircle] : [fromCircle, toCircle]
       transition.ready
         .then(() => {
           root.animate(
-            {
-              clipPath: [`circle(0 at ${xPct}% ${yPct}%)`, `circle(${endRadius}px at ${xPct}% ${yPct}%)`],
-            },
+            { clipPath: clipPathFrames },
             {
               duration: 520,
               easing: 'cubic-bezier(0.4, 0, 0.2, 1)',
-              pseudoElement: '::view-transition-new(root)',
+              pseudoElement,
+              // 必须 forwards：retract 方向播完后若让 clip-path 重置回默认（无裁剪），
+              // old(暗) 层会瞬间满屏再被销毁，肉眼一闪。fill:forwards 让 clip-path
+              // 保持在最终关键帧（circle(0)），直到伪元素被 VT 收尾清理。
+              fill: 'forwards',
             },
           )
         })
@@ -112,6 +135,7 @@ export function useTheme() {
       .catch(() => {})
       .finally(() => {
         delete root.dataset.colorModeAnim
+        delete root.dataset.colorModeAnimDir
       })
   }
 

@@ -179,7 +179,9 @@ html[data-color-mode-anim='fade']::view-transition-new(root) {
   animation-timing-function: ease;
 }
 
-/* circle：禁用默认根动画，改由 JS animate() 对 ::view-transition-new(root) 驱动 clip-path */
+/* circle：禁用默认根动画，改由 JS animate() 驱动 clip-path
+ * 默认（明 → 暗）：expand 方向，new(暗) 层在上从点击点扩张
+ * retract（暗 → 明）：old(暗) 层翻到上层从大圆收缩回点击点，露出底下的 new(亮) */
 html[data-color-mode-anim='circle']::view-transition-old(root),
 html[data-color-mode-anim='circle']::view-transition-new(root) {
   animation: none;
@@ -190,6 +192,12 @@ html[data-color-mode-anim='circle']::view-transition-old(root) {
 }
 html[data-color-mode-anim='circle']::view-transition-new(root) {
   z-index: 1;
+}
+html[data-color-mode-anim='circle'][data-color-mode-anim-dir='retract']::view-transition-old(root) {
+  z-index: 1;
+}
+html[data-color-mode-anim='circle'][data-color-mode-anim-dir='retract']::view-transition-new(root) {
+  z-index: 0;
 }
 
 /* blur：新视图从模糊状态淡入，旧视图淡出至模糊 */
