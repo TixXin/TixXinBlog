@@ -444,14 +444,41 @@ function onEscKey(e: KeyboardEvent) {
 }
 
 onMounted(() => {
-  document.addEventListener('click', onClickOutside)
   document.addEventListener('keydown', onEscKey)
 })
+
+/**
+ * 仅在登录面板 / 用户菜单实际打开时挂载 click-outside 监听器，
+ * 并且延后到 nextTick 注册，避开"打开此面板的那次点击事件"自身冒泡到 document
+ * 触发立即关闭的竞态（外部按钮如 flash/tabs 页 guest banner 调用 openLoginDrawer 时尤其关键）。
+ */
+let outsideHandlerAttached = false
+function attachOutsideHandler() {
+  if (outsideHandlerAttached) return
+  document.addEventListener('click', onClickOutside)
+  outsideHandlerAttached = true
+}
+function detachOutsideHandler() {
+  if (!outsideHandlerAttached) return
+  document.removeEventListener('click', onClickOutside)
+  outsideHandlerAttached = false
+}
+
+watch(
+  [isLoginOpen, isUserMenuOpen],
+  ([loginOpen, menuOpen]) => {
+    if (loginOpen || menuOpen) {
+      void nextTick(() => attachOutsideHandler())
+    } else {
+      detachOutsideHandler()
+    }
+  },
+)
 
 onBeforeUnmount(() => {
   if (expandTimer) clearTimeout(expandTimer)
   if (collapseTimer) clearTimeout(collapseTimer)
-  document.removeEventListener('click', onClickOutside)
+  detachOutsideHandler()
   document.removeEventListener('keydown', onEscKey)
 })
 </script>
