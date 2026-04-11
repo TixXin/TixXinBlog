@@ -10,6 +10,8 @@ export default {
   devtools: { enabled: true },
   devServer: {
     port: 3456,
+    // 容器/反代场景：监听 0.0.0.0，否则 Vite 默认只绑 127.0.0.1，外部/反代无法接入
+    host: '0.0.0.0',
   },
   alias: {
     '#theme-contracts': './theme-contracts/index.ts',
@@ -144,6 +146,12 @@ export default {
           additionalData: '@use "~/assets/styles/tokens" as *;',
         },
       },
+    },
+    // 1Panel 反代场景：外部域名 tix.xin -> 容器 localhost:3456
+    // Vite 默认 allowedHosts 只放行 localhost，这里需显式放行自定义域名
+    // 'all' 会关闭 DNS rebinding 防护，生产不走 dev server，dev 环境放开可接受
+    server: {
+      allowedHosts: ['tix.xin', '.tix.xin'],
     },
   },
 }
