@@ -84,7 +84,7 @@ export function useAppearanceSettings() {
   const colorModeTransitionLabel = computed(
     () =>
       COLOR_MODE_TRANSITION_OPTIONS.find((option) => option.value === colorModeTransitionPreset.value)?.label ??
-      '平滑渐变',
+      '圆形展开',
   )
 
   const contentTransitionName = computed(() => {
