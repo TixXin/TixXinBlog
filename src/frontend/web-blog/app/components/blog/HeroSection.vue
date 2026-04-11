@@ -16,6 +16,8 @@
           height="80"
           class="hero-section__avatar-img"
           format="webp"
+          loading="eager"
+          fetchpriority="high"
           @error="avatarError = true"
         />
         <div v-if="avatarError" class="hero-section__avatar-fallback">

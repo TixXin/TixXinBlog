@@ -16,6 +16,8 @@
         height="72"
         class="owner-profile-card__avatar"
         format="webp"
+        loading="eager"
+        fetchpriority="high"
       />
       <span
         class="owner-profile-card__presence-dot"
