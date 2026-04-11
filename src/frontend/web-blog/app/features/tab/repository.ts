@@ -1,0 +1,37 @@
+/**
+ * @file repository.ts
+ * @description 标签页书签 / 分类的数据仓库接口契约
+ * @author TixXin
+ * @since 2026-04-11
+ *
+ * 与 flash 模块同样的 Repository 模式：组件 / composable 只依赖接口，
+ * 现在由 localStorage 实现，未来切 HTTP 不用改调用方。
+ */
+
+import type {
+  Bookmark,
+  BookmarkCategory,
+  BookmarkCategoryDraft,
+  BookmarkDraft,
+} from './types'
+
+export interface TabBookmarkRepository {
+  /** 列出指定用户的全部分类（含默认分类） */
+  listCategories(userId: string): Promise<BookmarkCategory[]>
+  /** 列出指定用户的全部书签 */
+  listBookmarks(userId: string): Promise<Bookmark[]>
+
+  /** 创建分类 */
+  createCategory(userId: string, draft: BookmarkCategoryDraft): Promise<BookmarkCategory>
+  /** 更新分类 */
+  updateCategory(id: string, patch: Partial<BookmarkCategoryDraft>): Promise<BookmarkCategory>
+  /** 删除分类（连带删除其下书签） */
+  removeCategory(id: string): Promise<void>
+
+  /** 创建书签 */
+  createBookmark(userId: string, draft: BookmarkDraft): Promise<Bookmark>
+  /** 更新书签 */
+  updateBookmark(id: string, patch: Partial<BookmarkDraft>): Promise<Bookmark>
+  /** 删除书签 */
+  removeBookmark(id: string): Promise<void>
+}
