@@ -120,6 +120,9 @@ function updatePosition() {
 .moment-user-popover {
   position: relative;
   display: inline-flex;
+  // 当父级是 row 方向 flex 时，避免被默认 align-items: stretch 纵向拉伸到整列，
+  // 否则 wrapper div 的 hover hitbox 会扩展到头像之外的整列空白区
+  align-self: flex-start;
 }
 </style>
 

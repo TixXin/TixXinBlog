@@ -25,9 +25,7 @@
           </div>
         </MomentUserPopover>
         <div class="moment-comments__body">
-          <MomentUserPopover :profile="c.profile" :is-owner="c.isOwner">
-            <span class="moment-comments__author" :class="{ 'is-owner': c.isOwner }">{{ c.author }}</span>
-          </MomentUserPopover>
+          <span class="moment-comments__author" :class="{ 'is-owner': c.isOwner }">{{ c.author }}</span>
           <span class="moment-comments__sep">：</span>
           <span class="moment-comments__text" v-html="renderMentions(c.content)" />
         </div>
