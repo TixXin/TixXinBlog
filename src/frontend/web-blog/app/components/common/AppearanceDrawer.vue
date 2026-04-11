@@ -28,7 +28,8 @@
                   type="button"
                   class="appearance-option"
                   :class="{ 'appearance-option--active': currentPreference === option }"
-                  @click="(event) => setTheme(option, event)"
+                  @pointerdown="onColorThemePointerDown(option, $event)"
+                  @click="onColorThemeClick(option, $event)"
                 >
                   <Icon :name="themeIcons[option]" size="18" />
                   <span class="appearance-option__label">{{ themeLabels[option] }}</span>
@@ -194,7 +195,7 @@
 </template>
 
 <script setup lang="ts">
-import { COLOR_MODE_LABELS } from '~/features/appearance/types'
+import { COLOR_MODE_LABELS, type ThemeOption } from '~/features/appearance/types'
 
 const {
   isDrawerOpen,
@@ -245,6 +246,18 @@ function onLayoutThemeClick(id: string) {
 }
 
 const themeLabels = COLOR_MODE_LABELS
+
+/** 指针路径：在 pointerdown 取坐标并阻止默认，避免部分环境下 click 的 client 坐标不准 */
+function onColorThemePointerDown(option: ThemeOption, e: PointerEvent) {
+  if (e.button !== 0) return
+  e.preventDefault()
+  setTheme(option, e)
+}
+
+/** 键盘 Enter/Space 等无 pointerdown 时仅由 click 触发 */
+function onColorThemeClick(option: ThemeOption, e: MouseEvent) {
+  setTheme(option, e)
+}
 
 const themeIcons = {
   light: 'lucide:sun',

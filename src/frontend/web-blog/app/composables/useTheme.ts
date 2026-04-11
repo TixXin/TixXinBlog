@@ -21,28 +21,29 @@ declare global {
 }
 
 /**
- * 解析点击原点，用于圆形展开动画的圆心定位。
+ * 解析指针原点，用于圆形展开动画的圆心定位（视口 CSS 像素）。
  * 优先级：
- *   1. 鼠标实际按下的屏幕坐标 `event.clientX/Y`（非 0,0 合成坐标）
- *   2. 按钮 `getBoundingClientRect` 中心（键盘回车/空格触发 click 时 clientX/Y=0）
- *   3. 屏幕中心 fallback
+ *   1. Pointer/Mouse 的 `clientX/Y`（允许贴边为 0；仅当二者均为 0 时再走下方）
+ *   2. 触发元素 `getBoundingClientRect` 中心（键盘激活按钮时常见 0,0）
+ *   3. 视口中心 fallback
  */
-function getEventOrigin(event?: MouseEvent): { x: number; y: number } {
-  if (event) {
-    if (
-      Number.isFinite(event.clientX) &&
-      Number.isFinite(event.clientY) &&
-      (event.clientX !== 0 || event.clientY !== 0)
-    ) {
-      return { x: event.clientX, y: event.clientY }
+function getEventOrigin(event?: Event | null): { x: number; y: number } {
+  if (event && 'clientX' in event && 'clientY' in event) {
+    const pe = event as PointerEvent | MouseEvent
+    const cx = pe.clientX
+    const cy = pe.clientY
+    if (Number.isFinite(cx) && Number.isFinite(cy) && (cx !== 0 || cy !== 0)) {
+      return { x: cx, y: cy }
     }
-    const target = (event.currentTarget ?? event.target) as HTMLElement | null
+    const target = (pe.currentTarget ?? pe.target) as HTMLElement | null
     if (target && typeof target.getBoundingClientRect === 'function') {
       const rect = target.getBoundingClientRect()
       return { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 }
     }
   }
-  return { x: window.innerWidth / 2, y: window.innerHeight / 2 }
+  const vw = window.innerWidth
+  const vh = window.innerHeight
+  return { x: vw / 2, y: vh / 2 }
 }
 
 export function useTheme() {
@@ -54,9 +55,9 @@ export function useTheme() {
   /**
    * 切换明暗主题。不支持 View Transitions 或开启减少动效时，直接瞬间切换。
    * @param theme  目标主题（light / dark / system）
-   * @param event  可选点击事件，用于圆形展开动画取点击坐标
+   * @param event  可选指针/点击事件，用于圆形展开动画取坐标（建议 pointerdown）
    */
-  function setTheme(theme: ThemeOption, event?: MouseEvent) {
+  function setTheme(theme: ThemeOption, event?: Event | null) {
     if (!import.meta.client) {
       colorMode.preference = theme
       return
@@ -80,15 +81,19 @@ export function useTheme() {
       await nextTick()
     })
 
-    // circle 预设：JS 驱动 clip-path 从点击点展开
+    // circle 预设：JS 驱动 clip-path 从点击点展开（圆心用百分比对齐 VT 伪元素参考盒）
     if (preset === 'circle') {
       const { x, y } = getEventOrigin(event)
-      const endRadius = Math.hypot(Math.max(x, window.innerWidth - x), Math.max(y, window.innerHeight - y))
+      const vw = window.innerWidth || 1
+      const vh = window.innerHeight || 1
+      const xPct = (x / vw) * 100
+      const yPct = (y / vh) * 100
+      const endRadius = Math.hypot(Math.max(x, vw - x), Math.max(y, vh - y))
       transition.ready
         .then(() => {
           root.animate(
             {
-              clipPath: [`circle(0 at ${x}px ${y}px)`, `circle(${endRadius}px at ${x}px ${y}px)`],
+              clipPath: [`circle(0 at ${xPct}% ${yPct}%)`, `circle(${endRadius}px at ${xPct}% ${yPct}%)`],
             },
             {
               duration: 520,
