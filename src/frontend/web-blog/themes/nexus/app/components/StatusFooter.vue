@@ -43,6 +43,11 @@
       </span>
     </NuxtLink>
 
+    <!-- 登录按钮（移至头像右侧，与底部栏展开态独立，不被遮挡） -->
+    <button class="nexus-bar__login" type="button" aria-label="登录" @click="onLoginClick">
+      <Icon name="lucide:circle-user" size="18" />
+    </button>
+
     <!-- 内容切换区域 -->
     <div class="nexus-bar__body">
       <!-- 收起态：操作图标 + 导航 + 进度 -->
@@ -149,11 +154,6 @@
         </div>
       </div>
     </div>
-
-    <!-- 登录按钮（始终显示） -->
-    <button class="nexus-bar__login" type="button" aria-label="登录" @click="onLoginClick">
-      <Icon name="lucide:circle-user" size="18" />
-    </button>
 
     <!-- 登录面板（底部栏上方悬浮） -->
     <Transition name="nexus-login-panel">
@@ -299,13 +299,24 @@ $bar-height: 72px;
 $bar-expanded: 112px;
 
 .nexus-bar {
+  // 主内容区左边界（相对底部栏左边）：左栏宽 + grid gap
+  --bar-pivot-left: calc(#{$sidebar-left-width} + #{$grid-gap});
+  // 头像区右侧的留空（同 padding-left），便于公式复用
+  --bar-avatar-pad: 7.5rem;
+  // 分隔线两侧的对称间距
+  --bar-divider-gap: 1.5rem;
+  // 登录按钮尺寸（用于分隔线对齐公式）
+  --bar-login-size: 2rem;
+  // nexus-bar 自身 flex gap（影响 body 起点）
+  --bar-flex-gap: 0.5rem;
+
   position: relative;
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: var(--bar-flex-gap);
   height: $bar-height;
   padding: 0 1.25rem;
-  padding-left: 7.5rem; // 给头像留空间（含间距）
+  padding-left: var(--bar-avatar-pad); // 给头像留空间（含间距）
   background: var(--surface-1-alpha-90);
   backdrop-filter: blur(18px);
   border: 1px solid var(--border);
@@ -485,7 +496,7 @@ $bar-expanded: 112px;
   inset: 0;
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: var(--bar-divider-gap); // 分隔线两侧使用对称间距
   transition: opacity 0.12s ease;
 
   .nexus-bar.is-expanded & {
@@ -514,8 +525,27 @@ $bar-expanded: 112px;
 .nexus-bar__actions {
   display: flex;
   align-items: center;
-  gap: 0.75rem;
+  // 图标贴右，让右侧空白等于 row-nav gap，实现分隔线左右严格对称
+  justify-content: flex-end;
+  gap: 1.25rem; // 两个按钮之间的间距增加
   flex-shrink: 0;
+  // 拉宽至主内容区左边界，扣除头像区、登录按钮、两段 flex gap 与分隔线左侧间距，使分隔线对齐 .main-content 左边
+  width: calc(
+    var(--bar-pivot-left) - var(--bar-avatar-pad) - var(--bar-login-size) - var(--bar-flex-gap) -
+      var(--bar-divider-gap)
+  );
+
+  // 仅作用于底部栏内的两个按钮，放大按钮与图标尺寸
+  :deep(.theme-switcher),
+  :deep(button.appearance-fab) {
+    width: 2.25rem;
+    height: 2.25rem;
+  }
+
+  :deep(svg) {
+    width: 1.25rem;
+    height: 1.25rem;
+  }
 }
 
 // ---- 分隔线 ----
