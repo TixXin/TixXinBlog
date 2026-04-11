@@ -91,15 +91,16 @@
 
 <script setup lang="ts">
 import type { AuthView, LoginForm } from '~/features/auth/types'
-import { mockVisitorUser } from '~/features/auth/mock'
+import { findMockAccount } from '~/features/auth/mock'
 
 const emit = defineEmits<{
   switchView: [view: AuthView]
 }>()
 
-const { success, warning } = useToast()
+const { success, warning, error } = useToast()
 const { setUser } = useCurrentUser()
 const { close: closeLogin } = useLoginDrawer()
+const { pendingCredentials, consume: consumeDevFill } = useDevAuthFill()
 
 const form = reactive<LoginForm>({
   email: '',
@@ -108,6 +109,16 @@ const form = reactive<LoginForm>({
 
 const showPassword = ref(false)
 const submitting = ref(false)
+
+// Dev 快捷填入：监听 dev 组件投递的凭据，自动写入表单并提交（仅 dev；生产构建中调用方被 DevOnly 移除）
+watch(pendingCredentials, async (creds) => {
+  if (!creds) return
+  form.email = creds.email
+  form.password = creds.password
+  consumeDevFill()
+  await nextTick()
+  if (!submitting.value) onSubmit()
+})
 
 function validate(): boolean {
   if (!form.email.trim()) {
@@ -133,12 +144,14 @@ async function onSubmit() {
   await new Promise((resolve) => setTimeout(resolve, 1200))
   submitting.value = false
 
-  // mock：使用样例访客用户写入登录态，邮箱替换为表单输入值，方便联调
-  setUser({
-    ...mockVisitorUser,
-    email: form.email,
-  })
-  success('登录成功，欢迎回来！')
+  // mock：按测试账号清单做凭据匹配，命中即登录，未命中提示重试
+  const matched = findMockAccount(form.email, form.password)
+  if (!matched) {
+    error('邮箱或密码不正确')
+    return
+  }
+  setUser(matched)
+  success(`登录成功，欢迎回来，${matched.nickname}！`)
   closeLogin()
 }
 

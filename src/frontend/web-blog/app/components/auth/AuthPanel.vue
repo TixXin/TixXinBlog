@@ -10,9 +10,15 @@
     <!-- 头部 -->
     <div class="auth-panel__header">
       <h3 class="auth-panel__title">{{ viewTitle }}</h3>
-      <button type="button" class="auth-panel__close" aria-label="关闭" @click="close">
-        <Icon name="lucide:x" size="18" />
-      </button>
+      <div class="auth-panel__actions">
+        <!-- 仅 dev 模式下出现的测试账号快捷填入；生产构建中 DevOnly 整段被 tree-shake -->
+        <DevOnly>
+          <AuthDevQuickFill v-if="currentView === 'login'" />
+        </DevOnly>
+        <button type="button" class="auth-panel__close" aria-label="关闭" @click="close">
+          <Icon name="lucide:x" size="18" />
+        </button>
+      </div>
     </div>
 
     <!-- 视图切换区域：height 由 JS 测量后动画过渡，避免视图切换导致卡片跳动 -->
@@ -130,6 +136,12 @@ onBeforeUnmount(() => {
   font-weight: 700;
   color: var(--text-main);
   margin: 0;
+}
+
+.auth-panel__actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
 }
 
 .auth-panel__close {
