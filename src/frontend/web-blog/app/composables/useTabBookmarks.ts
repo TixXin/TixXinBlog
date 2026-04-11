@@ -7,7 +7,8 @@
  * 设计原则：
  * - 数据读写全部委托给 TabBookmarkRepository
  * - 跨组件通过 useState 共享响应式列表
- * - 未登录时返回空，写操作触发登录弹窗
+ * - 未登录时回退展示博主（mockOwnerUser）的分类与书签（只读）
+ * - 写操作仅对登录用户开放，未登录触发 useLoginDrawer.open()
  */
 
 import type {
@@ -17,6 +18,7 @@ import type {
   BookmarkDraft,
 } from '~/features/tab/types'
 import { defaultCategorySeeds, defaultBookmarkSeeds } from '~/features/tab/mock'
+import { mockOwnerUser } from '~/features/auth/mock'
 
 export function useTabBookmarks() {
   const repo = useTabRepository()
@@ -29,29 +31,35 @@ export function useTabBookmarks() {
   const loading = useState<boolean>('tab-loading', () => false)
   const error = useState<string | null>('tab-error', () => null)
   const activeCategoryId = useState<string | null>('tab-active-category', () => null)
+  /** 当前展示的所有者：owner（未登录回退）或 self（登录后看自己的） */
+  const viewingScope = useState<'self' | 'owner'>('tab-viewing-scope', () => 'owner')
 
-  /** 加载当前用户的分类与书签。首次加载且为空时注入 seed。 */
+  /** 是否处于只读模式：未登录时只能浏览博主的标签页 */
+  const isReadOnly = computed(() => !isLoggedIn.value)
+
+  /**
+   * 加载分类与书签。
+   * - 已登录：加载当前用户自己的列表，首次为空时注入 seed
+   * - 未登录：回退展示博主（mockOwnerUser）的列表，同样支持 seed
+   */
   async function load(force = false) {
-    if (!isLoggedIn.value || !currentUser.value) {
-      categories.value = []
-      bookmarks.value = []
-      loaded.value = true
-      activeCategoryId.value = null
-      return
-    }
-    if (loaded.value && !force) return
+    const targetUserId = isLoggedIn.value && currentUser.value ? currentUser.value.id : mockOwnerUser.id
+    const nextScope: 'self' | 'owner' = isLoggedIn.value ? 'self' : 'owner'
+
+    // 切换到不同 scope 时强制重载，避免显示上一身份的数据
+    if (loaded.value && !force && viewingScope.value === nextScope) return
+
     loading.value = true
     error.value = null
     try {
-      const userId = currentUser.value.id
-      let cats = await repo.listCategories(userId)
-      let bms = await repo.listBookmarks(userId)
+      let cats = await repo.listCategories(targetUserId)
+      let bms = await repo.listBookmarks(targetUserId)
 
       if (cats.length === 0) {
         // 首次进入：seed 默认分类
         const created: BookmarkCategory[] = []
         for (const draft of defaultCategorySeeds) {
-          created.push(await repo.createCategory(userId, draft))
+          created.push(await repo.createCategory(targetUserId, draft))
         }
         cats = created
 
@@ -60,7 +68,7 @@ export function useTabBookmarks() {
         for (const seed of defaultBookmarkSeeds) {
           const categoryId = nameToId.get(seed.categoryName)
           if (!categoryId) continue
-          await repo.createBookmark(userId, {
+          await repo.createBookmark(targetUserId, {
             name: seed.name,
             url: seed.url,
             icon: seed.icon,
@@ -68,15 +76,22 @@ export function useTabBookmarks() {
             categoryId,
           })
         }
-        bms = await repo.listBookmarks(userId)
+        bms = await repo.listBookmarks(targetUserId)
       }
 
       categories.value = cats
       bookmarks.value = bms
+      viewingScope.value = nextScope
       loaded.value = true
       // 默认选中第一个分类
-      if (!activeCategoryId.value && cats.length > 0) {
-        activeCategoryId.value = cats[0]!.id
+      if (cats.length > 0) {
+        // scope 切换时强制重选第一个分类，避免使用上一身份的 id
+        const stillExists = activeCategoryId.value && cats.some((c) => c.id === activeCategoryId.value)
+        if (!stillExists) {
+          activeCategoryId.value = cats[0]!.id
+        }
+      } else {
+        activeCategoryId.value = null
       }
     } catch (e) {
       error.value = e instanceof Error ? e.message : String(e)
@@ -172,6 +187,8 @@ export function useTabBookmarks() {
     loaded,
     loading,
     error,
+    viewingScope,
+    isReadOnly,
     load,
     selectCategory,
     addBookmark,
