@@ -203,7 +203,28 @@ export function useDevDebugPanel() {
   }
 
   function setFontScale(next: number) {
+    const prev = fontScale.value
     const v = clampFontScale(next)
+    // 居中模式下保持视觉中心不变：CSS zoom 同时缩放 top/left 与 width/height，
+    // 直接换 zoom 会让面板视觉位置向右下漂移。按 ratio = prev/next 反向补偿 logical x/y，
+    // 使「视觉中心 = (x + w/2) * zoom」在新旧 zoom 下相等
+    if (
+      v !== prev &&
+      position.value === 'center' &&
+      centerRect.value.x >= 0 &&
+      centerRect.value.y >= 0
+    ) {
+      const r = centerRect.value
+      const cx = r.x + r.w / 2
+      const cy = r.y + r.h / 2
+      const ratio = prev / v
+      setCenterRect({
+        x: cx * ratio - r.w / 2,
+        y: cy * ratio - r.h / 2,
+        w: r.w,
+        h: r.h,
+      })
+    }
     fontScale.value = v
     writeStorage(FONT_SCALE_KEY, String(v))
   }

@@ -392,12 +392,18 @@ const transitionName = computed(() => {
 })
 
 /**
- * 抽屉 inline style：始终注入 zoom（独立缩放系数），居中态额外注入 top/left/width/height
+ * 抽屉 inline style：始终注入 zoom（独立缩放系数）+ --dev-debug-zoom CSS 变量
+ * 居中态额外注入 top/left/width/height
  * 用 CSS zoom 而非 transform: scale —— zoom 真实改变 layout box，子元素的 fixed 计算与
  * pointer 命中区都自动跟随，避免左右贴边模式与视觉错位
+ * --dev-debug-zoom 供 dock 模式 SCSS 用 calc(100vh / var) 反向补偿 zoom 对尺寸的双倍放大
  */
 const drawerStyle = computed(() => {
-  const base: Record<string, string> = { zoom: String(fontScale.value) }
+  const scale = String(fontScale.value)
+  const base: Record<string, string> = {
+    zoom: scale,
+    '--dev-debug-zoom': scale,
+  }
   if (position.value === 'center') {
     const r = centerRect.value
     base.top = `${r.y}px`
@@ -720,12 +726,15 @@ onBeforeUnmount(() => {
   overflow: hidden;
 }
 
+/* 贴边停靠：用 calc(100vh|100vw / var(--dev-debug-zoom)) 反向补偿 zoom，
+   避免 zoom 同时缩放 top/bottom 锚点导致面板溢出视口 */
+
 /* 左侧停靠 */
 .dev-debug-drawer--left {
   top: 0;
   left: 0;
-  bottom: 0;
-  width: min(320px, 90vw);
+  width: min(320px, calc(90vw / var(--dev-debug-zoom, 1)));
+  height: calc(100vh / var(--dev-debug-zoom, 1));
   border-right: 1px solid var(--border);
   box-shadow: 8px 0 24px rgba(0, 0, 0, 0.12);
 }
@@ -734,8 +743,8 @@ onBeforeUnmount(() => {
 .dev-debug-drawer--right {
   top: 0;
   right: 0;
-  bottom: 0;
-  width: min(320px, 90vw);
+  width: min(320px, calc(90vw / var(--dev-debug-zoom, 1)));
+  height: calc(100vh / var(--dev-debug-zoom, 1));
   border-left: 1px solid var(--border);
   box-shadow: -8px 0 24px rgba(0, 0, 0, 0.12);
 }
@@ -744,8 +753,8 @@ onBeforeUnmount(() => {
 .dev-debug-drawer--top {
   top: 0;
   left: 0;
-  right: 0;
-  height: min(320px, 80vh);
+  width: calc(100vw / var(--dev-debug-zoom, 1));
+  height: min(320px, calc(80vh / var(--dev-debug-zoom, 1)));
   border-bottom: 1px solid var(--border);
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
 }
@@ -754,8 +763,8 @@ onBeforeUnmount(() => {
 .dev-debug-drawer--bottom {
   bottom: 0;
   left: 0;
-  right: 0;
-  height: min(320px, 80vh);
+  width: calc(100vw / var(--dev-debug-zoom, 1));
+  height: min(320px, calc(80vh / var(--dev-debug-zoom, 1)));
   border-top: 1px solid var(--border);
   box-shadow: 0 -8px 24px rgba(0, 0, 0, 0.12);
 }
