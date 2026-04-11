@@ -30,10 +30,11 @@
     </Transition>
 
     <!-- 抽屉：根据 position 切换为 left/right/top/bottom 贴边或 center 浮窗；transitionName 同步切换 -->
+    <!-- :key="position" 强制 unmount/remount，让切位置真正走「旧位置 leave + 新位置 enter」两段独立动画 -->
     <Transition :name="transitionName">
       <aside
         v-if="isOpen"
-        ref="drawerRef"
+        :key="position"
         class="dev-debug-drawer"
         :class="`dev-debug-drawer--${position}`"
         :style="drawerStyle"
@@ -283,6 +284,16 @@
             </div>
           </section>
         </div>
+
+        <!-- 居中模式：右下角自定义 resize 手柄。原生 resize:both 会和 drawerStyle 的 inline width/height 互相覆盖，必须自管 -->
+        <div
+          v-if="position === 'center'"
+          class="dev-debug-resize-handle"
+          aria-label="拖动调整尺寸"
+          @pointerdown="onResizePointerDown"
+        >
+          <Icon name="lucide:move-diagonal-2" size="12" />
+        </div>
       </aside>
     </Transition>
   </Teleport>
@@ -354,8 +365,6 @@ const drawerStyle = computed(() => {
     height: `${r.h}px`,
   }
 })
-
-const drawerRef = ref<HTMLElement | null>(null)
 
 // ---- FAB 位置 + 拖拽 ----
 const fabStyle = computed(() => ({
@@ -437,45 +446,49 @@ function onHeaderPointerUp() {
   setCenterRect(centerRect.value)
 }
 
-let centerResizeObserver: ResizeObserver | null = null
+// ---- 居中模式：自定义右下角 resize 手柄 ----
+// 不用原生 `resize: both` —— 它会写元素的 inline width/height，与 :style="drawerStyle"
+// 同步绑定的 width/height 互相覆盖，导致拖动时尺寸"缓慢回弹"。改为手写 pointer drag 走 state 单一数据源
+let resizeStart = { x: 0, y: 0, w: 0, h: 0 }
 
-function attachCenterResizeObserver() {
-  if (!drawerRef.value || position.value !== 'center') return
-  detachCenterResizeObserver()
-  centerResizeObserver = new ResizeObserver((entries) => {
-    const entry = entries[0]
-    if (!entry) return
-    const w = Math.round(entry.contentRect.width)
-    const h = Math.round(entry.contentRect.height)
-    // 仅当用户主动用 native resize handle 拖动时（值与 state 不一致）才写入
-    if (w !== centerRect.value.w || h !== centerRect.value.h) {
-      // 不调 setCenterRect 以避免每帧 clamp 抖动；只缓存到 state，pointerup 时不必持久化
-      // 这里也不写 localStorage 以减少 IO，等 mouseup/blur 时再持久化
-      centerRect.value = { ...centerRect.value, w, h }
-      // resize handle 没有 pointerup 钩子，直接在每次变化后持久化（已被浏览器节流）
-      setCenterRect(centerRect.value)
-    }
-  })
-  centerResizeObserver.observe(drawerRef.value)
-}
-function detachCenterResizeObserver() {
-  centerResizeObserver?.disconnect()
-  centerResizeObserver = null
+function onResizePointerDown(e: PointerEvent) {
+  if (position.value !== 'center') return
+  if (e.button !== 0) return
+  e.preventDefault()
+  e.stopPropagation()
+  ;(e.currentTarget as HTMLElement).setPointerCapture?.(e.pointerId)
+  resizeStart = {
+    x: e.clientX,
+    y: e.clientY,
+    w: centerRect.value.w,
+    h: centerRect.value.h,
+  }
+  window.addEventListener('pointermove', onResizePointerMove)
+  window.addEventListener('pointerup', onResizePointerUp, { once: true })
 }
 
-// 切换到 center 时初始化矩形（首次 x/y = -1 时居中放置），并挂 ResizeObserver
+function onResizePointerMove(e: PointerEvent) {
+  // 拖动时即时 clamp 最小值，避免视觉上缩到 0 后 pointerup 才回弹
+  const nextW = Math.max(360, resizeStart.w + (e.clientX - resizeStart.x))
+  const nextH = Math.max(320, resizeStart.h + (e.clientY - resizeStart.y))
+  centerRect.value = { ...centerRect.value, w: nextW, h: nextH }
+}
+
+function onResizePointerUp() {
+  window.removeEventListener('pointermove', onResizePointerMove)
+  // pointerup 时再 clamp + 持久化，避免拖动过程频繁写 localStorage
+  setCenterRect(centerRect.value)
+}
+
+// 切换到 center 时初始化矩形（首次 x/y = -1 时居中放置）
 watch(
   [position, isOpen],
-  async ([pos, open]) => {
+  ([pos, open]) => {
     if (open && pos === 'center') {
       // 首次进入 center 模式：x/y < 0 表示需要按当前视口居中
       if (centerRect.value.x < 0 || centerRect.value.y < 0) {
         setCenterRect(centerRect.value) // clampCenterRect 会把负数翻译为视口中心
       }
-      await nextTick()
-      attachCenterResizeObserver()
-    } else {
-      detachCenterResizeObserver()
     }
   },
   { immediate: false },
@@ -591,7 +604,7 @@ onBeforeUnmount(() => {
   window.removeEventListener('keydown', onKeydown)
   window.removeEventListener('pointermove', onFabPointerMove)
   window.removeEventListener('pointermove', onHeaderPointerMove)
-  detachCenterResizeObserver()
+  window.removeEventListener('pointermove', onResizePointerMove)
 })
 </script>
 
@@ -699,18 +712,35 @@ onBeforeUnmount(() => {
   box-shadow: 0 -8px 24px rgba(0, 0, 0, 0.12);
 }
 
-/* 居中浮窗：可拖拽 + 原生 resize 手柄 */
+/* 居中浮窗：可拖拽 + 自定义 resize 手柄（不用原生 resize:both，避免与 :style inline width/height 互相覆盖） */
 .dev-debug-drawer--center {
   /* top/left/width/height 由 :style 注入 */
   border: 1px solid var(--border);
   border-radius: $radius-md;
   box-shadow: 0 16px 48px rgba(0, 0, 0, 0.24);
-  resize: both;
   overflow: hidden;
-  min-width: 360px;
-  min-height: 320px;
-  max-width: calc(100vw - 16px);
-  max-height: calc(100vh - 16px);
+}
+
+/* 自定义右下角 resize 手柄 */
+.dev-debug-resize-handle {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  width: 1.25rem;
+  height: 1.25rem;
+  display: flex;
+  align-items: flex-end;
+  justify-content: flex-end;
+  padding: 0.125rem;
+  color: var(--text-faint);
+  cursor: nwse-resize;
+  user-select: none;
+  touch-action: none;
+  transition: color 0.18s ease;
+
+  &:hover {
+    color: var(--accent);
+  }
 }
 
 .dev-debug-drawer__head {
@@ -1025,7 +1055,7 @@ onBeforeUnmount(() => {
 /* 左侧停靠：从左滑入 */
 .dev-debug-drawer-left-enter-active,
 .dev-debug-drawer-left-leave-active {
-  transition: transform 0.28s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: transform 0.18s cubic-bezier(0.4, 0, 0.2, 1);
 }
 .dev-debug-drawer-left-enter-from,
 .dev-debug-drawer-left-leave-to {
@@ -1035,7 +1065,7 @@ onBeforeUnmount(() => {
 /* 右侧停靠：从右滑入 */
 .dev-debug-drawer-right-enter-active,
 .dev-debug-drawer-right-leave-active {
-  transition: transform 0.28s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: transform 0.18s cubic-bezier(0.4, 0, 0.2, 1);
 }
 .dev-debug-drawer-right-enter-from,
 .dev-debug-drawer-right-leave-to {
@@ -1045,7 +1075,7 @@ onBeforeUnmount(() => {
 /* 顶部停靠：从上滑入 */
 .dev-debug-drawer-top-enter-active,
 .dev-debug-drawer-top-leave-active {
-  transition: transform 0.28s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: transform 0.18s cubic-bezier(0.4, 0, 0.2, 1);
 }
 .dev-debug-drawer-top-enter-from,
 .dev-debug-drawer-top-leave-to {
@@ -1055,19 +1085,19 @@ onBeforeUnmount(() => {
 /* 底部停靠：从下滑入 */
 .dev-debug-drawer-bottom-enter-active,
 .dev-debug-drawer-bottom-leave-active {
-  transition: transform 0.28s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: transform 0.18s cubic-bezier(0.4, 0, 0.2, 1);
 }
 .dev-debug-drawer-bottom-enter-from,
 .dev-debug-drawer-bottom-leave-to {
   transform: translateY(100%);
 }
 
-/* 居中浮窗：opacity + scale */
+/* 居中浮窗：opacity + scale，更快更紧凑 */
 .dev-debug-drawer-center-enter-active,
 .dev-debug-drawer-center-leave-active {
   transition:
-    opacity 0.22s ease,
-    transform 0.22s cubic-bezier(0.34, 1.56, 0.64, 1);
+    opacity 0.16s ease,
+    transform 0.16s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 .dev-debug-drawer-center-enter-from,
 .dev-debug-drawer-center-leave-to {
