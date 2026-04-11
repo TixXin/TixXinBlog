@@ -158,6 +158,20 @@ input {
  * 不支持 View Transitions 的浏览器（如 Firefox）直接瞬间切换，不走这里的规则。
  */
 
+/*
+ * 主题变量切换时，body/.card/.main-content 等处大量使用 `transition: $transition-colors` 或 `all`，
+ * 会在 0.2～0.3s 内对 color / background-color / border-color 做插值；与根 VT 快照交叉叠在同一时段，
+ * 会出现背景点、主内容区描边、卡片与标题色、侧栏统计/PING、视图切换按钮边框等「开头闪一下」。
+ * 在 data 属性存续期间强制过渡时长为 0（不动 keyframes，如站点绿点 pulse 仍可播）。
+ */
+html[data-color-mode-anim],
+html[data-color-mode-anim] *,
+html[data-color-mode-anim] *::before,
+html[data-color-mode-anim] *::after {
+  transition-duration: 0s !important;
+  transition-delay: 0s !important;
+}
+
 /* fade：浏览器默认的根交叉淡入（old 淡出 / new 淡入），仅微调时长 */
 html[data-color-mode-anim='fade']::view-transition-old(root),
 html[data-color-mode-anim='fade']::view-transition-new(root) {
@@ -207,6 +221,25 @@ html[data-color-mode-anim='blur']::view-transition-new(root) {
 
 html[data-color-mode-anim='blur']::view-transition-old(root) {
   animation: color-mode-blur-out 0.45s cubic-bezier(0.22, 0.68, 0.35, 1) both;
+}
+
+/*
+ * 根级 View Transition 时，Chromium 对 backdrop-filter 子层快照易闪穿。
+ * 过渡阶段关闭 blur，改用 _variables 中 --surface-cover-overlay-vt 及配套描边/阴影，
+ * 用更不透明实色近似毛玻璃厚度（随 :root / .dark 切换 token）。
+ */
+html[data-color-mode-anim] .post-item:has(.post-item__cover-bg) .post-item__date,
+html[data-color-mode-anim] .post-item:has(.post-item__cover-bg) .post-item__meta-bottom {
+  background: var(--surface-cover-overlay-vt) !important;
+  border: var(--cover-overlay-border-vt) !important;
+  box-shadow: var(--cover-overlay-shadow-vt) !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+html[data-color-mode-anim] .post-item:has(.post-item__cover-bg) .post-item__title-highlight {
+  background: var(--surface-cover-overlay-vt) !important;
+  border: var(--cover-overlay-border-vt) !important;
 }
 
 // Animations

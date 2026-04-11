@@ -1,6 +1,6 @@
 /**
  * @file _variables.scss
- * @description CSS 自定义属性（运行时主题变量），定义亮色和暗色主题的颜色体系；封面叠层（--surface-cover-overlay、--text-on-cover*、--cover-overlay-*）、置顶徽标（--pin-badge-*）、Tooltip 浮层（--tooltip-*）
+ * @description CSS 自定义属性（运行时主题变量），定义亮色和暗色主题的颜色体系；封面叠层（--surface-cover-overlay、--surface-cover-overlay-vt、--text-on-cover*、--cover-overlay-*）、置顶徽标（--pin-badge-*）、Tooltip 浮层（--tooltip-*）
  * @author TixXin
  * @since 2025-03-17
  */
@@ -25,11 +25,19 @@
   --surface-1-alpha-90: rgba(255, 255, 255, 0.96);
   /* 文章卡片封面叠层：亮色用磨砂白 + 深字 + 玻璃边缘 */
   --surface-cover-overlay: rgba(255, 255, 255, 0.82);
+  /*
+   * 明暗 View Transition 期间关闭 backdrop-filter 时的实色近似：
+   * 略提高不透明度 + 微冷白，模拟 blur 叠在封面上的「奶白」厚度，避免发灰发空。
+   */
+  --surface-cover-overlay-vt: rgba(248, 250, 252, 0.94);
   --text-on-cover: #1e293b;
   --text-on-cover-muted: #64748b;
   --cover-overlay-backdrop: blur(16px) saturate(1.15);
   --cover-overlay-border: 1px solid rgba(255, 255, 255, 0.92);
+  /* VT 阶段略加强描边，补偿无 blur 时的体积感 */
+  --cover-overlay-border-vt: 1px solid rgba(255, 255, 255, 0.98);
   --cover-overlay-shadow: 0 1px 2px rgba(15, 23, 42, 0.06);
+  --cover-overlay-shadow-vt: 0 1px 3px rgba(15, 23, 42, 0.08), 0 0 0 1px rgba(255, 255, 255, 0.35) inset;
   --surface-2: #f8fafc;
   --surface-3: #f1f5f9;
 
@@ -139,11 +147,15 @@
   --surface-1-alpha: rgba(42, 47, 55, 0.3);
   --surface-1-alpha-90: rgba(42, 47, 55, 0.3);
   --surface-cover-overlay: rgba(42, 47, 55, 0.36);
+  /* 暗色 VT：提高 alpha，接近「深色磨砂 + blur」压在封面上的遮盖感 */
+  --surface-cover-overlay-vt: rgba(38, 43, 52, 0.82);
   --text-on-cover: #f8fafc;
   --text-on-cover-muted: rgba(203, 213, 225, 0.9);
   --cover-overlay-backdrop: blur(12px);
   --cover-overlay-border: 1px solid transparent;
+  --cover-overlay-border-vt: 1px solid rgba(255, 255, 255, 0.06);
   --cover-overlay-shadow: none;
+  --cover-overlay-shadow-vt: 0 1px 0 rgba(0, 0, 0, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.04);
   --surface-2: #313741;
   --surface-3: #383f4a;
 
