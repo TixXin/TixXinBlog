@@ -13,6 +13,10 @@
   <ClientOnly>
     <CommonToastContainer />
     <CommonSearchModal v-model:visible="isSearchOpen" />
+    <!-- Dev 调试面板：仅 dev 模式渲染，prod 构建被 DevOnly 整段 tree-shake -->
+    <DevOnly>
+      <DevDebugPanel />
+    </DevOnly>
   </ClientOnly>
 </template>
 

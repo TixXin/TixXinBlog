@@ -75,6 +75,9 @@ export default {
         siteId: '',
         scriptUrl: '',
       },
+      // 构建期常量：dev 调试面板「环境」tab 显示用，prod 时面板被 tree-shake，字段闲置
+      buildTime: new Date().toISOString(),
+      nuxtVersion: '4',
     },
   },
   site: {
