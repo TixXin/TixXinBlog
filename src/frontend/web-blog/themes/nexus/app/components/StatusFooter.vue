@@ -43,9 +43,40 @@
       </span>
     </NuxtLink>
 
-    <!-- 登录按钮（移至头像右侧，与底部栏展开态独立，不被遮挡） -->
-    <button class="nexus-bar__login" type="button" aria-label="登录" @click="onLoginClick">
+    <!-- 登录态切换：未登录显示登录按钮，已登录显示用户头像 + 弹出菜单 -->
+    <button
+      v-if="!isLoggedIn"
+      class="nexus-bar__login"
+      type="button"
+      aria-label="登录"
+      @click="onLoginClick"
+    >
       <Icon name="lucide:circle-user" size="18" />
+    </button>
+    <button
+      v-else
+      ref="userMenuButtonRef"
+      class="nexus-bar__user"
+      :class="{ 'is-open': isUserMenuOpen }"
+      type="button"
+      :aria-label="`用户菜单：${currentUser?.nickname ?? ''}`"
+      :aria-expanded="isUserMenuOpen"
+      @click="toggleUserMenu"
+    >
+      <NuxtImg
+        v-if="currentUser?.avatar && !userAvatarError"
+        :src="currentUser.avatar"
+        :alt="currentUser.nickname"
+        :width="36"
+        :height="36"
+        class="nexus-bar__user-avatar"
+        format="webp"
+        loading="eager"
+        @error="onUserAvatarError"
+      />
+      <span v-else class="nexus-bar__user-fallback">
+        {{ (currentUser?.nickname ?? 'U').slice(0, 1).toUpperCase() }}
+      </span>
     </button>
 
     <!-- 内容切换区域 -->
@@ -161,6 +192,50 @@
         <AuthPanel />
       </div>
     </Transition>
+
+    <!-- 用户菜单 popover（底部栏上方悬浮，已登录时可展开） -->
+    <Transition name="nexus-user-menu">
+      <div
+        v-if="isUserMenuOpen && isLoggedIn"
+        ref="userMenuRef"
+        class="nexus-bar__user-menu"
+        role="menu"
+      >
+        <div class="nexus-bar__user-menu-header">
+          <div class="nexus-bar__user-menu-name">{{ currentUser?.nickname }}</div>
+          <div class="nexus-bar__user-menu-email">{{ currentUser?.email }}</div>
+        </div>
+        <div class="nexus-bar__user-menu-divider" />
+        <button
+          type="button"
+          class="nexus-bar__user-menu-item"
+          role="menuitem"
+          @click="onUserMenuProfile"
+        >
+          <Icon name="lucide:user" size="14" />
+          <span>个人中心</span>
+        </button>
+        <button
+          type="button"
+          class="nexus-bar__user-menu-item"
+          role="menuitem"
+          @click="onUserMenuSettings"
+        >
+          <Icon name="lucide:settings" size="14" />
+          <span>账号设置</span>
+        </button>
+        <div class="nexus-bar__user-menu-divider" />
+        <button
+          type="button"
+          class="nexus-bar__user-menu-item nexus-bar__user-menu-item--danger"
+          role="menuitem"
+          @click="onUserMenuLogout"
+        >
+          <Icon name="lucide:log-out" size="14" />
+          <span>退出登录</span>
+        </button>
+      </div>
+    </Transition>
   </div>
 </template>
 
@@ -168,12 +243,19 @@
 import type { OwnerPresence } from '~/features/site/types'
 
 const route = useRoute()
+const router = useRouter()
 const { navItems } = useNavItems()
 const { scrollProgress, scrollResetFn, scrollDirection } = useScrollProgress()
 const { ownerPresence, ownerCard, dailyQuote } = useSiteInfo()
 const { isOpen: isLoginOpen, toggle: toggleLogin, close: closeLogin } = useLoginDrawer()
+const { isLoggedIn, currentUser, logout } = useCurrentUser()
+const { info } = useToast()
 
 const loginPanelRef = ref<HTMLElement | null>(null)
+const userMenuButtonRef = ref<HTMLElement | null>(null)
+const userMenuRef = ref<HTMLElement | null>(null)
+const isUserMenuOpen = ref(false)
+const userAvatarError = ref(false)
 
 // 头像呼吸光晕颜色映射
 const GLOW_COLOR_MAP: Record<OwnerPresence, string> = {
@@ -214,9 +296,9 @@ function onProgressClick() {
 function refreshQuote() {
   const quotes = ownerCard.value.quotes
   if (quotes.length <= 1) return
-  let next: string
+  let next: string = ''
   do {
-    next = quotes[Math.floor(Math.random() * quotes.length)]
+    next = quotes[Math.floor(Math.random() * quotes.length)] || ''
   } while (next === dailyQuote.value)
   dailyQuote.value = next
 }
@@ -263,22 +345,67 @@ function onLoginClick() {
   toggleLogin()
 }
 
-/** 点击外部关闭登录面板 */
-function onClickOutside(e: MouseEvent) {
-  if (!isLoginOpen.value) return
-  const panel = loginPanelRef.value
-  const target = e.target as HTMLElement
-  // 如果点击在面板内或登录按钮上，忽略
-  if (panel?.contains(target)) return
-  if (target.closest('.nexus-bar__login')) return
-  closeLogin()
+// ---- 用户菜单逻辑 ----
+function onUserAvatarError() {
+  userAvatarError.value = true
 }
 
-/** ESC 关闭登录面板 */
-function onEscKey(e: KeyboardEvent) {
-  if (e.key === 'Escape' && isLoginOpen.value) {
-    closeLogin()
+function toggleUserMenu() {
+  // 打开菜单时收起展开态，避免与博主信息卡视觉重叠
+  if (!isUserMenuOpen.value && isExpanded.value) {
+    if (expandTimer) { clearTimeout(expandTimer); expandTimer = null }
+    isExpanded.value = false
   }
+  isUserMenuOpen.value = !isUserMenuOpen.value
+}
+
+function closeUserMenu() {
+  isUserMenuOpen.value = false
+}
+
+function onUserMenuProfile() {
+  closeUserMenu()
+  // 占位：暂未实现独立的个人中心页，先跳到关于页
+  router.push('/about')
+}
+
+function onUserMenuSettings() {
+  closeUserMenu()
+  info('账号设置功能开发中')
+}
+
+function onUserMenuLogout() {
+  closeUserMenu()
+  logout()
+  info('已退出登录')
+}
+
+/** 点击外部关闭登录面板 / 用户菜单 */
+function onClickOutside(e: MouseEvent) {
+  const target = e.target as HTMLElement
+
+  if (isLoginOpen.value) {
+    const panel = loginPanelRef.value
+    // 如果点击在面板内或登录按钮上，忽略
+    if (!panel?.contains(target) && !target.closest('.nexus-bar__login')) {
+      closeLogin()
+    }
+  }
+
+  if (isUserMenuOpen.value) {
+    const menu = userMenuRef.value
+    const button = userMenuButtonRef.value
+    if (!menu?.contains(target) && !button?.contains(target)) {
+      closeUserMenu()
+    }
+  }
+}
+
+/** ESC 关闭登录面板 / 用户菜单 */
+function onEscKey(e: KeyboardEvent) {
+  if (e.key !== 'Escape') return
+  if (isLoginOpen.value) closeLogin()
+  if (isUserMenuOpen.value) closeUserMenu()
 }
 
 onMounted(() => {
@@ -302,13 +429,13 @@ $bar-expanded: 112px;
   // 主内容区左边界（相对底部栏左边）：左栏宽 + grid gap
   --bar-pivot-left: calc(#{$sidebar-left-width} + #{$grid-gap});
   // 头像区右侧的留空（同 padding-left），便于公式复用
-  --bar-avatar-pad: 7.5rem;
-  // 分隔线两侧的对称间距
+  --bar-avatar-pad: 7.75rem;
+  // 统一的元素间距：头像-登录-月亮-设置-分隔线-导航 全部使用 1.5rem
   --bar-divider-gap: 1.5rem;
-  // 登录按钮尺寸（用于分隔线对齐公式）
-  --bar-login-size: 2rem;
-  // nexus-bar 自身 flex gap（影响 body 起点）
-  --bar-flex-gap: 0.5rem;
+  // 三个左侧按钮的统一尺寸
+  --bar-action-size: 2.25rem;
+  // nexus-bar 自身 flex gap，与其它间距保持一致
+  --bar-flex-gap: 1.5rem;
 
   position: relative;
   display: flex;
@@ -354,7 +481,7 @@ $bar-expanded: 112px;
 // ---- 头像（半悬浮，展开时位置不变） ----
 .nexus-bar__avatar-wrap {
   position: absolute;
-  left: 1rem;
+  left: 1.25rem;
   bottom: 16px;
   width: 80px;
   height: 80px;
@@ -525,13 +652,11 @@ $bar-expanded: 112px;
 .nexus-bar__actions {
   display: flex;
   align-items: center;
-  // 图标贴右，让右侧空白等于 row-nav gap，实现分隔线左右严格对称
-  justify-content: flex-end;
-  gap: 1.25rem; // 两个按钮之间的间距增加
+  gap: var(--bar-divider-gap); // 月亮-设置间距与其它一致
   flex-shrink: 0;
-  // 拉宽至主内容区左边界，扣除头像区、登录按钮、两段 flex gap 与分隔线左侧间距，使分隔线对齐 .main-content 左边
+  // 容器宽度恰好包住两个按钮 + gap，分隔线由 nexus-bar 的 flex/row-nav 多个 gap 共同推到主内容区左边
   width: calc(
-    var(--bar-pivot-left) - var(--bar-avatar-pad) - var(--bar-login-size) - var(--bar-flex-gap) -
+    var(--bar-pivot-left) - var(--bar-avatar-pad) - var(--bar-action-size) - var(--bar-flex-gap) -
       var(--bar-divider-gap)
   );
 
@@ -913,34 +1038,191 @@ $bar-expanded: 112px;
   }
 }
 
-// ---- 登录按钮（始终显示） ----
+// ---- 登录按钮（与左侧两个图标视觉风格一致：无边框、圆角小） ----
 .nexus-bar__login {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 2rem;
-  height: 2rem;
+  width: var(--bar-action-size);
+  height: var(--bar-action-size);
   flex-shrink: 0;
-  border-radius: $radius-full;
+  border: none;
+  border-radius: $radius-sm;
   color: var(--text-soft);
   background: transparent;
-  border: 1px solid var(--border-soft);
   cursor: pointer;
   transition:
     color 0.2s ease,
     background 0.2s ease,
-    border-color 0.2s ease,
-    transform 0.15s ease;
+    transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
 
+  // 自定 hover 动效：图标轻微上抬 + 颜色高亮
   &:hover {
     color: var(--accent);
     background: var(--surface-2);
-    border-color: var(--accent-alpha-20, rgba(99, 102, 241, 0.15));
+    transform: translateY(-2px);
   }
 
   &:active {
-    transform: scale(0.92);
+    transform: translateY(0) scale(0.92);
   }
+
+  // 图标尺寸与其它两个按钮一致（20px）
+  :deep(svg) {
+    width: 1.25rem;
+    height: 1.25rem;
+  }
+}
+
+// ---- 已登录用户头像按钮（替换登录按钮位置） ----
+.nexus-bar__user {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--bar-action-size);
+  height: var(--bar-action-size);
+  flex-shrink: 0;
+  padding: 0;
+  border: 1.5px solid var(--border-soft);
+  border-radius: 50%;
+  background: var(--surface-2);
+  color: var(--text-soft);
+  cursor: pointer;
+  overflow: hidden;
+  transition:
+    border-color 0.25s ease,
+    box-shadow 0.25s ease,
+    transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+
+  &:hover {
+    border-color: var(--accent);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+  }
+
+  &:active {
+    transform: translateY(0) scale(0.92);
+  }
+
+  &.is-open {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 2px var(--accent-alpha-20, rgba(99, 102, 241, 0.2));
+  }
+}
+
+.nexus-bar__user-avatar {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 50%;
+  display: block;
+}
+
+.nexus-bar__user-fallback {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--accent);
+  background: var(--surface-3);
+  border-radius: 50%;
+}
+
+// ---- 用户菜单 popover ----
+.nexus-bar__user-menu {
+  position: absolute;
+  bottom: calc(100% + 0.5rem);
+  // 与登录按钮（已被替换为用户头像按钮）水平对齐
+  left: var(--bar-avatar-pad);
+  z-index: 21;
+  min-width: 200px;
+  padding: 0.5rem;
+  background: var(--surface-1);
+  border: 1px solid var(--border);
+  border-radius: $radius-card;
+  box-shadow: var(--shadow-card);
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+}
+
+.nexus-bar__user-menu-header {
+  padding: 0.5rem 0.625rem 0.625rem;
+}
+
+.nexus-bar__user-menu-name {
+  font-size: 0.875rem;
+  font-weight: 700;
+  color: var(--text-main);
+  line-height: 1.2;
+}
+
+.nexus-bar__user-menu-email {
+  margin-top: 0.25rem;
+  font-size: 0.6875rem;
+  color: var(--text-soft);
+  line-height: 1.2;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.nexus-bar__user-menu-divider {
+  height: 1px;
+  background: var(--border-soft);
+  margin: 0.25rem 0;
+}
+
+.nexus-bar__user-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  width: 100%;
+  padding: 0.5rem 0.625rem;
+  border: none;
+  background: transparent;
+  color: var(--text-main);
+  font-size: 0.8125rem;
+  text-align: left;
+  border-radius: $radius-sm;
+  cursor: pointer;
+  transition: background 0.18s ease, color 0.18s ease, transform 0.18s ease;
+
+  &:hover {
+    background: var(--surface-2);
+    transform: translateX(2px);
+  }
+
+  &--danger {
+    color: var(--danger, #ef4444);
+
+    &:hover {
+      background: rgba(239, 68, 68, 0.08);
+      color: var(--danger, #ef4444);
+    }
+  }
+}
+
+/* 用户菜单进出动画 */
+.nexus-user-menu-enter-active {
+  transition: opacity 0.18s ease-out, transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.nexus-user-menu-leave-active {
+  transition: opacity 0.14s ease-in, transform 0.14s ease-in;
+}
+
+.nexus-user-menu-enter-from {
+  opacity: 0;
+  transform: translateY(6px) scale(0.96);
+}
+
+.nexus-user-menu-leave-to {
+  opacity: 0;
+  transform: translateY(6px) scale(0.96);
 }
 
 // ---- 登录面板（底部栏上方悬浮） ----
