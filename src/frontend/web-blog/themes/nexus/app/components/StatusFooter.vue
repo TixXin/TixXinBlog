@@ -12,18 +12,19 @@
     @mouseenter="onBarEnter"
     @mouseleave="onBarLeave"
   >
-    <!-- 头像：半悬浮，hover 触发展开 + 在线状态微标签 -->
+    <!-- 头像：半悬浮，hover 触发展开 + 在线状态微标签（登录态下切换为当前用户） -->
     <NuxtLink
       to="/"
       class="nexus-bar__avatar-wrap"
       :style="{ '--avatar-glow-color': avatarGlowColor }"
-      aria-label="返回首页"
+      :aria-label="`返回首页（当前：${displayName}）`"
       @mouseenter="onAvatarEnter"
     >
       <NuxtImg
         v-if="!avatarError"
-        :src="avatarUrl"
-        alt="TixXin"
+        :key="displayAvatarUrl"
+        :src="displayAvatarUrl"
+        :alt="displayName"
         :width="80"
         :height="80"
         class="nexus-bar__avatar-img"
@@ -32,51 +33,28 @@
         fetchpriority="high"
         @error="onAvatarError"
       />
-      <span v-else class="nexus-bar__avatar-fallback">TX</span>
+      <span v-else class="nexus-bar__avatar-fallback">{{ avatarFallback }}</span>
       <span
         class="nexus-bar__presence-badge"
-        :class="`nexus-bar__presence-badge--${ownerPresence.status}`"
-        :aria-label="`状态：${ownerPresence.label}`"
+        :class="`nexus-bar__presence-badge--${effectivePresence.status}`"
+        :aria-label="`状态：${effectivePresence.label}`"
       >
         <span class="nexus-bar__presence-badge-dot" />
-        <span class="nexus-bar__presence-badge-text">{{ ownerPresence.label.slice(0, 2) }}</span>
+        <span class="nexus-bar__presence-badge-text">{{ effectivePresence.label.slice(0, 2) }}</span>
       </span>
     </NuxtLink>
 
-    <!-- 登录态切换：未登录显示登录按钮，已登录显示用户头像 + 弹出菜单 -->
+    <!-- 账号入口按钮：未登录 → 打开登录面板；已登录 → 打开用户菜单 popover -->
     <button
-      v-if="!isLoggedIn"
-      class="nexus-bar__login"
-      type="button"
-      aria-label="登录"
-      @click="onLoginClick"
-    >
-      <Icon name="lucide:circle-user" size="18" />
-    </button>
-    <button
-      v-else
       ref="userMenuButtonRef"
-      class="nexus-bar__user"
-      :class="{ 'is-open': isUserMenuOpen }"
+      class="nexus-bar__login"
+      :class="{ 'is-open': isLoggedIn ? isUserMenuOpen : isLoginOpen }"
       type="button"
-      :aria-label="`用户菜单：${currentUser?.nickname ?? ''}`"
-      :aria-expanded="isUserMenuOpen"
-      @click="toggleUserMenu"
+      :aria-label="loginButtonAriaLabel"
+      :aria-expanded="isLoggedIn ? isUserMenuOpen : isLoginOpen"
+      @click="onLoginButtonClick"
     >
-      <NuxtImg
-        v-if="currentUser?.avatar && !userAvatarError"
-        :src="currentUser.avatar"
-        :alt="currentUser.nickname"
-        :width="36"
-        :height="36"
-        class="nexus-bar__user-avatar"
-        format="webp"
-        loading="eager"
-        @error="onUserAvatarError"
-      />
-      <span v-else class="nexus-bar__user-fallback">
-        {{ (currentUser?.nickname ?? 'U').slice(0, 1).toUpperCase() }}
-      </span>
+      <Icon :name="loginButtonIcon" size="18" />
     </button>
 
     <!-- 内容切换区域 -->
@@ -132,20 +110,20 @@
       <!-- 展开态：横向布局 — 左侧身份信息 | 右侧一言+社交 -->
       <div class="nexus-bar__row-owner">
         <div class="nexus-bar__owner-card">
-          <!-- 左列：名字、头衔、在线状态 -->
+          <!-- 左列：名字、头衔、在线状态（登录态下切换为当前用户身份） -->
           <div class="nexus-bar__owner-left">
             <div class="nexus-bar__owner-header">
-              <span class="nexus-bar__owner-name">{{ ownerCard.name }}</span>
-              <span class="nexus-bar__owner-title">{{ ownerCard.title }}</span>
+              <span class="nexus-bar__owner-name">{{ displayName }}</span>
+              <span class="nexus-bar__owner-title">{{ displayTitle }}</span>
             </div>
             <div class="nexus-bar__owner-status-line">
               <span
                 class="nexus-bar__owner-status-dot"
-                :class="`nexus-bar__owner-status-dot--${ownerPresence.status}`"
+                :class="`nexus-bar__owner-status-dot--${effectivePresence.status}`"
               />
-              <span class="nexus-bar__owner-status-label">{{ ownerPresence.label }}</span>
-              <span v-if="ownerPresence.signature" class="nexus-bar__owner-status-sig">
-                · {{ ownerPresence.signature }}
+              <span class="nexus-bar__owner-status-label">{{ effectivePresence.label }}</span>
+              <span v-if="effectivePresence.signature" class="nexus-bar__owner-status-sig">
+                · {{ effectivePresence.signature }}
               </span>
             </div>
           </div>
@@ -168,7 +146,7 @@
                 <Icon name="lucide:refresh-cw" size="12" />
               </button>
             </div>
-            <div class="nexus-bar__owner-socials">
+            <div v-if="showSocials" class="nexus-bar__owner-socials">
               <a
                 v-for="social in ownerCard.socials"
                 :key="social.href"
@@ -255,7 +233,6 @@ const loginPanelRef = ref<HTMLElement | null>(null)
 const userMenuButtonRef = ref<HTMLElement | null>(null)
 const userMenuRef = ref<HTMLElement | null>(null)
 const isUserMenuOpen = ref(false)
-const userAvatarError = ref(false)
 
 // 头像呼吸光晕颜色映射
 const GLOW_COLOR_MAP: Record<OwnerPresence, string> = {
@@ -264,12 +241,65 @@ const GLOW_COLOR_MAP: Record<OwnerPresence, string> = {
   busy: 'rgba(239, 68, 68, 0.15)',
   offline: 'transparent',
 }
-const avatarGlowColor = computed(() => GLOW_COLOR_MAP[ownerPresence.value.status])
 
-const avatarUrl =
+// 默认博主头像（未登录时使用）
+const defaultAvatarUrl =
   'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=200&q=80&sat=-12'
 
 const avatarError = ref(false)
+
+/** 当前应展示的头像 URL：登录后用 currentUser.avatar，否则回落到博主默认头像 */
+const displayAvatarUrl = computed(() => currentUser.value?.avatar || defaultAvatarUrl)
+
+/** 当前应展示的名字：登录后用 currentUser.nickname，否则用 ownerCard.name */
+const displayName = computed(() => currentUser.value?.nickname || ownerCard.value.name)
+
+/** 头像加载失败时的占位首字母 */
+const avatarFallback = computed(() => {
+  const name = displayName.value || 'TX'
+  return name.slice(0, 2).toUpperCase()
+})
+
+/** 展开态左列副标题：访客显示「访客」，其它情况用 ownerCard.title */
+const displayTitle = computed(() => {
+  if (currentUser.value?.role === 'visitor') return '访客'
+  return ownerCard.value.title
+})
+
+/**
+ * 当前应展示的在线状态：
+ * - 已登录 → 强制 online，签名取自 currentUser.signature
+ * - 未登录 → 沿用 useSiteInfo().ownerPresence（mock 状态机）
+ */
+const effectivePresence = computed(() => {
+  if (isLoggedIn.value && currentUser.value) {
+    return {
+      status: 'online' as const,
+      label: '在线',
+      signature: currentUser.value.signature ?? '',
+      since: ownerPresence.value.since,
+    }
+  }
+  return ownerPresence.value
+})
+
+const avatarGlowColor = computed(() => GLOW_COLOR_MAP[effectivePresence.value.status])
+
+/** 仅博主或未登录态展示个人社交链接（访客没有个人 socials） */
+const showSocials = computed(() => !isLoggedIn.value || currentUser.value?.role === 'owner')
+
+/** 账号入口按钮：图标、aria-label、点击行为均按登录态切换 */
+const loginButtonIcon = computed(() =>
+  isLoggedIn.value ? 'lucide:user-round-cog' : 'lucide:circle-user',
+)
+const loginButtonAriaLabel = computed(() =>
+  isLoggedIn.value ? `用户菜单：${currentUser.value?.nickname ?? ''}` : '登录',
+)
+
+/** 头像 URL 切换时（登录/退出）重置失败标志，让 NuxtImg 重新尝试加载 */
+watch(displayAvatarUrl, () => {
+  avatarError.value = false
+})
 
 const showProgress = computed(() => scrollProgress.value > 1)
 const displayProgress = computed(() => Math.round(scrollProgress.value))
@@ -345,11 +375,16 @@ function onLoginClick() {
   toggleLogin()
 }
 
-// ---- 用户菜单逻辑 ----
-function onUserAvatarError() {
-  userAvatarError.value = true
+/** 账号入口按钮点击：登录态打开 popover，未登录打开登录面板 */
+function onLoginButtonClick() {
+  if (isLoggedIn.value) {
+    toggleUserMenu()
+  } else {
+    onLoginClick()
+  }
 }
 
+// ---- 用户菜单逻辑 ----
 function toggleUserMenu() {
   // 打开菜单时收起展开态，避免与博主信息卡视觉重叠
   if (!isUserMenuOpen.value && isExpanded.value) {
@@ -1067,6 +1102,12 @@ $bar-expanded: 112px;
     transform: translateY(0) scale(0.92);
   }
 
+  // 面板/popover 打开时保持高亮
+  &.is-open {
+    color: var(--accent);
+    background: var(--surface-2);
+  }
+
   // 图标尺寸与其它两个按钮一致（20px）
   :deep(svg) {
     width: 1.25rem;
@@ -1074,68 +1115,11 @@ $bar-expanded: 112px;
   }
 }
 
-// ---- 已登录用户头像按钮（替换登录按钮位置） ----
-.nexus-bar__user {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: var(--bar-action-size);
-  height: var(--bar-action-size);
-  flex-shrink: 0;
-  padding: 0;
-  border: 1.5px solid var(--border-soft);
-  border-radius: 50%;
-  background: var(--surface-2);
-  color: var(--text-soft);
-  cursor: pointer;
-  overflow: hidden;
-  transition:
-    border-color 0.25s ease,
-    box-shadow 0.25s ease,
-    transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
-
-  &:hover {
-    border-color: var(--accent);
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
-  }
-
-  &:active {
-    transform: translateY(0) scale(0.92);
-  }
-
-  &.is-open {
-    border-color: var(--accent);
-    box-shadow: 0 0 0 2px var(--accent-alpha-20, rgba(99, 102, 241, 0.2));
-  }
-}
-
-.nexus-bar__user-avatar {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  border-radius: 50%;
-  display: block;
-}
-
-.nexus-bar__user-fallback {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 100%;
-  height: 100%;
-  font-size: 0.75rem;
-  font-weight: 700;
-  color: var(--accent);
-  background: var(--surface-3);
-  border-radius: 50%;
-}
-
 // ---- 用户菜单 popover ----
 .nexus-bar__user-menu {
   position: absolute;
   bottom: calc(100% + 0.5rem);
-  // 与登录按钮（已被替换为用户头像按钮）水平对齐
+  // 与账号入口按钮（.nexus-bar__login）水平对齐
   left: var(--bar-avatar-pad);
   z-index: 21;
   min-width: 200px;
