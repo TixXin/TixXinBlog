@@ -21,8 +21,20 @@
         @cancel-reply="replyTarget = null"
       />
 
-      <!-- 消息区域 wrapper：浮动按钮的定位基准 -->
+      <!-- 消息区域 wrapper：浮动按钮与 loader 浮层的定位基准 -->
       <div class="guestbook-center__messages-wrap">
+        <!-- Loader 浮层（脱离文档流，不影响 scrollHeight） -->
+        <Transition name="loader-fade">
+          <div
+            v-if="hasOlderMessages && showLoadingOlder"
+            class="guestbook-loader"
+            :class="isChatMode ? 'guestbook-loader--top' : 'guestbook-loader--bottom'"
+          >
+            <Icon name="lucide:loader-2" size="14" class="guestbook-loader__spinner" />
+            <span class="guestbook-loader__text">{{ isChatMode ? '加载历史消息...' : '加载更多消息...' }}</span>
+          </div>
+        </Transition>
+
         <CommonCustomScrollbar
           ref="scrollbarRef"
           class="guestbook-center__messages"
@@ -32,15 +44,7 @@
           :primary-direction="isChatMode ? 'down' : 'up'"
         >
           <!-- 聊天模式：顶部哨兵，向上滚动加载历史消息 -->
-          <template v-if="isChatMode">
-            <Transition name="loader-fade">
-              <div v-if="hasOlderMessages && showLoadingOlder" class="guestbook-loader">
-                <Icon name="lucide:loader-2" size="18" class="guestbook-loader__spinner" />
-                <span class="guestbook-loader__text">加载历史消息...</span>
-              </div>
-            </Transition>
-            <div ref="topSentinelRef" class="guestbook-sentinel" />
-          </template>
+          <div v-if="isChatMode" ref="topSentinelRef" class="guestbook-sentinel" />
 
           <!-- 骨架屏 -->
           <GuestbookMessageSkeleton v-if="isLoading" />
@@ -52,15 +56,7 @@
           <GuestbookMessageList v-else :groups="visibleGroups" @reply="onReply" />
 
           <!-- 论坛模式：底部哨兵，向下滚动加载更早消息 -->
-          <template v-if="!isChatMode">
-            <div ref="bottomSentinelRef" class="guestbook-sentinel" />
-            <Transition name="loader-fade">
-              <div v-if="hasOlderMessages && showLoadingOlder" class="guestbook-loader">
-                <Icon name="lucide:loader-2" size="18" class="guestbook-loader__spinner" />
-                <span class="guestbook-loader__text">加载更多消息...</span>
-              </div>
-            </Transition>
-          </template>
+          <div v-if="!isChatMode" ref="bottomSentinelRef" class="guestbook-sentinel" />
         </CommonCustomScrollbar>
 
         <!-- 聊天模式：返回底部浮动按钮 -->
@@ -132,10 +128,9 @@ const activeMembers = mockActiveMembers
 const pinnedMessage = mockPinnedMessage
 
 // ---- 模拟加载态 ----
-const isLoading = ref(true)
-onMounted(() => {
-  setTimeout(() => { isLoading.value = false }, 600)
-})
+// 用 useState 跨导航持久化，避免每次返回页面都重新触发骨架屏
+const hasLoadedOnce = useState('guestbook-loaded-once', () => false)
+const isLoading = ref(!hasLoadedOnce.value)
 
 // ---- 回复引用交互 ----
 const replyTarget = ref<GuestMessage | null>(null)
@@ -186,30 +181,44 @@ const totalMessageCount = computed(() =>
 )
 
 // ---- 加载更早的消息 ----
-function loadOlderMessages() {
+// 注意：loader 已改为绝对定位浮层，不参与 scrollHeight，
+// 所以 delta 就是纯的新消息组高度，不存在 loader 消失时的跳动。
+async function loadOlderMessages() {
   if (loadingOlder.value || !hasOlderMessages.value) return
   loadingOlder.value = true
   showLoadingOlder.value = true
 
   const viewport = scrollbarRef.value?.viewport
-  const prevScrollHeight = viewport?.scrollHeight ?? 0
+  if (!viewport) {
+    loadingOlder.value = false
+    showLoadingOlder.value = false
+    return
+  }
 
-  requestAnimationFrame(() => {
-    loadedGroupCount.value = Math.min(
-      loadedGroupCount.value + LOAD_MORE_GROUPS,
-      allDateGroups.length,
-    )
+  // 记录当前快照
+  const prevScrollHeight = viewport.scrollHeight
+  const prevScrollTop = viewport.scrollTop
 
-    // 聊天模式：旧消息从顶部长出，需要保持当前视图位置
-    nextTick(() => {
-      if (isChatMode.value && viewport) {
-        const newScrollHeight = viewport.scrollHeight
-        viewport.scrollTop += newScrollHeight - prevScrollHeight
-      }
-      loadingOlder.value = false
-      showLoadingOlder.value = false
-    })
-  })
+  // 追加一批日期组
+  loadedGroupCount.value = Math.min(
+    loadedGroupCount.value + LOAD_MORE_GROUPS,
+    allDateGroups.length,
+  )
+
+  // 等 DOM 更新后立即补偿滚动位置，避免用户视野漂移
+  await nextTick()
+
+  if (isChatMode.value) {
+    const delta = viewport.scrollHeight - prevScrollHeight
+    // 用绝对赋值而非 +=，避免异步期间与其他滚动事件竞态
+    viewport.scrollTop = prevScrollTop + delta
+  }
+
+  // 留一小段时间让 loader 过渡完成再撤下
+  setTimeout(() => {
+    loadingOlder.value = false
+    showLoadingOlder.value = false
+  }, 200)
 }
 
 // ---- IntersectionObserver 监听顶部哨兵 ----
@@ -306,15 +315,31 @@ function scrollToBottom(smooth = true) {
 }
 
 // ---- 生命周期 ----
-onMounted(() => {
+// 消息列表渲染后滚动到底部并挂载 observer
+function initAfterRendered() {
   nextTick(() => {
-    // 聊天模式默认显示最底部（最新消息），论坛模式保持顶部
     if (isChatMode.value) {
       scrollToBottom(false)
     }
     // 等滚动完成后再设置 observer，避免初始触发加载
     setTimeout(() => setupObserver(), 100)
   })
+}
+
+// 首次访问：骨架屏结束后初始化
+watch(isLoading, (loading) => {
+  if (loading) return
+  hasLoadedOnce.value = true
+  initAfterRendered()
+})
+
+onMounted(() => {
+  // 首次挂载：启动模拟加载；重入页面：跳过骨架屏直接初始化
+  if (isLoading.value) {
+    setTimeout(() => { isLoading.value = false }, 600)
+  } else {
+    initAfterRendered()
+  }
 
   // 监听滚动检测是否在底部
   watch(
@@ -360,12 +385,30 @@ onUnmounted(() => {
   height: 1px;
 }
 
+/* ---- 加载 loader 浮层（绝对定位，不参与 scrollHeight） ---- */
 .guestbook-loader {
-  display: flex;
+  position: absolute;
+  left: 50%;
+  z-index: 6;
+  display: inline-flex;
   align-items: center;
-  justify-content: center;
-  gap: 0.5rem;
-  padding: 1rem 0;
+  gap: 0.375rem;
+  padding: 0.375rem 0.875rem;
+  border-radius: $radius-full;
+  border: 1px solid var(--border-soft);
+  background: color-mix(in srgb, var(--surface-1) 85%, transparent);
+  backdrop-filter: blur(10px);
+  box-shadow: var(--shadow-card);
+  pointer-events: none;
+  transform: translateX(-50%);
+}
+
+.guestbook-loader--top {
+  top: 0.75rem;
+}
+
+.guestbook-loader--bottom {
+  bottom: 0.75rem;
 }
 
 .guestbook-loader__spinner {
@@ -375,17 +418,23 @@ onUnmounted(() => {
 
 .guestbook-loader__text {
   color: var(--text-soft);
-  font-size: 0.8125rem;
+  font-size: 0.75rem;
+  line-height: 1;
 }
 
 .loader-fade-enter-active,
 .loader-fade-leave-active {
-  transition: opacity 0.25s ease;
+  transition: opacity 0.25s ease, transform 0.25s ease;
 }
 
-.loader-fade-enter-from,
+.loader-fade-enter-from {
+  opacity: 0;
+  transform: translateX(-50%) translateY(-4px);
+}
+
 .loader-fade-leave-to {
   opacity: 0;
+  transform: translateX(-50%) translateY(-4px);
 }
 
 /* ---- 返回底部浮动按钮 ---- */
