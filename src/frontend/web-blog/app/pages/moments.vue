@@ -48,9 +48,8 @@
 </template>
 
 <script setup lang="ts">
-import { mockMoments } from '~/features/moment/mock'
+import { mockMoments, mockMomentAuthorStats } from '~/features/moment/mock'
 import { mockPostTabs } from '~/features/post/mock'
-import type { MomentAuthorStats } from '~/components/sidebar/MomentAuthorCard.vue'
 import type { MomentTopic } from '~/components/sidebar/MomentTopicCard.vue'
 import type { MomentPhotoItem } from '~/components/sidebar/MomentPhotoWallCard.vue'
 
@@ -92,20 +91,7 @@ function onPhotoSelect(momentId: string) {
 }
 
 // 作者名片数据
-const totalComments = mockMoments.reduce((sum, m) => sum + (m.comments?.length || 0), 0)
-
-const authorStats: MomentAuthorStats = {
-  totalMoments: mockMoments.length,
-  totalLikes: mockMoments.reduce((sum, m) => sum + m.likes, 0),
-  totalComments,
-  currentMood: '今天阳光正好，适合写代码 🌞',
-  moodUpdatedAt: '2小时前',
-  socialLinks: [
-    { icon: 'lucide:github', url: 'https://github.com', label: 'GitHub' },
-    { icon: 'lucide:twitter', url: 'https://twitter.com', label: 'Twitter' },
-    { icon: 'lucide:mail', url: 'mailto:hi@tixxin.com', label: '邮箱' },
-  ],
-}
+const authorStats = mockMomentAuthorStats
 
 // 日历数据 — 从动态列表提取日期
 const momentDates = computed(() => mockMoments.map((m) => m.date.slice(0, 10)))

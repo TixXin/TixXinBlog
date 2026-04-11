@@ -14,12 +14,27 @@
           class="aside-left__scroll"
           viewport-class="aside-left__viewport"
         >
-          <OwnerProfileCard />
-          <SiteAnnouncementCard />
-          <DailyQuoteCard />
-          <SidebarSiteStatsCard :stats="siteStats" />
-          <BlogSubscribeCard />
-          <SidebarFooterCard />
+          <Transition name="sidebar-slide-left" mode="out-in">
+            <!-- 默认模式：博主名片、公告、统计 -->
+            <div v-if="!isMomentsMode" key="default" class="aside-left__group">
+              <OwnerProfileCard />
+              <SiteAnnouncementCard />
+              <SidebarSiteStatsCard :stats="siteStats" />
+              <DailyQuoteCard />
+              <SidebarFooterCard />
+            </div>
+            <!-- 朋友圈模式：作者名片、动态日历 -->
+            <div v-else key="moments" class="aside-left__group">
+              <SidebarMomentAuthorCard :stats="momentAuthorStats" />
+              <SidebarMomentCalendarCard
+                :moment-dates="momentDates"
+                :selected-date="selectedDate"
+                @select-date="onDateSelect"
+              />
+              <DailyQuoteCard />
+              <SidebarFooterCard />
+            </div>
+          </Transition>
         </CommonCustomScrollbar>
       </aside>
 
@@ -63,14 +78,28 @@
 
 <script setup lang="ts">
 import { mockSiteStats } from '~/features/stats/mock'
+import { mockMomentAuthorStats, mockMoments } from '~/features/moment/mock'
 import OwnerProfileCard from './OwnerProfileCard.vue'
 import SiteAnnouncementCard from './SiteAnnouncementCard.vue'
 import DailyQuoteCard from './DailyQuoteCard.vue'
 import SidebarFooterCard from './SidebarFooterCard.vue'
 
 const siteStats = mockSiteStats
+const momentAuthorStats = mockMomentAuthorStats
 const { sidebarAnimationClass } = useAppearanceSettings()
 useSidebarExitAnimation('.aside-right')
+
+// 监听首页 Tab 状态，切换左侧栏内容
+const { homeActiveTab } = useHomeTab()
+const isMomentsMode = computed(() => homeActiveTab.value === 'moments')
+
+// 朋友圈日历数据（通过 composable 与 index.vue 共享 selectedDate）
+const { selectedDate } = useMomentFilters()
+const momentDates = computed(() => mockMoments.map((m) => m.date.slice(0, 10)))
+
+function onDateSelect(date: string | null) {
+  selectedDate.value = date
+}
 </script>
 
 <style lang="scss" scoped>
@@ -110,12 +139,7 @@ useSidebarExitAnimation('.aside-right')
   height: 0.625rem;
   width: 100%;
   border-radius: $radius-sm;
-  background: linear-gradient(
-    90deg,
-    var(--surface-2) 0%,
-    var(--surface-3) 50%,
-    var(--surface-2) 100%
-  );
+  background: linear-gradient(90deg, var(--surface-2) 0%, var(--surface-3) 50%, var(--surface-2) 100%);
   background-size: 200% 100%;
   animation: aside-skeleton-shimmer 1.6s ease-in-out infinite;
 
@@ -141,20 +165,25 @@ useSidebarExitAnimation('.aside-right')
   width: 3.5rem;
   height: 1.25rem;
   border-radius: $radius-full;
-  background: linear-gradient(
-    90deg,
-    var(--surface-2) 0%,
-    var(--surface-3) 50%,
-    var(--surface-2) 100%
-  );
+  background: linear-gradient(90deg, var(--surface-2) 0%, var(--surface-3) 50%, var(--surface-2) 100%);
   background-size: 200% 100%;
   animation: aside-skeleton-shimmer 1.6s ease-in-out infinite;
 
-  &:nth-child(2) { width: 4.5rem; }
-  &:nth-child(3) { width: 2.5rem; }
-  &:nth-child(4) { width: 5rem; }
-  &:nth-child(5) { width: 3rem; }
-  &:nth-child(6) { width: 4rem; }
+  &:nth-child(2) {
+    width: 4.5rem;
+  }
+  &:nth-child(3) {
+    width: 2.5rem;
+  }
+  &:nth-child(4) {
+    width: 5rem;
+  }
+  &:nth-child(5) {
+    width: 3rem;
+  }
+  &:nth-child(6) {
+    width: 4rem;
+  }
 }
 
 @keyframes aside-skeleton-shimmer {
@@ -172,5 +201,31 @@ useSidebarExitAnimation('.aside-right')
   .aside-right__skeleton-tag {
     animation: none;
   }
+}
+
+/* ---- 左侧栏内容组 ---- */
+.aside-left__group {
+  display: flex;
+  flex-direction: column;
+  gap: $grid-gap;
+}
+
+/* ---- 左侧栏切换动画：slide-left ---- */
+.sidebar-slide-left-enter-active {
+  transition: all 0.25s ease-out;
+}
+
+.sidebar-slide-left-leave-active {
+  transition: all 0.2s ease-in;
+}
+
+.sidebar-slide-left-enter-from {
+  opacity: 0;
+  transform: translateX(-12px);
+}
+
+.sidebar-slide-left-leave-to {
+  opacity: 0;
+  transform: translateX(-12px);
 }
 </style>

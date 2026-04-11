@@ -130,18 +130,22 @@
           <MomentList :moments="moments" :selected-topic="selectedTopic" :selected-date="selectedDate" />
         </div>
       </CommonCustomScrollbar>
-
     </Transition>
 
     <!-- 右侧栏 -->
     <ClientOnly>
       <Teleport to="#right-sidebar-target">
         <SidebarRightSidebar>
-          <Transition :name="sidebarTransitionName" mode="out-in">
+          <Transition :name="rightSidebarTransition" mode="out-in">
             <!-- 文章列表侧栏 -->
             <div v-if="activeTab === 'all' && viewMode === 'list'" key="sidebar-list" class="sidebar-list-group">
               <SidebarTagCloudCard :tags="tags" :active-tag="selectedTag" @select="onTagSelect" />
-              <SidebarCategoryCard :categories="categories" :active-category="selectedCategory" @select="onCategorySelect" />
+              <SidebarCategoryCard
+                :categories="categories"
+                :active-category="selectedCategory"
+                @select="onCategorySelect"
+              />
+              <BlogSubscribeCard />
             </div>
 
             <!-- 归档侧栏 -->
@@ -152,19 +156,12 @@
               :distribution="categoryDistribution"
             />
 
-            <!-- 朋友圈侧栏 -->
+            <!-- 朋友圈侧栏（AuthorCard + 日历已移至左侧栏） -->
             <div v-else-if="activeTab === 'moments'" key="sidebar-moments" class="sidebar-list-group">
-              <SidebarMomentAuthorCard :stats="authorStats" />
               <SidebarMomentPhotoWallCard :images="photoWallImages" @select-moment="onPhotoSelect" />
-              <SidebarMomentCalendarCard
-                :moment-dates="momentDates"
-                :selected-date="selectedDate"
-                @select-date="onDateSelect"
-              />
               <SidebarMomentTopicCard :topics="momentTopics" :active-topic="selectedTopic" @select="onTopicSelect" />
               <SidebarMomentInteractionCard :users="activeUsers" :total-users="totalInteractionUsers" />
             </div>
-
           </Transition>
         </SidebarRightSidebar>
       </Teleport>
@@ -177,7 +174,6 @@ import { mockPosts, mockPostTabs } from '~/features/post/mock'
 import { mockTags, mockCategories } from '~/features/stats/mock'
 import { mockArchiveStats, mockArchiveYears, mockCategoryDistribution } from '~/features/article/mock'
 import { mockMoments } from '~/features/moment/mock'
-import type { MomentAuthorStats } from '~/components/sidebar/MomentAuthorCard.vue'
 import type { MomentTopic } from '~/components/sidebar/MomentTopicCard.vue'
 import type { MomentPhotoItem } from '~/components/sidebar/MomentPhotoWallCard.vue'
 import type { MomentActiveUser } from '~/components/sidebar/MomentInteractionCard.vue'
@@ -190,13 +186,24 @@ useSeoMeta({
 })
 
 const { sidebarTransitionName } = useAppearanceSettings()
+
+// 右侧栏过渡名称：需在 Tab 切换前设置，避免 Transition name 和 child 同时变更
+const rightSidebarTransition = ref(sidebarTransitionName.value)
+
+// 离开首页时重置状态，避免左侧栏残留朋友圈状态
+onBeforeUnmount(() => {
+  rightSidebarTransition.value = sidebarTransitionName.value
+  activeTab.value = 'all'
+  selectedDate.value = null
+})
 const searchModal = inject<{ open: () => void } | null>('searchModal', null)
 function openSearch() {
   searchModal?.open()
 }
 
 // ---- 视图状态 ----
-const activeTab = ref('all')
+const { homeActiveTab } = useHomeTab()
+const activeTab = homeActiveTab
 const viewMode = ref<'list' | 'archive'>('list')
 const listDisplayMode = ref<'waterfall' | 'pagination'>('pagination')
 
@@ -208,7 +215,6 @@ const categories = mockCategories
 const archiveYears = mockArchiveYears
 const archiveStats = mockArchiveStats
 const categoryDistribution = mockCategoryDistribution
-
 
 // ---- 标签/分类过滤 ----
 const selectedTag = ref<string | null>(null)
@@ -241,10 +247,18 @@ function clearFilters() {
 }
 
 function switchTab(value: string) {
+  // 先设置过渡名称再切换 Tab，确保离场动画使用正确的 Transition name
+  if (value === 'moments' || activeTab.value === 'moments') {
+    rightSidebarTransition.value = 'sidebar-slide-right'
+  } else {
+    rightSidebarTransition.value = sidebarTransitionName.value
+  }
   activeTab.value = value
   if (value === 'moments') {
     clearFilters()
     viewMode.value = 'list'
+  } else {
+    selectedDate.value = null
   }
 }
 
@@ -258,37 +272,14 @@ function onTopicSelect(topicName: string | null) {
   selectedTopic.value = topicName
 }
 
-// 日期筛选
-const selectedDate = ref<string | null>(null)
-
-function onDateSelect(date: string | null) {
-  selectedDate.value = date
-}
+// 日期筛选（通过 composable 与 RootLayout 左侧栏日历共享状态）
+const { selectedDate } = useMomentFilters()
 
 // 照片点击 — 滚动到对应动态
 function onPhotoSelect(momentId: string) {
   const el = document.getElementById(`moment-${momentId}`)
   el?.scrollIntoView({ behavior: 'smooth', block: 'center' })
 }
-
-// 作者名片数据
-const totalComments = mockMoments.reduce((sum, m) => sum + (m.comments?.length || 0), 0)
-
-const authorStats: MomentAuthorStats = {
-  totalMoments: mockMoments.length,
-  totalLikes: mockMoments.reduce((sum, m) => sum + m.likes, 0),
-  totalComments,
-  currentMood: '今天阳光正好，适合写代码 🌞',
-  moodUpdatedAt: '2小时前',
-  socialLinks: [
-    { icon: 'lucide:github', url: 'https://github.com', label: 'GitHub' },
-    { icon: 'lucide:twitter', url: 'https://twitter.com', label: 'Twitter' },
-    { icon: 'lucide:mail', url: 'mailto:hi@tixxin.com', label: '邮箱' },
-  ],
-}
-
-// 日历数据 — 从动态列表提取日期
-const momentDates = computed(() => mockMoments.map((m) => m.date.slice(0, 10)))
 
 // 精选照片墙 — 按获赞数排序，取带图片的动态的首张图
 const photoWallImages = computed<MomentPhotoItem[]>(() => {
@@ -297,7 +288,7 @@ const photoWallImages = computed<MomentPhotoItem[]>(() => {
     .sort((a, b) => b.likes - a.likes)
     .slice(0, 9)
     .map((m) => ({
-      src: m.images![0],
+      src: m.images![0]!,
       momentId: m.id,
     }))
 })
@@ -499,6 +490,25 @@ const momentTopics = computed<MomentTopic[]>(() =>
   margin: 0 auto;
 }
 
+/* ---- 右侧栏 slide-right 动画（朋友圈切换时使用） ---- */
+.sidebar-slide-right-enter-active {
+  transition: all 0.25s ease-out;
+}
+
+.sidebar-slide-right-leave-active {
+  transition: all 0.2s ease-in;
+}
+
+.sidebar-slide-right-enter-from {
+  opacity: 0;
+  transform: translateX(12px);
+}
+
+.sidebar-slide-right-leave-to {
+  opacity: 0;
+  transform: translateX(12px);
+}
+
 /* ---- Tab 内容区过渡动画 ---- */
 .tab-fade-enter-active {
   transition: opacity 0.2s ease;
@@ -514,11 +524,15 @@ const momentTopics = computed<MomentTopic[]>(() =>
 }
 
 .filter-fade-enter-active {
-  transition: opacity 0.2s ease, transform 0.2s ease;
+  transition:
+    opacity 0.2s ease,
+    transform 0.2s ease;
 }
 
 .filter-fade-leave-active {
-  transition: opacity 0.15s ease, transform 0.15s ease;
+  transition:
+    opacity 0.15s ease,
+    transform 0.15s ease;
 }
 
 .filter-fade-enter-from {
@@ -530,5 +544,4 @@ const momentTopics = computed<MomentTopic[]>(() =>
   opacity: 0;
   transform: translateX(-8px);
 }
-
 </style>
