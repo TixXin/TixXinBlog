@@ -1,20 +1,38 @@
 /**
  * @file useDevDebugPanel.ts
- * @description Dev 调试面板共享状态：抽屉开关、激活 tab、FAB 拖拽位置（仅 dev 使用，调用方应被 DevOnly 包裹）
+ * @description Dev 调试面板共享状态：抽屉开关、激活 tab、停靠位置、FAB 拖拽位置、居中态窗口矩形（仅 dev 使用，调用方应被 DevOnly 包裹）
  * @author TixXin
  * @since 2026-04-11
  */
 
 export type DevDebugTab = 'viewport' | 'route' | 'auth' | 'env'
 
+/** 抽屉停靠位置：四边贴边停靠或居中浮窗（居中态可拖拽缩放） */
+export type DevDebugDockPosition = 'left' | 'right' | 'top' | 'bottom' | 'center'
+
 export interface FabPosition {
   x: number
   y: number
 }
 
+/** 居中浮窗矩形（位置 + 尺寸），仅 position === 'center' 时生效 */
+export interface CenterRect {
+  x: number
+  y: number
+  w: number
+  h: number
+}
+
 const FAB_POS_KEY = 'dev-debug:fab-pos'
 const TAB_KEY = 'dev-debug:active-tab'
+const POSITION_KEY = 'dev-debug:position'
+const CENTER_RECT_KEY = 'dev-debug:center-rect'
 const VALID_TABS: DevDebugTab[] = ['viewport', 'route', 'auth', 'env']
+const VALID_POSITIONS: DevDebugDockPosition[] = ['left', 'right', 'top', 'bottom', 'center']
+
+/** 居中浮窗最小尺寸，避免被拖到不可用 */
+export const CENTER_MIN = { w: 360, h: 320 }
+export const CENTER_DEFAULT = { w: 520, h: 560 }
 
 /** FAB 视觉尺寸（用于把位置 clamp 在视口内，避免拖出屏幕） */
 const FAB_SIZE = { w: 64, h: 28 }
@@ -83,9 +101,74 @@ export function useDevDebugPanel() {
     ),
   )
 
+  // 抽屉停靠位置：默认 left；持久化
+  const position = useState<DevDebugDockPosition>('dev-debug:position', () =>
+    readStorage<DevDebugDockPosition>(
+      POSITION_KEY,
+      (raw) =>
+        VALID_POSITIONS.includes(raw as DevDebugDockPosition)
+          ? (raw as DevDebugDockPosition)
+          : null,
+      'left',
+    ),
+  )
+
+  // 居中浮窗矩形：默认 520×560 居中（首次使用时由组件按视口计算）；持久化
+  const centerRect = useState<CenterRect>('dev-debug:center-rect', () =>
+    readStorage<CenterRect>(
+      CENTER_RECT_KEY,
+      (raw) => {
+        try {
+          const parsed = JSON.parse(raw) as CenterRect
+          if (
+            typeof parsed?.x === 'number' &&
+            typeof parsed?.y === 'number' &&
+            typeof parsed?.w === 'number' &&
+            typeof parsed?.h === 'number'
+          ) {
+            return parsed
+          }
+        } catch {
+          /* fallthrough */
+        }
+        return null
+      },
+      { x: -1, y: -1, w: CENTER_DEFAULT.w, h: CENTER_DEFAULT.h },
+    ),
+  )
+
   function setActiveTab(tab: DevDebugTab) {
     activeTab.value = tab
     writeStorage(TAB_KEY, tab)
+  }
+
+  function setPosition(next: DevDebugDockPosition) {
+    position.value = next
+    writeStorage(POSITION_KEY, next)
+  }
+
+  function setCenterRect(rect: CenterRect) {
+    const clamped = clampCenterRect(rect)
+    centerRect.value = clamped
+    writeStorage(CENTER_RECT_KEY, JSON.stringify(clamped))
+  }
+
+  /** 把居中浮窗矩形 clamp 在当前视口内 + 强制最小尺寸 */
+  function clampCenterRect(rect: CenterRect): CenterRect {
+    if (!import.meta.client) return rect
+    const w = Math.max(CENTER_MIN.w, Math.min(rect.w, window.innerWidth - 16))
+    const h = Math.max(CENTER_MIN.h, Math.min(rect.h, window.innerHeight - 16))
+    const maxX = Math.max(8, window.innerWidth - w - 8)
+    const maxY = Math.max(8, window.innerHeight - h - 8)
+    const x =
+      rect.x < 0
+        ? Math.round((window.innerWidth - w) / 2)
+        : Math.min(Math.max(8, rect.x), maxX)
+    const y =
+      rect.y < 0
+        ? Math.round((window.innerHeight - h) / 2)
+        : Math.min(Math.max(8, rect.y), maxY)
+    return { x, y, w, h }
   }
 
   function setFabPosition(pos: FabPosition) {
@@ -103,6 +186,21 @@ export function useDevDebugPanel() {
     }
   }
 
+  /** resize 时重新 clamp 居中浮窗，避免视口缩小后窗口跑出屏幕 */
+  function reclampCenterRect() {
+    if (position.value !== 'center') return
+    const clamped = clampCenterRect(centerRect.value)
+    if (
+      clamped.x !== centerRect.value.x ||
+      clamped.y !== centerRect.value.y ||
+      clamped.w !== centerRect.value.w ||
+      clamped.h !== centerRect.value.h
+    ) {
+      centerRect.value = clamped
+      writeStorage(CENTER_RECT_KEY, JSON.stringify(clamped))
+    }
+  }
+
   function open() {
     isOpen.value = true
   }
@@ -117,9 +215,14 @@ export function useDevDebugPanel() {
     isOpen,
     activeTab,
     fabPosition,
+    position,
+    centerRect,
     setActiveTab,
     setFabPosition,
+    setPosition,
+    setCenterRect,
     reclampFabPosition,
+    reclampCenterRect,
     open,
     close,
     toggle,

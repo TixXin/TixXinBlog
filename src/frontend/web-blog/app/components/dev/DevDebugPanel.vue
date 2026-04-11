@@ -29,16 +29,45 @@
       <div v-if="isOpen" class="dev-debug-overlay" @click="close" />
     </Transition>
 
-    <!-- 侧抽屉：固定从左边缘滑出 -->
-    <Transition name="dev-debug-drawer">
-      <aside v-if="isOpen" class="dev-debug-drawer" role="dialog" aria-label="Dev 调试面板">
-        <header class="dev-debug-drawer__head">
+    <!-- 抽屉：根据 position 切换为 left/right/top/bottom 贴边或 center 浮窗；transitionName 同步切换 -->
+    <Transition :name="transitionName">
+      <aside
+        v-if="isOpen"
+        ref="drawerRef"
+        class="dev-debug-drawer"
+        :class="`dev-debug-drawer--${position}`"
+        :style="drawerStyle"
+        role="dialog"
+        aria-label="Dev 调试面板"
+      >
+        <header
+          class="dev-debug-drawer__head"
+          :class="{ 'is-draggable': position === 'center' }"
+          @pointerdown="onHeaderPointerDown"
+        >
           <Icon name="lucide:wrench" size="14" />
           <h2 class="dev-debug-drawer__title">DEV 调试面板</h2>
+          <!-- 停靠位置切换：5 个图标按钮 -->
+          <div class="dev-debug-dock-picker" role="group" aria-label="切换停靠位置">
+            <button
+              v-for="opt in dockOptions"
+              :key="opt.value"
+              type="button"
+              class="dev-debug-dock-btn"
+              :class="{ 'is-active': position === opt.value }"
+              :title="opt.label"
+              :aria-label="opt.label"
+              :aria-pressed="position === opt.value"
+              @click="setPosition(opt.value)"
+            >
+              <Icon :name="opt.icon" size="14" />
+            </button>
+          </div>
           <button
             type="button"
             class="dev-debug-drawer__close"
-            aria-label="关闭"
+            aria-label="关闭 (Esc)"
+            title="关闭 (Esc)"
             @click="close"
           >
             <Icon name="lucide:x" size="16" />
@@ -261,15 +290,20 @@
 
 <script setup lang="ts">
 import { mockOwnerUser, mockVisitorUser } from '~/features/auth/mock'
-import type { DevDebugTab } from '~/composables/useDevDebugPanel'
+import type { DevDebugTab, DevDebugDockPosition } from '~/composables/useDevDebugPanel'
 
 const {
   isOpen,
   activeTab,
   fabPosition,
+  position,
+  centerRect,
   setActiveTab,
   setFabPosition,
+  setPosition,
+  setCenterRect,
   reclampFabPosition,
+  reclampCenterRect,
   toggle,
   close,
 } = useDevDebugPanel()
@@ -287,6 +321,41 @@ const tabs: { id: DevDebugTab; label: string; icon: string }[] = [
   { id: 'auth', label: '账号', icon: 'lucide:user-round' },
   { id: 'env', label: '环境', icon: 'lucide:server' },
 ]
+
+// ---- 停靠位置切换 ----
+const dockOptions: { value: DevDebugDockPosition; label: string; icon: string }[] = [
+  { value: 'left', label: '左侧停靠', icon: 'lucide:panel-left' },
+  { value: 'right', label: '右侧停靠', icon: 'lucide:panel-right' },
+  { value: 'top', label: '顶部停靠', icon: 'lucide:panel-top' },
+  { value: 'bottom', label: '底部停靠', icon: 'lucide:panel-bottom' },
+  { value: 'center', label: '居中浮窗', icon: 'lucide:square' },
+]
+
+/** 不同停靠位置使用不同 transition：边贴边滑入，居中态 fade+scale */
+const transitionName = computed(() => {
+  switch (position.value) {
+    case 'left': return 'dev-debug-drawer-left'
+    case 'right': return 'dev-debug-drawer-right'
+    case 'top': return 'dev-debug-drawer-top'
+    case 'bottom': return 'dev-debug-drawer-bottom'
+    case 'center': return 'dev-debug-drawer-center'
+    default: return 'dev-debug-drawer-left'
+  }
+})
+
+/** 居中模式才走内联 style（位置+尺寸），其它模式由 CSS class 控制 */
+const drawerStyle = computed(() => {
+  if (position.value !== 'center') return undefined
+  const r = centerRect.value
+  return {
+    top: `${r.y}px`,
+    left: `${r.x}px`,
+    width: `${r.w}px`,
+    height: `${r.h}px`,
+  }
+})
+
+const drawerRef = ref<HTMLElement | null>(null)
 
 // ---- FAB 位置 + 拖拽 ----
 const fabStyle = computed(() => ({
@@ -308,11 +377,11 @@ function onFabPointerDown(e: PointerEvent) {
   }
   movedDistance = 0
   isDragging.value = true
-  window.addEventListener('pointermove', onPointerMove)
-  window.addEventListener('pointerup', onPointerUp, { once: true })
+  window.addEventListener('pointermove', onFabPointerMove)
+  window.addEventListener('pointerup', onFabPointerUp, { once: true })
 }
 
-function onPointerMove(e: PointerEvent) {
+function onFabPointerMove(e: PointerEvent) {
   movedDistance += Math.abs(e.movementX) + Math.abs(e.movementY)
   fabPosition.value = {
     x: e.clientX - dragOffset.x,
@@ -320,8 +389,8 @@ function onPointerMove(e: PointerEvent) {
   }
 }
 
-function onPointerUp() {
-  window.removeEventListener('pointermove', onPointerMove)
+function onFabPointerUp() {
+  window.removeEventListener('pointermove', onFabPointerMove)
   isDragging.value = false
   // 持久化 + clamp
   setFabPosition(fabPosition.value)
@@ -334,6 +403,98 @@ function onFabClick() {
     return
   }
   toggle()
+}
+
+// ---- 居中模式：header 拖拽 + ResizeObserver ----
+let headerDragOffset = { x: 0, y: 0 }
+
+function onHeaderPointerDown(e: PointerEvent) {
+  if (position.value !== 'center') return
+  // 忽略点击在停靠按钮 / 关闭按钮上的事件
+  const target = e.target as HTMLElement
+  if (target.closest('button')) return
+  if (e.button !== 0) return
+  ;(e.currentTarget as HTMLElement).setPointerCapture?.(e.pointerId)
+  headerDragOffset = {
+    x: e.clientX - centerRect.value.x,
+    y: e.clientY - centerRect.value.y,
+  }
+  window.addEventListener('pointermove', onHeaderPointerMove)
+  window.addEventListener('pointerup', onHeaderPointerUp, { once: true })
+}
+
+function onHeaderPointerMove(e: PointerEvent) {
+  centerRect.value = {
+    ...centerRect.value,
+    x: e.clientX - headerDragOffset.x,
+    y: e.clientY - headerDragOffset.y,
+  }
+}
+
+function onHeaderPointerUp() {
+  window.removeEventListener('pointermove', onHeaderPointerMove)
+  // clamp + 持久化
+  setCenterRect(centerRect.value)
+}
+
+let centerResizeObserver: ResizeObserver | null = null
+
+function attachCenterResizeObserver() {
+  if (!drawerRef.value || position.value !== 'center') return
+  detachCenterResizeObserver()
+  centerResizeObserver = new ResizeObserver((entries) => {
+    const entry = entries[0]
+    if (!entry) return
+    const w = Math.round(entry.contentRect.width)
+    const h = Math.round(entry.contentRect.height)
+    // 仅当用户主动用 native resize handle 拖动时（值与 state 不一致）才写入
+    if (w !== centerRect.value.w || h !== centerRect.value.h) {
+      // 不调 setCenterRect 以避免每帧 clamp 抖动；只缓存到 state，pointerup 时不必持久化
+      // 这里也不写 localStorage 以减少 IO，等 mouseup/blur 时再持久化
+      centerRect.value = { ...centerRect.value, w, h }
+      // resize handle 没有 pointerup 钩子，直接在每次变化后持久化（已被浏览器节流）
+      setCenterRect(centerRect.value)
+    }
+  })
+  centerResizeObserver.observe(drawerRef.value)
+}
+function detachCenterResizeObserver() {
+  centerResizeObserver?.disconnect()
+  centerResizeObserver = null
+}
+
+// 切换到 center 时初始化矩形（首次 x/y = -1 时居中放置），并挂 ResizeObserver
+watch(
+  [position, isOpen],
+  async ([pos, open]) => {
+    if (open && pos === 'center') {
+      // 首次进入 center 模式：x/y < 0 表示需要按当前视口居中
+      if (centerRect.value.x < 0 || centerRect.value.y < 0) {
+        setCenterRect(centerRect.value) // clampCenterRect 会把负数翻译为视口中心
+      }
+      await nextTick()
+      attachCenterResizeObserver()
+    } else {
+      detachCenterResizeObserver()
+    }
+  },
+  { immediate: false },
+)
+
+// ---- 键盘快捷键：Esc 关闭、Ctrl/Cmd+Shift+D 切换 ----
+function onKeydown(e: KeyboardEvent) {
+  // Ctrl/Cmd + Shift + D：全局开关
+  if ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.key === 'D' || e.key === 'd')) {
+    e.preventDefault()
+    toggle()
+    return
+  }
+  // Esc：仅在抽屉开启时关闭
+  if (e.key === 'Escape' && isOpen.value) {
+    // 避免与其它 Esc 监听器冲突：只在没人调用 stopPropagation 时拦截
+    e.preventDefault()
+    close()
+  }
 }
 
 // ---- 视口 tab 数据 ----
@@ -415,17 +576,22 @@ onMounted(() => {
 
   window.addEventListener('resize', onResize, { passive: true })
   window.addEventListener('scroll', syncScroll, { passive: true })
+  window.addEventListener('keydown', onKeydown)
 })
 
 function onResize() {
   syncViewport()
   reclampFabPosition()
+  reclampCenterRect()
 }
 
 onBeforeUnmount(() => {
   window.removeEventListener('resize', onResize)
   window.removeEventListener('scroll', syncScroll)
-  window.removeEventListener('pointermove', onPointerMove)
+  window.removeEventListener('keydown', onKeydown)
+  window.removeEventListener('pointermove', onFabPointerMove)
+  window.removeEventListener('pointermove', onHeaderPointerMove)
+  detachCenterResizeObserver()
 })
 </script>
 
@@ -483,28 +649,126 @@ onBeforeUnmount(() => {
   -webkit-backdrop-filter: blur(2px);
 }
 
-/* ==================== 抽屉 ==================== */
+/* ==================== 抽屉（基类） ==================== */
 .dev-debug-drawer {
   position: fixed;
-  top: 0;
-  left: 0;
-  bottom: 0;
   z-index: 9998;
   display: flex;
   flex-direction: column;
-  width: min(320px, 90vw);
   background: var(--surface-1);
+  overflow: hidden;
+}
+
+/* 左侧停靠 */
+.dev-debug-drawer--left {
+  top: 0;
+  left: 0;
+  bottom: 0;
+  width: min(320px, 90vw);
   border-right: 1px solid var(--border);
   box-shadow: 8px 0 24px rgba(0, 0, 0, 0.12);
+}
+
+/* 右侧停靠 */
+.dev-debug-drawer--right {
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: min(320px, 90vw);
+  border-left: 1px solid var(--border);
+  box-shadow: -8px 0 24px rgba(0, 0, 0, 0.12);
+}
+
+/* 顶部停靠 */
+.dev-debug-drawer--top {
+  top: 0;
+  left: 0;
+  right: 0;
+  height: min(320px, 80vh);
+  border-bottom: 1px solid var(--border);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+}
+
+/* 底部停靠 */
+.dev-debug-drawer--bottom {
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: min(320px, 80vh);
+  border-top: 1px solid var(--border);
+  box-shadow: 0 -8px 24px rgba(0, 0, 0, 0.12);
+}
+
+/* 居中浮窗：可拖拽 + 原生 resize 手柄 */
+.dev-debug-drawer--center {
+  /* top/left/width/height 由 :style 注入 */
+  border: 1px solid var(--border);
+  border-radius: $radius-md;
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.24);
+  resize: both;
+  overflow: hidden;
+  min-width: 360px;
+  min-height: 320px;
+  max-width: calc(100vw - 16px);
+  max-height: calc(100vh - 16px);
 }
 
 .dev-debug-drawer__head {
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  padding: 0.875rem 1rem;
+  padding: 0.75rem 0.875rem 0.75rem 1rem;
   border-bottom: 1px solid var(--border-soft);
   color: var(--accent);
+  flex-shrink: 0;
+  user-select: none;
+
+  &.is-draggable {
+    cursor: grab;
+
+    &:active {
+      cursor: grabbing;
+    }
+  }
+}
+
+/* ==================== 停靠位置切换 ==================== */
+.dev-debug-dock-picker {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.125rem;
+  padding: 0.125rem;
+  border: 1px solid var(--border-soft);
+  border-radius: $radius-sm;
+  background: var(--surface-2);
+  margin-right: 0.25rem;
+}
+
+.dev-debug-dock-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.375rem;
+  height: 1.375rem;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: var(--text-soft);
+  border-radius: $radius-sm;
+  cursor: pointer;
+  transition:
+    background 0.18s ease,
+    color 0.18s ease;
+
+  &:hover {
+    color: var(--text-main);
+    background: var(--surface-3);
+  }
+
+  &.is-active {
+    color: var(--accent);
+    background: var(--accent-alpha-20, rgba(99, 102, 241, 0.2));
+  }
 }
 
 .dev-debug-drawer__title {
@@ -758,12 +1022,56 @@ onBeforeUnmount(() => {
   opacity: 0;
 }
 
-.dev-debug-drawer-enter-active,
-.dev-debug-drawer-leave-active {
+/* 左侧停靠：从左滑入 */
+.dev-debug-drawer-left-enter-active,
+.dev-debug-drawer-left-leave-active {
   transition: transform 0.28s cubic-bezier(0.4, 0, 0.2, 1);
 }
-.dev-debug-drawer-enter-from,
-.dev-debug-drawer-leave-to {
+.dev-debug-drawer-left-enter-from,
+.dev-debug-drawer-left-leave-to {
   transform: translateX(-100%);
+}
+
+/* 右侧停靠：从右滑入 */
+.dev-debug-drawer-right-enter-active,
+.dev-debug-drawer-right-leave-active {
+  transition: transform 0.28s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.dev-debug-drawer-right-enter-from,
+.dev-debug-drawer-right-leave-to {
+  transform: translateX(100%);
+}
+
+/* 顶部停靠：从上滑入 */
+.dev-debug-drawer-top-enter-active,
+.dev-debug-drawer-top-leave-active {
+  transition: transform 0.28s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.dev-debug-drawer-top-enter-from,
+.dev-debug-drawer-top-leave-to {
+  transform: translateY(-100%);
+}
+
+/* 底部停靠：从下滑入 */
+.dev-debug-drawer-bottom-enter-active,
+.dev-debug-drawer-bottom-leave-active {
+  transition: transform 0.28s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.dev-debug-drawer-bottom-enter-from,
+.dev-debug-drawer-bottom-leave-to {
+  transform: translateY(100%);
+}
+
+/* 居中浮窗：opacity + scale */
+.dev-debug-drawer-center-enter-active,
+.dev-debug-drawer-center-leave-active {
+  transition:
+    opacity 0.22s ease,
+    transform 0.22s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.dev-debug-drawer-center-enter-from,
+.dev-debug-drawer-center-leave-to {
+  opacity: 0;
+  transform: scale(0.94);
 }
 </style>
