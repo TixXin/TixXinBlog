@@ -16,6 +16,7 @@
     <footer class="flash-note-card__footer">
       <time class="flash-note-card__time" :datetime="note.createdAt">{{ relativeTime }}</time>
       <button
+        v-if="!readOnly"
         type="button"
         class="flash-note-card__action"
         aria-label="删除闪念"
@@ -33,6 +34,7 @@ import type { FlashNote } from '~/features/flash/types'
 const props = defineProps<{
   note: FlashNote
   cited?: boolean
+  readOnly?: boolean
 }>()
 
 defineEmits<{

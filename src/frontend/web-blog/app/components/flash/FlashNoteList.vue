@@ -23,6 +23,7 @@
         :key="note.id"
         :note="note"
         :cited="citedIds?.includes(note.id)"
+        :read-only="readOnly"
         @remove="$emit('remove', $event)"
       />
     </TransitionGroup>
@@ -36,6 +37,7 @@ defineProps<{
   notes: FlashNote[]
   loading?: boolean
   citedIds?: string[]
+  readOnly?: boolean
 }>()
 
 defineEmits<{

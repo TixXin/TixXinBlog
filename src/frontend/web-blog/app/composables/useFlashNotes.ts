@@ -7,11 +7,13 @@
  * 设计原则：
  * - 所有数据操作都委托给 FlashNoteRepository，本文件不直接读写 localStorage
  * - 跨页面通过 useState 共享响应式 notes 列表，切换路由不重新拉取
- * - 未登录时所有写操作触发 useLoginDrawer.open()，引导登录后再继续
+ * - 未登录时回退展示博主（owner）的闪念列表（只读）；登录后切换到当前用户自己的列表
+ * - 写操作仅对登录用户开放，未登录触发 useLoginDrawer.open()
  */
 
 import type { FlashNote, FlashNoteDraft } from '~/features/flash/types'
 import { defaultFlashNoteSeeds } from '~/features/flash/mock'
+import { mockOwnerUser } from '~/features/auth/mock'
 
 export function useFlashNotes() {
   const repo = useFlashRepository()
@@ -22,31 +24,36 @@ export function useFlashNotes() {
   const loaded = useState<boolean>('flash-notes-loaded', () => false)
   const loading = useState<boolean>('flash-notes-loading', () => false)
   const error = useState<string | null>('flash-notes-error', () => null)
+  /** 当前展示的所有者：owner（未登录回退）或 self（登录后看自己的） */
+  const viewingScope = useState<'self' | 'owner'>('flash-notes-scope', () => 'owner')
+
+  /** 是否处于只读模式：未登录时只能浏览博主的闪念 */
+  const isReadOnly = computed(() => !isLoggedIn.value)
 
   /**
-   * 加载当前用户的笔记列表。首次加载（用户列表为空）时自动注入 seed 示例。
-   * SSR 安全：方法在 onMounted 后调用，typeof window 必然存在。
+   * 加载笔记列表。
+   * - 已登录：加载当前用户自己的列表，首次为空时注入 seed
+   * - 未登录：回退展示博主（mockOwnerUser）的闪念列表，同样支持 seed
    */
   async function load(force = false) {
-    if (!isLoggedIn.value || !currentUser.value) {
-      notes.value = []
-      loaded.value = true
-      return
-    }
-    if (loaded.value && !force) return
+    const targetUserId = isLoggedIn.value && currentUser.value ? currentUser.value.id : mockOwnerUser.id
+    const nextScope: 'self' | 'owner' = isLoggedIn.value ? 'self' : 'owner'
+
+    // 切换到不同 scope 时强制重载，避免显示上一身份的笔记
+    if (loaded.value && !force && viewingScope.value === nextScope) return
+
     loading.value = true
     error.value = null
     try {
-      const userId = currentUser.value.id
-      let list = await repo.list(userId)
+      let list = await repo.list(targetUserId)
       if (list.length === 0) {
-        // 首次进入：注入 seed 示例笔记，按顺序写入以保留时间倒序合理性
         for (const draft of defaultFlashNoteSeeds) {
-          await repo.create(userId, draft)
+          await repo.create(targetUserId, draft)
         }
-        list = await repo.list(userId)
+        list = await repo.list(targetUserId)
       }
       notes.value = list
+      viewingScope.value = nextScope
       loaded.value = true
     } catch (e) {
       error.value = e instanceof Error ? e.message : String(e)
@@ -88,10 +95,10 @@ export function useFlashNotes() {
     return true
   }
 
-  /** 关键词搜索（不修改主列表，仅返回匹配项） */
+  /** 关键词搜索（基于当前展示的列表所属用户） */
   async function search(query: string): Promise<FlashNote[]> {
-    if (!isLoggedIn.value || !currentUser.value) return []
-    return repo.search(currentUser.value.id, query)
+    const targetUserId = isLoggedIn.value && currentUser.value ? currentUser.value.id : mockOwnerUser.id
+    return repo.search(targetUserId, query)
   }
 
   /** 标签聚合：按出现次数倒序 */
@@ -119,6 +126,8 @@ export function useFlashNotes() {
     loaded,
     loading,
     error,
+    viewingScope,
+    isReadOnly,
     tagCloud,
     monthlyCount,
     load,
