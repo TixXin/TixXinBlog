@@ -48,6 +48,38 @@
         >
           <Icon name="lucide:wrench" size="14" />
           <h2 class="dev-debug-drawer__title">DEV 调试面板</h2>
+          <!-- 面板独立缩放：紧凑 +/- + 当前百分比（点击复位） -->
+          <div class="dev-debug-zoom-picker" role="group" aria-label="调整面板缩放">
+            <button
+              type="button"
+              class="dev-debug-zoom-btn"
+              title="缩小"
+              aria-label="缩小"
+              :disabled="fontScale <= FONT_SCALE_MIN + 0.001"
+              @click="decreaseFontScale"
+            >
+              <Icon name="lucide:minus" size="12" />
+            </button>
+            <button
+              type="button"
+              class="dev-debug-zoom-value"
+              title="复位为 100%"
+              aria-label="复位为 100%"
+              @click="resetFontScale"
+            >
+              {{ Math.round(fontScale * 100) }}%
+            </button>
+            <button
+              type="button"
+              class="dev-debug-zoom-btn"
+              title="放大"
+              aria-label="放大"
+              :disabled="fontScale >= FONT_SCALE_MAX - 0.001"
+              @click="increaseFontScale"
+            >
+              <Icon name="lucide:plus" size="12" />
+            </button>
+          </div>
           <!-- 停靠位置切换：5 个图标按钮 -->
           <div class="dev-debug-dock-picker" role="group" aria-label="切换停靠位置">
             <button
@@ -302,6 +334,7 @@
 <script setup lang="ts">
 import { mockOwnerUser, mockVisitorUser } from '~/features/auth/mock'
 import type { DevDebugTab, DevDebugDockPosition } from '~/composables/useDevDebugPanel'
+import { FONT_SCALE_MIN, FONT_SCALE_MAX } from '~/composables/useDevDebugPanel'
 
 const {
   isOpen,
@@ -309,10 +342,14 @@ const {
   fabPosition,
   position,
   centerRect,
+  fontScale,
   setActiveTab,
   setFabPosition,
   setPosition,
   setCenterRect,
+  increaseFontScale,
+  decreaseFontScale,
+  resetFontScale,
   reclampFabPosition,
   reclampCenterRect,
   toggle,
@@ -354,16 +391,21 @@ const transitionName = computed(() => {
   }
 })
 
-/** 居中模式才走内联 style（位置+尺寸），其它模式由 CSS class 控制 */
+/**
+ * 抽屉 inline style：始终注入 zoom（独立缩放系数），居中态额外注入 top/left/width/height
+ * 用 CSS zoom 而非 transform: scale —— zoom 真实改变 layout box，子元素的 fixed 计算与
+ * pointer 命中区都自动跟随，避免左右贴边模式与视觉错位
+ */
 const drawerStyle = computed(() => {
-  if (position.value !== 'center') return undefined
-  const r = centerRect.value
-  return {
-    top: `${r.y}px`,
-    left: `${r.x}px`,
-    width: `${r.w}px`,
-    height: `${r.h}px`,
+  const base: Record<string, string> = { zoom: String(fontScale.value) }
+  if (position.value === 'center') {
+    const r = centerRect.value
+    base.top = `${r.y}px`
+    base.left = `${r.x}px`
+    base.width = `${r.w}px`
+    base.height = `${r.h}px`
   }
+  return base
 })
 
 // ---- FAB 位置 + 拖拽 ----
@@ -414,8 +456,9 @@ function onFabClick() {
   toggle()
 }
 
-// ---- 居中模式：header 拖拽 + ResizeObserver ----
-let headerDragOffset = { x: 0, y: 0 }
+// ---- 居中模式：header 拖拽 ----
+// 用 down 时刻的快照 + delta 而非 offset：缩放后屏幕 delta 要除以 zoom 才是逻辑 delta
+let headerDragStart = { clientX: 0, clientY: 0, x: 0, y: 0 }
 
 function onHeaderPointerDown(e: PointerEvent) {
   if (position.value !== 'center') return
@@ -424,19 +467,22 @@ function onHeaderPointerDown(e: PointerEvent) {
   if (target.closest('button')) return
   if (e.button !== 0) return
   ;(e.currentTarget as HTMLElement).setPointerCapture?.(e.pointerId)
-  headerDragOffset = {
-    x: e.clientX - centerRect.value.x,
-    y: e.clientY - centerRect.value.y,
+  headerDragStart = {
+    clientX: e.clientX,
+    clientY: e.clientY,
+    x: centerRect.value.x,
+    y: centerRect.value.y,
   }
   window.addEventListener('pointermove', onHeaderPointerMove)
   window.addEventListener('pointerup', onHeaderPointerUp, { once: true })
 }
 
 function onHeaderPointerMove(e: PointerEvent) {
+  const scale = fontScale.value || 1
   centerRect.value = {
     ...centerRect.value,
-    x: e.clientX - headerDragOffset.x,
-    y: e.clientY - headerDragOffset.y,
+    x: headerDragStart.x + (e.clientX - headerDragStart.clientX) / scale,
+    y: headerDragStart.y + (e.clientY - headerDragStart.clientY) / scale,
   }
 }
 
@@ -469,8 +515,10 @@ function onResizePointerDown(e: PointerEvent) {
 
 function onResizePointerMove(e: PointerEvent) {
   // 拖动时即时 clamp 最小值，避免视觉上缩到 0 后 pointerup 才回弹
-  const nextW = Math.max(360, resizeStart.w + (e.clientX - resizeStart.x))
-  const nextH = Math.max(320, resizeStart.h + (e.clientY - resizeStart.y))
+  // 缩放后屏幕 delta 要除以 zoom 才是逻辑 delta，让 1:1 视觉拖拽手感不变
+  const scale = fontScale.value || 1
+  const nextW = Math.max(360, resizeStart.w + (e.clientX - resizeStart.x) / scale)
+  const nextH = Math.max(320, resizeStart.h + (e.clientY - resizeStart.y) / scale)
   centerRect.value = { ...centerRect.value, w: nextW, h: nextH }
 }
 
@@ -759,6 +807,67 @@ onBeforeUnmount(() => {
     &:active {
       cursor: grabbing;
     }
+  }
+}
+
+/* ==================== 面板独立缩放 ==================== */
+.dev-debug-zoom-picker {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.125rem;
+  padding: 0.125rem;
+  border: 1px solid var(--border-soft);
+  border-radius: $radius-sm;
+  background: var(--surface-2);
+  margin-right: 0.25rem;
+}
+
+.dev-debug-zoom-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.375rem;
+  height: 1.375rem;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: var(--text-soft);
+  border-radius: $radius-sm;
+  cursor: pointer;
+  transition:
+    background 0.18s ease,
+    color 0.18s ease;
+
+  &:hover:not(:disabled) {
+    color: var(--text-main);
+    background: var(--surface-3);
+  }
+
+  &:disabled {
+    opacity: 0.35;
+    cursor: not-allowed;
+  }
+}
+
+.dev-debug-zoom-value {
+  min-width: 2.4rem;
+  height: 1.375rem;
+  padding: 0 0.25rem;
+  border: none;
+  background: transparent;
+  color: var(--text-main);
+  font-size: 0.625rem;
+  font-weight: 700;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  border-radius: $radius-sm;
+  cursor: pointer;
+  transition:
+    background 0.18s ease,
+    color 0.18s ease;
+
+  &:hover {
+    background: var(--surface-3);
+    color: var(--accent);
   }
 }
 

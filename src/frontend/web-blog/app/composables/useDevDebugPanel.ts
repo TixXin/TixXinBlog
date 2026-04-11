@@ -27,12 +27,19 @@ const FAB_POS_KEY = 'dev-debug:fab-pos'
 const TAB_KEY = 'dev-debug:active-tab'
 const POSITION_KEY = 'dev-debug:position'
 const CENTER_RECT_KEY = 'dev-debug:center-rect'
+const FONT_SCALE_KEY = 'dev-debug:font-scale'
 const VALID_TABS: DevDebugTab[] = ['viewport', 'route', 'auth', 'env']
 const VALID_POSITIONS: DevDebugDockPosition[] = ['left', 'right', 'top', 'bottom', 'center']
 
 /** 居中浮窗最小尺寸，避免被拖到不可用 */
 export const CENTER_MIN = { w: 360, h: 320 }
 export const CENTER_DEFAULT = { w: 520, h: 560 }
+
+/** 面板独立缩放（CSS zoom）的范围与步长，仅作用于 dev 调试面板自身 */
+export const FONT_SCALE_MIN = 0.7
+export const FONT_SCALE_MAX = 1.5
+export const FONT_SCALE_STEP = 0.1
+export const FONT_SCALE_DEFAULT = 1
 
 /** FAB 视觉尺寸（用于把位置 clamp 在视口内，避免拖出屏幕） */
 const FAB_SIZE = { w: 64, h: 28 }
@@ -137,6 +144,18 @@ export function useDevDebugPanel() {
     ),
   )
 
+  // 面板独立缩放：CSS zoom 系数，0.7~1.5，0.1 步长；持久化
+  const fontScale = useState<number>('dev-debug:font-scale', () =>
+    readStorage<number>(
+      FONT_SCALE_KEY,
+      (raw) => {
+        const n = Number.parseFloat(raw)
+        return Number.isFinite(n) ? n : null
+      },
+      FONT_SCALE_DEFAULT,
+    ),
+  )
+
   function setActiveTab(tab: DevDebugTab) {
     activeTab.value = tab
     writeStorage(TAB_KEY, tab)
@@ -175,6 +194,30 @@ export function useDevDebugPanel() {
     const clamped = clampToViewport(pos)
     fabPosition.value = clamped
     writeStorage(FAB_POS_KEY, JSON.stringify(clamped))
+  }
+
+  /** clamp 缩放系数到 [MIN, MAX] 并对齐到 0.05 步长，避免浮点累积出现 1.0000000004 */
+  function clampFontScale(v: number): number {
+    const stepped = Math.round(v / 0.05) * 0.05
+    return Math.min(FONT_SCALE_MAX, Math.max(FONT_SCALE_MIN, Number(stepped.toFixed(2))))
+  }
+
+  function setFontScale(next: number) {
+    const v = clampFontScale(next)
+    fontScale.value = v
+    writeStorage(FONT_SCALE_KEY, String(v))
+  }
+
+  function increaseFontScale() {
+    setFontScale(fontScale.value + FONT_SCALE_STEP)
+  }
+
+  function decreaseFontScale() {
+    setFontScale(fontScale.value - FONT_SCALE_STEP)
+  }
+
+  function resetFontScale() {
+    setFontScale(FONT_SCALE_DEFAULT)
   }
 
   /** resize 时重新 clamp，避免视口缩小后 FAB 跑出屏幕 */
@@ -217,10 +260,15 @@ export function useDevDebugPanel() {
     fabPosition,
     position,
     centerRect,
+    fontScale,
     setActiveTab,
     setFabPosition,
     setPosition,
     setCenterRect,
+    setFontScale,
+    increaseFontScale,
+    decreaseFontScale,
+    resetFontScale,
     reclampFabPosition,
     reclampCenterRect,
     open,
