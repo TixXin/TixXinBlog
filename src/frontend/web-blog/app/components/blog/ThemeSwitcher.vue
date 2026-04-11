@@ -66,5 +66,14 @@ function onThemeSwitcherClick(e: MouseEvent) {
   &:active {
     transform: scale(0.92);
   }
+
+  // 图标 hover 旋转动效（与齿轮按钮的 rotate(45deg) 形成各自不同的微动效）
+  :deep(svg) {
+    transition: transform 0.45s cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+
+  &:hover :deep(svg) {
+    transform: rotate(-180deg);
+  }
 }
 </style>
