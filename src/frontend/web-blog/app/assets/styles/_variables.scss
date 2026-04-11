@@ -142,10 +142,10 @@
 
   /* --- 表面/卡片层级 ---
        实色用于不需要透明度的场景；
-        */
+       -alpha 用于轻度玻璃态（封面叠层等），-alpha-90 用于顶栏/底栏等需要明显遮盖的玻璃态 */
   --surface-1: #2a2f37;
   --surface-1-alpha: rgba(42, 47, 55, 0.3);
-  --surface-1-alpha-90: rgba(42, 47, 55, 0.3);
+  --surface-1-alpha-90: rgba(42, 47, 55, 0.9);
   --surface-cover-overlay: rgba(42, 47, 55, 0.36);
   /* 暗色 VT：提高 alpha，接近「深色磨砂 + blur」压在封面上的遮盖感 */
   --surface-cover-overlay-vt: rgba(38, 43, 52, 0.82);
