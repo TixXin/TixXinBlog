@@ -7,7 +7,12 @@
 
 <template>
   <Transition name="loading-screen">
-    <div v-if="visible" class="loading-screen" aria-hidden="true">
+    <div
+      v-if="visible"
+      class="loading-screen"
+      :class="{ 'loading-screen--force': forceVisible }"
+      aria-hidden="true"
+    >
       <div class="loading-screen__content">
         <!-- 品牌名：Tix 用主文字色，Xin 用强调色 -->
         <h1 class="loading-screen__brand">
@@ -29,6 +34,8 @@
 <script setup lang="ts">
 defineProps<{
   visible: boolean
+  // 强制显示：绕过 html.visited CSS 屏蔽，用于主题切换等首屏之外的场景
+  forceVisible?: boolean
 }>()
 </script>
 
@@ -48,9 +55,10 @@ defineProps<{
   overflow: hidden;
 }
 
-// 非首次访问（内联脚本在 hydration 前设置）：直接隐藏，消除闪烁
+// 非首次访问（内联脚本在 hydration 前设置）：直接隐藏首屏 loading，消除闪烁
 // 注意：scoped 下 html.visited .loading-screen 仍会被正确转换为带 data-v-xxx 后缀的选择器
-html.visited .loading-screen {
+// 带 --force 修饰的实例（主题切换 loading）不受此屏蔽，仍可正常显示
+html.visited .loading-screen:not(.loading-screen--force) {
   display: none !important;
 }
 
