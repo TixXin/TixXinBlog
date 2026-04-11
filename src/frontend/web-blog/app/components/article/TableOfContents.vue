@@ -25,6 +25,7 @@
           'toc__link--sub': item.level > 2,
         }"
         :style="{ paddingLeft: `${0.75 + (item.level - 2) * 0.75}rem` }"
+        @click="handleClick($event, item.id)"
       >
         <span class="toc__dot" :class="{ 'toc__dot--sub': item.level > 2 }" />
         {{ item.text }}
@@ -41,6 +42,31 @@ defineProps<{
   activeId: string
   progress?: number
 }>()
+
+/**
+ * 拦截目录链接的默认跳转行为：
+ * - 默认 <a href="#id"> 会让浏览器把每次点击都推入 history，导致文章详情顶栏的"返回上一页"
+ *   一直在锚点之间回退，无法真正回到上一个页面（这是一个真实 bug）。
+ * - 这里改为：手动 scrollIntoView 滚动到目标，并用 history.replaceState 替换当前 hash，
+ *   保证 history 长度不变，外观（地址栏 hash 同步）和右键复制链接行为都保留。
+ * - 仅响应纯左键点击；带修饰键 / 中键的点击保留浏览器默认（新标签页等）。
+ */
+function handleClick(event: MouseEvent, id: string) {
+  if (event.defaultPrevented) return
+  if (event.button !== 0) return
+  if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return
+
+  event.preventDefault()
+  const target = document.getElementById(id)
+  if (target) {
+    target.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  }
+  // 复用 history.state，避免破坏 Vue Router 的内部状态记录
+  if (typeof history !== 'undefined') {
+    const nextUrl = location.pathname + location.search + '#' + id
+    history.replaceState(history.state, '', nextUrl)
+  }
+}
 </script>
 
 <style lang="scss" scoped>
