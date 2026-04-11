@@ -12,6 +12,8 @@ export const mockNavItems: NavItem[] = [
   { icon: 'lucide:archive', label: '归档', to: '/archive' },
   { icon: 'lucide:layers', label: '项目', to: '/projects' },
   { icon: 'lucide:image', label: '画廊', to: '/gallery' },
+  { icon: 'lucide:zap', label: '闪念', to: '/flash' },
+  { icon: 'lucide:layout-grid', label: '标签页', to: '/tabs' },
   { icon: 'lucide:link', label: '友链', to: '/links', desktopOnly: true },
   { icon: 'lucide:message-circle', label: '留言', to: '/guestbook' },
   { icon: 'lucide:user', label: '关于', to: '/about' },
