@@ -19,6 +19,8 @@ const STORAGE_KEY = 'tixxin-blog-visited'
  */
 export function useAppLoading() {
   const isLoading = useState('app-loading', () => true)
+  // 主题切换 loading：独立于首屏 loading，布局主题切换期间全屏覆盖
+  const isThemeSwitchLoading = useState('app-theme-switch-loading', () => false)
 
   // 开发环境：清除旧的 visited 标记，确保每次刷新都能看到 loading
   if (import.meta.client && import.meta.dev) {
@@ -55,9 +57,22 @@ export function useAppLoading() {
     }
   }
 
+  /** 开始主题切换 loading（覆盖层显示） */
+  function startThemeSwitchLoading() {
+    isThemeSwitchLoading.value = true
+  }
+
+  /** 结束主题切换 loading（覆盖层淡出） */
+  function endThemeSwitchLoading() {
+    isThemeSwitchLoading.value = false
+  }
+
   return {
     isLoading,
+    isThemeSwitchLoading,
     checkFirstVisit,
     dismiss,
+    startThemeSwitchLoading,
+    endThemeSwitchLoading,
   }
 }

@@ -99,13 +99,23 @@ export function useLayoutTheme() {
       return
     }
 
+    // 复用首屏品牌 loading：切换期间全屏覆盖，最小展示 800ms 避免一闪而过
+    const { startThemeSwitchLoading, endThemeSwitchLoading } = useAppLoading()
+    startThemeSwitchLoading()
+    const minDisplay = new Promise<void>((resolve) => setTimeout(resolve, 800))
+
     switchingState.value = 'loading'
     try {
       await preloadThemeRuntime(themeId)
       setTheme(themeId)
+      // 等新主题组件挂载到 DOM，再补齐最小展示时长，最后卸下 loading
+      await nextTick()
+      await minDisplay
       switchingState.value = 'idle'
     } catch {
       switchingState.value = 'error'
+    } finally {
+      endThemeSwitchLoading()
     }
   }
 
