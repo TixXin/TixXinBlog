@@ -9,49 +9,34 @@
   <div class="main-inner articles-page">
     <!-- 头部区域 -->
     <div class="main-content__header">
-      <Transition name="tab-fade" mode="out-in">
-        <!-- 归档模式：标题 -->
-        <div v-if="activeTab === 'all' && viewMode === 'archive'" key="archive-title" class="articles-title">
-          <h2 class="articles-title__heading">
-            <Icon name="lucide:archive" size="18" class="articles-title__icon" />
-            文章归档
-          </h2>
-          <p class="articles-title__sub">共 {{ posts.length }} 篇文章，持续记录中...</p>
-        </div>
+      <!-- Tab 栏：全部文章与朋友圈共用 -->
+      <div class="articles-tabs no-scrollbar" role="tablist">
+        <button
+          v-for="tab in tabs"
+          :key="tab.value"
+          role="tab"
+          :aria-selected="activeTab === tab.value"
+          class="tab-btn"
+          :class="{ 'tab-active': activeTab === tab.value }"
+          @click="switchTab(tab.value)"
+        >
+          {{ tab.label }}
+        </button>
 
-        <!-- Tab 栏：全部文章与朋友圈共用，切换时不触发过渡 -->
-        <div v-else key="tabs" class="articles-tabs no-scrollbar" role="tablist">
-          <button
-            v-for="tab in tabs"
-            :key="tab.value"
-            role="tab"
-            :aria-selected="activeTab === tab.value"
-            class="tab-btn"
-            :class="{ 'tab-active': activeTab === tab.value }"
-            @click="switchTab(tab.value)"
-          >
-            {{ tab.label }}
-          </button>
+        <!-- 当前过滤条件标签 -->
+        <Transition name="filter-fade">
+          <span v-if="activeFilterLabel && activeTab === 'all'" class="filter-badge" @click="clearFilters">
+            <Icon name="lucide:filter" size="12" />
+            {{ activeFilterLabel }}
+            <Icon name="lucide:x" size="12" class="filter-badge__close" />
+          </span>
+        </Transition>
+      </div>
 
-          <!-- 当前过滤条件标签 -->
-          <Transition name="filter-fade">
-            <span v-if="activeFilterLabel && activeTab === 'all'" class="filter-badge" @click="clearFilters">
-              <Icon name="lucide:filter" size="12" />
-              {{ activeFilterLabel }}
-              <Icon name="lucide:x" size="12" class="filter-badge__close" />
-            </span>
-          </Transition>
-        </div>
-      </Transition>
-
-      <!-- 右侧操作区：仅在文章相关视图显示 -->
+      <!-- 右侧操作区：仅在文章列表视图显示 -->
       <div v-if="activeTab === 'all'" class="articles-actions">
-        <CommonSearchBox
-          :placeholder="viewMode === 'list' ? '搜索站内文章、标签...' : '搜索文章标题、内容...'"
-          readonly
-          @click="openSearch"
-        />
-        <div v-if="viewMode === 'list'" class="display-mode-toggle">
+        <CommonSearchBox placeholder="搜索站内文章、标签..." readonly @click="openSearch" />
+        <div class="display-mode-toggle">
           <CommonTooltip content="瀑布流">
             <button
               class="display-mode-toggle__btn"
@@ -71,33 +56,13 @@
             </button>
           </CommonTooltip>
         </div>
-        <div class="view-toggle">
-          <CommonTooltip content="列表视图">
-            <button
-              class="view-toggle__btn"
-              :class="{ 'view-toggle__btn--active': viewMode === 'list' }"
-              @click="viewMode = 'list'"
-            >
-              <Icon name="lucide:layout-list" size="15" />
-            </button>
-          </CommonTooltip>
-          <CommonTooltip content="归档视图">
-            <button
-              class="view-toggle__btn"
-              :class="{ 'view-toggle__btn--active': viewMode === 'archive' }"
-              @click="viewMode = 'archive'"
-            >
-              <Icon name="lucide:calendar-clock" size="15" />
-            </button>
-          </CommonTooltip>
-        </div>
       </div>
     </div>
 
     <Transition name="tab-fade" mode="out-in">
-      <!-- 列表模式：文章卡片列表 -->
+      <!-- 文章列表 -->
       <BlogPostCardList
-        v-if="activeTab === 'all' && viewMode === 'list'"
+        v-if="activeTab === 'all'"
         key="list"
         :posts="posts"
         active-tab="all"
@@ -105,18 +70,6 @@
         :selected-tag="selectedTag"
         :selected-category="selectedCategory"
       />
-
-      <!-- 归档模式：时间线 -->
-      <CommonCustomScrollbar
-        v-else-if="activeTab === 'all' && viewMode === 'archive'"
-        key="archive"
-        class="articles-body"
-        viewport-class="articles-viewport"
-        :show-back-to-top="false"
-        primary
-      >
-        <ArticleArchiveTimeline :years="archiveYears" />
-      </CommonCustomScrollbar>
 
       <!-- 朋友圈 -->
       <CommonCustomScrollbar
@@ -138,7 +91,7 @@
         <SidebarRightSidebar>
           <Transition :name="rightSidebarTransition" mode="out-in">
             <!-- 文章列表侧栏 -->
-            <div v-if="activeTab === 'all' && viewMode === 'list'" key="sidebar-list" class="sidebar-list-group">
+            <div v-if="activeTab === 'all'" key="sidebar-list" class="sidebar-list-group">
               <SidebarTagCloudCard :tags="tags" :active-tag="selectedTag" @select="onTagSelect" />
               <SidebarCategoryCard
                 :categories="categories"
@@ -147,14 +100,6 @@
               />
               <BlogSubscribeCard />
             </div>
-
-            <!-- 归档侧栏 -->
-            <ArticleArchiveStats
-              v-else-if="activeTab === 'all' && viewMode === 'archive'"
-              key="sidebar-archive"
-              :stats="archiveStats"
-              :distribution="categoryDistribution"
-            />
 
             <!-- 朋友圈侧栏（AuthorCard + 日历已移至左侧栏） -->
             <div v-else-if="activeTab === 'moments'" key="sidebar-moments" class="sidebar-list-group">
@@ -172,7 +117,6 @@
 <script setup lang="ts">
 import { mockPosts, mockPostTabs } from '~/features/post/mock'
 import { mockTags, mockCategories } from '~/features/stats/mock'
-import { mockArchiveStats, mockArchiveYears, mockCategoryDistribution } from '~/features/article/mock'
 import { mockMoments } from '~/features/moment/mock'
 import type { MomentTopic } from '~/components/sidebar/MomentTopicCard.vue'
 import type { MomentPhotoItem } from '~/components/sidebar/MomentPhotoWallCard.vue'
@@ -204,7 +148,6 @@ function openSearch() {
 // ---- 视图状态 ----
 const { homeActiveTab } = useHomeTab()
 const activeTab = homeActiveTab
-const viewMode = ref<'list' | 'archive'>('list')
 const listDisplayMode = ref<'waterfall' | 'pagination'>('pagination')
 
 // 首屏根据 URL hash 恢复 Tab，便于分享 /#moments 链接
@@ -220,9 +163,6 @@ const tabs = mockPostTabs
 const posts = mockPosts
 const tags = mockTags
 const categories = mockCategories
-const archiveYears = mockArchiveYears
-const archiveStats = mockArchiveStats
-const categoryDistribution = mockCategoryDistribution
 
 // ---- 标签/分类过滤 ----
 const selectedTag = ref<string | null>(null)
@@ -264,7 +204,6 @@ function switchTab(value: string) {
   activeTab.value = value
   if (value === 'moments') {
     clearFilters()
-    viewMode.value = 'list'
   } else {
     selectedDate.value = null
   }
@@ -367,26 +306,6 @@ const momentTopics = computed<MomentTopic[]>(() =>
   }
 }
 
-/* 归档标题 */
-.articles-title__heading {
-  font-size: 1.25rem;
-  font-weight: 700;
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  margin: 0;
-}
-
-.articles-title__icon {
-  color: var(--text-soft);
-}
-
-.articles-title__sub {
-  font-size: 0.875rem;
-  color: var(--text-soft);
-  margin-top: 0.25rem;
-}
-
 /* 右侧操作区 */
 .articles-actions {
   display: flex;
@@ -402,8 +321,7 @@ const momentTopics = computed<MomentTopic[]>(() =>
   }
 }
 
-/* 按钮组通用基础样式 */
-.view-toggle,
+/* 显示模式切换按钮组（瀑布流 / 分页） */
 .display-mode-toggle {
   display: flex;
   border: 1px solid var(--border);
@@ -412,7 +330,6 @@ const momentTopics = computed<MomentTopic[]>(() =>
   flex-shrink: 0;
 }
 
-.view-toggle__btn,
 .display-mode-toggle__btn {
   display: flex;
   align-items: center;
@@ -437,16 +354,6 @@ const momentTopics = computed<MomentTopic[]>(() =>
   & + & {
     border-left: 1px solid var(--border);
   }
-}
-
-/* 归档模式内容区 */
-.articles-body {
-  flex: 1;
-  padding: 0;
-}
-
-:deep(.articles-viewport) {
-  padding: 1.5rem 2rem 2rem;
 }
 
 /* 侧栏列表组容器，与 RightSidebar 的 gap 保持一致 */
