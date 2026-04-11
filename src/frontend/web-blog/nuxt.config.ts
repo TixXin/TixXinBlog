@@ -93,17 +93,19 @@ export default {
       fallbacks: ['system-ui', 'sans-serif'],
     },
   },
-  routeRules:
-    process.env.NODE_ENV === 'production'
+  routeRules: {
+    // /articles 独立列表已与首页 / 合并，统一重定向到首页
+    '/articles': { redirect: '/' },
+    ...(process.env.NODE_ENV === 'production'
       ? {
           '/': { prerender: true },
           '/about': { prerender: true },
           '/links': { prerender: true },
           '/projects': { prerender: true },
-          '/articles': { isr: 3600 },
           '/articles/**': { isr: 3600 },
         }
-      : {},
+      : {}),
+  },
   nitro: {
     compressPublicAssets: true,
     routeRules: {
