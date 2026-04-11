@@ -6,7 +6,13 @@
 -->
 
 <template>
-  <button type="button" class="theme-switcher" :aria-label="`切换主题（当前：${label}）`" @click="cycleTheme">
+  <button
+    type="button"
+    class="theme-switcher"
+    :aria-label="`切换主题（当前：${label}）`"
+    @pointerdown="onThemeSwitcherPointerDown"
+    @click="onThemeSwitcherClick"
+  >
     <ClientOnly>
       <Icon :name="icon" size="18" />
       <template #fallback>
@@ -25,8 +31,19 @@ const icon = computed(() => (currentPreference.value === 'dark' ? 'lucide:moon' 
 
 const label = computed(() => COLOR_MODE_LABELS[currentPreference.value])
 
-function cycleTheme() {
-  setTheme(currentPreference.value === 'dark' ? 'light' : 'dark')
+/** 若 pointerdown 已切换主题，短时间内忽略紧随其后的 click，避免二次反转 */
+let suppressSwitcherClickUntil = 0
+
+function onThemeSwitcherPointerDown(e: PointerEvent) {
+  if (e.button !== 0) return
+  e.preventDefault()
+  suppressSwitcherClickUntil = Date.now() + 400
+  setTheme(currentPreference.value === 'dark' ? 'light' : 'dark', e)
+}
+
+function onThemeSwitcherClick(e: MouseEvent) {
+  if (Date.now() < suppressSwitcherClickUntil) return
+  setTheme(currentPreference.value === 'dark' ? 'light' : 'dark', e)
 }
 </script>
 
