@@ -38,11 +38,13 @@
   --border-soft: rgba(226, 232, 240, 0.9);
   --border-hover: #cbd5e1;
 
-  /* --- 文字 --- */
+  /* --- 文字 ---
+     浅色主题文字层级：四档等差（L* ≈ 20/37/49/58），
+     保证 muted/soft 过 WCAG AA 正文对比度，faint 过 3:1 UI 下限 */
   --text-main: #1e293b;
-  --text-muted: #64748b;
-  --text-soft: #94a3b8;
-  --text-faint: #cbd5e1;
+  --text-muted: #475569;
+  --text-soft: #64748b;
+  --text-faint: #7b8795;
 
   /* --- 强调色 --- */
   --accent: #334155;
@@ -62,7 +64,7 @@
   --scrollbar-thumb-hover: rgba(148, 163, 184, 0.8);
 
   /* --- 焦点环 --- */
-  --focus-ring: #94a3b8;
+  --focus-ring: #7b8795;
 
   /* --- 文章列表置顶徽标 --- */
   --pin-badge-bg: rgba(239, 68, 68, 0.1);
