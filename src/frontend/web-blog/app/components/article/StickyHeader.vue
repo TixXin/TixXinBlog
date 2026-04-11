@@ -8,10 +8,10 @@
 <template>
   <header class="article-sticky-header">
     <div class="article-sticky-header__inner">
-      <NuxtLink to="/articles" class="article-sticky-header__back">
+      <button type="button" class="article-sticky-header__back" @click="handleBack">
         <Icon name="lucide:arrow-left" size="12" />
-        <span>返回文章</span>
-      </NuxtLink>
+        <span>返回上一页</span>
+      </button>
       <h1 class="article-sticky-header__title">{{ title }}</h1>
       <div class="article-sticky-header__meta">
         <span class="article-sticky-header__meta-item">
@@ -38,6 +38,17 @@ defineProps<{
   date: string
   readTime: string
 }>()
+
+const router = useRouter()
+
+// 返回上一页：若存在 SPA history 则返回上一条，否则 fallback 到首页
+function handleBack() {
+  if (typeof window !== 'undefined' && window.history.state?.back) {
+    router.back()
+  } else {
+    router.push('/')
+  }
+}
 </script>
 
 <style lang="scss" scoped>
@@ -60,8 +71,12 @@ defineProps<{
   display: inline-flex;
   align-items: center;
   gap: 0.375rem;
+  padding: 0;
   font-size: 0.75rem;
   color: var(--text-soft);
+  background: none;
+  border: none;
+  cursor: pointer;
   margin-bottom: 0.375rem;
   transition: $transition-fast;
 

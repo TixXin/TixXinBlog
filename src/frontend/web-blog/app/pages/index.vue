@@ -207,6 +207,14 @@ const activeTab = homeActiveTab
 const viewMode = ref<'list' | 'archive'>('list')
 const listDisplayMode = ref<'waterfall' | 'pagination'>('pagination')
 
+// 首屏根据 URL hash 恢复 Tab，便于分享 /#moments 链接
+// 注意：hash 不会发送到服务端，所以必须在 onMounted（hydration 之后）执行，避免 hydration mismatch
+onMounted(() => {
+  if (location.hash === '#moments' && activeTab.value !== 'moments') {
+    switchTab('moments')
+  }
+})
+
 // ---- 文章数据 ----
 const tabs = mockPostTabs
 const posts = mockPosts
@@ -259,6 +267,12 @@ function switchTab(value: string) {
     viewMode.value = 'list'
   } else {
     selectedDate.value = null
+  }
+  // 同步 URL hash：朋友圈写入 #moments，其它清空，便于分享与刷新保持
+  if (import.meta.client) {
+    const nextHash = value === 'moments' ? '#moments' : ''
+    const nextUrl = location.pathname + location.search + nextHash
+    history.replaceState(history.state, '', nextUrl)
   }
 }
 
