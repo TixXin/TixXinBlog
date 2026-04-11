@@ -22,7 +22,11 @@ export function useSidebarExitAnimation(
   const { sidebarAnimationPreset } = useAppearanceSettings()
 
   onMounted(() => {
-    const removeGuard = router.beforeEach(() => {
+    const removeGuard = router.beforeEach((to, from) => {
+      // 同路径导航（仅 hash/query 变化，例如点击文章目录锚点）不触发退出动画：
+      // 页面组件不会重新挂载，若仍执行守卫会把源元素隐藏后无法恢复，导致右侧栏整体消失。
+      if (to.path === from.path) return
+
       const aside = document.querySelector(containerSelector) as HTMLElement | null
       const target = document.getElementById(targetId)
       const source = target?.firstElementChild as HTMLElement | null

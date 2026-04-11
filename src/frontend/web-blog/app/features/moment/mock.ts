@@ -6,6 +6,7 @@
  */
 
 import type { MomentItem, MomentUserProfile } from './types'
+import type { MomentAuthorStats } from '~/components/sidebar/MomentAuthorCard.vue'
 
 /** 生成 mock 评论者头像 — 使用 UI Avatars 服务按名字生成 */
 function mockAvatar(name: string, bg: string): string {
@@ -74,7 +75,7 @@ export const mockMoments: MomentItem[] = [
       title: '从零搭建博客主题引擎：基于 Slot Contract 的可插拔架构',
       summary: '本文介绍如何设计一套灵活的主题引擎，通过 slot contract 模式实现主题的热切换和懒加载。',
       cover: 'https://images.unsplash.com/photo-1461749280684-dccba630e2f6?w=600&q=80',
-      url: '/posts/theme-engine-design',
+      url: '/articles/1',
     },
     comments: [
       {
@@ -171,7 +172,7 @@ export const mockMoments: MomentItem[] = [
       title: 'Vue 3 Transition 实战：打造丝滑的微交互动画',
       summary: '详解 CSS animation 与 JS hooks 的组合技巧，从基础过渡到复杂编排动画。',
       cover: 'https://images.unsplash.com/photo-1550439062-609e1531270e?w=600&q=80',
-      url: '/posts/vue3-transition-animations',
+      url: '/articles/2',
     },
   },
   {
@@ -378,3 +379,17 @@ export const mockMoments: MomentItem[] = [
     topics: ['生活日常', '摄影记录'],
   },
 ]
+
+/** 朋友圈博主名片统计数据 */
+export const mockMomentAuthorStats: MomentAuthorStats = {
+  totalMoments: mockMoments.length,
+  totalLikes: mockMoments.reduce((sum, m) => sum + m.likes, 0),
+  totalComments: mockMoments.reduce((sum, m) => sum + (m.comments?.length || 0), 0),
+  currentMood: '今天阳光正好，适合写代码 🌞',
+  moodUpdatedAt: '2小时前',
+  socialLinks: [
+    { icon: 'lucide:github', url: 'https://github.com', label: 'GitHub' },
+    { icon: 'lucide:twitter', url: 'https://twitter.com', label: 'Twitter' },
+    { icon: 'lucide:mail', url: 'mailto:hi@tixxin.com', label: '邮箱' },
+  ],
+}
