@@ -15,9 +15,15 @@
       </button>
     </div>
 
-    <!-- 视图切换区域 -->
-    <div class="auth-panel__body">
-      <Transition :name="transitionName" mode="out-in">
+    <!-- 视图切换区域：height 由 JS 测量后动画过渡，避免视图切换导致卡片跳动 -->
+    <div ref="bodyRef" class="auth-panel__body" :style="{ height: bodyHeight }">
+      <Transition
+        :name="transitionName"
+        mode="out-in"
+        @enter="onViewEnter"
+        @after-enter="onViewAfterEnter"
+        @before-leave="onViewBeforeLeave"
+      >
         <AuthLoginForm v-if="currentView === 'login'" :key="'login'" @switch-view="switchView" />
         <AuthRegisterForm v-else-if="currentView === 'register'" :key="'register'" @switch-view="switchView" />
         <AuthForgotForm v-else :key="'forgot'" @switch-view="switchView" />
@@ -49,6 +55,59 @@ watch(currentView, (newView, oldView) => {
   const newIdx = viewOrder.indexOf(newView)
   const oldIdx = viewOrder.indexOf(oldView)
   transitionName.value = newIdx > oldIdx ? 'auth-slide-left' : 'auth-slide-right'
+})
+
+// ---- 动态高度：测量当前表单并动画过渡，避免切换视图导致卡片跳动 ----
+const bodyRef = ref<HTMLElement | null>(null)
+const bodyHeight = ref<string>('auto')
+let resizeObserver: ResizeObserver | null = null
+
+/** 测量元素实际高度并赋给容器（用于切换 + 动态内容变化如密码强度） */
+function measureTo(el: Element | null | undefined) {
+  if (!el) return
+  bodyHeight.value = `${(el as HTMLElement).offsetHeight}px`
+}
+
+/** 监听当前表单尺寸变化（如密码强度指示器出现/消失） */
+function observeForm(el: Element) {
+  resizeObserver?.disconnect()
+  resizeObserver = new ResizeObserver((entries) => {
+    const h = entries[0]?.contentRect.height
+    if (typeof h === 'number' && h > 0) bodyHeight.value = `${Math.ceil(h)}px`
+  })
+  resizeObserver.observe(el)
+}
+
+/** Transition 进入前：读取目标高度，CSS 过渡容器到新值 */
+function onViewEnter(el: Element) {
+  measureTo(el)
+}
+
+/** 进入完成：挂载 ResizeObserver 跟踪后续内容变化 */
+function onViewAfterEnter(el: Element) {
+  observeForm(el)
+}
+
+/** 离开前：断开旧观察者，避免离场过程中触发 */
+function onViewBeforeLeave() {
+  resizeObserver?.disconnect()
+  resizeObserver = null
+}
+
+onMounted(() => {
+  nextTick(() => {
+    // 首次挂载：测量当前表单并开始观察
+    const form = bodyRef.value?.firstElementChild
+    if (form) {
+      measureTo(form)
+      observeForm(form)
+    }
+  })
+})
+
+onBeforeUnmount(() => {
+  resizeObserver?.disconnect()
+  resizeObserver = null
 })
 </script>
 
@@ -95,6 +154,9 @@ watch(currentView, (newView, oldView) => {
 .auth-panel__body {
   position: relative;
   overflow: hidden;
+  /* height 由 JS 动态测量，transition 保证切换时平滑过渡而非瞬间跳动 */
+  transition: height 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  will-change: height;
 }
 
 /* 视图切换动画：向左滑入 */
