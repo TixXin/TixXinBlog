@@ -206,6 +206,7 @@ let dockTipTimer: ReturnType<typeof setTimeout> | null = null
 
 function onLayoutThemeClick(id: string) {
   if (id === 'dock') {
+    // Dock 尚未开发，保留弹窗显示开发中提示
     dockTipVisible.value = true
     if (dockTipTimer) clearTimeout(dockTipTimer)
     dockTipTimer = setTimeout(() => {
@@ -214,6 +215,8 @@ function onLayoutThemeClick(id: string) {
     return
   }
   setLayoutTheme(id)
+  // 成功触发切换后立即关闭界面设置弹窗，让用户直接看到新布局
+  closeDrawer()
 }
 
 const themeLabels = COLOR_MODE_LABELS

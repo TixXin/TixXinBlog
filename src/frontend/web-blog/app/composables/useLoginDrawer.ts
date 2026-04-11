@@ -11,8 +11,12 @@ export function useLoginDrawer() {
   const isOpen = useState('login-drawer-open', () => false)
   const currentView = useState<AuthView>('login-drawer-view', () => 'login')
 
+  const validViews: AuthView[] = ['login', 'register', 'forgot']
+
   function open(view: AuthView = 'login') {
-    currentView.value = view
+    // 防御：@click="open" 会把 MouseEvent 作为首参传入，
+    // 导致 currentView 被污染，渲染落入 v-else 的找回密码分支
+    currentView.value = validViews.includes(view) ? view : 'login'
     isOpen.value = true
   }
 
