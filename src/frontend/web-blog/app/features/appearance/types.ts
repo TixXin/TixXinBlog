@@ -14,6 +14,9 @@ export type ContentTransitionPreset = (typeof CONTENT_TRANSITION_PRESETS)[number
 export const SIDEBAR_ANIMATION_PRESETS = ['fade-in-up', 'scale', 'fade', 'none'] as const
 export type SidebarAnimationPreset = (typeof SIDEBAR_ANIMATION_PRESETS)[number]
 
+export const COLOR_MODE_TRANSITION_PRESETS = ['fade', 'circle', 'blur', 'none'] as const
+export type ColorModeTransitionPreset = (typeof COLOR_MODE_TRANSITION_PRESETS)[number]
+
 export interface AppearanceOption<T extends string> {
   value: T
   label: string
@@ -23,6 +26,7 @@ export interface AppearanceOption<T extends string> {
 
 export const DEFAULT_CONTENT_TRANSITION_PRESET: ContentTransitionPreset = 'vertical-slide'
 export const DEFAULT_SIDEBAR_ANIMATION_PRESET: SidebarAnimationPreset = 'fade-in-up'
+export const DEFAULT_COLOR_MODE_TRANSITION_PRESET: ColorModeTransitionPreset = 'fade'
 
 export const COLOR_MODE_LABELS: Record<ThemeOption, string> = {
   light: '浅色',
@@ -53,6 +57,33 @@ export const CONTENT_TRANSITION_OPTIONS: AppearanceOption<ContentTransitionPrese
     value: 'none',
     label: '关闭动画',
     description: '内容瞬间切换',
+    icon: 'lucide:slash',
+  },
+]
+
+export const COLOR_MODE_TRANSITION_OPTIONS: AppearanceOption<ColorModeTransitionPreset>[] = [
+  {
+    value: 'fade',
+    label: '平滑渐变',
+    description: '全局色彩同步 0.3s 渐变',
+    icon: 'lucide:sparkles',
+  },
+  {
+    value: 'circle',
+    label: '圆形展开',
+    description: '从按钮位置以圆形展开（仅 Chromium）',
+    icon: 'lucide:circle',
+  },
+  {
+    value: 'blur',
+    label: '模糊深度',
+    description: '切换瞬间整页模糊过渡',
+    icon: 'lucide:aperture',
+  },
+  {
+    value: 'none',
+    label: '无动画',
+    description: '瞬间切换，不做过渡',
     icon: 'lucide:slash',
   },
 ]

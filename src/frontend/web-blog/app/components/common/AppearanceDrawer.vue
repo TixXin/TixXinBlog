@@ -28,10 +28,31 @@
                   type="button"
                   class="appearance-option"
                   :class="{ 'appearance-option--active': currentPreference === option }"
-                  @click="setTheme(option)"
+                  @click="(event) => setTheme(option, event)"
                 >
                   <Icon :name="themeIcons[option]" size="18" />
                   <span class="appearance-option__label">{{ themeLabels[option] }}</span>
+                </button>
+              </div>
+            </section>
+
+            <section v-if="isCapabilitySupported('colorMode')" class="appearance-section">
+              <div class="appearance-section__head">
+                <h3 class="appearance-section__title">主题切换动画</h3>
+                <span class="appearance-section__value">{{ colorModeTransitionLabel }}</span>
+              </div>
+              <div class="appearance-option-grid appearance-option-grid--anim">
+                <button
+                  v-for="option in colorModeTransitionOptions"
+                  :key="option.value"
+                  type="button"
+                  class="appearance-option"
+                  :class="{ 'appearance-option--active': colorModeTransitionPreset === option.value }"
+                  :title="option.description"
+                  @click="setColorModeTransitionPreset(option.value)"
+                >
+                  <Icon :name="option.icon || 'lucide:sparkles'" size="18" />
+                  <span class="appearance-option__label">{{ option.label }}</span>
                 </button>
               </div>
             </section>
@@ -191,6 +212,10 @@ const {
   sidebarAnimationOptions,
   sidebarAnimationLabel,
   setSidebarAnimationPreset,
+  colorModeTransitionPreset,
+  colorModeTransitionOptions,
+  colorModeTransitionLabel,
+  setColorModeTransitionPreset,
   paginationAutoHide,
   togglePaginationAutoHide,
   resetAppearanceSettings,
@@ -467,7 +492,9 @@ onBeforeUnmount(() => {
   background: var(--surface-3);
   border: 1px solid var(--border);
   cursor: pointer;
-  transition: background 0.2s, border-color 0.2s;
+  transition:
+    background 0.2s,
+    border-color 0.2s;
 
   &--on {
     background: var(--accent);

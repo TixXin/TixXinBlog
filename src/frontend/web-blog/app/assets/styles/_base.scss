@@ -56,7 +56,8 @@ a {
   text-decoration: none;
 }
 
-ul, ol {
+ul,
+ol {
   list-style: none;
 }
 
@@ -146,6 +147,66 @@ input {
 * {
   scrollbar-width: thin;
   scrollbar-color: var(--scrollbar-thumb) transparent;
+}
+
+/*
+ * 明暗主题切换动画：全部走 View Transitions API（`document.startViewTransition`），
+ * 由 JS 在切换前后设置 `<html data-color-mode-anim="fade|circle|blur">`，
+ * 由浏览器对根视图做 GPU 合成层快照交叉过渡，完全绕开 CSS transition + reflow。
+ *
+ * 三种预设分别通过下面的规则自定义 `::view-transition-*(root)` 伪元素动画。
+ * 不支持 View Transitions 的浏览器（如 Firefox）直接瞬间切换，不走这里的规则。
+ */
+
+/* fade：浏览器默认的根交叉淡入（old 淡出 / new 淡入），仅微调时长 */
+html[data-color-mode-anim='fade']::view-transition-old(root),
+html[data-color-mode-anim='fade']::view-transition-new(root) {
+  animation-duration: 0.35s;
+  animation-timing-function: ease;
+}
+
+/* circle：禁用默认根动画，改由 JS animate() 对 ::view-transition-new(root) 驱动 clip-path */
+html[data-color-mode-anim='circle']::view-transition-old(root),
+html[data-color-mode-anim='circle']::view-transition-new(root) {
+  animation: none;
+  mix-blend-mode: normal;
+}
+html[data-color-mode-anim='circle']::view-transition-old(root) {
+  z-index: 0;
+}
+html[data-color-mode-anim='circle']::view-transition-new(root) {
+  z-index: 1;
+}
+
+/* blur：新视图从模糊状态淡入，旧视图淡出至模糊 */
+@keyframes color-mode-blur-in {
+  from {
+    filter: blur(18px);
+    opacity: 0.65;
+  }
+  to {
+    filter: blur(0);
+    opacity: 1;
+  }
+}
+
+@keyframes color-mode-blur-out {
+  from {
+    filter: blur(0);
+    opacity: 1;
+  }
+  to {
+    filter: blur(18px);
+    opacity: 0.4;
+  }
+}
+
+html[data-color-mode-anim='blur']::view-transition-new(root) {
+  animation: color-mode-blur-in 0.45s cubic-bezier(0.22, 0.68, 0.35, 1) both;
+}
+
+html[data-color-mode-anim='blur']::view-transition-old(root) {
+  animation: color-mode-blur-out 0.45s cubic-bezier(0.22, 0.68, 0.35, 1) both;
 }
 
 // Animations

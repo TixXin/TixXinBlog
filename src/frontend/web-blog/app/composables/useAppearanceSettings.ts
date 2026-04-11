@@ -5,11 +5,17 @@
  * @since 2026-03-20
  */
 
-import type { ContentTransitionPreset, SidebarAnimationPreset } from '~/features/appearance/types'
+import type {
+  ColorModeTransitionPreset,
+  ContentTransitionPreset,
+  SidebarAnimationPreset,
+} from '~/features/appearance/types'
 import type { ThemeCustomizerCapability } from '~/features/appearance/themeRegistry'
 import {
   COLOR_MODE_LABELS,
+  COLOR_MODE_TRANSITION_OPTIONS,
   CONTENT_TRANSITION_OPTIONS,
+  DEFAULT_COLOR_MODE_TRANSITION_PRESET,
   DEFAULT_CONTENT_TRANSITION_PRESET,
   DEFAULT_SIDEBAR_ANIMATION_PRESET,
   SIDEBAR_ANIMATION_OPTIONS,
@@ -21,6 +27,7 @@ const STORAGE_KEY = 'tixxin-blog-appearance'
 interface AppearanceStorage {
   contentTransitionPreset: ContentTransitionPreset
   sidebarAnimationPreset: SidebarAnimationPreset
+  colorModeTransitionPreset: ColorModeTransitionPreset
   paginationAutoHide: boolean
 }
 
@@ -55,6 +62,10 @@ export function useAppearanceSettings() {
     'appearance-sidebar-animation-preset',
     () => DEFAULT_SIDEBAR_ANIMATION_PRESET,
   )
+  const colorModeTransitionPreset = useState<ColorModeTransitionPreset>(
+    'appearance-color-mode-transition-preset',
+    () => DEFAULT_COLOR_MODE_TRANSITION_PRESET,
+  )
   /** 分页栏滚动自动隐藏（默认关闭） */
   const paginationAutoHide = useState('appearance-pagination-auto-hide', () => false)
   const initialized = useState('appearance-settings-initialized', () => false)
@@ -69,6 +80,11 @@ export function useAppearanceSettings() {
     () =>
       SIDEBAR_ANIMATION_OPTIONS.find((option) => option.value === sidebarAnimationPreset.value)?.label ??
       '右侧退出和进入',
+  )
+  const colorModeTransitionLabel = computed(
+    () =>
+      COLOR_MODE_TRANSITION_OPTIONS.find((option) => option.value === colorModeTransitionPreset.value)?.label ??
+      '平滑渐变',
   )
 
   const contentTransitionName = computed(() => {
@@ -169,6 +185,10 @@ export function useAppearanceSettings() {
     sidebarAnimationPreset.value = preset
   }
 
+  function setColorModeTransitionPreset(preset: ColorModeTransitionPreset) {
+    colorModeTransitionPreset.value = preset
+  }
+
   function togglePaginationAutoHide() {
     paginationAutoHide.value = !paginationAutoHide.value
   }
@@ -177,6 +197,7 @@ export function useAppearanceSettings() {
     setTheme('system')
     contentTransitionPreset.value = DEFAULT_CONTENT_TRANSITION_PRESET
     sidebarAnimationPreset.value = DEFAULT_SIDEBAR_ANIMATION_PRESET
+    colorModeTransitionPreset.value = DEFAULT_COLOR_MODE_TRANSITION_PRESET
     paginationAutoHide.value = false
     setLayoutTheme(DEFAULT_LAYOUT_THEME_ID)
   }
@@ -201,6 +222,10 @@ export function useAppearanceSettings() {
             sidebarAnimationPreset.value = parsed.sidebarAnimationPreset
           }
 
+          if (parsed.colorModeTransitionPreset) {
+            colorModeTransitionPreset.value = parsed.colorModeTransitionPreset
+          }
+
           if (parsed.paginationAutoHide !== undefined) {
             paginationAutoHide.value = parsed.paginationAutoHide
           }
@@ -215,11 +240,12 @@ export function useAppearanceSettings() {
     persistenceBound.value = true
 
     watch(
-      [contentTransitionPreset, sidebarAnimationPreset, paginationAutoHide],
+      [contentTransitionPreset, sidebarAnimationPreset, colorModeTransitionPreset, paginationAutoHide],
       () => {
         const payload: AppearanceStorage = {
           contentTransitionPreset: contentTransitionPreset.value,
           sidebarAnimationPreset: sidebarAnimationPreset.value,
+          colorModeTransitionPreset: colorModeTransitionPreset.value,
           paginationAutoHide: paginationAutoHide.value,
         }
 
@@ -248,6 +274,10 @@ export function useAppearanceSettings() {
     sidebarAnimationClass,
     sidebarTransitionName,
     setSidebarAnimationPreset,
+    colorModeTransitionPreset,
+    colorModeTransitionOptions: COLOR_MODE_TRANSITION_OPTIONS,
+    colorModeTransitionLabel,
+    setColorModeTransitionPreset,
     paginationAutoHide,
     togglePaginationAutoHide,
     openDrawer,

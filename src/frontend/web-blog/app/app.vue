@@ -22,7 +22,7 @@ provide('searchModal', { open: () => (isSearchOpen.value = true) })
 useKeyboardShortcuts()
 useAnalytics()
 
-// 首次访问 loading 动画状态 + 主题切换 loading 状态
+// 首次访问 loading 动画状态 + 布局主题切换 loading 状态
 const { isLoading, isThemeSwitchLoading, checkFirstVisit, dismiss } = useAppLoading()
 
 // hydration 完成后关闭 loading：
@@ -37,5 +37,4 @@ onNuxtReady(() => {
     dismiss()
   }
 })
-
 </script>
