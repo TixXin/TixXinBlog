@@ -28,6 +28,8 @@
         :height="80"
         class="nexus-bar__avatar-img"
         format="webp"
+        loading="eager"
+        fetchpriority="high"
         @error="onAvatarError"
       />
       <span v-else class="nexus-bar__avatar-fallback">TX</span>
@@ -71,11 +73,11 @@
             :aria-label="scrollDirection === 'down' ? '返回底部' : '返回顶部'"
             @click="onProgressClick"
           >
-            <svg class="nexus-bar__progress-ring" viewBox="0 0 28 28" width="28" height="28">
-              <circle class="nexus-bar__progress-ring-bg" cx="14" cy="14" r="12" />
+            <svg class="nexus-bar__progress-ring" viewBox="0 0 36 36">
+              <circle class="nexus-bar__progress-ring-bg" cx="18" cy="18" r="16" />
               <circle
                 class="nexus-bar__progress-ring-fill"
-                cx="14" cy="14" r="12"
+                cx="18" cy="18" r="16"
                 :style="{ strokeDashoffset: progressRingOffset }"
               />
             </svg>
@@ -149,9 +151,16 @@
     </div>
 
     <!-- 登录按钮（始终显示） -->
-    <button class="nexus-bar__login" type="button" aria-label="登录">
+    <button class="nexus-bar__login" type="button" aria-label="登录" @click="onLoginClick">
       <Icon name="lucide:circle-user" size="18" />
     </button>
+
+    <!-- 登录面板（底部栏上方悬浮） -->
+    <Transition name="nexus-login-panel">
+      <div v-if="isLoginOpen" ref="loginPanelRef" class="nexus-bar__login-panel">
+        <AuthPanel />
+      </div>
+    </Transition>
   </div>
 </template>
 
@@ -162,6 +171,9 @@ const route = useRoute()
 const { navItems } = useNavItems()
 const { scrollProgress, scrollResetFn, scrollDirection } = useScrollProgress()
 const { ownerPresence, ownerCard, dailyQuote } = useSiteInfo()
+const { isOpen: isLoginOpen, toggle: toggleLogin, close: closeLogin } = useLoginDrawer()
+
+const loginPanelRef = ref<HTMLElement | null>(null)
 
 // 头像呼吸光晕颜色映射
 const GLOW_COLOR_MAP: Record<OwnerPresence, string> = {
@@ -180,8 +192,8 @@ const avatarError = ref(false)
 const showProgress = computed(() => scrollProgress.value > 1)
 const displayProgress = computed(() => Math.round(scrollProgress.value))
 
-// 环形进度条 dashoffset 计算
-const RING_CIRCUMFERENCE = 2 * Math.PI * 12
+// 环形进度条 dashoffset 计算（与 SVG circle r=16 保持一致）
+const RING_CIRCUMFERENCE = 2 * Math.PI * 16
 const progressRingOffset = computed(() => RING_CIRCUMFERENCE * (1 - scrollProgress.value / 100))
 
 function onAvatarError() {
@@ -215,8 +227,9 @@ const isExpanded = isFooterExpanded
 let expandTimer: ReturnType<typeof setTimeout> | null = null
 let collapseTimer: ReturnType<typeof setTimeout> | null = null
 
-/** hover 头像触发展开 */
+/** hover 头像触发展开（登录面板打开时不触发展开，避免干扰登录操作） */
 function onAvatarEnter() {
+  if (isLoginOpen.value) return
   if (collapseTimer) { clearTimeout(collapseTimer); collapseTimer = null }
   if (!expandTimer) {
     expandTimer = setTimeout(() => {
@@ -240,9 +253,44 @@ function onBarLeave() {
   }, 150)
 }
 
+// ---- 登录面板逻辑 ----
+function onLoginClick() {
+  // 打开登录面板时自动收起底部栏，避免视觉遮挡
+  if (!isLoginOpen.value && isExpanded.value) {
+    if (expandTimer) { clearTimeout(expandTimer); expandTimer = null }
+    isExpanded.value = false
+  }
+  toggleLogin()
+}
+
+/** 点击外部关闭登录面板 */
+function onClickOutside(e: MouseEvent) {
+  if (!isLoginOpen.value) return
+  const panel = loginPanelRef.value
+  const target = e.target as HTMLElement
+  // 如果点击在面板内或登录按钮上，忽略
+  if (panel?.contains(target)) return
+  if (target.closest('.nexus-bar__login')) return
+  closeLogin()
+}
+
+/** ESC 关闭登录面板 */
+function onEscKey(e: KeyboardEvent) {
+  if (e.key === 'Escape' && isLoginOpen.value) {
+    closeLogin()
+  }
+}
+
+onMounted(() => {
+  document.addEventListener('click', onClickOutside)
+  document.addEventListener('keydown', onEscKey)
+})
+
 onBeforeUnmount(() => {
   if (expandTimer) clearTimeout(expandTimer)
   if (collapseTimer) clearTimeout(collapseTimer)
+  document.removeEventListener('click', onClickOutside)
+  document.removeEventListener('keydown', onEscKey)
 })
 </script>
 
@@ -304,7 +352,7 @@ $bar-expanded: 112px;
   box-shadow:
     0 2px 16px rgba(0, 0, 0, 0.12),
     0 0 0 0 var(--accent-alpha-0);
-  z-index: 1;
+  z-index: 22;
   cursor: pointer;
   transition:
     transform 0.3s cubic-bezier(0.22, 0.68, 0.35, 1.0),
@@ -595,7 +643,7 @@ $bar-expanded: 112px;
   stroke: var(--accent);
   stroke-width: 2;
   stroke-linecap: round;
-  stroke-dasharray: 75.4;
+  stroke-dasharray: 100.53; // 2 * PI * 16
   transition: stroke-dashoffset 0.3s cubic-bezier(0.22, 0.68, 0.35, 1.0);
 }
 
@@ -863,5 +911,38 @@ $bar-expanded: 112px;
   &:active {
     transform: scale(0.92);
   }
+}
+
+// ---- 登录面板（底部栏上方悬浮） ----
+.nexus-bar__login-panel {
+  position: absolute;
+  bottom: calc(100% + 0.5rem);
+  left: 0;
+  right: 0;
+  z-index: 21;
+  padding: 1.75rem 1.5rem;
+  background: var(--surface-1);
+  border: 1px solid var(--border);
+  border-radius: $radius-card;
+  box-shadow: var(--shadow-card);
+}
+
+/* 登录面板进出动画 */
+.nexus-login-panel-enter-active {
+  transition: opacity 0.2s ease-out, transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.nexus-login-panel-leave-active {
+  transition: opacity 0.15s ease-in, transform 0.15s ease-in;
+}
+
+.nexus-login-panel-enter-from {
+  opacity: 0;
+  transform: translateY(8px);
+}
+
+.nexus-login-panel-leave-to {
+  opacity: 0;
+  transform: translateY(8px);
 }
 </style>
