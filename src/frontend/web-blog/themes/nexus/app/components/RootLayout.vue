@@ -6,7 +6,7 @@
 -->
 
 <template>
-  <div class="page-root theme-nexus">
+  <div class="page-root theme-nexus" :class="{ 'is-fullbleed-page': isFullbleed }">
     <div class="blog-grid">
       <aside class="aside-left anim-fade-in-up anim-delay-1">
         <CommonCustomScrollbar
@@ -89,6 +89,9 @@ const momentAuthorStats = mockMomentAuthorStats
 const { sidebarAnimationClass } = useAppearanceSettings()
 useSidebarExitAnimation('.aside-right')
 
+// 全屏页（如标签页）开关：开启时隐藏左右两栏，main-content 占满
+const { isFullbleed } = useFullbleedPage()
+
 // 监听首页 Tab 状态，切换左侧栏内容
 const { homeActiveTab } = useHomeTab()
 const isMomentsMode = computed(() => homeActiveTab.value === 'moments')
@@ -109,6 +112,37 @@ function onDateSelect(date: string | null) {
   --theme-bg-surface-sunken: var(--surface-3);
   --theme-border-default: var(--border);
   --theme-border-subtle: var(--border-soft);
+}
+
+/* ---- 全屏页（fullbleed）模式：隐藏左右两栏，main-content 占满 ---- */
+/* 使用方在 page setup 中调用 defineFullbleedPage() 即可激活 */
+/* 作用域内 deep 选择器：.blog-grid 等是本组件渲染的元素，受 scoped 哈希影响 */
+.page-root.is-fullbleed-page {
+  .blog-grid {
+    grid-template-columns: 1fr;
+    padding-bottom: 0;
+  }
+
+  .aside-left,
+  .aside-right {
+    display: none;
+  }
+
+  .page-columns {
+    display: flex;
+    grid-template-columns: 1fr;
+  }
+
+  /* 重置 main-content 的卡片样式，让全屏页面的背景能真正"全屏"延伸 */
+  .main-content {
+    width: 100%;
+    max-width: none;
+    background: transparent;
+    border: none;
+    border-radius: 0;
+    box-shadow: none;
+    overflow: visible;
+  }
 }
 
 /* ---- 右侧栏骨架屏占位 ---- */
