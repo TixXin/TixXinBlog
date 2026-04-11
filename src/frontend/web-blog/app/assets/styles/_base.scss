@@ -65,6 +65,46 @@ img {
   display: block;
 }
 
+// 图片渐显动画：加载完成后柔和淡入，避免首次访问时图片突然出现
+@keyframes img-reveal {
+  from {
+    opacity: 0;
+    transform: scale(1.015);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+// 对关键图片容器内的图片应用渐显效果
+.post-item__cover-bg img,
+.owner-profile-card__avatar,
+.hero-section__avatar-img,
+.nexus-bar__avatar-img,
+.moment-card__avatar,
+.moment-card img,
+.project-card img,
+.moment-photo-wall-card img,
+.gallery-item img {
+  animation: img-reveal 0.45s ease-out both;
+}
+
+// 无障碍降级：用户开启减少动效时禁用图片渐显
+@media (prefers-reduced-motion: reduce) {
+  .post-item__cover-bg img,
+  .owner-profile-card__avatar,
+  .hero-section__avatar-img,
+  .nexus-bar__avatar-img,
+  .moment-card__avatar,
+  .moment-card img,
+  .project-card img,
+  .moment-photo-wall-card img,
+  .gallery-item img {
+    animation: none;
+  }
+}
+
 button {
   font: inherit;
   color: inherit;
