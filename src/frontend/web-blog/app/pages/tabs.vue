@@ -242,7 +242,7 @@ async function onRemoveCategory(id: string) {
 /* ---- 右下角游客提示浮窗 ---- */
 .tabs-guest-toast {
   position: fixed;
-  bottom: 5rem;
+  bottom: 3.75rem;
   right: 1.5rem;
   z-index: 50;
   display: flex;
