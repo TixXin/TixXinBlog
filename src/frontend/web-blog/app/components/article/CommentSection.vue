@@ -38,6 +38,13 @@
         </ArticleCommentBubble>
       </li>
     </ul>
+    <!-- 游客身份弹窗 -->
+    <CommonGuestIdentityModal
+      :visible="identityModalVisible"
+      @confirm="onIdentityConfirm"
+      @cancel="identityModalVisible = false"
+      @login="onSwitchToLogin"
+    />
   </section>
 </template>
 
@@ -54,23 +61,57 @@ const emit = defineEmits<{
 
 const draft = ref('')
 const { info } = useToast()
+const { isLoggedIn, currentUser } = useCurrentUser()
+const { guestIdentity, hasIdentity, resolveAvatar } = useGuestIdentity()
+const { open: openLoginDrawer } = useLoginDrawer()
+
+const identityModalVisible = ref(false)
+let pendingText = ''
 
 function submitComment() {
   const text = draft.value.trim()
   if (!text) return
 
+  // 已登录 → 用 currentUser 信息
+  if (isLoggedIn.value && currentUser.value) {
+    emitComment(text, currentUser.value.nickname, currentUser.value.avatar)
+    return
+  }
+  // 未登录 + 有游客身份 → 用游客信息
+  if (hasIdentity.value && guestIdentity.value) {
+    emitComment(text, guestIdentity.value.nickname, resolveAvatar())
+    return
+  }
+  // 无身份 → 暂存文本，弹出身份面板
+  pendingText = text
+  identityModalVisible.value = true
+}
+
+function emitComment(text: string, author: string, avatar: string) {
   const newComment: CommentItem = {
     id: Date.now(),
-    author: '访客',
-    avatar: '',
+    author,
+    avatar,
     content: text,
     time: '刚刚',
     likes: 0,
   }
-
   emit('submit', newComment)
   draft.value = ''
   info('评论发布成功')
+}
+
+function onIdentityConfirm() {
+  identityModalVisible.value = false
+  if (pendingText && hasIdentity.value && guestIdentity.value) {
+    emitComment(pendingText, guestIdentity.value.nickname, resolveAvatar())
+    pendingText = ''
+  }
+}
+
+function onSwitchToLogin() {
+  identityModalVisible.value = false
+  openLoginDrawer('login')
 }
 </script>
 

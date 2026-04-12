@@ -129,6 +129,8 @@ const props = defineProps<{
   moment: MomentItem
 }>()
 
+
+
 const avatarError = ref(false)
 
 const formattedDate = computed(() => formatRelativeDate(props.moment.date))

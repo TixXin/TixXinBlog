@@ -62,6 +62,14 @@
         <Icon name="lucide:send" size="14" />
       </button>
     </div>
+
+    <!-- 游客身份弹窗：内置于组件，不需层层冒泡 -->
+    <CommonGuestIdentityModal
+      :visible="identityModalVisible"
+      @confirm="onIdentityConfirm"
+      @cancel="identityModalVisible = false"
+      @login="onSwitchToLogin"
+    />
   </div>
 </template>
 
@@ -88,21 +96,56 @@ function renderMentions(text: string): string {
 }
 
 const draft = ref('')
+const identityModalVisible = ref(false)
+let pendingText = ''
+
+const { isLoggedIn, currentUser } = useCurrentUser()
+const { guestIdentity, hasIdentity, resolveAvatar } = useGuestIdentity()
+const { open: openLoginDrawer } = useLoginDrawer()
 
 function submit() {
   const text = draft.value.trim()
   if (!text) return
 
+  // 已登录 → 用 currentUser 信息
+  if (isLoggedIn.value && currentUser.value) {
+    emitComment(text, currentUser.value.nickname, currentUser.value.avatar)
+    return
+  }
+  // 未登录 + 有游客身份 → 用游客信息
+  if (hasIdentity.value && guestIdentity.value) {
+    emitComment(text, guestIdentity.value.nickname, resolveAvatar())
+    return
+  }
+  // 无身份 → 暂存文本，弹出身份面板
+  pendingText = text
+  identityModalVisible.value = true
+}
+
+function emitComment(text: string, author: string, avatar: string) {
   const comment: MomentCommentItem = {
     id: `c-${Date.now()}`,
-    author: '访客',
-    avatar: '',
+    author,
+    avatar,
     content: text,
     time: '刚刚',
     isOwner: false,
   }
   emit('submit', comment)
   draft.value = ''
+}
+
+function onIdentityConfirm() {
+  identityModalVisible.value = false
+  if (pendingText && hasIdentity.value && guestIdentity.value) {
+    emitComment(pendingText, guestIdentity.value.nickname, resolveAvatar())
+    pendingText = ''
+  }
+}
+
+function onSwitchToLogin() {
+  identityModalVisible.value = false
+  openLoginDrawer('login')
 }
 </script>
 
