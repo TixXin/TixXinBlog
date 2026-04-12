@@ -20,8 +20,10 @@
           :total-count="bookmarks.length"
           :read-only="isReadOnly"
           @select="selectCategory"
-          @add-category="onAddCategoryClick"
+          @add-category="addCategoryVisible = true"
           @remove-category="onRemoveCategory"
+          @open-settings="settingsOpen = true"
+          @open-donate="onDonate"
         />
       </Teleport>
     </ClientOnly>
@@ -70,11 +72,15 @@
       :default-category-id="activeCategoryId"
       @submit="onSubmitBookmark"
     />
+    <TabAddCategoryDialog
+      v-model:visible="addCategoryVisible"
+      @submit="onSubmitCategory"
+    />
   </div>
 </template>
 
 <script setup lang="ts">
-import type { BookmarkDraft } from '~/features/tab/types'
+import type { BookmarkDraft, BookmarkCategoryDraft } from '~/features/tab/types'
 import { mockOwnerUser } from '~/features/auth/mock'
 
 definePageMeta({ fullbleed: true })
@@ -102,6 +108,8 @@ const {
 } = useTabBookmarks()
 
 const addBookmarkVisible = ref(false)
+const addCategoryVisible = ref(false)
+const settingsOpen = ref(false)
 const sidebarCollapsed = ref(false)
 
 /** 侧栏与问候语用：未登录时显示博主信息 */
@@ -160,10 +168,12 @@ async function onRemoveBookmark(id: string) {
   await removeBookmark(id)
 }
 
-async function onAddCategoryClick() {
-  const name = window.prompt('请输入分类名称')
-  if (!name?.trim()) return
-  await addCategory({ name: name.trim(), icon: 'lucide:folder', color: '#64748b' })
+async function onSubmitCategory(draft: BookmarkCategoryDraft) {
+  await addCategory(draft)
+}
+
+function onDonate() {
+  // 打赏功能占位，后续实现
 }
 
 async function onRemoveCategory(id: string) {
