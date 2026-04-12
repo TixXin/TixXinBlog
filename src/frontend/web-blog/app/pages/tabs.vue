@@ -76,6 +76,10 @@
       v-model:visible="addCategoryVisible"
       @submit="onSubmitCategory"
     />
+    <TabSettingsDrawer
+      v-model:visible="settingsOpen"
+      :user="displayUser"
+    />
   </div>
 </template>
 
