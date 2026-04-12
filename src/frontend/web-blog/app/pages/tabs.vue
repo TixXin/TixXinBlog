@@ -61,20 +61,24 @@
       :user="displayUser"
     />
 
-    <!-- 游客提示：右下角浮窗，可关闭 -->
-    <Transition name="tabs-guest-toast">
-      <div v-if="isReadOnly && !guestToastDismissed" class="tabs-guest-toast">
-        <Icon name="lucide:info" size="14" class="tabs-guest-toast__icon" />
-        <span class="tabs-guest-toast__text">正在浏览博主的标签页</span>
-        <button type="button" class="tabs-guest-toast__login" @click="onLogin">
-          登录
-          <Icon name="lucide:log-in" size="11" />
-        </button>
-        <button type="button" class="tabs-guest-toast__close" aria-label="关闭" @click="guestToastDismissed = true">
-          <Icon name="lucide:x" size="12" />
-        </button>
-      </div>
-    </Transition>
+    <!-- 游客提示：Teleport 到 body，避免祖先 transform 破坏 fixed 定位 -->
+    <ClientOnly>
+      <Teleport to="body">
+        <Transition name="tabs-guest-toast">
+          <div v-if="isReadOnly && !guestToastDismissed" class="tabs-guest-toast">
+            <Icon name="lucide:info" size="14" class="tabs-guest-toast__icon" />
+            <span class="tabs-guest-toast__text">正在浏览博主的标签页</span>
+            <button type="button" class="tabs-guest-toast__login" @click="onLogin">
+              登录
+              <Icon name="lucide:log-in" size="11" />
+            </button>
+            <button type="button" class="tabs-guest-toast__close" aria-label="关闭" @click="guestToastDismissed = true">
+              <Icon name="lucide:x" size="12" />
+            </button>
+          </div>
+        </Transition>
+      </Teleport>
+    </ClientOnly>
   </div>
 </template>
 
