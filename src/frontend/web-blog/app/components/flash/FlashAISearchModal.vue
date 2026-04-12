@@ -51,8 +51,14 @@
               <div v-if="citedNotes.length > 0" class="flash-ai-modal__citations">
                 <span class="flash-ai-modal__citations-label">引用的闪念</span>
                 <ul class="flash-ai-modal__citation-list">
-                  <li v-for="n in citedNotes" :key="n.id" class="flash-ai-modal__citation-item">
+                  <li
+                    v-for="n in citedNotes"
+                    :key="n.id"
+                    class="flash-ai-modal__citation-item"
+                    @click="onCiteClick(n.id)"
+                  >
                     <span class="flash-ai-modal__citation-content">{{ truncate(n.content, 80) }}</span>
+                    <Icon name="lucide:arrow-right" size="11" class="flash-ai-modal__citation-arrow" />
                   </li>
                 </ul>
               </div>
@@ -74,6 +80,11 @@ import type { FlashNote } from '~/features/flash/types'
 
 const props = defineProps<{
   notes: FlashNote[]
+}>()
+
+const emit = defineEmits<{
+  /** 点击引用列表中的某条闪念 → 父级关闭模态 + 滚动高亮 */
+  'cite-click': [noteId: string]
 }>()
 
 const visible = defineModel<boolean>('visible', { default: false })
@@ -102,6 +113,11 @@ function submit() {
 
 function close() {
   visible.value = false
+}
+
+function onCiteClick(noteId: string) {
+  emit('cite-click', noteId)
+  close()
 }
 
 function truncate(text: string, max: number): string {
@@ -267,16 +283,39 @@ function truncate(text: string, max: number): string {
 }
 
 .flash-ai-modal__citation-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
   padding: 0.5rem 0.75rem;
   background: var(--surface-2);
   border-radius: $radius-sm;
   font-size: 0.75rem;
   line-height: 1.55;
   color: var(--text-main);
+  cursor: pointer;
+  transition:
+    background 0.18s,
+    color 0.18s;
+
+  &:hover {
+    background: var(--accent-soft);
+    color: var(--accent);
+  }
 }
 
 .flash-ai-modal__citation-content {
-  display: block;
+  flex: 1;
+  min-width: 0;
+}
+
+.flash-ai-modal__citation-arrow {
+  flex-shrink: 0;
+  color: var(--text-faint);
+  transition: color 0.18s;
+
+  .flash-ai-modal__citation-item:hover & {
+    color: var(--accent);
+  }
 }
 
 .flash-ai-modal__meta {

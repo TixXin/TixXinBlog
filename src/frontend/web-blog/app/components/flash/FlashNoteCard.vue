@@ -6,11 +6,16 @@
 -->
 
 <template>
-  <article class="fnc" :class="{ 'fnc--cited': cited, 'fnc--commenting': commentOpen }">
-    <div class="fnc__content">{{ note.content }}</div>
+  <article
+    :id="'flash-note-' + note.id"
+    class="fnc"
+    :class="{ 'fnc--cited': cited, 'fnc--commenting': commentOpen, 'fnc--highlighted': highlighted }"
+  >
+    <!-- eslint-disable-next-line vue/no-v-html -->
+    <div class="fnc__content" v-html="renderedContent" />
 
     <div v-if="note.tags.length > 0" class="fnc__tags">
-      <span v-for="t in note.tags" :key="t" class="fnc__tag">#{{ t }}</span>
+      <span v-for="t in note.tags" :key="t" class="fnc__tag" @click="$emit('tag-click', t)">#{{ t }}</span>
     </div>
 
     <footer class="fnc__footer">
@@ -42,12 +47,22 @@
         <button type="button" class="fnc__action" aria-label="复制" @click="onCopy">
           <Icon :name="copied ? 'lucide:check' : 'lucide:copy'" size="14" />
         </button>
+        <!-- 删除：内联确认态，3s 超时自动恢复 -->
+        <div v-if="confirmingDelete" class="fnc__confirm-delete">
+          <span class="fnc__confirm-delete-text">确认删除？</span>
+          <button type="button" class="fnc__confirm-yes" @click="confirmDelete">
+            <Icon name="lucide:check" size="12" />
+          </button>
+          <button type="button" class="fnc__confirm-no" @click="cancelDelete">
+            <Icon name="lucide:x" size="12" />
+          </button>
+        </div>
         <button
-          v-if="!readOnly"
+          v-else-if="!readOnly"
           type="button"
           class="fnc__action fnc__action--danger"
           aria-label="删除"
-          @click="$emit('remove', note.id)"
+          @click="startDelete"
         >
           <Icon name="lucide:trash-2" size="14" />
         </button>
@@ -106,11 +121,14 @@
 
 <script setup lang="ts">
 import type { FlashNote } from '~/features/flash/types'
+import { renderFlashMarkdown } from '~/utils/flashMarkdown'
 
 const props = defineProps<{
   note: FlashNote
   cited?: boolean
   readOnly?: boolean
+  /** AI 引用高亮：外部控制 2s 脉冲动画 */
+  highlighted?: boolean
   /** 当前登录用户 id，用于判断能否删除别人的评论 */
   currentUserId?: string | null
 }>()
@@ -120,16 +138,25 @@ const emit = defineEmits<{
   'toggle-like': [id: string]
   'remove-comment': [payload: { noteId: string; commentId: string }]
   'add-comment': [payload: { noteId: string; content: string }]
+  'tag-click': [tag: string]
 }>()
+
+const { success, error: toastError } = useToast()
 
 const commentOpen = ref(false)
 const commentDraft = ref('')
 const copied = ref(false)
 let copyTimer: ReturnType<typeof setTimeout> | null = null
 
-const liked = computed(() => props.note.likes > 0)
+// 删除确认态：3s 超时自动恢复
+const confirmingDelete = ref(false)
+let deleteTimer: ReturnType<typeof setTimeout> | null = null
 
+const liked = computed(() => props.note.likes > 0)
 const relativeTime = computed(() => formatRelative(props.note.createdAt))
+
+/** 轻量 markdown 渲染 —— 覆盖编辑器工具栏支持的子集 */
+const renderedContent = computed(() => renderFlashMarkdown(props.note.content))
 
 function formatRelative(iso: string): string {
   const created = new Date(iso).getTime()
@@ -156,9 +183,28 @@ async function onCopy() {
     copied.value = true
     if (copyTimer) clearTimeout(copyTimer)
     copyTimer = setTimeout(() => (copied.value = false), 1500)
+    success('已复制到剪贴板')
   } catch {
-    /* 静默失败 */
+    toastError('复制失败')
   }
+}
+
+function startDelete() {
+  confirmingDelete.value = true
+  deleteTimer = setTimeout(() => {
+    confirmingDelete.value = false
+  }, 3000)
+}
+
+function confirmDelete() {
+  if (deleteTimer) clearTimeout(deleteTimer)
+  confirmingDelete.value = false
+  emit('remove', props.note.id)
+}
+
+function cancelDelete() {
+  if (deleteTimer) clearTimeout(deleteTimer)
+  confirmingDelete.value = false
 }
 
 function onSubmitComment() {
@@ -169,6 +215,7 @@ function onSubmitComment() {
 
 onBeforeUnmount(() => {
   if (copyTimer) clearTimeout(copyTimer)
+  if (deleteTimer) clearTimeout(deleteTimer)
 })
 </script>
 
@@ -204,6 +251,10 @@ onBeforeUnmount(() => {
     box-shadow: 0 0 0 1px var(--accent-soft);
   }
 
+  &--highlighted {
+    animation: flash-highlight 2s ease-out;
+  }
+
   &--commenting {
     .fnc__action {
       opacity: 1;
@@ -234,6 +285,16 @@ onBeforeUnmount(() => {
   color: var(--accent);
   background: var(--accent-soft);
   border-radius: $radius-full;
+  cursor: pointer;
+  transition:
+    opacity 0.18s,
+    background 0.18s;
+
+  &:hover {
+    opacity: 0.75;
+    background: var(--accent);
+    color: #fff;
+  }
 }
 
 .fnc__footer {
@@ -437,6 +498,116 @@ onBeforeUnmount(() => {
 
   &:not(:disabled):hover {
     opacity: 0.88;
+  }
+}
+
+/* ---- Markdown 渲染样式（v-html 内的 class，需 :deep） ---- */
+.fnc__content {
+  :deep(.fm-code) {
+    padding: 0.1rem 0.35rem;
+    background: var(--surface-2);
+    border-radius: $radius-sm;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 0.8125rem;
+  }
+
+  :deep(.fm-quote) {
+    display: block;
+    padding-left: 0.75rem;
+    border-left: 2px solid var(--accent);
+    color: var(--text-soft);
+    font-style: italic;
+  }
+
+  :deep(.fm-li) {
+    display: block;
+    padding-left: 0.5rem;
+
+    &::before {
+      content: '\2022\00a0';
+      color: var(--text-faint);
+    }
+  }
+
+  :deep(.fm-checkbox) {
+    display: block;
+    padding-left: 0.25rem;
+    color: var(--text-soft);
+
+    &--checked {
+      color: var(--accent);
+    }
+  }
+}
+
+/* ---- 删除确认态 ---- */
+.fnc__confirm-delete {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  animation: fnc-confirm-in 0.18s ease;
+}
+
+.fnc__confirm-delete-text {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  color: var(--danger);
+}
+
+.fnc__confirm-yes,
+.fnc__confirm-no {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.25rem;
+  height: 1.25rem;
+  padding: 0;
+  border: none;
+  border-radius: $radius-full;
+  cursor: pointer;
+  transition:
+    background 0.18s,
+    color 0.18s;
+}
+
+.fnc__confirm-yes {
+  background: rgba(239, 68, 68, 0.12);
+  color: var(--danger);
+
+  &:hover {
+    background: var(--danger);
+    color: #fff;
+  }
+}
+
+.fnc__confirm-no {
+  background: var(--surface-2);
+  color: var(--text-soft);
+
+  &:hover {
+    background: var(--surface-3, var(--surface-2));
+    color: var(--text-main);
+  }
+}
+
+@keyframes fnc-confirm-in {
+  from {
+    opacity: 0;
+    transform: translateX(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+/* ---- AI 引用高亮脉冲 ---- */
+@keyframes flash-highlight {
+  0% {
+    box-shadow: 0 0 0 3px var(--accent);
+  }
+  100% {
+    box-shadow: 0 0 0 3px transparent;
   }
 }
 

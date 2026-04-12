@@ -23,12 +23,14 @@
         :key="note.id"
         :note="note"
         :cited="citedIds?.includes(note.id)"
+        :highlighted="note.id === highlightedId"
         :read-only="readOnly"
         :current-user-id="currentUserId"
         @remove="$emit('remove', $event)"
         @toggle-like="$emit('toggle-like', $event)"
         @add-comment="$emit('add-comment', $event)"
         @remove-comment="$emit('remove-comment', $event)"
+        @tag-click="$emit('tag-click', $event)"
       />
     </div>
   </div>
@@ -43,6 +45,8 @@ defineProps<{
   citedIds?: string[]
   readOnly?: boolean
   currentUserId?: string | null
+  /** AI 引用高亮的笔记 id */
+  highlightedId?: string | null
 }>()
 
 defineEmits<{
@@ -50,6 +54,7 @@ defineEmits<{
   'toggle-like': [id: string]
   'add-comment': [payload: { noteId: string; content: string }]
   'remove-comment': [payload: { noteId: string; commentId: string }]
+  'tag-click': [tag: string]
 }>()
 </script>
 

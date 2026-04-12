@@ -14,6 +14,29 @@
         <span class="flash-page__sub">{{
           isLoggedIn ? '记录稍纵即逝的灵感' : '博主的灵感碎片'
         }}</span>
+        <button
+          type="button"
+          class="flash-page__search-toggle"
+          :class="{ 'is-active': searchExpanded }"
+          aria-label="搜索闪念"
+          @click="searchExpanded = !searchExpanded"
+        >
+          <Icon name="lucide:search" size="14" />
+        </button>
+      </div>
+      <!-- 搜索栏：展开后显示 -->
+      <div v-if="searchExpanded" class="flash-page__search-bar">
+        <Icon name="lucide:search" size="13" class="flash-page__search-icon" />
+        <input
+          v-model="searchQuery"
+          type="text"
+          class="flash-page__search-input"
+          placeholder="搜索闪念内容或标签..."
+          @keydown.escape="searchExpanded = false; searchQuery = ''"
+        >
+        <span v-if="debouncedQuery" class="flash-page__search-count">
+          {{ filteredNotes.length }} 条结果
+        </span>
       </div>
     </div>
 
@@ -30,15 +53,27 @@
             <Icon name="lucide:arrow-right" size="12" />
           </span>
         </button>
+        <!-- 标签筛选条 -->
+        <div v-if="activeTag" class="flash-page__filter-bar">
+          <span class="flash-page__filter-label">
+            正在筛选 <strong>#{{ activeTag }}</strong> · {{ filteredNotes.length }} 条结果
+          </span>
+          <button type="button" class="flash-page__filter-clear" @click="activeTag = null">
+            <Icon name="lucide:x" size="12" />
+            清除
+          </button>
+        </div>
         <FlashNoteList
-          :notes="notes"
+          :notes="filteredNotes"
           :loading="loading"
           :read-only="isReadOnly"
           :current-user-id="currentUserId"
+          :highlighted-id="highlightedNoteId"
           @remove="onRemove"
           @toggle-like="onToggleLike"
           @add-comment="onAddComment"
           @remove-comment="onRemoveComment"
+          @tag-click="onTagFilter"
         />
       </div>
     </CommonCustomScrollbar>
@@ -86,7 +121,9 @@
                   v-for="t in tagCloud"
                   :key="t.name"
                   class="flash-tag-cloud__item"
+                  :class="{ 'flash-tag-cloud__item--active': activeTag === t.name }"
                   :style="{ fontSize: tagFontSize(t.count) }"
+                  @click="onTagFilter(t.name)"
                 >
                   #{{ t.name }}
                   <span class="flash-tag-cloud__count">{{ t.count }}</span>
@@ -98,7 +135,7 @@
       </Teleport>
     </ClientOnly>
 
-    <FlashAISearchModal v-model:visible="aiModalVisible" :notes="notes" />
+    <FlashAISearchModal v-model:visible="aiModalVisible" :notes="notes" @cite-click="onCiteClick" />
   </div>
 </template>
 
@@ -110,6 +147,7 @@ useSeoMeta({
 
 const { isLoggedIn, currentUser } = useCurrentUser()
 const { open: openLoginDrawer } = useLoginDrawer()
+const { success } = useToast()
 const {
   notes,
   loading,
@@ -125,9 +163,58 @@ const {
 } = useFlashNotes()
 
 const currentUserId = computed(() => currentUser.value?.id ?? null)
-
 const aiModalVisible = ref(false)
 
+// ---- 标签筛选 ----
+const activeTag = ref<string | null>(null)
+
+function onTagFilter(tag: string) {
+  activeTag.value = activeTag.value === tag ? null : tag
+}
+
+// ---- 搜索 ----
+const searchExpanded = ref(false)
+const searchQuery = ref('')
+const debouncedQuery = ref('')
+let searchTimer: ReturnType<typeof setTimeout> | null = null
+
+watch(searchQuery, (v) => {
+  if (searchTimer) clearTimeout(searchTimer)
+  searchTimer = setTimeout(() => {
+    debouncedQuery.value = v.trim().toLowerCase()
+  }, 300)
+})
+
+/** 筛选后的闪念列表：标签 AND 搜索关键词 */
+const filteredNotes = computed(() => {
+  let result = notes.value
+  if (activeTag.value) {
+    result = result.filter((n) => n.tags.includes(activeTag.value!))
+  }
+  if (debouncedQuery.value) {
+    const q = debouncedQuery.value
+    result = result.filter(
+      (n) => n.content.toLowerCase().includes(q) || n.tags.some((t) => t.toLowerCase().includes(q)),
+    )
+  }
+  return result
+})
+
+// ---- AI 引用高亮 ----
+const highlightedNoteId = ref<string | null>(null)
+
+function onCiteClick(noteId: string) {
+  aiModalVisible.value = false
+  highlightedNoteId.value = noteId
+  nextTick(() => {
+    document.getElementById(`flash-note-${noteId}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+    setTimeout(() => {
+      highlightedNoteId.value = null
+    }, 2000)
+  })
+}
+
+// ---- 页面事件 ----
 function onLogin() {
   openLoginDrawer('login')
 }
@@ -151,30 +238,40 @@ watch(isLoggedIn, () => {
 
 async function onSubmit(draft: { content: string; tags: string[] }) {
   await add(draft)
+  success('闪念已发布')
 }
 
 async function onRemove(id: string) {
   await remove(id)
+  success('已删除')
 }
 
 async function onToggleLike(id: string) {
+  const prevLikes = notes.value.find((n) => n.id === id)?.likes ?? 0
   await toggleLike(id)
+  success(prevLikes > 0 ? '已取消点赞' : '已点赞')
 }
 
 async function onAddComment(payload: { noteId: string; content: string }) {
   await addComment(payload.noteId, payload.content)
+  success('评论已发送')
 }
 
 async function onRemoveComment(payload: { noteId: string; commentId: string }) {
   await removeComment(payload.noteId, payload.commentId)
+  success('评论已删除')
 }
 
-/** 标签云字号：count 越大字号越大，1.2x ~ 2x */
+/** 标签云字号：count 越大字号越大，0.7 ~ 1.2rem */
 function tagFontSize(count: number): string {
   const max = Math.max(...tagCloud.value.map((t) => t.count), 1)
   const ratio = 0.7 + (count / max) * 0.5
   return `${ratio}rem`
 }
+
+onBeforeUnmount(() => {
+  if (searchTimer) clearTimeout(searchTimer)
+})
 </script>
 
 <style lang="scss" scoped>
@@ -203,6 +300,83 @@ function tagFontSize(count: number): string {
   font-weight: 500;
 }
 
+.flash-page__search-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.75rem;
+  height: 1.75rem;
+  margin-left: auto;
+  border: none;
+  border-radius: $radius-full;
+  background: transparent;
+  color: var(--text-soft);
+  cursor: pointer;
+  transition:
+    background 0.18s,
+    color 0.18s;
+
+  &:hover,
+  &.is-active {
+    color: var(--accent);
+    background: var(--accent-soft);
+  }
+}
+
+/* ---- 搜索栏 ---- */
+.flash-page__search-bar {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 0.625rem;
+  padding: 0.5rem 0.75rem;
+  background: var(--surface-2);
+  border: 1px solid var(--border-soft);
+  border-radius: $radius-card;
+  animation: flash-search-in 0.18s ease;
+
+  &:focus-within {
+    border-color: var(--accent);
+  }
+}
+
+.flash-page__search-icon {
+  flex-shrink: 0;
+  color: var(--text-faint);
+}
+
+.flash-page__search-input {
+  flex: 1;
+  border: none;
+  outline: none;
+  background: transparent;
+  font-size: 0.8125rem;
+  color: var(--text-main);
+
+  &::placeholder {
+    color: var(--text-faint);
+  }
+}
+
+.flash-page__search-count {
+  flex-shrink: 0;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  color: var(--text-soft);
+  font-variant-numeric: tabular-nums;
+}
+
+@keyframes flash-search-in {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 .flash-page__body {
   flex: 1;
   min-height: 0;
@@ -222,6 +396,47 @@ function tagFontSize(count: number): string {
   display: flex;
   flex-direction: column;
   gap: 1.125rem;
+}
+
+/* ---- 标签筛选条 ---- */
+.flash-page__filter-bar {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  background: var(--accent-soft);
+  border: 1px dashed var(--accent);
+  border-radius: $radius-card;
+  font-size: 0.75rem;
+  color: var(--text-soft);
+  animation: flash-search-in 0.18s ease;
+}
+
+.flash-page__filter-label {
+  flex: 1;
+
+  strong {
+    color: var(--accent);
+  }
+}
+
+.flash-page__filter-clear {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.25rem 0.5rem;
+  border: none;
+  border-radius: $radius-full;
+  background: var(--accent);
+  color: #fff;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity 0.18s;
+
+  &:hover {
+    opacity: 0.85;
+  }
 }
 
 /* ---- 未登录浏览者的提示 banner ---- */
@@ -383,10 +598,25 @@ function tagFontSize(count: number): string {
   color: var(--accent);
   font-weight: 600;
   cursor: pointer;
-  transition: opacity 0.2s;
+  padding: 0.125rem 0.375rem;
+  border-radius: $radius-full;
+  transition:
+    opacity 0.2s,
+    background 0.2s,
+    color 0.2s;
 
   &:hover {
     opacity: 0.7;
+  }
+
+  &--active {
+    background: var(--accent);
+    color: #fff;
+    opacity: 1;
+
+    .flash-tag-cloud__count {
+      color: rgba(255, 255, 255, 0.7);
+    }
   }
 }
 
