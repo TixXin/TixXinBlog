@@ -164,9 +164,9 @@
       </div>
     </div>
 
-    <!-- 登录面板（底部栏上方悬浮） -->
+    <!-- 底部栏内嵌登录面板：仅在非 modal 模式下显示（modal 模式由 app.vue 的 AuthModal 接管） -->
     <Transition name="nexus-login-panel">
-      <div v-if="isLoginOpen" ref="loginPanelRef" class="nexus-bar__login-panel">
+      <div v-if="isLoginOpen && !preferModal" ref="loginPanelRef" class="nexus-bar__login-panel">
         <AuthPanel />
       </div>
     </Transition>
@@ -225,7 +225,7 @@ const router = useRouter()
 const { navItems } = useNavItems()
 const { scrollProgress, scrollResetFn, scrollDirection } = useScrollProgress()
 const { ownerPresence, ownerCard, dailyQuote } = useSiteInfo()
-const { isOpen: isLoginOpen, toggle: toggleLogin, close: closeLogin } = useLoginDrawer()
+const { isOpen: isLoginOpen, preferModal, toggle: toggleLogin, close: closeLogin } = useLoginDrawer()
 const { isLoggedIn, currentUser, logout } = useCurrentUser()
 const { info } = useToast()
 
@@ -419,9 +419,9 @@ function onUserMenuLogout() {
 function onClickOutside(e: MouseEvent) {
   const target = e.target as HTMLElement
 
-  if (isLoginOpen.value) {
+  // 关闭底部栏内嵌登录面板（AuthModal 模式由其自身管理）
+  if (isLoginOpen.value && !preferModal.value) {
     const panel = loginPanelRef.value
-    // 如果点击在面板内或登录按钮上，忽略
     if (!panel?.contains(target) && !target.closest('.nexus-bar__login')) {
       closeLogin()
     }
@@ -448,9 +448,8 @@ onMounted(() => {
 })
 
 /**
- * 仅在登录面板 / 用户菜单实际打开时挂载 click-outside 监听器，
- * 并且延后到 nextTick 注册，避开"打开此面板的那次点击事件"自身冒泡到 document
- * 触发立即关闭的竞态（外部按钮如 flash/tabs 页 guest banner 调用 openLoginDrawer 时尤其关键）。
+ * 仅在面板/菜单打开时挂载 click-outside 监听器，
+ * 延后到 nextTick 注册 — 避免"打开的那次点击"自身冒泡触发立即关闭。
  */
 let outsideHandlerAttached = false
 function attachOutsideHandler() {
@@ -468,7 +467,10 @@ watch(
   [isLoginOpen, isUserMenuOpen],
   ([loginOpen, menuOpen]) => {
     if (loginOpen || menuOpen) {
-      void nextTick(() => attachOutsideHandler())
+      // 必须用 setTimeout（macrotask），不能用 nextTick（microtask）——
+      // Vue 3 的 nextTick 基于 Promise.resolve()，微任务会在当前点击事件冒泡完成前执行，
+      // 导致 onClickOutside 在同一次点击中被触发。setTimeout 保证在下一轮事件循环才注册。
+      setTimeout(() => attachOutsideHandler(), 0)
     } else {
       detachOutsideHandler()
     }

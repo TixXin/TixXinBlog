@@ -8,7 +8,7 @@
 <template>
   <Teleport to="body">
     <Transition name="auth-modal">
-      <div v-if="isOpen" class="auth-modal-overlay" @click.self="close">
+      <div v-if="visible" class="auth-modal-overlay" @click.self="close">
         <div class="auth-modal">
           <AuthPanel />
         </div>
@@ -18,7 +18,10 @@
 </template>
 
 <script setup lang="ts">
-const { isOpen, close } = useLoginDrawer()
+const { isOpen, preferModal, close } = useLoginDrawer()
+
+/** 仅在 preferModal 模式下显示居中弹窗；底部栏内嵌面板由 StatusFooter 自行处理 */
+const visible = computed(() => isOpen.value && preferModal.value)
 
 /** ESC 关闭 */
 function onKeydown(e: KeyboardEvent) {
