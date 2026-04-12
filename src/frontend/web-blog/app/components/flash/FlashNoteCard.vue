@@ -533,10 +533,10 @@ onBeforeUnmount(() => {
     display: block;
     padding-left: 0.25rem;
     color: var(--text-soft);
+  }
 
-    &--checked {
-      color: var(--accent);
-    }
+  :deep(.fm-checkbox--checked) {
+    color: var(--accent);
   }
 }
 
