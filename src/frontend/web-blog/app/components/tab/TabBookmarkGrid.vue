@@ -6,8 +6,8 @@
 -->
 
 <template>
-  <div class="tab-grid">
-    <TransitionGroup name="grid-flip" tag="div" class="tab-grid__list">
+  <div class="tab-grid" :style="gridRootStyle">
+    <TransitionGroup name="grid-flip" tag="div" class="tab-grid__list" :style="{ gap: `${tabSettings.iconGap}px` }">
       <TabBookmarkItem
         v-for="bm in bookmarks"
         :key="bm.id"
@@ -30,19 +30,24 @@ import type { Bookmark } from '~/features/tab/types'
 
 defineProps<{ bookmarks: Bookmark[]; readOnly?: boolean }>()
 const emit = defineEmits<{ add: []; remove: [id: string] }>()
+const { settings: tabSettings } = useTabSettings()
+
+const gridRootStyle = computed(() => ({
+  maxWidth: `${tabSettings.value.gridMaxWidth}${tabSettings.value.gridMaxWidthUnit}`,
+}))
 </script>
 
 <style lang="scss" scoped>
 .tab-grid {
   width: 100%;
-  max-width: 760px;
   margin: 0 auto;
+  transition: max-width 0.2s ease;
 }
 
 .tab-grid__list {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(78px, 1fr));
-  gap: 0.5rem;
+  transition: gap 0.2s ease;
 }
 
 .tab-grid__add {

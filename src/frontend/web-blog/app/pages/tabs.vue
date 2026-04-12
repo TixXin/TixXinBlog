@@ -142,7 +142,11 @@ const greetingLine = computed(() => {
 const today = computed(() => {
   const d = new Date()
   const week = ['日', '一', '二', '三', '四', '五', '六'][d.getDay()]
-  return `${d.getFullYear()} 年 ${d.getMonth() + 1} 月 ${d.getDate()} 日 · 星期${week}`
+  let str = `${d.getFullYear()} 年 ${d.getMonth() + 1} 月 ${d.getDate()} 日 · 星期${week}`
+  if (tabSettings.value.showSeconds) {
+    str += ` · ${d.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}`
+  }
+  return str
 })
 
 // 设置中的默认折叠变化时同步侧边栏

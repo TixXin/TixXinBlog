@@ -7,11 +7,11 @@
 
 <template>
   <a :href="bookmark.url" :title="bookmark.url" target="_blank" rel="noopener" class="tab-bm">
-    <span class="tab-bm__icon" :class="`tab-bm__icon--${iconStyleClass}`" :style="iconStyle">
-      <Icon v-if="isLucide" :name="bookmark.icon!" size="22" />
+    <span class="tab-bm__icon" :style="iconComputedStyle">
+      <Icon v-if="isLucide" :name="bookmark.icon!" :size="Math.round(tabSettings.iconSize * 0.46)" />
       <span v-else class="tab-bm__letter">{{ letter }}</span>
     </span>
-    <span class="tab-bm__name">{{ bookmark.name }}</span>
+    <span v-if="tabSettings.showIconName" class="tab-bm__name" :style="nameComputedStyle">{{ bookmark.name }}</span>
     <button
       v-if="!readOnly"
       type="button"
@@ -34,10 +34,27 @@ const { settings: tabSettings } = useTabSettings()
 
 const isLucide = computed(() => Boolean(props.bookmark.icon?.startsWith('lucide:')))
 const letter = computed(() => props.bookmark.icon || props.bookmark.name.charAt(0).toUpperCase())
-const iconStyleClass = computed(() => tabSettings.value.iconStyle)
-const iconStyle = computed(() => ({
+
+const effectiveRadius = computed(() => {
+  const s = tabSettings.value
+  if (s.iconStyle === 'rounded') return Math.floor(s.iconSize / 2)
+  if (s.iconStyle === 'flat') return Math.min(4, s.iconRadius)
+  return s.iconRadius
+})
+
+const iconComputedStyle = computed(() => ({
   background: props.bookmark.color || 'var(--accent)',
   color: '#fff',
+  width: `${tabSettings.value.iconSize}px`,
+  height: `${tabSettings.value.iconSize}px`,
+  borderRadius: `${effectiveRadius.value}px`,
+  opacity: String(tabSettings.value.iconOpacity),
+  boxShadow: tabSettings.value.iconStyle === 'flat' ? 'none' : undefined,
+}))
+
+const nameComputedStyle = computed(() => ({
+  fontSize: `${tabSettings.value.nameSize}px`,
+  color: tabSettings.value.nameColor || undefined,
 }))
 </script>
 
@@ -68,22 +85,13 @@ const iconStyle = computed(() => ({
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 3rem;
-  height: 3rem;
-  border-radius: $radius-md;
   box-shadow: var(--shadow-card);
   flex-shrink: 0;
-  transition: border-radius 0.2s ease;
-
-  /* 图标风格变体 */
-  &--rounded {
-    border-radius: $radius-full;
-  }
-
-  &--flat {
-    border-radius: $radius-sm;
-    box-shadow: none;
-  }
+  transition:
+    width 0.2s ease,
+    height 0.2s ease,
+    border-radius 0.2s ease,
+    opacity 0.2s ease;
 }
 
 .tab-bm__letter {

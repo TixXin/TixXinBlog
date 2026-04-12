@@ -6,7 +6,7 @@
 -->
 
 <template>
-  <aside class="tab-side" :class="{ 'tab-side--collapsed': collapsed }">
+  <aside class="tab-side" :class="{ 'tab-side--collapsed': collapsed }" :style="sidebarStyle">
     <!-- 折叠/展开切换 -->
     <button type="button" class="tab-side__toggle" aria-label="折叠/展开" @click="collapsed = !collapsed">
       <Icon :name="collapsed ? 'lucide:chevron-right' : 'lucide:chevron-left'" size="14" />
@@ -150,6 +150,12 @@ const emit = defineEmits<{
 const collapsed = defineModel<boolean>('collapsed', { default: false })
 
 const { settings: tabSettings } = useTabSettings()
+
+const sidebarStyle = computed(() => ({
+  borderRadius: `${tabSettings.value.sidebarRadius}px`,
+  opacity: String(tabSettings.value.sidebarOpacity),
+  backdropFilter: tabSettings.value.sidebarBlur ? 'blur(12px)' : 'none',
+}))
 </script>
 
 <style lang="scss" scoped>
@@ -168,9 +174,7 @@ $side-collapsed: 44px;
   flex-direction: column;
   background: var(--surface-1);
   border: 1px solid var(--border-soft);
-  border-radius: $radius-card;
   box-shadow: var(--shadow-elevated, var(--shadow-card));
-  backdrop-filter: blur(12px);
   transition: width 0.25s cubic-bezier(0.4, 0, 0.2, 1);
 
   @media (max-width: $breakpoint-lg) {
