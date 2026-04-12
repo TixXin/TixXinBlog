@@ -94,7 +94,8 @@
           </div>
         </div>
 
-        <form v-if="!readOnly" class="fnc__comment-form" @submit.prevent="onSubmitComment">
+        <!-- 评论表单：游客和登录用户均可评论 -->
+        <form class="fnc__comment-form" @submit.prevent="onSubmitComment">
           <input
             v-model.trim="commentDraft"
             type="text"
@@ -111,9 +112,6 @@
             <Icon name="lucide:send-horizontal" size="14" />
           </button>
         </form>
-        <div v-else-if="note.comments.length === 0" class="fnc__comment-empty">
-          还没有评论，登录后留下第一条吧
-        </div>
       </div>
     </Transition>
   </article>
@@ -131,6 +129,8 @@ const props = defineProps<{
   highlighted?: boolean
   /** 当前登录用户 id，用于判断能否删除别人的评论 */
   currentUserId?: string | null
+  /** 游客设备 id，用于判断游客能否删除自己发的评论 */
+  guestId?: string | null
 }>()
 
 const emit = defineEmits<{
@@ -173,8 +173,11 @@ function formatRelative(iso: string): string {
 }
 
 function canDeleteComment(authorId: string): boolean {
-  if (props.readOnly) return false
-  return Boolean(props.currentUserId && props.currentUserId === authorId)
+  // 登录用户可以删自己的评论
+  if (props.currentUserId && props.currentUserId === authorId) return true
+  // 游客可以删自己的评论（通过 guestId 匹配）
+  if (props.guestId && props.guestId === authorId) return true
+  return false
 }
 
 async function onCopy() {

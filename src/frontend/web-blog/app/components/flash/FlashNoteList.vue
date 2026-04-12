@@ -26,6 +26,7 @@
         :highlighted="note.id === highlightedId"
         :read-only="readOnly"
         :current-user-id="currentUserId"
+        :guest-id="guestId"
         @remove="$emit('remove', $event)"
         @toggle-like="$emit('toggle-like', $event)"
         @add-comment="$emit('add-comment', $event)"
@@ -45,6 +46,8 @@ defineProps<{
   citedIds?: string[]
   readOnly?: boolean
   currentUserId?: string | null
+  /** 游客设备 id，透传给卡片用于评论删除权限 */
+  guestId?: string | null
   /** AI 引用高亮的笔记 id */
   highlightedId?: string | null
 }>()

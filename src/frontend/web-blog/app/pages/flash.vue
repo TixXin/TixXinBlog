@@ -68,6 +68,7 @@
           :loading="loading"
           :read-only="isReadOnly"
           :current-user-id="currentUserId"
+          :guest-id="guestId"
           :highlighted-id="highlightedNoteId"
           @remove="onRemove"
           @toggle-like="onToggleLike"
@@ -136,6 +137,11 @@
     </ClientOnly>
 
     <FlashAISearchModal v-model:visible="aiModalVisible" :notes="notes" @cite-click="onCiteClick" />
+    <CommonGuestIdentityModal
+      :visible="identityModalVisible"
+      @confirm="onIdentityConfirm"
+      @cancel="identityModalVisible = false"
+    />
   </div>
 </template>
 
@@ -148,6 +154,7 @@ useSeoMeta({
 const { isLoggedIn, currentUser } = useCurrentUser()
 const { open: openLoginDrawer } = useLoginDrawer()
 const { success } = useToast()
+const { guestIdentity, hasIdentity, resolveAvatar } = useGuestIdentity()
 const {
   notes,
   loading,
@@ -163,7 +170,10 @@ const {
 } = useFlashNotes()
 
 const currentUserId = computed(() => currentUser.value?.id ?? null)
+const guestId = computed(() => guestIdentity.value?.id ?? null)
 const aiModalVisible = ref(false)
+const identityModalVisible = ref(false)
+let pendingComment: { noteId: string; content: string } | null = null
 
 // ---- 标签筛选 ----
 const activeTag = ref<string | null>(null)
@@ -253,8 +263,36 @@ async function onToggleLike(id: string) {
 }
 
 async function onAddComment(payload: { noteId: string; content: string }) {
-  await addComment(payload.noteId, payload.content)
+  if (isLoggedIn.value) {
+    // 已登录 → 直接用 currentUser 信息
+    await addComment(payload.noteId, payload.content)
+    success('评论已发送')
+    return
+  }
+  // 未登录 → 检查游客身份
+  if (!hasIdentity.value) {
+    // 无身份 → 暂存评论内容，弹出身份录入面板
+    pendingComment = payload
+    identityModalVisible.value = true
+    return
+  }
+  // 有身份 → 用游客身份提交
+  const avatar = resolveAvatar()
+  await addComment(payload.noteId, payload.content, {
+    id: guestIdentity.value!.id,
+    name: guestIdentity.value!.nickname,
+    avatar,
+  })
   success('评论已发送')
+}
+
+function onIdentityConfirm() {
+  identityModalVisible.value = false
+  // 身份已保存到 localStorage，重新提交暂存的评论
+  if (pendingComment) {
+    void onAddComment(pendingComment)
+    pendingComment = null
+  }
 }
 
 async function onRemoveComment(payload: { noteId: string; commentId: string }) {

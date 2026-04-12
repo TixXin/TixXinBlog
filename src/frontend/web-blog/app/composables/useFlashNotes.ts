@@ -101,27 +101,47 @@ export function useFlashNotes() {
     return repo.search(targetUserId, query)
   }
 
-  /** 切换点赞 */
+  /**
+   * 切换点赞 —— 游客也可操作，设备级每日去重由 UI 层（flash.vue）管理。
+   * composable 层不再检查登录态，只负责数据读写。
+   */
   async function toggleLike(id: string): Promise<boolean> {
-    if (!isLoggedIn.value || !currentUser.value) {
-      openLoginDrawer('login')
-      return false
-    }
     const updated = await repo.toggleLike(id)
     notes.value = notes.value.map((n) => (n.id === id ? updated : n))
     return true
   }
 
-  /** 添加评论 */
-  async function addComment(noteId: string, content: string): Promise<FlashComment | null> {
-    if (!isLoggedIn.value || !currentUser.value) {
-      openLoginDrawer('login')
+  /**
+   * 添加评论 —— 支持登录用户和游客两种身份来源。
+   * 登录用户自动取 currentUser 信息；游客由调用方传入 guestAuthor。
+   * 若两者都没有则返回 null，由 UI 层决定是否弹出身份录入面板。
+   */
+  async function addComment(
+    noteId: string,
+    content: string,
+    guestAuthor?: { id: string; name: string; avatar: string },
+  ): Promise<FlashComment | null> {
+    let authorId: string
+    let authorName: string
+    let authorAvatar: string
+
+    if (isLoggedIn.value && currentUser.value) {
+      authorId = currentUser.value.id
+      authorName = currentUser.value.nickname
+      authorAvatar = currentUser.value.avatar
+    } else if (guestAuthor) {
+      authorId = guestAuthor.id
+      authorName = guestAuthor.name
+      authorAvatar = guestAuthor.avatar
+    } else {
+      // 无身份 → UI 层弹出身份录入
       return null
     }
+
     const created = await repo.addComment(noteId, {
-      authorId: currentUser.value.id,
-      authorName: currentUser.value.nickname,
-      authorAvatar: currentUser.value.avatar,
+      authorId,
+      authorName,
+      authorAvatar,
       content,
     })
     notes.value = notes.value.map((n) =>
@@ -130,12 +150,11 @@ export function useFlashNotes() {
     return created
   }
 
-  /** 删除评论（仅评论作者本人或博主可操作，UI 层判断；composable 不强制权限） */
+  /**
+   * 删除评论 —— 不再强制登录，游客也能删除自己发的评论。
+   * 权限校验在 UI 层通过 canDeleteComment 完成（匹配 currentUserId 或 guestId）。
+   */
   async function removeComment(noteId: string, commentId: string): Promise<boolean> {
-    if (!isLoggedIn.value || !currentUser.value) {
-      openLoginDrawer('login')
-      return false
-    }
     await repo.removeComment(noteId, commentId)
     notes.value = notes.value.map((n) =>
       n.id === noteId ? { ...n, comments: n.comments.filter((c) => c.id !== commentId) } : n,
