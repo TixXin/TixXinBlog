@@ -7,33 +7,31 @@
 
 <template>
   <div class="card message-input">
-    <!-- 访客身份栏 -->
+    <!-- 游客身份栏：显示当前身份或提示设置 -->
     <div class="message-input__identity">
-      <div
-        class="message-input__avatar"
-        :style="{ background: identity.avatarColor }"
-      >
-        {{ avatarLetter }}
-      </div>
-      <input
-        v-model="identity.nickname"
-        class="message-input__nickname"
-        type="text"
-        placeholder="你的昵称"
-        maxlength="20"
-      >
-      <div class="message-input__color-picks">
-        <button
-          v-for="color in avatarColors"
-          :key="color"
-          type="button"
-          class="message-input__color-pick"
-          :class="{ 'message-input__color-pick--active': identity.avatarColor === color }"
-          :style="{ background: color }"
-          :aria-label="`选择颜色 ${color}`"
-          @click="identity.avatarColor = color"
-        />
-      </div>
+      <template v-if="hasGuestIdentity">
+        <img
+          v-if="guestAvatarUrl"
+          :src="guestAvatarUrl"
+          :alt="guestIdentity!.nickname"
+          class="message-input__avatar-img"
+        >
+        <span v-else class="message-input__avatar" :style="{ background: guestAvatarColor }">
+          {{ guestAvatarLetter }}
+        </span>
+        <span class="message-input__identity-name">{{ guestIdentity!.nickname }}</span>
+        <button type="button" class="message-input__identity-edit" @click="identityModalVisible = true">
+          <Icon name="lucide:pencil" size="11" />
+          修改
+        </button>
+      </template>
+      <template v-else>
+        <span class="message-input__avatar" style="background: var(--text-faint)">?</span>
+        <button type="button" class="message-input__identity-setup" @click="identityModalVisible = true">
+          <Icon name="lucide:user-round-pen" size="12" />
+          设置你的身份
+        </button>
+      </template>
     </div>
 
     <!-- 回复引用预览 -->
@@ -66,6 +64,14 @@
       </button>
     </div>
 
+    <!-- 游客身份弹窗 -->
+    <CommonGuestIdentityModal
+      :visible="identityModalVisible"
+      @confirm="onIdentityConfirm"
+      @cancel="identityModalVisible = false"
+      @login="onSwitchToLogin"
+    />
+
     <!-- 底部工具栏 -->
     <div class="message-input__footer">
       <div class="message-input__toolbar" role="toolbar" aria-label="格式工具栏（占位）">
@@ -94,35 +100,45 @@
 </template>
 
 <script setup lang="ts">
-import type { GuestMessage, VisitorIdentity } from '~/features/guestbook/types'
+import type { GuestMessage } from '~/features/guestbook/types'
+import { resolveGuestAvatar } from '~/composables/useGuestIdentity'
 
 const props = defineProps<{
   replyTo?: GuestMessage | null
 }>()
 
 const emit = defineEmits<{
-  send: [content: string, identity: VisitorIdentity]
+  /** 发送留言：content + 作者信息 */
+  send: [content: string, author: { name: string; avatar: string }]
   cancelReply: []
 }>()
 
 const { info } = useToast()
+const { guestIdentity, hasIdentity: hasGuestIdentity, resolveAvatar } = useGuestIdentity()
+const { isLoggedIn, currentUser } = useCurrentUser()
+const { open: openLoginDrawer } = useLoginDrawer()
+
 const textareaRef = ref<HTMLTextAreaElement | null>(null)
 const content = ref('')
+const identityModalVisible = ref(false)
 const MAX_CHARS = 500
 
-/** 可选头像颜色 */
+// 头像颜色池（用于无自定义头像时的首字母头像）
 const avatarColors = [
   '#5b7cfa', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#06b6d4', '#f97316',
 ]
 
-/** 访客身份 */
-const identity = reactive<VisitorIdentity>({
-  nickname: '',
-  avatarColor: avatarColors[0],
+const guestAvatarUrl = computed(() => resolveGuestAvatar(guestIdentity.value))
+
+const guestAvatarColor = computed(() => {
+  const name = guestIdentity.value?.nickname || ''
+  let hash = 0
+  for (let i = 0; i < name.length; i++) hash = name.charCodeAt(i) + ((hash << 5) - hash)
+  return avatarColors[Math.abs(hash) % avatarColors.length]
 })
 
-const avatarLetter = computed(() => {
-  const name = identity.nickname.trim()
+const guestAvatarLetter = computed(() => {
+  const name = guestIdentity.value?.nickname || ''
   return name ? name.charAt(0).toUpperCase() : '?'
 })
 
@@ -146,10 +162,37 @@ function handleAction() {
     info(`留言不能超过 ${MAX_CHARS} 字`)
     return
   }
-  emit('send', text, { ...identity })
+
+  // 已登录 → 用 currentUser
+  if (isLoggedIn.value && currentUser.value) {
+    emitSend(text, currentUser.value.nickname, currentUser.value.avatar)
+    return
+  }
+  // 有游客身份 → 用游客信息
+  if (hasGuestIdentity.value && guestIdentity.value) {
+    emitSend(text, guestIdentity.value.nickname, resolveAvatar())
+    return
+  }
+  // 无身份 → 弹出身份面板
+  identityModalVisible.value = true
+}
+
+function emitSend(text: string, name: string, avatar: string) {
+  emit('send', text, { name, avatar })
   content.value = ''
   nextTick(autoResize)
   info('留言发送成功')
+}
+
+function onIdentityConfirm() {
+  identityModalVisible.value = false
+  // 身份已保存，重新执行发送
+  handleAction()
+}
+
+function onSwitchToLogin() {
+  identityModalVisible.value = false
+  openLoginDrawer('login')
 }
 
 /** Ctrl/Cmd+Enter 快捷发送 */
@@ -193,69 +236,71 @@ const toolbarButtons = [
 .message-input__identity {
   display: flex;
   align-items: center;
-  gap: 0.625rem;
-  padding: 0.625rem 1rem;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
   border-bottom: 1px solid var(--border-soft);
 }
 
 .message-input__avatar {
-  width: 1.75rem;
-  height: 1.75rem;
+  width: 1.625rem;
+  height: 1.625rem;
   border-radius: $radius-full;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 0.75rem;
+  font-size: 0.6875rem;
   font-weight: 700;
   color: #fff;
   flex-shrink: 0;
-  transition: background 0.2s;
 }
 
-.message-input__nickname {
-  flex: 1;
-  min-width: 0;
-  height: 1.75rem;
-  padding: 0 0.5rem;
-  border: 1px solid var(--border-soft);
-  border-radius: $radius-sm;
-  background: var(--surface-2);
-  font-size: 0.75rem;
-  color: var(--text-main);
-  outline: none;
-  transition: border-color 0.2s;
-
-  &::placeholder {
-    color: var(--text-faint);
-  }
-
-  &:focus {
-    border-color: var(--border-hover);
-  }
-}
-
-.message-input__color-picks {
-  display: flex;
-  gap: 0.25rem;
+.message-input__avatar-img {
+  width: 1.625rem;
+  height: 1.625rem;
+  border-radius: $radius-full;
+  object-fit: cover;
   flex-shrink: 0;
 }
 
-.message-input__color-pick {
-  width: 1rem;
-  height: 1rem;
-  border-radius: $radius-full;
-  border: 2px solid transparent;
-  cursor: pointer;
-  transition: all 0.15s;
+.message-input__identity-name {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text-main);
+}
+
+.message-input__identity-edit {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+  margin-left: auto;
   padding: 0;
+  border: none;
+  background: transparent;
+  font-size: 0.6875rem;
+  color: var(--text-faint);
+  cursor: pointer;
+  transition: color 0.18s;
 
   &:hover {
-    transform: scale(1.15);
+    color: var(--accent);
   }
+}
 
-  &--active {
-    border-color: var(--text-main);
-    box-shadow: 0 0 0 1px var(--surface-1);
+.message-input__identity-setup {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0;
+  border: none;
+  background: transparent;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--accent);
+  cursor: pointer;
+  transition: opacity 0.18s;
+
+  &:hover {
+    opacity: 0.75;
   }
 }
 

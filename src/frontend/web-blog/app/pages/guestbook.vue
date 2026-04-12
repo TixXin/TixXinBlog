@@ -96,7 +96,7 @@
 </template>
 
 <script setup lang="ts">
-import type { DateGroup, GuestMessage, VisitorIdentity } from '~/features/guestbook/types'
+import type { DateGroup, GuestMessage } from '~/features/guestbook/types'
 import {
   mockActiveMembers,
   mockChatRules,
@@ -247,14 +247,14 @@ function setupObserver() {
 }
 
 // ---- 发送消息 ----
-function addMessage(content: string, identity: VisitorIdentity) {
+function addMessage(content: string, author: { name: string; avatar: string }) {
   const today = new Date().toLocaleDateString('zh-CN', { year: 'numeric', month: '2-digit', day: '2-digit' })
-  const nickname = identity.nickname.trim() || '匿名访客'
+  const nickname = author.name.trim() || '匿名访客'
 
   const newMsg: GuestMessage = {
     id: Date.now(),
     author: nickname,
-    avatar: '',
+    avatar: author.avatar,
     content,
     time: new Date().toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' }),
     isOwner: false,
