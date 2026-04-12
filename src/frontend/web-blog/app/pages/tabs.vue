@@ -36,27 +36,7 @@
 
       <TabSearchBar />
 
-      <button v-if="isReadOnly" type="button" class="tabs-page__guest-banner" @click="onLogin">
-        <Icon name="lucide:eye" size="14" class="tabs-page__guest-banner-icon" />
-        <span class="tabs-page__guest-banner-text">
-          正在浏览博主的标签页，登录后管理你自己的常用网址
-        </span>
-        <span class="tabs-page__guest-banner-cta">
-          立即登录
-          <Icon name="lucide:arrow-right" size="12" />
-        </span>
-      </button>
-
       <div class="tabs-page__panel">
-        <div class="tabs-page__panel-header">
-          <Icon
-            :name="activeCategory?.icon || 'lucide:layout-grid'"
-            size="14"
-            :style="activeCategory ? { color: activeCategory.color } : undefined"
-          />
-          <span>{{ activeCategory?.name || '全部书签' }}</span>
-          <span class="tabs-page__panel-count">{{ visibleBookmarks.length }}</span>
-        </div>
         <TabBookmarkGrid
           :bookmarks="visibleBookmarks"
           :read-only="isReadOnly"
@@ -80,6 +60,21 @@
       v-model:visible="settingsOpen"
       :user="displayUser"
     />
+
+    <!-- 游客提示：右下角浮窗，可关闭 -->
+    <Transition name="tabs-guest-toast">
+      <div v-if="isReadOnly && !guestToastDismissed" class="tabs-guest-toast">
+        <Icon name="lucide:info" size="14" class="tabs-guest-toast__icon" />
+        <span class="tabs-guest-toast__text">正在浏览博主的标签页</span>
+        <button type="button" class="tabs-guest-toast__login" @click="onLogin">
+          登录
+          <Icon name="lucide:log-in" size="11" />
+        </button>
+        <button type="button" class="tabs-guest-toast__close" aria-label="关闭" @click="guestToastDismissed = true">
+          <Icon name="lucide:x" size="12" />
+        </button>
+      </div>
+    </Transition>
   </div>
 </template>
 
@@ -111,6 +106,7 @@ const {
   removeCategory,
 } = useTabBookmarks()
 
+const guestToastDismissed = ref(false)
 const addBookmarkVisible = ref(false)
 const addCategoryVisible = ref(false)
 const settingsOpen = ref(false)
@@ -119,10 +115,6 @@ const sidebarCollapsed = ref(tabSettings.value.defaultCollapsed)
 
 /** 侧栏与问候语用：未登录时显示博主信息 */
 const displayUser = computed(() => currentUser.value ?? mockOwnerUser)
-
-const activeCategory = computed(() =>
-  activeCategoryId.value ? categories.value.find((c) => c.id === activeCategoryId.value) : null,
-)
 
 const greeting = computed(() => {
   const h = new Date().getHours()
@@ -238,67 +230,88 @@ async function onRemoveCategory(id: string) {
   color: var(--text-soft);
 }
 
-/* ---- 未登录浏览者的提示 banner（与闪念页同款） ---- */
-.tabs-page__guest-banner {
-  display: flex;
-  align-items: center;
-  gap: 0.625rem;
-  width: 100%;
-  max-width: 640px;
-  padding: 0.75rem 1rem;
-  border: 1px dashed var(--accent);
-  border-radius: $radius-card;
-  background: var(--accent-soft);
-  color: var(--text-main);
-  font-size: 0.8125rem;
-  text-align: left;
-  cursor: pointer;
-  transition: all 0.2s;
-
-  &:hover {
-    border-style: solid;
-    transform: translateY(-1px);
-  }
-}
-
-.tabs-page__guest-banner-icon {
-  flex-shrink: 0;
-  color: var(--accent);
-}
-
-.tabs-page__guest-banner-text {
-  flex: 1;
-  color: var(--text-soft);
-}
-
-.tabs-page__guest-banner-cta {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.25rem;
-  flex-shrink: 0;
-  font-weight: 600;
-  color: var(--accent);
-}
-
 .tabs-page__panel {
   width: 100%;
   padding: 0.5rem 0;
 }
 
-.tabs-page__panel-header {
+/* ---- 右下角游客提示浮窗 ---- */
+.tabs-guest-toast {
+  position: fixed;
+  bottom: 5rem;
+  right: 1.5rem;
+  z-index: 50;
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  margin-bottom: 0.75rem;
-  font-size: 0.8125rem;
-  font-weight: 600;
-  color: var(--text-main);
+  padding: 0.625rem 0.875rem;
+  background: var(--surface-1);
+  border: 1px solid var(--border-soft);
+  border-radius: $radius-card;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+  font-size: 0.75rem;
 }
 
-.tabs-page__panel-count {
-  margin-left: auto;
-  font-size: 0.6875rem;
-  color: var(--text-faint);
-  font-variant-numeric: tabular-nums;
+.tabs-guest-toast__icon {
+  flex-shrink: 0;
+  color: var(--accent);
 }
+
+.tabs-guest-toast__text {
+  color: var(--text-soft);
+  white-space: nowrap;
+}
+
+.tabs-guest-toast__login {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.25rem 0.5rem;
+  border: none;
+  border-radius: $radius-sm;
+  background: var(--accent);
+  color: #fff;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: opacity 0.18s;
+
+  &:hover {
+    opacity: 0.85;
+  }
+}
+
+.tabs-guest-toast__close {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.25rem;
+  height: 1.25rem;
+  margin-left: 0.125rem;
+  border: none;
+  border-radius: $radius-full;
+  background: transparent;
+  color: var(--text-faint);
+  cursor: pointer;
+
+  &:hover {
+    color: var(--text-soft);
+    background: var(--surface-2);
+  }
+}
+
+.tabs-guest-toast-enter-active,
+.tabs-guest-toast-leave-active {
+  transition:
+    opacity 0.25s ease,
+    transform 0.25s ease;
+}
+
+.tabs-guest-toast-enter-from,
+.tabs-guest-toast-leave-to {
+  opacity: 0;
+  transform: translateY(8px);
+}
+
 </style>
