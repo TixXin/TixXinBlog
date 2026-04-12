@@ -12,10 +12,13 @@ import type { BookmarkCategoryDraft, BookmarkDraft } from './types'
 
 /** 默认分类草稿 */
 export const defaultCategorySeeds: BookmarkCategoryDraft[] = [
-  { name: '常用', icon: 'lucide:star', color: '#f59e0b' },
-  { name: '工具', icon: 'lucide:wrench', color: '#3b82f6' },
-  { name: '学习', icon: 'lucide:book-open', color: '#8b5cf6' },
-  { name: '灵感', icon: 'lucide:lightbulb', color: '#ec4899' },
+  { name: '主页', icon: 'lucide:home', color: '' },
+  { name: 'AI', icon: 'lucide:sparkles', color: '' },
+  { name: '程序员', icon: 'lucide:terminal', color: '' },
+  { name: '设计', icon: 'lucide:palette', color: '' },
+  { name: '产品', icon: 'lucide:box', color: '' },
+  { name: '服务器', icon: 'lucide:server', color: '' },
+  { name: '摸鱼', icon: 'lucide:fish', color: '' },
 ]
 
 /**
@@ -28,23 +31,28 @@ export interface BookmarkSeed extends Omit<BookmarkDraft, 'categoryId'> {
 }
 
 export const defaultBookmarkSeeds: BookmarkSeed[] = [
-  // 常用
-  { categoryName: '常用', name: 'Google', url: 'https://www.google.com', icon: 'G', color: '#4285f4' },
-  { categoryName: '常用', name: 'GitHub', url: 'https://github.com', icon: 'lucide:github', color: '#24292f' },
-  { categoryName: '常用', name: 'YouTube', url: 'https://www.youtube.com', icon: 'lucide:youtube', color: '#ff0000' },
-  { categoryName: '常用', name: 'Twitter', url: 'https://twitter.com', icon: 'lucide:twitter', color: '#1da1f2' },
+  // 主页
+  { categoryName: '主页', name: 'Google', url: 'https://www.google.com', icon: 'G', color: '#4285f4' },
+  { categoryName: '主页', name: 'GitHub', url: 'https://github.com', icon: 'lucide:github', color: '#24292f' },
+  { categoryName: '主页', name: 'YouTube', url: 'https://www.youtube.com', icon: 'lucide:youtube', color: '#ff0000' },
+  { categoryName: '主页', name: 'Twitter', url: 'https://twitter.com', icon: 'lucide:twitter', color: '#1da1f2' },
 
-  // 工具
-  { categoryName: '工具', name: 'ChatGPT', url: 'https://chat.openai.com', icon: 'lucide:bot', color: '#10a37f' },
-  { categoryName: '工具', name: 'Figma', url: 'https://www.figma.com', icon: 'lucide:figma', color: '#a259ff' },
-  { categoryName: '工具', name: 'Notion', url: 'https://www.notion.so', icon: 'N', color: '#000000' },
-  { categoryName: '工具', name: 'CodePen', url: 'https://codepen.io', icon: 'lucide:codepen', color: '#1e1f26' },
+  // AI
+  { categoryName: 'AI', name: 'ChatGPT', url: 'https://chat.openai.com', icon: 'lucide:bot', color: '#10a37f' },
+  { categoryName: 'AI', name: 'Claude', url: 'https://claude.ai', icon: 'lucide:sparkles', color: '#d4a574' },
+  { categoryName: 'AI', name: 'Midjourney', url: 'https://www.midjourney.com', icon: 'M', color: '#000000' },
 
-  // 学习
-  { categoryName: '学习', name: 'MDN', url: 'https://developer.mozilla.org', icon: 'M', color: '#000000' },
-  { categoryName: '学习', name: 'Vue.js', url: 'https://vuejs.org', icon: 'V', color: '#42b883' },
-  { categoryName: '学习', name: 'Nuxt', url: 'https://nuxt.com', icon: 'N', color: '#00dc82' },
+  // 程序员
+  { categoryName: '程序员', name: 'MDN', url: 'https://developer.mozilla.org', icon: 'M', color: '#000000' },
+  { categoryName: '程序员', name: 'Vue.js', url: 'https://vuejs.org', icon: 'V', color: '#42b883' },
+  { categoryName: '程序员', name: 'Nuxt', url: 'https://nuxt.com', icon: 'N', color: '#00dc82' },
+  { categoryName: '程序员', name: 'CodePen', url: 'https://codepen.io', icon: 'lucide:codepen', color: '#1e1f26' },
 
-  // 灵感
-  { categoryName: '灵感', name: 'Dribbble', url: 'https://dribbble.com', icon: 'lucide:dribbble', color: '#ea4c89' },
+  // 设计
+  { categoryName: '设计', name: 'Figma', url: 'https://www.figma.com', icon: 'lucide:figma', color: '#a259ff' },
+  { categoryName: '设计', name: 'Dribbble', url: 'https://dribbble.com', icon: 'lucide:dribbble', color: '#ea4c89' },
+
+  // 摸鱼
+  { categoryName: '摸鱼', name: 'Bilibili', url: 'https://www.bilibili.com', icon: 'B', color: '#00a1d6' },
+  { categoryName: '摸鱼', name: 'V2EX', url: 'https://www.v2ex.com', icon: 'V', color: '#333333' },
 ]

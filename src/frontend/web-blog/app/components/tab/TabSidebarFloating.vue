@@ -60,7 +60,7 @@
             :class="{ 'tab-side__cat--active': activeId === cat.id }"
             @click="emit('select', cat.id)"
           >
-            <Icon v-if="cat.icon" :name="cat.icon" size="15" class="tab-side__cat-icon" :style="{ color: cat.color }" />
+            <Icon v-if="cat.icon" :name="cat.icon" size="15" class="tab-side__cat-icon"  />
           </button>
         </CommonTooltip>
         <button
@@ -70,7 +70,7 @@
           :class="{ 'tab-side__cat--active': activeId === cat.id }"
           @click="emit('select', cat.id)"
         >
-          <Icon v-if="cat.icon" :name="cat.icon" size="15" class="tab-side__cat-icon" :style="{ color: cat.color }" />
+          <Icon v-if="cat.icon" :name="cat.icon" size="15" class="tab-side__cat-icon"  />
           <span class="tab-side__cat-name">{{ cat.name }}</span>
           <span class="tab-side__cat-count">{{ counts[cat.id] || 0 }}</span>
           <button
@@ -99,6 +99,30 @@
         <span>新建分类</span>
       </button>
     </template>
+
+    <!-- 底部弹性空间 + 功能按钮 -->
+    <div class="tab-side__spacer" />
+    <div class="tab-side__bottom">
+      <CommonTooltip v-if="collapsed" content="设置" placement="right">
+        <button type="button" class="tab-side__bottom-btn" @click="emit('openSettings')">
+          <Icon name="lucide:settings" size="15" />
+        </button>
+      </CommonTooltip>
+      <button v-else type="button" class="tab-side__bottom-btn" @click="emit('openSettings')">
+        <Icon name="lucide:settings" size="15" />
+        <span v-if="!collapsed">设置</span>
+      </button>
+
+      <CommonTooltip v-if="collapsed" content="打赏" placement="right">
+        <button type="button" class="tab-side__bottom-btn" @click="emit('openDonate')">
+          <Icon name="lucide:heart" size="15" />
+        </button>
+      </CommonTooltip>
+      <button v-else type="button" class="tab-side__bottom-btn" @click="emit('openDonate')">
+        <Icon name="lucide:heart" size="15" />
+        <span v-if="!collapsed">打赏</span>
+      </button>
+    </div>
   </aside>
 </template>
 
@@ -119,22 +143,25 @@ const emit = defineEmits<{
   select: [id: string | null]
   addCategory: []
   removeCategory: [id: string]
+  openSettings: []
+  openDonate: []
 }>()
 
 const collapsed = defineModel<boolean>('collapsed', { default: false })
 </script>
 
 <style lang="scss" scoped>
-$side-expanded: 200px;
-$side-collapsed: 48px;
+$side-expanded: 160px;
+$side-collapsed: 44px;
 
 .tab-side {
   position: fixed;
   left: 1.25rem;
-  top: 5rem;
+  top: 4rem;
+  bottom: 4rem;
   z-index: 10;
   width: $side-expanded;
-  padding: 0.75rem;
+  padding: 0.625rem;
   display: flex;
   flex-direction: column;
   background: var(--surface-1);
@@ -354,6 +381,44 @@ $side-collapsed: 48px;
 
   &--icon {
     padding: 0.4375rem;
+  }
+}
+
+/* ---- 底部弹性空间 + 功能按钮 ---- */
+.tab-side__spacer {
+  flex: 1;
+}
+
+.tab-side__bottom {
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+  padding-top: 0.5rem;
+  border-top: 1px solid var(--border-soft);
+}
+
+.tab-side__bottom-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.4375rem 0.5rem;
+  border: none;
+  border-radius: $radius-md;
+  background: transparent;
+  color: var(--text-soft);
+  font-size: 0.6875rem;
+  cursor: pointer;
+  transition: all 0.15s;
+  white-space: nowrap;
+
+  .tab-side--collapsed & {
+    justify-content: center;
+    padding: 0.4375rem;
+  }
+
+  &:hover {
+    color: var(--text-main);
+    background: var(--surface-2);
   }
 }
 </style>
