@@ -17,9 +17,24 @@
 <script setup lang="ts">
 const { contentTransitionName, contentTransitionDuration } = useAppearanceSettings()
 
+const route = useRoute()
+const { enable: enableFullbleed, disable: disableFullbleed } = useFullbleedPage()
+
+// 初始 / SSR：直接根据当前 route.meta 设置一次 fullbleed
+if (route.meta.fullbleed) enableFullbleed()
+else disableFullbleed()
+
 const contentTransition = computed(() => ({
   name: contentTransitionName.value,
   mode: 'out-in' as const,
   duration: contentTransitionDuration.value,
+  /**
+   * 关键：在新页面"进入前"才翻转 fullbleed 状态。
+   * 配合 `mode: 'out-in'`，此时离场页面已完全卸载，不会再被布局变化挤压。
+   */
+  onBeforeEnter() {
+    if (route.meta.fullbleed) enableFullbleed()
+    else disableFullbleed()
+  },
 }))
 </script>

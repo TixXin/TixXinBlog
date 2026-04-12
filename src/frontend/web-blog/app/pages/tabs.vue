@@ -8,17 +8,23 @@
 
 <template>
   <div class="tabs-page">
-    <TabSidebarFloating
-      :user="displayUser"
-      :categories="categories"
-      :active-id="activeCategoryId"
-      :counts="categoryCounts"
-      :total-count="bookmarks.length"
-      :read-only="isReadOnly"
-      @select="selectCategory"
-      @add-category="onAddCategoryClick"
-      @remove-category="onRemoveCategory"
-    />
+    <!-- Teleport 到 body，避免 .main-content 祖先链上的 transform/filter 破坏 position:fixed -->
+    <ClientOnly>
+      <Teleport to="body">
+        <TabSidebarFloating
+          v-model:collapsed="sidebarCollapsed"
+          :user="displayUser"
+          :categories="categories"
+          :active-id="activeCategoryId"
+          :counts="categoryCounts"
+          :total-count="bookmarks.length"
+          :read-only="isReadOnly"
+          @select="selectCategory"
+          @add-category="onAddCategoryClick"
+          @remove-category="onRemoveCategory"
+        />
+      </Teleport>
+    </ClientOnly>
 
     <div class="tabs-page__center">
       <div class="tabs-page__greeting">
@@ -71,13 +77,12 @@
 import type { BookmarkDraft } from '~/features/tab/types'
 import { mockOwnerUser } from '~/features/auth/mock'
 
+definePageMeta({ fullbleed: true })
+
 useSeoMeta({
   title: '标签页',
   description: '你的个人起始页：搜索 + 书签 + 分类管理',
 })
-
-// 进入页面即激活全屏模式（隐藏 nexus 左右两栏，main-content 占满）
-defineFullbleedPage()
 
 const { currentUser, isLoggedIn } = useCurrentUser()
 const { open: openLoginDrawer } = useLoginDrawer()
@@ -97,6 +102,7 @@ const {
 } = useTabBookmarks()
 
 const addBookmarkVisible = ref(false)
+const sidebarCollapsed = ref(false)
 
 /** 侧栏与问候语用：未登录时显示博主信息 */
 const displayUser = computed(() => currentUser.value ?? mockOwnerUser)
@@ -173,20 +179,7 @@ async function onRemoveCategory(id: string) {
   display: flex;
   flex-direction: column;
   min-height: 0;
-  background:
-    radial-gradient(ellipse at top left, var(--accent-soft), transparent 55%),
-    radial-gradient(ellipse at bottom right, var(--accent-soft), transparent 50%),
-    linear-gradient(135deg, var(--surface-1), var(--surface-2));
-}
-
-.tabs-page::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background-image: radial-gradient(circle at 1px 1px, var(--border-soft) 1px, transparent 0);
-  background-size: 28px 28px;
-  opacity: 0.35;
-  pointer-events: none;
+  /* 悬浮侧栏不占文档流，内容区自然居中，无需 padding-left */
 }
 
 .tabs-page__center {
@@ -197,7 +190,7 @@ async function onRemoveCategory(id: string) {
   flex-direction: column;
   align-items: center;
   justify-content: flex-start;
-  padding: 4.5rem 1.5rem 2rem;
+  padding: 3.5rem 1.5rem 2.5rem;
   gap: 1.75rem;
   width: 100%;
   max-width: 880px;
