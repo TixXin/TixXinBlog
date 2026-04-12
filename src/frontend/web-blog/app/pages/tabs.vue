@@ -217,7 +217,6 @@ async function onRemoveCategory(id: string) {
   padding: 3.5rem 1.5rem 2.5rem;
   gap: 1.75rem;
   width: 100%;
-  max-width: 880px;
   margin: 0 auto;
 }
 

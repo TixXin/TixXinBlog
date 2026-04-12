@@ -141,7 +141,7 @@
                     </button>
                   </span>
                 </div>
-                <input type="range" class="tsd-range" :value="s.gridMaxWidth" :min="s.gridMaxWidthUnit === 'px' ? 400 : 40" :max="s.gridMaxWidthUnit === 'px' ? 1200 : 100" :step="s.gridMaxWidthUnit === 'px' ? 10 : 5" @input="update('gridMaxWidth', +($event.target as HTMLInputElement).value)">
+                <input type="range" class="tsd-range" :value="s.gridMaxWidth" :min="s.gridMaxWidthUnit === 'px' ? 400 : 40" :max="s.gridMaxWidthUnit === 'px' ? 2400 : 100" :step="s.gridMaxWidthUnit === 'px' ? 10 : 5" @input="update('gridMaxWidth', +($event.target as HTMLInputElement).value)">
               </div>
               <button type="button" class="tsd-reset" @click="resetSection('icon')">
                 <Icon name="lucide:rotate-ccw" size="12" />
