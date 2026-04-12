@@ -20,18 +20,29 @@
       </div>
     </Transition>
 
+    <!-- 拖拽调整高度的手柄（输入区顶部边框） -->
+    <div class="message-input__resize-handle" @pointerdown="onResizePointerDown" />
+
     <!-- 输入区域 -->
     <div class="message-input__editor-wrap">
       <textarea
         ref="textareaRef"
         v-model="content"
         class="message-input__editor"
+        :style="{ height: editorHeight + 'px' }"
         placeholder="输入留言内容..."
-        rows="3"
         :maxlength="MAX_CHARS"
-        @input="autoResize"
         @keydown="onEditorKeydown"
       />
+      <!-- 右上角展开/收起按钮 -->
+      <button
+        type="button"
+        class="message-input__expand-toggle"
+        :title="isExpanded ? '收起输入框' : '展开输入框'"
+        @click="toggleExpand"
+      >
+        <Icon :name="isExpanded ? 'lucide:minimize-2' : 'lucide:maximize-2'" size="12" />
+      </button>
     </div>
 
     <!-- 游客身份弹窗 -->
@@ -82,13 +93,44 @@ const content = ref('')
 const identityModalVisible = ref(false)
 const MAX_CHARS = 500
 
+// ---- 输入框高度控制 ----
+const DEFAULT_HEIGHT = 72
+const EXPANDED_HEIGHT = 144
+const MIN_HEIGHT = 44
+const MAX_HEIGHT = 320
 
-/** textarea 自适应高度 */
-function autoResize() {
-  const el = textareaRef.value
-  if (!el) return
-  el.style.height = 'auto'
-  el.style.height = `${Math.min(el.scrollHeight, 160)}px`
+const editorHeight = ref(DEFAULT_HEIGHT)
+const isExpanded = ref(false)
+
+/** 展开/收起按钮：在默认高度和两倍高度之间切换 */
+function toggleExpand() {
+  isExpanded.value = !isExpanded.value
+  editorHeight.value = isExpanded.value ? EXPANDED_HEIGHT : DEFAULT_HEIGHT
+}
+
+/** 拖拽调整高度：顶部手柄 pointerdown → 向上拖 = 变高 */
+let resizeStartY = 0
+let resizeStartHeight = 0
+
+function onResizePointerDown(e: PointerEvent) {
+  if (e.button !== 0) return
+  e.preventDefault()
+  ;(e.currentTarget as HTMLElement).setPointerCapture?.(e.pointerId)
+  resizeStartY = e.clientY
+  resizeStartHeight = editorHeight.value
+  window.addEventListener('pointermove', onResizePointerMove)
+  window.addEventListener('pointerup', onResizePointerUp, { once: true })
+}
+
+function onResizePointerMove(e: PointerEvent) {
+  // 向上拖 = deltaY 为负 = 高度增加
+  const delta = resizeStartY - e.clientY
+  editorHeight.value = Math.max(MIN_HEIGHT, Math.min(MAX_HEIGHT, resizeStartHeight + delta))
+}
+
+function onResizePointerUp() {
+  window.removeEventListener('pointermove', onResizePointerMove)
+  isExpanded.value = editorHeight.value > DEFAULT_HEIGHT * 1.3
 }
 
 function handleAction() {
@@ -119,7 +161,6 @@ function handleAction() {
 function emitSend(text: string, name: string, avatar: string) {
   emit('send', text, { name, avatar })
   content.value = ''
-  nextTick(autoResize)
   info('留言发送成功')
 }
 
@@ -147,6 +188,10 @@ watch(() => props.replyTo, (v) => {
   if (v) nextTick(() => textareaRef.value?.focus())
 })
 
+onBeforeUnmount(() => {
+  window.removeEventListener('pointermove', onResizePointerMove)
+})
+
 const toolbarButtons = [
   { icon: 'lucide:bold', title: '加粗' },
   { icon: 'lucide:italic', title: '斜体' },
@@ -161,13 +206,42 @@ const toolbarButtons = [
 .message-input {
   flex-shrink: 0;
   margin: 0.375rem 0.5rem 0.5rem;
-  border-radius: $radius-sm;
+  border-radius: $radius-sm $radius-sm $radius-card $radius-card;
   border: 1px solid var(--border-soft);
   background: var(--surface-1-alpha-90);
   backdrop-filter: blur(8px);
   box-shadow: none;
   padding: 0;
   overflow: hidden;
+}
+
+/* 顶部拖拽手柄：拖动改变输入框高度 */
+.message-input__resize-handle {
+  height: 6px;
+  cursor: ns-resize;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  user-select: none;
+  touch-action: none;
+  transition: background 0.18s;
+
+  &:hover {
+    background: var(--border-soft);
+  }
+
+  &::after {
+    content: '';
+    width: 2rem;
+    height: 2px;
+    border-radius: 1px;
+    background: var(--border-soft);
+    transition: background 0.18s;
+  }
+
+  &:hover::after {
+    background: var(--text-faint);
+  }
 }
 
 /* ---- 回复引用预览 ---- */
@@ -245,14 +319,13 @@ const toolbarButtons = [
 
 /* ---- 输入区 ---- */
 .message-input__editor-wrap {
-  padding: 0.5rem 0.75rem 0.25rem;
+  position: relative;
+  padding: 0.25rem 0.75rem 0.25rem;
 }
 
 .message-input__editor {
   width: 100%;
-  min-height: 44px;
-  max-height: 160px;
-  padding: 0.375rem 0;
+  padding: 0.375rem 1.5rem 0.375rem 0;
   font-size: 0.875rem;
   font-family: inherit;
   line-height: 1.6;
@@ -265,6 +338,32 @@ const toolbarButtons = [
 
   &::placeholder {
     color: var(--text-faint);
+  }
+}
+
+/* 右上角展开/收起按钮 */
+.message-input__expand-toggle {
+  position: absolute;
+  top: 0.375rem;
+  right: 0.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.25rem;
+  height: 1.25rem;
+  padding: 0;
+  border: none;
+  border-radius: $radius-sm;
+  background: transparent;
+  color: var(--text-faint);
+  cursor: pointer;
+  transition:
+    color 0.18s,
+    background 0.18s;
+
+  &:hover {
+    color: var(--text-soft);
+    background: var(--surface-2);
   }
 }
 
