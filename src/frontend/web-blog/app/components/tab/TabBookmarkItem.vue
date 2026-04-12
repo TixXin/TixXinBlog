@@ -7,7 +7,7 @@
 
 <template>
   <a :href="bookmark.url" :title="bookmark.url" target="_blank" rel="noopener" class="tab-bm">
-    <span class="tab-bm__icon" :style="iconStyle">
+    <span class="tab-bm__icon" :class="`tab-bm__icon--${iconStyleClass}`" :style="iconStyle">
       <Icon v-if="isLucide" :name="bookmark.icon!" size="22" />
       <span v-else class="tab-bm__letter">{{ letter }}</span>
     </span>
@@ -30,8 +30,11 @@ import type { Bookmark } from '~/features/tab/types'
 const props = defineProps<{ bookmark: Bookmark; readOnly?: boolean }>()
 const emit = defineEmits<{ remove: [id: string] }>()
 
+const { settings: tabSettings } = useTabSettings()
+
 const isLucide = computed(() => Boolean(props.bookmark.icon?.startsWith('lucide:')))
 const letter = computed(() => props.bookmark.icon || props.bookmark.name.charAt(0).toUpperCase())
+const iconStyleClass = computed(() => tabSettings.value.iconStyle)
 const iconStyle = computed(() => ({
   background: props.bookmark.color || 'var(--accent)',
   color: '#fff',
@@ -70,6 +73,17 @@ const iconStyle = computed(() => ({
   border-radius: $radius-md;
   box-shadow: var(--shadow-card);
   flex-shrink: 0;
+  transition: border-radius 0.2s ease;
+
+  /* 图标风格变体 */
+  &--rounded {
+    border-radius: $radius-full;
+  }
+
+  &--flat {
+    border-radius: $radius-sm;
+    box-shadow: none;
+  }
 }
 
 .tab-bm__letter {

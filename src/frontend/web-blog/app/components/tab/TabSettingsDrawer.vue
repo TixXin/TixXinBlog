@@ -7,10 +7,8 @@
 
 <template>
   <Teleport to="body">
-    <!-- 遮罩 -->
-    <Transition name="tab-settings-overlay">
-      <div v-if="visible" class="tab-settings-overlay" @click="close" />
-    </Transition>
+    <!-- 点击外部关闭（无模糊遮罩） -->
+    <div v-if="visible" class="tab-settings-backdrop" @click="close" />
 
     <!-- 抽屉 -->
     <Transition name="tab-settings-drawer">
@@ -71,8 +69,8 @@
                     :key="opt.value"
                     type="button"
                     class="tab-settings-option"
-                    :class="{ 'tab-settings-option--active': iconStyle === opt.value }"
-                    @click="iconStyle = opt.value"
+                    :class="{ 'tab-settings-option--active': settings.iconStyle === opt.value }"
+                    @click="update('iconStyle', opt.value)"
                   >
                     <Icon :name="opt.icon" size="16" />
                     <span>{{ opt.label }}</span>
@@ -86,13 +84,13 @@
               <h3 class="tab-settings-section__title">时间与问候</h3>
               <div class="tab-settings-field">
                 <label class="tab-settings-field__label">显示问候语</label>
-                <button type="button" class="tab-settings-toggle" :class="{ 'is-on': showGreeting }" @click="showGreeting = !showGreeting">
+                <button type="button" class="tab-settings-toggle" :class="{ 'is-on': settings.showGreeting }" @click="update('showGreeting', !settings.showGreeting)">
                   <span class="tab-settings-toggle__thumb" />
                 </button>
               </div>
               <div class="tab-settings-field">
                 <label class="tab-settings-field__label">显示日期</label>
-                <button type="button" class="tab-settings-toggle" :class="{ 'is-on': showDate }" @click="showDate = !showDate">
+                <button type="button" class="tab-settings-toggle" :class="{ 'is-on': settings.showDate }" @click="update('showDate', !settings.showDate)">
                   <span class="tab-settings-toggle__thumb" />
                 </button>
               </div>
@@ -128,13 +126,13 @@
               <h3 class="tab-settings-section__title">侧边栏</h3>
               <div class="tab-settings-field">
                 <label class="tab-settings-field__label">默认折叠</label>
-                <button type="button" class="tab-settings-toggle" :class="{ 'is-on': defaultCollapsed }" @click="defaultCollapsed = !defaultCollapsed">
+                <button type="button" class="tab-settings-toggle" :class="{ 'is-on': settings.defaultCollapsed }" @click="update('defaultCollapsed', !settings.defaultCollapsed)">
                   <span class="tab-settings-toggle__thumb" />
                 </button>
               </div>
               <div class="tab-settings-field">
                 <label class="tab-settings-field__label">显示书签计数</label>
-                <button type="button" class="tab-settings-toggle" :class="{ 'is-on': showCounts }" @click="showCounts = !showCounts">
+                <button type="button" class="tab-settings-toggle" :class="{ 'is-on': settings.showCounts }" @click="update('showCounts', !settings.showCounts)">
                   <span class="tab-settings-toggle__thumb" />
                 </button>
               </div>
@@ -173,15 +171,9 @@ defineProps<{
 const visible = defineModel<boolean>('visible', { default: false })
 
 const colorMode = useColorMode()
+const { settings, update } = useTabSettings()
 
 const activeSection = ref('profile')
-
-// 设置项本地状态（后续可持久化到 localStorage）
-const iconStyle = ref('default')
-const showGreeting = ref(true)
-const showDate = ref(true)
-const defaultCollapsed = ref(false)
-const showCounts = ref(true)
 
 const sections = [
   { id: 'profile', label: '个人信息', icon: 'lucide:user' },
@@ -210,23 +202,11 @@ function close() {
 </script>
 
 <style lang="scss" scoped>
-/* ---- 遮罩 ---- */
-.tab-settings-overlay {
+/* ---- 透明背景（点击关闭用，无模糊无半透明） ---- */
+.tab-settings-backdrop {
   position: fixed;
   inset: 0;
   z-index: 199;
-  background: rgba(0, 0, 0, 0.2);
-  backdrop-filter: blur(2px);
-}
-
-.tab-settings-overlay-enter-active,
-.tab-settings-overlay-leave-active {
-  transition: opacity 0.2s ease;
-}
-
-.tab-settings-overlay-enter-from,
-.tab-settings-overlay-leave-to {
-  opacity: 0;
 }
 
 /* ---- 抽屉 ---- */
