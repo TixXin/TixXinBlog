@@ -283,21 +283,14 @@ async function onRemoveCategory(id: string) {
 
 .tabs-page__panel {
   width: 100%;
-  padding: 1.25rem 1.5rem;
-  background: var(--surface-1);
-  border: 1px solid var(--border-soft);
-  border-radius: $radius-card;
-  box-shadow: var(--shadow-card);
-  backdrop-filter: blur(8px);
+  padding: 0.5rem 0;
 }
 
 .tabs-page__panel-header {
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  margin-bottom: 1rem;
-  padding-bottom: 0.75rem;
-  border-bottom: 1px solid var(--border-soft);
+  margin-bottom: 0.75rem;
   font-size: 0.8125rem;
   font-weight: 600;
   color: var(--text-main);
