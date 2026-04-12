@@ -9,7 +9,7 @@
  * HttpFlashRepository（$fetch /api/flash-notes），调用方代码无需改动。
  */
 
-import type { FlashNote, FlashNoteDraft } from './types'
+import type { FlashComment, FlashCommentDraft, FlashNote, FlashNoteDraft } from './types'
 
 export interface FlashNoteRepository {
   /** 列出指定用户的全部闪念，按 createdAt 倒序 */
@@ -22,4 +22,10 @@ export interface FlashNoteRepository {
   remove(id: string): Promise<void>
   /** 关键词搜索（用户内本地匹配，不依赖 AI） */
   search(userId: string, query: string): Promise<FlashNote[]>
+  /** 切换点赞状态：当前已点赞则 -1，否则 +1（mock 阶段不区分谁点的） */
+  toggleLike(id: string): Promise<FlashNote>
+  /** 添加评论 */
+  addComment(noteId: string, draft: FlashCommentDraft): Promise<FlashComment>
+  /** 删除评论 */
+  removeComment(noteId: string, commentId: string): Promise<void>
 }

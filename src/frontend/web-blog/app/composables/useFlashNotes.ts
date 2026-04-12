@@ -11,7 +11,7 @@
  * - 写操作仅对登录用户开放，未登录触发 useLoginDrawer.open()
  */
 
-import type { FlashNote, FlashNoteDraft } from '~/features/flash/types'
+import type { FlashComment, FlashNote, FlashNoteDraft } from '~/features/flash/types'
 import { defaultFlashNoteSeeds } from '~/features/flash/mock'
 import { mockOwnerUser } from '~/features/auth/mock'
 
@@ -101,6 +101,48 @@ export function useFlashNotes() {
     return repo.search(targetUserId, query)
   }
 
+  /** 切换点赞 */
+  async function toggleLike(id: string): Promise<boolean> {
+    if (!isLoggedIn.value || !currentUser.value) {
+      openLoginDrawer('login')
+      return false
+    }
+    const updated = await repo.toggleLike(id)
+    notes.value = notes.value.map((n) => (n.id === id ? updated : n))
+    return true
+  }
+
+  /** 添加评论 */
+  async function addComment(noteId: string, content: string): Promise<FlashComment | null> {
+    if (!isLoggedIn.value || !currentUser.value) {
+      openLoginDrawer('login')
+      return null
+    }
+    const created = await repo.addComment(noteId, {
+      authorId: currentUser.value.id,
+      authorName: currentUser.value.nickname,
+      authorAvatar: currentUser.value.avatar,
+      content,
+    })
+    notes.value = notes.value.map((n) =>
+      n.id === noteId ? { ...n, comments: [...n.comments, created] } : n,
+    )
+    return created
+  }
+
+  /** 删除评论（仅评论作者本人或博主可操作，UI 层判断；composable 不强制权限） */
+  async function removeComment(noteId: string, commentId: string): Promise<boolean> {
+    if (!isLoggedIn.value || !currentUser.value) {
+      openLoginDrawer('login')
+      return false
+    }
+    await repo.removeComment(noteId, commentId)
+    notes.value = notes.value.map((n) =>
+      n.id === noteId ? { ...n, comments: n.comments.filter((c) => c.id !== commentId) } : n,
+    )
+    return true
+  }
+
   /** 标签聚合：按出现次数倒序 */
   const tagCloud = computed<{ name: string; count: number }[]>(() => {
     const map = new Map<string, number>()
@@ -135,5 +177,8 @@ export function useFlashNotes() {
     update,
     remove,
     search,
+    toggleLike,
+    addComment,
+    removeComment,
   }
 }

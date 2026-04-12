@@ -34,7 +34,11 @@
           :notes="notes"
           :loading="loading"
           :read-only="isReadOnly"
+          :current-user-id="currentUserId"
           @remove="onRemove"
+          @toggle-like="onToggleLike"
+          @add-comment="onAddComment"
+          @remove-comment="onRemoveComment"
         />
       </div>
     </CommonCustomScrollbar>
@@ -104,9 +108,23 @@ useSeoMeta({
   description: '记录每一个稍纵即逝的灵感，配合 AI 搜索回顾你的想法历史',
 })
 
-const { isLoggedIn } = useCurrentUser()
+const { isLoggedIn, currentUser } = useCurrentUser()
 const { open: openLoginDrawer } = useLoginDrawer()
-const { notes, loading, isReadOnly, tagCloud, monthlyCount, load, add, remove } = useFlashNotes()
+const {
+  notes,
+  loading,
+  isReadOnly,
+  tagCloud,
+  monthlyCount,
+  load,
+  add,
+  remove,
+  toggleLike,
+  addComment,
+  removeComment,
+} = useFlashNotes()
+
+const currentUserId = computed(() => currentUser.value?.id ?? null)
 
 const aiModalVisible = ref(false)
 
@@ -137,6 +155,18 @@ async function onSubmit(draft: { content: string; tags: string[] }) {
 
 async function onRemove(id: string) {
   await remove(id)
+}
+
+async function onToggleLike(id: string) {
+  await toggleLike(id)
+}
+
+async function onAddComment(payload: { noteId: string; content: string }) {
+  await addComment(payload.noteId, payload.content)
+}
+
+async function onRemoveComment(payload: { noteId: string; commentId: string }) {
+  await removeComment(payload.noteId, payload.commentId)
 }
 
 /** 标签云字号：count 越大字号越大，1.2x ~ 2x */

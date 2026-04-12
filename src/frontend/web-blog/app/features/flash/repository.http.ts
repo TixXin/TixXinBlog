@@ -14,7 +14,7 @@
  */
 
 import type { FlashNoteRepository } from './repository'
-import type { FlashNote, FlashNoteDraft } from './types'
+import type { FlashComment, FlashCommentDraft, FlashNote, FlashNoteDraft } from './types'
 
 const NOT_IMPLEMENTED = 'HttpFlashRepository 尚未实现，请保持 useMockRepo=true 或先完成后端 API 对接'
 
@@ -32,6 +32,15 @@ export class HttpFlashRepository implements FlashNoteRepository {
     return Promise.reject(new Error(NOT_IMPLEMENTED))
   }
   search(_userId: string, _query: string): Promise<FlashNote[]> {
+    return Promise.reject(new Error(NOT_IMPLEMENTED))
+  }
+  toggleLike(_id: string): Promise<FlashNote> {
+    return Promise.reject(new Error(NOT_IMPLEMENTED))
+  }
+  addComment(_noteId: string, _draft: FlashCommentDraft): Promise<FlashComment> {
+    return Promise.reject(new Error(NOT_IMPLEMENTED))
+  }
+  removeComment(_noteId: string, _commentId: string): Promise<void> {
     return Promise.reject(new Error(NOT_IMPLEMENTED))
   }
 }

@@ -10,7 +10,7 @@
  */
 
 import type { FlashNoteRepository } from './repository'
-import type { FlashNote, FlashNoteDraft } from './types'
+import type { FlashComment, FlashCommentDraft, FlashNote, FlashNoteDraft } from './types'
 
 const STORAGE_PREFIX = 'flash:notes:'
 
@@ -39,13 +39,33 @@ function writeAll(userId: string, notes: FlashNote[]): void {
   }
 }
 
-function generateId(): string {
-  return `note-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
+function generateId(prefix = 'note'): string {
+  return `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
+}
+
+/** 旧版 note 缺失 likes/comments，读取时按需补全字段，避免渲染崩溃 */
+function normalize(note: FlashNote): FlashNote {
+  return {
+    ...note,
+    likes: typeof note.likes === 'number' ? note.likes : 0,
+    comments: Array.isArray(note.comments) ? note.comments : [],
+  }
+}
+
+function findUserIdByNote(noteId: string): string | null {
+  if (typeof window === 'undefined') return null
+  for (let i = 0; i < window.localStorage.length; i++) {
+    const key = window.localStorage.key(i)
+    if (!key || !key.startsWith(STORAGE_PREFIX)) continue
+    const userId = key.slice(STORAGE_PREFIX.length)
+    if (readAll(userId).some((n) => n.id === noteId)) return userId
+  }
+  return null
 }
 
 export class LocalFlashRepository implements FlashNoteRepository {
   list(userId: string): Promise<FlashNote[]> {
-    const notes = readAll(userId)
+    const notes = readAll(userId).map(normalize)
     // 倒序：最新在前
     const sorted = [...notes].sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1))
     return Promise.resolve(sorted)
@@ -54,12 +74,14 @@ export class LocalFlashRepository implements FlashNoteRepository {
   create(userId: string, draft: FlashNoteDraft): Promise<FlashNote> {
     const now = new Date().toISOString()
     const note: FlashNote = {
-      id: generateId(),
+      id: generateId('note'),
       userId,
       content: draft.content,
       tags: [...draft.tags],
       createdAt: now,
       updatedAt: now,
+      likes: 0,
+      comments: [],
     }
     const notes = readAll(userId)
     notes.push(note)
@@ -112,11 +134,57 @@ export class LocalFlashRepository implements FlashNoteRepository {
   search(userId: string, query: string): Promise<FlashNote[]> {
     const q = query.trim().toLowerCase()
     if (!q) return this.list(userId)
-    const notes = readAll(userId)
+    const notes = readAll(userId).map(normalize)
     const hits = notes.filter((n) => {
       if (n.content.toLowerCase().includes(q)) return true
       return n.tags.some((t) => t.toLowerCase().includes(q))
     })
     return Promise.resolve(hits.sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1)))
+  }
+
+  toggleLike(id: string): Promise<FlashNote> {
+    const userId = findUserIdByNote(id)
+    if (!userId) return Promise.reject(new Error(`FlashNote ${id} not found`))
+    const notes = readAll(userId)
+    const idx = notes.findIndex((n) => n.id === id)
+    if (idx === -1) return Promise.reject(new Error(`FlashNote ${id} not found`))
+    const original = normalize(notes[idx]!)
+    // mock 阶段简单切换 0 ↔ 1，避免在客户端状态里维护"哪些用户点过"
+    const next: FlashNote = { ...original, likes: original.likes > 0 ? 0 : 1 }
+    notes[idx] = next
+    writeAll(userId, notes)
+    return Promise.resolve(next)
+  }
+
+  addComment(noteId: string, draft: FlashCommentDraft): Promise<FlashComment> {
+    const userId = findUserIdByNote(noteId)
+    if (!userId) return Promise.reject(new Error(`FlashNote ${noteId} not found`))
+    const notes = readAll(userId)
+    const idx = notes.findIndex((n) => n.id === noteId)
+    if (idx === -1) return Promise.reject(new Error(`FlashNote ${noteId} not found`))
+    const original = normalize(notes[idx]!)
+    const comment: FlashComment = {
+      id: generateId('cmt'),
+      authorId: draft.authorId,
+      authorName: draft.authorName,
+      authorAvatar: draft.authorAvatar,
+      content: draft.content,
+      createdAt: new Date().toISOString(),
+    }
+    notes[idx] = { ...original, comments: [...original.comments, comment] }
+    writeAll(userId, notes)
+    return Promise.resolve(comment)
+  }
+
+  removeComment(noteId: string, commentId: string): Promise<void> {
+    const userId = findUserIdByNote(noteId)
+    if (!userId) return Promise.resolve()
+    const notes = readAll(userId)
+    const idx = notes.findIndex((n) => n.id === noteId)
+    if (idx === -1) return Promise.resolve()
+    const original = normalize(notes[idx]!)
+    notes[idx] = { ...original, comments: original.comments.filter((c) => c.id !== commentId) }
+    writeAll(userId, notes)
+    return Promise.resolve()
   }
 }

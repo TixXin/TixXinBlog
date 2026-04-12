@@ -1,6 +1,6 @@
 <!--
   @file FlashNoteList.vue
-  @description 闪念笔记流，支持空状态与加载态
+  @description 闪念笔记流：双列瀑布流布局，支持空状态与加载态
   @author TixXin
   @since 2026-04-11
 -->
@@ -17,16 +17,20 @@
       <span>还没有闪念，记下第一个想法吧</span>
     </div>
 
-    <TransitionGroup v-else name="flash-list" tag="div" class="flash-note-list__items">
+    <div v-else class="flash-note-list__masonry">
       <FlashNoteCard
         v-for="note in notes"
         :key="note.id"
         :note="note"
         :cited="citedIds?.includes(note.id)"
         :read-only="readOnly"
+        :current-user-id="currentUserId"
         @remove="$emit('remove', $event)"
+        @toggle-like="$emit('toggle-like', $event)"
+        @add-comment="$emit('add-comment', $event)"
+        @remove-comment="$emit('remove-comment', $event)"
       />
-    </TransitionGroup>
+    </div>
   </div>
 </template>
 
@@ -38,10 +42,14 @@ defineProps<{
   loading?: boolean
   citedIds?: string[]
   readOnly?: boolean
+  currentUserId?: string | null
 }>()
 
 defineEmits<{
   remove: [id: string]
+  'toggle-like': [id: string]
+  'add-comment': [payload: { noteId: string; content: string }]
+  'remove-comment': [payload: { noteId: string; commentId: string }]
 }>()
 </script>
 
@@ -52,10 +60,22 @@ defineEmits<{
   gap: 0.75rem;
 }
 
-.flash-note-list__items {
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
+/* CSS columns 实现的双列瀑布流：高度自适应、卡片不被截断 */
+.flash-note-list__masonry {
+  column-count: 1;
+  column-gap: 0.875rem;
+
+  @media (min-width: $breakpoint-md) {
+    column-count: 2;
+  }
+
+  > * {
+    display: inline-flex;
+    width: 100%;
+    margin-bottom: 0.875rem;
+    /* 关键：避免卡片在两列之间被截断 */
+    break-inside: avoid;
+  }
 }
 
 .flash-note-list__loading,
@@ -78,26 +98,5 @@ defineEmits<{
   to {
     transform: rotate(360deg);
   }
-}
-
-/* TransitionGroup */
-.flash-list-enter-active,
-.flash-list-leave-active {
-  transition: all 0.3s ease;
-}
-
-.flash-list-enter-from {
-  opacity: 0;
-  transform: translateY(-8px);
-}
-
-.flash-list-leave-to {
-  opacity: 0;
-  transform: translateX(20px);
-}
-
-.flash-list-leave-active {
-  position: absolute;
-  width: 100%;
 }
 </style>
