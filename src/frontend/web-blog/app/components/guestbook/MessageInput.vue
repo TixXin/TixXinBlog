@@ -32,9 +32,6 @@
         @input="autoResize"
         @keydown="onEditorKeydown"
       />
-      <button type="button" class="message-input__send" :disabled="!content.trim()" @click="handleAction">
-        <Icon name="lucide:send" size="15" />
-      </button>
     </div>
 
     <!-- 游客身份弹窗 -->
@@ -54,27 +51,16 @@
           </button>
         </CommonTooltip>
       </div>
-      <div class="message-input__footer-right">
-        <span class="message-input__hint">
-          <kbd class="message-input__kbd">Ctrl</kbd>
-          <span class="message-input__kbd-plus">+</span>
-          <kbd class="message-input__kbd">Enter</kbd>
-          <span class="message-input__hint-text">发送</span>
-        </span>
-        <span
-          class="message-input__char-count"
-          :class="{ 'message-input__char-count--warn': charCount > MAX_CHARS * 0.9, 'message-input__char-count--over': charCount > MAX_CHARS }"
-        >
-          {{ charCount }} / {{ MAX_CHARS }}
-        </span>
-      </div>
+      <button type="button" class="message-input__send" :disabled="!content.trim()" @click="handleAction">
+        <Icon name="lucide:send" size="14" />
+        <span>发送</span>
+      </button>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
 import type { GuestMessage } from '~/features/guestbook/types'
-import { resolveGuestAvatar } from '~/composables/useGuestIdentity'
 
 const props = defineProps<{
   replyTo?: GuestMessage | null
@@ -96,26 +82,6 @@ const content = ref('')
 const identityModalVisible = ref(false)
 const MAX_CHARS = 500
 
-// 头像颜色池（用于无自定义头像时的首字母头像）
-const avatarColors = [
-  '#5b7cfa', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#06b6d4', '#f97316',
-]
-
-const guestAvatarUrl = computed(() => resolveGuestAvatar(guestIdentity.value))
-
-const guestAvatarColor = computed(() => {
-  const name = guestIdentity.value?.nickname || ''
-  let hash = 0
-  for (let i = 0; i < name.length; i++) hash = name.charCodeAt(i) + ((hash << 5) - hash)
-  return avatarColors[Math.abs(hash) % avatarColors.length]
-})
-
-const guestAvatarLetter = computed(() => {
-  const name = guestIdentity.value?.nickname || ''
-  return name ? name.charAt(0).toUpperCase() : '?'
-})
-
-const charCount = computed(() => content.value.length)
 
 /** textarea 自适应高度 */
 function autoResize() {
@@ -194,8 +160,8 @@ const toolbarButtons = [
 <style lang="scss" scoped>
 .message-input {
   flex-shrink: 0;
-  margin: 0.75rem 1rem;
-  border-radius: $radius-card;
+  margin: 0.375rem 0.5rem 0.5rem;
+  border-radius: $radius-sm;
   border: 1px solid var(--border-soft);
   background: var(--surface-1-alpha-90);
   backdrop-filter: blur(8px);
@@ -279,65 +245,51 @@ const toolbarButtons = [
 
 /* ---- 输入区 ---- */
 .message-input__editor-wrap {
-  display: flex;
-  align-items: flex-end;
-  gap: 0.5rem;
-  padding: 0.75rem 1rem 0.5rem;
+  padding: 0.5rem 0.75rem 0.25rem;
 }
 
 .message-input__editor {
-  flex: 1;
+  width: 100%;
   min-height: 44px;
   max-height: 160px;
-  padding: 0.625rem 0.75rem;
+  padding: 0.375rem 0;
   font-size: 0.875rem;
   font-family: inherit;
   line-height: 1.6;
   color: var(--text-main);
-  background: var(--surface-2);
-  border: 1px solid var(--border);
-  border-radius: $radius-md;
+  background: transparent;
+  border: none;
   outline: none;
   resize: none;
   overflow-y: auto;
-  transition:
-    border-color 0.2s,
-    box-shadow 0.2s;
 
   &::placeholder {
     color: var(--text-faint);
   }
-
-  &:focus {
-    border-color: var(--border-hover);
-    box-shadow: 0 0 0 2px var(--accent-soft);
-  }
 }
 
 .message-input__send {
-  flex-shrink: 0;
-  display: flex;
+  display: inline-flex;
   align-items: center;
-  justify-content: center;
-  width: 2.5rem;
-  height: 2.5rem;
+  gap: 0.375rem;
+  padding: 0.375rem 0.875rem;
   border: none;
-  border-radius: $radius-md;
+  border-radius: $radius-sm;
   color: #fff;
-  background: #1e293b;
+  background: var(--accent, #5b7cfa);
+  font-size: 0.75rem;
+  font-weight: 600;
   cursor: pointer;
   transition:
-    background 0.2s,
-    transform 0.15s,
-    opacity 0.2s;
+    opacity 0.2s,
+    transform 0.15s;
 
   &:hover:not(:disabled) {
-    background: #0f172a;
-    transform: scale(1.05);
+    opacity: 0.9;
   }
 
   &:active:not(:disabled) {
-    transform: scale(0.95);
+    transform: scale(0.97);
   }
 
   &:disabled {
@@ -346,20 +298,12 @@ const toolbarButtons = [
   }
 }
 
-:root.dark .message-input__send {
-  background: var(--accent, #5b7cfa);
-
-  &:hover:not(:disabled) {
-    filter: brightness(1.1);
-  }
-}
-
 /* ---- 底部工具栏 ---- */
 .message-input__footer {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0.25rem 0.75rem 0.5rem;
+  padding: 0.125rem 0.5rem 0.5rem;
 }
 
 .message-input__toolbar {
@@ -390,58 +334,4 @@ const toolbarButtons = [
   }
 }
 
-.message-input__footer-right {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-}
-
-.message-input__hint {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.25rem;
-  color: var(--text-faint);
-  font-size: 0.625rem;
-}
-
-.message-input__kbd {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  height: 1.125rem;
-  min-width: 1.25rem;
-  padding: 0 0.25rem;
-  border: 1px solid var(--border);
-  border-radius: 3px;
-  background: var(--surface-2);
-  font-size: 0.5625rem;
-  font-family: inherit;
-  color: var(--text-soft);
-  line-height: 1;
-}
-
-.message-input__kbd-plus {
-  color: var(--text-faint);
-  font-size: 0.5625rem;
-}
-
-.message-input__hint-text {
-  margin-left: 0.25rem;
-}
-
-.message-input__char-count {
-  font-size: 0.625rem;
-  color: var(--text-faint);
-  font-variant-numeric: tabular-nums;
-  transition: color 0.2s;
-
-  &--warn {
-    color: var(--warning, #f59e0b);
-  }
-
-  &--over {
-    color: var(--danger, #ef4444);
-    font-weight: 600;
-  }
-}
 </style>
