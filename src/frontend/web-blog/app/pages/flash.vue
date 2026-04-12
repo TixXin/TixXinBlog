@@ -141,6 +141,7 @@
       :visible="identityModalVisible"
       @confirm="onIdentityConfirm"
       @cancel="identityModalVisible = false"
+      @login="identityModalVisible = false; openLoginDrawer('login')"
     />
   </div>
 </template>

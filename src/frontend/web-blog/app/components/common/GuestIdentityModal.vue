@@ -19,6 +19,17 @@
           </header>
 
           <div class="guest-id-modal__body">
+            <!-- 说明文案 + 登录入口 -->
+            <div class="guest-id-notice">
+              <p class="guest-id-notice__text">
+                评论前需要一个身份标识，方便其他读者认识你。信息仅存储在你的浏览器中，不会上传到服务器。
+              </p>
+              <button type="button" class="guest-id-notice__login" @click="onSwitchToLogin">
+                <Icon name="lucide:log-in" size="12" />
+                已有账号？点击登录
+              </button>
+            </div>
+
             <!-- 头像预览 -->
             <div class="guest-id-avatar-preview">
               <img
@@ -128,6 +139,8 @@ import type { GuestIdentity } from '~/composables/useGuestIdentity'
 const emit = defineEmits<{
   confirm: [identity: GuestIdentity]
   cancel: []
+  /** 用户选择「点击登录」→ 关闭身份面板，由父级打开登录抽屉 */
+  login: []
 }>()
 
 const { guestIdentity, setIdentity } = useGuestIdentity()
@@ -199,6 +212,10 @@ watch(
     }
   },
 )
+
+function onSwitchToLogin() {
+  emit('login')
+}
 
 function onSubmit() {
   if (!form.nickname) return
@@ -279,6 +296,43 @@ function onSubmit() {
   display: flex;
   flex-direction: column;
   gap: 1.125rem;
+}
+
+/* ---- 说明文案 + 登录入口 ---- */
+.guest-id-notice {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 0.75rem 0.875rem;
+  background: var(--surface-2);
+  border: 1px solid var(--border-soft);
+  border-radius: $radius-sm;
+}
+
+.guest-id-notice__text {
+  margin: 0;
+  font-size: 0.75rem;
+  line-height: 1.6;
+  color: var(--text-soft);
+}
+
+.guest-id-notice__login {
+  display: inline-flex;
+  align-items: center;
+  align-self: flex-start;
+  gap: 0.25rem;
+  padding: 0;
+  border: none;
+  background: transparent;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--accent);
+  cursor: pointer;
+  transition: opacity 0.18s;
+
+  &:hover {
+    opacity: 0.75;
+  }
 }
 
 /* ---- 头像预览 ---- */
