@@ -194,10 +194,9 @@ const toolbarButtons = [
 <style lang="scss" scoped>
 .message-input {
   flex-shrink: 0;
-  margin: 0;
-  border-radius: 0;
-  border: none;
-  border-top: 1px solid var(--border-soft);
+  margin: 0.75rem 1rem;
+  border-radius: $radius-card;
+  border: 1px solid var(--border-soft);
   background: var(--surface-1-alpha-90);
   backdrop-filter: blur(8px);
   box-shadow: none;
