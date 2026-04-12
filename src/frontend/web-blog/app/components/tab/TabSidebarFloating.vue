@@ -166,7 +166,7 @@ $side-collapsed: 44px;
   position: fixed;
   left: 1.25rem;
   top: 4rem;
-  bottom: calc(72px + 0.75rem);
+  bottom: 0.75rem;
   z-index: 10;
   width: $side-expanded;
   padding: 0.625rem;
