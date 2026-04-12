@@ -48,7 +48,7 @@
       >
         <Icon name="lucide:layout-grid" size="15" class="tab-side__cat-icon" />
         <span class="tab-side__cat-name">全部</span>
-        <span class="tab-side__cat-count">{{ totalCount }}</span>
+        <span v-if="tabSettings.showCounts" class="tab-side__cat-count">{{ totalCount }}</span>
       </button>
 
       <!-- 各分类 -->
@@ -72,7 +72,7 @@
         >
           <Icon v-if="cat.icon" :name="cat.icon" size="15" class="tab-side__cat-icon"  />
           <span class="tab-side__cat-name">{{ cat.name }}</span>
-          <span class="tab-side__cat-count">{{ counts[cat.id] || 0 }}</span>
+          <span v-if="tabSettings.showCounts" class="tab-side__cat-count">{{ counts[cat.id] || 0 }}</span>
           <button
             v-if="!readOnly && categories.length > 1"
             type="button"
@@ -148,6 +148,8 @@ const emit = defineEmits<{
 }>()
 
 const collapsed = defineModel<boolean>('collapsed', { default: false })
+
+const { settings: tabSettings } = useTabSettings()
 </script>
 
 <style lang="scss" scoped>

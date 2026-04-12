@@ -29,9 +29,9 @@
     </ClientOnly>
 
     <div class="tabs-page__center">
-      <div class="tabs-page__greeting">
-        <h1 class="tabs-page__hello">{{ greetingLine }}</h1>
-        <p class="tabs-page__date">{{ today }}</p>
+      <div v-if="tabSettings.showGreeting || tabSettings.showDate" class="tabs-page__greeting">
+        <h1 v-if="tabSettings.showGreeting" class="tabs-page__hello">{{ greetingLine }}</h1>
+        <p v-if="tabSettings.showDate" class="tabs-page__date">{{ today }}</p>
       </div>
 
       <TabSearchBar />
@@ -114,7 +114,8 @@ const {
 const addBookmarkVisible = ref(false)
 const addCategoryVisible = ref(false)
 const settingsOpen = ref(false)
-const sidebarCollapsed = ref(false)
+const { settings: tabSettings } = useTabSettings()
+const sidebarCollapsed = ref(tabSettings.value.defaultCollapsed)
 
 /** 侧栏与问候语用：未登录时显示博主信息 */
 const displayUser = computed(() => currentUser.value ?? mockOwnerUser)
@@ -142,6 +143,11 @@ const today = computed(() => {
   const d = new Date()
   const week = ['日', '一', '二', '三', '四', '五', '六'][d.getDay()]
   return `${d.getFullYear()} 年 ${d.getMonth() + 1} 月 ${d.getDate()} 日 · 星期${week}`
+})
+
+// 设置中的默认折叠变化时同步侧边栏
+watch(() => tabSettings.value.defaultCollapsed, (v) => {
+  sidebarCollapsed.value = v
 })
 
 onMounted(() => {
