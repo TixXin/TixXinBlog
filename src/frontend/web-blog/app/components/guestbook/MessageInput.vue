@@ -7,33 +7,6 @@
 
 <template>
   <div class="card message-input">
-    <!-- 游客身份栏：显示当前身份或提示设置 -->
-    <div class="message-input__identity">
-      <template v-if="hasGuestIdentity">
-        <img
-          v-if="guestAvatarUrl"
-          :src="guestAvatarUrl"
-          :alt="guestIdentity!.nickname"
-          class="message-input__avatar-img"
-        >
-        <span v-else class="message-input__avatar" :style="{ background: guestAvatarColor }">
-          {{ guestAvatarLetter }}
-        </span>
-        <span class="message-input__identity-name">{{ guestIdentity!.nickname }}</span>
-        <button type="button" class="message-input__identity-edit" @click="identityModalVisible = true">
-          <Icon name="lucide:pencil" size="11" />
-          修改
-        </button>
-      </template>
-      <template v-else>
-        <span class="message-input__avatar" style="background: var(--text-faint)">?</span>
-        <button type="button" class="message-input__identity-setup" @click="identityModalVisible = true">
-          <Icon name="lucide:user-round-pen" size="12" />
-          设置你的身份
-        </button>
-      </template>
-    </div>
-
     <!-- 回复引用预览 -->
     <Transition name="reply-fade">
       <div v-if="replyTo" class="message-input__reply-bar">
@@ -230,78 +203,6 @@ const toolbarButtons = [
   box-shadow: none;
   padding: 0;
   overflow: hidden;
-}
-
-/* ---- 访客身份栏 ---- */
-.message-input__identity {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  padding: 0.5rem 1rem;
-  border-bottom: 1px solid var(--border-soft);
-}
-
-.message-input__avatar {
-  width: 1.625rem;
-  height: 1.625rem;
-  border-radius: $radius-full;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 0.6875rem;
-  font-weight: 700;
-  color: #fff;
-  flex-shrink: 0;
-}
-
-.message-input__avatar-img {
-  width: 1.625rem;
-  height: 1.625rem;
-  border-radius: $radius-full;
-  object-fit: cover;
-  flex-shrink: 0;
-}
-
-.message-input__identity-name {
-  font-size: 0.75rem;
-  font-weight: 600;
-  color: var(--text-main);
-}
-
-.message-input__identity-edit {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.2rem;
-  margin-left: auto;
-  padding: 0;
-  border: none;
-  background: transparent;
-  font-size: 0.6875rem;
-  color: var(--text-faint);
-  cursor: pointer;
-  transition: color 0.18s;
-
-  &:hover {
-    color: var(--accent);
-  }
-}
-
-.message-input__identity-setup {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.375rem;
-  padding: 0;
-  border: none;
-  background: transparent;
-  font-size: 0.75rem;
-  font-weight: 600;
-  color: var(--accent);
-  cursor: pointer;
-  transition: opacity 0.18s;
-
-  &:hover {
-    opacity: 0.75;
-  }
 }
 
 /* ---- 回复引用预览 ---- */
