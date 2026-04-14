@@ -1,7 +1,10 @@
 {
   "permissions": {
     "allow": [
-      "Bash(xargs grep:*)"
+      "Bash(xargs grep:*)",
+      "Bash(ls e:/Projects/TixXinBlog/.playwright-mcp/*.yml)",
+      "Bash(ls e:/Projects/TixXinBlog/.playwright-mcp/*.yml -lt)",
+      "mcp__playwright__browser_type"
     ]
   }
 }
