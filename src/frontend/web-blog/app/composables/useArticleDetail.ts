@@ -8,6 +8,13 @@
 import { mockArticleDetail, mockComments, mockTocItems, mockPosts } from '~/features/post/mock'
 import type { ArticleDetail, CommentItem, RelatedPost, TocItem } from '~/features/post/types'
 
+// 把 yyyy-mm-dd 字符串向后偏移 N 天，用来基于发布日生成评论时间，避免穿帮
+function shiftDate(dateStr: string, days: number): string {
+  const d = new Date(dateStr)
+  d.setDate(d.getDate() + days)
+  return d.toISOString().slice(0, 10)
+}
+
 export function useArticleDetail(id: string) {
   // TODO: 后续替换为 useAsyncData(`article-${id}`, () => $fetch(`/api/articles/${id}`))
   const article = computed<ArticleDetail>(() => {
@@ -19,13 +26,25 @@ export function useArticleDetail(id: string) {
         title: post.title,
         cover: post.cover || mockArticleDetail.cover,
         date: post.date,
-        category: post.category,
+        // 文章卡片与详情头需保持中文展示，folder 字段是中文分类
+        category: post.folder,
       }
     }
     return mockArticleDetail
   })
 
-  const comments = ref<CommentItem[]>(mockComments)
+  // 评论时间根据发布日动态偏移，确保每条评论都晚于发布日
+  const baseDate = article.value.date
+  const comments = ref<CommentItem[]>(
+    mockComments.map((c, i) => ({
+      ...c,
+      time: shiftDate(baseDate, i + 1),
+      replies: c.replies?.map((r, j) => ({
+        ...r,
+        time: shiftDate(baseDate, i + j + 2),
+      })),
+    })),
+  )
   const tocItems = ref<TocItem[]>(mockTocItems)
 
   const relatedPosts = computed<RelatedPost[]>(() => {
