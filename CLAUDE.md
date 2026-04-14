@@ -71,6 +71,8 @@ Commit format: Conventional Commits with Chinese subjects.
 Types: feat, fix, style, refactor, chore, docs, perf, test  
 Scopes: web-blog, theme, sidebar, pages, blog, etc.
 
+**禁止在 commit message 中添加 `Co-Authored-By: Claude ...` / `🤖 Generated with Claude Code` 之类的 AI 署名 trailer。** 仓库历史已经剥离过一次，后续保持干净：不写 trailer、不加 emoji 署名、也不在 PR body 里加「Generated with Claude Code」行。
+
 ## Key Config Files
 
 - `nuxt.config.ts` — Modules: color-mode (dark default), @nuxt/icon, theme-engine, eslint, fonts (Inter), image, sitemap, robots. Security headers and SSG/ISR route rules configured.
