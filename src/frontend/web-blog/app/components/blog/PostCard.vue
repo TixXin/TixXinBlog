@@ -163,10 +163,17 @@ function tagStyle(color: string) {
 
 .post-item__header {
   display: flex;
+  flex-direction: column;
   align-items: flex-start;
-  justify-content: space-between;
-  gap: 0.75rem;
+  gap: 0.25rem;
   margin-bottom: 0.25rem;
+
+  // 桌面端恢复横向布局：标题在左，发布日期在右
+  @media (min-width: $breakpoint-sm) {
+    flex-direction: row;
+    justify-content: space-between;
+    gap: 0.75rem;
+  }
 }
 
 .post-item__title-wrapper {
@@ -183,9 +190,13 @@ function tagStyle(color: string) {
   color: var(--text-soft);
   white-space: nowrap;
   flex-shrink: 0;
-  padding-top: 0.25rem;
   position: relative;
   z-index: 2;
+
+  // 桌面端原本与标题同行，需要顶对齐微调
+  @media (min-width: $breakpoint-sm) {
+    padding-top: 0.25rem;
+  }
 
   /* 有封面：磨砂叠层（亮色浅玻璃 / 暗色暗底，由全局 token 控制） */
   .post-item:has(.post-item__cover-bg) & {
