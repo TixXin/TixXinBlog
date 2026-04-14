@@ -102,4 +102,4 @@ docs/                     # 架构与目录说明
 
 ### 第三方许可
 
-本项目使用的 [@tixxin/nuxt-theme-engine](https://github.com/AYumeRNA/nuxt-theme-engine) 主题引擎采用 [MIT License](https://github.com/AYumeRNA/nuxt-theme-engine/blob/main/LICENSE) 许可。
+本项目使用的 [@tixxin/nuxt-theme-engine](https://github.com/TixXin/nuxt-theme-engine) 主题引擎采用 [MIT License](https://github.com/TixXin/nuxt-theme-engine/LICENSE) 许可。
