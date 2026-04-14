@@ -9,9 +9,8 @@ import type { FooterLink, OwnerCardInfo, OwnerPresenceInfo, PoweredByItem, SiteA
 
 export const mockFooterLinks: FooterLink[] = [
   { label: '关于本站', href: '/about' },
-  { label: '隐私政策', href: '#' },
-  { label: 'RSS 订阅', href: '#' },
-  { label: '站点地图', href: '#' },
+  { label: 'RSS 订阅', href: '/rss.xml' },
+  { label: '站点地图', href: '/sitemap.xml' },
 ]
 
 export const mockPoweredBy: PoweredByItem[] = [
