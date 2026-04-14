@@ -17,22 +17,50 @@
     <form class="link-form__fields" @submit.prevent="handleSubmit">
       <div class="link-form__field">
         <label class="link-form__label">站点名称</label>
-        <input type="text" class="input-field" placeholder="例如：TixXin Blog" >
+        <input
+          v-model="form.name"
+          type="text"
+          class="input-field"
+          placeholder="例如：TixXin Blog"
+          maxlength="40"
+          required
+        >
       </div>
       <div class="link-form__field">
         <label class="link-form__label">站点地址</label>
-        <input type="url" class="input-field" placeholder="https://example.com" >
+        <input
+          v-model="form.url"
+          type="url"
+          class="input-field"
+          placeholder="https://example.com"
+          pattern="https?://.+"
+          required
+        >
       </div>
       <div class="link-form__field">
         <label class="link-form__label">头像地址</label>
-        <input type="url" class="input-field" placeholder="https://example.com/avatar.png" >
+        <input
+          v-model="form.avatar"
+          type="url"
+          class="input-field"
+          placeholder="https://example.com/avatar.png"
+          pattern="https?://.+"
+          required
+        >
       </div>
       <div class="link-form__field">
         <label class="link-form__label">一句话描述</label>
-        <input type="text" class="input-field" placeholder="简要介绍你的站点" >
+        <input
+          v-model="form.description"
+          type="text"
+          class="input-field"
+          placeholder="简要介绍你的站点"
+          maxlength="60"
+          required
+        >
       </div>
       <div class="link-form__submit">
-        <button type="submit" class="btn-primary">提交申请</button>
+        <button type="submit" class="btn-primary" :disabled="!isValid">提交申请</button>
       </div>
     </form>
   </div>
@@ -41,7 +69,26 @@
 <script setup lang="ts">
 const { info } = useToast()
 
+const form = reactive({
+  name: '',
+  url: '',
+  avatar: '',
+  description: '',
+})
+
+// 简单的 URL 校验：必须以 http(s) 开头，避免协议缺失或填错
+const URL_PATTERN = /^https?:\/\/.+/i
+
+const isValid = computed(
+  () =>
+    form.name.trim().length > 0 &&
+    URL_PATTERN.test(form.url.trim()) &&
+    URL_PATTERN.test(form.avatar.trim()) &&
+    form.description.trim().length > 0,
+)
+
 function handleSubmit() {
+  if (!isValid.value) return
   info('友链申请功能开发中，敬请期待！')
 }
 </script>

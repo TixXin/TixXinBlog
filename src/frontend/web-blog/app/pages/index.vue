@@ -149,14 +149,7 @@ function openSearch() {
 const { homeActiveTab } = useHomeTab()
 const activeTab = homeActiveTab
 const listDisplayMode = ref<'waterfall' | 'pagination'>('pagination')
-
-// 首屏根据 URL hash 恢复 Tab，便于分享 /#moments 链接
-// 注意：hash 不会发送到服务端，所以必须在 onMounted（hydration 之后）执行，避免 hydration mismatch
-onMounted(() => {
-  if (location.hash === '#moments' && activeTab.value !== 'moments') {
-    switchTab('moments')
-  }
-})
+const route = useRoute()
 
 // ---- 文章数据 ----
 const tabs = mockPostTabs
@@ -227,6 +220,18 @@ function onTopicSelect(topicName: string | null) {
 
 // 日期筛选（通过 composable 与 RootLayout 左侧栏日历共享状态）
 const { selectedDate } = useMomentFilters()
+
+// hash → Tab 同步：放在所有依赖（switchTab / selectedTag / selectedDate）声明之后再注册
+// 既覆盖首屏冷加载（onMounted 时已 hydration 完成），也覆盖前进/后退（watch route.hash）
+function syncTabFromHash() {
+  if (route.hash === '#moments' && activeTab.value !== 'moments') {
+    switchTab('moments')
+  } else if (route.hash !== '#moments' && activeTab.value === 'moments') {
+    switchTab('all')
+  }
+}
+onMounted(syncTabFromHash)
+watch(() => route.hash, syncTabFromHash)
 
 // 照片点击 — 滚动到对应动态
 function onPhotoSelect(momentId: string) {
