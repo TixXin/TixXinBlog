@@ -26,8 +26,13 @@
 import { COLOR_MODE_LABELS } from '~/features/appearance/types'
 
 const { currentPreference, setTheme } = useTheme()
+const colorMode = useColorMode()
 
-const icon = computed(() => (currentPreference.value === 'dark' ? 'lucide:moon' : 'lucide:sun'))
+// 以「实际生效模式」决定下次切换目标，避免 preference='system' 时按一次不变的死区
+const effectiveMode = computed<'light' | 'dark'>(() => (colorMode.value === 'dark' ? 'dark' : 'light'))
+const nextTheme = computed<'light' | 'dark'>(() => (effectiveMode.value === 'dark' ? 'light' : 'dark'))
+
+const icon = computed(() => (effectiveMode.value === 'dark' ? 'lucide:moon' : 'lucide:sun'))
 
 const label = computed(() => COLOR_MODE_LABELS[currentPreference.value])
 
@@ -38,12 +43,12 @@ function onThemeSwitcherPointerDown(e: PointerEvent) {
   if (e.button !== 0) return
   e.preventDefault()
   suppressSwitcherClickUntil = Date.now() + 400
-  setTheme(currentPreference.value === 'dark' ? 'light' : 'dark', e)
+  setTheme(nextTheme.value, e)
 }
 
 function onThemeSwitcherClick(e: MouseEvent) {
   if (Date.now() < suppressSwitcherClickUntil) return
-  setTheme(currentPreference.value === 'dark' ? 'light' : 'dark', e)
+  setTheme(nextTheme.value, e)
 }
 </script>
 
