@@ -6,12 +6,24 @@
  */
 
 import type { SiteStats, TagItem, CategoryItem } from './types'
+import { mockPosts } from '~/features/post/mock'
+
+// 总浏览量按 mockPosts 累加，并做万 / 千格式化展示
+function formatViews(n: number): string {
+  if (n >= 10000) return `${(n / 10000).toFixed(1)}w`
+  if (n >= 1000) return `${(n / 1000).toFixed(1)}k`
+  return String(n)
+}
+
+const totalViews = mockPosts.reduce((sum, p) => sum + p.views, 0)
+const totalComments = mockPosts.reduce((sum, p) => sum + p.comments, 0)
+const uniqueTags = new Set<string>(mockPosts.flatMap((p) => p.tags.map((t) => t.label)))
 
 export const mockSiteStats: SiteStats = {
-  articles: 86,
-  views: '4.5w',
-  comments: 326,
-  tags: 18,
+  articles: mockPosts.length,
+  views: formatViews(totalViews),
+  comments: totalComments,
+  tags: uniqueTags.size,
   uptimeDays: 1888,
 }
 
