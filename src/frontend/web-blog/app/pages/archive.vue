@@ -9,16 +9,18 @@
   <div class="main-inner archive-page">
     <!-- 头部区域 -->
     <div class="main-content__header">
-      <div class="archive-title">
-        <h2 class="archive-title__heading">
-          <Icon name="lucide:archive" size="18" class="archive-title__icon" />
-          文章归档
-        </h2>
-        <p class="archive-title__sub">共 {{ totalCount }} 篇文章，持续记录中...</p>
+      <div class="page-title">
+        <div class="page-title__icon-wrap" aria-hidden="true">
+          <Icon name="lucide:archive" size="18" />
+        </div>
+        <div class="page-title__text">
+          <h2 class="page-title__heading">文章归档</h2>
+          <p class="page-title__sub">共 {{ totalCount }} 篇文章，持续记录中...</p>
+        </div>
       </div>
 
       <!-- 右侧操作区：仅搜索框 -->
-      <div class="archive-actions">
+      <div class="page-actions">
         <CommonSearchBox placeholder="搜索文章标题、内容..." readonly @click="openSearch" />
       </div>
     </div>
@@ -68,41 +70,6 @@ function openSearch() {
 </script>
 
 <style lang="scss" scoped>
-/* 归档标题块 */
-.archive-title__heading {
-  font-size: 1.25rem;
-  font-weight: 700;
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  margin: 0;
-}
-
-.archive-title__icon {
-  color: var(--text-soft);
-}
-
-.archive-title__sub {
-  font-size: 0.875rem;
-  color: var(--text-soft);
-  margin-top: 0.25rem;
-}
-
-/* 右侧操作区 */
-.archive-actions {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  width: 100%;
-  padding-bottom: 1rem;
-
-  @media (min-width: $breakpoint-sm) {
-    width: auto;
-    padding-bottom: 0;
-    margin-left: auto;
-  }
-}
-
 /* 归档时间线滚动区 */
 .archive-body {
   flex: 1;
