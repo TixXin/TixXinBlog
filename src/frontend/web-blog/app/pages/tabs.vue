@@ -64,7 +64,10 @@
     <TabSettingsDrawer
       v-model:visible="settingsOpen"
       :user="displayUser"
+      @open-import="importOpen = true"
     />
+
+    <TabImportDialog v-model:visible="importOpen" />
 
     <TabCommandPalette :actions="paletteActions" />
 
@@ -125,6 +128,7 @@ const guestToastDismissed = ref(false)
 const addBookmarkVisible = ref(false)
 const addCategoryVisible = ref(false)
 const settingsOpen = ref(false)
+const importOpen = ref(false)
 const { settings: tabSettings, update: updateSetting } = useTabSettings()
 const sidebarCollapsed = ref(tabSettings.value.defaultCollapsed)
 
@@ -172,6 +176,14 @@ const paletteActions = computed<CommandAction[]>(() => {
       icon: 'lucide:move',
       section: 'actions',
       run: () => updateSetting('dragEnabled', !tabSettings.value.dragEnabled),
+    },
+    {
+      id: 'import',
+      title: '导入书签',
+      subtitle: 'JSON 或浏览器 HTML',
+      icon: 'lucide:upload',
+      section: 'actions',
+      run: () => (importOpen.value = true),
     },
   ]
 })
