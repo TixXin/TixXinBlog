@@ -24,6 +24,7 @@
           @remove-category="onRemoveCategory"
           @open-settings="settingsOpen = true"
           @open-donate="onDonate"
+          @bookmark-dropped="onBookmarkDropped"
         />
       </Teleport>
     </ClientOnly>
@@ -42,6 +43,7 @@
           :read-only="isReadOnly"
           @add="onAddBookmarkClick"
           @remove="onRemoveBookmark"
+          @reorder="onReorder"
         />
       </div>
     </div>
@@ -83,7 +85,7 @@
 </template>
 
 <script setup lang="ts">
-import type { BookmarkDraft, BookmarkCategoryDraft } from '~/features/tab/types'
+import type { BookmarkDraft, BookmarkCategoryDraft, BookmarkReorderUpdate } from '~/features/tab/types'
 import { mockOwnerUser } from '~/features/auth/mock'
 
 definePageMeta({ fullbleed: true })
@@ -105,9 +107,11 @@ const {
   load,
   selectCategory,
   addBookmark,
+  updateBookmark,
   removeBookmark,
   addCategory,
   removeCategory,
+  reorderBookmarks,
 } = useTabBookmarks()
 
 const guestToastDismissed = ref(false)
@@ -189,6 +193,17 @@ function onDonate() {
 async function onRemoveCategory(id: string) {
   if (!window.confirm('确认删除该分类？该分类下的书签也会一并删除。')) return
   await removeCategory(id)
+}
+
+async function onReorder(updates: BookmarkReorderUpdate[]) {
+  await reorderBookmarks(updates)
+}
+
+/** 跨分类拖拽：侧栏分类按钮 drop 后调用 */
+async function onBookmarkDropped(payload: { bookmarkId: string; targetCategoryId: string }) {
+  const current = bookmarks.value.find((b) => b.id === payload.bookmarkId)
+  if (!current || current.categoryId === payload.targetCategoryId) return
+  await updateBookmark(payload.bookmarkId, { categoryId: payload.targetCategoryId })
 }
 </script>
 
