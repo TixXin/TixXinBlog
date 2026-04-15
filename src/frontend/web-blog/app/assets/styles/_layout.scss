@@ -108,6 +108,8 @@
   display: none;
   flex-direction: column;
   gap: $grid-gap;
+  // 与 .main-content 一致：滚动条 track 上下各 inset 一个卡片圆角距离，避免贴到首/末卡片圆角
+  --scrollbar-track-inset: #{$radius-card};
 
   @media (min-width: $breakpoint-md) {
     display: flex;
@@ -201,6 +203,8 @@
   display: none;
   flex-direction: column;
   position: relative;
+  // 与 .main-content 一致：滚动条 track 上下各 inset 一个卡片圆角距离，避免贴到首/末卡片圆角
+  --scrollbar-track-inset: #{$radius-card};
 
   @media (min-width: $breakpoint-lg) {
     display: flex;

@@ -121,8 +121,8 @@ function handleClick(event: MouseEvent, id: string) {
   max-height: 50vh;
   overflow-y: auto;
   // 底部淡出：暗示"还能滚"，同时最后一项大半可见
-  mask-image: linear-gradient(to bottom, black calc(100% - 0.75rem), transparent);
-  -webkit-mask-image: linear-gradient(to bottom, black calc(100% - 0.75rem), transparent);
+  mask-image: linear-gradient(to bottom, black calc(100% - 1.5rem), transparent);
+  -webkit-mask-image: linear-gradient(to bottom, black calc(100% - 1.5rem), transparent);
   // 隐藏原生滚动条（与 CustomScrollbar 视觉一致）
   scrollbar-width: none;
   -ms-overflow-style: none;
