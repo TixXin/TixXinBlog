@@ -51,7 +51,7 @@
             class="aurora-topbar__login"
             type="button"
             aria-label="登录"
-            @click="openLogin()"
+            @click="openLogin('login', true)"
           >
             <Icon name="lucide:circle-user" size="18" />
           </button>
