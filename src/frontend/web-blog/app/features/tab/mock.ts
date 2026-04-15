@@ -5,12 +5,13 @@
  * @since 2026-04-11
  *
  * 这些 seed 数据通过 useTabBookmarks 在客户端 onMounted 时按需写入 localStorage。
+ * 按 userId 分发：博主、普通访客、空账号各有独立 seed。
  * 后端就绪后，HttpTabRepository 会从服务端拉取真实数据，这份 seed 自然废弃。
  */
 
 import type { BookmarkCategoryDraft, BookmarkDraft } from './types'
 
-/** 默认分类草稿 */
+/** 博主默认分类草稿 */
 export const defaultCategorySeeds: BookmarkCategoryDraft[] = [
   { name: '主页', icon: 'lucide:home', color: '' },
   { name: 'AI', icon: 'lucide:sparkles', color: '' },
@@ -126,3 +127,47 @@ export const defaultBookmarkSeeds: BookmarkSeed[] = [
   { categoryName: '游戏', name: 'NGA', url: 'https://bbs.nga.cn', icon: 'N', color: '#7b8d42' },
   { categoryName: '游戏', name: 'TapTap', url: 'https://www.taptap.cn', icon: 'T', color: '#00c4b3' },
 ]
+
+// ==================== 访客种子（精简体验，10 条左右） ====================
+
+const visitorCategorySeeds: BookmarkCategoryDraft[] = [
+  { name: '常用', icon: 'lucide:home', color: '' },
+  { name: '工具', icon: 'lucide:wrench', color: '' },
+  { name: '灵感', icon: 'lucide:lightbulb', color: '' },
+]
+
+const visitorBookmarkSeeds: BookmarkSeed[] = [
+  { categoryName: '常用', name: 'Google', url: 'https://www.google.com', icon: 'G', color: '#4285f4' },
+  { categoryName: '常用', name: 'GitHub', url: 'https://github.com', icon: 'lucide:github', color: '#24292f' },
+  { categoryName: '常用', name: 'YouTube', url: 'https://www.youtube.com', icon: 'lucide:youtube', color: '#ff0000' },
+  { categoryName: '工具', name: 'ChatGPT', url: 'https://chat.openai.com', icon: 'lucide:bot', color: '#10a37f' },
+  { categoryName: '工具', name: 'Notion', url: 'https://www.notion.so', icon: 'N', color: '#000000' },
+  { categoryName: '工具', name: 'Figma', url: 'https://www.figma.com', icon: 'lucide:figma', color: '#a259ff' },
+  { categoryName: '灵感', name: 'Dribbble', url: 'https://dribbble.com', icon: 'lucide:dribbble', color: '#ea4c89' },
+  { categoryName: '灵感', name: 'Unsplash', url: 'https://unsplash.com', icon: 'U', color: '#000000' },
+  { categoryName: '灵感', name: 'Product Hunt', url: 'https://www.producthunt.com', icon: 'P', color: '#da552f' },
+  { categoryName: '灵感', name: 'Medium', url: 'https://medium.com', icon: 'M', color: '#000000' },
+]
+
+/** 种子集合 */
+export interface SeedSet {
+  categories: BookmarkCategoryDraft[]
+  bookmarks: BookmarkSeed[]
+}
+
+/**
+ * 按用户 id 分发种子数据。
+ * - owner-001：博主全套 128 条
+ * - visitor-001：访客精选 10 条
+ * - 其它 id：空种子（不注入任何数据，让新用户自己添加）
+ */
+export const mockSeedByUserId: Record<string, SeedSet> = {
+  'owner-001': { categories: defaultCategorySeeds, bookmarks: defaultBookmarkSeeds },
+  'visitor-001': { categories: visitorCategorySeeds, bookmarks: visitorBookmarkSeeds },
+}
+
+const EMPTY_SEED: SeedSet = { categories: [], bookmarks: [] }
+
+export function getSeedForUser(userId: string): SeedSet {
+  return mockSeedByUserId[userId] ?? EMPTY_SEED
+}

@@ -6,6 +6,25 @@
  */
 
 export type TabIconStyle = 'default' | 'rounded' | 'flat'
+export type TabViewMode = 'grid' | 'compact' | 'list' | 'cards'
+export type WallpaperKind = 'none' | 'solid' | 'gradient' | 'preset' | 'url' | 'upload'
+export type FaviconProvider = 'google' | 'duckduckgo' | 'icon-horse'
+export type SearchEngine = 'google' | 'bing' | 'duckduckgo' | 'baidu' | 'custom'
+
+/** 壁纸配置（每种亮/暗模式独立维护一份） */
+export interface WallpaperConfig {
+  kind: WallpaperKind
+  /** 纯色（kind=solid） */
+  solidColor?: string
+  /** 渐变（kind=gradient） */
+  gradient?: { from: string; via?: string; to: string; angle: number }
+  /** 内置预设 id（kind=preset） */
+  presetId?: string
+  /** 外链 URL（kind=url） */
+  url?: string
+  /** IndexedDB key（kind=upload） */
+  uploadKey?: string
+}
 
 export interface TabSettings {
   // ---- 图标 ----
@@ -29,6 +48,40 @@ export interface TabSettings {
   gridMaxWidth: number
   /** 最大宽度单位 */
   gridMaxWidthUnit: 'px' | '%'
+  /** 是否自动抓取书签 favicon */
+  faviconAutoFetch: boolean
+  /** favicon 服务提供商 */
+  faviconProvider: FaviconProvider
+
+  // ---- 布局 ----
+  /** 视图模式：grid 大网格 / compact 紧凑 / list 列表 / cards 详情卡 */
+  viewMode: TabViewMode
+  /** 固定列数，'auto' 为自适应（仅 grid/compact 视图生效） */
+  gridColumns: number | 'auto'
+  /** 是否启用拖拽排序 */
+  dragEnabled: boolean
+
+  // ---- 壁纸 ----
+  /** 亮暗是否使用独立壁纸；false 时两边共用 wallpaperLight */
+  wallpaperIndependent: boolean
+  wallpaperLight: WallpaperConfig
+  wallpaperDark: WallpaperConfig
+  /** 壁纸遮罩层不透明度 0-0.8 */
+  wallpaperMaskOpacity: number
+  /** 壁纸模糊半径 px（0 不模糊） */
+  wallpaperBlur: number
+  /** 是否叠加噪点纹理 */
+  wallpaperNoise: boolean
+  /** 是否叠加暗角 */
+  wallpaperVignette: boolean
+
+  // ---- 搜索/命令面板 ----
+  /** 外部搜索引擎 */
+  searchEngine: SearchEngine
+  /** 自定义搜索 URL，%s 占位会被替换为 query */
+  searchEngineCustomUrl: string
+  /** Cmd/Ctrl+K 唤起命令面板 */
+  commandPaletteEnabled: boolean
 
   // ---- 时间 ----
   /** 显示问候语 */
@@ -53,6 +106,8 @@ export interface TabSettings {
 
 const STORAGE_KEY = 'tab-settings'
 
+const DEFAULT_WALLPAPER: WallpaperConfig = { kind: 'none' }
+
 export const TAB_SETTINGS_DEFAULTS: Readonly<TabSettings> = {
   iconStyle: 'default',
   iconSize: 48,
@@ -64,6 +119,21 @@ export const TAB_SETTINGS_DEFAULTS: Readonly<TabSettings> = {
   nameColor: '',
   gridMaxWidth: 720,
   gridMaxWidthUnit: 'px',
+  faviconAutoFetch: true,
+  faviconProvider: 'google',
+  viewMode: 'grid',
+  gridColumns: 'auto',
+  dragEnabled: true,
+  wallpaperIndependent: false,
+  wallpaperLight: { ...DEFAULT_WALLPAPER },
+  wallpaperDark: { ...DEFAULT_WALLPAPER },
+  wallpaperMaskOpacity: 0,
+  wallpaperBlur: 0,
+  wallpaperNoise: false,
+  wallpaperVignette: false,
+  searchEngine: 'google',
+  searchEngineCustomUrl: '',
+  commandPaletteEnabled: true,
   showGreeting: true,
   showDate: true,
   showSeconds: false,
@@ -74,12 +144,19 @@ export const TAB_SETTINGS_DEFAULTS: Readonly<TabSettings> = {
   sidebarBlur: true,
 }
 
-/** 各 section 对应的设置键 */
+/** 各 section 对应的设置键，用于「恢复默认」分组 */
 const SECTION_KEYS: Record<string, (keyof TabSettings)[]> = {
   icon: [
     'iconStyle', 'iconSize', 'iconRadius', 'iconOpacity', 'iconGap',
     'showIconName', 'nameSize', 'nameColor', 'gridMaxWidth', 'gridMaxWidthUnit',
+    'faviconAutoFetch', 'faviconProvider',
   ],
+  view: ['viewMode', 'gridColumns', 'dragEnabled'],
+  wallpaper: [
+    'wallpaperIndependent', 'wallpaperLight', 'wallpaperDark',
+    'wallpaperMaskOpacity', 'wallpaperBlur', 'wallpaperNoise', 'wallpaperVignette',
+  ],
+  search: ['searchEngine', 'searchEngineCustomUrl', 'commandPaletteEnabled'],
   time: ['showGreeting', 'showDate', 'showSeconds'],
   sidebar: ['defaultCollapsed', 'showCounts', 'sidebarRadius', 'sidebarOpacity', 'sidebarBlur'],
 }

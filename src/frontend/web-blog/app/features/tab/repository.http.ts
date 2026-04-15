@@ -19,6 +19,10 @@ import type {
   BookmarkCategory,
   BookmarkCategoryDraft,
   BookmarkDraft,
+  BookmarkReorderUpdate,
+  CategoryReorderUpdate,
+  ImportMode,
+  ImportPayload,
 } from './types'
 
 const NOT_IMPLEMENTED = 'HttpTabRepository 尚未实现，请保持 useMockRepo=true 或先完成后端 API 对接'
@@ -46,6 +50,18 @@ export class HttpTabRepository implements TabBookmarkRepository {
     return Promise.reject(new Error(NOT_IMPLEMENTED))
   }
   removeBookmark(_id: string): Promise<void> {
+    return Promise.reject(new Error(NOT_IMPLEMENTED))
+  }
+  reorderBookmarks(_userId: string, _updates: BookmarkReorderUpdate[]): Promise<void> {
+    return Promise.reject(new Error(NOT_IMPLEMENTED))
+  }
+  reorderCategories(_userId: string, _updates: CategoryReorderUpdate[]): Promise<void> {
+    return Promise.reject(new Error(NOT_IMPLEMENTED))
+  }
+  importBulk(_userId: string, _data: ImportPayload, _mode: ImportMode): Promise<void> {
+    return Promise.reject(new Error(NOT_IMPLEMENTED))
+  }
+  exportBulk(_userId: string): Promise<{ categories: BookmarkCategory[]; bookmarks: Bookmark[] }> {
     return Promise.reject(new Error(NOT_IMPLEMENTED))
   }
 }

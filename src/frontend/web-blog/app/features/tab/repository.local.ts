@@ -17,6 +17,10 @@ import type {
   BookmarkCategory,
   BookmarkCategoryDraft,
   BookmarkDraft,
+  BookmarkReorderUpdate,
+  CategoryReorderUpdate,
+  ImportMode,
+  ImportPayload,
 } from './types'
 
 const CATEGORY_PREFIX = 'tab:categories:'
@@ -189,5 +193,96 @@ export class LocalTabRepository implements TabBookmarkRepository {
       }
     }
     return Promise.resolve()
+  }
+
+  reorderBookmarks(userId: string, updates: BookmarkReorderUpdate[]): Promise<void> {
+    const key = bookmarkKey(userId)
+    const list = readJson<Bookmark>(key)
+    const patchMap = new Map(updates.map((u) => [u.id, u] as const))
+    const next = list.map((b) => {
+      const p = patchMap.get(b.id)
+      return p ? { ...b, categoryId: p.categoryId, sortOrder: p.sortOrder } : b
+    })
+    writeJson(key, next)
+    return Promise.resolve()
+  }
+
+  reorderCategories(userId: string, updates: CategoryReorderUpdate[]): Promise<void> {
+    const key = categoryKey(userId)
+    const list = readJson<BookmarkCategory>(key)
+    const patchMap = new Map(updates.map((u) => [u.id, u] as const))
+    const next = list.map((c) => {
+      const p = patchMap.get(c.id)
+      return p ? { ...c, sortOrder: p.sortOrder } : c
+    })
+    writeJson(key, next)
+    return Promise.resolve()
+  }
+
+  async importBulk(userId: string, data: ImportPayload, mode: ImportMode): Promise<void> {
+    const catKey = categoryKey(userId)
+    const bmKey = bookmarkKey(userId)
+    let existingCats: BookmarkCategory[] = mode === 'replace' ? [] : readJson<BookmarkCategory>(catKey)
+    let existingBms: Bookmark[] = mode === 'replace' ? [] : readJson<Bookmark>(bmKey)
+
+    // 分类：merge 按 name 去重；append/replace 全部生成新记录
+    const nameToId = new Map(existingCats.map((c) => [c.name, c.id] as const))
+    const maxCatOrder = () => existingCats.reduce((m, c) => Math.max(m, c.sortOrder), 0)
+
+    for (const catDraft of data.categories) {
+      if (mode === 'merge' && nameToId.has(catDraft.name)) continue
+      const created: BookmarkCategory = {
+        id: generateId('cat'),
+        userId,
+        name: catDraft.name,
+        icon: catDraft.icon,
+        color: catDraft.color,
+        sortOrder: maxCatOrder() + 1,
+        description: catDraft.description,
+      }
+      existingCats = [...existingCats, created]
+      nameToId.set(created.name, created.id)
+    }
+
+    // 书签：按 categoryName 映射到 id
+    const sameCatMaxOrder = (catId: string): number => {
+      return existingBms
+        .filter((b) => b.categoryId === catId)
+        .reduce((m, b) => Math.max(m, b.sortOrder), 0)
+    }
+    const nowIso = new Date().toISOString()
+
+    for (const bm of data.bookmarks) {
+      const categoryId = nameToId.get(bm.categoryName) ?? ''
+      if (!categoryId) continue
+      if (mode === 'merge') {
+        const dup = existingBms.some((b) => b.categoryId === categoryId && b.url === bm.url)
+        if (dup) continue
+      }
+      const created: Bookmark = {
+        id: generateId('bm'),
+        userId,
+        name: bm.name,
+        url: bm.url,
+        icon: bm.icon,
+        color: bm.color,
+        categoryId,
+        sortOrder: sameCatMaxOrder(categoryId) + 1,
+        description: bm.description,
+        createdAt: nowIso,
+      }
+      existingBms = [...existingBms, created]
+    }
+
+    writeJson(catKey, existingCats)
+    writeJson(bmKey, existingBms)
+  }
+
+  exportBulk(userId: string): Promise<{ categories: BookmarkCategory[]; bookmarks: Bookmark[] }> {
+    const categories = readJson<BookmarkCategory>(categoryKey(userId))
+      .sort((a, b) => a.sortOrder - b.sortOrder)
+    const bookmarks = readJson<Bookmark>(bookmarkKey(userId))
+      .sort((a, b) => a.sortOrder - b.sortOrder)
+    return Promise.resolve({ categories, bookmarks })
   }
 }

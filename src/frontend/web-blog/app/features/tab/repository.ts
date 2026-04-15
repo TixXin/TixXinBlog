@@ -13,6 +13,10 @@ import type {
   BookmarkCategory,
   BookmarkCategoryDraft,
   BookmarkDraft,
+  BookmarkReorderUpdate,
+  CategoryReorderUpdate,
+  ImportMode,
+  ImportPayload,
 } from './types'
 
 export interface TabBookmarkRepository {
@@ -34,4 +38,14 @@ export interface TabBookmarkRepository {
   updateBookmark(id: string, patch: Partial<BookmarkDraft>): Promise<Bookmark>
   /** 删除书签 */
   removeBookmark(id: string): Promise<void>
+
+  /** 批量更新书签排序 / 所属分类（拖拽结束一次提交，避免多次 JSON IO） */
+  reorderBookmarks(userId: string, updates: BookmarkReorderUpdate[]): Promise<void>
+  /** 批量更新分类排序 */
+  reorderCategories(userId: string, updates: CategoryReorderUpdate[]): Promise<void>
+
+  /** 批量导入：mode=merge 同名跳过 / append 全部追加 / replace 清空旧数据 */
+  importBulk(userId: string, data: ImportPayload, mode: ImportMode): Promise<void>
+  /** 导出当前用户全部分类与书签 */
+  exportBulk(userId: string): Promise<{ categories: BookmarkCategory[]; bookmarks: Bookmark[] }>
 }

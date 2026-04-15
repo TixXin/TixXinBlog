@@ -16,8 +16,12 @@ import type {
   BookmarkCategory,
   BookmarkCategoryDraft,
   BookmarkDraft,
+  BookmarkReorderUpdate,
+  CategoryReorderUpdate,
+  ImportMode,
+  ImportPayload,
 } from '~/features/tab/types'
-import { defaultCategorySeeds, defaultBookmarkSeeds } from '~/features/tab/mock'
+import { getSeedForUser } from '~/features/tab/mock'
 import { mockOwnerUser } from '~/features/auth/mock'
 
 export function useTabBookmarks() {
@@ -56,27 +60,29 @@ export function useTabBookmarks() {
       let bms = await repo.listBookmarks(targetUserId)
 
       if (cats.length === 0) {
-        // 首次进入：seed 默认分类
-        const created: BookmarkCategory[] = []
-        for (const draft of defaultCategorySeeds) {
-          created.push(await repo.createCategory(targetUserId, draft))
-        }
-        cats = created
+        // 首次进入：按用户 id 分发 seed（owner/visitor/空）
+        const seed = getSeedForUser(targetUserId)
+        if (seed.categories.length > 0) {
+          const created: BookmarkCategory[] = []
+          for (const draft of seed.categories) {
+            created.push(await repo.createCategory(targetUserId, draft))
+          }
+          cats = created
 
-        // 然后按分类名映射 seed 书签
-        const nameToId = new Map(cats.map((c) => [c.name, c.id] as const))
-        for (const seed of defaultBookmarkSeeds) {
-          const categoryId = nameToId.get(seed.categoryName)
-          if (!categoryId) continue
-          await repo.createBookmark(targetUserId, {
-            name: seed.name,
-            url: seed.url,
-            icon: seed.icon,
-            color: seed.color,
-            categoryId,
-          })
+          const nameToId = new Map(cats.map((c) => [c.name, c.id] as const))
+          for (const bm of seed.bookmarks) {
+            const categoryId = nameToId.get(bm.categoryName)
+            if (!categoryId) continue
+            await repo.createBookmark(targetUserId, {
+              name: bm.name,
+              url: bm.url,
+              icon: bm.icon,
+              color: bm.color,
+              categoryId,
+            })
+          }
+          bms = await repo.listBookmarks(targetUserId)
         }
-        bms = await repo.listBookmarks(targetUserId)
       }
 
       categories.value = cats
@@ -178,6 +184,46 @@ export function useTabBookmarks() {
     activeCategoryId.value = id
   }
 
+  /** 批量更新书签排序（拖拽结束后一次性提交） */
+  async function reorderBookmarks(updates: BookmarkReorderUpdate[]): Promise<boolean> {
+    if (!isLoggedIn.value || !currentUser.value) return false
+    await repo.reorderBookmarks(currentUser.value.id, updates)
+    const patchMap = new Map(updates.map((u) => [u.id, u] as const))
+    bookmarks.value = bookmarks.value.map((b) => {
+      const p = patchMap.get(b.id)
+      return p ? { ...b, categoryId: p.categoryId, sortOrder: p.sortOrder } : b
+    })
+    return true
+  }
+
+  /** 批量更新分类排序 */
+  async function reorderCategories(updates: CategoryReorderUpdate[]): Promise<boolean> {
+    if (!isLoggedIn.value || !currentUser.value) return false
+    await repo.reorderCategories(currentUser.value.id, updates)
+    const patchMap = new Map(updates.map((u) => [u.id, u] as const))
+    categories.value = [...categories.value]
+      .map((c) => (patchMap.get(c.id) ? { ...c, sortOrder: patchMap.get(c.id)!.sortOrder } : c))
+      .sort((a, b) => a.sortOrder - b.sortOrder)
+    return true
+  }
+
+  /** 批量导入 */
+  async function importBulk(data: ImportPayload, mode: ImportMode): Promise<boolean> {
+    if (!isLoggedIn.value || !currentUser.value) {
+      openLoginDrawer('login')
+      return false
+    }
+    await repo.importBulk(currentUser.value.id, data, mode)
+    await load(true)
+    return true
+  }
+
+  /** 导出当前用户全部数据 */
+  async function exportBulk(): Promise<{ categories: BookmarkCategory[]; bookmarks: Bookmark[] } | null> {
+    const targetUserId = isLoggedIn.value && currentUser.value ? currentUser.value.id : mockOwnerUser.id
+    return repo.exportBulk(targetUserId)
+  }
+
   return {
     categories,
     bookmarks,
@@ -196,5 +242,9 @@ export function useTabBookmarks() {
     removeBookmark,
     addCategory,
     removeCategory,
+    reorderBookmarks,
+    reorderCategories,
+    importBulk,
+    exportBulk,
   }
 }
