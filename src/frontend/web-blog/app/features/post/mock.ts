@@ -180,7 +180,11 @@ function generateMockPosts(): PostItem[] {
     const daysAgo = i === 0 ? 0 : i === 1 ? 1 : i <= 4 ? Math.floor(i * 1.5) : Math.floor(i * 16)
     const date = new Date(now)
     date.setDate(date.getDate() - daysAgo)
-    const dateStr = date.toISOString().slice(0, 10)
+    // 手动按本地时区拼 YYYY-MM-DD，避免 toISOString() 转 UTC 导致 SSR/CSR 跨时区 1 天漂移
+    const y = date.getFullYear()
+    const m = String(date.getMonth() + 1).padStart(2, '0')
+    const d = String(date.getDate()).padStart(2, '0')
+    const dateStr = `${y}-${m}-${d}`
 
     // 约 60% 有封面
     const hasCover = i % 5 !== 2 && i % 5 !== 4
