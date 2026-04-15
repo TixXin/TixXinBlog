@@ -1,6 +1,6 @@
 <!--
   @file TabAddBookmarkDialog.vue
-  @description 新建书签弹窗：名称、URL、所属分类、可选颜色
+  @description 书签新建/编辑弹窗：名称、URL、所属分类、可选颜色
   @author TixXin
   @since 2026-04-11
 -->
@@ -11,8 +11,8 @@
       <div v-if="visible" class="tab-dialog" role="dialog" aria-modal="true" @click.self="close">
         <div class="tab-dialog__panel">
           <header class="tab-dialog__header">
-            <Icon name="lucide:bookmark-plus" size="18" />
-            <h2 class="tab-dialog__title">添加书签</h2>
+            <Icon :name="isEdit ? 'lucide:edit-3' : 'lucide:bookmark-plus'" size="18" />
+            <h2 class="tab-dialog__title">{{ isEdit ? '编辑书签' : '添加书签' }}</h2>
             <button type="button" class="tab-dialog__close" aria-label="关闭" @click="close">
               <Icon name="lucide:x" size="16" />
             </button>
@@ -46,7 +46,7 @@
             <div class="tab-dialog__actions">
               <button type="button" class="tab-dialog__btn tab-dialog__btn--ghost" @click="close">取消</button>
               <button type="submit" class="tab-dialog__btn tab-dialog__btn--primary" :disabled="!canSubmit">
-                添加
+                {{ isEdit ? '保存' : '添加' }}
               </button>
             </div>
           </form>
@@ -57,14 +57,21 @@
 </template>
 
 <script setup lang="ts">
-import type { BookmarkCategory, BookmarkDraft } from '~/features/tab/types'
+import type { Bookmark, BookmarkCategory, BookmarkDraft } from '~/features/tab/types'
 
 const props = defineProps<{
   categories: BookmarkCategory[]
   defaultCategoryId?: string | null
+  /** 编辑模式：传入后表单预填，提交 emit update 事件 */
+  initial?: Bookmark | null
 }>()
 const visible = defineModel<boolean>('visible', { default: false })
-const emit = defineEmits<{ submit: [draft: BookmarkDraft] }>()
+const emit = defineEmits<{
+  submit: [draft: BookmarkDraft]
+  update: [payload: { id: string; patch: BookmarkDraft }]
+}>()
+
+const isEdit = computed(() => Boolean(props.initial))
 
 const name = ref('')
 const url = ref('')
@@ -75,10 +82,17 @@ const canSubmit = computed(() => name.value && url.value && categoryId.value)
 
 watch(visible, (v) => {
   if (v) {
-    name.value = ''
-    url.value = ''
-    color.value = '#3b82f6'
-    categoryId.value = props.defaultCategoryId || props.categories[0]?.id || ''
+    if (props.initial) {
+      name.value = props.initial.name
+      url.value = props.initial.url
+      color.value = props.initial.color || '#3b82f6'
+      categoryId.value = props.initial.categoryId
+    } else {
+      name.value = ''
+      url.value = ''
+      color.value = '#3b82f6'
+      categoryId.value = props.defaultCategoryId || props.categories[0]?.id || ''
+    }
   }
 })
 
@@ -90,12 +104,17 @@ function onSubmit() {
   if (!canSubmit.value) return
   let finalUrl = url.value
   if (!/^https?:\/\//i.test(finalUrl)) finalUrl = `https://${finalUrl}`
-  emit('submit', {
+  const draft: BookmarkDraft = {
     name: name.value,
     url: finalUrl,
     color: color.value,
     categoryId: categoryId.value,
-  })
+  }
+  if (props.initial) {
+    emit('update', { id: props.initial.id, patch: draft })
+  } else {
+    emit('submit', draft)
+  }
   close()
 }
 </script>

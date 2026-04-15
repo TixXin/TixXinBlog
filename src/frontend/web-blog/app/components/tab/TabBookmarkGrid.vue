@@ -16,6 +16,7 @@
         :view-mode="tabSettings.viewMode"
         :data-bookmark-id="bm.id"
         @remove="emit('remove', $event)"
+        @context-menu="emit('contextMenu', $event)"
       />
       <button v-if="!readOnly" key="__add" type="button" class="tab-grid__add" @click="emit('add')">
         <span class="tab-grid__add-icon">
@@ -36,6 +37,7 @@ const emit = defineEmits<{
   add: []
   remove: [id: string]
   reorder: [updates: BookmarkReorderUpdate[]]
+  contextMenu: [payload: { bookmark: Bookmark; x: number; y: number }]
 }>()
 
 const { settings: tabSettings } = useTabSettings()

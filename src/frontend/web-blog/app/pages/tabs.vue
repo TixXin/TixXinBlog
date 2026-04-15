@@ -47,6 +47,7 @@
           @add="onAddBookmarkClick"
           @remove="onRemoveBookmark"
           @reorder="onReorder"
+          @context-menu="onBookmarkContextMenu"
         />
       </div>
     </div>
@@ -55,7 +56,17 @@
       v-model:visible="addBookmarkVisible"
       :categories="categories"
       :default-category-id="activeCategoryId"
+      :initial="editingBookmark"
       @submit="onSubmitBookmark"
+      @update="onUpdateBookmarkFromDialog"
+    />
+
+    <TabContextMenu
+      :visible="ctxVisible"
+      :x="ctxX"
+      :y="ctxY"
+      :items="ctxItems"
+      @close="ctxVisible = false"
     />
     <TabAddCategoryDialog
       v-model:visible="addCategoryVisible"
@@ -93,9 +104,10 @@
 </template>
 
 <script setup lang="ts">
-import type { BookmarkDraft, BookmarkCategoryDraft, BookmarkReorderUpdate } from '~/features/tab/types'
+import type { Bookmark, BookmarkDraft, BookmarkCategoryDraft, BookmarkReorderUpdate } from '~/features/tab/types'
 import type { TabViewMode } from '~/composables/useTabSettings'
 import type { CommandAction } from '~/components/tab/TabCommandPalette.vue'
+import type { ContextMenuItem } from '~/components/tab/TabContextMenu.vue'
 import { mockOwnerUser } from '~/features/auth/mock'
 
 definePageMeta({ fullbleed: true })
@@ -122,7 +134,10 @@ const {
   addCategory,
   removeCategory,
   reorderBookmarks,
+  refreshFavicon,
 } = useTabBookmarks()
+
+const { success } = useToast()
 
 const guestToastDismissed = ref(false)
 const addBookmarkVisible = ref(false)
@@ -291,6 +306,84 @@ async function onRemoveCategory(id: string) {
 async function onReorder(updates: BookmarkReorderUpdate[]) {
   await reorderBookmarks(updates)
 }
+
+async function onUpdateBookmarkFromDialog(payload: { id: string; patch: BookmarkDraft }) {
+  await updateBookmark(payload.id, payload.patch)
+}
+
+// ---- 上下文菜单 ----
+const ctxVisible = ref(false)
+const ctxX = ref(0)
+const ctxY = ref(0)
+const ctxItems = ref<ContextMenuItem[]>([])
+const editingBookmark = ref<Bookmark | null>(null)
+
+function onBookmarkContextMenu(payload: { bookmark: Bookmark; x: number; y: number }) {
+  const bm = payload.bookmark
+  ctxX.value = payload.x
+  ctxY.value = payload.y
+  ctxItems.value = [
+    {
+      label: '打开（新标签）',
+      icon: 'lucide:external-link',
+      run: () => window.open(bm.url, '_blank', 'noopener'),
+    },
+    {
+      label: '编辑',
+      icon: 'lucide:edit-3',
+      run: () => {
+        editingBookmark.value = bm
+        addBookmarkVisible.value = true
+      },
+    },
+    {
+      label: '复制 URL',
+      icon: 'lucide:clipboard',
+      run: async () => {
+        try {
+          await navigator.clipboard.writeText(bm.url)
+          success('URL 已复制')
+        } catch {
+          // clipboard 可能被禁用
+        }
+      },
+    },
+    {
+      label: bm.pinned ? '取消置顶' : '置顶',
+      icon: bm.pinned ? 'lucide:pin-off' : 'lucide:pin',
+      run: () => updateBookmark(bm.id, { pinned: !bm.pinned }),
+    },
+    {
+      label: '刷新 favicon',
+      icon: 'lucide:refresh-cw',
+      run: () => refreshFavicon(bm.id),
+    },
+    {
+      label: '移至分类',
+      icon: 'lucide:folder-symlink',
+      submenu: categories.value
+        .filter((c) => c.id !== bm.categoryId)
+        .map((c) => ({
+          label: c.name,
+          icon: c.icon,
+          run: () => updateBookmark(bm.id, { categoryId: c.id }),
+        })),
+    },
+    { type: 'divider' },
+    {
+      label: '删除',
+      icon: 'lucide:trash-2',
+      danger: true,
+      run: () => removeBookmark(bm.id),
+    },
+  ]
+  ctxVisible.value = true
+}
+
+// 编辑 Dialog 关闭时清理 editingBookmark
+watch(addBookmarkVisible, (v) => {
+  if (!v) editingBookmark.value = null
+})
 
 /** 跨分类拖拽：侧栏分类按钮 drop 后调用 */
 async function onBookmarkDropped(payload: { bookmarkId: string; targetCategoryId: string }) {
