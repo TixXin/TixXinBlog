@@ -12,8 +12,8 @@
     target="_blank"
     rel="noopener"
     class="tab-bm"
-    :class="{ 'tab-bm--pinned': bookmark.pinned }"
-    :draggable="!readOnly"
+    :class="[`tab-bm--view-${viewMode}`, { 'tab-bm--pinned': bookmark.pinned }]"
+    draggable="true"
     @dragstart="onDragStart"
     @contextmenu.prevent="onContextMenu"
     @pointerdown="onPointerDown"
@@ -198,8 +198,8 @@ const nameComputedStyle = computed(() => ({
     background: var(--accent);
   }
 
-  // list 视图：横向行式
-  .tab-grid--list & {
+  /* 视图变体（直接挂在 item 自身，避免跨组件 scoped 级联失效） */
+  &--view-list {
     flex-direction: row;
     align-items: center;
     justify-content: flex-start;
@@ -208,16 +208,14 @@ const nameComputedStyle = computed(() => ({
     background: var(--surface-1);
   }
 
-  // cards 视图：宽卡片纵向排列
-  .tab-grid--cards & {
+  &--view-cards {
     align-items: flex-start;
     padding: 1rem;
     background: var(--surface-1);
     border: 1px solid var(--border-soft);
   }
 
-  // compact 视图：更紧凑
-  .tab-grid--compact & {
+  &--view-compact {
     padding: 0.4375rem 0.25rem;
     gap: 0.25rem;
   }
@@ -237,10 +235,10 @@ const nameComputedStyle = computed(() => ({
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
 
-  .tab-grid--list & {
-    margin-left: auto;
-  }
+.tab-bm--view-list .tab-bm__url {
+  margin-left: auto;
 }
 
 .tab-bm__desc {
