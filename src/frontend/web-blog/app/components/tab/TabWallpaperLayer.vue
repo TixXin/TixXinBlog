@@ -40,6 +40,21 @@ const active = computed<WallpaperConfig>(() => {
 
 const hasWallpaper = computed(() => active.value.kind !== 'none')
 
+/**
+ * body 默认有 `background-color: var(--bg)` + 点状背景，会完全盖住 z-index:-1 的
+ * wallpaper 层。挂载时动态加 class，把 body 背景变透明，让壁纸能透出来。
+ */
+watchEffect(() => {
+  if (typeof document === 'undefined') return
+  document.body.classList.toggle('has-tab-wallpaper', hasWallpaper.value)
+})
+
+onBeforeUnmount(() => {
+  if (typeof document !== 'undefined') {
+    document.body.classList.remove('has-tab-wallpaper')
+  }
+})
+
 /** 上传壁纸的 Object URL：由 idbGet 按 uploadKey 懒加载 */
 const objectUrl = ref<string | null>(null)
 
@@ -154,5 +169,13 @@ const maskStyle = computed(() => ({
   position: absolute;
   inset: 0;
   background: radial-gradient(ellipse at center, transparent 55%, rgba(0, 0, 0, 0.45) 100%);
+}
+</style>
+
+<!-- 非 scoped：让 body 默认背景/点状图案让位，保证 z-index:-1 的壁纸层可见 -->
+<style>
+body.has-tab-wallpaper {
+  background-color: transparent !important;
+  background-image: none !important;
 }
 </style>
