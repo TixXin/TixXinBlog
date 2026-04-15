@@ -8,6 +8,9 @@
 
 <template>
   <div class="tabs-page">
+    <!-- 壁纸层：自身内部 Teleport 到 body，z-index:-1 -->
+    <TabWallpaperLayer />
+
     <!-- Teleport 到 body，避免 .main-content 祖先链上的 transform/filter 破坏 position:fixed -->
     <ClientOnly>
       <Teleport to="body">

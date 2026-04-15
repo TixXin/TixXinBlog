@@ -291,6 +291,8 @@
             <!-- ==================== 主题/壁纸 ==================== -->
             <section v-else-if="activeSection === 'theme'" class="tsd-section">
               <h3 class="tsd-section__title">主题与壁纸</h3>
+
+              <!-- 颜色模式 -->
               <div class="tsd-row">
                 <span class="tsd-row__label">颜色模式</span>
                 <div class="tsd-options">
@@ -307,11 +309,213 @@
                   </button>
                 </div>
               </div>
+
+              <!-- 亮暗独立壁纸开关 -->
               <div class="tsd-row">
-                <span class="tsd-row__label">壁纸</span>
-                <span class="tsd-row__value tsd-row__value--muted">即将支持</span>
+                <span class="tsd-row__label">亮暗独立壁纸</span>
+                <button
+                  type="button"
+                  class="tsd-toggle"
+                  :class="{ 'is-on': s.wallpaperIndependent }"
+                  @click="update('wallpaperIndependent', !s.wallpaperIndependent)"
+                >
+                  <span class="tsd-toggle__thumb" />
+                </button>
               </div>
-              <button type="button" class="tsd-reset" @click="colorMode.preference = 'system'">
+
+              <!-- 当前编辑的配置目标 -->
+              <div v-if="s.wallpaperIndependent" class="tsd-row">
+                <span class="tsd-row__label">编辑</span>
+                <div class="tsd-options">
+                  <button
+                    type="button"
+                    class="tsd-opt"
+                    :class="{ 'tsd-opt--active': wallpaperEditing === 'light' }"
+                    @click="wallpaperEditing = 'light'"
+                  >
+                    <Icon name="lucide:sun" size="12" />
+                    <span>亮色</span>
+                  </button>
+                  <button
+                    type="button"
+                    class="tsd-opt"
+                    :class="{ 'tsd-opt--active': wallpaperEditing === 'dark' }"
+                    @click="wallpaperEditing = 'dark'"
+                  >
+                    <Icon name="lucide:moon" size="12" />
+                    <span>暗色</span>
+                  </button>
+                </div>
+              </div>
+
+              <!-- 类型选择 -->
+              <div class="tsd-row tsd-row--col">
+                <div class="tsd-row__head">
+                  <span class="tsd-row__label">壁纸类型</span>
+                </div>
+                <div class="tsd-wp-kinds">
+                  <button
+                    v-for="kind in wallpaperKinds"
+                    :key="kind.value"
+                    type="button"
+                    class="tsd-opt tsd-wp-kind"
+                    :class="{ 'tsd-opt--active': currentWallpaper.kind === kind.value }"
+                    @click="onKindChange(kind.value)"
+                  >
+                    <Icon :name="kind.icon" size="12" />
+                    <span>{{ kind.label }}</span>
+                  </button>
+                </div>
+              </div>
+
+              <!-- solid -->
+              <div v-if="currentWallpaper.kind === 'solid'" class="tsd-row">
+                <span class="tsd-row__label">纯色</span>
+                <input
+                  type="color"
+                  class="tsd-color-pick__input"
+                  :value="currentWallpaper.solidColor || '#0f172a'"
+                  @input="patchWallpaper({ solidColor: ($event.target as HTMLInputElement).value })"
+                >
+              </div>
+
+              <!-- gradient -->
+              <template v-if="currentWallpaper.kind === 'gradient'">
+                <div class="tsd-row">
+                  <span class="tsd-row__label">渐变起色</span>
+                  <input
+                    type="color"
+                    class="tsd-color-pick__input"
+                    :value="currentWallpaper.gradient?.from || '#1e3a8a'"
+                    @input="patchGradient({ from: ($event.target as HTMLInputElement).value })"
+                  >
+                </div>
+                <div class="tsd-row">
+                  <span class="tsd-row__label">渐变终色</span>
+                  <input
+                    type="color"
+                    class="tsd-color-pick__input"
+                    :value="currentWallpaper.gradient?.to || '#7c3aed'"
+                    @input="patchGradient({ to: ($event.target as HTMLInputElement).value })"
+                  >
+                </div>
+                <div class="tsd-row tsd-row--col">
+                  <div class="tsd-row__head">
+                    <span class="tsd-row__label">渐变角度</span>
+                    <span class="tsd-row__val-badge">{{ currentWallpaper.gradient?.angle ?? 135 }}°</span>
+                  </div>
+                  <input
+                    type="range"
+                    class="tsd-range"
+                    :value="currentWallpaper.gradient?.angle ?? 135"
+                    min="0"
+                    max="360"
+                    step="5"
+                    @input="patchGradient({ angle: +($event.target as HTMLInputElement).value })"
+                  >
+                </div>
+              </template>
+
+              <!-- preset 图库 -->
+              <div v-if="currentWallpaper.kind === 'preset'" class="tsd-row tsd-row--col">
+                <div class="tsd-wp-gallery">
+                  <button
+                    v-for="wp in builtinWallpapers"
+                    :key="wp.id"
+                    type="button"
+                    class="tsd-wp-thumb"
+                    :class="{ 'tsd-wp-thumb--active': currentWallpaper.presetId === wp.id }"
+                    :title="wp.name"
+                    :style="{ backgroundImage: `url(${wp.thumb})` }"
+                    @click="patchWallpaper({ presetId: wp.id })"
+                  >
+                    <span class="tsd-wp-thumb__label">{{ wp.name }}</span>
+                  </button>
+                </div>
+              </div>
+
+              <!-- url -->
+              <div v-if="currentWallpaper.kind === 'url'" class="tsd-row tsd-row--col">
+                <div class="tsd-row__head">
+                  <span class="tsd-row__label">图片 URL</span>
+                </div>
+                <input
+                  type="text"
+                  class="tsd-text-input"
+                  placeholder="https://..."
+                  :value="currentWallpaper.url || ''"
+                  @change="patchWallpaper({ url: ($event.target as HTMLInputElement).value })"
+                >
+              </div>
+
+              <!-- upload -->
+              <div v-if="currentWallpaper.kind === 'upload'" class="tsd-row tsd-row--col">
+                <label class="tsd-wp-upload">
+                  <input type="file" accept="image/*" @change="onWallpaperUpload">
+                  <Icon name="lucide:upload" size="18" />
+                  <span>选择本地壁纸（&lt; 5MB，存储在本地）</span>
+                </label>
+                <p v-if="uploadError" class="tsd-upload-error">
+                  <Icon name="lucide:alert-circle" size="11" />
+                  {{ uploadError }}
+                </p>
+              </div>
+
+              <!-- 叠加层：遮罩/模糊/噪点/暗角 -->
+              <div class="tsd-row tsd-row--col">
+                <div class="tsd-row__head">
+                  <span class="tsd-row__label">遮罩不透明度</span>
+                  <span class="tsd-row__val-badge">{{ Math.round(s.wallpaperMaskOpacity * 100) }}%</span>
+                </div>
+                <input
+                  type="range"
+                  class="tsd-range"
+                  :value="s.wallpaperMaskOpacity"
+                  min="0"
+                  max="0.8"
+                  step="0.05"
+                  @input="update('wallpaperMaskOpacity', +($event.target as HTMLInputElement).value)"
+                >
+              </div>
+              <div class="tsd-row tsd-row--col">
+                <div class="tsd-row__head">
+                  <span class="tsd-row__label">模糊半径</span>
+                  <span class="tsd-row__val-badge">{{ s.wallpaperBlur }}px</span>
+                </div>
+                <input
+                  type="range"
+                  class="tsd-range"
+                  :value="s.wallpaperBlur"
+                  min="0"
+                  max="24"
+                  step="1"
+                  @input="update('wallpaperBlur', +($event.target as HTMLInputElement).value)"
+                >
+              </div>
+              <div class="tsd-row">
+                <span class="tsd-row__label">噪点纹理</span>
+                <button
+                  type="button"
+                  class="tsd-toggle"
+                  :class="{ 'is-on': s.wallpaperNoise }"
+                  @click="update('wallpaperNoise', !s.wallpaperNoise)"
+                >
+                  <span class="tsd-toggle__thumb" />
+                </button>
+              </div>
+              <div class="tsd-row">
+                <span class="tsd-row__label">暗角</span>
+                <button
+                  type="button"
+                  class="tsd-toggle"
+                  :class="{ 'is-on': s.wallpaperVignette }"
+                  @click="update('wallpaperVignette', !s.wallpaperVignette)"
+                >
+                  <span class="tsd-toggle__thumb" />
+                </button>
+              </div>
+
+              <button type="button" class="tsd-reset" @click="resetSection('wallpaper')">
                 <Icon name="lucide:rotate-ccw" size="12" />
                 恢复默认
               </button>
@@ -383,7 +587,9 @@
 
 <script setup lang="ts">
 import type { CurrentUser } from '~/features/auth/types'
-import type { TabIconStyle, FaviconProvider } from '~/composables/useTabSettings'
+import type { TabIconStyle, FaviconProvider, WallpaperKind, WallpaperConfig } from '~/composables/useTabSettings'
+import { builtinWallpapers } from '~/features/tab/wallpapers'
+import { idbSet, idbDel } from '~/utils/idbBlob'
 
 defineProps<{
   user: CurrentUser | null
@@ -432,6 +638,78 @@ const faviconProviderOptions: { value: FaviconProvider; label: string }[] = [
   { value: 'duckduckgo', label: 'DuckDuckGo' },
   { value: 'icon-horse', label: 'Icon Horse' },
 ]
+
+const wallpaperKinds: { value: WallpaperKind; label: string; icon: string }[] = [
+  { value: 'none', label: '无', icon: 'lucide:ban' },
+  { value: 'solid', label: '纯色', icon: 'lucide:square' },
+  { value: 'gradient', label: '渐变', icon: 'lucide:paintbrush' },
+  { value: 'preset', label: '图库', icon: 'lucide:image' },
+  { value: 'url', label: 'URL', icon: 'lucide:link' },
+  { value: 'upload', label: '上传', icon: 'lucide:upload' },
+]
+
+/** 当前编辑哪一份壁纸配置（亮 / 暗）；联动模式下始终编辑 light */
+const wallpaperEditing = ref<'light' | 'dark'>('light')
+
+const currentWallpaper = computed<WallpaperConfig>(() => {
+  if (s.value.wallpaperIndependent) {
+    return wallpaperEditing.value === 'dark' ? s.value.wallpaperDark : s.value.wallpaperLight
+  }
+  return s.value.wallpaperLight
+})
+
+function writeWallpaper(next: WallpaperConfig) {
+  if (s.value.wallpaperIndependent && wallpaperEditing.value === 'dark') {
+    update('wallpaperDark', next)
+  } else {
+    update('wallpaperLight', next)
+  }
+}
+
+function patchWallpaper(patch: Partial<WallpaperConfig>) {
+  writeWallpaper({ ...currentWallpaper.value, ...patch })
+}
+
+function patchGradient(patch: Partial<NonNullable<WallpaperConfig['gradient']>>) {
+  const current = currentWallpaper.value.gradient ?? { from: '#1e3a8a', to: '#7c3aed', angle: 135 }
+  patchWallpaper({ gradient: { ...current, ...patch } })
+}
+
+function onKindChange(kind: WallpaperKind) {
+  const next: WallpaperConfig = { ...currentWallpaper.value, kind }
+  // 切换 kind 时为没填的字段填默认值
+  if (kind === 'solid' && !next.solidColor) next.solidColor = '#0f172a'
+  if (kind === 'gradient' && !next.gradient) {
+    next.gradient = { from: '#1e3a8a', to: '#7c3aed', angle: 135 }
+  }
+  if (kind === 'preset' && !next.presetId) next.presetId = builtinWallpapers[0]!.id
+  writeWallpaper(next)
+}
+
+const uploadError = ref('')
+
+async function onWallpaperUpload(e: Event) {
+  const input = e.target as HTMLInputElement
+  const file = input.files?.[0]
+  if (!file) return
+  uploadError.value = ''
+  if (file.size > 5 * 1024 * 1024) {
+    uploadError.value = `图片过大（${(file.size / 1024 / 1024).toFixed(1)}MB），请压缩至 5MB 以内。`
+    input.value = ''
+    return
+  }
+  try {
+    // 清理旧上传（若存在）
+    const prev = currentWallpaper.value.uploadKey
+    if (prev) await idbDel(prev)
+    const key = `wp-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
+    await idbSet(key, file)
+    writeWallpaper({ ...currentWallpaper.value, kind: 'upload', uploadKey: key })
+  } catch (err) {
+    uploadError.value = err instanceof Error ? err.message : '上传失败，请重试'
+  }
+  input.value = ''
+}
 
 const colorModeOptions = [
   { value: 'light', label: '亮色', icon: 'lucide:sun' },
@@ -844,6 +1122,115 @@ function onGridColumnsChange(v: string) {
     border-color: var(--accent);
     color: var(--accent);
     background: var(--accent-soft);
+  }
+}
+
+/* ---- 壁纸类型按钮组 ---- */
+.tsd-wp-kinds {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.25rem;
+}
+
+.tsd-wp-kind {
+  justify-content: center;
+}
+
+/* ---- 内置壁纸缩略图网格 ---- */
+.tsd-wp-gallery {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.375rem;
+}
+
+.tsd-wp-thumb {
+  position: relative;
+  aspect-ratio: 16 / 10;
+  border: 2px solid var(--border-soft);
+  border-radius: $radius-sm;
+  background-size: cover;
+  background-position: center;
+  background-color: var(--surface-2);
+  cursor: pointer;
+  overflow: hidden;
+  transition: all 0.15s;
+
+  &:hover {
+    border-color: var(--accent);
+    transform: translateY(-2px);
+  }
+
+  &--active {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 2px var(--accent-soft);
+  }
+}
+
+.tsd-wp-thumb__label {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  padding: 0.125rem 0.375rem;
+  background: linear-gradient(to top, rgba(0, 0, 0, 0.6), transparent);
+  color: #fff;
+  font-size: 0.625rem;
+  font-weight: 500;
+  text-align: left;
+}
+
+/* ---- 壁纸上传 ---- */
+.tsd-wp-upload {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 1rem;
+  border: 2px dashed var(--border);
+  border-radius: $radius-sm;
+  background: var(--surface-2);
+  color: var(--text-soft);
+  font-size: 0.6875rem;
+  cursor: pointer;
+  text-align: center;
+  transition: all 0.15s;
+
+  &:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+    background: var(--accent-soft);
+  }
+
+  input[type='file'] {
+    display: none;
+  }
+}
+
+.tsd-upload-error {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  margin: 0.375rem 0 0;
+  padding: 0.375rem 0.5rem;
+  background: rgba(239, 68, 68, 0.08);
+  color: #ef4444;
+  border-radius: $radius-sm;
+  font-size: 0.6875rem;
+}
+
+/* ---- 文本输入 ---- */
+.tsd-text-input {
+  width: 100%;
+  padding: 0.375rem 0.625rem;
+  border: 1px solid var(--border-soft);
+  border-radius: $radius-sm;
+  background: var(--surface-2);
+  font-size: 0.75rem;
+  color: var(--text-main);
+  outline: none;
+
+  &:focus {
+    border-color: var(--accent);
   }
 }
 
