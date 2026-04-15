@@ -622,6 +622,45 @@
               </button>
             </section>
 
+            <!-- ==================== 数据管理 ==================== -->
+            <section v-else-if="activeSection === 'data'" class="tsd-section">
+              <h3 class="tsd-section__title">数据管理</h3>
+              <p class="tsd-hint">
+                <Icon name="lucide:info" size="11" />
+                数据目前存储在浏览器本地（LocalStorage + IndexedDB）。后端对接后将自动同步。
+              </p>
+              <div class="tsd-data-actions">
+                <button type="button" class="tsd-data-btn" @click="onExport">
+                  <Icon name="lucide:download" size="14" />
+                  <div>
+                    <div class="tsd-data-btn__title">导出 JSON</div>
+                    <div class="tsd-data-btn__desc">备份全部分类 / 书签 / 设置</div>
+                  </div>
+                </button>
+                <button type="button" class="tsd-data-btn" @click="emit('openImport')">
+                  <Icon name="lucide:upload" size="14" />
+                  <div>
+                    <div class="tsd-data-btn__title">导入数据</div>
+                    <div class="tsd-data-btn__desc">支持 JSON 备份或浏览器书签 HTML</div>
+                  </div>
+                </button>
+                <button type="button" class="tsd-data-btn tsd-data-btn--danger" @click="onClearBookmarks">
+                  <Icon name="lucide:trash-2" size="14" />
+                  <div>
+                    <div class="tsd-data-btn__title">清空所有书签</div>
+                    <div class="tsd-data-btn__desc">仅清书签与分类，设置保留</div>
+                  </div>
+                </button>
+                <button type="button" class="tsd-data-btn tsd-data-btn--danger" @click="onResetSettings">
+                  <Icon name="lucide:rotate-ccw" size="14" />
+                  <div>
+                    <div class="tsd-data-btn__title">重置所有设置</div>
+                    <div class="tsd-data-btn__desc">图标 / 布局 / 壁纸 / 搜索等</div>
+                  </div>
+                </button>
+              </div>
+            </section>
+
             <!-- ==================== 关于 ==================== -->
             <section v-else-if="activeSection === 'about'" class="tsd-section">
               <h3 class="tsd-section__title">关于</h3>
@@ -654,6 +693,7 @@ import { idbSet, idbDel } from '~/utils/idbBlob'
 defineProps<{
   user: CurrentUser | null
 }>()
+const emit = defineEmits<{ openImport: [] }>()
 
 const visible = defineModel<boolean>('visible', { default: false })
 
@@ -678,6 +718,7 @@ const sections = [
   { id: 'theme', label: '主题/壁纸', icon: 'lucide:paintbrush' },
   { id: 'search', label: '搜索', icon: 'lucide:search' },
   { id: 'sidebar', label: '侧边栏', icon: 'lucide:panel-left' },
+  { id: 'data', label: '数据', icon: 'lucide:database' },
   { id: 'about', label: '关于', icon: 'lucide:info' },
 ] as const
 
@@ -794,6 +835,48 @@ function close() {
 function onGridColumnsChange(v: string) {
   const n = Number(v)
   update('gridColumns', n === 0 ? 'auto' : n)
+}
+
+const { exportBulk, categories: allCategories, bookmarks: allBookmarks } = useTabBookmarks()
+const { success, error: toastError } = useToast()
+
+async function onExport() {
+  try {
+    const data = await exportBulk()
+    const { buildExportJson, triggerDownload } = await import('~/features/tab/export')
+    const payload = {
+      version: 1 as const,
+      exportedAt: new Date().toISOString(),
+      categories: data?.categories ?? allCategories.value,
+      bookmarks: data?.bookmarks ?? allBookmarks.value,
+      settings: settings.value,
+    }
+    const stamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19)
+    triggerDownload(`tabs-${stamp}.json`, buildExportJson(payload))
+    success('已导出 JSON 文件')
+  } catch (err) {
+    toastError(err instanceof Error ? err.message : '导出失败')
+  }
+}
+
+function onClearBookmarks() {
+  if (!window.confirm('确认清空所有分类与书签？此操作不可撤销。')) return
+  if (typeof window === 'undefined') return
+  const prefixes = ['tab:categories:', 'tab:bookmarks:']
+  const keysToDel: string[] = []
+  for (let i = 0; i < localStorage.length; i++) {
+    const k = localStorage.key(i)
+    if (k && prefixes.some((p) => k.startsWith(p))) keysToDel.push(k)
+  }
+  keysToDel.forEach((k) => localStorage.removeItem(k))
+  success('已清空书签数据，刷新后生效')
+}
+
+function onResetSettings() {
+  if (!window.confirm('确认重置所有设置？壁纸与布局将回到默认。')) return
+  if (typeof window === 'undefined') return
+  localStorage.removeItem('tab-settings')
+  success('已重置设置，刷新后生效')
 }
 </script>
 
@@ -1340,6 +1423,57 @@ function onGridColumnsChange(v: string) {
 .tsd-view-card__label {
   font-size: 0.6875rem;
   font-weight: 500;
+}
+
+/* ---- 数据管理按钮 ---- */
+.tsd-data-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+}
+
+.tsd-data-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  padding: 0.625rem 0.875rem;
+  border: 1px solid var(--border-soft);
+  border-radius: $radius-sm;
+  background: var(--surface-2);
+  color: var(--text-main);
+  text-align: left;
+  cursor: pointer;
+  transition: all 0.15s;
+
+  &:hover {
+    border-color: var(--accent);
+    background: var(--accent-soft);
+    color: var(--accent);
+  }
+
+  &--danger:hover {
+    border-color: #ef4444;
+    background: rgba(239, 68, 68, 0.08);
+    color: #ef4444;
+  }
+}
+
+.tsd-data-btn__title {
+  font-size: 0.8125rem;
+  font-weight: 600;
+}
+
+.tsd-data-btn__desc {
+  font-size: 0.6875rem;
+  color: var(--text-soft);
+  margin-top: 0.125rem;
+}
+
+.tsd-data-btn:hover .tsd-data-btn__desc,
+.tsd-data-btn--danger:hover .tsd-data-btn__desc {
+  color: inherit;
+  opacity: 0.8;
 }
 
 /* ---- 提示文字 ---- */
