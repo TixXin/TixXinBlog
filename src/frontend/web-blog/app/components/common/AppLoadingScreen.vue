@@ -26,17 +26,33 @@
         <div class="loading-screen__progress">
           <div class="loading-screen__progress-bar" />
         </div>
+
+        <!-- 真实进度百分比：仅首屏 loading 场景显示，主题切换场景（forceVisible）不渲染 -->
+        <p
+          v-if="!forceVisible"
+          class="loading-screen__percent"
+          :aria-label="`加载中 ${displayPercent}%`"
+        >
+          {{ displayPercent }}%
+        </p>
       </div>
     </div>
   </Transition>
 </template>
 
 <script setup lang="ts">
+import { computed } from 'vue'
+
 defineProps<{
   visible: boolean
   // 强制显示：绕过 html.visited CSS 屏蔽，用于主题切换等首屏之外的场景
   forceVisible?: boolean
 }>()
+
+// 读取首屏加载进度（主题切换场景 DOM 不渲染百分比，composable 仍可安全读取共享 state）
+const { progress } = useLoadingProgress()
+// 向下取整 + 夹紧，防止浮点抖动导致 42% → 43% → 42% 视觉闪烁
+const displayPercent = computed(() => Math.min(100, Math.max(0, Math.floor(progress.value))))
 </script>
 
 <style lang="scss" scoped>
@@ -129,6 +145,21 @@ html.visited .loading-screen:not(.loading-screen--force) {
   );
   border-radius: 1px;
   animation: loading-progress 1.2s ease-in-out infinite;
+}
+
+/* 真实进度百分比文字 */
+.loading-screen__percent {
+  margin: 0.75rem 0 0;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--text-soft);
+  letter-spacing: 0.05em;
+  // 等宽数字 + 最小宽度 + 居中，防止 0→10→100 宽度变化造成抖动
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: 'tnum';
+  min-width: 3ch;
+  text-align: center;
+  line-height: 1;
 }
 
 @keyframes loading-progress {
