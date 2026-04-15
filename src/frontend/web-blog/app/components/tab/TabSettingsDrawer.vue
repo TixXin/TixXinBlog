@@ -53,6 +53,89 @@
               </div>
             </section>
 
+            <!-- ==================== 布局 ==================== -->
+            <section v-else-if="activeSection === 'layout'" class="tsd-section">
+              <h3 class="tsd-section__title">布局</h3>
+              <!-- 视图模式：四格缩略卡 -->
+              <div class="tsd-row tsd-row--col">
+                <div class="tsd-row__head">
+                  <span class="tsd-row__label">视图模式</span>
+                </div>
+                <div class="tsd-view-grid">
+                  <button
+                    v-for="opt in viewModeOptions"
+                    :key="opt.value"
+                    type="button"
+                    class="tsd-view-card"
+                    :class="{ 'tsd-view-card--active': s.viewMode === opt.value }"
+                    :title="opt.desc"
+                    @click="update('viewMode', opt.value)"
+                  >
+                    <Icon :name="opt.icon" size="20" />
+                    <span class="tsd-view-card__label">{{ opt.label }}</span>
+                  </button>
+                </div>
+              </div>
+              <!-- 列数（仅 grid/compact） -->
+              <div
+                class="tsd-row tsd-row--col"
+                :class="{ 'tsd-row--disabled': s.viewMode !== 'grid' && s.viewMode !== 'compact' }"
+              >
+                <div class="tsd-row__head">
+                  <span class="tsd-row__label">列数</span>
+                  <span class="tsd-row__val-badge">
+                    {{ s.gridColumns === 'auto' ? '自适应' : `${s.gridColumns} 列` }}
+                  </span>
+                </div>
+                <input
+                  type="range"
+                  class="tsd-range"
+                  :value="s.gridColumns === 'auto' ? 0 : s.gridColumns"
+                  min="0"
+                  max="10"
+                  step="1"
+                  :disabled="s.viewMode !== 'grid' && s.viewMode !== 'compact'"
+                  @input="onGridColumnsChange(($event.target as HTMLInputElement).value)"
+                >
+              </div>
+              <!-- 图标间距 -->
+              <div class="tsd-row tsd-row--col">
+                <div class="tsd-row__head">
+                  <span class="tsd-row__label">图标间距</span>
+                  <span class="tsd-row__val-badge">{{ s.iconGap }}px</span>
+                </div>
+                <input
+                  type="range"
+                  class="tsd-range"
+                  :value="s.iconGap"
+                  min="0"
+                  max="32"
+                  step="2"
+                  @input="update('iconGap', +($event.target as HTMLInputElement).value)"
+                >
+              </div>
+              <!-- 启用拖拽 -->
+              <div class="tsd-row">
+                <span class="tsd-row__label">启用拖拽排序</span>
+                <button
+                  type="button"
+                  class="tsd-toggle"
+                  :class="{ 'is-on': s.dragEnabled }"
+                  @click="update('dragEnabled', !s.dragEnabled)"
+                >
+                  <span class="tsd-toggle__thumb" />
+                </button>
+              </div>
+              <p class="tsd-hint">
+                <Icon name="lucide:info" size="11" />
+                拖动书签卡片可在同分类内重新排序；拖到左侧分类按钮可跨分类移动。
+              </p>
+              <button type="button" class="tsd-reset" @click="resetSection('view')">
+                <Icon name="lucide:rotate-ccw" size="12" />
+                恢复默认
+              </button>
+            </section>
+
             <!-- ==================== 图标 ==================== -->
             <section v-else-if="activeSection === 'icon'" class="tsd-section">
               <h3 class="tsd-section__title">图标设置</h3>
@@ -294,6 +377,7 @@ const effectiveIconRadius = computed(() =>
 
 const sections = [
   { id: 'profile', label: '个人信息', icon: 'lucide:user' },
+  { id: 'layout', label: '布局', icon: 'lucide:layout-grid' },
   { id: 'icon', label: '图标', icon: 'lucide:image' },
   { id: 'time', label: '时间', icon: 'lucide:clock' },
   { id: 'theme', label: '主题/壁纸', icon: 'lucide:paintbrush' },
@@ -307,6 +391,13 @@ const iconStyleOptions: { value: TabIconStyle; label: string; icon: string }[] =
   { value: 'flat', label: '扁平', icon: 'lucide:minus' },
 ]
 
+const viewModeOptions: { value: 'grid' | 'compact' | 'list' | 'cards'; label: string; icon: string; desc: string }[] = [
+  { value: 'grid', label: '网格', icon: 'lucide:layout-grid', desc: '默认大图标 + 名称' },
+  { value: 'compact', label: '紧凑', icon: 'lucide:grid-2x2', desc: '小图标密排' },
+  { value: 'list', label: '列表', icon: 'lucide:list', desc: '横向行式含 URL' },
+  { value: 'cards', label: '卡片', icon: 'lucide:square-stack', desc: '宽卡片含描述' },
+]
+
 const colorModeOptions = [
   { value: 'light', label: '亮色', icon: 'lucide:sun' },
   { value: 'dark', label: '暗色', icon: 'lucide:moon' },
@@ -315,6 +406,12 @@ const colorModeOptions = [
 
 function close() {
   visible.value = false
+}
+
+/** 列数滑块：0 表示自适应，1-10 表示固定列数 */
+function onGridColumnsChange(v: string) {
+  const n = Number(v)
+  update('gridColumns', n === 0 ? 'auto' : n)
 }
 </script>
 
@@ -713,6 +810,59 @@ function close() {
     color: var(--accent);
     background: var(--accent-soft);
   }
+}
+
+/* ---- 视图模式四格缩略卡 ---- */
+.tsd-view-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0.5rem;
+}
+
+.tsd-view-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.625rem 0.25rem;
+  border: 1px solid var(--border-soft);
+  border-radius: $radius-md;
+  background: transparent;
+  color: var(--text-soft);
+  cursor: pointer;
+  transition: all 0.15s;
+
+  &:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+    background: var(--accent-soft);
+  }
+
+  &--active {
+    border-color: var(--accent);
+    background: var(--accent-soft);
+    color: var(--accent);
+    font-weight: 600;
+  }
+}
+
+.tsd-view-card__label {
+  font-size: 0.6875rem;
+  font-weight: 500;
+}
+
+/* ---- 提示文字 ---- */
+.tsd-hint {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.375rem;
+  margin: 0.5rem 0 0;
+  padding: 0.5rem 0.625rem;
+  border-radius: $radius-sm;
+  background: var(--surface-2);
+  color: var(--text-soft);
+  font-size: 0.6875rem;
+  line-height: 1.5;
 }
 
 /* ---- About ---- */
