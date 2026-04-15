@@ -27,15 +27,15 @@ export interface TabBookmarkRepository {
 
   /** 创建分类 */
   createCategory(userId: string, draft: BookmarkCategoryDraft): Promise<BookmarkCategory>
-  /** 更新分类 */
-  updateCategory(id: string, patch: Partial<BookmarkCategoryDraft>): Promise<BookmarkCategory>
+  /** 更新分类（patch 宽松接受所有字段，便于扩展 collapsed/description 等） */
+  updateCategory(id: string, patch: Partial<Omit<BookmarkCategory, 'id' | 'userId'>>): Promise<BookmarkCategory>
   /** 删除分类（连带删除其下书签） */
   removeCategory(id: string): Promise<void>
 
   /** 创建书签 */
   createBookmark(userId: string, draft: BookmarkDraft): Promise<Bookmark>
-  /** 更新书签 */
-  updateBookmark(id: string, patch: Partial<BookmarkDraft>): Promise<Bookmark>
+  /** 更新书签（patch 宽松接受所有字段，便于扩展 faviconUrl/pinned/description 等） */
+  updateBookmark(id: string, patch: Partial<Omit<Bookmark, 'id' | 'userId'>>): Promise<Bookmark>
   /** 删除书签 */
   removeBookmark(id: string): Promise<void>
 

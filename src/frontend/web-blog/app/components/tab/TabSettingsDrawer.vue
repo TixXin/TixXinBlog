@@ -226,6 +226,35 @@
                 </div>
                 <input type="range" class="tsd-range" :value="s.gridMaxWidth" :min="s.gridMaxWidthUnit === 'px' ? 400 : 40" :max="s.gridMaxWidthUnit === 'px' ? 2400 : 100" :step="s.gridMaxWidthUnit === 'px' ? 10 : 5" @input="update('gridMaxWidth', +($event.target as HTMLInputElement).value)">
               </div>
+              <!-- 自动抓取 favicon -->
+              <div class="tsd-row">
+                <span class="tsd-row__label">自动抓取 favicon</span>
+                <button
+                  type="button"
+                  class="tsd-toggle"
+                  :class="{ 'is-on': s.faviconAutoFetch }"
+                  @click="update('faviconAutoFetch', !s.faviconAutoFetch)"
+                >
+                  <span class="tsd-toggle__thumb" />
+                </button>
+              </div>
+              <!-- favicon provider -->
+              <div class="tsd-row" :class="{ 'tsd-row--disabled': !s.faviconAutoFetch }">
+                <span class="tsd-row__label">favicon 源</span>
+                <div class="tsd-options">
+                  <button
+                    v-for="opt in faviconProviderOptions"
+                    :key="opt.value"
+                    type="button"
+                    class="tsd-opt"
+                    :class="{ 'tsd-opt--active': s.faviconProvider === opt.value }"
+                    :disabled="!s.faviconAutoFetch"
+                    @click="update('faviconProvider', opt.value)"
+                  >
+                    {{ opt.label }}
+                  </button>
+                </div>
+              </div>
               <button type="button" class="tsd-reset" @click="resetSection('icon')">
                 <Icon name="lucide:rotate-ccw" size="12" />
                 恢复默认
@@ -354,7 +383,7 @@
 
 <script setup lang="ts">
 import type { CurrentUser } from '~/features/auth/types'
-import type { TabIconStyle } from '~/composables/useTabSettings'
+import type { TabIconStyle, FaviconProvider } from '~/composables/useTabSettings'
 
 defineProps<{
   user: CurrentUser | null
@@ -396,6 +425,12 @@ const viewModeOptions: { value: 'grid' | 'compact' | 'list' | 'cards'; label: st
   { value: 'compact', label: '紧凑', icon: 'lucide:grid-2x2', desc: '小图标密排' },
   { value: 'list', label: '列表', icon: 'lucide:list', desc: '横向行式含 URL' },
   { value: 'cards', label: '卡片', icon: 'lucide:square-stack', desc: '宽卡片含描述' },
+]
+
+const faviconProviderOptions: { value: FaviconProvider; label: string }[] = [
+  { value: 'google', label: 'Google' },
+  { value: 'duckduckgo', label: 'DuckDuckGo' },
+  { value: 'icon-horse', label: 'Icon Horse' },
 ]
 
 const colorModeOptions = [
