@@ -28,6 +28,12 @@
     flex-direction: column;
     gap: $grid-gap;
   }
+
+  // 紧凑档：lg–xl 区间减小三栏间距，避免三栏互相挤压
+  @media (min-width: $breakpoint-lg) and (max-width: #{$breakpoint-xl - 1px}) {
+    padding: 1.25rem;
+    gap: 1rem;
+  }
 }
 
 // 外层网格：左侧栏（持久化） + 内容区（随页面切换）
@@ -42,13 +48,24 @@
   padding-bottom: 5rem;
 
   @media (min-width: $breakpoint-md) {
-    grid-template-columns: #{$sidebar-left-width} 1fr;
+    grid-template-columns: #{$sidebar-left-width-compact} 1fr;
     padding-bottom: 0;
   }
 
   @media (min-width: $breakpoint-lg) {
     flex: 1;
     min-height: 0;
+  }
+
+  // 紧凑档：lg–xl 区间左栏使用紧凑宽度
+  @media (min-width: $breakpoint-lg) and (max-width: #{$breakpoint-xl - 1px}) {
+    grid-template-columns: #{$sidebar-left-width-compact} 1fr;
+    gap: 1rem;
+  }
+
+  // xl+ 恢复原 280px 左栏
+  @media (min-width: $breakpoint-xl) {
+    grid-template-columns: #{$sidebar-left-width} 1fr;
   }
 }
 
@@ -65,6 +82,12 @@
     grid-template-columns: 1fr #{$sidebar-right-width};
     gap: $grid-gap;
     min-height: 0;
+  }
+
+  // 紧凑档：lg–xl 区间右栏使用紧凑宽度与更小间距
+  @media (min-width: $breakpoint-lg) and (max-width: #{$breakpoint-xl - 1px}) {
+    grid-template-columns: 1fr #{$sidebar-right-width-compact};
+    gap: 1rem;
   }
 }
 
@@ -143,6 +166,13 @@
     flex-direction: row;
     align-items: center;
     justify-content: space-between;
+    flex-wrap: wrap; // 紧凑档兜底：允许 Tab/搜索/模式切换在极端文本下换行
+  }
+
+  // 紧凑档：lg–xl 减小左右 padding，让头部内容有更多呼吸空间
+  @media (min-width: $breakpoint-lg) and (max-width: #{$breakpoint-xl - 1px}) {
+    padding: 1.25rem 1.25rem 0;
+    gap: 0.75rem;
   }
 }
 
@@ -153,6 +183,12 @@
   flex-direction: column;
   gap: $grid-gap;
   min-height: 0;
+
+  // 紧凑档：lg–xl 减小主体 padding
+  @media (min-width: $breakpoint-lg) and (max-width: #{$breakpoint-xl - 1px}) {
+    padding: 1.25rem;
+    gap: 1rem;
+  }
 }
 
 .aside-right {

@@ -48,6 +48,11 @@ defineEmits<{
   position: relative;
   width: 100%;
   max-width: 16rem;
+
+  // 紧凑档（sm–xl）：搜索框收窄，避免与右侧按钮组挤压
+  @media (min-width: $breakpoint-sm) and (max-width: #{$breakpoint-xl - 1px}) {
+    max-width: 12rem;
+  }
 }
 
 .search-box__icon {

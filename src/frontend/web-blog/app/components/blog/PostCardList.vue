@@ -15,115 +15,105 @@
       :show-back-to-top="false"
       primary
     >
-
-    <!-- 瀑布流模式：TransitionGroup 实现新卡片渐入动画 -->
-    <TransitionGroup
-      v-if="displayMode === 'waterfall'"
-      tag="div"
-      class="post-list"
-      name="post-enter"
-      :css="false"
-      @enter="onItemEnter"
-    >
-      <ThemeComponent
-        v-for="(post, index) in displayedPosts"
-        :key="post.id"
-        name="PostCard"
-        :post="post"
-        :data-index="index"
-      />
-    </TransitionGroup>
-
-    <!-- 分页模式：Transition 实现翻页淡入淡出 -->
-    <Transition v-else name="page-fade" mode="out-in">
-      <div :key="paginationKey" class="post-list">
+      <!-- 瀑布流模式：TransitionGroup 实现新卡片渐入动画 -->
+      <TransitionGroup
+        v-if="displayMode === 'waterfall'"
+        tag="div"
+        class="post-list"
+        name="post-enter"
+        :css="false"
+        @enter="onItemEnter"
+      >
         <ThemeComponent
-          v-for="post in displayedPosts"
+          v-for="(post, index) in displayedPosts"
           :key="post.id"
           name="PostCard"
           :post="post"
+          :data-index="index"
         />
+      </TransitionGroup>
+
+      <!-- 分页模式：Transition 实现翻页淡入淡出 -->
+      <Transition v-else name="page-fade" mode="out-in">
+        <div :key="paginationKey" class="post-list">
+          <ThemeComponent v-for="post in displayedPosts" :key="post.id" name="PostCard" :post="post" />
+        </div>
+      </Transition>
+
+      <p v-if="filteredPosts.length === 0" class="post-list__empty">暂无相关文章</p>
+
+      <!-- 瀑布流模式：触底懒加载 -->
+      <template v-if="displayMode === 'waterfall'">
+        <!-- 哨兵始终存在（不受 loading 影响），避免 observer 反复断开重连 -->
+        <div v-if="hasMore" ref="sentinelRef" class="post-list__sentinel" />
+        <Transition name="loader-fade">
+          <div v-if="hasMore && showSpinner" class="post-list__loader">
+            <Icon name="lucide:loader-2" size="20" class="post-list__spinner" />
+            <span class="post-list__loader-text">加载中...</span>
+          </div>
+        </Transition>
+        <Transition name="loader-fade">
+          <div v-if="!hasMore && filteredPosts.length > 0" class="post-list__end">
+            <span class="post-list__end-line" />
+            <span class="post-list__end-text">已经到底了</span>
+            <span class="post-list__end-line" />
+          </div>
+        </Transition>
+      </template>
+    </CommonCustomScrollbar>
+
+    <!-- 分页模式：悬浮在主内容区底部，向下滚动隐藏，向上滚动显示 -->
+    <Transition name="pagination-slide">
+      <div
+        v-if="displayMode === 'pagination' && totalPages > 1 && paginationVisible"
+        class="pagination-bar"
+        :class="{ 'is-bounced': paginationBounce }"
+      >
+        <button class="pagination__btn" :disabled="currentPage <= 1" @click="goToPage(currentPage - 1)">
+          <Icon name="lucide:chevron-left" size="16" />
+        </button>
+
+        <template v-for="page in pageList" :key="page">
+          <span v-if="page === '...'" class="pagination__ellipsis">...</span>
+          <button
+            v-else
+            class="pagination__btn pagination__page"
+            :class="{ 'pagination__page--active': page === currentPage }"
+            @click="goToPage(page as number)"
+          >
+            {{ page }}
+          </button>
+        </template>
+
+        <button class="pagination__btn" :disabled="currentPage >= totalPages" @click="goToPage(currentPage + 1)">
+          <Icon name="lucide:chevron-right" size="16" />
+        </button>
+
+        <span class="pagination__info">{{ currentPage }} / {{ totalPages }}</span>
       </div>
     </Transition>
-
-    <p v-if="filteredPosts.length === 0" class="post-list__empty">
-      暂无相关文章
-    </p>
-
-    <!-- 瀑布流模式：触底懒加载 -->
-    <template v-if="displayMode === 'waterfall'">
-      <!-- 哨兵始终存在（不受 loading 影响），避免 observer 反复断开重连 -->
-      <div v-if="hasMore" ref="sentinelRef" class="post-list__sentinel" />
-      <Transition name="loader-fade">
-        <div v-if="hasMore && showSpinner" class="post-list__loader">
-          <Icon name="lucide:loader-2" size="20" class="post-list__spinner" />
-          <span class="post-list__loader-text">加载中...</span>
-        </div>
-      </Transition>
-      <Transition name="loader-fade">
-        <div v-if="!hasMore && filteredPosts.length > 0" class="post-list__end">
-          <span class="post-list__end-line" />
-          <span class="post-list__end-text">已经到底了</span>
-          <span class="post-list__end-line" />
-        </div>
-      </Transition>
-    </template>
-
-  </CommonCustomScrollbar>
-
-  <!-- 分页模式：悬浮在主内容区底部，向下滚动隐藏，向上滚动显示 -->
-  <Transition name="pagination-slide">
-    <div v-if="displayMode === 'pagination' && totalPages > 1 && paginationVisible" class="pagination-bar" :class="{ 'is-bounced': paginationBounce }">
-      <button
-        class="pagination__btn"
-        :disabled="currentPage <= 1"
-        @click="goToPage(currentPage - 1)"
-      >
-        <Icon name="lucide:chevron-left" size="16" />
-      </button>
-
-      <template v-for="page in pageList" :key="page">
-        <span v-if="page === '...'" class="pagination__ellipsis">...</span>
-        <button
-          v-else
-          class="pagination__btn pagination__page"
-          :class="{ 'pagination__page--active': page === currentPage }"
-          @click="goToPage(page as number)"
-        >
-          {{ page }}
-        </button>
-      </template>
-
-      <button
-        class="pagination__btn"
-        :disabled="currentPage >= totalPages"
-        @click="goToPage(currentPage + 1)"
-      >
-        <Icon name="lucide:chevron-right" size="16" />
-      </button>
-
-      <span class="pagination__info">{{ currentPage }} / {{ totalPages }}</span>
-    </div>
-  </Transition>
   </div>
 </template>
 
 <script setup lang="ts">
 import type { PostItem } from '~/features/post/types'
 
-const props = withDefaults(defineProps<{
-  posts: PostItem[]
-  activeTab: string
-  displayMode?: 'waterfall' | 'pagination'
-  /** 按标签名过滤 */
-  selectedTag?: string | null
-  /** 按分类名过滤 */
-  selectedCategory?: string | null
-}>(), {
-  displayMode: 'waterfall',
-  selectedTag: null,
-  selectedCategory: null,
-})
+const props = withDefaults(
+  defineProps<{
+    posts: PostItem[]
+    activeTab: string
+    displayMode?: 'waterfall' | 'pagination'
+    /** 按标签名过滤 */
+    selectedTag?: string | null
+    /** 按分类名过滤 */
+    selectedCategory?: string | null
+  }>(),
+  {
+    displayMode: 'waterfall',
+    selectedTag: null,
+    selectedCategory: null,
+  },
+)
 
 const scrollbarRef = ref<{ viewport: HTMLElement | null; scrollToTop: (smooth?: boolean) => void } | null>(null)
 
@@ -181,7 +171,9 @@ const paginationBounce = ref(false)
 watch(isFooterExpanded, (expanded) => {
   if (expanded) {
     paginationBounce.value = true
-    setTimeout(() => { paginationBounce.value = false }, 500)
+    setTimeout(() => {
+      paginationBounce.value = false
+    }, 500)
   }
 })
 
@@ -224,6 +216,11 @@ onUnmounted(() => {
 
   @media (min-width: $breakpoint-sm) {
     padding: 1.5rem 1.5rem 3.5rem;
+  }
+
+  // 紧凑档（lg–xl）：与 main-content__body 的 1.25rem padding 对齐
+  @media (min-width: $breakpoint-lg) and (max-width: #{$breakpoint-xl - 1px}) {
+    padding: 1rem 1.25rem 3.5rem;
   }
 
   @media (min-width: $breakpoint-xl) {
@@ -287,11 +284,15 @@ onUnmounted(() => {
 
 /* ---- 分页翻页过渡 ---- */
 .page-fade-enter-active {
-  transition: opacity 0.25s ease, transform 0.25s ease;
+  transition:
+    opacity 0.25s ease,
+    transform 0.25s ease;
 }
 
 .page-fade-leave-active {
-  transition: opacity 0.15s ease, transform 0.15s ease;
+  transition:
+    opacity 0.15s ease,
+    transform 0.15s ease;
 }
 
 .page-fade-enter-from {
@@ -400,24 +401,38 @@ onUnmounted(() => {
 
 /* ---- 分页栏弹跳（底部栏展开时联动） ---- */
 .pagination-bar.is-bounced {
-  animation: pagination-bump 0.5s cubic-bezier(0.22, 0.68, 0.35, 1.0);
+  animation: pagination-bump 0.5s cubic-bezier(0.22, 0.68, 0.35, 1);
 }
 
 @keyframes pagination-bump {
-  0%   { transform: translateX(-50%) translateY(0); }
-  30%  { transform: translateX(-50%) translateY(-24px); }
-  55%  { transform: translateX(-50%) translateY(4px); }
-  75%  { transform: translateX(-50%) translateY(-6px); }
-  100% { transform: translateX(-50%) translateY(0); }
+  0% {
+    transform: translateX(-50%) translateY(0);
+  }
+  30% {
+    transform: translateX(-50%) translateY(-24px);
+  }
+  55% {
+    transform: translateX(-50%) translateY(4px);
+  }
+  75% {
+    transform: translateX(-50%) translateY(-6px);
+  }
+  100% {
+    transform: translateX(-50%) translateY(0);
+  }
 }
 
 /* ---- 分页栏滑动动画：向上弹出显示 / 向下退出隐藏 ---- */
 .pagination-slide-enter-active {
-  transition: opacity 0.25s ease-out, transform 0.25s ease-out;
+  transition:
+    opacity 0.25s ease-out,
+    transform 0.25s ease-out;
 }
 
 .pagination-slide-leave-active {
-  transition: opacity 0.2s ease-in, transform 0.2s ease-in;
+  transition:
+    opacity 0.2s ease-in,
+    transform 0.2s ease-in;
 }
 
 .pagination-slide-enter-from {
@@ -429,5 +444,4 @@ onUnmounted(() => {
   opacity: 0;
   transform: translateX(-50%) translateY(100%);
 }
-
 </style>

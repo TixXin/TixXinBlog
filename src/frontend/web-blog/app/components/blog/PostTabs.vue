@@ -21,11 +21,7 @@
 
     <div class="post-tabs__search">
       <Icon name="lucide:search" size="16" class="post-tabs__search-icon" />
-      <input
-        type="text"
-        class="input-field post-tabs__search-input"
-        placeholder="搜索站内文章、标签..."
-      />
+      <input type="text" class="input-field post-tabs__search-input" placeholder="搜索站内文章、标签..." >
     </div>
   </div>
 </template>
@@ -53,6 +49,11 @@ defineEmits<{
   @media (min-width: $breakpoint-sm) {
     gap: 2.5rem;
   }
+
+  // 紧凑档（sm–xl）：缩小 Tab 间距避免与搜索框挤压
+  @media (min-width: $breakpoint-sm) and (max-width: #{$breakpoint-xl - 1px}) {
+    gap: 1.5rem;
+  }
 }
 
 .post-tabs__search {
@@ -66,6 +67,11 @@ defineEmits<{
     width: 16rem;
     padding-bottom: 0;
     margin-left: auto;
+  }
+
+  // 紧凑档（sm–xl）：搜索框缩至 12rem，给 Tab 与模式切换按钮让空间
+  @media (min-width: $breakpoint-sm) and (max-width: #{$breakpoint-xl - 1px}) {
+    width: 12rem;
   }
 }
 

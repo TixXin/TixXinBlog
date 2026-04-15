@@ -52,6 +52,11 @@ const statItems = computed(() => [
 <style lang="scss" scoped>
 .stats-card {
   padding: 1.25rem;
+
+  // 紧凑档（md–xl）：左栏只有 240px 宽度时，卡片 padding 收窄给内容让空间
+  @media (min-width: $breakpoint-md) and (max-width: #{$breakpoint-xl - 1px}) {
+    padding: 1rem 0.9rem;
+  }
 }
 
 .stats-card__title-row {
@@ -120,6 +125,11 @@ const statItems = computed(() => [
   grid-template-columns: repeat(4, 1fr);
   gap: 0.5rem;
   margin-bottom: 1rem;
+
+  // 紧凑档（md–xl）：240px 宽度下 4 列每列仅 ~45px，缩小间距避免数字挤压
+  @media (min-width: $breakpoint-md) and (max-width: #{$breakpoint-xl - 1px}) {
+    gap: 0.35rem;
+  }
 }
 
 .stats-card__item {
@@ -139,6 +149,11 @@ const statItems = computed(() => [
   font-size: 1.25rem;
   font-weight: 800;
   transition: color 0.2s;
+
+  // 紧凑档（md–xl）：数字字号略降，避免在 240px 宽度下挤破列宽
+  @media (min-width: $breakpoint-md) and (max-width: #{$breakpoint-xl - 1px}) {
+    font-size: 1.1rem;
+  }
 }
 
 .stats-card__label {
@@ -148,7 +163,12 @@ const statItems = computed(() => [
 }
 
 @keyframes pulse-green {
-  0%, 100% { box-shadow: 0 0 0 3px var(--stat-green-bg); }
-  50% { box-shadow: 0 0 0 8px transparent; }
+  0%,
+  100% {
+    box-shadow: 0 0 0 3px var(--stat-green-bg);
+  }
+  50% {
+    box-shadow: 0 0 0 8px transparent;
+  }
 }
 </style>

@@ -309,6 +309,11 @@ const momentTopics = computed<MomentTopic[]>(() =>
   @media (min-width: $breakpoint-sm) {
     gap: 2.5rem;
   }
+
+  // 紧凑档（sm–xl）：Tab 间距收紧，避免与右侧搜索/模式切换挤压
+  @media (min-width: $breakpoint-sm) and (max-width: #{$breakpoint-xl - 1px}) {
+    gap: 1.5rem;
+  }
 }
 
 /* 右侧操作区 */
@@ -323,6 +328,11 @@ const momentTopics = computed<MomentTopic[]>(() =>
     width: auto;
     padding-bottom: 0;
     margin-left: auto;
+  }
+
+  // 紧凑档（sm–xl）：缩小搜索框与模式切换按钮之间的间距
+  @media (min-width: $breakpoint-sm) and (max-width: #{$breakpoint-xl - 1px}) {
+    gap: 0.5rem;
   }
 }
 

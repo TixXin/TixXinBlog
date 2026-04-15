@@ -23,6 +23,9 @@ $breakpoint-xl: 1280px;
 
 $sidebar-left-width: 280px;
 $sidebar-right-width: 300px;
+// 紧凑档侧栏宽度：在 md–lg 与 lg–xl 区间让出更多中间内容空间
+$sidebar-left-width-compact: 240px;
+$sidebar-right-width-compact: 260px;
 $container-max-width: 1440px;
 $grid-gap: 1.5rem;
 $radius-card: 1.5rem;
