@@ -8,12 +8,20 @@
 <template>
   <div class="main-inner flash-page">
     <div class="main-content__header">
-      <div class="flash-page__title">
-        <Icon name="lucide:zap" size="20" />
-        <h1>闪念</h1>
-        <span class="flash-page__sub">{{
-          isLoggedIn ? '记录稍纵即逝的灵感' : '博主的灵感碎片'
-        }}</span>
+      <div class="page-title">
+        <div class="page-title__icon-wrap" aria-hidden="true">
+          <Icon name="lucide:zap" size="18" />
+        </div>
+        <div class="page-title__text">
+          <h2 class="page-title__heading">闪念</h2>
+          <p class="page-title__sub">
+            {{ isLoggedIn ? '记录稍纵即逝的灵感' : '博主的灵感碎片' }}
+          </p>
+        </div>
+      </div>
+
+      <!-- 右侧操作区：搜索切换按钮 -->
+      <div class="page-actions">
         <button
           type="button"
           class="flash-page__search-toggle"
@@ -22,9 +30,11 @@
           @click="searchExpanded = !searchExpanded"
         >
           <Icon name="lucide:search" size="14" />
+          <span>搜索</span>
         </button>
       </div>
-      <!-- 搜索栏：展开后显示 -->
+
+      <!-- 搜索栏：展开后显示，占满 header 整行 -->
       <div v-if="searchExpanded" class="flash-page__search-bar">
         <Icon name="lucide:search" size="13" class="flash-page__search-icon" />
         <input
@@ -319,56 +329,44 @@ onBeforeUnmount(() => {
   flex-direction: column;
 }
 
-.flash-page__title {
-  display: flex;
+/* ---- 右上角搜索切换按钮 ---- */
+.flash-page__search-toggle {
+  display: inline-flex;
   align-items: center;
-  gap: 0.625rem;
-  color: var(--accent);
-
-  h1 {
-    margin: 0;
-    font-size: 1.125rem;
-    font-weight: 700;
-    color: var(--text-main);
-  }
-}
-
-.flash-page__sub {
+  gap: 0.375rem;
+  padding: 0.375rem 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: $radius-md;
+  background: transparent;
   color: var(--text-soft);
   font-size: 0.75rem;
   font-weight: 500;
-}
-
-.flash-page__search-toggle {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 1.75rem;
-  height: 1.75rem;
-  margin-left: auto;
-  border: none;
-  border-radius: $radius-full;
-  background: transparent;
-  color: var(--text-soft);
   cursor: pointer;
   transition:
     background 0.18s,
-    color 0.18s;
+    color 0.18s,
+    border-color 0.18s;
 
-  &:hover,
+  &:hover {
+    color: var(--text-main);
+    background: var(--surface-2);
+  }
+
   &.is-active {
     color: var(--accent);
     background: var(--accent-soft);
+    border-color: var(--accent);
   }
 }
 
-/* ---- 搜索栏 ---- */
+/* ---- 搜索栏：展开后作为 header flex-wrap 的新行，占满整行 ---- */
 .flash-page__search-bar {
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  margin-top: 0.625rem;
+  width: 100%;
   padding: 0.5rem 0.75rem;
+  margin-bottom: 1rem;
   background: var(--surface-2);
   border: 1px solid var(--border-soft);
   border-radius: $radius-card;
