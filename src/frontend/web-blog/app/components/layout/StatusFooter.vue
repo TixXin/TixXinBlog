@@ -10,7 +10,10 @@
     <div class="footer__left">
       <span class="footer__copyright">&copy; {{ currentYear }} TixXin Blog. All rights reserved.</span>
       <nav class="footer__links" aria-label="页脚链接">
-        <a v-for="link in footerLinks" :key="link.label" :href="link.href">{{ link.label }}</a>
+        <template v-for="link in footerLinks" :key="link.label">
+          <a v-if="link.external" :href="link.href" target="_blank" rel="noopener">{{ link.label }}</a>
+          <NuxtLink v-else :to="link.href">{{ link.label }}</NuxtLink>
+        </template>
       </nav>
     </div>
     <div class="footer__right">
