@@ -117,6 +117,19 @@ function handleClick(event: MouseEvent, id: string) {
   display: flex;
   flex-direction: column;
   gap: 0.25rem;
+  // 长目录局部滚动，避免单卡吃满右栏可视高度
+  max-height: 50vh;
+  overflow-y: auto;
+  // 底部淡出：暗示"还能滚"，同时最后一项大半可见
+  mask-image: linear-gradient(to bottom, black calc(100% - 0.75rem), transparent);
+  -webkit-mask-image: linear-gradient(to bottom, black calc(100% - 0.75rem), transparent);
+  // 隐藏原生滚动条（与 CustomScrollbar 视觉一致）
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+
+  &::-webkit-scrollbar {
+    display: none;
+  }
 }
 
 .toc__link {
