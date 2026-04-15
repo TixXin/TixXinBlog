@@ -521,6 +521,66 @@
               </button>
             </section>
 
+            <!-- ==================== 搜索 ==================== -->
+            <section v-else-if="activeSection === 'search'" class="tsd-section">
+              <h3 class="tsd-section__title">搜索</h3>
+              <div class="tsd-row tsd-row--col">
+                <div class="tsd-row__head">
+                  <span class="tsd-row__label">搜索引擎</span>
+                </div>
+                <div class="tsd-wp-kinds">
+                  <button
+                    v-for="opt in searchEngineOptions"
+                    :key="opt.value"
+                    type="button"
+                    class="tsd-opt tsd-wp-kind"
+                    :class="{ 'tsd-opt--active': s.searchEngine === opt.value }"
+                    @click="update('searchEngine', opt.value)"
+                  >
+                    {{ opt.label }}
+                  </button>
+                </div>
+              </div>
+              <div
+                v-if="s.searchEngine === 'custom'"
+                class="tsd-row tsd-row--col"
+              >
+                <div class="tsd-row__head">
+                  <span class="tsd-row__label">自定义搜索 URL</span>
+                </div>
+                <input
+                  type="text"
+                  class="tsd-text-input"
+                  placeholder="https://example.com/search?q=%s"
+                  :value="s.searchEngineCustomUrl"
+                  @change="update('searchEngineCustomUrl', ($event.target as HTMLInputElement).value)"
+                >
+                <p class="tsd-hint">
+                  <Icon name="lucide:info" size="11" />
+                  使用 <code>%s</code> 占位符表示查询词位置。
+                </p>
+              </div>
+              <div class="tsd-row">
+                <span class="tsd-row__label">Cmd/Ctrl+K 命令面板</span>
+                <button
+                  type="button"
+                  class="tsd-toggle"
+                  :class="{ 'is-on': s.commandPaletteEnabled }"
+                  @click="update('commandPaletteEnabled', !s.commandPaletteEnabled)"
+                >
+                  <span class="tsd-toggle__thumb" />
+                </button>
+              </div>
+              <p class="tsd-hint">
+                <Icon name="lucide:keyboard" size="11" />
+                命令面板支持模糊搜索书签 / 分类 / 切视图 / 打开设置等动作。
+              </p>
+              <button type="button" class="tsd-reset" @click="resetSection('search')">
+                <Icon name="lucide:rotate-ccw" size="12" />
+                恢复默认
+              </button>
+            </section>
+
             <!-- ==================== 侧边栏 ==================== -->
             <section v-else-if="activeSection === 'sidebar'" class="tsd-section">
               <h3 class="tsd-section__title">侧边栏</h3>
@@ -616,9 +676,18 @@ const sections = [
   { id: 'icon', label: '图标', icon: 'lucide:image' },
   { id: 'time', label: '时间', icon: 'lucide:clock' },
   { id: 'theme', label: '主题/壁纸', icon: 'lucide:paintbrush' },
+  { id: 'search', label: '搜索', icon: 'lucide:search' },
   { id: 'sidebar', label: '侧边栏', icon: 'lucide:panel-left' },
   { id: 'about', label: '关于', icon: 'lucide:info' },
 ] as const
+
+const searchEngineOptions: { value: 'google' | 'bing' | 'duckduckgo' | 'baidu' | 'custom'; label: string }[] = [
+  { value: 'google', label: 'Google' },
+  { value: 'bing', label: 'Bing' },
+  { value: 'duckduckgo', label: 'DuckDuckGo' },
+  { value: 'baidu', label: '百度' },
+  { value: 'custom', label: '自定义' },
+]
 
 const iconStyleOptions: { value: TabIconStyle; label: string; icon: string }[] = [
   { value: 'default', label: '默认', icon: 'lucide:square' },

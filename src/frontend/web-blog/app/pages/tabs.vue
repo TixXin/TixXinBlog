@@ -66,6 +66,8 @@
       :user="displayUser"
     />
 
+    <TabCommandPalette :actions="paletteActions" />
+
     <!-- 游客提示：Teleport 到 body，避免祖先 transform 破坏 fixed 定位 -->
     <ClientOnly>
       <Teleport to="body">
@@ -89,6 +91,8 @@
 
 <script setup lang="ts">
 import type { BookmarkDraft, BookmarkCategoryDraft, BookmarkReorderUpdate } from '~/features/tab/types'
+import type { TabViewMode } from '~/composables/useTabSettings'
+import type { CommandAction } from '~/components/tab/TabCommandPalette.vue'
 import { mockOwnerUser } from '~/features/auth/mock'
 
 definePageMeta({ fullbleed: true })
@@ -121,8 +125,82 @@ const guestToastDismissed = ref(false)
 const addBookmarkVisible = ref(false)
 const addCategoryVisible = ref(false)
 const settingsOpen = ref(false)
-const { settings: tabSettings } = useTabSettings()
+const { settings: tabSettings, update: updateSetting } = useTabSettings()
 const sidebarCollapsed = ref(tabSettings.value.defaultCollapsed)
+
+/** 命令面板 actions：内建固定项（新建、切视图、打开设置、壁纸等） */
+const paletteActions = computed<CommandAction[]>(() => {
+  const switchView = (mode: TabViewMode): CommandAction => ({
+    id: `view-${mode}`,
+    title: `切换视图：${viewLabel(mode)}`,
+    subtitle: tabSettings.value.viewMode === mode ? '当前视图' : '',
+    icon: viewIcon(mode),
+    section: 'actions',
+    run: () => updateSetting('viewMode', mode),
+  })
+  return [
+    {
+      id: 'add-bookmark',
+      title: '新建书签',
+      subtitle: '打开书签编辑对话框',
+      icon: 'lucide:plus',
+      shortcut: 'N',
+      section: 'actions',
+      run: () => onAddBookmarkClick(),
+    },
+    {
+      id: 'add-category',
+      title: '新建分类',
+      icon: 'lucide:folder-plus',
+      section: 'actions',
+      run: () => (addCategoryVisible.value = true),
+    },
+    switchView('grid'),
+    switchView('compact'),
+    switchView('list'),
+    switchView('cards'),
+    {
+      id: 'open-settings',
+      title: '打开设置',
+      icon: 'lucide:settings',
+      section: 'actions',
+      run: () => (settingsOpen.value = true),
+    },
+    {
+      id: 'toggle-drag',
+      title: tabSettings.value.dragEnabled ? '关闭拖拽排序' : '开启拖拽排序',
+      icon: 'lucide:move',
+      section: 'actions',
+      run: () => updateSetting('dragEnabled', !tabSettings.value.dragEnabled),
+    },
+  ]
+})
+
+function viewLabel(mode: TabViewMode): string {
+  switch (mode) {
+    case 'grid':
+      return '网格'
+    case 'compact':
+      return '紧凑'
+    case 'list':
+      return '列表'
+    case 'cards':
+      return '卡片'
+  }
+}
+
+function viewIcon(mode: TabViewMode): string {
+  switch (mode) {
+    case 'grid':
+      return 'lucide:layout-grid'
+    case 'compact':
+      return 'lucide:grid-2x2'
+    case 'list':
+      return 'lucide:list'
+    case 'cards':
+      return 'lucide:square-stack'
+  }
+}
 
 /** 侧栏与问候语用：未登录时显示博主信息 */
 const displayUser = computed(() => currentUser.value ?? mockOwnerUser)
