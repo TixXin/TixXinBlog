@@ -54,15 +54,6 @@ export default {
           : [],
     },
   },
-  image: {
-    // 远程域名白名单：列入此处的外链 <NuxtImg src="..."> 会被本地 IPX 接管，
-    // 自动 WebP 转码 + 内置缓存 + 单域 keep-alive，避免浏览器跨域 DNS/TLS 握手
-    // 未列入的外链会直接透传 src，无 IPX 优化
-    // 当前 mock 数据（features/*/mock.ts）大量用 unsplash，待真实接口接入后按需扩充
-    domains: ['images.unsplash.com'],
-    // 默认输出格式优先级：先尝试 webp（浏览器不支持时回退源格式）
-    format: ['webp'],
-  },
   icon: {
     serverBundle: 'local',
     // 客户端 bundle：构建期静态扫描所有 <Icon name="..." /> 字面量并打入 JS bundle，
