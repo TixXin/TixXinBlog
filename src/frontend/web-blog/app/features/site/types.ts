@@ -8,6 +8,8 @@
 export interface FooterLink {
   label: string
   href: string
+  /** 外链：true 走 <a target="_blank">，false/undefined 走 <NuxtLink> 内部路由 */
+  external?: boolean
 }
 
 export interface PoweredByItem {
