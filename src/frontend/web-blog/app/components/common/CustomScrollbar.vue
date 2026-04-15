@@ -16,6 +16,7 @@
       class="custom-scrollbar__viewport"
       ref="viewportRef"
       :class="viewportClass"
+      :style="viewportStyle"
       @scroll="onScroll"
     >
       <slot />
@@ -90,6 +91,8 @@ const props = withDefaults(defineProps<{
   primary?: boolean
   /** 主滚动区域的滚动方向：'up' 回到顶部（默认），'down' 回到底部（聊天模式） */
   primaryDirection?: 'up' | 'down'
+  /** 滚动视口渐变遮罩：顶/底非边界时淡出，暗示"还能继续滚" */
+  fadeMask?: 'top' | 'bottom' | 'both' | false
 }>(), {
   autoHideDelay: 1500,
   showProgress: false,
@@ -97,6 +100,7 @@ const props = withDefaults(defineProps<{
   backToTopThreshold: 300,
   primary: false,
   primaryDirection: 'up',
+  fadeMask: false,
 })
 
 const { scrollProgress: globalProgress, scrollResetFn: globalScrollResetFn, scrollDirection: globalScrollDirection } = useScrollProgress()
@@ -115,6 +119,9 @@ const thumbHeight = ref(0)
 const thumbTop = ref(0)
 const scrollProgress = ref(0)
 const showBackToTopBtn = ref(false)
+// 边界位置：用于渐变遮罩的淡入淡出决策
+const atTop = ref(true)
+const atBottom = ref(false)
 
 const progressClicked = ref(false)
 const displayProgress = computed(() => Math.round(scrollProgress.value))
@@ -144,6 +151,10 @@ function updateMetrics() {
   const { clientHeight, scrollHeight, scrollTop } = el
   needsScrollbar.value = scrollHeight > clientHeight + 1
 
+  // 无论是否需要滚动条，都要更新边界标志（无溢出时 atTop=true/atBottom=true，渐变全部关闭）
+  atTop.value = scrollTop <= 1
+  atBottom.value = !needsScrollbar.value || scrollTop + clientHeight >= scrollHeight - 1
+
   if (!needsScrollbar.value) return
 
   // track 被 v-show 隐藏时 clientHeight 为 0，退回视口高度减去 track 上下边距
@@ -156,6 +167,31 @@ function updateMetrics() {
   const thumbRange = trackHeight - thumbHeight.value
   thumbTop.value = scrollRange > 0 ? (scrollTop / scrollRange) * thumbRange : 0
 }
+
+/**
+ * 渐变遮罩样式：仅在 fadeMask 启用且该方向尚未到边界时淡出对应一端。
+ * 不需要遮罩时返回空对象，让浏览器完全跳过 mask 合成。
+ */
+const viewportStyle = computed(() => {
+  if (!props.fadeMask) return {}
+  const topActive = (props.fadeMask === 'top' || props.fadeMask === 'both') && !atTop.value
+  const botActive = (props.fadeMask === 'bottom' || props.fadeMask === 'both') && !atBottom.value
+  if (!topActive && !botActive) return {}
+
+  const stops: string[] = []
+  if (topActive) {
+    stops.push('transparent 0%', 'black 1rem')
+  } else {
+    stops.push('black 0%')
+  }
+  if (botActive) {
+    stops.push('black calc(100% - 1rem)', 'transparent 100%')
+  } else {
+    stops.push('black 100%')
+  }
+  const gradient = `linear-gradient(to bottom, ${stops.join(', ')})`
+  return { maskImage: gradient, WebkitMaskImage: gradient }
+})
 
 function onScroll() {
   updateMetrics()
