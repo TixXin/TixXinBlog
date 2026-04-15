@@ -15,6 +15,11 @@
     :class="{ 'tab-bm--pinned': bookmark.pinned }"
     :draggable="!readOnly"
     @dragstart="onDragStart"
+    @contextmenu.prevent="onContextMenu"
+    @pointerdown="onPointerDown"
+    @pointerup="clearLongPress"
+    @pointerleave="clearLongPress"
+    @pointermove="clearLongPress"
   >
     <span class="tab-bm__icon" :style="iconComputedStyle">
       <Icon v-if="renderKind === 'lucide'" :name="bookmark.icon!" :size="Math.round(tabSettings.iconSize * 0.46)" />
@@ -55,7 +60,11 @@ const props = withDefaults(
   defineProps<{ bookmark: Bookmark; readOnly?: boolean; viewMode?: TabViewMode }>(),
   { viewMode: 'grid' },
 )
-const emit = defineEmits<{ remove: [id: string]; faviconError: [id: string] }>()
+const emit = defineEmits<{
+  remove: [id: string]
+  faviconError: [id: string]
+  contextMenu: [payload: { bookmark: Bookmark; x: number; y: number }]
+}>()
 
 const { settings: tabSettings } = useTabSettings()
 
@@ -97,6 +106,29 @@ function onDragStart(e: DragEvent) {
   if (props.readOnly || !e.dataTransfer) return
   e.dataTransfer.setData('application/x-bookmark-id', props.bookmark.id)
   e.dataTransfer.effectAllowed = 'move'
+}
+
+function onContextMenu(e: MouseEvent) {
+  if (props.readOnly) return
+  emit('contextMenu', { bookmark: props.bookmark, x: e.clientX, y: e.clientY })
+}
+
+// 移动端长按 500ms 触发上下文菜单
+let longPressTimer: number | null = null
+
+function onPointerDown(e: PointerEvent) {
+  if (props.readOnly) return
+  if (e.pointerType === 'mouse') return
+  longPressTimer = window.setTimeout(() => {
+    emit('contextMenu', { bookmark: props.bookmark, x: e.clientX, y: e.clientY })
+  }, 500)
+}
+
+function clearLongPress() {
+  if (longPressTimer) {
+    clearTimeout(longPressTimer)
+    longPressTimer = null
+  }
 }
 
 const showUrl = computed(() => props.viewMode === 'list' || props.viewMode === 'cards')
