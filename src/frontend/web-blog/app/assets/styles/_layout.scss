@@ -55,6 +55,8 @@
   @media (min-width: $breakpoint-lg) {
     flex: 1;
     min-height: 0;
+    // 锁死 grid row 不被子内容撑开，保证 aside-left / page-columns 的 height:100% 严格等于 flex 分配的高度
+    grid-template-rows: minmax(0, 1fr);
   }
 
   // 紧凑档：lg–xl 区间左栏使用紧凑宽度
@@ -80,6 +82,8 @@
   @media (min-width: $breakpoint-lg) {
     display: grid;
     grid-template-columns: 1fr #{$sidebar-right-width};
+    // 锁死 grid row，防止 aside-right 内的卡片内容把 row 撑得比父容器还高
+    grid-template-rows: minmax(0, 1fr);
     gap: $grid-gap;
     min-height: 0;
   }
@@ -111,8 +115,9 @@
   @media (min-width: $breakpoint-lg) {
     height: 100%;
     overflow: hidden;
-    padding: 2rem;
-    margin: -2rem;
+    padding: 2rem 2rem 0;
+    // 底部不再负外边距，避免 border-box 越过 grid cell 底边与 footer-row 重叠
+    margin: -2rem -2rem 0;
   }
 }
 
@@ -129,8 +134,8 @@
   gap: $grid-gap;
 
   @media (min-width: $breakpoint-lg) {
-    padding: 2rem;
-    margin: -2rem;
+    padding: 2rem 2rem 0;
+    margin: -2rem -2rem 0;
   }
 }
 
@@ -200,8 +205,9 @@
     display: flex;
     height: 100%;
     overflow: visible;
-    padding: 2rem;
-    margin: -2rem;
+    padding: 2rem 2rem 0;
+    // 底部不再负外边距，避免 border-box 越过 grid cell 底边与 footer-row 重叠
+    margin: -2rem -2rem 0;
   }
 }
 
@@ -214,8 +220,8 @@
 
 .aside-right__viewport {
   @media (min-width: $breakpoint-lg) {
-    padding: 2rem;
-    margin: -2rem;
+    padding: 2rem 2rem 0;
+    margin: -2rem -2rem 0;
   }
 }
 

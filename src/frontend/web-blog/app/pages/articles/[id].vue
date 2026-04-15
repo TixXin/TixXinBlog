@@ -158,7 +158,8 @@ useHead({
 }
 
 .article-page__inner {
-  padding: 0 2rem 2rem;
+  // 底部加厚缓冲，避免评论框滚到底时紧贴 dock
+  padding: 0 2rem 4rem;
 }
 
 .article-page__cover-wrap {
