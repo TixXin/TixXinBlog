@@ -38,6 +38,7 @@ const emit = defineEmits<{
   remove: [id: string]
   reorder: [updates: BookmarkReorderUpdate[]]
   contextMenu: [payload: { bookmark: Bookmark; x: number; y: number }]
+  readOnlyBlocked: []
 }>()
 
 const { settings: tabSettings } = useTabSettings()
@@ -66,6 +67,12 @@ const { start, stop } = useSortable(listEl, localList, {
   onEnd: (evt) => {
     // 跨分类拖拽由外部 drop zone 处理，此处仅关心同分类排序
     if (evt.to !== evt.from) return
+    // 只读（未登录）模式：回滚到原顺序并提示
+    if (props.readOnly) {
+      localList.value = [...props.bookmarks]
+      emit('readOnlyBlocked')
+      return
+    }
     const updates: BookmarkReorderUpdate[] = localList.value.map((b, i) => ({
       id: b.id,
       categoryId: b.categoryId,
@@ -75,9 +82,9 @@ const { start, stop } = useSortable(listEl, localList, {
   },
 })
 
-// 只读或拖拽开关关闭时禁用 sortable
+// 仅在 dragEnabled=false 时彻底停用；readOnly 保留 sortable（用于回滚动画 + toast）
 watchEffect(() => {
-  if (props.readOnly || !tabSettings.value.dragEnabled) stop()
+  if (!tabSettings.value.dragEnabled) stop()
   else start()
 })
 

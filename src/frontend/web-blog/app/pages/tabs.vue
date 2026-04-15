@@ -23,16 +23,18 @@
           :total-count="bookmarks.length"
           :read-only="isReadOnly"
           @select="selectCategory"
-          @add-category="addCategoryVisible = true"
+          @add-category="onAddCategoryClick"
           @remove-category="onRemoveCategory"
           @open-settings="settingsOpen = true"
           @open-donate="onDonate"
           @bookmark-dropped="onBookmarkDropped"
+          @reorder-categories="onReorderCategories"
+          @category-context-menu="onCategoryContextMenu"
         />
       </Teleport>
     </ClientOnly>
 
-    <div class="tabs-page__center">
+    <div class="tabs-page__center" @contextmenu.self.prevent="onBlankContextMenu">
       <div v-if="tabSettings.showGreeting || tabSettings.showDate" class="tabs-page__greeting">
         <h1 v-if="tabSettings.showGreeting" class="tabs-page__hello">{{ greetingLine }}</h1>
         <p v-if="tabSettings.showDate" class="tabs-page__date">{{ today }}</p>
@@ -40,7 +42,7 @@
 
       <TabSearchBar />
 
-      <div class="tabs-page__panel">
+      <div class="tabs-page__panel" @contextmenu.self.prevent="onBlankContextMenu">
         <TabBookmarkGrid
           :bookmarks="visibleBookmarks"
           :read-only="isReadOnly"
@@ -48,6 +50,7 @@
           @remove="onRemoveBookmark"
           @reorder="onReorder"
           @context-menu="onBookmarkContextMenu"
+          @read-only-blocked="onReadOnlyBlocked"
         />
       </div>
     </div>
@@ -104,7 +107,13 @@
 </template>
 
 <script setup lang="ts">
-import type { Bookmark, BookmarkDraft, BookmarkCategoryDraft, BookmarkReorderUpdate } from '~/features/tab/types'
+import type {
+  Bookmark,
+  BookmarkDraft,
+  BookmarkCategoryDraft,
+  BookmarkReorderUpdate,
+  CategoryReorderUpdate,
+} from '~/features/tab/types'
 import type { TabViewMode } from '~/composables/useTabSettings'
 import type { CommandAction } from '~/components/tab/TabCommandPalette.vue'
 import type { ContextMenuItem } from '~/components/tab/TabContextMenu.vue'
@@ -134,10 +143,13 @@ const {
   addCategory,
   removeCategory,
   reorderBookmarks,
+  reorderCategories,
   refreshFavicon,
 } = useTabBookmarks()
 
-const { success } = useToast()
+const { success, info } = useToast()
+const tabPalette = useTabCommandPalette()
+const tabRepo = useTabRepository()
 
 const guestToastDismissed = ref(false)
 const addBookmarkVisible = ref(false)
@@ -318,10 +330,44 @@ const ctxY = ref(0)
 const ctxItems = ref<ContextMenuItem[]>([])
 const editingBookmark = ref<Bookmark | null>(null)
 
+const copyToClipboard = async (text: string, msg = 'URL 已复制') => {
+  try {
+    await navigator.clipboard.writeText(text)
+    success(msg)
+  } catch {
+    // clipboard 可能被禁用（非 HTTPS / 禁用）
+  }
+}
+
 function onBookmarkContextMenu(payload: { bookmark: Bookmark; x: number; y: number }) {
   const bm = payload.bookmark
   ctxX.value = payload.x
   ctxY.value = payload.y
+
+  // 只读模式：仅保留查看类动作，修改类动作引导登录
+  if (isReadOnly.value) {
+    ctxItems.value = [
+      {
+        label: '打开（新标签）',
+        icon: 'lucide:external-link',
+        run: () => window.open(bm.url, '_blank', 'noopener'),
+      },
+      {
+        label: '复制 URL',
+        icon: 'lucide:clipboard',
+        run: () => copyToClipboard(bm.url),
+      },
+      { type: 'divider' },
+      {
+        label: '登录以编辑',
+        icon: 'lucide:log-in',
+        run: () => openLoginDrawer('login'),
+      },
+    ]
+    ctxVisible.value = true
+    return
+  }
+
   ctxItems.value = [
     {
       label: '打开（新标签）',
@@ -339,14 +385,7 @@ function onBookmarkContextMenu(payload: { bookmark: Bookmark; x: number; y: numb
     {
       label: '复制 URL',
       icon: 'lucide:clipboard',
-      run: async () => {
-        try {
-          await navigator.clipboard.writeText(bm.url)
-          success('URL 已复制')
-        } catch {
-          // clipboard 可能被禁用
-        }
-      },
+      run: () => copyToClipboard(bm.url),
     },
     {
       label: bm.pinned ? '取消置顶' : '置顶',
@@ -378,6 +417,152 @@ function onBookmarkContextMenu(payload: { bookmark: Bookmark; x: number; y: numb
     },
   ]
   ctxVisible.value = true
+}
+
+/** 分类右键菜单 */
+function onCategoryContextMenu(payload: { categoryId: string; x: number; y: number }) {
+  const cat = categories.value.find((c) => c.id === payload.categoryId)
+  if (!cat) return
+  ctxX.value = payload.x
+  ctxY.value = payload.y
+
+  if (isReadOnly.value) {
+    ctxItems.value = [
+      {
+        label: '查看该分类',
+        icon: 'lucide:eye',
+        run: () => selectCategory(cat.id),
+      },
+      { type: 'divider' },
+      {
+        label: '登录以编辑分类',
+        icon: 'lucide:log-in',
+        run: () => openLoginDrawer('login'),
+      },
+    ]
+    ctxVisible.value = true
+    return
+  }
+
+  ctxItems.value = [
+    {
+      label: '打开该分类',
+      icon: 'lucide:eye',
+      run: () => selectCategory(cat.id),
+    },
+    {
+      label: '重命名',
+      icon: 'lucide:edit-3',
+      run: async () => {
+        const next = window.prompt('新分类名称', cat.name)?.trim()
+        if (next && next !== cat.name) {
+          await updateCategoryMeta(cat.id, { name: next })
+        }
+      },
+    },
+    {
+      label: '更改图标',
+      icon: 'lucide:shapes',
+      run: async () => {
+        const next = window.prompt('Lucide 图标名（如 lucide:folder）', cat.icon || '')?.trim()
+        if (next) await updateCategoryMeta(cat.id, { icon: next })
+      },
+    },
+    { type: 'divider' },
+    {
+      label: '删除分类',
+      icon: 'lucide:trash-2',
+      danger: true,
+      run: () => onRemoveCategory(cat.id),
+    },
+  ]
+  ctxVisible.value = true
+}
+
+/** 空白区右键菜单（未登录时也可用，以只读动作为主） */
+function onBlankContextMenu(e: MouseEvent) {
+  ctxX.value = e.clientX
+  ctxY.value = e.clientY
+
+  const common: ContextMenuItem[] = [
+    {
+      label: '打开命令面板',
+      icon: 'lucide:command',
+      shortcut: 'Ctrl+K',
+      run: () => tabPalette.open(),
+    },
+    {
+      label: '打开设置',
+      icon: 'lucide:settings',
+      run: () => (settingsOpen.value = true),
+    },
+    {
+      label: '切换视图',
+      icon: 'lucide:layout-grid',
+      submenu: (['grid', 'compact', 'list', 'cards'] as TabViewMode[]).map((m) => ({
+        label: viewLabel(m),
+        icon: viewIcon(m),
+        run: () => updateSetting('viewMode', m),
+      })),
+    },
+  ]
+
+  if (isReadOnly.value) {
+    ctxItems.value = [
+      ...common,
+      { type: 'divider' },
+      {
+        label: '登录以新建书签',
+        icon: 'lucide:log-in',
+        run: () => openLoginDrawer('login'),
+      },
+    ]
+  } else {
+    ctxItems.value = [
+      {
+        label: '新建书签',
+        icon: 'lucide:plus',
+        run: () => onAddBookmarkClick(),
+      },
+      {
+        label: '新建分类',
+        icon: 'lucide:folder-plus',
+        run: () => (addCategoryVisible.value = true),
+      },
+      { type: 'divider' },
+      ...common,
+    ]
+  }
+  ctxVisible.value = true
+}
+
+/** 分类元信息更新（封装 repo.updateCategory，tabBookmarks 当前未暴露 updateCategory） */
+async function updateCategoryMeta(id: string, patch: Partial<{ name: string; icon: string; color: string }>) {
+  const updated = await tabRepo.updateCategory(id, patch)
+  const idx = categories.value.findIndex((c) => c.id === id)
+  if (idx !== -1) {
+    const next = [...categories.value]
+    next[idx] = updated
+    categories.value = next
+  }
+}
+
+/** 分类拖拽排序 */
+async function onReorderCategories(updates: CategoryReorderUpdate[]) {
+  await reorderCategories(updates)
+}
+
+/** 只读模式下被 Grid 拦截的拖拽动作 */
+function onReadOnlyBlocked() {
+  info('浏览模式下无法修改，请先登录')
+}
+
+function onAddCategoryClick() {
+  if (!isLoggedIn.value) {
+    openLoginDrawer('login')
+    return
+  }
+  addCategoryVisible.value = true
 }
 
 // 编辑 Dialog 关闭时清理 editingBookmark

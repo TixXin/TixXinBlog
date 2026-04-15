@@ -26,78 +26,32 @@
 
     <div class="tab-side__divider" />
 
-    <!-- 分类列表 -->
-    <nav class="tab-side__nav">
-      <!-- 全部 -->
-      <CommonTooltip v-if="collapsed" content="全部" placement="right">
-        <button
-          type="button"
-          class="tab-side__cat"
-          :class="{ 'tab-side__cat--active': activeId === null }"
-          @click="emit('select', null)"
-        >
-          <Icon name="lucide:layout-grid" size="15" class="tab-side__cat-icon" />
-        </button>
-      </CommonTooltip>
+    <!-- 分类列表（不再提供「全部」按钮，默认选中首个分类；支持拖拽排序） -->
+    <nav ref="navEl" class="tab-side__nav">
       <button
-        v-else
+        v-for="cat in localCategories"
+        :key="cat.id"
         type="button"
+        :data-category-id="cat.id"
+        :title="collapsed ? cat.name : undefined"
         class="tab-side__cat"
-        :class="{ 'tab-side__cat--active': activeId === null }"
-        @click="emit('select', null)"
+        :class="{
+          'tab-side__cat--active': activeId === cat.id,
+          'tab-side__cat--drop': dropTargetId === cat.id,
+        }"
+        @click="emit('select', cat.id)"
+        @contextmenu.prevent="onCategoryContextMenu($event, cat.id)"
+        @dragenter.prevent="onDragEnter(cat.id)"
+        @dragover.prevent="onDragOver($event)"
+        @dragleave="onDragLeave(cat.id)"
+        @drop.prevent="onDrop($event, cat.id)"
       >
-        <Icon name="lucide:layout-grid" size="15" class="tab-side__cat-icon" />
-        <span class="tab-side__cat-name">全部</span>
-        <span v-if="tabSettings.showCounts" class="tab-side__cat-count">{{ totalCount }}</span>
+        <Icon v-if="cat.icon" :name="cat.icon" size="15" class="tab-side__cat-icon" />
+        <span v-if="!collapsed" class="tab-side__cat-name">{{ cat.name }}</span>
+        <span v-if="!collapsed && tabSettings.showCounts" class="tab-side__cat-count">
+          {{ counts[cat.id] || 0 }}
+        </span>
       </button>
-
-      <!-- 各分类 -->
-      <template v-for="cat in categories" :key="cat.id">
-        <CommonTooltip v-if="collapsed" :content="cat.name" placement="right">
-          <button
-            type="button"
-            class="tab-side__cat"
-            :class="{
-              'tab-side__cat--active': activeId === cat.id,
-              'tab-side__cat--drop': dropTargetId === cat.id,
-            }"
-            @click="emit('select', cat.id)"
-            @dragenter.prevent="onDragEnter(cat.id)"
-            @dragover.prevent="onDragOver($event)"
-            @dragleave="onDragLeave(cat.id)"
-            @drop.prevent="onDrop($event, cat.id)"
-          >
-            <Icon v-if="cat.icon" :name="cat.icon" size="15" class="tab-side__cat-icon" />
-          </button>
-        </CommonTooltip>
-        <button
-          v-else
-          type="button"
-          class="tab-side__cat"
-          :class="{
-            'tab-side__cat--active': activeId === cat.id,
-            'tab-side__cat--drop': dropTargetId === cat.id,
-          }"
-          @click="emit('select', cat.id)"
-          @dragenter.prevent="onDragEnter(cat.id)"
-          @dragover.prevent="onDragOver($event)"
-          @dragleave="onDragLeave(cat.id)"
-          @drop.prevent="onDrop($event, cat.id)"
-        >
-          <Icon v-if="cat.icon" :name="cat.icon" size="15" class="tab-side__cat-icon" />
-          <span class="tab-side__cat-name">{{ cat.name }}</span>
-          <span v-if="tabSettings.showCounts" class="tab-side__cat-count">{{ counts[cat.id] || 0 }}</span>
-          <button
-            v-if="!readOnly && categories.length > 1"
-            type="button"
-            class="tab-side__cat-remove"
-            :aria-label="`删除 ${cat.name}`"
-            @click.stop="emit('removeCategory', cat.id)"
-          >
-            <Icon name="lucide:x" size="11" />
-          </button>
-        </button>
-      </template>
     </nav>
 
     <!-- 新建分类 -->
@@ -141,10 +95,11 @@
 </template>
 
 <script setup lang="ts">
-import type { BookmarkCategory } from '~/features/tab/types'
+import { useSortable } from '@vueuse/integrations/useSortable'
+import type { BookmarkCategory, CategoryReorderUpdate } from '~/features/tab/types'
 import type { CurrentUser } from '~/features/auth/types'
 
-defineProps<{
+const props = defineProps<{
   user: CurrentUser | null
   categories: BookmarkCategory[]
   activeId: string | null
@@ -160,6 +115,8 @@ const emit = defineEmits<{
   openSettings: []
   openDonate: []
   bookmarkDropped: [payload: { bookmarkId: string; targetCategoryId: string }]
+  reorderCategories: [updates: CategoryReorderUpdate[]]
+  categoryContextMenu: [payload: { categoryId: string; x: number; y: number }]
 }>()
 
 const collapsed = defineModel<boolean>('collapsed', { default: false })
@@ -168,6 +125,44 @@ const { settings: tabSettings } = useTabSettings()
 
 /** 当前拖拽悬浮的分类 id（用于高亮 drop target） */
 const dropTargetId = ref<string | null>(null)
+
+/** 本地 mutable 分类副本，供 useSortable 修改 */
+const navEl = ref<HTMLElement | null>(null)
+const localCategories = ref<BookmarkCategory[]>([])
+
+watch(
+  () => props.categories,
+  (val) => {
+    localCategories.value = [...val]
+  },
+  { immediate: true },
+)
+
+const { start: startSortable, stop: stopSortable } = useSortable(navEl, localCategories, {
+  animation: 150,
+  draggable: '.tab-side__cat',
+  ghostClass: 'tab-side__cat--ghost',
+  chosenClass: 'tab-side__cat--chosen',
+  forceFallback: false,
+  onEnd: (evt) => {
+    if (evt.to !== evt.from) return
+    const updates: CategoryReorderUpdate[] = localCategories.value.map((c, i) => ({
+      id: c.id,
+      sortOrder: (i + 1) * 100,
+    }))
+    emit('reorderCategories', updates)
+  },
+})
+
+watchEffect(() => {
+  // 只读（未登录）或拖拽被关闭时禁用分类拖拽
+  if (props.readOnly || !tabSettings.value.dragEnabled) stopSortable()
+  else startSortable()
+})
+
+function onCategoryContextMenu(e: MouseEvent, categoryId: string) {
+  emit('categoryContextMenu', { categoryId, x: e.clientX, y: e.clientY })
+}
 
 function onDragEnter(catId: string) {
   dropTargetId.value = catId
@@ -362,6 +357,16 @@ $side-collapsed: 44px;
     background: var(--accent-soft);
     outline: 2px dashed var(--accent);
     outline-offset: -2px;
+  }
+
+  // 分类被拖起的原位占位样式
+  &--ghost {
+    opacity: 0.35;
+    background: var(--surface-2);
+  }
+
+  &--chosen {
+    z-index: 2;
   }
 }
 
