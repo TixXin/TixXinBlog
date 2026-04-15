@@ -116,10 +116,13 @@
   }
 
   @media (min-width: $breakpoint-lg) {
-    // 不使用 padding/margin 负值延伸，aside border-box 严格 = grid cell = main-content 尺寸，
-    // fade mask 的 0%/100% 自然对齐 main-content 顶/底边框
-    height: 100%;
+    // 恢复 padding/margin 对称抵消技巧：aside content 宽度保留原始值（卡片宽度不变），
+    // 同时上下各外延 2rem 给卡片 box-shadow 呼吸空间；calc(+ 2rem) 让 border-box 向下再扩展 2rem，
+    // 确保 aside visual bottom 严格落在 main-content 底边（y=1193）
+    height: calc(100% + 2rem);
     overflow: hidden;
+    padding: 2rem;
+    margin: -2rem;
   }
 }
 
@@ -134,6 +137,16 @@
   display: flex;
   flex-direction: column;
   gap: $grid-gap;
+
+  @media (min-width: $breakpoint-lg) {
+    // padding + 负 margin 对称技巧：content-box 宽度 = 父容器 content-box 宽度（卡片宽度不变），
+    // 同时 padding 区提供卡片 box-shadow 的渲染空间；
+    // height calc(+ 4rem) 让 viewport border-box 从 y=-16 延伸到 y=1193（main-content 底），
+    // 底部渐变空间由 padding-bottom 承载
+    height: calc(100% + 4rem);
+    padding: 2rem;
+    margin: -2rem;
+  }
 }
 
 .main-content {
@@ -202,9 +215,11 @@
 
   @media (min-width: $breakpoint-lg) {
     display: flex;
-    // 同 .aside-left：aside border-box 严格 = grid cell，使 viewport 与 main-content 顶/底边框对齐
-    height: 100%;
+    // 同 .aside-left：恢复 padding/margin 抵消以保留卡片宽度与阴影空间
+    height: calc(100% + 2rem);
     overflow: visible;
+    padding: 2rem;
+    margin: -2rem;
   }
 }
 
@@ -216,7 +231,13 @@
 }
 
 .aside-right__viewport {
-  /* 不再使用 padding/margin 负值延伸技巧：aside 边界严格对齐 main-content */
+  @media (min-width: $breakpoint-lg) {
+    // 同 .aside-left__viewport：对称 padding/margin 抵消保原卡片宽度 + 阴影空间，height +4rem 让
+    // border-box 从 y=-16 延伸到 y=1193，使 fade mask 100%-2rem 位置对齐 main-content 底边
+    height: calc(100% + 4rem);
+    padding: 2rem;
+    margin: -2rem;
+  }
 }
 
 // 底部栏容器：沿用三栏外层总宽度，与上方整体容器对齐

@@ -93,6 +93,9 @@ const props = withDefaults(defineProps<{
   primaryDirection?: 'up' | 'down'
   /** 滚动视口渐变遮罩：顶/底非边界时淡出，暗示"还能继续滚" */
   fadeMask?: 'top' | 'bottom' | 'both' | false
+  /** fade mask 上下"完全透明区"的宽度（CSS 长度）。用于 viewport border-box 两端外延出 padding 区时，
+   *  把 fade 的"完全透明位置"从 border-box 边界内缩，使其对齐实际希望的边界（如 main-content 边框） */
+  fadeMaskInset?: string
   /** 是否渲染可拖拽的 track/thumb；关闭后仍可用滚轮/触控板滚动（配合 fadeMask 使用） */
   showTrack?: boolean
 }>(), {
@@ -103,6 +106,7 @@ const props = withDefaults(defineProps<{
   primary: false,
   primaryDirection: 'up',
   fadeMask: false,
+  fadeMaskInset: '0',
   showTrack: true,
 })
 
@@ -181,14 +185,21 @@ const viewportStyle = computed(() => {
   const botActive = (props.fadeMask === 'bottom' || props.fadeMask === 'both') && !atBottom.value
   if (!topActive && !botActive) return {}
 
+  const inset = props.fadeMaskInset
+  const hasInset = inset && inset !== '0'
   const stops: string[] = []
   if (topActive) {
-    stops.push('transparent 0%', 'black 2.5rem')
+    // hasInset 时前 inset 段整体透明（padding 区），从 inset 处开始 2.5rem 渐变到实心
+    stops.push('transparent 0%')
+    if (hasInset) stops.push(`transparent ${inset}`)
+    stops.push(hasInset ? `black calc(${inset} + 2.5rem)` : 'black 2.5rem')
   } else {
     stops.push('black 0%')
   }
   if (botActive) {
-    stops.push('black calc(100% - 2.5rem)', 'transparent 100%')
+    stops.push(hasInset ? `black calc(100% - ${inset} - 2.5rem)` : 'black calc(100% - 2.5rem)')
+    if (hasInset) stops.push(`transparent calc(100% - ${inset})`)
+    stops.push('transparent 100%')
   } else {
     stops.push('black 100%')
   }

@@ -13,6 +13,7 @@
           :show-back-to-top="false"
           :show-track="false"
           fade-mask="both"
+          fade-mask-inset="2rem"
           class="aside-left__scroll"
           viewport-class="aside-left__viewport"
         >
@@ -49,6 +50,7 @@
             :show-back-to-top="false"
             :show-track="false"
             fade-mask="both"
+            fade-mask-inset="2rem"
             class="aside-right__scroll"
             viewport-class="aside-right__viewport"
           >
