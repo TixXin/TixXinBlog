@@ -11,11 +11,19 @@ export function useKeyboardShortcuts() {
   const { info } = useToast()
   const searchModal = inject<{ open: () => void } | null>('searchModal', null)
 
+  const tabPalette = useTabCommandPalette()
+  const { settings: tabSettings } = useTabSettings()
+
   async function handleKeydown(e: KeyboardEvent) {
     // Ctrl/Cmd + K: 唤起搜索（优先响应，不受输入框限制）
+    // 在 /tabs 路由下切换到标签页命令面板，其它路由走通用 searchModal
     if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
       e.preventDefault()
-      searchModal?.open()
+      if (route.path === '/tabs' && tabSettings.value.commandPaletteEnabled) {
+        tabPalette.open()
+      } else {
+        searchModal?.open()
+      }
       return
     }
 
