@@ -7,9 +7,28 @@
 
 <template>
   <div class="main-inner">
-    <div class="guestbook-center">
-      <GuestbookHeader :member-count="totalMessageCount" />
+    <!-- 头部区域（统一样式） -->
+    <div class="main-content__header">
+      <div class="page-title">
+        <div class="page-title__icon-wrap" aria-hidden="true">
+          <Icon name="lucide:message-circle" size="18" />
+        </div>
+        <div class="page-title__text">
+          <h2 class="page-title__heading">留言板</h2>
+          <p class="page-title__sub">共 {{ formattedCount }} 条留言</p>
+        </div>
+      </div>
 
+      <!-- 右侧操作区：在线状态指示 -->
+      <div class="page-actions">
+        <div class="guestbook-online" role="status" aria-label="在线状态指示">
+          <span class="guestbook-online__pulse" />
+          <span class="guestbook-online__text">在线</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="guestbook-center">
       <!-- 置顶公告 -->
       <GuestbookPinnedMessage :message="pinnedMessage" />
 
@@ -179,6 +198,8 @@ const hasOlderMessages = computed(() => loadedGroupCount.value < allDateGroups.l
 const totalMessageCount = computed(() =>
   allDateGroups.reduce((sum, g) => sum + g.messages.length, 0),
 )
+
+const formattedCount = computed(() => totalMessageCount.value.toLocaleString('zh-CN'))
 
 // ---- 加载更早的消息 ----
 // 注意：loader 已改为绝对定位浮层，不参与 scrollHeight，
@@ -366,6 +387,56 @@ onUnmounted(() => {
   display: flex;
   flex-direction: column;
   overflow: hidden;
+}
+
+/* ---- 在线状态指示（留言板特有，放在 header 右侧） ---- */
+.guestbook-online {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.1875rem 0.625rem 0.1875rem 0.5rem;
+  border-radius: $radius-full;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  color: #059669;
+  background: rgba(16, 185, 129, 0.08);
+  border: 1px solid rgba(16, 185, 129, 0.15);
+  flex-shrink: 0;
+}
+
+:root.dark .guestbook-online {
+  color: #34d399;
+}
+
+.guestbook-online__pulse {
+  position: relative;
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: $radius-full;
+  background: #10b981;
+  flex-shrink: 0;
+
+  &::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    background: #34d399;
+    animation: guestbook-ping 1.5s cubic-bezier(0, 0, 0.2, 1) infinite;
+    opacity: 0.6;
+  }
+}
+
+.guestbook-online__text {
+  line-height: 1;
+}
+
+@keyframes guestbook-ping {
+  75%,
+  100% {
+    transform: scale(2);
+    opacity: 0;
+  }
 }
 
 .guestbook-center__messages-wrap {
