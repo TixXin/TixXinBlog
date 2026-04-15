@@ -191,6 +191,66 @@
   }
 }
 
+/* ==== 页头标题块：图标 + 标题 + 副标题（全站统一） ==== */
+.page-title {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  min-width: 0;
+}
+
+.page-title__icon-wrap {
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: $radius-md;
+  background: var(--surface-2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-soft);
+  flex-shrink: 0;
+}
+
+.page-title__text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.page-title__heading {
+  margin: 0;
+  font-size: 1.0625rem;
+  font-weight: 700;
+  line-height: 1.25;
+  color: var(--text-main);
+}
+
+.page-title__sub {
+  margin: 0.125rem 0 0;
+  font-size: 0.75rem;
+  color: var(--text-soft);
+}
+
+/* ==== 页头右侧操作区（全站统一） ==== */
+.page-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  width: 100%;
+  padding-bottom: 1rem;
+
+  @media (min-width: $breakpoint-sm) {
+    width: auto;
+    padding-bottom: 0;
+    margin-left: auto;
+  }
+
+  // 紧凑档：缩小间距避免挤压
+  @media (min-width: $breakpoint-sm) and (max-width: #{$breakpoint-xl - 1px}) {
+    gap: 0.5rem;
+  }
+}
+
 .main-content__body {
   flex: 1;
   padding: 2rem;
