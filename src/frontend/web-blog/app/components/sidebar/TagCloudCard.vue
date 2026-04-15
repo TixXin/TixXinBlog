@@ -63,6 +63,11 @@ const tagRows = computed(() => {
 .tag-cloud-card {
   padding: 1.25rem;
   overflow: hidden;
+
+  // 紧凑档（lg–xl）：右栏只有 260px 宽，卡片 padding 收窄
+  @media (min-width: $breakpoint-lg) and (max-width: #{$breakpoint-xl - 1px}) {
+    padding: 1rem;
+  }
 }
 
 .tag-cloud-card__header {
@@ -88,6 +93,11 @@ const tagRows = computed(() => {
   display: flex;
   flex-direction: column;
   gap: 6px;
+
+  // 紧凑档（lg–xl）：行间距略收
+  @media (min-width: $breakpoint-lg) and (max-width: #{$breakpoint-xl - 1px}) {
+    gap: 5px;
+  }
 }
 
 .tag-cloud-card__row {
@@ -132,6 +142,12 @@ const tagRows = computed(() => {
   border: 1px solid var(--border);
   transition: $transition-fast;
   cursor: pointer;
+
+  // 紧凑档（lg–xl）：标签 padding 与字号略收，减少跑马灯截断
+  @media (min-width: $breakpoint-lg) and (max-width: #{$breakpoint-xl - 1px}) {
+    padding: 4px 9px;
+    font-size: 10.5px;
+  }
 
   &:hover {
     background: var(--accent-soft);

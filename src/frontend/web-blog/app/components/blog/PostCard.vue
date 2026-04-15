@@ -122,6 +122,12 @@ function tagStyle(color: string) {
     padding: 1rem 1.25rem;
     gap: 1rem;
   }
+
+  // 紧凑档（sm–xl）：窄视口下卡片内边距略收，给标题/摘要更多横向空间
+  @media (min-width: $breakpoint-sm) and (max-width: #{$breakpoint-xl - 1px}) {
+    padding: 0.85rem 1rem;
+    gap: 0.75rem;
+  }
 }
 
 /* 背景图层 */
@@ -142,6 +148,13 @@ function tagStyle(color: string) {
     /* 左侧约 25% 为透明渐变过渡，右侧完全不透明 */
     mask-image: linear-gradient(to right, transparent 0%, black 35%, black 100%);
     -webkit-mask-image: linear-gradient(to right, transparent 0%, black 35%, black 100%);
+  }
+
+  // 紧凑档（sm–xl）：封面只占 32%，把更多空间让给标题/摘要
+  @media (min-width: $breakpoint-sm) and (max-width: #{$breakpoint-xl - 1px}) {
+    width: 32%;
+    mask-image: linear-gradient(to right, transparent 0%, black 25%, black 100%);
+    -webkit-mask-image: linear-gradient(to right, transparent 0%, black 25%, black 100%);
   }
 
   img {
@@ -233,7 +246,6 @@ function tagStyle(color: string) {
   background: var(--text-faint);
 }
 
-
 .post-item__title {
   margin: 0;
   font-size: 1rem;
@@ -258,6 +270,15 @@ function tagStyle(color: string) {
 
     .post-item:has(.post-item__cover-bg) & {
       max-width: 85%;
+    }
+  }
+
+  // 紧凑档（sm–xl）：封面只占 32%，标题可用到 100% 宽度，避免被压缩成 3 行
+  @media (min-width: $breakpoint-sm) and (max-width: #{$breakpoint-xl - 1px}) {
+    max-width: 100%;
+
+    .post-item:has(.post-item__cover-bg) & {
+      max-width: 100%;
     }
   }
 }
@@ -299,6 +320,11 @@ function tagStyle(color: string) {
     .post-item:not(:has(.post-item__cover-bg)) & {
       max-width: 100%;
     }
+  }
+
+  // 紧凑档（sm–xl）：封面只占 32%，简介可以更宽
+  @media (min-width: $breakpoint-sm) and (max-width: #{$breakpoint-xl - 1px}) {
+    max-width: 70%;
   }
 }
 
