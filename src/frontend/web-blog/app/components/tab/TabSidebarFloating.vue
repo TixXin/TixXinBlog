@@ -184,11 +184,17 @@ function onDrop(e: DragEvent, targetCategoryId: string) {
   emit('bookmarkDropped', { bookmarkId, targetCategoryId })
 }
 
-const sidebarStyle = computed(() => ({
-  borderRadius: `${tabSettings.value.sidebarRadius}px`,
-  opacity: String(tabSettings.value.sidebarOpacity),
-  backdropFilter: tabSettings.value.sidebarBlur ? 'blur(12px)' : 'none',
-}))
+const sidebarStyle = computed(() => {
+  const pct = Math.round(tabSettings.value.sidebarOpacity * 100)
+  const blur = tabSettings.value.sidebarBlur
+  return {
+    borderRadius: `${tabSettings.value.sidebarRadius}px`,
+    // 用 color-mix 调整背景透明度，避免 opacity 让文字/图标一起透
+    background: `color-mix(in srgb, var(--surface-1) ${pct}%, transparent)`,
+    backdropFilter: blur ? 'blur(14px) saturate(140%)' : 'none',
+    WebkitBackdropFilter: blur ? 'blur(14px) saturate(140%)' : 'none',
+  }
+})
 </script>
 
 <style lang="scss" scoped>
@@ -205,10 +211,11 @@ $side-collapsed: 44px;
   padding: 0.625rem;
   display: flex;
   flex-direction: column;
-  background: var(--surface-1);
+  /* background 由 inline style（sidebarStyle）用 color-mix 动态控制透明度 */
   border: 1px solid var(--border-soft);
   box-shadow: var(--shadow-elevated, var(--shadow-card));
-  transition: width 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: width 0.25s cubic-bezier(0.4, 0, 0.2, 1),
+    background 0.25s ease, backdrop-filter 0.25s ease;
 
   @media (max-width: $breakpoint-lg) {
     display: none;
