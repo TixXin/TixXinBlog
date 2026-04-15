@@ -56,11 +56,29 @@ export default {
   },
   icon: {
     serverBundle: 'local',
+    // 客户端 bundle：构建期静态扫描所有 <Icon name="..." /> 字面量并打入 JS bundle，
+    // 消除运行时 /api/_nuxt_icon/lucide.json?icons=... 请求（节省一次 RTT）
+    // 注意：动态 :name="dynamicVar" 不会被识别，必要时用下面 icons 字段补齐
+    clientBundle: {
+      scan: true,
+      // 防御：未压缩 client bundle 上限 256KB，超过则构建报错
+      sizeLimitKb: 256,
+    },
   },
   colorMode: {
     classSuffix: '', // html 上直接加 class="dark"，与原型一致
     preference: 'dark',
     fallback: 'dark',
+  },
+  // NuxtLink prefetch 策略：默认 visibility（链接进入视口即预取），导致首页
+  // 11 篇文章卡片挂载后挨个预取 /articles/N/_payload.json + 各路由 CSS/JS 共 ~350KB
+  // 改为 interaction 模式：仅在 hover/focus 时触发，命中延迟 50-100ms 但首屏请求数大幅下降
+  experimental: {
+    defaults: {
+      nuxtLink: {
+        prefetchOn: { interaction: true },
+      },
+    },
   },
   themeEngine: {
     themesDir: './themes',
@@ -99,7 +117,9 @@ export default {
     // 单 provider 模式：仅初始化 bunny，跳过 google/googleicons 等其他内置 provider
     // 避免服务器无网络环境下启动时卡 30s 拉取 fonts.google.com 元数据并报红
     provider: 'bunny',
-    families: [{ name: 'Inter', weights: [300, 400, 500, 600, 700, 800] }],
+    // 字重精简：移除未使用的 300（grep 确认 0 处使用），保留 400/500/600/700/800
+    // 每个权重对应一个独立 WOFF2 文件，少一个权重 ≈ 减 24KB 字体下载
+    families: [{ name: 'Inter', weights: [400, 500, 600, 700, 800] }],
     defaults: {
       fallbacks: ['system-ui', 'sans-serif'],
     },
