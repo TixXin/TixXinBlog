@@ -38,7 +38,7 @@
 
     <Transition name="scrollbar-fade">
       <div
-        v-show="thumbVisible && needsScrollbar"
+        v-show="showTrack && thumbVisible && needsScrollbar"
         class="custom-scrollbar__track"
         ref="trackRef"
         @mousedown.prevent="onTrackMouseDown"
@@ -93,6 +93,8 @@ const props = withDefaults(defineProps<{
   primaryDirection?: 'up' | 'down'
   /** 滚动视口渐变遮罩：顶/底非边界时淡出，暗示"还能继续滚" */
   fadeMask?: 'top' | 'bottom' | 'both' | false
+  /** 是否渲染可拖拽的 track/thumb；关闭后仍可用滚轮/触控板滚动（配合 fadeMask 使用） */
+  showTrack?: boolean
 }>(), {
   autoHideDelay: 1500,
   showProgress: false,
@@ -101,6 +103,7 @@ const props = withDefaults(defineProps<{
   primary: false,
   primaryDirection: 'up',
   fadeMask: false,
+  showTrack: true,
 })
 
 const { scrollProgress: globalProgress, scrollResetFn: globalScrollResetFn, scrollDirection: globalScrollDirection } = useScrollProgress()

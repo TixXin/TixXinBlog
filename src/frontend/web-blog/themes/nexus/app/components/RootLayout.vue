@@ -11,6 +11,7 @@
       <aside class="aside-left anim-fade-in-up anim-delay-1">
         <CommonCustomScrollbar
           :show-back-to-top="false"
+          :show-track="false"
           fade-mask="both"
           class="aside-left__scroll"
           viewport-class="aside-left__viewport"
@@ -46,6 +47,7 @@
         <aside class="aside-right">
           <CommonCustomScrollbar
             :show-back-to-top="false"
+            :show-track="false"
             fade-mask="both"
             class="aside-right__scroll"
             viewport-class="aside-right__viewport"
