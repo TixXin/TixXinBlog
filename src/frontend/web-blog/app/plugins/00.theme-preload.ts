@@ -38,5 +38,12 @@ export default defineNuxtPlugin({
         }
       }
     }
+
+    // 锚点事件：主题组件预加载完成，推进首屏加载进度到 60%
+    // 若当前值已高于 60（例如页面非常快）则 set() 内部会保持不倒退
+    if (import.meta.client) {
+      const { set } = useLoadingProgress()
+      set(60)
+    }
   },
 })
