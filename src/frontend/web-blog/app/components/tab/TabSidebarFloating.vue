@@ -57,20 +57,34 @@
           <button
             type="button"
             class="tab-side__cat"
-            :class="{ 'tab-side__cat--active': activeId === cat.id }"
+            :class="{
+              'tab-side__cat--active': activeId === cat.id,
+              'tab-side__cat--drop': dropTargetId === cat.id,
+            }"
             @click="emit('select', cat.id)"
+            @dragenter.prevent="onDragEnter(cat.id)"
+            @dragover.prevent="onDragOver($event)"
+            @dragleave="onDragLeave(cat.id)"
+            @drop.prevent="onDrop($event, cat.id)"
           >
-            <Icon v-if="cat.icon" :name="cat.icon" size="15" class="tab-side__cat-icon"  />
+            <Icon v-if="cat.icon" :name="cat.icon" size="15" class="tab-side__cat-icon" />
           </button>
         </CommonTooltip>
         <button
           v-else
           type="button"
           class="tab-side__cat"
-          :class="{ 'tab-side__cat--active': activeId === cat.id }"
+          :class="{
+            'tab-side__cat--active': activeId === cat.id,
+            'tab-side__cat--drop': dropTargetId === cat.id,
+          }"
           @click="emit('select', cat.id)"
+          @dragenter.prevent="onDragEnter(cat.id)"
+          @dragover.prevent="onDragOver($event)"
+          @dragleave="onDragLeave(cat.id)"
+          @drop.prevent="onDrop($event, cat.id)"
         >
-          <Icon v-if="cat.icon" :name="cat.icon" size="15" class="tab-side__cat-icon"  />
+          <Icon v-if="cat.icon" :name="cat.icon" size="15" class="tab-side__cat-icon" />
           <span class="tab-side__cat-name">{{ cat.name }}</span>
           <span v-if="tabSettings.showCounts" class="tab-side__cat-count">{{ counts[cat.id] || 0 }}</span>
           <button
@@ -145,11 +159,35 @@ const emit = defineEmits<{
   removeCategory: [id: string]
   openSettings: []
   openDonate: []
+  bookmarkDropped: [payload: { bookmarkId: string; targetCategoryId: string }]
 }>()
 
 const collapsed = defineModel<boolean>('collapsed', { default: false })
 
 const { settings: tabSettings } = useTabSettings()
+
+/** 当前拖拽悬浮的分类 id（用于高亮 drop target） */
+const dropTargetId = ref<string | null>(null)
+
+function onDragEnter(catId: string) {
+  dropTargetId.value = catId
+}
+
+function onDragOver(e: DragEvent) {
+  // 必须阻止默认才能触发 drop
+  if (e.dataTransfer) e.dataTransfer.dropEffect = 'move'
+}
+
+function onDragLeave(catId: string) {
+  if (dropTargetId.value === catId) dropTargetId.value = null
+}
+
+function onDrop(e: DragEvent, targetCategoryId: string) {
+  dropTargetId.value = null
+  const bookmarkId = e.dataTransfer?.getData('application/x-bookmark-id')
+  if (!bookmarkId) return
+  emit('bookmarkDropped', { bookmarkId, targetCategoryId })
+}
 
 const sidebarStyle = computed(() => ({
   borderRadius: `${tabSettings.value.sidebarRadius}px`,
@@ -317,6 +355,13 @@ $side-collapsed: 44px;
     background: var(--accent-soft);
     color: var(--accent);
     font-weight: 600;
+  }
+
+  // 拖拽 drop target 高亮（跨分类拖拽书签时使用）
+  &--drop {
+    background: var(--accent-soft);
+    outline: 2px dashed var(--accent);
+    outline-offset: -2px;
   }
 }
 
