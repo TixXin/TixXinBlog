@@ -116,11 +116,13 @@
   }
 
   @media (min-width: $breakpoint-lg) {
-    height: 100%;
+    // 项目启用了全局 box-sizing: border-box，height: 100% 即 border-box=grid cell。
+    // 加 2rem 让 border-box 经 margin-top: -2rem 抵消后整体下移 32px，使 aside 底部对齐 main-content 底边；
+    // 此时 aside 底 1193 距 footer 顶 1217 仍留 24px 安全间距
+    height: calc(100% + 2rem);
     overflow: hidden;
-    padding: 2rem 2rem 0;
-    // 底部不再负外边距，避免 border-box 越过 grid cell 底边与 footer-row 重叠
-    margin: -2rem -2rem 0;
+    padding: 2rem;
+    margin: -2rem;
   }
 }
 
@@ -137,8 +139,8 @@
   gap: $grid-gap;
 
   @media (min-width: $breakpoint-lg) {
-    padding: 2rem 2rem 0;
-    margin: -2rem -2rem 0;
+    padding: 2rem;
+    margin: -2rem;
   }
 }
 
@@ -208,11 +210,11 @@
 
   @media (min-width: $breakpoint-lg) {
     display: flex;
-    height: 100%;
+    // 同 .aside-left：border-box 加高 2rem，使 margin-top: -2rem 抵消后底边对齐 main-content
+    height: calc(100% + 2rem);
     overflow: visible;
-    padding: 2rem 2rem 0;
-    // 底部不再负外边距，避免 border-box 越过 grid cell 底边与 footer-row 重叠
-    margin: -2rem -2rem 0;
+    padding: 2rem;
+    margin: -2rem;
   }
 }
 
@@ -225,8 +227,8 @@
 
 .aside-right__viewport {
   @media (min-width: $breakpoint-lg) {
-    padding: 2rem 2rem 0;
-    margin: -2rem -2rem 0;
+    padding: 2rem;
+    margin: -2rem;
   }
 }
 
