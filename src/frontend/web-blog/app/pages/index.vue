@@ -9,32 +9,37 @@
   <div class="main-inner articles-page">
     <!-- 头部区域 -->
     <div class="main-content__header">
-      <!-- Tab 栏：全部文章与朋友圈共用 -->
-      <div class="articles-tabs no-scrollbar" role="tablist">
-        <button
-          v-for="tab in tabs"
-          :key="tab.value"
-          role="tab"
-          :aria-selected="activeTab === tab.value"
-          class="tab-btn"
-          :class="{ 'tab-active': activeTab === tab.value }"
-          @click="switchTab(tab.value)"
-        >
-          {{ tab.label }}
-        </button>
+      <!-- 左侧：页面图标 + Tab 栏（Tab 作为主标题切换） -->
+      <div class="articles-header-left">
+        <div class="page-title__icon-wrap articles-header-left__icon" aria-hidden="true">
+          <Icon :name="activeTab === 'moments' ? 'lucide:users' : 'lucide:newspaper'" size="18" />
+        </div>
+        <div class="articles-tabs no-scrollbar" role="tablist">
+          <button
+            v-for="tab in tabs"
+            :key="tab.value"
+            role="tab"
+            :aria-selected="activeTab === tab.value"
+            class="tab-btn"
+            :class="{ 'tab-active': activeTab === tab.value }"
+            @click="switchTab(tab.value)"
+          >
+            {{ tab.label }}
+          </button>
 
-        <!-- 当前过滤条件标签 -->
-        <Transition name="filter-fade">
-          <span v-if="activeFilterLabel && activeTab === 'all'" class="filter-badge" @click="clearFilters">
-            <Icon name="lucide:filter" size="12" />
-            {{ activeFilterLabel }}
-            <Icon name="lucide:x" size="12" class="filter-badge__close" />
-          </span>
-        </Transition>
+          <!-- 当前过滤条件标签 -->
+          <Transition name="filter-fade">
+            <span v-if="activeFilterLabel && activeTab === 'all'" class="filter-badge" @click="clearFilters">
+              <Icon name="lucide:filter" size="12" />
+              {{ activeFilterLabel }}
+              <Icon name="lucide:x" size="12" class="filter-badge__close" />
+            </span>
+          </Transition>
+        </div>
       </div>
 
       <!-- 右侧操作区：仅在文章列表视图显示 -->
-      <div v-if="activeTab === 'all'" class="articles-actions">
+      <div v-if="activeTab === 'all'" class="page-actions">
         <CommonSearchBox placeholder="搜索站内文章、标签..." readonly @click="openSearch" />
         <div class="display-mode-toggle">
           <CommonTooltip content="瀑布流">
@@ -299,40 +304,40 @@ const momentTopics = computed<MomentTopic[]>(() =>
 </script>
 
 <style lang="scss" scoped>
+/* 左侧：页面图标 + Tab 栏 */
+.articles-header-left {
+  display: flex;
+  align-items: center;
+  gap: 0.875rem;
+  min-width: 0;
+  flex: 1;
+
+  @media (min-width: $breakpoint-sm) {
+    flex: 0 1 auto;
+  }
+}
+
+.articles-header-left__icon {
+  // 与其他页面 page-title__icon-wrap 同尺寸，图标色随 Tab 切换带一丝强调色
+  color: var(--accent);
+  background: var(--accent-soft);
+}
+
 /* Tab 栏布局 */
 .articles-tabs {
   display: flex;
   align-items: center;
   gap: 1.5rem;
   overflow-x: auto;
+  min-width: 0;
 
   @media (min-width: $breakpoint-sm) {
-    gap: 2.5rem;
+    gap: 2rem;
   }
 
   // 紧凑档（sm–xl）：Tab 间距收紧，避免与右侧搜索/模式切换挤压
   @media (min-width: $breakpoint-sm) and (max-width: #{$breakpoint-xl - 1px}) {
-    gap: 1.5rem;
-  }
-}
-
-/* 右侧操作区 */
-.articles-actions {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  width: 100%;
-  padding-bottom: 1rem;
-
-  @media (min-width: $breakpoint-sm) {
-    width: auto;
-    padding-bottom: 0;
-    margin-left: auto;
-  }
-
-  // 紧凑档（sm–xl）：缩小搜索框与模式切换按钮之间的间距
-  @media (min-width: $breakpoint-sm) and (max-width: #{$breakpoint-xl - 1px}) {
-    gap: 0.5rem;
+    gap: 1.25rem;
   }
 }
 
