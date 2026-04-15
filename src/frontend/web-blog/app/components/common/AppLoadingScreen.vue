@@ -41,7 +41,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 
 defineProps<{
   visible: boolean
@@ -51,8 +51,20 @@ defineProps<{
 
 // 读取首屏加载进度（主题切换场景 DOM 不渲染百分比，composable 仍可安全读取共享 state）
 const { progress } = useLoadingProgress()
+
+// Hydration 一致性守卫：
+// 00.theme-preload plugin 在 enforce:'pre' 阶段（hydration 前）会调用 set(10→60)，
+// 导致客户端首次渲染时 progress 已非 0，与 SSR 输出的 "0%" 不一致触发 mismatch。
+// 用 isMounted 把首次 CSR 渲染也强制为 0，onMounted 后才切到真实 progress
+const isMounted = ref(false)
+onMounted(() => {
+  isMounted.value = true
+})
+
 // 向下取整 + 夹紧，防止浮点抖动导致 42% → 43% → 42% 视觉闪烁
-const displayPercent = computed(() => Math.min(100, Math.max(0, Math.floor(progress.value))))
+const displayPercent = computed(() =>
+  isMounted.value ? Math.min(100, Math.max(0, Math.floor(progress.value))) : 0,
+)
 </script>
 
 <style lang="scss" scoped>
