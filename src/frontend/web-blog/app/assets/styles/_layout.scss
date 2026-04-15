@@ -18,7 +18,8 @@
   padding-bottom: calc(4rem + env(safe-area-inset-bottom)); // 给 MobileNav 留空间
 
   @media (min-width: $breakpoint-md) {
-    padding: 2rem;
+    // 上下收紧一半，左右保留 2rem 呼吸区
+    padding: 1rem 2rem;
   }
 
   @media (min-width: $breakpoint-lg) {
@@ -31,7 +32,7 @@
 
   // 紧凑档：lg–xl 区间减小三栏间距，避免三栏互相挤压
   @media (min-width: $breakpoint-lg) and (max-width: #{$breakpoint-xl - 1px}) {
-    padding: 1.25rem;
+    padding: 0.625rem 1.25rem;
     gap: 1rem;
   }
 }
