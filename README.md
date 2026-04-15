@@ -2,7 +2,11 @@
 
 个人博客系统。前台基于 Nuxt 4 + Vue 3，支持文章、归档、画廊、留言板、友链等模块，当前处于 UI 打磨阶段，使用 mock 数据驱动。
 
-![image](https://github.com/TixXin/TixXinBlog/blob/main/docs/test.png?raw=true)
+![image](https://github.com/TixXin/TixXinBlog/blob/main/docs/img/01.png?raw=true)
+![image](https://github.com/TixXin/TixXinBlog/blob/main/docs/img/02.png?raw=true)
+![image](https://github.com/TixXin/TixXinBlog/blob/main/docs/img/03.png?raw=true)
+![image](https://github.com/TixXin/TixXinBlog/blob/main/docs/img/04.png?raw=true)
+![image](https://github.com/TixXin/TixXinBlog/blob/main/docs/img/05.png?raw=true)
 
 **在线预览**：[https://tix.xin](https://tix.xin)
 
