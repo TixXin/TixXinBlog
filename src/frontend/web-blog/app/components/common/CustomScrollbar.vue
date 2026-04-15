@@ -180,12 +180,12 @@ const viewportStyle = computed(() => {
 
   const stops: string[] = []
   if (topActive) {
-    stops.push('transparent 0%', 'black 1rem')
+    stops.push('transparent 0%', 'black 2.5rem')
   } else {
     stops.push('black 0%')
   }
   if (botActive) {
-    stops.push('black calc(100% - 1rem)', 'transparent 100%')
+    stops.push('black calc(100% - 2.5rem)', 'transparent 100%')
   } else {
     stops.push('black 100%')
   }
