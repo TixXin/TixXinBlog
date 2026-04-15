@@ -37,7 +37,7 @@ export class HttpTabRepository implements TabBookmarkRepository {
   createCategory(_userId: string, _draft: BookmarkCategoryDraft): Promise<BookmarkCategory> {
     return Promise.reject(new Error(NOT_IMPLEMENTED))
   }
-  updateCategory(_id: string, _patch: Partial<BookmarkCategoryDraft>): Promise<BookmarkCategory> {
+  updateCategory(_id: string, _patch: Partial<Omit<BookmarkCategory, 'id' | 'userId'>>): Promise<BookmarkCategory> {
     return Promise.reject(new Error(NOT_IMPLEMENTED))
   }
   removeCategory(_id: string): Promise<void> {
@@ -46,7 +46,7 @@ export class HttpTabRepository implements TabBookmarkRepository {
   createBookmark(_userId: string, _draft: BookmarkDraft): Promise<Bookmark> {
     return Promise.reject(new Error(NOT_IMPLEMENTED))
   }
-  updateBookmark(_id: string, _patch: Partial<BookmarkDraft>): Promise<Bookmark> {
+  updateBookmark(_id: string, _patch: Partial<Omit<Bookmark, 'id' | 'userId'>>): Promise<Bookmark> {
     return Promise.reject(new Error(NOT_IMPLEMENTED))
   }
   removeBookmark(_id: string): Promise<void> {

@@ -22,6 +22,7 @@ import type {
   ImportPayload,
 } from '~/features/tab/types'
 import { getSeedForUser } from '~/features/tab/mock'
+import { fetchFavicon } from '~/features/tab/favicon'
 import { mockOwnerUser } from '~/features/auth/mock'
 
 export function useTabBookmarks() {
@@ -106,7 +107,7 @@ export function useTabBookmarks() {
     }
   }
 
-  /** 创建书签 */
+  /** 创建书签；若设置允许则异步抓取 favicon 并补写 */
   async function addBookmark(draft: BookmarkDraft): Promise<Bookmark | null> {
     if (!isLoggedIn.value || !currentUser.value) {
       openLoginDrawer('login')
@@ -114,11 +115,40 @@ export function useTabBookmarks() {
     }
     const created = await repo.createBookmark(currentUser.value.id, draft)
     bookmarks.value = [...bookmarks.value, created]
+    void maybeFetchFavicon(created)
     return created
   }
 
-  /** 更新书签 */
-  async function updateBookmark(id: string, patch: Partial<BookmarkDraft>): Promise<Bookmark | null> {
+  /** 手动刷新单个书签的 favicon */
+  async function refreshFavicon(id: string): Promise<boolean> {
+    const bm = bookmarks.value.find((b) => b.id === id)
+    if (!bm) return false
+    const { settings } = useTabSettings()
+    const url = await fetchFavicon(bm.url, settings.value.faviconProvider)
+    const patch = { faviconUrl: url ?? undefined, faviconFailed: !url }
+    const updated = await repo.updateBookmark(id, patch)
+    bookmarks.value = bookmarks.value.map((b) => (b.id === id ? updated : b))
+    return true
+  }
+
+  /** 若设置启用，则为新建/缺失 favicon 的书签异步抓取；失败写 faviconFailed */
+  async function maybeFetchFavicon(bm: Bookmark): Promise<void> {
+    const { settings } = useTabSettings()
+    if (!settings.value.faviconAutoFetch) return
+    if (bm.icon?.startsWith('lucide:')) return
+    if (bm.faviconUrl || bm.faviconFailed) return
+    const url = await fetchFavicon(bm.url, settings.value.faviconProvider)
+    const patch = { faviconUrl: url ?? undefined, faviconFailed: !url }
+    try {
+      const updated = await repo.updateBookmark(bm.id, patch)
+      bookmarks.value = bookmarks.value.map((b) => (b.id === bm.id ? updated : b))
+    } catch {
+      // 书签已被删除等异常时忽略
+    }
+  }
+
+  /** 更新书签（patch 宽松接受 Bookmark 全部可写字段） */
+  async function updateBookmark(id: string, patch: Partial<Omit<Bookmark, 'id' | 'userId'>>): Promise<Bookmark | null> {
     if (!isLoggedIn.value || !currentUser.value) {
       openLoginDrawer('login')
       return null
@@ -246,5 +276,6 @@ export function useTabBookmarks() {
     reorderCategories,
     importBulk,
     exportBulk,
+    refreshFavicon,
   }
 }

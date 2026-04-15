@@ -23,6 +23,9 @@ import type {
   ImportPayload,
 } from './types'
 
+type BookmarkPatch = Partial<Omit<Bookmark, 'id' | 'userId'>>
+type CategoryPatch = Partial<Omit<BookmarkCategory, 'id' | 'userId'>>
+
 const CATEGORY_PREFIX = 'tab:categories:'
 const BOOKMARK_PREFIX = 'tab:bookmarks:'
 
@@ -88,7 +91,7 @@ export class LocalTabRepository implements TabBookmarkRepository {
     return Promise.resolve(next)
   }
 
-  updateCategory(id: string, patch: Partial<BookmarkCategoryDraft>): Promise<BookmarkCategory> {
+  updateCategory(id: string, patch: CategoryPatch): Promise<BookmarkCategory> {
     if (typeof window === 'undefined') {
       return Promise.reject(new Error('LocalTabRepository.updateCategory called on server'))
     }
@@ -98,13 +101,7 @@ export class LocalTabRepository implements TabBookmarkRepository {
       const categories = readJson<BookmarkCategory>(key)
       const idx = categories.findIndex((c) => c.id === id)
       if (idx === -1) continue
-      const original = categories[idx]!
-      const next: BookmarkCategory = {
-        ...original,
-        name: patch.name ?? original.name,
-        icon: patch.icon ?? original.icon,
-        color: patch.color ?? original.color,
-      }
+      const next: BookmarkCategory = { ...categories[idx]!, ...patch }
       categories[idx] = next
       writeJson(key, categories)
       return Promise.resolve(next)
@@ -154,7 +151,7 @@ export class LocalTabRepository implements TabBookmarkRepository {
     return Promise.resolve(next)
   }
 
-  updateBookmark(id: string, patch: Partial<BookmarkDraft>): Promise<Bookmark> {
+  updateBookmark(id: string, patch: BookmarkPatch): Promise<Bookmark> {
     if (typeof window === 'undefined') {
       return Promise.reject(new Error('LocalTabRepository.updateBookmark called on server'))
     }
@@ -164,15 +161,7 @@ export class LocalTabRepository implements TabBookmarkRepository {
       const bookmarks = readJson<Bookmark>(key)
       const idx = bookmarks.findIndex((b) => b.id === id)
       if (idx === -1) continue
-      const original = bookmarks[idx]!
-      const next: Bookmark = {
-        ...original,
-        name: patch.name ?? original.name,
-        url: patch.url ?? original.url,
-        icon: patch.icon ?? original.icon,
-        color: patch.color ?? original.color,
-        categoryId: patch.categoryId ?? original.categoryId,
-      }
+      const next: Bookmark = { ...bookmarks[idx]!, ...patch, updatedAt: new Date().toISOString() }
       bookmarks[idx] = next
       writeJson(key, bookmarks)
       return Promise.resolve(next)
