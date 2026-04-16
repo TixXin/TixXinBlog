@@ -2,6 +2,24 @@
 
 个人博客系统。前台基于 Nuxt 4 + Vue 3，支持文章、归档、画廊、留言板、友链等模块，当前处于 UI 打磨阶段，使用 mock 数据驱动。
 
+<p align="center">
+  <img alt="Nuxt 4" src="https://img.shields.io/badge/Nuxt_4-00DC82?style=for-the-badge&logo=nuxtdotjs&logoColor=white" />
+  <img alt="Vue 3" src="https://img.shields.io/badge/Vue_3-4FC08D?style=for-the-badge&logo=vuedotjs&logoColor=white" />
+  <img alt="TypeScript" src="https://img.shields.io/badge/TypeScript-3178C6?style=for-the-badge&logo=typescript&logoColor=white" />
+  <img alt="SCSS" src="https://img.shields.io/badge/SCSS-CC6699?style=for-the-badge&logo=sass&logoColor=white" />
+  <img alt="pnpm" src="https://img.shields.io/badge/pnpm-F69220?style=for-the-badge&logo=pnpm&logoColor=white" />
+  <img alt="Vitest" src="https://img.shields.io/badge/Vitest-6E9F18?style=for-the-badge&logo=vitest&logoColor=white" />
+  <img alt="ESLint" src="https://img.shields.io/badge/ESLint-4B32C3?style=for-the-badge&logo=eslint&logoColor=white" />
+  <img alt="Prettier" src="https://img.shields.io/badge/Prettier-F7B93E?style=for-the-badge&logo=prettier&logoColor=black" />
+</p>
+
+<p align="center">
+  <img alt="License" src="https://img.shields.io/badge/License-GPL--3.0-blue?style=flat-square" />
+  <img alt="Node" src="https://img.shields.io/badge/Node-%3E%3D20-5FA04E?style=flat-square&logo=nodedotjs&logoColor=white" />
+  <img alt="pnpm" src="https://img.shields.io/badge/pnpm-%3E%3D9-F69220?style=flat-square&logo=pnpm&logoColor=white" />
+  <a href="https://tix.xin"><img alt="在线预览" src="https://img.shields.io/badge/在线预览-tix.xin-brightgreen?style=flat-square" /></a>
+</p>
+
 ![image](https://github.com/TixXin/TixXinBlog/blob/main/docs/img/01.png?raw=true)
 ![image](https://github.com/TixXin/TixXinBlog/blob/main/docs/img/02.png?raw=true)
 ![image](https://github.com/TixXin/TixXinBlog/blob/main/docs/img/03.png?raw=true)
