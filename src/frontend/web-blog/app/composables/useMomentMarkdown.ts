@@ -6,6 +6,9 @@
  */
 
 import MarkdownIt from 'markdown-it'
+// markdown-it-task-lists 无 TS 类型声明，但运行时为合法插件
+// @ts-expect-error 缺少类型声明
+import taskLists from 'markdown-it-task-lists'
 import DOMPurify from 'isomorphic-dompurify'
 
 // 单实例复用，避免列表中每条动态重建 MarkdownIt 实例
@@ -14,7 +17,7 @@ const md = new MarkdownIt({
   linkify: true,
   breaks: true,
   typographer: true,
-})
+}).use(taskLists, { enabled: false, label: false })
 
 // 外链统一加 target=_blank + noopener（闪念里贴的 URL 大多是外部资源）
 const defaultLinkRender =
@@ -56,7 +59,8 @@ export function renderMomentMarkdown(text: string, options: MomentMarkdownOption
   }
 
   return DOMPurify.sanitize(html, {
-    ADD_ATTR: ['target', 'rel'],
+    // 允许外链属性 + 任务清单 checkbox 的 type/checked/disabled
+    ADD_ATTR: ['target', 'rel', 'type', 'checked', 'disabled'],
   })
 }
 
