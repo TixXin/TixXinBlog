@@ -27,6 +27,10 @@
         placeholder="搜索动态内容 / 话题 / 地点..."
         class="moments-header__search"
       />
+      <NuxtLink v-if="isOwner" to="/admin/moments/new" class="moments-header__publish" aria-label="发布新动态">
+        <Icon name="lucide:plus" size="14" />
+        <span>发布</span>
+      </NuxtLink>
     </div>
 
     <CommonCustomScrollbar class="moments-body" viewport-class="moments-viewport" primary>
@@ -59,12 +63,16 @@
 </template>
 
 <script setup lang="ts">
-import { mockMoments, mockMomentAuthorStats } from '~/features/moment/mock'
+import { mockMomentAuthorStats } from '~/features/moment/mock'
 import { MOMENT_TOPIC_DEFINITIONS } from '~/features/moment/topics'
 import { mockPostTabs } from '~/features/post/mock'
 import type { MomentItem } from '~/features/moment/types'
 import type { MomentTopic } from '~/components/sidebar/MomentTopicCard.vue'
 import type { MomentPhotoItem } from '~/components/sidebar/MomentPhotoWallCard.vue'
+
+const { list: momentList } = useMomentList()
+const { currentUser } = useCurrentUser()
+const isOwner = computed(() => currentUser.value?.role === 'owner')
 
 const tabs = mockPostTabs
 
@@ -81,7 +89,7 @@ useSeoMeta({
   ogDescription: '记录生活点滴，分享日常碎片',
 })
 
-const moments = computed(() => mockMoments)
+const moments = computed(() => momentList.value)
 
 // 搜索关键词（fuse.js 模糊匹配 content/topics/location）
 const searchKeyword = ref('')
@@ -110,11 +118,11 @@ function onPhotoSelect(momentId: string) {
 const authorStats = mockMomentAuthorStats
 
 // 日历数据 — 从动态列表提取日期
-const momentDates = computed(() => mockMoments.map((m) => m.date.slice(0, 10)))
+const momentDates = computed(() => momentList.value.map((m) => m.date.slice(0, 10)))
 
 // 精选照片墙 — 按获赞数排序，取带图片的动态的首张图
 const photoWallImages = computed<MomentPhotoItem[]>(() => {
-  return mockMoments
+  return momentList.value
     .filter((m): m is MomentItem & { images: [string, ...string[]] } => !!m.images && m.images.length > 0)
     .sort((a, b) => b.likes - a.likes)
     .slice(0, 9)
@@ -128,7 +136,7 @@ const photoWallImages = computed<MomentPhotoItem[]>(() => {
 const momentTopics = computed<MomentTopic[]>(() =>
   MOMENT_TOPIC_DEFINITIONS.map((t) => ({
     ...t,
-    count: mockMoments.filter((m) => m.topics?.includes(t.name)).length,
+    count: momentList.value.filter((m) => m.topics?.includes(t.name)).length,
   })),
 )
 </script>
@@ -155,6 +163,25 @@ const momentTopics = computed<MomentTopic[]>(() =>
   @media (max-width: #{$breakpoint-sm - 1px}) {
     width: 100%;
     max-width: none;
+  }
+}
+
+// 仅博主可见的发布入口
+.moments-header__publish {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.4rem 0.75rem;
+  background: var(--accent);
+  color: #fff;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  border-radius: $radius-sm;
+  text-decoration: none;
+  transition: opacity 0.2s;
+
+  &:hover {
+    opacity: 0.88;
   }
 }
 

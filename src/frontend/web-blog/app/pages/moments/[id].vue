@@ -79,9 +79,11 @@
 </template>
 
 <script setup lang="ts">
-import { mockMoments, mockMomentAuthorStats } from '~/features/moment/mock'
+import { mockMomentAuthorStats } from '~/features/moment/mock'
 import { MOMENT_TOPIC_DEFINITIONS } from '~/features/moment/topics'
 import type { MomentTopic } from '~/components/sidebar/MomentTopicCard.vue'
+
+const { list: momentList } = useMomentList()
 
 const route = useRoute()
 const router = useRouter()
@@ -90,7 +92,7 @@ const id = computed(() => route.params.id as string)
 
 // 时间倒序，"上一条"指更早，"下一条"指更晚（更符合博客时间线阅读习惯）
 const sortedMoments = computed(() =>
-  [...mockMoments].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()),
+  [...momentList.value].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()),
 )
 
 const currentIndex = computed(() => sortedMoments.value.findIndex((m) => m.id === id.value))
@@ -173,7 +175,7 @@ const authorStats = mockMomentAuthorStats
 const momentTopics = computed<MomentTopic[]>(() =>
   MOMENT_TOPIC_DEFINITIONS.map((t) => ({
     ...t,
-    count: mockMoments.filter((m) => m.topics?.includes(t.name)).length,
+    count: momentList.value.filter((m) => m.topics?.includes(t.name)).length,
   })),
 )
 

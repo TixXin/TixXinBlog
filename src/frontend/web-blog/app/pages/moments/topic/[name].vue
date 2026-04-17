@@ -56,9 +56,11 @@
 </template>
 
 <script setup lang="ts">
-import { mockMoments, mockMomentAuthorStats } from '~/features/moment/mock'
+import { mockMomentAuthorStats } from '~/features/moment/mock'
 import { MOMENT_TOPIC_DEFINITIONS, findMomentTopic } from '~/features/moment/topics'
 import type { MomentTopic } from '~/components/sidebar/MomentTopicCard.vue'
+
+const { list: momentList } = useMomentList()
 
 const route = useRoute()
 const router = useRouter()
@@ -69,7 +71,7 @@ const topicName = computed(() => String(route.params.name ?? ''))
 const topicMeta = computed(() => findMomentTopic(topicName.value))
 
 // 仅过滤话题，不复用分页/搜索（话题页只关心该话题的全部条目）
-const filteredMoments = computed(() => mockMoments.filter((m) => m.topics?.includes(topicName.value)))
+const filteredMoments = computed(() => momentList.value.filter((m) => m.topics?.includes(topicName.value)))
 
 // hero 区配色：以话题色作主调
 const heroStyle = computed(() => {
@@ -95,7 +97,7 @@ const authorStats = mockMomentAuthorStats
 const momentTopics = computed<MomentTopic[]>(() =>
   MOMENT_TOPIC_DEFINITIONS.map((t) => ({
     ...t,
-    count: mockMoments.filter((m) => m.topics?.includes(t.name)).length,
+    count: momentList.value.filter((m) => m.topics?.includes(t.name)).length,
   })),
 )
 
