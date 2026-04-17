@@ -73,13 +73,15 @@ export class LocalFlashRepository implements FlashNoteRepository {
 
   create(userId: string, draft: FlashNoteDraft): Promise<FlashNote> {
     const now = new Date().toISOString()
+    // draft.id / createdAt 仅在 seed 场景下传入，用户正常发布不会带这些字段
+    const createdAt = draft.createdAt ?? now
     const note: FlashNote = {
-      id: generateId('note'),
+      id: draft.id ?? generateId('note'),
       userId,
       content: draft.content,
       tags: [...draft.tags],
-      createdAt: now,
-      updatedAt: now,
+      createdAt,
+      updatedAt: createdAt,
       likes: 0,
       comments: [],
     }
