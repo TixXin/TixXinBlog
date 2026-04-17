@@ -1,6 +1,6 @@
 <!--
-  @file moments.vue
-  @description 朋友圈页面，展示动态流
+  @file index.vue
+  @description 朋友圈列表页（原 moments.vue，为支持子路由 /moments/:id 迁移为目录式）
   @author TixXin
   @since 2026-04-07
 -->
@@ -50,6 +50,7 @@
 <script setup lang="ts">
 import { mockMoments, mockMomentAuthorStats } from '~/features/moment/mock'
 import { mockPostTabs } from '~/features/post/mock'
+import type { MomentItem } from '~/features/moment/types'
 import type { MomentTopic } from '~/components/sidebar/MomentTopicCard.vue'
 import type { MomentPhotoItem } from '~/components/sidebar/MomentPhotoWallCard.vue'
 
@@ -99,11 +100,11 @@ const momentDates = computed(() => mockMoments.map((m) => m.date.slice(0, 10)))
 // 精选照片墙 — 按获赞数排序，取带图片的动态的首张图
 const photoWallImages = computed<MomentPhotoItem[]>(() => {
   return mockMoments
-    .filter((m) => m.images && m.images.length > 0)
+    .filter((m): m is MomentItem & { images: [string, ...string[]] } => !!m.images && m.images.length > 0)
     .sort((a, b) => b.likes - a.likes)
     .slice(0, 9)
     .map((m) => ({
-      src: m.images![0],
+      src: m.images[0],
       momentId: m.id,
     }))
 })

@@ -51,7 +51,13 @@
       <!-- 底部元信息 + 操作 -->
       <div class="moment-card__footer">
         <div class="moment-card__meta">
-          <span class="moment-card__time">{{ formattedDate }}</span>
+          <NuxtLink
+            :to="`/moments/${moment.id}`"
+            class="moment-card__time"
+            :aria-label="`查看动态详情 · ${formattedDate}`"
+          >
+            {{ formattedDate }}
+          </NuxtLink>
           <span v-if="moment.location" class="moment-card__location">
             <Icon name="lucide:map-pin" size="12" />
             {{ moment.location }}
@@ -333,6 +339,20 @@ function onLightBoxChange(index: number) {
   align-items: center;
   gap: 0.25rem;
   color: var(--text-soft);
+}
+
+// 时间戳兼详情入口：点击跳转单条动态详情页
+.moment-card__time {
+  color: var(--text-faint);
+  text-decoration: none;
+  transition: $transition-colors;
+
+  &:hover {
+    color: var(--accent);
+    text-decoration: underline;
+    text-decoration-style: dotted;
+    text-underline-offset: 3px;
+  }
 }
 
 // 操作按钮
