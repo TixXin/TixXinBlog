@@ -52,8 +52,7 @@
 
     <CommonCustomScrollbar class="flash-page__body" viewport-class="flash-page__viewport" primary>
       <div class="flash-page__content">
-        <FlashEditor v-if="isLoggedIn" @submit="onSubmit" />
-        <button v-else type="button" class="flash-page__guest-banner" @click="onLogin">
+        <button v-if="!isLoggedIn" type="button" class="flash-page__guest-banner" @click="onLogin">
           <Icon name="lucide:eye" size="14" class="flash-page__guest-banner-icon" />
           <span class="flash-page__guest-banner-text">
             正在浏览博主的闪念，登录后开启你自己的灵感空间
@@ -88,6 +87,13 @@
         />
       </div>
     </CommonCustomScrollbar>
+
+    <!-- 底部发布输入框：仅登录者可见，参考留言板底部 MessageInput 的呈现方式 -->
+    <div v-if="isLoggedIn" class="flash-page__composer-wrap">
+      <div class="flash-page__composer">
+        <FlashEditor @submit="onSubmit" />
+      </div>
+    </div>
 
     <!-- 右侧栏 -->
     <ClientOnly>
@@ -433,6 +439,24 @@ onBeforeUnmount(() => {
   display: flex;
   flex-direction: column;
   gap: 1.125rem;
+}
+
+/* ---- 底部发布输入框容器 ---- */
+.flash-page__composer-wrap {
+  flex-shrink: 0;
+  padding: 0.75rem 1rem 1rem;
+  background: linear-gradient(to bottom, transparent, var(--surface-0) 30%);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+
+  @media (min-width: $breakpoint-md) {
+    padding: 1rem 1.75rem 1.25rem;
+  }
+}
+
+.flash-page__composer {
+  max-width: 720px;
+  margin: 0 auto;
 }
 
 /* ---- 标签筛选条 ---- */
