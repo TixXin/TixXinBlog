@@ -6,8 +6,8 @@
  */
 
 import MarkdownIt from 'markdown-it'
-// markdown-it-task-lists 无 TS 类型声明，但运行时为合法插件
-// @ts-expect-error 缺少类型声明
+// markdown-it-task-lists 无 TS 类型声明，运行时是合法 markdown-it 插件
+// @ts-expect-error -- markdown-it-task-lists 未发布 .d.ts 类型声明
 import taskLists from 'markdown-it-task-lists'
 import DOMPurify from 'isomorphic-dompurify'
 
