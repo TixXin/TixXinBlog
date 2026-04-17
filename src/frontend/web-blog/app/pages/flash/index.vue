@@ -1,6 +1,6 @@
 <!--
-  @file flash.vue
-  @description 闪念主页：编辑器 + 笔记流；右栏 AI 搜索入口、标签云、统计
+  @file index.vue
+  @description 闪念主页（原 flash.vue，为支持 /flash/:id 子路由迁移为目录式）：编辑器 + 笔记流；右栏 AI 搜索入口、标签云、统计
   @author TixXin
   @since 2026-04-11
 -->

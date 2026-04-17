@@ -19,10 +19,14 @@
     </div>
 
     <footer class="fnc__footer">
-      <time class="fnc__time" :datetime="note.createdAt">
+      <NuxtLink
+        :to="`/flash/${note.id}`"
+        class="fnc__time"
+        :aria-label="`查看闪念详情 · ${relativeTime}`"
+      >
         <Icon name="lucide:clock-3" size="11" />
         {{ relativeTime }}
-      </time>
+      </NuxtLink>
       <div class="fnc__actions">
         <button
           type="button"
@@ -316,6 +320,15 @@ onBeforeUnmount(() => {
   font-size: 0.6875rem;
   color: var(--text-faint);
   font-variant-numeric: tabular-nums;
+  text-decoration: none;
+  transition: color 0.18s;
+
+  &:hover {
+    color: var(--accent);
+    text-decoration: underline;
+    text-decoration-style: dotted;
+    text-underline-offset: 3px;
+  }
 }
 
 .fnc__actions {
