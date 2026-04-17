@@ -102,6 +102,21 @@ export function useFlashNotes() {
   }
 
   /**
+   * 单独拉取博主（owner）的公开闪念列表，不影响主 notes 状态。
+   * 详情页用：任何访客都能看到博主笔记，不受登录态影响。
+   */
+  async function fetchOwnerNotes(): Promise<FlashNote[]> {
+    let list = await repo.list(mockOwnerUser.id)
+    if (list.length === 0) {
+      for (const draft of defaultFlashNoteSeeds) {
+        await repo.create(mockOwnerUser.id, draft)
+      }
+      list = await repo.list(mockOwnerUser.id)
+    }
+    return list
+  }
+
+  /**
    * 切换点赞 —— 游客也可操作，设备级每日去重由 UI 层（flash.vue）管理。
    * composable 层不再检查登录态，只负责数据读写。
    */
@@ -196,6 +211,7 @@ export function useFlashNotes() {
     update,
     remove,
     search,
+    fetchOwnerNotes,
     toggleLike,
     addComment,
     removeComment,
