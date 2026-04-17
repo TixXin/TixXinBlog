@@ -12,8 +12,32 @@
  */
 
 import type { FlashComment, FlashNote, FlashNoteDraft } from '~/features/flash/types'
-import { defaultFlashNoteSeeds } from '~/features/flash/mock'
+import { defaultFlashNoteSeeds, FLASH_SEEDS_VERSION } from '~/features/flash/mock'
 import { mockOwnerUser } from '~/features/auth/mock'
+
+/**
+ * 增量补种：seed 版本升级时，把当前 list 里没有的 seed id 补进 storage。
+ * 已存在的 id 跳过（保留用户对该条目的修改/删除/归档），归档项也算"已存在"。
+ * 一次性，写入版本号后下次 load 直接跳过。
+ */
+async function ensureSeedsUpToDate(
+  repo: ReturnType<typeof useFlashRepository>,
+  userId: string,
+): Promise<void> {
+  if (typeof window === 'undefined') return
+  const versionKey = `flash:seeds:version:${userId}`
+  const localVersion = Number(window.localStorage.getItem(versionKey) ?? '0')
+  if (localVersion >= FLASH_SEEDS_VERSION) return
+
+  const [active, archived] = await Promise.all([repo.list(userId), repo.listArchived(userId)])
+  const existingIds = new Set([...active, ...archived].map((n) => n.id))
+  for (const draft of defaultFlashNoteSeeds) {
+    if (draft.id && !existingIds.has(draft.id)) {
+      await repo.create(userId, draft)
+    }
+  }
+  window.localStorage.setItem(versionKey, String(FLASH_SEEDS_VERSION))
+}
 
 export function useFlashNotes() {
   const repo = useFlashRepository()
@@ -47,9 +71,17 @@ export function useFlashNotes() {
     try {
       let list = await repo.list(targetUserId)
       if (list.length === 0) {
+        // 全新用户：全量 seed
         for (const draft of defaultFlashNoteSeeds) {
           await repo.create(targetUserId, draft)
         }
+        if (typeof window !== 'undefined') {
+          window.localStorage.setItem(`flash:seeds:version:${targetUserId}`, String(FLASH_SEEDS_VERSION))
+        }
+        list = await repo.list(targetUserId)
+      } else {
+        // 老用户：按版本增量补种新增的 seed id（不动用户已修改/删除/归档的）
+        await ensureSeedsUpToDate(repo, targetUserId)
         list = await repo.list(targetUserId)
       }
       notes.value = list
@@ -111,6 +143,12 @@ export function useFlashNotes() {
       for (const draft of defaultFlashNoteSeeds) {
         await repo.create(mockOwnerUser.id, draft)
       }
+      if (typeof window !== 'undefined') {
+        window.localStorage.setItem(`flash:seeds:version:${mockOwnerUser.id}`, String(FLASH_SEEDS_VERSION))
+      }
+      list = await repo.list(mockOwnerUser.id)
+    } else {
+      await ensureSeedsUpToDate(repo, mockOwnerUser.id)
       list = await repo.list(mockOwnerUser.id)
     }
     return list
