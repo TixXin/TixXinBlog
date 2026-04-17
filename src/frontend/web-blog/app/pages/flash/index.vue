@@ -20,8 +20,19 @@
         </div>
       </div>
 
-      <!-- 右侧操作区：搜索切换按钮 -->
+      <!-- 右侧操作区：归档箱 toggle + 搜索切换按钮 -->
       <div class="page-actions">
+        <button
+          v-if="isLoggedIn"
+          type="button"
+          class="flash-page__search-toggle"
+          :class="{ 'is-active': showArchive }"
+          :aria-label="showArchive ? '返回主列表' : '查看归档箱'"
+          @click="toggleArchiveView"
+        >
+          <Icon :name="showArchive ? 'lucide:archive-restore' : 'lucide:archive'" size="14" />
+          <span>{{ showArchive ? '返回主列表' : '归档箱' }}</span>
+        </button>
         <button
           type="button"
           class="flash-page__search-toggle"
@@ -81,6 +92,8 @@
           :highlighted-id="highlightedNoteId"
           @remove="onRemove"
           @toggle-like="onToggleLike"
+          @set-pinned="onSetPinned"
+          @set-archived="onSetArchived"
           @add-comment="onAddComment"
           @remove-comment="onRemoveComment"
           @tag-click="onTagFilter"
@@ -163,6 +176,8 @@
 </template>
 
 <script setup lang="ts">
+import type { FlashNote } from '~/features/flash/types'
+
 useSeoMeta({
   title: '闪念',
   description: '记录每一个稍纵即逝的灵感，配合 AI 搜索回顾你的想法历史',
@@ -182,6 +197,9 @@ const {
   add,
   remove,
   toggleLike,
+  setPinned,
+  setArchived,
+  loadArchived,
   addComment,
   removeComment,
 } = useFlashNotes()
@@ -212,9 +230,9 @@ watch(searchQuery, (v) => {
   }, 300)
 })
 
-/** 筛选后的闪念列表：标签 AND 搜索关键词 */
+/** 筛选后的闪念列表：归档箱 | 主列表，均叠加标签 AND 搜索关键词 */
 const filteredNotes = computed(() => {
-  let result = notes.value
+  let result = showArchive.value ? archivedNotes.value : notes.value
   if (activeTag.value) {
     result = result.filter((n) => n.tags.includes(activeTag.value!))
   }
@@ -271,6 +289,40 @@ async function onSubmit(draft: { content: string; tags: string[] }) {
 async function onRemove(id: string) {
   await remove(id)
   success('已删除')
+}
+
+async function onSetPinned(payload: { id: string; pinned: boolean }) {
+  const updated = await setPinned(payload.id, payload.pinned)
+  if (updated) success(payload.pinned ? '已置顶' : '已取消置顶')
+}
+
+async function onSetArchived(payload: { id: string; archived: boolean }) {
+  const updated = await setArchived(payload.id, payload.archived)
+  if (updated) {
+    if (payload.archived) {
+      success('已归档')
+      // 若当前正在看归档箱，重新拉取让刚归档的笔记出现
+      if (showArchive.value) {
+        archivedNotes.value = await loadArchived()
+      }
+    } else {
+      success('已恢复到主列表')
+      // 归档箱视图里从本地列表移除；主列表需重载拿回笔记
+      archivedNotes.value = archivedNotes.value.filter((n) => n.id !== payload.id)
+      await load(true)
+    }
+  }
+}
+
+// ---- 归档箱 ----
+const showArchive = ref(false)
+const archivedNotes = ref<FlashNote[]>([])
+
+async function toggleArchiveView() {
+  showArchive.value = !showArchive.value
+  if (showArchive.value) {
+    archivedNotes.value = await loadArchived()
+  }
 }
 
 async function onToggleLike(id: string) {

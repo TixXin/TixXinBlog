@@ -29,6 +29,8 @@
         :guest-id="guestId"
         @remove="$emit('remove', $event)"
         @toggle-like="$emit('toggle-like', $event)"
+        @set-pinned="$emit('set-pinned', $event)"
+        @set-archived="$emit('set-archived', $event)"
         @add-comment="$emit('add-comment', $event)"
         @remove-comment="$emit('remove-comment', $event)"
         @tag-click="$emit('tag-click', $event)"
@@ -55,6 +57,8 @@ defineProps<{
 defineEmits<{
   remove: [id: string]
   'toggle-like': [id: string]
+  'set-pinned': [payload: { id: string; pinned: boolean }]
+  'set-archived': [payload: { id: string; archived: boolean }]
   'add-comment': [payload: { noteId: string; content: string }]
   'remove-comment': [payload: { noteId: string; commentId: string }]
   'tag-click': [tag: string]
