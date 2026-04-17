@@ -6,9 +6,9 @@
 -->
 
 <template>
-  <div class="fed" :class="{ 'fed--focused': focused }">
-    <!-- 顶部条：mood 切换（占位） + 字数 -->
-    <header class="fed__header">
+  <div class="fed" :class="{ 'fed--compact': !expanded, 'fed--focused': focused }">
+    <!-- 顶部条：mood 切换（占位） + 字数；紧凑态隐藏 -->
+    <header v-show="expanded" class="fed__header">
       <div class="fed__moods" role="tablist" aria-label="灵感分组">
         <button
           v-for="m in moods"
@@ -29,19 +29,30 @@
       </span>
     </header>
 
-    <!-- 主输入区 -->
-    <textarea
-      ref="textareaRef"
-      v-model="content"
-      class="fed__textarea"
-      :placeholder="placeholder"
-      rows="4"
-      maxlength="500"
-      @focus="focused = true"
-      @blur="focused = false"
-      @keydown.ctrl.enter="submit"
-      @keydown.meta.enter="submit"
-    />
+    <!-- 主输入区：textarea + 右上角展开/收起按钮 -->
+    <div class="fed__editor-wrap">
+      <textarea
+        ref="textareaRef"
+        v-model="content"
+        class="fed__textarea"
+        :placeholder="placeholder"
+        :rows="expanded ? 4 : 1"
+        maxlength="500"
+        @focus="focused = true"
+        @blur="focused = false"
+        @keydown.ctrl.enter="submit"
+        @keydown.meta.enter="submit"
+      />
+      <button
+        type="button"
+        class="fed__expand-toggle"
+        :aria-label="expanded ? '收起编辑器' : '展开编辑器'"
+        :title="expanded ? '收起编辑器' : '展开编辑器'"
+        @click="toggleExpand"
+      >
+        <Icon :name="expanded ? 'lucide:minimize-2' : 'lucide:maximize-2'" size="12" />
+      </button>
+    </div>
 
     <!-- 标签 chips -->
     <div v-if="tags.length > 0 || tagDraft" class="fed__tags">
@@ -161,11 +172,24 @@ const tagDraft = ref('')
 const focused = ref(false)
 const mood = ref<MoodId>('idea')
 const showTagInput = ref(false)
+// 紧凑态默认收起 mood/字数/大 textarea；聚焦或有输入时自动展开
+const expanded = ref(false)
 const textareaRef = ref<HTMLTextAreaElement | null>(null)
 const tagInputRef = ref<HTMLInputElement | null>(null)
 
 const placeholder = computed(() => placeholderByMood[mood.value])
 const canSubmit = computed(() => content.value.trim().length > 0)
+
+watch([focused, () => content.value.length > 0, () => tags.value.length > 0], ([f, hasContent, hasTags]) => {
+  if (f || hasContent || hasTags) expanded.value = true
+})
+
+function toggleExpand() {
+  expanded.value = !expanded.value
+  if (expanded.value) {
+    void nextTick(() => textareaRef.value?.focus())
+  }
+}
 
 function commitTag() {
   const t = tagDraft.value.trim().replace(/^#/, '')
@@ -240,6 +264,7 @@ function submit() {
   tagDraft.value = ''
   showTagInput.value = false
   mood.value = 'idea'
+  expanded.value = false
 }
 </script>
 
@@ -251,6 +276,8 @@ function submit() {
   box-shadow: var(--shadow-card);
   display: flex;
   flex-direction: column;
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
   transition:
     border-color 0.2s,
     box-shadow 0.2s;
@@ -315,6 +342,10 @@ function submit() {
   }
 }
 
+.fed__editor-wrap {
+  position: relative;
+}
+
 .fed__textarea {
   width: 100%;
   border: none;
@@ -326,10 +357,51 @@ function submit() {
   resize: vertical;
   font-family: inherit;
   min-height: 5.5rem;
-  padding: 0.25rem 1rem 0.5rem;
+  padding: 0.25rem 2.25rem 0.5rem 1rem;
 
   &::placeholder {
     color: var(--text-faint);
+  }
+}
+
+/* 右上角展开/收起按钮，照抄留言板 MessageInput 同款 */
+.fed__expand-toggle {
+  position: absolute;
+  top: 0.375rem;
+  right: 0.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.25rem;
+  height: 1.25rem;
+  padding: 0;
+  border: none;
+  border-radius: $radius-sm;
+  background: transparent;
+  color: var(--text-faint);
+  cursor: pointer;
+  transition:
+    color 0.18s,
+    background 0.18s;
+
+  &:hover {
+    color: var(--text-soft);
+    background: var(--surface-2);
+  }
+}
+
+/* ---- 紧凑态：贴近留言板底部输入框的简约样式 ---- */
+.fed--compact {
+  .fed__textarea {
+    min-height: 2.75rem;
+    line-height: 1.5;
+    padding: 0.625rem 2.25rem 0.5rem 1rem;
+    resize: none;
+  }
+
+  .fed__footer {
+    border-top: none;
+    padding-top: 0.375rem;
   }
 }
 
