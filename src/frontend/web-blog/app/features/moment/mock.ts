@@ -397,6 +397,16 @@ export const mockMoments: MomentItem[] = [
       image: 'https://opengraph.githubassets.com/1/blinkospace/blinko',
     },
   },
+  {
+    id: 'm-18',
+    content:
+      '本周博客升级 TODO，慢慢推进：\n\n- [x] 闪念详情页 + OG 卡\n- [x] 评论 Markdown 渲染\n- [x] 话题聚合页\n- [ ] 闪念发布编辑器\n- [ ] 后端 API 接入',
+    date: '2026-04-15T10:00:00Z',
+    likes: 12,
+    isLiked: false,
+    device: 'MacBook Pro',
+    topics: ['技术分享'],
+  },
 ]
 
 /** 朋友圈博主名片统计数据 */

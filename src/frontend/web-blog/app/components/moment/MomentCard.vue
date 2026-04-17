@@ -333,6 +333,22 @@ function onLightBoxChange(index: number) {
     margin: 0.125rem 0;
   }
 
+  // markdown-it-task-lists 输出：<li class="task-list-item">
+  :deep(.task-list-item) {
+    list-style: none;
+    margin-left: -1.25rem;
+    display: flex;
+    align-items: baseline;
+    gap: 0.5rem;
+  }
+
+  :deep(.task-list-item-checkbox) {
+    flex-shrink: 0;
+    margin: 0;
+    accent-color: var(--accent);
+    cursor: default;
+  }
+
   :deep(blockquote) {
     margin: 0.4rem 0;
     padding: 0.25rem 0.75rem;
