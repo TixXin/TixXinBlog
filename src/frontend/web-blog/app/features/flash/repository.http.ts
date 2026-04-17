@@ -22,6 +22,9 @@ export class HttpFlashRepository implements FlashNoteRepository {
   list(_userId: string): Promise<FlashNote[]> {
     return Promise.reject(new Error(NOT_IMPLEMENTED))
   }
+  listArchived(_userId: string): Promise<FlashNote[]> {
+    return Promise.reject(new Error(NOT_IMPLEMENTED))
+  }
   create(_userId: string, _draft: FlashNoteDraft): Promise<FlashNote> {
     return Promise.reject(new Error(NOT_IMPLEMENTED))
   }
@@ -35,6 +38,12 @@ export class HttpFlashRepository implements FlashNoteRepository {
     return Promise.reject(new Error(NOT_IMPLEMENTED))
   }
   toggleLike(_id: string): Promise<FlashNote> {
+    return Promise.reject(new Error(NOT_IMPLEMENTED))
+  }
+  setPinned(_id: string, _pinned: boolean): Promise<FlashNote> {
+    return Promise.reject(new Error(NOT_IMPLEMENTED))
+  }
+  setArchived(_id: string, _archived: boolean): Promise<FlashNote> {
     return Promise.reject(new Error(NOT_IMPLEMENTED))
   }
   addComment(_noteId: string, _draft: FlashCommentDraft): Promise<FlashComment> {

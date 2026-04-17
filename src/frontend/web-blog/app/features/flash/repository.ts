@@ -12,8 +12,10 @@
 import type { FlashComment, FlashCommentDraft, FlashNote, FlashNoteDraft } from './types'
 
 export interface FlashNoteRepository {
-  /** 列出指定用户的全部闪念，按 createdAt 倒序 */
+  /** 列出指定用户的**非归档**闪念，按 createdAt 倒序；isArchived=true 的条目由 listArchived 返回 */
   list(userId: string): Promise<FlashNote[]>
+  /** 列出指定用户的**已归档**闪念 */
+  listArchived(userId: string): Promise<FlashNote[]>
   /** 创建一条新闪念，返回完整对象（含生成的 id / 时间戳） */
   create(userId: string, draft: FlashNoteDraft): Promise<FlashNote>
   /** 更新指定闪念，支持部分字段 patch */
@@ -24,6 +26,10 @@ export interface FlashNoteRepository {
   search(userId: string, query: string): Promise<FlashNote[]>
   /** 切换点赞状态：当前已点赞则 -1，否则 +1（mock 阶段不区分谁点的） */
   toggleLike(id: string): Promise<FlashNote>
+  /** 设置置顶态 */
+  setPinned(id: string, pinned: boolean): Promise<FlashNote>
+  /** 设置归档态 */
+  setArchived(id: string, archived: boolean): Promise<FlashNote>
   /** 添加评论 */
   addComment(noteId: string, draft: FlashCommentDraft): Promise<FlashComment>
   /** 删除评论 */

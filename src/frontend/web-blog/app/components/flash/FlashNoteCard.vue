@@ -9,8 +9,26 @@
   <article
     :id="'flash-note-' + note.id"
     class="fnc"
-    :class="{ 'fnc--cited': cited, 'fnc--commenting': commentOpen, 'fnc--highlighted': highlighted }"
+    :class="{
+      'fnc--cited': cited,
+      'fnc--commenting': commentOpen,
+      'fnc--highlighted': highlighted,
+      'fnc--pinned': note.isPinned,
+      'fnc--draft': note.isDraft,
+    }"
   >
+    <!-- 状态徽章：置顶 / 草稿 -->
+    <div v-if="note.isPinned || note.isDraft" class="fnc__badges">
+      <span v-if="note.isPinned" class="fnc__badge fnc__badge--pin">
+        <Icon name="lucide:pin" size="11" />
+        置顶
+      </span>
+      <span v-if="note.isDraft" class="fnc__badge fnc__badge--draft">
+        <Icon name="lucide:file-edit" size="11" />
+        草稿
+      </span>
+    </div>
+
     <!-- eslint-disable-next-line vue/no-v-html -->
     <div class="fnc__content" v-html="renderedContent" />
 
@@ -50,6 +68,27 @@
         </button>
         <button type="button" class="fnc__action" aria-label="复制" @click="onCopy">
           <Icon :name="copied ? 'lucide:check' : 'lucide:copy'" size="14" />
+        </button>
+        <!-- 置顶 / 取消置顶（仅非只读） -->
+        <button
+          v-if="!readOnly"
+          type="button"
+          class="fnc__action"
+          :class="{ 'fnc__action--active': note.isPinned }"
+          :aria-label="note.isPinned ? '取消置顶' : '置顶'"
+          @click="$emit('set-pinned', { id: note.id, pinned: !note.isPinned })"
+        >
+          <Icon :name="note.isPinned ? 'lucide:pin-off' : 'lucide:pin'" size="14" />
+        </button>
+        <!-- 归档 / 恢复（仅非只读） -->
+        <button
+          v-if="!readOnly"
+          type="button"
+          class="fnc__action"
+          :aria-label="note.isArchived ? '恢复' : '归档'"
+          @click="$emit('set-archived', { id: note.id, archived: !note.isArchived })"
+        >
+          <Icon :name="note.isArchived ? 'lucide:archive-restore' : 'lucide:archive'" size="14" />
         </button>
         <!-- 删除：内联确认态，3s 超时自动恢复 -->
         <div v-if="confirmingDelete" class="fnc__confirm-delete">
@@ -140,6 +179,8 @@ const props = defineProps<{
 const emit = defineEmits<{
   remove: [id: string]
   'toggle-like': [id: string]
+  'set-pinned': [payload: { id: string; pinned: boolean }]
+  'set-archived': [payload: { id: string; archived: boolean }]
   'remove-comment': [payload: { noteId: string; commentId: string }]
   'add-comment': [payload: { noteId: string; content: string }]
   'tag-click': [tag: string]
@@ -515,6 +556,47 @@ onBeforeUnmount(() => {
   &:not(:disabled):hover {
     opacity: 0.88;
   }
+}
+
+/* ---- 状态徽章：置顶 / 草稿 ---- */
+.fnc__badges {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  margin-bottom: 0.4rem;
+  flex-wrap: wrap;
+}
+
+.fnc__badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.0625rem 0.4rem;
+  font-size: 0.6875rem;
+  font-weight: 500;
+  border-radius: $radius-sm;
+  line-height: 1.4;
+}
+
+.fnc__badge--pin {
+  color: var(--accent);
+  background: var(--accent-soft);
+}
+
+.fnc__badge--draft {
+  color: var(--text-faint);
+  background: var(--surface-2);
+  border: 1px dashed var(--border-soft);
+}
+
+/* 置顶卡片左侧强调条 */
+.fnc--pinned {
+  border-left: 2px solid var(--accent);
+}
+
+/* 草稿卡片整体透明度降低 */
+.fnc--draft {
+  opacity: 0.88;
 }
 
 /* ---- Markdown 渲染样式（markdown-it 输出标准标签，需 :deep） ---- */

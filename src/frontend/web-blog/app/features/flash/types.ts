@@ -39,6 +39,12 @@ export interface FlashNote {
   likes: number
   /** 评论列表 */
   comments: FlashComment[]
+  /** 是否置顶（在列表中前置展示） */
+  isPinned?: boolean
+  /** 是否归档（list 默认不返回，需 listArchived 获取） */
+  isArchived?: boolean
+  /** 是否草稿（仅作者可见，展示草稿徽章） */
+  isDraft?: boolean
 }
 
 /** 创建/更新闪念时使用的草稿数据 */
@@ -49,6 +55,10 @@ export interface FlashNoteDraft {
   id?: string
   /** 可选覆盖 createdAt（仅 seed 场景使用） */
   createdAt?: string
+  /** 是否以草稿方式创建 */
+  isDraft?: boolean
+  /** 是否同时置顶 */
+  isPinned?: boolean
 }
 
 /** 创建评论时的草稿 */

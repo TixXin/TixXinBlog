@@ -126,6 +126,38 @@ export function useFlashNotes() {
     return true
   }
 
+  /** 设置置顶态（仅登录者） */
+  async function setPinned(id: string, pinned: boolean): Promise<FlashNote | null> {
+    if (!isLoggedIn.value) {
+      openLoginDrawer('login')
+      return null
+    }
+    const updated = await repo.setPinned(id, pinned)
+    notes.value = notes.value.map((n) => (n.id === id ? updated : n))
+    return updated
+  }
+
+  /**
+   * 归档指定闪念（仅登录者）。归档后 list() 不再返回，归档箱视图单独拉取。
+   * unarchive（恢复）走 setArchived(false)。
+   */
+  async function setArchived(id: string, archived: boolean): Promise<FlashNote | null> {
+    if (!isLoggedIn.value) {
+      openLoginDrawer('login')
+      return null
+    }
+    const updated = await repo.setArchived(id, archived)
+    // 归档：从主列表移除；恢复：如果当前在归档视图，前端暂不自动插回，需刷新
+    notes.value = notes.value.filter((n) => n.id !== id)
+    return updated
+  }
+
+  /** 加载归档箱列表，返回给 UI 单独展示，不污染主 notes 状态 */
+  async function loadArchived(): Promise<FlashNote[]> {
+    const targetUserId = isLoggedIn.value && currentUser.value ? currentUser.value.id : mockOwnerUser.id
+    return repo.listArchived(targetUserId)
+  }
+
   /**
    * 添加评论 —— 支持登录用户和游客两种身份来源。
    * 登录用户自动取 currentUser 信息；游客由调用方传入 guestAuthor。
@@ -213,6 +245,9 @@ export function useFlashNotes() {
     search,
     fetchOwnerNotes,
     toggleLike,
+    setPinned,
+    setArchived,
+    loadArchived,
     addComment,
     removeComment,
   }

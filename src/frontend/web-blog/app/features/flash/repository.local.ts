@@ -43,12 +43,15 @@ function generateId(prefix = 'note'): string {
   return `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
 }
 
-/** 旧版 note 缺失 likes/comments，读取时按需补全字段，避免渲染崩溃 */
+/** 旧版 note 缺失字段，读取时按需补全，避免渲染崩溃 */
 function normalize(note: FlashNote): FlashNote {
   return {
     ...note,
     likes: typeof note.likes === 'number' ? note.likes : 0,
     comments: Array.isArray(note.comments) ? note.comments : [],
+    isPinned: !!note.isPinned,
+    isArchived: !!note.isArchived,
+    isDraft: !!note.isDraft,
   }
 }
 
@@ -66,9 +69,17 @@ function findUserIdByNote(noteId: string): string | null {
 export class LocalFlashRepository implements FlashNoteRepository {
   list(userId: string): Promise<FlashNote[]> {
     const notes = readAll(userId).map(normalize)
-    // 倒序：最新在前
-    const sorted = [...notes].sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1))
-    return Promise.resolve(sorted)
+    // 默认排除归档；置顶前置 + 剩余按 createdAt 倒序
+    const visible = notes.filter((n) => !n.isArchived)
+    const pinned = visible.filter((n) => n.isPinned).sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1))
+    const others = visible.filter((n) => !n.isPinned).sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1))
+    return Promise.resolve([...pinned, ...others])
+  }
+
+  listArchived(userId: string): Promise<FlashNote[]> {
+    const notes = readAll(userId).map(normalize)
+    const archived = notes.filter((n) => n.isArchived)
+    return Promise.resolve([...archived].sort((a, b) => (a.updatedAt < b.updatedAt ? 1 : -1)))
   }
 
   create(userId: string, draft: FlashNoteDraft): Promise<FlashNote> {
@@ -84,6 +95,9 @@ export class LocalFlashRepository implements FlashNoteRepository {
       updatedAt: createdAt,
       likes: 0,
       comments: [],
+      isPinned: !!draft.isPinned,
+      isArchived: false,
+      isDraft: !!draft.isDraft,
     }
     const notes = readAll(userId)
     notes.push(note)
@@ -153,6 +167,28 @@ export class LocalFlashRepository implements FlashNoteRepository {
     const original = normalize(notes[idx]!)
     // mock 阶段简单切换 0 ↔ 1，避免在客户端状态里维护"哪些用户点过"
     const next: FlashNote = { ...original, likes: original.likes > 0 ? 0 : 1 }
+    notes[idx] = next
+    writeAll(userId, notes)
+    return Promise.resolve(next)
+  }
+
+  setPinned(id: string, pinned: boolean): Promise<FlashNote> {
+    return this.#patchFlag(id, { isPinned: pinned })
+  }
+
+  setArchived(id: string, archived: boolean): Promise<FlashNote> {
+    return this.#patchFlag(id, { isArchived: archived })
+  }
+
+  /** 内部通用 patch：按 id 查找并更新指定标志位 */
+  #patchFlag(id: string, flag: Partial<Pick<FlashNote, 'isPinned' | 'isArchived' | 'isDraft'>>): Promise<FlashNote> {
+    const userId = findUserIdByNote(id)
+    if (!userId) return Promise.reject(new Error(`FlashNote ${id} not found`))
+    const notes = readAll(userId)
+    const idx = notes.findIndex((n) => n.id === id)
+    if (idx === -1) return Promise.reject(new Error(`FlashNote ${id} not found`))
+    const original = normalize(notes[idx]!)
+    const next: FlashNote = { ...original, ...flag, updatedAt: new Date().toISOString() }
     notes[idx] = next
     writeAll(userId, notes)
     return Promise.resolve(next)
