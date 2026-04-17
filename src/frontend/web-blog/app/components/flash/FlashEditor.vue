@@ -69,6 +69,26 @@
       </span>
     </div>
 
+    <!-- 图片 URL 列表（折叠态，paperclip 触发） -->
+    <div v-if="showImageInput" class="fed__images">
+      <label class="fed__images-label">
+        <Icon name="lucide:image" size="12" />
+        <span>图片 URL（每行一个，最多 9 张）</span>
+      </label>
+      <textarea
+        v-model="imageInput"
+        rows="3"
+        class="fed__images-input"
+        placeholder="https://example.com/photo.jpg"
+        @blur="commitImages"
+      />
+      <div v-if="images.length > 0" class="fed__images-thumbs">
+        <span v-for="(img, idx) in images" :key="img + idx" class="fed__images-thumb">
+          <img :src="img" alt="" >
+        </span>
+      </div>
+    </div>
+
     <!-- 底部工具栏 -->
     <footer class="fed__footer">
       <div class="fed__tools">
@@ -102,10 +122,13 @@
         <button
           type="button"
           class="fed__tool"
-          aria-label="附件（开发中）"
-          title="附件功能开发中"
+          :class="{ 'fed__tool--active': showImageInput || images.length > 0 }"
+          :aria-label="`图片（已添加 ${images.length}）`"
+          :title="`图片 URL 列表（已添加 ${images.length}/9）`"
+          @click="onImageButtonClick"
         >
           <Icon name="lucide:paperclip" size="14" />
+          <span v-if="images.length > 0" class="fed__tool-count">{{ images.length }}</span>
         </button>
         <button
           type="button"
@@ -173,6 +196,9 @@ const tagDraft = ref('')
 const focused = ref(false)
 const mood = ref<MoodId>('idea')
 const showTagInput = ref(false)
+const showImageInput = ref(false)
+const imageInput = ref('')
+const images = ref<string[]>([])
 // 紧凑态默认收起 mood/字数/大 textarea；聚焦或有输入时自动展开
 const expanded = ref(false)
 const textareaRef = ref<HTMLTextAreaElement | null>(null)
@@ -219,6 +245,23 @@ function onTagInputBlur() {
   showTagInput.value = false
 }
 
+function onImageButtonClick() {
+  showImageInput.value = !showImageInput.value
+  if (showImageInput.value && images.value.length > 0 && !imageInput.value) {
+    imageInput.value = images.value.join('\n')
+  }
+}
+
+/** 解析 textarea 文本为 URL 数组，校验 http(s)/data 协议，去重 + 截断到 9 */
+function commitImages() {
+  const list = imageInput.value
+    .split(/\r?\n/)
+    .map((s) => s.trim())
+    .filter(Boolean)
+    .filter((url) => /^(https?:\/\/|data:image\/)/i.test(url))
+  images.value = Array.from(new Set(list)).slice(0, 9)
+}
+
 /** 在 textarea 选区两侧插入包裹符号（如 **bold**） */
 function insertWrap(left: string, right: string) {
   const el = textareaRef.value
@@ -256,15 +299,20 @@ function insertPrefix(prefix: string) {
 function submit() {
   if (!canSubmit.value) return
   if (tagDraft.value.trim()) commitTag()
+  if (showImageInput.value) commitImages()
   emit('submit', {
     content: content.value.trim(),
     tags: [...tags.value],
     type: mood.value,
+    images: images.value.length > 0 ? [...images.value] : undefined,
   })
   content.value = ''
   tags.value = []
   tagDraft.value = ''
+  images.value = []
+  imageInput.value = ''
   showTagInput.value = false
+  showImageInput.value = false
   mood.value = 'idea'
   expanded.value = false
 }
@@ -488,6 +536,89 @@ function submit() {
   height: 16px;
   background: var(--border-soft);
   margin: 0 0.25rem;
+}
+
+.fed__tool--active {
+  color: var(--accent);
+  background: var(--accent-soft);
+}
+
+.fed__tool-count {
+  position: absolute;
+  top: -2px;
+  right: -2px;
+  min-width: 14px;
+  height: 14px;
+  padding: 0 3px;
+  font-size: 0.5625rem;
+  line-height: 14px;
+  text-align: center;
+  color: #fff;
+  background: var(--accent);
+  border-radius: $radius-full;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+/* paperclip 按钮需要 relative 来定位计数徽章 */
+.fed__tool {
+  position: relative;
+}
+
+/* ---- 图片 URL 输入区 ---- */
+.fed__images {
+  margin: 0.5rem 0;
+  padding: 0.625rem 0.75rem;
+  background: var(--surface-2);
+  border: 1px solid var(--border-soft);
+  border-radius: $radius-sm;
+}
+
+.fed__images-label {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-size: 0.75rem;
+  color: var(--text-soft);
+  margin-bottom: 0.375rem;
+}
+
+.fed__images-input {
+  width: 100%;
+  padding: 0.5rem;
+  border: 1px solid var(--border-soft);
+  border-radius: $radius-sm;
+  background: var(--surface-1);
+  color: var(--text-main);
+  font-size: 0.75rem;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  outline: none;
+  resize: vertical;
+
+  &:focus {
+    border-color: var(--accent);
+  }
+}
+
+.fed__images-thumbs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.375rem;
+  margin-top: 0.5rem;
+}
+
+.fed__images-thumb {
+  width: 36px;
+  height: 36px;
+  border-radius: $radius-sm;
+  overflow: hidden;
+  background: var(--surface-3);
+
+  img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
 }
 
 .fed__publish {

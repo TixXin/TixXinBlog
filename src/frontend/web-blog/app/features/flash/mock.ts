@@ -38,6 +38,7 @@ export const defaultFlashNoteSeeds: FlashNoteDraft[] = [
     content: 'Vue 4 的 Vapor Mode 让组件运行时开销更接近 Svelte，值得跟进。',
     tags: ['前端', '技术'],
     type: 'idea',
+    images: ['https://images.unsplash.com/photo-1461749280684-dccba630e2f6?w=800&q=80'],
     createdAt: '2026-04-07T16:45:00Z',
   },
   {
@@ -52,6 +53,10 @@ export const defaultFlashNoteSeeds: FlashNoteDraft[] = [
     content: '咖啡机水垢三个月清一次，下次提醒：6 月 11 日。',
     tags: ['生活', '提醒'],
     type: 'todo',
+    images: [
+      'https://images.unsplash.com/photo-1511920170033-f8396924c348?w=800&q=80',
+      'https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?w=800&q=80',
+    ],
     createdAt: '2026-04-02T08:20:00Z',
   },
   {
