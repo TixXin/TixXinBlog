@@ -147,13 +147,14 @@
 </template>
 
 <script setup lang="ts">
-import type { FlashNoteDraft } from '~/features/flash/types'
+import type { FlashNoteDraft, FlashType } from '~/features/flash/types'
 
 const emit = defineEmits<{
   submit: [draft: FlashNoteDraft]
 }>()
 
-type MoodId = 'idea' | 'todo' | 'memo'
+// MoodId 与 FlashType 一致，避免转换层；后续两者同步演进
+type MoodId = FlashType
 const moods: { id: MoodId; icon: string; label: string }[] = [
   { id: 'idea', icon: 'lucide:lightbulb', label: '灵感' },
   { id: 'todo', icon: 'lucide:check-circle', label: '待办' },
@@ -258,6 +259,7 @@ function submit() {
   emit('submit', {
     content: content.value.trim(),
     tags: [...tags.value],
+    type: mood.value,
   })
   content.value = ''
   tags.value = []
