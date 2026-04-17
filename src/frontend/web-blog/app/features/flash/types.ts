@@ -45,6 +45,10 @@ export interface FlashNote {
 export interface FlashNoteDraft {
   content: string
   tags: string[]
+  /** 可选覆盖 id（仅 seed 场景使用，确保 RSS/详情页链接稳定） */
+  id?: string
+  /** 可选覆盖 createdAt（仅 seed 场景使用） */
+  createdAt?: string
 }
 
 /** 创建评论时的草稿 */
