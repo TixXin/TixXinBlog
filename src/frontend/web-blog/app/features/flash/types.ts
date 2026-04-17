@@ -34,6 +34,8 @@ export interface FlashNote {
   content: string
   /** 标签集合 */
   tags: string[]
+  /** 图片 URL 列表（最多 9 张，mock 阶段手填，后端就绪后改真实上传） */
+  images: string[]
   /** 笔记类型（默认 memo） */
   type: FlashType
   /** 创建时间 ISO 字符串 */
@@ -56,6 +58,8 @@ export interface FlashNote {
 export interface FlashNoteDraft {
   content: string
   tags: string[]
+  /** 图片 URL 列表（最多 9 张） */
+  images?: string[]
   /** 笔记类型，缺省时仓库层补 memo */
   type?: FlashType
   /** 可选覆盖 id（仅 seed 场景使用，确保 RSS/详情页链接稳定） */

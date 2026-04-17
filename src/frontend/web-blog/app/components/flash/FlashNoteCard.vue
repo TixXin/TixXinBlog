@@ -32,6 +32,8 @@
     <!-- eslint-disable-next-line vue/no-v-html -->
     <div class="fnc__content" v-html="renderedContent" />
 
+    <FlashImageGrid v-if="note.images && note.images.length > 0" :images="note.images" />
+
     <div v-if="note.tags.length > 0" class="fnc__tags">
       <span v-for="t in note.tags" :key="t" class="fnc__tag" @click="$emit('tag-click', t)">#{{ t }}</span>
     </div>
