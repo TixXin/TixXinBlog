@@ -61,4 +61,8 @@ export interface MomentItem {
   linkedArticle?: MomentLinkedArticle
   /** 引用任意外链（OG 卡） */
   linkedLink?: MomentLinkedLink
+  /** 是否置顶（在列表中前置展示） */
+  isPinned?: boolean
+  /** 心情标签（emoji + 短文，例如 "🌧️ 微凉"） */
+  mood?: string
 }

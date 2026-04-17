@@ -70,6 +70,8 @@ export const mockMoments: MomentItem[] = [
     isLiked: true,
     device: 'MacBook Pro',
     topics: ['技术分享'],
+    isPinned: true,
+    mood: '🚀 心情大好',
     linkedArticle: {
       id: 'a-1',
       title: '从零搭建博客主题引擎：基于 Slot Contract 的可插拔架构',
