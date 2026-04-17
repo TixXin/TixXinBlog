@@ -168,6 +168,13 @@
               </div>
             </div>
 
+            <!-- 发布日历 -->
+            <SidebarFlashCalendarCard
+              :note-dates="noteDates"
+              :selected-date="selectedDate"
+              @select-date="onSelectDate"
+            />
+
             <!-- 标签云 -->
             <div v-if="tagCloud.length > 0" class="flash-tag-cloud">
               <div class="flash-tag-cloud__header">
@@ -245,6 +252,15 @@ function onTagFilter(tag: string) {
   activeTag.value = activeTag.value === tag ? null : tag
 }
 
+// ---- 日期筛选 ----
+const selectedDate = ref<string | null>(null)
+
+function onSelectDate(date: string | null) {
+  selectedDate.value = date
+}
+
+const noteDates = computed(() => notes.value.map((n) => n.createdAt.slice(0, 10)))
+
 // ---- 类型筛选 ----
 const typeFilter = ref<FlashType | null>(null)
 const typeTabs: { id: FlashType; icon: string; label: string }[] = [
@@ -266,7 +282,7 @@ watch(searchQuery, (v) => {
   }, 300)
 })
 
-/** 筛选后的闪念列表：归档箱 | 主列表，叠加 type AND 标签 AND 搜索关键词 */
+/** 筛选后的闪念列表：归档箱 | 主列表，叠加 type/标签/日期/搜索关键词 */
 const filteredNotes = computed(() => {
   let result = showArchive.value ? archivedNotes.value : notes.value
   if (typeFilter.value) {
@@ -274,6 +290,9 @@ const filteredNotes = computed(() => {
   }
   if (activeTag.value) {
     result = result.filter((n) => n.tags.includes(activeTag.value!))
+  }
+  if (selectedDate.value) {
+    result = result.filter((n) => n.createdAt.slice(0, 10) === selectedDate.value)
   }
   if (debouncedQuery.value) {
     const q = debouncedQuery.value
