@@ -6,7 +6,7 @@
 -->
 
 <template>
-  <div class="moment-card">
+  <div class="moment-card" :class="{ 'is-pinned': moment.isPinned }">
     <MomentUserPopover :profile="ownerProfile" is-owner placement="top">
       <div class="moment-card__avatar">
         <NuxtImg
@@ -27,6 +27,11 @@
     <div class="moment-card__body">
       <div class="moment-card__header">
         <span class="moment-card__author">TixXin</span>
+        <span v-if="moment.mood" class="moment-card__mood" :title="moment.mood">{{ moment.mood }}</span>
+        <span v-if="moment.isPinned" class="moment-card__pin" aria-label="置顶">
+          <Icon name="lucide:pin" size="11" />
+          置顶
+        </span>
       </div>
 
       <!-- eslint-disable-next-line vue/no-v-html -- 输入已通过 DOMPurify 净化 -->
@@ -247,6 +252,10 @@ function onLightBoxChange(index: number) {
 }
 
 .moment-card__header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
   margin-bottom: 0.25rem;
 }
 
@@ -254,6 +263,29 @@ function onLightBoxChange(index: number) {
   font-weight: 600;
   color: var(--accent);
   font-size: 1rem;
+}
+
+.moment-card__mood {
+  font-size: 0.8125rem;
+  color: var(--text-soft);
+  padding: 0.0625rem 0.5rem;
+  background: var(--surface-2);
+  border-radius: $radius-full;
+  line-height: 1.3;
+}
+
+.moment-card__pin {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  margin-left: auto;
+  padding: 0.0625rem 0.4rem;
+  font-size: 0.6875rem;
+  font-weight: 500;
+  color: var(--accent);
+  background: var(--accent-soft);
+  border-radius: $radius-sm;
+  line-height: 1.4;
 }
 
 .moment-card__content {

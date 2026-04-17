@@ -49,7 +49,10 @@ export function useMomentPagination(options: MomentPaginationOptions) {
       // 小数据集（≤数百条）在筛选后的子集上现建 Fuse，性能可接受
       result = new Fuse(result, fuseOptions).search(kw).map((r) => r.item)
     }
-    return result
+    // 置顶前置（稳定排序，保留筛选/搜索内的相对顺序）
+    const pinned = result.filter((m) => m.isPinned)
+    const others = result.filter((m) => !m.isPinned)
+    return [...pinned, ...others]
   })
 
   const displayCount = ref(pageSize)
