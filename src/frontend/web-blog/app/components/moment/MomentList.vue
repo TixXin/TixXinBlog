@@ -24,9 +24,15 @@
       <span class="moment-list__end-line" />
     </div>
 
-    <!-- 空态 -->
+    <!-- 空态：区分"无数据"与"搜索无结果" -->
     <div v-if="displayedMoments.length === 0" class="moment-list__empty">
-      <CommonStateBlock icon="lucide:message-square" title="暂无动态" description="没有找到匹配的动态内容" />
+      <CommonStateBlock
+        v-if="isSearching"
+        icon="lucide:search-x"
+        title="没有找到相关动态"
+        :description="`未匹配到包含「${keyword}」的动态，换个词试试？`"
+      />
+      <CommonStateBlock v-else icon="lucide:message-square" title="暂无动态" description="没有找到匹配的动态内容" />
     </div>
   </div>
 </template>
@@ -39,16 +45,20 @@ const props = defineProps<{
   moments: MomentItem[]
   selectedTopic?: string | null
   selectedDate?: string | null
+  keyword?: string
 }>()
 
 const allMoments = computed(() => props.moments)
 const selectedTopic = computed(() => props.selectedTopic ?? null)
 const selectedDate = computed(() => props.selectedDate ?? null)
+const keyword = computed(() => props.keyword ?? '')
+const isSearching = computed(() => keyword.value.trim().length > 0)
 
 const { displayedMoments, hasMore, showSpinner, sentinelRef } = useMomentPagination({
   allMoments,
   selectedTopic,
   selectedDate,
+  keyword,
 })
 </script>
 
