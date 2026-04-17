@@ -25,13 +25,25 @@ export interface MomentCommentItem {
   profile?: MomentUserProfile
 }
 
-/** 引用的文章信息 */
+/** 引用的文章信息（站内文章） */
 export interface MomentLinkedArticle {
   id: string
   title: string
   summary: string
   cover?: string
   url: string
+}
+
+/** 引用的任意外链（OG 卡片，无后端时由发布者手填） */
+export interface MomentLinkedLink {
+  url: string
+  title: string
+  description?: string
+  image?: string
+  /** 站点名（如 "GitHub" / "知乎"） */
+  siteName?: string
+  /** 站点 favicon URL */
+  favicon?: string
 }
 
 export interface MomentItem {
@@ -45,6 +57,8 @@ export interface MomentItem {
   device?: string
   topics?: string[]
   comments?: MomentCommentItem[]
-  /** 引用的文章 */
+  /** 引用站内文章（与 linkedLink 二选一，linkedArticle 优先） */
   linkedArticle?: MomentLinkedArticle
+  /** 引用任意外链（OG 卡） */
+  linkedLink?: MomentLinkedLink
 }
