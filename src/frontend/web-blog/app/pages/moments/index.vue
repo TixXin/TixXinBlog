@@ -7,8 +7,8 @@
 
 <template>
   <div class="main-inner moments-page">
-    <!-- 头部 Tab 栏 -->
-    <div class="main-content__header">
+    <!-- 头部 Tab 栏 + 搜索 -->
+    <div class="main-content__header moments-header">
       <div class="articles-tabs no-scrollbar" role="tablist">
         <button
           v-for="tab in tabs"
@@ -22,11 +22,21 @@
           {{ tab.label }}
         </button>
       </div>
+      <CommonSearchBox
+        v-model="searchKeyword"
+        placeholder="搜索动态内容 / 话题 / 地点..."
+        class="moments-header__search"
+      />
     </div>
 
     <CommonCustomScrollbar class="moments-body" viewport-class="moments-viewport" primary>
       <div class="moments-content">
-        <MomentList :moments="moments" :selected-topic="selectedTopic" :selected-date="selectedDate" />
+        <MomentList
+          :moments="moments"
+          :selected-topic="selectedTopic"
+          :selected-date="selectedDate"
+          :keyword="searchKeyword"
+        />
       </div>
     </CommonCustomScrollbar>
 
@@ -70,6 +80,9 @@ useSeoMeta({
 })
 
 const moments = computed(() => mockMoments)
+
+// 搜索关键词（fuse.js 模糊匹配 content/topics/location）
+const searchKeyword = ref('')
 
 // 话题筛选
 const selectedTopic = ref<string | null>(null)
@@ -131,6 +144,24 @@ const momentTopics = computed<MomentTopic[]>(() =>
   display: flex;
   flex-direction: column;
   height: 100%;
+}
+
+// 顶部 Tab + 搜索：大屏同一行，窄屏降级为多行
+.moments-header {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.moments-header__search {
+  margin-left: auto;
+  max-width: 16rem;
+
+  @media (max-width: #{$breakpoint-sm - 1px}) {
+    width: 100%;
+    max-width: none;
+  }
 }
 
 .moments-body {
