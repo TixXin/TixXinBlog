@@ -269,7 +269,7 @@ function onSwitchToLogin() {
     font-size: 0.875em;
     padding: 0.0625rem 0.25rem;
     background: var(--surface-1);
-    border-radius: $radius-xs;
+    border-radius: $radius-sm;
     color: var(--accent);
   }
 }

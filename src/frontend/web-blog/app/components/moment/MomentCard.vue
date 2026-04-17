@@ -307,7 +307,7 @@ function onLightBoxChange(index: number) {
     font-size: 0.875em;
     padding: 0.125rem 0.375rem;
     background: var(--surface-2);
-    border-radius: $radius-xs;
+    border-radius: $radius-sm;
     color: var(--accent);
   }
 
