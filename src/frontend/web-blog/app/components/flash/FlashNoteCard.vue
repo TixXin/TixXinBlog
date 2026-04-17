@@ -504,42 +504,103 @@ onBeforeUnmount(() => {
   }
 }
 
-/* ---- Markdown 渲染样式（v-html 内的 class，需 :deep） ---- */
+/* ---- Markdown 渲染样式（markdown-it 输出标准标签，需 :deep） ---- */
 .fnc__content {
-  :deep(.fm-code) {
+  :deep(p) {
+    margin: 0 0 0.4rem;
+
+    &:last-child {
+      margin-bottom: 0;
+    }
+  }
+
+  :deep(a) {
+    color: var(--accent);
+    text-decoration: none;
+    border-bottom: 1px dotted currentColor;
+
+    &:hover {
+      opacity: 0.85;
+    }
+  }
+
+  :deep(strong) {
+    font-weight: 600;
+  }
+
+  :deep(em) {
+    font-style: italic;
+  }
+
+  :deep(del) {
+    color: var(--text-faint);
+  }
+
+  :deep(code) {
     padding: 0.1rem 0.35rem;
     background: var(--surface-2);
     border-radius: $radius-sm;
     font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
     font-size: 0.8125rem;
+    color: var(--accent);
   }
 
-  :deep(.fm-quote) {
-    display: block;
-    padding-left: 0.75rem;
-    border-left: 2px solid var(--accent);
-    color: var(--text-soft);
-    font-style: italic;
-  }
+  :deep(pre) {
+    margin: 0.5rem 0;
+    padding: 0.75rem 1rem;
+    background: var(--surface-2);
+    border-radius: $radius-sm;
+    overflow-x: auto;
+    font-size: 0.8125rem;
+    line-height: 1.5;
 
-  :deep(.fm-li) {
-    display: block;
-    padding-left: 0.5rem;
-
-    &::before {
-      content: '\2022\00a0';
-      color: var(--text-faint);
+    code {
+      padding: 0;
+      background: transparent;
+      color: var(--text-main);
     }
   }
 
-  :deep(.fm-checkbox) {
-    display: block;
-    padding-left: 0.25rem;
+  :deep(blockquote) {
+    margin: 0.4rem 0;
+    padding: 0.25rem 0.75rem;
+    border-left: 2px solid var(--accent);
     color: var(--text-soft);
+    font-style: italic;
+    background: var(--surface-2);
+    border-radius: 0 $radius-sm $radius-sm 0;
   }
 
-  :deep(.fm-checkbox--checked) {
-    color: var(--accent);
+  :deep(ul),
+  :deep(ol) {
+    padding-left: 1.25rem;
+    margin: 0.25rem 0 0.4rem;
+  }
+
+  :deep(li) {
+    margin: 0.125rem 0;
+  }
+
+  // markdown-it-task-lists 输出：<li class="task-list-item">
+  :deep(.task-list-item) {
+    list-style: none;
+    margin-left: -1.25rem;
+    display: flex;
+    align-items: baseline;
+    gap: 0.5rem;
+  }
+
+  :deep(.task-list-item-checkbox) {
+    flex-shrink: 0;
+    margin: 0;
+    accent-color: var(--accent);
+    cursor: default;
+  }
+
+  :deep(hr) {
+    margin: 0.75rem 0;
+    border: none;
+    border-top: 1px dashed var(--border-soft);
   }
 }
 
