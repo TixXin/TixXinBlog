@@ -21,6 +21,9 @@ export interface FlashComment {
   createdAt: string
 }
 
+/** 闪念类型：灵感 / 待办 / 随记 —— 与 FlashEditor 顶部 mood 切换一致 */
+export type FlashType = 'idea' | 'todo' | 'memo'
+
 /** 单条闪念笔记 */
 export interface FlashNote {
   /** 全局唯一 id */
@@ -31,6 +34,8 @@ export interface FlashNote {
   content: string
   /** 标签集合 */
   tags: string[]
+  /** 笔记类型（默认 memo） */
+  type: FlashType
   /** 创建时间 ISO 字符串 */
   createdAt: string
   /** 最近更新时间 ISO 字符串 */
@@ -51,6 +56,8 @@ export interface FlashNote {
 export interface FlashNoteDraft {
   content: string
   tags: string[]
+  /** 笔记类型，缺省时仓库层补 memo */
+  type?: FlashType
   /** 可选覆盖 id（仅 seed 场景使用，确保 RSS/详情页链接稳定） */
   id?: string
   /** 可选覆盖 createdAt（仅 seed 场景使用） */

@@ -63,6 +63,34 @@
 
     <CommonCustomScrollbar class="flash-page__body" viewport-class="flash-page__viewport" primary>
       <div class="flash-page__content">
+        <!-- 类型 tab：全部 / 灵感 / 待办 / 随记 -->
+        <nav class="flash-page__type-tabs" role="tablist" aria-label="按类型筛选">
+          <button
+            type="button"
+            class="flash-page__type-tab"
+            :class="{ 'is-active': typeFilter === null }"
+            role="tab"
+            :aria-selected="typeFilter === null"
+            @click="typeFilter = null"
+          >
+            全部
+          </button>
+          <button
+            v-for="t in typeTabs"
+            :key="t.id"
+            type="button"
+            class="flash-page__type-tab"
+            :class="{ 'is-active': typeFilter === t.id }"
+            :data-type="t.id"
+            role="tab"
+            :aria-selected="typeFilter === t.id"
+            @click="typeFilter = t.id"
+          >
+            <Icon :name="t.icon" size="12" />
+            {{ t.label }}
+          </button>
+        </nav>
+
         <button v-if="!isLoggedIn" type="button" class="flash-page__guest-banner" @click="onLogin">
           <Icon name="lucide:eye" size="14" class="flash-page__guest-banner-icon" />
           <span class="flash-page__guest-banner-text">
@@ -176,7 +204,7 @@
 </template>
 
 <script setup lang="ts">
-import type { FlashNote } from '~/features/flash/types'
+import type { FlashNote, FlashType } from '~/features/flash/types'
 
 useSeoMeta({
   title: '闪念',
@@ -217,6 +245,14 @@ function onTagFilter(tag: string) {
   activeTag.value = activeTag.value === tag ? null : tag
 }
 
+// ---- 类型筛选 ----
+const typeFilter = ref<FlashType | null>(null)
+const typeTabs: { id: FlashType; icon: string; label: string }[] = [
+  { id: 'idea', icon: 'lucide:lightbulb', label: '灵感' },
+  { id: 'todo', icon: 'lucide:check-square', label: '待办' },
+  { id: 'memo', icon: 'lucide:file-text', label: '随记' },
+]
+
 // ---- 搜索 ----
 const searchExpanded = ref(false)
 const searchQuery = ref('')
@@ -230,9 +266,12 @@ watch(searchQuery, (v) => {
   }, 300)
 })
 
-/** 筛选后的闪念列表：归档箱 | 主列表，均叠加标签 AND 搜索关键词 */
+/** 筛选后的闪念列表：归档箱 | 主列表，叠加 type AND 标签 AND 搜索关键词 */
 const filteredNotes = computed(() => {
   let result = showArchive.value ? archivedNotes.value : notes.value
+  if (typeFilter.value) {
+    result = result.filter((n) => n.type === typeFilter.value)
+  }
   if (activeTag.value) {
     result = result.filter((n) => n.tags.includes(activeTag.value!))
   }
@@ -281,7 +320,7 @@ watch(isLoggedIn, () => {
   void load(true)
 })
 
-async function onSubmit(draft: { content: string; tags: string[] }) {
+async function onSubmit(draft: import('~/features/flash/types').FlashNoteDraft) {
   await add(draft)
   success('闪念已发布')
 }
@@ -509,6 +548,51 @@ onBeforeUnmount(() => {
 .flash-page__composer {
   max-width: 720px;
   margin: 0 auto;
+}
+
+/* ---- 类型 tab：全部 / 灵感 / 待办 / 随记 ---- */
+.flash-page__type-tabs {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  flex-wrap: wrap;
+}
+
+.flash-page__type-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.3rem 0.65rem;
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--text-soft);
+  background: var(--surface-2);
+  border: 1px solid transparent;
+  border-radius: $radius-full;
+  cursor: pointer;
+  transition:
+    background 0.18s,
+    color 0.18s,
+    border-color 0.18s;
+
+  &:hover {
+    color: var(--text-main);
+    background: var(--surface-3);
+  }
+
+  &.is-active {
+    color: #fff;
+    background: var(--accent);
+  }
+
+  // type 专属配色
+  &[data-type='idea'].is-active {
+    background: #f59e0b;
+  }
+
+  &[data-type='todo'].is-active {
+    background: #3b82f6;
+  }
 }
 
 /* ---- 标签筛选条 ---- */

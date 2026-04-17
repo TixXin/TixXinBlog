@@ -37,6 +37,16 @@
     </div>
 
     <footer class="fnc__footer">
+      <!-- type 标识：仅非 memo（默认态）显示，避免视觉冗余 -->
+      <span
+        v-if="typeMeta"
+        class="fnc__type"
+        :class="`fnc__type--${note.type}`"
+        :title="`类型：${typeMeta.label}`"
+      >
+        <Icon :name="typeMeta.icon" size="11" />
+        {{ typeMeta.label }}
+      </span>
       <NuxtLink
         :to="`/flash/${note.id}`"
         class="fnc__time"
@@ -199,6 +209,13 @@ let deleteTimer: ReturnType<typeof setTimeout> | null = null
 
 const liked = computed(() => props.note.likes > 0)
 const relativeTime = computed(() => formatRelative(props.note.createdAt))
+
+// 类型元信息：idea/todo 显示，memo 默认态隐藏避免冗余
+const TYPE_META: Record<string, { icon: string; label: string } | undefined> = {
+  idea: { icon: 'lucide:lightbulb', label: '灵感' },
+  todo: { icon: 'lucide:check-square', label: '待办' },
+}
+const typeMeta = computed(() => (props.note.type ? TYPE_META[props.note.type] : undefined))
 
 /** 轻量 markdown 渲染 —— 覆盖编辑器工具栏支持的子集 */
 const renderedContent = computed(() => renderFlashMarkdown(props.note.content))
@@ -370,6 +387,29 @@ onBeforeUnmount(() => {
     text-decoration-style: dotted;
     text-underline-offset: 3px;
   }
+}
+
+/* ---- 类型标识 ---- */
+.fnc__type {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  margin-right: 0.5rem;
+  padding: 0.0625rem 0.4rem;
+  font-size: 0.6875rem;
+  font-weight: 500;
+  border-radius: $radius-sm;
+  line-height: 1.4;
+}
+
+.fnc__type--idea {
+  color: #f59e0b;
+  background: color-mix(in srgb, #f59e0b 12%, transparent);
+}
+
+.fnc__type--todo {
+  color: #3b82f6;
+  background: color-mix(in srgb, #3b82f6 12%, transparent);
 }
 
 .fnc__actions {
