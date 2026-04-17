@@ -175,6 +175,9 @@
               @select-date="onSelectDate"
             />
 
+            <!-- 时间胶囊：去年今日 + 随机回顾 -->
+            <SidebarFlashTimeCapsuleCard :notes="notes" />
+
             <!-- 标签云 -->
             <div v-if="tagCloud.length > 0" class="flash-tag-cloud">
               <div class="flash-tag-cloud__header">
