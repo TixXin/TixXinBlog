@@ -51,6 +51,7 @@
             @select-date="onDateSelect"
           />
           <SidebarMomentTopicCard :topics="momentTopics" :active-topic="selectedTopic" @select="onTopicSelect" />
+          <SidebarMomentTimeCapsuleCard :moments="moments" />
         </SidebarRightSidebar>
       </Teleport>
     </ClientOnly>
