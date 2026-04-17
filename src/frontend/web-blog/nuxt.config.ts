@@ -39,7 +39,10 @@ export default {
         { name: 'twitter:card', content: 'summary_large_image' },
         { name: 'twitter:site', content: '@TixXin' },
       ],
-      link: [{ rel: 'alternate', type: 'application/rss+xml', title: 'TixXin Blog RSS', href: '/rss.xml' }],
+      link: [
+        { rel: 'alternate', type: 'application/rss+xml', title: 'TixXin Blog RSS', href: '/rss.xml' },
+        { rel: 'alternate', type: 'application/rss+xml', title: 'TixXin 朋友圈 RSS', href: '/moments.xml' },
+      ],
       // 生产环境：在 hydration 之前检测 sessionStorage，为 <html> 添加 .visited class，
       // 使非首次访问直接隐藏 loading 覆盖层，消除闪烁。开发环境不注入，保证刷新可调试
       script:
