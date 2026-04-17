@@ -32,9 +32,16 @@
       <!-- eslint-disable-next-line vue/no-v-html -- 输入已通过 DOMPurify 净化 -->
       <div class="moment-card__content markdown-body" v-html="renderedContent" />
 
-      <!-- 话题标签 -->
+      <!-- 话题标签：点击跳转话题聚合页 -->
       <div v-if="moment.topics && moment.topics.length > 0" class="moment-card__topics">
-        <span v-for="topic in moment.topics" :key="topic" class="moment-card__topic-tag"> #{{ topic }} </span>
+        <NuxtLink
+          v-for="topic in moment.topics"
+          :key="topic"
+          :to="`/moments/topic/${encodeURIComponent(topic)}`"
+          class="moment-card__topic-tag"
+        >
+          #{{ topic }}
+        </NuxtLink>
       </div>
 
       <!-- 图片网格 -->
@@ -348,7 +355,13 @@ function onLightBoxChange(index: number) {
   background: var(--accent-soft);
   padding: 0.125rem 0.5rem;
   border-radius: $radius-full;
-  cursor: default;
+  text-decoration: none;
+  transition: $transition-colors;
+
+  &:hover {
+    color: #fff;
+    background: var(--accent);
+  }
 }
 
 // 图片网格

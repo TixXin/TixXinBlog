@@ -59,6 +59,7 @@
 
 <script setup lang="ts">
 import { mockMoments, mockMomentAuthorStats } from '~/features/moment/mock'
+import { MOMENT_TOPIC_DEFINITIONS } from '~/features/moment/topics'
 import { mockPostTabs } from '~/features/post/mock'
 import type { MomentItem } from '~/features/moment/types'
 import type { MomentTopic } from '~/components/sidebar/MomentTopicCard.vue'
@@ -122,17 +123,9 @@ const photoWallImages = computed<MomentPhotoItem[]>(() => {
     }))
 })
 
-// 热门话题 — 话题定义与动态计数
-const TOPIC_DEFINITIONS: Omit<MomentTopic, 'count'>[] = [
-  { name: '生活日常', icon: 'lucide:sun', color: '#f59e0b', description: '记录每一天的小确幸' },
-  { name: '技术分享', icon: 'lucide:code', color: '#3b82f6', description: '代码与灵感的碰撞' },
-  { name: '读书笔记', icon: 'lucide:book-open', color: '#8b5cf6', description: '阅读中的思考片段' },
-  { name: '摄影记录', icon: 'lucide:camera', color: '#ec4899', description: '用镜头捕捉瞬间' },
-  { name: '美食探店', icon: 'lucide:utensils', color: '#ef4444', description: '味蕾的冒险旅程' },
-]
-
+// 热门话题 — 复用共享话题定义，动态计数
 const momentTopics = computed<MomentTopic[]>(() =>
-  TOPIC_DEFINITIONS.map((t) => ({
+  MOMENT_TOPIC_DEFINITIONS.map((t) => ({
     ...t,
     count: mockMoments.filter((m) => m.topics?.includes(t.name)).length,
   })),
