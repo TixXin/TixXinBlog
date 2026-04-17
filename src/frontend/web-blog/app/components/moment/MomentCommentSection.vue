@@ -27,7 +27,8 @@
         <div class="moment-comments__body">
           <span class="moment-comments__author" :class="{ 'is-owner': c.isOwner }">{{ c.author }}</span>
           <span class="moment-comments__sep">：</span>
-          <span class="moment-comments__text" v-html="renderMentions(c.content)" />
+          <!-- eslint-disable-next-line vue/no-v-html -- 已通过 DOMPurify 净化 -->
+          <span class="moment-comments__text markdown-body-inline" v-html="renderCommentBody(c.content)" />
         </div>
       </div>
 
@@ -75,6 +76,7 @@
 
 <script setup lang="ts">
 import type { MomentCommentItem } from '~/features/moment/types'
+import { renderMomentMarkdown } from '~/composables/useMomentMarkdown'
 
 const props = defineProps<{
   comments: MomentCommentItem[]
@@ -90,9 +92,9 @@ const expanded = ref(false)
 const hasMoreComments = computed(() => props.comments.length > maxVisible)
 const visibleComments = computed(() => (expanded.value ? props.comments : props.comments.slice(0, maxVisible)))
 
-/** 将评论文本中的 @xxx 转换为高亮 span */
-function renderMentions(text: string): string {
-  return text.replace(/@(\S+)/g, '<span class="mention">@$1</span>')
+/** 评论 Markdown 渲染（inline 模式 + @提及高亮） */
+function renderCommentBody(text: string): string {
+  return renderMomentMarkdown(text, { inline: true, mentions: true })
 }
 
 const draft = ref('')
@@ -241,6 +243,34 @@ function onSwitchToLogin() {
     &:hover {
       text-decoration: underline;
     }
+  }
+
+  // 评论 Markdown 最小样式集（inline 模式，不含段落/列表）
+  :deep(a) {
+    color: var(--accent);
+    text-decoration: none;
+    border-bottom: 1px dotted currentColor;
+
+    &:hover {
+      opacity: 0.85;
+    }
+  }
+
+  :deep(strong) {
+    font-weight: 600;
+  }
+
+  :deep(em) {
+    font-style: italic;
+  }
+
+  :deep(code) {
+    font-family: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+    font-size: 0.875em;
+    padding: 0.0625rem 0.25rem;
+    background: var(--surface-1);
+    border-radius: $radius-xs;
+    color: var(--accent);
   }
 }
 

@@ -29,9 +29,8 @@
         <span class="moment-card__author">TixXin</span>
       </div>
 
-      <div class="moment-card__content">
-        {{ moment.content }}
-      </div>
+      <!-- eslint-disable-next-line vue/no-v-html -- 输入已通过 DOMPurify 净化 -->
+      <div class="moment-card__content markdown-body" v-html="renderedContent" />
 
       <!-- 话题标签 -->
       <div v-if="moment.topics && moment.topics.length > 0" class="moment-card__topics">
@@ -122,6 +121,7 @@
 <script setup lang="ts">
 import type { MomentItem, MomentCommentItem, MomentUserProfile } from '~/features/moment/types'
 import { formatRelativeDate } from '~/composables/useRelativeDate'
+import { renderMomentMarkdown } from '~/composables/useMomentMarkdown'
 
 /** 博主信息，用于头像 hover 卡片 */
 const ownerProfile: MomentUserProfile = {
@@ -140,6 +140,9 @@ const props = defineProps<{
 const avatarError = ref(false)
 
 const formattedDate = computed(() => formatRelativeDate(props.moment.date))
+
+// Markdown 渲染：支持 **粗体**、链接、列表、代码、引用等
+const renderedContent = computed(() => renderMomentMarkdown(props.moment.content))
 
 // 点赞逻辑
 const isLiked = ref(props.moment.isLiked)
@@ -250,8 +253,85 @@ function onLightBoxChange(index: number) {
   line-height: 1.6;
   color: var(--text-main);
   margin-bottom: 0.5rem;
-  white-space: pre-wrap;
   word-break: break-word;
+
+  // Markdown 元素样式：闪念内容短小，样式克制
+  :deep(p) {
+    margin: 0 0 0.4rem;
+
+    &:last-child {
+      margin-bottom: 0;
+    }
+  }
+
+  :deep(a) {
+    color: var(--accent);
+    text-decoration: none;
+    border-bottom: 1px dotted currentColor;
+
+    &:hover {
+      opacity: 0.85;
+    }
+  }
+
+  :deep(strong) {
+    font-weight: 600;
+    color: var(--text-strong, var(--text-main));
+  }
+
+  :deep(em) {
+    font-style: italic;
+  }
+
+  :deep(ul),
+  :deep(ol) {
+    padding-left: 1.25rem;
+    margin: 0.25rem 0 0.4rem;
+  }
+
+  :deep(li) {
+    margin: 0.125rem 0;
+  }
+
+  :deep(blockquote) {
+    margin: 0.4rem 0;
+    padding: 0.25rem 0.75rem;
+    border-left: 3px solid var(--accent);
+    background: var(--surface-2);
+    border-radius: 0 $radius-sm $radius-sm 0;
+    color: var(--text-soft);
+  }
+
+  :deep(code) {
+    font-family: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+    font-size: 0.875em;
+    padding: 0.125rem 0.375rem;
+    background: var(--surface-2);
+    border-radius: $radius-xs;
+    color: var(--accent);
+  }
+
+  :deep(pre) {
+    margin: 0.5rem 0;
+    padding: 0.75rem 1rem;
+    background: var(--surface-2);
+    border-radius: $radius-sm;
+    overflow-x: auto;
+    font-size: 0.8125rem;
+    line-height: 1.5;
+
+    code {
+      padding: 0;
+      background: transparent;
+      color: var(--text-main);
+    }
+  }
+
+  :deep(hr) {
+    margin: 0.75rem 0;
+    border: none;
+    border-top: 1px dashed var(--border-soft);
+  }
 }
 
 // 话题标签
