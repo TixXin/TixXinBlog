@@ -51,8 +51,9 @@
         </div>
       </div>
 
-      <!-- 引用文章卡片 -->
+      <!-- 引用卡片：站内文章优先，否则外链 OG 卡 -->
       <MomentArticleCard v-if="moment.linkedArticle" :article="moment.linkedArticle" />
+      <MomentLinkCard v-else-if="moment.linkedLink" :link="moment.linkedLink" />
 
       <!-- 底部元信息 + 操作 -->
       <div class="moment-card__footer">

@@ -378,6 +378,23 @@ export const mockMoments: MomentItem[] = [
     location: '深圳·深圳湾',
     topics: ['生活日常', '摄影记录'],
   },
+  {
+    id: 'm-17',
+    content: '看到一个有意思的开源项目，把 AI 笔记和 RAG 检索做得很轻量，自托管也方便。先 star 收着以后研究。',
+    date: '2026-02-25T14:10:00Z',
+    likes: 19,
+    isLiked: false,
+    device: 'MacBook Pro',
+    topics: ['技术分享'],
+    linkedLink: {
+      url: 'https://github.com/blinkospace/blinko',
+      title: 'blinkospace/blinko: AI Native Note App',
+      description: 'Blinko 是一款开源的 AI 原生闪念笔记应用，支持 Markdown、双向链接、RAG 检索与多端同步。',
+      siteName: 'GitHub',
+      favicon: 'https://github.githubassets.com/favicons/favicon.svg',
+      image: 'https://opengraph.githubassets.com/1/blinkospace/blinko',
+    },
+  },
 ]
 
 /** 朋友圈博主名片统计数据 */
