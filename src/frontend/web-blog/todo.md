@@ -4,8 +4,8 @@
 
 ## 总进度
 
-- 总任务数：43
-- 已完成：42
+- 总任务数：47
+- 已完成：46
 - 进行中：0
 - 未开始：0
 - 暂缓：1
@@ -73,6 +73,10 @@
 - [x] Dock 主题大改：底部浮岛式 Dock 导航（spring 弹性动画 + 图标联动缩放）、隐藏全局 MobileNav
 - [x] 主题重构收尾：更新 directory-structure.md、theme-development-guide.md、project-analysis-report.md
 - [x] 主题元信息职责分离：消除 layoutThemes.ts 与 theme.json 的重复声明，theme.json 增加 meta 字段，各主题新增 theme.config.ts 声明 capabilities，features/theme/ 重命名为 features/appearance/，新建 themeRegistry.ts 替代 layoutThemes.ts
+- [x] Vite optimizeDeps 预打包：fuse.js/markdown-it/shiki 等 dev 运行时依赖显式声明，消除中途发现依赖导致的整页 reload（2026-07-20）
+- [x] 开放 Dock 浮岛主题：移除外观抽屉的开发中拦截与提示，恢复 hover 预热，三套主题均可切换（2026-07-20）
+- [x] 修复 formatRelativeDate：纯日期串按本地时区解析（修复 UTC 负偏移时区整体错一天），未来日期回退完整日期显示（2026-07-20）
+- [x] 单元测试扩充：新增 flash 仓储 CRUD/归档/搜索/评论、Netscape 书签解析与 JSON 导入导出、闪念 Markdown 渲染与 XSS 净化共 22 个用例；补装 happy-dom + @vue/test-utils 使 nuxt 测试环境可运行（2026-07-20）
 
 ## 暂缓 / 阻塞
 
