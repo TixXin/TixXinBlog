@@ -171,6 +171,18 @@ export default {
         },
       },
     },
+    // dev 期这些依赖在路由懒加载后才被发现，Vite 中途预打包会触发整页 reload；
+    // 显式声明可让其在启动时一次性预打包（生产构建不受影响）
+    optimizeDeps: {
+      include: [
+        'fuse.js',
+        'markdown-it',
+        'markdown-it-task-lists',
+        'isomorphic-dompurify',
+        'shiki',
+        '@vueuse/integrations/useSortable',
+      ],
+    },
     // 1Panel 反代场景：外部域名 tix.xin -> 容器 localhost:3456
     // Vite 默认 allowedHosts 只放行 localhost，这里需显式放行自定义域名
     // 'all' 会关闭 DNS rebinding 防护，生产不走 dev server，dev 环境放开可接受
