@@ -4,8 +4,8 @@
 
 ## 总进度
 
-- 总任务数：47
-- 已完成：46
+- 总任务数：48
+- 已完成：47
 - 进行中：0
 - 未开始：0
 - 暂缓：1
@@ -77,6 +77,7 @@
 - [x] 开放 Dock 浮岛主题：移除外观抽屉的开发中拦截与提示，恢复 hover 预热，三套主题均可切换（2026-07-20）
 - [x] 修复 formatRelativeDate：纯日期串按本地时区解析（修复 UTC 负偏移时区整体错一天），未来日期回退完整日期显示（2026-07-20）
 - [x] 单元测试扩充：新增 flash 仓储 CRUD/归档/搜索/评论、Netscape 书签解析与 JSON 导入导出、闪念 Markdown 渲染与 XSS 净化共 22 个用例；补装 happy-dom + @vue/test-utils 使 nuxt 测试环境可运行（2026-07-20）
+- [x] post 域接入后端 API：features/post/api.ts + usePostList，useArticleDetail 增加 HTTP 分支；useMockRepo/apiBaseUrl 读环境变量，CSP connect-src 自动放行 API origin；与 server-main 联调实测通过（2026-07-20）
 
 ## 暂缓 / 阻塞
 
