@@ -83,8 +83,11 @@ Scopes: web-blog, theme, sidebar, pages, blog, etc.
 
 ## CI Pipeline
 
-GitHub Actions on push/PR to main: install → lint → typecheck (`nuxi typecheck`) → test → build → audit (non-blocking).
+Two workflows on push/PR to main:
+- `ci.yml` (frontend, Node 22): install → lint → typecheck (`nuxt typecheck`) → test → build → audit (non-blocking). Skips backend/docs-only changes.
+- `backend-ci.yml` (paths: `src/backend/**`): postgres:16 service → lint → typecheck → test → migration replay + schema drift check → build → docker build.
 
 ## Docker
 
-Multi-stage build: Node 20-Alpine. Production runs on port 3000.
+- Frontend: root `Dockerfile`, multi-stage Node 20-Alpine, port 3000.
+- Backend: `src/backend/server-main/Dockerfile` (build context = repo root), multi-stage Node 22-Alpine, port 3000; requires `DATABASE_URL` and `JWT_ACCESS_SECRET` at runtime.
