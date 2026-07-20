@@ -7,6 +7,7 @@
 
 import { ValidationPipe } from '@nestjs/common'
 import { NestFactory } from '@nestjs/core'
+import cookieParser from 'cookie-parser'
 import { Logger } from 'nestjs-pino'
 import { AppModule } from './app.module'
 import { AllExceptionsFilter } from './common/filters/all-exceptions.filter'
@@ -15,6 +16,9 @@ import { ResponseWrapInterceptor } from './common/interceptors/response-wrap.int
 async function bootstrap(): Promise<void> {
   const app = await NestFactory.create(AppModule, { bufferLogs: true })
   app.useLogger(app.get(Logger))
+
+  // refresh token 走 httpOnly cookie(api.md §5.2)
+  app.use(cookieParser())
 
   // 路由前缀统一 /api/v1；健康探针保持根路径供 K8s/负载均衡直接访问
   app.setGlobalPrefix('api/v1', { exclude: ['health', 'ready'] })

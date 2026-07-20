@@ -11,12 +11,16 @@
 import { Migrator } from '@mikro-orm/migrations'
 import { defineConfig } from '@mikro-orm/postgresql'
 import { SeedManager } from '@mikro-orm/seeder'
+import { AdminUser } from '../entities/admin-user.entity'
+import { Comment } from '../entities/comment.entity'
+import { CommentLike } from '../entities/comment-like.entity'
 import { Post } from '../entities/post.entity'
 import { PostLike } from '../entities/post-like.entity'
 import { PostTag } from '../entities/post-tag.entity'
 import { PostView } from '../entities/post-view.entity'
+import { RefreshToken } from '../entities/refresh-token.entity'
 
-export const ORM_ENTITIES = [Post, PostTag, PostLike, PostView] as const
+export const ORM_ENTITIES = [Post, PostTag, PostLike, PostView, Comment, CommentLike, AdminUser, RefreshToken] as const
 
 export const mikroOrmOptions = defineConfig({
   clientUrl: process.env.DATABASE_URL ?? 'postgres://tixxin:tixxin@localhost:5432/tixxin_blog',
