@@ -120,7 +120,7 @@
 </template>
 
 <script setup lang="ts">
-import { mockPosts, mockPostTabs } from '~/features/post/mock'
+import { mockPostTabs } from '~/features/post/mock'
 import { mockTags, mockCategories } from '~/features/stats/mock'
 import { mockMoments } from '~/features/moment/mock'
 import type { MomentTopic } from '~/components/sidebar/MomentTopicCard.vue'
@@ -156,9 +156,9 @@ const activeTab = homeActiveTab
 const listDisplayMode = ref<'waterfall' | 'pagination'>('pagination')
 const route = useRoute()
 
-// ---- 文章数据 ----
+// ---- 文章数据（useMockRepo 开关决定 mock 或后端 API）----
 const tabs = mockPostTabs
-const posts = mockPosts
+const { posts } = await usePostList()
 const tags = mockTags
 const categories = mockCategories
 

@@ -10,7 +10,13 @@
     <Teleport to="body">
       <CommonReadingProgress :progress="progress" />
     </Teleport>
-    <CommonCustomScrollbar ref="scrollbarRef" class="article-page" viewport-class="article-viewport" :show-back-to-top="false" primary>
+    <CommonCustomScrollbar
+      ref="scrollbarRef"
+      class="article-page"
+      viewport-class="article-viewport"
+      :show-back-to-top="false"
+      primary
+    >
       <ArticleStickyHeader
         :title="article.title"
         :category="article.category"
@@ -91,7 +97,7 @@ const coverError = ref(false)
 const scrollbarRef = ref<{ viewport: HTMLElement | null } | null>(null)
 const scrollRoot = computed(() => scrollbarRef.value?.viewport ?? null)
 
-const { article, comments, relatedPosts, tocItems, articleExcerpt } = useArticleDetail(route.params.id as string)
+const { article, comments, relatedPosts, tocItems, articleExcerpt } = await useArticleDetail(route.params.id as string)
 const { isLiked, toggleLike, isFavorited, toggleFavorite } = useLikes()
 const { addToHistory } = useReadingHistory()
 
