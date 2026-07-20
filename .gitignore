@@ -5,6 +5,7 @@ node_modules/
 .nuxt/
 .output/
 dist/
+*.tsbuildinfo
 
 # 环境变量
 .env
