@@ -6,11 +6,13 @@
 -->
 
 <template>
-  <SharedPostCard v-bind="$attrs" />
+  <SharedPostCard v-bind="$attrs" :post="post" />
 </template>
 
 <script setup lang="ts">
 import SharedPostCard from '../../../../app/components/blog/PostCard.vue'
+import type { PostItem } from '~/features/post/types'
 
 defineOptions({ inheritAttrs: false })
+defineProps<{ post: PostItem }>()
 </script>

@@ -70,6 +70,8 @@ export interface FlashNoteDraft {
   isDraft?: boolean
   /** 是否同时置顶 */
   isPinned?: boolean
+  /** 是否以归档态创建（仅 seed 场景使用，展示归档区示例数据） */
+  isArchived?: boolean
 }
 
 /** 创建评论时的草稿 */

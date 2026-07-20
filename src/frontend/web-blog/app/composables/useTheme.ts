@@ -8,17 +8,7 @@
 import type { ThemeOption } from '~/features/appearance/types'
 import { COLOR_MODE_OPTIONS } from '~/features/appearance/types'
 
-// View Transitions API 类型声明（TS 默认 lib 尚未内置）
-declare global {
-  interface Document {
-    startViewTransition?: (callback: () => Promise<void> | void) => {
-      ready: Promise<void>
-      finished: Promise<void>
-      updateCallbackDone: Promise<void>
-      skipTransition: () => void
-    }
-  }
-}
+// View Transitions API 类型自 TS 5.6 起已内置于 DOM lib,无需本地声明
 
 /**
  * 解析指针原点，用于圆形展开动画的圆心定位（视口 CSS 像素）。

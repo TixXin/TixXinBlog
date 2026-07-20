@@ -64,22 +64,9 @@
       @update="onUpdateBookmarkFromDialog"
     />
 
-    <TabContextMenu
-      :visible="ctxVisible"
-      :x="ctxX"
-      :y="ctxY"
-      :items="ctxItems"
-      @close="ctxVisible = false"
-    />
-    <TabAddCategoryDialog
-      v-model:visible="addCategoryVisible"
-      @submit="onSubmitCategory"
-    />
-    <TabSettingsDrawer
-      v-model:visible="settingsOpen"
-      :user="displayUser"
-      @open-import="importOpen = true"
-    />
+    <TabContextMenu :visible="ctxVisible" :x="ctxX" :y="ctxY" :items="ctxItems" @close="ctxVisible = false" />
+    <TabAddCategoryDialog v-model:visible="addCategoryVisible" @submit="onSubmitCategory" />
+    <TabSettingsDrawer v-model:visible="settingsOpen" :user="displayUser" @open-import="importOpen = true" />
 
     <TabImportDialog v-model:visible="importOpen" />
 
@@ -184,7 +171,9 @@ const paletteActions = computed<CommandAction[]>(() => {
       title: '新建分类',
       icon: 'lucide:folder-plus',
       section: 'actions',
-      run: () => (addCategoryVisible.value = true),
+      run: () => {
+        addCategoryVisible.value = true
+      },
     },
     switchView('grid'),
     switchView('compact'),
@@ -195,7 +184,9 @@ const paletteActions = computed<CommandAction[]>(() => {
       title: '打开设置',
       icon: 'lucide:settings',
       section: 'actions',
-      run: () => (settingsOpen.value = true),
+      run: () => {
+        settingsOpen.value = true
+      },
     },
     {
       id: 'toggle-drag',
@@ -210,7 +201,9 @@ const paletteActions = computed<CommandAction[]>(() => {
       subtitle: 'JSON 或浏览器 HTML',
       icon: 'lucide:upload',
       section: 'actions',
-      run: () => (importOpen.value = true),
+      run: () => {
+        importOpen.value = true
+      },
     },
   ]
 })
@@ -270,9 +263,12 @@ const today = computed(() => {
 })
 
 // 设置中的默认折叠变化时同步侧边栏
-watch(() => tabSettings.value.defaultCollapsed, (v) => {
-  sidebarCollapsed.value = v
-})
+watch(
+  () => tabSettings.value.defaultCollapsed,
+  (v) => {
+    sidebarCollapsed.value = v
+  },
+)
 
 onMounted(() => {
   void load()
@@ -494,7 +490,9 @@ function onBlankContextMenu(e: MouseEvent) {
     {
       label: '打开设置',
       icon: 'lucide:settings',
-      run: () => (settingsOpen.value = true),
+      run: () => {
+        settingsOpen.value = true
+      },
     },
     {
       label: '切换视图',
@@ -527,7 +525,9 @@ function onBlankContextMenu(e: MouseEvent) {
       {
         label: '新建分类',
         icon: 'lucide:folder-plus',
-        run: () => (addCategoryVisible.value = true),
+        run: () => {
+          addCategoryVisible.value = true
+        },
       },
       { type: 'divider' },
       ...common,
@@ -703,5 +703,4 @@ async function onBookmarkDropped(payload: { bookmarkId: string; targetCategoryId
   opacity: 0;
   transform: translateY(8px);
 }
-
 </style>

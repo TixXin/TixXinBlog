@@ -5,11 +5,11 @@
  * @since 2025-03-17
  */
 
-import type { ArchiveStat, ArchiveYear, CategoryDistribution } from './types'
+import type { ArchiveCategoryColor, ArchiveStat, ArchiveYear, CategoryDistribution } from './types'
 import { mockPosts } from '~/features/post/mock'
 
 // 按 folder（中文分类）映射到统一色板，未匹配走兜底
-const FOLDER_COLOR_MAP: Record<string, string> = {
+const FOLDER_COLOR_MAP: Record<string, ArchiveCategoryColor> = {
   前端开发: 'sky',
   后端技术: 'emerald',
   随笔日记: 'rose',
@@ -73,4 +73,3 @@ export const mockCategoryDistribution: CategoryDistribution[] = (() => {
       percent: Math.round((count / total) * 100),
     }))
 })()
-
