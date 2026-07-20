@@ -102,9 +102,12 @@ export default {
       // 构建期常量：dev 调试面板「环境」tab 显示用，prod 时面板被 tree-shake，字段闲置
       buildTime: new Date().toISOString(),
       nuxtVersion: '4',
-      // 数据仓库切换：true=LocalStorage mock 实现；false=HTTP 实现（待后端就绪）
-      // 详见 app/plugins/repositories.ts
-      useMockRepo: true,
+      // 数据仓库切换：true=mock 实现；false=HTTP 实现（对接 server-main）
+      // 环境变量 NUXT_PUBLIC_USE_MOCK_REPO=false 时走后端；详见 app/plugins/repositories.ts
+      // 与 docs/backend/development.md §10
+      useMockRepo: process.env.NUXT_PUBLIC_USE_MOCK_REPO !== 'false',
+      // 后端 API 基址，如 http://localhost:3000/api/v1（useMockRepo=false 时必填）
+      apiBaseUrl: process.env.NUXT_PUBLIC_API_BASE_URL ?? '',
     },
   },
   site: {
@@ -152,7 +155,8 @@ export default {
             "style-src 'self' 'unsafe-inline'",
             "img-src 'self' data: https:",
             "font-src 'self' data:",
-            "connect-src 'self'",
+            // useMockRepo=false 时浏览器需直连后端 API，把 API origin 加入 connect-src 白名单
+            `connect-src 'self'${process.env.NUXT_PUBLIC_API_BASE_URL ? ` ${new URL(process.env.NUXT_PUBLIC_API_BASE_URL).origin}` : ''}`,
             "frame-ancestors 'none'",
           ].join('; '),
           'X-Content-Type-Options': 'nosniff',
