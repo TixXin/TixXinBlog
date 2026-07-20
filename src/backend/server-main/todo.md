@@ -5,10 +5,10 @@
 ## 总进度
 
 - 总任务数:12
-- 已完成:9
+- 已完成:10
 - 进行中:0
-- 未开始:3
-- 完成率:75%
+- 未开始:2
+- 完成率:83%
 
 ## 维护约定
 
@@ -21,7 +21,6 @@
 
 ## 待处理(按优先级)
 
-- [ ] 前端联调:post 域 composable 增加 useMockRepo=false 分支($fetch 对接 /api/v1/posts),按 development.md §10.3 清单验证
 - [ ] auth 模块:JWT access/refresh 双 token + argon2id 密码;Comment 实体与评论接口随后(解锁 todo 暂缓的评论系统)
 - [ ] backend-ci workflow:lint → typecheck → test → migration 校验 → build
 
@@ -36,6 +35,7 @@
 - [x] MikroOrmModule 注册 + 首批迁移 20260720125632_create_post_tables(tsx 迁移脚本替代 CLI,免 ts-node)(2026-07-20)
 - [x] DevSeeder:跨 workspace 读取前端 features/post/mock.ts,seed 50 篇文章 / 18 个标签,主键序列同步(2026-07-20)
 - [x] post 最小闭环 API:GET /posts(分页/过滤/排序)、GET /posts/:id(详情+toc)、POST /posts/:id/like(切换)、POST /posts/:id/view(1h 去重);真实 PostgreSQL 实测全部通过,错误码 11/12/1001 对齐契约(2026-07-20)
+- [x] 前端联调:usePostList / useArticleDetail 走 useMockRepo 开关对接 /api/v1,SSR 与客户端导航实测渲染数据库数据,CORS/CSP 放行验证通过(2026-07-20)
 
 ## 暂缓 / 阻塞
 

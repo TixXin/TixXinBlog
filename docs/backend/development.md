@@ -9,7 +9,7 @@
 | 文档设计 | 已完成 | 本目录四份文档已交付 |
 | 工程初始化 | 已完成（2026-07-20） | 骨架落地于 `src/backend/server-main/`：入口引导、统一响应/异常、pino 日志、env 校验、健康探针、MikroORM 配置与 docker-compose 依赖栈 |
 | 实体建模 | 进行中（post 域已完成） | Post / PostTag / PostLike / PostView 已落地并出首批迁移；Comment 等其余实体按 [§4](#4-实体建模要点) 随对应模块推进 |
-| 最小闭环（post 读写 + 前端联调） | 后端侧已完成（2026-07-20） | GET /posts、GET /posts/:id、like、view 四接口经真实 PostgreSQL 验证；DevSeeder 从前端 mock 同源灌数；前端 `useMockRepo=false` 联调待前端改造 |
+| 最小闭环（post 读写 + 前端联调） | 已完成（2026-07-20） | 四接口经真实 PostgreSQL 验证；DevSeeder 从前端 mock 同源灌数；前端 usePostList / useArticleDetail 经 `useMockRepo=false` 联调通过（首页列表 + 详情，评论/相关推荐待对应接口） |
 | 完整功能 | 未开始 | 按 [requirements.md §11](./requirements.md#11-验收指标) 分域验收 |
 
 ## 2. 项目目录
