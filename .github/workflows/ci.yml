@@ -3,8 +3,14 @@ name: CI
 on:
   push:
     branches: [main]
+    paths-ignore:
+      - 'src/backend/**'
+      - 'docs/**'
   pull_request:
     branches: [main]
+    paths-ignore:
+      - 'src/backend/**'
+      - 'docs/**'
 
 jobs:
   lint-and-build:
@@ -14,9 +20,10 @@ jobs:
 
       - uses: pnpm/action-setup@v4
 
+      # Node 22:ESLint 10 依赖 Object.groupBy(Node 21.4+),Node 20 会直接崩溃
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
           cache: pnpm
 
       - run: pnpm install --frozen-lockfile
@@ -25,7 +32,7 @@ jobs:
         run: pnpm lint
 
       - name: Type Check
-        run: pnpm --filter web-blog nuxi typecheck
+        run: pnpm --filter web-blog exec nuxt typecheck
 
       - name: Test
         run: pnpm --filter web-blog test

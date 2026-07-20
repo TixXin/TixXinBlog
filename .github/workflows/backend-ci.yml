@@ -1,0 +1,70 @@
+name: Backend CI
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'src/backend/**'
+      - '.github/workflows/backend-ci.yml'
+      - 'pnpm-lock.yaml'
+      - 'pnpm-workspace.yaml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'src/backend/**'
+      - '.github/workflows/backend-ci.yml'
+      - 'pnpm-lock.yaml'
+      - 'pnpm-workspace.yaml'
+
+jobs:
+  backend:
+    runs-on: ubuntu-latest
+    env:
+      DATABASE_URL: postgres://tixxin:tixxin@localhost:5432/tixxin_blog
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: tixxin
+          POSTGRES_PASSWORD: tixxin
+          POSTGRES_DB: tixxin_blog
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U tixxin -d tixxin_blog"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 10
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: Lint
+        run: pnpm --filter server-main lint
+
+      - name: Type Check
+        run: pnpm --filter server-main typecheck
+
+      - name: Test
+        run: pnpm --filter server-main test
+
+      # 在全新数据库上重放全部迁移,并校验实体与 schema 零漂移(development.md §8.1)
+      - name: Migration Up + Check
+        run: |
+          pnpm --filter server-main migration:up
+          pnpm --filter server-main migration:check
+
+      - name: Build
+        run: pnpm --filter server-main build
+
+      - name: Docker Build
+        run: docker build -f src/backend/server-main/Dockerfile -t tixxin-blog-server .
