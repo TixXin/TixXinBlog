@@ -5,13 +5,15 @@
  * @since 2026-07-20
  */
 
+import { MikroOrmModule } from '@mikro-orm/nestjs'
 import { Module } from '@nestjs/common'
 import { ConfigModule } from '@nestjs/config'
 import { LoggerModule } from 'nestjs-pino'
 import { validateEnv } from './config/env.validation'
+import { mikroOrmOptions } from './config/mikro-orm.options'
 import { HealthModule } from './modules/health/health.module'
+import { PostModule } from './modules/post/post.module'
 
-// TODO(实体建模阶段): 注册 MikroOrmModule.forRoot(mikro-orm.config.ts) 并接入 PostgreSQL
 @Module({
   imports: [
     ConfigModule.forRoot({
@@ -19,6 +21,8 @@ import { HealthModule } from './modules/health/health.module'
       envFilePath: ['.env.local', '.env'],
       validate: validateEnv,
     }),
+    // registerRequestContext 默认开启：HTTP 请求自动创建独立 EntityManager 上下文（development.md §5.5）
+    MikroOrmModule.forRoot(mikroOrmOptions),
     LoggerModule.forRoot({
       pinoHttp: {
         level: process.env.LOG_LEVEL ?? 'debug',
@@ -30,6 +34,7 @@ import { HealthModule } from './modules/health/health.module'
       },
     }),
     HealthModule,
+    PostModule,
   ],
 })
 export class AppModule {}
