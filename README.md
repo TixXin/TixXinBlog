@@ -112,7 +112,7 @@ pnpm --filter web-blog test
 ```
 src/
 ├── frontend/web-blog/    # 博客前台
-└── backend/              # 后端（规划中）
+└── backend/server-main/  # 后端服务（NestJS，工程骨架已初始化）
 docs/                     # 架构与目录说明
 ```
 
