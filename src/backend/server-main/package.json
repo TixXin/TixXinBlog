@@ -16,6 +16,7 @@
     "migration:create": "tsx scripts/migrate.ts create",
     "migration:up": "tsx scripts/migrate.ts up",
     "migration:list": "tsx scripts/migrate.ts list",
+    "migration:check": "tsx scripts/migrate.ts check",
     "seed:dev": "tsx src/seeders/run-dev.ts"
   },
   "engines": {
