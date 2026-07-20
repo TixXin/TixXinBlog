@@ -13,7 +13,7 @@
     "allowSyntheticDefaultImports": true,
     "esModuleInterop": true,
     "sourceMap": true,
-    "incremental": true,
+    // 不开 incremental:nest build 的 deleteOutDir 清空 dist 后,陈旧 tsbuildinfo 会让 tsc 跳过全部输出
     "skipLibCheck": true,
     "isolatedModules": true,
     "strict": true,

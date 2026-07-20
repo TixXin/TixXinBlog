@@ -11,6 +11,8 @@ import { ConfigModule } from '@nestjs/config'
 import { LoggerModule } from 'nestjs-pino'
 import { validateEnv } from './config/env.validation'
 import { mikroOrmOptions } from './config/mikro-orm.options'
+import { AuthModule } from './modules/auth/auth.module'
+import { CommentModule } from './modules/comment/comment.module'
 import { HealthModule } from './modules/health/health.module'
 import { PostModule } from './modules/post/post.module'
 
@@ -34,7 +36,9 @@ import { PostModule } from './modules/post/post.module'
       },
     }),
     HealthModule,
+    AuthModule,
     PostModule,
+    CommentModule,
   ],
 })
 export class AppModule {}
