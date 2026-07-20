@@ -43,13 +43,31 @@ docs/
 └── project-analysis-report.md   # 项目全面分析报告（维度评分与改进路线图）
 ```
 
-## src/backend/ — 后端服务（规划中）
+## src/backend/ — 后端服务
 
-后端目录尚未创建，以下为规划结构：
+`server-main` 工程骨架已初始化（2026-07-20），实体建模与业务模块随后续阶段推进，完整设计见 `docs/backend/`：
 
 ```
-src/backend/                       # 规划中，目录尚未创建
-└── server-main/               # 主后端服务（NestJS）
+src/backend/
+└── server-main/                       # 主后端服务（NestJS 11 + MikroORM 6 + PostgreSQL）
+    ├── src/
+    │   ├── main.ts                    # 入口：全局前缀 api/v1、ValidationPipe、CORS、优雅停机
+    │   ├── app.module.ts              # 根模块：ConfigModule + nestjs-pino + HealthModule
+    │   ├── common/                    # 跨模块复用
+    │   │   ├── constants/error-codes.ts          # 错误码枚举（对齐 docs/backend/api.md 附录 A）
+    │   │   ├── exceptions/business.exception.ts  # 业务异常（携带业务错误码）
+    │   │   ├── filters/all-exceptions.filter.ts  # 全局异常过滤器（统一错误响应）
+    │   │   ├── interceptors/response-wrap.interceptor.ts  # 成功响应包装 { code, message, data, traceId }
+    │   │   └── utils/trace-id.ts      # 请求级 traceId 生成与透传
+    │   ├── config/env.validation.ts   # 环境变量 schema 与启动期校验
+    │   └── modules/health/            # 健康探针 /health /ready（含单元测试）
+    ├── mikro-orm.config.ts            # ORM 配置：连接、实体扫描、迁移与 Seeder 路径
+    ├── docker-compose.yml             # 本地依赖栈：postgres / redis / meilisearch / minio
+    ├── .env.example                   # 环境变量模板
+    ├── eslint.config.mjs              # 后端 ESLint 扁平配置
+    ├── nest-cli.json / tsconfig*.json # Nest CLI 与 TypeScript 配置
+    ├── README.md                      # 快速开始
+    └── todo.md                        # 后端子项目任务清单
 ```
 
 ## src/frontend/web-blog/ — 博客前台
@@ -57,45 +75,66 @@ src/backend/                       # 规划中，目录尚未创建
 ```
 src/frontend/web-blog/
 ├── app/                       # Nuxt 4 应用目录
-│   ├── app.vue                # 应用根组件（配置页面切换过渡动画）
+│   ├── app.vue                # 应用根组件（加载条、全局弹窗、页面切换过渡）
 │   ├── error.vue              # Nuxt 全局错误页面（404、500 等）
 │   ├── assets/                # 静态资源
 │   │   └── styles/            # SCSS 样式文件
 │   ├── components/            # 可复用 UI 组件
+│   │   ├── ThemeComponent.vue # 主题契约组件水合安全加载器（根级）
 │   │   ├── about/             # 关于我页组件
 │   │   ├── article/           # 文章归档与详情组件
+│   │   ├── auth/              # 登录/注册/找回弹窗组件
 │   │   ├── blog/              # 博客业务组件（首页相关）
 │   │   ├── common/            # 通用基础组件
+│   │   ├── dev/               # 开发调试面板
+│   │   ├── flash/             # 闪念编辑与展示组件
 │   │   ├── gallery/           # 画廊组件
 │   │   ├── guestbook/         # 留言板组件
 │   │   ├── layout/            # 布局结构组件
 │   │   ├── link/              # 友链页组件
+│   │   ├── moment/            # 朋友圈动态组件
 │   │   ├── project/           # 项目展示页组件
-│   │   └── sidebar/           # 右侧栏组件
+│   │   ├── sidebar/           # 右侧栏组件
+│   │   └── tab/               # 标签页 / 书签墙组件
 │   ├── composables/           # 组合式函数（跨页面逻辑）
+│   ├── config/                # 站点可改配置（site.ts）
 │   ├── features/              # 业务域模块（mock 数据、类型、逻辑）
 │   │   ├── about/             # 关于我模块
+│   │   ├── appearance/        # 外观设置模块（主题注册表 + UI 偏好常量）
 │   │   ├── article/           # 文章归档模块
+│   │   ├── auth/              # 登录态 mock 模块
+│   │   ├── flash/             # 闪念模块（repository 接口 + local/http 双实现 + AI 搜索 mock）
 │   │   ├── gallery/           # 画廊模块
 │   │   ├── guestbook/         # 留言板模块
 │   │   ├── link/              # 友链模块
+│   │   ├── moment/            # 朋友圈模块（mock + 话题表）
 │   │   ├── nav/               # 导航模块
 │   │   ├── post/              # 文章模块
 │   │   ├── project/           # 项目展示模块
 │   │   ├── site/              # 站点模块
 │   │   ├── stats/             # 统计模块
-│   │   └── appearance/        # 外观设置模块（主题注册表 + UI 偏好常量）
+│   │   └── tab/               # 标签页模块（repository 双实现、favicon、导入导出、壁纸）
 │   ├── layouts/               # 页面布局（default.vue 将 NuxtPage 作为 slot 传入主题布局）
-│   └── pages/                 # 文件系统路由页面
-│       └── articles/          # 文章子路由
+│   ├── pages/                 # 文件系统路由页面
+│   │   ├── admin/moments/     # 博主发布编辑器（owner 守卫）
+│   │   ├── articles/          # 文章详情子路由
+│   │   ├── flash/             # 闪念列表与详情
+│   │   └── moments/           # 朋友圈列表、详情与话题聚合
+│   ├── plugins/               # 插件（主题预热、repository 注入与 useMockRepo 切换）
+│   └── utils/                 # 工具函数（闪念 Markdown、IndexedDB 壁纸、主题组件缓存）
 ├── public/                    # 公共静态资源（不经编译）
+├── server/                    # Nitro 服务端路由
+│   └── routes/                # RSS（rss/moments/flash.xml）与公开 JSON API（api/*.json）
+├── tests/                     # Vitest 单元测试
+│   └── unit/                  # useRelativeDate、flash 仓储、书签导入导出、闪念 Markdown
 ├── theme-contracts/           # 本地主题契约入口（RootLayout、ThemeAccessory、StatusFooter、SidebarNav、PostCard）
 ├── themes/                    # 主题引擎主题目录（theme.json + app/components，布局实现直接在 RootLayout.vue 中）
-│   ├── nexus/                 # Nexus 三栏主题（theme.json + theme.config.ts + RootLayout、ThemeAccessory、StatusFooter、SidebarNav、PostCard）
-│   ├── aurora/                # Aurora 双栏主题（theme.json + theme.config.ts + RootLayout、ThemeAccessory、StatusFooter、PostCard）
-│   └── dock/                  # Dock 浮岛主题（theme.json + theme.config.ts + RootLayout、ThemeAccessory、StatusFooter、PostCard）
+│   ├── nexus/                 # Nexus 三栏主题（默认；含 SidebarNav 与多张侧栏卡片）
+│   ├── aurora/                # Aurora 双栏主题（Hero + 毛玻璃吸顶顶栏）
+│   └── dock/                  # Dock 浮岛主题（底部 Dock 导航，2026-07-20 起开放切换）
 ├── nuxt.config.ts             # Nuxt 配置文件
 ├── package.json               # 依赖与脚本
+├── vitest.config.ts           # Vitest 配置（environment: nuxt）
 ├── todo.md                    # web-blog 开发待办文档，维护当前任务清单与总进度
 ├── tsconfig.json              # TypeScript 配置
 └── .npmrc                     # npm/pnpm 配置

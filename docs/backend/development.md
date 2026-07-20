@@ -6,9 +6,9 @@
 
 | 阶段 | 状态 | 说明 |
 |------|------|------|
-| 文档设计 | 进行中 | 本目录四份文档交付后进入 |
-| 工程初始化 | 未开始 | `nest new server-main` + MikroORM 脚手架 |
-| 实体建模 | 未开始 | 按 [§4](#4-实体建模要点) |
+| 文档设计 | 已完成 | 本目录四份文档已交付 |
+| 工程初始化 | 已完成（2026-07-20） | 骨架落地于 `src/backend/server-main/`：入口引导、统一响应/异常、pino 日志、env 校验、健康探针、MikroORM 配置与 docker-compose 依赖栈 |
+| 实体建模 | 未开始 | 按 [§4](#4-实体建模要点)；同时在 app.module.ts 注册 MikroOrmModule |
 | 最小闭环（post 读写 + 前端联调） | 未开始 | 打通 `useMockRepo` 切换 |
 | 完整功能 | 未开始 | 按 [requirements.md §11](./requirements.md#11-验收指标) 分域验收 |
 
