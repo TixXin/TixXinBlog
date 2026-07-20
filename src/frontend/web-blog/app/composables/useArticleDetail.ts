@@ -9,7 +9,7 @@
  */
 
 import { mockArticleDetail, mockComments, mockTocItems, mockPosts } from '~/features/post/mock'
-import { fetchArticleDetail } from '~/features/post/api'
+import { fetchArticleDetail, fetchComments } from '~/features/post/api'
 import type { ArticleDetail, CommentItem, RelatedPost, TocItem } from '~/features/post/types'
 
 // 把 yyyy-mm-dd 字符串向后偏移 N 天，用来基于发布日生成评论时间，避免穿帮
@@ -25,6 +25,7 @@ export async function useArticleDetail(id: string) {
 
   let article: ComputedRef<ArticleDetail>
   let tocItems: Ref<TocItem[]>
+  let comments: Ref<CommentItem[]>
 
   if (useMock) {
     article = computed<ArticleDetail>(() => {
@@ -43,30 +44,34 @@ export async function useArticleDetail(id: string) {
       return mockArticleDetail
     })
     tocItems = ref<TocItem[]>(mockTocItems)
-  } else {
-    const { data, error } = await useAsyncData(`article-${id}`, () =>
-      fetchArticleDetail(config.public.apiBaseUrl as string, id),
+
+    // 评论时间根据发布日动态偏移，确保每条评论都晚于发布日
+    const baseDate = article.value.date
+    comments = ref<CommentItem[]>(
+      mockComments.map((c, i) => ({
+        ...c,
+        time: shiftDate(baseDate, i + 1),
+        replies: c.replies?.map((r, j) => ({
+          ...r,
+          time: shiftDate(baseDate, i + j + 2),
+        })),
+      })),
     )
+  } else {
+    const [detailResult, commentResult] = await Promise.all([
+      useAsyncData(`article-${id}`, () => fetchArticleDetail(config.public.apiBaseUrl as string, id)),
+      useAsyncData(`article-${id}-comments`, () => fetchComments(config.public.apiBaseUrl as string, id)),
+    ])
     // 显式失败而非静默回退 mock，避免联调时"看似成功实际未连上"的假象
-    if (error.value || !data.value) {
+    if (detailResult.error.value || !detailResult.data.value) {
       throw createError({ statusCode: 404, statusMessage: '文章不存在或加载失败', fatal: true })
     }
+    const data = detailResult.data
     article = computed<ArticleDetail>(() => data.value ?? mockArticleDetail)
     tocItems = computed<TocItem[]>(() => data.value?.toc ?? [])
+    // 评论加载失败不阻塞正文,按空列表展示
+    comments = computed<CommentItem[]>(() => commentResult.data.value ?? [])
   }
-
-  // 评论时间根据发布日动态偏移，确保每条评论都晚于发布日
-  const baseDate = article.value.date
-  const comments = ref<CommentItem[]>(
-    mockComments.map((c, i) => ({
-      ...c,
-      time: shiftDate(baseDate, i + 1),
-      replies: c.replies?.map((r, j) => ({
-        ...r,
-        time: shiftDate(baseDate, i + j + 2),
-      })),
-    })),
-  )
 
   const relatedPosts = computed<RelatedPost[]>(() => {
     const current = article.value

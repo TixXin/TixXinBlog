@@ -8,7 +8,7 @@
  * 后端响应契约见 docs/backend/api.md §2 / §7.2。
  */
 
-import type { ArticleDetail, PostItem, TocItem } from './types'
+import type { ArticleDetail, CommentItem, PostItem, TocItem } from './types'
 
 /** 后端统一响应包装(docs/backend/api.md §2) */
 interface ApiEnvelope<T> {
@@ -62,4 +62,22 @@ export async function fetchArticleDetail(baseUrl: string, id: string): Promise<A
   const envelope = await $fetch<ApiEnvelope<ApiArticleDetail>>(`${base}/posts/${encodeURIComponent(id)}`)
   const detail = unwrap(envelope)
   return { ...detail, date: detail.date.slice(0, 10) }
+}
+
+/** 评论 time 为 ISO 串,展示层沿用 mock 的 YYYY-MM-DD 习惯,递归归一化 */
+function normalizeComment(item: CommentItem): CommentItem {
+  return {
+    ...item,
+    time: item.time.slice(0, 10),
+    replies: item.replies?.map(normalizeComment),
+  }
+}
+
+/** 拉取文章评论树 */
+export async function fetchComments(baseUrl: string, id: string): Promise<CommentItem[]> {
+  const base = requireBaseUrl(baseUrl)
+  const envelope = await $fetch<ApiEnvelope<{ items: CommentItem[]; total: number }>>(
+    `${base}/posts/${encodeURIComponent(id)}/comments`,
+  )
+  return unwrap(envelope).items.map(normalizeComment)
 }
