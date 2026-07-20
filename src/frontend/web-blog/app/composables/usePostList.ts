@@ -31,6 +31,10 @@ export async function usePostList(): Promise<PostListSource> {
   const { data, pending, error } = await useAsyncData('post-list', () =>
     fetchPostList(config.public.apiBaseUrl as string),
   )
+  // 后端不可用时显式失败,避免渲染"暂无相关文章"的假空态误导排查
+  if (error.value) {
+    throw createError({ statusCode: 503, statusMessage: '文章列表加载失败,请稍后重试', fatal: true })
+  }
   return {
     posts: computed(() => data.value ?? []),
     pending,
