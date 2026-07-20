@@ -4,6 +4,7 @@
     "module": "nodenext",
     "moduleResolution": "nodenext",
     "lib": ["ES2023"],
+    "rootDir": "./",
     "outDir": "./dist",
     "declaration": false,
     "removeComments": true,
