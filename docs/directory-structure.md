@@ -45,23 +45,30 @@ docs/
 
 ## src/backend/ — 后端服务
 
-`server-main` 工程骨架已初始化（2026-07-20），实体建模与业务模块随后续阶段推进，完整设计见 `docs/backend/`：
+`server-main` 已完成工程初始化与 post 域最小闭环（2026-07-20），完整设计见 `docs/backend/`：
 
 ```
 src/backend/
 └── server-main/                       # 主后端服务（NestJS 11 + MikroORM 6 + PostgreSQL）
     ├── src/
     │   ├── main.ts                    # 入口：全局前缀 api/v1、ValidationPipe、CORS、优雅停机
-    │   ├── app.module.ts              # 根模块：ConfigModule + nestjs-pino + HealthModule
+    │   ├── app.module.ts              # 根模块：ConfigModule + nestjs-pino + MikroOrmModule + 业务模块
     │   ├── common/                    # 跨模块复用
     │   │   ├── constants/error-codes.ts          # 错误码枚举（对齐 docs/backend/api.md 附录 A）
+    │   │   ├── decorators/visitor-id.decorator.ts # X-Visitor-Id 提取校验并哈希的参数装饰器
     │   │   ├── exceptions/business.exception.ts  # 业务异常（携带业务错误码）
     │   │   ├── filters/all-exceptions.filter.ts  # 全局异常过滤器（统一错误响应）
     │   │   ├── interceptors/response-wrap.interceptor.ts  # 成功响应包装 { code, message, data, traceId }
-    │   │   └── utils/trace-id.ts      # 请求级 traceId 生成与透传
-    │   ├── config/env.validation.ts   # 环境变量 schema 与启动期校验
-    │   └── modules/health/            # 健康探针 /health /ready（含单元测试）
-    ├── mikro-orm.config.ts            # ORM 配置：连接、实体扫描、迁移与 Seeder 路径
+    │   │   └── utils/                 # trace-id、visitor-id 哈希（含单元测试）
+    │   ├── config/                    # env 启动校验 + mikro-orm 配置单一来源
+    │   ├── entities/                  # MikroORM 实体：Post / PostTag / PostLike / PostView
+    │   ├── migrations/                # 迁移文件与 schema 快照（20260720125632_create_post_tables）
+    │   ├── seeders/                   # DevSeeder：跨 workspace 读取前端 post mock 同源灌数（tsx 运行）
+    │   └── modules/
+    │       ├── health/                # 健康探针 /health /ready（含单元测试）
+    │       └── post/                  # 文章接口:列表/详情/点赞/浏览计数（controller/service/dto）
+    ├── scripts/migrate.ts             # tsx 迁移工具（initial / create / up / list）
+    ├── mikro-orm.config.ts            # ORM CLI 入口（转发 src/config/mikro-orm.options.ts）
     ├── docker-compose.yml             # 本地依赖栈：postgres / redis / meilisearch / minio
     ├── .env.example                   # 环境变量模板
     ├── eslint.config.mjs              # 后端 ESLint 扁平配置

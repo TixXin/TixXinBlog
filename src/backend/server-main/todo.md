@@ -5,10 +5,10 @@
 ## 总进度
 
 - 总任务数:12
-- 已完成:5
+- 已完成:9
 - 进行中:0
-- 未开始:7
-- 完成率:42%
+- 未开始:3
+- 完成率:75%
 
 ## 维护约定
 
@@ -21,22 +21,28 @@
 
 ## 待处理(按优先级)
 
-- [ ] 实体建模:按 development.md §4 建 Post / PostTag / Comment 等内容类实体
-- [ ] 注册 MikroOrmModule 并生成首批迁移(create_post_table 等)
-- [ ] DevSeeder:从前端 `features/post/mock.ts` 读取种子数据,保证前后端同源
-- [ ] post 模块最小闭环:列表 / 详情 / 点赞 / 浏览统计,响应字段对齐前端 `types.ts`
-- [ ] 前端联调:`useMockRepo=false` 切换验证(development.md §10.3 清单)
-- [ ] auth 模块:JWT access/refresh 双 token + argon2id 密码
-- [ ] backend-ci workflow:lint → typecheck → test → migration:check → build
+- [ ] 前端联调:post 域 composable 增加 useMockRepo=false 分支($fetch 对接 /api/v1/posts),按 development.md §10.3 清单验证
+- [ ] auth 模块:JWT access/refresh 双 token + argon2id 密码;Comment 实体与评论接口随后(解锁 todo 暂缓的评论系统)
+- [ ] backend-ci workflow:lint → typecheck → test → migration 校验 → build
 
 ## 已完成
 
 - [x] 工程骨架初始化:package.json / tsconfig / nest-cli / ESLint 扁平配置(2026-07-20)
 - [x] 入口引导:全局前缀 api/v1、ValidationPipe、CORS、优雅停机(2026-07-20)
 - [x] 统一响应与错误码:响应包装拦截器 + 全局异常过滤器 + BusinessException,对齐 api.md 附录 A(2026-07-20)
-- [x] 基础设施配置:nestjs-pino 结构化日志、env 启动校验、mikro-orm.config、docker-compose 依赖栈、.env.example(2026-07-20)
+- [x] 基础设施配置:nestjs-pino 结构化日志、env 启动校验、mikro-orm 配置、docker-compose 依赖栈、.env.example(2026-07-20)
 - [x] 健康探针 /health /ready + 首个 Jest 单元测试(2026-07-20)
+- [x] post 域实体建模:Post / PostTag(M:N)/ PostLike / PostView,显式类型注解适配 tsx 运行(2026-07-20)
+- [x] MikroOrmModule 注册 + 首批迁移 20260720125632_create_post_tables(tsx 迁移脚本替代 CLI,免 ts-node)(2026-07-20)
+- [x] DevSeeder:跨 workspace 读取前端 features/post/mock.ts,seed 50 篇文章 / 18 个标签,主键序列同步(2026-07-20)
+- [x] post 最小闭环 API:GET /posts(分页/过滤/排序)、GET /posts/:id(详情+toc)、POST /posts/:id/like(切换)、POST /posts/:id/view(1h 去重);真实 PostgreSQL 实测全部通过,错误码 11/12/1001 对齐契约(2026-07-20)
 
 ## 暂缓 / 阻塞
 
 (无)
+
+## 备注:与设计文档的已知偏离
+
+- Post 主键为自增整数而非 uuid v7:前端契约 PostItem.id 为 number(api.md §7.2 示例同),uuid 迁移待前端统一 id 类型后再做
+- search 参数暂以 ILIKE 兜底,Meilisearch 接入后由 search 模块替换
+- 迁移与 Seeder 通过 tsx 脚本(scripts/migrate.ts、seed:dev)执行而非 mikro-orm CLI,避免引入 ts-node;能力等价

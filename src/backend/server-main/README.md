@@ -1,6 +1,6 @@
 # server-main
 
-TixXinBlog 后端服务(NestJS 11 + MikroORM 6 + PostgreSQL 16)。完整设计文档见 [`docs/backend/`](../../../docs/backend/README.md),当前处于**工程初始化完成、实体建模未开始**阶段。
+TixXinBlog 后端服务(NestJS 11 + MikroORM 6 + PostgreSQL 16)。完整设计文档见 [`docs/backend/`](../../../docs/backend/README.md),当前已完成**工程初始化 + post 域最小闭环**(列表/详情/点赞/浏览计数),等待前端 `useMockRepo=false` 联调。
 
 ## 快速开始
 
@@ -29,11 +29,13 @@ pnpm start:dev
 ## 常用命令
 
 ```bash
-pnpm build       # nest build 产出 dist/
-pnpm lint        # ESLint 检查
-pnpm typecheck   # tsc --noEmit
-pnpm test        # Jest 单元测试
-pnpm mikro-orm   # MikroORM CLI(迁移 / seeder,实体建模阶段启用)
+pnpm build              # nest build 产出 dist/
+pnpm lint               # ESLint 检查
+pnpm typecheck          # tsc --noEmit
+pnpm test               # Jest 单元测试
+pnpm migration:up       # 执行待应用迁移(tsx)
+pnpm migration:create <name>  # 依实体差异生成新迁移
+pnpm seed:dev           # DevSeeder:从前端 post mock 灌种子数据(50 篇文章)
 ```
 
 ## 当前实现范围
@@ -42,9 +44,14 @@ pnpm mikro-orm   # MikroORM CLI(迁移 / seeder,实体建模阶段启用)
 - 统一响应:`{ code, message, data, traceId }` 包装拦截器 + 全局异常过滤器(错误码对齐 api.md 附录 A)
 - 结构化日志:nestjs-pino(开发期 pino-pretty,探针请求不打日志)
 - 环境变量启动期校验(class-validator)
-- 健康探针模块 + 单元测试
-- MikroORM / 迁移 / Seeder 配置就位(尚未在 AppModule 注册,待实体建模阶段启用)
+- post 域实体(Post / PostTag / PostLike / PostView)+ 首批迁移 + DevSeeder
+- 文章接口最小闭环(经真实 PostgreSQL 实测):
+  - `GET /api/v1/posts` — 分页列表,支持 category / tag / search / pinned / sort / order
+  - `GET /api/v1/posts/:id` — 详情(正文块 + TOC),字段对齐前端 `ArticleDetail`
+  - `POST /api/v1/posts/:id/like` — 点赞切换(需 `X-Visitor-Id` 头)
+  - `POST /api/v1/posts/:id/view` — 浏览计数(同访客 1 小时去重)
+- 健康探针模块与单元测试
 
 ## 下一阶段
 
-按 [`docs/backend/development.md`](../../../docs/backend/development.md) §1 阶段表推进:实体建模 → 最小闭环(post 读写 + 前端 `useMockRepo=false` 联调)→ 分域完整功能。任务清单见 [todo.md](./todo.md)。
+前端 post 域 composable 增加 `useMockRepo=false` 分支联调;auth 模块与 Comment 实体(解锁评论系统);backend-ci workflow。任务清单见 [todo.md](./todo.md)。
