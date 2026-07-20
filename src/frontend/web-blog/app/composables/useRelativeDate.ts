@@ -13,7 +13,12 @@
  * - 其他 -> "发布于 xxxx-xx-xx"
  */
 export function formatRelativeDate(dateStr: string): string {
-  const target = new Date(dateStr)
+  // 纯日期串（YYYY-MM-DD）按本地时区解析：new Date('2026-04-03') 会被解析为 UTC 午夜，
+  // 在 UTC 负偏移时区会回退到前一天，导致"今天"被算成"昨天"
+  const dateOnly = /^(\d{4})-(\d{2})-(\d{2})$/.exec(dateStr)
+  const target = dateOnly
+    ? new Date(Number(dateOnly[1]), Number(dateOnly[2]) - 1, Number(dateOnly[3]))
+    : new Date(dateStr)
   const now = new Date()
 
   // 归一化到当天 00:00:00，避免时分秒影响天数计算
@@ -25,6 +30,7 @@ export function formatRelativeDate(dateStr: string): string {
 
   if (diffDays === 0) return '发布于今天'
   if (diffDays === 1) return '发布于昨天'
-  if (diffDays <= 7) return `发布于${diffDays}天前`
+  // 负数为未来日期，不适用"x天前"，与超过 7 天一样回退到完整日期
+  if (diffDays >= 2 && diffDays <= 7) return `发布于${diffDays}天前`
   return `发布于 ${dateStr}`
 }
