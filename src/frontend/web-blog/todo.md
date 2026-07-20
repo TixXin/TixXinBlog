@@ -4,8 +4,8 @@
 
 ## 总进度
 
-- 总任务数：49
-- 已完成：48
+- 总任务数：50
+- 已完成：49
 - 进行中：0
 - 未开始：1
 - 暂缓：0
@@ -79,6 +79,7 @@
 - [x] 单元测试扩充：新增 flash 仓储 CRUD/归档/搜索/评论、Netscape 书签解析与 JSON 导入导出、闪念 Markdown 渲染与 XSS 净化共 22 个用例；补装 happy-dom + @vue/test-utils 使 nuxt 测试环境可运行（2026-07-20）
 - [x] post 域接入后端 API：features/post/api.ts + usePostList，useArticleDetail 增加 HTTP 分支；useMockRepo/apiBaseUrl 读环境变量，CSP connect-src 自动放行 API origin；与 server-main 联调实测通过（2026-07-20）
 - [x] 评论系统读取接入：fetchComments 对接 GET /posts/:id/comments，HTTP 模式评论区渲染数据库评论树（后端 auth + comment 模块同日落地，原暂缓阻塞解除）（2026-07-20）
+- [x] vue-tsc 全量类型错误清零：修复 12 处存量错误（View Transitions 声明冲突、空数组守卫、可空图标、run 回调返回值、色板联合类型、FlashNoteDraft.isArchived、主题 PostCard 桥接 props）；CI typecheck 步骤自此为真实门禁（2026-07-20）
 
 ## 暂缓 / 阻塞
 

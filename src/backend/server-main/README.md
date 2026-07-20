@@ -35,7 +35,17 @@ pnpm typecheck          # tsc --noEmit
 pnpm test               # Jest 单元测试
 pnpm migration:up       # 执行待应用迁移(tsx)
 pnpm migration:create <name>  # 依实体差异生成新迁移
-pnpm seed:dev           # DevSeeder:从前端 post mock 灌种子数据(50 篇文章)
+pnpm migration:check    # CI 门禁:无待应用迁移且实体与 schema 零漂移
+pnpm seed:dev           # DevSeeder:从前端 post mock 灌种子数据(50 篇文章 + 管理员)
+```
+
+## 镜像构建
+
+```bash
+# 构建上下文为仓库根目录
+docker build -f src/backend/server-main/Dockerfile -t tixxin-blog-server .
+# 运行需显式提供 JWT_ACCESS_SECRET 与 DATABASE_URL
+docker run -p 3000:3000 -e DATABASE_URL=... -e JWT_ACCESS_SECRET=... tixxin-blog-server
 ```
 
 ## 当前实现范围

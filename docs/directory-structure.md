@@ -67,8 +67,9 @@ src/backend/
     │   └── modules/
     │       ├── health/                # 健康探针 /health /ready（含单元测试）
     │       └── post/                  # 文章接口:列表/详情/点赞/浏览计数（controller/service/dto）
-    ├── scripts/migrate.ts             # tsx 迁移工具（initial / create / up / list）
+    ├── scripts/migrate.ts             # tsx 迁移工具（initial / create / up / list / check）
     ├── mikro-orm.config.ts            # ORM CLI 入口（转发 src/config/mikro-orm.options.ts）
+    ├── Dockerfile                     # 生产镜像多阶段构建（构建上下文为仓库根目录）
     ├── docker-compose.yml             # 本地依赖栈：postgres / redis / meilisearch / minio
     ├── .env.example                   # 环境变量模板
     ├── eslint.config.mjs              # 后端 ESLint 扁平配置

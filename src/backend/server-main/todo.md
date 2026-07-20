@@ -5,10 +5,10 @@
 ## 总进度
 
 - 总任务数:12
-- 已完成:11
+- 已完成:12
 - 进行中:0
-- 未开始:1
-- 完成率:92%
+- 未开始:0
+- 完成率:100%(首批任务全部完成,后续任务随各域接口铺开时追加)
 
 ## 维护约定
 
@@ -21,7 +21,9 @@
 
 ## 待处理(按优先级)
 
-- [ ] backend-ci workflow:lint → typecheck → test → migration 校验 → build
+- [ ] moment / flash / guestbook 等其余域接口:复用 post 域模式(实体 → 迁移 → DevSeeder → 接口 → 前端开关分支)
+- [ ] admin post CRUD(POST/PATCH/DELETE /admin/posts,AdminAuthGuard 已就绪)
+- [ ] /archive 与 /posts/:id/related 接口,补齐 post 域收尾
 
 ## 已完成
 
@@ -37,6 +39,7 @@
 - [x] 前端联调:usePostList / useArticleDetail 走 useMockRepo 开关对接 /api/v1,SSR 与客户端导航实测渲染数据库数据,CORS/CSP 放行验证通过(2026-07-20)
 - [x] auth 模块:argon2id + access JWT(15min)+ refresh 轮换(7d httpOnly cookie),AdminAuthGuard 错误码 20/21/22,login/refresh/logout/me;DevSeeder 补管理员种子(2026-07-20)
 - [x] 评论系统:Comment/CommentLike 实体与迁移,评论树/发表(归档拒评 1002、层级超限 1003)/点赞切换;21 项真实 HTTP 验证通过;前端评论区已接入读取(2026-07-20)
+- [x] backend-ci workflow:postgres 服务容器上 lint/typecheck/test/迁移重放+schema 漂移校验/build/docker build,首跑即绿(1m32s);多阶段 Dockerfile 本地构建 + 容器冒烟通过(2026-07-20)
 
 ## 暂缓 / 阻塞
 
