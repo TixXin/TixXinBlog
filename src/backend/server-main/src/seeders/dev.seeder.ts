@@ -10,12 +10,42 @@
 
 import type { EntityManager } from '@mikro-orm/postgresql'
 import { Seeder } from '@mikro-orm/seeder'
+import * as argon2 from 'argon2'
 import { mockArticleDetail, mockPosts } from '../../../../frontend/web-blog/app/features/post/mock'
+import { AdminUser } from '../entities/admin-user.entity'
 import { Post, PostContentSection } from '../entities/post.entity'
 import { PostTag, PostTagColor } from '../entities/post-tag.entity'
 
 export class DevSeeder extends Seeder {
   async run(em: EntityManager): Promise<void> {
+    await this.seedAdmin(em)
+    await this.seedPosts(em)
+  }
+
+  /** 管理员账号:用户名/密码取自环境变量,开发环境回退 admin / admin123 */
+  private async seedAdmin(em: EntityManager): Promise<void> {
+    const username = process.env.ADMIN_DEFAULT_USERNAME ?? 'admin'
+    const exists = await em.findOne(AdminUser, { username })
+    if (exists) {
+      process.stdout.write(`管理员 ${username} 已存在，跳过\n`)
+      return
+    }
+    const password = process.env.ADMIN_DEFAULT_PASSWORD ?? 'admin123'
+    em.create(AdminUser, {
+      username,
+      passwordHash: await argon2.hash(password, {
+        type: argon2.argon2id,
+        memoryCost: 65536,
+        timeCost: 3,
+        parallelism: 4,
+      }),
+      createdAt: new Date(),
+    })
+    await em.flush()
+    process.stdout.write(`seeded 管理员 ${username}\n`)
+  }
+
+  private async seedPosts(em: EntityManager): Promise<void> {
     const existing = await em.count(Post, {})
     if (existing > 0) {
       process.stdout.write(`post 表已有 ${existing} 条数据，跳过 seed\n`)

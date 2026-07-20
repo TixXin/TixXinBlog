@@ -48,6 +48,19 @@ export class EnvironmentVariables {
   @IsString()
   @IsOptional()
   MEILISEARCH_URL?: string
+
+  /** 生产环境必填(auth.constants.ts 会在缺失时拒绝启动),开发环境允许回退内置值 */
+  @IsString()
+  @IsOptional()
+  JWT_ACCESS_SECRET?: string
+
+  @IsString()
+  @IsOptional()
+  ADMIN_DEFAULT_USERNAME?: string
+
+  @IsString()
+  @IsOptional()
+  ADMIN_DEFAULT_PASSWORD?: string
 }
 
 export function validateEnv(config: Record<string, unknown>): EnvironmentVariables {
