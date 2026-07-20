@@ -8,23 +8,12 @@
 <template>
   <Teleport to="body">
     <Transition name="ctx">
-      <div
-        v-if="visible"
-        class="tab-ctx"
-        :style="positionStyle"
-        role="menu"
-        @click.stop
-      >
+      <div v-if="visible" class="tab-ctx" :style="positionStyle" role="menu" @click.stop>
         <template v-for="(item, idx) in items" :key="idx">
           <div v-if="item.type === 'divider'" class="tab-ctx__divider" />
-          <div
-            v-else-if="item.submenu"
-            class="tab-ctx__sub"
-            @mouseenter="openSub = idx"
-            @mouseleave="openSub = -1"
-          >
+          <div v-else-if="item.submenu" class="tab-ctx__sub" @mouseenter="openSub = idx" @mouseleave="openSub = -1">
             <button type="button" class="tab-ctx__item">
-              <Icon :name="item.icon" size="13" />
+              <Icon v-if="item.icon" :name="item.icon" size="13" />
               <span class="tab-ctx__item-label">{{ item.label }}</span>
               <Icon name="lucide:chevron-right" size="12" class="tab-ctx__item-chev" />
             </button>
@@ -48,7 +37,7 @@
             :class="{ 'tab-ctx__item--danger': item.danger }"
             @click="run(item)"
           >
-            <Icon :name="item.icon" size="13" />
+            <Icon v-if="item.icon" :name="item.icon" size="13" />
             <span class="tab-ctx__item-label">{{ item.label }}</span>
             <kbd v-if="item.shortcut" class="tab-ctx__item-kbd">{{ item.shortcut }}</kbd>
           </button>
@@ -155,7 +144,9 @@ onBeforeUnmount(() => {
 
 .ctx-enter-active,
 .ctx-leave-active {
-  transition: opacity 0.12s ease, transform 0.12s ease;
+  transition:
+    opacity 0.12s ease,
+    transform 0.12s ease;
 }
 
 .ctx-enter-from,
@@ -182,7 +173,9 @@ onBeforeUnmount(() => {
   color: var(--text-main);
   text-align: left;
   cursor: pointer;
-  transition: background 0.15s, color 0.15s;
+  transition:
+    background 0.15s,
+    color 0.15s;
 
   &:hover,
   &:focus-visible {
