@@ -6,6 +6,8 @@
 -->
 
 <template>
+  <!-- eslint-disable vue/no-multiple-template-root -- 抽屉与移动导航是全局覆盖层,
+       有意与主题壳层平级挂载,避免被主题布局的层叠上下文裁剪;本布局未使用过渡,多根安全 -->
   <ThemeComponent name="RootLayout">
     <NuxtPage :transition="contentTransition" />
   </ThemeComponent>
