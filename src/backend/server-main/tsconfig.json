@@ -23,6 +23,7 @@
     "forceConsistentCasingInFileNames": true,
     "types": ["node", "jest"]
   },
-  "include": ["src/**/*", "mikro-orm.config.ts"],
-  "exclude": ["node_modules", "dist"]
+  "include": ["src/**/*", "mikro-orm.config.ts", "scripts/**/*"],
+  // seeders 跨 workspace 引用前端 mock（rootDir 之外），由 tsx 运行、eslint 静态检查，排除出 tsc
+  "exclude": ["node_modules", "dist", "src/seeders/**"]
 }
