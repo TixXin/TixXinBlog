@@ -57,12 +57,7 @@
 
     <div class="moment-calendar-card__footer">
       <!-- 回到今天按钮 -->
-      <button
-        v-if="!isCurrentMonth"
-        type="button"
-        class="moment-calendar-card__today-btn"
-        @click="goToday"
-      >
+      <button v-if="!isCurrentMonth" type="button" class="moment-calendar-card__today-btn" @click="goToday">
         <Icon name="lucide:calendar-check" size="12" />
         今天
       </button>
@@ -192,14 +187,15 @@ const monthMomentCount = computed(() => {
 /** 计算最近连续发布天数 */
 const streak = computed(() => {
   const sortedDates = [...new Set(props.momentDates.map((d) => d.slice(0, 10)))].sort().reverse()
-  if (sortedDates.length === 0) return 0
+  const latest = sortedDates[0]
+  if (!latest) return 0
 
   const today = new Date()
   today.setHours(0, 0, 0, 0)
 
   // 从今天或最近一条动态开始往回数
   let count = 0
-  const startDate = new Date(sortedDates[0])
+  const startDate = new Date(latest)
   startDate.setHours(0, 0, 0, 0)
 
   // 如果最近的动态不是今天或昨天，不算连续

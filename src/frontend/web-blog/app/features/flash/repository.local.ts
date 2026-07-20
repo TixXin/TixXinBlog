@@ -100,7 +100,7 @@ export class LocalFlashRepository implements FlashNoteRepository {
       likes: 0,
       comments: [],
       isPinned: !!draft.isPinned,
-      isArchived: false,
+      isArchived: !!draft.isArchived,
       isDraft: !!draft.isDraft,
     }
     const notes = readAll(userId)
