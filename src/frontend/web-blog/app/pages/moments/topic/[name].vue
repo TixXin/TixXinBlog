@@ -13,6 +13,18 @@
         <Icon name="lucide:arrow-left" size="16" />
         <span>返回朋友圈</span>
       </NuxtLink>
+      <MomentInfoDrawer
+        v-model:open="drawerOpen"
+        label="动态信息"
+        :show-info="drawerInfo"
+        :stats="authorStats"
+        :profile="ownerCard"
+        :dates="momentDates"
+        :selected-date="selectedDate"
+        @select-date="selectedDate = $event"
+      >
+        <SidebarMomentTopicCard :topics="momentTopics" :active-topic="topicName" @select="onTopicSelect" />
+      </MomentInfoDrawer>
     </div>
 
     <CommonCustomScrollbar class="moment-topic-body" viewport-class="moment-topic-viewport" primary>
@@ -47,7 +59,13 @@
     <ClientOnly>
       <Teleport to="#right-sidebar-target">
         <SidebarRightSidebar>
-          <SidebarMomentAuthorCard :stats="authorStats" :profile="ownerCard" />
+          <SidebarMomentAuthorCard v-if="rightInfo" :stats="authorStats" :profile="ownerCard" />
+          <SidebarMomentCalendarCard
+            v-if="rightInfo"
+            :moment-dates="momentDates"
+            :selected-date="selectedDate"
+            @select-date="selectedDate = $event"
+          />
           <SidebarMomentTopicCard :topics="momentTopics" :active-topic="topicName" @select="onTopicSelect" />
         </SidebarRightSidebar>
       </Teleport>
@@ -60,6 +78,9 @@ import { MOMENT_TOPIC_DEFINITIONS, findMomentTopic } from '~/features/moment/top
 import type { MomentTopic } from '~/components/sidebar/MomentTopicCard.vue'
 
 const { moments: momentList, authorStats, ownerCard } = useMomentOverview()
+const { rightInfo, drawerInfo, drawerOpen } = useMomentSidebarPlacement()
+const { selectedDate } = useMomentFilters()
+const momentDates = computed(() => momentList.value.map((moment) => moment.date.slice(0, 10)))
 
 const route = useRoute()
 const router = useRouter()

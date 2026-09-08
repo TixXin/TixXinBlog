@@ -50,7 +50,7 @@
 </template>
 <script setup lang="ts">
 withDefaults(defineProps<{ label: string; icon?: string }>(), { icon: 'lucide:menu' })
-const open = ref(false)
+const open = defineModel<boolean>('open', { default: false })
 const dialog = ref<HTMLElement | null>(null)
 useModalFocus(open, dialog, {
   close: () => {
