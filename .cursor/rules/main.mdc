@@ -5,9 +5,9 @@ alwaysApply: true
 
 # TixXinBlog 项目规则
 
-- 项目当前处于 **UI 打磨阶段**，前端使用 mock 数据驱动，不接入真实后端 API，不实现服务端逻辑。
-- 架构设计需为后续 API 替换预留空间（组件通过 props 接收数据，不直接依赖 mock）。
-- 当前仓库仍处于"先设计、后实现"阶段，新增结构前优先遵循现有文档。
+- 项目当前处于真实 API 联调与发布验收阶段，文章、评论、认证和闪念使用 NestJS + MikroORM + PostgreSQL。
+- 展示组件通过 props 接收数据；书签明确使用本机 LocalStorage，其他静态内容与演示数据不冒充已持久化业务数据。
+- 新增结构优先遵循已实现架构，并同步更新相应文档。
 - 将 `docs/project-architecture.md` 视为当前项目的统一架构基线文档。
 - 保持顶层边界稳定：
   - 前端代码放在 `src/frontend/`

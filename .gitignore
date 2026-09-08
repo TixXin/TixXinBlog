@@ -3,9 +3,12 @@ node_modules/
 
 # 构建产物
 .nuxt/
+.nuxt-production/
 .output/
 dist/
+.dev-dist/
 *.tsbuildinfo
+.codex
 
 # 环境变量
 .env
@@ -23,7 +26,11 @@ temp/*.js
 
 # Playwright MCP 临时文件
 .playwright-mcp/
+**/var/media/
 
 # Claude Code 本地设置
 .claude/settings.local.json
 .claude/scheduled_tasks.lock
+
+# 本地完整数据备份与恢复资料
+.backups/
