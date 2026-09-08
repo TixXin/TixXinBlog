@@ -1,0 +1,8 @@
+[
+  {
+    "name": "Nexus return top wheel interruption",
+    "status": "interrupted",
+    "elapsedMs": 12868,
+    "error": "locator.click: Timeout 9000ms exceeded.\nCall log:\n\u001b[2m  - waiting for getByRole('button', { name: '返回顶部', exact: true }).visible().first()\u001b[22m\n"
+  }
+]
