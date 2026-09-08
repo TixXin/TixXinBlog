@@ -1,0 +1,12 @@
+
+> web-blog@ test D:\Projects\TixXinBlog\.codex\content-navigation\frontend-test
+> vitest run
+
+
+ RUN  v4.1.11 D:/Projects/TixXinBlog/.codex/content-navigation/frontend-test
+
+
+ Test Files  16 passed (16)
+      Tests  83 passed (83)
+   Start at  07:50:39
+   Duration  5.08s (transform 58.40s, setup 2.19s, import 9.45s, tests 39.27s, environment 16.97s)
