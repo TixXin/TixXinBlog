@@ -24,8 +24,16 @@ temp/*.mjs
 temp/*.js
 !temp/UI excample/**/*.js
 
-# Playwright MCP 临时文件
+# 浏览器测试与本地验收产物（不按图片扩展名忽略，保留正式素材）
 .playwright-mcp/
+/.artifacts/
+/docs/**/evidence/
+/docs/git-validation/
+test-results/
+playwright-report/
+blob-report/
+
+# 运行时媒体
 **/var/media/
 
 # Claude Code 本地设置

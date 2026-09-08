@@ -1,8 +1,0 @@
-
- RUN  v4.1.11 D:/Projects/TixXinBlog/.codex/motion-fixes/frontend
-
-
- Test Files  1 passed (1)
-      Tests  2 passed (2)
-   Start at  22:51:59
-   Duration  3.73s (transform 4.92s, setup 84ms, import 163ms, tests 2.87s, environment 439ms)

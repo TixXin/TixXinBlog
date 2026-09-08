@@ -1,9 +1,0 @@
-{
-  "at": "2026-09-08T13:20:47.494Z",
-  "service": "http://127.0.0.1:6696",
-  "reachable": false,
-  "credentialsRemovedFromState": true,
-  "testDatabasesRemaining": 0,
-  "testMediaDirectoriesRemaining": 0,
-  "userDevelopmentStatus": 200
-}
