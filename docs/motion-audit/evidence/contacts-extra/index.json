@@ -1,0 +1,63 @@
+[
+  {
+    "file": "contacts-extra/sheet-01.jpg",
+    "images": [
+      "advanced/aurora-layers.png",
+      "advanced/dock-toc.png",
+      "failure/module-failure.png",
+      "failure/module-restored.png",
+      "reading-spa/reading-aurora.png",
+      "reading-spa/reading-dock.png",
+      "reading-spa/reading-nexus.png",
+      "reading/reading-aurora.png",
+      "reading/reading-dock.png",
+      "reading/reading-nexus.png",
+      "responsive/aurora-1024-light-true.png",
+      "responsive/aurora-1440-light-false.png",
+      "responsive/aurora-390-dark-true.png",
+      "responsive/aurora-768-dark-false.png",
+      "responsive/dock-1024-light-true.png",
+      "responsive/dock-1440-light-false.png"
+    ]
+  },
+  {
+    "file": "contacts-extra/sheet-02.jpg",
+    "images": [
+      "responsive/dock-390-dark-true.png",
+      "responsive/dock-768-dark-false.png",
+      "responsive/nexus-1024-light-true.png",
+      "responsive/nexus-1440-light-false.png",
+      "responsive/nexus-390-dark-true.png",
+      "responsive/nexus-768-dark-false.png",
+      "search-key/keyboard-0.png",
+      "search-key/keyboard-160.png",
+      "search-key/keyboard-320.png",
+      "search-key/keyboard-700.png",
+      "search-key/keyboard-80.png",
+      "search-key/mouse-0.png",
+      "search-key/mouse-160.png",
+      "search-key/mouse-320.png",
+      "search-key/mouse-700.png",
+      "search-key/mouse-80.png"
+    ]
+  },
+  {
+    "file": "contacts-extra/sheet-03.jpg",
+    "images": [
+      "supplement/auth-help.png",
+      "supplement/auth-open-0.png",
+      "supplement/auth-open-160.png",
+      "supplement/auth-open-320.png",
+      "supplement/auth-open-700.png",
+      "supplement/auth-open-80.png",
+      "supplement/flash-lightbox-0.png",
+      "supplement/flash-lightbox-160.png",
+      "supplement/flash-lightbox-320.png",
+      "supplement/flash-lightbox-700.png",
+      "supplement/flash-lightbox-80.png",
+      "supplement/reading-aurora.png",
+      "supplement/reading-nexus.png",
+      "supplement/touch-context.png"
+    ]
+  }
+]

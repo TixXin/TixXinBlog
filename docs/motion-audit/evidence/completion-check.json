@@ -1,0 +1,57 @@
+{
+  "at": "2026-09-08T03:18:47.755Z",
+  "requiredArtifacts": [
+    {
+      "file": "report.md",
+      "exists": true,
+      "bytes": 35332
+    },
+    {
+      "file": "inventory.md",
+      "exists": true,
+      "bytes": 207769
+    },
+    {
+      "file": "coverage.md",
+      "exists": true,
+      "bytes": 10856
+    },
+    {
+      "file": "findings.json",
+      "exists": true,
+      "bytes": 30369
+    },
+    {
+      "file": "motion-spec.md",
+      "exists": true,
+      "bytes": 5220
+    },
+    {
+      "file": "remediation-prompt.md",
+      "exists": true,
+      "bytes": 18669
+    }
+  ],
+  "sourceFilesCompared": 338,
+  "sourceChanges": [],
+  "brokenLinks": [],
+  "findings": 16,
+  "mechanismFamilies": 30,
+  "themeCombinations": 24,
+  "screenshotsReviewed": 336,
+  "cleanup": {
+    "at": "2026-09-08T03:16:24.667Z",
+    "database": "tixxin_browser_1788834398185_37744",
+    "databaseRemoved": true,
+    "method": "精确核对审查进程树后结束，再删除唯一匹配本次PID的测试库；原进程stdin已关闭",
+    "mediaDirectoryRemoved": true,
+    "privateStateRedacted": true
+  },
+  "limitationsDocumented": true,
+  "scope": "完成审查和整改方案，不代表缺陷已修复",
+  "ports": {
+    "3456": "已验证API 200",
+    "12543": "已验证关闭",
+    "12544": "已验证关闭"
+  }
+}

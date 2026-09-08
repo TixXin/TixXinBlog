@@ -1,0 +1,8 @@
+{
+  "at": "2026-09-08T03:16:24.667Z",
+  "database": "tixxin_browser_1788834398185_37744",
+  "databaseRemoved": true,
+  "method": "精确核对审查进程树后结束，再删除唯一匹配本次PID的测试库；原进程stdin已关闭",
+  "mediaDirectoryRemoved": true,
+  "privateStateRedacted": true
+}

@@ -1,0 +1,2262 @@
+[
+  {
+    "name": "reading nexus",
+    "status": "observed",
+    "elapsedMs": 4934,
+    "detail": {
+      "before": {
+        "window": 0,
+        "roots": [
+          {
+            "cls": "aside-left__viewport custom-scrollbar__viewport",
+            "top": 0
+          },
+          {
+            "cls": "article-viewport custom-scrollbar__viewport",
+            "top": 1800
+          },
+          {
+            "cls": "aside-right__viewport custom-scrollbar__viewport",
+            "top": 0
+          }
+        ],
+        "progress": "width: 26%;"
+      },
+      "returned": {
+        "window": 0,
+        "roots": [
+          {
+            "cls": "aside-left__viewport custom-scrollbar__viewport",
+            "top": 0
+          },
+          {
+            "cls": "article-viewport custom-scrollbar__viewport",
+            "top": 0
+          },
+          {
+            "cls": "aside-right__viewport custom-scrollbar__viewport",
+            "top": 0
+          }
+        ],
+        "progress": "width:0%;"
+      },
+      "heading": {
+        "hash": "#heading-12",
+        "rect": {
+          "x": 369,
+          "y": 160.703125,
+          "width": 682,
+          "height": 37.421875,
+          "top": 160.703125,
+          "right": 1051,
+          "bottom": 198.125,
+          "left": 369
+        }
+      },
+      "image": "reading/reading-nexus.png",
+      "beforeKey": {
+        "window": 0,
+        "roots": [
+          {
+            "cls": "aside-left__viewport custom-scrollbar__viewport",
+            "top": 0
+          },
+          {
+            "cls": "article-viewport custom-scrollbar__viewport",
+            "top": 4653
+          },
+          {
+            "cls": "aside-right__viewport custom-scrollbar__viewport",
+            "top": 264
+          }
+        ],
+        "progress": "width: 68%;"
+      },
+      "afterKey": {
+        "window": 0,
+        "roots": [
+          {
+            "cls": "aside-left__viewport custom-scrollbar__viewport",
+            "top": 0
+          },
+          {
+            "cls": "article-viewport custom-scrollbar__viewport",
+            "top": 0
+          },
+          {
+            "cls": "aside-right__viewport custom-scrollbar__viewport",
+            "top": 264
+          }
+        ],
+        "progress": "width: 0%;"
+      },
+      "state": {
+        "url": "http://127.0.0.1:12543/articles/107#heading-12",
+        "title": "动效审查长文 - TixXin Blog",
+        "viewport": {
+          "width": 1440,
+          "height": 1000
+        },
+        "reduced": true,
+        "color": "visited dark",
+        "mainChars": 9367,
+        "mainStart": "返回上一页\n动效审查长文\n2026-09-08\n示例专栏\n5 分钟\n2\n0\n收藏\n0\n分享\n审查章节 1\n\n用于检查目录定位、阅读进度与历史滚动恢复。用于检查目录定位、阅读进度与历史滚动恢复。用于检查目录定位、阅读进度与历史滚动恢复。用于检查目录定位、阅读进度与历史滚动恢复。用于检查目录定位、阅读进度与历史滚动恢复。用于检查目录定位、阅读进度与历史滚动恢复。",
+        "inert": [],
+        "bodyOverflow": "",
+        "dialogs": [],
+        "clones": 0,
+        "sidebar": [
+          {
+            "cls": "right-sidebar-wrapper",
+            "visibility": "visible"
+          }
+        ],
+        "focus": "<body><!--teleport start anchor--><!----><!--teleport anchor--><!--teleport start anchor--><div class=\"heatmap-tooltip\" style=\"left:0px;top:0px;opacity:0;pointer-events:none;\" data-v-987592c2=\"\"><!----><div class=\"heatmap-tooltip__arrow\" da",
+        "animations": [
+          {
+            "name": "fade-in-up",
+            "state": "finished",
+            "target": "aside-left anim-fade-in-up anim-delay-1",
+            "timing": {
+              "delay": 100,
+              "direction": "normal",
+              "duration": 600,
+              "easing": "linear",
+              "endDelay": 0,
+              "fill": "forwards",
+              "iterationStart": 0,
+              "iterations": 1
+            },
+            "keyframes": [
+              {
+                "offset": 0,
+                "easing": "ease-out",
+                "composite": "auto",
+                "opacity": "0",
+                "transform": "translateY(20px)",
+                "computedOffset": 0
+              },
+              {
+                "offset": 1,
+                "easing": "ease-out",
+                "composite": "auto",
+                "opacity": "1",
+                "transform": "none",
+                "computedOffset": 1
+              }
+            ]
+          },
+          {
+            "name": "fade-in-up",
+            "state": "finished",
+            "target": "page-columns anim-fade-in-up anim-delay-2",
+            "timing": {
+              "delay": 200,
+              "direction": "normal",
+              "duration": 600,
+              "easing": "linear",
+              "endDelay": 0,
+              "fill": "forwards",
+              "iterationStart": 0,
+              "iterations": 1
+            },
+            "keyframes": [
+              {
+                "offset": 0,
+                "easing": "ease-out",
+                "composite": "auto",
+                "opacity": "0",
+                "transform": "translateY(20px)",
+                "computedOffset": 0
+              },
+              {
+                "offset": 1,
+                "easing": "ease-out",
+                "composite": "auto",
+                "opacity": "1",
+                "transform": "none",
+                "computedOffset": 1
+              }
+            ]
+          },
+          {
+            "name": "fade-in-up",
+            "state": "finished",
+            "target": "nexus-bar footer-row__content anim-fade-in-up anim-delay-5",
+            "timing": {
+              "delay": 500,
+              "direction": "normal",
+              "duration": 600,
+              "easing": "linear",
+              "endDelay": 0,
+              "fill": "forwards",
+              "iterationStart": 0,
+              "iterations": 1
+            },
+            "keyframes": [
+              {
+                "offset": 0,
+                "easing": "ease-out",
+                "composite": "auto",
+                "opacity": "0",
+                "transform": "translateY(20px)",
+                "computedOffset": 0
+              },
+              {
+                "offset": 1,
+                "easing": "ease-out",
+                "composite": "auto",
+                "opacity": "1",
+                "transform": "none",
+                "computedOffset": 1
+              }
+            ]
+          }
+        ],
+        "metrics": {
+          "events": [
+            {
+              "at": 173.09999999403954,
+              "type": "transitionrun",
+              "name": "scrollbar-color",
+              "target": "article-page__stat article-page__stat--btn",
+              "elapsed": 0
+            },
+            {
+              "at": 173.09999999403954,
+              "type": "transitionrun",
+              "name": "scrollbar-color",
+              "target": "owner-profile-card__social-link",
+              "elapsed": 0
+            },
+            {
+              "at": 173.09999999403954,
+              "type": "transitionrun",
+              "name": "scrollbar-color",
+              "target": "owner-profile-card__social-link",
+              "elapsed": 0
+            },
+            {
+              "at": 173.09999999403954,
+              "type": "transitionrun",
+              "name": "scrollbar-color",
+              "target": "daily-quote-card__refresh",
+              "elapsed": 0
+            },
+            {
+              "at": 173.09999999403954,
+              "type": "transitionrun",
+              "name": "scrollbar-color",
+              "target": "owner-profile-card__social-link",
+              "elapsed": 0
+            },
+            {
+              "at": 173.09999999403954,
+              "type": "transitionrun",
+              "name": "scrollbar-color",
+              "target": "article-page__stat article-page__stat--btn",
+              "elapsed": 0
+            },
+            {
+              "at": 294.20000000298023,
+              "type": "animationstart",
+              "name": "fade-in-up",
+              "target": "aside-left anim-fade-in-up anim-delay-1",
+              "elapsed": 0
+            },
+            {
+              "at": 326,
+              "type": "transitioncancel",
+              "name": "scrollbar-color",
+              "target": "article-page__stat article-page__stat--btn",
+              "elapsed": 0.14996799999999996
+            },
+            {
+              "at": 326,
+              "type": "transitionrun",
+              "name": "scrollbar-color",
+              "target": "article-page__stat article-page__stat--btn",
+              "elapsed": 0
+            },
+            {
+              "at": 326,
+              "type": "animationstart",
+              "name": "fade-in-up",
+              "target": "page-columns anim-fade-in-up anim-delay-2",
+              "elapsed": 0
+            },
+            {
+              "at": 372.8999999910593,
+              "type": "transitioncancel",
+              "name": "scrollbar-color",
+              "target": "owner-profile-card__social-link",
+              "elapsed": 0.18326800000000001
+            },
+            {
+              "at": 372.8999999910593,
+              "type": "transitionrun",
+              "name": "scrollbar-color",
+              "target": "owner-profile-card__social-link",
+              "elapsed": 0
+            },
+            {
+              "at": 372.8999999910593,
+              "type": "transitioncancel",
+              "name": "scrollbar-color",
+              "target": "article-page__stat article-page__stat--btn",
+              "elapsed": 0.016600000000000004
+            },
+            {
+              "at": 372.8999999910593,
+              "type": "transitionrun",
+              "name": "scrollbar-color",
+              "target": "article-page__stat article-page__stat--btn",
+              "elapsed": 0
+            },
+            {
+              "at": 372.8999999910593,
+              "type": "transitioncancel",
+              "name": "scrollbar-color",
+              "target": "article-page__stat article-page__stat--btn",
+              "elapsed": 0.18326800000000001
+            },
+            {
+              "at": 372.8999999910593,
+              "type": "transitionrun",
+              "name": "scrollbar-color",
+              "target": "article-page__stat article-page__stat--btn",
+              "elapsed": 0
+            },
+            {
+              "at": 372.8999999910593,
+              "type": "transitioncancel",
+              "name": "scrollbar-color",
+              "target": "owner-profile-card__social-link",
+              "elapsed": 0.18326800000000001
+            },
+            {
+              "at": 372.8999999910593,
+              "type": "transitionrun",
+              "name": "scrollbar-color",
+              "target": "owner-profile-card__social-link",
+              "elapsed": 0
+            },
+            {
+              "at": 372.8999999910593,
+              "type": "transitioncancel",
+              "name": "scrollbar-color",
+              "target": "daily-quote-card__refresh",
+              "elapsed": 0.18326800000000001
+            },
+            {
+              "at": 372.8999999910593,
+              "type": "transitionrun",
+              "name": "scrollbar-color",
+              "target": "daily-quote-card__refresh",
+              "elapsed": 0
+            },
+            {
+              "at": 372.8999999910593,
+              "type": "transitioncancel",
+              "name": "scrollbar-color",
+              "target": "owner-profile-card__social-link",
+              "elapsed": 0.18326800000000001
+            },
+            {
+              "at": 372.8999999910593,
+              "type": "transitionrun",
+              "name": "scrollbar-color",
+              "target": "owner-profile-card__social-link",
+              "elapsed": 0
+            },
+            {
+              "at": 546.5999999940395,
+              "type": "transitionend",
+              "name": "scrollbar-color",
+              "target": "owner-profile-card__social-link",
+              "elapsed": 0.2
+            },
+            {
+              "at": 546.5999999940395,
+              "type": "transitionend",
+              "name": "scrollbar-color",
+              "target": "owner-profile-card__social-link",
+              "elapsed": 0.2
+            },
+            {
+              "at": 546.5999999940395,
+              "type": "transitionend",
+              "name": "scrollbar-color",
+              "target": "owner-profile-card__social-link",
+              "elapsed": 0.2
+            },
+            {
+              "at": 546.7000000029802,
+              "type": "transitionend",
+              "name": "scrollbar-color",
+              "target": "daily-quote-card__refresh",
+              "elapsed": 0.2
+            },
+            {
+              "at": 546.7000000029802,
+              "type": "transitionend",
+              "name": "scrollbar-color",
+              "target": "article-page__stat article-page__stat--btn",
+              "elapsed": 0.2
+            },
+            {
+              "at": 546.7000000029802,
+              "type": "transitionend",
+              "name": "scrollbar-color",
+              "target": "article-page__stat article-page__stat--btn",
+              "elapsed": 0.2
+            },
+            {
+              "at": 665,
+              "type": "animationstart",
+              "name": "fade-in-up",
+              "target": "nexus-bar footer-row__content anim-fade-in-up anim-delay-5",
+              "elapsed": 0
+            },
+            {
+              "at": 855.7000000029802,
+              "type": "animationend",
+              "name": "fade-in-up",
+              "target": "aside-left anim-fade-in-up anim-delay-1",
+              "elapsed": 0.6
+            },
+            {
+              "at": 946.2000000029802,
+              "type": "animationend",
+              "name": "fade-in-up",
+              "target": "page-columns anim-fade-in-up anim-delay-2",
+              "elapsed": 0.6
+            },
+            {
+              "at": 1132.5999999940395,
+              "type": "transitionrun",
+              "name": "width",
+              "target": "reading-progress__bar",
+              "elapsed": 0
+            },
+            {
+              "at": 1142.5,
+              "type": "transitionrun",
+              "name": "opacity",
+              "target": "nexus-bar__progress nexus-progress-fade-enter-active nexus-progress-fade-enter-to",
+              "elapsed": 0
+            },
+            {
+              "at": 1142.5,
+              "type": "transitionrun",
+              "name": "transform",
+              "target": "nexus-bar__progress nexus-progress-fade-enter-active nexus-progress-fade-enter-to",
+              "elapsed": 0
+            },
+            {
+              "at": 1142.5,
+              "type": "transitionrun",
+              "name": "opacity",
+              "target": "custom-scrollbar__track scrollbar-fade-enter-active scrollbar-fade-enter-to",
+              "elapsed": 0
+            },
+            {
+              "at": 1248,
+              "type": "animationend",
+              "name": "fade-in-up",
+              "target": "nexus-bar footer-row__content anim-fade-in-up anim-delay-5",
+              "elapsed": 0.6
+            },
+            {
+              "at": 1271.7000000029802,
+              "type": "transitionend",
+              "name": "width",
+              "target": "reading-progress__bar",
+              "elapsed": 0.15
+            },
+            {
+              "at": 1406.7000000029802,
+              "type": "transitionend",
+              "name": "opacity",
+              "target": "nexus-bar__progress",
+              "elapsed": 0.25
+            },
+            {
+              "at": 1406.7000000029802,
+              "type": "transitionend",
+              "name": "transform",
+              "target": "nexus-bar__progress",
+              "elapsed": 0.25
+            },
+            {
+              "at": 1456.2000000029802,
+              "type": "transitionend",
+              "name": "opacity",
+              "target": "custom-scrollbar__track",
+              "elapsed": 0.3
+            },
+            {
+              "at": 1661.7999999970198,
+              "type": "transitionrun",
+              "name": "width",
+              "target": "reading-progress__bar",
+              "elapsed": 0
+            },
+            {
+              "at": 1694.2000000029802,
+              "type": "transitionrun",
+              "name": "opacity",
+              "target": "nexus-bar__progress nexus-progress-fade-leave-active nexus-progress-fade-leave-to",
+              "elapsed": 0
+            },
+            {
+              "at": 1694.2000000029802,
+              "type": "transitionrun",
+              "name": "transform",
+              "target": "nexus-bar__progress nexus-progress-fade-leave-active nexus-progress-fade-leave-to",
+              "elapsed": 0
+            },
+            {
+              "at": 1793.5999999940395,
+              "type": "transitionend",
+              "name": "width",
+              "target": "reading-progress__bar",
+              "elapsed": 0.15
+            },
+            {
+              "at": 1859.2000000029802,
+              "type": "transitionend",
+              "name": "opacity",
+              "target": "nexus-bar__progress nexus-progress-fade-leave-active nexus-progress-fade-leave-to",
+              "elapsed": 0.2
+            },
+            {
+              "at": 1859.2999999970198,
+              "type": "transitionend",
+              "name": "transform",
+              "target": "nexus-bar__progress nexus-progress-fade-leave-active nexus-progress-fade-leave-to",
+              "elapsed": 0.2
+            }
+          ],
+          "longtasks": [
+            {
+              "at": 240.29999999701977,
+              "duration": 53
+            }
+          ],
+          "shifts": [],
+          "errors": []
+        }
+      }
+    }
+  },
+  {
+    "name": "reading aurora",
+    "status": "observed",
+    "elapsedMs": 7192,
+    "detail": {
+      "before": {
+        "window": 0,
+        "roots": [
+          {
+            "cls": "aurora-scroll-viewport custom-scrollbar__viewport",
+            "top": 1800
+          },
+          {
+            "cls": "aurora-aside__viewport custom-scrollbar__viewport",
+            "top": 0
+          }
+        ],
+        "progress": "width: 33%;"
+      },
+      "returned": {
+        "window": 0,
+        "roots": [
+          {
+            "cls": "aurora-scroll-viewport custom-scrollbar__viewport",
+            "top": 0
+          },
+          {
+            "cls": "aurora-aside__viewport custom-scrollbar__viewport",
+            "top": 0
+          }
+        ],
+        "progress": "width:0%;"
+      },
+      "heading": {
+        "hash": "#heading-12",
+        "rect": {
+          "x": 65,
+          "y": 143.40625,
+          "width": 986,
+          "height": 37.421875,
+          "top": 143.40625,
+          "right": 1051,
+          "bottom": 180.828125,
+          "left": 65
+        }
+      },
+      "image": "reading/reading-aurora.png",
+      "beforeKey": {
+        "window": 0,
+        "roots": [
+          {
+            "cls": "aurora-scroll-viewport custom-scrollbar__viewport",
+            "top": 3792
+          },
+          {
+            "cls": "aurora-aside__viewport custom-scrollbar__viewport",
+            "top": 0
+          }
+        ],
+        "progress": "width: 72%;"
+      },
+      "afterKey": {
+        "window": 0,
+        "roots": [
+          {
+            "cls": "aurora-scroll-viewport custom-scrollbar__viewport",
+            "top": 0
+          },
+          {
+            "cls": "aurora-aside__viewport custom-scrollbar__viewport",
+            "top": 0
+          }
+        ],
+        "progress": "width: 0%;"
+      },
+      "state": {
+        "url": "http://127.0.0.1:12543/articles/107#heading-12",
+        "title": "动效审查长文 - TixXin Blog",
+        "viewport": {
+          "width": 1440,
+          "height": 1000
+        },
+        "reduced": true,
+        "color": "visited dark",
+        "mainChars": 9367,
+        "mainStart": "返回上一页\n动效审查长文\n2026-09-08\n示例专栏\n5 分钟\n2\n0\n收藏\n0\n分享\n审查章节 1\n\n用于检查目录定位、阅读进度与历史滚动恢复。用于检查目录定位、阅读进度与历史滚动恢复。用于检查目录定位、阅读进度与历史滚动恢复。用于检查目录定位、阅读进度与历史滚动恢复。用于检查目录定位、阅读进度与历史滚动恢复。用于检查目录定位、阅读进度与历史滚动恢复。",
+        "inert": [],
+        "bodyOverflow": "",
+        "dialogs": [],
+        "clones": 0,
+        "sidebar": [
+          {
+            "cls": "right-sidebar-wrapper",
+            "visibility": "visible"
+          }
+        ],
+        "focus": "<body><!--teleport start anchor--><!----><!--teleport anchor--><!--teleport start anchor--><!----><!--teleport anchor--><!--teleport start anchor--><!----><!--teleport anchor--><!--teleport start anchor--><!----><!--teleport anchor--><!--te",
+        "animations": [],
+        "metrics": {
+          "events": [
+            {
+              "at": 704.3999999910593,
+              "type": "transitionrun",
+              "name": "opacity",
+              "target": "custom-scrollbar__track scrollbar-fade-enter-active scrollbar-fade-enter-to",
+              "elapsed": 0
+            },
+            {
+              "at": 704.3999999910593,
+              "type": "transitionrun",
+              "name": "opacity",
+              "target": "custom-scrollbar__track scrollbar-fade-enter-active scrollbar-fade-enter-to",
+              "elapsed": 0
+            },
+            {
+              "at": 721.7999999970198,
+              "type": "transitionrun",
+              "name": "border-bottom-color",
+              "target": "aurora-topbar aurora-topbar--scrolled",
+              "elapsed": 0
+            },
+            {
+              "at": 721.7999999970198,
+              "type": "transitionrun",
+              "name": "border-bottom-left-radius",
+              "target": "aurora-topbar aurora-topbar--scrolled",
+              "elapsed": 0
+            },
+            {
+              "at": 721.7999999970198,
+              "type": "transitionrun",
+              "name": "border-bottom-right-radius",
+              "target": "aurora-topbar aurora-topbar--scrolled",
+              "elapsed": 0
+            },
+            {
+              "at": 721.7999999970198,
+              "type": "transitionrun",
+              "name": "box-shadow",
+              "target": "aurora-topbar aurora-topbar--scrolled",
+              "elapsed": 0
+            },
+            {
+              "at": 721.7999999970198,
+              "type": "transitionrun",
+              "name": "max-width",
+              "target": "aurora-topbar aurora-topbar--scrolled",
+              "elapsed": 0
+            },
+            {
+              "at": 721.7999999970198,
+              "type": "transitionrun",
+              "name": "width",
+              "target": "aurora-topbar aurora-topbar--scrolled",
+              "elapsed": 0
+            },
+            {
+              "at": 721.7999999970198,
+              "type": "transitionrun",
+              "name": "width",
+              "target": "reading-progress__bar",
+              "elapsed": 0
+            },
+            {
+              "at": 737.7000000029802,
+              "type": "transitionrun",
+              "name": "opacity",
+              "target": "aurora-scroll-progress progress-fade-enter-active progress-fade-enter-to",
+              "elapsed": 0
+            },
+            {
+              "at": 737.7000000029802,
+              "type": "transitionrun",
+              "name": "transform",
+              "target": "aurora-scroll-progress progress-fade-enter-active progress-fade-enter-to",
+              "elapsed": 0
+            },
+            {
+              "at": 848.5999999940395,
+              "type": "transitionend",
+              "name": "width",
+              "target": "reading-progress__bar",
+              "elapsed": 0.15
+            },
+            {
+              "at": 964.3999999910593,
+              "type": "transitionend",
+              "name": "opacity",
+              "target": "aurora-scroll-progress progress-fade-enter-active progress-fade-enter-to",
+              "elapsed": 0.25
+            },
+            {
+              "at": 964.3999999910593,
+              "type": "transitionend",
+              "name": "transform",
+              "target": "aurora-scroll-progress progress-fade-enter-active progress-fade-enter-to",
+              "elapsed": 0.25
+            },
+            {
+              "at": 980.0999999940395,
+              "type": "transitionend",
+              "name": "opacity",
+              "target": "custom-scrollbar__track scrollbar-fade-enter-active scrollbar-fade-enter-to",
+              "elapsed": 0.3
+            },
+            {
+              "at": 980.0999999940395,
+              "type": "transitionend",
+              "name": "opacity",
+              "target": "custom-scrollbar__track scrollbar-fade-enter-active scrollbar-fade-enter-to",
+              "elapsed": 0.3
+            },
+            {
+              "at": 1097.3999999910593,
+              "type": "transitionend",
+              "name": "border-bottom-color",
+              "target": "aurora-topbar aurora-topbar--scrolled",
+              "elapsed": 0.4
+            },
+            {
+              "at": 1097.3999999910593,
+              "type": "transitionend",
+              "name": "border-bottom-left-radius",
+              "target": "aurora-topbar aurora-topbar--scrolled",
+              "elapsed": 0.4
+            },
+            {
+              "at": 1097.5,
+              "type": "transitionend",
+              "name": "border-bottom-right-radius",
+              "target": "aurora-topbar aurora-topbar--scrolled",
+              "elapsed": 0.4
+            },
+            {
+              "at": 1097.5,
+              "type": "transitionend",
+              "name": "box-shadow",
+              "target": "aurora-topbar aurora-topbar--scrolled",
+              "elapsed": 0.4
+            },
+            {
+              "at": 1097.5,
+              "type": "transitionend",
+              "name": "max-width",
+              "target": "aurora-topbar aurora-topbar--scrolled",
+              "elapsed": 0.4
+            },
+            {
+              "at": 1097.5,
+              "type": "transitionend",
+              "name": "width",
+              "target": "aurora-topbar aurora-topbar--scrolled",
+              "elapsed": 0.4
+            },
+            {
+              "at": 1231.5,
+              "type": "transitionrun",
+              "name": "border-bottom-color",
+              "target": "aurora-topbar",
+              "elapsed": 0
+            },
+            {
+              "at": 1231.5,
+              "type": "transitionrun",
+              "name": "border-bottom-left-radius",
+              "target": "aurora-topbar",
+              "elapsed": 0
+            },
+            {
+              "at": 1231.5,
+              "type": "transitionrun",
+              "name": "border-bottom-right-radius",
+              "target": "aurora-topbar",
+              "elapsed": 0
+            },
+            {
+              "at": 1231.5,
+              "type": "transitionrun",
+              "name": "box-shadow",
+              "target": "aurora-topbar",
+              "elapsed": 0
+            },
+            {
+              "at": 1231.5,
+              "type": "transitionrun",
+              "name": "max-width",
+              "target": "aurora-topbar",
+              "elapsed": 0
+            },
+            {
+              "at": 1231.5,
+              "type": "transitionrun",
+              "name": "width",
+              "target": "aurora-topbar",
+              "elapsed": 0
+            },
+            {
+              "at": 1252.7000000029802,
+              "type": "transitionrun",
+              "name": "width",
+              "target": "reading-progress__bar",
+              "elapsed": 0
+            },
+            {
+              "at": 1271.7999999970198,
+              "type": "transitionrun",
+              "name": "opacity",
+              "target": "aurora-scroll-progress progress-fade-leave-active progress-fade-leave-to",
+              "elapsed": 0
+            },
+            {
+              "at": 1271.7999999970198,
+              "type": "transitionrun",
+              "name": "transform",
+              "target": "aurora-scroll-progress progress-fade-leave-active progress-fade-leave-to",
+              "elapsed": 0
+            },
+            {
+              "at": 1382.7000000029802,
+              "type": "transitionend",
+              "name": "width",
+              "target": "reading-progress__bar",
+              "elapsed": 0.15
+            },
+            {
+              "at": 1645.7000000029802,
+              "type": "transitionend",
+              "name": "border-bottom-color",
+              "target": "aurora-topbar",
+              "elapsed": 0.4
+            },
+            {
+              "at": 1645.7000000029802,
+              "type": "transitionend",
+              "name": "border-bottom-left-radius",
+              "target": "aurora-topbar",
+              "elapsed": 0.4
+            },
+            {
+              "at": 1645.7000000029802,
+              "type": "transitionend",
+              "name": "border-bottom-right-radius",
+              "target": "aurora-topbar",
+              "elapsed": 0.4
+            },
+            {
+              "at": 1645.7000000029802,
+              "type": "transitionend",
+              "name": "box-shadow",
+              "target": "aurora-topbar",
+              "elapsed": 0.4
+            },
+            {
+              "at": 1645.7000000029802,
+              "type": "transitionend",
+              "name": "max-width",
+              "target": "aurora-topbar",
+              "elapsed": 0.4
+            },
+            {
+              "at": 1645.7000000029802,
+              "type": "transitionend",
+              "name": "width",
+              "target": "aurora-topbar",
+              "elapsed": 0.4
+            }
+          ],
+          "longtasks": [],
+          "shifts": [
+            {
+              "at": 226.09999999403954,
+              "value": 0.0011068854437934028,
+              "recentInput": false,
+              "sources": [
+                {
+                  "node": "article-reading-content",
+                  "previous": {
+                    "x": 64,
+                    "y": 273.671875,
+                    "width": 987,
+                    "height": 726.328125,
+                    "top": 273.671875,
+                    "right": 1051,
+                    "bottom": 1000,
+                    "left": 64
+                  },
+                  "current": {
+                    "x": 64,
+                    "y": 276.875,
+                    "width": 987,
+                    "height": 723.125,
+                    "top": 276.875,
+                    "right": 1051,
+                    "bottom": 1000,
+                    "left": 64
+                  }
+                }
+              ]
+            },
+            {
+              "at": 706.7000000029802,
+              "value": 0.000002733094015239197,
+              "recentInput": true,
+              "sources": [
+                {
+                  "node": "toc__progress",
+                  "previous": {
+                    "x": 1355.03125,
+                    "y": 109,
+                    "width": 31.96875,
+                    "height": 23.1875,
+                    "top": 109,
+                    "right": 1387,
+                    "bottom": 132.1875,
+                    "left": 1355.03125
+                  },
+                  "current": {
+                    "x": 1348.546875,
+                    "y": 109,
+                    "width": 38.453125,
+                    "height": 23.1875,
+                    "top": 109,
+                    "right": 1387,
+                    "bottom": 132.1875,
+                    "left": 1348.546875
+                  }
+                }
+              ]
+            },
+            {
+              "at": 755.0999999940395,
+              "value": 0.000049433714313271604,
+              "recentInput": true,
+              "sources": [
+                {
+                  "node": "aurora-topbar__link",
+                  "previous": {
+                    "x": 761.84375,
+                    "y": 10.796875,
+                    "width": 88,
+                    "height": 34.390625,
+                    "top": 10.796875,
+                    "right": 849.84375,
+                    "bottom": 45.1875,
+                    "left": 761.84375
+                  },
+                  "current": {
+                    "x": 757.609375,
+                    "y": 10.796875,
+                    "width": 88,
+                    "height": 34.390625,
+                    "top": 10.796875,
+                    "right": 845.609375,
+                    "bottom": 45.1875,
+                    "left": 757.609375
+                  }
+                },
+                {
+                  "node": "aurora-topbar__link",
+                  "previous": {
+                    "x": 449.84375,
+                    "y": 10.796875,
+                    "width": 74,
+                    "height": 34.390625,
+                    "top": 10.796875,
+                    "right": 523.84375,
+                    "bottom": 45.1875,
+                    "left": 449.84375
+                  },
+                  "current": {
+                    "x": 445.609375,
+                    "y": 10.796875,
+                    "width": 74,
+                    "height": 34.390625,
+                    "top": 10.796875,
+                    "right": 519.609375,
+                    "bottom": 45.1875,
+                    "left": 445.609375
+                  }
+                },
+                {
+                  "node": "aurora-topbar__link",
+                  "previous": {
+                    "x": 527.84375,
+                    "y": 10.796875,
+                    "width": 74,
+                    "height": 34.390625,
+                    "top": 10.796875,
+                    "right": 601.84375,
+                    "bottom": 45.1875,
+                    "left": 527.84375
+                  },
+                  "current": {
+                    "x": 523.609375,
+                    "y": 10.796875,
+                    "width": 74,
+                    "height": 34.390625,
+                    "top": 10.796875,
+                    "right": 597.609375,
+                    "bottom": 45.1875,
+                    "left": 523.609375
+                  }
+                },
+                {
+                  "node": "aurora-topbar__link",
+                  "previous": {
+                    "x": 605.84375,
+                    "y": 10.796875,
+                    "width": 74,
+                    "height": 34.390625,
+                    "top": 10.796875,
+                    "right": 679.84375,
+                    "bottom": 45.1875,
+                    "left": 605.84375
+                  },
+                  "current": {
+                    "x": 601.609375,
+                    "y": 10.796875,
+                    "width": 74,
+                    "height": 34.390625,
+                    "top": 10.796875,
+                    "right": 675.609375,
+                    "bottom": 45.1875,
+                    "left": 601.609375
+                  }
+                },
+                {
+                  "node": "aurora-topbar__link",
+                  "previous": {
+                    "x": 683.84375,
+                    "y": 10.796875,
+                    "width": 74,
+                    "height": 34.390625,
+                    "top": 10.796875,
+                    "right": 757.84375,
+                    "bottom": 45.1875,
+                    "left": 683.84375
+                  },
+                  "current": {
+                    "x": 679.609375,
+                    "y": 10.796875,
+                    "width": 74,
+                    "height": 34.390625,
+                    "top": 10.796875,
+                    "right": 753.609375,
+                    "bottom": 45.1875,
+                    "left": 679.609375
+                  }
+                }
+              ]
+            },
+            {
+              "at": 776.7000000029802,
+              "value": 0.0002426215277777778,
+              "recentInput": true,
+              "sources": [
+                {
+                  "node": "aurora-topbar aurora-topbar--scrolled",
+                  "previous": {
+                    "x": 0,
+                    "y": 0,
+                    "width": 1439.734375,
+                    "height": 62,
+                    "top": 0,
+                    "right": 1439.734375,
+                    "bottom": 62,
+                    "left": 0
+                  },
+                  "current": {
+                    "x": 0,
+                    "y": 0,
+                    "width": 1440,
+                    "height": 65,
+                    "top": 0,
+                    "right": 1440,
+                    "bottom": 65,
+                    "left": 0
+                  }
+                }
+              ]
+            },
+            {
+              "at": 793,
+              "value": 0.00028675130208333336,
+              "recentInput": true,
+              "sources": [
+                {
+                  "node": "aurora-topbar aurora-topbar--scrolled",
+                  "previous": {
+                    "x": 0,
+                    "y": 0,
+                    "width": 1440,
+                    "height": 65,
+                    "top": 0,
+                    "right": 1440,
+                    "bottom": 65,
+                    "left": 0
+                  },
+                  "current": {
+                    "x": 0,
+                    "y": 0,
+                    "width": 1440,
+                    "height": 69,
+                    "top": 0,
+                    "right": 1440,
+                    "bottom": 69,
+                    "left": 0
+                  }
+                }
+              ]
+            },
+            {
+              "at": 807.7000000029802,
+              "value": 0.00030156249999999996,
+              "recentInput": true,
+              "sources": [
+                {
+                  "node": "aurora-topbar aurora-topbar--scrolled",
+                  "previous": {
+                    "x": 0,
+                    "y": 0,
+                    "width": 1440,
+                    "height": 69,
+                    "top": 0,
+                    "right": 1440,
+                    "bottom": 69,
+                    "left": 0
+                  },
+                  "current": {
+                    "x": 0,
+                    "y": 0,
+                    "width": 1440,
+                    "height": 72,
+                    "top": 0,
+                    "right": 1440,
+                    "bottom": 72,
+                    "left": 0
+                  }
+                }
+              ]
+            },
+            {
+              "at": 821.3999999910593,
+              "value": 0.00029378255208333334,
+              "recentInput": true,
+              "sources": [
+                {
+                  "node": "aurora-topbar aurora-topbar--scrolled",
+                  "previous": {
+                    "x": 0,
+                    "y": 0,
+                    "width": 1440,
+                    "height": 72,
+                    "top": 0,
+                    "right": 1440,
+                    "bottom": 72,
+                    "left": 0
+                  },
+                  "current": {
+                    "x": 0,
+                    "y": 0,
+                    "width": 1440,
+                    "height": 75,
+                    "top": 0,
+                    "right": 1440,
+                    "bottom": 75,
+                    "left": 0
+                  }
+                }
+              ]
+            },
+            {
+              "at": 834.2000000029802,
+              "value": 0.0000591015625,
+              "recentInput": true,
+              "sources": [
+                {
+                  "node": "aurora-topbar__link",
+                  "previous": {
+                    "x": 748.609375,
+                    "y": 10.796875,
+                    "width": 88,
+                    "height": 34.390625,
+                    "top": 10.796875,
+                    "right": 836.609375,
+                    "bottom": 45.1875,
+                    "left": 748.609375
+                  },
+                  "current": {
+                    "x": 743.546875,
+                    "y": 10.796875,
+                    "width": 88,
+                    "height": 34.390625,
+                    "top": 10.796875,
+                    "right": 831.546875,
+                    "bottom": 45.1875,
+                    "left": 743.546875
+                  }
+                },
+                {
+                  "node": "aurora-topbar__link",
+                  "previous": {
+                    "x": 436.609375,
+                    "y": 10.796875,
+                    "width": 74,
+                    "height": 34.390625,
+                    "top": 10.796875,
+                    "right": 510.609375,
+                    "bottom": 45.1875,
+                    "left": 436.609375
+                  },
+                  "current": {
+                    "x": 431.546875,
+                    "y": 10.796875,
+                    "width": 74,
+                    "height": 34.390625,
+                    "top": 10.796875,
+                    "right": 505.546875,
+                    "bottom": 45.1875,
+                    "left": 431.546875
+                  }
+                },
+                {
+                  "node": "aurora-topbar__link",
+                  "previous": {
+                    "x": 514.609375,
+                    "y": 10.796875,
+                    "width": 74,
+                    "height": 34.390625,
+                    "top": 10.796875,
+                    "right": 588.609375,
+                    "bottom": 45.1875,
+                    "left": 514.609375
+                  },
+                  "current": {
+                    "x": 509.546875,
+                    "y": 10.796875,
+                    "width": 74,
+                    "height": 34.390625,
+                    "top": 10.796875,
+                    "right": 583.546875,
+                    "bottom": 45.1875,
+                    "left": 509.546875
+                  }
+                },
+                {
+                  "node": "aurora-topbar__link",
+                  "previous": {
+                    "x": 592.609375,
+                    "y": 10.796875,
+                    "width": 74,
+                    "height": 34.390625,
+                    "top": 10.796875,
+                    "right": 666.609375,
+                    "bottom": 45.1875,
+                    "left": 592.609375
+                  },
+                  "current": {
+                    "x": 587.546875,
+                    "y": 10.796875,
+                    "width": 74,
+                    "height": 34.390625,
+                    "top": 10.796875,
+                    "right": 661.546875,
+                    "bottom": 45.1875,
+                    "left": 587.546875
+                  }
+                },
+                {
+                  "node": "aurora-topbar__link",
+                  "previous": {
+                    "x": 670.609375,
+                    "y": 10.796875,
+                    "width": 74,
+                    "height": 34.390625,
+                    "top": 10.796875,
+                    "right": 744.609375,
+                    "bottom": 45.1875,
+                    "left": 670.609375
+                  },
+                  "current": {
+                    "x": 665.546875,
+                    "y": 10.796875,
+                    "width": 74,
+                    "height": 34.390625,
+                    "top": 10.796875,
+                    "right": 739.546875,
+                    "bottom": 45.1875,
+                    "left": 665.546875
+                  }
+                }
+              ]
+            },
+            {
+              "at": 848.5,
+              "value": 0.000249609375,
+              "recentInput": true,
+              "sources": [
+                {
+                  "node": "aurora-topbar aurora-topbar--scrolled",
+                  "previous": {
+                    "x": 0,
+                    "y": 0,
+                    "width": 1439.46875,
+                    "height": 78,
+                    "top": 0,
+                    "right": 1439.46875,
+                    "bottom": 78,
+                    "left": 0
+                  },
+                  "current": {
+                    "x": 0,
+                    "y": 0,
+                    "width": 1440,
+                    "height": 81,
+                    "top": 0,
+                    "right": 1440,
+                    "bottom": 81,
+                    "left": 0
+                  }
+                }
+              ]
+            },
+            {
+              "at": 863.2999999970198,
+              "value": 0.00004505582079475308,
+              "recentInput": true,
+              "sources": [
+                {
+                  "node": "aurora-topbar__link",
+                  "previous": {
+                    "x": 743.265625,
+                    "y": 10.796875,
+                    "width": 88,
+                    "height": 34.390625,
+                    "top": 10.796875,
+                    "right": 831.265625,
+                    "bottom": 45.1875,
+                    "left": 743.265625
+                  },
+                  "current": {
+                    "x": 739.40625,
+                    "y": 10.796875,
+                    "width": 88,
+                    "height": 34.390625,
+                    "top": 10.796875,
+                    "right": 827.40625,
+                    "bottom": 45.1875,
+                    "left": 739.40625
+                  }
+                },
+                {
+                  "node": "aurora-topbar__link",
+                  "previous": {
+                    "x": 431.265625,
+                    "y": 10.796875,
+                    "width": 74,
+                    "height": 34.390625,
+                    "top": 10.796875,
+                    "right": 505.265625,
+                    "bottom": 45.1875,
+                    "left": 431.265625
+                  },
+                  "current": {
+                    "x": 427.40625,
+                    "y": 10.796875,
+                    "width": 74,
+                    "height": 34.390625,
+                    "top": 10.796875,
+                    "right": 501.40625,
+                    "bottom": 45.1875,
+                    "left": 427.40625
+                  }
+                },
+                {
+                  "node": "aurora-topbar__link",
+                  "previous": {
+                    "x": 509.265625,
+                    "y": 10.796875,
+                    "width": 74,
+                    "height": 34.390625,
+                    "top": 10.796875,
+                    "right": 583.265625,
+                    "bottom": 45.1875,
+                    "left": 509.265625
+                  },
+                  "current": {
+                    "x": 505.40625,
+                    "y": 10.796875,
+                    "width": 74,
+                    "height": 34.390625,
+                    "top": 10.796875,
+                    "right": 579.40625,
+                    "bottom": 45.1875,
+                    "left": 505.40625
+                  }
+                },
+                {
+                  "node": "aurora-topbar__link",
+                  "previous": {
+                    "x": 587.265625,
+                    "y": 10.796875,
+                    "width": 74,
+                    "height": 34.390625,
+                    "top": 10.796875,
+                    "right": 661.265625,
+                    "bottom": 45.1875,
+                    "left": 587.265625
+                  },
+                  "current": {
+                    "x": 583.40625,
+                    "y": 10.796875,
+                    "width": 74,
+                    "height": 34.390625,
+                    "top": 10.796875,
+                    "right": 657.40625,
+                    "bottom": 45.1875,
+                    "left": 583.40625
+                  }
+                },
+                {
+                  "node": "aurora-topbar__link",
+                  "previous": {
+                    "x": 665.265625,
+                    "y": 10.796875,
+                    "width": 74,
+                    "height": 34.390625,
+                    "top": 10.796875,
+                    "right": 739.265625,
+                    "bottom": 45.1875,
+                    "left": 665.265625
+                  },
+                  "current": {
+                    "x": 661.40625,
+                    "y": 10.796875,
+                    "width": 74,
+                    "height": 34.390625,
+                    "top": 10.796875,
+                    "right": 735.40625,
+                    "bottom": 45.1875,
+                    "left": 661.40625
+                  }
+                }
+              ]
+            },
+            {
+              "at": 879.8999999910593,
+              "value": 0.00003841724537037037,
+              "recentInput": true,
+              "sources": [
+                {
+                  "node": "aurora-topbar__link",
+                  "previous": {
+                    "x": 741.0625,
+                    "y": 10.796875,
+                    "width": 88,
+                    "height": 34.390625,
+                    "top": 10.796875,
+                    "right": 829.0625,
+                    "bottom": 45.1875,
+                    "left": 741.0625
+                  },
+                  "current": {
+                    "x": 737.734375,
+                    "y": 10.796875,
+                    "width": 88,
+                    "height": 34.390625,
+                    "top": 10.796875,
+                    "right": 825.734375,
+                    "bottom": 45.1875,
+                    "left": 737.734375
+                  }
+                },
+                {
+                  "node": "aurora-topbar__link",
+                  "previous": {
+                    "x": 429.0625,
+                    "y": 10.796875,
+                    "width": 74,
+                    "height": 34.390625,
+                    "top": 10.796875,
+                    "right": 503.0625,
+                    "bottom": 45.1875,
+                    "left": 429.0625
+                  },
+                  "current": {
+                    "x": 425.734375,
+                    "y": 10.796875,
+                    "width": 74,
+                    "height": 34.390625,
+                    "top": 10.796875,
+                    "right": 499.734375,
+                    "bottom": 45.1875,
+                    "left": 425.734375
+                  }
+                },
+                {
+                  "node": "aurora-topbar__link",
+                  "previous": {
+                    "x": 507.0625,
+                    "y": 10.796875,
+                    "width": 74,
+                    "height": 34.390625,
+                    "top": 10.796875,
+                    "right": 581.0625,
+                    "bottom": 45.1875,
+                    "left": 507.0625
+                  },
+                  "current": {
+                    "x": 503.734375,
+                    "y": 10.796875,
+                    "width": 74,
+                    "height": 34.390625,
+                    "top": 10.796875,
+                    "right": 577.734375,
+                    "bottom": 45.1875,
+                    "left": 503.734375
+                  }
+                },
+                {
+                  "node": "aurora-topbar__link",
+                  "previous": {
+                    "x": 585.0625,
+                    "y": 10.796875,
+                    "width": 74,
+                    "height": 34.390625,
+                    "top": 10.796875,
+                    "right": 659.0625,
+                    "bottom": 45.1875,
+                    "left": 585.0625
+                  },
+                  "current": {
+                    "x": 581.734375,
+                    "y": 10.796875,
+                    "width": 74,
+                    "height": 34.390625,
+                    "top": 10.796875,
+                    "right": 655.734375,
+                    "bottom": 45.1875,
+                    "left": 581.734375
+                  }
+                },
+                {
+                  "node": "aurora-topbar__link",
+                  "previous": {
+                    "x": 663.0625,
+                    "y": 10.796875,
+                    "width": 74,
+                    "height": 34.390625,
+                    "top": 10.796875,
+                    "right": 737.0625,
+                    "bottom": 45.1875,
+                    "left": 663.0625
+                  },
+                  "current": {
+                    "x": 659.734375,
+                    "y": 10.796875,
+                    "width": 74,
+                    "height": 34.390625,
+                    "top": 10.796875,
+                    "right": 733.734375,
+                    "bottom": 45.1875,
+                    "left": 659.734375
+                  }
+                }
+              ]
+            },
+            {
+              "at": 1232.2999999970198,
+              "value": 0.000002733094015239197,
+              "recentInput": true,
+              "sources": [
+                {
+                  "node": "toc__progress",
+                  "previous": {
+                    "x": 1348.546875,
+                    "y": 109,
+                    "width": 38.453125,
+                    "height": 23.1875,
+                    "top": 109,
+                    "right": 1387,
+                    "bottom": 132.1875,
+                    "left": 1348.546875
+                  },
+                  "current": {
+                    "x": 1355.03125,
+                    "y": 109,
+                    "width": 31.96875,
+                    "height": 23.1875,
+                    "top": 109,
+                    "right": 1387,
+                    "bottom": 132.1875,
+                    "left": 1355.03125
+                  }
+                }
+              ]
+            },
+            {
+              "at": 1290.2999999970198,
+              "value": 0.00004971143180941358,
+              "recentInput": true,
+              "sources": [
+                {
+                  "node": "aurora-topbar__link",
+                  "previous": {
+                    "x": 730.140625,
+                    "y": 10.796875,
+                    "width": 88,
+                    "height": 34.390625,
+                    "top": 10.796875,
+                    "right": 818.140625,
+                    "bottom": 45.1875,
+                    "left": 730.140625
+                  },
+                  "current": {
+                    "x": 734.375,
+                    "y": 10.796875,
+                    "width": 88,
+                    "height": 34.390625,
+                    "top": 10.796875,
+                    "right": 822.375,
+                    "bottom": 45.1875,
+                    "left": 734.375
+                  }
+                },
+                {
+                  "node": "aurora-topbar__link",
+                  "previous": {
+                    "x": 418.140625,
+                    "y": 10.796875,
+                    "width": 74,
+                    "height": 34.390625,
+                    "top": 10.796875,
+                    "right": 492.140625,
+                    "bottom": 45.1875,
+                    "left": 418.140625
+                  },
+                  "current": {
+                    "x": 422.375,
+                    "y": 10.796875,
+                    "width": 74,
+                    "height": 34.390625,
+                    "top": 10.796875,
+                    "right": 496.375,
+                    "bottom": 45.1875,
+                    "left": 422.375
+                  }
+                },
+                {
+                  "node": "aurora-topbar__link",
+                  "previous": {
+                    "x": 496.140625,
+                    "y": 10.796875,
+                    "width": 74,
+                    "height": 34.390625,
+                    "top": 10.796875,
+                    "right": 570.140625,
+                    "bottom": 45.1875,
+                    "left": 496.140625
+                  },
+                  "current": {
+                    "x": 500.375,
+                    "y": 10.796875,
+                    "width": 74,
+                    "height": 34.390625,
+                    "top": 10.796875,
+                    "right": 574.375,
+                    "bottom": 45.1875,
+                    "left": 500.375
+                  }
+                },
+                {
+                  "node": "aurora-topbar__link",
+                  "previous": {
+                    "x": 574.140625,
+                    "y": 10.796875,
+                    "width": 74,
+                    "height": 34.390625,
+                    "top": 10.796875,
+                    "right": 648.140625,
+                    "bottom": 45.1875,
+                    "left": 574.140625
+                  },
+                  "current": {
+                    "x": 578.375,
+                    "y": 10.796875,
+                    "width": 74,
+                    "height": 34.390625,
+                    "top": 10.796875,
+                    "right": 652.375,
+                    "bottom": 45.1875,
+                    "left": 578.375
+                  }
+                },
+                {
+                  "node": "aurora-topbar__link",
+                  "previous": {
+                    "x": 652.140625,
+                    "y": 10.796875,
+                    "width": 74,
+                    "height": 34.390625,
+                    "top": 10.796875,
+                    "right": 726.140625,
+                    "bottom": 45.1875,
+                    "left": 652.140625
+                  },
+                  "current": {
+                    "x": 656.375,
+                    "y": 10.796875,
+                    "width": 74,
+                    "height": 34.390625,
+                    "top": 10.796875,
+                    "right": 730.375,
+                    "bottom": 45.1875,
+                    "left": 656.375
+                  }
+                }
+              ]
+            },
+            {
+              "at": 1309.0999999940395,
+              "value": 0.00033123914930555554,
+              "recentInput": true,
+              "sources": [
+                {
+                  "node": "aurora-topbar",
+                  "previous": {
+                    "x": 0,
+                    "y": 0,
+                    "width": 1440,
+                    "height": 89,
+                    "top": 0,
+                    "right": 1440,
+                    "bottom": 89,
+                    "left": 0
+                  },
+                  "current": {
+                    "x": 0,
+                    "y": 0,
+                    "width": 1440,
+                    "height": 86,
+                    "top": 0,
+                    "right": 1440,
+                    "bottom": 86,
+                    "left": 0
+                  }
+                }
+              ]
+            },
+            {
+              "at": 1327.5999999940395,
+              "value": 0.00035740017361111107,
+              "recentInput": true,
+              "sources": [
+                {
+                  "node": "aurora-topbar",
+                  "previous": {
+                    "x": 0,
+                    "y": 0,
+                    "width": 1440,
+                    "height": 86,
+                    "top": 0,
+                    "right": 1440,
+                    "bottom": 86,
+                    "left": 0
+                  },
+                  "current": {
+                    "x": 0,
+                    "y": 0,
+                    "width": 1440,
+                    "height": 82,
+                    "top": 0,
+                    "right": 1440,
+                    "bottom": 82,
+                    "left": 0
+                  }
+                }
+              ]
+            },
+            {
+              "at": 1344.8999999910593,
+              "value": 0.00034344618055555555,
+              "recentInput": true,
+              "sources": [
+                {
+                  "node": "aurora-topbar",
+                  "previous": {
+                    "x": 0,
+                    "y": 0,
+                    "width": 1440,
+                    "height": 82,
+                    "top": 0,
+                    "right": 1440,
+                    "bottom": 82,
+                    "left": 0
+                  },
+                  "current": {
+                    "x": 0,
+                    "y": 0,
+                    "width": 1440,
+                    "height": 79,
+                    "top": 0,
+                    "right": 1440,
+                    "bottom": 79,
+                    "left": 0
+                  }
+                }
+              ]
+            },
+            {
+              "at": 1364.2999999970198,
+              "value": 0.0005871853298611111,
+              "recentInput": true,
+              "sources": [
+                {
+                  "node": "aurora-topbar",
+                  "previous": {
+                    "x": 0,
+                    "y": 0,
+                    "width": 1440,
+                    "height": 79,
+                    "top": 0,
+                    "right": 1440,
+                    "bottom": 79,
+                    "left": 0
+                  },
+                  "current": {
+                    "x": 0,
+                    "y": 0,
+                    "width": 1440,
+                    "height": 73,
+                    "top": 0,
+                    "right": 1440,
+                    "bottom": 73,
+                    "left": 0
+                  }
+                }
+              ]
+            },
+            {
+              "at": 1382.5999999940395,
+              "value": 0.00022574869791666663,
+              "recentInput": true,
+              "sources": [
+                {
+                  "node": "aurora-topbar",
+                  "previous": {
+                    "x": 0.03125,
+                    "y": 0,
+                    "width": 1439.96875,
+                    "height": 73,
+                    "top": 0,
+                    "right": 1440,
+                    "bottom": 73,
+                    "left": 0.03125
+                  },
+                  "current": {
+                    "x": 0,
+                    "y": 0,
+                    "width": 1440,
+                    "height": 70,
+                    "top": 0,
+                    "right": 1440,
+                    "bottom": 70,
+                    "left": 0
+                  }
+                }
+              ]
+            },
+            {
+              "at": 1401.8999999910593,
+              "value": 0.000045308943383487655,
+              "recentInput": true,
+              "sources": [
+                {
+                  "node": "aurora-topbar__link",
+                  "previous": {
+                    "x": 748.71875,
+                    "y": 10.796875,
+                    "width": 88,
+                    "height": 34.390625,
+                    "top": 10.796875,
+                    "right": 836.71875,
+                    "bottom": 45.1875,
+                    "left": 748.71875
+                  },
+                  "current": {
+                    "x": 752.578125,
+                    "y": 10.796875,
+                    "width": 88,
+                    "height": 34.390625,
+                    "top": 10.796875,
+                    "right": 840.578125,
+                    "bottom": 45.1875,
+                    "left": 752.578125
+                  }
+                },
+                {
+                  "node": "aurora-topbar__link",
+                  "previous": {
+                    "x": 436.71875,
+                    "y": 10.796875,
+                    "width": 74,
+                    "height": 34.390625,
+                    "top": 10.796875,
+                    "right": 510.71875,
+                    "bottom": 45.1875,
+                    "left": 436.71875
+                  },
+                  "current": {
+                    "x": 440.578125,
+                    "y": 10.796875,
+                    "width": 74,
+                    "height": 34.390625,
+                    "top": 10.796875,
+                    "right": 514.578125,
+                    "bottom": 45.1875,
+                    "left": 440.578125
+                  }
+                },
+                {
+                  "node": "aurora-topbar__link",
+                  "previous": {
+                    "x": 514.71875,
+                    "y": 10.796875,
+                    "width": 74,
+                    "height": 34.390625,
+                    "top": 10.796875,
+                    "right": 588.71875,
+                    "bottom": 45.1875,
+                    "left": 514.71875
+                  },
+                  "current": {
+                    "x": 518.578125,
+                    "y": 10.796875,
+                    "width": 74,
+                    "height": 34.390625,
+                    "top": 10.796875,
+                    "right": 592.578125,
+                    "bottom": 45.1875,
+                    "left": 518.578125
+                  }
+                },
+                {
+                  "node": "aurora-topbar__link",
+                  "previous": {
+                    "x": 592.71875,
+                    "y": 10.796875,
+                    "width": 74,
+                    "height": 34.390625,
+                    "top": 10.796875,
+                    "right": 666.71875,
+                    "bottom": 45.1875,
+                    "left": 592.71875
+                  },
+                  "current": {
+                    "x": 596.578125,
+                    "y": 10.796875,
+                    "width": 74,
+                    "height": 34.390625,
+                    "top": 10.796875,
+                    "right": 670.578125,
+                    "bottom": 45.1875,
+                    "left": 596.578125
+                  }
+                },
+                {
+                  "node": "aurora-topbar__link",
+                  "previous": {
+                    "x": 670.71875,
+                    "y": 10.796875,
+                    "width": 74,
+                    "height": 34.390625,
+                    "top": 10.796875,
+                    "right": 744.71875,
+                    "bottom": 45.1875,
+                    "left": 670.71875
+                  },
+                  "current": {
+                    "x": 674.578125,
+                    "y": 10.796875,
+                    "width": 74,
+                    "height": 34.390625,
+                    "top": 10.796875,
+                    "right": 748.578125,
+                    "bottom": 45.1875,
+                    "left": 674.578125
+                  }
+                }
+              ]
+            },
+            {
+              "at": 1419.7999999970198,
+              "value": 0.00003858095522280092,
+              "recentInput": true,
+              "sources": [
+                {
+                  "node": "aurora-topbar__link",
+                  "previous": {
+                    "x": 750.90625,
+                    "y": 10.796875,
+                    "width": 88,
+                    "height": 34.390625,
+                    "top": 10.796875,
+                    "right": 838.90625,
+                    "bottom": 45.1875,
+                    "left": 750.90625
+                  },
+                  "current": {
+                    "x": 754.234375,
+                    "y": 10.796875,
+                    "width": 88,
+                    "height": 34.390625,
+                    "top": 10.796875,
+                    "right": 842.234375,
+                    "bottom": 45.1875,
+                    "left": 754.234375
+                  }
+                },
+                {
+                  "node": "aurora-topbar__link",
+                  "previous": {
+                    "x": 438.90625,
+                    "y": 10.796875,
+                    "width": 74,
+                    "height": 34.390625,
+                    "top": 10.796875,
+                    "right": 512.90625,
+                    "bottom": 45.1875,
+                    "left": 438.90625
+                  },
+                  "current": {
+                    "x": 442.234375,
+                    "y": 10.796875,
+                    "width": 74,
+                    "height": 34.390625,
+                    "top": 10.796875,
+                    "right": 516.234375,
+                    "bottom": 45.1875,
+                    "left": 442.234375
+                  }
+                },
+                {
+                  "node": "aurora-topbar__link",
+                  "previous": {
+                    "x": 516.90625,
+                    "y": 10.796875,
+                    "width": 74,
+                    "height": 34.390625,
+                    "top": 10.796875,
+                    "right": 590.90625,
+                    "bottom": 45.1875,
+                    "left": 516.90625
+                  },
+                  "current": {
+                    "x": 520.234375,
+                    "y": 10.796875,
+                    "width": 74,
+                    "height": 34.390625,
+                    "top": 10.796875,
+                    "right": 594.234375,
+                    "bottom": 45.1875,
+                    "left": 520.234375
+                  }
+                },
+                {
+                  "node": "aurora-topbar__link",
+                  "previous": {
+                    "x": 594.90625,
+                    "y": 10.796875,
+                    "width": 74,
+                    "height": 34.390625,
+                    "top": 10.796875,
+                    "right": 668.90625,
+                    "bottom": 45.1875,
+                    "left": 594.90625
+                  },
+                  "current": {
+                    "x": 598.234375,
+                    "y": 10.796875,
+                    "width": 74,
+                    "height": 34.390625,
+                    "top": 10.796875,
+                    "right": 672.234375,
+                    "bottom": 45.1875,
+                    "left": 598.234375
+                  }
+                },
+                {
+                  "node": "aurora-topbar__link",
+                  "previous": {
+                    "x": 672.90625,
+                    "y": 10.796875,
+                    "width": 74,
+                    "height": 34.390625,
+                    "top": 10.796875,
+                    "right": 746.90625,
+                    "bottom": 45.1875,
+                    "left": 672.90625
+                  },
+                  "current": {
+                    "x": 676.234375,
+                    "y": 10.796875,
+                    "width": 74,
+                    "height": 34.390625,
+                    "top": 10.796875,
+                    "right": 750.234375,
+                    "bottom": 45.1875,
+                    "left": 676.234375
+                  }
+                }
+              ]
+            }
+          ],
+          "errors": []
+        }
+      }
+    }
+  },
+  {
+    "name": "reading dock",
+    "status": "observed",
+    "elapsedMs": 5654,
+    "detail": {
+      "before": {
+        "window": 1800,
+        "roots": [],
+        "progress": "width: 24%;"
+      },
+      "returned": {
+        "window": 0,
+        "roots": [],
+        "progress": "width:0%;"
+      },
+      "heading": null,
+      "image": "reading/reading-dock.png",
+      "beforeKey": {
+        "window": 0,
+        "roots": [],
+        "progress": "width:0%;"
+      },
+      "afterKey": {
+        "window": 100,
+        "roots": [],
+        "progress": "width:0%;"
+      },
+      "state": {
+        "url": "http://127.0.0.1:12543/articles/107",
+        "title": "动效审查长文 - TixXin Blog",
+        "viewport": {
+          "width": 1440,
+          "height": 1000
+        },
+        "reduced": true,
+        "color": "visited dark",
+        "mainChars": 9367,
+        "mainStart": "返回上一页\n动效审查长文\n2026-09-08\n示例专栏\n5 分钟\n2\n0\n收藏\n0\n分享\n审查章节 1\n\n用于检查目录定位、阅读进度与历史滚动恢复。用于检查目录定位、阅读进度与历史滚动恢复。用于检查目录定位、阅读进度与历史滚动恢复。用于检查目录定位、阅读进度与历史滚动恢复。用于检查目录定位、阅读进度与历史滚动恢复。用于检查目录定位、阅读进度与历史滚动恢复。",
+        "inert": [],
+        "bodyOverflow": "",
+        "dialogs": [],
+        "clones": 0,
+        "sidebar": [
+          {
+            "cls": "right-sidebar-wrapper",
+            "visibility": "visible"
+          }
+        ],
+        "focus": "<body><!--teleport start anchor--><!----><!--teleport anchor--><!--teleport start anchor--><div class=\"reading-progress\" aria-hidden=\"true\" data-v-aea79775=\"\" data-v-a1157435=\"\"><div class=\"reading-progress__bar\" style=\"width:0%;\" data-v-a1",
+        "animations": [],
+        "metrics": {
+          "events": [],
+          "longtasks": [],
+          "shifts": [
+            {
+              "at": 219.5,
+              "value": 0.0007783426920572917,
+              "recentInput": false,
+              "sources": [
+                {
+                  "node": "article-reading-content",
+                  "previous": {
+                    "x": 394,
+                    "y": 225.671875,
+                    "width": 651,
+                    "height": 774.328125,
+                    "top": 225.671875,
+                    "right": 1045,
+                    "bottom": 1000,
+                    "left": 394
+                  },
+                  "current": {
+                    "x": 394,
+                    "y": 228.875,
+                    "width": 651,
+                    "height": 771.125,
+                    "top": 228.875,
+                    "right": 1045,
+                    "bottom": 1000,
+                    "left": 394
+                  }
+                }
+              ]
+            }
+          ],
+          "errors": []
+        }
+      }
+    }
+  }
+]
