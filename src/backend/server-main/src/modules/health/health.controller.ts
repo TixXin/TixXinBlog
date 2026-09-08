@@ -5,7 +5,8 @@
  * @since 2026-07-20
  */
 
-import { Controller, Get } from '@nestjs/common'
+import { Controller, Get, ServiceUnavailableException } from '@nestjs/common'
+import { EntityManager } from '@mikro-orm/postgresql'
 
 export interface HealthStatus {
   status: 'ok'
@@ -15,6 +16,7 @@ export interface HealthStatus {
 
 @Controller()
 export class HealthController {
+  constructor(private readonly em: EntityManager) {}
   @Get('health')
   health(): HealthStatus {
     return {
@@ -24,13 +26,14 @@ export class HealthController {
     }
   }
 
-  /** TODO(实体建模阶段): 就绪检查需真实探测 PostgreSQL / Redis 连接 */
+  /** 检测当前业务必需的 PostgreSQL，连接失败时对编排器返回 503。 */
   @Get('ready')
-  ready(): HealthStatus {
-    return {
-      status: 'ok',
-      uptimeSeconds: Math.round(process.uptime()),
-      timestamp: new Date().toISOString(),
+  async ready(): Promise<HealthStatus> {
+    try {
+      await this.em.getConnection().execute('select 1')
+      return this.health()
+    } catch {
+      throw new ServiceUnavailableException('数据库尚未就绪')
     }
   }
 }
