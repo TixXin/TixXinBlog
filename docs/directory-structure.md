@@ -411,3 +411,11 @@ app/assets/styles/
 - `usePostList.ts` 保留等待/失败时的原列表并向传输层传递取消信号；`usePostListPagination.ts` 区分显式翻页与串行触底追加，滚动位置交由URL历史恢复统一管理。
 - `tests/e2e/content-tabs.spec.ts`、`post-pagination.spec.ts`：多主题多尺寸标签往返、慢请求、分页时序、错误恢复及跨页联动回归。
 - `docs/content-navigation-fix/`：本轮原因、处理方式、三浏览器结果及实际动画证据。
+
+### 页面分区与朋友圈资料归属
+
+- `app/components/common/PageFrame.vue`：`headerKey` 与 header/default/overlays 插槽，SSR直接输出标题、正文和独立浮层；保留原页面状态与事件。
+- `app/utils/pageMotionRegions.ts`：显式区域定位及请求级pending注入；`usePageMotion`按标题组和正文边界分别播放、取消与清理动效，特殊页面继续使用原边界。
+- `app/composables/useMomentSidebarPlacement.ts`：作者和日历按主题与断点分配，监听由页面作用域持有；`app/components/moment/InfoDrawer.vue`仅展示固定侧栏缺失的信息。
+- `CommonContextDrawer`支持可选`v-model:open`以处理布局变化，并在打开前确定可恢复的入口焦点。
+- `tests/e2e/page-regions.spec.ts`、`moment-sidebar.spec.ts`：分区、SSR、慢导航、侧栏去重、跨主题/断点、日期状态和焦点回归；结果见`docs/page-regions/`。
