@@ -1,6 +1,6 @@
 <!--
   @file LinkForm.vue
-  @description 申请友链表单组件（纯 UI，不实现提交逻辑）
+  @description 整理友链资料供本机复制，明确在线申请尚未开放
   @author TixXin
   @since 2025-03-17
 -->
@@ -11,63 +11,67 @@
       <Icon name="lucide:plus-circle" size="18" />
       申请友链
     </h3>
-    <p class="link-form__desc">
-      欢迎互换友链！请填写以下信息，我会尽快审核添加。要求：网站正常运行、内容健康、有定期更新。
-    </p>
+    <p class="link-form__desc">在线申请尚未开放。你可以在下方整理并复制友链资料；内容不会自动提交给博主。</p>
     <form class="link-form__fields" @submit.prevent="handleSubmit">
       <div class="link-form__field">
-        <label class="link-form__label">站点名称</label>
+        <label class="link-form__label" for="friend-name">站点名称</label>
         <input
+          id="friend-name"
           v-model="form.name"
           type="text"
           class="input-field"
           placeholder="例如：TixXin Blog"
           maxlength="40"
           required
-        >
+        />
       </div>
       <div class="link-form__field">
-        <label class="link-form__label">站点地址</label>
+        <label class="link-form__label" for="friend-url">站点地址</label>
         <input
+          id="friend-url"
           v-model="form.url"
           type="url"
           class="input-field"
           placeholder="https://example.com"
           pattern="https?://.+"
           required
-        >
+        />
       </div>
       <div class="link-form__field">
-        <label class="link-form__label">头像地址</label>
+        <label class="link-form__label" for="friend-avatar">头像地址</label>
         <input
+          id="friend-avatar"
           v-model="form.avatar"
           type="url"
           class="input-field"
           placeholder="https://example.com/avatar.png"
           pattern="https?://.+"
           required
-        >
+        />
       </div>
       <div class="link-form__field">
-        <label class="link-form__label">一句话描述</label>
+        <label class="link-form__label" for="friend-description">一句话描述</label>
         <input
+          id="friend-description"
           v-model="form.description"
           type="text"
           class="input-field"
           placeholder="简要介绍你的站点"
           maxlength="60"
           required
-        >
+        />
       </div>
       <div class="link-form__submit">
-        <button type="submit" class="btn-primary" :disabled="!isValid">提交申请</button>
+        <button type="submit" class="btn-primary" :disabled="!isValid">复制友链资料</button>
+        <p v-if="copyError" role="alert">复制失败，资料已保留。请手动复制各字段。</p>
       </div>
     </form>
   </div>
 </template>
 
 <script setup lang="ts">
-const { info } = useToast()
+const { success } = useToast()
+const copyError = ref(false)
 
 const form = reactive({
   name: '',
@@ -87,9 +91,17 @@ const isValid = computed(
     form.description.trim().length > 0,
 )
 
-function handleSubmit() {
+async function handleSubmit() {
   if (!isValid.value) return
-  info('友链申请功能开发中，敬请期待！')
+  copyError.value = false
+  try {
+    await navigator.clipboard.writeText(
+      `站点名称：${form.name.trim()}\n站点地址：${form.url.trim()}\n头像地址：${form.avatar.trim()}\n一句话描述：${form.description.trim()}`,
+    )
+    success('友链资料已复制，尚未提交申请')
+  } catch {
+    copyError.value = true
+  }
 }
 </script>
 

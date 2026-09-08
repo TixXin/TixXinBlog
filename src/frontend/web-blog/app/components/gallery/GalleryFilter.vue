@@ -6,13 +6,14 @@
 -->
 
 <template>
-  <div class="gallery-filter" role="toolbar" aria-label="照片分类筛选">
+  <div class="gallery-filter" role="group" aria-label="照片分类筛选">
     <button
       v-for="cat in categories"
       :key="cat.value"
       type="button"
       class="gallery-filter__btn"
       :class="{ 'gallery-filter__btn--active': modelValue === cat.value }"
+      :aria-pressed="modelValue === cat.value"
       @click="$emit('update:modelValue', cat.value)"
     >
       {{ cat.label }}
@@ -43,6 +44,7 @@ defineEmits<{
 }
 
 .gallery-filter__btn {
+  min-height: 44px;
   padding: 0.375rem 0.75rem;
   font-size: 0.75rem;
   font-weight: 500;
@@ -50,6 +52,9 @@ defineEmits<{
   border-radius: $radius-sm;
   cursor: pointer;
   transition: $transition-fast;
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
   background: var(--surface-2);
   color: var(--text-muted);
 
@@ -60,11 +65,11 @@ defineEmits<{
 }
 
 .gallery-filter__btn--active {
-  background: var(--accent);
+  background: var(--accent-action);
   color: #fff;
 
   &:hover {
-    background: var(--accent);
+    background: var(--accent-action);
     color: #fff;
     filter: brightness(1.05);
   }

@@ -7,12 +7,13 @@
 
 import type { GalleryCategory, GalleryStat, GearItem, PhotoItem } from './types'
 
-const u = (id: string, w: 500 | 1200) =>
-  `https://images.unsplash.com/photo-${id}?auto=format&fit=crop&w=${w}&q=80`
+const u = (id: string, w: 500 | 1200) => `https://images.unsplash.com/photo-${id}?auto=format&fit=crop&w=${w}&q=80`
 
 export const mockPhotos: PhotoItem[] = [
   {
     id: 1,
+    width: 500,
+    height: 333,
     title: '雪山日出',
     description: '清晨第一缕阳光照亮贡嘎主峰，云海与雪峰交织。',
     src: u('1506905925346-21bda4d32df4', 500),
@@ -23,6 +24,8 @@ export const mockPhotos: PhotoItem[] = [
   },
   {
     id: 2,
+    width: 500,
+    height: 304,
     title: '城市夜景',
     description: '陆家嘴灯火与黄浦江倒影，记录都市的脉搏。',
     src: u('1514565131-fce0801e5785', 500),
@@ -33,6 +36,8 @@ export const mockPhotos: PhotoItem[] = [
   },
   {
     id: 3,
+    width: 500,
+    height: 604,
     title: '手工披萨',
     description: '窑烤面饼与芝士拉丝，简单却治愈的一餐。',
     src: u('1565299624946-b28f40a0ae38', 500),
@@ -43,6 +48,8 @@ export const mockPhotos: PhotoItem[] = [
   },
   {
     id: 4,
+    width: 500,
+    height: 298,
     title: '晨雾森林',
     description: '热带雨林的晨雾与光束，仿佛走进绿野仙踪。',
     src: u('1470071459604-3b5ec3a7fe05', 500),
@@ -53,6 +60,8 @@ export const mockPhotos: PhotoItem[] = [
   },
   {
     id: 5,
+    width: 500,
+    height: 333,
     title: '天际线',
     description: '莲花山顶俯瞰深圳湾，城市与海洋的交界。',
     src: u('1480714378408-67cf0d13bc1b', 500),
@@ -63,6 +72,8 @@ export const mockPhotos: PhotoItem[] = [
   },
   {
     id: 6,
+    width: 500,
+    height: 604,
     title: '精致甜点',
     description: '法式摆盘与季节水果，下午茶的小确幸。',
     src: u('1567620905732-2d1ec7ab7445', 500),
@@ -73,6 +84,8 @@ export const mockPhotos: PhotoItem[] = [
   },
   {
     id: 7,
+    width: 500,
+    height: 750,
     title: '窗边人像',
     description: '自然光下的肖像练习，柔和明暗过渡。',
     src: u('1506794778202-cad84cf45f1d', 500),
@@ -83,6 +96,8 @@ export const mockPhotos: PhotoItem[] = [
   },
   {
     id: 8,
+    width: 500,
+    height: 333,
     title: '湖畔黄昏',
     description: '洱海边的金色时刻，远山与湖水融为一体。',
     src: u('1501785888041-af3ef285b470', 500),

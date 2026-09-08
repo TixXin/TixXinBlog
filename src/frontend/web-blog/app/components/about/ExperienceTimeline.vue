@@ -7,14 +7,9 @@
 
 <template>
   <div class="timeline">
-    <h3 class="timeline__title">
-      <Icon name="lucide:clock" size="18" /> 经历时间线    </h3>
+    <h3 class="timeline__title"><Icon name="lucide:clock" size="18" /> 经历示例</h3>
     <div class="timeline__track">
-      <div
-        v-for="(exp, idx) in experiences"
-        :key="exp.period"
-        class="timeline__item"
-      >
+      <div v-for="(exp, idx) in experiences" :key="exp.period" class="timeline__item">
         <div class="timeline__dot" :class="`timeline__dot--${idx}`" />
         <span class="timeline__period">{{ exp.period }}</span>
         <h4 class="timeline__role">{{ exp.title }}</h4>
@@ -69,10 +64,18 @@ defineProps<{
   border: 2px solid var(--surface-1);
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 
-  &--0 { background: var(--text-main); }
-  &--1 { background: var(--text-soft); }
-  &--2 { background: var(--text-faint); }
-  &--3 { background: var(--border-soft); }
+  &--0 {
+    background: var(--text-main);
+  }
+  &--1 {
+    background: var(--text-soft);
+  }
+  &--2 {
+    background: var(--text-faint);
+  }
+  &--3 {
+    background: var(--border-soft);
+  }
 }
 
 .timeline__period {

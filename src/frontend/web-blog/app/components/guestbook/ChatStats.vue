@@ -8,18 +8,11 @@
 <template>
   <section ref="containerRef" class="card chat-stats">
     <h3 class="chat-stats__title">
-      <Icon
-        name="lucide:bar-chart-2"
-        size="14"
-      />
+      <Icon name="lucide:bar-chart-2" size="14" />
       对话统计
     </h3>
     <div class="chat-stats__grid">
-      <div
-        v-for="(item, index) in stats"
-        :key="item.label"
-        class="chat-stats__cell"
-      >
+      <div v-for="(item, index) in stats" :key="item.label" class="chat-stats__cell">
         <p class="chat-stats__value">
           {{ animatedValues[index] ?? item.value }}
         </p>
@@ -39,8 +32,15 @@ const props = defineProps<{
 }>()
 
 const containerRef = ref<HTMLElement | null>(null)
-const animatedValues = ref<string[]>(props.stats.map(() => '0'))
+const animatedValues = ref<string[]>(props.stats.map((stat) => stat.value))
 const hasAnimated = ref(false)
+const { reducedMotion } = useMotionPreference()
+let frame = 0
+function finishCountUp() {
+  cancelAnimationFrame(frame)
+  frame = 0
+  animatedValues.value = props.stats.map((stat) => stat.value)
+}
 
 /** 从字符串中提取数字部分（如 "1,234" → 1234） */
 function parseStatValue(val: string): number {
@@ -57,29 +57,27 @@ function animateCountUp() {
   if (hasAnimated.value) return
   hasAnimated.value = true
 
-  props.stats.forEach((stat, index) => {
-    const target = parseStatValue(stat.value)
-    const duration = 800
-    const startTime = performance.now()
-
-    function step(now: number) {
-      const elapsed = now - startTime
-      const progress = Math.min(elapsed / duration, 1)
-      // easeOutCubic
-      const eased = 1 - (1 - progress) ** 3
-      const current = Math.round(target * eased)
-      animatedValues.value[index] = formatNumber(current)
-      if (progress < 1) {
-        requestAnimationFrame(step)
-      } else {
-        // 最终确保显示原始值（保持格式一致）
-        animatedValues.value[index] = stat.value
-      }
-    }
-
-    requestAnimationFrame(step)
-  })
+  if (reducedMotion.value || matchMedia('(prefers-reduced-motion: reduce)').matches) return finishCountUp()
+  const startTime = performance.now()
+  const step = (now: number) => {
+    const progress = Math.min((now - startTime) / 400, 1)
+    const eased = 1 - (1 - progress) ** 3
+    animatedValues.value = props.stats.map((stat) => formatNumber(Math.round(parseStatValue(stat.value) * eased)))
+    if (progress < 1) frame = requestAnimationFrame(step)
+    else finishCountUp()
+  }
+  frame = requestAnimationFrame(step)
 }
+
+watch(
+  reducedMotion,
+  (reduced) => {
+    if (reduced) finishCountUp()
+  },
+  { flush: 'sync' },
+)
+watch(() => props.stats, finishCountUp)
+onBeforeUnmount(finishCountUp)
 
 onMounted(() => {
   if (!containerRef.value) return
@@ -132,6 +130,9 @@ onMounted(() => {
   border-radius: $radius-md;
   background: var(--surface-2);
   transition: color 0.2s;
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
 
   &:hover .chat-stats__value {
     color: #059669;
@@ -149,6 +150,9 @@ onMounted(() => {
   line-height: 1.2;
   color: var(--text-main);
   transition: color 0.2s;
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
   font-variant-numeric: tabular-nums;
 }
 

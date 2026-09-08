@@ -9,24 +9,26 @@
   <Teleport to="body">
     <div
       v-if="visible && photo"
+      ref="dialogRef"
       class="lightbox"
       role="dialog"
       aria-modal="true"
       :aria-label="photo.title"
+      tabindex="-1"
       @click.self="onClose"
     >
-      <button
-        type="button"
-        class="lightbox__close"
-        aria-label="关闭"
-        @click="onClose"
-      >
+      <button type="button" class="lightbox__close" aria-label="关闭" @click="onClose">
         <Icon name="lucide:x" size="24" />
       </button>
       <div class="lightbox__inner">
-        <img
+        <CommonImageFrame
           :src="photo.srcLarge"
           :alt="photo.title"
+          :width="photo.width"
+          :height="photo.height"
+          fit="contain"
+          loading="eager"
+          max-height="75vh"
           class="lightbox__img"
         />
         <div class="lightbox__caption">
@@ -54,34 +56,8 @@ function onClose() {
   emit('close')
 }
 
-function onKeydown(e: KeyboardEvent) {
-  if (e.key === 'Escape' && props.visible) {
-    onClose()
-  }
-}
-
-watch(
-  () => props.visible && props.photo,
-  (open) => {
-    if (import.meta.client) {
-      document.body.style.overflow = open ? 'hidden' : ''
-    }
-  },
-  { immediate: true },
-)
-
-onMounted(() => {
-  if (import.meta.client) {
-    window.addEventListener('keydown', onKeydown)
-  }
-})
-
-onUnmounted(() => {
-  if (import.meta.client) {
-    window.removeEventListener('keydown', onKeydown)
-    document.body.style.overflow = ''
-  }
-})
+const dialogRef = ref<HTMLElement | null>(null)
+useModalFocus(() => props.visible && !!props.photo, dialogRef, { close: onClose })
 </script>
 
 <style lang="scss" scoped>
@@ -113,6 +89,9 @@ onUnmounted(() => {
   color: #fff;
   cursor: pointer;
   transition: $transition-fast;
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
 
   &:hover {
     background: rgba(255, 255, 255, 0.2);

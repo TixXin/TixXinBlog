@@ -7,13 +7,13 @@
 
 <template>
   <div class="main-inner">
-    <CommonPageHeader title="项目展示" subtitle="这里是我参与或独立开发的开源项目" icon="lucide:layers">
+    <CommonPageHeader title="项目展示" subtitle="当前为示例项目资料，未公开的资源会明确标注" icon="lucide:layers">
       <template #action>
         <CommonSearchBox placeholder="搜索项目..." readonly @click="openSearch" />
       </template>
     </CommonPageHeader>
     <CommonCustomScrollbar class="projects-body" viewport-class="projects-viewport" :show-back-to-top="false" primary>
-      <ProjectGrid :projects="projects" />
+      <ProjectGrid :projects="projects" example />
     </CommonCustomScrollbar>
     <ClientOnly>
       <Teleport to="#right-sidebar-target">
@@ -27,7 +27,7 @@
 </template>
 
 <script setup lang="ts">
-import { mockProjects, mockProjectStats, mockTechStack } from '~/features/project/mock'
+import { mockProjects, mockTechStack } from '~/features/project/mock'
 
 const searchModal = inject<{ open: () => void } | null>('searchModal', null)
 function openSearch() {
@@ -43,7 +43,14 @@ useSeoMeta({
 })
 
 const projects = mockProjects
-const projectStats = mockProjectStats
+const projectStats = [
+  { label: '展示条目', value: String(mockProjects.length) },
+  {
+    label: '示例技术',
+    value: String(new Set(mockProjects.flatMap((project) => project.tags.map((tag) => tag.label))).size),
+  },
+  { label: '资料状态', value: '示例' },
+]
 const techStack = mockTechStack
 </script>
 

@@ -104,13 +104,16 @@ function onAvatarError(e: string | Event) {
   background: var(--surface-3);
   color: var(--text-main);
   transition: $transition-fast;
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
 
   &:hover {
     background: var(--surface-2);
   }
 
   &--primary {
-    background: var(--accent);
+    background: var(--accent-action);
     color: #fff;
 
     .dark & {

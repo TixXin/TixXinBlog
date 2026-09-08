@@ -6,10 +6,7 @@
 -->
 
 <template>
-  <div
-    class="message-bubble"
-    :class="message.isOwner ? 'message-bubble--owner' : 'message-bubble--guest'"
-  >
+  <div class="message-bubble" :class="message.isOwner ? 'message-bubble--owner' : 'message-bubble--guest'">
     <!-- 头像 -->
     <div class="message-bubble__avatar-wrap" @mouseenter="showUserCard = true" @mouseleave="showUserCard = false">
       <img
@@ -18,15 +15,27 @@
         :alt="`${message.author} 的头像`"
         width="32"
         height="32"
-      >
+      />
       <!-- 头像悬浮用户卡 -->
       <Transition name="user-card-fade">
-        <div v-if="showUserCard" class="message-bubble__user-card" :class="{ 'message-bubble__user-card--right': message.isOwner }">
-          <img class="message-bubble__user-card-avatar" :src="message.avatar" :alt="message.author" width="40" height="40">
+        <div
+          v-if="showUserCard"
+          class="message-bubble__user-card"
+          :class="{ 'message-bubble__user-card--right': message.isOwner }"
+        >
+          <img
+            class="message-bubble__user-card-avatar"
+            :src="message.avatar"
+            :alt="message.author"
+            width="40"
+            height="40"
+          />
           <div class="message-bubble__user-card-info">
             <span class="message-bubble__user-card-name">
               {{ message.author }}
-              <span v-if="message.isOwner" class="message-bubble__owner-badge message-bubble__owner-badge--sm">博主</span>
+              <span v-if="message.isOwner" class="message-bubble__owner-badge message-bubble__owner-badge--sm"
+                >博主</span
+              >
             </span>
             <span v-if="message.region" class="message-bubble__user-card-region">
               <Icon name="lucide:map-pin" size="11" />
@@ -37,15 +46,9 @@
       </Transition>
     </div>
 
-    <div
-      class="message-bubble__col"
-      :class="{ 'message-bubble__col--end': message.isOwner }"
-    >
+    <div class="message-bubble__col" :class="{ 'message-bubble__col--end': message.isOwner }">
       <!-- 用户名和时间 -->
-      <div
-        class="message-bubble__meta"
-        :class="{ 'message-bubble__meta--reverse': message.isOwner }"
-      >
+      <div class="message-bubble__meta" :class="{ 'message-bubble__meta--reverse': message.isOwner }">
         <template v-if="message.isOwner">
           <span class="message-bubble__time">{{ message.time }}</span>
           <span class="message-bubble__name">{{ message.author }}</span>
@@ -75,26 +78,38 @@
           :class="message.isOwner ? 'message-bubble__content--owner' : 'message-bubble__content--guest'"
         >
           <!-- 气泡尾巴 -->
-          <span class="message-bubble__tail" :class="message.isOwner ? 'message-bubble__tail--owner' : 'message-bubble__tail--guest'" />
+          <span
+            class="message-bubble__tail"
+            :class="message.isOwner ? 'message-bubble__tail--owner' : 'message-bubble__tail--guest'"
+          />
           {{ message.content }}
         </div>
         <!-- 操作按钮 -->
-        <div
-          class="message-bubble__actions"
-          :class="{ 'message-bubble__actions--left': message.isOwner }"
-        >
+        <div class="message-bubble__actions" :class="{ 'message-bubble__actions--left': message.isOwner }">
           <CommonTooltip content="回复">
-            <button type="button" class="message-bubble__action" @click="$emit('reply', message)">
+            <button
+              type="button"
+              class="message-bubble__action"
+              :aria-label="`回复${message.author}的演示留言`"
+              @click="$emit('reply', message)"
+            >
               <Icon name="lucide:reply" size="13" />
             </button>
           </CommonTooltip>
           <CommonTooltip content="复制">
-            <button type="button" class="message-bubble__action" @click="copyContent">
+            <button type="button" class="message-bubble__action" aria-label="复制留言" @click="copyContent">
               <Icon :name="copied ? 'lucide:check' : 'lucide:copy'" size="13" />
             </button>
           </CommonTooltip>
           <CommonTooltip content="表情">
-            <button type="button" class="message-bubble__action" @click="showReactionPicker = !showReactionPicker">
+            <button
+              ref="reactionButton"
+              type="button"
+              class="message-bubble__action"
+              aria-label="添加回应"
+              :aria-expanded="showReactionPicker"
+              @click="showReactionPicker = !showReactionPicker"
+            >
               <Icon name="lucide:smile-plus" size="13" />
             </button>
           </CommonTooltip>
@@ -103,15 +118,23 @@
 
       <!-- 反应 emoji 选择器 -->
       <Transition name="picker-fade">
-        <div v-if="showReactionPicker" class="message-bubble__reaction-picker" :class="{ 'message-bubble__reaction-picker--end': message.isOwner }">
+        <div
+          v-if="showReactionPicker"
+          role="group"
+          aria-label="选择回应"
+          class="message-bubble__reaction-picker"
+          :class="{ 'message-bubble__reaction-picker--end': message.isOwner }"
+          @keydown.escape.stop="closeReactions"
+        >
           <button
-            v-for="emoji in reactionEmojis"
-            :key="emoji"
+            v-for="option in reactionOptions"
+            :key="option.value"
             type="button"
+            :aria-label="option.label"
             class="message-bubble__reaction-pick"
-            @click="addReaction(emoji)"
+            @click="addReaction(option.value)"
           >
-            {{ emoji }}
+            <Icon :name="option.icon" size="16" />
           </button>
         </div>
       </Transition>
@@ -128,9 +151,11 @@
           type="button"
           class="message-bubble__reaction"
           :class="{ 'message-bubble__reaction--active': r.reacted }"
+          :aria-label="`${reactionMeta(r.emoji).label}，${r.count} 次回应`"
+          :aria-pressed="r.reacted"
           @click="toggleReaction(r.emoji)"
         >
-          <span class="message-bubble__reaction-emoji">{{ r.emoji }}</span>
+          <Icon :name="reactionMeta(r.emoji).icon" size="15" />
           <span class="message-bubble__reaction-count">{{ r.count }}</span>
         </button>
       </div>
@@ -153,12 +178,10 @@
           {{ message.region }}
         </span>
         <!-- 消息状态指示 -->
-        <template v-if="message.status && message.isOwner">
+        <template v-if="message.status">
           <span class="message-bubble__dot">&middot;</span>
           <span class="message-bubble__status" :class="`message-bubble__status--${message.status}`">
-            <Icon v-if="message.status === 'sending'" name="lucide:loader-2" size="11" class="message-bubble__status-spin" />
-            <Icon v-else-if="message.status === 'sent'" name="lucide:check" size="11" />
-            <Icon v-else name="lucide:check-check" size="11" />
+            <Icon name="lucide:monitor" size="11" />
             {{ statusText }}
           </span>
         </template>
@@ -179,42 +202,59 @@ defineEmits<{
 }>()
 
 const copied = ref(false)
+const { error: showError } = useToast()
 const showReactionPicker = ref(false)
 const showUserCard = ref(false)
 let copyTimer: ReturnType<typeof setTimeout> | null = null
 
-/** 可选的反应 emoji */
-const reactionEmojis = ['👍', '❤️', '🎉', '🔥', '😄', '🙏', '📷', '💡']
+/** 保留示例数据的反应值，界面统一使用Lucide与明确名称。 */
+const reactionOptions = [
+  { value: '👍', icon: 'lucide:thumbs-up', label: '赞' },
+  { value: '❤️', icon: 'lucide:heart', label: '喜欢' },
+  { value: '🎉', icon: 'lucide:party-popper', label: '庆祝' },
+  { value: '🔥', icon: 'lucide:flame', label: '热情' },
+  { value: '😄', icon: 'lucide:smile', label: '开心' },
+  { value: '🙏', icon: 'lucide:hand-heart', label: '感谢' },
+  { value: '📷', icon: 'lucide:camera', label: '摄影' },
+  { value: '💡', icon: 'lucide:lightbulb', label: '灵感' },
+]
+const reactionButton = ref<HTMLButtonElement | null>(null)
+const reactionMeta = (value: string) =>
+  reactionOptions.find((option) => option.value === value) ?? { icon: 'lucide:smile', label: '回应' }
+function closeReactions() {
+  showReactionPicker.value = false
+  nextTick(() => reactionButton.value?.focus())
+}
 
 /** 响应式反应列表 */
 const reactions = ref<MessageReaction[]>(
-  props.message.reactions ? [...props.message.reactions.map(r => ({ ...r }))] : [],
+  props.message.reactions ? [...props.message.reactions.map((r) => ({ ...r }))] : [],
 )
 
-const statusText = computed(() => {
-  switch (props.message.status) {
-    case 'sending': return '发送中'
-    case 'sent': return '已发送'
-    case 'read': return '已读'
-    default: return ''
-  }
-})
+const statusText = computed(() => (props.message.status === 'local' ? '仅当前页面' : '示例记录'))
 
-function copyContent() {
-  navigator.clipboard.writeText(props.message.content)
-  copied.value = true
+async function copyContent() {
+  try {
+    await navigator.clipboard.writeText(props.message.content)
+    copied.value = true
+  } catch {
+    showError('复制失败，请重试或手动选择留言内容')
+    return
+  }
   if (copyTimer) clearTimeout(copyTimer)
-  copyTimer = setTimeout(() => { copied.value = false }, 1500)
+  copyTimer = setTimeout(() => {
+    copied.value = false
+  }, 1500)
 }
 
 function toggleReaction(emoji: string) {
-  const existing = reactions.value.find(r => r.emoji === emoji)
+  const existing = reactions.value.find((r) => r.emoji === emoji)
   if (existing) {
     if (existing.reacted) {
       existing.count--
       existing.reacted = false
       if (existing.count <= 0) {
-        reactions.value = reactions.value.filter(r => r.emoji !== emoji)
+        reactions.value = reactions.value.filter((r) => r.emoji !== emoji)
       }
     } else {
       existing.count++
@@ -224,7 +264,7 @@ function toggleReaction(emoji: string) {
 }
 
 function addReaction(emoji: string) {
-  const existing = reactions.value.find(r => r.emoji === emoji)
+  const existing = reactions.value.find((r) => r.emoji === emoji)
   if (existing) {
     if (!existing.reacted) {
       existing.count++
@@ -233,7 +273,7 @@ function addReaction(emoji: string) {
   } else {
     reactions.value.push({ emoji, count: 1, reacted: true })
   }
-  showReactionPicker.value = false
+  closeReactions()
 }
 
 onBeforeUnmount(() => {
@@ -274,6 +314,9 @@ onBeforeUnmount(() => {
     0 1px 2px rgba(0, 0, 0, 0.05);
   cursor: pointer;
   transition: transform 0.15s;
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
 
   &:hover {
     transform: scale(1.08);
@@ -336,11 +379,21 @@ onBeforeUnmount(() => {
 }
 
 .user-card-fade-enter-active {
-  transition: opacity 0.15s ease, transform 0.15s ease;
+  transition:
+    opacity 0.15s ease,
+    transform 0.15s ease;
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
 }
 
 .user-card-fade-leave-active {
-  transition: opacity 0.1s ease, transform 0.1s ease;
+  transition:
+    opacity 0.1s ease,
+    transform 0.1s ease;
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
 }
 
 .user-card-fade-enter-from,
@@ -523,9 +576,13 @@ onBeforeUnmount(() => {
   gap: 0.125rem;
   opacity: 0;
   transition: opacity 0.15s ease;
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
   flex-shrink: 0;
 
-  .message-bubble:hover & {
+  .message-bubble:hover &,
+  .message-bubble:focus-within & {
     opacity: 1;
   }
 
@@ -545,7 +602,10 @@ onBeforeUnmount(() => {
   background: var(--surface-1);
   color: var(--text-faint);
   cursor: pointer;
-  transition: all 0.15s ease;
+  transition: $transition-fast;
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
 
   &:hover {
     color: var(--text-main);
@@ -581,7 +641,10 @@ onBeforeUnmount(() => {
   background: transparent;
   font-size: 1rem;
   cursor: pointer;
-  transition: all 0.15s;
+  transition: $transition-fast;
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
 
   &:hover {
     background: var(--surface-2);
@@ -590,11 +653,19 @@ onBeforeUnmount(() => {
 }
 
 .picker-fade-enter-active {
-  transition: opacity 0.15s ease, transform 0.15s ease;
+  transition:
+    opacity 0.15s ease,
+    transform 0.15s ease;
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
 }
 
 .picker-fade-leave-active {
   transition: opacity 0.1s ease;
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
 }
 
 .picker-fade-enter-from,
@@ -624,7 +695,10 @@ onBeforeUnmount(() => {
   background: var(--surface-2);
   font-size: 0.6875rem;
   cursor: pointer;
-  transition: all 0.15s;
+  transition: $transition-fast;
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
 
   &:hover {
     border-color: var(--border);
@@ -706,6 +780,9 @@ onBeforeUnmount(() => {
 
 .message-bubble__status-spin {
   animation: spin 1.2s linear infinite;
+  @media (prefers-reduced-motion: reduce) {
+    animation: none;
+  }
 }
 
 @keyframes spin {

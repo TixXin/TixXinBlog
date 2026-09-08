@@ -5,14 +5,8 @@
   @since 2025-03-17
 -->
 
-
 <template>
-  <a
-    :href="link.url"
-    class="link-card"
-    target="_blank"
-    rel="noopener"
-  >
+  <a :href="link.url" class="link-card" target="_blank" rel="noopener">
     <img
       :src="link.avatar"
       :alt="link.name"
@@ -38,7 +32,11 @@ defineProps<{
   link: LinkItem
 }>()
 
-const AVATAR_FALLBACK = 'data:image/svg+xml,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="%23666"><rect width="64" height="64" rx="12" fill="%23333"/><text x="32" y="38" text-anchor="middle" font-size="24" fill="%23888">?</text></svg>')
+const AVATAR_FALLBACK =
+  'data:image/svg+xml,' +
+  encodeURIComponent(
+    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="%23666"><rect width="64" height="64" rx="12" fill="%23333"/><text x="32" y="38" text-anchor="middle" font-size="24" fill="%23888">?</text></svg>',
+  )
 
 function onImgError(e: Event) {
   const img = e.target as HTMLImageElement
@@ -57,6 +55,9 @@ function onImgError(e: Event) {
   border: 1px solid var(--border);
   border-radius: $radius-card;
   transition: $transition-normal;
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
   text-decoration: none;
   color: inherit;
 
@@ -78,6 +79,9 @@ function onImgError(e: Event) {
   margin-bottom: 0.75rem;
   object-fit: cover;
   transition: transform 0.3s ease;
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
 }
 
 .link-card__name {

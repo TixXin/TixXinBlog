@@ -14,21 +14,21 @@
           <div class="msg-skeleton__name skeleton-pulse" />
           <div class="msg-skeleton__time skeleton-pulse" />
         </div>
-        <div
-          class="msg-skeleton__bubble skeleton-pulse"
-          :style="{ width: bubbleWidths[i - 1] }"
-        />
+        <div class="msg-skeleton__bubble skeleton-pulse" :style="{ width: bubbleWidths[i - 1] }" />
       </div>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-const props = withDefaults(defineProps<{
-  count?: number
-}>(), {
-  count: 6,
-})
+const props = withDefaults(
+  defineProps<{
+    count?: number
+  }>(),
+  {
+    count: 6,
+  },
+)
 
 /** 随机气泡宽度，让骨架屏看起来更自然 */
 const bubbleWidths = Array.from({ length: props.count }, (_, i) => {
@@ -102,6 +102,9 @@ const bubbleWidths = Array.from({ length: props.count }, (_, i) => {
 .skeleton-pulse {
   background: var(--surface-2);
   animation: skeleton-shimmer 1.5s ease-in-out infinite;
+  @media (prefers-reduced-motion: reduce) {
+    animation: none;
+  }
 }
 
 @keyframes skeleton-shimmer {
