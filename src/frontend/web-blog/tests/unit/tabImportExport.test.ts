@@ -57,8 +57,10 @@ describe('buildExportJson / parseImportJson', () => {
   const payload: TabExportFormat = {
     version: 1,
     exportedAt: '2026-07-20T00:00:00Z',
-    categories: [{ id: 'c1', name: '开发', icon: 'lucide:code', color: '#888888' } as never],
-    bookmarks: [{ id: 'b1', categoryId: 'c1', name: 'GitHub', url: 'https://github.com' } as never],
+    categories: [{ id: 'c1', userId: 'test', sortOrder: 0, name: '开发', icon: 'lucide:code', color: '#888888' }],
+    bookmarks: [
+      { id: 'b1', userId: 'test', sortOrder: 0, categoryId: 'c1', name: 'GitHub', url: 'https://github.com' },
+    ],
   }
 
   it('导出后再导入可完整还原 categories / bookmarks', () => {
@@ -77,5 +79,22 @@ describe('buildExportJson / parseImportJson', () => {
 
   it('非法 JSON 抛错', () => {
     expect(() => parseImportJson('{not-json')).toThrow()
+  })
+
+  it('拒绝未知版本、非法字段、危险协议和断开的分类引用', () => {
+    expect(() => parseImportJson(JSON.stringify({ ...payload, version: 99 }))).toThrow('版本')
+    for (const patch of [
+      { name: 123 },
+      { url: 'javascript:alert(1)' },
+      { categoryId: 'missing' },
+      { url: 'https://user:password@example.com' },
+    ]) {
+      const invalid = { ...payload, bookmarks: [{ ...payload.bookmarks[0], ...patch }] }
+      expect(() => parseImportJson(JSON.stringify(invalid))).toThrow()
+    }
+  })
+
+  it('浏览器 HTML 导入同样拒绝危险协议', () => {
+    expect(() => parseNetscapeBookmarks('<DL><DT><A HREF="javascript:alert(1)">危险书签</A></DT></DL>')).toThrow('HTTP')
   })
 })

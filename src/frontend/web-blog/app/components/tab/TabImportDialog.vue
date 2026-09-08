@@ -7,9 +7,17 @@
 
 <template>
   <Teleport to="body">
-    <div v-if="visible" class="tid-backdrop" @click.self="close" />
+    <div v-if="visible" ref="backdropRef" class="tid-backdrop" @click.self="close" />
     <Transition name="tid">
-      <div v-if="visible" class="tid-dialog" role="dialog" aria-label="导入书签">
+      <div
+        v-if="visible"
+        ref="dialogRef"
+        class="tid-dialog"
+        role="dialog"
+        aria-modal="true"
+        aria-label="导入书签"
+        tabindex="-1"
+      >
         <header class="tid-header">
           <Icon name="lucide:download" size="16" />
           <h2>导入书签</h2>
@@ -20,7 +28,7 @@
 
         <div class="tid-body">
           <label class="tid-dropzone">
-            <input type="file" accept=".json,.html,.htm" @change="onFile">
+            <input type="file" accept=".json,.html,.htm" @change="onFile" />
             <Icon name="lucide:upload-cloud" size="28" />
             <span class="tid-dropzone__hint">
               <strong>选择文件</strong>
@@ -48,7 +56,7 @@
             <span class="tid-mode__label">导入策略</span>
             <div class="tid-mode__options">
               <label v-for="opt in modeOptions" :key="opt.value" class="tid-mode__opt">
-                <input v-model="mode" type="radio" :value="opt.value">
+                <input v-model="mode" type="radio" :value="opt.value" />
                 <div>
                   <div class="tid-mode__opt-title">{{ opt.label }}</div>
                   <div class="tid-mode__opt-desc">{{ opt.desc }}</div>
@@ -60,12 +68,7 @@
 
         <footer class="tid-footer">
           <button type="button" class="tid-btn" @click="close">取消</button>
-          <button
-            type="button"
-            class="tid-btn tid-btn--primary"
-            :disabled="!payload || importing"
-            @click="onConfirm"
-          >
+          <button type="button" class="tid-btn tid-btn--primary" :disabled="!payload || importing" @click="onConfirm">
             <Icon v-if="importing" name="lucide:loader-2" size="12" class="tid-spin" />
             确认导入
           </button>
@@ -76,11 +79,15 @@
 </template>
 
 <script setup lang="ts">
+import { MAX_IMPORT_BYTES } from '~/features/tab/validation'
 import type { ImportMode, ImportPayload } from '~/features/tab/types'
 import { parseImportJson } from '~/features/tab/export'
 import { parseNetscapeBookmarks } from '~/features/tab/import-netscape'
 
 const visible = defineModel<boolean>('visible', { default: false })
+const dialogRef = ref<HTMLElement | null>(null)
+const backdropRef = ref<HTMLElement | null>(null)
+useModalFocus(visible, dialogRef, { close, extra: () => [backdropRef.value] })
 
 const { importBulk } = useTabBookmarks()
 const { success, error: toastError } = useToast()
@@ -115,6 +122,7 @@ async function onFile(e: Event) {
   error.value = ''
   payload.value = null
   try {
+    if (file.size > MAX_IMPORT_BYTES) throw new Error('导入文件不能超过 5 MB')
     const raw = await file.text()
     if (file.name.toLowerCase().endsWith('.json')) {
       const exp = parseImportJson(raw)
@@ -188,7 +196,12 @@ async function onConfirm() {
 
 .tid-enter-active,
 .tid-leave-active {
-  transition: opacity 0.18s ease, transform 0.18s ease;
+  transition:
+    opacity 0.18s ease,
+    transform 0.18s ease;
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
 }
 
 .tid-enter-from,
@@ -252,11 +265,14 @@ async function onConfirm() {
   color: var(--text-soft);
   cursor: pointer;
   text-align: center;
-  transition: all 0.15s;
+  transition: $transition-fast;
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
 
   &:hover {
     border-color: var(--accent);
-    color: var(--accent);
+    color: var(--accent-text);
     background: var(--accent-soft);
   }
 
@@ -265,7 +281,7 @@ async function onConfirm() {
   }
 
   strong {
-    color: var(--accent);
+    color: var(--accent-text);
   }
 
   small {
@@ -311,7 +327,7 @@ async function onConfirm() {
   display: block;
   font-size: 1.25rem;
   font-weight: 700;
-  color: var(--accent);
+  color: var(--accent-text);
   font-variant-numeric: tabular-nums;
 }
 
@@ -344,7 +360,10 @@ async function onConfirm() {
   border: 1px solid var(--border-soft);
   border-radius: $radius-sm;
   cursor: pointer;
-  transition: all 0.15s;
+  transition: $transition-fast;
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
 
   &:hover {
     border-color: var(--accent);
@@ -388,14 +407,17 @@ async function onConfirm() {
   font-size: 0.75rem;
   font-weight: 500;
   cursor: pointer;
-  transition: all 0.15s;
+  transition: $transition-fast;
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
 
   &:hover {
     background: var(--surface-2);
   }
 
   &--primary {
-    background: var(--accent);
+    background: var(--accent-action);
     border-color: var(--accent);
     color: #fff;
 
@@ -412,6 +434,9 @@ async function onConfirm() {
 
 .tid-spin {
   animation: tid-spin 1.2s linear infinite;
+  @media (prefers-reduced-motion: reduce) {
+    animation: none;
+  }
 }
 
 @keyframes tid-spin {

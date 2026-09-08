@@ -12,6 +12,8 @@
  */
 
 import type { TabBookmarkRepository } from './repository'
+import { recoverLocalBatch, writeLocalBatch, writeLocalJson } from '~/utils/localPersistence'
+import { requireText, requireWebUrl, validateImportPayload } from './validation'
 import type {
   Bookmark,
   BookmarkCategory,
@@ -39,6 +41,7 @@ function bookmarkKey(userId: string): string {
 
 function readJson<T>(key: string): T[] {
   if (typeof window === 'undefined') return []
+  recoverLocalBatch()
   try {
     const raw = window.localStorage.getItem(key)
     if (!raw) return []
@@ -50,12 +53,7 @@ function readJson<T>(key: string): T[] {
 }
 
 function writeJson<T>(key: string, value: T[]): void {
-  if (typeof window === 'undefined') return
-  try {
-    window.localStorage.setItem(key, JSON.stringify(value))
-  } catch {
-    // 容量超限或被禁用 → 静默失败
-  }
+  writeLocalJson(key, value)
 }
 
 function generateId(prefix: string): string {
@@ -133,6 +131,8 @@ export class LocalTabRepository implements TabBookmarkRepository {
   }
 
   createBookmark(userId: string, draft: BookmarkDraft): Promise<Bookmark> {
+    requireText(draft.name, '书签名称')
+    requireWebUrl(draft.url)
     const bookmarks = readJson<Bookmark>(bookmarkKey(userId))
     const sameCat = bookmarks.filter((b) => b.categoryId === draft.categoryId)
     const maxOrder = sameCat.reduce((m, b) => Math.max(m, b.sortOrder), 0)
@@ -152,6 +152,8 @@ export class LocalTabRepository implements TabBookmarkRepository {
   }
 
   updateBookmark(id: string, patch: BookmarkPatch): Promise<Bookmark> {
+    if (patch.name !== undefined) requireText(patch.name, '书签名称')
+    if (patch.url !== undefined) requireWebUrl(patch.url)
     if (typeof window === 'undefined') {
       return Promise.reject(new Error('LocalTabRepository.updateBookmark called on server'))
     }
@@ -209,6 +211,7 @@ export class LocalTabRepository implements TabBookmarkRepository {
   }
 
   async importBulk(userId: string, data: ImportPayload, mode: ImportMode): Promise<void> {
+    validateImportPayload(data)
     const catKey = categoryKey(userId)
     const bmKey = bookmarkKey(userId)
     let existingCats: BookmarkCategory[] = mode === 'replace' ? [] : readJson<BookmarkCategory>(catKey)
@@ -235,9 +238,7 @@ export class LocalTabRepository implements TabBookmarkRepository {
 
     // 书签：按 categoryName 映射到 id
     const sameCatMaxOrder = (catId: string): number => {
-      return existingBms
-        .filter((b) => b.categoryId === catId)
-        .reduce((m, b) => Math.max(m, b.sortOrder), 0)
+      return existingBms.filter((b) => b.categoryId === catId).reduce((m, b) => Math.max(m, b.sortOrder), 0)
     }
     const nowIso = new Date().toISOString()
 
@@ -263,15 +264,15 @@ export class LocalTabRepository implements TabBookmarkRepository {
       existingBms = [...existingBms, created]
     }
 
-    writeJson(catKey, existingCats)
-    writeJson(bmKey, existingBms)
+    writeLocalBatch([
+      [catKey, existingCats],
+      [bmKey, existingBms],
+    ])
   }
 
   exportBulk(userId: string): Promise<{ categories: BookmarkCategory[]; bookmarks: Bookmark[] }> {
-    const categories = readJson<BookmarkCategory>(categoryKey(userId))
-      .sort((a, b) => a.sortOrder - b.sortOrder)
-    const bookmarks = readJson<Bookmark>(bookmarkKey(userId))
-      .sort((a, b) => a.sortOrder - b.sortOrder)
+    const categories = readJson<BookmarkCategory>(categoryKey(userId)).sort((a, b) => a.sortOrder - b.sortOrder)
+    const bookmarks = readJson<Bookmark>(bookmarkKey(userId)).sort((a, b) => a.sortOrder - b.sortOrder)
     return Promise.resolve({ categories, bookmarks })
   }
 }

@@ -12,8 +12,10 @@
  */
 
 import type { ImportPayload } from './types'
+import { requireImportText, validateImportPayload } from './validation'
 
 export function parseNetscapeBookmarks(html: string): ImportPayload {
+  requireImportText(html)
   if (typeof window === 'undefined') {
     throw new Error('Netscape 书签解析需在浏览器端执行')
   }
@@ -63,5 +65,7 @@ export function parseNetscapeBookmarks(html: string): ImportPayload {
   ensureCategory('导入')
   walk(root, '导入')
 
-  return { categories, bookmarks }
+  const payload = { categories, bookmarks }
+  validateImportPayload(payload)
+  return payload
 }

@@ -7,9 +7,17 @@
 
 <template>
   <Teleport to="body">
-    <div v-if="visible" class="tab-settings-backdrop" @click="close" />
+    <div v-if="visible" ref="backdropRef" class="tab-settings-backdrop" @click="close" />
     <Transition name="tab-settings-drawer">
-      <aside v-if="visible" class="tab-settings-drawer" role="dialog" aria-label="标签页设置">
+      <aside
+        v-if="visible"
+        ref="dialogRef"
+        class="tab-settings-drawer"
+        role="dialog"
+        aria-modal="true"
+        aria-label="标签页设置"
+        tabindex="-1"
+      >
         <header class="tsd-header">
           <Icon name="lucide:settings" size="16" />
           <h2 class="tsd-header__title">设置</h2>
@@ -27,6 +35,7 @@
               type="button"
               class="tsd-nav__item"
               :class="{ 'tsd-nav__item--active': activeSection === sec.id }"
+              :aria-pressed="activeSection === sec.id"
               @click="activeSection = sec.id"
             >
               <Icon :name="sec.icon" size="14" />
@@ -96,7 +105,7 @@
                   step="1"
                   :disabled="s.viewMode !== 'grid' && s.viewMode !== 'compact'"
                   @input="onGridColumnsChange(($event.target as HTMLInputElement).value)"
-                >
+                />
               </div>
               <!-- 图标间距 -->
               <div class="tsd-row tsd-row--col">
@@ -112,7 +121,7 @@
                   max="32"
                   step="2"
                   @input="update('iconGap', +($event.target as HTMLInputElement).value)"
-                >
+                />
               </div>
               <!-- 启用拖拽 -->
               <div class="tsd-row">
@@ -162,7 +171,15 @@
                   <span class="tsd-row__label">图标大小</span>
                   <span class="tsd-row__val-badge">{{ s.iconSize }}px</span>
                 </div>
-                <input type="range" class="tsd-range" :value="s.iconSize" min="32" max="80" step="2" @input="update('iconSize', +($event.target as HTMLInputElement).value)">
+                <input
+                  type="range"
+                  class="tsd-range"
+                  :value="s.iconSize"
+                  min="32"
+                  max="80"
+                  step="2"
+                  @input="update('iconSize', +($event.target as HTMLInputElement).value)"
+                />
               </div>
               <!-- 图标圆角 -->
               <div class="tsd-row tsd-row--col">
@@ -170,7 +187,16 @@
                   <span class="tsd-row__label">图标圆角</span>
                   <span class="tsd-row__val-badge">{{ effectiveIconRadius }}px</span>
                 </div>
-                <input type="range" class="tsd-range" :value="s.iconRadius" min="0" :max="Math.floor(s.iconSize / 2)" step="1" :disabled="s.iconStyle === 'rounded'" @input="update('iconRadius', +($event.target as HTMLInputElement).value)">
+                <input
+                  type="range"
+                  class="tsd-range"
+                  :value="s.iconRadius"
+                  min="0"
+                  :max="Math.floor(s.iconSize / 2)"
+                  step="1"
+                  :disabled="s.iconStyle === 'rounded'"
+                  @input="update('iconRadius', +($event.target as HTMLInputElement).value)"
+                />
               </div>
               <!-- 不透明度 -->
               <div class="tsd-row tsd-row--col">
@@ -178,7 +204,15 @@
                   <span class="tsd-row__label">不透明度</span>
                   <span class="tsd-row__val-badge">{{ Math.round(s.iconOpacity * 100) }}%</span>
                 </div>
-                <input type="range" class="tsd-range" :value="s.iconOpacity" min="0.2" max="1" step="0.05" @input="update('iconOpacity', +($event.target as HTMLInputElement).value)">
+                <input
+                  type="range"
+                  class="tsd-range"
+                  :value="s.iconOpacity"
+                  min="0.2"
+                  max="1"
+                  step="0.05"
+                  @input="update('iconOpacity', +($event.target as HTMLInputElement).value)"
+                />
               </div>
               <!-- 图标间距 -->
               <div class="tsd-row tsd-row--col">
@@ -186,12 +220,25 @@
                   <span class="tsd-row__label">图标间距</span>
                   <span class="tsd-row__val-badge">{{ s.iconGap }}px</span>
                 </div>
-                <input type="range" class="tsd-range" :value="s.iconGap" min="0" max="32" step="2" @input="update('iconGap', +($event.target as HTMLInputElement).value)">
+                <input
+                  type="range"
+                  class="tsd-range"
+                  :value="s.iconGap"
+                  min="0"
+                  max="32"
+                  step="2"
+                  @input="update('iconGap', +($event.target as HTMLInputElement).value)"
+                />
               </div>
               <!-- 显示图标名称 -->
               <div class="tsd-row">
                 <span class="tsd-row__label">显示图标名称</span>
-                <button type="button" class="tsd-toggle" :class="{ 'is-on': s.showIconName }" @click="update('showIconName', !s.showIconName)">
+                <button
+                  type="button"
+                  class="tsd-toggle"
+                  :class="{ 'is-on': s.showIconName }"
+                  @click="update('showIconName', !s.showIconName)"
+                >
                   <span class="tsd-toggle__thumb" />
                 </button>
               </div>
@@ -201,14 +248,35 @@
                   <span class="tsd-row__label">文字大小</span>
                   <span class="tsd-row__val-badge">{{ s.nameSize }}px</span>
                 </div>
-                <input type="range" class="tsd-range" :value="s.nameSize" min="10" max="18" step="1" :disabled="!s.showIconName" @input="update('nameSize', +($event.target as HTMLInputElement).value)">
+                <input
+                  type="range"
+                  class="tsd-range"
+                  :value="s.nameSize"
+                  min="10"
+                  max="18"
+                  step="1"
+                  :disabled="!s.showIconName"
+                  @input="update('nameSize', +($event.target as HTMLInputElement).value)"
+                />
               </div>
               <!-- 名称颜色 -->
               <div class="tsd-row" :class="{ 'tsd-row--disabled': !s.showIconName }">
                 <span class="tsd-row__label">名称颜色</span>
                 <div class="tsd-color-pick">
-                  <input type="color" class="tsd-color-pick__input" :value="s.nameColor || '#888888'" :disabled="!s.showIconName" @input="update('nameColor', ($event.target as HTMLInputElement).value)">
-                  <button v-if="s.nameColor" type="button" class="tsd-color-pick__clear" title="恢复默认颜色" @click="update('nameColor', '')">
+                  <input
+                    type="color"
+                    class="tsd-color-pick__input"
+                    :value="s.nameColor || '#888888'"
+                    :disabled="!s.showIconName"
+                    @input="update('nameColor', ($event.target as HTMLInputElement).value)"
+                  />
+                  <button
+                    v-if="s.nameColor"
+                    type="button"
+                    class="tsd-color-pick__clear"
+                    title="恢复默认颜色"
+                    @click="update('nameColor', '')"
+                  >
                     <Icon name="lucide:x" size="10" />
                   </button>
                 </div>
@@ -219,12 +287,24 @@
                   <span class="tsd-row__label">区域最大宽度</span>
                   <span class="tsd-row__val-badge">
                     {{ s.gridMaxWidth }}{{ s.gridMaxWidthUnit }}
-                    <button type="button" class="tsd-unit-toggle" @click="update('gridMaxWidthUnit', s.gridMaxWidthUnit === 'px' ? '%' : 'px')">
+                    <button
+                      type="button"
+                      class="tsd-unit-toggle"
+                      @click="update('gridMaxWidthUnit', s.gridMaxWidthUnit === 'px' ? '%' : 'px')"
+                    >
                       {{ s.gridMaxWidthUnit === 'px' ? '切换%' : '切换px' }}
                     </button>
                   </span>
                 </div>
-                <input type="range" class="tsd-range" :value="s.gridMaxWidth" :min="s.gridMaxWidthUnit === 'px' ? 400 : 40" :max="s.gridMaxWidthUnit === 'px' ? 2400 : 100" :step="s.gridMaxWidthUnit === 'px' ? 10 : 5" @input="update('gridMaxWidth', +($event.target as HTMLInputElement).value)">
+                <input
+                  type="range"
+                  class="tsd-range"
+                  :value="s.gridMaxWidth"
+                  :min="s.gridMaxWidthUnit === 'px' ? 400 : 40"
+                  :max="s.gridMaxWidthUnit === 'px' ? 2400 : 100"
+                  :step="s.gridMaxWidthUnit === 'px' ? 10 : 5"
+                  @input="update('gridMaxWidth', +($event.target as HTMLInputElement).value)"
+                />
               </div>
               <!-- 自动抓取 favicon -->
               <div class="tsd-row">
@@ -266,19 +346,35 @@
               <h3 class="tsd-section__title">时间与问候</h3>
               <div class="tsd-row">
                 <span class="tsd-row__label">显示问候语</span>
-                <button type="button" class="tsd-toggle" :class="{ 'is-on': s.showGreeting }" @click="update('showGreeting', !s.showGreeting)">
+                <button
+                  type="button"
+                  class="tsd-toggle"
+                  :class="{ 'is-on': s.showGreeting }"
+                  @click="update('showGreeting', !s.showGreeting)"
+                >
                   <span class="tsd-toggle__thumb" />
                 </button>
               </div>
               <div class="tsd-row">
                 <span class="tsd-row__label">显示日期</span>
-                <button type="button" class="tsd-toggle" :class="{ 'is-on': s.showDate }" @click="update('showDate', !s.showDate)">
+                <button
+                  type="button"
+                  class="tsd-toggle"
+                  :class="{ 'is-on': s.showDate }"
+                  @click="update('showDate', !s.showDate)"
+                >
                   <span class="tsd-toggle__thumb" />
                 </button>
               </div>
               <div class="tsd-row" :class="{ 'tsd-row--disabled': !s.showDate }">
                 <span class="tsd-row__label">显示秒数</span>
-                <button type="button" class="tsd-toggle" :class="{ 'is-on': s.showSeconds }" :disabled="!s.showDate" @click="update('showSeconds', !s.showSeconds)">
+                <button
+                  type="button"
+                  class="tsd-toggle"
+                  :class="{ 'is-on': s.showSeconds }"
+                  :disabled="!s.showDate"
+                  @click="update('showSeconds', !s.showSeconds)"
+                >
                   <span class="tsd-toggle__thumb" />
                 </button>
               </div>
@@ -376,7 +472,7 @@
                   class="tsd-color-pick__input"
                   :value="currentWallpaper.solidColor || '#0f172a'"
                   @input="patchWallpaper({ solidColor: ($event.target as HTMLInputElement).value })"
-                >
+                />
               </div>
 
               <!-- gradient -->
@@ -388,7 +484,7 @@
                     class="tsd-color-pick__input"
                     :value="currentWallpaper.gradient?.from || '#1e3a8a'"
                     @input="patchGradient({ from: ($event.target as HTMLInputElement).value })"
-                  >
+                  />
                 </div>
                 <div class="tsd-row">
                   <span class="tsd-row__label">渐变终色</span>
@@ -397,7 +493,7 @@
                     class="tsd-color-pick__input"
                     :value="currentWallpaper.gradient?.to || '#7c3aed'"
                     @input="patchGradient({ to: ($event.target as HTMLInputElement).value })"
-                  >
+                  />
                 </div>
                 <div class="tsd-row tsd-row--col">
                   <div class="tsd-row__head">
@@ -412,7 +508,7 @@
                     max="360"
                     step="5"
                     @input="patchGradient({ angle: +($event.target as HTMLInputElement).value })"
-                  >
+                  />
                 </div>
               </template>
 
@@ -445,13 +541,13 @@
                   placeholder="https://..."
                   :value="currentWallpaper.url || ''"
                   @change="patchWallpaper({ url: ($event.target as HTMLInputElement).value })"
-                >
+                />
               </div>
 
               <!-- upload -->
               <div v-if="currentWallpaper.kind === 'upload'" class="tsd-row tsd-row--col">
                 <label class="tsd-wp-upload">
-                  <input type="file" accept="image/*" @change="onWallpaperUpload">
+                  <input type="file" accept="image/*" @change="onWallpaperUpload" />
                   <Icon name="lucide:upload" size="18" />
                   <span>选择本地壁纸（&lt; 5MB，存储在本地）</span>
                 </label>
@@ -475,7 +571,7 @@
                   max="0.8"
                   step="0.05"
                   @input="update('wallpaperMaskOpacity', +($event.target as HTMLInputElement).value)"
-                >
+                />
               </div>
               <div class="tsd-row tsd-row--col">
                 <div class="tsd-row__head">
@@ -490,7 +586,7 @@
                   max="24"
                   step="1"
                   @input="update('wallpaperBlur', +($event.target as HTMLInputElement).value)"
-                >
+                />
               </div>
               <div class="tsd-row">
                 <span class="tsd-row__label">噪点纹理</span>
@@ -541,10 +637,7 @@
                   </button>
                 </div>
               </div>
-              <div
-                v-if="s.searchEngine === 'custom'"
-                class="tsd-row tsd-row--col"
-              >
+              <div v-if="s.searchEngine === 'custom'" class="tsd-row tsd-row--col">
                 <div class="tsd-row__head">
                   <span class="tsd-row__label">自定义搜索 URL</span>
                 </div>
@@ -554,7 +647,7 @@
                   placeholder="https://example.com/search?q=%s"
                   :value="s.searchEngineCustomUrl"
                   @change="update('searchEngineCustomUrl', ($event.target as HTMLInputElement).value)"
-                >
+                />
                 <p class="tsd-hint">
                   <Icon name="lucide:info" size="11" />
                   使用 <code>%s</code> 占位符表示查询词位置。
@@ -586,13 +679,23 @@
               <h3 class="tsd-section__title">侧边栏</h3>
               <div class="tsd-row">
                 <span class="tsd-row__label">默认折叠</span>
-                <button type="button" class="tsd-toggle" :class="{ 'is-on': s.defaultCollapsed }" @click="update('defaultCollapsed', !s.defaultCollapsed)">
+                <button
+                  type="button"
+                  class="tsd-toggle"
+                  :class="{ 'is-on': s.defaultCollapsed }"
+                  @click="update('defaultCollapsed', !s.defaultCollapsed)"
+                >
                   <span class="tsd-toggle__thumb" />
                 </button>
               </div>
               <div class="tsd-row">
                 <span class="tsd-row__label">显示书签计数</span>
-                <button type="button" class="tsd-toggle" :class="{ 'is-on': s.showCounts }" @click="update('showCounts', !s.showCounts)">
+                <button
+                  type="button"
+                  class="tsd-toggle"
+                  :class="{ 'is-on': s.showCounts }"
+                  @click="update('showCounts', !s.showCounts)"
+                >
                   <span class="tsd-toggle__thumb" />
                 </button>
               </div>
@@ -601,18 +704,39 @@
                   <span class="tsd-row__label">侧边栏圆角</span>
                   <span class="tsd-row__val-badge">{{ s.sidebarRadius }}px</span>
                 </div>
-                <input type="range" class="tsd-range" :value="s.sidebarRadius" min="0" max="24" step="1" @input="update('sidebarRadius', +($event.target as HTMLInputElement).value)">
+                <input
+                  type="range"
+                  class="tsd-range"
+                  :value="s.sidebarRadius"
+                  min="0"
+                  max="24"
+                  step="1"
+                  @input="update('sidebarRadius', +($event.target as HTMLInputElement).value)"
+                />
               </div>
               <div class="tsd-row tsd-row--col">
                 <div class="tsd-row__head">
                   <span class="tsd-row__label">背景不透明度</span>
                   <span class="tsd-row__val-badge">{{ Math.round(s.sidebarOpacity * 100) }}%</span>
                 </div>
-                <input type="range" class="tsd-range" :value="s.sidebarOpacity" min="0.3" max="1" step="0.05" @input="update('sidebarOpacity', +($event.target as HTMLInputElement).value)">
+                <input
+                  type="range"
+                  class="tsd-range"
+                  :value="s.sidebarOpacity"
+                  min="0.3"
+                  max="1"
+                  step="0.05"
+                  @input="update('sidebarOpacity', +($event.target as HTMLInputElement).value)"
+                />
               </div>
               <div class="tsd-row">
                 <span class="tsd-row__label">毛玻璃效果</span>
-                <button type="button" class="tsd-toggle" :class="{ 'is-on': s.sidebarBlur }" @click="update('sidebarBlur', !s.sidebarBlur)">
+                <button
+                  type="button"
+                  class="tsd-toggle"
+                  :class="{ 'is-on': s.sidebarBlur }"
+                  @click="update('sidebarBlur', !s.sidebarBlur)"
+                >
                   <span class="tsd-toggle__thumb" />
                 </button>
               </div>
@@ -627,7 +751,7 @@
               <h3 class="tsd-section__title">数据管理</h3>
               <p class="tsd-hint">
                 <Icon name="lucide:info" size="11" />
-                数据目前存储在浏览器本地（LocalStorage + IndexedDB）。后端对接后将自动同步。
+                数据只保存在当前浏览器，不会自动跨设备同步。请定期导出备份。
               </p>
               <div class="tsd-data-actions">
                 <button type="button" class="tsd-data-btn" @click="onExport">
@@ -674,7 +798,7 @@
               </div>
               <p class="tsd-about-text">
                 标签页是 TixXin Blog 的一个实验功能，灵感来自浏览器新标签页管理工具。
-                数据存储在浏览器本地，登录后可同步到云端（即将支持）。
+                数据保存在当前浏览器，暂不提供云同步。导出文件可用于备份和手动迁移。
               </p>
             </section>
           </div>
@@ -696,6 +820,9 @@ defineProps<{
 const emit = defineEmits<{ openImport: [] }>()
 
 const visible = defineModel<boolean>('visible', { default: false })
+const dialogRef = ref<HTMLElement | null>(null)
+const backdropRef = ref<HTMLElement | null>(null)
+useModalFocus(visible, dialogRef, { close, extra: () => [backdropRef.value] })
 
 const colorMode = useColorMode()
 const { settings, update, resetSection } = useTabSettings()
@@ -906,6 +1033,9 @@ function onResetSettings() {
 .tab-settings-drawer-enter-active,
 .tab-settings-drawer-leave-active {
   transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
 }
 
 .tab-settings-drawer-enter-from,
@@ -920,7 +1050,7 @@ function onResetSettings() {
   gap: 0.5rem;
   padding: 0.75rem 1.25rem;
   border-bottom: 1px solid var(--border-soft);
-  color: var(--accent);
+  color: var(--accent-text);
   flex-shrink: 0;
 }
 
@@ -984,7 +1114,10 @@ function onResetSettings() {
   cursor: pointer;
   text-align: left;
   white-space: nowrap;
-  transition: all 0.15s;
+  transition: $transition-fast;
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
 
   &:hover {
     background: var(--surface-2);
@@ -993,7 +1126,7 @@ function onResetSettings() {
 
   &--active {
     background: var(--accent-soft);
-    color: var(--accent);
+    color: var(--accent-text);
     font-weight: 600;
   }
 }
@@ -1082,7 +1215,7 @@ function onResetSettings() {
 .tsd-chip {
   padding: 0.0625rem 0.5rem;
   background: var(--accent-soft);
-  color: var(--accent);
+  color: var(--accent-text);
   border-radius: $radius-full;
   font-size: 0.625rem;
   font-weight: 600;
@@ -1106,17 +1239,20 @@ function onResetSettings() {
   font-size: 0.625rem;
   font-weight: 500;
   cursor: pointer;
-  transition: all 0.15s;
+  transition: $transition-fast;
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
 
   &:hover {
     border-color: var(--accent);
-    color: var(--accent);
+    color: var(--accent-text);
   }
 
   &--active {
     background: var(--accent-soft);
     border-color: var(--accent);
-    color: var(--accent);
+    color: var(--accent-text);
     font-weight: 600;
   }
 }
@@ -1167,6 +1303,9 @@ function onResetSettings() {
   background: var(--border);
   cursor: pointer;
   transition: background 0.2s;
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
   padding: 0;
   flex-shrink: 0;
 
@@ -1189,6 +1328,9 @@ function onResetSettings() {
   border-radius: $radius-full;
   background: #fff;
   transition: transform 0.2s;
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
 
   .is-on & {
@@ -1234,7 +1376,7 @@ function onResetSettings() {
   cursor: pointer;
 
   &:hover {
-    color: var(--accent);
+    color: var(--accent-text);
   }
 }
 
@@ -1244,7 +1386,7 @@ function onResetSettings() {
   border: 1px solid var(--border-soft);
   border-radius: 3px;
   background: transparent;
-  color: var(--accent);
+  color: var(--accent-text);
   font-size: 0.5625rem;
   cursor: pointer;
 
@@ -1268,11 +1410,14 @@ function onResetSettings() {
   font-size: 0.625rem;
   font-weight: 500;
   cursor: pointer;
-  transition: all 0.15s;
+  transition: $transition-fast;
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
 
   &:hover {
     border-color: var(--accent);
-    color: var(--accent);
+    color: var(--accent-text);
     background: var(--accent-soft);
   }
 }
@@ -1305,7 +1450,10 @@ function onResetSettings() {
   background-color: var(--surface-2);
   cursor: pointer;
   overflow: hidden;
-  transition: all 0.15s;
+  transition: $transition-fast;
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
 
   &:hover {
     border-color: var(--accent);
@@ -1345,11 +1493,14 @@ function onResetSettings() {
   font-size: 0.6875rem;
   cursor: pointer;
   text-align: center;
-  transition: all 0.15s;
+  transition: $transition-fast;
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
 
   &:hover {
     border-color: var(--accent);
-    color: var(--accent);
+    color: var(--accent-text);
     background: var(--accent-soft);
   }
 
@@ -1404,18 +1555,21 @@ function onResetSettings() {
   background: transparent;
   color: var(--text-soft);
   cursor: pointer;
-  transition: all 0.15s;
+  transition: $transition-fast;
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
 
   &:hover {
     border-color: var(--accent);
-    color: var(--accent);
+    color: var(--accent-text);
     background: var(--accent-soft);
   }
 
   &--active {
     border-color: var(--accent);
     background: var(--accent-soft);
-    color: var(--accent);
+    color: var(--accent-text);
     font-weight: 600;
   }
 }
@@ -1444,12 +1598,15 @@ function onResetSettings() {
   color: var(--text-main);
   text-align: left;
   cursor: pointer;
-  transition: all 0.15s;
+  transition: $transition-fast;
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
 
   &:hover {
     border-color: var(--accent);
     background: var(--accent-soft);
-    color: var(--accent);
+    color: var(--accent-text);
   }
 
   &--danger:hover {

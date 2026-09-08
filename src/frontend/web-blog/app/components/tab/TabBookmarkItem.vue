@@ -12,6 +12,7 @@
     target="_blank"
     rel="noopener"
     class="tab-bm"
+    :data-focus-key="`bookmark:${bookmark.id}`"
     :class="[`tab-bm--view-${viewMode}`, { 'tab-bm--pinned': bookmark.pinned }]"
     draggable="true"
     @dragstart="onDragStart"
@@ -20,6 +21,8 @@
     @pointerup="clearLongPress"
     @pointerleave="clearLongPress"
     @pointermove="clearLongPress"
+    @keydown.alt.up.prevent.stop="emit('move', -1)"
+    @keydown.alt.down.prevent.stop="emit('move', 1)"
   >
     <span class="tab-bm__icon" :style="iconComputedStyle">
       <Icon v-if="renderKind === 'lucide'" :name="bookmark.icon!" :size="Math.round(tabSettings.iconSize * 0.46)" />
@@ -30,14 +33,12 @@
         class="tab-bm__img"
         referrerpolicy="no-referrer"
         @error="onImgError"
-      >
+      />
       <span v-else class="tab-bm__letter">{{ letter }}</span>
     </span>
-    <span
-      v-if="tabSettings.showIconName && viewMode !== 'compact'"
-      class="tab-bm__name"
-      :style="nameComputedStyle"
-    >{{ bookmark.name }}</span>
+    <span v-if="tabSettings.showIconName && viewMode !== 'compact'" class="tab-bm__name" :style="nameComputedStyle">{{
+      bookmark.name
+    }}</span>
     <span v-if="showUrl" class="tab-bm__url">{{ displayHost }}</span>
     <span v-if="showDescription && bookmark.description" class="tab-bm__desc">{{ bookmark.description }}</span>
     <button
@@ -56,12 +57,12 @@
 import type { Bookmark } from '~/features/tab/types'
 import type { TabViewMode } from '~/composables/useTabSettings'
 
-const props = withDefaults(
-  defineProps<{ bookmark: Bookmark; readOnly?: boolean; viewMode?: TabViewMode }>(),
-  { viewMode: 'grid' },
-)
+const props = withDefaults(defineProps<{ bookmark: Bookmark; readOnly?: boolean; viewMode?: TabViewMode }>(), {
+  viewMode: 'grid',
+})
 const emit = defineEmits<{
   remove: [id: string]
+  move: [direction: -1 | 1]
   faviconError: [id: string]
   contextMenu: [payload: { bookmark: Bookmark; x: number; y: number }]
 }>()
@@ -70,8 +71,18 @@ const { settings: tabSettings } = useTabSettings()
 
 // 本地图片加载失败态；不直接改 props，由父组件再决定是否持久化
 const localImgFailed = ref(false)
-watch(() => props.bookmark.icon, () => { localImgFailed.value = false })
-watch(() => props.bookmark.faviconUrl, () => { localImgFailed.value = false })
+watch(
+  () => props.bookmark.icon,
+  () => {
+    localImgFailed.value = false
+  },
+)
+watch(
+  () => props.bookmark.faviconUrl,
+  () => {
+    localImgFailed.value = false
+  },
+)
 
 /** 渲染分支：lucide 优先 → 有 favicon/dataURL 图片 → 字符 fallback */
 const renderKind = computed<'lucide' | 'image' | 'text'>(() => {
@@ -176,7 +187,10 @@ const nameComputedStyle = computed(() => ({
   border-radius: $radius-card;
   text-decoration: none;
   color: var(--text-main);
-  transition: all 0.2s;
+  transition: $transition-fast;
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
 
   &:hover {
     background: var(--surface-1);
@@ -263,6 +277,9 @@ const nameComputedStyle = computed(() => ({
     height 0.2s ease,
     border-radius 0.2s ease,
     opacity 0.2s ease;
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
 }
 
 .tab-bm__letter {
@@ -297,10 +314,13 @@ const nameComputedStyle = computed(() => ({
   color: var(--text-soft);
   cursor: pointer;
   opacity: 0;
-  transition: all 0.15s;
+  transition: $transition-fast;
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
 
   &:hover {
-    background: var(--accent);
+    background: var(--accent-action);
     color: #fff;
   }
 }

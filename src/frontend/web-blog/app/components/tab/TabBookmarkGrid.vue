@@ -7,6 +7,7 @@
 
 <template>
   <div class="tab-grid" :class="viewClass" :style="gridRootStyle">
+    <p v-if="!readOnly" class="tab-grid__hint">可拖拽排序，也可聚焦书签后按 Alt＋上/下方向键调整顺序。</p>
     <div ref="listEl" class="tab-grid__list" :style="listStyle">
       <TabBookmarkItem
         v-for="bm in localList"
@@ -17,6 +18,7 @@
         :data-bookmark-id="bm.id"
         @remove="emit('remove', $event)"
         @context-menu="emit('contextMenu', $event)"
+        @move="moveBookmark(bm.id, $event)"
       />
       <button v-if="!readOnly" key="__add" type="button" class="tab-grid__add" @click="emit('add')">
         <span class="tab-grid__add-icon">
@@ -42,6 +44,7 @@ const emit = defineEmits<{
 }>()
 
 const { settings: tabSettings } = useTabSettings()
+const { reducedMotion } = useMotionPreference()
 
 // 本地 mutable 副本：useSortable 需要直接改动数组；外部 props 变化时同步
 const listEl = ref<HTMLElement | null>(null)
@@ -55,7 +58,7 @@ watch(
   { immediate: true },
 )
 
-const { start, stop } = useSortable(listEl, localList, {
+const { start, stop, option } = useSortable(listEl, localList, {
   animation: 150,
   handle: '.tab-bm',
   filter: '.tab-grid__add',
@@ -64,9 +67,11 @@ const { start, stop } = useSortable(listEl, localList, {
   dragClass: 'tab-bm--dragging',
   // forceFallback=false：使用 HTML5 drag，允许跨分类拖拽（侧栏 drop zone 生效）
   forceFallback: false,
-  onEnd: (evt) => {
+  onEnd: async (evt) => {
     // 跨分类拖拽由外部 drop zone 处理，此处仅关心同分类排序
     if (evt.to !== evt.from) return
+    // useSortable的onUpdate在nextTick中同步数组；等待它完成后再持久化最终顺序。
+    await nextTick()
     // 只读（未登录）模式：回滚到原顺序并提示
     if (props.readOnly) {
       localList.value = [...props.bookmarks]
@@ -79,6 +84,8 @@ const { start, stop } = useSortable(listEl, localList, {
       sortOrder: (i + 1) * 100,
     }))
     emit('reorder', updates)
+    await nextTick()
+    localList.value = [...props.bookmarks]
   },
 })
 
@@ -86,7 +93,30 @@ const { start, stop } = useSortable(listEl, localList, {
 watchEffect(() => {
   if (!tabSettings.value.dragEnabled) stop()
   else start()
+  option('animation', reducedMotion.value ? 0 : 150)
 })
+
+async function moveBookmark(id: string, direction: -1 | 1) {
+  if (props.readOnly) {
+    emit('readOnlyBlocked')
+    return
+  }
+  const index = localList.value.findIndex((bookmark) => bookmark.id === id)
+  const next = index + direction
+  if (index < 0 || next < 0 || next >= localList.value.length) return
+  const reordered = [...localList.value]
+  const [bookmark] = reordered.splice(index, 1)
+  reordered.splice(next, 0, bookmark!)
+  emit(
+    'reorder',
+    reordered.map((item, i) => ({ id: item.id, categoryId: item.categoryId, sortOrder: (i + 1) * 100 })),
+  )
+  await nextTick()
+  localList.value = [...props.bookmarks]
+  await nextTick()
+  const target = [...(listEl.value?.children ?? [])].find((node) => (node as HTMLElement).dataset.bookmarkId === id)
+  ;(target as HTMLElement | undefined)?.focus({ preventScroll: true })
+}
 
 const gridRootStyle = computed(() => ({
   maxWidth: `${tabSettings.value.gridMaxWidth}${tabSettings.value.gridMaxWidthUnit}`,
@@ -108,16 +138,34 @@ const listStyle = computed(() => {
 </script>
 
 <style lang="scss" scoped>
+.tab-grid__hint {
+  margin-bottom: 0.75rem;
+  font-size: 0.75rem;
+  color: var(--text-soft);
+}
+@media (prefers-reduced-motion: reduce) {
+  :deep(.tab-bm) {
+    // Sortable写入内联补间，只在此作用域和减少模式中覆盖。
+    transition: none !important;
+    transform: none !important;
+  }
+}
 .tab-grid {
   width: 100%;
   margin: 0 auto;
   transition: max-width 0.2s ease;
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
 }
 
 .tab-grid__list {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(78px, 1fr));
   transition: gap 0.2s ease;
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
 }
 
 /* compact：小图标密排 */
@@ -147,11 +195,14 @@ const listStyle = computed(() => {
   background: transparent;
   color: var(--text-soft);
   cursor: pointer;
-  transition: all 0.2s;
+  transition: $transition-fast;
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
 
   &:hover {
     border-color: var(--accent);
-    color: var(--accent);
+    color: var(--accent-text);
     background: var(--accent-soft);
     transform: translateY(-2px);
   }

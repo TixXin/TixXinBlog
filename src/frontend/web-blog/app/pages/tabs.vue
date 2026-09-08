@@ -35,12 +35,33 @@
     </ClientOnly>
 
     <div class="tabs-page__center" @contextmenu.self.prevent="onBlankContextMenu">
+      <p v-if="storageError" role="alert">{{ storageError }}</p>
       <div v-if="tabSettings.showGreeting || tabSettings.showDate" class="tabs-page__greeting">
         <h1 v-if="tabSettings.showGreeting" class="tabs-page__hello">{{ greetingLine }}</h1>
         <p v-if="tabSettings.showDate" class="tabs-page__date">{{ today }}</p>
       </div>
 
       <TabSearchBar />
+      <div class="tabs-page__compact-tools">
+        <label for="bookmark-group">书签分组</label>
+        <select
+          id="bookmark-group"
+          :value="activeCategoryId ?? ''"
+          @change="selectCategory(($event.target as HTMLSelectElement).value || null)"
+        >
+          <option value="">全部书签</option>
+          <option v-for="category in categories" :key="category.id" :value="category.id">
+            {{ category.name }}（{{ categoryCounts[category.id] || 0 }}）
+          </option>
+        </select>
+        <button type="button" aria-haspopup="dialog" :aria-expanded="settingsOpen" @click="settingsOpen = true">
+          <Icon name="lucide:settings" size="18" />书签设置
+        </button>
+        <button v-if="!isReadOnly" type="button" @click="onAddCategoryClick">
+          <Icon name="lucide:folder-plus" size="18" />新建分类
+        </button>
+      </div>
+      <p class="tabs-page__storage-note">书签保存在当前浏览器，登录后可编辑；可在书签设置中导出备份。</p>
 
       <div class="tabs-page__panel" @contextmenu.self.prevent="onBlankContextMenu">
         <TabBookmarkGrid
@@ -64,7 +85,14 @@
       @update="onUpdateBookmarkFromDialog"
     />
 
-    <TabContextMenu :visible="ctxVisible" :x="ctxX" :y="ctxY" :items="ctxItems" @close="ctxVisible = false" />
+    <TabContextMenu
+      :visible="ctxVisible"
+      :x="ctxX"
+      :y="ctxY"
+      :items="ctxItems"
+      :focus-key="ctxFocusKey"
+      @close="ctxVisible = false"
+    />
     <TabAddCategoryDialog v-model:visible="addCategoryVisible" @submit="onSubmitCategory" />
     <TabSettingsDrawer v-model:visible="settingsOpen" :user="displayUser" @open-import="importOpen = true" />
 
@@ -116,6 +144,7 @@ useSeoMeta({
 const { currentUser, isLoggedIn } = useCurrentUser()
 const { open: openLoginDrawer } = useLoginDrawer()
 const {
+  error: storageError,
   categories,
   bookmarks,
   visibleBookmarks,
@@ -134,7 +163,7 @@ const {
   refreshFavicon,
 } = useTabBookmarks()
 
-const { success, info } = useToast()
+const { success, info, error: showError } = useToast()
 const tabPalette = useTabCommandPalette()
 const tabRepo = useTabRepository()
 
@@ -279,7 +308,7 @@ watch(isLoggedIn, () => {
 })
 
 function onLogin() {
-  openLoginDrawer('login')
+  openLoginDrawer('login', true)
 }
 
 function onAddBookmarkClick() {
@@ -291,7 +320,11 @@ function onAddBookmarkClick() {
 }
 
 async function onSubmitBookmark(draft: BookmarkDraft) {
-  await addBookmark(draft)
+  try {
+    if (await addBookmark(draft)) addBookmarkVisible.value = false
+  } catch (cause) {
+    showError(cause instanceof Error ? cause.message : '保存失败，输入已保留')
+  }
 }
 
 async function onRemoveBookmark(id: string) {
@@ -316,7 +349,11 @@ async function onReorder(updates: BookmarkReorderUpdate[]) {
 }
 
 async function onUpdateBookmarkFromDialog(payload: { id: string; patch: BookmarkDraft }) {
-  await updateBookmark(payload.id, payload.patch)
+  try {
+    if (await updateBookmark(payload.id, payload.patch)) addBookmarkVisible.value = false
+  } catch (cause) {
+    showError(cause instanceof Error ? cause.message : '保存失败，输入已保留')
+  }
 }
 
 // ---- 上下文菜单 ----
@@ -324,6 +361,7 @@ const ctxVisible = ref(false)
 const ctxX = ref(0)
 const ctxY = ref(0)
 const ctxItems = ref<ContextMenuItem[]>([])
+const ctxFocusKey = ref<string | undefined>()
 const editingBookmark = ref<Bookmark | null>(null)
 
 const copyToClipboard = async (text: string, msg = 'URL 已复制') => {
@@ -337,6 +375,7 @@ const copyToClipboard = async (text: string, msg = 'URL 已复制') => {
 
 function onBookmarkContextMenu(payload: { bookmark: Bookmark; x: number; y: number }) {
   const bm = payload.bookmark
+  ctxFocusKey.value = `bookmark:${bm.id}`
   ctxX.value = payload.x
   ctxY.value = payload.y
 
@@ -419,6 +458,7 @@ function onBookmarkContextMenu(payload: { bookmark: Bookmark; x: number; y: numb
 function onCategoryContextMenu(payload: { categoryId: string; x: number; y: number }) {
   const cat = categories.value.find((c) => c.id === payload.categoryId)
   if (!cat) return
+  ctxFocusKey.value = `category:${cat.id}`
   ctxX.value = payload.x
   ctxY.value = payload.y
 
@@ -477,6 +517,7 @@ function onCategoryContextMenu(payload: { categoryId: string; x: number; y: numb
 
 /** 空白区右键菜单（未登录时也可用，以只读动作为主） */
 function onBlankContextMenu(e: MouseEvent) {
+  ctxFocusKey.value = undefined
   ctxX.value = e.clientX
   ctxY.value = e.clientY
 
@@ -624,11 +665,49 @@ async function onBookmarkDropped(payload: { bookmarkId: string; targetCategoryId
   width: 100%;
   padding: 0.5rem 0;
 }
+.tabs-page__compact-tools {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  width: 100%;
+  max-width: 48rem;
+  label {
+    font-size: 0.875rem;
+    color: var(--text-soft);
+  }
+  select {
+    flex: 1;
+    min-width: 9rem;
+    max-width: 100%;
+  }
+  select,
+  button {
+    min-height: 44px;
+    padding: 0.5rem 0.75rem;
+    color: var(--text-main);
+    background: var(--surface-1);
+    border: 1px solid var(--border);
+    border-radius: $radius-md;
+  }
+  button {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.375rem;
+  }
+  @media (min-width: 1025px) {
+    display: none;
+  }
+}
+.tabs-page__storage-note {
+  color: var(--text-soft);
+  font-size: 0.8125rem;
+}
 
 /* ---- 右下角游客提示浮窗 ---- */
 .tabs-guest-toast {
   position: fixed;
-  bottom: 0.75rem;
+  bottom: calc(5rem + env(safe-area-inset-bottom));
   right: 1.5rem;
   z-index: 50;
   display: flex;
@@ -640,16 +719,20 @@ async function onBookmarkDropped(payload: { bookmarkId: string; targetCategoryId
   border-radius: $radius-card;
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
   font-size: 0.75rem;
+  max-width: calc(100vw - 2rem);
+  @media (min-width: $breakpoint-lg) {
+    bottom: 0.75rem;
+  }
 }
 
 .tabs-guest-toast__icon {
   flex-shrink: 0;
-  color: var(--accent);
+  color: var(--accent-text);
 }
 
 .tabs-guest-toast__text {
   color: var(--text-soft);
-  white-space: nowrap;
+  overflow-wrap: anywhere;
 }
 
 .tabs-guest-toast__login {
@@ -659,13 +742,16 @@ async function onBookmarkDropped(payload: { bookmarkId: string; targetCategoryId
   padding: 0.25rem 0.5rem;
   border: none;
   border-radius: $radius-sm;
-  background: var(--accent);
+  background: var(--accent-action);
   color: #fff;
   font-size: 0.6875rem;
   font-weight: 600;
   cursor: pointer;
   white-space: nowrap;
   transition: opacity 0.18s;
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
 
   &:hover {
     opacity: 0.85;
@@ -696,6 +782,9 @@ async function onBookmarkDropped(payload: { bookmarkId: string; targetCategoryId
   transition:
     opacity 0.25s ease,
     transform 0.25s ease;
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
 }
 
 .tabs-guest-toast-enter-from,
