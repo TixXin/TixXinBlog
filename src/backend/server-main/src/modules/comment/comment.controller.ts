@@ -5,7 +5,7 @@
  * @since 2026-07-20
  */
 
-import { Body, Controller, Get, Param, ParseIntPipe, Post as HttpPost } from '@nestjs/common'
+import { Body, Controller, Get, Header, Param, ParseIntPipe, Post as HttpPost } from '@nestjs/common'
 import { VisitorIdHash } from '../../common/decorators/visitor-id.decorator'
 import { CommentService } from './comment.service'
 import { CommentTreeNode } from './comment-tree'
@@ -16,8 +16,12 @@ export class CommentController {
   constructor(private readonly commentService: CommentService) {}
 
   @Get('posts/:id/comments')
-  tree(@Param('id', ParseIntPipe) postId: number): Promise<{ items: CommentTreeNode[]; total: number }> {
-    return this.commentService.getTree(postId)
+  @Header('Cache-Control', 'private, no-store')
+  tree(
+    @Param('id', ParseIntPipe) postId: number,
+    @VisitorIdHash({ optional: true }) visitorIdHash: string,
+  ): Promise<{ items: CommentTreeNode[]; total: number }> {
+    return this.commentService.getTree(postId, visitorIdHash)
   }
 
   @HttpPost('posts/:id/comments')

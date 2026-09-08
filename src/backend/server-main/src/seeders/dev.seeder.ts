@@ -11,18 +11,54 @@
 import type { EntityManager } from '@mikro-orm/postgresql'
 import { Seeder } from '@mikro-orm/seeder'
 import * as argon2 from 'argon2'
+import { defaultFlashNoteSeeds } from '../../../../frontend/web-blog/app/features/flash/mock'
 import { mockArticleDetail, mockPosts } from '../../../../frontend/web-blog/app/features/post/mock'
 import { AdminUser } from '../entities/admin-user.entity'
+import { FlashNote } from '../entities/flash-note.entity'
 import { Post, PostContentSection } from '../entities/post.entity'
 import { PostTag, PostTagColor } from '../entities/post-tag.entity'
+
+/** 单博主场景,闪念种子统一归属博主 */
+import { SITE_OWNER_ID as FLASH_OWNER_ID } from '../common/constants/site'
 
 export class DevSeeder extends Seeder {
   async run(em: EntityManager): Promise<void> {
     await this.seedAdmin(em)
     await this.seedPosts(em)
+    await em.execute('insert into post_folder (label) select distinct folder from post on conflict (label) do nothing')
+    await this.seedFlashNotes(em)
   }
 
-  /** 管理员账号:用户名/密码取自环境变量,开发环境回退 admin / admin123 */
+  /** 闪念种子:与前端 features/flash/mock.ts 同源(前端 LocalStorage 模式也用同一份 seed) */
+  private async seedFlashNotes(em: EntityManager): Promise<void> {
+    const existing = await em.count(FlashNote, {})
+    if (existing > 0) {
+      process.stdout.write(`flash_note 表已有 ${existing} 条数据，跳过 seed\n`)
+      return
+    }
+    for (const seed of defaultFlashNoteSeeds) {
+      const createdAt = seed.createdAt ? new Date(seed.createdAt) : new Date()
+      em.create(FlashNote, {
+        // seed 均带稳定 id,保证 RSS 与详情页链接与前端 mock 一致
+        id: seed.id ?? undefined,
+        userId: FLASH_OWNER_ID,
+        content: seed.content,
+        tags: [...seed.tags],
+        images: seed.images ? [...seed.images] : [],
+        type: seed.type ?? 'memo',
+        likes: 0,
+        isPinned: !!seed.isPinned,
+        isArchived: !!seed.isArchived,
+        isDraft: !!seed.isDraft,
+        createdAt,
+        updatedAt: createdAt,
+      })
+    }
+    await em.flush()
+    process.stdout.write(`seeded ${defaultFlashNoteSeeds.length} flash notes\n`)
+  }
+
+  /** 新建管理员必须显式配置密码；已有账号不重置密码。 */
   private async seedAdmin(em: EntityManager): Promise<void> {
     const username = process.env.ADMIN_DEFAULT_USERNAME ?? 'admin'
     const exists = await em.findOne(AdminUser, { username })
@@ -30,9 +66,13 @@ export class DevSeeder extends Seeder {
       process.stdout.write(`管理员 ${username} 已存在，跳过\n`)
       return
     }
-    const password = process.env.ADMIN_DEFAULT_PASSWORD ?? 'admin123'
+    const password = process.env.ADMIN_DEFAULT_PASSWORD
+    if (!password || password === '<required>' || password.length < 12) {
+      throw new Error('新建管理员需要配置至少 12 位的 ADMIN_DEFAULT_PASSWORD')
+    }
     em.create(AdminUser, {
       username,
+      sessionVersion: 0,
       passwordHash: await argon2.hash(password, {
         type: argon2.argon2id,
         memoryCost: 65536,
@@ -87,7 +127,7 @@ export class DevSeeder extends Seeder {
         publishedAt: new Date(item.date),
         views: item.views,
         likes: item.likes,
-        commentCount: item.comments,
+        commentCount: 0,
         createdAt: new Date(item.date),
         updatedAt: new Date(item.date),
       })

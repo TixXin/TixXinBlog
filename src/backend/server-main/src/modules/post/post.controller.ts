@@ -5,18 +5,42 @@
  * @since 2026-07-20
  */
 
-import { Controller, Get, Param, ParseIntPipe, Post as HttpPost, Query } from '@nestjs/common'
+import { Controller, Get, Header, Param, ParseIntPipe, Post as HttpPost, Query } from '@nestjs/common'
 import { VisitorIdHash } from '../../common/decorators/visitor-id.decorator'
 import { QueryPostDto } from './dto/query-post.dto'
 import { ArticleDetailDto, PostListResult, PostService } from './post.service'
+import { PostDiscoveryService } from './post-discovery.service'
 
 @Controller('posts')
 export class PostController {
-  constructor(private readonly postService: PostService) {}
+  constructor(
+    private readonly postService: PostService,
+    private readonly discovery: PostDiscoveryService,
+  ) {}
 
   @Get()
   list(@Query() query: QueryPostDto): Promise<PostListResult> {
     return this.postService.findMany(query)
+  }
+
+  @Get('metadata')
+  metadata() {
+    return this.discovery.metadata()
+  }
+
+  @Get('by-slug/:slug')
+  bySlug(@Param('slug') slug: string): Promise<ArticleDetailDto> {
+    return this.postService.findBySlug(slug)
+  }
+
+  @Get(':id/navigation')
+  navigation(@Param('id', ParseIntPipe) id: number) {
+    return this.discovery.navigation(id)
+  }
+
+  @Get(':id/related')
+  related(@Param('id', ParseIntPipe) id: number) {
+    return this.discovery.related(id)
   }
 
   @Get(':id')
@@ -35,5 +59,11 @@ export class PostController {
   @HttpPost(':id/view')
   addView(@Param('id', ParseIntPipe) id: number, @VisitorIdHash() visitorIdHash: string): Promise<{ views: number }> {
     return this.postService.addView(id, visitorIdHash)
+  }
+
+  @Get(':id/interaction')
+  @Header('Cache-Control', 'private, no-store')
+  interaction(@Param('id', ParseIntPipe) id: number, @VisitorIdHash({ optional: true }) visitor: string) {
+    return this.postService.interaction(id, visitor)
   }
 }
