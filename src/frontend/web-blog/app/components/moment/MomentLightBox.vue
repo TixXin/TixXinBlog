@@ -10,8 +10,10 @@
     <Transition name="lightbox-fade">
       <div
         v-if="visible && images.length > 0"
+        ref="dialogRef"
         class="moment-lightbox"
         role="dialog"
+        tabindex="-1"
         aria-modal="true"
         aria-label="图片预览"
         @click.self="onClose"
@@ -34,7 +36,14 @@
 
         <!-- 图片内容 -->
         <div class="moment-lightbox__content" @click.self="onClose">
-          <img :src="images[currentIndex]" alt="预览图片" class="moment-lightbox__img" >
+          <CommonImageFrame
+            :src="images[currentIndex]"
+            alt="预览图片"
+            class="moment-lightbox__img"
+            fit="contain"
+            loading="eager"
+            max-height="78vh"
+          />
           <!-- 计数器 -->
           <div v-if="images.length > 1" class="moment-lightbox__counter">
             {{ currentIndex + 1 }} / {{ images.length }}
@@ -85,22 +94,14 @@ function onNext() {
 }
 
 function onKeydown(e: KeyboardEvent) {
-  if (!props.visible) return
+  if (!props.visible || !isTopModal()) return
   if (e.key === 'Escape') onClose()
   if (e.key === 'ArrowLeft') onPrev()
   if (e.key === 'ArrowRight') onNext()
 }
 
-// 控制 body 滚动
-watch(
-  () => props.visible,
-  (open) => {
-    if (import.meta.client) {
-      document.body.style.overflow = open ? 'hidden' : ''
-    }
-  },
-  { immediate: true },
-)
+const dialogRef = ref<HTMLElement | null>(null)
+const { isTopModal } = useModalFocus(() => props.visible, dialogRef, { close: onClose })
 
 onMounted(() => {
   if (import.meta.client) {
@@ -111,7 +112,6 @@ onMounted(() => {
 onUnmounted(() => {
   if (import.meta.client) {
     window.removeEventListener('keydown', onKeydown)
-    document.body.style.overflow = ''
   }
 })
 </script>
@@ -145,6 +145,9 @@ onUnmounted(() => {
   color: #fff;
   cursor: pointer;
   transition: background 0.2s;
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
 
   &:hover {
     background: rgba(255, 255, 255, 0.2);
@@ -167,6 +170,9 @@ onUnmounted(() => {
   color: #fff;
   cursor: pointer;
   transition: background 0.2s;
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
 
   &:hover {
     background: rgba(255, 255, 255, 0.25);
@@ -198,6 +204,9 @@ onUnmounted(() => {
   border-radius: $radius-md;
   box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
   transition: opacity 0.2s ease;
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
 }
 
 .moment-lightbox__counter {
@@ -210,10 +219,16 @@ onUnmounted(() => {
 // 进出过渡
 .lightbox-fade-enter-active {
   transition: opacity 0.25s ease;
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
 }
 
 .lightbox-fade-leave-active {
   transition: opacity 0.2s ease;
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
 }
 
 .lightbox-fade-enter-from,

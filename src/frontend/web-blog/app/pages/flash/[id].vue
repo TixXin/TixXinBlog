@@ -17,7 +17,15 @@
     <CommonCustomScrollbar class="flash-detail-body" viewport-class="flash-detail-viewport" primary>
       <div class="flash-detail-content">
         <CommonStateBlock
-          v-if="loadFinished && !note"
+          v-if="loadError"
+          icon="lucide:cloud-off"
+          title="闪念加载失败"
+          description="暂时无法读取公开闪念，请稍后重试。"
+          action-label="重试加载"
+          @action="refreshNotes()"
+        />
+        <CommonStateBlock
+          v-else-if="loadFinished && !note"
           icon="lucide:search-x"
           title="闪念不存在"
           description="这条闪念可能已被删除或链接有误"
@@ -30,7 +38,7 @@
 
         <template v-else-if="note">
           <article class="flash-detail-card">
-            <FlashNoteCard :note="note" read-only />
+            <FlashNoteCard :note="note" read-only :interactive="false" />
           </article>
 
           <p class="flash-detail-hint">
@@ -79,13 +87,21 @@
 
 <script setup lang="ts">
 import type { FlashNote } from '~/features/flash/types'
+definePageMeta({ rightSidebar: false })
 
 const route = useRoute()
 
 const id = computed(() => String(route.params.id ?? ''))
 
-const ownerNotes = ref<FlashNote[]>([])
-const loadFinished = ref(false)
+const localOnly = useRuntimeConfig().public.useMockRepo !== false
+const { fetchOwnerNotes } = useFlashNotes()
+const detailResult = await useAsyncData<FlashNote[]>(`flash-public-${id.value}`, fetchOwnerNotes, {
+  server: !localOnly,
+})
+const ownerNotes = computed(() => detailResult.data.value ?? [])
+const loadError = detailResult.error
+const refreshNotes = detailResult.refresh
+const loadFinished = computed(() => detailResult.status.value === 'success' || detailResult.status.value === 'error')
 
 // 按 createdAt 倒序排序（与主页一致）
 const sortedNotes = computed(() =>
@@ -107,29 +123,27 @@ const nextNote = computed(() => {
   return sortedNotes.value[currentIndex.value + 1] ?? null
 })
 
+// 本机仓库只能由浏览器确认；真实HTTP模式在SSR阶段区分服务失败与资源缺失。
+if (!localOnly) {
+  if (loadError.value)
+    throw createError({ statusCode: 502, statusMessage: 'Bad Gateway', data: { title: '闪念加载失败' }, fatal: true })
+  if (!note.value)
+    throw createError({ statusCode: 404, statusMessage: 'Not Found', data: { title: '闪念不存在' }, fatal: true })
+}
+
 function truncate(s: string, n: number) {
   const t = s.replace(/\s+/g, ' ')
   return t.length > n ? `${t.slice(0, n)}…` : t
 }
 
-// 客户端挂载后从 LocalStorage 拉 owner 列表（server 端 localStorage 不可用）
-const { fetchOwnerNotes } = useFlashNotes()
-onMounted(async () => {
-  try {
-    ownerNotes.value = await fetchOwnerNotes()
-  } finally {
-    loadFinished.value = true
-  }
-})
-
 // SEO：content 前 120 字摘要，首图（images 若有）作为 ogImage
 const excerpt = computed(() => {
-  if (!note.value) return '闪念不存在或已被删除'
+  if (!note.value) return loadFinished.value && !loadError.value ? '闪念不存在或已被删除' : '查看博主的公开闪念'
   return note.value.content.replace(/\s+/g, ' ').slice(0, 120)
 })
 
 const pageTitle = computed(() => {
-  if (!note.value) return '闪念不存在'
+  if (!note.value) return loadFinished.value && !loadError.value ? '闪念不存在' : '闪念详情'
   const first = note.value.content.replace(/\s+/g, ' ').slice(0, 36)
   return `${first}${note.value.content.length > 36 ? '…' : ''}`
 })
@@ -140,6 +154,8 @@ useSeoMeta({
   ogTitle: () => `${pageTitle.value} - TixXin 闪念`,
   ogDescription: () => excerpt.value,
   ogType: 'article',
+  ogImage: () => note.value?.images?.[0] ?? '/avatar-photo.webp',
+  robots: localOnly ? 'noindex, follow' : 'index, follow',
   twitterCard: 'summary',
   twitterTitle: () => `${pageTitle.value} - TixXin 闪念`,
   twitterDescription: () => excerpt.value,
@@ -161,7 +177,7 @@ useHead({
               keywords: note.value.tags.join(', '),
               author: { '@type': 'Person', name: 'TixXin' },
               publisher: { '@type': 'Organization', name: 'TixXin Blog' },
-            })
+            }).replace(/</g, String.fromCharCode(92) + 'u003c')
           : '',
       ),
     },
@@ -191,6 +207,9 @@ useHead({
   border-radius: $radius-sm;
   text-decoration: none;
   transition: $transition-colors;
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
 
   &:hover {
     color: var(--text-main);
@@ -233,7 +252,7 @@ useHead({
 }
 
 .flash-detail-hint__link {
-  color: var(--accent);
+  color: var(--accent-text);
   text-decoration: none;
 
   &:hover {
@@ -258,6 +277,9 @@ useHead({
   color: inherit;
   text-decoration: none;
   transition: $transition-normal;
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
   min-width: 0;
 
   &:hover {
@@ -314,6 +336,9 @@ useHead({
 
 .flash-detail-loading__icon {
   animation: flash-spin 1s linear infinite;
+  @media (prefers-reduced-motion: reduce) {
+    animation: none;
+  }
 }
 
 @keyframes flash-spin {
@@ -331,7 +356,7 @@ useHead({
   align-items: center;
   gap: 0.375rem;
   margin-top: 1rem;
-  color: var(--accent);
+  color: var(--accent-text);
   text-decoration: none;
   font-size: 0.875rem;
 

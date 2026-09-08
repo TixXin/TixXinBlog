@@ -25,9 +25,11 @@
         :cited="citedIds?.includes(note.id)"
         :highlighted="note.id === highlightedId"
         :read-only="readOnly"
+        :busy="pendingIds?.includes(note.id)"
         :current-user-id="currentUserId"
         :guest-id="guestId"
         @remove="$emit('remove', $event)"
+        @edit="$emit('edit', note)"
         @toggle-like="$emit('toggle-like', $event)"
         @set-pinned="$emit('set-pinned', $event)"
         @set-archived="$emit('set-archived', $event)"
@@ -40,11 +42,12 @@
 </template>
 
 <script setup lang="ts">
-import type { FlashNote } from '~/features/flash/types'
+import type { FlashNote, FlashCommentSubmission } from '~/features/flash/types'
 
 defineProps<{
   notes: FlashNote[]
   loading?: boolean
+  pendingIds?: string[]
   citedIds?: string[]
   readOnly?: boolean
   currentUserId?: string | null
@@ -56,10 +59,11 @@ defineProps<{
 
 defineEmits<{
   remove: [id: string]
+  edit: [note: FlashNote]
   'toggle-like': [id: string]
   'set-pinned': [payload: { id: string; pinned: boolean }]
   'set-archived': [payload: { id: string; archived: boolean }]
-  'add-comment': [payload: { noteId: string; content: string }]
+  'add-comment': [payload: FlashCommentSubmission]
   'remove-comment': [payload: { noteId: string; commentId: string }]
   'tag-click': [tag: string]
 }>()
@@ -104,6 +108,9 @@ defineEmits<{
 
 .flash-note-list__spinner {
   animation: flash-spin 1s linear infinite;
+  @media (prefers-reduced-motion: reduce) {
+    animation: none;
+  }
 }
 
 @keyframes flash-spin {

@@ -37,17 +37,36 @@ function simulatedLatency(): number {
 }
 
 /** 等待 N 毫秒 */
-function delay(ms: number): Promise<void> {
-  return new Promise((resolve) => setTimeout(resolve, ms))
+function delay(ms: number, signal?: AbortSignal): Promise<void> {
+  return new Promise((resolve, reject) => {
+    if (signal?.aborted) {
+      reject(signal.reason)
+      return
+    }
+    const cancel = () => {
+      clearTimeout(timer)
+      signal?.removeEventListener('abort', cancel)
+      reject(signal?.reason ?? new DOMException('检索已取消', 'AbortError'))
+    }
+    const timer = setTimeout(() => {
+      signal?.removeEventListener('abort', cancel)
+      resolve()
+    }, ms)
+    signal?.addEventListener('abort', cancel, { once: true })
+  })
 }
 
 /**
  * 对当前用户的闪念列表执行 mock AI 搜索。
  * 命中规则：分词 → 给每条笔记评分 → 取 top 4。
  */
-export async function mockFlashAISearch(query: string, notes: FlashNote[]): Promise<FlashAISearchResult> {
+export async function mockFlashAISearch(
+  query: string,
+  notes: FlashNote[],
+  signal?: AbortSignal,
+): Promise<FlashAISearchResult> {
   const latencyMs = simulatedLatency()
-  await delay(latencyMs)
+  await delay(latencyMs, signal)
 
   const tokens = tokenize(query)
   if (tokens.length === 0) {
@@ -72,21 +91,13 @@ export async function mockFlashAISearch(query: string, notes: FlashNote[]): Prom
     }
   }
 
-  const summary = ranked
-    .map((entry, idx) => `${idx + 1}. ${truncate(entry.note.content, 60)}`)
-    .join('\n')
+  const summary = ranked.map((entry, idx) => `${idx + 1}. ${truncate(entry.note.content, 60)}`).join('\n')
 
   const tagPool = new Set<string>()
   ranked.forEach((entry) => entry.note.tags.forEach((t) => tagPool.add(t)))
   const tagHint = tagPool.size > 0 ? `相关标签：${[...tagPool].slice(0, 5).join(' / ')}` : ''
 
-  const answer = [
-    `根据你的 ${ranked.length} 条闪念，关于「${query}」我整理了以下要点：`,
-    '',
-    summary,
-    '',
-    tagHint,
-  ]
+  const answer = [`根据你的 ${ranked.length} 条闪念，关于「${query}」我整理了以下要点：`, '', summary, '', tagHint]
     .filter(Boolean)
     .join('\n')
 

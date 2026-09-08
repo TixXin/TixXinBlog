@@ -60,6 +60,7 @@ export function useMomentPagination(options: MomentPaginationOptions) {
   const showSpinner = ref(false)
   const sentinelRef = ref<HTMLElement | null>(null)
   let spinnerTimer: ReturnType<typeof setTimeout> | null = null
+  let loadFrame = 0
 
   const displayedMoments = computed(() => filteredMoments.value.slice(0, displayCount.value))
 
@@ -89,7 +90,7 @@ export function useMomentPagination(options: MomentPaginationOptions) {
       if (loading.value) showSpinner.value = true
     }, SPINNER_DELAY)
 
-    requestAnimationFrame(() => {
+    loadFrame = requestAnimationFrame(() => {
       displayCount.value = Math.min(displayCount.value + pageSize, filteredMoments.value.length)
       loading.value = false
       showSpinner.value = false
@@ -128,6 +129,7 @@ export function useMomentPagination(options: MomentPaginationOptions) {
   })
 
   onUnmounted(() => {
+    cancelAnimationFrame(loadFrame)
     observer?.disconnect()
     observer = null
     clearSpinnerTimer()

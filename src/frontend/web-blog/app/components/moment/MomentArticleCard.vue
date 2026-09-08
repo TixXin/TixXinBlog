@@ -8,7 +8,7 @@
 <template>
   <NuxtLink :to="article.url" class="moment-article-card">
     <div v-if="article.cover" class="moment-article-card__cover">
-      <img :src="article.cover" :alt="article.title" loading="lazy">
+      <img :src="article.cover" :alt="article.title" loading="lazy" />
     </div>
     <div class="moment-article-card__body">
       <div class="moment-article-card__title">
@@ -39,7 +39,10 @@ defineProps<{
   border-radius: $radius-md;
   text-decoration: none;
   color: inherit;
-  transition: all 0.2s ease;
+  transition: $transition-fast;
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
   overflow: hidden;
 
   &:hover {
@@ -88,7 +91,7 @@ defineProps<{
 
 .moment-article-card__icon {
   flex-shrink: 0;
-  color: var(--accent);
+  color: var(--accent-text);
 }
 
 .moment-article-card__summary {

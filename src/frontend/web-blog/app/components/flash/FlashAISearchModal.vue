@@ -9,26 +9,36 @@
   <Teleport to="body">
     <Transition name="flash-ai-modal">
       <div v-if="visible" class="flash-ai-modal-overlay" @click.self="close">
-        <div class="flash-ai-modal">
+        <div
+          ref="dialogRef"
+          class="flash-ai-modal"
+          role="dialog"
+          aria-modal="true"
+          aria-label="闪念演示搜索"
+          tabindex="-1"
+        >
           <div class="flash-ai-modal__header">
             <Icon name="lucide:sparkles" size="16" class="flash-ai-modal__icon" />
             <input
               ref="inputRef"
               v-model="input"
               type="text"
+              aria-label="搜索闪念（演示）"
               class="flash-ai-modal__input"
               placeholder="问问你的闪念，比如「今年读了什么书」"
               @keydown.escape="close"
               @keydown.enter="submit"
-            >
-            <kbd class="flash-ai-modal__kbd">ESC</kbd>
+            />
+            <button type="button" class="flash-ai-modal__close" aria-label="关闭闪念搜索" @click="close">
+              <Icon name="lucide:x" size="18" />
+            </button>
           </div>
 
           <div class="flash-ai-modal__body">
             <!-- idle 状态：提示词 -->
             <div v-if="aiSearch.status.value === 'idle'" class="flash-ai-modal__hint">
               <Icon name="lucide:wand-2" size="18" />
-              <p>这是 mock AI，会基于你已记录的闪念给出整理。</p>
+              <p>这是演示功能，会整理当前闪念中的相关内容。</p>
               <p class="flash-ai-modal__hint-sub">输入关键词后回车开始。</p>
             </div>
 
@@ -45,20 +55,20 @@
             </div>
 
             <!-- success -->
-            <div v-else-if="aiSearch.status.value === 'success' && aiSearch.result.value" class="flash-ai-modal__result">
+            <div
+              v-else-if="aiSearch.status.value === 'success' && aiSearch.result.value"
+              class="flash-ai-modal__result"
+            >
               <div class="flash-ai-modal__answer">{{ aiSearch.result.value.answer }}</div>
 
               <div v-if="citedNotes.length > 0" class="flash-ai-modal__citations">
                 <span class="flash-ai-modal__citations-label">引用的闪念</span>
                 <ul class="flash-ai-modal__citation-list">
-                  <li
-                    v-for="n in citedNotes"
-                    :key="n.id"
-                    class="flash-ai-modal__citation-item"
-                    @click="onCiteClick(n.id)"
-                  >
-                    <span class="flash-ai-modal__citation-content">{{ truncate(n.content, 80) }}</span>
-                    <Icon name="lucide:arrow-right" size="11" class="flash-ai-modal__citation-arrow" />
+                  <li v-for="n in citedNotes" :key="n.id">
+                    <button class="flash-ai-modal__citation-item" type="button" @click="onCiteClick(n.id)">
+                      <span class="flash-ai-modal__citation-content">{{ truncate(n.content, 80) }}</span>
+                      <Icon name="lucide:arrow-right" size="11" class="flash-ai-modal__citation-arrow" />
+                    </button>
                   </li>
                 </ul>
               </div>
@@ -88,6 +98,9 @@ const emit = defineEmits<{
 }>()
 
 const visible = defineModel<boolean>('visible', { default: false })
+const dialogRef = ref<HTMLElement | null>(null)
+let restoreTrigger = true
+useModalFocus(visible, dialogRef, { close, initialFocus: () => inputRef.value, restoreFocus: () => restoreTrigger })
 
 const input = ref('')
 const inputRef = ref<HTMLInputElement | null>(null)
@@ -100,14 +113,17 @@ const citedNotes = computed<FlashNote[]>(() => {
 })
 
 watch(visible, (v) => {
+  aiSearch.reset()
   if (v) {
+    restoreTrigger = true
     input.value = ''
-    aiSearch.reset()
     nextTick(() => inputRef.value?.focus())
   }
 })
 
-function submit() {
+function submit(event?: KeyboardEvent) {
+  if (event?.isComposing) return
+  event?.preventDefault()
   void aiSearch.ask(input.value, props.notes)
 }
 
@@ -116,6 +132,7 @@ function close() {
 }
 
 function onCiteClick(noteId: string) {
+  restoreTrigger = false
   emit('cite-click', noteId)
   close()
 }
@@ -127,6 +144,13 @@ function truncate(text: string, max: number): string {
 </script>
 
 <style lang="scss" scoped>
+.flash-ai-modal__close {
+  flex: 0 0 2.75rem;
+  height: 2.75rem;
+  display: grid;
+  place-items: center;
+  border-radius: $radius-sm;
+}
 .flash-ai-modal-overlay {
   position: fixed;
   inset: 0;
@@ -157,7 +181,7 @@ function truncate(text: string, max: number): string {
 }
 
 .flash-ai-modal__icon {
-  color: var(--accent);
+  color: var(--accent-text);
   flex-shrink: 0;
 }
 
@@ -201,7 +225,7 @@ function truncate(text: string, max: number): string {
   text-align: center;
 
   > svg {
-    color: var(--accent);
+    color: var(--accent-text);
   }
 }
 
@@ -221,8 +245,11 @@ function truncate(text: string, max: number): string {
 }
 
 .flash-ai-modal__spinner {
-  color: var(--accent);
+  color: var(--accent-text);
   animation: spin 1s linear infinite;
+  @media (prefers-reduced-motion: reduce) {
+    animation: none;
+  }
 }
 
 @keyframes spin {
@@ -283,6 +310,8 @@ function truncate(text: string, max: number): string {
 }
 
 .flash-ai-modal__citation-item {
+  width: 100%;
+  text-align: left;
   display: flex;
   align-items: center;
   gap: 0.5rem;
@@ -296,10 +325,13 @@ function truncate(text: string, max: number): string {
   transition:
     background 0.18s,
     color 0.18s;
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
 
   &:hover {
     background: var(--accent-soft);
-    color: var(--accent);
+    color: var(--accent-text);
   }
 }
 
@@ -312,9 +344,12 @@ function truncate(text: string, max: number): string {
   flex-shrink: 0;
   color: var(--text-faint);
   transition: color 0.18s;
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
 
   .flash-ai-modal__citation-item:hover & {
-    color: var(--accent);
+    color: var(--accent-text);
   }
 }
 
@@ -330,6 +365,9 @@ function truncate(text: string, max: number): string {
 .flash-ai-modal-enter-active,
 .flash-ai-modal-leave-active {
   transition: opacity 0.2s ease;
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
 }
 
 .flash-ai-modal-enter-active .flash-ai-modal,
@@ -337,6 +375,9 @@ function truncate(text: string, max: number): string {
   transition:
     transform 0.2s ease,
     opacity 0.2s ease;
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
 }
 
 .flash-ai-modal-enter-from,

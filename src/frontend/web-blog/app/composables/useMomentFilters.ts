@@ -1,11 +1,51 @@
 /**
  * @file useMomentFilters.ts
- * @description 朋友圈筛选状态共享，用于页面与主题布局组件间通信（日期筛选）
+ * @description 朋友圈搜索、话题与日期以URL共享，列表和主题侧栏使用同一状态
  * @author TixXin
  * @since 2026-04-11
  */
 
 export function useMomentFilters() {
-  const selectedDate = useState<string | null>('momentSelectedDate', () => null)
-  return { selectedDate }
+  const route = useRoute()
+  const router = useRouter()
+  function read(key: string) {
+    const value = route.query[key]
+    const first = Array.isArray(value) ? value[0] : value
+    return typeof first === 'string' ? first.trim().slice(0, 200) : ''
+  }
+  function update(key: string, value: string | null, replace = false) {
+    const query = Object.fromEntries(
+      Object.entries(route.path === '/moments' ? route.query : {}).filter(([name]) => name !== key),
+    )
+    if (value) query[key] = value
+    return replace ? router.replace({ path: '/moments', query }) : router.push({ path: '/moments', query })
+  }
+  const selectedDate = computed({
+    get: () => {
+      const value = read('date')
+      return /^\d{4}-\d{2}-\d{2}$/.test(value) ? value : null
+    },
+    set: (value: string | null) => {
+      void update('date', value)
+    },
+  })
+  const selectedTopic = computed({
+    get: () => read('topic') || null,
+    set: (value: string | null) => {
+      void update('topic', value)
+    },
+  })
+  const searchKeyword = computed({
+    get: () => read('q'),
+    set: (value: string) => {
+      void update('q', value, true)
+    },
+  })
+  function clearFilters() {
+    const query = Object.fromEntries(
+      Object.entries(route.query).filter(([key]) => !['date', 'topic', 'q'].includes(key)),
+    )
+    return router.push({ path: '/moments', query })
+  }
+  return { selectedDate, selectedTopic, searchKeyword, clearFilters }
 }

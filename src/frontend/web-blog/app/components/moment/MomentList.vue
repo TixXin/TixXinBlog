@@ -7,6 +7,9 @@
 
 <template>
   <div class="moment-list">
+    <p class="moment-list__notice">
+      朋友圈为演示内容；点赞和评论仅在当前页面生效，离开或刷新后不保留，也不会发送给博主。
+    </p>
     <MomentCard v-for="moment in displayedMoments" :id="`moment-${moment.id}`" :key="moment.id" :moment="moment" />
 
     <!-- 加载哨兵 -->
@@ -63,6 +66,14 @@ const { displayedMoments, hasMore, showSpinner, sentinelRef } = useMomentPaginat
 </script>
 
 <style lang="scss" scoped>
+.moment-list__notice {
+  padding: 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: $radius-md;
+  color: var(--text-soft);
+  font-size: 0.8125rem;
+  line-height: 1.6;
+}
 .moment-list {
   display: flex;
   flex-direction: column;
@@ -84,6 +95,9 @@ const { displayedMoments, hasMore, showSpinner, sentinelRef } = useMomentPaginat
 
 .moment-list__spinner-icon {
   animation: spin 1s linear infinite;
+  @media (prefers-reduced-motion: reduce) {
+    animation: none;
+  }
 }
 
 @keyframes spin {

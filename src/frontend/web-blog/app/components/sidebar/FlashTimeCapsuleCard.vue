@@ -29,12 +29,7 @@
       <div class="flash-capsule-card__label">
         <Icon name="lucide:shuffle" size="12" />
         <span>随机回顾</span>
-        <button
-          type="button"
-          class="flash-capsule-card__refresh"
-          aria-label="换一条"
-          @click.stop.prevent="rollRandom"
-        >
+        <button type="button" class="flash-capsule-card__refresh" aria-label="换一条" @click.stop.prevent="rollRandom">
           <Icon name="lucide:refresh-cw" size="11" />
         </button>
       </div>
@@ -155,10 +150,15 @@ function formatDate(iso: string) {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  transition: color 0.18s, background 0.18s;
+  transition:
+    color 0.18s,
+    background 0.18s;
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
 
   &:hover {
-    color: var(--accent);
+    color: var(--accent-text);
     background: var(--surface-2);
   }
 }
@@ -171,6 +171,9 @@ function formatDate(iso: string) {
   text-decoration: none;
   color: inherit;
   transition: background 0.18s;
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
 
   &:hover {
     background: var(--surface-3);

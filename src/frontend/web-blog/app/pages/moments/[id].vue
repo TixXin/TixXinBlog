@@ -9,10 +9,10 @@
   <div class="main-inner moment-detail-page">
     <!-- 顶部返回栏 -->
     <div class="main-content__header moment-detail-header">
-      <button type="button" class="back-btn" aria-label="返回朋友圈" @click="goBack">
+      <NuxtLink to="/moments" class="back-btn" aria-label="返回朋友圈">
         <Icon name="lucide:arrow-left" size="16" />
         <span>返回朋友圈</span>
-      </button>
+      </NuxtLink>
     </div>
 
     <CommonCustomScrollbar class="moment-detail-body" viewport-class="moment-detail-viewport" primary>
@@ -33,6 +33,7 @@
         <!-- 动态卡片 + 上下条导航 -->
         <template v-else>
           <article class="moment-detail-card">
+            <p class="moment-detail-notice">演示动态；互动仅当前页面生效，不会发送给博主。</p>
             <MomentCard :moment="moment" />
           </article>
 
@@ -70,7 +71,7 @@
     <ClientOnly>
       <Teleport to="#right-sidebar-target">
         <SidebarRightSidebar>
-          <SidebarMomentAuthorCard :stats="authorStats" />
+          <SidebarMomentAuthorCard :stats="authorStats" :profile="ownerCard" />
           <SidebarMomentTopicCard :topics="momentTopics" :active-topic="null" @select="onTopicSelect" />
         </SidebarRightSidebar>
       </Teleport>
@@ -79,11 +80,10 @@
 </template>
 
 <script setup lang="ts">
-import { mockMomentAuthorStats } from '~/features/moment/mock'
 import { MOMENT_TOPIC_DEFINITIONS } from '~/features/moment/topics'
 import type { MomentTopic } from '~/components/sidebar/MomentTopicCard.vue'
 
-const { list: momentList } = useMomentList()
+const { moments: momentList, authorStats, ownerCard } = useMomentOverview()
 
 const route = useRoute()
 const router = useRouter()
@@ -97,6 +97,8 @@ const sortedMoments = computed(() =>
 
 const currentIndex = computed(() => sortedMoments.value.findIndex((m) => m.id === id.value))
 const moment = computed(() => (currentIndex.value >= 0 ? sortedMoments.value[currentIndex.value] : null))
+if (!moment.value)
+  throw createError({ statusCode: 404, statusMessage: 'Not Found', data: { title: '动态不存在' }, fatal: true })
 
 // prev 指更晚（在排序数组中索引更小），next 指更早（索引更大）
 const prevMoment = computed(() => {
@@ -107,14 +109,6 @@ const nextMoment = computed(() => {
   if (currentIndex.value < 0 || currentIndex.value >= sortedMoments.value.length - 1) return null
   return sortedMoments.value[currentIndex.value + 1] ?? null
 })
-
-function goBack() {
-  if (import.meta.client && window.history.length > 1) {
-    router.back()
-  } else {
-    router.push('/moments')
-  }
-}
 
 function truncate(str: string, n: number) {
   return str.length > n ? `${str.slice(0, n)}…` : str
@@ -162,7 +156,7 @@ useHead({
               image: moment.value.images ?? [],
               author: { '@type': 'Person', name: 'TixXin' },
               publisher: { '@type': 'Organization', name: 'TixXin Blog' },
-            })
+            }).replace(/</g, String.fromCharCode(92) + 'u003c')
           : '',
       ),
     },
@@ -170,7 +164,6 @@ useHead({
 })
 
 // 侧栏数据
-const authorStats = mockMomentAuthorStats
 
 const momentTopics = computed<MomentTopic[]>(() =>
   MOMENT_TOPIC_DEFINITIONS.map((t) => ({
@@ -190,6 +183,11 @@ function onTopicSelect(topic: string | null) {
 </script>
 
 <style lang="scss" scoped>
+.moment-detail-notice {
+  color: var(--text-soft);
+  font-size: 0.8125rem;
+  padding: 0.75rem 0;
+}
 .moment-detail-page {
   display: flex;
   flex-direction: column;
@@ -213,6 +211,9 @@ function onTopicSelect(topic: string | null) {
   border-radius: $radius-sm;
   cursor: pointer;
   transition: $transition-colors;
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
 
   &:hover {
     color: var(--text-main);
@@ -264,6 +265,9 @@ function onTopicSelect(topic: string | null) {
   color: inherit;
   text-decoration: none;
   transition: $transition-normal;
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
   min-width: 0;
 
   &:hover {
@@ -313,7 +317,7 @@ function onTopicSelect(topic: string | null) {
   align-items: center;
   gap: 0.375rem;
   margin-top: 1rem;
-  color: var(--accent);
+  color: var(--accent-text);
   text-decoration: none;
   font-size: 0.875rem;
 

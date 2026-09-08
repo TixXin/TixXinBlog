@@ -12,6 +12,8 @@
 import type { FlashComment, FlashCommentDraft, FlashNote, FlashNoteDraft } from './types'
 
 export interface FlashNoteRepository {
+  /** 公开详情与聚合入口使用，不随管理员登录态包含草稿。 */
+  listPublic?(): Promise<FlashNote[]>
   /** 列出指定用户的**非归档**闪念，按 createdAt 倒序；isArchived=true 的条目由 listArchived 返回 */
   list(userId: string): Promise<FlashNote[]>
   /** 列出指定用户的**已归档**闪念 */

@@ -36,6 +36,7 @@ export interface FlashNote {
   tags: string[]
   /** 图片 URL 列表（最多 9 张，mock 阶段手填，后端就绪后改真实上传） */
   images: string[]
+  imageAlts?: string[]
   /** 笔记类型（默认 memo） */
   type: FlashType
   /** 创建时间 ISO 字符串 */
@@ -44,6 +45,7 @@ export interface FlashNote {
   updatedAt: string
   /** 点赞数 */
   likes: number
+  liked?: boolean
   /** 评论列表 */
   comments: FlashComment[]
   /** 是否置顶（在列表中前置展示） */
@@ -80,6 +82,13 @@ export interface FlashCommentDraft {
   authorName: string
   authorAvatar: string
   content: string
+}
+
+/** 表单提交的完成通知只在组件事件中使用，不发送给 API。 */
+export interface FlashCommentSubmission {
+  noteId: string
+  content: string
+  complete?: (saved: boolean) => void
 }
 
 /** AI 搜索返回结构 */

@@ -34,10 +34,13 @@
           <span>{{ showArchive ? '返回主列表' : '归档箱' }}</span>
         </button>
         <button
+          ref="searchButtonRef"
           type="button"
           class="flash-page__search-toggle"
           :class="{ 'is-active': searchExpanded }"
           aria-label="搜索闪念"
+          :aria-expanded="searchExpanded"
+          aria-controls="flash-search"
           @click="searchExpanded = !searchExpanded"
         >
           <Icon name="lucide:search" size="14" />
@@ -49,28 +52,32 @@
       <div v-if="searchExpanded" class="flash-page__search-bar">
         <Icon name="lucide:search" size="13" class="flash-page__search-icon" />
         <input
+          id="flash-search"
+          ref="searchInputRef"
           v-model="searchQuery"
+          aria-label="搜索闪念内容或标签"
           type="text"
           class="flash-page__search-input"
           placeholder="搜索闪念内容或标签..."
-          @keydown.escape="searchExpanded = false; searchQuery = ''"
-        >
-        <span v-if="debouncedQuery" class="flash-page__search-count">
-          {{ filteredNotes.length }} 条结果
-        </span>
+          @keydown.escape="closeSearch"
+        />
+        <span v-if="debouncedQuery" class="flash-page__search-count"> {{ filteredNotes.length }} 条结果 </span>
+        <button type="button" class="flash-page__filter-clear" aria-label="收起搜索" @click="closeSearch">
+          <Icon name="lucide:x" size="16" />
+        </button>
       </div>
     </div>
 
     <CommonCustomScrollbar class="flash-page__body" viewport-class="flash-page__viewport" primary>
       <div class="flash-page__content">
+        <p v-if="storageError" role="alert">{{ storageError }}</p>
         <!-- 类型 tab：全部 / 灵感 / 待办 / 随记 -->
-        <nav class="flash-page__type-tabs" role="tablist" aria-label="按类型筛选">
+        <div class="flash-page__type-tabs" role="group" aria-label="按类型筛选">
           <button
             type="button"
             class="flash-page__type-tab"
             :class="{ 'is-active': typeFilter === null }"
-            role="tab"
-            :aria-selected="typeFilter === null"
+            :aria-pressed="typeFilter === null"
             @click="typeFilter = null"
           >
             全部
@@ -82,43 +89,52 @@
             class="flash-page__type-tab"
             :class="{ 'is-active': typeFilter === t.id }"
             :data-type="t.id"
-            role="tab"
-            :aria-selected="typeFilter === t.id"
+            :aria-pressed="typeFilter === t.id"
             @click="typeFilter = t.id"
           >
             <Icon :name="t.icon" size="12" />
             {{ t.label }}
           </button>
-        </nav>
+        </div>
 
         <button v-if="!isLoggedIn" type="button" class="flash-page__guest-banner" @click="onLogin">
           <Icon name="lucide:eye" size="14" class="flash-page__guest-banner-icon" />
-          <span class="flash-page__guest-banner-text">
-            正在浏览博主的闪念，登录后开启你自己的灵感空间
-          </span>
+          <span class="flash-page__guest-banner-text"> 正在浏览博主的公开闪念，管理内容请使用博主账号登录 </span>
           <span class="flash-page__guest-banner-cta">
             立即登录
             <Icon name="lucide:arrow-right" size="12" />
           </span>
         </button>
         <!-- 标签筛选条 -->
-        <div v-if="activeTag" class="flash-page__filter-bar">
-          <span class="flash-page__filter-label">
-            正在筛选 <strong>#{{ activeTag }}</strong> · {{ filteredNotes.length }} 条结果
+        <div v-if="activeTag || selectedDate || debouncedQuery || typeFilter" class="flash-page__filter-bar">
+          <span class="flash-page__filter-label" role="status">
+            当前筛选：{{
+              [
+                typeTabs.find((t) => t.id === typeFilter)?.label,
+                activeTag ? '#' + activeTag : '',
+                selectedDate,
+                debouncedQuery ? '关键词：' + debouncedQuery : '',
+              ]
+                .filter(Boolean)
+                .join(' · ')
+            }}
+            · {{ filteredNotes.length }} 条结果
           </span>
-          <button type="button" class="flash-page__filter-clear" @click="activeTag = null">
+          <button type="button" class="flash-page__filter-clear" @click="clearFilters">
             <Icon name="lucide:x" size="12" />
-            清除
+            清除全部筛选
           </button>
         </div>
         <FlashNoteList
           :notes="filteredNotes"
+          :pending-ids="pendingIds"
           :loading="loading"
           :read-only="isReadOnly"
           :current-user-id="currentUserId"
           :guest-id="guestId"
           :highlighted-id="highlightedNoteId"
           @remove="onRemove"
+          @edit="onEdit"
           @toggle-like="onToggleLike"
           @set-pinned="onSetPinned"
           @set-archived="onSetArchived"
@@ -132,7 +148,15 @@
     <!-- 底部发布输入框：仅登录者可见，参考留言板底部 MessageInput 的呈现方式 -->
     <div v-if="isLoggedIn" class="flash-page__composer-wrap">
       <div class="flash-page__composer">
-        <FlashEditor @submit="onSubmit" />
+        <p v-if="editingNote">正在编辑闪念 <button type="button" @click="cancelEdit">取消编辑</button></p>
+        <FlashEditor
+          :key="editorVersion"
+          ref="editorRef"
+          :initial="editingNote"
+          :submitting="publishing || loading"
+          @submit="onSubmit"
+          @dirty="editorDirty = $event"
+        />
       </div>
     </div>
 
@@ -156,9 +180,7 @@
             <!-- 统计卡片 -->
             <div class="flash-stat-card">
               <div class="flash-stat-card__row">
-                <span class="flash-stat-card__label">{{
-                  isLoggedIn ? '闪念总数' : '博主总数'
-                }}</span>
+                <span class="flash-stat-card__label">{{ isLoggedIn ? '闪念总数' : '博主总数' }}</span>
                 <span class="flash-stat-card__value">{{ notes.length }}</span>
               </div>
               <div class="flash-stat-card__divider" />
@@ -185,9 +207,11 @@
                 <span>标签云</span>
               </div>
               <div class="flash-tag-cloud__list">
-                <span
+                <button
                   v-for="t in tagCloud"
                   :key="t.name"
+                  type="button"
+                  :aria-pressed="activeTag === t.name"
                   class="flash-tag-cloud__item"
                   :class="{ 'flash-tag-cloud__item--active': activeTag === t.name }"
                   :style="{ fontSize: tagFontSize(t.count) }"
@@ -195,7 +219,7 @@
                 >
                   #{{ t.name }}
                   <span class="flash-tag-cloud__count">{{ t.count }}</span>
-                </span>
+                </button>
               </div>
             </div>
           </div>
@@ -207,14 +231,15 @@
     <CommonGuestIdentityModal
       :visible="identityModalVisible"
       @confirm="onIdentityConfirm"
-      @cancel="identityModalVisible = false"
-      @login="identityModalVisible = false; openLoginDrawer('login')"
+      @cancel="cancelIdentity"
+      @login="loginForComment"
     />
   </div>
 </template>
 
 <script setup lang="ts">
-import type { FlashNote, FlashType } from '~/features/flash/types'
+import { resolveScrollRoot, scrollToRoot } from '~/utils/scrollRoot'
+import type { FlashNote, FlashType, FlashCommentSubmission } from '~/features/flash/types'
 
 useSeoMeta({
   title: '闪念',
@@ -223,9 +248,10 @@ useSeoMeta({
 
 const { isLoggedIn, currentUser } = useCurrentUser()
 const { open: openLoginDrawer } = useLoginDrawer()
-const { success } = useToast()
+const { success, error: showError } = useToast()
 const { guestIdentity, hasIdentity, resolveAvatar } = useGuestIdentity()
 const {
+  error: storageError,
   notes,
   loading,
   isReadOnly,
@@ -233,6 +259,7 @@ const {
   monthlyCount,
   load,
   add,
+  update,
   remove,
   toggleLike,
   setPinned,
@@ -246,7 +273,8 @@ const currentUserId = computed(() => currentUser.value?.id ?? null)
 const guestId = computed(() => guestIdentity.value?.id ?? null)
 const aiModalVisible = ref(false)
 const identityModalVisible = ref(false)
-let pendingComment: { noteId: string; content: string } | null = null
+let pendingComment: FlashCommentSubmission | null = null
+const pendingIds = ref<string[]>([])
 
 // ---- 标签筛选 ----
 const activeTag = ref<string | null>(null)
@@ -274,6 +302,11 @@ const typeTabs: { id: FlashType; icon: string; label: string }[] = [
 
 // ---- 搜索 ----
 const searchExpanded = ref(false)
+const searchInputRef = ref<HTMLInputElement | null>(null)
+const searchButtonRef = ref<HTMLButtonElement | null>(null)
+watch(searchExpanded, (expanded) => {
+  if (expanded) nextTick(() => searchInputRef.value?.focus())
+})
 const searchQuery = ref('')
 const debouncedQuery = ref('')
 let searchTimer: ReturnType<typeof setTimeout> | null = null
@@ -308,13 +341,38 @@ const filteredNotes = computed(() => {
 
 // ---- AI 引用高亮 ----
 const highlightedNoteId = ref<string | null>(null)
+let highlightTimer: ReturnType<typeof setTimeout> | undefined
+let cancelCitationScroll: (() => void) | undefined
+let citationAlive = true
+onBeforeUnmount(() => {
+  citationAlive = false
+  if (highlightTimer) clearTimeout(highlightTimer)
+  cancelCitationScroll?.()
+})
 
 function onCiteClick(noteId: string) {
   aiModalVisible.value = false
+  clearFilters()
+  if (highlightTimer) clearTimeout(highlightTimer)
+  cancelCitationScroll?.()
   highlightedNoteId.value = noteId
   nextTick(() => {
-    document.getElementById(`flash-note-${noteId}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' })
-    setTimeout(() => {
+    if (!citationAlive) return
+    const node = document.getElementById(`flash-note-${noteId}`)
+    if (!node) return
+    const root = resolveScrollRoot(node.parentElement)
+    const rect = node.getBoundingClientRect()
+    const top =
+      (root?.scrollTop ?? window.scrollY) +
+      rect.top -
+      (root?.getBoundingClientRect().top ?? 0) -
+      (root?.clientHeight ?? window.innerHeight) / 2 +
+      rect.height / 2
+    cancelCitationScroll = scrollToRoot(root, top)
+    node.setAttribute('tabindex', '-1')
+    node.focus({ preventScroll: true })
+    node.addEventListener('blur', () => node.removeAttribute('tabindex'), { once: true })
+    highlightTimer = setTimeout(() => {
       highlightedNoteId.value = null
     }, 2000)
   })
@@ -322,7 +380,7 @@ function onCiteClick(noteId: string) {
 
 // ---- 页面事件 ----
 function onLogin() {
-  openLoginDrawer('login')
+  openLoginDrawer('login', true)
 }
 
 function onAiClick() {
@@ -338,41 +396,86 @@ onMounted(() => {
 })
 
 // 登录态变化时重新加载（登入 / 切换用户）
-watch(isLoggedIn, () => {
+watch(isLoggedIn, (loggedIn) => {
+  if (!loggedIn) {
+    showArchive.value = false
+    archivedNotes.value = []
+  }
   void load(true)
 })
 
+const editingNote = ref<FlashNote | null>(null)
+const editorDirty = ref(false)
+const editorRef = ref<{ focus: () => void } | null>(null)
+async function onEdit(note: FlashNote) {
+  if (editorDirty.value && !window.confirm('放弃当前尚未保存的内容并编辑这条闪念？')) return
+  editingNote.value = note
+  editorDirty.value = false
+  editorVersion.value += 1
+  await nextTick()
+  editorRef.value?.focus()
+}
+function cancelEdit() {
+  if (editorDirty.value && !window.confirm('放弃当前尚未保存的修改？')) return
+  editingNote.value = null
+  editorDirty.value = false
+  editorVersion.value += 1
+}
+const editorVersion = ref(0)
+const publishing = ref(false)
 async function onSubmit(draft: import('~/features/flash/types').FlashNoteDraft) {
-  await add(draft)
-  success('闪念已发布')
-}
-
-async function onRemove(id: string) {
-  await remove(id)
-  success('已删除')
-}
-
-async function onSetPinned(payload: { id: string; pinned: boolean }) {
-  const updated = await setPinned(payload.id, payload.pinned)
-  if (updated) success(payload.pinned ? '已置顶' : '已取消置顶')
-}
-
-async function onSetArchived(payload: { id: string; archived: boolean }) {
-  const updated = await setArchived(payload.id, payload.archived)
-  if (updated) {
-    if (payload.archived) {
-      success('已归档')
-      // 若当前正在看归档箱，重新拉取让刚归档的笔记出现
-      if (showArchive.value) {
-        archivedNotes.value = await loadArchived()
-      }
-    } else {
-      success('已恢复到主列表')
-      // 归档箱视图里从本地列表移除；主列表需重载拿回笔记
-      archivedNotes.value = archivedNotes.value.filter((n) => n.id !== payload.id)
-      await load(true)
+  if (publishing.value) return
+  publishing.value = true
+  try {
+    const created = editingNote.value ? await update(editingNote.value.id, draft) : await add(draft)
+    if (created) {
+      editingNote.value = null
+      editorDirty.value = false
+      editorVersion.value += 1
+      success(draft.isDraft ? '草稿已保存' : '闪念已发布')
     }
+  } catch (cause) {
+    showError(cause instanceof Error ? cause.message : '保存失败，内容已保留')
+  } finally {
+    publishing.value = false
   }
+}
+
+async function runNoteAction(id: string, action: () => Promise<void>) {
+  if (pendingIds.value.includes(id)) return
+  pendingIds.value.push(id)
+  try {
+    await action()
+  } catch (cause) {
+    showError(cause instanceof Error ? cause.message : '操作失败，请重试')
+  } finally {
+    pendingIds.value = pendingIds.value.filter((value) => value !== id)
+  }
+}
+async function onRemove(id: string) {
+  await runNoteAction(id, async () => {
+    await remove(id)
+    archivedNotes.value = archivedNotes.value.filter((note) => note.id !== id)
+    success('已删除')
+  })
+}
+async function onSetPinned(payload: { id: string; pinned: boolean }) {
+  await runNoteAction(payload.id, async () => {
+    const changed = await setPinned(payload.id, payload.pinned)
+    if (changed) {
+      archivedNotes.value = archivedNotes.value.map((note) => (note.id === changed.id ? changed : note))
+      success(payload.pinned ? '已置顶' : '已取消置顶')
+    }
+  })
+}
+async function onSetArchived(payload: { id: string; archived: boolean }) {
+  await runNoteAction(payload.id, async () => {
+    const changed = await setArchived(payload.id, payload.archived)
+    if (!changed) return
+    archivedNotes.value = await loadArchived()
+    if (!payload.archived) await load(true)
+    success(payload.archived ? '已归档' : '已恢复到主列表')
+  })
 }
 
 // ---- 归档箱 ----
@@ -382,52 +485,91 @@ const archivedNotes = ref<FlashNote[]>([])
 async function toggleArchiveView() {
   showArchive.value = !showArchive.value
   if (showArchive.value) {
-    archivedNotes.value = await loadArchived()
+    try {
+      archivedNotes.value = await loadArchived()
+    } catch (cause) {
+      showError(cause instanceof Error ? cause.message : '归档加载失败')
+    }
   }
 }
 
 async function onToggleLike(id: string) {
-  const prevLikes = notes.value.find((n) => n.id === id)?.likes ?? 0
-  await toggleLike(id)
-  success(prevLikes > 0 ? '已取消点赞' : '已点赞')
+  if (pendingIds.value.includes(id)) return
+  pendingIds.value.push(id)
+  try {
+    await toggleLike(id)
+    success(notes.value.find((note) => note.id === id)?.liked ? '已点赞' : '已取消点赞')
+  } catch (cause) {
+    showError(cause instanceof Error ? cause.message : '点赞失败，请重试')
+  } finally {
+    pendingIds.value = pendingIds.value.filter((value) => value !== id)
+  }
 }
 
-async function onAddComment(payload: { noteId: string; content: string }) {
-  if (isLoggedIn.value) {
-    // 已登录 → 直接用 currentUser 信息
-    await addComment(payload.noteId, payload.content)
-    success('评论已发送')
+async function onAddComment(payload: FlashCommentSubmission) {
+  if (pendingIds.value.includes(payload.noteId)) {
+    payload.complete?.(false)
     return
   }
-  // 未登录 → 检查游客身份
-  if (!hasIdentity.value) {
-    // 无身份 → 暂存评论内容，弹出身份录入面板
+  if (!isLoggedIn.value && !hasIdentity.value) {
     pendingComment = payload
     identityModalVisible.value = true
     return
   }
-  // 有身份 → 用游客身份提交
-  const avatar = resolveAvatar()
-  await addComment(payload.noteId, payload.content, {
-    id: guestIdentity.value!.id,
-    name: guestIdentity.value!.nickname,
-    avatar,
-  })
-  success('评论已发送')
-}
-
-function onIdentityConfirm() {
-  identityModalVisible.value = false
-  // 身份已保存到 localStorage，重新提交暂存的评论
-  if (pendingComment) {
-    void onAddComment(pendingComment)
-    pendingComment = null
+  pendingIds.value.push(payload.noteId)
+  try {
+    const guest = guestIdentity.value
+    const created = await addComment(
+      payload.noteId,
+      payload.content,
+      !isLoggedIn.value && guest ? { id: guest.id, name: guest.nickname, avatar: resolveAvatar() } : undefined,
+    )
+    payload.complete?.(!!created)
+    if (created) success('评论已发送')
+  } catch (cause) {
+    payload.complete?.(false)
+    showError(cause instanceof Error ? cause.message : '评论失败，内容已保留')
+  } finally {
+    pendingIds.value = pendingIds.value.filter((value) => value !== payload.noteId)
   }
 }
 
+function closeSearch() {
+  searchExpanded.value = false
+  nextTick(() => searchButtonRef.value?.focus())
+}
+function clearFilters() {
+  activeTag.value = null
+  selectedDate.value = null
+  typeFilter.value = null
+  searchQuery.value = ''
+  debouncedQuery.value = ''
+  if (searchTimer) clearTimeout(searchTimer)
+}
+function loginForComment() {
+  cancelIdentity()
+  openLoginDrawer('login')
+}
+function cancelIdentity() {
+  identityModalVisible.value = false
+  pendingComment?.complete?.(false)
+  pendingComment = null
+}
+function onIdentityConfirm() {
+  identityModalVisible.value = false
+  if (pendingComment) {
+    const pending = pendingComment
+    pendingComment = null
+    void onAddComment(pending)
+  }
+}
 async function onRemoveComment(payload: { noteId: string; commentId: string }) {
-  await removeComment(payload.noteId, payload.commentId)
-  success('评论已删除')
+  try {
+    await removeComment(payload.noteId, payload.commentId)
+    success('评论已删除')
+  } catch (cause) {
+    showError(cause instanceof Error ? cause.message : '删除失败')
+  }
 }
 
 /** 标签云字号：count 越大字号越大，0.7 ~ 1.2rem */
@@ -465,6 +607,9 @@ onBeforeUnmount(() => {
     background 0.18s,
     color 0.18s,
     border-color 0.18s;
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
 
   &:hover {
     color: var(--text-main);
@@ -472,7 +617,7 @@ onBeforeUnmount(() => {
   }
 
   &.is-active {
-    color: var(--accent);
+    color: var(--accent-text);
     background: var(--accent-soft);
     border-color: var(--accent);
   }
@@ -490,6 +635,9 @@ onBeforeUnmount(() => {
   border: 1px solid var(--border-soft);
   border-radius: $radius-card;
   animation: flash-search-in 0.18s ease;
+  @media (prefers-reduced-motion: reduce) {
+    animation: none;
+  }
 
   &:focus-within {
     border-color: var(--accent);
@@ -596,6 +744,9 @@ onBeforeUnmount(() => {
     background 0.18s,
     color 0.18s,
     border-color 0.18s;
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
 
   &:hover {
     color: var(--text-main);
@@ -629,13 +780,16 @@ onBeforeUnmount(() => {
   font-size: 0.75rem;
   color: var(--text-soft);
   animation: flash-search-in 0.18s ease;
+  @media (prefers-reduced-motion: reduce) {
+    animation: none;
+  }
 }
 
 .flash-page__filter-label {
   flex: 1;
 
   strong {
-    color: var(--accent);
+    color: var(--accent-text);
   }
 }
 
@@ -646,12 +800,15 @@ onBeforeUnmount(() => {
   padding: 0.25rem 0.5rem;
   border: none;
   border-radius: $radius-full;
-  background: var(--accent);
+  background: var(--accent-action);
   color: #fff;
   font-size: 0.6875rem;
   font-weight: 600;
   cursor: pointer;
   transition: opacity 0.18s;
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
 
   &:hover {
     opacity: 0.85;
@@ -671,7 +828,10 @@ onBeforeUnmount(() => {
   font-size: 0.8125rem;
   text-align: left;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: $transition-fast;
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
   width: 100%;
 
   &:hover {
@@ -682,7 +842,7 @@ onBeforeUnmount(() => {
 
 .flash-page__guest-banner-icon {
   flex-shrink: 0;
-  color: var(--accent);
+  color: var(--accent-text);
 }
 
 .flash-page__guest-banner-text {
@@ -696,7 +856,7 @@ onBeforeUnmount(() => {
   gap: 0.25rem;
   flex-shrink: 0;
   font-weight: 600;
-  color: var(--accent);
+  color: var(--accent-text);
 }
 
 /* ---- 右栏卡片：AI 搜索入口 ---- */
@@ -711,7 +871,10 @@ onBeforeUnmount(() => {
   color: var(--text-main);
   text-align: left;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: $transition-fast;
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
   width: 100%;
 
   &:hover {
@@ -722,7 +885,7 @@ onBeforeUnmount(() => {
 
 .flash-ai-card__icon {
   flex-shrink: 0;
-  color: var(--accent);
+  color: var(--accent-text);
 }
 
 .flash-ai-card__body {
@@ -771,7 +934,7 @@ onBeforeUnmount(() => {
 
 .flash-stat-card__value {
   font-weight: 700;
-  color: var(--accent);
+  color: var(--accent-text);
   font-variant-numeric: tabular-nums;
   font-size: 1.0625rem;
 }
@@ -814,7 +977,7 @@ onBeforeUnmount(() => {
   display: inline-flex;
   align-items: center;
   gap: 0.25rem;
-  color: var(--accent);
+  color: var(--accent-text);
   font-weight: 600;
   cursor: pointer;
   padding: 0.125rem 0.375rem;
@@ -823,13 +986,16 @@ onBeforeUnmount(() => {
     opacity 0.2s,
     background 0.2s,
     color 0.2s;
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
 
   &:hover {
     opacity: 0.7;
   }
 
   &--active {
-    background: var(--accent);
+    background: var(--accent-action);
     color: #fff;
     opacity: 1;
 

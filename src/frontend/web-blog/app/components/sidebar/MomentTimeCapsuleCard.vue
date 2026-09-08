@@ -31,12 +31,7 @@
       <div class="moment-capsule-card__label">
         <Icon name="lucide:shuffle" size="12" />
         <span>随机回顾</span>
-        <button
-          type="button"
-          class="moment-capsule-card__refresh"
-          aria-label="换一条"
-          @click.stop.prevent="rollRandom"
-        >
+        <button type="button" class="moment-capsule-card__refresh" aria-label="换一条" @click.stop.prevent="rollRandom">
           <Icon name="lucide:refresh-cw" size="11" />
         </button>
       </div>
@@ -159,9 +154,12 @@ function formatDate(iso: string) {
   align-items: center;
   justify-content: center;
   transition: $transition-colors;
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
 
   &:hover {
-    color: var(--accent);
+    color: var(--accent-text);
     background: var(--surface-2);
   }
 }
@@ -174,6 +172,9 @@ function formatDate(iso: string) {
   text-decoration: none;
   color: inherit;
   transition: $transition-colors;
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
 
   &:hover {
     background: var(--surface-3);

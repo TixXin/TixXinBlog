@@ -7,18 +7,21 @@
 
 <template>
   <div v-if="images.length > 0" class="flash-grid" :class="gridClass">
-    <div
+    <button
       v-for="(img, idx) in images"
       :key="img + idx"
+      type="button"
+      :aria-label="`预览图片：${descriptions[idx] || idx + 1}`"
       class="flash-grid__cell"
       @click="open(idx)"
     >
-      <img :src="img" alt="闪念配图" loading="lazy" class="flash-grid__img" >
-    </div>
+      <img :src="img" :alt="descriptions?.[idx] || '闪念配图'" loading="lazy" class="flash-grid__img" />
+    </button>
 
     <ClientOnly>
       <FlashImageLightBox
         :images="images"
+        :descriptions="descriptions"
         :current-index="currentIndex"
         :visible="lightBoxVisible"
         @close="lightBoxVisible = false"
@@ -29,9 +32,13 @@
 </template>
 
 <script setup lang="ts">
-const props = defineProps<{
-  images: string[]
-}>()
+const props = withDefaults(
+  defineProps<{
+    images: string[]
+    descriptions?: string[]
+  }>(),
+  { descriptions: () => [] },
+)
 
 const lightBoxVisible = ref(false)
 const currentIndex = ref(0)
@@ -74,6 +81,10 @@ function open(idx: number) {
     grid-template-columns: repeat(3, 1fr);
   }
 }
+.flash-grid__cell {
+  border: 0;
+  padding: 0;
+}
 
 .flash-grid__cell {
   aspect-ratio: 1;
@@ -88,6 +99,9 @@ function open(idx: number) {
   height: 100%;
   object-fit: cover;
   transition: transform 0.3s ease;
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
 
   .flash-grid__cell:hover & {
     transform: scale(1.04);
