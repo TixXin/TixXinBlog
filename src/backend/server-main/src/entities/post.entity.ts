@@ -9,7 +9,7 @@
  * uuid 迁移需待前端统一 id 类型后再做。
  */
 
-import { Collection, Entity, Enum, Index, ManyToMany, PrimaryKey, Property } from '@mikro-orm/core'
+import { Collection, Entity, Enum, Index, ManyToMany, OptionalProps, PrimaryKey, Property } from '@mikro-orm/core'
 import { PostTag } from './post-tag.entity'
 
 /** 文章正文块，镜像前端 features/post/types.ts 的 ArticleSection */
@@ -30,16 +30,26 @@ export type PostStatus = (typeof POST_STATUSES)[number]
 
 @Entity({ tableName: 'post' })
 export class Post {
+  [OptionalProps]?: 'revision' | 'seoNoindex'
   @PrimaryKey({ type: 'integer', autoincrement: true })
   id!: number
 
   @Property({ type: 'text' })
   title!: string
 
-  /** SEO slug，中文标题暂不强制生成，后台完善后启用 */
+  /** 仅内容或管理状态改变时递增，与浏览/点赞/评论更新分离。 */
+  @Property({ type: 'integer', default: 0 })
+  revision: number = 0
+
+  /** 自定义公开地址标识；留空使用数字 ID，历史标识由 post_address 保留。 */
   @Property({ type: 'text', nullable: true })
   @Index()
   slug?: string
+
+  @Property({ type: 'text', nullable: true }) coverAlt?: string
+  @Property({ type: 'text', nullable: true }) seoTitle?: string
+  @Property({ type: 'text', nullable: true }) seoDescription?: string
+  @Property({ type: 'boolean', default: false }) seoNoindex: boolean = false
 
   @Property({ type: 'text' })
   summary!: string
@@ -93,4 +103,9 @@ export class Post {
 
   @Property({ type: 'datetime', onUpdate: () => new Date() })
   updatedAt: Date = new Date()
+
+  /** 回收状态与草稿/发布/归档分离，回收时撤下公开内容。 */
+  @Property({ type: 'datetime', nullable: true })
+  @Index()
+  deletedAt?: Date
 }
