@@ -29,9 +29,9 @@ TixXinBlog/
 2. 在 `src/frontend/` 或 `src/backend/` 下创建子目录，并包含 `package.json` 且设置唯一 `name`
 3. 在根 `package.json` 的 `scripts` 中新增对应脚本，例如：
    - `dev:admin` → `pnpm --filter web-admin dev`
-   - `dev:server` → `pnpm --filter server-main dev`
+   - `dev:server` → `corepack pnpm --filter server-main start:dev`
 
-预期子项目：`web-blog`（博客前台）、`web-admin`（后台管理）、`server-main`（主后端服务）。
+当前子项目：`web-blog`（前台及 `/admin` 管理页）、`server-main`（后端服务）；`web-admin` 仅为历史预留。
 
 ## docs/ — 项目文档
 
@@ -39,13 +39,17 @@ TixXinBlog/
 docs/
 ├── project-architecture.md      # 项目架构基线文档（统一参考）
 ├── directory-structure.md       # 项目目录结构说明（本文档）
+├── ui-ux-remediation-progress.md # 35项UI/UX整改状态、验证证据与隔离环境记录
+├── ui-ux-remediation-report.md   # 35项整改最终结果、前后截图、测试证据与覆盖边界
+├── motion-audit/               # 全站动效审查：报告、机制台账、覆盖、结构化问题、规范、整改提示词及本轮证据
+├── motion-remediation-progress.md # M01–M16动效整改任务、阶段验证与剩余回归
 ├── theme-development-guide.md   # 主题开发指南（契约体系、开发流程、注册与最佳实践）
 └── project-analysis-report.md   # 项目全面分析报告（维度评分与改进路线图）
 ```
 
 ## src/backend/ — 后端服务
 
-`server-main` 已完成工程初始化与 post 域最小闭环（2026-07-20），完整设计见 `docs/backend/`：
+`server-main` 已实现文章、认证、评论、闪念和就绪探针（2026-09-06），完整设计见 `docs/backend/`：
 
 ```
 src/backend/
@@ -165,162 +169,191 @@ app/assets/styles/
 
 ### components/about/ — 关于我页组件
 
-| 文件 | 职责 |
-|------|------|
-| AboutHero.vue | 个人信息 Hero：头像、简介、社交链接按钮 |
-| SkillBars.vue | 技能进度条，双列网格展示技能熟练度 |
-| ExperienceTimeline.vue | 经历时间线，按时间顺序展示职业和学历 |
-| ContactCards.vue | 联系方式网格，展示邮件、GitHub、Twitter、微信 |
-| HobbyCard.vue | 兴趣爱好卡片，Lucide 图标展示爱好标签 |
-| ReadingCard.vue | 最近在读卡片，展示书籍列表 |
-| DonateCard.vue | 打赏卡片，可复用于关于页和文章详情页 |
+| 文件                   | 职责                                          |
+| ---------------------- | --------------------------------------------- |
+| AboutHero.vue          | 个人信息 Hero：头像、简介、社交链接按钮       |
+| SkillBars.vue          | 技能进度条，双列网格展示技能熟练度            |
+| ExperienceTimeline.vue | 经历时间线，按时间顺序展示职业和学历          |
+| ContactCards.vue       | 联系方式网格，展示邮件、GitHub、Twitter、微信 |
+| HobbyCard.vue          | 兴趣爱好卡片，Lucide 图标展示爱好标签         |
+| ReadingCard.vue        | 最近在读卡片，展示书籍列表                    |
+| DonateCard.vue         | 打赏卡片，可复用于关于页和文章详情页          |
 
 ### components/article/ — 文章归档与详情组件
 
-| 文件 | 职责 |
-|------|------|
-| ArchiveTimeline.vue | 按年份分组的时间线容器，含年份徽章与轨道 |
-| ArchiveItem.vue | 单条归档记录：时间线节点、日期、分类标签与标题链接 |
-| ArchiveStats.vue | 侧栏归档概览统计与分类分布进度条 |
-| ArticleContent.vue | 文章正文块渲染（标题、段落、代码、引用、列表） |
-| ArticleNav.vue | 上一篇 / 下一篇导航卡片 |
-| CommentSection.vue | 评论区：输入区与列表（含一层回复缩进） |
-| RelatedPosts.vue | 右侧栏相关文章列表 |
-| StickyHeader.vue | 文章详情粘性顶栏：返回、标题与元信息 |
-| TableOfContents.vue | 右侧栏目录，层级缩进与当前章节高亮 |
+| 文件                | 职责                                               |
+| ------------------- | -------------------------------------------------- |
+| ArchiveTimeline.vue | 按年份分组的时间线容器，含年份徽章与轨道           |
+| ArchiveItem.vue     | 单条归档记录：时间线节点、日期、分类标签与标题链接 |
+| ArchiveStats.vue    | 侧栏归档概览统计与分类分布进度条                   |
+| ArticleContent.vue  | 文章正文块渲染（标题、段落、代码、引用、列表）     |
+| ArticleNav.vue      | 上一篇 / 下一篇导航卡片                            |
+| CommentSection.vue  | 评论区：输入区与列表（含一层回复缩进）             |
+| RelatedPosts.vue    | 右侧栏相关文章列表                                 |
+| StickyHeader.vue    | 文章详情粘性顶栏：返回、标题与元信息               |
+| TableOfContents.vue | 右侧栏目录，层级缩进与当前章节高亮                 |
 
 ### components/blog/ — 博客业务组件
 
-| 文件 | 职责 |
-|------|------|
-| PostCard.vue | 文章卡片，展示封面、标题、摘要、标签和元信息 |
-| PostCardList.vue | 文章卡片列表，按 Tab 过滤并渲染文章 |
-| PostTabs.vue | 文章分类 Tab 栏与搜索输入框 |
+| 文件                | 职责                                                     |
+| ------------------- | -------------------------------------------------------- |
+| PostCard.vue        | 文章卡片，展示封面、标题、摘要、标签和元信息             |
+| PostCardList.vue    | 文章卡片列表，按 Tab 过滤并渲染文章                      |
+| PostTabs.vue        | 文章分类 Tab 栏与搜索输入框                              |
 | AppearanceEntry.vue | 左侧栏界面设置入口，展示当前主题与动画摘要并打开设置抽屉 |
-| SubscribeCard.vue | 邮件订阅卡片，提供邮箱输入和订阅按钮 |
-| ThemeSwitcher.vue | 主题切换器，支持亮色/跟随系统/暗色三种模式 |
+| SubscribeCard.vue   | 邮件订阅卡片，提供邮箱输入和订阅按钮                     |
+| ThemeSwitcher.vue   | 主题切换器，支持亮色/跟随系统/暗色三种模式               |
 
 ### components/common/ — 通用基础组件
 
-| 文件 | 职责 |
-|------|------|
+| 文件                 | 职责                                                       |
+| -------------------- | ---------------------------------------------------------- |
 | AppearanceDrawer.vue | 全局界面设置抽屉，集中管理颜色主题、主内容动画和左侧栏动画 |
-| BaseCard.vue | 通用卡片容器，支持可选的 hover 效果 |
-| PageHeader.vue | 通用页面标题组件，带图标、标题和副标题 |
-| ReadingProgress.vue | 固定在视口顶部的阅读进度条（3px，强调色） |
-| SearchBox.vue | 通用搜索框组件，多页面复用 |
-| StateBlock.vue | 通用状态提示组件，用于空态、404、500 等场景 |
-| Tooltip.vue | 通用 Tooltip 提示组件，支持自动定位、明暗适配与方向箭头 |
+| BaseCard.vue         | 通用卡片容器，支持可选的 hover 效果                        |
+| PageHeader.vue       | 通用页面标题组件，带图标、标题和副标题                     |
+| ReadingProgress.vue  | 固定在视口顶部的阅读进度条（3px，强调色）                  |
+| SearchBox.vue        | 通用搜索框组件，多页面复用                                 |
+| StateBlock.vue       | 通用状态提示组件，用于空态、404、500 等场景                |
+| Tooltip.vue          | 通用 Tooltip 提示组件，支持自动定位、明暗适配与方向箭头    |
 
 ### components/gallery/ — 画廊组件
 
-| 文件 | 职责 |
-|------|------|
-| GalleryFilter.vue | 画廊分类筛选按钮组，v-model 绑定当前分类 |
-| GalleryGrid.vue | CSS columns 瀑布流容器，向父级抛出选中照片 |
-| GalleryItem.vue | 单张照片卡片，悬停渐变遮罩与元信息 |
-| GalleryStats.vue | 右侧栏画廊统计卡片 |
-| GearCard.vue | 右侧栏拍摄器材信息卡片 |
-| LightBox.vue | 全屏灯箱预览大图与说明（Teleport + ESC 关闭） |
+| 文件              | 职责                                          |
+| ----------------- | --------------------------------------------- |
+| GalleryFilter.vue | 画廊分类筛选按钮组，v-model 绑定当前分类      |
+| GalleryGrid.vue   | CSS columns 瀑布流容器，向父级抛出选中照片    |
+| GalleryItem.vue   | 单张照片卡片，悬停渐变遮罩与元信息            |
+| GalleryStats.vue  | 右侧栏画廊统计卡片                            |
+| GearCard.vue      | 右侧栏拍摄器材信息卡片                        |
+| LightBox.vue      | 全屏灯箱预览大图与说明（Teleport + ESC 关闭） |
 
 ### components/guestbook/ — 留言板组件
 
-| 文件 | 职责 |
-|------|------|
-| GuestbookHeader.vue | 聊天式顶栏：标题、留言总数、在线状态点 |
-| MessageBubble.vue | 单条留言气泡（访客左对齐 / 博主右对齐） |
-| MessageList.vue | 按日期分组列表与日期分隔徽标 |
-| MessageInput.vue | 底部工具栏占位与可编辑输入区、发送按钮 |
-| ChatStats.vue | 右侧栏对话统计（总留言、活跃用户等） |
-| ChatRules.vue | 右侧栏对话守则编号列表 |
-| ActiveMembers.vue | 右侧栏活跃成员头像与留言数 |
+| 文件                | 职责                                    |
+| ------------------- | --------------------------------------- |
+| GuestbookHeader.vue | 聊天式顶栏：标题、留言总数、在线状态点  |
+| MessageBubble.vue   | 单条留言气泡（访客左对齐 / 博主右对齐） |
+| MessageList.vue     | 按日期分组列表与日期分隔徽标            |
+| MessageInput.vue    | 底部工具栏占位与可编辑输入区、发送按钮  |
+| ChatStats.vue       | 右侧栏对话统计（总留言、活跃用户等）    |
+| ChatRules.vue       | 右侧栏对话守则编号列表                  |
+| ActiveMembers.vue   | 右侧栏活跃成员头像与留言数              |
 
 ### components/layout/ — 布局结构组件
 
-| 文件 | 职责 |
-|------|------|
-| MobileNav.vue | 移动端底部导航栏 |
-| SidebarNav.vue | 桌面端左侧栏导航 |
+| 文件             | 职责                                   |
+| ---------------- | -------------------------------------- |
+| MobileNav.vue    | 移动端底部导航栏                       |
+| SidebarNav.vue   | 桌面端左侧栏导航                       |
 | StatusFooter.vue | 站点底部页脚，展示版权、链接和系统状态 |
 
 ### components/link/ — 友链页组件
 
-| 文件 | 职责 |
-|------|------|
-| LinkCard.vue | 单个友链卡片：头像、站点名、描述、域名 |
-| LinkGrid.vue | 友链网格容器，响应式三列布局 |
-| LinkForm.vue | 申请友链表单（纯 UI，不实现提交逻辑） |
-| LinkRules.vue | 友链须知卡片，编号列表展示规则 |
+| 文件             | 职责                                   |
+| ---------------- | -------------------------------------- |
+| LinkCard.vue     | 单个友链卡片：头像、站点名、描述、域名 |
+| LinkGrid.vue     | 友链网格容器，响应式三列布局           |
+| LinkForm.vue     | 申请友链表单（纯 UI，不实现提交逻辑）  |
+| LinkRules.vue    | 友链须知卡片，编号列表展示规则         |
 | SiteInfoCard.vue | 本站信息卡片，展示站点名称、地址和描述 |
 
 ### components/project/ — 项目展示页组件
 
-| 文件 | 职责 |
-|------|------|
-| ProjectCard.vue | 项目卡片：封面、状态标签、Star 数、技术标签、链接 |
-| ProjectGrid.vue | 项目网格容器，响应式两列布局 |
-| ProjectStats.vue | 项目概览统计卡片（总项目数、Star、Fork） |
-| TechStackCard.vue | 技术栈进度条卡片 |
+| 文件              | 职责                                              |
+| ----------------- | ------------------------------------------------- |
+| ProjectCard.vue   | 项目卡片：封面、状态标签、Star 数、技术标签、链接 |
+| ProjectGrid.vue   | 项目网格容器，响应式两列布局                      |
+| ProjectStats.vue  | 项目概览统计卡片（总项目数、Star、Fork）          |
+| TechStackCard.vue | 技术栈进度条卡片                                  |
 
 ### components/sidebar/ — 右侧栏组件
 
-| 文件 | 职责 |
-|------|------|
-| CategoryCard.vue | 专栏分类卡片，展示分类列表及文章数量 |
-| HeatmapGrid.vue | 活跃度热力图，GitHub 风格网格展示近期活动 |
-| RightSidebar.vue | 右侧栏容器，包裹所有右侧卡片子组件 |
-| SiteStatsCard.vue | 站点统计卡片，展示运行天数、文章数等数据 |
-| TagCloudCard.vue | 标签云卡片，多行滚动展示标签 |
+| 文件              | 职责                                      |
+| ----------------- | ----------------------------------------- |
+| CategoryCard.vue  | 专栏分类卡片，展示分类列表及文章数量      |
+| HeatmapGrid.vue   | 活跃度热力图，GitHub 风格网格展示近期活动 |
+| RightSidebar.vue  | 右侧栏容器，包裹所有右侧卡片子组件        |
+| SiteStatsCard.vue | 站点统计卡片，展示运行天数、文章数等数据  |
+| TagCloudCard.vue  | 标签云卡片，多行滚动展示标签              |
 
 ## 业务域模块详情
 
 ### features/ — 按领域组织的业务模块
 
-每个模块包含 `mock.ts`（mock 数据）和 `types.ts`（类型定义）。
+下表列出展示类型与演示数据资源；它不代表生产页面的数据源。文章、认证、评论与闪念已通过 API 接入，书签明确使用 LocalStorage。
 
-| 模块 | 路径 | 导出内容 |
-|------|------|----------|
-| 关于我 | `features/about/` | `mockProfile`、`mockSkills`、`mockExperiences`、`mockContacts`、`mockHobbies`、`mockReadings` 及 `Profile`、`SkillItem`、`ExperienceItem`、`ContactItem`、`HobbyItem`、`BookItem` |
-| 文章归档 | `features/article/` | `mockArchiveYears`、`mockArchiveStats`、`mockCategoryDistribution` 及 `ArchivePost`、`ArchiveYear`、`ArchiveStat`、`CategoryDistribution` |
-| 画廊 | `features/gallery/` | `mockPhotos`、`mockGalleryCategories`、`mockGalleryStats`、`mockGearList` 及 `PhotoItem`、`GalleryCategory`、`GalleryStat`、`GearItem` |
-| 留言板 | `features/guestbook/` | `mockDateGroups`、`mockChatStats`、`mockChatRules`、`mockActiveMembers` 及 `GuestMessage`、`DateGroup`、`ChatStat`、`ChatRule`、`ActiveMember` |
-| 友链 | `features/link/` | `mockLinks`、`mockLinkRules`、`mockSiteInfo` 及 `LinkItem`、`LinkRule`、`SiteInfo` |
-| 导航 | `features/nav/` | `mockNavItems`、`NavItem` |
-| 文章 | `features/post/` | `mockPosts`、`mockPostTabs`、`mockArticleDetail`、`mockComments`、`mockRelatedPosts`、`mockTocItems` 及 `PostItem`、`ArticleDetail`、`ArticleSection`、`CommentItem`、`RelatedPost`、`TocItem` 等 |
-| 项目展示 | `features/project/` | `mockProjects`、`mockProjectStats`、`mockTechStack` 及 `ProjectItem`、`ProjectStats`、`TechStackItem`、`ProjectTag`、`ProjectLink` |
-| 站点 | `features/site/` | `mockFooterLinks`、`mockPoweredBy`、`mockSiteStatus`、`FooterLink`、`PoweredByItem`、`SiteStatus` |
-| 统计 | `features/stats/` | `mockSiteStats`、`mockTags`、`mockCategories`、`SiteStats`、`TagItem`、`CategoryItem` |
-| 外观设置 | `features/appearance/` | `themeRegistry.ts`（主题注册表：ThemeHostConfig 导入、LayoutThemeMeta 类型、工具函数）、`types.ts`（COLOR_MODE_OPTIONS、CONTENT_TRANSITION_PRESETS、SIDEBAR_ANIMATION_PRESETS 及对应类型） |
+### 真实业务与验收入口（2026-09-06）
+
+- `app/pages/admin/`、`app/layouts/admin.vue`、`app/components/admin/`：博主登录、真实概览、文章草稿/发布/撤回、评论上下文、闪念管理、分类标签和账号安全。
+- `app/composables/useAdminApi.ts`、`useCurrentUser.ts`、`usePostEditor.ts`：真实认证、请求和编辑状态；`useAdminFlashes.ts` 管理后台闪念分页与操作状态。
+- `app/composables/usePostMetadata.ts`：公开文章归档、分类标签及统计。
+- `server/api/v1/[...path].ts`：同源网关；`server/utils/publicContent.ts`：RSS、JSON feed 与 sitemap 的公开数据查询。
+- `tests/unit/`、`tests/e2e/`：单元测试与隔离生产浏览器回归；`playwright.config.ts`：浏览器验收配置。
+- `src/backend/server-main/src/modules/`：auth、post、comment、flash、health；`src/migrations/`：正式迁移。
+- `src/backend/server-main/src/admin-bootstrap.ts`：只创建管理员的生产初始化入口；`tests/`：隔离数据库 HTTP 与浏览器测试驱动。
+- 根 `compose.yaml`、`scripts/container-smoke.mjs`、`scripts/check-secrets.mjs`：生产式编排、容器故障恢复验收与秘密扫描。
+
+以下前端路径均相对于 `src/frontend/web-blog/`；后端及根目录路径已显式注明。
+
+| 模块     | 路径                   | 导出内容                                                                                                                                                                                          |
+| -------- | ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 关于我   | `features/about/`      | `mockProfile`、`mockSkills`、`mockExperiences`、`mockContacts`、`mockHobbies`、`mockReadings` 及 `Profile`、`SkillItem`、`ExperienceItem`、`ContactItem`、`HobbyItem`、`BookItem`                 |
+| 文章归档 | `features/article/`    | `mockArchiveYears`、`mockArchiveStats`、`mockCategoryDistribution` 及 `ArchivePost`、`ArchiveYear`、`ArchiveStat`、`CategoryDistribution`                                                         |
+| 画廊     | `features/gallery/`    | `mockPhotos`、`mockGalleryCategories`、`mockGalleryStats`、`mockGearList` 及 `PhotoItem`、`GalleryCategory`、`GalleryStat`、`GearItem`                                                            |
+| 留言板   | `features/guestbook/`  | `mockDateGroups`、`mockChatStats`、`mockChatRules`、`mockActiveMembers` 及 `GuestMessage`、`DateGroup`、`ChatStat`、`ChatRule`、`ActiveMember`                                                    |
+| 友链     | `features/link/`       | `mockLinks`、`mockLinkRules`、`mockSiteInfo` 及 `LinkItem`、`LinkRule`、`SiteInfo`                                                                                                                |
+| 导航     | `features/nav/`        | `mockNavItems`、`NavItem`                                                                                                                                                                         |
+| 文章     | `features/post/`       | `mockPosts`、`mockPostTabs`、`mockArticleDetail`、`mockComments`、`mockRelatedPosts`、`mockTocItems` 及 `PostItem`、`ArticleDetail`、`ArticleSection`、`CommentItem`、`RelatedPost`、`TocItem` 等 |
+| 项目展示 | `features/project/`    | `mockProjects`、`mockProjectStats`、`mockTechStack` 及 `ProjectItem`、`ProjectStats`、`TechStackItem`、`ProjectTag`、`ProjectLink`                                                                |
+| 站点     | `features/site/`       | `mockFooterLinks`、`mockPoweredBy`、`mockSiteStatus`、`FooterLink`、`PoweredByItem`、`SiteStatus`                                                                                                 |
+| 统计     | `features/stats/`      | `mockSiteStats`、`mockTags`、`mockCategories`、`SiteStats`、`TagItem`、`CategoryItem`                                                                                                             |
+| 外观设置 | `features/appearance/` | `themeRegistry.ts`（主题注册表：ThemeHostConfig 导入、LayoutThemeMeta 类型、工具函数）、`types.ts`（COLOR_MODE_OPTIONS、CONTENT_TRANSITION_PRESETS、SIDEBAR_ANIMATION_PRESETS 及对应类型）        |
 
 ## 组合式函数
 
-| 文件 | 职责 |
-|------|------|
-| composables/useAppearanceSettings.ts | 管理界面设置抽屉状态、动画偏好与本地持久化，并复用主题切换能力 |
-| composables/useTheme.ts | 颜色主题切换逻辑，封装 colorMode 的读取与设置 |
-| composables/useLayoutTheme.ts | 布局主题管理，运行时切换三栏/双栏/单栏布局并通过 cookie 持久化 |
-| composables/useNavItems.ts | 导航数据源，封装导航菜单项获取逻辑（当前返回 mock，后续替换为 API） |
-| composables/useSiteInfo.ts | 站点信息数据源，封装页脚链接、技术栈和状态获取逻辑（当前返回 mock） |
+| 文件                                   | 职责                                                                 |
+| -------------------------------------- | -------------------------------------------------------------------- |
+| composables/useAppearanceSettings.ts   | 管理界面设置抽屉状态、动画偏好与本地持久化，并复用主题切换能力       |
+| composables/useTheme.ts                | 颜色主题切换逻辑，封装 colorMode 的读取与设置                        |
+| composables/useLayoutTheme.ts          | 布局主题管理，运行时切换三栏/双栏/单栏布局并通过 cookie 持久化       |
+| composables/useNavItems.ts             | 导航数据源，封装导航菜单项获取逻辑（当前返回 mock，后续替换为 API）  |
+| composables/useSiteInfo.ts             | 站点信息数据源，封装页脚链接、技术栈和状态获取逻辑（当前返回 mock）  |
 | composables/useSidebarExitAnimation.ts | 右侧栏页面切换退出动画，导航前克隆内容播放离场动画，供各布局主题复用 |
-| composables/useReadingProgress.ts | 阅读进度 0–100，支持可选滚动根节点或文档滚动 |
-| composables/useTableOfContents.ts | 根据标题锚点 Intersection Observer 高亮当前目录项 |
-| composables/useArticleDetail.ts | 文章详情数据获取，当前使用 mock 数据，后续替换为 useAsyncData |
-| composables/usePostListPagination.ts | 文章列表分页与瀑布流懒加载逻辑，含 IntersectionObserver 管理 |
-| composables/usePostListAnimation.ts | 文章列表瀑布流模式下新卡片交错入场动画控制 |
-| composables/useRelativeDate.ts | 日期相对时间格式化工具，7 天内显示相对时间，否则显示完整日期 |
+| composables/useReadingProgress.ts      | 文章正文阅读进度0–100，按实际滚动根计算，不计入评论区                   |
+| composables/useTableOfContents.ts      | 根据实际滚动位置及粘性标题高度高亮目录，支持长章节与文末               |
+| composables/useModalFocus.ts           | 模态弹层栈、焦点约束/归还、背景隔离与嵌套滚动锁                       |
+| composables/usePostListRoute.ts        | 以URL为文章页码、分类、标签与显示模式的单一状态来源                   |
+| features/post/listQuery.ts             | 文章列表查询参数校验与规范序列化                                     |
+| composables/usePageScrollRestoration.ts | 按浏览器历史项恢复主内容的内部或文档滚动位置                         |
+| composables/useMomentOverview.ts       | 朋友圈统一作者资料、公开社交入口与示例统计口径                       |
+| features/post/commentSession.ts        | 按Nuxt应用会话与文章隔离的评论控制器，主题重挂保留输入和在途状态       |
+| utils/scrollRoot.ts                    | 识别真实滚动根、测量文章顶栏偏移和定位标题                             |
+| components/common/ContextDrawer.vue    | 小屏与无侧栏主题的筛选、目录、完整导航抽屉                             |
+| tests/unit/postList.test.ts            | 连续文章集合、模式切换、筛选、追加失败和旧响应竞态回归                 |
+| tests/unit/postListQuery.test.ts       | URL默认/非法参数与组合筛选状态往返                                   |
+| tests/unit/commentSession.test.ts      | 评论会话、文章隔离与退出后的草稿清理                                 |
+| tests/unit/flashNoteCard.test.ts        | 实际闪念组件的Boolean缺省值和公开/只读/busy限制                       |
+| tests/unit/likesPersistence.test.ts     | 本机收藏存储失败保留状态，存储恢复后可继续保存                         |
+| tests/e2e/ux-remediation.spec.ts        | 隔离生产环境的UI整改专项浏览器验收                                   |
+| tests/e2e/flash-ux.spec.ts              | 闪念公开互动、权限状态、失败重试、过滤提示和资源状态码验收             |
+| tests/e2e/reading-ux.spec.ts            | 长标题、正文、目录落点/高亮、阅读进度与分享锚点的浏览器验收           |
+| composables/useArticleDetail.ts        | 按配置读取Mock/API文章，布局切换复用当前已读快照，普通导航仍取接口   |
+| composables/usePostListPagination.ts   | 文章列表分页与瀑布流懒加载逻辑，含 IntersectionObserver 管理         |
+| composables/usePostListAnimation.ts    | 文章列表瀑布流模式下新卡片交错入场动画控制                           |
+| composables/useRelativeDate.ts         | 日期相对时间格式化工具，7 天内显示相对时间，否则显示完整日期         |
 
 ## 页面
 
-| 文件 | 路由 | 职责 |
-|------|------|------|
-| pages/index.vue | `/` | 博客首页，主内容区暂为空态提示，右侧栏站点统计 |
-| pages/articles/index.vue | `/articles` | 文章页，支持列表与归档两种视图模式切换 |
-| pages/articles/[id].vue | `/articles/:id` | 文章详情页：正文、目录、评论、相关文章与打赏卡片 |
-| pages/gallery.vue | `/gallery` | 画廊页，分类筛选、瀑布流与灯箱 |
-| pages/guestbook.vue | `/guestbook` | 留言板页，聊天式列表与侧栏统计/守则/活跃成员 |
-| pages/links.vue | `/links` | 友链页，友链网格、申请表单与友链须知 |
-| pages/projects.vue | `/projects` | 项目展示页，项目卡片网格与技术栈统计 |
-| pages/about.vue | `/about` | 关于我页，个人信息、技能、经历、联系方式 |
+| 文件                     | 路由            | 职责                                             |
+| ------------------------ | --------------- | ------------------------------------------------ |
+| pages/index.vue          | `/`             | 文章列表，URL控制分类/标签/分页/连续加载，旧朋友圈锚点兼容转到统一列表 |
+| pages/moments/index.vue  | `/moments`      | 统一朋友圈入口，共享搜索、话题和日期URL状态 |
+| pages/articles/[id].vue  | `/articles/:id` | 文章详情页：正文、目录、评论、相关文章与打赏卡片 |
+| pages/gallery.vue        | `/gallery`      | 画廊页，分类筛选、瀑布流与灯箱                   |
+| pages/guestbook.vue      | `/guestbook`    | 留言板页，聊天式列表与侧栏统计/守则/活跃成员     |
+| pages/links.vue          | `/links`        | 友链页，友链网格、申请表单与友链须知             |
+| pages/projects.vue       | `/projects`     | 项目展示页，项目卡片网格与技术栈统计             |
+| pages/about.vue          | `/about`        | 关于我页，个人信息、技能、经历、联系方式         |
 
 ## .cursor/rules/ — Cursor 规则
 
@@ -335,4 +368,38 @@ app/assets/styles/
 
 ## src/frontend/web-admin/ — 后台管理前端
 
-暂未开发，目录预留。
+独立应用暂未开发；当前博主后台已经位于 `web-blog/app/pages/admin/`。
+
+### 创作保护工作区
+
+`app/components/admin/PostWorkspace.vue` 统一新建和编辑页；`PostHistory.vue` 提供修订分页与比较，`PostConflict.vue` 复用内容比较。`usePostRecovery.ts` 与 `utils/postRecovery.ts` 管理本机副本；`utils/postDifference.ts` 提供长正文差异。后端 `post-revisions.service.ts` 管理内容快照，`taxonomy-aliases.ts` 解析历史目录名。
+
+### 媒体资源
+
+后台 `app/pages/admin/media.vue` 使用可复用 MediaLibrary/MediaPicker；useMediaUpload 提供真实 XHR 进度与幂等重试。CommonContentImage 直接显示已经优化的受管图片。后端 modules/media 通过 MediaStorage 接口读写文件，media_asset/media_reference 持久化元信息与引用。生产 compose 使用 media-data 卷，开发 var/media 排除出 Git 与构建上下文。
+
+
+### 管理后台长期维护新增模块
+
+- 后端 `modules/backup`：内容包导出、校验、预览、事务迁入与运行诊断；`scripts/full-backup.mjs`：一致快照和隔离恢复。
+- 后端 `modules/audit`：持久化意图、白名单摘要、失败补全及只读检索；`auth-sessions.service.ts`：稳定会话撤销。
+- 前端 `pages/admin/site.vue`、`audit.vue`、`maintenance.vue`：站点设置、审计和备份维护；业务状态分别在对应 composable。
+- `MediaWorkspace` 编排 `useMediaLibrary`，`MediaLibrary` 仅接收 props 展示，媒体选择器复用同一流程。
+- `.backups` 为本机私有数据目录，从 Git 和 Docker 上下文排除。备份/恢复说明见 `docs/backup-and-recovery.md`。
+
+### 动效整改新增模块
+
+- `app/composables/useMotionPreference.ts` 与 `app/plugins/00.motion-preference.client.ts`：应用级系统偏好订阅及水合后同步。
+- `app/composables/usePageMotion.ts`：页面实例独立于视觉动效，维护可中断的进入、离场和焦点完成通知。
+- `app/utils/colorMotion.ts`：文档级颜色事务、取消和即时降级；`app/utils/elementMotion.ts` 与 `app/composables/useEntranceMotion.ts`：受组件作用域管理的元素入场。
+- `app/utils/themeRuntime.ts`、`app/types/theme-host.d.ts`：按需主题预加载、截止时间及构建期宿主元数据类型。
+- `app/components/common/ThemeLoadError.vue` 与 `public/startup-guard.js`：组件加载失败、入口失败和超时的可恢复反馈；守卫在构建期内联，避免依赖另一份网络脚本。
+- `app/composables/useImageState.ts`、`app/components/common/ImageFrame.vue`、`app/plugins/image-motion.client.ts`：稳定图片占位、解码/重试与实际加载后的揭示。
+- `tests/unit/motionLifecycle.test.ts`：旧颜色事务与列表卸载中断回归；`tests/e2e/motion-remediation.spec.ts`：三主题快速导航、焦点、偏好、订阅及图片恢复回归。
+- `tests/e2e/motion-features.spec.ts`：隔离长文、滚轮中断、有效拖拽、键盘替代、AI搜索及嵌套弹层；`playwright.motion.config.ts`提供三浏览器验证配置。
+
+- `app/composables/usePageRequestScope.ts`、`app/utils/pageRequestCancellation.ts`：页面读取的取消信号与显式预期取消；共享评论提交不随页面销毁中断。
+- `app/utils/modalFocusOrigin.ts`、`app/plugins/modal-focus-origin.client.ts`：应用级指针入口记录，兼容WebKit点击按钮不自动聚焦的行为。
+- `app/utils/themeComponentCache.ts`：客户端共享、SSR按Nuxt请求隔离的组件缓存；热更新后新SSR请求使用新模板。
+- `tests/e2e/motionScreenshot.ts`：等待实际字体请求与FontFace状态后采集原生截图，保留正常动画。
+- `docs/motion-remediation/`：逐项处理报告、覆盖记录、动效规范、性能分布及证据；原审查 `docs/motion-audit/` 保留整改前事实。

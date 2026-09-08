@@ -1,0 +1,88 @@
+{
+  "browser": "153.0.8010.12",
+  "suite": "fonts",
+  "results": [
+    {
+      "name": "nexus 字体延迟期间可交互，释放后保留搜索内容",
+      "status": "passed",
+      "detail": {
+        "blocked": [
+          "http://127.0.0.1:12573/_fonts/nAgE5pSvvPYnfvlzwZuRSVZcaFqq55PXBGfLcRXeuuE-61E8Za6u_d-giyfOB2D6lwZ2OYFoeNWszEX3DZSNQbM.woff2",
+          "http://127.0.0.1:12573/_fonts/PdlwIep5snc350G9ejckmhhjhnIatMdBkmSnr8-J_qU-tilk_phboCI34ATr2HSDq_4x1kCi9ku9fNJ5S0i8wC0.woff2",
+          "http://127.0.0.1:12573/_fonts/TMLj1xgSnS-XlgLqO3MHONakaafpE7OKg3jznkd5oCo-Qp01UhmcsCxCN2_pKwCXCNxoddDpvRi_U1mnafHSdV0.woff2",
+          "http://127.0.0.1:12573/_fonts/HMIpvSGaowt7SlR6hOzitNhapl3-DP_uKEIrqDYZqm4-TR4adq7OWcw3ccMrfRUsKwRNoXJh3OBAOX83AEC3CEI.woff2",
+          "http://127.0.0.1:12573/_fonts/glWiZgUjTW_66zZrAes3rA_89fcxEK7C4QeR_lEysw0-9RVEIHfNYwi6RJ4qcrx09MoXsAbExqCeJ8m_f8Oc6ls.woff2",
+          "http://127.0.0.1:12573/_fonts/kQs9r37d020Z7f1r1hpmwlekQ3VmX-2hJK105TmErgI-KeLvfe5Qvm8Vz_lrLaNVMxIEw4GEzb9kjo5QwP_4kNw.woff2"
+        ],
+        "pending": "loading",
+        "before": {
+          "x": 485,
+          "y": 185,
+          "width": 386,
+          "height": 24
+        },
+        "after": {
+          "x": 485,
+          "y": 185,
+          "width": 386,
+          "height": 24
+        },
+        "finalUrl": "http://127.0.0.1:12573/articles/105"
+      }
+    },
+    {
+      "name": "aurora 字体延迟期间可交互，释放后保留搜索内容",
+      "status": "passed",
+      "detail": {
+        "blocked": [
+          "http://127.0.0.1:12573/_fonts/nAgE5pSvvPYnfvlzwZuRSVZcaFqq55PXBGfLcRXeuuE-61E8Za6u_d-giyfOB2D6lwZ2OYFoeNWszEX3DZSNQbM.woff2",
+          "http://127.0.0.1:12573/_fonts/PdlwIep5snc350G9ejckmhhjhnIatMdBkmSnr8-J_qU-tilk_phboCI34ATr2HSDq_4x1kCi9ku9fNJ5S0i8wC0.woff2",
+          "http://127.0.0.1:12573/_fonts/TMLj1xgSnS-XlgLqO3MHONakaafpE7OKg3jznkd5oCo-Qp01UhmcsCxCN2_pKwCXCNxoddDpvRi_U1mnafHSdV0.woff2",
+          "http://127.0.0.1:12573/_fonts/glWiZgUjTW_66zZrAes3rA_89fcxEK7C4QeR_lEysw0-9RVEIHfNYwi6RJ4qcrx09MoXsAbExqCeJ8m_f8Oc6ls.woff2",
+          "http://127.0.0.1:12573/_fonts/HMIpvSGaowt7SlR6hOzitNhapl3-DP_uKEIrqDYZqm4-TR4adq7OWcw3ccMrfRUsKwRNoXJh3OBAOX83AEC3CEI.woff2"
+        ],
+        "pending": "loading",
+        "before": {
+          "x": 485,
+          "y": 185,
+          "width": 386,
+          "height": 24
+        },
+        "after": {
+          "x": 485,
+          "y": 185,
+          "width": 386,
+          "height": 24
+        },
+        "finalUrl": "http://127.0.0.1:12573/articles/105"
+      }
+    },
+    {
+      "name": "dock 字体延迟期间可交互，释放后保留搜索内容",
+      "status": "passed",
+      "detail": {
+        "blocked": [
+          "http://127.0.0.1:12573/_fonts/nAgE5pSvvPYnfvlzwZuRSVZcaFqq55PXBGfLcRXeuuE-61E8Za6u_d-giyfOB2D6lwZ2OYFoeNWszEX3DZSNQbM.woff2",
+          "http://127.0.0.1:12573/_fonts/PdlwIep5snc350G9ejckmhhjhnIatMdBkmSnr8-J_qU-tilk_phboCI34ATr2HSDq_4x1kCi9ku9fNJ5S0i8wC0.woff2",
+          "http://127.0.0.1:12573/_fonts/TMLj1xgSnS-XlgLqO3MHONakaafpE7OKg3jznkd5oCo-Qp01UhmcsCxCN2_pKwCXCNxoddDpvRi_U1mnafHSdV0.woff2",
+          "http://127.0.0.1:12573/_fonts/glWiZgUjTW_66zZrAes3rA_89fcxEK7C4QeR_lEysw0-9RVEIHfNYwi6RJ4qcrx09MoXsAbExqCeJ8m_f8Oc6ls.woff2",
+          "http://127.0.0.1:12573/_fonts/HMIpvSGaowt7SlR6hOzitNhapl3-DP_uKEIrqDYZqm4-TR4adq7OWcw3ccMrfRUsKwRNoXJh3OBAOX83AEC3CEI.woff2"
+        ],
+        "pending": "loading",
+        "before": {
+          "x": 485,
+          "y": 185,
+          "width": 386,
+          "height": 24
+        },
+        "after": {
+          "x": 485,
+          "y": 185,
+          "width": 386,
+          "height": 24
+        },
+        "finalUrl": "http://127.0.0.1:12573/articles/105"
+      }
+    }
+  ]
+}

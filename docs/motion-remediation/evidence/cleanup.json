@@ -1,0 +1,31 @@
+{
+  "at": "2026-09-08T12:00:11.138Z",
+  "status": "closed",
+  "credentialsRemovedFromState": true,
+  "ports": [
+    {
+      "name": "prod",
+      "url": "http://127.0.0.1:12748",
+      "reachable": false
+    },
+    {
+      "name": "dev",
+      "url": "http://127.0.0.1:12749",
+      "reachable": false
+    },
+    {
+      "name": "before",
+      "url": "http://127.0.0.1:12750",
+      "reachable": false
+    }
+  ],
+  "matchingTestDatabasesRemaining": 0,
+  "matchingMediaDirectoriesRemaining": 0,
+  "ownedNodeProcessesRemaining": 0,
+  "processCheck": "Windows CIM检查：无motion-fixes Node进程；3456仅由用户开发进程44800监听",
+  "userDevelopment": {
+    "url": "http://localhost:3456/",
+    "status": 200,
+    "preserved": true
+  }
+}
