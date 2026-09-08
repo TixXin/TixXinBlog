@@ -53,7 +53,7 @@ function refresh() {
 
 /* 装饰引号图标 */
 .daily-quote-card__decor-icon {
-  color: var(--accent);
+  color: var(--accent-text);
   opacity: 0.25;
   margin-bottom: 0.25rem;
 }
@@ -82,7 +82,10 @@ function refresh() {
   background: transparent;
   color: var(--text-faint);
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: $transition-fast;
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
 
   &:hover {
     background: var(--surface-2);
@@ -92,5 +95,8 @@ function refresh() {
 
 .daily-quote-card__refresh-icon {
   transition: transform 0.4s ease;
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
 }
 </style>
