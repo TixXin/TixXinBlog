@@ -183,6 +183,7 @@ for (const layout of ['nexus', 'aurora', 'dock']) {
       expect(await page.locator('[data-page-header]').evaluate((el) => getComputedStyle(el).opacity)).toBe('1')
       expect(await records(page)).toHaveLength(0)
       await page.emulateMedia({ reducedMotion: 'reduce' })
+      await expect.poll(() => page.evaluate(() => matchMedia('(prefers-reduced-motion: reduce)').matches)).toBe(true)
     } finally {
       release()
     }

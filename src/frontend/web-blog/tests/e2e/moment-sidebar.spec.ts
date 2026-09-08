@@ -4,6 +4,29 @@ import { prepareMotionCapture, captureMotion } from './motionScreenshot'
 
 test.beforeEach(({ page, browserName }) => prepareMotionCapture(page, browserName))
 
+test('运行中切换三套布局后资料归属更新，日期筛选保留', async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 1000 })
+  await page.goto('/moments?date=2026-04-08')
+  await expect(page.locator('html')).toHaveClass(/app-client-ready/)
+  for (const theme of ['aurora', 'dock', 'nexus', 'dock', 'aurora', 'nexus']) {
+    await page.getByRole('button', { name: '界面设置', exact: true }).click()
+    await page
+      .getByRole('dialog', { name: '界面设置', exact: true })
+      .getByRole('button', { name: new RegExp(`^${theme} .*布局主题$`, 'i') })
+      .click()
+    await expect(page.locator(`.theme-${theme}`)).toBeVisible()
+    await expect(page.getByRole('dialog')).toHaveCount(0)
+    expect(new URL(page.url()).searchParams.get('date')).toBe('2026-04-08')
+    if (theme === 'dock') await page.getByRole('button', { name: '筛选动态', exact: true }).click()
+    await expect(page.locator('.moment-author-card:visible')).toHaveCount(1)
+    await expect(page.locator('.moment-calendar-card:visible .is-selected')).toHaveText('8')
+    if (theme === 'dock') {
+      await page.keyboard.press('Escape')
+      await expect(page.getByRole('dialog')).toHaveCount(0)
+    }
+  }
+})
+
 test('侧栏与抽屉共享日期话题筛选，重新挂载恢复已选月份', async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 1000 })
   await page.goto('/moments?date=2026-04-08&topic=技术分享')
