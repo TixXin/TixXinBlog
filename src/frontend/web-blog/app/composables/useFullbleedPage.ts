@@ -5,9 +5,8 @@
  * @author TixXin
  * @since 2026-04-11
  *
- * 状态切换由 default layout 的 page transition `onBeforeEnter` 钩子驱动 ——
- * 在新页面进入前根据 route.meta.fullbleed 翻转 class，离场页面在整个 leave
- * transition 期间保持自己的 fullbleed 模式，避免被中途挤压。
+ * 状态由default layout跟随Nuxt已解析的route.meta.fullbleed同步，
+ * 与动画生命周期解耦，关闭动画和历史导航也能切换布局。
  *
  * 页面端只需声明 `definePageMeta({ fullbleed: true })`。
  */

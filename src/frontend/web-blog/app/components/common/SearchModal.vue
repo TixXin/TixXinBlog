@@ -7,9 +7,9 @@
 
 <template>
   <Teleport to="body">
-    <Transition name="search-modal">
+    <Transition name="search-modal" @after-leave="focusDestination">
       <div v-if="visible" class="search-modal-overlay" @click.self="close">
-        <div class="search-modal">
+        <div ref="dialogRef" class="search-modal" role="dialog" aria-modal="true" aria-label="站内搜索" tabindex="-1">
           <div class="search-modal__header">
             <Icon name="lucide:search" size="16" class="search-modal__icon" />
             <input
@@ -18,12 +18,17 @@
               type="text"
               class="search-modal__input"
               placeholder="搜索文章、项目、友链..."
-              @keydown.escape="close"
-              @keydown.enter="navigateToFirst"
+              aria-label="搜索文章、项目和友链"
+              @keydown.enter="onEnter"
               @keydown.down.prevent="selectNext"
               @keydown.up.prevent="selectPrev"
-            >
-            <kbd class="search-modal__kbd">ESC</kbd>
+            />
+            <button v-if="query" type="button" class="search-modal__close" aria-label="清空搜索" @click="query = ''">
+              <Icon name="lucide:delete" size="16" />
+            </button>
+            <button type="button" class="search-modal__close" aria-label="关闭搜索" @click="close">
+              <Icon name="lucide:x" size="18" />
+            </button>
           </div>
 
           <div v-if="query.trim()" class="search-modal__body">
@@ -31,21 +36,28 @@
               <Icon name="lucide:loader-2" size="16" class="search-modal__spinner" />
               搜索中...
             </div>
-            <ul v-else-if="results.length" class="search-modal__list">
-              <li
-                v-for="(item, i) in results"
-                :key="item.id"
-                class="search-modal__item"
-                :class="{ 'search-modal__item--active': selectedIndex === i }"
-                @click="navigateTo(item)"
-                @mouseenter="selectedIndex = i"
-              >
-                <Icon :name="item.icon" size="16" class="search-modal__item-icon" />
-                <div class="search-modal__item-content">
-                  <span class="search-modal__item-title">{{ item.title }}</span>
-                  <span class="search-modal__item-desc line-clamp-1">{{ item.description }}</span>
-                </div>
-                <span class="search-modal__item-type">{{ typeLabel(item.type) }}</span>
+            <div v-else-if="error" class="search-modal__empty" role="alert">
+              <span>{{ error }}</span>
+              <button type="button" class="btn-primary" @click="search(query)">重试搜索</button>
+            </div>
+            <ul v-else-if="results.length" ref="resultListRef" class="search-modal__list">
+              <li v-for="(item, i) in results" :key="`${item.type}:${item.id}`">
+                <a
+                  :href="item.url"
+                  class="search-modal__item"
+                  :class="{ 'search-modal__item--active': selectedIndex === i }"
+                  :data-result-selected="selectedIndex === i"
+                  @click="onResultClick($event, item)"
+                  @mouseenter="selectedIndex = i"
+                  @focus="selectedIndex = i"
+                >
+                  <Icon :name="item.icon" size="16" class="search-modal__item-icon" />
+                  <div class="search-modal__item-content">
+                    <span class="search-modal__item-title">{{ item.title }}</span>
+                    <span class="search-modal__item-desc line-clamp-1">{{ item.description }}</span>
+                  </div>
+                  <span class="search-modal__item-type">{{ typeLabel(item.type) }}</span>
+                </a>
               </li>
             </ul>
             <div v-else class="search-modal__empty">
@@ -53,6 +65,9 @@
               <span>没有找到相关内容</span>
             </div>
           </div>
+          <p v-if="query.trim() && !error" class="search-modal__status" role="status">
+            {{ isSearching ? '正在搜索…' : `找到 ${results.length} 项内容` }}
+          </p>
 
           <div v-else class="search-modal__hint">
             <span>输入关键词开始搜索</span>
@@ -67,20 +82,37 @@
 </template>
 
 <script setup lang="ts">
-import { mockPosts } from '~/features/post/mock'
-import { mockProjects } from '~/features/project/mock'
-import { mockLinks } from '~/features/link/mock'
 import type { SearchResultItem } from '~/composables/useSearch'
 
 const visible = defineModel<boolean>('visible', { default: false })
 
 const inputRef = ref<HTMLInputElement | null>(null)
+const dialogRef = ref<HTMLElement | null>(null)
+const resultListRef = ref<HTMLElement | null>(null)
 const selectedIndex = ref(0)
 
-const { query, results, isSearching, search } = useSearch()
+const { query, results, isSearching, error, search } = useSearch()
+let restoreTrigger = true
+let destination: string | null = null
+let waitForPageTransition = false
+const { contentTransitionDuration } = useAppearanceSettings()
+const activePageTransition = useState<false | { duration: number }>('page-transition-current', () => false)
+const pageMotionCompleted = useState('page-motion-completed', () => 0)
+watch(pageMotionCompleted, () => {
+  waitForPageTransition = false
+  focusDestination()
+})
+useModalFocus(visible, dialogRef, {
+  close,
+  initialFocus: () => inputRef.value,
+  restoreFocus: () => restoreTrigger,
+})
 
 watch(visible, (v) => {
   if (v) {
+    restoreTrigger = true
+    destination = null
+    waitForPageTransition = false
     query.value = ''
     results.value = []
     selectedIndex.value = 0
@@ -88,9 +120,14 @@ watch(visible, (v) => {
   }
 })
 
-watch(query, (q) => {
+watch(query, (q, _previous, onCleanup) => {
   selectedIndex.value = 0
-  search(q, mockPosts, mockProjects, mockLinks)
+  // 防抖期间也属于检索中，避免在结果返回前闪出“没有找到”。
+  isSearching.value = !!q.trim()
+  const timer = setTimeout(() => {
+    void search(q)
+  }, 250)
+  onCleanup(() => clearTimeout(timer))
 })
 
 function close() {
@@ -107,15 +144,96 @@ function typeLabel(type: string) {
 }
 
 const router = useRouter()
+const currentRoute = useRoute()
+const app = useNuxtApp()
+const { error: notifyNavigationError } = useToast()
 
-function navigateTo(item: SearchResultItem) {
+function focusDestination() {
+  if (!destination || waitForPageTransition || visible.value || currentRoute.path !== destination) return
+  if (document.querySelector('[role="dialog"]')) return
+  destination = null
+  void nextTick(() => {
+    if (visible.value || document.querySelector('[role="dialog"]')) return
+    const target =
+      document.querySelector<HTMLElement>('main h1, main h2') ?? document.querySelector<HTMLElement>('main')
+    if (!target) return
+    const previousTabindex = target.getAttribute('tabindex')
+    target.setAttribute('tabindex', '-1')
+    target.focus({ preventScroll: true })
+    target.addEventListener(
+      'blur',
+      () => {
+        if (previousTabindex === null) target.removeAttribute('tabindex')
+        else target.setAttribute('tabindex', previousTabindex)
+      },
+      { once: true },
+    )
+  })
+}
+const removePageFinish = app.hook('page:finish', focusDestination)
+const removeTransitionFinish = app.hook('page:transition:finish', () => {
+  waitForPageTransition = false
+  focusDestination()
+})
+onBeforeUnmount(removePageFinish)
+onBeforeUnmount(removeTransitionFinish)
+watch(
+  () => (activePageTransition.value ? activePageTransition.value.duration : 0),
+  (duration) => {
+    if (duration === 0) {
+      waitForPageTransition = false
+      void nextTick(focusDestination)
+    }
+  },
+)
+
+async function navigateTo(item: SearchResultItem) {
+  restoreTrigger = item.type === 'link'
+  const targetRoute = router.resolve(item.url)
+  const samePage = router.currentRoute.value.fullPath === targetRoute.fullPath
+  destination = item.type === 'link' ? null : targetRoute.path
+  waitForPageTransition =
+    item.type !== 'link' && router.currentRoute.value.path !== targetRoute.path && contentTransitionDuration.value > 0
   close()
   if (item.type === 'link') {
-    window.open(item.url, '_blank')
+    window.open(item.url, '_blank', 'noopener,noreferrer')
   } else {
-    router.push(item.url)
+    try {
+      const failure = await router.push(item.url)
+      if (failure && !samePage) {
+        destination = null
+        document.querySelector<HTMLElement>('[data-focus-key="site-search"]')?.focus({ preventScroll: true })
+      } else if (samePage) {
+        focusDestination()
+      }
+    } catch {
+      destination = null
+      notifyNavigationError('页面跳转失败，请重试。')
+      document.querySelector<HTMLElement>('[data-focus-key="site-search"]')?.focus({ preventScroll: true })
+    }
   }
 }
+
+function onResultClick(event: MouseEvent, item: SearchResultItem) {
+  if (event.button !== 0 || event.ctrlKey || event.metaKey || event.shiftKey || event.altKey) return
+  event.preventDefault()
+  navigateTo(item)
+}
+
+function onEnter(event: KeyboardEvent) {
+  if (event.isComposing) return
+  // 焦点会在关闭时变化，必须先取消Enter默认激活，避免重新点击搜索入口。
+  event.preventDefault()
+  navigateToFirst()
+}
+
+watch([selectedIndex, results], () =>
+  nextTick(() => {
+    resultListRef.value
+      ?.querySelector<HTMLElement>('[data-result-selected="true"]')
+      ?.scrollIntoView({ block: 'nearest' })
+  }),
+)
 
 function navigateToFirst() {
   if (results.value.length > 0) {
@@ -137,6 +255,27 @@ function selectPrev() {
 </script>
 
 <style lang="scss" scoped>
+.search-modal__close {
+  flex: 0 0 2.75rem;
+  height: 2.75rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: $radius-sm;
+  color: var(--text-soft);
+  &:hover {
+    background: var(--surface-2);
+    color: var(--text-main);
+  }
+}
+.search-modal__status {
+  padding: 0.5rem 1rem;
+  color: var(--text-soft);
+  font-size: 0.8125rem;
+}
+.search-modal__item {
+  text-decoration: none;
+}
 .search-modal-overlay {
   position: fixed;
   inset: 0;
@@ -211,6 +350,9 @@ function selectPrev() {
 
 .search-modal__spinner {
   animation: spin 1s linear infinite;
+  @media (prefers-reduced-motion: reduce) {
+    animation: none;
+  }
 }
 
 @keyframes spin {
@@ -233,6 +375,9 @@ function selectPrev() {
   border-radius: $radius-md;
   cursor: pointer;
   transition: background 0.15s;
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
 
   &--active {
     background: var(--surface-2);
@@ -312,6 +457,9 @@ function selectPrev() {
 .search-modal-enter-active,
 .search-modal-leave-active {
   transition: opacity 0.2s ease;
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
 }
 
 .search-modal-enter-active .search-modal,
@@ -319,6 +467,9 @@ function selectPrev() {
   transition:
     transform 0.2s ease,
     opacity 0.2s ease;
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
 }
 
 .search-modal-enter-from,

@@ -16,7 +16,7 @@
   --overlay-bg: rgba(15, 23, 42, 0.42);
   --code-bg: var(--text-main);
   --code-text: #f1f5f9;
-  --danger: #ef4444;
+  --danger: #b91c1c;
 
   /* --- 表面/卡片层级 --- */
   --surface-1: #ffffff;
@@ -24,14 +24,14 @@
   --surface-1-alpha: rgba(255, 255, 255, 0.94);
   --surface-1-alpha-90: rgba(255, 255, 255, 0.96);
   /* 文章卡片封面叠层：亮色用磨砂白 + 深字 + 玻璃边缘 */
-  --surface-cover-overlay: rgba(255, 255, 255, 0.82);
+  --surface-cover-overlay: rgba(255, 255, 255, 0.96);
   /*
    * 明暗 View Transition 期间关闭 backdrop-filter 时的实色近似：
    * 略提高不透明度 + 微冷白，模拟 blur 叠在封面上的「奶白」厚度，避免发灰发空。
    */
   --surface-cover-overlay-vt: rgba(248, 250, 252, 0.94);
   --text-on-cover: #1e293b;
-  --text-on-cover-muted: #64748b;
+  --text-on-cover-muted: #5e6c80;
   --cover-overlay-backdrop: blur(16px) saturate(1.15);
   --cover-overlay-border: 1px solid rgba(255, 255, 255, 0.92);
   /* VT 阶段略加强描边，补偿无 blur 时的体积感 */
@@ -47,15 +47,16 @@
   --border-hover: #cbd5e1;
 
   /* --- 文字 ---
-     浅色主题文字层级：四档等差（L* ≈ 20/37/49/58），
-     保证 muted/soft 过 WCAG AA 正文对比度，faint 过 3:1 UI 下限 */
+     辅助文字在surface-1/2/3均需达到普通文字对比；装饰线由border独立控制。 */
   --text-main: #1e293b;
   --text-muted: #475569;
-  --text-soft: #64748b;
-  --text-faint: #7b8795;
+  --text-soft: #5e6c80;
+  --text-faint: #5e6c80;
 
   /* --- 强调色 --- */
   --accent: #334155;
+  --accent-text: #334155;
+  --accent-action: #334155;
   --accent-soft: rgba(51, 65, 85, 0.08);
   --accent-bg: #f1f5f9;
 
@@ -80,26 +81,26 @@
 
   /* --- 标签颜色（各色系：背景/文字/边框） --- */
   --tag-emerald-bg: #ecfdf5;
-  --tag-emerald-text: #059669;
+  --tag-emerald-text: #047857;
   --tag-emerald-border: #d1fae5;
   --tag-rose-bg: #fff1f2;
-  --tag-rose-text: #e11d48;
+  --tag-rose-text: #be123c;
   --tag-rose-border: #ffe4e6;
   --tag-sky-bg: #f0f9ff;
-  --tag-sky-text: #0284c7;
+  --tag-sky-text: #0369a1;
   --tag-sky-border: #e0f2fe;
   --tag-orange-bg: #fff7ed;
-  --tag-orange-text: #ea580c;
+  --tag-orange-text: #c2410c;
   --tag-orange-border: #fed7aa;
   --tag-blue-bg: #eff6ff;
   --tag-blue-text: #2563eb;
   --tag-blue-border: #dbeafe;
   --tag-amber-bg: #fffbeb;
-  --tag-amber-text: #d97706;
+  --tag-amber-text: #a15104;
   --tag-amber-border: #fde68a;
 
   /* --- 统计模块绿色系 --- */
-  --stat-green: #059669;
+  --stat-green: #047857;
   --stat-green-bg: rgba(5, 150, 105, 0.08);
   --stat-green-border: rgba(5, 150, 105, 0.15);
   --stat-green-dot: #10b981;
@@ -146,11 +147,11 @@
   --surface-1: #2a2f37;
   --surface-1-alpha: rgba(42, 47, 55, 0.3);
   --surface-1-alpha-90: rgba(42, 47, 55, 0.9);
-  --surface-cover-overlay: rgba(42, 47, 55, 0.36);
+  --surface-cover-overlay: rgba(42, 47, 55, 0.9);
   /* 暗色 VT：提高 alpha，接近「深色磨砂 + blur」压在封面上的遮盖感 */
   --surface-cover-overlay-vt: rgba(38, 43, 52, 0.82);
   --text-on-cover: #f8fafc;
-  --text-on-cover-muted: rgba(203, 213, 225, 0.9);
+  --text-on-cover-muted: #cbd5e1;
   --cover-overlay-backdrop: blur(12px);
   --cover-overlay-border: 1px solid transparent;
   --cover-overlay-border-vt: 1px solid rgba(255, 255, 255, 0.06);
@@ -167,11 +168,13 @@
   /* --- 文字 --- */
   --text-main: #e2e8f0;
   --text-muted: #cbd5e1;
-  --text-soft: #94a3b8;
-  --text-faint: #64748b;
+  --text-soft: #a0aec0;
+  --text-faint: #a0aec0;
 
   /* --- 强调色 --- */
   --accent: #5b7cfa;
+  --accent-text: #91a7ff;
+  --accent-action: #3f5cc6;
   --accent-soft: rgba(91, 124, 250, 0.16);
   --accent-bg: rgba(91, 124, 250, 0.12);
 

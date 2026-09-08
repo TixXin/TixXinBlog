@@ -5,8 +5,9 @@
  * @since 2025-03-17
  */
 
-import type { ThemeOption } from '~/features/appearance/types'
-import { COLOR_MODE_OPTIONS } from '~/features/appearance/types'
+import type { ColorModeTransitionPreset, ThemeOption } from '~/features/appearance/types'
+import { COLOR_MODE_OPTIONS, DEFAULT_COLOR_MODE_TRANSITION_PRESET } from '~/features/appearance/types'
+import { hasColorMotion, runColorMotion } from '~/utils/colorMotion'
 
 // View Transitions API 类型自 TS 5.6 起已内置于 DOM lib,无需本地声明
 
@@ -39,6 +40,11 @@ function getEventOrigin(event?: Event | null): { x: number; y: number } {
 export function useTheme() {
   const colorMode = useColorMode()
   const themeOptions = COLOR_MODE_OPTIONS
+  // 在setup中读取纯状态，事件回调不能再次创建包含媒体查询订阅的composable。
+  const colorModeTransitionPreset = useState<ColorModeTransitionPreset>(
+    'appearance-color-mode-transition-preset',
+    () => DEFAULT_COLOR_MODE_TRANSITION_PRESET,
+  )
 
   const currentPreference = computed(() => colorMode.preference as ThemeOption)
 
@@ -53,80 +59,42 @@ export function useTheme() {
       return
     }
 
-    const { colorModeTransitionPreset } = useAppearanceSettings()
     const preset = colorModeTransitionPreset.value
+    if (currentPreference.value === theme && !hasColorMotion(document)) return
     const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
 
-    // 无动画 / 减少动效 / 浏览器不支持 View Transitions → 瞬间切换
-    if (reducedMotion || preset === 'none' || typeof document.startViewTransition !== 'function') {
-      colorMode.preference = theme
-      return
-    }
-
     const root = document.documentElement
-    root.dataset.colorModeAnim = preset
-
-    // circle 预设需要根据「当前实际模式 → 目标实际模式」决定动画方向：
-    //   明 → 暗：expand（暗色新层从点击点扩张覆盖）— 动画 ::view-transition-new(root)
-    //   暗 → 明：retract（暗色旧层从外向点击点收缩消失）— 动画 ::view-transition-old(root)
-    // colorMode.value 是已解析的当前模式（'light' | 'dark'），preference='system' 时也会解析；
-    // 目标 preference='system' 时需要再用 matchMedia 解析一次
-    let direction: 'expand' | 'retract' = 'expand'
-    if (preset === 'circle') {
-      const currentEffective = colorMode.value
-      const targetEffective =
-        theme === 'system' ? (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light') : theme
-      if (currentEffective === 'dark' && targetEffective === 'light') {
-        direction = 'retract'
-      }
-      root.dataset.colorModeAnimDir = direction
-    }
-
-    const transition = document.startViewTransition(async () => {
-      colorMode.preference = theme
-      await nextTick()
+    const target = theme === 'system' ? (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light') : theme
+    const direction = colorMode.value === 'dark' && target === 'light' ? 'retract' : 'expand'
+    const { x, y } = getEventOrigin(event)
+    const vw = window.innerWidth || 1
+    const vh = window.innerHeight || 1
+    const origin = `${(x / vw) * 100}% ${(y / vh) * 100}%`
+    const radius = Math.hypot(Math.max(x, vw - x), Math.max(y, vh - y))
+    const frames = [`circle(0 at ${origin})`, `circle(${radius}px at ${origin})`]
+    runColorMotion({
+      doc: document,
+      key: theme,
+      preset: reducedMotion || preset === 'none' ? 'instant' : preset,
+      direction: preset === 'circle' ? direction : undefined,
+      apply: () => {
+        colorMode.preference = theme
+      },
+      animate:
+        preset === 'circle'
+          ? () =>
+              root.animate(
+                { clipPath: direction === 'retract' ? [...frames].reverse() : frames },
+                {
+                  duration: 320,
+                  easing: 'cubic-bezier(0.4, 0, 0.2, 1)',
+                  pseudoElement:
+                    direction === 'retract' ? '::view-transition-old(root)' : '::view-transition-new(root)',
+                  fill: 'forwards',
+                },
+              )
+          : undefined,
     })
-
-    // circle 预设：JS 驱动 clip-path 实现展开 / 收回（圆心用百分比对齐 VT 伪元素参考盒）
-    if (preset === 'circle') {
-      const { x, y } = getEventOrigin(event)
-      const vw = window.innerWidth || 1
-      const vh = window.innerHeight || 1
-      const xPct = (x / vw) * 100
-      const yPct = (y / vh) * 100
-      const endRadius = Math.hypot(Math.max(x, vw - x), Math.max(y, vh - y))
-      const fromCircle = `circle(0 at ${xPct}% ${yPct}%)`
-      const toCircle = `circle(${endRadius}px at ${xPct}% ${yPct}%)`
-      // retract 方向：动画作用在 old 层（CSS 配套把 old 提到 new 之上），从大圆收缩到点击点
-      const pseudoElement = direction === 'retract' ? '::view-transition-old(root)' : '::view-transition-new(root)'
-      const clipPathFrames = direction === 'retract' ? [toCircle, fromCircle] : [fromCircle, toCircle]
-      transition.ready
-        .then(() => {
-          root.animate(
-            { clipPath: clipPathFrames },
-            {
-              duration: 520,
-              easing: 'cubic-bezier(0.4, 0, 0.2, 1)',
-              pseudoElement,
-              // 必须 forwards：retract 方向播完后若让 clip-path 重置回默认（无裁剪），
-              // old(暗) 层会瞬间满屏再被销毁，肉眼一闪。fill:forwards 让 clip-path
-              // 保持在最终关键帧（circle(0)），直到伪元素被 VT 收尾清理。
-              fill: 'forwards',
-            },
-          )
-        })
-        .catch(() => {
-          // animate() 失败静默忽略：最终回落到浏览器默认交叉淡入
-        })
-    }
-
-    // 切换结束后清理 data-attribute，让 CSS 规则恢复默认
-    transition.finished
-      .catch(() => {})
-      .finally(() => {
-        delete root.dataset.colorModeAnim
-        delete root.dataset.colorModeAnimDir
-      })
   }
 
   return {

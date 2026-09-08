@@ -128,9 +128,7 @@
           <section v-if="activeTab === 'viewport'" class="dev-debug-section">
             <div class="dev-debug-row">
               <span class="dev-debug-row__label">分辨率</span>
-              <span class="dev-debug-row__value dev-debug-row__value--mono">
-                {{ viewport.w }} × {{ viewport.h }}
-              </span>
+              <span class="dev-debug-row__value dev-debug-row__value--mono"> {{ viewport.w }} × {{ viewport.h }} </span>
             </div>
             <div class="dev-debug-row">
               <span class="dev-debug-row__label">断点</span>
@@ -146,19 +144,14 @@
             <div class="dev-debug-row">
               <span class="dev-debug-row__label">UA 类型</span>
               <span class="dev-debug-row__value">
-                <span
-                  class="dev-debug-chip"
-                  :class="isMobileUA ? 'dev-debug-chip--warn' : 'dev-debug-chip--ok'"
-                >
+                <span class="dev-debug-chip" :class="isMobileUA ? 'dev-debug-chip--warn' : 'dev-debug-chip--ok'">
                   {{ isMobileUA ? 'mobile' : 'desktop' }}
                 </span>
               </span>
             </div>
             <div class="dev-debug-row">
               <span class="dev-debug-row__label">滚动位置</span>
-              <span class="dev-debug-row__value dev-debug-row__value--mono">
-                {{ scrollY }}px
-              </span>
+              <span class="dev-debug-row__value dev-debug-row__value--mono"> {{ scrollY }}px </span>
             </div>
           </section>
 
@@ -166,7 +159,10 @@
           <section v-else-if="activeTab === 'route'" class="dev-debug-section">
             <div class="dev-debug-row">
               <span class="dev-debug-row__label">fullPath</span>
-              <span class="dev-debug-row__value dev-debug-row__value--mono dev-debug-row__value--clickable" @click="copyText(route.fullPath)">
+              <span
+                class="dev-debug-row__value dev-debug-row__value--mono dev-debug-row__value--clickable"
+                @click="copyText(route.fullPath)"
+              >
                 {{ route.fullPath }}
                 <Icon name="lucide:copy" size="11" />
               </span>
@@ -215,10 +211,7 @@
             <div class="dev-debug-row">
               <span class="dev-debug-row__label">isLoggedIn</span>
               <span class="dev-debug-row__value">
-                <span
-                  class="dev-debug-chip"
-                  :class="isLoggedIn ? 'dev-debug-chip--ok' : 'dev-debug-chip--muted'"
-                >
+                <span class="dev-debug-chip" :class="isLoggedIn ? 'dev-debug-chip--ok' : 'dev-debug-chip--muted'">
                   {{ isLoggedIn ? 'true' : 'false' }}
                 </span>
               </span>
@@ -227,10 +220,7 @@
               <div class="dev-debug-row">
                 <span class="dev-debug-row__label">role</span>
                 <span class="dev-debug-row__value">
-                  <span
-                    class="dev-debug-chip"
-                    :class="`dev-debug-chip--role-${currentUser.role}`"
-                  >
+                  <span class="dev-debug-chip" :class="`dev-debug-chip--role-${currentUser.role}`">
                     {{ currentUser.role }}
                   </span>
                 </span>
@@ -332,7 +322,6 @@
 </template>
 
 <script setup lang="ts">
-import { mockOwnerUser, mockVisitorUser } from '~/features/auth/mock'
 import type { DevDebugTab, DevDebugDockPosition } from '~/composables/useDevDebugPanel'
 import { FONT_SCALE_MIN, FONT_SCALE_MAX } from '~/composables/useDevDebugPanel'
 
@@ -356,7 +345,7 @@ const {
   close,
 } = useDevDebugPanel()
 
-const { currentUser, isLoggedIn, setUser, logout } = useCurrentUser()
+const { currentUser, isLoggedIn, logout } = useCurrentUser()
 const { success, info } = useToast()
 const route = useRoute()
 const colorMode = useColorMode()
@@ -382,12 +371,18 @@ const dockOptions: { value: DevDebugDockPosition; label: string; icon: string }[
 /** 不同停靠位置使用不同 transition：边贴边滑入，居中态 fade+scale */
 const transitionName = computed(() => {
   switch (position.value) {
-    case 'left': return 'dev-debug-drawer-left'
-    case 'right': return 'dev-debug-drawer-right'
-    case 'top': return 'dev-debug-drawer-top'
-    case 'bottom': return 'dev-debug-drawer-bottom'
-    case 'center': return 'dev-debug-drawer-center'
-    default: return 'dev-debug-drawer-left'
+    case 'left':
+      return 'dev-debug-drawer-left'
+    case 'right':
+      return 'dev-debug-drawer-right'
+    case 'top':
+      return 'dev-debug-drawer-top'
+    case 'bottom':
+      return 'dev-debug-drawer-bottom'
+    case 'center':
+      return 'dev-debug-drawer-center'
+    default:
+      return 'dev-debug-drawer-left'
   }
 })
 
@@ -618,13 +613,18 @@ async function copyText(text: string) {
 }
 
 // ---- 登录态 tab 操作 ----
-function loginAs(role: 'owner' | 'visitor') {
-  setUser({ ...(role === 'owner' ? mockOwnerUser : mockVisitorUser) })
-  success(`已切换为${role === 'owner' ? '博主' : '访客'}`)
+const { open: openRealLogin } = useLoginDrawer()
+async function loginAs(role: 'owner' | 'visitor') {
+  if (role === 'owner') openRealLogin('login')
+  else await logout()
 }
-function onLogout() {
-  logout()
-  info('已退出登录')
+async function onLogout() {
+  try {
+    await logout()
+    info('已退出登录')
+  } catch {
+    info('退出失败，请重试')
+  }
 }
 
 // ---- 环境 tab 数据 ----
@@ -687,6 +687,9 @@ onBeforeUnmount(() => {
     border-color 0.2s ease,
     transform 0.2s ease,
     box-shadow 0.2s ease;
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
 
   &:hover {
     background: var(--accent-alpha-20, rgba(99, 102, 241, 0.2));
@@ -794,6 +797,9 @@ onBeforeUnmount(() => {
   user-select: none;
   touch-action: none;
   transition: color 0.18s ease;
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
 
   &:hover {
     color: var(--accent);
@@ -846,6 +852,9 @@ onBeforeUnmount(() => {
   transition:
     background 0.18s ease,
     color 0.18s ease;
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
 
   &:hover:not(:disabled) {
     color: var(--text-main);
@@ -873,6 +882,9 @@ onBeforeUnmount(() => {
   transition:
     background 0.18s ease,
     color 0.18s ease;
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
 
   &:hover {
     background: var(--surface-3);
@@ -907,6 +919,9 @@ onBeforeUnmount(() => {
   transition:
     background 0.18s ease,
     color 0.18s ease;
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
 
   &:hover {
     color: var(--text-main);
@@ -942,6 +957,9 @@ onBeforeUnmount(() => {
   transition:
     background 0.2s ease,
     color 0.2s ease;
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
 
   &:hover {
     background: var(--surface-2);
@@ -974,6 +992,9 @@ onBeforeUnmount(() => {
     color 0.2s ease,
     border-color 0.2s ease,
     background 0.2s ease;
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
 
   &:hover {
     color: var(--text-main);
@@ -1045,6 +1066,9 @@ onBeforeUnmount(() => {
   padding: 0.125rem 0.25rem;
   margin: -0.125rem -0.25rem;
   transition: background 0.18s ease;
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
 
   &:hover {
     background: var(--surface-2);
@@ -1135,6 +1159,9 @@ onBeforeUnmount(() => {
     border-color 0.18s ease,
     color 0.18s ease,
     transform 0.18s ease;
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
 
   &:hover:not(:disabled) {
     background: var(--surface-3);
@@ -1164,6 +1191,9 @@ onBeforeUnmount(() => {
 .dev-debug-overlay-enter-active,
 .dev-debug-overlay-leave-active {
   transition: opacity 0.2s ease;
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
 }
 .dev-debug-overlay-enter-from,
 .dev-debug-overlay-leave-to {
@@ -1174,6 +1204,9 @@ onBeforeUnmount(() => {
 .dev-debug-drawer-left-enter-active,
 .dev-debug-drawer-left-leave-active {
   transition: transform 0.18s cubic-bezier(0.4, 0, 0.2, 1);
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
 }
 .dev-debug-drawer-left-enter-from,
 .dev-debug-drawer-left-leave-to {
@@ -1184,6 +1217,9 @@ onBeforeUnmount(() => {
 .dev-debug-drawer-right-enter-active,
 .dev-debug-drawer-right-leave-active {
   transition: transform 0.18s cubic-bezier(0.4, 0, 0.2, 1);
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
 }
 .dev-debug-drawer-right-enter-from,
 .dev-debug-drawer-right-leave-to {
@@ -1194,6 +1230,9 @@ onBeforeUnmount(() => {
 .dev-debug-drawer-top-enter-active,
 .dev-debug-drawer-top-leave-active {
   transition: transform 0.18s cubic-bezier(0.4, 0, 0.2, 1);
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
 }
 .dev-debug-drawer-top-enter-from,
 .dev-debug-drawer-top-leave-to {
@@ -1204,6 +1243,9 @@ onBeforeUnmount(() => {
 .dev-debug-drawer-bottom-enter-active,
 .dev-debug-drawer-bottom-leave-active {
   transition: transform 0.18s cubic-bezier(0.4, 0, 0.2, 1);
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
 }
 .dev-debug-drawer-bottom-enter-from,
 .dev-debug-drawer-bottom-leave-to {
@@ -1216,6 +1258,9 @@ onBeforeUnmount(() => {
   transition:
     opacity 0.16s ease,
     transform 0.16s cubic-bezier(0.34, 1.56, 0.64, 1);
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
 }
 .dev-debug-drawer-center-enter-from,
 .dev-debug-drawer-center-leave-to {

@@ -31,20 +31,8 @@ interface AppearanceStorage {
   paginationAutoHide: boolean
 }
 
-/** 关闭抽屉后让触发按钮失焦，避免 ESC/点击关闭后残留浏览器默认 focus 轮廓 */
-function blurAppearanceTrigger() {
-  if (!import.meta.client) return
-
-  nextTick(() => {
-    const trigger = document.querySelector('button.appearance-fab')
-
-    if (trigger instanceof HTMLElement) {
-      trigger.blur()
-    }
-  })
-}
-
 export function useAppearanceSettings() {
+  const { reducedMotion } = useMotionPreference()
   const { currentPreference, themeOptions, setTheme } = useTheme()
   const { activeTheme, setLayoutTheme } = useLayoutTheme()
 
@@ -88,6 +76,7 @@ export function useAppearanceSettings() {
   )
 
   const contentTransitionName = computed(() => {
+    if (reducedMotion.value) return 'content-none'
     switch (contentTransitionPreset.value) {
       case 'soft-slide':
         return 'content-soft'
@@ -102,6 +91,7 @@ export function useAppearanceSettings() {
   })
 
   const contentTransitionDuration = computed(() => {
+    if (reducedMotion.value) return 0
     switch (contentTransitionPreset.value) {
       case 'none':
         return 0
@@ -111,7 +101,7 @@ export function useAppearanceSettings() {
         return 140
       case 'vertical-slide':
       default:
-        return 180
+        return 150
     }
   })
 
@@ -130,6 +120,7 @@ export function useAppearanceSettings() {
   }
 
   const sidebarTransitionName = computed(() => {
+    if (reducedMotion.value) return 'sidebar-none'
     switch (sidebarAnimationPreset.value) {
       case 'scale':
         return 'sidebar-scale'
@@ -145,6 +136,7 @@ export function useAppearanceSettings() {
 
   const sidebarAnimationClass = computed(() => {
     if (!hydrated.value) return ''
+    if (reducedMotion.value) return 'anim-sidebar-none'
 
     switch (sidebarAnimationPreset.value) {
       case 'scale':
@@ -165,16 +157,10 @@ export function useAppearanceSettings() {
 
   function closeDrawer() {
     isDrawerOpen.value = false
-    blurAppearanceTrigger()
   }
 
   function toggleDrawer() {
-    const next = !isDrawerOpen.value
-    isDrawerOpen.value = next
-
-    if (!next) {
-      blurAppearanceTrigger()
-    }
+    isDrawerOpen.value = !isDrawerOpen.value
   }
 
   function setContentTransitionPreset(preset: ContentTransitionPreset) {

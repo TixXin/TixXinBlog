@@ -44,6 +44,9 @@ const scaleX = computed(() => Math.min(1, Math.max(0, progress.value / 100)))
   transform-origin: left center;
   transform: scaleX(0);
   transition: transform 200ms ease-out;
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
   // 仅在右端呈现光晕，营造"流动"感（全条模糊会拖累重绘）
   box-shadow:
     0 0 8px 0 var(--accent),
@@ -59,6 +62,9 @@ html.visited .loading-topbar {
 // Vue Transition 淡出
 .loading-topbar-leave-active {
   transition: opacity 300ms ease-out;
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
 }
 
 .loading-topbar-leave-to {

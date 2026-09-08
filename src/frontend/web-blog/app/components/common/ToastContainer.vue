@@ -7,7 +7,7 @@
 
 <template>
   <Teleport to="body">
-    <div class="toast-container">
+    <div class="toast-container" aria-live="polite" aria-atomic="false">
       <TransitionGroup name="toast-list">
         <div v-for="toast in toasts" :key="toast.id" class="toast-item" :class="`toast-item--${toast.type}`">
           <Icon :name="getIcon(toast.type)" size="16" class="toast-item__icon" />
@@ -74,13 +74,18 @@ function getIcon(type: string) {
     color: var(--danger);
   }
   &--info .toast-item__icon {
-    color: var(--accent);
+    color: var(--accent-text);
   }
 }
 
 .toast-list-enter-active,
 .toast-list-leave-active {
-  transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+  transition:
+    opacity 0.22s cubic-bezier(0.34, 1.56, 0.64, 1),
+    transform 0.22s cubic-bezier(0.34, 1.56, 0.64, 1);
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
 }
 
 .toast-list-enter-from {

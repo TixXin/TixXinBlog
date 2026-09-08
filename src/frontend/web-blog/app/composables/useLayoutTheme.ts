@@ -11,50 +11,18 @@ import {
   themeHostConfigs,
   type LayoutThemeMeta,
 } from '~/features/appearance/themeRegistry'
-import { themeComponentLoaders } from '#build/theme-engine.registry.mjs'
-
-type ThemeLoader = () => Promise<unknown>
+import { preloadLayoutTheme } from '~/utils/themeRuntime'
 
 export type ThemeSwitchState = 'idle' | 'loading' | 'error'
-
-const preloadedThemes = new Set<string>()
-const preloadTasks = new Map<string, Promise<void>>()
-
-function getThemeLoaders(id: string): ThemeLoader[] {
-  const loaderMap = themeComponentLoaders[id as keyof typeof themeComponentLoaders]
-  if (!loaderMap) return []
-
-  return Object.values(loaderMap) as ThemeLoader[]
-}
-
-async function preloadThemeRuntime(id: string) {
-  const themeId = ensureKnownThemeId(id)
-
-  if (preloadedThemes.has(themeId)) return
-
-  const currentTask = preloadTasks.get(themeId)
-  if (currentTask) {
-    await currentTask
-    return
-  }
-
-  const nextTask = Promise.all(getThemeLoaders(themeId).map((loader) => loader()))
-    .then(() => {
-      preloadedThemes.add(themeId)
-    })
-    .finally(() => {
-      preloadTasks.delete(themeId)
-    })
-
-  preloadTasks.set(themeId, nextTask)
-
-  await nextTask
-}
 
 export function useLayoutTheme() {
   const { currentTheme, availableThemes: engineThemeIds, setTheme, themeDefinitions } = useThemeEngine()
 
   const switchingState = useState<ThemeSwitchState>('layout-theme-switch-state', () => 'idle')
+  const switchVersion = useState('layout-theme-switch-version', () => 0)
+  const preloadErrors = useState<Record<string, string>>('layout-theme-preload-errors', () => ({}))
+  const { startThemeSwitchLoading, endThemeSwitchLoading } = useAppLoading()
+  const { error: notifyThemeError } = useToast()
 
   const currentThemeId = computed(() => ensureKnownThemeId(currentTheme.value))
 
@@ -93,39 +61,44 @@ export function useLayoutTheme() {
 
   async function setLayoutTheme(id: string) {
     const themeId = ensureKnownThemeId(id)
-
+    const version = ++switchVersion.value
     if (themeId === currentThemeId.value) {
       switchingState.value = 'idle'
+      endThemeSwitchLoading()
       return
     }
-
-    // 复用首屏品牌 loading：切换期间全屏覆盖，最小展示 800ms 避免一闪而过
-    const { startThemeSwitchLoading, endThemeSwitchLoading } = useAppLoading()
-    startThemeSwitchLoading()
-    const minDisplay = new Promise<void>((resolve) => setTimeout(resolve, 800))
-
     switchingState.value = 'loading'
+    const previousTheme = currentThemeId.value
+    startThemeSwitchLoading()
     try {
-      await preloadThemeRuntime(themeId)
-      setTheme(themeId)
-      // 等新主题组件挂载到 DOM，再补齐最小展示时长，最后卸下 loading
+      await preloadLayoutTheme(themeId)
+      if (switchVersion.value !== version) return
+      if ((await setTheme(themeId)) === false) throw new Error('主题不可用')
       await nextTick()
-      await minDisplay
-      switchingState.value = 'idle'
+      if (switchVersion.value === version) switchingState.value = 'idle'
     } catch {
+      if (switchVersion.value !== version) return
+      if (currentThemeId.value !== previousTheme) await setTheme(previousTheme)
       switchingState.value = 'error'
+      notifyThemeError('主题加载失败，当前布局已保留。恢复网络后请刷新重试。')
     } finally {
-      endThemeSwitchLoading()
+      if (switchVersion.value === version) endThemeSwitchLoading()
     }
   }
 
   function preloadTheme(id: string) {
-    preloadThemeRuntime(id).catch(() => {})
+    void preloadLayoutTheme(ensureKnownThemeId(id)).then(
+      () => {
+        preloadErrors.value = Object.fromEntries(Object.entries(preloadErrors.value).filter(([key]) => key !== id))
+      },
+      () => {
+        preloadErrors.value[id] = '主题资源未就绪，切换失败时请刷新重试。'
+      },
+    )
   }
 
   function disableCurrentTheme() {
-    setTheme(DEFAULT_LAYOUT_THEME_ID)
-    switchingState.value = 'idle'
+    void setLayoutTheme(DEFAULT_LAYOUT_THEME_ID)
   }
 
   return {
@@ -133,6 +106,7 @@ export function useLayoutTheme() {
     activeTheme,
     availableThemes,
     switchingState,
+    preloadErrors,
     setLayoutTheme,
     preloadTheme,
     disableCurrentTheme,

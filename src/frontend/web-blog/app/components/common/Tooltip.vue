@@ -21,11 +21,16 @@
     <Transition name="tooltip">
       <div
         v-if="visible && (content || hasContentSlot)"
+        :id="tooltipId"
         ref="floatingRef"
         class="tooltip-floating"
         :class="[`tooltip-floating--${resolvedPlacement}`, { 'tooltip-floating--rich': rich }]"
         :style="floatingStyle"
         role="tooltip"
+        @mouseenter="onFloatingEnter"
+        @mouseleave="onFloatingLeave"
+        @focusin="onFloatingEnter"
+        @focusout="onFloatingLeave"
       >
         <slot name="content">{{ content }}</slot>
         <span class="tooltip-floating__arrow" />
@@ -37,21 +42,24 @@
 <script setup lang="ts">
 type Placement = 'top' | 'bottom' | 'left' | 'right'
 
-const props = withDefaults(defineProps<{
-  content?: string
-  placement?: Placement
-  offset?: number
-  delay?: number
-  disabled?: boolean
-  rich?: boolean
-}>(), {
-  content: undefined,
-  placement: undefined,
-  offset: 8,
-  delay: 200,
-  disabled: false,
-  rich: false,
-})
+const props = withDefaults(
+  defineProps<{
+    content?: string
+    placement?: Placement
+    offset?: number
+    delay?: number
+    disabled?: boolean
+    rich?: boolean
+  }>(),
+  {
+    content: undefined,
+    placement: undefined,
+    offset: 8,
+    delay: 200,
+    disabled: false,
+    rich: false,
+  },
+)
 
 const slots = useSlots()
 const hasContentSlot = computed(() => !!slots.content)
@@ -59,6 +67,12 @@ const hasContentSlot = computed(() => !!slots.content)
 const triggerRef = ref<HTMLElement | null>(null)
 const floatingRef = ref<HTMLElement | null>(null)
 const visible = ref(false)
+const tooltipId = useId()
+let triggerHover = false
+let triggerFocus = false
+let floatingActive = false
+let dismissed = false
+let positionFrame = 0
 const resolvedPlacement = ref<Placement>('top')
 const floatingStyle = ref<Record<string, string>>({
   top: '0px',
@@ -75,26 +89,102 @@ function getTriggerElement(): HTMLElement | null {
   return (el.firstElementChild as HTMLElement) ?? el
 }
 
-watch(() => props.disabled, (val) => {
-  if (val) visible.value = false
-})
+watch(
+  () => props.disabled,
+  (val) => {
+    if (val) visible.value = false
+  },
+)
 
-function onEnter() {
+function onEnter(event: Event) {
+  if (event.type === 'focusin') triggerFocus = true
+  else triggerHover = true
+  if (showTimer) clearTimeout(showTimer)
   if (props.disabled) return
-  if (hideTimer) { clearTimeout(hideTimer); hideTimer = null }
+  if (dismissed) return
+  if (hideTimer) {
+    clearTimeout(hideTimer)
+    hideTimer = null
+  }
   showTimer = setTimeout(() => {
-    if (props.disabled) return
+    if (props.disabled || dismissed || (!triggerHover && !triggerFocus)) return
     visible.value = true
     nextTick(updatePosition)
   }, props.delay)
 }
 
-function onLeave() {
-  if (showTimer) { clearTimeout(showTimer); showTimer = null }
-  hideTimer = setTimeout(() => {
-    visible.value = false
-  }, 80)
+function onLeave(event: Event) {
+  if (event.type === 'focusout') triggerFocus = false
+  else triggerHover = false
+  if (!triggerHover && !triggerFocus) dismissed = false
+  if (showTimer) {
+    clearTimeout(showTimer)
+    showTimer = null
+  }
+  scheduleHide()
 }
+
+function scheduleHide() {
+  if (hideTimer) clearTimeout(hideTimer)
+  hideTimer = setTimeout(() => {
+    if (!triggerHover && !triggerFocus && !floatingActive) visible.value = false
+  }, 140)
+}
+function onFloatingEnter() {
+  floatingActive = true
+  if (hideTimer) clearTimeout(hideTimer)
+}
+function onFloatingLeave() {
+  floatingActive = false
+  scheduleHide()
+}
+function onEscape(event: KeyboardEvent) {
+  if (event.key !== 'Escape' || !visible.value) return
+  event.preventDefault()
+  event.stopImmediatePropagation()
+  dismissed = true
+  visible.value = false
+  if (showTimer) clearTimeout(showTimer)
+}
+function schedulePosition() {
+  if (positionFrame) return
+  positionFrame = requestAnimationFrame(() => {
+    positionFrame = 0
+    updatePosition()
+  })
+}
+function onFocusChange() {
+  if (getTriggerElement()?.closest('[inert]')) visible.value = false
+}
+watch(
+  visible,
+  (shown, _previous, onCleanup) => {
+    if (!shown) return
+    const trigger = getTriggerElement()
+    if (!trigger) return
+    const descriptions = new Set((trigger.getAttribute('aria-describedby') || '').split(/\s+/).filter(Boolean))
+    descriptions.add(tooltipId)
+    trigger.setAttribute('aria-describedby', [...descriptions].join(' '))
+    window.addEventListener('keydown', onEscape, true)
+    window.addEventListener('resize', schedulePosition)
+    document.addEventListener('scroll', schedulePosition, { capture: true, passive: true })
+    document.addEventListener('focusin', onFocusChange)
+    onCleanup(() => {
+      window.removeEventListener('keydown', onEscape, true)
+      window.removeEventListener('resize', schedulePosition)
+      document.removeEventListener('scroll', schedulePosition, true)
+      document.removeEventListener('focusin', onFocusChange)
+      cancelAnimationFrame(positionFrame)
+      positionFrame = 0
+      const remaining = (trigger.getAttribute('aria-describedby') || '')
+        .split(/\s+/)
+        .filter((id) => id && id !== tooltipId)
+      if (remaining.length) trigger.setAttribute('aria-describedby', remaining.join(' '))
+      else trigger.removeAttribute('aria-describedby')
+    })
+  },
+  { flush: 'post' },
+)
 
 function detectPlacement(triggerRect: DOMRect): Placement {
   if (props.placement) return props.placement
@@ -125,6 +215,15 @@ function updatePosition() {
   if (!trigger || !floating) return
 
   const triggerRect = trigger.getBoundingClientRect()
+  if (
+    !trigger.isConnected ||
+    trigger.closest('[inert]') ||
+    triggerRect.bottom <= 0 ||
+    triggerRect.top >= window.innerHeight
+  ) {
+    visible.value = false
+    return
+  }
   const floatingRect = floating.getBoundingClientRect()
   const placement = detectPlacement(triggerRect)
   resolvedPlacement.value = placement
@@ -167,6 +266,7 @@ function updatePosition() {
 }
 
 onBeforeUnmount(() => {
+  cancelAnimationFrame(positionFrame)
   if (showTimer) clearTimeout(showTimer)
   if (hideTimer) clearTimeout(hideTimer)
 })
@@ -180,20 +280,21 @@ onBeforeUnmount(() => {
 .tooltip-floating {
   position: fixed;
   z-index: 9999;
-  max-width: 240px;
+  max-width: min(240px, calc(100vw - 16px));
   padding: 5px 10px;
   border-radius: 6px;
   font-size: 12px;
   line-height: 1.5;
-  white-space: nowrap;
-  pointer-events: none;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  pointer-events: auto;
   background: var(--tooltip-bg);
   color: var(--tooltip-text);
   box-shadow: var(--tooltip-shadow);
 
   &--rich {
     white-space: normal;
-    max-width: 280px;
+    max-width: min(280px, calc(100vw - 16px));
     padding: 8px 14px;
   }
 }
@@ -244,11 +345,21 @@ onBeforeUnmount(() => {
 
 // 入场/退场动画
 .tooltip-enter-active {
-  transition: opacity 0.15s ease, transform 0.15s ease;
+  transition:
+    opacity 0.15s ease,
+    transform 0.15s ease;
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
 }
 
 .tooltip-leave-active {
-  transition: opacity 0.1s ease, transform 0.1s ease;
+  transition:
+    opacity 0.1s ease,
+    transform 0.1s ease;
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
 }
 
 .tooltip-enter-from,

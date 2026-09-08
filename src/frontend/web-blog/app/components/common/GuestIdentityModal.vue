@@ -9,7 +9,14 @@
   <Teleport to="body">
     <Transition name="guest-id-modal">
       <div v-if="visible" class="guest-id-overlay" @click.self="$emit('cancel')">
-        <div class="guest-id-modal">
+        <div
+          ref="dialogRef"
+          class="guest-id-modal"
+          role="dialog"
+          aria-modal="true"
+          aria-label="填写评论身份"
+          tabindex="-1"
+        >
           <header class="guest-id-modal__header">
             <Icon name="lucide:user-round-pen" size="16" class="guest-id-modal__icon" />
             <h3 class="guest-id-modal__title">填写你的身份</h3>
@@ -22,7 +29,7 @@
             <!-- 说明文案 + 登录入口 -->
             <div class="guest-id-notice">
               <p class="guest-id-notice__text">
-                评论前需要一个身份标识，方便其他读者认识你。信息仅存储在你的浏览器中，不会上传到服务器。
+                评论前需要一个身份标识，方便其他读者认识你。身份保存在当前浏览器；发表评论时，昵称和头像会随评论公开展示。
               </p>
               <button type="button" class="guest-id-notice__login" @click="onSwitchToLogin">
                 <Icon name="lucide:log-in" size="12" />
@@ -38,7 +45,7 @@
                 class="guest-id-avatar-preview__img"
                 alt="头像预览"
                 @error="avatarLoadError = true"
-              >
+              />
               <span v-else class="guest-id-avatar-preview__letter" :style="{ background: avatarColor }">
                 {{ avatarLetter }}
               </span>
@@ -62,7 +69,7 @@
                     placeholder="你的昵称"
                     maxlength="20"
                     required
-                  >
+                  />
                 </div>
               </div>
 
@@ -80,7 +87,7 @@
                     type="email"
                     class="guest-id-field__input"
                     placeholder="your@email.com"
-                  >
+                  />
                 </div>
               </div>
 
@@ -98,7 +105,7 @@
                     type="url"
                     class="guest-id-field__input"
                     placeholder="https://your-site.com"
-                  >
+                  />
                 </div>
               </div>
 
@@ -116,7 +123,7 @@
                     type="url"
                     class="guest-id-field__input"
                     placeholder="https://example.com/avatar.png"
-                  >
+                  />
                 </div>
               </div>
 
@@ -155,9 +162,7 @@ const form = reactive({
 const avatarLoadError = ref(false)
 
 // 头像颜色池（复用留言板配色）
-const avatarColors = [
-  '#5b7cfa', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#06b6d4', '#f97316',
-]
+const avatarColors = ['#5b7cfa', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#06b6d4', '#f97316']
 
 // 根据昵称哈希选色
 const avatarColor = computed(() => {
@@ -200,6 +205,11 @@ const avatarHint = computed(() => {
 
 // 弹窗打开时回填已有身份
 const props = defineProps<{ visible: boolean }>()
+const dialogRef = ref<HTMLElement | null>(null)
+useModalFocus(() => props.visible, dialogRef, {
+  close: () => emit('cancel'),
+  initialFocus: () => dialogRef.value?.querySelector('input') ?? null,
+})
 
 watch(
   () => props.visible,
@@ -261,7 +271,7 @@ function onSubmit() {
 }
 
 .guest-id-modal__icon {
-  color: var(--accent);
+  color: var(--accent-text);
   flex-shrink: 0;
 }
 
@@ -326,9 +336,12 @@ function onSubmit() {
   background: transparent;
   font-size: 0.75rem;
   font-weight: 600;
-  color: var(--accent);
+  color: var(--accent-text);
   cursor: pointer;
   transition: opacity 0.18s;
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
 
   &:hover {
     opacity: 0.75;
@@ -402,6 +415,9 @@ function onSubmit() {
   border: 1px solid var(--border-soft);
   border-radius: $radius-sm;
   transition: border-color 0.18s;
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
 
   &:focus-within {
     border-color: var(--accent);
@@ -435,12 +451,15 @@ function onSubmit() {
   margin-top: 0.25rem;
   border: none;
   border-radius: $radius-md;
-  background: var(--accent);
+  background: var(--accent-action);
   color: #fff;
   font-size: 0.8125rem;
   font-weight: 600;
   cursor: pointer;
   transition: opacity 0.2s;
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
 
   &:hover:not(:disabled) {
     opacity: 0.9;
@@ -456,6 +475,9 @@ function onSubmit() {
 .guest-id-modal-enter-active,
 .guest-id-modal-leave-active {
   transition: opacity 0.2s ease;
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
 }
 
 .guest-id-modal-enter-active .guest-id-modal,
@@ -463,6 +485,9 @@ function onSubmit() {
   transition:
     transform 0.2s ease,
     opacity 0.2s ease;
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
 }
 
 .guest-id-modal-enter-from,

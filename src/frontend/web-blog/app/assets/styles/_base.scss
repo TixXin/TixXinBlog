@@ -26,6 +26,9 @@ body {
   background-size: var(--bg-dot-size) var(--bg-dot-size);
   color: var(--text-main);
   transition: $transition-colors;
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
   line-height: 1.6;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
@@ -66,43 +69,14 @@ img {
   display: block;
 }
 
-// 图片渐显动画：加载完成后柔和淡入，避免首次访问时图片突然出现
-@keyframes img-reveal {
-  from {
-    opacity: 0;
-    transform: scale(1.015);
-  }
-  to {
-    opacity: 1;
-    transform: scale(1);
-  }
-}
-
-// 对关键图片容器内的图片应用渐显效果
-.post-item__cover-bg img,
-.owner-profile-card__avatar,
-.hero-section__avatar-img,
-.nexus-bar__avatar-img,
-.moment-card__avatar,
-.moment-card img,
-.project-card img,
-.moment-photo-wall-card img,
-.gallery-item img {
-  animation: img-reveal 0.45s ease-out both;
-}
-
-// 无障碍降级：用户开启减少动效时禁用图片渐显
+// 图片揭示由image-motion插件在实际加载后执行，避免挂载或偏好变化重播。
 @media (prefers-reduced-motion: reduce) {
-  .post-item__cover-bg img,
-  .owner-profile-card__avatar,
-  .hero-section__avatar-img,
-  .nexus-bar__avatar-img,
-  .moment-card__avatar,
-  .moment-card img,
-  .project-card img,
-  .moment-photo-wall-card img,
-  .gallery-item img {
-    animation: none;
+  :root {
+    --motion-fast: 0s;
+    --motion-normal: 0s;
+  }
+  html {
+    scroll-behavior: auto;
   }
 }
 
@@ -175,7 +149,7 @@ html[data-color-mode-anim] *::after {
 /* fade：浏览器默认的根交叉淡入（old 淡出 / new 淡入），仅微调时长 */
 html[data-color-mode-anim='fade']::view-transition-old(root),
 html[data-color-mode-anim='fade']::view-transition-new(root) {
-  animation-duration: 0.35s;
+  animation-duration: 0.22s;
   animation-timing-function: ease;
 }
 
@@ -203,7 +177,7 @@ html[data-color-mode-anim='circle'][data-color-mode-anim-dir='retract']::view-tr
 /* blur：新视图从模糊状态淡入，旧视图淡出至模糊 */
 @keyframes color-mode-blur-in {
   from {
-    filter: blur(18px);
+    filter: blur(8px);
     opacity: 0.65;
   }
   to {
@@ -218,17 +192,23 @@ html[data-color-mode-anim='circle'][data-color-mode-anim-dir='retract']::view-tr
     opacity: 1;
   }
   to {
-    filter: blur(18px);
+    filter: blur(8px);
     opacity: 0.4;
   }
 }
 
 html[data-color-mode-anim='blur']::view-transition-new(root) {
-  animation: color-mode-blur-in 0.45s cubic-bezier(0.22, 0.68, 0.35, 1) both;
+  animation: color-mode-blur-in 0.24s cubic-bezier(0.22, 0.68, 0.35, 1) both;
+  @media (prefers-reduced-motion: reduce) {
+    animation: none;
+  }
 }
 
 html[data-color-mode-anim='blur']::view-transition-old(root) {
-  animation: color-mode-blur-out 0.45s cubic-bezier(0.22, 0.68, 0.35, 1) both;
+  animation: color-mode-blur-out 0.24s cubic-bezier(0.22, 0.68, 0.35, 1) both;
+  @media (prefers-reduced-motion: reduce) {
+    animation: none;
+  }
 }
 
 /*
@@ -254,7 +234,7 @@ html[data-color-mode-anim] .post-item:has(.post-item__cover-bg) .post-item__titl
 @keyframes fade-in-up {
   0% {
     opacity: 0;
-    transform: translateY(20px);
+    transform: translateY(8px);
   }
   100% {
     opacity: 1;
@@ -264,11 +244,15 @@ html[data-color-mode-anim] .post-item:has(.post-item__cover-bg) .post-item__titl
 
 .anim-fade-in-up {
   opacity: 0;
-  animation: fade-in-up 0.6s ease-out forwards;
+  animation: fade-in-up 0.24s ease-out forwards;
+  @media (prefers-reduced-motion: reduce) {
+    animation: none;
+    opacity: 1;
+  }
 }
 
 @for $i from 1 through 6 {
   .anim-delay-#{$i} {
-    animation-delay: #{$i * 100}ms;
+    animation-delay: #{min($i * 25, 150)}ms;
   }
 }

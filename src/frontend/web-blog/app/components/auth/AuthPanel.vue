@@ -11,10 +11,6 @@
     <div class="auth-panel__header">
       <h3 class="auth-panel__title">{{ viewTitle }}</h3>
       <div class="auth-panel__actions">
-        <!-- 仅 dev 模式下出现的测试账号快捷填入；生产构建中 DevOnly 整段被 tree-shake -->
-        <DevOnly>
-          <AuthDevQuickFill v-if="currentView === 'login'" />
-        </DevOnly>
         <button type="button" class="auth-panel__close" aria-label="关闭" @click="close">
           <Icon name="lucide:x" size="18" />
         </button>
@@ -46,8 +42,8 @@ const { currentView, close, switchView } = useLoginDrawer()
 const viewTitle = computed(() => {
   const titles: Record<AuthView, string> = {
     login: '登录',
-    register: '注册',
-    forgot: '找回密码',
+    register: '参与讨论',
+    forgot: '登录帮助',
   }
   return titles[currentView.value]
 })
@@ -155,7 +151,10 @@ onBeforeUnmount(() => {
   background: transparent;
   color: var(--text-soft);
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: $transition-fast;
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
 
   &:hover {
     color: var(--text-main);
@@ -168,13 +167,21 @@ onBeforeUnmount(() => {
   overflow: hidden;
   /* height 由 JS 动态测量，transition 保证切换时平滑过渡而非瞬间跳动 */
   transition: height 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
   will-change: height;
 }
 
 /* 视图切换动画：向左滑入 */
 .auth-slide-left-enter-active,
 .auth-slide-left-leave-active {
-  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  transition:
+    opacity 0.2s cubic-bezier(0.4, 0, 0.2, 1),
+    transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
 }
 
 .auth-slide-left-enter-from {
@@ -190,7 +197,12 @@ onBeforeUnmount(() => {
 /* 视图切换动画：向右滑入 */
 .auth-slide-right-enter-active,
 .auth-slide-right-leave-active {
-  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  transition:
+    opacity 0.2s cubic-bezier(0.4, 0, 0.2, 1),
+    transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
 }
 
 .auth-slide-right-enter-from {
@@ -252,6 +264,9 @@ onBeforeUnmount(() => {
   color: var(--text-soft);
   cursor: pointer;
   transition: color 0.2s ease;
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
 
   &:hover {
     color: var(--text-main);
@@ -268,11 +283,18 @@ onBeforeUnmount(() => {
 
 .auth-submit__spinner {
   animation: auth-spin 1s linear infinite;
+  @media (prefers-reduced-motion: reduce) {
+    animation: none;
+  }
 }
 
 @keyframes auth-spin {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 /* 分隔线 */
@@ -314,7 +336,10 @@ onBeforeUnmount(() => {
   font-size: 0.8125rem;
   font-weight: 500;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: $transition-fast;
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
 
   &:hover {
     border-color: var(--border-hover);
@@ -341,12 +366,15 @@ onBeforeUnmount(() => {
   gap: 0.25rem;
   background: none;
   border: none;
-  color: var(--accent);
+  color: var(--accent-text);
   font-size: 0.8125rem;
   font-weight: 600;
   cursor: pointer;
   padding: 0;
   transition: opacity 0.2s ease;
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
 
   &:hover {
     opacity: 0.8;

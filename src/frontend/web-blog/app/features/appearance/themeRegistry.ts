@@ -5,9 +5,7 @@
  * @since 2026-04-04
  */
 
-import nexusConfig from '@@/themes/nexus/theme.config'
-import auroraConfig from '@@/themes/aurora/theme.config'
-import dockConfig from '@@/themes/dock/theme.config'
+import { themeHostConfigs as generatedHostConfigs } from '#build/theme-host.config.mjs'
 
 export type ThemeCustomizerCapability = 'colorMode' | 'contentTransition' | 'sidebarAnimation' | 'layoutDensity'
 
@@ -36,13 +34,9 @@ export const DEFAULT_LAYOUT_THEME_ID = 'nexus'
 
 /**
  * 各主题的宿主侧配置，按展示顺序排列。
- * 新增主题时在此处增加一行 import + 一条记录即可。
+ * 由Nuxt构建期读取主题配置，客户端只接收纯元数据。
  */
-export const themeHostConfigs: Record<string, ThemeHostConfig> = {
-  nexus: nexusConfig,
-  aurora: auroraConfig,
-  dock: dockConfig,
-}
+export const themeHostConfigs: Record<string, ThemeHostConfig> = generatedHostConfigs
 
 export function isKnownLayoutThemeId(id: string): boolean {
   return id in themeHostConfigs

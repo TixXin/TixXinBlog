@@ -10,11 +10,25 @@
     <!-- 遮罩与面板 Teleport 到 body，面板固定定位视口居中避免溢出 -->
     <Teleport to="body">
       <Transition name="drawer-overlay">
-        <div v-if="isDrawerOpen" class="appearance-drawer__overlay" @click="closeDrawer" />
+        <div v-if="isDrawerOpen" ref="backdropRef" class="appearance-drawer__overlay" @click="closeDrawer" />
       </Transition>
 
       <Transition name="drawer-panel">
-        <aside v-if="isDrawerOpen" class="appearance-drawer card">
+        <aside
+          v-if="isDrawerOpen"
+          ref="dialogRef"
+          class="appearance-drawer card"
+          role="dialog"
+          aria-modal="true"
+          aria-label="界面设置"
+          tabindex="-1"
+        >
+          <header class="appearance-drawer__heading">
+            <h2>界面设置</h2>
+            <button type="button" aria-label="关闭界面设置" @click="closeDrawer">
+              <Icon name="lucide:x" size="18" />
+            </button>
+          </header>
           <div class="appearance-drawer__body">
             <section v-if="isCapabilitySupported('colorMode')" class="appearance-section appearance-section--first">
               <div class="appearance-section__head">
@@ -28,6 +42,7 @@
                   type="button"
                   class="appearance-option"
                   :class="{ 'appearance-option--active': currentPreference === option }"
+                  :aria-pressed="currentPreference === option"
                   @pointerdown="onColorThemePointerDown(option, $event)"
                   @click="onColorThemeClick(option, $event)"
                 >
@@ -49,6 +64,7 @@
                   type="button"
                   class="appearance-option"
                   :class="{ 'appearance-option--active': colorModeTransitionPreset === option.value }"
+                  :aria-pressed="colorModeTransitionPreset === option.value"
                   :title="option.description"
                   @click="setColorModeTransitionPreset(option.value)"
                 >
@@ -96,6 +112,8 @@
                   }"
                   :disabled="switchingState === 'loading'"
                   :aria-label="`${theme.name} 布局主题`"
+                  :aria-pressed="currentThemeId === theme.id"
+                  :title="preloadErrors[theme.id] || theme.description"
                   @click="onLayoutThemeClick(theme.id)"
                   @mouseenter="preloadTheme(theme.id)"
                 >
@@ -123,6 +141,7 @@
                   type="button"
                   class="appearance-option"
                   :class="{ 'appearance-option--active': contentTransitionPreset === option.value }"
+                  :aria-pressed="contentTransitionPreset === option.value"
                   @click="setContentTransitionPreset(option.value)"
                 >
                   <Icon :name="option.icon || 'lucide:sparkles'" size="18" />
@@ -143,6 +162,7 @@
                   type="button"
                   class="appearance-option"
                   :class="{ 'appearance-option--active': sidebarAnimationPreset === option.value }"
+                  :aria-pressed="sidebarAnimationPreset === option.value"
                   @click="setSidebarAnimationPreset(option.value)"
                 >
                   <Icon :name="option.icon || 'lucide:panel-left-open'" size="18" />
@@ -216,7 +236,11 @@ const {
   resetAppearanceSettings,
 } = useAppearanceSettings()
 
-const { currentThemeId, activeTheme, availableThemes, switchingState, setLayoutTheme, preloadTheme } = useLayoutTheme()
+const { currentThemeId, activeTheme, availableThemes, switchingState, setLayoutTheme, preloadTheme, preloadErrors } =
+  useLayoutTheme()
+const dialogRef = ref<HTMLElement | null>(null)
+const backdropRef = ref<HTMLElement | null>(null)
+useModalFocus(isDrawerOpen, dialogRef, { close: closeDrawer, extra: () => [backdropRef.value] })
 
 const layoutThemeLabel = computed(() => activeTheme.value.name)
 
@@ -300,11 +324,30 @@ onBeforeUnmount(() => {
 </script>
 
 <style lang="scss" scoped>
+.appearance-drawer__heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex: 0 0 auto;
+  padding: 0.5rem 1.25rem;
+  border-bottom: 1px solid var(--border-soft);
+  h2 {
+    font-size: 1rem;
+    margin: 0;
+  }
+  button {
+    width: 2.75rem;
+    height: 2.75rem;
+    display: grid;
+    place-items: center;
+    border-radius: $radius-sm;
+  }
+}
 .appearance-drawer__overlay {
   position: fixed;
   inset: 0;
   background: var(--overlay-bg);
-  backdrop-filter: blur(6px);
+  // 半透明遮罩提供层级分隔；避免每帧重新采样整个博客背景。
   z-index: 79;
 }
 
@@ -395,6 +438,9 @@ onBeforeUnmount(() => {
   background: var(--surface-1);
   color: var(--text-soft);
   transition: $transition-fast;
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
 
   &:hover {
     border-color: var(--border-hover);
@@ -429,6 +475,9 @@ onBeforeUnmount(() => {
 
 .appearance-option__spinner {
   animation: spin 0.8s linear infinite;
+  @media (prefers-reduced-motion: reduce) {
+    animation: none;
+  }
 }
 
 .appearance-section__status {
@@ -456,6 +505,9 @@ onBeforeUnmount(() => {
   font-size: 0.75rem;
   font-weight: 700;
   transition: $transition-fast;
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
 
   &:hover {
     background: var(--surface-3);
@@ -488,6 +540,9 @@ onBeforeUnmount(() => {
   transition:
     background 0.2s,
     border-color 0.2s;
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
 
   &--on {
     background: var(--accent);
@@ -505,6 +560,9 @@ onBeforeUnmount(() => {
   background: #fff;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
   transition: transform 0.2s ease;
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
 
   .appearance-toggle__switch--on & {
     transform: translateX(1rem);
@@ -519,9 +577,12 @@ onBeforeUnmount(() => {
   vertical-align: middle;
   opacity: 0.55;
   transition: $transition-fast;
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
 
   &:hover {
-    color: var(--accent);
+    color: var(--accent-text);
     opacity: 1;
   }
 }
@@ -544,6 +605,9 @@ onBeforeUnmount(() => {
 :global(.drawer-overlay-enter-active),
 :global(.drawer-overlay-leave-active) {
   transition: opacity 0.18s ease;
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
 }
 
 :global(.drawer-overlay-enter-from),
@@ -557,12 +621,15 @@ onBeforeUnmount(() => {
   transition:
     opacity 0.2s ease,
     transform 0.2s ease;
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
 }
 
 :global(.drawer-panel-enter-from),
 :global(.drawer-panel-leave-to) {
   opacity: 0;
-  transform: translate(-50%, 16px);
+  transform: translate(-50%, calc(-50% + 8px));
 }
 
 :global(.drawer-panel-enter-to),

@@ -6,15 +6,10 @@
 -->
 
 <template>
-  <div
-    class="custom-scrollbar"
-    ref="rootRef"
-    @mouseenter="onMouseEnter"
-    @mouseleave="onMouseLeave"
-  >
+  <div ref="rootRef" class="custom-scrollbar" @mouseenter="onMouseEnter" @mouseleave="onMouseLeave">
     <div
-      class="custom-scrollbar__viewport"
       ref="viewportRef"
+      class="custom-scrollbar__viewport"
       :class="viewportClass"
       :style="viewportStyle"
       @scroll="onScroll"
@@ -24,23 +19,16 @@
 
     <!-- 滚动进度条：Teleport 到 body 顶部，不受父级 overflow/transform 影响 -->
     <Teleport to="body">
-      <div
-        v-if="showProgress"
-        class="custom-scrollbar__progress"
-        aria-hidden="true"
-      >
-        <div
-          class="custom-scrollbar__progress-bar"
-          :style="progressBarStyle"
-        />
+      <div v-if="showProgress" class="custom-scrollbar__progress" aria-hidden="true">
+        <div class="custom-scrollbar__progress-bar" :style="progressBarStyle" />
       </div>
     </Teleport>
 
     <Transition name="scrollbar-fade">
       <div
         v-show="showTrack && thumbVisible && needsScrollbar"
-        class="custom-scrollbar__track"
         ref="trackRef"
+        class="custom-scrollbar__track"
         @mousedown.prevent="onTrackMouseDown"
       >
         <div
@@ -54,10 +42,7 @@
 
     <!-- 滚动进度 / 返回顶部按钮 -->
     <Transition name="back-to-top">
-      <div
-        v-if="showBackToTop && showBackToTopBtn"
-        class="custom-scrollbar__back-to-top"
-      >
+      <div v-if="showBackToTop && showBackToTopBtn" class="custom-scrollbar__back-to-top">
         <CommonTooltip content="返回顶部" placement="left">
           <button
             type="button"
@@ -76,47 +61,57 @@
 </template>
 
 <script setup lang="ts">
-const props = withDefaults(defineProps<{
-  /** 应用到滚动视口的额外 class */
-  viewportClass?: string | string[] | Record<string, boolean>
-  /** 滚动条自动隐藏延迟（ms） */
-  autoHideDelay?: number
-  /** 是否显示顶部滚动进度条 */
-  showProgress?: boolean
-  /** 是否显示返回顶部按钮 */
-  showBackToTop?: boolean
-  /** 返回顶部按钮出现阈值（px） */
-  backToTopThreshold?: number
-  /** 是否为当前页面的主滚动区域（写入全局滚动进度） */
-  primary?: boolean
-  /** 主滚动区域的滚动方向：'up' 回到顶部（默认），'down' 回到底部（聊天模式） */
-  primaryDirection?: 'up' | 'down'
-  /** 滚动视口渐变遮罩：顶/底非边界时淡出，暗示"还能继续滚" */
-  fadeMask?: 'top' | 'bottom' | 'both' | false
-  /** fade mask 上下"完全透明区"的宽度（CSS 长度）。用于 viewport border-box 两端外延出 padding 区时，
-   *  把 fade 的"完全透明位置"从 border-box 边界内缩，使其对齐实际希望的边界（如 main-content 边框） */
-  fadeMaskInset?: string
-  /** 是否渲染可拖拽的 track/thumb；关闭后仍可用滚轮/触控板滚动（配合 fadeMask 使用） */
-  showTrack?: boolean
-}>(), {
-  autoHideDelay: 1500,
-  showProgress: false,
-  showBackToTop: true,
-  backToTopThreshold: 300,
-  primary: false,
-  primaryDirection: 'up',
-  fadeMask: false,
-  fadeMaskInset: '0',
-  showTrack: true,
-})
+import { resolveScrollRoot, scrollToRoot } from '~/utils/scrollRoot'
+const props = withDefaults(
+  defineProps<{
+    /** 应用到滚动视口的额外 class */
+    viewportClass?: string | string[] | Record<string, boolean>
+    /** 滚动条自动隐藏延迟（ms） */
+    autoHideDelay?: number
+    /** 是否显示顶部滚动进度条 */
+    showProgress?: boolean
+    /** 是否显示返回顶部按钮 */
+    showBackToTop?: boolean
+    /** 返回顶部按钮出现阈值（px） */
+    backToTopThreshold?: number
+    /** 是否为当前页面的主滚动区域（写入全局滚动进度） */
+    primary?: boolean
+    /** 主滚动区域的滚动方向：'up' 回到顶部（默认），'down' 回到底部（聊天模式） */
+    primaryDirection?: 'up' | 'down'
+    /** 滚动视口渐变遮罩：顶/底非边界时淡出，暗示"还能继续滚" */
+    fadeMask?: 'top' | 'bottom' | 'both' | false
+    /** fade mask 上下"完全透明区"的宽度（CSS 长度）。用于 viewport border-box 两端外延出 padding 区时，
+     *  把 fade 的"完全透明位置"从 border-box 边界内缩，使其对齐实际希望的边界（如 main-content 边框） */
+    fadeMaskInset?: string
+    /** 是否渲染可拖拽的 track/thumb；关闭后仍可用滚轮/触控板滚动（配合 fadeMask 使用） */
+    showTrack?: boolean
+  }>(),
+  {
+    viewportClass: '',
+    autoHideDelay: 1500,
+    showProgress: false,
+    showBackToTop: true,
+    backToTopThreshold: 300,
+    primary: false,
+    primaryDirection: 'up',
+    fadeMask: false,
+    fadeMaskInset: '0',
+    showTrack: true,
+  },
+)
 
-const { scrollProgress: globalProgress, scrollResetFn: globalScrollResetFn, scrollDirection: globalScrollDirection } = useScrollProgress()
+const {
+  scrollProgress: globalProgress,
+  scrollResetFn: globalScrollResetFn,
+  scrollDirection: globalScrollDirection,
+} = useScrollProgress()
 
 // 记录本实例注册的 resetFn，用于 unmount 时判断是否仍为当前活跃的主滚动条
 let myResetFn: (() => void) | null = null
 
 const rootRef = ref<HTMLElement | null>(null)
 const viewportRef = ref<HTMLElement | null>(null)
+usePageScrollRestoration(viewportRef, () => props.primary)
 const trackRef = ref<HTMLElement | null>(null)
 
 const needsScrollbar = ref(false)
@@ -141,6 +136,15 @@ function onProgressClick() {
 let hideTimer: ReturnType<typeof setTimeout> | null = null
 let resizeObserver: ResizeObserver | null = null
 let mutationObserver: MutationObserver | null = null
+let metricsFrame = 0
+let cancelOwnScroll: (() => void) | undefined
+function scheduleMetrics() {
+  if (metricsFrame) return
+  metricsFrame = requestAnimationFrame(() => {
+    metricsFrame = 0
+    updateMetrics()
+  })
+}
 
 const thumbStyle = computed(() => ({
   height: `${thumbHeight.value}px`,
@@ -208,7 +212,7 @@ const viewportStyle = computed(() => {
 })
 
 function onScroll() {
-  updateMetrics()
+  scheduleMetrics()
   reveal()
   scheduleHide()
 
@@ -221,9 +225,7 @@ function onScroll() {
 
   // 主滚动区域：同步到全局滚动进度（聊天页面反转：底部0%，顶部100%）
   if (props.primary) {
-    globalProgress.value = props.primaryDirection === 'down'
-      ? 100 - scrollProgress.value
-      : scrollProgress.value
+    globalProgress.value = props.primaryDirection === 'down' ? 100 - scrollProgress.value : scrollProgress.value
   }
 
   // 用户滚动后重置点击状态
@@ -236,7 +238,7 @@ function reveal() {
   if (hideTimer) clearTimeout(hideTimer)
   thumbVisible.value = true
   // track 从隐藏变可见后 DOM 尺寸才更新，等下一帧用真实 trackHeight 修正滑块
-  nextTick(updateMetrics)
+  scheduleMetrics()
 }
 
 function scheduleHide() {
@@ -258,6 +260,7 @@ function onMouseLeave() {
 // ---- Thumb 拖拽 ----
 let dragStartY = 0
 let dragStartScrollTop = 0
+let originalUserSelect = ''
 
 function onThumbMouseDown(e: MouseEvent) {
   isDragging.value = true
@@ -265,6 +268,7 @@ function onThumbMouseDown(e: MouseEvent) {
   dragStartScrollTop = viewportRef.value?.scrollTop ?? 0
   document.addEventListener('mousemove', onDragMove)
   document.addEventListener('mouseup', onDragEnd)
+  originalUserSelect = document.body.style.userSelect
   document.body.style.userSelect = 'none'
   reveal()
 }
@@ -284,7 +288,7 @@ function onDragEnd() {
   isDragging.value = false
   document.removeEventListener('mousemove', onDragMove)
   document.removeEventListener('mouseup', onDragEnd)
-  document.body.style.userSelect = ''
+  document.body.style.userSelect = originalUserSelect
   scheduleHide()
 }
 
@@ -295,26 +299,18 @@ function onTrackMouseDown(e: MouseEvent) {
   const clickY = e.clientY - trackRect.top
   const clickRatio = clickY / trackRect.height
   const { scrollHeight, clientHeight } = viewportRef.value
-  viewportRef.value.scrollTo({
-    top: clickRatio * (scrollHeight - clientHeight),
-    behavior: 'smooth',
-  })
+  cancelOwnScroll = scrollToRoot(viewportRef.value, clickRatio * (scrollHeight - clientHeight))
 }
 
 function scrollToTop(smooth = true) {
-  viewportRef.value?.scrollTo({
-    top: 0,
-    behavior: smooth ? 'smooth' : 'instant',
-  })
+  if (viewportRef.value) cancelOwnScroll = scrollToRoot(resolveScrollRoot(viewportRef.value), 0, smooth)
 }
 
 function scrollToBottom(smooth = true) {
   const el = viewportRef.value
   if (!el) return
-  el.scrollTo({
-    top: el.scrollHeight,
-    behavior: smooth ? 'smooth' : 'instant',
-  })
+  const root = resolveScrollRoot(el)
+  cancelOwnScroll = scrollToRoot(root, root?.scrollHeight ?? document.documentElement.scrollHeight, smooth)
 }
 
 defineExpose({
@@ -330,11 +326,11 @@ onMounted(() => {
   nextTick(updateMetrics)
 
   if (viewportRef.value) {
-    resizeObserver = new ResizeObserver(() => updateMetrics())
+    resizeObserver = new ResizeObserver(scheduleMetrics)
     resizeObserver.observe(viewportRef.value)
 
     // 监听子元素变化（懒加载新增内容时自动更新滚动条尺寸）
-    mutationObserver = new MutationObserver(() => nextTick(updateMetrics))
+    mutationObserver = new MutationObserver(scheduleMetrics)
     mutationObserver.observe(viewportRef.value, {
       childList: true,
       subtree: true,
@@ -344,14 +340,18 @@ onMounted(() => {
   // 主滚动区域：根据方向注册全局回到起始位置方法
   if (props.primary) {
     globalScrollDirection.value = props.primaryDirection
-    myResetFn = props.primaryDirection === 'down'
-      ? () => scrollToBottom(true)
-      : () => scrollToTop(true)
+    myResetFn = props.primaryDirection === 'down' ? () => scrollToBottom(true) : () => scrollToTop(true)
     globalScrollResetFn.value = myResetFn
   }
 })
 
+onBeforeUnmount(() => {
+  cancelOwnScroll?.()
+  if (isDragging.value) document.body.style.userSelect = originalUserSelect
+})
+
 onUnmounted(() => {
+  cancelAnimationFrame(metricsFrame)
   if (hideTimer) clearTimeout(hideTimer)
   resizeObserver?.disconnect()
   mutationObserver?.disconnect()
@@ -406,6 +406,9 @@ onUnmounted(() => {
   background: #22c55e;
   transform-origin: left;
   transition: transform 0.1s ease-out;
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
 }
 
 .custom-scrollbar__back-to-top {
@@ -444,9 +447,12 @@ onUnmounted(() => {
     color 0.2s ease,
     box-shadow 0.2s ease,
     transform 0.15s ease;
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
 
   &:hover {
-    color: var(--accent);
+    color: var(--accent-text);
     background: var(--surface-2);
     border-color: var(--border-hover);
     box-shadow: var(--shadow-card);
@@ -460,6 +466,9 @@ onUnmounted(() => {
       opacity: 1;
       transform: translateY(0);
       animation: scrollbar-progress-bounce 0.6s ease infinite;
+      @media (prefers-reduced-motion: reduce) {
+        animation: none;
+      }
     }
   }
 
@@ -492,6 +501,9 @@ onUnmounted(() => {
   transition:
     opacity 0.2s ease,
     transform 0.2s ease;
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
 }
 
 .custom-scrollbar__progress-icon {
@@ -501,6 +513,9 @@ onUnmounted(() => {
   transition:
     opacity 0.2s ease,
     transform 0.2s ease;
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
 }
 
 @keyframes scrollbar-progress-bounce {
@@ -517,11 +532,21 @@ onUnmounted(() => {
 }
 
 .back-to-top-enter-active {
-  transition: opacity 0.25s ease-out, transform 0.25s ease-out;
+  transition:
+    opacity 0.25s ease-out,
+    transform 0.25s ease-out;
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
 }
 
 .back-to-top-leave-active {
-  transition: opacity 0.2s ease-in, transform 0.2s ease-in;
+  transition:
+    opacity 0.2s ease-in,
+    transform 0.2s ease-in;
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
 }
 
 .back-to-top-enter-from,
@@ -538,7 +563,12 @@ onUnmounted(() => {
   width: 6px;
   border-radius: 3px;
   z-index: 20;
-  transition: width 0.2s ease, background-color 0.2s ease;
+  transition:
+    width 0.2s ease,
+    background-color 0.2s ease;
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
 
   &:hover {
     width: 10px;
@@ -558,6 +588,9 @@ onUnmounted(() => {
   background-color: var(--text-soft);
   opacity: 0.3;
   transition: opacity 0.15s ease;
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
   cursor: pointer;
 
   &:hover {
@@ -572,6 +605,9 @@ onUnmounted(() => {
 .scrollbar-fade-enter-active,
 .scrollbar-fade-leave-active {
   transition: opacity 0.3s ease;
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
 }
 
 .scrollbar-fade-enter-from,

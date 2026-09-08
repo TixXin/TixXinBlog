@@ -44,6 +44,11 @@ export function useLoadingProgress() {
 
   // 模块级 timer 会导致多实例共用，这里用闭包变量，由 onScopeDispose 兜底清理
   let timer: ReturnType<typeof setInterval> | null = null
+  let finishTimer: ReturnType<typeof setTimeout> | null = null
+  const clearFinish = () => {
+    if (finishTimer) clearTimeout(finishTimer)
+    finishTimer = null
+  }
 
   // 从后往前找第一个满足阈值的阶段
   function pickPhase(value: number): PhaseConfig {
@@ -67,6 +72,7 @@ export function useLoadingProgress() {
 
   /** 启动 tick：仅客户端、仅首次访问路径调用 */
   function start() {
+    clearFinish()
     if (!import.meta.client || timer) return
     topBarVisible.value = true
     // 立即拉到 8%，给用户"已经在加载"的即时反馈
@@ -81,19 +87,21 @@ export function useLoadingProgress() {
 
   /** 完成：跳 100% 并延迟淡出 topbar */
   function finish() {
+    clearFinish()
     if (!import.meta.client) return
     if (timer) {
       clearInterval(timer)
       timer = null
     }
     progress.value = 100
-    setTimeout(() => {
+    finishTimer = setTimeout(() => {
       topBarVisible.value = false
     }, FINISH_FADE_MS)
   }
 
   /** 立即归零并隐藏（非首次访问路径 / HMR 清理） */
   function reset() {
+    clearFinish()
     if (timer) {
       clearInterval(timer)
       timer = null
@@ -105,6 +113,7 @@ export function useLoadingProgress() {
   // 组件卸载或 HMR 时清理残留 timer
   if (import.meta.client) {
     onScopeDispose(() => {
+      clearFinish()
       if (timer) {
         clearInterval(timer)
         timer = null

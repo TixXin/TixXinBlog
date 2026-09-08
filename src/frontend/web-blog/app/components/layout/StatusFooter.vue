@@ -8,7 +8,7 @@
 <template>
   <footer class="site-footer">
     <div class="footer__left">
-      <span class="footer__copyright">&copy; {{ currentYear }} TixXin Blog. All rights reserved.</span>
+      <span class="footer__copyright">&copy; {{ currentYear }} {{ siteName }}. All rights reserved.</span>
       <nav class="footer__links" aria-label="页脚链接">
         <template v-for="link in footerLinks" :key="link.label">
           <a v-if="link.external" :href="link.href" target="_blank" rel="noopener">{{ link.label }}</a>
@@ -25,9 +25,9 @@
         </template>
       </div>
       <div class="footer__divider" aria-hidden="true" />
-      <CommonTooltip content="服务器延迟" placement="top">
-        <div class="footer__status" role="status">
-          <span class="footer__ping"><Icon name="lucide:activity" size="12" /> PING {{ siteStatus.pingMs }}ms</span>
+      <CommonTooltip content="仅表示本次资料读取结果，不代表全站运行监控" placement="top">
+        <div class="footer__status" role="status" tabindex="0">
+          <span class="footer__ping"><Icon name="lucide:activity" size="12" /> 延迟未测量</span>
           <span class="footer__dot" />
           <span class="footer__operational">{{ siteStatus.statusText }}</span>
         </div>
@@ -38,7 +38,7 @@
 
 <script setup lang="ts">
 const currentYear = new Date().getFullYear()
-const { footerLinks, poweredBy, siteStatus } = useSiteInfo()
+const { siteName, footerLinks, poweredBy, siteStatus } = useSiteInfo()
 </script>
 
 <style lang="scss" scoped>
@@ -75,6 +75,9 @@ const { footerLinks, poweredBy, siteStatus } = useSiteInfo()
   a {
     font-size: 0.6875rem;
     transition: color 0.2s;
+    @media (prefers-reduced-motion: reduce) {
+      transition: none;
+    }
 
     &:hover {
       color: var(--text-main);
@@ -112,6 +115,9 @@ const { footerLinks, poweredBy, siteStatus } = useSiteInfo()
   font-weight: 600;
   color: var(--text-main);
   transition: opacity 0.2s;
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
 
   &:hover {
     opacity: 0.82;
@@ -155,6 +161,9 @@ const { footerLinks, poweredBy, siteStatus } = useSiteInfo()
   background: var(--stat-green-dot);
   box-shadow: 0 0 0 2px var(--stat-green-bg);
   animation: pulse-dot 2s infinite;
+  @media (prefers-reduced-motion: reduce) {
+    animation: none;
+  }
 }
 
 .footer__operational {

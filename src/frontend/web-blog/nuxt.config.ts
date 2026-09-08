@@ -5,13 +5,22 @@
  * @since 2025-03-17
  */
 
+import nexusHostConfig from './themes/nexus/theme.config'
+import auroraHostConfig from './themes/aurora/theme.config'
+import dockHostConfig from './themes/dock/theme.config'
+import { readFileSync } from 'node:fs'
+
+const startupGuard = readFileSync(new URL('./public/startup-guard.js', import.meta.url), 'utf8')
+
 export default {
+  // 开发与生产构建使用独立中间目录，避免并行构建污染正在运行的 Vite 状态。
+  buildDir: process.env.NODE_ENV === 'production' ? '.nuxt-production' : '.nuxt',
   compatibilityDate: '2025-07-15',
   devtools: { enabled: true },
   devServer: {
     port: 3456,
-    // 容器/反代场景：监听 0.0.0.0，否则 Vite 默认只绑 127.0.0.1，外部/反代无法接入
-    host: '0.0.0.0',
+    // 开发服务仅监听本机；生产通过构建产物及容器入口提供服务
+    host: '127.0.0.1',
   },
   alias: {
     '#theme-contracts': './theme-contracts/index.ts',
@@ -39,15 +48,11 @@ export default {
         { name: 'twitter:card', content: 'summary_large_image' },
         { name: 'twitter:site', content: '@TixXin' },
       ],
-      link: [
-        { rel: 'alternate', type: 'application/rss+xml', title: 'TixXin Blog RSS', href: '/rss.xml' },
-        { rel: 'alternate', type: 'application/rss+xml', title: 'TixXin 朋友圈 RSS', href: '/moments.xml' },
-        { rel: 'alternate', type: 'application/rss+xml', title: 'TixXin 闪念 RSS', href: '/flash.xml' },
-      ],
       // 生产环境：在 hydration 之前检测 sessionStorage，为 <html> 添加 .visited class，
       // 使非首次访问直接隐藏 loading 覆盖层，消除闪烁。开发环境不注入，保证刷新可调试
-      script:
-        process.env.NODE_ENV === 'production'
+      script: [
+        { innerHTML: startupGuard, tagPosition: 'head' },
+        ...(process.env.NODE_ENV === 'production'
           ? [
               {
                 innerHTML:
@@ -55,7 +60,14 @@ export default {
                 tagPosition: 'head',
               },
             ]
-          : [],
+          : []),
+      ],
+      noscript: [
+        {
+          tagPosition: 'bodyClose',
+          innerHTML: '<style>.loading-screen:not(.loading-screen--force){display:none!important}</style>',
+        },
+      ],
     },
   },
   icon: {
@@ -88,12 +100,15 @@ export default {
     themesDir: './themes',
     defaultTheme: 'nexus',
     cookieKey: 'tixxin-blog-layout-theme',
-    lazyLoadThemes: false,
+    lazyLoadThemes: true,
     contractsEntry: '#theme-contracts',
     contractsImportId: '#theme-contracts',
   },
   runtimeConfig: {
+    // 仅服务端使用，可在容器运行时通过 NUXT_API_BASE_URL 覆盖。
+    apiBaseUrl: '',
     public: {
+      siteUrl: 'https://tix.xin',
       analytics: {
         provider: '',
         siteId: '',
@@ -105,9 +120,11 @@ export default {
       // 数据仓库切换：true=mock 实现；false=HTTP 实现（对接 server-main）
       // 环境变量 NUXT_PUBLIC_USE_MOCK_REPO=false 时走后端；详见 app/plugins/repositories.ts
       // 与 docs/backend/development.md §10
-      useMockRepo: process.env.NUXT_PUBLIC_USE_MOCK_REPO !== 'false',
+      useMockRepo: process.env.NUXT_PUBLIC_USE_MOCK_REPO === 'true',
+      // 文章及评论可独立联调，未配置时兼容原有全局开关。
+      postUseMockRepo: (process.env.NUXT_PUBLIC_POST_USE_MOCK_REPO ?? process.env.NUXT_PUBLIC_USE_MOCK_REPO) === 'true',
       // 后端 API 基址，如 http://localhost:3000/api/v1（useMockRepo=false 时必填）
-      apiBaseUrl: process.env.NUXT_PUBLIC_API_BASE_URL ?? '',
+      apiBaseUrl: '/api/v1',
     },
   },
   site: {
@@ -116,9 +133,13 @@ export default {
   },
   sitemap: {
     strictNuxtContentPaths: true,
+    exclude: ['/admin', '/admin/**', '/_theme-engine-devtools'],
+    sources: ['/api/__sitemap__/urls'],
+    cacheMaxAgeSeconds: 0,
   },
   robots: {
     allow: '/',
+    disallow: ['/admin/', '/_theme-engine-devtools'],
   },
   fonts: {
     // 单 provider 模式：仅初始化 bunny，跳过 google/googleicons 等其他内置 provider
@@ -136,11 +157,8 @@ export default {
     '/articles': { redirect: '/' },
     ...(process.env.NODE_ENV === 'production'
       ? {
-          '/': { prerender: true },
-          '/about': { prerender: true },
-          '/links': { prerender: true },
-          '/projects': { prerender: true },
-          '/articles/**': { isr: 3600 },
+          '/admin': { headers: { 'Cache-Control': 'private, no-store', 'X-Robots-Tag': 'noindex' } },
+          '/admin/**': { headers: { 'Cache-Control': 'private, no-store', 'X-Robots-Tag': 'noindex' } },
         }
       : {}),
   },
@@ -156,7 +174,7 @@ export default {
             "img-src 'self' data: https:",
             "font-src 'self' data:",
             // useMockRepo=false 时浏览器需直连后端 API，把 API origin 加入 connect-src 白名单
-            `connect-src 'self'${process.env.NUXT_PUBLIC_API_BASE_URL ? ` ${new URL(process.env.NUXT_PUBLIC_API_BASE_URL).origin}` : ''}`,
+            "connect-src 'self'",
             "frame-ancestors 'none'",
           ].join('; '),
           'X-Content-Type-Options': 'nosniff',
@@ -167,6 +185,35 @@ export default {
     },
   },
   css: ['~/assets/styles/main.scss'],
+  hooks: {
+    // 宿主能力在构建期序列化；客户端不直接导入未激活主题的配置模块。
+    'app:templates': (app: { templates: Array<{ filename: string; getContents: () => string; write?: boolean }> }) => {
+      app.templates.push({
+        filename: 'theme-host.config.mjs',
+        write: true,
+        getContents: () =>
+          `export const themeHostConfigs = ${JSON.stringify({
+            nexus: nexusHostConfig,
+            aurora: auroraHostConfig,
+            dock: dockHostConfig,
+          })}`,
+      })
+    },
+    // 引擎在dev下强制注册全部主题别名，会把可选SFC样式纳入入口依赖。
+    // 本项目统一通过ThemeComponent的动态注册表加载，不使用这些全局别名。
+    'components:extend': (components: Array<{ filePath: string }>) => {
+      for (let index = components.length - 1; index >= 0; index--) {
+        if (components[index]?.filePath.replaceAll('\\', '/').includes('/themes/')) components.splice(index, 1)
+      }
+    },
+    // 主题引擎当前版本无条件注册调试页，必须在页面解析完成后移出生产路由。
+    'pages:resolved': (pages: Array<{ path: string }>) => {
+      if (process.env.NODE_ENV !== 'production') return
+      for (let index = pages.length - 1; index >= 0; index -= 1) {
+        if (pages[index]?.path === '/_theme-engine-devtools') pages.splice(index, 1)
+      }
+    },
+  },
   vite: {
     css: {
       preprocessorOptions: {

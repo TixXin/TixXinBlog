@@ -5,16 +5,19 @@
  * @since 2026-04-04
  */
 
-export function useKeyboardShortcuts() {
+import { resolveScrollRoot, scrollToRoot } from '~/utils/scrollRoot'
+
+export function useKeyboardShortcuts(search?: { open: () => void }) {
   const route = useRoute()
   const { isDrawerOpen, closeDrawer } = useAppearanceSettings()
   const { info } = useToast()
-  const searchModal = inject<{ open: () => void } | null>('searchModal', null)
+  const searchModal = search ?? inject<{ open: () => void } | null>('searchModal', null)
 
   const tabPalette = useTabCommandPalette()
   const { settings: tabSettings } = useTabSettings()
 
   async function handleKeydown(e: KeyboardEvent) {
+    if (e.isComposing || e.getModifierState('AltGraph')) return
     // Ctrl/Cmd + K: 唤起搜索（优先响应，不受输入框限制）
     // 在 /tabs 路由下切换到标签页命令面板，其它路由走通用 searchModal
     if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
@@ -48,19 +51,22 @@ export function useKeyboardShortcuts() {
 
     // 文章详情页特定快捷键
     if (route.name === 'articles-id') {
+      if (e.ctrlKey || e.metaKey || e.altKey) return
+      const root = resolveScrollRoot(document.querySelector<HTMLElement>('.article-reading-content'))
+      const position = root?.scrollTop ?? window.scrollY
       // j: 向下滚动
       if (e.key === 'j') {
-        window.scrollBy({ top: 100, behavior: 'smooth' })
+        scrollToRoot(root, position + 100)
         e.preventDefault()
       }
       // k: 向上滚动
       else if (e.key === 'k') {
-        window.scrollBy({ top: -100, behavior: 'smooth' })
+        scrollToRoot(root, position - 100)
         e.preventDefault()
       }
       // t: 回到顶部
       else if (e.key === 't') {
-        window.scrollTo({ top: 0, behavior: 'smooth' })
+        scrollToRoot(root, 0)
         e.preventDefault()
       }
       // [ / ]: 上下篇导航
