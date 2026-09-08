@@ -1,29 +1,31 @@
 # 动效整改覆盖与证据边界
 
+> 本文截图、录屏、原始日志、采样和临时实验脚本仅在本机留存，不随 Git 发布。下列本地产物路径以仓库根目录为起点，新检出不包含这些文件；验收结论与正式测试源码继续保留。见[验收产物管理](../verification-artifacts.md)。
+
 本轮交付 T01–T10 的正式实现、M01–M16 处理记录及实际回归。浏览器通过表示对应断言成立，不表示全站任意组合均已穷举。真实设备限制和保留的性能问题继续列明。
 
 ## 源码与环境
 
 整改开始时，保存快照与原审查的 338 个指纹全部一致。批次13测试版本扫描了374个代码文件。提交钩子随后整理9个文件的格式：365个文件字节一致；其余9个经同配置格式化比较、编译后 JavaScript 语法树、Vue 模板及样式比对一致。原始哈希差异仍保留，没有改写旧测试指纹来制造一致。
 
-证据：[测试源码](D:/Projects/TixXinBlog/docs/motion-remediation/evidence/source-proof.json)、[原始差异检查](D:/Projects/TixXinBlog/docs/motion-remediation/evidence/final-source-check.json)、[提交后逐文件对应](D:/Projects/TixXinBlog/docs/motion-remediation/evidence/post-commit-source.json)。代码提交后全量 Lint 通过，独立测试副本同步格式变化后[类型检查](D:/Projects/TixXinBlog/docs/motion-remediation/evidence/typecheck-post-commit.log)与[81项单测](D:/Projects/TixXinBlog/docs/motion-remediation/evidence/unit-post-commit.log)再次通过。格式比对辅助脚本归档在 reproduce 中。
+证据：测试源码（本地：`docs/motion-remediation/evidence/source-proof.json`）、原始差异检查（本地：`docs/motion-remediation/evidence/final-source-check.json`）、提交后逐文件对应（本地：`docs/motion-remediation/evidence/post-commit-source.json`）。代码提交后全量 Lint 通过，独立测试副本同步格式变化后类型检查（本地：`docs/motion-remediation/evidence/typecheck-post-commit.log`）与81项单测（本地：`docs/motion-remediation/evidence/unit-post-commit.log`）再次通过。格式比对辅助脚本归档在 reproduce 中。
 
-Windows、Node 24.16.0；实际运行 Chromium 153.0.8010.12、Firefox 155.0、WebKit 26.6，见[浏览器版本](D:/Projects/TixXinBlog/docs/motion-remediation/evidence/browser-versions.json)。WebKit 是引擎验证，不等于实体 Safari。所有业务写入使用随机隔离数据库和媒体目录；开发、测试、整改前后生产构建分别使用独立生成目录及缓存。
+Windows、Node 24.16.0；实际运行 Chromium 153.0.8010.12、Firefox 155.0、WebKit 26.6，见浏览器版本（本地：`docs/motion-remediation/evidence/browser-versions.json`）。WebKit 是引擎验证，不等于实体 Safari。所有业务写入使用随机隔离数据库和媒体目录；开发、测试、整改前后生产构建分别使用独立生成目录及缓存。
 
 ## 最终运行记录
 
 |验证|结果|证据|
 |---|---|---|
-|Chromium 完整业务、UI 与动效回归|113/113，无跳过、重试后通过或意外失败|[报告](D:/Projects/TixXinBlog/docs/motion-remediation/evidence/e2e/chromium-full/report.json)|
-|Firefox/WebKit 动效核心|104/104，各52项|[报告](D:/Projects/TixXinBlog/docs/motion-remediation/evidence/e2e/firefox-webkit-core/report.json)|
-|Firefox/WebKit 阅读、排序及弹层|30/30，各15项|[报告](D:/Projects/TixXinBlog/docs/motion-remediation/evidence/e2e/firefox-webkit-features/report.json)|
-|单元测试|81/81，16个文件|[日志](D:/Projects/TixXinBlog/docs/motion-remediation/evidence/unit-batch13.log)|
-|Lint / 类型 / 独立生产构建|全部通过|[Lint](D:/Projects/TixXinBlog/docs/motion-remediation/evidence/lint-batch13.log)、[类型](D:/Projects/TixXinBlog/docs/motion-remediation/evidence/typecheck-batch13.log)、[构建](D:/Projects/TixXinBlog/docs/motion-remediation/evidence/build-batch13.log)|
-|响应式与配色|75/75，99张首页/设置原图已检查|[矩阵](D:/Projects/TixXinBlog/docs/motion-remediation/evidence/matrix/results.json)|
-|正常页面进入/离场|3主题实际动画、连续帧及视频|[时间轴](D:/Projects/TixXinBlog/docs/motion-remediation/evidence/normal-motion/results.json)|
-|故障恢复 / HMR|3类故障、8类热更新通过|[故障](D:/Projects/TixXinBlog/docs/motion-remediation/evidence/faults/results.json)、[热更新](D:/Projects/TixXinBlog/docs/motion-remediation/evidence/hmr/results.json)|
-|补充交互|字体3、颜色14、上下文2、慢导航6、Hero离屏1，通过|[字体](D:/Projects/TixXinBlog/docs/motion-remediation/evidence/fonts/results.json)、[颜色](D:/Projects/TixXinBlog/docs/motion-remediation/evidence/colors/results.json)、[上下文](D:/Projects/TixXinBlog/docs/motion-remediation/evidence/contexts/results.json)、[慢导航](D:/Projects/TixXinBlog/docs/motion-remediation/evidence/slow-navigation/results.json)、[离屏](D:/Projects/TixXinBlog/docs/motion-remediation/evidence/offscreen/results.json)|
-|性能|前后各6轮，正常/4倍CPU分别3轮|[分布和保留问题](D:/Projects/TixXinBlog/docs/motion-remediation/performance.md)|
+|Chromium 完整业务、UI 与动效回归|113/113，无跳过、重试后通过或意外失败|报告（本地：`docs/motion-remediation/evidence/e2e/chromium-full/report.json`）|
+|Firefox/WebKit 动效核心|104/104，各52项|报告（本地：`docs/motion-remediation/evidence/e2e/firefox-webkit-core/report.json`）|
+|Firefox/WebKit 阅读、排序及弹层|30/30，各15项|报告（本地：`docs/motion-remediation/evidence/e2e/firefox-webkit-features/report.json`）|
+|单元测试|81/81，16个文件|日志（本地：`docs/motion-remediation/evidence/unit-batch13.log`）|
+|Lint / 类型 / 独立生产构建|全部通过|Lint（本地：`docs/motion-remediation/evidence/lint-batch13.log`）、类型（本地：`docs/motion-remediation/evidence/typecheck-batch13.log`）、构建（本地：`docs/motion-remediation/evidence/build-batch13.log`）|
+|响应式与配色|75/75，99张首页/设置原图已检查|矩阵（本地：`docs/motion-remediation/evidence/matrix/results.json`）|
+|正常页面进入/离场|3主题实际动画、连续帧及视频|时间轴（本地：`docs/motion-remediation/evidence/normal-motion/results.json`）|
+|故障恢复 / HMR|3类故障、8类热更新通过|故障（本地：`docs/motion-remediation/evidence/faults/results.json`）、热更新（本地：`docs/motion-remediation/evidence/hmr/results.json`）|
+|补充交互|字体3、颜色14、上下文2、慢导航6、Hero离屏1，通过|字体（本地：`docs/motion-remediation/evidence/fonts/results.json`）、颜色（本地：`docs/motion-remediation/evidence/colors/results.json`）、上下文（本地：`docs/motion-remediation/evidence/contexts/results.json`）、慢导航（本地：`docs/motion-remediation/evidence/slow-navigation/results.json`）、离屏（本地：`docs/motion-remediation/evidence/offscreen/results.json`）|
+|性能|前后各6轮，正常/4倍CPU分别3轮|[分布和保留问题](performance.md)|
 
 运行数量包含不同浏览器对相同场景的重复验证，不应相加解释成互不重复的功能数量。E2E 原报告内保留当时输出路径；归档中的 artifacts 对应各运行的截图和附件，未归档可能携带测试凭据的 Playwright trace 压缩包。
 
@@ -90,10 +92,10 @@ Windows、Node 24.16.0；实际运行 Chromium 153.0.8010.12、Firefox 155.0、W
 ## 仍未验证及保留问题
 
 - 真实手机原生惯性、系统软键盘、设备旋转、实体Safari和辅助技术朗读没有设备证据。390px模拟及WebKit结果不替代真机验收。
-- 真实后台暂停未证明：自动化窗口切换/最小化仍返回visible，Edge原生事件观察也没有hidden事件。[原始失败](D:/Projects/TixXinBlog/docs/motion-remediation/evidence/visibility/results.json)和[环境观察](D:/Projects/TixXinBlog/docs/motion-remediation/evidence/visibility/edge-observation.json)均保留；不能将此记为产品暂停失败或测试通过。
+- 真实后台暂停未证明：自动化窗口切换/最小化仍返回visible，Edge原生事件观察也没有hidden事件。原始失败（本地：`docs/motion-remediation/evidence/visibility/results.json`）和环境观察（本地：`docs/motion-remediation/evidence/visibility/edge-observation.json`）均保留；不能将此记为产品暂停失败或测试通过。
 - 4倍CPU最差帧仍达266.6ms，Paint总量和部分Layout耗时增加；尚无真实低端GPU或用户群体性能门槛。
 - 未执行专业闪烁阈值分析、多小时留页或所有后台写入分支的全排列。本轮未声明全站无障碍合规。
 
 ## 复验与资源归属
 
-标准回归保存在仓库tests目录。以独立检出或副本执行项目定义的Lint、typecheck、单测、构建和隔离E2E；Firefox/WebKit使用playwright.motion.config.ts。性能与补测采集脚本、当时固定负载和路径约定见[复验说明](D:/Projects/TixXinBlog/docs/motion-remediation/evidence/reproduce/README.md)。清理结果见[资源清理](D:/Projects/TixXinBlog/docs/motion-remediation/evidence/cleanup.json)。
+标准回归保存在仓库tests目录。以独立检出或副本执行项目定义的Lint、typecheck、单测、构建和隔离E2E；Firefox/WebKit使用playwright.motion.config.ts。性能与补测采集脚本、当时固定负载和路径约定见复验说明（本地：`docs/motion-remediation/evidence/reproduce/README.md`）。清理结果见资源清理（本地：`docs/motion-remediation/evidence/cleanup.json`）。

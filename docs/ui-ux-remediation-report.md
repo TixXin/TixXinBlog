@@ -1,31 +1,33 @@
 # UI/UX 审查整改与验收记录
 
+> 本文截图、录屏、原始日志、采样和临时实验脚本仅在本机留存，不随 Git 发布。下列本地产物路径以仓库根目录为起点，新检出不包含这些文件；验收结论与正式测试源码继续保留。见[验收产物管理](verification-artifacts.md)。
+
 2026-09-07，基于本次审查的35项问题完成界面、状态与交互整改。保留Nuxt/Vue、三套主题、现有API/Mock边界及书签本机存储。修改保存在工作区；本任务没有提交、推送或发布。
 
 最终验证使用当前前端的独立生产构建、当前后端代码和随机测试数据库。写入只发生在隔离环境。所有者资料使用站点设置；没有猜测真实履历、项目资源或付款地址，也没有修改用户已发布文章内容。
 
 本次创建的所有预览、临时数据库及测试媒体目录均已清理；原开发服务3456/3000仍在运行。源码基线、日志及截图保留供复核。
 
-验证结果如下。完整机器记录位于[验证汇总](../.codex/ui-ux-fixes/evidence/measurements/validation-summary.json)。
+验证结果如下。完整机器记录位于验证汇总（本地：`.codex/ui-ux-fixes/evidence/measurements/validation-summary.json`）。
 
 |检查|结果|证据|
 |---|---|---|
-|前端ESLint全量检查|通过，0错误/警告|[日志](../.codex/ui-ux-fixes/full-lint.log)|
-|Nuxt类型检查|通过|[日志](../.codex/ui-ux-fixes/typecheck-final.log)|
-|前端单元测试|15个文件，78项通过|[日志](../.codex/ui-ux-fixes/full-unit-tests-final.log)|
-|前端生产构建|通过|[日志](../.codex/ui-ux-fixes/frontend-build-final.log)|
-|当前后端独立构建|通过|[日志](../.codex/ui-ux-fixes/backend-build-final.log)|
-|专项生产浏览器E2E|22项通过；无跳过、意外失败或重试通过|[日志](../.codex/ui-ux-fixes/e2e-complete.log)、[JSON报告](../.codex/ui-ux-fixes/e2e-report-final.json)|
+|前端ESLint全量检查|通过，0错误/警告|日志（本地：`.codex/ui-ux-fixes/full-lint.log`）|
+|Nuxt类型检查|通过|日志（本地：`.codex/ui-ux-fixes/typecheck-final.log`）|
+|前端单元测试|15个文件，78项通过|日志（本地：`.codex/ui-ux-fixes/full-unit-tests-final.log`）|
+|前端生产构建|通过|日志（本地：`.codex/ui-ux-fixes/frontend-build-final.log`）|
+|当前后端独立构建|通过|日志（本地：`.codex/ui-ux-fixes/backend-build-final.log`）|
+|专项生产浏览器E2E|22项通过；无跳过、意外失败或重试通过|日志（本地：`.codex/ui-ux-fixes/e2e-complete.log`）、JSON报告（本地：`.codex/ui-ux-fixes/e2e-report-final.json`）|
 |Git差异空白检查|通过|执行 `git diff --check`|
 
 同一50篇Mock文章、Nexus暗色和相同视口的修复前后截图如下；语录属于动态内容。基线截图来自本任务修改前的代码备份，后图来自最终生产代码。106篇API测试样本用于E2E，未与这些Mock截图混作同一数据集。
 
 |视口|修复前|修复后|
 |---|---|---|
-|390×844|[手机截图](../.codex/ui-ux-fixes/evidence/before-home-390.jpg)|[手机截图](../.codex/ui-ux-fixes/evidence/after-home-390.jpg)|
-|1440×1000|[桌面截图](../.codex/ui-ux-fixes/evidence/before-home-1440.jpg)|[桌面截图](../.codex/ui-ux-fixes/evidence/after-home-1440.jpg)|
+|390×844|手机截图（本地：`.codex/ui-ux-fixes/evidence/before-home-390.jpg`）|手机截图（本地：`.codex/ui-ux-fixes/evidence/after-home-390.jpg`）|
+|1440×1000|桌面截图（本地：`.codex/ui-ux-fixes/evidence/before-home-1440.jpg`）|桌面截图（本地：`.codex/ui-ux-fixes/evidence/after-home-1440.jpg`）|
 
-手机前3张卡片的摘要原本为0 / 8.6 / 8.6px，现在均为42px，即2个完整的21px行高。卡片高度随内容增长，标题、日期、标签和操作信息不再挤压摘要。[实际测量](../.codex/ui-ux-fixes/evidence/phone-card-metrics.json)
+手机前3张卡片的摘要原本为0 / 8.6 / 8.6px，现在均为42px，即2个完整的21px行高。卡片高度随内容增长，标题、日期、标签和操作信息不再挤压摘要。实际测量（本地：`.codex/ui-ux-fixes/evidence/phone-card-metrics.json`）
 
 35项问题的处理情况如下。“完成”表示对应实现与所列验证完成，不能解释为所有设备或整个站点的无障碍认证。
 
@@ -67,7 +69,7 @@
 |UX-34|完成|[画廊](../src/frontend/web-blog/app/pages/gallery.vue)搜索照片标题、描述和地点，分类叠加、无结果清除与灯箱焦点验证通过；水合前禁用输入以避免丢词。|
 |UX-35|完成|[useLikes](../src/frontend/web-blog/app/composables/useLikes.ts)先保存再更新UI，失败提示且保留原集合；实际存储异常、恢复、刷新保留通过。|
 
-关键原始数据已单独导出：[完整ID（第1页起）](../.codex/ui-ux-fixes/evidence/measurements/continuous-from-1.json)、[完整ID（第8页起）](../.codex/ui-ux-fixes/evidence/measurements/continuous-from-8.json)、[六向切换](../.codex/ui-ux-fixes/evidence/measurements/theme-directions.json)、[颜色矩阵](../.codex/ui-ux-fixes/evidence/measurements/contrast-matrix.json)、[SSR故障](../.codex/ui-ux-fixes/evidence/measurements/ssr-upstream-failure.json)。
+关键原始数据已单独导出：完整ID（第1页起）（本地：`.codex/ui-ux-fixes/evidence/measurements/continuous-from-1.json`）、完整ID（第8页起）（本地：`.codex/ui-ux-fixes/evidence/measurements/continuous-from-8.json`）、六向切换（本地：`.codex/ui-ux-fixes/evidence/measurements/theme-directions.json`）、颜色矩阵（本地：`.codex/ui-ux-fixes/evidence/measurements/contrast-matrix.json`）、SSR故障（本地：`.codex/ui-ux-fixes/evidence/measurements/ssr-upstream-failure.json`）。
 
 普通文字4.5:1作为本次基准；数值以未舍入结果判定。参考[W3C文字对比说明](https://www.w3.org/WAI/WCAG22/Understanding/contrast-minimum.html)。弹窗测试覆盖名称、Tab循环、Esc、背景不可交互和焦点归还，参考[W3C模态对话框模式](https://www.w3.org/WAI/ARIA/apg/patterns/dialog-modal/)。
 
@@ -75,4 +77,4 @@
 
 本机Mock闪念依赖浏览器存储，服务端不能据此确认资源是否存在，因此保留客户端确认并标记noindex；真实HTTP模式的404/502已经验证。书签继续保存在当前浏览器，不提供云同步。暂未公开的资源和示例履历已明确说明，替换成正式内容需要作者资料。
 
-原始审查与实施目标仍保留在[审查资料目录](C:/Users/tixxin/.codex/visualizations/2026/09/07/01a07ae9-e444-7ea3-b99d-0caadc5ab71b/full-blog-ui-audit/README.md)及[完整目标提示词](C:/Users/tixxin/.codex/visualizations/2026/09/07/01a07ae9-e444-7ea3-b99d-0caadc5ab71b/full-blog-ui-audit/implementation-prompt.md)。
+原始审查与实施目标保留在仓库外的本机绝对路径 `C:/Users/tixxin/.codex/visualizations/2026/09/07/01a07ae9-e444-7ea3-b99d-0caadc5ab71b/full-blog-ui-audit/`，其中 `README.md` 为审查资料索引，`implementation-prompt.md` 为完整目标提示词；这些文件不随仓库发布。

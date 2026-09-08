@@ -1,5 +1,7 @@
 # 覆盖与证据边界
 
+> 本文截图、录屏、原始日志、采样和临时实验脚本仅在本机留存，不随 Git 发布。下列本地产物路径以仓库根目录为起点，新检出不包含这些文件；验收结论与正式测试源码继续保留。见[验收产物管理](../verification-artifacts.md)。
+
 审查范围：用户提供的16部分目标，输出审查和整改方案。所有产品源码基于当前工作区快照；临时实验位于D:/Projects/TixXinBlog/.codex/motion-audit/。产品修改不在本轮交付内。
 
 ## 运行清单
@@ -8,26 +10,26 @@
 
 |套件|场景数|中断数|内容|
 |---|---:|---:|---|
-|[ab](D:/Projects/TixXinBlog/docs/motion-audit/evidence/ab/results.json)|6|0|详见逐场景步骤、最终状态和原始采样|
-|[advanced](D:/Projects/TixXinBlog/docs/motion-audit/evidence/advanced/results.json)|3|1|详见逐场景步骤、最终状态和原始采样|
-|[components](D:/Projects/TixXinBlog/docs/motion-audit/evidence/components/results.json)|4|1|详见逐场景步骤、最终状态和原始采样|
-|[development](D:/Projects/TixXinBlog/docs/motion-audit/evidence/development/results.json)|6|0|详见逐场景步骤、最终状态和原始采样|
-|[edge](D:/Projects/TixXinBlog/docs/motion-audit/evidence/edge/results.json)|6|0|详见逐场景步骤、最终状态和原始采样|
-|[failure](D:/Projects/TixXinBlog/docs/motion-audit/evidence/failure/results.json)|1|0|详见逐场景步骤、最终状态和原始采样|
-|[interactions](D:/Projects/TixXinBlog/docs/motion-audit/evidence/interactions/results.json)|9|0|详见逐场景步骤、最终状态和原始采样|
-|[listener](D:/Projects/TixXinBlog/docs/motion-audit/evidence/listener/results.json)|1|0|详见逐场景步骤、最终状态和原始采样|
-|[matrix](D:/Projects/TixXinBlog/docs/motion-audit/evidence/matrix/results.json)|12|0|详见逐场景步骤、最终状态和原始采样|
-|[performance](D:/Projects/TixXinBlog/docs/motion-audit/evidence/performance/results.json)|3|0|详见逐场景步骤、最终状态和原始采样|
-|[race](D:/Projects/TixXinBlog/docs/motion-audit/evidence/race/results.json)|6|0|详见逐场景步骤、最终状态和原始采样|
-|[reading](D:/Projects/TixXinBlog/docs/motion-audit/evidence/reading/results.json)|3|0|详见逐场景步骤、最终状态和原始采样|
-|[reading-spa](D:/Projects/TixXinBlog/docs/motion-audit/evidence/reading-spa/results.json)|3|0|详见逐场景步骤、最终状态和原始采样|
-|[responsive](D:/Projects/TixXinBlog/docs/motion-audit/evidence/responsive/results.json)|12|0|详见逐场景步骤、最终状态和原始采样|
-|[scroll-boundary](D:/Projects/TixXinBlog/docs/motion-audit/evidence/scroll-boundary/results.json)|1|1|详见逐场景步骤、最终状态和原始采样|
-|[scroll-final](D:/Projects/TixXinBlog/docs/motion-audit/evidence/scroll-final/results.json)|1|0|详见逐场景步骤、最终状态和原始采样|
-|[search-key](D:/Projects/TixXinBlog/docs/motion-audit/evidence/search-key/results.json)|2|0|详见逐场景步骤、最终状态和原始采样|
-|[smoke](D:/Projects/TixXinBlog/docs/motion-audit/evidence/smoke/results.json)|13|0|详见逐场景步骤、最终状态和原始采样|
-|[supplement](D:/Projects/TixXinBlog/docs/motion-audit/evidence/supplement/results.json)|5|1|详见逐场景步骤、最终状态和原始采样|
-|[themes](D:/Projects/TixXinBlog/docs/motion-audit/evidence/themes/results.json)|11|0|详见逐场景步骤、最终状态和原始采样|
+|ab（本地：`docs/motion-audit/evidence/ab/results.json`）|6|0|详见逐场景步骤、最终状态和原始采样|
+|advanced（本地：`docs/motion-audit/evidence/advanced/results.json`）|3|1|详见逐场景步骤、最终状态和原始采样|
+|components（本地：`docs/motion-audit/evidence/components/results.json`）|4|1|详见逐场景步骤、最终状态和原始采样|
+|development（本地：`docs/motion-audit/evidence/development/results.json`）|6|0|详见逐场景步骤、最终状态和原始采样|
+|edge（本地：`docs/motion-audit/evidence/edge/results.json`）|6|0|详见逐场景步骤、最终状态和原始采样|
+|failure（本地：`docs/motion-audit/evidence/failure/results.json`）|1|0|详见逐场景步骤、最终状态和原始采样|
+|interactions（本地：`docs/motion-audit/evidence/interactions/results.json`）|9|0|详见逐场景步骤、最终状态和原始采样|
+|listener（本地：`docs/motion-audit/evidence/listener/results.json`）|1|0|详见逐场景步骤、最终状态和原始采样|
+|matrix（本地：`docs/motion-audit/evidence/matrix/results.json`）|12|0|详见逐场景步骤、最终状态和原始采样|
+|performance（本地：`docs/motion-audit/evidence/performance/results.json`）|3|0|详见逐场景步骤、最终状态和原始采样|
+|race（本地：`docs/motion-audit/evidence/race/results.json`）|6|0|详见逐场景步骤、最终状态和原始采样|
+|reading（本地：`docs/motion-audit/evidence/reading/results.json`）|3|0|详见逐场景步骤、最终状态和原始采样|
+|reading-spa（本地：`docs/motion-audit/evidence/reading-spa/results.json`）|3|0|详见逐场景步骤、最终状态和原始采样|
+|responsive（本地：`docs/motion-audit/evidence/responsive/results.json`）|12|0|详见逐场景步骤、最终状态和原始采样|
+|scroll-boundary（本地：`docs/motion-audit/evidence/scroll-boundary/results.json`）|1|1|详见逐场景步骤、最终状态和原始采样|
+|scroll-final（本地：`docs/motion-audit/evidence/scroll-final/results.json`）|1|0|详见逐场景步骤、最终状态和原始采样|
+|search-key（本地：`docs/motion-audit/evidence/search-key/results.json`）|2|0|详见逐场景步骤、最终状态和原始采样|
+|smoke（本地：`docs/motion-audit/evidence/smoke/results.json`）|13|0|详见逐场景步骤、最终状态和原始采样|
+|supplement（本地：`docs/motion-audit/evidence/supplement/results.json`）|5|1|详见逐场景步骤、最终状态和原始采样|
+|themes（本地：`docs/motion-audit/evidence/themes/results.json`）|11|0|详见逐场景步骤、最终状态和原始采样|
 
 ## 页面范围
 

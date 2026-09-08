@@ -1,5 +1,7 @@
 # 动效性能对照
 
+> 本文截图、录屏、原始日志、采样和临时实验脚本仅在本机留存，不随 Git 发布。下列本地产物路径以仓库根目录为起点，新检出不包含这些文件；验收结论与正式测试源码继续保留。见[验收产物管理](../verification-artifacts.md)。
+
 同一台Intel(R) Core(TM) i5-14600KF、Windows、约64GB内存，Chromium 153.0.8010.12，1440×1000，正常动效。隔离库保留相同106篇样本，固定随机数和操作顺序：设置打开→关闭→归档→首页，记录约4秒。正常与4倍CPU各重复3次；采样期间未并行运行其他验证。
 
 |阶段|CPU|轮次|帧间隔样本数|p50 ms|p95 ms|最大 ms|Paint总计 ms|Style总计 ms|Layout总计 ms|长任务数|
@@ -21,7 +23,7 @@ p95从33.4–50ms下降到16.7–16.8ms，普通条件下最差帧也改善。4�
 
 单变量实验确认设置遮罩的背景模糊影响帧间隔，因此移除该模糊并保留半透明遮罩、面板和路由动画。性能样本使用批次13生产构建；提交钩子随后仅整理9个文件的格式，编译后语法树、Vue模板及样式比对一致，详见覆盖记录。上述为实验室样本，不能代表真实手机GPU、实体Safari或全站用户指标；未设置未经真机验证的性能门槛。
 
-[整改前分布与轨迹索引](D:/Projects/TixXinBlog/docs/motion-remediation/evidence/performance-before/results.json)；[整改后分布与轨迹索引](D:/Projects/TixXinBlog/docs/motion-remediation/evidence/performance-after/results.json)。
+整改前分布与轨迹索引（本地：`docs/motion-remediation/evidence/performance-before/results.json`）；整改后分布与轨迹索引（本地：`docs/motion-remediation/evidence/performance-after/results.json`）。
 
 三轮中位数的相对变化如下；负值表示耗时减少，正值表示增加。样本量为每条件3轮，不推断统计显著性。
 

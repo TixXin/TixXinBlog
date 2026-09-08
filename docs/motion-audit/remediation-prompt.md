@@ -1,3 +1,7 @@
+# 动效整改目标（历史审查）
+
+> 下文为当时的实施目标。复现参考中的 `docs/motion-audit/evidence/` 仅在本机留存，不随 Git 发布；路径以仓库根目录为起点。新的截图、录屏和原始报告写入忽略目录，Git 仅提交源码和文字结论，见[验收产物管理](../verification-artifacts.md)。
+
 请在D:/Projects/TixXinBlog中，根据本轮动效审查完成整改，交付经过实际验证的结果。
 
 先阅读以下当前审查材料并确认源码指纹是否仍适用：
@@ -23,7 +27,7 @@ T01 修复零时长路由竞态
 验收与回归：
 - 三主题、正常/关闭/减少动态效果执行30/120/300ms导航压力测试；最终正文、URL、标题一致。
 - 慢请求、前进后退及全宽页面切换不挂起；不能用阻止用户导航掩盖问题。
-复现参考：D:/Projects/TixXinBlog/docs/motion-audit/evidence/race/results.json；D:/Projects/TixXinBlog/docs/motion-audit/evidence/ab/results.json；D:/Projects/TixXinBlog/docs/motion-audit/evidence/race/pointer-关闭动画-false-30.png；D:/Projects/TixXinBlog/docs/motion-audit/evidence/ab/ab-true-0.png。
+复现参考：docs/motion-audit/evidence/race/results.json；docs/motion-audit/evidence/ab/results.json；docs/motion-audit/evidence/race/pointer-关闭动画-false-30.png；docs/motion-audit/evidence/ab/ab-true-0.png。
 
 T02 使侧栏离场可取消和恢复
 依赖：T01。对应：M02。
@@ -33,7 +37,7 @@ T02 使侧栏离场可取消和恢复
 验收与回归：
 - 取消导航后原侧栏可见、可聚焦。
 - 快速重定向和切主题后没有残留clone、重复ID或hidden样式。
-复现参考：D:/Projects/TixXinBlog/docs/motion-audit/evidence/edge/results.json；D:/Projects/TixXinBlog/docs/motion-audit/evidence/edge/cancelled-sidebar.png。
+复现参考：docs/motion-audit/evidence/edge/results.json；docs/motion-audit/evidence/edge/cancelled-sidebar.png。
 
 T03 修复搜索按键与导航焦点
 依赖：无。对应：M03。
@@ -43,7 +47,7 @@ T03 修复搜索按键与导航焦点
 验收与回归：
 - 键盘Enter与鼠标选择都只导航一次且弹窗保持关闭。
 - Esc关闭仍将焦点归还原入口；IME确认不误导航。
-复现参考：D:/Projects/TixXinBlog/docs/motion-audit/evidence/search-key/results.json；D:/Projects/TixXinBlog/docs/motion-audit/evidence/search-key/keyboard-700.png；D:/Projects/TixXinBlog/docs/motion-audit/evidence/search-key/mouse-700.png。
+复现参考：docs/motion-audit/evidence/search-key/results.json；docs/motion-audit/evidence/search-key/keyboard-700.png；docs/motion-audit/evidence/search-key/mouse-700.png。
 
 T04 统一订阅所有权与水合偏好
 依赖：无。对应：M04、M09。
@@ -54,7 +58,7 @@ T04 统一订阅所有权与水合偏好
 - 切换100次后，媒体查询活跃订阅回到稳定基线。
 - 系统深浅色及减少动态效果变化仍能实时响应。
 - 深浅色、三主题、reduce/normal首次刷新无该水合警告，首帧不播放被禁用的位移。
-复现参考：D:/Projects/TixXinBlog/docs/motion-audit/evidence/listener/results.json；D:/Projects/TixXinBlog/docs/motion-audit/evidence/performance/results.json；D:/Projects/TixXinBlog/docs/motion-audit/evidence/development-diagnostics.txt；D:/Projects/TixXinBlog/docs/motion-audit/evidence/ab/results.json。
+复现参考：docs/motion-audit/evidence/listener/results.json；docs/motion-audit/evidence/performance/results.json；docs/motion-audit/evidence/development-diagnostics.txt；docs/motion-audit/evidence/ab/results.json。
 
 T05 隔离可选主题预热与启动错误恢复
 依赖：T01、T04。对应：M08。
@@ -64,7 +68,7 @@ T05 隔离可选主题预热与启动错误恢复
 验收与回归：
 - 不可用的非当前主题不阻断当前主题阅读与导航。
 - 关键入口失败可恢复，失败后不存在透明阻挡层和无限假进度。
-复现参考：D:/Projects/TixXinBlog/docs/motion-audit/evidence/failure/results.json；D:/Projects/TixXinBlog/docs/motion-audit/evidence/failure/module-failure.png；D:/Projects/TixXinBlog/docs/motion-audit/evidence/failure/module-restored.png；D:/Projects/TixXinBlog/docs/motion-audit/evidence/development-diagnostics.txt。
+复现参考：docs/motion-audit/evidence/failure/results.json；docs/motion-audit/evidence/failure/module-failure.png；docs/motion-audit/evidence/failure/module-restored.png；docs/motion-audit/evidence/development-diagnostics.txt。
 
 T06 建立可取消动效协议并接入减少模式
 依赖：T01、T02、T04。对应：M05、M12。
@@ -76,7 +80,7 @@ T06 建立可取消动效协议并接入减少模式
 - 运行中更改偏好可停止持续运动并呈现最终状态；没有等待永不触发的结束事件。
 - 入场中导航、移除、减动效切换后无待处理动画任务。
 - transitioncancel、无transitionend时仍可靠收尾。
-复现参考：D:/Projects/TixXinBlog/docs/motion-audit/evidence/matrix/results.json；D:/Projects/TixXinBlog/docs/motion-audit/evidence/edge/results.json；D:/Projects/TixXinBlog/docs/motion-audit/evidence/components/results.json；D:/Projects/TixXinBlog/docs/motion-audit/evidence/supplement/results.json；D:/Projects/TixXinBlog/docs/motion-audit/evidence/inventory-rules.json；D:/Projects/TixXinBlog/docs/motion-audit/evidence/inventory-rules.json；D:/Projects/TixXinBlog/docs/motion-audit/evidence/source-motion-hits.txt；D:/Projects/TixXinBlog/docs/motion-audit/evidence/interactions/results.json。
+复现参考：docs/motion-audit/evidence/matrix/results.json；docs/motion-audit/evidence/edge/results.json；docs/motion-audit/evidence/components/results.json；docs/motion-audit/evidence/supplement/results.json；docs/motion-audit/evidence/inventory-rules.json；docs/motion-audit/evidence/inventory-rules.json；docs/motion-audit/evidence/source-motion-hits.txt；docs/motion-audit/evidence/interactions/results.json。
 
 T07 颜色切换事务与即时降级
 依赖：T04、T06。对应：M07、M15。
@@ -87,7 +91,7 @@ T07 颜色切换事务与即时降级
 - 无动画路径不生成颜色插值事件；切换结束后普通交互样式恢复。
 - 深浅色两个方向、系统切换及无API路径都验证。
 - 连续键盘切换中旧任务不能删除新任务属性；最终无伪元素、属性或遮罩残留。
-复现参考：D:/Projects/TixXinBlog/docs/motion-audit/evidence/themes/results.json；D:/Projects/TixXinBlog/docs/motion-audit/evidence/themes/color-无动画-0.png；D:/Projects/TixXinBlog/docs/motion-audit/evidence/themes/results.json；D:/Projects/TixXinBlog/docs/motion-audit/evidence/source-motion-hits.txt。
+复现参考：docs/motion-audit/evidence/themes/results.json；docs/motion-audit/evidence/themes/color-无动画-0.png；docs/motion-audit/evidence/themes/results.json；docs/motion-audit/evidence/source-motion-hits.txt。
 
 T08 停止不必要轮播和统一阅读滚动
 依赖：T06。对应：M06、M10。
@@ -99,7 +103,7 @@ T08 停止不必要轮播和统一阅读滚动
 - 离开Hero、切后台及卸载后无持续无效更新；真实后台标签行为补充验证。
 - 三主题j/k/t都移动正确容器；reduce时不平滑运动。
 - 目录、返回顶部及用户滚动中断规则保持一致。
-复现参考：D:/Projects/TixXinBlog/docs/motion-audit/evidence/themes/results.json；D:/Projects/TixXinBlog/docs/motion-audit/evidence/themes/aurora-reduced-rotation.png；D:/Projects/TixXinBlog/docs/motion-audit/evidence/reading-spa/results.json；D:/Projects/TixXinBlog/docs/motion-audit/evidence/reading-spa/reading-nexus.png。
+复现参考：docs/motion-audit/evidence/themes/results.json；docs/motion-audit/evidence/themes/aurora-reduced-rotation.png；docs/motion-audit/evidence/reading-spa/results.json；docs/motion-audit/evidence/reading-spa/reading-nexus.png。
 
 T09 完善图像状态和提示关闭
 依赖：T03、T06。对应：M11、M13。
@@ -109,7 +113,7 @@ T09 完善图像状态和提示关闭
 验收与回归：
 - 慢图、破图、缓存图与无图时布局稳定；失败可以理解并恢复。
 - Esc关闭后不立即重开，焦点不丢失；长提示可读，滚动定位不漂移。
-复现参考：D:/Projects/TixXinBlog/docs/motion-audit/evidence/edge/gallery-images-fail.png；D:/Projects/TixXinBlog/docs/motion-audit/evidence/edge/results.json；D:/Projects/TixXinBlog/docs/motion-audit/evidence/matrix/results.json；D:/Projects/TixXinBlog/docs/motion-audit/evidence/edge/results.json；D:/Projects/TixXinBlog/docs/motion-audit/evidence/edge/tooltip-escape.png。
+复现参考：docs/motion-audit/evidence/edge/gallery-images-fail.png；docs/motion-audit/evidence/edge/results.json；docs/motion-audit/evidence/matrix/results.json；docs/motion-audit/evidence/edge/results.json；docs/motion-audit/evidence/edge/tooltip-escape.png。
 
 T10 基于轨迹优化绘制并统一节奏
 依赖：T01、T02、T03、T04、T05、T06、T07、T08、T09。对应：M14、M16。
@@ -120,7 +124,7 @@ T10 基于轨迹优化绘制并统一节奏
 - 同一环境、同一交互至少重复采样，报告分布与相对改善。
 - 补充代表性真实移动设备后再设设备级性能门槛。
 - 规则集中、可解释，视觉稿与实际计算时长一致；首屏不因装饰延迟阻止已就绪操作。
-复现参考：D:/Projects/TixXinBlog/docs/motion-audit/evidence/performance/results.json；D:/Projects/TixXinBlog/docs/motion-audit/evidence/performance/cpu-1-trace.json；D:/Projects/TixXinBlog/docs/motion-audit/evidence/performance/cpu-4-trace.json；D:/Projects/TixXinBlog/docs/motion-audit/evidence/advanced/results.json；D:/Projects/TixXinBlog/docs/motion-audit/evidence/inventory-rules.json；D:/Projects/TixXinBlog/docs/motion-audit/evidence/interactions/results.json；D:/Projects/TixXinBlog/docs/motion-audit/evidence/development/results.json。
+复现参考：docs/motion-audit/evidence/performance/results.json；docs/motion-audit/evidence/performance/cpu-1-trace.json；docs/motion-audit/evidence/performance/cpu-4-trace.json；docs/motion-audit/evidence/advanced/results.json；docs/motion-audit/evidence/inventory-rules.json；docs/motion-audit/evidence/interactions/results.json；docs/motion-audit/evidence/development/results.json。
 
 最终回归必须包含：
 1. 三主题×正常/关闭/减少动态效果的快速导航，30/120/300ms间隔；等待最后请求完成后断言正文、URL、title一致。

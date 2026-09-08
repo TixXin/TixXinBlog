@@ -402,7 +402,7 @@ app/assets/styles/
 - `app/utils/modalFocusOrigin.ts`、`app/plugins/modal-focus-origin.client.ts`：应用级指针入口记录，兼容WebKit点击按钮不自动聚焦的行为。
 - `app/utils/themeComponentCache.ts`：客户端共享、SSR按Nuxt请求隔离的组件缓存；热更新后新SSR请求使用新模板。
 - `tests/e2e/motionScreenshot.ts`：等待实际字体请求与FontFace状态后采集原生截图，保留正常动画。
-- `docs/motion-remediation/`：逐项处理报告、覆盖记录、动效规范、性能分布及证据；原审查 `docs/motion-audit/` 保留整改前事实。
+- `docs/motion-remediation/`：逐项处理报告、覆盖记录、动效规范及性能结论；原审查 `docs/motion-audit/` 保留整改前事实。原始截图、轨迹与日志仅在本地 `evidence/` 留存。
 
 ### 内容标签与分页
 
@@ -410,7 +410,7 @@ app/assets/styles/
 - `app/composables/usePostPageMotion.ts`：已接受的新分页内容触发可取消入场，遵守内容预设与系统减少动态效果。
 - `usePostList.ts` 保留等待/失败时的原列表并向传输层传递取消信号；`usePostListPagination.ts` 区分显式翻页与串行触底追加，滚动位置交由URL历史恢复统一管理。
 - `tests/e2e/content-tabs.spec.ts`、`post-pagination.spec.ts`：多主题多尺寸标签往返、慢请求、分页时序、错误恢复及跨页联动回归。
-- `docs/content-navigation-fix/`：本轮原因、处理方式、三浏览器结果及实际动画证据。
+- `docs/content-navigation-fix/`：本轮原因、处理方式及三浏览器结果；实际动画视频和帧数据仅保留本地路径说明。
 
 ### 页面分区与朋友圈资料归属
 
@@ -419,3 +419,7 @@ app/assets/styles/
 - `app/composables/useMomentSidebarPlacement.ts`：作者和日历按主题与断点分配，监听由页面作用域持有；`app/components/moment/InfoDrawer.vue`仅展示固定侧栏缺失的信息。
 - `CommonContextDrawer`支持可选`v-model:open`以处理布局变化，并在打开前确定可恢复的入口焦点。
 - `tests/e2e/page-regions.spec.ts`、`moment-sidebar.spec.ts`：分区、SSR、慢导航、侧栏去重、跨主题/断点、日期状态和焦点回归；结果见`docs/page-regions/`。
+
+### 本地验收产物
+
+新的截图、录屏、trace 和原始报告写入被忽略的 `.playwright-mcp/` 或 `.artifacts/`。历史 `docs/**/evidence/` 与 `docs/git-validation/` 仅留本机副本，Git 保留文字结论、正式回归脚本及 `docs/img/` 文档素材。存放、复验和分享规则见[验收产物管理](verification-artifacts.md)。

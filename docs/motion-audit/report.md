@@ -1,5 +1,7 @@
 # TixXinBlog 动效审查
 
+> 本文截图、录屏、原始日志、采样和临时实验脚本仅在本机留存，不随 Git 发布。下列本地产物路径以仓库根目录为起点，新检出不包含这些文件；验收结论与正式测试源码继续保留。见[验收产物管理](../verification-artifacts.md)。
+
 本轮完成动效审查和整改方案，**未实施产品修复**。当前共整理16项：P0 1项、P1 5项、P2 9项、P3 1项。优先处理无动画导航空白、搜索Enter重开、取消导航侧栏消失，以及颜色切换监听累积。
 
 ## 结论与历史空白问题
@@ -8,24 +10,24 @@
 
 开发对照在相同源码、相同数据和操作下执行：保留零时长Transition包装3/3空白；仅在独立副本临时将NuxtPage过渡设为false，0/3空白。该改动已还原，是诊断实验，不是已交付修复。非当前主题资源故障另可阻断交互启动（M08），应分别处理。
 
-![快速导航后的实际空白](D:/Projects/TixXinBlog/docs/motion-audit/evidence/race/pointer-关闭动画-false-30.png)
+快速导航后的实际空白（本地：`docs/motion-audit/evidence/race/pointer-关闭动画-false-30.png`）
 
 ## 审查流程与健康状况
 
 |步骤|场景|本轮结果|证据|
 |---|---|---|---|
-|1|当前用户开发页与独立副本首屏|日常开发页正常；冷启动及资源失败另列M08|[开发结果](D:/Projects/TixXinBlog/docs/motion-audit/evidence/development/results.json)|
-|2|列表、分页、连续加载、慢请求与重试|数据恢复可用；存在过渡空档和未统一时长|[列表结果](D:/Projects/TixXinBlog/docs/motion-audit/evidence/interactions/results.json)|
-|3|搜索→结果→详情→返回|鼠标正常；Enter会重开弹层（M03）|[键鼠对照](D:/Projects/TixXinBlog/docs/motion-audit/evidence/search-key/results.json)|
-|4|路由预设与快速导航|普通预设本轮正常；零时长竞态M01|[导航对照](D:/Projects/TixXinBlog/docs/motion-audit/evidence/race/results.json)|
-|5|设置、颜色及布局主题|基本切换可用；监听累积、none路径颜色插值、竞态风险|[主题结果](D:/Projects/TixXinBlog/docs/motion-audit/evidence/themes/results.json)|
-|6|图片灯箱、认证、书签嵌套弹层|一般关闭和焦点清理可用；减少模式仍有位移；图片错误弱|[组件结果](D:/Projects/TixXinBlog/docs/motion-audit/evidence/components/results.json)|
-|7|朋友圈、留言、闪念更新|更新与互动可用，局部入场未响应减少动态效果|[补充结果](D:/Projects/TixXinBlog/docs/motion-audit/evidence/supplement/results.json)|
-|8|长文滚动、目录和历史|站内导航返回三主题均恢复1800px；快捷键容器错误M10|[阅读结果](D:/Projects/TixXinBlog/docs/motion-audit/evidence/reading-spa/results.json)|
-|9|多端与主题组合|完成24个主题/尺寸/配色/偏好组合及9个断点检查；不是所有组合笛卡尔积|[矩阵](D:/Projects/TixXinBlog/docs/motion-audit/coverage.md)|
-|10|后台路由|13个已认证管理页面完成进入与静态状态检查；高风险业务动作未遍历|[后台结果](D:/Projects/TixXinBlog/docs/motion-audit/evidence/smoke/results.json)|
-|11|开发热更新、配置重启|CSS、SFC脚本、RootLayout热更新后弹窗可关闭，无残留inert；reduce水合警告M09|[开发结果](D:/Projects/TixXinBlog/docs/motion-audit/evidence/development/results.json)|
-|12|资源生命周期、帧时间与合成层|模态/导航预热后计数稳定；颜色切换订阅增长；节流下绘制成本明显|[性能结果](D:/Projects/TixXinBlog/docs/motion-audit/evidence/performance/results.json)|
+|1|当前用户开发页与独立副本首屏|日常开发页正常；冷启动及资源失败另列M08|开发结果（本地：`docs/motion-audit/evidence/development/results.json`）|
+|2|列表、分页、连续加载、慢请求与重试|数据恢复可用；存在过渡空档和未统一时长|列表结果（本地：`docs/motion-audit/evidence/interactions/results.json`）|
+|3|搜索→结果→详情→返回|鼠标正常；Enter会重开弹层（M03）|键鼠对照（本地：`docs/motion-audit/evidence/search-key/results.json`）|
+|4|路由预设与快速导航|普通预设本轮正常；零时长竞态M01|导航对照（本地：`docs/motion-audit/evidence/race/results.json`）|
+|5|设置、颜色及布局主题|基本切换可用；监听累积、none路径颜色插值、竞态风险|主题结果（本地：`docs/motion-audit/evidence/themes/results.json`）|
+|6|图片灯箱、认证、书签嵌套弹层|一般关闭和焦点清理可用；减少模式仍有位移；图片错误弱|组件结果（本地：`docs/motion-audit/evidence/components/results.json`）|
+|7|朋友圈、留言、闪念更新|更新与互动可用，局部入场未响应减少动态效果|补充结果（本地：`docs/motion-audit/evidence/supplement/results.json`）|
+|8|长文滚动、目录和历史|站内导航返回三主题均恢复1800px；快捷键容器错误M10|阅读结果（本地：`docs/motion-audit/evidence/reading-spa/results.json`）|
+|9|多端与主题组合|完成24个主题/尺寸/配色/偏好组合及9个断点检查；不是所有组合笛卡尔积|[矩阵](coverage.md)|
+|10|后台路由|13个已认证管理页面完成进入与静态状态检查；高风险业务动作未遍历|后台结果（本地：`docs/motion-audit/evidence/smoke/results.json`）|
+|11|开发热更新、配置重启|CSS、SFC脚本、RootLayout热更新后弹窗可关闭，无残留inert；reduce水合警告M09|开发结果（本地：`docs/motion-audit/evidence/development/results.json`）|
+|12|资源生命周期、帧时间与合成层|模态/导航预热后计数稳定；颜色切换订阅增长；节流下绘制成本明显|性能结果（本地：`docs/motion-audit/evidence/performance/results.json`）|
 
 ## 问题总表
 
@@ -52,11 +54,11 @@
 
 搜索键盘跳转后弹层重新打开，事件顺序证明是焦点归还后再次触发入口；鼠标路径正常。
 
-![搜索Enter跳转后重新显示弹窗](D:/Projects/TixXinBlog/docs/motion-audit/evidence/search-key/keyboard-700.png)
+搜索Enter跳转后重新显示弹窗（本地：`docs/motion-audit/evidence/search-key/keyboard-700.png`）
 
 取消导航后右侧栏源节点被留在visibility:hidden，当前首页内容未变。
 
-![取消导航后消失的右侧栏](D:/Projects/TixXinBlog/docs/motion-audit/evidence/edge/cancelled-sidebar.png)
+取消导航后消失的右侧栏（本地：`docs/motion-audit/evidence/edge/cancelled-sidebar.png`）
 
 ## 性能样本
 
@@ -89,7 +91,7 @@
 
 验收：三主题、正常/关闭/减少动态效果执行30/120/300ms导航压力测试；最终正文、URL、标题一致。 慢请求、前进后退及全宽页面切换不挂起；不能用阻止用户导航掩盖问题。
 
-实现：[源码](D:/Projects/TixXinBlog/src/frontend/web-blog/app/layouts/default.vue:28)、[源码](D:/Projects/TixXinBlog/src/frontend/web-blog/app/composables/useAppearanceSettings.ts:86)。证据：[race/results.json](D:/Projects/TixXinBlog/docs/motion-audit/evidence/race/results.json)、[ab/results.json](D:/Projects/TixXinBlog/docs/motion-audit/evidence/ab/results.json)、[race/pointer-关闭动画-false-30.png](D:/Projects/TixXinBlog/docs/motion-audit/evidence/race/pointer-关闭动画-false-30.png)、[ab/ab-true-0.png](D:/Projects/TixXinBlog/docs/motion-audit/evidence/ab/ab-true-0.png)。
+实现：[源码](../../src/frontend/web-blog/app/layouts/default.vue#L28)、[源码](../../src/frontend/web-blog/app/composables/useAppearanceSettings.ts#L86)。证据：race/results.json（本地：`docs/motion-audit/evidence/race/results.json`）、ab/results.json（本地：`docs/motion-audit/evidence/ab/results.json`）、race/pointer-关闭动画-false-30.png（本地：`docs/motion-audit/evidence/race/pointer-关闭动画-false-30.png`）、ab/ab-true-0.png（本地：`docs/motion-audit/evidence/ab/ab-true-0.png`）。
 
 ### M02 导航被取消后右侧栏原内容没有恢复
 
@@ -109,7 +111,7 @@
 
 验收：取消导航后原侧栏可见、可聚焦。 快速重定向和切主题后没有残留clone、重复ID或hidden样式。
 
-实现：[源码](D:/Projects/TixXinBlog/src/frontend/web-blog/app/composables/useSidebarExitAnimation.ts:20)。证据：[edge/results.json](D:/Projects/TixXinBlog/docs/motion-audit/evidence/edge/results.json)、[edge/cancelled-sidebar.png](D:/Projects/TixXinBlog/docs/motion-audit/evidence/edge/cancelled-sidebar.png)。
+实现：[源码](../../src/frontend/web-blog/app/composables/useSidebarExitAnimation.ts#L20)。证据：edge/results.json（本地：`docs/motion-audit/evidence/edge/results.json`）、edge/cancelled-sidebar.png（本地：`docs/motion-audit/evidence/edge/cancelled-sidebar.png`）。
 
 ### M03 搜索按Enter跳转后弹窗再次打开
 
@@ -129,7 +131,7 @@
 
 验收：键盘Enter与鼠标选择都只导航一次且弹窗保持关闭。 Esc关闭仍将焦点归还原入口；IME确认不误导航。
 
-实现：[源码](D:/Projects/TixXinBlog/src/frontend/web-blog/app/components/common/SearchModal.vue:13)、[源码](D:/Projects/TixXinBlog/src/frontend/web-blog/app/components/common/SearchModal.vue:146)、[源码](D:/Projects/TixXinBlog/src/frontend/web-blog/app/composables/useModalFocus.ts:142)。证据：[search-key/results.json](D:/Projects/TixXinBlog/docs/motion-audit/evidence/search-key/results.json)、[search-key/keyboard-700.png](D:/Projects/TixXinBlog/docs/motion-audit/evidence/search-key/keyboard-700.png)、[search-key/mouse-700.png](D:/Projects/TixXinBlog/docs/motion-audit/evidence/search-key/mouse-700.png)。
+实现：[源码](../../src/frontend/web-blog/app/components/common/SearchModal.vue#L13)、[源码](../../src/frontend/web-blog/app/components/common/SearchModal.vue#L146)、[源码](../../src/frontend/web-blog/app/composables/useModalFocus.ts#L142)。证据：search-key/results.json（本地：`docs/motion-audit/evidence/search-key/results.json`）、search-key/keyboard-700.png（本地：`docs/motion-audit/evidence/search-key/keyboard-700.png`）、search-key/mouse-700.png（本地：`docs/motion-audit/evidence/search-key/mouse-700.png`）。
 
 ### M04 颜色切换反复创建媒体查询监听
 
@@ -149,7 +151,7 @@
 
 验收：切换100次后，媒体查询活跃订阅回到稳定基线。 系统深浅色及减少动态效果变化仍能实时响应。
 
-实现：[源码](D:/Projects/TixXinBlog/src/frontend/web-blog/app/composables/useTheme.ts:56)、[源码](D:/Projects/TixXinBlog/src/frontend/web-blog/app/composables/useAppearanceSettings.ts:35)。证据：[listener/results.json](D:/Projects/TixXinBlog/docs/motion-audit/evidence/listener/results.json)、[performance/results.json](D:/Projects/TixXinBlog/docs/motion-audit/evidence/performance/results.json)。
+实现：[源码](../../src/frontend/web-blog/app/composables/useTheme.ts#L56)、[源码](../../src/frontend/web-blog/app/composables/useAppearanceSettings.ts#L35)。证据：listener/results.json（本地：`docs/motion-audit/evidence/listener/results.json`）、performance/results.json（本地：`docs/motion-audit/evidence/performance/results.json`）。
 
 ### M05 减少动态效果只覆盖部分动效
 
@@ -169,7 +171,7 @@
 
 验收：覆盖inventory中的每种非必要运动，正常/减少模式均测试。 运行中更改偏好可停止持续运动并呈现最终状态；没有等待永不触发的结束事件。
 
-实现：[源码](D:/Projects/TixXinBlog/src/frontend/web-blog/app/assets/styles/_base.scss:95)、[源码](D:/Projects/TixXinBlog/src/frontend/web-blog/app/assets/styles/_base.scss:272)、[源码](D:/Projects/TixXinBlog/src/frontend/web-blog/app/components/common/SearchModal.vue:373)、[源码](D:/Projects/TixXinBlog/src/frontend/web-blog/app/components/auth/AuthPanel.vue:166)、[源码](D:/Projects/TixXinBlog/src/frontend/web-blog/app/components/guestbook/MessageList.vue:44)、[源码](D:/Projects/TixXinBlog/src/frontend/web-blog/app/components/tab/TabBookmarkGrid.vue:59)。证据：[matrix/results.json](D:/Projects/TixXinBlog/docs/motion-audit/evidence/matrix/results.json)、[edge/results.json](D:/Projects/TixXinBlog/docs/motion-audit/evidence/edge/results.json)、[components/results.json](D:/Projects/TixXinBlog/docs/motion-audit/evidence/components/results.json)、[supplement/results.json](D:/Projects/TixXinBlog/docs/motion-audit/evidence/supplement/results.json)、[inventory-rules.json](D:/Projects/TixXinBlog/docs/motion-audit/evidence/inventory-rules.json)。
+实现：[源码](../../src/frontend/web-blog/app/assets/styles/_base.scss#L95)、[源码](../../src/frontend/web-blog/app/assets/styles/_base.scss#L272)、[源码](../../src/frontend/web-blog/app/components/common/SearchModal.vue#L373)、[源码](../../src/frontend/web-blog/app/components/auth/AuthPanel.vue#L166)、[源码](../../src/frontend/web-blog/app/components/guestbook/MessageList.vue#L44)、[源码](../../src/frontend/web-blog/app/components/tab/TabBookmarkGrid.vue#L59)。证据：matrix/results.json（本地：`docs/motion-audit/evidence/matrix/results.json`）、edge/results.json（本地：`docs/motion-audit/evidence/edge/results.json`）、components/results.json（本地：`docs/motion-audit/evidence/components/results.json`）、supplement/results.json（本地：`docs/motion-audit/evidence/supplement/results.json`）、inventory-rules.json（本地：`docs/motion-audit/evidence/inventory-rules.json`）。
 
 ### M06 Aurora背景轮播和视差持续打断静态阅读
 
@@ -189,7 +191,7 @@
 
 验收：减少模式观察至少10秒无换图和视差。 离开Hero、切后台及卸载后无持续无效更新；真实后台标签行为补充验证。
 
-实现：[源码](D:/Projects/TixXinBlog/src/frontend/web-blog/themes/aurora/app/components/RootLayout.vue:146)、[源码](D:/Projects/TixXinBlog/src/frontend/web-blog/themes/aurora/app/components/RootLayout.vue:157)、[源码](D:/Projects/TixXinBlog/src/frontend/web-blog/themes/aurora/app/components/RootLayout.vue:174)。证据：[themes/results.json](D:/Projects/TixXinBlog/docs/motion-audit/evidence/themes/results.json)、[themes/aurora-reduced-rotation.png](D:/Projects/TixXinBlog/docs/motion-audit/evidence/themes/aurora-reduced-rotation.png)。
+实现：[源码](../../src/frontend/web-blog/themes/aurora/app/components/RootLayout.vue#L146)、[源码](../../src/frontend/web-blog/themes/aurora/app/components/RootLayout.vue#L157)、[源码](../../src/frontend/web-blog/themes/aurora/app/components/RootLayout.vue#L174)。证据：themes/results.json（本地：`docs/motion-audit/evidence/themes/results.json`）、themes/aurora-reduced-rotation.png（本地：`docs/motion-audit/evidence/themes/aurora-reduced-rotation.png`）。
 
 ### M07 “无动画”颜色切换仍发生局部颜色插值
 
@@ -209,7 +211,7 @@
 
 验收：无动画路径不生成颜色插值事件；切换结束后普通交互样式恢复。 深浅色两个方向、系统切换及无API路径都验证。
 
-实现：[源码](D:/Projects/TixXinBlog/src/frontend/web-blog/app/composables/useTheme.ts:61)、[源码](D:/Projects/TixXinBlog/src/frontend/web-blog/app/assets/styles/_base.scss:175)、[源码](D:/Projects/TixXinBlog/src/frontend/web-blog/app/assets/styles/_tokens.scss:40)。证据：[themes/results.json](D:/Projects/TixXinBlog/docs/motion-audit/evidence/themes/results.json)、[themes/color-无动画-0.png](D:/Projects/TixXinBlog/docs/motion-audit/evidence/themes/color-无动画-0.png)。
+实现：[源码](../../src/frontend/web-blog/app/composables/useTheme.ts#L61)、[源码](../../src/frontend/web-blog/app/assets/styles/_base.scss#L175)、[源码](../../src/frontend/web-blog/app/assets/styles/_tokens.scss#L40)。证据：themes/results.json（本地：`docs/motion-audit/evidence/themes/results.json`）、themes/color-无动画-0.png（本地：`docs/motion-audit/evidence/themes/color-无动画-0.png`）。
 
 ### M08 非当前主题资源失败可阻断开发页交互启动
 
@@ -229,7 +231,7 @@
 
 验收：不可用的非当前主题不阻断当前主题阅读与导航。 关键入口失败可恢复，失败后不存在透明阻挡层和无限假进度。
 
-实现：[源码](D:/Projects/TixXinBlog/src/frontend/web-blog/app/plugins/00.theme-preload.ts:16)、[源码](D:/Projects/TixXinBlog/src/frontend/web-blog/app/components/ThemeComponent.vue:132)、[源码](D:/Projects/TixXinBlog/src/frontend/web-blog/app/composables/useAppLoading.ts:24)、[源码](D:/Projects/TixXinBlog/src/frontend/web-blog/app/app.vue:67)。证据：[failure/results.json](D:/Projects/TixXinBlog/docs/motion-audit/evidence/failure/results.json)、[failure/module-failure.png](D:/Projects/TixXinBlog/docs/motion-audit/evidence/failure/module-failure.png)、[failure/module-restored.png](D:/Projects/TixXinBlog/docs/motion-audit/evidence/failure/module-restored.png)、[development-diagnostics.txt](D:/Projects/TixXinBlog/docs/motion-audit/evidence/development-diagnostics.txt)。
+实现：[源码](../../src/frontend/web-blog/app/plugins/00.theme-preload.ts#L16)、[源码](../../src/frontend/web-blog/app/components/ThemeComponent.vue#L132)、[源码](../../src/frontend/web-blog/app/composables/useAppLoading.ts#L24)、[源码](../../src/frontend/web-blog/app/app.vue#L67)。证据：failure/results.json（本地：`docs/motion-audit/evidence/failure/results.json`）、failure/module-failure.png（本地：`docs/motion-audit/evidence/failure/module-failure.png`）、failure/module-restored.png（本地：`docs/motion-audit/evidence/failure/module-restored.png`）、development-diagnostics.txt（本地：`docs/motion-audit/evidence/development-diagnostics.txt`）。
 
 ### M09 减少动态效果条件导致SSR侧栏类名不一致
 
@@ -249,7 +251,7 @@
 
 验收：深浅色、三主题、reduce/normal首次刷新无该水合警告，首帧不播放被禁用的位移。
 
-实现：[源码](D:/Projects/TixXinBlog/src/frontend/web-blog/app/composables/useAppearanceSettings.ts:152)。证据：[development-diagnostics.txt](D:/Projects/TixXinBlog/docs/motion-audit/evidence/development-diagnostics.txt)、[ab/results.json](D:/Projects/TixXinBlog/docs/motion-audit/evidence/ab/results.json)。
+实现：[源码](../../src/frontend/web-blog/app/composables/useAppearanceSettings.ts#L152)。证据：development-diagnostics.txt（本地：`docs/motion-audit/evidence/development-diagnostics.txt`）、ab/results.json（本地：`docs/motion-audit/evidence/ab/results.json`）。
 
 ### M10 阅读快捷键操作window，未使用实际滚动容器
 
@@ -269,7 +271,7 @@
 
 验收：三主题j/k/t都移动正确容器；reduce时不平滑运动。 目录、返回顶部及用户滚动中断规则保持一致。
 
-实现：[源码](D:/Projects/TixXinBlog/src/frontend/web-blog/app/composables/useKeyboardShortcuts.ts:51)、[源码](D:/Projects/TixXinBlog/src/frontend/web-blog/app/utils/scrollRoot.ts:8)。证据：[reading-spa/results.json](D:/Projects/TixXinBlog/docs/motion-audit/evidence/reading-spa/results.json)、[reading-spa/reading-nexus.png](D:/Projects/TixXinBlog/docs/motion-audit/evidence/reading-spa/reading-nexus.png)。
+实现：[源码](../../src/frontend/web-blog/app/composables/useKeyboardShortcuts.ts#L51)、[源码](../../src/frontend/web-blog/app/utils/scrollRoot.ts#L8)。证据：reading-spa/results.json（本地：`docs/motion-audit/evidence/reading-spa/results.json`）、reading-spa/reading-nexus.png（本地：`docs/motion-audit/evidence/reading-spa/reading-nexus.png`）。
 
 ### M11 图片入场按挂载播放，失败时网格缺少稳定占位
 
@@ -289,7 +291,7 @@
 
 验收：慢图、破图、缓存图与无图时布局稳定；失败可以理解并恢复。
 
-实现：[源码](D:/Projects/TixXinBlog/src/frontend/web-blog/app/components/gallery/GalleryItem.vue:16)、[源码](D:/Projects/TixXinBlog/src/frontend/web-blog/app/components/gallery/LightBox.vue:24)、[源码](D:/Projects/TixXinBlog/src/frontend/web-blog/app/assets/styles/_base.scss:79)。证据：[edge/gallery-images-fail.png](D:/Projects/TixXinBlog/docs/motion-audit/evidence/edge/gallery-images-fail.png)、[edge/results.json](D:/Projects/TixXinBlog/docs/motion-audit/evidence/edge/results.json)、[matrix/results.json](D:/Projects/TixXinBlog/docs/motion-audit/evidence/matrix/results.json)。
+实现：[源码](../../src/frontend/web-blog/app/components/gallery/GalleryItem.vue#L16)、[源码](../../src/frontend/web-blog/app/components/gallery/LightBox.vue#L24)、[源码](../../src/frontend/web-blog/app/assets/styles/_base.scss#L79)。证据：edge/gallery-images-fail.png（本地：`docs/motion-audit/evidence/edge/gallery-images-fail.png`）、edge/results.json（本地：`docs/motion-audit/evidence/edge/results.json`）、matrix/results.json（本地：`docs/motion-audit/evidence/matrix/results.json`）。
 
 ### M12 手写入场回调缺少取消和结束兜底
 
@@ -309,7 +311,7 @@
 
 验收：入场中导航、移除、减动效切换后无待处理动画任务。 transitioncancel、无transitionend时仍可靠收尾。
 
-实现：[源码](D:/Projects/TixXinBlog/src/frontend/web-blog/app/composables/usePostListAnimation.ts:39)、[源码](D:/Projects/TixXinBlog/src/frontend/web-blog/app/components/guestbook/MessageList.vue:49)、[源码](D:/Projects/TixXinBlog/src/frontend/web-blog/app/components/guestbook/ChatStats.vue:73)。证据：[inventory-rules.json](D:/Projects/TixXinBlog/docs/motion-audit/evidence/inventory-rules.json)、[source-motion-hits.txt](D:/Projects/TixXinBlog/docs/motion-audit/evidence/source-motion-hits.txt)、[interactions/results.json](D:/Projects/TixXinBlog/docs/motion-audit/evidence/interactions/results.json)。
+实现：[源码](../../src/frontend/web-blog/app/composables/usePostListAnimation.ts#L39)、[源码](../../src/frontend/web-blog/app/components/guestbook/MessageList.vue#L49)、[源码](../../src/frontend/web-blog/app/components/guestbook/ChatStats.vue#L73)。证据：inventory-rules.json（本地：`docs/motion-audit/evidence/inventory-rules.json`）、source-motion-hits.txt（本地：`docs/motion-audit/evidence/source-motion-hits.txt`）、interactions/results.json（本地：`docs/motion-audit/evidence/interactions/results.json`）。
 
 ### M13 Tooltip按Esc不关闭且不能悬停保留
 
@@ -329,7 +331,7 @@
 
 验收：Esc关闭后不立即重开，焦点不丢失；长提示可读，滚动定位不漂移。
 
-实现：[源码](D:/Projects/TixXinBlog/src/frontend/web-blog/app/components/common/Tooltip.vue:83)、[源码](D:/Projects/TixXinBlog/src/frontend/web-blog/app/components/common/Tooltip.vue:185)。证据：[edge/results.json](D:/Projects/TixXinBlog/docs/motion-audit/evidence/edge/results.json)、[edge/tooltip-escape.png](D:/Projects/TixXinBlog/docs/motion-audit/evidence/edge/tooltip-escape.png)。
+实现：[源码](../../src/frontend/web-blog/app/components/common/Tooltip.vue#L83)、[源码](../../src/frontend/web-blog/app/components/common/Tooltip.vue#L185)。证据：edge/results.json（本地：`docs/motion-audit/evidence/edge/results.json`）、edge/tooltip-escape.png（本地：`docs/motion-audit/evidence/edge/tooltip-escape.png`）。
 
 ### M14 叠加绘制效果在CPU节流下出现明显帧间隔拉长
 
@@ -349,7 +351,7 @@
 
 验收：同一环境、同一交互至少重复采样，报告分布与相对改善。 补充代表性真实移动设备后再设设备级性能门槛。
 
-实现：[源码](D:/Projects/TixXinBlog/src/frontend/web-blog/app/assets/styles/_components.scss:15)、[源码](D:/Projects/TixXinBlog/src/frontend/web-blog/app/components/common/AppearanceDrawer.vue:352)、[源码](D:/Projects/TixXinBlog/src/frontend/web-blog/app/components/common/CustomScrollbar.vue:200)。证据：[performance/results.json](D:/Projects/TixXinBlog/docs/motion-audit/evidence/performance/results.json)、[performance/cpu-1-trace.json](D:/Projects/TixXinBlog/docs/motion-audit/evidence/performance/cpu-1-trace.json)、[performance/cpu-4-trace.json](D:/Projects/TixXinBlog/docs/motion-audit/evidence/performance/cpu-4-trace.json)、[advanced/results.json](D:/Projects/TixXinBlog/docs/motion-audit/evidence/advanced/results.json)。
+实现：[源码](../../src/frontend/web-blog/app/assets/styles/_components.scss#L15)、[源码](../../src/frontend/web-blog/app/components/common/AppearanceDrawer.vue#L352)、[源码](../../src/frontend/web-blog/app/components/common/CustomScrollbar.vue#L200)。证据：performance/results.json（本地：`docs/motion-audit/evidence/performance/results.json`）、performance/cpu-1-trace.json（本地：`docs/motion-audit/evidence/performance/cpu-1-trace.json`）、performance/cpu-4-trace.json（本地：`docs/motion-audit/evidence/performance/cpu-4-trace.json`）、advanced/results.json（本地：`docs/motion-audit/evidence/advanced/results.json`）。
 
 ### M15 重叠颜色切换缺少事务归属
 
@@ -369,7 +371,7 @@
 
 验收：连续键盘切换中旧任务不能删除新任务属性；最终无伪元素、属性或遮罩残留。
 
-实现：[源码](D:/Projects/TixXinBlog/src/frontend/web-blog/app/composables/useTheme.ts:85)、[源码](D:/Projects/TixXinBlog/src/frontend/web-blog/app/composables/useTheme.ts:124)。证据：[themes/results.json](D:/Projects/TixXinBlog/docs/motion-audit/evidence/themes/results.json)、[source-motion-hits.txt](D:/Projects/TixXinBlog/docs/motion-audit/evidence/source-motion-hits.txt)。
+实现：[源码](../../src/frontend/web-blog/app/composables/useTheme.ts#L85)、[源码](../../src/frontend/web-blog/app/composables/useTheme.ts#L124)。证据：themes/results.json（本地：`docs/motion-audit/evidence/themes/results.json`）、source-motion-hits.txt（本地：`docs/motion-audit/evidence/source-motion-hits.txt`）。
 
 ### M16 等待和交错入场预算缺少统一上限
 
@@ -389,14 +391,14 @@
 
 验收：规则集中、可解释，视觉稿与实际计算时长一致；首屏不因装饰延迟阻止已就绪操作。
 
-实现：[源码](D:/Projects/TixXinBlog/src/frontend/web-blog/app/app.vue:67)、[源码](D:/Projects/TixXinBlog/src/frontend/web-blog/app/composables/usePostListAnimation.ts:31)、[源码](D:/Projects/TixXinBlog/src/frontend/web-blog/app/composables/useAppearanceSettings.ts:103)、[源码](D:/Projects/TixXinBlog/src/frontend/web-blog/app/assets/styles/_utilities.scss:61)。证据：[inventory-rules.json](D:/Projects/TixXinBlog/docs/motion-audit/evidence/inventory-rules.json)、[interactions/results.json](D:/Projects/TixXinBlog/docs/motion-audit/evidence/interactions/results.json)、[development/results.json](D:/Projects/TixXinBlog/docs/motion-audit/evidence/development/results.json)。
+实现：[源码](../../src/frontend/web-blog/app/app.vue#L67)、[源码](../../src/frontend/web-blog/app/composables/usePostListAnimation.ts#L31)、[源码](../../src/frontend/web-blog/app/composables/useAppearanceSettings.ts#L103)、[源码](../../src/frontend/web-blog/app/assets/styles/_utilities.scss#L61)。证据：inventory-rules.json（本地：`docs/motion-audit/evidence/inventory-rules.json`）、interactions/results.json（本地：`docs/motion-audit/evidence/interactions/results.json`）、development/results.json（本地：`docs/motion-audit/evidence/development/results.json`）。
 
 ## 优先顺序和验证边界
 
-先处理M01/M02/M03的导航及焦点收尾，再处理M04/M08/M09的生命周期与启动，随后统一M05/M06/M07/M10/M12/M15的偏好和中断策略，最后完成图片、Tooltip及绘制与节奏优化。完整可执行任务见[整改提示词](D:/Projects/TixXinBlog/docs/motion-audit/remediation-prompt.md)。
+先处理M01/M02/M03的导航及焦点收尾，再处理M04/M08/M09的生命周期与启动，随后统一M05/M06/M07/M10/M12/M15的偏好和中断策略，最后完成图片、Tooltip及绘制与节奏优化。完整可执行任务见[整改提示词](remediation-prompt.md)。
 
-本轮使用当前源文件指纹和新采集证据，未复用历史截图充当本轮结果。故障注入、临时对照、自动化目标失配和修正均在coverage中公开记录。真实Safari/Firefox、手机系统键盘/惯性滚动、辅助技术朗读、后台标签节流、物理低端GPU、闪烁阈值分析仍未验证。完整组合与限制见[覆盖矩阵](D:/Projects/TixXinBlog/docs/motion-audit/coverage.md)。
+本轮使用当前源文件指纹和新采集证据，未复用历史截图充当本轮结果。故障注入、临时对照、自动化目标失配和修正均在coverage中公开记录。真实Safari/Firefox、手机系统键盘/惯性滚动、辅助技术朗读、后台标签节流、物理低端GPU、闪烁阈值分析仍未验证。完整组合与限制见[覆盖矩阵](coverage.md)。
 
 ## 交付核验
 
-[完成核验记录](D:/Projects/TixXinBlog/docs/motion-audit/evidence/completion-check.json)列明源文件未变更、证据链接与测试资源清理结果。复现脚本保存在[evidence/reproduce](D:/Projects/TixXinBlog/docs/motion-audit/evidence/reproduce/README.md)。本次已结束12543/12544隔离预览及其子进程，删除唯一对应审查进程的随机数据库和空测试媒体目录；日常开发3456接口仍返回200。
+完成核验记录（本地：`docs/motion-audit/evidence/completion-check.json`）列明源文件未变更、证据链接与测试资源清理结果。复现脚本保存在evidence/reproduce（本地：`docs/motion-audit/evidence/reproduce/README.md`）。本次已结束12543/12544隔离预览及其子进程，删除唯一对应审查进程的随机数据库和空测试媒体目录；日常开发3456接口仍返回200。
