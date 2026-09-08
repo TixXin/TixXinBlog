@@ -81,21 +81,21 @@
           <div class="moment-form__row">
             <label class="moment-form__field">
               <span class="moment-form__label">地点</span>
-              <input v-model="form.location" type="text" placeholder="深圳·南山" class="moment-form__input" >
+              <input v-model="form.location" type="text" placeholder="深圳·南山" class="moment-form__input" />
             </label>
             <label class="moment-form__field">
               <span class="moment-form__label">设备</span>
-              <input v-model="form.device" type="text" placeholder="MacBook Pro" class="moment-form__input" >
+              <input v-model="form.device" type="text" placeholder="MacBook Pro" class="moment-form__input" />
             </label>
             <label class="moment-form__field">
               <span class="moment-form__label">心情</span>
-              <input v-model="form.mood" type="text" placeholder="🚀 心情大好" class="moment-form__input" >
+              <input v-model="form.mood" type="text" placeholder="🚀 心情大好" class="moment-form__input" />
             </label>
           </div>
 
           <!-- 置顶 -->
           <label class="moment-form__checkbox">
-            <input v-model="form.isPinned" type="checkbox" >
+            <input v-model="form.isPinned" type="checkbox" />
             <span>置顶到列表顶部</span>
           </label>
 
@@ -105,25 +105,25 @@
             <div class="moment-form__row">
               <label class="moment-form__field">
                 <span class="moment-form__label">URL</span>
-                <input v-model="form.linkedLink.url" type="url" placeholder="https://..." class="moment-form__input" >
+                <input v-model="form.linkedLink.url" type="url" placeholder="https://..." class="moment-form__input" />
               </label>
               <label class="moment-form__field">
                 <span class="moment-form__label">标题</span>
-                <input v-model="form.linkedLink.title" type="text" class="moment-form__input" >
+                <input v-model="form.linkedLink.title" type="text" class="moment-form__input" />
               </label>
             </div>
             <label class="moment-form__field">
               <span class="moment-form__label">描述</span>
-              <input v-model="form.linkedLink.description" type="text" class="moment-form__input" >
+              <input v-model="form.linkedLink.description" type="text" class="moment-form__input" />
             </label>
             <div class="moment-form__row">
               <label class="moment-form__field">
                 <span class="moment-form__label">站点名</span>
-                <input v-model="form.linkedLink.siteName" type="text" class="moment-form__input" >
+                <input v-model="form.linkedLink.siteName" type="text" class="moment-form__input" />
               </label>
               <label class="moment-form__field">
                 <span class="moment-form__label">封面图 URL</span>
-                <input v-model="form.linkedLink.image" type="url" class="moment-form__input" >
+                <input v-model="form.linkedLink.image" type="url" class="moment-form__input" />
               </label>
             </div>
           </details>
@@ -183,9 +183,7 @@ const form = reactive({
 
 const imageInput = ref('')
 
-const canSubmit = computed(
-  () => form.content.trim().length > 0 && form.content.length <= 1000,
-)
+const canSubmit = computed(() => form.content.trim().length > 0 && form.content.length <= 1000)
 
 function toggleTopic(name: string) {
   const i = form.topics.indexOf(name)
@@ -277,6 +275,9 @@ function onSubmit() {
   border-radius: $radius-sm;
   text-decoration: none;
   transition: $transition-colors;
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
 
   &:hover {
     color: var(--text-main);
@@ -338,7 +339,12 @@ function onSubmit() {
   color: var(--text-main);
   font-size: 0.875rem;
   outline: none;
-  transition: border-color 0.2s, box-shadow 0.2s;
+  transition:
+    border-color 0.2s,
+    box-shadow 0.2s;
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
   font-family: inherit;
   resize: vertical;
 
@@ -383,7 +389,10 @@ function onSubmit() {
   font-size: 0.75rem;
   border-radius: $radius-full;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: $transition-fast;
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
 
   &:hover {
     color: var(--topic-color, var(--accent));
@@ -454,6 +463,9 @@ function onSubmit() {
   border-radius: $radius-sm;
   cursor: pointer;
   transition: opacity 0.2s;
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
 
   &:hover:not(:disabled) {
     opacity: 0.88;
@@ -474,6 +486,9 @@ function onSubmit() {
   border-radius: $radius-sm;
   cursor: pointer;
   transition: $transition-colors;
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
 
   &:hover {
     color: var(--text-main);
