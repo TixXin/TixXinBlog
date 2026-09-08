@@ -18,12 +18,14 @@ export interface PoweredByItem {
 }
 
 export interface SiteStatus {
-  pingMs: number
+  pingMs: number | null
   statusText: string
 }
 
 /** 博主卡片信息（底部栏展开时展示） */
 export interface OwnerCardInfo {
+  avatar?: string
+  avatarAlt?: string
   /** 博主名称 */
   name: string
   /** 头衔/简介 */

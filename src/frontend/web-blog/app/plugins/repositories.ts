@@ -4,7 +4,7 @@
  * @author TixXin
  * @since 2026-04-11
  *
- * 这是 Repository 模式的「单点切换」入口：
+ * 闪念域按配置切换，标签页域明确保留本地仓库：
  * - useMockRepo === true  → 使用 LocalStorage 实现（mock 阶段，演示用）
  * - useMockRepo === false → 使用 HTTP 实现（后端就绪后启用）
  *
@@ -14,21 +14,22 @@
 import { LocalFlashRepository } from '~/features/flash/repository.local'
 import { HttpFlashRepository } from '~/features/flash/repository.http'
 import { LocalTabRepository } from '~/features/tab/repository.local'
-import { HttpTabRepository } from '~/features/tab/repository.http'
 import type { FlashNoteRepository } from '~/features/flash/repository'
 import type { TabBookmarkRepository } from '~/features/tab/repository'
 
 export default defineNuxtPlugin((nuxtApp) => {
   const config = useRuntimeConfig()
   const useMock = config.public.useMockRepo !== false
+  const apiBaseUrl = config.public.apiBaseUrl as string
+  const admin = useAdminApi()
+  const { isLoggedIn } = useCurrentUser()
 
   const flashRepo: FlashNoteRepository = useMock
     ? new LocalFlashRepository()
-    : new HttpFlashRepository()
+    : new HttpFlashRepository(apiBaseUrl, admin, () => isLoggedIn.value)
 
-  const tabRepo: TabBookmarkRepository = useMock
-    ? new LocalTabRepository()
-    : new HttpTabRepository()
+  // 标签页后端尚未实现，明确保持本地仓库，不随已接通的文章/闪念域切换。
+  const tabRepo: TabBookmarkRepository = new LocalTabRepository()
 
   nuxtApp.provide('flashRepo', flashRepo)
   nuxtApp.provide('tabRepo', tabRepo)

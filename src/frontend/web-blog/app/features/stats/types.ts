@@ -6,6 +6,7 @@
  */
 
 export interface SiteStats {
+  activity?: { date: string; articles: number; comments: number }[]
   articles: number
   views: string
   comments: number
