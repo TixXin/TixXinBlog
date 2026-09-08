@@ -5,11 +5,12 @@
  * @since 2026-07-20
  */
 
-import { Type } from 'class-transformer'
+import { Transform, Type } from 'class-transformer'
 import { IsInt, IsOptional, IsString, MaxLength, Min, MinLength } from 'class-validator'
 
 export class CreateCommentDto {
   @IsString()
+  @Transform(({ value }: { value: unknown }) => (typeof value === 'string' ? value.trim() : value))
   @MinLength(1)
   @MaxLength(32)
   author!: string
@@ -20,6 +21,7 @@ export class CreateCommentDto {
   avatar?: string
 
   @IsString()
+  @Transform(({ value }: { value: unknown }) => (typeof value === 'string' ? value.trim() : value))
   @MinLength(1)
   @MaxLength(1000)
   content!: string

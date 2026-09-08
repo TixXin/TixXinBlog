@@ -38,6 +38,11 @@ export class QueryPostDto {
   tag?: string
 
   @IsString()
+  @MaxLength(64)
+  @IsOptional()
+  folder?: string
+
+  @IsString()
   @MaxLength(128)
   @IsOptional()
   search?: string
@@ -46,6 +51,10 @@ export class QueryPostDto {
   @IsBoolean()
   @IsOptional()
   pinned?: boolean
+
+  @Transform(({ value }) => (value === 'false' ? false : value === 'true' ? true : value))
+  @IsBoolean()
+  pinnedFirst: boolean = true
 
   @IsIn(POST_QUERY_SORTS)
   @IsOptional()
