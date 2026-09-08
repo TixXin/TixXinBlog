@@ -60,7 +60,10 @@ const displayItems = computed(() => history.value.slice(0, 5))
   background: transparent;
   color: var(--text-faint);
   cursor: pointer;
-  transition: all 0.2s;
+  transition: $transition-fast;
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
 
   &:hover {
     color: var(--text-soft);
@@ -86,6 +89,9 @@ const displayItems = computed(() => history.value.slice(0, 5))
   border-radius: $radius-sm;
   text-decoration: none;
   transition: background 0.15s;
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
 
   &:hover {
     background: var(--surface-2);

@@ -1,6 +1,6 @@
 <!--
   @file TagCloudCard.vue
-  @description 右侧栏标签云卡片组件，以多行滚动方式展示标签
+  @description 可用键盘与触屏操作的静态标签云，标签不重复或自动移动
   @author TixXin
   @since 2025-03-17
 -->
@@ -11,52 +11,40 @@
       <h3 class="tag-cloud-card__title"><Icon name="lucide:hash" size="16" /> 探索标签</h3>
       <span class="tag-cloud-card__count text-xs">{{ tags.length }} 个标签</span>
     </div>
-    <div class="tag-cloud-card__rows">
-      <div v-for="(row, rowIdx) in tagRows" :key="rowIdx" class="tag-cloud-card__row">
-        <div
-          class="tag-cloud-card__track"
-          :class="rowIdx % 2 === 0 ? 'tag-cloud-card__track--left' : 'tag-cloud-card__track--right'"
-          :style="{ animationDuration: rowSpeeds[rowIdx] }"
-        >
-          <span
-            v-for="(tag, i) in [...row, ...row]"
-            :key="`${rowIdx}-${i}`"
-            class="tag-cloud-card__tag"
-            :class="{ 'is-active': activeTag === tag.name }"
-            @click="$emit('select', tag.name)"
-          >
-            <span class="tag-cloud-card__hash" :style="{ color: tag.color }">#</span>
-            {{ tag.name }}
-            <span class="tag-cloud-card__tag-count">{{ tag.count }}</span>
-          </span>
-        </div>
-      </div>
+    <div class="tag-cloud-card__tags" role="group" aria-label="按标签筛选">
+      <button
+        v-for="tag in tags"
+        :key="tag.name"
+        type="button"
+        :aria-pressed="activeTag === tag.name"
+        class="tag-cloud-card__tag"
+        :class="{ 'is-active': activeTag === tag.name }"
+        @click="$emit('select', tag.name)"
+      >
+        <span class="tag-cloud-card__hash" aria-hidden="true" :style="{ color: tag.color }">#</span>
+        {{ tag.name }}
+        <span class="tag-cloud-card__tag-count">{{ tag.count }}</span>
+      </button>
     </div>
+    <p v-if="!tags.length" class="tag-cloud-card__empty">暂无标签</p>
   </section>
 </template>
 
 <script setup lang="ts">
 import type { TagItem } from '~/features/stats/types'
 
-const props = defineProps<{
-  tags: TagItem[]
-  /** 当前选中的标签名 */
-  activeTag?: string | null
-}>()
+withDefaults(
+  defineProps<{
+    tags: TagItem[]
+    /** 当前选中的标签名 */
+    activeTag?: string | null
+  }>(),
+  { activeTag: null },
+)
 
 defineEmits<{
   select: [tagName: string]
 }>()
-
-const rowSpeeds = ['22s', '18s', '25s', '20s']
-
-const tagRows = computed(() => {
-  const rows: TagItem[][] = [[], [], [], []]
-  props.tags.forEach((tag, i) => {
-    rows[i % 4]!.push(tag)
-  })
-  return rows
-})
 </script>
 
 <style lang="scss" scoped>
@@ -89,64 +77,33 @@ const tagRows = computed(() => {
   color: var(--text-muted);
 }
 
-.tag-cloud-card__rows {
+.tag-cloud-card__tags {
   display: flex;
-  flex-direction: column;
-  gap: 6px;
-
-  // 紧凑档（lg–xl）：行间距略收
-  @media (min-width: $breakpoint-lg) and (max-width: #{$breakpoint-xl - 1px}) {
-    gap: 5px;
-  }
-}
-
-.tag-cloud-card__row {
-  overflow: hidden;
-  height: 32px;
-  mask-image: linear-gradient(to right, transparent, black 8%, black 92%, transparent);
-  -webkit-mask-image: linear-gradient(to right, transparent, black 8%, black 92%, transparent);
-}
-
-.tag-cloud-card__track {
-  display: flex;
+  flex-wrap: wrap;
   gap: 0.5rem;
-  width: max-content;
-  white-space: nowrap;
-
-  &:hover {
-    animation-play-state: paused;
-  }
-
-  &--left {
-    animation: marquee-l linear infinite;
-    will-change: transform;
-  }
-
-  &--right {
-    animation: marquee-r linear infinite;
-    will-change: transform;
-  }
 }
 
 .tag-cloud-card__tag {
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  white-space: nowrap;
-  padding: 5px 12px;
+  overflow-wrap: anywhere;
+  min-height: 32px;
+  padding: 0.375rem 0.25rem;
   border-radius: 9px;
-  font-size: 11px;
+  font-size: 0.75rem;
   font-weight: 600;
   background: var(--surface-1);
   color: var(--text-muted);
   border: 1px solid var(--border);
   transition: $transition-fast;
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
   cursor: pointer;
 
-  // 紧凑档（lg–xl）：标签 padding 与字号略收，减少跑马灯截断
-  @media (min-width: $breakpoint-lg) and (max-width: #{$breakpoint-xl - 1px}) {
-    padding: 4px 9px;
-    font-size: 10.5px;
+  @media (pointer: coarse) {
+    min-height: 44px;
   }
 
   &:hover {
@@ -157,8 +114,9 @@ const tagRows = computed(() => {
 
   &.is-active {
     background: var(--accent-soft);
-    color: var(--accent);
+    color: var(--text-main);
     border-color: var(--accent);
+    box-shadow: inset 0 -2px 0 var(--accent);
   }
 }
 
@@ -168,25 +126,12 @@ const tagRows = computed(() => {
 
 .tag-cloud-card__tag-count {
   color: var(--text-soft);
-  font-size: 10px;
+  font-size: 0.75rem;
   font-weight: 500;
 }
 
-@keyframes marquee-l {
-  0% {
-    transform: translateX(0);
-  }
-  100% {
-    transform: translateX(-50%);
-  }
-}
-
-@keyframes marquee-r {
-  0% {
-    transform: translateX(-50%);
-  }
-  100% {
-    transform: translateX(0);
-  }
+.tag-cloud-card__empty {
+  font-size: 0.875rem;
+  color: var(--text-soft);
 }
 </style>

@@ -1,85 +1,52 @@
 /**
  * @file useTableOfContents.ts
- * @description 文章目录观察与高亮组合式函数
+ * @description 按实际滚动根和粘性标题高度计算当前章节，支持长章节与文末
  * @author TixXin
  * @since 2025-03-17
  */
-
 import type { TocItem } from '~/features/post/types'
 
-/**
- * 根据正文标题锚点在视口中的位置高亮当前目录项
- */
 export function useTableOfContents(items: MaybeRefOrGetter<TocItem[]>) {
   const activeId = ref('')
-
-  let observer: IntersectionObserver | null = null
-
+  let frame = 0
+  function update() {
+    const headings = toValue(items)
+      .map((item) => document.getElementById(item.id))
+      .filter(Boolean) as HTMLElement[]
+    const first = headings[0]
+    if (!first) {
+      activeId.value = ''
+      return
+    }
+    const root = resolveScrollRoot(first.parentElement)
+    const boundary = (root?.getBoundingClientRect().top ?? 0) + articleScrollOffset(first) + 2
+    let active = first
+    for (const heading of headings) {
+      if (heading.getBoundingClientRect().top <= boundary) active = heading
+      else break
+    }
+    const body = first.closest('.article-reading-content')
+    const bottom = (root?.getBoundingClientRect().bottom ?? window.innerHeight) - 12
+    if (body && body.getBoundingClientRect().bottom <= bottom) active = headings.at(-1)!
+    activeId.value = active.id
+  }
+  function schedule() {
+    cancelAnimationFrame(frame)
+    frame = requestAnimationFrame(update)
+  }
   onMounted(() => {
-    const list = toValue(items)
-    if (!list.length) return
-
-    nextTick(() => {
-      const seen = new Map<string, IntersectionObserverEntry>()
-
-      observer = new IntersectionObserver(
-        (entries) => {
-          for (const entry of entries) {
-            const id = entry.target.id
-            if (!id) continue
-            if (entry.isIntersecting) {
-              seen.set(id, entry)
-            } else {
-              seen.delete(id)
-            }
-          }
-
-          if (seen.size === 0) {
-            return
-          }
-
-          let bestId = ''
-          let bestTop = Number.POSITIVE_INFINITY
-          for (const [id, entry] of seen) {
-            const top = entry.boundingClientRect.top
-            if (top >= 0 && top < bestTop) {
-              bestTop = top
-              bestId = id
-            }
-          }
-          if (!bestId) {
-            const first = [...seen.keys()][0]
-            bestId = first ?? ''
-          }
-          if (bestId) {
-            activeId.value = bestId
-          }
-        },
-        {
-          root: null,
-          rootMargin: '-15% 0px -55% 0px',
-          threshold: [0, 0.1, 0.5, 1],
-        },
-      )
-
-      for (const item of list) {
-        const el = document.getElementById(item.id)
-        if (el) {
-          observer?.observe(el)
-        }
-      }
-
-      const first = list[0]
-      if (first) {
-        activeId.value = first.id
-      }
-    })
+    document.addEventListener('scroll', schedule, { capture: true, passive: true })
+    window.addEventListener('resize', schedule, { passive: true })
+    watch(
+      () => toValue(items),
+      () => nextTick(schedule),
+      { immediate: true },
+    )
   })
-
-  onUnmounted(() => {
-    observer?.disconnect()
-    observer = null
+  onBeforeUnmount(() => {
+    cancelAnimationFrame(frame)
+    document.removeEventListener('scroll', schedule, true)
+    window.removeEventListener('resize', schedule)
   })
-
   return { activeId }
 }

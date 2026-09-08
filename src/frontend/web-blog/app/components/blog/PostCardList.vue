@@ -15,6 +15,10 @@
       :show-back-to-top="false"
       primary
     >
+      <p v-if="pending" role="status">正在加载文章…</p>
+      <div v-if="errorMessage" role="alert">
+        {{ errorMessage }} <button type="button" @click="$emit('retry')">重试</button>
+      </div>
       <!-- 瀑布流模式：TransitionGroup 实现新卡片渐入动画 -->
       <TransitionGroup
         v-if="displayMode === 'waterfall'"
@@ -23,6 +27,7 @@
         name="post-enter"
         :css="false"
         @enter="onItemEnter"
+        @enter-cancelled="onItemEnterCancelled"
       >
         <ThemeComponent
           v-for="(post, index) in displayedPosts"
@@ -40,7 +45,7 @@
         </div>
       </Transition>
 
-      <p v-if="filteredPosts.length === 0" class="post-list__empty">暂无相关文章</p>
+      <p v-if="!pending && !errorMessage && filteredPosts.length === 0" class="post-list__empty">暂无相关文章</p>
 
       <!-- 瀑布流模式：触底懒加载 -->
       <template v-if="displayMode === 'waterfall'">
@@ -53,7 +58,7 @@
           </div>
         </Transition>
         <Transition name="loader-fade">
-          <div v-if="!hasMore && filteredPosts.length > 0" class="post-list__end">
+          <div v-if="!hasMore && !pending && !errorMessage && filteredPosts.length > 0" class="post-list__end">
             <span class="post-list__end-line" />
             <span class="post-list__end-text">已经到底了</span>
             <span class="post-list__end-line" />
@@ -64,19 +69,29 @@
 
     <!-- 分页模式：悬浮在主内容区底部，向下滚动隐藏，向上滚动显示 -->
     <Transition name="pagination-slide">
-      <div
+      <nav
         v-if="displayMode === 'pagination' && totalPages > 1 && paginationVisible"
+        aria-label="文章分页"
         class="pagination-bar"
         :class="{ 'is-bounced': paginationBounce }"
       >
-        <button class="pagination__btn" :disabled="currentPage <= 1" @click="goToPage(currentPage - 1)">
+        <button
+          type="button"
+          aria-label="上一页"
+          class="pagination__btn"
+          :disabled="pending || currentPage <= 1"
+          @click="goToPage(currentPage - 1)"
+        >
           <Icon name="lucide:chevron-left" size="16" />
         </button>
 
-        <template v-for="page in pageList" :key="page">
+        <template v-for="(page, index) in pageList" :key="`${page}-${index}`">
           <span v-if="page === '...'" class="pagination__ellipsis">...</span>
           <button
             v-else
+            type="button"
+            :aria-current="page === currentPage ? 'page' : undefined"
+            :disabled="pending"
             class="pagination__btn pagination__page"
             :class="{ 'pagination__page--active': page === currentPage }"
             @click="goToPage(page as number)"
@@ -85,12 +100,18 @@
           </button>
         </template>
 
-        <button class="pagination__btn" :disabled="currentPage >= totalPages" @click="goToPage(currentPage + 1)">
+        <button
+          type="button"
+          aria-label="下一页"
+          class="pagination__btn"
+          :disabled="pending || currentPage >= totalPages"
+          @click="goToPage(currentPage + 1)"
+        >
           <Icon name="lucide:chevron-right" size="16" />
         </button>
 
         <span class="pagination__info">{{ currentPage }} / {{ totalPages }}</span>
-      </div>
+      </nav>
     </Transition>
   </div>
 </template>
@@ -102,6 +123,10 @@ const props = withDefaults(
   defineProps<{
     posts: PostItem[]
     activeTab: string
+    total: number
+    currentPage: number
+    pending: boolean
+    errorMessage?: string
     displayMode?: 'waterfall' | 'pagination'
     /** 按标签名过滤 */
     selectedTag?: string | null
@@ -110,10 +135,13 @@ const props = withDefaults(
   }>(),
   {
     displayMode: 'waterfall',
+    errorMessage: '',
     selectedTag: null,
     selectedCategory: null,
   },
 )
+
+const emit = defineEmits<{ page: [page: number]; retry: [] }>()
 
 const scrollbarRef = ref<{ viewport: HTMLElement | null; scrollToTop: (smooth?: boolean) => void } | null>(null)
 
@@ -131,14 +159,16 @@ const {
   goToPage,
 } = usePostListPagination({
   posts: toRef(props, 'posts'),
-  activeTab: toRef(props, 'activeTab'),
+  total: toRef(props, 'total'),
+  currentPage: toRef(props, 'currentPage'),
+  pending: toRef(props, 'pending'),
+  error: toRef(props, 'errorMessage'),
+  requestPage: (page) => emit('page', page),
   displayMode: toRef(props, 'displayMode'),
   scrollbarRef,
-  selectedTag: toRef(props, 'selectedTag'),
-  selectedCategory: toRef(props, 'selectedCategory'),
 })
 
-const { onItemEnter } = usePostListAnimation(displayCount)
+const { onItemEnter, onItemEnterCancelled } = usePostListAnimation(displayCount)
 
 // ---- 滚动方向检测：向下隐藏分页，向上显示分页（受界面设置开关控制） ----
 const { paginationAutoHide } = useAppearanceSettings()
@@ -167,11 +197,14 @@ watch(paginationAutoHide, (enabled) => {
 // ---- 底部栏展开时分页栏弹跳 ----
 const { isFooterExpanded } = useFooterExpand()
 const paginationBounce = ref(false)
+const { reducedMotion } = useMotionPreference()
+let bounceTimer: ReturnType<typeof setTimeout> | undefined
 
 watch(isFooterExpanded, (expanded) => {
   if (expanded) {
-    paginationBounce.value = true
-    setTimeout(() => {
+    if (bounceTimer) clearTimeout(bounceTimer)
+    paginationBounce.value = !reducedMotion.value
+    bounceTimer = setTimeout(() => {
       paginationBounce.value = false
     }, 500)
   }
@@ -190,6 +223,7 @@ onMounted(() => {
 })
 
 onUnmounted(() => {
+  if (bounceTimer) clearTimeout(bounceTimer)
   scrollbarRef.value?.viewport?.removeEventListener('scroll', onViewportScroll)
 })
 </script>
@@ -252,6 +286,9 @@ onUnmounted(() => {
 .post-list__spinner {
   color: var(--text-soft);
   animation: spin 1.2s linear infinite;
+  @media (prefers-reduced-motion: reduce) {
+    animation: none;
+  }
 }
 
 .post-list__loader-text {
@@ -287,12 +324,18 @@ onUnmounted(() => {
   transition:
     opacity 0.25s ease,
     transform 0.25s ease;
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
 }
 
 .page-fade-leave-active {
   transition:
     opacity 0.15s ease,
     transform 0.15s ease;
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
 }
 
 .page-fade-enter-from {
@@ -309,6 +352,9 @@ onUnmounted(() => {
 .loader-fade-enter-active,
 .loader-fade-leave-active {
   transition: opacity 0.25s ease;
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
 }
 
 .loader-fade-enter-from,
@@ -350,7 +396,10 @@ onUnmounted(() => {
   background: transparent;
   border: 1px solid transparent;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: $transition-fast;
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
 
   &:hover:not(:disabled) {
     color: var(--text-main);
@@ -369,12 +418,12 @@ onUnmounted(() => {
   font-weight: 500;
 
   &--active {
-    color: var(--accent);
+    color: var(--accent-text);
     background: var(--accent-soft);
     border-color: var(--accent-soft);
 
     &:hover {
-      color: var(--accent);
+      color: var(--accent-text);
       background: var(--accent-soft);
       border-color: var(--accent-soft);
     }
@@ -402,6 +451,9 @@ onUnmounted(() => {
 /* ---- 分页栏弹跳（底部栏展开时联动） ---- */
 .pagination-bar.is-bounced {
   animation: pagination-bump 0.5s cubic-bezier(0.22, 0.68, 0.35, 1);
+  @media (prefers-reduced-motion: reduce) {
+    animation: none;
+  }
 }
 
 @keyframes pagination-bump {
@@ -427,12 +479,18 @@ onUnmounted(() => {
   transition:
     opacity 0.25s ease-out,
     transform 0.25s ease-out;
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
 }
 
 .pagination-slide-leave-active {
   transition:
     opacity 0.2s ease-in,
     transform 0.2s ease-in;
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
 }
 
 .pagination-slide-enter-from {

@@ -11,6 +11,9 @@
     :class="{ 'appearance-fab--open': isDrawerOpen }"
     type="button"
     aria-label="界面设置"
+    aria-haspopup="dialog"
+    data-focus-key="appearance"
+    :aria-expanded="isDrawerOpen"
     @click="toggleDrawer"
   >
     <Icon name="lucide:settings" size="18" class="appearance-fab__icon" />
@@ -32,6 +35,9 @@ button.appearance-fab {
   color: var(--text-soft);
   cursor: pointer;
   transition: $transition-fast;
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
   background: transparent;
   border: none;
   box-shadow: none;
@@ -63,6 +69,9 @@ button.appearance-fab {
 
 .appearance-fab__icon {
   transition: transform 0.3s ease;
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
 
   .appearance-fab:hover & {
     transform: rotate(45deg);

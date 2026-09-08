@@ -1,49 +1,46 @@
 <!--
   @file index.vue
-  @description 博客首页，支持全部文章与朋友圈两个 Tab 视图，文章列表支持标签/分类过滤
+  @description 文章发现页：URL控制分页和筛选，朋友圈使用统一的独立入口
   @author TixXin
   @since 2025-03-17
 -->
-
 <template>
   <div class="main-inner articles-page">
-    <!-- 头部区域 -->
     <div class="main-content__header">
-      <!-- 左侧：页面图标 + Tab 栏（Tab 作为主标题切换） -->
       <div class="articles-header-left">
-        <div class="page-title__icon-wrap articles-header-left__icon" aria-hidden="true">
-          <Icon :name="activeTab === 'moments' ? 'lucide:users' : 'lucide:newspaper'" size="18" />
-        </div>
-        <div class="articles-tabs no-scrollbar" role="tablist">
-          <button
+        <div class="page-title__icon-wrap" aria-hidden="true"><Icon name="lucide:newspaper" size="18" /></div>
+        <nav class="articles-tabs" aria-label="内容类型">
+          <NuxtLink
             v-for="tab in tabs"
             :key="tab.value"
-            role="tab"
-            :aria-selected="activeTab === tab.value"
+            :to="tab.value === 'moments' ? '/moments' : '/'"
             class="tab-btn"
-            :class="{ 'tab-active': activeTab === tab.value }"
-            @click="switchTab(tab.value)"
+            :class="{ 'tab-active': tab.value === 'all' }"
+            :aria-current="tab.value === 'all' ? 'page' : undefined"
           >
             {{ tab.label }}
-          </button>
-
-          <!-- 当前过滤条件标签 -->
-          <Transition name="filter-fade">
-            <span v-if="activeFilterLabel && activeTab === 'all'" class="filter-badge" @click="clearFilters">
-              <Icon name="lucide:filter" size="12" />
-              {{ activeFilterLabel }}
-              <Icon name="lucide:x" size="12" class="filter-badge__close" />
-            </span>
-          </Transition>
-        </div>
+          </NuxtLink>
+        </nav>
       </div>
-
-      <!-- 右侧操作区：仅在文章列表视图显示 -->
-      <div v-if="activeTab === 'all'" class="page-actions">
+      <div class="page-actions">
         <CommonSearchBox placeholder="搜索站内文章、标签..." readonly @click="openSearch" />
-        <div class="display-mode-toggle">
-          <CommonTooltip content="瀑布流">
+        <CommonContextDrawer class="page-context-entry" label="筛选文章" icon="lucide:list-filter">
+          <SidebarTagCloudCard :tags="tags" :active-tag="selectedTag" @select="onTagSelect" />
+          <SidebarCategoryCard
+            :categories="categories"
+            :active-category="selectedCategory"
+            @select="onCategorySelect"
+          />
+          <button v-if="activeFilterLabel" type="button" class="filter-badge" @click="clearFilters">
+            清除筛选：{{ activeFilterLabel }}
+          </button>
+        </CommonContextDrawer>
+        <div class="display-mode-toggle" role="group" aria-label="文章列表显示模式">
+          <CommonTooltip content="连续加载">
             <button
+              type="button"
+              aria-label="连续加载"
+              :aria-pressed="listDisplayMode === 'waterfall'"
               class="display-mode-toggle__btn"
               :class="{ 'display-mode-toggle__btn--active': listDisplayMode === 'waterfall' }"
               @click="listDisplayMode = 'waterfall'"
@@ -53,6 +50,9 @@
           </CommonTooltip>
           <CommonTooltip content="分页显示">
             <button
+              type="button"
+              aria-label="分页显示"
+              :aria-pressed="listDisplayMode === 'pagination'"
               class="display-mode-toggle__btn"
               :class="{ 'display-mode-toggle__btn--active': listDisplayMode === 'pagination' }"
               @click="listDisplayMode = 'pagination'"
@@ -63,285 +63,115 @@
         </div>
       </div>
     </div>
-
-    <Transition name="tab-fade" mode="out-in">
-      <!-- 文章列表 -->
-      <BlogPostCardList
-        v-if="activeTab === 'all'"
-        key="list"
-        :posts="posts"
-        active-tab="all"
-        :display-mode="listDisplayMode"
-        :selected-tag="selectedTag"
-        :selected-category="selectedCategory"
-      />
-
-      <!-- 朋友圈 -->
-      <CommonCustomScrollbar
-        v-else-if="activeTab === 'moments'"
-        key="moments"
-        class="moments-body"
-        viewport-class="moments-viewport"
-        primary
-      >
-        <div class="moments-content">
-          <MomentList :moments="moments" :selected-topic="selectedTopic" :selected-date="selectedDate" />
-        </div>
-      </CommonCustomScrollbar>
-    </Transition>
-
-    <!-- 右侧栏 -->
+    <div v-if="activeFilterLabel" class="articles-filter-summary">
+      <span role="status">当前筛选：{{ activeFilterLabel }}</span>
+      <button type="button" class="filter-badge" :aria-label="`清除筛选：${activeFilterLabel}`" @click="clearFilters">
+        <Icon name="lucide:x" size="14" />清除筛选
+      </button>
+    </div>
+    <BlogPostCardList
+      :posts="posts"
+      :total="postTotal"
+      :current-page="postPage"
+      :pending="postsPending"
+      :error-message="postsError ? '文章加载失败，请重试' : ''"
+      active-tab="all"
+      :display-mode="listDisplayMode"
+      :selected-tag="selectedTag"
+      :selected-category="selectedCategory"
+      @page="postPage = $event"
+      @retry="refreshPosts()"
+    />
     <ClientOnly>
       <Teleport to="#right-sidebar-target">
         <SidebarRightSidebar>
-          <Transition :name="rightSidebarTransition" mode="out-in">
-            <!-- 文章列表侧栏 -->
-            <div v-if="activeTab === 'all'" key="sidebar-list" class="sidebar-list-group">
-              <SidebarTagCloudCard :tags="tags" :active-tag="selectedTag" @select="onTagSelect" />
-              <SidebarCategoryCard
-                :categories="categories"
-                :active-category="selectedCategory"
-                @select="onCategorySelect"
-              />
-              <BlogSubscribeCard />
-            </div>
-
-            <!-- 朋友圈侧栏（AuthorCard + 日历已移至左侧栏） -->
-            <div v-else-if="activeTab === 'moments'" key="sidebar-moments" class="sidebar-list-group">
-              <SidebarMomentPhotoWallCard :images="photoWallImages" @select-moment="onPhotoSelect" />
-              <SidebarMomentTopicCard :topics="momentTopics" :active-topic="selectedTopic" @select="onTopicSelect" />
-              <SidebarMomentInteractionCard :users="activeUsers" :total-users="totalInteractionUsers" />
-            </div>
-          </Transition>
+          <SidebarTagCloudCard :tags="tags" :active-tag="selectedTag" @select="onTagSelect" />
+          <SidebarCategoryCard
+            :categories="categories"
+            :active-category="selectedCategory"
+            @select="onCategorySelect"
+          />
+          <BlogSubscribeCard />
         </SidebarRightSidebar>
       </Teleport>
     </ClientOnly>
   </div>
 </template>
-
 <script setup lang="ts">
 import { mockPostTabs } from '~/features/post/mock'
-import { mockTags, mockCategories } from '~/features/stats/mock'
-import { mockMoments } from '~/features/moment/mock'
-import type { MomentTopic } from '~/components/sidebar/MomentTopicCard.vue'
-import type { MomentPhotoItem } from '~/components/sidebar/MomentPhotoWallCard.vue'
-import type { MomentActiveUser } from '~/components/sidebar/MomentInteractionCard.vue'
 
+const { settings: siteSettings } = useSiteSettings()
 useSeoMeta({
-  title: '首页',
-  description: 'TixXin 的个人博客，分享技术文章、项目经验与生活随笔',
-  ogTitle: '首页 - TixXin Blog',
-  ogDescription: 'TixXin 的个人博客，分享技术文章、项目经验与生活随笔',
+  title: () => siteSettings.value.seoTitle || siteSettings.value.name,
+  description: () => siteSettings.value.seoDescription || siteSettings.value.description,
+  ogTitle: () => siteSettings.value.seoTitle || siteSettings.value.name,
+  ogDescription: () => siteSettings.value.seoDescription || siteSettings.value.description,
 })
-
-const { sidebarTransitionName } = useAppearanceSettings()
-
-// 右侧栏过渡名称：需在 Tab 切换前设置，避免 Transition name 和 child 同时变更
-const rightSidebarTransition = ref(sidebarTransitionName.value)
-
-// 离开首页时重置状态，避免左侧栏残留朋友圈状态
-onBeforeUnmount(() => {
-  rightSidebarTransition.value = sidebarTransitionName.value
-  activeTab.value = 'all'
-  selectedDate.value = null
+const route = useRoute()
+const tabs = mockPostTabs
+const {
+  page: postPage,
+  selectedTag,
+  selectedCategory,
+  displayMode: listDisplayMode,
+  clearFilters,
+  replacePage,
+} = usePostListRoute()
+const { tags, categories } = await usePostMetadata()
+const {
+  posts,
+  total: postTotal,
+  pending: postsPending,
+  error: postsError,
+  refresh: refreshPosts,
+} = await usePostList({
+  page: postPage,
+  selectedTag,
+  selectedCategory,
+  displayMode: listDisplayMode,
+  resetOnScopeChange: false,
 })
+const activeFilterLabel = computed(() => [selectedCategory.value, selectedTag.value].filter(Boolean).join(' · '))
+function onTagSelect(tag: string) {
+  selectedTag.value = selectedTag.value === tag ? null : tag
+}
+function onCategorySelect(category: string) {
+  selectedCategory.value = selectedCategory.value === category ? null : category
+}
 const searchModal = inject<{ open: () => void } | null>('searchModal', null)
 function openSearch() {
   searchModal?.open()
 }
-
-// ---- 视图状态 ----
-const { homeActiveTab } = useHomeTab()
-const activeTab = homeActiveTab
-const listDisplayMode = ref<'waterfall' | 'pagination'>('pagination')
-const route = useRoute()
-
-// ---- 文章数据（useMockRepo 开关决定 mock 或后端 API）----
-const tabs = mockPostTabs
-const { posts } = await usePostList()
-const tags = mockTags
-const categories = mockCategories
-
-// ---- 标签/分类过滤 ----
-const selectedTag = ref<string | null>(null)
-const selectedCategory = ref<string | null>(null)
-
-const activeFilterLabel = computed(() => {
-  if (selectedTag.value && selectedCategory.value) {
-    return `${selectedCategory.value} · ${selectedTag.value}`
-  }
-  if (selectedTag.value) return selectedTag.value
-  if (selectedCategory.value) return selectedCategory.value
-  return null
-})
-
-function onTagSelect(tagName: string) {
-  // 切到文章 tab
-  if (activeTab.value !== 'all') switchTab('all')
-  // 再次点击取消选中
-  selectedTag.value = selectedTag.value === tagName ? null : tagName
-}
-
-function onCategorySelect(categoryName: string) {
-  if (activeTab.value !== 'all') switchTab('all')
-  selectedCategory.value = selectedCategory.value === categoryName ? null : categoryName
-}
-
-function clearFilters() {
-  selectedTag.value = null
-  selectedCategory.value = null
-}
-
-function switchTab(value: string) {
-  // 先设置过渡名称再切换 Tab，确保离场动画使用正确的 Transition name
-  if (value === 'moments' || activeTab.value === 'moments') {
-    rightSidebarTransition.value = 'sidebar-slide-right'
-  } else {
-    rightSidebarTransition.value = sidebarTransitionName.value
-  }
-  activeTab.value = value
-  if (value === 'moments') {
-    clearFilters()
-  } else {
-    selectedDate.value = null
-  }
-  // 同步 URL hash：朋友圈写入 #moments，其它清空，便于分享与刷新保持
-  if (import.meta.client) {
-    const nextHash = value === 'moments' ? '#moments' : ''
-    const nextUrl = location.pathname + location.search + nextHash
-    history.replaceState(history.state, '', nextUrl)
-  }
-}
-
-// ---- 朋友圈数据 ----
-const moments = computed(() => mockMoments)
-
-// 话题筛选
-const selectedTopic = ref<string | null>(null)
-
-function onTopicSelect(topicName: string | null) {
-  selectedTopic.value = topicName
-}
-
-// 日期筛选（通过 composable 与 RootLayout 左侧栏日历共享状态）
-const { selectedDate } = useMomentFilters()
-
-// hash → Tab 同步：放在所有依赖（switchTab / selectedTag / selectedDate）声明之后再注册
-// 既覆盖首屏冷加载（onMounted 时已 hydration 完成），也覆盖前进/后退（watch route.hash）
-function syncTabFromHash() {
-  if (route.hash === '#moments' && activeTab.value !== 'moments') {
-    switchTab('moments')
-  } else if (route.hash !== '#moments' && activeTab.value === 'moments') {
-    switchTab('all')
-  }
-}
-onMounted(syncTabFromHash)
-watch(() => route.hash, syncTabFromHash)
-
-// 照片点击 — 滚动到对应动态
-function onPhotoSelect(momentId: string) {
-  const el = document.getElementById(`moment-${momentId}`)
-  el?.scrollIntoView({ behavior: 'smooth', block: 'center' })
-}
-
-// 精选照片墙 — 按获赞数排序，取带图片的动态的首张图
-const photoWallImages = computed<MomentPhotoItem[]>(() => {
-  return mockMoments
-    .filter((m) => m.images && m.images.length > 0)
-    .sort((a, b) => b.likes - a.likes)
-    .slice(0, 9)
-    .map((m) => ({
-      src: m.images![0]!,
-      momentId: m.id,
-    }))
-})
-
-// 互动之星 — 聚合评论者排行（排除博主自己）
-const activeUsers = computed<MomentActiveUser[]>(() => {
-  const countMap = new Map<string, { avatar: string; count: number }>()
-  mockMoments.forEach((m) => {
-    m.comments?.forEach((c) => {
-      if (c.isOwner) return
-      const existing = countMap.get(c.author)
-      if (existing) {
-        existing.count++
-      } else {
-        countMap.set(c.author, { avatar: c.avatar, count: 1 })
-      }
-    })
-  })
-  return [...countMap.entries()]
-    .map(([name, { avatar, count }]) => ({ name, avatar, commentCount: count }))
-    .sort((a, b) => b.commentCount - a.commentCount)
-    .slice(0, 5)
-})
-
-const totalInteractionUsers = computed(() => {
-  const users = new Set<string>()
-  mockMoments.forEach((m) => {
-    m.comments?.forEach((c) => {
-      if (!c.isOwner) users.add(c.author)
-    })
-  })
-  return users.size
-})
-
-// 热门话题 — 话题定义与动态计数
-const TOPIC_DEFINITIONS: Omit<MomentTopic, 'count'>[] = [
-  { name: '生活日常', icon: 'lucide:sun', color: '#f59e0b', description: '记录每一天的小确幸' },
-  { name: '技术分享', icon: 'lucide:code', color: '#3b82f6', description: '代码与灵感的碰撞' },
-  { name: '读书笔记', icon: 'lucide:book-open', color: '#8b5cf6', description: '阅读中的思考片段' },
-  { name: '摄影记录', icon: 'lucide:camera', color: '#ec4899', description: '用镜头捕捉瞬间' },
-  { name: '美食探店', icon: 'lucide:utensils', color: '#ef4444', description: '味蕾的冒险旅程' },
-]
-
-const momentTopics = computed<MomentTopic[]>(() =>
-  TOPIC_DEFINITIONS.map((t) => ({
-    ...t,
-    count: mockMoments.filter((m) => m.topics?.includes(t.name)).length,
-  })),
+watch(
+  [postTotal, postsPending, postsError],
+  () => {
+    if (postsPending.value || postsError.value) return
+    const lastPage = Math.max(1, Math.ceil(postTotal.value / 15))
+    if (postPage.value > lastPage) void replacePage(lastPage)
+  },
+  { immediate: true },
 )
-</script>
 
+// 旧分享链接仍可使用，进入后归一到同一朋友圈页面和数据源。
+function migrateMomentHash() {
+  if (route.hash === '#moments') void navigateTo({ path: '/moments', query: route.query }, { replace: true })
+}
+onMounted(migrateMomentHash)
+watch(() => route.hash, migrateMomentHash)
+</script>
 <style lang="scss" scoped>
-/* 左侧：页面图标 + Tab 栏 */
 .articles-header-left {
   display: flex;
   align-items: center;
   gap: 0.875rem;
   min-width: 0;
-  flex: 1;
-
-  @media (min-width: $breakpoint-sm) {
-    flex: 0 1 auto;
-  }
 }
-
-.articles-header-left__icon {
-  // 与其他页面 page-title__icon-wrap 同尺寸，图标色随 Tab 切换带一丝强调色
-  color: var(--accent);
-  background: var(--accent-soft);
-}
-
-/* Tab 栏布局 */
 .articles-tabs {
   display: flex;
   align-items: center;
   gap: 1.5rem;
-  overflow-x: auto;
   min-width: 0;
-
-  @media (min-width: $breakpoint-sm) {
-    gap: 2rem;
-  }
-
-  // 紧凑档（sm–xl）：Tab 间距收紧，避免与右侧搜索/模式切换挤压
-  @media (min-width: $breakpoint-sm) and (max-width: #{$breakpoint-xl - 1px}) {
-    gap: 1.25rem;
-  }
 }
-
-/* 显示模式切换按钮组（瀑布流 / 分页） */
 .display-mode-toggle {
   display: flex;
   border: 1px solid var(--border);
@@ -349,140 +179,49 @@ const momentTopics = computed<MomentTopic[]>(() =>
   overflow: hidden;
   flex-shrink: 0;
 }
-
 .display-mode-toggle__btn {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 2rem;
-  height: 2rem;
+  width: 44px;
+  height: 44px;
   color: var(--text-soft);
   background: transparent;
-  transition: all 0.2s ease;
   cursor: pointer;
-
   &:hover {
     color: var(--text-main);
     background: var(--surface-2);
   }
-
   &--active {
     color: var(--text-main);
     background: var(--surface-3);
   }
-
   & + & {
     border-left: 1px solid var(--border);
   }
 }
-
-/* 侧栏列表组容器，与 RightSidebar 的 gap 保持一致 */
-.sidebar-list-group {
+.articles-filter-summary {
   display: flex;
-  flex-direction: column;
-  gap: 1.25rem;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+  padding: 0.5rem 1rem;
+  font-size: 0.8125rem;
+  color: var(--text-soft);
 }
-
-/* ---- 过滤条件标签 ---- */
 .filter-badge {
   display: inline-flex;
   align-items: center;
   gap: 0.25rem;
+  min-height: 32px;
   padding: 0.25rem 0.625rem;
   border-radius: $radius-full;
   background: var(--accent-soft);
-  color: var(--accent);
-  font-size: 0.6875rem;
-  font-weight: 600;
-  white-space: nowrap;
+  color: var(--accent-text);
+  font-size: 0.8125rem;
   cursor: pointer;
-  transition: all 0.2s ease;
-
-  &:hover {
-    background: var(--accent);
-    color: #fff;
+  @media (pointer: coarse) {
+    min-height: 44px;
   }
-}
-
-.filter-badge__close {
-  opacity: 0.6;
-
-  .filter-badge:hover & {
-    opacity: 1;
-  }
-}
-
-/* 朋友圈内容区 */
-.moments-body {
-  flex: 1;
-  min-height: 0;
-}
-
-:deep(.moments-viewport) {
-  padding: 1.5rem 1rem;
-
-  @media (min-width: $breakpoint-md) {
-    padding: 2rem;
-  }
-}
-
-.moments-content {
-  max-width: 800px;
-  margin: 0 auto;
-}
-
-/* ---- 右侧栏 slide-right 动画（朋友圈切换时使用） ---- */
-.sidebar-slide-right-enter-active {
-  transition: all 0.25s ease-out;
-}
-
-.sidebar-slide-right-leave-active {
-  transition: all 0.2s ease-in;
-}
-
-.sidebar-slide-right-enter-from {
-  opacity: 0;
-  transform: translateX(12px);
-}
-
-.sidebar-slide-right-leave-to {
-  opacity: 0;
-  transform: translateX(12px);
-}
-
-/* ---- Tab 内容区过渡动画 ---- */
-.tab-fade-enter-active {
-  transition: opacity 0.2s ease;
-}
-
-.tab-fade-leave-active {
-  transition: opacity 0.15s ease;
-}
-
-.tab-fade-enter-from,
-.tab-fade-leave-to {
-  opacity: 0;
-}
-
-.filter-fade-enter-active {
-  transition:
-    opacity 0.2s ease,
-    transform 0.2s ease;
-}
-
-.filter-fade-leave-active {
-  transition:
-    opacity 0.15s ease,
-    transform 0.15s ease;
-}
-
-.filter-fade-enter-from {
-  opacity: 0;
-  transform: translateX(-8px);
-}
-
-.filter-fade-leave-to {
-  opacity: 0;
-  transform: translateX(-8px);
 }
 </style>

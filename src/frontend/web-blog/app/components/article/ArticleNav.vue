@@ -7,17 +7,18 @@
 
 <template>
   <nav class="article-nav" aria-label="相邻文章">
-    <NuxtLink to="/articles/2" class="article-nav__card article-nav__card--prev">
+    <p v-if="error" role="status">相邻文章暂时无法加载</p>
+    <NuxtLink v-if="prev" :to="articlePath(prev)" class="article-nav__card article-nav__card--prev">
       <Icon name="lucide:chevron-left" size="20" class="article-nav__icon" />
       <div class="article-nav__text">
         <p class="article-nav__label">上一篇</p>
-        <p class="article-nav__title">{{ prevTitle }}</p>
+        <p class="article-nav__title">{{ prev.title }}</p>
       </div>
     </NuxtLink>
-    <NuxtLink to="/articles/3" class="article-nav__card article-nav__card--next">
+    <NuxtLink v-if="next" :to="articlePath(next)" class="article-nav__card article-nav__card--next">
       <div class="article-nav__text">
         <p class="article-nav__label">下一篇</p>
-        <p class="article-nav__title">{{ nextTitle }}</p>
+        <p class="article-nav__title">{{ next.title }}</p>
       </div>
       <Icon name="lucide:chevron-right" size="20" class="article-nav__icon" />
     </NuxtLink>
@@ -25,9 +26,8 @@
 </template>
 
 <script setup lang="ts">
-/** 与原型一致的硬编码标题，后续可改为 props + API */
-const prevTitle = '关于现代化个人博客交互设计的几个思考法则'
-const nextTitle = '零成本使用 GitHub Actions 实现流水线自动化构建部署'
+import type { RelatedPost } from '~/features/post/types'
+defineProps<{ prev: RelatedPost | null; next: RelatedPost | null; error?: boolean }>()
 </script>
 
 <style lang="scss" scoped>
@@ -54,6 +54,9 @@ const nextTitle = '零成本使用 GitHub Actions 实现流水线自动化构建
   text-decoration: none;
   color: inherit;
   transition: $transition-fast;
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
   box-shadow: var(--shadow-card);
 
   &:hover {
@@ -71,6 +74,9 @@ const nextTitle = '零成本使用 GitHub Actions 实现流水线自动化构建
   flex-shrink: 0;
   color: var(--text-soft);
   transition: transform 0.2s ease;
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
 
   .article-nav__card--prev:hover & {
     transform: translateX(-4px);

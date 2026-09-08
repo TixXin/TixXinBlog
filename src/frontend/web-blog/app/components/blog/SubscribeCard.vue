@@ -1,6 +1,6 @@
 <!--
   @file SubscribeCard.vue
-  @description 邮件订阅卡片组件，提供邮箱输入和订阅按钮
+  @description 可用RSS订阅入口，并说明邮件订阅尚未开放
   @author TixXin
   @since 2025-03-17
 -->
@@ -15,32 +15,11 @@
         </span>
         订阅更新
       </h3>
-      <p class="subscribe-card__desc">获取最新文章和技术分享，不会发送垃圾邮件。</p>
-      <form class="subscribe-card__form" @submit.prevent="handleSubscribe">
-        <input
-          v-model="email"
-          type="email"
-          class="input-field subscribe-card__input"
-          placeholder="输入您的邮箱..."
-          required
-        >
-        <button type="submit" class="btn-primary subscribe-card__btn">立即订阅</button>
-      </form>
+      <p class="subscribe-card__desc">使用RSS阅读器订阅最新文章。邮件订阅尚未开放。</p>
+      <a href="/rss.xml" class="btn-primary subscribe-card__btn"><Icon name="lucide:rss" size="16" />RSS订阅</a>
     </div>
   </section>
 </template>
-
-<script setup lang="ts">
-const email = ref('')
-const { info } = useToast()
-
-function handleSubscribe() {
-  if (email.value) {
-    info('邮件订阅功能开发中，敬请期待！')
-    email.value = ''
-  }
-}
-</script>
 
 <style lang="scss" scoped>
 .subscribe-card {
@@ -113,6 +92,11 @@ function handleSubscribe() {
 }
 
 .subscribe-card__btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  gap: 0.5rem;
   width: 100%;
   border-radius: $radius-md;
 }

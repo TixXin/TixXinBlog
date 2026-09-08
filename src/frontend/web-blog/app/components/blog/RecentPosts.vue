@@ -19,7 +19,7 @@
     </div>
 
     <div class="recent-posts__list">
-      <NuxtLink v-for="post in posts" :key="post.id" :to="`/articles/${post.id}`" class="recent-post-item">
+      <NuxtLink v-for="post in posts" :key="post.id" :to="articlePath(post)" class="recent-post-item">
         <div class="recent-post-item__content">
           <h3 class="recent-post-item__title">{{ post.title }}</h3>
           <div class="recent-post-item__meta">
@@ -34,7 +34,7 @@
           </div>
         </div>
         <div v-if="post.cover" class="recent-post-item__cover">
-          <NuxtImg
+          <CommonContentImage
             :src="post.cover"
             :alt="post.title"
             width="120"
@@ -86,7 +86,7 @@ defineProps<{
 }
 
 .recent-posts__icon {
-  color: var(--accent);
+  color: var(--accent-text);
 }
 
 .recent-posts__more {
@@ -96,9 +96,12 @@ defineProps<{
   font-size: 0.875rem;
   color: var(--text-muted);
   transition: $transition-colors;
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
 
   &:hover {
-    color: var(--accent);
+    color: var(--accent-text);
   }
 }
 
@@ -116,13 +119,16 @@ defineProps<{
   background: var(--surface-2);
   border: 1px solid transparent;
   transition: $transition-colors;
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
 
   &:hover {
     background: var(--surface-3);
     border-color: var(--border-hover);
 
     .recent-post-item__title {
-      color: var(--accent);
+      color: var(--accent-text);
     }
   }
 }
@@ -147,6 +153,9 @@ defineProps<{
   overflow: hidden;
   text-overflow: ellipsis;
   transition: color 0.2s ease;
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
 }
 
 .recent-post-item__meta {

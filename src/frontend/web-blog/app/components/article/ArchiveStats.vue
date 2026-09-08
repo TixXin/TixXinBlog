@@ -7,15 +7,9 @@
 
 <template>
   <section class="card archive-stats">
-    <h3 class="archive-stats__title">
-      <Icon name="lucide:bar-chart-2" size="14" /> 归档概览
-    </h3>
+    <h3 class="archive-stats__title"><Icon name="lucide:bar-chart-2" size="14" /> 归档概览</h3>
     <ul class="archive-stats__list">
-      <li
-        v-for="row in stats"
-        :key="row.label"
-        class="archive-stats__row"
-      >
+      <li v-for="row in stats" :key="row.label" class="archive-stats__row">
         <span class="archive-stats__label">{{ row.label }}</span>
         <span class="archive-stats__value">{{ row.value }}</span>
       </li>
@@ -25,20 +19,13 @@
 
     <h4 class="archive-stats__section-title">分类分布</h4>
     <div class="archive-stats__distribution">
-      <div
-        v-for="item in distribution"
-        :key="item.name"
-        class="archive-stats__dist-item"
-      >
+      <div v-for="item in distribution" :key="item.name" class="archive-stats__dist-item">
         <div class="archive-stats__dist-meta">
           <span class="archive-stats__dist-name">{{ item.name }}</span>
           <span class="archive-stats__dist-count">{{ item.count }} · {{ item.percent }}%</span>
         </div>
         <div class="archive-stats__track">
-          <div
-            class="archive-stats__fill"
-            :style="{ width: `${item.percent}%` }"
-          />
+          <div class="archive-stats__fill" :style="{ width: `${item.percent}%` }" />
         </div>
       </div>
     </div>
@@ -143,6 +130,9 @@ defineProps<{
   border-radius: $radius-full;
   background: var(--text-muted);
   transition: width 1s ease;
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
 
   .dark & {
     background: var(--text-soft);

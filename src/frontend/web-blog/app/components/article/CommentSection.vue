@@ -1,118 +1,107 @@
 <!--
   @file CommentSection.vue
-  @description 文章评论区：输入框与评论列表（含嵌套回复）
-  @author TixXin
-  @since 2026-03-20
+  @description 评论表单与列表展示，数据、身份和请求状态由页面传入
 -->
 
 <template>
-  <section class="comment-section">
+  <section class="comment-section" aria-label="文章评论">
     <h2 class="comment-section__title">
       <Icon name="lucide:message-circle" size="20" />
-      评论
-      <span class="comment-section__count">({{ comments.length }})</span>
+      评论 <span class="comment-section__count">({{ total }})</span>
     </h2>
-
     <div class="comment-section__composer">
       <div class="comment-section__avatar comment-section__avatar--placeholder">
         <Icon name="lucide:user" size="16" />
       </div>
-      <div class="comment-section__form">
-        <textarea v-model="draft" class="comment-section__textarea" rows="3" placeholder="写下你的评论..." />
+      <form class="comment-section__form" @submit.prevent="$emit('submit')">
+        <div v-if="replyTarget" class="comment-section__reply-target" role="status">
+          回复 {{ replyTarget.author }}
+          <button type="button" :disabled="submitting" @click="$emit('cancel-reply')">取消回复</button>
+        </div>
+        <label for="article-comment-draft" class="comment-section__label">{{
+          replyTarget ? '回复内容' : '评论内容'
+        }}</label>
+        <textarea
+          id="article-comment-draft"
+          ref="input"
+          v-model="draft"
+          class="comment-section__textarea"
+          rows="3"
+          maxlength="1000"
+          placeholder="写下你的评论..."
+          :disabled="submitting || !hydrated"
+          aria-describedby="article-comment-limit"
+        />
         <div class="comment-section__actions">
-          <button type="button" class="comment-section__submit" :disabled="!draft.trim()" @click="submitComment">
-            发布评论
+          <span id="article-comment-limit">{{ draft.length }} / 1000</span>
+          <button type="submit" class="comment-section__submit" :disabled="!canSubmit || !hydrated">
+            {{ submitting ? '正在发表…' : replyTarget ? '发表回复' : '发布评论' }}
           </button>
         </div>
-      </div>
+        <p v-if="submitError" role="alert" class="comment-section__error">{{ submitError }}</p>
+        <p v-if="submitNotice && !submitError" role="status">{{ submitNotice }}</p>
+      </form>
     </div>
-
-    <ul class="comment-section__list">
+    <p v-if="loadError" role="alert" class="comment-section__error">{{ loadError }}</p>
+    <p v-if="likeError" role="alert" class="comment-section__error">{{ likeError }}</p>
+    <button type="button" class="comment-section__refresh" :disabled="busy" @click="$emit('retry')">
+      {{ loading ? '正在加载评论…' : loadError ? '重试加载评论' : '刷新评论' }}
+    </button>
+    <p v-if="!loading && !loadError && !comments.length" class="comment-section__empty">暂无评论，来写下第一条吧。</p>
+    <ul class="comment-section__list" :aria-busy="loading">
       <li v-for="item in comments" :key="item.id" class="comment-section__thread">
-        <ArticleCommentBubble :comment="item">
-          <ul v-if="item.replies?.length" class="comment-section__replies">
-            <li v-for="reply in item.replies" :key="reply.id">
-              <ArticleCommentBubble :comment="reply" small />
-            </li>
-          </ul>
-        </ArticleCommentBubble>
+        <ArticleCommentBubble
+          :comment="item"
+          :busy="busy"
+          :pending-likes="pendingLikes"
+          @reply="$emit('reply', $event)"
+          @like="$emit('like', $event)"
+        />
       </li>
     </ul>
-    <!-- 游客身份弹窗 -->
-    <CommonGuestIdentityModal
-      :visible="identityModalVisible"
-      @confirm="onIdentityConfirm"
-      @cancel="identityModalVisible = false"
-      @login="onSwitchToLogin"
-    />
   </section>
 </template>
 
 <script setup lang="ts">
 import type { CommentItem } from '~/features/post/types'
 
-defineProps<{
+const props = defineProps<{
   comments: CommentItem[]
+  total: number
+  replyTarget: { id: number; author: string } | null
+  submitting: boolean
+  loading: boolean
+  busy: boolean
+  canSubmit: boolean
+  submitError: string
+  submitNotice?: string
+  loadError: string
+  likeError: string
+  pendingLikes: number[]
 }>()
-
-const emit = defineEmits<{
-  submit: [comment: CommentItem]
+const draft = defineModel<string>({ required: true })
+const input = ref<HTMLTextAreaElement | null>(null)
+const hydrated = ref(false)
+onMounted(() => {
+  hydrated.value = true
+})
+defineEmits<{
+  submit: []
+  retry: []
+  reply: [comment: CommentItem]
+  'cancel-reply': []
+  like: [id: number]
 }>()
-
-const draft = ref('')
-const { info } = useToast()
-const { isLoggedIn, currentUser } = useCurrentUser()
-const { guestIdentity, hasIdentity, resolveAvatar } = useGuestIdentity()
-const { open: openLoginDrawer } = useLoginDrawer()
-
-const identityModalVisible = ref(false)
-let pendingText = ''
-
-function submitComment() {
-  const text = draft.value.trim()
-  if (!text) return
-
-  // 已登录 → 用 currentUser 信息
-  if (isLoggedIn.value && currentUser.value) {
-    emitComment(text, currentUser.value.nickname, currentUser.value.avatar)
-    return
-  }
-  // 未登录 + 有游客身份 → 用游客信息
-  if (hasIdentity.value && guestIdentity.value) {
-    emitComment(text, guestIdentity.value.nickname, resolveAvatar())
-    return
-  }
-  // 无身份 → 暂存文本，弹出身份面板
-  pendingText = text
-  identityModalVisible.value = true
-}
-
-function emitComment(text: string, author: string, avatar: string) {
-  const newComment: CommentItem = {
-    id: Date.now(),
-    author,
-    avatar,
-    content: text,
-    time: '刚刚',
-    likes: 0,
-  }
-  emit('submit', newComment)
-  draft.value = ''
-  info('评论发布成功')
-}
-
-function onIdentityConfirm() {
-  identityModalVisible.value = false
-  if (pendingText && hasIdentity.value && guestIdentity.value) {
-    emitComment(pendingText, guestIdentity.value.nickname, resolveAvatar())
-    pendingText = ''
-  }
-}
-
-function onSwitchToLogin() {
-  identityModalVisible.value = false
-  openLoginDrawer('login')
-}
+watch(
+  () => props.replyTarget,
+  async (target) => {
+    if (target) {
+      await nextTick()
+      input.value?.focus()
+      input.value?.scrollIntoView({ block: 'center', behavior: 'smooth' })
+    }
+  },
+)
 </script>
 
 <style lang="scss" scoped>
@@ -162,6 +151,7 @@ function onSwitchToLogin() {
 .comment-section__form {
   flex: 1;
   min-width: 0;
+  min-width: 0;
 }
 
 .comment-section__textarea {
@@ -177,6 +167,9 @@ function onSwitchToLogin() {
   resize: none;
   outline: none;
   transition: $transition-fast;
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
 
   &::placeholder {
     color: var(--text-soft);
@@ -190,7 +183,10 @@ function onSwitchToLogin() {
 
 .comment-section__actions {
   display: flex;
-  justify-content: flex-end;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
   margin-top: 0.5rem;
 }
 
@@ -204,6 +200,9 @@ function onSwitchToLogin() {
   background: var(--accent);
   color: var(--surface-1);
   transition: $transition-fast;
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
 
   &:hover:not(:disabled) {
     opacity: 0.92;
@@ -236,5 +235,35 @@ function onSwitchToLogin() {
   display: flex;
   flex-direction: column;
   gap: 1rem;
+}
+.comment-section__error {
+  color: var(--text-main);
+  overflow-wrap: anywhere;
+}
+.comment-section__label {
+  display: block;
+  margin-bottom: 0.5rem;
+}
+.comment-section__reply-target {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+  overflow-wrap: anywhere;
+}
+.comment-section__reply-target button,
+.comment-section__refresh {
+  color: var(--accent-text);
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 0.4rem 0.6rem;
+  cursor: pointer;
+}
+.comment-section__refresh {
+  margin-bottom: 1rem;
+}
+.comment-section__empty {
+  color: var(--text-muted);
 }
 </style>

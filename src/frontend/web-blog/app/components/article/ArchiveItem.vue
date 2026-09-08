@@ -11,10 +11,7 @@
     <div class="archive-item__body">
       <div class="archive-item__meta">
         <time class="archive-item__date" :datetime="post.date">{{ post.date }}</time>
-        <span
-          class="archive-item__tag"
-          :class="`archive-item__tag--${post.categoryColor}`"
-        >
+        <span class="archive-item__tag" :class="`archive-item__tag--${post.categoryColor}`">
           {{ post.category }}
         </span>
       </div>
@@ -134,9 +131,12 @@ defineProps<{
   text-decoration: none;
   line-height: 1.45;
   transition: $transition-colors;
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
 
   &:hover {
-    color: var(--accent);
+    color: var(--accent-text);
   }
 
   &:focus-visible {

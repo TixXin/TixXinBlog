@@ -13,7 +13,7 @@
     </h3>
     <ul class="related__list">
       <li v-for="post in posts" :key="post.id" class="related__item">
-        <NuxtLink :to="`/articles/${post.id}`" class="related__link">
+        <NuxtLink :to="articlePath(post)" class="related__link">
           <p class="related__post-title">{{ post.title }}</p>
           <div class="related__meta">
             <span>{{ post.date }}</span>
@@ -43,6 +43,9 @@ defineProps<{
   background: var(--surface-1-alpha);
   backdrop-filter: blur(12px);
   transition: $transition-colors;
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
 }
 
 .related__title {
@@ -78,6 +81,9 @@ defineProps<{
   text-decoration: none;
   color: inherit;
   transition: $transition-fast;
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
 
   &:hover {
     background: var(--surface-3);

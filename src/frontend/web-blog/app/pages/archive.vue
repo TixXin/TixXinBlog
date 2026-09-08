@@ -26,13 +26,9 @@
     </div>
 
     <!-- 主内容：归档时间线 -->
-    <CommonCustomScrollbar
-      class="archive-body"
-      viewport-class="archive-viewport"
-      :show-back-to-top="false"
-      primary
-    >
-      <ArticleArchiveTimeline :years="archiveYears" />
+    <CommonCustomScrollbar class="archive-body" viewport-class="archive-viewport" :show-back-to-top="false" primary>
+      <p v-if="archiveError" role="alert">归档加载失败，请稍后重试</p>
+      <ArticleArchiveTimeline v-else :years="archiveYears" />
     </CommonCustomScrollbar>
 
     <!-- 右侧栏：归档统计 + 分类分布 -->
@@ -47,14 +43,10 @@
 </template>
 
 <script setup lang="ts">
-import { mockArchiveStats, mockArchiveYears, mockCategoryDistribution } from '~/features/article/mock'
-
-const archiveYears = mockArchiveYears
-const archiveStats = mockArchiveStats
-const categoryDistribution = mockCategoryDistribution
+const { archiveYears, archiveStats, categoryDistribution, error: archiveError } = await usePostMetadata()
 
 // 累加各年文章数，避免依赖 mockPosts，保持数据源一致
-const totalCount = computed(() => archiveYears.reduce((sum, year) => sum + year.count, 0))
+const totalCount = computed(() => archiveYears.value.reduce((sum, year) => sum + year.count, 0))
 
 useSeoMeta({
   title: '归档',
