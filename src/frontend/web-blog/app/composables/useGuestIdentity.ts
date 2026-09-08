@@ -84,6 +84,11 @@ export function isQQEmail(email: string): boolean {
 export function useGuestIdentity() {
   const guestIdentity = useState<GuestIdentity | null>('guest-identity', () => readIdentity())
 
+  // SSR 无法读取 localStorage，挂载后恢复，避免刷新后重复要求填写身份。
+  onMounted(() => {
+    if (!guestIdentity.value) guestIdentity.value = readIdentity()
+  })
+
   const hasIdentity = computed(() => guestIdentity.value !== null)
 
   function setIdentity(data: Omit<GuestIdentity, 'id'> & { id?: string }) {
