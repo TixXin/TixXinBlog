@@ -23,6 +23,7 @@ function saveSet(key: string, set: Set<string>) {
 }
 
 export function useLikes() {
+  const { error: showError } = useToast()
   const likedIds = useState<Set<string>>('liked-ids', () => new Set())
   const favoritedIds = useState<Set<string>>('favorited-ids', () => new Set())
 
@@ -42,8 +43,14 @@ export function useLikes() {
     } else {
       set.add(id)
     }
-    likedIds.value = set
-    saveSet(LIKES_KEY, set)
+    try {
+      saveSet(LIKES_KEY, set)
+      likedIds.value = set
+      return true
+    } catch {
+      showError('点赞未保存：浏览器存储不可用或空间不足，请重试')
+      return false
+    }
   }
 
   function isFavorited(id: string) {
@@ -57,8 +64,14 @@ export function useLikes() {
     } else {
       set.add(id)
     }
-    favoritedIds.value = set
-    saveSet(FAVORITES_KEY, set)
+    try {
+      saveSet(FAVORITES_KEY, set)
+      favoritedIds.value = set
+      return true
+    } catch {
+      showError('收藏未保存：浏览器存储不可用或空间不足，请重试')
+      return false
+    }
   }
 
   return {

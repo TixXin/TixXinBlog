@@ -1,64 +1,21 @@
 /**
  * @file flash.xml.ts
- * @description 闪念 RSS 2.0 feed，数据源当前为公开 seed（博主已发的公开闪念）
- * @author TixXin
- * @since 2026-04-17
- *
- * 由于 server 端无法访问客户端 localStorage（LocalFlashRepository 的数据位置），
- * RSS 直接消费 `defaultFlashNoteSeeds`（每条带稳定 id + createdAt）。
- * 后端就绪后替换为 $fetch /api/flash-notes?userId=owner。
+ * @description 闪念 RSS 仅使用当前公开数据，草稿/归档项过滤且不拼接未转义 CDATA
  */
+import { escapeXml, publicFlashes, publicSiteUrl, publicSiteSettings } from '../utils/publicContent'
 
-import { defaultFlashNoteSeeds } from '~/features/flash/mock'
-
-export default defineEventHandler((event) => {
-  const siteUrl = 'https://tix.xin'
-  const siteName = 'TixXin 闪念'
-  const siteDescription = '记录每一个稍纵即逝的灵感，配合 AI 搜索回顾想法历史'
-
-  const notes = defaultFlashNoteSeeds
-    .slice()
-    .sort((a, b) => new Date(b.createdAt ?? 0).getTime() - new Date(a.createdAt ?? 0).getTime())
-    .slice(0, 30)
-
-  const escapeXml = (s: string) =>
-    s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
-
-  const deriveTitle = (content: string) => {
-    const oneLine = content.replace(/\s+/g, ' ').trim()
-    return oneLine.length > 40 ? `${oneLine.slice(0, 40)}…` : oneLine
-  }
-
-  const items = notes
-    .map((n) => {
-      const title = deriveTitle(n.content)
-      const link = `${siteUrl}/flash/${n.id}`
-      const categories = (n.tags ?? []).map((t) => `      <category>${escapeXml(t)}</category>`).join('\n')
-      const descCdata = `<![CDATA[${n.content}]]>`
-
-      return `    <item>
-      <title>${escapeXml(title)}</title>
-      <link>${link}</link>
-      <guid isPermaLink="true">${link}</guid>
-      <description>${descCdata}</description>
-      <pubDate>${new Date(n.createdAt ?? Date.now()).toUTCString()}</pubDate>
-${categories}${categories ? '\n' : ''}    </item>`
-    })
+export default defineEventHandler(async (event) => {
+  const site = publicSiteUrl(event)
+  const [notes, settings] = await Promise.all([publicFlashes(event), publicSiteSettings(event)])
+  const entries = notes
+    .map(
+      (note) => `<item><title>${escapeXml(note.content.replace(/\s+/g, ' ').slice(0, 60))}</title>
+<link>${site}/flash/${encodeURIComponent(note.id)}</link><guid>${site}/flash/${encodeURIComponent(note.id)}</guid>
+<description>${escapeXml(note.content)}</description><pubDate>${new Date(note.createdAt).toUTCString()}</pubDate></item>`,
+    )
     .join('\n')
-
-  const rss = `<?xml version="1.0" encoding="UTF-8"?>
-<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
-  <channel>
-    <title>${escapeXml(siteName)}</title>
-    <link>${siteUrl}/flash</link>
-    <description>${escapeXml(siteDescription)}</description>
-    <language>zh-CN</language>
-    <lastBuildDate>${new Date().toUTCString()}</lastBuildDate>
-    <atom:link href="${siteUrl}/flash.xml" rel="self" type="application/rss+xml" />
-${items}
-  </channel>
-</rss>`
-
   setResponseHeader(event, 'content-type', 'application/rss+xml; charset=utf-8')
-  return rss
+  setResponseHeader(event, 'cache-control', 'no-store')
+  return `<?xml version="1.0" encoding="UTF-8"?><rss version="2.0"><channel>
+<title>${escapeXml(settings.name)} 闪念</title><link>${site}/flash</link><description>公开的灵感碎片</description>${entries}</channel></rss>`
 })
