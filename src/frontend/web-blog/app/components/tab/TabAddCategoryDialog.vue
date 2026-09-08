@@ -9,7 +9,7 @@
   <Teleport to="body">
     <Transition name="tab-cat-dialog">
       <div v-if="visible" class="tab-cat-dialog-overlay" @click.self="close">
-        <div class="tab-cat-dialog">
+        <div ref="dialogRef" class="tab-cat-dialog" role="dialog" aria-modal="true" aria-label="新建分类" tabindex="-1">
           <header class="tab-cat-dialog__header">
             <Icon name="lucide:folder-plus" size="16" />
             <h3 class="tab-cat-dialog__title">新建分类</h3>
@@ -33,14 +33,12 @@
                 placeholder="例如：工作、阅读、游戏"
                 maxlength="20"
                 required
-              >
+              />
             </div>
 
             <!-- 图标选择 -->
             <div class="tab-cat-dialog__field">
-              <label class="tab-cat-dialog__label">
-                选择图标
-              </label>
+              <label class="tab-cat-dialog__label"> 选择图标 </label>
               <TabIconPicker v-model="form.icon" />
             </div>
 
@@ -59,6 +57,8 @@
 import type { BookmarkCategoryDraft } from '~/features/tab/types'
 
 const visible = defineModel<boolean>('visible', { default: false })
+const dialogRef = ref<HTMLElement | null>(null)
+useModalFocus(visible, dialogRef, { close, initialFocus: () => dialogRef.value?.querySelector('input') ?? null })
 
 const emit = defineEmits<{
   submit: [draft: BookmarkCategoryDraft]
@@ -122,7 +122,7 @@ function onSubmit() {
   gap: 0.5rem;
   padding: 0.875rem 1rem;
   border-bottom: 1px solid var(--border-soft);
-  color: var(--accent);
+  color: var(--accent-text);
 }
 
 .tab-cat-dialog__title {
@@ -183,6 +183,9 @@ function onSubmit() {
   font-size: 0.8125rem;
   outline: none;
   transition: border-color 0.18s;
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
 
   &::placeholder {
     color: var(--text-faint);
@@ -201,12 +204,15 @@ function onSubmit() {
   padding: 0.625rem 1rem;
   border: none;
   border-radius: $radius-md;
-  background: var(--accent);
+  background: var(--accent-action);
   color: #fff;
   font-size: 0.8125rem;
   font-weight: 600;
   cursor: pointer;
   transition: opacity 0.2s;
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
 
   &:hover:not(:disabled) {
     opacity: 0.9;
@@ -222,6 +228,9 @@ function onSubmit() {
 .tab-cat-dialog-enter-active,
 .tab-cat-dialog-leave-active {
   transition: opacity 0.2s ease;
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
 }
 
 .tab-cat-dialog-enter-active .tab-cat-dialog,
@@ -229,6 +238,9 @@ function onSubmit() {
   transition:
     transform 0.2s ease,
     opacity 0.2s ease;
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
 }
 
 .tab-cat-dialog-enter-from,

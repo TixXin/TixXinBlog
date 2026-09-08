@@ -8,7 +8,16 @@
 <template>
   <Teleport to="body">
     <Transition name="dialog">
-      <div v-if="visible" class="tab-dialog" role="dialog" aria-modal="true" @click.self="close">
+      <div
+        v-if="visible"
+        ref="dialogRef"
+        class="tab-dialog"
+        role="dialog"
+        aria-modal="true"
+        :aria-label="isEdit ? '编辑书签' : '添加书签'"
+        tabindex="-1"
+        @click.self="close"
+      >
         <div class="tab-dialog__panel">
           <header class="tab-dialog__header">
             <Icon :name="isEdit ? 'lucide:edit-3' : 'lucide:bookmark-plus'" size="18" />
@@ -21,11 +30,11 @@
           <form class="tab-dialog__form" @submit.prevent="onSubmit">
             <label class="tab-dialog__field">
               <span>名称</span>
-              <input v-model.trim="name" type="text" required placeholder="例如：GitHub" >
+              <input v-model.trim="name" type="text" required placeholder="例如：GitHub" />
             </label>
             <label class="tab-dialog__field">
               <span>网址</span>
-              <input v-model.trim="url" type="url" required placeholder="https://example.com" >
+              <input v-model.trim="url" type="url" required placeholder="https://example.com" />
             </label>
             <label class="tab-dialog__field">
               <span>分类</span>
@@ -38,7 +47,7 @@
             <label class="tab-dialog__field">
               <span>颜色（可选）</span>
               <div class="tab-dialog__color">
-                <input v-model="color" type="color" >
+                <input v-model="color" type="color" />
                 <span>{{ color }}</span>
               </div>
             </label>
@@ -66,6 +75,8 @@ const props = defineProps<{
   initial?: Bookmark | null
 }>()
 const visible = defineModel<boolean>('visible', { default: false })
+const dialogRef = ref<HTMLElement | null>(null)
+useModalFocus(visible, dialogRef, { close, initialFocus: () => dialogRef.value?.querySelector('input') ?? null })
 const emit = defineEmits<{
   submit: [draft: BookmarkDraft]
   update: [payload: { id: string; patch: BookmarkDraft }]
@@ -115,7 +126,7 @@ function onSubmit() {
   } else {
     emit('submit', draft)
   }
-  close()
+  // 写入成功后由父页面关闭；失败时保留所有输入。
 }
 </script>
 
@@ -148,7 +159,7 @@ function onSubmit() {
   gap: 0.5rem;
   padding: 1rem 1.25rem;
   border-bottom: 1px solid var(--border-soft);
-  color: var(--accent);
+  color: var(--accent-text);
 }
 
 .tab-dialog__title {
@@ -244,7 +255,10 @@ function onSubmit() {
   font-size: 0.8125rem;
   font-weight: 600;
   cursor: pointer;
-  transition: all 0.15s;
+  transition: $transition-fast;
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
 
   &--ghost {
     background: transparent;
@@ -258,7 +272,7 @@ function onSubmit() {
   }
 
   &--primary {
-    background: var(--accent);
+    background: var(--accent-action);
     color: #fff;
 
     &:hover:not(:disabled) {
@@ -275,9 +289,15 @@ function onSubmit() {
 .dialog-enter-active,
 .dialog-leave-active {
   transition: opacity 0.18s ease;
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
 
   .tab-dialog__panel {
     transition: transform 0.18s ease;
+    @media (prefers-reduced-motion: reduce) {
+      transition: none;
+    }
   }
 }
 

@@ -18,10 +18,10 @@
           :placeholder="placeholder"
           autocomplete="off"
           spellcheck="false"
-          @focus="focused = true"
+          @focus="onFocus"
           @blur="onBlur"
           @keydown.down.prevent="focusFirstHit"
-        >
+        />
         <button v-if="query" type="button" class="tab-search__clear" aria-label="清空" @click="query = ''">
           <Icon name="lucide:x" size="14" />
         </button>
@@ -125,7 +125,10 @@ const fuse = computed(
 const localHits = computed<LocalHit[]>(() => {
   const q = query.value.trim()
   if (!q) return []
-  return fuse.value.search(q).slice(0, 5).map((r) => r.item)
+  return fuse.value
+    .search(q)
+    .slice(0, 5)
+    .map((r) => r.item)
 })
 
 const showDropdown = computed(() => focused.value && localHits.value.length > 0)
@@ -176,9 +179,18 @@ function onSubmit() {
   window.open(buildSearchUrl(q), '_blank', 'noopener')
 }
 
+let blurTimer: ReturnType<typeof setTimeout> | undefined
+function onFocus() {
+  if (blurTimer) clearTimeout(blurTimer)
+  focused.value = true
+}
+onBeforeUnmount(() => {
+  if (blurTimer) clearTimeout(blurTimer)
+})
 function onBlur() {
   // 延迟以允许点击下拉项
-  setTimeout(() => {
+  if (blurTimer) clearTimeout(blurTimer)
+  blurTimer = setTimeout(() => {
     focused.value = false
     focusedIdx.value = -1
   }, 180)
@@ -235,7 +247,10 @@ function openHit(hit: LocalHit) {
   border: 1px solid var(--border-soft);
   border-radius: $radius-full;
   box-shadow: var(--shadow-card);
-  transition: all 0.2s;
+  transition: $transition-fast;
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
 
   &:focus-within {
     border-color: var(--accent);
@@ -289,10 +304,13 @@ function openHit(hit: LocalHit) {
   margin-left: 0.5rem;
   border: none;
   border-radius: $radius-full;
-  background: var(--accent);
+  background: var(--accent-action);
   color: #fff;
   cursor: pointer;
   transition: opacity 0.2s;
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
 
   &:disabled {
     opacity: 0.4;
@@ -334,7 +352,12 @@ function openHit(hit: LocalHit) {
 
 .tab-search-dropdown-enter-active,
 .tab-search-dropdown-leave-active {
-  transition: opacity 0.15s ease, transform 0.15s ease;
+  transition:
+    opacity 0.15s ease,
+    transform 0.15s ease;
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
 }
 
 .tab-search-dropdown-enter-from,
@@ -356,12 +379,15 @@ function openHit(hit: LocalHit) {
   cursor: pointer;
   border-radius: $radius-sm;
   transition: background 0.15s;
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
 
   &:hover,
   &--focus,
   &:focus-visible {
     background: var(--accent-soft);
-    color: var(--accent);
+    color: var(--accent-text);
     outline: none;
   }
 }
@@ -382,7 +408,7 @@ function openHit(hit: LocalHit) {
 
 .tab-search__hit--focus .tab-search__hit-icon,
 .tab-search__hit:hover .tab-search__hit-icon {
-  background: var(--accent);
+  background: var(--accent-action);
   color: #fff;
 }
 

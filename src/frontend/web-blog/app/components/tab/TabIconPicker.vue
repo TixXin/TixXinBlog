@@ -28,12 +28,7 @@
     <div v-if="activeTab === 'lucide'" class="icon-picker__pane">
       <div class="icon-picker__search">
         <Icon name="lucide:search" size="12" class="icon-picker__search-icon" />
-        <input
-          v-model="searchQuery"
-          type="text"
-          class="icon-picker__search-input"
-          placeholder="搜索图标..."
-        >
+        <input v-model="searchQuery" type="text" class="icon-picker__search-input" placeholder="搜索图标..." />
       </div>
       <div class="icon-picker__grid">
         <button
@@ -48,21 +43,14 @@
           <Icon :name="icon.name" size="16" />
         </button>
       </div>
-      <div v-if="filteredIcons.length === 0" class="icon-picker__empty">
-        没有匹配的图标
-      </div>
+      <div v-if="filteredIcons.length === 0" class="icon-picker__empty">没有匹配的图标</div>
     </div>
 
     <!-- Emoji -->
     <div v-else-if="activeTab === 'emoji'" class="icon-picker__pane">
       <div class="icon-picker__search">
         <Icon name="lucide:search" size="12" class="icon-picker__search-icon" />
-        <input
-          v-model="emojiQuery"
-          type="text"
-          class="icon-picker__search-input"
-          placeholder="搜索 emoji..."
-        >
+        <input v-model="emojiQuery" type="text" class="icon-picker__search-input" placeholder="搜索 emoji..." />
       </div>
       <div class="icon-picker__grid icon-picker__grid--emoji">
         <button
@@ -77,15 +65,13 @@
           {{ e.char }}
         </button>
       </div>
-      <div v-if="filteredEmojis.length === 0" class="icon-picker__empty">
-        没有匹配的 emoji
-      </div>
+      <div v-if="filteredEmojis.length === 0" class="icon-picker__empty">没有匹配的 emoji</div>
     </div>
 
     <!-- 上传 -->
     <div v-else-if="activeTab === 'upload'" class="icon-picker__pane icon-picker__upload">
       <label class="icon-picker__upload-dropzone">
-        <input type="file" accept="image/*" class="icon-picker__upload-input" @change="onUpload">
+        <input type="file" accept="image/*" class="icon-picker__upload-input" @change="onUpload" />
         <Icon name="lucide:upload" size="24" />
         <span class="icon-picker__upload-hint">
           <strong>点击上传</strong>或拖拽图片
@@ -97,7 +83,7 @@
         {{ uploadError }}
       </p>
       <div v-if="isDataUrl" class="icon-picker__upload-preview">
-        <img :src="modelValue" alt="预览">
+        <img :src="modelValue" alt="预览" />
         <button type="button" class="icon-picker__upload-clear" @click="$emit('update:modelValue', '')">
           <Icon name="lucide:x" size="11" />
           清除
@@ -120,9 +106,7 @@ const tabs: { value: TabKey; label: string; icon: string }[] = [
 ]
 
 const isDataUrl = computed(() => props.modelValue.startsWith('data:'))
-const activeTab = ref<TabKey>(
-  isDataUrl.value ? 'upload' : props.modelValue.startsWith('lucide:') ? 'lucide' : 'emoji',
-)
+const activeTab = ref<TabKey>(isDataUrl.value ? 'upload' : props.modelValue.startsWith('lucide:') ? 'lucide' : 'emoji')
 
 const searchQuery = ref('')
 const emojiQuery = ref('')
@@ -286,7 +270,10 @@ function onUpload(e: Event) {
   font-size: 0.6875rem;
   font-weight: 500;
   cursor: pointer;
-  transition: all 0.15s;
+  transition: $transition-fast;
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
 
   &:hover {
     color: var(--text-main);
@@ -294,7 +281,7 @@ function onUpload(e: Event) {
 
   &--active {
     background: var(--surface-1);
-    color: var(--accent);
+    color: var(--accent-text);
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
   }
 }
@@ -365,6 +352,9 @@ function onUpload(e: Event) {
   transition:
     background 0.15s,
     color 0.15s;
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
 
   &:hover {
     background: var(--surface-2);
@@ -373,7 +363,7 @@ function onUpload(e: Event) {
 
   &--active {
     background: var(--accent-soft);
-    color: var(--accent);
+    color: var(--accent-text);
   }
 
   &--emoji {
@@ -407,16 +397,19 @@ function onUpload(e: Event) {
   color: var(--text-soft);
   cursor: pointer;
   text-align: center;
-  transition: all 0.15s;
+  transition: $transition-fast;
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
 
   &:hover {
     border-color: var(--accent);
-    color: var(--accent);
+    color: var(--accent-text);
     background: var(--accent-soft);
   }
 
   strong {
-    color: var(--accent);
+    color: var(--accent-text);
   }
 
   small {

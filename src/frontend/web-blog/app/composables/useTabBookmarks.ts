@@ -28,6 +28,10 @@ import { mockOwnerUser } from '~/features/auth/mock'
 export function useTabBookmarks() {
   const repo = useTabRepository()
   const { currentUser, isLoggedIn } = useCurrentUser()
+  // 本地演示数据归属站点所有者；真实管理员 UUID 不应创建第二份重复的站点数据。
+  const contentOwnerId = computed(() =>
+    currentUser.value?.role === 'owner' ? mockOwnerUser.id : (currentUser.value?.id ?? mockOwnerUser.id),
+  )
   const { open: openLoginDrawer } = useLoginDrawer()
 
   const categories = useState<BookmarkCategory[]>('tab-categories', () => [])
@@ -48,7 +52,7 @@ export function useTabBookmarks() {
    * - 未登录：回退展示博主（mockOwnerUser）的列表，同样支持 seed
    */
   async function load(force = false) {
-    const targetUserId = isLoggedIn.value && currentUser.value ? currentUser.value.id : mockOwnerUser.id
+    const targetUserId = contentOwnerId.value
     const nextScope: 'self' | 'owner' = isLoggedIn.value ? 'self' : 'owner'
 
     // 切换到不同 scope 时强制重载，避免显示上一身份的数据
@@ -113,7 +117,7 @@ export function useTabBookmarks() {
       openLoginDrawer('login')
       return null
     }
-    const created = await repo.createBookmark(currentUser.value.id, draft)
+    const created = await repo.createBookmark(contentOwnerId.value, draft)
     bookmarks.value = [...bookmarks.value, created]
     void maybeFetchFavicon(created)
     return created
@@ -175,7 +179,7 @@ export function useTabBookmarks() {
       openLoginDrawer('login')
       return null
     }
-    const created = await repo.createCategory(currentUser.value.id, draft)
+    const created = await repo.createCategory(contentOwnerId.value, draft)
     categories.value = [...categories.value, created]
     return created
   }
@@ -217,19 +221,33 @@ export function useTabBookmarks() {
   /** 批量更新书签排序（拖拽结束后一次性提交） */
   async function reorderBookmarks(updates: BookmarkReorderUpdate[]): Promise<boolean> {
     if (!isLoggedIn.value || !currentUser.value) return false
-    await repo.reorderBookmarks(currentUser.value.id, updates)
+    try {
+      await repo.reorderBookmarks(contentOwnerId.value, updates)
+    } catch {
+      error.value = '书签排序未保存，浏览器存储不可用或空间不足。'
+      return false
+    }
+    error.value = null
     const patchMap = new Map(updates.map((u) => [u.id, u] as const))
-    bookmarks.value = bookmarks.value.map((b) => {
-      const p = patchMap.get(b.id)
-      return p ? { ...b, categoryId: p.categoryId, sortOrder: p.sortOrder } : b
-    })
+    bookmarks.value = bookmarks.value
+      .map((b) => {
+        const p = patchMap.get(b.id)
+        return p ? { ...b, categoryId: p.categoryId, sortOrder: p.sortOrder } : b
+      })
+      .sort((a, b) => a.sortOrder - b.sortOrder)
     return true
   }
 
   /** 批量更新分类排序 */
   async function reorderCategories(updates: CategoryReorderUpdate[]): Promise<boolean> {
     if (!isLoggedIn.value || !currentUser.value) return false
-    await repo.reorderCategories(currentUser.value.id, updates)
+    try {
+      await repo.reorderCategories(contentOwnerId.value, updates)
+    } catch {
+      error.value = '分组排序未保存，浏览器存储不可用或空间不足。'
+      return false
+    }
+    error.value = null
     const patchMap = new Map(updates.map((u) => [u.id, u] as const))
     categories.value = [...categories.value]
       .map((c) => (patchMap.get(c.id) ? { ...c, sortOrder: patchMap.get(c.id)!.sortOrder } : c))
@@ -243,14 +261,14 @@ export function useTabBookmarks() {
       openLoginDrawer('login')
       return false
     }
-    await repo.importBulk(currentUser.value.id, data, mode)
+    await repo.importBulk(contentOwnerId.value, data, mode)
     await load(true)
     return true
   }
 
   /** 导出当前用户全部数据 */
   async function exportBulk(): Promise<{ categories: BookmarkCategory[]; bookmarks: Bookmark[] } | null> {
-    const targetUserId = isLoggedIn.value && currentUser.value ? currentUser.value.id : mockOwnerUser.id
+    const targetUserId = contentOwnerId.value
     return repo.exportBulk(targetUserId)
   }
 

@@ -146,13 +146,21 @@ const maskStyle = computed(() => ({
 .tab-wp__layer {
   position: absolute;
   inset: -24px; // 留出空间给 blur 放大后的溢出
-  transition: filter 0.3s ease, background 0.3s ease;
+  transition:
+    filter 0.3s ease,
+    background 0.3s ease;
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
 }
 
 .tab-wp__mask {
   position: absolute;
   inset: 0;
   transition: opacity 0.3s ease;
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
 }
 
 /* 噪点：SVG 图案，平铺在壁纸之上增加质感 */
