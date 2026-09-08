@@ -6,12 +6,7 @@
 -->
 
 <template>
-  <div
-    ref="triggerRef"
-    class="moment-user-popover"
-    @mouseenter="onEnter"
-    @mouseleave="onLeave"
-  >
+  <div ref="triggerRef" class="moment-user-popover" @mouseenter="onEnter" @mouseleave="onLeave">
     <slot />
     <Teleport to="body">
       <Transition name="popover-fade">
@@ -71,6 +66,9 @@ const floatingStyle = ref<Record<string, string>>({})
 
 /** 延迟关闭计时器，防止鼠标从触发元素移入弹窗时闪烁 */
 let hideTimer: ReturnType<typeof setTimeout> | null = null
+onBeforeUnmount(() => {
+  if (hideTimer) clearTimeout(hideTimer)
+})
 
 function onEnter() {
   if (hideTimer) {
@@ -177,7 +175,7 @@ function updatePosition() {
   color: var(--text-main);
 
   &.is-owner {
-    color: var(--accent);
+    color: var(--accent-text);
   }
 }
 
@@ -187,7 +185,7 @@ function updatePosition() {
   padding: 0.0625rem 0.375rem;
   border-radius: $radius-full;
   background: var(--accent-soft);
-  color: var(--accent);
+  color: var(--accent-text);
 }
 
 .moment-user-popover__bio {
@@ -203,7 +201,7 @@ function updatePosition() {
   gap: 0.25rem;
   margin-top: 0.5rem;
   font-size: 0.75rem;
-  color: var(--accent);
+  color: var(--accent-text);
   text-decoration: none;
 
   &:hover {
@@ -213,11 +211,21 @@ function updatePosition() {
 
 // 浮层过渡动画
 .popover-fade-enter-active {
-  transition: all 0.2s ease-out;
+  transition:
+    opacity 0.2s ease-out,
+    transform 0.2s ease-out;
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
 }
 
 .popover-fade-leave-active {
-  transition: all 0.15s ease-in;
+  transition:
+    opacity 0.15s ease-in,
+    transform 0.15s ease-in;
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
 }
 
 .popover-fade-enter-from,

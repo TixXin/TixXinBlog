@@ -14,11 +14,17 @@
     :class="{ 'has-image': !!link.image }"
   >
     <div v-if="link.image" class="moment-link-card__cover">
-      <img :src="link.image" :alt="link.title" loading="lazy" @error="onImageError">
+      <img :src="link.image" :alt="link.title" loading="lazy" @error="onImageError" />
     </div>
     <div class="moment-link-card__body">
       <div class="moment-link-card__head">
-        <img v-if="link.favicon && !faviconError" :src="link.favicon" alt="" class="moment-link-card__favicon" @error="faviconError = true" >
+        <img
+          v-if="link.favicon && !faviconError"
+          :src="link.favicon"
+          alt=""
+          class="moment-link-card__favicon"
+          @error="faviconError = true"
+        />
         <Icon v-else name="lucide:link" size="12" class="moment-link-card__favicon-fallback" />
         <span class="moment-link-card__site">{{ siteLabel }}</span>
         <Icon name="lucide:external-link" size="12" class="moment-link-card__external" />
@@ -65,7 +71,10 @@ const siteLabel = computed(() => {
   border-radius: $radius-md;
   text-decoration: none;
   color: inherit;
-  transition: all 0.2s ease;
+  transition: $transition-fast;
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
   overflow: hidden;
 
   &:hover {
@@ -73,7 +82,7 @@ const siteLabel = computed(() => {
     background: var(--surface-3);
 
     .moment-link-card__external {
-      color: var(--accent);
+      color: var(--accent-text);
     }
   }
 }
@@ -133,6 +142,9 @@ const siteLabel = computed(() => {
   flex-shrink: 0;
   color: var(--text-faint);
   transition: color 0.2s;
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
 }
 
 .moment-link-card__title {

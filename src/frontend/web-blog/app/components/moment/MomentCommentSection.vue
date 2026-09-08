@@ -44,20 +44,22 @@
     </div>
 
     <!-- 输入区 -->
+    <p class="moment-comments__notice">演示评论仅当前页面可见，不会发送给博主。</p>
     <div class="moment-comments__input-wrap">
       <input
         v-model="draft"
         type="text"
+        aria-label="演示评论内容"
         class="moment-comments__input"
         placeholder="写评论..."
         maxlength="200"
-        @keyup.enter="submit"
-      >
+        @keydown.enter="onEnter"
+      />
       <button
         type="button"
         class="moment-comments__send"
         :disabled="!draft.trim()"
-        aria-label="发送评论"
+        aria-label="添加演示评论"
         @click="submit"
       >
         <Icon name="lucide:send" size="14" />
@@ -123,6 +125,9 @@ function submit() {
   pendingText = text
   identityModalVisible.value = true
 }
+function onEnter(event: KeyboardEvent) {
+  if (!event.isComposing) submit()
+}
 
 function emitComment(text: string, author: string, avatar: string) {
   const comment: MomentCommentItem = {
@@ -152,6 +157,11 @@ function onSwitchToLogin() {
 </script>
 
 <style lang="scss" scoped>
+.moment-comments__notice {
+  color: var(--text-soft);
+  font-size: 0.75rem;
+  margin: 0.5rem 0;
+}
 .moment-comments {
   background: var(--surface-2);
   border-radius: $radius-md;
@@ -220,7 +230,7 @@ function onSwitchToLogin() {
 
 .moment-comments__author {
   font-weight: 600;
-  color: var(--accent);
+  color: var(--accent-text);
   cursor: pointer;
 
   &.is-owner {
@@ -236,7 +246,7 @@ function onSwitchToLogin() {
   color: var(--text-main);
 
   :deep(.mention) {
-    color: var(--accent);
+    color: var(--accent-text);
     font-weight: 500;
     cursor: pointer;
 
@@ -247,7 +257,7 @@ function onSwitchToLogin() {
 
   // 评论 Markdown 最小样式集（inline 模式，不含段落/列表）
   :deep(a) {
-    color: var(--accent);
+    color: var(--accent-text);
     text-decoration: none;
     border-bottom: 1px dotted currentColor;
 
@@ -270,7 +280,7 @@ function onSwitchToLogin() {
     padding: 0.0625rem 0.25rem;
     background: var(--surface-1);
     border-radius: $radius-sm;
-    color: var(--accent);
+    color: var(--accent-text);
   }
 }
 
@@ -278,13 +288,16 @@ function onSwitchToLogin() {
   display: block;
   border: none;
   background: transparent;
-  color: var(--accent);
+  color: var(--accent-text);
   font-size: 0.75rem;
   font-weight: 500;
   cursor: pointer;
   padding: 0.25rem 0;
   margin-left: 2rem;
   transition: opacity 0.2s;
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
 
   &:hover {
     opacity: 0.75;
@@ -310,6 +323,9 @@ function onSwitchToLogin() {
   font-size: 0.8125rem;
   outline: none;
   transition: border-color 0.2s;
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
 
   &::placeholder {
     color: var(--text-faint);
@@ -329,10 +345,13 @@ function onSwitchToLogin() {
   justify-content: center;
   border: none;
   border-radius: $radius-sm;
-  background: var(--accent);
+  background: var(--accent-action);
   color: #fff;
   cursor: pointer;
   transition: opacity 0.2s;
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
 
   &:disabled {
     opacity: 0.4;

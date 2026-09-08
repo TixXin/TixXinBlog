@@ -20,10 +20,7 @@ import { mockOwnerUser } from '~/features/auth/mock'
  * 已存在的 id 跳过（保留用户对该条目的修改/删除/归档），归档项也算"已存在"。
  * 一次性，写入版本号后下次 load 直接跳过。
  */
-async function ensureSeedsUpToDate(
-  repo: ReturnType<typeof useFlashRepository>,
-  userId: string,
-): Promise<void> {
+async function ensureSeedsUpToDate(repo: ReturnType<typeof useFlashRepository>, userId: string): Promise<void> {
   if (typeof window === 'undefined') return
   const versionKey = `flash:seeds:version:${userId}`
   const localVersion = Number(window.localStorage.getItem(versionKey) ?? '0')
@@ -42,7 +39,13 @@ async function ensureSeedsUpToDate(
 export function useFlashNotes() {
   const repo = useFlashRepository()
   const { currentUser, isLoggedIn } = useCurrentUser()
+  // 本地演示数据归属站点所有者；真实管理员 UUID 不应创建第二份重复的站点数据。
+  const contentOwnerId = computed(() =>
+    currentUser.value?.role === 'owner' ? mockOwnerUser.id : (currentUser.value?.id ?? mockOwnerUser.id),
+  )
   const { open: openLoginDrawer } = useLoginDrawer()
+  // HTTP 模式下种子由后端 DevSeeder 负责,前端不再补种(create 是管理员能力)
+  const shouldSeedLocally = useRuntimeConfig().public.useMockRepo !== false
 
   const notes = useState<FlashNote[]>('flash-notes', () => [])
   const loaded = useState<boolean>('flash-notes-loaded', () => false)
@@ -59,38 +62,44 @@ export function useFlashNotes() {
    * - 已登录：加载当前用户自己的列表，首次为空时注入 seed
    * - 未登录：回退展示博主（mockOwnerUser）的闪念列表，同样支持 seed
    */
+  const loadVersion = useState('flash-load-version', () => 0)
   async function load(force = false) {
-    const targetUserId = isLoggedIn.value && currentUser.value ? currentUser.value.id : mockOwnerUser.id
+    const targetUserId = contentOwnerId.value
     const nextScope: 'self' | 'owner' = isLoggedIn.value ? 'self' : 'owner'
 
     // 切换到不同 scope 时强制重载，避免显示上一身份的笔记
     if (loaded.value && !force && viewingScope.value === nextScope) return
 
+    const version = ++loadVersion.value
+    if (viewingScope.value !== nextScope) notes.value = []
     loading.value = true
     error.value = null
     try {
       let list = await repo.list(targetUserId)
-      if (list.length === 0) {
-        // 全新用户：全量 seed
-        for (const draft of defaultFlashNoteSeeds) {
-          await repo.create(targetUserId, draft)
+      if (shouldSeedLocally) {
+        if (list.length === 0) {
+          // 全新用户：全量 seed
+          for (const draft of defaultFlashNoteSeeds) {
+            await repo.create(targetUserId, draft)
+          }
+          if (typeof window !== 'undefined') {
+            window.localStorage.setItem(`flash:seeds:version:${targetUserId}`, String(FLASH_SEEDS_VERSION))
+          }
+          list = await repo.list(targetUserId)
+        } else {
+          // 老用户：按版本增量补种新增的 seed id（不动用户已修改/删除/归档的）
+          await ensureSeedsUpToDate(repo, targetUserId)
+          list = await repo.list(targetUserId)
         }
-        if (typeof window !== 'undefined') {
-          window.localStorage.setItem(`flash:seeds:version:${targetUserId}`, String(FLASH_SEEDS_VERSION))
-        }
-        list = await repo.list(targetUserId)
-      } else {
-        // 老用户：按版本增量补种新增的 seed id（不动用户已修改/删除/归档的）
-        await ensureSeedsUpToDate(repo, targetUserId)
-        list = await repo.list(targetUserId)
       }
-      notes.value = list
+      if (version !== loadVersion.value || nextScope !== (isLoggedIn.value ? 'self' : 'owner')) return
+      notes.value = nextScope === 'owner' ? list.filter((note) => !note.isDraft && !note.isArchived) : list
       viewingScope.value = nextScope
       loaded.value = true
     } catch (e) {
-      error.value = e instanceof Error ? e.message : String(e)
+      if (version === loadVersion.value) error.value = e instanceof Error ? e.message : String(e)
     } finally {
-      loading.value = false
+      if (version === loadVersion.value) loading.value = false
     }
   }
 
@@ -100,7 +109,7 @@ export function useFlashNotes() {
       openLoginDrawer('login')
       return null
     }
-    const created = await repo.create(currentUser.value.id, draft)
+    const created = await repo.create(contentOwnerId.value, draft)
     notes.value = [created, ...notes.value]
     return created
   }
@@ -129,7 +138,7 @@ export function useFlashNotes() {
 
   /** 关键词搜索（基于当前展示的列表所属用户） */
   async function search(query: string): Promise<FlashNote[]> {
-    const targetUserId = isLoggedIn.value && currentUser.value ? currentUser.value.id : mockOwnerUser.id
+    const targetUserId = contentOwnerId.value
     return repo.search(targetUserId, query)
   }
 
@@ -138,20 +147,23 @@ export function useFlashNotes() {
    * 详情页用：任何访客都能看到博主笔记，不受登录态影响。
    */
   async function fetchOwnerNotes(): Promise<FlashNote[]> {
+    if (repo.listPublic) return repo.listPublic()
     let list = await repo.list(mockOwnerUser.id)
-    if (list.length === 0) {
-      for (const draft of defaultFlashNoteSeeds) {
-        await repo.create(mockOwnerUser.id, draft)
+    if (shouldSeedLocally) {
+      if (list.length === 0) {
+        for (const draft of defaultFlashNoteSeeds) {
+          await repo.create(mockOwnerUser.id, draft)
+        }
+        if (typeof window !== 'undefined') {
+          window.localStorage.setItem(`flash:seeds:version:${mockOwnerUser.id}`, String(FLASH_SEEDS_VERSION))
+        }
+        list = await repo.list(mockOwnerUser.id)
+      } else {
+        await ensureSeedsUpToDate(repo, mockOwnerUser.id)
+        list = await repo.list(mockOwnerUser.id)
       }
-      if (typeof window !== 'undefined') {
-        window.localStorage.setItem(`flash:seeds:version:${mockOwnerUser.id}`, String(FLASH_SEEDS_VERSION))
-      }
-      list = await repo.list(mockOwnerUser.id)
-    } else {
-      await ensureSeedsUpToDate(repo, mockOwnerUser.id)
-      list = await repo.list(mockOwnerUser.id)
     }
-    return list
+    return list.filter((note) => !note.isDraft && !note.isArchived)
   }
 
   /**
@@ -192,7 +204,7 @@ export function useFlashNotes() {
 
   /** 加载归档箱列表，返回给 UI 单独展示，不污染主 notes 状态 */
   async function loadArchived(): Promise<FlashNote[]> {
-    const targetUserId = isLoggedIn.value && currentUser.value ? currentUser.value.id : mockOwnerUser.id
+    const targetUserId = contentOwnerId.value
     return repo.listArchived(targetUserId)
   }
 
@@ -229,9 +241,7 @@ export function useFlashNotes() {
       authorAvatar,
       content,
     })
-    notes.value = notes.value.map((n) =>
-      n.id === noteId ? { ...n, comments: [...n.comments, created] } : n,
-    )
+    notes.value = notes.value.map((n) => (n.id === noteId ? { ...n, comments: [...n.comments, created] } : n))
     return created
   }
 
@@ -255,9 +265,7 @@ export function useFlashNotes() {
         map.set(t, (map.get(t) ?? 0) + 1)
       })
     })
-    return [...map.entries()]
-      .map(([name, count]) => ({ name, count }))
-      .sort((a, b) => b.count - a.count)
+    return [...map.entries()].map(([name, count]) => ({ name, count })).sort((a, b) => b.count - a.count)
   })
 
   /** 本月新增数量 */

@@ -265,7 +265,10 @@ function onDayClick(day: CalendarDay) {
   background: transparent;
   color: var(--text-soft);
   cursor: pointer;
-  transition: all 0.15s;
+  transition: $transition-fast;
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
 
   &:hover:not(:disabled) {
     color: var(--text-main);
@@ -318,7 +321,10 @@ function onDayClick(day: CalendarDay) {
   color: var(--text-main);
   border-radius: $radius-sm;
   cursor: default;
-  transition: all 0.15s;
+  transition: $transition-fast;
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
 
   &.is-empty {
     visibility: hidden;
@@ -331,14 +337,14 @@ function onDayClick(day: CalendarDay) {
 
   &.is-today {
     font-weight: 700;
-    background: var(--accent);
+    background: var(--accent-action);
     color: #fff;
     border-radius: 50%;
   }
 
   &.has-moment:not(.is-today) {
     font-weight: 700;
-    color: var(--accent);
+    color: var(--accent-text);
     background: var(--accent-soft);
     border-radius: 50%;
     cursor: pointer;
@@ -415,12 +421,15 @@ function onDayClick(day: CalendarDay) {
   gap: 0.25rem;
   border: none;
   background: none;
-  color: var(--accent);
+  color: var(--accent-text);
   font-size: 0.6875rem;
   font-weight: 600;
   cursor: pointer;
   padding: 0.125rem 0;
   transition: opacity 0.15s;
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
 
   &:hover {
     opacity: 0.8;

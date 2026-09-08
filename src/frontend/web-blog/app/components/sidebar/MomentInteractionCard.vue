@@ -16,11 +16,7 @@
     </header>
 
     <ul v-if="users.length" class="moment-interaction-card__list">
-      <li
-        v-for="(user, index) in users"
-        :key="user.name"
-        class="moment-interaction-card__item"
-      >
+      <li v-for="(user, index) in users" :key="user.name" class="moment-interaction-card__item">
         <span class="moment-interaction-card__rank" :class="rankClass(index)">{{ index + 1 }}</span>
         <div class="moment-interaction-card__avatar-wrap">
           <NuxtImg
@@ -91,7 +87,7 @@ function rankClass(index: number): string {
 }
 
 .moment-interaction-card__title-icon {
-  color: var(--accent);
+  color: var(--accent-text);
 }
 
 .moment-interaction-card__count {
@@ -117,7 +113,12 @@ function rankClass(index: number): string {
   gap: 0.625rem;
   padding: 0.375rem 0.5rem;
   border-radius: $radius-sm;
-  transition: background-color 0.2s ease, transform 0.2s ease;
+  transition:
+    background-color 0.2s ease,
+    transform 0.2s ease;
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
 
   &:hover {
     background: var(--surface-2);

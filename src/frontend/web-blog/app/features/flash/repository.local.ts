@@ -10,6 +10,7 @@
  */
 
 import type { FlashNoteRepository } from './repository'
+import { writeLocalJson } from '~/utils/localPersistence'
 import type { FlashComment, FlashCommentDraft, FlashNote, FlashNoteDraft } from './types'
 
 const STORAGE_PREFIX = 'flash:notes:'
@@ -31,12 +32,7 @@ function readAll(userId: string): FlashNote[] {
 }
 
 function writeAll(userId: string, notes: FlashNote[]): void {
-  if (typeof window === 'undefined') return
-  try {
-    window.localStorage.setItem(storageKey(userId), JSON.stringify(notes))
-  } catch {
-    // 容量超限或被禁用 → 静默失败，避免阻断 UI
-  }
+  writeLocalJson(storageKey(userId), notes)
 }
 
 function generateId(prefix = 'note'): string {
@@ -170,7 +166,11 @@ export class LocalFlashRepository implements FlashNoteRepository {
     if (idx === -1) return Promise.reject(new Error(`FlashNote ${id} not found`))
     const original = normalize(notes[idx]!)
     // mock 阶段简单切换 0 ↔ 1，避免在客户端状态里维护"哪些用户点过"
-    const next: FlashNote = { ...original, likes: original.likes > 0 ? 0 : 1 }
+    const next: FlashNote = {
+      ...original,
+      liked: !original.liked,
+      likes: Math.max(0, original.likes + (original.liked ? -1 : 1)),
+    }
     notes[idx] = next
     writeAll(userId, notes)
     return Promise.resolve(next)

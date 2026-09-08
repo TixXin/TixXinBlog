@@ -15,20 +15,27 @@ export function useFlashAISearch() {
   const query = ref('')
   const result = ref<FlashAISearchResult | null>(null)
   const errorMsg = ref<string | null>(null)
+  let version = 0
+  let controller: AbortController | undefined
 
   /** 触发一次 AI 搜索；调用方提供当前可见的笔记列表 */
   async function ask(text: string, notes: FlashNote[]) {
     const trimmed = text.trim()
     if (!trimmed) return
+    const request = ++version
+    controller?.abort()
+    controller = new AbortController()
     query.value = trimmed
     status.value = 'loading'
     errorMsg.value = null
     result.value = null
     try {
-      const res = await mockFlashAISearch(trimmed, notes)
+      const res = await mockFlashAISearch(trimmed, notes, controller.signal)
+      if (request !== version) return
       result.value = res
       status.value = 'success'
     } catch (e) {
+      if (request !== version) return
       errorMsg.value = e instanceof Error ? e.message : String(e)
       status.value = 'error'
     }
@@ -36,11 +43,16 @@ export function useFlashAISearch() {
 
   /** 清空状态，回到 idle */
   function reset() {
+    version++
+    controller?.abort()
+    controller = undefined
     status.value = 'idle'
     query.value = ''
     result.value = null
     errorMsg.value = null
   }
+
+  onScopeDispose(reset)
 
   return {
     status,

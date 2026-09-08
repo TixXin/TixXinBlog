@@ -52,7 +52,7 @@
       <!-- 图片网格 -->
       <div v-if="moment.images && moment.images.length > 0" class="moment-card__images" :class="gridClass">
         <div v-for="(img, idx) in moment.images" :key="idx" class="moment-card__image-wrap" @click="openLightBox(idx)">
-          <img :src="img" alt="图片" class="moment-card__image" loading="lazy" >
+          <img :src="img" alt="图片" class="moment-card__image" loading="lazy" />
         </div>
       </div>
 
@@ -148,8 +148,6 @@ const props = defineProps<{
   moment: MomentItem
 }>()
 
-
-
 const avatarError = ref(false)
 
 const formattedDate = computed(() => formatRelativeDate(props.moment.date))
@@ -161,6 +159,16 @@ const renderedContent = computed(() => renderMomentMarkdown(props.moment.content
 const isLiked = ref(props.moment.isLiked)
 const likes = ref(props.moment.likes)
 const justLiked = ref(false)
+const { reducedMotion } = useMotionPreference()
+let likeTimer: ReturnType<typeof setTimeout> | undefined
+const finishLike = () => {
+  if (likeTimer) clearTimeout(likeTimer)
+  justLiked.value = false
+}
+watch(reducedMotion, (reduced) => {
+  if (reduced) finishLike()
+})
+onBeforeUnmount(finishLike)
 
 function toggleLike() {
   if (isLiked.value) {
@@ -169,10 +177,11 @@ function toggleLike() {
   } else {
     isLiked.value = true
     likes.value++
-    justLiked.value = true
-    setTimeout(() => {
-      justLiked.value = false
-    }, 600)
+    finishLike()
+    if (!reducedMotion.value) {
+      justLiked.value = true
+      likeTimer = setTimeout(finishLike, 400)
+    }
   }
 }
 
@@ -261,7 +270,7 @@ function onLightBoxChange(index: number) {
 
 .moment-card__author {
   font-weight: 600;
-  color: var(--accent);
+  color: var(--accent-text);
   font-size: 1rem;
 }
 
@@ -282,7 +291,7 @@ function onLightBoxChange(index: number) {
   padding: 0.0625rem 0.4rem;
   font-size: 0.6875rem;
   font-weight: 500;
-  color: var(--accent);
+  color: var(--accent-text);
   background: var(--accent-soft);
   border-radius: $radius-sm;
   line-height: 1.4;
@@ -305,7 +314,7 @@ function onLightBoxChange(index: number) {
   }
 
   :deep(a) {
-    color: var(--accent);
+    color: var(--accent-text);
     text-decoration: none;
     border-bottom: 1px dotted currentColor;
 
@@ -364,7 +373,7 @@ function onLightBoxChange(index: number) {
     padding: 0.125rem 0.375rem;
     background: var(--surface-2);
     border-radius: $radius-sm;
-    color: var(--accent);
+    color: var(--accent-text);
   }
 
   :deep(pre) {
@@ -400,12 +409,15 @@ function onLightBoxChange(index: number) {
 
 .moment-card__topic-tag {
   font-size: 0.75rem;
-  color: var(--accent);
+  color: var(--accent-text);
   background: var(--accent-soft);
   padding: 0.125rem 0.5rem;
   border-radius: $radius-full;
   text-decoration: none;
   transition: $transition-colors;
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
 
   &:hover {
     color: #fff;
@@ -452,6 +464,9 @@ function onLightBoxChange(index: number) {
   height: 100%;
   object-fit: cover;
   transition: transform 0.3s ease;
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
 
   .moment-card__image-wrap:hover & {
     transform: scale(1.05);
@@ -488,9 +503,12 @@ function onLightBoxChange(index: number) {
   color: var(--text-faint);
   text-decoration: none;
   transition: $transition-colors;
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
 
   &:hover {
-    color: var(--accent);
+    color: var(--accent-text);
     text-decoration: underline;
     text-decoration-style: dotted;
     text-underline-offset: 3px;
@@ -516,6 +534,9 @@ function onLightBoxChange(index: number) {
   border-radius: $radius-sm;
   cursor: pointer;
   transition: $transition-colors;
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
 
   &:hover {
     color: var(--text-main);
@@ -523,7 +544,7 @@ function onLightBoxChange(index: number) {
   }
 
   &.is-active {
-    color: var(--accent);
+    color: var(--accent-text);
   }
 
   &.is-liked {
@@ -547,6 +568,9 @@ function onLightBoxChange(index: number) {
 
   &--burst {
     animation: like-pop 0.35s ease-out;
+    @media (prefers-reduced-motion: reduce) {
+      animation: none;
+    }
 
     // 粒子效果（6个圆点从中心向外扩散）
     &::before {
@@ -558,6 +582,9 @@ function onLightBoxChange(index: number) {
       height: 2px;
       border-radius: 50%;
       animation: like-particles 0.5s ease-out forwards;
+      @media (prefers-reduced-motion: reduce) {
+        animation: none;
+      }
     }
   }
 }
@@ -611,10 +638,16 @@ function onLightBoxChange(index: number) {
 // 点赞数字过渡
 .like-count-enter-active {
   animation: count-float-in 0.3s ease-out;
+  @media (prefers-reduced-motion: reduce) {
+    animation: none;
+  }
 }
 
 .like-count-leave-active {
   animation: count-float-out 0.2s ease-in;
+  @media (prefers-reduced-motion: reduce) {
+    animation: none;
+  }
   position: absolute;
   left: 0;
 }
@@ -645,11 +678,23 @@ function onLightBoxChange(index: number) {
 
 // 评论区展开过渡
 .comment-slide-enter-active {
-  transition: all 0.25s ease-out;
+  transition:
+    opacity 0.22s ease-out,
+    transform 0.22s ease-out,
+    max-height 0.22s ease-out;
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
 }
 
 .comment-slide-leave-active {
-  transition: all 0.2s ease-in;
+  transition:
+    opacity 0.2s ease-in,
+    transform 0.2s ease-in,
+    max-height 0.2s ease-in;
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
 }
 
 .comment-slide-enter-from {
