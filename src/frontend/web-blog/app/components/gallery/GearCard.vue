@@ -9,14 +9,10 @@
   <section class="card gear-card">
     <h3 class="gear-card__title">
       <Icon name="lucide:info" size="16" />
-      <span>器材信息</span>
+      <span>示例器材</span>
     </h3>
     <ul class="gear-card__list">
-      <li
-        v-for="(item, index) in gear"
-        :key="`${item.name}-${index}`"
-        class="gear-card__item"
-      >
+      <li v-for="(item, index) in gear" :key="`${item.name}-${index}`" class="gear-card__item">
         <div class="gear-card__icon-wrap">
           <Icon :name="item.icon" size="16" />
         </div>

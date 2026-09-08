@@ -7,17 +7,14 @@
 
 <template>
   <div class="message-list">
-    <template
-      v-for="group in groups"
-      :key="group.date"
-    >
+    <template v-for="group in groups" :key="group.date">
       <!-- 日期分隔线：左线 + 徽标 + 右线 -->
       <div class="message-list__date-row">
         <span class="message-list__date-line" />
         <span class="message-list__date-badge">{{ group.date }}</span>
         <span class="message-list__date-line" />
       </div>
-      <TransitionGroup name="msg-enter" :css="false" @enter="onMsgEnter">
+      <TransitionGroup name="msg-enter" :css="false" @enter="onMsgEnter" @enter-cancelled="cancel">
         <GuestbookMessageBubble
           v-for="msg in group.messages"
           :key="msg.id"
@@ -40,25 +37,10 @@ defineEmits<{
   reply: [message: GuestMessage]
 }>()
 
-/** 新消息渐入 + 轻微上移动画 */
+const { enter, cancel } = useEntranceMotion()
+/** 新消息入场由组件作用域持有，卸载与减少动态效果都可靠收尾。 */
 function onMsgEnter(el: Element, done: () => void) {
-  const htmlEl = el as HTMLElement
-  htmlEl.style.opacity = '0'
-  htmlEl.style.transform = 'translateY(8px)'
-
-  requestAnimationFrame(() => {
-    htmlEl.style.transition = 'opacity 0.25s ease, transform 0.25s ease'
-    htmlEl.style.opacity = '1'
-    htmlEl.style.transform = 'translateY(0)'
-
-    const onEnd = () => {
-      htmlEl.style.transition = ''
-      htmlEl.style.transform = ''
-      htmlEl.removeEventListener('transitionend', onEnd)
-      done()
-    }
-    htmlEl.addEventListener('transitionend', onEnd, { once: true })
-  })
+  enter(el, done)
 }
 </script>
 

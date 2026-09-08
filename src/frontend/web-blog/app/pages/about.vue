@@ -9,6 +9,9 @@
   <div class="main-inner">
     <CommonCustomScrollbar class="about-body" viewport-class="about-viewport" :show-back-to-top="false" primary>
       <AboutHero :profile="profile" />
+      <p class="about-demo-note">
+        以下技能、经历、兴趣与书单为界面示例，尚未作为博主履历确认。联系方式使用本站公开资料。
+      </p>
       <AboutSkillBars :skills="skills" />
       <AboutExperienceTimeline :experiences="experiences" />
       <AboutContactCards :contacts="contacts" />
@@ -26,14 +29,7 @@
 </template>
 
 <script setup lang="ts">
-import {
-  mockProfile,
-  mockSkills,
-  mockExperiences,
-  mockContacts,
-  mockHobbies,
-  mockReadings,
-} from '~/features/about/mock'
+import { mockSkills, mockExperiences, mockHobbies, mockReadings } from '~/features/about/mock'
 
 useSeoMeta({
   title: '关于我',
@@ -42,15 +38,37 @@ useSeoMeta({
   ogDescription: '了解 TixXin — 个人简介、技能栈、职业经历与联系方式',
 })
 
-const profile = mockProfile
+const { ownerCard } = useSiteInfo()
+const profile = computed(() => ({
+  name: ownerCard.value.name,
+  avatar: ownerCard.value.avatar || '/avatar.svg',
+  bio: ownerCard.value.title,
+  socials: ownerCard.value.socials,
+}))
 const skills = mockSkills
 const experiences = mockExperiences
-const contacts = mockContacts
+const contacts = computed(() =>
+  ownerCard.value.socials.map((link) => ({
+    icon: link.icon,
+    type: link.label,
+    value: link.href.replace(/^mailto:|^https?:\/\//, ''),
+    href: link.href,
+  })),
+)
 const hobbies = mockHobbies
 const readings = mockReadings
 </script>
 
 <style lang="scss" scoped>
+.about-demo-note {
+  padding: 1rem;
+  margin-bottom: 1.5rem;
+  border: 1px solid var(--border);
+  border-radius: $radius-md;
+  font-size: 0.875rem;
+  color: var(--text-soft);
+  line-height: 1.7;
+}
 .about-body {
   flex: 1;
   padding: 0;

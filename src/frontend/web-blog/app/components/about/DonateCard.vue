@@ -13,9 +13,10 @@
         <span class="donate-card__icon">
           <Icon name="lucide:coffee" size="16" />
         </span>
-        请我喝咖啡      </h3>
-      <p class="donate-card__desc">如果我的文章对你有帮助，欢迎请我喝杯咖啡</p>
-      <button class="btn-primary donate-card__btn">打赏支持</button>
+        感谢支持
+      </h3>
+      <p class="donate-card__desc">打赏暂未开放。感谢你阅读、收藏或分享喜欢的文章。</p>
+      <span class="donate-card__status">打赏暂未开放</span>
     </div>
   </section>
 </template>
@@ -73,8 +74,8 @@
   margin-bottom: 1rem;
 }
 
-.donate-card__btn {
-  width: 100%;
-  border-radius: $radius-md;
+.donate-card__status {
+  color: var(--text-soft);
+  font-size: 0.8125rem;
 }
 </style>

@@ -7,9 +7,7 @@
 
 <template>
   <section class="card hobby-card">
-    <h3 class="hobby-card__title">
-      <Icon name="lucide:heart" size="14" /> 兴趣爱好
-    </h3>
+    <h3 class="hobby-card__title"><Icon name="lucide:heart" size="14" /> 兴趣示例</h3>
     <div class="hobby-card__tags">
       <span v-for="h in hobbies" :key="h.label" class="hobby-card__tag">
         <Icon :name="h.icon" size="12" /> {{ h.label }}

@@ -20,7 +20,7 @@ export interface ReplyRef {
 }
 
 /** 消息发送状态 */
-export type MessageStatus = 'sending' | 'sent' | 'read'
+export type MessageStatus = 'sending' | 'sent' | 'read' | 'local'
 
 export interface GuestMessage {
   id: number

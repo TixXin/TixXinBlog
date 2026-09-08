@@ -7,8 +7,7 @@
 
 <template>
   <section class="card reading-card">
-    <h3 class="reading-card__title">
-      <Icon name="lucide:book-open" size="14" /> 最近在读    </h3>
+    <h3 class="reading-card__title"><Icon name="lucide:book-open" size="14" /> 书单示例</h3>
     <div class="reading-card__list">
       <div v-for="book in books" :key="book.title" class="reading-card__item">
         <div class="reading-card__cover">

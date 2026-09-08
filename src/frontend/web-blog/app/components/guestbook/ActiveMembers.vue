@@ -8,18 +8,11 @@
 <template>
   <section class="card active-members">
     <h3 class="active-members__title">
-      <Icon
-        name="lucide:users"
-        size="14"
-      />
+      <Icon name="lucide:users" size="14" />
       活跃成员
     </h3>
     <ul class="active-members__list">
-      <li
-        v-for="(m, index) in members"
-        :key="`${m.name}-${index}`"
-        class="active-members__row"
-      >
+      <li v-for="(m, index) in members" :key="`${m.name}-${index}`" class="active-members__row">
         <!-- 排名标识 -->
         <div v-if="index < 3" class="active-members__rank" :class="`active-members__rank--${index + 1}`">
           <Icon name="lucide:crown" size="10" />
@@ -28,17 +21,8 @@
           {{ index + 1 }}
         </div>
 
-        <div
-          class="active-members__avatar-wrap"
-          :class="{ 'active-members__avatar-wrap--online': m.isOnline }"
-        >
-          <img
-            class="active-members__avatar"
-            :src="m.avatar"
-            :alt="`${m.name} 的头像`"
-            width="36"
-            height="36"
-          >
+        <div class="active-members__avatar-wrap" :class="{ 'active-members__avatar-wrap--online': m.isOnline }">
+          <img class="active-members__avatar" :src="m.avatar" :alt="`${m.name} 的头像`" width="36" height="36" />
         </div>
         <div class="active-members__info">
           <span class="active-members__name">{{ m.name }}</span>
@@ -95,6 +79,9 @@ defineProps<{
   padding: 0.4375rem 0.5rem;
   border-radius: $radius-md;
   transition: background 0.2s;
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
 
   &:hover {
     background: var(--surface-2);
