@@ -7,18 +7,22 @@
 
 <template>
   <div class="post-card-list-root">
+    <div v-if="pending || errorMessage" class="post-list-feedback">
+      <p v-if="pending" role="status">正在加载文章…</p>
+      <div v-else role="alert">
+        {{ errorMessage }}<span v-if="posts.length">，已保留原列表。</span>
+        <button type="button" @click="$emit('retry')">重试</button>
+      </div>
+    </div>
     <CommonCustomScrollbar
       ref="scrollbarRef"
       class="main-content__body"
       viewport-class="post-list-viewport"
       :show-progress="displayMode === 'waterfall'"
       :show-back-to-top="false"
+      :aria-busy="pending"
       primary
     >
-      <p v-if="pending" role="status">正在加载文章…</p>
-      <div v-if="errorMessage" role="alert">
-        {{ errorMessage }} <button type="button" @click="$emit('retry')">重试</button>
-      </div>
       <!-- 瀑布流模式：TransitionGroup 实现新卡片渐入动画 -->
       <TransitionGroup
         v-if="displayMode === 'waterfall'"
@@ -38,12 +42,10 @@
         />
       </TransitionGroup>
 
-      <!-- 分页模式：Transition 实现翻页淡入淡出 -->
-      <Transition v-else name="page-fade" mode="out-in">
-        <div :key="paginationKey" class="post-list">
-          <ThemeComponent v-for="post in displayedPosts" :key="post.id" name="PostCard" :post="post" />
-        </div>
-      </Transition>
+      <!-- 保持容器稳定，仅在已接受的新文章到齐后播放可取消过渡。 -->
+      <div v-else ref="pageListRef" class="post-list">
+        <ThemeComponent v-for="post in displayedPosts" :key="post.id" name="PostCard" :post="post" />
+      </div>
 
       <p v-if="!pending && !errorMessage && filteredPosts.length === 0" class="post-list__empty">暂无相关文章</p>
 
@@ -79,7 +81,7 @@
           type="button"
           aria-label="上一页"
           class="pagination__btn"
-          :disabled="pending || currentPage <= 1"
+          :disabled="currentPage <= 1"
           @click="goToPage(currentPage - 1)"
         >
           <Icon name="lucide:chevron-left" size="16" />
@@ -91,7 +93,6 @@
             v-else
             type="button"
             :aria-current="page === currentPage ? 'page' : undefined"
-            :disabled="pending"
             class="pagination__btn pagination__page"
             :class="{ 'pagination__page--active': page === currentPage }"
             @click="goToPage(page as number)"
@@ -104,7 +105,7 @@
           type="button"
           aria-label="下一页"
           class="pagination__btn"
-          :disabled="pending || currentPage >= totalPages"
+          :disabled="currentPage >= totalPages"
           @click="goToPage(currentPage + 1)"
         >
           <Icon name="lucide:chevron-right" size="16" />
@@ -144,6 +145,8 @@ const props = withDefaults(
 const emit = defineEmits<{ page: [page: number]; retry: [] }>()
 
 const scrollbarRef = ref<{ viewport: HTMLElement | null; scrollToTop: (smooth?: boolean) => void } | null>(null)
+const pageListRef = ref<HTMLElement | null>(null)
+usePostPageMotion(pageListRef, toRef(props, 'posts'), toRef(props, 'displayMode'))
 
 const {
   filteredPosts,
@@ -154,7 +157,6 @@ const {
   sentinelRef,
   currentPage,
   totalPages,
-  paginationKey,
   pageList,
   goToPage,
 } = usePostListPagination({
@@ -238,6 +240,34 @@ onUnmounted(() => {
   position: relative;
 }
 
+// 状态提示不参与列表排版，避免请求开始和结束时内容上下跳动。
+.post-list-feedback {
+  position: absolute;
+  top: 0.5rem;
+  right: 1rem;
+  z-index: 3;
+  max-width: calc(100% - 2rem);
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: $radius-md;
+  background: var(--surface-1);
+  color: var(--text-soft);
+  font-size: 0.8125rem;
+  box-shadow: var(--shadow-card);
+  pointer-events: none;
+
+  p {
+    margin: 0;
+  }
+  button {
+    min-height: 44px;
+    margin-left: 0.5rem;
+    padding: 0 0.5rem;
+    color: var(--accent-text);
+    pointer-events: auto;
+  }
+}
+
 /* 外层容器：重置 .main-content__body 自带的 padding，将间距交给视口层控制 */
 .main-content__body {
   padding: 0;
@@ -317,35 +347,6 @@ onUnmounted(() => {
   color: var(--text-soft);
   font-size: 0.8125rem;
   white-space: nowrap;
-}
-
-/* ---- 分页翻页过渡 ---- */
-.page-fade-enter-active {
-  transition:
-    opacity 0.25s ease,
-    transform 0.25s ease;
-  @media (prefers-reduced-motion: reduce) {
-    transition: none;
-  }
-}
-
-.page-fade-leave-active {
-  transition:
-    opacity 0.15s ease,
-    transform 0.15s ease;
-  @media (prefers-reduced-motion: reduce) {
-    transition: none;
-  }
-}
-
-.page-fade-enter-from {
-  opacity: 0;
-  transform: translateY(12px);
-}
-
-.page-fade-leave-to {
-  opacity: 0;
-  transform: translateY(-8px);
 }
 
 /* ---- 加载指示器渐隐渐现 ---- */
