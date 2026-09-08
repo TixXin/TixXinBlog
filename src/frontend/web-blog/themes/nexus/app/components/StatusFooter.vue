@@ -6,12 +6,7 @@
 -->
 
 <template>
-  <div
-    class="nexus-bar"
-    :class="{ 'is-expanded': isExpanded }"
-    @mouseenter="onBarEnter"
-    @mouseleave="onBarLeave"
-  >
+  <div class="nexus-bar" :class="{ 'is-expanded': isExpanded }" @mouseenter="onBarEnter" @mouseleave="onBarLeave">
     <!-- 头像：半悬浮，hover 触发展开 + 在线状态微标签（登录态下切换为当前用户） -->
     <NuxtLink
       to="/"
@@ -20,7 +15,7 @@
       :aria-label="`返回首页（当前：${displayName}）`"
       @mouseenter="onAvatarEnter"
     >
-      <NuxtImg
+      <img
         v-if="!avatarError"
         :key="displayAvatarUrl"
         :src="displayAvatarUrl"
@@ -28,7 +23,6 @@
         :width="80"
         :height="80"
         class="nexus-bar__avatar-img"
-        format="webp"
         loading="eager"
         fetchpriority="high"
         @error="onAvatarError"
@@ -91,7 +85,9 @@
               <circle class="nexus-bar__progress-ring-bg" cx="18" cy="18" r="16" />
               <circle
                 class="nexus-bar__progress-ring-fill"
-                cx="18" cy="18" r="16"
+                cx="18"
+                cy="18"
+                r="16"
                 :style="{ strokeDashoffset: progressRingOffset }"
               />
             </svg>
@@ -137,12 +133,7 @@
                   <span :key="dailyQuote">「{{ dailyQuote }}」</span>
                 </Transition>
               </p>
-              <button
-                class="nexus-bar__quote-refresh"
-                type="button"
-                aria-label="换一条"
-                @click="refreshQuote"
-              >
+              <button class="nexus-bar__quote-refresh" type="button" aria-label="换一条" @click="refreshQuote">
                 <Icon name="lucide:refresh-cw" size="12" />
               </button>
             </div>
@@ -173,34 +164,19 @@
 
     <!-- 用户菜单 popover（底部栏上方悬浮，已登录时可展开） -->
     <Transition name="nexus-user-menu">
-      <div
-        v-if="isUserMenuOpen && isLoggedIn"
-        ref="userMenuRef"
-        class="nexus-bar__user-menu"
-        role="menu"
-      >
+      <div v-if="isUserMenuOpen && isLoggedIn" ref="userMenuRef" class="nexus-bar__user-menu" role="menu">
         <div class="nexus-bar__user-menu-header">
           <div class="nexus-bar__user-menu-name">{{ currentUser?.nickname }}</div>
           <div class="nexus-bar__user-menu-email">{{ currentUser?.email }}</div>
         </div>
         <div class="nexus-bar__user-menu-divider" />
-        <button
-          type="button"
-          class="nexus-bar__user-menu-item"
-          role="menuitem"
-          @click="onUserMenuProfile"
-        >
+        <button type="button" class="nexus-bar__user-menu-item" role="menuitem" @click="onUserMenuProfile">
           <Icon name="lucide:user" size="14" />
           <span>个人中心</span>
         </button>
-        <button
-          type="button"
-          class="nexus-bar__user-menu-item"
-          role="menuitem"
-          @click="onUserMenuSettings"
-        >
+        <button type="button" class="nexus-bar__user-menu-item" role="menuitem" @click="onUserMenuSettings">
           <Icon name="lucide:settings" size="14" />
-          <span>账号设置</span>
+          <span>管理文章</span>
         </button>
         <div class="nexus-bar__user-menu-divider" />
         <button
@@ -243,13 +219,12 @@ const GLOW_COLOR_MAP: Record<OwnerPresence, string> = {
 }
 
 // 默认博主头像（未登录时使用）
-const defaultAvatarUrl =
-  'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=200&q=80&sat=-12'
+const defaultAvatarUrl = computed(() => ownerCard.value.avatar || '/avatar.svg')
 
 const avatarError = ref(false)
 
 /** 当前应展示的头像 URL：登录后用 currentUser.avatar，否则回落到博主默认头像 */
-const displayAvatarUrl = computed(() => currentUser.value?.avatar || defaultAvatarUrl)
+const displayAvatarUrl = computed(() => currentUser.value?.avatar || defaultAvatarUrl.value)
 
 /** 当前应展示的名字：登录后用 currentUser.nickname，否则用 ownerCard.name */
 const displayName = computed(() => currentUser.value?.nickname || ownerCard.value.name)
@@ -289,9 +264,7 @@ const avatarGlowColor = computed(() => GLOW_COLOR_MAP[effectivePresence.value.st
 const showSocials = computed(() => !isLoggedIn.value || currentUser.value?.role === 'owner')
 
 /** 账号入口按钮：图标、aria-label、点击行为均按登录态切换 */
-const loginButtonIcon = computed(() =>
-  isLoggedIn.value ? 'lucide:user-round-cog' : 'lucide:circle-user',
-)
+const loginButtonIcon = computed(() => (isLoggedIn.value ? 'lucide:user-round-cog' : 'lucide:circle-user'))
 const loginButtonAriaLabel = computed(() =>
   isLoggedIn.value ? `用户菜单：${currentUser.value?.nickname ?? ''}` : '登录',
 )
@@ -342,7 +315,10 @@ let collapseTimer: ReturnType<typeof setTimeout> | null = null
 /** hover 头像触发展开（登录面板打开时不触发展开，避免干扰登录操作） */
 function onAvatarEnter() {
   if (isLoginOpen.value) return
-  if (collapseTimer) { clearTimeout(collapseTimer); collapseTimer = null }
+  if (collapseTimer) {
+    clearTimeout(collapseTimer)
+    collapseTimer = null
+  }
   if (!expandTimer) {
     expandTimer = setTimeout(() => {
       isExpanded.value = true
@@ -353,12 +329,18 @@ function onAvatarEnter() {
 
 /** 鼠标在整个底部栏内时保持展开 */
 function onBarEnter() {
-  if (collapseTimer) { clearTimeout(collapseTimer); collapseTimer = null }
+  if (collapseTimer) {
+    clearTimeout(collapseTimer)
+    collapseTimer = null
+  }
 }
 
 /** 鼠标离开底部栏时延迟收起 */
 function onBarLeave() {
-  if (expandTimer) { clearTimeout(expandTimer); expandTimer = null }
+  if (expandTimer) {
+    clearTimeout(expandTimer)
+    expandTimer = null
+  }
   collapseTimer = setTimeout(() => {
     isExpanded.value = false
     collapseTimer = null
@@ -369,7 +351,10 @@ function onBarLeave() {
 function onLoginClick() {
   // 打开登录面板时自动收起底部栏，避免视觉遮挡
   if (!isLoginOpen.value && isExpanded.value) {
-    if (expandTimer) { clearTimeout(expandTimer); expandTimer = null }
+    if (expandTimer) {
+      clearTimeout(expandTimer)
+      expandTimer = null
+    }
     isExpanded.value = false
   }
   toggleLogin()
@@ -388,7 +373,10 @@ function onLoginButtonClick() {
 function toggleUserMenu() {
   // 打开菜单时收起展开态，避免与博主信息卡视觉重叠
   if (!isUserMenuOpen.value && isExpanded.value) {
-    if (expandTimer) { clearTimeout(expandTimer); expandTimer = null }
+    if (expandTimer) {
+      clearTimeout(expandTimer)
+      expandTimer = null
+    }
     isExpanded.value = false
   }
   isUserMenuOpen.value = !isUserMenuOpen.value
@@ -404,15 +392,19 @@ function onUserMenuProfile() {
   router.push('/about')
 }
 
-function onUserMenuSettings() {
+async function onUserMenuSettings() {
   closeUserMenu()
-  info('账号设置功能开发中')
+  await navigateTo('/admin/posts')
 }
 
-function onUserMenuLogout() {
+async function onUserMenuLogout() {
   closeUserMenu()
-  logout()
-  info('已退出登录')
+  try {
+    await logout()
+    info('已退出登录')
+  } catch {
+    info('退出失败，请重试')
+  }
 }
 
 /** 点击外部关闭登录面板 / 用户菜单 */
@@ -463,19 +455,16 @@ function detachOutsideHandler() {
   outsideHandlerAttached = false
 }
 
-watch(
-  [isLoginOpen, isUserMenuOpen],
-  ([loginOpen, menuOpen]) => {
-    if (loginOpen || menuOpen) {
-      // 必须用 setTimeout（macrotask），不能用 nextTick（microtask）——
-      // Vue 3 的 nextTick 基于 Promise.resolve()，微任务会在当前点击事件冒泡完成前执行，
-      // 导致 onClickOutside 在同一次点击中被触发。setTimeout 保证在下一轮事件循环才注册。
-      setTimeout(() => attachOutsideHandler(), 0)
-    } else {
-      detachOutsideHandler()
-    }
-  },
-)
+watch([isLoginOpen, isUserMenuOpen], ([loginOpen, menuOpen]) => {
+  if (loginOpen || menuOpen) {
+    // 必须用 setTimeout（macrotask），不能用 nextTick（microtask）——
+    // Vue 3 的 nextTick 基于 Promise.resolve()，微任务会在当前点击事件冒泡完成前执行，
+    // 导致 onClickOutside 在同一次点击中被触发。setTimeout 保证在下一轮事件循环才注册。
+    setTimeout(() => attachOutsideHandler(), 0)
+  } else {
+    detachOutsideHandler()
+  }
+})
 
 onBeforeUnmount(() => {
   if (expandTimer) clearTimeout(expandTimer)
@@ -523,6 +512,9 @@ $bar-expanded: 112px;
     transform 0.18s cubic-bezier(0.4, 0, 0.6, 1),
     background 0.25s ease,
     box-shadow 0.25s ease;
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
 
   &.is-expanded {
     height: $bar-expanded;
@@ -531,13 +523,16 @@ $bar-expanded: 112px;
 
     // 展开动画（柔和减速）
     transition:
-      height 0.3s cubic-bezier(0.22, 0.68, 0.35, 1.0),
-      transform 0.3s cubic-bezier(0.22, 0.68, 0.35, 1.0),
+      height 0.3s cubic-bezier(0.22, 0.68, 0.35, 1),
+      transform 0.3s cubic-bezier(0.22, 0.68, 0.35, 1),
       background 0.3s ease,
       box-shadow 0.3s ease;
+    @media (prefers-reduced-motion: reduce) {
+      transition: none;
+    }
   }
 
-  @media (max-width: #{$breakpoint-md - 0.02}) {
+  @media (max-width: #{$breakpoint-lg - 0.02}) {
     display: none;
   }
 }
@@ -557,9 +552,12 @@ $bar-expanded: 112px;
   z-index: 22;
   cursor: pointer;
   transition:
-    transform 0.3s cubic-bezier(0.22, 0.68, 0.35, 1.0),
+    transform 0.3s cubic-bezier(0.22, 0.68, 0.35, 1),
     box-shadow 0.3s ease,
     border-color 0.3s ease;
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
 
   &:hover {
     border-color: var(--accent);
@@ -567,7 +565,13 @@ $bar-expanded: 112px;
       0 4px 20px rgba(0, 0, 0, 0.15),
       0 0 0 3px var(--accent-alpha-20, rgba(99, 102, 241, 0.15));
     transform: scale(1.05);
-    transition: transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.3s ease, border-color 0.3s ease;
+    transition:
+      transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1),
+      box-shadow 0.3s ease,
+      border-color 0.3s ease;
+    @media (prefers-reduced-motion: reduce) {
+      transition: none;
+    }
   }
 
   &:active {
@@ -587,6 +591,9 @@ $bar-expanded: 112px;
   object-fit: cover;
   border-radius: 50%;
   transition: filter 0.3s ease;
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
 
   .nexus-bar__avatar-wrap:hover & {
     filter: brightness(1.05);
@@ -601,7 +608,7 @@ $bar-expanded: 112px;
   height: 100%;
   border-radius: 50%;
   background: var(--surface-2);
-  color: var(--accent);
+  color: var(--accent-text);
   font-size: 0.6875rem;
   font-weight: 800;
   letter-spacing: 0.08em;
@@ -616,17 +623,27 @@ $bar-expanded: 112px;
   opacity: 0;
   pointer-events: none;
   transition: opacity 0.6s ease;
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
 }
 
 .nexus-bar:not(.is-expanded) .nexus-bar__avatar-wrap::after {
   opacity: 1;
   animation: nexus-avatar-glow 3s ease-in-out infinite;
+  @media (prefers-reduced-motion: reduce) {
+    animation: none;
+  }
 }
 
 @keyframes nexus-avatar-glow {
   0%,
-  100% { box-shadow: 0 0 0 0 var(--avatar-glow-color, transparent); }
-  50% { box-shadow: 0 0 12px 2px var(--avatar-glow-color, transparent); }
+  100% {
+    box-shadow: 0 0 0 0 var(--avatar-glow-color, transparent);
+  }
+  50% {
+    box-shadow: 0 0 12px 2px var(--avatar-glow-color, transparent);
+  }
 }
 
 // ---- 在线状态微标签 ----
@@ -650,6 +667,9 @@ $bar-expanded: 112px;
   transition:
     opacity 0.2s ease,
     transform 0.2s ease;
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
 
   .nexus-bar.is-expanded & {
     opacity: 0;
@@ -664,10 +684,18 @@ $bar-expanded: 112px;
   flex-shrink: 0;
 }
 
-.nexus-bar__presence-badge--online .nexus-bar__presence-badge-dot { background: var(--presence-online); }
-.nexus-bar__presence-badge--idle .nexus-bar__presence-badge-dot { background: var(--presence-idle); }
-.nexus-bar__presence-badge--busy .nexus-bar__presence-badge-dot { background: var(--presence-busy); }
-.nexus-bar__presence-badge--offline .nexus-bar__presence-badge-dot { background: var(--presence-offline); }
+.nexus-bar__presence-badge--online .nexus-bar__presence-badge-dot {
+  background: var(--presence-online);
+}
+.nexus-bar__presence-badge--idle .nexus-bar__presence-badge-dot {
+  background: var(--presence-idle);
+}
+.nexus-bar__presence-badge--busy .nexus-bar__presence-badge-dot {
+  background: var(--presence-busy);
+}
+.nexus-bar__presence-badge--offline .nexus-bar__presence-badge-dot {
+  background: var(--presence-offline);
+}
 
 .nexus-bar__presence-badge-text {
   line-height: 1;
@@ -689,6 +717,9 @@ $bar-expanded: 112px;
   align-items: center;
   gap: var(--bar-divider-gap); // 分隔线两侧使用对称间距
   transition: opacity 0.12s ease;
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
 
   .nexus-bar.is-expanded & {
     opacity: 0;
@@ -705,6 +736,9 @@ $bar-expanded: 112px;
   opacity: 0;
   pointer-events: none;
   transition: opacity 0.15s ease 0.04s;
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
 
   .nexus-bar.is-expanded & {
     opacity: 1;
@@ -720,8 +754,9 @@ $bar-expanded: 112px;
   flex-shrink: 0;
   // 容器宽度恰好包住两个按钮 + gap，分隔线由 nexus-bar 的 flex/row-nav 多个 gap 共同推到主内容区左边
   width: calc(
-    var(--bar-pivot-left) - var(--bar-avatar-pad) - var(--bar-action-size) - var(--bar-flex-gap) -
-      var(--bar-divider-gap)
+    var(--bar-pivot-left) - var(--bar-avatar-pad) - var(--bar-action-size) - var(--bar-flex-gap) - var(
+        --bar-divider-gap
+      )
   );
 
   // 仅作用于底部栏内的两个按钮，放大按钮与图标尺寸
@@ -776,6 +811,9 @@ $bar-expanded: 112px;
     color 0.2s ease,
     background 0.2s ease,
     transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
 
   &:hover {
     color: var(--text-main);
@@ -788,7 +826,7 @@ $bar-expanded: 112px;
   }
 
   &.is-active {
-    color: var(--accent);
+    color: var(--accent-text);
     background: var(--accent-alpha-5, rgba(99, 102, 241, 0.05));
     font-weight: 600;
 
@@ -824,6 +862,9 @@ $bar-expanded: 112px;
   transition:
     background 0.2s ease,
     transform 0.15s ease;
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
 
   &:hover {
     background: var(--surface-3);
@@ -837,6 +878,9 @@ $bar-expanded: 112px;
       opacity: 1;
       transform: translateY(0);
       animation: nexus-bar-bounce 0.6s ease infinite;
+      @media (prefers-reduced-motion: reduce) {
+        animation: none;
+      }
     }
   }
 
@@ -863,7 +907,10 @@ $bar-expanded: 112px;
   stroke-width: 2;
   stroke-linecap: round;
   stroke-dasharray: 100.53; // 2 * PI * 16
-  transition: stroke-dashoffset 0.3s cubic-bezier(0.22, 0.68, 0.35, 1.0);
+  transition: stroke-dashoffset 0.3s cubic-bezier(0.22, 0.68, 0.35, 1);
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
 }
 
 .nexus-bar__progress-center {
@@ -881,31 +928,53 @@ $bar-expanded: 112px;
   transition:
     opacity 0.2s ease,
     transform 0.2s ease;
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
 }
 
 .nexus-bar__progress-icon {
   position: absolute;
   opacity: 0;
-  color: var(--accent);
+  color: var(--accent-text);
   transform: translateY(3px);
   transition:
     opacity 0.2s ease,
     transform 0.2s ease;
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
 }
 
 @keyframes nexus-bar-bounce {
   0%,
-  100% { transform: translateY(0); }
-  40% { transform: translateY(-3px); }
-  60% { transform: translateY(1px); }
+  100% {
+    transform: translateY(0);
+  }
+  40% {
+    transform: translateY(-3px);
+  }
+  60% {
+    transform: translateY(1px);
+  }
 }
 
 .nexus-progress-fade-enter-active {
-  transition: opacity 0.25s ease-out, transform 0.25s ease-out;
+  transition:
+    opacity 0.25s ease-out,
+    transform 0.25s ease-out;
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
 }
 
 .nexus-progress-fade-leave-active {
-  transition: opacity 0.2s ease-in, transform 0.2s ease-in;
+  transition:
+    opacity 0.2s ease-in,
+    transform 0.2s ease-in;
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
 }
 
 .nexus-progress-fade-enter-from,
@@ -926,7 +995,12 @@ $bar-expanded: 112px;
 .nexus-bar__owner-card > * {
   opacity: 0;
   transform: translateX(-8px);
-  transition: opacity 0.18s ease, transform 0.18s ease;
+  transition:
+    opacity 0.18s ease,
+    transform 0.18s ease;
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
 }
 
 .nexus-bar.is-expanded .nexus-bar__owner-card > :nth-child(1) {
@@ -938,7 +1012,7 @@ $bar-expanded: 112px;
 .nexus-bar.is-expanded .nexus-bar__owner-card > :nth-child(2) {
   opacity: 1;
   transform: translateX(0);
-  transition-delay: 0.10s;
+  transition-delay: 0.1s;
 }
 
 .nexus-bar.is-expanded .nexus-bar__owner-card > :nth-child(3) {
@@ -1006,10 +1080,18 @@ $bar-expanded: 112px;
   border-radius: 50%;
   flex-shrink: 0;
 
-  &--online { background: var(--presence-online); }
-  &--idle { background: var(--presence-idle); }
-  &--busy { background: var(--presence-busy); }
-  &--offline { background: var(--presence-offline); }
+  &--online {
+    background: var(--presence-online);
+  }
+  &--idle {
+    background: var(--presence-idle);
+  }
+  &--busy {
+    background: var(--presence-busy);
+  }
+  &--offline {
+    background: var(--presence-offline);
+  }
 }
 
 .nexus-bar__owner-status-label {
@@ -1052,13 +1134,16 @@ $bar-expanded: 112px;
     opacity 0.2s ease,
     color 0.2s ease,
     transform 0.3s ease;
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
 
   .nexus-bar__owner-quote-row:hover & {
     opacity: 1;
   }
 
   &:hover {
-    color: var(--accent);
+    color: var(--accent-text);
   }
 
   &:active {
@@ -1069,7 +1154,12 @@ $bar-expanded: 112px;
 // 一言切换动画
 .nexus-quote-swap-enter-active,
 .nexus-quote-swap-leave-active {
-  transition: opacity 0.2s ease, transform 0.2s ease;
+  transition:
+    opacity 0.2s ease,
+    transform 0.2s ease;
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
 }
 
 .nexus-quote-swap-enter-from {
@@ -1096,9 +1186,12 @@ $bar-expanded: 112px;
   font-size: 0.6875rem;
   color: var(--text-soft);
   transition: color 0.2s ease;
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
 
   &:hover {
-    color: var(--accent);
+    color: var(--accent-text);
   }
 }
 
@@ -1119,10 +1212,13 @@ $bar-expanded: 112px;
     color 0.2s ease,
     background 0.2s ease,
     transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
 
   // 自定 hover 动效：图标轻微上抬 + 颜色高亮
   &:hover {
-    color: var(--accent);
+    color: var(--accent-text);
     background: var(--surface-2);
     transform: translateY(-2px);
   }
@@ -1133,7 +1229,7 @@ $bar-expanded: 112px;
 
   // 面板/popover 打开时保持高亮
   &.is-open {
-    color: var(--accent);
+    color: var(--accent-text);
     background: var(--surface-2);
   }
 
@@ -1202,7 +1298,13 @@ $bar-expanded: 112px;
   text-align: left;
   border-radius: $radius-sm;
   cursor: pointer;
-  transition: background 0.18s ease, color 0.18s ease, transform 0.18s ease;
+  transition:
+    background 0.18s ease,
+    color 0.18s ease,
+    transform 0.18s ease;
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
 
   &:hover {
     background: var(--surface-2);
@@ -1221,11 +1323,21 @@ $bar-expanded: 112px;
 
 /* 用户菜单进出动画 */
 .nexus-user-menu-enter-active {
-  transition: opacity 0.18s ease-out, transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+  transition:
+    opacity 0.18s ease-out,
+    transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
 }
 
 .nexus-user-menu-leave-active {
-  transition: opacity 0.14s ease-in, transform 0.14s ease-in;
+  transition:
+    opacity 0.14s ease-in,
+    transform 0.14s ease-in;
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
 }
 
 .nexus-user-menu-enter-from {
@@ -1254,11 +1366,21 @@ $bar-expanded: 112px;
 
 /* 登录面板进出动画 */
 .nexus-login-panel-enter-active {
-  transition: opacity 0.2s ease-out, transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+  transition:
+    opacity 0.2s ease-out,
+    transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
 }
 
 .nexus-login-panel-leave-active {
-  transition: opacity 0.15s ease-in, transform 0.15s ease-in;
+  transition:
+    opacity 0.15s ease-in,
+    transform 0.15s ease-in;
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
 }
 
 .nexus-login-panel-enter-from {

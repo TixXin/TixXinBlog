@@ -9,15 +9,15 @@
   <section class="card owner-profile-card">
     <!-- 头像 + 在线状态 -->
     <div class="owner-profile-card__avatar-wrap">
-      <NuxtImg
-        src="/avatar-photo.webp"
-        :alt="ownerCard.name"
+      <img
+        :src="photoFailed ? '/avatar.svg' : ownerCard.avatar || '/avatar.svg'"
+        :alt="photoFailed ? '头像暂不可用' : ownerCard.avatarAlt || ownerCard.name"
         width="72"
         height="72"
         class="owner-profile-card__avatar"
-        format="webp"
         loading="eager"
         fetchpriority="high"
+        @error="photoFailed = true"
       />
       <span
         class="owner-profile-card__presence-dot"
@@ -32,7 +32,7 @@
     <!-- 状态签名 -->
     <p class="owner-profile-card__status-line">
       <span class="owner-profile-card__status-label">{{ ownerPresence.label }}</span>
-      <span class="owner-profile-card__status-sep">&middot;</span>
+      <span v-if="ownerPresence.signature" class="owner-profile-card__status-sep">&middot;</span>
       <span class="owner-profile-card__status-sig">{{ ownerPresence.signature }}</span>
     </p>
 
@@ -58,6 +58,13 @@
 
 <script setup lang="ts">
 const { ownerCard, ownerPresence } = useSiteInfo()
+const photoFailed = ref(false)
+watch(
+  () => ownerCard.value.avatar,
+  () => {
+    photoFailed.value = false
+  },
+)
 </script>
 
 <style lang="scss" scoped>
@@ -82,7 +89,12 @@ const { ownerCard, ownerPresence } = useSiteInfo()
   border-radius: 50%;
   object-fit: cover;
   border: 2.5px solid var(--border);
-  transition: border-color 0.3s, transform 0.3s;
+  transition:
+    border-color 0.3s,
+    transform 0.3s;
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
 
   &:hover {
     border-color: var(--accent);
@@ -100,11 +112,17 @@ const { ownerCard, ownerPresence } = useSiteInfo()
   border-radius: 50%;
   border: 2.5px solid var(--surface-1);
   transition: background-color 0.3s;
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
 
   &.--online {
     background: var(--presence-online);
     box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.15);
     animation: owner-presence-pulse 2s infinite;
+    @media (prefers-reduced-motion: reduce) {
+      animation: none;
+    }
   }
 
   &.--idle {
@@ -167,11 +185,14 @@ const { ownerCard, ownerPresence } = useSiteInfo()
   border-radius: 50%;
   background: var(--surface-2);
   color: var(--text-muted);
-  transition: all 0.2s ease;
+  transition: $transition-fast;
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
 
   &:hover {
     background: var(--accent-soft);
-    color: var(--accent);
+    color: var(--accent-text);
     transform: translateY(-2px);
   }
 }

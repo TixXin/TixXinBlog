@@ -21,14 +21,14 @@
             <!-- 默认模式：博主名片、公告、统计 -->
             <div v-if="!isMomentsMode" key="default" class="aside-left__group">
               <OwnerProfileCard />
-              <SiteAnnouncementCard />
-              <SidebarSiteStatsCard :stats="siteStats" />
+              <SidebarSiteStatsCard v-if="siteStats" :stats="siteStats" />
+              <p v-else-if="statsError" role="status">站点统计暂时不可用</p>
               <DailyQuoteCard />
               <SidebarFooterCard />
             </div>
             <!-- 朋友圈模式：作者名片、动态日历 -->
             <div v-else key="moments" class="aside-left__group">
-              <SidebarMomentAuthorCard :stats="momentAuthorStats" />
+              <SidebarMomentAuthorCard :stats="momentAuthorStats" :profile="ownerCard" />
               <SidebarMomentCalendarCard
                 :moment-dates="momentDates"
                 :selected-date="selectedDate"
@@ -41,11 +41,14 @@
         </CommonCustomScrollbar>
       </aside>
 
-      <div class="page-columns anim-fade-in-up anim-delay-2">
+      <div
+        class="page-columns anim-fade-in-up anim-delay-2"
+        :class="{ 'page-columns--without-sidebar': !showRightSidebar }"
+      >
         <main class="main-content">
           <slot />
         </main>
-        <aside class="aside-right">
+        <aside v-show="showRightSidebar" class="aside-right">
           <CommonCustomScrollbar
             :show-back-to-top="false"
             :show-track="false"
@@ -83,15 +86,12 @@
 </template>
 
 <script setup lang="ts">
-import { mockSiteStats } from '~/features/stats/mock'
-import { mockMomentAuthorStats, mockMoments } from '~/features/moment/mock'
 import OwnerProfileCard from './OwnerProfileCard.vue'
-import SiteAnnouncementCard from './SiteAnnouncementCard.vue'
 import DailyQuoteCard from './DailyQuoteCard.vue'
 import SidebarFooterCard from './SidebarFooterCard.vue'
 
-const siteStats = mockSiteStats
-const momentAuthorStats = mockMomentAuthorStats
+const { siteStats, error: statsError } = await usePostMetadata()
+const { moments: momentList, authorStats: momentAuthorStats, ownerCard } = useMomentOverview()
 const { sidebarAnimationClass } = useAppearanceSettings()
 useSidebarExitAnimation('.aside-right')
 
@@ -99,12 +99,13 @@ useSidebarExitAnimation('.aside-right')
 const { isFullbleed } = useFullbleedPage()
 
 // 监听首页 Tab 状态，切换左侧栏内容
-const { homeActiveTab } = useHomeTab()
-const isMomentsMode = computed(() => homeActiveTab.value === 'moments')
+const route = useRoute()
+const showRightSidebar = computed(() => route.meta.rightSidebar !== false)
+const isMomentsMode = computed(() => route.path.startsWith('/moments'))
 
 // 朋友圈日历数据（通过 composable 与 index.vue 共享 selectedDate）
 const { selectedDate } = useMomentFilters()
-const momentDates = computed(() => mockMoments.map((m) => m.date.slice(0, 10)))
+const momentDates = computed(() => momentList.value.map((m) => m.date.slice(0, 10)))
 
 function onDateSelect(date: string | null) {
   selectedDate.value = date
@@ -112,6 +113,9 @@ function onDateSelect(date: string | null) {
 </script>
 
 <style lang="scss" scoped>
+.page-columns--without-sidebar {
+  grid-template-columns: minmax(0, 1fr);
+}
 .theme-nexus {
   --theme-bg-surface: var(--surface-1);
   --theme-bg-surface-elevated: var(--surface-2);
@@ -182,6 +186,9 @@ function onDateSelect(date: string | null) {
   background: linear-gradient(90deg, var(--surface-2) 0%, var(--surface-3) 50%, var(--surface-2) 100%);
   background-size: 200% 100%;
   animation: aside-skeleton-shimmer 1.6s ease-in-out infinite;
+  @media (prefers-reduced-motion: reduce) {
+    animation: none;
+  }
 
   &--title {
     width: 40%;
@@ -208,6 +215,9 @@ function onDateSelect(date: string | null) {
   background: linear-gradient(90deg, var(--surface-2) 0%, var(--surface-3) 50%, var(--surface-2) 100%);
   background-size: 200% 100%;
   animation: aside-skeleton-shimmer 1.6s ease-in-out infinite;
+  @media (prefers-reduced-motion: reduce) {
+    animation: none;
+  }
 
   &:nth-child(2) {
     width: 4.5rem;
@@ -252,11 +262,21 @@ function onDateSelect(date: string | null) {
 
 /* ---- 左侧栏切换动画：slide-left ---- */
 .sidebar-slide-left-enter-active {
-  transition: all 0.25s ease-out;
+  transition:
+    opacity 0.22s ease-out,
+    transform 0.22s ease-out;
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
 }
 
 .sidebar-slide-left-leave-active {
-  transition: all 0.2s ease-in;
+  transition:
+    opacity 0.2s ease-in,
+    transform 0.2s ease-in;
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
 }
 
 .sidebar-slide-left-enter-from {

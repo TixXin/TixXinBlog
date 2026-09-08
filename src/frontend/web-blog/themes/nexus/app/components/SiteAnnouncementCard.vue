@@ -68,6 +68,9 @@ const { announcements } = useSiteInfo()
   background: var(--text-faint);
   margin-top: 0.4375rem;
   transition: background-color 0.2s;
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
 
   &.--pinned {
     background: var(--accent);
