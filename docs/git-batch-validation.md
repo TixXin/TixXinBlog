@@ -1,6 +1,8 @@
 # Git 分批提交与验证
 
-本次按用户要求整理整个待提交工作区，并将开发过程中按模块、按批次及时提交写入[AGENTS.md](D:/Projects/TixXinBlog/AGENTS.md)。所有提交使用中文Conventional Commits及说明原因的正文，经过项目提交钩子；固定用Corepack调用pnpm 9.15.0。当前分支为main，本轮只执行本地提交。
+> 本文截图、录屏、原始日志、采样和临时实验脚本仅在本机留存，不随 Git 发布。下列本地产物路径以仓库根目录为起点，新检出不包含这些文件；验收结论与正式测试源码继续保留。见[验收产物管理](verification-artifacts.md)。
+
+本次按用户要求整理整个待提交工作区，并将开发过程中按模块、按批次及时提交写入[AGENTS.md](../AGENTS.md)。所有提交使用中文Conventional Commits及说明原因的正文，经过项目提交钩子；固定用Corepack调用pnpm 9.15.0。当前分支为main，本轮只执行本地提交。
 
 从原基点dbe2990起，先提交工具约定和依赖，再提交数据库、后端业务、前台共享能力与各业务页面，最后归档验证和阶段资料。以下列出本页归档前的批次；本页随最后一批整改文档提交，因此不列自身哈希。
 
@@ -29,8 +31,8 @@
 
 ## 验证与取舍
 
-- 前端：Lint通过；提交后的独立副本类型检查、81项单测通过。生产浏览器113项、Firefox/WebKit核心104项及功能30项通过。三主题75组响应式矩阵、故障与HMR等结果见[覆盖记录](D:/Projects/TixXinBlog/docs/motion-remediation/coverage.md)。
-- 后端：提交后Lint、类型、25项单测通过；独立源码/构建副本执行项目定义的test:integration，8个HTTP套件及迁移重放通过。[日志](D:/Projects/TixXinBlog/docs/git-validation/backend-integration.log)与[结果](D:/Projects/TixXinBlog/docs/git-validation/backend-integration-result.json)保留。
+- 前端：Lint通过；提交后的独立副本类型检查、81项单测通过。生产浏览器113项、Firefox/WebKit核心104项及功能30项通过。三主题75组响应式矩阵、故障与HMR等结果见[覆盖记录](motion-remediation/coverage.md)。
+- 后端：提交后Lint、类型、25项单测通过；独立源码/构建副本执行项目定义的test:integration，8个HTTP套件及迁移重放通过。日志（本地：`docs/git-validation/backend-integration.log`）与结果（本地：`docs/git-validation/backend-integration-result.json`）保留。
 - 本批归档日志统一为LF并去除行尾空白，测试输出内容保持一致。
 - 两套Compose配置校验通过。此前容器构建与恢复验收见项目运维记录；本次Git整理未重新执行镜像构建，未把配置解析当作容器运行通过。
 - 提交钩子整理了9个前端文件的格式。格式化结果、编译后JavaScript语法树、Vue模板与样式一致，其余365个测试源文件字节一致；原始差异与最终哈希均保留。未混入额外业务修改。

@@ -1,5 +1,10 @@
 {
   "schemaVersion": 1,
+  "evidenceStorage": {
+    "availability": "local-only",
+    "basePath": "docs/motion-audit/evidence/",
+    "policy": "docs/verification-artifacts.md"
+  },
   "auditedAt": "2026-09-08T03:13:45.173Z",
   "scope": "动效审查与整改方案，未在产品源码实施修复",
   "findings": [

@@ -1,5 +1,7 @@
 # 内容标签与文章分页修复
 
+> 本文截图、录屏、原始日志、采样和临时实验脚本仅在本机留存，不随 Git 发布。下列本地产物路径以仓库根目录为起点，新检出不包含这些文件；验收结论与正式测试源码继续保留。见[验收产物管理](../verification-artifacts.md)。
+
 用户报告的两项问题均已复现并修复。保留三种布局及原数据源边界，正常分页仍有动画；修改已经在本机开发页和独立生产构建中验证。
 
 ## 原因与处理
@@ -22,28 +24,28 @@
 |代码检查|Lint、Nuxt类型检查、83项单测和独立生产构建通过；包含2项新增数据源中断/失败回归|
 |实际动画|三主题均记录正常动画视频和rAF状态；新内容有真实中间透明度，列表节点不重建，最终opacity=1、transform=none、动画任务为空|
 
-三浏览器专项合计135项通过，另有9项既有业务回归。查看[主运行](D:/Projects/TixXinBlog/docs/content-navigation-fix/evidence/main/report.json)、[联动补测](D:/Projects/TixXinBlog/docs/content-navigation-fix/evidence/combined/report.json)、[业务回归](D:/Projects/TixXinBlog/docs/content-navigation-fix/evidence/regression/report.json)。本轮代码与验证副本的逐文件一致性见[源码核验](D:/Projects/TixXinBlog/docs/content-navigation-fix/evidence/source-check.json)。
+三浏览器专项合计135项通过，另有9项既有业务回归。查看主运行（本地：`docs/content-navigation-fix/evidence/main/report.json`）、联动补测（本地：`docs/content-navigation-fix/evidence/combined/report.json`）、业务回归（本地：`docs/content-navigation-fix/evidence/regression/report.json`）。本轮代码与验证副本的逐文件一致性见源码核验（本地：`docs/content-navigation-fix/evidence/source-check.json`）。
 
 ## 前后画面
 
 整改前朋友圈导航：
 
-![整改前标签挤在一起](D:/Projects/TixXinBlog/docs/content-navigation-fix/evidence/tabs-moments-before.png)
+整改前标签挤在一起（本地：`docs/content-navigation-fix/evidence/tabs-moments-before.png`）
 
 整改后统一图标、间距及选中标记：
 
-![整改后朋友圈导航](D:/Projects/TixXinBlog/docs/content-navigation-fix/evidence/normal-pagination/nexus-moments-tabs.png)
+整改后朋友圈导航（本地：`docs/content-navigation-fix/evidence/normal-pagination/nexus-moments-tabs.png`）
 
 键盘焦点轮廓完整：
 
-![键盘焦点](D:/Projects/TixXinBlog/docs/content-navigation-fix/evidence/normal-pagination/nexus-keyboard-tabs.png)
+键盘焦点（本地：`docs/content-navigation-fix/evidence/normal-pagination/nexus-keyboard-tabs.png`）
 
-正常分页记录：[Nexus视频](D:/Projects/TixXinBlog/docs/content-navigation-fix/evidence/normal-pagination/nexus.webm)、[Aurora视频](D:/Projects/TixXinBlog/docs/content-navigation-fix/evidence/normal-pagination/aurora.webm)、[Dock视频](D:/Projects/TixXinBlog/docs/content-navigation-fix/evidence/normal-pagination/dock.webm)。[实际帧数据](D:/Projects/TixXinBlog/docs/content-navigation-fix/evidence/normal-pagination/results.json)包含透明度、变换、正文和动画状态；没有关闭正常动画来拍摄效果。
+正常分页记录：Nexus视频（本地：`docs/content-navigation-fix/evidence/normal-pagination/nexus.webm`）、Aurora视频（本地：`docs/content-navigation-fix/evidence/normal-pagination/aurora.webm`）、Dock视频（本地：`docs/content-navigation-fix/evidence/normal-pagination/dock.webm`）。实际帧数据（本地：`docs/content-navigation-fix/evidence/normal-pagination/results.json`）包含透明度、变换、正文和动画状态；没有关闭正常动画来拍摄效果。
 
 ## 测试修正与边界
 
-最初的独立单测副本尚未生成Nuxt类型，运行prepare后正常执行。首轮跨浏览器采集漏接已有prepareMotionCapture，导致Windows WebKit在字体聚合就绪处等待；另一次在动画结束帧到finished回调之间过早断言transform必须为none。已补初始化，并在1秒内等待所有动画句柄移除后检查终态。保留[初轮记录](D:/Projects/TixXinBlog/docs/content-navigation-fix/evidence/initial-run/run.log)及[中止原因](D:/Projects/TixXinBlog/docs/content-navigation-fix/evidence/initial-run/aborted.json)；中止时的Target crashed来自停止测试子进程，不记为产品崩溃。
+最初的独立单测副本尚未生成Nuxt类型，运行prepare后正常执行。首轮跨浏览器采集漏接已有prepareMotionCapture，导致Windows WebKit在字体聚合就绪处等待；另一次在动画结束帧到finished回调之间过早断言transform必须为none。已补初始化，并在1秒内等待所有动画句柄移除后检查终态。保留初轮记录（本地：`docs/content-navigation-fix/evidence/initial-run/run.log`）及中止原因（本地：`docs/content-navigation-fix/evidence/initial-run/aborted.json`）；中止时的Target crashed来自停止测试子进程，不记为产品崩溃。
 
 既有9项业务回归在首次生产候选执行，后续只补充标签焦点样式及测试初始化，没有再修改分页数据逻辑。最终135项专项对应最终生产构建；联动补测是在原126项之外新增3个场景。Windows WebKit验证不等于实体Safari，手机宽度为模拟视口，本轮不声称真机测试。
 
-测试使用独立数据库、媒体、端口和生成目录；归档不包含临时凭据或Playwright trace压缩包。清理及用户开发服务状态见[清理结果](D:/Projects/TixXinBlog/docs/content-navigation-fix/evidence/cleanup.json)。
+测试使用独立数据库、媒体、端口和生成目录；归档不包含临时凭据或Playwright trace压缩包。清理及用户开发服务状态见清理结果（本地：`docs/content-navigation-fix/evidence/cleanup.json`）。

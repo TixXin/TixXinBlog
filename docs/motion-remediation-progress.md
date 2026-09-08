@@ -1,6 +1,8 @@
 # 动效整改完成记录
 
-T01–T10正式实现与本机可执行验收已完成，M01–M16逐项结果见[整改报告](D:/Projects/TixXinBlog/docs/motion-remediation/report.md)。真实设备与后台可见性验证限制，以及仍存在的性能开销，按要求明确保留，未冒充通过。
+> 本文截图、录屏、原始日志、采样和临时实验脚本仅在本机留存，不随 Git 发布。下列本地产物路径以仓库根目录为起点，新检出不包含这些文件；验收结论与正式测试源码继续保留。见[验收产物管理](verification-artifacts.md)。
+
+T01–T10正式实现与本机可执行验收已完成，M01–M16逐项结果见[整改报告](motion-remediation/report.md)。真实设备与后台可见性验证限制，以及仍存在的性能开销，按要求明确保留，未冒充通过。
 
 |任务|对应发现|结果|
 |---|---|---|
@@ -17,10 +19,10 @@ T01–T10正式实现与本机可执行验收已完成，M01–M16逐项结果�
 
 最终回归：Chromium完整113/113，Firefox/WebKit核心104/104、功能30/30；81项单测、Lint、类型、构建通过；75组响应矩阵与99张首页/设置原图已检查；正常动效视频覆盖三主题。3类故障、8类HMR、字体3项、颜色14项、上下文2项、慢导航6项和Hero离屏补测通过。
 
-提交钩子只整理9个文件的格式，365个测试源文件字节未变，9个差异文件的格式化结果与编译结构一致，原始指纹和差异均保留。代码与证据关系见[覆盖记录](D:/Projects/TixXinBlog/docs/motion-remediation/coverage.md)。
+提交钩子只整理9个文件的格式，365个测试源文件字节未变，9个差异文件的格式化结果与编译结构一致，原始指纹和差异均保留。代码与证据关系见[覆盖记录](motion-remediation/coverage.md)。
 
 整改前后同负载各6轮性能记录，正常与4倍CPU分别3轮。p95约从33–50ms改善到16.7–16.8ms；4倍CPU最差266.6ms，Paint总耗时和部分Layout指标未下降。未据此建立未经真机验证的设备门槛。
 
-所有本轮隔离服务已关闭，服务状态文件中的临时凭据已移除，随机测试库与媒体目录清理后匹配数量均为0。日常localhost:3456开发服务保留并返回200。[清理证据](D:/Projects/TixXinBlog/docs/motion-remediation/evidence/cleanup.json)。
+所有本轮隔离服务已关闭，服务状态文件中的临时凭据已移除，随机测试库与媒体目录清理后匹配数量均为0。日常localhost:3456开发服务保留并返回200。清理证据（本地：`docs/motion-remediation/evidence/cleanup.json`）。
 
-实现过程中发现的产品问题和脚本问题在覆盖文档中分列；完整阶段记录留存于[开发历史](D:/Projects/TixXinBlog/docs/motion-remediation/evidence/development-history.md)，其中早期进行中或失败状态只描述当时版本，不替代最终结果。
+实现过程中发现的产品问题和脚本问题在覆盖文档中分列；完整阶段记录留存于开发历史（本地：`docs/motion-remediation/evidence/development-history.md`），其中早期进行中或失败状态只描述当时版本，不替代最终结果。
