@@ -16,7 +16,7 @@
     <div class="tab-side__header">
       <div class="tab-side__avatar">
         <Icon v-if="!user?.avatar" name="lucide:user" size="18" />
-        <img v-else :src="user.avatar" :alt="user.nickname" >
+        <img v-else :src="user.avatar" :alt="user.nickname" />
       </div>
       <div v-if="!collapsed" class="tab-side__user">
         <div class="tab-side__name">{{ user?.nickname || '未登录' }}</div>
@@ -33,7 +33,10 @@
         :key="cat.id"
         type="button"
         :data-category-id="cat.id"
+        :data-focus-key="`category:${cat.id}`"
         :title="collapsed ? cat.name : undefined"
+        :aria-label="`${cat.name}，${counts[cat.id] || 0} 个书签`"
+        :aria-pressed="activeId === cat.id"
         class="tab-side__cat"
         :class="{
           'tab-side__cat--active': activeId === cat.id,
@@ -45,6 +48,8 @@
         @dragover.prevent="onDragOver($event)"
         @dragleave="onDragLeave(cat.id)"
         @drop.prevent="onDrop($event, cat.id)"
+        @keydown.alt.up.prevent.stop="moveCategory(cat.id, -1)"
+        @keydown.alt.down.prevent.stop="moveCategory(cat.id, 1)"
       >
         <Icon v-if="cat.icon" :name="cat.icon" size="15" class="tab-side__cat-icon" />
         <span v-if="!collapsed" class="tab-side__cat-name">{{ cat.name }}</span>
@@ -58,7 +63,12 @@
     <template v-if="!readOnly">
       <div class="tab-side__divider" />
       <CommonTooltip v-if="collapsed" content="新建分类" placement="right">
-        <button type="button" class="tab-side__action tab-side__action--icon" @click="emit('addCategory')">
+        <button
+          type="button"
+          aria-label="新建分类"
+          class="tab-side__action tab-side__action--icon"
+          @click="emit('addCategory')"
+        >
           <Icon name="lucide:folder-plus" size="15" />
         </button>
       </CommonTooltip>
@@ -122,6 +132,7 @@ const emit = defineEmits<{
 const collapsed = defineModel<boolean>('collapsed', { default: false })
 
 const { settings: tabSettings } = useTabSettings()
+const { reducedMotion } = useMotionPreference()
 
 /** 当前拖拽悬浮的分类 id（用于高亮 drop target） */
 const dropTargetId = ref<string | null>(null)
@@ -138,19 +149,26 @@ watch(
   { immediate: true },
 )
 
-const { start: startSortable, stop: stopSortable } = useSortable(navEl, localCategories, {
+const {
+  start: startSortable,
+  stop: stopSortable,
+  option,
+} = useSortable(navEl, localCategories, {
   animation: 150,
   draggable: '.tab-side__cat',
   ghostClass: 'tab-side__cat--ghost',
   chosenClass: 'tab-side__cat--chosen',
   forceFallback: false,
-  onEnd: (evt) => {
+  onEnd: async (evt) => {
     if (evt.to !== evt.from) return
+    await nextTick()
     const updates: CategoryReorderUpdate[] = localCategories.value.map((c, i) => ({
       id: c.id,
       sortOrder: (i + 1) * 100,
     }))
     emit('reorderCategories', updates)
+    await nextTick()
+    localCategories.value = [...props.categories]
   },
 })
 
@@ -158,10 +176,30 @@ watchEffect(() => {
   // 只读（未登录）或拖拽被关闭时禁用分类拖拽
   if (props.readOnly || !tabSettings.value.dragEnabled) stopSortable()
   else startSortable()
+  option('animation', reducedMotion.value ? 0 : 150)
 })
 
 function onCategoryContextMenu(e: MouseEvent, categoryId: string) {
   emit('categoryContextMenu', { categoryId, x: e.clientX, y: e.clientY })
+}
+
+async function moveCategory(id: string, direction: -1 | 1) {
+  if (props.readOnly) return
+  const index = localCategories.value.findIndex((category) => category.id === id)
+  const next = index + direction
+  if (index < 0 || next < 0 || next >= localCategories.value.length) return
+  const reordered = [...localCategories.value]
+  const [category] = reordered.splice(index, 1)
+  reordered.splice(next, 0, category!)
+  emit(
+    'reorderCategories',
+    reordered.map((item, i) => ({ id: item.id, sortOrder: (i + 1) * 100 })),
+  )
+  await nextTick()
+  localCategories.value = [...props.categories]
+  await nextTick()
+  const target = [...(navEl.value?.children ?? [])].find((node) => (node as HTMLElement).dataset.categoryId === id)
+  ;(target as HTMLElement | undefined)?.focus({ preventScroll: true })
 }
 
 function onDragEnter(catId: string) {
@@ -198,6 +236,12 @@ const sidebarStyle = computed(() => {
 </script>
 
 <style lang="scss" scoped>
+@media (prefers-reduced-motion: reduce) {
+  .tab-side__cat {
+    transition: none !important;
+    transform: none !important;
+  }
+}
 $side-expanded: 160px;
 $side-collapsed: 44px;
 
@@ -214,8 +258,13 @@ $side-collapsed: 44px;
   /* background 由 inline style（sidebarStyle）用 color-mix 动态控制透明度 */
   border: 1px solid var(--border-soft);
   box-shadow: var(--shadow-elevated, var(--shadow-card));
-  transition: width 0.25s cubic-bezier(0.4, 0, 0.2, 1),
-    background 0.25s ease, backdrop-filter 0.25s ease;
+  transition:
+    width 0.25s cubic-bezier(0.4, 0, 0.2, 1),
+    background 0.25s ease,
+    backdrop-filter 0.25s ease;
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
 
   @media (max-width: $breakpoint-lg) {
     display: none;
@@ -255,7 +304,12 @@ $side-collapsed: 44px;
   background: transparent;
   color: var(--text-faint);
   cursor: pointer;
-  transition: color 0.15s, background 0.15s;
+  transition:
+    color 0.15s,
+    background 0.15s;
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
 
   .tab-side--collapsed & {
     position: static;
@@ -264,7 +318,7 @@ $side-collapsed: 44px;
   }
 
   &:hover {
-    color: var(--accent);
+    color: var(--accent-text);
     background: var(--accent-soft);
   }
 }
@@ -284,7 +338,7 @@ $side-collapsed: 44px;
   height: 32px;
   border-radius: $radius-full;
   background: var(--accent-soft);
-  color: var(--accent);
+  color: var(--accent-text);
   overflow: hidden;
   flex-shrink: 0;
 
@@ -342,7 +396,10 @@ $side-collapsed: 44px;
   font-size: 0.75rem;
   text-align: left;
   cursor: pointer;
-  transition: all 0.15s;
+  transition: $transition-fast;
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
   white-space: nowrap;
 
   &:hover {
@@ -355,7 +412,7 @@ $side-collapsed: 44px;
 
   &--active {
     background: var(--accent-soft);
-    color: var(--accent);
+    color: var(--accent-text);
     font-weight: 600;
   }
 
@@ -383,7 +440,7 @@ $side-collapsed: 44px;
 }
 
 .tab-side__cat--active .tab-side__cat-icon {
-  color: var(--accent);
+  color: var(--accent-text);
 }
 
 .tab-side__cat-name {
@@ -411,11 +468,14 @@ $side-collapsed: 44px;
   color: var(--text-soft);
   cursor: pointer;
   opacity: 0;
-  transition: all 0.15s;
+  transition: $transition-fast;
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
 
   &:hover {
     background: var(--surface-3, var(--surface-2));
-    color: var(--accent);
+    color: var(--accent-text);
   }
 }
 
@@ -434,11 +494,14 @@ $side-collapsed: 44px;
   font-size: 0.6875rem;
   font-weight: 500;
   cursor: pointer;
-  transition: all 0.15s;
+  transition: $transition-fast;
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
 
   &:hover {
     border-color: var(--accent);
-    color: var(--accent);
+    color: var(--accent-text);
     background: var(--accent-soft);
   }
 
@@ -471,7 +534,10 @@ $side-collapsed: 44px;
   color: var(--text-soft);
   font-size: 0.6875rem;
   cursor: pointer;
-  transition: all 0.15s;
+  transition: $transition-fast;
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
   white-space: nowrap;
 
   .tab-side--collapsed & {

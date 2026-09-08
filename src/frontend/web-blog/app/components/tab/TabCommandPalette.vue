@@ -8,21 +8,31 @@
 <template>
   <Teleport to="body">
     <Transition name="tab-palette">
-      <div v-if="open" class="tab-palette" role="dialog" aria-modal="true" @click.self="close">
-        <div class="tab-palette__panel">
+      <div v-if="open" class="tab-palette" @click.self="close">
+        <div
+          ref="dialogRef"
+          class="tab-palette__panel"
+          role="dialog"
+          aria-modal="true"
+          aria-label="书签命令面板"
+          tabindex="-1"
+        >
           <div class="tab-palette__search">
             <Icon name="lucide:search" size="16" class="tab-palette__icon" />
             <input
               ref="inputRef"
               v-model="query"
               type="text"
+              aria-label="搜索书签、分类和命令"
               class="tab-palette__input"
               placeholder="搜索书签 / 分类 / 动作，↑↓ 选择，Enter 执行，Esc 关闭"
               autocomplete="off"
               spellcheck="false"
               @keydown.stop="onKeydown"
-            >
-            <kbd class="tab-palette__kbd">Esc</kbd>
+            />
+            <button type="button" class="tab-palette__close" aria-label="关闭命令面板" @click="close">
+              <Icon name="lucide:x" size="18" />
+            </button>
           </div>
 
           <div v-if="sectionList.length === 0" class="tab-palette__empty">
@@ -39,6 +49,7 @@
                 type="button"
                 class="tab-palette__item"
                 :class="{ 'tab-palette__item--focus': focusedId === item.id }"
+                :aria-current="focusedId === item.id ? 'true' : undefined"
                 :data-id="item.id"
                 @mouseenter="focusedId = item.id"
                 @click="runItem(item)"
@@ -57,9 +68,7 @@
           </div>
 
           <div class="tab-palette__footer">
-            <span>
-              <kbd>↑</kbd><kbd>↓</kbd> 导航
-            </span>
+            <span> <kbd>↑</kbd><kbd>↓</kbd> 导航 </span>
             <span><kbd>Enter</kbd> 执行</span>
             <span><kbd>Esc</kbd> 关闭</span>
           </div>
@@ -92,6 +101,8 @@ const { bookmarks, categories, selectCategory } = useTabBookmarks()
 const query = ref('')
 const focusedId = ref<string | null>(null)
 const inputRef = ref<HTMLInputElement | null>(null)
+const dialogRef = ref<HTMLElement | null>(null)
+useModalFocus(open, dialogRef, { close, initialFocus: () => inputRef.value })
 const listRef = ref<HTMLElement | null>(null)
 
 interface PaletteItem {
@@ -152,7 +163,10 @@ const fuse = computed(
 const filteredItems = computed<PaletteItem[]>(() => {
   const q = query.value.trim()
   if (!q) return allItems.value.slice(0, 30)
-  return fuse.value.search(q).slice(0, 30).map((r) => r.item)
+  return fuse.value
+    .search(q)
+    .slice(0, 30)
+    .map((r) => r.item)
 })
 
 /** 分段组织结果 */
@@ -172,9 +186,7 @@ const sectionList = computed<PaletteSection[]>(() => {
   return sections
 })
 
-const flattenedItems = computed<PaletteItem[]>(() =>
-  sectionList.value.flatMap((s) => s.items),
-)
+const flattenedItems = computed<PaletteItem[]>(() => sectionList.value.flatMap((s) => s.items))
 
 // 打开时聚焦输入 + 重置状态
 watch(open, (v) => {
@@ -191,6 +203,7 @@ watch(filteredItems, (list) => {
 })
 
 function onKeydown(e: KeyboardEvent) {
+  if (e.isComposing) return
   const items = flattenedItems.value
   if (items.length === 0) {
     if (e.key === 'Escape') close()
@@ -242,6 +255,12 @@ async function runItem(item: PaletteItem) {
 </script>
 
 <style lang="scss" scoped>
+.tab-palette__close {
+  width: 44px;
+  height: 44px;
+  flex-shrink: 0;
+  color: var(--text-main);
+}
 .tab-palette {
   position: fixed;
   inset: 0;
@@ -257,9 +276,17 @@ async function runItem(item: PaletteItem) {
 .tab-palette-enter-active,
 .tab-palette-leave-active {
   transition: opacity 0.18s ease;
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
 
   .tab-palette__panel {
-    transition: transform 0.18s ease, opacity 0.18s ease;
+    transition:
+      transform 0.18s ease,
+      opacity 0.18s ease;
+    @media (prefers-reduced-motion: reduce) {
+      transition: none;
+    }
   }
 }
 
@@ -359,13 +386,16 @@ async function runItem(item: PaletteItem) {
   text-align: left;
   cursor: pointer;
   transition: background 0.15s;
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
 
   &--focus {
     background: var(--accent-soft);
-    color: var(--accent);
+    color: var(--accent-text);
 
     .tab-palette__item-sub {
-      color: var(--accent);
+      color: var(--accent-text);
       opacity: 0.75;
     }
   }
@@ -385,7 +415,7 @@ async function runItem(item: PaletteItem) {
 }
 
 .tab-palette__item--focus .tab-palette__item-icon {
-  background: var(--accent);
+  background: var(--accent-action);
   color: #fff;
 }
 

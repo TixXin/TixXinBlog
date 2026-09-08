@@ -8,11 +8,18 @@
 <template>
   <Teleport to="body">
     <Transition name="ctx">
-      <div v-if="visible" class="tab-ctx" :style="positionStyle" role="menu" @click.stop>
+      <div v-if="visible" ref="menuRef" class="tab-ctx" :style="positionStyle" role="menu" @click.stop>
         <template v-for="(item, idx) in items" :key="idx">
           <div v-if="item.type === 'divider'" class="tab-ctx__divider" />
           <div v-else-if="item.submenu" class="tab-ctx__sub" @mouseenter="openSub = idx" @mouseleave="openSub = -1">
-            <button type="button" class="tab-ctx__item">
+            <button
+              type="button"
+              class="tab-ctx__item"
+              :data-focus-key="focusKey"
+              :aria-expanded="openSub === idx"
+              aria-haspopup="menu"
+              @click="openSub = openSub === idx ? -1 : idx"
+            >
               <Icon v-if="item.icon" :name="item.icon" size="13" />
               <span class="tab-ctx__item-label">{{ item.label }}</span>
               <Icon name="lucide:chevron-right" size="12" class="tab-ctx__item-chev" />
@@ -23,6 +30,7 @@
                 :key="sub.label"
                 type="button"
                 class="tab-ctx__item"
+                :data-focus-key="focusKey"
                 @click="runSub(sub)"
               >
                 <Icon v-if="sub.icon" :name="sub.icon" size="13" />
@@ -34,6 +42,7 @@
             v-else
             type="button"
             class="tab-ctx__item"
+            :data-focus-key="focusKey"
             :class="{ 'tab-ctx__item--danger': item.danger }"
             @click="run(item)"
           >
@@ -63,11 +72,13 @@ const props = defineProps<{
   x: number
   y: number
   items: ContextMenuItem[]
+  focusKey?: string
 }>()
 
 const emit = defineEmits<{ close: [] }>()
 
 const openSub = ref(-1)
+const menuRef = ref<HTMLElement | null>(null)
 const MENU_WIDTH = 220
 const MENU_MAX_HEIGHT = 420
 
@@ -84,32 +95,63 @@ const positionStyle = computed(() => {
   }
 })
 
+/** 菜单即将卸载，后续弹窗应记住稳定的原始入口。 */
+function focusOrigin() {
+  if (!props.focusKey) return
+  const target = [...document.querySelectorAll<HTMLElement>('[data-focus-key]')].find(
+    (node) => node.dataset.focusKey === props.focusKey && !node.closest('.tab-ctx') && !node.closest('[inert]'),
+  )
+  target?.focus({ preventScroll: true })
+}
+
 function run(item: ContextMenuItem) {
+  focusOrigin()
   item.run?.()
   emit('close')
 }
 
 function runSub(sub: ContextMenuItem) {
+  focusOrigin()
   sub.run?.()
   openSub.value = -1
   emit('close')
 }
 
 /** 全局点击/ESC 关闭 */
+let attachTimer: ReturnType<typeof setTimeout> | undefined
 function onGlobalClick() {
   if (props.visible) emit('close')
 }
 function onGlobalKey(e: KeyboardEvent) {
-  if (e.key === 'Escape' && props.visible) emit('close')
+  if (!props.visible) return
+  if (e.key === 'Escape') {
+    e.preventDefault()
+    if (openSub.value >= 0) {
+      openSub.value = -1
+      return
+    }
+    emit('close')
+    void nextTick(focusOrigin)
+  } else if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+    e.preventDefault()
+    const items = [...(menuRef.value?.querySelectorAll<HTMLButtonElement>('button') ?? [])].filter(
+      (node) => node.getClientRects().length,
+    )
+    const index = items.indexOf(document.activeElement as HTMLButtonElement)
+    items[(index + (e.key === 'ArrowDown' ? 1 : -1) + items.length) % items.length]?.focus()
+  } else if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') emit('close')
 }
 
 watch(
   () => props.visible,
   (v) => {
+    if (attachTimer) clearTimeout(attachTimer)
     if (v) {
       openSub.value = -1
+      void nextTick(() => menuRef.value?.querySelector<HTMLButtonElement>('button')?.focus({ preventScroll: true }))
       // 延迟一帧挂全局事件，避免打开时立即被当前 click 关闭
-      setTimeout(() => {
+      attachTimer = setTimeout(() => {
+        if (!props.visible) return
         document.addEventListener('click', onGlobalClick)
         document.addEventListener('contextmenu', onGlobalClick)
         document.addEventListener('keydown', onGlobalKey)
@@ -123,6 +165,7 @@ watch(
 )
 
 onBeforeUnmount(() => {
+  if (attachTimer) clearTimeout(attachTimer)
   document.removeEventListener('click', onGlobalClick)
   document.removeEventListener('contextmenu', onGlobalClick)
   document.removeEventListener('keydown', onGlobalKey)
@@ -147,6 +190,9 @@ onBeforeUnmount(() => {
   transition:
     opacity 0.12s ease,
     transform 0.12s ease;
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
 }
 
 .ctx-enter-from,
@@ -176,11 +222,14 @@ onBeforeUnmount(() => {
   transition:
     background 0.15s,
     color 0.15s;
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
 
   &:hover,
   &:focus-visible {
     background: var(--accent-soft);
-    color: var(--accent);
+    color: var(--accent-text);
     outline: none;
   }
 
