@@ -1,0 +1,61 @@
+# 生产式本地编排；秘密通过独立 env 文件提供，不与开发数据库复用卷。
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: tixxin
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?请配置数据库密码}
+      POSTGRES_DB: tixxin_blog
+    volumes:
+      - blog-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U tixxin -d tixxin_blog']
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  migration:
+    build:
+      context: .
+      dockerfile: src/backend/server-main/Dockerfile
+      target: migration
+    environment:
+      DATABASE_URL: postgres://tixxin:${POSTGRES_PASSWORD}@postgres:5432/tixxin_blog
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  backend:
+    build:
+      context: .
+      dockerfile: src/backend/server-main/Dockerfile
+      target: runtime
+    environment:
+      DATABASE_URL: postgres://tixxin:${POSTGRES_PASSWORD}@postgres:5432/tixxin_blog
+      JWT_ACCESS_SECRET: ${JWT_ACCESS_SECRET:?请配置随机签名密钥}
+      CORS_ORIGIN: ${SITE_URL:-http://localhost:3457}
+      LOG_LEVEL: info
+      MEDIA_DIRECTORY: /app/var/media
+    volumes:
+      - media-data:/app/var/media
+    depends_on:
+      migration:
+        condition: service_completed_successfully
+
+  frontend:
+    build: .
+    environment:
+      NUXT_API_BASE_URL: http://backend:3000/api/v1
+      NUXT_PUBLIC_API_BASE_URL: /api/v1
+      NUXT_PUBLIC_SITE_URL: ${SITE_URL:-http://localhost:3457}
+      NUXT_PUBLIC_USE_MOCK_REPO: 'false'
+      NUXT_PUBLIC_POST_USE_MOCK_REPO: 'false'
+    ports:
+      - '127.0.0.1:${WEB_PORT:-3457}:3000'
+    depends_on:
+      backend:
+        condition: service_healthy
+
+volumes:
+  blog-data:
+  media-data:
