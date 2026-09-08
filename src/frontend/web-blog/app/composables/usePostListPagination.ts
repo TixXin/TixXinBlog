@@ -43,7 +43,6 @@ export function usePostListPagination(options: {
     pageRequested.value = false
   })
   const totalPages = computed(() => Math.max(1, Math.ceil(options.total.value / pageSize)))
-  const paginationKey = computed(() => String(currentPage.value))
   const hasMore = computed(() => currentPage.value * pageSize < options.total.value)
   const pageList = computed(() => {
     const total = totalPages.value
@@ -57,24 +56,14 @@ export function usePostListPagination(options: {
     return pages
   })
   function goToPage(page: number) {
-    if (
-      leaving ||
-      pageRequested.value ||
-      options.pending.value ||
-      page < 1 ||
-      page > totalPages.value ||
-      page === currentPage.value
-    )
-      return
-    pageRequested.value = true
-    options.requestPage(page)
-    if (options.displayMode.value === 'pagination') {
-      const viewport = options.scrollbarRef.value?.viewport
-      const root = resolveScrollRoot(viewport ?? null)
-      const behavior = matchMedia('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth'
-      if (root) root.scrollTo({ top: 0, behavior })
-      else viewport?.closest('.main-inner')?.scrollIntoView({ block: 'start', behavior })
+    if (leaving || page < 1 || page > totalPages.value || page === currentPage.value) return
+    // 触底追加需要串行；显式翻页允许新请求替换正在等待的旧页。
+    if (options.displayMode.value === 'waterfall') {
+      if (pageRequested.value || options.pending.value) return
+      pageRequested.value = true
     }
+    options.requestPage(page)
+    // URL驱动的滚动恢复统一负责落点，避免平滑回顶与历史恢复同时争用滚动根。
   }
   let observer: IntersectionObserver | null = null
   function observe() {
@@ -108,7 +97,6 @@ export function usePostListPagination(options: {
     sentinelRef,
     currentPage,
     totalPages,
-    paginationKey,
     pageList,
     goToPage,
   }

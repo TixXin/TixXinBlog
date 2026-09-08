@@ -29,8 +29,7 @@ export async function usePostList(options: {
     () => {
       if (options.resetOnScopeChange !== false) options.page.value = 1
       pages.clear()
-      accumulated.value = []
-      total.value = 0
+      // 保留已读内容与布局，当前筛选的数据被接受后再原子替换。
     },
     { flush: 'sync' },
   )
@@ -62,7 +61,7 @@ export async function usePostList(options: {
           pageSize,
         }
       } else {
-        value = await fetchPostPage(config.public.apiBaseUrl, { ...query, page })
+        value = await fetchPostPage(config.public.apiBaseUrl, { ...query, page }, signal)
       }
       knownTotal = value.total
       chunks.set(page, value.items)

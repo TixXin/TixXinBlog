@@ -63,6 +63,47 @@ async function setup(initialPage = 1, initialMode: 'waterfall' | 'pagination' = 
 }
 
 describe('文章数据源', () => {
+  it('等待换页时保留原列表，后续页取消旧请求且迟到结果不能覆盖', async () => {
+    const { options, state, settle } = await setup()
+    let finishOld!: (value: Awaited<ReturnType<typeof fetchPostPage>>) => void
+    let oldSignal: AbortSignal | undefined
+    vi.mocked(fetchPostPage).mockImplementationOnce((_base, _query, signal) => {
+      oldSignal = signal
+      return new Promise((resolve) => {
+        finishOld = resolve
+      })
+    })
+    options.page.value = 2
+    await settle()
+    expect(state.pending.value).toBe(true)
+    expect(state.posts.value.map((post) => post.id)).toEqual(mockPosts.slice(0, 15).map((post) => post.id))
+    expect(oldSignal?.aborted).toBe(false)
+    options.page.value = 3
+    await settle()
+    expect(oldSignal?.aborted).toBe(true)
+    const expected = mockPosts.slice(30, 45).map((post) => post.id)
+    await vi.waitFor(() => expect(state.posts.value.map((post) => post.id)).toEqual(expected))
+    finishOld({ items: mockPosts.slice(15, 30), total: mockPosts.length, page: 2, pageSize: 15 })
+    await settle()
+    expect(state.posts.value.map((post) => post.id)).toEqual(expected)
+  })
+
+  it('新筛选失败时仍可阅读原列表，重试后替换为新分类', async () => {
+    const { options, state, settle } = await setup()
+    const original = state.posts.value.map((post) => post.id)
+    vi.mocked(fetchPostPage).mockRejectedValueOnce(new Error('筛选请求失败'))
+    options.selectedCategory.value = '工作复盘'
+    await settle()
+    expect(state.error.value).toBeTruthy()
+    expect(state.posts.value.map((post) => post.id)).toEqual(original)
+    await state.refresh()
+    await settle()
+    expect(state.error.value).toBeFalsy()
+    expect(state.posts.value.map((post) => post.id)).toEqual(
+      mockPosts.filter((post) => post.folder === '工作复盘').map((post) => post.id),
+    )
+  })
+
   it('冷启动连续模式的第3页URL按页补齐完整前缀', async () => {
     const { state } = await setup(3, 'waterfall')
     expect(state.posts.value.map((post) => post.id)).toEqual(mockPosts.slice(0, 45).map((post) => post.id))
