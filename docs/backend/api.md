@@ -244,6 +244,16 @@ Authorization: Bearer <access-token>
 { "liked": true, "likes": 43 }
 ```
 
+`GET /posts/:id/comments` 返回 `{ items: CommentItem[], total: number }`，`total` 包括所有层级回复。
+可选携带 `X-Visitor-Id`，每个评论的 `liked` 表示该访客是否已点赞；不携带时为 `false`。
+响应设置 `Cache-Control: private, no-store`，避免个人点赞状态被共享缓存。无效访客头返回 400。
+
+评论发表会对昵称和内容去除首尾空白：昵称 1–32 字符，内容 1–1000 字符，头像地址最多 512 字符。
+`parentId` 必须属于同一文章；根评论深度 0，允许回复到深度 2，再深返回 1003。
+归档文章拒评 1002，草稿文章按不存在处理。公开写接口始终返回 `isOwner: false`，不接受客户端指定作者权限。
+评论创建与点赞切换通过事务和行锁保护计数。`POST /comments/:id/like` 返回 `{ liked, likes }`。
+前端禁止请求期间重复提交；当前协议不保证网络中断后的重试幂等，响应丢失时应先读取确认。
+
 `POST /posts/:id/comments` 请求：
 
 ```json
@@ -265,6 +275,7 @@ Authorization: Bearer <access-token>
   "content": "写得不错",
   "time": "2026-04-16T10:30:00.000Z",
   "likes": 0,
+  "liked": false,
   "isOwner": false,
   "replies": []
 }
@@ -1053,3 +1064,167 @@ curl -X POST 'https://api.tixxin.com/api/v1/admin/posts' \
 | 日期 | 接口 | 变更 |
 |------|------|------|
 | 2026-04-16 | 全部 | 初版契约 |
+| 2026-07-20 | GET /flashes | 新增可选查询参数 archived(boolean,默认 false):true 时返回归档列表,服务前端归档箱视图 |
+
+## 管理概览
+
+`GET /api/v1/admin/overview` 需要管理员 Bearer JWT。返回 `counts`（posts、published、drafts、archived、trashed、comments、flashes、flashDrafts、unanswered）及最多 6 条 `recentPosts`（id、title、status、updatedAt）。待回复数量只计算公开文章下没有博主直接回复的游客根评论；评论数包含回复。
+
+### 文章管理筛选与恢复
+
+`GET /admin/posts` 新增 category（tech/life）、folder、tag、sort（updatedAt/publishedAt/title）与 order（asc/desc），与 search/status/page/pageSize 组合使用。列表额外返回 category、folder、tags、pinned、updatedAt。
+
+`GET /admin/posts/filters` 返回包含草稿与归档内容的专栏/标签选项，仅管理员可读。`POST /admin/posts/:id/restore` 只允许恢复已归档或回收的文章，恢复为草稿，不自动公开；重复恢复返回 400。以上路径均位于 `/api/v1` 下。
+
+### 评论管理上下文
+
+`GET /api/v1/admin/comments` 支持 postId、search、unanswered=true 和分页。待回复只统计公开文章下尚无博主直接回复的游客根评论，与管理概览一致。列表返回 postStatus，前端不向未公开文章展示可用回复操作。
+
+`GET /api/v1/admin/comments/articles` 返回存在评论的文章选项。`GET /api/v1/admin/comments/:id/context?page=1` 返回当前评论、祖先链、每页 20 条直接回复、total 和 deleteTotal（当前评论及所有后代）。
+
+`DELETE /api/v1/admin/comments/:id?expectedTotal=N&expectedFingerprint=...` 在文章行锁内重新计算删除范围；与确认时范围不同返回 409，数据保留。expectedFingerprint 为上下文返回的 SHA-256 指纹，现为必传；旧管理客户端需升级，不可仅依赖数量确认。成功返回 deleted。所有上述接口均要求管理员 JWT。
+
+### 后台闪念管理
+
+`GET /api/v1/admin/flashes` 增加 status=all/draft/published/archived。status 未传时保留 archived 布尔筛选的原行为；草稿与已发布均排除归档。`GET /api/v1/admin/flashes/:id` 允许管理员读取草稿、归档及评论，匿名返回 401。
+
+后台 `/admin/flashes` 复用 FlashEditor 和已有创建/更新/删除评论接口；归档恢复使用 `{isArchived:false,isDraft:true}`，恢复后不自动公开。正文支持最多 50000 字，图片最多 9 个 HTTP(S) URL，标签最多 20 个、每个 64 字。
+
+### 专栏与标签维护
+
+`GET /api/v1/admin/taxonomy` 返回 folders/tags（id、label、total、published，标签含 color）及固定内容类型引用统计。`POST /admin/taxonomy/folders|tags` 新增，`PATCH /admin/taxonomy/:kind/:id` 重命名/改色，`DELETE` 删除未被引用的目录项；路径均有 `/api/v1` 前缀且要求管理员 JWT。输入 label 去首尾空白后为 1–64 字，同名返回 409，有引用（含草稿、归档）删除返回 409。
+
+专栏迁移回填现有 post.folder 名称；重命名在事务内同步更新所有文章的 folder。标签维持原多对多 ID，更名同步 label/slug；公开统计始终按已发布文章计算。文章保存与目录写操作共用事务级 advisory lock，保证引用检查与修改原子性。编辑器仍支持手工新增专栏名，保存时自动登记目录。
+
+### 管理员修改密码
+
+`POST /api/v1/auth/password` 需要管理员 Bearer JWT 和同源请求，body 为 currentPassword（1–128 字）、newPassword（12–128 字），新旧不能相同。错误当前密码返回 400，不撤销会话；成功更新密码哈希，递增 admin_user.session_version，撤销该账号全部刷新记录并清除当前 Cookie，返回 `{ok:true}`。
+
+访问 JWT 带 version，守卫与数据库版本比较，因此所有旧访问令牌即时拒绝；登录、刷新及改密按管理员行锁顺序串行化。接口沿用凭据操作限流，新增密码字段全部日志脱敏。后台账号页不保存密码到本机存储，成功清空输入并要求重新登录。
+
+### 内容版本与修订基础（长期维护阶段）
+
+管理文章列表与详情增加 revision；详情增加 savedAt。现有文章迁移为版本 0 并保存初始快照，新文章首次保存为版本 1。版本仅随内容/管理状态及关联目录修改递增，互动计数不推进内容版本。
+
+`PATCH /api/v1/admin/posts/:id` 必须提交读取时的 revision；缺失返回 428，过期返回 409，事务回滚且不覆盖内容。归档与恢复请求必须传 query revision，版本过期同样返回 409。旧管理客户端需先重新读取文章，不可省略版本。
+
+`GET /api/v1/admin/posts/:id/revisions?page=1` 返回每页 20 条版本摘要；`GET /api/v1/admin/posts/:id/revisions/:revision` 返回内容快照。快照保留正文与编辑元信息，不包含阅读、点赞及评论计数。后台提供历史分页、正文差异比较、载入合并与恢复为新草稿。
+
+
+### 修订恢复与目录历史名
+
+`POST /api/v1/admin/posts/:id/revisions/:historical/restore` 接收 `{revision: 当前内容版本}`。成功生成新版本并将文章设为草稿；过期版本返回 409；评论、阅读和点赞计数不回滚。
+
+目录更名维护 taxonomy_alias（kind/alias/target）。连续更名将旧别名直接指向最新名称；文章创建/保存和历史修订恢复统一解析别名。重新创建历史名称返回 409；别名目标已删除时保存拒绝并提示重新选择。
+
+编辑器自动保存服务器仅用于草稿；已公开/归档内容只自动保留本机副本。副本按账号与文章隔离，不在服务器 API 中读取或传输，用户显式选择恢复后仍需手动保存确认。
+
+
+### 文章地址、封面和 SEO
+
+管理文章保存支持 slug（最长 120 位，小写字母开头，仅字母/数字/连字符，可留空）、coverAlt（300）、seoTitle（160）、seoDescription（320）、seoNoindex（布尔）。这些字段随内容版本和修订保存。未提供的新字段保留现值，兼容旧修订及旧恢复副本。
+
+`GET /api/v1/posts/by-slug/:slug` 解析当前或历史地址，仅返回已发布文章。地址由 post_address 统一保留，同一地址不可分配给另一文章。旧数字 URL 和旧标识页面会跳转到当前规范地址；RSS 链接使用当前地址，GUID 保持数字身份稳定。
+
+seoNoindex 仅控制搜索引擎收录，不是隐私权限：文章仍公开、可通过站内搜索及 RSS 访问。站点地图排除 noindex 文章；页面输出相应 robots、canonical 和 SEO 元信息。
+
+JSON 正文限制调整为 1MB，以支持 DTO 允许的 20 万字 UTF-8 正文；字段校验继续生效。发布前确认由后台界面展示标题、地址、目录、摘要和收录规则，保存时继续校验版本与地址唯一性。
+
+
+### 媒体资源
+
+- `POST /api/v1/admin/media`：multipart 单文件字段 file，可传 uploadId（UUID v4）与 alt（最多 300 字）。仅管理员可用。同一 uploadId 和相同规范化图片重试返回原资源，避免重复上传。
+- 支持 JPEG/PNG/WebP，单文件最多 8MB，最多 4000 万输入像素；真实解码后自动纠正方向、最长边不超过 4096 并输出 WebP。原始元信息被移除，文件系统键由 UUID 生成，不使用用户文件路径。
+- `GET /api/v1/admin/media?page=1&search=...&deleted=false`：分页检索文件名/替代文本。`PATCH /:id` 更新 alt。
+- `GET /api/v1/admin/media/:id/references`：每页 20 条引用，覆盖当前文章、历史修订和闪念的全部状态。
+- `DELETE /api/v1/admin/media/:id`：有引用返回 409；无引用则移入回收，公共链接返回 404，文件保留。`POST /:id/restore` 验证文件存在后恢复。
+- `GET /api/v1/media/:uuid.webp`：返回规范化图片字节；资源链接可公开访问，管理元信息接口仍需鉴权。
+
+内容保存与媒体移除共用事务锁，媒体引用索引随内容及修订原子更新。不存在或已移除的受管图片不能再被文章/闪念保存引用。本文所称引用数量是内容位置数量，历史版本分别计数。
+
+实现依据：[Sharp 输入限制](https://sharp.pixelplumbing.com/api-constructor/)、[Sharp 默认元信息处理](https://sharp.pixelplumbing.com/api-output/)。
+
+
+### 文章批量管理与回收站
+
+现有 post.status 仍为 draft/published/archived；新增 deleted_at 作为回收标记。默认管理列表和概览文章数量不含回收站；status=trash 单独查询回收内容。列表返回 deleted，详情返回可选 deletedAt。回收时转为不公开草稿，保留正文、评论、修订、历史地址及图片引用，编辑与历史恢复入口拒绝直接保存回收文章；先恢复为草稿后才可编辑。概览增加 trashed，最近更新不显示回收内容。
+
+- `POST /api/v1/admin/posts/batch/preview`：`{action, items:[{id,revision}]}`，1–50 个唯一 ID。action 为 withdraw/archive/trash/restore/delete，不提供批量发布。返回每项标题、版本、可执行状态/原因、影响数量、ticket（UUID）、expiresIn。仅创建预览记录，不修改文章。
+- `POST /api/v1/admin/posts/batch/execute`：`{ticket, acknowledgement?}`。预览创建后 5 分钟内有效，绑定操作者和会话版本；delete 必须额外提交 `acknowledgement: "永久删除"`。永久删除仅允许已回收文章。
+- 每项在独立事务中重新锁定并检查版本/状态。删除还检查实际关联记录集合，包含评论及其点赞、修订、历史地址、媒体引用、文章点赞与访问去重记录；即使数量不变而评论被替换，旧预览也会拒绝。失败条目回滚并保存原因，其他条目继续。
+- 每项结果随内容事务提交到 post_batch_operation；同 ticket 并发或重试不会重复执行。返回 results、successCount、failedCount、pendingCount、completed 和原 preview。部分成功返回正常结果，由客户端逐项展示，不能仅凭 HTTP 成功认定全量成功。
+- `GET /api/v1/admin/posts/batch/:ticket`：读取当前账号操作的已提交结果，可在断线后查询。`GET /api/v1/admin/posts/batch`：最近 10 次已开始操作，后台刷新后可重新打开。过期未完成操作只能查询；刷新文章列表并重新预览剩余条目。
+- 永久删除级联清理文章关联记录，媒体实体与文件保留。文章回收/归档/恢复会推进内容版本并保存修订；恢复不会自动公开。
+
+后台当前页最多选择 20 篇，切换筛选/分页后清空勾选；执行前使用原生对话框确认。网关和客户端批量执行超时为 60 秒，超时不视为未执行，使用持久化记录查询真实结果。
+
+
+### 评论审核与可见性
+
+迁移为全部已有评论添加 status=published、revision=0，保持现有数据和公开状态。状态为 published（通过）、pending（待审）、hidden（隐藏）、spam（垃圾）。公开评论必须自身及最多两级祖先均为 published，且文章已发布并未回收；隐藏上级会隐藏回复，恢复上级不会恢复单独隐藏或标记垃圾的回复。
+
+- `GET /api/v1/admin/comments/policy`：requireApproval、revision、updatedAt、notification。notification 固定为 not_configured，未发送任何邮件/消息。
+- `PATCH /api/v1/admin/comments/policy`：`{requireApproval:boolean, revision:number}`，版本冲突 409。策略持久化、保存后运行时生效，只控制新的游客评论；默认 false，保持原行为。博主真实管理回复直接通过。
+- 新游客评论成功响应增加 moderationStatus=published/pending；待审内容仅返回给本次提交者，公开评论树不含它。前端提示已提交待审核，不增加公开列表和计数。
+- `GET /api/v1/admin/comments` 增加 status、from、to（YYYY-MM-DD；UTC 日期含首尾）、visible、revision、postDeleted。status 指自身状态，visible 表示综合祖先/文章状态后的实际公开结果。待回复只计算当前可见且没有可见博主直接回复的根评论。
+- 上下文增加 deleteFingerprint、visibleTotal、approvedVisibleTotal、visible；当前、祖先和直接回复均带审核状态/版本。删除/审核确认绑定实际子树、祖先状态、文章版本及评论点赞集合，范围变化返回 409。
+- `POST /api/v1/admin/comments/:id/moderation`：`{status, revision, expectedFingerprint}`。只改变当前评论并递增版本，保留子回复自身状态。文章行锁保护审核、评论新增、点赞与删除，公开计数在同一事务重算。
+- 评论点赞和新增回复都要求目标实际可见；草稿、回收、待审、隐藏、垃圾及被上级阻挡的评论不能通过互动接口泄露计数。
+
+文章缓存评论数表示审核可见的整棵评论树数量；公开概览/发现还排除未发布文章。管理概览的 comments 为全部已存储评论，publicComments 为当前公开可见数量，pendingComments/spamComments 为按自身状态统计。现有 IP 固定窗口限流继续生效，更换客户端访客 ID 不能突破同 IP 配额；未接入外部垃圾识别或通知服务。
+
+
+### 站点公开资料与历史
+
+- `GET /api/v1/site` 返回站点公开资料；没有内部连接、账号凭据或部署密钥。管理读写为 `GET/PATCH /api/v1/admin/site`，需要管理员 JWT。
+- PATCH 必传 name（1–80）、description（0–300）、ownerName（1–80）、ownerTitle（0–200）、avatar（0–1000）、avatarAlt（0–300）、seoTitle（0–160）、seoDescription（0–320）、announcement（0–1000）、socials（最多 8 个）及 revision。
+- social 包含 label（1–40）、href（1–1000）、icon（支持的 Lucide 名称）。链接只允许无内嵌凭据的 HTTP(S) 或 mailto；头像支持 HTTP(S) 或站内路径，拒绝协议相对 URL。受管媒体必须存在且未回收。
+- 成功递增 revision，保存历史并返回 updatedAt 和 announcementUpdatedAt。后两者只读，不能在 PATCH 中提交。旧版本 409，失败回滚并保留当前资料。
+- `GET /api/v1/admin/site/revisions?page=1` 每页 20 条摘要；`GET /revisions/:revision` 读取历史；`POST /revisions/:revision/restore` body 为 `{revision:当前版本}`，恢复产生新版本。
+- 当前头像与所有历史配置均登记媒体引用，清空当前头像后历史引用仍保护原文件。媒体引用列表链接到站点设置。
+
+前端 SSR 首次读取后共享站点资料。应用范围为首页标题/描述、Open Graph 站点名称、文章 JSON-LD 作者/发布者、博主名片/头像/社交链接、版权、各主题公告，以及文章/闪念 RSS 的频道信息和订阅链接名称。专题、朋友圈等既有独立内容源继续保持原契约。部署站点地址、监听端口和存储目录由环境配置，需重启服务；不通过公开资料接口修改。
+
+公开 metadata 新增 activity：按 UTC 自然日统计当前可见文章/评论，包含本周及前 14 周，共 105 格。回收/撤回文章和不可见评论不计入热力图。强度由真实数量映射，界面支持键盘方向键查看每日值。uptimeDays 仅指服务本次进程运行天数；不称作站点稳定运行天数。页脚不生成模拟延迟或“全系统正常”结论。
+
+
+### 稳定管理会话
+
+访问 JWT 增加 sid，指向 admin_session。刷新轮换保持同一 sid，access 最长 15 分钟、refresh 与会话到期为成功续期后 7 天。守卫每次请求验证会话未撤销/未到期和账号 session_version；数据库故障返回 503，不把基础设施故障伪装为退出。
+
+- `GET /api/v1/auth/sessions?page=1`：当前账号仍有效的会话，每页 20 条，包含粗略设备名称、登录时间、最近续期、到期时间及 current。只保存系统/浏览器类别，不新增完整 User-Agent 或 IP 记录。旧记录迁移时登录时间未知，明确显示未知。
+- `DELETE /api/v1/auth/sessions/:id`：仅能撤销自己的会话，同时撤销关联刷新记录。撤销当前会话清除 Cookie，返回 current=true。
+- `POST /api/v1/auth/sessions/revoke-others`：保留当前会话，撤销该账号其他有效会话，返回真实 revoked 数量。
+- `POST /api/v1/auth/logout`：撤销请求中可验证的 Cookie 会话及当前有效访问令牌会话；两者不同时都处理。后续旧访问令牌和刷新 Cookie 均失效。返回 ok 和 revoked 数量。
+- 改密继续递增 session_version，并撤销全部会话与刷新记录。已通过鉴权的在途操作可能完成；批量文章操作在每项开始前也检查会话。
+
+迁移保留有效旧刷新记录，旧 JWT 缺少 sid 时通过原 Cookie 刷新升级；迁移窗口中产生的有效无 sid 刷新记录也可升级。浏览器使用 Web Locks（可用时）串行化同源跨标签页 Cookie 操作。有效会话表示仍可使用的登录授权，不证明设备当前在线。
+
+### 管理操作审计
+
+`GET /api/v1/admin/audit?page=1&action=post.update&state=failure&from=2026-09-01&to=2026-09-07` 仅管理员可读，每页 20 条。action 选项由 `GET /admin/audit/actions` 获取，state 为 pending/success/partial/failure/unknown，日期按 UTC 含首尾。无日志修改或删除接口。
+
+审计记录包括操作者、对象类型/编号、请求开始与处理结束时刻、HTTP 状态、提交字段名称、版本及必要数量。提交字段不表示每个值都改变。密码、访问/刷新令牌、原始正文、完整敏感请求体和原始设备标识均不写入审计。
+
+限流通过后，管理操作开始前先持久化意图；意图写入失败返回 503，核心操作尚未执行。执行后的结果正常写库；结果写入短时失败保留 pending 意图、返回实际核心操作结果及 `X-Audit-Status: pending`，使用有界队列补全。进程中断或队列结果未补全时需核对对象状态，不能把 pending/unknown 视为未执行。审计列表 health 给出待确认/重试数量。
+
+覆盖登录/退出/改密与会话撤销、文章及批量/历史恢复、评论治理、媒体、闪念、分类标签和站点资料。无有效签名的匿名管理探测不会造成审计库写放大；有签名但会话已撤销的管理请求记录拒绝结果，登录尝试记录失败。超过限流的请求由 HTTP 日志记录。
+
+审计中的文章批次可通过 `/admin/posts?operation=UUID` 重新读取持久化结果，评论通过 commentId 打开上下文，媒体支持按 UUID 搜索。对象当前状态可能与历史记录不同。
+
+
+### 内容包、恢复上下文与运行诊断
+
+`POST /api/v1/admin/backup/export` 接收 `{mediaIncluded:boolean}`，下载 `tixxin-content` v1 JSON。该响应为文件，不使用普通 data 包装；只把导出计数交给审计。内容包用于迁入新草稿，完整数据库/历史/账号及全部登记媒体的备份恢复使用 `scripts/full-backup.mjs`。
+
+`POST /admin/backup/imports/preview` 为 multipart，file 为 JSON，requestId 为 UUID v4，strategy=skip/copy，includeSettings=true/false。返回有期限的 ticket、confirmation、明确清单、冲突/引用错误与统计；预览不包含正文或图片字节。相同上传标识重试返回已有票据。
+
+`POST /admin/backup/imports/:id/repreview` 使用仍有效的已上传内容重新预览。`POST /:id/execute` 接收 `{acknowledgement:"导入为新草稿",confirmation}`，绑定实际预览。目标内容或预览变化返回 409。成功只创建新文章/闪念草稿，并在选择时迁入站点资料及审核设置；已有内容保持。数据库统一提交，已确认的失败回滚，新文件在媒体锁内清理；提交结果不确定时保留文件并查询持久化结果。重复执行已完成票据不会重复创建。
+
+`GET /admin/backup/imports` 返回本人最近 10 条记录，`GET /:id` 查询结果；上传内容 15 分钟有效，完成或过期后清除临时包正文。文件上限 50MB；格式、字段、评论层级、媒体真实 WebP/摘要/尺寸/引用校验由服务器执行。
+
+`GET /site` 的 X-Content-Context 响应头标识当前数据上下文。前端在页面初始化时保存该值，管理请求和上传附带相同头；正常配置保存不改变上下文。完整恢复会轮换 content_context 并要求新的上下文，旧页面即使重新登录也无法继续写入，缺失为 428、失配为 409。
+
+`GET /api/v1/admin/maintenance/diagnostics` 返回数据库、迁移、schema、Node 版本和存储读写探测；`POST /admin/maintenance/media-check` 校验登记媒体，返回资源编号及缺失/损坏情况。仅管理员可读，不返回磁盘目录、数据库连接或密钥。内容包/完整恢复及切换步骤见 docs/backup-and-recovery.md。
+
+媒体引用现在包含文章及闪念评论头像，删除评论时由外键级联释放；上传重试可复用同标识、同摘要的未登记文件，提交结果不确定时不会误删已登记资源。
