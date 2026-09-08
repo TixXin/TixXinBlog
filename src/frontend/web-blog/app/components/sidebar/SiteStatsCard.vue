@@ -16,7 +16,7 @@
       <div class="stats-card__uptime-left">
         <span class="stats-card__ping-dot" />
         <div class="stats-card__uptime-text">
-          <span class="stats-card__uptime-label">站点已稳定运行</span>
+          <span class="stats-card__uptime-label">服务本次运行</span>
           <span class="stats-card__uptime-days">{{ stats.uptimeDays.toLocaleString() }} 天</span>
         </div>
       </div>
@@ -30,7 +30,7 @@
       </div>
     </div>
 
-    <SidebarHeatmapGrid />
+    <SidebarHeatmapGrid v-if="stats.activity?.length" :activity="stats.activity" />
   </section>
 </template>
 
@@ -94,6 +94,9 @@ const statItems = computed(() => [
   background: var(--stat-green-dot);
   box-shadow: 0 0 0 3px var(--stat-green-bg);
   animation: pulse-green 2s infinite;
+  @media (prefers-reduced-motion: reduce) {
+    animation: none;
+  }
   flex-shrink: 0;
 }
 
@@ -149,6 +152,9 @@ const statItems = computed(() => [
   font-size: 1.25rem;
   font-weight: 800;
   transition: color 0.2s;
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
 
   // 紧凑档（md–xl）：数字字号略降，避免在 240px 宽度下挤破列宽
   @media (min-width: $breakpoint-md) and (max-width: #{$breakpoint-xl - 1px}) {

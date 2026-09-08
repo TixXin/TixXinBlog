@@ -6,9 +6,9 @@
 -->
 
 <template>
-  <NuxtLink :to="`/articles/${post.id}`" class="post-item">
+  <NuxtLink :to="articlePath(post)" class="post-item">
     <div v-if="post.cover && !coverError" class="post-item__cover-bg">
-      <NuxtImg
+      <CommonContentImage
         :src="post.cover"
         :alt="`${post.title} 封面`"
         loading="lazy"
@@ -90,9 +90,12 @@ function tagStyle(color: string) {
   gap: 0.75rem;
   padding: 0.75rem 1rem;
   min-height: var(--post-card-min-h, 112px);
-  max-height: var(--post-card-max-h, 155px);
+  flex-shrink: 0;
   cursor: pointer;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: $transition-fast;
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
   background-color: transparent;
   border: 1px solid var(--border-soft);
   border-radius: $radius-md;
@@ -106,11 +109,11 @@ function tagStyle(color: string) {
     box-shadow: var(--shadow-card);
 
     .post-item__title {
-      color: var(--accent);
+      color: var(--accent-text);
     }
 
     &:has(.post-item__cover-bg) .post-item__title {
-      color: var(--accent);
+      color: var(--accent-text);
     }
 
     .post-item__cover-bg img {
@@ -162,6 +165,9 @@ function tagStyle(color: string) {
     height: 100%;
     object-fit: cover;
     transition: transform 0.5s ease;
+    @media (prefers-reduced-motion: reduce) {
+      transition: none;
+    }
   }
 }
 
@@ -227,7 +233,7 @@ function tagStyle(color: string) {
   display: inline-flex;
   align-items: center;
   gap: 0.25rem;
-  color: #ef4444;
+  color: var(--danger);
   font-weight: 600;
   font-size: 0.6875rem;
   flex-shrink: 0;
@@ -247,12 +253,16 @@ function tagStyle(color: string) {
 }
 
 .post-item__title {
+  overflow-wrap: anywhere;
   margin: 0;
   font-size: 1rem;
   font-weight: 700;
   line-height: 1.35;
   color: var(--text-main);
   transition: color 0.2s;
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
   position: relative;
   z-index: 2;
 
@@ -305,7 +315,9 @@ function tagStyle(color: string) {
 }
 
 .post-item__summary {
-  font-size: 0.8125rem;
+  flex-shrink: 0;
+  overflow-wrap: anywhere;
+  font-size: 0.875rem;
   color: var(--text-muted);
   line-height: 1.5;
   margin-bottom: 0.25rem;
@@ -330,6 +342,7 @@ function tagStyle(color: string) {
 
 .post-item__footer {
   display: flex;
+  flex-wrap: wrap;
   flex-direction: column;
   gap: 0.25rem;
   margin-top: auto;
@@ -354,7 +367,7 @@ function tagStyle(color: string) {
   align-items: center;
   flex-wrap: wrap;
   gap: 0.5rem;
-  font-size: 0.6875rem;
+  font-size: 0.75rem;
   color: var(--text-soft);
   padding: 0.3rem 0.625rem;
   border-radius: $radius-sm;

@@ -61,7 +61,7 @@
 }
 
 .about-blog__icon {
-  color: var(--accent);
+  color: var(--accent-text);
 }
 
 .about-blog__content {
@@ -82,7 +82,7 @@
     padding: 0.125rem 0.375rem;
     border-radius: $radius-sm;
     font-size: 0.875em;
-    color: var(--accent);
+    color: var(--accent-text);
     font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
   }
 }
@@ -103,10 +103,13 @@
   border-radius: $radius-md;
   font-weight: 500;
   transition: $transition-colors;
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
   text-decoration: none;
 
   &:hover {
-    background: var(--accent);
+    background: var(--accent-action);
     color: #fff;
   }
 }
@@ -122,6 +125,9 @@
   border-radius: $radius-md;
   font-weight: 500;
   transition: $transition-colors;
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
   text-decoration: none;
 
   &:hover {

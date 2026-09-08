@@ -11,26 +11,25 @@
       <h3 class="category-card__title"><Icon name="lucide:folder-open" size="16" /> 专栏分类</h3>
     </div>
     <ul class="category-card__list">
-      <li
-        v-for="cat in categories"
-        :key="cat.name"
-        class="category-card__item"
-        :class="{ 'is-active': activeCategory === cat.name }"
-        @click="$emit('select', cat.name)"
-      >
-        <div class="category-card__left">
-          <span
-            class="category-card__icon"
-            :style="{ color: cat.iconColor, background: cat.iconBg }"
-          >
-            <Icon :name="cat.icon" size="16" />
-          </span>
-          <span class="font-medium text-sm">{{ cat.name }}</span>
-        </div>
-        <div class="category-card__right">
-          <span class="category-card__badge">{{ cat.count }}</span>
-          <Icon name="lucide:chevron-right" size="14" class="category-card__arrow" />
-        </div>
+      <li v-for="cat in categories" :key="cat.name">
+        <button
+          type="button"
+          class="category-card__item"
+          :class="{ 'is-active': activeCategory === cat.name }"
+          :aria-pressed="activeCategory === cat.name"
+          @click="$emit('select', cat.name)"
+        >
+          <div class="category-card__left">
+            <span class="category-card__icon" :style="{ color: cat.iconColor, background: cat.iconBg }">
+              <Icon :name="cat.icon" size="16" />
+            </span>
+            <span class="font-medium text-sm">{{ cat.name }}</span>
+          </div>
+          <div class="category-card__right">
+            <span class="category-card__badge">{{ cat.count }}</span>
+            <Icon name="lucide:chevron-right" size="14" class="category-card__arrow" />
+          </div>
+        </button>
       </li>
     </ul>
   </section>
@@ -74,12 +73,19 @@ defineEmits<{
 }
 
 .category-card__item {
+  width: 100%;
+  min-height: 44px;
+  text-align: left;
+  color: var(--text-main);
   display: flex;
   align-items: center;
   justify-content: space-between;
   padding: 0.625rem 0.75rem;
   border-radius: $radius-md;
   transition: $transition-fast;
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
   cursor: pointer;
 
   &:hover {
@@ -88,15 +94,15 @@ defineEmits<{
 
   &.is-active {
     background: var(--accent-soft);
-    color: var(--accent);
+    color: var(--accent-text);
 
     .category-card__badge {
-      background: var(--accent);
-      color: #fff;
+      background: var(--surface-3);
+      color: var(--text-main);
     }
 
     .category-card__arrow {
-      color: var(--accent);
+      color: var(--accent-text);
     }
   }
 }
@@ -138,6 +144,9 @@ defineEmits<{
   font-size: 1rem;
   color: var(--text-soft);
   transition: color 0.2s;
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
 
   .category-card__item:hover & {
     color: var(--text-main);

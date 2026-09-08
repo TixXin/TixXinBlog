@@ -19,6 +19,7 @@
         v-for="item in items"
         :key="item.id"
         :href="`#${item.id}`"
+        :aria-current="item.id === activeId ? 'location' : undefined"
         class="toc__link"
         :class="{
           'toc__link--active': item.id === activeId,
@@ -42,36 +43,41 @@ defineProps<{
   activeId: string
   progress?: number
 }>()
+const emit = defineEmits<{ navigate: [] }>()
+const router = useRouter()
 
 /**
  * 拦截目录链接的默认跳转行为：
  * - 默认 <a href="#id"> 会让浏览器把每次点击都推入 history，导致文章详情顶栏的"返回上一页"
  *   一直在锚点之间回退，无法真正回到上一个页面（这是一个真实 bug）。
- * - 这里改为：手动 scrollIntoView 滚动到目标，并用 history.replaceState 替换当前 hash，
- *   保证 history 长度不变，外观（地址栏 hash 同步）和右键复制链接行为都保留。
+ * - 使用 router.replace 更新当前 hash，保持路由状态同步且不新增历史项。
+ * - 等路由默认滚动完成后，再按实际顶栏高度定位。
  * - 仅响应纯左键点击；带修饰键 / 中键的点击保留浏览器默认（新标签页等）。
  */
-function handleClick(event: MouseEvent, id: string) {
+async function handleClick(event: MouseEvent, id: string) {
   if (event.defaultPrevented) return
   if (event.button !== 0) return
   if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return
 
   event.preventDefault()
-  const target = document.getElementById(id)
-  if (target) {
-    target.scrollIntoView({ behavior: 'smooth', block: 'start' })
-  }
-  // 复用 history.state，避免破坏 Vue Router 的内部状态记录
-  if (typeof history !== 'undefined') {
-    const nextUrl = location.pathname + location.search + '#' + id
-    history.replaceState(history.state, '', nextUrl)
-  }
+  const path = router.currentRoute.value.path
+  emit('navigate')
+  await router.replace({ hash: '#' + id })
+  await nextTick()
+  requestAnimationFrame(() => {
+    if (router.currentRoute.value.path !== path) return
+    const target = document.getElementById(id)
+    if (!target) return
+    scrollArticleHeading(target)
+    target.setAttribute('tabindex', '-1')
+    target.focus({ preventScroll: true })
+  })
 }
 </script>
 
 <style lang="scss" scoped>
 .toc {
-  display: none;
+  display: block;
   padding: 1.25rem;
   border-radius: $radius-card;
   border: 1px solid var(--border);
@@ -79,6 +85,9 @@ function handleClick(event: MouseEvent, id: string) {
   background: var(--surface-1-alpha);
   backdrop-filter: blur(12px);
   transition: $transition-colors;
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
 
   @media (min-width: $breakpoint-lg) {
     display: block;
@@ -107,7 +116,7 @@ function handleClick(event: MouseEvent, id: string) {
 .toc__progress {
   font-size: 0.75rem;
   font-weight: 600;
-  color: var(--accent);
+  color: var(--accent-text);
   background: var(--surface-2);
   padding: 0.125rem 0.375rem;
   border-radius: $radius-sm;
@@ -121,8 +130,6 @@ function handleClick(event: MouseEvent, id: string) {
   max-height: 50vh;
   overflow-y: auto;
   // 底部淡出：暗示"还能滚"，同时最后一项大半可见
-  mask-image: linear-gradient(to bottom, black calc(100% - 1.5rem), transparent);
-  -webkit-mask-image: linear-gradient(to bottom, black calc(100% - 1.5rem), transparent);
   // 隐藏原生滚动条（与 CustomScrollbar 视觉一致）
   scrollbar-width: none;
   -ms-overflow-style: none;
@@ -133,6 +140,7 @@ function handleClick(event: MouseEvent, id: string) {
 }
 
 .toc__link {
+  min-height: 44px;
   display: flex;
   align-items: center;
   gap: 0.625rem;
@@ -143,6 +151,9 @@ function handleClick(event: MouseEvent, id: string) {
   color: var(--text-muted);
   text-decoration: none;
   transition: $transition-fast;
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
 
   &:hover {
     background: var(--surface-3);
@@ -156,7 +167,7 @@ function handleClick(event: MouseEvent, id: string) {
 
   &--active {
     background: var(--accent-soft);
-    color: var(--accent);
+    color: var(--accent-text);
   }
 }
 

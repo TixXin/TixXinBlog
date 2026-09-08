@@ -62,6 +62,9 @@ function onThemeSwitcherClick(e: MouseEvent) {
   border-radius: $radius-sm;
   color: var(--text-soft);
   transition: $transition-fast;
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
 
   &:hover {
     color: var(--text-main);
@@ -75,6 +78,9 @@ function onThemeSwitcherClick(e: MouseEvent) {
   // 图标 hover 旋转动效（与齿轮按钮的 rotate(45deg) 形成各自不同的微动效）
   :deep(svg) {
     transition: transform 0.45s cubic-bezier(0.34, 1.56, 0.64, 1);
+    @media (prefers-reduced-motion: reduce) {
+      transition: none;
+    }
   }
 
   &:hover :deep(svg) {

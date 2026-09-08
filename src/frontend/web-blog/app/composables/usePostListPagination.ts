@@ -1,242 +1,110 @@
 /**
  * @file usePostListPagination.ts
- * @description 文章列表分页与瀑布流懒加载逻辑，含 IntersectionObserver 管理
- * @author TixXin
- * @since 2026-04-03
+ * @description 受控分页和触底事件：组件只发出页码请求，真实取数由页面数据源负责
  */
-
 import type { PostItem } from '~/features/post/types'
 
-const PAGE_SIZE = 15
-const SPINNER_DELAY = 250
-
-interface PostListPaginationOptions {
+export function usePostListPagination(options: {
   posts: Ref<PostItem[]>
-  activeTab: Ref<string>
+  total: Ref<number>
+  currentPage: Ref<number>
+  pending: Ref<boolean>
+  error: Ref<string>
   displayMode: Ref<'waterfall' | 'pagination'>
   scrollbarRef: Ref<{ viewport: HTMLElement | null; scrollToTop: (smooth?: boolean) => void } | null>
-  /** 按标签名过滤 */
-  selectedTag?: Ref<string | null>
-  /** 按分类名（folder）过滤 */
-  selectedCategory?: Ref<string | null>
-}
-
-export function usePostListPagination(options: PostListPaginationOptions) {
-  const { posts, activeTab, displayMode, scrollbarRef, selectedTag, selectedCategory } = options
-
-  const filteredPosts = computed(() => {
-    let result = posts.value
-    if (selectedTag?.value) {
-      result = result.filter(p => p.tags.some(t => t.label === selectedTag.value))
-    }
-    if (selectedCategory?.value) {
-      result = result.filter(p => p.folder === selectedCategory.value)
-    }
-    return result
-  })
-
-  // 瀑布流模式状态
-  const displayCount = ref(PAGE_SIZE)
-  const loading = ref(false)
-  const showSpinner = ref(false)
+  requestPage: (page: number) => void
+}) {
+  const pageSize = 15
   const sentinelRef = ref<HTMLElement | null>(null)
-  let spinnerTimer: ReturnType<typeof setTimeout> | null = null
-
-  // 分页模式状态
-  const currentPage = ref(1)
-  const paginationKey = computed(() => `${activeTab.value}-${currentPage.value}`)
-
-  const totalPages = computed(() =>
-    Math.ceil(filteredPosts.value.length / PAGE_SIZE),
-  )
-
-  const displayedPosts = computed(() => {
-    if (displayMode.value === 'pagination') {
-      const start = (currentPage.value - 1) * PAGE_SIZE
-      return filteredPosts.value.slice(start, start + PAGE_SIZE)
-    }
-    return filteredPosts.value.slice(0, displayCount.value)
+  const currentPage = options.currentPage
+  let leaving = false
+  const router = useRouter()
+  onBeforeRouteLeave(() => {
+    leaving = true
+    observer?.disconnect()
   })
-
-  const hasMore = computed(() =>
-    displayCount.value < filteredPosts.value.length,
+  const removeAfter = router.afterEach((_to, _from, failure) => {
+    if (failure) {
+      leaving = false
+      pageRequested.value = false
+      observe()
+    }
+  })
+  // 在父页面的 pending 更新前锁住本次触底请求，避免观察器连续推进页码。
+  const pageRequested = ref(false)
+  watch(
+    options.pending,
+    (pending) => {
+      if (!pending) pageRequested.value = false
+    },
+    { flush: 'sync' },
   )
-
+  watch(options.displayMode, () => {
+    pageRequested.value = false
+  })
+  const totalPages = computed(() => Math.max(1, Math.ceil(options.total.value / pageSize)))
+  const paginationKey = computed(() => String(currentPage.value))
+  const hasMore = computed(() => currentPage.value * pageSize < options.total.value)
   const pageList = computed(() => {
     const total = totalPages.value
     const current = currentPage.value
-    if (total <= 7) {
-      return Array.from({ length: total }, (_, i) => i + 1)
-    }
-    const pages: (number | string)[] = [1]
+    if (total <= 7) return Array.from({ length: total }, (_, index) => index + 1)
+    const pages: Array<number | string> = [1]
     if (current > 3) pages.push('...')
-    const start = Math.max(2, current - 1)
-    const end = Math.min(total - 1, current + 1)
-    for (let i = start; i <= end; i++) pages.push(i)
+    for (let page = Math.max(2, current - 1); page <= Math.min(total - 1, current + 1); page += 1) pages.push(page)
     if (current < total - 2) pages.push('...')
     pages.push(total)
     return pages
   })
-
   function goToPage(page: number) {
-    if (page < 1 || page > totalPages.value || page === currentPage.value) return
-    currentPage.value = page
-    scrollbarRef.value?.scrollToTop(true)
-  }
-
-  // Tab / 显示模式 / 过滤条件切换时重置
-  watch(activeTab, () => {
-    displayCount.value = PAGE_SIZE
-    currentPage.value = 1
-    scrollbarRef.value?.scrollToTop(false)
-  })
-
-  watch(displayMode, () => {
-    displayCount.value = PAGE_SIZE
-    currentPage.value = 1
-    scrollbarRef.value?.scrollToTop(false)
-  })
-
-  if (selectedTag) {
-    watch(selectedTag, () => {
-      displayCount.value = PAGE_SIZE
-      currentPage.value = 1
-      scrollbarRef.value?.scrollToTop(false)
-    })
-  }
-
-  if (selectedCategory) {
-    watch(selectedCategory, () => {
-      displayCount.value = PAGE_SIZE
-      currentPage.value = 1
-      scrollbarRef.value?.scrollToTop(false)
-    })
-  }
-
-  // 瀑布流加载逻辑
-  function clearSpinnerTimer() {
-    if (spinnerTimer) {
-      clearTimeout(spinnerTimer)
-      spinnerTimer = null
+    if (
+      leaving ||
+      pageRequested.value ||
+      options.pending.value ||
+      page < 1 ||
+      page > totalPages.value ||
+      page === currentPage.value
+    )
+      return
+    pageRequested.value = true
+    options.requestPage(page)
+    if (options.displayMode.value === 'pagination') {
+      const viewport = options.scrollbarRef.value?.viewport
+      const root = resolveScrollRoot(viewport ?? null)
+      const behavior = matchMedia('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth'
+      if (root) root.scrollTo({ top: 0, behavior })
+      else viewport?.closest('.main-inner')?.scrollIntoView({ block: 'start', behavior })
     }
   }
-
-  function loadMore() {
-    if (loading.value || !hasMore.value) return
-    loading.value = true
-
-    clearSpinnerTimer()
-    spinnerTimer = setTimeout(() => {
-      if (loading.value) showSpinner.value = true
-    }, SPINNER_DELAY)
-
-    requestAnimationFrame(() => {
-      displayCount.value = Math.min(
-        displayCount.value + PAGE_SIZE,
-        filteredPosts.value.length,
-      )
-      loading.value = false
-      showSpinner.value = false
-      clearSpinnerTimer()
-    })
-  }
-
-  // IntersectionObserver 管理
-  const BREAKPOINT_XL = 1280
   let observer: IntersectionObserver | null = null
-  let resizeCleanup: (() => void) | null = null
-
-  function getScrollRoot(): Element | null {
-    if (import.meta.server) return null
-    const vp = scrollbarRef.value?.viewport
-    const el = unref(vp)
-    return el instanceof HTMLElement ? el : null
-  }
-
-  function getObserverRoot(): Element | null {
-    if (import.meta.server) return null
-    if (window.innerWidth < BREAKPOINT_XL) return null
-    const root = getScrollRoot()
-    if (!root) return null
-    if (root.scrollHeight <= root.clientHeight + 1) return null
-    return root
-  }
-
-  function setupObserver() {
+  function observe() {
     observer?.disconnect()
-    if (displayMode.value !== 'waterfall') return
-
+    if (leaving || options.displayMode.value !== 'waterfall' || !sentinelRef.value || options.error.value) return
+    const viewport = options.scrollbarRef.value?.viewport
+    const root = viewport && viewport.scrollHeight > viewport.clientHeight + 1 ? viewport : null
     observer = new IntersectionObserver(
       (entries) => {
-        if (entries[0]?.isIntersecting) {
-          loadMore()
-        }
+        if (entries.some((entry) => entry.isIntersecting) && hasMore.value) goToPage(currentPage.value + 1)
       },
-      {
-        root: getObserverRoot(),
-        rootMargin: '0px 0px 600px 0px',
-      },
+      { root, rootMargin: '0px 0px 400px 0px' },
     )
-
-    if (sentinelRef.value) {
-      observer.observe(sentinelRef.value)
-    }
+    observer.observe(sentinelRef.value)
   }
-
-  watch(sentinelRef, (el) => {
-    if (el && observer) {
-      observer.observe(el)
-    }
-  })
-
-  watch(
-    () => [getScrollRoot(), sentinelRef.value] as const,
-    ([root, sentinel]) => {
-      if (root && sentinel) {
-        setupObserver()
-      }
-    },
-    { immediate: true },
-  )
-
-  watch(displayMode, () => {
-    if (displayMode.value === 'waterfall') {
-      nextTick(() => setupObserver())
-    } else {
-      observer?.disconnect()
-      observer = null
-    }
-  })
-
   onMounted(() => {
-    nextTick(() => setupObserver())
-
-    let prevIsXl = window.innerWidth >= BREAKPOINT_XL
-    const onResize = () => {
-      const nowIsXl = window.innerWidth >= BREAKPOINT_XL
-      if (nowIsXl !== prevIsXl) {
-        prevIsXl = nowIsXl
-        setupObserver()
-      }
-    }
-    window.addEventListener('resize', onResize)
-    resizeCleanup = () => window.removeEventListener('resize', onResize)
+    watch([sentinelRef, options.posts, options.displayMode, options.pending], () => nextTick(observe), {
+      immediate: true,
+    })
   })
-
   onUnmounted(() => {
     observer?.disconnect()
-    observer = null
-    resizeCleanup?.()
-    resizeCleanup = null
-    clearSpinnerTimer()
+    removeAfter()
   })
-
   return {
-    filteredPosts,
-    displayedPosts,
-    displayCount,
+    filteredPosts: options.posts,
+    displayedPosts: options.posts,
+    displayCount: computed(() => options.posts.value.length),
     hasMore,
-    showSpinner,
+    showSpinner: options.pending,
     sentinelRef,
     currentPage,
     totalPages,

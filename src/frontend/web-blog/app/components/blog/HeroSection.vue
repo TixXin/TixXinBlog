@@ -9,7 +9,7 @@
   <div class="hero-section">
     <div class="hero-section__content">
       <div class="hero-section__avatar">
-        <NuxtImg
+        <CommonContentImage
           src="/avatar.svg"
           alt="TixXin"
           width="80"
@@ -28,7 +28,7 @@
       <div class="hero-section__text">
         <h1 class="hero-section__name">TixXin</h1>
         <p class="hero-section__bio">
-          前端开发工程师，热爱技术与生活。<br >
+          前端开发工程师，热爱技术与生活。<br />
           在这里记录学习心得、项目经验和日常随笔。
         </p>
 
@@ -151,9 +151,12 @@ onMounted(() => {
   background: var(--surface-2);
   color: var(--text-muted);
   transition: $transition-colors;
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
 
   &:hover {
-    background: var(--accent);
+    background: var(--accent-action);
     color: #fff;
   }
 }
