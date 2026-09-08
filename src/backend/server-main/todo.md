@@ -4,11 +4,12 @@
 
 ## 总进度
 
-- 总任务数:12
-- 已完成:12
+- 总任务数:21
+- 已完成:20
 - 进行中:0
-- 未开始:0
-- 完成率:100%(首批任务全部完成,后续任务随各域接口铺开时追加)
+- 未开始:1
+- 暂缓:0
+- 完成率:95.2%
 
 ## 维护约定
 
@@ -17,15 +18,22 @@
 
 ## 当前进行中
 
-(无)
-
 ## 待处理(按优先级)
 
-- [ ] moment / flash / guestbook 等其余域接口:复用 post 域模式(实体 → 迁移 → DevSeeder → 接口 → 前端开关分支)
-- [ ] admin post CRUD(POST/PATCH/DELETE /admin/posts,AdminAuthGuard 已就绪)
-- [ ] /archive 与 /posts/:id/related 接口,补齐 post 域收尾
+- [ ] moment / guestbook 等其余域接口：实体、迁移、接口与前端联调（闪念管理已完成）。
 
 ## 已完成
+
+- [x] 后台长期维护能力：创作保护、媒体、批量回收、评论审核、站点设置、会话审计、备份恢复及统一验收（详见 docs/admin-long-term-progress.md）
+
+- [x] 后台日常管理完善（详见 docs/admin-management-progress.md）（2026-09-07 验收通过）
+- [x] 闪念前后端身份统一，管理与公开接口权限验证通过。
+- [x] admin post CRUD(POST/PATCH/DELETE /admin/posts,AdminAuthGuard 已就绪)
+- [x] 文章归档与相关推荐统一真实数据源（/posts/metadata 与 /posts/:id/related）。
+
+- [x] 全项目审计 28 项整改与验收（详见 docs/remediation-progress.md）（2026-09-07，旧密钥撤销验证通过）
+
+- [x] 评论联调：读取访客点赞状态、输入校验、并发计数与接口回归验证（本轮新增）（2026-09-06，见 docs/comment-integration-validation.md）
 
 - [x] 工程骨架初始化:package.json / tsconfig / nest-cli / ESLint 扁平配置(2026-07-20)
 - [x] 入口引导:全局前缀 api/v1、ValidationPipe、CORS、优雅停机(2026-07-20)

@@ -1,6 +1,6 @@
 # TixXinBlog
 
-个人博客系统。前台基于 Nuxt 4 + Vue 3，支持文章、归档、画廊、留言板、友链等模块，当前处于 UI 打磨阶段，使用 mock 数据驱动。
+个人博客系统。前台基于 Nuxt 4 + Vue 3，支持文章、归档、画廊、留言板、友链等模块，当前文章、评论、认证、闪念及创作后台已接入真实 API；书签使用本机存储，展示类模块保留静态数据。
 
 <p align="center">
   <img alt="Nuxt 4" src="https://img.shields.io/badge/Nuxt_4-00DC82?style=for-the-badge&logo=nuxt&logoColor=white" />
@@ -15,8 +15,8 @@
 
 <p align="center">
   <img alt="License" src="https://img.shields.io/badge/License-GPL--3.0-blue?style=flat-square" />
-  <img alt="Node" src="https://img.shields.io/badge/Node-%3E%3D20-5FA04E?style=flat-square&logo=nodedotjs&logoColor=white" />
-  <img alt="pnpm" src="https://img.shields.io/badge/pnpm-%3E%3D9-F69220?style=flat-square&logo=pnpm&logoColor=white" />
+  <img alt="Node" src="https://img.shields.io/badge/Node-24-5FA04E?style=flat-square&logo=nodedotjs&logoColor=white" />
+  <img alt="pnpm" src="https://img.shields.io/badge/pnpm-9.15.0-F69220?style=flat-square&logo=pnpm&logoColor=white" />
   <a href="https://tix.xin"><img alt="在线预览" src="https://img.shields.io/badge/在线预览-tix.xin-brightgreen?style=flat-square" /></a>
 </p>
 
@@ -43,8 +43,8 @@
 
 ## 环境要求
 
-- Node.js >= 20
-- pnpm >= 9
+- Node.js >= 24 < 25
+- pnpm 9.15.0（推荐 `corepack pnpm`）
 
 ## 快速开始
 
@@ -60,7 +60,7 @@ pnpm install
 pnpm dev
 ```
 
-访问 http://localhost:3456 查看本地效果。
+启动前需按 [后端说明](src/backend/server-main/README.md) 配置数据库、迁移并启动后端，前端环境模板见 `src/frontend/web-blog/.env.example`。访问 http://localhost:3456 查看本地效果。生产式编排与管理员初始化见 [部署验收说明](docs/local-production-validation.md)。
 
 ## 构建与部署
 
