@@ -61,5 +61,10 @@ defineProps<{
   &.tab-active::after {
     bottom: 0;
   }
+
+  // 焦点轮廓放在链接内部，避免被可横向滚动的导航容器裁切。
+  &:focus-visible {
+    outline-offset: -2px;
+  }
 }
 </style>
