@@ -1,0 +1,411 @@
+{
+  "config": {
+    "argv": [
+      "c:\\program files\\nodejs\\node.exe",
+      "D:\\Projects\\TixXinBlog\\.codex\\content-navigation\\frontend\\node_modules\\@playwright\\test\\cli.js",
+      "test",
+      "tests/e2e/ux-remediation.spec.ts",
+      "--grep",
+      "页码筛选刷新与返回|连续，失败重试后|三主题六个有向切换|网络请求失败时切换主题|关闭JavaScript时|旧朋友圈锚点入口",
+      "--output",
+      "D:/Projects/TixXinBlog/.codex/content-navigation/e2e-1788871908168/artifacts",
+      "--reporter=line,json"
+    ],
+    "configFile": "D:\\Projects\\TixXinBlog\\.codex\\content-navigation\\frontend\\playwright.config.ts",
+    "rootDir": "D:/Projects/TixXinBlog/.codex/content-navigation/frontend/tests/e2e",
+    "failOnFlakyTests": false,
+    "forbidOnly": false,
+    "fullyParallel": false,
+    "globalSetup": null,
+    "globalTeardown": null,
+    "globalTimeout": 0,
+    "grep": {},
+    "grepInvert": null,
+    "maxFailures": 0,
+    "metadata": {
+      "actualWorkers": 1
+    },
+    "preserveOutput": "always",
+    "projects": [
+      {
+        "outputDir": "D:/Projects/TixXinBlog/.codex/content-navigation/e2e-1788871908168/artifacts",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {
+          "actualWorkers": 1
+        },
+        "id": "",
+        "name": "",
+        "testDir": "D:/Projects/TixXinBlog/.codex/content-navigation/frontend/tests/e2e",
+        "testIgnore": [],
+        "testMatch": [
+          "**/*.@(spec|test).?(c|m)[jt]s?(x)"
+        ],
+        "timeout": 60000
+      }
+    ],
+    "quiet": false,
+    "reporter": [
+      [
+        "line"
+      ],
+      [
+        "json"
+      ]
+    ],
+    "reportSlowTests": {
+      "max": 5,
+      "threshold": 300000
+    },
+    "shard": null,
+    "tags": [],
+    "updateSnapshots": "missing",
+    "updateSourceMethod": "patch",
+    "version": "1.63.0",
+    "workers": 1,
+    "webServer": null
+  },
+  "suites": [
+    {
+      "title": "ux-remediation.spec.ts",
+      "file": "ux-remediation.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [
+        {
+          "title": "关闭JavaScript时首屏仍包含服务端文章列表",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 504,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-09-08T12:51:49.068Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "a5b2bd9a0411b2112a15-01f218e4c33095ccd3f8",
+          "file": "ux-remediation.spec.ts",
+          "line": 10,
+          "column": 1
+        },
+        {
+          "title": "nexus的页码筛选刷新与返回保留位置，连续模式返回补齐前缀",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 3528,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-09-08T12:51:49.710Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "a5b2bd9a0411b2112a15-2f787519f5801e4cb076",
+          "file": "ux-remediation.spec.ts",
+          "line": 124,
+          "column": 3
+        },
+        {
+          "title": "aurora的页码筛选刷新与返回保留位置，连续模式返回补齐前缀",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 5295,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-09-08T12:51:53.248Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "a5b2bd9a0411b2112a15-589b6b47e5dfa66b51d7",
+          "file": "ux-remediation.spec.ts",
+          "line": 124,
+          "column": 3
+        },
+        {
+          "title": "dock的页码筛选刷新与返回保留位置，连续模式返回补齐前缀",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 4917,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-09-08T12:51:58.552Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "a5b2bd9a0411b2112a15-b8f30cdeffccecf8c0b3",
+          "file": "ux-remediation.spec.ts",
+          "line": 124,
+          "column": 3
+        },
+        {
+          "title": "旧朋友圈锚点入口与独立列表使用同一搜索URL和数据",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 3946,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-09-08T12:52:03.475Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "a5b2bd9a0411b2112a15-509de2c94b063524c380",
+          "file": "ux-remediation.spec.ts",
+          "line": 178,
+          "column": 1
+        },
+        {
+          "title": "网络请求失败时切换主题仍保留文章和未发送的评论",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 1967,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-09-08T12:52:07.427Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "a5b2bd9a0411b2112a15-1eb2e6d692d388a345b0",
+          "file": "ux-remediation.spec.ts",
+          "line": 296,
+          "column": 1
+        },
+        {
+          "title": "首页切连续，失败重试后全部文章唯一有序完整",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 2064,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-09-08T12:52:09.401Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "完整ID集合",
+                      "contentType": "application/json",
+                      "body": "eyJleHBlY3RlZCI6WyIvYXJ0aWNsZXMvMTA2IiwiL2FydGljbGVzLzEwNSIsIi9hcnRpY2xlcy8xMDQiLCIvYXJ0aWNsZXMvMTAzIiwiL2FydGljbGVzLzEwMiIsIi9hcnRpY2xlcy8xMDEiLCIvYXJ0aWNsZXMvMTAwIiwiL2FydGljbGVzLzk5IiwiL2FydGljbGVzLzk4IiwiL2FydGljbGVzLzk3IiwiL2FydGljbGVzLzk2IiwiL2FydGljbGVzLzk1IiwiL2FydGljbGVzLzk0IiwiL2FydGljbGVzLzkzIiwiL2FydGljbGVzLzkyIiwiL2FydGljbGVzLzkxIiwiL2FydGljbGVzLzkwIiwiL2FydGljbGVzLzg5IiwiL2FydGljbGVzLzg4IiwiL2FydGljbGVzLzg3IiwiL2FydGljbGVzLzg2IiwiL2FydGljbGVzLzg1IiwiL2FydGljbGVzLzg0IiwiL2FydGljbGVzLzgzIiwiL2FydGljbGVzLzgyIiwiL2FydGljbGVzLzgxIiwiL2FydGljbGVzLzgwIiwiL2FydGljbGVzLzc5IiwiL2FydGljbGVzLzc4IiwiL2FydGljbGVzLzc3IiwiL2FydGljbGVzLzc2IiwiL2FydGljbGVzLzc1IiwiL2FydGljbGVzLzc0IiwiL2FydGljbGVzLzczIiwiL2FydGljbGVzLzcyIiwiL2FydGljbGVzLzcxIiwiL2FydGljbGVzLzcwIiwiL2FydGljbGVzLzY5IiwiL2FydGljbGVzLzY4IiwiL2FydGljbGVzLzY3IiwiL2FydGljbGVzLzY2IiwiL2FydGljbGVzLzY1IiwiL2FydGljbGVzLzY0IiwiL2FydGljbGVzLzYzIiwiL2FydGljbGVzLzYyIiwiL2FydGljbGVzLzYxIiwiL2FydGljbGVzLzYwIiwiL2FydGljbGVzLzU5IiwiL2FydGljbGVzLzU4IiwiL2FydGljbGVzLzU3IiwiL2FydGljbGVzLzU2IiwiL2FydGljbGVzLzU1IiwiL2FydGljbGVzLzU0IiwiL2FydGljbGVzLzUzIiwiL2FydGljbGVzLzUyIiwiL2FydGljbGVzLzUxIiwiL2FydGljbGVzLzUwIiwiL2FydGljbGVzLzQ5IiwiL2FydGljbGVzLzQ4IiwiL2FydGljbGVzLzQ3IiwiL2FydGljbGVzLzQ2IiwiL2FydGljbGVzLzQ1IiwiL2FydGljbGVzLzQ0IiwiL2FydGljbGVzLzQzIiwiL2FydGljbGVzLzQyIiwiL2FydGljbGVzLzQxIiwiL2FydGljbGVzLzQwIiwiL2FydGljbGVzLzM5IiwiL2FydGljbGVzLzM4IiwiL2FydGljbGVzLzM3IiwiL2FydGljbGVzLzM2IiwiL2FydGljbGVzLzM1IiwiL2FydGljbGVzLzM0IiwiL2FydGljbGVzLzMzIiwiL2FydGljbGVzLzMyIiwiL2FydGljbGVzLzMxIiwiL2FydGljbGVzLzMwIiwiL2FydGljbGVzLzI5IiwiL2FydGljbGVzLzI4IiwiL2FydGljbGVzLzI3IiwiL2FydGljbGVzLzI2IiwiL2FydGljbGVzLzI1IiwiL2FydGljbGVzLzI0IiwiL2FydGljbGVzLzIzIiwiL2FydGljbGVzLzIyIiwiL2FydGljbGVzLzIxIiwiL2FydGljbGVzLzIwIiwiL2FydGljbGVzLzE5IiwiL2FydGljbGVzLzE4IiwiL2FydGljbGVzLzE3IiwiL2FydGljbGVzLzE2IiwiL2FydGljbGVzLzE1IiwiL2FydGljbGVzLzE0IiwiL2FydGljbGVzLzEzIiwiL2FydGljbGVzLzEyIiwiL2FydGljbGVzLzExIiwiL2FydGljbGVzLzEwIiwiL2FydGljbGVzLzkiLCIvYXJ0aWNsZXMvOCIsIi9hcnRpY2xlcy83IiwiL2FydGljbGVzLzYiLCIvYXJ0aWNsZXMvNSIsIi9hcnRpY2xlcy80IiwiL2FydGljbGVzLzMiLCIvYXJ0aWNsZXMvMiIsIi9hcnRpY2xlcy8xIl0sImFjdHVhbCI6WyIvYXJ0aWNsZXMvMTA2IiwiL2FydGljbGVzLzEwNSIsIi9hcnRpY2xlcy8xMDQiLCIvYXJ0aWNsZXMvMTAzIiwiL2FydGljbGVzLzEwMiIsIi9hcnRpY2xlcy8xMDEiLCIvYXJ0aWNsZXMvMTAwIiwiL2FydGljbGVzLzk5IiwiL2FydGljbGVzLzk4IiwiL2FydGljbGVzLzk3IiwiL2FydGljbGVzLzk2IiwiL2FydGljbGVzLzk1IiwiL2FydGljbGVzLzk0IiwiL2FydGljbGVzLzkzIiwiL2FydGljbGVzLzkyIiwiL2FydGljbGVzLzkxIiwiL2FydGljbGVzLzkwIiwiL2FydGljbGVzLzg5IiwiL2FydGljbGVzLzg4IiwiL2FydGljbGVzLzg3IiwiL2FydGljbGVzLzg2IiwiL2FydGljbGVzLzg1IiwiL2FydGljbGVzLzg0IiwiL2FydGljbGVzLzgzIiwiL2FydGljbGVzLzgyIiwiL2FydGljbGVzLzgxIiwiL2FydGljbGVzLzgwIiwiL2FydGljbGVzLzc5IiwiL2FydGljbGVzLzc4IiwiL2FydGljbGVzLzc3IiwiL2FydGljbGVzLzc2IiwiL2FydGljbGVzLzc1IiwiL2FydGljbGVzLzc0IiwiL2FydGljbGVzLzczIiwiL2FydGljbGVzLzcyIiwiL2FydGljbGVzLzcxIiwiL2FydGljbGVzLzcwIiwiL2FydGljbGVzLzY5IiwiL2FydGljbGVzLzY4IiwiL2FydGljbGVzLzY3IiwiL2FydGljbGVzLzY2IiwiL2FydGljbGVzLzY1IiwiL2FydGljbGVzLzY0IiwiL2FydGljbGVzLzYzIiwiL2FydGljbGVzLzYyIiwiL2FydGljbGVzLzYxIiwiL2FydGljbGVzLzYwIiwiL2FydGljbGVzLzU5IiwiL2FydGljbGVzLzU4IiwiL2FydGljbGVzLzU3IiwiL2FydGljbGVzLzU2IiwiL2FydGljbGVzLzU1IiwiL2FydGljbGVzLzU0IiwiL2FydGljbGVzLzUzIiwiL2FydGljbGVzLzUyIiwiL2FydGljbGVzLzUxIiwiL2FydGljbGVzLzUwIiwiL2FydGljbGVzLzQ5IiwiL2FydGljbGVzLzQ4IiwiL2FydGljbGVzLzQ3IiwiL2FydGljbGVzLzQ2IiwiL2FydGljbGVzLzQ1IiwiL2FydGljbGVzLzQ0IiwiL2FydGljbGVzLzQzIiwiL2FydGljbGVzLzQyIiwiL2FydGljbGVzLzQxIiwiL2FydGljbGVzLzQwIiwiL2FydGljbGVzLzM5IiwiL2FydGljbGVzLzM4IiwiL2FydGljbGVzLzM3IiwiL2FydGljbGVzLzM2IiwiL2FydGljbGVzLzM1IiwiL2FydGljbGVzLzM0IiwiL2FydGljbGVzLzMzIiwiL2FydGljbGVzLzMyIiwiL2FydGljbGVzLzMxIiwiL2FydGljbGVzLzMwIiwiL2FydGljbGVzLzI5IiwiL2FydGljbGVzLzI4IiwiL2FydGljbGVzLzI3IiwiL2FydGljbGVzLzI2IiwiL2FydGljbGVzLzI1IiwiL2FydGljbGVzLzI0IiwiL2FydGljbGVzLzIzIiwiL2FydGljbGVzLzIyIiwiL2FydGljbGVzLzIxIiwiL2FydGljbGVzLzIwIiwiL2FydGljbGVzLzE5IiwiL2FydGljbGVzLzE4IiwiL2FydGljbGVzLzE3IiwiL2FydGljbGVzLzE2IiwiL2FydGljbGVzLzE1IiwiL2FydGljbGVzLzE0IiwiL2FydGljbGVzLzEzIiwiL2FydGljbGVzLzEyIiwiL2FydGljbGVzLzExIiwiL2FydGljbGVzLzEwIiwiL2FydGljbGVzLzkiLCIvYXJ0aWNsZXMvOCIsIi9hcnRpY2xlcy83IiwiL2FydGljbGVzLzYiLCIvYXJ0aWNsZXMvNSIsIi9hcnRpY2xlcy80IiwiL2FydGljbGVzLzMiLCIvYXJ0aWNsZXMvMiIsIi9hcnRpY2xlcy8xIl19"
+                    }
+                  ]
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "a5b2bd9a0411b2112a15-6b7a97ddde3281cd4361",
+          "file": "ux-remediation.spec.ts",
+          "line": 373,
+          "column": 3
+        },
+        {
+          "title": "末页切连续，失败重试后全部文章唯一有序完整",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 2158,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-09-08T12:52:11.471Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "完整ID集合",
+                      "contentType": "application/json",
+                      "body": "eyJleHBlY3RlZCI6WyIvYXJ0aWNsZXMvMTA2IiwiL2FydGljbGVzLzEwNSIsIi9hcnRpY2xlcy8xMDQiLCIvYXJ0aWNsZXMvMTAzIiwiL2FydGljbGVzLzEwMiIsIi9hcnRpY2xlcy8xMDEiLCIvYXJ0aWNsZXMvMTAwIiwiL2FydGljbGVzLzk5IiwiL2FydGljbGVzLzk4IiwiL2FydGljbGVzLzk3IiwiL2FydGljbGVzLzk2IiwiL2FydGljbGVzLzk1IiwiL2FydGljbGVzLzk0IiwiL2FydGljbGVzLzkzIiwiL2FydGljbGVzLzkyIiwiL2FydGljbGVzLzkxIiwiL2FydGljbGVzLzkwIiwiL2FydGljbGVzLzg5IiwiL2FydGljbGVzLzg4IiwiL2FydGljbGVzLzg3IiwiL2FydGljbGVzLzg2IiwiL2FydGljbGVzLzg1IiwiL2FydGljbGVzLzg0IiwiL2FydGljbGVzLzgzIiwiL2FydGljbGVzLzgyIiwiL2FydGljbGVzLzgxIiwiL2FydGljbGVzLzgwIiwiL2FydGljbGVzLzc5IiwiL2FydGljbGVzLzc4IiwiL2FydGljbGVzLzc3IiwiL2FydGljbGVzLzc2IiwiL2FydGljbGVzLzc1IiwiL2FydGljbGVzLzc0IiwiL2FydGljbGVzLzczIiwiL2FydGljbGVzLzcyIiwiL2FydGljbGVzLzcxIiwiL2FydGljbGVzLzcwIiwiL2FydGljbGVzLzY5IiwiL2FydGljbGVzLzY4IiwiL2FydGljbGVzLzY3IiwiL2FydGljbGVzLzY2IiwiL2FydGljbGVzLzY1IiwiL2FydGljbGVzLzY0IiwiL2FydGljbGVzLzYzIiwiL2FydGljbGVzLzYyIiwiL2FydGljbGVzLzYxIiwiL2FydGljbGVzLzYwIiwiL2FydGljbGVzLzU5IiwiL2FydGljbGVzLzU4IiwiL2FydGljbGVzLzU3IiwiL2FydGljbGVzLzU2IiwiL2FydGljbGVzLzU1IiwiL2FydGljbGVzLzU0IiwiL2FydGljbGVzLzUzIiwiL2FydGljbGVzLzUyIiwiL2FydGljbGVzLzUxIiwiL2FydGljbGVzLzUwIiwiL2FydGljbGVzLzQ5IiwiL2FydGljbGVzLzQ4IiwiL2FydGljbGVzLzQ3IiwiL2FydGljbGVzLzQ2IiwiL2FydGljbGVzLzQ1IiwiL2FydGljbGVzLzQ0IiwiL2FydGljbGVzLzQzIiwiL2FydGljbGVzLzQyIiwiL2FydGljbGVzLzQxIiwiL2FydGljbGVzLzQwIiwiL2FydGljbGVzLzM5IiwiL2FydGljbGVzLzM4IiwiL2FydGljbGVzLzM3IiwiL2FydGljbGVzLzM2IiwiL2FydGljbGVzLzM1IiwiL2FydGljbGVzLzM0IiwiL2FydGljbGVzLzMzIiwiL2FydGljbGVzLzMyIiwiL2FydGljbGVzLzMxIiwiL2FydGljbGVzLzMwIiwiL2FydGljbGVzLzI5IiwiL2FydGljbGVzLzI4IiwiL2FydGljbGVzLzI3IiwiL2FydGljbGVzLzI2IiwiL2FydGljbGVzLzI1IiwiL2FydGljbGVzLzI0IiwiL2FydGljbGVzLzIzIiwiL2FydGljbGVzLzIyIiwiL2FydGljbGVzLzIxIiwiL2FydGljbGVzLzIwIiwiL2FydGljbGVzLzE5IiwiL2FydGljbGVzLzE4IiwiL2FydGljbGVzLzE3IiwiL2FydGljbGVzLzE2IiwiL2FydGljbGVzLzE1IiwiL2FydGljbGVzLzE0IiwiL2FydGljbGVzLzEzIiwiL2FydGljbGVzLzEyIiwiL2FydGljbGVzLzExIiwiL2FydGljbGVzLzEwIiwiL2FydGljbGVzLzkiLCIvYXJ0aWNsZXMvOCIsIi9hcnRpY2xlcy83IiwiL2FydGljbGVzLzYiLCIvYXJ0aWNsZXMvNSIsIi9hcnRpY2xlcy80IiwiL2FydGljbGVzLzMiLCIvYXJ0aWNsZXMvMiIsIi9hcnRpY2xlcy8xIl0sImFjdHVhbCI6WyIvYXJ0aWNsZXMvMTA2IiwiL2FydGljbGVzLzEwNSIsIi9hcnRpY2xlcy8xMDQiLCIvYXJ0aWNsZXMvMTAzIiwiL2FydGljbGVzLzEwMiIsIi9hcnRpY2xlcy8xMDEiLCIvYXJ0aWNsZXMvMTAwIiwiL2FydGljbGVzLzk5IiwiL2FydGljbGVzLzk4IiwiL2FydGljbGVzLzk3IiwiL2FydGljbGVzLzk2IiwiL2FydGljbGVzLzk1IiwiL2FydGljbGVzLzk0IiwiL2FydGljbGVzLzkzIiwiL2FydGljbGVzLzkyIiwiL2FydGljbGVzLzkxIiwiL2FydGljbGVzLzkwIiwiL2FydGljbGVzLzg5IiwiL2FydGljbGVzLzg4IiwiL2FydGljbGVzLzg3IiwiL2FydGljbGVzLzg2IiwiL2FydGljbGVzLzg1IiwiL2FydGljbGVzLzg0IiwiL2FydGljbGVzLzgzIiwiL2FydGljbGVzLzgyIiwiL2FydGljbGVzLzgxIiwiL2FydGljbGVzLzgwIiwiL2FydGljbGVzLzc5IiwiL2FydGljbGVzLzc4IiwiL2FydGljbGVzLzc3IiwiL2FydGljbGVzLzc2IiwiL2FydGljbGVzLzc1IiwiL2FydGljbGVzLzc0IiwiL2FydGljbGVzLzczIiwiL2FydGljbGVzLzcyIiwiL2FydGljbGVzLzcxIiwiL2FydGljbGVzLzcwIiwiL2FydGljbGVzLzY5IiwiL2FydGljbGVzLzY4IiwiL2FydGljbGVzLzY3IiwiL2FydGljbGVzLzY2IiwiL2FydGljbGVzLzY1IiwiL2FydGljbGVzLzY0IiwiL2FydGljbGVzLzYzIiwiL2FydGljbGVzLzYyIiwiL2FydGljbGVzLzYxIiwiL2FydGljbGVzLzYwIiwiL2FydGljbGVzLzU5IiwiL2FydGljbGVzLzU4IiwiL2FydGljbGVzLzU3IiwiL2FydGljbGVzLzU2IiwiL2FydGljbGVzLzU1IiwiL2FydGljbGVzLzU0IiwiL2FydGljbGVzLzUzIiwiL2FydGljbGVzLzUyIiwiL2FydGljbGVzLzUxIiwiL2FydGljbGVzLzUwIiwiL2FydGljbGVzLzQ5IiwiL2FydGljbGVzLzQ4IiwiL2FydGljbGVzLzQ3IiwiL2FydGljbGVzLzQ2IiwiL2FydGljbGVzLzQ1IiwiL2FydGljbGVzLzQ0IiwiL2FydGljbGVzLzQzIiwiL2FydGljbGVzLzQyIiwiL2FydGljbGVzLzQxIiwiL2FydGljbGVzLzQwIiwiL2FydGljbGVzLzM5IiwiL2FydGljbGVzLzM4IiwiL2FydGljbGVzLzM3IiwiL2FydGljbGVzLzM2IiwiL2FydGljbGVzLzM1IiwiL2FydGljbGVzLzM0IiwiL2FydGljbGVzLzMzIiwiL2FydGljbGVzLzMyIiwiL2FydGljbGVzLzMxIiwiL2FydGljbGVzLzMwIiwiL2FydGljbGVzLzI5IiwiL2FydGljbGVzLzI4IiwiL2FydGljbGVzLzI3IiwiL2FydGljbGVzLzI2IiwiL2FydGljbGVzLzI1IiwiL2FydGljbGVzLzI0IiwiL2FydGljbGVzLzIzIiwiL2FydGljbGVzLzIyIiwiL2FydGljbGVzLzIxIiwiL2FydGljbGVzLzIwIiwiL2FydGljbGVzLzE5IiwiL2FydGljbGVzLzE4IiwiL2FydGljbGVzLzE3IiwiL2FydGljbGVzLzE2IiwiL2FydGljbGVzLzE1IiwiL2FydGljbGVzLzE0IiwiL2FydGljbGVzLzEzIiwiL2FydGljbGVzLzEyIiwiL2FydGljbGVzLzExIiwiL2FydGljbGVzLzEwIiwiL2FydGljbGVzLzkiLCIvYXJ0aWNsZXMvOCIsIi9hcnRpY2xlcy83IiwiL2FydGljbGVzLzYiLCIvYXJ0aWNsZXMvNSIsIi9hcnRpY2xlcy80IiwiL2FydGljbGVzLzMiLCIvYXJ0aWNsZXMvMiIsIi9hcnRpY2xlcy8xIl19"
+                    }
+                  ]
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "a5b2bd9a0411b2112a15-d2eb0e83cb7cdf56a810",
+          "file": "ux-remediation.spec.ts",
+          "line": 373,
+          "column": 3
+        },
+        {
+          "title": "三主题六个有向切换保留评论草稿与回复目标，且无空白或页面异常",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "",
+              "projectName": "",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 5555,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-09-08T12:52:13.635Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "主题切换记录",
+                      "contentType": "application/json",
+                      "body": "eyJkaXJlY3Rpb25zIjpbIm5leHVzLT5hdXJvcmEiLCJhdXJvcmEtPmRvY2siLCJkb2NrLT5uZXh1cyIsIm5leHVzLT5kb2NrIiwiZG9jay0+YXVyb3JhIiwiYXVyb3JhLT5uZXh1cyJdLCJlcnJvcnMiOltdfQ=="
+                    }
+                  ]
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "a5b2bd9a0411b2112a15-b0c491dc515b3a819784",
+          "file": "ux-remediation.spec.ts",
+          "line": 423,
+          "column": 1
+        }
+      ]
+    }
+  ],
+  "errors": [],
+  "stats": {
+    "startTime": "2026-09-08T12:51:48.579Z",
+    "duration": 30894.077,
+    "expected": 9,
+    "skipped": 0,
+    "unexpected": 0,
+    "flaky": 0
+  }
+}

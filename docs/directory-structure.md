@@ -403,3 +403,11 @@ app/assets/styles/
 - `app/utils/themeComponentCache.ts`：客户端共享、SSR按Nuxt请求隔离的组件缓存；热更新后新SSR请求使用新模板。
 - `tests/e2e/motionScreenshot.ts`：等待实际字体请求与FontFace状态后采集原生截图，保留正常动画。
 - `docs/motion-remediation/`：逐项处理报告、覆盖记录、动效规范、性能分布及证据；原审查 `docs/motion-audit/` 保留整改前事实。
+
+### 内容标签与分页
+
+- `app/components/blog/PostTabs.vue`：文章页与朋友圈共用的图标及内容导航，提供一致的当前页状态和键盘焦点。
+- `app/composables/usePostPageMotion.ts`：已接受的新分页内容触发可取消入场，遵守内容预设与系统减少动态效果。
+- `usePostList.ts` 保留等待/失败时的原列表并向传输层传递取消信号；`usePostListPagination.ts` 区分显式翻页与串行触底追加，滚动位置交由URL历史恢复统一管理。
+- `tests/e2e/content-tabs.spec.ts`、`post-pagination.spec.ts`：多主题多尺寸标签往返、慢请求、分页时序、错误恢复及跨页联动回归。
+- `docs/content-navigation-fix/`：本轮原因、处理方式、三浏览器结果及实际动画证据。
