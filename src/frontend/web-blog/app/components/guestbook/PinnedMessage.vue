@@ -100,7 +100,10 @@ const dismissed = ref(false)
   background: transparent;
   color: var(--text-faint);
   cursor: pointer;
-  transition: all 0.15s;
+  transition: $transition-fast;
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
 
   &:hover {
     background: var(--surface-2);

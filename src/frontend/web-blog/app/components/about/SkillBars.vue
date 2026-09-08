@@ -7,9 +7,7 @@
 
 <template>
   <div class="skill-bars">
-    <h3 class="skill-bars__title">
-      <Icon name="lucide:zap" size="18" /> 技能栈
-    </h3>
+    <h3 class="skill-bars__title"><Icon name="lucide:zap" size="18" /> 技能示例</h3>
     <div class="skill-bars__grid">
       <div v-for="skill in skills" :key="skill.name" class="skill-bars__item">
         <div class="skill-bars__meta">
@@ -83,6 +81,9 @@ defineProps<{
   border-radius: $radius-full;
   background: var(--text-main);
   transition: width 1s ease;
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
 
   .dark & {
     background: var(--text-soft);

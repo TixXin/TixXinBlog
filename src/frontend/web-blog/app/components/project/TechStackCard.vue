@@ -7,24 +7,15 @@
 
 <template>
   <section class="card tech-stack">
-    <h3 class="tech-stack__title">
-      <Icon name="lucide:code-2" size="14" /> 技术栈
-    </h3>
+    <h3 class="tech-stack__title"><Icon name="lucide:code-2" size="14" /> 技术栈示例</h3>
     <div class="tech-stack__list">
-      <div
-        v-for="item in stack"
-        :key="item.name"
-        class="tech-stack__item"
-      >
+      <div v-for="item in stack" :key="item.name" class="tech-stack__item">
         <div class="tech-stack__meta">
           <span class="tech-stack__name">{{ item.name }}</span>
           <span class="tech-stack__percent">{{ item.percent }}%</span>
         </div>
         <div class="tech-stack__track">
-          <div
-            class="tech-stack__fill"
-            :style="{ width: `${item.percent}%` }"
-          />
+          <div class="tech-stack__fill" :style="{ width: `${item.percent}%` }" />
         </div>
       </div>
     </div>
@@ -88,6 +79,9 @@ defineProps<{
   border-radius: $radius-full;
   background: var(--text-muted);
   transition: width 1s ease;
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
 
   .dark & {
     background: var(--text-soft);

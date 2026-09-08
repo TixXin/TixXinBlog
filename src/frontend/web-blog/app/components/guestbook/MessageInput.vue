@@ -7,6 +7,7 @@
 
 <template>
   <div class="card message-input">
+    <p class="message-input__notice">演示留言仅在当前页面可见，离开或刷新后不保留，不会发送给博主。</p>
     <!-- 回复引用预览 -->
     <Transition name="reply-fade">
       <div v-if="replyTo" class="message-input__reply-bar">
@@ -31,6 +32,7 @@
         class="message-input__editor"
         :style="{ height: editorHeight + 'px' }"
         placeholder="输入留言内容..."
+        aria-label="演示留言内容"
         :maxlength="MAX_CHARS"
         @keydown="onEditorKeydown"
       />
@@ -57,14 +59,14 @@
     <div class="message-input__footer">
       <div class="message-input__toolbar" role="toolbar" aria-label="格式工具栏（占位）">
         <CommonTooltip v-for="btn in toolbarButtons" :key="btn.icon" :content="btn.title">
-          <button type="button" class="message-input__tool" :aria-label="btn.title">
+          <button type="button" class="message-input__tool" :aria-label="`${btn.title}（暂未开放）`" disabled>
             <Icon :name="btn.icon" size="15" />
           </button>
         </CommonTooltip>
       </div>
       <button type="button" class="message-input__send" :disabled="!content.trim()" @click="handleAction">
         <Icon name="lucide:send" size="14" />
-        <span>发送</span>
+        <span>添加演示留言</span>
       </button>
     </div>
   </div>
@@ -161,7 +163,7 @@ function handleAction() {
 function emitSend(text: string, name: string, avatar: string) {
   emit('send', text, { name, avatar })
   content.value = ''
-  info('留言发送成功')
+  info('已添加演示留言，仅当前页面可见')
 }
 
 function onIdentityConfirm() {
@@ -177,6 +179,7 @@ function onSwitchToLogin() {
 
 /** Ctrl/Cmd+Enter 快捷发送 */
 function onEditorKeydown(e: KeyboardEvent) {
+  if (e.isComposing) return
   if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
     e.preventDefault()
     handleAction()
@@ -184,9 +187,12 @@ function onEditorKeydown(e: KeyboardEvent) {
 }
 
 /** 回复时聚焦输入框 */
-watch(() => props.replyTo, (v) => {
-  if (v) nextTick(() => textareaRef.value?.focus())
-})
+watch(
+  () => props.replyTo,
+  (v) => {
+    if (v) nextTick(() => textareaRef.value?.focus())
+  },
+)
 
 onBeforeUnmount(() => {
   window.removeEventListener('pointermove', onResizePointerMove)
@@ -203,6 +209,12 @@ const toolbarButtons = [
 </script>
 
 <style lang="scss" scoped>
+.message-input__notice {
+  color: var(--text-soft);
+  font-size: 0.8125rem;
+  line-height: 1.6;
+  margin-bottom: 0.5rem;
+}
 .message-input {
   flex-shrink: 0;
   margin: 0.375rem 0.5rem 0.5rem;
@@ -225,6 +237,9 @@ const toolbarButtons = [
   user-select: none;
   touch-action: none;
   transition: background 0.18s;
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
 
   &:hover {
     background: var(--border-soft);
@@ -237,6 +252,9 @@ const toolbarButtons = [
     border-radius: 1px;
     background: var(--border-soft);
     transition: background 0.18s;
+    @media (prefers-reduced-motion: reduce) {
+      transition: none;
+    }
   }
 
   &:hover::after {
@@ -296,7 +314,10 @@ const toolbarButtons = [
   background: transparent;
   color: var(--text-faint);
   cursor: pointer;
-  transition: all 0.15s;
+  transition: $transition-fast;
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
 
   &:hover {
     background: var(--surface-2);
@@ -305,11 +326,21 @@ const toolbarButtons = [
 }
 
 .reply-fade-enter-active {
-  transition: opacity 0.2s ease, max-height 0.2s ease;
+  transition:
+    opacity 0.2s ease,
+    max-height 0.2s ease;
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
 }
 
 .reply-fade-leave-active {
-  transition: opacity 0.15s ease, max-height 0.15s ease;
+  transition:
+    opacity 0.15s ease,
+    max-height 0.15s ease;
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
 }
 
 .reply-fade-enter-from,
@@ -360,6 +391,9 @@ const toolbarButtons = [
   transition:
     color 0.18s,
     background 0.18s;
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
 
   &:hover {
     color: var(--text-soft);
@@ -382,6 +416,9 @@ const toolbarButtons = [
   transition:
     opacity 0.2s,
     transform 0.15s;
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
 
   &:hover:not(:disabled) {
     opacity: 0.9;
@@ -426,11 +463,13 @@ const toolbarButtons = [
   transition:
     background 0.15s,
     color 0.15s;
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
 
   &:hover {
     background: var(--surface-2);
     color: var(--text-soft);
   }
 }
-
 </style>

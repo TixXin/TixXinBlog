@@ -56,6 +56,9 @@ defineEmits<{
     inset: 0;
     background: color-mix(in srgb, var(--accent, #5b7cfa) 6%, transparent);
     animation: guestbook-empty-pulse 3s ease-in-out infinite;
+    @media (prefers-reduced-motion: reduce) {
+      animation: none;
+    }
   }
 
   &--inner {
@@ -99,7 +102,10 @@ defineEmits<{
   background: linear-gradient(135deg, var(--accent, #5b7cfa), #6366f1);
   box-shadow: 0 2px 8px rgba(91, 124, 250, 0.3);
   cursor: pointer;
-  transition: all 0.2s;
+  transition: $transition-fast;
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
 
   &:hover {
     transform: translateY(-1px);

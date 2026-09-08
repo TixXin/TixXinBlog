@@ -7,18 +7,9 @@
 
 <template>
   <div class="contact-cards">
-    <h3 class="contact-cards__title">
-      <Icon name="lucide:send" size="18" /> 联系我
-    </h3>
+    <h3 class="contact-cards__title"><Icon name="lucide:send" size="18" /> 联系我</h3>
     <div class="contact-cards__grid">
-      <a
-        v-for="c in contacts"
-        :key="c.type"
-        :href="c.href"
-        class="contact-cards__item"
-        target="_blank"
-        rel="noopener"
-      >
+      <a v-for="c in contacts" :key="c.type" :href="c.href" class="contact-cards__item" target="_blank" rel="noopener">
         <div class="contact-cards__icon">
           <Icon :name="c.icon" size="20" />
         </div>
@@ -28,6 +19,7 @@
         </div>
       </a>
     </div>
+    <p v-if="contacts.length === 0">暂未公开联系方式</p>
   </div>
 </template>
 
@@ -70,13 +62,16 @@ defineProps<{
   text-decoration: none;
   color: inherit;
   transition: $transition-normal;
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
 
   &:hover {
     box-shadow: var(--shadow-card-hover);
     border-color: var(--border-hover);
 
     .contact-cards__icon {
-      background: var(--accent);
+      background: var(--accent-action);
       color: #fff;
     }
   }
@@ -93,6 +88,9 @@ defineProps<{
   color: var(--text-soft);
   flex-shrink: 0;
   transition: $transition-fast;
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
 }
 
 .contact-cards__type {

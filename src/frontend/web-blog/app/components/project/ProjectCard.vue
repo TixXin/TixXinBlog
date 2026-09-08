@@ -14,13 +14,12 @@
         <span class="project-card__status" :class="`project-card__status--${project.status}`">
           {{ statusLabel }}
         </span>
-        <span class="project-card__stars">
-          <Icon name="lucide:star" size="12" /> {{ project.stars }}
-        </span>
+        <span class="project-card__stars"> <Icon name="lucide:star" size="12" /> {{ project.stars }} </span>
       </div>
     </div>
     <div class="project-card__body">
       <h3 class="project-card__title">{{ project.title }}</h3>
+      <p v-if="example" class="project-card__example">示例资料</p>
       <p class="project-card__desc">{{ project.description }}</p>
       <div class="project-card__tags">
         <span
@@ -33,16 +32,20 @@
         </span>
       </div>
       <div class="project-card__links">
-        <a
-          v-for="link in project.links"
-          :key="link.label"
-          :href="link.href"
-          class="project-card__link"
-          target="_blank"
-          rel="noopener"
-        >
-          <Icon :name="link.icon" size="14" /> {{ link.label }}
-        </a>
+        <template v-for="link in project.links" :key="link.label">
+          <a
+            v-if="link.href && link.href !== '#'"
+            :href="link.href"
+            class="project-card__link"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            <Icon :name="link.icon" size="14" /> {{ link.label }}
+          </a>
+          <span v-else class="project-card__link project-card__link--unavailable"
+            ><Icon :name="link.icon" size="14" />{{ link.label }} · 暂未公开</span
+          >
+        </template>
       </div>
     </div>
   </div>
@@ -51,9 +54,13 @@
 <script setup lang="ts">
 import type { ProjectItem } from '~/features/project/types'
 
-const props = defineProps<{
-  project: ProjectItem
-}>()
+const props = withDefaults(
+  defineProps<{
+    project: ProjectItem
+    example?: boolean
+  }>(),
+  { example: false },
+)
 
 const statusMap: Record<string, string> = {
   active: '维护中',
@@ -65,12 +72,23 @@ const statusLabel = computed(() => statusMap[props.project.status] ?? props.proj
 </script>
 
 <style lang="scss" scoped>
+.project-card__example {
+  font-size: 0.75rem;
+  color: var(--text-soft);
+}
+.project-card__link--unavailable {
+  color: var(--text-soft);
+  cursor: default;
+}
 .project-card {
   background: var(--surface-1);
   border: 1px solid var(--border);
   border-radius: $radius-card;
   overflow: hidden;
   transition: $transition-normal;
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
 
   &:hover {
     box-shadow: var(--shadow-card-hover);
@@ -92,6 +110,9 @@ const statusLabel = computed(() => statusMap[props.project.status] ?? props.proj
     height: 100%;
     object-fit: cover;
     transition: transform 0.5s ease;
+    @media (prefers-reduced-motion: reduce) {
+      transition: none;
+    }
   }
 }
 
@@ -117,9 +138,15 @@ const statusLabel = computed(() => statusMap[props.project.status] ?? props.proj
   border-radius: 0.25rem;
   color: #fff;
 
-  &--active { background: #10b981; }
-  &--dev { background: #f59e0b; }
-  &--archived { background: #64748b; }
+  &--active {
+    background: #047857;
+  }
+  &--dev {
+    background: #92400e;
+  }
+  &--archived {
+    background: #475569;
+  }
 }
 
 .project-card__stars {
@@ -162,12 +189,30 @@ const statusLabel = computed(() => statusMap[props.project.status] ?? props.proj
   font-weight: 600;
   border-radius: 0.25rem;
 
-  &--emerald { background: var(--tag-emerald-bg); color: var(--tag-emerald-text); }
-  &--blue { background: var(--tag-blue-bg); color: var(--tag-blue-text); }
-  &--amber { background: var(--tag-amber-bg); color: var(--tag-amber-text); }
-  &--sky { background: var(--tag-sky-bg); color: var(--tag-sky-text); }
-  &--rose { background: var(--tag-rose-bg); color: var(--tag-rose-text); }
-  &--slate { background: var(--surface-3); color: var(--text-muted); }
+  &--emerald {
+    background: var(--tag-emerald-bg);
+    color: var(--tag-emerald-text);
+  }
+  &--blue {
+    background: var(--tag-blue-bg);
+    color: var(--tag-blue-text);
+  }
+  &--amber {
+    background: var(--tag-amber-bg);
+    color: var(--tag-amber-text);
+  }
+  &--sky {
+    background: var(--tag-sky-bg);
+    color: var(--tag-sky-text);
+  }
+  &--rose {
+    background: var(--tag-rose-bg);
+    color: var(--tag-rose-text);
+  }
+  &--slate {
+    background: var(--surface-3);
+    color: var(--text-muted);
+  }
 }
 
 .project-card__links {
@@ -186,6 +231,9 @@ const statusLabel = computed(() => statusMap[props.project.status] ?? props.proj
   color: var(--text-soft);
   text-decoration: none;
   transition: color 0.2s;
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
 
   &:hover {
     color: var(--text-main);

@@ -11,6 +11,8 @@ export interface PhotoItem {
   description: string
   src: string
   srcLarge: string
+  width?: number
+  height?: number
   category: string
   date: string
   location: string

@@ -7,20 +7,20 @@
 
 <template>
   <div class="project-grid">
-    <ProjectCard
-      v-for="project in projects"
-      :key="project.title"
-      :project="project"
-    />
+    <ProjectCard v-for="project in projects" :key="project.title" :project="project" :example="example" />
   </div>
 </template>
 
 <script setup lang="ts">
 import type { ProjectItem } from '~/features/project/types'
 
-defineProps<{
-  projects: ProjectItem[]
-}>()
+withDefaults(
+  defineProps<{
+    projects: ProjectItem[]
+    example?: boolean
+  }>(),
+  { example: false },
+)
 </script>
 
 <style lang="scss" scoped>

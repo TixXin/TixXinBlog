@@ -14,11 +14,12 @@
     @keydown.enter.prevent="$emit('click')"
     @keydown.space.prevent="$emit('click')"
   >
-    <img
+    <CommonImageFrame
       :src="photo.src"
       :alt="photo.title"
+      :width="photo.width"
+      :height="photo.height"
       class="gallery-item__img"
-      loading="lazy"
     />
     <div class="gallery-item__overlay">
       <h4 class="gallery-item__title">{{ photo.title }}</h4>
@@ -48,7 +49,9 @@ defineEmits<{
   outline: none;
 
   &:focus-visible {
-    box-shadow: 0 0 0 2px var(--surface-1), 0 0 0 4px var(--accent);
+    box-shadow:
+      0 0 0 2px var(--surface-1),
+      0 0 0 4px var(--accent);
   }
 }
 
@@ -57,11 +60,17 @@ defineEmits<{
   width: 100%;
   height: auto;
   border-radius: $radius-md;
-  transition: transform 0.5s ease;
 }
 
-.gallery-item:hover .gallery-item__img,
-.gallery-item:focus-visible .gallery-item__img {
+.gallery-item :deep(.image-frame__image) {
+  transition: transform 0.24s ease;
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
+}
+
+.gallery-item:hover :deep(.image-frame__image),
+.gallery-item:focus-visible :deep(.image-frame__image) {
   transform: scale(1.05);
 }
 
@@ -76,6 +85,9 @@ defineEmits<{
   background: linear-gradient(to top, rgba(0, 0, 0, 0.6), transparent 55%);
   opacity: 0;
   transition: opacity 0.3s ease;
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
   pointer-events: none;
 }
 
