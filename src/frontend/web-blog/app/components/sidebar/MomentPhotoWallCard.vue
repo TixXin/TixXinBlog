@@ -111,6 +111,9 @@ const emit = defineEmits<{
   height: 100%;
   object-fit: cover;
   transition: transform 0.3s ease;
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
 }
 
 .moment-photo-wall__overlay {
@@ -123,6 +126,9 @@ const emit = defineEmits<{
   color: #fff;
   opacity: 0;
   transition: opacity 0.2s ease;
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
 }
 
 .moment-photo-wall__item:hover {

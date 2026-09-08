@@ -10,32 +10,32 @@
     <div class="moment-author-card__profile">
       <div class="moment-author-card__avatar-ring">
         <NuxtImg
-          src="/avatar-photo.webp"
-          alt="TixXin"
+          :src="profile.avatar || '/avatar.svg'"
+          :alt="profile.avatarAlt || profile.name"
           width="64"
           height="64"
           class="moment-author-card__avatar"
           format="webp"
         />
       </div>
-      <h3 class="moment-author-card__name">TixXin</h3>
-      <p class="moment-author-card__bio">记录生活点滴，分享技术与日常 ✨</p>
+      <h3 class="moment-author-card__name">{{ profile.name }}</h3>
+      <p class="moment-author-card__bio">{{ profile.title }}</p>
     </div>
 
     <div class="moment-author-card__stats">
       <div class="moment-author-card__stat">
         <span class="moment-author-card__stat-value">{{ stats.totalMoments }}</span>
-        <span class="moment-author-card__stat-label">动态</span>
+        <span class="moment-author-card__stat-label">示例动态</span>
       </div>
       <div class="moment-author-card__stat-divider" />
       <div class="moment-author-card__stat">
         <span class="moment-author-card__stat-value">{{ stats.totalLikes }}</span>
-        <span class="moment-author-card__stat-label">获赞</span>
+        <span class="moment-author-card__stat-label">示例点赞</span>
       </div>
       <div class="moment-author-card__stat-divider" />
       <div class="moment-author-card__stat">
         <span class="moment-author-card__stat-value">{{ stats.totalComments }}</span>
-        <span class="moment-author-card__stat-label">评论</span>
+        <span class="moment-author-card__stat-label">示例评论</span>
       </div>
     </div>
 
@@ -63,6 +63,7 @@
 </template>
 
 <script setup lang="ts">
+import type { OwnerCardInfo } from '~/features/site/types'
 export interface MomentAuthorStats {
   totalMoments: number
   totalLikes: number
@@ -74,6 +75,7 @@ export interface MomentAuthorStats {
 
 defineProps<{
   stats: MomentAuthorStats
+  profile: OwnerCardInfo
 }>()
 </script>
 
@@ -139,12 +141,15 @@ defineProps<{
   gap: 0.125rem;
   cursor: default;
   transition: transform 0.2s ease;
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
 
   &:hover {
     transform: translateY(-1px);
 
     .moment-author-card__stat-value {
-      color: var(--accent);
+      color: var(--accent-text);
     }
   }
 }
@@ -154,6 +159,9 @@ defineProps<{
   font-weight: 800;
   color: var(--text-main);
   transition: color 0.2s;
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
 }
 
 .moment-author-card__stat-label {
@@ -182,7 +190,7 @@ defineProps<{
 }
 
 .moment-author-card__mood-icon {
-  color: var(--accent);
+  color: var(--accent-text);
   flex-shrink: 0;
 }
 
@@ -217,10 +225,13 @@ defineProps<{
   border-radius: 50%;
   color: var(--text-soft);
   background: var(--surface-2);
-  transition: all 0.2s ease;
+  transition: $transition-fast;
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
 
   &:hover {
-    color: var(--accent);
+    color: var(--accent-text);
     background: var(--accent-soft);
     transform: translateY(-1px);
   }

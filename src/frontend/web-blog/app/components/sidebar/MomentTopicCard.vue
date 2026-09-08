@@ -16,6 +16,7 @@
         type="button"
         class="moment-topic-card__view-all"
         :class="{ 'is-active': !activeTopic }"
+        :aria-pressed="!activeTopic"
         @click="emit('select', null)"
       >
         全部
@@ -23,31 +24,33 @@
     </div>
 
     <ul class="moment-topic-card__list">
-      <li
-        v-for="(topic, index) in sortedTopics"
-        :key="topic.name"
-        class="moment-topic-card__item"
-        :class="{ 'is-active': activeTopic === topic.name }"
-        @click="emit('select', topic.name)"
-      >
-        <!-- 背景比例条 -->
-        <span
-          class="moment-topic-card__bar"
-          :style="{ width: barWidth(topic.count), background: topic.color + '08' }"
-        />
-        <div class="moment-topic-card__item-left">
-          <span class="moment-topic-card__tag-icon" :style="{ background: topic.color + '18', color: topic.color }">
-            <Icon :name="topic.icon" size="14" />
-          </span>
-          <div class="moment-topic-card__item-info">
-            <span class="moment-topic-card__tag-name">#{{ topic.name }}</span>
-            <span class="moment-topic-card__tag-desc">{{ topic.description }}</span>
+      <li v-for="(topic, index) in sortedTopics" :key="topic.name">
+        <button
+          type="button"
+          class="moment-topic-card__item"
+          :class="{ 'is-active': activeTopic === topic.name }"
+          :aria-pressed="activeTopic === topic.name"
+          @click="emit('select', topic.name)"
+        >
+          <!-- 背景比例条 -->
+          <span
+            class="moment-topic-card__bar"
+            :style="{ width: barWidth(topic.count), background: topic.color + '08' }"
+          />
+          <div class="moment-topic-card__item-left">
+            <span class="moment-topic-card__tag-icon" :style="{ background: topic.color + '18', color: topic.color }">
+              <Icon :name="topic.icon" size="14" />
+            </span>
+            <div class="moment-topic-card__item-info">
+              <span class="moment-topic-card__tag-name">#{{ topic.name }}</span>
+              <span class="moment-topic-card__tag-desc">{{ topic.description }}</span>
+            </div>
           </div>
-        </div>
-        <div class="moment-topic-card__item-right">
-          <span v-if="index === 0" class="moment-topic-card__hot">HOT</span>
-          <span class="moment-topic-card__count">{{ topic.count }}</span>
-        </div>
+          <div class="moment-topic-card__item-right">
+            <span v-if="index === 0" class="moment-topic-card__hot">HOT</span>
+            <span class="moment-topic-card__count">{{ topic.count }}</span>
+          </div>
+        </button>
       </li>
     </ul>
   </section>
@@ -112,12 +115,15 @@ function barWidth(count: number): string {
   padding: 0.25rem 0.625rem;
   border-radius: $radius-full;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: $transition-fast;
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
 
   &:hover,
   &.is-active {
     background: var(--accent-soft);
-    color: var(--accent);
+    color: var(--accent-text);
   }
 }
 
@@ -131,6 +137,10 @@ function barWidth(count: number): string {
 }
 
 .moment-topic-card__item {
+  width: 100%;
+  min-height: 44px;
+  color: var(--text-main);
+  text-align: left;
   position: relative;
   display: flex;
   align-items: center;
@@ -138,14 +148,17 @@ function barWidth(count: number): string {
   padding: 0.625rem 0.75rem;
   border-radius: $radius-md;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: $transition-fast;
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
   overflow: hidden;
 
   &:hover {
     background: var(--accent-soft);
 
     .moment-topic-card__tag-name {
-      color: var(--accent);
+      color: var(--accent-text);
     }
   }
 
@@ -153,7 +166,7 @@ function barWidth(count: number): string {
     background: var(--accent-soft);
 
     .moment-topic-card__tag-name {
-      color: var(--accent);
+      color: var(--accent-text);
       font-weight: 700;
     }
   }
@@ -166,6 +179,9 @@ function barWidth(count: number): string {
   height: 100%;
   border-radius: $radius-md;
   transition: width 0.3s ease;
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
   pointer-events: none;
 }
 
@@ -198,6 +214,9 @@ function barWidth(count: number): string {
   font-weight: 600;
   color: var(--text-main);
   transition: color 0.15s;
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
 }
 
 .moment-topic-card__tag-desc {

@@ -9,28 +9,49 @@
   <div class="main-inner moments-page">
     <!-- 头部 Tab 栏 + 搜索 -->
     <div class="main-content__header moments-header">
-      <div class="articles-tabs no-scrollbar" role="tablist">
-        <button
+      <nav class="articles-tabs no-scrollbar" aria-label="内容类型">
+        <NuxtLink
           v-for="tab in tabs"
           :key="tab.value"
-          role="tab"
-          :aria-selected="tab.value === 'moments'"
+          :to="tab.value === 'moments' ? '/moments' : '/'"
+          :aria-current="tab.value === 'moments' ? 'page' : undefined"
           class="tab-btn"
           :class="{ 'tab-active': tab.value === 'moments' }"
-          @click="switchTab(tab.value)"
         >
           {{ tab.label }}
-        </button>
-      </div>
+        </NuxtLink>
+      </nav>
       <CommonSearchBox
         v-model="searchKeyword"
         placeholder="搜索动态内容 / 话题 / 地点..."
         class="moments-header__search"
       />
+      <CommonContextDrawer class="page-context-entry" label="筛选动态" icon="lucide:list-filter">
+        <SidebarMomentCalendarCard
+          :moment-dates="momentDates"
+          :selected-date="selectedDate"
+          @select-date="onDateSelect"
+        />
+        <SidebarMomentTopicCard :topics="momentTopics" :active-topic="selectedTopic" @select="onTopicSelect" />
+        <button
+          v-if="searchKeyword || selectedTopic || selectedDate"
+          type="button"
+          class="filter-clear"
+          @click="clearFilters"
+        >
+          清除动态筛选
+        </button>
+      </CommonContextDrawer>
       <NuxtLink v-if="isOwner" to="/admin/moments/new" class="moments-header__publish" aria-label="发布新动态">
         <Icon name="lucide:plus" size="14" />
         <span>发布</span>
       </NuxtLink>
+    </div>
+    <div v-if="searchKeyword || selectedTopic || selectedDate" class="moments-filter-summary">
+      <span role="status"
+        >当前筛选：{{ [searchKeyword, selectedTopic, selectedDate].filter(Boolean).join(' · ') }}</span
+      >
+      <button type="button" class="filter-clear" @click="clearFilters">清除动态筛选</button>
     </div>
 
     <CommonCustomScrollbar class="moments-body" viewport-class="moments-viewport" primary>
@@ -47,7 +68,7 @@
     <ClientOnly>
       <Teleport to="#right-sidebar-target">
         <SidebarRightSidebar>
-          <SidebarMomentAuthorCard :stats="authorStats" />
+          <SidebarMomentAuthorCard :stats="authorStats" :profile="ownerCard" />
           <SidebarMomentPhotoWallCard :images="photoWallImages" @select-moment="onPhotoSelect" />
           <SidebarMomentCalendarCard
             :moment-dates="momentDates"
@@ -63,24 +84,17 @@
 </template>
 
 <script setup lang="ts">
-import { mockMomentAuthorStats } from '~/features/moment/mock'
 import { MOMENT_TOPIC_DEFINITIONS } from '~/features/moment/topics'
 import { mockPostTabs } from '~/features/post/mock'
 import type { MomentItem } from '~/features/moment/types'
 import type { MomentTopic } from '~/components/sidebar/MomentTopicCard.vue'
 import type { MomentPhotoItem } from '~/components/sidebar/MomentPhotoWallCard.vue'
 
-const { list: momentList } = useMomentList()
+const { moments: momentList, authorStats, ownerCard } = useMomentOverview()
 const { currentUser } = useCurrentUser()
 const isOwner = computed(() => currentUser.value?.role === 'owner')
 
 const tabs = mockPostTabs
-
-function switchTab(value: string) {
-  if (value !== 'moments') {
-    navigateTo('/')
-  }
-}
 
 useSeoMeta({
   title: '朋友圈',
@@ -92,18 +106,13 @@ useSeoMeta({
 const moments = computed(() => momentList.value)
 
 // 搜索关键词（fuse.js 模糊匹配 content/topics/location）
-const searchKeyword = ref('')
-
-// 话题筛选
-const selectedTopic = ref<string | null>(null)
+const { searchKeyword, selectedTopic, selectedDate, clearFilters } = useMomentFilters()
 
 function onTopicSelect(topicName: string | null) {
   selectedTopic.value = topicName
 }
 
 // 日期筛选
-const selectedDate = ref<string | null>(null)
-
 function onDateSelect(date: string | null) {
   selectedDate.value = date
 }
@@ -115,7 +124,6 @@ function onPhotoSelect(momentId: string) {
 }
 
 // 作者名片数据
-const authorStats = mockMomentAuthorStats
 
 // 日历数据 — 从动态列表提取日期
 const momentDates = computed(() => momentList.value.map((m) => m.date.slice(0, 10)))
@@ -142,6 +150,20 @@ const momentTopics = computed<MomentTopic[]>(() =>
 </script>
 
 <style lang="scss" scoped>
+.moments-filter-summary {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  font-size: 0.8125rem;
+  color: var(--text-soft);
+}
+.filter-clear {
+  min-height: 44px;
+  padding: 0.5rem;
+  color: var(--accent-text);
+}
 .moments-page {
   display: flex;
   flex-direction: column;
@@ -172,13 +194,16 @@ const momentTopics = computed<MomentTopic[]>(() =>
   align-items: center;
   gap: 0.25rem;
   padding: 0.4rem 0.75rem;
-  background: var(--accent);
+  background: var(--accent-action);
   color: #fff;
   font-size: 0.8125rem;
   font-weight: 500;
   border-radius: $radius-sm;
   text-decoration: none;
   transition: opacity 0.2s;
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
 
   &:hover {
     opacity: 0.88;

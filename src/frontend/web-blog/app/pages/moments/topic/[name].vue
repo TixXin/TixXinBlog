@@ -47,7 +47,7 @@
     <ClientOnly>
       <Teleport to="#right-sidebar-target">
         <SidebarRightSidebar>
-          <SidebarMomentAuthorCard :stats="authorStats" />
+          <SidebarMomentAuthorCard :stats="authorStats" :profile="ownerCard" />
           <SidebarMomentTopicCard :topics="momentTopics" :active-topic="topicName" @select="onTopicSelect" />
         </SidebarRightSidebar>
       </Teleport>
@@ -56,11 +56,10 @@
 </template>
 
 <script setup lang="ts">
-import { mockMomentAuthorStats } from '~/features/moment/mock'
 import { MOMENT_TOPIC_DEFINITIONS, findMomentTopic } from '~/features/moment/topics'
 import type { MomentTopic } from '~/components/sidebar/MomentTopicCard.vue'
 
-const { list: momentList } = useMomentList()
+const { moments: momentList, authorStats, ownerCard } = useMomentOverview()
 
 const route = useRoute()
 const router = useRouter()
@@ -92,7 +91,6 @@ useSeoMeta({
 })
 
 // 侧栏
-const authorStats = mockMomentAuthorStats
 
 const momentTopics = computed<MomentTopic[]>(() =>
   MOMENT_TOPIC_DEFINITIONS.map((t) => ({
@@ -134,6 +132,9 @@ function onTopicSelect(topic: string | null) {
   border-radius: $radius-sm;
   text-decoration: none;
   transition: $transition-colors;
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
 
   &:hover {
     color: var(--text-main);

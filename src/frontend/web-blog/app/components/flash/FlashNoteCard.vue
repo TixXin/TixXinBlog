@@ -32,24 +32,23 @@
     <!-- eslint-disable-next-line vue/no-v-html -->
     <div class="fnc__content" v-html="renderedContent" />
 
-    <FlashImageGrid v-if="note.images && note.images.length > 0" :images="note.images" />
+    <FlashImageGrid v-if="note.images && note.images.length > 0" :images="note.images" :descriptions="note.imageAlts" />
 
     <div v-if="note.tags.length > 0" class="fnc__tags">
-      <span v-for="t in note.tags" :key="t" class="fnc__tag" @click="$emit('tag-click', t)">#{{ t }}</span>
+      <template v-for="t in note.tags" :key="t">
+        <span v-if="interactive === false" class="fnc__tag">#{{ t }}</span>
+        <button v-else type="button" class="fnc__tag" @click="$emit('tag-click', t)">#{{ t }}</button>
+      </template>
     </div>
 
     <footer class="fnc__footer">
       <!-- type 标识：仅非 memo（默认态）显示，避免视觉冗余 -->
-      <span
-        v-if="typeMeta"
-        class="fnc__type"
-        :class="`fnc__type--${note.type}`"
-        :title="`类型：${typeMeta.label}`"
-      >
+      <span v-if="typeMeta" class="fnc__type" :class="`fnc__type--${note.type}`" :title="`类型：${typeMeta.label}`">
         <Icon :name="typeMeta.icon" size="11" />
         {{ typeMeta.label }}
       </span>
       <NuxtLink
+        v-if="!note.isDraft && !note.isArchived"
         :to="`/flash/${note.id}`"
         class="fnc__time"
         :aria-label="`查看闪念详情 · ${relativeTime}`"
@@ -57,12 +56,15 @@
         <Icon name="lucide:clock-3" size="11" />
         {{ relativeTime }}
       </NuxtLink>
+      <span v-else class="fnc__time">{{ relativeTime }} · 未公开</span>
       <div class="fnc__actions">
         <button
           type="button"
           class="fnc__action"
           :class="{ 'fnc__action--active': liked }"
           :aria-label="liked ? '取消点赞' : '点赞'"
+          :aria-pressed="liked"
+          :disabled="busy || interactive === false || note.isDraft || note.isArchived"
           @click="$emit('toggle-like', note.id)"
         >
           <Icon :name="liked ? 'lucide:heart' : 'lucide:heart'" size="14" :class="liked ? 'fnc__heart-filled' : ''" />
@@ -73,6 +75,8 @@
           class="fnc__action"
           :class="{ 'fnc__action--active': commentOpen }"
           aria-label="评论"
+          :aria-expanded="commentOpen"
+          :disabled="busy || interactive === false || note.isDraft || note.isArchived"
           @click="commentOpen = !commentOpen"
         >
           <Icon name="lucide:message-circle" size="14" />
@@ -86,6 +90,17 @@
           v-if="!readOnly"
           type="button"
           class="fnc__action"
+          aria-label="编辑闪念"
+          :disabled="busy"
+          @click="$emit('edit')"
+        >
+          <Icon name="lucide:pencil" size="14" />
+        </button>
+        <button
+          v-if="!readOnly"
+          :disabled="busy"
+          type="button"
+          class="fnc__action"
           :class="{ 'fnc__action--active': note.isPinned }"
           :aria-label="note.isPinned ? '取消置顶' : '置顶'"
           @click="$emit('set-pinned', { id: note.id, pinned: !note.isPinned })"
@@ -95,6 +110,7 @@
         <!-- 归档 / 恢复（仅非只读） -->
         <button
           v-if="!readOnly"
+          :disabled="busy"
           type="button"
           class="fnc__action"
           :aria-label="note.isArchived ? '恢复' : '归档'"
@@ -104,11 +120,17 @@
         </button>
         <!-- 删除：内联确认态，3s 超时自动恢复 -->
         <div v-if="confirmingDelete" class="fnc__confirm-delete">
-          <span class="fnc__confirm-delete-text">确认删除？</span>
-          <button type="button" class="fnc__confirm-yes" @click="confirmDelete">
+          <span class="fnc__confirm-delete-text">永久删除？</span>
+          <button
+            type="button"
+            class="fnc__confirm-yes"
+            aria-label="确认永久删除闪念"
+            :disabled="busy"
+            @click="confirmDelete"
+          >
             <Icon name="lucide:check" size="12" />
           </button>
-          <button type="button" class="fnc__confirm-no" @click="cancelDelete">
+          <button type="button" class="fnc__confirm-no" aria-label="取消删除" @click="cancelDelete">
             <Icon name="lucide:x" size="12" />
           </button>
         </div>
@@ -129,7 +151,7 @@
       <div v-if="commentOpen" class="fnc__comments">
         <div v-if="note.comments.length > 0" class="fnc__comment-list">
           <div v-for="c in note.comments" :key="c.id" class="fnc__comment">
-            <img :src="c.authorAvatar" :alt="c.authorName" class="fnc__comment-avatar" >
+            <img :src="c.authorAvatar" :alt="c.authorName" class="fnc__comment-avatar" />
             <div class="fnc__comment-body">
               <div class="fnc__comment-head">
                 <span class="fnc__comment-name">{{ c.authorName }}</span>
@@ -153,15 +175,18 @@
         <form class="fnc__comment-form" @submit.prevent="onSubmitComment">
           <input
             v-model.trim="commentDraft"
+            :disabled="!canInteract || commentSending || busy"
             type="text"
+            aria-label="闪念评论内容"
             class="fnc__comment-input"
             placeholder="写下你的想法…"
-            maxlength="200"
-          >
+            maxlength="500"
+            @keydown.enter="onCommentEnter"
+          />
           <button
             type="submit"
             class="fnc__comment-send"
-            :disabled="!commentDraft"
+            :disabled="!canInteract || !commentDraft || commentSending || busy"
             aria-label="发送评论"
           >
             <Icon name="lucide:send-horizontal" size="14" />
@@ -173,28 +198,34 @@
 </template>
 
 <script setup lang="ts">
-import type { FlashNote } from '~/features/flash/types'
+import type { FlashNote, FlashCommentSubmission } from '~/features/flash/types'
 import { renderFlashMarkdown } from '~/utils/flashMarkdown'
 
-const props = defineProps<{
-  note: FlashNote
-  cited?: boolean
-  readOnly?: boolean
-  /** AI 引用高亮：外部控制 2s 脉冲动画 */
-  highlighted?: boolean
-  /** 当前登录用户 id，用于判断能否删除别人的评论 */
-  currentUserId?: string | null
-  /** 游客设备 id，用于判断游客能否删除自己发的评论 */
-  guestId?: string | null
-}>()
+const props = withDefaults(
+  defineProps<{
+    note: FlashNote
+    cited?: boolean
+    readOnly?: boolean
+    busy?: boolean
+    interactive?: boolean
+    /** AI 引用高亮：外部控制 2s 脉冲动画 */
+    highlighted?: boolean
+    /** 当前登录用户 id，用于判断能否删除别人的评论 */
+    currentUserId?: string | null
+    /** 游客设备 id，用于判断游客能否删除自己发的评论 */
+    guestId?: string | null
+  }>(),
+  { interactive: true, currentUserId: null, guestId: null },
+)
 
 const emit = defineEmits<{
   remove: [id: string]
+  edit: []
   'toggle-like': [id: string]
   'set-pinned': [payload: { id: string; pinned: boolean }]
   'set-archived': [payload: { id: string; archived: boolean }]
   'remove-comment': [payload: { noteId: string; commentId: string }]
-  'add-comment': [payload: { noteId: string; content: string }]
+  'add-comment': [payload: FlashCommentSubmission]
   'tag-click': [tag: string]
 }>()
 
@@ -209,7 +240,9 @@ let copyTimer: ReturnType<typeof setTimeout> | null = null
 const confirmingDelete = ref(false)
 let deleteTimer: ReturnType<typeof setTimeout> | null = null
 
-const liked = computed(() => props.note.likes > 0)
+const liked = computed(() => !!props.note.liked)
+const canInteract = computed(() => props.interactive && !props.note.isDraft && !props.note.isArchived)
+const commentSending = ref(false)
 const relativeTime = computed(() => formatRelative(props.note.createdAt))
 
 // 类型元信息：idea/todo 显示，memo 默认态隐藏避免冗余
@@ -225,7 +258,8 @@ const renderedContent = computed(() => renderFlashMarkdown(props.note.content))
 function formatRelative(iso: string): string {
   const created = new Date(iso).getTime()
   const now = Date.now()
-  const diff = Math.max(0, now - created)
+  if (!Number.isFinite(created) || created > now) return formatCalendarDate(iso)
+  const diff = now - created
   const minute = 60 * 1000
   const hour = 60 * minute
   const day = 24 * hour
@@ -233,15 +267,11 @@ function formatRelative(iso: string): string {
   if (diff < hour) return `${Math.floor(diff / minute)} 分钟前`
   if (diff < day) return `${Math.floor(diff / hour)} 小时前`
   if (diff < 7 * day) return `${Math.floor(diff / day)} 天前`
-  return new Date(iso).toLocaleDateString('zh-CN')
+  return formatCalendarDate(iso)
 }
 
-function canDeleteComment(authorId: string): boolean {
-  // 登录用户可以删自己的评论
-  if (props.currentUserId && props.currentUserId === authorId) return true
-  // 游客可以删自己的评论（通过 guestId 匹配）
-  if (props.guestId && props.guestId === authorId) return true
-  return false
+function canDeleteComment(_authorId: string): boolean {
+  return !props.readOnly && !!props.currentUserId
 }
 
 async function onCopy() {
@@ -275,9 +305,20 @@ function cancelDelete() {
 }
 
 function onSubmitComment() {
-  if (!commentDraft.value) return
-  emit('add-comment', { noteId: props.note.id, content: commentDraft.value })
-  commentDraft.value = ''
+  const content = commentDraft.value.trim()
+  if (!canInteract.value || !content || commentSending.value || props.busy) return
+  commentSending.value = true
+  emit('add-comment', {
+    noteId: props.note.id,
+    content,
+    complete: (saved) => {
+      if (saved && commentDraft.value.trim() === content) commentDraft.value = ''
+      commentSending.value = false
+    },
+  })
+}
+function onCommentEnter(event: KeyboardEvent) {
+  if (event.isComposing) event.preventDefault()
 }
 
 onBeforeUnmount(() => {
@@ -302,6 +343,9 @@ onBeforeUnmount(() => {
     transform 0.2s ease,
     border-color 0.2s ease,
     box-shadow 0.2s ease;
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
 
   &:hover {
     transform: translateY(-2px);
@@ -320,6 +364,9 @@ onBeforeUnmount(() => {
 
   &--highlighted {
     animation: flash-highlight 2s ease-out;
+    @media (prefers-reduced-motion: reduce) {
+      animation: none;
+    }
   }
 
   &--commenting {
@@ -349,23 +396,27 @@ onBeforeUnmount(() => {
   padding: 0.125rem 0.5rem;
   font-size: 0.6875rem;
   font-weight: 600;
-  color: var(--accent);
+  color: var(--accent-text);
   background: var(--accent-soft);
   border-radius: $radius-full;
   cursor: pointer;
   transition:
     opacity 0.18s,
     background 0.18s;
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
 
   &:hover {
     opacity: 0.75;
-    background: var(--accent);
+    background: var(--accent-action);
     color: #fff;
   }
 }
 
 .fnc__footer {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
   gap: 0.5rem;
@@ -374,6 +425,7 @@ onBeforeUnmount(() => {
 }
 
 .fnc__time {
+  white-space: nowrap;
   display: inline-flex;
   align-items: center;
   gap: 0.25rem;
@@ -382,9 +434,12 @@ onBeforeUnmount(() => {
   font-variant-numeric: tabular-nums;
   text-decoration: none;
   transition: color 0.18s;
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
 
   &:hover {
-    color: var(--accent);
+    color: var(--accent-text);
     text-decoration: underline;
     text-decoration-style: dotted;
     text-underline-offset: 3px;
@@ -405,22 +460,29 @@ onBeforeUnmount(() => {
 }
 
 .fnc__type--idea {
-  color: #f59e0b;
-  background: color-mix(in srgb, #f59e0b 12%, transparent);
+  color: var(--tag-amber-text);
+  background: var(--tag-amber-bg);
 }
 
 .fnc__type--todo {
-  color: #3b82f6;
-  background: color-mix(in srgb, #3b82f6 12%, transparent);
+  color: var(--tag-blue-text);
+  background: var(--tag-blue-bg);
 }
 
 .fnc__actions {
   display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  margin-left: auto;
+  max-width: 100%;
   align-items: center;
   gap: 0.125rem;
 }
 
 .fnc__action {
+  min-width: 32px;
+  min-height: 32px;
+  white-space: nowrap;
   display: inline-flex;
   align-items: center;
   gap: 0.25rem;
@@ -431,25 +493,34 @@ onBeforeUnmount(() => {
   font-size: 0.6875rem;
   border-radius: $radius-sm;
   cursor: pointer;
-  opacity: 0.55;
+  opacity: 1;
   transition:
     opacity 0.2s,
     color 0.2s,
     background 0.2s;
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
 
   &:hover {
-    color: var(--accent);
+    color: var(--accent-text);
     background: var(--accent-soft);
   }
 
   &--active {
-    color: var(--accent);
+    color: var(--accent-text);
     opacity: 1;
   }
 
   &--danger:hover {
     color: var(--danger);
     background: rgba(239, 68, 68, 0.1);
+  }
+}
+@media (pointer: coarse) {
+  .fnc__action {
+    min-width: 44px;
+    min-height: 44px;
   }
 }
 
@@ -585,10 +656,13 @@ onBeforeUnmount(() => {
   height: 26px;
   border: none;
   border-radius: $radius-full;
-  background: var(--accent);
+  background: var(--accent-action);
   color: #fff;
   cursor: pointer;
   transition: opacity 0.2s;
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
 
   &:disabled {
     opacity: 0.4;
@@ -621,7 +695,7 @@ onBeforeUnmount(() => {
 }
 
 .fnc__badge--pin {
-  color: var(--accent);
+  color: var(--accent-text);
   background: var(--accent-soft);
 }
 
@@ -652,7 +726,7 @@ onBeforeUnmount(() => {
   }
 
   :deep(a) {
-    color: var(--accent);
+    color: var(--accent-text);
     text-decoration: none;
     border-bottom: 1px dotted currentColor;
 
@@ -679,7 +753,7 @@ onBeforeUnmount(() => {
     border-radius: $radius-sm;
     font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
     font-size: 0.8125rem;
-    color: var(--accent);
+    color: var(--accent-text);
   }
 
   :deep(pre) {
@@ -747,6 +821,9 @@ onBeforeUnmount(() => {
   align-items: center;
   gap: 0.375rem;
   animation: fnc-confirm-in 0.18s ease;
+  @media (prefers-reduced-motion: reduce) {
+    animation: none;
+  }
 }
 
 .fnc__confirm-delete-text {
@@ -769,6 +846,9 @@ onBeforeUnmount(() => {
   transition:
     background 0.18s,
     color 0.18s;
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
 }
 
 .fnc__confirm-yes {
@@ -818,6 +898,9 @@ onBeforeUnmount(() => {
   transition:
     opacity 0.2s ease,
     max-height 0.25s ease;
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
   overflow: hidden;
 }
 
