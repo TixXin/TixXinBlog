@@ -24,6 +24,8 @@ export function usePageMotion(host: Ref<HTMLElement | null>) {
   let animations: Animation[] = []
   let timer: ReturnType<typeof setTimeout> | undefined
   const disposers: (() => void)[] = []
+  // 媒体查询已生效时，其change事件可能还在排队；动画创建前以浏览器当前值兜底。
+  const wantsReducedMotion = () => reducedMotion.value || window.matchMedia('(prefers-reduced-motion: reduce)').matches
   const root = () =>
     [...(host.value?.children ?? [])].find(
       (node) => !node.hasAttribute('data-page-motion-status') && !node.hasAttribute('data-page-motion-overlay'),
@@ -127,7 +129,7 @@ export function usePageMotion(host: Ref<HTMLElement | null>) {
           focused instanceof HTMLElement && previous?.header?.contains(focused) && focused.matches(':focus-visible')
             ? focused.dataset.focusKey
             : undefined
-        const duration = reducedMotion.value ? 0 : contentTransitionDuration.value
+        const duration = wantsReducedMotion() ? 0 : contentTransitionDuration.value
         active.value = duration ? { name: contentTransitionName.value, duration } : false
         pending.value = true
         if (duration && previousRoot) captureBody(previousRoot)
@@ -153,7 +155,7 @@ export function usePageMotion(host: Ref<HTMLElement | null>) {
         const regions = getPageMotionRegions(element)
         pending.value = false
         restoreHeaderFocus(element)
-        if (!active.value || reducedMotion.value || typeof regions.body.animate !== 'function') {
+        if (!active.value || wantsReducedMotion() || typeof regions.body.animate !== 'function') {
           finish()
           return
         }

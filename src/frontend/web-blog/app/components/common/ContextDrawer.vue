@@ -11,7 +11,7 @@
       class="context-entry__button"
       aria-haspopup="dialog"
       :aria-expanded="open"
-      @click="open = true"
+      @click="openFromButton"
     >
       <Icon :name="icon" size="18" />
       <span>{{ label }}</span>
@@ -52,6 +52,11 @@
 withDefaults(defineProps<{ label: string; icon?: string }>(), { icon: 'lucide:menu' })
 const open = defineModel<boolean>('open', { default: false })
 const dialog = ref<HTMLElement | null>(null)
+function openFromButton(event: MouseEvent) {
+  // WebKit再次点击已聚焦按钮时会先失焦，显式确定入口再交给模态焦点管理。
+  ;(event.currentTarget as HTMLButtonElement).focus({ preventScroll: true })
+  open.value = true
+}
 useModalFocus(open, dialog, {
   close: () => {
     open.value = false
