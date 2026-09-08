@@ -5,7 +5,7 @@
  * @since 2026-07-20
  */
 
-import { Entity, Index, ManyToOne, PrimaryKey, Property } from '@mikro-orm/core'
+import { Entity, Index, ManyToOne, OptionalProps, PrimaryKey, Property } from '@mikro-orm/core'
 import { Post } from './post.entity'
 
 /** 评论作者快照：访客无账号体系,冗余存展示信息 + 访客哈希（development.md §4.1） */
@@ -17,11 +17,24 @@ export interface CommentAuthorSnapshot {
 
 /** 评论最大层级：根=0、回复=1、回复的回复=2；再深拒绝（api.md 错误码 1003） */
 export const COMMENT_MAX_DEPTH = 2
+export const COMMENT_STATUSES = ['published', 'pending', 'hidden', 'spam'] as const
+export type CommentStatus = (typeof COMMENT_STATUSES)[number]
 
 @Entity({ tableName: 'comment' })
 export class Comment {
+  [OptionalProps]?: 'status' | 'revision'
   @PrimaryKey({ type: 'integer', autoincrement: true })
   id!: number
+
+  @Property({ type: 'text', default: 'published' })
+  @Index()
+  status: CommentStatus = 'published'
+
+  @Property({ type: 'integer', default: 0 })
+  revision: number = 0
+
+  @Property({ type: 'datetime', nullable: true })
+  moderatedAt?: Date
 
   @ManyToOne({ entity: () => Post, deleteRule: 'cascade' })
   @Index()
