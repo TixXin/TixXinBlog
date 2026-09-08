@@ -43,10 +43,13 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version: 24
           cache: pnpm
 
       - run: pnpm install --frozen-lockfile
+
+      - name: Check Secrets
+        run: pnpm check:secrets
 
       - name: Lint
         run: pnpm --filter server-main lint
@@ -66,5 +69,26 @@ jobs:
       - name: Build
         run: pnpm --filter server-main build
 
+      - name: HTTP Integration on Isolated Database
+        run: pnpm --filter server-main test:integration
+
       - name: Docker Build
         run: docker build -f src/backend/server-main/Dockerfile -t tixxin-blog-server .
+
+      - name: Migration Image Build
+        run: docker build -f src/backend/server-main/Dockerfile --target migration -t tixxin-blog-migration .
+
+      - name: Full Backup Restore on Isolated Container
+        env:
+          BACKUP_POSTGRES_CONTAINER: ${{ job.services.postgres.id }}
+          RESTORE_API_IMAGE: tixxin-blog-server
+        run: node src/backend/server-main/tests/full-backup-integration.mjs
+
+      - name: Restore Verification Report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: restore-verification
+          path: .backups/**/verification-report.json
+          if-no-files-found: ignore
+          retention-days: 5

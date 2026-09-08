@@ -4,29 +4,46 @@ on:
   push:
     branches: [main]
     paths-ignore:
-      - 'src/backend/**'
       - 'docs/**'
   pull_request:
     branches: [main]
     paths-ignore:
-      - 'src/backend/**'
       - 'docs/**'
 
 jobs:
   lint-and-build:
     runs-on: ubuntu-latest
+    env:
+      DATABASE_URL: postgres://tixxin:tixxin@localhost:5432/tixxin_blog
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: tixxin
+          POSTGRES_PASSWORD: tixxin
+          POSTGRES_DB: tixxin_blog
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U tixxin -d tixxin_blog"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 10
     steps:
       - uses: actions/checkout@v4
 
       - uses: pnpm/action-setup@v4
 
-      # Node 22:ESLint 10 依赖 Object.groupBy(Node 21.4+),Node 20 会直接崩溃
+      # 开发、CI 与两套生产镜像统一使用 Node 24。
       - uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version: 24
           cache: pnpm
 
       - run: pnpm install --frozen-lockfile
+
+      - name: Check Secrets
+        run: pnpm check:secrets
 
       - name: Lint
         run: pnpm lint
@@ -40,6 +57,37 @@ jobs:
       - name: Build
         run: pnpm build
 
+      - name: Build Backend for Browser Tests
+        run: pnpm --filter server-main build
+
+      - name: Install Chromium
+        run: pnpm --filter web-blog exec playwright install --with-deps chromium
+
+      - name: Browser E2E on Isolated Database
+        run: pnpm test:e2e:run
+
+      - name: Browser Failure Artifacts
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: browser-e2e-failure
+          path: .playwright-mcp/e2e-results
+          retention-days: 5
+
+      - name: Frontend Docker Build
+        run: docker build -t tixxin-blog-web:ci .
+
+      - name: Backend and Migration Docker Build
+        run: |
+          docker build -f src/backend/server-main/Dockerfile -t tixxin-blog-api:ci .
+          docker build -f src/backend/server-main/Dockerfile --target migration -t tixxin-blog-migration:ci .
+
+      - name: Production Container Smoke
+        env:
+          WEB_IMAGE: tixxin-blog-web:ci
+          API_IMAGE: tixxin-blog-api:ci
+          MIGRATION_IMAGE: tixxin-blog-migration:ci
+        run: node scripts/container-smoke.mjs
+
       - name: Audit Dependencies
-        run: pnpm audit --audit-level=high
-        continue-on-error: true
+        run: pnpm audit --prod --audit-level=high
