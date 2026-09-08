@@ -1,0 +1,266 @@
+
+Running 126 tests using 1 worker
+
+(node:45000) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+
+[1/126] [chromium] › tests\e2e\content-tabs.spec.ts:10:5 › 内容导航 nexus/320 两页样式一致且可往返
+[2/126] [chromium] › tests\e2e\content-tabs.spec.ts:10:5 › 内容导航 nexus/390 两页样式一致且可往返
+[3/126] [chromium] › tests\e2e\content-tabs.spec.ts:10:5 › 内容导航 nexus/768 两页样式一致且可往返
+[4/126] [chromium] › tests\e2e\content-tabs.spec.ts:10:5 › 内容导航 nexus/1024 两页样式一致且可往返
+[5/126] [chromium] › tests\e2e\content-tabs.spec.ts:10:5 › 内容导航 nexus/1440 两页样式一致且可往返
+[6/126] [chromium] › tests\e2e\content-tabs.spec.ts:10:5 › 内容导航 nexus/1920 两页样式一致且可往返
+[7/126] [chromium] › tests\e2e\content-tabs.spec.ts:10:5 › 内容导航 aurora/320 两页样式一致且可往返
+[8/126] [chromium] › tests\e2e\content-tabs.spec.ts:10:5 › 内容导航 aurora/390 两页样式一致且可往返
+[9/126] [chromium] › tests\e2e\content-tabs.spec.ts:10:5 › 内容导航 aurora/768 两页样式一致且可往返
+[10/126] [chromium] › tests\e2e\content-tabs.spec.ts:10:5 › 内容导航 aurora/1024 两页样式一致且可往返
+[11/126] [chromium] › tests\e2e\content-tabs.spec.ts:10:5 › 内容导航 aurora/1440 两页样式一致且可往返
+[12/126] [chromium] › tests\e2e\content-tabs.spec.ts:10:5 › 内容导航 aurora/1920 两页样式一致且可往返
+[13/126] [chromium] › tests\e2e\content-tabs.spec.ts:10:5 › 内容导航 dock/320 两页样式一致且可往返
+[14/126] [chromium] › tests\e2e\content-tabs.spec.ts:10:5 › 内容导航 dock/390 两页样式一致且可往返
+[15/126] [chromium] › tests\e2e\content-tabs.spec.ts:10:5 › 内容导航 dock/768 两页样式一致且可往返
+[16/126] [chromium] › tests\e2e\content-tabs.spec.ts:10:5 › 内容导航 dock/1024 两页样式一致且可往返
+[17/126] [chromium] › tests\e2e\content-tabs.spec.ts:10:5 › 内容导航 dock/1440 两页样式一致且可往返
+[18/126] [chromium] › tests\e2e\content-tabs.spec.ts:10:5 › 内容导航 dock/1920 两页样式一致且可往返
+[19/126] [chromium] › tests\e2e\post-pagination.spec.ts:78:5 › 慢分页 nexus/normal 只对已到齐的新内容过渡
+[20/126] [chromium] › tests\e2e\post-pagination.spec.ts:138:5 › 快速分页 nexus/normal 可替换慢请求并显示最后一页
+  1) [chromium] › tests\e2e\post-pagination.spec.ts:138:5 › 快速分页 nexus/normal 可替换慢请求并显示最后一页 ────────
+
+    Error: expect(received).toEqual(expected) // deep equality
+
+    - Expected  - 1
+    + Received  + 1
+
+      Object {
+        "opacity": "1",
+        "same": true,
+    -   "transform": "none",
+    +   "transform": "matrix(1, 0, 0, 1, 0, 0)",
+      }
+
+      70 |         transform: getComputedStyle(el).transform,
+      71 |       })),
+    > 72 |   ).toEqual({ same: true, opacity: '1', transform: 'none' })
+         |     ^
+      73 |   return data
+      74 | }
+      75 |
+        at assertSettled (D:\Projects\TixXinBlog\.codex\content-navigation\frontend\tests\e2e\post-pagination.spec.ts:72:5)
+        at D:\Projects\TixXinBlog\.codex\content-navigation\frontend\tests\e2e\post-pagination.spec.ts:160:9
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ..\e2e-1788871897954\artifacts\post-pagination-快速分页-nexus-normal-可替换慢请求并显示最后一页-chromium\test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ..\e2e-1788871897954\artifacts\post-pagination-快速分页-nexus-normal-可替换慢请求并显示最后一页-chromium\error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    ..\e2e-1788871897954\artifacts\post-pagination-快速分页-nexus-normal-可替换慢请求并显示最后一页-chromium\trace.zip
+    Usage:
+
+        npx playwright show-trace ..\e2e-1788871897954\artifacts\post-pagination-快速分页-nexus-normal-可替换慢请求并显示最后一页-chromium\trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+
+(node:6760) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+
+[21/126] [chromium] › tests\e2e\post-pagination.spec.ts:78:5 › 慢分页 nexus/off 只对已到齐的新内容过渡
+[22/126] [chromium] › tests\e2e\post-pagination.spec.ts:138:5 › 快速分页 nexus/off 可替换慢请求并显示最后一页
+[23/126] [chromium] › tests\e2e\post-pagination.spec.ts:78:5 › 慢分页 nexus/reduce 只对已到齐的新内容过渡
+[24/126] [chromium] › tests\e2e\post-pagination.spec.ts:138:5 › 快速分页 nexus/reduce 可替换慢请求并显示最后一页
+[25/126] [chromium] › tests\e2e\post-pagination.spec.ts:173:3 › 分页恢复 nexus 失败保留原内容，重试和末页切模式可用
+[26/126] [chromium] › tests\e2e\post-pagination.spec.ts:78:5 › 慢分页 aurora/normal 只对已到齐的新内容过渡
+[27/126] [chromium] › tests\e2e\post-pagination.spec.ts:138:5 › 快速分页 aurora/normal 可替换慢请求并显示最后一页
+[28/126] [chromium] › tests\e2e\post-pagination.spec.ts:78:5 › 慢分页 aurora/off 只对已到齐的新内容过渡
+[29/126] [chromium] › tests\e2e\post-pagination.spec.ts:138:5 › 快速分页 aurora/off 可替换慢请求并显示最后一页
+[30/126] [chromium] › tests\e2e\post-pagination.spec.ts:78:5 › 慢分页 aurora/reduce 只对已到齐的新内容过渡
+[31/126] [chromium] › tests\e2e\post-pagination.spec.ts:138:5 › 快速分页 aurora/reduce 可替换慢请求并显示最后一页
+[32/126] [chromium] › tests\e2e\post-pagination.spec.ts:173:3 › 分页恢复 aurora 失败保留原内容，重试和末页切模式可用
+[33/126] [chromium] › tests\e2e\post-pagination.spec.ts:78:5 › 慢分页 dock/normal 只对已到齐的新内容过渡
+[34/126] [chromium] › tests\e2e\post-pagination.spec.ts:138:5 › 快速分页 dock/normal 可替换慢请求并显示最后一页
+[35/126] [chromium] › tests\e2e\post-pagination.spec.ts:78:5 › 慢分页 dock/off 只对已到齐的新内容过渡
+[36/126] [chromium] › tests\e2e\post-pagination.spec.ts:138:5 › 快速分页 dock/off 可替换慢请求并显示最后一页
+[37/126] [chromium] › tests\e2e\post-pagination.spec.ts:78:5 › 慢分页 dock/reduce 只对已到齐的新内容过渡
+[38/126] [chromium] › tests\e2e\post-pagination.spec.ts:138:5 › 快速分页 dock/reduce 可替换慢请求并显示最后一页
+[39/126] [chromium] › tests\e2e\post-pagination.spec.ts:173:3 › 分页恢复 dock 失败保留原内容，重试和末页切模式可用
+[40/126] [chromium] › tests\e2e\post-pagination.spec.ts:206:3 › 分页遵守fade预设
+[41/126] [chromium] › tests\e2e\post-pagination.spec.ts:206:3 › 分页遵守soft-slide预设
+[42/126] [chromium] › tests\e2e\post-pagination.spec.ts:221:1 › 分页动画进行中开启减少动态效果会立即收尾
+(node:3220) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+
+[43/126] [firefox] › tests\e2e\content-tabs.spec.ts:10:5 › 内容导航 nexus/320 两页样式一致且可往返
+[44/126] [firefox] › tests\e2e\content-tabs.spec.ts:10:5 › 内容导航 nexus/390 两页样式一致且可往返
+[45/126] [firefox] › tests\e2e\content-tabs.spec.ts:10:5 › 内容导航 nexus/768 两页样式一致且可往返
+[46/126] [firefox] › tests\e2e\content-tabs.spec.ts:10:5 › 内容导航 nexus/1024 两页样式一致且可往返
+[47/126] [firefox] › tests\e2e\content-tabs.spec.ts:10:5 › 内容导航 nexus/1440 两页样式一致且可往返
+[48/126] [firefox] › tests\e2e\content-tabs.spec.ts:10:5 › 内容导航 nexus/1920 两页样式一致且可往返
+[49/126] [firefox] › tests\e2e\content-tabs.spec.ts:10:5 › 内容导航 aurora/320 两页样式一致且可往返
+[50/126] [firefox] › tests\e2e\content-tabs.spec.ts:10:5 › 内容导航 aurora/390 两页样式一致且可往返
+[51/126] [firefox] › tests\e2e\content-tabs.spec.ts:10:5 › 内容导航 aurora/768 两页样式一致且可往返
+[52/126] [firefox] › tests\e2e\content-tabs.spec.ts:10:5 › 内容导航 aurora/1024 两页样式一致且可往返
+[53/126] [firefox] › tests\e2e\content-tabs.spec.ts:10:5 › 内容导航 aurora/1440 两页样式一致且可往返
+[54/126] [firefox] › tests\e2e\content-tabs.spec.ts:10:5 › 内容导航 aurora/1920 两页样式一致且可往返
+[55/126] [firefox] › tests\e2e\content-tabs.spec.ts:10:5 › 内容导航 dock/320 两页样式一致且可往返
+[56/126] [firefox] › tests\e2e\content-tabs.spec.ts:10:5 › 内容导航 dock/390 两页样式一致且可往返
+[57/126] [firefox] › tests\e2e\content-tabs.spec.ts:10:5 › 内容导航 dock/768 两页样式一致且可往返
+[58/126] [firefox] › tests\e2e\content-tabs.spec.ts:10:5 › 内容导航 dock/1024 两页样式一致且可往返
+[59/126] [firefox] › tests\e2e\content-tabs.spec.ts:10:5 › 内容导航 dock/1440 两页样式一致且可往返
+[60/126] [firefox] › tests\e2e\content-tabs.spec.ts:10:5 › 内容导航 dock/1920 两页样式一致且可往返
+[61/126] [firefox] › tests\e2e\post-pagination.spec.ts:78:5 › 慢分页 nexus/normal 只对已到齐的新内容过渡
+[62/126] [firefox] › tests\e2e\post-pagination.spec.ts:138:5 › 快速分页 nexus/normal 可替换慢请求并显示最后一页
+[63/126] [firefox] › tests\e2e\post-pagination.spec.ts:78:5 › 慢分页 nexus/off 只对已到齐的新内容过渡
+[64/126] [firefox] › tests\e2e\post-pagination.spec.ts:138:5 › 快速分页 nexus/off 可替换慢请求并显示最后一页
+[65/126] [firefox] › tests\e2e\post-pagination.spec.ts:78:5 › 慢分页 nexus/reduce 只对已到齐的新内容过渡
+[66/126] [firefox] › tests\e2e\post-pagination.spec.ts:138:5 › 快速分页 nexus/reduce 可替换慢请求并显示最后一页
+[67/126] [firefox] › tests\e2e\post-pagination.spec.ts:173:3 › 分页恢复 nexus 失败保留原内容，重试和末页切模式可用
+[68/126] [firefox] › tests\e2e\post-pagination.spec.ts:78:5 › 慢分页 aurora/normal 只对已到齐的新内容过渡
+[69/126] [firefox] › tests\e2e\post-pagination.spec.ts:138:5 › 快速分页 aurora/normal 可替换慢请求并显示最后一页
+[70/126] [firefox] › tests\e2e\post-pagination.spec.ts:78:5 › 慢分页 aurora/off 只对已到齐的新内容过渡
+[71/126] [firefox] › tests\e2e\post-pagination.spec.ts:138:5 › 快速分页 aurora/off 可替换慢请求并显示最后一页
+[72/126] [firefox] › tests\e2e\post-pagination.spec.ts:78:5 › 慢分页 aurora/reduce 只对已到齐的新内容过渡
+[73/126] [firefox] › tests\e2e\post-pagination.spec.ts:138:5 › 快速分页 aurora/reduce 可替换慢请求并显示最后一页
+[74/126] [firefox] › tests\e2e\post-pagination.spec.ts:173:3 › 分页恢复 aurora 失败保留原内容，重试和末页切模式可用
+[75/126] [firefox] › tests\e2e\post-pagination.spec.ts:78:5 › 慢分页 dock/normal 只对已到齐的新内容过渡
+[76/126] [firefox] › tests\e2e\post-pagination.spec.ts:138:5 › 快速分页 dock/normal 可替换慢请求并显示最后一页
+[77/126] [firefox] › tests\e2e\post-pagination.spec.ts:78:5 › 慢分页 dock/off 只对已到齐的新内容过渡
+[78/126] [firefox] › tests\e2e\post-pagination.spec.ts:138:5 › 快速分页 dock/off 可替换慢请求并显示最后一页
+[79/126] [firefox] › tests\e2e\post-pagination.spec.ts:78:5 › 慢分页 dock/reduce 只对已到齐的新内容过渡
+[80/126] [firefox] › tests\e2e\post-pagination.spec.ts:138:5 › 快速分页 dock/reduce 可替换慢请求并显示最后一页
+[81/126] [firefox] › tests\e2e\post-pagination.spec.ts:173:3 › 分页恢复 dock 失败保留原内容，重试和末页切模式可用
+[82/126] [firefox] › tests\e2e\post-pagination.spec.ts:206:3 › 分页遵守fade预设
+[83/126] [firefox] › tests\e2e\post-pagination.spec.ts:206:3 › 分页遵守soft-slide预设
+[84/126] [firefox] › tests\e2e\post-pagination.spec.ts:221:1 › 分页动画进行中开启减少动态效果会立即收尾
+(node:10236) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+
+[85/126] [webkit] › tests\e2e\content-tabs.spec.ts:10:5 › 内容导航 nexus/320 两页样式一致且可往返
+[86/126] [webkit] › tests\e2e\content-tabs.spec.ts:10:5 › 内容导航 nexus/390 两页样式一致且可往返
+  2) [webkit] › tests\e2e\content-tabs.spec.ts:10:5 › 内容导航 nexus/390 两页样式一致且可往返 ────────────────────
+
+    Test timeout of 60000ms exceeded.
+
+    Test timeout of 60000ms exceeded.
+
+    Error: page.screenshot: Test ended.
+    Call log:
+      - taking page screenshot
+      - waiting for fonts to load...
+      - fonts loaded
+
+
+       at motionScreenshot.ts:34
+
+      32 |       .toBe(0)
+      33 |   }
+    > 34 |   await page.screenshot({ path: testInfo.outputPath(name), animations: 'allow' })
+         |              ^
+      35 | }
+      36 |
+        at captureMotion (D:\Projects\TixXinBlog\.codex\content-navigation\frontend\tests\e2e\motionScreenshot.ts:34:14)
+        at D:\Projects\TixXinBlog\.codex\content-navigation\frontend\tests\e2e\content-tabs.spec.ts:67:46
+
+    Error Context: ..\e2e-1788871897954\artifacts\content-tabs-内容导航-nexus-390-两页样式一致且可往返-webkit\error-context.md
+
+    attachment #2: trace (application/zip) ─────────────────────────────────────────────────────────
+    ..\e2e-1788871897954\artifacts\content-tabs-内容导航-nexus-390-两页样式一致且可往返-webkit\trace.zip
+    Usage:
+
+        npx playwright show-trace ..\e2e-1788871897954\artifacts\content-tabs-内容导航-nexus-390-两页样式一致且可往返-webkit\trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+
+(node:39768) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+
+[87/126] [webkit] › tests\e2e\content-tabs.spec.ts:10:5 › 内容导航 nexus/768 两页样式一致且可往返
+[88/126] [webkit] › tests\e2e\content-tabs.spec.ts:10:5 › 内容导航 nexus/1024 两页样式一致且可往返
+[89/126] [webkit] › tests\e2e\content-tabs.spec.ts:10:5 › 内容导航 nexus/1440 两页样式一致且可往返
+  3) [webkit] › tests\e2e\content-tabs.spec.ts:10:5 › 内容导航 nexus/1440 两页样式一致且可往返 ───────────────────
+
+    Test timeout of 60000ms exceeded.
+
+    Test timeout of 60000ms exceeded.
+
+    Error: page.screenshot: Test ended.
+    Call log:
+      - taking page screenshot
+      - waiting for fonts to load...
+      - fonts loaded
+
+
+       at motionScreenshot.ts:34
+
+      32 |       .toBe(0)
+      33 |   }
+    > 34 |   await page.screenshot({ path: testInfo.outputPath(name), animations: 'allow' })
+         |              ^
+      35 | }
+      36 |
+        at captureMotion (D:\Projects\TixXinBlog\.codex\content-navigation\frontend\tests\e2e\motionScreenshot.ts:34:14)
+        at D:\Projects\TixXinBlog\.codex\content-navigation\frontend\tests\e2e\content-tabs.spec.ts:67:46
+
+    Error Context: ..\e2e-1788871897954\artifacts\content-tabs-内容导航-nexus-1440-两页样式一致且可往返-webkit\error-context.md
+
+    attachment #2: trace (application/zip) ─────────────────────────────────────────────────────────
+    ..\e2e-1788871897954\artifacts\content-tabs-内容导航-nexus-1440-两页样式一致且可往返-webkit\trace.zip
+    Usage:
+
+        npx playwright show-trace ..\e2e-1788871897954\artifacts\content-tabs-内容导航-nexus-1440-两页样式一致且可往返-webkit\trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+
+(node:49064) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+
+[90/126] [webkit] › tests\e2e\content-tabs.spec.ts:10:5 › 内容导航 nexus/1920 两页样式一致且可往返
+[91/126] [webkit] › tests\e2e\content-tabs.spec.ts:10:5 › 内容导航 aurora/320 两页样式一致且可往返
+[92/126] [webkit] › tests\e2e\content-tabs.spec.ts:10:5 › 内容导航 aurora/390 两页样式一致且可往返
+  4) [webkit] › tests\e2e\content-tabs.spec.ts:10:5 › 内容导航 aurora/390 两页样式一致且可往返 ───────────────────
+
+    Test timeout of 60000ms exceeded.
+
+    Error: page.screenshot: Target crashed
+    Call log:
+      - taking page screenshot
+      - waiting for fonts to load...
+      - fonts loaded
+
+
+       at motionScreenshot.ts:34
+
+      32 |       .toBe(0)
+      33 |   }
+    > 34 |   await page.screenshot({ path: testInfo.outputPath(name), animations: 'allow' })
+         |              ^
+      35 | }
+      36 |
+        at captureMotion (D:\Projects\TixXinBlog\.codex\content-navigation\frontend\tests\e2e\motionScreenshot.ts:34:14)
+        at D:\Projects\TixXinBlog\.codex\content-navigation\frontend\tests\e2e\content-tabs.spec.ts:67:46
+
+    Error Context: ..\e2e-1788871897954\artifacts\content-tabs-内容导航-aurora-390-两页样式一致且可往返-webkit\error-context.md
+
+    attachment #2: trace (application/zip) ─────────────────────────────────────────────────────────
+    ..\e2e-1788871897954\artifacts\content-tabs-内容导航-aurora-390-两页样式一致且可往返-webkit\trace.zip
+    Usage:
+
+        npx playwright show-trace ..\e2e-1788871897954\artifacts\content-tabs-内容导航-aurora-390-两页样式一致且可往返-webkit\trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+
+(node:45548) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+
+[93/126] [webkit] › tests\e2e\content-tabs.spec.ts:10:5 › 内容导航 aurora/768 两页样式一致且可往返
