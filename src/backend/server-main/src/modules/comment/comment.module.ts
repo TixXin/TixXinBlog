@@ -12,10 +12,14 @@ import { CommentLike } from '../../entities/comment-like.entity'
 import { Post } from '../../entities/post.entity'
 import { CommentController } from './comment.controller'
 import { CommentService } from './comment.service'
+import { AdminCommentController } from './admin-comment.controller'
+import { AdminCommentService } from './admin-comment.service'
+import { CommentModerationService } from './comment-moderation.service'
 
 @Module({
   imports: [MikroOrmModule.forFeature([Comment, CommentLike, Post])],
-  controllers: [CommentController],
-  providers: [CommentService],
+  controllers: [CommentController, AdminCommentController],
+  providers: [CommentService, AdminCommentService, CommentModerationService],
+  exports: [CommentModerationService],
 })
 export class CommentModule {}

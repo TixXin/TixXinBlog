@@ -13,18 +13,21 @@ export interface CommentRow {
   authorAvatar: string
   content: string
   likes: number
+  liked?: boolean
   isOwner: boolean
   createdAt: Date
 }
 
 /** 前端 CommentItem 形状(api.md §7.2) */
 export interface CommentTreeNode {
+  moderationStatus?: 'published' | 'pending'
   id: number
   author: string
   avatar: string
   content: string
   time: string
   likes: number
+  liked: boolean
   isOwner: boolean
   replies: CommentTreeNode[]
 }
@@ -42,6 +45,7 @@ export function buildCommentTree(rows: CommentRow[]): CommentTreeNode[] {
       content: row.content,
       time: row.createdAt.toISOString(),
       likes: row.likes,
+      liked: row.liked ?? false,
       isOwner: row.isOwner,
       replies: [],
     })
