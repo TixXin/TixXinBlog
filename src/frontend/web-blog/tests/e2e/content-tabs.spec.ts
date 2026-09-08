@@ -3,7 +3,9 @@
  * @description 直接进入朋友圈和往返文章页时，内容导航保持相同布局与可访问选中状态
  */
 import { test, expect } from '@playwright/test'
-import { captureMotion } from './motionScreenshot'
+import { captureMotion, prepareMotionCapture } from './motionScreenshot'
+
+test.beforeEach(({ page, browserName }) => prepareMotionCapture(page, browserName))
 
 for (const layout of ['nexus', 'aurora', 'dock']) {
   for (const width of [320, 390, 768, 1024, 1440, 1920]) {

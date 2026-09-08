@@ -53,10 +53,12 @@ function normalizePostItem(item: PostItem): PostItem {
 export async function fetchPostPage(
   baseUrl: string,
   query: { page?: number; pageSize?: number; tag?: string; folder?: string; search?: string } = {},
+  signal?: AbortSignal,
 ): Promise<PostPage> {
   const base = requireBaseUrl(baseUrl)
   const envelope = await $fetch<ApiEnvelope<ApiPostListData>>(`${base}/posts`, {
     query: { page: 1, pageSize: 15, ...query },
+    signal,
     timeout: 10000,
     retry: 0,
   })
