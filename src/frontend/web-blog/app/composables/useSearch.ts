@@ -6,6 +6,10 @@
  */
 
 import type Fuse from 'fuse.js'
+import { fetchPostPage } from '~/features/post/api'
+import { mockPosts } from '~/features/post/mock'
+import { mockProjects } from '~/features/project/mock'
+import { mockLinks } from '~/features/link/mock'
 import type { PostItem } from '~/features/post/types'
 import type { ProjectItem } from '~/features/project/types'
 import type { LinkItem } from '~/features/link/types'
@@ -40,6 +44,9 @@ async function getFuse(items: SearchResultItem[]) {
 }
 
 export function useSearch() {
+  const config = useRuntimeConfig()
+  const error = ref('')
+  let version = 0
   const query = ref('')
   const results = ref<SearchResultItem[]>([])
   const isSearching = ref(false)
@@ -53,7 +60,7 @@ export function useSearch() {
         id: post.id.toString(),
         title: post.title,
         description: post.summary,
-        url: `/articles/${post.id}`,
+        url: articlePath(post),
         icon: 'lucide:file-text',
       })
     }
@@ -83,20 +90,34 @@ export function useSearch() {
     return items
   }
 
-  async function search(q: string, posts: PostItem[], projects: ProjectItem[], links: LinkItem[]) {
+  async function search(q: string) {
+    const requestVersion = ++version
     query.value = q
+    error.value = ''
     if (!q.trim()) {
       results.value = []
+      isSearching.value = false
       return
     }
-
     isSearching.value = true
     try {
-      const items = buildSearchItems(posts, projects, links)
+      const useMock = config.public.postUseMockRepo !== false
+      const remotePosts = useMock
+        ? []
+        : (await fetchPostPage(config.public.apiBaseUrl, { search: q.trim(), pageSize: 10 })).items
+      const items = buildSearchItems(useMock ? mockPosts : [], mockProjects, mockLinks)
       const fuse = await getFuse(items)
-      results.value = fuse!.search(q, { limit: 10 }).map((r) => r.item)
+      const local = fuse!.search(q, { limit: 10 }).map((match) => match.item)
+      if (requestVersion === version && query.value === q) {
+        results.value = [...buildSearchItems(remotePosts, [], []), ...local].slice(0, 10)
+      }
+    } catch {
+      if (requestVersion === version && query.value === q) {
+        error.value = '搜索暂时不可用，请稍后重试'
+        results.value = []
+      }
     } finally {
-      isSearching.value = false
+      if (requestVersion === version) isSearching.value = false
     }
   }
 
@@ -104,6 +125,7 @@ export function useSearch() {
     query,
     results,
     isSearching,
+    error,
     search,
   }
 }

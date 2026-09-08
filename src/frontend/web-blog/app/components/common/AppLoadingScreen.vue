@@ -7,13 +7,8 @@
 
 <template>
   <Transition name="loading-screen">
-    <div
-      v-if="visible"
-      class="loading-screen"
-      :class="{ 'loading-screen--force': forceVisible }"
-      aria-hidden="true"
-    >
-      <div class="loading-screen__content">
+    <div v-if="visible" class="loading-screen" :class="{ 'loading-screen--force': forceVisible }">
+      <div class="loading-screen__content" aria-hidden="true">
         <!-- 品牌名：Tix 用主文字色，Xin 用强调色 -->
         <h1 class="loading-screen__brand">
           <span class="loading-screen__brand-tix">Tix</span><span class="loading-screen__brand-xin">Xin</span>
@@ -28,14 +23,15 @@
         </div>
 
         <!-- 真实进度百分比：仅首屏 loading 场景显示，主题切换场景（forceVisible）不渲染 -->
-        <p
-          v-if="!forceVisible"
-          class="loading-screen__percent"
-          :aria-label="`加载中 ${displayPercent}%`"
-        >
+        <p v-if="!forceVisible" class="loading-screen__percent" :aria-label="`加载中 ${displayPercent}%`">
           {{ displayPercent }}%
         </p>
       </div>
+      <p v-if="!forceVisible" class="loading-screen__recovery" role="alert">
+        页面交互暂未启动，你仍可浏览已加载的内容。
+        <a :href="route.fullPath">刷新重试</a>
+      </p>
+      <p v-else class="loading-screen__theme-status" role="status">正在加载布局…</p>
     </div>
   </Transition>
 </template>
@@ -51,6 +47,7 @@ defineProps<{
 
 // 读取首屏加载进度（主题切换场景 DOM 不渲染百分比，composable 仍可安全读取共享 state）
 const { progress } = useLoadingProgress()
+const route = useRoute()
 
 // Hydration 一致性守卫：
 // 00.theme-preload plugin 在 enforce:'pre' 阶段（hydration 前）会调用 set(10→60)，
@@ -62,9 +59,7 @@ onMounted(() => {
 })
 
 // 向下取整 + 夹紧，防止浮点抖动导致 42% → 43% → 42% 视觉闪烁
-const displayPercent = computed(() =>
-  isMounted.value ? Math.min(100, Math.max(0, Math.floor(progress.value))) : 0,
-)
+const displayPercent = computed(() => (isMounted.value ? Math.min(100, Math.max(0, Math.floor(progress.value))) : 0))
 </script>
 
 <style lang="scss" scoped>
@@ -83,6 +78,58 @@ const displayPercent = computed(() =>
   overflow: hidden;
 }
 
+.loading-screen__recovery {
+  display: none;
+  padding: 0.75rem 1rem;
+  background: var(--surface-1);
+  color: var(--text-main);
+  border: 1px solid var(--border);
+  border-radius: $radius-md;
+  font-size: 0.875rem;
+  a {
+    margin-left: 0.5rem;
+    text-decoration: underline;
+    color: var(--accent-text);
+  }
+}
+
+// 切换布局时保留当前内容和导航的可操作性，反馈只占用顶部小块空间。
+.loading-screen.loading-screen--force {
+  inset: 1rem auto auto 50%;
+  transform: translateX(-50%);
+  padding: 0.625rem 1rem;
+  background: var(--surface-1);
+  border: 1px solid var(--border);
+  border-radius: $radius-full;
+  box-shadow: var(--shadow-card);
+  pointer-events: none;
+  .loading-screen__content {
+    display: none;
+  }
+}
+.loading-screen__theme-status {
+  font-size: 0.8125rem;
+  color: var(--text-main);
+  white-space: nowrap;
+}
+
+html.app-startup-stalled .loading-screen:not(.loading-screen--force) {
+  display: block !important;
+  inset: 0 0 auto;
+  padding: 0.5rem;
+  background: transparent;
+  pointer-events: none;
+  .loading-screen__content {
+    display: none;
+  }
+  .loading-screen__recovery {
+    display: block;
+    width: fit-content;
+    margin: auto;
+    pointer-events: auto;
+  }
+}
+
 // 非首次访问（内联脚本在 hydration 前设置）：直接隐藏首屏 loading，消除闪烁
 // 注意：scoped 下 html.visited .loading-screen 仍会被正确转换为带 data-v-xxx 后缀的选择器
 // 带 --force 修饰的实例（主题切换 loading）不受此屏蔽，仍可正常显示
@@ -97,6 +144,9 @@ html.visited .loading-screen:not(.loading-screen--force) {
   gap: 0.5rem;
   // 内容入场动画：从下方淡入
   animation: loading-content-enter 0.5s cubic-bezier(0.22, 0.68, 0.35, 1) both;
+  @media (prefers-reduced-motion: reduce) {
+    animation: none;
+  }
 }
 
 /* 品牌名 */
@@ -118,7 +168,7 @@ html.visited .loading-screen:not(.loading-screen--force) {
 }
 
 .loading-screen__brand-xin {
-  color: var(--accent);
+  color: var(--accent-text);
 }
 
 /* 副标题 */
@@ -149,14 +199,12 @@ html.visited .loading-screen:not(.loading-screen--force) {
   left: 0;
   width: 40%;
   height: 100%;
-  background: linear-gradient(
-    90deg,
-    transparent 0%,
-    var(--accent) 50%,
-    transparent 100%
-  );
+  background: linear-gradient(90deg, transparent 0%, var(--accent) 50%, transparent 100%);
   border-radius: 1px;
   animation: loading-progress 1.2s ease-in-out infinite;
+  @media (prefers-reduced-motion: reduce) {
+    animation: none;
+  }
 }
 
 /* 真实进度百分比文字 */
@@ -199,9 +247,13 @@ html.visited .loading-screen:not(.loading-screen--force) {
 
 /* Vue Transition 退出动画：整体向上滑出 + 淡出 */
 .loading-screen-leave-active {
+  pointer-events: none;
   transition:
     opacity 0.5s cubic-bezier(0.22, 0.68, 0.35, 1),
     transform 0.5s cubic-bezier(0.22, 0.68, 0.35, 1);
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
 }
 
 .loading-screen-leave-to {

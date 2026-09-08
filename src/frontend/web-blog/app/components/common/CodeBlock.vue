@@ -18,46 +18,50 @@
         <Icon :name="copied ? 'lucide:check' : 'lucide:copy'" size="16" />
       </button>
     </CommonTooltip>
-    <div class="article-content__pre" v-html="highlightedHtml || fallbackHtml" />
+    <!-- 只有 Shiki 生成的受控 HTML 进入 v-html；失败时以 Vue 文本节点输出。 -->
+    <!-- eslint-disable-next-line vue/no-v-html -->
+    <div v-if="highlightedHtml" class="article-content__pre" v-html="highlightedHtml" />
+    <div v-else class="article-content__pre">
+      <pre><code>{{ code }}</code></pre>
+    </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { codeToHtml } from 'shiki'
+import { highlightCode } from '~/utils/highlightCode'
 
 const props = defineProps<{
   code: string
   language?: string
 }>()
 
-const fallbackHtml = computed(() => `<pre><code>${props.code}</code></pre>`)
-
-const { data: highlightedHtml } = await useAsyncData(`shiki-${props.code.slice(0, 20)}-${props.language}`, async () => {
-  try {
-    return await codeToHtml(props.code, {
-      lang: props.language || 'text',
-      themes: {
-        light: 'github-light',
-        dark: 'github-dark',
-      },
-    })
-  } catch (e) {
-    console.error('Shiki highlight error:', e)
-    return fallbackHtml.value
-  }
-})
+// 每个代码块独立缓存，避免相同前缀的不同正文共享结果；props 变化时重新高亮。
+const { data: highlightedHtml } = await useAsyncData(
+  `shiki-${useId()}`,
+  () => highlightCode(props.code, props.language),
+  { watch: [() => props.code, () => props.language] },
+)
 
 const copied = ref(false)
+const { warning: notifyCopyFailure } = useToast()
+let copyTimer: ReturnType<typeof setTimeout> | undefined
+let alive = true
+onBeforeUnmount(() => {
+  alive = false
+  if (copyTimer) clearTimeout(copyTimer)
+})
 
 async function copyCode(text: string) {
   try {
     await navigator.clipboard.writeText(text)
+    if (!alive) return
     copied.value = true
-    setTimeout(() => {
+    if (copyTimer) clearTimeout(copyTimer)
+    copyTimer = setTimeout(() => {
       copied.value = false
     }, 2000)
   } catch {
-    /* 剪贴板不可用时不打断阅读 */
+    if (alive) notifyCopyFailure('复制失败，请手动选择代码复制。')
   }
 }
 </script>
@@ -71,7 +75,7 @@ async function copyCode(text: string) {
   background: var(--surface-2);
   overflow: hidden;
 
-  :global(.dark) & {
+  :is(html.dark) & {
     background: #0d1117;
     border-color: rgba(51, 65, 85, 0.5);
   }
@@ -90,6 +94,9 @@ async function copyCode(text: string) {
   cursor: pointer;
   opacity: 0;
   transition: $transition-fast;
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
 
   .article-content__code-wrap:hover &,
   &:focus-visible {
@@ -122,8 +129,8 @@ async function copyCode(text: string) {
 }
 
 /* Shiki dual themes CSS */
-:global(.dark) .article-content__pre :deep(.shiki),
-:global(.dark) .article-content__pre :deep(.shiki span) {
+:is(html.dark) .article-content__pre :deep(.shiki),
+:is(html.dark) .article-content__pre :deep(.shiki span) {
   color: var(--shiki-dark) !important;
   background-color: var(--shiki-dark-bg) !important;
   font-style: var(--shiki-dark-font-style) !important;

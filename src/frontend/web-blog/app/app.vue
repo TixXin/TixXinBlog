@@ -9,7 +9,7 @@
   <!-- 浏览器顶部加载进度条：NProgress 风格，与中央百分比共享 useLoadingProgress -->
   <CommonAppLoadingTopBar />
   <CommonAppLoadingScreen :visible="isLoading" />
-  <!-- 布局主题切换 loading：force-visible 绕过 html.visited 屏蔽，在切换期间全屏覆盖 -->
+  <!-- 布局主题切换以非阻断状态提示反馈真实加载过程 -->
   <CommonAppLoadingScreen :visible="isThemeSwitchLoading" force-visible />
   <NuxtLayout />
   <ClientOnly>
@@ -24,20 +24,46 @@
 </template>
 
 <script setup lang="ts">
+import { hasColorMotion, runColorMotion } from '~/utils/colorMotion'
+
+const colorMode = useColorMode()
+watch(
+  () => colorMode.value,
+  () => {
+    if (import.meta.client && colorMode.preference === 'system' && !hasColorMotion(document)) {
+      runColorMotion({ doc: document, preset: 'instant', apply: () => {} })
+    }
+  },
+  { flush: 'sync' },
+)
+const { settings: siteSettings } = useSiteSettings()
+useHead({
+  htmlAttrs: { lang: 'zh-CN' },
+  titleTemplate: (title) =>
+    title && title !== siteSettings.value.name ? `${title} - ${siteSettings.value.name}` : siteSettings.value.name,
+})
+useSeoMeta({
+  ogSiteName: () => siteSettings.value.name,
+  description: () => siteSettings.value.seoDescription || siteSettings.value.description,
+})
+useHead(() => ({
+  link: [
+    { rel: 'alternate', type: 'application/rss+xml', title: `${siteSettings.value.name} RSS`, href: '/rss.xml' },
+    { rel: 'alternate', type: 'application/rss+xml', title: `${siteSettings.value.name} 闪念 RSS`, href: '/flash.xml' },
+    { rel: 'alternate', type: 'application/rss+xml', title: '朋友圈 RSS', href: '/moments.xml' },
+  ],
+}))
 const isSearchOpen = ref(false)
-provide('searchModal', { open: () => (isSearchOpen.value = true) })
-useKeyboardShortcuts()
+const searchController = { open: () => (isSearchOpen.value = true) }
+provide('searchModal', searchController)
+// 根组件不能inject自己provide的值，快捷键直接复用同一控制器。
+useKeyboardShortcuts(searchController)
 useAnalytics()
 
 // 首次访问 loading 动画状态 + 布局主题切换 loading 状态
 const { isLoading, isThemeSwitchLoading, checkFirstVisit, dismiss } = useAppLoading()
 // 首屏加载进度：顶部进度条 + 中央百分比共享
-const {
-  start: startProgress,
-  set: setProgress,
-  finish: finishProgress,
-  reset: resetProgress,
-} = useLoadingProgress()
+const { start: startProgress, set: setProgress, finish: finishProgress, reset: resetProgress } = useLoadingProgress()
 
 // 客户端挂载后立即启动假进度（早于 onNuxtReady，最大化可见时间）
 // 非首次访问路径不启动，progress 保持 0，顶部条与中央百分比均不可见
@@ -49,19 +75,16 @@ onMounted(() => {
   }
 })
 
-// hydration 完成后关闭 loading：
-// - 首次访问：跳到 95%，延迟 ~0.8s 再到 100% 并淡出，避免闪烁
-// - 非首次访问：立即关闭（视觉上早已被 CSS 隐藏，这里只更新状态避免 DOM 残留）
+// 内容就绪后立即解除首屏等待；加载进度负责反馈，不再增加装饰性等待。
 onNuxtReady(() => {
   if (checkFirstVisit()) {
     setProgress(95)
-    setTimeout(() => {
-      finishProgress()
-      dismiss()
-    }, 800)
+    finishProgress()
   } else {
     resetProgress()
-    dismiss()
   }
+  dismiss()
+  document.documentElement.classList.add('app-client-ready')
+  window.dispatchEvent(new Event('tixxin:ready'))
 })
 </script>
