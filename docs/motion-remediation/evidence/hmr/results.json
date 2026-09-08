@@ -1,0 +1,131 @@
+[
+  {
+    "name": "HMR css",
+    "status": "passed",
+    "detail": {
+      "image": "hmr/css.png",
+      "state": {
+        "url": "http://127.0.0.1:12749/archive",
+        "title": "归档 - TixXin Blog",
+        "cards": 0,
+        "inert": 0,
+        "dialogs": 0,
+        "overflow": "",
+        "focus": null
+      }
+    }
+  },
+  {
+    "name": "HMR component",
+    "status": "passed",
+    "detail": {
+      "image": "hmr/component.png",
+      "state": {
+        "url": "http://127.0.0.1:12749/archive",
+        "title": "归档 - TixXin Blog",
+        "cards": 0,
+        "inert": 0,
+        "dialogs": 0,
+        "overflow": "",
+        "focus": null
+      }
+    }
+  },
+  {
+    "name": "HMR layout",
+    "status": "passed",
+    "detail": {
+      "image": "hmr/layout.png",
+      "state": {
+        "url": "http://127.0.0.1:12749/archive",
+        "title": "归档 - TixXin Blog",
+        "cards": 0,
+        "inert": 0,
+        "dialogs": 0,
+        "overflow": "",
+        "focus": null
+      }
+    }
+  },
+  {
+    "name": "HMR modal-composable",
+    "status": "passed",
+    "detail": {
+      "image": "hmr/modal-composable.png",
+      "state": {
+        "url": "http://127.0.0.1:12749/archive",
+        "title": "归档 - TixXin Blog",
+        "cards": 0,
+        "inert": 0,
+        "dialogs": 0,
+        "overflow": "",
+        "focus": null
+      }
+    }
+  },
+  {
+    "name": "HMR motion-composable",
+    "status": "passed",
+    "detail": {
+      "image": "hmr/motion-composable.png",
+      "state": {
+        "url": "http://127.0.0.1:12749/archive",
+        "title": "归档 - TixXin Blog",
+        "cards": 0,
+        "inert": 0,
+        "dialogs": 0,
+        "overflow": "",
+        "focus": null
+      }
+    }
+  },
+  {
+    "name": "共享主题子组件热更新后新SSR请求也使用新模板",
+    "status": "passed",
+    "detail": {
+      "updated": "hmr/footer-fresh-ssr.png",
+      "errors": [],
+      "state": {
+        "url": "http://127.0.0.1:12749/about",
+        "title": "关于我 - TixXin Blog",
+        "cards": 0,
+        "inert": 0,
+        "dialogs": 0,
+        "overflow": "",
+        "focus": null
+      }
+    }
+  },
+  {
+    "name": "文章请求作用域热更新后可继续导航",
+    "status": "passed",
+    "detail": {
+      "image": "hmr/page-request-scope.png",
+      "state": {
+        "url": "http://127.0.0.1:12749/archive",
+        "title": "归档 - TixXin Blog",
+        "cards": 0,
+        "inert": 0,
+        "dialogs": 0,
+        "overflow": "",
+        "focus": null
+      }
+    }
+  },
+  {
+    "name": "配置重启后重新连接",
+    "status": "passed",
+    "detail": {
+      "image": "hmr/reconnect.png",
+      "state": {
+        "url": "http://127.0.0.1:12749/",
+        "title": "TixXin Blog",
+        "cards": 15,
+        "inert": 0,
+        "dialogs": 0,
+        "overflow": "",
+        "focus": null
+      }
+    }
+  }
+]

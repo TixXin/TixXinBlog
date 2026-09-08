@@ -1,0 +1,3 @@
+
+> server-main@0.0.1 typecheck D:\Projects\TixXinBlog\src\backend\server-main
+> tsc --noEmit

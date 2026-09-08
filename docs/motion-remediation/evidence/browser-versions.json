@@ -1,0 +1,18 @@
+{
+  "platform": "win32",
+  "node": "v24.16.0",
+  "versions": [
+    {
+      "name": "chromium",
+      "version": "153.0.8010.12"
+    },
+    {
+      "name": "firefox",
+      "version": "155.0"
+    },
+    {
+      "name": "webkit",
+      "version": "26.6"
+    }
+  ]
+}

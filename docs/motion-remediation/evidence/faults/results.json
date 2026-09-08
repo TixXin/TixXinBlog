@@ -1,0 +1,86 @@
+[
+  {
+    "name": "非当前主题不进入启动依赖，运行期失败保留当前布局且可导航",
+    "status": "passed",
+    "detail": {
+      "startupBlocked": [],
+      "blocked": [
+        "http://127.0.0.1:12749/_nuxt/@fs/D:/Projects/TixXinBlog/.codex/motion-fixes/frontend-dev/themes/dock/app/components/PostCard.vue",
+        "http://127.0.0.1:12749/_nuxt/@fs/D:/Projects/TixXinBlog/.codex/motion-fixes/frontend-dev/themes/dock/app/components/RootLayout.vue",
+        "http://127.0.0.1:12749/_nuxt/@fs/D:/Projects/TixXinBlog/.codex/motion-fixes/frontend-dev/themes/dock/app/components/StatusFooter.vue",
+        "http://127.0.0.1:12749/_nuxt/@fs/D:/Projects/TixXinBlog/.codex/motion-fixes/frontend-dev/themes/dock/app/components/ThemeAccessory.vue"
+      ],
+      "failed": "faults/optional-failure.png",
+      "recovered": {
+        "url": "http://127.0.0.1:12749/",
+        "title": "TixXin Blog",
+        "cards": 15,
+        "inert": 0,
+        "dialogs": 0,
+        "overflow": "",
+        "focus": null
+      }
+    }
+  },
+  {
+    "name": "当前主题失败保留只读SSR内容，刷新后恢复",
+    "status": "passed",
+    "detail": {
+      "blocked": [
+        "http://127.0.0.1:12749/_nuxt/@fs/D:/Projects/TixXinBlog/.codex/motion-fixes/frontend-dev/themes/nexus/app/components/DailyQuoteCard.vue?vue&type=style&index=0&scoped=404619e4&lang.scss",
+        "http://127.0.0.1:12749/_nuxt/@fs/D:/Projects/TixXinBlog/.codex/motion-fixes/frontend-dev/themes/nexus/app/components/SidebarFooterCard.vue?vue&type=style&index=0&scoped=60f125a8&lang.scss",
+        "http://127.0.0.1:12749/_nuxt/@fs/D:/Projects/TixXinBlog/.codex/motion-fixes/frontend-dev/themes/nexus/app/components/SiteAnnouncementCard.vue?vue&type=style&index=0&scoped=b4f46596&lang.scss",
+        "http://127.0.0.1:12749/_nuxt/@fs/D:/Projects/TixXinBlog/.codex/motion-fixes/frontend-dev/themes/nexus/app/components/OwnerProfileCard.vue?vue&type=style&index=0&scoped=ea707d4d&lang.scss",
+        "http://127.0.0.1:12749/_nuxt/@fs/D:/Projects/TixXinBlog/.codex/motion-fixes/frontend-dev/themes/nexus/app/components/RootLayout.vue?vue&type=style&index=0&scoped=9c06afbf&lang.scss",
+        "http://127.0.0.1:12749/_nuxt/@fs/D:/Projects/TixXinBlog/.codex/motion-fixes/frontend-dev/themes/nexus/app/components/StatusFooter.vue?vue&type=style&index=0&scoped=d6529a1b&lang.scss",
+        "http://127.0.0.1:12749/_nuxt/@fs/D:/Projects/TixXinBlog/.codex/motion-fixes/frontend-dev/themes/nexus/app/components/ThemeAccessory.vue?vue&type=style&index=0&scoped=84df4d3f&lang.scss",
+        "http://127.0.0.1:12749/_nuxt/D:/Projects/TixXinBlog/.codex/motion-fixes/frontend-dev/themes/nexus/app/components/SidebarFooterCard.vue?vue&type=style&index=0&scoped=60f125a8&lang.scss",
+        "http://127.0.0.1:12749/_nuxt/D:/Projects/TixXinBlog/.codex/motion-fixes/frontend-dev/themes/nexus/app/components/SiteAnnouncementCard.vue?vue&type=style&index=0&scoped=b4f46596&lang.scss",
+        "http://127.0.0.1:12749/_nuxt/D:/Projects/TixXinBlog/.codex/motion-fixes/frontend-dev/themes/nexus/app/components/DailyQuoteCard.vue?vue&type=style&index=0&scoped=404619e4&lang.scss",
+        "http://127.0.0.1:12749/_nuxt/D:/Projects/TixXinBlog/.codex/motion-fixes/frontend-dev/themes/nexus/app/components/OwnerProfileCard.vue?vue&type=style&index=0&scoped=ea707d4d&lang.scss",
+        "http://127.0.0.1:12749/_nuxt/D:/Projects/TixXinBlog/.codex/motion-fixes/frontend-dev/themes/nexus/app/components/ThemeAccessory.vue?vue&type=style&index=0&scoped=84df4d3f&lang.scss",
+        "http://127.0.0.1:12749/_nuxt/D:/Projects/TixXinBlog/.codex/motion-fixes/frontend-dev/themes/nexus/app/components/StatusFooter.vue?vue&type=style&index=0&scoped=d6529a1b&lang.scss",
+        "http://127.0.0.1:12749/_nuxt/D:/Projects/TixXinBlog/.codex/motion-fixes/frontend-dev/themes/nexus/app/components/RootLayout.vue?vue&type=style&index=0&scoped=9c06afbf&lang.scss",
+        "http://127.0.0.1:12749/_nuxt/@fs/D:/Projects/TixXinBlog/.codex/motion-fixes/frontend-dev/themes/nexus/app/components/DailyQuoteCard.vue",
+        "http://127.0.0.1:12749/_nuxt/@fs/D:/Projects/TixXinBlog/.codex/motion-fixes/frontend-dev/themes/nexus/app/components/OwnerProfileCard.vue",
+        "http://127.0.0.1:12749/_nuxt/@fs/D:/Projects/TixXinBlog/.codex/motion-fixes/frontend-dev/themes/nexus/app/components/PostCard.vue",
+        "http://127.0.0.1:12749/_nuxt/@fs/D:/Projects/TixXinBlog/.codex/motion-fixes/frontend-dev/themes/nexus/app/components/RootLayout.vue",
+        "http://127.0.0.1:12749/_nuxt/@fs/D:/Projects/TixXinBlog/.codex/motion-fixes/frontend-dev/themes/nexus/app/components/SidebarFooterCard.vue",
+        "http://127.0.0.1:12749/_nuxt/@fs/D:/Projects/TixXinBlog/.codex/motion-fixes/frontend-dev/themes/nexus/app/components/SidebarNav.vue",
+        "http://127.0.0.1:12749/_nuxt/@fs/D:/Projects/TixXinBlog/.codex/motion-fixes/frontend-dev/themes/nexus/app/components/SiteAnnouncementCard.vue",
+        "http://127.0.0.1:12749/_nuxt/@fs/D:/Projects/TixXinBlog/.codex/motion-fixes/frontend-dev/themes/nexus/app/components/StatusFooter.vue",
+        "http://127.0.0.1:12749/_nuxt/@fs/D:/Projects/TixXinBlog/.codex/motion-fixes/frontend-dev/themes/nexus/app/components/ThemeAccessory.vue"
+      ],
+      "failed": "faults/required-failure.png",
+      "recovered": {
+        "url": "http://127.0.0.1:12749/",
+        "title": "TixXin Blog",
+        "cards": 15,
+        "inert": 1,
+        "dialogs": 1,
+        "overflow": "hidden",
+        "focus": "关闭界面设置"
+      }
+    }
+  },
+  {
+    "name": "入口脚本失败时独立恢复提示可用，SSR文章仍可读",
+    "status": "passed",
+    "detail": {
+      "entry": "/_nuxt/Cce57sat.js",
+      "blocked": [
+        "http://127.0.0.1:12748/_nuxt/Cce57sat.js"
+      ],
+      "failed": "faults/entry-failure.png",
+      "recovered": {
+        "url": "http://127.0.0.1:12748/",
+        "title": "TixXin Blog",
+        "cards": 15,
+        "inert": 0,
+        "dialogs": 0,
+        "overflow": "",
+        "focus": null
+      }
+    }
+  }
+]

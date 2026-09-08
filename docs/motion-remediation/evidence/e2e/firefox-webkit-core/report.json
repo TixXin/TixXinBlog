@@ -1,0 +1,3824 @@
+{
+  "config": {
+    "argv": [
+      "c:\\program files\\nodejs\\node.exe",
+      "D:\\Projects\\TixXinBlog\\.codex\\motion-fixes\\frontend\\node_modules\\@playwright\\test\\cli.js",
+      "test",
+      "tests/e2e/motion-remediation.spec.ts",
+      "--config=playwright.motion.config.ts",
+      "--project=firefox",
+      "--project=webkit",
+      "--output",
+      "D:/Projects/TixXinBlog/.codex/motion-fixes/e2e-runs/1788866680659-prod/artifacts",
+      "--reporter=line,json"
+    ],
+    "configFile": "D:\\Projects\\TixXinBlog\\.codex\\motion-fixes\\frontend\\playwright.motion.config.ts",
+    "rootDir": "D:/Projects/TixXinBlog/.codex/motion-fixes/frontend/tests/e2e",
+    "failOnFlakyTests": false,
+    "forbidOnly": false,
+    "fullyParallel": false,
+    "globalSetup": null,
+    "globalTeardown": null,
+    "globalTimeout": 0,
+    "grep": {},
+    "grepInvert": null,
+    "maxFailures": 0,
+    "metadata": {
+      "actualWorkers": 1
+    },
+    "preserveOutput": "always",
+    "projects": [
+      {
+        "outputDir": "D:/Projects/TixXinBlog/.codex/motion-fixes/e2e-runs/1788866680659-prod/artifacts",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {
+          "actualWorkers": 1
+        },
+        "id": "chromium",
+        "name": "chromium",
+        "testDir": "D:/Projects/TixXinBlog/.codex/motion-fixes/frontend/tests/e2e",
+        "testIgnore": [],
+        "testMatch": [
+          "**/*.@(spec|test).?(c|m)[jt]s?(x)"
+        ],
+        "timeout": 60000
+      },
+      {
+        "outputDir": "D:/Projects/TixXinBlog/.codex/motion-fixes/e2e-runs/1788866680659-prod/artifacts",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {
+          "actualWorkers": 1
+        },
+        "id": "firefox",
+        "name": "firefox",
+        "testDir": "D:/Projects/TixXinBlog/.codex/motion-fixes/frontend/tests/e2e",
+        "testIgnore": [],
+        "testMatch": [
+          "**/*.@(spec|test).?(c|m)[jt]s?(x)"
+        ],
+        "timeout": 60000
+      },
+      {
+        "outputDir": "D:/Projects/TixXinBlog/.codex/motion-fixes/e2e-runs/1788866680659-prod/artifacts",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {
+          "actualWorkers": 1
+        },
+        "id": "webkit",
+        "name": "webkit",
+        "testDir": "D:/Projects/TixXinBlog/.codex/motion-fixes/frontend/tests/e2e",
+        "testIgnore": [],
+        "testMatch": [
+          "**/*.@(spec|test).?(c|m)[jt]s?(x)"
+        ],
+        "timeout": 60000
+      }
+    ],
+    "quiet": false,
+    "reporter": [
+      [
+        "line"
+      ],
+      [
+        "json"
+      ]
+    ],
+    "reportSlowTests": {
+      "max": 5,
+      "threshold": 300000
+    },
+    "shard": null,
+    "tags": [],
+    "updateSnapshots": "missing",
+    "updateSourceMethod": "patch",
+    "version": "1.63.0",
+    "workers": 1,
+    "webServer": null
+  },
+  "suites": [
+    {
+      "title": "motion-remediation.spec.ts",
+      "file": "motion-remediation.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [
+        {
+          "title": "首屏内容就绪后，加载层淡出不再拦截操作",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "firefox",
+              "projectName": "firefox",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 1753,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-09-08T11:24:41.486Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "ready-exit",
+                      "contentType": "application/json",
+                      "body": "W3siYXQiOjc1OCwicG9pbnRlciI6Im5vbmUifSx7ImF0Ijo3NjIsInBvaW50ZXIiOiJub25lIn0seyJhdCI6ODMxLCJwb2ludGVyIjoibm9uZSJ9LHsiYXQiOjgzMSwicG9pbnRlciI6Im5vbmUifV0="
+                    }
+                  ]
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "63c3828e7b96b0f3f61e-35f335d2ca36a413c45c",
+          "file": "motion-remediation.spec.ts",
+          "line": 43,
+          "column": 1
+        },
+        {
+          "title": "慢请求 nexus/normal 被导航取消后不会覆盖全宽页面",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "firefox",
+              "projectName": "firefox",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 2353,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-09-08T11:24:43.600Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "cancelled-article-request",
+                      "contentType": "application/json",
+                      "body": "eyJibG9ja2VkIjoyLCJjYW5jZWxsZWQiOlsiTlNfQklORElOR19BQk9SVEVEIl19"
+                    }
+                  ]
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "63c3828e7b96b0f3f61e-fef0088d9b7d35153bb4",
+          "file": "motion-remediation.spec.ts",
+          "line": 69,
+          "column": 5
+        },
+        {
+          "title": "慢请求 nexus/off 被导航取消后不会覆盖全宽页面",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "firefox",
+              "projectName": "firefox",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 3346,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-09-08T11:24:45.964Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "cancelled-article-request",
+                      "contentType": "application/json",
+                      "body": "eyJibG9ja2VkIjoyLCJjYW5jZWxsZWQiOlsiTlNfQklORElOR19BQk9SVEVEIl19"
+                    }
+                  ]
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "63c3828e7b96b0f3f61e-5949fffa7192451f9883",
+          "file": "motion-remediation.spec.ts",
+          "line": 69,
+          "column": 5
+        },
+        {
+          "title": "慢请求 nexus/reduce 被导航取消后不会覆盖全宽页面",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "firefox",
+              "projectName": "firefox",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 2453,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-09-08T11:24:49.318Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "cancelled-article-request",
+                      "contentType": "application/json",
+                      "body": "eyJibG9ja2VkIjoyLCJjYW5jZWxsZWQiOlsiTlNfQklORElOR19BQk9SVEVEIl19"
+                    }
+                  ]
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "63c3828e7b96b0f3f61e-84ba2c07f471efe3311e",
+          "file": "motion-remediation.spec.ts",
+          "line": 69,
+          "column": 5
+        },
+        {
+          "title": "慢请求 aurora/normal 被导航取消后不会覆盖全宽页面",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "firefox",
+              "projectName": "firefox",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 4508,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-09-08T11:24:51.780Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "cancelled-article-request",
+                      "contentType": "application/json",
+                      "body": "eyJibG9ja2VkIjoyLCJjYW5jZWxsZWQiOlsiTlNfQklORElOR19BQk9SVEVEIl19"
+                    }
+                  ]
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "63c3828e7b96b0f3f61e-bb16a274f93511195ecf",
+          "file": "motion-remediation.spec.ts",
+          "line": 69,
+          "column": 5
+        },
+        {
+          "title": "慢请求 aurora/off 被导航取消后不会覆盖全宽页面",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "firefox",
+              "projectName": "firefox",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 4952,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-09-08T11:24:56.296Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "cancelled-article-request",
+                      "contentType": "application/json",
+                      "body": "eyJibG9ja2VkIjoyLCJjYW5jZWxsZWQiOlsiTlNfQklORElOR19BQk9SVEVEIl19"
+                    }
+                  ]
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "63c3828e7b96b0f3f61e-1e631c6c4b0ab781bab4",
+          "file": "motion-remediation.spec.ts",
+          "line": 69,
+          "column": 5
+        },
+        {
+          "title": "慢请求 aurora/reduce 被导航取消后不会覆盖全宽页面",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "firefox",
+              "projectName": "firefox",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 4182,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-09-08T11:25:01.256Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "cancelled-article-request",
+                      "contentType": "application/json",
+                      "body": "eyJibG9ja2VkIjoyLCJjYW5jZWxsZWQiOlsiTlNfQklORElOR19BQk9SVEVEIl19"
+                    }
+                  ]
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "63c3828e7b96b0f3f61e-a1b62f9688e3076e3607",
+          "file": "motion-remediation.spec.ts",
+          "line": 69,
+          "column": 5
+        },
+        {
+          "title": "慢请求 dock/normal 被导航取消后不会覆盖全宽页面",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "firefox",
+              "projectName": "firefox",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 1925,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-09-08T11:25:05.446Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "cancelled-article-request",
+                      "contentType": "application/json",
+                      "body": "eyJibG9ja2VkIjoyLCJjYW5jZWxsZWQiOlsiTlNfQklORElOR19BQk9SVEVEIl19"
+                    }
+                  ]
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "63c3828e7b96b0f3f61e-b4210c15c5d59e37d44d",
+          "file": "motion-remediation.spec.ts",
+          "line": 69,
+          "column": 5
+        },
+        {
+          "title": "慢请求 dock/off 被导航取消后不会覆盖全宽页面",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "firefox",
+              "projectName": "firefox",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 2567,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-09-08T11:25:07.378Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "cancelled-article-request",
+                      "contentType": "application/json",
+                      "body": "eyJibG9ja2VkIjoyLCJjYW5jZWxsZWQiOlsiTlNfQklORElOR19BQk9SVEVEIl19"
+                    }
+                  ]
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "63c3828e7b96b0f3f61e-9a77fdaf69e4f115a3c1",
+          "file": "motion-remediation.spec.ts",
+          "line": 69,
+          "column": 5
+        },
+        {
+          "title": "慢请求 dock/reduce 被导航取消后不会覆盖全宽页面",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "firefox",
+              "projectName": "firefox",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 3033,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-09-08T11:25:09.953Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "cancelled-article-request",
+                      "contentType": "application/json",
+                      "body": "eyJibG9ja2VkIjoyLCJjYW5jZWxsZWQiOlsiTlNfQklORElOR19BQk9SVEVEIl19"
+                    }
+                  ]
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "63c3828e7b96b0f3f61e-042bfee881bfe7edf211",
+          "file": "motion-remediation.spec.ts",
+          "line": 69,
+          "column": 5
+        },
+        {
+          "title": "离开文章时取消related初始化读取并保持目标页面",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "firefox",
+              "projectName": "firefox",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 2262,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-09-08T11:25:12.994Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "cancelled-initial-read",
+                      "contentType": "application/json",
+                      "body": "eyJwYXJ0IjoicmVsYXRlZCIsImJsb2NrZWQiOjEsImNhbmNlbGxlZCI6WyJOU19CSU5ESU5HX0FCT1JURUQiXX0="
+                    }
+                  ]
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "63c3828e7b96b0f3f61e-6645f36ad9a14c2de845",
+          "file": "motion-remediation.spec.ts",
+          "line": 129,
+          "column": 3
+        },
+        {
+          "title": "离开文章时取消navigation初始化读取并保持目标页面",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "firefox",
+              "projectName": "firefox",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 1892,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-09-08T11:25:15.264Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "cancelled-initial-read",
+                      "contentType": "application/json",
+                      "body": "eyJwYXJ0IjoibmF2aWdhdGlvbiIsImJsb2NrZWQiOjEsImNhbmNlbGxlZCI6WyJOU19CSU5ESU5HX0FCT1JURUQiXX0="
+                    }
+                  ]
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "63c3828e7b96b0f3f61e-3051d9fa9ee6fc3bf7a3",
+          "file": "motion-remediation.spec.ts",
+          "line": 129,
+          "column": 3
+        },
+        {
+          "title": "离开文章时取消comments初始化读取并保持目标页面",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "firefox",
+              "projectName": "firefox",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 1951,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-09-08T11:25:17.162Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "cancelled-initial-read",
+                      "contentType": "application/json",
+                      "body": "eyJwYXJ0IjoiY29tbWVudHMiLCJibG9ja2VkIjoxLCJjYW5jZWxsZWQiOlsiTlNfQklORElOR19BQk9SVEVEIl19"
+                    }
+                  ]
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "63c3828e7b96b0f3f61e-4f26f02e9c6a966d353a",
+          "file": "motion-remediation.spec.ts",
+          "line": 129,
+          "column": 3
+        },
+        {
+          "title": "仍在当前文章的真实请求失败继续显示503错误反馈",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "firefox",
+              "projectName": "firefox",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 1167,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-09-08T11:25:19.120Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "63c3828e7b96b0f3f61e-1134e003233e69458c59",
+          "file": "motion-remediation.spec.ts",
+          "line": 167,
+          "column": 1
+        },
+        {
+          "title": "导航 nexus/normal/30ms 最终页面完整",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "firefox",
+              "projectName": "firefox",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 3287,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-09-08T11:25:20.293Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "63c3828e7b96b0f3f61e-3285a8f49e24a5e21af1",
+          "file": "motion-remediation.spec.ts",
+          "line": 185,
+          "column": 7
+        },
+        {
+          "title": "导航 nexus/normal/120ms 最终页面完整",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "firefox",
+              "projectName": "firefox",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 4257,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-09-08T11:25:23.587Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "63c3828e7b96b0f3f61e-603567ce0583005aee0c",
+          "file": "motion-remediation.spec.ts",
+          "line": 185,
+          "column": 7
+        },
+        {
+          "title": "导航 nexus/normal/300ms 最终页面完整",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "firefox",
+              "projectName": "firefox",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 6711,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-09-08T11:25:27.852Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "63c3828e7b96b0f3f61e-2c8b098f4191996ff09e",
+          "file": "motion-remediation.spec.ts",
+          "line": 185,
+          "column": 7
+        },
+        {
+          "title": "导航 nexus/off/30ms 最终页面完整",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "firefox",
+              "projectName": "firefox",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 3568,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-09-08T11:25:34.572Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "63c3828e7b96b0f3f61e-2849503e59e8c79ddd12",
+          "file": "motion-remediation.spec.ts",
+          "line": 185,
+          "column": 7
+        },
+        {
+          "title": "导航 nexus/off/120ms 最终页面完整",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "firefox",
+              "projectName": "firefox",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 4568,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-09-08T11:25:38.147Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "63c3828e7b96b0f3f61e-82287b04cc15cec92ea6",
+          "file": "motion-remediation.spec.ts",
+          "line": 185,
+          "column": 7
+        },
+        {
+          "title": "导航 nexus/off/300ms 最终页面完整",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "firefox",
+              "projectName": "firefox",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 9190,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-09-08T11:25:42.721Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "63c3828e7b96b0f3f61e-6ba3994366a17c3d6f21",
+          "file": "motion-remediation.spec.ts",
+          "line": 185,
+          "column": 7
+        },
+        {
+          "title": "导航 nexus/reduce/30ms 最终页面完整",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "firefox",
+              "projectName": "firefox",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 3481,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-09-08T11:25:51.918Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "63c3828e7b96b0f3f61e-ef7b576fb72f7aac571a",
+          "file": "motion-remediation.spec.ts",
+          "line": 185,
+          "column": 7
+        },
+        {
+          "title": "导航 nexus/reduce/120ms 最终页面完整",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "firefox",
+              "projectName": "firefox",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 4149,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-09-08T11:25:55.408Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "63c3828e7b96b0f3f61e-015297cb779993d8481f",
+          "file": "motion-remediation.spec.ts",
+          "line": 185,
+          "column": 7
+        },
+        {
+          "title": "导航 nexus/reduce/300ms 最终页面完整",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "firefox",
+              "projectName": "firefox",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 6705,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-09-08T11:25:59.564Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "63c3828e7b96b0f3f61e-2eacbcc8e65bc82cb69b",
+          "file": "motion-remediation.spec.ts",
+          "line": 185,
+          "column": 7
+        },
+        {
+          "title": "导航 aurora/normal/30ms 最终页面完整",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "firefox",
+              "projectName": "firefox",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 5536,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-09-08T11:26:06.278Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "63c3828e7b96b0f3f61e-13401ea38fea59ad92ac",
+          "file": "motion-remediation.spec.ts",
+          "line": 185,
+          "column": 7
+        },
+        {
+          "title": "导航 aurora/normal/120ms 最终页面完整",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "firefox",
+              "projectName": "firefox",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 6200,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-09-08T11:26:11.823Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "63c3828e7b96b0f3f61e-4b1f238263910116b1dc",
+          "file": "motion-remediation.spec.ts",
+          "line": 185,
+          "column": 7
+        },
+        {
+          "title": "导航 aurora/normal/300ms 最终页面完整",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "firefox",
+              "projectName": "firefox",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 9168,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-09-08T11:26:18.031Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "63c3828e7b96b0f3f61e-bd46ac8fae386a6d6b45",
+          "file": "motion-remediation.spec.ts",
+          "line": 185,
+          "column": 7
+        },
+        {
+          "title": "导航 aurora/off/30ms 最终页面完整",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "firefox",
+              "projectName": "firefox",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 6541,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-09-08T11:26:27.209Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "63c3828e7b96b0f3f61e-7e321f659673a73b6110",
+          "file": "motion-remediation.spec.ts",
+          "line": 185,
+          "column": 7
+        },
+        {
+          "title": "导航 aurora/off/120ms 最终页面完整",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "firefox",
+              "projectName": "firefox",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 6973,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-09-08T11:26:33.760Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "63c3828e7b96b0f3f61e-40ec3ee66dc4dbffaef3",
+          "file": "motion-remediation.spec.ts",
+          "line": 185,
+          "column": 7
+        },
+        {
+          "title": "导航 aurora/off/300ms 最终页面完整",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "firefox",
+              "projectName": "firefox",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 9566,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-09-08T11:26:40.747Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "63c3828e7b96b0f3f61e-ae616e1cf93f1e4e413a",
+          "file": "motion-remediation.spec.ts",
+          "line": 185,
+          "column": 7
+        },
+        {
+          "title": "导航 aurora/reduce/30ms 最终页面完整",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "firefox",
+              "projectName": "firefox",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 7972,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-09-08T11:26:50.321Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "63c3828e7b96b0f3f61e-76ff01479c0847ca1087",
+          "file": "motion-remediation.spec.ts",
+          "line": 185,
+          "column": 7
+        },
+        {
+          "title": "导航 aurora/reduce/120ms 最终页面完整",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "firefox",
+              "projectName": "firefox",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 6016,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-09-08T11:26:58.302Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "63c3828e7b96b0f3f61e-c03feea9b294db0cac97",
+          "file": "motion-remediation.spec.ts",
+          "line": 185,
+          "column": 7
+        },
+        {
+          "title": "导航 aurora/reduce/300ms 最终页面完整",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "firefox",
+              "projectName": "firefox",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 7890,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-09-08T11:27:04.323Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "63c3828e7b96b0f3f61e-928c1a0a84ff1dfa9e1f",
+          "file": "motion-remediation.spec.ts",
+          "line": 185,
+          "column": 7
+        },
+        {
+          "title": "导航 dock/normal/30ms 最终页面完整",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "firefox",
+              "projectName": "firefox",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 3283,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-09-08T11:27:12.219Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "63c3828e7b96b0f3f61e-efa714ae0e3f57d48bd4",
+          "file": "motion-remediation.spec.ts",
+          "line": 185,
+          "column": 7
+        },
+        {
+          "title": "导航 dock/normal/120ms 最终页面完整",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "firefox",
+              "projectName": "firefox",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 4464,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-09-08T11:27:15.508Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "63c3828e7b96b0f3f61e-dad028601d54e1fc71f9",
+          "file": "motion-remediation.spec.ts",
+          "line": 185,
+          "column": 7
+        },
+        {
+          "title": "导航 dock/normal/300ms 最终页面完整",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "firefox",
+              "projectName": "firefox",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 6852,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-09-08T11:27:19.981Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "63c3828e7b96b0f3f61e-e3f7269cb4cee30ec02d",
+          "file": "motion-remediation.spec.ts",
+          "line": 185,
+          "column": 7
+        },
+        {
+          "title": "导航 dock/off/30ms 最终页面完整",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "firefox",
+              "projectName": "firefox",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 3321,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-09-08T11:27:26.843Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "63c3828e7b96b0f3f61e-5ac80d647f14be6e1fc4",
+          "file": "motion-remediation.spec.ts",
+          "line": 185,
+          "column": 7
+        },
+        {
+          "title": "导航 dock/off/120ms 最终页面完整",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "firefox",
+              "projectName": "firefox",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 5361,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-09-08T11:27:30.175Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "63c3828e7b96b0f3f61e-4b33245f104c743a8296",
+          "file": "motion-remediation.spec.ts",
+          "line": 185,
+          "column": 7
+        },
+        {
+          "title": "导航 dock/off/300ms 最终页面完整",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "firefox",
+              "projectName": "firefox",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 7790,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-09-08T11:27:35.543Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "63c3828e7b96b0f3f61e-0e55d4a0fdea3308b417",
+          "file": "motion-remediation.spec.ts",
+          "line": 185,
+          "column": 7
+        },
+        {
+          "title": "导航 dock/reduce/30ms 最终页面完整",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "firefox",
+              "projectName": "firefox",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 3355,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-09-08T11:27:43.344Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "63c3828e7b96b0f3f61e-32ca60b35b39c38e4c95",
+          "file": "motion-remediation.spec.ts",
+          "line": 185,
+          "column": 7
+        },
+        {
+          "title": "导航 dock/reduce/120ms 最终页面完整",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "firefox",
+              "projectName": "firefox",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 7797,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-09-08T11:27:46.706Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "63c3828e7b96b0f3f61e-a99939b62f3be9eba4cc",
+          "file": "motion-remediation.spec.ts",
+          "line": 185,
+          "column": 7
+        },
+        {
+          "title": "导航 dock/reduce/300ms 最终页面完整",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "firefox",
+              "projectName": "firefox",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 7441,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-09-08T11:27:54.510Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "63c3828e7b96b0f3f61e-2f439f628f6150f9789f",
+          "file": "motion-remediation.spec.ts",
+          "line": 185,
+          "column": 7
+        },
+        {
+          "title": "取消导航恢复 nexus 侧栏",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "firefox",
+              "projectName": "firefox",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 1768,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-09-08T11:28:01.959Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "63c3828e7b96b0f3f61e-95dc9acd7471e9e19966",
+          "file": "motion-remediation.spec.ts",
+          "line": 227,
+          "column": 3
+        },
+        {
+          "title": "取消导航恢复 aurora 侧栏",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "firefox",
+              "projectName": "firefox",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 3144,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-09-08T11:28:03.738Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "63c3828e7b96b0f3f61e-249bf6940ba5e0cfb5a2",
+          "file": "motion-remediation.spec.ts",
+          "line": 227,
+          "column": 3
+        },
+        {
+          "title": "搜索 keyboard 导航不重开并聚焦正文",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "firefox",
+              "projectName": "firefox",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 3890,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-09-08T11:28:06.892Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "63c3828e7b96b0f3f61e-89c4f29e8a34a928dbed",
+          "file": "motion-remediation.spec.ts",
+          "line": 253,
+          "column": 3
+        },
+        {
+          "title": "搜索 mouse 导航不重开并聚焦正文",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "firefox",
+              "projectName": "firefox",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 4124,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-09-08T11:28:10.790Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "63c3828e7b96b0f3f61e-38f3398ef9377740b225",
+          "file": "motion-remediation.spec.ts",
+          "line": 253,
+          "column": 3
+        },
+        {
+          "title": "颜色切换100次不增加媒体查询订阅，模态30次无残留锁",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 120000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "firefox",
+              "projectName": "firefox",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 37170,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-09-08T11:28:14.924Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "media-subscriptions-after-warmup",
+                      "contentType": "application/json",
+                      "body": "eyJjb2xvclN3aXRjaGVzIjoxMDAsIm1vZGFsQ3ljbGVzIjozMCwiYWRkZWQiOjAsInJlbW92ZWQiOjB9"
+                    }
+                  ]
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "63c3828e7b96b0f3f61e-5e2bf326bdcb0cb730ef",
+          "file": "motion-remediation.spec.ts",
+          "line": 277,
+          "column": 1
+        },
+        {
+          "title": "运行中减少动态效果停止运动，关闭后不依赖结束事件",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "firefox",
+              "projectName": "firefox",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 2353,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-09-08T11:28:52.103Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "63c3828e7b96b0f3f61e-52a270e59c1f6c309496",
+          "file": "motion-remediation.spec.ts",
+          "line": 317,
+          "column": 1
+        },
+        {
+          "title": "照片失败保持占位，恢复后可重试且不跳动",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "firefox",
+              "projectName": "firefox",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 2562,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-09-08T11:28:54.463Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "63c3828e7b96b0f3f61e-db49b490682a06b01e6a",
+          "file": "motion-remediation.spec.ts",
+          "line": 354,
+          "column": 1
+        },
+        {
+          "title": "Tooltip支持Esc并保留焦点",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "firefox",
+              "projectName": "firefox",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 2258,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-09-08T11:28:57.034Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "63c3828e7b96b0f3f61e-dc23e7aad823451f0c4e",
+          "file": "motion-remediation.spec.ts",
+          "line": 370,
+          "column": 1
+        },
+        {
+          "title": "长提示 320px 可键盘阅读、悬停保持且不越界",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "firefox",
+              "projectName": "firefox",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 4767,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-09-08T11:28:59.302Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "63c3828e7b96b0f3f61e-3e10e5be321a9ce02cf7",
+          "file": "motion-remediation.spec.ts",
+          "line": 384,
+          "column": 3
+        },
+        {
+          "title": "长提示 1440px 可键盘阅读、悬停保持且不越界",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "firefox",
+              "projectName": "firefox",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 2732,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-09-08T11:29:04.075Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "63c3828e7b96b0f3f61e-a7d5dfc3774089188517",
+          "file": "motion-remediation.spec.ts",
+          "line": 384,
+          "column": 3
+        },
+        {
+          "title": "正常页面仍有受控进入和离场，减少模式保留页面实例",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "firefox",
+              "projectName": "firefox",
+              "results": [
+                {
+                  "workerIndex": 0,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 1826,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-09-08T11:29:06.815Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "63c3828e7b96b0f3f61e-e8f3a7664b225f2b2034",
+          "file": "motion-remediation.spec.ts",
+          "line": 415,
+          "column": 1
+        },
+        {
+          "title": "首屏内容就绪后，加载层淡出不再拦截操作",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "webkit",
+              "projectName": "webkit",
+              "results": [
+                {
+                  "workerIndex": 1,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 12501,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-09-08T11:29:11.461Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "ready-exit",
+                      "contentType": "application/json",
+                      "body": "W3siYXQiOjYxOSwicG9pbnRlciI6Im5vbmUifSx7ImF0Ijo2MTksInBvaW50ZXIiOiJub25lIn0seyJhdCI6NzA5LCJwb2ludGVyIjoibm9uZSJ9LHsiYXQiOjcwOSwicG9pbnRlciI6Im5vbmUifV0="
+                    }
+                  ]
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "63c3828e7b96b0f3f61e-05639c93d4c42abdb3bd",
+          "file": "motion-remediation.spec.ts",
+          "line": 43,
+          "column": 1
+        },
+        {
+          "title": "慢请求 nexus/normal 被导航取消后不会覆盖全宽页面",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "webkit",
+              "projectName": "webkit",
+              "results": [
+                {
+                  "workerIndex": 1,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 3883,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-09-08T11:29:24.026Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "cancelled-article-request",
+                      "contentType": "application/json",
+                      "body": "eyJibG9ja2VkIjoyLCJjYW5jZWxsZWQiOlsiTG9hZCByZXF1ZXN0IGNhbmNlbGxlZCJdfQ=="
+                    }
+                  ]
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "63c3828e7b96b0f3f61e-70d5b08e833b8b88116f",
+          "file": "motion-remediation.spec.ts",
+          "line": 69,
+          "column": 5
+        },
+        {
+          "title": "慢请求 nexus/off 被导航取消后不会覆盖全宽页面",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "webkit",
+              "projectName": "webkit",
+              "results": [
+                {
+                  "workerIndex": 1,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 4006,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-09-08T11:29:27.920Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "cancelled-article-request",
+                      "contentType": "application/json",
+                      "body": "eyJibG9ja2VkIjoyLCJjYW5jZWxsZWQiOlsiTG9hZCByZXF1ZXN0IGNhbmNlbGxlZCJdfQ=="
+                    }
+                  ]
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "63c3828e7b96b0f3f61e-8dbeb167ab1f9122c0fd",
+          "file": "motion-remediation.spec.ts",
+          "line": 69,
+          "column": 5
+        },
+        {
+          "title": "慢请求 nexus/reduce 被导航取消后不会覆盖全宽页面",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "webkit",
+              "projectName": "webkit",
+              "results": [
+                {
+                  "workerIndex": 1,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 2156,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-09-08T11:29:31.936Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "cancelled-article-request",
+                      "contentType": "application/json",
+                      "body": "eyJibG9ja2VkIjoyLCJjYW5jZWxsZWQiOlsiTG9hZCByZXF1ZXN0IGNhbmNlbGxlZCJdfQ=="
+                    }
+                  ]
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "63c3828e7b96b0f3f61e-efc94aa1e1bf4e206731",
+          "file": "motion-remediation.spec.ts",
+          "line": 69,
+          "column": 5
+        },
+        {
+          "title": "慢请求 aurora/normal 被导航取消后不会覆盖全宽页面",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "webkit",
+              "projectName": "webkit",
+              "results": [
+                {
+                  "workerIndex": 1,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 4994,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-09-08T11:29:34.099Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "cancelled-article-request",
+                      "contentType": "application/json",
+                      "body": "eyJibG9ja2VkIjoyLCJjYW5jZWxsZWQiOlsiTG9hZCByZXF1ZXN0IGNhbmNlbGxlZCJdfQ=="
+                    }
+                  ]
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "63c3828e7b96b0f3f61e-22812f321c617415973f",
+          "file": "motion-remediation.spec.ts",
+          "line": 69,
+          "column": 5
+        },
+        {
+          "title": "慢请求 aurora/off 被导航取消后不会覆盖全宽页面",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "webkit",
+              "projectName": "webkit",
+              "results": [
+                {
+                  "workerIndex": 1,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 6256,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-09-08T11:29:39.101Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "cancelled-article-request",
+                      "contentType": "application/json",
+                      "body": "eyJibG9ja2VkIjoyLCJjYW5jZWxsZWQiOlsiTG9hZCByZXF1ZXN0IGNhbmNlbGxlZCJdfQ=="
+                    }
+                  ]
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "63c3828e7b96b0f3f61e-74fac04cb2a5d6cd9445",
+          "file": "motion-remediation.spec.ts",
+          "line": 69,
+          "column": 5
+        },
+        {
+          "title": "慢请求 aurora/reduce 被导航取消后不会覆盖全宽页面",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "webkit",
+              "projectName": "webkit",
+              "results": [
+                {
+                  "workerIndex": 1,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 4279,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-09-08T11:29:45.365Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "cancelled-article-request",
+                      "contentType": "application/json",
+                      "body": "eyJibG9ja2VkIjoyLCJjYW5jZWxsZWQiOlsiTG9hZCByZXF1ZXN0IGNhbmNlbGxlZCJdfQ=="
+                    }
+                  ]
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "63c3828e7b96b0f3f61e-bb892470f5f08bd0e3da",
+          "file": "motion-remediation.spec.ts",
+          "line": 69,
+          "column": 5
+        },
+        {
+          "title": "慢请求 dock/normal 被导航取消后不会覆盖全宽页面",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "webkit",
+              "projectName": "webkit",
+              "results": [
+                {
+                  "workerIndex": 1,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 3186,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-09-08T11:29:49.651Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "cancelled-article-request",
+                      "contentType": "application/json",
+                      "body": "eyJibG9ja2VkIjoyLCJjYW5jZWxsZWQiOlsiTG9hZCByZXF1ZXN0IGNhbmNlbGxlZCJdfQ=="
+                    }
+                  ]
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "63c3828e7b96b0f3f61e-59f823b5dd76f7ba233f",
+          "file": "motion-remediation.spec.ts",
+          "line": 69,
+          "column": 5
+        },
+        {
+          "title": "慢请求 dock/off 被导航取消后不会覆盖全宽页面",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "webkit",
+              "projectName": "webkit",
+              "results": [
+                {
+                  "workerIndex": 1,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 4775,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-09-08T11:29:52.846Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "cancelled-article-request",
+                      "contentType": "application/json",
+                      "body": "eyJibG9ja2VkIjoyLCJjYW5jZWxsZWQiOlsiTG9hZCByZXF1ZXN0IGNhbmNlbGxlZCJdfQ=="
+                    }
+                  ]
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "63c3828e7b96b0f3f61e-5213447feb408390b51a",
+          "file": "motion-remediation.spec.ts",
+          "line": 69,
+          "column": 5
+        },
+        {
+          "title": "慢请求 dock/reduce 被导航取消后不会覆盖全宽页面",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "webkit",
+              "projectName": "webkit",
+              "results": [
+                {
+                  "workerIndex": 1,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 2525,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-09-08T11:29:57.632Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "cancelled-article-request",
+                      "contentType": "application/json",
+                      "body": "eyJibG9ja2VkIjoyLCJjYW5jZWxsZWQiOlsiTG9hZCByZXF1ZXN0IGNhbmNlbGxlZCJdfQ=="
+                    }
+                  ]
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "63c3828e7b96b0f3f61e-599af2cd678b7c78f8fb",
+          "file": "motion-remediation.spec.ts",
+          "line": 69,
+          "column": 5
+        },
+        {
+          "title": "离开文章时取消related初始化读取并保持目标页面",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "webkit",
+              "projectName": "webkit",
+              "results": [
+                {
+                  "workerIndex": 1,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 2277,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-09-08T11:30:00.165Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "cancelled-initial-read",
+                      "contentType": "application/json",
+                      "body": "eyJwYXJ0IjoicmVsYXRlZCIsImJsb2NrZWQiOjEsImNhbmNlbGxlZCI6WyJMb2FkIHJlcXVlc3QgY2FuY2VsbGVkIl19"
+                    }
+                  ]
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "63c3828e7b96b0f3f61e-1377a83ee8ffce82329f",
+          "file": "motion-remediation.spec.ts",
+          "line": 129,
+          "column": 3
+        },
+        {
+          "title": "离开文章时取消navigation初始化读取并保持目标页面",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "webkit",
+              "projectName": "webkit",
+              "results": [
+                {
+                  "workerIndex": 1,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 2343,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-09-08T11:30:02.450Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "cancelled-initial-read",
+                      "contentType": "application/json",
+                      "body": "eyJwYXJ0IjoibmF2aWdhdGlvbiIsImJsb2NrZWQiOjEsImNhbmNlbGxlZCI6WyJMb2FkIHJlcXVlc3QgY2FuY2VsbGVkIl19"
+                    }
+                  ]
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "63c3828e7b96b0f3f61e-e20b30accc7456d495d8",
+          "file": "motion-remediation.spec.ts",
+          "line": 129,
+          "column": 3
+        },
+        {
+          "title": "离开文章时取消comments初始化读取并保持目标页面",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "webkit",
+              "projectName": "webkit",
+              "results": [
+                {
+                  "workerIndex": 1,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 2293,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-09-08T11:30:04.801Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "cancelled-initial-read",
+                      "contentType": "application/json",
+                      "body": "eyJwYXJ0IjoiY29tbWVudHMiLCJibG9ja2VkIjoxLCJjYW5jZWxsZWQiOlsiTG9hZCByZXF1ZXN0IGNhbmNlbGxlZCJdfQ=="
+                    }
+                  ]
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "63c3828e7b96b0f3f61e-53667ef53bc16a30ae5c",
+          "file": "motion-remediation.spec.ts",
+          "line": 129,
+          "column": 3
+        },
+        {
+          "title": "仍在当前文章的真实请求失败继续显示503错误反馈",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "webkit",
+              "projectName": "webkit",
+              "results": [
+                {
+                  "workerIndex": 1,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 1508,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-09-08T11:30:07.103Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "63c3828e7b96b0f3f61e-df31abdbbbaf9db59458",
+          "file": "motion-remediation.spec.ts",
+          "line": 167,
+          "column": 1
+        },
+        {
+          "title": "导航 nexus/normal/30ms 最终页面完整",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "webkit",
+              "projectName": "webkit",
+              "results": [
+                {
+                  "workerIndex": 1,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 3273,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-09-08T11:30:08.617Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "63c3828e7b96b0f3f61e-78881daf199c97613736",
+          "file": "motion-remediation.spec.ts",
+          "line": 185,
+          "column": 7
+        },
+        {
+          "title": "导航 nexus/normal/120ms 最终页面完整",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "webkit",
+              "projectName": "webkit",
+              "results": [
+                {
+                  "workerIndex": 1,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 4219,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-09-08T11:30:11.898Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "63c3828e7b96b0f3f61e-7dd34f2204983c921b3e",
+          "file": "motion-remediation.spec.ts",
+          "line": 185,
+          "column": 7
+        },
+        {
+          "title": "导航 nexus/normal/300ms 最终页面完整",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "webkit",
+              "projectName": "webkit",
+              "results": [
+                {
+                  "workerIndex": 1,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 6557,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-09-08T11:30:16.129Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "63c3828e7b96b0f3f61e-98e7827baaf85bdc077c",
+          "file": "motion-remediation.spec.ts",
+          "line": 185,
+          "column": 7
+        },
+        {
+          "title": "导航 nexus/off/30ms 最终页面完整",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "webkit",
+              "projectName": "webkit",
+              "results": [
+                {
+                  "workerIndex": 1,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 4362,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-09-08T11:30:22.699Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "63c3828e7b96b0f3f61e-f2862982d6263303c88e",
+          "file": "motion-remediation.spec.ts",
+          "line": 185,
+          "column": 7
+        },
+        {
+          "title": "导航 nexus/off/120ms 最终页面完整",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "webkit",
+              "projectName": "webkit",
+              "results": [
+                {
+                  "workerIndex": 1,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 5760,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-09-08T11:30:27.070Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "63c3828e7b96b0f3f61e-d75b7efecb49e79867d1",
+          "file": "motion-remediation.spec.ts",
+          "line": 185,
+          "column": 7
+        },
+        {
+          "title": "导航 nexus/off/300ms 最终页面完整",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "webkit",
+              "projectName": "webkit",
+              "results": [
+                {
+                  "workerIndex": 1,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 9150,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-09-08T11:30:32.840Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "63c3828e7b96b0f3f61e-255bbb52519f78a4152b",
+          "file": "motion-remediation.spec.ts",
+          "line": 185,
+          "column": 7
+        },
+        {
+          "title": "导航 nexus/reduce/30ms 最终页面完整",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "webkit",
+              "projectName": "webkit",
+              "results": [
+                {
+                  "workerIndex": 1,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 3132,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-09-08T11:30:41.998Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "63c3828e7b96b0f3f61e-0fbd04c8fac3949dcb13",
+          "file": "motion-remediation.spec.ts",
+          "line": 185,
+          "column": 7
+        },
+        {
+          "title": "导航 nexus/reduce/120ms 最终页面完整",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "webkit",
+              "projectName": "webkit",
+              "results": [
+                {
+                  "workerIndex": 1,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 3908,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-09-08T11:30:45.139Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "63c3828e7b96b0f3f61e-92f8eabcbec97022ad76",
+          "file": "motion-remediation.spec.ts",
+          "line": 185,
+          "column": 7
+        },
+        {
+          "title": "导航 nexus/reduce/300ms 最终页面完整",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "webkit",
+              "projectName": "webkit",
+              "results": [
+                {
+                  "workerIndex": 1,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 6413,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-09-08T11:30:49.058Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "63c3828e7b96b0f3f61e-ce836ed0042ab4307281",
+          "file": "motion-remediation.spec.ts",
+          "line": 185,
+          "column": 7
+        },
+        {
+          "title": "导航 aurora/normal/30ms 最终页面完整",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "webkit",
+              "projectName": "webkit",
+              "results": [
+                {
+                  "workerIndex": 1,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 5340,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-09-08T11:30:55.480Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "63c3828e7b96b0f3f61e-ffd274bab6868fbf7f59",
+          "file": "motion-remediation.spec.ts",
+          "line": 185,
+          "column": 7
+        },
+        {
+          "title": "导航 aurora/normal/120ms 最终页面完整",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "webkit",
+              "projectName": "webkit",
+              "results": [
+                {
+                  "workerIndex": 1,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 6033,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-09-08T11:31:00.827Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "63c3828e7b96b0f3f61e-36cd07e62fb94af59652",
+          "file": "motion-remediation.spec.ts",
+          "line": 185,
+          "column": 7
+        },
+        {
+          "title": "导航 aurora/normal/300ms 最终页面完整",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "webkit",
+              "projectName": "webkit",
+              "results": [
+                {
+                  "workerIndex": 1,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 8851,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-09-08T11:31:06.868Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "63c3828e7b96b0f3f61e-5eca26a0591653029e3d",
+          "file": "motion-remediation.spec.ts",
+          "line": 185,
+          "column": 7
+        },
+        {
+          "title": "导航 aurora/off/30ms 最终页面完整",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "webkit",
+              "projectName": "webkit",
+              "results": [
+                {
+                  "workerIndex": 1,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 6365,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-09-08T11:31:15.728Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "63c3828e7b96b0f3f61e-8daac81905137bce0127",
+          "file": "motion-remediation.spec.ts",
+          "line": 185,
+          "column": 7
+        },
+        {
+          "title": "导航 aurora/off/120ms 最终页面完整",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "webkit",
+              "projectName": "webkit",
+              "results": [
+                {
+                  "workerIndex": 1,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 7096,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-09-08T11:31:22.101Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "63c3828e7b96b0f3f61e-c97436193dd9c4a0e39d",
+          "file": "motion-remediation.spec.ts",
+          "line": 185,
+          "column": 7
+        },
+        {
+          "title": "导航 aurora/off/300ms 最终页面完整",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "webkit",
+              "projectName": "webkit",
+              "results": [
+                {
+                  "workerIndex": 1,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 10126,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-09-08T11:31:29.204Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "63c3828e7b96b0f3f61e-e0699f8da4d7159ab630",
+          "file": "motion-remediation.spec.ts",
+          "line": 185,
+          "column": 7
+        },
+        {
+          "title": "导航 aurora/reduce/30ms 最终页面完整",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "webkit",
+              "projectName": "webkit",
+              "results": [
+                {
+                  "workerIndex": 1,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 4770,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-09-08T11:31:39.337Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "63c3828e7b96b0f3f61e-2a3a0773d606a35dd357",
+          "file": "motion-remediation.spec.ts",
+          "line": 185,
+          "column": 7
+        },
+        {
+          "title": "导航 aurora/reduce/120ms 最终页面完整",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "webkit",
+              "projectName": "webkit",
+              "results": [
+                {
+                  "workerIndex": 1,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 5661,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-09-08T11:31:44.114Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "63c3828e7b96b0f3f61e-a5e63ee19a3df76761c9",
+          "file": "motion-remediation.spec.ts",
+          "line": 185,
+          "column": 7
+        },
+        {
+          "title": "导航 aurora/reduce/300ms 最终页面完整",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "webkit",
+              "projectName": "webkit",
+              "results": [
+                {
+                  "workerIndex": 1,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 8371,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-09-08T11:31:49.782Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "63c3828e7b96b0f3f61e-4c44b24f9e6312c14c8a",
+          "file": "motion-remediation.spec.ts",
+          "line": 185,
+          "column": 7
+        },
+        {
+          "title": "导航 dock/normal/30ms 最终页面完整",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "webkit",
+              "projectName": "webkit",
+              "results": [
+                {
+                  "workerIndex": 1,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 3076,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-09-08T11:31:58.159Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "63c3828e7b96b0f3f61e-8a757d2dd342812df464",
+          "file": "motion-remediation.spec.ts",
+          "line": 185,
+          "column": 7
+        },
+        {
+          "title": "导航 dock/normal/120ms 最终页面完整",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "webkit",
+              "projectName": "webkit",
+              "results": [
+                {
+                  "workerIndex": 1,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 3907,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-09-08T11:32:01.245Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "63c3828e7b96b0f3f61e-7900e2df05401e5f3461",
+          "file": "motion-remediation.spec.ts",
+          "line": 185,
+          "column": 7
+        },
+        {
+          "title": "导航 dock/normal/300ms 最终页面完整",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "webkit",
+              "projectName": "webkit",
+              "results": [
+                {
+                  "workerIndex": 1,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 53144,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-09-08T11:32:05.163Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "63c3828e7b96b0f3f61e-bff3e49985f86399d6d8",
+          "file": "motion-remediation.spec.ts",
+          "line": 185,
+          "column": 7
+        },
+        {
+          "title": "导航 dock/off/30ms 最终页面完整",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "webkit",
+              "projectName": "webkit",
+              "results": [
+                {
+                  "workerIndex": 1,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 3497,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-09-08T11:32:58.314Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "63c3828e7b96b0f3f61e-d927f85beda66a6f8cf0",
+          "file": "motion-remediation.spec.ts",
+          "line": 185,
+          "column": 7
+        },
+        {
+          "title": "导航 dock/off/120ms 最终页面完整",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "webkit",
+              "projectName": "webkit",
+              "results": [
+                {
+                  "workerIndex": 1,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 15875,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-09-08T11:33:01.819Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "63c3828e7b96b0f3f61e-81cf0987670de6315e3d",
+          "file": "motion-remediation.spec.ts",
+          "line": 185,
+          "column": 7
+        },
+        {
+          "title": "导航 dock/off/300ms 最终页面完整",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "webkit",
+              "projectName": "webkit",
+              "results": [
+                {
+                  "workerIndex": 1,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 7175,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-09-08T11:33:17.700Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "63c3828e7b96b0f3f61e-9f5a0a77f4a6978a4086",
+          "file": "motion-remediation.spec.ts",
+          "line": 185,
+          "column": 7
+        },
+        {
+          "title": "导航 dock/reduce/30ms 最终页面完整",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "webkit",
+              "projectName": "webkit",
+              "results": [
+                {
+                  "workerIndex": 1,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 2674,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-09-08T11:33:24.883Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "63c3828e7b96b0f3f61e-afc00abd17f126b828bb",
+          "file": "motion-remediation.spec.ts",
+          "line": 185,
+          "column": 7
+        },
+        {
+          "title": "导航 dock/reduce/120ms 最终页面完整",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "webkit",
+              "projectName": "webkit",
+              "results": [
+                {
+                  "workerIndex": 1,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 3204,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-09-08T11:33:27.564Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "63c3828e7b96b0f3f61e-0ee17e4ee8640572e721",
+          "file": "motion-remediation.spec.ts",
+          "line": 185,
+          "column": 7
+        },
+        {
+          "title": "导航 dock/reduce/300ms 最终页面完整",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "webkit",
+              "projectName": "webkit",
+              "results": [
+                {
+                  "workerIndex": 1,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 5859,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-09-08T11:33:30.774Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "63c3828e7b96b0f3f61e-b15353ebb6632925a56b",
+          "file": "motion-remediation.spec.ts",
+          "line": 185,
+          "column": 7
+        },
+        {
+          "title": "取消导航恢复 nexus 侧栏",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "webkit",
+              "projectName": "webkit",
+              "results": [
+                {
+                  "workerIndex": 1,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 1255,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-09-08T11:33:36.639Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "63c3828e7b96b0f3f61e-830dfbef4cf2bd86a264",
+          "file": "motion-remediation.spec.ts",
+          "line": 227,
+          "column": 3
+        },
+        {
+          "title": "取消导航恢复 aurora 侧栏",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "webkit",
+              "projectName": "webkit",
+              "results": [
+                {
+                  "workerIndex": 1,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 3353,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-09-08T11:33:37.900Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "63c3828e7b96b0f3f61e-add6dafaf34b839a5396",
+          "file": "motion-remediation.spec.ts",
+          "line": 227,
+          "column": 3
+        },
+        {
+          "title": "搜索 keyboard 导航不重开并聚焦正文",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "webkit",
+              "projectName": "webkit",
+              "results": [
+                {
+                  "workerIndex": 1,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 3090,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-09-08T11:33:41.260Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "63c3828e7b96b0f3f61e-2b3952251770dca0a31e",
+          "file": "motion-remediation.spec.ts",
+          "line": 253,
+          "column": 3
+        },
+        {
+          "title": "搜索 mouse 导航不重开并聚焦正文",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "webkit",
+              "projectName": "webkit",
+              "results": [
+                {
+                  "workerIndex": 1,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 3291,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-09-08T11:33:44.357Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "63c3828e7b96b0f3f61e-25ca9a6d6f7ef2b18bdb",
+          "file": "motion-remediation.spec.ts",
+          "line": 253,
+          "column": 3
+        },
+        {
+          "title": "颜色切换100次不增加媒体查询订阅，模态30次无残留锁",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 120000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "webkit",
+              "projectName": "webkit",
+              "results": [
+                {
+                  "workerIndex": 1,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 88981,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-09-08T11:33:47.655Z",
+                  "annotations": [],
+                  "attachments": [
+                    {
+                      "name": "media-subscriptions-after-warmup",
+                      "contentType": "application/json",
+                      "body": "eyJjb2xvclN3aXRjaGVzIjoxMDAsIm1vZGFsQ3ljbGVzIjozMCwiYWRkZWQiOjAsInJlbW92ZWQiOjB9"
+                    }
+                  ]
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "63c3828e7b96b0f3f61e-9d73d1adc6a91dd1c2a3",
+          "file": "motion-remediation.spec.ts",
+          "line": 277,
+          "column": 1
+        },
+        {
+          "title": "运行中减少动态效果停止运动，关闭后不依赖结束事件",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "webkit",
+              "projectName": "webkit",
+              "results": [
+                {
+                  "workerIndex": 1,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 2000,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-09-08T11:35:16.645Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "63c3828e7b96b0f3f61e-7d1632e08ff3f3671e13",
+          "file": "motion-remediation.spec.ts",
+          "line": 317,
+          "column": 1
+        },
+        {
+          "title": "照片失败保持占位，恢复后可重试且不跳动",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "webkit",
+              "projectName": "webkit",
+              "results": [
+                {
+                  "workerIndex": 1,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 2864,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-09-08T11:35:18.652Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "63c3828e7b96b0f3f61e-f9dbc499d460d8195d68",
+          "file": "motion-remediation.spec.ts",
+          "line": 354,
+          "column": 1
+        },
+        {
+          "title": "Tooltip支持Esc并保留焦点",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "webkit",
+              "projectName": "webkit",
+              "results": [
+                {
+                  "workerIndex": 1,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 2027,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-09-08T11:35:21.523Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "63c3828e7b96b0f3f61e-dd9e5f663ab5fb2a39a1",
+          "file": "motion-remediation.spec.ts",
+          "line": 370,
+          "column": 1
+        },
+        {
+          "title": "长提示 320px 可键盘阅读、悬停保持且不越界",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "webkit",
+              "projectName": "webkit",
+              "results": [
+                {
+                  "workerIndex": 1,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 2249,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-09-08T11:35:23.559Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "63c3828e7b96b0f3f61e-7e005f27f7cab9de4f23",
+          "file": "motion-remediation.spec.ts",
+          "line": 384,
+          "column": 3
+        },
+        {
+          "title": "长提示 1440px 可键盘阅读、悬停保持且不越界",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "webkit",
+              "projectName": "webkit",
+              "results": [
+                {
+                  "workerIndex": 1,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 2728,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-09-08T11:35:25.818Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "63c3828e7b96b0f3f61e-c086b6e119fc7fd0a8f5",
+          "file": "motion-remediation.spec.ts",
+          "line": 384,
+          "column": 3
+        },
+        {
+          "title": "正常页面仍有受控进入和离场，减少模式保留页面实例",
+          "ok": true,
+          "tags": [],
+          "tests": [
+            {
+              "timeout": 60000,
+              "annotations": [],
+              "expectedStatus": "passed",
+              "projectId": "webkit",
+              "projectName": "webkit",
+              "results": [
+                {
+                  "workerIndex": 1,
+                  "parallelIndex": 0,
+                  "status": "passed",
+                  "duration": 1819,
+                  "errors": [],
+                  "stdout": [],
+                  "stderr": [],
+                  "retry": 0,
+                  "startTime": "2026-09-08T11:35:28.554Z",
+                  "annotations": [],
+                  "attachments": []
+                }
+              ],
+              "status": "expected"
+            }
+          ],
+          "id": "63c3828e7b96b0f3f61e-b916d678cdaa80901b94",
+          "file": "motion-remediation.spec.ts",
+          "line": 415,
+          "column": 1
+        }
+      ]
+    }
+  ],
+  "errors": [],
+  "stats": {
+    "startTime": "2026-09-08T11:24:41.104Z",
+    "duration": 649978.7390000001,
+    "expected": 104,
+    "skipped": 0,
+    "unexpected": 0,
+    "flaky": 0
+  }
+}
