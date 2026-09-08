@@ -65,13 +65,13 @@ export const COLOR_MODE_TRANSITION_OPTIONS: AppearanceOption<ColorModeTransition
   {
     value: 'fade',
     label: '平滑渐变',
-    description: '全局色彩同步 0.3s 渐变',
+    description: '平滑切换全局配色',
     icon: 'lucide:sparkles',
   },
   {
     value: 'circle',
     label: '圆形展开',
-    description: '从按钮位置以圆形展开（仅 Chromium）',
+    description: '从切换按钮位置展开圆形过渡',
     icon: 'lucide:circle',
   },
   {

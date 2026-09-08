@@ -1,176 +1,83 @@
 <!--
   @file AuthLoginForm.vue
-  @description 登录表单：邮箱密码 + 社交登录（GitHub / Google）
-  @author TixXin
-  @since 2026-04-10
+  @description 真实博主登录表单，认证成功后才更新界面状态
 -->
-
 <template>
   <form class="auth-login" @submit.prevent="onSubmit">
-    <!-- 邮箱 -->
+    <p class="auth-login__hint">博主管理登录。游客发表评论无需账号。</p>
     <div class="auth-field">
-      <label class="auth-field__label" for="login-email">邮箱</label>
-      <div class="auth-field__input-wrap">
-        <Icon name="lucide:mail" size="16" class="auth-field__icon" />
-        <input
-          id="login-email"
-          v-model="form.email"
-          type="email"
-          class="input-field auth-field__input"
-          placeholder="your@email.com"
-          autocomplete="email"
-        >
-      </div>
+      <label class="auth-field__label" for="login-username">用户名</label>
+      <input
+        id="login-username"
+        v-model.trim="username"
+        class="input-field auth-field__input"
+        autocomplete="username"
+        maxlength="64"
+        required
+        :disabled="submitting || !hydrated"
+      />
     </div>
-
-    <!-- 密码 -->
     <div class="auth-field">
       <label class="auth-field__label" for="login-password">密码</label>
-      <div class="auth-field__input-wrap">
-        <Icon name="lucide:lock" size="16" class="auth-field__icon" />
-        <input
-          id="login-password"
-          v-model="form.password"
-          :type="showPassword ? 'text' : 'password'"
-          class="input-field auth-field__input"
-          placeholder="输入密码"
-          autocomplete="current-password"
-        >
-        <button
-          type="button"
-          class="auth-field__toggle"
-          :aria-label="showPassword ? '隐藏密码' : '显示密码'"
-          @click="showPassword = !showPassword"
-        >
-          <Icon :name="showPassword ? 'lucide:eye-off' : 'lucide:eye'" size="16" />
-        </button>
-      </div>
+      <input
+        id="login-password"
+        v-model="password"
+        type="password"
+        class="input-field auth-field__input"
+        autocomplete="current-password"
+        maxlength="128"
+        required
+        :disabled="submitting || !hydrated"
+      />
     </div>
-
-    <!-- 忘记密码 -->
-    <div class="auth-login__forgot">
-      <button type="button" class="auth-link" @click="emit('switchView', 'forgot')">
-        忘记密码？
-      </button>
-    </div>
-
-    <!-- 登录按钮 -->
-    <button type="submit" class="btn-primary auth-submit" :disabled="submitting">
-      <Icon v-if="submitting" name="lucide:loader-2" size="16" class="auth-submit__spinner" />
-      <span>{{ submitting ? '登录中...' : '登录' }}</span>
+    <p v-if="errorMessage" role="alert">{{ errorMessage }}</p>
+    <button type="submit" class="btn-primary auth-submit" :disabled="submitting || !hydrated">
+      {{ submitting ? '登录中…' : '登录' }}
     </button>
-
-    <!-- 分隔线 -->
-    <div class="auth-divider">
-      <span class="auth-divider__line" />
-      <span class="auth-divider__text">或</span>
-      <span class="auth-divider__line" />
-    </div>
-
-    <!-- 社交登录 -->
-    <div class="auth-social">
-      <button type="button" class="auth-social__btn" @click="onSocialLogin('github')">
-        <Icon name="lucide:github" size="18" />
-        <span>GitHub</span>
-      </button>
-      <button type="button" class="auth-social__btn" @click="onSocialLogin('google')">
-        <Icon name="lucide:chrome" size="18" />
-        <span>Google</span>
-      </button>
-    </div>
-
-    <!-- 切换到注册 -->
-    <p class="auth-switch">
-      没有账号？
-      <button type="button" class="auth-link" @click="emit('switchView', 'register')">
-        立即注册
-      </button>
-    </p>
+    <button type="button" class="auth-link" @click="emit('switchView', 'forgot')">登录帮助</button>
   </form>
 </template>
-
 <script setup lang="ts">
-import type { AuthView, LoginForm } from '~/features/auth/types'
-import { findMockAccount } from '~/features/auth/mock'
-
-const emit = defineEmits<{
-  switchView: [view: AuthView]
-}>()
-
-const { success, warning, error } = useToast()
-const { setUser } = useCurrentUser()
-const { close: closeLogin } = useLoginDrawer()
-const { pendingCredentials, consume: consumeDevFill } = useDevAuthFill()
-
-const form = reactive<LoginForm>({
-  email: '',
-  password: '',
-})
-
-const showPassword = ref(false)
+import type { AuthView } from '~/features/auth/types'
+const emit = defineEmits<{ switchView: [view: AuthView]; authenticated: [] }>()
+const { login } = useCurrentUser()
+const { close } = useLoginDrawer()
+const { success } = useToast()
+const username = ref('')
+const password = ref('')
 const submitting = ref(false)
-
-// Dev 快捷填入：监听 dev 组件投递的凭据，自动写入表单并提交（仅 dev；生产构建中调用方被 DevOnly 移除）
-watch(pendingCredentials, async (creds) => {
-  if (!creds) return
-  form.email = creds.email
-  form.password = creds.password
-  consumeDevFill()
-  await nextTick()
-  if (!submitting.value) onSubmit()
+const hydrated = ref(false)
+onMounted(() => {
+  hydrated.value = true
 })
-
-function validate(): boolean {
-  if (!form.email.trim()) {
-    warning('请输入邮箱地址')
-    return false
-  }
-  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) {
-    warning('请输入有效的邮箱地址')
-    return false
-  }
-  if (!form.password) {
-    warning('请输入密码')
-    return false
-  }
-  return true
-}
-
+const errorMessage = ref('')
 async function onSubmit() {
-  if (!validate()) return
+  if (submitting.value || !hydrated.value) return
   submitting.value = true
-
-  // Mock 登录延迟
-  await new Promise((resolve) => setTimeout(resolve, 1200))
-  submitting.value = false
-
-  // mock：按测试账号清单做凭据匹配，命中即登录，未命中提示重试
-  const matched = findMockAccount(form.email, form.password)
-  if (!matched) {
-    error('邮箱或密码不正确')
-    return
+  errorMessage.value = ''
+  try {
+    await login(username.value, password.value)
+    password.value = ''
+    success('登录成功')
+    close()
+    emit('authenticated')
+  } catch (cause) {
+    const message = (cause as { data?: { message?: unknown } }).data?.message
+    errorMessage.value = typeof message === 'string' ? message : '暂时无法登录，请稍后重试'
+  } finally {
+    submitting.value = false
   }
-  setUser(matched)
-  success(`登录成功，欢迎回来，${matched.nickname}！`)
-  closeLogin()
-}
-
-function onSocialLogin(provider: 'github' | 'google') {
-  const name = provider === 'github' ? 'GitHub' : 'Google'
-  success(`正在跳转到 ${name} 授权...`)
 }
 </script>
-
-<style lang="scss" scoped>
+<style scoped lang="scss">
 .auth-login {
   display: flex;
   flex-direction: column;
   gap: 1rem;
 }
-
-.auth-login__forgot {
-  display: flex;
-  justify-content: flex-end;
-  margin-top: -0.5rem;
+.auth-login__hint {
+  font-size: 0.8125rem;
+  color: var(--text-muted);
+  margin: 0;
 }
 </style>

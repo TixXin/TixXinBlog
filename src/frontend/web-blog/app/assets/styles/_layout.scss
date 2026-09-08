@@ -160,6 +160,9 @@
   flex-direction: column;
   overflow: hidden;
   transition: $transition-colors;
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
   --scrollbar-track-inset: #{$radius-card};
 
   .theme-nexus & {
@@ -233,7 +236,9 @@
 
 /* ==== 页头右侧操作区（全站统一） ==== */
 .page-actions {
+  --search-box-width: clamp(8rem, 14vw, 16rem);
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: 0.75rem;
   width: 100%;
@@ -248,6 +253,49 @@
   // 紧凑档：缩小间距避免挤压
   @media (min-width: $breakpoint-sm) and (max-width: #{$breakpoint-xl - 1px}) {
     gap: 0.5rem;
+  }
+}
+
+// 根据主列可用宽度逐级展示侧栏；隐藏后由页面紧凑入口提供同一功能。
+@media (max-width: 1439px) {
+  .theme-nexus .page-columns {
+    display: flex;
+  }
+  .theme-nexus .aside-right {
+    display: none;
+  }
+}
+@media (max-width: #{$breakpoint-lg - 1px}) {
+  .theme-nexus {
+    padding-bottom: calc(5rem + env(safe-area-inset-bottom));
+    .blog-grid {
+      grid-template-columns: minmax(0, 1fr);
+      padding-bottom: 0;
+    }
+    .aside-left,
+    .footer-row {
+      display: none;
+    }
+  }
+}
+@media (min-width: 1440px) {
+  .theme-nexus .page-context-entry {
+    display: none;
+  }
+}
+@media (min-width: $breakpoint-xl) {
+  .theme-aurora .page-context-entry {
+    display: none;
+  }
+}
+@media (max-width: #{$breakpoint-sm - 1px}) {
+  .main-content__header {
+    padding: 1rem 1rem 0;
+  }
+  .page-actions .search-box {
+    flex: 1 1 8rem;
+    min-width: 8rem;
+    max-width: none;
   }
 }
 
@@ -333,6 +381,9 @@
     border: 1px solid var(--border);
     box-shadow: var(--shadow-card);
     transition: $transition-colors;
+    @media (prefers-reduced-motion: reduce) {
+      transition: none;
+    }
   }
 }
 
@@ -347,7 +398,7 @@
   z-index: 50;
   padding-bottom: env(safe-area-inset-bottom);
 
-  @media (min-width: $breakpoint-md) {
+  @media (min-width: $breakpoint-lg) {
     display: none;
   }
 
@@ -365,6 +416,8 @@
 }
 
 .mobile-nav__item {
+  min-width: 44px;
+  min-height: 44px;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -372,6 +425,9 @@
   padding: 0.5rem;
   color: var(--text-soft);
   transition: $transition-fast;
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
   font-size: 0.625rem;
   font-weight: 500;
 

@@ -6,6 +6,7 @@
  */
 
 import type { AuthView } from '~/features/auth/types'
+import { useMediaQuery } from '@vueuse/core'
 
 export function useLoginDrawer() {
   const isOpen = useState('login-drawer-open', () => false)
@@ -14,7 +15,9 @@ export function useLoginDrawer() {
    * true → 使用全屏居中 AuthModal（适合从页面中部触发，如 flash/tabs guest banner）
    * false → 使用底部栏内嵌面板（适合从底部栏按钮触发，nexus 原生体验）
    */
-  const preferModal = useState('login-drawer-prefer-modal', () => false)
+  const modalRequested = useState('login-drawer-prefer-modal', () => false)
+  const compact = useMediaQuery('(max-width: 1023px)')
+  const preferModal = computed(() => modalRequested.value || compact.value)
 
   const validViews: AuthView[] = ['login', 'register', 'forgot']
 
@@ -22,7 +25,7 @@ export function useLoginDrawer() {
     // 防御：@click="open" 会把 MouseEvent 作为首参传入，
     // 导致 currentView 被污染，渲染落入 v-else 的找回密码分支
     currentView.value = validViews.includes(view) ? view : 'login'
-    preferModal.value = modal
+    modalRequested.value = modal
     isOpen.value = true
   }
 

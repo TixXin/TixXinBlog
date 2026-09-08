@@ -13,14 +13,11 @@
     <h2 class="state-block__title">{{ title }}</h2>
     <p v-if="description" class="state-block__desc">{{ description }}</p>
     <span v-if="statusCode" class="state-block__code">{{ statusCode }}</span>
-    <button
-      v-if="actionLabel"
-      class="state-block__action"
-      @click="$emit('action')"
-    >
+    <button v-if="actionLabel" type="button" class="state-block__action" @click="$emit('action')">
       <Icon name="lucide:arrow-left" size="14" />
       {{ actionLabel }}
     </button>
+    <slot />
   </div>
 </template>
 
@@ -102,7 +99,10 @@ defineEmits<{
   border: 1px solid var(--border);
   border-radius: $radius-md;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: $transition-fast;
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
 
   &:hover {
     background: var(--accent-soft);

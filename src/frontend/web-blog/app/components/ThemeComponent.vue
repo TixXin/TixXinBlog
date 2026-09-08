@@ -12,6 +12,7 @@ import {
   defineAsyncComponent,
   defineComponent,
   h,
+  onBeforeUnmount,
   onServerPrefetch,
   shallowRef,
   useAttrs,
@@ -20,24 +21,22 @@ import {
 } from 'vue'
 import { themeComponentLoaders, themeComponentRegistry } from '#build/theme-engine.registry.mjs'
 import { useThemeEngine } from '@tixxin/nuxt-theme-engine/runtime/composables/useThemeEngine'
-import { themeComponentCache } from '~/utils/themeComponentCache'
+import { getThemeComponentCache } from '~/utils/themeComponentCache'
+import ThemeLoadError from '~/components/common/ThemeLoadError.vue'
+import { useState } from 'nuxt/app'
 
-/** 已加载的组件缓存（运行时，与预加载缓存合并使用） */
-const loadedComponentCache = new Map()
-
-/** 正在加载的 Promise 缓存，防止重复请求 */
-const loadingTaskCache = new Map()
-
-/** defineAsyncComponent 实例缓存 */
-const asyncComponentCache = new Map()
+/** 加载句柄跟随组件缓存所有者：浏览器共享，SSR不跨请求保留旧模块。 */
+const runtimeCaches = new WeakMap()
+function getRuntimeCaches(cache) {
+  if (!runtimeCaches.has(cache)) runtimeCaches.set(cache, { loading: new Map(), wrappers: new Map() })
+  return runtimeCaches.get(cache)
+}
 
 function resolveThemeComponent(themeName, componentName, firstThemeName) {
   const entry =
-    themeComponentRegistry[themeName]?.[componentName] ??
-    themeComponentRegistry[firstThemeName]?.[componentName]
+    themeComponentRegistry[themeName]?.[componentName] ?? themeComponentRegistry[firstThemeName]?.[componentName]
   const loader =
-    themeComponentLoaders[themeName]?.[componentName] ??
-    themeComponentLoaders[firstThemeName]?.[componentName]
+    themeComponentLoaders[themeName]?.[componentName] ?? themeComponentLoaders[firstThemeName]?.[componentName]
 
   if (!entry || !loader) return null
 
@@ -47,16 +46,13 @@ function resolveThemeComponent(themeName, componentName, firstThemeName) {
   }
 }
 
-async function loadThemeComponent(cacheKey, loader) {
+async function loadThemeComponent(cacheKey, loader, themeComponentCache) {
+  const loadingTaskCache = getRuntimeCaches(themeComponentCache).loading
   // 优先检查预加载缓存
   const preloaded = themeComponentCache.get(cacheKey)
   if (preloaded) {
-    loadedComponentCache.set(cacheKey, preloaded)
     return preloaded
   }
-
-  const cached = loadedComponentCache.get(cacheKey)
-  if (cached) return cached
 
   const loading = loadingTaskCache.get(cacheKey)
   if (loading) return loading
@@ -65,7 +61,7 @@ async function loadThemeComponent(cacheKey, loader) {
     .then((module) => {
       const component = module.default ?? null
       if (component) {
-        loadedComponentCache.set(cacheKey, component)
+        themeComponentCache.set(cacheKey, component)
       }
       return component
     })
@@ -77,14 +73,22 @@ async function loadThemeComponent(cacheKey, loader) {
   return task
 }
 
-function getAsyncComponent(cacheKey, loader) {
+function getAsyncComponent(cacheKey, loader, themeComponentCache) {
+  const asyncComponentCache = getRuntimeCaches(themeComponentCache).wrappers
   if (!asyncComponentCache.has(cacheKey)) {
     asyncComponentCache.set(
       cacheKey,
-      defineAsyncComponent(async () => {
-        const component = await loadThemeComponent(cacheKey, loader)
-        if (!component) throw new Error(`Theme component "${cacheKey}" failed to load.`)
-        return component
+      defineAsyncComponent({
+        errorComponent: ThemeLoadError,
+        timeout: 8000,
+        loader: async () => {
+          try {
+            const component = await loadThemeComponent(cacheKey, loader, themeComponentCache)
+            return component ?? ThemeLoadError
+          } catch {
+            return ThemeLoadError
+          }
+        },
       }),
     )
   }
@@ -101,19 +105,23 @@ export default defineComponent({
     },
   },
   setup(props) {
+    const themeComponentCache = getThemeComponentCache()
     const attrs = useAttrs()
     const slots = useSlots()
     const { currentTheme } = useThemeEngine()
     const firstThemeName = Object.keys(themeComponentRegistry)[0] ?? ''
+    const startupContent = useState('theme-startup-content', () => null)
+    const startupError = useState('theme-startup-error', () => null)
 
     const displayedComponent = shallowRef(null)
     const displayedCacheKey = shallowRef(null)
 
-    const targetComponent = computed(() =>
-      resolveThemeComponent(currentTheme.value, props.name, firstThemeName),
-    )
+    const targetComponent = computed(() => resolveThemeComponent(currentTheme.value, props.name, firstThemeName))
 
     let activeRequestId = 0
+    onBeforeUnmount(() => {
+      activeRequestId++
+    })
 
     async function syncDisplayedComponent() {
       const requestId = ++activeRequestId
@@ -132,41 +140,62 @@ export default defineComponent({
       // 同步路径：从预加载缓存或运行时缓存直接获取（水合关键路径）
       const preloaded = themeComponentCache.get(resolved.cacheKey)
       if (preloaded) {
+        if (props.name === 'RootLayout') startupContent.value = null
         displayedComponent.value = preloaded
         displayedCacheKey.value = resolved.cacheKey
         return
       }
 
-      const cached = loadedComponentCache.get(resolved.cacheKey)
-      if (cached) {
-        displayedComponent.value = cached
-        displayedCacheKey.value = resolved.cacheKey
+      // 初次加载已明确失败时直接挂载错误态，避免水合中的异步包装器再次替换同一SSR节点。
+      if (import.meta.client && startupError.value) {
+        displayedComponent.value = ThemeLoadError
+        displayedCacheKey.value = null
         return
       }
 
       // 异步路径：首次加载或运行时主题切换
       const hasDisplayed = Boolean(displayedComponent.value)
       if (!hasDisplayed) {
-        displayedComponent.value = getAsyncComponent(resolved.cacheKey, resolved.loader)
+        displayedComponent.value = getAsyncComponent(resolved.cacheKey, resolved.loader, themeComponentCache)
         displayedCacheKey.value = resolved.cacheKey
       }
 
-      const loaded = await loadThemeComponent(resolved.cacheKey, resolved.loader)
-      if (!loaded || requestId !== activeRequestId) return
-
-      displayedComponent.value = loaded
-      displayedCacheKey.value = resolved.cacheKey
+      try {
+        const loaded = await loadThemeComponent(resolved.cacheKey, resolved.loader, themeComponentCache)
+        if (!loaded || requestId !== activeRequestId) return
+        displayedComponent.value = loaded
+        displayedCacheKey.value = resolved.cacheKey
+      } catch {
+        if (requestId !== activeRequestId) return
+        displayedComponent.value = ThemeLoadError
+        displayedCacheKey.value = null
+      }
     }
 
-    watch([() => currentTheme.value, () => props.name], () => {
-      void syncDisplayedComponent()
-    }, { immediate: true })
+    watch(
+      [() => currentTheme.value, () => props.name],
+      () => {
+        void syncDisplayedComponent()
+      },
+      { immediate: true },
+    )
 
     onServerPrefetch(syncDisplayedComponent)
 
     return () => {
       if (!displayedComponent.value) return null
-      return h(displayedComponent.value, attrs, slots)
+      if (displayedComponent.value === ThemeLoadError && props.name === 'ThemeAccessory' && startupContent.value)
+        return null
+      return h(
+        displayedComponent.value,
+        {
+          ...attrs,
+          ...(displayedComponent.value === ThemeLoadError && props.name === 'RootLayout'
+            ? { snapshot: startupContent.value }
+            : {}),
+        },
+        slots,
+      )
     }
   },
 })

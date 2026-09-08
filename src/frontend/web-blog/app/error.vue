@@ -6,32 +6,40 @@
 -->
 
 <template>
-  <div class="error-page">
+  <main class="error-page">
     <div class="error-page__card">
       <CommonStateBlock
         :icon="errorConfig.icon"
         :title="errorConfig.title"
         :description="errorConfig.description"
-        :status-code="error?.statusCode"
-        action-label="返回首页"
-        @action="handleError"
-      />
+        :status-code="errorStatus"
+        :action-label="errorStatus >= 500 ? '重试当前页面' : '返回首页'"
+        @action="handlePrimary"
+      >
+        <button v-if="errorStatus >= 500" type="button" class="error-page__secondary" @click="handleHome">
+          返回首页
+        </button>
+      </CommonStateBlock>
     </div>
-  </div>
+  </main>
 </template>
 
 <script setup lang="ts">
 import type { NuxtError } from '#app'
 
 const props = defineProps<{ error: NuxtError }>()
+const errorStatus = computed(() => props.error.statusCode ?? 500)
+useHead({ htmlAttrs: { lang: 'zh-CN' } })
+useSeoMeta({ robots: 'noindex, follow' })
 
 const errorConfig = computed(() => {
   const code = props.error?.statusCode ?? 500
+  const data = props.error.data as { title?: string } | undefined
 
   if (code === 404) {
     return {
       icon: 'lucide:search-x',
-      title: '页面未找到',
+      title: data?.title || '页面未找到',
       description: '你访问的页面不存在或已被移除，请检查链接是否正确',
     }
   }
@@ -39,7 +47,7 @@ const errorConfig = computed(() => {
   if (code >= 500) {
     return {
       icon: 'lucide:server-crash',
-      title: '服务器错误',
+      title: data?.title || '服务器错误',
       description: '服务器遇到了问题，请稍后再试',
     }
   }
@@ -51,10 +59,19 @@ const errorConfig = computed(() => {
   }
 })
 
-const handleError = () => clearError({ redirect: '/' })
+const handleHome = () => clearError({ redirect: '/' })
+function handlePrimary() {
+  if (errorStatus.value >= 500) window.location.reload()
+  else void handleHome()
+}
 </script>
 
 <style lang="scss" scoped>
+.error-page__secondary {
+  min-height: 44px;
+  color: var(--accent-text);
+  padding: 0.5rem 0.75rem;
+}
 .error-page {
   display: flex;
   align-items: center;

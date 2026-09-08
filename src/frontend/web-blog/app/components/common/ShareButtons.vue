@@ -27,6 +27,13 @@ const props = defineProps<{
 }>()
 
 const copied = ref(false)
+const { warning: notifyCopyFailure } = useToast()
+let copyTimer: ReturnType<typeof setTimeout> | undefined
+let alive = true
+onBeforeUnmount(() => {
+  alive = false
+  if (copyTimer) clearTimeout(copyTimer)
+})
 
 const shareUrl = computed(() => {
   if (props.url) return props.url
@@ -37,10 +44,12 @@ const shareUrl = computed(() => {
 async function copyLink() {
   try {
     await navigator.clipboard.writeText(shareUrl.value)
+    if (!alive) return
     copied.value = true
-    setTimeout(() => (copied.value = false), 2000)
+    if (copyTimer) clearTimeout(copyTimer)
+    copyTimer = setTimeout(() => (copied.value = false), 2000)
   } catch {
-    /* clipboard not available */
+    if (alive) notifyCopyFailure('复制失败，请手动复制浏览器地址。')
   }
 }
 
@@ -79,7 +88,10 @@ function shareWeibo() {
   background: transparent;
   color: var(--text-soft);
   cursor: pointer;
-  transition: all 0.2s;
+  transition: $transition-fast;
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
 
   &:hover {
     color: var(--text-main);

@@ -7,7 +7,7 @@
 
 <template>
   <div class="reading-progress" aria-hidden="true">
-    <div class="reading-progress__bar" :style="{ width: `${clamped}%` }" />
+    <div class="reading-progress__bar" :style="{ transform: `scaleX(${clamped / 100})` }" />
   </div>
 </template>
 
@@ -35,7 +35,12 @@ const clamped = computed(() => Math.min(100, Math.max(0, props.progress)))
 
 .reading-progress__bar {
   height: 100%;
+  width: 100%;
+  transform-origin: left;
   background: var(--accent);
-  transition: width 0.15s ease-out;
+  transition: transform 0.08s linear;
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
 }
 </style>

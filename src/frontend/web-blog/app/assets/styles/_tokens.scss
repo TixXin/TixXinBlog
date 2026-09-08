@@ -7,12 +7,15 @@
 
 $font-family-base:
   'Inter',
+  system-ui,
   -apple-system,
   BlinkMacSystemFont,
   'Segoe UI',
   Roboto,
   'Helvetica Neue',
   Arial,
+  'PingFang SC',
+  'Microsoft YaHei',
   sans-serif;
 
 $breakpoint-xs: 480px;
@@ -38,5 +41,18 @@ $transition-colors:
   color 0.3s ease,
   background-color 0.3s ease,
   border-color 0.3s ease;
-$transition-fast: all 0.2s ease;
-$transition-normal: all 0.3s ease;
+// 高频状态只过渡必要属性，避免尺寸、字体和背景位置被all隐式加入绘制。
+$transition-fast:
+  color var(--motion-fast, 0.16s) ease,
+  background-color var(--motion-fast, 0.16s) ease,
+  border-color var(--motion-fast, 0.16s) ease,
+  box-shadow var(--motion-fast, 0.16s) ease,
+  opacity var(--motion-fast, 0.16s) ease,
+  transform var(--motion-fast, 0.16s) ease;
+$transition-normal:
+  color var(--motion-normal, 0.2s) ease,
+  background-color var(--motion-normal, 0.2s) ease,
+  border-color var(--motion-normal, 0.2s) ease,
+  box-shadow var(--motion-normal, 0.2s) ease,
+  opacity var(--motion-normal, 0.2s) ease,
+  transform var(--motion-normal, 0.2s) ease;

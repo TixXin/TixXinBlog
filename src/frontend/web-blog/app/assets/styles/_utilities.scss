@@ -10,8 +10,8 @@
 @mixin line-clamp($lines: 2) {
   display: -webkit-box;
   -webkit-box-orient: vertical;
-  line-clamp: $lines;           /* 标准属性 */
-  -webkit-line-clamp: $lines;   /* 兼容属性 */
+  line-clamp: $lines; /* 标准属性 */
+  -webkit-line-clamp: $lines; /* 兼容属性 */
   overflow: hidden;
   text-overflow: ellipsis;
 }
@@ -47,18 +47,37 @@
   justify-content: center;
 }
 
-.text-xs { font-size: 0.75rem; }
-.text-sm { font-size: 0.875rem; }
-.text-lg { font-size: 1.125rem; }
-.text-xl { font-size: 1.25rem; }
-.font-medium { font-weight: 500; }
-.font-semibold { font-weight: 600; }
-.font-bold { font-weight: 700; }
+.text-xs {
+  font-size: 0.75rem;
+}
+.text-sm {
+  font-size: 0.875rem;
+}
+.text-lg {
+  font-size: 1.125rem;
+}
+.text-xl {
+  font-size: 1.25rem;
+}
+.font-medium {
+  font-weight: 500;
+}
+.font-semibold {
+  font-weight: 600;
+}
+.font-bold {
+  font-weight: 700;
+}
 
 // 主内容卡片内部过渡动画：旧内容向下滑出，新内容从上方滑入
 .content-vertical-enter-active,
 .content-vertical-leave-active {
-  transition: opacity 0.15s ease, transform 0.15s ease;
+  transition:
+    opacity 0.15s ease,
+    transform 0.15s ease;
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
 }
 
 .content-vertical-enter-from {
@@ -74,7 +93,12 @@
 // 主内容卡片内部过渡动画：轻柔滑动
 .content-soft-enter-active,
 .content-soft-leave-active {
-  transition: opacity 0.16s ease, transform 0.16s ease;
+  transition:
+    opacity 0.16s ease,
+    transform 0.16s ease;
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
 }
 
 .content-soft-enter-from {
@@ -91,6 +115,9 @@
 .content-fade-enter-active,
 .content-fade-leave-active {
   transition: opacity 0.14s ease;
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
 }
 
 .content-fade-enter-from,
@@ -118,10 +145,16 @@
   left: 0;
   right: 0;
   animation: sidebar-leave 0.15s ease forwards;
+  @media (prefers-reduced-motion: reduce) {
+    animation: none;
+  }
   pointer-events: none;
 
   &.sidebar-leave-slide-right {
     animation: sidebar-leave-slide-right 0.2s ease forwards;
+    @media (prefers-reduced-motion: reduce) {
+      animation: none;
+    }
   }
 }
 
@@ -150,14 +183,23 @@
 // 右侧栏动画预设：通过容器类名控制 Teleport 子元素的入场动画
 .anim-sidebar-up > *:not(.sidebar-leaving-clone) {
   animation: sidebar-slide-in-right 0.35s ease-out both;
+  @media (prefers-reduced-motion: reduce) {
+    animation: none;
+  }
 }
 
 .anim-sidebar-fade > *:not(.sidebar-leaving-clone) {
   animation: sidebar-fade-in 0.25s ease-out both;
+  @media (prefers-reduced-motion: reduce) {
+    animation: none;
+  }
 }
 
 .anim-sidebar-scale > *:not(.sidebar-leaving-clone) {
   animation: sidebar-scale-in 0.3s ease-out both;
+  @media (prefers-reduced-motion: reduce) {
+    animation: none;
+  }
 }
 
 .anim-sidebar-none > *:not(.sidebar-leaving-clone) {
@@ -201,7 +243,12 @@
 // 右侧栏 Vue Transition 过渡类：右侧退出和进入
 .sidebar-slide-enter-active,
 .sidebar-slide-leave-active {
-  transition: opacity 0.25s ease, transform 0.25s ease;
+  transition:
+    opacity 0.25s ease,
+    transform 0.25s ease;
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
 }
 
 .sidebar-slide-enter-from {
@@ -217,7 +264,12 @@
 // 右侧栏 Vue Transition 过渡类：缩放淡入
 .sidebar-scale-enter-active,
 .sidebar-scale-leave-active {
-  transition: opacity 0.25s ease, transform 0.25s ease;
+  transition:
+    opacity 0.25s ease,
+    transform 0.25s ease;
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
 }
 
 .sidebar-scale-enter-from {
@@ -234,6 +286,9 @@
 .sidebar-fade-enter-active,
 .sidebar-fade-leave-active {
   transition: opacity 0.2s ease;
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
 }
 
 .sidebar-fade-enter-from,
@@ -249,6 +304,10 @@
 
 // 通用旋转动画（加载指示器等）
 @keyframes spin {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
 }
