@@ -57,9 +57,13 @@ for (const theme of ['nexus', 'aurora', 'dock']) {
       await expect(page.locator('html')).toHaveClass(/app-client-ready/)
       await expect(page.locator('.loading-screen:visible')).toHaveCount(0)
       if (kind === 'detail') {
-        const href = await page.locator('.moment-card a[href^="/moments/"]').first().getAttribute('href')
+        const href = await page
+          .getByRole('link', { name: /^查看动态详情/ })
+          .first()
+          .getAttribute('href')
         expect(href).toBeTruthy()
         await page.goto(href!)
+        await expect(page.locator('.moment-detail-page')).toBeVisible()
       } else if (kind === 'topic') await page.goto('/moments/topic/技术分享')
       const entry = page.getByRole('button', { name: kind === 'list' ? '筛选动态' : '动态信息', exact: true })
       for (const width of [320, 390, 1023, 1024, 1279, 1280, 1439, 1440, 1920]) {
