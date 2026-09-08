@@ -92,6 +92,19 @@ const weekdays = ['一', '二', '三', '四', '五', '六', '日']
 const viewYear = ref(new Date().getFullYear())
 const viewMonth = ref(new Date().getMonth()) // 0-indexed
 
+// 侧栏与抽屉切换会重新挂载日历；从共享筛选恢复月份，避免选中日期离开可见月份。
+watch(
+  () => props.selectedDate,
+  (value) => {
+    if (!value) return
+    const date = new Date(`${value}T12:00:00`)
+    if (Number.isNaN(date.getTime())) return
+    viewYear.value = date.getFullYear()
+    viewMonth.value = date.getMonth()
+  },
+  { immediate: true },
+)
+
 const monthLabel = computed(() => `${viewYear.value}年${viewMonth.value + 1}月`)
 
 const isCurrentMonth = computed(() => {

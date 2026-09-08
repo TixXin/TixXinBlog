@@ -3,6 +3,29 @@ import { test, expect } from '@playwright/test'
 import { prepareMotionCapture, captureMotion } from './motionScreenshot'
 
 test.beforeEach(({ page, browserName }) => prepareMotionCapture(page, browserName))
+
+test('侧栏与抽屉共享日期话题筛选，重新挂载恢复已选月份', async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 1000 })
+  await page.goto('/moments?date=2026-04-08&topic=技术分享')
+  await expect(page.locator('html')).toHaveClass(/app-client-ready/)
+  await expect(page.locator('.moment-calendar-card:visible .moment-calendar-card__month')).toHaveText('2026年4月')
+  await expect(page.locator('.moment-calendar-card:visible .is-selected')).toHaveText('8')
+  await page.setViewportSize({ width: 390, height: 1000 })
+  await page.getByRole('button', { name: '筛选动态', exact: true }).click()
+  const dialog = page.getByRole('dialog', { name: '筛选动态' })
+  await expect(dialog.locator('.moment-calendar-card__month')).toHaveText('2026年4月')
+  await expect(dialog.locator('.is-selected')).toHaveText('8')
+  await dialog.locator('.is-selected').click()
+  await expect.poll(() => new URL(page.url()).searchParams.get('date')).toBeNull()
+  expect(new URL(page.url()).searchParams.get('topic')).toBe('技术分享')
+  await dialog.locator('.moment-topic-card__item').filter({ hasText: '#生活日常' }).click()
+  await expect.poll(() => new URL(page.url()).searchParams.get('topic')).toBe('生活日常')
+  await page.keyboard.press('Escape')
+  await expect(dialog).toHaveCount(0)
+  await page.setViewportSize({ width: 1440, height: 1000 })
+  await expect(page.locator('.moment-calendar-card:visible .is-selected')).toHaveCount(0)
+  await expect(page.locator('.moment-topic-card__item[aria-pressed="true"]:visible')).toContainText('生活日常')
+})
 for (const theme of ['nexus', 'aurora', 'dock']) {
   for (const kind of ['list', 'detail', 'topic']) {
     test(`朋友圈资料 ${theme}/${kind} 固定侧栏与抽屉不重复`, async ({ page, context, baseURL }, testInfo) => {
