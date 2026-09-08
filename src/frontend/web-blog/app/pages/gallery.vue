@@ -6,35 +6,41 @@
 -->
 
 <template>
-  <div class="main-inner">
-    <CommonPageHeader title="画廊" subtitle="演示照片集，可按标题、描述和地点搜索" icon="lucide:image">
-      <template #action>
-        <CommonSearchBox v-model="keyword" placeholder="搜索照片、地点..." label="搜索画廊照片" />
-      </template>
-    </CommonPageHeader>
-    <CommonCustomScrollbar class="gallery-body" viewport-class="gallery-viewport" :show-back-to-top="false" primary>
-      <GalleryFilter v-model="activeFilter" :categories="categories" />
-      <p class="gallery-result" role="status">显示 {{ filteredPhotos.length }} / {{ photos.length }} 张演示照片</p>
-      <CommonStateBlock
-        v-if="filteredPhotos.length === 0"
-        icon="lucide:search-x"
-        title="没有找到照片"
-        description="试试其他标题、描述或地点，也可以清除当前筛选。"
-        action-label="清除筛选"
-        @action="clearFilters"
-      />
-      <GalleryGrid v-else :photos="filteredPhotos" @select="openLightBox" />
-    </CommonCustomScrollbar>
-    <GalleryLightBox :photo="selectedPhoto" :visible="lightBoxVisible" @close="closeLightBox" />
-    <ClientOnly>
-      <Teleport to="#right-sidebar-target">
-        <SidebarRightSidebar>
-          <GalleryStats :stats="galleryStats" />
-          <GalleryGearCard :gear="gearList" />
-        </SidebarRightSidebar>
-      </Teleport>
-    </ClientOnly>
-  </div>
+  <CommonPageFrame class="main-inner" header-key="gallery">
+    <template #header>
+      <CommonPageHeader title="画廊" subtitle="演示照片集，可按标题、描述和地点搜索" icon="lucide:image">
+        <template #action>
+          <CommonSearchBox v-model="keyword" placeholder="搜索照片、地点..." label="搜索画廊照片" />
+        </template>
+      </CommonPageHeader>
+    </template>
+    <template #default>
+      <CommonCustomScrollbar class="gallery-body" viewport-class="gallery-viewport" :show-back-to-top="false" primary>
+        <GalleryFilter v-model="activeFilter" :categories="categories" />
+        <p class="gallery-result" role="status">显示 {{ filteredPhotos.length }} / {{ photos.length }} 张演示照片</p>
+        <CommonStateBlock
+          v-if="filteredPhotos.length === 0"
+          icon="lucide:search-x"
+          title="没有找到照片"
+          description="试试其他标题、描述或地点，也可以清除当前筛选。"
+          action-label="清除筛选"
+          @action="clearFilters"
+        />
+        <GalleryGrid v-else :photos="filteredPhotos" @select="openLightBox" />
+      </CommonCustomScrollbar>
+    </template>
+    <template #overlays>
+      <GalleryLightBox :photo="selectedPhoto" :visible="lightBoxVisible" @close="closeLightBox" />
+      <ClientOnly>
+        <Teleport to="#right-sidebar-target">
+          <SidebarRightSidebar>
+            <GalleryStats :stats="galleryStats" />
+            <GalleryGearCard :gear="gearList" />
+          </SidebarRightSidebar>
+        </Teleport>
+      </ClientOnly>
+    </template>
+  </CommonPageFrame>
 </template>
 
 <script setup lang="ts">

@@ -5,83 +5,89 @@
   @since 2025-03-17
 -->
 <template>
-  <div class="main-inner articles-page">
-    <div class="main-content__header">
-      <BlogPostTabs :tabs="tabs" model-value="all" />
-      <div class="page-actions">
-        <CommonSearchBox placeholder="搜索站内文章、标签..." readonly @click="openSearch" />
-        <CommonContextDrawer class="page-context-entry" label="筛选文章" icon="lucide:list-filter">
-          <SidebarTagCloudCard :tags="tags" :active-tag="selectedTag" @select="onTagSelect" />
-          <SidebarCategoryCard
-            :categories="categories"
-            :active-category="selectedCategory"
-            @select="onCategorySelect"
-          />
-          <button v-if="activeFilterLabel" type="button" class="filter-badge" @click="clearFilters">
-            清除筛选：{{ activeFilterLabel }}
-          </button>
-        </CommonContextDrawer>
-        <div class="display-mode-toggle" role="group" aria-label="文章列表显示模式">
-          <CommonTooltip content="连续加载">
-            <button
-              type="button"
-              aria-label="连续加载"
-              :aria-pressed="listDisplayMode === 'waterfall'"
-              class="display-mode-toggle__btn"
-              :class="{ 'display-mode-toggle__btn--active': listDisplayMode === 'waterfall' }"
-              @click="listDisplayMode = 'waterfall'"
-            >
-              <Icon name="lucide:scroll-text" size="15" />
+  <CommonPageFrame class="main-inner articles-page" header-key="feed">
+    <template #header>
+      <div class="main-content__header">
+        <BlogPostTabs :tabs="tabs" model-value="all" />
+        <div class="page-actions">
+          <CommonSearchBox placeholder="搜索站内文章、标签..." readonly @click="openSearch" />
+          <CommonContextDrawer class="page-context-entry" label="筛选文章" icon="lucide:list-filter">
+            <SidebarTagCloudCard :tags="tags" :active-tag="selectedTag" @select="onTagSelect" />
+            <SidebarCategoryCard
+              :categories="categories"
+              :active-category="selectedCategory"
+              @select="onCategorySelect"
+            />
+            <button v-if="activeFilterLabel" type="button" class="filter-badge" @click="clearFilters">
+              清除筛选：{{ activeFilterLabel }}
             </button>
-          </CommonTooltip>
-          <CommonTooltip content="分页显示">
-            <button
-              type="button"
-              aria-label="分页显示"
-              :aria-pressed="listDisplayMode === 'pagination'"
-              class="display-mode-toggle__btn"
-              :class="{ 'display-mode-toggle__btn--active': listDisplayMode === 'pagination' }"
-              @click="listDisplayMode = 'pagination'"
-            >
-              <Icon name="lucide:book-open" size="15" />
-            </button>
-          </CommonTooltip>
+          </CommonContextDrawer>
+          <div class="display-mode-toggle" role="group" aria-label="文章列表显示模式">
+            <CommonTooltip content="连续加载">
+              <button
+                type="button"
+                aria-label="连续加载"
+                :aria-pressed="listDisplayMode === 'waterfall'"
+                class="display-mode-toggle__btn"
+                :class="{ 'display-mode-toggle__btn--active': listDisplayMode === 'waterfall' }"
+                @click="listDisplayMode = 'waterfall'"
+              >
+                <Icon name="lucide:scroll-text" size="15" />
+              </button>
+            </CommonTooltip>
+            <CommonTooltip content="分页显示">
+              <button
+                type="button"
+                aria-label="分页显示"
+                :aria-pressed="listDisplayMode === 'pagination'"
+                class="display-mode-toggle__btn"
+                :class="{ 'display-mode-toggle__btn--active': listDisplayMode === 'pagination' }"
+                @click="listDisplayMode = 'pagination'"
+              >
+                <Icon name="lucide:book-open" size="15" />
+              </button>
+            </CommonTooltip>
+          </div>
         </div>
       </div>
-    </div>
-    <div v-if="activeFilterLabel" class="articles-filter-summary">
-      <span role="status">当前筛选：{{ activeFilterLabel }}</span>
-      <button type="button" class="filter-badge" :aria-label="`清除筛选：${activeFilterLabel}`" @click="clearFilters">
-        <Icon name="lucide:x" size="14" />清除筛选
-      </button>
-    </div>
-    <BlogPostCardList
-      :posts="posts"
-      :total="postTotal"
-      :current-page="postPage"
-      :pending="postsPending"
-      :error-message="postsError ? '文章加载失败，请重试' : ''"
-      active-tab="all"
-      :display-mode="listDisplayMode"
-      :selected-tag="selectedTag"
-      :selected-category="selectedCategory"
-      @page="postPage = $event"
-      @retry="refreshPosts()"
-    />
-    <ClientOnly>
-      <Teleport to="#right-sidebar-target">
-        <SidebarRightSidebar>
-          <SidebarTagCloudCard :tags="tags" :active-tag="selectedTag" @select="onTagSelect" />
-          <SidebarCategoryCard
-            :categories="categories"
-            :active-category="selectedCategory"
-            @select="onCategorySelect"
-          />
-          <BlogSubscribeCard />
-        </SidebarRightSidebar>
-      </Teleport>
-    </ClientOnly>
-  </div>
+    </template>
+    <template #default>
+      <div v-if="activeFilterLabel" class="articles-filter-summary">
+        <span role="status">当前筛选：{{ activeFilterLabel }}</span>
+        <button type="button" class="filter-badge" :aria-label="`清除筛选：${activeFilterLabel}`" @click="clearFilters">
+          <Icon name="lucide:x" size="14" />清除筛选
+        </button>
+      </div>
+      <BlogPostCardList
+        :posts="posts"
+        :total="postTotal"
+        :current-page="postPage"
+        :pending="postsPending"
+        :error-message="postsError ? '文章加载失败，请重试' : ''"
+        active-tab="all"
+        :display-mode="listDisplayMode"
+        :selected-tag="selectedTag"
+        :selected-category="selectedCategory"
+        @page="postPage = $event"
+        @retry="refreshPosts()"
+      />
+    </template>
+    <template #overlays>
+      <ClientOnly>
+        <Teleport to="#right-sidebar-target">
+          <SidebarRightSidebar>
+            <SidebarTagCloudCard :tags="tags" :active-tag="selectedTag" @select="onTagSelect" />
+            <SidebarCategoryCard
+              :categories="categories"
+              :active-category="selectedCategory"
+              @select="onCategorySelect"
+            />
+            <BlogSubscribeCard />
+          </SidebarRightSidebar>
+        </Teleport>
+      </ClientOnly>
+    </template>
+  </CommonPageFrame>
 </template>
 <script setup lang="ts">
 import { mockPostTabs } from '~/features/post/mock'
