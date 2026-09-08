@@ -18,7 +18,7 @@
   position: fixed;
   top: calc(1rem + env(safe-area-inset-top));
   right: 1rem;
-  z-index: 82;
+  z-index: 60;
   border-radius: $radius-full;
   border: 1px solid var(--border);
   box-shadow: var(--shadow-card);
@@ -33,6 +33,9 @@
   transition:
     border-color 0.15s ease,
     box-shadow 0.15s ease;
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
 
   &:hover {
     border-color: var(--border-hover);
@@ -51,7 +54,10 @@
   width: 2rem;
   height: 2rem;
   color: var(--text-soft);
-  transition: color $transition-fast;
+  transition: color var(--motion-fast, 0.16s) ease;
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
 
   &:hover {
     color: var(--text-main);

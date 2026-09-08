@@ -15,12 +15,13 @@
 
     <div id="right-sidebar-target" class="dock-sidebar-sink" />
 
-    <nav class="dock-bar" @mouseleave="onDockLeave">
+    <nav class="dock-bar" aria-label="主导航" @mouseleave="onDockLeave">
       <div class="dock-bar__inner">
         <NuxtLink
           v-for="(item, index) in navItems"
           :key="item.to"
           :to="item.to"
+          :aria-label="item.label"
           class="dock-item"
           :class="{ active: isActive(item.to) }"
           :style="getDockItemStyle(index)"
@@ -36,6 +37,15 @@
         <div class="dock-item dock-item--action">
           <BlogAppearanceEntry />
         </div>
+        <button
+          v-if="windowScroll > 300"
+          class="dock-item dock-item--action"
+          type="button"
+          aria-label="返回顶部"
+          @click="returnTop"
+        >
+          <Icon name="lucide:arrow-up" size="18" />
+        </button>
       </div>
     </nav>
 
@@ -46,8 +56,31 @@
 </template>
 
 <script setup lang="ts">
+import { scrollToRoot } from '~/utils/scrollRoot'
 const route = useRoute()
 const { navItems } = useNavItems()
+const windowScroll = ref(0)
+let scrollFrame = 0
+let cancelScroll: (() => void) | undefined
+function updateWindowScroll() {
+  if (scrollFrame) return
+  scrollFrame = requestAnimationFrame(() => {
+    scrollFrame = 0
+    windowScroll.value = window.scrollY
+  })
+}
+function returnTop() {
+  cancelScroll = scrollToRoot(null, 0)
+}
+onMounted(() => {
+  updateWindowScroll()
+  window.addEventListener('scroll', updateWindowScroll, { passive: true })
+})
+onBeforeUnmount(() => {
+  cancelAnimationFrame(scrollFrame)
+  cancelScroll?.()
+  window.removeEventListener('scroll', updateWindowScroll)
+})
 
 function isActive(to: string) {
   if (route.path === to) return true
@@ -56,6 +89,7 @@ function isActive(to: string) {
 }
 
 const hoveredIndex = ref(-1)
+const { reducedMotion } = useMotionPreference()
 
 function onDockItemEnter(index: number) {
   hoveredIndex.value = index
@@ -66,7 +100,7 @@ function onDockLeave() {
 }
 
 function getDockItemStyle(index: number): Record<string, string> {
-  if (hoveredIndex.value < 0) return {}
+  if (reducedMotion.value || hoveredIndex.value < 0) return {}
 
   const distance = Math.abs(index - hoveredIndex.value)
   if (distance === 0) {
@@ -88,20 +122,15 @@ function getDockItemStyle(index: number): Record<string, string> {
   display: flex;
   flex-direction: column;
 
-  --dock-bg: rgba(255, 255, 255, 0.72);
+  --dock-bg: color-mix(in srgb, var(--surface-1) 72%, transparent);
   --dock-blur: 20px;
-  --dock-shadow: 0 8px 32px rgba(0, 0, 0, 0.12), 0 2px 8px rgba(0, 0, 0, 0.06);
+  --dock-shadow: var(--shadow-card);
   --dock-radius: 1.25rem;
   --dock-bottom-offset: 1.5rem;
   --dock-icon-size: 1.5rem;
   --dock-icon-scale-hover: 1.3;
   --dock-icon-scale-neighbor: 1.15;
   --dock-border: 1px solid var(--border-soft);
-}
-
-:global(.dark) .theme-dock {
-  --dock-bg: rgba(42, 47, 55, 0.72);
-  --dock-shadow: 0 8px 32px rgba(0, 0, 0, 0.4), 0 2px 8px rgba(0, 0, 0, 0.2);
 }
 
 .dock-sidebar-sink {
@@ -113,10 +142,10 @@ function getDockItemStyle(index: number): Record<string, string> {
   max-width: 780px;
   width: 100%;
   margin: 0 auto;
-  padding: 2rem 1rem 6rem;
+  padding: 2rem 1rem 2rem;
 
   @media (min-width: $breakpoint-md) {
-    padding: 2.5rem 2rem 6rem;
+    padding: 2.5rem 2rem 2rem;
   }
 
   --post-card-min-h: 140px;
@@ -138,6 +167,9 @@ function getDockItemStyle(index: number): Record<string, string> {
   box-shadow: var(--dock-shadow);
   padding: 0.5rem 0.75rem;
   transition: $transition-colors;
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
 
   @media (max-width: #{$breakpoint-md - 0.02}) {
     bottom: 0;
@@ -157,6 +189,11 @@ function getDockItemStyle(index: number): Record<string, string> {
   display: flex;
   align-items: flex-end;
   gap: 0.25rem;
+  @media (max-width: #{$breakpoint-md - 0.02}) {
+    overflow-x: auto;
+    align-items: center;
+    padding-block: 0.25rem;
+  }
 }
 
 .dock-bar__divider {
@@ -172,6 +209,7 @@ function getDockItemStyle(index: number): Record<string, string> {
 
 .dock-item {
   display: flex;
+  flex-shrink: 0;
   flex-direction: column;
   align-items: center;
   gap: 0.125rem;
@@ -181,9 +219,13 @@ function getDockItemStyle(index: number): Record<string, string> {
   cursor: pointer;
   transform: scale(var(--dock-scale, 1)) translateY(calc((var(--dock-scale, 1) - 1) * -8px));
   transform-origin: bottom center;
-  transition: transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1),
-              color 0.2s ease,
-              background 0.2s ease;
+  transition:
+    transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1),
+    color 0.2s ease,
+    background 0.2s ease;
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
 
   &:hover {
     color: var(--text-main);
@@ -191,7 +233,7 @@ function getDockItemStyle(index: number): Record<string, string> {
   }
 
   &.active {
-    color: var(--accent);
+    color: var(--accent-text);
   }
 
   &--action {
@@ -226,10 +268,11 @@ function getDockItemStyle(index: number): Record<string, string> {
   max-width: $container-max-width;
   width: 100%;
   margin: 0 auto;
-  padding: 0 1rem 1rem;
+  // 最后的页脚也必须留出浮岛导航空间，移动端状态说明才可悬停和聚焦。
+  padding: 0 1rem calc(6rem + env(safe-area-inset-bottom));
 
   @media (min-width: $breakpoint-md) {
-    padding: 0 2rem 2rem;
+    padding: 0 2rem calc(6rem + env(safe-area-inset-bottom));
   }
 
   :deep(.site-footer) {

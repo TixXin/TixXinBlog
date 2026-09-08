@@ -8,7 +8,7 @@
 <template>
   <section class="card sidebar-footer-card">
     <!-- 版权信息 -->
-    <p class="sidebar-footer-card__copyright">&copy; {{ currentYear }} TixXin Blog. All rights reserved.</p>
+    <p class="sidebar-footer-card__copyright">&copy; {{ currentYear }} {{ siteName }}. All rights reserved.</p>
 
     <!-- 页脚链接 -->
     <nav class="sidebar-footer-card__links" aria-label="站点链接">
@@ -35,7 +35,7 @@
     <div class="sidebar-footer-card__status">
       <span class="sidebar-footer-card__ping">
         <Icon name="lucide:activity" size="12" />
-        PING {{ siteStatus.pingMs }}ms
+        延迟未测量
       </span>
       <span class="sidebar-footer-card__dot" />
       <span class="sidebar-footer-card__operational">{{ siteStatus.statusText }}</span>
@@ -45,7 +45,7 @@
 
 <script setup lang="ts">
 const currentYear = new Date().getFullYear()
-const { footerLinks, poweredBy, siteStatus } = useSiteInfo()
+const { siteName, footerLinks, poweredBy, siteStatus } = useSiteInfo()
 </script>
 
 <style lang="scss" scoped>
@@ -76,6 +76,9 @@ const { footerLinks, poweredBy, siteStatus } = useSiteInfo()
   font-size: 0.6875rem;
   color: var(--text-muted);
   transition: color 0.2s;
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
 
   &:hover {
     color: var(--text-main);
@@ -109,6 +112,9 @@ const { footerLinks, poweredBy, siteStatus } = useSiteInfo()
   font-weight: 600;
   color: var(--text-main);
   transition: opacity 0.2s;
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
 
   &:hover {
     opacity: 0.82;
@@ -143,6 +149,9 @@ const { footerLinks, poweredBy, siteStatus } = useSiteInfo()
   background: var(--stat-green-dot);
   box-shadow: 0 0 0 2px var(--stat-green-bg);
   animation: sidebar-pulse-dot 2s infinite;
+  @media (prefers-reduced-motion: reduce) {
+    animation: none;
+  }
 }
 
 .sidebar-footer-card__operational {
