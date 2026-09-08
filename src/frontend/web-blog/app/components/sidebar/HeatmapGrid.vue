@@ -8,8 +8,8 @@
 <template>
   <div class="heatmap">
     <div class="heatmap__header">
-      <span class="heatmap__title">活跃度</span>
-      <span class="heatmap__subtitle">最近 15 周</span>
+      <span class="heatmap__title">公开内容</span>
+      <span class="heatmap__subtitle">最近 15 周 · UTC</span>
     </div>
     <div class="heatmap__body">
       <div class="heatmap__week-labels">
@@ -24,44 +24,40 @@
       <div
         ref="gridRef"
         class="heatmap__grid"
+        role="group"
+        aria-label="每日公开内容，方向键选择日期"
         @mouseover="onCellEnter"
         @mouseout="onCellLeave"
+        @focusin="onCellEnter"
+        @focusout="onCellLeave"
       >
-        <div
+        <button
           v-for="(cell, i) in cells"
           :key="i"
+          type="button"
           class="heatmap__cell"
           :data-idx="i"
+          :tabindex="i === focusedIndex ? 0 : -1"
+          :aria-label="`${cell.date}，${cell.articles} 篇公开文章，${cell.comments} 条公开评论`"
           :style="{ background: heatmapColor(cell.level) }"
+          @keydown="moveCell($event, i)"
         />
       </div>
     </div>
     <div class="heatmap__legend">
       <span class="heatmap__legend-text">Less</span>
-      <div
-        v-for="n in 5"
-        :key="n"
-        class="heatmap__legend-dot"
-        :style="{ background: heatmapColor(n - 1) }"
-      />
+      <div v-for="n in 5" :key="n" class="heatmap__legend-dot" :style="{ background: heatmapColor(n - 1) }" />
       <span class="heatmap__legend-text">More</span>
     </div>
 
     <Teleport to="body">
-      <div
-        ref="tooltipRef"
-        class="heatmap-tooltip"
-        :style="tooltipStyle"
-      >
+      <div ref="tooltipRef" class="heatmap-tooltip" :style="tooltipStyle">
         <template v-if="activeCell">
           <div class="heatmap-tooltip__date">{{ activeCell.date }} {{ activeCell.weekday }}</div>
           <template v-if="activeCell.level > 0">
             <div class="heatmap-tooltip__level">
-              <span
-                class="heatmap-tooltip__dot"
-                :style="{ background: heatmapLightColor(activeCell.level) }"
-              />
-              活跃度 Lv.{{ activeCell.level }}
+              <span class="heatmap-tooltip__dot" :style="{ background: heatmapLightColor(activeCell.level) }" />
+              公开内容数量
             </div>
             <div class="heatmap-tooltip__detail">{{ cellDetail(activeCell) }}</div>
           </template>
@@ -103,56 +99,29 @@ const tooltipStyle = computed(() => ({
   pointerEvents: 'none' as const,
 }))
 
-function seedRandom(seed: number) {
-  return (Math.sin(seed) * 10000) - Math.floor(Math.sin(seed) * 10000)
+const props = defineProps<{ activity: { date: string; articles: number; comments: number }[] }>()
+const focusedIndex = ref(0)
+const cells = computed<HeatmapCell[]>(() =>
+  props.activity.map((item) => {
+    const total = item.articles + item.comments
+    return {
+      ...item,
+      weekday: weekdayNames[(new Date(`${item.date}T00:00:00Z`).getUTCDay() + 6) % 7]!,
+      level: total === 0 ? 0 : total <= 2 ? 1 : total <= 5 ? 2 : total <= 10 ? 3 : 4,
+    }
+  }),
+)
+function moveCell(event: KeyboardEvent, index: number) {
+  const changes: Record<string, number> = { ArrowUp: -1, ArrowDown: 1, ArrowLeft: -7, ArrowRight: 7 }
+  const change = changes[event.key]
+  if (change === undefined) return
+  event.preventDefault()
+  focusedIndex.value = Math.max(0, Math.min(cells.value.length - 1, index + change))
+  gridRef.value?.querySelectorAll<HTMLButtonElement>('button')[focusedIndex.value]?.focus()
 }
 
-const cells = computed<HeatmapCell[]>(() => {
-  const result: HeatmapCell[] = []
-  const today = new Date()
-
-  const startDate = new Date(today)
-  startDate.setDate(startDate.getDate() - (15 * 7 - 1) - ((startDate.getDay() + 6) % 7))
-
-  for (let col = 0; col < 15; col++) {
-    for (let row = 0; row < 7; row++) {
-      const d = new Date(startDate)
-      d.setDate(startDate.getDate() + col * 7 + row)
-
-      const isFuture = d > today
-      const seed = d.getFullYear() * 10000 + (d.getMonth() + 1) * 100 + d.getDate()
-      const rng = seedRandom(seed)
-
-      let level = 0
-      let articles = 0
-      let comments = 0
-
-      if (!isFuture && rng > 0.45) {
-        level = rng > 0.85 ? 4 : rng > 0.72 ? 3 : rng > 0.58 ? 2 : 1
-        articles = level >= 3 ? Math.floor(rng * 3) + 1 : (level >= 2 ? 1 : 0)
-        comments = Math.floor(rng * level * 8)
-      }
-
-      result.push({
-        date: `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`,
-        weekday: weekdayNames[(d.getDay() + 6) % 7]!,
-        level,
-        articles,
-        comments,
-      })
-    }
-  }
-  return result
-})
-
 function heatmapColor(level: number) {
-  const colors = [
-    'var(--heatmap-0)',
-    'var(--heatmap-1)',
-    'var(--heatmap-2)',
-    'var(--heatmap-3)',
-    'var(--heatmap-4)',
-  ]
+  const colors = ['var(--heatmap-0)', 'var(--heatmap-1)', 'var(--heatmap-2)', 'var(--heatmap-3)', 'var(--heatmap-4)']
   return colors[level] ?? colors[0]
 }
 
@@ -173,6 +142,7 @@ function onCellEnter(e: Event) {
   if (idx === undefined) return
 
   hoveredIdx.value = Number(idx)
+  if (e.type === 'focusin') focusedIndex.value = Number(idx)
 
   const rect = target.getBoundingClientRect()
   tooltipPos.value = {
@@ -251,11 +221,19 @@ function onCellLeave(e: Event) {
 }
 
 .heatmap__cell {
+  padding: 0;
+  border: 0;
   width: 10px;
   height: 10px;
   border-radius: 2px;
   cursor: pointer;
-  transition: transform 0.15s, box-shadow 0.15s, background 0.3s;
+  transition:
+    transform 0.15s,
+    box-shadow 0.15s,
+    background 0.3s;
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
 
   &:hover {
     transform: scale(1.3);
@@ -299,6 +277,9 @@ function onCellLeave(e: Event) {
   line-height: 1.6;
   white-space: nowrap;
   transition: opacity 0.15s;
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
   pointer-events: none;
 }
 

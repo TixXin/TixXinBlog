@@ -24,11 +24,14 @@
         :read-time="article.readTime"
       />
       <div class="article-page__inner">
-        <div class="article-page__cover-wrap">
-          <NuxtImg
+        <p v-if="isMockArticle" class="article-page__demo-note">
+          演示文章：正文为通用排版示例，不代表标题对应的正式内容。
+        </p>
+        <div v-if="article.cover" class="article-page__cover-wrap">
+          <CommonContentImage
             v-if="!coverError"
             :src="article.cover"
-            :alt="article.title"
+            :alt="article.coverAlt || article.title"
             class="article-page__cover"
             fetchpriority="high"
             format="webp"
@@ -45,21 +48,25 @@
         <div class="article-page__stats">
           <span class="article-page__stat">
             <Icon name="lucide:eye" size="14" />
-            {{ formatCount(article.views) }}
+            {{ formatCount(articleViews) }}
           </span>
           <button
             type="button"
             class="article-page__stat article-page__stat--btn"
-            :class="{ 'is-liked': isLiked(article.id) }"
-            @click="toggleLike(article.id)"
+            :class="{ 'is-liked': articleLiked }"
+            :disabled="interactionPending || !interactionLoaded"
+            :aria-pressed="articleLiked"
+            aria-label="点赞文章"
+            @click="toggleArticleLike"
           >
-            <Icon :name="isLiked(article.id) ? 'lucide:heart' : 'lucide:heart'" size="14" />
-            {{ article.likes + (isLiked(article.id) ? 1 : 0) }}
+            <Icon :name="'lucide:heart'" size="14" />
+            {{ articleLikes }}
           </button>
           <button
             type="button"
             class="article-page__stat article-page__stat--btn"
             :class="{ 'is-favorited': isFavorited(article.id) }"
+            :aria-pressed="isFavorited(article.id)"
             @click="toggleFavorite(article.id)"
           >
             <Icon :name="isFavorited(article.id) ? 'lucide:bookmark-check' : 'lucide:bookmark'" size="14" />
@@ -67,18 +74,60 @@
           </button>
           <span class="article-page__stat">
             <Icon name="lucide:message-circle" size="14" />
-            {{ article.comments }}
+            {{ total }}
           </span>
           <ClientOnly>
             <CommonShareButtons :title="article.title" class="article-page__share" />
           </ClientOnly>
         </div>
-        <ArticleContent :sections="article.content" />
-        <ArticleNav />
-        <ArticleCommentSection :comments="comments" @submit="(c) => comments.unshift(c)" />
+        <p v-if="interactionError" role="alert">
+          {{ interactionError }} <button type="button" @click="reloadInteraction">重试</button>
+        </p>
+        <div ref="readingContent" class="article-reading-content">
+          <ArticleMarkdown v-if="article.contentRaw" :content="article.contentRaw" />
+          <ArticleContent v-else :sections="article.content" />
+        </div>
+        <ArticleNav :prev="navigation.prev" :next="navigation.next" :error="discoveryError" />
+        <ArticleCommentSection
+          v-model="draft"
+          :comments="comments"
+          :total="total"
+          :reply-target="replyTarget"
+          :submitting="submitting"
+          :loading="loading"
+          :busy="busy"
+          :can-submit="canSubmit"
+          :submit-error="submitError"
+          :submit-notice="submitNotice"
+          :load-error="loadError"
+          :like-error="likeError"
+          :pending-likes="pendingLikes"
+          @submit="submit"
+          @reply="reply"
+          @cancel-reply="cancelReply"
+          @like="like"
+          @retry="reload"
+        />
+        <CommonGuestIdentityModal
+          :visible="identityVisible"
+          @confirm="submit"
+          @cancel="identityVisible = false"
+          @login="switchToLogin"
+        />
       </div>
     </CommonCustomScrollbar>
     <ClientOnly>
+      <Teleport to="body">
+        <CommonContextDrawer
+          v-if="tocItems.length && needsCompactToc"
+          v-slot="{ close }"
+          class="article-toc-entry"
+          label="文章目录"
+          icon="lucide:list"
+        >
+          <ArticleTableOfContents :items="tocItems" :active-id="activeId" :progress="progress" @navigate="close" />
+        </CommonContextDrawer>
+      </Teleport>
       <Teleport to="#right-sidebar-target">
         <SidebarRightSidebar>
           <ArticleTableOfContents :items="tocItems" :active-id="activeId" :progress="progress" />
@@ -92,16 +141,77 @@
 </template>
 
 <script setup lang="ts">
+import { useMediaQuery } from '@vueuse/core'
 const route = useRoute()
+const { currentThemeId, switchingState } = useLayoutTheme()
+const nexusSidebarVisible = useMediaQuery('(min-width: 1440px)')
+const auroraSidebarVisible = useMediaQuery('(min-width: 1280px)')
+const needsCompactToc = computed(
+  () =>
+    currentThemeId.value === 'dock' ||
+    (currentThemeId.value === 'nexus' ? !nexusSidebarVisible.value : !auroraSidebarVisible.value),
+)
+const isMockArticle = useRuntimeConfig().public.postUseMockRepo !== false
 const coverError = ref(false)
 const scrollbarRef = ref<{ viewport: HTMLElement | null } | null>(null)
+const readingContent = ref<HTMLElement | null>(null)
 const scrollRoot = computed(() => scrollbarRef.value?.viewport ?? null)
 
-const { article, comments, relatedPosts, tocItems, articleExcerpt } = await useArticleDetail(route.params.id as string)
-const { isLiked, toggleLike, isFavorited, toggleFavorite } = useLikes()
+const requestScope = usePageRequestScope()
+const { article, relatedPosts, navigation, discoveryError, tocItems, articleExcerpt } = await useArticleDetail(
+  route.params.id as string,
+  { reuseLoaded: switchingState.value === 'loading' },
+)
+requestScope.assertActive()
+const canonicalPath = articlePath(article.value)
+if (route.path !== canonicalPath)
+  await navigateTo({ path: canonicalPath, query: route.query, hash: route.hash }, { redirectCode: 301, replace: true })
+requestScope.assertActive()
+const publicSite = String(useRuntimeConfig().public.siteUrl).replace(/\/$/, '')
+const { settings: siteSettings } = useSiteSettings()
+const canonicalUrl = computed(() => `${publicSite}${articlePath(article.value)}`)
+const seoDescription = computed(() => article.value.seoDescription || articleExcerpt.value)
+const {
+  comments,
+  total,
+  draft,
+  replyTarget,
+  submitting,
+  loading,
+  busy,
+  canSubmit,
+  submitError,
+  submitNotice,
+  loadError,
+  likeError,
+  pendingLikes,
+  identityVisible,
+  submit,
+  reply,
+  cancelReply,
+  like,
+  reload,
+} = await useArticleComments(article.value.id)
+requestScope.assertActive()
+const { open: openLoginDrawer } = useLoginDrawer()
+function switchToLogin() {
+  identityVisible.value = false
+  openLoginDrawer('login', true)
+}
+const { isFavorited, toggleFavorite } = useLikes()
+const {
+  likes: articleLikes,
+  views: articleViews,
+  liked: articleLiked,
+  pending: interactionPending,
+  loaded: interactionLoaded,
+  error: interactionError,
+  toggle: toggleArticleLike,
+  load: reloadInteraction,
+} = useArticleInteraction(article.value.id, article.value)
 const { addToHistory } = useReadingHistory()
 
-const { progress } = useReadingProgress(scrollRoot)
+const { progress } = useReadingProgress(scrollRoot, readingContent)
 const { activeId } = useTableOfContents(() => tocItems.value)
 
 onMounted(() => {
@@ -118,18 +228,21 @@ function formatCount(n: number) {
 }
 
 useSeoMeta({
-  title: () => article.value.title,
-  description: () => articleExcerpt.value,
-  ogTitle: () => `${article.value.title} - TixXin Blog`,
-  ogDescription: () => articleExcerpt.value,
+  title: () => article.value.seoTitle || article.value.title,
+  description: () => seoDescription.value,
+  ogTitle: () => article.value.seoTitle || article.value.title,
+  ogDescription: () => seoDescription.value,
   ogType: 'article',
+  ogUrl: () => canonicalUrl.value,
+  robots: () => (article.value.seoNoindex ? 'noindex, follow' : 'index, follow'),
   ogImage: () => article.value.cover,
   twitterCard: 'summary_large_image',
-  twitterTitle: () => `${article.value.title} - TixXin Blog`,
-  twitterDescription: () => articleExcerpt.value,
+  twitterTitle: () => article.value.seoTitle || article.value.title,
+  twitterDescription: () => seoDescription.value,
 })
 
 useHead({
+  link: [{ rel: 'canonical', href: canonicalUrl }],
   script: [
     {
       type: 'application/ld+json',
@@ -142,15 +255,16 @@ useHead({
           datePublished: article.value.date,
           author: {
             '@type': 'Person',
-            name: 'TixXin',
-            url: 'https://tixxin.dev',
+            name: siteSettings.value.ownerName,
+            url: publicSite,
           },
           publisher: {
             '@type': 'Organization',
-            name: 'TixXin Blog',
+            name: siteSettings.value.name,
           },
-          description: articleExcerpt.value,
-        }),
+          description: seoDescription.value,
+          mainEntityOfPage: canonicalUrl.value,
+        }).replace(/</g, String.fromCharCode(92) + 'u003c'),
       ),
     },
   ],
@@ -158,14 +272,33 @@ useHead({
 </script>
 
 <style lang="scss" scoped>
+.article-page__demo-note {
+  padding: 0.75rem;
+  margin-bottom: 1rem;
+  border: 1px solid var(--border);
+  border-radius: $radius-md;
+  color: var(--text-soft);
+  font-size: 0.875rem;
+}
 .article-page {
   flex: 1;
   min-height: 0;
+}
+.article-toc-entry {
+  position: fixed;
+  right: max(1rem, env(safe-area-inset-right));
+  bottom: calc(6rem + env(safe-area-inset-bottom));
+  z-index: 55;
+  box-shadow: var(--shadow-card);
+  border-radius: $radius-md;
 }
 
 .article-page__inner {
   // 底部加厚缓冲，避免评论框滚到底时紧贴 dock
   padding: 0 2rem 4rem;
+  @media (max-width: 480px) {
+    padding: 0 0.75rem 5rem;
+  }
 }
 
 .article-page__cover-wrap {
@@ -220,7 +353,10 @@ useHead({
     cursor: pointer;
     padding: 0.25rem 0.5rem;
     border-radius: $radius-sm;
-    transition: all 0.2s;
+    transition: $transition-fast;
+    @media (prefers-reduced-motion: reduce) {
+      transition: none;
+    }
     font-size: inherit;
     color: inherit;
 
@@ -234,7 +370,7 @@ useHead({
     }
 
     &.is-favorited {
-      color: var(--accent);
+      color: var(--accent-text);
     }
   }
 }

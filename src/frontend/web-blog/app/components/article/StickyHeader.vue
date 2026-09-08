@@ -61,6 +61,13 @@ function handleBack() {
   backdrop-filter: blur(12px);
   border-bottom: 1px solid var(--border-soft);
   transition: $transition-colors;
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
+  @media (max-width: #{$breakpoint-sm - 1px}) {
+    position: relative;
+    padding: 0 1rem;
+  }
 }
 
 .article-sticky-header__inner {
@@ -68,6 +75,7 @@ function handleBack() {
 }
 
 .article-sticky-header__back {
+  min-height: 44px;
   display: inline-flex;
   align-items: center;
   gap: 0.375rem;
@@ -79,6 +87,9 @@ function handleBack() {
   cursor: pointer;
   margin-bottom: 0.375rem;
   transition: $transition-fast;
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
 
   &:hover {
     color: var(--text-main);
@@ -87,14 +98,12 @@ function handleBack() {
 
 .article-sticky-header__title {
   font-family: $font-family-base;
-  font-size: 1rem;
+  font-size: clamp(1.25rem, 1.8vw, 1.625rem);
   font-weight: 700;
   color: var(--text-main);
   line-height: 1.3;
   margin: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  overflow-wrap: anywhere;
 }
 
 .article-sticky-header__meta {
@@ -103,7 +112,7 @@ function handleBack() {
   align-items: center;
   gap: 0.75rem;
   margin-top: 0.25rem;
-  font-size: 0.6875rem;
+  font-size: 0.75rem;
   color: var(--text-soft);
 }
 

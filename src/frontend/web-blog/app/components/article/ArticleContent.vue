@@ -56,7 +56,7 @@ function headingTag(section: ArticleSection): 'h2' | 'h3' {
   margin: 0;
   scroll-margin-top: 5rem;
 
-  h2 {
+  &:is(h2) {
     font-size: 1.25rem;
     margin-top: 2rem;
     margin-bottom: 1rem;
@@ -66,7 +66,7 @@ function headingTag(section: ArticleSection): 'h2' | 'h3' {
     }
   }
 
-  h3 {
+  &:is(h3) {
     font-size: 1.125rem;
     font-weight: 600;
     margin-top: 1.5rem;

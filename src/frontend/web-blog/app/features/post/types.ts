@@ -11,6 +11,7 @@ export interface PostTag {
 }
 
 export interface PostItem {
+  slug?: string
   id: number
   title: string
   summary: string
@@ -42,6 +43,12 @@ export interface ArticleSection {
 }
 
 export interface ArticleDetail {
+  slug?: string
+  summary?: string
+  coverAlt?: string
+  seoTitle?: string
+  seoDescription?: string
+  seoNoindex?: boolean
   id: string
   title: string
   cover: string
@@ -52,20 +59,24 @@ export interface ArticleDetail {
   likes: number
   comments: number
   content: ArticleSection[]
+  contentRaw?: string
 }
 
 export interface CommentItem {
+  moderationStatus?: 'published' | 'pending'
   id: number
   author: string
   avatar: string
   content: string
   time: string
   likes: number
+  liked?: boolean
   isOwner?: boolean
   replies?: CommentItem[]
 }
 
 export interface RelatedPost {
+  slug?: string
   id: string
   title: string
   date: string
@@ -76,4 +87,19 @@ export interface TocItem {
   id: string
   text: string
   level: number
+}
+
+export interface PostMetadata {
+  activity?: Array<{ date: string; articles: number; comments: number }>
+  tags: Array<{ label: string; slug: string; color: string; count: number }>
+  categories: Array<{ name: string; count: number }>
+  stats: { posts: number; views: number; comments: number; tags: number; uptimeDays: number }
+  archive: Array<{ id: number; slug?: string; seoNoindex?: boolean; title: string; folder: string; date: string }>
+}
+
+export interface PostPage {
+  items: PostItem[]
+  total: number
+  page: number
+  pageSize: number
 }
