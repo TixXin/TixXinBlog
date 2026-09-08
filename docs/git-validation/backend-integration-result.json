@@ -1,0 +1,6 @@
+{
+  "at": "2026-09-08T11:43:18.414Z",
+  "command": "corepack pnpm test:integration",
+  "code": 0,
+  "isolation": "independent source/build copy, disposable test databases and media"
+}

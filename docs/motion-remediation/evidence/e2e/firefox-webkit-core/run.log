@@ -1,0 +1,118 @@
+
+Running 104 tests using 1 worker
+
+(node:51080) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+
+[1/104] [firefox] › tests\e2e\motion-remediation.spec.ts:43:1 › 首屏内容就绪后，加载层淡出不再拦截操作
+[2/104] [firefox] › tests\e2e\motion-remediation.spec.ts:69:5 › 慢请求 nexus/normal 被导航取消后不会覆盖全宽页面
+[3/104] [firefox] › tests\e2e\motion-remediation.spec.ts:69:5 › 慢请求 nexus/off 被导航取消后不会覆盖全宽页面
+[4/104] [firefox] › tests\e2e\motion-remediation.spec.ts:69:5 › 慢请求 nexus/reduce 被导航取消后不会覆盖全宽页面
+[5/104] [firefox] › tests\e2e\motion-remediation.spec.ts:69:5 › 慢请求 aurora/normal 被导航取消后不会覆盖全宽页面
+[6/104] [firefox] › tests\e2e\motion-remediation.spec.ts:69:5 › 慢请求 aurora/off 被导航取消后不会覆盖全宽页面
+[7/104] [firefox] › tests\e2e\motion-remediation.spec.ts:69:5 › 慢请求 aurora/reduce 被导航取消后不会覆盖全宽页面
+[8/104] [firefox] › tests\e2e\motion-remediation.spec.ts:69:5 › 慢请求 dock/normal 被导航取消后不会覆盖全宽页面
+[9/104] [firefox] › tests\e2e\motion-remediation.spec.ts:69:5 › 慢请求 dock/off 被导航取消后不会覆盖全宽页面
+[10/104] [firefox] › tests\e2e\motion-remediation.spec.ts:69:5 › 慢请求 dock/reduce 被导航取消后不会覆盖全宽页面
+[11/104] [firefox] › tests\e2e\motion-remediation.spec.ts:129:3 › 离开文章时取消related初始化读取并保持目标页面
+[12/104] [firefox] › tests\e2e\motion-remediation.spec.ts:129:3 › 离开文章时取消navigation初始化读取并保持目标页面
+[13/104] [firefox] › tests\e2e\motion-remediation.spec.ts:129:3 › 离开文章时取消comments初始化读取并保持目标页面
+[14/104] [firefox] › tests\e2e\motion-remediation.spec.ts:167:1 › 仍在当前文章的真实请求失败继续显示503错误反馈
+[15/104] [firefox] › tests\e2e\motion-remediation.spec.ts:185:7 › 导航 nexus/normal/30ms 最终页面完整
+[16/104] [firefox] › tests\e2e\motion-remediation.spec.ts:185:7 › 导航 nexus/normal/120ms 最终页面完整
+[17/104] [firefox] › tests\e2e\motion-remediation.spec.ts:185:7 › 导航 nexus/normal/300ms 最终页面完整
+[18/104] [firefox] › tests\e2e\motion-remediation.spec.ts:185:7 › 导航 nexus/off/30ms 最终页面完整
+[19/104] [firefox] › tests\e2e\motion-remediation.spec.ts:185:7 › 导航 nexus/off/120ms 最终页面完整
+[20/104] [firefox] › tests\e2e\motion-remediation.spec.ts:185:7 › 导航 nexus/off/300ms 最终页面完整
+[21/104] [firefox] › tests\e2e\motion-remediation.spec.ts:185:7 › 导航 nexus/reduce/30ms 最终页面完整
+[22/104] [firefox] › tests\e2e\motion-remediation.spec.ts:185:7 › 导航 nexus/reduce/120ms 最终页面完整
+[23/104] [firefox] › tests\e2e\motion-remediation.spec.ts:185:7 › 导航 nexus/reduce/300ms 最终页面完整
+[24/104] [firefox] › tests\e2e\motion-remediation.spec.ts:185:7 › 导航 aurora/normal/30ms 最终页面完整
+[25/104] [firefox] › tests\e2e\motion-remediation.spec.ts:185:7 › 导航 aurora/normal/120ms 最终页面完整
+[26/104] [firefox] › tests\e2e\motion-remediation.spec.ts:185:7 › 导航 aurora/normal/300ms 最终页面完整
+[27/104] [firefox] › tests\e2e\motion-remediation.spec.ts:185:7 › 导航 aurora/off/30ms 最终页面完整
+[28/104] [firefox] › tests\e2e\motion-remediation.spec.ts:185:7 › 导航 aurora/off/120ms 最终页面完整
+[29/104] [firefox] › tests\e2e\motion-remediation.spec.ts:185:7 › 导航 aurora/off/300ms 最终页面完整
+[30/104] [firefox] › tests\e2e\motion-remediation.spec.ts:185:7 › 导航 aurora/reduce/30ms 最终页面完整
+[31/104] [firefox] › tests\e2e\motion-remediation.spec.ts:185:7 › 导航 aurora/reduce/120ms 最终页面完整
+[32/104] [firefox] › tests\e2e\motion-remediation.spec.ts:185:7 › 导航 aurora/reduce/300ms 最终页面完整
+[33/104] [firefox] › tests\e2e\motion-remediation.spec.ts:185:7 › 导航 dock/normal/30ms 最终页面完整
+[34/104] [firefox] › tests\e2e\motion-remediation.spec.ts:185:7 › 导航 dock/normal/120ms 最终页面完整
+[35/104] [firefox] › tests\e2e\motion-remediation.spec.ts:185:7 › 导航 dock/normal/300ms 最终页面完整
+[36/104] [firefox] › tests\e2e\motion-remediation.spec.ts:185:7 › 导航 dock/off/30ms 最终页面完整
+[37/104] [firefox] › tests\e2e\motion-remediation.spec.ts:185:7 › 导航 dock/off/120ms 最终页面完整
+[38/104] [firefox] › tests\e2e\motion-remediation.spec.ts:185:7 › 导航 dock/off/300ms 最终页面完整
+[39/104] [firefox] › tests\e2e\motion-remediation.spec.ts:185:7 › 导航 dock/reduce/30ms 最终页面完整
+[40/104] [firefox] › tests\e2e\motion-remediation.spec.ts:185:7 › 导航 dock/reduce/120ms 最终页面完整
+[41/104] [firefox] › tests\e2e\motion-remediation.spec.ts:185:7 › 导航 dock/reduce/300ms 最终页面完整
+[42/104] [firefox] › tests\e2e\motion-remediation.spec.ts:227:3 › 取消导航恢复 nexus 侧栏
+[43/104] [firefox] › tests\e2e\motion-remediation.spec.ts:227:3 › 取消导航恢复 aurora 侧栏
+[44/104] [firefox] › tests\e2e\motion-remediation.spec.ts:253:3 › 搜索 keyboard 导航不重开并聚焦正文
+[45/104] [firefox] › tests\e2e\motion-remediation.spec.ts:253:3 › 搜索 mouse 导航不重开并聚焦正文
+[46/104] [firefox] › tests\e2e\motion-remediation.spec.ts:277:1 › 颜色切换100次不增加媒体查询订阅，模态30次无残留锁
+[47/104] [firefox] › tests\e2e\motion-remediation.spec.ts:317:1 › 运行中减少动态效果停止运动，关闭后不依赖结束事件
+[48/104] [firefox] › tests\e2e\motion-remediation.spec.ts:354:1 › 照片失败保持占位，恢复后可重试且不跳动
+[49/104] [firefox] › tests\e2e\motion-remediation.spec.ts:370:1 › Tooltip支持Esc并保留焦点
+[50/104] [firefox] › tests\e2e\motion-remediation.spec.ts:384:3 › 长提示 320px 可键盘阅读、悬停保持且不越界
+[51/104] [firefox] › tests\e2e\motion-remediation.spec.ts:384:3 › 长提示 1440px 可键盘阅读、悬停保持且不越界
+[52/104] [firefox] › tests\e2e\motion-remediation.spec.ts:415:1 › 正常页面仍有受控进入和离场，减少模式保留页面实例
+(node:6940) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+
+[53/104] [webkit] › tests\e2e\motion-remediation.spec.ts:43:1 › 首屏内容就绪后，加载层淡出不再拦截操作
+[54/104] [webkit] › tests\e2e\motion-remediation.spec.ts:69:5 › 慢请求 nexus/normal 被导航取消后不会覆盖全宽页面
+[55/104] [webkit] › tests\e2e\motion-remediation.spec.ts:69:5 › 慢请求 nexus/off 被导航取消后不会覆盖全宽页面
+[56/104] [webkit] › tests\e2e\motion-remediation.spec.ts:69:5 › 慢请求 nexus/reduce 被导航取消后不会覆盖全宽页面
+[57/104] [webkit] › tests\e2e\motion-remediation.spec.ts:69:5 › 慢请求 aurora/normal 被导航取消后不会覆盖全宽页面
+[58/104] [webkit] › tests\e2e\motion-remediation.spec.ts:69:5 › 慢请求 aurora/off 被导航取消后不会覆盖全宽页面
+[59/104] [webkit] › tests\e2e\motion-remediation.spec.ts:69:5 › 慢请求 aurora/reduce 被导航取消后不会覆盖全宽页面
+[60/104] [webkit] › tests\e2e\motion-remediation.spec.ts:69:5 › 慢请求 dock/normal 被导航取消后不会覆盖全宽页面
+[61/104] [webkit] › tests\e2e\motion-remediation.spec.ts:69:5 › 慢请求 dock/off 被导航取消后不会覆盖全宽页面
+[62/104] [webkit] › tests\e2e\motion-remediation.spec.ts:69:5 › 慢请求 dock/reduce 被导航取消后不会覆盖全宽页面
+[63/104] [webkit] › tests\e2e\motion-remediation.spec.ts:129:3 › 离开文章时取消related初始化读取并保持目标页面
+[64/104] [webkit] › tests\e2e\motion-remediation.spec.ts:129:3 › 离开文章时取消navigation初始化读取并保持目标页面
+[65/104] [webkit] › tests\e2e\motion-remediation.spec.ts:129:3 › 离开文章时取消comments初始化读取并保持目标页面
+[66/104] [webkit] › tests\e2e\motion-remediation.spec.ts:167:1 › 仍在当前文章的真实请求失败继续显示503错误反馈
+[67/104] [webkit] › tests\e2e\motion-remediation.spec.ts:185:7 › 导航 nexus/normal/30ms 最终页面完整
+[68/104] [webkit] › tests\e2e\motion-remediation.spec.ts:185:7 › 导航 nexus/normal/120ms 最终页面完整
+[69/104] [webkit] › tests\e2e\motion-remediation.spec.ts:185:7 › 导航 nexus/normal/300ms 最终页面完整
+[70/104] [webkit] › tests\e2e\motion-remediation.spec.ts:185:7 › 导航 nexus/off/30ms 最终页面完整
+[71/104] [webkit] › tests\e2e\motion-remediation.spec.ts:185:7 › 导航 nexus/off/120ms 最终页面完整
+[72/104] [webkit] › tests\e2e\motion-remediation.spec.ts:185:7 › 导航 nexus/off/300ms 最终页面完整
+[73/104] [webkit] › tests\e2e\motion-remediation.spec.ts:185:7 › 导航 nexus/reduce/30ms 最终页面完整
+[74/104] [webkit] › tests\e2e\motion-remediation.spec.ts:185:7 › 导航 nexus/reduce/120ms 最终页面完整
+[75/104] [webkit] › tests\e2e\motion-remediation.spec.ts:185:7 › 导航 nexus/reduce/300ms 最终页面完整
+[76/104] [webkit] › tests\e2e\motion-remediation.spec.ts:185:7 › 导航 aurora/normal/30ms 最终页面完整
+[77/104] [webkit] › tests\e2e\motion-remediation.spec.ts:185:7 › 导航 aurora/normal/120ms 最终页面完整
+[78/104] [webkit] › tests\e2e\motion-remediation.spec.ts:185:7 › 导航 aurora/normal/300ms 最终页面完整
+[79/104] [webkit] › tests\e2e\motion-remediation.spec.ts:185:7 › 导航 aurora/off/30ms 最终页面完整
+[80/104] [webkit] › tests\e2e\motion-remediation.spec.ts:185:7 › 导航 aurora/off/120ms 最终页面完整
+[81/104] [webkit] › tests\e2e\motion-remediation.spec.ts:185:7 › 导航 aurora/off/300ms 最终页面完整
+[82/104] [webkit] › tests\e2e\motion-remediation.spec.ts:185:7 › 导航 aurora/reduce/30ms 最终页面完整
+[83/104] [webkit] › tests\e2e\motion-remediation.spec.ts:185:7 › 导航 aurora/reduce/120ms 最终页面完整
+[84/104] [webkit] › tests\e2e\motion-remediation.spec.ts:185:7 › 导航 aurora/reduce/300ms 最终页面完整
+[85/104] [webkit] › tests\e2e\motion-remediation.spec.ts:185:7 › 导航 dock/normal/30ms 最终页面完整
+[86/104] [webkit] › tests\e2e\motion-remediation.spec.ts:185:7 › 导航 dock/normal/120ms 最终页面完整
+[87/104] [webkit] › tests\e2e\motion-remediation.spec.ts:185:7 › 导航 dock/normal/300ms 最终页面完整
+[88/104] [webkit] › tests\e2e\motion-remediation.spec.ts:185:7 › 导航 dock/off/30ms 最终页面完整
+[89/104] [webkit] › tests\e2e\motion-remediation.spec.ts:185:7 › 导航 dock/off/120ms 最终页面完整
+[90/104] [webkit] › tests\e2e\motion-remediation.spec.ts:185:7 › 导航 dock/off/300ms 最终页面完整
+[91/104] [webkit] › tests\e2e\motion-remediation.spec.ts:185:7 › 导航 dock/reduce/30ms 最终页面完整
+[92/104] [webkit] › tests\e2e\motion-remediation.spec.ts:185:7 › 导航 dock/reduce/120ms 最终页面完整
+[93/104] [webkit] › tests\e2e\motion-remediation.spec.ts:185:7 › 导航 dock/reduce/300ms 最终页面完整
+[94/104] [webkit] › tests\e2e\motion-remediation.spec.ts:227:3 › 取消导航恢复 nexus 侧栏
+[95/104] [webkit] › tests\e2e\motion-remediation.spec.ts:227:3 › 取消导航恢复 aurora 侧栏
+[96/104] [webkit] › tests\e2e\motion-remediation.spec.ts:253:3 › 搜索 keyboard 导航不重开并聚焦正文
+[97/104] [webkit] › tests\e2e\motion-remediation.spec.ts:253:3 › 搜索 mouse 导航不重开并聚焦正文
+[98/104] [webkit] › tests\e2e\motion-remediation.spec.ts:277:1 › 颜色切换100次不增加媒体查询订阅，模态30次无残留锁
+[99/104] [webkit] › tests\e2e\motion-remediation.spec.ts:317:1 › 运行中减少动态效果停止运动，关闭后不依赖结束事件
+[100/104] [webkit] › tests\e2e\motion-remediation.spec.ts:354:1 › 照片失败保持占位，恢复后可重试且不跳动
+[101/104] [webkit] › tests\e2e\motion-remediation.spec.ts:370:1 › Tooltip支持Esc并保留焦点
+[102/104] [webkit] › tests\e2e\motion-remediation.spec.ts:384:3 › 长提示 320px 可键盘阅读、悬停保持且不越界
+[103/104] [webkit] › tests\e2e\motion-remediation.spec.ts:384:3 › 长提示 1440px 可键盘阅读、悬停保持且不越界
+[104/104] [webkit] › tests\e2e\motion-remediation.spec.ts:415:1 › 正常页面仍有受控进入和离场，减少模式保留页面实例
+  Slow test file: [webkit] › tests\e2e\motion-remediation.spec.ts (6.3m)
+  Consider running tests from slow files in parallel. See: https://playwright.dev/docs/test-parallel
+  104 passed (10.8m)

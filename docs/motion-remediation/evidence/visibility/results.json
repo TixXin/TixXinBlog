@@ -1,0 +1,11 @@
+{
+  "browser": "153.0.8010.12",
+  "suite": "visibility",
+  "results": [
+    {
+      "name": "真实后台标签暂停Aurora轮播，回到前台后恢复",
+      "status": "failed",
+      "error": "expect(received).toBe(expected) // Object.is equality\n\nExpected: \"hidden\"\nReceived: \"visible\"\n\nCall Log:\n- Timeout 5000ms exceeded while waiting on the predicate"
+    }
+  ]
+}

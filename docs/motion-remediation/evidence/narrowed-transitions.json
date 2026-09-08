@@ -1,0 +1,350 @@
+[
+  {
+    "file": "app/components/auth/AuthPanel.vue",
+    "selector": ".auth-panel__close",
+    "before": "transition: all 0.2s ease;",
+    "after": "transition: $transition-fast;"
+  },
+  {
+    "file": "app/components/auth/AuthPanel.vue",
+    "selector": "/* 视图切换动画：向左滑入 */\n.auth-slide-left-enter-active,\n.auth-slide-left-leave-active",
+    "before": "transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);",
+    "after": "transition: opacity 0.2s cubic-bezier(0.4, 0, 0.2, 1), transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);"
+  },
+  {
+    "file": "app/components/auth/AuthPanel.vue",
+    "selector": "/* 视图切换动画：向右滑入 */\n.auth-slide-right-enter-active,\n.auth-slide-right-leave-active",
+    "before": "transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);",
+    "after": "transition: opacity 0.2s cubic-bezier(0.4, 0, 0.2, 1), transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);"
+  },
+  {
+    "file": "app/components/auth/AuthPanel.vue",
+    "selector": ".auth-social__btn",
+    "before": "transition: all 0.2s ease;",
+    "after": "transition: $transition-fast;"
+  },
+  {
+    "file": "app/components/common/ShareButtons.vue",
+    "selector": ".share-buttons__btn",
+    "before": "transition: all 0.2s;",
+    "after": "transition: $transition-fast;"
+  },
+  {
+    "file": "app/components/common/StateBlock.vue",
+    "selector": ".state-block__action",
+    "before": "transition: all 0.2s ease;",
+    "after": "transition: $transition-fast;"
+  },
+  {
+    "file": "app/components/common/ToastContainer.vue",
+    "selector": ".toast-list-enter-active,\n.toast-list-leave-active",
+    "before": "transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);",
+    "after": "transition: opacity 0.22s cubic-bezier(0.34, 1.56, 0.64, 1), transform 0.22s cubic-bezier(0.34, 1.56, 0.64, 1);"
+  },
+  {
+    "file": "app/components/flash/FlashEditor.vue",
+    "selector": ".fed__mood",
+    "before": "transition: all 0.18s;",
+    "after": "transition: $transition-fast;"
+  },
+  {
+    "file": "app/components/flash/FlashEditor.vue",
+    "selector": ".fed__submit",
+    "before": "transition: all 0.18s;",
+    "after": "transition: $transition-fast;"
+  },
+  {
+    "file": "app/components/guestbook/EmptyState.vue",
+    "selector": ".guestbook-empty__cta",
+    "before": "transition: all 0.2s;",
+    "after": "transition: $transition-fast;"
+  },
+  {
+    "file": "app/components/guestbook/MessageBubble.vue",
+    "selector": ".message-bubble__action",
+    "before": "transition: all 0.15s ease;",
+    "after": "transition: $transition-fast;"
+  },
+  {
+    "file": "app/components/guestbook/MessageBubble.vue",
+    "selector": ".message-bubble__reaction-pick",
+    "before": "transition: all 0.15s;",
+    "after": "transition: $transition-fast;"
+  },
+  {
+    "file": "app/components/guestbook/MessageBubble.vue",
+    "selector": ".message-bubble__reaction",
+    "before": "transition: all 0.15s;",
+    "after": "transition: $transition-fast;"
+  },
+  {
+    "file": "app/components/guestbook/MessageInput.vue",
+    "selector": ".message-input__reply-close",
+    "before": "transition: all 0.15s;",
+    "after": "transition: $transition-fast;"
+  },
+  {
+    "file": "app/components/guestbook/PinnedMessage.vue",
+    "selector": ".pinned-message__close",
+    "before": "transition: all 0.15s;",
+    "after": "transition: $transition-fast;"
+  },
+  {
+    "file": "app/components/moment/MomentArticleCard.vue",
+    "selector": ">()\n</script>\n\n<style lang=\"scss\" scoped>\n.moment-article-card",
+    "before": "transition: all 0.2s ease;",
+    "after": "transition: $transition-fast;"
+  },
+  {
+    "file": "app/components/moment/MomentCard.vue",
+    "selector": "// 评论区展开过渡\n.comment-slide-enter-active",
+    "before": "transition: all 0.25s ease-out;",
+    "after": "transition: opacity 0.22s ease-out, transform 0.22s ease-out, max-height 0.22s ease-out;"
+  },
+  {
+    "file": "app/components/moment/MomentCard.vue",
+    "selector": ".comment-slide-leave-active",
+    "before": "transition: all 0.2s ease-in;",
+    "after": "transition: opacity 0.2s ease-in, transform 0.2s ease-in, max-height 0.2s ease-in;"
+  },
+  {
+    "file": "app/components/moment/MomentLinkCard.vue",
+    "selector": ")\n</script>\n\n<style lang=\"scss\" scoped>\n.moment-link-card",
+    "before": "transition: all 0.2s ease;",
+    "after": "transition: $transition-fast;"
+  },
+  {
+    "file": "app/components/moment/MomentUserPopover.vue",
+    "selector": "// 浮层过渡动画\n.popover-fade-enter-active",
+    "before": "transition: all 0.2s ease-out;",
+    "after": "transition: opacity 0.2s ease-out, transform 0.2s ease-out;"
+  },
+  {
+    "file": "app/components/moment/MomentUserPopover.vue",
+    "selector": ".popover-fade-leave-active",
+    "before": "transition: all 0.15s ease-in;",
+    "after": "transition: opacity 0.15s ease-in, transform 0.15s ease-in;"
+  },
+  {
+    "file": "app/components/sidebar/FlashCalendarCard.vue",
+    "selector": ".flash-calendar-card__nav-btn",
+    "before": "transition: all 0.15s;",
+    "after": "transition: $transition-fast;"
+  },
+  {
+    "file": "app/components/sidebar/FlashCalendarCard.vue",
+    "selector": ".flash-calendar-card__day",
+    "before": "transition: all 0.15s;",
+    "after": "transition: $transition-fast;"
+  },
+  {
+    "file": "app/components/sidebar/MomentAuthorCard.vue",
+    "selector": ".moment-author-card__social-btn",
+    "before": "transition: all 0.2s ease;",
+    "after": "transition: $transition-fast;"
+  },
+  {
+    "file": "app/components/sidebar/MomentCalendarCard.vue",
+    "selector": ".moment-calendar-card__nav-btn",
+    "before": "transition: all 0.15s;",
+    "after": "transition: $transition-fast;"
+  },
+  {
+    "file": "app/components/sidebar/MomentCalendarCard.vue",
+    "selector": ".moment-calendar-card__day",
+    "before": "transition: all 0.15s;",
+    "after": "transition: $transition-fast;"
+  },
+  {
+    "file": "app/components/sidebar/MomentTopicCard.vue",
+    "selector": ".moment-topic-card__view-all",
+    "before": "transition: all 0.2s ease;",
+    "after": "transition: $transition-fast;"
+  },
+  {
+    "file": "app/components/sidebar/MomentTopicCard.vue",
+    "selector": ".moment-topic-card__item",
+    "before": "transition: all 0.2s ease;",
+    "after": "transition: $transition-fast;"
+  },
+  {
+    "file": "app/components/sidebar/ReadingHistoryCard.vue",
+    "selector": ".reading-history-card__clear",
+    "before": "transition: all 0.2s;",
+    "after": "transition: $transition-fast;"
+  },
+  {
+    "file": "app/components/tab/TabAddBookmarkDialog.vue",
+    "selector": ".tab-dialog__btn",
+    "before": "transition: all 0.15s;",
+    "after": "transition: $transition-fast;"
+  },
+  {
+    "file": "app/components/tab/TabBookmarkGrid.vue",
+    "selector": ".tab-grid__add",
+    "before": "transition: all 0.2s;",
+    "after": "transition: $transition-fast;"
+  },
+  {
+    "file": "app/components/tab/TabBookmarkItem.vue",
+    "selector": "))\n</script>\n\n<style lang=\"scss\" scoped>\n.tab-bm",
+    "before": "transition: all 0.2s;",
+    "after": "transition: $transition-fast;"
+  },
+  {
+    "file": "app/components/tab/TabBookmarkItem.vue",
+    "selector": ".tab-bm__remove",
+    "before": "transition: all 0.15s;",
+    "after": "transition: $transition-fast;"
+  },
+  {
+    "file": "app/components/tab/TabIconPicker.vue",
+    "selector": ".icon-picker__tab",
+    "before": "transition: all 0.15s;",
+    "after": "transition: $transition-fast;"
+  },
+  {
+    "file": "app/components/tab/TabIconPicker.vue",
+    "selector": ".icon-picker__upload-dropzone",
+    "before": "transition: all 0.15s;",
+    "after": "transition: $transition-fast;"
+  },
+  {
+    "file": "app/components/tab/TabImportDialog.vue",
+    "selector": ".tid-dropzone",
+    "before": "transition: all 0.15s;",
+    "after": "transition: $transition-fast;"
+  },
+  {
+    "file": "app/components/tab/TabImportDialog.vue",
+    "selector": ".tid-mode__opt",
+    "before": "transition: all 0.15s;",
+    "after": "transition: $transition-fast;"
+  },
+  {
+    "file": "app/components/tab/TabImportDialog.vue",
+    "selector": ".tid-btn",
+    "before": "transition: all 0.15s;",
+    "after": "transition: $transition-fast;"
+  },
+  {
+    "file": "app/components/tab/TabSearchBar.vue",
+    "selector": ".tab-search__inner",
+    "before": "transition: all 0.2s;",
+    "after": "transition: $transition-fast;"
+  },
+  {
+    "file": "app/components/tab/TabSettingsDrawer.vue",
+    "selector": ".tsd-nav__item",
+    "before": "transition: all 0.15s;",
+    "after": "transition: $transition-fast;"
+  },
+  {
+    "file": "app/components/tab/TabSettingsDrawer.vue",
+    "selector": ".tsd-opt",
+    "before": "transition: all 0.15s;",
+    "after": "transition: $transition-fast;"
+  },
+  {
+    "file": "app/components/tab/TabSettingsDrawer.vue",
+    "selector": "/* ---- Reset button ---- */\n.tsd-reset",
+    "before": "transition: all 0.15s;",
+    "after": "transition: $transition-fast;"
+  },
+  {
+    "file": "app/components/tab/TabSettingsDrawer.vue",
+    "selector": ".tsd-wp-thumb",
+    "before": "transition: all 0.15s;",
+    "after": "transition: $transition-fast;"
+  },
+  {
+    "file": "app/components/tab/TabSettingsDrawer.vue",
+    "selector": "/* ---- 壁纸上传 ---- */\n.tsd-wp-upload",
+    "before": "transition: all 0.15s;",
+    "after": "transition: $transition-fast;"
+  },
+  {
+    "file": "app/components/tab/TabSettingsDrawer.vue",
+    "selector": ".tsd-view-card",
+    "before": "transition: all 0.15s;",
+    "after": "transition: $transition-fast;"
+  },
+  {
+    "file": "app/components/tab/TabSettingsDrawer.vue",
+    "selector": ".tsd-data-btn",
+    "before": "transition: all 0.15s;",
+    "after": "transition: $transition-fast;"
+  },
+  {
+    "file": "app/components/tab/TabSidebarFloating.vue",
+    "selector": ".tab-side__cat",
+    "before": "transition: all 0.15s;",
+    "after": "transition: $transition-fast;"
+  },
+  {
+    "file": "app/components/tab/TabSidebarFloating.vue",
+    "selector": ".tab-side__cat-remove",
+    "before": "transition: all 0.15s;",
+    "after": "transition: $transition-fast;"
+  },
+  {
+    "file": "app/components/tab/TabSidebarFloating.vue",
+    "selector": "/* ---- 新建分类 ---- */\n.tab-side__action",
+    "before": "transition: all 0.15s;",
+    "after": "transition: $transition-fast;"
+  },
+  {
+    "file": "app/components/tab/TabSidebarFloating.vue",
+    "selector": ".tab-side__bottom-btn",
+    "before": "transition: all 0.15s;",
+    "after": "transition: $transition-fast;"
+  },
+  {
+    "file": "app/pages/admin/moments/new.vue",
+    "selector": ".moment-form__topic",
+    "before": "transition: all 0.2s;",
+    "after": "transition: $transition-fast;"
+  },
+  {
+    "file": "app/pages/articles/[id].vue",
+    "selector": "display: inline-flex;\n  align-items: center;\n  gap: 0.375rem;\n\n  &--btn",
+    "before": "transition: all 0.2s;",
+    "after": "transition: $transition-fast;"
+  },
+  {
+    "file": "app/pages/flash/index.vue",
+    "selector": "/* ---- 未登录浏览者的提示 banner ---- */\n.flash-page__guest-banner",
+    "before": "transition: all 0.2s;",
+    "after": "transition: $transition-fast;"
+  },
+  {
+    "file": "app/pages/flash/index.vue",
+    "selector": "/* ---- 右栏卡片：AI 搜索入口 ---- */\n.flash-ai-card",
+    "before": "transition: all 0.2s;",
+    "after": "transition: $transition-fast;"
+  },
+  {
+    "file": "app/pages/guestbook.vue",
+    "selector": "/* ---- 返回底部浮动按钮 ---- */\n.guestbook-scroll-bottom",
+    "before": "transition: all 0.2s ease;",
+    "after": "transition: $transition-fast;"
+  },
+  {
+    "file": "themes/aurora/app/components/RootLayout.vue",
+    "selector": "// --- 登录按钮 ---\n.aurora-topbar__login",
+    "before": "transition: all 0.2s ease;",
+    "after": "transition: $transition-fast;"
+  },
+  {
+    "file": "themes/nexus/app/components/RootLayout.vue",
+    "selector": "/* ---- 左侧栏切换动画：slide-left ---- */\n.sidebar-slide-left-enter-active",
+    "before": "transition: all 0.25s ease-out;",
+    "after": "transition: opacity 0.22s ease-out, transform 0.22s ease-out;"
+  },
+  {
+    "file": "themes/nexus/app/components/RootLayout.vue",
+    "selector": ".sidebar-slide-left-leave-active",
+    "before": "transition: all 0.2s ease-in;",
+    "after": "transition: opacity 0.2s ease-in, transform 0.2s ease-in;"
+  }
+]

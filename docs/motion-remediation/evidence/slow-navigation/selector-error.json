@@ -1,0 +1,36 @@
+{
+  "browser": "153.0.8010.12",
+  "suite": "slow-navigation",
+  "results": [
+    {
+      "name": "nexus/no-preference 慢文章请求中进入全宽页，迟到结果不覆盖末次导航",
+      "status": "failed",
+      "error": "expect(locator).toBeVisible() failed\n\nLocator: locator('.tab-page')\nExpected: visible\nTimeout: 5000ms\nError: element(s) not found\n\nCall log:\n  - Expect \"toBeVisible\" locator('.tab-page') with timeout 5000ms\n  - waiting for locator('.tab-page')\n"
+    },
+    {
+      "name": "nexus/reduce 慢文章请求中进入全宽页，迟到结果不覆盖末次导航",
+      "status": "failed",
+      "error": "expect(locator).toBeVisible() failed\n\nLocator: locator('.tab-page')\nExpected: visible\nTimeout: 5000ms\nError: element(s) not found\n\nCall log:\n  - Expect \"toBeVisible\" locator('.tab-page') with timeout 5000ms\n  - waiting for locator('.tab-page')\n"
+    },
+    {
+      "name": "aurora/no-preference 慢文章请求中进入全宽页，迟到结果不覆盖末次导航",
+      "status": "failed",
+      "error": "expect(locator).toBeVisible() failed\n\nLocator: locator('.tab-page')\nExpected: visible\nTimeout: 5000ms\nError: element(s) not found\n\nCall log:\n  - Expect \"toBeVisible\" locator('.tab-page') with timeout 5000ms\n  - waiting for locator('.tab-page')\n"
+    },
+    {
+      "name": "aurora/reduce 慢文章请求中进入全宽页，迟到结果不覆盖末次导航",
+      "status": "failed",
+      "error": "expect(locator).toBeVisible() failed\n\nLocator: locator('.tab-page')\nExpected: visible\nTimeout: 5000ms\nError: element(s) not found\n\nCall log:\n  - Expect \"toBeVisible\" locator('.tab-page') with timeout 5000ms\n  - waiting for locator('.tab-page')\n"
+    },
+    {
+      "name": "dock/no-preference 慢文章请求中进入全宽页，迟到结果不覆盖末次导航",
+      "status": "failed",
+      "error": "expect(locator).toBeVisible() failed\n\nLocator: locator('.tab-page')\nExpected: visible\nTimeout: 5000ms\nError: element(s) not found\n\nCall log:\n  - Expect \"toBeVisible\" locator('.tab-page') with timeout 5000ms\n  - waiting for locator('.tab-page')\n"
+    },
+    {
+      "name": "dock/reduce 慢文章请求中进入全宽页，迟到结果不覆盖末次导航",
+      "status": "failed",
+      "error": "expect(locator).toBeVisible() failed\n\nLocator: locator('.tab-page')\nExpected: visible\nTimeout: 5000ms\nError: element(s) not found\n\nCall log:\n  - Expect \"toBeVisible\" locator('.tab-page') with timeout 5000ms\n  - waiting for locator('.tab-page')\n"
+    }
+  ]
+}

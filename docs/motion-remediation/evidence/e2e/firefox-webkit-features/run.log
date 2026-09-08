@@ -1,0 +1,42 @@
+
+Running 30 tests using 1 worker
+
+(node:17708) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+
+[1/30] [firefox] › tests\e2e\motion-features.spec.ts:95:5 › 长文 nexus/390 快捷键目录与历史
+[2/30] [firefox] › tests\e2e\motion-features.spec.ts:95:5 › 长文 nexus/1440 快捷键目录与历史
+[3/30] [firefox] › tests\e2e\motion-features.spec.ts:95:5 › 长文 aurora/390 快捷键目录与历史
+[4/30] [firefox] › tests\e2e\motion-features.spec.ts:95:5 › 长文 aurora/1440 快捷键目录与历史
+[5/30] [firefox] › tests\e2e\motion-features.spec.ts:95:5 › 长文 dock/390 快捷键目录与历史
+[6/30] [firefox] › tests\e2e\motion-features.spec.ts:95:5 › 长文 dock/1440 快捷键目录与历史
+[7/30] [firefox] › tests\e2e\motion-features.spec.ts:131:3 › 阅读 nexus 回顶可被滚轮中断，运行中reduce完成滚动
+[8/30] [firefox] › tests\e2e\motion-features.spec.ts:131:3 › 阅读 aurora 回顶可被滚轮中断，运行中reduce完成滚动
+[9/30] [firefox] › tests\e2e\motion-features.spec.ts:131:3 › 阅读 dock 回顶可被滚轮中断，运行中reduce完成滚动
+[10/30] [firefox] › tests\e2e\motion-features.spec.ts:176:1 › Aurora紧凑顶栏的前后导航项均可通过真实点击到达
+[11/30] [firefox] › tests\e2e\motion-features.spec.ts:192:1 › 书签键盘和真实拖拽均能持久化顺序，导入逐层关闭
+[12/30] [firefox] › tests\e2e\motion-features.spec.ts:253:1 › AI演示搜索关闭后迟到结果不覆盖新会话
+[13/30] [firefox] › tests\e2e\motion-features.spec.ts:272:1 › Aurora减少模式和默认模式静止，手动播放可暂停
+[14/30] [firefox] › tests\e2e\motion-features.spec.ts:297:1 › 图片灯箱切换后关闭释放背景，快捷键命令面板可退出
+[15/30] [firefox] › tests\e2e\motion-features.spec.ts:316:1 › 书签上下文编辑退出回到原书签，图标选择器与分组弹窗可关闭
+(node:45888) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+
+[16/30] [webkit] › tests\e2e\motion-features.spec.ts:95:5 › 长文 nexus/390 快捷键目录与历史
+[17/30] [webkit] › tests\e2e\motion-features.spec.ts:95:5 › 长文 nexus/1440 快捷键目录与历史
+[18/30] [webkit] › tests\e2e\motion-features.spec.ts:95:5 › 长文 aurora/390 快捷键目录与历史
+[19/30] [webkit] › tests\e2e\motion-features.spec.ts:95:5 › 长文 aurora/1440 快捷键目录与历史
+[20/30] [webkit] › tests\e2e\motion-features.spec.ts:95:5 › 长文 dock/390 快捷键目录与历史
+[21/30] [webkit] › tests\e2e\motion-features.spec.ts:95:5 › 长文 dock/1440 快捷键目录与历史
+[22/30] [webkit] › tests\e2e\motion-features.spec.ts:131:3 › 阅读 nexus 回顶可被滚轮中断，运行中reduce完成滚动
+[23/30] [webkit] › tests\e2e\motion-features.spec.ts:131:3 › 阅读 aurora 回顶可被滚轮中断，运行中reduce完成滚动
+[24/30] [webkit] › tests\e2e\motion-features.spec.ts:131:3 › 阅读 dock 回顶可被滚轮中断，运行中reduce完成滚动
+[25/30] [webkit] › tests\e2e\motion-features.spec.ts:176:1 › Aurora紧凑顶栏的前后导航项均可通过真实点击到达
+[26/30] [webkit] › tests\e2e\motion-features.spec.ts:192:1 › 书签键盘和真实拖拽均能持久化顺序，导入逐层关闭
+[27/30] [webkit] › tests\e2e\motion-features.spec.ts:253:1 › AI演示搜索关闭后迟到结果不覆盖新会话
+[28/30] [webkit] › tests\e2e\motion-features.spec.ts:272:1 › Aurora减少模式和默认模式静止，手动播放可暂停
+[29/30] [webkit] › tests\e2e\motion-features.spec.ts:297:1 › 图片灯箱切换后关闭释放背景，快捷键命令面板可退出
+[30/30] [webkit] › tests\e2e\motion-features.spec.ts:316:1 › 书签上下文编辑退出回到原书签，图标选择器与分组弹窗可关闭
+  30 passed (2.8m)
