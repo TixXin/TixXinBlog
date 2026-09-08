@@ -6,95 +6,99 @@
 -->
 
 <template>
-  <div class="main-inner moment-detail-page">
-    <!-- 顶部返回栏 -->
-    <div class="main-content__header moment-detail-header">
-      <NuxtLink to="/moments" class="back-btn" aria-label="返回朋友圈">
-        <Icon name="lucide:arrow-left" size="16" />
-        <span>返回朋友圈</span>
-      </NuxtLink>
-      <MomentInfoDrawer
-        v-model:open="drawerOpen"
-        label="动态信息"
-        :show-info="drawerInfo"
-        :stats="authorStats"
-        :profile="ownerCard"
-        :dates="momentDates"
-        :selected-date="selectedDate"
-        @select-date="selectedDate = $event"
-      >
-        <SidebarMomentTopicCard :topics="momentTopics" :active-topic="null" @select="onTopicSelect" />
-      </MomentInfoDrawer>
-    </div>
-
-    <CommonCustomScrollbar class="moment-detail-body" viewport-class="moment-detail-viewport" primary>
-      <div class="moment-detail-content">
-        <!-- 动态不存在 -->
-        <CommonStateBlock
-          v-if="!moment"
-          icon="lucide:search-x"
-          title="动态不存在"
-          description="这条动态可能已被删除或链接有误"
+  <CommonPageFrame class="main-inner moment-detail-page" header-key="moment-return">
+    <template #header>
+      <div class="main-content__header moment-detail-header">
+        <NuxtLink to="/moments" class="back-btn" aria-label="返回朋友圈">
+          <Icon name="lucide:arrow-left" size="16" />
+          <span>返回朋友圈</span>
+        </NuxtLink>
+        <MomentInfoDrawer
+          v-model:open="drawerOpen"
+          label="动态信息"
+          :show-info="drawerInfo"
+          :stats="authorStats"
+          :profile="ownerCard"
+          :dates="momentDates"
+          :selected-date="selectedDate"
+          @select-date="selectedDate = $event"
         >
-          <NuxtLink to="/moments" class="back-link">
-            <Icon name="lucide:arrow-left" size="14" />
-            返回朋友圈
-          </NuxtLink>
-        </CommonStateBlock>
-
-        <!-- 动态卡片 + 上下条导航 -->
-        <template v-else>
-          <article class="moment-detail-card">
-            <p class="moment-detail-notice">演示动态；互动仅当前页面生效，不会发送给博主。</p>
-            <MomentCard :moment="moment" />
-          </article>
-
-          <nav class="moment-detail-nav" aria-label="动态导航">
-            <NuxtLink
-              v-if="prevMoment"
-              :to="`/moments/${prevMoment.id}`"
-              class="moment-detail-nav__item moment-detail-nav__item--prev"
-            >
-              <Icon name="lucide:chevron-left" size="18" class="moment-detail-nav__arrow" />
-              <div class="moment-detail-nav__text">
-                <span class="moment-detail-nav__label">上一条</span>
-                <span class="moment-detail-nav__title">{{ truncate(prevMoment.content, 40) }}</span>
-              </div>
-            </NuxtLink>
-            <span v-else class="moment-detail-nav__placeholder" />
-
-            <NuxtLink
-              v-if="nextMoment"
-              :to="`/moments/${nextMoment.id}`"
-              class="moment-detail-nav__item moment-detail-nav__item--next"
-            >
-              <div class="moment-detail-nav__text">
-                <span class="moment-detail-nav__label">下一条</span>
-                <span class="moment-detail-nav__title">{{ truncate(nextMoment.content, 40) }}</span>
-              </div>
-              <Icon name="lucide:chevron-right" size="18" class="moment-detail-nav__arrow" />
-            </NuxtLink>
-            <span v-else class="moment-detail-nav__placeholder" />
-          </nav>
-        </template>
-      </div>
-    </CommonCustomScrollbar>
-
-    <ClientOnly>
-      <Teleport to="#right-sidebar-target">
-        <SidebarRightSidebar>
-          <SidebarMomentAuthorCard v-if="rightInfo" :stats="authorStats" :profile="ownerCard" />
-          <SidebarMomentCalendarCard
-            v-if="rightInfo"
-            :moment-dates="momentDates"
-            :selected-date="selectedDate"
-            @select-date="selectedDate = $event"
-          />
           <SidebarMomentTopicCard :topics="momentTopics" :active-topic="null" @select="onTopicSelect" />
-        </SidebarRightSidebar>
-      </Teleport>
-    </ClientOnly>
-  </div>
+        </MomentInfoDrawer>
+      </div>
+    </template>
+    <template #default>
+      <!-- 顶部返回栏 -->
+      <CommonCustomScrollbar class="moment-detail-body" viewport-class="moment-detail-viewport" primary>
+        <div class="moment-detail-content">
+          <!-- 动态不存在 -->
+          <CommonStateBlock
+            v-if="!moment"
+            icon="lucide:search-x"
+            title="动态不存在"
+            description="这条动态可能已被删除或链接有误"
+          >
+            <NuxtLink to="/moments" class="back-link">
+              <Icon name="lucide:arrow-left" size="14" />
+              返回朋友圈
+            </NuxtLink>
+          </CommonStateBlock>
+
+          <!-- 动态卡片 + 上下条导航 -->
+          <template v-else>
+            <article class="moment-detail-card">
+              <p class="moment-detail-notice">演示动态；互动仅当前页面生效，不会发送给博主。</p>
+              <MomentCard :moment="moment" />
+            </article>
+
+            <nav class="moment-detail-nav" aria-label="动态导航">
+              <NuxtLink
+                v-if="prevMoment"
+                :to="`/moments/${prevMoment.id}`"
+                class="moment-detail-nav__item moment-detail-nav__item--prev"
+              >
+                <Icon name="lucide:chevron-left" size="18" class="moment-detail-nav__arrow" />
+                <div class="moment-detail-nav__text">
+                  <span class="moment-detail-nav__label">上一条</span>
+                  <span class="moment-detail-nav__title">{{ truncate(prevMoment.content, 40) }}</span>
+                </div>
+              </NuxtLink>
+              <span v-else class="moment-detail-nav__placeholder" />
+
+              <NuxtLink
+                v-if="nextMoment"
+                :to="`/moments/${nextMoment.id}`"
+                class="moment-detail-nav__item moment-detail-nav__item--next"
+              >
+                <div class="moment-detail-nav__text">
+                  <span class="moment-detail-nav__label">下一条</span>
+                  <span class="moment-detail-nav__title">{{ truncate(nextMoment.content, 40) }}</span>
+                </div>
+                <Icon name="lucide:chevron-right" size="18" class="moment-detail-nav__arrow" />
+              </NuxtLink>
+              <span v-else class="moment-detail-nav__placeholder" />
+            </nav>
+          </template>
+        </div>
+      </CommonCustomScrollbar>
+    </template>
+    <template #overlays>
+      <ClientOnly>
+        <Teleport to="#right-sidebar-target">
+          <SidebarRightSidebar>
+            <SidebarMomentAuthorCard v-if="rightInfo" :stats="authorStats" :profile="ownerCard" />
+            <SidebarMomentCalendarCard
+              v-if="rightInfo"
+              :moment-dates="momentDates"
+              :selected-date="selectedDate"
+              @select-date="selectedDate = $event"
+            />
+            <SidebarMomentTopicCard :topics="momentTopics" :active-topic="null" @select="onTopicSelect" />
+          </SidebarRightSidebar>
+        </Teleport>
+      </ClientOnly>
+    </template>
+  </CommonPageFrame>
 </template>
 
 <script setup lang="ts">

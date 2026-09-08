@@ -6,71 +6,75 @@
 -->
 
 <template>
-  <div class="main-inner moment-topic-page">
-    <!-- 顶部返回栏 -->
-    <div class="main-content__header moment-topic-header">
-      <NuxtLink to="/moments" class="back-btn" aria-label="返回朋友圈">
-        <Icon name="lucide:arrow-left" size="16" />
-        <span>返回朋友圈</span>
-      </NuxtLink>
-      <MomentInfoDrawer
-        v-model:open="drawerOpen"
-        label="动态信息"
-        :show-info="drawerInfo"
-        :stats="authorStats"
-        :profile="ownerCard"
-        :dates="momentDates"
-        :selected-date="selectedDate"
-        @select-date="selectedDate = $event"
-      >
-        <SidebarMomentTopicCard :topics="momentTopics" :active-topic="topicName" @select="onTopicSelect" />
-      </MomentInfoDrawer>
-    </div>
-
-    <CommonCustomScrollbar class="moment-topic-body" viewport-class="moment-topic-viewport" primary>
-      <div class="moment-topic-content">
-        <!-- 话题 Hero -->
-        <header v-if="topicMeta" class="moment-topic-hero" :style="heroStyle">
-          <div class="moment-topic-hero__icon">
-            <Icon :name="topicMeta.icon" size="24" />
-          </div>
-          <div class="moment-topic-hero__text">
-            <h1 class="moment-topic-hero__name">#{{ topicMeta.name }}</h1>
-            <p v-if="topicMeta.description" class="moment-topic-hero__desc">{{ topicMeta.description }}</p>
-            <p class="moment-topic-hero__count">共 {{ filteredMoments.length }} 条动态</p>
-          </div>
-        </header>
-
-        <!-- 未知话题降级 -->
-        <header v-else class="moment-topic-hero moment-topic-hero--unknown">
-          <div class="moment-topic-hero__icon">
-            <Icon name="lucide:hash" size="24" />
-          </div>
-          <div class="moment-topic-hero__text">
-            <h1 class="moment-topic-hero__name">#{{ topicName }}</h1>
-            <p class="moment-topic-hero__count">共 {{ filteredMoments.length }} 条动态</p>
-          </div>
-        </header>
-
-        <MomentList :moments="filteredMoments" :selected-topic="null" :selected-date="null" />
-      </div>
-    </CommonCustomScrollbar>
-
-    <ClientOnly>
-      <Teleport to="#right-sidebar-target">
-        <SidebarRightSidebar>
-          <SidebarMomentAuthorCard v-if="rightInfo" :stats="authorStats" :profile="ownerCard" />
-          <SidebarMomentCalendarCard
-            v-if="rightInfo"
-            :moment-dates="momentDates"
-            :selected-date="selectedDate"
-            @select-date="selectedDate = $event"
-          />
+  <CommonPageFrame class="main-inner moment-topic-page" header-key="moment-return">
+    <template #header>
+      <div class="main-content__header moment-topic-header">
+        <NuxtLink to="/moments" class="back-btn" aria-label="返回朋友圈">
+          <Icon name="lucide:arrow-left" size="16" />
+          <span>返回朋友圈</span>
+        </NuxtLink>
+        <MomentInfoDrawer
+          v-model:open="drawerOpen"
+          label="动态信息"
+          :show-info="drawerInfo"
+          :stats="authorStats"
+          :profile="ownerCard"
+          :dates="momentDates"
+          :selected-date="selectedDate"
+          @select-date="selectedDate = $event"
+        >
           <SidebarMomentTopicCard :topics="momentTopics" :active-topic="topicName" @select="onTopicSelect" />
-        </SidebarRightSidebar>
-      </Teleport>
-    </ClientOnly>
-  </div>
+        </MomentInfoDrawer>
+      </div>
+    </template>
+    <template #default>
+      <!-- 顶部返回栏 -->
+      <CommonCustomScrollbar class="moment-topic-body" viewport-class="moment-topic-viewport" primary>
+        <div class="moment-topic-content">
+          <!-- 话题 Hero -->
+          <header v-if="topicMeta" class="moment-topic-hero" :style="heroStyle">
+            <div class="moment-topic-hero__icon">
+              <Icon :name="topicMeta.icon" size="24" />
+            </div>
+            <div class="moment-topic-hero__text">
+              <h1 class="moment-topic-hero__name">#{{ topicMeta.name }}</h1>
+              <p v-if="topicMeta.description" class="moment-topic-hero__desc">{{ topicMeta.description }}</p>
+              <p class="moment-topic-hero__count">共 {{ filteredMoments.length }} 条动态</p>
+            </div>
+          </header>
+
+          <!-- 未知话题降级 -->
+          <header v-else class="moment-topic-hero moment-topic-hero--unknown">
+            <div class="moment-topic-hero__icon">
+              <Icon name="lucide:hash" size="24" />
+            </div>
+            <div class="moment-topic-hero__text">
+              <h1 class="moment-topic-hero__name">#{{ topicName }}</h1>
+              <p class="moment-topic-hero__count">共 {{ filteredMoments.length }} 条动态</p>
+            </div>
+          </header>
+
+          <MomentList :moments="filteredMoments" :selected-topic="null" :selected-date="null" />
+        </div>
+      </CommonCustomScrollbar>
+    </template>
+    <template #overlays>
+      <ClientOnly>
+        <Teleport to="#right-sidebar-target">
+          <SidebarRightSidebar>
+            <SidebarMomentAuthorCard v-if="rightInfo" :stats="authorStats" :profile="ownerCard" />
+            <SidebarMomentCalendarCard
+              v-if="rightInfo"
+              :moment-dates="momentDates"
+              :selected-date="selectedDate"
+              @select-date="selectedDate = $event"
+            />
+            <SidebarMomentTopicCard :topics="momentTopics" :active-topic="topicName" @select="onTopicSelect" />
+          </SidebarRightSidebar>
+        </Teleport>
+      </ClientOnly>
+    </template>
+  </CommonPageFrame>
 </template>
 
 <script setup lang="ts">

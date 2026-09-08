@@ -6,235 +6,237 @@
 -->
 
 <template>
-  <div class="main-inner flash-page">
-    <div class="main-content__header">
-      <div class="page-title">
-        <div class="page-title__icon-wrap" aria-hidden="true">
-          <Icon name="lucide:zap" size="18" />
-        </div>
-        <div class="page-title__text">
-          <h2 class="page-title__heading">闪念</h2>
-          <p class="page-title__sub">
-            {{ isLoggedIn ? '记录稍纵即逝的灵感' : '博主的灵感碎片' }}
-          </p>
-        </div>
-      </div>
-
-      <!-- 右侧操作区：归档箱 toggle + 搜索切换按钮 -->
-      <div class="page-actions">
-        <button
-          v-if="isLoggedIn"
-          type="button"
-          class="flash-page__search-toggle"
-          :class="{ 'is-active': showArchive }"
-          :aria-label="showArchive ? '返回主列表' : '查看归档箱'"
-          @click="toggleArchiveView"
-        >
-          <Icon :name="showArchive ? 'lucide:archive-restore' : 'lucide:archive'" size="14" />
-          <span>{{ showArchive ? '返回主列表' : '归档箱' }}</span>
-        </button>
-        <button
-          ref="searchButtonRef"
-          type="button"
-          class="flash-page__search-toggle"
-          :class="{ 'is-active': searchExpanded }"
-          aria-label="搜索闪念"
-          :aria-expanded="searchExpanded"
-          aria-controls="flash-search"
-          @click="searchExpanded = !searchExpanded"
-        >
-          <Icon name="lucide:search" size="14" />
-          <span>搜索</span>
-        </button>
-      </div>
-
-      <!-- 搜索栏：展开后显示，占满 header 整行 -->
-      <div v-if="searchExpanded" class="flash-page__search-bar">
-        <Icon name="lucide:search" size="13" class="flash-page__search-icon" />
-        <input
-          id="flash-search"
-          ref="searchInputRef"
-          v-model="searchQuery"
-          aria-label="搜索闪念内容或标签"
-          type="text"
-          class="flash-page__search-input"
-          placeholder="搜索闪念内容或标签..."
-          @keydown.escape="closeSearch"
-        />
-        <span v-if="debouncedQuery" class="flash-page__search-count"> {{ filteredNotes.length }} 条结果 </span>
-        <button type="button" class="flash-page__filter-clear" aria-label="收起搜索" @click="closeSearch">
-          <Icon name="lucide:x" size="16" />
-        </button>
-      </div>
-    </div>
-
-    <CommonCustomScrollbar class="flash-page__body" viewport-class="flash-page__viewport" primary>
-      <div class="flash-page__content">
-        <p v-if="storageError" role="alert">{{ storageError }}</p>
-        <!-- 类型 tab：全部 / 灵感 / 待办 / 随记 -->
-        <div class="flash-page__type-tabs" role="group" aria-label="按类型筛选">
-          <button
-            type="button"
-            class="flash-page__type-tab"
-            :class="{ 'is-active': typeFilter === null }"
-            :aria-pressed="typeFilter === null"
-            @click="typeFilter = null"
-          >
-            全部
-          </button>
-          <button
-            v-for="t in typeTabs"
-            :key="t.id"
-            type="button"
-            class="flash-page__type-tab"
-            :class="{ 'is-active': typeFilter === t.id }"
-            :data-type="t.id"
-            :aria-pressed="typeFilter === t.id"
-            @click="typeFilter = t.id"
-          >
-            <Icon :name="t.icon" size="12" />
-            {{ t.label }}
-          </button>
-        </div>
-
-        <button v-if="!isLoggedIn" type="button" class="flash-page__guest-banner" @click="onLogin">
-          <Icon name="lucide:eye" size="14" class="flash-page__guest-banner-icon" />
-          <span class="flash-page__guest-banner-text"> 正在浏览博主的公开闪念，管理内容请使用博主账号登录 </span>
-          <span class="flash-page__guest-banner-cta">
-            立即登录
-            <Icon name="lucide:arrow-right" size="12" />
-          </span>
-        </button>
-        <!-- 标签筛选条 -->
-        <div v-if="activeTag || selectedDate || debouncedQuery || typeFilter" class="flash-page__filter-bar">
-          <span class="flash-page__filter-label" role="status">
-            当前筛选：{{
-              [
-                typeTabs.find((t) => t.id === typeFilter)?.label,
-                activeTag ? '#' + activeTag : '',
-                selectedDate,
-                debouncedQuery ? '关键词：' + debouncedQuery : '',
-              ]
-                .filter(Boolean)
-                .join(' · ')
-            }}
-            · {{ filteredNotes.length }} 条结果
-          </span>
-          <button type="button" class="flash-page__filter-clear" @click="clearFilters">
-            <Icon name="lucide:x" size="12" />
-            清除全部筛选
-          </button>
-        </div>
-        <FlashNoteList
-          :notes="filteredNotes"
-          :pending-ids="pendingIds"
-          :loading="loading"
-          :read-only="isReadOnly"
-          :current-user-id="currentUserId"
-          :guest-id="guestId"
-          :highlighted-id="highlightedNoteId"
-          @remove="onRemove"
-          @edit="onEdit"
-          @toggle-like="onToggleLike"
-          @set-pinned="onSetPinned"
-          @set-archived="onSetArchived"
-          @add-comment="onAddComment"
-          @remove-comment="onRemoveComment"
-          @tag-click="onTagFilter"
-        />
-      </div>
-    </CommonCustomScrollbar>
-
-    <!-- 底部发布输入框：仅登录者可见，参考留言板底部 MessageInput 的呈现方式 -->
-    <div v-if="isLoggedIn" class="flash-page__composer-wrap">
-      <div class="flash-page__composer">
-        <p v-if="editingNote">正在编辑闪念 <button type="button" @click="cancelEdit">取消编辑</button></p>
-        <FlashEditor
-          :key="editorVersion"
-          ref="editorRef"
-          :initial="editingNote"
-          :submitting="publishing || loading"
-          @submit="onSubmit"
-          @dirty="editorDirty = $event"
-        />
-      </div>
-    </div>
-
-    <!-- 右侧栏 -->
-    <ClientOnly>
-      <Teleport to="#right-sidebar-target">
-        <SidebarRightSidebar>
-          <div class="sidebar-list-group">
-            <!-- AI 搜索入口 -->
-            <button type="button" class="flash-ai-card" @click="onAiClick">
-              <Icon name="lucide:sparkles" size="18" class="flash-ai-card__icon" />
-              <div class="flash-ai-card__body">
-                <span class="flash-ai-card__title">AI 搜索闪念</span>
-                <span class="flash-ai-card__desc">{{
-                  isLoggedIn ? '让 AI 帮你回顾过去的想法' : '登录后启用 AI 搜索'
-                }}</span>
-              </div>
-              <Icon name="lucide:chevron-right" size="14" class="flash-ai-card__arrow" />
-            </button>
-
-            <!-- 统计卡片 -->
-            <div class="flash-stat-card">
-              <div class="flash-stat-card__row">
-                <span class="flash-stat-card__label">{{ isLoggedIn ? '闪念总数' : '博主总数' }}</span>
-                <span class="flash-stat-card__value">{{ notes.length }}</span>
-              </div>
-              <div class="flash-stat-card__divider" />
-              <div class="flash-stat-card__row">
-                <span class="flash-stat-card__label">本月新增</span>
-                <span class="flash-stat-card__value">{{ monthlyCount }}</span>
-              </div>
-            </div>
-
-            <!-- 发布日历 -->
-            <SidebarFlashCalendarCard
-              :note-dates="noteDates"
-              :selected-date="selectedDate"
-              @select-date="onSelectDate"
-            />
-
-            <!-- 时间胶囊：去年今日 + 随机回顾 -->
-            <SidebarFlashTimeCapsuleCard :notes="notes" />
-
-            <!-- 标签云 -->
-            <div v-if="tagCloud.length > 0" class="flash-tag-cloud">
-              <div class="flash-tag-cloud__header">
-                <Icon name="lucide:tags" size="14" />
-                <span>标签云</span>
-              </div>
-              <div class="flash-tag-cloud__list">
-                <button
-                  v-for="t in tagCloud"
-                  :key="t.name"
-                  type="button"
-                  :aria-pressed="activeTag === t.name"
-                  class="flash-tag-cloud__item"
-                  :class="{ 'flash-tag-cloud__item--active': activeTag === t.name }"
-                  :style="{ fontSize: tagFontSize(t.count) }"
-                  @click="onTagFilter(t.name)"
-                >
-                  #{{ t.name }}
-                  <span class="flash-tag-cloud__count">{{ t.count }}</span>
-                </button>
-              </div>
-            </div>
+  <CommonPageFrame class="main-inner flash-page" header-key="flash">
+    <template #header>
+      <div class="main-content__header">
+        <div class="page-title">
+          <div class="page-title__icon-wrap" aria-hidden="true">
+            <Icon name="lucide:zap" size="18" />
           </div>
-        </SidebarRightSidebar>
-      </Teleport>
-    </ClientOnly>
+          <div class="page-title__text">
+            <h2 class="page-title__heading">闪念</h2>
+            <p class="page-title__sub">
+              {{ isLoggedIn ? '记录稍纵即逝的灵感' : '博主的灵感碎片' }}
+            </p>
+          </div>
+        </div>
 
-    <FlashAISearchModal v-model:visible="aiModalVisible" :notes="notes" @cite-click="onCiteClick" />
-    <CommonGuestIdentityModal
-      :visible="identityModalVisible"
-      @confirm="onIdentityConfirm"
-      @cancel="cancelIdentity"
-      @login="loginForComment"
-    />
-  </div>
+        <!-- 右侧操作区：归档箱 toggle + 搜索切换按钮 -->
+        <div class="page-actions">
+          <button
+            v-if="isLoggedIn"
+            type="button"
+            class="flash-page__search-toggle"
+            :class="{ 'is-active': showArchive }"
+            :aria-label="showArchive ? '返回主列表' : '查看归档箱'"
+            @click="toggleArchiveView"
+          >
+            <Icon :name="showArchive ? 'lucide:archive-restore' : 'lucide:archive'" size="14" />
+            <span>{{ showArchive ? '返回主列表' : '归档箱' }}</span>
+          </button>
+          <button
+            ref="searchButtonRef"
+            type="button"
+            class="flash-page__search-toggle"
+            :class="{ 'is-active': searchExpanded }"
+            aria-label="搜索闪念"
+            :aria-expanded="searchExpanded"
+            aria-controls="flash-search"
+            @click="searchExpanded = !searchExpanded"
+          >
+            <Icon name="lucide:search" size="14" />
+            <span>搜索</span>
+          </button>
+        </div>
+
+        <!-- 搜索栏：展开后显示，占满 header 整行 -->
+        <div v-if="searchExpanded" class="flash-page__search-bar">
+          <Icon name="lucide:search" size="13" class="flash-page__search-icon" />
+          <input
+            id="flash-search"
+            ref="searchInputRef"
+            v-model="searchQuery"
+            aria-label="搜索闪念内容或标签"
+            type="text"
+            class="flash-page__search-input"
+            placeholder="搜索闪念内容或标签..."
+            @keydown.escape="closeSearch"
+          />
+          <span v-if="debouncedQuery" class="flash-page__search-count"> {{ filteredNotes.length }} 条结果 </span>
+          <button type="button" class="flash-page__filter-clear" aria-label="收起搜索" @click="closeSearch">
+            <Icon name="lucide:x" size="16" />
+          </button>
+        </div>
+      </div>
+    </template>
+    <template #default>
+      <CommonCustomScrollbar class="flash-page__body" viewport-class="flash-page__viewport" primary>
+        <div class="flash-page__content">
+          <p v-if="storageError" role="alert">{{ storageError }}</p>
+          <!-- 类型 tab：全部 / 灵感 / 待办 / 随记 -->
+          <div class="flash-page__type-tabs" role="group" aria-label="按类型筛选">
+            <button
+              type="button"
+              class="flash-page__type-tab"
+              :class="{ 'is-active': typeFilter === null }"
+              :aria-pressed="typeFilter === null"
+              @click="typeFilter = null"
+            >
+              全部
+            </button>
+            <button
+              v-for="t in typeTabs"
+              :key="t.id"
+              type="button"
+              class="flash-page__type-tab"
+              :class="{ 'is-active': typeFilter === t.id }"
+              :data-type="t.id"
+              :aria-pressed="typeFilter === t.id"
+              @click="typeFilter = t.id"
+            >
+              <Icon :name="t.icon" size="12" />
+              {{ t.label }}
+            </button>
+          </div>
+
+          <button v-if="!isLoggedIn" type="button" class="flash-page__guest-banner" @click="onLogin">
+            <Icon name="lucide:eye" size="14" class="flash-page__guest-banner-icon" />
+            <span class="flash-page__guest-banner-text"> 正在浏览博主的公开闪念，管理内容请使用博主账号登录 </span>
+            <span class="flash-page__guest-banner-cta">
+              立即登录
+              <Icon name="lucide:arrow-right" size="12" />
+            </span>
+          </button>
+          <!-- 标签筛选条 -->
+          <div v-if="activeTag || selectedDate || debouncedQuery || typeFilter" class="flash-page__filter-bar">
+            <span class="flash-page__filter-label" role="status">
+              当前筛选：{{
+                [
+                  typeTabs.find((t) => t.id === typeFilter)?.label,
+                  activeTag ? '#' + activeTag : '',
+                  selectedDate,
+                  debouncedQuery ? '关键词：' + debouncedQuery : '',
+                ]
+                  .filter(Boolean)
+                  .join(' · ')
+              }}
+              · {{ filteredNotes.length }} 条结果
+            </span>
+            <button type="button" class="flash-page__filter-clear" @click="clearFilters">
+              <Icon name="lucide:x" size="12" />
+              清除全部筛选
+            </button>
+          </div>
+          <FlashNoteList
+            :notes="filteredNotes"
+            :pending-ids="pendingIds"
+            :loading="loading"
+            :read-only="isReadOnly"
+            :current-user-id="currentUserId"
+            :guest-id="guestId"
+            :highlighted-id="highlightedNoteId"
+            @remove="onRemove"
+            @edit="onEdit"
+            @toggle-like="onToggleLike"
+            @set-pinned="onSetPinned"
+            @set-archived="onSetArchived"
+            @add-comment="onAddComment"
+            @remove-comment="onRemoveComment"
+            @tag-click="onTagFilter"
+          />
+        </div>
+      </CommonCustomScrollbar>
+      <!-- 底部发布输入框：仅登录者可见，参考留言板底部 MessageInput 的呈现方式 -->
+      <div v-if="isLoggedIn" class="flash-page__composer-wrap">
+        <div class="flash-page__composer">
+          <p v-if="editingNote">正在编辑闪念 <button type="button" @click="cancelEdit">取消编辑</button></p>
+          <FlashEditor
+            :key="editorVersion"
+            ref="editorRef"
+            :initial="editingNote"
+            :submitting="publishing || loading"
+            @submit="onSubmit"
+            @dirty="editorDirty = $event"
+          />
+        </div>
+      </div>
+      <!-- 右侧栏 -->
+    </template>
+    <template #overlays>
+      <ClientOnly>
+        <Teleport to="#right-sidebar-target">
+          <SidebarRightSidebar>
+            <div class="sidebar-list-group">
+              <!-- AI 搜索入口 -->
+              <button type="button" class="flash-ai-card" @click="onAiClick">
+                <Icon name="lucide:sparkles" size="18" class="flash-ai-card__icon" />
+                <div class="flash-ai-card__body">
+                  <span class="flash-ai-card__title">AI 搜索闪念</span>
+                  <span class="flash-ai-card__desc">{{
+                    isLoggedIn ? '让 AI 帮你回顾过去的想法' : '登录后启用 AI 搜索'
+                  }}</span>
+                </div>
+                <Icon name="lucide:chevron-right" size="14" class="flash-ai-card__arrow" />
+              </button>
+
+              <!-- 统计卡片 -->
+              <div class="flash-stat-card">
+                <div class="flash-stat-card__row">
+                  <span class="flash-stat-card__label">{{ isLoggedIn ? '闪念总数' : '博主总数' }}</span>
+                  <span class="flash-stat-card__value">{{ notes.length }}</span>
+                </div>
+                <div class="flash-stat-card__divider" />
+                <div class="flash-stat-card__row">
+                  <span class="flash-stat-card__label">本月新增</span>
+                  <span class="flash-stat-card__value">{{ monthlyCount }}</span>
+                </div>
+              </div>
+
+              <!-- 发布日历 -->
+              <SidebarFlashCalendarCard
+                :note-dates="noteDates"
+                :selected-date="selectedDate"
+                @select-date="onSelectDate"
+              />
+
+              <!-- 时间胶囊：去年今日 + 随机回顾 -->
+              <SidebarFlashTimeCapsuleCard :notes="notes" />
+
+              <!-- 标签云 -->
+              <div v-if="tagCloud.length > 0" class="flash-tag-cloud">
+                <div class="flash-tag-cloud__header">
+                  <Icon name="lucide:tags" size="14" />
+                  <span>标签云</span>
+                </div>
+                <div class="flash-tag-cloud__list">
+                  <button
+                    v-for="t in tagCloud"
+                    :key="t.name"
+                    type="button"
+                    :aria-pressed="activeTag === t.name"
+                    class="flash-tag-cloud__item"
+                    :class="{ 'flash-tag-cloud__item--active': activeTag === t.name }"
+                    :style="{ fontSize: tagFontSize(t.count) }"
+                    @click="onTagFilter(t.name)"
+                  >
+                    #{{ t.name }}
+                    <span class="flash-tag-cloud__count">{{ t.count }}</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </SidebarRightSidebar>
+        </Teleport>
+      </ClientOnly>
+      <FlashAISearchModal v-model:visible="aiModalVisible" :notes="notes" @cite-click="onCiteClick" />
+      <CommonGuestIdentityModal
+        :visible="identityModalVisible"
+        @confirm="onIdentityConfirm"
+        @cancel="cancelIdentity"
+        @login="loginForComment"
+      />
+    </template>
+  </CommonPageFrame>
 </template>
 
 <script setup lang="ts">

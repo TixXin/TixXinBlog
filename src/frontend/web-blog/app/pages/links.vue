@@ -6,27 +6,33 @@
 -->
 
 <template>
-  <div class="main-inner">
-    <CommonPageHeader title="友情链接" subtitle="互联网上志同道合的伙伴们" icon="lucide:link">
-      <template #action>
-        <CommonSearchBox placeholder="搜索友链..." readonly @click="openSearch" />
-      </template>
-    </CommonPageHeader>
-    <CommonCustomScrollbar class="links-body" viewport-class="links-viewport" :show-back-to-top="false" primary>
-      <LinkGrid :links="links" />
-    </CommonCustomScrollbar>
-    <div class="links-footer">
-      <LinkForm />
-    </div>
-    <ClientOnly>
-      <Teleport to="#right-sidebar-target">
-        <SidebarRightSidebar>
-          <LinkRules :rules="linkRules" />
-          <LinkSiteInfoCard :info="siteInfo" />
-        </SidebarRightSidebar>
-      </Teleport>
-    </ClientOnly>
-  </div>
+  <CommonPageFrame class="main-inner" header-key="links">
+    <template #header>
+      <CommonPageHeader title="友情链接" subtitle="互联网上志同道合的伙伴们" icon="lucide:link">
+        <template #action>
+          <CommonSearchBox placeholder="搜索友链..." readonly @click="openSearch" />
+        </template>
+      </CommonPageHeader>
+    </template>
+    <template #default>
+      <CommonCustomScrollbar class="links-body" viewport-class="links-viewport" :show-back-to-top="false" primary>
+        <LinkGrid :links="links" />
+      </CommonCustomScrollbar>
+      <div class="links-footer">
+        <LinkForm />
+      </div>
+    </template>
+    <template #overlays>
+      <ClientOnly>
+        <Teleport to="#right-sidebar-target">
+          <SidebarRightSidebar>
+            <LinkRules :rules="linkRules" />
+            <LinkSiteInfoCard :info="siteInfo" />
+          </SidebarRightSidebar>
+        </Teleport>
+      </ClientOnly>
+    </template>
+  </CommonPageFrame>
 </template>
 
 <script setup lang="ts">

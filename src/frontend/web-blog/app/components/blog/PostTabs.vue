@@ -16,6 +16,7 @@
         :key="tab.value"
         :to="tab.value === 'moments' ? '/moments' : '/'"
         class="tab-btn post-tabs__link"
+        :data-focus-key="`content-tab-${tab.value}`"
         :class="{ 'tab-active': modelValue === tab.value }"
         :aria-current="modelValue === tab.value ? 'page' : undefined"
       >

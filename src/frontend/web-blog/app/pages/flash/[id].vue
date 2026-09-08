@@ -6,83 +6,87 @@
 -->
 
 <template>
-  <div class="main-inner flash-detail-page">
-    <div class="main-content__header flash-detail-header">
-      <NuxtLink to="/flash" class="back-btn" aria-label="返回闪念">
-        <Icon name="lucide:arrow-left" size="16" />
-        <span>返回闪念</span>
-      </NuxtLink>
-    </div>
-
-    <CommonCustomScrollbar class="flash-detail-body" viewport-class="flash-detail-viewport" primary>
-      <div class="flash-detail-content">
-        <CommonStateBlock
-          v-if="loadError"
-          icon="lucide:cloud-off"
-          title="闪念加载失败"
-          description="暂时无法读取公开闪念，请稍后重试。"
-          action-label="重试加载"
-          @action="refreshNotes()"
-        />
-        <CommonStateBlock
-          v-else-if="loadFinished && !note"
-          icon="lucide:search-x"
-          title="闪念不存在"
-          description="这条闪念可能已被删除或链接有误"
-        >
-          <NuxtLink to="/flash" class="back-link">
-            <Icon name="lucide:arrow-left" size="14" />
-            返回闪念
-          </NuxtLink>
-        </CommonStateBlock>
-
-        <template v-else-if="note">
-          <article class="flash-detail-card">
-            <FlashNoteCard :note="note" read-only :interactive="false" />
-          </article>
-
-          <p class="flash-detail-hint">
-            <Icon name="lucide:info" size="12" />
-            详情页为只读视图，点赞 / 评论请
-            <NuxtLink to="/flash" class="flash-detail-hint__link">回到主页</NuxtLink>
-          </p>
-
-          <nav class="flash-detail-nav" aria-label="闪念导航">
-            <NuxtLink
-              v-if="prevNote"
-              :to="`/flash/${prevNote.id}`"
-              class="flash-detail-nav__item flash-detail-nav__item--prev"
-            >
-              <Icon name="lucide:chevron-left" size="18" class="flash-detail-nav__arrow" />
-              <div class="flash-detail-nav__text">
-                <span class="flash-detail-nav__label">上一条</span>
-                <span class="flash-detail-nav__title">{{ truncate(prevNote.content, 40) }}</span>
-              </div>
-            </NuxtLink>
-            <span v-else class="flash-detail-nav__placeholder" />
-
-            <NuxtLink
-              v-if="nextNote"
-              :to="`/flash/${nextNote.id}`"
-              class="flash-detail-nav__item flash-detail-nav__item--next"
-            >
-              <div class="flash-detail-nav__text">
-                <span class="flash-detail-nav__label">下一条</span>
-                <span class="flash-detail-nav__title">{{ truncate(nextNote.content, 40) }}</span>
-              </div>
-              <Icon name="lucide:chevron-right" size="18" class="flash-detail-nav__arrow" />
-            </NuxtLink>
-            <span v-else class="flash-detail-nav__placeholder" />
-          </nav>
-        </template>
-
-        <div v-else class="flash-detail-loading">
-          <Icon name="lucide:loader-2" size="20" class="flash-detail-loading__icon" />
-          <span>加载中...</span>
-        </div>
+  <CommonPageFrame class="main-inner flash-detail-page" header-key="flash-return">
+    <template #header>
+      <div class="main-content__header flash-detail-header">
+        <NuxtLink to="/flash" class="back-btn" aria-label="返回闪念">
+          <Icon name="lucide:arrow-left" size="16" />
+          <span>返回闪念</span>
+        </NuxtLink>
       </div>
-    </CommonCustomScrollbar>
-  </div>
+    </template>
+    <template #default>
+      <CommonCustomScrollbar class="flash-detail-body" viewport-class="flash-detail-viewport" primary>
+        <div class="flash-detail-content">
+          <CommonStateBlock
+            v-if="loadError"
+            icon="lucide:cloud-off"
+            title="闪念加载失败"
+            description="暂时无法读取公开闪念，请稍后重试。"
+            action-label="重试加载"
+            @action="refreshNotes()"
+          />
+          <CommonStateBlock
+            v-else-if="loadFinished && !note"
+            icon="lucide:search-x"
+            title="闪念不存在"
+            description="这条闪念可能已被删除或链接有误"
+          >
+            <NuxtLink to="/flash" class="back-link">
+              <Icon name="lucide:arrow-left" size="14" />
+              返回闪念
+            </NuxtLink>
+          </CommonStateBlock>
+
+          <template v-else-if="note">
+            <article class="flash-detail-card">
+              <FlashNoteCard :note="note" read-only :interactive="false" />
+            </article>
+
+            <p class="flash-detail-hint">
+              <Icon name="lucide:info" size="12" />
+              详情页为只读视图，点赞 / 评论请
+              <NuxtLink to="/flash" class="flash-detail-hint__link">回到主页</NuxtLink>
+            </p>
+
+            <nav class="flash-detail-nav" aria-label="闪念导航">
+              <NuxtLink
+                v-if="prevNote"
+                :to="`/flash/${prevNote.id}`"
+                class="flash-detail-nav__item flash-detail-nav__item--prev"
+              >
+                <Icon name="lucide:chevron-left" size="18" class="flash-detail-nav__arrow" />
+                <div class="flash-detail-nav__text">
+                  <span class="flash-detail-nav__label">上一条</span>
+                  <span class="flash-detail-nav__title">{{ truncate(prevNote.content, 40) }}</span>
+                </div>
+              </NuxtLink>
+              <span v-else class="flash-detail-nav__placeholder" />
+
+              <NuxtLink
+                v-if="nextNote"
+                :to="`/flash/${nextNote.id}`"
+                class="flash-detail-nav__item flash-detail-nav__item--next"
+              >
+                <div class="flash-detail-nav__text">
+                  <span class="flash-detail-nav__label">下一条</span>
+                  <span class="flash-detail-nav__title">{{ truncate(nextNote.content, 40) }}</span>
+                </div>
+                <Icon name="lucide:chevron-right" size="18" class="flash-detail-nav__arrow" />
+              </NuxtLink>
+              <span v-else class="flash-detail-nav__placeholder" />
+            </nav>
+          </template>
+
+          <div v-else class="flash-detail-loading">
+            <Icon name="lucide:loader-2" size="20" class="flash-detail-loading__icon" />
+            <span>加载中...</span>
+          </div>
+        </div>
+      </CommonCustomScrollbar>
+    </template>
+    <template #overlays> </template>
+  </CommonPageFrame>
 </template>
 
 <script setup lang="ts">

@@ -6,78 +6,82 @@
 -->
 
 <template>
-  <div class="main-inner moments-page">
-    <!-- 头部 Tab 栏 + 搜索 -->
-    <div class="main-content__header">
-      <BlogPostTabs :tabs="tabs" model-value="moments" />
-      <div class="page-actions">
-        <CommonSearchBox
-          v-model="searchKeyword"
-          placeholder="搜索动态内容 / 话题 / 地点..."
-          class="moments-header__search"
-        />
-        <MomentInfoDrawer
-          v-model:open="drawerOpen"
-          :show-info="drawerInfo"
-          :stats="authorStats"
-          :profile="ownerCard"
-          :dates="momentDates"
-          :selected-date="selectedDate"
-          @select-date="onDateSelect"
-        >
-          <SidebarMomentTopicCard :topics="momentTopics" :active-topic="selectedTopic" @select="onTopicSelect" />
-          <button
-            v-if="searchKeyword || selectedTopic || selectedDate"
-            type="button"
-            class="filter-clear"
-            @click="clearFilters"
-          >
-            清除动态筛选
-          </button>
-          <SidebarMomentPhotoWallCard :images="photoWallImages" @select-moment="onPhotoSelect" />
-          <SidebarMomentTimeCapsuleCard :moments="moments" />
-        </MomentInfoDrawer>
-        <NuxtLink v-if="isOwner" to="/admin/moments/new" class="moments-header__publish" aria-label="发布新动态">
-          <Icon name="lucide:plus" size="14" />
-          <span>发布</span>
-        </NuxtLink>
-      </div>
-    </div>
-    <div v-if="searchKeyword || selectedTopic || selectedDate" class="moments-filter-summary">
-      <span role="status"
-        >当前筛选：{{ [searchKeyword, selectedTopic, selectedDate].filter(Boolean).join(' · ') }}</span
-      >
-      <button type="button" class="filter-clear" @click="clearFilters">清除动态筛选</button>
-    </div>
-
-    <CommonCustomScrollbar class="moments-body" viewport-class="moments-viewport" primary>
-      <div class="moments-content">
-        <MomentList
-          :moments="moments"
-          :selected-topic="selectedTopic"
-          :selected-date="selectedDate"
-          :keyword="searchKeyword"
-        />
-      </div>
-    </CommonCustomScrollbar>
-
-    <ClientOnly>
-      <Teleport to="#right-sidebar-target">
-        <SidebarRightSidebar>
-          <SidebarMomentAuthorCard v-if="rightInfo" :stats="authorStats" :profile="ownerCard" />
-          <SidebarMomentPhotoWallCard :images="photoWallImages" @select-moment="onPhotoSelect" />
-          <SidebarMomentCalendarCard
-            v-if="rightInfo"
-            :moment-dates="momentDates"
+  <CommonPageFrame class="main-inner moments-page" header-key="feed">
+    <template #header>
+      <div class="main-content__header">
+        <BlogPostTabs :tabs="tabs" model-value="moments" />
+        <div class="page-actions">
+          <CommonSearchBox
+            v-model="searchKeyword"
+            placeholder="搜索动态内容 / 话题 / 地点..."
+            class="moments-header__search"
+          />
+          <MomentInfoDrawer
+            v-model:open="drawerOpen"
+            :show-info="drawerInfo"
+            :stats="authorStats"
+            :profile="ownerCard"
+            :dates="momentDates"
             :selected-date="selectedDate"
             @select-date="onDateSelect"
+          >
+            <SidebarMomentTopicCard :topics="momentTopics" :active-topic="selectedTopic" @select="onTopicSelect" />
+            <button
+              v-if="searchKeyword || selectedTopic || selectedDate"
+              type="button"
+              class="filter-clear"
+              @click="clearFilters"
+            >
+              清除动态筛选
+            </button>
+            <SidebarMomentPhotoWallCard :images="photoWallImages" @select-moment="onPhotoSelect" />
+            <SidebarMomentTimeCapsuleCard :moments="moments" />
+          </MomentInfoDrawer>
+          <NuxtLink v-if="isOwner" to="/admin/moments/new" class="moments-header__publish" aria-label="发布新动态">
+            <Icon name="lucide:plus" size="14" />
+            <span>发布</span>
+          </NuxtLink>
+        </div>
+      </div>
+    </template>
+    <template #default>
+      <!-- 头部 Tab 栏 + 搜索 -->
+      <div v-if="searchKeyword || selectedTopic || selectedDate" class="moments-filter-summary">
+        <span role="status"
+          >当前筛选：{{ [searchKeyword, selectedTopic, selectedDate].filter(Boolean).join(' · ') }}</span
+        >
+        <button type="button" class="filter-clear" @click="clearFilters">清除动态筛选</button>
+      </div>
+      <CommonCustomScrollbar class="moments-body" viewport-class="moments-viewport" primary>
+        <div class="moments-content">
+          <MomentList
+            :moments="moments"
+            :selected-topic="selectedTopic"
+            :selected-date="selectedDate"
+            :keyword="searchKeyword"
           />
-          <SidebarMomentTopicCard :topics="momentTopics" :active-topic="selectedTopic" @select="onTopicSelect" />
-          <SidebarMomentTimeCapsuleCard :moments="moments" />
-        </SidebarRightSidebar>
-      </Teleport>
-    </ClientOnly>
-  </div>
+        </div>
+      </CommonCustomScrollbar>
+    </template>
+    <template #overlays>
+      <ClientOnly>
+        <Teleport to="#right-sidebar-target">
+          <SidebarRightSidebar>
+            <SidebarMomentAuthorCard v-if="rightInfo" :stats="authorStats" :profile="ownerCard" />
+            <SidebarMomentPhotoWallCard :images="photoWallImages" @select-moment="onPhotoSelect" />
+            <SidebarMomentCalendarCard
+              v-if="rightInfo"
+              :moment-dates="momentDates"
+              :selected-date="selectedDate"
+              @select-date="onDateSelect"
+            />
+            <SidebarMomentTopicCard :topics="momentTopics" :active-topic="selectedTopic" @select="onTopicSelect" />
+            <SidebarMomentTimeCapsuleCard :moments="moments" />
+          </SidebarRightSidebar>
+        </Teleport>
+      </ClientOnly>
+    </template>
+  </CommonPageFrame>
 </template>
 
 <script setup lang="ts">

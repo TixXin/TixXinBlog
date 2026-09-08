@@ -22,6 +22,7 @@
 
 <script setup lang="ts">
 import { isPageRequestCancellation } from '~/utils/pageRequestCancellation'
+import { pageMotionPendingKey } from '~/utils/pageMotionRegions'
 
 // 仅终止已销毁页面的初始化；真实网络、渲染和业务错误继续交给Nuxt错误边界。
 onErrorCaptured((error) => {
@@ -31,6 +32,7 @@ onErrorCaptured((error) => {
 const { settings: siteSettings } = useSiteSettings()
 const pageHost = ref<HTMLElement | null>(null)
 const { pending: pagePending } = usePageMotion(pageHost)
+provide(pageMotionPendingKey, pagePending)
 
 const route = useRoute()
 const { enable: enableFullbleed, disable: disableFullbleed } = useFullbleedPage()
@@ -68,5 +70,9 @@ watch(
   color: var(--text-soft);
   font-size: 0.8125rem;
   pointer-events: none;
+}
+// 普通页在自身正文区提供反馈；特殊页面继续使用外层兜底。
+.page-motion-host:has(> [data-page-frame]) > .page-motion-status {
+  display: none;
 }
 </style>

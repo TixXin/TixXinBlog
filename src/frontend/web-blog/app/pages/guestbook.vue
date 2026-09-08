@@ -6,109 +6,114 @@
 -->
 
 <template>
-  <div class="main-inner">
-    <!-- 头部区域（统一样式） -->
-    <div class="main-content__header">
-      <div class="page-title">
-        <div class="page-title__icon-wrap" aria-hidden="true">
-          <Icon name="lucide:message-circle" size="18" />
-        </div>
-        <div class="page-title__text">
-          <h2 class="page-title__heading">留言板</h2>
-          <p class="page-title__sub">当前演示 {{ formattedCount }} 条留言</p>
-        </div>
-      </div>
-
-      <!-- 右侧操作区：在线状态指示 -->
-      <div class="page-actions">
-        <span class="page-title__sub">演示留言板</span>
-      </div>
-    </div>
-
-    <div class="guestbook-center">
-      <!-- 置顶公告 -->
-      <GuestbookPinnedMessage :message="pinnedMessage" />
-
-      <!-- 论坛模式：输入框在消息列表上方 -->
-      <GuestbookMessageInput
-        v-if="!isChatMode"
-        :reply-to="replyTarget"
-        @send="addMessage"
-        @cancel-reply="replyTarget = null"
-      />
-
-      <!-- 消息区域 wrapper：浮动按钮与 loader 浮层的定位基准 -->
-      <div class="guestbook-center__messages-wrap">
-        <!-- Loader 浮层（脱离文档流，不影响 scrollHeight） -->
-        <Transition name="loader-fade">
-          <div
-            v-if="hasOlderMessages && showLoadingOlder"
-            class="guestbook-loader"
-            :class="isChatMode ? 'guestbook-loader--top' : 'guestbook-loader--bottom'"
-          >
-            <Icon name="lucide:loader-2" size="14" class="guestbook-loader__spinner" />
-            <span class="guestbook-loader__text">{{ isChatMode ? '加载历史消息...' : '加载更多消息...' }}</span>
+  <CommonPageFrame class="main-inner" header-key="guestbook">
+    <template #header>
+      <div class="main-content__header">
+        <div class="page-title">
+          <div class="page-title__icon-wrap" aria-hidden="true">
+            <Icon name="lucide:message-circle" size="18" />
           </div>
-        </Transition>
+          <div class="page-title__text">
+            <h2 class="page-title__heading">留言板</h2>
+            <p class="page-title__sub">当前演示 {{ formattedCount }} 条留言</p>
+          </div>
+        </div>
 
-        <CommonCustomScrollbar
-          ref="scrollbarRef"
-          class="guestbook-center__messages"
-          viewport-class="guestbook-viewport"
-          :show-back-to-top="false"
-          primary
-          :primary-direction="isChatMode ? 'down' : 'up'"
-        >
-          <!-- 聊天模式：顶部哨兵，向上滚动加载历史消息 -->
-          <div v-if="isChatMode" ref="topSentinelRef" class="guestbook-sentinel" />
-
-          <!-- 骨架屏 -->
-          <GuestbookMessageSkeleton v-if="isLoading" />
-
-          <!-- 空状态 -->
-          <GuestbookEmptyState v-else-if="totalMessageCount === 0" @compose="focusInput" />
-
-          <!-- 消息列表 -->
-          <GuestbookMessageList v-else :groups="visibleGroups" @reply="onReply" />
-
-          <!-- 论坛模式：底部哨兵，向下滚动加载更早消息 -->
-          <div v-if="!isChatMode" ref="bottomSentinelRef" class="guestbook-sentinel" />
-        </CommonCustomScrollbar>
-
-        <!-- 聊天模式：返回底部浮动按钮 -->
-        <Transition name="scroll-btn-fade">
-          <button
-            v-if="isChatMode && !isAtBottom"
-            type="button"
-            class="guestbook-scroll-bottom"
-            @click="scrollToBottom()"
-          >
-            <span v-if="newMessageCount > 0" class="guestbook-scroll-bottom__badge">
-              {{ newMessageCount > 99 ? '99+' : newMessageCount }}
-            </span>
-            <Icon name="lucide:arrow-down" size="16" />
-          </button>
-        </Transition>
+        <!-- 右侧操作区：在线状态指示 -->
+        <div class="page-actions">
+          <span class="page-title__sub">演示留言板</span>
+        </div>
       </div>
+    </template>
+    <template #default>
+      <!-- 头部区域（统一样式） -->
+      <div class="guestbook-center">
+        <!-- 置顶公告 -->
+        <GuestbookPinnedMessage :message="pinnedMessage" />
 
-      <!-- 聊天模式：输入框在消息列表下方 -->
-      <GuestbookMessageInput
-        v-if="isChatMode"
-        :reply-to="replyTarget"
-        @send="addMessage"
-        @cancel-reply="replyTarget = null"
-      />
-    </div>
-    <ClientOnly>
-      <Teleport to="#right-sidebar-target">
-        <SidebarRightSidebar>
-          <GuestbookChatStats :stats="chatStats" />
-          <GuestbookChatRules :rules="chatRules" />
-          <GuestbookActiveMembers :members="activeMembers" />
-        </SidebarRightSidebar>
-      </Teleport>
-    </ClientOnly>
-  </div>
+        <!-- 论坛模式：输入框在消息列表上方 -->
+        <GuestbookMessageInput
+          v-if="!isChatMode"
+          :reply-to="replyTarget"
+          @send="addMessage"
+          @cancel-reply="replyTarget = null"
+        />
+
+        <!-- 消息区域 wrapper：浮动按钮与 loader 浮层的定位基准 -->
+        <div class="guestbook-center__messages-wrap">
+          <!-- Loader 浮层（脱离文档流，不影响 scrollHeight） -->
+          <Transition name="loader-fade">
+            <div
+              v-if="hasOlderMessages && showLoadingOlder"
+              class="guestbook-loader"
+              :class="isChatMode ? 'guestbook-loader--top' : 'guestbook-loader--bottom'"
+            >
+              <Icon name="lucide:loader-2" size="14" class="guestbook-loader__spinner" />
+              <span class="guestbook-loader__text">{{ isChatMode ? '加载历史消息...' : '加载更多消息...' }}</span>
+            </div>
+          </Transition>
+
+          <CommonCustomScrollbar
+            ref="scrollbarRef"
+            class="guestbook-center__messages"
+            viewport-class="guestbook-viewport"
+            :show-back-to-top="false"
+            primary
+            :primary-direction="isChatMode ? 'down' : 'up'"
+          >
+            <!-- 聊天模式：顶部哨兵，向上滚动加载历史消息 -->
+            <div v-if="isChatMode" ref="topSentinelRef" class="guestbook-sentinel" />
+
+            <!-- 骨架屏 -->
+            <GuestbookMessageSkeleton v-if="isLoading" />
+
+            <!-- 空状态 -->
+            <GuestbookEmptyState v-else-if="totalMessageCount === 0" @compose="focusInput" />
+
+            <!-- 消息列表 -->
+            <GuestbookMessageList v-else :groups="visibleGroups" @reply="onReply" />
+
+            <!-- 论坛模式：底部哨兵，向下滚动加载更早消息 -->
+            <div v-if="!isChatMode" ref="bottomSentinelRef" class="guestbook-sentinel" />
+          </CommonCustomScrollbar>
+
+          <!-- 聊天模式：返回底部浮动按钮 -->
+          <Transition name="scroll-btn-fade">
+            <button
+              v-if="isChatMode && !isAtBottom"
+              type="button"
+              class="guestbook-scroll-bottom"
+              @click="scrollToBottom()"
+            >
+              <span v-if="newMessageCount > 0" class="guestbook-scroll-bottom__badge">
+                {{ newMessageCount > 99 ? '99+' : newMessageCount }}
+              </span>
+              <Icon name="lucide:arrow-down" size="16" />
+            </button>
+          </Transition>
+        </div>
+
+        <!-- 聊天模式：输入框在消息列表下方 -->
+        <GuestbookMessageInput
+          v-if="isChatMode"
+          :reply-to="replyTarget"
+          @send="addMessage"
+          @cancel-reply="replyTarget = null"
+        />
+      </div>
+    </template>
+    <template #overlays>
+      <ClientOnly>
+        <Teleport to="#right-sidebar-target">
+          <SidebarRightSidebar>
+            <GuestbookChatStats :stats="chatStats" />
+            <GuestbookChatRules :rules="chatRules" />
+            <GuestbookActiveMembers :members="activeMembers" />
+          </SidebarRightSidebar>
+        </Teleport>
+      </ClientOnly>
+    </template>
+  </CommonPageFrame>
 </template>
 
 <script setup lang="ts">
