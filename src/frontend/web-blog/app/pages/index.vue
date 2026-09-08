@@ -7,21 +7,7 @@
 <template>
   <div class="main-inner articles-page">
     <div class="main-content__header">
-      <div class="articles-header-left">
-        <div class="page-title__icon-wrap" aria-hidden="true"><Icon name="lucide:newspaper" size="18" /></div>
-        <nav class="articles-tabs" aria-label="内容类型">
-          <NuxtLink
-            v-for="tab in tabs"
-            :key="tab.value"
-            :to="tab.value === 'moments' ? '/moments' : '/'"
-            class="tab-btn"
-            :class="{ 'tab-active': tab.value === 'all' }"
-            :aria-current="tab.value === 'all' ? 'page' : undefined"
-          >
-            {{ tab.label }}
-          </NuxtLink>
-        </nav>
-      </div>
+      <BlogPostTabs :tabs="tabs" model-value="all" />
       <div class="page-actions">
         <CommonSearchBox placeholder="搜索站内文章、标签..." readonly @click="openSearch" />
         <CommonContextDrawer class="page-context-entry" label="筛选文章" icon="lucide:list-filter">
@@ -160,18 +146,6 @@ onMounted(migrateMomentHash)
 watch(() => route.hash, migrateMomentHash)
 </script>
 <style lang="scss" scoped>
-.articles-header-left {
-  display: flex;
-  align-items: center;
-  gap: 0.875rem;
-  min-width: 0;
-}
-.articles-tabs {
-  display: flex;
-  align-items: center;
-  gap: 1.5rem;
-  min-width: 0;
-}
 .display-mode-toggle {
   display: flex;
   border: 1px solid var(--border);

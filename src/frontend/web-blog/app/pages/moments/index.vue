@@ -8,44 +8,35 @@
 <template>
   <div class="main-inner moments-page">
     <!-- 头部 Tab 栏 + 搜索 -->
-    <div class="main-content__header moments-header">
-      <nav class="articles-tabs no-scrollbar" aria-label="内容类型">
-        <NuxtLink
-          v-for="tab in tabs"
-          :key="tab.value"
-          :to="tab.value === 'moments' ? '/moments' : '/'"
-          :aria-current="tab.value === 'moments' ? 'page' : undefined"
-          class="tab-btn"
-          :class="{ 'tab-active': tab.value === 'moments' }"
-        >
-          {{ tab.label }}
-        </NuxtLink>
-      </nav>
-      <CommonSearchBox
-        v-model="searchKeyword"
-        placeholder="搜索动态内容 / 话题 / 地点..."
-        class="moments-header__search"
-      />
-      <CommonContextDrawer class="page-context-entry" label="筛选动态" icon="lucide:list-filter">
-        <SidebarMomentCalendarCard
-          :moment-dates="momentDates"
-          :selected-date="selectedDate"
-          @select-date="onDateSelect"
+    <div class="main-content__header">
+      <BlogPostTabs :tabs="tabs" model-value="moments" />
+      <div class="page-actions">
+        <CommonSearchBox
+          v-model="searchKeyword"
+          placeholder="搜索动态内容 / 话题 / 地点..."
+          class="moments-header__search"
         />
-        <SidebarMomentTopicCard :topics="momentTopics" :active-topic="selectedTopic" @select="onTopicSelect" />
-        <button
-          v-if="searchKeyword || selectedTopic || selectedDate"
-          type="button"
-          class="filter-clear"
-          @click="clearFilters"
-        >
-          清除动态筛选
-        </button>
-      </CommonContextDrawer>
-      <NuxtLink v-if="isOwner" to="/admin/moments/new" class="moments-header__publish" aria-label="发布新动态">
-        <Icon name="lucide:plus" size="14" />
-        <span>发布</span>
-      </NuxtLink>
+        <CommonContextDrawer class="page-context-entry" label="筛选动态" icon="lucide:list-filter">
+          <SidebarMomentCalendarCard
+            :moment-dates="momentDates"
+            :selected-date="selectedDate"
+            @select-date="onDateSelect"
+          />
+          <SidebarMomentTopicCard :topics="momentTopics" :active-topic="selectedTopic" @select="onTopicSelect" />
+          <button
+            v-if="searchKeyword || selectedTopic || selectedDate"
+            type="button"
+            class="filter-clear"
+            @click="clearFilters"
+          >
+            清除动态筛选
+          </button>
+        </CommonContextDrawer>
+        <NuxtLink v-if="isOwner" to="/admin/moments/new" class="moments-header__publish" aria-label="发布新动态">
+          <Icon name="lucide:plus" size="14" />
+          <span>发布</span>
+        </NuxtLink>
+      </div>
     </div>
     <div v-if="searchKeyword || selectedTopic || selectedDate" class="moments-filter-summary">
       <span role="status"
@@ -168,24 +159,6 @@ const momentTopics = computed<MomentTopic[]>(() =>
   display: flex;
   flex-direction: column;
   height: 100%;
-}
-
-// 顶部 Tab + 搜索：大屏同一行，窄屏降级为多行
-.moments-header {
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-  flex-wrap: wrap;
-}
-
-.moments-header__search {
-  margin-left: auto;
-  max-width: 16rem;
-
-  @media (max-width: #{$breakpoint-sm - 1px}) {
-    width: 100%;
-    max-width: none;
-  }
 }
 
 // 仅博主可见的发布入口
