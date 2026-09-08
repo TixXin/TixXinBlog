@@ -5,26 +5,35 @@
   "description": "个人博客系统。前台 Nuxt 4 + Vue 3，当前处于 UI 打磨阶段。",
   "type": "module",
   "scripts": {
-    "dev": "pnpm --filter web-blog dev",
-    "dev:blog": "pnpm --filter web-blog dev",
-    "build": "pnpm --filter web-blog build",
-    "build:blog": "pnpm --filter web-blog build",
-    "generate": "pnpm --filter web-blog generate",
-    "preview": "pnpm --filter web-blog preview",
-    "start": "pnpm --filter web-blog start",
-    "deploy": "pnpm install && pnpm start",
+    "dev": "corepack pnpm --filter web-blog dev",
+    "dev:blog": "corepack pnpm --filter web-blog dev",
+    "build": "corepack pnpm --filter web-blog build",
+    "build:blog": "corepack pnpm --filter web-blog build",
+    "generate": "corepack pnpm --filter web-blog generate",
+    "preview": "corepack pnpm --filter web-blog preview",
+    "start": "corepack pnpm --filter web-blog start",
+    "deploy": "corepack pnpm install && corepack pnpm start",
     "clear": "node scripts/clear.js",
-    "lint": "pnpm --filter web-blog exec eslint .",
-    "lint:fix": "pnpm --filter web-blog exec eslint . --fix",
+    "lint": "corepack pnpm --filter web-blog exec eslint .",
+    "lint:fix": "corepack pnpm --filter web-blog exec eslint . --fix",
     "format": "prettier --write \"src/**/*.{vue,ts,js,scss,json,md}\"",
-    "prepare": "husky"
+    "prepare": "husky",
+    "check:secrets": "node scripts/check-secrets.mjs",
+    "test:e2e": "corepack pnpm --filter server-main build && corepack pnpm --filter web-blog build && node src/backend/server-main/tests/browser-runner.mjs",
+    "test:e2e:run": "node src/backend/server-main/tests/browser-runner.mjs"
   },
   "engines": {
-    "node": ">=20"
+    "node": ">=24 <25"
   },
   "packageManager": "pnpm@9.15.0",
   "devDependencies": {
     "husky": "^9.1.7",
     "lint-staged": "^16.4.0"
+  },
+  "pnpm": {
+    "overrides": {
+      "@rushstack/node-core-library@5.13.0>ajv": "^8.18.0",
+      "fontless@0.2.1>esbuild": "^0.28.2"
+    }
   }
 }
