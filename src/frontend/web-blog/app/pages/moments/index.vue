@@ -16,12 +16,15 @@
           placeholder="搜索动态内容 / 话题 / 地点..."
           class="moments-header__search"
         />
-        <CommonContextDrawer class="page-context-entry" label="筛选动态" icon="lucide:list-filter">
-          <SidebarMomentCalendarCard
-            :moment-dates="momentDates"
-            :selected-date="selectedDate"
-            @select-date="onDateSelect"
-          />
+        <MomentInfoDrawer
+          v-model:open="drawerOpen"
+          :show-info="drawerInfo"
+          :stats="authorStats"
+          :profile="ownerCard"
+          :dates="momentDates"
+          :selected-date="selectedDate"
+          @select-date="onDateSelect"
+        >
           <SidebarMomentTopicCard :topics="momentTopics" :active-topic="selectedTopic" @select="onTopicSelect" />
           <button
             v-if="searchKeyword || selectedTopic || selectedDate"
@@ -31,7 +34,9 @@
           >
             清除动态筛选
           </button>
-        </CommonContextDrawer>
+          <SidebarMomentPhotoWallCard :images="photoWallImages" @select-moment="onPhotoSelect" />
+          <SidebarMomentTimeCapsuleCard :moments="moments" />
+        </MomentInfoDrawer>
         <NuxtLink v-if="isOwner" to="/admin/moments/new" class="moments-header__publish" aria-label="发布新动态">
           <Icon name="lucide:plus" size="14" />
           <span>发布</span>
@@ -59,9 +64,10 @@
     <ClientOnly>
       <Teleport to="#right-sidebar-target">
         <SidebarRightSidebar>
-          <SidebarMomentAuthorCard :stats="authorStats" :profile="ownerCard" />
+          <SidebarMomentAuthorCard v-if="rightInfo" :stats="authorStats" :profile="ownerCard" />
           <SidebarMomentPhotoWallCard :images="photoWallImages" @select-moment="onPhotoSelect" />
           <SidebarMomentCalendarCard
+            v-if="rightInfo"
             :moment-dates="momentDates"
             :selected-date="selectedDate"
             @select-date="onDateSelect"
@@ -82,6 +88,7 @@ import type { MomentTopic } from '~/components/sidebar/MomentTopicCard.vue'
 import type { MomentPhotoItem } from '~/components/sidebar/MomentPhotoWallCard.vue'
 
 const { moments: momentList, authorStats, ownerCard } = useMomentOverview()
+const { rightInfo, drawerInfo, drawerOpen } = useMomentSidebarPlacement()
 const { currentUser } = useCurrentUser()
 const isOwner = computed(() => currentUser.value?.role === 'owner')
 
