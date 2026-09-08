@@ -21,6 +21,10 @@ export class AdminUser {
   @Property({ type: 'text' })
   passwordHash!: string
 
+  /** 改密递增，所有旧 access JWT 即时失效。 */
+  @Property({ type: 'integer', default: 0 })
+  sessionVersion: number = 0
+
   @Property({ type: 'datetime' })
   createdAt: Date = new Date()
 

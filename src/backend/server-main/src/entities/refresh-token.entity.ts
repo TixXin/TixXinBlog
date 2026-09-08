@@ -7,6 +7,7 @@
 
 import { Entity, Index, ManyToOne, PrimaryKey, Property, Unique } from '@mikro-orm/core'
 import { AdminUser } from './admin-user.entity'
+import { AdminSession } from './admin-session.entity'
 
 @Entity({ tableName: 'refresh_token' })
 export class RefreshToken {
@@ -16,6 +17,10 @@ export class RefreshToken {
   @ManyToOne({ entity: () => AdminUser, deleteRule: 'cascade' })
   @Index()
   adminUser!: AdminUser
+
+  @ManyToOne({ entity: () => AdminSession, nullable: true, deleteRule: 'cascade' })
+  @Index()
+  session?: AdminSession
 
   /** token 明文的 SHA-256,不落库明文 */
   @Property({ type: 'text' })
