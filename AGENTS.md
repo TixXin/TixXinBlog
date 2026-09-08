@@ -67,6 +67,8 @@ Uses `@tixxin/nuxt-theme-engine` with lazy-loaded themes from `themes/` director
 
 开发（对话）过程中，按模块、按批次及时提交 Git。一组关联改动完成并通过相应验证后即提交，避免积攒为混杂的大提交。提交前检查差异与依赖，使用中文说明；提交范围遵循当前会话授权，推送和部署需要对应授权。
 
+截图、录屏、trace、性能采样、原始测试报告和运行日志属于本地验收产物，统一写入 `.playwright-mcp/` 或 `.artifacts/`，不得复制到受 Git 跟踪的文档目录或强制添加被忽略的文件。历史 `docs/**/evidence/` 与 `docs/git-validation/` 仅保留本机副本。Git 保留测试源码、文字结论及必要的产品/文档素材（如 `docs/img/`）；报告引用本地产物时明确标注，不使用远程无法解析的图片嵌入。详情见 [验收产物管理](docs/verification-artifacts.md)。
+
 Pre-commit hook (Husky) runs lint-staged: ESLint fix + Prettier on staged files.
 
 Commit format: Conventional Commits with Chinese subjects.

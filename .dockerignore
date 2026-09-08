@@ -22,6 +22,10 @@ docs
 .claude
 .codex
 .playwright-mcp
+.artifacts
+**/test-results
+**/playwright-report
+**/blob-report
 **/var/media
 
 .backups

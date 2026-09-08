@@ -1,3 +1,0 @@
-
-> tixxinblog@0.0.1 lint D:\Projects\TixXinBlog
-> corepack pnpm --filter web-blog exec eslint .
