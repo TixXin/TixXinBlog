@@ -1,28 +1,27 @@
 <!--
   @file PostTabs.vue
-  @description 文章分类 Tab 栏与搜索输入框
+  @description 文章与朋友圈共用的内容导航，统一图标、标签间距和选中状态
   @author TixXin
   @since 2025-03-17
 -->
 
 <template>
-  <div class="main-content__header">
-    <div class="post-tabs no-scrollbar">
-      <button
+  <div class="post-tabs">
+    <div class="page-title__icon-wrap" aria-hidden="true">
+      <Icon :name="modelValue === 'moments' ? 'lucide:messages-square' : 'lucide:newspaper'" size="18" />
+    </div>
+    <nav class="post-tabs__links no-scrollbar" aria-label="内容类型">
+      <NuxtLink
         v-for="tab in tabs"
         :key="tab.value"
-        class="tab-btn"
+        :to="tab.value === 'moments' ? '/moments' : '/'"
+        class="tab-btn post-tabs__link"
         :class="{ 'tab-active': modelValue === tab.value }"
-        @click="$emit('update:modelValue', tab.value)"
+        :aria-current="modelValue === tab.value ? 'page' : undefined"
       >
         {{ tab.label }}
-      </button>
-    </div>
-
-    <div class="post-tabs__search">
-      <Icon name="lucide:search" size="16" class="post-tabs__search-icon" />
-      <input type="text" class="input-field post-tabs__search-input" placeholder="搜索站内文章、标签..." >
-    </div>
+      </NuxtLink>
+    </nav>
   </div>
 </template>
 
@@ -33,58 +32,34 @@ defineProps<{
   modelValue: string
   tabs: PostTab[]
 }>()
-
-defineEmits<{
-  'update:modelValue': [value: string]
-}>()
 </script>
 
 <style lang="scss" scoped>
 .post-tabs {
   display: flex;
   align-items: center;
-  gap: 1.5rem;
-  overflow-x: auto;
-
-  @media (min-width: $breakpoint-sm) {
-    gap: 2.5rem;
-  }
-
-  // 紧凑档（sm–xl）：缩小 Tab 间距避免与搜索框挤压
-  @media (min-width: $breakpoint-sm) and (max-width: #{$breakpoint-xl - 1px}) {
-    gap: 1.5rem;
-  }
+  gap: 0.875rem;
+  min-width: 0;
+  max-width: 100%;
 }
 
-.post-tabs__search {
+.post-tabs__links {
   display: flex;
   align-items: center;
-  position: relative;
-  width: 100%;
-  padding-bottom: 1rem;
-
-  @media (min-width: $breakpoint-sm) {
-    width: 16rem;
-    padding-bottom: 0;
-    margin-left: auto;
-  }
-
-  // 紧凑档（sm–xl）：搜索框缩至 12rem，给 Tab 与模式切换按钮让空间
-  @media (min-width: $breakpoint-sm) and (max-width: #{$breakpoint-xl - 1px}) {
-    width: 12rem;
-  }
+  gap: 1.5rem;
+  min-width: 0;
+  overflow-x: auto;
 }
 
-.post-tabs__search-icon {
-  position: absolute;
-  left: 1rem;
-  top: 50%;
-  transform: translateY(-50%);
-  color: var(--text-soft);
-  pointer-events: none;
-}
+.post-tabs__link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  min-height: 44px;
 
-.post-tabs__search-input {
-  padding-left: 2.75rem;
+  &.tab-active::after {
+    bottom: 0;
+  }
 }
 </style>
