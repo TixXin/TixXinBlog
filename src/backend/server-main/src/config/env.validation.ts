@@ -6,7 +6,8 @@
  */
 
 import { plainToInstance } from 'class-transformer'
-import { IsEnum, IsInt, IsOptional, IsString, Max, Min, validateSync } from 'class-validator'
+import { requireDatabaseUrl } from './environment'
+import { IsEnum, IsInt, IsOptional, IsString, Matches, Max, Min, MinLength, validateSync } from 'class-validator'
 
 export enum NodeEnv {
   Development = 'development',
@@ -38,8 +39,8 @@ export class EnvironmentVariables {
   CORS_ORIGIN?: string
 
   @IsString()
-  @IsOptional()
-  DATABASE_URL?: string
+  @Matches(/^postgres(?:ql)?:\/\//, { message: 'DATABASE_URL 必须为 PostgreSQL 连接地址' })
+  DATABASE_URL!: string
 
   @IsString()
   @IsOptional()
@@ -49,10 +50,10 @@ export class EnvironmentVariables {
   @IsOptional()
   MEILISEARCH_URL?: string
 
-  /** 生产环境必填(auth.constants.ts 会在缺失时拒绝启动),开发环境允许回退内置值 */
+  /** 密钥不再允许开发默认值，所有启动方式均必须配置。 */
   @IsString()
-  @IsOptional()
-  JWT_ACCESS_SECRET?: string
+  @MinLength(32)
+  JWT_ACCESS_SECRET!: string
 
   @IsString()
   @IsOptional()
@@ -70,5 +71,6 @@ export function validateEnv(config: Record<string, unknown>): EnvironmentVariabl
     const detail = errors.map((e) => `${e.property}: ${Object.values(e.constraints ?? {}).join(', ')}`).join('; ')
     throw new Error(`环境变量校验失败 -> ${detail}`)
   }
+  requireDatabaseUrl(validated.DATABASE_URL)
   return validated
 }

@@ -14,12 +14,12 @@ export const ACCESS_TOKEN_TTL_SECONDS = 15 * 60
 /** refresh token 有效期(毫秒):7 天 */
 export const REFRESH_TOKEN_TTL_MS = 7 * 24 * 60 * 60 * 1000
 
-/** 生产环境必须显式提供 secret;开发环境允许回退固定值以便本地起服 */
-export function getAccessSecret(): string {
-  const secret = process.env.JWT_ACCESS_SECRET
-  if (secret) return secret
-  if (process.env.NODE_ENV === 'production') throw new Error('JWT_ACCESS_SECRET 未配置')
-  return 'dev-only-access-secret-not-for-production'
+/** 所有环境均显式配置密钥，不提供可预测的开发默认签名密钥。 */
+export function getAccessSecret(secret?: string): string {
+  if (!secret || secret.length < 32 || secret.includes('<required>')) {
+    throw new Error('JWT_ACCESS_SECRET 必须显式配置至少 32 个字符的随机密钥')
+  }
+  return secret
 }
 
 export function getRefreshCookieOptions(): {
