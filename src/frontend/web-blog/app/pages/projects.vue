@@ -6,24 +6,30 @@
 -->
 
 <template>
-  <div class="main-inner">
-    <CommonPageHeader title="项目展示" subtitle="当前为示例项目资料，未公开的资源会明确标注" icon="lucide:layers">
-      <template #action>
-        <CommonSearchBox placeholder="搜索项目..." readonly @click="openSearch" />
-      </template>
-    </CommonPageHeader>
-    <CommonCustomScrollbar class="projects-body" viewport-class="projects-viewport" :show-back-to-top="false" primary>
-      <ProjectGrid :projects="projects" example />
-    </CommonCustomScrollbar>
-    <ClientOnly>
-      <Teleport to="#right-sidebar-target">
-        <SidebarRightSidebar>
-          <ProjectStats :stats="projectStats" />
-          <ProjectTechStackCard :stack="techStack" />
-        </SidebarRightSidebar>
-      </Teleport>
-    </ClientOnly>
-  </div>
+  <CommonPageFrame class="main-inner" header-key="projects">
+    <template #header>
+      <CommonPageHeader title="项目展示" subtitle="当前为示例项目资料，未公开的资源会明确标注" icon="lucide:layers">
+        <template #action>
+          <CommonSearchBox placeholder="搜索项目..." readonly @click="openSearch" />
+        </template>
+      </CommonPageHeader>
+    </template>
+    <template #default>
+      <CommonCustomScrollbar class="projects-body" viewport-class="projects-viewport" :show-back-to-top="false" primary>
+        <ProjectGrid :projects="projects" example />
+      </CommonCustomScrollbar>
+    </template>
+    <template #overlays>
+      <ClientOnly>
+        <Teleport to="#right-sidebar-target">
+          <SidebarRightSidebar>
+            <ProjectStats :stats="projectStats" />
+            <ProjectTechStackCard :stack="techStack" />
+          </SidebarRightSidebar>
+        </Teleport>
+      </ClientOnly>
+    </template>
+  </CommonPageFrame>
 </template>
 
 <script setup lang="ts">

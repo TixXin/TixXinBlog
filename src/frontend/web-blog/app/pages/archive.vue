@@ -6,40 +6,44 @@
 -->
 
 <template>
-  <div class="main-inner archive-page">
-    <!-- 头部区域 -->
-    <div class="main-content__header">
-      <div class="page-title">
-        <div class="page-title__icon-wrap" aria-hidden="true">
-          <Icon name="lucide:archive" size="18" />
+  <CommonPageFrame class="main-inner archive-page" header-key="archive">
+    <template #header>
+      <div class="main-content__header">
+        <div class="page-title">
+          <div class="page-title__icon-wrap" aria-hidden="true">
+            <Icon name="lucide:archive" size="18" />
+          </div>
+          <div class="page-title__text">
+            <h2 class="page-title__heading">文章归档</h2>
+            <p class="page-title__sub">共 {{ totalCount }} 篇文章，持续记录中...</p>
+          </div>
         </div>
-        <div class="page-title__text">
-          <h2 class="page-title__heading">文章归档</h2>
-          <p class="page-title__sub">共 {{ totalCount }} 篇文章，持续记录中...</p>
+
+        <!-- 右侧操作区：仅搜索框 -->
+        <div class="page-actions">
+          <CommonSearchBox placeholder="搜索文章标题、内容..." readonly @click="openSearch" />
         </div>
       </div>
-
-      <!-- 右侧操作区：仅搜索框 -->
-      <div class="page-actions">
-        <CommonSearchBox placeholder="搜索文章标题、内容..." readonly @click="openSearch" />
-      </div>
-    </div>
-
-    <!-- 主内容：归档时间线 -->
-    <CommonCustomScrollbar class="archive-body" viewport-class="archive-viewport" :show-back-to-top="false" primary>
-      <p v-if="archiveError" role="alert">归档加载失败，请稍后重试</p>
-      <ArticleArchiveTimeline v-else :years="archiveYears" />
-    </CommonCustomScrollbar>
-
-    <!-- 右侧栏：归档统计 + 分类分布 -->
-    <ClientOnly>
-      <Teleport to="#right-sidebar-target">
-        <SidebarRightSidebar>
-          <ArticleArchiveStats :stats="archiveStats" :distribution="categoryDistribution" />
-        </SidebarRightSidebar>
-      </Teleport>
-    </ClientOnly>
-  </div>
+    </template>
+    <template #default>
+      <!-- 头部区域 -->
+      <!-- 主内容：归档时间线 -->
+      <CommonCustomScrollbar class="archive-body" viewport-class="archive-viewport" :show-back-to-top="false" primary>
+        <p v-if="archiveError" role="alert">归档加载失败，请稍后重试</p>
+        <ArticleArchiveTimeline v-else :years="archiveYears" />
+      </CommonCustomScrollbar>
+      <!-- 右侧栏：归档统计 + 分类分布 -->
+    </template>
+    <template #overlays>
+      <ClientOnly>
+        <Teleport to="#right-sidebar-target">
+          <SidebarRightSidebar>
+            <ArticleArchiveStats :stats="archiveStats" :distribution="categoryDistribution" />
+          </SidebarRightSidebar>
+        </Teleport>
+      </ClientOnly>
+    </template>
+  </CommonPageFrame>
 </template>
 
 <script setup lang="ts">

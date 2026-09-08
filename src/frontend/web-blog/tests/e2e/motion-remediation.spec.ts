@@ -412,9 +412,22 @@ for (const width of [320, 1440]) {
   })
 }
 
-test('正常页面仍有受控进入和离场，减少模式保留页面实例', async ({ page }) => {
+test('正常页面的标题与正文独立过渡，离场快照不包含标题', async ({ page }) => {
   await page.goto('/')
   await ready(page)
+  await page.evaluate(() => {
+    const native = Element.prototype.animate
+    const regions = { root: false, header: false, body: false, cloneHeader: false }
+    Object.assign(window, { checkedPageRegions: regions })
+    Element.prototype.animate = function (...args) {
+      if (this.hasAttribute('data-page-frame')) regions.root = true
+      if (this.hasAttribute('data-page-header')) regions.header = true
+      if (this.hasAttribute('data-page-body') && !this.hasAttribute('data-page-motion-clone')) regions.body = true
+      if (this.hasAttribute('data-page-motion-clone') && this.querySelector('[data-page-header]'))
+        regions.cloneHeader = true
+      return native.apply(this, args)
+    }
+  })
   await page.getByRole('link', { name: '归档', exact: true }).click()
   await expect
     .poll(
@@ -427,8 +440,7 @@ test('正常页面仍有受控进入和离场，减少模式保留页面实例',
                 (animation) =>
                   animation.playState === 'running' &&
                   animation.effect?.target instanceof HTMLElement &&
-                  (animation.effect.target.closest('.page-motion-host') ||
-                    animation.effect.target.hasAttribute('data-page-motion-clone')),
+                  animation.effect.target.matches('[data-page-header],[data-page-body],[data-page-motion-clone]'),
               ).length,
         ),
       { intervals: [10, 20, 20] },
@@ -437,4 +449,10 @@ test('正常页面仍有受控进入和离场，减少模式保留页面实例',
   await expect(page.locator('[data-page-motion-clone]')).toHaveCount(0)
   await expect(page.locator('main')).toContainText('文章归档')
   await expect(page.locator('[data-page-motion-clone] [id]')).toHaveCount(0)
+  expect(await page.evaluate(() => (window as unknown as { checkedPageRegions: object }).checkedPageRegions)).toEqual({
+    root: false,
+    header: true,
+    body: true,
+    cloneHeader: false,
+  })
 })
