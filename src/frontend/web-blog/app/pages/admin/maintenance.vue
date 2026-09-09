@@ -66,9 +66,11 @@ corepack pnpm --filter server-main run backup:restore --directory &lt;备份目�
       </section>
       <section aria-label="导出内容包">
         <h2>导出内容包</h2>
-        <p>用于迁入文章、闪念、朋友圈、评论、目录和当前站点资料。迁入后创建新的草稿，已有内容保留。</p>
         <p>
-          内容包不包含账号、登录凭据、访客控制标识、点赞、历史修订和互动去重记录；完整数据库与媒体恢复使用维护流程。
+          用于迁入文章、闪念、朋友圈、评论、留言、目录和当前站点资料。文章类内容迁入为草稿；留言迁入为待审，隐藏和删除状态保留。
+        </p>
+        <p>
+          内容包不包含账号、登录凭据、访客控制标识、点赞、回应、历史修订和互动去重记录；完整数据库与媒体恢复使用维护流程。
         </p>
         <label><input v-model="mediaIncluded" type="checkbox" :disabled="pending" />包含受管媒体图片文件</label>
         <p>
@@ -82,7 +84,11 @@ corepack pnpm --filter server-main run backup:restore --directory &lt;备份目�
       </section>
       <section aria-label="选择内容包">
         <h2>迁入内容</h2>
-        <p>支持本项目生成的 v1、v2 JSON 内容包，最多 50MB。v2 包含朋友圈；先校验格式、图片和引用，再确认导入。</p>
+        <p>
+          支持本项目生成的 v1、v2、v3 JSON 内容包，最多 50MB。v2 增加朋友圈，v3
+          增加留言和回复关系；先校验格式、图片和引用，再确认导入。
+        </p>
+        <p>留言迁入后不会自动公开或置顶。已删除留言保留为不可见的引用记录，审核前请核对内容与作者。</p>
         <label
           >选择内容包<input type="file" accept="application/json,.json" :disabled="pending" @change="chooseFile"
         /></label>
@@ -116,6 +122,7 @@ corepack pnpm --filter server-main run backup:restore --directory &lt;备份目�
           }}
           条朋友圈草稿，迁入 {{ job.plan.counts.comments }} 条评论；跳过 {{ job.plan.counts.skipped }} 项相同内容。
         </p>
+        <p>迁入 {{ job.plan.counts.guestbook ?? 0 }} 条留言及其回复关系，按预览保留为待审、隐藏或已删除状态。</p>
         <p>新增 {{ job.plan.counts.media }} 个媒体记录，写入或修复 {{ job.plan.counts.files }} 个图片文件。</p>
         <p v-if="job.error" role="alert">{{ job.error }}</p>
         <p v-if="job.expired">预览已过期，请重新选择文件生成票据。</p>
@@ -123,7 +130,7 @@ corepack pnpm --filter server-main run backup:restore --directory &lt;备份目�
           <li v-for="issue in job.plan.errors" :key="issue">{{ issue }}</li>
         </ul>
         <details>
-          <summary>查看文章、闪念与朋友圈清单</summary>
+          <summary>查看文章、闪念、朋友圈与留言清单</summary>
           <ul>
             <li v-for="post in job.plan.posts" :key="`post-${post.sourceId}`">
               {{ post.title }} · {{ post.reason }}{{ post.slug ? ` · 地址标识 ${post.slug}` : '' }}
@@ -131,6 +138,9 @@ corepack pnpm --filter server-main run backup:restore --directory &lt;备份目�
             <li v-for="flash in job.plan.flashes" :key="flash.sourceId">{{ flash.title }} · {{ flash.reason }}</li>
             <li v-for="moment in job.plan.moments ?? []" :key="`moment-${moment.sourceId}`">
               {{ moment.title }} · {{ moment.reason }}
+            </li>
+            <li v-for="message in job.plan.guestbook ?? []" :key="`guestbook-${message.sourceId}`">
+              {{ message.title }} · {{ message.reason }}
             </li>
           </ul>
         </details>
@@ -146,6 +156,7 @@ corepack pnpm --filter server-main run backup:restore --directory &lt;备份目�
             }}
             条朋友圈草稿，迁入 {{ job.result.comments }} 条评论。
           </p>
+          <p>已迁入 {{ job.result.guestbook?.length ?? 0 }} 条非公开留言，回复关系已重建。</p>
           <ul>
             <li v-for="post in job.result.posts" :key="post.id">
               <NuxtLink :to="`/admin/posts/${post.id}`">检查新文章草稿 #{{ post.id }}</NuxtLink
@@ -154,6 +165,7 @@ corepack pnpm --filter server-main run backup:restore --directory &lt;备份目�
           </ul>
           <NuxtLink v-if="job.result.flashes.length" to="/admin/flashes?status=draft">检查闪念草稿</NuxtLink>
           <NuxtLink v-if="job.result.moments?.length" to="/admin/moments?status=draft">检查朋友圈草稿</NuxtLink>
+          <NuxtLink v-if="job.result.guestbook?.length" to="/admin/guestbook">检查迁入留言</NuxtLink>
         </template>
         <template v-if="!job.completed && !job.expired">
           <p>

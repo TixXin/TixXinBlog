@@ -13,6 +13,8 @@ import { SaveMomentDto } from '../moment/moment.dto'
 import { momentUrl, momentValues } from '../moment/moment-values'
 import { MOMENT_COMMENT_STATUSES } from '../../entities/moment-comment.entity'
 import type { MomentCommentStatus } from '../../entities/moment-comment.entity'
+import { GUESTBOOK_STATUSES } from '../../entities/guestbook-message.entity'
+import type { GuestbookStatus } from '../../entities/guestbook-message.entity'
 import { SaveSiteSettingsDto } from '../site/site-settings.dto'
 import { COMMENT_STATUSES } from '../../entities/comment.entity'
 import type { CommentStatus } from '../../entities/comment.entity'
@@ -72,14 +74,27 @@ export interface PackageMoment {
     createdAt: string
   }[]
 }
+export interface PackageGuestbook {
+  sourceId: number
+  createdAt: string
+  deleted: boolean
+  author: string
+  avatar: string
+  content: string
+  isOwner: boolean
+  status: GuestbookStatus
+  isPinned: boolean
+  replyToId: number | null
+}
 export interface ContentPackage {
   format: 'tixxin-content'
-  version: 2
+  version: 3
   exportedAt: string
   mediaIncluded: boolean
   posts: PackagePost[]
   flashes: PackageFlash[]
   moments: PackageMoment[]
+  guestbook: PackageGuestbook[]
   folders: string[]
   tags: { label: string; color: PostTagColor }[]
   site: Omit<SaveSiteSettingsDto, 'revision'>
@@ -170,6 +185,7 @@ export async function parseContentPackage(buffer: Buffer): Promise<ContentPackag
     'posts',
     'flashes',
     'moments',
+    'guestbook',
     'folders',
     'tags',
     'site',
@@ -178,11 +194,12 @@ export async function parseContentPackage(buffer: Buffer): Promise<ContentPackag
   ])
   if (
     source.format !== 'tixxin-content' ||
-    ![1, 2].includes(Number(source.version)) ||
+    ![1, 2, 3].includes(Number(source.version)) ||
     typeof source.version !== 'number'
   )
     throw new BadRequestException('不支持的内容包格式或版本')
   if (source.version === 1 && source.moments !== undefined) fail('v1 不支持朋友圈字段')
+  if (source.version !== 3 && source.guestbook !== undefined) fail('v1/v2 不支持留言字段')
   const mediaIncluded = boolean(source.mediaIncluded, 'mediaIncluded')
   let commentsTotal = 0
   const posts = array(source.posts, 'posts', 1000).map((value, index): PackagePost => {
@@ -317,6 +334,51 @@ export async function parseContentPackage(buffer: Buffer): Promise<ContentPackag
     },
   )
   if (new Set(moments.map((note) => note.sourceId)).size !== moments.length) fail('重复动态编号')
+  const guestbook = array(source.version === 3 ? source.guestbook : [], 'guestbook', 2000).map(
+    (value, index): PackageGuestbook => {
+      const path = `guestbook[${index}]`
+      const row = record(value, path, [
+        'sourceId',
+        'createdAt',
+        'deleted',
+        'author',
+        'avatar',
+        'content',
+        'isOwner',
+        'status',
+        'isPinned',
+        'replyToId',
+      ])
+      const avatar = text(row.avatar, `${path}.avatar`, 2048)
+      if (!packageImageUrl(avatar) || !GUESTBOOK_STATUSES.includes(row.status as GuestbookStatus)) fail(path)
+      return {
+        sourceId: number(row.sourceId, `${path}.sourceId`),
+        createdAt: date(row.createdAt, `${path}.createdAt`),
+        deleted: boolean(row.deleted, `${path}.deleted`),
+        author: text(row.author, `${path}.author`, 80, 1),
+        avatar,
+        content: text(row.content, `${path}.content`, 500, 1),
+        isOwner: boolean(row.isOwner, `${path}.isOwner`),
+        status: row.status as GuestbookStatus,
+        isPinned: boolean(row.isPinned, `${path}.isPinned`),
+        replyToId: row.replyToId === null ? null : number(row.replyToId, `${path}.replyToId`),
+      }
+    },
+  )
+  const guestbookById = new Map(guestbook.map((message) => [message.sourceId, message]))
+  if (guestbookById.size !== guestbook.length) fail('重复留言编号')
+  const checked = new Set<number>()
+  for (const message of guestbook) {
+    const path = new Set<number>()
+    let id: number | null = message.sourceId
+    while (id !== null && !checked.has(id)) {
+      const current = guestbookById.get(id)
+      if (!current || path.has(id)) fail('留言引用缺失或循环')
+      path.add(id)
+      id = current.replyToId
+    }
+    for (const id of path) checked.add(id)
+  }
   if (commentsTotal > 10000 || new Set(flashes.map((flash) => flash.sourceId)).size !== flashes.length)
     fail('评论总量或重复闪念编号')
   const folders = array(source.folders, 'folders', 1000).map((value) => text(value, '专栏名称', 64, 1).trim())
@@ -445,12 +507,13 @@ export async function parseContentPackage(buffer: Buffer): Promise<ContentPackag
   if (new Set(media.map((item) => item.id)).size !== media.length) fail('重复媒体编号')
   return {
     format: 'tixxin-content',
-    version: 2,
+    version: 3,
     exportedAt: date(source.exportedAt, '导出时间'),
     mediaIncluded,
     posts,
     flashes,
     moments,
+    guestbook,
     folders,
     tags,
     site,

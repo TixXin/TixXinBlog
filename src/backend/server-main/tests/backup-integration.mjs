@@ -90,13 +90,38 @@ try {
     status: 'hidden',
     expectedStatus: 'published',
   })
+  const guest = await ok('/guestbook', 'POST', {
+    content: '迁入留言父项',
+    author: '小林',
+    avatar: asset.url,
+    requestId: randomUUID(),
+  })
+  const reply = await ok('/admin/guestbook', 'POST', {
+    content: '迁入留言答复',
+    replyToId: guest.id,
+    requestId: randomUUID(),
+  })
+  await ok(`/guestbook/${guest.id}/reactions`, 'PUT', { emoji: '👍', reacted: true })
+  const deletedGuest = await ok('/admin/guestbook', 'POST', { content: '已删除引用源', requestId: randomUUID() })
+  const hiddenReply = await ok('/admin/guestbook', 'POST', {
+    content: '保留隐藏回复',
+    replyToId: deletedGuest.id,
+    requestId: randomUUID(),
+  })
+  await ok(`/admin/guestbook/${hiddenReply.id}`, 'PATCH', { status: 'hidden', revision: hiddenReply.revision })
+  await ok(`/admin/guestbook/${deletedGuest.id}?revision=${deletedGuest.revision}`, 'DELETE')
   assert.equal((await request('/admin/backup/export', 'POST', { mediaIncluded: true }, '')).status, 401)
   const exported = await request('/admin/backup/export', 'POST', { mediaIncluded: true })
   assert.equal(exported.status, 201)
   assert(exported.headers.get('content-disposition').includes('attachment'))
   assert.equal(exported.body.format, 'tixxin-content')
   const bundle = exported.body
-  assert.equal(bundle.version, 2)
+  assert.equal(bundle.version, 3)
+  assert.equal(bundle.guestbook.length, 4)
+  assert.equal(bundle.guestbook.find((item) => item.sourceId === reply.id).replyToId, guest.id)
+  assert.equal(bundle.guestbook.find((item) => item.sourceId === deletedGuest.id).deleted, true)
+  assert(!JSON.stringify(bundle.guestbook).includes('requestId'))
+  assert(!JSON.stringify(bundle.guestbook).includes('reactions'))
   assert.equal(bundle.moments.length, 1)
   assert.equal(bundle.moments[0].comments.length, 2)
   assert(!JSON.stringify(bundle.moments).includes('requestId'))
@@ -123,13 +148,13 @@ try {
   const same = await preview(bundle)
   assert.equal(same.status, 201, same.body.message)
   assert.equal(same.body.data.plan.counts.posts, 0)
-  assert.equal(same.body.data.plan.counts.skipped, 3)
+  assert.equal(same.body.data.plan.counts.skipped, 7)
   assert.equal((await preview(bundle, 'skip', false, same.body.data.ticket)).body.data.ticket, same.body.data.ticket)
   assert.equal((await preview({ ...bundle, version: 99 })).status, 400)
   assert.equal(
     (
       await preview(
-        JSON.parse(JSON.stringify(bundle).replace('"version":2', '"version":2,"__proto__":{"polluted":true}')),
+        JSON.parse(JSON.stringify(bundle).replace('"version":3', '"version":3,"__proto__":{"polluted":true}')),
       )
     ).status,
     400,
@@ -137,8 +162,22 @@ try {
   const legacy = structuredClone(bundle)
   legacy.version = 1
   delete legacy.moments
+  delete legacy.guestbook
   assert.equal((await preview(legacy)).body.data.plan.counts.moments, 0)
+  const legacyV2 = structuredClone(bundle)
+  legacyV2.version = 2
+  delete legacyV2.guestbook
+  assert.equal((await preview(legacyV2)).body.data.plan.counts.guestbook, 0)
+  assert.equal((await preview({ ...bundle, version: 2 })).status, 400)
   assert.equal((await preview({ ...bundle, version: 1 })).status, 400)
+  const invalidGuest = structuredClone(bundle)
+  invalidGuest.guestbook[0].replyToId = invalidGuest.guestbook[0].sourceId
+  assert.equal((await preview(invalidGuest)).status, 400)
+  invalidGuest.guestbook[0].replyToId = 2147483647
+  assert.equal((await preview(invalidGuest)).status, 400)
+  invalidGuest.guestbook[0].replyToId = null
+  invalidGuest.guestbook[0].requestId = randomUUID()
+  assert.equal((await preview(invalidGuest)).status, 400)
   const invalidMoment = structuredClone(bundle)
   invalidMoment.moments[0].values.requestId = randomUUID()
   assert.equal((await preview(invalidMoment)).status, 400)
@@ -163,6 +202,7 @@ try {
   assert.equal(planned.plan.ready, true)
   assert.equal(planned.plan.counts.posts, 1)
   assert.equal(planned.plan.counts.moments, 1)
+  assert.equal(planned.plan.counts.guestbook, 4)
   assert.equal(planned.plan.counts.media, 1)
   assert.notEqual(planned.plan.posts[0].slug, 'backup-source')
   const execute = (value, confirmation = value.confirmation) =>
@@ -172,6 +212,33 @@ try {
   assert.equal(imported.body.data.completed, true)
   assert.equal(imported.body.data.result.posts.length, 1)
   assert.equal(imported.body.data.result.comments, 5)
+  const importedGuest = new Map(imported.body.data.result.guestbook.map((item) => [item.sourceId, item.id]))
+  assert.equal(importedGuest.size, 4)
+  const newGuest = await ok(`/admin/guestbook/${importedGuest.get(guest.id)}`)
+  const newReply = await ok(`/admin/guestbook/${importedGuest.get(reply.id)}`)
+  assert.equal(newGuest.moderationStatus, 'pending')
+  assert.equal(newGuest.isPinned, false)
+  assert.equal(newGuest.reactions.length, 0)
+  assert.equal(newReply.replyTo.id, newGuest.id)
+  assert.equal((await request(`/guestbook/${newGuest.id}`, 'GET', undefined, '')).status, 404)
+  const restoredHidden = await ok(`/admin/guestbook/${importedGuest.get(hiddenReply.id)}`)
+  assert.equal(restoredHidden.moderationStatus, 'hidden')
+  const importedRows = await fixture.testOrm.em
+    .fork()
+    .execute('select id,reply_to_id,deleted_at,request_id from guestbook_message where id in (?,?,?,?)', [
+      ...importedGuest.values(),
+    ])
+  assert(importedRows.find((row) => row.id === importedGuest.get(deletedGuest.id)).deleted_at)
+  assert.equal(
+    importedRows.find((row) => row.id === importedGuest.get(hiddenReply.id)).reply_to_id,
+    importedGuest.get(deletedGuest.id),
+  )
+  assert(importedRows.every((row) => row.request_id === null))
+  assert(
+    (await ok(`/admin/media/${asset.id}/references`)).items.some(
+      (item) => item.url === `/admin/guestbook?focus=${newGuest.id}`,
+    ),
+  )
   const newId = imported.body.data.result.posts[0].id
   const momentId = imported.body.data.result.moments[0].id
   const restoredMoment = await ok(`/admin/moments/${momentId}`)
@@ -200,6 +267,37 @@ try {
   assert.equal(repeat.body.data.result.moments[0].id, momentId)
   const copiedAgain = await preview(copied)
   assert.equal(copiedAgain.body.data.plan.counts.moments, 0)
+  assert.equal(copiedAgain.body.data.plan.counts.guestbook, 0)
+  const messagePackage = structuredClone(bundle)
+  messagePackage.posts = []
+  messagePackage.flashes = []
+  messagePackage.moments = []
+  const sourceGuest = messagePackage.guestbook.find((item) => item.sourceId === guest.id)
+  messagePackage.guestbook = [
+    sourceGuest,
+    { ...sourceGuest, sourceId: 10001, content: '新答复映射到已有父留言', replyToId: guest.id },
+  ]
+  const mixed = (await preview(messagePackage)).body.data
+  assert.equal(mixed.plan.guestbook[0].targetId, guest.id)
+  const mixedResult = (await execute(mixed)).body.data.result.guestbook
+  assert.equal(mixedResult.length, 1)
+  assert.equal((await ok(`/admin/guestbook/${mixedResult[0].id}`)).replyTo.id, guest.id)
+  messagePackage.guestbook = [
+    { ...sourceGuest, sourceId: 11000, content: '同包重复父项' },
+    { ...sourceGuest, sourceId: 11001, content: '同包重复父项' },
+    { ...sourceGuest, sourceId: 11002, content: '编号不同但引用相同', replyToId: 11001 },
+  ]
+  const duplicatePlan = (await preview(messagePackage)).body.data
+  assert.equal(duplicatePlan.plan.counts.guestbook, 2)
+  const duplicateResult = (await execute(duplicatePlan)).body.data.result.guestbook
+  const duplicateParent = duplicateResult.find((item) => item.sourceId === 11000).id
+  const duplicateReply = duplicateResult.find((item) => item.sourceId === 11002).id
+  assert.equal((await ok(`/admin/guestbook/${duplicateReply}`)).replyTo.id, duplicateParent)
+  const staleGuestPlan = (await preview(messagePackage, 'copy')).body.data
+  const guestRevision = (await ok(`/admin/guestbook/${guest.id}`)).revision
+  await ok(`/admin/guestbook/${guest.id}`, 'PATCH', { status: 'hidden', revision: guestRevision })
+  assert.equal((await execute(staleGuestPlan)).status, 409)
+  await ok(`/admin/guestbook/${guest.id}`, 'PATCH', { status: 'published', revision: guestRevision + 1 })
   assert.equal((await ok(`/admin/comments?postId=${newId}`)).total, 2)
   const importedComments = await ok(`/admin/comments?postId=${newId}`)
   const root = importedComments.items.find((item) => item.parentId === null)
@@ -247,6 +345,14 @@ try {
     409,
   )
   assert.equal((await request('/admin/posts', 'POST', { title: '拒绝缺少上下文', contentRaw: '' })).status, 428)
+  const guestBody = { content: '旧页面不能提交留言', author: '小林', requestId: randomUUID() }
+  assert.equal((await request('/guestbook', 'POST', guestBody, '', oldContext)).status, 409)
+  assert.equal((await request('/guestbook', 'POST', guestBody, '')).status, 428)
+  assert.equal(
+    (await request(`/guestbook/${guest.id}/reactions`, 'PUT', { emoji: '👍', reacted: false }, '', oldContext)).status,
+    409,
+  )
+  assert.equal((await request('/guestbook', 'POST', guestBody, '', nextContext)).status, 201)
   assert.equal(
     (await request('/admin/posts', 'POST', { title: '重新读取后允许创建', contentRaw: '' }, token, nextContext)).status,
     201,
