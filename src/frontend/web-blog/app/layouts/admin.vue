@@ -30,6 +30,7 @@
       >
     </header>
     <main class="admin-main">
+      <ClientOnly><p v-if="restoringPending" role="status">正在确认登录状态…</p></ClientOnly>
       <ClientOnly
         ><section v-if="!isLogin && authError" class="admin-session" aria-label="登录状态提示">
           <p role="alert">{{ authError }}</p>
@@ -46,7 +47,7 @@
   </div>
 </template>
 <script setup lang="ts">
-const { isLoggedIn, logout, authError } = useCurrentUser()
+const { isLoggedIn, logout, authError, restoringPending } = useCurrentUser()
 const sessionHelp = ref(false)
 function reauthenticated() {
   sessionHelp.value = false

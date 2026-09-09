@@ -159,7 +159,7 @@
           <p v-else>动态公开后可以回复评论。</p>
         </section>
       </template>
-      <p v-else>请先登录博主账号。</p>
+      <p v-else-if="!restoringPending">请先登录博主账号。</p>
     </ClientOnly>
   </section>
 </template>
@@ -168,6 +168,7 @@ import type { ManagedMoment } from '~/features/moment/types'
 definePageMeta({ layout: 'admin' })
 useSeoMeta({ title: '朋友圈管理', robots: 'noindex, nofollow' })
 const {
+  restoringPending,
   isLoggedIn,
   items,
   total,

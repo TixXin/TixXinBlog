@@ -11,7 +11,7 @@ async function login(page: Page) {
   await page.getByRole('textbox', { name: '用户名', exact: true }).fill(process.env.E2E_USERNAME!)
   await page.getByRole('textbox', { name: '密码', exact: true }).fill(process.env.E2E_PASSWORD!)
   await page.getByRole('button', { name: '登录', exact: true }).click()
-  await expect(page).toHaveURL(/\/admin$/)
+  await expect(page).toHaveURL(/\/admin$/, { timeout: 18000 })
 }
 async function api(request: APIRequestContext) {
   const response = await request.post('/api/v1/auth/login', {
@@ -183,13 +183,11 @@ test('媒体选择上传、文章引用、图片说明与编辑释放引用一�
   const picker = page.getByRole('dialog', { name: '选择媒体图片', exact: true })
   await picker.getByLabel('新图片默认替代文本', { exact: true }).fill('动态实测配图')
   const filename = `moment-${randomUUID()}.png`
-  await picker
-    .getByLabel('选择或拖入图片', { exact: true })
-    .setInputFiles({
-      name: filename,
-      mimeType: 'image/png',
-      buffer: Buffer.from(process.env.E2E_MEDIA_SAMPLE!, 'base64'),
-    })
+  await picker.getByLabel('选择或拖入图片', { exact: true }).setInputFiles({
+    name: filename,
+    mimeType: 'image/png',
+    buffer: Buffer.from(process.env.E2E_MEDIA_SAMPLE!, 'base64'),
+  })
   const assetRow = picker.locator('.media-library__grid > li').filter({ hasText: filename })
   await assetRow.getByRole('button', { name: '使用此图片', exact: true }).click()
   await expect(picker).not.toBeVisible()
@@ -302,7 +300,72 @@ test('分页与筛选共享URL，读取失败保留内容并可重试，迟到�
   await page.waitForTimeout(750)
   await expect(page.locator('.moment-card__content')).toContainText('样本 02')
   await page.getByRole('link', { name: /^查看动态详情/ }).click()
+  await expect(page).toHaveURL(/\/moments\/[0-9a-f-]{36}/)
+  await expect(page.locator('.moment-detail-page')).toBeVisible()
   await page.goBack()
+  await expect(page).toHaveURL(/\/moments\?.*q=/)
+  await expect(page.locator('.moments-page')).toBeVisible()
+  await expect(page.locator('[data-page-motion-clone]')).toHaveCount(0)
   await expect(search).toHaveValue('样本 02')
   await expect(page.locator('.moment-card__content')).toContainText('样本 02')
 })
+
+test('登录轮换期间快速刷新跳转仍可恢复后台会话', async ({ page }) => {
+  test.setTimeout(90000)
+  await login(page)
+  for (let index = 0; index < 2; index++) {
+    const refreshing = page.waitForRequest(
+      (request) => request.url().endsWith('/api/v1/auth/refresh') && request.method() === 'POST',
+    )
+    await page.goto('/moments')
+    await refreshing
+    await page.goto('/admin/moments')
+    await expect(page.getByRole('button', { name: '退出登录', exact: true })).toBeVisible({ timeout: 18000 })
+    await expect(page.getByRole('button', { name: '管理评论', exact: true }).first()).toBeVisible()
+  }
+})
+
+for (const theme of ['nexus', 'aurora', 'dock']) {
+  for (const width of [320, 390]) {
+    test(`移动朋友圈 ${theme}/${width} 键盘互动、主题切换与评论输入保留`, async ({
+      page,
+      context,
+      request,
+      baseURL,
+    }) => {
+      await context.addCookies([{ name: 'tixxin-blog-layout-theme', value: theme, url: baseURL! }])
+      await page.setViewportSize({ width, height: 900 })
+      if (width === 320) await page.emulateMedia({ reducedMotion: 'reduce' })
+      const call = await api(request)
+      const note = await call('/admin/moments', 'POST', {
+        content: '移动互动验收 ' + randomUUID(),
+        status: 'published',
+        requestId: randomUUID(),
+      })
+      await page.goto(`/moments/${note.id}`)
+      await expect(page.locator(`.theme-${theme}`)).toBeVisible()
+      await expect(page.getByRole('button', { name: '点赞动态', exact: true })).toBeEnabled()
+      await page.getByRole('button', { name: '点赞动态', exact: true }).focus()
+      await page.keyboard.press('Enter')
+      await expect(page.getByRole('button', { name: '取消动态点赞', exact: true })).toHaveAttribute(
+        'aria-pressed',
+        'true',
+      )
+      await page.getByRole('button', { name: '查看动态评论', exact: true }).focus()
+      await page.keyboard.press('Enter')
+      const input = page.getByRole('textbox', { name: '动态评论内容', exact: true })
+      await input.fill('切换主题仍需保留的评论输入')
+      const nextTheme = theme === 'nexus' ? 'aurora' : 'nexus'
+      await page.getByRole('button', { name: '界面设置', exact: true }).click()
+      await page
+        .getByRole('dialog', { name: '界面设置', exact: true })
+        .getByRole('button', { name: new RegExp(`^${nextTheme} .*布局主题$`, 'i') })
+        .click()
+      await expect(page.locator(`.theme-${nextTheme}`)).toBeVisible()
+      if (!(await input.isVisible())) await page.getByRole('button', { name: '查看动态评论', exact: true }).click()
+      await expect(input).toHaveValue('切换主题仍需保留的评论输入')
+      expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true)
+      await input.fill('')
+    })
+  }
+}

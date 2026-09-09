@@ -3,7 +3,7 @@
  * @description 真实管理员登录态：访问令牌仅留在内存，刷新令牌使用同源 HttpOnly Cookie
  */
 import type { CurrentUser } from '~/features/auth/types'
-import { withAuthCookieLock } from '~/utils/authCookieLock'
+import { withAuthCookieLock, withAuthCookieRead } from '~/utils/authCookieLock'
 import { clearCommentDrafts } from '~/features/post/commentSession'
 import { clearMomentDrafts } from '~/features/moment/session'
 
@@ -22,6 +22,7 @@ export function useCurrentUser() {
   const accessToken = useState<string | null>('auth-access-token', () => null)
   const initialized = useState('auth-initialized', () => false)
   const authError = useState('auth-error', () => '')
+  const restoringPending = useState('auth-restoring', () => false)
   const isLoggedIn = computed(() => currentUser.value !== null && accessToken.value !== null)
 
   function accept(payload: AuthPayload) {
@@ -44,6 +45,7 @@ export function useCurrentUser() {
       $fetch<{ code: number; data: AuthPayload }>('/api/v1/auth/login', {
         method: 'POST',
         body: { username, password },
+        keepalive: true,
         credentials: 'include',
         retry: 0,
         timeout: 10000,
@@ -60,6 +62,7 @@ export function useCurrentUser() {
       try {
         const result = await $fetch<{ data: AuthPayload }>('/api/v1/auth/refresh', {
           method: 'POST',
+          keepalive: true,
           credentials: 'include',
           retry: 0,
           timeout: 10000,
@@ -87,13 +90,16 @@ export function useCurrentUser() {
   async function restore() {
     if (import.meta.server || initialized.value) return isLoggedIn.value
     if (restoring) return restoring
+    restoringPending.value = true
     restoring = (async () => {
       try {
-        const result = await $fetch<{ data: { authenticated: boolean } }>('/api/v1/auth/session', {
-          credentials: 'include',
-          retry: 0,
-          timeout: 10000,
-        })
+        const result = await withAuthCookieRead(() =>
+          $fetch<{ data: { authenticated: boolean } }>('/api/v1/auth/session', {
+            credentials: 'include',
+            retry: 0,
+            timeout: 10000,
+          }),
+        )
         if (result.data.authenticated) {
           const restored = await refresh()
           initialized.value = restored || authError.value === '登录已过期，请重新登录'
@@ -107,6 +113,7 @@ export function useCurrentUser() {
       return await restoring
     } finally {
       restoring = null
+      restoringPending.value = false
     }
   }
   async function clearSession(message = '') {
@@ -132,6 +139,7 @@ export function useCurrentUser() {
       await withAuthCookieLock(() =>
         $fetch<{ data: { ok: boolean } }>('/api/v1/auth/logout', {
           method: 'POST',
+          keepalive: true,
           credentials: 'include',
           headers: accessToken.value ? { Authorization: `Bearer ${accessToken.value}` } : {},
           retry: 0,
@@ -147,5 +155,17 @@ export function useCurrentUser() {
       loggingOut = false
     }
   }
-  return { currentUser, accessToken, initialized, authError, isLoggedIn, login, restore, refresh, logout, clearSession }
+  return {
+    currentUser,
+    accessToken,
+    initialized,
+    authError,
+    isLoggedIn,
+    restoringPending,
+    login,
+    restore,
+    refresh,
+    logout,
+    clearSession,
+  }
 }

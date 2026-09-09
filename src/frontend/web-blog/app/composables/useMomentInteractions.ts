@@ -83,6 +83,11 @@ export function useMomentInteractions() {
   async function submit(id: string) {
     const state = stateFor(id)
     if (!state || state.submitting || !state.draft.trim()) return
+    if (!auth.initialized.value || auth.restoringPending.value) {
+      state.submitError = '正在确认登录状态，请稍后再次发送；输入已保留。'
+      void auth.restore()
+      return
+    }
     if (!auth.isLoggedIn.value && !identity.hasIdentity.value) {
       waitingId = id
       identityVisible.value = true
