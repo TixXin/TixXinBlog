@@ -42,7 +42,7 @@
     <div class="moment-author-card__mood">
       <Icon name="lucide:chart-no-axes-column" size="14" class="moment-author-card__mood-icon" />
       <span class="moment-author-card__mood-text">{{ stats.currentMood }}</span>
-      <span class="moment-author-card__mood-time">{{ stats.moodUpdatedAt }}</span>
+      <span v-if="stats.moodUpdatedAt" class="moment-author-card__mood-time">{{ stats.moodUpdatedAt }}</span>
     </div>
 
     <!-- 社交链接 -->

@@ -47,10 +47,10 @@ const port = listener.address().port
 await new Promise((resolve) => listener.close(resolve))
 const origin = `http://127.0.0.1:${port}`
 const fixture = await createBrowserTestApp(origin)
-await seedMomentBrowserFixture(fixture)
 let preview
 let previewLog = ''
 try {
+  await seedMomentBrowserFixture(fixture)
   preview = spawn(process.execPath, ['.output/server/index.mjs'], {
     cwd: frontendDirectory,
     windowsHide: true,
