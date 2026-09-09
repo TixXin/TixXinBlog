@@ -4,7 +4,7 @@
 
 ## Project Overview
 
-TixXinBlog is a personal blog system in **UI polishing and incremental API integration**. Article lists, details, and comments support the NestJS API via `public.postUseMockRepo`; other domains retain their existing data sources. Tab bookmarks explicitly use LocalStorage until their API is implemented. Mock data lives in `features/<domain>/mock.ts` with types in `features/<domain>/types.ts`. Components receive data via props only (component-data decoupled).
+TixXinBlog is a personal blog system with persistent articles, comments, authentication, flashes, moments, media, and site settings. Articles support an explicit demo repository via `public.postUseMockRepo`; flashes use `public.useMockRepo`. Moments always use the real API; sample data is limited to tests or explicit development seeding. Guestbook, projects, gallery, and links retain demo data. Tab bookmarks explicitly use LocalStorage until their API is implemented. Data types live in `features/<domain>/types.ts`; components receive data via props and emit events. See `docs/capability-map.md` for verified boundaries.
 
 ## Commands
 
@@ -30,6 +30,8 @@ pnpm --filter web-blog test:watch  # Watch mode
 Package manager: **pnpm 9.15.0** (enforced). Node >= 24 < 25；推荐通过 `corepack pnpm` 调用固定版本。
 
 `dev` 只启动前端。真实接口模式推荐 `dev:all`，先用 `dev:check` 核对链路。统一启动不执行迁移、seed 或清空，退出仅清理本次创建的服务；已有服务保持运行。多个内容页同时出现 502 时检查后端 `/ready` 与同源 `/api/v1/posts`，不要切换 Mock 来掩盖服务故障。详见 `docs/development-runtime.md`。
+
+`corepack pnpm db:dev status` 查看数据库；其他数据工具默认预览，写入需显式确认数据库并先备份。清空和重建必须先停止使用目标库的服务。详见 `docs/development-database.md`。
 
 ## Architecture
 
