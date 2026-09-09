@@ -31,6 +31,10 @@ export class MomentController {
   ) {
     return this.read.comments(id, query, visitor)
   }
+  @Get(':id/navigation')
+  navigation(@Param('id') id: string) {
+    return this.read.navigation(id)
+  }
   @Post(':id/comments')
   comment(@Param('id') id: string, @Body() body: CreateMomentCommentDto, @VisitorIdHash() visitor: string) {
     return this.interactions.comment(id, body, visitor)

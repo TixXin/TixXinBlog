@@ -94,6 +94,9 @@ try {
     ok('/admin/moments', 'POST', input),
   ])
   assert.equal(first.id, duplicate.id)
+  assert.equal((await ok(`/admin/moments/submissions/${input.requestId}`)).id, first.id)
+  assert.equal((await request(`/admin/moments/submissions/${input.requestId}`, 'GET', undefined, false)).status, 401)
+  assert.equal((await request('/admin/moments/submissions/invalid')).status, 400)
   assert.equal((await ok('/moments', 'GET', undefined, false)).total, 1)
   assert.equal((await request('/admin/moments', 'POST', { ...input, content: '不同正文' })).status, 409)
   const published = await ok(`/moments/${first.id}`, 'GET', undefined, false)
@@ -110,12 +113,18 @@ try {
     status: 'published',
   })
   const pinned = await ok(`/admin/moments/${first.id}`, 'PATCH', { revision: first.revision, isPinned: true })
+  const firstNavigation = await ok(`/moments/${first.id}/navigation`, 'GET', undefined, false)
+  assert.equal(firstNavigation.prev.id, second.id)
+  assert.equal(firstNavigation.next, null)
+  assert.equal((await ok(`/moments/${second.id}/navigation`, 'GET', undefined, false)).next.id, first.id)
+  assert.equal((await request(`/moments/${draft.id}/navigation`, 'GET', undefined, false)).status, 404)
   assert.equal((await ok('/moments?pageSize=1', 'GET', undefined, false)).items[0].id, first.id)
   assert.equal((await ok('/moments?pageSize=1&page=2', 'GET', undefined, false)).items[0].id, second.id)
   assert.equal((await ok('/moments?q=%25', 'GET', undefined, false)).total, 1)
   assert.equal((await ok('/moments?topic=' + encodeURIComponent('技术'), 'GET', undefined, false)).total, 1)
   assert.equal((await ok('/moments?date=' + first.date.slice(0, 10), 'GET', undefined, false)).total, 2)
   assert.equal((await request('/moments?date=2026-02-30', 'GET', undefined, false)).status, 400)
+  assert.equal((await request('/moments?page=10001', 'GET', undefined, false)).status, 400)
   assert.equal(
     (await request(`/admin/moments/${first.id}`, 'PATCH', { revision: first.revision, content: '旧版本覆盖' })).status,
     409,
@@ -136,6 +145,7 @@ try {
   ])
   assert.equal(comments[0].id, comments[1].id)
   assert.equal(comments[0].isOwner, false)
+  assert(comments.every((comment) => comment.commentCount === 1))
   assert.equal((await ok(`/moments/${first.id}`, 'GET', undefined, false)).commentCount, 1)
   assert.equal(
     (
@@ -150,17 +160,35 @@ try {
   )
   const policy = await ok('/admin/comments/policy')
   await ok('/admin/comments/policy', 'PATCH', { requireApproval: true, revision: policy.revision })
-  const pending = await ok(
-    `/moments/${first.id}/comments`,
-    'POST',
-    { requestId: randomUUID(), author: '待审访客', content: '需要审核' },
-    false,
-  )
+  const pendingInput = { requestId: randomUUID(), author: '待审访客', content: '需要审核' }
+  const pending = await ok(`/moments/${first.id}/comments`, 'POST', pendingInput, false)
   assert.equal(pending.moderationStatus, 'pending')
+  assert.equal(pending.commentCount, 1)
   assert.equal((await ok(`/moments/${first.id}/comments`, 'GET', undefined, false)).total, 2)
   assert.equal((await ok(`/moments/${first.id}/comments`, 'GET', undefined, false, other)).total, 1)
   assert.equal((await ok('/moments/overview', 'GET', undefined, false)).stats.totalComments, 1)
-  await ok(`/admin/moments/${first.id}/comments/${pending.id}`, 'PATCH', { status: 'published' })
+  await ok(`/admin/moments/${first.id}/comments/${pending.id}`, 'PATCH', {
+    status: 'published',
+    expectedStatus: 'pending',
+  })
+  assert.equal(
+    (
+      await ok(`/admin/moments/${first.id}/comments/${pending.id}`, 'PATCH', {
+        status: 'published',
+        expectedStatus: 'pending',
+      })
+    ).commentCount,
+    2,
+  )
+  assert.equal(
+    (
+      await request(`/admin/moments/${first.id}/comments/${pending.id}`, 'PATCH', {
+        status: 'hidden',
+        expectedStatus: 'pending',
+      })
+    ).status,
+    409,
+  )
   const site = await ok('/site', 'GET', undefined, false)
   const reply = await ok(`/admin/moments/${first.id}/comments`, 'POST', {
     requestId: randomUUID(),
@@ -174,7 +202,11 @@ try {
   const commentPage2 = await ok(`/moments/${first.id}/comments?pageSize=2&page=2`, 'GET', undefined, false)
   assert.equal(commentPage1.total, 4)
   assert.equal(new Set([...commentPage1.items, ...commentPage2.items].map((item) => item.id)).size, 4)
-  await ok(`/admin/moments/${first.id}/comments/${pending.id}`, 'PATCH', { status: 'hidden' })
+  await ok(`/admin/moments/${first.id}/comments/${pending.id}`, 'PATCH', {
+    status: 'hidden',
+    expectedStatus: 'published',
+  })
+  assert.equal((await request(`/moments/${first.id}/comments`, 'POST', pendingInput, false)).status, 409)
   assert.equal((await ok(`/moments/${first.id}/comments`, 'GET', undefined, false)).total, 3)
   assert.equal((await ok('/moments/overview', 'GET', undefined, false)).stats.totalComments, 3)
   const references = await ok(`/admin/media/${image.id}/references`)
@@ -194,9 +226,11 @@ try {
   assert.equal(overview.topics.find((topic) => topic.name === '技术').count, 1)
   assert.equal(overview.photos[0].momentId, first.id)
   assert.equal(overview.dates[0].count, 2)
+  assert.equal(overview.recollections.length, 2)
+  assert(overview.recollections.every((item) => Object.keys(item).sort().join(',') === 'content,date,id'))
   const edited = await ok(`/admin/moments/${first.id}`, 'PATCH', { revision: pinned.revision, images: [] })
   assert.equal((await ok(`/admin/media/${image.id}/references`)).total, 1)
-  await ok(`/admin/moments/${first.id}/comments/${comments[0].id}`, 'DELETE')
+  assert.equal((await ok(`/admin/moments/${first.id}/comments/${comments[0].id}`, 'DELETE')).commentCount, 2)
   assert.equal((await request(`/moments/${first.id}/comments`, 'POST', commentInput, false)).status, 409)
   assert.equal((await ok(`/admin/media/${image.id}/references`)).total, 0)
   await ok(`/admin/media/${image.id}`, 'DELETE')
