@@ -90,6 +90,25 @@ try {
     }),
   })
   assert.equal(momentComment.status, 201)
+  const guestResponse = await fetch(`${fixture.origin}/api/v1/guestbook`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'X-Visitor-Id': 'restore-guestbook-visitor' },
+    body: JSON.stringify({ content: '完整恢复留言', author: '小林', avatar: asset.url, requestId: randomUUID() }),
+  })
+  assert.equal(guestResponse.status, 201)
+  const guest = (await guestResponse.json()).data
+  const guestReply = await fetch(`${fixture.origin}/api/v1/admin/guestbook`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+    body: JSON.stringify({ content: '完整恢复博主答复', replyToId: guest.id, requestId: randomUUID() }),
+  })
+  assert.equal(guestReply.status, 201)
+  const reaction = await fetch(`${fixture.origin}/api/v1/guestbook/${guest.id}/reactions`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', 'X-Visitor-Id': 'restore-guestbook-visitor' },
+    body: JSON.stringify({ emoji: '👍', reacted: true }),
+  })
+  assert.equal(reaction.status, 200)
   const target = resolve(backendRoot, '../../..', '.backups', `verification-${randomUUID()}`)
   const backup = await createFullBackup({
     output: join(target, 'backup'),
@@ -102,7 +121,9 @@ try {
   assert.equal(backup.manifest.counts.moment, 1)
   assert.equal(backup.manifest.counts.moment_comment, 1)
   assert.equal(backup.manifest.counts.moment_like, 1)
-  assert.equal(backup.manifest.counts.media_reference, 6)
+  assert.equal(backup.manifest.counts.guestbook_message, 2)
+  assert.equal(backup.manifest.counts.guestbook_reaction, 1)
+  assert.equal(backup.manifest.counts.media_reference, 7)
   assert.equal(
     Number((await fixture.testOrm.em.fork().execute('select count(*)::int as count from post'))[0].count),
     108,
@@ -119,6 +140,8 @@ try {
   assert.equal(restored.report.counts.moment, 1)
   assert.equal(restored.report.counts.moment_comment, 1)
   assert.equal(restored.report.counts.moment_like, 1)
+  assert.equal(restored.report.counts.guestbook_message, 2)
+  assert.equal(restored.report.counts.guestbook_reaction, 1)
   assert.equal(restored.report.mediaFiles, 1)
   assert.equal(restored.report.rowDigestsVerified, true)
   assert.equal(restored.report.network, 'none')
@@ -140,6 +163,7 @@ try {
       '恢复不影响源库',
       '旧会话撤销与上下文轮换',
       '朋友圈正文、文章关系、评论、点赞及提交去重记录完整恢复',
+      '留言、回复关系、回应、媒体引用及提交去重记录完整恢复',
     ],
   }
   await restored.cleanup()

@@ -16,6 +16,7 @@ import { canonicalTaxonomyLabel } from '../post/taxonomy-aliases'
 import { managedMediaIds } from '../media/media-references'
 import type { MediaStorage } from '../media/media-storage'
 import type { ContentExportService } from './content-export.service'
+import { guestbookImportPlan } from './content-guestbook-plan'
 export function postContentHash(values: PackagePost['values']) {
   return packageHash({
     title: values.title.trim(),
@@ -83,6 +84,7 @@ export async function makeContentPlan(
   ])
   const basis = packageHash({
     context: context.generation,
+    guestbook: current.guestbook,
     posts: current.posts.map((post) => ({ id: post.sourceId, values: post.values })),
     flashes: current.flashes.map((flash) => ({ id: flash.sourceId, values: flash.values })),
     moments: current.moments.map((note) => ({
@@ -200,6 +202,12 @@ export async function makeContentPlan(
       reason: skip ? '跳过相同内容及其评论' : '创建新的朋友圈草稿；保留未删除评论的审核状态；点赞和访客身份不迁入',
     }
   })
+  const guestbookPlans = guestbookImportPlan(current.guestbook, input.guestbook ?? [], strategy)
+  const guestbookById = new Map((input.guestbook ?? []).map((message) => [message.sourceId, message]))
+  for (const plan of guestbookPlans) {
+    const source = guestbookById.get(plan.sourceId)!
+    if (!plan.skip && !source.deleted) requiredValues.push(source.avatar)
+  }
   if (includeSettings) requiredValues.push(input.site.avatar)
   const required = new Set(managedMediaIds(requiredValues))
   const incoming = new Map(input.media.map((item) => [item.id, item]))
@@ -253,16 +261,19 @@ export async function makeContentPlan(
     posts: postPlans,
     flashes: flashPlans,
     moments: momentPlans,
+    guestbook: guestbookPlans,
     media,
     counts: {
       posts: postPlans.filter((item) => !item.skip).length,
       flashes: flashPlans.filter((item) => !item.skip).length,
       moments: momentPlans.filter((item) => !item.skip).length,
+      guestbook: guestbookPlans.filter((item) => !item.skip).length,
       comments,
       skipped:
         postPlans.filter((item) => item.skip).length +
         flashPlans.filter((item) => item.skip).length +
-        momentPlans.filter((item) => item.skip).length,
+        momentPlans.filter((item) => item.skip).length +
+        guestbookPlans.filter((item) => item.skip).length,
       media: media.filter((item) => item.create).length,
       files: media.filter((item) => item.writeFile).length,
       settings: includeSettings,

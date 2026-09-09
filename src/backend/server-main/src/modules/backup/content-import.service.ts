@@ -36,6 +36,8 @@ import { ContentExportService } from './content-export.service'
 import { packageHash, parseContentPackage } from './content-package'
 import { makeContentPlan, normalizedPost } from './content-import-plan'
 import { importMoments } from './content-import-moments'
+import { importGuestbook } from './content-import-guestbook'
+import { lockGuestbook } from '../guestbook/guestbook-write.service'
 type Admin = { id: string; sessionVersion: number; sessionId: string }
 type Options = { requestId: string; strategy: 'skip' | 'copy'; includeSettings: boolean }
 @Injectable()
@@ -200,6 +202,7 @@ export class ContentImportService {
       return await this.em.transactional(async (em) => {
         await lockTaxonomy(em)
         await lockMedia(em)
+        await lockGuestbook(em)
         const job = await em.findOneOrFail(
           ContentImport,
           { id, actorId: admin.id },
@@ -235,6 +238,7 @@ export class ContentImportService {
           posts: [],
           flashes: [],
           moments: [],
+          guestbook: [],
           comments: 0,
           media: 0,
           files: 0,
@@ -350,6 +354,7 @@ export class ContentImportService {
             result.flashes.push({ sourceId: source.sourceId, id: saved.id })
           }
           await importMoments(em, payload, current, result)
+          await importGuestbook(em, payload, current, result)
           if (job.includeSettings) {
             await this.sites.save({ ...payload.site, revision: current.siteRevision }, '从内容包迁入站点资料')
             await this.comments.savePolicy({

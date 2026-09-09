@@ -12,6 +12,7 @@ import { FlashNote } from '../../entities/flash-note.entity'
 import { FlashComment } from '../../entities/flash-comment.entity'
 import { Moment } from '../../entities/moment.entity'
 import { MomentComment } from '../../entities/moment-comment.entity'
+import { GuestbookMessage } from '../../entities/guestbook-message.entity'
 import { PostFolder } from '../../entities/post-folder.entity'
 import { PostTag } from '../../entities/post-tag.entity'
 import { MediaAsset } from '../../entities/media-asset.entity'
@@ -31,15 +32,24 @@ export class ContentExportService {
   async snapshot(mediaIncluded: boolean, manager?: EntityManager): Promise<ContentPackage> {
     const capture = async (em: EntityManager): Promise<ContentPackage> => {
       const [counts] = await em.execute<
-        { posts: number; flashes: number; moments: number; comments: number; media: number; bytes: string }[]
+        {
+          posts: number
+          flashes: number
+          moments: number
+          guestbook: number
+          comments: number
+          media: number
+          bytes: string
+        }[]
       >(
-        `select (select count(*)::int from post) as posts, (select count(*)::int from flash_note) as flashes, (select count(*)::int from moment) as moments, ((select count(*) from comment)+(select count(*) from flash_comment)+(select count(*) from moment_comment))::int as comments, (select count(*)::int from media_asset) as media, (select coalesce(sum(octet_length(coalesce(content_raw,content_sections::text,''))),0)::text from post) as bytes`,
+        `select (select count(*)::int from post) as posts, (select count(*)::int from flash_note) as flashes, (select count(*)::int from moment) as moments, (select count(*)::int from guestbook_message) as guestbook, ((select count(*) from comment)+(select count(*) from flash_comment)+(select count(*) from moment_comment))::int as comments, (select count(*)::int from media_asset) as media, (select coalesce(sum(octet_length(coalesce(content_raw,content_sections::text,''))),0)::text from post) as bytes`,
       )
       if (
         !counts ||
         counts.posts > 1000 ||
         counts.flashes > 2000 ||
         counts.moments > 2000 ||
+        counts.guestbook > 2000 ||
         counts.comments > 10000 ||
         counts.media > 300 ||
         Number(counts.bytes) > MAX_PACKAGE_BYTES
@@ -55,11 +65,13 @@ export class ContentExportService {
       )
       const assets = await em.find(MediaAsset, {}, { orderBy: { id: 'asc' } })
       const moments = await em.find(Moment, {}, { orderBy: { id: 'asc' } })
+      const guestbook = await em.find(GuestbookMessage, {}, { orderBy: { id: 'asc' } })
       const momentComments = await em.find(MomentComment, {}, { orderBy: { createdAt: 'asc', id: 'asc' } })
       if (
         posts.length > 1000 ||
         flashes.length > 2000 ||
         moments.length > 2000 ||
+        guestbook.length > 2000 ||
         comments.length + flashComments.length + momentComments.length > 10000 ||
         assets.length > 300
       )
@@ -101,7 +113,7 @@ export class ContentExportService {
       void announcementUpdatedAt
       const result: ContentPackage = {
         format: 'tixxin-content',
-        version: 2,
+        version: 3,
         exportedAt: new Date().toISOString(),
         mediaIncluded,
         posts: posts.map((post) => {
@@ -159,6 +171,18 @@ export class ContentExportService {
               deleted: !!comment.deletedAt,
               createdAt: comment.createdAt.toISOString(),
             })),
+        })),
+        guestbook: guestbook.map((message) => ({
+          sourceId: message.id,
+          createdAt: message.createdAt.toISOString(),
+          deleted: !!message.deletedAt,
+          author: message.author,
+          avatar: message.avatar,
+          content: message.content,
+          isOwner: message.isOwner,
+          status: message.status,
+          isPinned: message.isPinned,
+          replyToId: message.replyTo?.id ?? null,
         })),
         folders: folders.map((folder) => folder.label),
         tags: tags.map((tag) => ({ label: tag.label, color: tag.color })),

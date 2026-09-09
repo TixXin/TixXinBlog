@@ -4,9 +4,10 @@ import { GuestbookReadService } from './guestbook-read.service'
 import { GuestbookWriteService } from './guestbook-write.service'
 import { GuestbookController } from './guestbook.controller'
 import { AdminGuestbookController } from './admin-guestbook.controller'
+import { ContentWriteContextGuard } from '../../common/guards/content-write-context.guard'
 @Module({
   controllers: [GuestbookController, AdminGuestbookController],
-  providers: [GuestbookReadService, GuestbookWriteService],
+  providers: [GuestbookReadService, GuestbookWriteService, ContentWriteContextGuard],
   exports: [GuestbookReadService, GuestbookWriteService],
 })
 export class GuestbookModule {}

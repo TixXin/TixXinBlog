@@ -11,11 +11,20 @@ export interface ContentImportPlan {
   posts: { sourceId: number; title: string; skip: boolean; slug: string; reason: string }[]
   flashes: { sourceId: string; title: string; skip: boolean; reason: string }[]
   moments: { sourceId: string; title: string; skip: boolean; reason: string; linkedArticleId: number | null }[]
+  guestbook: {
+    sourceId: number
+    title: string
+    skip: boolean
+    reason: string
+    targetId?: number
+    duplicateOf?: number
+  }[]
   media: { id: string; create: boolean; writeFile: boolean; skip: boolean }[]
   counts: {
     posts: number
     flashes: number
     moments: number
+    guestbook: number
     comments: number
     skipped: number
     media: number
@@ -29,6 +38,7 @@ export interface ContentImportResult {
   posts: { sourceId: number; id: number }[]
   flashes: { sourceId: string; id: string }[]
   moments: { sourceId: string; id: string }[]
+  guestbook: { sourceId: number; id: number }[]
   comments: number
   media: number
   files: number
