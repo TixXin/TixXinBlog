@@ -19,6 +19,10 @@
           v-for="msg in group.messages"
           :key="msg.id"
           :message="msg"
+          :interactive="interactive"
+          :reacting="reacting?.includes(msg.id)"
+          :reaction-error="reactionErrors?.[msg.id]"
+          @react="$emit('react', $event)"
           @reply="(m) => $emit('reply', m)"
         />
       </TransitionGroup>
@@ -31,10 +35,14 @@ import type { DateGroup, GuestMessage } from '~/features/guestbook/types'
 
 defineProps<{
   groups: DateGroup[]
+  interactive?: boolean
+  reacting?: number[]
+  reactionErrors?: Record<number, string>
 }>()
 
 defineEmits<{
   reply: [message: GuestMessage]
+  react: [value: { id: number; emoji: string; reacted: boolean; complete?: () => void }]
 }>()
 
 const { enter, cancel } = useEntranceMotion()

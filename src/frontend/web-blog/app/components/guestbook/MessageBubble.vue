@@ -6,12 +6,16 @@
 -->
 
 <template>
-  <div class="message-bubble" :class="message.isOwner ? 'message-bubble--owner' : 'message-bubble--guest'">
+  <div
+    class="message-bubble"
+    :data-guestbook-id="message.id"
+    :class="message.isOwner ? 'message-bubble--owner' : 'message-bubble--guest'"
+  >
     <!-- 头像 -->
     <div class="message-bubble__avatar-wrap" @mouseenter="showUserCard = true" @mouseleave="showUserCard = false">
       <img
         class="message-bubble__avatar"
-        :src="message.avatar"
+        :src="message.avatar || '/avatar.svg'"
         :alt="`${message.author} 的头像`"
         width="32"
         height="32"
@@ -25,7 +29,7 @@
         >
           <img
             class="message-bubble__user-card-avatar"
-            :src="message.avatar"
+            :src="message.avatar || '/avatar.svg'"
             :alt="message.author"
             width="40"
             height="40"
@@ -71,6 +75,9 @@
         <span class="message-bubble__reply-content">{{ message.replyTo.content }}</span>
       </div>
 
+      <p v-if="message.replyUnavailable" class="message-bubble__reply">所引用的留言暂不可见</p>
+      <p v-if="message.moderationStatus === 'pending'" class="message-bubble__foot">待审核，仅自己可见</p>
+      <p v-if="reactionError" role="alert" class="message-bubble__foot">{{ reactionError }}</p>
       <!-- 气泡主体 -->
       <div class="message-bubble__body">
         <div
@@ -90,7 +97,8 @@
             <button
               type="button"
               class="message-bubble__action"
-              :aria-label="`回复${message.author}的演示留言`"
+              :aria-label="`回复${message.author}的留言`"
+              :disabled="message.moderationStatus !== 'published'"
               @click="$emit('reply', message)"
             >
               <Icon name="lucide:reply" size="13" />
@@ -107,6 +115,7 @@
               type="button"
               class="message-bubble__action"
               aria-label="添加回应"
+              :disabled="!interactive || reacting || message.moderationStatus !== 'published'"
               :aria-expanded="showReactionPicker"
               @click="showReactionPicker = !showReactionPicker"
             >
@@ -131,6 +140,7 @@
             :key="option.value"
             type="button"
             :aria-label="option.label"
+            :disabled="reacting"
             class="message-bubble__reaction-pick"
             @click="addReaction(option.value)"
           >
@@ -153,51 +163,29 @@
           :class="{ 'message-bubble__reaction--active': r.reacted }"
           :aria-label="`${reactionMeta(r.emoji).label}，${r.count} 次回应`"
           :aria-pressed="r.reacted"
+          :disabled="!interactive || reacting || message.moderationStatus !== 'published'"
           @click="toggleReaction(r.emoji)"
         >
           <Icon :name="reactionMeta(r.emoji).icon" size="15" />
           <span class="message-bubble__reaction-count">{{ r.count }}</span>
         </button>
       </div>
-
-      <!-- 底部信息行：浏览器 + 地区 + 状态 -->
-      <div
-        v-if="message.browser || message.region || message.status"
-        class="message-bubble__foot"
-        :class="{ 'message-bubble__foot--end': message.isOwner }"
-      >
-        <span v-if="message.browser" class="message-bubble__browser">
-          <Icon name="lucide:monitor" size="12" class="message-bubble__browser-icon" />
-          {{ message.browser }}
-        </span>
-        <template v-if="message.browser && message.region">
-          <span class="message-bubble__dot">&middot;</span>
-        </template>
-        <span v-if="message.region" class="message-bubble__region">
-          <Icon name="lucide:map-pin" size="12" class="message-bubble__region-icon" />
-          {{ message.region }}
-        </span>
-        <!-- 消息状态指示 -->
-        <template v-if="message.status">
-          <span class="message-bubble__dot">&middot;</span>
-          <span class="message-bubble__status" :class="`message-bubble__status--${message.status}`">
-            <Icon name="lucide:monitor" size="11" />
-            {{ statusText }}
-          </span>
-        </template>
-      </div>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import type { GuestMessage, MessageReaction } from '~/features/guestbook/types'
+import type { GuestMessage } from '~/features/guestbook/types'
 
 const props = defineProps<{
   message: GuestMessage
+  interactive?: boolean
+  reacting?: boolean
+  reactionError?: string
 }>()
 
-defineEmits<{
+const emit = defineEmits<{
+  react: [value: { id: number; emoji: string; reacted: boolean; complete?: () => void }]
   reply: [message: GuestMessage]
 }>()
 
@@ -226,12 +214,7 @@ function closeReactions() {
   nextTick(() => reactionButton.value?.focus())
 }
 
-/** 响应式反应列表 */
-const reactions = ref<MessageReaction[]>(
-  props.message.reactions ? [...props.message.reactions.map((r) => ({ ...r }))] : [],
-)
-
-const statusText = computed(() => (props.message.status === 'local' ? '仅当前页面' : '示例记录'))
+const reactions = computed(() => props.message.reactions ?? [])
 
 async function copyContent() {
   try {
@@ -247,32 +230,22 @@ async function copyContent() {
   }, 1500)
 }
 
-function toggleReaction(emoji: string) {
-  const existing = reactions.value.find((r) => r.emoji === emoji)
-  if (existing) {
-    if (existing.reacted) {
-      existing.count--
-      existing.reacted = false
-      if (existing.count <= 0) {
-        reactions.value = reactions.value.filter((r) => r.emoji !== emoji)
-      }
-    } else {
-      existing.count++
-      existing.reacted = true
-    }
-  }
+function sendReaction(emoji: string, reacted: boolean) {
+  if (!props.interactive || props.reacting || props.message.moderationStatus !== 'published') return
+  emit('react', {
+    id: props.message.id,
+    emoji,
+    reacted,
+    complete: () => {
+      if (document.activeElement === document.body) reactionButton.value?.focus({ preventScroll: true })
+    },
+  })
 }
-
+function toggleReaction(emoji: string) {
+  sendReaction(emoji, !reactions.value.find((item) => item.emoji === emoji)?.reacted)
+}
 function addReaction(emoji: string) {
-  const existing = reactions.value.find((r) => r.emoji === emoji)
-  if (existing) {
-    if (!existing.reacted) {
-      existing.count++
-      existing.reacted = true
-    }
-  } else {
-    reactions.value.push({ emoji, count: 1, reacted: true })
-  }
+  sendReaction(emoji, true)
   closeReactions()
 }
 
