@@ -10,10 +10,12 @@ export interface ContentImportPlan {
   errors: string[]
   posts: { sourceId: number; title: string; skip: boolean; slug: string; reason: string }[]
   flashes: { sourceId: string; title: string; skip: boolean; reason: string }[]
+  moments: { sourceId: string; title: string; skip: boolean; reason: string; linkedArticleId: number | null }[]
   media: { id: string; create: boolean; writeFile: boolean; skip: boolean }[]
   counts: {
     posts: number
     flashes: number
+    moments: number
     comments: number
     skipped: number
     media: number
@@ -26,6 +28,7 @@ export interface ContentImportPlan {
 export interface ContentImportResult {
   posts: { sourceId: number; id: number }[]
   flashes: { sourceId: string; id: string }[]
+  moments: { sourceId: string; id: string }[]
   comments: number
   media: number
   files: number

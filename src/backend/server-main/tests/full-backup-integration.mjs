@@ -59,6 +59,37 @@ try {
     body: JSON.stringify({ content: '恢复闪念内容', images: [asset.url], isDraft: true }),
   })
   assert.equal(flash.status, 201)
+  const momentRequestId = randomUUID()
+  const momentResponse = await fetch(`${fixture.origin}/api/v1/admin/moments`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      content: '完整恢复朋友圈',
+      images: [asset.url],
+      linkedArticleId: sourcePost.id,
+      status: 'published',
+      requestId: momentRequestId,
+    }),
+  })
+  assert.equal(momentResponse.status, 201)
+  const moment = (await momentResponse.json()).data
+  const like = await fetch(`${fixture.origin}/api/v1/moments/${moment.id}/like`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', 'X-Visitor-Id': 'restore-moment-visitor' },
+    body: JSON.stringify({ liked: true }),
+  })
+  assert.equal(like.status, 200)
+  const momentComment = await fetch(`${fixture.origin}/api/v1/moments/${moment.id}/comments`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'X-Visitor-Id': 'restore-moment-visitor' },
+    body: JSON.stringify({
+      content: '完整恢复动态评论',
+      author: '恢复访客',
+      avatar: asset.url,
+      requestId: randomUUID(),
+    }),
+  })
+  assert.equal(momentComment.status, 201)
   const target = resolve(backendRoot, '../../..', '.backups', `verification-${randomUUID()}`)
   const backup = await createFullBackup({
     output: join(target, 'backup'),
@@ -68,6 +99,10 @@ try {
     },
   })
   assert.equal(backup.manifest.counts.post, 107)
+  assert.equal(backup.manifest.counts.moment, 1)
+  assert.equal(backup.manifest.counts.moment_comment, 1)
+  assert.equal(backup.manifest.counts.moment_like, 1)
+  assert.equal(backup.manifest.counts.media_reference, 6)
   assert.equal(
     Number((await fixture.testOrm.em.fork().execute('select count(*)::int as count from post'))[0].count),
     108,
@@ -81,6 +116,9 @@ try {
   await writeFile(mediaFile, valid)
   restored = await restoreFullBackup(backup.directory, { output: join(target, 'restored') })
   assert.equal(restored.report.counts.post, 107)
+  assert.equal(restored.report.counts.moment, 1)
+  assert.equal(restored.report.counts.moment_comment, 1)
+  assert.equal(restored.report.counts.moment_like, 1)
   assert.equal(restored.report.mediaFiles, 1)
   assert.equal(restored.report.rowDigestsVerified, true)
   assert.equal(restored.report.network, 'none')
@@ -101,6 +139,7 @@ try {
       '篡改文件拒绝恢复',
       '恢复不影响源库',
       '旧会话撤销与上下文轮换',
+      '朋友圈正文、文章关系、评论、点赞及提交去重记录完整恢复',
     ],
   }
   await restored.cleanup()

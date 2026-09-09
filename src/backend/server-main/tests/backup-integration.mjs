@@ -14,7 +14,16 @@ try {
   let writes = 0
   async function request(path, method = 'GET', body, credential = token, context) {
     if (method !== 'GET' && ++writes % 6 === 0) await delay(1100)
-    const response = await fetch(`${fixture.origin}/api/v1${path}`, { method, headers: { 'Content-Type': 'application/json', 'X-Visitor-Id': 'backup-isolated-visitor', ...(credential ? { Authorization: `Bearer ${credential}` } : {}), ...(context ? { 'X-Content-Context': context } : {}) }, ...(body === undefined ? {} : { body: JSON.stringify(body) }) })
+    const response = await fetch(`${fixture.origin}/api/v1${path}`, {
+      method,
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Visitor-Id': 'backup-isolated-visitor',
+        ...(credential ? { Authorization: `Bearer ${credential}` } : {}),
+        ...(context ? { 'X-Content-Context': context } : {}),
+      },
+      ...(body === undefined ? {} : { body: JSON.stringify(body) }),
+    })
     return { status: response.status, body: await response.json(), headers: response.headers }
   }
   const login = await request('/auth/login', 'POST', { username: fixture.username, password: fixture.password }, '')
@@ -26,21 +35,72 @@ try {
     return response.body.data
   }
   const upload = new FormData()
-  upload.append('file', new Blob([Buffer.from(fixture.mediaSample, 'base64')], { type: 'image/png' }), 'backup-source.png')
-  const assetResponse = await fetch(`${fixture.origin}/api/v1/admin/media`, { method: 'POST', headers: { Authorization: `Bearer ${token}` }, body: upload })
+  upload.append(
+    'file',
+    new Blob([Buffer.from(fixture.mediaSample, 'base64')], { type: 'image/png' }),
+    'backup-source.png',
+  )
+  const assetResponse = await fetch(`${fixture.origin}/api/v1/admin/media`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}` },
+    body: upload,
+  })
   assert.equal(assetResponse.status, 201)
   const asset = (await assetResponse.json()).data
-  const original = await ok('/admin/posts', 'POST', { title: '内容包源文章', contentRaw: `![图片](${asset.url})`, status: 'published', slug: 'backup-source' })
-  const parent = await ok(`/posts/${original.id}/comments`, 'POST', { author: '备份访客', avatar: asset.url, content: '导入根评论' })
+  const original = await ok('/admin/posts', 'POST', {
+    title: '内容包源文章',
+    contentRaw: `![图片](${asset.url})`,
+    status: 'published',
+    slug: 'backup-source',
+  })
+  const parent = await ok(`/posts/${original.id}/comments`, 'POST', {
+    author: '备份访客',
+    avatar: asset.url,
+    content: '导入根评论',
+  })
   await ok(`/posts/${original.id}/comments`, 'POST', { author: '备份访客', content: '导入子评论', parentId: parent.id })
   const flash = await ok('/admin/flashes', 'POST', { content: '内容包源闪念', images: [asset.url], isDraft: false })
-  await ok(`/flashes/${flash.id}/comments`, 'POST', { authorName: '备份访客', authorAvatar: asset.url, content: '迁入闪念评论' })
+  await ok(`/flashes/${flash.id}/comments`, 'POST', {
+    authorName: '备份访客',
+    authorAvatar: asset.url,
+    content: '迁入闪念评论',
+  })
+  const moment = await ok('/admin/moments', 'POST', {
+    content: '内容包源朋友圈',
+    images: [asset.url],
+    linkedArticleId: original.id,
+    status: 'published',
+    topics: ['迁入'],
+    requestId: randomUUID(),
+  })
+  await ok(`/moments/${moment.id}/like`, 'PUT', { liked: true })
+  await ok(`/moments/${moment.id}/comments`, 'POST', {
+    author: '迁入访客',
+    avatar: asset.url,
+    content: '迁入动态公开评论',
+    requestId: randomUUID(),
+  })
+  const hidden = await ok(`/moments/${moment.id}/comments`, 'POST', {
+    author: '迁入访客',
+    avatar: asset.url,
+    content: '迁入动态隐藏评论',
+    requestId: randomUUID(),
+  })
+  await ok(`/admin/moments/${moment.id}/comments/${hidden.id}`, 'PATCH', {
+    status: 'hidden',
+    expectedStatus: 'published',
+  })
   assert.equal((await request('/admin/backup/export', 'POST', { mediaIncluded: true }, '')).status, 401)
   const exported = await request('/admin/backup/export', 'POST', { mediaIncluded: true })
   assert.equal(exported.status, 201)
   assert(exported.headers.get('content-disposition').includes('attachment'))
   assert.equal(exported.body.format, 'tixxin-content')
   const bundle = exported.body
+  assert.equal(bundle.version, 2)
+  assert.equal(bundle.moments.length, 1)
+  assert.equal(bundle.moments[0].comments.length, 2)
+  assert(!JSON.stringify(bundle.moments).includes('requestId'))
+  assert(!JSON.stringify(bundle.moments).includes('likes'))
   bundle.posts = bundle.posts.filter((item) => item.sourceId === original.id)
   bundle.flashes = bundle.flashes.filter((item) => item.sourceId === flash.id)
   assert.equal(bundle.posts[0].comments.length, 2)
@@ -53,16 +113,38 @@ try {
     form.append('requestId', id)
     form.append('strategy', strategy)
     form.append('includeSettings', String(includeSettings))
-    const response = await fetch(`${fixture.origin}/api/v1/admin/backup/imports/preview`, { method: 'POST', headers: { Authorization: `Bearer ${token}` }, body: form })
+    const response = await fetch(`${fixture.origin}/api/v1/admin/backup/imports/preview`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}` },
+      body: form,
+    })
     return { status: response.status, body: await response.json() }
   }
   const same = await preview(bundle)
   assert.equal(same.status, 201, same.body.message)
   assert.equal(same.body.data.plan.counts.posts, 0)
-  assert.equal(same.body.data.plan.counts.skipped, 2)
+  assert.equal(same.body.data.plan.counts.skipped, 3)
   assert.equal((await preview(bundle, 'skip', false, same.body.data.ticket)).body.data.ticket, same.body.data.ticket)
   assert.equal((await preview({ ...bundle, version: 99 })).status, 400)
-  assert.equal((await preview(JSON.parse(JSON.stringify(bundle).replace('"version":1', '"version":1,"__proto__":{"polluted":true}')))).status, 400)
+  assert.equal(
+    (
+      await preview(
+        JSON.parse(JSON.stringify(bundle).replace('"version":2', '"version":2,"__proto__":{"polluted":true}')),
+      )
+    ).status,
+    400,
+  )
+  const legacy = structuredClone(bundle)
+  legacy.version = 1
+  delete legacy.moments
+  assert.equal((await preview(legacy)).body.data.plan.counts.moments, 0)
+  assert.equal((await preview({ ...bundle, version: 1 })).status, 400)
+  const invalidMoment = structuredClone(bundle)
+  invalidMoment.moments[0].values.requestId = randomUUID()
+  assert.equal((await preview(invalidMoment)).status, 400)
+  delete invalidMoment.moments[0].values.requestId
+  invalidMoment.moments[0].values.linkedArticleId = 2147483647
+  assert.equal((await preview(invalidMoment)).status, 400)
   const missing = structuredClone(bundle)
   missing.media = []
   missing.posts[0].values.cover = `/api/v1/media/${randomUUID()}.webp`
@@ -80,21 +162,44 @@ try {
   const planned = (await preview(copied, 'copy', true)).body.data
   assert.equal(planned.plan.ready, true)
   assert.equal(planned.plan.counts.posts, 1)
+  assert.equal(planned.plan.counts.moments, 1)
   assert.equal(planned.plan.counts.media, 1)
   assert.notEqual(planned.plan.posts[0].slug, 'backup-source')
-  const execute = (value, confirmation = value.confirmation) => request(`/admin/backup/imports/${value.ticket}/execute`, 'POST', { acknowledgement: '导入为新草稿', confirmation })
+  const execute = (value, confirmation = value.confirmation) =>
+    request(`/admin/backup/imports/${value.ticket}/execute`, 'POST', { acknowledgement: '导入为新草稿', confirmation })
   const imported = await execute(planned)
   assert.equal(imported.status, 201, imported.body.message)
   assert.equal(imported.body.data.completed, true)
   assert.equal(imported.body.data.result.posts.length, 1)
-  assert.equal(imported.body.data.result.comments, 3)
+  assert.equal(imported.body.data.result.comments, 5)
   const newId = imported.body.data.result.posts[0].id
+  const momentId = imported.body.data.result.moments[0].id
+  const restoredMoment = await ok(`/admin/moments/${momentId}`)
+  assert.equal(restoredMoment.status, 'draft')
+  assert.equal(restoredMoment.linkedArticleId, newId)
+  assert.equal(restoredMoment.likes, 0)
+  assert.equal(restoredMoment.commentCount, 1)
+  assert.equal(restoredMoment.comments.length, 2)
+  assert.equal(
+    restoredMoment.comments.find((comment) => comment.content === '迁入动态隐藏评论').moderationStatus,
+    'hidden',
+  )
+  assert.equal((await request(`/moments/${momentId}`)).status, 404)
+  assert.equal((await ok(`/moments/${moment.id}`)).likes, 1)
+  assert(
+    (await ok(`/admin/media/${asset.id}/references`)).items.some(
+      (item) => item.url === `/admin/moments?edit=${momentId}`,
+    ),
+  )
   assert.equal((await ok(`/admin/posts/${newId}`)).status, 'draft')
   assert.equal((await request(`/posts/${newId}`)).status, 404)
   assert.equal((await ok(`/admin/posts/${original.id}`)).status, 'published')
   assert.equal((await ok('/site')).name, '迁入后的站点资料')
   const repeat = await execute(planned)
   assert.equal(repeat.body.data.result.posts[0].id, newId)
+  assert.equal(repeat.body.data.result.moments[0].id, momentId)
+  const copiedAgain = await preview(copied)
+  assert.equal(copiedAgain.body.data.plan.counts.moments, 0)
   assert.equal((await ok(`/admin/comments?postId=${newId}`)).total, 2)
   const importedComments = await ok(`/admin/comments?postId=${newId}`)
   const root = importedComments.items.find((item) => item.parentId === null)
@@ -107,11 +212,16 @@ try {
   broken.posts[0].values.title = '导入回滚证明'
   const brokenPlan = (await preview(broken, 'copy')).body.data
   const em = fixture.testOrm.em.fork()
-  await em.execute("create function fail_import_test() returns trigger language plpgsql as $$ begin if new.title='导入回滚证明' then raise exception 'isolated import failure'; end if; return new; end $$")
+  await em.execute(
+    "create function fail_import_test() returns trigger language plpgsql as $$ begin if new.title='导入回滚证明' then raise exception 'isolated import failure'; end if; return new; end $$",
+  )
   await em.execute('create trigger fail_import before insert on post for each row execute function fail_import_test()')
   assert.equal((await execute(brokenPlan)).status, 503)
   assert.equal((await ok('/admin/overview')).counts.posts, beforeCount)
-  assert.equal((await em.execute('select count(*)::int as count from media_asset where id=?', [brokenMedia]))[0].count, 0)
+  assert.equal(
+    (await em.execute('select count(*)::int as count from media_asset where id=?', [brokenMedia]))[0].count,
+    0,
+  )
   assert(!existsSync(join(process.env.MEDIA_DIRECTORY, `${brokenMedia}.webp`)))
   await em.execute('drop trigger fail_import on post')
   await em.execute('drop function fail_import_test()')
@@ -132,8 +242,18 @@ try {
   assert(oldContext)
   const nextContext = randomUUID()
   await em.execute('update content_context set generation=?,require_context=true', [nextContext])
-  assert.equal((await request('/admin/posts', 'POST', { title: '拒绝旧页面', contentRaw: '' }, token, oldContext)).status, 409)
+  assert.equal(
+    (await request('/admin/posts', 'POST', { title: '拒绝旧页面', contentRaw: '' }, token, oldContext)).status,
+    409,
+  )
   assert.equal((await request('/admin/posts', 'POST', { title: '拒绝缺少上下文', contentRaw: '' })).status, 428)
-  assert.equal((await request('/admin/posts', 'POST', { title: '重新读取后允许创建', contentRaw: '' }, token, nextContext)).status, 201)
-  process.stdout.write('内容包集成通过：真实导出、媒体/引用/格式校验、去重与新草稿、评论关系、配置迁入、幂等结果、故障回滚、预览变更确认与旧页面恢复保护\n')
-} finally { await fixture.close() }
+  assert.equal(
+    (await request('/admin/posts', 'POST', { title: '重新读取后允许创建', contentRaw: '' }, token, nextContext)).status,
+    201,
+  )
+  process.stdout.write(
+    '内容包集成通过：真实导出、媒体/引用/格式校验、去重与新草稿、评论关系、配置迁入、幂等结果、故障回滚、预览变更确认与旧页面恢复保护\n',
+  )
+} finally {
+  await fixture.close()
+}
