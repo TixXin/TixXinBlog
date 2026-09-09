@@ -26,6 +26,21 @@ interface FlashPage {
   pageSize: number
 }
 
+/** 公开与管理读取采用相同错误边界，页面不显示请求地址或 FetchError 原文。 */
+function flashRequestError(cause: unknown): Error {
+  const failure = cause as { statusCode?: number; status?: number; data?: { message?: unknown } } | null
+  const statusCode = failure?.statusCode ?? failure?.status
+  const message =
+    !statusCode || statusCode >= 500
+      ? '闪念服务暂时不可用，请稍后重试'
+      : typeof failure?.data?.message === 'string'
+        ? failure.data.message
+        : statusCode === 401
+          ? '登录已失效，请重新登录后重试'
+          : '闪念操作未完成，请检查输入后重试'
+  return Object.assign(new Error(message, { cause }), { statusCode })
+}
+
 export class HttpFlashRepository implements FlashNoteRepository {
   private readonly base: string
   constructor(
@@ -38,6 +53,13 @@ export class HttpFlashRepository implements FlashNoteRepository {
   private headers() {
     const visitor = ensureVisitorId()
     return visitor ? { 'X-Visitor-Id': visitor } : undefined
+  }
+  private async adminRequest<T>(path: string, options?: Parameters<AdminFetch>[1]): Promise<T> {
+    try {
+      return await this.admin<T>(path, options)
+    } catch (cause) {
+      throw flashRequestError(cause)
+    }
   }
   private async publicRequest<T>(
     path: string,
@@ -53,14 +75,7 @@ export class HttpFlashRepository implements FlashNoteRepository {
         retry: 0,
       })
     } catch (cause) {
-      const failure = cause as { statusCode?: number; data?: { message?: unknown } }
-      const message =
-        !failure.statusCode || failure.statusCode >= 500
-          ? '暂时无法连接闪念服务，请稍后重试'
-          : typeof failure.data?.message === 'string'
-            ? failure.data.message
-            : '闪念操作未完成，请检查输入后重试'
-      throw Object.assign(new Error(message), { statusCode: failure.statusCode })
+      throw flashRequestError(cause)
     }
     if (result.code !== 0) throw new Error(result.message)
     return result.data
@@ -73,7 +88,7 @@ export class HttpFlashRepository implements FlashNoteRepository {
     let total: number
     do {
       const result: FlashPage = privateView
-        ? await this.admin<FlashPage>('/admin/flashes', {
+        ? await this.adminRequest<FlashPage>('/admin/flashes', {
             query: { page, pageSize: 100, archived: String(archived), search: query || undefined },
           })
         : await this.publicRequest<FlashPage>(query ? '/flashes/search' : '/flashes', {
@@ -110,13 +125,13 @@ export class HttpFlashRepository implements FlashNoteRepository {
     }
   }
   create(_userId: string, draft: FlashNoteDraft): Promise<FlashNote> {
-    return this.admin('/admin/flashes', { method: 'POST', body: this.body(draft) })
+    return this.adminRequest('/admin/flashes', { method: 'POST', body: this.body(draft) })
   }
   update(id: string, patch: Partial<FlashNoteDraft>): Promise<FlashNote> {
-    return this.admin(`/admin/flashes/${encodeURIComponent(id)}`, { method: 'PATCH', body: this.body(patch) })
+    return this.adminRequest(`/admin/flashes/${encodeURIComponent(id)}`, { method: 'PATCH', body: this.body(patch) })
   }
   async remove(id: string): Promise<void> {
-    await this.admin(`/admin/flashes/${encodeURIComponent(id)}`, { method: 'DELETE' })
+    await this.adminRequest(`/admin/flashes/${encodeURIComponent(id)}`, { method: 'DELETE' })
   }
   setPinned(id: string, value: boolean) {
     return this.update(id, { isPinned: value })
@@ -135,7 +150,7 @@ export class HttpFlashRepository implements FlashNoteRepository {
     })
   }
   async removeComment(id: string, commentId: string): Promise<void> {
-    await this.admin(`/admin/flashes/${encodeURIComponent(id)}/comments/${encodeURIComponent(commentId)}`, {
+    await this.adminRequest(`/admin/flashes/${encodeURIComponent(id)}/comments/${encodeURIComponent(commentId)}`, {
       method: 'DELETE',
     })
   }
