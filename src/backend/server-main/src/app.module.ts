@@ -14,6 +14,7 @@ import { mikroOrmOptions } from './config/mikro-orm.options'
 import { AuthModule } from './modules/auth/auth.module'
 import { CommentModule } from './modules/comment/comment.module'
 import { FlashModule } from './modules/flash/flash.module'
+import { MomentModule } from './modules/moment/moment.module'
 import { HealthModule } from './modules/health/health.module'
 import { PostModule } from './modules/post/post.module'
 import { MediaModule } from './modules/media/media.module'
@@ -53,6 +54,7 @@ import { BackupModule } from './modules/backup/backup.module'
     PostModule,
     CommentModule,
     FlashModule,
+    MomentModule,
     MediaModule,
     SiteModule,
     AuditModule,

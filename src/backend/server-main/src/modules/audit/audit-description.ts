@@ -26,6 +26,12 @@ export const auditActions: Record<string, string> = {
   'media.recycle': '回收图片',
   'media.restore': '恢复图片',
   'flash.write': '管理闪念',
+  'moment.create': '发布动态',
+  'moment.update': '更新动态',
+  'moment.delete': '删除动态',
+  'moment.comment.reply': '回复动态评论',
+  'moment.comment.moderate': '审核动态评论',
+  'moment.comment.delete': '删除动态评论',
   'taxonomy.write': '管理分类标签',
   'site.save': '保存站点资料',
   'site.restore': '恢复站点资料',
@@ -95,6 +101,20 @@ export function auditDescriptor(path: string, method: string) {
     else if (resourceType === 'flashes') {
       resourceType = 'flash'
       action = 'flash.write'
+    } else if (resourceType === 'moments') {
+      resourceType = 'moment'
+      action =
+        parts[3] === 'comments'
+          ? method === 'DELETE'
+            ? 'moment.comment.delete'
+            : method === 'PATCH'
+              ? 'moment.comment.moderate'
+              : 'moment.comment.reply'
+          : method === 'DELETE'
+            ? 'moment.delete'
+            : method === 'POST'
+              ? 'moment.create'
+              : 'moment.update'
     } else if (resourceType === 'taxonomy') {
       action = 'taxonomy.write'
       resourceId = identifier(parts[3])
@@ -145,6 +165,13 @@ const fields: Record<string, string> = {
   images: '图片',
   isDraft: '草稿状态',
   isArchived: '归档状态',
+  isPinned: '置顶状态',
+  topics: '话题',
+  location: '地点',
+  device: '设备',
+  mood: '心情',
+  linkedArticleId: '引用文章',
+  linkedLink: '引用链接',
   requireApproval: '评论审核策略',
 }
 function object(value: unknown): Record<string, unknown> {
