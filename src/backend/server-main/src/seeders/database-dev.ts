@@ -36,6 +36,29 @@ const normalizeSampleContent = (content: string) => content.replace(/^\[开发�
 const isUneditedSample = (note: Moment) =>
   note.revision === 0 &&
   (note.content === sampleContents.get(note.id) || note.content === `${legacyPrefix} ${sampleContents.get(note.id)}`)
+async function hasOnlyOriginalInteractions(em: EntityManager, note: Moment, site: SiteSettings) {
+  const sample = mockMoments.find((item) => seedId(item.id) === note.id)!
+  const [likes] = await em.execute<{ count: number }[]>(
+    'select count(*)::int as count from moment_like where moment_id=?',
+    [note.id],
+  )
+  if (likes?.count) return false
+  const comments = await em.find(MomentComment, { moment: note.id })
+  if (comments.length !== (sample.comments ?? []).length) return false
+  return (sample.comments ?? []).every((original, index) => {
+    const visitor = createHash('sha256').update(`development:${note.id}:${index}`).digest('hex')
+    const current = comments.find((item) => item.visitorIdHash === visitor)
+    return (
+      current &&
+      !current.deletedAt &&
+      current.status === 'published' &&
+      current.content === original.content &&
+      current.isOwner === !!original.isOwner &&
+      current.author === (original.isOwner ? site.values.ownerName : original.author) &&
+      current.avatar === (original.isOwner ? site.values.avatar : momentUrl(original.avatar || '', true, true))
+    )
+  })
+}
 const quote = (name: string) => '"' + name.replaceAll('"', '""') + '"'
 function options(args: string[]) {
   const action = (args[0] ?? 'status') as Action
@@ -51,7 +74,7 @@ function options(args: string[]) {
   if (action === 'status' && (apply || confirm)) throw new DevDatabaseError('status 只读，不接受写入参数')
   return { action, apply, confirm }
 }
-async function requireIdle(em: EntityManager, application: string) {
+export async function requireIdle(em: EntityManager, application: string) {
   const [row] = await em.execute<{ count: number }[]>(
     "select count(*)::int as count from pg_stat_activity where datname=current_database() and application_name<>? and backend_type='client backend'",
     [application],
@@ -106,7 +129,11 @@ export async function runDevDatabase(args: string[], write = (text: string) => p
       'mikro_orm_migrations' in before ? await orm.getMigrator().getPendingMigrations() : [{ name: '数据库尚未初始化' }]
     const known = 'moment' in before ? await orm.em.fork().find(Moment, { id: { $in: sampleIds } }) : []
     const add = sampleIds.filter((id) => !known.some((note) => note.id === id))
-    const removable = known.filter(isUneditedSample)
+    const removable: Moment[] = []
+    const protectionSite = known.length ? await orm.em.fork().findOneOrFail(SiteSettings, { id: 'default' }) : null
+    for (const note of known.filter(isUneditedSample))
+      if (protectionSite && (await hasOnlyOriginalInteractions(orm.em.fork(), note, protectionSite)))
+        removable.push(note)
     const normalizable = known.filter((note) => note.content.startsWith(legacyPrefix))
     const requiresIdle = input.action !== 'seed-moments' && input.action !== 'normalize-samples'
     // 首次导入按今日 UTC 平移整组日期，保留样本间隔；避免旧固定日期令当前月日历一直为空。
@@ -120,9 +147,10 @@ export async function runDevDatabase(args: string[], write = (text: string) => p
       status: '只读统计，不创建或修改数据库',
       'seed-moments': '追加自然正文的动态与评论，以内部稳定编号识别样本；点赞从零开始，已有内容不覆盖',
       'normalize-samples': '仅去除已知朋友圈样本正文开头的旧开发标记；保留其他正文、字段、日期和互动',
-      'remove-samples': '仅删除未编辑的开发动态及其互动；已编辑样本保留',
+      'remove-samples': '仅删除未编辑且互动仍为原始样本的开发动态；有新增、编辑或删除互动的内容保留',
       'clear-moments': '清空全部朋友圈正文、互动及提交记录；保留其他业务、账号、站点和媒体文件',
-      'clear-content': '清空文章、闪念、朋友圈、评论、目录和导入票据；保留账号、站点、审核设置、媒体和审计',
+      'clear-content':
+        '清空文章、闪念、朋友圈、留言、评论、目录和导入票据；保留账号、站点、审核设置、媒体、样本归属账本和审计',
       reset:
         '重建全部应用表，账号、配置、内容和媒体索引全部删除；迁移生成默认配置，磁盘媒体和备份保留，需要重新创建管理员',
     }[input.action]
@@ -270,6 +298,7 @@ export async function runDevDatabase(args: string[], write = (text: string) => p
           })
         else await em.nativeDelete(Moment, {})
         if (input.action === 'clear-content') {
+          await em.execute('delete from guestbook_message')
           await em.execute('delete from flash_note')
           await em.execute('delete from post')
           for (const table of ['post_tag', 'post_folder', 'taxonomy_alias', 'post_batch_operation', 'content_import'])
