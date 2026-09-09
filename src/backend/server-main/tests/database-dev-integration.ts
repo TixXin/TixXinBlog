@@ -26,6 +26,8 @@ async function main() {
     assert.equal(seeded.after.moment_like, 0)
     assert(seeded.after.moment_comment > 0)
     assert.equal(seeded.after.post, preview.counts.post)
+    const initialMoments = await fixture.testOrm.em.fork().execute('select id,content from moment order by id')
+    assert(initialMoments.every((note) => !/开发示例|测试数据|演示用途/.test(note.content)))
     const firstDates = await fixture.testOrm.em.fork().execute('select id,published_at from moment order by id')
     const latestDate = Math.max(...firstDates.map((note) => new Date(note.published_at).getTime()))
     assert.equal(new Date(latestDate).toISOString().slice(0, 10), new Date().toISOString().slice(0, 10))
@@ -42,17 +44,96 @@ async function main() {
       await fixture.testOrm.em.fork().execute('select id,published_at from moment order by id'),
       firstDates,
     )
+    const [legacy, edited, compactPrefix, concurrent, manuallyEdited] = initialMoments
+    const em = fixture.testOrm.em.fork()
+    for (const note of [legacy, compactPrefix, concurrent])
+      await em.execute('update moment set content=? where id=?', [
+        `[开发示例]${note === compactPrefix ? '' : ' '}${note.content}`,
+        note.id,
+      ])
+    await em.execute('update moment set content=?,revision=4,location=? where id=?', [
+      '[开发示例] 自己改写的第一段。\n\n正文里提到[开发示例]时保留原文。',
+      '杭州·西湖',
+      edited.id,
+    ])
+    await em.execute('update moment set content=? where id=?', ['直接在数据库维护的正文也要保留。', manuallyEdited.id])
+    for (const id of ['personal-moment', 'dev-moment-v1-unknown'])
+      await em.execute('insert into moment (id,content,status,created_at,updated_at) values (?,?,?,now(),now())', [
+        id,
+        '[开发示例] 自己创建的记录不属于种子清理范围。',
+        'published',
+      ])
+    await em.execute('insert into moment_like (moment_id,visitor_id_hash,created_at) values (?,?,now())', [
+      edited.id,
+      'database-dev-normalization-visitor',
+    ])
+    await em.execute('update moment set likes=1 where id=?', [edited.id])
+    const beforeNormalization = await em.execute('select * from moment order by id')
+    const beforeComments = await em.execute('select * from moment_comment order by id')
+    const beforeLikes = await em.execute('select * from moment_like order by id')
+    const beforeReferences = await em.execute('select * from media_reference order by id')
+    const normalizePreview = await run('normalize-samples')
+    assert.equal(normalizePreview.samplesToNormalize, 4)
+    assert.deepEqual(await em.execute('select * from moment order by id'), beforeNormalization)
+
+    // 持有行锁，在备份完成后模拟另一客户端编辑，验证比较更新不会覆盖并发正文。
+    const concurrentEm = fixture.testOrm.em.fork()
+    await concurrentEm.begin()
+    await concurrentEm.execute('select id from moment where id=? for update', [concurrent.id])
+    let backupReady!: () => void
+    const backedUp = new Promise<void>((resolve) => {
+      backupReady = resolve
+    })
+    const normalization = runDevDatabase(['normalize-samples', '--apply', '--confirm', target], (text) => {
+      output.push(text)
+      if (text.startsWith('写入前完整备份：')) backupReady()
+    })
+    try {
+      await Promise.race([
+        backedUp,
+        normalization.then(() => {
+          throw new Error('正文清理必须先完成备份')
+        }),
+      ])
+      await concurrentEm.execute('update moment set content=?,revision=revision+1 where id=?', [
+        '刚刚保存的并发编辑内容。',
+        concurrent.id,
+      ])
+      await concurrentEm.commit()
+    } catch (error) {
+      await concurrentEm.rollback()
+      await normalization.catch(() => undefined)
+      throw error
+    }
+    const normalized = await normalization
+    assert.equal(normalized.samplesNormalized, 3)
+    assert('backup' in normalized)
+    const expectedMoments = beforeNormalization.map((note) => {
+      if (note.id === concurrent.id)
+        return { ...note, content: '刚刚保存的并发编辑内容。', revision: note.revision + 1 }
+      if ([legacy.id, edited.id, compactPrefix.id].includes(note.id))
+        return { ...note, content: note.content.replace(/^\[开发示例\] ?/, '') }
+      return note
+    })
+    assert.deepEqual(await em.execute('select * from moment order by id'), expectedMoments)
+    assert.deepEqual(await em.execute('select * from moment_comment order by id'), beforeComments)
+    assert.deepEqual(await em.execute('select * from moment_like order by id'), beforeLikes)
+    assert.deepEqual(await em.execute('select * from media_reference order by id'), beforeReferences)
+    const normalizedAgain = await run('normalize-samples', true)
+    assert.equal(normalizedAgain.samplesToNormalize, 0)
+    assert.equal('backup' in normalizedAgain, false)
+    const seedAgain = await run('seed-moments', true)
+    assert.equal(seedAgain.samplesToAdd, 0)
+    assert.deepEqual(await em.execute('select * from moment order by id'), expectedMoments)
+    // 删除操作同时识别自然正文与旧前缀正文，但保留已编辑样本和未登记的编号。
+    await em.execute('update moment set content=? where id=?', [`[开发示例] ${legacy.content}`, legacy.id])
     await assert.rejects(run('clear-moments', true), /其他连接/)
-    await fixture.testOrm.em
-      .fork()
-      .execute(
-        "update moment set content='保留编辑后的样本',revision=1 where id=(select id from moment order by id limit 1)",
-      )
     await fixture.testOrm.em.fork().execute('create view database_dev_guard as select id from moment')
     await fixture.stopServices()
     const removed = await run('remove-samples', true)
-    assert.equal(removed.after?.moment, 1)
-    assert.equal(removed.editedSamplesPreserved, 1)
+    assert.equal(removed.after?.moment, 5)
+    assert.equal(removed.editedSamplesPreserved, 3)
+    assert.equal(removed.after?.moment_like, 1)
     const cleared = await run('clear-content', true)
     assert.equal(cleared.after?.moment, 0)
     assert.equal(cleared.after?.post, 0)
@@ -79,7 +160,7 @@ async function main() {
     assert(!text.includes(sourceUrl))
     assert(!text.includes(`${new URL(sourceUrl).username}:${new URL(sourceUrl).password}@`))
     process.stdout.write(
-      '开发数据库工具通过：默认预览、目标/生产/运行连接拒绝、备份、样本幂等、已编辑样本保留、业务清空与全部迁移事务重建\n',
+      '开发数据库工具通过：默认预览、目标/生产/运行连接拒绝、备份、无标记样本、正文清理幂等与并发保护、编辑内容与互动保留、业务清空与全部迁移事务重建\n',
     )
   } finally {
     process.env.NODE_ENV = 'test'

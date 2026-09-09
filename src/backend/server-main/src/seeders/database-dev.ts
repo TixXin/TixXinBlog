@@ -16,11 +16,26 @@ import { momentValues, momentUrl } from '../modules/moment/moment-values'
 import { mockMoments } from '../../../../frontend/web-blog/app/features/moment/mock'
 import { createFullBackup } from '../../scripts/full-backup.mjs'
 
-const actions = ['status', 'seed-moments', 'remove-samples', 'clear-moments', 'clear-content', 'reset'] as const
+const actions = [
+  'status',
+  'seed-moments',
+  'normalize-samples',
+  'remove-samples',
+  'clear-moments',
+  'clear-content',
+  'reset',
+] as const
 type Action = (typeof actions)[number]
 class DevDatabaseError extends Error {}
 const seedId = (id: string) => `dev-moment-v1-${id}`
 const sampleIds = mockMoments.map((note) => seedId(note.id))
+// 开发身份仅保留在稳定编号中；兼容旧工具曾写入正文的前缀。
+const legacyPrefix = '[开发示例]'
+const sampleContents = new Map(mockMoments.map((note) => [seedId(note.id), note.content]))
+const normalizeSampleContent = (content: string) => content.replace(/^\[开发示例\] ?/, '')
+const isUneditedSample = (note: Moment) =>
+  note.revision === 0 &&
+  (note.content === sampleContents.get(note.id) || note.content === `${legacyPrefix} ${sampleContents.get(note.id)}`)
 const quote = (name: string) => '"' + name.replaceAll('"', '""') + '"'
 function options(args: string[]) {
   const action = (args[0] ?? 'status') as Action
@@ -91,7 +106,9 @@ export async function runDevDatabase(args: string[], write = (text: string) => p
       'mikro_orm_migrations' in before ? await orm.getMigrator().getPendingMigrations() : [{ name: '数据库尚未初始化' }]
     const known = 'moment' in before ? await orm.em.fork().find(Moment, { id: { $in: sampleIds } }) : []
     const add = sampleIds.filter((id) => !known.some((note) => note.id === id))
-    const removable = known.filter((note) => note.revision === 0 && note.content.startsWith('[开发示例]'))
+    const removable = known.filter(isUneditedSample)
+    const normalizable = known.filter((note) => note.content.startsWith(legacyPrefix))
+    const requiresIdle = input.action !== 'seed-moments' && input.action !== 'normalize-samples'
     // 首次导入按今日 UTC 平移整组日期，保留样本间隔；避免旧固定日期令当前月日历一直为空。
     const sourceDates = mockMoments.map((note) => Date.parse(note.date))
     if (sourceDates.some((date) => !Number.isFinite(date)))
@@ -101,7 +118,8 @@ export async function runDevDatabase(args: string[], write = (text: string) => p
     const dateOffset = todayStart - Math.max(...sourceDates)
     const scope = {
       status: '只读统计，不创建或修改数据库',
-      'seed-moments': '追加带开发示例标记的动态与示例评论；点赞从零开始，已有内容不覆盖',
+      'seed-moments': '追加自然正文的动态与评论，以内部稳定编号识别样本；点赞从零开始，已有内容不覆盖',
+      'normalize-samples': '仅去除已知朋友圈样本正文开头的旧开发标记；保留其他正文、字段、日期和互动',
       'remove-samples': '仅删除未编辑的开发动态及其互动；已编辑样本保留',
       'clear-moments': '清空全部朋友圈正文、互动及提交记录；保留其他业务、账号、站点和媒体文件',
       'clear-content': '清空文章、闪念、朋友圈、评论、目录和导入票据；保留账号、站点、审核设置、媒体和审计',
@@ -115,6 +133,7 @@ export async function runDevDatabase(args: string[], write = (text: string) => p
       pendingMigrations: pending.length,
       counts: before,
       samplesToAdd: add.length,
+      samplesToNormalize: normalizable.length,
       sampleDateRange: {
         from: new Date(Math.min(...sourceDates) + dateOffset).toISOString(),
         to: new Date(todayStart).toISOString(),
@@ -142,14 +161,19 @@ export async function runDevDatabase(args: string[], write = (text: string) => p
       write('没有可清理的未编辑开发样本。')
       return plan
     }
-    if (input.action !== 'seed-moments') await requireIdle(orm.em.fork(), application)
+    if (input.action === 'normalize-samples' && !normalizable.length) {
+      write('已知样本没有需要去除的旧正文标记。')
+      return plan
+    }
+    if (requiresIdle) await requireIdle(orm.em.fork(), application)
     // 备份使用已有一致快照/媒体流程；失败时不执行后续写入。
     const backup = await createFullBackup()
     write(`写入前完整备份：${backup.directory}`)
-    if (input.action !== 'seed-moments') await requireIdle(orm.em.fork(), application)
+    if (requiresIdle) await requireIdle(orm.em.fork(), application)
+    let samplesNormalized = 0
     await orm.em.fork().transactional(async (em) => {
       await em.execute("set local lock_timeout='5s'")
-      if (input.action !== 'seed-moments') {
+      if (requiresIdle) {
         const tables = Object.keys(before)
         await em.execute(
           `lock table ${tables.map((name) => `public.${quote(name)}`).join(',')} in access exclusive mode nowait`,
@@ -169,7 +193,7 @@ export async function runDevDatabase(args: string[], write = (text: string) => p
               ? await em.findOne(Post, { id: postId, status: 'published', deletedAt: null })
               : null
           const values = momentValues({
-            content: `[开发示例] ${sample.content}`,
+            content: sample.content,
             topics: sample.topics ?? [],
             images: sample.images ?? [],
             location: sample.location,
@@ -209,6 +233,16 @@ export async function runDevDatabase(args: string[], write = (text: string) => p
             })
           }
         }
+      } else if (input.action === 'normalize-samples') {
+        for (const note of normalizable) {
+          // 比较正文与修订号后只更新前缀，备份期间发生的人工编辑会被跳过。
+          // 使用定点 SQL，避免 ORM 的 onUpdate 改写日期，也不影响媒体引用与互动。
+          const changed = await em.execute<{ id: string }[]>(
+            'update moment set content=? where id=? and content=? and revision=? returning id',
+            [normalizeSampleContent(note.content), note.id, note.content, note.revision],
+          )
+          samplesNormalized += changed.length
+        }
       } else if (input.action === 'reset') {
         // 初始迁移不可逆；一次性删除全部已核对的应用表，再在同一事务中重放迁移。
         // 不使用 CASCADE，其他 schema/视图对这些表的依赖会阻止重建并整体回滚。
@@ -231,9 +265,8 @@ export async function runDevDatabase(args: string[], write = (text: string) => p
       } else {
         if (input.action === 'remove-samples')
           await em.nativeDelete(Moment, {
-            id: { $in: removable.map((note) => note.id) },
+            $or: removable.map((note) => ({ id: note.id, content: note.content })),
             revision: 0,
-            content: { $like: '[开发示例]%' },
           })
         else await em.nativeDelete(Moment, {})
         if (input.action === 'clear-content') {
@@ -249,13 +282,25 @@ export async function runDevDatabase(args: string[], write = (text: string) => p
         resourceType: 'database',
         actorName: '本机开发工具',
         state: 'success',
-        summary: { fields: [], counts: { samples: input.action === 'seed-moments' ? add.length : removable.length } },
+        summary: {
+          fields: [],
+          counts: {
+            samples:
+              input.action === 'seed-moments'
+                ? add.length
+                : input.action === 'normalize-samples'
+                  ? samplesNormalized
+                  : removable.length,
+          },
+        },
         finishedAt: new Date(),
       })
       await em.flush()
     })
-    write('操作完成。媒体文件未从磁盘删除；重新启动服务并刷新页面后使用新的内容上下文。')
-    return { ...plan, backup: backup.directory, after: await counts(orm) }
+    if (input.action === 'normalize-samples')
+      write(`已去除 ${samplesNormalized} 条正文标记，跳过 ${normalizable.length - samplesNormalized} 条并发变化记录。`)
+    else write('操作完成。媒体文件未从磁盘删除；重新启动服务并刷新页面后使用新的内容上下文。')
+    return { ...plan, samplesNormalized, backup: backup.directory, after: await counts(orm) }
   } finally {
     await orm.close(true)
   }
