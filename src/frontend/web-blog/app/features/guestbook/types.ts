@@ -37,6 +37,53 @@ export interface GuestMessage {
   reactions?: MessageReaction[]
   /** 消息状态 */
   status?: MessageStatus
+  createdAt?: string
+  moderationStatus?: 'published' | 'pending' | 'hidden'
+  isPinned?: boolean
+  replyUnavailable?: boolean
+}
+
+/** 服务端留言记录，显示时间与分组由页面层生成。 */
+export interface GuestbookRecord {
+  id: number
+  author: string
+  avatar: string
+  content: string
+  createdAt: string
+  isOwner: boolean
+  isPinned: boolean
+  moderationStatus: 'published' | 'pending' | 'hidden'
+  replyTo: ReplyRef | null
+  replyUnavailable: boolean
+  reactions: MessageReaction[]
+}
+export interface ManagedGuestbookRecord extends GuestbookRecord {
+  revision: number
+  updatedAt: string
+}
+export interface GuestbookPage {
+  items: GuestbookRecord[]
+  total: number
+  nextCursor: string | null
+}
+export interface GuestbookMetadata {
+  stats: { messages: number; members: number; recent: number; today: number }
+  pinned: GuestbookRecord | null
+  members: (ActiveMember & { id: string; isOwner: boolean })[]
+  rules: ChatRule[]
+}
+export interface GuestbookSubmission {
+  requestId: string
+  content: string
+  replyToId?: number | null
+  author?: string
+  avatar?: string
+}
+export interface GuestbookQuery {
+  q?: string
+  date?: string
+  before?: string
+  pageSize?: number
 }
 
 /** 置顶公告消息 */
