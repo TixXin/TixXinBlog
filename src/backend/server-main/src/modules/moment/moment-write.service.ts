@@ -43,9 +43,13 @@ export class MomentWriteService {
         throw new ConflictException('动态已被更新，请保留输入并重新读取后再保存')
       const { linkedArticleId, ...fields } = values
       if (linkedArticleId !== undefined) {
-        const post = linkedArticleId
-          ? await em.findOne(Post, { id: linkedArticleId, deletedAt: null, status: 'published' })
-          : null
+        // 已建立的引用允许随文章撤回保留，公开序列化仍隐藏其信息；新增引用必须指向公开文章。
+        const unchanged = !!linkedArticleId && linkedArticleId === note.linkedArticle?.id
+        const post = unchanged
+          ? note.linkedArticle
+          : linkedArticleId
+            ? await em.findOne(Post, { id: linkedArticleId, deletedAt: null, status: 'published' })
+            : null
         if (linkedArticleId && !post) throw new BadRequestException('只能引用已公开的站内文章')
         note.linkedArticle = post
         if (post) note.linkedLink = null
