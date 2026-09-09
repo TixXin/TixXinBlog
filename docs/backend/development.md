@@ -285,7 +285,7 @@ corepack pnpm dev       # 前端热重载，默认 3456
 
 ### 7.3 环境变量清单
 
-`.env.example` 必须包含以下变量（不提供默认值的用 `<required>` 占位）：
+以下清单包含长期设计的预留项；当前启动校验以 `src/backend/server-main/src/config/env.validation.ts` 和[后端快速开始](../../src/backend/server-main/README.md)为准。当前必须配置有效的 `DATABASE_URL` 和至少 32 位的 `JWT_ACCESS_SECRET`；首次创建管理员的 seed 还需显式提供管理员密码。已有账号不需要重新 seed。示例中预留的 Redis、搜索、对象存储和 AI 配置不是当前已接入模块的启动前置条件。
 
 ```bash
 NODE_ENV=development
