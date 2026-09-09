@@ -1,6 +1,6 @@
 <!--
   @file ActiveMembers.vue
-  @description 留言板右侧栏活跃成员列表，前三名显示排名标识，多个成员可显示在线状态
+  @description 留言板右侧栏活跃成员列表，前三名显示排名标识，仅显示公开留言聚合
   @author TixXin
   @since 2026-03-20
 -->
@@ -21,8 +21,14 @@
           {{ index + 1 }}
         </div>
 
-        <div class="active-members__avatar-wrap" :class="{ 'active-members__avatar-wrap--online': m.isOnline }">
-          <img class="active-members__avatar" :src="m.avatar" :alt="`${m.name} 的头像`" width="36" height="36" />
+        <div class="active-members__avatar-wrap">
+          <img
+            class="active-members__avatar"
+            :src="m.avatar || '/avatar.svg'"
+            :alt="`${m.name} 的头像`"
+            width="36"
+            height="36"
+          />
         </div>
         <div class="active-members__info">
           <span class="active-members__name">{{ m.name }}</span>

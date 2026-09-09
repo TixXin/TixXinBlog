@@ -8,18 +8,11 @@
 <template>
   <section class="card chat-rules">
     <h3 class="chat-rules__title">
-      <Icon
-        name="lucide:shield"
-        size="14"
-      />
+      <Icon name="lucide:shield" size="14" />
       对话守则
     </h3>
     <div class="chat-rules__list">
-      <div
-        v-for="rule in rules"
-        :key="rule.id"
-        class="chat-rules__item"
-      >
+      <div v-for="rule in rules" :key="rule.id" class="chat-rules__item">
         <span class="chat-rules__badge">{{ rule.id }}</span>
         <p>{{ rule.text }}</p>
       </div>
