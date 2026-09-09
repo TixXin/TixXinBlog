@@ -19,7 +19,7 @@
     "migration:check": "tsx scripts/migrate.ts check",
     "seed:dev": "tsx src/seeders/run-dev.ts",
     "db:dev": "tsx src/seeders/run-data-command.ts",
-    "test:development-data": "corepack pnpm build && tsx tests/development-data-integration.ts",
+    "test:development-data": "corepack pnpm build && tsx tests/development-data-integration.ts && tsx tests/core-fixtures-integration.ts",
     "test:database-dev": "corepack pnpm build && tsx tests/database-dev-integration.ts",
     "test:integration": "corepack pnpm build && node tests/integration.mjs && node tests/media-integration.mjs && node tests/post-batch-integration.mjs && node tests/comment-moderation-integration.mjs && node tests/site-settings-integration.mjs && node tests/auth-sessions-integration.mjs && node tests/audit-integration.mjs && node tests/moment-integration.mjs && node tests/backup-integration.mjs",
     "backup:full": "corepack pnpm build && node scripts/full-backup.mjs create",
