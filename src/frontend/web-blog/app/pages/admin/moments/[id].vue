@@ -1,4 +1,4 @@
-<!-- @file new.vue @description 朋友圈动态编辑入口，页面持有业务状态 -->
+<!-- @file [id].vue @description 朋友圈动态编辑入口，页面持有业务状态 -->
 <template>
   <section>
     <ClientOnly>
@@ -31,6 +31,6 @@
 </template>
 <script setup lang="ts">
 definePageMeta({ layout: 'admin' })
-const editor = useAdminMomentEditor(null)
+const editor = useAdminMomentEditor(String(useRoute().params.id))
 useSeoMeta({ title: () => (editor.id.value ? '编辑动态' : '发布动态'), robots: 'noindex, nofollow' })
 </script>

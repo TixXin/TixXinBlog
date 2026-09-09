@@ -69,6 +69,7 @@ const navigation = [
   { path: '/admin/posts', label: '文章管理', icon: 'lucide:files' },
   { path: '/admin/comments', label: '评论管理', icon: 'lucide:messages-square' },
   { path: '/admin/flashes', label: '闪念管理', icon: 'lucide:lightbulb' },
+  { path: '/admin/moments', label: '朋友圈管理', icon: 'lucide:messages-square' },
   { path: '/admin/media', label: '媒体资源', icon: 'lucide:images' },
   { path: '/admin/taxonomy', label: '分类与标签', icon: 'lucide:tags' },
   { path: '/admin/site', label: '站点设置', icon: 'lucide:settings' },
