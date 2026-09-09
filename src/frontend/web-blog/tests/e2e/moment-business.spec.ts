@@ -277,9 +277,10 @@ test('分页与筛选共享URL，读取失败保留内容并可重试，迟到�
   const search = page.getByRole('textbox', { name: '搜索动态内容 / 话题 / 地点...', exact: true })
   let fail = true
   await page.route('**/api/v1/moments?**', async (route) => {
-    if (fail) return route.fulfill({ status: 503, json: { code: 503, message: '隔离读取故障' } })
-    if (new URL(route.request().url()).searchParams.get('q') === '样本 00')
-      await new Promise((resolve) => setTimeout(resolve, 650))
+    const query = new URL(route.request().url()).searchParams.get('q')
+    // 故障只属于本次搜索，不能误伤刷新后尚在完成的个人状态同步。
+    if (fail && query === '样本 00') return route.fulfill({ status: 503, json: { code: 503, message: '隔离读取故障' } })
+    if (query === '样本 00') await new Promise((resolve) => setTimeout(resolve, 650))
     await route.continue()
   })
   await search.fill('样本 00')
