@@ -10,6 +10,7 @@ import { join, resolve, sep } from 'node:path'
 import { readdirSync, existsSync, lstatSync } from 'node:fs'
 import { createBrowserTestApp } from './test-app.mjs'
 import { seedMomentBrowserFixture } from './moment-fixture.mjs'
+import { seedGuestbookBrowserFixture } from './guestbook-fixture.mjs'
 
 const frontendDirectory = fileURLToPath(new URL('../../../frontend/web-blog/', import.meta.url))
 // 每份完整测试文件使用自己的数据库，避免管理用例新增内容污染固定样本的展示验收。
@@ -51,6 +52,7 @@ let preview
 let previewLog = ''
 try {
   await seedMomentBrowserFixture(fixture)
+  await seedGuestbookBrowserFixture(fixture)
   preview = spawn(process.execPath, ['.output/server/index.mjs'], {
     cwd: frontendDirectory,
     windowsHide: true,
