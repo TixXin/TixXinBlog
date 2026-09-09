@@ -92,6 +92,13 @@ export async function runDevDatabase(args: string[], write = (text: string) => p
     const known = 'moment' in before ? await orm.em.fork().find(Moment, { id: { $in: sampleIds } }) : []
     const add = sampleIds.filter((id) => !known.some((note) => note.id === id))
     const removable = known.filter((note) => note.revision === 0 && note.content.startsWith('[开发示例]'))
+    // 首次导入按今日 UTC 平移整组日期，保留样本间隔；避免旧固定日期令当前月日历一直为空。
+    const sourceDates = mockMoments.map((note) => Date.parse(note.date))
+    if (sourceDates.some((date) => !Number.isFinite(date)))
+      throw new DevDatabaseError('开发样本包含无效日期，未写入数据。')
+    const today = new Date()
+    const todayStart = Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), today.getUTCDate())
+    const dateOffset = todayStart - Math.max(...sourceDates)
     const scope = {
       status: '只读统计，不创建或修改数据库',
       'seed-moments': '追加带开发示例标记的动态与示例评论；点赞从零开始，已有内容不覆盖',
@@ -108,6 +115,11 @@ export async function runDevDatabase(args: string[], write = (text: string) => p
       pendingMigrations: pending.length,
       counts: before,
       samplesToAdd: add.length,
+      sampleDateRange: {
+        from: new Date(Math.min(...sourceDates) + dateOffset).toISOString(),
+        to: new Date(todayStart).toISOString(),
+        appliesTo: '仅首次插入的样本，已有记录的日期不变',
+      },
       samplesToRemove: removable.length,
       editedSamplesPreserved: known.length - removable.length,
       apply: input.apply,
@@ -150,7 +162,7 @@ export async function runDevDatabase(args: string[], write = (text: string) => p
         for (const sample of mockMoments) {
           const id = seedId(sample.id)
           if (await em.findOne(Moment, { id })) continue
-          const date = new Date(sample.date)
+          const date = new Date(Date.parse(sample.date) + dateOffset)
           const postId = Number(sample.linkedArticle?.id)
           const linkedArticle =
             Number.isInteger(postId) && postId > 0
@@ -188,7 +200,7 @@ export async function runDevDatabase(args: string[], write = (text: string) => p
               isOwner: !!comment.isOwner,
               visitorIdHash: createHash('sha256').update(`development:${id}:${index}`).digest('hex'),
               status: 'published',
-              createdAt: new Date(date.getTime() + (index + 1) * 60000),
+              createdAt: new Date(Math.min(today.getTime(), date.getTime() + (index + 1) * 60000)),
             })
             await em.flush()
             await synchronizeMediaReferences(em, `moment-comment:${created.id}`, 'moment-comment', [created.avatar], {
