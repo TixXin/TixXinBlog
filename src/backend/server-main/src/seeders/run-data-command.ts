@@ -4,6 +4,11 @@ import { DATA_DOMAINS } from './development-data-catalog'
 
 async function main() {
   const [action, ...args] = process.argv.slice(2)
+  if (action === 'remove-data') {
+    const { removeDevelopmentData } = await import('./remove-development-data')
+    await removeDevelopmentData(args)
+    return
+  }
   if (action === 'seed-data') {
     const { seedDevelopmentData } = await import('./seed-development-data')
     const result = await seedDevelopmentData(args)

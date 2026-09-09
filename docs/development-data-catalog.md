@@ -18,7 +18,7 @@ corepack pnpm db:dev check-data --domain moments --search 不存在的关键词
 | moments | `/moments` / `/admin/moments` | PostgreSQL moment及互动 | 超过15条公开内容、草稿、归档、近期、图片 |
 | media | 公开资源URL / `/admin/media` | PostgreSQL media_asset及独立磁盘目录 | 有活动媒体；文件完整性继续由媒体核验检查 |
 | site | 公开资料 / `/admin/site` | PostgreSQL site_settings | 有默认站点名称与作者资料 |
-| guestbook | `/guestbook` / `/admin/guestbook` | 本阶段接入，当前仍为演示 | 超过20条公开内容、待审、隐藏、回复、博主、置顶、近期 |
+| guestbook | `/guestbook` / `/admin/guestbook` | PostgreSQL guestbook_message、guestbook_reaction | 超过20条公开内容、待审、隐藏、回复、博主、置顶、近期 |
 
 项目、图库、友链保留各域mock展示数据；书签仍在LocalStorage。命令将这些边界作为 `preservedSources` 输出，不宣称它们已经接入数据库。
 
@@ -31,7 +31,7 @@ corepack pnpm db:dev seed-data --dataset guestbook-v1
 corepack pnpm db:dev seed-data --dataset guestbook-v1 --apply --confirm tixxin_blog
 ```
 
-账本在业务记录删除后保留，不以重复seed复活被删除内容；人工编辑的记录不覆盖。事务失败时回滚数据，并只清理本次新生成且确认未登记的媒体文件。正文不添加测试标签，身份仅保留在内部账本、脚本和维护记录中。定向数据集清理仍在本阶段实施，现有样本规范化与清理命令保持用途。
+账本在业务记录删除后保留，不以重复seed复活被删除内容；人工编辑的记录不覆盖。事务失败时回滚数据，并只清理本次新生成且确认未登记的媒体文件。正文不添加测试标签，身份仅保留在内部账本、脚本和维护记录中。`db:dev remove-data --dataset core-v1|guestbook-v1|all` 提供定向清理预览，保留已有编辑、外部互动和媒体引用；实际执行要求服务退出、确认数据库和完整备份，详见 [开发数据库工具](development-database.md)。
 
 `--dataset all` 按依赖顺序检查并补齐核心和留言数据集，不重设站点审核开关或用户已有置顶。留言样本的发送、审核、置顶和回应复用实际服务，不复制演示的浏览器、地区或已读信息。留言补齐前备份为 `.backups/backup-1788955517936-d22b31e0/`（本机保留）。
 
