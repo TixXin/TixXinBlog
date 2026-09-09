@@ -68,6 +68,11 @@ async function main() {
       'database-dev-normalization-visitor',
     ])
     await em.execute('update moment set likes=1 where id=?', [edited.id])
+    const interacted = initialMoments[5]
+    await em.execute('insert into moment_like (moment_id,visitor_id_hash,created_at) values (?,?,now())', [
+      interacted.id,
+      'another-user-interaction',
+    ])
     const beforeNormalization = await em.execute('select * from moment order by id')
     const beforeComments = await em.execute('select * from moment_comment order by id')
     const beforeLikes = await em.execute('select * from moment_like order by id')
@@ -128,15 +133,26 @@ async function main() {
     // 删除操作同时识别自然正文与旧前缀正文，但保留已编辑样本和未登记的编号。
     await em.execute('update moment set content=? where id=?', [`[开发示例] ${legacy.content}`, legacy.id])
     await assert.rejects(run('clear-moments', true), /其他连接/)
+    const [guest] = await em.execute(
+      "insert into guestbook_message (visitor_id_hash,author,avatar,content,status,revision,is_owner,is_pinned,created_at,updated_at) values ('clear-tool','小林','','清空范围中的留言','published',0,false,false,now(),now()) returning id",
+    )
+    await em.execute(
+      "insert into guestbook_reaction (message_id,visitor_id_hash,emoji,created_at) values (?,'clear-tool','👍',now())",
+      [guest.id],
+    )
+    assert.equal((await run('status')).counts.guestbook_message, 1)
+    assert.equal((await run('status')).counts.guestbook_reaction, 1)
     await fixture.testOrm.em.fork().execute('create view database_dev_guard as select id from moment')
     await fixture.stopServices()
     const removed = await run('remove-samples', true)
-    assert.equal(removed.after?.moment, 5)
-    assert.equal(removed.editedSamplesPreserved, 3)
-    assert.equal(removed.after?.moment_like, 1)
+    assert.equal(removed.after?.moment, 6)
+    assert.equal(removed.editedSamplesPreserved, 4)
+    assert.equal(removed.after?.moment_like, 2)
     const cleared = await run('clear-content', true)
     assert.equal(cleared.after?.moment, 0)
     assert.equal(cleared.after?.post, 0)
+    assert.equal(cleared.after?.guestbook_message, 0)
+    assert.equal(cleared.after?.guestbook_reaction, 0)
     assert.equal(cleared.after?.admin_user, preview.counts.admin_user)
     assert.equal(cleared.after?.site_settings, 1)
     const beforeRejectedReset = await run('status')
