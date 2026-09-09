@@ -54,6 +54,10 @@ function formatNumber(n: number): string {
 
 /** 数字递增动画 */
 function animateCountUp() {
+  if (props.stats.some((stat) => !/\d/.test(stat.value))) {
+    finishCountUp()
+    return
+  }
   if (hasAnimated.value) return
   hasAnimated.value = true
 
@@ -120,7 +124,7 @@ onMounted(() => {
 
 .chat-stats__grid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(2, 1fr);
   gap: 0.75rem;
 }
 

@@ -7,7 +7,19 @@
 
 <template>
   <div class="card message-input">
-    <p class="message-input__notice">演示留言仅在当前页面可见，离开或刷新后不保留，不会发送给博主。</p>
+    <p class="message-input__notice">{{ identityLabel }} · 最多500字，Ctrl / ⌘ + Enter发送</p>
+    <p v-if="error" role="alert" class="message-input__notice">{{ error }}</p>
+    <p v-if="notice" role="status" class="message-input__notice">{{ notice }}</p>
+    <p v-if="storageError" role="alert" class="message-input__notice">{{ storageError }}</p>
+    <div v-if="hasRecovery" class="message-input__notice" aria-label="留言输入恢复">
+      发现本标签页未发送的输入。
+      <button type="button" :disabled="submitting" @click="$emit('restore')">恢复输入</button>
+      <button type="button" :disabled="submitting" @click="$emit('discard')">保留当前输入</button>
+    </div>
+    <p v-if="!ready" class="message-input__notice">
+      {{ expired ? '登录已失效，输入保留。' : '正在确认登录状态…'
+      }}<button v-if="expired" type="button" @click="$emit('login')">重新登录</button>
+    </p>
     <!-- 回复引用预览 -->
     <Transition name="reply-fade">
       <div v-if="replyTo" class="message-input__reply-bar">
@@ -28,12 +40,13 @@
     <div class="message-input__editor-wrap">
       <textarea
         ref="textareaRef"
-        v-model="content"
+        :value="draft"
         class="message-input__editor"
         :style="{ height: editorHeight + 'px' }"
         placeholder="输入留言内容..."
-        aria-label="演示留言内容"
-        :maxlength="MAX_CHARS"
+        aria-label="留言内容"
+        :maxlength="500"
+        @input="$emit('update:draft', ($event.target as HTMLTextAreaElement).value)"
         @keydown="onEditorKeydown"
       />
       <!-- 右上角展开/收起按钮 -->
@@ -47,165 +60,88 @@
       </button>
     </div>
 
-    <!-- 游客身份弹窗 -->
-    <CommonGuestIdentityModal
-      :visible="identityModalVisible"
-      @confirm="onIdentityConfirm"
-      @cancel="identityModalVisible = false"
-      @login="onSwitchToLogin"
-    />
-
     <!-- 底部工具栏 -->
     <div class="message-input__footer">
-      <div class="message-input__toolbar" role="toolbar" aria-label="格式工具栏（占位）">
-        <CommonTooltip v-for="btn in toolbarButtons" :key="btn.icon" :content="btn.title">
-          <button type="button" class="message-input__tool" :aria-label="`${btn.title}（暂未开放）`" disabled>
-            <Icon :name="btn.icon" size="15" />
-          </button>
-        </CommonTooltip>
-      </div>
-      <button type="button" class="message-input__send" :disabled="!content.trim()" @click="handleAction">
+      <small>{{ draft.length }} / 500</small>
+      <button
+        type="button"
+        class="message-input__send"
+        :disabled="!draft.trim() || submitting || !ready"
+        @click="submit"
+      >
         <Icon name="lucide:send" size="14" />
-        <span>添加演示留言</span>
+        <span>{{ submitting ? '正在发送…' : '发送留言' }}</span>
       </button>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import type { GuestMessage } from '~/features/guestbook/types'
-
+import type { ReplyRef } from '~/features/guestbook/types'
 const props = defineProps<{
-  replyTo?: GuestMessage | null
+  draft: string
+  replyTo?: ReplyRef | null
+  ready: boolean
+  expired?: boolean
+  submitting: boolean
+  error?: string
+  notice?: string
+  storageError?: string
+  identityLabel: string
+  hasRecovery?: boolean
 }>()
-
 const emit = defineEmits<{
-  /** 发送留言：content + 作者信息 */
-  send: [content: string, author: { name: string; avatar: string }]
+  'update:draft': [value: string]
+  send: []
   cancelReply: []
+  restore: []
+  discard: []
+  login: []
 }>()
-
-const { info } = useToast()
-const { guestIdentity, hasIdentity: hasGuestIdentity, resolveAvatar } = useGuestIdentity()
-const { isLoggedIn, currentUser } = useCurrentUser()
-const { open: openLoginDrawer } = useLoginDrawer()
-
 const textareaRef = ref<HTMLTextAreaElement | null>(null)
-const content = ref('')
-const identityModalVisible = ref(false)
-const MAX_CHARS = 500
-
-// ---- 输入框高度控制 ----
-const DEFAULT_HEIGHT = 72
-const EXPANDED_HEIGHT = 144
-const MIN_HEIGHT = 44
-const MAX_HEIGHT = 320
-
-const editorHeight = ref(DEFAULT_HEIGHT)
-const isExpanded = ref(false)
-
-/** 展开/收起按钮：在默认高度和两倍高度之间切换 */
+const editorHeight = ref(72),
+  isExpanded = ref(false)
 function toggleExpand() {
   isExpanded.value = !isExpanded.value
-  editorHeight.value = isExpanded.value ? EXPANDED_HEIGHT : DEFAULT_HEIGHT
+  editorHeight.value = isExpanded.value ? 144 : 72
 }
-
-/** 拖拽调整高度：顶部手柄 pointerdown → 向上拖 = 变高 */
-let resizeStartY = 0
-let resizeStartHeight = 0
-
-function onResizePointerDown(e: PointerEvent) {
-  if (e.button !== 0) return
-  e.preventDefault()
-  ;(e.currentTarget as HTMLElement).setPointerCapture?.(e.pointerId)
-  resizeStartY = e.clientY
+let resizeStartY = 0,
+  resizeStartHeight = 0
+function onResizePointerDown(event: PointerEvent) {
+  if (event.button !== 0) return
+  event.preventDefault()
+  ;(event.currentTarget as HTMLElement).setPointerCapture?.(event.pointerId)
+  resizeStartY = event.clientY
   resizeStartHeight = editorHeight.value
   window.addEventListener('pointermove', onResizePointerMove)
   window.addEventListener('pointerup', onResizePointerUp, { once: true })
 }
-
-function onResizePointerMove(e: PointerEvent) {
-  // 向上拖 = deltaY 为负 = 高度增加
-  const delta = resizeStartY - e.clientY
-  editorHeight.value = Math.max(MIN_HEIGHT, Math.min(MAX_HEIGHT, resizeStartHeight + delta))
+function onResizePointerMove(event: PointerEvent) {
+  editorHeight.value = Math.max(44, Math.min(320, resizeStartHeight + resizeStartY - event.clientY))
 }
-
 function onResizePointerUp() {
   window.removeEventListener('pointermove', onResizePointerMove)
-  isExpanded.value = editorHeight.value > DEFAULT_HEIGHT * 1.3
+  isExpanded.value = editorHeight.value > 100
 }
-
-function handleAction() {
-  const text = content.value.trim()
-  if (!text) {
-    info('请输入留言内容')
-    return
-  }
-  if (text.length > MAX_CHARS) {
-    info(`留言不能超过 ${MAX_CHARS} 字`)
-    return
-  }
-
-  // 已登录 → 用 currentUser
-  if (isLoggedIn.value && currentUser.value) {
-    emitSend(text, currentUser.value.nickname, currentUser.value.avatar)
-    return
-  }
-  // 有游客身份 → 用游客信息
-  if (hasGuestIdentity.value && guestIdentity.value) {
-    emitSend(text, guestIdentity.value.nickname, resolveAvatar())
-    return
-  }
-  // 无身份 → 弹出身份面板
-  identityModalVisible.value = true
+function submit() {
+  if (props.ready && !props.submitting && props.draft.trim()) emit('send')
 }
-
-function emitSend(text: string, name: string, avatar: string) {
-  emit('send', text, { name, avatar })
-  content.value = ''
-  info('已添加演示留言，仅当前页面可见')
-}
-
-function onIdentityConfirm() {
-  identityModalVisible.value = false
-  // 身份已保存，重新执行发送
-  handleAction()
-}
-
-function onSwitchToLogin() {
-  identityModalVisible.value = false
-  openLoginDrawer('login')
-}
-
-/** Ctrl/Cmd+Enter 快捷发送 */
-function onEditorKeydown(e: KeyboardEvent) {
-  if (e.isComposing) return
-  if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
-    e.preventDefault()
-    handleAction()
+function onEditorKeydown(event: KeyboardEvent) {
+  if (!event.isComposing && event.key === 'Enter' && (event.ctrlKey || event.metaKey)) {
+    event.preventDefault()
+    submit()
   }
 }
-
-/** 回复时聚焦输入框 */
 watch(
   () => props.replyTo,
-  (v) => {
-    if (v) nextTick(() => textareaRef.value?.focus())
+  (value) => {
+    if (value) nextTick(() => textareaRef.value?.focus())
   },
 )
-
 onBeforeUnmount(() => {
   window.removeEventListener('pointermove', onResizePointerMove)
+  window.removeEventListener('pointerup', onResizePointerUp)
 })
-
-const toolbarButtons = [
-  { icon: 'lucide:bold', title: '加粗' },
-  { icon: 'lucide:italic', title: '斜体' },
-  { icon: 'lucide:code', title: '行内代码' },
-  { icon: 'lucide:link', title: '链接' },
-  { icon: 'lucide:image', title: '图片' },
-  { icon: 'lucide:smile', title: '表情' },
-] as const
 </script>
 
 <style lang="scss" scoped>

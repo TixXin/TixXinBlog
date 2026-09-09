@@ -72,11 +72,22 @@ export async function useGuestbookFeed(options: {
     morePending.value = false
     moreError.value = ''
   }
+  let lastRefresh: ReturnType<typeof result.refresh> | null = null
   function refresh(reset = false) {
     cancelMore()
+    if (timer) clearTimeout(timer)
+    scheduled.value = false
     if (reset) pages.value = 1
-    return result.refresh({ dedupe: 'cancel', cachedData: undefined })
+    lastRefresh = result.refresh({ dedupe: 'cancel', cachedData: undefined })
+    return lastRefresh
   }
+  watch(
+    cache.generation,
+    () => {
+      void refresh()
+    },
+    { flush: 'sync' },
+  )
   watch(key, () => {
     cancelMore()
     pages.value = 1
@@ -157,6 +168,7 @@ export async function useGuestbookFeed(options: {
     pending: computed(() => scheduled.value || result.pending.value),
     error: computed(() => (requestedKey.value === key.value ? result.error.value : undefined)),
     refresh,
+    settled: () => lastRefresh ?? Promise.resolve(),
     loadMore,
     retryMore: () => {
       moreError.value = ''

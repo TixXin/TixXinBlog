@@ -1,382 +1,332 @@
-<!--
-  @file guestbook.vue
-  @description 留言板页面，聊天式留言列表与侧栏统计、守则与活跃成员
-  @author TixXin
-  @since 2026-03-20
--->
-
+<!-- @file guestbook.vue @description 真实留言页面，聊天/论坛共用游标流、输入状态和侧栏聚合 -->
 <template>
-  <CommonPageFrame class="main-inner" header-key="guestbook">
+  <CommonPageFrame class="main-inner guestbook-page" header-key="guestbook">
     <template #header>
       <div class="main-content__header">
         <div class="page-title">
-          <div class="page-title__icon-wrap" aria-hidden="true">
-            <Icon name="lucide:message-circle" size="18" />
-          </div>
+          <div class="page-title__icon-wrap" aria-hidden="true"><Icon name="lucide:message-circle" size="18" /></div>
           <div class="page-title__text">
             <h2 class="page-title__heading">留言板</h2>
-            <p class="page-title__sub">当前演示 {{ formattedCount }} 条留言</p>
+            <p class="page-title__sub">{{ metadata?.stats.messages.toLocaleString('zh-CN') ?? '—' }} 条公开留言</p>
           </div>
         </div>
-
-        <!-- 右侧操作区：在线状态指示 -->
-        <div class="page-actions">
-          <span class="page-title__sub">演示留言板</span>
+        <div class="page-actions guestbook-actions">
+          <CommonSearchBox v-model="search" label="搜索留言" placeholder="搜索留言或作者…" />
+          <button v-if="search || selectedDate" type="button" class="guestbook-clear" @click="clearFilters">
+            清除筛选
+          </button>
+          <CommonContextDrawer v-if="!rightVisible" v-model:open="infoOpen" label="留言信息" icon="lucide:info"
+            ><GuestbookOverview
+              :data="metadata"
+              :pending="metadataPending"
+              :error="metadataError?.message"
+              @retry="refreshMetadata()"
+          /></CommonContextDrawer>
+          <NuxtLink v-if="isLoggedIn" to="/admin/guestbook" class="guestbook-clear">管理</NuxtLink>
         </div>
       </div>
     </template>
     <template #default>
-      <!-- 头部区域（统一样式） -->
-      <div class="guestbook-center">
-        <!-- 置顶公告 -->
-        <GuestbookPinnedMessage :message="pinnedMessage" />
-
-        <!-- 论坛模式：输入框在消息列表上方 -->
-        <GuestbookMessageInput
-          v-if="!isChatMode"
-          :reply-to="replyTarget"
-          @send="addMessage"
-          @cancel-reply="replyTarget = null"
-        />
-
-        <!-- 消息区域 wrapper：浮动按钮与 loader 浮层的定位基准 -->
-        <div class="guestbook-center__messages-wrap">
-          <!-- Loader 浮层（脱离文档流，不影响 scrollHeight） -->
-          <Transition name="loader-fade">
-            <div
-              v-if="hasOlderMessages && showLoadingOlder"
-              class="guestbook-loader"
-              :class="isChatMode ? 'guestbook-loader--top' : 'guestbook-loader--bottom'"
-            >
-              <Icon name="lucide:loader-2" size="14" class="guestbook-loader__spinner" />
-              <span class="guestbook-loader__text">{{ isChatMode ? '加载历史消息...' : '加载更多消息...' }}</span>
-            </div>
-          </Transition>
-
+      <div class="guestbook-center" :data-display-mode="isChatMode ? 'chat' : 'forum'">
+        <GuestbookPinnedMessage v-if="pinned" :key="pinned.id" :message="pinned" />
+        <template v-if="!isChatMode"
+          ><GuestbookMessageInput
+            v-bind="composerProps"
+            @update:draft="interactions.setDraft"
+            @send="interactions.submit"
+            @cancel-reply="interactions.setReply(null)"
+            @restore="interactions.restore"
+            @discard="interactions.discardRecovery"
+            @login="interactions.openLogin"
+        /></template>
+        <div ref="messagesWrap" class="guestbook-center__messages-wrap">
+          <div v-if="pending || feedError" class="guestbook-feedback">
+            <CommonRequestFeedback
+              :compact="items.length > 0"
+              :pending="pending"
+              :title="feedError?.message || '正在加载留言'"
+              :description="items.length ? '仍显示上次成功读取的内容。' : undefined"
+              @retry="refreshFeed()"
+            />
+          </div>
           <CommonCustomScrollbar
-            ref="scrollbarRef"
+            ref="scrollbar"
             class="guestbook-center__messages"
             viewport-class="guestbook-viewport"
             :show-back-to-top="false"
             primary
             :primary-direction="isChatMode ? 'down' : 'up'"
           >
-            <!-- 聊天模式：顶部哨兵，向上滚动加载历史消息 -->
-            <div v-if="isChatMode" ref="topSentinelRef" class="guestbook-sentinel" />
-
-            <!-- 骨架屏 -->
-            <GuestbookMessageSkeleton v-if="isLoading" />
-
-            <!-- 空状态 -->
-            <GuestbookEmptyState v-else-if="totalMessageCount === 0" @compose="focusInput" />
-
-            <!-- 消息列表 -->
-            <GuestbookMessageList v-else :groups="visibleGroups" @reply="onReply" />
-
-            <!-- 论坛模式：底部哨兵，向下滚动加载更早消息 -->
-            <div v-if="!isChatMode" ref="bottomSentinelRef" class="guestbook-sentinel" />
+            <div v-if="isChatMode && hasMore" ref="topSentinel" class="guestbook-more">
+              <button
+                type="button"
+                :disabled="pending || morePending || !personalized"
+                @click="moreError ? retryMore() : loadMore()"
+              >
+                {{ morePending ? '正在加载历史…' : moreError ? '重试加载历史' : '加载历史留言' }}
+              </button>
+              <p v-if="moreError" role="alert">{{ moreError }}</p>
+            </div>
+            <GuestbookMessageSkeleton v-if="pending && !items.length" />
+            <GuestbookEmptyState v-else-if="!pending && !feedError && !items.length" @compose="focusInput" />
+            <GuestbookMessageList
+              :groups="groups"
+              :interactive="personalized && !pending"
+              :reacting="interactions.reacting.value"
+              :reaction-errors="interactions.reactionErrors.value"
+              @reply="reply"
+              @react="interactions.react"
+            />
+            <div v-if="!isChatMode && hasMore" ref="bottomSentinel" class="guestbook-more">
+              <button
+                type="button"
+                :disabled="pending || morePending || !personalized"
+                @click="moreError ? retryMore() : loadMore()"
+              >
+                {{ morePending ? '正在加载…' : moreError ? '重试加载更多' : '加载更多留言' }}
+              </button>
+              <p v-if="moreError" role="alert">{{ moreError }}</p>
+            </div>
+            <p v-if="!hasMore && items.length && !pending && !feedError" class="guestbook-end">
+              已显示当前范围的全部留言
+            </p>
           </CommonCustomScrollbar>
-
-          <!-- 聊天模式：返回底部浮动按钮 -->
-          <Transition name="scroll-btn-fade">
-            <button
-              v-if="isChatMode && !isAtBottom"
-              type="button"
-              class="guestbook-scroll-bottom"
-              @click="scrollToBottom()"
-            >
-              <span v-if="newMessageCount > 0" class="guestbook-scroll-bottom__badge">
-                {{ newMessageCount > 99 ? '99+' : newMessageCount }}
-              </span>
-              <Icon name="lucide:arrow-down" size="16" />
-            </button>
-          </Transition>
+          <button
+            v-if="isChatMode && !atBottom"
+            type="button"
+            class="guestbook-scroll-bottom"
+            aria-label="回到最新留言"
+            @click="scrollLatest(true)"
+          >
+            <Icon name="lucide:arrow-down" size="18" />
+          </button>
         </div>
-
-        <!-- 聊天模式：输入框在消息列表下方 -->
-        <GuestbookMessageInput
-          v-if="isChatMode"
-          :reply-to="replyTarget"
-          @send="addMessage"
-          @cancel-reply="replyTarget = null"
-        />
+        <template v-if="isChatMode"
+          ><GuestbookMessageInput
+            v-bind="composerProps"
+            @update:draft="interactions.setDraft"
+            @send="interactions.submit"
+            @cancel-reply="interactions.setReply(null)"
+            @restore="interactions.restore"
+            @discard="interactions.discardRecovery"
+            @login="interactions.openLogin"
+        /></template>
       </div>
     </template>
     <template #overlays>
-      <ClientOnly>
-        <Teleport to="#right-sidebar-target">
-          <SidebarRightSidebar>
-            <GuestbookChatStats :stats="chatStats" />
-            <GuestbookChatRules :rules="chatRules" />
-            <GuestbookActiveMembers :members="activeMembers" />
-          </SidebarRightSidebar>
-        </Teleport>
-      </ClientOnly>
+      <CommonGuestIdentityModal
+        :visible="interactions.identityVisible.value"
+        @confirm="interactions.confirmIdentity"
+        @cancel="interactions.identityVisible.value = false"
+        @login="interactions.openLogin"
+      />
+      <ClientOnly
+        ><Teleport to="#right-sidebar-target"
+          ><SidebarRightSidebar
+            ><GuestbookOverview
+              :data="metadata"
+              :pending="metadataPending"
+              :error="metadataError?.message"
+              @retry="refreshMetadata()" /></SidebarRightSidebar></Teleport
+      ></ClientOnly>
     </template>
   </CommonPageFrame>
 </template>
-
 <script setup lang="ts">
-import { resolveScrollRoot, scrollToRoot } from '~/utils/scrollRoot'
 import { useMediaQuery } from '@vueuse/core'
-import type { DateGroup, GuestMessage } from '~/features/guestbook/types'
-import {
-  mockActiveMembers,
-  mockChatRules,
-  mockChatStats,
-  mockDateGroups,
-  mockPinnedMessage,
-} from '~/features/guestbook/mock'
-
-let alive = true
-onBeforeUnmount(() => {
-  alive = false
+import { resolveScrollRoot, scrollToRoot } from '~/utils/scrollRoot'
+import { guestbookGroups } from '~/features/guestbook/display'
+import type { GuestMessage, GuestbookRecord } from '~/features/guestbook/types'
+const pageScope = usePageRequestScope(),
+  route = useRoute(),
+  router = useRouter()
+const { activeTheme, currentThemeId } = useLayoutTheme()
+const { isLoggedIn } = useCurrentUser()
+const internalWidth = useMediaQuery('(min-width:1024px)'),
+  nexusRight = useMediaQuery('(min-width:1440px)'),
+  auroraRight = useMediaQuery('(min-width:1280px)')
+const isChatMode = computed(() => mounted.value && activeTheme.value.capabilities.leftSidebar && internalWidth.value)
+const rightVisible = computed(
+  () =>
+    mounted.value &&
+    (currentThemeId.value === 'nexus' ? nexusRight.value : currentThemeId.value === 'aurora' && auroraRight.value),
+)
+const infoOpen = ref(false),
+  mounted = ref(false),
+  atBottom = ref(true)
+const scrollbar = ref<{ viewport: HTMLElement | null } | null>(null),
+  messagesWrap = ref<HTMLElement | null>(null)
+const topSentinel = ref<HTMLElement | null>(null),
+  bottomSentinel = ref<HTMLElement | null>(null)
+const search = computed({
+  get: () => String(route.query.q ?? ''),
+  set: (value) => {
+    void router.replace({ path: '/guestbook', query: { ...route.query, q: value || undefined } })
+  },
 })
-
-// ---- 主题模式检测 ----
-// 三栏主题（leftSidebar）为聊天模式：输入框在底部，最新消息在底部
-// 双栏/单栏主题为论坛模式：输入框在顶部，最新消息在顶部
-const { activeTheme } = useLayoutTheme()
-const hasInternalViewport = useMediaQuery('(min-width: 1024px)')
-const isChatMode = computed(() => activeTheme.value.capabilities.leftSidebar && hasInternalViewport.value)
-
-useSeoMeta({
-  title: '留言板',
-  description: '在这里留下你的足迹，和博主聊聊天',
-  ogTitle: '留言板 - TixXin Blog',
-  ogDescription: '在这里留下你的足迹，和博主聊聊天',
-  ogType: 'website',
-  ogImage: '/og-guestbook.jpg',
-})
-
-// ---- 数据源 ----
-const allDateGroups = reactive<DateGroup[]>(JSON.parse(JSON.stringify(mockDateGroups)))
-const chatStats = mockChatStats
-const chatRules = mockChatRules
-const activeMembers = mockActiveMembers
-const pinnedMessage = mockPinnedMessage
-
-// ---- 模拟加载态 ----
-// 用 useState 跨导航持久化，避免每次返回页面都重新触发骨架屏
-const hasLoadedOnce = useState('guestbook-loaded-once', () => false)
-const isLoading = ref(!hasLoadedOnce.value)
-
-// ---- 回复引用交互 ----
-const replyTarget = ref<GuestMessage | null>(null)
-
-function onReply(message: GuestMessage) {
-  replyTarget.value = message
-  focusInput()
+const selectedDate = computed(() => (typeof route.query.date === 'string' ? route.query.date : null))
+const clearFilters = () => router.replace({ path: '/guestbook' })
+let observer: IntersectionObserver | null = null,
+  boundScroll: HTMLElement | Window | null = null,
+  initialized = false
+let anchor: { id: string; top: number; scroll: number; root: HTMLElement | null } | null = null
+function root() {
+  return resolveScrollRoot(scrollbar.value?.viewport ?? null)
 }
-
-function focusInput() {
-  // 聚焦输入框（空状态 CTA 按钮）
-  nextTick(() => {
-    const textarea = document.querySelector('.message-input__editor') as HTMLTextAreaElement
-    textarea?.focus()
+function captureAnchor() {
+  if (!mounted.value || !initialized || !messagesWrap.value) return
+  const current = root(),
+    bounds = current?.getBoundingClientRect() ?? { top: 0, bottom: innerHeight }
+  const item = [...messagesWrap.value.querySelectorAll<HTMLElement>('[data-guestbook-id]')].find((node) => {
+    const box = node.getBoundingClientRect()
+    return box.bottom > Math.max(bounds.top, 0) && box.top < bounds.bottom
   })
+  anchor = item
+    ? {
+        id: item.dataset.guestbookId!,
+        top: item.getBoundingClientRect().top,
+        scroll: current?.scrollTop ?? scrollY,
+        root: current,
+      }
+    : null
 }
-
-// ---- 懒加载：从最新消息开始，向上滚动加载更早的日期组 ----
-const INITIAL_GROUPS = 3
-const LOAD_MORE_GROUPS = 3
-
-const loadedGroupCount = ref(Math.min(INITIAL_GROUPS, allDateGroups.length))
-const loadingOlder = ref(false)
-const showLoadingOlder = ref(false)
-const topSentinelRef = ref<HTMLElement | null>(null)
-const bottomSentinelRef = ref<HTMLElement | null>(null)
-const scrollbarRef = ref<{ viewport: HTMLElement | null; scrollToTop: (smooth?: boolean) => void } | null>(null)
-
-// 可见的日期组（从最新的 N 组开始，逐步加载更早的）
-const visibleGroups = computed(() => {
-  const start = Math.max(0, allDateGroups.length - loadedGroupCount.value)
-  const groups = allDateGroups.slice(start)
-
-  if (isChatMode.value) {
-    // 聊天模式：旧→新（上→下），数据原始顺序即可
-    return groups
+function restoreAnchor() {
+  if (!mounted.value || pageScope.signal.aborted) return
+  if (anchor) {
+    const item = messagesWrap.value?.querySelector<HTMLElement>(`[data-guestbook-id="${anchor.id}"]`),
+      current = root()
+    if (item) {
+      const position = current?.scrollTop ?? scrollY
+      const userDelta = current === anchor.root ? position - anchor.scroll : 0
+      scrollToRoot(current, position + item.getBoundingClientRect().top - anchor.top + userDelta, false)
+    }
+    anchor = null
   }
-  // 论坛模式：新→旧（上→下），反转日期组和组内消息
-  return [...groups].reverse().map((g) => ({
-    ...g,
-    messages: [...g.messages].reverse(),
-  }))
-})
-
-const hasOlderMessages = computed(() => loadedGroupCount.value < allDateGroups.length)
-
-const totalMessageCount = computed(() => allDateGroups.reduce((sum, g) => sum + g.messages.length, 0))
-
-const formattedCount = computed(() => totalMessageCount.value.toLocaleString('zh-CN'))
-
-// ---- 加载更早的消息 ----
-// 注意：loader 已改为绝对定位浮层，不参与 scrollHeight，
-// 所以 delta 就是纯的新消息组高度，不存在 loader 消失时的跳动。
-async function loadOlderMessages() {
-  if (loadingOlder.value || !hasOlderMessages.value) return
-  loadingOlder.value = true
-  showLoadingOlder.value = true
-
-  const viewport = scrollbarRef.value?.viewport
-  if (!viewport) {
-    loadingOlder.value = false
-    showLoadingOlder.value = false
-    return
-  }
-
-  // 记录当前快照
-  const prevScrollHeight = viewport.scrollHeight
-  const prevScrollTop = viewport.scrollTop
-
-  // 追加一批日期组
-  loadedGroupCount.value = Math.min(loadedGroupCount.value + LOAD_MORE_GROUPS, allDateGroups.length)
-
-  // 等 DOM 更新后立即补偿滚动位置，避免用户视野漂移
-  await nextTick()
-  if (!alive) return
-
-  if (isChatMode.value) {
-    const delta = viewport.scrollHeight - prevScrollHeight
-    // 用绝对赋值而非 +=，避免异步期间与其他滚动事件竞态
-    viewport.scrollTop = prevScrollTop + delta
-  }
-
-  loadingOlder.value = false
-  showLoadingOlder.value = false
+  bindScroll()
+  setupObserver()
 }
-
-// ---- IntersectionObserver 监听顶部哨兵 ----
-let observer: IntersectionObserver | null = null
-
+function scrollLatest(smooth = false) {
+  const current = root()
+  scrollToRoot(current, current?.scrollHeight ?? document.documentElement.scrollHeight, smooth)
+}
+function checkBottom() {
+  const current = root()
+  atBottom.value = current
+    ? current.scrollHeight - current.scrollTop - current.clientHeight < 80
+    : document.documentElement.scrollHeight - scrollY - innerHeight < 80
+}
+function bindScroll() {
+  boundScroll?.removeEventListener('scroll', checkBottom)
+  boundScroll = root() ?? window
+  boundScroll.addEventListener('scroll', checkBottom, { passive: true })
+  checkBottom()
+}
 function setupObserver() {
+  if (!mounted.value || !initialized || pageScope.signal.aborted) return
   observer?.disconnect()
-  const viewport = scrollbarRef.value?.viewport
-  // 聊天模式用顶部哨兵（向上加载），论坛模式用底部哨兵（向下加载）
-  const sentinel = isChatMode.value ? topSentinelRef.value : bottomSentinelRef.value
-  if (!viewport || !sentinel) return
-
-  const rootMargin = isChatMode.value ? '200px 0px 0px 0px' : '0px 0px 200px 0px'
-
+  const sentinel = isChatMode.value ? topSentinel.value : bottomSentinel.value
+  if (!sentinel) return
   observer = new IntersectionObserver(
     (entries) => {
-      if (entries[0]?.isIntersecting && hasOlderMessages.value) {
-        loadOlderMessages()
-      }
+      if (
+        entries.some((entry) => entry.isIntersecting) &&
+        hasMore.value &&
+        personalized.value &&
+        !pending.value &&
+        !morePending.value &&
+        !moreError.value
+      )
+        void loadMore()
     },
-    { root: viewport, rootMargin },
+    { root: root(), rootMargin: isChatMode.value ? '120px 0px 0px' : '0px 0px 120px' },
   )
   observer.observe(sentinel)
 }
-
-// ---- 发送消息 ----
-function addMessage(content: string, author: { name: string; avatar: string }) {
-  const today = new Date().toLocaleDateString('zh-CN', { year: 'numeric', month: '2-digit', day: '2-digit' })
-  const nickname = author.name.trim() || '匿名访客'
-
-  const newMsg: GuestMessage = {
-    id: Date.now(),
-    author: nickname,
-    avatar: author.avatar,
-    content,
-    time: new Date().toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' }),
-    isOwner: false,
-    status: 'local',
-    replyTo: replyTarget.value
-      ? { id: replyTarget.value.id, author: replyTarget.value.author, content: replyTarget.value.content }
-      : undefined,
+function initialize() {
+  if (!mounted.value || initialized || !items.value.length) return
+  initialized = true
+  if (isChatMode.value) scrollLatest()
+  bindScroll()
+  setupObserver()
+}
+function focusInput() {
+  nextTick(() => document.querySelector<HTMLTextAreaElement>('.message-input__editor')?.focus())
+}
+function reply(message: GuestMessage) {
+  interactions.setReply(message)
+  focusInput()
+}
+let onSent: (record: GuestbookRecord) => Promise<void> = async () => {}
+const interactions = useGuestbookInteractions((record) => onSent(record))
+const [feed, overview] = await Promise.all([
+  useGuestbookFeed({ q: search, date: selectedDate, beforeChange: captureAnchor, afterChange: restoreAnchor }),
+  useGuestbookMetadata(),
+])
+pageScope.assertActive()
+const {
+  items,
+  pending,
+  error: feedError,
+  morePending,
+  moreError,
+  hasMore,
+  personalized,
+  loadMore,
+  retryMore,
+  refresh: refreshFeed,
+} = feed
+const { data: metadata, pending: metadataPending, error: metadataError, refresh: refreshMetadata } = overview
+const groups = computed(() => guestbookGroups(items.value, isChatMode.value))
+const pinned = computed(() =>
+  metadata.value?.pinned ? { ...metadata.value.pinned, time: metadata.value.pinned.createdAt.slice(0, 10) } : null,
+)
+const composerProps = computed(() => ({
+  draft: interactions.state.draft,
+  replyTo: interactions.state.reply,
+  ready: interactions.ready.value,
+  expired: interactions.expired.value,
+  submitting: interactions.state.submitting,
+  error: interactions.state.error,
+  notice: interactions.state.notice,
+  storageError: interactions.state.storageError,
+  hasRecovery: !!interactions.state.recovery,
+  identityLabel: interactions.identityLabel.value,
+}))
+onSent = async (record) => {
+  await Promise.all([feed.settled(), refreshMetadata()])
+  await nextTick()
+  if (pageScope.signal.aborted) return
+  if (items.value.some((item) => item.id === record.id)) {
+    if (isChatMode.value) scrollLatest()
+    else
+      messagesWrap.value
+        ?.querySelector<HTMLElement>(`[data-guestbook-id="${record.id}"]`)
+        ?.scrollIntoView({ block: 'nearest' })
   }
-
-  const todayGroup = allDateGroups.find((g) => g.date === today)
-  if (todayGroup) {
-    todayGroup.messages.push(newMsg)
-  } else {
-    allDateGroups.push({ date: today, messages: [newMsg] })
-    // 新增日期组也要显示
-    loadedGroupCount.value = Math.min(loadedGroupCount.value + 1, allDateGroups.length)
-  }
-
-  // 清除回复引用
-  replyTarget.value = null
-
-  // 发送后滚动到可见新消息的位置
-  nextTick(() => {
-    if (isChatMode.value) {
-      scrollToBottom()
-    } else {
-      scrollbarRef.value?.scrollToTop(true)
-    }
-    newMessageCount.value = 0
-  })
 }
-
-// ---- 滚动位置检测 & 新消息计数 ----
-const isAtBottom = ref(true)
-const newMessageCount = ref(0)
-
-function checkIsAtBottom() {
-  const viewport = scrollbarRef.value?.viewport
-  if (!viewport) return
-  const { scrollTop, scrollHeight, clientHeight } = viewport
-  isAtBottom.value = scrollHeight - scrollTop - clientHeight < 60
-  // 回到底部时清零新消息计数
-  if (isAtBottom.value) newMessageCount.value = 0
-}
-
-// ---- 滚动到底部 ----
-function scrollToBottom(smooth = true) {
-  const viewport = scrollbarRef.value?.viewport
-  if (!viewport) return
-  const root = resolveScrollRoot(viewport)
-  scrollToRoot(root, root?.scrollHeight ?? document.documentElement.scrollHeight, smooth)
-}
-
-// ---- 生命周期 ----
-// 消息列表渲染后滚动到底部并挂载 observer
-function initAfterRendered() {
-  nextTick(() => {
-    if (!alive) return
-    if (isChatMode.value) {
-      scrollToBottom(false)
-    }
-    setupObserver()
-  })
-}
-
-// 首次访问：骨架屏结束后初始化
-watch(isLoading, (loading) => {
-  if (loading) return
-  hasLoadedOnce.value = true
-  initAfterRendered()
+watch([isChatMode, currentThemeId, rightVisible], async () => {
+  captureAnchor()
+  infoOpen.value = false
+  await nextTick()
+  restoreAnchor()
 })
-
-onMounted(() => {
-  // 演示数据已在内存中，挂载后直接呈现，不增加模拟等待。
-  if (isLoading.value) {
-    isLoading.value = false
-  } else {
-    initAfterRendered()
-  }
-
-  // 监听滚动检测是否在底部
-  watch(
-    () => scrollbarRef.value?.viewport,
-    (vp, oldVp) => {
-      oldVp?.removeEventListener('scroll', checkIsAtBottom)
-      vp?.addEventListener('scroll', checkIsAtBottom, { passive: true })
-    },
-    { immediate: true },
-  )
+watch([() => items.value.length, hasMore, personalized], async () => {
+  await nextTick()
+  initialize()
+  setupObserver()
 })
-
-onUnmounted(() => {
-  scrollbarRef.value?.viewport?.removeEventListener('scroll', checkIsAtBottom)
+onMounted(async () => {
+  mounted.value = true
+  await nextTick()
+  initialize()
+})
+onBeforeUnmount(() => {
   observer?.disconnect()
-  observer = null
+  boundScroll?.removeEventListener('scroll', checkBottom)
 })
+useSeoMeta({ title: '留言板', description: '留下你的足迹，交流技术与生活。', ogTitle: '留言板', ogType: 'website' })
 </script>
-
-<style lang="scss" scoped>
+<style scoped lang="scss">
 .guestbook-center {
   flex: 1;
   min-height: 0;
@@ -384,60 +334,6 @@ onUnmounted(() => {
   flex-direction: column;
   overflow: hidden;
 }
-
-/* ---- 在线状态指示（留言板特有，放在 header 右侧） ---- */
-.guestbook-online {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.375rem;
-  padding: 0.1875rem 0.625rem 0.1875rem 0.5rem;
-  border-radius: $radius-full;
-  font-size: 0.6875rem;
-  font-weight: 600;
-  color: #059669;
-  background: rgba(16, 185, 129, 0.08);
-  border: 1px solid rgba(16, 185, 129, 0.15);
-  flex-shrink: 0;
-}
-
-:root.dark .guestbook-online {
-  color: #34d399;
-}
-
-.guestbook-online__pulse {
-  position: relative;
-  width: 0.5rem;
-  height: 0.5rem;
-  border-radius: $radius-full;
-  background: #10b981;
-  flex-shrink: 0;
-
-  &::before {
-    content: '';
-    position: absolute;
-    inset: 0;
-    border-radius: inherit;
-    background: #34d399;
-    animation: guestbook-ping 1.5s cubic-bezier(0, 0, 0.2, 1) infinite;
-    @media (prefers-reduced-motion: reduce) {
-      animation: none;
-    }
-    opacity: 0.6;
-  }
-}
-
-.guestbook-online__text {
-  line-height: 1;
-}
-
-@keyframes guestbook-ping {
-  75%,
-  100% {
-    transform: scale(2);
-    opacity: 0;
-  }
-}
-
 .guestbook-center__messages-wrap {
   position: relative;
   flex: 1;
@@ -445,157 +341,73 @@ onUnmounted(() => {
   display: flex;
   flex-direction: column;
 }
-
 .guestbook-center__messages {
   flex: 1;
   min-height: 0;
 }
-
-.guestbook-sentinel {
-  height: 1px;
+.guestbook-center :deep(.guestbook-viewport) {
+  overflow-anchor: none;
 }
-
-/* ---- 加载 loader 浮层（绝对定位，不参与 scrollHeight） ---- */
-.guestbook-loader {
-  position: absolute;
-  left: 50%;
-  z-index: 6;
-  display: inline-flex;
+.guestbook-actions {
+  display: flex;
+  gap: 0.5rem;
   align-items: center;
-  gap: 0.375rem;
-  padding: 0.375rem 0.875rem;
-  border-radius: $radius-full;
-  border: 1px solid var(--border-soft);
-  background: color-mix(in srgb, var(--surface-1) 85%, transparent);
-  backdrop-filter: blur(10px);
-  box-shadow: var(--shadow-card);
-  pointer-events: none;
-  transform: translateX(-50%);
+  flex-wrap: wrap;
 }
-
-.guestbook-loader--top {
-  top: 0.75rem;
+.guestbook-actions :deep(.search-box) {
+  min-width: 0;
+  flex: 1;
 }
-
-.guestbook-loader--bottom {
-  bottom: 0.75rem;
+.guestbook-clear,
+.guestbook-more button {
+  color: var(--accent-text);
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  min-height: 44px;
 }
-
-.guestbook-loader__spinner {
+.guestbook-more {
+  padding: 0.5rem 1rem;
+  text-align: center;
   color: var(--text-soft);
-  animation: spin 1.2s linear infinite;
-  @media (prefers-reduced-motion: reduce) {
-    animation: none;
-  }
 }
-
-.guestbook-loader__text {
-  color: var(--text-soft);
+.guestbook-feedback {
+  flex-shrink: 0;
+  max-height: 40%;
+  overflow: auto;
+}
+.guestbook-end {
+  padding: 0.5rem 1rem 1rem;
   font-size: 0.75rem;
-  line-height: 1;
+  text-align: center;
+  color: var(--text-soft);
 }
-
-.loader-fade-enter-active,
-.loader-fade-leave-active {
-  transition:
-    opacity 0.25s ease,
-    transform 0.25s ease;
-  @media (prefers-reduced-motion: reduce) {
-    transition: none;
-  }
-}
-
-.loader-fade-enter-from {
-  opacity: 0;
-  transform: translateX(-50%) translateY(-4px);
-}
-
-.loader-fade-leave-to {
-  opacity: 0;
-  transform: translateX(-50%) translateY(-4px);
-}
-
-/* ---- 返回底部浮动按钮 ---- */
 .guestbook-scroll-bottom {
   position: absolute;
-  right: 1.25rem;
   bottom: 1rem;
-  z-index: 8;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 2.25rem;
-  height: 2.25rem;
-  border-radius: $radius-full;
+  right: 1rem;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  color: var(--text-main);
+  background: var(--surface-2);
   border: 1px solid var(--border);
-  background: color-mix(in srgb, var(--surface-1) 80%, transparent);
-  backdrop-filter: blur(12px);
-  color: var(--text-soft);
-  box-shadow: var(--shadow-card);
-  cursor: pointer;
-  transition: $transition-fast;
-  @media (prefers-reduced-motion: reduce) {
-    transition: none;
-  }
-
-  &:hover {
-    color: var(--text-main);
-    border-color: var(--border-hover);
-    transform: translateY(-2px);
-    box-shadow: var(--shadow-card-hover, 0 4px 12px rgba(0, 0, 0, 0.12));
+  display: grid;
+  place-items: center;
+}
+@media (max-width: 1023px) {
+  .guestbook-center {
+    overflow: visible;
   }
 }
-
-.guestbook-scroll-bottom__badge {
-  position: absolute;
-  top: -0.375rem;
-  right: -0.375rem;
-  min-width: 1.125rem;
-  height: 1.125rem;
-  padding: 0 0.25rem;
-  border-radius: $radius-full;
-  background: var(--accent, #5b7cfa);
-  color: #fff;
-  font-size: 0.5625rem;
-  font-weight: 700;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  line-height: 1;
-  box-shadow: 0 1px 3px rgba(91, 124, 250, 0.4);
-}
-
-.scroll-btn-fade-enter-active {
-  transition:
-    opacity 0.2s ease,
-    transform 0.2s ease;
-  @media (prefers-reduced-motion: reduce) {
-    transition: none;
+@media (max-width: 640px) {
+  .guestbook-page .main-content__header {
+    flex-wrap: wrap;
+    gap: 0.75rem;
   }
-}
-
-.scroll-btn-fade-leave-active {
-  transition:
-    opacity 0.15s ease,
-    transform 0.15s ease;
-  @media (prefers-reduced-motion: reduce) {
-    transition: none;
-  }
-}
-
-.scroll-btn-fade-enter-from {
-  opacity: 0;
-  transform: translateY(8px);
-}
-
-.scroll-btn-fade-leave-to {
-  opacity: 0;
-  transform: translateY(8px);
-}
-
-@keyframes spin {
-  to {
-    transform: rotate(360deg);
+  .guestbook-actions {
+    width: 100%;
   }
 }
 </style>
