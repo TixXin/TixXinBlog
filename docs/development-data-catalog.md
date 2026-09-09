@@ -22,13 +22,17 @@ corepack pnpm db:dev check-data --domain moments --search 不存在的关键词
 
 项目、图库、友链保留各域mock展示数据；书签仍在LocalStorage。命令将这些边界作为 `preservedSources` 输出，不宣称它们已经接入数据库。
 
-原18条朋友圈及18条评论持续保留。`core-v1` 数据集通过内部 `development_fixture` 账本增量管理文章/闪念/朋友圈各18条、评论回复、待审隐藏、本地媒体和真实点赞记录，共71条归属。当前日常库核心六域覆盖检查通过；留言板仍待接入和补齐。
+原18条朋友圈及18条评论持续保留。`core-v1` 数据集通过内部 `development_fixture` 账本增量管理文章/闪念/朋友圈各18条、评论回复、待审隐藏、本地媒体和真实点赞记录，共71条归属。`guestbook-v1` 提供29条留言（26公开、2待审、1隐藏）、头像和8条回应，共38条归属。当前日常库七域数据覆盖检查通过，但页面接入和维护验收尚未全部完成。
 
 ```sh
 corepack pnpm db:dev seed-data --dataset core-v1
 corepack pnpm db:dev seed-data --dataset core-v1 --apply --confirm tixxin_blog
+corepack pnpm db:dev seed-data --dataset guestbook-v1
+corepack pnpm db:dev seed-data --dataset guestbook-v1 --apply --confirm tixxin_blog
 ```
 
 账本在业务记录删除后保留，不以重复seed复活被删除内容；人工编辑的记录不覆盖。事务失败时回滚数据，并只清理本次新生成且确认未登记的媒体文件。正文不添加测试标签，身份仅保留在内部账本、脚本和维护记录中。定向数据集清理仍在本阶段实施，现有样本规范化与清理命令保持用途。
+
+`--dataset all` 按依赖顺序检查并补齐核心和留言数据集，不重设站点审核开关或用户已有置顶。留言样本的发送、审核、置顶和回应复用实际服务，不复制演示的浏览器、地区或已读信息。留言补齐前备份为 `.backups/backup-1788955517936-d22b31e0/`（本机保留）。
 
 前端新增仅本机开发可用的 `/__dev/data-source`，返回上游服务及数据库指纹，以确认实际运行中的同源网关连接。生产环境返回404，不返回路径、连接串或凭据，也不放宽公共API代理路径。

@@ -12,6 +12,7 @@ import { lockMedia } from '../modules/media/media-references'
 import { createFullBackup } from '../../scripts/full-backup.mjs'
 import { seedCoreFixtures, CORE_DATASET } from './core-fixtures'
 import type { FixtureProgress } from './fixture-ledger'
+import { seedGuestbookFixtures, GUESTBOOK_DATASET, GUESTBOOK_FIXTURE_COUNT } from './guestbook-fixtures'
 
 export class DevelopmentDataError extends Error {}
 export async function seedDevelopmentData(
@@ -22,10 +23,14 @@ export async function seedDevelopmentData(
     apply = false,
     confirm = ''
   for (let index = 0; index < args.length; index++) {
-    if (args[index] === '--dataset' && args[index + 1] === CORE_DATASET) dataset = args[++index]!
+    if (args[index] === '--dataset' && [CORE_DATASET, GUESTBOOK_DATASET, 'all'].includes(args[index + 1] ?? ''))
+      dataset = args[++index]!
     else if (args[index] === '--apply' && !apply) apply = true
     else if (args[index] === '--confirm' && !confirm && args[index + 1]) confirm = args[++index]!
-    else throw new DevelopmentDataError('用法：db:dev seed-data --dataset core-v1 [--apply --confirm 数据库名]')
+    else
+      throw new DevelopmentDataError(
+        '用法：db:dev seed-data --dataset core-v1|guestbook-v1|all [--apply --confirm 数据库名]',
+      )
   }
   const url = new URL(process.env.DATABASE_URL!)
   const database = decodeURIComponent(url.pathname.slice(1))
@@ -50,13 +55,23 @@ export async function seedDevelopmentData(
     const [{ table }] = await orm.em
       .getConnection()
       .execute<{ table: string | null }[]>('select to_regclass(\'public.development_fixture\') as "table"')
-    const existing = table ? await orm.em.fork().count(DevelopmentFixture, { dataset }) : 0
+    const existing = table ? await orm.em.fork().count(DevelopmentFixture, dataset === 'all' ? {} : { dataset }) : 0
     const plan = {
       dataset,
       target: { database, host: url.hostname, port: Number(url.port || 5432) },
       existingOwnershipRecords: existing,
-      expectedRecords: 71,
-      scope: '文章/闪念/朋友圈各18条，评论、回复、审核状态、本地媒体及真实互动；已有归属不覆盖、不复活',
+      expectedRecords:
+        dataset === CORE_DATASET
+          ? 71
+          : dataset === GUESTBOOK_DATASET
+            ? GUESTBOOK_FIXTURE_COUNT
+            : 71 + GUESTBOOK_FIXTURE_COUNT,
+      scope:
+        (dataset === CORE_DATASET
+          ? '核心文章/闪念/朋友圈及互动'
+          : dataset === GUESTBOOK_DATASET
+            ? '留言、回复、置顶、待审隐藏、本地头像与真实回应'
+            : '核心业务和留言数据集') + '；已有归属不覆盖、不复活',
       apply,
     }
     write(JSON.stringify(plan, null, 2))
@@ -76,7 +91,9 @@ export async function seedDevelopmentData(
         await lockTaxonomy(em)
         await lockMedia(em)
         await em.execute('select pg_advisory_xact_lock(742919)')
-        await seedCoreFixtures(em, storage, progress, createdMedia)
+        if (dataset === CORE_DATASET || dataset === 'all') await seedCoreFixtures(em, storage, progress, createdMedia)
+        if (dataset === GUESTBOOK_DATASET || dataset === 'all')
+          await seedGuestbookFixtures(em, storage, progress, createdMedia)
         em.create(AuditEntry, {
           action: 'development.seed-data',
           resourceType: 'dataset',
