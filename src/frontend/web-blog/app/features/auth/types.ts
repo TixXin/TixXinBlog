@@ -27,7 +27,7 @@ export interface ForgotForm {
   email: string
 }
 
-/** 当前登录用户信息（mock 阶段使用，未来由后端返回） */
+/** 当前登录用户展示信息；博主身份由真实认证响应确定，访客身份另行管理。 */
 export interface CurrentUser {
   /** 用户唯一标识 */
   id: string

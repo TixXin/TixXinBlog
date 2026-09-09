@@ -13,7 +13,7 @@
 | 认证       | `/admin/login`、登录抽屉；`useCurrentUser.ts` → `/api/v1/auth`                                       | 会话查看、撤销、密码与访问保护                                                         | `auth-sessions-integration.mjs`、相关浏览器用例。访问令牌内存保存，刷新使用 HttpOnly Cookie；普通访客身份不是注册用户系统                                                             |
 | 闪念       | `/flash`、`/flash/:id`；`HttpFlashRepository` → `/api/v1/flashes` 与 `/admin/flashes`                | `/admin/flashes` 与前台博主编辑器；草稿、归档、图片、置顶、互动                        | `flashRepositoryHttp.test.ts`、`flash-ux.spec.ts`、`service-recovery.spec.ts`。本地仓库只由显式演示配置启用                                                                           |
 | 朋友圈     | `/moments`、详情、话题页；`useMomentRepository` → `/api/v1/moments` → PostgreSQL，运行时无 Mock 回退 | `/admin/moments`；发布编辑、草稿归档、置顶删除、媒体、评论审核和回复；内容包及完整备份 | `moment-integration.mjs` 87请求、`moment-business.spec.ts` 跨上下文持久化/图片/筛选/失败/冲突、缓存与恢复单测、备份恢复；三主题三浏览器通过，见[验收记录](next-stage-verification.md) |
-| 留言       | `/guestbook`；`features/guestbook/mock.ts` + 页面内响应式数组                                        | 尚无真实留言管理接口                                                                   | 当前展示与提交为演示；剩余持久化、身份/审核、分页及管理闭环，本阶段不接入                                                                                                             |
+| 留言       | `/guestbook`；`useGuestbookRepository` → `/api/v1/guestbook` → PostgreSQL，无Mock回退                | `/admin/guestbook`；分页、筛选、博主回复、审核、隐藏、置顶和删除                       | 88请求接口集成、12项缓存/草稿单测、真实业务三浏览器回归、v3内容包及完整备份恢复；日常库有29条留言与8条回应，最终验收跟踪见[留言阶段](guestbook-stage.md)                              |
 | 项目       | `/projects`；`mockProjects`、`mockTechStack`                                                         | 尚无项目管理接口                                                                       | 展示条目、过滤和 UI；剩余项目数据维护与真实内容，本阶段保持演示                                                                                                                       |
 | 图库       | `/gallery`；`mockPhotos`、分类与设备示例                                                             | 尚无图库条目管理接口                                                                   | 搜索、筛选与灯箱已有 UI 验证。通用媒体库已实现，但图库页面仍未从该库读取业务条目                                                                                                      |
 | 友链       | `/links`；`mockLinks`、规则与站点示例                                                                | 尚无友链申请审核或管理接口                                                             | 当前为展示数据；剩余真实维护及申请流程，本阶段保持现状                                                                                                                                |
@@ -25,8 +25,8 @@
 
 ## 本阶段与后续边界
 
-本阶段交付开发启动、自检、朋友圈真实业务、数据库操作脚本及相应维护/验收能力。使用方式见[朋友圈业务](moment-business.md)和[开发数据库](development-database.md)。
+可靠启动与朋友圈阶段已归档。开发数据与留言阶段也已完成统一检查、带归属的增量样本、真实留言业务与维护兼容，完整验收见[留言阶段](guestbook-stage-verification.md)。使用方式见[朋友圈业务](moment-business.md)、[留言业务](backend/guestbook.md)和[开发数据库](development-database.md)。
 
-留言、项目、图库、友链的真实管理和书签云同步属于后续候选工作；AI 增强、独立 Worker 与外部搜索服务也没有因已有页面或设计文档而自动实现。后续按具体业务目标建立独立待办。
+项目、图库、友链的真实管理和书签云同步属于后续候选工作；AI 增强、独立 Worker 与外部搜索服务也没有因已有页面或设计文档而自动实现。后续按具体业务目标建立独立待办。
 
 导航、标签栏名称和图标等静态配置可以继续位于现有 `mock.ts`，不能仅凭该文件名判断业务是否持久化。真实数据链路以请求、服务端读写、数据库结果和重载验证共同确认。

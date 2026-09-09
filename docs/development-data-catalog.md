@@ -10,19 +10,19 @@ corepack pnpm db:dev check-data --domain moments --search 不存在的关键词
 
 命令复用开发启动器的配置、数据库和服务身份检查，再读取各业务表。退出0表示指定范围的场景和链路满足要求；退出非零会区分数据库断连、迁移缺失、错误服务/数据库、网关不一致和样本不足。筛选匹配数为0但底层有数据时标记 `normal-empty-filter`，不报告“数据库被清空”。筛选计数是维护视角，可能包含私有记录，不代替公开API计数。
 
-| 域 | 前台 / 管理入口 | 实际数据源 | 最小场景 |
-| --- | --- | --- | --- |
-| posts | `/`、`/articles/:id` / `/admin/posts` | PostgreSQL post等表 | 超过15条公开内容、草稿、归档、近30日、图片 |
-| comments | 文章详情 / `/admin/comments` | PostgreSQL comment及父子关系 | 公开、待审、隐藏、回复、博主 |
-| flashes | `/flash` / `/admin/flashes` | PostgreSQL flash_note及互动 | 超过15条公开内容、草稿、归档、近期、图片 |
-| moments | `/moments` / `/admin/moments` | PostgreSQL moment及互动 | 超过15条公开内容、草稿、归档、近期、图片 |
-| media | 公开资源URL / `/admin/media` | PostgreSQL media_asset及独立磁盘目录 | 有活动媒体；文件完整性继续由媒体核验检查 |
-| site | 公开资料 / `/admin/site` | PostgreSQL site_settings | 有默认站点名称与作者资料 |
-| guestbook | `/guestbook` / `/admin/guestbook` | PostgreSQL guestbook_message、guestbook_reaction | 超过20条公开内容、待审、隐藏、回复、博主、置顶、近期 |
+| 域        | 前台 / 管理入口                       | 实际数据源                                       | 最小场景                                             |
+| --------- | ------------------------------------- | ------------------------------------------------ | ---------------------------------------------------- |
+| posts     | `/`、`/articles/:id` / `/admin/posts` | PostgreSQL post等表                              | 超过15条公开内容、草稿、归档、近30日、图片           |
+| comments  | 文章详情 / `/admin/comments`          | PostgreSQL comment及父子关系                     | 公开、待审、隐藏、回复、博主                         |
+| flashes   | `/flash` / `/admin/flashes`           | PostgreSQL flash_note及互动                      | 超过15条公开内容、草稿、归档、近期、图片             |
+| moments   | `/moments` / `/admin/moments`         | PostgreSQL moment及互动                          | 超过15条公开内容、草稿、归档、近期、图片             |
+| media     | 公开资源URL / `/admin/media`          | PostgreSQL media_asset及独立磁盘目录             | 有活动媒体；文件完整性继续由媒体核验检查             |
+| site      | 公开资料 / `/admin/site`              | PostgreSQL site_settings                         | 有默认站点名称与作者资料                             |
+| guestbook | `/guestbook` / `/admin/guestbook`     | PostgreSQL guestbook_message、guestbook_reaction | 超过20条公开内容、待审、隐藏、回复、博主、置顶、近期 |
 
 项目、图库、友链保留各域mock展示数据；书签仍在LocalStorage。命令将这些边界作为 `preservedSources` 输出，不宣称它们已经接入数据库。
 
-原18条朋友圈及18条评论持续保留。`core-v1` 数据集通过内部 `development_fixture` 账本增量管理文章/闪念/朋友圈各18条、评论回复、待审隐藏、本地媒体和真实点赞记录，共71条归属。`guestbook-v1` 提供29条留言（26公开、2待审、1隐藏）、头像和8条回应，共38条归属。当前日常库七域数据覆盖检查通过，但页面接入和维护验收尚未全部完成。
+原18条朋友圈及18条评论持续保留。`core-v1` 数据集通过内部 `development_fixture` 账本增量管理文章/闪念/朋友圈各18条、评论回复、待审隐藏、本地媒体和真实点赞记录，共71条归属。`guestbook-v1` 提供29条留言（26公开、2待审、1隐藏）、头像和8条回应，共38条归属。日常库七域覆盖、实际页面和维护验收已通过，详见[阶段验收](guestbook-stage-verification.md)。
 
 ```sh
 corepack pnpm db:dev seed-data --dataset core-v1
