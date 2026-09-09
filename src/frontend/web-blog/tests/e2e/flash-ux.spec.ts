@@ -66,7 +66,7 @@ test('公开闪念可互动，草稿归档受限，手机工具栏和折叠搜�
     await note.getByRole('button', { name: '发送评论', exact: true }).click()
     await guest.getByRole('textbox', { name: '昵称 *', exact: true }).fill('UX 闪念访客')
     await guest.getByRole('button', { name: '确认身份', exact: true }).click()
-    await expect(guest.getByText('暂时无法连接闪念服务，请稍后重试', { exact: true })).toBeVisible()
+    await expect(guest.getByText('闪念服务暂时不可用，请稍后重试', { exact: true })).toBeVisible()
     await expect(comment).toHaveValue('UX 网络恢复后评论')
     await expect(note.getByRole('button', { name: '发送评论', exact: true })).toBeEnabled()
     await guest.unroute(`**/api/v1/flashes/${id}/comments`)

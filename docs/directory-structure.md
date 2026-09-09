@@ -423,3 +423,9 @@ app/assets/styles/
 ### 本地验收产物
 
 新的截图、录屏、trace 和原始报告写入被忽略的 `.playwright-mcp/` 或 `.artifacts/`。历史 `docs/**/evidence/` 与 `docs/git-validation/` 仅留本机副本，Git 保留文字结论、正式回归脚本及 `docs/img/` 文档素材。存放、复验和分享规则见[验收产物管理](verification-artifacts.md)。
+
+### 内容服务故障恢复
+
+- `app/components/common/RequestFeedback.vue`：加载、失败与重试反馈；`sidebar/PostFilters.vue`：标签与分类的共享展示状态。
+- `usePostMetadata.ts` 保留最后成功统计；`useFlashNotes.ts` 与闪念页面区分主列表、归档箱和身份变化的请求状态。
+- `tests/e2e/service-recovery.spec.ts` 与两份仓库/统计单测覆盖故障恢复。根目录 `dev:api` 启动后端，启动步骤及验收结果见[服务恢复记录](service-recovery.md)。
