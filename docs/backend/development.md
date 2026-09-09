@@ -260,26 +260,28 @@ cd src/backend/server-main
 # 复制环境变量模板
 cp .env.example .env.local
 
-# 起本地依赖栈（postgres / redis / meilisearch / minio）
-docker compose -f docker-compose.yml up -d
+# 当前已实现模块仅依赖 PostgreSQL；复用已有数据库配置与卷
+docker compose --env-file .env.local up -d postgres
 
 # 安装依赖
 pnpm install
 
 # 执行迁移
-pnpm mikro-orm migration:up
+corepack pnpm migration:up
 
-# 填充开发数据（从前端 mock 读取）
-pnpm seed:dev
+# 仅新建开发库按需填充，已有数据无需重复 seed
+corepack pnpm seed:dev
 ```
 
 ### 7.2 日常启动
 
 ```bash
-# 一次性起 HTTP 服务 + Worker 进程
-pnpm start:dev          # app 热重载
-pnpm start:worker:dev   # BullMQ 消费者（独立终端）
+# 在仓库根目录的独立终端中分别运行
+corepack pnpm dev:api   # 后端热重载，默认 3000
+corepack pnpm dev       # 前端热重载，默认 3456
 ```
+
+当前尚无独立 Worker 启动命令。仅启动前端不会自动启动 API；后端 `/ready` 就绪后，前端同源 `/api/v1/posts?pageSize=1` 应可读取数据。多个栏目同时返回 502 时检查这两条链路，见[服务恢复记录](../service-recovery.md)。
 
 ### 7.3 环境变量清单
 
@@ -323,8 +325,9 @@ CORS_ORIGIN=http://localhost:3456
 
 ```bash
 NUXT_PUBLIC_USE_MOCK_REPO=false
-NUXT_PUBLIC_API_BASE_URL=http://localhost:3000/api/v1
-NUXT_PUBLIC_WS_BASE_URL=ws://localhost:3000
+NUXT_PUBLIC_POST_USE_MOCK_REPO=false
+NUXT_API_BASE_URL=http://127.0.0.1:3000/api/v1
+NUXT_PUBLIC_API_BASE_URL=/api/v1
 ```
 
 ## 8. Migration 与 Seed 策略
