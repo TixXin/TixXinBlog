@@ -9,6 +9,7 @@ import { fileURLToPath } from 'node:url'
 import { join, resolve, sep } from 'node:path'
 import { readdirSync, existsSync, lstatSync } from 'node:fs'
 import { createBrowserTestApp } from './test-app.mjs'
+import { seedMomentBrowserFixture } from './moment-fixture.mjs'
 
 const frontendDirectory = fileURLToPath(new URL('../../../frontend/web-blog/', import.meta.url))
 // 每份完整测试文件使用自己的数据库，避免管理用例新增内容污染固定样本的展示验收。
@@ -46,6 +47,7 @@ const port = listener.address().port
 await new Promise((resolve) => listener.close(resolve))
 const origin = `http://127.0.0.1:${port}`
 const fixture = await createBrowserTestApp(origin)
+await seedMomentBrowserFixture(fixture)
 let preview
 let previewLog = ''
 try {
