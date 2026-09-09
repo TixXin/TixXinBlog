@@ -1,6 +1,6 @@
 # TixXinBlog
 
-个人博客系统。前台基于 Nuxt 4 + Vue 3，支持文章、归档、画廊、留言板、友链等模块，当前文章、评论、认证、闪念及创作后台已接入真实 API；书签使用本机存储，展示类模块保留静态数据。
+个人博客系统。前台基于 Nuxt 4 + Vue 3，文章、评论、认证、闪念、朋友圈、媒体及站点配置已接入真实 API；书签使用本机存储，留言、项目、图库和友链保留演示数据。逐项边界见[能力清单](docs/capability-map.md)。
 
 <p align="center">
   <img alt="Nuxt 4" src="https://img.shields.io/badge/Nuxt_4-00DC82?style=for-the-badge&logo=nuxt&logoColor=white" />
@@ -60,7 +60,7 @@ corepack pnpm install
 corepack pnpm dev:all
 ```
 
-启动前需按 [后端说明](src/backend/server-main/README.md) 配置数据库、迁移并启动后端，前端环境模板见 `src/frontend/web-blog/.env.example`。访问 http://localhost:3456 查看本地效果。生产式编排与管理员初始化见 [部署验收说明](docs/local-production-validation.md)。
+首次启动前按 [后端说明](src/backend/server-main/README.md) 准备数据库、配置并执行迁移，前端环境模板见 `src/frontend/web-blog/.env.example`。`dev:all` 负责启动或复用前后端；访问 http://localhost:3456 查看本地效果。生产式编排与管理员初始化见 [部署验收说明](docs/local-production-validation.md)。
 
 `dev:check` 检查当前链路，`dev:all` 统一启动；`dev` / `dev:blog` 仅启动前端，`dev:api` 仅启动后端。配置、进程归属和清理规则见[开发启动说明](docs/development-runtime.md)。多个栏目同时加载失败时，也可按[服务恢复记录](docs/service-recovery.md)检查后端就绪与前端同源接口。
 
@@ -80,13 +80,9 @@ docker run -p 3000:3000 tixxin-blog
 
 ## 环境变量
 
-复制 `.env.example` 为 `.env` 并按需修改：
+开发环境分服务配置：前端参考 [前端模板](src/frontend/web-blog/.env.example)，配置放在该目录 `.env`；后端参考 [后端模板](src/backend/server-main/.env.example)，配置放在该目录 `.env.local`。已有文件保留并按需补充；环境优先级见[开发启动说明](docs/development-runtime.md)。根目录 `.env.example` 不是统一开发链路的配置来源。
 
-```bash
-cp .env.example .env
-```
-
-详见 [.env.example](.env.example)。
+朋友圈阅读入口为 `/moments`，登录后通过 `/admin/moments` 发布、编辑、置顶和管理评论。真实模式不会回退演示数据，使用方式与输入恢复见[朋友圈业务说明](docs/moment-business.md)。`corepack pnpm db:dev status` 可检查数据库，显式开发样本和清空工具见[开发数据库说明](docs/development-database.md)。
 
 ## 代码规范
 
@@ -114,7 +110,7 @@ pnpm --filter web-blog test
 ```
 src/
 ├── frontend/web-blog/    # 博客前台
-└── backend/server-main/  # 后端服务（NestJS，工程骨架已初始化）
+└── backend/server-main/  # NestJS API、数据库迁移和维护工具
 docs/                     # 架构与目录说明
 ```
 

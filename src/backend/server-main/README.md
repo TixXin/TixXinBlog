@@ -1,6 +1,6 @@
 # server-main
 
-TixXinBlog 后端服务(NestJS 11 + MikroORM 6 + PostgreSQL 16)。完整设计文档见 [`docs/backend/`](../../../docs/backend/README.md),已实现文章、鉴权、评论及闪念接口；文章与评论前端联调使用独立的 `NUXT_PUBLIC_POST_USE_MOCK_REPO=false`。
+TixXinBlog 后端服务(NestJS 11 + MikroORM 6 + PostgreSQL 16)。已实现文章、鉴权、评论、闪念、朋友圈、媒体和站点管理。真实能力见[能力清单](../../../docs/capability-map.md)，朋友圈 API 见[接口约定](../../../docs/backend/moments.md)。文章使用 `NUXT_PUBLIC_POST_USE_MOCK_REPO=false`，闪念使用 `NUXT_PUBLIC_USE_MOCK_REPO=false`，朋友圈始终读取真实 API。
 
 ## 快速开始
 
