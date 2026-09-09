@@ -13,7 +13,7 @@
     "test:dev": "node --test scripts/dev/*.test.mjs",
     "test:dev:integration": "node scripts/dev/integration.mjs",
     "test:dev:postgres": "node scripts/dev/postgres-integration.mjs",
-    "db:dev": "corepack pnpm --filter server-main exec tsx src/seeders/database-dev.ts",
+    "db:dev": "corepack pnpm --filter server-main run db:dev",
     "build": "corepack pnpm --filter web-blog build",
     "build:blog": "corepack pnpm --filter web-blog build",
     "generate": "corepack pnpm --filter web-blog generate",
