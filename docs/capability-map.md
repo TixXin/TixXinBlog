@@ -12,7 +12,7 @@
 | 评论 | 文章评论走 `/posts/:id/comments`；闪念评论走 `/flashes/:id/comments` | 文章评论审核与策略、闪念评论维护 | `commentController.test.ts`、`comment-moderation-integration.mjs`、`flash-ux.spec.ts`。游客显示资料可在本机保留，身份和权限最终由服务端校验 |
 | 认证 | `/admin/login`、登录抽屉；`useCurrentUser.ts` → `/api/v1/auth` | 会话查看、撤销、密码与访问保护 | `auth-sessions-integration.mjs`、相关浏览器用例。访问令牌内存保存，刷新使用 HttpOnly Cookie；普通访客身份不是注册用户系统 |
 | 闪念 | `/flash`、`/flash/:id`；`HttpFlashRepository` → `/api/v1/flashes` 与 `/admin/flashes` | `/admin/flashes` 与前台博主编辑器；草稿、归档、图片、置顶、互动 | `flashRepositoryHttp.test.ts`、`flash-ux.spec.ts`、`service-recovery.spec.ts`。本地仓库只由显式演示配置启用 |
-| 朋友圈 | `/moments`、详情、话题页；当前 `useMomentList.ts` 的 `useState(mockMoments)` | 当前发布与互动为页面内演示，没有朋友圈后台 API | `moment-sidebar.spec.ts`、`page-regions.spec.ts` 证明的是 UI/布局状态。本阶段正在补实体、持久化、公开/管理 API、互动、后台及维护闭环 |
+| 朋友圈 | `/moments`、详情、话题页；后端已提供真实 API，当前前台仍使用 `useState(mockMoments)`，正在接入 | 公开/管理 API、去重、审核和媒体引用已实现；管理页面待接入 | `moment-integration.mjs` 已验证75个请求及结构一致性；既有侧栏/分区测试证明 UI 边界。页面、维护和跨上下文闭环仍待后续验收 |
 | 留言 | `/guestbook`；`features/guestbook/mock.ts` + 页面内响应式数组 | 尚无真实留言管理接口 | 当前展示与提交为演示；剩余持久化、身份/审核、分页及管理闭环，本阶段不接入 |
 | 项目 | `/projects`；`mockProjects`、`mockTechStack` | 尚无项目管理接口 | 展示条目、过滤和 UI；剩余项目数据维护与真实内容，本阶段保持演示 |
 | 图库 | `/gallery`；`mockPhotos`、分类与设备示例 | 尚无图库条目管理接口 | 搜索、筛选与灯箱已有 UI 验证。通用媒体库已实现，但图库页面仍未从该库读取业务条目 |

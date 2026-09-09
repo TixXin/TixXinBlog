@@ -10,6 +10,8 @@ import type { Post } from '../../entities/post.entity'
 import type { FlashNote } from '../../entities/flash-note.entity'
 import type { Comment } from '../../entities/comment.entity'
 import type { FlashComment } from '../../entities/flash-comment.entity'
+import type { Moment } from '../../entities/moment.entity'
+import type { MomentComment } from '../../entities/moment-comment.entity'
 
 export function mediaUrl(id: string) {
   return `/api/v1/media/${id}.webp`
@@ -34,9 +36,17 @@ export function managedMediaIds(values: unknown[]) {
 export async function synchronizeMediaReferences(
   em: EntityManager,
   sourceKey: string,
-  kind: 'post' | 'revision' | 'flash' | 'site' | 'site-revision' | 'comment' | 'flash-comment',
+  kind: MediaReference['kind'],
   values: unknown[],
-  owner: { post?: Post; flashNote?: FlashNote; comment?: Comment; flashComment?: FlashComment; revision?: number },
+  owner: {
+    post?: Post
+    flashNote?: FlashNote
+    comment?: Comment
+    flashComment?: FlashComment
+    revision?: number
+    moment?: Moment
+    momentComment?: MomentComment
+  },
 ) {
   const ids = managedMediaIds(values)
   if (ids.length && (await em.count(MediaAsset, { id: { $in: ids }, deletedAt: null })) !== ids.length)

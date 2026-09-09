@@ -23,6 +23,9 @@ import { SiteSettings, SiteSettingsRevision } from '../entities/site-settings.en
 import { FlashComment } from '../entities/flash-comment.entity'
 import { FlashLike } from '../entities/flash-like.entity'
 import { FlashNote } from '../entities/flash-note.entity'
+import { Moment } from '../entities/moment.entity'
+import { MomentComment } from '../entities/moment-comment.entity'
+import { MomentLike } from '../entities/moment-like.entity'
 import { Post } from '../entities/post.entity'
 import { PostFolder } from '../entities/post-folder.entity'
 import { PostRevision } from '../entities/post-revision.entity'
@@ -67,6 +70,9 @@ export const ORM_ENTITIES = [
   FlashNote,
   FlashComment,
   FlashLike,
+  Moment,
+  MomentComment,
+  MomentLike,
 ] as const
 
 export const mikroOrmOptions = defineConfig({

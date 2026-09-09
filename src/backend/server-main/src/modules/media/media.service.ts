@@ -115,7 +115,7 @@ export class MediaService {
       MediaReference,
       { asset: id },
       {
-        populate: ['post', 'flashNote'],
+        populate: ['post', 'flashNote', 'moment'],
         orderBy: { id: 'asc' },
         limit: 20,
         offset: (page - 1) * 20,
@@ -128,8 +128,15 @@ export class MediaService {
       items: items.map((item) => ({
         kind: item.kind,
         revision: item.revision,
-        title: item.post?.title ?? item.flashNote?.content.slice(0, 100) ?? '站点头像',
-        url: item.post ? `/admin/posts/${item.post.id}` : item.flashNote ? '/admin/flashes' : '/admin/site',
+        title:
+          item.post?.title ?? item.flashNote?.content.slice(0, 100) ?? item.moment?.content.slice(0, 100) ?? '站点头像',
+        url: item.post
+          ? `/admin/posts/${item.post.id}`
+          : item.flashNote
+            ? '/admin/flashes'
+            : item.moment
+              ? `/admin/moments?edit=${encodeURIComponent(item.moment.id)}`
+              : '/admin/site',
       })),
     }
   }
