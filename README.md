@@ -56,16 +56,13 @@ cd TixXinBlog
 # 安装依赖
 corepack pnpm install
 
-# 终端一：启动后端（数据库、迁移和环境变量准备好后）
-corepack pnpm dev:api
-
-# 终端二：启动前端
-corepack pnpm dev
+# 数据库、迁移和环境变量准备好后，统一启动或复用服务
+corepack pnpm dev:all
 ```
 
 启动前需按 [后端说明](src/backend/server-main/README.md) 配置数据库、迁移并启动后端，前端环境模板见 `src/frontend/web-blog/.env.example`。访问 http://localhost:3456 查看本地效果。生产式编排与管理员初始化见 [部署验收说明](docs/local-production-validation.md)。
 
-`dev` / `dev:blog` 仅启动前端，`dev:api` 才启动后端。默认真实接口模式需要两者同时运行；如果首页、归档和闪念同时加载失败，先检查后端 `http://127.0.0.1:3000/ready`，再检查前端同源接口 `http://localhost:3456/api/v1/posts?pageSize=1`。端口或连接地址自定义时使用对应配置，排查步骤见[服务恢复记录](docs/service-recovery.md)。
+`dev:check` 检查当前链路，`dev:all` 统一启动；`dev` / `dev:blog` 仅启动前端，`dev:api` 仅启动后端。配置、进程归属和清理规则见[开发启动说明](docs/development-runtime.md)。多个栏目同时加载失败时，也可按[服务恢复记录](docs/service-recovery.md)检查后端就绪与前端同源接口。
 
 ## 构建与部署
 
