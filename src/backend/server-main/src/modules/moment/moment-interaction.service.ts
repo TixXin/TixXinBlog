@@ -43,9 +43,12 @@ export class MomentInteractionService {
         requestId: body.requestId,
       })
       if (existing) {
-        if (existing.deletedAt || existing.requestHash !== hash)
+        if (existing.deletedAt || existing.requestHash !== hash || (!adminId && existing.status === 'hidden'))
           throw new ConflictException('此评论提交已处理，请确认原评论')
-        return momentCommentDto(existing)
+        return {
+          ...momentCommentDto(existing),
+          commentCount: await em.count(MomentComment, { moment: note, status: 'published', deletedAt: null }),
+        }
       }
       const settings = adminId ? await em.findOneOrFail(SiteSettings, { id: 'default' }) : null
       const policy = await em.findOne(CommentPolicy, { id: 'default' }, { refresh: true })
@@ -70,18 +73,26 @@ export class MomentInteractionService {
         momentComment: comment,
       })
       await em.flush()
-      return momentCommentDto(comment)
+      return {
+        ...momentCommentDto(comment),
+        commentCount: await em.count(MomentComment, { moment: note, status: 'published', deletedAt: null }),
+      }
     })
   }
-  async moderate(id: string, commentId: string, status: MomentCommentStatus) {
+  async moderate(id: string, commentId: string, status: MomentCommentStatus, expectedStatus: MomentCommentStatus) {
     return this.em.transactional(async (em) => {
       const note = await em.findOne(Moment, { id, deletedAt: null }, { lockMode: LockMode.PESSIMISTIC_WRITE })
       if (!note) throw new NotFoundException('动态不存在')
       const comment = await em.findOne(MomentComment, { id: commentId, moment: note, deletedAt: null })
       if (!comment) throw new NotFoundException('评论不存在')
+      if (comment.status !== expectedStatus && comment.status !== status)
+        throw new ConflictException('评论状态已改变，请重新加载后再操作')
       comment.status = status
       await em.flush()
-      return momentCommentDto(comment)
+      return {
+        ...momentCommentDto(comment),
+        commentCount: await em.count(MomentComment, { moment: note, status: 'published', deletedAt: null }),
+      }
     })
   }
   async removeComment(id: string, commentId: string) {
@@ -94,7 +105,10 @@ export class MomentInteractionService {
       comment.deletedAt ??= new Date()
       await em.nativeDelete(MediaReference, { momentComment: comment })
       await em.flush()
-      return { ok: true }
+      return {
+        ok: true,
+        commentCount: await em.count(MomentComment, { moment: note, status: 'published', deletedAt: null }),
+      }
     })
   }
 }
