@@ -26,7 +26,7 @@ import type { MomentCommentStatus } from '../../entities/moment-comment.entity'
 const provided = (_object: unknown, value: unknown) => value !== undefined
 const trim = ({ value }: { value: unknown }) => (typeof value === 'string' ? value.trim() : value)
 export class MomentPageQuery {
-  @Type(() => Number) @IsInt() @Min(1) page: number = 1
+  @Type(() => Number) @IsInt() @Min(1) @Max(10000) page: number = 1
   @Type(() => Number) @IsInt() @Min(1) @Max(50) pageSize: number = 15
 }
 export class QueryMomentsDto extends MomentPageQuery {
@@ -85,4 +85,5 @@ export class CreateMomentCommentDto extends MomentCommentBody {
 }
 export class ModerateMomentCommentDto {
   @IsIn(MOMENT_COMMENT_STATUSES) status!: MomentCommentStatus
+  @IsIn(MOMENT_COMMENT_STATUSES) expectedStatus!: MomentCommentStatus
 }

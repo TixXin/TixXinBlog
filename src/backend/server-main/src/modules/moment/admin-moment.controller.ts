@@ -1,5 +1,5 @@
 /** @file admin-moment.controller.ts @description 博主朋友圈管理与评论审核，权限由服务器认证守卫确定 */
-import { Body, Controller, Delete, Get, Param, Patch, Post, Query, UseGuards } from '@nestjs/common'
+import { Body, Controller, Delete, Get, Param, ParseUUIDPipe, Patch, Post, Query, UseGuards } from '@nestjs/common'
 import { AdminAuthGuard } from '../../common/guards/admin-auth.guard'
 import { CurrentAdmin } from '../../common/decorators/current-admin.decorator'
 import { VisitorIdHash } from '../../common/decorators/visitor-id.decorator'
@@ -31,6 +31,10 @@ export class AdminMomentController {
   detail(@Param('id') id: string) {
     return this.read.detail(id, '', true)
   }
+  @Get('submissions/:requestId')
+  submission(@Param('requestId', new ParseUUIDPipe({ version: '4' })) requestId: string) {
+    return this.read.submission(requestId)
+  }
   @Post()
   create(@Body() body: SaveMomentDto) {
     return this.write.save(null, body)
@@ -53,7 +57,7 @@ export class AdminMomentController {
   }
   @Patch(':id/comments/:commentId')
   moderate(@Param('id') id: string, @Param('commentId') commentId: string, @Body() body: ModerateMomentCommentDto) {
-    return this.interactions.moderate(id, commentId, body.status)
+    return this.interactions.moderate(id, commentId, body.status, body.expectedStatus)
   }
   @Delete(':id/comments/:commentId')
   removeComment(@Param('id') id: string, @Param('commentId') commentId: string) {

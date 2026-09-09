@@ -64,6 +64,33 @@ export class MomentReadService {
   async detail(id: string, visitor = '', admin = false) {
     return (await this.serialize([await this.require(id, admin)], visitor, admin))[0]!
   }
+  async submission(requestId: string) {
+    const note = await this.em.findOne(Moment, { requestId, deletedAt: null })
+    if (!note) throw new NotFoundException('尚未找到这次提交保存的动态')
+    return this.detail(note.id, '', true)
+  }
+  async navigation(id: string) {
+    const current = await this.require(id)
+    const date = current.publishedAt ?? current.createdAt
+    const nearest = async (direction: 'asc' | 'desc') => {
+      const comparison = direction === 'asc' ? '$gt' : '$lt'
+      const note = await this.em.findOne(
+        Moment,
+        {
+          ...publicMoments,
+          $or: [
+            { publishedAt: { [comparison]: date } },
+            { publishedAt: date, createdAt: { [comparison]: current.createdAt } },
+            { publishedAt: date, createdAt: current.createdAt, id: { [comparison]: id } },
+          ],
+        },
+        { orderBy: { publishedAt: direction, createdAt: direction, id: direction } },
+      )
+      return note ? { id: note.id, content: note.content.slice(0, 160) } : null
+    }
+    const [prev, next] = await Promise.all([nearest('asc'), nearest('desc')])
+    return { prev, next }
+  }
   async comments(id: string, query: MomentPageQuery, visitor = '', admin = false) {
     await this.require(id, admin)
     const where: FilterQuery<MomentComment> = { moment: id, deletedAt: null }
@@ -98,15 +125,30 @@ export class MomentReadService {
     )
     const recent = await this.em.find(Moment, publicMoments, {
       populate: ['linkedArticle'],
-      orderBy: { publishedAt: 'desc', id: 'desc' },
+      orderBy: { [raw('random()')]: 'asc' },
       limit: 12,
     })
+    const today = new Date()
+    const from = new Date(Date.UTC(today.getUTCFullYear() - 1, today.getUTCMonth(), today.getUTCDate()))
+    const anniversary =
+      from.getUTCMonth() === today.getUTCMonth()
+        ? await this.em.findOne(
+            Moment,
+            { ...publicMoments, publishedAt: { $gte: from, $lt: new Date(from.getTime() + 86400000) } },
+            { orderBy: { publishedAt: 'desc', id: 'desc' } },
+          )
+        : null
+    if (anniversary && !recent.some((item) => item.id === anniversary.id)) recent.push(anniversary)
     return {
       stats,
       topics,
       dates,
       photos: photos.map((note) => ({ src: note.images[0], momentId: note.id })),
-      recollections: await this.serialize(recent, '', false),
+      recollections: recent.map((note) => ({
+        id: note.id,
+        content: note.content.slice(0, 300),
+        date: (note.publishedAt ?? note.createdAt).toISOString(),
+      })),
     }
   }
   async serialize(items: Moment[], visitor: string, admin: boolean) {
