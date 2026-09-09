@@ -4,6 +4,12 @@ import { DATA_DOMAINS } from './development-data-catalog'
 
 async function main() {
   const [action, ...args] = process.argv.slice(2)
+  if (action === 'seed-data') {
+    const { seedDevelopmentData } = await import('./seed-development-data')
+    const result = await seedDevelopmentData(args)
+    if (!result.preview && !result.ready) process.exitCode = 1
+    return
+  }
   if (action !== 'check-data') {
     const { runDevDatabase } = await import('./database-dev')
     await runDevDatabase([action ?? 'status', ...args])
@@ -28,7 +34,8 @@ async function main() {
 void main().catch((error) => {
   const safe =
     error instanceof Error &&
-    (/^(用法：|搜索检查)/.test(error.message) || error.constructor.name === 'DevDatabaseError')
+    (/^(用法：|搜索检查)/.test(error.message) ||
+      ['DevDatabaseError', 'DevelopmentDataError'].includes(error.constructor.name))
   process.stderr.write(
     (safe ? error.message : '开发数据检查或操作未完成，请运行 dev:check 核对配置、连接、权限及迁移；未自动重试写入。') +
       '\n',
