@@ -12,6 +12,7 @@ import type { Comment } from '../../entities/comment.entity'
 import type { FlashComment } from '../../entities/flash-comment.entity'
 import type { Moment } from '../../entities/moment.entity'
 import type { MomentComment } from '../../entities/moment-comment.entity'
+import type { GuestbookMessage } from '../../entities/guestbook-message.entity'
 
 export function mediaUrl(id: string) {
   return `/api/v1/media/${id}.webp`
@@ -46,6 +47,7 @@ export async function synchronizeMediaReferences(
     revision?: number
     moment?: Moment
     momentComment?: MomentComment
+    guestbookMessage?: GuestbookMessage
   },
 ) {
   const ids = managedMediaIds(values)

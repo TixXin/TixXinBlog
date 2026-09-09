@@ -32,6 +32,9 @@ export const auditActions: Record<string, string> = {
   'moment.comment.reply': '回复动态评论',
   'moment.comment.moderate': '审核动态评论',
   'moment.comment.delete': '删除动态评论',
+  'guestbook.create': '发布或回复留言',
+  'guestbook.update': '审核或置顶留言',
+  'guestbook.delete': '删除留言',
   'taxonomy.write': '管理分类标签',
   'site.save': '保存站点资料',
   'site.restore': '恢复站点资料',
@@ -115,6 +118,8 @@ export function auditDescriptor(path: string, method: string) {
             : method === 'POST'
               ? 'moment.create'
               : 'moment.update'
+    } else if (resourceType === 'guestbook') {
+      action = method === 'POST' ? 'guestbook.create' : method === 'DELETE' ? 'guestbook.delete' : 'guestbook.update'
     } else if (resourceType === 'taxonomy') {
       action = 'taxonomy.write'
       resourceId = identifier(parts[3])
@@ -172,6 +177,7 @@ const fields: Record<string, string> = {
   mood: '心情',
   linkedArticleId: '引用文章',
   linkedLink: '引用链接',
+  replyToId: '回复留言',
   requireApproval: '评论审核策略',
 }
 function object(value: unknown): Record<string, unknown> {
