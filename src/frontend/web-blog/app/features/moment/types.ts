@@ -21,6 +21,7 @@ export interface MomentCommentItem {
   content: string
   time: string
   isOwner?: boolean
+  moderationStatus?: 'published' | 'pending' | 'hidden'
   /** 评论者详细信息，用于 hover 卡片 */
   profile?: MomentUserProfile
 }
@@ -50,6 +51,8 @@ export interface MomentItem {
   id: string
   content: string
   images?: string[]
+  imageAlts?: string[]
+  commentCount?: number
   date: string
   likes: number
   isLiked: boolean
@@ -58,11 +61,62 @@ export interface MomentItem {
   topics?: string[]
   comments?: MomentCommentItem[]
   /** 引用站内文章（与 linkedLink 二选一，linkedArticle 优先） */
-  linkedArticle?: MomentLinkedArticle
+  linkedArticle?: MomentLinkedArticle | null
   /** 引用任意外链（OG 卡） */
-  linkedLink?: MomentLinkedLink
+  linkedLink?: MomentLinkedLink | null
   /** 是否置顶（在列表中前置展示） */
   isPinned?: boolean
   /** 心情标签（emoji + 短文，例如 "🌧️ 微凉"） */
   mood?: string
+}
+
+export type MomentStatus = 'draft' | 'published' | 'archived'
+export interface MomentPage {
+  items: MomentItem[]
+  total: number
+  page: number
+  pageSize: number
+}
+export interface MomentOverview {
+  stats: { totalMoments: number; totalLikes: number; totalComments: number }
+  topics: { name: string; count: number }[]
+  dates: { date: string; count: number }[]
+  photos: { src: string; momentId: string }[]
+  recollections: Pick<MomentItem, 'id' | 'content' | 'date'>[]
+}
+export interface MomentQuery {
+  page: number
+  pageSize?: number
+  q?: string
+  topic?: string
+  date?: string
+}
+export interface MomentCommentPage {
+  items: MomentCommentItem[]
+  total: number
+  page: number
+  pageSize: number
+}
+export interface MomentNavigation {
+  prev: Pick<MomentItem, 'id' | 'content'> | null
+  next: Pick<MomentItem, 'id' | 'content'> | null
+}
+export interface MomentEditable {
+  content: string
+  topics: string[]
+  images: string[]
+  location: string
+  device: string
+  mood: string
+  linkedArticleId: number | null
+  linkedLink: MomentLinkedLink | null
+  status: MomentStatus
+  isPinned: boolean
+}
+export interface ManagedMoment extends MomentItem {
+  status: MomentStatus
+  revision: number
+  linkedArticleId: number | null
+  createdAt: string
+  updatedAt: string
 }

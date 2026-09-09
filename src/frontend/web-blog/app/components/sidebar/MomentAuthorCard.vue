@@ -24,23 +24,23 @@
 
     <div class="moment-author-card__stats">
       <div class="moment-author-card__stat">
-        <span class="moment-author-card__stat-value">{{ stats.totalMoments }}</span>
-        <span class="moment-author-card__stat-label">示例动态</span>
+        <span class="moment-author-card__stat-value">{{ stats.totalMoments ?? '—' }}</span>
+        <span class="moment-author-card__stat-label">公开动态</span>
       </div>
       <div class="moment-author-card__stat-divider" />
       <div class="moment-author-card__stat">
-        <span class="moment-author-card__stat-value">{{ stats.totalLikes }}</span>
-        <span class="moment-author-card__stat-label">示例点赞</span>
+        <span class="moment-author-card__stat-value">{{ stats.totalLikes ?? '—' }}</span>
+        <span class="moment-author-card__stat-label">点赞</span>
       </div>
       <div class="moment-author-card__stat-divider" />
       <div class="moment-author-card__stat">
-        <span class="moment-author-card__stat-value">{{ stats.totalComments }}</span>
-        <span class="moment-author-card__stat-label">示例评论</span>
+        <span class="moment-author-card__stat-value">{{ stats.totalComments ?? '—' }}</span>
+        <span class="moment-author-card__stat-label">公开评论</span>
       </div>
     </div>
 
     <div class="moment-author-card__mood">
-      <Icon name="lucide:cloud-sun" size="14" class="moment-author-card__mood-icon" />
+      <Icon name="lucide:chart-no-axes-column" size="14" class="moment-author-card__mood-icon" />
       <span class="moment-author-card__mood-text">{{ stats.currentMood }}</span>
       <span class="moment-author-card__mood-time">{{ stats.moodUpdatedAt }}</span>
     </div>
@@ -65,9 +65,9 @@
 <script setup lang="ts">
 import type { OwnerCardInfo } from '~/features/site/types'
 export interface MomentAuthorStats {
-  totalMoments: number
-  totalLikes: number
-  totalComments: number
+  totalMoments: number | null
+  totalLikes: number | null
+  totalComments: number | null
   currentMood: string
   moodUpdatedAt: string
   socialLinks?: { icon: string; url: string; label: string }[]

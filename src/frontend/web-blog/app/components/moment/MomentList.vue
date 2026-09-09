@@ -6,66 +6,131 @@
 -->
 
 <template>
-  <div class="moment-list">
-    <p class="moment-list__notice">
-      朋友圈为演示内容；点赞和评论仅在当前页面生效，离开或刷新后不保留，也不会发送给博主。
-    </p>
-    <MomentCard v-for="moment in displayedMoments" :id="`moment-${moment.id}`" :key="moment.id" :moment="moment" />
-
-    <!-- 加载哨兵 -->
-    <div v-if="hasMore" ref="sentinelRef" class="moment-list__sentinel">
-      <div v-if="showSpinner" class="moment-list__spinner">
-        <Icon name="lucide:loader-2" size="20" class="moment-list__spinner-icon" />
-        <span>加载中...</span>
+  <div class="moment-list" :aria-busy="pending">
+    <CommonRequestFeedback
+      v-if="!moments.length && (pending || errorMessage)"
+      :pending="pending"
+      :compact="moments.length > 0"
+      :title="errorMessage || '正在加载动态'"
+      :description="moments.length ? '仍显示上次成功加载的动态。' : undefined"
+      @retry="$emit('retry')"
+    />
+    <div v-if="moments.length && (pending || errorMessage)" class="moment-list__feedback">
+      <p v-if="pending" role="status">正在加载动态…</p>
+      <div v-else role="alert">
+        {{ errorMessage }}，已保留原内容。<button type="button" @click="$emit('retry')">重试</button>
       </div>
     </div>
-
-    <!-- 已加载全部 -->
-    <div v-else-if="displayedMoments.length > 0" class="moment-list__end">
-      <span class="moment-list__end-line" />
-      <span class="moment-list__end-text">没有更多了</span>
-      <span class="moment-list__end-line" />
+    <MomentCard
+      v-for="moment in moments"
+      :id="`moment-${moment.id}`"
+      :key="moment.id"
+      :moment="moment"
+      :owner-profile="ownerProfile"
+      :state="states[moment.id]"
+      :syncing="pending"
+      :detail-query="detailQuery"
+      @like="$emit('like', $event)"
+      @draft="$emit('draft', $event)"
+      @comment="$emit('comment', $event)"
+      @comments="$emit('comments', $event)"
+    />
+    <div v-if="hasMore" ref="sentinelRef" class="moment-list__sentinel">
+      <button
+        type="button"
+        class="moment-list__more"
+        :disabled="pending || !!errorMessage || !hydrated"
+        @click="$emit('more')"
+      >
+        {{ pending ? '正在加载…' : '加载更多动态' }}
+      </button>
     </div>
-
-    <!-- 空态：区分"无数据"与"搜索无结果" -->
-    <div v-if="displayedMoments.length === 0" class="moment-list__empty">
-      <CommonStateBlock
-        v-if="isSearching"
-        icon="lucide:search-x"
-        title="没有找到相关动态"
-        :description="`未匹配到包含「${keyword}」的动态，换个词试试？`"
-      />
-      <CommonStateBlock v-else icon="lucide:message-square" title="暂无动态" description="没有找到匹配的动态内容" />
+    <div v-else-if="moments.length && !pending && !errorMessage" class="moment-list__end">
+      <span class="moment-list__end-line" /><span class="moment-list__end-text">没有更多了</span
+      ><span class="moment-list__end-line" />
     </div>
+    <CommonStateBlock
+      v-if="!moments.length && !pending && !errorMessage"
+      icon="lucide:message-square"
+      :title="filtered ? '没有找到相关动态' : '暂无动态'"
+      :description="filtered ? '调整或清除筛选后再试。' : '公开发布的动态会显示在这里。'"
+    />
   </div>
 </template>
-
 <script setup lang="ts">
-import type { MomentItem } from '~/features/moment/types'
-import { useMomentPagination } from '~/composables/useMomentPagination'
-
+import { useIntersectionObserver } from '@vueuse/core'
+import type { MomentItem, MomentUserProfile } from '~/features/moment/types'
+import type { MomentInteractionState } from '~/features/moment/session'
 const props = defineProps<{
   moments: MomentItem[]
-  selectedTopic?: string | null
-  selectedDate?: string | null
-  keyword?: string
+  ownerProfile: MomentUserProfile
+  states: Record<string, MomentInteractionState>
+  pending: boolean
+  errorMessage?: string
+  hasMore: boolean
+  filtered?: boolean
+  detailQuery?: Record<string, string>
 }>()
-
-const allMoments = computed(() => props.moments)
-const selectedTopic = computed(() => props.selectedTopic ?? null)
-const selectedDate = computed(() => props.selectedDate ?? null)
-const keyword = computed(() => props.keyword ?? '')
-const isSearching = computed(() => keyword.value.trim().length > 0)
-
-const { displayedMoments, hasMore, showSpinner, sentinelRef } = useMomentPagination({
-  allMoments,
-  selectedTopic,
-  selectedDate,
-  keyword,
+const emit = defineEmits<{
+  retry: []
+  more: []
+  comment: [id: string]
+  comments: [id: string]
+  draft: [value: { id: string; value: string }]
+  like: [value: { id: string; liked: boolean; complete: (success: boolean) => void }]
+}>()
+const sentinelRef = ref<HTMLElement | null>(null),
+  hydrated = ref(false)
+onMounted(() => {
+  hydrated.value = true
 })
+useIntersectionObserver(
+  sentinelRef,
+  (entries) => {
+    if (
+      entries.some((entry) => entry.isIntersecting) &&
+      hydrated.value &&
+      props.hasMore &&
+      !props.pending &&
+      !props.errorMessage
+    )
+      emit('more')
+  },
+  { rootMargin: '100px' },
+)
 </script>
 
 <style lang="scss" scoped>
+.moment-list__feedback {
+  position: sticky;
+  top: 0;
+  height: 0;
+  display: flex;
+  justify-content: flex-end;
+  z-index: 3;
+  pointer-events: none;
+  > * {
+    height: fit-content;
+    max-width: 100%;
+    margin: 0;
+    padding: 0.5rem 0.75rem;
+    border: 1px solid var(--border);
+    border-radius: $radius-md;
+    background: var(--surface-1);
+    font-size: 0.8125rem;
+    pointer-events: auto;
+  }
+  button {
+    min-height: 44px;
+    padding: 0 0.5rem;
+    color: var(--accent-text);
+  }
+}
+.moment-list__more {
+  min-height: 44px;
+  padding: 0.5rem 1rem;
+  color: var(--accent-text);
+}
 .moment-list__notice {
   padding: 0.75rem;
   border: 1px solid var(--border);

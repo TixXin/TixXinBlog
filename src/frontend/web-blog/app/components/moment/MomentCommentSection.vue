@@ -7,9 +7,8 @@
 
 <template>
   <div class="moment-comments">
-    <!-- 评论列表 -->
-    <div v-if="comments.length > 0" class="moment-comments__list">
-      <div v-for="c in visibleComments" :key="c.id" class="moment-comments__item">
+    <div v-if="comments.length" class="moment-comments__list">
+      <div v-for="c in comments" :key="c.id" class="moment-comments__item">
         <MomentUserPopover :profile="c.profile" :is-owner="c.isOwner">
           <div class="moment-comments__avatar">
             <NuxtImg
@@ -19,7 +18,6 @@
               width="24"
               height="24"
               class="moment-comments__avatar-img"
-              format="webp"
             />
             <Icon v-else name="lucide:user" size="14" class="moment-comments__avatar-fallback" />
           </div>
@@ -27,132 +25,68 @@
         <div class="moment-comments__body">
           <span class="moment-comments__author" :class="{ 'is-owner': c.isOwner }">{{ c.author }}</span>
           <span class="moment-comments__sep">：</span>
-          <!-- eslint-disable-next-line vue/no-v-html -- 已通过 DOMPurify 净化 -->
+          <!-- eslint-disable-next-line vue/no-v-html -- 评论 Markdown 已通过 DOMPurify 净化 -->
           <span class="moment-comments__text markdown-body-inline" v-html="renderCommentBody(c.content)" />
+          <small v-if="c.moderationStatus === 'pending'">（待审核，仅自己可见）</small>
         </div>
       </div>
-
-      <!-- 展开更多 -->
-      <button
-        v-if="hasMoreComments && !expanded"
-        type="button"
-        class="moment-comments__expand"
-        @click="expanded = true"
-      >
-        展开剩余 {{ comments.length - maxVisible }} 条评论
-      </button>
     </div>
-
-    <!-- 输入区 -->
-    <p class="moment-comments__notice">演示评论仅当前页面可见，不会发送给博主。</p>
-    <div class="moment-comments__input-wrap">
+    <p v-if="loadError" role="alert" class="moment-comments__notice">{{ loadError }}</p>
+    <button
+      v-if="hasMore || loadError"
+      type="button"
+      class="moment-comments__expand"
+      :disabled="loading"
+      @click="$emit('load-more')"
+    >
+      {{ loading ? '正在加载评论…' : loadError ? '重试加载评论' : '查看更多评论' }}
+    </button>
+    <p v-if="submitError" role="alert" class="moment-comments__notice">{{ submitError }}</p>
+    <p v-if="notice" role="status" class="moment-comments__notice">{{ notice }}</p>
+    <div class="moment-comments__input-wrap" :aria-busy="submitting">
       <input
-        v-model="draft"
+        :value="draft"
         type="text"
-        aria-label="演示评论内容"
+        aria-label="动态评论内容"
         class="moment-comments__input"
         placeholder="写评论..."
-        maxlength="200"
+        maxlength="1000"
+        @input="$emit('update:draft', ($event.target as HTMLInputElement).value)"
         @keydown.enter="onEnter"
       />
       <button
         type="button"
         class="moment-comments__send"
-        :disabled="!draft.trim()"
-        aria-label="添加演示评论"
-        @click="submit"
+        :disabled="!draft.trim() || submitting"
+        :aria-label="submitting ? '正在发送评论' : '发送评论'"
+        @click="$emit('submit')"
       >
-        <Icon name="lucide:send" size="14" />
+        <Icon :name="submitting ? 'lucide:loader-circle' : 'lucide:send'" size="14" />
       </button>
     </div>
-
-    <!-- 游客身份弹窗：内置于组件，不需层层冒泡 -->
-    <CommonGuestIdentityModal
-      :visible="identityModalVisible"
-      @confirm="onIdentityConfirm"
-      @cancel="identityModalVisible = false"
-      @login="onSwitchToLogin"
-    />
   </div>
 </template>
-
 <script setup lang="ts">
 import type { MomentCommentItem } from '~/features/moment/types'
 import { renderMomentMarkdown } from '~/composables/useMomentMarkdown'
-
 const props = defineProps<{
   comments: MomentCommentItem[]
+  draft: string
+  submitting?: boolean
+  submitError?: string
+  notice?: string
+  loading?: boolean
+  loadError?: string
+  hasMore?: boolean
 }>()
-
-const emit = defineEmits<{
-  submit: [comment: MomentCommentItem]
-}>()
-
-const maxVisible = 3
-const expanded = ref(false)
-
-const hasMoreComments = computed(() => props.comments.length > maxVisible)
-const visibleComments = computed(() => (expanded.value ? props.comments : props.comments.slice(0, maxVisible)))
-
-/** 评论 Markdown 渲染（inline 模式 + @提及高亮） */
-function renderCommentBody(text: string): string {
+const emit = defineEmits<{ 'update:draft': [value: string]; submit: []; 'load-more': [] }>()
+function renderCommentBody(text: string) {
   return renderMomentMarkdown(text, { inline: true, mentions: true })
 }
-
-const draft = ref('')
-const identityModalVisible = ref(false)
-let pendingText = ''
-
-const { isLoggedIn, currentUser } = useCurrentUser()
-const { guestIdentity, hasIdentity, resolveAvatar } = useGuestIdentity()
-const { open: openLoginDrawer } = useLoginDrawer()
-
-function submit() {
-  const text = draft.value.trim()
-  if (!text) return
-
-  // 已登录 → 用 currentUser 信息
-  if (isLoggedIn.value && currentUser.value) {
-    emitComment(text, currentUser.value.nickname, currentUser.value.avatar)
-    return
-  }
-  // 未登录 + 有游客身份 → 用游客信息
-  if (hasIdentity.value && guestIdentity.value) {
-    emitComment(text, guestIdentity.value.nickname, resolveAvatar())
-    return
-  }
-  // 无身份 → 暂存文本，弹出身份面板
-  pendingText = text
-  identityModalVisible.value = true
-}
 function onEnter(event: KeyboardEvent) {
-  if (!event.isComposing) submit()
-}
-
-function emitComment(text: string, author: string, avatar: string) {
-  const comment: MomentCommentItem = {
-    id: `c-${Date.now()}`,
-    author,
-    avatar,
-    content: text,
-    time: '刚刚',
-    isOwner: false,
-  }
-  emit('submit', comment)
-  draft.value = ''
-}
-
-function onIdentityConfirm() {
-  identityModalVisible.value = false
-  if (pendingText && hasIdentity.value && guestIdentity.value) {
-    emitComment(pendingText, guestIdentity.value.nickname, resolveAvatar())
-    pendingText = ''
-  }
-}
-
-function onSwitchToLogin() {
-  identityModalVisible.value = false
-  openLoginDrawer('login')
+  if (event.isComposing || props.submitting || !props.draft.trim()) return
+  event.preventDefault()
+  emit('submit')
 }
 </script>
 

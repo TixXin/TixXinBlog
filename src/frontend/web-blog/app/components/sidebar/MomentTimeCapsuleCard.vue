@@ -45,24 +45,25 @@
 
 <script setup lang="ts">
 import type { MomentItem } from '~/features/moment/types'
+type Recollection = Pick<MomentItem, 'id' | 'content' | 'date'>
 
 const props = defineProps<{
-  moments: MomentItem[]
+  moments: Recollection[]
 }>()
 
 // 去年今日：找出"月日"匹配且年份更早的最近一条
-const throwback = computed<MomentItem | null>(() => {
+const throwback = computed<Recollection | null>(() => {
   const today = new Date()
-  const mm = String(today.getMonth() + 1).padStart(2, '0')
-  const dd = String(today.getDate()).padStart(2, '0')
+  const mm = String(today.getUTCMonth() + 1).padStart(2, '0')
+  const dd = String(today.getUTCDate()).padStart(2, '0')
   const todayMd = `${mm}-${dd}`
-  const todayYear = today.getFullYear()
+  const todayYear = today.getUTCFullYear()
 
   const hits = props.moments
     .filter((m) => {
       const d = new Date(m.date)
-      const md = `${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
-      return md === todayMd && d.getFullYear() < todayYear
+      const md = `${String(d.getUTCMonth() + 1).padStart(2, '0')}-${String(d.getUTCDate()).padStart(2, '0')}`
+      return md === todayMd && d.getUTCFullYear() === todayYear - 1
     })
     .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
 
@@ -71,7 +72,7 @@ const throwback = computed<MomentItem | null>(() => {
 
 // 随机回顾：每次 rollRandom 重新选；初始用稳定值避免 hydration mismatch
 const randomSeed = ref(0)
-const randomMoment = computed<MomentItem | null>(() => {
+const randomMoment = computed<Recollection | null>(() => {
   if (props.moments.length === 0) return null
   const idx = randomSeed.value % props.moments.length
   return props.moments[idx] ?? null
@@ -101,8 +102,7 @@ function truncate(s: string, n: number) {
 }
 
 function formatDate(iso: string) {
-  const d = new Date(iso)
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+  return iso.slice(0, 10)
 }
 </script>
 

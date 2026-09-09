@@ -10,8 +10,8 @@
     <MomentUserPopover :profile="ownerProfile" is-owner placement="top">
       <div class="moment-card__avatar">
         <NuxtImg
-          src="/avatar-photo.webp"
-          alt="TixXin"
+          :src="ownerProfile.avatar || '/avatar.svg'"
+          :alt="ownerProfile.name"
           width="44"
           height="44"
           class="moment-card__avatar-img"
@@ -26,7 +26,7 @@
 
     <div class="moment-card__body">
       <div class="moment-card__header">
-        <span class="moment-card__author">TixXin</span>
+        <span class="moment-card__author">{{ ownerProfile.name }}</span>
         <span v-if="moment.mood" class="moment-card__mood" :title="moment.mood">{{ moment.mood }}</span>
         <span v-if="moment.isPinned" class="moment-card__pin" aria-label="置顶">
           <Icon name="lucide:pin" size="11" />
@@ -51,9 +51,21 @@
 
       <!-- 图片网格 -->
       <div v-if="moment.images && moment.images.length > 0" class="moment-card__images" :class="gridClass">
-        <div v-for="(img, idx) in moment.images" :key="idx" class="moment-card__image-wrap" @click="openLightBox(idx)">
-          <img :src="img" alt="图片" class="moment-card__image" loading="lazy" />
-        </div>
+        <button
+          v-for="(img, idx) in moment.images"
+          :key="idx"
+          type="button"
+          class="moment-card__image-wrap"
+          :aria-label="`查看动态配图 ${idx + 1}`"
+          @click="openLightBox(idx)"
+        >
+          <img
+            :src="img"
+            :alt="moment.imageAlts?.[idx] || `动态配图 ${idx + 1}`"
+            class="moment-card__image"
+            loading="lazy"
+          />
+        </button>
       </div>
 
       <!-- 引用卡片：站内文章优先，否则外链 OG 卡 -->
@@ -64,7 +76,7 @@
       <div class="moment-card__footer">
         <div class="moment-card__meta">
           <NuxtLink
-            :to="`/moments/${moment.id}`"
+            :to="{ path: `/moments/${moment.id}`, query: detailQuery }"
             class="moment-card__time"
             :aria-label="`查看动态详情 · ${formattedDate}`"
           >
@@ -86,6 +98,8 @@
             type="button"
             class="moment-action-btn"
             :class="{ 'is-active': showComments }"
+            aria-label="查看动态评论"
+            :aria-expanded="showComments"
             @click="toggleComments"
           >
             <Icon name="lucide:message-square" size="15" />
@@ -97,7 +111,9 @@
             type="button"
             class="moment-action-btn"
             :class="{ 'is-liked': isLiked }"
-            aria-label="点赞"
+            :aria-label="isLiked ? '取消动态点赞' : '点赞动态'"
+            :aria-pressed="isLiked"
+            :disabled="state?.likePending || syncing || !hydrated"
             @click="toggleLike"
           >
             <span class="like-icon-wrap" :class="{ 'like-icon-wrap--burst': justLiked }">
@@ -114,7 +130,20 @@
 
       <!-- 评论区 -->
       <Transition name="comment-slide">
-        <MomentCommentSection v-if="showComments" :comments="localComments" @submit="onCommentSubmit" />
+        <MomentCommentSection
+          v-if="showComments"
+          :comments="state?.comments ?? moment.comments ?? []"
+          :draft="state?.draft ?? ''"
+          :submitting="state?.submitting"
+          :submit-error="state?.submitError"
+          :notice="state?.notice"
+          :loading="state?.loading"
+          :load-error="state?.loadError"
+          :has-more="!state?.initialized || (state?.comments.length ?? 0) < (state?.total ?? 0)"
+          @update:draft="$emit('draft', { id: moment.id, value: $event })"
+          @submit="$emit('comment', moment.id)"
+          @load-more="$emit('comments', moment.id)"
+        />
       </Transition>
     </div>
 
@@ -132,93 +161,86 @@
 </template>
 
 <script setup lang="ts">
-import type { MomentItem, MomentCommentItem, MomentUserProfile } from '~/features/moment/types'
-import { formatRelativeDate } from '~/composables/useRelativeDate'
+import type { MomentItem, MomentUserProfile } from '~/features/moment/types'
+import type { MomentInteractionState } from '~/features/moment/session'
 import { renderMomentMarkdown } from '~/composables/useMomentMarkdown'
-
-/** 博主信息，用于头像 hover 卡片 */
-const ownerProfile: MomentUserProfile = {
-  name: 'TixXin',
-  avatar: '/avatar-photo.webp',
-  bio: '记录生活点滴，分享技术与日常',
-  link: '/',
-}
-
 const props = defineProps<{
   moment: MomentItem
+  ownerProfile: MomentUserProfile
+  state?: MomentInteractionState
+  syncing?: boolean
+  detailQuery?: Record<string, string>
 }>()
-
-const avatarError = ref(false)
-
-const formattedDate = computed(() => formatRelativeDate(props.moment.date))
-
-// Markdown 渲染：支持 **粗体**、链接、列表、代码、引用等
+const emit = defineEmits<{
+  like: [value: { id: string; liked: boolean; complete: (success: boolean) => void }]
+  draft: [value: { id: string; value: string }]
+  comment: [id: string]
+  comments: [id: string]
+}>()
+const avatarError = ref(false),
+  hydrated = ref(false)
+onMounted(() => {
+  hydrated.value = true
+})
+watch(
+  () => props.ownerProfile.avatar,
+  () => {
+    avatarError.value = false
+  },
+)
+// 与日期筛选和日历采用同一 UTC 日期键。
+const formattedDate = computed(() => props.moment.date.slice(0, 10))
 const renderedContent = computed(() => renderMomentMarkdown(props.moment.content))
-
-// 点赞逻辑
-const isLiked = ref(props.moment.isLiked)
-const likes = ref(props.moment.likes)
+const isLiked = computed(() => props.moment.isLiked)
+const likes = computed(() => props.moment.likes)
+const commentCount = computed(() => props.moment.commentCount ?? props.moment.comments?.length ?? 0)
+const showComments = ref((props.moment.comments?.length ?? 0) > 0)
+function toggleComments() {
+  showComments.value = !showComments.value
+  if (showComments.value && !props.state?.initialized) emit('comments', props.moment.id)
+}
 const justLiked = ref(false)
 const { reducedMotion } = useMotionPreference()
 let likeTimer: ReturnType<typeof setTimeout> | undefined
-const finishLike = () => {
+let alive = true
+function finishLike() {
   if (likeTimer) clearTimeout(likeTimer)
   justLiked.value = false
 }
-watch(reducedMotion, (reduced) => {
-  if (reduced) finishLike()
+watch(reducedMotion, (value) => {
+  if (value) finishLike()
 })
-onBeforeUnmount(finishLike)
-
+onBeforeUnmount(() => {
+  alive = false
+  finishLike()
+})
 function toggleLike() {
-  if (isLiked.value) {
-    isLiked.value = false
-    likes.value--
-  } else {
-    isLiked.value = true
-    likes.value++
-    finishLike()
-    if (!reducedMotion.value) {
+  if (props.state?.likePending || props.syncing || !hydrated.value) return
+  const liked = !isLiked.value
+  emit('like', {
+    id: props.moment.id,
+    liked,
+    complete(success) {
+      if (!success || !liked || !alive || reducedMotion.value) return
+      finishLike()
       justLiked.value = true
       likeTimer = setTimeout(finishLike, 400)
-    }
-  }
+    },
+  })
 }
-
-// 评论逻辑 — 有评论时默认展开
-const showComments = ref((props.moment.comments ?? []).length > 0)
-const localComments = ref<MomentCommentItem[]>([...(props.moment.comments ?? [])])
-const commentCount = computed(() => localComments.value.length)
-
-function toggleComments() {
-  showComments.value = !showComments.value
-}
-
-function onCommentSubmit(comment: MomentCommentItem) {
-  localComments.value.push(comment)
-}
-
-// 图片网格
 const gridClass = computed(() => {
-  const len = props.moment.images?.length || 0
-  if (len === 1) return 'grid-1'
-  if (len === 2 || len === 4) return 'grid-2'
-  return 'grid-3'
+  const size = props.moment.images?.length || 0
+  return size === 1 ? 'grid-1' : size === 2 || size === 4 ? 'grid-2' : 'grid-3'
 })
-
-// 多图灯箱
-const lightBoxVisible = ref(false)
-const lightBoxIndex = ref(0)
-
+const lightBoxVisible = ref(false),
+  lightBoxIndex = ref(0)
 function openLightBox(index: number) {
   lightBoxIndex.value = index
   lightBoxVisible.value = true
 }
-
 function closeLightBox() {
   lightBoxVisible.value = false
 }
-
 function onLightBoxChange(index: number) {
   lightBoxIndex.value = index
 }

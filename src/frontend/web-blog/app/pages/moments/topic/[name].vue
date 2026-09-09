@@ -20,6 +20,8 @@
           :stats="authorStats"
           :profile="ownerCard"
           :dates="momentDates"
+          :date-counts="momentDateCounts"
+          :available="!!metadata"
           :selected-date="selectedDate"
           @select-date="selectedDate = $event"
         >
@@ -39,7 +41,7 @@
             <div class="moment-topic-hero__text">
               <h1 class="moment-topic-hero__name">#{{ topicMeta.name }}</h1>
               <p v-if="topicMeta.description" class="moment-topic-hero__desc">{{ topicMeta.description }}</p>
-              <p class="moment-topic-hero__count">共 {{ filteredMoments.length }} 条动态</p>
+              <p class="moment-topic-hero__count">共 {{ feedError && !moments.length ? '—' : total }} 条动态</p>
             </div>
           </header>
 
@@ -50,22 +52,53 @@
             </div>
             <div class="moment-topic-hero__text">
               <h1 class="moment-topic-hero__name">#{{ topicName }}</h1>
-              <p class="moment-topic-hero__count">共 {{ filteredMoments.length }} 条动态</p>
+              <p class="moment-topic-hero__count">共 {{ feedError && !moments.length ? '—' : total }} 条动态</p>
             </div>
           </header>
 
-          <MomentList :moments="filteredMoments" :selected-topic="null" :selected-date="null" />
+          <MomentList
+            :moments="moments"
+            :owner-profile="ownerProfile"
+            :states="interactions.states"
+            :pending="feedPending"
+            :error-message="feedError?.message"
+            :has-more="hasMore"
+            filtered
+            :detail-query="filterQuery"
+            @retry="refreshFeed()"
+            @more="loadMore"
+            @like="interactions.like"
+            @draft="interactions.draft"
+            @comment="interactions.submit"
+            @comments="interactions.comments"
+          />
         </div>
       </CommonCustomScrollbar>
     </template>
     <template #overlays>
+      <MomentInteractionDialogs
+        :visible="interactions.identityVisible.value"
+        @confirm="interactions.confirmIdentity"
+        @cancel="interactions.cancelIdentity"
+        @login="interactions.switchToLogin"
+      />
       <ClientOnly>
         <Teleport to="#right-sidebar-target">
           <SidebarRightSidebar>
+            <CommonRequestFeedback
+              v-if="overviewError"
+              class="card"
+              compact
+              title="动态统计暂时不可用"
+              :pending="overviewPending"
+              @retry="refreshOverview()"
+            />
             <SidebarMomentAuthorCard v-if="rightInfo" :stats="authorStats" :profile="ownerCard" />
             <SidebarMomentCalendarCard
               v-if="rightInfo"
               :moment-dates="momentDates"
+              :date-counts="momentDateCounts"
+              :available="!!metadata"
               :selected-date="selectedDate"
               @select-date="selectedDate = $event"
             />
@@ -78,60 +111,53 @@
 </template>
 
 <script setup lang="ts">
-import { MOMENT_TOPIC_DEFINITIONS, findMomentTopic } from '~/features/moment/topics'
-import type { MomentTopic } from '~/components/sidebar/MomentTopicCard.vue'
-
-const { moments: momentList, authorStats, ownerCard } = useMomentOverview()
-const { rightInfo, drawerInfo, drawerOpen } = useMomentSidebarPlacement()
-const { selectedDate } = useMomentFilters()
-const momentDates = computed(() => momentList.value.map((moment) => moment.date.slice(0, 10)))
-
+import { findMomentTopic } from '~/features/moment/topics'
+const pageScope = usePageRequestScope()
 const route = useRoute()
-const router = useRouter()
-
-// 路由 param 已 URL 解码（Nuxt/Vue Router 自动处理）
+const { selectedDate, selectedTopic, searchKeyword, page, setPage, filterQuery } = useMomentFilters()
+const interactions = useMomentInteractions()
+const [overview, feed] = await Promise.all([
+  useMomentOverview(),
+  useMomentFeed({ page, q: searchKeyword, topic: selectedTopic, date: selectedDate }),
+])
+pageScope.assertActive()
+const {
+  metadata,
+  authorStats,
+  ownerCard,
+  ownerProfile,
+  momentTopics,
+  momentDates,
+  momentDateCounts,
+  error: overviewError,
+  pending: overviewPending,
+  refresh: refreshOverview,
+} = overview
+const { moments, total, pending: feedPending, error: feedError, refresh: refreshFeed } = feed
+const { rightInfo, drawerInfo, drawerOpen } = useMomentSidebarPlacement()
 const topicName = computed(() => String(route.params.name ?? ''))
-
 const topicMeta = computed(() => findMomentTopic(topicName.value))
-
-// 仅过滤话题，不复用分页/搜索（话题页只关心该话题的全部条目）
-const filteredMoments = computed(() => momentList.value.filter((m) => m.topics?.includes(topicName.value)))
-
-// hero 区配色：以话题色作主调
-const heroStyle = computed(() => {
-  const color = topicMeta.value?.color ?? 'var(--accent)'
-  return {
-    '--topic-color': color,
+const heroStyle = computed(() => ({ '--topic-color': topicMeta.value?.color ?? 'var(--accent)' }))
+const hasMore = computed(() => moments.value.length < total.value)
+const advancing = ref(false)
+watch(moments, interactions.seed, { immediate: true })
+async function loadMore() {
+  if (advancing.value || feedPending.value || feedError.value || !hasMore.value) return
+  advancing.value = true
+  try {
+    await setPage(page.value + 1)
+  } finally {
+    advancing.value = false
   }
-})
-
-// SEO
-useSeoMeta({
-  title: () => `#${topicName.value}`,
-  description: () =>
-    topicMeta.value?.description ?? `朋友圈中关于 #${topicName.value} 的全部 ${filteredMoments.value.length} 条动态`,
-  ogTitle: () => `#${topicName.value} - TixXin 朋友圈`,
-  ogDescription: () =>
-    topicMeta.value?.description ?? `共 ${filteredMoments.value.length} 条动态，记录关于 ${topicName.value} 的点滴`,
-})
-
-// 侧栏
-
-const momentTopics = computed<MomentTopic[]>(() =>
-  MOMENT_TOPIC_DEFINITIONS.map((t) => ({
-    ...t,
-    count: momentList.value.filter((m) => m.topics?.includes(t.name)).length,
-  })),
-)
-
-function onTopicSelect(topic: string | null) {
-  if (!topic) {
-    router.push('/moments')
-    return
-  }
-  if (topic === topicName.value) return
-  router.push(`/moments/topic/${encodeURIComponent(topic)}`)
 }
+function onTopicSelect(value: string | null) {
+  selectedTopic.value = value
+}
+useSeoMeta({
+  title: () => '#' + topicName.value,
+  description: () => '朋友圈中关于 ' + topicName.value + ' 的公开动态',
+  ogTitle: () => '#' + topicName.value + ' - ' + ownerCard.value.name + ' 朋友圈',
+})
 </script>
 
 <style lang="scss" scoped>
