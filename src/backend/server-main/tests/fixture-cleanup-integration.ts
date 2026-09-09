@@ -8,6 +8,7 @@ async function main() {
   loadLocalEnvironment()
   const fixture = await createBrowserTestApp('http://localhost')
   const target = decodeURIComponent(new URL(process.env.DATABASE_URL!).pathname.slice(1))
+  let servicesStopped = false
   const { seedDevelopmentData } = await import('../src/seeders/seed-development-data')
   const { removeDevelopmentData } = await import('../src/seeders/remove-development-data')
   const run = (apply = false) =>
@@ -59,6 +60,7 @@ async function main() {
     assert(protectedPlan.remove.length < initial.remove.length)
     const files = await readdir(process.env.MEDIA_DIRECTORY!)
     await fixture.stopServices()
+    servicesStopped = true
     const removed = await run(true)
     assert('backup' in removed)
     await fixture.testOrm.connect()
@@ -93,6 +95,7 @@ async function main() {
     )
   } finally {
     process.env.NODE_ENV = 'test'
+    if (servicesStopped) await fixture.testOrm.close(true)
     await fixture.close()
   }
 }
