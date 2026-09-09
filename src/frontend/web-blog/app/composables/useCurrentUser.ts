@@ -5,6 +5,7 @@
 import type { CurrentUser } from '~/features/auth/types'
 import { withAuthCookieLock } from '~/utils/authCookieLock'
 import { clearCommentDrafts } from '~/features/post/commentSession'
+import { clearMomentDrafts } from '~/features/moment/session'
 
 interface AuthPayload {
   accessToken: string
@@ -24,7 +25,10 @@ export function useCurrentUser() {
   const isLoggedIn = computed(() => currentUser.value !== null && accessToken.value !== null)
 
   function accept(payload: AuthPayload) {
-    if (currentUser.value && currentUser.value.id !== payload.user.id) clearCommentDrafts(nuxtApp)
+    if (currentUser.value && currentUser.value.id !== payload.user.id) {
+      clearCommentDrafts(nuxtApp)
+      clearMomentDrafts(nuxtApp)
+    }
     accessToken.value = payload.accessToken
     currentUser.value = {
       id: payload.user.id,
@@ -65,7 +69,10 @@ export function useCurrentUser() {
       } catch (cause) {
         const status = (cause as { statusCode?: number }).statusCode
         if (status === 401) {
-          if (currentUser.value) clearCommentDrafts(nuxtApp)
+          if (currentUser.value) {
+            clearCommentDrafts(nuxtApp)
+            clearMomentDrafts(nuxtApp)
+          }
           currentUser.value = null
           accessToken.value = null
         }
@@ -107,6 +114,7 @@ export function useCurrentUser() {
     try {
       if (refreshing) await refreshing
       clearCommentDrafts(nuxtApp)
+      clearMomentDrafts(nuxtApp)
       currentUser.value = null
       accessToken.value = null
       initialized.value = true
@@ -132,6 +140,7 @@ export function useCurrentUser() {
       )
       clearCommentDrafts(nuxtApp)
       currentUser.value = null
+      clearMomentDrafts(nuxtApp)
       accessToken.value = null
       initialized.value = true
     } finally {

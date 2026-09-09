@@ -14,9 +14,13 @@ export function useMomentFilters() {
     return typeof first === 'string' ? first.trim().slice(0, 200) : ''
   }
   function update(key: string, value: string | null, replace = false) {
+    const inTopic = route.path.startsWith('/moments/topic/')
     const query = Object.fromEntries(
-      Object.entries(route.path === '/moments' ? route.query : {}).filter(([name]) => name !== key),
+      Object.entries(route.path === '/moments' || inTopic ? route.query : {}).filter(
+        ([name]) => name !== key && (key === 'page' || name !== 'page'),
+      ),
     )
+    if (inTopic && key !== 'topic') query.topic = String(route.params.name ?? '')
     if (value) query[key] = value
     return replace ? router.replace({ path: '/moments', query }) : router.push({ path: '/moments', query })
   }
@@ -30,7 +34,7 @@ export function useMomentFilters() {
     },
   })
   const selectedTopic = computed({
-    get: () => read('topic') || null,
+    get: () => read('topic') || (route.path.startsWith('/moments/topic/') ? String(route.params.name ?? '') : null),
     set: (value: string | null) => {
       void update('topic', value)
     },
@@ -43,9 +47,26 @@ export function useMomentFilters() {
   })
   function clearFilters() {
     const query = Object.fromEntries(
-      Object.entries(route.query).filter(([key]) => !['date', 'topic', 'q'].includes(key)),
+      Object.entries(route.query).filter(([key]) => !['date', 'topic', 'q', 'page'].includes(key)),
     )
     return router.push({ path: '/moments', query })
   }
-  return { selectedDate, selectedTopic, searchKeyword, clearFilters }
+  const page = computed(() => {
+    const value = Number(read('page'))
+    return Number.isInteger(value) && value > 0 ? Math.min(value, 10000) : 1
+  })
+  const filterQuery = computed<Record<string, string>>(() =>
+    Object.fromEntries(
+      [
+        ['q', searchKeyword.value],
+        ['topic', selectedTopic.value ?? ''],
+        ['date', selectedDate.value ?? ''],
+        ['page', page.value > 1 ? String(page.value) : ''],
+      ].filter(([, value]) => !!value),
+    ),
+  )
+  function setPage(value: number, replace = false) {
+    return update('page', value > 1 ? String(value) : null, replace)
+  }
+  return { selectedDate, selectedTopic, searchKeyword, page, setPage, filterQuery, clearFilters }
 }

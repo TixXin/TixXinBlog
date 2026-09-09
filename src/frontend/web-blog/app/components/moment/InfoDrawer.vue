@@ -9,6 +9,8 @@
       <SidebarMomentCalendarCard
         v-if="showInfo"
         :moment-dates="dates"
+        :date-counts="dateCounts"
+        :available="available"
         :selected-date="selectedDate"
         @select-date="$emit('selectDate', $event)"
       />
@@ -25,11 +27,13 @@ withDefaults(
     stats: MomentAuthorStats
     profile: OwnerCardInfo
     dates: string[]
+    dateCounts?: Record<string, number>
+    available?: boolean
     selectedDate: string | null
     showInfo: boolean
     label?: string
   }>(),
-  { label: '筛选动态' },
+  { label: '筛选动态', available: true, dateCounts: undefined },
 )
 const open = defineModel<boolean>('open', { default: false })
 defineEmits<{ selectDate: [date: string | null] }>()
