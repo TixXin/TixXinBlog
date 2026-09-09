@@ -1451,6 +1451,146 @@
     },
     {
       "columns": {
+        "key": {
+          "name": "key",
+          "type": "text",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": true,
+          "nullable": false,
+          "unique": false,
+          "length": null,
+          "precision": null,
+          "scale": null,
+          "default": null,
+          "comment": null,
+          "enumItems": [],
+          "mappedType": "text"
+        },
+        "dataset": {
+          "name": "dataset",
+          "type": "text",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
+          "unique": false,
+          "length": null,
+          "precision": null,
+          "scale": null,
+          "default": null,
+          "comment": null,
+          "enumItems": [],
+          "mappedType": "text"
+        },
+        "kind": {
+          "name": "kind",
+          "type": "text",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
+          "unique": false,
+          "length": null,
+          "precision": null,
+          "scale": null,
+          "default": null,
+          "comment": null,
+          "enumItems": [],
+          "mappedType": "text"
+        },
+        "resource_id": {
+          "name": "resource_id",
+          "type": "text",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
+          "unique": false,
+          "length": null,
+          "precision": null,
+          "scale": null,
+          "default": null,
+          "comment": null,
+          "enumItems": [],
+          "mappedType": "text"
+        },
+        "snapshot_hash": {
+          "name": "snapshot_hash",
+          "type": "text",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
+          "unique": false,
+          "length": null,
+          "precision": null,
+          "scale": null,
+          "default": null,
+          "comment": null,
+          "enumItems": [],
+          "mappedType": "text"
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamptz(6)",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
+          "unique": false,
+          "length": 6,
+          "precision": null,
+          "scale": null,
+          "default": null,
+          "comment": null,
+          "enumItems": [],
+          "mappedType": "datetime"
+        }
+      },
+      "name": "development_fixture",
+      "schema": "public",
+      "indexes": [
+        {
+          "columnNames": ["dataset"],
+          "composite": false,
+          "constraint": false,
+          "keyName": "development_fixture_dataset_index",
+          "unique": false,
+          "primary": false
+        },
+        {
+          "columnNames": ["key"],
+          "composite": false,
+          "constraint": false,
+          "keyName": "development_fixture_pkey",
+          "unique": true,
+          "primary": true
+        }
+      ],
+      "checks": [],
+      "foreignKeys": {},
+      "nativeEnums": {
+        "flash_type": {
+          "name": "flash_type",
+          "schema": "public",
+          "items": ["idea", "todo", "memo"]
+        },
+        "post_category": {
+          "name": "post_category",
+          "schema": "public",
+          "items": ["tech", "life"]
+        },
+        "post_status": {
+          "name": "post_status",
+          "schema": "public",
+          "items": ["draft", "published", "archived"]
+        }
+      },
+      "comment": null
+    },
+    {
+      "columns": {
         "id": {
           "name": "id",
           "type": "text",
@@ -1967,6 +2107,459 @@
       ],
       "checks": [],
       "foreignKeys": {},
+      "nativeEnums": {
+        "flash_type": {
+          "name": "flash_type",
+          "schema": "public",
+          "items": ["idea", "todo", "memo"]
+        },
+        "post_category": {
+          "name": "post_category",
+          "schema": "public",
+          "items": ["tech", "life"]
+        },
+        "post_status": {
+          "name": "post_status",
+          "schema": "public",
+          "items": ["draft", "published", "archived"]
+        }
+      },
+      "comment": null
+    },
+    {
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "int4",
+          "unsigned": true,
+          "autoincrement": true,
+          "primary": true,
+          "nullable": false,
+          "unique": false,
+          "length": null,
+          "precision": 32,
+          "scale": 0,
+          "default": null,
+          "comment": null,
+          "enumItems": [],
+          "mappedType": "integer"
+        },
+        "visitor_id_hash": {
+          "name": "visitor_id_hash",
+          "type": "text",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
+          "unique": true,
+          "length": null,
+          "precision": null,
+          "scale": null,
+          "default": null,
+          "comment": null,
+          "enumItems": [],
+          "mappedType": "text"
+        },
+        "author": {
+          "name": "author",
+          "type": "text",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
+          "unique": false,
+          "length": null,
+          "precision": null,
+          "scale": null,
+          "default": null,
+          "comment": null,
+          "enumItems": [],
+          "mappedType": "text"
+        },
+        "avatar": {
+          "name": "avatar",
+          "type": "text",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
+          "unique": false,
+          "length": null,
+          "precision": null,
+          "scale": null,
+          "default": null,
+          "comment": null,
+          "enumItems": [],
+          "mappedType": "text"
+        },
+        "content": {
+          "name": "content",
+          "type": "text",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
+          "unique": false,
+          "length": null,
+          "precision": null,
+          "scale": null,
+          "default": null,
+          "comment": null,
+          "enumItems": [],
+          "mappedType": "text"
+        },
+        "reply_to_id": {
+          "name": "reply_to_id",
+          "type": "int4",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": true,
+          "unique": false,
+          "length": null,
+          "precision": 32,
+          "scale": 0,
+          "default": null,
+          "comment": null,
+          "enumItems": [],
+          "mappedType": "integer"
+        },
+        "status": {
+          "name": "status",
+          "type": "text",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
+          "unique": false,
+          "length": null,
+          "precision": null,
+          "scale": null,
+          "default": "'published'",
+          "comment": null,
+          "enumItems": [],
+          "mappedType": "text"
+        },
+        "revision": {
+          "name": "revision",
+          "type": "int4",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
+          "unique": false,
+          "length": null,
+          "precision": 32,
+          "scale": 0,
+          "default": "0",
+          "comment": null,
+          "enumItems": [],
+          "mappedType": "integer"
+        },
+        "is_owner": {
+          "name": "is_owner",
+          "type": "bool",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
+          "unique": false,
+          "length": null,
+          "precision": null,
+          "scale": null,
+          "default": "false",
+          "comment": null,
+          "enumItems": [],
+          "mappedType": "boolean"
+        },
+        "is_pinned": {
+          "name": "is_pinned",
+          "type": "bool",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
+          "unique": true,
+          "length": null,
+          "precision": null,
+          "scale": null,
+          "default": "false",
+          "comment": null,
+          "enumItems": [],
+          "mappedType": "boolean"
+        },
+        "request_id": {
+          "name": "request_id",
+          "type": "text",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": true,
+          "unique": false,
+          "length": null,
+          "precision": null,
+          "scale": null,
+          "default": null,
+          "comment": null,
+          "enumItems": [],
+          "mappedType": "text"
+        },
+        "request_hash": {
+          "name": "request_hash",
+          "type": "text",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": true,
+          "unique": false,
+          "length": null,
+          "precision": null,
+          "scale": null,
+          "default": null,
+          "comment": null,
+          "enumItems": [],
+          "mappedType": "text"
+        },
+        "deleted_at": {
+          "name": "deleted_at",
+          "type": "timestamptz(6)",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": true,
+          "unique": false,
+          "length": 6,
+          "precision": null,
+          "scale": null,
+          "default": null,
+          "comment": null,
+          "enumItems": [],
+          "mappedType": "datetime"
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamptz(6)",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
+          "unique": false,
+          "length": 6,
+          "precision": null,
+          "scale": null,
+          "default": null,
+          "comment": null,
+          "enumItems": [],
+          "mappedType": "datetime"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamptz(6)",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
+          "unique": false,
+          "length": 6,
+          "precision": null,
+          "scale": null,
+          "default": null,
+          "comment": null,
+          "enumItems": [],
+          "mappedType": "datetime"
+        }
+      },
+      "name": "guestbook_message",
+      "schema": "public",
+      "indexes": [
+        {
+          "columnNames": ["id"],
+          "composite": false,
+          "constraint": false,
+          "keyName": "guestbook_message_pkey",
+          "unique": true,
+          "primary": true
+        },
+        {
+          "columnNames": ["reply_to_id"],
+          "composite": false,
+          "constraint": false,
+          "keyName": "guestbook_reply_idx",
+          "unique": false,
+          "primary": false
+        },
+        {
+          "columnNames": ["is_pinned"],
+          "composite": false,
+          "constraint": false,
+          "keyName": "guestbook_single_pinned",
+          "unique": true,
+          "primary": false,
+          "expression": "CREATE UNIQUE INDEX guestbook_single_pinned ON public.guestbook_message USING btree (is_pinned) WHERE ((is_pinned = true) AND (status = 'published'::text) AND (deleted_at IS NULL))"
+        },
+        {
+          "columnNames": ["visitor_id_hash", "request_id"],
+          "composite": true,
+          "constraint": true,
+          "keyName": "guestbook_submission_unique",
+          "unique": true,
+          "primary": false
+        },
+        {
+          "columnNames": ["status", "deleted_at", "created_at", "id"],
+          "composite": true,
+          "constraint": false,
+          "keyName": "guestbook_visibility_order_idx",
+          "unique": false,
+          "primary": false
+        }
+      ],
+      "checks": [],
+      "foreignKeys": {
+        "guestbook_message_reply_to_id_foreign": {
+          "columnNames": ["reply_to_id"],
+          "constraintName": "guestbook_message_reply_to_id_foreign",
+          "localTableName": "public.guestbook_message",
+          "referencedTableName": "public.guestbook_message",
+          "referencedColumnNames": ["id"],
+          "updateRule": "cascade",
+          "deleteRule": "set null"
+        }
+      },
+      "nativeEnums": {
+        "flash_type": {
+          "name": "flash_type",
+          "schema": "public",
+          "items": ["idea", "todo", "memo"]
+        },
+        "post_category": {
+          "name": "post_category",
+          "schema": "public",
+          "items": ["tech", "life"]
+        },
+        "post_status": {
+          "name": "post_status",
+          "schema": "public",
+          "items": ["draft", "published", "archived"]
+        }
+      },
+      "comment": null
+    },
+    {
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "int4",
+          "unsigned": true,
+          "autoincrement": true,
+          "primary": true,
+          "nullable": false,
+          "unique": false,
+          "length": null,
+          "precision": 32,
+          "scale": 0,
+          "default": null,
+          "comment": null,
+          "enumItems": [],
+          "mappedType": "integer"
+        },
+        "message_id": {
+          "name": "message_id",
+          "type": "int4",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
+          "unique": true,
+          "length": null,
+          "precision": 32,
+          "scale": 0,
+          "default": null,
+          "comment": null,
+          "enumItems": [],
+          "mappedType": "integer"
+        },
+        "visitor_id_hash": {
+          "name": "visitor_id_hash",
+          "type": "text",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
+          "unique": false,
+          "length": null,
+          "precision": null,
+          "scale": null,
+          "default": null,
+          "comment": null,
+          "enumItems": [],
+          "mappedType": "text"
+        },
+        "emoji": {
+          "name": "emoji",
+          "type": "text",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
+          "unique": false,
+          "length": null,
+          "precision": null,
+          "scale": null,
+          "default": null,
+          "comment": null,
+          "enumItems": [],
+          "mappedType": "text"
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamptz(6)",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
+          "unique": false,
+          "length": 6,
+          "precision": null,
+          "scale": null,
+          "default": null,
+          "comment": null,
+          "enumItems": [],
+          "mappedType": "datetime"
+        }
+      },
+      "name": "guestbook_reaction",
+      "schema": "public",
+      "indexes": [
+        {
+          "columnNames": ["id"],
+          "composite": false,
+          "constraint": false,
+          "keyName": "guestbook_reaction_pkey",
+          "unique": true,
+          "primary": true
+        },
+        {
+          "columnNames": ["message_id", "visitor_id_hash", "emoji"],
+          "composite": true,
+          "constraint": true,
+          "keyName": "guestbook_reaction_unique",
+          "unique": true,
+          "primary": false
+        }
+      ],
+      "checks": [],
+      "foreignKeys": {
+        "guestbook_reaction_message_id_foreign": {
+          "columnNames": ["message_id"],
+          "constraintName": "guestbook_reaction_message_id_foreign",
+          "localTableName": "public.guestbook_reaction",
+          "referencedTableName": "public.guestbook_message",
+          "referencedColumnNames": ["id"],
+          "updateRule": "cascade",
+          "deleteRule": "cascade"
+        }
+      },
       "nativeEnums": {
         "flash_type": {
           "name": "flash_type",
