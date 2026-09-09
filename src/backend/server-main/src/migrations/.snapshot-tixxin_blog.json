@@ -2968,6 +2968,22 @@
           "comment": null,
           "enumItems": [],
           "mappedType": "text"
+        },
+        "guestbook_message_id": {
+          "name": "guestbook_message_id",
+          "type": "int4",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": true,
+          "unique": false,
+          "length": null,
+          "precision": 32,
+          "scale": 0,
+          "default": null,
+          "comment": null,
+          "enumItems": [],
+          "mappedType": "integer"
         }
       },
       "name": "media_reference",
@@ -3024,6 +3040,15 @@
           "constraintName": "media_reference_flash_note_id_foreign",
           "localTableName": "public.media_reference",
           "referencedTableName": "public.flash_note",
+          "referencedColumnNames": ["id"],
+          "updateRule": "cascade",
+          "deleteRule": "cascade"
+        },
+        "media_reference_guestbook_message_id_foreign": {
+          "columnNames": ["guestbook_message_id"],
+          "constraintName": "media_reference_guestbook_message_id_foreign",
+          "localTableName": "public.media_reference",
+          "referencedTableName": "public.guestbook_message",
           "referencedColumnNames": ["id"],
           "updateRule": "cascade",
           "deleteRule": "cascade"
