@@ -1,6 +1,6 @@
 # TixXinBlog
 
-个人博客系统。前台基于 Nuxt 4 + Vue 3，文章、评论、认证、闪念、朋友圈、媒体及站点配置已接入真实 API；书签使用本机存储，留言、项目、图库和友链保留演示数据。逐项边界见[能力清单](docs/capability-map.md)。
+个人博客系统。前台基于 Nuxt 4 + Vue 3，文章、评论、认证、闪念、朋友圈、留言、媒体及站点配置已接入真实 API；书签使用本机存储，项目、图库和友链保留演示数据。逐项边界见[能力清单](docs/capability-map.md)。
 
 <p align="center">
   <img alt="Nuxt 4" src="https://img.shields.io/badge/Nuxt_4-00DC82?style=for-the-badge&logo=nuxt&logoColor=white" />
@@ -83,6 +83,8 @@ docker run -p 3000:3000 tixxin-blog
 开发环境分服务配置：前端参考 [前端模板](src/frontend/web-blog/.env.example)，配置放在该目录 `.env`；后端参考 [后端模板](src/backend/server-main/.env.example)，配置放在该目录 `.env.local`。已有文件保留并按需补充；环境优先级见[开发启动说明](docs/development-runtime.md)。根目录 `.env.example` 不是统一开发链路的配置来源。
 
 朋友圈阅读入口为 `/moments`，登录后通过 `/admin/moments` 发布、编辑、置顶和管理评论。真实模式不会回退演示数据，使用方式与输入恢复见[朋友圈业务说明](docs/moment-business.md)。`corepack pnpm db:dev status` 可检查数据库，显式开发样本和清空工具见[开发数据库说明](docs/development-database.md)。
+
+留言入口为 `/guestbook`，博主通过 `/admin/guestbook` 回复、审核、置顶和管理内容。日常开发数据检查使用 `corepack pnpm db:dev check-data`，增量补齐预览使用 `corepack pnpm db:dev seed-data --dataset all`；核对目标后加上 `--apply --confirm 数据库名` 执行。新功能必须同批交付日常样本与隔离测试，具体归属、数量及安全清理见[开发数据目录](docs/development-data-catalog.md)。
 
 ## 代码规范
 
