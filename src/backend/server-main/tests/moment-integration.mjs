@@ -112,7 +112,7 @@ try {
     requestId: randomUUID(),
     status: 'published',
   })
-  const pinned = await ok(`/admin/moments/${first.id}`, 'PATCH', { revision: first.revision, isPinned: true })
+  let pinned = await ok(`/admin/moments/${first.id}`, 'PATCH', { revision: first.revision, isPinned: true })
   const firstNavigation = await ok(`/moments/${first.id}/navigation`, 'GET', undefined, false)
   assert.equal(firstNavigation.prev.id, second.id)
   assert.equal(firstNavigation.next, null)
@@ -220,6 +220,13 @@ try {
     revision: hiddenPost.revision,
     status: 'draft',
   })
+  assert.equal((await ok(`/moments/${first.id}`, 'GET', undefined, false)).linkedArticle, null)
+  pinned = await ok(`/admin/moments/${first.id}`, 'PATCH', {
+    revision: pinned.revision,
+    linkedArticleId: post.id,
+    content: '引用撤回后仍能编辑正文',
+  })
+  assert.equal(pinned.linkedArticleId, post.id)
   assert.equal((await ok(`/moments/${first.id}`, 'GET', undefined, false)).linkedArticle, null)
   const overview = await ok('/moments/overview', 'GET', undefined, false)
   assert.equal(overview.stats.totalMoments, 2)
