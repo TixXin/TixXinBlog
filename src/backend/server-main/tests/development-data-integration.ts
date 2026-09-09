@@ -14,9 +14,16 @@ async function main() {
     assert.equal(missing.ready, false)
     assert.equal(missing.domains[0].state, 'missing-data')
     assert.equal(missing.domains[0].counts.total, 0)
-    const schema = await inspectDataCatalog(em, 'guestbook')
-    assert.equal(schema.domains[0].state, 'missing-schema')
-    assert.equal(schema.domains[0].counts, null)
+    await em.transactional(async (transaction) => {
+      await transaction.execute('alter table guestbook_message rename to catalog_held_guestbook')
+      try {
+        const schema = await inspectDataCatalog(transaction, 'guestbook')
+        assert.equal(schema.domains[0].state, 'missing-schema')
+        assert.equal(schema.domains[0].counts, null)
+      } finally {
+        await transaction.execute('alter table catalog_held_guestbook rename to guestbook_message')
+      }
+    })
     const login = await fetch(fixture.origin + '/api/v1/auth/login', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -56,6 +63,7 @@ async function main() {
     assert.equal(full.domains.length, 7)
     assert.equal(full.preservedSources.find((item) => item.id === 'bookmarks').storage, 'localStorage')
     await assert.rejects(inspectDataCatalog(em, 'arbitrary-table'), /不支持/)
+    assert.equal((await fixture.testOrm.schema.getUpdateSchemaSQL({ wrap: false })).trim(), '')
     process.stdout.write('开发数据目录验证通过：空库、缺表、覆盖缺口、正常筛选空结果、字面搜索、只读及数据源边界\n')
   } finally {
     await fixture.close()

@@ -26,6 +26,9 @@ import { FlashNote } from '../entities/flash-note.entity'
 import { Moment } from '../entities/moment.entity'
 import { MomentComment } from '../entities/moment-comment.entity'
 import { MomentLike } from '../entities/moment-like.entity'
+import { DevelopmentFixture } from '../entities/development-fixture.entity'
+import { GuestbookMessage } from '../entities/guestbook-message.entity'
+import { GuestbookReaction } from '../entities/guestbook-reaction.entity'
 import { Post } from '../entities/post.entity'
 import { PostFolder } from '../entities/post-folder.entity'
 import { PostRevision } from '../entities/post-revision.entity'
@@ -73,6 +76,9 @@ export const ORM_ENTITIES = [
   Moment,
   MomentComment,
   MomentLike,
+  DevelopmentFixture,
+  GuestbookMessage,
+  GuestbookReaction,
 ] as const
 
 export const mikroOrmOptions = defineConfig({
