@@ -7,7 +7,7 @@
 
 <template>
   <div class="post-card-list-root">
-    <div v-if="pending || errorMessage" class="post-list-feedback">
+    <div v-if="posts.length && (pending || errorMessage)" class="post-list-feedback">
       <p v-if="pending" role="status">正在加载文章…</p>
       <div v-else role="alert">
         {{ errorMessage }}<span v-if="posts.length">，已保留原列表。</span>
@@ -23,6 +23,13 @@
       :aria-busy="pending"
       primary
     >
+      <CommonRequestFeedback
+        v-if="!posts.length && (pending || errorMessage)"
+        :pending="pending"
+        :title="errorMessage || '正在加载文章'"
+        description="暂时无法获取文章内容，请稍后重试。"
+        @retry="$emit('retry')"
+      />
       <!-- 瀑布流模式：TransitionGroup 实现新卡片渐入动画 -->
       <TransitionGroup
         v-if="displayMode === 'waterfall'"

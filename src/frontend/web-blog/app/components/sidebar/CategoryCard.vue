@@ -32,6 +32,7 @@
         </button>
       </li>
     </ul>
+    <p v-if="!categories.length" class="text-sm text-soft">暂无分类</p>
   </section>
 </template>
 

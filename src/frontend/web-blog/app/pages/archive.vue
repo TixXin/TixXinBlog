@@ -15,7 +15,15 @@
           </div>
           <div class="page-title__text">
             <h2 class="page-title__heading">文章归档</h2>
-            <p class="page-title__sub">共 {{ totalCount }} 篇文章，持续记录中...</p>
+            <p class="page-title__sub">
+              {{
+                metadata
+                  ? `共 ${totalCount} 篇文章，持续记录中...`
+                  : archivePending
+                    ? '正在加载归档…'
+                    : '归档暂时不可用'
+              }}
+            </p>
           </div>
         </div>
 
@@ -29,8 +37,21 @@
       <!-- 头部区域 -->
       <!-- 主内容：归档时间线 -->
       <CommonCustomScrollbar class="archive-body" viewport-class="archive-viewport" :show-back-to-top="false" primary>
-        <p v-if="archiveError" role="alert">归档加载失败，请稍后重试</p>
-        <ArticleArchiveTimeline v-else :years="archiveYears" />
+        <CommonRequestFeedback
+          v-if="archivePending || archiveError"
+          :pending="archivePending"
+          :compact="!!metadata"
+          title="归档加载失败，请稍后重试"
+          :description="metadata ? '仍显示上次成功加载的归档。' : '暂时无法获取归档内容。'"
+          @retry="refreshArchive()"
+        />
+        <ArticleArchiveTimeline v-if="archiveYears.length" :years="archiveYears" />
+        <CommonStateBlock
+          v-else-if="!archivePending && !archiveError"
+          icon="lucide:archive"
+          title="暂无文章归档"
+          description="文章发布后会显示在这里。"
+        />
       </CommonCustomScrollbar>
       <!-- 右侧栏：归档统计 + 分类分布 -->
     </template>
@@ -38,7 +59,15 @@
       <ClientOnly>
         <Teleport to="#right-sidebar-target">
           <SidebarRightSidebar>
-            <ArticleArchiveStats :stats="archiveStats" :distribution="categoryDistribution" />
+            <ArticleArchiveStats v-if="metadata" :stats="archiveStats" :distribution="categoryDistribution" />
+            <CommonRequestFeedback
+              v-else
+              class="card"
+              compact
+              :pending="archivePending"
+              title="归档统计暂时不可用"
+              @retry="refreshArchive()"
+            />
           </SidebarRightSidebar>
         </Teleport>
       </ClientOnly>
@@ -47,7 +76,15 @@
 </template>
 
 <script setup lang="ts">
-const { archiveYears, archiveStats, categoryDistribution, error: archiveError } = await usePostMetadata()
+const {
+  metadata,
+  archiveYears,
+  archiveStats,
+  categoryDistribution,
+  error: archiveError,
+  pending: archivePending,
+  refresh: refreshArchive,
+} = await usePostMetadata()
 
 // 累加各年文章数，避免依赖 mockPosts，保持数据源一致
 const totalCount = computed(() => archiveYears.value.reduce((sum, year) => sum + year.count, 0))

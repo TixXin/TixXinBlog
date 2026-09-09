@@ -12,11 +12,17 @@
         <div class="page-actions">
           <CommonSearchBox placeholder="搜索站内文章、标签..." readonly @click="openSearch" />
           <CommonContextDrawer class="page-context-entry" label="筛选文章" icon="lucide:list-filter">
-            <SidebarTagCloudCard :tags="tags" :active-tag="selectedTag" @select="onTagSelect" />
-            <SidebarCategoryCard
+            <SidebarPostFilters
+              :tags="tags"
               :categories="categories"
+              :available="!!metadata"
+              :pending="metadataPending"
+              :error="!!metadataError"
+              :active-tag="selectedTag"
               :active-category="selectedCategory"
-              @select="onCategorySelect"
+              @select-tag="onTagSelect"
+              @select-category="onCategorySelect"
+              @retry="refreshMetadata()"
             />
             <button v-if="activeFilterLabel" type="button" class="filter-badge" @click="clearFilters">
               清除筛选：{{ activeFilterLabel }}
@@ -69,18 +75,24 @@
         :selected-tag="selectedTag"
         :selected-category="selectedCategory"
         @page="postPage = $event"
-        @retry="refreshPosts()"
+        @retry="retryArticles"
       />
     </template>
     <template #overlays>
       <ClientOnly>
         <Teleport to="#right-sidebar-target">
           <SidebarRightSidebar>
-            <SidebarTagCloudCard :tags="tags" :active-tag="selectedTag" @select="onTagSelect" />
-            <SidebarCategoryCard
+            <SidebarPostFilters
+              :tags="tags"
               :categories="categories"
+              :available="!!metadata"
+              :pending="metadataPending"
+              :error="!!metadataError"
+              :active-tag="selectedTag"
               :active-category="selectedCategory"
-              @select="onCategorySelect"
+              @select-tag="onTagSelect"
+              @select-category="onCategorySelect"
+              @retry="refreshMetadata()"
             />
             <BlogSubscribeCard />
           </SidebarRightSidebar>
@@ -109,7 +121,14 @@ const {
   clearFilters,
   replacePage,
 } = usePostListRoute()
-const { tags, categories } = await usePostMetadata()
+const {
+  metadata,
+  tags,
+  categories,
+  pending: metadataPending,
+  error: metadataError,
+  refresh: refreshMetadata,
+} = await usePostMetadata()
 const {
   posts,
   total: postTotal,
@@ -124,6 +143,10 @@ const {
   resetOnScopeChange: false,
 })
 const activeFilterLabel = computed(() => [selectedCategory.value, selectedTag.value].filter(Boolean).join(' · '))
+async function retryArticles() {
+  if (postsPending.value) return
+  await Promise.all([refreshPosts(), ...(metadataError.value ? [refreshMetadata()] : [])])
+}
 function onTagSelect(tag: string) {
   selectedTag.value = selectedTag.value === tag ? null : tag
 }
