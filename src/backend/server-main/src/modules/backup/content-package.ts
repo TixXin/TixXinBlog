@@ -9,6 +9,10 @@ import { createHash } from 'node:crypto'
 import sharp from 'sharp'
 import { SavePostDto } from '../post/dto/save-post.dto'
 import { SaveFlashDto } from '../flash/admin-flash.controller'
+import { SaveMomentDto } from '../moment/moment.dto'
+import { momentUrl, momentValues } from '../moment/moment-values'
+import { MOMENT_COMMENT_STATUSES } from '../../entities/moment-comment.entity'
+import type { MomentCommentStatus } from '../../entities/moment-comment.entity'
 import { SaveSiteSettingsDto } from '../site/site-settings.dto'
 import { COMMENT_STATUSES } from '../../entities/comment.entity'
 import type { CommentStatus } from '../../entities/comment.entity'
@@ -51,13 +55,31 @@ export interface PackageMedia {
   deleted: boolean
   base64?: string
 }
+export interface PackageMoment {
+  sourceId: string
+  createdAt: string
+  publishedAt: string | null
+  deleted: boolean
+  values: Omit<SaveMomentDto, 'requestId' | 'revision'>
+  comments: {
+    sourceId: string
+    author: string
+    avatar: string
+    content: string
+    isOwner: boolean
+    status: MomentCommentStatus
+    deleted: boolean
+    createdAt: string
+  }[]
+}
 export interface ContentPackage {
   format: 'tixxin-content'
-  version: 1
+  version: 2
   exportedAt: string
   mediaIncluded: boolean
   posts: PackagePost[]
   flashes: PackageFlash[]
+  moments: PackageMoment[]
   folders: string[]
   tags: { label: string; color: PostTagColor }[]
   site: Omit<SaveSiteSettingsDto, 'revision'>
@@ -147,14 +169,20 @@ export async function parseContentPackage(buffer: Buffer): Promise<ContentPackag
     'mediaIncluded',
     'posts',
     'flashes',
+    'moments',
     'folders',
     'tags',
     'site',
     'requireCommentApproval',
     'media',
   ])
-  if (source.format !== 'tixxin-content' || source.version !== 1)
+  if (
+    source.format !== 'tixxin-content' ||
+    ![1, 2].includes(Number(source.version)) ||
+    typeof source.version !== 'number'
+  )
     throw new BadRequestException('不支持的内容包格式或版本')
+  if (source.version === 1 && source.moments !== undefined) fail('v1 不支持朋友圈字段')
   const mediaIncluded = boolean(source.mediaIncluded, 'mediaIncluded')
   let commentsTotal = 0
   const posts = array(source.posts, 'posts', 1000).map((value, index): PackagePost => {
@@ -241,6 +269,54 @@ export async function parseContentPackage(buffer: Buffer): Promise<ContentPackag
       comments,
     }
   })
+  const moments = array(source.version === 1 ? [] : source.moments, 'moments', 2000).map(
+    (value, index): PackageMoment => {
+      const path = `moments[${index}]`
+      const row = record(value, path, ['sourceId', 'createdAt', 'publishedAt', 'deleted', 'values', 'comments'])
+      const rawValues = dto(SaveMomentDto, row.values, `${path}.values`)
+      if ('requestId' in (row.values as object) || 'revision' in (row.values as object) || !rawValues.content?.trim())
+        fail(`${path}.values`)
+      const values = momentValues(rawValues)
+      if (values.linkedArticleId && !posts.some((post) => post.sourceId === values.linkedArticleId))
+        fail('动态引用的文章不在内容包中')
+      const comments = array(row.comments, `${path}.comments`, 10000).map(
+        (value): PackageMoment['comments'][number] => {
+          const comment = record(value, '动态评论', [
+            'sourceId',
+            'author',
+            'avatar',
+            'content',
+            'isOwner',
+            'status',
+            'deleted',
+            'createdAt',
+          ])
+          if (!MOMENT_COMMENT_STATUSES.includes(comment.status as MomentCommentStatus)) fail('动态评论状态')
+          return {
+            sourceId: text(comment.sourceId, '动态评论编号', 120, 1),
+            author: text(comment.author, '动态评论作者', 80, 1),
+            avatar: momentUrl(text(comment.avatar, '动态评论头像', 2048), true, true),
+            content: text(comment.content, '动态评论内容', 1000, 1),
+            isOwner: boolean(comment.isOwner, '动态博主标记'),
+            status: comment.status as MomentCommentStatus,
+            deleted: boolean(comment.deleted, '动态评论删除标记'),
+            createdAt: date(comment.createdAt, '动态评论时间'),
+          }
+        },
+      )
+      if (new Set(comments.map((comment) => comment.sourceId)).size !== comments.length) fail('重复动态评论编号')
+      commentsTotal += comments.length
+      return {
+        sourceId: text(row.sourceId, '动态编号', 120, 1),
+        createdAt: date(row.createdAt, '动态创建时间'),
+        publishedAt: row.publishedAt === null ? null : date(row.publishedAt, '动态发布时间'),
+        deleted: boolean(row.deleted, '动态删除标记'),
+        values,
+        comments,
+      }
+    },
+  )
+  if (new Set(moments.map((note) => note.sourceId)).size !== moments.length) fail('重复动态编号')
   if (commentsTotal > 10000 || new Set(flashes.map((flash) => flash.sourceId)).size !== flashes.length)
     fail('评论总量或重复闪念编号')
   const folders = array(source.folders, 'folders', 1000).map((value) => text(value, '专栏名称', 64, 1).trim())
@@ -369,11 +445,12 @@ export async function parseContentPackage(buffer: Buffer): Promise<ContentPackag
   if (new Set(media.map((item) => item.id)).size !== media.length) fail('重复媒体编号')
   return {
     format: 'tixxin-content',
-    version: 1,
+    version: 2,
     exportedAt: date(source.exportedAt, '导出时间'),
     mediaIncluded,
     posts,
     flashes,
+    moments,
     folders,
     tags,
     site,

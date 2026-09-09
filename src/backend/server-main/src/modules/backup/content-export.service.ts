@@ -10,6 +10,8 @@ import { Post } from '../../entities/post.entity'
 import { Comment } from '../../entities/comment.entity'
 import { FlashNote } from '../../entities/flash-note.entity'
 import { FlashComment } from '../../entities/flash-comment.entity'
+import { Moment } from '../../entities/moment.entity'
+import { MomentComment } from '../../entities/moment-comment.entity'
 import { PostFolder } from '../../entities/post-folder.entity'
 import { PostTag } from '../../entities/post-tag.entity'
 import { MediaAsset } from '../../entities/media-asset.entity'
@@ -29,14 +31,15 @@ export class ContentExportService {
   async snapshot(mediaIncluded: boolean, manager?: EntityManager): Promise<ContentPackage> {
     const capture = async (em: EntityManager): Promise<ContentPackage> => {
       const [counts] = await em.execute<
-        { posts: number; flashes: number; comments: number; media: number; bytes: string }[]
+        { posts: number; flashes: number; moments: number; comments: number; media: number; bytes: string }[]
       >(
-        `select (select count(*)::int from post) as posts, (select count(*)::int from flash_note) as flashes, ((select count(*) from comment)+(select count(*) from flash_comment))::int as comments, (select count(*)::int from media_asset) as media, (select coalesce(sum(octet_length(coalesce(content_raw,content_sections::text,''))),0)::text from post) as bytes`,
+        `select (select count(*)::int from post) as posts, (select count(*)::int from flash_note) as flashes, (select count(*)::int from moment) as moments, ((select count(*) from comment)+(select count(*) from flash_comment)+(select count(*) from moment_comment))::int as comments, (select count(*)::int from media_asset) as media, (select coalesce(sum(octet_length(coalesce(content_raw,content_sections::text,''))),0)::text from post) as bytes`,
       )
       if (
         !counts ||
         counts.posts > 1000 ||
         counts.flashes > 2000 ||
+        counts.moments > 2000 ||
         counts.comments > 10000 ||
         counts.media > 300 ||
         Number(counts.bytes) > MAX_PACKAGE_BYTES
@@ -51,10 +54,13 @@ export class ContentExportService {
         { orderBy: { createdAt: 'asc', id: 'asc' } },
       )
       const assets = await em.find(MediaAsset, {}, { orderBy: { id: 'asc' } })
+      const moments = await em.find(Moment, {}, { orderBy: { id: 'asc' } })
+      const momentComments = await em.find(MomentComment, {}, { orderBy: { createdAt: 'asc', id: 'asc' } })
       if (
         posts.length > 1000 ||
         flashes.length > 2000 ||
-        comments.length + flashComments.length > 10000 ||
+        moments.length > 2000 ||
+        comments.length + flashComments.length + momentComments.length > 10000 ||
         assets.length > 300
       )
         throw new PayloadTooLargeException('内容规模超过浏览器包限制，请使用完整维护备份')
@@ -95,7 +101,7 @@ export class ContentExportService {
       void announcementUpdatedAt
       const result: ContentPackage = {
         format: 'tixxin-content',
-        version: 1,
+        version: 2,
         exportedAt: new Date().toISOString(),
         mediaIncluded,
         posts: posts.map((post) => {
@@ -123,6 +129,36 @@ export class ContentExportService {
             isArchived: note.isArchived,
           },
           comments: byFlash.get(note.id) ?? [],
+        })),
+        moments: moments.map((note) => ({
+          sourceId: note.id,
+          createdAt: note.createdAt.toISOString(),
+          publishedAt: note.publishedAt?.toISOString() ?? null,
+          deleted: !!note.deletedAt,
+          values: {
+            content: note.content,
+            topics: note.topics,
+            images: note.images,
+            location: note.location ?? null,
+            device: note.device ?? null,
+            mood: note.mood ?? null,
+            linkedArticleId: note.linkedArticle?.id ?? null,
+            linkedLink: note.linkedLink ?? null,
+            status: note.status,
+            isPinned: note.isPinned,
+          },
+          comments: momentComments
+            .filter((comment) => comment.moment.id === note.id)
+            .map((comment) => ({
+              sourceId: comment.id,
+              author: comment.author,
+              avatar: comment.avatar,
+              content: comment.content,
+              isOwner: comment.isOwner,
+              status: comment.status,
+              deleted: !!comment.deletedAt,
+              createdAt: comment.createdAt.toISOString(),
+            })),
         })),
         folders: folders.map((folder) => folder.label),
         tags: tags.map((tag) => ({ label: tag.label, color: tag.color })),

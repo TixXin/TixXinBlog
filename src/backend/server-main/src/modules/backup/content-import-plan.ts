@@ -10,7 +10,7 @@ import { SiteSettings } from '../../entities/site-settings.entity'
 import { CommentPolicy } from '../../entities/comment-policy.entity'
 import { ContentContext } from '../../entities/content-context.entity'
 import type { ContentImportPlan } from '../../entities/content-import.entity'
-import type { ContentPackage, PackagePost, PackageFlash } from './content-package'
+import type { ContentPackage, PackagePost, PackageFlash, PackageMoment } from './content-package'
 import { packageHash } from './content-package'
 import { canonicalTaxonomyLabel } from '../post/taxonomy-aliases'
 import { managedMediaIds } from '../media/media-references'
@@ -39,6 +39,19 @@ export function flashContentHash(values: PackageFlash['values']) {
     tags: [...new Set((values.tags ?? []).map((tag) => tag.trim()))].sort(),
     images: values.images ?? [],
     type: values.type ?? 'memo',
+    isPinned: values.isPinned ?? false,
+  })
+}
+export function momentContentHash(values: PackageMoment['values'], articleHash: string | null) {
+  return packageHash({
+    content: values.content?.trim() ?? '',
+    topics: [...new Set(values.topics ?? [])].sort(),
+    images: values.images ?? [],
+    location: values.location || null,
+    device: values.device || null,
+    mood: values.mood || null,
+    linkedLink: values.linkedLink ?? null,
+    articleHash,
     isPinned: values.isPinned ?? false,
   })
 }
@@ -72,6 +85,12 @@ export async function makeContentPlan(
     context: context.generation,
     posts: current.posts.map((post) => ({ id: post.sourceId, values: post.values })),
     flashes: current.flashes.map((flash) => ({ id: flash.sourceId, values: flash.values })),
+    moments: current.moments.map((note) => ({
+      id: note.sourceId,
+      values: note.values,
+      deleted: note.deleted,
+      comments: note.comments,
+    })),
     folders: current.folders,
     tags: current.tags,
     aliases: aliases.map((alias) => ({ kind: alias.kind, alias: alias.alias, target: alias.target })),
@@ -81,6 +100,18 @@ export async function makeContentPlan(
   })
   const existingPosts = new Set(current.posts.map((post) => postContentHash(post.values)))
   const existingFlashes = new Set(current.flashes.map((flash) => flashContentHash(flash.values)))
+  const currentPostHashes = new Map(current.posts.map((post) => [post.sourceId, postContentHash(post.values)]))
+  const sourcePostHashes = new Map<number, string>()
+  const existingMoments = new Set(
+    current.moments
+      .filter((note) => !note.deleted)
+      .map((note) =>
+        momentContentHash(
+          note.values,
+          note.values.linkedArticleId ? (currentPostHashes.get(note.values.linkedArticleId) ?? null) : null,
+        ),
+      ),
+  )
   const occupiedSlugs = new Set(addresses.map((address) => address.slug))
   const errors: string[] = []
   const postPlans: ContentImportPlan['posts'] = []
@@ -94,6 +125,7 @@ export async function makeContentPlan(
       errors.push(`文章 ${source.sourceId} 的历史目录名无法映射，请先调整目录`)
     }
     const hash = postContentHash(values)
+    sourcePostHashes.set(source.sourceId, hash)
     const duplicate = existingPosts.has(hash)
     const skip = strategy === 'skip' && duplicate
     let slug = source.values.slug ?? ''
@@ -132,6 +164,40 @@ export async function makeContentPlan(
       title: source.values.content?.slice(0, 100) ?? '',
       skip,
       reason: skip ? '跳过相同内容及其评论' : '创建新的闪念草稿',
+    }
+  })
+  const momentPlans = (input.moments ?? []).map((source) => {
+    const articleHash = source.values.linkedArticleId
+      ? (sourcePostHashes.get(source.values.linkedArticleId) ?? null)
+      : null
+    const hash = momentContentHash(source.values, articleHash)
+    const skip = strategy === 'skip' && existingMoments.has(hash)
+    const linkedArticleId = articleHash
+      ? (current.posts.find((post) => !post.deleted && currentPostHashes.get(post.sourceId) === articleHash)
+          ?.sourceId ?? null)
+      : null
+    if (!skip) {
+      existingMoments.add(hash)
+      comments += source.comments.filter((comment) => !comment.deleted).length
+      requiredValues.push(
+        source.values.content,
+        source.values.images,
+        source.values.linkedLink,
+        source.comments.filter((comment) => !comment.deleted).map((comment) => comment.avatar),
+      )
+      if (
+        source.values.linkedArticleId &&
+        postPlans.find((post) => post.sourceId === source.values.linkedArticleId)?.skip &&
+        !linkedArticleId
+      )
+        errors.push(`动态 ${source.sourceId} 的引用文章已删除，请选择创建副本或先恢复文章`)
+    }
+    return {
+      sourceId: source.sourceId,
+      title: source.values.content?.slice(0, 100) ?? '',
+      skip,
+      linkedArticleId,
+      reason: skip ? '跳过相同内容及其评论' : '创建新的朋友圈草稿；保留未删除评论的审核状态；点赞和访客身份不迁入',
     }
   })
   if (includeSettings) requiredValues.push(input.site.avatar)
@@ -186,12 +252,17 @@ export async function makeContentPlan(
     errors: [...new Set(errors)],
     posts: postPlans,
     flashes: flashPlans,
+    moments: momentPlans,
     media,
     counts: {
       posts: postPlans.filter((item) => !item.skip).length,
       flashes: flashPlans.filter((item) => !item.skip).length,
+      moments: momentPlans.filter((item) => !item.skip).length,
       comments,
-      skipped: postPlans.filter((item) => item.skip).length + flashPlans.filter((item) => item.skip).length,
+      skipped:
+        postPlans.filter((item) => item.skip).length +
+        flashPlans.filter((item) => item.skip).length +
+        momentPlans.filter((item) => item.skip).length,
       media: media.filter((item) => item.create).length,
       files: media.filter((item) => item.writeFile).length,
       settings: includeSettings,
