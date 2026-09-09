@@ -113,7 +113,19 @@ export async function createBrowserTestApp(corsOrigin) {
     }
     await em.flush()
     await app.listen(0, '127.0.0.1')
-    return { origin: await app.getUrl(), username, password, accountUsername, mediaSample, testOrm: orm, close }
+    return {
+      origin: await app.getUrl(),
+      username,
+      password,
+      accountUsername,
+      mediaSample,
+      testOrm: orm,
+      close,
+      stopServices: async () => {
+        await app?.close()
+        app = undefined
+      },
+    }
   } catch (error) {
     await close()
     throw error
