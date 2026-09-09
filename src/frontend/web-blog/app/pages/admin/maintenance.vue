@@ -66,8 +66,10 @@ corepack pnpm --filter server-main run backup:restore --directory &lt;备份目�
       </section>
       <section aria-label="导出内容包">
         <h2>导出内容包</h2>
-        <p>用于迁入文章、闪念、评论、目录和当前站点资料。迁入后创建新的草稿，已有内容保留。</p>
-        <p>内容包不包含账号、登录凭据、访客控制标识、历史修订和互动去重记录；完整数据库与媒体恢复使用维护流程。</p>
+        <p>用于迁入文章、闪念、朋友圈、评论、目录和当前站点资料。迁入后创建新的草稿，已有内容保留。</p>
+        <p>
+          内容包不包含账号、登录凭据、访客控制标识、点赞、历史修订和互动去重记录；完整数据库与媒体恢复使用维护流程。
+        </p>
         <label><input v-model="mediaIncluded" type="checkbox" :disabled="pending" />包含受管媒体图片文件</label>
         <p>
           {{
@@ -80,7 +82,7 @@ corepack pnpm --filter server-main run backup:restore --directory &lt;备份目�
       </section>
       <section aria-label="选择内容包">
         <h2>迁入内容</h2>
-        <p>支持本项目生成的 v1 JSON 内容包，最多 50MB。先校验格式、图片和引用，再确认导入。</p>
+        <p>支持本项目生成的 v1、v2 JSON 内容包，最多 50MB。v2 包含朋友圈；先校验格式、图片和引用，再确认导入。</p>
         <label
           >选择内容包<input type="file" accept="application/json,.json" :disabled="pending" @change="chooseFile"
         /></label>
@@ -109,8 +111,10 @@ corepack pnpm --filter server-main run backup:restore --directory &lt;备份目�
           {{ job.includeSettings ? '包含站点资料与审核设置' : '保留当前站点设置' }}
         </p>
         <p>
-          计划新建 {{ job.plan.counts.posts }} 篇文章草稿、{{ job.plan.counts.flashes }} 条闪念草稿，迁入
-          {{ job.plan.counts.comments }} 条评论；跳过 {{ job.plan.counts.skipped }} 项相同内容。
+          计划新建 {{ job.plan.counts.posts }} 篇文章草稿、{{ job.plan.counts.flashes }} 条闪念草稿、{{
+            job.plan.counts.moments ?? 0
+          }}
+          条朋友圈草稿，迁入 {{ job.plan.counts.comments }} 条评论；跳过 {{ job.plan.counts.skipped }} 项相同内容。
         </p>
         <p>新增 {{ job.plan.counts.media }} 个媒体记录，写入或修复 {{ job.plan.counts.files }} 个图片文件。</p>
         <p v-if="job.error" role="alert">{{ job.error }}</p>
@@ -119,12 +123,15 @@ corepack pnpm --filter server-main run backup:restore --directory &lt;备份目�
           <li v-for="issue in job.plan.errors" :key="issue">{{ issue }}</li>
         </ul>
         <details>
-          <summary>查看文章与闪念清单</summary>
+          <summary>查看文章、闪念与朋友圈清单</summary>
           <ul>
             <li v-for="post in job.plan.posts" :key="`post-${post.sourceId}`">
               {{ post.title }} · {{ post.reason }}{{ post.slug ? ` · 地址标识 ${post.slug}` : '' }}
             </li>
             <li v-for="flash in job.plan.flashes" :key="flash.sourceId">{{ flash.title }} · {{ flash.reason }}</li>
+            <li v-for="moment in job.plan.moments ?? []" :key="`moment-${moment.sourceId}`">
+              {{ moment.title }} · {{ moment.reason }}
+            </li>
           </ul>
         </details>
         <AdminSiteSettingsPreview
@@ -134,8 +141,10 @@ corepack pnpm --filter server-main run backup:restore --directory &lt;备份目�
         />
         <template v-if="job.result">
           <p role="status">
-            已创建 {{ job.result.posts.length }} 篇文章草稿、{{ job.result.flashes.length }} 条闪念草稿，迁入
-            {{ job.result.comments }} 条评论。
+            已创建 {{ job.result.posts.length }} 篇文章草稿、{{ job.result.flashes.length }} 条闪念草稿、{{
+              job.result.moments?.length ?? 0
+            }}
+            条朋友圈草稿，迁入 {{ job.result.comments }} 条评论。
           </p>
           <ul>
             <li v-for="post in job.result.posts" :key="post.id">
@@ -144,6 +153,7 @@ corepack pnpm --filter server-main run backup:restore --directory &lt;备份目�
             </li>
           </ul>
           <NuxtLink v-if="job.result.flashes.length" to="/admin/flashes?status=draft">检查闪念草稿</NuxtLink>
+          <NuxtLink v-if="job.result.moments?.length" to="/admin/moments?status=draft">检查朋友圈草稿</NuxtLink>
         </template>
         <template v-if="!job.completed && !job.expired">
           <p>

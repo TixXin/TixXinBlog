@@ -35,6 +35,7 @@ import { visibleCommentWhere } from '../comment/comment-visibility'
 import { ContentExportService } from './content-export.service'
 import { packageHash, parseContentPackage } from './content-package'
 import { makeContentPlan, normalizedPost } from './content-import-plan'
+import { importMoments } from './content-import-moments'
 type Admin = { id: string; sessionVersion: number; sessionId: string }
 type Options = { requestId: string; strategy: 'skip' | 'copy'; includeSettings: boolean }
 @Injectable()
@@ -230,7 +231,15 @@ export class ContentImportService {
         if (!job.plan.ready || current.basis !== job.plan.basis)
           throw new ConflictException('目标内容或配置已变化，请重新预览后确认')
         const payload = job.payload
-        const result: ContentImportResult = { posts: [], flashes: [], comments: 0, media: 0, files: 0, settings: false }
+        const result: ContentImportResult = {
+          posts: [],
+          flashes: [],
+          moments: [],
+          comments: 0,
+          media: 0,
+          files: 0,
+          settings: false,
+        }
         try {
           for (const plan of current.media) {
             if (plan.skip) continue
@@ -340,6 +349,7 @@ export class ContentImportService {
             }
             result.flashes.push({ sourceId: source.sourceId, id: saved.id })
           }
+          await importMoments(em, payload, current, result)
           if (job.includeSettings) {
             await this.sites.save({ ...payload.site, revision: current.siteRevision }, '从内容包迁入站点资料')
             await this.comments.savePolicy({
