@@ -84,7 +84,7 @@
           aria-label="留言详情"
         >
           <h2>留言详情</h2>
-          <button type="button" @click="close">关闭详情</button>
+          <button type="button" @click="closeDetail">关闭详情</button>
           <CommonRequestFeedback
             v-if="detailPending || detailError"
             compact
@@ -151,6 +151,7 @@ const interactions = useGuestbookInteractions(async () => {
 const labels = { published: '已公开', pending: '待审核', hidden: '已隐藏' }
 const composer = ref<HTMLElement | null>(null),
   detailPanel = ref<HTMLElement | null>(null)
+let detailTrigger: HTMLElement | null = null
 const composerProps = computed(() => ({
   draft: interactions.state.draft,
   replyTo: interactions.state.reply,
@@ -164,10 +165,17 @@ const composerProps = computed(() => ({
   identityLabel: '博主',
 }))
 async function show(id: number) {
+  detailTrigger = document.activeElement instanceof HTMLElement ? document.activeElement : null
   await focus(id)
   await nextTick()
   detailPanel.value?.focus({ preventScroll: true })
   detailPanel.value?.scrollIntoView({ block: 'nearest' })
+}
+function closeDetail() {
+  close()
+  nextTick(() => {
+    if (detailTrigger?.isConnected) detailTrigger.focus({ preventScroll: true })
+  })
 }
 function reply(note: ManagedGuestbookRecord) {
   interactions.setReply(guestbookDisplay(note))

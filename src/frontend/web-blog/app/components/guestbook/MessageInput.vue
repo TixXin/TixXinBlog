@@ -41,6 +41,7 @@
       <textarea
         ref="textareaRef"
         :value="draft"
+        :disabled="!hydrated"
         class="message-input__editor"
         :style="{ height: editorHeight + 'px' }"
         placeholder="输入留言内容..."
@@ -98,7 +99,12 @@ const emit = defineEmits<{
   discard: []
   login: []
 }>()
-const textareaRef = ref<HTMLTextAreaElement | null>(null)
+const textareaRef = ref<HTMLTextAreaElement | null>(null),
+  hydrated = ref(false)
+// SSR 阶段尚无输入事件监听，挂载后立即开放编辑，不等待登录恢复。
+onMounted(() => {
+  hydrated.value = true
+})
 const editorHeight = ref(72),
   isExpanded = ref(false)
 function toggleExpand() {

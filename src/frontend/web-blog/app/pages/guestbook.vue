@@ -167,6 +167,10 @@ const search = computed({
 const selectedDate = computed(() => (typeof route.query.date === 'string' ? route.query.date : null))
 const clearFilters = () => router.replace({ path: '/guestbook' })
 let observer: IntersectionObserver | null = null,
+  bottomResize: ResizeObserver | null = null,
+  followingLatest = false,
+  restoreLatest = false,
+  lastScrollTop = 0,
   boundScroll: HTMLElement | Window | null = null,
   initialized = false
 let anchor: { id: string; top: number; scroll: number; root: HTMLElement | null } | null = null
@@ -175,6 +179,11 @@ function root() {
 }
 function captureAnchor() {
   if (!mounted.value || !initialized || !messagesWrap.value) return
+  restoreLatest = isChatMode.value && followingLatest
+  if (restoreLatest) {
+    anchor = null
+    return
+  }
   const current = root(),
     bounds = current?.getBoundingClientRect() ?? { top: 0, bottom: innerHeight }
   const item = [...messagesWrap.value.querySelectorAll<HTMLElement>('[data-guestbook-id]')].find((node) => {
@@ -192,7 +201,8 @@ function captureAnchor() {
 }
 function restoreAnchor() {
   if (!mounted.value || pageScope.signal.aborted) return
-  if (anchor) {
+  if (restoreLatest && isChatMode.value) scrollLatest()
+  else if (anchor) {
     const item = messagesWrap.value?.querySelector<HTMLElement>(`[data-guestbook-id="${anchor.id}"]`),
       current = root()
     if (item) {
@@ -202,24 +212,39 @@ function restoreAnchor() {
     }
     anchor = null
   }
+  restoreLatest = false
   bindScroll()
   setupObserver()
 }
 function scrollLatest(smooth = false) {
   const current = root()
+  followingLatest = true
   scrollToRoot(current, current?.scrollHeight ?? document.documentElement.scrollHeight, smooth)
 }
 function checkBottom() {
   const current = root()
+  const position = current?.scrollTop ?? scrollY
   atBottom.value = current
     ? current.scrollHeight - current.scrollTop - current.clientHeight < 80
     : document.documentElement.scrollHeight - scrollY - innerHeight < 80
+  // 内容或输入区变高不代表用户离开底部；向上滚动才取消跟随。
+  if (atBottom.value) followingLatest = true
+  else if (position < lastScrollTop - 1) followingLatest = false
+  lastScrollTop = position
 }
 function bindScroll() {
   boundScroll?.removeEventListener('scroll', checkBottom)
+  bottomResize?.disconnect()
   boundScroll = root() ?? window
   boundScroll.addEventListener('scroll', checkBottom, { passive: true })
   checkBottom()
+  bottomResize = new ResizeObserver(() => {
+    if (followingLatest && isChatMode.value && initialized && !pageScope.signal.aborted) scrollLatest()
+  })
+  const viewport = root(),
+    list = messagesWrap.value?.querySelector('.message-list')
+  if (viewport) bottomResize.observe(viewport)
+  if (list) bottomResize.observe(list)
 }
 function setupObserver() {
   if (!mounted.value || !initialized || pageScope.signal.aborted) return
@@ -322,6 +347,7 @@ onMounted(async () => {
 })
 onBeforeUnmount(() => {
   observer?.disconnect()
+  bottomResize?.disconnect()
   boundScroll?.removeEventListener('scroll', checkBottom)
 })
 useSeoMeta({ title: '留言板', description: '留下你的足迹，交流技术与生活。', ogTitle: '留言板', ogType: 'website' })

@@ -6,6 +6,9 @@
  */
 import { expect, test } from '@playwright/test'
 import type { Page } from '@playwright/test'
+import { prepareMotionCapture, captureMotion } from './motionScreenshot'
+
+test.beforeEach(({ page, browserName }) => prepareMotionCapture(page, browserName))
 
 test('关闭JavaScript时首屏仍包含服务端文章列表', async ({ browser, baseURL }) => {
   const context = await browser.newContext({ javaScriptEnabled: false, baseURL })
@@ -69,7 +72,7 @@ test('收藏写入失败不假装成功，存储恢复后可收藏并刷新保�
   await expect(page.getByRole('button', { name: '已收藏', exact: true })).toBeVisible()
 })
 
-test('未上线动作前置说明，项目无占位链接，演示留言不发出业务写入', async ({ page }, testInfo) => {
+test('未上线动作前置说明，项目无占位链接，手机留言真实持久化', async ({ page }, testInfo) => {
   await page.goto('/')
   await expect(page.getByText('使用RSS阅读器订阅最新文章。邮件订阅尚未开放。')).toBeVisible()
   await page.goto('/projects')
@@ -83,22 +86,24 @@ test('未上线动作前置说明，项目无占位链接，演示留言不发�
   await page.goto('/guestbook')
   const writes: string[] = []
   page.on('request', (request) => {
-    if (request.method() === 'POST' && request.url().includes('/api/v1/')) writes.push(request.url())
+    if (request.method() === 'POST' && new URL(request.url()).pathname === '/api/v1/guestbook')
+      writes.push(request.url())
   })
-  const input = page.getByRole('textbox', { name: '演示留言内容', exact: true })
+  const input = page.getByRole('textbox', { name: '留言内容', exact: true })
   await expect(input).toBeVisible()
   const inputTop = (await input.boundingBox())!.y
   expect(inputTop).toBeLessThan(844)
-  await input.fill('UX 本页演示，不发送')
-  await page.getByRole('button', { name: '添加演示留言', exact: true }).click()
-  await page.getByRole('textbox', { name: '昵称 *', exact: true }).fill('UX 演示访客')
+  const content = '手机上留下的想法 ' + crypto.randomUUID()
+  await input.fill(content)
+  await page.getByRole('button', { name: '发送留言', exact: true }).click()
+  await page.getByPlaceholder('你的昵称', { exact: true }).fill('小林')
   await page.getByRole('button', { name: '确认身份', exact: true }).click()
-  await expect(page.getByText('UX 本页演示，不发送', { exact: true })).toBeVisible()
-  await expect(page.getByText('仅当前页面', { exact: true })).toBeVisible()
-  expect(writes).toEqual([])
-  await page.screenshot({ animations: 'disabled', path: testInfo.outputPath('guestbook-demo.png') })
+  await expect(page.getByText(content, { exact: true })).toBeVisible()
+  expect(writes).toHaveLength(1)
+  await expect(input).toHaveValue('')
+  await captureMotion(page, testInfo, 'guestbook-persistent.png')
   await page.reload()
-  await expect(page.getByText('UX 本页演示，不发送', { exact: true })).toHaveCount(0)
+  await expect(page.getByText(content, { exact: true })).toBeVisible()
 })
 
 async function theme(page: Page, id: string) {
