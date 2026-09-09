@@ -9,7 +9,7 @@
   <CommonPageFrame class="main-inner moment-detail-page" header-key="moment-return">
     <template #header>
       <div class="main-content__header moment-detail-header">
-        <NuxtLink to="/moments" class="back-btn" aria-label="返回朋友圈">
+        <NuxtLink :to="{ path: '/moments', query: filterQuery }" class="back-btn" aria-label="返回朋友圈">
           <Icon name="lucide:arrow-left" size="16" />
           <span>返回朋友圈</span>
         </NuxtLink>
@@ -20,6 +20,8 @@
           :stats="authorStats"
           :profile="ownerCard"
           :dates="momentDates"
+          :date-counts="momentDateCounts"
+          :available="!!metadata"
           :selected-date="selectedDate"
           @select-date="selectedDate = $event"
         >
@@ -47,14 +49,35 @@
           <!-- 动态卡片 + 上下条导航 -->
           <template v-else>
             <article class="moment-detail-card">
-              <p class="moment-detail-notice">演示动态；互动仅当前页面生效，不会发送给博主。</p>
-              <MomentCard :moment="moment" />
+              <CommonRequestFeedback
+                v-if="detailError"
+                compact
+                title="动态更新失败，仍显示已加载的内容"
+                @retry="refreshDetail()"
+              />
+              <MomentCard
+                :moment="moment"
+                :owner-profile="ownerProfile"
+                :state="interactions.states[moment.id]"
+                :syncing="detailPending"
+                :detail-query="filterQuery"
+                @like="interactions.like"
+                @draft="interactions.draft"
+                @comment="interactions.submit"
+                @comments="interactions.comments"
+              />
             </article>
 
+            <CommonRequestFeedback
+              v-if="navigationError"
+              compact
+              title="动态导航暂时不可用"
+              @retry="refreshNavigation()"
+            />
             <nav class="moment-detail-nav" aria-label="动态导航">
               <NuxtLink
                 v-if="prevMoment"
-                :to="`/moments/${prevMoment.id}`"
+                :to="{ path: `/moments/${prevMoment.id}`, query: filterQuery }"
                 class="moment-detail-nav__item moment-detail-nav__item--prev"
               >
                 <Icon name="lucide:chevron-left" size="18" class="moment-detail-nav__arrow" />
@@ -67,7 +90,7 @@
 
               <NuxtLink
                 v-if="nextMoment"
-                :to="`/moments/${nextMoment.id}`"
+                :to="{ path: `/moments/${nextMoment.id}`, query: filterQuery }"
                 class="moment-detail-nav__item moment-detail-nav__item--next"
               >
                 <div class="moment-detail-nav__text">
@@ -83,13 +106,29 @@
       </CommonCustomScrollbar>
     </template>
     <template #overlays>
+      <MomentInteractionDialogs
+        :visible="interactions.identityVisible.value"
+        @confirm="interactions.confirmIdentity"
+        @cancel="interactions.cancelIdentity"
+        @login="interactions.switchToLogin"
+      />
       <ClientOnly>
         <Teleport to="#right-sidebar-target">
           <SidebarRightSidebar>
+            <CommonRequestFeedback
+              v-if="overviewError"
+              class="card"
+              compact
+              title="动态统计暂时不可用"
+              :pending="overviewPending"
+              @retry="refreshOverview()"
+            />
             <SidebarMomentAuthorCard v-if="rightInfo" :stats="authorStats" :profile="ownerCard" />
             <SidebarMomentCalendarCard
               v-if="rightInfo"
               :moment-dates="momentDates"
+              :date-counts="momentDateCounts"
+              :available="!!metadata"
               :selected-date="selectedDate"
               @select-date="selectedDate = $event"
             />
@@ -102,70 +141,61 @@
 </template>
 
 <script setup lang="ts">
-import { MOMENT_TOPIC_DEFINITIONS } from '~/features/moment/topics'
-import type { MomentTopic } from '~/components/sidebar/MomentTopicCard.vue'
-
-const { moments: momentList, authorStats, ownerCard } = useMomentOverview()
-const { rightInfo, drawerInfo, drawerOpen } = useMomentSidebarPlacement()
-const { selectedDate } = useMomentFilters()
-const momentDates = computed(() => momentList.value.map((moment) => moment.date.slice(0, 10)))
-
+const pageScope = usePageRequestScope()
 const route = useRoute()
-const router = useRouter()
-
-const id = computed(() => route.params.id as string)
-
-// 时间倒序，"上一条"指更早，"下一条"指更晚（更符合博客时间线阅读习惯）
-const sortedMoments = computed(() =>
-  [...momentList.value].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()),
+const id = computed(() => String(route.params.id ?? ''))
+const { selectedDate, selectedTopic, filterQuery } = useMomentFilters()
+const interactions = useMomentInteractions()
+const [overview, detail] = await Promise.all([useMomentOverview(), useMomentDetail(id)])
+pageScope.assertActive()
+const {
+  metadata,
+  authorStats,
+  ownerCard,
+  ownerProfile,
+  momentTopics,
+  momentDates,
+  momentDateCounts,
+  error: overviewError,
+  pending: overviewPending,
+  refresh: refreshOverview,
+} = overview
+const {
+  moment,
+  pending: detailPending,
+  error: detailError,
+  refresh: refreshDetail,
+  navigation,
+  navigationError,
+  refreshNavigation,
+} = detail
+const { rightInfo, drawerInfo, drawerOpen } = useMomentSidebarPlacement()
+watch(
+  moment,
+  (value) => {
+    if (value) interactions.seed([value])
+  },
+  { immediate: true },
 )
-
-const currentIndex = computed(() => sortedMoments.value.findIndex((m) => m.id === id.value))
-const moment = computed(() => (currentIndex.value >= 0 ? sortedMoments.value[currentIndex.value] : null))
-if (!moment.value)
-  throw createError({ statusCode: 404, statusMessage: 'Not Found', data: { title: '动态不存在' }, fatal: true })
-
-// prev 指更晚（在排序数组中索引更小），next 指更早（索引更大）
-const prevMoment = computed(() => {
-  if (currentIndex.value <= 0) return null
-  return sortedMoments.value[currentIndex.value - 1] ?? null
-})
-const nextMoment = computed(() => {
-  if (currentIndex.value < 0 || currentIndex.value >= sortedMoments.value.length - 1) return null
-  return sortedMoments.value[currentIndex.value + 1] ?? null
-})
-
-function truncate(str: string, n: number) {
-  return str.length > n ? `${str.slice(0, n)}…` : str
+const prevMoment = computed(() => navigation.value?.prev ?? null)
+const nextMoment = computed(() => navigation.value?.next ?? null)
+function truncate(value: string, max: number) {
+  return value.length > max ? value.slice(0, max) + '…' : value
 }
-
-// OG / SEO：摘要取 content 前 120 字，首图作为 ogImage
-const excerpt = computed(() => {
-  if (!moment.value) return '动态不存在或已被删除'
-  return moment.value.content.replace(/\s+/g, ' ').slice(0, 120)
-})
-
-const ogImage = computed(() => moment.value?.images?.[0] ?? '/avatar-photo.webp')
-
-const pageTitle = computed(() => {
-  if (!moment.value) return '动态不存在'
-  const first = moment.value.content.replace(/\s+/g, ' ').slice(0, 36)
-  return `${first}${moment.value.content.length > 36 ? '…' : ''}`
-})
-
+function onTopicSelect(value: string | null) {
+  selectedTopic.value = value
+}
+const excerpt = computed(() => moment.value?.content.replace(/\s+/g, ' ').slice(0, 120) ?? '动态不存在')
+const pageTitle = computed(() => truncate(excerpt.value, 36))
 useSeoMeta({
   title: () => pageTitle.value,
   description: () => excerpt.value,
-  ogTitle: () => `${pageTitle.value} - TixXin 朋友圈`,
+  ogTitle: () => pageTitle.value + ' - ' + ownerCard.value.name + ' 朋友圈',
   ogDescription: () => excerpt.value,
   ogType: 'article',
-  ogImage,
+  ogImage: () => moment.value?.images?.[0] ?? ownerCard.value.avatar,
   twitterCard: 'summary_large_image',
-  twitterTitle: () => `${pageTitle.value} - TixXin 朋友圈`,
-  twitterDescription: () => excerpt.value,
 })
-
-// 结构化数据（SocialMediaPosting）
 useHead({
   script: [
     {
@@ -179,32 +209,13 @@ useHead({
               articleBody: moment.value.content,
               datePublished: moment.value.date,
               image: moment.value.images ?? [],
-              author: { '@type': 'Person', name: 'TixXin' },
-              publisher: { '@type': 'Organization', name: 'TixXin Blog' },
+              author: { '@type': 'Person', name: ownerCard.value.name },
             }).replace(/</g, String.fromCharCode(92) + 'u003c')
           : '',
       ),
     },
   ],
 })
-
-// 侧栏数据
-
-const momentTopics = computed<MomentTopic[]>(() =>
-  MOMENT_TOPIC_DEFINITIONS.map((t) => ({
-    ...t,
-    count: momentList.value.filter((m) => m.topics?.includes(t.name)).length,
-  })),
-)
-
-// 侧栏话题点击 → 跳到话题聚合页
-function onTopicSelect(topic: string | null) {
-  if (topic) {
-    router.push(`/moments/topic/${encodeURIComponent(topic)}`)
-  } else {
-    router.push('/moments')
-  }
-}
 </script>
 
 <style lang="scss" scoped>

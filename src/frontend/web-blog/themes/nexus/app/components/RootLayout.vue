@@ -31,6 +31,8 @@
               <SidebarMomentAuthorCard :stats="momentAuthorStats" :profile="ownerCard" />
               <SidebarMomentCalendarCard
                 :moment-dates="momentDates"
+                :date-counts="momentDateCounts"
+                :available="!!momentMetadata"
                 :selected-date="selectedDate"
                 @select-date="onDateSelect"
               />
@@ -91,7 +93,15 @@ import DailyQuoteCard from './DailyQuoteCard.vue'
 import SidebarFooterCard from './SidebarFooterCard.vue'
 
 const { siteStats, error: statsError } = await usePostMetadata()
-const { moments: momentList, authorStats: momentAuthorStats, ownerCard } = useMomentOverview()
+const route = useRoute()
+const isMomentsMode = computed(() => route.path.startsWith('/moments'))
+const {
+  authorStats: momentAuthorStats,
+  ownerCard,
+  momentDates,
+  momentDateCounts,
+  metadata: momentMetadata,
+} = await useMomentOverview({ immediate: isMomentsMode.value })
 const { sidebarAnimationClass } = useAppearanceSettings()
 useSidebarExitAnimation('.aside-right')
 
@@ -99,13 +109,10 @@ useSidebarExitAnimation('.aside-right')
 const { isFullbleed } = useFullbleedPage()
 
 // 监听首页 Tab 状态，切换左侧栏内容
-const route = useRoute()
 const showRightSidebar = computed(() => route.meta.rightSidebar !== false)
-const isMomentsMode = computed(() => route.path.startsWith('/moments'))
 
 // 朋友圈日历数据（通过 composable 与 index.vue 共享 selectedDate）
 const { selectedDate } = useMomentFilters()
-const momentDates = computed(() => momentList.value.map((m) => m.date.slice(0, 10)))
 
 function onDateSelect(date: string | null) {
   selectedDate.value = date

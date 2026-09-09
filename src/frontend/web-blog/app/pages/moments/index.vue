@@ -22,9 +22,18 @@
             :stats="authorStats"
             :profile="ownerCard"
             :dates="momentDates"
+            :date-counts="momentDateCounts"
+            :available="!!metadata"
             :selected-date="selectedDate"
             @select-date="onDateSelect"
           >
+            <CommonRequestFeedback
+              v-if="overviewError"
+              compact
+              title="动态统计暂时不可用"
+              :pending="overviewPending"
+              @retry="refreshOverview()"
+            />
             <SidebarMomentTopicCard :topics="momentTopics" :active-topic="selectedTopic" @select="onTopicSelect" />
             <button
               v-if="searchKeyword || selectedTopic || selectedDate"
@@ -35,7 +44,7 @@
               清除动态筛选
             </button>
             <SidebarMomentPhotoWallCard :images="photoWallImages" @select-moment="onPhotoSelect" />
-            <SidebarMomentTimeCapsuleCard :moments="moments" />
+            <SidebarMomentTimeCapsuleCard :moments="recollections" />
           </MomentInfoDrawer>
           <NuxtLink v-if="isOwner" to="/admin/moments/new" class="moments-header__publish" aria-label="发布新动态">
             <Icon name="lucide:plus" size="14" />
@@ -56,27 +65,53 @@
         <div class="moments-content">
           <MomentList
             :moments="moments"
-            :selected-topic="selectedTopic"
-            :selected-date="selectedDate"
-            :keyword="searchKeyword"
+            :owner-profile="ownerProfile"
+            :states="interactions.states"
+            :pending="feedPending"
+            :error-message="feedError?.message"
+            :has-more="hasMore"
+            :filtered="!!(searchKeyword || selectedTopic || selectedDate)"
+            :detail-query="filterQuery"
+            @retry="retryFeed"
+            @more="loadMore"
+            @like="interactions.like"
+            @draft="interactions.draft"
+            @comment="interactions.submit"
+            @comments="interactions.comments"
           />
         </div>
       </CommonCustomScrollbar>
     </template>
     <template #overlays>
+      <MomentInteractionDialogs
+        :visible="interactions.identityVisible.value"
+        @confirm="interactions.confirmIdentity"
+        @cancel="interactions.cancelIdentity"
+        @login="interactions.switchToLogin"
+      />
       <ClientOnly>
         <Teleport to="#right-sidebar-target">
           <SidebarRightSidebar>
+            <CommonRequestFeedback
+              v-if="overviewError"
+              class="card"
+              compact
+              title="动态统计暂时不可用"
+              :pending="overviewPending"
+              @retry="refreshOverview()"
+            />
             <SidebarMomentAuthorCard v-if="rightInfo" :stats="authorStats" :profile="ownerCard" />
             <SidebarMomentPhotoWallCard :images="photoWallImages" @select-moment="onPhotoSelect" />
             <SidebarMomentCalendarCard
               v-if="rightInfo"
               :moment-dates="momentDates"
+              :date-counts="momentDateCounts"
+              :available="!!metadata"
               :selected-date="selectedDate"
               @select-date="onDateSelect"
             />
             <SidebarMomentTopicCard :topics="momentTopics" :active-topic="selectedTopic" @select="onTopicSelect" />
-            <SidebarMomentTimeCapsuleCard :moments="moments" />
+            <SidebarMomentTimeCapsuleCard :moments="recollections" />
           </SidebarRightSidebar>
         </Teleport>
       </ClientOnly>
@@ -85,70 +120,65 @@
 </template>
 
 <script setup lang="ts">
-import { MOMENT_TOPIC_DEFINITIONS } from '~/features/moment/topics'
 import { mockPostTabs } from '~/features/post/mock'
-import type { MomentItem } from '~/features/moment/types'
-import type { MomentTopic } from '~/components/sidebar/MomentTopicCard.vue'
-import type { MomentPhotoItem } from '~/components/sidebar/MomentPhotoWallCard.vue'
-
-const { moments: momentList, authorStats, ownerCard } = useMomentOverview()
+const pageScope = usePageRequestScope()
+const { searchKeyword, selectedTopic, selectedDate, page, setPage, filterQuery, clearFilters } = useMomentFilters()
+const interactions = useMomentInteractions()
+const overviewRequest = useMomentOverview()
+const feedRequest = useMomentFeed({ page, q: searchKeyword, topic: selectedTopic, date: selectedDate })
+const [overview, feed] = await Promise.all([overviewRequest, feedRequest])
+pageScope.assertActive()
+const {
+  metadata,
+  authorStats,
+  ownerCard,
+  ownerProfile,
+  momentTopics,
+  momentDates,
+  momentDateCounts,
+  photoWallImages,
+  moments: recollections,
+  error: overviewError,
+  pending: overviewPending,
+  refresh: refreshOverview,
+} = overview
+const { moments, total, pending: feedPending, error: feedError, refresh: refreshFeed } = feed
 const { rightInfo, drawerInfo, drawerOpen } = useMomentSidebarPlacement()
-const { currentUser } = useCurrentUser()
-const isOwner = computed(() => currentUser.value?.role === 'owner')
-
+const { isLoggedIn: isOwner } = useCurrentUser()
 const tabs = mockPostTabs
-
+const hasMore = computed(() => moments.value.length < total.value)
+const advancing = ref(false)
+watch(moments, interactions.seed, { immediate: true })
+watch([total, feedPending, feedError], () => {
+  if (!feedPending.value && !feedError.value && page.value > Math.max(1, Math.ceil(total.value / 15)))
+    void setPage(Math.max(1, Math.ceil(total.value / 15)), true)
+})
+async function loadMore() {
+  if (advancing.value || feedPending.value || feedError.value || !hasMore.value) return
+  advancing.value = true
+  try {
+    await setPage(page.value + 1)
+  } finally {
+    advancing.value = false
+  }
+}
+async function retryFeed() {
+  await Promise.all([refreshFeed(), ...(overviewError.value ? [refreshOverview()] : [])])
+}
+function onTopicSelect(value: string | null) {
+  selectedTopic.value = value
+}
+function onDateSelect(value: string | null) {
+  selectedDate.value = value
+}
+function onPhotoSelect(id: string) {
+  void navigateTo({ path: '/moments/' + encodeURIComponent(id), query: filterQuery.value })
+}
 useSeoMeta({
   title: '朋友圈',
   description: '记录生活点滴，分享日常碎片',
-  ogTitle: '朋友圈 - TixXin Blog',
-  ogDescription: '记录生活点滴，分享日常碎片',
+  ogTitle: () => ownerCard.value.name + ' 的朋友圈',
 })
-
-const moments = computed(() => momentList.value)
-
-// 搜索关键词（fuse.js 模糊匹配 content/topics/location）
-const { searchKeyword, selectedTopic, selectedDate, clearFilters } = useMomentFilters()
-
-function onTopicSelect(topicName: string | null) {
-  selectedTopic.value = topicName
-}
-
-// 日期筛选
-function onDateSelect(date: string | null) {
-  selectedDate.value = date
-}
-
-// 照片点击 — 滚动到对应动态
-function onPhotoSelect(momentId: string) {
-  const el = document.getElementById(`moment-${momentId}`)
-  el?.scrollIntoView({ behavior: 'smooth', block: 'center' })
-}
-
-// 作者名片数据
-
-// 日历数据 — 从动态列表提取日期
-const momentDates = computed(() => momentList.value.map((m) => m.date.slice(0, 10)))
-
-// 精选照片墙 — 按获赞数排序，取带图片的动态的首张图
-const photoWallImages = computed<MomentPhotoItem[]>(() => {
-  return momentList.value
-    .filter((m): m is MomentItem & { images: [string, ...string[]] } => !!m.images && m.images.length > 0)
-    .sort((a, b) => b.likes - a.likes)
-    .slice(0, 9)
-    .map((m) => ({
-      src: m.images[0],
-      momentId: m.id,
-    }))
-})
-
-// 热门话题 — 复用共享话题定义，动态计数
-const momentTopics = computed<MomentTopic[]>(() =>
-  MOMENT_TOPIC_DEFINITIONS.map((t) => ({
-    ...t,
-    count: momentList.value.filter((m) => m.topics?.includes(t.name)).length,
-  })),
-)
 </script>
 
 <style lang="scss" scoped>

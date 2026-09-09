@@ -34,9 +34,14 @@
     </div>
 
     <div class="moment-calendar-card__grid">
-      <span
+      <button
         v-for="(day, idx) in calendarDays"
         :key="idx"
+        type="button"
+        :disabled="!day?.hasMoment"
+        :aria-hidden="!day || undefined"
+        :aria-label="day ? `${day.dateStr}，${day.momentCount} 条动态` : undefined"
+        :aria-pressed="day?.dateStr === selectedDate"
         class="moment-calendar-card__day"
         :class="{
           'is-empty': !day,
@@ -52,7 +57,7 @@
           {{ day.num }}
           <span v-if="day.hasMoment" class="moment-calendar-card__dot" />
         </template>
-      </span>
+      </button>
     </div>
 
     <div class="moment-calendar-card__footer">
@@ -70,7 +75,7 @@
         </span>
         <span class="moment-calendar-card__legend">
           <span class="moment-calendar-card__legend-dot" />
-          本月 {{ monthMomentCount }} 条动态
+          本月 {{ available ? monthMomentCount : '—' }} 条动态 · UTC
         </span>
       </div>
     </div>
@@ -78,10 +83,15 @@
 </template>
 
 <script setup lang="ts">
-const props = defineProps<{
-  momentDates: string[] // ISO 日期字符串数组, e.g. ['2026-04-04', '2026-04-03']
-  selectedDate?: string | null
-}>()
+const props = withDefaults(
+  defineProps<{
+    momentDates?: string[]
+    dateCounts?: Record<string, number>
+    available?: boolean
+    selectedDate?: string | null
+  }>(),
+  { momentDates: () => [], available: true, dateCounts: undefined, selectedDate: null },
+)
 
 const emit = defineEmits<{
   'select-date': [date: string | null]
@@ -89,18 +99,18 @@ const emit = defineEmits<{
 
 const weekdays = ['一', '二', '三', '四', '五', '六', '日']
 
-const viewYear = ref(new Date().getFullYear())
-const viewMonth = ref(new Date().getMonth()) // 0-indexed
+const viewYear = ref(new Date().getUTCFullYear())
+const viewMonth = ref(new Date().getUTCMonth())
 
 // 侧栏与抽屉切换会重新挂载日历；从共享筛选恢复月份，避免选中日期离开可见月份。
 watch(
   () => props.selectedDate,
   (value) => {
     if (!value) return
-    const date = new Date(`${value}T12:00:00`)
-    if (Number.isNaN(date.getTime())) return
-    viewYear.value = date.getFullYear()
-    viewMonth.value = date.getMonth()
+    const date = new Date(`${value}T12:00:00Z`)
+    if (Number.isNaN(date.getTime()) || date.toISOString().slice(0, 10) !== value) return
+    viewYear.value = date.getUTCFullYear()
+    viewMonth.value = date.getUTCMonth()
   },
   { immediate: true },
 )
@@ -109,7 +119,7 @@ const monthLabel = computed(() => `${viewYear.value}年${viewMonth.value + 1}月
 
 const isCurrentMonth = computed(() => {
   const now = new Date()
-  return viewYear.value === now.getFullYear() && viewMonth.value === now.getMonth()
+  return viewYear.value === now.getUTCFullYear() && viewMonth.value === now.getUTCMonth()
 })
 
 function prevMonth() {
@@ -134,8 +144,8 @@ function nextMonth() {
 /** 回到今天 */
 function goToday() {
   const now = new Date()
-  viewYear.value = now.getFullYear()
-  viewMonth.value = now.getMonth()
+  viewYear.value = now.getUTCFullYear()
+  viewMonth.value = now.getUTCMonth()
 }
 
 interface CalendarDay {
@@ -149,6 +159,7 @@ interface CalendarDay {
 
 /** 按日期聚合动态数量 */
 const momentDateMap = computed(() => {
+  if (props.dateCounts) return new Map(Object.entries(props.dateCounts))
   const map = new Map<string, number>()
   props.momentDates.forEach((d) => {
     const key = d.slice(0, 10)
@@ -160,13 +171,13 @@ const momentDateMap = computed(() => {
 const calendarDays = computed<(CalendarDay | null)[]>(() => {
   const y = viewYear.value
   const m = viewMonth.value
-  const firstDay = new Date(y, m, 1)
-  const daysInMonth = new Date(y, m + 1, 0).getDate()
+  const firstDay = new Date(Date.UTC(y, m, 1))
+  const daysInMonth = new Date(Date.UTC(y, m + 1, 0)).getUTCDate()
 
   // Monday=0 offset
-  const startOffset = (firstDay.getDay() + 6) % 7
+  const startOffset = (firstDay.getUTCDay() + 6) % 7
   const today = new Date()
-  const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`
+  const todayStr = today.toISOString().slice(0, 10)
 
   const result: (CalendarDay | null)[] = []
 
@@ -177,7 +188,7 @@ const calendarDays = computed<(CalendarDay | null)[]>(() => {
 
   for (let d = 1; d <= daysInMonth; d++) {
     const dateStr = `${y}-${String(m + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`
-    const isFuture = new Date(y, m, d) > today
+    const isFuture = dateStr > todayStr
     const momentCount = momentDateMap.value.get(dateStr) || 0
     result.push({
       num: d,
@@ -194,22 +205,22 @@ const calendarDays = computed<(CalendarDay | null)[]>(() => {
 
 const monthMomentCount = computed(() => {
   const prefix = `${viewYear.value}-${String(viewMonth.value + 1).padStart(2, '0')}`
-  return props.momentDates.filter((d) => d.startsWith(prefix)).length
+  return [...momentDateMap.value].filter(([date]) => date.startsWith(prefix)).reduce((sum, [, count]) => sum + count, 0)
 })
 
 /** 计算最近连续发布天数 */
 const streak = computed(() => {
-  const sortedDates = [...new Set(props.momentDates.map((d) => d.slice(0, 10)))].sort().reverse()
+  const sortedDates = [...momentDateMap.value.keys()].sort().reverse()
   const latest = sortedDates[0]
   if (!latest) return 0
 
   const today = new Date()
-  today.setHours(0, 0, 0, 0)
+  today.setUTCHours(0, 0, 0, 0)
 
   // 从今天或最近一条动态开始往回数
   let count = 0
   const startDate = new Date(latest)
-  startDate.setHours(0, 0, 0, 0)
+  startDate.setUTCHours(0, 0, 0, 0)
 
   // 如果最近的动态不是今天或昨天，不算连续
   const diffDays = Math.floor((today.getTime() - startDate.getTime()) / 86400000)
@@ -219,7 +230,7 @@ const streak = computed(() => {
   const checkDate = new Date(startDate)
   while (dateSet.has(checkDate.toISOString().slice(0, 10))) {
     count++
-    checkDate.setDate(checkDate.getDate() - 1)
+    checkDate.setUTCDate(checkDate.getUTCDate() - 1)
   }
 
   return count
