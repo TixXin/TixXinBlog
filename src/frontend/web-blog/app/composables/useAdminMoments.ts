@@ -36,6 +36,7 @@ export function useAdminMoments() {
   let alive = true,
     version = 0,
     commentsVersion = 0
+  let lastActor = auth.currentUser.value?.id
   async function load() {
     const current = ++version
     pending.value = true
@@ -83,21 +84,24 @@ export function useAdminMoments() {
   async function perform(note: ManagedMoment, operation: () => Promise<void>) {
     if (busyIds.value.includes(note.id) || !auth.isLoggedIn.value) return
     busyIds.value.push(note.id)
+    const actor = auth.currentUser.value?.id
     try {
       await operation()
     } catch (cause) {
-      if (alive) toast.error(cause instanceof Error ? cause.message : '操作失败，请重试')
+      if (alive && actor === auth.currentUser.value?.id)
+        toast.error(cause instanceof Error ? cause.message : '操作失败，请重试')
     } finally {
       busyIds.value = busyIds.value.filter((id) => id !== note.id)
     }
   }
   async function update(note: ManagedMoment, patch: Partial<MomentEditable>) {
+    const actor = auth.currentUser.value?.id
     await perform(note, async () => {
       const result = await repo.update(note.id, patch, note.revision)
       if (result.status !== 'published') store.forget(note.id)
       else store.invalidate()
       void app.runWithContext(() => refreshNuxtData(['moment-overview', 'moment-feed', `moment-detail:${note.id}`]))
-      if (alive) {
+      if (alive && actor === auth.currentUser.value?.id) {
         if (commentNote.value?.id === note.id) commentNote.value = result
         toast.success('动态状态已更新')
         await load()
@@ -105,13 +109,14 @@ export function useAdminMoments() {
     })
   }
   async function remove(note: ManagedMoment) {
+    const actor = auth.currentUser.value?.id
     if (busyIds.value.includes(note.id) || !window.confirm('确定删除这条动态及其互动记录吗？')) return
     await perform(note, async () => {
       await repo.remove(note.id, note.revision)
       store.forget(note.id)
       invalidateMomentComments(app, note.id)
       void app.runWithContext(() => refreshNuxtData(['moment-overview', 'moment-feed', `moment-detail:${note.id}`]))
-      if (alive) {
+      if (alive && actor === auth.currentUser.value?.id) {
         if (commentNote.value?.id === note.id) commentNote.value = null
         toast.success('动态已删除')
         await load()
@@ -164,30 +169,33 @@ export function useAdminMoments() {
     void app.runWithContext(() => refreshNuxtData(['moment-overview', 'moment-feed', `moment-detail:${id}`]))
   }
   async function moderate(comment: MomentCommentItem, next: 'published' | 'pending' | 'hidden') {
+    const actor = auth.currentUser.value?.id
     const note = commentNote.value
     if (!note) return
     await perform(note, async () => {
       const result = await repo.moderate(note.id, comment.id, next, comment.moderationStatus ?? 'published')
       invalidateComments(note.id, result.commentCount)
-      if (alive) {
+      if (alive && actor === auth.currentUser.value?.id) {
         await openComments(note, commentPage.value)
         await load()
       }
     })
   }
   async function removeComment(comment: MomentCommentItem) {
+    const actor = auth.currentUser.value?.id
     const note = commentNote.value
     if (!note || busyIds.value.includes(note.id) || !window.confirm('确定删除这条评论吗？')) return
     await perform(note, async () => {
       const result = await repo.removeComment(note.id, comment.id)
       invalidateComments(note.id, result.commentCount)
-      if (alive) {
+      if (alive && actor === auth.currentUser.value?.id) {
         await openComments(note, 1)
         await load()
       }
     })
   }
   async function reply() {
+    const actor = auth.currentUser.value?.id
     const note = commentNote.value,
       content = replyDraft.value.trim()
     if (!note || !content) return
@@ -198,7 +206,7 @@ export function useAdminMoments() {
     await perform(note, async () => {
       const result = await repo.comment(note.id, { requestId: replyRequest.value, content }, true)
       invalidateComments(note.id, result.commentCount)
-      if (alive) {
+      if (alive && actor === auth.currentUser.value?.id) {
         if (replyDraft.value.trim() === content) replyDraft.value = ''
         replyRequest.value = ''
         replyBody.value = ''
@@ -208,7 +216,14 @@ export function useAdminMoments() {
       }
     })
   }
+  const protectReply = (event: BeforeUnloadEvent) => {
+    if (replyDraft.value.trim()) {
+      event.preventDefault()
+      event.returnValue = ''
+    }
+  }
   onMounted(() => {
+    window.addEventListener('beforeunload', protectReply)
     const edit = read('edit')
     if (edit) void router.replace('/admin/moments/' + encodeURIComponent(edit))
     else void load()
@@ -232,25 +247,31 @@ export function useAdminMoments() {
   })
   watch(
     () => auth.currentUser.value?.id,
-    (next, previous) => {
-      if (next && previous && next !== previous) {
+    (next) => {
+      if (next && lastActor && next !== lastActor) {
         items.value = []
         commentNote.value = null
+        commentItems.value = []
         replyDraft.value = ''
+        replyBody.value = ''
+        replyRequest.value = ''
         version++
         commentsVersion++
         commentsPending.value = false
         void load()
       }
+      if (next) lastActor = next
     },
   )
   onBeforeRouteLeave(() => !replyDraft.value.trim() || window.confirm('有尚未发送的动态回复，确定离开吗？'))
   onScopeDispose(() => {
+    if (import.meta.client) window.removeEventListener('beforeunload', protectReply)
     alive = false
     version++
     commentsVersion++
   })
   return {
+    restoringPending: auth.restoringPending,
     isLoggedIn: auth.isLoggedIn,
     items,
     total,
