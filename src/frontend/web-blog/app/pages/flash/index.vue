@@ -72,7 +72,6 @@
     <template #default>
       <CommonCustomScrollbar class="flash-page__body" viewport-class="flash-page__viewport" primary>
         <div class="flash-page__content">
-          <p v-if="storageError" role="alert">{{ storageError }}</p>
           <!-- 类型 tab：全部 / 灵感 / 待办 / 随记 -->
           <div class="flash-page__type-tabs" role="group" aria-label="按类型筛选">
             <button
@@ -130,11 +129,14 @@
           <FlashNoteList
             :notes="filteredNotes"
             :pending-ids="pendingIds"
-            :loading="loading"
+            :loading="listPending"
+            :error-message="listError"
+            :empty-message="emptyMessage"
             :read-only="isReadOnly"
             :current-user-id="currentUserId"
             :guest-id="guestId"
             :highlighted-id="highlightedNoteId"
+            @retry="retryList"
             @remove="onRemove"
             @edit="onEdit"
             @toggle-like="onToggleLike"
@@ -183,24 +185,25 @@
               <div class="flash-stat-card">
                 <div class="flash-stat-card__row">
                   <span class="flash-stat-card__label">{{ isLoggedIn ? '闪念总数' : '博主总数' }}</span>
-                  <span class="flash-stat-card__value">{{ notes.length }}</span>
+                  <span class="flash-stat-card__value">{{ loaded ? notes.length : '—' }}</span>
                 </div>
                 <div class="flash-stat-card__divider" />
                 <div class="flash-stat-card__row">
                   <span class="flash-stat-card__label">本月新增</span>
-                  <span class="flash-stat-card__value">{{ monthlyCount }}</span>
+                  <span class="flash-stat-card__value">{{ loaded ? monthlyCount : '—' }}</span>
                 </div>
               </div>
 
               <!-- 发布日历 -->
               <SidebarFlashCalendarCard
+                v-if="loaded"
                 :note-dates="noteDates"
                 :selected-date="selectedDate"
                 @select-date="onSelectDate"
               />
 
               <!-- 时间胶囊：去年今日 + 随机回顾 -->
-              <SidebarFlashTimeCapsuleCard :notes="notes" />
+              <SidebarFlashTimeCapsuleCard v-if="loaded" :notes="notes" />
 
               <!-- 标签云 -->
               <div v-if="tagCloud.length > 0" class="flash-tag-cloud">
@@ -256,6 +259,7 @@ const {
   error: storageError,
   notes,
   loading,
+  loaded,
   isReadOnly,
   tagCloud,
   monthlyCount,
@@ -400,8 +404,12 @@ onMounted(() => {
 // 登录态变化时重新加载（登入 / 切换用户）
 watch(isLoggedIn, (loggedIn) => {
   if (!loggedIn) {
+    archiveVersion += 1
     showArchive.value = false
     archivedNotes.value = []
+    archiveLoaded.value = false
+    archiveLoading.value = false
+    archiveError.value = null
   }
   void load(true)
 })
@@ -474,7 +482,7 @@ async function onSetArchived(payload: { id: string; archived: boolean }) {
   await runNoteAction(payload.id, async () => {
     const changed = await setArchived(payload.id, payload.archived)
     if (!changed) return
-    archivedNotes.value = await loadArchived()
+    await refreshArchived()
     if (!payload.archived) await load(true)
     success(payload.archived ? '已归档' : '已恢复到主列表')
   })
@@ -483,16 +491,51 @@ async function onSetArchived(payload: { id: string; archived: boolean }) {
 // ---- 归档箱 ----
 const showArchive = ref(false)
 const archivedNotes = ref<FlashNote[]>([])
+const archiveLoading = ref(false)
+const archiveLoaded = ref(false)
+const archiveError = ref<string | null>(null)
+let archiveVersion = 0
+const listError = computed(() => (showArchive.value ? archiveError.value : storageError.value))
+const listPending = computed(() =>
+  showArchive.value
+    ? archiveLoading.value || (!archiveLoaded.value && !archiveError.value)
+    : loading.value || (!loaded.value && !storageError.value),
+)
+const emptyMessage = computed(() => {
+  if (activeTag.value || selectedDate.value || debouncedQuery.value || typeFilter.value)
+    return '没有匹配的闪念，请调整筛选条件'
+  return showArchive.value ? '归档箱暂无闪念' : undefined
+})
+
+async function refreshArchived() {
+  if (archiveLoading.value) return
+  const version = ++archiveVersion
+  archiveLoading.value = true
+  archiveError.value = null
+  try {
+    const result = await loadArchived()
+    if (version !== archiveVersion || !isLoggedIn.value) return
+    archivedNotes.value = result
+    archiveLoaded.value = true
+  } catch (cause) {
+    if (version === archiveVersion) archiveError.value = cause instanceof Error ? cause.message : '归档加载失败，请重试'
+  } finally {
+    if (version === archiveVersion) archiveLoading.value = false
+  }
+}
+
+async function retryList() {
+  if (listPending.value) return
+  await (showArchive.value ? refreshArchived() : load(true))
+}
+
+onBeforeUnmount(() => {
+  archiveVersion += 1
+})
 
 async function toggleArchiveView() {
   showArchive.value = !showArchive.value
-  if (showArchive.value) {
-    try {
-      archivedNotes.value = await loadArchived()
-    } catch (cause) {
-      showError(cause instanceof Error ? cause.message : '归档加载失败')
-    }
-  }
+  if (showArchive.value) await refreshArchived()
 }
 
 async function onToggleLike(id: string) {

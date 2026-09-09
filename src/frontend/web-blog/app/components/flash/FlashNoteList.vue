@@ -7,17 +7,21 @@
 
 <template>
   <div class="flash-note-list">
-    <div v-if="loading" class="flash-note-list__loading">
-      <Icon name="lucide:loader-2" size="18" class="flash-note-list__spinner" />
-      加载闪念中...
-    </div>
+    <CommonRequestFeedback
+      v-if="loading || errorMessage"
+      :pending="loading"
+      :compact="notes.length > 0"
+      :title="errorMessage || '正在加载闪念'"
+      :description="notes.length ? '仍显示上次成功加载的闪念，未提交的内容已保留。' : undefined"
+      @retry="$emit('retry')"
+    />
 
-    <div v-else-if="notes.length === 0" class="flash-note-list__empty">
+    <div v-if="!loading && !errorMessage && notes.length === 0" class="flash-note-list__empty">
       <Icon name="lucide:zap-off" size="24" />
-      <span>还没有闪念，记下第一个想法吧</span>
+      <span>{{ emptyMessage || (readOnly ? '博主还没有公开闪念' : '还没有闪念，记下第一个想法吧') }}</span>
     </div>
 
-    <div v-else class="flash-note-list__masonry">
+    <div v-if="notes.length" class="flash-note-list__masonry">
       <FlashNoteCard
         v-for="note in notes"
         :key="note.id"
@@ -47,6 +51,8 @@ import type { FlashNote, FlashCommentSubmission } from '~/features/flash/types'
 defineProps<{
   notes: FlashNote[]
   loading?: boolean
+  errorMessage?: string | null
+  emptyMessage?: string
   pendingIds?: string[]
   citedIds?: string[]
   readOnly?: boolean
@@ -58,6 +64,7 @@ defineProps<{
 }>()
 
 defineEmits<{
+  retry: []
   remove: [id: string]
   edit: [note: FlashNote]
   'toggle-like': [id: string]
@@ -94,7 +101,6 @@ defineEmits<{
   }
 }
 
-.flash-note-list__loading,
 .flash-note-list__empty {
   display: flex;
   flex-direction: column;
@@ -104,18 +110,5 @@ defineEmits<{
   padding: 3rem 1rem;
   color: var(--text-soft);
   font-size: 0.875rem;
-}
-
-.flash-note-list__spinner {
-  animation: flash-spin 1s linear infinite;
-  @media (prefers-reduced-motion: reduce) {
-    animation: none;
-  }
-}
-
-@keyframes flash-spin {
-  to {
-    transform: rotate(360deg);
-  }
 }
 </style>

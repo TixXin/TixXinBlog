@@ -71,7 +71,11 @@ export function useFlashNotes() {
     if (loaded.value && !force && viewingScope.value === nextScope) return
 
     const version = ++loadVersion.value
-    if (viewingScope.value !== nextScope) notes.value = []
+    if (viewingScope.value !== nextScope) {
+      notes.value = []
+      loaded.value = false
+      viewingScope.value = nextScope
+    }
     loading.value = true
     error.value = null
     try {
