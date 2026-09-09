@@ -203,28 +203,25 @@ app/pages/
 
 ## 13. 开发阶段 Mock 数据策略
 
-项目当前处于 **UI 打磨阶段**，前端不对接真实后端 API，所有业务数据使用 mock。
+当前按业务域渐进接入真实 API：文章、统计、评论、认证、闪念、媒体和站点配置已持久化；书签明确使用本机存储；朋友圈正在本阶段接入，留言、项目、图库和友链仍有演示数据。逐项入口、证据和剩余工作见[能力清单](capability-map.md)。
 
 ### 基本原则
 
 - Mock 数据统一存放在 `features/<domain>/mock.ts`，配套类型放 `features/<domain>/types.ts`
-- 页面层（`pages/*.vue`）负责引入 mock 数据并通过 props 传递给组件
+- 页面层通过 composable/仓储取得数据并通过 props 传递给组件；演示模式使用对应 Mock 仓储或数据
 - **组件不直接 import mock 文件**，而是通过 props 接收数据，保持组件与数据源解耦
 - 导航、Tab 列表等配置型数据也归入 `features/<domain>/mock.ts`
 - 多个组件共用的数据（如导航项）只定义一次，统一 import，避免重复维护
 
-### 当前 Mock 模块
+### 真实模式与演示模式
 
-| 模块 | 路径                     | 导出内容                                             |
-| ---- | ------------------------ | ---------------------------------------------------- |
-| 文章 | `features/post/mock.ts`  | `mockPosts`、`mockPostTabs`                          |
-| 统计 | `features/stats/mock.ts` | `mockSiteStats`、`mockTags`、`mockCategories`        |
-| 导航 | `features/nav/mock.ts`   | `mockNavItems`                                       |
-| 站点 | `features/site/mock.ts`  | `mockFooterLinks`、`mockPoweredBy`、`mockSiteStatus` |
+文章由 `public.postUseMockRepo` 控制；闪念由 `public.useMockRepo` 控制；标签页仓储独立保持 LocalStorage。配置名称与具体数据源以当前仓储装配为准。真实模式的请求失败必须显示可恢复错误，不得回退为演示内容或虚假零统计。
+
+`features/*/mock.ts` 中既有演示业务数据，也有静态导航配置；保留静态配置不影响对应业务使用真实 API。开发种子可通过显式命令写入开发库，日常启动不执行 seed、清空或重置。
 
 ### 未来迁移路径
 
-接入真实 API 时，只需在页面层将 `import { mockXxx }` 替换为 `useFetch()` / `useAsyncData()` 调用，组件无需任何改动。
+每个业务接入时同时核对实体和迁移、公开/管理权限、分页排序、请求状态、媒体引用、维护与备份、刷新/跨上下文持久化及实际验收。展示组件保持数据解耦，页面入口可见不等于上述闭环已完成。
 
 ## 14. 当前结论
 
