@@ -72,6 +72,11 @@ jobs:
       - name: HTTP Integration on Isolated Database
         run: pnpm --filter server-main test:integration
 
+      - name: Development Database Tools on Isolated Database
+        env:
+          BACKUP_POSTGRES_CONTAINER: ${{ job.services.postgres.id }}
+        run: pnpm --filter server-main test:database-dev
+
       - name: Docker Build
         run: docker build -f src/backend/server-main/Dockerfile -t tixxin-blog-server .
 
