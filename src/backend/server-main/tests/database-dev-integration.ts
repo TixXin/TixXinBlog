@@ -26,9 +26,22 @@ async function main() {
     assert.equal(seeded.after.moment_like, 0)
     assert(seeded.after.moment_comment > 0)
     assert.equal(seeded.after.post, preview.counts.post)
+    const firstDates = await fixture.testOrm.em.fork().execute('select id,published_at from moment order by id')
+    const latestDate = Math.max(...firstDates.map((note) => new Date(note.published_at).getTime()))
+    assert.equal(new Date(latestDate).toISOString().slice(0, 10), new Date().toISOString().slice(0, 10))
+    assert(latestDate <= Date.now(), '开发样本不能发布日期在未来')
+    const overviewResponse = await fetch(fixture.origin + '/api/v1/moments/overview')
+    assert.equal(overviewResponse.status, 200)
+    const overview = (await overviewResponse.json()).data
+    assert(overview.photos.length > 0 && overview.topics.length > 0 && overview.recollections.length > 0)
+    assert(overview.dates.some((item) => item.date === new Date(latestDate).toISOString().slice(0, 10)))
     const again = await run('seed-moments', true)
     assert.equal(again.samplesToAdd, 0)
     assert.equal('backup' in again, false)
+    assert.deepEqual(
+      await fixture.testOrm.em.fork().execute('select id,published_at from moment order by id'),
+      firstDates,
+    )
     await assert.rejects(run('clear-moments', true), /其他连接/)
     await fixture.testOrm.em
       .fork()
