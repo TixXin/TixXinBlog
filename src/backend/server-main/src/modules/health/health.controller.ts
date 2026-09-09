@@ -5,8 +5,10 @@
  * @since 2026-07-20
  */
 
-import { Controller, Get, ServiceUnavailableException } from '@nestjs/common'
+import { Controller, Get, NotFoundException, Req, ServiceUnavailableException } from '@nestjs/common'
 import { EntityManager } from '@mikro-orm/postgresql'
+import type { Request } from 'express'
+import { devIdentity } from './dev-identity'
 
 export interface HealthStatus {
   status: 'ok'
@@ -17,6 +19,15 @@ export interface HealthStatus {
 @Controller()
 export class HealthController {
   constructor(private readonly em: EntityManager) {}
+  @Get('dev/identity')
+  identity(@Req() request: Request) {
+    if (
+      process.env.NODE_ENV !== 'development' ||
+      !['127.0.0.1', '::1', '::ffff:127.0.0.1'].includes(request.socket.remoteAddress ?? '')
+    )
+      throw new NotFoundException()
+    return devIdentity()
+  }
   @Get('health')
   health(): HealthStatus {
     return {

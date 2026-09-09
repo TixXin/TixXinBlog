@@ -11,6 +11,20 @@ on:
       - 'docs/**'
 
 jobs:
+  development-runner:
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - name: Development Process Lifecycle
+        run: node --test scripts/dev/*.test.mjs
+
   lint-and-build:
     runs-on: ubuntu-latest
     env:
@@ -59,6 +73,12 @@ jobs:
 
       - name: Build Backend for Browser Tests
         run: pnpm --filter server-main build
+
+      - name: Isolated Development Startup
+        run: pnpm test:dev:integration
+
+      - name: Isolated PostgreSQL Startup
+        run: pnpm test:dev:postgres
 
       - name: Install Chromium
         run: pnpm --filter web-blog exec playwright install --with-deps chromium

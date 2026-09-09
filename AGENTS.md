@@ -11,6 +11,10 @@ TixXinBlog is a personal blog system in **UI polishing and incremental API integ
 ```bash
 pnpm dev              # Dev server at localhost:3456
 pnpm dev:api          # NestJS API at localhost:3000（独立终端）
+pnpm dev:check        # 配置、数据库、服务归属与就绪自检
+pnpm dev:all          # 完整开发链路启动；复用当前项目已有服务
+pnpm test:dev         # 跨平台进程生命周期回归
+pnpm test:dev:integration # 隔离 Nuxt/Nest 冷启动与复用验收
 pnpm build            # Production build
 pnpm preview          # Preview production build
 pnpm generate         # Static site generation
@@ -25,7 +29,7 @@ pnpm --filter web-blog test:watch  # Watch mode
 
 Package manager: **pnpm 9.15.0** (enforced). Node >= 24 < 25；推荐通过 `corepack pnpm` 调用固定版本。
 
-`dev` 只启动前端。真实接口模式下还需运行 `dev:api` 和已配置的 PostgreSQL；多个内容页同时出现 502 时，先检查后端 `/ready` 与同源 `/api/v1/posts`，不要切换 Mock 来掩盖服务故障。
+`dev` 只启动前端。真实接口模式推荐 `dev:all`，先用 `dev:check` 核对链路。统一启动不执行迁移、seed 或清空，退出仅清理本次创建的服务；已有服务保持运行。多个内容页同时出现 502 时检查后端 `/ready` 与同源 `/api/v1/posts`，不要切换 Mock 来掩盖服务故障。详见 `docs/development-runtime.md`。
 
 ## Architecture
 
