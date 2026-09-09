@@ -19,7 +19,9 @@ const COLORS: Record<string, string> = {
 
 export async function usePostMetadata() {
   const config = useRuntimeConfig()
-  const result = await useAsyncData('post-metadata', async (): Promise<PostMetadata> => {
+  // useState 与监听在首次 await 前注册，保持 SSR 的 Nuxt 上下文与组件清理作用域。
+  const retained = useState<PostMetadata | undefined>('post-metadata-retained', () => undefined)
+  const result = useAsyncData('post-metadata', async (): Promise<PostMetadata> => {
     if (config.public.postUseMockRepo === false) return fetchPostMetadata(config.public.apiBaseUrl)
     const tags = new Map<string, { label: string; slug: string; color: string; count: number }>()
     const categories = new Map<string, number>()
@@ -44,7 +46,17 @@ export async function usePostMetadata() {
       archive: mockPosts.map((post) => ({ id: post.id, title: post.title, folder: post.folder, date: post.date })),
     }
   })
-  const metadata = computed(() => result.data.value)
+  // 刷新失败时 Nuxt 会清空当前 data；保留最后成功结果，不能将故障解释为零篇文章。
+  watch(
+    result.data,
+    (value) => {
+      if (value) retained.value = value
+    },
+    { immediate: true },
+  )
+  await result
+  if (result.data.value) retained.value = result.data.value
+  const metadata = computed(() => result.data.value ?? retained.value)
   const tags = computed<TagItem[]>(() =>
     (metadata.value?.tags ?? []).map((tag) => ({
       name: tag.label,
@@ -110,6 +122,7 @@ export async function usePostMetadata() {
     archiveStats,
     categoryDistribution,
     error: result.error,
+    pending: result.pending,
     refresh: result.refresh,
   }
 }
