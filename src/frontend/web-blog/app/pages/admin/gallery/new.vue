@@ -7,6 +7,7 @@
       :saved="editor.saved.value"
       :server-version="editor.serverVersion.value"
       :recovery="editor.recovery.value"
+      :previous-recoveries="editor.previousRecoveries.value"
       :ready="editor.ready.value"
       :loading="editor.loading.value"
       :saving="editor.saving.value"
