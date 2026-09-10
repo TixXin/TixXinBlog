@@ -160,6 +160,86 @@ try {
     ],
   )
   assert.equal(photoRow.request_id, photoRequestId)
+  await delay(1100)
+  const restoredProjects = []
+  for (const values of [
+    {
+      title: '资料整理台',
+      description: '保留已归档但仍公开的项目。'.padEnd(5000, '。'),
+      coverMediaId: asset.id,
+      progress: 'archived',
+      status: 'published',
+      sortOrder: 17,
+      tags: [
+        { label: 'TypeScript', color: 'blue' },
+        { label: 'Vue', color: 'emerald' },
+      ],
+      links: [
+        { kind: 'source', href: 'https://github.com/vuejs/core' },
+        { kind: 'docs', href: 'https://vuejs.org/Guide/?tag=A&tag=B&q='.padEnd(2048, 'x') },
+      ],
+    },
+    {
+      title: '纸上记录',
+      description: '',
+      coverMediaId: null,
+      progress: 'dev',
+      status: 'draft',
+      sortOrder: 0,
+      tags: [],
+      links: [],
+    },
+    {
+      title: '一段路程',
+      description: '暂时收起的作品。',
+      coverMediaId: asset.id,
+      progress: 'active',
+      status: 'withdrawn',
+      sortOrder: -3,
+      tags: [{ label: 'Node.js', color: 'emerald' }],
+      links: [],
+    },
+    {
+      title: '已收起的计划',
+      description: '',
+      coverMediaId: asset.id,
+      progress: 'dev',
+      status: 'draft',
+      sortOrder: 0,
+      tags: [],
+      links: [],
+    },
+  ]) {
+    const requestId = randomUUID()
+    const response = await fetch(`${fixture.origin}/api/v1/admin/projects`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ ...values, requestId }),
+    })
+    assert.equal(response.status, 201)
+    const project = (await response.json()).data
+    if (values.title === '已收起的计划') {
+      const removed = await fetch(
+        `${fixture.origin}/api/v1/admin/projects/${project.id}?revision=${project.revision}`,
+        { method: 'DELETE', headers: { Authorization: `Bearer ${token}` } },
+      )
+      assert.equal(removed.status, 200)
+    }
+    const [row] = await ledgerEm.execute('select * from project where id=?', [project.id])
+    assert.equal(row.request_id, requestId)
+    await ledgerEm.execute(
+      'insert into development_fixture (key,dataset,kind,resource_id,snapshot_hash,created_at) values (?,?,?,?,?,now())',
+      [
+        `project-restore:${project.id}`,
+        'project-restore-v1',
+        'project',
+        String(project.id),
+        submissionHash(Object.fromEntries(Object.entries(row).filter(([key]) => key !== 'updated_at'))),
+      ],
+    )
+    restoredProjects.push(project)
+  }
+  assert.equal(restoredProjects.length, 4)
   const backup = await createFullBackup({
     output: join(target, 'backup'),
     onProgress: (value) => process.stdout.write(`备份阶段：${value.stage}\n`),
@@ -175,8 +255,9 @@ try {
   assert.equal(backup.manifest.counts.guestbook_reaction, 1)
   assert.equal(backup.manifest.counts.gallery_photo, 1)
   assert.equal(backup.manifest.counts.gallery_settings, 1)
-  assert.equal(backup.manifest.counts.development_fixture, 1)
-  assert.equal(backup.manifest.counts.media_reference, 8)
+  assert.equal(backup.manifest.counts.project, 4)
+  assert.equal(backup.manifest.counts.development_fixture, 5)
+  assert.equal(backup.manifest.counts.media_reference, 10)
   assert.equal(
     Number((await fixture.testOrm.em.fork().execute('select count(*)::int as count from post'))[0].count),
     108,
@@ -197,7 +278,15 @@ try {
   assert.equal(restored.report.counts.guestbook_reaction, 1)
   assert.equal(restored.report.counts.gallery_photo, 1)
   assert.equal(restored.report.counts.gallery_settings, 1)
-  assert.equal(restored.report.counts.development_fixture, 1)
+  assert.equal(restored.report.counts.project, 4)
+  assert.equal(restored.report.counts.development_fixture, 5)
+  assert.deepEqual(restored.report.projectIntegrity, {
+    projects: 4,
+    withCover: 3,
+    mediaReferences: 2,
+    fixtures: 4,
+    verified: true,
+  })
   assert.deepEqual(restored.report.galleryIntegrity, {
     photos: 1,
     settings: 1,
@@ -224,6 +313,11 @@ try {
     assert.equal(application.galleryAdminVerified, true)
     assert.equal(application.galleryOldContextRejected, true)
     assert.equal(application.galleryFreshWriteAllowed, true)
+    assert.equal(application.publicProjects, 1)
+    assert.equal(application.projectMetadataVerified, true)
+    assert.equal(application.projectAdminVerified, true)
+    assert.equal(application.projectOldContextRejected, true)
+    assert.equal(application.projectFreshWriteAllowed, true)
   }
   const report = {
     ...restored.report,
@@ -240,6 +334,7 @@ try {
       '朋友圈正文、文章关系、评论、点赞及提交去重记录完整恢复',
       '留言、回复关系、回应、媒体引用及提交去重记录完整恢复',
       '图库作品、拍摄时间、器材配置、媒体关联、提交去重及样本归属账本完整恢复',
+      '项目进展、发布与删除状态、标签和链接、可选封面、提交去重及归属账本完整恢复',
     ],
   }
   await restored.cleanup()
