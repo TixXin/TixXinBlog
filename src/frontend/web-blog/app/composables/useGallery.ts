@@ -1,14 +1,32 @@
 /** @file useGallery.ts @description 图库统一 URL、服务端定位与灯箱读取，SSR 数据共享且迟到响应不覆盖当前选择 */
-import type { GalleryNavigation, GalleryPage, PhotoItem } from '~/features/gallery/types'
+import type { GalleryNavigation, GalleryPage, GalleryQuery, PhotoItem } from '~/features/gallery/types'
 import { galleryPhotoId, galleryQuery } from '~/features/gallery/query'
 export async function useGallery() {
   const route = useRoute(),
     router = useRouter(),
     repo = useGalleryRepository(),
     scope = usePageRequestScope()
-  const query = computed(() => galleryQuery(route.query)),
+  const app = useNuxtApp(),
+    hydrating = ref(import.meta.client && app.isHydrating)
+  let initialQuery: GalleryQuery = galleryQuery(route.query),
+    initialSelectedId = galleryPhotoId(route.query.photo)
+  if (hydrating.value) {
+    const serverKey = (app.payload.data['gallery-feed'] as { key?: string } | undefined)?.key
+    if (serverKey) {
+      try {
+        initialQuery = galleryQuery(JSON.parse(serverKey))
+      } catch {
+        /* 无有效 SSR 查询时沿用初始路由。 */
+      }
+    }
+    const selected = (app.payload.data['gallery-selection'] as { id?: number | null } | undefined)?.id
+    if (selected === null || (typeof selected === 'number' && Number.isSafeInteger(selected) && selected > 0))
+      initialSelectedId = selected
+  }
+  // 历史导航也可能更改 photo；首帧列表与灯箱必须同时对应 SSR DOM，挂载后再消费最新 URL。
+  const query = computed(() => (hydrating.value ? initialQuery : galleryQuery(route.query))),
     key = computed(() => JSON.stringify(query.value))
-  const selectedId = computed(() => galleryPhotoId(route.query.photo))
+  const selectedId = computed(() => (hydrating.value ? initialSelectedId : galleryPhotoId(route.query.photo)))
   const selectionKey = computed(() =>
     JSON.stringify({ q: query.value.q, category: query.value.category, pageSize: query.value.pageSize }),
   )
@@ -18,34 +36,32 @@ export async function useGallery() {
   let openerId: number | null = null,
     moveVersion = 0
   let pendingFocus: { id: number; key: string; root: HTMLElement } | null = null
-  const feed = useAsyncData(
-    'gallery-feed',
-    async (_app, { signal }) => {
-      const current = key.value
-      return { key: current, page: await repo.list(query.value, AbortSignal.any([signal, scope.signal])) }
-    },
-    { watch: [key] },
-  )
+  const feed = useAsyncData('gallery-feed', async (_app, { signal }) => {
+    const current = key.value
+    return { key: current, page: await repo.list(query.value, AbortSignal.any([signal, scope.signal])) }
+  })
+  watch(key, () => {
+    void feed.refresh({ dedupe: 'cancel', cachedData: undefined })
+  })
   const overview = useAsyncData('gallery-metadata', (_app, { signal }) =>
     repo.metadata(AbortSignal.any([signal, scope.signal])),
   )
   const requestedSelection = ref({ id: selectedId.value, key: selectionKey.value })
-  const selection = useAsyncData(
-    'gallery-selection',
-    async (_app, { signal }) => {
-      const id = selectedId.value,
-        current = selectionKey.value
-      requestedSelection.value = { id, key: current }
-      if (!id) return { id: null, key: current, item: null, navigation: null }
-      const ownedSignal = AbortSignal.any([signal, scope.signal])
-      const [item, navigation] = await Promise.all([
-        repo.detail(id, ownedSignal),
-        repo.navigation(id, query.value, ownedSignal),
-      ])
-      return { id, key: current, item, navigation }
-    },
-    { watch: [selectedId, selectionKey] },
-  )
+  const selection = useAsyncData('gallery-selection', async (_app, { signal }) => {
+    const id = selectedId.value,
+      current = selectionKey.value
+    requestedSelection.value = { id, key: current }
+    if (!id) return { id: null, key: current, item: null, navigation: null }
+    const ownedSignal = AbortSignal.any([signal, scope.signal])
+    const [item, navigation] = await Promise.all([
+      repo.detail(id, ownedSignal),
+      repo.navigation(id, query.value, ownedSignal),
+    ])
+    return { id, key: current, item, navigation }
+  })
+  watch([selectedId, selectionKey], () => {
+    void selection.refresh({ dedupe: 'cancel', cachedData: undefined })
+  })
   watch(
     feed.data,
     (value) => {
@@ -105,6 +121,7 @@ export async function useGallery() {
   watch([selection.data, () => query.value.page], normalizeLocation)
   onMounted(() => {
     mounted.value = true
+    hydrating.value = false
     normalizeLocation()
   })
   function changeQuery(patch: Record<string, string | number | undefined>) {
@@ -157,6 +174,7 @@ export async function useGallery() {
   scope.assertActive()
   return {
     query,
+    ready: mounted,
     photos,
     total: computed(() => accepted.value?.page.total ?? null),
     selectedId,
