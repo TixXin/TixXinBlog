@@ -135,6 +135,9 @@ try {
   })
   assert.equal(galleryResponse.status, 201)
   const photo = (await galleryResponse.json()).data
+  const sourceSite = await fetch(`${fixture.origin}/api/v1/site`)
+  const oldContext = sourceSite.headers.get('x-content-context')
+  assert(oldContext, '恢复前必须从站点配置读取真实内容上下文')
   const settingsResponse = await fetch(`${fixture.origin}/api/v1/admin/gallery/settings`, {
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
@@ -208,8 +211,20 @@ try {
   assert.equal(restored.report.revokedRestoredSessions, true)
   assert.equal(restored.report.requireFreshContentContext, true)
   const application = process.env.RESTORE_API_IMAGE
-    ? await verifyRestoredApplication(restored, process.env.RESTORE_API_IMAGE, process.env.JWT_ACCESS_SECRET, token)
+    ? await verifyRestoredApplication(restored, process.env.RESTORE_API_IMAGE, process.env.JWT_ACCESS_SECRET, token, {
+        username: fixture.username,
+        password: fixture.password,
+        oldContext,
+      })
     : undefined
+  if (application) {
+    assert.equal(application.publicGalleryPhotos, 1)
+    assert.equal(application.galleryGearVerified, true)
+    assert.equal(application.freshLoginVerified, true)
+    assert.equal(application.galleryAdminVerified, true)
+    assert.equal(application.galleryOldContextRejected, true)
+    assert.equal(application.galleryFreshWriteAllowed, true)
+  }
   const report = {
     ...restored.report,
     application,
