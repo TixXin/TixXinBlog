@@ -8,11 +8,16 @@ import { createRequire } from 'node:module'
 import { fileURLToPath } from 'node:url'
 import { createMediaTestDirectory } from './media-directory.mjs'
 import { createFixtureBackupDirectory } from './fixture-backup-directory.mjs'
+import { getHttpTestPort } from './http-test-port.mjs'
 
 const require = createRequire(import.meta.url)
 const backendDirectory = fileURLToPath(new URL('../', import.meta.url))
+let fixtureRequested = false
 
 export async function createBrowserTestApp(corsOrigin) {
+  // Nest 模块缓存会保留首次数据库配置；必须在任何配置读取和建库之前拒绝同进程复建。
+  assert.equal(fixtureRequested, false, '每个测试进程只允许创建一次隔离应用；其他场景请使用独立进程')
+  fixtureRequested = true
   process.chdir(backendDirectory)
   require('reflect-metadata')
   require('../dist/config/environment.js').loadLocalEnvironment()
@@ -115,7 +120,7 @@ export async function createBrowserTestApp(corsOrigin) {
       post.tags.add(tag)
     }
     await em.flush()
-    await app.listen(0, '127.0.0.1')
+    await app.listen(await getHttpTestPort(), '127.0.0.1')
     return {
       origin: await app.getUrl(),
       username,

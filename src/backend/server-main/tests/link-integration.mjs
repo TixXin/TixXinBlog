@@ -114,6 +114,12 @@ try {
     true,
   )
   assert.notEqual(corrected.id, created.id, '重复失败后可保留同一请求标识修正地址重新提交')
+  const concurrentUrl = 'https://example.com/concurrent'
+  const concurrent = await Promise.all([
+    request(adminPath, 'POST', { name: '同时保存一', url: concurrentUrl, requestId: randomUUID() }, true),
+    request(adminPath, 'POST', { name: '同时保存二', url: concurrentUrl, requestId: randomUUID() }, true),
+  ])
+  assert.deepEqual(concurrent.map((item) => item.status).sort(), [201, 400])
   assert.equal((await ok(`${adminPath}/submissions/${body.requestId}`, 'GET', undefined, true)).item.id, created.id)
   for (const url of [
     created.url + '/',

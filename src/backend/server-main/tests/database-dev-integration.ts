@@ -161,11 +161,20 @@ async function main() {
       () => undefined,
       fixture.backupOptions,
     )
+    await seedDevelopmentData(
+      ['--dataset', 'link-v1', '--apply', '--confirm', target],
+      () => undefined,
+      fixture.backupOptions,
+    )
+    await em.execute(
+      "update link_settings set rules='[\"保留博主自行维护的规则\"]'::jsonb,revision=1 where id='default'",
+    )
     await em.execute(
       'update gallery_settings set gear=\'[{"icon":"lucide:camera","name":"随身相机","description":"日常记录"}]\'::jsonb,revision=1 where id=\'default\'',
     )
     assert.equal((await run('status')).counts.gallery_photo, 18)
     assert.equal((await run('status')).counts.project, 18)
+    assert.equal((await run('status')).counts.friend_link, 18)
     await fixture.testOrm.em.fork().execute('create view database_dev_guard as select id from moment')
     await fixture.stopServices()
     const removed = await run('remove-samples', true)
@@ -179,9 +188,11 @@ async function main() {
     assert.equal(cleared.after?.guestbook_reaction, 0)
     assert.equal(cleared.after?.gallery_photo, 0)
     assert.equal(cleared.after?.project, 0)
+    assert.equal(cleared.after?.friend_link, 0)
+    assert.equal(cleared.after?.link_settings, 1)
     assert.equal(cleared.after?.gallery_settings, 1)
-    assert.equal(cleared.after?.development_fixture, 47)
-    assert.equal(cleared.after?.media_asset, 11)
+    assert.equal(cleared.after?.development_fixture, 68)
+    assert.equal(cleared.after?.media_asset, 14)
     assert.equal(cleared.after?.admin_user, preview.counts.admin_user)
     assert.equal(cleared.after?.site_settings, 1)
     const beforeRejectedReset = await run('status')
@@ -196,6 +207,13 @@ async function main() {
           revision: 1,
         },
       )
+      assert.deepEqual(
+        (await fixture.testOrm.em.getConnection().execute('select rules,revision from link_settings'))[0],
+        {
+          rules: ['保留博主自行维护的规则'],
+          revision: 1,
+        },
+      )
       await fixture.testOrm.em.getConnection().execute('drop view database_dev_guard')
     } finally {
       await fixture.testOrm.close(true)
@@ -207,6 +225,8 @@ async function main() {
     assert.equal(reset.after?.content_context, 1)
     assert.equal(reset.after?.gallery_photo, 0)
     assert.equal(reset.after?.project, 0)
+    assert.equal(reset.after?.friend_link, 0)
+    assert.equal(reset.after?.link_settings, 1)
     assert.equal(reset.after?.gallery_settings, 1)
     assert.equal(reset.after?.development_fixture, 0)
     assert.equal(reset.pendingMigrations, 0)
