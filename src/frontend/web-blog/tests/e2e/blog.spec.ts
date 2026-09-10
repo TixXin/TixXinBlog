@@ -3,8 +3,18 @@
  * @description 隔离生产预览的浏览器验收：分页、发布链路、评论恢复、主题及导入失败
  */
 import { expect, test } from '@playwright/test'
-import type { Page } from '@playwright/test'
+import type { Locator, Page } from '@playwright/test'
 import { readFile } from 'node:fs/promises'
+import { captureMotion, prepareMotionCapture } from './motionScreenshot'
+
+interface PreviewResponseLoss {
+  matchedResponses: number
+  lostResponses: number
+  status: number | null
+  ticket: string
+}
+
+test.beforeEach(({ page, browserName }) => prepareMotionCapture(page, browserName))
 
 test('旧正文标题样式、未知语言回退和同前缀高亮在生产浏览器中正确', async ({ page }, testInfo) => {
   await page.addInitScript(() => localStorage.setItem('nuxt-color-mode', 'dark'))
@@ -32,7 +42,7 @@ test('旧正文标题样式、未知语言回退和同前缀高亮在生产浏�
   await expect(blocks.nth(1).locator('code .line > span').first()).toHaveCSS('color', 'rgb(249, 117, 131)')
   expect(dialogs).toEqual([])
   await expect(page.locator('.loading-screen')).toHaveCount(0)
-  await page.locator('.article-content').screenshot({ path: testInfo.outputPath('legacy-content.png') })
+  await captureMotion(page, testInfo, 'legacy-content.png', { target: page.locator('.article-content') })
 })
 
 async function publishArticle(page: Page) {
@@ -46,8 +56,37 @@ async function login(page: Page, username = process.env.E2E_USERNAME!, password 
   await page.goto('/admin/login')
   await page.getByRole('textbox', { name: '用户名', exact: true }).fill(username)
   await page.getByRole('textbox', { name: '密码', exact: true }).fill(password)
+  const loginResponse = page.waitForResponse(
+    (response) => new URL(response.url()).pathname === '/api/v1/auth/login' && response.request().method() === 'POST',
+  )
   await page.getByRole('button', { name: '登录', exact: true }).click()
+  const response = await loginResponse
+  expect(response.ok()).toBe(true)
+  const token = (await response.json()).data.accessToken as string
+  const sessionId = (JSON.parse(Buffer.from(token.split('.')[1]!, 'base64url').toString()) as { sid: string }).sid
+  expect(sessionId).toMatch(/^[a-f0-9-]{36}$/)
   await expect(page).toHaveURL(/\/admin$/)
+  return { sessionId, agent: (await response.request().headerValue('user-agent')) ?? '' }
+}
+
+async function expectSessionDevice(row: Locator, agent: string) {
+  // 各浏览器对自定义 UA 的支持不同，以实际登录请求验证设备说明，以真实 sid 定位撤销对象。
+  const systems = [
+    ['Windows', /Windows/i],
+    ['Android', /Android/i],
+    ['iOS', /iPhone|iPad|iPod/i],
+    ['macOS', /Macintosh|Mac OS X/i],
+    ['Linux', /Linux/i],
+  ] as const
+  const browsers = [
+    ['Edge', /Edg\//i],
+    ['Firefox', /Firefox\//i],
+    ['Chrome', /Chrome\/|Chromium\//i],
+    ['Safari', /Safari\//i],
+  ] as const
+  const system = systems.find(([, pattern]) => pattern.test(agent))?.[0] ?? '未知系统'
+  const browser = browsers.find(([, pattern]) => pattern.test(agent))?.[0] ?? '未知客户端'
+  await expect(row.getByRole('heading')).toHaveText(`${system} · ${browser}`)
 }
 
 test('106 篇文章可以通过真实后端翻到最后一页', async ({ page }) => {
@@ -209,14 +248,23 @@ test('真实闪念发布失败保留输入，编辑与归档同步公开 feed', 
   await page.goto('/flash')
   const editor = page.getByPlaceholder('此刻闪过的灵感是…')
   await editor.fill('E2E 闪念发布')
-  await page.route('**/api/v1/admin/flashes', (route) =>
-    route.request().method() === 'POST' ? route.abort() : route.continue(),
-  )
+  let abortedSubmissions = 0
+  await page.route('**/api/v1/admin/flashes', (route) => {
+    if (route.request().method() !== 'POST') return route.continue()
+    abortedSubmissions++
+    return route.abort()
+  })
   await page.locator('.fed').getByRole('button', { name: /^发布/ }).click()
   await expect(editor).toHaveValue('E2E 闪念发布')
-  await expect(page.getByText(/Failed to fetch|fetch failed|保存失败|失败/)).toBeVisible()
+  await expect.poll(() => abortedSubmissions).toBe(1)
+  await expect(page.getByText('闪念服务暂时不可用，请稍后重试', { exact: true })).toBeVisible()
   await page.unroute('**/api/v1/admin/flashes')
+  const retried = page.waitForResponse(
+    (response) =>
+      new URL(response.url()).pathname === '/api/v1/admin/flashes' && response.request().method() === 'POST',
+  )
   await page.locator('.fed').getByRole('button', { name: /^发布/ }).click()
+  expect((await retried).ok()).toBe(true)
   const card = page.locator('.fnc').filter({ hasText: 'E2E 闪念发布' })
   await expect(card).toBeVisible()
   await card.getByRole('button', { name: '编辑闪念' }).click()
@@ -433,11 +481,11 @@ test('后台六个页面在 390px 下导航可见且无页面横向溢出', asyn
     expect(
       await page.locator('.admin-shell').evaluate((element) => element.scrollWidth <= element.clientWidth + 1),
     ).toBe(true)
-    await page.screenshot({ path: testInfo.outputPath(`mobile-${path.split('/').pop() || 'overview'}.png`) })
+    await captureMotion(page, testInfo, `mobile-${path.split('/').pop() || 'overview'}.png`)
   }
   await page.getByRole('button', { name: '切换明暗主题', exact: true }).click()
   await expect(page.locator('html')).toHaveClass(/light/)
-  await page.screenshot({ path: testInfo.outputPath('mobile-account-light.png') })
+  await captureMotion(page, testInfo, 'mobile-account-light.png')
 })
 
 test('编辑时会话失效可原地重新登录并保留文章草稿', async ({ page }) => {
@@ -692,6 +740,8 @@ test('媒体上传重试、替代文本、封面正文闪念选择与引用保�
   const flash = page.locator('.fnc').filter({ hasText: 'E2E 媒体引用闪念' })
   await expect(flash.getByRole('img', { name: 'E2E 更新图片说明', exact: true })).toBeVisible()
   await page.goto('/admin/media')
+  // setInputFiles 不等待 enabled，先确认身份恢复和媒体读取已开放输入。
+  await expect(page.locator('input[type="file"]')).toBeEnabled()
   await page.locator('input[type="file"]').setInputFiles({ ...image, name: 'e2e-unused.png' })
   const unused = page.locator('.media-library__grid > li').filter({ hasText: 'e2e-unused.png' })
   await expect(unused).toBeVisible()
@@ -774,7 +824,7 @@ test('文章批量回收、断线结果查询、恢复与永久删除可在移�
   await confirmation.getByLabel('输入“永久删除”确认', { exact: true }).fill('永久删除')
   await expect(confirmation.getByRole('button', { name: '确认执行', exact: true })).toBeEnabled()
   expect(await confirmation.evaluate((element) => element.scrollWidth <= element.clientWidth + 1)).toBe(true)
-  await confirmation.screenshot({ path: testInfo.outputPath('post-trash-confirm-mobile.png') })
+  await captureMotion(page, testInfo, 'post-trash-confirm-mobile.png', { target: confirmation })
   await confirmation.getByRole('button', { name: '确认执行', exact: true }).click()
   await expect(confirmation).toContainText('成功 1 篇，失败 0 篇，待处理 0 篇')
   await confirmation.getByRole('button', { name: '完成并关闭', exact: true }).click()
@@ -818,7 +868,7 @@ test('评论先审后发、审核失败重试、隐藏和恢复同步公开页�
   await page.getByRole('button', { name: '切换明暗主题', exact: true }).click()
   await expect(page.getByText('通知渠道尚未接入，不会向评论者发送邮件或消息。', { exact: true })).toBeVisible()
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1)).toBe(true)
-  await row.screenshot({ path: testInfo.outputPath('comment-moderation-mobile-light.png') })
+  await captureMotion(page, testInfo, 'comment-moderation-mobile-light.png', { target: row })
   await row.getByRole('button', { name: '标记垃圾', exact: true }).click()
   await expect(row).toContainText('垃圾评论')
   await row.getByRole('button', { name: '通过或恢复公开', exact: true }).click()
@@ -904,9 +954,9 @@ test('站点资料保存失败保留、前台与 feed 同步、配置冲突和�
   await page.setViewportSize({ width: 390, height: 844 })
   await expect(page.getByRole('link', { name: '站点设置', exact: true })).toBeVisible()
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1)).toBe(true)
-  await page
-    .getByRole('region', { name: '保存后的公开资料预览', exact: true })
-    .screenshot({ path: testInfo.outputPath('site-settings-mobile-preview.png') })
+  await captureMotion(page, testInfo, 'site-settings-mobile-preview.png', {
+    target: page.getByRole('region', { name: '保存后的公开资料预览', exact: true }),
+  })
   await page.getByRole('button', { name: /^查看版本 0 ·/ }).click()
   await expect(page.getByRole('region', { name: '历史版本 0 预览', exact: true })).toContainText('TixXin Blog')
   page.once('dialog', (dialog) => dialog.accept())
@@ -932,15 +982,20 @@ test('跨标签页登录恢复、撤销其他设备和当前会话退出保持�
   const another = await anotherContext.newPage()
   let thirdContext: Awaited<ReturnType<typeof browser.newContext>> | undefined
   try {
-    await login(another)
+    const anotherLogin = await login(another)
     const original = (await (await request.get('/api/v1/posts/1')).json()).data.title
     await another.goto('/admin/posts/1')
     await another.getByRole('textbox', { name: '标题', exact: true }).fill('E2E 会话失效后保留输入')
     await page.getByRole('button', { name: '刷新会话', exact: true }).click()
-    const foreign = page.locator('.active-sessions li').filter({ hasText: 'Linux · Firefox' })
+    const foreign = page.locator(`.active-sessions li[data-session-id="${anotherLogin.sessionId}"]`)
     await expect(foreign).toBeVisible()
+    await expectSessionDevice(foreign, anotherLogin.agent)
     page.on('dialog', (dialog) => dialog.accept())
-    await page.route('**/api/v1/auth/sessions/*', (route) => route.abort(), { times: 1 })
+    await page.route(
+      `**/api/v1/auth/sessions/${anotherLogin.sessionId}`,
+      (route) => (route.request().method() === 'DELETE' ? route.abort() : route.continue()),
+      { times: 1 },
+    )
     await foreign.getByRole('button', { name: '撤销此会话', exact: true }).click()
     await expect(page.getByRole('region', { name: '活跃管理会话', exact: true }).getByRole('alert')).toContainText(
       '未能确认撤销结果',
@@ -956,14 +1011,16 @@ test('跨标签页登录恢复、撤销其他设备和当前会话退出保持�
       userAgent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) Version/18.0 Safari/605.1.15',
     })
     const third = await thirdContext.newPage()
-    await login(third)
+    const thirdLogin = await login(third)
     await page.getByRole('button', { name: '刷新会话', exact: true }).click()
-    await expect(page.locator('.active-sessions li').filter({ hasText: 'macOS · Safari' })).toBeVisible()
+    const thirdSession = page.locator(`.active-sessions li[data-session-id="${thirdLogin.sessionId}"]`)
+    await expect(thirdSession).toBeVisible()
+    await expectSessionDevice(thirdSession, thirdLogin.agent)
     await page.setViewportSize({ width: 390, height: 844 })
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1)).toBe(true)
-    await page
-      .getByRole('region', { name: '活跃管理会话', exact: true })
-      .screenshot({ path: testInfo.outputPath('admin-sessions-mobile.png') })
+    await captureMotion(page, testInfo, 'admin-sessions-mobile.png', {
+      target: page.getByRole('region', { name: '活跃管理会话', exact: true }),
+    })
     await page.getByRole('button', { name: '撤销其他全部会话', exact: true }).click()
     await expect(page.locator('.active-sessions li')).toHaveCount(1)
     await third.goto('/admin/posts')
@@ -1024,7 +1081,7 @@ test('审计展示真实成功与冲突、筛选刷新和对象跳转且不暴�
   await expect(entry).toContainText('保存文章')
   await page.setViewportSize({ width: 390, height: 844 })
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1)).toBe(true)
-  await entry.screenshot({ path: testInfo.outputPath('audit-entry-mobile.png') })
+  await captureMotion(page, testInfo, 'audit-entry-mobile.png', { target: entry })
   await entry.getByRole('link', { name: '前往相关管理', exact: true }).click()
   await expect(page).toHaveURL(new RegExp(`/admin/posts/${id}$`))
   await expect(page.getByRole('textbox', { name: '标题', exact: true })).toHaveValue('E2E 审计服务器新版本')
@@ -1037,6 +1094,33 @@ test('内容包下载、上传断线查询与导入结果重读不重复创建�
   await page.getByRole('textbox', { name: 'Markdown 正文', exact: true }).fill('内容包迁入验证正文')
   await page.getByRole('button', { name: '保存草稿', exact: true }).click()
   await expect(page).toHaveURL(/\/admin\/posts\/\d+$/)
+  await page.addInitScript(() => {
+    const nativeFetch = window.fetch.bind(window)
+    const state: PreviewResponseLoss = { matchedResponses: 0, lostResponses: 0, status: null, ticket: '' }
+    ;(window as unknown as { previewResponseLoss: PreviewResponseLoss }).previewResponseLoss = state
+    window.fetch = async (input, init) => {
+      const url = new URL(input instanceof Request ? input.url : String(input), window.location.href)
+      const method = (init?.method ?? (input instanceof Request ? input.method : 'GET')).toUpperCase()
+      const response = await nativeFetch(input, init)
+      if (
+        url.origin !== window.location.origin ||
+        url.pathname !== '/api/v1/admin/backup/imports/preview' ||
+        method !== 'POST' ||
+        state.lostResponses > 0
+      )
+        return response
+      state.matchedResponses++
+      state.status = response.status
+      const payload = (await response.clone().json()) as { data?: { ticket?: string } }
+      state.ticket = payload.data?.ticket ?? ''
+      // File 字节由浏览器直接上传；只在真实 201 且票据已建立后丢弃一次应用可见响应。
+      if (response.status === 201 && /^[a-f0-9-]{36}$/.test(state.ticket)) {
+        state.lostResponses++
+        throw new TypeError('模拟服务器已处理后响应丢失')
+      }
+      return response
+    }
+  })
   await page.goto('/admin/maintenance')
   const context = (await request.get('/api/v1/site')).headers()['x-content-context']
   expect(context).toBeTruthy()
@@ -1059,20 +1143,17 @@ test('内容包下载、上传断线查询与导入结果重读不重复创建�
   await page
     .locator('input[type="file"]')
     .setInputFiles({ name: 'migration.json', mimeType: 'application/json', buffer: Buffer.from(JSON.stringify(data)) })
-  await page.route(
-    '**/api/v1/admin/backup/imports/preview',
-    async (route) => {
-      const response = await route.fetch()
-      expect(response.status()).toBe(201)
-      await route.abort('failed')
-    },
-    { times: 1 },
-  )
   await page.getByRole('button', { name: '生成导入预览', exact: true }).click()
   await expect(page.getByRole('alert')).toContainText('预览未能确认')
+  const loss = await page.evaluate(
+    () => (window as unknown as { previewResponseLoss: PreviewResponseLoss }).previewResponseLoss,
+  )
+  expect(loss).toMatchObject({ matchedResponses: 1, lostResponses: 1, status: 201 })
+  expect(loss.ticket).toMatch(/^[a-f0-9-]{36}$/)
   await expect(page.getByText(/已选 migration.json/)).toBeVisible()
   await page.getByRole('button', { name: '查询本次上传票据', exact: true }).click()
   const preview = page.getByRole('region', { name: '内容导入预览', exact: true })
+  await expect(preview).toContainText(loss.ticket)
   await expect(preview).toContainText('计划新建 1 篇文章草稿')
   await expect(preview.getByRole('button', { name: '确认导入预览内容', exact: true })).toBeDisabled()
   await preview.getByRole('textbox', { name: '输入“导入为新草稿”确认', exact: true }).fill('导入为新草稿')
@@ -1091,7 +1172,7 @@ test('内容包下载、上传断线查询与导入结果重读不重复创建�
   await expect(preview).toContainText('已创建 1 篇文章草稿')
   await page.setViewportSize({ width: 390, height: 844 })
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1)).toBe(true)
-  await preview.screenshot({ path: testInfo.outputPath('content-import-mobile.png') })
+  await captureMotion(page, testInfo, 'content-import-mobile.png', { target: preview })
   await preview.getByRole('button', { name: '查询导入结果', exact: true }).click()
   await expect(preview.getByRole('link', { name: /^检查新文章草稿/ })).toHaveCount(1)
   await preview.getByRole('link', { name: /^检查新文章草稿/ }).click()
