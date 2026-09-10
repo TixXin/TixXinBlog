@@ -17,6 +17,7 @@ import { FlashModule } from './modules/flash/flash.module'
 import { MomentModule } from './modules/moment/moment.module'
 import { GuestbookModule } from './modules/guestbook/guestbook.module'
 import { GalleryModule } from './modules/gallery/gallery.module'
+import { ProjectModule } from './modules/project/project.module'
 import { HealthModule } from './modules/health/health.module'
 import { PostModule } from './modules/post/post.module'
 import { MediaModule } from './modules/media/media.module'
@@ -59,6 +60,7 @@ import { BackupModule } from './modules/backup/backup.module'
     MomentModule,
     GuestbookModule,
     GalleryModule,
+    ProjectModule,
     MediaModule,
     SiteModule,
     AuditModule,

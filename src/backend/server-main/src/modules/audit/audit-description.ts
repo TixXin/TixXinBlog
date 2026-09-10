@@ -38,6 +38,9 @@ export const auditActions: Record<string, string> = {
   'gallery.create': '创建图库作品',
   'gallery.update': '编辑发布或排序图库作品',
   'gallery.delete': '删除图库作品',
+  'project.create': '创建项目',
+  'project.update': '编辑发布或排序项目',
+  'project.delete': '删除项目',
   'taxonomy.write': '管理分类标签',
   'site.save': '保存站点资料',
   'site.restore': '恢复站点资料',
@@ -121,6 +124,9 @@ export function auditDescriptor(path: string, method: string) {
             : method === 'POST'
               ? 'moment.create'
               : 'moment.update'
+    } else if (resourceType === 'projects') {
+      resourceType = 'project'
+      action = method === 'POST' ? 'project.create' : method === 'DELETE' ? 'project.delete' : 'project.update'
     } else if (resourceType === 'gallery') {
       action = method === 'POST' ? 'gallery.create' : method === 'DELETE' ? 'gallery.delete' : 'gallery.update'
     } else if (resourceType === 'guestbook') {
@@ -188,6 +194,9 @@ const fields: Record<string, string> = {
   takenOn: '拍摄日期',
   sortOrder: '显示排序',
   gear: '器材介绍',
+  progress: '项目进展',
+  coverMediaId: '项目封面',
+  links: '关联链接',
 }
 function object(value: unknown): Record<string, unknown> {
   return value && typeof value === 'object' && !Array.isArray(value) ? (value as Record<string, unknown>) : {}
@@ -225,12 +234,14 @@ export function auditResult(
     'exportedMoments',
     'exportedGuestbook',
     'exportedGallery',
+    'exportedProjects',
     'exportedMedia',
     'importedPosts',
     'importedFlashes',
     'importedMoments',
     'importedGuestbook',
     'importedGallery',
+    'importedProjects',
     'importedComments',
     'importedMedia',
   ])

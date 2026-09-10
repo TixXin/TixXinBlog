@@ -115,7 +115,7 @@ export class MediaService {
       MediaReference,
       { asset: id },
       {
-        populate: ['post', 'flashNote', 'moment', 'guestbookMessage', 'galleryPhoto'],
+        populate: ['post', 'flashNote', 'moment', 'guestbookMessage', 'galleryPhoto', 'project'],
         orderBy: { id: 'asc' },
         limit: 20,
         offset: (page - 1) * 20,
@@ -134,6 +134,7 @@ export class MediaService {
           item.moment?.content.slice(0, 100) ??
           item.guestbookMessage?.content.slice(0, 100) ??
           item.galleryPhoto?.title ??
+          item.project?.title ??
           '站点头像',
         url: item.post
           ? `/admin/posts/${item.post.id}`
@@ -145,7 +146,9 @@ export class MediaService {
                 ? `/admin/guestbook?focus=${item.guestbookMessage.id}`
                 : item.galleryPhoto
                   ? `/admin/gallery/${item.galleryPhoto.id}`
-                  : '/admin/site',
+                  : item.project
+                    ? `/admin/projects/${item.project.id}`
+                    : '/admin/site',
       })),
     }
   }
