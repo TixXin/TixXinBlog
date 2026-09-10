@@ -1,5 +1,7 @@
 # 图库作品
 
+文本长度与HTML `maxlength`及既有内容包保持相同的UTF-16计数，避免接口允许保存但导出包无法再导入。合法边界原样保留，超限写入拒绝且不截断内容。
+
 图库保存作品的标题、说明、分类、拍摄日期、地点、设备、排序及发布状态。媒体库继续保存文件与实际像素、格式和引用；上传图片不会自动创建或发布作品。前台 `/gallery`，后台 `/admin/gallery`，新建 `/admin/gallery/new`，编辑 `/admin/gallery/:id`，器材介绍 `/admin/gallery/settings`。
 
 ## API 与可见性
