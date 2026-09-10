@@ -2,6 +2,7 @@
 import assert from 'node:assert/strict'
 import { randomUUID } from 'node:crypto'
 import { existsSync } from 'node:fs'
+import { createRequire } from 'node:module'
 import { join } from 'node:path'
 import { setTimeout as delay } from 'node:timers/promises'
 import { createBrowserTestApp } from './test-app.mjs'
@@ -319,7 +320,7 @@ try {
   broken.links[0].values.name = '友链迁入回滚证明'
   const brokenPlan = (await preview(broken, 'copy', true)).data.data
   const countsSql =
-    "select (select count(*) from friend_link)::int as links,(select count(*) from project)::int as projects,(select count(*) from post)::int as posts,(select count(*) from gallery_photo)::int as gallery,(select count(*) from media_asset)::int as media,(select count(*) from media_reference)::int as refs,(select revision from link_settings where id='default') as rules_revision"
+    "select (select count(*) from friend_link)::int as links,(select count(*) from project)::int as projects,(select count(*) from post)::int as posts,(select count(*) from gallery_photo)::int as gallery,(select count(*) from guestbook_message)::int as guestbook,(select count(*) from media_asset)::int as media,(select count(*) from media_reference)::int as refs,(select revision from link_settings where id='default') as rules_revision"
   const before = await em.execute(countsSql)
   await em.execute(
     "create function fail_link_import() returns trigger language plpgsql as $$ begin if new.name='友链迁入回滚证明' then raise exception 'isolated link import failure'; end if; return new; end $$",
@@ -411,6 +412,137 @@ try {
   assert.equal((await em.execute("select count(*)::int as n from friend_link where name='等待回音的站点'"))[0].n, 1)
   await em.execute('drop trigger slow_link_import on friend_link')
   await em.execute('drop function slow_link_import()')
+
+  // 模拟升级前已持久化的票据，而不是仅用新服务重新上传旧版本文件。
+  const { packageHash } = createRequire(import.meta.url)('../dist/modules/backup/content-package.js')
+  const oldMessage = await ok('/admin/guestbook', 'POST', { content: '旧票据中的留言', requestId: randomUUID() })
+  const oldReply = await ok('/admin/guestbook', 'POST', {
+    content: '旧票据中的答复',
+    replyToId: oldMessage.id,
+    requestId: randomUUID(),
+  })
+  const currentSnapshot = (await request('/admin/backup/export', 'POST', { mediaIncluded: false })).data
+  const legacyPayload = structuredClone(currentSnapshot)
+  legacyPayload.version = 5
+  delete legacyPayload.links
+  delete legacyPayload.linkSettings
+  legacyPayload.posts = legacyPayload.posts.filter((item) => item.sourceId === post.id)
+  legacyPayload.gallery = legacyPayload.gallery.filter((item) => item.sourceId === gallery.id)
+  legacyPayload.projects = legacyPayload.projects.filter((item) => item.sourceId === project.id)
+  legacyPayload.guestbook = legacyPayload.guestbook.filter((item) =>
+    [oldMessage.id, oldReply.id].includes(item.sourceId),
+  )
+  const legacyPreview = (await preview(legacyPayload, 'copy', true)).data.data
+  const [stored] = await em.execute('select payload,plan from content_import where id=?', [legacyPreview.ticket])
+  const payloadV5 = { ...stored.payload, version: 5 }
+  delete payloadV5.links
+  delete payloadV5.linkSettings
+  const planV5 = structuredClone(stored.plan)
+  delete planV5.links
+  delete planV5.counts.links
+  delete planV5.linkSettingsRevision
+  const [versions] = await em.execute(`select (select generation from content_context where id='default') as context,
+    (select revision from site_settings where id='default') as site,
+    (select revision from comment_policy where id='default') as policy,
+    (select revision from gallery_settings where id='default') as gallery`)
+  // 此对象保持 v5 的实际基准算法：没有 links 字段或第四项规则配置版本。
+  planV5.basis = packageHash({
+    context: versions.context,
+    guestbook: currentSnapshot.guestbook,
+    gallery: currentSnapshot.gallery,
+    projects: currentSnapshot.projects,
+    posts: currentSnapshot.posts.map((item) => ({ id: item.sourceId, values: item.values })),
+    flashes: currentSnapshot.flashes.map((item) => ({ id: item.sourceId, values: item.values })),
+    moments: currentSnapshot.moments.map((item) => ({
+      id: item.sourceId,
+      values: item.values,
+      deleted: item.deleted,
+      comments: item.comments,
+    })),
+    folders: currentSnapshot.folders,
+    tags: currentSnapshot.tags,
+    aliases: await em.execute('select kind,alias,target from taxonomy_alias order by kind,alias'),
+    addresses: (await em.execute('select slug,post_id from post_address order by slug')).map((item) => ({
+      slug: item.slug,
+      post: item.post_id,
+    })),
+    media: currentSnapshot.media.map((item) => ({ id: item.id, sha256: item.sha256, deleted: item.deleted })),
+    settings: [versions.site, versions.policy, payloadV5.gallerySettings ? versions.gallery : null],
+  })
+  await em.execute('update content_import set payload=?::jsonb,plan=?::jsonb where id=?', [
+    JSON.stringify(payloadV5),
+    JSON.stringify(planV5),
+    legacyPreview.ticket,
+  ])
+  const oldTicket = await ok(`/admin/backup/imports/${legacyPreview.ticket}`)
+  assert.equal(oldTicket.plan.links, undefined)
+  assert.equal(oldTicket.plan.counts.links, undefined)
+  assert.equal(oldTicket.linkSettingsPreview, undefined)
+  const countsBeforeLegacy = await em.execute(countsSql)
+  const mustRepreview = await execute(oldTicket)
+  assert.equal(mustRepreview.status, 409)
+  assert.match(mustRepreview.data.message, /重新预览/)
+  assert.deepEqual(await em.execute(countsSql), countsBeforeLegacy)
+  const refreshed = await ok(`/admin/backup/imports/${oldTicket.ticket}/repreview`, 'POST')
+  assert.equal(refreshed.plan.counts.links, 0)
+  assert.deepEqual(refreshed.plan.links, [])
+  assert.equal((await execute(oldTicket)).status, 409, '重新预览后旧确认摘要不能执行')
+  const currentRules = (await ok('/admin/links/settings')).rules
+  const migratedLegacy = await execute(refreshed)
+  assert.equal(migratedLegacy.status, 201, migratedLegacy.data.message)
+  const legacyResult = migratedLegacy.data.data.result
+  assert.equal(legacyResult.posts.length, 1)
+  assert.equal(legacyResult.gallery.length, 1)
+  assert.equal(legacyResult.projects.length, 1)
+  assert.equal(legacyResult.guestbook.length, 2)
+  assert.deepEqual(legacyResult.links, [])
+  const importedParent = legacyResult.guestbook.find((item) => item.sourceId === oldMessage.id).id
+  const importedReply = legacyResult.guestbook.find((item) => item.sourceId === oldReply.id).id
+  assert.equal((await ok(`/admin/guestbook/${importedReply}`)).replyTo.id, importedParent)
+  assert.deepEqual((await ok('/admin/links/settings')).rules, currentRules)
+
+  // 已完成 v5 结果缺少 links，已完成 v1 结果还缺少后来新增的业务数组。
+  const completedCases = [{ ticket: oldTicket.ticket, fields: ['links'] }]
+  const payloadV1 = structuredClone(legacyPayload)
+  payloadV1.version = 1
+  for (const field of ['moments', 'guestbook', 'gallery', 'gallerySettings', 'projects']) delete payloadV1[field]
+  const previewV1 = (await preview(payloadV1, 'copy')).data.data
+  const importedV1 = await execute(previewV1)
+  assert.equal(importedV1.status, 201)
+  completedCases.push({ ticket: previewV1.ticket, fields: ['moments', 'guestbook', 'gallery', 'projects', 'links'] })
+  for (const completedCase of completedCases) {
+    const [record] = await em.execute('select plan,result from content_import where id=?', [completedCase.ticket])
+    for (const field of completedCase.fields) {
+      assert.equal(record.result[field]?.length ?? 0, 0, '模拟旧版缺省字段不能丢弃真实迁入内容')
+      delete record.plan[field]
+      delete record.plan.counts[field]
+      delete record.result[field]
+    }
+    delete record.plan.linkSettingsRevision
+    if (completedCase.fields.includes('gallery')) delete record.plan.gallerySettingsRevision
+    await em.execute('update content_import set plan=?::jsonb,result=?::jsonb where id=?', [
+      JSON.stringify(record.plan),
+      JSON.stringify(record.result),
+      completedCase.ticket,
+    ])
+    const beforeRepeat = await em.execute(countsSql)
+    const completedView = await ok(`/admin/backup/imports/${completedCase.ticket}`)
+    assert.equal(completedView.completed, true)
+    assert.equal(completedView.result.links, undefined)
+    assert.equal(completedView.result.posts.length, 1)
+    const repeatedCompleted = await execute(completedView)
+    assert.equal(repeatedCompleted.status, 201)
+    assert.equal(repeatedCompleted.data.data.importedLinks, 0)
+    assert.deepEqual(repeatedCompleted.data.data.result, record.result)
+    assert.deepEqual(
+      (await ok(`/admin/backup/imports/${completedCase.ticket}/repreview`, 'POST')).result,
+      record.result,
+    )
+    assert.deepEqual(await em.execute(countsSql), beforeRepeat)
+  }
+  process.stdout.write(
+    '旧持久化票据通过：v5预览强制重新确认、不遗漏文章/留言回复/图库/项目、不清新规则；v1/v5完成结果缺新字段仍可查询和重复执行且不增殖\n',
+  )
   const oldContext = (await request('/site')).headers.get('x-content-context'),
     nextContext = randomUUID()
   const current = await ok(`/admin/links/${link.id}`)
