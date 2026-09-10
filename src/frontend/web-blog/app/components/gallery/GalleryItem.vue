@@ -10,6 +10,8 @@
     class="gallery-item"
     role="button"
     tabindex="0"
+    :data-focus-key="`gallery-photo-${photo.id}`"
+    :aria-label="`查看照片：${photo.title}`"
     @click="$emit('click')"
     @keydown.enter.prevent="$emit('click')"
     @keydown.space.prevent="$emit('click')"
@@ -23,7 +25,9 @@
     />
     <div class="gallery-item__overlay">
       <h4 class="gallery-item__title">{{ photo.title }}</h4>
-      <p class="gallery-item__meta">{{ photo.date }} · {{ photo.location }}</p>
+      <p class="gallery-item__meta">
+        {{ [photo.date, photo.location].filter(Boolean).join(' · ') || '拍摄信息未填写' }}
+      </p>
     </div>
   </article>
 </template>

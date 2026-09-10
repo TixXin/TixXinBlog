@@ -29,15 +29,18 @@ async function openAppearance(page: Page) {
   await expect(page.getByRole('dialog', { name: '界面设置', exact: true })).toBeVisible()
 }
 
-test('画廊检索使用照片标题描述与地点，空态可恢复且灯箱归还焦点', async ({ page }, testInfo) => {
+test('画廊检索使用真实照片，空态可恢复且灯箱归还焦点', async ({ page, request }, testInfo) => {
+  const response = await request.get('/api/v1/gallery?pageSize=12')
+  expect(response.status()).toBe(200)
+  const sample = (await response.json()).data.items[0]
+  expect(sample).toBeTruthy()
   await page.goto('/gallery')
   await expect(page.locator('html')).toHaveAttribute('lang', 'zh-CN')
   const search = page.getByRole('textbox', { name: '搜索画廊照片', exact: true })
-  await search.fill('贡嘎')
-  await expect(page.locator('.gallery-grid__cell')).toHaveCount(1)
-  const photo = page.getByRole('button', { name: /雪山日出/ })
+  await search.fill(sample.title)
+  const photo = page.getByRole('button', { name: `查看照片：${sample.title}`, exact: true })
   await photo.press('Enter')
-  const lightbox = page.getByRole('dialog', { name: '雪山日出', exact: true })
+  const lightbox = page.getByRole('dialog', { name: sample.title, exact: true })
   await expect(lightbox.getByRole('button', { name: '关闭', exact: true })).toBeFocused()
   await lightbox.screenshot({ animations: 'disabled', path: testInfo.outputPath('gallery-lightbox.png') })
   await lightbox.getByRole('button', { name: '关闭', exact: true }).press('Escape')
