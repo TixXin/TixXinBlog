@@ -4,7 +4,7 @@
 
 ## Project Overview
 
-TixXinBlog is a personal blog system with persistent articles, comments, authentication, flashes, moments, guestbook, media, and site settings. Articles support an explicit demo repository via `public.postUseMockRepo`; flashes use `public.useMockRepo`. Moments and guestbook always use the real API; sample data is limited to tests or explicit development seeding. Gallery uses the real API with managed media, publication states and independent gear settings. Projects also use the real API with independent project progress and publication status. Links retain demo data. Tab bookmarks explicitly use LocalStorage until their API is implemented. Data types live in `features/<domain>/types.ts`; components receive data via props and emit events. See `docs/capability-map.md` for verified boundaries.
+TixXinBlog is a personal blog system with persistent articles, comments, authentication, flashes, moments, guestbook, media, and site settings. Articles support an explicit demo repository via `public.postUseMockRepo`; flashes use `public.useMockRepo`. Moments and guestbook always use the real API; sample data is limited to tests or explicit development seeding. Gallery uses the real API with managed media, publication states and independent gear settings. Projects use the real API with independent progress and publication status. Links use the real API with owner management and rule settings; public applications remain unavailable. Tab bookmarks explicitly use LocalStorage until their API is implemented. Data types live in `features/<domain>/types.ts`; components receive data via props and emit events. See `docs/capability-map.md` for verified boundaries.
 
 ## Commands
 
@@ -48,7 +48,7 @@ Package manager: **pnpm 9.15.0** (enforced). Node >= 24 < 25；推荐通过 `cor
 **Monorepo** with pnpm workspaces:
 
 - `src/frontend/web-blog/` — Nuxt 4 + Vue 3 + TypeScript blog frontend (the active project)
-- `src/backend/server-main/` — NestJS + MikroORM + PostgreSQL; post, auth, comment, and flash modules
+- `src/backend/server-main/` — NestJS + MikroORM + PostgreSQL; content, authentication, media, and maintenance modules
 
 ### Frontend Structure (`src/frontend/web-blog/`)
 
@@ -56,7 +56,7 @@ Nuxt 4 app directory layout under `app/`:
 
 - **`pages/`** — File-system routing. Assembles components, passes data via props.
 - **`components/<domain>/`** — Display-only UI components grouped by domain (article, blog, common, layout, sidebar, etc.)
-- **`features/<domain>/`** — Business logic modules with `mock.ts` and `types.ts` per domain (post, stats, nav, site, about, article, gallery, guestbook, link, moment, project)
+- **`features/<domain>/`** — Domain types, query/editor helpers and business logic (post, stats, nav, site, about, article, gallery, guestbook, link, moment, project). Mock files remain only for explicit demo repositories, tests or static/sample configuration.
 - **`composables/`** — Cross-page reusable Composition API logic
 - **`layouts/`** — Page layouts
 - **`assets/styles/`** — SCSS with design tokens
