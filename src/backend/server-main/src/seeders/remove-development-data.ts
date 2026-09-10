@@ -25,14 +25,14 @@ export async function removeDevelopmentData(
     if (
       args[index] === '--dataset' &&
       !dataset &&
-      ['core-v1', 'guestbook-v1', 'gallery-v1', 'all'].includes(args[index + 1] ?? '')
+      ['core-v1', 'guestbook-v1', 'gallery-v1', 'project-v1', 'all'].includes(args[index + 1] ?? '')
     )
       dataset = args[++index]!
     else if (args[index] === '--apply' && !apply) apply = true
     else if (args[index] === '--confirm' && !confirm && args[index + 1]) confirm = args[++index]!
     else
       throw new DevelopmentDataError(
-        '用法：db:dev remove-data --dataset core-v1|guestbook-v1|gallery-v1|all [--apply --confirm 数据库名]',
+        '用法：db:dev remove-data --dataset core-v1|guestbook-v1|gallery-v1|project-v1|all [--apply --confirm 数据库名]',
       )
   }
   if (!dataset) throw new DevelopmentDataError('请显式指定需要清理的样本集 --dataset')
@@ -98,6 +98,7 @@ export async function removeDevelopmentData(
         'moment-comment',
         'guestbook',
         'gallery',
+        'project',
         'moment',
         'flash',
         'post',

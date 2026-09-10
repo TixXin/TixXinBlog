@@ -15,6 +15,7 @@ import { seedCoreFixtures, CORE_DATASET } from './core-fixtures'
 import type { FixtureProgress } from './fixture-ledger'
 import { seedGuestbookFixtures, GUESTBOOK_DATASET, GUESTBOOK_FIXTURE_COUNT } from './guestbook-fixtures'
 import { seedGalleryFixtures, GALLERY_DATASET, GALLERY_FIXTURE_COUNT } from './gallery-fixtures'
+import { seedProjectFixtures, PROJECT_DATASET, PROJECT_FIXTURE_COUNT } from './project-fixtures'
 
 export class DevelopmentDataError extends Error {}
 export async function seedDevelopmentData(
@@ -28,14 +29,14 @@ export async function seedDevelopmentData(
   for (let index = 0; index < args.length; index++) {
     if (
       args[index] === '--dataset' &&
-      [CORE_DATASET, GUESTBOOK_DATASET, GALLERY_DATASET, 'all'].includes(args[index + 1] ?? '')
+      [CORE_DATASET, GUESTBOOK_DATASET, GALLERY_DATASET, PROJECT_DATASET, 'all'].includes(args[index + 1] ?? '')
     )
       dataset = args[++index]!
     else if (args[index] === '--apply' && !apply) apply = true
     else if (args[index] === '--confirm' && !confirm && args[index + 1]) confirm = args[++index]!
     else
       throw new DevelopmentDataError(
-        '用法：db:dev seed-data --dataset core-v1|guestbook-v1|gallery-v1|all [--apply --confirm 数据库名]',
+        '用法：db:dev seed-data --dataset core-v1|guestbook-v1|gallery-v1|project-v1|all [--apply --confirm 数据库名]',
       )
   }
   const url = new URL(process.env.DATABASE_URL!)
@@ -73,7 +74,9 @@ export async function seedDevelopmentData(
             ? GUESTBOOK_FIXTURE_COUNT
             : dataset === GALLERY_DATASET
               ? GALLERY_FIXTURE_COUNT
-              : 71 + GUESTBOOK_FIXTURE_COUNT + GALLERY_FIXTURE_COUNT,
+              : dataset === PROJECT_DATASET
+                ? PROJECT_FIXTURE_COUNT
+                : 71 + GUESTBOOK_FIXTURE_COUNT + GALLERY_FIXTURE_COUNT + PROJECT_FIXTURE_COUNT,
       scope:
         (dataset === CORE_DATASET
           ? '核心文章/闪念/朋友圈及互动'
@@ -81,7 +84,9 @@ export async function seedDevelopmentData(
             ? '留言、回复、置顶、待审隐藏、本地头像与真实回应'
             : dataset === GALLERY_DATASET
               ? '图库作品、公开分页、草稿撤回、分类排序和横竖本地照片'
-              : '核心业务、留言和图库数据集') + '；已有归属不覆盖、不复活',
+              : dataset === PROJECT_DATASET
+                ? '项目公开分页、独立进展和发布状态、标签排序、可空封面及真实文档链接'
+                : '核心业务、留言、图库和项目数据集') + '；已有归属不覆盖、不复活',
       apply,
     }
     write(JSON.stringify(plan, null, 2))
@@ -106,6 +111,8 @@ export async function seedDevelopmentData(
           await seedGuestbookFixtures(em, storage, progress, createdMedia)
         if (dataset === GALLERY_DATASET || dataset === 'all')
           await seedGalleryFixtures(em, storage, progress, createdMedia)
+        if (dataset === PROJECT_DATASET || dataset === 'all')
+          await seedProjectFixtures(em, storage, progress, createdMedia)
         em.create(AuditEntry, {
           action: 'development.seed-data',
           resourceType: 'dataset',

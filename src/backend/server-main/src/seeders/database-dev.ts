@@ -155,7 +155,7 @@ export async function runDevDatabase(
       'remove-samples': '仅删除未编辑且互动仍为原始样本的开发动态；有新增、编辑或删除互动的内容保留',
       'clear-moments': '清空全部朋友圈正文、互动及提交记录；保留其他业务、账号、站点和媒体文件',
       'clear-content':
-        '清空文章、闪念、朋友圈、留言、图库、评论、目录和导入票据；保留账号、站点、审核设置、媒体、样本归属账本和审计',
+        '清空文章、闪念、朋友圈、留言、图库、项目、评论、目录和导入票据；保留账号、站点、审核设置、媒体、样本归属账本和审计',
       reset:
         '重建全部应用表，账号、配置、内容和媒体索引全部删除；迁移生成默认配置，磁盘媒体和备份保留，需要重新创建管理员',
     }[input.action]
@@ -304,6 +304,7 @@ export async function runDevDatabase(
         else await em.nativeDelete(Moment, {})
         if (input.action === 'clear-content') {
           await em.execute('delete from gallery_photo')
+          await em.execute('delete from project')
           await em.execute('delete from guestbook_message')
           await em.execute('delete from flash_note')
           await em.execute('delete from post')

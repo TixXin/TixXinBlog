@@ -100,6 +100,52 @@ export const DATA_DOMAINS: Domain[] = [
     },
   },
   {
+    id: 'projects',
+    entry: '/projects',
+    admin: '/admin/projects',
+    table: 'project',
+    searchColumn: 'title',
+    dataset: 'project-v1',
+    source: 'PostgreSQL project、media_asset、media_reference；MEDIA_DIRECTORY 本地封面',
+    scenarios: '两页公开项目、草稿撤回、三种独立项目进展、排序、多技术标签、有无封面、有无链接和长短说明',
+    query: `select count(*)::int as total,
+      count(*) filter(where p.status='published' and p.deleted_at is null)::int as published,
+      count(*) filter(where p.status='draft' and p.deleted_at is null)::int as drafts,
+      count(*) filter(where p.status='withdrawn' and p.deleted_at is null)::int as withdrawn,
+      count(*) filter(where p.status='published' and p.deleted_at is null and p.progress='active')::int as active,
+      count(*) filter(where p.status='published' and p.deleted_at is null and p.progress='dev')::int as developing,
+      count(*) filter(where p.status='published' and p.deleted_at is null and p.progress='archived')::int as archived,
+      count(*) filter(where p.deleted_at is null and p.cover_media_id is not null)::int as covered,
+      count(*) filter(where p.status='published' and p.deleted_at is null and p.cover_media_id is null)::int as "withoutCover",
+      count(distinct p.cover_media_id) filter(where p.deleted_at is null)::int as images,
+      count(*) filter(where p.deleted_at is null and p.sort_order<>0)::int as ordered,
+      count(*) filter(where p.deleted_at is null and length(p.description)>100)::int as "longText",
+      count(*) filter(where p.deleted_at is null and jsonb_array_length(p.tags)>1)::int as "multipleTags",
+      count(*) filter(where p.deleted_at is null and jsonb_array_length(p.links)>0)::int as linked,
+      count(*) filter(where p.status='published' and p.deleted_at is null and jsonb_array_length(p.links)=0)::int as "withoutLinks",
+      (select count(distinct lower(tag->>'label'))::int from project t cross join lateral jsonb_array_elements(t.tags) tag where t.status='published' and t.deleted_at is null) as tags,
+      count(*) filter(where p.deleted_at is null and p.cover_media_id is not null and exists(select 1 from media_reference r where r.project_id=p.id and r.asset_id=p.cover_media_id and r.kind='project'))::int as references
+      from project p`,
+    required: {
+      published: 13,
+      drafts: 1,
+      withdrawn: 1,
+      active: 1,
+      developing: 1,
+      archived: 1,
+      covered: 1,
+      withoutCover: 1,
+      images: 3,
+      ordered: 1,
+      longText: 1,
+      multipleTags: 1,
+      linked: 1,
+      withoutLinks: 1,
+      tags: 3,
+      references: 1,
+    },
+  },
+  {
     id: 'media',
     entry: '/api/v1/media/:key',
     admin: '/admin/media',
@@ -126,13 +172,6 @@ export const DATA_DOMAINS: Domain[] = [
   },
 ]
 export const STATIC_DATA_DOMAINS = [
-  {
-    id: 'projects',
-    entry: '/projects',
-    source: 'features/project/mock.ts',
-    storage: 'demo',
-    scenarios: '列表、技术栈、分类',
-  },
   { id: 'links', entry: '/links', source: 'features/link/mock.ts', storage: 'demo', scenarios: '友链、规则' },
   {
     id: 'bookmarks',
@@ -176,10 +215,12 @@ async function inspectOwnership(em: EntityManager, dataset: string, hasLedger: b
   return report
 }
 
-async function inspectGalleryFiles(em: EntityManager) {
+async function inspectContentFiles(em: EntityManager, domain: 'gallery' | 'projects') {
   const storage = new LocalMediaStorage(new ConfigService(process.env))
   const assets = await em.execute<{ id: string; storage_key: string; deleted_at: Date | null }[]>(
-    'select distinct m.id,m.storage_key,m.deleted_at from media_asset m join gallery_photo g on g.media_id=m.id where g.deleted_at is null',
+    domain === 'gallery'
+      ? 'select distinct m.id,m.storage_key,m.deleted_at from media_asset m join gallery_photo g on g.media_id=m.id where g.deleted_at is null'
+      : 'select distinct m.id,m.storage_key,m.deleted_at from media_asset m join project p on p.cover_media_id=m.id where p.deleted_at is null',
   )
   const unavailable: string[] = []
   for (const asset of assets) {
@@ -215,7 +256,11 @@ export async function inspectDataCatalog(em: EntityManager, domain?: string, sea
     const ownership = item.dataset
       ? await inspectOwnership(em, item.dataset, tables.has('development_fixture'))
       : undefined
-    const media = item.id === 'gallery' ? await inspectGalleryFiles(em) : undefined
+    const media = item.id === 'gallery' || item.id === 'projects' ? await inspectContentFiles(em, item.id) : undefined
+    if (item.id === 'projects' && counts?.covered !== counts?.references)
+      missing.push(
+        `项目封面与媒体引用不一致：${counts?.covered ?? 0}件有封面，${counts?.references ?? 0}件有有效引用；请核对关联并从完整备份恢复`,
+      )
     if (media?.unavailable.length)
       missing.push(`媒体文件不可用：${media.unavailable.length}项；从完整备份恢复文件，不重新补种覆盖作品`)
     let filter: { matched: number; state: string } | null = null
