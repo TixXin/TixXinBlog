@@ -431,6 +431,55 @@ export async function restoreFullBackup(path, { output } = {}) {
         verified: true,
       }
     }
+    let projectIntegrity
+    if (Object.hasOwn(manifest.counts, 'project')) {
+      const invalid = Number(
+        await psql(
+          container,
+          database,
+          user,
+          password,
+          `
+        select
+          (select count(*) from project p left join media_asset a on a.id=p.cover_media_id where p.cover_media_id is not null and a.id is null)
+          + (select count(*) from project p where p.deleted_at is null and p.cover_media_id is not null and not exists
+              (select 1 from media_reference r where r.project_id=p.id and r.asset_id=p.cover_media_id and r.kind='project' and r.source_key='project:'||p.id::text))
+          + (select count(*) from media_reference r left join project p on p.id=r.project_id
+              where (r.kind='project' or r.project_id is not null) and
+                (p.id is null or p.deleted_at is not null or p.cover_media_id is null or r.kind<>'project' or r.asset_id<>p.cover_media_id or r.source_key<>'project:'||p.id::text))
+          + (select count(*) from project where progress not in ('active','dev','archived') or status not in ('draft','published','withdrawn') or revision<0
+              or sort_order not between -1000000 and 1000000 or jsonb_typeof(tags)<>'array' or jsonb_typeof(links)<>'array')
+          + (select count(*) from development_fixture where kind='project' and (resource_id !~ '^[1-9][0-9]*$' or snapshot_hash !~ '^[a-f0-9]{64}$'));
+      `,
+        ),
+      )
+      if (invalid) throw new Error('恢复后的项目进展、发布状态、封面引用或样本归属校验失败')
+      projectIntegrity = {
+        projects: counts.project,
+        withCover: Number(
+          await psql(
+            container,
+            database,
+            user,
+            password,
+            'select count(*) from project where cover_media_id is not null',
+          ),
+        ),
+        mediaReferences: Number(
+          await psql(container, database, user, password, "select count(*) from media_reference where kind='project'"),
+        ),
+        fixtures: Number(
+          await psql(
+            container,
+            database,
+            user,
+            password,
+            "select count(*) from development_fixture where kind='project'",
+          ),
+        ),
+        verified: true,
+      }
+    }
     await mkdir(join(target, 'media'), { mode: 0o700 })
     for (const media of manifest.media) {
       const file = join(target, 'media', media.key)
@@ -462,6 +511,7 @@ export async function restoreFullBackup(path, { output } = {}) {
       counts,
       rowDigestsVerified: true,
       galleryIntegrity,
+      projectIntegrity,
       mediaFiles: manifest.media.length,
       revokedRestoredSessions: true,
       requireFreshContentContext: true,
@@ -521,6 +571,31 @@ export async function verifyRestoredApplication(
         ),
       )
     : null
+  const projects = Object.hasOwn(restored.report.counts, 'project')
+    ? JSON.parse(
+        await psql(
+          restored.connection.container,
+          database,
+          user,
+          password,
+          `
+        with public_projects as (select * from project where status='published' and deleted_at is null),
+        tag_counts as (select lower(tag->>'label') as label,count(distinct p.id)::int as count
+          from public_projects p cross join lateral jsonb_array_elements(p.tags) tag group by lower(tag->>'label'))
+        select json_build_object(
+          'total',(select count(*) from project where deleted_at is null),
+          'stats',(select json_build_object('projects',count(*),'active',count(*) filter(where progress='active'),
+            'dev',count(*) filter(where progress='dev'),'archived',count(*) filter(where progress='archived'),'tags',(select count(*) from tag_counts)) from public_projects),
+          'tags',coalesce((select json_agg(t) from tag_counts t),'[]'::json),
+          'items',coalesce((select json_agg(p) from (select id,title,md5(description) as "descriptionHash",cover_media_id as "coverMediaId",progress,status,tags,
+            (select coalesce(jsonb_agg(jsonb_build_object('kind',link->>'kind','hrefHash',md5(link->>'href')) order by position),'[]'::jsonb)
+              from jsonb_array_elements(project.links) with ordinality as entry(link,position)) as links,sort_order as "sortOrder",revision
+            from project where deleted_at is null order by id limit 5) p),'[]'::json),
+          'deletedIds',coalesce((select json_agg(id) from (select id from project where deleted_at is not null order by id limit 5) p),'[]'::json));
+      `,
+        ),
+      )
+    : null
   try {
     await command(
       [
@@ -561,12 +636,27 @@ export async function verifyRestoredApplication(
           if(!image.ok||crypto.createHash('sha256').update(Buffer.from(await image.arrayBuffer())).digest('hex')!==media[0].sha256)throw Error('media');
         }
         const gallery=${JSON.stringify(gallery)};
+        const projects=${JSON.stringify(projects)};
+        let projectMetadataVerified=false, projectAdminVerified=false, projectOldContextRejected=false, projectFreshWriteAllowed=false;
         if(gallery){
           const list=await fetch('http://127.0.0.1:3000/api/v1/gallery?pageSize=1');
           if(!list.ok||(await list.json()).data.total!==gallery.photos)throw Error('gallery');
           const metadata=await fetch('http://127.0.0.1:3000/api/v1/gallery/metadata');
           const values=(await metadata.json()).data;
           if(!metadata.ok||values.stats.photos!==gallery.photos||JSON.stringify(values.gear)!==JSON.stringify(gallery.gear))throw Error('gallery settings');
+        }
+        if(projects){
+          const list=await fetch('http://127.0.0.1:3000/api/v1/projects?pageSize=1');
+          const values=(await list.json()).data;
+          if(!list.ok||values.total!==projects.stats.projects||values.items.some(item=>'stars' in item||'forks' in item))throw Error('projects');
+          const metadata=await fetch('http://127.0.0.1:3000/api/v1/projects/metadata');
+          const details=(await metadata.json()).data;
+          if(!metadata.ok||Object.entries(projects.stats).some(([key,value])=>details.stats[key]!==value))throw Error('project statistics');
+          for(const tag of projects.tags){
+            const found=details.tags.find(item=>item.label.toLowerCase()===tag.label);
+            if(!found||found.count!==tag.count||found.percent!==Math.round(tag.count*100/projects.stats.projects))throw Error('project tags');
+          }
+          projectMetadataVerified=true;
         }
         if(process.env.VERIFY_OLD_ACCESS_TOKEN){
           const denied=await fetch('http://127.0.0.1:3000/api/v1/admin/posts',{headers:{Authorization:'Bearer '+process.env.VERIFY_OLD_ACCESS_TOKEN}});
@@ -602,8 +692,51 @@ export async function verifyRestoredApplication(
             if(!saved.ok||(await saved.json()).data.revision!==current.revision+1)throw Error('fresh restored write');
             galleryFreshWriteAllowed=true;
           }
+          if(projects){
+            const headers={Authorization:'Bearer '+token,'Content-Type':'application/json'};
+            const list=await fetch('http://127.0.0.1:3000/api/v1/admin/projects?pageSize=1',{headers});
+            if(!list.ok||(await list.json()).data.total!==projects.total)throw Error('restored project admin count');
+            for(const expected of projects.items){
+              const response=await fetch('http://127.0.0.1:3000/api/v1/admin/projects/'+expected.id,{headers});
+              const current=(await response.json()).data;
+              if(!response.ok)throw Error('restored project admin');
+              const normalized={...current,descriptionHash:crypto.createHash('md5').update(current.description).digest('hex'),links:current.links.map(({kind,href})=>({kind,hrefHash:crypto.createHash('md5').update(href).digest('hex')}))};
+              for(const [key,value] of Object.entries(expected)){
+                if(key==='links'){
+                  if(JSON.stringify(normalized.links)!==JSON.stringify(value.map(({kind,hrefHash})=>({kind,hrefHash}))))throw Error('restored project links');
+                }else if(JSON.stringify(normalized[key])!==JSON.stringify(value))throw Error('restored project '+key);
+              }
+              if(expected.status!=='published'){
+                const hidden=await fetch('http://127.0.0.1:3000/api/v1/projects/'+expected.id);
+                if(hidden.status!==404)throw Error('restored project visibility');
+              }
+            }
+            for(const id of projects.deletedIds){
+              const hidden=await fetch('http://127.0.0.1:3000/api/v1/admin/projects/'+id,{headers});
+              if(hidden.status!==404)throw Error('restored deleted project');
+            }
+            projectAdminVerified=true;
+            if(projects.items.length){
+              await new Promise(resolve=>setTimeout(resolve,1100));
+              const expected=projects.items[0],path='http://127.0.0.1:3000/api/v1/admin/projects/'+expected.id;
+              const payload=JSON.stringify({revision:expected.revision,sortOrder:expected.sortOrder});
+              const missing=await fetch(path,{method:'PATCH',headers,body:payload});
+              if(missing.status!==428)throw Error('missing restored project context');
+              if(process.env.VERIFY_OLD_CONTENT_CONTEXT){
+                const stale=await fetch(path,{method:'PATCH',headers:{...headers,'X-Content-Context':process.env.VERIFY_OLD_CONTENT_CONTEXT},body:payload});
+                if(stale.status!==409)throw Error('stale restored project context');
+                projectOldContextRejected=true;
+              }
+              const site=await fetch('http://127.0.0.1:3000/api/v1/site');
+              const freshContext=site.headers.get('x-content-context');
+              if(!freshContext||freshContext===process.env.VERIFY_OLD_CONTENT_CONTEXT)throw Error('restored project context generation');
+              const saved=await fetch(path,{method:'PATCH',headers:{...headers,'X-Content-Context':freshContext},body:payload});
+              if(!saved.ok||(await saved.json()).data.revision!==expected.revision+1)throw Error('fresh restored project write');
+              projectFreshWriteAllowed=true;
+            }
+          }
         }
-        process.stdout.write(JSON.stringify({ready:true,publicPosts:body.data.total,publicGalleryPhotos:gallery?.photos??null,galleryGearVerified:!!gallery,mediaVerified:media.length,oldAuthorizationChecked:!!process.env.VERIFY_OLD_ACCESS_TOKEN,oldAuthorizationRejected:process.env.VERIFY_OLD_ACCESS_TOKEN?true:null,freshLoginVerified,galleryAdminVerified,galleryOldContextRejected,galleryFreshWriteAllowed}));
+        process.stdout.write(JSON.stringify({ready:true,publicPosts:body.data.total,publicGalleryPhotos:gallery?.photos??null,galleryGearVerified:!!gallery,publicProjects:projects?.stats.projects??null,projectMetadataVerified,projectAdminVerified,projectOldContextRejected,projectFreshWriteAllowed,mediaVerified:media.length,oldAuthorizationChecked:!!process.env.VERIFY_OLD_ACCESS_TOKEN,oldAuthorizationRejected:process.env.VERIFY_OLD_ACCESS_TOKEN?true:null,freshLoginVerified,galleryAdminVerified,galleryOldContextRejected,galleryFreshWriteAllowed}));
       })().catch((error)=>process.stdout.write(JSON.stringify({errorStage:error.message})))`
     let ready = false
     for (let i = 0; i < 50; i++) {
@@ -626,6 +759,7 @@ export async function verifyRestoredApplication(
     const output = await command(
       [
         'exec',
+        '-i',
         '-e',
         'VERIFY_OLD_ACCESS_TOKEN',
         '-e',
@@ -636,10 +770,10 @@ export async function verifyRestoredApplication(
         'VERIFY_OLD_CONTENT_CONTEXT',
         container,
         'node',
-        '-e',
-        source,
       ],
       {
+        // 验证程序走标准输入，避免字段边界样本超出 Windows 命令行长度。
+        input: source,
         env: {
           VERIFY_OLD_ACCESS_TOKEN: oldToken,
           VERIFY_RESTORED_USERNAME: credentials.username ?? '',

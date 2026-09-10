@@ -20,6 +20,7 @@ export interface ContentImportPlan {
     duplicateOf?: number
   }[]
   gallery: { sourceId: number; title: string; skip: boolean; reason: string }[]
+  projects: { sourceId: number; title: string; skip: boolean; reason: string }[]
   media: { id: string; create: boolean; writeFile: boolean; skip: boolean }[]
   counts: {
     posts: number
@@ -27,6 +28,7 @@ export interface ContentImportPlan {
     moments: number
     guestbook: number
     gallery: number
+    projects: number
     comments: number
     skipped: number
     media: number
@@ -43,6 +45,7 @@ export interface ContentImportResult {
   moments: { sourceId: string; id: string }[]
   guestbook: { sourceId: number; id: number }[]
   gallery: { sourceId: number; id: number }[]
+  projects: { sourceId: number; id: number }[]
   comments: number
   media: number
   files: number

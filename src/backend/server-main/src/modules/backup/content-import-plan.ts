@@ -11,7 +11,14 @@ import { CommentPolicy } from '../../entities/comment-policy.entity'
 import { ContentContext } from '../../entities/content-context.entity'
 import { GallerySettings } from '../../entities/gallery-settings.entity'
 import type { ContentImportPlan } from '../../entities/content-import.entity'
-import type { ContentPackage, PackagePost, PackageFlash, PackageMoment, PackageGalleryPhoto } from './content-package'
+import type {
+  ContentPackage,
+  PackagePost,
+  PackageFlash,
+  PackageMoment,
+  PackageGalleryPhoto,
+  PackageProject,
+} from './content-package'
 import { packageHash } from './content-package'
 import { canonicalTaxonomyLabel } from '../post/taxonomy-aliases'
 import { managedMediaIds } from '../media/media-references'
@@ -63,6 +70,12 @@ export function galleryContentHash(values: PackageGalleryPhoto['values']) {
   void status
   return packageHash(content)
 }
+export function projectContentHash(values: PackageProject['values']) {
+  const { status, ...content } = values
+  // 项目进展属于业务内容；站点发布状态不参与去重，草稿迁入后仍可识别同一内容。
+  void status
+  return packageHash(content)
+}
 export async function normalizedPost(em: EntityManager, values: PackagePost['values']) {
   return {
     ...values,
@@ -94,6 +107,7 @@ export async function makeContentPlan(
     context: context.generation,
     guestbook: current.guestbook,
     gallery: current.gallery,
+    projects: current.projects,
     posts: current.posts.map((post) => ({ id: post.sourceId, values: post.values })),
     flashes: current.flashes.map((flash) => ({ id: flash.sourceId, values: flash.values })),
     moments: current.moments.map((note) => ({
@@ -240,6 +254,27 @@ export async function makeContentPlan(
           : '创建新的图库草稿，保留拍摄信息及媒体关联',
     }
   })
+  const existingProjects = new Set(
+    current.projects.filter((project) => !project.deleted).map((project) => projectContentHash(project.values)),
+  )
+  const projectPlans = (input.projects ?? []).map((source) => {
+    const hash = projectContentHash(source.values)
+    const skip = source.deleted || (strategy === 'skip' && existingProjects.has(hash))
+    if (!skip) {
+      existingProjects.add(hash)
+      if (source.values.coverMediaId) requiredValues.push(`/api/v1/media/${source.values.coverMediaId}.webp`)
+    }
+    return {
+      sourceId: source.sourceId,
+      title: source.values.title,
+      skip,
+      reason: source.deleted
+        ? '跳过已删除项目，保留删除状态'
+        : skip
+          ? '跳过相同项目内容'
+          : '创建新的项目草稿，保留项目进展、标签、链接与封面关联',
+    }
+  })
   if (includeSettings) requiredValues.push(input.site.avatar)
   const required = new Set(managedMediaIds(requiredValues))
   const incoming = new Map(input.media.map((item) => [item.id, item]))
@@ -295,6 +330,7 @@ export async function makeContentPlan(
     moments: momentPlans,
     guestbook: guestbookPlans,
     gallery: galleryPlans,
+    projects: projectPlans,
     media,
     counts: {
       posts: postPlans.filter((item) => !item.skip).length,
@@ -302,13 +338,15 @@ export async function makeContentPlan(
       moments: momentPlans.filter((item) => !item.skip).length,
       guestbook: guestbookPlans.filter((item) => !item.skip).length,
       gallery: galleryPlans.filter((item) => !item.skip).length,
+      projects: projectPlans.filter((item) => !item.skip).length,
       comments,
       skipped:
         postPlans.filter((item) => item.skip).length +
         flashPlans.filter((item) => item.skip).length +
         momentPlans.filter((item) => item.skip).length +
         guestbookPlans.filter((item) => item.skip).length +
-        galleryPlans.filter((item) => item.skip).length,
+        galleryPlans.filter((item) => item.skip).length +
+        projectPlans.filter((item) => item.skip).length,
       media: media.filter((item) => item.create).length,
       files: media.filter((item) => item.writeFile).length,
       settings: includeSettings,

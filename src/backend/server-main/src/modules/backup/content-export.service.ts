@@ -15,6 +15,7 @@ import { MomentComment } from '../../entities/moment-comment.entity'
 import { GuestbookMessage } from '../../entities/guestbook-message.entity'
 import { GalleryPhoto } from '../../entities/gallery-photo.entity'
 import { GallerySettings } from '../../entities/gallery-settings.entity'
+import { Project } from '../../entities/project.entity'
 import { PostFolder } from '../../entities/post-folder.entity'
 import { PostTag } from '../../entities/post-tag.entity'
 import { MediaAsset } from '../../entities/media-asset.entity'
@@ -40,12 +41,13 @@ export class ContentExportService {
           moments: number
           guestbook: number
           gallery: number
+          projects: number
           comments: number
           media: number
           bytes: string
         }[]
       >(
-        `select (select count(*)::int from post) as posts, (select count(*)::int from flash_note) as flashes, (select count(*)::int from moment) as moments, (select count(*)::int from guestbook_message) as guestbook, (select count(*)::int from gallery_photo) as gallery, ((select count(*) from comment)+(select count(*) from flash_comment)+(select count(*) from moment_comment))::int as comments, (select count(*)::int from media_asset) as media, (select coalesce(sum(octet_length(coalesce(content_raw,content_sections::text,''))),0)::text from post) as bytes`,
+        `select (select count(*)::int from post) as posts, (select count(*)::int from flash_note) as flashes, (select count(*)::int from moment) as moments, (select count(*)::int from guestbook_message) as guestbook, (select count(*)::int from gallery_photo) as gallery, (select count(*)::int from project) as projects, ((select count(*) from comment)+(select count(*) from flash_comment)+(select count(*) from moment_comment))::int as comments, (select count(*)::int from media_asset) as media, (select coalesce(sum(octet_length(coalesce(content_raw,content_sections::text,''))),0)::text from post) as bytes`,
       )
       if (
         !counts ||
@@ -54,6 +56,7 @@ export class ContentExportService {
         counts.moments > 2000 ||
         counts.guestbook > 2000 ||
         counts.gallery > 3000 ||
+        counts.projects > 2000 ||
         counts.comments > 10000 ||
         counts.media > 300 ||
         Number(counts.bytes) > MAX_PACKAGE_BYTES
@@ -71,6 +74,7 @@ export class ContentExportService {
       const moments = await em.find(Moment, {}, { orderBy: { id: 'asc' } })
       const guestbook = await em.find(GuestbookMessage, {}, { orderBy: { id: 'asc' } })
       const gallery = await em.find(GalleryPhoto, {}, { orderBy: { id: 'asc' } })
+      const projects = await em.find(Project, {}, { orderBy: { id: 'asc' } })
       const gallerySettings = await em.findOneOrFail(GallerySettings, { id: 'default' })
       const momentComments = await em.find(MomentComment, {}, { orderBy: { createdAt: 'asc', id: 'asc' } })
       if (
@@ -79,6 +83,7 @@ export class ContentExportService {
         moments.length > 2000 ||
         guestbook.length > 2000 ||
         gallery.length > 3000 ||
+        projects.length > 2000 ||
         comments.length + flashComments.length + momentComments.length > 10000 ||
         assets.length > 300
       )
@@ -120,7 +125,7 @@ export class ContentExportService {
       void announcementUpdatedAt
       const result: ContentPackage = {
         format: 'tixxin-content',
-        version: 4,
+        version: 5,
         exportedAt: new Date().toISOString(),
         mediaIncluded,
         posts: posts.map((post) => {
@@ -209,6 +214,22 @@ export class ContentExportService {
           },
         })),
         gallerySettings: { gear: gallerySettings.gear },
+        projects: projects.map((project) => ({
+          sourceId: project.id,
+          createdAt: project.createdAt.toISOString(),
+          publishedAt: project.publishedAt?.toISOString() ?? null,
+          deleted: !!project.deletedAt,
+          values: {
+            title: project.title,
+            description: project.description,
+            coverMediaId: project.coverMedia?.id ?? null,
+            tags: project.tags,
+            links: project.links,
+            progress: project.progress,
+            status: project.status,
+            sortOrder: project.sortOrder,
+          },
+        })),
         folders: folders.map((folder) => folder.label),
         tags: tags.map((tag) => ({ label: tag.label, color: tag.color })),
         site: siteValues,
