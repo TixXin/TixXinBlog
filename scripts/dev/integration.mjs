@@ -29,7 +29,14 @@ const skip = new Set([
   'coverage',
 ])
 mkdirSync(target, { recursive: true })
-for (const name of ['package.json', 'pnpm-workspace.yaml']) cpSync(join(workspace, name), join(target, name))
+// pnpm 的命令包装可能从子项目 .bin 相对访问根虚拟依赖目录，副本需保持同样结构。
+symlinkSync(
+  join(workspace, 'node_modules'),
+  join(target, 'node_modules'),
+  process.platform === 'win32' ? 'junction' : 'dir',
+)
+for (const name of ['package.json', 'pnpm-workspace.yaml', 'pnpm-lock.yaml', 'patches'])
+  cpSync(join(workspace, name), join(target, name), { recursive: true })
 cpSync(join(workspace, 'scripts/dev.mjs'), join(target, 'scripts/dev.mjs'), { recursive: true })
 cpSync(join(workspace, 'scripts/dev'), join(target, 'scripts/dev'), { recursive: true })
 for (const [source, destination] of [

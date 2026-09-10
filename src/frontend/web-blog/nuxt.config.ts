@@ -13,6 +13,7 @@ import { readFileSync } from 'node:fs'
 const startupGuard = readFileSync(new URL('./public/startup-guard.js', import.meta.url), 'utf8')
 
 export default {
+  // Nuxt 启动历史与清单预取的固定版本修正维护在仓库根目录 patches/。
   // 开发与生产构建使用独立中间目录，避免并行构建污染正在运行的 Vite 状态。
   buildDir: process.env.NODE_ENV === 'production' ? '.nuxt-production' : '.nuxt',
   compatibilityDate: '2025-07-15',
