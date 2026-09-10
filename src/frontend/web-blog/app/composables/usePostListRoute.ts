@@ -11,6 +11,27 @@ import { isNavigationFailure, NavigationFailureType } from 'vue-router'
 export function usePostListRoute() {
   const route = useRoute()
   const router = useRouter()
+  const app = useNuxtApp()
+  const hydrating = ref(import.meta.client && app.isHydrating)
+  let initialState = readPostListQuery(route.query)
+  const serverPage = app.payload.data['post-list'] as { page?: number; scopeKey?: string } | undefined
+  if (hydrating.value && Number.isInteger(serverPage?.page) && typeof serverPage?.scopeKey === 'string') {
+    try {
+      const scope = JSON.parse(serverPage.scopeKey) as { tag?: string; folder?: string; mode?: string }
+      initialState = readPostListQuery({
+        page: String(serverPage.page),
+        tag: scope.tag,
+        category: scope.folder,
+        mode: scope.mode,
+      })
+    } catch {
+      /* 无有效 SSR 查询时沿用初始路由。 */
+    }
+  }
+  // 早期原生历史可能已改变 URL；首帧卡片和分页控件仍须与 SSR 使用同一查询。
+  onMounted(() => {
+    hydrating.value = false
+  })
   let leavingTo: string | undefined
   onBeforeRouteLeave((to) => {
     leavingTo = to.fullPath
@@ -25,7 +46,7 @@ export function usePostListRoute() {
       leavingTo = undefined
   })
   onBeforeUnmount(removeAfter)
-  const state = computed(() => readPostListQuery(route.query))
+  const state = computed(() => (hydrating.value ? initialState : readPostListQuery(route.query)))
   function update(patch: Partial<PostListQueryState>, replace = false) {
     // Nuxt 的 useRoute 在新页面接管前仍可能指向旧列表，写 URL 必须核对即时路由。
     if (leavingTo || router.currentRoute.value.path !== '/' || route.path !== '/') return Promise.resolve()

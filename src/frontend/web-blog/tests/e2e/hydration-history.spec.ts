@@ -1,8 +1,85 @@
-/** @file hydration-history.spec.ts @description 项目与图库快速刷新及原生历史导航，记录真实接管时序并核对API与DOM */
+/** @file hydration-history.spec.ts @description 首页及内容列表快速刷新与原生历史导航，核对SSR、API与历史槽位 */
 import { expect, test } from '@playwright/test'
 import type { Page, TestInfo } from '@playwright/test'
 import { prepareMotionCapture, captureMotion } from './motionScreenshot'
 test.beforeEach(({ page, browserName }) => prepareMotionCapture(page, browserName))
+
+test('首页分页早期返回后正确接管SSR列表，往返保留真实历史槽位', async ({ page, context, baseURL }, testInfo) => {
+  const issues: string[] = []
+  page.on('pageerror', (error) => issues.push(error.message))
+  page.on('console', (message) => {
+    if (/hydration|NotFoundError|TypeError|ReferenceError|Unhandled/i.test(message.text())) issues.push(message.text())
+  })
+  await context.addCookies([{ name: 'tixxin-blog-layout-theme', value: 'nexus', url: baseURL! }])
+  await page.setViewportSize({ width: 390, height: 960 })
+  await page.addInitScript(() => {
+    addEventListener('popstate', () => {
+      const key = 'post-early-history'
+      const events = JSON.parse(sessionStorage.getItem(key) ?? '[]') as unknown[]
+      events.push({
+        path: location.pathname + location.search,
+        ready: document.documentElement?.classList.contains('app-client-ready') ?? false,
+      })
+      sessionStorage.setItem(key, JSON.stringify(events))
+    })
+  })
+  const cards = page.locator('.post-list a[href^="/articles/"]')
+  const ids = () =>
+    cards.evaluateAll((nodes) => nodes.map((node) => Number(node.getAttribute('href')?.split('/').at(-1))))
+  await page.goto('/?mode=paginated')
+  await expect(page.locator('html')).toHaveClass(/app-client-ready/)
+  const firstUrl = new URL(page.url()).pathname + new URL(page.url()).search
+  const firstResponse = await page.request.get('/api/v1/posts?page=1&pageSize=15')
+  const secondResponse = await page.request.get('/api/v1/posts?page=2&pageSize=15')
+  expect(firstResponse.status()).toBe(200)
+  expect(secondResponse.status()).toBe(200)
+  const first = (await firstResponse.json()).data as { items: { id: number }[] }
+  const second = (await secondResponse.json()).data as { items: { id: number }[] }
+  const firstIds = first.items.map((item) => item.id),
+    secondIds = second.items.map((item) => item.id)
+  expect(firstIds).toHaveLength(15)
+  expect(secondIds).toHaveLength(15)
+  await expect.poll(ids).toEqual(firstIds)
+  const ssr = await page.request.get('/?mode=paginated&page=2')
+  expect(ssr.status()).toBe(200)
+  const ssrIds = await page.evaluate(
+    (html) =>
+      [...new DOMParser().parseFromString(html, 'text/html').querySelectorAll('.post-list a[href^="/articles/"]')].map(
+        (node) => Number(node.getAttribute('href')?.split('/').at(-1)),
+      ),
+    await ssr.text(),
+  )
+  expect(ssrIds).toEqual(secondIds)
+  await page.getByRole('button', { name: '2', exact: true }).click()
+  await expect(page).toHaveURL(/page=2/)
+  await expect.poll(ids).toEqual(secondIds)
+  // 返回从文档commit后立即发起；在第一页核查水合结果，不能先前进掩盖首帧空VNode。
+  await page.reload({ waitUntil: 'commit' })
+  await page.goBack({ waitUntil: 'commit' })
+  await expect(page).toHaveURL((url) => url.pathname + url.search === firstUrl)
+  await expect(page.locator('html')).toHaveClass(/app-client-ready/)
+  await expect.poll(ids).toEqual(firstIds)
+  await page.goForward({ waitUntil: 'commit' })
+  await expect(page).toHaveURL(/page=2/)
+  await expect.poll(ids).toEqual(secondIds)
+  await page.goBack({ waitUntil: 'commit' })
+  await expect(page).toHaveURL((url) => url.pathname + url.search === firstUrl)
+  await expect.poll(ids).toEqual(firstIds)
+  await page.goForward({ waitUntil: 'commit' })
+  await expect(page).toHaveURL(/page=2/)
+  await expect.poll(ids).toEqual(secondIds)
+  expect(issues).toEqual([])
+  await testInfo.attach('post-early-history.json', {
+    body: JSON.stringify({
+      firstIds,
+      secondIds,
+      ssrIds,
+      issues,
+      observations: await page.evaluate(() => JSON.parse(sessionStorage.getItem('post-early-history') ?? '[]')),
+    }),
+    contentType: 'application/json',
+  })
+})
 
 interface HistoryObservation {
   event: string
@@ -43,6 +120,10 @@ async function rapidReloadAndHistory(
   })
   await page.goto(options.path)
   await expect(page.locator('html')).toHaveClass(/app-client-ready/)
+  const firstResponse = await page.request.get(`/api/v1${options.path}?page=1&pageSize=12`)
+  expect(firstResponse.status()).toBe(200)
+  const firstPage = (await firstResponse.json()).data as { items: { id: number }[] }
+  expect(firstPage.items.length).toBeGreaterThan(0)
   const secondResponse = await page.request.get(`/api/v1${options.path}?page=2&pageSize=12`)
   expect(secondResponse.status()).toBe(200)
   const secondPage = (await secondResponse.json()).data as { items: { id: number }[] }
@@ -84,6 +165,27 @@ async function rapidReloadAndHistory(
   })
   await expect(page.locator('html')).toHaveClass(/app-client-ready/)
   await expect(page.locator(options.card)).toHaveCount(secondPage.items.length)
+  // 瞬时出现第一页还不足以证明历史完整：启动回放可能随后覆盖该槽位。
+  await page.goBack({ waitUntil: 'commit' })
+  await expect(page).toHaveURL((url) => url.pathname === options.path && !url.searchParams.has('page'))
+  await expect(page.locator(options.card)).toHaveCount(firstPage.items.length)
+  const cardIds = () =>
+    page.locator(options.card).evaluateAll((cards) =>
+      cards.map((card) => {
+        const element = card as HTMLElement
+        return Number(
+          element.dataset.linkId ||
+            element.dataset.projectId ||
+            element.dataset.focusKey?.replace('gallery-photo-', ''),
+        )
+      }),
+    )
+  await expect.poll(cardIds).toEqual(firstPage.items.map((item) => item.id))
+  timings.push({ event: 'first-history-slot-preserved', elapsedMs: Date.now() - startedAt, url: page.url() })
+  await page.goForward({ waitUntil: 'commit' })
+  await expect(page).toHaveURL(/page=2/)
+  await expect(page.locator(options.card)).toHaveCount(secondPage.items.length)
+  await expect.poll(cardIds).toEqual(secondPage.items.map((item) => item.id))
   return evidence
 }
 for (const width of [390, 768, 1280, 1439]) {
