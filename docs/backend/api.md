@@ -1,6 +1,6 @@
 # TixXinBlog 后端 API 文档
 
-本文记录 TixXinBlog 后端服务对外暴露的全部 HTTP 与 WebSocket 接口契约。所有响应字段严格与 `src/frontend/web-blog/app/features/<domain>/types.ts` 对齐，实现 **"前端组件零改动，仅切换数据源"** 的迁移目标。
+本文保留早期 API 设计和后续维护增量记录，其中部分端点尚未实现或已被正式业务契约替代。当前能力以[实际能力清单](../capability-map.md)及各领域使用文档为准；不能将此处的设计表视为全部已经开放的 HTTP 或 WebSocket 接口。图库正式契约见[图库业务](gallery.md)，留言和朋友圈分别见[留言](guestbook.md)及[朋友圈](moments.md)。
 
 ## 1. 总则
 
@@ -557,41 +557,22 @@ Authorization: Bearer <access-token>
 
 `GET /guestbook/pinned` 响应 `data` 对齐 `PinnedMessage`。
 
-### 7.8 Gallery（画廊）
+### 7.8 Gallery（图库，已实现）
+
+图库以稳定作品编号关联受管媒体，公开与管理 DTO 分离。正式契约、字段边界和维护规则见 [图库业务](gallery.md)。
 
 | Method | Path | 鉴权 | 摘要 |
 |--------|------|------|------|
-| GET | `/gallery/photos` | 无 | 照片列表 |
-| GET | `/gallery/categories` | 无 | 分类列表 |
-| GET | `/gallery/stats` | 无 | 画廊统计 |
-| GET | `/gallery/gears` | 无 | 器材列表 |
-| POST | `/admin/gallery/photos` | [Admin] | 新增照片 |
-| PATCH | `/admin/gallery/photos/:id` | [Admin] | 更新照片 |
-| DELETE | `/admin/gallery/photos/:id` | [Admin] | 删除照片 |
+| GET | `/gallery` | 无 | 公开作品分页；q搜索、category分类，省略分类代表全部、空分类代表未分类 |
+| GET | `/gallery/metadata` | 无 | 公开分类和统计、博主管理的器材介绍 |
+| GET | `/gallery/:id` | 无 | 公开作品、实际媒体尺寸与可缺省拍摄信息 |
+| GET | `/gallery/:id/navigation` | 无 | 当前筛选内的所在页及前后作品 |
+| GET/POST | `/admin/gallery` | [Admin] | 管理分页/带requestId创建作品 |
+| GET/PATCH/DELETE | `/admin/gallery/:id` | [Admin] | 读取/带revision编辑发布撤回排序/带revision删除 |
+| GET | `/admin/gallery/submissions/:requestId` | [Admin] | 核查未知创建结果及已删除提交 |
+| GET/PATCH | `/admin/gallery/settings` | [Admin] | 读取/带revision维护器材介绍 |
 
-`GET /gallery/photos` 查询参数：`category`（可为 `all`）、`page`、`pageSize`、`search`。
-
-响应 `data.items[]` 对齐 `PhotoItem`：
-
-```json
-{
-  "id": 1,
-  "title": "贡嘎日出",
-  "description": "...",
-  "src": "https://.../thumb-800.webp",
-  "srcLarge": "https://.../large-1920.webp",
-  "category": "landscape",
-  "date": "2024-03-01T00:00:00.000Z",
-  "location": "贡嘎山"
-}
-```
-
-`GET /gallery/categories` 响应 `data.items[]` 对齐 `GalleryCategory`。
-
-`GET /gallery/stats` 响应 `data.items[]` 对齐 `GalleryStat`。
-
-`GET /gallery/gears` 响应 `data.items[]` 对齐 `GearItem`。
-
+公开列表默认每页12件，按sortOrder与id倒序；只有published且未删除作品可见。管理状态为draft、published、withdrawn。拍摄日期使用可空YYYY-MM-DD，创建和首次发布时间分别维护，宽高和格式直接读取媒体，上传不会自动发布。v4内容包和完整备份均覆盖图库。旧设计的gallery/photos、categories、stats、gears独立端点未开放。
 ### 7.9 Link（友链）
 
 | Method | Path | 鉴权 | 摘要 |

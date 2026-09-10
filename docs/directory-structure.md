@@ -299,7 +299,7 @@ app/assets/styles/
 | -------- | ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | 关于我   | `features/about/`      | `mockProfile`、`mockSkills`、`mockExperiences`、`mockContacts`、`mockHobbies`、`mockReadings` 及 `Profile`、`SkillItem`、`ExperienceItem`、`ContactItem`、`HobbyItem`、`BookItem`                 |
 | 文章归档 | `features/article/`    | `mockArchiveYears`、`mockArchiveStats`、`mockCategoryDistribution` 及 `ArchivePost`、`ArchiveYear`、`ArchiveStat`、`CategoryDistribution`                                                         |
-| 画廊     | `features/gallery/`    | `mockPhotos`、`mockGalleryCategories`、`mockGalleryStats`、`mockGearList` 及 `PhotoItem`、`GalleryCategory`、`GalleryStat`、`GearItem`                                                            |
+| 画廊 | `features/gallery/` | 真实作品/管理/器材类型、URL查询规范化、编辑恢复白名单；仓储为`useGalleryRepository`，公开流为`useGallery` |
 | 留言板   | `features/guestbook/`  | `mockDateGroups`、`mockChatStats`、`mockChatRules`、`mockActiveMembers` 及 `GuestMessage`、`DateGroup`、`ChatStat`、`ChatRule`、`ActiveMember`                                                    |
 | 友链     | `features/link/`       | `mockLinks`、`mockLinkRules`、`mockSiteInfo` 及 `LinkItem`、`LinkRule`、`SiteInfo`                                                                                                                |
 | 导航     | `features/nav/`        | `mockNavItems`、`NavItem`                                                                                                                                                                         |
