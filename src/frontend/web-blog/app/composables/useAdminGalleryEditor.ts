@@ -2,6 +2,8 @@
 import type { GalleryEditable, GalleryStatus, ManagedPhoto } from '~/features/gallery/types'
 import { galleryForm, parseGalleryRecovery } from '~/features/gallery/editor'
 import type { GalleryRecovery } from '~/features/gallery/editor'
+import { editorRecoveryKey, readEditorRecoveries } from '~/utils/editorRecoveryStorage'
+import type { EditorRecoveryCopy } from '~/utils/editorRecoveryStorage'
 export function useAdminGalleryEditor(initialId: number | null) {
   const repo = useGalleryRepository(),
     auth = useCurrentUser(),
@@ -14,6 +16,8 @@ export function useAdminGalleryEditor(initialId: number | null) {
   const saved = ref<ManagedPhoto | null>(null),
     serverVersion = ref<ManagedPhoto | null>(null),
     recovery = ref<GalleryRecovery | null>(null)
+  const previousRecoveries = ref<EditorRecoveryCopy<GalleryRecovery>[]>([])
+  let currentRecoveryKey = ''
   const ready = ref(false),
     loading = ref(false),
     saving = ref(false),
@@ -28,7 +32,8 @@ export function useAdminGalleryEditor(initialId: number | null) {
     ownedContext = '',
     generation = 0,
     alive = true
-  const storageKey = () => `tixxin-gallery-editor:${actor}:${initialId ?? 'new'}`
+  const storagePrefix = () => `tixxin-gallery-editor:${actor}:${initialId ?? 'new'}`
+  const storageKey = () => editorRecoveryKey(storagePrefix(), ownedContext)
   const owns = (user: string | undefined, version: number) =>
     alive && generation === version && auth.currentUser.value?.id === user && ownedContext === context.value
   function persistLocal() {
@@ -71,6 +76,16 @@ export function useAdminGalleryEditor(initialId: number | null) {
       requestId ||= crypto.randomUUID()
       if (ownedContext !== context.value)
         throw new Error('内容库已恢复或切换，请刷新页面后重新核对作品；当前输入已保留。')
+      // 新库可能已没有同编号记录；先保留只读副本入口，再读取服务器详情。
+      try {
+        const copies = readEditorRecoveries(sessionStorage, storagePrefix(), ownedContext, parseGalleryRecovery)
+        recovery.value = copies.current?.value ?? null
+        currentRecoveryKey = copies.current?.key ?? storageKey()
+        previousRecoveries.value = copies.previous
+        if (copies.migrationIssue) localError.value = '旧恢复副本迁移暂未完成，原副本已保留。'
+      } catch {
+        localError.value = '无法读取本标签页恢复副本。'
+      }
       if (replace || (!dirty.value && !saved.value)) {
         const photo = id.value ? await repo.adminDetail(id.value) : null
         if (!owns(user, version)) return
@@ -78,11 +93,6 @@ export function useAdminGalleryEditor(initialId: number | null) {
       }
       if (!owns(user, version)) return
       ready.value = true
-      try {
-        recovery.value = parseGalleryRecovery(sessionStorage.getItem(storageKey()))
-      } catch {
-        localError.value = '无法读取本标签页恢复副本。'
-      }
     } catch (cause) {
       if (alive && version === generation) error.value = cause instanceof Error ? cause.message : '作品读取失败'
     } finally {
@@ -189,7 +199,7 @@ export function useAdminGalleryEditor(initialId: number | null) {
   }
   function discardRecovery() {
     try {
-      sessionStorage.removeItem(storageKey())
+      sessionStorage.removeItem(currentRecoveryKey || storageKey())
       recovery.value = null
     } catch {
       localError.value = '恢复副本暂时无法移除。'
@@ -242,6 +252,8 @@ export function useAdminGalleryEditor(initialId: number | null) {
           saved.value = null
           serverVersion.value = null
           recovery.value = null
+          previousRecoveries.value = []
+          currentRecoveryKey = ''
           pendingCreate.value = null
           Object.assign(form, galleryForm())
           baseline.value = JSON.stringify(form)
@@ -272,6 +284,7 @@ export function useAdminGalleryEditor(initialId: number | null) {
     saved,
     serverVersion,
     recovery,
+    previousRecoveries,
     ready,
     loading,
     saving,

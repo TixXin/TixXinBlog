@@ -15,10 +15,17 @@
     </p>
     <section v-if="recovery" class="gallery-editor__notice" aria-label="作品恢复副本">
       <h2>发现本标签页未保存的输入</h2>
-      <p>{{ recovery.form.title }}</p>
-      <p>{{ recovery.form.description }}</p>
+      <AdminGalleryRecoveryDetails :value="recovery.form" />
       <button type="button" :disabled="saving || !ready" @click="$emit('restore')">恢复输入</button
       ><button type="button" :disabled="saving" @click="$emit('discard')">移除恢复副本</button>
+    </section>
+    <section v-if="previousRecoveries.length" class="gallery-editor__notice" aria-label="另外保留的图库恢复副本">
+      <h2>另外保留的图库输入</h2>
+      <p>这些副本可能属于其他内容库，不会直接写入当前作品。请核对后手动录入，并重新选择当前媒体库中的图片。</p>
+      <article v-for="copy in previousRecoveries" :key="copy.key">
+        <p>保存于 {{ copy.value.savedAt }}</p>
+        <AdminGalleryRecoveryDetails :value="copy.value.form" />
+      </article>
     </section>
     <section v-if="serverVersion" class="gallery-editor__notice" aria-label="作品服务器版本">
       <h2>服务器当前版本 {{ serverVersion.revision }}</h2>
@@ -168,12 +175,14 @@
 import type { GalleryEditable, GalleryStatus, ManagedPhoto } from '~/features/gallery/types'
 import type { GalleryRecovery } from '~/features/gallery/editor'
 import type { MediaAsset } from '~/features/media/types'
+import type { EditorRecoveryCopy } from '~/utils/editorRecoveryStorage'
 defineProps<{
   value: GalleryEditable
   id: number | null
   saved: ManagedPhoto | null
   serverVersion: ManagedPhoto | null
   recovery: GalleryRecovery | null
+  previousRecoveries: EditorRecoveryCopy<GalleryRecovery>[]
   ready: boolean
   loading: boolean
   saving: boolean
