@@ -31,6 +31,7 @@ export interface MediaReferences {
       | 'moment-comment'
       | 'guestbook'
       | 'gallery'
+      | 'project'
     title: string
     url: string
     revision?: number
