@@ -5,7 +5,7 @@
  * @since 2026-09-08
  */
 import { expect } from '@playwright/test'
-import type { Page, Request, TestInfo } from '@playwright/test'
+import type { Locator, Page, Request, TestInfo } from '@playwright/test'
 
 const pendingFonts = new WeakMap<Page, Set<Request>>()
 const nativeFontBarrierWorkaround = new WeakSet<Page>()
@@ -24,12 +24,20 @@ export function prepareMotionCapture(page: Page, browserName: string) {
   page.on('requestfailed', (request) => pending.delete(request))
 }
 
-export async function captureMotion(page: Page, testInfo: TestInfo, name: string) {
+export async function captureMotion(
+  page: Page,
+  testInfo: TestInfo,
+  name: string,
+  options: { target?: Locator; animations?: 'allow' | 'disabled' } = {},
+) {
   if (nativeFontBarrierWorkaround.has(page)) {
     await expect.poll(() => pendingFonts.get(page)?.size ?? 0).toBe(0)
     await expect
       .poll(() => page.evaluate(() => [...document.fonts].filter((font) => font.status === 'loading').length))
       .toBe(0)
   }
-  await page.screenshot({ path: testInfo.outputPath(name), animations: 'allow' })
+  await (options.target ?? page).screenshot({
+    path: testInfo.outputPath(name),
+    animations: options.animations ?? 'allow',
+  })
 }
