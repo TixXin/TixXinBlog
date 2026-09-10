@@ -240,6 +240,141 @@ try {
     restoredProjects.push(project)
   }
   assert.equal(restoredProjects.length, 4)
+  await delay(1100)
+  const restoredLinks = []
+  for (const values of [
+    {
+      name: '山间札记'.padEnd(80, '记'),
+      description: '记录真实的写作与分享。'.padEnd(300, '。'),
+      url: 'https://example.com/Docs/Guide?tag=A&tag=B&signature=AbC&q='.padEnd(2040, 'x') + '#Section',
+      logoMediaId: asset.id,
+      logoUrl: null,
+      status: 'published',
+      isFeatured: true,
+      sortOrder: 17,
+    },
+    {
+      name: '纸上花园',
+      description: '',
+      url: 'https://example.org/Notes?tag=A&tag=B#Intro',
+      logoMediaId: null,
+      logoUrl: 'https://assets.example.org/Logo.PNG?version=A&version=B&q='.padEnd(2048, 'x'),
+      status: 'draft',
+      isFeatured: false,
+      sortOrder: 0,
+    },
+    {
+      name: '一段旅途',
+      description: '暂时收起的友链。',
+      url: 'https://example.net/Notes/',
+      logoMediaId: asset.id,
+      logoUrl: null,
+      status: 'withdrawn',
+      isFeatured: true,
+      sortOrder: -3,
+    },
+    {
+      name: '已收起的书页',
+      description: '',
+      url: 'https://example.org/closed',
+      logoMediaId: asset.id,
+      logoUrl: null,
+      status: 'draft',
+      isFeatured: false,
+      sortOrder: 0,
+    },
+    {
+      name: '留白之间',
+      description: '不用图标也能认真表达。',
+      url: 'https://plain.example/Notes',
+      logoMediaId: null,
+      logoUrl: null,
+      status: 'published',
+      isFeatured: false,
+      sortOrder: 0,
+    },
+  ]) {
+    const requestId = randomUUID()
+    const response = await fetch(`${fixture.origin}/api/v1/admin/links`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ ...values, requestId }),
+    })
+    assert.equal(response.status, 201)
+    const link = (await response.json()).data
+    if (values.name === '已收起的书页') {
+      const removed = await fetch(`${fixture.origin}/api/v1/admin/links/${link.id}?revision=${link.revision}`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${token}` },
+      })
+      assert.equal(removed.status, 200)
+    }
+    const [row] = await ledgerEm.execute('select * from friend_link where id=?', [link.id])
+    assert.equal(row.request_id, requestId)
+    await ledgerEm.execute(
+      'insert into development_fixture (key,dataset,kind,resource_id,snapshot_hash,created_at) values (?,?,?,?,?,now())',
+      [
+        `link-restore:${link.id}`,
+        'link-restore-v1',
+        'link',
+        String(link.id),
+        submissionHash(Object.fromEntries(Object.entries(row).filter(([key]) => key !== 'updated_at'))),
+      ],
+    )
+    restoredLinks.push(link)
+  }
+  await delay(1100)
+  const linkRules = ['友链由博主维护，不自动申请或抓取站点。', '保留清楚的站点介绍。'.padEnd(300, '。')]
+  const rulesResponse = await fetch(`${fixture.origin}/api/v1/admin/links/settings`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+    body: JSON.stringify({ revision: 0, rules: linkRules }),
+  })
+  assert.equal(rulesResponse.status, 200)
+  // 使用真实内容包复制制造同址草稿，完整备份必须同时保留原公开友链和不可见副本。
+  const linkExport = await fetch(`${fixture.origin}/api/v1/admin/backup/export`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+    body: JSON.stringify({ mediaIncluded: false }),
+  })
+  assert.equal(linkExport.status, 201)
+  const copyBundle = await linkExport.json()
+  for (const field of ['posts', 'flashes', 'moments', 'guestbook', 'gallery', 'projects']) copyBundle[field] = []
+  copyBundle.links = copyBundle.links.filter((link) => link.sourceId === restoredLinks[0].id)
+  const copyForm = new FormData()
+  copyForm.append('file', new Blob([JSON.stringify(copyBundle)], { type: 'application/json' }), 'same-address.json')
+  copyForm.append('requestId', randomUUID())
+  copyForm.append('strategy', 'copy')
+  copyForm.append('includeSettings', 'false')
+  const copyPreview = await fetch(`${fixture.origin}/api/v1/admin/backup/imports/preview`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}` },
+    body: copyForm,
+  })
+  assert.equal(copyPreview.status, 201)
+  const copyPlan = (await copyPreview.json()).data
+  assert.equal(copyPlan.plan.counts.links, 1)
+  const copied = await fetch(`${fixture.origin}/api/v1/admin/backup/imports/${copyPlan.ticket}/execute`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+    body: JSON.stringify({ acknowledgement: '导入为新草稿', confirmation: copyPlan.confirmation }),
+  })
+  assert.equal(copied.status, 201)
+  const copiedId = (await copied.json()).data.result.links[0].id
+  const [copiedRow] = await ledgerEm.execute('select * from friend_link where id=?', [copiedId])
+  assert.equal(copiedRow.status, 'draft')
+  assert.equal(copiedRow.url, restoredLinks[0].url)
+  assert.equal(copiedRow.request_id, null)
+  await ledgerEm.execute(
+    'insert into development_fixture (key,dataset,kind,resource_id,snapshot_hash,created_at) values (?,?,?,?,?,now())',
+    [
+      `link-restore:${copiedId}`,
+      'link-restore-v1',
+      'link',
+      String(copiedId),
+      submissionHash(Object.fromEntries(Object.entries(copiedRow).filter(([key]) => key !== 'updated_at'))),
+    ],
+  )
   const backup = await createFullBackup({
     output: join(target, 'backup'),
     onProgress: (value) => process.stdout.write(`备份阶段：${value.stage}\n`),
@@ -256,8 +391,10 @@ try {
   assert.equal(backup.manifest.counts.gallery_photo, 1)
   assert.equal(backup.manifest.counts.gallery_settings, 1)
   assert.equal(backup.manifest.counts.project, 4)
-  assert.equal(backup.manifest.counts.development_fixture, 5)
-  assert.equal(backup.manifest.counts.media_reference, 10)
+  assert.equal(backup.manifest.counts.friend_link, 6)
+  assert.equal(backup.manifest.counts.link_settings, 1)
+  assert.equal(backup.manifest.counts.development_fixture, 11)
+  assert.equal(backup.manifest.counts.media_reference, 13)
   assert.equal(
     Number((await fixture.testOrm.em.fork().execute('select count(*)::int as count from post'))[0].count),
     108,
@@ -279,7 +416,18 @@ try {
   assert.equal(restored.report.counts.gallery_photo, 1)
   assert.equal(restored.report.counts.gallery_settings, 1)
   assert.equal(restored.report.counts.project, 4)
-  assert.equal(restored.report.counts.development_fixture, 5)
+  assert.equal(restored.report.counts.friend_link, 6)
+  assert.equal(restored.report.counts.link_settings, 1)
+  assert.equal(restored.report.counts.development_fixture, 11)
+  assert.deepEqual(restored.report.linkIntegrity, {
+    links: 6,
+    settings: 1,
+    managedLogos: 4,
+    externalLogos: 1,
+    mediaReferences: 3,
+    fixtures: 6,
+    verified: true,
+  })
   assert.deepEqual(restored.report.projectIntegrity, {
     projects: 4,
     withCover: 3,
@@ -318,6 +466,11 @@ try {
     assert.equal(application.projectAdminVerified, true)
     assert.equal(application.projectOldContextRejected, true)
     assert.equal(application.projectFreshWriteAllowed, true)
+    assert.equal(application.publicLinks, 2)
+    assert.equal(application.linkMetadataVerified, true)
+    assert.equal(application.linkAdminVerified, true)
+    assert.equal(application.linkOldContextRejected, true)
+    assert.equal(application.linkFreshWriteAllowed, true)
   }
   const report = {
     ...restored.report,
@@ -335,6 +488,7 @@ try {
       '留言、回复关系、回应、媒体引用及提交去重记录完整恢复',
       '图库作品、拍摄时间、器材配置、媒体关联、提交去重及样本归属账本完整恢复',
       '项目进展、发布与删除状态、标签和链接、可选封面、提交去重及归属账本完整恢复',
+      '友链URL语义、同址草稿副本、规则、推荐与状态、媒体/外部Logo、提交去重及归属账本完整恢复',
     ],
   }
   await restored.cleanup()

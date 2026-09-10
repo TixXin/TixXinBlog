@@ -480,6 +480,61 @@ export async function restoreFullBackup(path, { output } = {}) {
         verified: true,
       }
     }
+    let linkIntegrity
+    if (Object.hasOwn(manifest.counts, 'friend_link')) {
+      const invalid = Number(
+        await psql(
+          container,
+          database,
+          user,
+          password,
+          `
+        select
+          (select count(*) from friend_link l left join media_asset a on a.id=l.logo_media_id where l.logo_media_id is not null and a.id is null)
+          + (select count(*) from friend_link where logo_media_id is not null and logo_url is not null)
+          + (select count(*) from friend_link l where l.deleted_at is null and l.logo_media_id is not null and not exists
+              (select 1 from media_reference r where r.friend_link_id=l.id and r.asset_id=l.logo_media_id and r.kind='link' and r.source_key='link:'||l.id::text))
+          + (select count(*) from media_reference r left join friend_link l on l.id=r.friend_link_id
+              where (r.kind='link' or r.friend_link_id is not null) and
+                (l.id is null or l.deleted_at is not null or l.logo_media_id is null or r.kind<>'link' or r.asset_id<>l.logo_media_id or r.source_key<>'link:'||l.id::text))
+          + (select count(*) from friend_link where status not in ('draft','published','withdrawn') or revision<0 or sort_order not between -1000000 and 1000000)
+          + (select count(*) from (select url from friend_link where status='published' and deleted_at is null group by url having count(*)>1) duplicates)
+          + (select count(*) from development_fixture where kind='link' and (resource_id !~ '^[1-9][0-9]*$' or snapshot_hash !~ '^[a-f0-9]{64}$'))
+          + case when exists(select 1 from link_settings where id='default' and revision>=0 and jsonb_typeof(rules)='array') then 0 else 1 end;
+      `,
+        ),
+      )
+      if (invalid) throw new Error('恢复后的友链状态、公开地址唯一性、Logo引用、规则或样本归属校验失败')
+      linkIntegrity = {
+        links: counts.friend_link,
+        settings: counts.link_settings,
+        managedLogos: Number(
+          await psql(
+            container,
+            database,
+            user,
+            password,
+            'select count(*) from friend_link where logo_media_id is not null',
+          ),
+        ),
+        externalLogos: Number(
+          await psql(
+            container,
+            database,
+            user,
+            password,
+            'select count(*) from friend_link where logo_url is not null',
+          ),
+        ),
+        mediaReferences: Number(
+          await psql(container, database, user, password, "select count(*) from media_reference where kind='link'"),
+        ),
+        fixtures: Number(
+          await psql(container, database, user, password, "select count(*) from development_fixture where kind='link'"),
+        ),
+        verified: true,
+      }
+    }
     await mkdir(join(target, 'media'), { mode: 0o700 })
     for (const media of manifest.media) {
       const file = join(target, 'media', media.key)
@@ -512,6 +567,7 @@ export async function restoreFullBackup(path, { output } = {}) {
       rowDigestsVerified: true,
       galleryIntegrity,
       projectIntegrity,
+      linkIntegrity,
       mediaFiles: manifest.media.length,
       revokedRestoredSessions: true,
       requireFreshContentContext: true,
@@ -596,6 +652,27 @@ export async function verifyRestoredApplication(
         ),
       )
     : null
+  const friends = Object.hasOwn(restored.report.counts, 'friend_link')
+    ? JSON.parse(
+        await psql(
+          restored.connection.container,
+          database,
+          user,
+          password,
+          `
+        select json_build_object(
+          'total',(select count(*) from friend_link where deleted_at is null),
+          'stats',(select json_build_object('links',count(*),'featured',count(*) filter(where is_featured),
+            'domains',count(distinct substring(url from '^https?://([^/]+)'))) from friend_link where status='published' and deleted_at is null),
+          'rules',(select rules from link_settings where id='default'),
+          'items',coalesce((select json_agg(l) from (select id,name,md5(description) as "descriptionHash",md5(url) as "urlHash",
+            substring(url from '^https?://([^/]+)') as domain,logo_media_id as "logoMediaId",md5(logo_url) as "logoUrlHash",
+            status,is_featured as "isFeatured",sort_order as "sortOrder",revision from friend_link where deleted_at is null order by id limit 8) l),'[]'::json),
+          'deletedIds',coalesce((select json_agg(id) from (select id from friend_link where deleted_at is not null order by id limit 5) l),'[]'::json));
+      `,
+        ),
+      )
+    : null
   try {
     await command(
       [
@@ -637,6 +714,8 @@ export async function verifyRestoredApplication(
         }
         const gallery=${JSON.stringify(gallery)};
         const projects=${JSON.stringify(projects)};
+        const friends=${JSON.stringify(friends)};
+        let linkMetadataVerified=false, linkAdminVerified=false, linkOldContextRejected=false, linkFreshWriteAllowed=false;
         let projectMetadataVerified=false, projectAdminVerified=false, projectOldContextRejected=false, projectFreshWriteAllowed=false;
         if(gallery){
           const list=await fetch('http://127.0.0.1:3000/api/v1/gallery?pageSize=1');
@@ -657,6 +736,15 @@ export async function verifyRestoredApplication(
             if(!found||found.count!==tag.count||found.percent!==Math.round(tag.count*100/projects.stats.projects))throw Error('project tags');
           }
           projectMetadataVerified=true;
+        }
+        if(friends){
+          const list=await fetch('http://127.0.0.1:3000/api/v1/links?pageSize=1');
+          const values=(await list.json()).data;
+          if(!list.ok||values.total!==friends.stats.links||values.items.some(item=>'status' in item||'requestId' in item||'verified' in item))throw Error('public links');
+          const metadata=await fetch('http://127.0.0.1:3000/api/v1/links/metadata');
+          const details=(await metadata.json()).data;
+          if(!metadata.ok||Object.entries(friends.stats).some(([key,value])=>details.stats[key]!==value)||JSON.stringify(details.rules)!==JSON.stringify(friends.rules))throw Error('link metadata');
+          linkMetadataVerified=true;
         }
         if(process.env.VERIFY_OLD_ACCESS_TOKEN){
           const denied=await fetch('http://127.0.0.1:3000/api/v1/admin/posts',{headers:{Authorization:'Bearer '+process.env.VERIFY_OLD_ACCESS_TOKEN}});
@@ -735,8 +823,51 @@ export async function verifyRestoredApplication(
               projectFreshWriteAllowed=true;
             }
           }
+          if(friends){
+            const headers={Authorization:'Bearer '+token,'Content-Type':'application/json'};
+            const list=await fetch('http://127.0.0.1:3000/api/v1/admin/links?pageSize=1',{headers});
+            if(!list.ok||(await list.json()).data.total!==friends.total)throw Error('restored link admin count');
+            const settings=await fetch('http://127.0.0.1:3000/api/v1/admin/links/settings',{headers});
+            if(!settings.ok||JSON.stringify((await settings.json()).data.rules)!==JSON.stringify(friends.rules))throw Error('restored link rules');
+            for(const expected of friends.items){
+              const response=await fetch('http://127.0.0.1:3000/api/v1/admin/links/'+expected.id,{headers});
+              const current=(await response.json()).data;
+              if(!response.ok)throw Error('restored link admin');
+              const normalized={...current,descriptionHash:crypto.createHash('md5').update(current.description).digest('hex'),urlHash:crypto.createHash('md5').update(current.url).digest('hex'),logoUrlHash:current.logoUrl?crypto.createHash('md5').update(current.logoUrl).digest('hex'):null};
+              if(Object.entries(expected).some(([key,value])=>normalized[key]!==value))throw Error('restored link fields');
+              const avatar=expected.logoMediaId?'/api/v1/media/'+expected.logoMediaId+'.webp':current.logoUrl??null;
+              if(current.avatar!==avatar)throw Error('restored link logo projection');
+              if(expected.status!=='published'){
+                const hidden=await fetch('http://127.0.0.1:3000/api/v1/links/'+expected.id);
+                if(hidden.status!==404)throw Error('restored link visibility');
+              }
+            }
+            for(const id of friends.deletedIds){
+              const hidden=await fetch('http://127.0.0.1:3000/api/v1/admin/links/'+id,{headers});
+              if(hidden.status!==404)throw Error('restored deleted link');
+            }
+            linkAdminVerified=true;
+            if(friends.items.length){
+              await new Promise(resolve=>setTimeout(resolve,1100));
+              const expected=friends.items[0],path='http://127.0.0.1:3000/api/v1/admin/links/'+expected.id;
+              const payload=JSON.stringify({revision:expected.revision,sortOrder:expected.sortOrder});
+              const missing=await fetch(path,{method:'PATCH',headers,body:payload});
+              if(missing.status!==428)throw Error('missing restored link context');
+              if(process.env.VERIFY_OLD_CONTENT_CONTEXT){
+                const stale=await fetch(path,{method:'PATCH',headers:{...headers,'X-Content-Context':process.env.VERIFY_OLD_CONTENT_CONTEXT},body:payload});
+                if(stale.status!==409)throw Error('stale restored link context');
+                linkOldContextRejected=true;
+              }
+              const site=await fetch('http://127.0.0.1:3000/api/v1/site');
+              const freshContext=site.headers.get('x-content-context');
+              if(!freshContext||freshContext===process.env.VERIFY_OLD_CONTENT_CONTEXT)throw Error('restored link context generation');
+              const saved=await fetch(path,{method:'PATCH',headers:{...headers,'X-Content-Context':freshContext},body:payload});
+              if(!saved.ok||(await saved.json()).data.revision!==expected.revision+1)throw Error('fresh restored link write');
+              linkFreshWriteAllowed=true;
+            }
+          }
         }
-        process.stdout.write(JSON.stringify({ready:true,publicPosts:body.data.total,publicGalleryPhotos:gallery?.photos??null,galleryGearVerified:!!gallery,publicProjects:projects?.stats.projects??null,projectMetadataVerified,projectAdminVerified,projectOldContextRejected,projectFreshWriteAllowed,mediaVerified:media.length,oldAuthorizationChecked:!!process.env.VERIFY_OLD_ACCESS_TOKEN,oldAuthorizationRejected:process.env.VERIFY_OLD_ACCESS_TOKEN?true:null,freshLoginVerified,galleryAdminVerified,galleryOldContextRejected,galleryFreshWriteAllowed}));
+        process.stdout.write(JSON.stringify({ready:true,publicPosts:body.data.total,publicGalleryPhotos:gallery?.photos??null,galleryGearVerified:!!gallery,publicProjects:projects?.stats.projects??null,projectMetadataVerified,projectAdminVerified,projectOldContextRejected,projectFreshWriteAllowed,publicLinks:friends?.stats.links??null,linkMetadataVerified,linkAdminVerified,linkOldContextRejected,linkFreshWriteAllowed,mediaVerified:media.length,oldAuthorizationChecked:!!process.env.VERIFY_OLD_ACCESS_TOKEN,oldAuthorizationRejected:process.env.VERIFY_OLD_ACCESS_TOKEN?true:null,freshLoginVerified,galleryAdminVerified,galleryOldContextRejected,galleryFreshWriteAllowed}));
       })().catch((error)=>process.stdout.write(JSON.stringify({errorStage:error.message})))`
     let ready = false
     for (let i = 0; i < 50; i++) {
