@@ -11,6 +11,7 @@ import { FlashComment } from './flash-comment.entity'
 import { Moment } from './moment.entity'
 import { MomentComment } from './moment-comment.entity'
 import { GuestbookMessage } from './guestbook-message.entity'
+import { GalleryPhoto } from './gallery-photo.entity'
 @Entity({ tableName: 'media_reference' })
 @Unique({ properties: ['asset', 'sourceKey'] })
 export class MediaReference {
@@ -28,6 +29,7 @@ export class MediaReference {
     | 'moment'
     | 'moment-comment'
     | 'guestbook'
+    | 'gallery'
   @ManyToOne({ entity: () => Post, nullable: true, deleteRule: 'cascade' }) post?: Post
   @ManyToOne({ entity: () => FlashNote, nullable: true, deleteRule: 'cascade' }) flashNote?: FlashNote
   @Property({ type: 'integer', nullable: true }) revision?: number
@@ -37,4 +39,5 @@ export class MediaReference {
   @ManyToOne({ entity: () => MomentComment, nullable: true, deleteRule: 'cascade' }) momentComment?: MomentComment
   @ManyToOne({ entity: () => GuestbookMessage, nullable: true, deleteRule: 'cascade' })
   guestbookMessage?: GuestbookMessage
+  @ManyToOne({ entity: () => GalleryPhoto, nullable: true, deleteRule: 'cascade' }) galleryPhoto?: GalleryPhoto
 }
