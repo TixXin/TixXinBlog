@@ -390,6 +390,47 @@ export async function restoreFullBackup(path, { output } = {}) {
         .at(-1)
       if (digest !== manifest.rowDigests[table]) throw new Error(`恢复后表内容摘要不符：${table}`)
     }
+    let galleryIntegrity
+    if (Object.hasOwn(manifest.counts, 'gallery_photo')) {
+      // 行摘要之外显式核对作品与引用索引，归属账本允许保留已经删除的资源编号。
+      const invalid = Number(
+        await psql(
+          container,
+          database,
+          user,
+          password,
+          `
+        select
+          (select count(*) from gallery_photo g left join media_asset a on a.id=g.media_id where a.id is null)
+          + (select count(*) from gallery_photo g where g.deleted_at is null and not exists
+              (select 1 from media_reference r where r.gallery_photo_id=g.id and r.asset_id=g.media_id and r.kind='gallery' and r.source_key='gallery:'||g.id::text))
+          + (select count(*) from media_reference r left join gallery_photo g on g.id=r.gallery_photo_id
+              where (r.kind='gallery' or r.gallery_photo_id is not null) and
+                (g.id is null or g.deleted_at is not null or r.kind<>'gallery' or r.asset_id<>g.media_id or r.source_key<>'gallery:'||g.id::text))
+          + (select count(*) from development_fixture where kind='gallery' and (resource_id !~ '^[1-9][0-9]*$' or snapshot_hash !~ '^[a-f0-9]{64}$'))
+          + case when exists(select 1 from gallery_settings where id='default') then 0 else 1 end;
+      `,
+        ),
+      )
+      if (invalid) throw new Error('恢复后的图库作品、媒体引用、配置或样本归属校验失败')
+      galleryIntegrity = {
+        photos: counts.gallery_photo,
+        settings: counts.gallery_settings,
+        mediaReferences: Number(
+          await psql(container, database, user, password, "select count(*) from media_reference where kind='gallery'"),
+        ),
+        fixtures: Number(
+          await psql(
+            container,
+            database,
+            user,
+            password,
+            "select count(*) from development_fixture where kind='gallery'",
+          ),
+        ),
+        verified: true,
+      }
+    }
     await mkdir(join(target, 'media'), { mode: 0o700 })
     for (const media of manifest.media) {
       const file = join(target, 'media', media.key)
@@ -420,6 +461,7 @@ export async function restoreFullBackup(path, { output } = {}) {
       network: 'none',
       counts,
       rowDigestsVerified: true,
+      galleryIntegrity,
       mediaFiles: manifest.media.length,
       revokedRestoredSessions: true,
       requireFreshContentContext: true,
@@ -464,6 +506,17 @@ export async function verifyRestoredApplication(
       "select coalesce(json_agg(x),'[]'::json) from (select id,sha256 from media_asset where deleted_at is null order by id limit 1) x",
     ),
   )
+  const gallery = Object.hasOwn(restored.report.counts, 'gallery_photo')
+    ? JSON.parse(
+        await psql(
+          restored.connection.container,
+          database,
+          user,
+          password,
+          "select json_build_object('photos',(select count(*) from gallery_photo where status='published' and deleted_at is null),'gear',(select gear from gallery_settings where id='default'))",
+        ),
+      )
+    : null
   try {
     await command(
       [
@@ -492,7 +545,31 @@ export async function verifyRestoredApplication(
       ],
       { env: { DATABASE_URL: restored.connection.databaseUrl, JWT_ACCESS_SECRET: accessSecret } },
     )
-    const source = `const crypto = require('node:crypto'); (async()=>{ const ready=await fetch('http://127.0.0.1:3000/ready'); if(!ready.ok)throw Error('ready'); const response=await fetch('http://127.0.0.1:3000/api/v1/posts?pageSize=1'); const body=await response.json(); if(response.status!==200||body.data.total!==${expected})throw Error('posts'); const media=${JSON.stringify(media)}; if(media.length){ const image=await fetch('http://127.0.0.1:3000/api/v1/media/'+media[0].id+'.webp'); if(!image.ok||crypto.createHash('sha256').update(Buffer.from(await image.arrayBuffer())).digest('hex')!==media[0].sha256)throw Error('media'); } if(process.env.VERIFY_OLD_ACCESS_TOKEN){const denied=await fetch('http://127.0.0.1:3000/api/v1/admin/posts',{headers:{Authorization:'Bearer '+process.env.VERIFY_OLD_ACCESS_TOKEN}});if(denied.status!==401)throw Error('old token');} process.stdout.write(JSON.stringify({ready:true,publicPosts:body.data.total,mediaVerified:media.length,oldAuthorizationChecked:!!process.env.VERIFY_OLD_ACCESS_TOKEN,oldAuthorizationRejected:process.env.VERIFY_OLD_ACCESS_TOKEN?true:null})); })().catch(()=>process.exit(1))`
+    const source = `
+      const crypto = require('node:crypto');
+      (async()=>{
+        const ready=await fetch('http://127.0.0.1:3000/ready'); if(!ready.ok)throw Error('ready');
+        const response=await fetch('http://127.0.0.1:3000/api/v1/posts?pageSize=1'); const body=await response.json();
+        if(response.status!==200||body.data.total!==${expected})throw Error('posts');
+        const media=${JSON.stringify(media)};
+        if(media.length){
+          const image=await fetch('http://127.0.0.1:3000/api/v1/media/'+media[0].id+'.webp');
+          if(!image.ok||crypto.createHash('sha256').update(Buffer.from(await image.arrayBuffer())).digest('hex')!==media[0].sha256)throw Error('media');
+        }
+        const gallery=${JSON.stringify(gallery)};
+        if(gallery){
+          const list=await fetch('http://127.0.0.1:3000/api/v1/gallery?pageSize=1');
+          if(!list.ok||(await list.json()).data.total!==gallery.photos)throw Error('gallery');
+          const metadata=await fetch('http://127.0.0.1:3000/api/v1/gallery/metadata');
+          const values=(await metadata.json()).data;
+          if(!metadata.ok||values.stats.photos!==gallery.photos||JSON.stringify(values.gear)!==JSON.stringify(gallery.gear))throw Error('gallery settings');
+        }
+        if(process.env.VERIFY_OLD_ACCESS_TOKEN){
+          const denied=await fetch('http://127.0.0.1:3000/api/v1/admin/posts',{headers:{Authorization:'Bearer '+process.env.VERIFY_OLD_ACCESS_TOKEN}});
+          if(denied.status!==401)throw Error('old token');
+        }
+        process.stdout.write(JSON.stringify({ready:true,publicPosts:body.data.total,publicGalleryPhotos:gallery?.photos??null,galleryGearVerified:!!gallery,mediaVerified:media.length,oldAuthorizationChecked:!!process.env.VERIFY_OLD_ACCESS_TOKEN,oldAuthorizationRejected:process.env.VERIFY_OLD_ACCESS_TOKEN?true:null}));
+      })().catch(()=>process.exit(1))`
     for (let i = 0; i < 50; i++) {
       try {
         const result = await command(['exec', '-e', 'VERIFY_OLD_ACCESS_TOKEN', container, 'node', '-e', source], {

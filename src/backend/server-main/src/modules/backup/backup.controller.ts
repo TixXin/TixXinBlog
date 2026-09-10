@@ -62,6 +62,9 @@ export class BackupController {
       id,
       exportedPosts: content.posts.length,
       exportedFlashes: content.flashes.length,
+      exportedMoments: content.moments.length,
+      exportedGuestbook: content.guestbook.length,
+      exportedGallery: content.gallery.length,
       exportedMedia: body.mediaIncluded ? content.media.length : 0,
     }
   }
@@ -101,6 +104,9 @@ export class BackupController {
       ...value,
       importedPosts: value.result?.posts.length ?? 0,
       importedFlashes: value.result?.flashes.length ?? 0,
+      importedMoments: value.result?.moments?.length ?? 0,
+      importedGuestbook: value.result?.guestbook?.length ?? 0,
+      importedGallery: value.result?.gallery?.length ?? 0,
       importedComments: value.result?.comments ?? 0,
       importedMedia: value.result?.media ?? 0,
     }

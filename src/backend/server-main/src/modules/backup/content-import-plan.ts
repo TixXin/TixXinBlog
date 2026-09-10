@@ -9,8 +9,9 @@ import { TaxonomyAlias } from '../../entities/taxonomy-alias.entity'
 import { SiteSettings } from '../../entities/site-settings.entity'
 import { CommentPolicy } from '../../entities/comment-policy.entity'
 import { ContentContext } from '../../entities/content-context.entity'
+import { GallerySettings } from '../../entities/gallery-settings.entity'
 import type { ContentImportPlan } from '../../entities/content-import.entity'
-import type { ContentPackage, PackagePost, PackageFlash, PackageMoment } from './content-package'
+import type { ContentPackage, PackagePost, PackageFlash, PackageMoment, PackageGalleryPhoto } from './content-package'
 import { packageHash } from './content-package'
 import { canonicalTaxonomyLabel } from '../post/taxonomy-aliases'
 import { managedMediaIds } from '../media/media-references'
@@ -56,6 +57,12 @@ export function momentContentHash(values: PackageMoment['values'], articleHash: 
     isPinned: values.isPinned ?? false,
   })
 }
+export function galleryContentHash(values: PackageGalleryPhoto['values']) {
+  const { status, ...content } = values
+  // 发布状态不参与内容去重，避免已迁入草稿被下一次跳过策略重复创建。
+  void status
+  return packageHash(content)
+}
 export async function normalizedPost(em: EntityManager, values: PackagePost['values']) {
   return {
     ...values,
@@ -75,16 +82,18 @@ export async function makeContentPlan(
   ticket: string,
 ): Promise<ContentImportPlan> {
   const current = await exporter.snapshot(false, em)
-  const [addresses, aliases, site, policy, context] = await Promise.all([
+  const [addresses, aliases, site, policy, context, gallerySettings] = await Promise.all([
     em.find(PostAddress, {}, { orderBy: { slug: 'asc' } }),
     em.find(TaxonomyAlias, {}, { orderBy: { kind: 'asc', alias: 'asc' } }),
     em.findOneOrFail(SiteSettings, { id: 'default' }),
     em.findOneOrFail(CommentPolicy, { id: 'default' }),
     em.findOneOrFail(ContentContext, { id: 'default' }),
+    em.findOneOrFail(GallerySettings, { id: 'default' }),
   ])
   const basis = packageHash({
     context: context.generation,
     guestbook: current.guestbook,
+    gallery: current.gallery,
     posts: current.posts.map((post) => ({ id: post.sourceId, values: post.values })),
     flashes: current.flashes.map((flash) => ({ id: flash.sourceId, values: flash.values })),
     moments: current.moments.map((note) => ({
@@ -98,7 +107,9 @@ export async function makeContentPlan(
     aliases: aliases.map((alias) => ({ kind: alias.kind, alias: alias.alias, target: alias.target })),
     addresses: addresses.map((item) => ({ slug: item.slug, post: item.post.id })),
     media: current.media.map((item) => ({ id: item.id, sha256: item.sha256, deleted: item.deleted })),
-    settings: includeSettings ? [site.revision, policy.revision] : null,
+    settings: includeSettings
+      ? [site.revision, policy.revision, input.gallerySettings ? gallerySettings.revision : null]
+      : null,
   })
   const existingPosts = new Set(current.posts.map((post) => postContentHash(post.values)))
   const existingFlashes = new Set(current.flashes.map((flash) => flashContentHash(flash.values)))
@@ -208,6 +219,27 @@ export async function makeContentPlan(
     const source = guestbookById.get(plan.sourceId)!
     if (!plan.skip && !source.deleted) requiredValues.push(source.avatar)
   }
+  const existingGallery = new Set(
+    current.gallery.filter((photo) => !photo.deleted).map((photo) => galleryContentHash(photo.values)),
+  )
+  const galleryPlans = (input.gallery ?? []).map((source) => {
+    const hash = galleryContentHash(source.values)
+    const skip = source.deleted || (strategy === 'skip' && existingGallery.has(hash))
+    if (!skip) {
+      existingGallery.add(hash)
+      requiredValues.push(`/api/v1/media/${source.values.mediaId}.webp`)
+    }
+    return {
+      sourceId: source.sourceId,
+      title: source.values.title,
+      skip,
+      reason: source.deleted
+        ? '跳过已删除作品，保留删除状态'
+        : skip
+          ? '跳过相同图库作品'
+          : '创建新的图库草稿，保留拍摄信息及媒体关联',
+    }
+  })
   if (includeSettings) requiredValues.push(input.site.avatar)
   const required = new Set(managedMediaIds(requiredValues))
   const incoming = new Map(input.media.map((item) => [item.id, item]))
@@ -262,23 +294,27 @@ export async function makeContentPlan(
     flashes: flashPlans,
     moments: momentPlans,
     guestbook: guestbookPlans,
+    gallery: galleryPlans,
     media,
     counts: {
       posts: postPlans.filter((item) => !item.skip).length,
       flashes: flashPlans.filter((item) => !item.skip).length,
       moments: momentPlans.filter((item) => !item.skip).length,
       guestbook: guestbookPlans.filter((item) => !item.skip).length,
+      gallery: galleryPlans.filter((item) => !item.skip).length,
       comments,
       skipped:
         postPlans.filter((item) => item.skip).length +
         flashPlans.filter((item) => item.skip).length +
         momentPlans.filter((item) => item.skip).length +
-        guestbookPlans.filter((item) => item.skip).length,
+        guestbookPlans.filter((item) => item.skip).length +
+        galleryPlans.filter((item) => item.skip).length,
       media: media.filter((item) => item.create).length,
       files: media.filter((item) => item.writeFile).length,
       settings: includeSettings,
     },
     siteRevision: site.revision,
     policyRevision: policy.revision,
+    gallerySettingsRevision: gallerySettings.revision,
   }
 }

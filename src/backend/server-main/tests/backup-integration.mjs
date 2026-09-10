@@ -110,13 +110,45 @@ try {
   })
   await ok(`/admin/guestbook/${hiddenReply.id}`, 'PATCH', { status: 'hidden', revision: hiddenReply.revision })
   await ok(`/admin/guestbook/${deletedGuest.id}?revision=${deletedGuest.revision}`, 'DELETE')
+  const gallery = await ok('/admin/gallery', 'POST', {
+    requestId: randomUUID(),
+    mediaId: asset.id,
+    title: '雾中的桥',
+    description: '清晨河面上的薄雾',
+    category: '城市',
+    takenOn: '2020-11-04',
+    location: '',
+    device: '',
+    status: 'published',
+    sortOrder: 8,
+  })
+  const withdrawnGallery = await ok('/admin/gallery', 'POST', {
+    requestId: randomUUID(),
+    mediaId: asset.id,
+    title: '留在窗边的光',
+    status: 'withdrawn',
+  })
+  const deletedGallery = await ok('/admin/gallery', 'POST', {
+    requestId: randomUUID(),
+    mediaId: asset.id,
+    title: '重拍之前',
+  })
+  await ok(`/admin/gallery/${deletedGallery.id}?revision=${deletedGallery.revision}`, 'DELETE')
+  const gear = [{ icon: 'lucide:camera', name: '随行相机', description: '器材介绍由博主维护' }]
+  await ok('/admin/gallery/settings', 'PATCH', { gear, revision: (await ok('/admin/gallery/settings')).revision })
   assert.equal((await request('/admin/backup/export', 'POST', { mediaIncluded: true }, '')).status, 401)
   const exported = await request('/admin/backup/export', 'POST', { mediaIncluded: true })
   assert.equal(exported.status, 201)
   assert(exported.headers.get('content-disposition').includes('attachment'))
   assert.equal(exported.body.format, 'tixxin-content')
   const bundle = exported.body
-  assert.equal(bundle.version, 3)
+  assert.equal(bundle.version, 4)
+  assert.equal(bundle.gallery.length, 3)
+  assert.deepEqual(bundle.gallerySettings, { gear })
+  assert.equal(bundle.gallery.find((photo) => photo.sourceId === gallery.id).values.takenOn, '2020-11-04')
+  assert.equal(bundle.gallery.find((photo) => photo.sourceId === withdrawnGallery.id).values.takenOn, null)
+  assert(!JSON.stringify(bundle.gallery).includes('requestId'))
+  assert(!JSON.stringify(bundle.gallery).includes('revision'))
   assert.equal(bundle.guestbook.length, 4)
   assert.equal(bundle.guestbook.find((item) => item.sourceId === reply.id).replyToId, guest.id)
   assert.equal(bundle.guestbook.find((item) => item.sourceId === deletedGuest.id).deleted, true)
@@ -148,13 +180,14 @@ try {
   const same = await preview(bundle)
   assert.equal(same.status, 201, same.body.message)
   assert.equal(same.body.data.plan.counts.posts, 0)
-  assert.equal(same.body.data.plan.counts.skipped, 7)
+  assert.equal(same.body.data.plan.counts.skipped, 10)
+  assert.equal(same.body.data.plan.counts.gallery, 0)
   assert.equal((await preview(bundle, 'skip', false, same.body.data.ticket)).body.data.ticket, same.body.data.ticket)
   assert.equal((await preview({ ...bundle, version: 99 })).status, 400)
   assert.equal(
     (
       await preview(
-        JSON.parse(JSON.stringify(bundle).replace('"version":3', '"version":3,"__proto__":{"polluted":true}')),
+        JSON.parse(JSON.stringify(bundle).replace('"version":4', '"version":4,"__proto__":{"polluted":true}')),
       )
     ).status,
     400,
@@ -163,11 +196,38 @@ try {
   legacy.version = 1
   delete legacy.moments
   delete legacy.guestbook
+  delete legacy.gallery
+  delete legacy.gallerySettings
   assert.equal((await preview(legacy)).body.data.plan.counts.moments, 0)
   const legacyV2 = structuredClone(bundle)
   legacyV2.version = 2
   delete legacyV2.guestbook
+  delete legacyV2.gallery
+  delete legacyV2.gallerySettings
   assert.equal((await preview(legacyV2)).body.data.plan.counts.guestbook, 0)
+  const legacyV3 = structuredClone(bundle)
+  legacyV3.version = 3
+  delete legacyV3.gallery
+  delete legacyV3.gallerySettings
+  const oldPreview = await preview(legacyV3, 'skip', true)
+  assert.equal(oldPreview.status, 201)
+  assert.equal(oldPreview.body.data.plan.counts.gallery, 0)
+  assert.equal(oldPreview.body.data.gallerySettingsPreview, null)
+  assert.equal((await preview({ ...legacyV3, gallery: [] })).status, 400)
+  assert.equal((await preview({ ...legacyV3, gallerySettings: { gear: [] } })).status, 400)
+  assert.equal((await preview({ ...bundle, projects: [] })).status, 400)
+  const invalidGallery = structuredClone(bundle)
+  invalidGallery.gallery[0].values.takenOn = '2025-02-30'
+  assert.equal((await preview(invalidGallery)).status, 400)
+  invalidGallery.gallery[0].values.takenOn = null
+  invalidGallery.gallery[0].values.width = 100
+  assert.equal((await preview(invalidGallery)).status, 400)
+  delete invalidGallery.gallery[0].values.width
+  invalidGallery.gallery[0].values.requestId = randomUUID()
+  assert.equal((await preview(invalidGallery)).status, 400)
+  const missingGallery = structuredClone(bundle)
+  missingGallery.gallery[0].values.mediaId = randomUUID()
+  assert.equal((await preview(missingGallery, 'copy')).body.data.plan.ready, false)
   assert.equal((await preview({ ...bundle, version: 2 })).status, 400)
   assert.equal((await preview({ ...bundle, version: 1 })).status, 400)
   const invalidGuest = structuredClone(bundle)
@@ -197,6 +257,10 @@ try {
   const copied = structuredClone(bundle)
   copied.media[0].id = migratedMediaId
   copied.posts[0].values.cover = `/api/v1/media/${migratedMediaId}.webp`
+  copied.gallery.forEach((photo) => {
+    photo.values.mediaId = migratedMediaId
+  })
+  copied.gallerySettings.gear[0].description = '随身携带，记录日常'
   copied.site.name = '迁入后的站点资料'
   const planned = (await preview(copied, 'copy', true)).body.data
   assert.equal(planned.plan.ready, true)
@@ -204,6 +268,8 @@ try {
   assert.equal(planned.plan.counts.moments, 1)
   assert.equal(planned.plan.counts.guestbook, 4)
   assert.equal(planned.plan.counts.media, 1)
+  assert.equal(planned.plan.counts.gallery, 2)
+  assert.deepEqual(planned.gallerySettingsPreview, copied.gallerySettings)
   assert.notEqual(planned.plan.posts[0].slug, 'backup-source')
   const execute = (value, confirmation = value.confirmation) =>
     request(`/admin/backup/imports/${value.ticket}/execute`, 'POST', { acknowledgement: '导入为新草稿', confirmation })
@@ -212,6 +278,20 @@ try {
   assert.equal(imported.body.data.completed, true)
   assert.equal(imported.body.data.result.posts.length, 1)
   assert.equal(imported.body.data.result.comments, 5)
+  assert.equal(imported.body.data.result.gallery.length, 2)
+  const importedPhotoId = imported.body.data.result.gallery.find((photo) => photo.sourceId === gallery.id).id
+  const importedPhoto = await ok(`/admin/gallery/${importedPhotoId}`)
+  assert.equal(importedPhoto.status, 'draft')
+  assert.equal(importedPhoto.mediaId, migratedMediaId)
+  assert.equal(importedPhoto.takenOn, '2020-11-04')
+  assert.equal(importedPhoto.sortOrder, 8)
+  assert.equal((await request(`/gallery/${importedPhotoId}`, 'GET', undefined, '')).status, 404)
+  assert(
+    (await ok(`/admin/media/${migratedMediaId}/references`)).items.some(
+      (item) => item.url === `/admin/gallery?edit=${importedPhotoId}`,
+    ),
+  )
+  assert.deepEqual((await ok('/admin/gallery/settings')).gear, copied.gallerySettings.gear)
   const importedGuest = new Map(imported.body.data.result.guestbook.map((item) => [item.sourceId, item.id]))
   assert.equal(importedGuest.size, 4)
   const newGuest = await ok(`/admin/guestbook/${importedGuest.get(guest.id)}`)
@@ -262,12 +342,26 @@ try {
   assert.equal((await request(`/posts/${newId}`)).status, 404)
   assert.equal((await ok(`/admin/posts/${original.id}`)).status, 'published')
   assert.equal((await ok('/site')).name, '迁入后的站点资料')
+  const refreshedLegacy = await ok(`/admin/backup/imports/${oldPreview.body.data.ticket}/repreview`, 'POST')
+  assert.equal((await execute(refreshedLegacy)).status, 201)
+  assert.deepEqual((await ok('/admin/gallery/settings')).gear, copied.gallerySettings.gear)
   const repeat = await execute(planned)
   assert.equal(repeat.body.data.result.posts[0].id, newId)
   assert.equal(repeat.body.data.result.moments[0].id, momentId)
+  assert.deepEqual(repeat.body.data.result.gallery, imported.body.data.result.gallery)
   const copiedAgain = await preview(copied)
   assert.equal(copiedAgain.body.data.plan.counts.moments, 0)
   assert.equal(copiedAgain.body.data.plan.counts.guestbook, 0)
+  assert.equal(copiedAgain.body.data.plan.counts.gallery, 0)
+  const staleGalleryPlan = (await preview(copied, 'copy')).body.data
+  await ok(`/admin/gallery/${gallery.id}`, 'PATCH', { revision: gallery.revision, title: '河面上的雾' })
+  assert.equal((await execute(staleGalleryPlan)).status, 409)
+  const staleGearPlan = (await preview(copied, 'copy', true)).body.data
+  await ok('/admin/gallery/settings', 'PATCH', { gear: [], revision: (await ok('/admin/gallery/settings')).revision })
+  assert.equal((await execute(staleGearPlan)).status, 409)
+  const defaultGearPlan = (await preview(copied, 'skip')).body.data
+  assert.equal((await execute(defaultGearPlan)).status, 201)
+  assert.deepEqual((await ok('/admin/gallery/settings')).gear, [])
   const messagePackage = structuredClone(bundle)
   messagePackage.posts = []
   messagePackage.flashes = []
@@ -328,6 +422,36 @@ try {
   assert.notEqual(refreshed.confirmation, brokenPlan.confirmation)
   assert.equal((await execute(refreshed, brokenPlan.confirmation)).status, 409)
   assert.equal((await execute(refreshed)).status, 201)
+  const galleryRollback = structuredClone(copied)
+  const rollbackMedia = randomUUID()
+  galleryRollback.media[0].id = rollbackMedia
+  galleryRollback.gallery[0].values.mediaId = rollbackMedia
+  galleryRollback.gallery[0].values.title = '图库导入回滚证明'
+  const galleryRollbackPlan = (await preview(galleryRollback, 'copy')).body.data
+  const beforeRollback = await em.execute(
+    'select (select count(*) from gallery_photo)::int as gallery, (select count(*) from post)::int as posts, (select count(*) from guestbook_message)::int as guestbook, (select count(*) from media_reference)::int as refs',
+  )
+  await em.execute(
+    "create function fail_gallery_import_test() returns trigger language plpgsql as $$ begin if new.title='图库导入回滚证明' then raise exception 'isolated gallery import failure'; end if; return new; end $$",
+  )
+  await em.execute(
+    'create trigger fail_gallery_import before insert on gallery_photo for each row execute function fail_gallery_import_test()',
+  )
+  assert.equal((await execute(galleryRollbackPlan)).status, 503)
+  assert.deepEqual(
+    await em.execute(
+      'select (select count(*) from gallery_photo)::int as gallery, (select count(*) from post)::int as posts, (select count(*) from guestbook_message)::int as guestbook, (select count(*) from media_reference)::int as refs',
+    ),
+    beforeRollback,
+  )
+  assert.equal(
+    (await em.execute('select count(*)::int as count from media_asset where id=?', [rollbackMedia]))[0].count,
+    0,
+  )
+  assert(!existsSync(join(process.env.MEDIA_DIRECTORY, `${rollbackMedia}.webp`)))
+  assert.equal((await ok(`/admin/backup/imports/${galleryRollbackPlan.ticket}`)).completed, false)
+  await em.execute('drop trigger fail_gallery_import on gallery_photo')
+  await em.execute('drop function fail_gallery_import_test()')
   assert.equal((await request('/admin/maintenance/diagnostics', 'GET', undefined, '')).status, 401)
   const diagnostics = await ok('/admin/maintenance/diagnostics')
   assert.equal(diagnostics.schemaDrift, false)
@@ -345,6 +469,23 @@ try {
     409,
   )
   assert.equal((await request('/admin/posts', 'POST', { title: '拒绝缺少上下文', contentRaw: '' })).status, 428)
+  assert.equal(
+    (
+      await request(
+        `/admin/gallery/${gallery.id}`,
+        'PATCH',
+        { title: '拒绝旧图库编辑', revision: gallery.revision + 1 },
+        token,
+        oldContext,
+      )
+    ).status,
+    409,
+  )
+  assert.equal(
+    (await request('/admin/gallery', 'POST', { title: '拒绝旧图库创建', mediaId: asset.id, requestId: randomUUID() }))
+      .status,
+    428,
+  )
   const guestBody = { content: '旧页面不能提交留言', author: '小林', requestId: randomUUID() }
   assert.equal((await request('/guestbook', 'POST', guestBody, '', oldContext)).status, 409)
   assert.equal((await request('/guestbook', 'POST', guestBody, '')).status, 428)

@@ -19,12 +19,14 @@ export interface ContentImportPlan {
     targetId?: number
     duplicateOf?: number
   }[]
+  gallery: { sourceId: number; title: string; skip: boolean; reason: string }[]
   media: { id: string; create: boolean; writeFile: boolean; skip: boolean }[]
   counts: {
     posts: number
     flashes: number
     moments: number
     guestbook: number
+    gallery: number
     comments: number
     skipped: number
     media: number
@@ -33,12 +35,14 @@ export interface ContentImportPlan {
   }
   siteRevision: number
   policyRevision: number
+  gallerySettingsRevision: number
 }
 export interface ContentImportResult {
   posts: { sourceId: number; id: number }[]
   flashes: { sourceId: string; id: string }[]
   moments: { sourceId: string; id: string }[]
   guestbook: { sourceId: number; id: number }[]
+  gallery: { sourceId: number; id: number }[]
   comments: number
   media: number
   files: number
