@@ -611,35 +611,20 @@ Authorization: Bearer <access-token>
 }
 ```
 
-### 7.10 Project（项目）
+### 7.10 Project（项目，已实现）
+
+正式字段、统计口径和维护规则见 [项目业务](projects.md)。项目进展progress与站点发布status独立，不采集无来源Star/Fork。
 
 | Method | Path | 鉴权 | 摘要 |
 |--------|------|------|------|
-| GET | `/projects` | 无 | 项目列表 |
-| GET | `/projects/stats` | 无 | 项目统计 |
-| GET | `/projects/tech-stack` | 无 | 技术栈占比 |
-| POST | `/admin/projects` | [Admin] | 创建项目 |
-| PATCH | `/admin/projects/:id` | [Admin] | 更新项目 |
-| DELETE | `/admin/projects/:id` | [Admin] | 删除项目 |
-| POST | `/admin/projects/:id/sync-stars` | [Admin] | 触发 GitHub 同步 |
+| GET | `/projects` | 无 | 公开项目，q/progress/tag/page/pageSize查询；默认12项稳定分页 |
+| GET | `/projects/metadata` | 无 | 公开项目及进展数量、技术标签使用覆盖率 |
+| GET | `/projects/:id` | 无 | 公开项目投影，不含私有状态和管理版本 |
+| GET/POST | `/admin/projects` | [Admin] | 管理列表/带requestId创建 |
+| GET/PATCH/DELETE | `/admin/projects/:id` | [Admin] | 读取/带revision编辑、发布、撤回、排序/带revision删除 |
+| GET | `/admin/projects/submissions/:requestId` | [Admin] | 查询未知创建结果及删除墓碑 |
 
-`GET /projects` 响应 `data.items[]` 对齐 `ProjectItem`：
-
-```json
-{
-  "title": "VueDash",
-  "description": "基于 Vue3 的管理后台模板",
-  "cover": "https://...",
-  "status": "active",
-  "stars": "1.2k",
-  "tags": [{ "label": "Vue3", "color": "emerald" }],
-  "links": [{ "icon": "lucide:github", "label": "源代码", "href": "..." }]
-}
-```
-
-`GET /projects/stats` 响应 `data.items[]` 对齐 `ProjectStats`。
-
-`GET /projects/tech-stack` 响应 `data.items[]` 对齐 `TechStackItem`。
+技术标签忽略大小写去重和筛选。覆盖率为使用此技术的公开项目数除以全部公开项目数，非代码语言分析。封面使用可空受管媒体，链接经服务端规范化，不创建#占位。v5内容包及完整备份均保留项目；导入以草稿等待复核，进展信息不改变。旧设计的独立stats、tech-stack端点未开放。
 
 ### 7.11 About（关于）
 
