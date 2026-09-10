@@ -142,7 +142,8 @@ try {
   assert(exported.headers.get('content-disposition').includes('attachment'))
   assert.equal(exported.body.format, 'tixxin-content')
   const bundle = exported.body
-  assert.equal(bundle.version, 4)
+  assert.equal(bundle.version, 5)
+  assert.deepEqual(bundle.projects, [])
   assert.equal(bundle.gallery.length, 3)
   assert.deepEqual(bundle.gallerySettings, { gear })
   assert.equal(bundle.gallery.find((photo) => photo.sourceId === gallery.id).values.takenOn, '2020-11-04')
@@ -187,7 +188,7 @@ try {
   assert.equal(
     (
       await preview(
-        JSON.parse(JSON.stringify(bundle).replace('"version":4', '"version":4,"__proto__":{"polluted":true}')),
+        JSON.parse(JSON.stringify(bundle).replace('"version":5', '"version":5,"__proto__":{"polluted":true}')),
       )
     ).status,
     400,
@@ -198,24 +199,35 @@ try {
   delete legacy.guestbook
   delete legacy.gallery
   delete legacy.gallerySettings
+  delete legacy.projects
   assert.equal((await preview(legacy)).body.data.plan.counts.moments, 0)
   const legacyV2 = structuredClone(bundle)
   legacyV2.version = 2
   delete legacyV2.guestbook
   delete legacyV2.gallery
   delete legacyV2.gallerySettings
+  delete legacyV2.projects
   assert.equal((await preview(legacyV2)).body.data.plan.counts.guestbook, 0)
   const legacyV3 = structuredClone(bundle)
   legacyV3.version = 3
   delete legacyV3.gallery
   delete legacyV3.gallerySettings
+  delete legacyV3.projects
   const oldPreview = await preview(legacyV3, 'skip', true)
   assert.equal(oldPreview.status, 201)
   assert.equal(oldPreview.body.data.plan.counts.gallery, 0)
   assert.equal(oldPreview.body.data.gallerySettingsPreview, null)
   assert.equal((await preview({ ...legacyV3, gallery: [] })).status, 400)
   assert.equal((await preview({ ...legacyV3, gallerySettings: { gear: [] } })).status, 400)
-  assert.equal((await preview({ ...bundle, projects: [] })).status, 400)
+  const legacyV4 = structuredClone(bundle)
+  legacyV4.version = 4
+  delete legacyV4.projects
+  assert.equal((await preview(legacyV4)).body.data.plan.counts.projects, 0)
+  assert.equal((await preview({ ...legacyV4, projects: [] })).status, 400)
+  const invalidLegacyGear = structuredClone(legacyV4)
+  invalidLegacyGear.gallerySettings.gear[0].icon = ['lucide:camera']
+  assert.equal((await preview(invalidLegacyGear)).status, 400)
+  assert.equal((await preview({ ...bundle, links: [] })).status, 400)
   const invalidGallery = structuredClone(bundle)
   invalidGallery.gallery[0].values.takenOn = '2025-02-30'
   assert.equal((await preview(invalidGallery)).status, 400)

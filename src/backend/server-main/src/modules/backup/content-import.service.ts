@@ -39,6 +39,7 @@ import { makeContentPlan, normalizedPost } from './content-import-plan'
 import { importMoments } from './content-import-moments'
 import { importGuestbook } from './content-import-guestbook'
 import { importGallery } from './content-import-gallery'
+import { importProjects } from './content-import-projects'
 import { lockGuestbook } from '../guestbook/guestbook-write.service'
 type Admin = { id: string; sessionVersion: number; sessionId: string }
 type Options = { requestId: string; strategy: 'skip' | 'copy'; includeSettings: boolean }
@@ -243,6 +244,7 @@ export class ContentImportService {
           moments: [],
           guestbook: [],
           gallery: [],
+          projects: [],
           comments: 0,
           media: 0,
           files: 0,
@@ -360,6 +362,7 @@ export class ContentImportService {
           await importMoments(em, payload, current, result)
           await importGuestbook(em, payload, current, result)
           await importGallery(em, payload, current, result)
+          await importProjects(em, payload, current, result)
           if (job.includeSettings) {
             await this.sites.save({ ...payload.site, revision: current.siteRevision }, '从内容包迁入站点资料')
             await this.comments.savePolicy({

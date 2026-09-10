@@ -22,6 +22,7 @@ import { POST_TAG_COLORS } from '../../entities/post-tag.entity'
 import type { PostTagColor } from '../../entities/post-tag.entity'
 import { GALLERY_STATUSES } from '../../entities/gallery-photo.entity'
 import type { GalleryStatus } from '../../entities/gallery-photo.entity'
+import { projectUrl } from '../project/project-values'
 export const MAX_PACKAGE_BYTES = 50 * 1024 * 1024
 export interface PackageComment {
   sourceId: number
@@ -90,7 +91,7 @@ export interface PackageGuestbook {
 }
 export interface ContentPackage {
   format: 'tixxin-content'
-  version: 4
+  version: 5
   exportedAt: string
   mediaIncluded: boolean
   posts: PackagePost[]
@@ -98,6 +99,7 @@ export interface ContentPackage {
   moments: PackageMoment[]
   guestbook: PackageGuestbook[]
   gallery: PackageGalleryPhoto[]
+  projects: PackageProject[]
   gallerySettings: {
     gear: { icon: 'lucide:camera' | 'lucide:circle' | 'lucide:smartphone'; name: string; description: string }[]
   } | null
@@ -121,6 +123,22 @@ export interface PackageGalleryPhoto {
     location: string
     device: string
     status: GalleryStatus
+    sortOrder: number
+  }
+}
+export interface PackageProject {
+  sourceId: number
+  createdAt: string
+  publishedAt: string | null
+  deleted: boolean
+  values: {
+    title: string
+    description: string
+    coverMediaId: string | null
+    tags: { label: string; color: 'emerald' | 'blue' | 'amber' | 'sky' | 'rose' | 'slate' }[]
+    links: { kind: 'source' | 'demo' | 'docs' | 'download'; href: string }[]
+    progress: 'active' | 'dev' | 'archived'
+    status: 'draft' | 'published' | 'withdrawn'
     sortOrder: number
   }
 }
@@ -210,6 +228,7 @@ export async function parseContentPackage(buffer: Buffer): Promise<ContentPackag
     'moments',
     'guestbook',
     'gallery',
+    'projects',
     'gallerySettings',
     'folders',
     'tags',
@@ -219,14 +238,15 @@ export async function parseContentPackage(buffer: Buffer): Promise<ContentPackag
   ])
   if (
     source.format !== 'tixxin-content' ||
-    ![1, 2, 3, 4].includes(Number(source.version)) ||
+    ![1, 2, 3, 4, 5].includes(Number(source.version)) ||
     typeof source.version !== 'number'
   )
     throw new BadRequestException('不支持的内容包格式或版本')
   if (source.version === 1 && source.moments !== undefined) fail('v1 不支持朋友圈字段')
   if (Number(source.version) < 3 && source.guestbook !== undefined) fail('v1/v2 不支持留言字段')
-  if (source.version !== 4 && (source.gallery !== undefined || source.gallerySettings !== undefined))
+  if (Number(source.version) < 4 && (source.gallery !== undefined || source.gallerySettings !== undefined))
     fail('v1/v2/v3 不支持图库字段或器材配置')
+  if (source.version !== 5 && source.projects !== undefined) fail('v1/v2/v3/v4 不支持项目字段')
   const mediaIncluded = boolean(source.mediaIncluded, 'mediaIncluded')
   let commentsTotal = 0
   const posts = array(source.posts, 'posts', 1000).map((value, index): PackagePost => {
@@ -392,7 +412,7 @@ export async function parseContentPackage(buffer: Buffer): Promise<ContentPackag
       }
     },
   )
-  const gallery = array(source.version === 4 ? source.gallery : [], 'gallery', 3000).map(
+  const gallery = array(Number(source.version) >= 4 ? source.gallery : [], 'gallery', 3000).map(
     (value, index): PackageGalleryPhoto => {
       const path = `gallery[${index}]`
       const row = record(value, path, ['sourceId', 'createdAt', 'publishedAt', 'deleted', 'values'])
@@ -439,12 +459,13 @@ export async function parseContentPackage(buffer: Buffer): Promise<ContentPackag
   )
   if (new Set(gallery.map((photo) => photo.sourceId)).size !== gallery.length) fail('重复图库作品编号')
   let gallerySettings: ContentPackage['gallerySettings'] = null
-  if (source.version === 4) {
+  if (Number(source.version) >= 4) {
     const settings = record(source.gallerySettings, 'gallerySettings', ['gear'])
     gallerySettings = {
       gear: array(settings.gear, 'gallerySettings.gear', 12).map((value) => {
         const row = record(value, '图库器材', ['icon', 'name', 'description'])
-        if (!['lucide:camera', 'lucide:circle', 'lucide:smartphone'].includes(String(row.icon))) fail('图库器材图标')
+        if (typeof row.icon !== 'string' || !['lucide:camera', 'lucide:circle', 'lucide:smartphone'].includes(row.icon))
+          fail('图库器材图标')
         return {
           icon: row.icon as 'lucide:camera' | 'lucide:circle' | 'lucide:smartphone',
           name: text(row.name, '图库器材名称', 80, 1).trim(),
@@ -453,6 +474,89 @@ export async function parseContentPackage(buffer: Buffer): Promise<ContentPackag
       }),
     }
   }
+  const projects = array(source.version === 5 ? source.projects : [], 'projects', 2000).map(
+    (value, index): PackageProject => {
+      const path = `projects[${index}]`
+      const row = record(value, path, ['sourceId', 'createdAt', 'publishedAt', 'deleted', 'values'])
+      const values = record(row.values, `${path}.values`, [
+        'title',
+        'description',
+        'coverMediaId',
+        'tags',
+        'links',
+        'progress',
+        'status',
+        'sortOrder',
+      ])
+      const coverMediaId =
+        values.coverMediaId === null ? null : text(values.coverMediaId, `${path}.coverMediaId`, 36, 1)
+      if (coverMediaId !== null && !isUUID(coverMediaId, '4')) fail(`${path}.coverMediaId`)
+      if (
+        typeof values.progress !== 'string' ||
+        !['active', 'dev', 'archived'].includes(values.progress) ||
+        typeof values.status !== 'string' ||
+        !['draft', 'published', 'withdrawn'].includes(values.status)
+      )
+        fail(`${path}.progress/status`)
+      if (
+        !Number.isInteger(values.sortOrder) ||
+        Number(values.sortOrder) < -1000000 ||
+        Number(values.sortOrder) > 1000000
+      )
+        fail(`${path}.sortOrder`)
+      const tagLabels = new Set<string>()
+      const tags = array(values.tags, `${path}.tags`, 20)
+        .map((value): PackageProject['values']['tags'][number] => {
+          const tag = record(value, `${path}.tags`, ['label', 'color'])
+          if (
+            typeof tag.color !== 'string' ||
+            !['emerald', 'blue', 'amber', 'sky', 'rose', 'slate'].includes(tag.color)
+          )
+            fail(`${path}.tags.color`)
+          return {
+            label: text(tag.label, `${path}.tags.label`, 40, 1).trim(),
+            color: tag.color as PackageProject['values']['tags'][number]['color'],
+          }
+        })
+        .filter((tag) => {
+          const key = tag.label.toLowerCase()
+          if (tagLabels.has(key)) return false
+          tagLabels.add(key)
+          return true
+        })
+      const kinds = new Set<string>()
+      const links = array(values.links, `${path}.links`, 4).map((value): PackageProject['values']['links'][number] => {
+        const link = record(value, `${path}.links`, ['kind', 'href'])
+        const kind = text(link.kind, `${path}.links.kind`, 20, 1)
+        if (!['source', 'demo', 'docs', 'download'].includes(kind) || kinds.has(kind)) fail(`${path}.links.kind`)
+        kinds.add(kind)
+        const href = text(link.href, `${path}.links.href`, 2048, 1).trim()
+        if (!/^https?:\/\//i.test(href)) fail(`${path}.links.href`)
+        try {
+          return { kind: kind as PackageProject['values']['links'][number]['kind'], href: projectUrl(href) }
+        } catch {
+          return fail(`${path}.links.href`)
+        }
+      })
+      return {
+        sourceId: number(row.sourceId, `${path}.sourceId`),
+        createdAt: date(row.createdAt, `${path}.createdAt`),
+        publishedAt: row.publishedAt === null ? null : date(row.publishedAt, `${path}.publishedAt`),
+        deleted: boolean(row.deleted, `${path}.deleted`),
+        values: {
+          title: text(values.title, `${path}.title`, 160, 1).trim(),
+          description: text(values.description, `${path}.description`, 5000).trim(),
+          coverMediaId: coverMediaId?.toLowerCase() ?? null,
+          tags,
+          links,
+          progress: values.progress as PackageProject['values']['progress'],
+          status: values.status as PackageProject['values']['status'],
+          sortOrder: Number(values.sortOrder),
+        },
+      }
+    },
+  )
+  if (new Set(projects.map((project) => project.sourceId)).size !== projects.length) fail('重复项目编号')
   const guestbookById = new Map(guestbook.map((message) => [message.sourceId, message]))
   if (guestbookById.size !== guestbook.length) fail('重复留言编号')
   const checked = new Set<number>()
@@ -595,7 +699,7 @@ export async function parseContentPackage(buffer: Buffer): Promise<ContentPackag
   if (new Set(media.map((item) => item.id)).size !== media.length) fail('重复媒体编号')
   return {
     format: 'tixxin-content',
-    version: 4,
+    version: 5,
     exportedAt: date(source.exportedAt, '导出时间'),
     mediaIncluded,
     posts,
@@ -603,6 +707,7 @@ export async function parseContentPackage(buffer: Buffer): Promise<ContentPackag
     moments,
     guestbook,
     gallery,
+    projects,
     gallerySettings,
     folders,
     tags,
