@@ -14,7 +14,8 @@ import { AuditEntry } from '../entities/audit-entry.entity'
 import { lockMedia, synchronizeMediaReferences } from '../modules/media/media-references'
 import { momentValues, momentUrl } from '../modules/moment/moment-values'
 import { mockMoments } from '../../../../frontend/web-blog/app/features/moment/mock'
-import { createFullBackup } from '../../scripts/full-backup.mjs'
+import { createDevelopmentBackup } from './development-backup'
+import type { DevelopmentBackupOptions } from './development-backup'
 
 const actions = [
   'status',
@@ -97,7 +98,11 @@ async function counts(orm: MikroORM) {
   }
   return result
 }
-export async function runDevDatabase(args: string[], write = (text: string) => process.stdout.write(text + '\n')) {
+export async function runDevDatabase(
+  args: string[],
+  write = (text: string) => process.stdout.write(text + '\n'),
+  backupOptions: DevelopmentBackupOptions = {},
+) {
   const input = options(args)
   const url = new URL(process.env.DATABASE_URL!)
   const database = decodeURIComponent(url.pathname.slice(1))
@@ -150,7 +155,7 @@ export async function runDevDatabase(args: string[], write = (text: string) => p
       'remove-samples': '仅删除未编辑且互动仍为原始样本的开发动态；有新增、编辑或删除互动的内容保留',
       'clear-moments': '清空全部朋友圈正文、互动及提交记录；保留其他业务、账号、站点和媒体文件',
       'clear-content':
-        '清空文章、闪念、朋友圈、留言、评论、目录和导入票据；保留账号、站点、审核设置、媒体、样本归属账本和审计',
+        '清空文章、闪念、朋友圈、留言、图库、评论、目录和导入票据；保留账号、站点、审核设置、媒体、样本归属账本和审计',
       reset:
         '重建全部应用表，账号、配置、内容和媒体索引全部删除；迁移生成默认配置，磁盘媒体和备份保留，需要重新创建管理员',
     }[input.action]
@@ -195,7 +200,7 @@ export async function runDevDatabase(args: string[], write = (text: string) => p
     }
     if (requiresIdle) await requireIdle(orm.em.fork(), application)
     // 备份使用已有一致快照/媒体流程；失败时不执行后续写入。
-    const backup = await createFullBackup()
+    const backup = await createDevelopmentBackup(backupOptions)
     write(`写入前完整备份：${backup.directory}`)
     if (requiresIdle) await requireIdle(orm.em.fork(), application)
     let samplesNormalized = 0
@@ -298,6 +303,7 @@ export async function runDevDatabase(args: string[], write = (text: string) => p
           })
         else await em.nativeDelete(Moment, {})
         if (input.action === 'clear-content') {
+          await em.execute('delete from gallery_photo')
           await em.execute('delete from guestbook_message')
           await em.execute('delete from flash_note')
           await em.execute('delete from post')

@@ -12,16 +12,24 @@ async function main() {
   const { seedDevelopmentData } = await import('../src/seeders/seed-development-data')
   const { removeDevelopmentData } = await import('../src/seeders/remove-development-data')
   const run = (apply = false) =>
-    removeDevelopmentData(['--dataset', 'all', ...(apply ? ['--apply', '--confirm', target] : [])], () => undefined)
+    removeDevelopmentData(
+      ['--dataset', 'all', ...(apply ? ['--apply', '--confirm', target] : [])],
+      () => undefined,
+      fixture.backupOptions,
+    )
   try {
     const em = fixture.testOrm.em.fork()
     const originals = await em.execute('select * from post order by id')
-    await seedDevelopmentData(['--dataset', 'all', '--apply', '--confirm', target], () => undefined)
+    await seedDevelopmentData(
+      ['--dataset', 'all', '--apply', '--confirm', target],
+      () => undefined,
+      fixture.backupOptions,
+    )
     const ownership = await em.execute('select * from development_fixture order by key')
-    assert.equal(ownership.length, 109)
+    assert.equal(ownership.length, 135)
     const initial = await run()
     assert.equal(initial.preview, true)
-    assert.equal(initial.remove.length, 109, JSON.stringify(initial.preserve))
+    assert.equal(initial.remove.length, 135, JSON.stringify(initial.preserve))
     assert.equal(initial.preserve.length, 0)
     await assert.rejects(removeDevelopmentData(['--dataset', 'all', '--apply', '--confirm', 'wrong']), /确认/)
     await assert.rejects(removeDevelopmentData([]), /显式指定/)
@@ -87,11 +95,15 @@ async function main() {
     assert.equal((await after.execute('select require_context from content_context'))[0].require_context, true)
     const repeated = await run()
     assert.equal(repeated.remove.length, 0)
-    const reseeded = await seedDevelopmentData(['--dataset', 'all', '--apply', '--confirm', target], () => undefined)
+    const reseeded = await seedDevelopmentData(
+      ['--dataset', 'all', '--apply', '--confirm', target],
+      () => undefined,
+      fixture.backupOptions,
+    )
     assert.equal(reseeded.created.length, 0)
     assert.equal(reseeded.ready, false)
     process.stdout.write(
-      '样本清理通过：109项归属预览、确认和连接保护、用户编辑/回复/互动/媒体保留、独立备份、账本与文件保留、重复补种不复活\n',
+      '样本清理通过：135项归属预览、确认和连接保护、用户编辑/回复/互动/媒体保留、独立备份、账本与文件保留、重复补种不复活\n',
     )
   } finally {
     process.env.NODE_ENV = 'test'

@@ -7,6 +7,7 @@ import { randomBytes } from 'node:crypto'
 import { createRequire } from 'node:module'
 import { fileURLToPath } from 'node:url'
 import { createMediaTestDirectory } from './media-directory.mjs'
+import { createFixtureBackupDirectory } from './fixture-backup-directory.mjs'
 
 const require = createRequire(import.meta.url)
 const backendDirectory = fileURLToPath(new URL('../', import.meta.url))
@@ -21,6 +22,7 @@ export async function createBrowserTestApp(corsOrigin) {
   const { mikroOrmOptions } = require('../dist/config/mikro-orm.options.js')
   const admin = await MikroORM.init({ ...mikroOrmOptions, debug: false })
   const mediaDirectory = createMediaTestDirectory()
+  const backupDirectory = createFixtureBackupDirectory()
   const database = `tixxin_browser_${Date.now()}_${process.pid}`
   assert(/^tixxin_browser_\d+_\d+$/.test(database))
   let app
@@ -33,6 +35,7 @@ export async function createBrowserTestApp(corsOrigin) {
     }
     await admin.close(true)
     mediaDirectory.cleanup()
+    backupDirectory.cleanup()
   }
   try {
     await admin.em.getConnection().execute(`create database "${database}"`)
@@ -120,6 +123,7 @@ export async function createBrowserTestApp(corsOrigin) {
       accountUsername,
       mediaSample,
       testOrm: orm,
+      backupOptions: { backupRoot: backupDirectory.directory },
       close,
       stopServices: async () => {
         await app?.close()

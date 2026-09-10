@@ -1,6 +1,10 @@
 /** @file development-data-catalog.ts @description 日常开发数据覆盖目录；只读统计真实可见内容，不把页面存在当作业务完成 */
 import type { EntityManager } from '@mikro-orm/postgresql'
 import { visibleCommentSql } from '../modules/comment/comment-visibility'
+import { ConfigService } from '@nestjs/config'
+import { LocalMediaStorage } from '../modules/media/media-storage'
+import { fixtureHash, FIXTURE_TABLES } from './fixture-ledger'
+import type { FixtureKind } from './fixture-ledger'
 
 type Counts = Record<string, number>
 interface Domain {
@@ -11,6 +15,9 @@ interface Domain {
   searchColumn?: string
   query: string
   required: Record<string, number>
+  dataset?: string
+  source?: string
+  scenarios?: string
 }
 const publicPost = "p.status='published' and p.deleted_at is null"
 export const DATA_DOMAINS: Domain[] = [
@@ -51,6 +58,48 @@ export const DATA_DOMAINS: Domain[] = [
     required: { published: 16, drafts: 1, archived: 1, recent: 1, images: 1 },
   },
   {
+    id: 'gallery',
+    entry: '/gallery',
+    admin: '/admin/gallery',
+    table: 'gallery_photo',
+    searchColumn: 'title',
+    dataset: 'gallery-v1',
+    source: 'PostgreSQL gallery_photo、media_asset、media_reference；MEDIA_DIRECTORY 本地文件',
+    scenarios: '两页公开作品、草稿撤回、分类排序、长短说明、缺省字段、横竖比例、近期历史拍摄日期及共用图片',
+    query: `select count(*)::int as total,
+      count(*) filter(where g.status='published' and g.deleted_at is null)::int as published,
+      count(*) filter(where g.status='draft' and g.deleted_at is null)::int as drafts,
+      count(*) filter(where g.status='withdrawn' and g.deleted_at is null)::int as withdrawn,
+      count(distinct nullif(g.category,'')) filter(where g.status='published' and g.deleted_at is null)::int as categories,
+      count(*) filter(where g.status='published' and g.deleted_at is null and g.taken_on>=current_date-30)::int as recent,
+      count(*) filter(where g.status='published' and g.deleted_at is null and g.taken_on<current_date-365)::int as historical,
+      count(*) filter(where g.deleted_at is null and g.taken_on is null)::int as undated,
+      count(*) filter(where g.deleted_at is null and g.sort_order<>0)::int as ordered,
+      count(*) filter(where g.deleted_at is null and length(g.description)>100)::int as "longText",
+      count(*) filter(where g.deleted_at is null and g.description='')::int as "emptyDescription",
+      count(*) filter(where g.status='published' and g.deleted_at is null and m.width>m.height)::int as landscape,
+      count(*) filter(where g.status='published' and g.deleted_at is null and m.width<m.height)::int as portrait,
+      count(distinct g.media_id) filter(where g.deleted_at is null and m.deleted_at is null)::int as images,
+      count(*) filter(where g.deleted_at is null and exists(select 1 from media_reference r where r.gallery_photo_id=g.id and r.asset_id=g.media_id))::int as references
+      from gallery_photo g join media_asset m on m.id=g.media_id`,
+    required: {
+      published: 13,
+      drafts: 1,
+      withdrawn: 1,
+      categories: 3,
+      recent: 1,
+      historical: 1,
+      undated: 1,
+      ordered: 1,
+      longText: 1,
+      emptyDescription: 1,
+      landscape: 1,
+      portrait: 1,
+      images: 4,
+      references: 18,
+    },
+  },
+  {
     id: 'media',
     entry: '/api/v1/media/:key',
     admin: '/admin/media',
@@ -84,13 +133,6 @@ export const STATIC_DATA_DOMAINS = [
     storage: 'demo',
     scenarios: '列表、技术栈、分类',
   },
-  {
-    id: 'gallery',
-    entry: '/gallery',
-    source: 'features/gallery/mock.ts',
-    storage: 'demo',
-    scenarios: '图片、分类、灯箱',
-  },
   { id: 'links', entry: '/links', source: 'features/link/mock.ts', storage: 'demo', scenarios: '友链、规则' },
   {
     id: 'bookmarks',
@@ -100,6 +142,51 @@ export const STATIC_DATA_DOMAINS = [
     scenarios: '分组、编辑、导入导出；随浏览器隔离',
   },
 ]
+
+async function inspectOwnership(em: EntityManager, dataset: string, hasLedger: boolean) {
+  const report = {
+    dataset,
+    total: 0,
+    original: 0,
+    edited: [] as string[],
+    deleted: [] as string[],
+    state: 'not-seeded',
+  }
+  if (!hasLedger) return report
+  const ownership = await em.execute<{ key: string; kind: FixtureKind; resource_id: string; snapshot_hash: string }[]>(
+    'select key,kind,resource_id,snapshot_hash from development_fixture where dataset=? order by key',
+    [dataset],
+  )
+  report.total = ownership.length
+  for (const item of ownership) {
+    const table = FIXTURE_TABLES[item.kind]
+    if (!table) throw new Error('样本归属含未知资源类型，请先核对账本')
+    const [row] = await em.execute<Record<string, unknown>[]>(`select * from "${table}" where id=?`, [item.resource_id])
+    if (!row || row.deleted_at) report.deleted.push(item.key)
+    else if (fixtureHash(row) !== item.snapshot_hash) report.edited.push(item.key)
+    else report.original++
+  }
+  report.state = report.deleted.length
+    ? 'deleted-fixtures'
+    : report.edited.length
+      ? 'edited-fixtures'
+      : report.total
+        ? 'original'
+        : 'not-seeded'
+  return report
+}
+
+async function inspectGalleryFiles(em: EntityManager) {
+  const storage = new LocalMediaStorage(new ConfigService(process.env))
+  const assets = await em.execute<{ id: string; storage_key: string; deleted_at: Date | null }[]>(
+    'select distinct m.id,m.storage_key,m.deleted_at from media_asset m join gallery_photo g on g.media_id=m.id where g.deleted_at is null',
+  )
+  const unavailable: string[] = []
+  for (const asset of assets) {
+    if (asset.deleted_at || !(await storage.readIfExists(asset.storage_key))) unavailable.push(asset.id)
+  }
+  return { checked: assets.length, available: assets.length - unavailable.length, unavailable }
+}
 export async function inspectDataCatalog(em: EntityManager, domain?: string, search?: string) {
   if (domain && !DATA_DOMAINS.some((item) => item.id === domain)) throw new Error('不支持的数据域')
   const tables = new Set(
@@ -125,6 +212,12 @@ export async function inspectDataCatalog(em: EntityManager, domain?: string, sea
     const missing = Object.entries(item.required)
       .filter(([name, minimum]) => (counts?.[name] ?? 0) < minimum)
       .map(([name, minimum]) => `${name} 至少${minimum}项，当前${counts?.[name] ?? 0}项`)
+    const ownership = item.dataset
+      ? await inspectOwnership(em, item.dataset, tables.has('development_fixture'))
+      : undefined
+    const media = item.id === 'gallery' ? await inspectGalleryFiles(em) : undefined
+    if (media?.unavailable.length)
+      missing.push(`媒体文件不可用：${media.unavailable.length}项；从完整备份恢复文件，不重新补种覆盖作品`)
     let filter: { matched: number; state: string } | null = null
     if (search !== undefined && item.searchColumn) {
       const value = `%${search.slice(0, 200).replace(/[\\%_]/g, (char) => '\\' + char)}%`
@@ -141,7 +234,25 @@ export async function inspectDataCatalog(em: EntityManager, domain?: string, sea
       domain: item.id,
       entry: item.entry,
       admin: item.admin,
-      state: missing.length ? 'missing-data' : 'ready',
+      ...(item.source ? { source: item.source, scenarios: item.scenarios } : {}),
+      ...(ownership ? { ownership } : {}),
+      ...(media ? { media } : {}),
+      state: missing.length
+        ? ownership?.deleted.length || ownership?.edited.length
+          ? 'changed-fixtures'
+          : 'missing-data'
+        : 'ready',
+      ...(item.dataset
+        ? {
+            repair: ownership?.deleted.length
+              ? '样本已被删除；保留归属且不会复活。需要恢复时使用已核对的完整备份，或通过后台新增内容。'
+              : ownership?.edited.length
+                ? '已编辑样本保持原样；从后台核对缺少场景并补充内容，不清空或覆盖已有作品。'
+                : missing.length
+                  ? `corepack pnpm db:dev seed-data --dataset ${item.dataset}；先预览并核对目标，媒体缺失从备份恢复。`
+                  : null,
+          }
+        : {}),
       counts,
       missing,
       filter,

@@ -13,7 +13,11 @@ async function main() {
   const target = decodeURIComponent(new URL(process.env.DATABASE_URL!).pathname.slice(1))
   const { seedDevelopmentData } = await import('../src/seeders/seed-development-data')
   const run = (apply = false) =>
-    seedDevelopmentData(['--dataset', 'core-v1', ...(apply ? ['--apply', '--confirm', target] : [])], () => undefined)
+    seedDevelopmentData(
+      ['--dataset', 'core-v1', ...(apply ? ['--apply', '--confirm', target] : [])],
+      () => undefined,
+      fixture.backupOptions,
+    )
   try {
     const em = fixture.testOrm.em.fork()
     const preview = await run()
