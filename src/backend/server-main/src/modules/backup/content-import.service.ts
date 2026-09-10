@@ -24,6 +24,7 @@ import { PostFolder } from '../../entities/post-folder.entity'
 import { PostTag } from '../../entities/post-tag.entity'
 import { AdminSession } from '../../entities/admin-session.entity'
 import { GallerySettings } from '../../entities/gallery-settings.entity'
+import { LinkSettings } from '../../entities/link-settings.entity'
 import { MediaStorage } from '../media/media-storage'
 import { lockMedia, synchronizeMediaReferences } from '../media/media-references'
 import { lockTaxonomy } from '../post/taxonomy-lock'
@@ -40,6 +41,7 @@ import { importMoments } from './content-import-moments'
 import { importGuestbook } from './content-import-guestbook'
 import { importGallery } from './content-import-gallery'
 import { importProjects } from './content-import-projects'
+import { importLinks } from './content-import-links'
 import { lockGuestbook } from '../guestbook/guestbook-write.service'
 type Admin = { id: string; sessionVersion: number; sessionId: string }
 type Options = { requestId: string; strategy: 'skip' | 'copy'; includeSettings: boolean }
@@ -62,6 +64,7 @@ export class ContentImportService {
       confirmation: packageHash(job.plan),
       settingsPreview: job.includeSettings ? job.payload?.site : undefined,
       gallerySettingsPreview: job.includeSettings ? job.payload?.gallerySettings : undefined,
+      linkSettingsPreview: job.includeSettings ? job.payload?.linkSettings : undefined,
       strategy: job.strategy,
       includeSettings: job.includeSettings,
       plan,
@@ -245,6 +248,7 @@ export class ContentImportService {
           guestbook: [],
           gallery: [],
           projects: [],
+          links: [],
           comments: 0,
           media: 0,
           files: 0,
@@ -363,6 +367,7 @@ export class ContentImportService {
           await importGuestbook(em, payload, current, result)
           await importGallery(em, payload, current, result)
           await importProjects(em, payload, current, result)
+          await importLinks(em, payload, current, result)
           if (job.includeSettings) {
             await this.sites.save({ ...payload.site, revision: current.siteRevision }, '从内容包迁入站点资料')
             await this.comments.savePolicy({
@@ -374,6 +379,14 @@ export class ContentImportService {
               if (settings.revision !== current.gallerySettingsRevision)
                 throw new ConflictException('图库器材配置已变化，请重新预览')
               settings.gear = payload.gallerySettings.gear
+              settings.revision += 1
+              settings.updatedAt = new Date()
+            }
+            if (payload.linkSettings) {
+              const settings = await em.findOneOrFail(LinkSettings, { id: 'default' }, { refresh: true })
+              if (settings.revision !== current.linkSettingsRevision)
+                throw new ConflictException('友链规则已变化，请重新预览')
+              settings.rules = payload.linkSettings.rules
               settings.revision += 1
               settings.updatedAt = new Date()
             }

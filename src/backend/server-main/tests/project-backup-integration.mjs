@@ -97,7 +97,7 @@ try {
   const exported = await request('/admin/backup/export', 'POST', { mediaIncluded: true })
   assert.equal(exported.status, 201)
   const bundle = exported.data
-  assert.equal(bundle.version, 5)
+  assert.equal(bundle.version, 6)
   assert.equal(bundle.projects.length, 4)
   assert(!JSON.stringify(bundle.projects).includes('requestId'))
   assert(!JSON.stringify(bundle.projects).includes('revision'))
@@ -135,10 +135,12 @@ try {
   assert.equal(same.status, 201)
   assert.equal(same.data.data.plan.counts.projects, 0)
   assert.equal(same.data.data.plan.projects.length, 4)
-  for (const version of [1, 2, 3, 4]) {
+  for (const version of [1, 2, 3, 4, 5]) {
     const legacy = structuredClone(bundle)
     legacy.version = version
-    delete legacy.projects
+    if (version < 5) delete legacy.projects
+    delete legacy.links
+    delete legacy.linkSettings
     if (version < 4) {
       delete legacy.gallery
       delete legacy.gallerySettings
@@ -148,7 +150,8 @@ try {
     const accepted = await preview(legacy)
     assert.equal(accepted.status, 201, `旧v${version}仍应兼容`)
     assert.equal(accepted.data.data.plan.counts.projects, 0)
-    assert.equal((await preview({ ...legacy, projects: [] })).status, 400)
+    if (version < 5) assert.equal((await preview({ ...legacy, projects: [] })).status, 400)
+    assert.equal((await preview({ ...legacy, links: [] })).status, 400)
   }
   const missingRequired = structuredClone(bundle)
   delete missingRequired.projects
