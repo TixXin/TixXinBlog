@@ -480,6 +480,7 @@ export async function verifyRestoredApplication(
   image,
   accessSecret = randomBytes(48).toString('hex'),
   oldToken = '',
+  credentials = {},
 ) {
   if (!/^[a-z0-9][a-z0-9./:_-]+$/.test(image)) throw new Error('后端镜像名称不合法')
   const id = randomUUID(),
@@ -513,7 +514,10 @@ export async function verifyRestoredApplication(
           database,
           user,
           password,
-          "select json_build_object('photos',(select count(*) from gallery_photo where status='published' and deleted_at is null),'gear',(select gear from gallery_settings where id='default'))",
+          `select json_build_object('photos',(select count(*) from gallery_photo where status='published' and deleted_at is null),
+            'gear',(select gear from gallery_settings where id='default'),
+            'photo',(select row_to_json(g) from (select id,title,taken_on as "takenOn",media_id as "mediaId",status,sort_order as "sortOrder",revision
+              from gallery_photo where deleted_at is null order by id limit 1) g))`,
         ),
       )
     : null
@@ -568,19 +572,85 @@ export async function verifyRestoredApplication(
           const denied=await fetch('http://127.0.0.1:3000/api/v1/admin/posts',{headers:{Authorization:'Bearer '+process.env.VERIFY_OLD_ACCESS_TOKEN}});
           if(denied.status!==401)throw Error('old token');
         }
-        process.stdout.write(JSON.stringify({ready:true,publicPosts:body.data.total,publicGalleryPhotos:gallery?.photos??null,galleryGearVerified:!!gallery,mediaVerified:media.length,oldAuthorizationChecked:!!process.env.VERIFY_OLD_ACCESS_TOKEN,oldAuthorizationRejected:process.env.VERIFY_OLD_ACCESS_TOKEN?true:null}));
-      })().catch(()=>process.exit(1))`
+        let freshLoginVerified=false, galleryAdminVerified=false, galleryOldContextRejected=false, galleryFreshWriteAllowed=false;
+        if(process.env.VERIFY_RESTORED_USERNAME && process.env.VERIFY_RESTORED_PASSWORD){
+          const login=await fetch('http://127.0.0.1:3000/api/v1/auth/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({username:process.env.VERIFY_RESTORED_USERNAME,password:process.env.VERIFY_RESTORED_PASSWORD})});
+          if(!login.ok)throw Error('fresh login');
+          const token=(await login.json()).data.accessToken;
+          freshLoginVerified=true;
+          if(gallery?.photo){
+            const headers={Authorization:'Bearer '+token,'Content-Type':'application/json'};
+            const path='http://127.0.0.1:3000/api/v1/admin/gallery/'+gallery.photo.id;
+            const response=await fetch(path,{headers});
+            const current=(await response.json()).data;
+            if(!response.ok||Object.entries(gallery.photo).some(([key,value])=>current[key]!==value))throw Error('restored gallery admin');
+            const settings=await fetch('http://127.0.0.1:3000/api/v1/admin/gallery/settings',{headers});
+            if(!settings.ok||JSON.stringify((await settings.json()).data.gear)!==JSON.stringify(gallery.gear))throw Error('restored gallery admin settings');
+            galleryAdminVerified=true;
+            const payload=JSON.stringify({revision:current.revision,sortOrder:current.sortOrder});
+            const missing=await fetch(path,{method:'PATCH',headers,body:payload});
+            if(missing.status!==428)throw Error('missing restored context');
+            if(process.env.VERIFY_OLD_CONTENT_CONTEXT){
+              const stale=await fetch(path,{method:'PATCH',headers:{...headers,'X-Content-Context':process.env.VERIFY_OLD_CONTENT_CONTEXT},body:payload});
+              if(stale.status!==409)throw Error('stale restored context');
+              galleryOldContextRejected=true;
+            }
+            const site=await fetch('http://127.0.0.1:3000/api/v1/site');
+            const freshContext=site.headers.get('x-content-context');
+            if(!freshContext||freshContext===process.env.VERIFY_OLD_CONTENT_CONTEXT)throw Error('restored context generation');
+            const saved=await fetch(path,{method:'PATCH',headers:{...headers,'X-Content-Context':freshContext},body:payload});
+            if(!saved.ok||(await saved.json()).data.revision!==current.revision+1)throw Error('fresh restored write');
+            galleryFreshWriteAllowed=true;
+          }
+        }
+        process.stdout.write(JSON.stringify({ready:true,publicPosts:body.data.total,publicGalleryPhotos:gallery?.photos??null,galleryGearVerified:!!gallery,mediaVerified:media.length,oldAuthorizationChecked:!!process.env.VERIFY_OLD_ACCESS_TOKEN,oldAuthorizationRejected:process.env.VERIFY_OLD_ACCESS_TOKEN?true:null,freshLoginVerified,galleryAdminVerified,galleryOldContextRejected,galleryFreshWriteAllowed}));
+      })().catch((error)=>process.stdout.write(JSON.stringify({errorStage:error.message})))`
+    let ready = false
     for (let i = 0; i < 50; i++) {
       try {
-        const result = await command(['exec', '-e', 'VERIFY_OLD_ACCESS_TOKEN', container, 'node', '-e', source], {
-          env: { VERIFY_OLD_ACCESS_TOKEN: oldToken },
-        })
-        return JSON.parse(result)
+        await command([
+          'exec',
+          container,
+          'node',
+          '-e',
+          "fetch('http://127.0.0.1:3000/ready').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))",
+        ])
+        ready = true
+        break
       } catch {
         await delay(500)
       }
     }
-    throw new Error('恢复后的后端接口验证未通过')
+    if (!ready) throw new Error('恢复后的后端就绪探测未通过')
+    // 只重复就绪探测；业务校验只运行一次，防止失败重试意外重复登录或写入。
+    const output = await command(
+      [
+        'exec',
+        '-e',
+        'VERIFY_OLD_ACCESS_TOKEN',
+        '-e',
+        'VERIFY_RESTORED_USERNAME',
+        '-e',
+        'VERIFY_RESTORED_PASSWORD',
+        '-e',
+        'VERIFY_OLD_CONTENT_CONTEXT',
+        container,
+        'node',
+        '-e',
+        source,
+      ],
+      {
+        env: {
+          VERIFY_OLD_ACCESS_TOKEN: oldToken,
+          VERIFY_RESTORED_USERNAME: credentials.username ?? '',
+          VERIFY_RESTORED_PASSWORD: credentials.password ?? '',
+          VERIFY_OLD_CONTENT_CONTEXT: credentials.oldContext ?? '',
+        },
+      },
+    )
+    const result = JSON.parse(output)
+    if (result.errorStage) throw new Error(`恢复后的后端接口验证未通过：${String(result.errorStage).slice(0, 100)}`)
+    return result
   } finally {
     const label = await command([
       'inspect',
