@@ -86,13 +86,15 @@
                       ? '图库作品'
                       : item.kind === 'project'
                         ? '项目封面'
-                        : item.kind === 'moment'
-                          ? '朋友圈动态'
-                          : item.kind === 'moment-comment'
-                            ? '动态评论'
-                            : item.kind === 'guestbook'
-                              ? '留言'
-                              : '闪念'
+                        : item.kind === 'link'
+                          ? '友链Logo'
+                          : item.kind === 'moment'
+                            ? '朋友圈动态'
+                            : item.kind === 'moment-comment'
+                              ? '动态评论'
+                              : item.kind === 'guestbook'
+                                ? '留言'
+                                : '闪念'
           }}
         </li>
       </ul>

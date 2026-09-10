@@ -5,6 +5,7 @@ import { mockNuxtImport, mountSuspended } from '@nuxt/test-utils/runtime'
 import { useSearch } from '../../app/composables/useSearch'
 const mocks = vi.hoisted(() => ({ projects: vi.fn(), posts: vi.fn() }))
 mockNuxtImport('useProjectRepository', () => () => ({ list: mocks.projects }))
+mockNuxtImport('useLinkRepository', () => () => ({ list: async () => ({ items: [] }) }))
 vi.mock('../../app/features/post/api', () => ({ fetchPostPage: mocks.posts }))
 const wrappers: { unmount(): void }[] = []
 beforeEach(() => {

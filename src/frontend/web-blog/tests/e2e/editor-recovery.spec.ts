@@ -3,12 +3,13 @@ import { expect, test } from '@playwright/test'
 import { randomUUID } from 'node:crypto'
 import { projectForm } from '../../app/features/project/editor'
 import { galleryForm } from '../../app/features/gallery/editor'
+import { linkForm } from '../../app/features/link/editor'
 import { captureMotion, prepareMotionCapture } from './motionScreenshot'
 test.beforeEach(({ page, browserName }) => {
   expect(process.env.E2E_ISOLATED).toBe('true')
   prepareMotionCapture(page, browserName)
 })
-for (const domain of ['project', 'gallery'] as const) {
+for (const domain of ['project', 'gallery', 'link'] as const) {
   test(`${domain} 旧键完整副本迁入独立代次，恢复后新输入不覆盖旧资料`, async ({ page }, testInfo) => {
     const login = await page.request.post('/api/v1/auth/login', {
       data: { username: process.env.E2E_USERNAME, password: process.env.E2E_PASSWORD },
@@ -20,10 +21,16 @@ for (const domain of ['project', 'gallery'] as const) {
     if (domain === 'gallery')
       mediaId = (await (await page.request.get('/api/v1/admin/gallery?pageSize=1', { headers })).json()).data.items[0]
         .mediaId
-    const path = domain === 'project' ? 'projects' : 'gallery'
+    const path = domain === 'project' ? 'projects' : domain === 'gallery' ? 'gallery' : 'links'
     const created = await page.request.post(`/api/v1/admin/${path}`, {
       headers,
-      data: { requestId: randomUUID(), title: '当前内容库中的记录', ...(mediaId ? { mediaId } : {}) },
+      data: {
+        requestId: randomUUID(),
+        ...(domain === 'link'
+          ? { name: '当前内容库中的友链', url: `https://example.com/${randomUUID()}` }
+          : { title: '当前内容库中的记录' }),
+        ...(mediaId ? { mediaId } : {}),
+      },
     })
     expect(created.status()).toBe(201)
     const current = (await created.json()).data as { id: number }
@@ -44,17 +51,27 @@ for (const domain of ['project', 'gallery'] as const) {
             tags: [{ label: 'UnstoredTech', color: 'rose' }],
             links: [{ kind: 'docs', href: 'https://example.com/OnlyInDraft?version=Original' }],
           }
-        : {
-            ...galleryForm(),
-            title: '旧图库独有输入',
-            status: 'withdrawn',
-            sortOrder: 45,
-            category: '原分类',
-            takenOn: '2024-01-08',
-            location: '原地点',
-            device: '原器材',
-            mediaId: oldMedia,
-          }
+        : domain === 'gallery'
+          ? {
+              ...galleryForm(),
+              title: '旧图库独有输入',
+              status: 'withdrawn',
+              sortOrder: 45,
+              category: '原分类',
+              takenOn: '2024-01-08',
+              location: '原地点',
+              device: '原器材',
+              mediaId: oldMedia,
+            }
+          : {
+              ...linkForm(),
+              name: '旧友链独有输入',
+              status: 'withdrawn',
+              isFeatured: true,
+              sortOrder: 45,
+              url: 'https://example.com/OnlyInDraft?version=Original',
+              logoMediaId: oldMedia,
+            }
     const prefix = `tixxin-${domain}-editor:${auth.user.id}:${current.id}`
     const legacy = {
       version: 1,
@@ -75,17 +92,25 @@ for (const domain of ['project', 'gallery'] as const) {
     await page.setViewportSize({ width: 390, height: 960 })
     await page.goto(`/admin/${path}/${current.id}`)
     const copies = page.getByRole('region', {
-      name: domain === 'project' ? '另外保留的项目恢复副本' : '另外保留的图库恢复副本',
+      name:
+        domain === 'project'
+          ? '另外保留的项目恢复副本'
+          : domain === 'gallery'
+            ? '另外保留的图库恢复副本'
+            : '另外保留的友链恢复副本',
       exact: true,
     })
     await expect(copies).toContainText(oldMedia)
-    await expect(copies).toContainText(domain === 'project' ? 'OnlyInDraft?version=Original' : '2024-01-08')
-    await expect(copies).toContainText(domain === 'project' ? 'UnstoredTech' : '原器材')
+    await expect(copies).toContainText(domain !== 'gallery' ? 'OnlyInDraft?version=Original' : '2024-01-08')
+    await expect(copies).toContainText(domain === 'project' ? 'UnstoredTech' : domain === 'gallery' ? '原器材' : '推荐')
     await expect(copies.locator('img, a, input, button')).toHaveCount(0)
     if (domain === 'project')
       await expect(page.getByRole('combobox', { name: '项目进展', exact: true })).toHaveValue('dev')
     await page
-      .getByRole('textbox', { name: domain === 'project' ? '项目介绍' : '作品说明', exact: true })
+      .getByRole('textbox', {
+        name: domain === 'project' ? '项目介绍' : domain === 'gallery' ? '作品说明' : '友链站点介绍',
+        exact: true,
+      })
       .fill('当前内容库继续编辑的新输入')
     await expect
       .poll(() =>
@@ -95,7 +120,7 @@ for (const domain of ['project', 'gallery'] as const) {
     page.once('dialog', (dialog) => dialog.accept())
     await page.reload()
     await expect(copies).toContainText(oldMedia)
-    await expect(copies).toContainText(domain === 'project' ? 'OnlyInDraft?version=Original' : '原地点')
+    await expect(copies).toContainText(domain !== 'gallery' ? 'OnlyInDraft?version=Original' : '原地点')
     const retained = await page.evaluate(
       (key) =>
         Object.keys(sessionStorage)

@@ -42,7 +42,7 @@
           :action-label="filtered ? '清除筛选' : undefined"
           @action="clearFilters"
         />
-        <GalleryGrid v-else :photos="photos" @select="open" />
+        <GalleryGrid v-else :photos="photos" :ready="ready" @select="open" />
         <nav v-if="total !== null && (total > 12 || query.page > 1)" class="gallery-pagination" aria-label="图库分页">
           <button
             type="button"

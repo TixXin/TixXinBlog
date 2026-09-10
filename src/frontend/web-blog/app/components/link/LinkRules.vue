@@ -7,33 +7,31 @@
 
 <template>
   <section class="card link-rules">
-    <h3 class="link-rules__title">
-      <Icon name="lucide:link" size="14" /> 友链须知
-    </h3>
+    <h3 class="link-rules__title"><Icon name="lucide:link" size="14" /> 友链须知</h3>
     <div class="link-rules__list">
-      <div
-        v-for="rule in rules"
-        :key="rule.id"
-        class="link-rules__item"
-      >
-        <span class="link-rules__badge">{{ rule.id }}</span>
-        <p>{{ rule.text }}</p>
+      <div v-for="(rule, index) in rules" :key="index" class="link-rules__item">
+        <span class="link-rules__badge">{{ index + 1 }}</span>
+        <p>{{ rule }}</p>
       </div>
     </div>
+    <p v-if="!rules.length" class="link-rules__empty">暂无额外友链须知。</p>
   </section>
 </template>
 
 <script setup lang="ts">
-import type { LinkRule } from '~/features/link/types'
-
 defineProps<{
-  rules: LinkRule[]
+  rules: string[]
 }>()
 </script>
 
 <style lang="scss" scoped>
 .link-rules {
   padding: 1.25rem;
+  overflow-wrap: anywhere;
+}
+.link-rules__empty {
+  font-size: 0.8125rem;
+  color: var(--text-soft);
 }
 
 .link-rules__title {
