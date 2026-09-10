@@ -1,0 +1,180 @@
+/** @file gallery.service.ts @description 图库公开投影、稳定分页与带去重和版本保护的管理事务 */
+import { BadRequestException, ConflictException, Injectable, NotFoundException } from '@nestjs/common'
+import { EntityManager } from '@mikro-orm/postgresql'
+import { LockMode } from '@mikro-orm/core'
+import type { FilterQuery } from '@mikro-orm/core'
+import { GalleryPhoto } from '../../entities/gallery-photo.entity'
+import { GallerySettings } from '../../entities/gallery-settings.entity'
+import { MediaAsset } from '../../entities/media-asset.entity'
+import { MediaReference } from '../../entities/media-reference.entity'
+import { lockMedia, mediaUrl, synchronizeMediaReferences } from '../media/media-references'
+import { submissionHash } from '../moment/moment-values'
+import type { AdminGalleryQuery, GalleryQuery, SaveGalleryDto, SaveGallerySettingsDto } from './gallery.dto'
+
+const publicPhotos = { deletedAt: null, status: 'published' } as const
+function galleryId(id: number) {
+  if (!Number.isSafeInteger(id) || id < 1 || id > 2147483647) throw new BadRequestException('作品编号不合法')
+}
+@Injectable()
+export class GalleryService {
+  constructor(private readonly em: EntityManager) {}
+
+  serialize(photo: GalleryPhoto, admin = false) {
+    const result = {
+      id: photo.id,
+      title: photo.title,
+      description: photo.description,
+      src: mediaUrl(photo.media.id),
+      srcLarge: mediaUrl(photo.media.id),
+      width: photo.media.width,
+      height: photo.media.height,
+      format: photo.media.mimeType,
+      category: photo.category,
+      date: photo.takenOn ?? '',
+      location: photo.location,
+      device: photo.device,
+      publishedAt: photo.publishedAt?.toISOString() ?? null,
+    }
+    return admin
+      ? {
+          ...result,
+          mediaId: photo.media.id,
+          takenOn: photo.takenOn ?? null,
+          status: photo.status,
+          revision: photo.revision,
+          sortOrder: photo.sortOrder,
+          createdAt: photo.createdAt.toISOString(),
+          updatedAt: photo.updatedAt.toISOString(),
+        }
+      : result
+  }
+  async list(query: GalleryQuery | AdminGalleryQuery, admin = false) {
+    const where: FilterQuery<GalleryPhoto> = admin ? { deletedAt: null } : { ...publicPhotos }
+    const status = (query as AdminGalleryQuery).status
+    if (admin && status && status !== 'all') where.status = status
+    if (query.category !== undefined) where.category = query.category
+    if (query.q) {
+      const pattern = `%${query.q.replace(/[\\%_]/g, '\\$&')}%`
+      where.$or = ['title', 'description', 'location'].map((key) => ({ [key]: { $ilike: pattern } }))
+    }
+    const [items, total] = await this.em.findAndCount(GalleryPhoto, where, {
+      populate: ['media'],
+      orderBy: { sortOrder: 'DESC', id: 'DESC' },
+      limit: query.pageSize,
+      offset: (query.page - 1) * query.pageSize,
+    })
+    return {
+      items: items.map((item) => this.serialize(item, admin)),
+      total,
+      page: query.page,
+      pageSize: query.pageSize,
+    }
+  }
+  async detail(id: number, admin = false) {
+    galleryId(id)
+    const item = await this.em.findOne(GalleryPhoto, admin ? { id, deletedAt: null } : { id, ...publicPhotos }, {
+      populate: ['media'],
+    })
+    if (!item) throw new NotFoundException('作品不存在或尚未公开')
+    return this.serialize(item, admin)
+  }
+  async submission(requestId: string) {
+    const item = await this.em.findOne(GalleryPhoto, { requestId }, { populate: ['media'] })
+    if (!item) throw new NotFoundException('尚未找到此提交，请使用原提交标识重试')
+    return item.deletedAt ? { state: 'deleted', id: item.id } : { state: 'saved', item: this.serialize(item, true) }
+  }
+  async metadata() {
+    const categories = await this.em.execute<{ value: string; count: number }[]>(
+      "select category as value,count(*)::int as count from gallery_photo where deleted_at is null and status='published' group by category order by category",
+    )
+    const [stats] = await this.em.execute<{ photos: number; locations: number; categories: number }[]>(
+      "select count(*)::int as photos,count(distinct nullif(location,''))::int as locations,count(distinct nullif(category,''))::int as categories from gallery_photo where deleted_at is null and status='published'",
+    )
+    const settings = await this.settings()
+    return {
+      categories: categories.map((item) => ({ ...item, label: item.value || '未分类' })),
+      stats,
+      gear: settings.gear,
+    }
+  }
+  async settings() {
+    const settings = await this.em.findOneOrFail(GallerySettings, { id: 'default' })
+    return { gear: settings.gear, revision: settings.revision, updatedAt: settings.updatedAt.toISOString() }
+  }
+  async saveSettings(input: SaveGallerySettingsDto) {
+    await this.em.transactional(async (em) => {
+      await lockMedia(em)
+      const settings = await em.findOneOrFail(
+        GallerySettings,
+        { id: 'default' },
+        { lockMode: LockMode.PESSIMISTIC_WRITE },
+      )
+      if (settings.revision !== input.revision) throw new ConflictException('器材配置已变化，请保留输入并重新读取')
+      settings.gear = input.gear
+      settings.revision++
+      settings.updatedAt = new Date()
+      await em.flush()
+    })
+    return this.settings()
+  }
+  async save(id: number | null, input: SaveGalleryDto) {
+    if (id !== null) galleryId(id)
+    if (id === null && input.revision !== undefined) throw new BadRequestException('创建作品不能携带编辑版本')
+    if (!id && (!input.title || !input.mediaId || !input.requestId))
+      throw new BadRequestException('创建作品需要标题、媒体和提交标识')
+    if (id && (input.revision === undefined || input.requestId !== undefined))
+      throw new BadRequestException('编辑需要当前版本，不能携带创建标识')
+    const { requestId, mediaId } = input
+    // 装饰器 DTO 含未提交的 undefined 属性；局部更新只能应用明确提供的字段。
+    const values = Object.fromEntries(
+      Object.entries(input).filter(
+        ([key, value]) => !['requestId', 'mediaId', 'revision'].includes(key) && value !== undefined,
+      ),
+    )
+    const hash = submissionHash({ mediaId, ...values })
+    const savedId = await this.em.transactional(async (em) => {
+      await lockMedia(em)
+      if (!id) {
+        const prior = await em.findOne(GalleryPhoto, { requestId })
+        if (prior) {
+          if (prior.deletedAt || prior.requestHash !== hash) throw new ConflictException('此提交已处理，请核查原作品')
+          return prior.id
+        }
+      }
+      const media = mediaId ? await em.findOne(MediaAsset, { id: mediaId, deletedAt: null }) : undefined
+      if (mediaId && (!media || !media.mimeType.startsWith('image/') || media.width < 1 || media.height < 1))
+        throw new BadRequestException('请选择有效的媒体库图片')
+      const photo = id
+        ? await em.findOne(GalleryPhoto, { id, deletedAt: null }, { lockMode: LockMode.PESSIMISTIC_WRITE })
+        : em.create(GalleryPhoto, { title: input.title!, media: media!, requestId, requestHash: hash })
+      if (!photo) throw new NotFoundException('作品不存在或已删除')
+      if (id && photo.revision !== input.revision) throw new ConflictException('作品已被修改，请保留输入并重新读取')
+      Object.assign(photo, values)
+      if (media) photo.media = media
+      if (photo.status === 'published' && !photo.publishedAt) photo.publishedAt = new Date()
+      if (id) photo.revision++
+      await em.flush()
+      await synchronizeMediaReferences(em, `gallery:${photo.id}`, 'gallery', [mediaUrl(photo.media.id)], {
+        galleryPhoto: photo,
+      })
+      await em.flush()
+      return photo.id
+    })
+    return this.detail(savedId, true)
+  }
+  async remove(id: number, revision: number) {
+    galleryId(id)
+    return this.em.transactional(async (em) => {
+      await lockMedia(em)
+      const photo = await em.findOne(GalleryPhoto, { id }, { lockMode: LockMode.PESSIMISTIC_WRITE })
+      if (!photo) throw new NotFoundException('作品不存在')
+      if (photo.deletedAt) return { ok: true }
+      if (photo.revision !== revision) throw new ConflictException('作品已变化，请重新读取后确认删除')
+      photo.deletedAt = new Date()
+      photo.revision++
+      await em.nativeDelete(MediaReference, { galleryPhoto: photo })
+      await em.flush()
+      return { ok: true }
+    })
+  }
+}

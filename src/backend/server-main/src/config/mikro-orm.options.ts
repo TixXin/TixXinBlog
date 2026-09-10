@@ -29,6 +29,8 @@ import { MomentLike } from '../entities/moment-like.entity'
 import { DevelopmentFixture } from '../entities/development-fixture.entity'
 import { GuestbookMessage } from '../entities/guestbook-message.entity'
 import { GuestbookReaction } from '../entities/guestbook-reaction.entity'
+import { GalleryPhoto } from '../entities/gallery-photo.entity'
+import { GallerySettings } from '../entities/gallery-settings.entity'
 import { Post } from '../entities/post.entity'
 import { PostFolder } from '../entities/post-folder.entity'
 import { PostRevision } from '../entities/post-revision.entity'
@@ -79,6 +81,8 @@ export const ORM_ENTITIES = [
   DevelopmentFixture,
   GuestbookMessage,
   GuestbookReaction,
+  GalleryPhoto,
+  GallerySettings,
 ] as const
 
 export const mikroOrmOptions = defineConfig({
