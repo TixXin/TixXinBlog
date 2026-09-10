@@ -82,6 +82,7 @@ try {
   assert.equal(photo.publishedAt, null)
   assert.equal(photo.status, 'draft')
   assert.equal((await request(`/gallery/${photo.id}`)).status, 404)
+  assert.equal((await request(`/gallery/${photo.id}/navigation`)).status, 404)
   assert.equal((await request(adminPath, 'POST', { ...body, title: '不同内容' }, true)).status, 409)
   assert.equal((await ok(`${adminPath}/submissions/${body.requestId}`, 'GET', undefined, true)).item.id, photo.id)
   assert.equal((await request(`/admin/media/${asset.id}`, 'DELETE', undefined, true)).status, 409)
@@ -140,7 +141,7 @@ try {
   assert.equal((await ok('/gallery/metadata')).stats.photos, 0)
   assert.equal((await request(`/admin/media/${asset.id}`, 'DELETE', undefined, true)).status, 409, '保留朋友圈共用图片')
   const refs = await ok(`/admin/media/${replacement.id}/references`, 'GET', undefined, true)
-  assert(refs.items.some((item) => item.kind === 'gallery' && item.url === `${adminPath}?edit=${photo.id}`))
+  assert(refs.items.some((item) => item.kind === 'gallery' && item.url === `${adminPath}/${photo.id}`))
   assert.equal(
     (await request(`/admin/media/${replacement.id}`, 'DELETE', undefined, true)).status,
     409,
@@ -160,6 +161,17 @@ try {
     second = await ok('/gallery?page=2')
   assert.equal(first.items.length, 12)
   assert.equal(second.items.length, 3)
+  const tail = second.items.at(-1)
+  const position = await ok(`/gallery/${tail.id}/navigation`)
+  assert.equal(position.page, 2)
+  assert.equal(position.nextId, null)
+  assert.equal(position.previousId, second.items.at(-2).id)
+  const edge = await ok(`/gallery/${first.items.at(-1).id}/navigation`)
+  assert.equal(edge.page, 1)
+  assert.equal(edge.nextPage, 2)
+  assert.equal(edge.nextId, second.items[0].id)
+  const outside = await ok(`/gallery/${tail.id}/navigation?category=unmatched`)
+  assert.deepEqual(outside, { matched: false, page: null, previousId: null, nextId: null, previousPage: null, nextPage: null })
   assert.equal(new Set([...first.items, ...second.items].map((item) => item.id)).size, 15)
   assert.deepEqual(
     (await ok('/gallery')).items.map((item) => item.id),

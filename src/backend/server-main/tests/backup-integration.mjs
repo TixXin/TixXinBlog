@@ -288,7 +288,7 @@ try {
   assert.equal((await request(`/gallery/${importedPhotoId}`, 'GET', undefined, '')).status, 404)
   assert(
     (await ok(`/admin/media/${migratedMediaId}/references`)).items.some(
-      (item) => item.url === `/admin/gallery?edit=${importedPhotoId}`,
+      (item) => item.url === `/admin/gallery/${importedPhotoId}`,
     ),
   )
   assert.deepEqual((await ok('/admin/gallery/settings')).gear, copied.gallerySettings.gear)
