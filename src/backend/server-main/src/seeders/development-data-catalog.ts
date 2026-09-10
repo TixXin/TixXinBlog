@@ -146,6 +146,46 @@ export const DATA_DOMAINS: Domain[] = [
     },
   },
   {
+    id: 'links',
+    entry: '/links',
+    admin: '/admin/links',
+    table: 'friend_link',
+    searchColumn: 'name',
+    dataset: 'link-v1',
+    source: 'PostgreSQL friend_link、link_settings、media_asset、media_reference；本地或明确外部 HTTPS 标志',
+    scenarios: '两页公开友链、草稿撤回、推荐排序、长短介绍、无图、受管标志、外部标志、同域不同路径与地址冲突',
+    query: `select count(*)::int as total,
+      count(*) filter(where status='published' and deleted_at is null)::int as published,
+      count(*) filter(where status='draft' and deleted_at is null)::int as drafts,
+      count(*) filter(where status='withdrawn' and deleted_at is null)::int as withdrawn,
+      count(*) filter(where status='published' and deleted_at is null and is_featured)::int as featured,
+      count(*) filter(where status='published' and deleted_at is null and not is_featured)::int as regular,
+      count(distinct substring(url from '^https?://([^/]+)')) filter(where status='published' and deleted_at is null)::int as domains,
+      count(*) filter(where deleted_at is null and sort_order<>0)::int as ordered,
+      count(*) filter(where deleted_at is null and length(description)>100)::int as "longText",
+      count(*) filter(where deleted_at is null and logo_media_id is not null)::int as managed,
+      count(*) filter(where status='published' and deleted_at is null and logo_url is not null)::int as external,
+      count(*) filter(where status='published' and deleted_at is null and logo_media_id is null and logo_url is null)::int as "withoutImage",
+      count(distinct logo_media_id) filter(where deleted_at is null)::int as images,
+      count(*) filter(where deleted_at is null and logo_media_id is not null and exists(select 1 from media_reference r where r.friend_link_id=friend_link.id and r.asset_id=friend_link.logo_media_id and r.kind='link'))::int as references
+      from friend_link`,
+    required: {
+      published: 13,
+      drafts: 1,
+      withdrawn: 1,
+      featured: 1,
+      regular: 1,
+      domains: 3,
+      ordered: 1,
+      longText: 1,
+      managed: 3,
+      external: 1,
+      withoutImage: 1,
+      images: 3,
+      references: 3,
+    },
+  },
+  {
     id: 'media',
     entry: '/api/v1/media/:key',
     admin: '/admin/media',
@@ -172,7 +212,6 @@ export const DATA_DOMAINS: Domain[] = [
   },
 ]
 export const STATIC_DATA_DOMAINS = [
-  { id: 'links', entry: '/links', source: 'features/link/mock.ts', storage: 'demo', scenarios: '友链、规则' },
   {
     id: 'bookmarks',
     entry: '/tabs',
@@ -215,12 +254,14 @@ async function inspectOwnership(em: EntityManager, dataset: string, hasLedger: b
   return report
 }
 
-async function inspectContentFiles(em: EntityManager, domain: 'gallery' | 'projects') {
+async function inspectContentFiles(em: EntityManager, domain: 'gallery' | 'projects' | 'links') {
   const storage = new LocalMediaStorage(new ConfigService(process.env))
   const assets = await em.execute<{ id: string; storage_key: string; deleted_at: Date | null }[]>(
     domain === 'gallery'
       ? 'select distinct m.id,m.storage_key,m.deleted_at from media_asset m join gallery_photo g on g.media_id=m.id where g.deleted_at is null'
-      : 'select distinct m.id,m.storage_key,m.deleted_at from media_asset m join project p on p.cover_media_id=m.id where p.deleted_at is null',
+      : domain === 'projects'
+        ? 'select distinct m.id,m.storage_key,m.deleted_at from media_asset m join project p on p.cover_media_id=m.id where p.deleted_at is null'
+        : 'select distinct m.id,m.storage_key,m.deleted_at from media_asset m join friend_link l on l.logo_media_id=m.id where l.deleted_at is null',
   )
   const unavailable: string[] = []
   for (const asset of assets) {
@@ -256,10 +297,16 @@ export async function inspectDataCatalog(em: EntityManager, domain?: string, sea
     const ownership = item.dataset
       ? await inspectOwnership(em, item.dataset, tables.has('development_fixture'))
       : undefined
-    const media = item.id === 'gallery' || item.id === 'projects' ? await inspectContentFiles(em, item.id) : undefined
+    const media = ['gallery', 'projects', 'links'].includes(item.id)
+      ? await inspectContentFiles(em, item.id as 'gallery' | 'projects' | 'links')
+      : undefined
     if (item.id === 'projects' && counts?.covered !== counts?.references)
       missing.push(
         `项目封面与媒体引用不一致：${counts?.covered ?? 0}件有封面，${counts?.references ?? 0}件有有效引用；请核对关联并从完整备份恢复`,
+      )
+    if (item.id === 'links' && counts?.managed !== counts?.references)
+      missing.push(
+        `友链标志与引用不一致：${counts?.managed ?? 0}件关联媒体，${counts?.references ?? 0}件有有效引用；请核对关联并从完整备份恢复`,
       )
     if (media?.unavailable.length)
       missing.push(`媒体文件不可用：${media.unavailable.length}项；从完整备份恢复文件，不重新补种覆盖作品`)

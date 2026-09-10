@@ -12,6 +12,7 @@ import { fixtureCleanupPlan } from './fixture-cleanup-plan'
 import { FIXTURE_TABLES } from './fixture-ledger'
 import type { FixtureKind } from './fixture-ledger'
 import { submissionHash } from '../modules/moment/moment-values'
+import { DEVELOPMENT_DATASET_NAMES } from './development-datasets'
 
 export async function removeDevelopmentData(
   args: string[],
@@ -25,14 +26,14 @@ export async function removeDevelopmentData(
     if (
       args[index] === '--dataset' &&
       !dataset &&
-      ['core-v1', 'guestbook-v1', 'gallery-v1', 'project-v1', 'all'].includes(args[index + 1] ?? '')
+      [...DEVELOPMENT_DATASET_NAMES, 'all'].includes(args[index + 1] ?? '')
     )
       dataset = args[++index]!
     else if (args[index] === '--apply' && !apply) apply = true
     else if (args[index] === '--confirm' && !confirm && args[index + 1]) confirm = args[++index]!
     else
       throw new DevelopmentDataError(
-        '用法：db:dev remove-data --dataset core-v1|guestbook-v1|gallery-v1|project-v1|all [--apply --confirm 数据库名]',
+        `用法：db:dev remove-data --dataset ${DEVELOPMENT_DATASET_NAMES.join('|')}|all [--apply --confirm 数据库名]`,
       )
   }
   if (!dataset) throw new DevelopmentDataError('请显式指定需要清理的样本集 --dataset')
@@ -99,6 +100,7 @@ export async function removeDevelopmentData(
         'guestbook',
         'gallery',
         'project',
+        'link',
         'moment',
         'flash',
         'post',

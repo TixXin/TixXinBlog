@@ -11,11 +11,8 @@ import { lockTaxonomy } from '../modules/post/taxonomy-lock'
 import { lockMedia } from '../modules/media/media-references'
 import { createDevelopmentBackup } from './development-backup'
 import type { DevelopmentBackupOptions } from './development-backup'
-import { seedCoreFixtures, CORE_DATASET } from './core-fixtures'
 import type { FixtureProgress } from './fixture-ledger'
-import { seedGuestbookFixtures, GUESTBOOK_DATASET, GUESTBOOK_FIXTURE_COUNT } from './guestbook-fixtures'
-import { seedGalleryFixtures, GALLERY_DATASET, GALLERY_FIXTURE_COUNT } from './gallery-fixtures'
-import { seedProjectFixtures, PROJECT_DATASET, PROJECT_FIXTURE_COUNT } from './project-fixtures'
+import { DEFAULT_DEVELOPMENT_DATASET, DEVELOPMENT_DATASETS, DEVELOPMENT_DATASET_NAMES } from './development-datasets'
 
 export class DevelopmentDataError extends Error {}
 export async function seedDevelopmentData(
@@ -23,20 +20,17 @@ export async function seedDevelopmentData(
   write = (value: string) => process.stdout.write(value + '\n'),
   options: DevelopmentBackupOptions = {},
 ) {
-  let dataset = CORE_DATASET,
+  let dataset = DEFAULT_DEVELOPMENT_DATASET,
     apply = false,
     confirm = ''
   for (let index = 0; index < args.length; index++) {
-    if (
-      args[index] === '--dataset' &&
-      [CORE_DATASET, GUESTBOOK_DATASET, GALLERY_DATASET, PROJECT_DATASET, 'all'].includes(args[index + 1] ?? '')
-    )
+    if (args[index] === '--dataset' && [...DEVELOPMENT_DATASET_NAMES, 'all'].includes(args[index + 1] ?? ''))
       dataset = args[++index]!
     else if (args[index] === '--apply' && !apply) apply = true
     else if (args[index] === '--confirm' && !confirm && args[index + 1]) confirm = args[++index]!
     else
       throw new DevelopmentDataError(
-        '用法：db:dev seed-data --dataset core-v1|guestbook-v1|gallery-v1|project-v1|all [--apply --confirm 数据库名]',
+        `用法：db:dev seed-data --dataset ${DEVELOPMENT_DATASET_NAMES.join('|')}|all [--apply --confirm 数据库名]`,
       )
   }
   const url = new URL(process.env.DATABASE_URL!)
@@ -63,30 +57,14 @@ export async function seedDevelopmentData(
       .getConnection()
       .execute<{ table: string | null }[]>('select to_regclass(\'public.development_fixture\') as "table"')
     const existing = table ? await orm.em.fork().count(DevelopmentFixture, dataset === 'all' ? {} : { dataset }) : 0
+    const selected = DEVELOPMENT_DATASETS.filter((item) => dataset === 'all' || item.id === dataset)
     const plan = {
       dataset,
       target: { database, host: url.hostname, port: Number(url.port || 5432) },
       existingOwnershipRecords: existing,
-      expectedRecords:
-        dataset === CORE_DATASET
-          ? 71
-          : dataset === GUESTBOOK_DATASET
-            ? GUESTBOOK_FIXTURE_COUNT
-            : dataset === GALLERY_DATASET
-              ? GALLERY_FIXTURE_COUNT
-              : dataset === PROJECT_DATASET
-                ? PROJECT_FIXTURE_COUNT
-                : 71 + GUESTBOOK_FIXTURE_COUNT + GALLERY_FIXTURE_COUNT + PROJECT_FIXTURE_COUNT,
-      scope:
-        (dataset === CORE_DATASET
-          ? '核心文章/闪念/朋友圈及互动'
-          : dataset === GUESTBOOK_DATASET
-            ? '留言、回复、置顶、待审隐藏、本地头像与真实回应'
-            : dataset === GALLERY_DATASET
-              ? '图库作品、公开分页、草稿撤回、分类排序和横竖本地照片'
-              : dataset === PROJECT_DATASET
-                ? '项目公开分页、独立进展和发布状态、标签排序、可空封面及真实文档链接'
-                : '核心业务、留言、图库和项目数据集') + '；已有归属不覆盖、不复活',
+      expectedRecords: selected.reduce((total, item) => total + item.count, 0),
+      datasets: selected.map((item) => ({ id: item.id, expectedRecords: item.count })),
+      scope: selected.map((item) => item.scope).join('；') + '；已有归属不覆盖、不复活',
       apply,
     }
     write(JSON.stringify(plan, null, 2))
@@ -106,13 +84,7 @@ export async function seedDevelopmentData(
         await lockTaxonomy(em)
         await lockMedia(em)
         await em.execute('select pg_advisory_xact_lock(742919)')
-        if (dataset === CORE_DATASET || dataset === 'all') await seedCoreFixtures(em, storage, progress, createdMedia)
-        if (dataset === GUESTBOOK_DATASET || dataset === 'all')
-          await seedGuestbookFixtures(em, storage, progress, createdMedia)
-        if (dataset === GALLERY_DATASET || dataset === 'all')
-          await seedGalleryFixtures(em, storage, progress, createdMedia)
-        if (dataset === PROJECT_DATASET || dataset === 'all')
-          await seedProjectFixtures(em, storage, progress, createdMedia)
+        for (const item of selected) await item.seed(em, storage, progress, createdMedia)
         em.create(AuditEntry, {
           action: 'development.seed-data',
           resourceType: 'dataset',
