@@ -156,10 +156,16 @@ async function main() {
       () => undefined,
       fixture.backupOptions,
     )
+    await seedDevelopmentData(
+      ['--dataset', 'project-v1', '--apply', '--confirm', target],
+      () => undefined,
+      fixture.backupOptions,
+    )
     await em.execute(
       'update gallery_settings set gear=\'[{"icon":"lucide:camera","name":"随身相机","description":"日常记录"}]\'::jsonb,revision=1 where id=\'default\'',
     )
     assert.equal((await run('status')).counts.gallery_photo, 18)
+    assert.equal((await run('status')).counts.project, 18)
     await fixture.testOrm.em.fork().execute('create view database_dev_guard as select id from moment')
     await fixture.stopServices()
     const removed = await run('remove-samples', true)
@@ -172,9 +178,10 @@ async function main() {
     assert.equal(cleared.after?.guestbook_message, 0)
     assert.equal(cleared.after?.guestbook_reaction, 0)
     assert.equal(cleared.after?.gallery_photo, 0)
+    assert.equal(cleared.after?.project, 0)
     assert.equal(cleared.after?.gallery_settings, 1)
-    assert.equal(cleared.after?.development_fixture, 26)
-    assert.equal(cleared.after?.media_asset, 8)
+    assert.equal(cleared.after?.development_fixture, 47)
+    assert.equal(cleared.after?.media_asset, 11)
     assert.equal(cleared.after?.admin_user, preview.counts.admin_user)
     assert.equal(cleared.after?.site_settings, 1)
     const beforeRejectedReset = await run('status')
@@ -199,6 +206,7 @@ async function main() {
     assert.equal(reset.after?.site_settings, 1)
     assert.equal(reset.after?.content_context, 1)
     assert.equal(reset.after?.gallery_photo, 0)
+    assert.equal(reset.after?.project, 0)
     assert.equal(reset.after?.gallery_settings, 1)
     assert.equal(reset.after?.development_fixture, 0)
     assert.equal(reset.pendingMigrations, 0)
