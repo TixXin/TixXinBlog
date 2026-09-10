@@ -144,7 +144,7 @@ export class MediaService {
               : item.guestbookMessage
                 ? `/admin/guestbook?focus=${item.guestbookMessage.id}`
                 : item.galleryPhoto
-                  ? `/admin/gallery?edit=${item.galleryPhoto.id}`
+                  ? `/admin/gallery/${item.galleryPhoto.id}`
                   : '/admin/site',
       })),
     }
