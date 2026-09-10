@@ -796,6 +796,8 @@ test('媒体上传重试、替代文本、封面正文闪念选择与引用保�
   await page.goto('/flash')
   const flash = page.locator('.fnc').filter({ hasText: 'E2E 媒体引用闪念' })
   await expect(flash.getByRole('img', { name: 'E2E 更新图片说明', exact: true })).toBeVisible()
+  // 本例已登录；SSR 图片可见不代表身份恢复结束，离开前等待真实用户菜单，避免中断刷新请求。
+  await expect(page.getByRole('button', { name: /^用户菜单：/ })).toBeVisible()
   await page.goto('/admin/media')
   // setInputFiles 不等待 enabled，先确认身份恢复和媒体读取已开放输入。
   await expect(page.locator('input[type="file"]')).toBeEnabled()
