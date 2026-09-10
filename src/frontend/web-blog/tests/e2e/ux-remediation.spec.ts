@@ -185,18 +185,29 @@ for (const layout of ['nexus', 'aurora', 'dock']) {
   })
 }
 
-test('旧朋友圈锚点入口与独立列表使用同一搜索URL和数据', async ({ page }) => {
-  await page.goto('/?q=摄影#moments')
-  await expect(page).toHaveURL(/\/moments\?q=/)
+test('旧朋友圈锚点入口与独立列表使用同一搜索URL和数据', async ({ page, request }) => {
+  const query = '隔离朋友圈样本 00'
+  const response = await request.get(`/api/v1/moments?page=1&pageSize=15&q=${encodeURIComponent(query)}`)
+  expect(response.status()).toBe(200)
+  const result = (await response.json()) as { code: number; data: { items: { id: string }[]; total: number } }
+  expect(result.code).toBe(0)
+  expect(result.data.total).toBeGreaterThan(0)
+  expect(result.data.items).toHaveLength(result.data.total)
+  const expectedIds = result.data.items.map((item) => `moment-${item.id}`)
+  await page.goto(`/?q=${encodeURIComponent(query)}#moments`)
+  await expect(page).toHaveURL((url) => url.pathname === '/moments' && url.searchParams.get('q') === query)
   const search = page.getByRole('textbox', { name: '搜索动态内容 / 话题 / 地点...', exact: true })
-  await expect(search).toHaveValue('摄影')
-  const first = await page.locator('.moment-card').evaluateAll((nodes) => nodes.map((node) => node.id))
-  expect(first.length).toBeGreaterThan(0)
+  await expect(search).toHaveValue(query)
+  const cards = page.locator('.moment-card')
+  await expect(cards).toHaveCount(expectedIds.length)
+  expect(await cards.evaluateAll((nodes) => nodes.map((node) => node.id))).toEqual(expectedIds)
   await page.reload()
-  await expect(search).toHaveValue('摄影')
-  expect(await page.locator('.moment-card').evaluateAll((nodes) => nodes.map((node) => node.id))).toEqual(first)
+  await expect(search).toHaveValue(query)
+  await expect(cards).toHaveCount(expectedIds.length)
+  expect(await cards.evaluateAll((nodes) => nodes.map((node) => node.id))).toEqual(expectedIds)
   await page.goto('/archive')
-  await page.goto('/moments/m-1')
+  await page.goto(`/moments/${result.data.items[0]!.id}`)
+  await expect(page.locator('.moment-detail-card .moment-card')).toHaveCount(1)
   await page.getByRole('link', { name: '返回朋友圈', exact: true }).first().click()
   await expect(page).toHaveURL(/\/moments$/)
 })

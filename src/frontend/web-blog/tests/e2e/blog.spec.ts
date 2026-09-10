@@ -288,7 +288,11 @@ test('后台闪念草稿、失败重试、发布评论与归档恢复闭环', as
   page.on('dialog', (dialog) => dialog.accept())
   await login(page)
   await page.goto('/admin/flashes')
-  await page.getByRole('button', { name: '新建闪念', exact: true }).click()
+  await expect(page.getByRole('button', { name: '退出登录', exact: true })).toBeVisible()
+  await expect(page.getByText('正在确认登录状态…', { exact: true })).toHaveCount(0)
+  const create = page.getByRole('button', { name: '新建闪念', exact: true })
+  await expect(create).toBeEnabled()
+  await create.click()
   const editor = page.getByRole('textbox', { name: '闪念正文', exact: true })
   await editor.fill('E2E 后台闪念完整流程')
   await page.route('**/api/v1/admin/flashes', (route) =>
@@ -327,6 +331,59 @@ test('后台闪念草稿、失败重试、发布评论与归档恢复闭环', as
   expect((await request.get(`/api/v1/flashes/${id}`)).status()).toBe(404)
   await page.reload()
   await expect(card).toContainText('草稿')
+})
+
+test('后台闪念入口在SSR和真实身份恢复期间禁用，恢复后可打开编辑器', async ({ page, browser, baseURL }) => {
+  const staticContext = await browser.newContext({ javaScriptEnabled: false, baseURL })
+  try {
+    const staticPage = await staticContext.newPage()
+    await staticPage.goto('/admin/flashes')
+    await expect(staticPage.getByRole('button', { name: '新建闪念', exact: true })).toBeDisabled()
+  } finally {
+    await staticContext.close()
+  }
+  await login(page)
+  await expect(page.getByRole('button', { name: '退出登录', exact: true })).toBeVisible()
+  let release!: () => void, entered!: () => void
+  const held = new Promise<void>((resolve) => {
+    release = resolve
+  })
+  const intercepted = new Promise<void>((resolve) => {
+    entered = resolve
+  })
+  let matches = 0
+  await page.route('**/api/v1/auth/refresh', async (route) => {
+    if (route.request().method() !== 'POST') return route.continue()
+    matches++
+    if (matches === 1) {
+      entered()
+      await held
+    }
+    await route.continue()
+  })
+  try {
+    await page.goto('/admin/flashes')
+    await intercepted
+    const create = page.getByRole('button', { name: '新建闪念', exact: true })
+    await expect(page.getByText('正在确认登录状态…', { exact: true })).toBeVisible()
+    await expect(create).toBeDisabled()
+    await expect(page.getByRole('textbox', { name: '闪念正文', exact: true })).toHaveCount(0)
+    expect(matches).toBe(1)
+    const refreshed = page.waitForResponse(
+      (response) =>
+        new URL(response.url()).pathname === '/api/v1/auth/refresh' && response.request().method() === 'POST',
+    )
+    release()
+    expect((await refreshed).status()).toBe(200)
+    await expect(page.getByRole('button', { name: '退出登录', exact: true })).toBeVisible()
+    await expect(page.getByText('正在确认登录状态…', { exact: true })).toHaveCount(0)
+    await expect(create).toBeEnabled()
+    await create.click()
+    await expect(page.getByRole('textbox', { name: '闪念正文', exact: true })).toBeEnabled()
+  } finally {
+    release()
+    await page.unroute('**/api/v1/auth/refresh')
+  }
 })
 
 test('后台专栏标签创建、文章引用和重命名同步公开入口', async ({ page, request }) => {
