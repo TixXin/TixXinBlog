@@ -13,6 +13,7 @@
     "test:dev": "node --test scripts/dev/*.test.mjs",
     "test:dev:integration": "node scripts/dev/integration.mjs",
     "test:dev:postgres": "node scripts/dev/postgres-integration.mjs",
+    "test:nuxt-patches": "node --test scripts/nuxt/*.test.mjs",
     "db:dev": "corepack pnpm --filter server-main run db:dev",
     "build": "corepack pnpm --filter web-blog build",
     "build:blog": "corepack pnpm --filter web-blog build",
@@ -41,6 +42,9 @@
     "overrides": {
       "@rushstack/node-core-library@5.13.0>ajv": "^8.18.0",
       "fontless@0.2.1>esbuild": "^0.28.2"
+    },
+    "patchedDependencies": {
+      "nuxt@4.5.2": "patches/nuxt@4.5.2.patch"
     }
   }
 }

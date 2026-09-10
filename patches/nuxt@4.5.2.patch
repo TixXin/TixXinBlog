@@ -1,0 +1,161 @@
+diff --git a/dist/app/plugins/payload.client.js b/dist/app/plugins/payload.client.js
+index 98e0ece07aac4cb2f98955abaf2afb40456f7551..990041c1745282ad8d6ee9a8031bfa62fda40a64 100644
+--- a/dist/app/plugins/payload.client.js
++++ b/dist/app/plugins/payload.client.js
+@@ -15,6 +15,52 @@ const plugin = /* @__PURE__ */ defineNuxtPlugin({
+ 	setup(nuxtApp) {
+ 		const staticKeysToRemove = /* @__PURE__ */ new Set();
+ 		const router = useRouter();
++		let manifestTimer;
++		let manifestReady = false;
++		let manifestPaused = false;
++		let disposed = false;
++		let beforeUnloadGuard = false;
++		function syncBeforeUnloadGuard() {
++			// 只保护迟到就绪或待执行的预取，闲置页面不常驻监听，以免妨碍 Firefox 的 BFCache。
++			const needed = appManifest && !manifestPaused && !disposed && (!manifestReady || manifestTimer !== void 0);
++			if (needed === beforeUnloadGuard) return;
++			beforeUnloadGuard = needed;
++			window[needed ? "addEventListener" : "removeEventListener"]("beforeunload", pauseManifestPrefetch);
++		}
++		function pauseManifestPrefetch() {
++			manifestPaused = true;
++			clearTimeout(manifestTimer);
++			manifestTimer = void 0;
++			syncBeforeUnloadGuard();
++		}
++		function scheduleManifestPrefetch() {
++			clearTimeout(manifestTimer);
++			manifestTimer = void 0;
++			if (appManifest && manifestReady && !manifestPaused && !disposed && navigator.connection?.effectiveType !== "slow-2g") manifestTimer = setTimeout(() => {
++				manifestTimer = void 0;
++				syncBeforeUnloadGuard();
++				if (manifestPaused || disposed) return;
++				// 仅处理预取调用者的拒绝，清单自身仍负责验证、诊断与失败清缓存。
++				void getAppManifest().catch(() => {});
++			}, 1e3);
++			syncBeforeUnloadGuard();
++		}
++		function resumeManifestPrefetch() {
++			manifestPaused = false;
++			scheduleManifestPrefetch();
++		}
++		if (appManifest) {
++			// beforeunload 与 pagehide 之间旧文档仍可执行定时器，必须在浏览器禁止新请求前暂停。
++			syncBeforeUnloadGuard();
++			window.addEventListener("pagehide", pauseManifestPrefetch);
++			window.addEventListener("pageshow", resumeManifestPrefetch);
++			nuxtApp.vueApp.onUnmount(() => {
++				disposed = true;
++				pauseManifestPrefetch();
++				window.removeEventListener("pagehide", pauseManifestPrefetch);
++				window.removeEventListener("pageshow", resumeManifestPrefetch);
++			});
++		}
+ 		if (prefetchPreloadTags) router.afterEach(() => {
+ 			for (const entry of forwardedPrefetchEntries.values()) entry.dispose();
+ 			forwardedPrefetchEntries.clear();
+@@ -52,7 +98,8 @@ const plugin = /* @__PURE__ */ defineNuxtPlugin({
+ 					forwardedPrefetchEntries.set(pathname, entry);
+ 				}
+ 			});
+-			if (appManifest && navigator.connection?.effectiveType !== "slow-2g") setTimeout(getAppManifest, 1e3);
++			manifestReady = true;
++			scheduleManifestPrefetch();
+ 		});
+ 	}
+ });
+diff --git a/dist/pages/runtime/plugins/router.js b/dist/pages/runtime/plugins/router.js
+index 8a3025bfe8a0bf35d9903a5cc2470cd49490bcd8..57287f971fd1174ee9cd9b77862fad1d73b1181c 100644
+--- a/dist/pages/runtime/plugins/router.js
++++ b/dist/pages/runtime/plugins/router.js
+@@ -1,7 +1,7 @@
+ import { navigationDiagnostics } from "../../../app/diagnostics/navigation.js";
+ import { generateRouteKey, toArray } from "../utils.js";
+ import { isReadonly, reactive, shallowReactive, shallowRef } from "vue";
+-import { isSamePath, withoutBase } from "ufo";
++import { isSamePath, parseURL, withoutBase } from "ufo";
+ import { defineNuxtPlugin, useRuntimeConfig } from "#app/nuxt";
+ import routerOptions, { hashMode } from "#build/router.options.mjs";
+ import { pageIslandRoutes } from "#build/components.islands.mjs";
+@@ -22,7 +22,8 @@ function createCurrentLocation(base, location, renderedPath) {
+ 		return withoutBase(pathFromHash, "");
+ 	}
+ 	const displayedPath = withoutBase(pathname, base);
+-	const path = !renderedPath || isSamePath(displayedPath, renderedPath) ? displayedPath : renderedPath;
++	// 同一路径的查询和锚点以浏览器为准；SSR 的完整 path 可能仍是原历史条目。
++	const path = !renderedPath || isSamePath(displayedPath, parseURL(renderedPath).pathname) ? displayedPath : renderedPath;
+ 	return path + (path.includes("?") ? "" : search) + hash;
+ }
+ const plugin = defineNuxtPlugin({
+@@ -31,6 +32,19 @@ const plugin = defineNuxtPlugin({
+ 	async setup(nuxtApp) {
+ 		let routerBase = useRuntimeConfig().app.baseURL;
+ 		if (hashMode && !routerBase.includes("#")) routerBase += "#";
++		// 初始化与 SSG 延后恢复期间记住原生历史意图，内部 replace 不得覆盖它。
++		let nativeHistoryURL;
++		const onNativeHistory = () => {
++			nativeHistoryURL = createCurrentLocation(routerBase, window.location);
++		};
++		const stopNativeHistory = () => {
++			if (import.meta.client) window.removeEventListener("popstate", onNativeHistory);
++		};
++		if (import.meta.client) window.addEventListener("popstate", onNativeHistory);
++		nuxtApp.hooks.hookOnce("app:error", stopNativeHistory);
++		nuxtApp.hooks.hookOnce("app:mounted", () => {
++			if (!nuxtApp["~restoreDeferredRoute"]) stopNativeHistory();
++		});
+ 		const history = routerOptions.history?.(routerBase) ?? (import.meta.client ? hashMode ? createWebHashHistory(routerBase) : createWebHistory(routerBase) : createMemoryHistory(routerBase));
+ 		const routes = routerOptions.routes ? await routerOptions.routes(_routes) ?? _routes : _routes;
+ 		let startPosition;
+@@ -198,8 +212,10 @@ const plugin = defineNuxtPlugin({
+ 			})));
+ 		});
+ 		nuxtApp.hooks.hookOnce("app:created", async () => {
++			let deferred = false;
+ 			try {
+-				if ("name" in resolvedInitialRoute) resolvedInitialRoute.name = void 0;
++				const startupRoute = nativeHistoryURL === void 0 ? resolvedInitialRoute : router.resolve(nativeHistoryURL);
++				if ("name" in startupRoute) startupRoute.name = void 0;
+ 				if (import.meta.client && router.currentRoute.value.fullPath !== prePluginRoutePath) {} else if (hasDeferredRoute) {
+ 					const payloadRoute = router.resolve(nuxtApp.payload.path);
+ 					if ("name" in payloadRoute) payloadRoute.name = void 0;
+@@ -208,24 +224,34 @@ const plugin = defineNuxtPlugin({
+ 						force: true
+ 					});
+ 					const restoreDeferredRoute = () => {
++						stopNativeHistory();
+ 						if (!nuxtApp["~restoreDeferredRoute"]) return;
+ 						nuxtApp["~restoreDeferredRoute"] = void 0;
+-						router.currentRoute.value = router.resolve(initialURL);
+-						syncCurrentRoute();
++						// 已完成的新导航优先；尚未由路由器接管的 popstate 仍须使用最新原生目标。
++						if (router.currentRoute.value.fullPath !== payloadRoute.fullPath) return;
++						const restoreRoute = nativeHistoryURL === void 0 ? startupRoute : router.resolve(nativeHistoryURL);
++						if ("name" in restoreRoute) restoreRoute.name = void 0;
++						if (nativeHistoryURL === void 0) {
++							router.currentRoute.value = router.resolve(initialURL);
++							syncCurrentRoute();
++						}
+ 						router.replace({
+-							...resolvedInitialRoute,
++							...restoreRoute,
+ 							force: true
+ 						}).catch(() => {});
+ 					};
+ 					nuxtApp["~restoreDeferredRoute"] = restoreDeferredRoute;
++					deferred = true;
+ 					nuxtApp.hooks.hookOnce("app:suspense:resolve", restoreDeferredRoute);
+ 				} else await router.replace({
+-					...resolvedInitialRoute,
++					...startupRoute,
+ 					force: true
+ 				});
+ 				router.options.scrollBehavior = routerOptions.scrollBehavior;
+ 			} catch (error) {
+ 				await _showErrorUnlessCrawler(nuxtApp, error);
++			} finally {
++				if (!deferred) stopNativeHistory();
+ 			}
+ 		});
+ 		return { provide: { router } };
