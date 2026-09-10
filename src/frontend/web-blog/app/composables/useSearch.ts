@@ -8,7 +8,6 @@
 import type Fuse from 'fuse.js'
 import { fetchPostPage } from '~/features/post/api'
 import { mockPosts } from '~/features/post/mock'
-import { mockLinks } from '~/features/link/mock'
 import type { PostItem } from '~/features/post/types'
 import type { ProjectItem } from '~/features/project/types'
 import type { LinkItem } from '~/features/link/types'
@@ -45,6 +44,7 @@ async function getFuse(items: SearchResultItem[]) {
 export function useSearch() {
   const config = useRuntimeConfig()
   const projects = useProjectRepository()
+  const links = useLinkRepository()
   const error = ref('')
   let version = 0
   let controller: AbortController | undefined
@@ -81,7 +81,7 @@ export function useSearch() {
     for (const link of links) {
       items.push({
         type: 'link',
-        id: link.name,
+        id: String(link.id),
         title: link.name,
         description: link.description,
         url: link.url,
@@ -108,29 +108,37 @@ export function useSearch() {
       const useMock = config.public.postUseMockRepo !== false
       const keyword = q.trim().slice(0, 200),
         signal = controller.signal
-      const [postRead, projectRead, localRead] = await Promise.allSettled([
+      const [postRead, projectRead, linkRead, localRead] = await Promise.allSettled([
         useMock
           ? Promise.resolve([] as PostItem[])
           : fetchPostPage(config.public.apiBaseUrl, { search: keyword, pageSize: 10 }, signal).then(
               (page) => page.items,
             ),
         projects.list({ q: keyword, page: 1, pageSize: 10 }, signal),
-        getFuse(buildSearchItems(useMock ? mockPosts : [], [], mockLinks)).then((fuse) =>
+        links.list({ q: keyword, page: 1, pageSize: 10 }, signal),
+        getFuse(buildSearchItems(useMock ? mockPosts : [], [], [])).then((fuse) =>
           fuse.search(keyword, { limit: 10 }).map((match) => match.item),
         ),
       ])
       if (alive && requestVersion === version && query.value === q) {
         const projectItems = projectRead.status === 'fulfilled' ? projectRead.value.items : []
         const postItems = postRead.status === 'fulfilled' ? postRead.value : []
+        const linkItems = linkRead.status === 'fulfilled' ? linkRead.value.items : []
         const local = localRead.status === 'fulfilled' ? localRead.value : []
-        results.value = [
-          ...buildSearchItems([], projectItems, []),
-          ...buildSearchItems(postItems, [], []),
-          ...local,
-        ].slice(0, 10)
+        const groups = [
+          buildSearchItems([], projectItems, []),
+          [...buildSearchItems(postItems, [], []), ...local],
+          buildSearchItems([], [], linkItems),
+        ]
+        results.value = Array.from({ length: 10 }, (_, index) =>
+          groups.map((group) => group[index]).filter((item): item is SearchResultItem => !!item),
+        )
+          .flat()
+          .slice(0, 10)
         const unavailable = [
           projectRead.status === 'rejected' ? '项目' : '',
           postRead.status === 'rejected' ? '文章' : '',
+          linkRead.status === 'rejected' ? '友链' : '',
           localRead.status === 'rejected' ? '本地资料' : '',
         ].filter(Boolean)
         error.value = unavailable.length

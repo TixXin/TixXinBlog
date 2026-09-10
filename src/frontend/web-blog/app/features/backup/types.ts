@@ -17,6 +17,7 @@ export interface ContentImportView {
   error?: string
   settingsPreview?: Omit<SiteSettingsData, 'revision' | 'updatedAt' | 'announcementUpdatedAt'>
   gallerySettingsPreview?: { gear: GearItem[] } | null
+  linkSettingsPreview?: { rules: string[] } | null
   plan: {
     ready: boolean
     errors: string[]
@@ -26,6 +27,7 @@ export interface ContentImportView {
     guestbook?: { sourceId: number; title: string; skip: boolean; reason: string }[]
     gallery?: { sourceId: number; title: string; skip: boolean; reason: string }[]
     projects?: { sourceId: number; title: string; skip: boolean; reason: string }[]
+    links?: { sourceId: number; title: string; skip: boolean; reason: string }[]
     counts: {
       posts: number
       flashes: number
@@ -33,6 +35,7 @@ export interface ContentImportView {
       guestbook?: number
       gallery?: number
       projects?: number
+      links?: number
       comments: number
       skipped: number
       media: number
@@ -47,6 +50,7 @@ export interface ContentImportView {
     guestbook?: { sourceId: number; id: number }[]
     gallery?: { sourceId: number; id: number }[]
     projects?: { sourceId: number; id: number }[]
+    links?: { sourceId: number; id: number }[]
     comments: number
     media: number
     files: number

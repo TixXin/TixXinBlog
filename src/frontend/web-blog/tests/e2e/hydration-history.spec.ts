@@ -162,3 +162,33 @@ test('图库快速刷新与原生历史切换不丢照片，后续搜索与API�
     contentType: 'application/json',
   })
 })
+test('友链快速刷新与原生历史切换不丢记录，后续推荐筛选与API一致', async ({ page, context, baseURL }, testInfo) => {
+  await context.addCookies([{ name: 'tixxin-blog-layout-theme', value: 'nexus', url: baseURL! }])
+  await page.setViewportSize({ width: 390, height: 960 })
+  const evidence = await rapidReloadAndHistory(
+    page,
+    { path: '/links', card: '.link-card', pagination: '友链分页' },
+    testInfo,
+  )
+  const read = page.waitForResponse(
+    (response) =>
+      new URL(response.url()).pathname === '/api/v1/links' &&
+      new URL(response.url()).searchParams.get('featured') === 'true',
+  )
+  await page.getByRole('combobox', { name: '筛选推荐友链', exact: true }).selectOption('true')
+  const response = await read
+  expect(response.status()).toBe(200)
+  const data = (await response.json()).data as { items: { id: number }[] }
+  expect(data.items.length).toBeGreaterThan(0)
+  await expect(page.locator('.link-card')).toHaveCount(data.items.length)
+  expect(
+    await page
+      .locator('.link-card')
+      .evaluateAll((cards) => cards.map((card) => Number((card as HTMLElement).dataset.linkId))),
+  ).toEqual(data.items.map((item) => item.id))
+  expect(evidence.issues).toEqual([])
+  await testInfo.attach('hydration-history.json', {
+    body: Buffer.from(JSON.stringify(evidence)),
+    contentType: 'application/json',
+  })
+})

@@ -9,12 +9,13 @@
   <article
     class="gallery-item"
     role="button"
-    tabindex="0"
+    :tabindex="ready ? 0 : -1"
+    :aria-disabled="!ready"
     :data-focus-key="`gallery-photo-${photo.id}`"
     :aria-label="`查看照片：${photo.title}`"
-    @click="$emit('click')"
-    @keydown.enter.prevent="$emit('click')"
-    @keydown.space.prevent="$emit('click')"
+    @click="select"
+    @keydown.enter.prevent="select"
+    @keydown.space.prevent="select"
   >
     <CommonImageFrame
       :src="photo.src"
@@ -35,13 +36,17 @@
 <script setup lang="ts">
 import type { PhotoItem } from '~/features/gallery/types'
 
-defineProps<{
+const props = defineProps<{
   photo: PhotoItem
+  ready: boolean
 }>()
 
-defineEmits<{
+const emit = defineEmits<{
   click: []
 }>()
+function select() {
+  if (props.ready) emit('click')
+}
 </script>
 
 <style lang="scss" scoped>
@@ -51,6 +56,10 @@ defineEmits<{
   overflow: hidden;
   cursor: pointer;
   outline: none;
+
+  &[aria-disabled='true'] {
+    cursor: default;
+  }
 
   &:focus-visible {
     box-shadow:

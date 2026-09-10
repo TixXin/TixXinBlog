@@ -8,7 +8,7 @@
 <template>
   <div class="gallery-grid">
     <div v-for="photo in photos" :key="photo.id" class="gallery-grid__cell">
-      <GalleryItem :photo="photo" @click="$emit('select', photo)" />
+      <GalleryItem :photo="photo" :ready="ready" @click="ready && $emit('select', photo)" />
     </div>
   </div>
 </template>
@@ -18,6 +18,7 @@ import type { PhotoItem } from '~/features/gallery/types'
 
 defineProps<{
   photos: PhotoItem[]
+  ready: boolean
 }>()
 
 defineEmits<{

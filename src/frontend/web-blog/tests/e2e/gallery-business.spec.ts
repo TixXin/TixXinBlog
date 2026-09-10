@@ -221,6 +221,8 @@ test('关闭 JavaScript 仍输出真实图库标题、照片与筛选计数', as
     await expect(page.getByRole('heading', { name: '画廊', exact: true })).toBeVisible()
     await expect(page.locator('.gallery-item')).toHaveCount(12)
     await expect(page.locator('.gallery-item').first()).toContainText(sample.items[0].title)
+    await expect(page.locator('.gallery-item').first()).toBeDisabled()
+    await expect(page.locator('.gallery-item').first()).toHaveAttribute('tabindex', '-1')
   } finally {
     await context.close()
   }
@@ -333,6 +335,7 @@ test('跨页切图后列表仍在读取时关闭，焦点在正确列表到达�
     await route.continue()
   })
   const original = page.getByRole('button', { name: `查看照片：${last.title}`, exact: true })
+  await expect(original).toBeEnabled()
   await original.press('Enter')
   const dialog = page.getByRole('dialog')
   await expect(dialog.getByRole('button', { name: '下一张', exact: true })).toBeEnabled()
@@ -374,6 +377,7 @@ for (const theme of ['nexus', 'aurora', 'dock']) {
       if (!hasFixedSidebar) await compactInfo.locator('summary').click()
       const first = page.locator('.gallery-item').nth(6),
         originalTitle = await first.getAttribute('aria-label')
+      await expect(first).toBeEnabled()
       await first.scrollIntoViewIfNeeded()
       const beforeLightbox = (await first.boundingBox())!.y
       await first.focus()

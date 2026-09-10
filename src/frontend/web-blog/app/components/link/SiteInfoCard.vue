@@ -1,73 +1,104 @@
-<!--
-  @file SiteInfoCard.vue
-  @description 本站信息卡片组件，展示站点名称、地址和描述
-  @author TixXin
-  @since 2025-03-17
--->
-
+<!-- @file SiteInfoCard.vue @description 真实本站友链资料与复制反馈，数据不可用时禁止复制默认资料 -->
 <template>
-  <section class="card site-info">
-    <h3 class="site-info__title">
-      <Icon name="lucide:clipboard" size="14" /> 本站信息
-    </h3>
-    <div class="site-info__list">
-      <div
-        v-for="item in info"
-        :key="item.label"
-        class="site-info__row"
-      >
-        <span class="site-info__label">{{ item.label }}</span>
-        <span class="site-info__value">{{ item.value }}</span>
+  <section class="card site-info" aria-label="本站友链资料">
+    <h3><Icon name="lucide:clipboard" size="16" />本站友链资料</h3>
+    <CommonRequestFeedback
+      v-if="pending || error"
+      :pending="pending"
+      :title="error || '正在读取本站资料'"
+      compact
+      @retry="$emit('retry')"
+    />
+    <dl v-if="info" class="site-info__list">
+      <div v-for="item in info" :key="item.label">
+        <dt>{{ item.label }}</dt>
+        <dd>{{ item.value }}</dd>
       </div>
-    </div>
+    </dl>
+    <button type="button" :disabled="!ready || !info || pending || copying || !!error" @click="$emit('copy')">
+      {{ copying ? '正在复制…' : '复制本站资料' }}
+    </button>
+    <button type="button" :disabled="!ready || pending" @click="$emit('retry')">刷新本站资料</button>
+    <p v-if="notice" role="status">{{ notice }}</p>
+    <p v-if="copyError" role="alert">{{ copyError }}</p>
+    <label v-if="copyError && retainedText"
+      >待复制资料<textarea :value="retainedText" readonly rows="6" aria-label="待复制本站资料" />
+    </label>
   </section>
 </template>
-
 <script setup lang="ts">
 import type { SiteInfo } from '~/features/link/types'
-
 defineProps<{
-  info: SiteInfo[]
+  info: SiteInfo[] | null
+  ready: boolean
+  pending: boolean
+  error: string
+  copying: boolean
+  copyError: string
+  notice: string
+  retainedText: string
 }>()
+defineEmits<{ retry: []; copy: [] }>()
 </script>
-
-<style lang="scss" scoped>
+<style scoped lang="scss">
 .site-info {
   padding: 1.25rem;
+  overflow-wrap: anywhere;
 }
-
-.site-info__title {
-  font-size: 0.8125rem;
-  font-weight: 700;
+h3 {
   display: flex;
   align-items: center;
   gap: 0.5rem;
+  font-size: 0.875rem;
+  font-weight: 700;
   margin-bottom: 1rem;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
 }
-
 .site-info__list {
-  display: flex;
-  flex-direction: column;
-  gap: 0.625rem;
+  display: grid;
+  gap: 0.65rem;
+  margin-bottom: 1rem;
 }
-
-.site-info__row {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
+.site-info__list > div {
+  display: grid;
+  gap: 0.25rem;
+  min-width: 0;
   padding: 0.5rem;
-  border-radius: $radius-sm;
+  border-radius: 0.4rem;
   background: var(--surface-2);
   font-size: 0.75rem;
 }
-
-.site-info__label {
+dt {
   color: var(--text-soft);
 }
-
-.site-info__value {
+dd {
+  margin: 0;
   font-weight: 500;
+}
+button,
+textarea {
+  max-width: 100%;
+  padding: 0.55rem 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: 0.5rem;
+  color: var(--text-main);
+  background: var(--surface-2);
+}
+button {
+  min-height: 44px;
+}
+button:disabled {
+  opacity: 0.5;
+}
+p,
+label {
+  display: grid;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+  font-size: 0.8125rem;
+  color: var(--text-muted);
+}
+textarea {
+  width: 100%;
+  min-width: 0;
 }
 </style>

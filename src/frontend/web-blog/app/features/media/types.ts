@@ -32,6 +32,7 @@ export interface MediaReferences {
       | 'guestbook'
       | 'gallery'
       | 'project'
+      | 'link'
     title: string
     url: string
     revision?: number

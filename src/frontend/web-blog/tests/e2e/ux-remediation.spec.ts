@@ -39,6 +39,7 @@ test('画廊检索使用真实照片，空态可恢复且灯箱归还焦点', as
   const search = page.getByRole('textbox', { name: '搜索画廊照片', exact: true })
   await search.fill(sample.title)
   const photo = page.getByRole('button', { name: `查看照片：${sample.title}`, exact: true })
+  await expect(photo).toBeEnabled()
   await photo.press('Enter')
   const lightbox = page.getByRole('dialog', { name: sample.title, exact: true })
   await expect(lightbox.getByRole('button', { name: '关闭', exact: true })).toBeFocused()
