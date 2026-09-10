@@ -17,7 +17,12 @@
         :preserved-query-keys="['photo']"
         primary
       >
-        <GalleryFilter :model-value="query.category" :categories="categories" @update:model-value="filterCategory" />
+        <GalleryFilter
+          :model-value="query.category"
+          :categories="categories"
+          :disabled="!ready"
+          @update:model-value="filterCategory"
+        />
         <CommonRequestFeedback
           v-if="pending || error"
           :pending="pending"
@@ -39,13 +44,17 @@
         />
         <GalleryGrid v-else :photos="photos" @select="open" />
         <nav v-if="total !== null && (total > 12 || query.page > 1)" class="gallery-pagination" aria-label="图库分页">
-          <button type="button" :disabled="query.page <= 1 || pending" @click="changeQuery({ page: query.page - 1 })">
+          <button
+            type="button"
+            :disabled="!ready || query.page <= 1 || pending"
+            @click="changeQuery({ page: query.page - 1 })"
+          >
             上一页
           </button>
           <span>{{ query.page }} / {{ Math.max(1, Math.ceil(total / 12)) }}</span>
           <button
             type="button"
-            :disabled="query.page * 12 >= total || pending"
+            :disabled="!ready || query.page * 12 >= total || pending"
             @click="changeQuery({ page: query.page + 1 })"
           >
             下一页
@@ -103,6 +112,7 @@ const sidebarPlacement = computed(() =>
 )
 const {
   query,
+  ready,
   photos,
   total,
   selectedId,
@@ -133,7 +143,7 @@ useSeoMeta({
   ogImage: () => photos.value[0]?.srcLarge,
 })
 const keyword = computed({
-  get: () => (typeof route.query.q === 'string' ? route.query.q : ''),
+  get: () => (!ready.value ? (query.value.q ?? '') : typeof route.query.q === 'string' ? route.query.q : ''),
   set: (q: string) => {
     void router.replace({
       path: '/gallery',

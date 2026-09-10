@@ -14,6 +14,7 @@
       class="gallery-filter__btn"
       :class="{ 'gallery-filter__btn--active': modelValue === cat.value }"
       :aria-pressed="modelValue === cat.value"
+      :disabled="disabled"
       @click="$emit('update:modelValue', cat.value)"
     >
       {{ cat.label }}<span v-if="cat.count !== undefined">（{{ cat.count }}）</span>
@@ -27,6 +28,7 @@ import type { GalleryCategory } from '~/features/gallery/types'
 defineProps<{
   categories: (GalleryCategory | { label: string; value: undefined; count?: number })[]
   modelValue: string | undefined
+  disabled: boolean
 }>()
 
 defineEmits<{
