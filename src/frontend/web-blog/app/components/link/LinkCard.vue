@@ -1,51 +1,33 @@
-<!--
-  @file LinkCard.vue
-  @description 单个友链卡片组件，展示头像、站点名、描述和域名
-  @author TixXin
-  @since 2025-03-17
--->
-
+<!-- @file LinkCard.vue @description 真实友链卡片，图片重试按钮独立于外链，推荐不表示互链验证 -->
 <template>
-  <a :href="link.url" class="link-card" target="_blank" rel="noopener">
-    <img
+  <article class="link-card" :data-link-id="link.id">
+    <CommonImageFrame
+      v-if="link.avatar"
+      class="link-card__avatar"
       :src="link.avatar"
       :alt="link.name"
-      class="link-card__avatar"
-      loading="lazy"
-      width="64"
-      height="64"
-      @error="onImgError"
+      :width="link.width ?? 64"
+      :height="link.height ?? 64"
+      fit="contain"
     />
-    <h4 class="link-card__name">{{ link.name }}</h4>
-    <p class="link-card__desc">{{ link.description }}</p>
-    <div class="link-card__domain">
-      <Icon name="lucide:external-link" size="10" />
-      <span>{{ link.domain }}</span>
-    </div>
-  </a>
+    <div v-else class="link-card__placeholder" aria-label="未设置站点图片"><Icon name="lucide:globe" size="28" /></div>
+    <h3 class="link-card__name">
+      <a :href="link.url" target="_blank" rel="noopener noreferrer"
+        >{{ link.name }}<Icon name="lucide:external-link" size="13"
+      /></a>
+    </h3>
+    <span v-if="link.isFeatured" class="link-card__featured">推荐</span>
+    <p class="link-card__desc">{{ link.description || '暂未填写站点介绍' }}</p>
+    <p class="link-card__domain">{{ link.domain }}</p>
+  </article>
 </template>
-
 <script setup lang="ts">
 import type { LinkItem } from '~/features/link/types'
-
-defineProps<{
-  link: LinkItem
-}>()
-
-const AVATAR_FALLBACK =
-  'data:image/svg+xml,' +
-  encodeURIComponent(
-    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="%23666"><rect width="64" height="64" rx="12" fill="%23333"/><text x="32" y="38" text-anchor="middle" font-size="24" fill="%23888">?</text></svg>',
-  )
-
-function onImgError(e: Event) {
-  const img = e.target as HTMLImageElement
-  img.src = AVATAR_FALLBACK
-}
+defineProps<{ link: LinkItem }>()
 </script>
-
-<style lang="scss" scoped>
+<style scoped lang="scss">
 .link-card {
+  min-width: 0;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -54,55 +36,66 @@ function onImgError(e: Event) {
   background: var(--surface-1);
   border: 1px solid var(--border);
   border-radius: $radius-card;
+  overflow-wrap: anywhere;
   transition: $transition-normal;
   @media (prefers-reduced-motion: reduce) {
     transition: none;
   }
-  text-decoration: none;
-  color: inherit;
-
   &:hover {
     box-shadow: var(--shadow-card-hover);
     border-color: var(--border-hover);
-
-    .link-card__avatar {
-      transform: scale(1.1);
-    }
   }
 }
-
 .link-card__avatar {
+  width: 100%;
+  max-width: 9rem;
+  height: 9rem;
+  margin-bottom: 0.75rem;
+  border-radius: $radius-md;
+}
+.link-card__placeholder {
   width: 4rem;
   height: 4rem;
-  border-radius: $radius-full;
-  border: 2px solid var(--border-soft);
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  color: var(--text-soft);
+  background: var(--surface-2);
   margin-bottom: 0.75rem;
-  object-fit: cover;
-  transition: transform 0.3s ease;
-  @media (prefers-reduced-motion: reduce) {
-    transition: none;
-  }
 }
-
 .link-card__name {
+  margin: 0;
+  max-width: 100%;
   font-size: 0.875rem;
   font-weight: 700;
-  margin: 0;
 }
-
-.link-card__desc {
-  font-size: 0.75rem;
-  color: var(--text-muted);
-  margin-top: 0.25rem;
-  line-height: 1.6;
-}
-
-.link-card__domain {
-  margin-top: 0.75rem;
-  display: flex;
+.link-card__name a {
+  min-height: 44px;
+  display: inline-flex;
   align-items: center;
-  gap: 0.25rem;
-  font-size: 10px;
+  justify-content: center;
+  gap: 0.35rem;
+  color: var(--text-main);
+}
+.link-card__name :deep(svg) {
+  flex-shrink: 0;
+}
+.link-card__desc {
+  font-size: 0.8125rem;
+  color: var(--text-muted);
+  line-height: 1.65;
+  margin-top: 0.5rem;
+}
+.link-card__domain {
+  font-size: 0.75rem;
   color: var(--text-soft);
+  margin-top: 0.75rem;
+}
+.link-card__featured {
+  font-size: 0.75rem;
+  color: var(--accent-text);
+  background: var(--accent-soft);
+  border-radius: 0.35rem;
+  padding: 0.15rem 0.5rem;
 }
 </style>

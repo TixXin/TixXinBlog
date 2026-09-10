@@ -7,11 +7,7 @@
 
 <template>
   <div class="link-grid">
-    <LinkCard
-      v-for="link in links"
-      :key="link.domain"
-      :link="link"
-    />
+    <LinkCard v-for="link in links" :key="link.id" :link="link" />
   </div>
 </template>
 
@@ -31,11 +27,11 @@ defineProps<{
   margin-bottom: 0;
 
   @media (min-width: $breakpoint-sm) {
-    grid-template-columns: repeat(2, 1fr);
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   @media (min-width: $breakpoint-lg) {
-    grid-template-columns: repeat(3, 1fr);
+    grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 }
 </style>
