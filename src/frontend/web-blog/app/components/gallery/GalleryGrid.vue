@@ -7,15 +7,8 @@
 
 <template>
   <div class="gallery-grid">
-    <div
-      v-for="photo in photos"
-      :key="photo.id"
-      class="gallery-grid__cell"
-    >
-      <GalleryItem
-        :photo="photo"
-        @click="$emit('select', photo)"
-      />
+    <div v-for="photo in photos" :key="photo.id" class="gallery-grid__cell">
+      <GalleryItem :photo="photo" @click="$emit('select', photo)" />
     </div>
   </div>
 </template>

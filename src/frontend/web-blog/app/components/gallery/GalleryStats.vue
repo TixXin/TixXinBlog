@@ -12,11 +12,7 @@
       <span>画廊统计</span>
     </h3>
     <ul class="gallery-stats__list">
-      <li
-        v-for="row in stats"
-        :key="row.label"
-        class="gallery-stats__row"
-      >
+      <li v-for="row in stats" :key="row.label" class="gallery-stats__row">
         <span class="gallery-stats__label">{{ row.label }}</span>
         <span class="gallery-stats__value">{{ row.value }}</span>
       </li>

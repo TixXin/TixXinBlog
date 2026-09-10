@@ -67,7 +67,7 @@ corepack pnpm --filter server-main run backup:restore --directory &lt;备份目�
       <section aria-label="导出内容包">
         <h2>导出内容包</h2>
         <p>
-          用于迁入文章、闪念、朋友圈、评论、留言、目录和当前站点资料。文章类内容迁入为草稿；留言迁入为待审，隐藏和删除状态保留。
+          用于迁入文章、闪念、朋友圈、图库、评论、留言、目录和当前站点资料。文章和图库作品迁入为草稿；留言迁入为待审，隐藏和删除状态保留。
         </p>
         <p>
           内容包不包含账号、登录凭据、访客控制标识、点赞、回应、历史修订和互动去重记录；完整数据库与媒体恢复使用维护流程。
@@ -85,8 +85,8 @@ corepack pnpm --filter server-main run backup:restore --directory &lt;备份目�
       <section aria-label="选择内容包">
         <h2>迁入内容</h2>
         <p>
-          支持本项目生成的 v1、v2、v3 JSON 内容包，最多 50MB。v2 增加朋友圈，v3
-          增加留言和回复关系；先校验格式、图片和引用，再确认导入。
+          支持本项目生成的 v1、v2、v3、v4 JSON 内容包，最多 50MB。v2 增加朋友圈，v3 增加留言和回复关系，v4
+          增加图库及器材配置；先校验格式、图片和引用，再确认导入。
         </p>
         <p>留言迁入后不会自动公开或置顶。已删除留言保留为不可见的引用记录，审核前请核对内容与作者。</p>
         <label
@@ -100,7 +100,11 @@ corepack pnpm --filter server-main run backup:restore --directory &lt;备份目�
           </select></label
         >
         <label
-          ><input v-model="includeSettings" type="checkbox" :disabled="pending" />同时迁入站点资料和评论审核设置</label
+          ><input
+            v-model="includeSettings"
+            type="checkbox"
+            :disabled="pending"
+          />同时迁入站点资料、器材介绍和评论审核设置</label
         >
         <p>
           相同内容判定不比较发布状态和互动数。目录遵循本站历史名称规则。新副本重新累计浏览和点赞，正文中的链接保留原文，发布前请核对。
@@ -123,6 +127,7 @@ corepack pnpm --filter server-main run backup:restore --directory &lt;备份目�
           条朋友圈草稿，迁入 {{ job.plan.counts.comments }} 条评论；跳过 {{ job.plan.counts.skipped }} 项相同内容。
         </p>
         <p>迁入 {{ job.plan.counts.guestbook ?? 0 }} 条留言及其回复关系，按预览保留为待审、隐藏或已删除状态。</p>
+        <p>迁入 {{ job.plan.counts.gallery ?? 0 }} 件图库作品，分类、拍摄信息、排序和媒体关系保留，作品保持非公开。</p>
         <p>新增 {{ job.plan.counts.media }} 个媒体记录，写入或修复 {{ job.plan.counts.files }} 个图片文件。</p>
         <p v-if="job.error" role="alert">{{ job.error }}</p>
         <p v-if="job.expired">预览已过期，请重新选择文件生成票据。</p>
@@ -130,7 +135,7 @@ corepack pnpm --filter server-main run backup:restore --directory &lt;备份目�
           <li v-for="issue in job.plan.errors" :key="issue">{{ issue }}</li>
         </ul>
         <details>
-          <summary>查看文章、闪念、朋友圈与留言清单</summary>
+          <summary>查看文章、闪念、朋友圈、图库与留言清单</summary>
           <ul>
             <li v-for="post in job.plan.posts" :key="`post-${post.sourceId}`">
               {{ post.title }} · {{ post.reason }}{{ post.slug ? ` · 地址标识 ${post.slug}` : '' }}
@@ -142,6 +147,9 @@ corepack pnpm --filter server-main run backup:restore --directory &lt;备份目�
             <li v-for="message in job.plan.guestbook ?? []" :key="`guestbook-${message.sourceId}`">
               {{ message.title }} · {{ message.reason }}
             </li>
+            <li v-for="photo in job.plan.gallery ?? []" :key="`gallery-${photo.sourceId}`">
+              {{ photo.title }} · {{ photo.reason }}
+            </li>
           </ul>
         </details>
         <AdminSiteSettingsPreview
@@ -149,6 +157,10 @@ corepack pnpm --filter server-main run backup:restore --directory &lt;备份目�
           :value="job.settingsPreview"
           label="将写入的站点资料"
         />
+        <section v-if="job.gallerySettingsPreview && !job.completed" aria-label="将写入的器材资料">
+          <h3>将写入的器材资料</h3>
+          <GalleryGearCard :gear="job.gallerySettingsPreview.gear" />
+        </section>
         <template v-if="job.result">
           <p role="status">
             已创建 {{ job.result.posts.length }} 篇文章草稿、{{ job.result.flashes.length }} 条闪念草稿、{{
@@ -157,6 +169,7 @@ corepack pnpm --filter server-main run backup:restore --directory &lt;备份目�
             条朋友圈草稿，迁入 {{ job.result.comments }} 条评论。
           </p>
           <p>已迁入 {{ job.result.guestbook?.length ?? 0 }} 条非公开留言，回复关系已重建。</p>
+          <p>已迁入 {{ job.result.gallery?.length ?? 0 }} 件图库草稿，检查图片及拍摄信息后再发布。</p>
           <ul>
             <li v-for="post in job.result.posts" :key="post.id">
               <NuxtLink :to="`/admin/posts/${post.id}`">检查新文章草稿 #{{ post.id }}</NuxtLink
@@ -166,6 +179,7 @@ corepack pnpm --filter server-main run backup:restore --directory &lt;备份目�
           <NuxtLink v-if="job.result.flashes.length" to="/admin/flashes?status=draft">检查闪念草稿</NuxtLink>
           <NuxtLink v-if="job.result.moments?.length" to="/admin/moments?status=draft">检查朋友圈草稿</NuxtLink>
           <NuxtLink v-if="job.result.guestbook?.length" to="/admin/guestbook">检查迁入留言</NuxtLink>
+          <NuxtLink v-if="job.result.gallery?.length" to="/admin/gallery?status=draft">检查图库草稿</NuxtLink>
         </template>
         <template v-if="!job.completed && !job.expired">
           <p>

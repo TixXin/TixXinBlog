@@ -9,14 +9,14 @@
   <div class="gallery-filter" role="group" aria-label="照片分类筛选">
     <button
       v-for="cat in categories"
-      :key="cat.value"
+      :key="cat.value === undefined ? 'all' : `category:${cat.value}`"
       type="button"
       class="gallery-filter__btn"
       :class="{ 'gallery-filter__btn--active': modelValue === cat.value }"
       :aria-pressed="modelValue === cat.value"
       @click="$emit('update:modelValue', cat.value)"
     >
-      {{ cat.label }}
+      {{ cat.label }}<span v-if="cat.count !== undefined">（{{ cat.count }}）</span>
     </button>
   </div>
 </template>
@@ -25,12 +25,12 @@
 import type { GalleryCategory } from '~/features/gallery/types'
 
 defineProps<{
-  categories: GalleryCategory[]
-  modelValue: string
+  categories: (GalleryCategory | { label: string; value: undefined; count?: number })[]
+  modelValue: string | undefined
 }>()
 
 defineEmits<{
-  'update:modelValue': [value: string]
+  'update:modelValue': [value: string | undefined]
 }>()
 </script>
 
@@ -44,6 +44,8 @@ defineEmits<{
 }
 
 .gallery-filter__btn {
+  max-width: 100%;
+  overflow-wrap: anywhere;
   min-height: 44px;
   padding: 0.375rem 0.75rem;
   font-size: 0.75rem;

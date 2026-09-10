@@ -76,6 +76,7 @@ const props = withDefaults(
     backToTopThreshold?: number
     /** 是否为当前页面的主滚动区域（写入全局滚动进度） */
     primary?: boolean
+    preservedQueryKeys?: string[]
     /** 主滚动区域的滚动方向：'up' 回到顶部（默认），'down' 回到底部（聊天模式） */
     primaryDirection?: 'up' | 'down'
     /** 滚动视口渐变遮罩：顶/底非边界时淡出，暗示"还能继续滚" */
@@ -93,6 +94,7 @@ const props = withDefaults(
     showBackToTop: true,
     backToTopThreshold: 300,
     primary: false,
+    preservedQueryKeys: () => [],
     primaryDirection: 'up',
     fadeMask: false,
     fadeMaskInset: '0',
@@ -111,7 +113,11 @@ let myResetFn: (() => void) | null = null
 
 const rootRef = ref<HTMLElement | null>(null)
 const viewportRef = ref<HTMLElement | null>(null)
-usePageScrollRestoration(viewportRef, () => props.primary)
+usePageScrollRestoration(
+  viewportRef,
+  () => props.primary,
+  () => props.preservedQueryKeys,
+)
 const trackRef = ref<HTMLElement | null>(null)
 
 const needsScrollbar = ref(false)
