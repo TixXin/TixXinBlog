@@ -10,6 +10,7 @@ import { SiteSettings } from '../../entities/site-settings.entity'
 import { CommentPolicy } from '../../entities/comment-policy.entity'
 import { ContentContext } from '../../entities/content-context.entity'
 import { GallerySettings } from '../../entities/gallery-settings.entity'
+import { LinkSettings } from '../../entities/link-settings.entity'
 import type { ContentImportPlan } from '../../entities/content-import.entity'
 import type {
   ContentPackage,
@@ -95,19 +96,21 @@ export async function makeContentPlan(
   ticket: string,
 ): Promise<ContentImportPlan> {
   const current = await exporter.snapshot(false, em)
-  const [addresses, aliases, site, policy, context, gallerySettings] = await Promise.all([
+  const [addresses, aliases, site, policy, context, gallerySettings, linkSettings] = await Promise.all([
     em.find(PostAddress, {}, { orderBy: { slug: 'asc' } }),
     em.find(TaxonomyAlias, {}, { orderBy: { kind: 'asc', alias: 'asc' } }),
     em.findOneOrFail(SiteSettings, { id: 'default' }),
     em.findOneOrFail(CommentPolicy, { id: 'default' }),
     em.findOneOrFail(ContentContext, { id: 'default' }),
     em.findOneOrFail(GallerySettings, { id: 'default' }),
+    em.findOneOrFail(LinkSettings, { id: 'default' }),
   ])
   const basis = packageHash({
     context: context.generation,
     guestbook: current.guestbook,
     gallery: current.gallery,
     projects: current.projects,
+    links: current.links,
     posts: current.posts.map((post) => ({ id: post.sourceId, values: post.values })),
     flashes: current.flashes.map((flash) => ({ id: flash.sourceId, values: flash.values })),
     moments: current.moments.map((note) => ({
@@ -122,7 +125,12 @@ export async function makeContentPlan(
     addresses: addresses.map((item) => ({ slug: item.slug, post: item.post.id })),
     media: current.media.map((item) => ({ id: item.id, sha256: item.sha256, deleted: item.deleted })),
     settings: includeSettings
-      ? [site.revision, policy.revision, input.gallerySettings ? gallerySettings.revision : null]
+      ? [
+          site.revision,
+          policy.revision,
+          input.gallerySettings ? gallerySettings.revision : null,
+          input.linkSettings ? linkSettings.revision : null,
+        ]
       : null,
   })
   const existingPosts = new Set(current.posts.map((post) => postContentHash(post.values)))
@@ -275,6 +283,27 @@ export async function makeContentPlan(
           : '创建新的项目草稿，保留项目进展、标签、链接与封面关联',
     }
   })
+  const occupiedLinks = new Set(current.links.filter((link) => !link.deleted).map((link) => link.values.url))
+  const linkPlans = (input.links ?? []).map((source) => {
+    const duplicate = occupiedLinks.has(source.values.url)
+    const skip = source.deleted || (strategy === 'skip' && duplicate)
+    if (!skip) {
+      occupiedLinks.add(source.values.url)
+      if (source.values.logoMediaId) requiredValues.push(`/api/v1/media/${source.values.logoMediaId}.webp`)
+    }
+    return {
+      sourceId: source.sourceId,
+      title: source.values.name,
+      skip,
+      reason: source.deleted
+        ? '跳过已删除友链，不自动恢复'
+        : skip
+          ? '跳过已有相同规范地址的友链，现有内容保持不变'
+          : duplicate
+            ? '相同地址另建非公开草稿副本，保留原路径与参数；不能自动上架'
+            : '创建新的友链草稿，保留推荐与排序；不会自动上架',
+    }
+  })
   if (includeSettings) requiredValues.push(input.site.avatar)
   const required = new Set(managedMediaIds(requiredValues))
   const incoming = new Map(input.media.map((item) => [item.id, item]))
@@ -331,6 +360,7 @@ export async function makeContentPlan(
     guestbook: guestbookPlans,
     gallery: galleryPlans,
     projects: projectPlans,
+    links: linkPlans,
     media,
     counts: {
       posts: postPlans.filter((item) => !item.skip).length,
@@ -339,6 +369,7 @@ export async function makeContentPlan(
       guestbook: guestbookPlans.filter((item) => !item.skip).length,
       gallery: galleryPlans.filter((item) => !item.skip).length,
       projects: projectPlans.filter((item) => !item.skip).length,
+      links: linkPlans.filter((item) => !item.skip).length,
       comments,
       skipped:
         postPlans.filter((item) => item.skip).length +
@@ -346,7 +377,8 @@ export async function makeContentPlan(
         momentPlans.filter((item) => item.skip).length +
         guestbookPlans.filter((item) => item.skip).length +
         galleryPlans.filter((item) => item.skip).length +
-        projectPlans.filter((item) => item.skip).length,
+        projectPlans.filter((item) => item.skip).length +
+        linkPlans.filter((item) => item.skip).length,
       media: media.filter((item) => item.create).length,
       files: media.filter((item) => item.writeFile).length,
       settings: includeSettings,
@@ -354,5 +386,6 @@ export async function makeContentPlan(
     siteRevision: site.revision,
     policyRevision: policy.revision,
     gallerySettingsRevision: gallerySettings.revision,
+    linkSettingsRevision: linkSettings.revision,
   }
 }

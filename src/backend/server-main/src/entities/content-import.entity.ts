@@ -21,6 +21,7 @@ export interface ContentImportPlan {
   }[]
   gallery: { sourceId: number; title: string; skip: boolean; reason: string }[]
   projects: { sourceId: number; title: string; skip: boolean; reason: string }[]
+  links: { sourceId: number; title: string; skip: boolean; reason: string }[]
   media: { id: string; create: boolean; writeFile: boolean; skip: boolean }[]
   counts: {
     posts: number
@@ -29,6 +30,7 @@ export interface ContentImportPlan {
     guestbook: number
     gallery: number
     projects: number
+    links: number
     comments: number
     skipped: number
     media: number
@@ -38,6 +40,7 @@ export interface ContentImportPlan {
   siteRevision: number
   policyRevision: number
   gallerySettingsRevision: number
+  linkSettingsRevision: number
 }
 export interface ContentImportResult {
   posts: { sourceId: number; id: number }[]
@@ -46,6 +49,7 @@ export interface ContentImportResult {
   guestbook: { sourceId: number; id: number }[]
   gallery: { sourceId: number; id: number }[]
   projects: { sourceId: number; id: number }[]
+  links: { sourceId: number; id: number }[]
   comments: number
   media: number
   files: number
