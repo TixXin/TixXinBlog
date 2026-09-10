@@ -44,7 +44,9 @@ export function getModalFocusOrigin(doc: Document) {
     origin &&
     target?.isConnected &&
     performance.now() - origin.time < 1000 &&
-    active === origin.activeBefore?.deref()
+    (active === origin.activeBefore?.deref() ||
+      // WebKit 再次点击已聚焦按钮时会先将焦点退回 body；原入口仍然是这次指针目标。
+      (target === origin.activeBefore?.deref() && active === doc.body))
   )
     return target
   return active
