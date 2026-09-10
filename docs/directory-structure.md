@@ -304,7 +304,7 @@ app/assets/styles/
 | 友链     | `features/link/`       | `mockLinks`、`mockLinkRules`、`mockSiteInfo` 及 `LinkItem`、`LinkRule`、`SiteInfo`                                                                                                                |
 | 导航     | `features/nav/`        | `mockNavItems`、`NavItem`                                                                                                                                                                         |
 | 文章     | `features/post/`       | `mockPosts`、`mockPostTabs`、`mockArticleDetail`、`mockComments`、`mockRelatedPosts`、`mockTocItems` 及 `PostItem`、`ArticleDetail`、`ArticleSection`、`CommentItem`、`RelatedPost`、`TocItem` 等 |
-| 项目展示 | `features/project/`    | `mockProjects`、`mockProjectStats`、`mockTechStack` 及 `ProjectItem`、`ProjectStats`、`TechStackItem`、`ProjectTag`、`ProjectLink`                                                                |
+| 项目展示 | `features/project/` | 真实项目、独立进展/发布类型、URL查询与恢复白名单；仓储`useProjectRepository`、列表`useProjects`及真实全站项目搜索 |
 | 站点     | `features/site/`       | `mockFooterLinks`、`mockPoweredBy`、`mockSiteStatus`、`FooterLink`、`PoweredByItem`、`SiteStatus`                                                                                                 |
 | 统计     | `features/stats/`      | `mockSiteStats`、`mockTags`、`mockCategories`、`SiteStats`、`TagItem`、`CategoryItem`                                                                                                             |
 | 外观设置 | `features/appearance/` | `themeRegistry.ts`（主题注册表：ThemeHostConfig 导入、LayoutThemeMeta 类型、工具函数）、`types.ts`（COLOR_MODE_OPTIONS、CONTENT_TRANSITION_PRESETS、SIDEBAR_ANIMATION_PRESETS 及对应类型）        |
