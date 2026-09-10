@@ -351,15 +351,24 @@ test('运行中减少动态效果停止运动，关闭后不依赖结束事件',
   await captureMotion(page, testInfo, 'reduce-live.png')
 })
 
-test('照片失败保持占位，恢复后可重试且不跳动', async ({ page }, testInfo) => {
-  await page.route('**/images.unsplash.com/**', (route) => route.abort())
+test('照片失败保持占位，恢复后可重试且不跳动', async ({ page, request }, testInfo) => {
+  const response = await request.get('/api/v1/gallery?pageSize=12')
+  expect(response.status()).toBe(200)
+  const photo = (await response.json()).data.items[0]
+  expect(photo.src).toMatch(/^\/api\/v1\/media\/[a-f0-9-]+\.webp$/)
+  let failures = 0
+  await page.route(`**${photo.src}`, (route) => {
+    failures++
+    return route.abort()
+  })
   await page.goto('/gallery')
   await ready(page)
   const first = page.locator('.gallery-item').first()
   await expect(first.getByRole('button', { name: /重新加载图片/ })).toBeVisible()
+  expect(failures).toBeGreaterThan(0)
   const failed = await first.boundingBox()
   await captureMotion(page, testInfo, 'image-failed.png')
-  await page.unroute('**/images.unsplash.com/**')
+  await page.unroute(`**${photo.src}`)
   await first.getByRole('button', { name: /重新加载图片/ }).click()
   await expect(first.locator('.image-frame')).toHaveClass(/image-frame--ready/)
   const loaded = await first.boundingBox()

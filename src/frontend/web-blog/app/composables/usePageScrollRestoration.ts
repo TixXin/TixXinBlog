@@ -4,7 +4,11 @@
  * @author TixXin
  * @since 2026-09-07
  */
-export function usePageScrollRestoration(viewport: Ref<HTMLElement | null>, enabled: () => boolean) {
+export function usePageScrollRestoration(
+  viewport: Ref<HTMLElement | null>,
+  enabled: () => boolean,
+  preservedQueryKeys: () => string[] = () => [],
+) {
   const router = useRouter()
   const app = useNuxtApp()
   const positions = useState<Record<string, number>>('page-scroll-positions', () => ({}))
@@ -90,7 +94,19 @@ export function usePageScrollRestoration(viewport: Ref<HTMLElement | null>, enab
       if (replaced) {
         cancel()
         save()
-      } else begin(positions.value[key] ?? 0)
+      } else {
+        // 灯箱定位等覆盖层状态改变不移动背景列表；真正的筛选与分页仍沿用历史项恢复。
+        const ignored = preservedQueryKeys()
+        const businessQuery = (query: typeof to.query) =>
+          JSON.stringify(
+            Object.entries(query)
+              .filter(([name]) => !ignored.includes(name))
+              .sort(([a], [b]) => a.localeCompare(b)),
+          )
+        const preserve =
+          ignored.length > 0 && to.hash === from.hash && businessQuery(to.query) === businessQuery(from.query)
+        begin(positions.value[key] ?? (preserve ? readTop() : 0))
+      }
     })
     const removeFinish = app.hook('page:finish', schedule)
     const removeTransition = app.hook('page:transition:finish', schedule)

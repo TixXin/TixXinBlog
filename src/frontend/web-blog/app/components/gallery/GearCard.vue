@@ -9,7 +9,7 @@
   <section class="card gear-card">
     <h3 class="gear-card__title">
       <Icon name="lucide:info" size="16" />
-      <span>示例器材</span>
+      <span>摄影器材</span>
     </h3>
     <ul class="gear-card__list">
       <li v-for="(item, index) in gear" :key="`${item.name}-${index}`" class="gear-card__item">
@@ -22,6 +22,7 @@
         </div>
       </li>
     </ul>
+    <p v-if="!gear.length" class="gear-card__desc">尚未填写器材资料。</p>
   </section>
 </template>
 
@@ -87,6 +88,7 @@ defineProps<{
 
 .gear-card__text {
   min-width: 0;
+  overflow-wrap: anywhere;
 }
 
 .gear-card__name {
