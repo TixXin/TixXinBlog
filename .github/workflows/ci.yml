@@ -65,6 +65,9 @@ jobs:
       - name: Type Check
         run: pnpm --filter web-blog exec nuxt typecheck
 
+      - name: Nuxt Startup Patch Regression
+        run: pnpm test:nuxt-patches
+
       - name: Test
         run: pnpm --filter web-blog test
 

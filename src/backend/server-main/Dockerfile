@@ -7,6 +7,7 @@ WORKDIR /repo
 
 # 先复制清单文件,让依赖安装层可被缓存
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
+COPY patches ./patches
 COPY src/backend/server-main/package.json src/backend/server-main/
 # --ignore-scripts:根 prepare(husky)在过滤安装下不可用;argon2 等原生依赖均带预编译产物
 RUN corepack pnpm install --frozen-lockfile --filter server-main --ignore-scripts
