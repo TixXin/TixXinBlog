@@ -173,9 +173,10 @@ for (const layout of ['nexus', 'aurora', 'dock']) {
     await page.getByRole('button', { name: '连续加载', exact: true }).click()
     await expect(cards).toHaveCount(15)
     await expect(cards.first()).toHaveAttribute('href', '/articles/106')
-    // 真实用户滚动会结束模式切换的自动回顶；协议 scrollIntoView 不会产生 wheel 输入。
+    // 真实滚轮先结束自动回顶，再定位末卡；固定滚动量在不同浏览器不保证到达底部。
     await cards.first().hover()
-    await page.mouse.wheel(0, 3000)
+    await page.mouse.wheel(0, 250)
+    await cards.last().scrollIntoViewIfNeeded()
     await expect(cards).toHaveCount(30)
     const collection = await cards.evaluateAll((nodes) => nodes.map((node) => node.getAttribute('href')))
     await cards.last().click()
