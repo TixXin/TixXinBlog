@@ -35,6 +35,9 @@ export const auditActions: Record<string, string> = {
   'guestbook.create': '发布或回复留言',
   'guestbook.update': '审核或置顶留言',
   'guestbook.delete': '删除留言',
+  'gallery.create': '创建图库作品',
+  'gallery.update': '编辑发布或排序图库作品',
+  'gallery.delete': '删除图库作品',
   'taxonomy.write': '管理分类标签',
   'site.save': '保存站点资料',
   'site.restore': '恢复站点资料',
@@ -118,6 +121,8 @@ export function auditDescriptor(path: string, method: string) {
             : method === 'POST'
               ? 'moment.create'
               : 'moment.update'
+    } else if (resourceType === 'gallery') {
+      action = method === 'POST' ? 'gallery.create' : method === 'DELETE' ? 'gallery.delete' : 'gallery.update'
     } else if (resourceType === 'guestbook') {
       action = method === 'POST' ? 'guestbook.create' : method === 'DELETE' ? 'guestbook.delete' : 'guestbook.update'
     } else if (resourceType === 'taxonomy') {
@@ -179,6 +184,10 @@ const fields: Record<string, string> = {
   linkedLink: '引用链接',
   replyToId: '回复留言',
   requireApproval: '评论审核策略',
+  mediaId: '作品图片',
+  takenOn: '拍摄日期',
+  sortOrder: '显示排序',
+  gear: '器材介绍',
 }
 function object(value: unknown): Record<string, unknown> {
   return value && typeof value === 'object' && !Array.isArray(value) ? (value as Record<string, unknown>) : {}
@@ -213,9 +222,15 @@ export function auditResult(
     'height',
     'exportedPosts',
     'exportedFlashes',
+    'exportedMoments',
+    'exportedGuestbook',
+    'exportedGallery',
     'exportedMedia',
     'importedPosts',
     'importedFlashes',
+    'importedMoments',
+    'importedGuestbook',
+    'importedGallery',
     'importedComments',
     'importedMedia',
   ])
@@ -223,7 +238,7 @@ export function auditResult(
   if (Object.keys(counts).length) summary.counts = counts
   if (
     typeof value.status === 'string' &&
-    ['draft', 'published', 'archived', 'pending', 'hidden', 'spam'].includes(value.status)
+    ['draft', 'published', 'archived', 'pending', 'hidden', 'spam', 'withdrawn'].includes(value.status)
   )
     summary.targetState = value.status
   if (typeof value.requireApproval === 'boolean')
