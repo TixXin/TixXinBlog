@@ -84,3 +84,15 @@ corepack pnpm --filter server-main run test:backup-restore
 后台运行诊断只向管理员展示数据库连通性、待应用迁移、schema 一致性、Node 版本和存储读写探测。媒体完整性核验单独读取登记资源，返回缺失/损坏的资源编号，不公开磁盘路径或连接凭据。
 
 恢复后的媒体目录默认仅归创建用户访问；将其挂载到容器时，需让运行 API 的用户具有读取权限。可设置 `RESTORE_API_IMAGE` 运行当前后端镜像的隔离应用验证；验证会共享恢复容器的无外部网络空间，不发布端口。CI 同时检查数据库、媒体和旧授权拒绝。
+
+使用当前源码的独立生产镜像验收时，可在仓库根目录执行（镜像名应使用本次专用且尚未占用的标签）：
+
+```powershell
+docker build -f src/backend/server-main/Dockerfile -t tixxin-gallery-restore-test:latest .
+$env:RESTORE_API_IMAGE = 'tixxin-gallery-restore-test:latest'
+corepack pnpm --filter server-main run test:backup-restore
+Remove-Item Env:RESTORE_API_IMAGE
+docker image rm tixxin-gallery-restore-test:latest
+```
+
+此流程使用隔离测试账号和媒体，无需提供日常账号密码。应用验收核对生产 `/ready`、公开文章与图库数量、器材配置、媒体字节摘要、恢复前 token 拒绝、原密码重新登录，以及图库后台字段和原记录一致。还会用恢复前上下文对同编号作品提交并要求返回 409，缺少上下文要求 428，重新读取后使用新上下文允许保存。所有写入只发生在即将清理的恢复副本；实际站点切换、外部网络、生产部署及真机浏览器不在此演练范围内。
