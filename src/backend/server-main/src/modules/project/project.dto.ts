@@ -21,6 +21,7 @@ import {
   PROJECT_TAG_COLORS,
 } from '../../entities/project.entity'
 import type { ProjectLink, ProjectProgress, ProjectStatus, ProjectTag } from '../../entities/project.entity'
+import { MaxUtf16Length } from '../../common/validators/max-utf16-length'
 const provided = (_object: unknown, value: unknown) => value !== undefined
 const trim = ({ value }: { value: unknown }) => (typeof value === 'string' ? value.trim() : value)
 export class ProjectQuery {
@@ -34,7 +35,7 @@ export class AdminProjectQuery extends ProjectQuery {
   @ValidateIf(provided) @IsIn(['all', ...PROJECT_STATUSES]) status?: ProjectStatus | 'all'
 }
 export class ProjectTagDto implements ProjectTag {
-  @IsString() @MinLength(1) @MaxLength(40) @Transform(trim) label!: string
+  @IsString() @MinLength(1) @MaxUtf16Length(40) @Transform(trim) label!: string
   @IsIn(PROJECT_TAG_COLORS) color!: ProjectTag['color']
 }
 export class ProjectLinkDto implements ProjectLink {
@@ -44,8 +45,8 @@ export class ProjectLinkDto implements ProjectLink {
 export class SaveProjectDto {
   @ValidateIf(provided) @IsUUID('4') requestId?: string
   @ValidateIf(provided) @IsInt() @Min(0) revision?: number
-  @ValidateIf(provided) @IsString() @MinLength(1) @MaxLength(160) @Transform(trim) title?: string
-  @ValidateIf(provided) @IsString() @MaxLength(5000) @Transform(trim) description?: string
+  @ValidateIf(provided) @IsString() @MinLength(1) @MaxUtf16Length(160) @Transform(trim) title?: string
+  @ValidateIf(provided) @IsString() @MaxUtf16Length(5000) @Transform(trim) description?: string
   @ValidateIf((_object, value) => value !== undefined && value !== null) @IsUUID('4') coverMediaId?: string | null
   @ValidateIf(provided)
   @IsArray()

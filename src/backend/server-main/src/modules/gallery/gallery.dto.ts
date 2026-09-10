@@ -3,6 +3,7 @@ import { Transform, Type } from 'class-transformer'
 import { ArrayMaxSize, IsArray, ValidateNested } from 'class-validator'
 import { GALLERY_GEAR_ICONS } from '../../entities/gallery-settings.entity'
 import type { GalleryGear } from '../../entities/gallery-settings.entity'
+import { MaxUtf16Length } from '../../common/validators/max-utf16-length'
 import {
   IsDateString,
   IsIn,
@@ -34,15 +35,15 @@ export class SaveGalleryDto {
   @ValidateIf(provided) @IsUUID('4') requestId?: string
   @ValidateIf(provided) @IsInt() @Min(0) revision?: number
   @ValidateIf(provided) @IsUUID('4') mediaId?: string
-  @ValidateIf(provided) @IsString() @MinLength(1) @MaxLength(160) @Transform(trim) title?: string
-  @ValidateIf(provided) @IsString() @MaxLength(5000) @Transform(trim) description?: string
-  @ValidateIf(provided) @IsString() @MaxLength(40) @Transform(trim) category?: string
+  @ValidateIf(provided) @IsString() @MinLength(1) @MaxUtf16Length(160) @Transform(trim) title?: string
+  @ValidateIf(provided) @IsString() @MaxUtf16Length(5000) @Transform(trim) description?: string
+  @ValidateIf(provided) @IsString() @MaxUtf16Length(40) @Transform(trim) category?: string
   @ValidateIf((_object, value) => value !== undefined && value !== null)
   @Matches(/^\d{4}-\d{2}-\d{2}$/)
   @IsDateString({ strict: true })
   takenOn?: string | null
-  @ValidateIf(provided) @IsString() @MaxLength(160) @Transform(trim) location?: string
-  @ValidateIf(provided) @IsString() @MaxLength(160) @Transform(trim) device?: string
+  @ValidateIf(provided) @IsString() @MaxUtf16Length(160) @Transform(trim) location?: string
+  @ValidateIf(provided) @IsString() @MaxUtf16Length(160) @Transform(trim) device?: string
   @ValidateIf(provided) @IsIn(GALLERY_STATUSES) status?: GalleryStatus
   @ValidateIf(provided) @IsInt() @Min(-1000000) @Max(1000000) sortOrder?: number
 }
@@ -52,8 +53,8 @@ export class GalleryRevisionDto {
 
 export class GalleryGearDto implements GalleryGear {
   @IsIn(GALLERY_GEAR_ICONS) icon!: GalleryGear['icon']
-  @IsString() @MinLength(1) @MaxLength(80) @Transform(trim) name!: string
-  @IsString() @MaxLength(300) @Transform(trim) description!: string
+  @IsString() @MinLength(1) @MaxUtf16Length(80) @Transform(trim) name!: string
+  @IsString() @MaxUtf16Length(300) @Transform(trim) description!: string
 }
 export class SaveGallerySettingsDto {
   @IsInt() @Min(0) revision!: number
