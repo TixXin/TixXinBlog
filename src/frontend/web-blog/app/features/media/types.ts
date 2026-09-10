@@ -19,7 +19,18 @@ export interface MediaReferences {
   page: number
   pageSize: number
   items: {
-    kind: 'post' | 'revision' | 'flash' | 'site' | 'site-revision' | 'comment' | 'flash-comment'
+    kind:
+      | 'post'
+      | 'revision'
+      | 'flash'
+      | 'site'
+      | 'site-revision'
+      | 'comment'
+      | 'flash-comment'
+      | 'moment'
+      | 'moment-comment'
+      | 'guestbook'
+      | 'gallery'
     title: string
     url: string
     revision?: number

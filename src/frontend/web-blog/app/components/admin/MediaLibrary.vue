@@ -40,21 +40,27 @@
           :aria-label="`${job.name} 上传进度`"
         />
         <span v-if="job.error" role="alert">{{ job.error }}</span
-        ><button v-if="job.status === 'failed' && job.file" type="button" :disabled="uploading" @click="retry(job)">
+        ><button
+          v-if="job.status === 'failed' && job.file"
+          type="button"
+          :disabled="uploading || !ready"
+          @click="retry(job)"
+        >
           重试上传
         </button>
       </li>
     </ul>
     <form class="media-library__filters" @submit.prevent="searchMedia">
-      <input v-model="search" placeholder="搜索文件名或替代文本" aria-label="搜索媒体" maxlength="128" /><select
-        v-if="!selectable"
-        v-model="deleted"
-        aria-label="资源状态"
-        @change="searchMedia"
-      >
+      <input
+        v-model="search"
+        :disabled="!ready"
+        placeholder="搜索文件名或替代文本"
+        aria-label="搜索媒体"
+        maxlength="128"
+      /><select v-if="!selectable" v-model="deleted" :disabled="!ready" aria-label="资源状态" @change="searchMedia">
         <option value="false">可用资源</option>
         <option value="true">回收资源</option></select
-      ><button type="submit" :disabled="pending">搜索</button>
+      ><button type="submit" :disabled="pending || !ready">搜索</button>
     </form>
     <p v-if="error" role="alert">
       {{ error }} <button type="button" :disabled="pending" @click="load">重新加载</button>
@@ -76,19 +82,27 @@
                   ? '站点设置'
                   : item.kind === 'comment' || item.kind === 'flash-comment'
                     ? '评论头像'
-                    : '闪念'
+                    : item.kind === 'gallery'
+                      ? '图库作品'
+                      : item.kind === 'moment'
+                        ? '朋友圈动态'
+                        : item.kind === 'moment-comment'
+                          ? '动态评论'
+                          : item.kind === 'guestbook'
+                            ? '留言'
+                            : '闪念'
           }}
         </li>
       </ul>
       <button
         type="button"
-        :disabled="working || references.page <= 1"
+        :disabled="!ready || working || references.page <= 1"
         @click="showReferences(referenceId, references.page - 1)"
       >
         上一页引用</button
       ><button
         type="button"
-        :disabled="working || references.page * 20 >= references.total"
+        :disabled="!ready || working || references.page * 20 >= references.total"
         @click="showReferences(referenceId, references.page + 1)"
       >
         下一页引用
@@ -106,13 +120,13 @@
             v-model="altDrafts[asset.id]"
             :aria-label="`${asset.name} 替代文本`"
             maxlength="300"
-            :disabled="asset.deleted || working"
+            :disabled="!ready || asset.deleted || working"
         /></label>
         <div class="media-library__actions">
           <button
             v-if="!asset.deleted"
             type="button"
-            :disabled="working || altDrafts[asset.id] === asset.alt"
+            :disabled="!ready || working || altDrafts[asset.id] === asset.alt"
             @click="saveAlt(asset)"
           >
             保存替代文本
@@ -120,19 +134,23 @@
           <button
             v-if="altDrafts[asset.id] !== asset.alt"
             type="button"
-            :disabled="working"
+            :disabled="!ready || working"
             @click="altDrafts[asset.id] = asset.alt"
           >
             取消替代文本修改
           </button>
-          <button type="button" :disabled="working" @click="showReferences(asset.id)">查看引用</button>
-          <button v-if="asset.deleted" type="button" :disabled="working" @click="restore(asset)">恢复资源</button>
-          <button v-else type="button" :disabled="working || uploading" @click="remove(asset)">移入回收</button>
+          <button type="button" :disabled="!ready || working" @click="showReferences(asset.id)">查看引用</button>
+          <button v-if="asset.deleted" type="button" :disabled="!ready || working" @click="restore(asset)">
+            恢复资源
+          </button>
+          <button v-else type="button" :disabled="!ready || working || uploading" @click="remove(asset)">
+            移入回收
+          </button>
           <button
             v-if="selectable && !asset.deleted"
             type="button"
-            :disabled="working || pending || uploading || hasDirtyAlt"
-            @click="$emit('selected', asset)"
+            :disabled="!canSelect(asset)"
+            @click="select(asset)"
           >
             使用此图片
           </button>
@@ -140,9 +158,11 @@
       </li>
     </ul>
     <div class="media-library__pagination">
-      <button type="button" :disabled="pending || page <= 1" @click="changePage(page - 1)">上一页资源</button
+      <button type="button" :disabled="!ready || pending || page <= 1" @click="changePage(page - 1)">上一页资源</button
       ><span>{{ page }} / {{ Math.max(1, Math.ceil(total / 20)) }} · 共 {{ total }} 项</span
-      ><button type="button" :disabled="pending || page * 20 >= total" @click="changePage(page + 1)">下一页资源</button>
+      ><button type="button" :disabled="!ready || pending || page * 20 >= total" @click="changePage(page + 1)">
+        下一页资源
+      </button>
     </div>
   </section>
 </template>
@@ -150,7 +170,10 @@
 import type { MediaAsset } from '~/features/media/types'
 import type { useMediaLibrary } from '~/composables/useMediaLibrary'
 const props = defineProps<{ selectable: boolean; controller: ReturnType<typeof useMediaLibrary> }>()
-defineEmits<{ selected: [asset: MediaAsset] }>()
+const emit = defineEmits<{ selected: [asset: MediaAsset] }>()
+function select(asset: MediaAsset) {
+  if (props.controller.canSelect(asset)) emit('selected', asset)
+}
 const {
   search,
   deleted,
@@ -158,7 +181,7 @@ const {
   total,
   items,
   altDrafts,
-  hasDirtyAlt,
+  canSelect,
   uploadAlt,
   jobs,
   pending,
