@@ -26,10 +26,10 @@ async function main() {
       fixture.backupOptions,
     )
     const ownership = await em.execute('select * from development_fixture order by key')
-    assert.equal(ownership.length, 135)
+    assert.equal(ownership.length, 156)
     const initial = await run()
     assert.equal(initial.preview, true)
-    assert.equal(initial.remove.length, 135, JSON.stringify(initial.preserve))
+    assert.equal(initial.remove.length, 156, JSON.stringify(initial.preserve))
     assert.equal(initial.preserve.length, 0)
     await assert.rejects(removeDevelopmentData(['--dataset', 'all', '--apply', '--confirm', 'wrong']), /确认/)
     await assert.rejects(removeDevelopmentData([]), /显式指定/)
@@ -103,7 +103,7 @@ async function main() {
     assert.equal(reseeded.created.length, 0)
     assert.equal(reseeded.ready, false)
     process.stdout.write(
-      '样本清理通过：135项归属预览、确认和连接保护、用户编辑/回复/互动/媒体保留、独立备份、账本与文件保留、重复补种不复活\n',
+      '样本清理通过：156项归属预览、确认和连接保护、用户编辑/回复/互动/媒体保留、独立备份、账本与文件保留、重复补种不复活\n',
     )
   } finally {
     process.env.NODE_ENV = 'test'
