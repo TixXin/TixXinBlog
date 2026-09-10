@@ -79,6 +79,7 @@
 <script setup lang="ts">
 import { postBatchLabels } from '~/features/post/batchTypes'
 import type { PostBatchPreview, PostBatchResult } from '~/features/post/batchTypes'
+import { getModalFocusOrigin } from '~/utils/modalFocusOrigin'
 const props = defineProps<{
   preview: PostBatchPreview | null
   result: PostBatchResult | null
@@ -90,6 +91,7 @@ defineEmits<{ execute: []; query: [] }>()
 const open = defineModel<boolean>('open', { required: true })
 const acknowledgement = defineModel<string>('acknowledgement', { required: true })
 const dialog = ref<HTMLDialogElement | null>(null)
+let focusOrigin: HTMLElement | null = null
 function outcome(id: number) {
   return props.result?.results.find((item) => item.id === id)
 }
@@ -97,9 +99,21 @@ function close() {
   if (!props.pending) open.value = false
 }
 watch(open, async (value) => {
+  if (value && import.meta.client) focusOrigin = getModalFocusOrigin(document)
   await nextTick()
+  if (value !== open.value) return
   if (value && !dialog.value?.open) dialog.value?.showModal()
-  else if (!value) dialog.value?.close()
+  else if (!value) {
+    dialog.value?.close()
+    // 原生 dialog 完成焦点恢复后，再归还真实指针或键盘入口。
+    if (
+      focusOrigin?.isConnected &&
+      !focusOrigin.matches(':disabled') &&
+      !focusOrigin.closest('[inert]') &&
+      focusOrigin.getClientRects().length
+    )
+      focusOrigin.focus({ preventScroll: true })
+  }
 })
 </script>
 <style scoped lang="scss">

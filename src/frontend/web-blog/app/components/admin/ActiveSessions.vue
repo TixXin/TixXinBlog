@@ -14,7 +14,7 @@
     <p v-if="pending" role="status">正在处理会话…</p>
     <p v-if="error" role="alert">{{ error }}</p>
     <ul>
-      <li v-for="item in items" :key="item.id">
+      <li v-for="item in items" :key="item.id" :data-session-id="item.id">
         <h3>{{ item.device }}{{ item.current ? ' · 当前会话' : '' }}</h3>
         <p>登录时间：{{ item.loginAt ? date(item.loginAt) : '未知（从旧登录迁移）' }}</p>
         <p>最近续期：{{ date(item.lastRefreshedAt) }}</p>
