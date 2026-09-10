@@ -83,6 +83,38 @@ export class GalleryService {
     if (!item) throw new NotFoundException('尚未找到此提交，请使用原提交标识重试')
     return item.deletedAt ? { state: 'deleted', id: item.id } : { state: 'saved', item: this.serialize(item, true) }
   }
+  async navigation(id: number, query: GalleryQuery) {
+    galleryId(id)
+    if (!(await this.em.count(GalleryPhoto, { id, ...publicPhotos })))
+      throw new NotFoundException('作品不存在或尚未公开')
+    const clauses = ["status='published'", 'deleted_at is null']
+    const parameters: (string | number)[] = []
+    if (query.category !== undefined) {
+      clauses.push('category=?')
+      parameters.push(query.category)
+    }
+    if (query.q) {
+      clauses.push('(title ilike ? or description ilike ? or location ilike ?)')
+      const pattern = `%${query.q.replace(/[\\%_]/g, '\\$&')}%`
+      parameters.push(pattern, pattern, pattern)
+    }
+    // 窗口先应用与列表相同的过滤和稳定排序，再定位作品；深链不依赖当前页缓存。
+    const [position] = await this.em.execute<{ previousId: number | null; nextId: number | null; position: number }[]>(
+      `select "previousId","nextId",position::int from (
+        select id,lag(id) over w as "previousId",lead(id) over w as "nextId",row_number() over w as position
+        from gallery_photo where ${clauses.join(' and ')} window w as (order by sort_order desc,id desc)
+      ) ordered where id=?`,
+      [...parameters, id],
+    )
+    return {
+      matched: !!position,
+      page: position ? Math.ceil(position.position / query.pageSize) : null,
+      previousId: position?.previousId ?? null,
+      nextId: position?.nextId ?? null,
+      previousPage: position?.previousId ? Math.ceil((position.position - 1) / query.pageSize) : null,
+      nextPage: position?.nextId ? Math.ceil((position.position + 1) / query.pageSize) : null,
+    }
+  }
   async metadata() {
     const categories = await this.em.execute<{ value: string; count: number }[]>(
       "select category as value,count(*)::int as count from gallery_photo where deleted_at is null and status='published' group by category order by category",

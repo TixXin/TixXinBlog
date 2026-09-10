@@ -31,6 +31,9 @@ export class GalleryController {
   @Get('metadata') metadata() {
     return this.gallery.metadata()
   }
+  @Get(':id/navigation') navigation(@Param('id', ParseIntPipe) id: number, @Query() query: GalleryQuery) {
+    return this.gallery.navigation(id, query)
+  }
   @Get(':id') detail(@Param('id', ParseIntPipe) id: number) {
     return this.gallery.detail(id)
   }
