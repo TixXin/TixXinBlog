@@ -16,6 +16,7 @@ import {
 } from 'class-validator'
 import { LINK_STATUSES } from '../../entities/friend-link.entity'
 import type { LinkStatus } from '../../entities/friend-link.entity'
+import { MaxUtf16Length } from '../../common/validators/max-utf16-length'
 const provided = (_object: unknown, value: unknown) => value !== undefined
 const trim = ({ value }: { value: unknown }) => (typeof value === 'string' ? value.trim() : value)
 export class LinkQuery {
@@ -30,8 +31,8 @@ export class AdminLinkQuery extends LinkQuery {
 export class SaveLinkDto {
   @ValidateIf(provided) @IsUUID('4') requestId?: string
   @ValidateIf(provided) @IsInt() @Min(0) revision?: number
-  @ValidateIf(provided) @IsString() @MinLength(1) @MaxLength(80) @Transform(trim) name?: string
-  @ValidateIf(provided) @IsString() @MaxLength(300) @Transform(trim) description?: string
+  @ValidateIf(provided) @IsString() @MinLength(1) @MaxUtf16Length(80) @Transform(trim) name?: string
+  @ValidateIf(provided) @IsString() @MaxUtf16Length(300) @Transform(trim) description?: string
   @ValidateIf(provided) @IsString() @MinLength(1) @MaxLength(2048) @Transform(trim) url?: string
   @ValidateIf((_object, value) => value !== undefined && value !== null) @IsUUID('4') logoMediaId?: string | null
   @ValidateIf((_object, value) => value !== undefined && value !== null)
@@ -53,7 +54,7 @@ export class SaveLinkSettingsDto {
   @ArrayMaxSize(12)
   @IsString({ each: true })
   @MinLength(1, { each: true })
-  @MaxLength(300, { each: true })
+  @MaxUtf16Length(300, { each: true })
   @Transform(({ value }: { value: unknown }) =>
     Array.isArray(value) ? value.map((item: unknown) => (typeof item === 'string' ? item.trim() : item)) : value,
   )
