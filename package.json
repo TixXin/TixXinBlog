@@ -41,7 +41,8 @@
   "pnpm": {
     "overrides": {
       "@rushstack/node-core-library@5.13.0>ajv": "^8.18.0",
-      "fontless@0.2.1>esbuild": "^0.28.2"
+      "fontless@0.2.1>esbuild": "^0.28.2",
+      "@nestjs/platform-express@11.2.3>multer": "2.3.0"
     },
     "patchedDependencies": {
       "nuxt@4.5.2": "patches/nuxt@4.5.2.patch"
