@@ -8,10 +8,15 @@ async function main() {
   const fixture = await createBrowserTestApp('http://localhost')
   const sourceUrl = process.env.DATABASE_URL!
   const { runDevDatabase } = await import('../src/seeders/database-dev')
+  const { seedDevelopmentData } = await import('../src/seeders/seed-development-data')
   const target = decodeURIComponent(new URL(sourceUrl).pathname.slice(1))
   const output: string[] = []
   const run = (action: string, apply = false) =>
-    runDevDatabase([action, ...(apply ? ['--apply', '--confirm', target] : [])], (text) => output.push(text))
+    runDevDatabase(
+      [action, ...(apply ? ['--apply', '--confirm', target] : [])],
+      (text) => output.push(text),
+      fixture.backupOptions,
+    )
   try {
     const preview = await run('seed-moments')
     assert.equal(preview.counts.moment, 0)
@@ -89,10 +94,14 @@ async function main() {
     const backedUp = new Promise<void>((resolve) => {
       backupReady = resolve
     })
-    const normalization = runDevDatabase(['normalize-samples', '--apply', '--confirm', target], (text) => {
-      output.push(text)
-      if (text.startsWith('写入前完整备份：')) backupReady()
-    })
+    const normalization = runDevDatabase(
+      ['normalize-samples', '--apply', '--confirm', target],
+      (text) => {
+        output.push(text)
+        if (text.startsWith('写入前完整备份：')) backupReady()
+      },
+      fixture.backupOptions,
+    )
     try {
       await Promise.race([
         backedUp,
@@ -142,6 +151,15 @@ async function main() {
     )
     assert.equal((await run('status')).counts.guestbook_message, 1)
     assert.equal((await run('status')).counts.guestbook_reaction, 1)
+    await seedDevelopmentData(
+      ['--dataset', 'gallery-v1', '--apply', '--confirm', target],
+      () => undefined,
+      fixture.backupOptions,
+    )
+    await em.execute(
+      'update gallery_settings set gear=\'[{"icon":"lucide:camera","name":"随身相机","description":"日常记录"}]\'::jsonb,revision=1 where id=\'default\'',
+    )
+    assert.equal((await run('status')).counts.gallery_photo, 18)
     await fixture.testOrm.em.fork().execute('create view database_dev_guard as select id from moment')
     await fixture.stopServices()
     const removed = await run('remove-samples', true)
@@ -153,6 +171,10 @@ async function main() {
     assert.equal(cleared.after?.post, 0)
     assert.equal(cleared.after?.guestbook_message, 0)
     assert.equal(cleared.after?.guestbook_reaction, 0)
+    assert.equal(cleared.after?.gallery_photo, 0)
+    assert.equal(cleared.after?.gallery_settings, 1)
+    assert.equal(cleared.after?.development_fixture, 26)
+    assert.equal(cleared.after?.media_asset, 8)
     assert.equal(cleared.after?.admin_user, preview.counts.admin_user)
     assert.equal(cleared.after?.site_settings, 1)
     const beforeRejectedReset = await run('status')
@@ -160,6 +182,13 @@ async function main() {
     assert.deepEqual((await run('status')).counts, beforeRejectedReset.counts)
     await fixture.testOrm.connect()
     try {
+      assert.deepEqual(
+        (await fixture.testOrm.em.getConnection().execute('select gear,revision from gallery_settings'))[0],
+        {
+          gear: [{ icon: 'lucide:camera', name: '随身相机', description: '日常记录' }],
+          revision: 1,
+        },
+      )
       await fixture.testOrm.em.getConnection().execute('drop view database_dev_guard')
     } finally {
       await fixture.testOrm.close(true)
@@ -169,6 +198,9 @@ async function main() {
     assert.equal(reset.after?.post, 0)
     assert.equal(reset.after?.site_settings, 1)
     assert.equal(reset.after?.content_context, 1)
+    assert.equal(reset.after?.gallery_photo, 0)
+    assert.equal(reset.after?.gallery_settings, 1)
+    assert.equal(reset.after?.development_fixture, 0)
     assert.equal(reset.pendingMigrations, 0)
     assert.equal((await run('status')).pendingMigrations, 0)
     assert.equal(reset.after?.mikro_orm_migrations, preview.counts.mikro_orm_migrations)

@@ -4,7 +4,8 @@ import { MikroORM } from '@mikro-orm/postgresql'
 import { randomUUID } from 'node:crypto'
 import { mikroOrmOptions } from '../config/mikro-orm.options'
 import { AuditEntry } from '../entities/audit-entry.entity'
-import { createFullBackup } from '../../scripts/full-backup.mjs'
+import { createDevelopmentBackup } from './development-backup'
+import type { DevelopmentBackupOptions } from './development-backup'
 import { requireIdle } from './database-dev'
 import { DevelopmentDataError } from './seed-development-data'
 import { fixtureCleanupPlan } from './fixture-cleanup-plan'
@@ -15,18 +16,23 @@ import { submissionHash } from '../modules/moment/moment-values'
 export async function removeDevelopmentData(
   args: string[],
   write = (value: string) => process.stdout.write(value + '\n'),
+  options: DevelopmentBackupOptions = {},
 ) {
   let dataset = '',
     apply = false,
     confirm = ''
   for (let index = 0; index < args.length; index++) {
-    if (args[index] === '--dataset' && !dataset && ['core-v1', 'guestbook-v1', 'all'].includes(args[index + 1] ?? ''))
+    if (
+      args[index] === '--dataset' &&
+      !dataset &&
+      ['core-v1', 'guestbook-v1', 'gallery-v1', 'all'].includes(args[index + 1] ?? '')
+    )
       dataset = args[++index]!
     else if (args[index] === '--apply' && !apply) apply = true
     else if (args[index] === '--confirm' && !confirm && args[index + 1]) confirm = args[++index]!
     else
       throw new DevelopmentDataError(
-        '用法：db:dev remove-data --dataset core-v1|guestbook-v1|all [--apply --confirm 数据库名]',
+        '用法：db:dev remove-data --dataset core-v1|guestbook-v1|gallery-v1|all [--apply --confirm 数据库名]',
       )
   }
   if (!dataset) throw new DevelopmentDataError('请显式指定需要清理的样本集 --dataset')
@@ -66,7 +72,7 @@ export async function removeDevelopmentData(
     write(JSON.stringify(report, null, 2))
     if (!apply || !plan.remove.length) return report
     await requireIdle(orm.em.fork(), application)
-    const backup = await createFullBackup()
+    const backup = await createDevelopmentBackup(options)
     write(`清理前完整备份：${backup.directory}`)
     await requireIdle(orm.em.fork(), application)
     await orm.em.fork().transactional(async (em) => {
@@ -91,6 +97,7 @@ export async function removeDevelopmentData(
         'flash-comment',
         'moment-comment',
         'guestbook',
+        'gallery',
         'moment',
         'flash',
         'post',

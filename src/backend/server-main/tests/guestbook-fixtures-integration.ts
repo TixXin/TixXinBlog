@@ -10,7 +10,11 @@ async function main() {
   const database = decodeURIComponent(new URL(process.env.DATABASE_URL!).pathname.slice(1))
   const { seedDevelopmentData } = await import('../src/seeders/seed-development-data')
   const run = () =>
-    seedDevelopmentData(['--dataset', 'guestbook-v1', '--apply', '--confirm', database], () => undefined)
+    seedDevelopmentData(
+      ['--dataset', 'guestbook-v1', '--apply', '--confirm', database],
+      () => undefined,
+      fixture.backupOptions,
+    )
   try {
     const seeded = await run()
     assert.equal(seeded.ready, true)

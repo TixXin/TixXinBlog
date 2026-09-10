@@ -9,27 +9,33 @@ import { AuditEntry } from '../entities/audit-entry.entity'
 import { LocalMediaStorage } from '../modules/media/media-storage'
 import { lockTaxonomy } from '../modules/post/taxonomy-lock'
 import { lockMedia } from '../modules/media/media-references'
-import { createFullBackup } from '../../scripts/full-backup.mjs'
+import { createDevelopmentBackup } from './development-backup'
+import type { DevelopmentBackupOptions } from './development-backup'
 import { seedCoreFixtures, CORE_DATASET } from './core-fixtures'
 import type { FixtureProgress } from './fixture-ledger'
 import { seedGuestbookFixtures, GUESTBOOK_DATASET, GUESTBOOK_FIXTURE_COUNT } from './guestbook-fixtures'
+import { seedGalleryFixtures, GALLERY_DATASET, GALLERY_FIXTURE_COUNT } from './gallery-fixtures'
 
 export class DevelopmentDataError extends Error {}
 export async function seedDevelopmentData(
   args: string[],
   write = (value: string) => process.stdout.write(value + '\n'),
+  options: DevelopmentBackupOptions = {},
 ) {
   let dataset = CORE_DATASET,
     apply = false,
     confirm = ''
   for (let index = 0; index < args.length; index++) {
-    if (args[index] === '--dataset' && [CORE_DATASET, GUESTBOOK_DATASET, 'all'].includes(args[index + 1] ?? ''))
+    if (
+      args[index] === '--dataset' &&
+      [CORE_DATASET, GUESTBOOK_DATASET, GALLERY_DATASET, 'all'].includes(args[index + 1] ?? '')
+    )
       dataset = args[++index]!
     else if (args[index] === '--apply' && !apply) apply = true
     else if (args[index] === '--confirm' && !confirm && args[index + 1]) confirm = args[++index]!
     else
       throw new DevelopmentDataError(
-        '用法：db:dev seed-data --dataset core-v1|guestbook-v1|all [--apply --confirm 数据库名]',
+        '用法：db:dev seed-data --dataset core-v1|guestbook-v1|gallery-v1|all [--apply --confirm 数据库名]',
       )
   }
   const url = new URL(process.env.DATABASE_URL!)
@@ -65,13 +71,17 @@ export async function seedDevelopmentData(
           ? 71
           : dataset === GUESTBOOK_DATASET
             ? GUESTBOOK_FIXTURE_COUNT
-            : 71 + GUESTBOOK_FIXTURE_COUNT,
+            : dataset === GALLERY_DATASET
+              ? GALLERY_FIXTURE_COUNT
+              : 71 + GUESTBOOK_FIXTURE_COUNT + GALLERY_FIXTURE_COUNT,
       scope:
         (dataset === CORE_DATASET
           ? '核心文章/闪念/朋友圈及互动'
           : dataset === GUESTBOOK_DATASET
             ? '留言、回复、置顶、待审隐藏、本地头像与真实回应'
-            : '核心业务和留言数据集') + '；已有归属不覆盖、不复活',
+            : dataset === GALLERY_DATASET
+              ? '图库作品、公开分页、草稿撤回、分类排序和横竖本地照片'
+              : '核心业务、留言和图库数据集') + '；已有归属不覆盖、不复活',
       apply,
     }
     write(JSON.stringify(plan, null, 2))
@@ -82,7 +92,7 @@ export async function seedDevelopmentData(
       (await orm.schema.getUpdateSchemaSQL({ wrap: false })).trim()
     )
       throw new DevelopmentDataError('请先核对并执行 migration:up，数据集不会隐式迁移或重建数据库')
-    const backup = await createFullBackup()
+    const backup = await createDevelopmentBackup(options)
     write(`写入前完整备份：${backup.directory}`)
     const progress: FixtureProgress = { created: [], retained: [], unavailable: [] }
     try {
@@ -94,6 +104,8 @@ export async function seedDevelopmentData(
         if (dataset === CORE_DATASET || dataset === 'all') await seedCoreFixtures(em, storage, progress, createdMedia)
         if (dataset === GUESTBOOK_DATASET || dataset === 'all')
           await seedGuestbookFixtures(em, storage, progress, createdMedia)
+        if (dataset === GALLERY_DATASET || dataset === 'all')
+          await seedGalleryFixtures(em, storage, progress, createdMedia)
         em.create(AuditEntry, {
           action: 'development.seed-data',
           resourceType: 'dataset',

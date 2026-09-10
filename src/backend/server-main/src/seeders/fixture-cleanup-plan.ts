@@ -66,6 +66,8 @@ export async function fixtureCleanupPlan(em: EntityManager, dataset: string) {
           changed = preserve(parent, '存在已修改或不属于指定样本集的回复、互动或内容引用') || changed
         if (!eligible.has(parent)) changed = preserve(child, '所属内容需要保留，关联样本一并保留') || changed
       } else if (eligible.has(parent)) {
+        // 图库等实体直接关联媒体；只在所有引用作品都可清理时允许移除该媒体索引。
+        if (relation.targetTable === 'media_asset' && tables.has(relation.sourceTable) && eligible.has(child)) continue
         if (relation.sourceTable === 'media_reference') {
           if (relation.targetTable !== 'media_asset') continue
           const owners = relations.filter(

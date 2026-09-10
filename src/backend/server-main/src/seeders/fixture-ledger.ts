@@ -16,6 +16,7 @@ export const FIXTURE_TABLES = {
   'moment-like': 'moment_like',
   guestbook: 'guestbook_message',
   'guestbook-reaction': 'guestbook_reaction',
+  gallery: 'gallery_photo',
 } as const
 export type FixtureKind = keyof typeof FIXTURE_TABLES
 export async function fixtureRow(em: EntityManager, kind: FixtureKind, id: string) {

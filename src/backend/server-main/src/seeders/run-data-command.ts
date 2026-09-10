@@ -28,7 +28,7 @@ async function main() {
       search = args[++index]!.slice(0, 200)
     else
       throw new Error(
-        '用法：db:dev check-data [--domain posts|comments|flashes|moments|media|site|guestbook] [--search 搜索词]；检查不接受写入参数',
+        `用法：db:dev check-data [--domain ${DATA_DOMAINS.map((item) => item.id).join('|')}] [--search 搜索词]；检查不接受写入参数`,
       )
   }
   if (search !== undefined && !domain) throw new Error('搜索检查需同时提供 --domain')
