@@ -23,6 +23,7 @@ import { MediaAsset } from '../../entities/media-asset.entity'
 import { PostFolder } from '../../entities/post-folder.entity'
 import { PostTag } from '../../entities/post-tag.entity'
 import { AdminSession } from '../../entities/admin-session.entity'
+import { GallerySettings } from '../../entities/gallery-settings.entity'
 import { MediaStorage } from '../media/media-storage'
 import { lockMedia, synchronizeMediaReferences } from '../media/media-references'
 import { lockTaxonomy } from '../post/taxonomy-lock'
@@ -37,6 +38,7 @@ import { packageHash, parseContentPackage } from './content-package'
 import { makeContentPlan, normalizedPost } from './content-import-plan'
 import { importMoments } from './content-import-moments'
 import { importGuestbook } from './content-import-guestbook'
+import { importGallery } from './content-import-gallery'
 import { lockGuestbook } from '../guestbook/guestbook-write.service'
 type Admin = { id: string; sessionVersion: number; sessionId: string }
 type Options = { requestId: string; strategy: 'skip' | 'copy'; includeSettings: boolean }
@@ -58,6 +60,7 @@ export class ContentImportService {
       ticket: job.id,
       confirmation: packageHash(job.plan),
       settingsPreview: job.includeSettings ? job.payload?.site : undefined,
+      gallerySettingsPreview: job.includeSettings ? job.payload?.gallerySettings : undefined,
       strategy: job.strategy,
       includeSettings: job.includeSettings,
       plan,
@@ -239,6 +242,7 @@ export class ContentImportService {
           flashes: [],
           moments: [],
           guestbook: [],
+          gallery: [],
           comments: 0,
           media: 0,
           files: 0,
@@ -355,12 +359,21 @@ export class ContentImportService {
           }
           await importMoments(em, payload, current, result)
           await importGuestbook(em, payload, current, result)
+          await importGallery(em, payload, current, result)
           if (job.includeSettings) {
             await this.sites.save({ ...payload.site, revision: current.siteRevision }, '从内容包迁入站点资料')
             await this.comments.savePolicy({
               requireApproval: payload.requireCommentApproval,
               revision: current.policyRevision,
             })
+            if (payload.gallerySettings) {
+              const settings = await em.findOneOrFail(GallerySettings, { id: 'default' }, { refresh: true })
+              if (settings.revision !== current.gallerySettingsRevision)
+                throw new ConflictException('图库器材配置已变化，请重新预览')
+              settings.gear = payload.gallerySettings.gear
+              settings.revision += 1
+              settings.updatedAt = new Date()
+            }
             result.settings = true
           }
           job.result = result

@@ -4,8 +4,10 @@
  */
 import assert from 'node:assert/strict'
 import { randomUUID } from 'node:crypto'
-import { readFile, writeFile } from 'node:fs/promises'
-import { join, resolve } from 'node:path'
+import { createRequire } from 'node:module'
+import { mkdir, readFile, rm, writeFile } from 'node:fs/promises'
+import { join, resolve, sep } from 'node:path'
+import { setTimeout as delay } from 'node:timers/promises'
 import { createBrowserTestApp } from './test-app.mjs'
 import {
   backendRoot,
@@ -14,8 +16,12 @@ import {
   restoreFullBackup,
   verifyRestoredApplication,
 } from '../scripts/full-backup.mjs'
+const { submissionHash } = createRequire(import.meta.url)('../dist/modules/moment/moment-values.js')
 
 const fixture = await createBrowserTestApp('http://localhost')
+const verificationRoot = resolve(backendRoot, '../../..', '.artifacts', 'backup-restore')
+const target = resolve(verificationRoot, `verification-${randomUUID()}`)
+if (!target.startsWith(verificationRoot + sep)) throw new Error('恢复演练产物路径越界')
 let restored
 try {
   const login = await fetch(`${fixture.origin}/api/v1/auth/login`, {
@@ -109,7 +115,48 @@ try {
     body: JSON.stringify({ emoji: '👍', reacted: true }),
   })
   assert.equal(reaction.status, 200)
-  const target = resolve(backendRoot, '../../..', '.backups', `verification-${randomUUID()}`)
+  await delay(1100)
+  const photoRequestId = randomUUID()
+  const galleryResponse = await fetch(`${fixture.origin}/api/v1/admin/gallery`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+    body: JSON.stringify({
+      requestId: photoRequestId,
+      mediaId: asset.id,
+      title: '清晨的石桥',
+      description: '完整保留的作品说明',
+      category: '城市',
+      takenOn: '2019-10-08',
+      location: '',
+      device: '',
+      status: 'published',
+      sortOrder: 10,
+    }),
+  })
+  assert.equal(galleryResponse.status, 201)
+  const photo = (await galleryResponse.json()).data
+  const settingsResponse = await fetch(`${fixture.origin}/api/v1/admin/gallery/settings`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+    body: JSON.stringify({
+      revision: 0,
+      gear: [{ icon: 'lucide:camera', name: '随行相机', description: '工作室器材记录' }],
+    }),
+  })
+  assert.equal(settingsResponse.status, 200)
+  const ledgerEm = fixture.testOrm.em.fork()
+  const [photoRow] = await ledgerEm.execute('select * from gallery_photo where id=?', [photo.id])
+  await ledgerEm.execute(
+    'insert into development_fixture (key,dataset,kind,resource_id,snapshot_hash,created_at) values (?,?,?,?,?,now())',
+    [
+      'gallery-restore:photo',
+      'gallery-restore-v1',
+      'gallery',
+      String(photo.id),
+      submissionHash(Object.fromEntries(Object.entries(photoRow).filter(([key]) => key !== 'updated_at'))),
+    ],
+  )
+  assert.equal(photoRow.request_id, photoRequestId)
   const backup = await createFullBackup({
     output: join(target, 'backup'),
     onProgress: (value) => process.stdout.write(`备份阶段：${value.stage}\n`),
@@ -123,7 +170,10 @@ try {
   assert.equal(backup.manifest.counts.moment_like, 1)
   assert.equal(backup.manifest.counts.guestbook_message, 2)
   assert.equal(backup.manifest.counts.guestbook_reaction, 1)
-  assert.equal(backup.manifest.counts.media_reference, 7)
+  assert.equal(backup.manifest.counts.gallery_photo, 1)
+  assert.equal(backup.manifest.counts.gallery_settings, 1)
+  assert.equal(backup.manifest.counts.development_fixture, 1)
+  assert.equal(backup.manifest.counts.media_reference, 8)
   assert.equal(
     Number((await fixture.testOrm.em.fork().execute('select count(*)::int as count from post'))[0].count),
     108,
@@ -142,6 +192,16 @@ try {
   assert.equal(restored.report.counts.moment_like, 1)
   assert.equal(restored.report.counts.guestbook_message, 2)
   assert.equal(restored.report.counts.guestbook_reaction, 1)
+  assert.equal(restored.report.counts.gallery_photo, 1)
+  assert.equal(restored.report.counts.gallery_settings, 1)
+  assert.equal(restored.report.counts.development_fixture, 1)
+  assert.deepEqual(restored.report.galleryIntegrity, {
+    photos: 1,
+    settings: 1,
+    mediaReferences: 1,
+    fixtures: 1,
+    verified: true,
+  })
   assert.equal(restored.report.mediaFiles, 1)
   assert.equal(restored.report.rowDigestsVerified, true)
   assert.equal(restored.report.network, 'none')
@@ -154,7 +214,7 @@ try {
     ...restored.report,
     application,
     isolatedResourcesRemoved: true,
-    backupDirectory: backup.directory,
+    backupAndRestoredMediaRemoved: true,
     verification: [
       '并发写入不进入既有快照',
       '数据库全部表行数与内容摘要一致',
@@ -164,13 +224,20 @@ try {
       '旧会话撤销与上下文轮换',
       '朋友圈正文、文章关系、评论、点赞及提交去重记录完整恢复',
       '留言、回复关系、回应、媒体引用及提交去重记录完整恢复',
+      '图库作品、拍摄时间、器材配置、媒体关联、提交去重及样本归属账本完整恢复',
     ],
   }
   await restored.cleanup()
   restored = null
+  await rm(join(target, 'backup'), { recursive: true, force: true })
+  await rm(join(target, 'restored'), { recursive: true, force: true })
+  await mkdir(target, { recursive: true })
   await writeFile(join(target, 'verification-report.json'), JSON.stringify(report, null, 2))
   process.stdout.write(`完整恢复演练通过：${join(target, 'verification-report.json')}\n`)
 } finally {
   await restored?.cleanup()
   await fixture.close()
+  // 成功和失败都清理本次专有子目录，仅保留无凭据的文字验收报告。
+  await rm(join(target, 'backup'), { recursive: true, force: true })
+  await rm(join(target, 'restored'), { recursive: true, force: true })
 }
