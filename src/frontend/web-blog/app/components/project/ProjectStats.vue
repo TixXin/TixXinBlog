@@ -7,15 +7,9 @@
 
 <template>
   <section class="card project-stats">
-    <h3 class="project-stats__title">
-      <Icon name="lucide:bar-chart-2" size="14" /> 项目概览
-    </h3>
+    <h3 class="project-stats__title"><Icon name="lucide:bar-chart-2" size="14" /> 项目概览</h3>
     <div class="project-stats__list">
-      <div
-        v-for="stat in stats"
-        :key="stat.label"
-        class="project-stats__item"
-      >
+      <div v-for="stat in stats" :key="stat.label" class="project-stats__item">
         <span class="project-stats__label">{{ stat.label }}</span>
         <span class="project-stats__value">{{ stat.value }}</span>
       </div>

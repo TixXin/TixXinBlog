@@ -19,6 +19,7 @@
               class="search-modal__input"
               placeholder="搜索文章、项目、友链..."
               aria-label="搜索文章、项目和友链"
+              maxlength="200"
               @keydown.enter="onEnter"
               @keydown.down.prevent="selectNext"
               @keydown.up.prevent="selectPrev"
@@ -40,7 +41,7 @@
               <span>{{ error }}</span>
               <button type="button" class="btn-primary" @click="search(query)">重试搜索</button>
             </div>
-            <ul v-else-if="results.length" ref="resultListRef" class="search-modal__list">
+            <ul v-if="!isSearching && results.length" ref="resultListRef" class="search-modal__list">
               <li v-for="(item, i) in results" :key="`${item.type}:${item.id}`">
                 <a
                   :href="item.url"
@@ -60,7 +61,7 @@
                 </a>
               </li>
             </ul>
-            <div v-else class="search-modal__empty">
+            <div v-if="!isSearching && !error && !results.length" class="search-modal__empty">
               <Icon name="lucide:search-x" size="20" />
               <span>没有找到相关内容</span>
             </div>
@@ -69,7 +70,7 @@
             {{ isSearching ? '正在搜索…' : `找到 ${results.length} 项内容` }}
           </p>
 
-          <div v-else class="search-modal__hint">
+          <div v-if="!query.trim()" class="search-modal__hint">
             <span>输入关键词开始搜索</span>
             <div class="search-modal__hint-keys">
               <kbd>&uarr;&darr;</kbd> 导航 <kbd>Enter</kbd> 跳转 <kbd>ESC</kbd> 关闭
@@ -236,9 +237,9 @@ watch([selectedIndex, results], () =>
 )
 
 function navigateToFirst() {
-  if (results.value.length > 0) {
-    navigateTo(results.value[selectedIndex.value]!)
-  }
+  if (isSearching.value) return
+  const item = results.value[Math.min(selectedIndex.value, results.value.length - 1)]
+  if (item) navigateTo(item)
 }
 
 function selectNext() {

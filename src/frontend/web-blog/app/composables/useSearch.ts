@@ -8,7 +8,6 @@
 import type Fuse from 'fuse.js'
 import { fetchPostPage } from '~/features/post/api'
 import { mockPosts } from '~/features/post/mock'
-import { mockProjects } from '~/features/project/mock'
 import { mockLinks } from '~/features/link/mock'
 import type { PostItem } from '~/features/post/types'
 import type { ProjectItem } from '~/features/project/types'
@@ -45,8 +44,11 @@ async function getFuse(items: SearchResultItem[]) {
 
 export function useSearch() {
   const config = useRuntimeConfig()
+  const projects = useProjectRepository()
   const error = ref('')
   let version = 0
+  let controller: AbortController | undefined
+  let alive = true
   const query = ref('')
   const results = ref<SearchResultItem[]>([])
   const isSearching = ref(false)
@@ -68,10 +70,10 @@ export function useSearch() {
     for (const project of projects) {
       items.push({
         type: 'project',
-        id: project.title,
+        id: String(project.id),
         title: project.title,
         description: project.description,
-        url: '/projects',
+        url: `/projects?q=${encodeURIComponent(project.title)}`,
         icon: 'lucide:layers',
       })
     }
@@ -92,6 +94,7 @@ export function useSearch() {
 
   async function search(q: string) {
     const requestVersion = ++version
+    controller?.abort()
     query.value = q
     error.value = ''
     if (!q.trim()) {
@@ -100,26 +103,54 @@ export function useSearch() {
       return
     }
     isSearching.value = true
+    controller = new AbortController()
     try {
       const useMock = config.public.postUseMockRepo !== false
-      const remotePosts = useMock
-        ? []
-        : (await fetchPostPage(config.public.apiBaseUrl, { search: q.trim(), pageSize: 10 })).items
-      const items = buildSearchItems(useMock ? mockPosts : [], mockProjects, mockLinks)
-      const fuse = await getFuse(items)
-      const local = fuse!.search(q, { limit: 10 }).map((match) => match.item)
-      if (requestVersion === version && query.value === q) {
-        results.value = [...buildSearchItems(remotePosts, [], []), ...local].slice(0, 10)
+      const keyword = q.trim().slice(0, 200),
+        signal = controller.signal
+      const [postRead, projectRead, localRead] = await Promise.allSettled([
+        useMock
+          ? Promise.resolve([] as PostItem[])
+          : fetchPostPage(config.public.apiBaseUrl, { search: keyword, pageSize: 10 }, signal).then(
+              (page) => page.items,
+            ),
+        projects.list({ q: keyword, page: 1, pageSize: 10 }, signal),
+        getFuse(buildSearchItems(useMock ? mockPosts : [], [], mockLinks)).then((fuse) =>
+          fuse.search(keyword, { limit: 10 }).map((match) => match.item),
+        ),
+      ])
+      if (alive && requestVersion === version && query.value === q) {
+        const projectItems = projectRead.status === 'fulfilled' ? projectRead.value.items : []
+        const postItems = postRead.status === 'fulfilled' ? postRead.value : []
+        const local = localRead.status === 'fulfilled' ? localRead.value : []
+        results.value = [
+          ...buildSearchItems([], projectItems, []),
+          ...buildSearchItems(postItems, [], []),
+          ...local,
+        ].slice(0, 10)
+        const unavailable = [
+          projectRead.status === 'rejected' ? '项目' : '',
+          postRead.status === 'rejected' ? '文章' : '',
+          localRead.status === 'rejected' ? '本地资料' : '',
+        ].filter(Boolean)
+        error.value = unavailable.length
+          ? `${unavailable.join('、')}搜索暂时不可用，请重试。${results.value.length ? '以下保留其他来源的可用结果。' : ''}`
+          : ''
       }
     } catch {
-      if (requestVersion === version && query.value === q) {
+      if (alive && requestVersion === version && query.value === q) {
         error.value = '搜索暂时不可用，请稍后重试'
         results.value = []
       }
     } finally {
-      if (requestVersion === version) isSearching.value = false
+      if (alive && requestVersion === version && query.value === q) isSearching.value = false
     }
   }
+  onScopeDispose(() => {
+    alive = false
+    version++
+    controller?.abort()
+  })
 
   return {
     query,

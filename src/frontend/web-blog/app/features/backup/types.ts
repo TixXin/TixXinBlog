@@ -25,12 +25,14 @@ export interface ContentImportView {
     moments?: { sourceId: string; title: string; skip: boolean; reason: string }[]
     guestbook?: { sourceId: number; title: string; skip: boolean; reason: string }[]
     gallery?: { sourceId: number; title: string; skip: boolean; reason: string }[]
+    projects?: { sourceId: number; title: string; skip: boolean; reason: string }[]
     counts: {
       posts: number
       flashes: number
       moments?: number
       guestbook?: number
       gallery?: number
+      projects?: number
       comments: number
       skipped: number
       media: number
@@ -44,6 +46,7 @@ export interface ContentImportView {
     moments?: { sourceId: string; id: string }[]
     guestbook?: { sourceId: number; id: number }[]
     gallery?: { sourceId: number; id: number }[]
+    projects?: { sourceId: number; id: number }[]
     comments: number
     media: number
     files: number
