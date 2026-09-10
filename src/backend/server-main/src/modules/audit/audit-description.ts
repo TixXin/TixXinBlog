@@ -41,6 +41,10 @@ export const auditActions: Record<string, string> = {
   'project.create': '创建项目',
   'project.update': '编辑发布或排序项目',
   'project.delete': '删除项目',
+  'link.create': '创建友链',
+  'link.update': '编辑推荐上下架或排序友链',
+  'link.delete': '删除友链',
+  'link.settings': '修改友链规则',
   'taxonomy.write': '管理分类标签',
   'site.save': '保存站点资料',
   'site.restore': '恢复站点资料',
@@ -124,6 +128,16 @@ export function auditDescriptor(path: string, method: string) {
             : method === 'POST'
               ? 'moment.create'
               : 'moment.update'
+    } else if (resourceType === 'links') {
+      resourceType = 'link'
+      action =
+        parts[2] === 'settings'
+          ? 'link.settings'
+          : method === 'POST'
+            ? 'link.create'
+            : method === 'DELETE'
+              ? 'link.delete'
+              : 'link.update'
     } else if (resourceType === 'projects') {
       resourceType = 'project'
       action = method === 'POST' ? 'project.create' : method === 'DELETE' ? 'project.delete' : 'project.update'
@@ -197,6 +211,11 @@ const fields: Record<string, string> = {
   progress: '项目进展',
   coverMediaId: '项目封面',
   links: '关联链接',
+  url: '站点地址',
+  logoMediaId: '友链媒体头像',
+  logoUrl: '友链外部头像',
+  isFeatured: '推荐状态',
+  rules: '友链规则',
 }
 function object(value: unknown): Record<string, unknown> {
   return value && typeof value === 'object' && !Array.isArray(value) ? (value as Record<string, unknown>) : {}
@@ -235,6 +254,7 @@ export function auditResult(
     'exportedGuestbook',
     'exportedGallery',
     'exportedProjects',
+    'exportedLinks',
     'exportedMedia',
     'importedPosts',
     'importedFlashes',
@@ -242,6 +262,7 @@ export function auditResult(
     'importedGuestbook',
     'importedGallery',
     'importedProjects',
+    'importedLinks',
     'importedComments',
     'importedMedia',
   ])

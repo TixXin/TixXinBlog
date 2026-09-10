@@ -32,6 +32,8 @@ import { GuestbookReaction } from '../entities/guestbook-reaction.entity'
 import { GalleryPhoto } from '../entities/gallery-photo.entity'
 import { GallerySettings } from '../entities/gallery-settings.entity'
 import { Project } from '../entities/project.entity'
+import { FriendLink } from '../entities/friend-link.entity'
+import { LinkSettings } from '../entities/link-settings.entity'
 import { Post } from '../entities/post.entity'
 import { PostFolder } from '../entities/post-folder.entity'
 import { PostRevision } from '../entities/post-revision.entity'
@@ -85,6 +87,8 @@ export const ORM_ENTITIES = [
   GalleryPhoto,
   GallerySettings,
   Project,
+  FriendLink,
+  LinkSettings,
 ] as const
 
 export const mikroOrmOptions = defineConfig({

@@ -5,7 +5,7 @@
 export default defineEventHandler(async (event) => {
   const path = getRouterParam(event, 'path') ?? ''
   if (
-    !/^(?:posts|comments|auth|admin|flashes|moments|guestbook|gallery|projects|media|site)(?:\/|$)/.test(path) ||
+    !/^(?:posts|comments|auth|admin|flashes|moments|guestbook|gallery|projects|links|media|site)(?:\/|$)/.test(path) ||
     path.split('/').some((part) => part === '..' || part === '.')
   ) {
     throw createError({ statusCode: 404, message: '接口不存在' })
