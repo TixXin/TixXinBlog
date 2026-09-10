@@ -573,43 +573,24 @@ Authorization: Bearer <access-token>
 | GET/PATCH | `/admin/gallery/settings` | [Admin] | 读取/带revision维护器材介绍 |
 
 公开列表默认每页12件，按sortOrder与id倒序；只有published且未删除作品可见。管理状态为draft、published、withdrawn。拍摄日期使用可空YYYY-MM-DD，创建和首次发布时间分别维护，宽高和格式直接读取媒体，上传不会自动发布。v4内容包和完整备份均覆盖图库。旧设计的gallery/photos、categories、stats、gears独立端点未开放。
-### 7.9 Link（友链）
 
-| Method | Path | 鉴权 | 摘要 |
-|--------|------|------|------|
-| GET | `/links` | 无 | 友链列表 |
-| GET | `/links/rules` | 无 | 友链须知 |
-| GET | `/links/site` | 无 | 本站信息 |
-| POST | `/links/applications` | 访客 | 申请友链 |
-| GET | `/admin/links/applications` | [Admin] | 审核队列 |
-| POST | `/admin/links/applications/:id/approve` | [Admin] | 通过申请 |
-| POST | `/admin/links/applications/:id/reject` | [Admin] | 拒绝申请 |
-| DELETE | `/admin/links/:id` | [Admin] | 移除友链 |
+### 7.9 Link（友链，博主管理已实现）
 
-`GET /links` 响应 `data.items[]` 对齐 `LinkItem`（额外附带 `id` 以便管理员端）：
+字段、地址语义、Logo与重复处理见[友链维护](links.md)。本轮不提供公开申请、审核队列、邮件、抓取或自动探活。
 
-```json
-{
-  "id": "uuid",
-  "name": "代码小站",
-  "description": "...",
-  "url": "https://...",
-  "avatar": "https://...",
-  "domain": "example.com"
-}
-```
+| Method           | Path                                  | 鉴权    | 摘要                                             |
+| ---------------- | ------------------------------------- | ------- | ------------------------------------------------ |
+| GET              | `/links`                              | 无      | 上架友链；q/featured/page/pageSize查询，默认12项 |
+| GET              | `/links/metadata`                     | 无      | 真实公开数量、推荐数、域名数与规则               |
+| GET              | `/links/:id`                          | 无      | 公开友链投影                                     |
+| GET/POST         | `/admin/links`                        | [Admin] | 管理列表/带requestId创建                         |
+| GET/PATCH/DELETE | `/admin/links/:id`                    | [Admin] | 读取/带revision编辑推荐上下架排序/带revision删除 |
+| GET              | `/admin/links/submissions/:requestId` | [Admin] | 未知创建结果及删除墓碑                           |
+| GET/PATCH        | `/admin/links/settings`               | [Admin] | 带版本读取及维护规则                             |
 
-`POST /links/applications` 请求：
+公开`LinkItem`使用整数id，返回name/description/url/domain、可空avatar及width/height、isFeatured与publishedAt。管理DTO另提供logoMediaId/logoUrl、status、sortOrder、revision和创建/修改时间。状态draft/published/withdrawn与推荐独立，公开排序为推荐优先、sortOrder和id倒序。
 
-```json
-{
-  "name": "我的博客",
-  "description": "独立开发者日志",
-  "url": "https://example.com",
-  "avatar": "https://.../logo.png",
-  "contactEmail": "me@example.com"
-}
-```
+普通相同规范地址返回400明确反馈，可修正输入重提；版本或提交标识冲突返回409。内容包v6支持同地址复制为草稿，同地址只允许一条公开。本站资料沿用`GET /site`和部署siteUrl，旧设计的links/rules、links/site和applications端点均未开放。
 
 ### 7.10 Project（项目，已实现）
 
