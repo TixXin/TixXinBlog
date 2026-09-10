@@ -9,7 +9,9 @@
         <h1>闪念管理</h1>
         <p>记录灵感，管理草稿与公开内容。</p>
       </div>
-      <button type="button" :disabled="working" @click="openEditor()"><Icon name="lucide:plus" />新建闪念</button>
+      <button type="button" :disabled="working || !editorReady" @click="openEditor()">
+        <Icon name="lucide:plus" />新建闪念
+      </button>
     </header>
     <ClientOnly>
       <form class="admin-flashes__filters" @submit.prevent="resetPage">
@@ -73,7 +75,7 @@
           <p class="admin-flashes__content">{{ note.content }}</p>
           <p class="admin-flashes__tags">{{ note.tags.map((tag) => `#${tag}`).join(' ') }}</p>
           <div class="admin-flashes__actions">
-            <button type="button" :disabled="working" @click="openEditor(note)">编辑</button>
+            <button type="button" :disabled="working || !editorReady" @click="openEditor(note)">编辑</button>
             <button type="button" :disabled="working || pending" @click="update(note, 'pin')">
               {{ note.isPinned ? '取消置顶' : '置顶' }}
             </button>
@@ -122,6 +124,7 @@ const {
   total,
   pending,
   working,
+  editorReady,
   error,
   editorOpen,
   editing,

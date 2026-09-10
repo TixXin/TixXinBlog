@@ -21,6 +21,8 @@ export function useAdminFlashes() {
   const total = ref(0)
   const pending = ref(false)
   const working = ref(false)
+  const mounted = ref(false)
+  const editorReady = computed(() => mounted.value && auth.isLoggedIn.value && !auth.restoringPending.value)
   const error = ref('')
   const editorOpen = ref(false)
   const editing = ref<FlashNote | null>(null)
@@ -70,7 +72,7 @@ export function useAdminFlashes() {
     void load()
   }
   async function openEditor(note?: FlashNote) {
-    if (working.value || !canDiscard()) return
+    if (!editorReady.value || working.value || !canDiscard()) return
     working.value = true
     error.value = ''
     try {
@@ -201,11 +203,13 @@ export function useAdminFlashes() {
   }
   onBeforeRouteLeave(() => !working.value && canDiscard())
   onMounted(async () => {
+    mounted.value = true
     window.addEventListener('beforeunload', beforeUnload)
     if (await auth.restore()) await load()
     else await navigateTo({ path: '/admin/login', query: { next: route.fullPath } })
   })
   onBeforeUnmount(() => {
+    mounted.value = false
     version += 1
     window.removeEventListener('beforeunload', beforeUnload)
   })
@@ -217,6 +221,7 @@ export function useAdminFlashes() {
     total,
     pending,
     working,
+    editorReady,
     error,
     editorOpen,
     editing,

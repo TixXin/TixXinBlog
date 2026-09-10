@@ -6,21 +6,29 @@
  */
 import { readPostListQuery, writePostListQuery } from '~/features/post/listQuery'
 import type { PostListQueryState } from '~/features/post/listQuery'
+import { isNavigationFailure, NavigationFailureType } from 'vue-router'
 
 export function usePostListRoute() {
   const route = useRoute()
   const router = useRouter()
-  let leaving = false
-  onBeforeRouteLeave(() => {
-    leaving = true
+  let leavingTo: string | undefined
+  onBeforeRouteLeave((to) => {
+    leavingTo = to.fullPath
   })
-  const removeAfter = router.afterEach((_to, _from, failure) => {
-    if (failure) leaving = false
+  const removeAfter = router.afterEach((to, from, failure) => {
+    // 被新导航取消的旧触底请求不能解开离开锁；仅本页恢复或本次离开被守卫拒绝时恢复操作。
+    if (
+      router.currentRoute.value.path === '/' &&
+      ((!failure && to.path === '/') ||
+        (to.fullPath === leavingTo && from.path === '/' && isNavigationFailure(failure, NavigationFailureType.aborted)))
+    )
+      leavingTo = undefined
   })
   onBeforeUnmount(removeAfter)
   const state = computed(() => readPostListQuery(route.query))
   function update(patch: Partial<PostListQueryState>, replace = false) {
-    if (leaving || route.path !== '/') return Promise.resolve()
+    // Nuxt 的 useRoute 在新页面接管前仍可能指向旧列表，写 URL 必须核对即时路由。
+    if (leavingTo || router.currentRoute.value.path !== '/' || route.path !== '/') return Promise.resolve()
     const next = { ...state.value, ...patch }
     if ('tag' in patch || 'category' in patch || 'mode' in patch) next.page = 1
     const query = Object.fromEntries(

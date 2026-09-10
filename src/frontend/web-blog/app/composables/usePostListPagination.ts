@@ -3,6 +3,7 @@
  * @description 受控分页和触底事件：组件只发出页码请求，真实取数由页面数据源负责
  */
 import type { PostItem } from '~/features/post/types'
+import { isNavigationFailure, NavigationFailureType } from 'vue-router'
 
 export function usePostListPagination(options: {
   posts: Ref<PostItem[]>
@@ -17,15 +18,19 @@ export function usePostListPagination(options: {
   const pageSize = 15
   const sentinelRef = ref<HTMLElement | null>(null)
   const currentPage = options.currentPage
-  let leaving = false
+  let leavingTo: string | undefined
   const router = useRouter()
-  onBeforeRouteLeave(() => {
-    leaving = true
+  onBeforeRouteLeave((to) => {
+    leavingTo = to.fullPath
     observer?.disconnect()
   })
-  const removeAfter = router.afterEach((_to, _from, failure) => {
-    if (failure) {
-      leaving = false
+  const removeAfter = router.afterEach((to, from, failure) => {
+    if (
+      router.currentRoute.value.path === '/' &&
+      ((!failure && to.path === '/') ||
+        (to.fullPath === leavingTo && from.path === '/' && isNavigationFailure(failure, NavigationFailureType.aborted)))
+    ) {
+      leavingTo = undefined
       pageRequested.value = false
       observe()
     }
@@ -56,7 +61,14 @@ export function usePostListPagination(options: {
     return pages
   })
   function goToPage(page: number) {
-    if (leaving || page < 1 || page > totalPages.value || page === currentPage.value) return
+    if (
+      leavingTo ||
+      router.currentRoute.value.path !== '/' ||
+      page < 1 ||
+      page > totalPages.value ||
+      page === currentPage.value
+    )
+      return
     // 触底追加需要串行；显式翻页允许新请求替换正在等待的旧页。
     if (options.displayMode.value === 'waterfall') {
       if (pageRequested.value || options.pending.value) return
@@ -68,7 +80,14 @@ export function usePostListPagination(options: {
   let observer: IntersectionObserver | null = null
   function observe() {
     observer?.disconnect()
-    if (leaving || options.displayMode.value !== 'waterfall' || !sentinelRef.value || options.error.value) return
+    if (
+      leavingTo ||
+      router.currentRoute.value.path !== '/' ||
+      options.displayMode.value !== 'waterfall' ||
+      !sentinelRef.value ||
+      options.error.value
+    )
+      return
     const viewport = options.scrollbarRef.value?.viewport
     const root = viewport && viewport.scrollHeight > viewport.clientHeight + 1 ? viewport : null
     observer = new IntersectionObserver(
