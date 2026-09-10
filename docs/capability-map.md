@@ -15,7 +15,7 @@
 | 朋友圈     | `/moments`、详情、话题页；`useMomentRepository` → `/api/v1/moments` → PostgreSQL，运行时无 Mock 回退 | `/admin/moments`；发布编辑、草稿归档、置顶删除、媒体、评论审核和回复；内容包及完整备份 | `moment-integration.mjs` 87请求、`moment-business.spec.ts` 跨上下文持久化/图片/筛选/失败/冲突、缓存与恢复单测、备份恢复；三主题三浏览器通过，见[验收记录](next-stage-verification.md) |
 | 留言       | `/guestbook`；`useGuestbookRepository` → `/api/v1/guestbook` → PostgreSQL，无Mock回退                | `/admin/guestbook`；分页、筛选、博主回复、审核、隐藏、置顶和删除                       | 88请求接口集成、12项缓存/草稿单测、真实业务三浏览器回归、v3内容包及完整备份恢复；日常库有29条留言与8条回应，最终验收跟踪见[留言阶段](guestbook-stage.md)                              |
 | 项目       | `/projects`；`mockProjects`、`mockTechStack`                                                         | 尚无项目管理接口                                                                       | 展示条目、过滤和 UI；剩余项目数据维护与真实内容，本阶段保持演示                                                                                                                       |
-| 图库       | `/gallery`；`mockPhotos`、分类与设备示例                                                             | 尚无图库条目管理接口                                                                   | 搜索、筛选与灯箱已有 UI 验证。通用媒体库已实现，但图库页面仍未从该库读取业务条目                                                                                                      |
+| 图库 | `/gallery`；`useGalleryRepository` → `/api/v1/gallery` → PostgreSQL，无Mock回退 | `/admin/gallery`；作品编辑发布撤回、排序删除、媒体选择上传、器材配置；v4内容包和完整备份 | 日常18作品/8媒体/26归属；90请求、数据/维护/生产恢复通过，三浏览器与输入恢复正在收尾；见[图库阶段](gallery-project-link-stage.md) |
 | 友链       | `/links`；`mockLinks`、规则与站点示例                                                                | 尚无友链申请审核或管理接口                                                             | 当前为展示数据；剩余真实维护及申请流程，本阶段保持现状                                                                                                                                |
 | 书签       | `/tabs`；`LocalTabRepository` → 当前浏览器 LocalStorage                                              | 本机分组、编辑、排序、导入导出                                                         | `tabImportExport.test.ts`、`motion-features.spec.ts` 等。明确不提供云同步，本阶段继续保留本地存储                                                                                     |
 | 站点配置   | `/api/v1/site`；`useSiteSettings.ts`                                                                 | `/admin/site`；版本、媒体引用与设置维护                                                | `site-settings-integration.mjs`。作者与站点资料已真实接入；关于页的履历、技能和书单仍有明确标注的示例                                                                                 |
@@ -27,6 +27,6 @@
 
 可靠启动与朋友圈阶段已归档。开发数据与留言阶段也已完成统一检查、带归属的增量样本、真实留言业务与维护兼容，完整验收见[留言阶段](guestbook-stage-verification.md)。使用方式见[朋友圈业务](moment-business.md)、[留言业务](backend/guestbook.md)和[开发数据库](development-database.md)。
 
-项目、图库、友链的真实管理和书签云同步属于后续候选工作；AI 增强、独立 Worker 与外部搜索服务也没有因已有页面或设计文档而自动实现。后续按具体业务目标建立独立待办。
+图库真实业务正在本轮收尾验收；项目、友链随后按顺序实施，书签云同步属于后续候选工作；AI 增强、独立 Worker 与外部搜索服务也没有因已有页面或设计文档而自动实现。后续按具体业务目标建立独立待办。
 
 导航、标签栏名称和图标等静态配置可以继续位于现有 `mock.ts`，不能仅凭该文件名判断业务是否持久化。真实数据链路以请求、服务端读写、数据库结果和重载验证共同确认。
