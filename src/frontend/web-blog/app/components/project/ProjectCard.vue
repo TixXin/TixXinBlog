@@ -1,86 +1,76 @@
 <!--
   @file ProjectCard.vue
-  @description 项目卡片组件，展示封面、状态标签、Star 数、描述、技术标签和链接
+  @description 项目卡片，展示真实封面、项目进展、技术标签与有效链接
   @author TixXin
   @since 2025-03-17
 -->
 
 <template>
-  <div class="project-card">
+  <article class="project-card" :data-project-id="project.id" tabindex="-1">
     <div class="project-card__cover">
-      <NuxtImg :src="project.cover" :alt="project.title" loading="lazy" format="webp" />
-      <div class="project-card__overlay" />
+      <CommonImageFrame
+        v-if="project.cover"
+        :src="project.cover"
+        :alt="project.title"
+        :width="project.width ?? undefined"
+        :height="project.height ?? undefined"
+        class="project-card__image"
+      />
+      <div v-else class="project-card__no-cover">
+        <Icon name="lucide:panels-top-left" size="32" /><span>暂无封面</span>
+      </div>
+      <div v-if="project.cover" class="project-card__overlay" />
       <div class="project-card__badges">
-        <span class="project-card__status" :class="`project-card__status--${project.status}`">
+        <span class="project-card__status" :class="`project-card__status--${project.progress}`">
           {{ statusLabel }}
         </span>
-        <span class="project-card__stars"> <Icon name="lucide:star" size="12" /> {{ project.stars }} </span>
       </div>
     </div>
     <div class="project-card__body">
       <h3 class="project-card__title">{{ project.title }}</h3>
-      <p v-if="example" class="project-card__example">示例资料</p>
       <p class="project-card__desc">{{ project.description }}</p>
       <div class="project-card__tags">
-        <span
+        <button
           v-for="tag in project.tags"
           :key="tag.label"
           class="project-card__tag"
           :class="`project-card__tag--${tag.color}`"
+          type="button"
+          :aria-label="`筛选技术：${tag.label}`"
+          :disabled="!interactive"
+          @click="$emit('tag', tag.label)"
         >
           {{ tag.label }}
-        </span>
+        </button>
       </div>
       <div class="project-card__links">
-        <template v-for="link in project.links" :key="link.label">
-          <a
-            v-if="link.href && link.href !== '#'"
-            :href="link.href"
-            class="project-card__link"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
+        <template v-for="link in project.links" :key="link.kind">
+          <a :href="link.href" class="project-card__link" target="_blank" rel="noopener noreferrer">
             <Icon :name="link.icon" size="14" /> {{ link.label }}
           </a>
-          <span v-else class="project-card__link project-card__link--unavailable"
-            ><Icon :name="link.icon" size="14" />{{ link.label }} · 暂未公开</span
-          >
         </template>
+        <p v-if="!project.links.length" class="project-card__link--unavailable">尚未提供公开链接</p>
       </div>
     </div>
-  </div>
+  </article>
 </template>
 
 <script setup lang="ts">
+import { projectProgressLabels } from '~/features/project/types'
 import type { ProjectItem } from '~/features/project/types'
-
-const props = withDefaults(
-  defineProps<{
-    project: ProjectItem
-    example?: boolean
-  }>(),
-  { example: false },
-)
-
-const statusMap: Record<string, string> = {
-  active: '维护中',
-  dev: '开发中',
-  archived: '归档',
-}
-
-const statusLabel = computed(() => statusMap[props.project.status] ?? props.project.status)
+const props = defineProps<{ project: ProjectItem; interactive: boolean }>()
+defineEmits<{ tag: [label: string] }>()
+const statusLabel = computed(() => projectProgressLabels[props.project.progress])
 </script>
 
 <style lang="scss" scoped>
-.project-card__example {
-  font-size: 0.75rem;
-  color: var(--text-soft);
-}
 .project-card__link--unavailable {
   color: var(--text-soft);
   cursor: default;
 }
 .project-card {
+  min-width: 0;
+  overflow-wrap: anywhere;
   background: var(--surface-1);
   border: 1px solid var(--border);
   border-radius: $radius-card;
@@ -94,7 +84,7 @@ const statusLabel = computed(() => statusMap[props.project.status] ?? props.proj
     box-shadow: var(--shadow-card-hover);
     border-color: var(--border-hover);
 
-    .project-card__cover img {
+    .project-card__cover :deep(img) {
       transform: scale(1.05);
     }
   }
@@ -105,7 +95,7 @@ const statusLabel = computed(() => statusMap[props.project.status] ?? props.proj
   overflow: hidden;
   position: relative;
 
-  img {
+  :deep(img) {
     width: 100%;
     height: 100%;
     object-fit: cover;
@@ -115,8 +105,23 @@ const statusLabel = computed(() => statusMap[props.project.status] ?? props.proj
     }
   }
 }
+.project-card__image {
+  width: 100%;
+  height: 100%;
+}
+.project-card__no-cover {
+  display: flex;
+  height: 100%;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  gap: 0.5rem;
+  color: var(--text-muted);
+  background: var(--surface-2);
+}
 
 .project-card__overlay {
+  pointer-events: none;
   position: absolute;
   inset: 0;
   background: linear-gradient(to top, rgba(0, 0, 0, 0.4), transparent);
@@ -149,14 +154,6 @@ const statusLabel = computed(() => statusMap[props.project.status] ?? props.proj
   }
 }
 
-.project-card__stars {
-  display: flex;
-  align-items: center;
-  gap: 0.25rem;
-  color: rgba(255, 255, 255, 0.8);
-  font-size: 0.75rem;
-}
-
 .project-card__body {
   padding: 1.25rem;
   display: flex;
@@ -184,6 +181,11 @@ const statusLabel = computed(() => statusMap[props.project.status] ?? props.proj
 }
 
 .project-card__tag {
+  min-height: 44px;
+  max-width: 100%;
+  overflow-wrap: anywhere;
+  border: 0;
+  cursor: pointer;
   padding: 0.125rem 0.5rem;
   font-size: 10px;
   font-weight: 600;
@@ -216,6 +218,7 @@ const statusLabel = computed(() => statusMap[props.project.status] ?? props.proj
 }
 
 .project-card__links {
+  flex-wrap: wrap;
   display: flex;
   align-items: center;
   gap: 0.75rem;
@@ -224,6 +227,7 @@ const statusLabel = computed(() => statusMap[props.project.status] ?? props.proj
 }
 
 .project-card__link {
+  min-height: 44px;
   display: flex;
   align-items: center;
   gap: 0.375rem;

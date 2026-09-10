@@ -7,20 +7,21 @@
 
 <template>
   <div class="project-grid">
-    <ProjectCard v-for="project in projects" :key="project.title" :project="project" :example="example" />
+    <ProjectCard
+      v-for="project in projects"
+      :key="project.id"
+      :project="project"
+      :interactive="interactive"
+      @tag="$emit('tag', $event)"
+    />
   </div>
 </template>
 
 <script setup lang="ts">
 import type { ProjectItem } from '~/features/project/types'
 
-withDefaults(
-  defineProps<{
-    projects: ProjectItem[]
-    example?: boolean
-  }>(),
-  { example: false },
-)
+defineProps<{ projects: ProjectItem[]; interactive: boolean }>()
+defineEmits<{ tag: [label: string] }>()
 </script>
 
 <style lang="scss" scoped>
@@ -30,7 +31,7 @@ withDefaults(
   gap: 1.5rem;
 
   @media (min-width: $breakpoint-md) {
-    grid-template-columns: repeat(2, 1fr);
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 </style>
