@@ -49,6 +49,9 @@ const topics = [
   '暂存的写作计划',
   '留待以后展开的话题',
 ]
+const commentStatuses = ['published', 'published', 'pending', 'hidden'] as const
+const likers = ['晨曦', '小林'] as const
+export const CORE_FIXTURE_COUNT = 1 + topics.length * 3 + commentStatuses.length * 2 + 2 + likers.length * 3
 const visitor = (name: string) => createHash('sha256').update(`development/core-v1/${name}`).digest('hex')
 export async function seedCoreFixtures(
   em: EntityManager,
@@ -170,7 +173,7 @@ export async function seedCoreFixtures(
     }
   }
   let parent: string | null = null
-  for (const [index, status] of ['published', 'published', 'pending', 'hidden'].entries()) {
+  for (const [index, status] of commentStatuses.entries()) {
     const owned = index === 1
     const author = owned ? site.values.ownerName : ['晨曦', '小林', '远山', '清和'][index]!
     const avatar = owned ? site.values.avatar : image
@@ -262,7 +265,7 @@ export async function seedCoreFixtures(
         progress,
       )
   }
-  for (const name of ['晨曦', '小林']) {
+  for (const name of likers) {
     await ensureFixture(
       em,
       CORE_DATASET,

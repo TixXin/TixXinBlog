@@ -18,6 +18,7 @@ export const FIXTURE_TABLES = {
   'guestbook-reaction': 'guestbook_reaction',
   gallery: 'gallery_photo',
   project: 'project',
+  link: 'friend_link',
 } as const
 export type FixtureKind = keyof typeof FIXTURE_TABLES
 export async function fixtureRow(em: EntityManager, kind: FixtureKind, id: string) {

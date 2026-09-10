@@ -3,7 +3,6 @@
  * @description 启动隔离数据库、后端和生产前端执行浏览器测试，不操作日常开发数据库
  */
 import { spawn } from 'node:child_process'
-import { createServer } from 'node:net'
 import { setTimeout as delay } from 'node:timers/promises'
 import { fileURLToPath } from 'node:url'
 import { join, resolve, sep } from 'node:path'
@@ -13,6 +12,8 @@ import { seedMomentBrowserFixture } from './moment-fixture.mjs'
 import { seedGuestbookBrowserFixture } from './guestbook-fixture.mjs'
 import { seedGalleryBrowserFixture } from './gallery-fixture.mjs'
 import { seedProjectBrowserFixture } from './project-fixture.mjs'
+import { seedLinkBrowserFixture } from './link-fixture.mjs'
+import { getHttpTestPort } from './http-test-port.mjs'
 
 const frontendDirectory = fileURLToPath(new URL('../../../frontend/web-blog/', import.meta.url))
 // 每份完整测试文件使用自己的数据库，避免管理用例新增内容污染固定样本的展示验收。
@@ -44,10 +45,7 @@ if (process.argv.length === 2) {
   }
 }
 if (process.argv[2] === '--isolated-spec') process.argv.splice(2, 1)
-const listener = createServer()
-await new Promise((resolve) => listener.listen(0, '127.0.0.1', resolve))
-const port = listener.address().port
-await new Promise((resolve) => listener.close(resolve))
+const port = await getHttpTestPort()
 const origin = `http://127.0.0.1:${port}`
 const fixture = await createBrowserTestApp(origin)
 let preview
@@ -57,6 +55,7 @@ try {
   await seedGuestbookBrowserFixture(fixture)
   await seedGalleryBrowserFixture(fixture)
   await seedProjectBrowserFixture(fixture)
+  await seedLinkBrowserFixture(fixture)
   preview = spawn(process.execPath, ['.output/server/index.mjs'], {
     cwd: frontendDirectory,
     windowsHide: true,
