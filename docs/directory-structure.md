@@ -300,8 +300,8 @@ app/assets/styles/
 | 关于我   | `features/about/`      | `mockProfile`、`mockSkills`、`mockExperiences`、`mockContacts`、`mockHobbies`、`mockReadings` 及 `Profile`、`SkillItem`、`ExperienceItem`、`ContactItem`、`HobbyItem`、`BookItem`                 |
 | 文章归档 | `features/article/`    | `mockArchiveYears`、`mockArchiveStats`、`mockCategoryDistribution` 及 `ArchivePost`、`ArchiveYear`、`ArchiveStat`、`CategoryDistribution`                                                         |
 | 画廊 | `features/gallery/` | 真实作品/管理/器材类型、URL查询规范化、编辑恢复白名单；仓储为`useGalleryRepository`，公开流为`useGallery` |
-| 留言板   | `features/guestbook/`  | `mockDateGroups`、`mockChatStats`、`mockChatRules`、`mockActiveMembers` 及 `GuestMessage`、`DateGroup`、`ChatStat`、`ChatRule`、`ActiveMember`                                                    |
-| 友链     | `features/link/`       | `mockLinks`、`mockLinkRules`、`mockSiteInfo` 及 `LinkItem`、`LinkRule`、`SiteInfo`                                                                                                                |
+| 留言板   | `features/guestbook/`  | 真实留言、回复、统计与管理类型，查询和输入规范化；公开列表与后台通过仓储访问真实API |
+| 友链     | `features/link/`       | 真实友链/管理类型、URL查询、编辑恢复、本站资料映射；仓储`useLinkRepository`与列表`useLinks`，本机资料整理明确不提交申请 |
 | 导航     | `features/nav/`        | `mockNavItems`、`NavItem`                                                                                                                                                                         |
 | 文章     | `features/post/`       | `mockPosts`、`mockPostTabs`、`mockArticleDetail`、`mockComments`、`mockRelatedPosts`、`mockTocItems` 及 `PostItem`、`ArticleDetail`、`ArticleSection`、`CommentItem`、`RelatedPost`、`TocItem` 等 |
 | 项目展示 | `features/project/` | 真实项目、独立进展/发布类型、URL查询与恢复白名单；仓储`useProjectRepository`、列表`useProjects`及真实全站项目搜索 |
@@ -351,7 +351,7 @@ app/assets/styles/
 | pages/articles/[id].vue  | `/articles/:id` | 文章详情页：正文、目录、评论、相关文章与打赏卡片 |
 | pages/gallery.vue        | `/gallery`      | 画廊页，分类筛选、瀑布流与灯箱                   |
 | pages/guestbook.vue      | `/guestbook`    | 留言板页，聊天式列表与侧栏统计/守则/活跃成员     |
-| pages/links.vue          | `/links`        | 友链页，友链网格、申请表单与友链须知             |
+| pages/links.vue          | `/links`        | 真实友链网格、规则与本站资料，本标签页资料整理不提交申请             |
 | pages/projects.vue       | `/projects`     | 项目展示页，项目卡片网格与技术栈统计             |
 | pages/about.vue          | `/about`        | 关于我页，个人信息、技能、经历、联系方式         |
 
