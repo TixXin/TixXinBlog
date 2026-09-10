@@ -76,7 +76,7 @@ export async function usePostList(options: {
     }
   })
   // 当前 Nuxt 的自动参数监听会等待旧请求结束；筛选变化需要立即取消旧任务并取新条件。
-  watch([filters, options.page, options.displayMode], () => result.refresh({ dedupe: 'cancel' }))
+  watch([filters, options.page, options.displayMode], () => result.refresh({ dedupe: 'cancel', cachedData: undefined }))
   function acceptPage(value: CollectionPage | undefined) {
     // 旧条件的响应不能重新填入当前列表；初始缓存也必须进入累计集合。
     if (!value || value.scopeKey !== scopeKey.value || value.page !== options.page.value) return
@@ -92,7 +92,7 @@ export async function usePostList(options: {
     result.data.value &&
     (result.data.value.scopeKey !== scopeKey.value || result.data.value.page !== options.page.value)
   )
-    await result.refresh({ dedupe: 'cancel' })
+    await result.refresh({ dedupe: 'cancel', cachedData: undefined })
   // SSR 不持续运行响应式监听；首次请求完成后也要直接种入返回页面。
   acceptPage(result.data.value)
   return {
