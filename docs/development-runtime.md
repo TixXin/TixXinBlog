@@ -15,7 +15,9 @@ corepack pnpm dev:all
 
 首次检出后执行 `corepack pnpm install --frozen-lockfile`。安装阶段的 `nuxt prepare` 在标准 `.nuxt/` 生成 ESLint 配置和 TypeScript 引用；需要重新准备时可运行 `corepack pnpm --filter web-blog exec nuxt prepare`。`nuxt typecheck` 同样使用该目录，不依赖其他工作区的生成缓存。
 
-生产构建与静态生成使用仓库支持的 `corepack pnpm build`、`corepack pnpm generate` 入口。前端脚本显式传入 Nuxt 的 `--envName production-build`，只把中间目录切换到 `.nuxt-production/`；生产 `NODE_ENV` 语义保持不变，避免构建改写正在运行的开发 Vite 文件。直接执行裸 `nuxt build` 或 `nuxt generate` 不带此项目配置环境，不能保证开发目录隔离。
+生产构建与静态生成使用仓库支持的 `corepack pnpm build`、`corepack pnpm generate` 入口。前端脚本显式传入 Nuxt 的 `--envName production-build`，将中间目录切换到 `.nuxt-production/`，并明确站点模块的环境为 `production`；生产 `NODE_ENV` 语义保持不变，避免构建改写正在运行的开发 Vite 文件。直接执行裸 `nuxt build` 或 `nuxt generate` 不带此项目配置环境，不能保证开发目录隔离。
+
+`nuxt-site-config` 会优先将 Nuxt 的环境名称用于判断站点是否可索引，因此生产配置必须显式保留 `site.env: production`，不能把目录隔离名称当作预发布环境。开发默认仍不可索引；预发布部署可通过运行时 `NUXT_SITE_ENV=staging` 或 `NUXT_SITE_INDEXABLE=false` 保持禁止索引，这些环境配置的优先级高于构建时站点默认值。
 
 不按 `NODE_ENV` 单独选择生成目录：当前 Nuxt CLI 的 `prepare` 和 `typecheck` 也可能默认设为 `production`，否则干净安装后会缺少根 ESLint 与 tsconfig 所引用的 `.nuxt/` 文件。
 

@@ -353,8 +353,56 @@ try {
     const redirect = await fetch(`http://localhost:${httpPort}/`, { redirect: 'manual' })
     assert.equal(redirect.status, 308)
     assert.equal(redirect.headers.get('location'), origin + '/')
+    // 容器就绪不代表站点可被索引；构建环境名称不能令正式站点整体 noindex。
+    assert.doesNotMatch(homepage.headers.get('x-robots-tag') ?? '', /\bnoindex\b/i)
+    const homepageHtml = await homepage.text()
+    for (const [meta] of homepageHtml.matchAll(/<meta\b[^>]*>/gi))
+      if (/\bname\s*=\s*["']robots["']/i.test(meta)) assert.doesNotMatch(meta, /\bnoindex\b/i)
+    const robots = await secureFetch(origin + '/robots.txt')
+    assert.equal(robots.status, 200)
+    const directives = (await robots.text())
+      .split(/\r?\n/)
+      .map((line) => line.replace(/#.*$/, '').trim())
+      .filter(Boolean)
+    assert(directives.some((line) => /^user-agent\s*:\s*\*$/i.test(line)))
+    assert(
+      directives.some((line) => /^allow\s*:\s*\/$/i.test(line)),
+      '生产公开页面必须允许抓取',
+    )
+    assert(!directives.some((line) => /^disallow\s*:\s*\/$/i.test(line)), '生产 robots 不能禁止整站抓取')
+    assert(
+      directives.some((line) => /^disallow\s*:\s*\/admin\/?\*?$/i.test(line)),
+      '管理路径继续禁止抓取',
+    )
+    const declaredSitemaps = directives
+      .filter((line) => /^sitemap\s*:/i.test(line))
+      .map((line) => line.replace(/^sitemap\s*:\s*/i, ''))
+    assert(declaredSitemaps.includes(origin + '/sitemap.xml'), 'robots 必须声明当前运行地址的 sitemap')
+    for (const location of declaredSitemaps) assert.equal(new URL(location).origin, origin)
+    const sitemap = await secureFetch(origin + '/sitemap.xml')
+    assert.equal(sitemap.status, 200)
+    const locations = [...(await sitemap.text()).matchAll(/<loc>([^<]+)<\/loc>/g)].map(
+      (match) => new URL(match[1].replaceAll('&amp;', '&')),
+    )
+    assert(locations.length > 0, '生产 sitemap 必须包含公开页面')
+    for (const location of locations) {
+      assert.equal(location.origin, origin, 'sitemap 不能退回构建期缺省域名')
+      assert(!/^\/admin(?:\/|$)/.test(location.pathname))
+      assert.notEqual(location.pathname, '/_theme-engine-devtools')
+    }
+    const admin = await secureFetch(origin + '/admin/login')
+    assert.equal(admin.status, 200)
+    assert.match(admin.headers.get('x-robots-tag') ?? '', /\bnoindex\b/i)
     report.assertions.httpsVerified = true
     report.assertions.defaultWorkerStopped = true
+    report.assertions.productionSeo = {
+      homepageIndexable: true,
+      robotsAllowPublic: true,
+      robotsDisallowAdmin: true,
+      adminNoindex: true,
+      sitemapLocations: locations.length,
+      runtimeOriginVerified: origin,
+    }
   })
   let token, oldContext, media, post, postDigest, mediaDigest, operationGeneration
   await stage('生产身份与非空内容、媒体及关联', async () => {

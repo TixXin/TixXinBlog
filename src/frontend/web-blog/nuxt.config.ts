@@ -18,7 +18,11 @@ export default {
   buildDir: '.nuxt',
   // 项目 build/generate 命令显式选择该环境，生产构建不会改写日常开发的 Vite 中间文件。
   $env: {
-    'production-build': { buildDir: '.nuxt-production' },
+    'production-build': {
+      buildDir: '.nuxt-production',
+      // 站点模块默认把 envName 当作发布环境；构建目录名称不应导致正式站点被禁止索引。
+      site: { env: 'production' },
+    },
   },
   compatibilityDate: '2025-07-15',
   devtools: { enabled: true },
