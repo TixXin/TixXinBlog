@@ -22,6 +22,29 @@ interface Domain {
 const publicPost = "p.status='published' and p.deleted_at is null"
 export const DATA_DOMAINS: Domain[] = [
   {
+    id: 'writing',
+    entry: '/archive',
+    admin: '/admin/posts',
+    table: 'post',
+    searchColumn: 'title',
+    dataset: 'writing-v1',
+    source: 'PostgreSQL 真实文章、项目、图库与媒体；writing-v1归属',
+    scenarios: '万字长文、草稿、有序跨域关联、带来源的素材说明',
+    query: `select count(*)::int as total,count(*) filter(where p.status='published' and p.deleted_at is null and length(p.content_raw)>10000)::int as "longArticles",count(*) filter(where p.status='draft' and p.deleted_at is null)::int as drafts,count(*) filter(where jsonb_array_length(p.related_content)>0 and p.deleted_at is null)::int as linked from post p join development_fixture f on f.resource_id=p.id::text and f.kind='post' where f.dataset='writing-v1'`,
+    required: { longArticles: 1, drafts: 1, linked: 2 },
+  },
+  {
+    id: 'notifications',
+    entry: '/admin/notifications',
+    admin: '/admin/operations',
+    table: 'owner_notification',
+    dataset: 'notifications-v1',
+    source: 'PostgreSQL 真实事件与当前业务状态；通知已读不代表业务处理',
+    scenarios: '通知分页、未读与已读、待审/待回复/已回复/隐藏，暂停投递任务',
+    query: `select count(*)::int as total,count(*) filter(where read_at is null)::int as unread,count(*) filter(where read_at is not null)::int as "read",count(*) filter(where created_at>=now()-interval '30 days')::int as recent,(select count(*)::int from background_task where kind='mail' and state='paused') as "pausedMail" from owner_notification`,
+    required: { total: 21, unread: 1, read: 1, recent: 1, pausedMail: 1 },
+  },
+  {
     id: 'posts',
     entry: '/',
     admin: '/admin/posts',

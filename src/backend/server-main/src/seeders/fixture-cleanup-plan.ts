@@ -56,9 +56,38 @@ export async function fixtureCleanupPlan(em: EntityManager, dataset: string) {
     reasons.set(key, reason)
     return true
   }
+  // JSON业务关联、通知和任务不使用媒体外键，清理仍需保护外部内容与已读/已处理记录。
+  const logical = await em.execute<
+    { source_table: string; source_id: string; target_type: string; target_id: string }[]
+  >(`
+    select 'post' as source_table,p.id::text as source_id,r->>'type' as target_type,r->>'id' as target_id from post p cross join lateral jsonb_array_elements(p.related_content) r
+    union all select 'project',p.id::text,r->>'type',r->>'id' from project p cross join lateral jsonb_array_elements(p.related_content) r
+    union all select 'gallery_photo',p.id::text,r->>'type',r->>'id' from gallery_photo p cross join lateral jsonb_array_elements(p.related_content) r
+    union all select 'post',p.post_id::text,r->>'type',r->>'id' from post_revision p cross join lateral jsonb_array_elements(coalesce(p.snapshot->'relatedContent','[]'::jsonb)) r
+    union all select 'owner_notification',id::text,kind,source_id from owner_notification
+    union all select 'background_task',id::text,'notification',payload->>'notificationId' from background_task where payload->>'notificationId' is not null`)
+  const logicalTables: Record<string, string> = {
+    post: 'post',
+    project: 'project',
+    gallery: 'gallery_photo',
+    guestbook: 'guestbook_message',
+    comment: 'comment',
+    'moment-comment': 'moment_comment',
+    task: 'background_task',
+    notification: 'owner_notification',
+  }
   let changed = true
   while (changed) {
     changed = false
+    for (const link of logical) {
+      const table = logicalTables[link.target_type]
+      if (!table) continue
+      const source = identity(link.source_table, link.source_id),
+        target = identity(table, link.target_id)
+      if (!eligible.has(source)) changed = preserve(target, '仍被保留的内容关联、通知或运行记录使用') || changed
+      if (rows.has(source) && rows.has(target) && !eligible.has(target))
+        changed = preserve(source, '关联的本组内容已编辑或需保留，通知与任务一并保留') || changed
+    }
     for (const { parent, relation, row } of incoming) {
       const child = identity(relation.sourceTable, row.id)
       if (tables.has(relation.sourceTable) && relation.targetTable !== 'media_asset') {
@@ -83,6 +112,7 @@ export async function fixtureCleanupPlan(em: EntityManager, dataset: string) {
           relation.targetTable === 'post'
         )
           continue
+        else if (relation.sourceTable === 'comment_submission' && relation.targetTable === 'comment') continue
         changed = preserve(parent, '仍有其他内容、媒体或未知业务引用') || changed
       }
     }

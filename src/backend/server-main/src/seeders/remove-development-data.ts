@@ -90,6 +90,8 @@ export async function removeDevelopmentData(
       if (submissionHash(current) !== submissionHash(plan))
         throw new DevelopmentDataError('预览后的样本或引用已变化，未执行清理；请重新预览')
       const order: FixtureKind[] = [
+        'task',
+        'notification',
         'guestbook-reaction',
         'post-like',
         'flash-like',

@@ -1,6 +1,8 @@
 /** @file development-datasets.ts @description 版本化样本集统一登记，范围与预期归属数量从各域真实定义汇总 */
 import { seedCoreFixtures, CORE_DATASET, CORE_FIXTURE_COUNT } from './core-fixtures'
 import { seedEditorialFixtures, EDITORIAL_DATASET, EDITORIAL_FIXTURE_COUNT } from './editorial-fixtures'
+import { seedNotificationFixtures, NOTIFICATION_DATASET, NOTIFICATION_FIXTURE_COUNT } from './notification-fixtures'
+import { seedWritingFixtures, WRITING_DATASET, WRITING_FIXTURE_COUNT } from './writing-fixtures'
 import { seedGuestbookFixtures, GUESTBOOK_DATASET, GUESTBOOK_FIXTURE_COUNT } from './guestbook-fixtures'
 import { seedGalleryFixtures, GALLERY_DATASET, GALLERY_FIXTURE_COUNT } from './gallery-fixtures'
 import { seedProjectFixtures, PROJECT_DATASET, PROJECT_FIXTURE_COUNT } from './project-fixtures'
@@ -13,6 +15,18 @@ import {
 
 export const DEFAULT_DEVELOPMENT_DATASET = CORE_DATASET
 export const DEVELOPMENT_DATASETS = [
+  {
+    id: WRITING_DATASET,
+    count: WRITING_FIXTURE_COUNT,
+    scope: '长文、媒体说明和有向关联阅读',
+    seed: seedWritingFixtures,
+  },
+  {
+    id: NOTIFICATION_DATASET,
+    count: NOTIFICATION_FIXTURE_COUNT,
+    scope: '近期互动、通知分页与已读/处理分离，邮件任务保持暂停',
+    seed: seedNotificationFixtures,
+  },
   {
     id: EDITORIAL_DATASET,
     count: EDITORIAL_FIXTURE_COUNT,
