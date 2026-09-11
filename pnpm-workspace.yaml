@@ -3,7 +3,7 @@
 #
 # 使用 glob 模式，新增项目时无需修改此文件，
 # 只需在 src/frontend/ 或 src/backend/ 下创建含 package.json 的子目录即可。
-# 预期结构：web-blog、web-admin（前端），server-main（后端）。
+# 当前工作区：web-blog（前端）、server-main（后端）。
 packages:
   - 'src/frontend/*'
   - 'src/backend/*'
