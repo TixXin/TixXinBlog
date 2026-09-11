@@ -2,33 +2,19 @@
   "mcpServers": {
     "playwright": {
       "command": "npx",
-      "args": [
-        "@playwright/mcp@latest"
-      ]
+      "args": ["@playwright/mcp@latest", "--output-dir", ".playwright-mcp"]
     },
     "context7": {
       "command": "npx",
-      "args": [
-        "-y",
-        "@upstash/context7-mcp"
-      ]
+      "args": ["-y", "@upstash/context7-mcp"]
     },
     "git-mcp-server": {
       "command": "uvx",
-      "args": [
-        "mcp-server-git",
-        "--repository",
-        "."
-      ]
+      "args": ["mcp-server-git", "--repository", "."]
     },
     "server-memory": {
       "command": "cmd",
-      "args": [
-        "/c",
-        "npx",
-        "-y",
-        "@modelcontextprotocol/server-memory"
-      ],
+      "args": ["/c", "npx", "-y", "@modelcontextprotocol/server-memory"],
       "env": {
         "MEMORY_FILE_PATH": ".cursor/mcp/memory.jsonl"
       }

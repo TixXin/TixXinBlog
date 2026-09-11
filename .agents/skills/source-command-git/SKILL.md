@@ -1,17 +1,12 @@
 ---
-name: "source-command-git"
-description: "Migrated source command `git`"
+name: source-command-git
+description: 用户调用 git 命令时，按当前会话授权分模块检查、验证并提交工作区改动
 ---
 
-# source-command-git
+# Git 分批提交
 
-Use this skill when the user asks to run the migrated source command `git`.
+用户调用迁移后的 `git` 命令时使用此技能。先读取根目录 [AGENTS.md](../../../AGENTS.md) 的 Git 规范；工具选择遵循[共享 MCP 技能](../mcp/SKILL.md)。
 
-## Command Template
+分析待提交文件，按模块和关联关系分批处理。默认只处理当前会话修改或明确授权的文件；用户要求处理全部时先核查所有差异，不覆盖他人改动。
 
-# git
-分析git工作区待提交的文件，按照你的想法分批次分模块提交
-
-注意：要使用中文
-
-默认：只处理上下文记忆中修改过的文件，除非用户说了全部
+各批次完成相应验证后提交，使用中文标题和解释原因的正文，不添加 AI 署名。已有授权不重复询问；推送与部署需要对应授权。

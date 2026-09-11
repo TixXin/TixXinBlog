@@ -19,11 +19,6 @@ dist/
 .DS_Store
 Thumbs.db
 
-# 临时调试脚本
-temp/*.mjs
-temp/*.js
-!temp/UI excample/**/*.js
-
 # 浏览器测试与本地验收产物（不按图片扩展名忽略，保留正式素材）
 .playwright-mcp/
 /.artifacts/
@@ -32,13 +27,19 @@ temp/*.js
 test-results/
 playwright-report/
 blob-report/
+coverage/
 
 # 运行时媒体
 **/var/media/
+**/var/backups/
 
 # Claude Code 本地设置
+.claude/settings.json
 .claude/settings.local.json
 .claude/scheduled_tasks.lock
+
+# MCP 本机运行时记忆
+.cursor/mcp/memory.jsonl
 
 # 本地完整数据备份与恢复资料
 .backups/
