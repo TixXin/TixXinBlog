@@ -4,11 +4,12 @@ import { spawn } from 'node:child_process'
 import { createHash, randomBytes, randomUUID } from 'node:crypto'
 import { createServer } from 'node:net'
 import { request as httpsRequest } from 'node:https'
-import { mkdir, readFile, writeFile, copyFile, lstat, readdir, unlink } from 'node:fs/promises'
+import { mkdir, readFile, writeFile, copyFile, lstat, readdir } from 'node:fs/promises'
 import { createWriteStream } from 'node:fs'
 import { resolve, join, dirname, basename, sep } from 'node:path'
 import { setTimeout as delay } from 'node:timers/promises'
 import { executeRelease, root } from './release.mjs'
+import { cleanupProductionArtifacts } from './production-artifact-cleanup.mjs'
 import { restoreFullBackup, verifyRestoredApplication } from '../../src/backend/server-main/scripts/full-backup.mjs'
 
 const prefix = `tixxin-production-smoke-${Date.now()}-${process.pid}`
@@ -700,6 +701,13 @@ try {
   report.cleanup.dailyPostgresPreserved =
     !dailyPostgres ||
     dailyPostgres === (await run('docker', ['inspect', '--format', '{{.Id}}', 'tixxin-blog-postgres']).catch(() => ''))
+  try {
+    Object.assign(report.cleanup, await cleanupProductionArtifacts(directory))
+  } catch (error) {
+    report.cleanup.payloadsRemoved = false
+    report.cleanup.environmentRemoved = false
+    report.cleanup.artifactCleanupError = redact(error.message)
+  }
   report.finishedAt = new Date().toISOString()
   if (
     Object.entries(report.cleanup).some(([key, value]) =>
@@ -709,7 +717,6 @@ try {
     report.status = 'cleanup-failed'
     process.exitCode = 1
   }
-  await unlink(envFile).catch(() => {})
   await save()
   process.stdout.write(
     JSON.stringify(

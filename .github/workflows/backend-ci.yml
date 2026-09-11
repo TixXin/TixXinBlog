@@ -87,12 +87,14 @@ jobs:
         env:
           BACKUP_POSTGRES_CONTAINER: ${{ job.services.postgres.id }}
         run: |
+          pnpm --filter server-main exec tsx tests/initial-profile-integration.ts
           pnpm --filter server-main exec tsx tests/editorial-fixtures-integration.ts
           pnpm --filter server-main exec tsx tests/sustainable-fixtures-integration.ts
           pnpm --filter server-main exec node tests/operations-integration.mjs
           pnpm --filter server-main exec node tests/backup-integrity-integration.mjs
           pnpm --filter server-main exec node tests/manual-backup-record-integration.mjs
           node --test scripts/release/release.test.mjs
+          node --test scripts/release/production-artifact-cleanup.test.mjs
 
       - name: Docker Build
         run: docker build -f src/backend/server-main/Dockerfile -t tixxin-blog-server .

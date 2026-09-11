@@ -19,32 +19,11 @@ export interface Profile {
   socials: SocialLink[]
 }
 
-export interface SkillItem {
-  name: string
-  percent: number
-}
-
-export interface ExperienceItem {
-  period: string
-  title: string
-  description: string
-}
-
 export interface ContactItem {
   icon: string
   type: string
   value: string
   href: string
-}
-
-export interface HobbyItem {
-  icon: string
-  label: string
-}
-
-export interface BookItem {
-  title: string
-  author: string
 }
 
 /** 用户自行确认的资料；顺序按数组维护，隐藏内容不由公开 API 返回。 */
