@@ -27,6 +27,16 @@ function setup(initial: CommentList = { items: [], total: 0 }) {
 }
 
 describe('评论控制器', () => {
+  it('服务端返回同一次提交时，列表已含该评论也不重复追加或增加计数', async () => {
+    const { state, transport } = setup({ items: [item(2)], total: 1 })
+    state.draft.value = '原评论'
+    vi.mocked(transport.create).mockResolvedValue(item(2))
+    vi.mocked(transport.load).mockRejectedValueOnce(new Error('读取暂不可用'))
+    expect(await state.submit(identity)).toBe(true)
+    expect(state.comments.value).toHaveLength(1)
+    expect(state.total.value).toBe(1)
+    expect(state.loadError.value).toContain('已发表')
+  })
   it.each(['文章已归档,无法评论', '父评论不存在', '评论层级超限(最深 3 层)'])(
     '后端业务拒绝时保留草稿并展示原因：%s',
     async (message) => {

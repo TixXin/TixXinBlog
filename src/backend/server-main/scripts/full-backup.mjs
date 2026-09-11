@@ -42,11 +42,13 @@ async function safeFile(root, relative) {
 }
 function environment(extra = {}) {
   const env = { ...process.env }
-  for (const key of Object.keys(env)) if (/JWT|API_KEY|ACCESS_TOKEN|DEFAULT_PASSWORD/i.test(key)) delete env[key]
+  for (const key of Object.keys(env))
+    if (/JWT|API_KEY|ACCESS_TOKEN|DEFAULT_PASSWORD|^NOTIFICATION_|BACKUP_TRANSFER_TOKEN|DATABASE_URL/i.test(key))
+      delete env[key]
   return { ...env, ...extra }
 }
-async function command(args, { output, env, input } = {}) {
-  const child = spawn('docker', args, { windowsHide: true, stdio: ['pipe', 'pipe', 'pipe'], env: environment(env) })
+async function command(args, { output, env, input, program = 'docker' } = {}) {
+  const child = spawn(program, args, { windowsHide: true, stdio: ['pipe', 'pipe', 'pipe'], env: environment(env) })
   let text = ''
   child.stderr.on('data', () => {
     /* 不将数据库行或连接凭据写入操作日志。 */
@@ -56,7 +58,9 @@ async function command(args, { output, env, input } = {}) {
   const done = new Promise((resolve, reject) => {
     child.once('error', reject)
     child.once('exit', (code) =>
-      code === 0 ? resolve() : reject(new Error(`Docker ${operation} 操作失败（退出码 ${code}）`)),
+      code === 0
+        ? resolve()
+        : reject(new Error(`${program === 'docker' ? 'Docker ' : ''}${operation} 操作失败（退出码 ${code}）`)),
     )
   })
   const writing = output
@@ -98,13 +102,13 @@ async function psql(container, database, user, password, sql) {
     { env: { PGPASSWORD: password } },
   )
 }
-function localConfig() {
+function localConfig(mode = 'docker', overrides = {}) {
   process.chdir(backendRoot)
   require('../dist/config/environment.js').loadLocalEnvironment(backendRoot)
-  const url = new URL(process.env.DATABASE_URL)
+  const url = new URL(overrides.databaseUrl ?? process.env.DATABASE_URL)
   if (
     !['postgres:', 'postgresql:'].includes(url.protocol) ||
-    !['localhost', '127.0.0.1', '[::1]'].includes(url.hostname)
+    (mode === 'docker' && !['localhost', '127.0.0.1', '[::1]'].includes(url.hostname))
   )
     throw new Error('此维护命令仅处理本机数据库')
   const database = decodeURIComponent(url.pathname.slice(1)),
@@ -115,7 +119,7 @@ function localConfig() {
     database,
     user,
     password: decodeURIComponent(url.password),
-    media: resolve(process.env.MEDIA_DIRECTORY || './var/media'),
+    media: resolve(overrides.mediaDirectory ?? process.env.MEDIA_DIRECTORY ?? './var/media'),
   }
 }
 export async function createFullBackup({
@@ -123,12 +127,23 @@ export async function createFullBackup({
   container = process.env.BACKUP_POSTGRES_CONTAINER || 'tixxin-blog-postgres',
   onSnapshot,
   onProgress = () => {},
+  mode = 'docker',
+  databaseUrl,
+  mediaDirectory,
+  recordOperation = false,
 } = {}) {
-  const source = localConfig()
+  if (!['docker', 'native'].includes(mode)) throw new Error('备份执行模式不支持')
+  if (typeof recordOperation !== 'boolean') throw new Error('备份运行记录选项不合法')
+  const source = localConfig(mode, { databaseUrl, mediaDirectory })
   if (!/^[a-zA-Z0-9_.-]+$/.test(container)) throw new Error('容器名称不合法')
-  const ports = JSON.parse(await command(['inspect', '--format', '{{json .NetworkSettings.Ports}}', container]))
-  if (!(ports['5432/tcp'] ?? []).some((binding) => Number(binding.HostPort) === Number(source.url.port || 5432)))
-    throw new Error('指定容器与本机数据库端口不匹配')
+  if (mode === 'docker') {
+    const ports = JSON.parse(await command(['inspect', '--format', '{{json .NetworkSettings.Ports}}', container]))
+    if (!(ports['5432/tcp'] ?? []).some((binding) => Number(binding.HostPort) === Number(source.url.port || 5432)))
+      throw new Error('指定容器与本机数据库端口不匹配')
+  } else {
+    const version = await command(['--version'], { program: 'pg_dump' })
+    if (!/PostgreSQL\) 16\./.test(version)) throw new Error('原生备份需要 PostgreSQL 16 的 pg_dump')
+  }
   const root = await directory(output || join(repoRoot, '.backups', `backup-${Date.now()}-${randomUUID().slice(0, 8)}`))
   await mkdir(join(root, 'media'), { mode: 0o700 })
   const { MikroORM } = require('@mikro-orm/postgresql')
@@ -161,13 +176,10 @@ export async function createFullBackup({
         await onSnapshot?.()
         await command(
           [
-            'exec',
-            '-e',
-            'PGPASSWORD',
-            container,
-            'pg_dump',
+            ...(mode === 'docker' ? ['exec', '-e', 'PGPASSWORD', container, 'pg_dump'] : []),
             '-h',
-            '127.0.0.1',
+            mode === 'docker' ? '127.0.0.1' : source.url.hostname.replace(/^\[|\]$/g, ''),
+            ...(mode === 'native' ? ['-p', source.url.port || '5432'] : []),
             '-U',
             source.user,
             '-d',
@@ -177,7 +189,14 @@ export async function createFullBackup({
             '--no-privileges',
             `--snapshot=${snapshot.id}`,
           ],
-          { env: { PGPASSWORD: source.password }, output: join(root, 'database.dump') },
+          {
+            env: {
+              PGPASSWORD: source.password,
+              ...(source.url.searchParams.get('sslmode') ? { PGSSLMODE: source.url.searchParams.get('sslmode') } : {}),
+            },
+            output: join(root, 'database.dump'),
+            program: mode === 'docker' ? 'docker' : 'pg_dump',
+          },
         )
         const media = []
         for (const asset of assets) {
@@ -213,9 +232,60 @@ export async function createFullBackup({
       { isolationLevel: IsolationLevel.REPEATABLE_READ },
     )
     await writeFile(join(root, 'manifest.json'), JSON.stringify(manifest, null, 2), { flag: 'wx', mode: 0o600 })
-    return { directory: root, manifest }
+    if (!recordOperation) return { directory: root, manifest }
+    await verifyFullBackup(root)
+    // 只登记本次函数刚从已核对来源生成的备份，不接受导入陌生目录进行补登记。
+    const operationRecord = await recordManualBackup(orm, root, manifest)
+    return { directory: root, manifest, operationRecord }
   } finally {
     await orm.close(true)
+  }
+}
+async function recordManualBackup(orm, root, manifest) {
+  try {
+    const [tables] = await orm.em
+      .fork()
+      .execute(
+        "select to_regclass('public.operation_control') is not null as control,to_regclass('public.background_task') is not null as tasks",
+      )
+    if (!tables?.control || !tables.tasks) return { recorded: false, errorCode: 'operation_tables_missing' }
+    const manifestSha256 = await digest(join(root, 'manifest.json'))
+    const dedupeKey = `manual-backup:${manifestSha256}`
+    const result = {
+      generated: true,
+      integrityVerified: true,
+      manual: true,
+      directory: root,
+      manifestVersion: manifest.version,
+      manifestSha256,
+      snapshotAt: manifest.snapshotAt,
+      databaseBytes: manifest.database.bytes,
+      mediaFiles: manifest.media.length,
+    }
+    // 数据库可能已提交但响应中断；重试使用同一清单键，不重复登记，更不重做备份或发送通知。
+    for (let attempt = 0; attempt < 2; attempt++) {
+      try {
+        const em = orm.em.fork()
+        const [inserted] = await em.execute(
+          `insert into background_task
+          (id,dedupe_key,kind,state,generation,payload,result,attempts,max_attempts,available_at,started_at,finished_at,created_at)
+          select ?,?,'backup','succeeded',generation,'{}'::jsonb,?::jsonb,1,1,now(),?,now(),now()
+          from operation_control where id='default' on conflict(dedupe_key) do nothing returning id`,
+          [randomUUID(), dedupeKey, JSON.stringify(result), new Date(manifest.snapshotAt)],
+        )
+        if (inserted) return { recorded: true, taskId: inserted.id }
+        const [existing] = await em.execute(
+          "select id from background_task where dedupe_key=? and kind='backup' and state='succeeded' and result->>'manifestSha256'=?",
+          [dedupeKey, manifestSha256],
+        )
+        if (existing) return { recorded: true, taskId: existing.id }
+        return { recorded: false, errorCode: 'operation_control_missing' }
+      } catch {
+        if (attempt === 1) return { recorded: false, errorCode: 'operation_record_failed' }
+      }
+    }
+  } catch {
+    return { recorded: false, errorCode: 'operation_record_failed' }
   }
 }
 export async function verifyFullBackup(path) {
@@ -261,6 +331,12 @@ export async function verifyFullBackup(path) {
   }
   for (const [table, count] of Object.entries(manifest.counts))
     if (!identifier.test(table) || !Number.isSafeInteger(count) || count < 0) throw new Error('表计数不合法')
+  if (
+    Object.hasOwn(manifest.counts, 'media_asset')
+      ? manifest.counts.media_asset !== manifest.media.length
+      : manifest.media.length !== 0
+  )
+    throw new Error('媒体清单数量与数据库记录计数不一致')
   return { root, manifest }
 }
 export async function restoreFullBackup(path, { output } = {}) {
@@ -370,6 +446,25 @@ export async function restoreFullBackup(path, { output } = {}) {
       ],
       { env: { PGPASSWORD: password } },
     )
+    // 清单也是输入数据；不能以遗漏清单键的方式跳过实际恢复表或运行安全检查。
+    const restoredTables = JSON.parse(
+      await psql(
+        container,
+        database,
+        user,
+        password,
+        "select coalesce(json_agg(tablename order by tablename),'[]'::json) from pg_tables where schemaname='public';",
+      ),
+    )
+    if (JSON.stringify(restoredTables.sort()) !== JSON.stringify(Object.keys(manifest.counts).sort()))
+      throw new Error('恢复后的实际数据表集合与备份清单不一致')
+    const actualTables = new Set(restoredTables)
+    const operationTables = ['operation_control', 'background_task', 'owner_notification']
+    if (
+      operationTables.some((table) => actualTables.has(table)) &&
+      !operationTables.every((table) => actualTables.has(table))
+    )
+      throw new Error('恢复后的运行表集合不完整')
     const counts = Object.create(null)
     for (const [table, expected] of Object.entries(manifest.counts)) {
       counts[table] = Number(
@@ -390,6 +485,28 @@ export async function restoreFullBackup(path, { output } = {}) {
         .at(-1)
       if (digest !== manifest.rowDigests[table]) throw new Error(`恢复后表内容摘要不符：${table}`)
     }
+    const actualMedia = actualTables.has('media_asset')
+      ? JSON.parse(
+          await psql(
+            container,
+            database,
+            user,
+            password,
+            "select coalesce(json_agg(json_build_object('id',id::text,'key',storage_key,'sha256',sha256,'bytes',byte_size) order by id),'[]'::json) from media_asset;",
+          ),
+        )
+      : []
+    const declaredMedia = new Map(manifest.media.map((item) => [item.id, item]))
+    if (
+      actualMedia.length !== declaredMedia.size ||
+      actualMedia.some((item) => {
+        const declared = declaredMedia.get(item.id)
+        return (
+          !declared || item.key !== declared.key || item.sha256 !== declared.sha256 || item.bytes !== declared.bytes
+        )
+      })
+    )
+      throw new Error('恢复后的实际媒体库存与备份清单不一致')
     let galleryIntegrity
     if (Object.hasOwn(manifest.counts, 'gallery_photo')) {
       // 行摘要之外显式核对作品与引用索引，归属账本允许保留已经删除的资源编号。
@@ -551,6 +668,60 @@ export async function restoreFullBackup(path, { output } = {}) {
       password,
       "update admin_user set session_version=session_version+1; update refresh_token set revoked_at=now() where revoked_at is null; update admin_session set revoked_at=now() where revoked_at is null; update content_context set generation=gen_random_uuid(),require_context=true where id='default';",
     )
+    let operationSafety = {
+      present: false,
+      externalDeliveryPaused: true,
+      automaticBackupPaused: true,
+      restoredMailTasks: 0,
+      interruptedBackupTasks: 0,
+      generationRotated: false,
+      recoveryRecordId: null,
+    }
+    if (actualTables.has('operation_control')) {
+      const tasks = JSON.parse(
+        await psql(
+          container,
+          database,
+          user,
+          password,
+          `select json_build_object('mail',count(*) filter(where kind='mail' and state in ('queued','retry','running','paused')),'backup',count(*) filter(where kind='backup' and state='running')) from background_task;`,
+        ),
+      )
+      // 原始全表摘要已经通过，此处才轮换运行代次并暂停恢复出来的外部副作用。
+      await psql(
+        container,
+        database,
+        user,
+        password,
+        `begin;
+        update operation_control set generation=gen_random_uuid(),external_paused=true,backup_paused=true,revision=revision+1,reason='restored',last_mail_at=null,updated_at=now() where id='default';
+        update background_task set state='restored',error_code='restored_delivery_paused',lease_token=null,lease_until=null,finished_at=now() where kind='mail' and state in ('queued','retry','running','paused');
+        update background_task set state='failed',error_code='restored_backup_interrupted',lease_token=null,lease_until=null,finished_at=now() where kind='backup' and state='running';
+        update background_task set state='restored',error_code='restored_backup_paused',lease_token=null,lease_until=null,finished_at=now() where kind='backup' and state in ('queued','retry','paused');
+        commit;`,
+      )
+      const recoveryRecordId = randomUUID()
+      await psql(
+        container,
+        database,
+        user,
+        password,
+        `insert into background_task
+        (id,dedupe_key,kind,state,generation,payload,result,attempts,max_attempts,available_at,started_at,finished_at,created_at)
+        select '${recoveryRecordId}','restore:${id}','backup','succeeded',generation,'{}'::jsonb,
+          json_build_object('recoveryVerified',true,'sourceManifestVersion',${manifest.version},'mediaFiles',${manifest.media.length},'verifiedTables',${Object.keys(counts).length})::jsonb,
+          1,1,now(),now(),now(),now() from operation_control where id='default';`,
+      )
+      operationSafety = {
+        present: true,
+        externalDeliveryPaused: true,
+        automaticBackupPaused: true,
+        restoredMailTasks: tasks.mail,
+        interruptedBackupTasks: tasks.backup,
+        generationRotated: true,
+        recoveryRecordId,
+      }
+    }
     const connection = {
       databaseUrl: `postgresql://${user}:${password}@127.0.0.1:5432/${database}`,
       mediaDirectory: join(target, 'media'),
@@ -565,6 +736,8 @@ export async function restoreFullBackup(path, { output } = {}) {
       container,
       network: 'none',
       counts,
+      tableInventoryVerified: true,
+      mediaInventoryVerified: true,
       rowDigestsVerified: true,
       galleryIntegrity,
       projectIntegrity,
@@ -572,6 +745,7 @@ export async function restoreFullBackup(path, { output } = {}) {
       mediaFiles: manifest.media.length,
       revokedRestoredSessions: true,
       requireFreshContentContext: true,
+      operationSafety,
       connectionFile: 'connection.json',
     }
     await writeFile(join(target, 'restore-report.json'), JSON.stringify(report, null, 2), { flag: 'wx', mode: 0o600 })
@@ -943,8 +1117,10 @@ async function main() {
   }
   if (action === 'create') {
     const result = await createFullBackup({
+      recordOperation: true,
       output: option('--output'),
       container: option('--container'),
+      mode: option('--mode') ?? 'docker',
       onProgress: (value) => {
         if (value.stage === 'database') process.stdout.write('一致快照已固定，正在导出数据库…\n')
         else if (value.done % 25 === 0 || value.done === value.total)
@@ -953,6 +1129,11 @@ async function main() {
     })
     process.stdout.write(
       `完整备份已生成：${result.directory}\n受管媒体 ${result.manifest.media.length} 个，数据库与文件校验通过\n`,
+    )
+    process.stdout.write(
+      result.operationRecord.recorded
+        ? `运行工作台已登记本次手动备份：${result.operationRecord.taskId}\n`
+        : `完整备份产物已保留，但运行工作台未确认登记（${result.operationRecord.errorCode}）；未启用任务或修改控制开关。\n`,
     )
   } else if (action === 'verify' && option('--directory')) {
     const result = await verifyFullBackup(option('--directory'))
@@ -964,7 +1145,7 @@ async function main() {
     )
   } else
     throw new Error(
-      '用法：full-backup.mjs create [--output 新目录] [--container 本机PG容器] | verify --directory 备份目录 | restore --directory 备份目录 [--output 新目录]',
+      '用法：full-backup.mjs create [--mode docker|native] [--output 新目录] [--container 本机PG容器] | verify --directory 备份目录 | restore --directory 备份目录 [--output 新目录]',
     )
 }
 if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url))

@@ -10,6 +10,7 @@ import { MediaReference } from '../../entities/media-reference.entity'
 import { lockMedia, synchronizeMediaReferences } from '../media/media-references'
 import { momentUrl, submissionHash } from '../moment/moment-values'
 import { GuestbookReadService } from './guestbook-read.service'
+import { recordOwnerEvent } from '../operations/owner-events'
 import { guestbookId, PUBLIC_GUESTBOOK } from './guestbook-values'
 import type { CreateGuestbookDto, GuestbookBodyDto, UpdateGuestbookDto, SetGuestbookReactionDto } from './guestbook.dto'
 
@@ -55,6 +56,8 @@ export class GuestbookWriteService {
       await em.flush()
       await synchronizeMediaReferences(em, `guestbook:${note.id}`, 'guestbook', [avatar], { guestbookMessage: note })
       await em.flush()
+      if (!adminId)
+        await recordOwnerEvent(em, 'guestbook', note.id, note.status === 'pending' ? 'pending_review' : 'new_guestbook')
       return note.id
     })
     return this.read.detail(id, visitor, !!adminId)

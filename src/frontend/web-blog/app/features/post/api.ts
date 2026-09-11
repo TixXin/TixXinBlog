@@ -168,11 +168,31 @@ function commentVisitorHeaders(): Record<string, string> {
 }
 
 export async function createComment(baseUrl: string, id: string, draft: CommentDraft): Promise<CommentItem> {
+  const headers = commentVisitorHeaders()
+  // 提交凭据跨响应丢失与刷新保留；不在存储键中保存评论正文或访客原始身份。
+  const digest = await crypto.subtle.digest(
+    'SHA-256',
+    new TextEncoder().encode(JSON.stringify([baseUrl, id, headers, draft])),
+  )
+  const key = `tixxin-comment-submit:${Array.from(new Uint8Array(digest), (byte) => byte.toString(16).padStart(2, '0')).join('')}`
+  let requestId = draft.requestId
+  try {
+    requestId ??= sessionStorage.getItem(key) ?? crypto.randomUUID()
+    sessionStorage.setItem(key, requestId)
+  } catch {
+    throw new Error('评论提交凭据无法保存，请保留正文并检查浏览器存储。')
+  }
   const envelope = await $fetch<ApiEnvelope<CommentItem>>(
     `${requireBaseUrl(baseUrl)}/posts/${encodeURIComponent(id)}/comments`,
-    { method: 'POST', body: draft, headers: commentVisitorHeaders(), timeout: 10000, retry: 0 },
+    { method: 'POST', body: { ...draft, requestId }, headers, timeout: 10000, retry: 0 },
   )
-  return normalizeComment(unwrap(envelope))
+  const value = normalizeComment(unwrap(envelope))
+  try {
+    sessionStorage.removeItem(key)
+  } catch {
+    /* 保留凭据仍可安全查询同一次提交。 */
+  }
+  return value
 }
 
 export async function toggleCommentLike(baseUrl: string, id: number): Promise<{ liked: boolean; likes: number }> {

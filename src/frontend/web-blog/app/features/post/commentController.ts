@@ -6,6 +6,7 @@ import { computed, ref } from 'vue'
 import type { CommentItem } from './types'
 
 export interface CommentDraft {
+  requestId?: string
   author: string
   avatar?: string
   content: string
@@ -90,7 +91,7 @@ export function createCommentController(transport: CommentTransport, initial: Co
     try {
       const created = await transport.create({ ...identity, content, ...(target ? { parentId: target.id } : {}) })
       const parent = target ? findComment(comments.value, target.id) : undefined
-      if (created.moderationStatus !== 'pending') {
+      if (created.moderationStatus !== 'pending' && !findComment(comments.value, created.id)) {
         if (parent) (parent.replies ??= []).push(created)
         else comments.value.push(created)
         total.value += 1
