@@ -17,7 +17,7 @@ export class PublicSiteController {
   constructor(private readonly settings: SiteSettingsService) {}
   @Get() @Header('Cache-Control', 'no-store') async get(@Res({ passthrough: true }) response: Response) {
     response.setHeader('X-Content-Context', (await this.settings.context()).generation)
-    return this.settings.get()
+    return this.settings.get(true)
   }
 }
 @Controller('admin/site')

@@ -99,7 +99,7 @@ test('v7 内容维护界面迁入两种图库来源与三域草稿，同票据�
   await download.saveAs(originalPath)
   const bundle = JSON.parse(await readFile(originalPath, 'utf8')) as DownloadedPackage
   expect(bundle.format).toBe('tixxin-content')
-  expect(bundle.version).toBe(7)
+  expect(bundle.version).toBe(8)
   expect(bundle.mediaIncluded).toBe(true)
   for (const domain of ['gallery', 'projects', 'links'] as const)
     expect(bundle[domain]).toHaveLength(before.get(domain)!.adminTotal)

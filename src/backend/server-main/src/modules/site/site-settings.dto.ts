@@ -13,7 +13,9 @@ import {
   Min,
   MinLength,
   ValidateNested,
+  ValidateIf,
 } from 'class-validator'
+import { AboutSettingsDto } from './about-settings'
 const trim = ({ value }: { value: unknown }) => (typeof value === 'string' ? value.trim() : value)
 class SiteSocialDto {
   @Transform(trim) @IsString() @MinLength(1) @MaxLength(40) label!: string
@@ -34,6 +36,10 @@ export class ExpectedSiteRevisionDto {
   @IsInt() @Min(0) revision!: number
 }
 export class SaveSiteSettingsDto extends ExpectedSiteRevisionDto {
+  @ValidateIf((_object, value) => value !== undefined)
+  @ValidateNested()
+  @Type(() => AboutSettingsDto)
+  about?: AboutSettingsDto
   @Transform(trim) @IsString() @MinLength(1) @MaxLength(80) name!: string
   @Transform(trim) @IsString() @MaxLength(300) description!: string
   @Transform(trim) @IsString() @MinLength(1) @MaxLength(80) ownerName!: string

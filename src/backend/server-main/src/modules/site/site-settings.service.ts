@@ -10,15 +10,21 @@ import type { SiteSettingsValues } from '../../entities/site-settings.entity'
 import type { SaveSiteSettingsDto } from './site-settings.dto'
 import { lockMedia, synchronizeMediaReferences } from '../media/media-references'
 import { ContentContext } from '../../entities/content-context.entity'
+import { emptyAbout, publicAbout } from './about-settings'
 @Injectable()
 export class SiteSettingsService {
   constructor(private readonly em: EntityManager) {}
   async context() {
     return this.em.findOneOrFail(ContentContext, { id: 'default' }, { refresh: true })
   }
-  async get() {
+  async get(publicView = false) {
     const settings = await this.em.findOneOrFail(SiteSettings, { id: 'default' }, { refresh: true })
-    return { ...settings.values, revision: settings.revision, updatedAt: settings.updatedAt.toISOString() }
+    return {
+      ...settings.values,
+      about: publicView ? publicAbout(settings.values.about) : (settings.values.about ?? emptyAbout()),
+      revision: settings.revision,
+      updatedAt: settings.updatedAt.toISOString(),
+    }
   }
   private validateUrls(input: Pick<SiteSettingsValues, 'avatar' | 'socials'>) {
     const http = (value: string) => {
@@ -38,6 +44,11 @@ export class SiteSettingsService {
   }
   async save(input: SaveSiteSettingsDto, reason = '更新站点资料') {
     this.validateUrls(input)
+    if (
+      input.about &&
+      new Set(input.about.sections.map((section) => section.kind)).size !== input.about.sections.length
+    )
+      throw new BadRequestException('关于页栏目不能重复')
     return this.em.transactional(async (em) => {
       await lockMedia(em)
       const settings = await em.findOneOrFail(
@@ -48,6 +59,7 @@ export class SiteSettingsService {
       if (settings.revision !== input.revision)
         throw new ConflictException('站点资料已更新，请读取最新版本并比较；当前输入未保存')
       const values = {
+        about: input.about ?? settings.values.about ?? emptyAbout(),
         name: input.name,
         description: input.description,
         ownerName: input.ownerName,
@@ -107,7 +119,12 @@ export class SiteSettingsService {
   async historical(revision: number) {
     const history = await this.em.findOne(SiteSettingsRevision, { revision })
     if (!history) throw new NotFoundException('站点历史版本不存在')
-    return { ...history.values, revision: history.revision, updatedAt: history.createdAt.toISOString() }
+    return {
+      ...history.values,
+      about: history.values.about ?? emptyAbout(),
+      revision: history.revision,
+      updatedAt: history.createdAt.toISOString(),
+    }
   }
   async restore(historical: number, current: number) {
     const previous = await this.historical(historical)

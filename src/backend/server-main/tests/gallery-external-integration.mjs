@@ -108,7 +108,7 @@ try {
   const exported = await request('/admin/backup/export', 'POST', { mediaIncluded: true })
   assert.equal(exported.status, 201)
   const bundle = exported.data
-  assert.equal(bundle.version, 7)
+  assert.equal(bundle.version, 8)
   bundle.posts = []
   bundle.projects = []
   assert.equal(bundle.gallery.find((row) => row.sourceId === external.id).values.externalUrl, externalUrl)
@@ -126,6 +126,7 @@ try {
   for (const version of [1, 2, 3, 4, 5, 6]) {
     const old = structuredClone(bundle)
     old.version = version
+    delete old.site.about
     old.gallery = old.gallery.filter((row) => row.values.mediaId)
     for (const row of old.gallery) delete row.values.externalUrl
     if (version < 6) {

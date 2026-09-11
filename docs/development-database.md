@@ -1,5 +1,7 @@
 # 开发数据库工具
 
+新增 `prepare-profile` 仅整理未编辑的初始个人资料；默认预览，写入仍需 `--apply --confirm 数据库名` 和完整备份，已编辑资料跳过。事实内容候选用独立 `editorial-v1` 数据集，3篇文章与1个项目全为草稿。见 [个人内容](personal-content.md) 与 [开发数据目录](development-data-catalog.md)。
+
 图库外链另有 `gallery-external-v1` 增量集（4作品、无新增媒体资产），支持同一 `seed-data/remove-data` 流程；`check-data --domain gallery-external` 独立核对。原 `gallery-v1` 不被替换或扩写。日常库两种来源均长期保留，具体数量、备份及命令见 [本轮验收](gallery-external-admin-verification.md)。
 
 根目录使用 `corepack pnpm db:dev`，沿用后端进程环境 → `.env.local` → `.env` 的配置顺序。所有命令默认只预览，输出数据库名、服务地址、表计数、作用范围和待应用迁移，不显示用户名或密码。
