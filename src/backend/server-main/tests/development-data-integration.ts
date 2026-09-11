@@ -60,7 +60,26 @@ async function main() {
     assert.equal(literal.domains[0].filter.matched, 1)
     assert.deepEqual((await inspectDataCatalog(em, 'moments')).domains[0].counts, present.domains[0].counts)
     const full = await inspectDataCatalog(em)
-    assert.equal(full.domains.length, 10)
+    assert.deepEqual(
+      full.domains.map((domain) => domain.domain).sort(),
+      [
+        'writing',
+        'notifications',
+        'posts',
+        'comments',
+        'flashes',
+        'moments',
+        'gallery',
+        'gallery-external',
+        'projects',
+        'links',
+        'media',
+        'site',
+        'guestbook',
+      ].sort(),
+    )
+    assert.equal(full.domains.find((domain) => domain.domain === 'writing')?.state, 'missing-data')
+    assert.equal(full.domains.find((domain) => domain.domain === 'notifications')?.state, 'missing-data')
     assert.equal(full.preservedSources.find((item) => item.id === 'bookmarks').storage, 'localStorage')
     await assert.rejects(inspectDataCatalog(em, 'arbitrary-table'), /不支持/)
     assert.equal((await fixture.testOrm.schema.getUpdateSchemaSQL({ wrap: false })).trim(), '')

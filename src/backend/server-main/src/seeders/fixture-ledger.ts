@@ -19,6 +19,8 @@ export const FIXTURE_TABLES = {
   gallery: 'gallery_photo',
   project: 'project',
   link: 'friend_link',
+  notification: 'owner_notification',
+  task: 'background_task',
 } as const
 export type FixtureKind = keyof typeof FIXTURE_TABLES
 export async function fixtureRow(em: EntityManager, kind: FixtureKind, id: string) {
@@ -32,7 +34,9 @@ export function fixtureHash(row: Record<string, unknown>) {
       Object.entries(row).filter(
         ([key, value]) =>
           !['likes', 'views', 'comment_count', 'updated_at'].includes(key) &&
-          !(key === 'external_url' && value === null),
+          !(key === 'external_url' && value === null) &&
+          !(key === 'related_content' && Array.isArray(value) && value.length === 0) &&
+          !(key === 'description' && value === '' && typeof row.storage_key === 'string'),
       ),
     ),
   )
