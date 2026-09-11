@@ -9,6 +9,7 @@ import type {
   ManagedPhoto,
   PhotoItem,
 } from '~/features/gallery/types'
+import { galleryPayload } from '~/features/gallery/editor'
 export function useGalleryRepository() {
   const base = String(useRuntimeConfig().public.apiBaseUrl).replace(/\/$/, '')
   const admin = useAdminApi()
@@ -61,8 +62,8 @@ export function useGalleryRepository() {
       ),
     save: (body: GalleryEditable, requestId: string, id?: number, revision?: number) =>
       id
-        ? manage<ManagedPhoto>(`/admin/gallery/${id}`, { method: 'PATCH', body: { ...body, revision } })
-        : manage<ManagedPhoto>('/admin/gallery', { method: 'POST', body: { ...body, requestId } }),
+        ? manage<ManagedPhoto>(`/admin/gallery/${id}`, { method: 'PATCH', body: { ...galleryPayload(body), revision } })
+        : manage<ManagedPhoto>('/admin/gallery', { method: 'POST', body: { ...galleryPayload(body), requestId } }),
     update: (id: number, body: Partial<GalleryEditable>, revision: number) =>
       manage<ManagedPhoto>(`/admin/gallery/${id}`, { method: 'PATCH', body: { ...body, revision } }),
     remove: (id: number, revision: number) =>

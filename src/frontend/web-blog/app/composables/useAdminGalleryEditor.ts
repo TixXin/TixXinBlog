@@ -1,6 +1,6 @@
 /** @file useAdminGalleryEditor.ts @description 图库管理编辑，账号隔离、提交核查、版本冲突与输入恢复 */
 import type { GalleryEditable, GalleryStatus, ManagedPhoto } from '~/features/gallery/types'
-import { galleryForm, parseGalleryRecovery } from '~/features/gallery/editor'
+import { galleryForm, galleryUrlError, parseGalleryRecovery } from '~/features/gallery/editor'
 import type { GalleryRecovery } from '~/features/gallery/editor'
 import { editorRecoveryKey, readEditorRecoveries } from '~/utils/editorRecoveryStorage'
 import type { EditorRecoveryCopy } from '~/utils/editorRecoveryStorage'
@@ -40,7 +40,7 @@ export function useAdminGalleryEditor(initialId: number | null) {
     if (!import.meta.client || !actor || (!dirty.value && !pendingCreate.value)) return
     try {
       const value: GalleryRecovery = {
-        version: 1,
+        version: 2,
         context: ownedContext,
         id: id.value,
         revision: revision.value,
@@ -106,7 +106,14 @@ export function useAdminGalleryEditor(initialId: number | null) {
     notice.value = ''
   }
   async function save(status: GalleryStatus) {
-    if (!ready.value || saving.value || loading.value || !form.title.trim() || !form.mediaId) return
+    if (
+      !ready.value ||
+      saving.value ||
+      loading.value ||
+      !form.title.trim() ||
+      (form.source === 'external' ? galleryUrlError(form.externalUrl) : !form.mediaId)
+    )
+      return
     const user = auth.currentUser.value?.id,
       version = generation,
       capture = JSON.stringify(form)
@@ -148,8 +155,14 @@ export function useAdminGalleryEditor(initialId: number | null) {
       revision.value = photo.revision
       pendingCreate.value = null
       serverVersion.value = null
+      const accepted = galleryForm(photo)
+      // 另一来源的未提交输入继续保留在表单及恢复副本，不发送给 API。
+      if (form.source === accepted.source) {
+        if (accepted.source === 'media') accepted.externalUrl = form.externalUrl
+        else accepted.mediaId = form.mediaId
+      }
       baseline.value = JSON.stringify(galleryForm(photo))
-      if (JSON.stringify(form) === capture && recoveringMatches) Object.assign(form, galleryForm(photo))
+      if (JSON.stringify(form) === capture && recoveringMatches) Object.assign(form, accepted)
       notice.value = dirty.value ? '已核查服务器作品，当前新增输入仍保留，请核对后继续保存。' : '作品已保存。'
       if (!dirty.value) {
         sessionStorage.removeItem(storageKey())

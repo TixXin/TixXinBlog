@@ -16,6 +16,7 @@
       :width="width"
       :height="height"
       :loading="loading"
+      referrerpolicy="no-referrer"
       @load="loaded"
       @error="failed"
     />
@@ -43,8 +44,15 @@ const props = withDefaults(
   { src: '', fit: 'cover', loading: 'lazy', maxHeight: undefined, width: undefined, height: undefined },
 )
 const { image, state, attempt, loaded, failed, retry } = useImageState(() => props.src)
+const emit = defineEmits<{ state: [value: 'loading' | 'ready' | 'error' | 'empty'] }>()
+watch(state, (value) => emit('state', value), { immediate: true })
+const naturalRatio = computed(() =>
+  state.value === 'ready' && image.value?.naturalWidth && image.value.naturalHeight
+    ? `${image.value.naturalWidth} / ${image.value.naturalHeight}`
+    : '3 / 2',
+)
 const frameStyle = computed(() => ({
-  aspectRatio: props.width && props.height ? `${props.width} / ${props.height}` : '3 / 2',
+  aspectRatio: props.width && props.height ? `${props.width} / ${props.height}` : naturalRatio.value,
   maxHeight: props.maxHeight,
   '--image-fit': props.fit === 'contain' ? 'scale-down' : props.fit,
 }))
