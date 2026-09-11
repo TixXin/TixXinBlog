@@ -15,9 +15,11 @@
             <option value="pending">待审核</option>
             <option value="hidden">已隐藏</option>
           </select>
+          <label><input v-model="unanswered" type="checkbox" />仅待博主回复</label>
           <label>日期 · UTC<input v-model="date" type="date" aria-label="留言日期" /></label
           ><button type="submit">筛选</button>
         </form>
+        <p v-if="unanswered">仅显示已公开、未删除且尚无公开博主直接回复的游客根留言；隐藏或删除回复后重新计入。</p>
         <CommonRequestFeedback
           v-if="pending || error"
           :compact="items.length > 0"
@@ -127,6 +129,7 @@ const {
   restoring,
   q,
   status,
+  unanswered,
   date,
   page,
   items,

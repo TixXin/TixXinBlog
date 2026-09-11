@@ -7,7 +7,7 @@ import { Moment } from '../../entities/moment.entity'
 import { MomentLike } from '../../entities/moment-like.entity'
 import { MomentComment } from '../../entities/moment-comment.entity'
 import { MediaAsset } from '../../entities/media-asset.entity'
-import type { QueryAdminMomentsDto, QueryMomentsDto, MomentPageQuery } from './moment.dto'
+import type { QueryAdminMomentsDto, QueryMomentsDto, MomentPageQuery, QueryAdminMomentCommentsDto } from './moment.dto'
 import { momentWhere, publicMoments } from './moment-values'
 import { managedMediaIds } from '../media/media-references'
 
@@ -90,6 +90,33 @@ export class MomentReadService {
     }
     const [prev, next] = await Promise.all([nearest('asc'), nearest('desc')])
     return { prev, next }
+  }
+  async adminComments(query: QueryAdminMomentCommentsDto) {
+    const [items, total] = await this.em.findAndCount(
+      MomentComment,
+      {
+        deletedAt: null,
+        moment: { deletedAt: null },
+        ...(query.status && query.status !== 'all' ? { status: query.status } : {}),
+      },
+      {
+        populate: ['moment'],
+        orderBy: { createdAt: 'desc', id: 'desc' },
+        limit: query.pageSize,
+        offset: (query.page - 1) * query.pageSize,
+      },
+    )
+    return {
+      items: items.map((comment) => ({
+        ...momentCommentDto(comment),
+        momentId: comment.moment.id,
+        momentContent: comment.moment.content.slice(0, 160),
+        momentStatus: comment.moment.status,
+      })),
+      total,
+      page: query.page,
+      pageSize: query.pageSize,
+    }
   }
   async comments(id: string, query: MomentPageQuery, visitor = '', admin = false) {
     await this.require(id, admin)

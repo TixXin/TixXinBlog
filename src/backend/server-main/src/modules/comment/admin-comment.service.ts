@@ -2,7 +2,7 @@
  * @file admin-comment.service.ts
  * @description 评论管理业务；删除锁定文章并重新计算真实评论总数，避免与新评论竞争
  */
-import { FilterQuery, LockMode } from '@mikro-orm/core'
+import { FilterQuery, LockMode, raw } from '@mikro-orm/core'
 import { EntityManager } from '@mikro-orm/postgresql'
 import { BadRequestException, ConflictException, Injectable, NotFoundException } from '@nestjs/common'
 import { Comment } from '../../entities/comment.entity'
@@ -11,7 +11,7 @@ import { hashVisitorId } from '../../common/utils/visitor-id'
 import { CommentService } from './comment.service'
 import type { CommentStatus } from '../../entities/comment.entity'
 import { CommentModerationService } from './comment-moderation.service'
-import { visibleCommentSql, visibleCommentWhere } from './comment-visibility'
+import { unansweredCommentSql, visibleCommentWhere } from './comment-visibility'
 
 @Injectable()
 export class AdminCommentService {
@@ -41,12 +41,9 @@ export class AdminCommentService {
         ...(query.to ? { $lt: new Date(new Date(query.to).getTime() + 86400000) } : {}),
       }
     if (query.unanswered === 'true') {
-      const ids = await this.em.getConnection().execute<
-        { id: number }[]
-      >(`select c.id from comment c join post p on p.id=c.post_id
-        where p.status='published' and p.deleted_at is null and ${visibleCommentSql('c')} and c.parent_id is null and not c.is_owner
-        and not exists(select 1 from comment r where r.parent_id=c.id and r.is_owner and ${visibleCommentSql('r')})`)
-      where.id = { $in: ids.map((item) => item.id) }
+      where.$and = [
+        { [raw((alias) => `${alias}.id in (select c.id from comment c where ${unansweredCommentSql('c')})`)]: true },
+      ]
     }
     const [items, total] = await this.em.findAndCount(Comment, where, {
       populate: ['post'],
