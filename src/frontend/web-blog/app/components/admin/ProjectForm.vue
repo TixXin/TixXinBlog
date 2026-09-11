@@ -4,9 +4,7 @@
     <header>
       <h1>{{ id ? '编辑项目' : '新建项目' }}</h1>
       <AdminBackLink to="/admin/projects">返回项目管理</AdminBackLink
-      ><NuxtLink v-if="saved?.status === 'published'" :to="`/projects?q=${encodeURIComponent(saved.title)}`"
-        >查看公开项目</NuxtLink
-      >
+      ><NuxtLink v-if="saved?.status === 'published'" :to="`/projects?project=${saved.id}`">查看公开项目</NuxtLink>
     </header>
     <p v-if="error" role="alert">
       {{ error }} <button type="button" :disabled="saving || loading" @click="$emit('reload')">重新读取</button>
@@ -36,6 +34,7 @@
         {{ projectProgressLabels[serverVersion.progress] }} · 排序 {{ serverVersion.sortOrder }}
       </p>
       <p>{{ serverVersion.description }}</p>
+      <p>有序关联：{{ contentRelationSummary(serverVersion.relatedContent) }}</p>
       <p>技术：{{ serverVersion.tags.map((tag) => tag.label).join('、') || '未填写' }}</p>
       <ul>
         <li v-for="link in serverVersion.links" :key="link.kind">
@@ -133,6 +132,17 @@
         /></label>
       </div>
       <p>进展描述项目本身。已归档的项目仍可公开；开发中的项目也可保留为草稿。</p>
+      <AdminContentRelations
+        v-bind="relations.props.value"
+        @choose="relations.choose"
+        @remove="relations.remove"
+        @move="relations.move"
+        @search="relations.search"
+        @page="relations.setPage"
+        @type="relations.setType"
+        @query="relations.setQuery"
+        @resolve="relations.resolve"
+      />
       <section aria-label="项目技术标签">
         <h2>技术标签（{{ value.tags.length }} / 20）</h2>
         <div v-for="(tag, index) in value.tags" :key="index" class="project-editor__row">
@@ -259,6 +269,7 @@ import type {
   ProjectLinkKind,
 } from '~/features/project/types'
 import type { ProjectRecovery } from '~/features/project/editor'
+import { contentRelationSummary } from '~/features/content-relation/editor'
 import type { MediaAsset } from '~/features/media/types'
 import type { EditorRecoveryCopy } from '~/utils/editorRecoveryStorage'
 const props = defineProps<{
@@ -291,6 +302,12 @@ const colorLabels = { emerald: '翠绿', blue: '蓝色', amber: '琥珀', sky: '
 function change<K extends keyof ProjectEditable>(key: K, value: ProjectEditable[K]) {
   emit('change', { [key]: value })
 }
+const relations = useContentRelationPicker(
+  computed(() => props.value.relatedContent ?? []),
+  computed(() => (props.id ? { type: 'project' as const, id: props.id } : undefined)),
+  computed(() => props.ready && !props.saving && !props.loading),
+  (relatedContent) => emit('change', { relatedContent }),
+)
 function changeTag(index: number, patch: Partial<ProjectTag>) {
   change(
     'tags',

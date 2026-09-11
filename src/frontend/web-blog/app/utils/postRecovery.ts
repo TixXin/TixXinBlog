@@ -3,6 +3,7 @@
  * @description 按账号和文章隔离的本机恢复副本；每个编辑页使用独立键，避免标签页互相覆盖。
  */
 import type { AdminPostDraft } from '~/features/post/adminTypes'
+import { copyContentRelations, validContentRelations } from '~/features/content-relation/editor'
 
 export interface PostRecoveryEntry {
   schemaVersion: 1
@@ -25,6 +26,7 @@ export function recoveryPrefix(owner: string, postId: string | null): string {
 function validDraft(value: unknown, postId: string | null): value is AdminPostDraft {
   if (!value || typeof value !== 'object') return false
   const draft = value as Record<string, unknown>
+  if (draft.relatedContent !== undefined && !validContentRelations(draft.relatedContent)) return false
   for (const field of ['slug', 'coverAlt', 'seoTitle', 'seoDescription']) {
     if (draft[field] !== undefined && (typeof draft[field] !== 'string' || (draft[field] as string).length > 10000))
       return false
@@ -81,6 +83,7 @@ export function readPostRecoveries(
         schemaVersion: 1,
         savedAt: value.savedAt,
         draft: {
+          relatedContent: copyContentRelations(draft.relatedContent),
           id: draft.id,
           slug: draft.slug,
           coverAlt: draft.coverAlt,

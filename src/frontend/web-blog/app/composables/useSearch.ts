@@ -1,170 +1,244 @@
 /**
  * @file useSearch.ts
- * @description 客户端模糊搜索 composable，基于 Fuse.js
- * @author TixXin
- * @since 2026-04-06
+ * @description 六域公开检索；全部类型分组预览，单类型真实分页，取消与版本保护隔离迟到响应。
  */
-
-import type Fuse from 'fuse.js'
 import { fetchPostPage } from '~/features/post/api'
-import { mockPosts } from '~/features/post/mock'
-import type { PostItem } from '~/features/post/types'
-import type { ProjectItem } from '~/features/project/types'
-import type { LinkItem } from '~/features/link/types'
+import { fetchFlashSearchPage } from '~/features/search/flash'
+import { SEARCH_PAGE_SIZE, SEARCH_PREVIEW_SIZE, searchTypes, searchTypeLabels } from '~/features/search/types'
+import type { SearchGroup, SearchResultItem, SearchScope, SearchSelection, SearchType } from '~/features/search/types'
+import { searchPage, searchScope } from '~/features/search/query'
+export type { SearchResultItem } from '~/features/search/types'
 
-export interface SearchResultItem {
-  type: 'post' | 'project' | 'link'
-  id: string
-  title: string
-  description: string
-  url: string
-  icon: string
-}
-
-let fuseInstance: Fuse<SearchResultItem> | null = null
-let fuseItems: SearchResultItem[] = []
-
-async function getFuse(items: SearchResultItem[]) {
-  if (fuseInstance && fuseItems === items) return fuseInstance
-  const { default: FuseClass } = await import('fuse.js')
-  fuseItems = items
-  fuseInstance = new FuseClass(items, {
-    keys: [
-      { name: 'title', weight: 0.5 },
-      { name: 'description', weight: 0.3 },
-      { name: 'type', weight: 0.2 },
-    ],
-    threshold: 0.4,
-    includeScore: true,
-    minMatchCharLength: 1,
-  })
-  return fuseInstance
-}
-
-export function useSearch() {
+export function useSearch(options: { remember?: boolean } = {}) {
   const config = useRuntimeConfig()
-  const projects = useProjectRepository()
-  const links = useLinkRepository()
-  const error = ref('')
-  let version = 0
-  let controller: AbortController | undefined
-  let alive = true
-  const query = ref('')
-  const results = ref<SearchResultItem[]>([])
-  const isSearching = ref(false)
+  const projects = useProjectRepository(),
+    links = useLinkRepository(),
+    gallery = useGalleryRepository()
+  const moments = useMomentRepository(),
+    flashes = useFlashRepository()
+  const selection = options.remember
+    ? useState<SearchSelection>('search-dialog-selection', () => ({ query: '', type: 'all', page: 1 }))
+    : ref<SearchSelection>({ query: '', type: 'all', page: 1 })
+  const query = computed({
+    get: () => selection.value.query,
+    set: (value) => {
+      selection.value.query = value
+    },
+  })
+  const type = computed({
+    get: () => selection.value.type,
+    set: (value: SearchScope) => {
+      selection.value.type = value
+    },
+  })
+  const page = computed({
+    get: () => selection.value.page,
+    set: (value: number) => {
+      selection.value.page = value
+    },
+  })
+  const groups = ref<SearchGroup[]>([])
+  const results = computed(() => groups.value.flatMap((group) => group.items))
+  const total = computed(() =>
+    groups.value.length && groups.value.every((group) => group.total !== null)
+      ? groups.value.reduce((sum, group) => sum + group.total!, 0)
+      : null,
+  )
+  const isSearching = ref(false),
+    error = ref('')
+  let version = 0,
+    controller: AbortController | undefined,
+    alive = true
+  const text = (value: string) => value.replace(/\s+/g, ' ').trim()
+  const item = (
+    source: SearchType,
+    id: string | number,
+    title: string,
+    description: string,
+    url: string,
+    icon: string,
+  ): SearchResultItem => ({
+    type: source,
+    id: String(id),
+    title: text(title).slice(0, 100),
+    description: text(description).slice(0, 200),
+    url,
+    icon,
+  })
 
-  function buildSearchItems(posts: PostItem[], projects: ProjectItem[], links: LinkItem[]): SearchResultItem[] {
-    const items: SearchResultItem[] = []
-
-    for (const post of posts) {
-      items.push({
-        type: 'post',
-        id: post.id.toString(),
-        title: post.title,
-        description: post.summary,
-        url: articlePath(post),
-        icon: 'lucide:file-text',
-      })
+  async function read(source: SearchType, keyword: string, currentPage: number, pageSize: number, signal: AbortSignal) {
+    const paging = { q: keyword, page: currentPage, pageSize }
+    if (source === 'post') {
+      if (config.public.postUseMockRepo !== false) {
+        const [{ mockPosts }, { default: Fuse }] = await Promise.all([
+          import('~/features/post/mock'),
+          import('fuse.js'),
+        ])
+        const matches = new Fuse(mockPosts, { keys: ['title', 'summary'], threshold: 0.4 }).search(keyword)
+        return {
+          total: matches.length,
+          items: matches
+            .slice((currentPage - 1) * pageSize, currentPage * pageSize)
+            .map(({ item: post }) =>
+              item(source, post.id, post.title, post.summary, articlePath(post), 'lucide:file-text'),
+            ),
+        }
+      }
+      const value = await fetchPostPage(
+        config.public.apiBaseUrl,
+        { search: keyword, page: currentPage, pageSize },
+        signal,
+      )
+      return {
+        total: value.total,
+        items: value.items.map((post) =>
+          item(source, post.id, post.title, post.summary, articlePath(post), 'lucide:file-text'),
+        ),
+      }
     }
-
-    for (const project of projects) {
-      items.push({
-        type: 'project',
-        id: String(project.id),
-        title: project.title,
-        description: project.description,
-        url: `/projects?q=${encodeURIComponent(project.title)}`,
-        icon: 'lucide:layers',
-      })
+    if (source === 'project') {
+      const value = await projects.list(paging, signal)
+      return {
+        total: value.total,
+        items: value.items.map((project) =>
+          item(
+            source,
+            project.id,
+            project.title,
+            project.description,
+            '/projects?project=' + project.id,
+            'lucide:layers',
+          ),
+        ),
+      }
     }
-
-    for (const link of links) {
-      items.push({
-        type: 'link',
-        id: String(link.id),
-        title: link.name,
-        description: link.description,
-        url: link.url,
-        icon: 'lucide:link',
-      })
+    if (source === 'link') {
+      const value = await links.list(paging, signal)
+      return {
+        total: value.total,
+        items: value.items.map((link) => item(source, link.id, link.name, link.description, link.url, 'lucide:link')),
+      }
     }
-
-    return items
+    if (source === 'gallery') {
+      const value = await gallery.list(paging, signal)
+      return {
+        total: value.total,
+        items: value.items.map((photo) =>
+          item(
+            source,
+            photo.id,
+            photo.title,
+            photo.description || photo.category,
+            '/gallery?photo=' + photo.id,
+            'lucide:images',
+          ),
+        ),
+      }
+    }
+    if (source === 'moment') {
+      const value = await moments.list(paging, signal)
+      return {
+        total: value.total,
+        items: value.items.map((moment) =>
+          item(
+            source,
+            moment.id,
+            moment.content,
+            moment.content,
+            '/moments/' + encodeURIComponent(moment.id),
+            'lucide:messages-square',
+          ),
+        ),
+      }
+    }
+    if (config.public.useMockRepo !== false) {
+      const notes = await (flashes.listPublic?.() ?? flashes.list('tixxin'))
+      const matches = notes
+        .filter(
+          (note) =>
+            !note.isDraft &&
+            !note.isArchived &&
+            (note.content.toLocaleLowerCase().includes(keyword.toLocaleLowerCase()) ||
+              note.tags.some((tag) => tag.toLocaleLowerCase().includes(keyword.toLocaleLowerCase()))),
+        )
+        .sort((a, b) => b.createdAt.localeCompare(a.createdAt) || b.id.localeCompare(a.id))
+      return {
+        total: matches.length,
+        items: matches
+          .slice((currentPage - 1) * pageSize, currentPage * pageSize)
+          .map((note) =>
+            item(
+              source,
+              note.id,
+              note.content,
+              note.content,
+              '/flash/' + encodeURIComponent(note.id),
+              'lucide:lightbulb',
+            ),
+          ),
+      }
+    }
+    const value = await fetchFlashSearchPage(config.public.apiBaseUrl, keyword, currentPage, pageSize, signal)
+    return {
+      total: value.total,
+      items: value.items.map((note) =>
+        item(source, note.id, note.content, note.content, '/flash/' + encodeURIComponent(note.id), 'lucide:lightbulb'),
+      ),
+    }
   }
 
-  async function search(q: string) {
+  function cancel() {
+    version++
+    controller?.abort()
+    isSearching.value = false
+  }
+  async function search(q: string, scope: SearchScope = type.value, requestedPage = page.value) {
     const requestVersion = ++version
     controller?.abort()
     query.value = q
+    type.value = searchScope(scope)
+    page.value = type.value === 'all' ? 1 : searchPage(requestedPage)
     error.value = ''
     if (!q.trim()) {
-      results.value = []
+      groups.value = []
       isSearching.value = false
       return
     }
     isSearching.value = true
     controller = new AbortController()
+    const keyword = q.trim().slice(0, 200),
+      currentType = type.value,
+      currentPage = page.value
+    const sources = currentType === 'all' ? [...searchTypes] : [currentType]
+    const pageSize = currentType === 'all' ? SEARCH_PREVIEW_SIZE : SEARCH_PAGE_SIZE
+    const owns = () =>
+      alive &&
+      requestVersion === version &&
+      query.value === q &&
+      type.value === currentType &&
+      page.value === currentPage
     try {
-      const useMock = config.public.postUseMockRepo !== false
-      const keyword = q.trim().slice(0, 200),
-        signal = controller.signal
-      const [postRead, projectRead, linkRead, localRead] = await Promise.allSettled([
-        useMock
-          ? Promise.resolve([] as PostItem[])
-          : fetchPostPage(config.public.apiBaseUrl, { search: keyword, pageSize: 10 }, signal).then(
-              (page) => page.items,
-            ),
-        projects.list({ q: keyword, page: 1, pageSize: 10 }, signal),
-        links.list({ q: keyword, page: 1, pageSize: 10 }, signal),
-        getFuse(buildSearchItems(useMock ? mockPosts : [], [], [])).then((fuse) =>
-          fuse.search(keyword, { limit: 10 }).map((match) => match.item),
-        ),
-      ])
-      if (alive && requestVersion === version && query.value === q) {
-        const projectItems = projectRead.status === 'fulfilled' ? projectRead.value.items : []
-        const postItems = postRead.status === 'fulfilled' ? postRead.value : []
-        const linkItems = linkRead.status === 'fulfilled' ? linkRead.value.items : []
-        const local = localRead.status === 'fulfilled' ? localRead.value : []
-        const groups = [
-          buildSearchItems([], projectItems, []),
-          [...buildSearchItems(postItems, [], []), ...local],
-          buildSearchItems([], [], linkItems),
-        ]
-        results.value = Array.from({ length: 10 }, (_, index) =>
-          groups.map((group) => group[index]).filter((item): item is SearchResultItem => !!item),
-        )
-          .flat()
-          .slice(0, 10)
-        const unavailable = [
-          projectRead.status === 'rejected' ? '项目' : '',
-          postRead.status === 'rejected' ? '文章' : '',
-          linkRead.status === 'rejected' ? '友链' : '',
-          localRead.status === 'rejected' ? '本地资料' : '',
-        ].filter(Boolean)
-        error.value = unavailable.length
-          ? `${unavailable.join('、')}搜索暂时不可用，请重试。${results.value.length ? '以下保留其他来源的可用结果。' : ''}`
-          : ''
-      }
-    } catch {
-      if (alive && requestVersion === version && query.value === q) {
-        error.value = '搜索暂时不可用，请稍后重试'
-        results.value = []
-      }
+      const responses = await Promise.allSettled(
+        sources.map((source) => read(source, keyword, currentPage, pageSize, controller!.signal)),
+      )
+      if (!owns()) return
+      groups.value = responses.map((response, index) => ({
+        type: sources[index]!,
+        items: response.status === 'fulfilled' ? response.value.items : [],
+        total: response.status === 'fulfilled' ? response.value.total : null,
+        unavailable: response.status === 'rejected',
+      }))
+      const unavailable = groups.value.filter((group) => group.unavailable).map((group) => searchTypeLabels[group.type])
+      error.value = unavailable.length
+        ? `${unavailable.join('、')}搜索暂时不可用，请重试。${results.value.length ? '其他来源结果仍可使用。' : ''}`
+        : ''
     } finally {
-      if (alive && requestVersion === version && query.value === q) isSearching.value = false
+      if (owns()) isSearching.value = false
     }
   }
   onScopeDispose(() => {
     alive = false
-    version++
-    controller?.abort()
+    cancel()
   })
-
-  return {
-    query,
-    results,
-    isSearching,
-    error,
-    search,
-  }
+  return { query, type, page, groups, results, total, isSearching, error, search, cancel }
 }

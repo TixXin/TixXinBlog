@@ -25,6 +25,8 @@
       </ul>
       <template v-else>未填写</template>
     </dd>
+    <dt>原有序关联编号</dt>
+    <dd>{{ contentRelationSummary(value.relatedContent) }}</dd>
     <dt>原封面编号</dt>
     <dd>
       {{ value.coverMediaId || '未设置封面' }}
@@ -35,6 +37,7 @@
 <script setup lang="ts">
 import { projectProgressLabels, projectStatusLabels, projectLinkLabels } from '~/features/project/types'
 import type { ProjectEditable } from '~/features/project/types'
+import { contentRelationSummary } from '~/features/content-relation/editor'
 defineProps<{ value: ProjectEditable }>()
 </script>
 <style scoped>

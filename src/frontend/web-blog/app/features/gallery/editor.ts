@@ -1,7 +1,9 @@
 /** @file editor.ts @description 图库编辑字段白名单与绑定内容上下文的恢复副本 */
 import type { GalleryEditable, ManagedPhoto } from './types'
+import { copyContentRelations, validContentRelations } from '~/features/content-relation/editor'
 export function galleryForm(photo?: Partial<ManagedPhoto>): GalleryEditable {
   return {
+    relatedContent: copyContentRelations(photo?.relatedContent),
     source: photo?.source ?? (photo?.externalUrl ? 'external' : 'media'),
     mediaId: photo?.mediaId ?? '',
     externalUrl: photo?.externalUrl ?? '',
@@ -29,6 +31,7 @@ export function validGalleryForm(value: unknown): value is GalleryEditable {
   if (!value || typeof value !== 'object') return false
   const v = value as GalleryEditable
   return (
+    (v.relatedContent === undefined || validContentRelations(v.relatedContent)) &&
     (v.source === undefined || ['media', 'external'].includes(v.source)) &&
     (v.externalUrl === undefined || (typeof v.externalUrl === 'string' && v.externalUrl.length <= 2048)) &&
     typeof v.mediaId === 'string' &&

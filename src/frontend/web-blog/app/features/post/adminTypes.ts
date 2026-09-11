@@ -2,7 +2,9 @@
  * @file adminTypes.ts
  * @description 文章编辑契约，与后端 SavePostDto 保持一致
  */
+import type { ContentRelation } from '~/features/content-relation/types'
 export interface AdminPostDraft {
+  relatedContent?: ContentRelation[]
   slug?: string
   coverAlt?: string
   seoTitle?: string

@@ -30,6 +30,7 @@ export interface MomentRepository {
   save(value: MomentEditable, requestId: string, id?: string, revision?: number): Promise<ManagedMoment>
   remove(id: string, revision: number): Promise<{ ok: boolean }>
   adminComments(id: string, page: number): Promise<MomentCommentPage>
+  adminCommentLocation(id: string, commentId: string): Promise<{ commentId: string; page: number; pageSize: number }>
   moderate(
     id: string,
     commentId: string,

@@ -44,6 +44,15 @@
         </button>
       </div>
       <div class="project-card__links">
+        <button
+          v-if="showDetails"
+          type="button"
+          class="project-card__link"
+          :disabled="!interactive"
+          @click="$emit('open', project.id)"
+        >
+          <Icon name="lucide:book-open" size="14" />项目详情与关联阅读
+        </button>
         <template v-for="link in project.links" :key="link.kind">
           <a :href="link.href" class="project-card__link" target="_blank" rel="noopener noreferrer">
             <Icon :name="link.icon" size="14" /> {{ link.label }}
@@ -58,8 +67,8 @@
 <script setup lang="ts">
 import { projectProgressLabels } from '~/features/project/types'
 import type { ProjectItem } from '~/features/project/types'
-const props = defineProps<{ project: ProjectItem; interactive: boolean }>()
-defineEmits<{ tag: [label: string] }>()
+const props = defineProps<{ project: ProjectItem; interactive: boolean; showDetails?: boolean }>()
+defineEmits<{ tag: [label: string]; open: [id: number] }>()
 const statusLabel = computed(() => projectProgressLabels[props.project.progress])
 </script>
 

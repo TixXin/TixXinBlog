@@ -475,7 +475,7 @@ test('全局友链搜索用真实记录和稳定编号，同域不同路径均�
     }
     return route.continue()
   })
-  await dialog.getByRole('textbox', { name: '搜索文章、项目和友链', exact: true }).fill(name)
+  await dialog.getByRole('textbox', { name: '搜索站内公开内容', exact: true }).fill(name)
   await expect(dialog.getByRole('alert')).toContainText('友链搜索暂时不可用')
   expect(failedSearches).toBe(1)
   await expect(dialog.getByText('没有找到相关内容', { exact: true })).toHaveCount(0)

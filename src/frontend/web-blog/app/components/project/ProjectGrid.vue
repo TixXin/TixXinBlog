@@ -12,7 +12,9 @@
       :key="project.id"
       :project="project"
       :interactive="interactive"
+      show-details
       @tag="$emit('tag', $event)"
+      @open="$emit('open', $event)"
     />
   </div>
 </template>
@@ -21,7 +23,7 @@
 import type { ProjectItem } from '~/features/project/types'
 
 defineProps<{ projects: ProjectItem[]; interactive: boolean }>()
-defineEmits<{ tag: [label: string] }>()
+defineEmits<{ tag: [label: string]; open: [id: number] }>()
 </script>
 
 <style lang="scss" scoped>

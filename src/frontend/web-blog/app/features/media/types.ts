@@ -7,6 +7,7 @@ export interface MediaAsset {
   name: string
   url: string
   alt: string
+  description: string
   width: number
   height: number
   byteSize: number
@@ -14,6 +15,8 @@ export interface MediaAsset {
   createdAt: string
   deleted: boolean
 }
+export type MediaOrientation = '' | 'landscape' | 'portrait' | 'square'
+export type MediaUsage = '' | 'used' | 'unused'
 export interface MediaReferences {
   total: number
   page: number

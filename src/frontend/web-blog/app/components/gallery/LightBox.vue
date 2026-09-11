@@ -47,6 +47,7 @@
             ><template v-if="photo.device"> · {{ photo.device }}</template>
           </p>
         </div>
+        <CommonRelatedContent v-if="photo" :items="photo.relatedContent" />
         <nav class="lightbox__navigation" aria-label="切换照片">
           <button type="button" :disabled="!ready || !canPrevious || pending" @click="$emit('previous')">
             <Icon name="lucide:chevron-left" />上一张</button
@@ -134,6 +135,12 @@ useModalFocus(() => props.visible, dialogRef, { close: onClose })
   overflow-y: auto;
   width: 100%;
   padding: 0 1rem;
+}
+.lightbox__inner :deep(.related-content) {
+  color: #fff;
+  --text-main: #fff;
+  --text-muted: #ffffffb3;
+  --accent: #bfdcff;
 }
 
 .lightbox__img {

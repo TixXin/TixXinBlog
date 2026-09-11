@@ -4,6 +4,7 @@
  */
 import type { AdminPostDraft } from '~/features/post/adminTypes'
 import type { PostRecoveryItem } from '~/utils/postRecovery'
+import { copyContentRelations } from '~/features/content-relation/editor'
 
 export function usePostEditor(id: string | null) {
   const api = useAdminApi()
@@ -11,6 +12,7 @@ export function usePostEditor(id: string | null) {
   const route = useRoute()
   const { success } = useToast()
   const draft = ref<AdminPostDraft>({
+    relatedContent: [],
     title: '',
     summary: '',
     cover: '',
@@ -43,6 +45,8 @@ export function usePostEditor(id: string | null) {
   const preservedLocal = ref<AdminPostDraft | null>(null)
   const localForCompare = computed(() => ({
     ...draft.value,
+    // 展开响应式对象不会移除嵌套代理；关联列表必须和标签一样形成独立可克隆快照。
+    relatedContent: copyContentRelations(draft.value.relatedContent),
     tags: tags.value
       .split(/[,，]/)
       .map((value) => value.trim())
@@ -223,6 +227,7 @@ export function usePostEditor(id: string | null) {
       readTimeMinutes: source.readTimeMinutes,
       pinned: source.pinned,
       tags: [...source.tags],
+      relatedContent: copyContentRelations(source.relatedContent),
     }
     tags.value = draft.value.tags.join(', ')
     autoSavePaused.value = true
