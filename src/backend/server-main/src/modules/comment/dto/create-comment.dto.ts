@@ -6,9 +6,10 @@
  */
 
 import { Transform, Type } from 'class-transformer'
-import { IsInt, IsOptional, IsString, MaxLength, Min, MinLength } from 'class-validator'
+import { IsInt, IsOptional, IsString, IsUUID, MaxLength, Min, MinLength } from 'class-validator'
 
 export class CreateCommentDto {
+  @IsOptional() @IsUUID('4') requestId?: string
   @IsString()
   @Transform(({ value }: { value: unknown }) => (typeof value === 'string' ? value.trim() : value))
   @MinLength(1)

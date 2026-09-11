@@ -7,7 +7,10 @@
 
 import { LockMode } from '@mikro-orm/core'
 import { EntityManager } from '@mikro-orm/postgresql'
-import { HttpStatus, Injectable } from '@nestjs/common'
+import { ConflictException, HttpStatus, Injectable } from '@nestjs/common'
+import { createHash } from 'node:crypto'
+import { CommentSubmission } from '../../entities/comment-submission.entity'
+import { recordOwnerEvent } from '../operations/owner-events'
 import { ErrorCode } from '../../common/constants/error-codes'
 import { BusinessException } from '../../common/exceptions/business.exception'
 import { Comment, COMMENT_MAX_DEPTH } from '../../entities/comment.entity'
@@ -75,6 +78,34 @@ export class CommentService {
         throw new BusinessException(POST_ARCHIVED, '文章已归档,无法评论', HttpStatus.UNPROCESSABLE_ENTITY)
       }
 
+      const digest = (value: unknown) => createHash('sha256').update(JSON.stringify(value)).digest('hex')
+      const submissionId = dto.requestId ? digest([postId, visitorIdHash, isOwner, dto.requestId]) : null
+      const requestHash = digest([dto.author, dto.avatar ?? DEFAULT_AVATAR, dto.content, dto.parentId ?? null])
+      if (submissionId) {
+        const previous = await em.findOne(CommentSubmission, { id: submissionId }, { populate: ['comment'] })
+        if (previous) {
+          if (
+            previous.requestHash !== requestHash ||
+            !previous.comment ||
+            ['hidden', 'spam'].includes(previous.comment.status)
+          )
+            throw new ConflictException('此评论提交已处理或移除，请核对原结果')
+          const saved = previous.comment
+          return {
+            moderationStatus: saved.status as 'pending' | 'published',
+            id: saved.id,
+            author: saved.authorSnapshot.name,
+            avatar: saved.authorSnapshot.avatar,
+            content: saved.content,
+            time: saved.createdAt.toISOString(),
+            likes: saved.likes,
+            liked: false,
+            isOwner: saved.isOwner,
+            replies: [],
+          }
+        }
+      }
+
       let parent: Comment | undefined
       if (dto.parentId) {
         parent = (await em.findOne(Comment, { id: dto.parentId, post, ...visibleCommentWhere() })) ?? undefined
@@ -108,7 +139,10 @@ export class CommentService {
         post,
         comment,
       })
+      if (submissionId) em.create(CommentSubmission, { id: submissionId, requestHash, comment, createdAt: new Date() })
       await em.flush()
+      if (!isOwner)
+        await recordOwnerEvent(em, 'comment', comment.id, requiresApproval ? 'pending_review' : 'new_comment')
 
       return {
         moderationStatus: requiresApproval ? 'pending' : 'published',
