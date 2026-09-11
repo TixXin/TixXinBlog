@@ -38,6 +38,7 @@ try {
   assert.equal(initial.announcement, '')
   assert.equal((await request('/admin/site', 'GET', undefined, false)).status, 401)
   assert.equal((await request('/admin/site/revisions', 'GET', undefined, false)).status, 401)
+  const initialHistory = await ok('/admin/site/revisions')
   const input = {
     ...editable(initial),
     name: '隔离站点 <文字>',
@@ -70,7 +71,7 @@ try {
   assert(changed.announcementUpdatedAt)
   assert.equal((await ok('/site', 'GET', undefined, false)).name, input.name)
   assert.equal((await request('/admin/site', 'PATCH', input)).status, 409)
-  assert.equal((await ok('/admin/site/revisions')).total, 2)
+  assert.equal((await ok('/admin/site/revisions')).total, initialHistory.total + 1)
   assert.equal((await ok('/admin/site/revisions/0')).name, initial.name)
   const beforeFailure = await ok('/site')
   assert.equal(
@@ -83,10 +84,10 @@ try {
     409,
   )
   assert.equal((await ok('/site')).revision, beforeFailure.revision)
-  assert.equal((await ok('/admin/site/revisions')).total, 2)
-  const restored = await ok('/admin/site/revisions/0/restore', 'POST', { revision: changed.revision })
+  assert.equal((await ok('/admin/site/revisions')).total, initialHistory.total + 1)
+  const restored = await ok(`/admin/site/revisions/${initial.revision}/restore`, 'POST', { revision: changed.revision })
   assert.equal(restored.name, initial.name)
-  assert.equal(restored.revision, 2)
+  assert.equal(restored.revision, changed.revision + 1)
   assert.equal(
     (await request('/admin/site/revisions/999/restore', 'POST', { revision: restored.revision })).status,
     404,
@@ -124,10 +125,14 @@ try {
     visible: true,
     introduction: '从代码中记录技术实践',
     sections: [
-      { kind: 'skill', visible: true, items: [
-        { title: 'Web 开发', detail: '公开说明', period: '', visible: true },
-        { title: '尚未确认', detail: '隐藏的个人资料', period: '', visible: false },
-      ] },
+      {
+        kind: 'skill',
+        visible: true,
+        items: [
+          { title: 'Web 开发', detail: '公开说明', period: '', visible: true },
+          { title: '尚未确认', detail: '隐藏的个人资料', period: '', visible: false },
+        ],
+      },
       { kind: 'experience', visible: false, items: [{ title: '隐藏经历', detail: '', period: '', visible: true }] },
     ],
   }
@@ -138,13 +143,30 @@ try {
   assert.equal(publishedAbout.sections[0].items.length, 1)
   assert(!JSON.stringify(publishedAbout).includes('隐藏'))
   assert.equal((await request('/admin/site', 'PATCH', { ...editable(withAbout), about: null })).status, 400)
-  assert.equal((await request('/admin/site', 'PATCH', { ...editable(withAbout), about: { ...about, sections: [about.sections[0], about.sections[0]] } })).status, 400)
+  assert.equal(
+    (
+      await request('/admin/site', 'PATCH', {
+        ...editable(withAbout),
+        about: { ...about, sections: [about.sections[0], about.sections[0]] },
+      })
+    ).status,
+    400,
+  )
   const { about: _about, ...oldClient } = editable(withAbout)
   const preservedAbout = await ok('/admin/site', 'PATCH', { ...oldClient, announcement: '独立公告修改' })
   assert.deepEqual(preservedAbout.about, about, '旧客户端未提供新字段时不得清除关于页')
-  const hiddenAbout = await ok('/admin/site', 'PATCH', { ...editable(preservedAbout), about: { ...about, visible: false } })
-  assert.deepEqual((await ok('/site', 'GET', undefined, false)).about, { visible: false, introduction: '', sections: [] })
-  const restoredAbout = await ok(`/admin/site/revisions/${withAbout.revision}/restore`, 'POST', { revision: hiddenAbout.revision })
+  const hiddenAbout = await ok('/admin/site', 'PATCH', {
+    ...editable(preservedAbout),
+    about: { ...about, visible: false },
+  })
+  assert.deepEqual((await ok('/site', 'GET', undefined, false)).about, {
+    visible: false,
+    introduction: '',
+    sections: [],
+  })
+  const restoredAbout = await ok(`/admin/site/revisions/${withAbout.revision}/restore`, 'POST', {
+    revision: hiddenAbout.revision,
+  })
   assert.deepEqual(restoredAbout.about, about)
   process.stdout.write(
     '站点设置集成通过：权限、字段/URL 校验、运行时持久化、版本并发、历史恢复、失败回滚和头像历史引用保护\n',
