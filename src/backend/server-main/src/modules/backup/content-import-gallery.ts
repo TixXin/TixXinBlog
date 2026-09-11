@@ -19,14 +19,20 @@ export async function importGallery(
     const photo = em.create(GalleryPhoto, {
       ...values,
       status: 'draft',
-      media: em.getReference(MediaAsset, mediaId),
+      media: mediaId ? em.getReference(MediaAsset, mediaId) : null,
       createdAt: new Date(source.createdAt),
       publishedAt: source.publishedAt ? new Date(source.publishedAt) : null,
     })
     await em.flush()
-    await synchronizeMediaReferences(em, `gallery:${photo.id}`, 'gallery', [`/api/v1/media/${mediaId}.webp`], {
-      galleryPhoto: photo,
-    })
+    await synchronizeMediaReferences(
+      em,
+      `gallery:${photo.id}`,
+      'gallery',
+      mediaId ? [`/api/v1/media/${mediaId}.webp`] : [],
+      {
+        galleryPhoto: photo,
+      },
+    )
     result.gallery.push({ sourceId: source.sourceId, id: photo.id })
   }
 }

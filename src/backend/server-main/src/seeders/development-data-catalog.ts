@@ -64,7 +64,7 @@ export const DATA_DOMAINS: Domain[] = [
     table: 'gallery_photo',
     searchColumn: 'title',
     dataset: 'gallery-v1',
-    source: 'PostgreSQL gallery_photo、media_asset、media_reference；MEDIA_DIRECTORY 本地文件',
+    source: 'PostgreSQL gallery_photo、media_asset、media_reference；MEDIA_DIRECTORY 本地文件及外链 URL',
     scenarios: '两页公开作品、草稿撤回、分类排序、长短说明、缺省字段、横竖比例、近期历史拍摄日期及共用图片',
     query: `select count(*)::int as total,
       count(*) filter(where g.status='published' and g.deleted_at is null)::int as published,
@@ -80,8 +80,10 @@ export const DATA_DOMAINS: Domain[] = [
       count(*) filter(where g.status='published' and g.deleted_at is null and m.width>m.height)::int as landscape,
       count(*) filter(where g.status='published' and g.deleted_at is null and m.width<m.height)::int as portrait,
       count(distinct g.media_id) filter(where g.deleted_at is null and m.deleted_at is null)::int as images,
-      count(*) filter(where g.deleted_at is null and exists(select 1 from media_reference r where r.gallery_photo_id=g.id and r.asset_id=g.media_id))::int as references
-      from gallery_photo g join media_asset m on m.id=g.media_id`,
+      count(*) filter(where g.deleted_at is null and exists(select 1 from media_reference r where r.gallery_photo_id=g.id and r.asset_id=g.media_id))::int as references,
+      count(*) filter(where g.deleted_at is null and g.external_url is not null)::int as external,
+      count(*) filter(where g.status='published' and g.deleted_at is null and g.external_url is not null)::int as "externalPublished"
+      from gallery_photo g left join media_asset m on m.id=g.media_id`,
     required: {
       published: 13,
       drafts: 1,
@@ -98,6 +100,22 @@ export const DATA_DOMAINS: Domain[] = [
       images: 4,
       references: 18,
     },
+  },
+  {
+    id: 'gallery-external',
+    entry: '/gallery',
+    admin: '/admin/gallery',
+    table: 'gallery_photo',
+    dataset: 'gallery-external-v1',
+    source: 'PostgreSQL gallery_photo.external_url；浏览器直连外链，检查工具不抓取远程图片',
+    scenarios: '外链横竖构图、查询参数、未知尺寸、缺省资料、公开草稿撤回',
+    query: `select count(*)::int as total,
+      count(*) filter(where status='published')::int as published,
+      count(*) filter(where status='draft')::int as drafts,
+      count(*) filter(where status='withdrawn')::int as withdrawn,
+      count(*) filter(where external_url like '%?%')::int as parameterized
+      from gallery_photo where deleted_at is null and external_url is not null`,
+    required: { total: 4, published: 2, drafts: 1, withdrawn: 1, parameterized: 1 },
   },
   {
     id: 'projects',

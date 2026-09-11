@@ -113,7 +113,7 @@ try {
   const exported = await request('/admin/backup/export', 'POST', { mediaIncluded: true })
   assert.equal(exported.status, 201)
   const bundle = exported.data
-  assert.equal(bundle.version, 6)
+  assert.equal(bundle.version, 7)
   assert.equal(bundle.links.length, 4)
   assert.deepEqual(bundle.linkSettings, { rules })
   const sourceLink = bundle.links.find((item) => item.sourceId === link.id)
@@ -154,6 +154,7 @@ try {
   for (const version of [1, 2, 3, 4, 5]) {
     const legacy = structuredClone(bundle)
     legacy.version = version
+    for (const photo of legacy.gallery ?? []) delete photo.values.externalUrl
     delete legacy.links
     delete legacy.linkSettings
     if (version < 5) delete legacy.projects
@@ -424,6 +425,7 @@ try {
   const currentSnapshot = (await request('/admin/backup/export', 'POST', { mediaIncluded: false })).data
   const legacyPayload = structuredClone(currentSnapshot)
   legacyPayload.version = 5
+  for (const photo of legacyPayload.gallery ?? []) delete photo.values.externalUrl
   delete legacyPayload.links
   delete legacyPayload.linkSettings
   legacyPayload.posts = legacyPayload.posts.filter((item) => item.sourceId === post.id)

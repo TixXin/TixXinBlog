@@ -135,6 +135,20 @@ try {
   })
   assert.equal(galleryResponse.status, 201)
   const photo = (await galleryResponse.json()).data
+  await delay(1100)
+  const externalPhotoResponse = await fetch(`${fixture.origin}/api/v1/admin/gallery`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+    body: JSON.stringify({
+      title: '保留远方的光',
+      externalUrl: 'https://images.example.org/Photo?Signature=Ab%2Fc&tag=A&tag=B',
+      requestId: randomUUID(),
+      status: 'published',
+    }),
+  })
+  assert.equal(externalPhotoResponse.status, 201)
+  const externalPhoto = (await externalPhotoResponse.json()).data
+  assert.equal(externalPhoto.mediaId, null)
   const sourceSite = await fetch(`${fixture.origin}/api/v1/site`)
   const oldContext = sourceSite.headers.get('x-content-context')
   assert(oldContext, '恢复前必须从站点配置读取真实内容上下文')
@@ -388,7 +402,7 @@ try {
   assert.equal(backup.manifest.counts.moment_like, 1)
   assert.equal(backup.manifest.counts.guestbook_message, 2)
   assert.equal(backup.manifest.counts.guestbook_reaction, 1)
-  assert.equal(backup.manifest.counts.gallery_photo, 1)
+  assert.equal(backup.manifest.counts.gallery_photo, 2)
   assert.equal(backup.manifest.counts.gallery_settings, 1)
   assert.equal(backup.manifest.counts.project, 4)
   assert.equal(backup.manifest.counts.friend_link, 6)
@@ -413,7 +427,7 @@ try {
   assert.equal(restored.report.counts.moment_like, 1)
   assert.equal(restored.report.counts.guestbook_message, 2)
   assert.equal(restored.report.counts.guestbook_reaction, 1)
-  assert.equal(restored.report.counts.gallery_photo, 1)
+  assert.equal(restored.report.counts.gallery_photo, 2)
   assert.equal(restored.report.counts.gallery_settings, 1)
   assert.equal(restored.report.counts.project, 4)
   assert.equal(restored.report.counts.friend_link, 6)
@@ -436,7 +450,7 @@ try {
     verified: true,
   })
   assert.deepEqual(restored.report.galleryIntegrity, {
-    photos: 1,
+    photos: 2,
     settings: 1,
     mediaReferences: 1,
     fixtures: 1,
@@ -455,7 +469,8 @@ try {
       })
     : undefined
   if (application) {
-    assert.equal(application.publicGalleryPhotos, 1)
+    assert.equal(application.publicGalleryPhotos, 2)
+    assert.equal(application.externalGalleryVerified, true)
     assert.equal(application.galleryGearVerified, true)
     assert.equal(application.freshLoginVerified, true)
     assert.equal(application.galleryAdminVerified, true)

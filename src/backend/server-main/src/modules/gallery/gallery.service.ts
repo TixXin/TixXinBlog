@@ -9,6 +9,7 @@ import { MediaAsset } from '../../entities/media-asset.entity'
 import { MediaReference } from '../../entities/media-reference.entity'
 import { lockMedia, mediaUrl, synchronizeMediaReferences } from '../media/media-references'
 import { submissionHash } from '../moment/moment-values'
+import { galleryExternalUrl } from './gallery-values'
 import type { AdminGalleryQuery, GalleryQuery, SaveGalleryDto, SaveGallerySettingsDto } from './gallery.dto'
 
 const publicPhotos = { deletedAt: null, status: 'published' } as const
@@ -24,11 +25,12 @@ export class GalleryService {
       id: photo.id,
       title: photo.title,
       description: photo.description,
-      src: mediaUrl(photo.media.id),
-      srcLarge: mediaUrl(photo.media.id),
-      width: photo.media.width,
-      height: photo.media.height,
-      format: photo.media.mimeType,
+      source: photo.media ? 'media' : 'external',
+      src: photo.media ? mediaUrl(photo.media.id) : photo.externalUrl!,
+      srcLarge: photo.media ? mediaUrl(photo.media.id) : photo.externalUrl!,
+      width: photo.media?.width,
+      height: photo.media?.height,
+      format: photo.media?.mimeType,
       category: photo.category,
       date: photo.takenOn ?? '',
       location: photo.location,
@@ -38,7 +40,8 @@ export class GalleryService {
     return admin
       ? {
           ...result,
-          mediaId: photo.media.id,
+          mediaId: photo.media?.id ?? null,
+          externalUrl: photo.externalUrl ?? null,
           takenOn: photo.takenOn ?? null,
           status: photo.status,
           revision: photo.revision,
@@ -152,18 +155,23 @@ export class GalleryService {
   async save(id: number | null, input: SaveGalleryDto) {
     if (id !== null) galleryId(id)
     if (id === null && input.revision !== undefined) throw new BadRequestException('创建作品不能携带编辑版本')
-    if (!id && (!input.title || !input.mediaId || !input.requestId))
-      throw new BadRequestException('创建作品需要标题、媒体和提交标识')
+    if (!id && (!input.title || !input.requestId)) throw new BadRequestException('创建作品需要标题、图片来源和提交标识')
     if (id && (input.revision === undefined || input.requestId !== undefined))
       throw new BadRequestException('编辑需要当前版本，不能携带创建标识')
     const { requestId, mediaId } = input
+    if (input.externalUrl !== undefined && input.externalUrl !== null) galleryExternalUrl(input.externalUrl)
     // 装饰器 DTO 含未提交的 undefined 属性；局部更新只能应用明确提供的字段。
     const values = Object.fromEntries(
       Object.entries(input).filter(
         ([key, value]) => !['requestId', 'mediaId', 'revision'].includes(key) && value !== undefined,
       ),
     )
-    const hash = submissionHash({ mediaId, ...values })
+    // 旧媒体提交没有 externalUrl 字段，显式清空与省略保持相同创建去重语义。
+    const hash = submissionHash(
+      Object.fromEntries(
+        Object.entries({ mediaId, ...values }).filter(([key, value]) => !(key === 'externalUrl' && value === null)),
+      ),
+    )
     const savedId = await this.em.transactional(async (em) => {
       await lockMedia(em)
       if (!id) {
@@ -182,13 +190,21 @@ export class GalleryService {
       if (!photo) throw new NotFoundException('作品不存在或已删除')
       if (id && photo.revision !== input.revision) throw new ConflictException('作品已被修改，请保留输入并重新读取')
       Object.assign(photo, values)
-      if (media) photo.media = media
+      if (mediaId !== undefined) photo.media = media ?? null
+      if (Boolean(photo.media) === Boolean(photo.externalUrl))
+        throw new BadRequestException('每件作品必须恰好选择一种图片来源；切换时请明确清空另一来源')
       if (photo.status === 'published' && !photo.publishedAt) photo.publishedAt = new Date()
       if (id) photo.revision++
       await em.flush()
-      await synchronizeMediaReferences(em, `gallery:${photo.id}`, 'gallery', [mediaUrl(photo.media.id)], {
-        galleryPhoto: photo,
-      })
+      await synchronizeMediaReferences(
+        em,
+        `gallery:${photo.id}`,
+        'gallery',
+        photo.media ? [mediaUrl(photo.media.id)] : [],
+        {
+          galleryPhoto: photo,
+        },
+      )
       await em.flush()
       return photo.id
     })

@@ -2477,7 +2477,7 @@
           "unsigned": false,
           "autoincrement": false,
           "primary": false,
-          "nullable": false,
+          "nullable": true,
           "unique": false,
           "length": null,
           "precision": null,
@@ -2726,6 +2726,22 @@
           "comment": null,
           "enumItems": [],
           "mappedType": "datetime"
+        },
+        "external_url": {
+          "name": "external_url",
+          "type": "text",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": true,
+          "unique": false,
+          "length": null,
+          "precision": null,
+          "scale": null,
+          "default": null,
+          "comment": null,
+          "enumItems": [],
+          "mappedType": "text"
         }
       },
       "name": "gallery_photo",
@@ -2756,7 +2772,14 @@
           "primary": false
         }
       ],
-      "checks": [],
+      "checks": [
+        {
+          "name": "gallery_photo_source_check",
+          "columnName": "external_url",
+          "definition": "CHECK ((((media_id IS NOT NULL) AND (external_url IS NULL)) OR ((media_id IS NULL) AND (external_url IS NOT NULL) AND (length(external_url) > 0))))",
+          "expression": "((media_id IS NOT NULL) AND (external_url IS NULL)) OR ((media_id IS NULL) AND (external_url IS NOT NULL) AND (length(external_url) > 0))"
+        }
+      ],
       "foreignKeys": {
         "gallery_photo_media_id_foreign": {
           "columnNames": ["media_id"],
