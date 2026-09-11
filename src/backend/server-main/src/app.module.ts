@@ -23,6 +23,7 @@ import { HealthModule } from './modules/health/health.module'
 import { PostModule } from './modules/post/post.module'
 import { MediaModule } from './modules/media/media.module'
 import { SiteModule } from './modules/site/site.module'
+import { OperationsModule } from './modules/operations/operations.module'
 import { createLoggingOptions } from './config/logging'
 import { APP_GUARD, APP_INTERCEPTOR } from '@nestjs/core'
 import { RateLimitGuard } from './common/guards/rate-limit.guard'
@@ -65,6 +66,7 @@ import { BackupModule } from './modules/backup/backup.module'
     LinkModule,
     MediaModule,
     SiteModule,
+    OperationsModule,
     AuditModule,
     BackupModule,
   ],

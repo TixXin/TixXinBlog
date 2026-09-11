@@ -17,6 +17,7 @@ import { AuditEntry } from '../entities/audit-entry.entity'
 import { ContentContext } from '../entities/content-context.entity'
 import { ContentImport } from '../entities/content-import.entity'
 import { Comment } from '../entities/comment.entity'
+import { CommentSubmission } from '../entities/comment-submission.entity'
 import { CommentLike } from '../entities/comment-like.entity'
 import { CommentPolicy } from '../entities/comment-policy.entity'
 import { SiteSettings, SiteSettingsRevision } from '../entities/site-settings.entity'
@@ -46,6 +47,9 @@ import { PostLike } from '../entities/post-like.entity'
 import { PostTag } from '../entities/post-tag.entity'
 import { PostView } from '../entities/post-view.entity'
 import { RefreshToken } from '../entities/refresh-token.entity'
+import { OperationControl } from '../entities/operation-control.entity'
+import { BackgroundTask } from '../entities/background-task.entity'
+import { OwnerNotification } from '../entities/owner-notification.entity'
 import { loadLocalEnvironment, requireDatabaseUrl } from './environment'
 import { join } from 'node:path'
 
@@ -53,6 +57,9 @@ import { join } from 'node:path'
 loadLocalEnvironment()
 
 export const ORM_ENTITIES = [
+  OperationControl,
+  BackgroundTask,
+  OwnerNotification,
   Post,
   PostFolder,
   PostRevision,
@@ -65,6 +72,7 @@ export const ORM_ENTITIES = [
   PostLike,
   PostView,
   Comment,
+  CommentSubmission,
   CommentLike,
   CommentPolicy,
   SiteSettings,

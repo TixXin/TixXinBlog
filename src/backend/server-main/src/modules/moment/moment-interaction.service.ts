@@ -13,6 +13,7 @@ import type { CreateMomentCommentDto, MomentCommentBody } from './moment.dto'
 import { momentUrl, publicMoments, submissionHash } from './moment-values'
 import { momentCommentDto } from './moment-read.service'
 import { lockMedia, synchronizeMediaReferences } from '../media/media-references'
+import { recordOwnerEvent } from '../operations/owner-events'
 
 @Injectable()
 export class MomentInteractionService {
@@ -73,6 +74,13 @@ export class MomentInteractionService {
         momentComment: comment,
       })
       await em.flush()
+      if (!adminId)
+        await recordOwnerEvent(
+          em,
+          'moment-comment',
+          comment.id,
+          comment.status === 'pending' ? 'pending_review' : 'new_comment',
+        )
       return {
         ...momentCommentDto(comment),
         commentCount: await em.count(MomentComment, { moment: note, status: 'published', deletedAt: null }),
