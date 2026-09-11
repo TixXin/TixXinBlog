@@ -1,73 +1,12 @@
 ---
-description: Git 提交消息规范
+description: Git 提交格式与授权的公共规范入口
 alwaysApply: true
 ---
 
-# Git 提交消息规范
+# Git 提交规范
 
-采用 Conventional Commits 格式，描述使用中文。
+读取根目录 [AGENTS.md](../../AGENTS.md) 的 Git Conventions 和[提交消息模板](../../.gitmessage)。使用中文 Conventional Commits 标题，空一行后添加解释变更原因的中文正文，不添加 AI 署名。
 
-## 格式
+按当前会话授权检查差异和暂存范围，分模块验证并及时提交；保留他人改动，不重复询问已有授权。推送和部署遵循对应授权。
 
-```
-<type>(<scope>): <subject>
-
-<body>
-```
-
-## type（必填）
-
-| 类型 | 说明 |
-|------|------|
-| `feat` | 新功能 |
-| `fix` | 修复缺陷 |
-| `style` | 样式调整（不影响逻辑） |
-| `refactor` | 重构（既不是新功能也不是修复） |
-| `chore` | 构建、依赖、配置等杂务 |
-| `docs` | 文档变更 |
-| `perf` | 性能优化 |
-| `test` | 测试相关 |
-
-## scope（可选）
-
-标注影响范围，常用值：`web-blog`、`theme`、`scrollbar`、`sidebar`、`pages`、`blog` 等。
-单文件修改可用组件/模块名，如 `PostCardList`、`settings`。
-
-## subject（必填）
-
-- 使用中文
-- 不加句号
-- 简明概括变更目的（一句话，不超过 50 字）
-
-## body（必填）
-
-- 使用中文
-- 解释"为什么"做此变更，而非"做了什么"
-- 多行时每行不超过 72 字
-
-## 示例
-
-```
-feat(web-blog): 自定义滚动条组件与文章列表懒加载
-
-统一阅读容器并支持按需加载，改善长列表的阅读体验。
-```
-
-```
-fix(web-blog): 文章列表懒加载 viewport 就绪后重建 observer
-
-增加 watch 监听 getScrollRoot() 与 sentinelRef，在 viewport 晚于
-onMounted 就绪时自动重建 IntersectionObserver，恢复懒加载。
-```
-
-```
-docs: 添加测试预览图片
-
-保留可复查的页面证据，便于核对布局变化。
-```
-
-```
-chore: pnpm 工作区升级至项目根目录
-
-统一管理前后端依赖，减少重复安装和版本漂移。
-```
+用户调用 `git` 命令时，按[共享 Git 技能](../../.agents/skills/source-command-git/SKILL.md)执行。
