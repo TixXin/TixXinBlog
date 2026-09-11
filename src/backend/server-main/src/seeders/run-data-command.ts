@@ -4,6 +4,11 @@ import { DATA_DOMAINS } from './development-data-catalog'
 
 async function main() {
   const [action, ...args] = process.argv.slice(2)
+  if (action === 'prepare-profile') {
+    const { preparePersonalProfile } = await import('./prepare-personal-profile')
+    process.stdout.write(JSON.stringify(await preparePersonalProfile(args), null, 2) + '\n')
+    return
+  }
   if (action === 'remove-data') {
     const { removeDevelopmentData } = await import('./remove-development-data')
     await removeDevelopmentData(args)

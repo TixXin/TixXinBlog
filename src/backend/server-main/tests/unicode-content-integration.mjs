@@ -112,7 +112,7 @@ try {
   const exported = await request('/admin/backup/export', 'POST', { mediaIncluded: true })
   assert.equal(exported.status, 201)
   const bundle = exported.data
-  assert.equal(bundle.version, 7)
+  assert.equal(bundle.version, 8)
   const selected = {
     gallery: bundle.gallery.find((item) => item.sourceId === gallery.id),
     projects: bundle.projects.find((item) => item.sourceId === project.id),
@@ -140,6 +140,7 @@ try {
   for (const version of [4, 5, 6]) {
     const legacy = structuredClone(bundle)
     legacy.version = version
+    delete legacy.site.about
     for (const photo of legacy.gallery ?? []) delete photo.values.externalUrl
     if (version < 6) {
       delete legacy.links

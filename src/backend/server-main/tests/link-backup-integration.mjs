@@ -113,7 +113,7 @@ try {
   const exported = await request('/admin/backup/export', 'POST', { mediaIncluded: true })
   assert.equal(exported.status, 201)
   const bundle = exported.data
-  assert.equal(bundle.version, 7)
+  assert.equal(bundle.version, 8)
   assert.equal(bundle.links.length, 4)
   assert.deepEqual(bundle.linkSettings, { rules })
   const sourceLink = bundle.links.find((item) => item.sourceId === link.id)
@@ -154,6 +154,7 @@ try {
   for (const version of [1, 2, 3, 4, 5]) {
     const legacy = structuredClone(bundle)
     legacy.version = version
+    delete legacy.site.about
     for (const photo of legacy.gallery ?? []) delete photo.values.externalUrl
     delete legacy.links
     delete legacy.linkSettings
@@ -425,6 +426,7 @@ try {
   const currentSnapshot = (await request('/admin/backup/export', 'POST', { mediaIncluded: false })).data
   const legacyPayload = structuredClone(currentSnapshot)
   legacyPayload.version = 5
+  delete legacyPayload.site.about
   for (const photo of legacyPayload.gallery ?? []) delete photo.values.externalUrl
   delete legacyPayload.links
   delete legacyPayload.linkSettings
@@ -507,6 +509,7 @@ try {
   const completedCases = [{ ticket: oldTicket.ticket, fields: ['links'] }]
   const payloadV1 = structuredClone(legacyPayload)
   payloadV1.version = 1
+  delete payloadV1.site.about
   for (const field of ['moments', 'guestbook', 'gallery', 'gallerySettings', 'projects']) delete payloadV1[field]
   const previewV1 = (await preview(payloadV1, 'copy')).data.data
   const importedV1 = await execute(previewV1)

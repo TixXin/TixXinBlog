@@ -93,7 +93,7 @@ export interface PackageGuestbook {
 }
 export interface ContentPackage {
   format: 'tixxin-content'
-  version: 7
+  version: 8
   exportedAt: string
   mediaIncluded: boolean
   posts: PackagePost[]
@@ -261,7 +261,7 @@ export async function parseContentPackage(buffer: Buffer): Promise<ContentPackag
   ])
   if (
     source.format !== 'tixxin-content' ||
-    ![1, 2, 3, 4, 5, 6, 7].includes(Number(source.version)) ||
+    ![1, 2, 3, 4, 5, 6, 7, 8].includes(Number(source.version)) ||
     typeof source.version !== 'number'
   )
     throw new BadRequestException('不支持的内容包格式或版本')
@@ -443,7 +443,7 @@ export async function parseContentPackage(buffer: Buffer): Promise<ContentPackag
       const row = record(value, path, ['sourceId', 'createdAt', 'publishedAt', 'deleted', 'values'])
       const values = record(row.values, `${path}.values`, [
         'mediaId',
-        ...(source.version === 7 ? ['externalUrl'] : []),
+        ...(Number(source.version) >= 7 ? ['externalUrl'] : []),
         'title',
         'description',
         'category',
@@ -454,9 +454,9 @@ export async function parseContentPackage(buffer: Buffer): Promise<ContentPackag
         'sortOrder',
       ])
       const mediaId =
-        source.version === 7 && values.mediaId === null ? null : text(values.mediaId, `${path}.mediaId`, 36, 1)
+        Number(source.version) >= 7 && values.mediaId === null ? null : text(values.mediaId, `${path}.mediaId`, 36, 1)
       const externalUrl =
-        source.version === 7 && values.externalUrl !== null
+        Number(source.version) >= 7 && values.externalUrl !== null
           ? galleryExternalUrl(text(values.externalUrl, `${path}.externalUrl`, 2048, 1))
           : null
       if (
@@ -688,12 +688,15 @@ export async function parseContentPackage(buffer: Buffer): Promise<ContentPackag
         'seoDescription',
         'announcement',
         'socials',
+        ...(Number(source.version) >= 8 ? ['about'] : []),
       ]),
       revision: 0,
     },
     '站点资料',
   )
   const { revision: ignoredRevision, ...site } = siteData
+  if (site.about && new Set(site.about.sections.map((section) => section.kind)).size !== site.about.sections.length)
+    fail('关于页栏目重复')
   if (ignoredRevision !== 0 || !packageImageUrl(site.avatar)) fail('站点头像')
   for (const social of site.socials) {
     let valid = /^mailto:[^\s?@]+@[^\s?@]+\.[^\s?@]+$/.test(social.href)
@@ -787,7 +790,7 @@ export async function parseContentPackage(buffer: Buffer): Promise<ContentPackag
   if (new Set(media.map((item) => item.id)).size !== media.length) fail('重复媒体编号')
   return {
     format: 'tixxin-content',
-    version: 7,
+    version: 8,
     exportedAt: date(source.exportedAt, '导出时间'),
     mediaIncluded,
     posts,

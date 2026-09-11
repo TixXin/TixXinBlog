@@ -2,6 +2,14 @@
 
 本目录记录数据来源与场景覆盖。覆盖检查不能代替业务验收，也不会自动修改样本。
 
+## 可持续运营阶段增量（进行中）
+
+`editorial-v1` 独立登记3篇技术文章与1个TixXinBlog项目候选，全部草稿、无新增媒体，事实来自仓库；区别于虚构场景样本，不自动迁入生产。使用 `db:dev seed-data --dataset editorial-v1` 预览，显式补齐/定向清理沿用确认、完整备份、编辑/删除及跨域引用保护。资料来源见 [内容定位](personal-content.md)。
+
+2026-09-11 已在 `127.0.0.1:15433/tixxin_blog` 实际补齐4条归属：文章总数72、项目19，原有媒体16及其他样本保留，归属185。迁移前完整备份 `.backups/backup-1789113275418-cf49888d/`；资料整理前 `.backups/backup-1789113342806-50445aca/`；补种前 `.backups/backup-1789113345125-f8778ef5/`，均为本机长期保留位置。资料整理仅修改未编辑版本0初始资料，产生版本1并保留旧历史；采用已确认称呼tixxin，收起未确认职位、社交地址和肖像，关于页使用本轮内容定位。
+
+隔离 `tests/editorial-fixtures-integration.ts` 已验证默认预览、错误目标拒绝、真实完整备份、其他配置保留、4条全草稿归属、重复无新增、编辑保护与删除不复活、零漂移。日常页面及浏览器验收继续记录于 [阶段跟踪](sustainable-blog-stage.md)，数据结果不代替整项完成。
+
 图库外链扩展：`gallery-external` 域对应独立 `gallery-external-v1` 数据集，提供4条外链作品（2公开、1草稿、1撤回），只保存地址和自然内容，不抓取远程图片。使用 `corepack pnpm db:dev check-data --domain gallery-external` 检查；通过 `seed-data --dataset gallery-external-v1` 预览补齐，核对本机目标后加 `--apply --confirm tixxin_blog`。同名 `remove-data` 仍遵循备份、停服务、编辑保护和删除不复活规则。原图库26条归属保留，全站样本归属现181条；本轮记录见 [图库外链与后台验收](gallery-external-admin-verification.md)。
 
 ```sh

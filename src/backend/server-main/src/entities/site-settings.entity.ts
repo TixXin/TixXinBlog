@@ -3,7 +3,9 @@
  * @description 单站点运行时公开资料与版本化历史，不包含部署密钥或内部连接地址。
  */
 import { Entity, PrimaryKey, Property } from '@mikro-orm/core'
+import type { AboutSettingsDto } from '../modules/site/about-settings'
 export interface SiteSettingsValues {
+  about?: AboutSettingsDto
   name: string
   description: string
   ownerName: string

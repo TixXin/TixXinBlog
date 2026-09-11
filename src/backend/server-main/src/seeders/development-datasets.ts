@@ -1,5 +1,6 @@
 /** @file development-datasets.ts @description 版本化样本集统一登记，范围与预期归属数量从各域真实定义汇总 */
 import { seedCoreFixtures, CORE_DATASET, CORE_FIXTURE_COUNT } from './core-fixtures'
+import { seedEditorialFixtures, EDITORIAL_DATASET, EDITORIAL_FIXTURE_COUNT } from './editorial-fixtures'
 import { seedGuestbookFixtures, GUESTBOOK_DATASET, GUESTBOOK_FIXTURE_COUNT } from './guestbook-fixtures'
 import { seedGalleryFixtures, GALLERY_DATASET, GALLERY_FIXTURE_COUNT } from './gallery-fixtures'
 import { seedProjectFixtures, PROJECT_DATASET, PROJECT_FIXTURE_COUNT } from './project-fixtures'
@@ -12,6 +13,12 @@ import {
 
 export const DEFAULT_DEVELOPMENT_DATASET = CORE_DATASET
 export const DEVELOPMENT_DATASETS = [
+  {
+    id: EDITORIAL_DATASET,
+    count: EDITORIAL_FIXTURE_COUNT,
+    scope: '基于仓库事实的技术文章及项目候选，全部保持草稿',
+    seed: seedEditorialFixtures,
+  },
   { id: CORE_DATASET, count: CORE_FIXTURE_COUNT, scope: '核心文章、闪念、朋友圈及互动', seed: seedCoreFixtures },
   {
     id: GUESTBOOK_DATASET,
