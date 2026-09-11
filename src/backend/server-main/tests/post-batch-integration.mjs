@@ -92,7 +92,11 @@ try {
   assert((await fresh(first)).deletedAt)
   assert.equal((await request(`/posts/${first.id}`)).status, 404)
   assert.equal((await ok('/admin/posts?status=trash')).total, 2)
-  assert(!(await ok('/admin/overview')).recentPosts.some((post) => [first.id, second.id].includes(post.id)))
+  assert(
+    !(await ok('/admin/overview')).recentContent.some(
+      (item) => item.domain === 'post' && [first.id, second.id].includes(Number(item.id)),
+    ),
+  )
   assert.equal(
     (await request(`/admin/posts/${first.id}`, 'PATCH', { title: '不应复活', contentRaw: '', revision: revision + 1 }))
       .status,

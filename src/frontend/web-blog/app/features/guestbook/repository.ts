@@ -20,6 +20,7 @@ export interface GuestbookRepository {
     q?: string
     date?: string
     status?: string
+    unanswered?: string
   }): Promise<{ items: ManagedGuestbookRecord[]; total: number; page: number; pageSize: number }>
   adminDetail(id: number): Promise<ManagedGuestbookRecord>
   update(

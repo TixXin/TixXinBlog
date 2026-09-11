@@ -1,6 +1,7 @@
 /** @file guestbook-read.service.ts @description 留言读取、引用可见性和真实侧栏聚合；公开响应不返回身份哈希或管理信息 */
 import { Injectable, NotFoundException } from '@nestjs/common'
 import { EntityManager } from '@mikro-orm/postgresql'
+import { raw } from '@mikro-orm/core'
 import { GuestbookMessage } from '../../entities/guestbook-message.entity'
 import { GUESTBOOK_REACTIONS } from '../../entities/guestbook-reaction.entity'
 import { createHash } from 'node:crypto'
@@ -13,6 +14,7 @@ import {
   decodeGuestbookCursor,
   guestbookId,
   GUESTBOOK_RULES,
+  unansweredGuestbookSql,
 } from './guestbook-values'
 
 @Injectable()
@@ -53,6 +55,16 @@ export class GuestbookReadService {
           { deletedAt: null },
           guestbookFilter(query),
           ...(query.status && query.status !== 'all' ? [{ status: query.status }] : []),
+          ...(query.unanswered === 'true'
+            ? [
+                {
+                  [raw(
+                    (alias) =>
+                      `${alias}.id in (select g.id from guestbook_message g where ${unansweredGuestbookSql('g')})`,
+                  )]: true,
+                },
+              ]
+            : []),
         ],
       },
       {

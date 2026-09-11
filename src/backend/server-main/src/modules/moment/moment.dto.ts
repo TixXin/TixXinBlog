@@ -29,6 +29,9 @@ export class MomentPageQuery {
   @Type(() => Number) @IsInt() @Min(1) @Max(10000) page: number = 1
   @Type(() => Number) @IsInt() @Min(1) @Max(50) pageSize: number = 15
 }
+export class QueryAdminMomentCommentsDto extends MomentPageQuery {
+  @IsOptional() @IsIn(['all', ...MOMENT_COMMENT_STATUSES]) status?: 'all' | MomentCommentStatus
+}
 export class QueryMomentsDto extends MomentPageQuery {
   @IsOptional() @IsString() @MaxLength(200) @Transform(trim) q?: string
   @IsOptional() @IsString() @MinLength(1) @MaxLength(40) @Transform(trim) topic?: string

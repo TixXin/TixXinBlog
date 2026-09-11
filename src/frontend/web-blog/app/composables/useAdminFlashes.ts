@@ -9,14 +9,17 @@ export function useAdminFlashes() {
   const auth = useCurrentUser()
   const { success } = useToast()
   const route = useRoute()
+  const router = useRouter()
+  const read = (key: string) => (typeof route.query[key] === 'string' ? (route.query[key] as string) : '')
   const initialStatus = route.query.status
   const status = ref(
     typeof initialStatus === 'string' && ['draft', 'published', 'archived'].includes(initialStatus)
       ? initialStatus
       : 'all',
   )
-  const search = ref('')
-  const page = ref(1)
+  const search = ref(read('search'))
+  const readPage = () => (/^\d+$/.test(read('page')) ? Math.max(1, Math.min(Number(read('page')), 10000)) : 1)
+  const page = ref(readPage())
   const items = ref<FlashNote[]>([])
   const total = ref(0)
   const pending = ref(false)
@@ -52,7 +55,10 @@ export function useAdminFlashes() {
       const last = Math.max(1, Math.ceil(total.value / 20))
       if (page.value > last) {
         page.value = last
-        await load()
+        await router.replace({
+          path: '/admin/flashes',
+          query: { ...route.query, page: last > 1 ? String(last) : undefined },
+        })
       }
     } catch (cause) {
       if (current === version) {
@@ -63,20 +69,29 @@ export function useAdminFlashes() {
       if (current === version) pending.value = false
     }
   }
+  async function syncQuery() {
+    const query = {
+      ...(status.value !== 'all' ? { status: status.value } : {}),
+      ...(search.value.trim() ? { search: search.value.trim() } : {}),
+      ...(page.value > 1 ? { page: String(page.value) } : {}),
+    }
+    if (JSON.stringify(query) === JSON.stringify(route.query)) await load()
+    else await router.replace({ path: '/admin/flashes', query })
+  }
   function resetPage() {
     page.value = 1
-    void load()
+    void syncQuery()
   }
   function changePage(value: number) {
     page.value = value
-    void load()
+    void syncQuery()
   }
-  async function openEditor(note?: FlashNote) {
+  async function openEditor(note?: Pick<FlashNote, 'id'>) {
     if (!editorReady.value || working.value || !canDiscard()) return
     working.value = true
     error.value = ''
     try {
-      const fresh = note ? await api<FlashNote>(`/admin/flashes/${note.id}`) : null
+      const fresh = note ? await api<FlashNote>(`/admin/flashes/${encodeURIComponent(note.id)}`) : null
       editing.value = fresh
       editorError.value = ''
       editorKey.value += 1
@@ -202,11 +217,32 @@ export function useAdminFlashes() {
     }
   }
   onBeforeRouteLeave(() => !working.value && canDiscard())
+  onBeforeRouteUpdate(
+    (to, from) =>
+      !working.value && ((to.query.edit === from.query.edit && to.query.create === from.query.create) || canDiscard()),
+  )
+  async function openLinkedEditor() {
+    if (read('edit')) await openEditor({ id: read('edit') })
+    else if (read('create') === 'true') await openEditor()
+  }
+  watch(
+    () => route.fullPath,
+    async (next, previous) => {
+      if (!mounted.value || route.path !== '/admin/flashes' || next === previous) return
+      status.value = ['draft', 'published', 'archived'].includes(read('status')) ? read('status') : 'all'
+      search.value = read('search')
+      page.value = readPage()
+      await load()
+      await openLinkedEditor()
+    },
+  )
   onMounted(async () => {
     mounted.value = true
     window.addEventListener('beforeunload', beforeUnload)
-    if (await auth.restore()) await load()
-    else await navigateTo({ path: '/admin/login', query: { next: route.fullPath } })
+    if (await auth.restore()) {
+      await load()
+      await openLinkedEditor()
+    } else await navigateTo({ path: '/admin/login', query: { next: route.fullPath } })
   })
   onBeforeUnmount(() => {
     mounted.value = false

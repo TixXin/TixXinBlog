@@ -25,6 +25,13 @@ export interface MomentCommentItem {
   /** 评论者详细信息，用于 hover 卡片 */
   profile?: MomentUserProfile
 }
+/** 跨动态管理评论，仅管理员接口提供主内容上下文。 */
+export interface ManagedMomentComment extends MomentCommentItem {
+  moderationStatus: 'published' | 'pending' | 'hidden'
+  momentId: string
+  momentContent: string
+  momentStatus: 'draft' | 'published' | 'archived'
+}
 
 /** 引用的文章信息（站内文章） */
 export interface MomentLinkedArticle {

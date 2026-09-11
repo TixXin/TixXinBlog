@@ -10,6 +10,7 @@ export function useAdminGuestbook() {
   const read = (name: string) => (typeof route.query[name] === 'string' ? (route.query[name] as string) : '')
   const q = ref(read('q')),
     status = ref(read('status') || 'all'),
+    unanswered = ref(read('unanswered') === 'true'),
     date = ref(read('date'))
   const page = computed(() => {
     const value = Number(read('page'))
@@ -41,6 +42,7 @@ export function useAdminGuestbook() {
         q: read('q') || undefined,
         date: read('date') || undefined,
         status: read('status') || 'all',
+        unanswered: read('unanswered') === 'true' ? 'true' : undefined,
       })
       if (!alive || current !== version || auth.currentUser.value?.id !== identity) return
       items.value = value.items
@@ -80,6 +82,7 @@ export function useAdminGuestbook() {
       Object.entries({
         q: q.value.trim(),
         status: status.value === 'all' ? '' : status.value,
+        unanswered: unanswered.value ? 'true' : '',
         date: date.value,
       }).filter(([, value]) => !!value),
     )
@@ -134,6 +137,7 @@ export function useAdminGuestbook() {
       if (route.path !== '/admin/guestbook') return
       q.value = read('q')
       status.value = read('status') || 'all'
+      unanswered.value = read('unanswered') === 'true'
       date.value = read('date')
       void load()
     },
@@ -163,6 +167,7 @@ export function useAdminGuestbook() {
     restoring: auth.restoringPending,
     q,
     status,
+    unanswered,
     date,
     page,
     items,

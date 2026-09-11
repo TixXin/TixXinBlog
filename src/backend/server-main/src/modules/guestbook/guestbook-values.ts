@@ -5,6 +5,13 @@ import type { GuestbookMessage } from '../../entities/guestbook-message.entity'
 import type { GuestbookFilters } from './guestbook.dto'
 import { submissionHash } from '../moment/moment-values'
 export const PUBLIC_GUESTBOOK = { status: 'published' as const, deletedAt: null }
+/** 留言独立公开；只将尚无公开博主直接回复的游客根留言计入待回复。 */
+export function unansweredGuestbookSql(alias = 'g'): string {
+  if (!/^[a-z][a-z0-9_]*$/.test(alias)) throw new Error('非法内部 SQL 别名')
+  return `${alias}.deleted_at is null and ${alias}.status='published' and not ${alias}.is_owner
+    and ${alias}.reply_to_id is null and not exists(select 1 from guestbook_message r
+    where r.reply_to_id=${alias}.id and r.is_owner and r.status='published' and r.deleted_at is null)`
+}
 export const GUESTBOOK_RULES = [
   { id: 1, text: '欢迎分享技术经验、阅读感受和生活见闻。' },
   { id: 2, text: '请友善交流，尊重不同意见。' },
