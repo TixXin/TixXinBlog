@@ -5,14 +5,14 @@
  * @since 2026-07-20
  *
  * 仅在 runtimeConfig.public.postUseMockRepo === false 时被调用(见 usePostList / useArticleDetail)。
- * 后端响应契约见 docs/archive/backend-design/api.md §2 / §7.2。
+ * 后端响应契约见 docs/api.md。
  */
 
 import type { ArticleDetail, CommentItem, PostItem, PostMetadata, PostPage, RelatedPost, TocItem } from './types'
 import type { CommentDraft, CommentList } from './commentController'
 import { ensureVisitorId } from '~/utils/visitorId'
 
-/** 后端统一响应包装(docs/archive/backend-design/api.md §2) */
+/** 后端统一响应包装，业务错误与 HTTP 状态分别处理。 */
 interface ApiEnvelope<T> {
   code: number
   message: string

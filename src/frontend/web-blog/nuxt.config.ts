@@ -127,7 +127,7 @@ export default {
       nuxtVersion: '4',
       // 数据仓库切换：true=mock 实现；false=HTTP 实现（对接 server-main）
       // 环境变量 NUXT_PUBLIC_USE_MOCK_REPO=false 时走后端；详见 app/plugins/repositories.ts
-      // 当前数据源边界见 docs/capability-map.md。
+      // 当前数据源边界见 docs/content.md。
       useMockRepo: process.env.NUXT_PUBLIC_USE_MOCK_REPO === 'true',
       // 文章及评论可独立联调，未配置时兼容原有全局开关。
       postUseMockRepo: (process.env.NUXT_PUBLIC_POST_USE_MOCK_REPO ?? process.env.NUXT_PUBLIC_USE_MOCK_REPO) === 'true',

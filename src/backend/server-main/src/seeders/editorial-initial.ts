@@ -1,4 +1,5 @@
 /** @file editorial-initial.ts @description editorial-v1 初稿的冻结指纹来源；仅用于精确迁正，不作为新稿或公开事实回退。 */
+// 旧正文和旧文档路径均属于兼容数据，不能随当前文档重组改变指纹。
 export const legacyEditorialArticles = [
   {
     key: 'content-boundaries',

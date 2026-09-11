@@ -2,7 +2,7 @@
   "name": "server-main",
   "version": "0.0.1",
   "private": true,
-  "description": "TixXinBlog 后端服务：NestJS + MikroORM + PostgreSQL，详见 docs/backend/",
+  "description": "TixXinBlog 后端服务：NestJS + MikroORM + PostgreSQL",
   "scripts": {
     "build": "nest build",
     "start": "node dist/main.js",

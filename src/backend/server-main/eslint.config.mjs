@@ -16,7 +16,7 @@ export default tseslint.config(
   prettierConfig,
   {
     rules: {
-      // 见 docs/archive/backend-design/development.md §5：禁用 any 与 console，统一走 pino
+      // 后端禁用 any 与 console，统一使用类型约束和结构化日志。
       '@typescript-eslint/no-explicit-any': 'error',
       'no-console': 'error',
       '@typescript-eslint/no-unused-vars': ['error', { argsIgnorePattern: '^_' }],

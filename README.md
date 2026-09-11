@@ -1,154 +1,117 @@
 # TixXinBlog
 
-面向单博主持续写作与维护的个人博客系统。Nuxt 4 同时提供公开网站和 `/admin` 后台，NestJS + PostgreSQL 保存文章、评论、闪念、朋友圈、留言、图库、项目、友链、站点资料及运行记录。当前能力、使用入口和维护契约从[文档导航](docs/README.md)与[能力清单](docs/capability-map.md)进入。
+面向单博主的个人博客系统，包含公开网站和内置创作后台。前端使用 Nuxt 4 / Vue 3，后端使用 NestJS / MikroORM / PostgreSQL。
 
-书签仍保存在当前浏览器 LocalStorage，友链公开申请和访客邮件订阅尚未开放。开发样本与用户真实内容分开管理；部署配置可执行，不代表已完成生产部署、真实邮件/异地上传或长期任务启用。
+## 可以做什么
 
-<p align="center">
-  <img alt="Nuxt 4" src="https://img.shields.io/badge/Nuxt_4-00DC82?style=for-the-badge&logo=nuxt&logoColor=white" />
-  <img alt="Vue 3" src="https://img.shields.io/badge/Vue_3-4FC08D?style=for-the-badge&logo=vuedotjs&logoColor=white" />
-  <img alt="TypeScript" src="https://img.shields.io/badge/TypeScript-3178C6?style=for-the-badge&logo=typescript&logoColor=white" />
-  <img alt="SCSS" src="https://img.shields.io/badge/SCSS-CC6699?style=for-the-badge&logo=sass&logoColor=white" />
-  <img alt="pnpm" src="https://img.shields.io/badge/pnpm-F69220?style=for-the-badge&logo=pnpm&logoColor=white" />
-  <img alt="Vitest" src="https://img.shields.io/badge/Vitest-6E9F18?style=for-the-badge&logo=vitest&logoColor=white" />
-  <img alt="ESLint" src="https://img.shields.io/badge/ESLint-4B32C3?style=for-the-badge&logo=eslint&logoColor=white" />
-  <img alt="Prettier" src="https://img.shields.io/badge/Prettier-F7B93E?style=for-the-badge&logo=prettier&logoColor=black" />
-</p>
+- 写作与阅读：Markdown 文章、版本历史、评论审核、归档、正文搜索、RSS 和 sitemap。
+- 内容展示：闪念、朋友圈、留言、图库、项目和友链；文章、项目、图库可维护有序关联。
+- 创作与运营：长文章节定位、媒体说明与引用查找、草稿工作台、站内通知和可配置邮件。
+- 外观与维护：Nexus、Aurora、Dock 三套主题，站点/关于资料编辑，内容包迁入和完整备份恢复。
 
-<p align="center">
-  <img alt="License" src="https://img.shields.io/badge/License-GPL--3.0-blue?style=flat-square" />
-  <img alt="Node" src="https://img.shields.io/badge/Node-24-5FA04E?style=flat-square&logo=nodedotjs&logoColor=white" />
-  <img alt="pnpm" src="https://img.shields.io/badge/pnpm-9.15.0-F69220?style=flat-square&logo=pnpm&logoColor=white" />
-  <a href="https://tix.xin"><img alt="项目关联站点" src="https://img.shields.io/badge/项目站点-tix.xin-brightgreen?style=flat-square" /></a>
-</p>
-
-![image](https://github.com/TixXin/TixXinBlog/blob/main/docs/img/01.png?raw=true)
-![image](https://github.com/TixXin/TixXinBlog/blob/main/docs/img/02.png?raw=true)
-![image](https://github.com/TixXin/TixXinBlog/blob/main/docs/img/03.png?raw=true)
-![image](https://github.com/TixXin/TixXinBlog/blob/main/docs/img/04.png?raw=true)
-![image](https://github.com/TixXin/TixXinBlog/blob/main/docs/img/05.png?raw=true)
-
-项目关联站点：[tix.xin](https://tix.xin)。以上为既有界面素材；未据此核实该站点当前运行的提交或宣称本轮版本已对外部署。
-
-## 当前使用入口
-
-| 用途       | 入口与能力                                                                                                                                        |
-| ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 写作与阅读 | `/`、`/archive`、`/articles/:id`；文章历史地址兼容、正文检索、相关文章、RSS 与 sitemap                                                            |
-| 跨内容发现 | `/search` 和站内搜索弹窗；文章、项目、友链、图库、闪念、朋友圈六类公开内容，分组、筛选和分页                                                      |
-| 个人资料   | `/about`；姓名、简介、联系方式复用站点资料，详细介绍与可选栏目由 `/admin/site` 维护，未填写或隐藏资料不公开                                       |
-| 日常运营   | `/admin`；六类内容草稿、五类真实互动待办、最近编辑、快捷创作、通知与维护摘要                                                                      |
-| 创作与素材 | `/admin/posts`、`/admin/projects`、`/admin/gallery`、`/admin/media`；长文章章节定位、有序内容关联、素材说明/替代文本、构图/使用状态筛选及引用跳转 |
-| 互动处理   | `/admin/comments`、`/admin/moment-comments`、`/admin/guestbook`；审核/回复规则以各域真实能力为准；`/admin/notifications` 单独维护已读状态         |
-| 运行与维护 | `/admin/operations`、`/admin/maintenance`；持久任务、备份与投递结果、内容包预览迁入及运行诊断                                                     |
-
-内容包当前导出 **v9**，兼容 v1–v8；涵盖关于资料、媒体说明以及文章/项目/图库的编号映射关联。完整备份另外保存数据库历史、身份与运行数据；恢复后撤销旧授权、轮换内容上下文并暂停外部投递。具体操作见[备份与恢复](docs/backup-and-recovery.md)、[运营工作台](docs/operations-workbench.md)和[运行任务与通知](docs/operations-and-notifications.md)。
-
-## 技术栈
-
-- **前端**：Nuxt 4、Vue 3、TypeScript、SCSS
-- **后端**：NestJS 11、MikroORM 6、PostgreSQL 16
-- **图标**：@nuxt/icon + Lucide
-- **主题引擎**：@tixxin/nuxt-theme-engine
-- **色彩模式**：@nuxtjs/color-mode
-- **字体**：@nuxt/fonts (Inter)
-- **图片**：@nuxt/image
-- **SEO**：@nuxtjs/sitemap、@nuxtjs/robots、JSON-LD
-- **代码规范**：@nuxt/eslint、Prettier、Husky + lint-staged
-- **测试**：Vitest + @nuxt/test-utils、Jest、隔离 HTTP/Playwright 与容器验收
-- **运行**：Docker Compose、独立迁移与可选任务 worker、Caddy HTTPS 入口；GitHub Actions 执行 CI 检查
+文章等业务内容通过真实 API 持久化。书签仍保存在当前浏览器 LocalStorage；公开友链申请、访客邮件订阅尚未提供。邮件、自动备份和持续 worker 需要单独配置与启用。更多说明见[内容管理](docs/content.md)和[运行维护](docs/operations.md)。
 
 ## 环境要求
 
-- Node.js >= 24 < 25
-- pnpm 9.15.0（推荐 `corepack pnpm`）
+- Node.js **24.x**（`>=24 <25`）。
+- pnpm **9.15.0**；以下命令通过可用的 Corepack 调用固定版本。
+- PostgreSQL **16**。
+- 使用仓库提供的数据库与部署编排时，需要 Docker 和 Docker Compose。
 
-## 快速开始
+## 本地启动
 
-```bash
-# 克隆仓库
-git clone https://github.com/TixXin/TixXinBlog.git
-cd TixXinBlog
+以下步骤在仓库根目录执行。已有配置、数据库卷和账号应保留，不重复初始化。
 
-# 安装依赖
-corepack pnpm install
+1. **获取源码并安装依赖。**
 
-# 数据库、迁移和环境变量准备好后，统一启动或复用服务
-corepack pnpm dev:all
+   ```sh
+   git clone https://github.com/TixXin/TixXinBlog.git
+   cd TixXinBlog
+   corepack pnpm install --frozen-lockfile
+   ```
+
+2. **准备两个服务的本地配置。** 首次分别将[前端模板](src/frontend/web-blog/.env.example)复制为同目录 `.env`，将[后端模板](src/backend/server-main/.env.example)复制为同目录 `.env.local`。不要覆盖已有文件。主要检查：
+
+   | 后端配置                   | 要求                                       |
+   | -------------------------- | ------------------------------------------ |
+   | `DATABASE_URL`             | 指向准备使用的 PostgreSQL 数据库           |
+   | `JWT_ACCESS_SECRET`        | 至少 32 字符的随机密钥                     |
+   | `ADMIN_DEFAULT_USERNAME`   | 要初始化的博主登录名                       |
+   | `ADMIN_DEFAULT_PASSWORD`   | 至少 12 字符的随机密码；不要使用模板占位值 |
+   | `NODE_ENV` / `CORS_ORIGIN` | `development` / `http://localhost:3456`    |
+
+   前端保留 `NUXT_PUBLIC_API_BASE_URL=/api/v1`，将 `NUXT_API_BASE_URL` 指向本机 API，模板值为 `http://127.0.0.1:3000/api/v1`。两个 Mock 开关均为 `false`。密钥和密码仅放在本地配置或受控环境中，不提交 Git。
+
+3. **启动 PostgreSQL。** 已有 PostgreSQL 16 可直接使用；仓库的本机开发配置只需启动 `postgres` 服务：
+
+   ```sh
+   docker compose --env-file src/backend/server-main/.env.local -f src/backend/server-main/docker-compose.yml up -d postgres
+   docker compose --env-file src/backend/server-main/.env.local -f src/backend/server-main/docker-compose.yml ps postgres
+   ```
+
+   等待状态为 healthy。该本机配置的用户、密码和数据库与后端模板默认 `DATABASE_URL` 对应；更换实例时请同步连接配置。端口冲突时同时调整 `POSTGRES_PORT` 与 `DATABASE_URL`。
+
+4. **显式应用迁移并检查结构。**
+
+   ```sh
+   corepack pnpm --filter server-main migration:up
+   corepack pnpm --filter server-main migration:check
+   ```
+
+5. **初始化管理员。**
+
+   ```sh
+   corepack pnpm --filter server-main build
+   corepack pnpm --filter server-main exec node dist/admin-bootstrap.js
+   ```
+
+   初始化命令读取第 2 步的账号配置，不插入文章或开发样本；同名账号已存在时拒绝覆盖，已有账号跳过此步。
+
+6. **启动前后端。**
+
+   ```sh
+   corepack pnpm dev:all
+   ```
+
+   此命令启动或复用本项目服务，不隐式迁移、seed 或清空数据库。后续可在另一个终端运行 `corepack pnpm dev:check` 检查链路。
+
+7. **开始使用。** 打开[网站](http://localhost:3456)和[后台](http://localhost:3456/admin)，用初始化的账号登录，在站点设置中维护自己的资料，再创建内容。新库没有默认公开文章；开发样本的显式准备见[开发指南](docs/development.md)。
+
+## 常用入口
+
+| 用途                   | 路径                                                              |
+| ---------------------- | ----------------------------------------------------------------- |
+| 文章、归档、跨类型搜索 | `/`、`/archive`、`/search`                                        |
+| 关于、项目、图库       | `/about`、`/projects`、`/gallery`                                 |
+| 闪念、朋友圈、留言     | `/flash`、`/moments`、`/guestbook`                                |
+| 创作与资料维护         | `/admin`、`/admin/site`、`/admin/media`                           |
+| 通知与备份管理         | `/admin/notifications`、`/admin/operations`、`/admin/maintenance` |
+
+## 仓库布局
+
+```text
+src/frontend/web-blog/    网站、管理界面和前端测试
+src/backend/server-main/ API、迁移、开发样本和后端测试
+docs/                    当前使用、架构与维护指南
+scripts/                 开发启动、检查和发布工具
+deploy/                  生产环境与 HTTPS 配置模板
+patches/                 固定依赖版本所需的补丁
+.github/workflows/       持续集成
 ```
 
-首次启动前按[后端说明](src/backend/server-main/README.md)准备数据库、配置并显式执行迁移，前端环境模板见 `src/frontend/web-blog/.env.example`。已有环境文件、数据库、账号与媒体应保留。`dev:all` 启动或复用本项目已有服务；访问 [本地网站](http://localhost:3456) 和 [运营工作台](http://localhost:3456/admin)。启动不会执行迁移、seed、reset 或对外发送。
+共享格式、提交钩子和依赖配置保留在根目录；个人编辑器配置和运行产物不进入版本库。模块内职责见[架构指南](docs/architecture.md)。
 
-`dev:check` 检查当前链路，`dev:all` 统一启动；`dev` / `dev:blog` 仅启动前端，`dev:api` 仅启动后端。配置、进程归属和清理规则见[开发启动说明](docs/development-runtime.md)。多个栏目同时加载失败时，也可按[服务恢复记录](docs/archive/content-history/service-recovery.md)检查后端就绪与前端同源接口。
+## 构建、部署与贡献
 
-## 构建与部署
-
-```bash
-# 生产构建：前端与后端分别准备
+```sh
 corepack pnpm build
 corepack pnpm --filter server-main build
-
-# 本地预览生产构建
-corepack pnpm --filter web-blog preview
 ```
 
-`compose.yaml` 用于独立本地生产式编排；`compose.production.yaml`、`deploy/` 和 `scripts/release/release.mjs` 提供固定镜像版本、HTTPS、日志/重启、发布预检及版本切换。后端 Dockerfile 分为 `runtime`、`migration` 和 `worker` 目标。发布脚本默认预览，`--apply` 才执行；应用回退、数据库向前修复与备份恢复分别处理。使用步骤见[发布与回退](docs/release-operations.md)和[本地生产式验收](docs/local-production-validation.md)。
+根目录 `build` 构建前端，后端单独构建。生产编排使用 `compose.production.yaml` 和 `deploy/` 模板；部署前需要设置实际域名、固定镜像版本、密钥和持久化存储，并先执行迁移。步骤见[部署指南](docs/deployment.md)，数据维护见[备份与恢复](docs/backup-and-recovery.md)。
 
-邮件与自动备份默认关闭。取得对应授权后，才配置并启用 worker、真实收件目标或异地接收器；本机隔离验收通过不等于已经投产。
+开发环境、代码职责、测试和 PR 要求见 [CONTRIBUTING.md](CONTRIBUTING.md)。[文档导航](docs/README.md)提供开发、架构、API、内容和主题说明。
 
-## 环境变量
+## 许可证
 
-开发环境分服务配置：前端参考 [前端模板](src/frontend/web-blog/.env.example)，配置放在该目录 `.env`；后端参考 [后端模板](src/backend/server-main/.env.example)，配置放在该目录 `.env.local`。已有文件保留并按需补充；环境优先级见[开发启动说明](docs/development-runtime.md)。生产配置使用 [deploy 模板](deploy/production.env.example)，具体要求见[发布操作](docs/release-operations.md)。
-
-朋友圈阅读入口为 `/moments`，登录后通过 `/admin/moments` 发布、编辑、置顶和管理评论。真实模式不会回退演示数据，使用方式与输入恢复见[朋友圈业务说明](docs/moment-business.md)。`corepack pnpm db:dev status` 可检查数据库，显式开发样本和清空工具见[开发数据库说明](docs/development-database.md)。
-
-留言入口为 `/guestbook`，博主通过 `/admin/guestbook` 回复、审核、置顶和管理内容。日常开发数据检查使用 `corepack pnpm db:dev check-data`，增量补齐预览使用 `corepack pnpm db:dev seed-data --dataset all`；核对目标后加上 `--apply --confirm 数据库名` 执行。新功能必须同批交付日常样本与隔离测试，具体归属、数量及安全清理见[开发数据目录](docs/development-data-catalog.md)。
-
-## 代码规范
-
-```bash
-# ESLint 检查
-corepack pnpm lint
-
-# ESLint 自动修复
-corepack pnpm lint:fix
-
-# Prettier 格式化
-corepack pnpm format
-```
-
-提交代码时 Husky + lint-staged 会自动运行检查。
-
-## 测试
-
-```bash
-corepack pnpm --filter web-blog test
-corepack pnpm --filter server-main test
-corepack pnpm --filter server-main typecheck
-corepack pnpm --filter server-main test:integration
-
-# 已准备前后端生产构建后，按 spec 启动隔离浏览器验收
-node src/backend/server-main/tests/browser-runner.mjs sustainable-admin.spec.ts --browser=all --max-failures=1
-```
-
-测试写入、故障注入、投递和恢复使用隔离数据库、媒体、账号与本机捕获服务；原始产物只留在 `.artifacts/` 或 `.playwright-mcp/`。验证边界见[验收产物管理](docs/verification-artifacts.md)。已实施的性能改进为公开文章列表按需取字段，测试保持正文检索与最终业务响应不变，复核方法见[性能与维护](docs/performance-maintenance.md)，不以局部采样推断线上性能。
-
-## 项目结构
-
-```
-src/
-├── frontend/web-blog/    # 公开网站与内置 /admin 后台
-└── backend/server-main/  # NestJS API、数据库迁移和维护工具
-docs/                     # 现行契约、使用维护与文档导航
-└── archive/              # 历史设计、阶段交付与已完成目标
-```
-
-当前没有独立的 `web-admin` 应用。模块职责与代码入口见[架构基线](docs/project-architecture.md)、[目录地图](docs/directory-structure.md)。本轮工作见[首发准备与使用验收](docs/first-release-readiness.md)，早期规划与历史交付从[文档导航](docs/README.md)的归档区进入。
-
-## 开源协议
-
-本项目采用 [GPL-3.0](LICENSE) 协议。
-
-### 第三方许可
-
-本项目使用的 [@tixxin/nuxt-theme-engine](https://github.com/TixXin/nuxt-theme-engine) 主题引擎采用 [MIT License](https://github.com/TixXin/nuxt-theme-engine/LICENSE) 许可。
+代码许可证见 [LICENSE](LICENSE)（GNU GPL v3）。第三方素材的来源和许可按其随附说明处理。

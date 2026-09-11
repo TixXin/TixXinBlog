@@ -1,7 +1,7 @@
 /**
  * @file visitorId.ts
  * @description 设备级访客 id:生成并持久化到 localStorage,写接口经 X-Visitor-Id 头携带
- *              (后端只存 SHA-256 哈希,见 docs/archive/backend-design/api.md §5.1)
+ *              （后端只存 SHA-256 哈希，身份边界见 docs/api.md）
  * @author TixXin
  * @since 2026-07-20
  */
