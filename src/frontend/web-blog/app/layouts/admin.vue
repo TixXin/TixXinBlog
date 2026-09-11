@@ -6,47 +6,66 @@
   <div class="admin-shell" :class="{ 'admin-shell--login': isLogin }">
     <aside v-if="!isLogin" class="admin-sidebar">
       <NuxtLink class="admin-brand" to="/admin"><Icon name="lucide:notebook-pen" />TixXin 管理</NuxtLink>
-      <nav ref="sidebarNav" aria-label="管理导航">
-        <NuxtLink
-          v-for="item in navigation"
-          :key="item.path"
-          :to="item.path"
-          :class="{ 'is-active': activePath === item.path }"
-          :aria-current="activePath === item.path ? 'page' : undefined"
-          ><Icon :name="item.icon" />{{ item.label }}</NuxtLink
-        >
-      </nav>
+      <AdminNavigation />
       <NuxtLink class="admin-back" to="/"><Icon name="lucide:arrow-up-right" />返回博客</NuxtLink>
     </aside>
     <header class="admin-header">
+      <CommonContextDrawer v-if="!isLogin" v-model:open="drawerOpen" class="admin-mobile-navigation" label="管理导航">
+        <AdminNavigation />
+        <NuxtLink class="admin-back" to="/">返回博客<Icon name="lucide:arrow-up-right" /></NuxtLink>
+      </CommonContextDrawer>
       <nav aria-label="面包屑">
         <NuxtLink :to="isLogin ? '/' : '/admin'">{{ isLogin ? '返回博客' : '后台' }}</NuxtLink
         ><span aria-hidden="true">/</span><span>{{ pageTitle }}</span>
       </nav>
+      <button v-if="actionTarget" type="button" class="admin-jump-actions" @click="jumpToActions">
+        表单操作<Icon name="lucide:arrow-down-to-line" />
+      </button>
       <ClientOnly
         ><button type="button" aria-label="切换明暗主题" @click="toggleColor">
           <Icon :name="colorMode.value === 'dark' ? 'lucide:sun' : 'lucide:moon'" /></button
         ><button v-if="isLoggedIn" type="button" :disabled="leaving" @click="leave">退出登录</button></ClientOnly
       >
     </header>
-    <main class="admin-main">
-      <ClientOnly><p v-if="restoringPending" role="status">正在确认登录状态…</p></ClientOnly>
-      <ClientOnly
-        ><section v-if="!isLogin && authError" class="admin-session" aria-label="登录状态提示">
-          <p role="alert">{{ authError }}</p>
-          <AuthLoginForm
-            v-if="!isLoggedIn"
-            @authenticated="reauthenticated"
-            @switch-view="sessionHelp = !sessionHelp"
-          />
-          <p v-if="sessionHelp">请使用博主账号重新登录；当前页面不会跳转，未保存内容保留。</p>
-        </section></ClientOnly
-      >
-      <NuxtPage />
+    <main ref="main" class="admin-main" aria-label="管理内容" tabindex="-1">
+      <div class="admin-content">
+        <ClientOnly><p v-if="restoringPending" role="status">正在确认登录状态…</p></ClientOnly>
+        <ClientOnly
+          ><section v-if="!isLogin && authError" class="admin-session" aria-label="登录状态提示">
+            <p role="alert">{{ authError }}</p>
+            <AuthLoginForm
+              v-if="!isLoggedIn"
+              @authenticated="reauthenticated"
+              @switch-view="sessionHelp = !sessionHelp"
+            />
+            <p v-if="sessionHelp">请使用博主账号重新登录；当前页面不会跳转，未保存内容保留。</p>
+          </section></ClientOnly
+        >
+        <NuxtPage />
+      </div>
     </main>
   </div>
 </template>
 <script setup lang="ts">
+import { adminNavigation as navigation, adminModule } from '~/features/admin/navigation'
+const main = ref<HTMLElement | null>(null)
+useAdminWorkspace(main)
+const actionTarget = ref<HTMLElement | null>(null)
+provide('admin-action-target', actionTarget)
+function jumpToActions() {
+  actionTarget.value?.scrollIntoView({ block: 'nearest', behavior: 'instant' })
+  actionTarget.value?.focus({ preventScroll: true })
+}
+const drawerOpen = ref(false)
+let breakpoint: MediaQueryList | undefined
+const closeAtDesktop = () => {
+  if (breakpoint?.matches) drawerOpen.value = false
+}
+onMounted(() => {
+  breakpoint = window.matchMedia('(min-width: 761px)')
+  breakpoint.addEventListener('change', closeAtDesktop)
+})
+onBeforeUnmount(() => breakpoint?.removeEventListener('change', closeAtDesktop))
 const { isLoggedIn, logout, authError, restoringPending } = useCurrentUser()
 const sessionHelp = ref(false)
 function reauthenticated() {
@@ -54,42 +73,16 @@ function reauthenticated() {
 }
 const { error } = useToast()
 const route = useRoute()
-const sidebarNav = ref<HTMLElement | null>(null)
-async function revealActiveNavigation() {
-  await nextTick()
-  sidebarNav.value
-    ?.querySelector<HTMLElement>('[aria-current="page"]')
-    ?.scrollIntoView({ block: 'nearest', inline: 'nearest' })
-}
-onMounted(revealActiveNavigation)
-watch(() => route.path, revealActiveNavigation)
+watch(
+  () => route.fullPath,
+  () => {
+    drawerOpen.value = false
+  },
+)
 const colorMode = useColorMode()
 const leaving = ref(false)
-const navigation = [
-  { path: '/admin', label: '管理概览', icon: 'lucide:layout-dashboard' },
-  { path: '/admin/posts', label: '文章管理', icon: 'lucide:files' },
-  { path: '/admin/comments', label: '评论管理', icon: 'lucide:messages-square' },
-  { path: '/admin/flashes', label: '闪念管理', icon: 'lucide:lightbulb' },
-  { path: '/admin/moments', label: '朋友圈管理', icon: 'lucide:messages-square' },
-  { path: '/admin/guestbook', label: '留言管理', icon: 'lucide:message-circle' },
-  { path: '/admin/gallery', label: '图库管理', icon: 'lucide:camera' },
-  { path: '/admin/projects', label: '项目管理', icon: 'lucide:layers' },
-  { path: '/admin/links', label: '友链管理', icon: 'lucide:link' },
-  { path: '/admin/media', label: '媒体资源', icon: 'lucide:images' },
-  { path: '/admin/taxonomy', label: '分类与标签', icon: 'lucide:tags' },
-  { path: '/admin/site', label: '站点设置', icon: 'lucide:settings' },
-  { path: '/admin/account', label: '账号安全', icon: 'lucide:shield-check' },
-  { path: '/admin/audit', label: '操作审计', icon: 'lucide:clipboard-list' },
-  { path: '/admin/maintenance', label: '备份与维护', icon: 'lucide:database-backup' },
-]
 const isLogin = computed(() => route.path === '/admin/login')
-const activePath = computed(
-  () =>
-    navigation
-      .slice()
-      .reverse()
-      .find((item) => route.path === item.path || route.path.startsWith(`${item.path}/`))?.path,
-)
+const activePath = computed(() => adminModule(route.path)?.path)
 const pageTitle = computed(() =>
   isLogin.value
     ? '博主登录'
@@ -119,15 +112,13 @@ async function leave() {
 .admin-shell {
   display: grid;
   grid-template-columns: 220px minmax(0, 1fr);
-  grid-template-rows: auto 1fr;
+  grid-template-rows: auto minmax(0, 1fr);
   height: 100dvh;
-  overflow: auto;
+  overflow: hidden;
   background: var(--surface-1);
   color: var(--text-main);
 }
 .admin-header {
-  position: sticky;
-  top: 0;
   z-index: 10;
   display: flex;
   flex-wrap: wrap;
@@ -153,12 +144,30 @@ async function leave() {
   border-radius: 0.5rem;
 }
 .admin-main {
-  width: 100%;
   min-width: 0;
+  min-height: 0;
+  overflow: auto;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
+  scroll-padding-block: 1rem 10rem;
+  outline: none;
+}
+.admin-content {
+  width: 100%;
   max-width: 1200px;
   margin: 0 auto;
-  align-self: start;
   padding: 1.5rem;
+}
+.admin-mobile-navigation {
+  display: none;
+}
+.admin-header button {
+  min-height: 44px;
+}
+.admin-jump-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
 }
 .admin-session {
   border: 1px solid var(--border);
@@ -171,7 +180,9 @@ async function leave() {
   grid-row: 1 / -1;
   display: flex;
   flex-direction: column;
-  gap: 2rem;
+  gap: 1rem;
+  min-height: 0;
+  overflow: hidden;
   padding: 1.5rem 1rem;
   border-right: 1px solid var(--border);
   background: var(--surface-2);
@@ -184,27 +195,20 @@ async function leave() {
   font-weight: 700;
   color: var(--text-main);
 }
-.admin-sidebar nav {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
+.admin-sidebar :deep(.admin-navigation) {
+  flex: 1;
 }
-.admin-sidebar nav a,
+.admin-brand,
+.admin-back {
+  flex-shrink: 0;
+}
 .admin-back {
   display: flex;
   align-items: center;
   gap: 0.65rem;
-  padding: 0.8rem;
-  border-radius: 0.65rem;
+  min-height: 44px;
+  padding: 0.75rem;
   color: var(--text-muted);
-}
-.admin-sidebar nav a.is-active {
-  color: var(--accent);
-  background: var(--surface-3);
-  font-weight: 600;
-}
-.admin-sidebar nav a:hover {
-  background: var(--surface-3);
 }
 .admin-back {
   margin-top: auto;
@@ -214,34 +218,30 @@ async function leave() {
 }
 @media (max-width: 760px) {
   .admin-shell {
-    display: block;
+    grid-template-columns: minmax(0, 1fr);
   }
   .admin-sidebar {
-    padding: 1rem;
-    gap: 0.8rem;
-    border-right: 0;
-    border-bottom: 1px solid var(--border);
-  }
-  .admin-sidebar nav {
-    flex-direction: row;
-    overflow-x: auto;
-  }
-  .admin-sidebar nav a {
-    white-space: nowrap;
-    flex-shrink: 0;
-  }
-  .admin-back {
     display: none;
   }
+  .admin-mobile-navigation {
+    display: block;
+  }
   .admin-header {
-    gap: 0.75rem;
-    padding: 0.75rem 1rem;
+    gap: 0.5rem;
+    padding: 0.5rem;
   }
   .admin-header nav {
-    gap: 0.5rem;
+    gap: 0.4rem;
+    min-width: 0;
+    flex-basis: 100%;
+    order: 2;
+    padding: 0.25rem;
+  }
+  .admin-content {
+    padding: 1rem;
   }
   .admin-main {
-    padding: 1rem;
+    scroll-padding-block: 1rem;
   }
 }
 </style>

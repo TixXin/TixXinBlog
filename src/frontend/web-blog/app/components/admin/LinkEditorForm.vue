@@ -3,7 +3,7 @@
   <form class="link-editor" @submit.prevent="$emit('save', value.status)">
     <header>
       <h1>{{ id ? '编辑友链' : '新建友链' }}</h1>
-      <NuxtLink to="/admin/links">返回友链管理</NuxtLink
+      <AdminBackLink to="/admin/links">返回友链管理</AdminBackLink
       ><NuxtLink v-if="saved?.status === 'published'" :to="`/links?q=${encodeURIComponent(saved.name)}`"
         >查看公开友链</NuxtLink
       >
@@ -146,7 +146,7 @@
       创建于 {{ saved.createdAt }}<template v-if="saved.publishedAt"> · 首次上架于 {{ saved.publishedAt }}</template> ·
       版本 {{ saved.revision }}
     </p>
-    <footer>
+    <AdminActionBar>
       <button type="submit" :disabled="!ready || loading || saving || !value.name.trim() || !value.url.trim()">
         {{ saving ? '正在保存…' : '保存友链' }}</button
       ><button
@@ -162,7 +162,7 @@
       >
         上架友链</button
       ><span>{{ dirty ? '有尚未保存输入' : saved ? '当前输入已保存' : '尚未保存' }}</span>
-    </footer>
+    </AdminActionBar>
     <ClientOnly><AdminMediaPicker v-model:open="mediaOpen" @selected="selectMedia" /></ClientOnly>
   </form>
 </template>

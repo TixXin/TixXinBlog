@@ -3,7 +3,7 @@
   <form class="moment-editor" @submit.prevent="$emit('save', value.status)">
     <header class="moment-editor__heading">
       <h1>{{ id ? '编辑动态' : '发布动态' }}</h1>
-      <NuxtLink to="/admin/moments">返回动态管理</NuxtLink>
+      <AdminBackLink to="/admin/moments">返回动态管理</AdminBackLink>
       <NuxtLink v-if="id && saved?.status === 'published'" :to="`/moments/${id}`">查看公开动态</NuxtLink>
     </header>
     <p v-if="error" role="alert">
@@ -195,7 +195,7 @@
         >
       </div>
     </fieldset>
-    <footer class="moment-editor__actions">
+    <AdminActionBar class="moment-editor__actions">
       <button type="submit" :disabled="!ready || loading || saving || !value.content.trim()">
         {{ saving ? '正在保存…' : '保存动态' }}
       </button>
@@ -214,7 +214,7 @@
         发布动态
       </button>
       <span>{{ dirty ? '有尚未保存的输入' : saved ? '当前输入已保存' : '尚未保存' }}</span>
-    </footer>
+    </AdminActionBar>
     <ClientOnly><AdminMediaPicker v-model:open="mediaOpen" @selected="selectMedia" /></ClientOnly>
   </form>
 </template>
