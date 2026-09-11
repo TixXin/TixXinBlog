@@ -19,7 +19,7 @@ Git 保存可维护的源码和文字结论。批量截图、录屏、trace、�
 
 ## 复验和分享
 
-持续维护的前端回归位于 [tests/e2e](../src/frontend/web-blog/tests/e2e/)，配置见 [playwright.config.ts](../src/frontend/web-blog/playwright.config.ts) 与 [playwright.motion.config.ts](../src/frontend/web-blog/playwright.motion.config.ts)。历史 `evidence/reproduce/` 是依赖当时本机路径及已关闭隔离实例的实验快照，保留本地，不作为可持续运行的测试入口。
+持续维护的前端回归位于 [tests/e2e](../src/frontend/web-blog/tests/e2e)，配置见 [playwright.config.ts](../src/frontend/web-blog/playwright.config.ts) 与 [playwright.motion.config.ts](../src/frontend/web-blog/playwright.motion.config.ts)。历史 `evidence/reproduce/` 是依赖当时本机路径及已关闭隔离实例的实验快照，保留本地，不作为可持续运行的测试入口。
 
 复验使用独立构建目录及项目隔离测试流程，新的运行结果写入忽略目录。已有 [CI](../.github/workflows/ci.yml) 在失败时通过 Actions artifact 上传 `.playwright-mcp/e2e-results`，保留 5 天；需要分享其他验收结果时使用任务附件或明确配置的 CI artifact。上传前检查截图、日志和 trace 是否含账号、凭据或私有内容。
 

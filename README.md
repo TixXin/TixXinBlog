@@ -79,7 +79,7 @@ corepack pnpm dev:all
 
 首次启动前按[后端说明](src/backend/server-main/README.md)准备数据库、配置并显式执行迁移，前端环境模板见 `src/frontend/web-blog/.env.example`。已有环境文件、数据库、账号与媒体应保留。`dev:all` 启动或复用本项目已有服务；访问 [本地网站](http://localhost:3456) 和 [运营工作台](http://localhost:3456/admin)。启动不会执行迁移、seed、reset 或对外发送。
 
-`dev:check` 检查当前链路，`dev:all` 统一启动；`dev` / `dev:blog` 仅启动前端，`dev:api` 仅启动后端。配置、进程归属和清理规则见[开发启动说明](docs/development-runtime.md)。多个栏目同时加载失败时，也可按[服务恢复记录](docs/service-recovery.md)检查后端就绪与前端同源接口。
+`dev:check` 检查当前链路，`dev:all` 统一启动；`dev` / `dev:blog` 仅启动前端，`dev:api` 仅启动后端。配置、进程归属和清理规则见[开发启动说明](docs/development-runtime.md)。多个栏目同时加载失败时，也可按[服务恢复记录](docs/archive/content-history/service-recovery.md)检查后端就绪与前端同源接口。
 
 ## 构建与部署
 
@@ -98,7 +98,7 @@ corepack pnpm --filter web-blog preview
 
 ## 环境变量
 
-开发环境分服务配置：前端参考 [前端模板](src/frontend/web-blog/.env.example)，配置放在该目录 `.env`；后端参考 [后端模板](src/backend/server-main/.env.example)，配置放在该目录 `.env.local`。已有文件保留并按需补充；环境优先级见[开发启动说明](docs/development-runtime.md)。根目录 `.env.example` 不是统一开发链路的配置来源。
+开发环境分服务配置：前端参考 [前端模板](src/frontend/web-blog/.env.example)，配置放在该目录 `.env`；后端参考 [后端模板](src/backend/server-main/.env.example)，配置放在该目录 `.env.local`。已有文件保留并按需补充；环境优先级见[开发启动说明](docs/development-runtime.md)。生产配置使用 [deploy 模板](deploy/production.env.example)，具体要求见[发布操作](docs/release-operations.md)。
 
 朋友圈阅读入口为 `/moments`，登录后通过 `/admin/moments` 发布、编辑、置顶和管理评论。真实模式不会回退演示数据，使用方式与输入恢复见[朋友圈业务说明](docs/moment-business.md)。`corepack pnpm db:dev status` 可检查数据库，显式开发样本和清空工具见[开发数据库说明](docs/development-database.md)。
 
@@ -139,10 +139,11 @@ node src/backend/server-main/tests/browser-runner.mjs sustainable-admin.spec.ts 
 src/
 ├── frontend/web-blog/    # 公开网站与内置 /admin 后台
 └── backend/server-main/  # NestJS API、数据库迁移和维护工具
-docs/                     # 架构与目录说明
+docs/                     # 现行契约、使用维护与文档导航
+└── archive/              # 历史设计、阶段交付与已完成目标
 ```
 
-当前没有独立的 `web-admin` 应用。模块职责与代码入口见[架构基线](docs/project-architecture.md)、[目录地图](docs/directory-structure.md)；早期规划与历史交付单独收录在[文档导航](docs/README.md)，不作为当前能力声明。
+当前没有独立的 `web-admin` 应用。模块职责与代码入口见[架构基线](docs/project-architecture.md)、[目录地图](docs/directory-structure.md)。本轮工作见[首发准备与使用验收](docs/first-release-readiness.md)，早期规划与历史交付从[文档导航](docs/README.md)的归档区进入。
 
 ## 开源协议
 

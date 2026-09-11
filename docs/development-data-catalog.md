@@ -10,7 +10,7 @@
 
 两组补种前分别完整备份 `.backups/backup-1789117524856-e9fe1a03/` 与 `.backups/backup-1789117527664-f2a33fda/`，迁移前备份 `.backups/backup-1789116156816-0a7af66b/`，均本机长期保留。日常目标仍为 `127.0.0.1:15433/tixxin_blog`：33迁移、74文章、20项目、24图库、54留言、17媒体、90媒体引用、262归属；其他业务原有内容保留。新增素材运行位置仍为 `src/backend/server-main/var/media/`，源素材在 `src/backend/server-main/src/seeders/gallery-assets/`。
 
-最终完整备份 `.backups/backup-1789123595051-75bcc61e/` 已固定数据库快照并校验17/17媒体，工作台登记 `bef57dd6-31dd-4ff7-917b-ead0b298daf6`。日常共有25项任务：23项暂停邮件、2次手动备份；邮件投递次数为零，备份与邮件调度均暂停。第33项安全初始资料迁移保留日常已编辑版本，零漂移。日常备份继续保留；最终只读与隔离清理见 [验收报告](sustainable-blog-verification.md)。
+最终完整备份 `.backups/backup-1789123595051-75bcc61e/` 已固定数据库快照并校验17/17媒体，工作台登记 `bef57dd6-31dd-4ff7-917b-ead0b298daf6`。日常共有25项任务：23项暂停邮件、2次手动备份；邮件投递次数为零，备份与邮件调度均暂停。第33项安全初始资料迁移保留日常已编辑版本，零漂移。日常备份继续保留；最终只读与隔离清理见 [验收报告](archive/sustainable-blog/sustainable-blog-verification.md)。
 
 `sustainable-fixtures-integration.ts` 验证6+71归属、万字内容、公开过滤、重复无新增、启用环境下仍零排队、已读和人工编辑保护。空的新增关联及媒体说明不改变旧样本指纹；非空真实修改仍受保护。定向清理同时检查当前/历史JSON内容关联及通知/任务依赖，保留被其他内容使用或已编辑的关联家庭；评论提交凭据在评论删除后保留空引用，避免重试复活。
 
@@ -18,9 +18,9 @@
 
 2026-09-11 首批资料整理时，已在 `127.0.0.1:15433/tixxin_blog` 实际补齐4条归属：当时文章总数72、项目19，原有媒体16及其他样本保留，归属185。迁移前完整备份 `.backups/backup-1789113275418-cf49888d/`；资料整理前 `.backups/backup-1789113342806-50445aca/`；补种前 `.backups/backup-1789113345125-f8778ef5/`，均为本机长期保留位置。资料整理仅修改未编辑版本0初始资料，产生版本1并保留旧历史；采用已确认称呼tixxin，收起未确认职位、社交地址和肖像，关于页使用本轮内容定位。
 
-隔离 `tests/editorial-fixtures-integration.ts` 已验证默认预览、错误目标拒绝、真实完整备份、其他配置保留、4条全草稿归属、重复无新增、编辑保护与删除不复活、零漂移。日常页面及浏览器验收已完成，记录于 [阶段跟踪](sustainable-blog-stage.md)，数据结果不代替整项完成。
+隔离 `tests/editorial-fixtures-integration.ts` 已验证默认预览、错误目标拒绝、真实完整备份、其他配置保留、4条全草稿归属、重复无新增、编辑保护与删除不复活、零漂移。日常页面及浏览器验收已完成，记录于 [阶段跟踪](archive/sustainable-blog/sustainable-blog-stage.md)，数据结果不代替整项完成。
 
-图库外链扩展：`gallery-external` 域对应独立 `gallery-external-v1` 数据集，提供4条外链作品（2公开、1草稿、1撤回），只保存地址和自然内容，不抓取远程图片。使用 `corepack pnpm db:dev check-data --domain gallery-external` 检查；通过 `seed-data --dataset gallery-external-v1` 预览补齐，核对本机目标后加 `--apply --confirm tixxin_blog`。同名 `remove-data` 仍遵循备份、停服务、编辑保护和删除不复活规则。原图库26条归属保留，该历史阶段全站样本归属181条；阶段记录见 [图库外链与后台验收](gallery-external-admin-verification.md)。
+图库外链扩展：`gallery-external` 域对应独立 `gallery-external-v1` 数据集，提供4条外链作品（2公开、1草稿、1撤回），只保存地址和自然内容，不抓取远程图片。使用 `corepack pnpm db:dev check-data --domain gallery-external` 检查；通过 `seed-data --dataset gallery-external-v1` 预览补齐，核对本机目标后加 `--apply --confirm tixxin_blog`。同名 `remove-data` 仍遵循备份、停服务、编辑保护和删除不复活规则。原图库26条归属保留，该历史阶段全站样本归属181条；阶段记录见 [图库外链与后台验收](archive/content-history/gallery-external-admin-verification.md)。
 
 ```sh
 corepack pnpm db:dev check-data
@@ -48,7 +48,7 @@ corepack pnpm db:dev check-data --domain links
 
 书签仍在LocalStorage。命令通过 `preservedSources` 准确输出这一边界，不宣称书签已经接入数据库。
 
-原18条朋友圈及18条评论持续保留。`core-v1` 数据集通过内部 `development_fixture` 账本增量管理文章/闪念/朋友圈各18条、评论回复、待审隐藏、本地媒体和真实点赞记录，共71条归属。`guestbook-v1` 提供29条留言（26公开、2待审、1隐藏）、头像和8条回应，共38条归属。日常库七域覆盖、实际页面和维护验收已通过，详见[阶段验收](guestbook-stage-verification.md)。
+原18条朋友圈及18条评论持续保留。`core-v1` 数据集通过内部 `development_fixture` 账本增量管理文章/闪念/朋友圈各18条、评论回复、待审隐藏、本地媒体和真实点赞记录，共71条归属。`guestbook-v1` 提供29条留言（26公开、2待审、1隐藏）、头像和8条回应，共38条归属。日常库七域覆盖、实际页面和维护验收已通过，详见[阶段验收](archive/content-history/guestbook-stage-verification.md)。
 
 ```sh
 corepack pnpm db:dev seed-data --dataset core-v1
