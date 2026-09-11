@@ -1,0 +1,131 @@
+# 独立生产发布编排：只引用已构建版本；环境文件由发布命令显式指定。
+name: ${RELEASE_PROJECT:?请配置独立项目名称}
+
+x-logging: &logging
+  driver: json-file
+  options:
+    max-size: '10m'
+    max-file: '5'
+
+x-operation-environment: &operation-environment
+  OPERATIONS_WORKER_ENABLED: ${OPERATIONS_WORKER_ENABLED:-false}
+  NOTIFICATION_EMAIL_ENABLED: ${NOTIFICATION_EMAIL_ENABLED:-false}
+  NOTIFICATION_SMTP_HOST: ${NOTIFICATION_SMTP_HOST:-}
+  NOTIFICATION_SMTP_PORT: ${NOTIFICATION_SMTP_PORT:-587}
+  NOTIFICATION_SMTP_SECURE: ${NOTIFICATION_SMTP_SECURE:-false}
+  NOTIFICATION_SMTP_USER: ${NOTIFICATION_SMTP_USER:-}
+  NOTIFICATION_SMTP_PASSWORD: ${NOTIFICATION_SMTP_PASSWORD:-}
+  NOTIFICATION_EMAIL_FROM: ${NOTIFICATION_EMAIL_FROM:-}
+  NOTIFICATION_EMAIL_TO: ${NOTIFICATION_EMAIL_TO:-}
+  NOTIFICATION_SITE_URL: ${SITE_URL:?请配置 HTTPS 站点地址}
+  NOTIFICATION_MAIL_INTERVAL_SECONDS: ${NOTIFICATION_MAIL_INTERVAL_SECONDS:-60}
+  BACKUP_SCHEDULE_ENABLED: ${BACKUP_SCHEDULE_ENABLED:-false}
+  BACKUP_EXECUTION_MODE: native
+  BACKUP_DIRECTORY: /app/var/backups
+  BACKUP_OWNER_ID: ${BACKUP_OWNER_ID:-}
+  BACKUP_INTERVAL_MINUTES: ${BACKUP_INTERVAL_MINUTES:-1440}
+  BACKUP_RETENTION_DAYS: ${BACKUP_RETENTION_DAYS:-30}
+  BACKUP_TRANSFER_URL: ${BACKUP_TRANSFER_URL:-}
+  BACKUP_TRANSFER_TOKEN: ${BACKUP_TRANSFER_TOKEN:-}
+
+services:
+  postgres:
+    image: ${POSTGRES_IMAGE:?请固定 PostgreSQL 16 镜像}
+    restart: unless-stopped
+    logging: *logging
+    environment:
+      POSTGRES_USER: tixxin
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?请配置数据库密码}
+      POSTGRES_DB: tixxin_blog
+    volumes:
+      - database:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U tixxin -d tixxin_blog']
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  migration:
+    image: ${MIGRATION_IMAGE_REPOSITORY:?请配置迁移镜像仓库}:${RELEASE_VERSION:?请配置版本}
+    profiles: [maintenance]
+    restart: 'no'
+    logging: *logging
+    environment:
+      DATABASE_URL: postgres://tixxin:${POSTGRES_PASSWORD}@postgres:5432/tixxin_blog
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  worker:
+    image: ${WORKER_IMAGE_REPOSITORY:-tixxin-blog-worker}:${RELEASE_VERSION:?请配置版本}
+    profiles: [worker]
+    restart: unless-stopped
+    logging: *logging
+    command: ['node', 'scripts/operations.mjs', 'loop', '--apply']
+    environment:
+      <<: *operation-environment
+      DATABASE_URL: postgres://tixxin:${POSTGRES_PASSWORD}@postgres:5432/tixxin_blog
+      MEDIA_DIRECTORY: /app/var/media
+    volumes:
+      - media:/app/var/media:ro
+      - backups:/app/var/backups
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  backend:
+    image: ${API_IMAGE_REPOSITORY:?请配置 API 镜像仓库}:${RELEASE_VERSION:?请配置版本}
+    restart: unless-stopped
+    logging: *logging
+    environment:
+      <<: *operation-environment
+      DATABASE_URL: postgres://tixxin:${POSTGRES_PASSWORD}@postgres:5432/tixxin_blog
+      JWT_ACCESS_SECRET: ${JWT_ACCESS_SECRET:?请配置签名密钥}
+      CORS_ORIGIN: ${SITE_URL:?请配置 HTTPS 站点地址}
+      LOG_LEVEL: info
+      MEDIA_DIRECTORY: /app/var/media
+      RELEASE_VERSION: ${RELEASE_VERSION}
+    volumes:
+      - media:/app/var/media
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  frontend:
+    image: ${WEB_IMAGE_REPOSITORY:?请配置前端镜像仓库}:${RELEASE_VERSION:?请配置版本}
+    restart: unless-stopped
+    logging: *logging
+    environment:
+      NUXT_API_BASE_URL: http://backend:3000/api/v1
+      NUXT_PUBLIC_API_BASE_URL: /api/v1
+      NUXT_PUBLIC_SITE_URL: ${SITE_URL:?请配置 HTTPS 站点地址}
+      NUXT_PUBLIC_USE_MOCK_REPO: 'false'
+      NUXT_PUBLIC_POST_USE_MOCK_REPO: 'false'
+    depends_on:
+      backend:
+        condition: service_healthy
+
+  edge:
+    image: ${CADDY_IMAGE:?请固定 Caddy 2 镜像}
+    restart: unless-stopped
+    logging: *logging
+    environment:
+      SITE_HOST: ${SITE_HOST:?请配置站点域名}
+      RELEASE_VERSION: ${RELEASE_VERSION}
+    ports:
+      - '${HTTPS_BIND_ADDRESS:-127.0.0.1}:${HTTPS_PORT:-443}:443'
+      - '${HTTPS_BIND_ADDRESS:-127.0.0.1}:${HTTP_PORT:-80}:80'
+    volumes:
+      - ./deploy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - certificates:/data
+      - caddy-config:/config
+    depends_on:
+      frontend:
+        condition: service_healthy
+
+volumes:
+  database:
+  media:
+  certificates:
+  caddy-config:
+  backups:

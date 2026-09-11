@@ -1,0 +1,6 @@
+# Caddy 自动 HTTPS；对外启用之前核对 DNS、端口及证书签发授权。
+{$SITE_HOST} {
+  encode zstd gzip
+  header X-TixXin-Release {$RELEASE_VERSION}
+  reverse_proxy frontend:3000
+}
