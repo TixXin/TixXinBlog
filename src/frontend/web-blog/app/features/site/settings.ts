@@ -2,7 +2,9 @@
  * @file settings.ts
  * @description 公开站点设置契约与服务不可用时的基础资料，不包含模拟运行指标。
  */
+import type { AboutSettings } from '~/features/about/types'
 export interface SiteSettingsData {
+  about?: AboutSettings
   name: string
   description: string
   ownerName: string
@@ -20,10 +22,10 @@ export interface SiteSettingsData {
 export const defaultSiteSettings: SiteSettingsData = {
   name: 'TixXin Blog',
   description: 'TixXin 的个人博客，分享技术文章、项目经验与生活随笔',
-  ownerName: 'TixXin',
-  ownerTitle: '前端开发工程师，热爱开源与技术分享',
-  avatar: '/avatar-photo.webp',
-  avatarAlt: 'TixXin 的头像',
+  ownerName: 'tixxin',
+  ownerTitle: '',
+  avatar: '/avatar.svg',
+  avatarAlt: '博主头像',
   seoTitle: '',
   seoDescription: '',
   announcement: '',
