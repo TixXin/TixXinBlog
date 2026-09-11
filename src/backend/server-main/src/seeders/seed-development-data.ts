@@ -13,6 +13,7 @@ import { createDevelopmentBackup } from './development-backup'
 import type { DevelopmentBackupOptions } from './development-backup'
 import type { FixtureProgress } from './fixture-ledger'
 import { DEFAULT_DEVELOPMENT_DATASET, DEVELOPMENT_DATASETS, DEVELOPMENT_DATASET_NAMES } from './development-datasets'
+import { withoutOwnerEvents } from '../modules/operations/owner-events'
 
 export class DevelopmentDataError extends Error {}
 export async function seedDevelopmentData(
@@ -84,7 +85,9 @@ export async function seedDevelopmentData(
         await lockTaxonomy(em)
         await lockMedia(em)
         await em.execute('select pg_advisory_xact_lock(742919)')
-        for (const item of selected) await item.seed(em, storage, progress, createdMedia)
+        await withoutOwnerEvents(async () => {
+          for (const item of selected) await item.seed(em, storage, progress, createdMedia)
+        })
         em.create(AuditEntry, {
           action: 'development.seed-data',
           resourceType: 'dataset',
