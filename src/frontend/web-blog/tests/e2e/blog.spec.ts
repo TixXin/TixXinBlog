@@ -980,8 +980,10 @@ test('站点资料保存失败保留、前台与 feed 同步、配置冲突和�
     { times: 1 },
   )
   await page.getByRole('button', { name: '保存并生效', exact: true }).click()
-  await expect(page.getByRole('alert')).toContainText(/失败|fetch/i)
+  await expect(page.getByRole('alert')).toContainText(/提交结果尚未确认/)
   await expect(page.getByRole('textbox', { name: '站点名称', exact: true })).toHaveValue('E2E 可维护站点')
+  await page.getByRole('button', { name: '核对服务器提交结果', exact: true }).click()
+  await page.getByRole('button', { name: '保留输入，按最新版本继续合并', exact: true }).click()
   await saveSite(page)
   await page.goto('/')
   await expect(page).toHaveTitle('E2E 搜索首页 - E2E 可维护站点')

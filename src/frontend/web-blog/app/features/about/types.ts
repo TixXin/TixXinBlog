@@ -46,3 +46,21 @@ export interface BookItem {
   title: string
   author: string
 }
+
+/** 用户自行确认的资料；顺序按数组维护，隐藏内容不由公开 API 返回。 */
+export interface AboutItem {
+  title: string
+  detail: string
+  period: string
+  visible: boolean
+}
+export interface AboutSection {
+  kind: 'experience' | 'skill' | 'interest' | 'reading'
+  visible: boolean
+  items: AboutItem[]
+}
+export interface AboutSettings {
+  visible: boolean
+  introduction: string
+  sections: AboutSection[]
+}

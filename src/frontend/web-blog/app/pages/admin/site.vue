@@ -13,12 +13,16 @@
     </p>
     <ClientOnly>
       <template v-if="draft">
+        <p v-if="submission" role="status">
+          此前提交结果尚未确认。
+          <button type="button" :disabled="pending || !ready" @click="checkSubmission">核对服务器提交结果</button>
+        </p>
         <p>
           服务器版本 {{ draft.revision }} · 保存于
           {{ new Date(draft.updatedAt).toLocaleString('zh-CN', { hour12: false }) }}{{ dirty ? ' · 有未保存输入' : '' }}
         </p>
         <form @submit.prevent="save">
-          <fieldset :disabled="pending">
+          <fieldset :disabled="pending || !ready">
             <legend>站点和博主资料</legend>
             <label>站点名称<input v-model="draft.name" maxlength="80" required /></label>
             <label>站点简介<textarea v-model="draft.description" maxlength="300" rows="3" /></label>
@@ -28,7 +32,7 @@
             <button type="button" @click="pickerOpen = true">从媒体库选择头像</button>
             <label>头像替代文本<input v-model="draft.avatarAlt" maxlength="300" /></label>
           </fieldset>
-          <fieldset :disabled="pending">
+          <fieldset :disabled="pending || !ready">
             <legend>社交链接（最多 8 个）</legend>
             <div v-for="(link, index) in draft.socials" :key="index" class="admin-site__social">
               <label>链接名称<input v-model="link.label" maxlength="40" required /></label>
@@ -54,7 +58,7 @@
               添加社交链接
             </button>
           </fieldset>
-          <fieldset :disabled="pending">
+          <fieldset :disabled="pending || !ready">
             <legend>公告与默认 SEO</legend>
             <label
               >站点公告<textarea
@@ -76,9 +80,10 @@
               />
             </label>
           </fieldset>
+          <AdminAboutSettingsFields v-if="draft.about" v-model="draft.about" :disabled="pending || !ready" />
           <AdminSiteSettingsPreview :value="draft" label="保存后的公开资料预览" />
           <AdminActionBar
-            ><button type="submit" :disabled="pending || !dirty">
+            ><button type="submit" :disabled="pending || !ready || !dirty || !!submission || !!conflict">
               {{ pending ? '处理中…' : '保存并生效' }}
             </button></AdminActionBar
           >
@@ -86,14 +91,18 @@
         <section v-if="conflict" aria-label="站点配置冲突">
           <AdminSiteSettingsPreview :value="conflict" label="最新服务器资料" /><button
             type="button"
-            :disabled="pending"
+            :disabled="pending || !ready || !!submission"
             @click="mergeConflict"
           >
             保留输入，按最新版本继续合并
           </button>
         </section>
         <p v-if="preserved">
-          此前未保存输入仍保留在本页。<button type="button" :disabled="pending" @click="recoverPreserved">
+          此前未保存输入仍保留在本页。<button
+            type="button"
+            :disabled="pending || !ready || !!submission"
+            @click="recoverPreserved"
+          >
             恢复此前输入
           </button>
         </p>
@@ -124,11 +133,13 @@
           <template v-if="historical"
             ><AdminSiteSettingsPreview :value="historical" :label="`历史版本 ${historical.revision} 预览`" /><button
               type="button"
-              :disabled="pending"
+              :disabled="pending || !ready || !!submission"
               @click="loadHistorical"
             >
               载入历史资料编辑</button
-            ><button type="button" :disabled="pending" @click="restoreHistorical">恢复此版本到服务器</button></template
+            ><button type="button" :disabled="pending || !ready || !!submission" @click="restoreHistorical">
+              恢复此版本到服务器
+            </button></template
           >
         </section>
         <AdminMediaPicker v-model:open="pickerOpen" @selected="selectAvatar" />
@@ -144,9 +155,12 @@ useSeoMeta({ title: '站点设置', robots: 'noindex, nofollow' })
 const siteUrl = useRuntimeConfig().public.siteUrl
 const {
   draft,
+  ready,
   conflict,
   historical,
   preserved,
+  submission,
+  checkSubmission,
   pending,
   error,
   dirty,
