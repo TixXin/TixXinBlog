@@ -19,6 +19,8 @@
     <dd>{{ value.device || '未填写' }}</dd>
     <dt>发布状态 / 排序值</dt>
     <dd>{{ statusLabels[value.status] }} / {{ value.sortOrder }}</dd>
+    <dt>原有序关联编号</dt>
+    <dd>{{ contentRelationSummary(value.relatedContent) }}</dd>
     <dt>原图片编号</dt>
     <dd>
       {{ value.mediaId || '未选择图片' }}
@@ -28,6 +30,7 @@
 </template>
 <script setup lang="ts">
 import type { GalleryEditable } from '~/features/gallery/types'
+import { contentRelationSummary } from '~/features/content-relation/editor'
 defineProps<{ value: GalleryEditable }>()
 const statusLabels = { draft: '草稿', published: '已公开', withdrawn: '已撤回' }
 </script>

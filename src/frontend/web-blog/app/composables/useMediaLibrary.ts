@@ -2,7 +2,7 @@
  * @file useMediaLibrary.ts
  * @description 媒体工作区的请求、上传队列与草稿保护；展示组件仅通过 props 接收状态和动作。
  */
-import type { MediaAsset, MediaReferences } from '~/features/media/types'
+import type { MediaAsset, MediaOrientation, MediaReferences, MediaUsage } from '~/features/media/types'
 export function useMediaLibrary(selectable = false) {
   interface UploadJob {
     id: string
@@ -22,6 +22,12 @@ export function useMediaLibrary(selectable = false) {
   const router = useRouter()
   const search = ref(!selectable && typeof route.query.search === 'string' ? route.query.search : '')
   const deleted = ref(!selectable && route.query.deleted === 'true' ? 'true' : 'false')
+  const readOrientation = (value: unknown): MediaOrientation =>
+    typeof value === 'string' && ['landscape', 'portrait', 'square'].includes(value) ? (value as MediaOrientation) : ''
+  const readUsage = (value: unknown): MediaUsage =>
+    typeof value === 'string' && ['used', 'unused'].includes(value) ? (value as MediaUsage) : ''
+  const orientation = ref<MediaOrientation>(selectable ? '' : readOrientation(route.query.orientation))
+  const usage = ref<MediaUsage>(selectable ? '' : readUsage(route.query.usage))
   const initialPage = Number(route.query.page)
   const page = ref(!selectable && Number.isSafeInteger(initialPage) && initialPage > 0 ? initialPage : 1)
   const total = ref(0)
@@ -29,6 +35,12 @@ export function useMediaLibrary(selectable = false) {
   const altDrafts = reactive<Record<string, string>>({})
   const savedAlts = reactive<Record<string, string>>({})
   const hasDirtyAlt = computed(() => Object.entries(altDrafts).some(([id, value]) => value !== savedAlts[id]))
+  const descriptionDrafts = reactive<Record<string, string>>({})
+  const savedDescriptions = reactive<Record<string, string>>({})
+  const hasDirtyDescription = computed(() =>
+    Object.entries(descriptionDrafts).some(([id, value]) => value !== savedDescriptions[id]),
+  )
+  const hasDirtyMetadata = computed(() => hasDirtyAlt.value || hasDirtyDescription.value)
   const uploadAlt = ref('')
   const jobs = ref<UploadJob[]>([])
   const pending = ref(false)
@@ -43,10 +55,10 @@ export function useMediaLibrary(selectable = false) {
   let ownershipVersion = 0
   let owner: { actor: string; context: string } | null = null
   const busy = computed(
-    () => working.value || uploading.value || hasDirtyAlt.value || jobs.value.some((job) => !!job.file),
+    () => working.value || uploading.value || hasDirtyMetadata.value || jobs.value.some((job) => !!job.file),
   )
   const ownershipMessage =
-    '登录账号或内容库已变化，原文件和替代文本已保留。恢复原账号及内容库后重新读取，或重新进入媒体工作区。'
+    '登录账号或内容库已变化，原文件、替代文本和素材说明已保留。恢复原账号及内容库后重新读取，或重新进入媒体工作区。'
   const ownsWorkspace = () =>
     !disposed && owner?.actor === auth.currentUser.value?.id && owner?.context === pageContext.value
   const ownsOperation = (version: number) => ownsWorkspace() && version === ownershipVersion
@@ -108,7 +120,14 @@ export function useMediaLibrary(selectable = false) {
     error.value = ''
     try {
       const result = await api<{ items: MediaAsset[]; total: number }>('/admin/media', {
-        query: { page: page.value, pageSize: 20, search: search.value || undefined, deleted: deleted.value },
+        query: {
+          page: page.value,
+          pageSize: 20,
+          search: search.value || undefined,
+          deleted: deleted.value,
+          orientation: orientation.value || undefined,
+          usage: usage.value || undefined,
+        },
       })
       if (version !== requestVersion || !ownsOperation(operation)) return
       items.value = result.items
@@ -118,6 +137,9 @@ export function useMediaLibrary(selectable = false) {
         if (altDrafts[asset.id] === undefined || altDrafts[asset.id] === savedAlts[asset.id])
           altDrafts[asset.id] = asset.alt
         savedAlts[asset.id] = asset.alt
+        if (descriptionDrafts[asset.id] === undefined || descriptionDrafts[asset.id] === savedDescriptions[asset.id])
+          descriptionDrafts[asset.id] = asset.description ?? ''
+        savedDescriptions[asset.id] = asset.description ?? ''
       }
       const last = Math.max(1, Math.ceil(total.value / 20))
       if (page.value > last) {
@@ -135,6 +157,8 @@ export function useMediaLibrary(selectable = false) {
     const query = {
       ...(search.value ? { search: search.value } : {}),
       ...(deleted.value === 'true' ? { deleted: 'true' } : {}),
+      ...(orientation.value ? { orientation: orientation.value } : {}),
+      ...(usage.value ? { usage: usage.value } : {}),
       ...(page.value > 1 ? { page: String(page.value) } : {}),
     }
     const target = router.resolve({ path: '/admin/media', query }).fullPath
@@ -144,8 +168,8 @@ export function useMediaLibrary(selectable = false) {
   }
   async function searchMedia() {
     if (!allowAction()) return
-    if (hasDirtyAlt.value) {
-      error.value = '请先保存或取消替代文本修改'
+    if (hasDirtyMetadata.value) {
+      error.value = '请先保存或取消替代文本和素材说明修改'
       return
     }
     page.value = 1
@@ -153,8 +177,8 @@ export function useMediaLibrary(selectable = false) {
   }
   async function changePage(value: number) {
     if (!allowAction()) return
-    if (hasDirtyAlt.value) {
-      error.value = '请先保存或取消替代文本修改'
+    if (hasDirtyMetadata.value) {
+      error.value = '请先保存或取消替代文本和素材说明修改'
       return
     }
     page.value = value
@@ -166,21 +190,24 @@ export function useMediaLibrary(selectable = false) {
       if (selectable || route.path !== '/admin/media') return
       search.value = typeof route.query.search === 'string' ? route.query.search : ''
       deleted.value = route.query.deleted === 'true' ? 'true' : 'false'
+      orientation.value = readOrientation(route.query.orientation)
+      usage.value = readUsage(route.query.usage)
       const value = Number(route.query.page)
       page.value = Number.isSafeInteger(value) && value > 0 ? value : 1
       if (ready.value) void load()
     },
   )
   onBeforeRouteUpdate(() => {
-    if (!hasDirtyAlt.value) return true
-    if (!window.confirm('替代文本尚未保存，确定放弃修改并切换筛选吗？')) return false
+    if (!hasDirtyMetadata.value) return true
+    if (!window.confirm('替代文本或素材说明尚未保存，确定放弃修改并切换筛选吗？')) return false
     for (const [id, value] of Object.entries(savedAlts)) altDrafts[id] = value
+    for (const [id, value] of Object.entries(savedDescriptions)) descriptionDrafts[id] = value
     return true
   })
   function enqueue(files: File[]) {
     if (!allowAction() || uploading.value) return
-    if (hasDirtyAlt.value) {
-      error.value = '请先保存或取消替代文本修改'
+    if (hasDirtyMetadata.value) {
+      error.value = '请先保存或取消替代文本和素材说明修改'
       return
     }
     if (files.length > 10) {
@@ -248,25 +275,35 @@ export function useMediaLibrary(selectable = false) {
       void runQueue()
     }
   }
-  async function saveAlt(asset: MediaAsset) {
+  async function saveField(asset: MediaAsset, field: 'alt' | 'description') {
     if (working.value || !allowAction(asset)) return
     const operation = ownershipVersion
+    const drafts = field === 'alt' ? altDrafts : descriptionDrafts
+    const saved = field === 'alt' ? savedAlts : savedDescriptions
+    const submitted = drafts[asset.id] ?? ''
+    const label = field === 'alt' ? '替代文本' : '素材说明'
     working.value = true
+    error.value = ''
     try {
       const result = await api<MediaAsset>(`/admin/media/${asset.id}`, {
         method: 'PATCH',
-        body: { alt: altDrafts[asset.id] },
+        body: { [field]: submitted },
       })
       if (!ownsOperation(operation)) return
-      asset.alt = result.alt
-      savedAlts[asset.id] = result.alt
-      success('替代文本已保存')
+      const value = result[field] ?? ''
+      const current = items.value.find((item) => item.id === asset.id)
+      if (current) current[field] = value
+      saved[asset.id] = value
+      if (drafts[asset.id] === submitted) drafts[asset.id] = value
+      success(`${label}已保存`)
     } catch {
-      if (ownsOperation(operation)) error.value = '替代文本保存失败，输入已保留'
+      if (ownsOperation(operation)) error.value = `${label}保存失败，输入已保留`
     } finally {
       working.value = false
     }
   }
+  const saveAlt = (asset: MediaAsset) => saveField(asset, 'alt')
+  const saveDescription = (asset: MediaAsset) => saveField(asset, 'description')
   async function showReferences(id: string, currentPage = 1) {
     if (working.value || !allowAction() || !items.value.some((asset) => asset.id === id)) return
     const operation = ownershipVersion
@@ -325,9 +362,18 @@ export function useMediaLibrary(selectable = false) {
   onBeforeRouteLeave(
     () =>
       !busy.value ||
-      window.confirm('仍有上传或未保存的替代文本，离开会停止等待并放弃未保存输入；已上传资源保留。确定离开吗？'),
+      window.confirm(
+        '仍有上传或未保存的替代文本、素材说明，离开会停止等待并放弃未保存输入；已上传资源保留。确定离开吗？',
+      ),
   )
+  function beforeUnload(event: BeforeUnloadEvent) {
+    if (busy.value) {
+      event.preventDefault()
+      event.returnValue = ''
+    }
+  }
   onMounted(async () => {
+    window.addEventListener('beforeunload', beforeUnload)
     const actor = auth.currentUser.value?.id
     const context = pageContext.value
     const restored = await auth.restore()
@@ -341,6 +387,7 @@ export function useMediaLibrary(selectable = false) {
     else error.value = '请先登录博主账号，媒体库仅对管理员开放'
   })
   onBeforeUnmount(() => {
+    window.removeEventListener('beforeunload', beforeUnload)
     disposed = true
     requestVersion += 1
     ownershipVersion += 1
@@ -349,12 +396,18 @@ export function useMediaLibrary(selectable = false) {
   return {
     search,
     deleted,
+    orientation,
+    usage,
     page,
     total,
     items,
     altDrafts,
     savedAlts,
     hasDirtyAlt,
+    descriptionDrafts,
+    savedDescriptions,
+    hasDirtyDescription,
+    hasDirtyMetadata,
     uploadAlt,
     jobs,
     pending,
@@ -373,6 +426,7 @@ export function useMediaLibrary(selectable = false) {
     dropFiles,
     retry,
     saveAlt,
+    saveDescription,
     showReferences,
     remove,
     restore,

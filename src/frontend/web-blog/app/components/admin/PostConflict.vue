@@ -11,6 +11,7 @@
         <h3>{{ item.label }} · 版本 {{ item.draft.revision ?? '未知' }}</h3>
         <p>标题：{{ item.draft.title }}</p>
         <p>摘要：{{ item.draft.summary }}</p>
+        <p>有序关联：{{ contentRelationSummary(item.draft.relatedContent) }}</p>
         <p>专栏：{{ item.draft.folder }} · 标签：{{ item.draft.tags.join('、') }}</p>
         <p>封面：{{ item.draft.cover || '无' }}</p>
         <p>地址：{{ item.draft.slug || '数字编号' }} · 封面描述：{{ item.draft.coverAlt || '未设置' }}</p>
@@ -47,6 +48,7 @@
 <script setup lang="ts">
 import type { AdminPostDraft } from '~/features/post/adminTypes'
 import { postDifference } from '~/utils/postDifference'
+import { contentRelationSummary } from '~/features/content-relation/editor'
 const props = withDefaults(
   defineProps<{
     local: AdminPostDraft

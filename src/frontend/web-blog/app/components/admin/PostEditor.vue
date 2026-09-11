@@ -1,6 +1,6 @@
 <!--
   @file PostEditor.vue
-  @description 文章编辑表单与实时预览，保存和发布由页面数据源处理
+  @description 文章编辑、章节定位与实时预览，保存和发布由页面数据源处理
 -->
 <template>
   <form ref="editorForm" class="post-editor" @submit.prevent="requestSave(draft.status)">
@@ -40,6 +40,17 @@
     >
       从正文生成摘要
     </button>
+    <AdminContentRelations
+      v-bind="relations.props.value"
+      @choose="relations.choose"
+      @remove="relations.remove"
+      @move="relations.move"
+      @search="relations.search"
+      @page="relations.setPage"
+      @type="relations.setType"
+      @query="relations.setQuery"
+      @resolve="relations.resolve"
+    />
     <div class="post-editor__fields">
       <label
         >专栏<input v-model="draft.folder" :list="folderListId" maxlength="64" required :disabled="pending"
@@ -129,6 +140,7 @@
     </section>
     <label class="post-editor__check"><input v-model="draft.pinned" type="checkbox" :disabled="pending" />置顶</label>
     <button type="button" :disabled="pending" @click="openMedia('body')">向正文插入媒体图片</button>
+    <PostOutline :headings="headings" :disabled="pending || composing" @navigate="navigateHeading" />
     <div class="post-editor__body">
       <label
         >Markdown 正文<textarea
@@ -137,6 +149,8 @@
           rows="24"
           maxlength="200000"
           :disabled="pending"
+          @compositionstart="composing = true"
+          @compositionend="composing = false"
         />
       </label>
       <section class="post-editor__preview" aria-label="文章预览">
@@ -162,6 +176,8 @@
       <dd>{{ draft.folder }} · {{ selectedTags.join('、') || '无标签' }}</dd>
       <dt>搜索收录</dt>
       <dd>{{ draft.seoNoindex ? '不收录，但仍公开可访问' : '允许收录，并进入站点地图' }}</dd>
+      <dt>有序关联</dt>
+      <dd>{{ contentRelationSummary(draft.relatedContent) }}</dd>
       <dt>摘要</dt>
       <dd>{{ draft.seoDescription || draft.summary || suggestedSummary(draft.contentRaw) }}</dd>
     </dl>
@@ -175,8 +191,13 @@
 </template>
 <script setup lang="ts">
 import type { AdminPostDraft } from '~/features/post/adminTypes'
+import { contentRelationSummary } from '~/features/content-relation/editor'
 import { suggestedReadTime, suggestedSummary } from '~/utils/postPublishing'
 import type { MediaAsset } from '~/features/media/types'
+import PostOutline from './PostOutline.vue'
+import { postHeadings } from '~/features/post/outline'
+import type { PostHeading } from '~/features/post/outline'
+import { focusTextareaHeading } from '~/utils/textareaHeadingPosition'
 const draft = defineModel<AdminPostDraft>({ required: true })
 const tags = defineModel<string>('tags', { required: true })
 const props = withDefaults(
@@ -186,6 +207,14 @@ const props = withDefaults(
   },
 )
 const folderListId = useId()
+const relations = useContentRelationPicker(
+  computed(() => draft.value.relatedContent ?? []),
+  computed(() => (draft.value.id ? { type: 'post' as const, id: draft.value.id } : undefined)),
+  computed(() => !props.pending),
+  (value) => {
+    draft.value.relatedContent = value
+  },
+)
 const selectedTags = computed(() =>
   tags.value
     .split(/[,，]/)
@@ -198,6 +227,13 @@ function addTag(tag: string) {
 const emit = defineEmits<{ save: [status: AdminPostDraft['status']]; reviewing: [value: boolean] }>()
 const editorForm = ref<HTMLFormElement | null>(null)
 const bodyInput = ref<HTMLTextAreaElement | null>(null)
+const composing = ref(false)
+// textarea 的原生值将 CRLF 规范为 LF；只为定位计算转换，不回写存储的正文。
+const headings = computed(() => postHeadings(draft.value.contentRaw.replace(/\r\n?/g, '\n')))
+function navigateHeading(heading: PostHeading) {
+  if (props.pending || composing.value || !bodyInput.value) return
+  focusTextareaHeading(bodyInput.value, heading.offset)
+}
 const mediaOpen = ref(false)
 const mediaTarget = ref<'cover' | 'body'>('cover')
 watch(mediaOpen, (value) => emit('reviewing', value))
@@ -374,6 +410,8 @@ function confirmPublish() {
 .post-editor__body {
   display: grid;
   grid-template-columns: 1fr 1fr;
+  // 长文预览不能把正文输入框拉伸为整篇文章高度，否则章节选区没有独立滚动空间。
+  align-items: start;
   gap: 1.5rem;
 }
 .post-editor__body > * {

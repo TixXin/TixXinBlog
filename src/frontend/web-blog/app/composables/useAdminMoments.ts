@@ -30,6 +30,12 @@ export function useAdminMoments() {
     commentPage = ref(1),
     commentsPending = ref(false),
     commentsError = ref('')
+  const commentTargetId = ref(''),
+    commentsLinkError = ref(''),
+    commentsLinkPending = ref(false),
+    commentsFocusVersion = ref(0)
+  const contentContext = useState<string>('page-content-context', () => '')
+  let commentsLinkVersion = 0
   const replyDraft = ref(''),
     replyRequest = ref(''),
     replyBody = ref('')
@@ -132,13 +138,24 @@ export function useAdminMoments() {
       replyBody.value = ''
     }
     const current = ++commentsVersion
+    const requestedPath = route.fullPath,
+      requestedContext = contentContext.value
     commentNote.value = note
+    commentTargetId.value = ''
+    commentsLinkError.value = ''
     commentsPending.value = true
     commentsError.value = ''
     const actor = auth.currentUser.value?.id
     try {
       const data = await repo.adminComments(note.id, targetPage)
-      if (!alive || current !== commentsVersion || auth.currentUser.value?.id !== actor) return
+      if (
+        !alive ||
+        current !== commentsVersion ||
+        auth.currentUser.value?.id !== actor ||
+        route.fullPath !== requestedPath ||
+        contentContext.value !== requestedContext
+      )
+        return
       const last = Math.max(1, Math.ceil(data.total / 15))
       if (targetPage > last) {
         await openComments(note, last)
@@ -148,7 +165,13 @@ export function useAdminMoments() {
       commentTotal.value = data.total
       commentPage.value = data.page
     } catch (cause) {
-      if (alive && current === commentsVersion)
+      if (
+        alive &&
+        current === commentsVersion &&
+        route.fullPath === requestedPath &&
+        contentContext.value === requestedContext &&
+        auth.currentUser.value?.id === actor
+      )
         commentsError.value = cause instanceof Error ? cause.message : '评论读取失败，请重试'
     } finally {
       if (alive && current === commentsVersion) commentsPending.value = false
@@ -162,6 +185,49 @@ export function useAdminMoments() {
     replyDraft.value = ''
     commentsPending.value = false
     return true
+  }
+  async function openLinkedComments() {
+    if (!alive || route.path !== '/admin/moments') return
+    const sourceId = read('comments'),
+      targetId = read('commentId')
+    const current = ++commentsLinkVersion,
+      actor = auth.currentUser.value?.id,
+      context = contentContext.value,
+      path = route.fullPath
+    const owns = () =>
+      alive &&
+      current === commentsLinkVersion &&
+      actor === auth.currentUser.value?.id &&
+      context === contentContext.value &&
+      path === route.fullPath
+    commentsLinkError.value = ''
+    commentTargetId.value = ''
+    if (!sourceId) {
+      commentsLinkPending.value = false
+      return
+    }
+    commentsLinkPending.value = true
+    try {
+      const note = await repo.adminDetail(sourceId)
+      if (!owns()) return
+      const location = targetId ? await repo.adminCommentLocation(sourceId, targetId) : { page: 1 }
+      if (!owns()) return
+      await openComments(note, location.page)
+      if (!owns()) return
+      if (commentNote.value?.id !== sourceId) {
+        commentsLinkError.value = '当前回复已保留，请先处理未发送的回复，再重新定位。'
+        return
+      }
+      commentTargetId.value = targetId
+      if (targetId && !commentsError.value && !commentItems.value.some((item) => item.id === targetId))
+        commentsLinkError.value = '目标评论的位置已变化或评论已删除，请重新定位。'
+      commentsFocusVersion.value++
+    } catch (cause) {
+      if (owns())
+        commentsLinkError.value = cause instanceof Error ? cause.message : '评论不存在或读取失败，请重新定位。'
+    } finally {
+      if (alive && current === commentsLinkVersion) commentsLinkPending.value = false
+    }
   }
   function invalidateComments(id: string, count: number) {
     invalidateMomentComments(app, id)
@@ -222,21 +288,25 @@ export function useAdminMoments() {
       event.returnValue = ''
     }
   }
-  onMounted(() => {
+  onMounted(async () => {
     window.addEventListener('beforeunload', protectReply)
     const edit = read('edit')
     if (edit) void router.replace('/admin/moments/' + encodeURIComponent(edit))
-    else void load()
+    else {
+      await load()
+      await openLinkedComments()
+    }
   })
   watch(
     () => route.fullPath,
-    () => {
+    async () => {
       if (route.path !== '/admin/moments') return
       search.value = read('q')
       status.value = read('status') || 'all'
       topic.value = read('topic')
       date.value = read('date')
-      void load()
+      await load()
+      await openLinkedComments()
     },
   )
   watch(auth.isLoggedIn, (loggedIn) => {
@@ -257,6 +327,9 @@ export function useAdminMoments() {
         replyRequest.value = ''
         version++
         commentsVersion++
+        commentsLinkVersion++
+        commentsLinkPending.value = false
+        commentTargetId.value = ''
         commentsPending.value = false
         void load()
       }
@@ -269,6 +342,7 @@ export function useAdminMoments() {
     alive = false
     version++
     commentsVersion++
+    commentsLinkVersion++
   })
   return {
     restoringPending: auth.restoringPending,
@@ -294,6 +368,11 @@ export function useAdminMoments() {
     commentPage,
     commentsPending,
     commentsError,
+    commentTargetId,
+    commentsLinkError,
+    commentsLinkPending,
+    commentsFocusVersion,
+    openLinkedComments,
     openComments,
     closeComments,
     moderate,

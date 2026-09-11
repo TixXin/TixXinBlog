@@ -19,6 +19,7 @@ export interface ContentImportView {
   gallerySettingsPreview?: { gear: GearItem[] } | null
   linkSettingsPreview?: { rules: string[] } | null
   plan: {
+    omittedRelations?: number
     ready: boolean
     errors: string[]
     posts: { sourceId: number; title: string; skip: boolean; slug: string; reason: string }[]
@@ -44,6 +45,7 @@ export interface ContentImportView {
     }
   }
   result?: {
+    relations?: { applied: number; omitted: number }
     posts: { sourceId: number; id: number }[]
     flashes: { sourceId: string; id: string }[]
     moments?: { sourceId: string; id: string }[]
