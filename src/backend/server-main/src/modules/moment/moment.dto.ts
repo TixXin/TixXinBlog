@@ -33,6 +33,10 @@ export class QueryAdminMomentCommentsDto extends MomentPageQuery {
   @IsOptional() @IsIn(['all', ...MOMENT_COMMENT_STATUSES]) status?: 'all' | MomentCommentStatus
 }
 export class QueryMomentsDto extends MomentPageQuery {
+  @Transform(({ value }) => (value === 'false' ? false : value === 'true' ? true : value))
+  @IsBoolean()
+  pinnedFirst: boolean = true
+
   @IsOptional() @IsString() @MaxLength(200) @Transform(trim) q?: string
   @IsOptional() @IsString() @MinLength(1) @MaxLength(40) @Transform(trim) topic?: string
   @IsOptional() @Matches(/^\d{4}-\d{2}-\d{2}$/) @IsDateString({ strict: true }) date?: string
