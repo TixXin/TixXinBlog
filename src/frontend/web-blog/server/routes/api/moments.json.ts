@@ -1,40 +1,39 @@
 /**
  * @file moments.json.ts
- * @description 闪念公开 JSON API，便于第三方聚合 / 静态站抓取
- * @author TixXin
- * @since 2026-04-17
+ * @description 朋友圈公开 JSON 订阅，使用真实最新动态和站点设置，不输出访客身份或评论
  */
+import { publicMoments, publicSiteSettings, publicSiteUrl, publicFeedUrl } from '../../utils/publicContent'
 
-import { mockMoments } from '~/features/moment/mock'
-
-const SITE_URL = 'https://tix.xin'
-
-export default defineEventHandler((event) => {
-  const moments = mockMoments
-    .slice()
-    .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
-    .map((m) => ({
-      id: m.id,
-      url: `${SITE_URL}/moments/${m.id}`,
-      content: m.content,
-      date: m.date,
-      likes: m.likes,
-      topics: m.topics ?? [],
-      images: m.images ?? [],
-      location: m.location,
-      isPinned: !!m.isPinned,
-      mood: m.mood,
-      linkedArticle: m.linkedArticle ? { title: m.linkedArticle.title, url: m.linkedArticle.url } : null,
-      linkedLink: m.linkedLink ? { title: m.linkedLink.title, url: m.linkedLink.url } : null,
-    }))
-
-  // 跨域只读公开数据，开放 GET CORS
-  setResponseHeader(event, 'content-type', 'application/json; charset=utf-8')
+export default defineEventHandler(async (event) => {
+  setResponseHeader(event, 'cache-control', 'no-store')
   setResponseHeader(event, 'access-control-allow-origin', '*')
-  setResponseHeader(event, 'cache-control', 'public, max-age=300')
-
+  setResponseHeader(event, 'access-control-allow-methods', 'GET, HEAD')
+  assertMethod(event, ['GET', 'HEAD'])
+  const site = publicSiteUrl(event)
+  const [items, settings] = await Promise.all([publicMoments(event), publicSiteSettings(event)])
+  const moments = items.map((moment) => ({
+    id: moment.id,
+    url: `${site}/moments/${encodeURIComponent(moment.id)}`,
+    content: moment.content,
+    date: moment.date,
+    likes: moment.likes,
+    topics: moment.topics ?? [],
+    images: (moment.images ?? []).map((image) => publicFeedUrl(image, site)).filter((image) => image !== undefined),
+    location: moment.location,
+    isPinned: !!moment.isPinned,
+    mood: moment.mood,
+    linkedArticle:
+      moment.linkedArticle && publicFeedUrl(moment.linkedArticle.url, site)
+        ? { title: moment.linkedArticle.title, url: publicFeedUrl(moment.linkedArticle.url, site) }
+        : null,
+    linkedLink:
+      moment.linkedLink && publicFeedUrl(moment.linkedLink.url, site)
+        ? { title: moment.linkedLink.title, url: publicFeedUrl(moment.linkedLink.url, site) }
+        : null,
+  }))
+  setResponseHeader(event, 'content-type', 'application/json; charset=utf-8')
   return {
-    site: { name: 'TixXin Blog', url: SITE_URL },
+    site: { name: settings.name, url: site },
     generatedAt: new Date().toISOString(),
     count: moments.length,
     moments,

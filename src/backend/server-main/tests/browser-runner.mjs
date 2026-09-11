@@ -67,6 +67,8 @@ try {
       PORT: String(port),
       NUXT_API_BASE_URL: `${fixture.origin}/api/v1`,
       NUXT_PUBLIC_API_BASE_URL: '/api/v1',
+      // 每次独立预览覆盖构建默认域名，验证部署时 canonical、RSS 和 sitemap 同源。
+      NUXT_PUBLIC_SITE_URL: origin,
       NUXT_PUBLIC_USE_MOCK_REPO: 'false',
       NUXT_PUBLIC_POST_USE_MOCK_REPO: 'false',
     },
