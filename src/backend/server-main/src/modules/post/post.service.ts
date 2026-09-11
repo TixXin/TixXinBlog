@@ -14,6 +14,7 @@ import { PostLike } from '../../entities/post-like.entity'
 import { PostView } from '../../entities/post-view.entity'
 import { PostAddress } from '../../entities/post-address.entity'
 import { QueryPostDto } from './dto/query-post.dto'
+import { resolveContentRelations } from '../content-relations/content-relations'
 
 /** 文章不存在（api.md 附录 A：1001 / 404） */
 const POST_NOT_FOUND = 1001
@@ -38,6 +39,7 @@ export interface PostItemDto {
 
 /** 详情，字段对齐前端 ArticleDetail（含 toc 扩展） */
 export interface ArticleDetailDto {
+  relatedContent?: Awaited<ReturnType<typeof resolveContentRelations>>
   slug?: string
   summary?: string
   coverAlt?: string
@@ -94,8 +96,8 @@ export class PostService {
     if (query.folder) where.folder = query.folder
     if (query.tag) where.tags = { slug: query.tag }
     if (query.search) {
-      // 兜底实现：ILIKE 模糊匹配；Meilisearch 接入后（search 模块）替换
-      const kw = `%${query.search}%`
+      // 与其他公开内容域保持字面检索，保留正文和标签搜索。
+      const kw = '%' + query.search.replace(/[\\%_]/g, (char) => '\\' + char) + '%'
       where.$or = [
         { title: { $ilike: kw } },
         { summary: { $ilike: kw } },
@@ -148,6 +150,7 @@ export class PostService {
     const content = post.contentSections ?? []
     return {
       id: String(post.id),
+      relatedContent: await resolveContentRelations(this.em, post.relatedContent),
       slug: post.slug,
       summary: post.summary,
       coverAlt: post.coverAlt,

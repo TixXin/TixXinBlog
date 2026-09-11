@@ -14,6 +14,7 @@ import {
 } from '@nestjs/common'
 import { createHash, randomUUID } from 'node:crypto'
 import { ContentImport } from '../../entities/content-import.entity'
+import { importContentRelations } from './content-import-relations'
 import type { ContentImportResult } from '../../entities/content-import.entity'
 import { Post } from '../../entities/post.entity'
 import { Comment } from '../../entities/comment.entity'
@@ -275,6 +276,7 @@ export class ContentImportService {
                 height: source.height,
                 sha256: source.sha256,
                 alt: source.alt,
+                description: source.description ?? '',
                 createdAt: new Date(source.createdAt),
                 deletedAt: source.deleted ? new Date() : undefined,
               })
@@ -297,7 +299,7 @@ export class ContentImportService {
             if (plan.skip) continue
             const saved = await this.posts.save(
               null,
-              { ...(await normalizedPost(em, source.values)), slug: plan.slug, status: 'draft' },
+              { ...(await normalizedPost(em, source.values)), relatedContent: [], slug: plan.slug, status: 'draft' },
               '从内容包迁入草稿',
             )
             const post = await em.findOneOrFail(Post, { id: saved.id })
@@ -367,6 +369,7 @@ export class ContentImportService {
           await importGuestbook(em, payload, current, result)
           await importGallery(em, payload, current, result)
           await importProjects(em, payload, current, result)
+          await importContentRelations(em, payload, current, result)
           await importLinks(em, payload, current, result)
           if (job.includeSettings) {
             await this.sites.save({ ...payload.site, revision: current.siteRevision }, '从内容包迁入站点资料')

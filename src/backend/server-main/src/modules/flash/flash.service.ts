@@ -75,7 +75,7 @@ export class FlashService {
 
     const [notes, total] = await this.em.findAndCount(FlashNote, where, {
       populate: ['comments'],
-      orderBy: [{ isPinned: 'desc' }, { createdAt: 'desc' }],
+      orderBy: [{ isPinned: 'desc' }, { createdAt: 'desc' }, { id: 'desc' }],
       limit: query.pageSize,
       offset: (query.page - 1) * query.pageSize,
     })
@@ -98,9 +98,9 @@ export class FlashService {
     return (await this.serialize([note], visitor))[0]!
   }
 
-  /** 全文搜索:content 与 tags 的 ILIKE 兜底,Meilisearch 接入后替换 */
+  /** 正文和标签字面搜索；相同创建时间按编号稳定分页。 */
   async search(query: SearchFlashDto, visitor = ''): Promise<FlashListResult> {
-    const kw = `%${query.q}%`
+    const kw = '%' + query.q.replace(/[\\%_]/g, (char) => '\\' + char) + '%'
     if (query.userId && query.userId !== SITE_OWNER_ID) throw new BadRequestException('此接口只提供本站公开闪念')
     const where: FilterQuery<FlashNote> = {
       userId: SITE_OWNER_ID,
@@ -110,7 +110,7 @@ export class FlashService {
     }
     const [notes, total] = await this.em.findAndCount(FlashNote, where, {
       populate: ['comments'],
-      orderBy: { createdAt: 'desc' },
+      orderBy: { createdAt: 'desc', id: 'desc' },
       limit: query.pageSize,
       offset: (query.page - 1) * query.pageSize,
     })

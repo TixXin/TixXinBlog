@@ -43,7 +43,7 @@ export class QueryPostDto {
   folder?: string
 
   @IsString()
-  @MaxLength(128)
+  @MaxLength(200)
   @IsOptional()
   search?: string
 

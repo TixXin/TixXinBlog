@@ -211,7 +211,13 @@ try {
   assert.equal((await ok('/moments/overview', 'GET', undefined, false)).stats.totalComments, 3)
   const references = await ok(`/admin/media/${image.id}/references`)
   assert.equal(references.total, 2)
-  assert(references.items.every((item) => item.url.startsWith('/admin/moments?edit=')))
+  assert(
+    references.items.every((item) =>
+      item.kind === 'moment-comment'
+        ? item.url === `/admin/moments?comments=${first.id}&commentId=${comments[0].id}`
+        : item.url === `/admin/moments/${first.id}`,
+    ),
+  )
   assert.equal((await request(`/admin/media/${image.id}`, 'DELETE')).status, 409)
   const hiddenPost = await ok(`/admin/posts/${post.id}`)
   await ok(`/admin/posts/${post.id}`, 'PATCH', {
@@ -259,6 +265,34 @@ try {
   const orm = await MikroORM.init({ ...mikroOrmOptions, clientUrl: process.env.DATABASE_URL, debug: false })
   try {
     assert.equal((await orm.getSchemaGenerator().getUpdateSchemaSQL({ wrap: false })).trim(), '')
+    const { Moment } = require('../dist/entities/moment.entity.js')
+    const { MomentComment } = require('../dist/entities/moment-comment.entity.js')
+    const em = orm.em.fork()
+    const ids = Array.from({ length: 32 }, () => randomUUID()).sort()
+    for (const [index, id] of ids.entries())
+      em.create(MomentComment, {
+        id,
+        moment: em.getReference(Moment, second.id),
+        visitorIdHash: 'location-fixture',
+        author: '读者',
+        avatar: '/avatar.svg',
+        content: `继续讨论第 ${index + 1} 个问题`,
+        status: index % 2 ? 'hidden' : 'published',
+        createdAt: new Date('2026-09-11T00:00:00Z'),
+      })
+    await em.flush()
+    const target = ids.at(-1)
+    const locationPath = `/admin/moments/${second.id}/comments/${target}/location`
+    assert.equal((await request(locationPath, 'GET', undefined, false)).status, 401)
+    assert.deepEqual(await ok(locationPath), { commentId: target, page: 3, pageSize: 15 })
+    assert(
+      (await ok(`/admin/moments/${second.id}/comments?page=3&pageSize=15`)).items.some((item) => item.id === target),
+    )
+    assert.equal((await request(`/admin/moments/${draft.id}/comments/${target}/location`)).status, 404)
+    await em.nativeUpdate(MomentComment, { id: { $in: ids.slice(0, 16) } }, { deletedAt: new Date() })
+    assert.equal((await ok(locationPath)).page, 2, '已删除评论不计入定位，隐藏评论仍计入管理页')
+    await em.nativeUpdate(MomentComment, { id: target }, { deletedAt: new Date() })
+    assert.equal((await request(locationPath)).status, 404)
   } finally {
     await orm.close(true)
   }

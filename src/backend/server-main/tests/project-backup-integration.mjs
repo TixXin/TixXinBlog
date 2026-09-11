@@ -1,5 +1,6 @@
 /** @file project-backup-integration.mjs @description 项目内容包版本、独立进展、可选封面、去重复制、事务回滚与未知提交结果的隔离验收 */
 import assert from 'node:assert/strict'
+import { stripV9Fields } from './legacy-content-package.mjs'
 import { randomUUID } from 'node:crypto'
 import { existsSync } from 'node:fs'
 import { join } from 'node:path'
@@ -97,7 +98,7 @@ try {
   const exported = await request('/admin/backup/export', 'POST', { mediaIncluded: true })
   assert.equal(exported.status, 201)
   const bundle = exported.data
-  assert.equal(bundle.version, 8)
+  assert.equal(bundle.version, 9)
   assert.equal(bundle.projects.length, 4)
   assert(!JSON.stringify(bundle.projects).includes('requestId'))
   assert(!JSON.stringify(bundle.projects).includes('revision'))
@@ -138,6 +139,7 @@ try {
   for (const version of [1, 2, 3, 4, 5]) {
     const legacy = structuredClone(bundle)
     legacy.version = version
+    stripV9Fields(legacy)
     delete legacy.site.about
     for (const photo of legacy.gallery ?? []) delete photo.values.externalUrl
     if (version < 5) delete legacy.projects

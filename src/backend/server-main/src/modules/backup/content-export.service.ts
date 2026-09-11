@@ -132,7 +132,8 @@ export class ContentExportService {
       void announcementUpdatedAt
       const result: ContentPackage = {
         format: 'tixxin-content',
-        version: 8,
+        version: 9,
+        omittedRelations: 0,
         exportedAt: new Date().toISOString(),
         mediaIncluded,
         posts: posts.map((post) => {
@@ -210,6 +211,7 @@ export class ContentExportService {
           deleted: !!photo.deletedAt,
           values: {
             mediaId: photo.media?.id ?? null,
+            relatedContent: photo.relatedContent ?? [],
             externalUrl: photo.externalUrl ?? null,
             title: photo.title,
             description: photo.description,
@@ -229,6 +231,7 @@ export class ContentExportService {
           deleted: !!project.deletedAt,
           values: {
             title: project.title,
+            relatedContent: project.relatedContent ?? [],
             description: project.description,
             coverMediaId: project.coverMedia?.id ?? null,
             tags: project.tags,
@@ -263,6 +266,7 @@ export class ContentExportService {
           id: asset.id,
           name: asset.originalName,
           alt: asset.alt,
+          description: asset.description,
           sha256: asset.sha256,
           byteSize: asset.byteSize,
           width: asset.width,
@@ -270,6 +274,17 @@ export class ContentExportService {
           createdAt: asset.createdAt.toISOString(),
           deleted: !!asset.deletedAt,
         })),
+      }
+      // 迁入只保留可映射的内容关系；已删除/缺失目标不猜测编号，完整备份仍保留原关系。
+      const targets = new Set([
+        ...result.posts.filter((row) => !row.deleted).map((row) => `post:${row.sourceId}`),
+        ...result.projects.filter((row) => !row.deleted).map((row) => `project:${row.sourceId}`),
+        ...result.gallery.filter((row) => !row.deleted).map((row) => `gallery:${row.sourceId}`),
+      ])
+      for (const row of [...result.posts, ...result.projects, ...result.gallery]) {
+        const original = row.values.relatedContent ?? []
+        row.values.relatedContent = original.filter((relation) => targets.has(`${relation.type}:${relation.id}`))
+        result.omittedRelations += original.length - row.values.relatedContent.length
       }
       let size = Buffer.byteLength(JSON.stringify(result))
       if (size > MAX_PACKAGE_BYTES) throw new PayloadTooLargeException('内容包超过 50MB，请使用完整维护备份')

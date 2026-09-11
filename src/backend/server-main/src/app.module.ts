@@ -32,6 +32,7 @@ import { AuditModule } from './modules/audit/audit.module'
 import { AuditGateGuard } from './modules/audit/audit-gate.guard'
 import { AuditInterceptor } from './modules/audit/audit.interceptor'
 import { BackupModule } from './modules/backup/backup.module'
+import { ContentRelationsModule } from './modules/content-relations/content-relations.module'
 
 @Module({
   imports: [
@@ -69,6 +70,7 @@ import { BackupModule } from './modules/backup/backup.module'
     OperationsModule,
     AuditModule,
     BackupModule,
+    ContentRelationsModule,
   ],
   providers: [
     { provide: APP_GUARD, useClass: RateLimitGuard },

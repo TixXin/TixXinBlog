@@ -3,6 +3,8 @@
  * @description 媒体上传、检索、引用保护及回收；同一上传标识重试不重复创建资源。
  */
 import { EntityManager } from '@mikro-orm/postgresql'
+import { raw } from '@mikro-orm/core'
+import type { FilterQuery } from '@mikro-orm/core'
 import {
   ConflictException,
   HttpException,
@@ -31,6 +33,7 @@ export class MediaService {
       name: asset.originalName,
       url: mediaUrl(asset.id),
       alt: asset.alt,
+      description: asset.description,
       width: asset.width,
       height: asset.height,
       byteSize: asset.byteSize,
@@ -90,21 +93,40 @@ export class MediaService {
       throw new ServiceUnavailableException('媒体保存失败，请稍后重试')
     }
   }
-  async list(query: { page: number; pageSize: number; search?: string; deleted: boolean }) {
+  async list(query: {
+    page: number
+    pageSize: number
+    search?: string
+    deleted: boolean
+    orientation?: 'landscape' | 'portrait' | 'square'
+    usage?: 'used' | 'unused'
+  }) {
+    const conditions: FilterQuery<MediaAsset>[] = [{ deletedAt: query.deleted ? { $ne: null } : null }]
+    if (query.search) {
+      const pattern = `%${query.search.replace(/[\\%_]/g, '\\$&')}%`
+      conditions.push({
+        $or: [
+          { originalName: { $ilike: pattern } },
+          { alt: { $ilike: pattern } },
+          { description: { $ilike: pattern } },
+          ...(isUUID(query.search) ? [{ id: query.search }] : []),
+        ],
+      })
+    }
+    if (query.orientation) {
+      const operator = { landscape: '>', portrait: '<', square: '=' }[query.orientation]
+      conditions.push({ [raw((alias) => `(${alias}.width ${operator} ${alias}.height)`)]: true })
+    }
+    if (query.usage) {
+      // 历史版本、草稿和所有业务引用共同决定是否使用，不能只统计当前公开内容。
+      conditions.push({
+        [raw((alias) => `(exists (select 1 from media_reference r where r.asset_id = ${alias}.id))`)]:
+          query.usage === 'used',
+      })
+    }
     const [items, total] = await this.em.findAndCount(
       MediaAsset,
-      {
-        deletedAt: query.deleted ? { $ne: null } : null,
-        ...(query.search
-          ? {
-              $or: [
-                { originalName: { $ilike: `%${query.search}%` } },
-                { alt: { $ilike: `%${query.search}%` } },
-                ...(isUUID(query.search) ? [{ id: query.search }] : []),
-              ],
-            }
-          : {}),
-      },
+      { $and: conditions },
       { orderBy: { createdAt: 'desc', id: 'desc' }, limit: query.pageSize, offset: (query.page - 1) * query.pageSize },
     )
     return { items: items.map((item) => this.dto(item)), total, page: query.page, pageSize: query.pageSize }
@@ -137,28 +159,36 @@ export class MediaService {
           item.project?.title ??
           item.friendLink?.name ??
           '站点头像',
-        url: item.post
-          ? `/admin/posts/${item.post.id}`
-          : item.flashNote
-            ? '/admin/flashes'
-            : item.moment
-              ? `/admin/moments?edit=${encodeURIComponent(item.moment.id)}`
-              : item.guestbookMessage
-                ? `/admin/guestbook?focus=${item.guestbookMessage.id}`
-                : item.galleryPhoto
-                  ? `/admin/gallery/${item.galleryPhoto.id}`
-                  : item.project
-                    ? `/admin/projects/${item.project.id}`
-                    : item.friendLink
-                      ? `/admin/links/${item.friendLink.id}`
-                      : '/admin/site',
+        url:
+          item.momentComment && item.moment
+            ? `/admin/moments?comments=${encodeURIComponent(item.moment.id)}&commentId=${encodeURIComponent(item.momentComment.id)}`
+            : item.flashComment && item.flashNote
+              ? `/admin/flashes?comments=${encodeURIComponent(item.flashNote.id)}&commentId=${encodeURIComponent(item.flashComment.id)}`
+              : item.comment
+                ? `/admin/comments?commentId=${item.comment.id}`
+                : item.post
+                  ? `/admin/posts/${item.post.id}`
+                  : item.flashNote
+                    ? `/admin/flashes?edit=${encodeURIComponent(item.flashNote.id)}`
+                    : item.moment
+                      ? `/admin/moments/${encodeURIComponent(item.moment.id)}`
+                      : item.guestbookMessage
+                        ? `/admin/guestbook?focus=${item.guestbookMessage.id}`
+                        : item.galleryPhoto
+                          ? `/admin/gallery/${item.galleryPhoto.id}`
+                          : item.project
+                            ? `/admin/projects/${item.project.id}`
+                            : item.friendLink
+                              ? `/admin/links/${item.friendLink.id}`
+                              : '/admin/site',
       })),
     }
   }
-  async update(id: string, alt: string) {
+  async update(id: string, fields: { alt?: string; description?: string }) {
     const asset = await this.em.findOne(MediaAsset, { id, deletedAt: null })
     if (!asset) throw new NotFoundException('媒体不存在或已移除')
-    asset.alt = alt
+    if (fields.alt !== undefined) asset.alt = fields.alt
+    if (fields.description !== undefined) asset.description = fields.description
     await this.em.flush()
     return this.dto(asset)
   }
