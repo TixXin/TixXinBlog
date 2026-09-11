@@ -1,6 +1,6 @@
 /**
  * @file error-codes.ts
- * @description 统一业务错误码，与 docs/archive/backend-design/api.md 附录 A 严格对齐
+ * @description 统一业务错误码，响应约定见 docs/api.md
  * @author TixXin
  * @since 2026-07-20
  */
