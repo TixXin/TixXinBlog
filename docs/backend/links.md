@@ -42,7 +42,7 @@
 
 ## 开发数据与维护
 
-`link-v1`是独立版本化样本集。补种、检查、定向清理使用既有数据库工具；实际数量与交付证据以[阶段记录](../gallery-project-link-stage.md)和[开发数据目录](../development-data-catalog.md)为准。
+`link-v1`是独立版本化样本集。补种、检查、定向清理使用既有数据库工具；实际数量与交付证据以[阶段记录](../archive/content-history/gallery-project-link-stage.md)和[开发数据目录](../development-data-catalog.md)为准。
 
 ```sh
 corepack pnpm dev:check

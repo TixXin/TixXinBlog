@@ -30,7 +30,7 @@ pnpm --filter web-blog test
 pnpm build
 ```
 
-当前范围与验收见[阶段记录](../../../docs/next-stage.md)，早期文章评论联调过程保留在[历史记录](../../../docs/comment-integration-validation.md)，后续工作见 [todo.md](todo.md)。
+当前范围与验收见[阶段记录](../../../docs/archive/content-history/next-stage.md)，早期文章评论联调过程保留在[历史记录](../../../docs/archive/admin-history/comment-integration-validation.md)，后续工作见 [todo.md](todo.md)。
 
 ## 管理后台与公开配置
 
@@ -38,6 +38,6 @@ pnpm build
 
 浏览器始终通过同源 `/api/v1` 网关访问后端；`NUXT_PUBLIC_API_BASE_URL` 保持 `/api/v1`。站点规范地址使用 `NUXT_PUBLIC_SITE_URL`，运行配置修改后重启。生产构建和隔离回归优先使用根目录的 `corepack pnpm` 命令。
 
-内容保护、批量回收与评论/站点配置的历史验收见[长期维护进度](../../../docs/admin-long-term-progress.md)。会话审计、内容包及完整备份恢复已实现；当前实际能力与边界以[能力清单](../../../docs/capability-map.md)为准。
+内容保护、批量回收与评论/站点配置的历史验收见[长期维护进度](../../../docs/archive/admin-history/admin-long-term-progress.md)。会话审计、内容包及完整备份恢复已实现；当前实际能力与边界以[能力清单](../../../docs/capability-map.md)为准。
 
 开发使用 .nuxt，生产中间产物使用 .nuxt-production；build 不再覆盖正在运行的 dev 中间目录。

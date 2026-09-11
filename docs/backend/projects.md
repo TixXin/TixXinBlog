@@ -47,4 +47,4 @@ corepack pnpm db:dev remove-data --dataset project-v1
 
 内容包显式演进至v5，包含projects并兼容v1–v4；旧版本不接受夹带新字段。导入项目保持草稿，保留项目进展、标签、链接、排序和日期，正确映射可选封面。预览、跳过/复制、目标变化检测、事务回滚与同票据幂等规则继续有效。完整数据库及媒体恢复保留发布状态、关系、归属和请求标识，恢复后旧页面上下文不能写入同编号内容。命令见 [备份与恢复](../backup-and-recovery.md)。
 
-本阶段接口源码 `tests/project-integration.mjs`、数据 `tests/project-fixtures-integration.ts`、维护 `tests/project-backup-integration.mjs` 和前端 `tests/e2e/project-business.spec.ts` 分别提供证据；最终结论以 [本轮实施记录](../gallery-project-link-stage.md) 为准。
+本阶段接口源码 `tests/project-integration.mjs`、数据 `tests/project-fixtures-integration.ts`、维护 `tests/project-backup-integration.mjs` 和前端 `tests/e2e/project-business.spec.ts` 分别提供证据；最终结论以 [本轮实施记录](../archive/content-history/gallery-project-link-stage.md) 为准。
