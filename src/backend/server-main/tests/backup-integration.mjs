@@ -136,13 +136,18 @@ try {
   await ok(`/admin/gallery/${deletedGallery.id}?revision=${deletedGallery.revision}`, 'DELETE')
   const gear = [{ icon: 'lucide:camera', name: '随行相机', description: '器材介绍由博主维护' }]
   await ok('/admin/gallery/settings', 'PATCH', { gear, revision: (await ok('/admin/gallery/settings')).revision })
+  const siteBefore = await ok('/admin/site')
+  const { updatedAt: _siteUpdatedAt, announcementUpdatedAt: _announcementUpdatedAt, ...siteInput } = siteBefore
+  const about = { visible: true, introduction: '公开介绍', sections: [{ kind: 'reading', visible: false, items: [{ title: '尚未公开的书单', detail: '只在后台保留', period: '', visible: false }] }] }
+  await ok('/admin/site', 'PATCH', { ...siteInput, about })
   assert.equal((await request('/admin/backup/export', 'POST', { mediaIncluded: true }, '')).status, 401)
   const exported = await request('/admin/backup/export', 'POST', { mediaIncluded: true })
   assert.equal(exported.status, 201)
   assert(exported.headers.get('content-disposition').includes('attachment'))
   assert.equal(exported.body.format, 'tixxin-content')
   const bundle = exported.body
-  assert.equal(bundle.version, 7)
+  assert.equal(bundle.version, 8)
+  assert.deepEqual(bundle.site.about, about, '管理员内容包保留隐藏资料供迁入恢复')
   assert.deepEqual(bundle.projects, [])
   assert.deepEqual(bundle.links, [])
   assert.deepEqual(bundle.linkSettings, { rules: [] })
@@ -190,13 +195,14 @@ try {
   assert.equal(
     (
       await preview(
-        JSON.parse(JSON.stringify(bundle).replace('"version":7', '"version":7,"__proto__":{"polluted":true}')),
+        JSON.parse(JSON.stringify(bundle).replace('"version":8', '"version":8,"__proto__":{"polluted":true}')),
       )
     ).status,
     400,
   )
   const legacy = structuredClone(bundle)
   legacy.version = 1
+  delete legacy.site.about
   for (const photo of legacy.gallery ?? []) delete photo.values.externalUrl
   delete legacy.moments
   delete legacy.guestbook
@@ -208,6 +214,7 @@ try {
   assert.equal((await preview(legacy)).body.data.plan.counts.moments, 0)
   const legacyV2 = structuredClone(bundle)
   legacyV2.version = 2
+  delete legacyV2.site.about
   delete legacyV2.guestbook
   delete legacyV2.gallery
   delete legacyV2.gallerySettings
@@ -217,6 +224,7 @@ try {
   assert.equal((await preview(legacyV2)).body.data.plan.counts.guestbook, 0)
   const legacyV3 = structuredClone(bundle)
   legacyV3.version = 3
+  delete legacyV3.site.about
   delete legacyV3.gallery
   delete legacyV3.gallerySettings
   delete legacyV3.projects
@@ -230,6 +238,7 @@ try {
   assert.equal((await preview({ ...legacyV3, gallerySettings: { gear: [] } })).status, 400)
   const legacyV4 = structuredClone(bundle)
   legacyV4.version = 4
+  delete legacyV4.site.about
   for (const photo of legacyV4.gallery ?? []) delete photo.values.externalUrl
   delete legacyV4.projects
   delete legacyV4.links
@@ -241,12 +250,22 @@ try {
   assert.equal((await preview(invalidLegacyGear)).status, 400)
   const legacyV5 = structuredClone(bundle)
   legacyV5.version = 5
+  delete legacyV5.site.about
   for (const photo of legacyV5.gallery ?? []) delete photo.values.externalUrl
   delete legacyV5.links
   delete legacyV5.linkSettings
   assert.equal((await preview(legacyV5)).body.data.plan.counts.links, 0)
   assert.equal((await preview({ ...legacyV5, links: [] })).status, 400)
   assert.equal((await preview({ ...legacyV5, linkSettings: { rules: [] } })).status, 400)
+  const legacyV7 = structuredClone(bundle)
+  legacyV7.version = 7
+  delete legacyV7.site.about
+  const oldSitePlan = await preview(legacyV7, 'skip', true)
+  assert.equal(oldSitePlan.status, 201)
+  const oldSiteResult = await ok(`/admin/backup/imports/${oldSitePlan.body.data.ticket}/execute`, 'POST', { acknowledgement: '导入为新草稿', confirmation: oldSitePlan.body.data.confirmation })
+  assert(oldSiteResult.completed)
+  assert.deepEqual((await ok('/admin/site')).about, about, '旧内容包未提供关于页时保留目标资料')
+  assert.equal((await preview({ ...legacyV7, site: { ...legacyV7.site, about } })).status, 400, '旧版本不能偷偷接受新字段')
   assert.equal((await preview({ ...bundle, friendApplications: [] })).status, 400)
   const invalidGallery = structuredClone(bundle)
   invalidGallery.gallery[0].values.takenOn = '2025-02-30'

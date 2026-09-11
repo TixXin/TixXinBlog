@@ -119,6 +119,33 @@ try {
   )
   assert.deepEqual(concurrent.map((item) => item.status).sort(), [200, 409])
   assert.equal((await ok('/site')).revision, current.revision + 1)
+  const profileBase = await ok('/admin/site')
+  const about = {
+    visible: true,
+    introduction: '从代码中记录技术实践',
+    sections: [
+      { kind: 'skill', visible: true, items: [
+        { title: 'Web 开发', detail: '公开说明', period: '', visible: true },
+        { title: '尚未确认', detail: '隐藏的个人资料', period: '', visible: false },
+      ] },
+      { kind: 'experience', visible: false, items: [{ title: '隐藏经历', detail: '', period: '', visible: true }] },
+    ],
+  }
+  const withAbout = await ok('/admin/site', 'PATCH', { ...editable(profileBase), about })
+  assert.deepEqual((await ok('/admin/site')).about, about)
+  const publishedAbout = (await ok('/site', 'GET', undefined, false)).about
+  assert.equal(publishedAbout.sections.length, 1)
+  assert.equal(publishedAbout.sections[0].items.length, 1)
+  assert(!JSON.stringify(publishedAbout).includes('隐藏'))
+  assert.equal((await request('/admin/site', 'PATCH', { ...editable(withAbout), about: null })).status, 400)
+  assert.equal((await request('/admin/site', 'PATCH', { ...editable(withAbout), about: { ...about, sections: [about.sections[0], about.sections[0]] } })).status, 400)
+  const { about: _about, ...oldClient } = editable(withAbout)
+  const preservedAbout = await ok('/admin/site', 'PATCH', { ...oldClient, announcement: '独立公告修改' })
+  assert.deepEqual(preservedAbout.about, about, '旧客户端未提供新字段时不得清除关于页')
+  const hiddenAbout = await ok('/admin/site', 'PATCH', { ...editable(preservedAbout), about: { ...about, visible: false } })
+  assert.deepEqual((await ok('/site', 'GET', undefined, false)).about, { visible: false, introduction: '', sections: [] })
+  const restoredAbout = await ok(`/admin/site/revisions/${withAbout.revision}/restore`, 'POST', { revision: hiddenAbout.revision })
+  assert.deepEqual(restoredAbout.about, about)
   process.stdout.write(
     '站点设置集成通过：权限、字段/URL 校验、运行时持久化、版本并发、历史恢复、失败回滚和头像历史引用保护\n',
   )
