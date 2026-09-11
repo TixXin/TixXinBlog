@@ -1,8 +1,10 @@
 /** @file editor.ts @description 项目编辑字段白名单、链接标签约束与绑定内容上下文的恢复副本 */
 import { projectLinkLabels, projectProgressLabels, projectStatusLabels, projectTagColors } from './types'
 import type { ManagedProject, ProjectEditable } from './types'
+import { copyContentRelations, validContentRelations } from '~/features/content-relation/editor'
 export function projectForm(project?: Partial<ManagedProject>): ProjectEditable {
   return {
+    relatedContent: copyContentRelations(project?.relatedContent),
     title: project?.title ?? '',
     description: project?.description ?? '',
     coverMediaId: project?.coverMediaId ?? null,
@@ -27,6 +29,7 @@ export function validProjectForm(value: unknown): value is ProjectEditable {
   if (!value || typeof value !== 'object') return false
   const v = value as ProjectEditable
   return (
+    (v.relatedContent === undefined || validContentRelations(v.relatedContent)) &&
     typeof v.title === 'string' &&
     v.title.length <= 160 &&
     typeof v.description === 'string' &&

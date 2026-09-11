@@ -28,6 +28,7 @@ const asset: MediaAsset = {
   name: 'photo.webp',
   url: '/api/v1/media/same-media-id.webp',
   alt: '原始说明',
+  description: '原有素材说明',
   width: 1000,
   height: 700,
   byteSize: 4000,
@@ -71,6 +72,7 @@ it.each(['actor', 'context'])('%s变化立即停用旧图片与写入，旧草�
   const { state, context, wrapper } = await setup()
   const original = state.items.value[0]!
   state.altDrafts[original.id] = '尚未提交的旧说明'
+  state.descriptionDrafts[original.id] = '原内容库中的素材出处'
   if (change === 'actor') mocks.auth.currentUser.value = { id: 'actor-b' }
   else context.value = 'library-b'
   expect(state.ready.value).toBe(false)
@@ -83,12 +85,14 @@ it.each(['actor', 'context'])('%s变化立即停用旧图片与写入，旧草�
   await state.load()
   expect(mocks.api).toHaveBeenCalledTimes(1)
   expect(state.altDrafts[original.id]).toBe('尚未提交的旧说明')
+  expect(state.descriptionDrafts[original.id]).toBe('原内容库中的素材出处')
   expect(state.busy.value).toBe(true)
   wrapper.unmount()
   mocks.api.mockResolvedValue({ items: [{ ...asset, alt: '新库自己的说明' }], total: 1 })
   const reopened = await setup(context.value)
   expect(reopened.state.altDrafts[original.id]).toBe('新库自己的说明')
   expect(reopened.state.hasDirtyAlt.value).toBe(false)
+  expect(reopened.state.hasDirtyDescription.value).toBe(false)
 })
 it('原账号恢复并重新读取后，保留自己的未提交替代文本', async () => {
   const { state } = await setup()

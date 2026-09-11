@@ -33,6 +33,16 @@ export function useAdminFlashes() {
   const editorKey = ref(0)
   const editorError = ref('')
   const commentNote = ref<FlashNote | null>(null)
+  const commentTargetId = ref('')
+  const commentTargetMessage = computed(() =>
+    commentTargetId.value &&
+    commentNote.value &&
+    !commentNote.value.comments.some((item) => item.id === commentTargetId.value)
+      ? '目标评论不存在或已删除。'
+      : '',
+  )
+  const contentContext = useState<string>('page-content-context', () => '')
+  let commentsVersion = 0
   let version = 0
   function message(cause: unknown, fallback: string) {
     const value = (cause as { data?: { message?: unknown } }).data?.message
@@ -182,14 +192,27 @@ export function useAdminFlashes() {
       working.value = false
     }
   }
-  async function showComments(note: FlashNote) {
+  async function showComments(note: Pick<FlashNote, 'id'>, targetId = '') {
     if (working.value) return
+    const current = ++commentsVersion,
+      actor = auth.currentUser.value?.id,
+      context = contentContext.value,
+      path = route.fullPath
+    const owns = () =>
+      mounted.value &&
+      current === commentsVersion &&
+      actor === auth.currentUser.value?.id &&
+      context === contentContext.value &&
+      path === route.fullPath
     working.value = true
     error.value = ''
+    commentNote.value = null
+    commentTargetId.value = targetId
     try {
-      commentNote.value = await api<FlashNote>(`/admin/flashes/${note.id}`)
+      const result = await api<FlashNote>(`/admin/flashes/${encodeURIComponent(note.id)}`)
+      if (owns()) commentNote.value = result
     } catch (cause) {
-      error.value = message(cause, '评论加载失败，请重试')
+      if (owns()) error.value = message(cause, '闪念或评论读取失败，内容可能已删除，请重试')
     } finally {
       working.value = false
     }
@@ -222,7 +245,8 @@ export function useAdminFlashes() {
       !working.value && ((to.query.edit === from.query.edit && to.query.create === from.query.create) || canDiscard()),
   )
   async function openLinkedEditor() {
-    if (read('edit')) await openEditor({ id: read('edit') })
+    if (read('comments')) await showComments({ id: read('comments') }, read('commentId'))
+    else if (read('edit')) await openEditor({ id: read('edit') })
     else if (read('create') === 'true') await openEditor()
   }
   watch(
@@ -247,6 +271,7 @@ export function useAdminFlashes() {
   onBeforeUnmount(() => {
     mounted.value = false
     version += 1
+    commentsVersion++
     window.removeEventListener('beforeunload', beforeUnload)
   })
   return {
@@ -265,6 +290,9 @@ export function useAdminFlashes() {
     editorKey,
     editorError,
     commentNote,
+    commentTargetId,
+    commentTargetMessage,
+    retryRead: () => (read('comments') ? showComments({ id: read('comments') }, read('commentId')) : load()),
     load,
     resetPage,
     changePage,

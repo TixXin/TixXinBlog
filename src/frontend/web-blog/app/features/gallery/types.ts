@@ -6,6 +6,7 @@
  */
 
 export interface PhotoItem {
+  relatedContent?: import('~/features/content-relation/types').RelatedContentItem[]
   source?: 'media' | 'external'
   id: number
   title: string
@@ -41,6 +42,7 @@ export interface GearItem {
 
 export type GalleryStatus = 'draft' | 'published' | 'withdrawn'
 export interface GalleryEditable {
+  relatedContent?: import('~/features/content-relation/types').ContentRelation[]
   source: 'media' | 'external'
   mediaId: string
   externalUrl: string
@@ -54,7 +56,7 @@ export interface GalleryEditable {
   sortOrder: number
 }
 export interface ManagedPhoto
-  extends Omit<PhotoItem, 'device' | 'source'>, Omit<GalleryEditable, 'mediaId' | 'externalUrl'> {
+  extends Omit<PhotoItem, 'device' | 'source' | 'relatedContent'>, Omit<GalleryEditable, 'mediaId' | 'externalUrl'> {
   mediaId: string | null
   externalUrl: string | null
   revision: number

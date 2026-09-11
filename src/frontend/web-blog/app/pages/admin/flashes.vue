@@ -27,7 +27,7 @@
         ><button type="submit" :disabled="pending">搜索</button>
       </form>
       <p v-if="error" role="alert">
-        {{ error }} <button type="button" :disabled="pending || working" @click="load">重新加载</button>
+        {{ error }} <button type="button" :disabled="pending || working" @click="retryRead">重新加载</button>
       </p>
       <p v-if="pending" role="status">正在加载闪念…</p>
       <section v-if="editorOpen" ref="editorPanel" tabindex="-1" class="admin-flashes__panel" aria-label="闪念编辑">
@@ -55,8 +55,15 @@
         <p class="admin-flashes__content">{{ commentNote.content }}</p>
         <button type="button" :disabled="working" @click="commentNote = null">关闭评论</button>
         <p v-if="!commentNote.comments.length">暂无评论</p>
+        <p v-if="commentTargetMessage" role="status">{{ commentTargetMessage }}</p>
         <ul>
-          <li v-for="comment in commentNote.comments" :key="comment.id">
+          <li
+            v-for="comment in commentNote.comments"
+            :key="comment.id"
+            :data-comment-id="comment.id"
+            :data-comment-target="commentTargetId === comment.id"
+            :tabindex="commentTargetId === comment.id ? -1 : undefined"
+          >
             <strong>{{ comment.authorName }}</strong
             ><time>{{ formatDate(comment.createdAt) }}</time>
             <p>{{ comment.content }}</p>
@@ -132,7 +139,9 @@ const {
   editorKey,
   editorError,
   commentNote,
-  load,
+  commentTargetId,
+  commentTargetMessage,
+  retryRead,
   resetPage,
   changePage,
   openEditor,
@@ -150,13 +159,22 @@ watch([editorOpen, editorKey], async () => {
 })
 watch(commentNote, async () => {
   await nextTick()
-  commentsPanel.value?.focus()
+  const target =
+    Array.from(commentsPanel.value?.querySelectorAll<HTMLElement>('[data-comment-id]') ?? []).find(
+      (item) => item.dataset.commentId === commentTargetId.value,
+    ) ?? commentsPanel.value
+  target?.focus({ preventScroll: true })
+  target?.scrollIntoView({ block: 'center', behavior: 'instant' })
 })
 function formatDate(value: string) {
   return new Date(value).toLocaleString('zh-CN', { hour12: false })
 }
 </script>
 <style scoped lang="scss">
+[data-comment-target='true'] {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+}
 h1 {
   font-size: 1.6rem;
   font-weight: 700;

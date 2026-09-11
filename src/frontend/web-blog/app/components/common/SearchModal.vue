@@ -1,6 +1,6 @@
 <!--
   @file SearchModal.vue
-  @description 全局搜索弹窗 (Cmd+K)，跨文章、项目、友链进行模糊搜索
+  @description 全局搜索弹窗 (Cmd+K)，六域公开检索、分组预览与单类型分页
   @author TixXin
   @since 2026-04-06
 -->
@@ -17,8 +17,8 @@
               v-model="query"
               type="text"
               class="search-modal__input"
-              placeholder="搜索文章、项目、友链..."
-              aria-label="搜索文章、项目和友链"
+              placeholder="搜索文章、项目、图库等内容…"
+              aria-label="搜索站内公开内容"
               maxlength="200"
               @keydown.enter="onEnter"
               @keydown.down.prevent="selectNext"
@@ -31,8 +31,18 @@
               <Icon name="lucide:x" size="18" />
             </button>
           </div>
-
-          <div v-if="query.trim()" class="search-modal__body">
+          <nav class="search-modal__filters" aria-label="搜索内容类型">
+            <button
+              v-for="(label, value) in searchTypeLabels"
+              :key="value"
+              type="button"
+              :aria-pressed="type === value"
+              @click="type = value"
+            >
+              {{ label }}
+            </button>
+          </nav>
+          <div v-if="query.trim()" ref="resultListRef" class="search-modal__body">
             <div v-if="isSearching" class="search-modal__loading">
               <Icon name="lucide:loader-2" size="16" class="search-modal__spinner" />
               搜索中...
@@ -41,34 +51,80 @@
               <span>{{ error }}</span>
               <button type="button" class="btn-primary" @click="search(query)">重试搜索</button>
             </div>
-            <ul v-if="!isSearching && results.length" ref="resultListRef" class="search-modal__list">
-              <li v-for="(item, i) in results" :key="`${item.type}:${item.id}`">
-                <a
-                  :href="item.url"
-                  class="search-modal__item"
-                  :class="{ 'search-modal__item--active': selectedIndex === i }"
-                  :data-result-selected="selectedIndex === i"
-                  @click="onResultClick($event, item)"
-                  @mouseenter="selectedIndex = i"
-                  @focus="selectedIndex = i"
+            <template v-if="!isSearching">
+              <section
+                v-for="group in groups"
+                :key="group.type"
+                class="search-modal__group"
+                :data-search-type="group.type"
+              >
+                <h2>
+                  {{ typeLabel(group.type) }} <span v-if="group.total !== null">· {{ group.total }} 项</span>
+                </h2>
+                <p v-if="group.unavailable" class="search-modal__status">此来源暂不可用</p>
+                <p v-else-if="!group.items.length" class="search-modal__status">当前条件下没有结果</p>
+                <ul v-else class="search-modal__list">
+                  <li v-for="item in group.items" :key="`${item.type}:${item.id}`">
+                    <a
+                      :href="item.url"
+                      class="search-modal__item"
+                      :class="{ 'search-modal__item--active': selectedIndex === results.indexOf(item) }"
+                      :data-result-selected="selectedIndex === results.indexOf(item)"
+                      @click="onResultClick($event, item)"
+                      @mouseenter="selectedIndex = results.indexOf(item)"
+                      @focus="selectedIndex = results.indexOf(item)"
+                    >
+                      <Icon :name="item.icon" size="16" class="search-modal__item-icon" />
+                      <div class="search-modal__item-content">
+                        <span class="search-modal__item-title">{{ item.title }}</span>
+                        <span class="search-modal__item-desc line-clamp-1">{{ item.description }}</span>
+                      </div>
+                      <span class="search-modal__item-type">{{ typeLabel(item.type) }}</span>
+                    </a>
+                  </li>
+                </ul>
+                <button
+                  v-if="type === 'all' && group.total !== null && group.total > group.items.length"
+                  type="button"
+                  class="search-modal__more"
+                  @click="type = group.type"
                 >
-                  <Icon :name="item.icon" size="16" class="search-modal__item-icon" />
-                  <div class="search-modal__item-content">
-                    <span class="search-modal__item-title">{{ item.title }}</span>
-                    <span class="search-modal__item-desc line-clamp-1">{{ item.description }}</span>
-                  </div>
-                  <span class="search-modal__item-type">{{ typeLabel(item.type) }}</span>
-                </a>
-              </li>
-            </ul>
+                  查看全部{{ typeLabel(group.type) }}
+                </button>
+              </section>
+            </template>
             <div v-if="!isSearching && !error && !results.length" class="search-modal__empty">
               <Icon name="lucide:search-x" size="20" />
               <span>没有找到相关内容</span>
             </div>
           </div>
-          <p v-if="query.trim() && !error" class="search-modal__status" role="status">
-            {{ isSearching ? '正在搜索…' : `找到 ${results.length} 项内容` }}
+          <p v-if="query.trim()" class="search-modal__status" role="status">
+            {{
+              isSearching
+                ? '正在搜索…'
+                : type === 'all'
+                  ? '各类型分别展示前 3 项，可选择类型查看全部。'
+                  : `第 ${page} 页${total === null ? '' : `，共 ${total} 项`}`
+            }}
           </p>
+          <nav
+            v-if="query.trim() && type !== 'all' && total !== null && (total > SEARCH_PAGE_SIZE || page > 1)"
+            class="search-modal__filters"
+            aria-label="搜索结果分页"
+          >
+            <button type="button" :disabled="isSearching || page <= 1" @click="page--">上一页</button>
+            <span>{{ page }} / {{ Math.max(1, Math.ceil(total / SEARCH_PAGE_SIZE)) }}</span>
+            <button type="button" :disabled="isSearching || page * SEARCH_PAGE_SIZE >= total" @click="page++">
+              下一页
+            </button>
+          </nav>
+          <a
+            v-if="query.trim()"
+            :href="resultsPageUrl"
+            class="search-modal__more"
+            @click="onResultClick($event, { type: 'post', url: resultsPageUrl })"
+            >打开完整搜索结果页</a
+          >
 
           <div v-if="!query.trim()" class="search-modal__hint">
             <span>输入关键词开始搜索</span>
@@ -84,6 +140,8 @@
 
 <script setup lang="ts">
 import type { SearchResultItem } from '~/composables/useSearch'
+import { searchTypeLabels, SEARCH_PAGE_SIZE } from '~/features/search/types'
+import { searchLocation } from '~/features/search/query'
 
 const visible = defineModel<boolean>('visible', { default: false })
 
@@ -92,7 +150,12 @@ const dialogRef = ref<HTMLElement | null>(null)
 const resultListRef = ref<HTMLElement | null>(null)
 const selectedIndex = ref(0)
 
-const { query, results, isSearching, error, search } = useSearch()
+const { query, type, page, groups, results, total, isSearching, error, search, cancel } = useSearch({ remember: true })
+watch([total, isSearching], () => {
+  if (isSearching.value || total.value === null || type.value === 'all') return
+  const lastPage = Math.max(1, Math.ceil(total.value / SEARCH_PAGE_SIZE))
+  if (page.value > lastPage) page.value = lastPage
+})
 let restoreTrigger = true
 let destination: string | null = null
 let waitForPageTransition = false
@@ -114,19 +177,24 @@ watch(visible, (v) => {
     restoreTrigger = true
     destination = null
     waitForPageTransition = false
-    query.value = ''
-    results.value = []
     selectedIndex.value = 0
+    void search(query.value)
     nextTick(() => inputRef.value?.focus())
-  }
+  } else cancel()
 })
 
-watch(query, (q, _previous, onCleanup) => {
+watch([query, type, page], ([q, scope, currentPage], [oldQuery, oldType], onCleanup) => {
+  cancel()
+  if (!visible.value) return
   selectedIndex.value = 0
+  if ((q !== oldQuery || scope !== oldType) && currentPage !== 1) {
+    page.value = 1
+    return
+  }
   // 防抖期间也属于检索中，避免在结果返回前闪出“没有找到”。
   isSearching.value = !!q.trim()
   const timer = setTimeout(() => {
-    void search(q)
+    void search(q, scope, currentPage)
   }, 250)
   onCleanup(() => clearTimeout(timer))
 })
@@ -136,15 +204,11 @@ function close() {
 }
 
 function typeLabel(type: string) {
-  const labels: Record<string, string> = {
-    post: '文章',
-    project: '项目',
-    link: '友链',
-  }
-  return labels[type] ?? type
+  return searchTypeLabels[type as keyof typeof searchTypeLabels] ?? type
 }
 
 const router = useRouter()
+const resultsPageUrl = computed(() => router.resolve(searchLocation(query.value, type.value, page.value)).href)
 const currentRoute = useRoute()
 const app = useNuxtApp()
 const { error: notifyNavigationError } = useToast()
@@ -188,7 +252,7 @@ watch(
   },
 )
 
-async function navigateTo(item: SearchResultItem) {
+async function navigateTo(item: Pick<SearchResultItem, 'type' | 'url'>) {
   restoreTrigger = item.type === 'link'
   const targetRoute = router.resolve(item.url)
   const samePage = router.currentRoute.value.fullPath === targetRoute.fullPath
@@ -215,7 +279,7 @@ async function navigateTo(item: SearchResultItem) {
   }
 }
 
-function onResultClick(event: MouseEvent, item: SearchResultItem) {
+function onResultClick(event: MouseEvent, item: Pick<SearchResultItem, 'type' | 'url'>) {
   if (event.button !== 0 || event.ctrlKey || event.metaKey || event.shiftKey || event.altKey) return
   event.preventDefault()
   navigateTo(item)
@@ -256,6 +320,38 @@ function selectPrev() {
 </script>
 
 <style lang="scss" scoped>
+.search-modal__filters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.5rem 0.75rem;
+  button {
+    padding: 0.4rem 0.6rem;
+    min-height: 36px;
+    border: 1px solid var(--border);
+    border-radius: 0.4rem;
+    color: var(--text-main);
+  }
+  [aria-pressed='true'] {
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+  :disabled {
+    opacity: 0.5;
+  }
+}
+.search-modal__group h2 {
+  padding: 0.65rem 1rem 0.2rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+.search-modal__more {
+  display: block;
+  padding: 0.65rem 1rem;
+  color: var(--accent);
+  font-size: 0.8rem;
+}
 .search-modal__close {
   flex: 0 0 2.75rem;
   height: 2.75rem;
@@ -290,6 +386,9 @@ function selectPrev() {
 }
 
 .search-modal {
+  max-height: calc(100dvh - 2rem);
+  display: flex;
+  flex-direction: column;
   width: min(560px, calc(100vw - 2rem));
   background: var(--surface-1);
   border: 1px solid var(--border);
@@ -312,6 +411,7 @@ function selectPrev() {
 }
 
 .search-modal__input {
+  min-width: 0;
   flex: 1;
   background: transparent;
   border: none;
@@ -336,8 +436,19 @@ function selectPrev() {
 }
 
 .search-modal__body {
+  min-height: 0;
   max-height: 360px;
   overflow-y: auto;
+}
+@media (max-height: 700px), (max-width: 400px) {
+  .search-modal-overlay {
+    padding-top: 1rem;
+  }
+  .search-modal__hint {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
 }
 
 .search-modal__loading {

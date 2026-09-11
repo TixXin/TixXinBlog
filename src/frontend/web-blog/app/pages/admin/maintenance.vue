@@ -85,8 +85,8 @@ corepack pnpm --filter server-main run backup:restore --directory &lt;备份目�
       <section aria-label="选择内容包">
         <h2>迁入内容</h2>
         <p>
-          支持本项目生成的 v1–v8 JSON 内容包，最多 50MB。可迁入文章、互动、图库、项目和友链；v8
-          保留关于页资料，外部图片地址不会下载到媒体库。先校验内容包和受管图片引用，再确认导入。
+          支持本项目生成的 v1–v9 JSON 内容包，最多 50MB。v9保留内容关联和媒体说明，v8保留关于页资料。
+          外部图片地址不会下载到媒体库。先校验内容包和受管图片引用，再确认导入。
         </p>
         <p>留言迁入后不会自动公开或置顶。已删除留言保留为不可见的引用记录，审核前请核对内容与作者。</p>
         <label
@@ -138,6 +138,13 @@ corepack pnpm --filter server-main run backup:restore --directory &lt;备份目�
           条友链草稿，保留推荐、排序和Logo关系，不自动上架；同一规范地址只允许一条公开记录。
         </p>
         <p>新增 {{ job.plan.counts.media }} 个媒体记录，写入或修复 {{ job.plan.counts.files }} 个图片文件。</p>
+        <p>结构化内容关联会按目标编号映射；跳过的现有内容及媒体说明保持原值，迁入的新内容仍是草稿。</p>
+        <p v-if="job.plan.omittedRelations" role="status">
+          {{
+            job.plan.omittedRelations
+          }}
+          条关联因目标已删除、缺失或无法映射而省略；不会按来源编号误连当前站点内容。完整备份仍保留原始关系。
+        </p>
         <p v-if="job.error" role="alert">{{ job.error }}</p>
         <p v-if="job.expired">预览已过期，请重新选择文件生成票据。</p>
         <ul>
@@ -190,6 +197,9 @@ corepack pnpm --filter server-main run backup:restore --directory &lt;备份目�
           <p>已迁入 {{ job.result.gallery?.length ?? 0 }} 件图库草稿，检查图片及拍摄信息后再发布。</p>
           <p>已迁入 {{ job.result.projects?.length ?? 0 }} 个项目草稿，检查项目进展、技术标签及有效链接后再发布。</p>
           <p>已迁入 {{ job.result.links?.length ?? 0 }} 条友链草稿，请核对地址和Logo后再上架。</p>
+          <p v-if="job.result.relations">
+            已映射 {{ job.result.relations.applied }} 条内容关联，省略 {{ job.result.relations.omitted }} 条失效关联。
+          </p>
           <ul>
             <li v-for="post in job.result.posts" :key="post.id">
               <NuxtLink :to="`/admin/posts/${post.id}`">检查新文章草稿 #{{ post.id }}</NuxtLink

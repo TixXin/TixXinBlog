@@ -43,6 +43,7 @@ export interface ArticleSection {
 }
 
 export interface ArticleDetail {
+  relatedContent?: import('~/features/content-relation/types').RelatedContentItem[]
   slug?: string
   summary?: string
   coverAlt?: string

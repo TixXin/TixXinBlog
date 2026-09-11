@@ -30,6 +30,13 @@
           @retry="load"
         />
         <p v-if="!pending && !error && !items.length">当前条件下暂无动态。</p>
+        <CommonRequestFeedback
+          v-if="commentsLinkPending || commentsLinkError"
+          compact
+          :pending="commentsLinkPending"
+          :title="commentsLinkError || '正在定位动态评论'"
+          @retry="openLinkedComments"
+        />
         <ul class="admin-moments__list">
           <li v-for="note in items" :key="note.id">
             <p>
@@ -106,7 +113,13 @@
           />
           <p v-if="!commentsPending && !commentsError && !commentItems.length">暂无评论。</p>
           <ul>
-            <li v-for="comment in commentItems" :key="comment.id">
+            <li
+              v-for="comment in commentItems"
+              :key="comment.id"
+              :data-comment-id="comment.id"
+              :data-comment-target="commentTargetId === comment.id"
+              :tabindex="commentTargetId === comment.id ? -1 : undefined"
+            >
               <strong>{{ comment.author }}{{ comment.isOwner ? '（博主）' : '' }}</strong
               ><span> · {{ commentLabels[comment.moderationStatus ?? 'published'] }}</span>
               <p>{{ comment.content }}</p>
@@ -191,6 +204,11 @@ const {
   commentPage,
   commentsPending,
   commentsError,
+  commentTargetId,
+  commentsLinkError,
+  commentsLinkPending,
+  commentsFocusVersion,
+  openLinkedComments,
   openComments,
   closeComments,
   moderate,
@@ -201,6 +219,15 @@ const {
 const statusLabels = { draft: '草稿', published: '已发布', archived: '已归档' }
 const commentLabels = { published: '已公开', pending: '待审核', hidden: '已隐藏' }
 const commentsPanel = ref<HTMLElement | null>(null)
+watch(commentsFocusVersion, async () => {
+  await nextTick()
+  const target =
+    Array.from(commentsPanel.value?.querySelectorAll<HTMLElement>('[data-comment-id]') ?? []).find(
+      (item) => item.dataset.commentId === commentTargetId.value,
+    ) ?? commentsPanel.value
+  target?.focus({ preventScroll: true })
+  target?.scrollIntoView({ block: 'center', behavior: 'instant' })
+})
 let commentsTrigger: HTMLElement | null = null
 async function showComments(note: ManagedMoment, event: Event) {
   commentsTrigger = event.currentTarget as HTMLElement
@@ -217,6 +244,10 @@ async function hideComments() {
 }
 </script>
 <style scoped lang="scss">
+[data-comment-target='true'] {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+}
 .admin-moments {
   display: grid;
   gap: 1rem;

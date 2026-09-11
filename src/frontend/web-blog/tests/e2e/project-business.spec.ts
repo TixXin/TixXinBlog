@@ -303,7 +303,7 @@ test('全局搜索真实项目可导航，项目搜索失败保留其他来源�
   await page.goto('/')
   await page.locator('[data-focus-key="site-search"]:visible').first().click()
   const dialog = page.getByRole('dialog', { name: '站内搜索', exact: true }),
-    input = dialog.getByRole('textbox', { name: '搜索文章、项目和友链', exact: true })
+    input = dialog.getByRole('textbox', { name: '搜索站内公开内容', exact: true })
   let failed = 0
   await page.route('**/api/v1/projects?*', (route) => {
     if (new URL(route.request().url()).searchParams.get('q') === '分页样本' && failed === 0) {
@@ -322,11 +322,11 @@ test('全局搜索真实项目可导航，项目搜索失败保留其他来源�
   await expect(dialog.locator('a[href^="/articles/"]').first()).toBeVisible()
   await dialog.getByRole('button', { name: '重试搜索', exact: true }).click()
   const result = dialog.getByRole('link').filter({ hasText: title })
-  await expect(result).toHaveAttribute('href', '/projects?q=' + encodeURIComponent(title))
+  await expect(result).toHaveAttribute('href', '/projects?project=' + project.id)
   await result.click()
-  await expect(page).toHaveURL(/\/projects\?q=/)
-  await expect(page.locator(`[data-project-id="${project.id}"]`)).toBeVisible()
-  expect(new URL(page.url()).searchParams.get('q')).toBe(title)
+  await expect(page).toHaveURL(/\/projects\?project=/)
+  await expect(page.locator(`.projects-focus [data-project-id="${project.id}"]`)).toBeVisible()
+  expect(new URL(page.url()).searchParams.get('project')).toBe(String(project.id))
 })
 
 test('失败不显示伪空列表，慢查询不会覆盖新筛选', async ({ page, request }) => {

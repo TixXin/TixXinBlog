@@ -54,14 +54,34 @@
       <input
         v-model="search"
         :disabled="!ready"
-        placeholder="搜索文件名或替代文本"
+        placeholder="搜索文件名、替代文本或素材说明"
         aria-label="搜索媒体"
         maxlength="128"
       /><select v-if="!selectable" v-model="deleted" :disabled="!ready" aria-label="资源状态" @change="searchMedia">
         <option value="false">可用资源</option>
         <option value="true">回收资源</option></select
+      ><select
+        v-model="orientation"
+        :disabled="!ready || working || hasDirtyMetadata"
+        aria-label="媒体构图"
+        @change="searchMedia"
+      >
+        <option value="">全部构图</option>
+        <option value="landscape">横向图片</option>
+        <option value="portrait">竖向图片</option>
+        <option value="square">方形图片</option></select
+      ><select
+        v-model="usage"
+        :disabled="!ready || working || hasDirtyMetadata"
+        aria-label="媒体使用状态"
+        @change="searchMedia"
+      >
+        <option value="">全部使用状态</option>
+        <option value="used">已使用（含历史版本）</option>
+        <option value="unused">尚未使用</option></select
       ><button type="submit" :disabled="pending || !ready">搜索</button>
     </form>
+    <p>“已使用”包含草稿、归档、评论和历史版本引用；修改素材说明不会改变引用关系。</p>
     <p v-if="error" role="alert">
       {{ error }} <button type="button" :disabled="pending" @click="load">重新加载</button>
     </p>
@@ -126,6 +146,15 @@
             maxlength="300"
             :disabled="!ready || asset.deleted || working"
         /></label>
+        <label
+          >素材说明<textarea
+            v-model="descriptionDrafts[asset.id]"
+            :aria-label="`${asset.name} 素材说明`"
+            maxlength="1000"
+            rows="3"
+            :disabled="!ready || asset.deleted || working"
+          />
+        </label>
         <div class="media-library__actions">
           <button
             v-if="!asset.deleted"
@@ -142,6 +171,22 @@
             @click="altDrafts[asset.id] = asset.alt"
           >
             取消替代文本修改
+          </button>
+          <button
+            v-if="!asset.deleted"
+            type="button"
+            :disabled="!ready || working || descriptionDrafts[asset.id] === asset.description"
+            @click="saveDescription(asset)"
+          >
+            保存素材说明
+          </button>
+          <button
+            v-if="descriptionDrafts[asset.id] !== asset.description"
+            type="button"
+            :disabled="!ready || working"
+            @click="descriptionDrafts[asset.id] = asset.description"
+          >
+            取消素材说明修改
           </button>
           <button type="button" :disabled="!ready || working" @click="showReferences(asset.id)">查看引用</button>
           <button v-if="asset.deleted" type="button" :disabled="!ready || working" @click="restore(asset)">
@@ -181,10 +226,14 @@ function select(asset: MediaAsset) {
 const {
   search,
   deleted,
+  orientation,
+  usage,
   page,
   total,
   items,
   altDrafts,
+  descriptionDrafts,
+  hasDirtyMetadata,
   canSelect,
   uploadAlt,
   jobs,
@@ -202,6 +251,7 @@ const {
   dropFiles,
   retry,
   saveAlt,
+  saveDescription,
   showReferences,
   remove,
   restore,
@@ -224,6 +274,7 @@ p {
   margin: 0.5rem 0;
 }
 input,
+textarea,
 select,
 button {
   padding: 0.55rem;
@@ -232,6 +283,10 @@ button {
   border: 1px solid var(--border);
   border-radius: 0.5rem;
   min-width: 0;
+}
+textarea {
+  width: 100%;
+  resize: vertical;
 }
 button:disabled {
   opacity: 0.5;

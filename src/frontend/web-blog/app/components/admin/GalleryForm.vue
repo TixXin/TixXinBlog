@@ -31,6 +31,7 @@
       <h2>服务器当前版本 {{ serverVersion.revision }}</h2>
       <p>{{ serverVersion.title }} · {{ statusLabels[serverVersion.status] }} · 排序 {{ serverVersion.sortOrder }}</p>
       <p>{{ serverVersion.description }}</p>
+      <p>有序关联：{{ contentRelationSummary(serverVersion.relatedContent) }}</p>
       <p>
         {{ serverVersion.category || '未分类' }} · {{ serverVersion.takenOn || '拍摄日期未填写' }} ·
         {{ serverVersion.location || '地点未填写' }} · {{ serverVersion.device || '器材未填写' }}
@@ -197,6 +198,17 @@
             @input="change('sortOrder', Number(($event.target as HTMLInputElement).value))"
         /></label>
       </div>
+      <AdminContentRelations
+        v-bind="relations.props.value"
+        @choose="relations.choose"
+        @remove="relations.remove"
+        @move="relations.move"
+        @search="relations.search"
+        @page="relations.setPage"
+        @type="relations.setType"
+        @query="relations.setQuery"
+        @resolve="relations.resolve"
+      />
     </fieldset>
     <p v-if="saved">
       创建于 {{ saved.createdAt }}<template v-if="saved.publishedAt"> · 首次发布于 {{ saved.publishedAt }}</template> ·
@@ -226,6 +238,7 @@
 import type { GalleryEditable, GalleryStatus, ManagedPhoto } from '~/features/gallery/types'
 import type { GalleryRecovery } from '~/features/gallery/editor'
 import { galleryUrlError } from '~/features/gallery/editor'
+import { contentRelationSummary } from '~/features/content-relation/editor'
 import type { MediaAsset } from '~/features/media/types'
 import type { EditorRecoveryCopy } from '~/utils/editorRecoveryStorage'
 const props = defineProps<{
@@ -261,6 +274,12 @@ const selectedMedia = ref<MediaAsset | null>(null)
 function change<K extends keyof GalleryEditable>(key: K, value: GalleryEditable[K]) {
   emit('change', { [key]: value })
 }
+const relations = useContentRelationPicker(
+  computed(() => props.value.relatedContent ?? []),
+  computed(() => (props.id ? { type: 'gallery' as const, id: props.id } : undefined)),
+  computed(() => props.ready && !props.saving && !props.loading),
+  (relatedContent) => emit('change', { relatedContent }),
+)
 function selectMedia(asset: MediaAsset) {
   selectedMedia.value = asset
   change('mediaId', asset.id)

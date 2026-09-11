@@ -255,7 +255,7 @@ for (const method of ['keyboard', 'mouse']) {
     await ready(page)
     const entry = page.getByRole('button', { name: '搜索站内文章、标签...', exact: true })
     await entry.click()
-    const input = page.getByRole('textbox', { name: '搜索文章、项目和友链', exact: true })
+    const input = page.getByRole('textbox', { name: '搜索站内公开内容', exact: true })
     await input.fill('分页样本 104')
     await expect(page.locator('.search-modal__item')).toHaveCount(1)
     await input.dispatchEvent('keydown', { key: 'Enter', isComposing: true })

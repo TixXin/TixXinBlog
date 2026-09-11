@@ -16,6 +16,26 @@
         :show-back-to-top="false"
         primary
       >
+        <section
+          v-if="focus.target.value"
+          ref="focusedProject"
+          class="projects-focus"
+          tabindex="-1"
+          aria-label="指定项目"
+        >
+          <header>
+            <h2>项目详情</h2>
+            <button type="button" @click="focus.close">关闭项目详情</button>
+          </header>
+          <CommonRequestFeedback
+            v-if="focus.pending.value || focus.error.value"
+            :pending="focus.pending.value"
+            :title="focus.error.value || '正在读取指定项目'"
+            @retry="focus.load"
+          />
+          <ProjectCard v-if="focus.item.value" :project="focus.item.value" :interactive="ready" @tag="filterTag" />
+          <CommonRelatedContent :items="focus.item.value?.relatedContent" />
+        </section>
         <div class="projects-filters">
           <label
             >项目进展<select
@@ -67,7 +87,7 @@
           :action-label="filtered ? '清除筛选' : undefined"
           @action="clearFilters"
         />
-        <ProjectGrid v-else :projects="projects" :interactive="ready" @tag="filterTag" />
+        <ProjectGrid v-else :projects="projects" :interactive="ready" @tag="filterTag" @open="openProject" />
         <nav v-if="total !== null && (total > 12 || query.page > 1)" class="projects-pagination" aria-label="项目分页">
           <button
             type="button"
@@ -119,6 +139,14 @@
 </template>
 <script setup lang="ts">
 import { projectProgressLabels } from '~/features/project/types'
+const focus = useProjectFocus()
+const focusedProject = ref<HTMLElement | null>(null)
+watch([focus.item, focus.error], async () => {
+  if (!focus.target.value || focus.pending.value) return
+  await nextTick()
+  focusedProject.value?.focus({ preventScroll: true })
+  focusedProject.value?.scrollIntoView({ block: 'start' })
+})
 const route = useRoute(),
   router = useRouter(),
   { currentThemeId, activeTheme } = useLayoutTheme()
@@ -172,11 +200,37 @@ const stats = computed(() =>
 function filterTag(tag: string) {
   void changeQuery({ tag })
 }
+function openProject(id: number) {
+  void router.push({ path: '/projects', query: { ...route.query, project: String(id) } })
+}
 function clearFilters() {
   void changeQuery({ q: undefined, tag: undefined, progress: undefined })
 }
 </script>
 <style scoped lang="scss">
+.projects-focus {
+  margin-bottom: 1.5rem;
+  min-width: 0;
+}
+.projects-focus header {
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  margin-bottom: 0.75rem;
+}
+.projects-focus h2 {
+  font-size: 1.1rem;
+  font-weight: 600;
+}
+.projects-focus button {
+  min-height: 44px;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: 0.5rem;
+  color: var(--text-main);
+}
 .projects-body {
   flex: 1;
   padding: 0;

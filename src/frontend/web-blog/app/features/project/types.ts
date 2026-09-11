@@ -19,6 +19,7 @@ export interface ProjectTag {
   color: (typeof projectTagColors)[number]
 }
 export interface ProjectItem {
+  relatedContent?: import('~/features/content-relation/types').RelatedContentItem[]
   id: number
   title: string
   description: string
@@ -31,6 +32,7 @@ export interface ProjectItem {
   publishedAt: string | null
 }
 export interface ProjectEditable {
+  relatedContent?: import('~/features/content-relation/types').ContentRelation[]
   title: string
   description: string
   coverMediaId: string | null

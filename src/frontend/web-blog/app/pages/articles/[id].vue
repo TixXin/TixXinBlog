@@ -87,6 +87,7 @@
           <ArticleMarkdown v-if="article.contentRaw" :content="article.contentRaw" />
           <ArticleContent v-else :sections="article.content" />
         </div>
+        <CommonRelatedContent :items="article.relatedContent" />
         <ArticleNav :prev="navigation.prev" :next="navigation.next" :error="discoveryError" />
         <ArticleCommentSection
           v-model="draft"

@@ -79,6 +79,8 @@ export function useMomentRepository(): MomentRepository {
       }),
     remove: (id, revision) => manage('/admin' + path(id), { method: 'DELETE', query: { revision } }),
     adminComments: (id, page) => manage('/admin' + path(id) + '/comments', { query: { page, pageSize: 15 } }),
+    adminCommentLocation: (id, commentId) =>
+      manage('/admin' + path(id) + `/comments/${encodeURIComponent(commentId)}/location`),
     moderate: (id, commentId, status, expectedStatus) =>
       manage('/admin' + path(id) + `/comments/${encodeURIComponent(commentId)}`, {
         method: 'PATCH',

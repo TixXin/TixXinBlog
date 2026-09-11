@@ -35,7 +35,9 @@ watch(
 function close() {
   if (
     busy.value &&
-    !window.confirm('仍有上传或未保存的替代文本，关闭会停止等待并放弃未保存输入；已上传资源保留。确定关闭吗？')
+    !window.confirm(
+      '仍有上传或未保存的替代文本、素材说明，关闭会停止等待并放弃未保存输入；已上传资源保留。确定关闭吗？',
+    )
   )
     return
   open.value = false
