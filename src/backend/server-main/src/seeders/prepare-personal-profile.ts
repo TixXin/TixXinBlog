@@ -6,6 +6,39 @@ import { SiteSettingsService } from '../modules/site/site-settings.service'
 import { createDevelopmentBackup } from './development-backup'
 import type { DevelopmentBackupOptions } from './development-backup'
 import { DevelopmentDataError } from './seed-development-data'
+import { LockMode } from '@mikro-orm/core'
+import type { EntityManager } from '@mikro-orm/postgresql'
+import { SiteSettings } from '../entities/site-settings.entity'
+import { lockMedia } from '../modules/media/media-references'
+import {
+  EMPTY_INITIAL_ABOUT,
+  INITIAL_PROFILE_REASON,
+  LEGACY_INITIAL_SITE_VALUES,
+  SAFE_INITIAL_PROFILE_REASON,
+  SAFE_INITIAL_SITE_VALUES,
+} from '../modules/site/initial-profile'
+
+async function eligibleInitialProfile(em: EntityManager) {
+  const [match] = await em.execute<{ eligible: boolean }[]>(
+    `select exists(select 1 from site_settings s join site_settings_revision r on r.revision=s.revision
+      where s.id='default' and (
+        (s.revision=0 and not exists(select 1 from site_settings_revision where revision=1) and r.reason=? and s."values"-'about'=r."values"-'about' and r."values"-'about'=?::jsonb
+          and coalesce(s."values"->'about',?::jsonb)=?::jsonb and coalesce(r."values"->'about',?::jsonb)=?::jsonb)
+        or (s.revision=1 and r.reason=? and s."values"=r."values" and s."values"=?::jsonb)
+      )) as eligible`,
+    [
+      INITIAL_PROFILE_REASON,
+      JSON.stringify(LEGACY_INITIAL_SITE_VALUES),
+      JSON.stringify(EMPTY_INITIAL_ABOUT),
+      JSON.stringify(EMPTY_INITIAL_ABOUT),
+      JSON.stringify(EMPTY_INITIAL_ABOUT),
+      JSON.stringify(EMPTY_INITIAL_ABOUT),
+      SAFE_INITIAL_PROFILE_REASON,
+      JSON.stringify(SAFE_INITIAL_SITE_VALUES),
+    ],
+  )
+  return match?.eligible === true
+}
 
 export async function preparePersonalProfile(args: string[], options: DevelopmentBackupOptions = {}) {
   const apply = args.includes('--apply')
@@ -38,15 +71,7 @@ export async function preparePersonalProfile(args: string[], options: Developmen
   try {
     const service = new SiteSettingsService(orm.em.fork())
     const current = await service.get()
-    const initial =
-      current.revision === 0 &&
-      current.ownerName === 'TixXin' &&
-      current.ownerTitle === '前端开发工程师，热爱开源与技术分享' &&
-      current.avatar === '/avatar-photo.webp' &&
-      current.about?.introduction === '' &&
-      !current.about?.sections.length &&
-      JSON.stringify(current.socials.map((item) => item.href)) ===
-        JSON.stringify(['https://github.com/TixXin', 'https://twitter.com/TixXin', 'mailto:hi@tix.xin'])
+    const initial = await eligibleInitialProfile(orm.em.fork())
     const report = {
       target: { host: url.hostname, port: Number(url.port || 5432), database },
       apply,
@@ -66,23 +91,40 @@ export async function preparePersonalProfile(args: string[], options: Developmen
     const { updatedAt: _updatedAt, announcementUpdatedAt: _announcementUpdatedAt, ...values } = current
     void _updatedAt
     void _announcementUpdatedAt
-    const saved = await service.save(
-      {
-        ...values,
-        ownerName: 'tixxin',
-        ownerTitle: '技术笔记、项目实践与生活记录',
-        avatar: '/avatar.svg',
-        avatarAlt: '博主头像',
-        socials: [],
-        about: {
-          visible: true,
-          introduction:
-            '这里主要记录 Web 技术实践，整理 TixXinBlog 的实现与维护过程。项目用于介绍具体实现，图库用于整理图片与来源，生活记录保留独立入口。',
-          sections: [],
+    const saved = await orm.em.fork().transactional(async (em) => {
+      await lockMedia(em)
+      const latest = await em.findOneOrFail(
+        SiteSettings,
+        { id: 'default' },
+        { lockMode: LockMode.PESSIMISTIC_WRITE, refresh: true },
+      )
+      if (latest.revision !== current.revision || !(await eligibleInitialProfile(em))) return null
+      return new SiteSettingsService(em).save(
+        {
+          ...values,
+          ownerName: 'tixxin',
+          ownerTitle: '技术笔记、项目实践与生活记录',
+          avatar: '/avatar.svg',
+          avatarAlt: '博主头像',
+          socials: [],
+          about: {
+            visible: true,
+            introduction:
+              '这里主要记录 Web 技术实践，整理 TixXinBlog 的实现与维护过程。项目用于介绍具体实现，图库用于整理图片与来源，生活记录保留独立入口。',
+            sections: [],
+          },
         },
-      },
-      '整理已确认称呼与站点定位，收起未经确认的初始资料',
-    )
+        '整理已确认称呼与站点定位，收起未经确认的初始资料',
+      )
+    })
+    if (!saved)
+      return {
+        ...report,
+        eligible: false,
+        changed: false,
+        backup: backup.directory,
+        reason: '资料在备份期间已改变，保留当前配置',
+      }
     return { ...report, changed: true, revision: saved.revision, backup: backup.directory }
   } finally {
     await orm.close(true)
