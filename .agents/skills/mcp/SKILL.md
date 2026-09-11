@@ -1,94 +1,41 @@
 ---
 name: mcp
-description: 本项目 MCP 服务器的使用规范和工具速查，涵盖 Git、Playwright、Context7 四个 MCP 服务器
+description: 本项目 Git、Playwright、Context7 和 Memory MCP 的共享使用规范
 ---
 
 # MCP 工具使用规范
 
-本项目配置了 4 个 MCP 服务器（见 `.mcp.json`），以下是使用规则和常用工具速查。
+先读取根目录 [AGENTS.md](../../../AGENTS.md)，遵循当前会话授权、数据维护边界和提交规范。各客户端只保留指向本技能的入口，避免复制业务状态或权限要求。
 
-## 1. Git MCP Server (`mcp__git-mcp-server__*`)
+共享配置为根目录 `.mcp.json` 与 `.cursor/mcp.json`。使用前读取当前会话实际提供的工具及其 schema；配置中声明服务器不代表本次会话一定可用。
 
-优先使用当前会话可用的 Git MCP 工具。若工具不可用，可以使用原生 Git CLI 完成已授权范围内的操作；不得因工具缺失虚构检查结果。提交、推送等动作遵循用户当前授权与 AGENTS.md。
+## Git
 
-常用工具：
+- 优先使用当前可用的 Git MCP 工具；未提供或不可用时可使用原生 Git CLI，不因工具缺失虚构检查结果。
+- 仓库参数使用实际工作区根目录，不硬编码开发者盘符或个人目录。
+- 提交前检查工作区、差异与暂存范围，仅处理当前会话授权的文件；按 AGENTS.md 分模块、分批验证后提交。
+- 使用中文 Conventional Commits 标题及解释原因的正文，不添加 AI 署名。已有授权不重复询问；推送和部署按各自授权执行。
 
-| 工具 | 用途 | 关键参数 |
-|------|------|----------|
-| `git_status` | 查看工作区状态 | `repo_path` |
-| `git_diff` | 查看差异 | `repo_path`, `target`（如 `HEAD`） |
-| `git_diff_staged` | 查看暂存区差异 | `repo_path` |
-| `git_diff_unstaged` | 查看未暂存差异 | `repo_path` |
-| `git_log` | 查看提交历史 | `repo_path`, `max_count` |
-| `git_add` | 暂存文件 | `repo_path`, `files`（数组） |
-| `git_commit` | 提交 | `repo_path`, `message` |
-| `git_show` | 查看某次提交详情 | `repo_path`, `revision` |
-| `git_branch` | 查看分支 | `repo_path` |
-| `git_create_branch` | 创建分支 | `repo_path`, `branch_name` |
-| `git_checkout` | 切换分支 | `repo_path`, `branch_name` |
-| `git_reset` | 重置 | `repo_path` |
+## 浏览器验证
 
-注意事项：
-- `repo_path` 使用当前工作区的真实绝对路径，不硬编码开发者盘符。
-- 提交消息格式：`<type>(<scope>): <中文描述>`；遵循 AGENTS.md，不添加 AI 署名 trailer。
-- 提交前先 `git_status` + `git_diff` 确认改动范围
-- 仅在用户授权提交时执行 commit；已有明确授权时不重复询问。
+- UI 改动使用当前可用的浏览器自动化工具实际验证；优先 Playwright MCP，也可使用会话提供的浏览器接口。
+- 先按[开发运行说明](../../../docs/development-runtime.md)检查服务状态；`dev` 只启动前端，真实 API 联调需要完整链路，不能用 Mock 掩盖服务故障。
+- 先读取页面状态，再定位并操作元素；检查交互结果、控制台和相关网络请求，按需保存截图。
+- 截图、trace、录屏和日志保存到 `.playwright-mcp/` 或 `.artifacts/`，遵循[验收产物管理](../../../docs/verification-artifacts.md)。
+- 只关闭本次创建的浏览器会话，不影响用户已有页面或其他验收任务。
 
-## 2. Playwright MCP (`mcp__playwright__*`)
+## Context7
 
-UI 改动后使用当前可用的浏览器自动化工具实际验证；优先 Playwright MCP，未提供时可用内置浏览器的 Playwright/可访问性接口。
+- 查询第三方库 API 或迁移信息时，先解析库 ID，再使用当前 schema 提供的文档查询方法，不沿用旧工具名或参数。
+- 工具未提供时可查阅官方文档；明确区分已验证事实与待确认内容。
+- 密钥由本机环境提供，不写入共享配置、命令示例或日志；不擅自修改现有环境变量。
 
-截图输出目录：`.playwright-mcp/`（已在 `.mcp.json` 中通过 `--output-dir` 配置）
+## Memory
 
-常用工具：
+- 仅在当前客户端提供此工具且任务需要已有决策时使用，不要求所有客户端调用同一记忆系统。
+- 共享配置的记忆输出为 `.cursor/mcp/memory.jsonl`，属于本机运行时文件，已从 Git 忽略。
+- 记录可复用的项目决策和原因，不记录密钥、本机权限或临时调试输出；项目公共约束仍维护在 AGENTS.md 与对应文档中。
 
-| 工具 | 用途 |
-|------|------|
-| `browser_navigate` | 导航到 URL |
-| `browser_snapshot` | 获取无障碍快照（优于截图，结构化数据） |
-| `browser_take_screenshot` | 截图保存为文件 |
-| `browser_click` | 点击元素（需先 snapshot 获取 ref） |
-| `browser_evaluate` | 在页面执行 JS（DOM 检查、状态验证） |
-| `browser_console_messages` | 查看控制台消息 |
-| `browser_hover` | 悬停元素 |
-| `browser_fill_form` | 填写表单 |
-| `browser_press_key` | 按键操作 |
-| `browser_wait_for` | 等待元素/条件 |
-| `browser_network_requests` | 查看网络请求 |
-| `browser_close` | 关闭浏览器 |
+## 维护入口
 
-验证流程：
-1. 确保 dev server 已运行（`pnpm dev`，端口 3456）
-2. `browser_navigate` 到 `http://localhost:3456/<目标页面>`
-3. `browser_snapshot` 获取页面结构，或 `browser_evaluate` 检查 DOM 状态
-4. 需要视觉验证时用 `browser_take_screenshot`
-5. 检查控制台有无报错
-
-交互测试技巧：
-- 先 `browser_snapshot` 获取元素 `ref`，再用 `ref` 进行 `browser_click`
-- 切换主题：通过 `browser_evaluate` 设置 cookie `tixxin-blog-layout-theme=aurora|nexus|dock`，然后刷新
-- 验证组件状态：`browser_evaluate` 执行 DOM 查询
-
-## 3. Context7 MCP (`mcp__context7__*`)
-
-查询第三方库/框架的最新文档，避免使用过时 API。
-
-| 工具 | 用途 |
-|------|------|
-| `resolve-library-id` | 搜索库名获取 Context7 ID |
-| `query-docs` | 根据 ID 查询文档内容 |
-
-使用场景：
-- 使用 Vue/Nuxt/Vite 等框架 API 时查文档确认
-- 不确定某个库的配置选项时
-- 版本迁移或 API 变更时
-
-用法：先 `resolve-library-id` 获取 ID，再 `query-docs` 查询具体内容。
-
-## 4. Memory MCP (`mcp__server-memory__*`)
-
-知识图谱式记忆存储（Cursor 用），Codex 有自己的 memory 系统，一般不直接使用此 MCP。
-
-## 本机秘密配置
-
-Context7 从用户环境变量 `CONTEXT7_API_KEY` 读取密钥；不在 .mcp.json、命令示例或日志中写入密钥值。修改用户环境后，新启动的客户端才能继承。
+当前能力见[能力清单](../../../docs/capability-map.md)，数据库操作见[开发数据库](../../../docs/development-database.md)。历史审计记录不能替代当前代码和配置；修改工具配置时保留现有本机权限语义与环境。

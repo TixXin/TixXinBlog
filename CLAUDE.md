@@ -1,93 +1,11 @@
-# CLAUDE.md
+# Claude Code 项目入口
 
-注意：使用中文进行思考和回复交流
+先读取根目录 [AGENTS.md](AGENTS.md)，以其中的项目约束、当前会话授权、开发数据要求和提交规范为准。使用中文交流；不在此重复维护 Node 版本、业务实现状态或构建流程。
 
-## Project Overview
+- 当前能力与数据源边界：[能力清单](docs/capability-map.md)。
+- 代码职责与目录：[架构基线](docs/project-architecture.md)、[目录说明](docs/directory-structure.md)。
+- 服务启动与数据维护：[开发运行](docs/development-runtime.md)、[开发数据库](docs/development-database.md)、[开发数据目录](docs/development-data-catalog.md)。
+- 验收材料与其他文档：[验收产物管理](docs/verification-artifacts.md)、[文档导航](docs/README.md)。
+- MCP 工具规则：[共享技能](.agents/skills/mcp/SKILL.md)；Claude 入口保留在 `.claude/skills/mcp/SKILL.md`。
 
-TixXinBlog is a personal blog system currently in **UI polishing stage** — all business data uses mock, no backend API integration yet. Mock data lives in `features/<domain>/mock.ts` with types in `features/<domain>/types.ts`. Components receive data via props only (component-data decoupled).
-
-## Commands
-
-```bash
-pnpm dev              # Dev server at localhost:3456
-pnpm build            # Production build
-pnpm preview          # Preview production build
-pnpm generate         # Static site generation
-pnpm lint             # ESLint check
-pnpm lint:fix         # ESLint auto-fix
-pnpm format           # Prettier format all src/
-
-# Testing (runs in web-blog workspace)
-pnpm --filter web-blog test        # Run tests once
-pnpm --filter web-blog test:watch  # Watch mode
-```
-
-Package manager: **pnpm 9.15.0** (enforced). Node >= 20.
-
-## Architecture
-
-**Monorepo** with pnpm workspaces:
-- `src/frontend/web-blog/` — Nuxt 4 + Vue 3 + TypeScript blog frontend (the active project)
-- `src/backend/` — Planned, currently empty
-
-### Frontend Structure (`src/frontend/web-blog/`)
-
-Nuxt 4 app directory layout under `app/`:
-- **`pages/`** — File-system routing. Assembles components, passes data via props.
-- **`components/<domain>/`** — Display-only UI components grouped by domain (article, blog, common, layout, sidebar, etc.)
-- **`features/<domain>/`** — Business logic modules with `mock.ts` and `types.ts` per domain (post, stats, nav, site, about, article, gallery, guestbook, link, moment, project)
-- **`composables/`** — Cross-page reusable Composition API logic
-- **`layouts/`** — Page layouts
-- **`assets/styles/`** — SCSS with design tokens
-
-Other key directories:
-- **`themes/`** — Three themes (nexus, aurora, dock) managed by `@tixxin/nuxt-theme-engine`
-- **`theme-contracts/`** — Local theme slot contracts (RootLayout, ThemeAccessory, etc.)
-- **`server/routes/`** — Nitro server routes (RSS feed)
-- **`tests/`** — Vitest tests
-
-### Theme System
-
-Uses `@tixxin/nuxt-theme-engine` with lazy-loaded themes from `themes/` directory. Default theme: Nexus (three-column). Themes implement contracts defined in `theme-contracts/`.
-
-## Coding Conventions
-
-- **File headers required** on all code files (HTML comments for Vue, JSDoc for TS/SCSS)
-- **Comments in Chinese**
-- **Icons:** Lucide only via `<Icon name="lucide:xxx" />` — never emoji as UI elements
-- **Line endings:** LF only
-- **Prettier:** single quotes, no semicolons, 120 print width, trailing commas
-- **ESLint:** `no-console` warns, `vue/multi-word-component-names` off
-- **Page naming:** `xxx.vue` for single pages; `xxx/index.vue` only when sub-pages exist
-
-## Git Conventions
-
-Pre-commit hook (Husky) runs lint-staged: ESLint fix + Prettier on staged files.
-
-Commit format: Conventional Commits with Chinese subjects.
-```
-<type>(<scope>): <中文描述，不超过50字>
-```
-Types: feat, fix, style, refactor, chore, docs, perf, test  
-Scopes: web-blog, theme, sidebar, pages, blog, etc.
-
-**禁止在 commit message 中添加 `Co-Authored-By: Claude ...` / `🤖 Generated with Claude Code` 之类的 AI 署名 trailer。** 仓库历史已经剥离过一次，后续保持干净：不写 trailer、不加 emoji 署名、也不在 PR body 里加「Generated with Claude Code」行。
-
-## Key Config Files
-
-- `nuxt.config.ts` — Modules: color-mode (dark default), @nuxt/icon, theme-engine, eslint, fonts (Inter), image, sitemap, robots. Security headers and SSG/ISR route rules configured.
-- `vitest.config.ts` — Environment: nuxt, globals enabled
-- `.cursor/rules/` — Project rules (main.mdc, frontend/nuxt4.mdc, git-commit-message.mdc)
-- `docs/` — Architecture baseline (`project-architecture.md`), directory map (`directory-structure.md`), theme guide (`theme-development-guide.md`)
-- `src/frontend/web-blog/todo.md` — Active task tracking
-
-## CI Pipeline
-
-Two workflows on push/PR to main:
-- `ci.yml` (frontend, Node 22): install → lint → typecheck (`nuxt typecheck`) → test → build → audit (non-blocking). Skips backend/docs-only changes.
-- `backend-ci.yml` (paths: `src/backend/**`): postgres:16 service → lint → typecheck → test → migration replay + schema drift check → build → docker build.
-
-## Docker
-
-- Frontend: root `Dockerfile`, multi-stage Node 20-Alpine, port 3000.
-- Backend: `src/backend/server-main/Dockerfile` (build context = repo root), multi-stage Node 22-Alpine, port 3000; requires `DATABASE_URL` and `JWT_ACCESS_SECRET` at runtime.
+本机权限配置与工具记忆留在忽略范围内。整理配置时先备份并保留既有权限语义，不把机器路径、密钥或本机会话白名单加入共享规则。

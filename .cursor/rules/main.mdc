@@ -1,81 +1,15 @@
 ---
-description: TixXinBlog 项目级架构约束
+description: TixXinBlog 公共项目约束与维护入口
 alwaysApply: true
 ---
 
 # TixXinBlog 项目规则
 
-- 项目当前处于真实 API 联调与发布验收阶段，文章、评论、认证和闪念使用 NestJS + MikroORM + PostgreSQL。
-- 展示组件通过 props 接收数据；书签明确使用本机 LocalStorage，其他静态内容与演示数据不冒充已持久化业务数据。
-- 新增结构优先遵循已实现架构，并同步更新相应文档。
-- 将 `docs/project-architecture.md` 视为当前项目的统一架构基线文档。
-- 保持顶层边界稳定：
-  - 前端代码放在 `src/frontend/`
-  - 后端代码放在 `src/backend/`
-  - 文档和设计说明放在 `docs/`
-- 优先做最小、渐进式实现，避免过度预埋和推演式扩展。
-- 如果实现必须偏离文档，偏离范围要小，并明确说明原因。
-- 已有明确归属时，不要再发明一套平行目录约定。
-- 保持模块边界清晰，不要把前端、后端、内容和文档混放到同一位置。
-- 优先采用模块化开发，按领域和职责拆分代码，而不是把多类职责堆到单个文件或目录中。
-- 尽量遵守单一职责原则，一个文件只做一件事；当文件开始同时承担页面、状态、请求、转换等多种职责时，应主动拆分。
-- 写代码时优先考虑长期维护成本，保持命名清晰、结构稳定、依赖关系简单。
-- 优先采用组件化、模块式实现，避免复制粘贴式开发。
-- 遇到重复逻辑时，优先提炼为可复用组件、组合式函数、工具函数或业务模块。
-- 保持仓库整洁，遵守现有 `LF` 行尾约定，避免无意义的格式噪音。
-- Git 提交消息遵循 Conventional Commits 规范，描述使用中文，详见 `.cursor/rules/git-commit-message.mdc`。
+先读取根目录 [AGENTS.md](../../AGENTS.md)，遵循其中的语言、代码风格、数据维护、验证与提交要求，以及当前会话授权。已获授权的开发和验证命令可直接执行，不另设客户端专有确认流程。
 
-## pnpm 命令执行约定
-
-- **pnpm 命令需由用户手动执行**：Agent 不得擅自调用终端执行 `pnpm install`、`pnpm run xxx`、`pnpm add` 等 pnpm 相关命令。
-- **仅可提示**：需要安装依赖、运行脚本或执行 pnpm 操作时，只输出提示文案，告知用户应执行的命令。
-- **例外**：若用户在当前对话中明确表示「可以帮我执行」「你直接运行」等，则可在该对话内代为执行 pnpm 命令。
-
-## 文件头注释规范
-
-- 所有代码文件（`.vue`、`.ts`、`.scss`）顶部必须包含统一的文件头注释。
-- `.vue` 文件使用 HTML 注释格式，放在 `<template>` 标签之前：
-  ```
-  <!--
-    @file 文件名.vue
-    @description 用中文一句话描述文件职责
-    @author TixXin
-    @since YYYY-MM-DD
-  -->
-  ```
-- `.ts`、`.scss` 文件使用 JSDoc 注释格式：
-  ```
-  /**
-   * @file 文件名（含扩展名）
-   * @description 用中文一句话描述文件职责
-   * @author TixXin
-   * @since YYYY-MM-DD
-   */
-  ```
-- 新建文件时必须包含文件头注释，`@since` 填写当天日期。
-
-## 图标与表情规范
-
-- **禁止使用 emoji 字符作为 UI 图标或交互元素**：所有需要图标的场景（按钮、标签、状态指示等）必须使用 Lucide 图标（通过 `@nuxt/icon` 的 `<Icon>` 组件），不得使用 Unicode emoji 字符。
-- 原因：emoji 在不同操作系统和浏览器上的渲染差异大，且无法通过 CSS 精确控制尺寸、颜色和样式，不符合博客的视觉一致性要求。
-- 正确做法：`<Icon name="lucide:heart" size="15" />`
-- 错误做法：`<span>❤️</span>` 或 `{{ emoji }}`
-
-## 注释语言规范
-
-- 代码中需要注释时统一使用中文。
-- 仅在必要时添加注释，不做逐行翻译式注释。
-
-## 目录结构文档
-
-- `docs/directory-structure.md` 记录项目完整目录结构及各文件职责说明。
-- 新增、删除或重命名文件/目录时，需同步更新该文档。
-
-## Todo 文档维护
-
-- 每个正在开发的子项目都应在各自根目录维护 `todo.md`，用于记录当前阶段的任务清单、状态与总进度。
-- 开始开发前，应先查看并更新对应子项目的 `todo.md`，确认当前进行中、待处理、已完成与阻塞事项。
-- 开发过程中任务状态、范围、优先级或阻塞情况发生变化时，必须同步更新 `todo.md`。
-- 完成任务、暂停任务或切换任务前，必须先更新 `todo.md` 的状态与开头的总进度。
-- 当前 `web-blog` 项目的 todo 文档路径为 `src/frontend/web-blog/todo.md`。
-- 后续新增其他前端或后端子项目时，也应沿用“子项目根目录维护本地 `todo.md`”的方式。
+- 当前实现和数据源边界以[能力清单](../../docs/capability-map.md)为准，不从历史阶段说明推断功能状态。
+- 结构调整遵循[架构基线](../../docs/project-architecture.md)和[目录说明](../../docs/directory-structure.md)，保持领域职责清晰，避免平行目录和重复实现。
+- 启动、服务复用和端口检查遵循[开发运行](../../docs/development-runtime.md)；数据库和开发样本遵循[开发数据库](../../docs/development-database.md)及[开发数据目录](../../docs/development-data-catalog.md)。
+- 前后端待办分别维护在 `src/frontend/web-blog/todo.md` 与 `src/backend/server-main/todo.md`；状态变化同步到对应文档。
+- 截图、trace 和日志等本地产物按[验收产物管理](../../docs/verification-artifacts.md)存放，不加入受跟踪的文档目录。
+- MCP 工具操作读取[共享技能](../../.agents/skills/mcp/SKILL.md)，Git 提交读取本目录 `git-commit-message.mdc` 的公共规范入口。
