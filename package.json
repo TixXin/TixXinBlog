@@ -2,7 +2,7 @@
   "name": "tixxinblog",
   "version": "0.0.1",
   "private": true,
-  "description": "个人博客系统。前台 Nuxt 4 + Vue 3，当前处于 UI 打磨阶段。",
+  "description": "Nuxt 4 与 NestJS 个人博客，提供真实内容、创作后台与持久运营维护。",
   "type": "module",
   "scripts": {
     "dev": "corepack pnpm --filter web-blog dev",
