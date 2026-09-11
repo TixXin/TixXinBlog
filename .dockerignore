@@ -7,10 +7,13 @@ node_modules
 **/.output
 **/dist
 **/.dev-dist
+**/*.tsbuildinfo
+**/coverage
 .git
 *.md
 docs
 .cursor
+.vscode
 .husky
 .github
 **/.env
@@ -27,6 +30,7 @@ docs
 **/playwright-report
 **/blob-report
 **/var/media
+**/var/backups
 
 .backups
 
