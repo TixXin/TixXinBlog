@@ -1,9 +1,0 @@
-{
-  // 保留已实现工作区的文件夹图标映射（Material Icon Theme）
-  "material-icon-theme.folders.associations": {
-    "server-main": "server",
-    "web-blog": "server"
-  },
-  // 统一行尾符为 LF，避免跨平台产生无关差异
-  "files.eol": "\n"
-}

@@ -6,7 +6,7 @@
  *
  * 这些 seed 数据通过 useTabBookmarks 在客户端 onMounted 时按需写入 localStorage。
  * 按 userId 分发：博主、普通访客、空账号各有独立 seed。
- * 后端就绪后，HttpTabRepository 会从服务端拉取真实数据，这份 seed 自然废弃。
+ * 当前由 LocalTabRepository 初始化本机书签，保留稳定用户编号与已有 LocalStorage 数据。
  */
 
 import type { BookmarkCategoryDraft, BookmarkDraft } from './types'
@@ -55,9 +55,21 @@ export const defaultBookmarkSeeds: BookmarkSeed[] = [
   { categoryName: '主页', name: 'MDN', url: 'https://developer.mozilla.org', icon: 'M', color: '#000000' },
   { categoryName: '主页', name: 'Can I Use', url: 'https://caniuse.com', icon: 'C', color: '#263238' },
   { categoryName: '主页', name: 'Google Maps', url: 'https://maps.google.com', icon: 'lucide:map', color: '#34a853' },
-  { categoryName: '主页', name: 'Google Drive', url: 'https://drive.google.com', icon: 'lucide:hard-drive', color: '#4285f4' },
+  {
+    categoryName: '主页',
+    name: 'Google Drive',
+    url: 'https://drive.google.com',
+    icon: 'lucide:hard-drive',
+    color: '#4285f4',
+  },
   { categoryName: '主页', name: 'Amazon', url: 'https://www.amazon.com', icon: 'A', color: '#ff9900' },
-  { categoryName: '主页', name: 'LinkedIn', url: 'https://www.linkedin.com', icon: 'lucide:linkedin', color: '#0a66c2' },
+  {
+    categoryName: '主页',
+    name: 'LinkedIn',
+    url: 'https://www.linkedin.com',
+    icon: 'lucide:linkedin',
+    color: '#0a66c2',
+  },
   { categoryName: '主页', name: 'Discord', url: 'https://discord.com', icon: 'D', color: '#5865f2' },
   { categoryName: '主页', name: 'Slack', url: 'https://slack.com', icon: 'lucide:slack', color: '#4a154b' },
   { categoryName: '主页', name: 'Medium', url: 'https://medium.com', icon: 'M', color: '#000000' },
@@ -108,7 +120,13 @@ export const defaultBookmarkSeeds: BookmarkSeed[] = [
   { categoryName: '产品', name: 'Stripe', url: 'https://stripe.com', icon: 'S', color: '#635bff' },
   { categoryName: '产品', name: 'Linear', url: 'https://linear.app', icon: 'L', color: '#5e6ad2' },
   { categoryName: '产品', name: 'Jira', url: 'https://www.atlassian.com/software/jira', icon: 'J', color: '#0052cc' },
-  { categoryName: '产品', name: 'Analytics', url: 'https://analytics.google.com', icon: 'lucide:bar-chart', color: '#e37400' },
+  {
+    categoryName: '产品',
+    name: 'Analytics',
+    url: 'https://analytics.google.com',
+    icon: 'lucide:bar-chart',
+    color: '#e37400',
+  },
 
   // ==================== 娱乐 ====================
   { categoryName: '娱乐', name: 'Netflix', url: 'https://www.netflix.com', icon: 'N', color: '#e50914' },

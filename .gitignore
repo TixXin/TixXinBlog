@@ -8,7 +8,6 @@ node_modules/
 dist/
 .dev-dist/
 *.tsbuildinfo
-.codex
 
 # 环境变量
 .env
@@ -33,13 +32,18 @@ coverage/
 **/var/media/
 **/var/backups/
 
-# Claude Code 本地设置
-.claude/settings.json
-.claude/settings.local.json
-.claude/scheduled_tasks.lock
+# 可选编辑器与代理工具（只在本机保留）
+/.agents/
+/.claude/
+/.cursor/
+/.vscode/
+/.codex/
+/.mcp.json
+/CLAUDE.md
+/.gitmessage
 
-# MCP 本机运行时记忆
-.cursor/mcp/memory.jsonl
+# Nuxt 测试模块自动生成的本机安装记录
+/src/frontend/web-blog/.nuxtrc
 
 # 本地完整数据备份与恢复资料
 .backups/
