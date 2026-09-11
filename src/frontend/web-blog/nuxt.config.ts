@@ -47,7 +47,6 @@ export default {
         { property: 'og:type', content: 'website' },
         { property: 'og:locale', content: 'zh_CN' },
         { name: 'twitter:card', content: 'summary_large_image' },
-        { name: 'twitter:site', content: '@TixXin' },
       ],
       // 生产环境：在 hydration 之前检测 sessionStorage，为 <html> 添加 .visited class，
       // 使非首次访问直接隐藏 loading 覆盖层，消除闪烁。开发环境不注入，保证刷新可调试
@@ -120,7 +119,7 @@ export default {
       nuxtVersion: '4',
       // 数据仓库切换：true=mock 实现；false=HTTP 实现（对接 server-main）
       // 环境变量 NUXT_PUBLIC_USE_MOCK_REPO=false 时走后端；详见 app/plugins/repositories.ts
-      // 与 docs/backend/development.md §10
+      // 当前数据源边界见 docs/capability-map.md。
       useMockRepo: process.env.NUXT_PUBLIC_USE_MOCK_REPO === 'true',
       // 文章及评论可独立联调，未配置时兼容原有全局开关。
       postUseMockRepo: (process.env.NUXT_PUBLIC_POST_USE_MOCK_REPO ?? process.env.NUXT_PUBLIC_USE_MOCK_REPO) === 'true',

@@ -46,7 +46,12 @@ export class MomentReadService {
     }
     const [items, total] = await this.em.findAndCount(Moment, where, {
       populate: ['linkedArticle'],
-      orderBy: { isPinned: 'desc', publishedAt: 'desc', createdAt: 'desc', id: 'desc' },
+      orderBy: {
+        ...(query.pinnedFirst !== false ? { isPinned: 'desc' as const } : {}),
+        publishedAt: 'desc',
+        createdAt: 'desc',
+        id: 'desc',
+      },
       limit: query.pageSize,
       offset: (query.page - 1) * query.pageSize,
     })
