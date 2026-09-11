@@ -77,7 +77,11 @@
             </label>
           </fieldset>
           <AdminSiteSettingsPreview :value="draft" label="保存后的公开资料预览" />
-          <button type="submit" :disabled="pending || !dirty">{{ pending ? '处理中…' : '保存并生效' }}</button>
+          <AdminActionBar
+            ><button type="submit" :disabled="pending || !dirty">
+              {{ pending ? '处理中…' : '保存并生效' }}
+            </button></AdminActionBar
+          >
         </form>
         <section v-if="conflict" aria-label="站点配置冲突">
           <AdminSiteSettingsPreview :value="conflict" label="最新服务器资料" /><button

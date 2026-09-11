@@ -2,7 +2,7 @@
 <template>
   <section class="gallery-settings">
     <h1>摄影器材设置</h1>
-    <NuxtLink to="/admin/gallery">返回图库管理</NuxtLink>
+    <AdminBackLink to="/admin/gallery">返回图库管理</AdminBackLink>
     <p>以下是博主维护的器材介绍。照片数量、地点和分类由公开作品实时统计。未填写的器材不会自动生成。</p>
     <ClientOnly
       ><CommonRequestFeedback
@@ -57,7 +57,9 @@
             添加器材
           </button>
         </fieldset>
-        <button type="submit" :disabled="pending || !ready || !dirty">保存器材资料</button>
+        <AdminActionBar
+          ><button type="submit" :disabled="pending || !ready || !dirty">保存器材资料</button></AdminActionBar
+        >
         <p>服务器版本 {{ draft.revision }}{{ dirty ? ' · 有未保存输入' : '' }}</p>
       </form>
       <section v-if="conflict" aria-label="器材版本冲突">

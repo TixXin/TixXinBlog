@@ -3,7 +3,7 @@
   <form class="project-editor" @submit.prevent="$emit('save', value.status)">
     <header>
       <h1>{{ id ? '编辑项目' : '新建项目' }}</h1>
-      <NuxtLink to="/admin/projects">返回项目管理</NuxtLink
+      <AdminBackLink to="/admin/projects">返回项目管理</AdminBackLink
       ><NuxtLink v-if="saved?.status === 'published'" :to="`/projects?q=${encodeURIComponent(saved.title)}`"
         >查看公开项目</NuxtLink
       >
@@ -222,7 +222,7 @@
       创建于 {{ saved.createdAt }}<template v-if="saved.publishedAt"> · 首次发布于 {{ saved.publishedAt }}</template> ·
       版本 {{ saved.revision }}
     </p>
-    <footer>
+    <AdminActionBar>
       <button type="submit" :disabled="!ready || loading || saving || !value.title.trim()">
         {{ saving ? '正在保存…' : '保存项目' }}</button
       ><button
@@ -238,7 +238,7 @@
       >
         发布项目</button
       ><span>{{ dirty ? '有尚未保存输入' : saved ? '当前输入已保存' : '尚未保存' }}</span>
-    </footer>
+    </AdminActionBar>
     <ClientOnly><AdminMediaPicker v-model:open="mediaOpen" @selected="selectMedia" /></ClientOnly>
   </form>
 </template>
