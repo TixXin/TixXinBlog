@@ -21,6 +21,24 @@ WORKDIR /repo/src/backend/server-main
 ENV NODE_ENV=production
 CMD ["corepack", "pnpm", "migration:up"]
 
+# 独立运行任务镜像：原生 PG16 客户端与脚本随镜像交付，不依赖宿主 Docker socket。
+FROM node:24-alpine AS worker
+ENV NODE_ENV=production \
+    BACKUP_EXECUTION_MODE=native \
+    MEDIA_DIRECTORY=/app/var/media \
+    BACKUP_DIRECTORY=/app/var/backups
+WORKDIR /app
+RUN apk add --no-cache postgresql16-client \
+  && npm install --global pnpm@9.15.0 \
+  && test "$(pnpm --version)" = '9.15.0' \
+  && pg_dump --version
+COPY --from=build --chown=node:node /out .
+COPY --from=build --chown=node:node /repo/src/backend/server-main/scripts ./scripts
+RUN mkdir -p /app/var/media /app/var/backups && chown -R node:node /app/var
+USER node
+# 直接运行镜像只读状态；只有显式 profile、配置及 loop --apply 才启用持续执行。
+CMD ["node", "scripts/operations.mjs", "status"]
+
 FROM node:24-alpine AS runtime
 ENV NODE_ENV=production \
     PORT=3000

@@ -8,6 +8,9 @@ on:
       - '.github/workflows/backend-ci.yml'
       - 'pnpm-lock.yaml'
       - 'pnpm-workspace.yaml'
+      - 'compose.production.yaml'
+      - 'deploy/**'
+      - 'scripts/release/**'
   pull_request:
     branches: [main]
     paths:
@@ -15,6 +18,9 @@ on:
       - '.github/workflows/backend-ci.yml'
       - 'pnpm-lock.yaml'
       - 'pnpm-workspace.yaml'
+      - 'compose.production.yaml'
+      - 'deploy/**'
+      - 'scripts/release/**'
 
 jobs:
   backend:
@@ -77,11 +83,25 @@ jobs:
           BACKUP_POSTGRES_CONTAINER: ${{ job.services.postgres.id }}
         run: pnpm --filter server-main test:database-dev
 
+      - name: Sustainable Content and Operations on Isolated Targets
+        env:
+          BACKUP_POSTGRES_CONTAINER: ${{ job.services.postgres.id }}
+        run: |
+          pnpm --filter server-main exec tsx tests/editorial-fixtures-integration.ts
+          pnpm --filter server-main exec tsx tests/sustainable-fixtures-integration.ts
+          pnpm --filter server-main exec node tests/operations-integration.mjs
+          pnpm --filter server-main exec node tests/backup-integrity-integration.mjs
+          pnpm --filter server-main exec node tests/manual-backup-record-integration.mjs
+          node --test scripts/release/release.test.mjs
+
       - name: Docker Build
         run: docker build -f src/backend/server-main/Dockerfile -t tixxin-blog-server .
 
       - name: Migration Image Build
         run: docker build -f src/backend/server-main/Dockerfile --target migration -t tixxin-blog-migration .
+
+      - name: Worker Image Build
+        run: docker build -f src/backend/server-main/Dockerfile --target worker -t tixxin-blog-worker .
 
       - name: Full Backup Restore on Isolated Container
         env:
@@ -94,6 +114,8 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: restore-verification
-          path: .backups/**/verification-report.json
+          path: |
+            .backups/**/verification-report.json
+            .artifacts/**/verification-report.json
           if-no-files-found: ignore
           retention-days: 5

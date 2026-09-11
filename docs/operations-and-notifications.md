@@ -88,4 +88,6 @@ node src/backend/server-main/tests/operations-integration.mjs
 
 测试创建随机隔离数据库、媒体目录、临时账号、本机 SMTP/TCP 接收器及无网络恢复容器，验证事务事件去重、双 worker 竞争、限频、有限重试、真实接收后断线、不确定状态不重投、失效租约、过时提醒抑制、真实文件传输及回执、错误 token/摘要拒绝、归属清理和恢复双暂停。结束只清理自身资源，脱敏报告保留 `.artifacts/operations/<本次UUID>/verification-report.json`。不会向真实收件人、异地目标发送，也不会启用日常开发库开关。
 
-宿主 Docker 模式验收不能代替最终 worker 镜像内原生 `pg_dump`、生产 HTTPS/SMTP 认证、真实异地网络和真实容量告警验收；这些边界需在最终交付分别记录。
+后端 Dockerfile 的独立 `worker` target 已提供 Node 24、固定 pnpm 9.15.0、PostgreSQL 16 客户端、生产依赖和 `scripts/`。直接运行镜像默认只读 status；生产 Compose 的 worker profile 默认关闭，媒体只读挂载，备份写入专用卷，不需要 Docker socket。具体版本配置、显式启用及发布过程对既有 worker 的停启协调见[发布与版本切换](release-operations.md#可选运行任务容器)。
+
+镜像内原生备份、受信任本机 HTTPS、完整恢复和故障编排使用 `node scripts/release/production-integration.mjs` 实际验证，原始报告保留在本机 `.artifacts/production-release/<唯一编号>/`。该验收使用独立项目、内部 CA 和临时内容，不替代真实 SMTP 认证、异地网络、真实容量告警或生产发布验收；这些外部启用边界仍需单独记录。
