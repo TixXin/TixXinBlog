@@ -3,7 +3,7 @@
   <form class="gallery-editor" @submit.prevent="$emit('save', value.status)">
     <header>
       <h1>{{ id ? '编辑照片作品' : '新建照片作品' }}</h1>
-      <NuxtLink to="/admin/gallery">返回图库管理</NuxtLink
+      <AdminBackLink to="/admin/gallery">返回图库管理</AdminBackLink
       ><NuxtLink v-if="saved?.status === 'published'" :to="`/gallery?photo=${id}`">查看公开作品</NuxtLink>
     </header>
     <p v-if="error" role="alert">
@@ -66,31 +66,82 @@
       </label>
       <section>
         <h2>作品图片</h2>
-        <button type="button" @click="mediaOpen = true">选择或上传图片</button
-        ><CommonImageFrame
-          v-if="value.mediaId"
-          class="gallery-editor__preview"
-          :src="`/api/v1/media/${value.mediaId}.webp`"
-          :alt="value.title || '作品图片'"
-          fit="contain"
-          :width="
-            selectedMedia?.id === value.mediaId
-              ? selectedMedia.width
-              : saved?.mediaId === value.mediaId
-                ? saved.width
-                : undefined
-          "
-          :height="
-            selectedMedia?.id === value.mediaId
-              ? selectedMedia.height
-              : saved?.mediaId === value.mediaId
-                ? saved.height
-                : undefined
-          "
-        />
-        <p>
-          上传文件不会自动公开为图库作品。发布状态控制作品展示；持有媒体文件地址的人仍可能访问文件。替换或删除作品不会删除其他内容使用的文件。
-        </p>
+        <label
+          >图片来源<select
+            :value="value.source"
+            aria-label="图片来源"
+            @change="change('source', ($event.target as HTMLSelectElement).value as GalleryEditable['source'])"
+          >
+            <option value="media">媒体库图片</option>
+            <option value="external">外部图片 URL</option>
+          </select></label
+        >
+        <div v-if="value.source === 'external'">
+          <label
+            >外部图片地址<input
+              :value="value.externalUrl"
+              aria-label="外部图片地址"
+              type="url"
+              maxlength="2048"
+              :aria-invalid="!!value.externalUrl && !!urlError"
+              aria-describedby="gallery-url-help"
+              @input="change('externalUrl', ($event.target as HTMLInputElement).value)"
+          /></label>
+          <p id="gallery-url-help">
+            填写完整 HTTP(S) 图片直链，可带查询参数。地址不会被服务器下载或检查；HTTPS 页面中的 HTTP
+            图片可能被浏览器阻止。
+          </p>
+          <p v-if="value.externalUrl && urlError" role="alert">{{ urlError }}</p>
+          <template v-else-if="value.externalUrl">
+            <p>地址格式合法，可以保存。预览结果不决定保存结果。</p>
+            <CommonImageFrame
+              :key="value.externalUrl"
+              class="gallery-editor__preview"
+              :src="value.externalUrl"
+              :alt="value.title || '外部图片预览'"
+              fit="contain"
+              loading="eager"
+              @state="previewState = $event"
+            />
+            <p role="status">
+              {{
+                previewState === 'ready'
+                  ? '当前预览加载成功；显示比例来自浏览器实际尺寸，不写入作品资料。'
+                  : previewState === 'error'
+                    ? '当前预览加载失败，可能是地址失效、网络故障、防盗链或浏览器安全限制。可重试，也可以保存此合法地址。'
+                    : '正在加载预览…'
+              }}
+            </p>
+          </template>
+        </div>
+        <template v-else>
+          <button type="button" @click="mediaOpen = true">选择或上传图片</button
+          ><CommonImageFrame
+            v-if="value.mediaId"
+            class="gallery-editor__preview"
+            :src="`/api/v1/media/${value.mediaId}.webp`"
+            :alt="value.title || '作品图片'"
+            fit="contain"
+            :width="
+              selectedMedia?.id === value.mediaId
+                ? selectedMedia.width
+                : saved?.mediaId === value.mediaId
+                  ? saved.width
+                  : undefined
+            "
+            :height="
+              selectedMedia?.id === value.mediaId
+                ? selectedMedia.height
+                : saved?.mediaId === value.mediaId
+                  ? saved.height
+                  : undefined
+            "
+          />
+          <p>
+            上传文件不会自动公开为图库作品。发布状态控制作品展示；持有媒体文件地址的人仍可能访问文件。替换或删除作品不会删除其他内容使用的文件。
+          </p>
+        </template>
+        <p>切换来源会保留本次未提交输入；保存时仅使用选定来源。</p>
       </section>
       <div class="gallery-editor__row">
         <label
@@ -151,32 +202,33 @@
       创建于 {{ saved.createdAt }}<template v-if="saved.publishedAt"> · 首次发布于 {{ saved.publishedAt }}</template> ·
       版本 {{ saved.revision }}
     </p>
-    <footer>
-      <button type="submit" :disabled="!ready || saving || loading || !value.title.trim() || !value.mediaId">
+    <AdminActionBar>
+      <button type="submit" :disabled="!ready || saving || loading || !value.title.trim() || !sourceValid">
         {{ saving ? '正在保存…' : '保存作品' }}</button
       ><button
         type="button"
-        :disabled="!ready || saving || loading || !value.title.trim() || !value.mediaId"
+        :disabled="!ready || saving || loading || !value.title.trim() || !sourceValid"
         @click="$emit('save', 'draft')"
       >
         保存草稿</button
       ><button
         type="button"
-        :disabled="!ready || saving || loading || !value.title.trim() || !value.mediaId"
+        :disabled="!ready || saving || loading || !value.title.trim() || !sourceValid"
         @click="$emit('save', 'published')"
       >
         发布作品</button
       ><span>{{ dirty ? '有尚未保存输入' : saved ? '当前输入已保存' : '尚未保存' }}</span>
-    </footer>
+    </AdminActionBar>
     <ClientOnly><AdminMediaPicker v-model:open="mediaOpen" @selected="selectMedia" /></ClientOnly>
   </form>
 </template>
 <script setup lang="ts">
 import type { GalleryEditable, GalleryStatus, ManagedPhoto } from '~/features/gallery/types'
 import type { GalleryRecovery } from '~/features/gallery/editor'
+import { galleryUrlError } from '~/features/gallery/editor'
 import type { MediaAsset } from '~/features/media/types'
 import type { EditorRecoveryCopy } from '~/utils/editorRecoveryStorage'
-defineProps<{
+const props = defineProps<{
   value: GalleryEditable
   id: number | null
   saved: ManagedPhoto | null
@@ -191,6 +243,9 @@ defineProps<{
   notice: string
   localError: string
 }>()
+const urlError = computed(() => galleryUrlError(props.value.externalUrl))
+const sourceValid = computed(() => (props.value.source === 'external' ? !urlError.value : !!props.value.mediaId))
+const previewState = ref('loading')
 const emit = defineEmits<{
   change: [value: Partial<GalleryEditable>]
   save: [status: GalleryStatus]

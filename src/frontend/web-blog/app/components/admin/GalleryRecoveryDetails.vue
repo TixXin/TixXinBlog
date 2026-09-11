@@ -1,6 +1,10 @@
 <!-- @file GalleryRecoveryDetails.vue @description 图库恢复副本完整只读字段，跨内容库不展示或绑定旧媒体文件 -->
 <template>
   <dl class="recovery-details">
+    <dt>图片来源</dt>
+    <dd>{{ value.source === 'external' ? '外部图片 URL' : '媒体库图片' }}</dd>
+    <dt>保留的外部图片地址</dt>
+    <dd>{{ value.externalUrl || '未填写' }}</dd>
     <dt>作品标题</dt>
     <dd>{{ value.title || '未填写' }}</dd>
     <dt>作品说明</dt>

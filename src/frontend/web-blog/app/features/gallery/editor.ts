@@ -2,7 +2,9 @@
 import type { GalleryEditable, ManagedPhoto } from './types'
 export function galleryForm(photo?: Partial<ManagedPhoto>): GalleryEditable {
   return {
+    source: photo?.source ?? (photo?.externalUrl ? 'external' : 'media'),
     mediaId: photo?.mediaId ?? '',
+    externalUrl: photo?.externalUrl ?? '',
     title: photo?.title ?? '',
     description: photo?.description ?? '',
     category: photo?.category ?? '',
@@ -14,7 +16,7 @@ export function galleryForm(photo?: Partial<ManagedPhoto>): GalleryEditable {
   }
 }
 export interface GalleryRecovery {
-  version: 1
+  version: 1 | 2
   context: string
   id: number | null
   revision: number | null
@@ -27,6 +29,8 @@ export function validGalleryForm(value: unknown): value is GalleryEditable {
   if (!value || typeof value !== 'object') return false
   const v = value as GalleryEditable
   return (
+    (v.source === undefined || ['media', 'external'].includes(v.source)) &&
+    (v.externalUrl === undefined || (typeof v.externalUrl === 'string' && v.externalUrl.length <= 2048)) &&
     typeof v.mediaId === 'string' &&
     (!v.mediaId || /^[0-9a-f-]{36}$/i.test(v.mediaId)) &&
     [
@@ -50,7 +54,7 @@ export function parseGalleryRecovery(raw: string | null): GalleryRecovery | null
   try {
     const v = JSON.parse(raw) as GalleryRecovery
     if (
-      v.version !== 1 ||
+      ![1, 2].includes(v.version) ||
       typeof v.context !== 'string' ||
       v.context.length > 200 ||
       typeof v.requestId !== 'string' ||
@@ -63,7 +67,7 @@ export function parseGalleryRecovery(raw: string | null): GalleryRecovery | null
     )
       return null
     return {
-      version: 1,
+      version: 2,
       context: v.context,
       id: v.id,
       revision: v.revision,
@@ -75,4 +79,37 @@ export function parseGalleryRecovery(raw: string | null): GalleryRecovery | null
   } catch {
     return null
   }
+}
+
+export function galleryPayload(form: GalleryEditable) {
+  const { source, mediaId, externalUrl, ...values } = form
+  return {
+    ...values,
+    mediaId: source === 'external' ? null : mediaId,
+    externalUrl: source === 'external' ? externalUrl : null,
+  }
+}
+
+export function galleryUrlError(value: string): string {
+  if (!value) return '请输入完整的图片地址'
+  if (
+    !/^https?:\/\/[^/]/i.test(value) ||
+    /[\\\s]/u.test(value) ||
+    [...value].some((char) => char.charCodeAt(0) < 32 || char.charCodeAt(0) === 127) ||
+    value.length > 2048
+  )
+    return '请使用完整的 HTTP(S) 地址，不含空白、控制字符或反斜杠'
+  try {
+    const url = new URL(value)
+    if (!['http:', 'https:'].includes(url.protocol) || !url.hostname || url.username || url.password)
+      return '地址不完整或含有凭据'
+    let decoded = value
+    for (let i = 0; i < 2; i++)
+      decoded = decoded.replace(/%([0-9a-f]{2})/gi, (_all, hex: string) => String.fromCharCode(parseInt(hex, 16)))
+    if (/\/api\/v1\/media\/[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}\.webp/i.test(decoded))
+      return '媒体库图片请通过媒体选择器关联'
+  } catch {
+    return '请输入完整有效的图片地址'
+  }
+  return ''
 }

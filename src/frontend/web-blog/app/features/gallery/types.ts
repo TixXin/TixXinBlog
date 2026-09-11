@@ -6,6 +6,7 @@
  */
 
 export interface PhotoItem {
+  source?: 'media' | 'external'
   id: number
   title: string
   description: string
@@ -40,7 +41,9 @@ export interface GearItem {
 
 export type GalleryStatus = 'draft' | 'published' | 'withdrawn'
 export interface GalleryEditable {
+  source: 'media' | 'external'
   mediaId: string
+  externalUrl: string
   title: string
   description: string
   category: string
@@ -50,7 +53,10 @@ export interface GalleryEditable {
   status: GalleryStatus
   sortOrder: number
 }
-export interface ManagedPhoto extends Omit<PhotoItem, 'device'>, GalleryEditable {
+export interface ManagedPhoto
+  extends Omit<PhotoItem, 'device' | 'source'>, Omit<GalleryEditable, 'mediaId' | 'externalUrl'> {
+  mediaId: string | null
+  externalUrl: string | null
   revision: number
   createdAt: string
   updatedAt: string
