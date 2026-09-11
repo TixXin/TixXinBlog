@@ -1,4 +1,5 @@
 /** @file editorial-content.ts @description 首发技术内容候选，依据当前仓库可核查实现，不代写未经确认的个人经历。 */
+// 本内容版本参与归属指纹；正文中的文档路径对应当时检出，不随目录整理改写已有样本。
 export const EDITORIAL_CONTENT_VERSION = 'first-release-2026-09'
 export const EDITORIAL_DATASET = 'editorial-v1'
 export const EDITORIAL_CREATE_REASON = '整理仓库事实技术草稿'

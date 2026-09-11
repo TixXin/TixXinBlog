@@ -4,9 +4,7 @@
  * @author TixXin
  * @since 2026-07-20
  *
- * 与 docs/archive/backend-design/development.md §4.1 的偏离：主键采用自增整数而非 uuid v7。
- * 原因：前端契约 PostItem.id 为 number（api.md §7.2 列表示例同为数字），
- * uuid 迁移需待前端统一 id 类型后再做。
+ * 自增整数主键与前端数字 ID、历史地址和内容包编号映射契约保持一致。
  */
 
 import { Collection, Entity, Enum, Index, ManyToMany, OptionalProps, PrimaryKey, Property } from '@mikro-orm/core'

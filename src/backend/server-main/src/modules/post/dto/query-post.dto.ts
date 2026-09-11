@@ -1,6 +1,6 @@
 /**
  * @file query-post.dto.ts
- * @description GET /posts 查询参数 DTO，对齐 docs/archive/backend-design/api.md §7.2
+ * @description GET /posts 查询参数 DTO，公开查询约定见 docs/api.md
  * @author TixXin
  * @since 2026-07-20
  */
