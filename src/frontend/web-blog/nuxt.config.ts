@@ -14,8 +14,12 @@ const startupGuard = readFileSync(new URL('./public/startup-guard.js', import.me
 
 export default {
   // Nuxt 启动历史与清单预取的固定版本修正维护在仓库根目录 patches/。
-  // 开发与生产构建使用独立中间目录，避免并行构建污染正在运行的 Vite 状态。
-  buildDir: process.env.NODE_ENV === 'production' ? '.nuxt-production' : '.nuxt',
+  // prepare/typecheck 也可能使用 production；默认目录需与 ESLint 和根 tsconfig 的引用保持一致。
+  buildDir: '.nuxt',
+  // 项目 build/generate 命令显式选择该环境，生产构建不会改写日常开发的 Vite 中间文件。
+  $env: {
+    'production-build': { buildDir: '.nuxt-production' },
+  },
   compatibilityDate: '2025-07-15',
   devtools: { enabled: true },
   devServer: {

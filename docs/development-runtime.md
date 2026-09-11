@@ -11,6 +11,14 @@ corepack pnpm dev:all
 
 `dev:all` 先检查数据库，再依次启动或复用 API 与前端。原 `dev` / `dev:blog` 仍只启动 Nuxt，`dev:api` 仍只启动 Nest。完整链路要求真实 API 模式。
 
+## 安装准备与构建目录
+
+首次检出后执行 `corepack pnpm install --frozen-lockfile`。安装阶段的 `nuxt prepare` 在标准 `.nuxt/` 生成 ESLint 配置和 TypeScript 引用；需要重新准备时可运行 `corepack pnpm --filter web-blog exec nuxt prepare`。`nuxt typecheck` 同样使用该目录，不依赖其他工作区的生成缓存。
+
+生产构建与静态生成使用仓库支持的 `corepack pnpm build`、`corepack pnpm generate` 入口。前端脚本显式传入 Nuxt 的 `--envName production-build`，只把中间目录切换到 `.nuxt-production/`；生产 `NODE_ENV` 语义保持不变，避免构建改写正在运行的开发 Vite 文件。直接执行裸 `nuxt build` 或 `nuxt generate` 不带此项目配置环境，不能保证开发目录隔离。
+
+不按 `NODE_ENV` 单独选择生成目录：当前 Nuxt CLI 的 `prepare` 和 `typecheck` 也可能默认设为 `production`，否则干净安装后会缺少根 ESLint 与 tsconfig 所引用的 `.nuxt/` 文件。
+
 ## 配置与判断依据
 
 - 后端工作目录为 `src/backend/server-main`；环境优先级是进程环境、`.env.local`、`.env`。

@@ -3,9 +3,9 @@
   "type": "module",
   "private": true,
   "scripts": {
-    "build": "nuxt build",
+    "build": "nuxt build --envName production-build",
     "dev": "nuxt dev",
-    "generate": "nuxt generate",
+    "generate": "nuxt generate --envName production-build",
     "preview": "nuxt preview",
     "postinstall": "nuxt prepare",
     "start": "corepack pnpm build && node .output/server/index.mjs",
