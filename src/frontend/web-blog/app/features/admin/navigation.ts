@@ -1,6 +1,8 @@
 /** @file navigation.ts @description 后台导航唯一配置，详情页保持所属模块识别 */
 export const adminNavigation = [
   { path: '/admin', label: '管理概览', icon: 'lucide:layout-dashboard' },
+  { path: '/admin/notifications', label: '互动通知', icon: 'lucide:bell' },
+  { path: '/admin/operations', label: '运行状态', icon: 'lucide:activity' },
   { path: '/admin/posts', label: '文章管理', icon: 'lucide:files' },
   { path: '/admin/comments', label: '评论管理', icon: 'lucide:messages-square' },
   { path: '/admin/flashes', label: '闪念管理', icon: 'lucide:lightbulb' },

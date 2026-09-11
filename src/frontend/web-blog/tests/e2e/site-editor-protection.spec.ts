@@ -87,6 +87,53 @@ test('真实 PATCH 已完成而客户端断线，核对后不重复提交', asyn
     await restore(page, original.value, original.headers)
   }
 })
+test('管理员可展开核对冲突与历史中的隐藏关于资料', async ({ page }) => {
+  const original = await currentSite(page)
+  const saveValues = async (about: NonNullable<SiteSettingsData['about']>) => {
+    const current = (await (await page.request.get('/api/v1/admin/site', { headers: original.headers })).json()).data
+    const { updatedAt: _updatedAt, announcementUpdatedAt: _announcementUpdatedAt, ...body } = current
+    const response = await page.request.patch('/api/v1/admin/site', {
+      headers: original.headers,
+      data: { ...body, about },
+    })
+    expect(response.status()).toBe(200)
+    return (await response.json()).data
+  }
+  try {
+    const about: NonNullable<SiteSettingsData['about']> = {
+      visible: false,
+      introduction: '尚未公开的原介绍',
+      sections: [
+        {
+          kind: 'reading',
+          visible: false,
+          items: [{ title: '暂未公开的阅读记录', period: '近期', detail: '原始阅读笔记', visible: false }],
+        },
+      ],
+    }
+    const historical = await saveValues(about)
+    await page.goto('/admin/site')
+    await page.getByRole('textbox', { name: '博主简介', exact: true }).fill('本页尚未保存的简介')
+    await saveValues({ ...about, introduction: '服务器尚未公开的最新介绍' })
+    const conflictResponse = page.waitForResponse(
+      (response) => response.url().endsWith('/api/v1/admin/site') && response.request().method() === 'PATCH',
+    )
+    await page.getByRole('button', { name: '保存并生效', exact: true }).click()
+    expect((await conflictResponse).status()).toBe(409)
+    const latest = page.getByRole('region', { name: '最新服务器资料', exact: true })
+    await latest.locator('summary').click()
+    await expect(latest).toContainText('服务器尚未公开的最新介绍')
+    await expect(latest.getByText('说明：原始阅读笔记', { exact: true })).toBeVisible()
+    await expect(latest).toContainText('条目隐藏')
+    await page.getByRole('button', { name: new RegExp(`^查看版本 ${historical.revision} ·`) }).click()
+    const preview = page.getByRole('region', { name: `历史版本 ${historical.revision} 预览`, exact: true })
+    await preview.locator('summary').click()
+    await expect(preview).toContainText('尚未公开的原介绍')
+    await expect(preview.getByText('说明：原始阅读笔记', { exact: true })).toBeVisible()
+  } finally {
+    await restore(page, original.value, original.headers)
+  }
+})
 for (const width of [320, 390]) {
   test(`${width}px 关于条目排序后焦点保持在同一条目且无横向溢出`, async ({ page }, testInfo) => {
     await page.setViewportSize({ width, height: 840 })

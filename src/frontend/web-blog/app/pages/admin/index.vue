@@ -87,6 +87,7 @@
         </ul>
       </section>
     </template>
+    <AdminOperationsSummary />
   </section>
 </template>
 <script setup lang="ts">
@@ -95,43 +96,17 @@ import { overviewDomains, overviewTasks, overviewEditorPath } from '~/features/a
 definePageMeta({ layout: 'admin' })
 useSeoMeta({ title: '管理概览', robots: 'noindex, nofollow' })
 const api = useAdminApi()
-const auth = useCurrentUser()
-const data = ref<AdminOverview | null>(null)
-const pending = ref(false)
-const error = ref('')
+const {
+  data,
+  pending,
+  error,
+  refresh: load,
+} = useAdminReadResource(() => api<AdminOverview>('/admin/overview'), '工作台加载失败，请检查登录状态后重试')
 const statusLabels = { draft: '草稿', published: '已发布', archived: '已归档', withdrawn: '已撤回' }
 const domainLabels = Object.fromEntries(overviewDomains.map((item) => [item.domain, item.label]))
-let alive = true
 function formatDate(value: string) {
   return new Date(value).toLocaleString('zh-CN', { hour12: false })
 }
-async function load() {
-  if (pending.value) return
-  pending.value = true
-  error.value = ''
-  const actor = auth.currentUser.value?.id
-  try {
-    const result = await api<AdminOverview>('/admin/overview')
-    if (alive && actor === auth.currentUser.value?.id) data.value = result
-  } catch {
-    if (alive) error.value = '工作台加载失败，请检查登录状态后重试'
-  } finally {
-    if (alive) pending.value = false
-  }
-}
-onMounted(async () => {
-  if (await auth.restore()) await load()
-  else await navigateTo({ path: '/admin/login', query: { next: '/admin' } })
-})
-watch(
-  () => auth.currentUser.value?.id,
-  () => {
-    data.value = null
-  },
-)
-onBeforeUnmount(() => {
-  alive = false
-})
 </script>
 <style scoped lang="scss">
 .overview {
