@@ -2,6 +2,8 @@
 
 本目录记录数据来源与场景覆盖。覆盖检查不能代替业务验收，也不会自动修改样本。
 
+图库外链扩展：`gallery-external` 域对应独立 `gallery-external-v1` 数据集，提供4条外链作品（2公开、1草稿、1撤回），只保存地址和自然内容，不抓取远程图片。使用 `corepack pnpm db:dev check-data --domain gallery-external` 检查；通过 `seed-data --dataset gallery-external-v1` 预览补齐，核对本机目标后加 `--apply --confirm tixxin_blog`。同名 `remove-data` 仍遵循备份、停服务、编辑保护和删除不复活规则。原图库26条归属保留，全站样本归属现181条；本轮记录见 [图库外链与后台验收](gallery-external-admin-verification.md)。
+
 ```sh
 corepack pnpm db:dev check-data
 corepack pnpm db:dev check-data --domain moments

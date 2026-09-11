@@ -1,5 +1,7 @@
 # 开发数据库工具
 
+图库外链另有 `gallery-external-v1` 增量集（4作品、无新增媒体资产），支持同一 `seed-data/remove-data` 流程；`check-data --domain gallery-external` 独立核对。原 `gallery-v1` 不被替换或扩写。日常库两种来源均长期保留，具体数量、备份及命令见 [本轮验收](gallery-external-admin-verification.md)。
+
 根目录使用 `corepack pnpm db:dev`，沿用后端进程环境 → `.env.local` → `.env` 的配置顺序。所有命令默认只预览，输出数据库名、服务地址、表计数、作用范围和待应用迁移，不显示用户名或密码。
 
 | 命令                | 明确加上 `--apply --confirm 数据库名` 后的行为                                                                                              |
