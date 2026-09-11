@@ -97,6 +97,8 @@ try {
     NOTIFICATION_SITE_URL: 'http://localhost',
     NOTIFICATION_MAIL_INTERVAL_SECONDS: '1',
     BACKUP_SCHEDULE_ENABLED: 'true',
+    // 独立验收 PostgreSQL 可使用自有容器，不能把其备份错误地指向日常数据库容器。
+    BACKUP_POSTGRES_CONTAINER: process.env.BACKUP_POSTGRES_CONTAINER,
     BACKUP_DIRECTORY: join(work, 'local'),
     BACKUP_OWNER_ID: ownerId,
     BACKUP_TRANSFER_URL: `http://127.0.0.1:${receiver.address().port}/backups`,
@@ -254,7 +256,7 @@ try {
   ])
   assert.equal(scheduled.filter((item) => item.state === 'queued').length, 1)
   const outcome = await runTaskOnce(fixture.testOrm, config, 'backup')
-  assert.equal(outcome.state, 'succeeded')
+  assert.equal(outcome.state, 'succeeded', `备份执行状态：${outcome.state}，错误分类：${outcome.errorCode ?? 'none'}`)
   const source = join(config.backup.directory, `backup-${outcome.taskId}-1`)
   const checked = await verifyFullBackup(source)
   assert(checked.manifest.counts.owner_notification > 0)
