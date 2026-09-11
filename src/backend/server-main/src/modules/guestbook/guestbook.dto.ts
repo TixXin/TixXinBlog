@@ -32,6 +32,7 @@ export class QueryAdminGuestbookDto extends GuestbookFilters {
   @Type(() => Number) @IsInt() @Min(1) @Max(10000) page = 1
   @Type(() => Number) @IsInt() @Min(1) @Max(50) pageSize = 20
   @IsOptional() @IsIn(['all', ...GUESTBOOK_STATUSES]) status?: GuestbookStatus | 'all'
+  @IsOptional() @IsIn(['true', 'false']) unanswered?: string
 }
 export class GuestbookBodyDto {
   @IsUUID('4') requestId!: string

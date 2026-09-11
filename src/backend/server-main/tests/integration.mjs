@@ -160,7 +160,7 @@ try {
   const overview = await request('/api/v1/admin/overview', { token })
   assert.equal(overview.status, 200)
   assert.equal(overview.body.data.counts.published, 106)
-  assert.equal(overview.body.data.recentPosts.length, 6)
+  assert.equal(overview.body.data.recentContent.length, 12)
   assert.equal((await request('/api/v1/admin/posts/filters')).status, 401)
   const filters = await request('/api/v1/admin/posts/filters', { token })
   assert(filters.body.data.tags.includes('集成测试'))

@@ -9,6 +9,7 @@ import {
   MomentPageQuery,
   MomentRevisionDto,
   QueryAdminMomentsDto,
+  QueryAdminMomentCommentsDto,
   SaveMomentDto,
 } from './moment.dto'
 import { MomentReadService } from './moment-read.service'
@@ -26,6 +27,10 @@ export class AdminMomentController {
   @Get()
   list(@Query() query: QueryAdminMomentsDto, @VisitorIdHash({ optional: true }) visitor: string) {
     return this.read.list(query, visitor, true)
+  }
+  @Get('comments')
+  allComments(@Query() query: QueryAdminMomentCommentsDto) {
+    return this.read.adminComments(query)
   }
   @Get(':id')
   detail(@Param('id') id: string) {
