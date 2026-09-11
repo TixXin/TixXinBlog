@@ -20,7 +20,6 @@
     "generate": "corepack pnpm --filter web-blog generate",
     "preview": "corepack pnpm --filter web-blog preview",
     "start": "corepack pnpm --filter web-blog start",
-    "deploy": "corepack pnpm install && corepack pnpm start",
     "lint": "corepack pnpm --filter web-blog exec eslint .",
     "lint:fix": "corepack pnpm --filter web-blog exec eslint . --fix",
     "format": "prettier --write \"src/**/*.{vue,ts,js,scss,json,md}\"",
