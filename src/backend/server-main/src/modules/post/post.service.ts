@@ -66,6 +66,22 @@ export interface PostListResult {
 }
 
 const SORT_FIELD_MAP = { date: 'publishedAt', views: 'views', likes: 'likes' } as const
+type PostListSource = Pick<
+  Post,
+  | 'id'
+  | 'slug'
+  | 'title'
+  | 'summary'
+  | 'cover'
+  | 'category'
+  | 'readTimeMinutes'
+  | 'likes'
+  | 'views'
+  | 'commentCount'
+  | 'publishedAt'
+  | 'folder'
+  | 'pinned'
+> & { tags: { getItems(): PostItemDto['tags'] } }
 
 @Injectable()
 export class PostService {
@@ -89,6 +105,24 @@ export class PostService {
     }
 
     const [posts, total] = await this.em.findAndCount(Post, where, {
+      // 列表仅读取投影使用的字段；正文仍参与 WHERE 检索，避免多标签联表重复取回长正文。
+      fields: [
+        'id',
+        'slug',
+        'title',
+        'summary',
+        'cover',
+        'category',
+        'readTimeMinutes',
+        'likes',
+        'views',
+        'commentCount',
+        'publishedAt',
+        'folder',
+        'pinned',
+        'tags.label',
+        'tags.color',
+      ],
       populate: ['tags'],
       orderBy: [
         ...(query.pinnedFirst ? [{ pinned: 'desc' as const }] : []),
@@ -192,7 +226,7 @@ export class PostService {
     if (!address) throw new BusinessException(POST_NOT_FOUND, '文章不存在', HttpStatus.NOT_FOUND)
     return this.findDetail(address.post.id)
   }
-  private toPostItem(post: Post): PostItemDto {
+  private toPostItem(post: PostListSource): PostItemDto {
     return {
       id: post.id,
       slug: post.slug,
