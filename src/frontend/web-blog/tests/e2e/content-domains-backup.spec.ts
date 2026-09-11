@@ -39,7 +39,7 @@ test.beforeEach(({ page, browserName }) => {
   prepareMotionCapture(page, browserName)
 })
 
-test('v7 内容维护界面迁入两种图库来源与三域草稿，同票据不增殖', async ({ page }, testInfo) => {
+test('v9 内容维护界面迁入两种图库来源与三域草稿，同票据不增殖', async ({ page }, testInfo) => {
   const login = await page.request.post('/api/v1/auth/login', {
     data: { username: process.env.E2E_USERNAME, password: process.env.E2E_PASSWORD },
   })

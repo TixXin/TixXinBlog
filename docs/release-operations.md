@@ -90,13 +90,17 @@ node scripts/release/release.mjs --env-file D:/PrivateConfig/blog-production.env
 ## 本批验证边界
 
 ```powershell
-node --test scripts/release/release.test.mjs
+node --test scripts/release/release.test.mjs scripts/release/production-artifact-cleanup.test.mjs
 ```
 
 单测以假的 Docker/HTTPS 依赖覆盖预览不变更、配置/版本约束、发布顺序、迁移失败停止、入口失败不报成功、应用回退跳过迁移、全新安装与既有卷拒绝。测试只创建自身临时目录并清理。现有生产镜像和真实 PostgreSQL 验收继续使用 `scripts/container-smoke.mjs`；真实 DNS、证书签发、生产发布、生产故障和真实目标恢复没有因这些单测而完成。
 
 联合生产隔离验收入口为 `node scripts/release/production-integration.mjs`。它冻结当前源码到本轮 `.artifacts/production-release/<唯一编号>/build-context`，四类镜像从同一快照构建；仅使用本机端口和 Caddy 内部 CA，不修改系统信任或申请公共证书。测试创建非空文章、图库、项目和媒体，运行镜像内原生备份、独立校验和新的无外网恢复容器，并验证版本标识、迁移任务真实失败、回退不迁移、数据库故障与恢复。版本别名来自同一快照，用于核验发布编排，不能证明任意历史应用版本兼容。
 
-全部测试容器、网络、卷和镜像标签带本次唯一归属，finally 只清本次资源；日常 PostgreSQL 保留。原始构建日志、内部根证书、快照摘要、备份与脱敏结论只保留在 `.artifacts/`。这类隔离恢复不能等同于已经投产、已配置真实异地备份或已启用长期通知。
+全部测试容器、网络、卷和镜像标签带本次唯一归属，finally 只清本次资源；日常 PostgreSQL 保留。本机只保留原始构建日志、内部根证书、源码快照及其摘要、manifest、restore-report 等文字元数据与脱敏结论。`backup/`、`restored/` 下的数据库 dump 和运行媒体、恢复连接凭据及临时 `production.env` 在结束时定向移除；这些文字记录不能作为仍可恢复的数据备份使用。
 
-2026-09-11 的最终联合运行已通过上述路径及真实一次性 worker 互斥校验：原生备份包含 42 张表和 1 个受管媒体文件，恢复后行摘要、新登录、旧授权失效与双暂停均通过；数据库停止时 `/ready` 返回 503，恢复后同源内容接口返回 200。原始本地报告：`.artifacts/production-release/tixxin-production-smoke-1789119281081-51708/verification-report.json`。该项目的容器、卷、网络和专属镜像标签均已清理，日常 PostgreSQL 仍在运行。
+文件清理只允许 `.artifacts/production-release/` 下名称合法的本次运行目录，先核对绝对路径、realpath、普通文件类型及整个固定数据目录没有链接，再逐文件删除数据载荷。任何路径变化、链接或环境文件删除失败都会记录 `artifactCleanupError` 并令结果为 `cleanup-failed`；成功记录 `payloadsRemoved`、`environmentRemoved` 和实际移除数量。不会清理源码快照、截图、trace、其他运行目录或日常 `.backups`。这类隔离恢复仍不能等同于已经投产、已配置真实异地备份或已启用长期通知。
+
+2026-09-11 的最终联合运行已通过上述路径及真实一次性 worker 互斥校验：当时的原生备份包含 42 张表和 1 个受管媒体文件，恢复后行摘要、新登录、旧授权失效与双暂停均通过；数据库停止时 `/ready` 返回 503，恢复后同源内容接口返回 200。原始本地报告：`.artifacts/production-release/tixxin-production-smoke-1789119281081-51708/verification-report.json`。本轮三次已知运行的容器、卷、网络、专属镜像标签以及本机 dump、运行媒体、临时凭据均已清理，报告内记录补充清理时间；日常 PostgreSQL 仍在运行。
+
+随后新增的 `20260911225000_sanitize_initial_profile` 为纯数据迁移，表结构仍为 42 张。已从更新后的源码单独构建 migration target，以生产 `NODE_ENV` 在新的独立 PostgreSQL 16 中回放全部 33 项迁移：公开缺省为 `ownerName=tixxin`、空头衔、空社交链接、`/avatar.svg`、隐藏关于资料；当前版本为 1，原始版本 0 历史保留，安全版本 1 与当前值一致。本地构建日志与 SQL 结论位于 `.artifacts/production-profile-migration/tixxin-profile-migration-1789122800841-13064/`。此次追加仅覆盖最新迁移镜像与全新库缺省，HTTPS、worker 和完整恢复继续引用此前联合运行记录；专属镜像标签、容器、网络、卷和临时环境文件均已清理。
