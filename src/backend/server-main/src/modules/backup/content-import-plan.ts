@@ -69,7 +69,7 @@ export function galleryContentHash(values: PackageGalleryPhoto['values']) {
   const { status, ...content } = values
   // 发布状态不参与内容去重，避免已迁入草稿被下一次跳过策略重复创建。
   void status
-  return packageHash(content)
+  return packageHash({ ...content, externalUrl: values.externalUrl ?? null })
 }
 export function projectContentHash(values: PackageProject['values']) {
   const { status, ...content } = values
@@ -249,7 +249,7 @@ export async function makeContentPlan(
     const skip = source.deleted || (strategy === 'skip' && existingGallery.has(hash))
     if (!skip) {
       existingGallery.add(hash)
-      requiredValues.push(`/api/v1/media/${source.values.mediaId}.webp`)
+      if (source.values.mediaId) requiredValues.push(`/api/v1/media/${source.values.mediaId}.webp`)
     }
     return {
       sourceId: source.sourceId,

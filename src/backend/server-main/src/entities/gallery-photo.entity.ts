@@ -1,5 +1,5 @@
 /** @file gallery-photo.entity.ts @description 图库作品独立于媒体文件；拍摄日期缺省保留，删除保留提交去重依据 */
-import { Entity, Index, ManyToOne, OptionalProps, PrimaryKey, Property, Unique } from '@mikro-orm/core'
+import { Check, Entity, Index, ManyToOne, OptionalProps, PrimaryKey, Property, Unique } from '@mikro-orm/core'
 import { MediaAsset } from './media-asset.entity'
 
 export const GALLERY_STATUSES = ['draft', 'published', 'withdrawn'] as const
@@ -8,6 +8,11 @@ export type GalleryStatus = (typeof GALLERY_STATUSES)[number]
 @Entity({ tableName: 'gallery_photo' })
 @Index({ name: 'gallery_visibility_order_idx', properties: ['status', 'deletedAt', 'sortOrder', 'id'] })
 @Unique({ properties: ['requestId'] })
+@Check({
+  name: 'gallery_photo_source_check',
+  expression:
+    '(media_id is not null and external_url is null) or (media_id is null and external_url is not null and length(external_url) > 0)',
+})
 export class GalleryPhoto {
   [OptionalProps]?:
     | 'id'
@@ -21,7 +26,8 @@ export class GalleryPhoto {
     | 'createdAt'
     | 'updatedAt'
   @PrimaryKey({ type: 'integer', autoincrement: true }) id!: number
-  @ManyToOne({ entity: () => MediaAsset, deleteRule: 'restrict' }) media!: MediaAsset
+  @ManyToOne({ entity: () => MediaAsset, deleteRule: 'restrict', nullable: true }) media?: MediaAsset | null
+  @Property({ type: 'text', nullable: true }) externalUrl?: string | null
   @Property({ type: 'text' }) title!: string
   @Property({ type: 'text', default: '' }) description: string = ''
   @Property({ type: 'text', default: '' }) category: string = ''

@@ -401,12 +401,13 @@ export async function restoreFullBackup(path, { output } = {}) {
           password,
           `
         select
-          (select count(*) from gallery_photo g left join media_asset a on a.id=g.media_id where a.id is null)
-          + (select count(*) from gallery_photo g where g.deleted_at is null and not exists
+          (select count(*) from gallery_photo g left join media_asset a on a.id=g.media_id where g.media_id is not null and a.id is null)
+          + (select count(*) from gallery_photo g where (g.media_id is null) = (nullif(to_jsonb(g)->>'external_url','') is null))
+          + (select count(*) from gallery_photo g where g.deleted_at is null and g.media_id is not null and not exists
               (select 1 from media_reference r where r.gallery_photo_id=g.id and r.asset_id=g.media_id and r.kind='gallery' and r.source_key='gallery:'||g.id::text))
           + (select count(*) from media_reference r left join gallery_photo g on g.id=r.gallery_photo_id
               where (r.kind='gallery' or r.gallery_photo_id is not null) and
-                (g.id is null or g.deleted_at is not null or r.kind<>'gallery' or r.asset_id<>g.media_id or r.source_key<>'gallery:'||g.id::text))
+                (g.id is null or g.deleted_at is not null or g.media_id is null or r.kind<>'gallery' or r.asset_id<>g.media_id or r.source_key<>'gallery:'||g.id::text))
           + (select count(*) from development_fixture where kind='gallery' and (resource_id !~ '^[1-9][0-9]*$' or snapshot_hash !~ '^[a-f0-9]{64}$'))
           + case when exists(select 1 from gallery_settings where id='default') then 0 else 1 end;
       `,
@@ -622,6 +623,7 @@ export async function verifyRestoredApplication(
           password,
           `select json_build_object('photos',(select count(*) from gallery_photo where status='published' and deleted_at is null),
             'gear',(select gear from gallery_settings where id='default'),
+            'external',coalesce((select json_agg(x) from (select id,to_jsonb(g)->>'external_url' as url,status from gallery_photo g where deleted_at is null and to_jsonb(g)->>'external_url' is not null) x),'[]'::json),
             'photo',(select row_to_json(g) from (select id,title,taken_on as "takenOn",media_id as "mediaId",status,sort_order as "sortOrder",revision
               from gallery_photo where deleted_at is null order by id limit 1) g))`,
         ),
@@ -750,7 +752,7 @@ export async function verifyRestoredApplication(
           const denied=await fetch('http://127.0.0.1:3000/api/v1/admin/posts',{headers:{Authorization:'Bearer '+process.env.VERIFY_OLD_ACCESS_TOKEN}});
           if(denied.status!==401)throw Error('old token');
         }
-        let freshLoginVerified=false, galleryAdminVerified=false, galleryOldContextRejected=false, galleryFreshWriteAllowed=false;
+        let freshLoginVerified=false, galleryAdminVerified=false, galleryOldContextRejected=false, galleryFreshWriteAllowed=false, externalGalleryVerified=false;
         if(process.env.VERIFY_RESTORED_USERNAME && process.env.VERIFY_RESTORED_PASSWORD){
           const login=await fetch('http://127.0.0.1:3000/api/v1/auth/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({username:process.env.VERIFY_RESTORED_USERNAME,password:process.env.VERIFY_RESTORED_PASSWORD})});
           if(!login.ok)throw Error('fresh login');
@@ -758,6 +760,12 @@ export async function verifyRestoredApplication(
           freshLoginVerified=true;
           if(gallery?.photo){
             const headers={Authorization:'Bearer '+token,'Content-Type':'application/json'};
+            for(const photo of gallery.external ?? []) {
+              const response=await fetch('http://127.0.0.1:3000/api/v1/admin/gallery/'+photo.id,{headers});
+              const value=(await response.json()).data;
+              if(!response.ok||value.externalUrl!==photo.url||value.mediaId!==null||value.src!==photo.url||value.width!==undefined||value.height!==undefined)throw Error('restored external gallery');
+            }
+            externalGalleryVerified=!!gallery.external?.length;
             const path='http://127.0.0.1:3000/api/v1/admin/gallery/'+gallery.photo.id;
             const response=await fetch(path,{headers});
             const current=(await response.json()).data;
@@ -867,7 +875,7 @@ export async function verifyRestoredApplication(
             }
           }
         }
-        process.stdout.write(JSON.stringify({ready:true,publicPosts:body.data.total,publicGalleryPhotos:gallery?.photos??null,galleryGearVerified:!!gallery,publicProjects:projects?.stats.projects??null,projectMetadataVerified,projectAdminVerified,projectOldContextRejected,projectFreshWriteAllowed,publicLinks:friends?.stats.links??null,linkMetadataVerified,linkAdminVerified,linkOldContextRejected,linkFreshWriteAllowed,mediaVerified:media.length,oldAuthorizationChecked:!!process.env.VERIFY_OLD_ACCESS_TOKEN,oldAuthorizationRejected:process.env.VERIFY_OLD_ACCESS_TOKEN?true:null,freshLoginVerified,galleryAdminVerified,galleryOldContextRejected,galleryFreshWriteAllowed}));
+        process.stdout.write(JSON.stringify({ready:true,publicPosts:body.data.total,publicGalleryPhotos:gallery?.photos??null,galleryGearVerified:!!gallery,publicProjects:projects?.stats.projects??null,projectMetadataVerified,projectAdminVerified,projectOldContextRejected,projectFreshWriteAllowed,publicLinks:friends?.stats.links??null,linkMetadataVerified,linkAdminVerified,linkOldContextRejected,linkFreshWriteAllowed,mediaVerified:media.length,oldAuthorizationChecked:!!process.env.VERIFY_OLD_ACCESS_TOKEN,oldAuthorizationRejected:process.env.VERIFY_OLD_ACCESS_TOKEN?true:null,freshLoginVerified,galleryAdminVerified,galleryOldContextRejected,galleryFreshWriteAllowed,externalGalleryVerified}));
       })().catch((error)=>process.stdout.write(JSON.stringify({errorStage:error.message})))`
     let ready = false
     for (let i = 0; i < 50; i++) {
