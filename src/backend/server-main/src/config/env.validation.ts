@@ -18,7 +18,7 @@ export enum NodeEnv {
 
 /**
  * 工程初始化阶段仅校验基础字段；DATABASE_URL / REDIS_URL / MEILISEARCH_URL 等
- * 依赖项将在对应模块接入时改为必填（见 docs/backend/development.md §7.3 完整清单）
+ * 依赖项将在对应模块接入时改为必填（见 docs/archive/backend-design/development.md §7.3 完整清单）
  */
 export class EnvironmentVariables {
   @IsEnum(NodeEnv)

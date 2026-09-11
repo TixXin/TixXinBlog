@@ -21,7 +21,9 @@ TixXinBlog/
 ├── src/
 │   ├── frontend/web-blog/          # 公开网站和内置 /admin
 │   └── backend/server-main/        # NestJS API、实体、迁移与运行工具
-├── docs/                           # 当前契约、操作说明、规划与历史记录
+├── docs/                           # 当前契约、操作说明与文档导航
+│   ├── backend/                    # 当前后端分域接口与维护入口
+│   └── archive/                    # 历史设计、阶段交付和旧目标；不作为当前待办
 ├── .github/workflows/              # CI 检查
 ├── .artifacts/                     # 本机验收产物，忽略于 Git
 ├── .playwright-mcp/                # 本机浏览器产物，忽略于 Git
@@ -29,6 +31,8 @@ TixXinBlog/
 ```
 
 目前只有 `web-blog` 与 `server-main` 两个已实现工作区。早期 `web-admin` 预留不对应当前独立应用；后台已经在 `web-blog/app/pages/admin/`，不需要另一个前端启动命令。`temp/` 等历史参考目录不是运行时依赖。
+
+日常入口按职责维护：[能力清单](capability-map.md)判断实现边界，[架构基线](project-architecture.md)说明长期契约，本文定位代码；前后端 `todo.md` 只记录当前工作与明确的后续需求。历史记录从[文档导航](README.md)进入，归档时仅移动受 Git 跟踪的文字与问题清单，本机 `docs/**/evidence/` 原位置不变。
 
 ## Nuxt 前端
 

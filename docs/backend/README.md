@@ -1,48 +1,29 @@
-# TixXinBlog 后端文档
+# 后端接口与维护入口
 
-本目录汇总 TixXinBlog 后端服务（`src/backend/server-main/`）的全部设计文档。前端文档体系保留在 `docs/` 根目录（`project-architecture.md` / `directory-structure.md` 等），后端相关一律放入本目录，避免与前端约定交织。
+当前后端位于 `src/backend/server-main/`，使用 NestJS、MikroORM 和 PostgreSQL。启动配置、命令与服务结构见[后端服务 README](../../src/backend/server-main/README.md)，已开放能力以[能力清单](../capability-map.md)为准。
 
-## 1. 文档定位
+## 分域契约
 
-后端当前处于 **从零设计阶段**，代码尚未落地。本目录不是"已有系统的说明书"，而是"后续开发者据此可以初始化工程、建模、写接口"的底盘文档。
+| 业务       | 文档与边界                                                                                                                |
+| ---------- | ------------------------------------------------------------------------------------------------------------------------- |
+| 朋友圈     | [接口](moments.md)、[维护关系](moment-maintenance.md)；公开与管理、评论、媒体及内容包                                     |
+| 留言       | [留言契约](guestbook.md)；身份、审核、回复、互动、分页与管理                                                              |
+| 图库       | [图库契约](gallery.md)；受管媒体与外链互斥、发布状态和独立器材设置                                                        |
+| 项目       | [项目契约](projects.md)；进展与发布状态、管理与维护兼容                                                                   |
+| 友链       | [友链契约](links.md)；站点目录、博主管理与规则，公开申请未开放                                                            |
+| 内容与站点 | [架构基线](../project-architecture.md)、[代码入口](../directory-structure.md)；文章、评论、认证、闪念、站点版本与跨域约束 |
 
-适用读者：
+## 日常维护
 
-- **后端开发者**：按 `tech-stack.md` + `development.md` 初始化工程与编码
-- **前端对接者**：按 `api.md` 编写 composable，切换 `useMockRepo = false`
-- **运维 / 部署**：按 `development.md` 的部署章节起容器栈
+| 场景                 | 入口                                                                                      |
+| -------------------- | ----------------------------------------------------------------------------------------- |
+| 开发启动与故障定位   | [开发运行](../development-runtime.md)                                                     |
+| 数据库与代表性样本   | [开发数据库](../development-database.md)、[开发数据目录](../development-data-catalog.md)  |
+| 内容包与完整恢复     | [备份与恢复](../backup-and-recovery.md)                                                   |
+| 通知、投递与自动备份 | [运行任务与通知](../operations-and-notifications.md)                                      |
+| 发布准备与版本切换   | [发布操作](../release-operations.md)、[首发准备与验收](../first-release-readiness.md)     |
+| 测试与维护边界       | [验收产物管理](../verification-artifacts.md)、[性能与维护](../performance-maintenance.md) |
 
-## 2. 阅读顺序
+接口、实体或维护行为变化时，更新对应现行分域文档和回归入口。正式迁移、测试源码、开发样本及其素材许可持续跟踪，截图和机器报告写入本机忽略目录。
 
-建议按下表顺序阅读：
-
-| 顺序 | 文档 | 作用 |
-|------|------|------|
-| 1 | [requirements.md](./requirements.md) | 需求文档：前端已经呈现的行为 → 后端必须撑住的能力清单 |
-| 2 | [tech-stack.md](./tech-stack.md) | 技术栈文档：选型理由、版本、关键依赖清单 |
-| 3 | [development.md](./development.md) | 开发文档：项目结构、编码规范、本地流程、迁移与部署 |
-| 4 | [api.md](./api.md) | API 文档：REST 契约、响应格式、全量接口表、错误码 |
-
-## 3. 与全局文档的关系
-
-本目录是对 [`docs/project-architecture.md`](../project-architecture.md) 第 2 节"技术方向"与第 8 节"博客核心模块"的后端落地细化。
-
-需要注意的偏离点：`project-architecture.md` 原始选型写的是 **Prisma + PostgreSQL**，本目录确定改用 **MikroORM + PostgreSQL**。原因与迁移影响见 [`tech-stack.md` 第 4 节](./tech-stack.md#4-mikroorm)。
-
-## 4. 前后端协作约定
-
-前端已在 `src/frontend/web-blog/nuxt.config.ts` 预留 `runtimeConfig.public.useMockRepo` 开关：
-
-- `true`：组合式函数从 `features/<domain>/mock.ts` 直接取数据（当前默认）
-- `false`：组合式函数走 `$fetch` / `useAsyncData`，目标指向 `NUXT_PUBLIC_API_BASE_URL`
-
-切换步骤详见 [`development.md` 第 10 节](./development.md#10-前后端联调切换)。所有后端响应字段都严格对齐 `src/frontend/web-blog/app/features/<domain>/types.ts`，组件无需改动，只替换数据源即可。
-
-## 5. 维护约定
-
-- 任何实体 schema / 接口参数 / 响应结构变更，必须**同步更新 [api.md](./api.md)**，并在其"变更历史"追加一行
-- 技术栈版本升级或替换，必须**同步更新 [tech-stack.md](./tech-stack.md)**，并简述影响面
-- 新增业务域或调整边界，必须**同步更新 [requirements.md](./requirements.md)** 与 [api.md](./api.md)
-- 开发流程、部署方式调整，必须**同步更新 [development.md](./development.md)**
-
-文档与实现偏离时，以实现为准，但必须在一周内回补文档，且在 commit message 中显式说明原因。
+早期“从零设计”、旧 Mock 默认值和原综合 API 方案已移至[后端设计归档](../archive/backend-design/README.md)，用于解释演进背景。当前开发待办在[后端 Todo](../../src/backend/server-main/todo.md)维护，全部文档从[总导航](../README.md)进入。

@@ -38,7 +38,7 @@ corepack pnpm db:dev prepare-profile --apply --confirm tixxin_blog
 
 ## 确认与启用状态
 
-本批前端验证：14项合并/编辑保护单测、Nuxt类型与定向Lint通过；独立生产构建成功。`site-editor-protection.spec.ts --browser=all` 共12项通过，覆盖刷新恢复保留独立公告、真实保存后响应丢失的零重投核对、320/390px排序焦点与无横向溢出。初版测试自身的完整请求字段、异步同步点和定位器方法问题已修复，未放宽超时或删除业务断言。最终日志为本机 `.artifacts/sustainable-blog/site-editor-e2e-final.log`；完整恢复、三主题及公开页面联合验收已完成，见 [最终验收](sustainable-blog-verification.md)。
+本批前端验证：14项合并/编辑保护单测、Nuxt类型与定向Lint通过；独立生产构建成功。`site-editor-protection.spec.ts --browser=all` 共12项通过，覆盖刷新恢复保留独立公告、真实保存后响应丢失的零重投核对、320/390px排序焦点与无横向溢出。初版测试自身的完整请求字段、异步同步点和定位器方法问题已修复，未放宽超时或删除业务断言。最终日志为本机 `.artifacts/sustainable-blog/site-editor-e2e-final.log`；完整恢复、三主题及公开页面联合验收已完成，见 [最终验收](archive/sustainable-blog/sustainable-blog-verification.md)。
 
 - 已确认：称呼 `tixxin`。
 - 已采用的默认组织：技术为主、项目与图库辅助、生活独立入口。

@@ -1,4 +1,4 @@
-# 本地开发依赖栈（不含 app 本身），见 docs/backend/development.md §7.1
+# 本地开发依赖栈（不含 app 本身），见 docs/archive/backend-design/development.md §7.1
 # 用法：docker compose up -d
 services:
   postgres:

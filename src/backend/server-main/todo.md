@@ -1,84 +1,29 @@
 # server-main 开发 Todo
 
-## 可持续运营建设（当前 P0–P2）
+本文维护当前后端工作与验收状态。现行命令从[服务 README](README.md)进入，分域契约见[后端文档](../../../docs/backend/README.md)；本轮操作和结果集中见[首发准备与使用验收](../../../docs/first-release-readiness.md)。
 
-- 本轮七项已完成 7 项，完成率 100%；包含本机实现、日常样本、维护兼容、必要验证、文档、清理与本地提交。
-- 日常库 33 项迁移、42 表、零漂移；内容包导出 v9、兼容 v1–v8，恢复默认暂停外部投递。
-- 称呼 `tixxin` 已确认，其余个人事实缺省或隐藏；生产发布、真实外投与长期任务未启用。
-- 清单见 [阶段跟踪](../../../docs/sustainable-blog-stage.md)，使用与证据见 [最终验收](../../../docs/sustainable-blog-verification.md)。
+## 当前阶段：仓库整理与首次发布准备
 
-## 图库外链与后台体验扩展（已归档）
+本轮五项尚未完成统一验收；旧七项建设的 100% 不计入本轮。
 
-- [x] 外链互斥模型、原地正式迁移、媒体引用与提交版本兼容。
-- [x] v7内容包兼容v1–v6、完整恢复和生产镜像应用校验。
-- [x] 独立外链样本集、日常增量补齐、备份、幂等与定向清理。
-- [x] 前端联合回归、后台布局与交互验收、文档和最终资源清理。
-- 本轮两项扩展均完成，完成率100%只对应本轮范围；后端83项单测、图库142请求、维护与生产恢复、三浏览器相关243项通过。
-- 日常图库22作品（18公开、2草稿、2撤回）保留，数据库零漂移；详情见 `docs/gallery-external-admin-verification.md`。
+| 工作           | 本轮后端范围与完成条件                                                       | 状态   |
+| -------------- | ---------------------------------------------------------------------------- | ------ |
+| 仓库与文档整理 | 收敛旧设计和阶段入口；保留迁移、正式回归、种子、fixture、素材与许可          | 进行中 |
+| 首批真实内容   | 核对个人资料与内容来源、状态和维护兼容；明确开发样本归属并保留用户编辑       | 进行中 |
+| 发布准备       | 核对实际环境、发布配置、迁移、备份恢复和运行任务，记录执行结果与启用边界     | 进行中 |
+| 日常使用验收   | 核对 API、公开与管理状态、计数、写入恢复及开发样本；所需写入验证使用隔离资源 | 待验收 |
+| 最终交付       | 按变更运行必要检查、验证数据保留和资源归属、整理文档并分批本地提交           | 待验收 |
 
-> 本文档维护 `src/backend/server-main/` 的开发待办与总体进度。开发前先阅读,开发中同步更新。阶段划分与验收标准见 `docs/backend/development.md` §1。
+## 后续独立需求
 
-## 历史基础建设（已归档）
+- 友链公开申请、访客邮件订阅、自动探活、项目外部指标同步和书签 API／云同步另行规划。
+- 已实现的站内通知、SMTP 通道和持久任务，应分别记录配置、隔离验证、真实投递及长期启用状态。
+- 数据库变更继续使用正式迁移与结构漂移检查；性能扩展先提供同条件证据。
 
-原工程、文章、认证、评论、闪念与后台维护任务已完成。后续朋友圈、留言及开发数据保障也已交付，见 `docs/next-stage-verification.md` 和 `docs/guestbook-stage-verification.md`；不再保留这些领域“待实现”的遗留状态。
+## 维护约定与已归档阶段
 
-## 图库、项目与友链（已归档）
-
-- 总任务数：3；已完成：3；进行中：0；未开始：0；完成率：100%。
-- 完成率只对应本轮三个模块的完整业务交付，每项包含前后台、日常样本、维护、验证和提交。
-- [x] 图库：数据库/API、数据、维护及前端联合验收已完成，日常18作品/8媒体保留。
-- [x] 项目真实业务：79请求、日常18项目/3媒体、v5维护、生产恢复与前端联合验收完成。
-- [x] 友链真实业务：118请求、日常18友链/3媒体、v6维护与生产恢复、前后台及三模块联合801项验收完成。
-- 最终83项后端单测、95请求文字边界往返、正式迁移零漂移、生产镜像与上传依赖验收通过；日常数据保留、隔离资源清理完成。交付见 `docs/gallery-project-link-delivery.md`。
-- 跟踪见 `docs/gallery-project-link-stage.md`。
-
-## 维护约定
-
-- `[ ]` 未开始 / `[~]` 进行中 / `[x]` 已完成 / `[-]` 暂缓
-- 任务状态变化时同步更新本文档与总进度
-
-## 当前进行中
-
-本轮七项无进行中事项；未授权的生产启用与新增业务分别列为后续动作。
-
-## 待处理(按优先级)
-
-- 友链公开申请、访客邮件订阅与自动探活、外部指标自动同步和书签云同步另行规划。博主站内通知及 SMTP 通道已实现，真实发送与长期执行器未启用。
-
-## 已完成
-
-- [x] 后台长期维护能力：创作保护、媒体、批量回收、评论审核、站点设置、会话审计、备份恢复及统一验收（详见 docs/admin-long-term-progress.md）
-
-- [x] 后台日常管理完善（详见 docs/admin-management-progress.md）（2026-09-07 验收通过）
-- [x] 闪念前后端身份统一，管理与公开接口权限验证通过。
-- [x] admin post CRUD(POST/PATCH/DELETE /admin/posts,AdminAuthGuard 已就绪)
-- [x] 文章归档与相关推荐统一真实数据源（/posts/metadata 与 /posts/:id/related）。
-
-- [x] 全项目审计 28 项整改与验收（详见 docs/remediation-progress.md）（2026-09-07，旧密钥撤销验证通过）
-
-- [x] 评论联调：读取访客点赞状态、输入校验、并发计数与接口回归验证（本轮新增）（2026-09-06，见 docs/comment-integration-validation.md）
-
-- [x] 工程骨架初始化:package.json / tsconfig / nest-cli / ESLint 扁平配置(2026-07-20)
-- [x] 入口引导:全局前缀 api/v1、ValidationPipe、CORS、优雅停机(2026-07-20)
-- [x] 统一响应与错误码:响应包装拦截器 + 全局异常过滤器 + BusinessException,对齐 api.md 附录 A(2026-07-20)
-- [x] 基础设施配置:nestjs-pino 结构化日志、env 启动校验、mikro-orm 配置、docker-compose 依赖栈、.env.example(2026-07-20)
-- [x] 健康探针 /health /ready + 首个 Jest 单元测试(2026-07-20)
-- [x] post 域实体建模:Post / PostTag(M:N)/ PostLike / PostView,显式类型注解适配 tsx 运行(2026-07-20)
-- [x] MikroOrmModule 注册 + 首批迁移 20260720125632_create_post_tables(tsx 迁移脚本替代 CLI,免 ts-node)(2026-07-20)
-- [x] DevSeeder:跨 workspace 读取前端 features/post/mock.ts,seed 50 篇文章 / 18 个标签,主键序列同步(2026-07-20)
-- [x] post 最小闭环 API:GET /posts(分页/过滤/排序)、GET /posts/:id(详情+toc)、POST /posts/:id/like(切换)、POST /posts/:id/view(1h 去重);真实 PostgreSQL 实测全部通过,错误码 11/12/1001 对齐契约(2026-07-20)
-- [x] 前端联调:usePostList / useArticleDetail 走 useMockRepo 开关对接 /api/v1,SSR 与客户端导航实测渲染数据库数据,CORS/CSP 放行验证通过(2026-07-20)
-- [x] auth 模块:argon2id + access JWT(15min)+ refresh 轮换(7d httpOnly cookie),AdminAuthGuard 错误码 20/21/22,login/refresh/logout/me;DevSeeder 补管理员种子(2026-07-20)
-- [x] 评论系统:Comment/CommentLike 实体与迁移,评论树/发表(归档拒评 1002、层级超限 1003)/点赞切换;21 项真实 HTTP 验证通过;前端评论区已接入读取(2026-07-20)
-- [x] backend-ci workflow:postgres 服务容器上 lint/typecheck/test/迁移重放+schema 漂移校验/build/docker build,首跑即绿(1m32s);多阶段 Dockerfile 本地构建 + 容器冒烟通过(2026-07-20)
-
-## 暂缓 / 阻塞
-
-(无)
-
-## 备注:与设计文档的已知偏离
-
-- Post 主键为自增整数而非 uuid v7:前端契约 PostItem.id 为 number(api.md §7.2 示例同),uuid 迁移待前端统一 id 类型后再做
-- search 参数暂以 ILIKE 兜底,Meilisearch 接入后由 search 模块替换
-- 迁移与 Seeder 通过 tsx 脚本(scripts/migrate.ts、seed:dev)执行而非 mikro-orm CLI,避免引入 ts-node;能力等价
-- 鉴权未引入 passport/passport-jwt,直接 @nestjs/jwt + 自定义 AdminAuthGuard;能力等价、依赖更少
+- 状态使用“待开始／进行中／待验收／已完成／阻塞”，完成必须有与本轮范围相符的验证依据。
+- 数据库操作先核对目标；增量样本按既有授权备份后处理，保护账号、配置、用户编辑、媒体和日常备份。
+- 内容包和完整恢复沿用当前维护契约，历史版本数字不直接作为现行兼容范围。
+- 七项可持续运营建设已归档，见[阶段记录](../../../docs/archive/sustainable-blog/sustainable-blog-stage.md)与[七项验收](../../../docs/archive/sustainable-blog/sustainable-blog-verification.md)。
+- 工程、认证、评论、内容域及后台旧记录统一保留于[Todo 历史快照](../../../docs/archive/project-history/development-todos.md)与[文档导航](../../../docs/README.md)，不再沿用早期“从零设计”作为开发状态。

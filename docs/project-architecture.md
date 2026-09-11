@@ -1,6 +1,6 @@
 # TixXinBlog 项目架构基线
 
-本文说明当前代码的职责边界与长期约定。业务入口见[能力清单](capability-map.md)，使用、维护、规划和历史记录分别从[文档导航](README.md)进入；历史报告里的阶段数字不代表当前整站能力。
+本文说明当前代码的职责边界与长期约定。业务入口见[能力清单](capability-map.md)，代码位置见[目录与代码入口](directory-structure.md)，使用和维护从[文档导航](README.md)进入。历史设计与阶段交付保存在 `docs/archive/`，不在本基线重复维护阶段数字；当前任务见前后端 Todo 与[首发准备清单](first-release-readiness.md)。
 
 ## 1. 项目定位
 
