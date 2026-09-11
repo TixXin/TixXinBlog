@@ -29,6 +29,8 @@ async function main() {
       seedDevelopmentData(['--dataset', 'editorial-v1', ...args], () => undefined, fixture.backupOptions)
     const first = await seed()
     assert('created' in first && first.created.length === 4)
+    const { inspectEditorialContent } = await import('../src/seeders/editorial-review')
+    assert.equal((await inspectEditorialContent(fixture.testOrm.em.fork())).ready, true)
     const rows = await fixture.testOrm.em.execute(
       "select f.resource_id,p.status,p.content_raw from development_fixture f join post p on p.id::text=f.resource_id where f.dataset='editorial-v1' and f.kind='post'",
     )

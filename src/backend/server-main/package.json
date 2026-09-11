@@ -19,6 +19,8 @@
     "migration:check": "tsx scripts/migrate.ts check",
     "seed:dev": "tsx src/seeders/run-dev.ts",
     "db:dev": "tsx src/seeders/run-data-command.ts",
+    "editorial:prepare": "tsx src/seeders/run-editorial-content.ts",
+    "test:editorial-preparation": "corepack pnpm build && tsx tests/editorial-preparation-integration.ts",
     "operations": "node scripts/operations.mjs",
     "test:operations": "corepack pnpm build && node tests/operations-integration.mjs",
     "test:backup-integrity": "corepack pnpm build && node tests/backup-integrity-integration.mjs && node tests/manual-backup-record-integration.mjs",
