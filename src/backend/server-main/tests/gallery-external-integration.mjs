@@ -1,5 +1,6 @@
 /** @file gallery-external-integration.mjs @description 隔离验证外链互斥、切换引用、无抓取及 v7/旧内容包维护 */
 import assert from 'node:assert/strict'
+import { stripV9Fields } from './legacy-content-package.mjs'
 import { randomUUID } from 'node:crypto'
 import { createServer } from 'node:http'
 import { setTimeout as delay } from 'node:timers/promises'
@@ -108,7 +109,7 @@ try {
   const exported = await request('/admin/backup/export', 'POST', { mediaIncluded: true })
   assert.equal(exported.status, 201)
   const bundle = exported.data
-  assert.equal(bundle.version, 8)
+  assert.equal(bundle.version, 9)
   bundle.posts = []
   bundle.projects = []
   assert.equal(bundle.gallery.find((row) => row.sourceId === external.id).values.externalUrl, externalUrl)
@@ -126,6 +127,7 @@ try {
   for (const version of [1, 2, 3, 4, 5, 6]) {
     const old = structuredClone(bundle)
     old.version = version
+    stripV9Fields(old)
     delete old.site.about
     old.gallery = old.gallery.filter((row) => row.values.mediaId)
     for (const row of old.gallery) delete row.values.externalUrl

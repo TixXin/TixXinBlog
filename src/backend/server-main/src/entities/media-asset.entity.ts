@@ -6,7 +6,7 @@ import { Entity, OptionalProps, PrimaryKey, Property } from '@mikro-orm/core'
 import { randomUUID } from 'node:crypto'
 @Entity({ tableName: 'media_asset' })
 export class MediaAsset {
-  [OptionalProps]?: 'id' | 'alt' | 'createdAt'
+  [OptionalProps]?: 'id' | 'alt' | 'description' | 'createdAt'
   @PrimaryKey({ type: 'uuid' }) id: string = randomUUID()
   @Property({ type: 'text' }) originalName!: string
   @Property({ type: 'text' }) storageKey!: string
@@ -16,6 +16,7 @@ export class MediaAsset {
   @Property({ type: 'integer' }) height!: number
   @Property({ type: 'text' }) sha256!: string
   @Property({ type: 'text', default: '' }) alt: string = ''
+  @Property({ type: 'text', default: '' }) description: string = ''
   @Property({ type: 'datetime' }) createdAt: Date = new Date()
   @Property({ type: 'datetime', nullable: true }) deletedAt?: Date
 }

@@ -17,11 +17,20 @@ import {
   Matches,
   Min,
   MinLength,
+  ValidateIf,
+  ValidateNested,
 } from 'class-validator'
 import { POST_CATEGORIES, POST_STATUSES } from '../../../entities/post.entity'
 import type { PostCategory, PostStatus } from '../../../entities/post.entity'
+import { ContentRelationDto } from '../../content-relations/content-relations.dto'
 
 export class SavePostDto {
+  @ValidateIf((_object, value) => value !== undefined)
+  @IsArray()
+  @ArrayMaxSize(12)
+  @ValidateNested({ each: true })
+  @Type(() => ContentRelationDto)
+  relatedContent?: ContentRelationDto[]
   @IsOptional()
   @IsString()
   @MaxLength(120)

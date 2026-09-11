@@ -1,6 +1,7 @@
 /** @file project-values.ts @description 项目标签与外链规范化，不抓取站点或生成外部指标 */
 import { BadRequestException } from '@nestjs/common'
 import type { SaveProjectDto } from './project.dto'
+import { normalizeContentRelations } from '../content-relations/content-relations'
 export function projectUrl(value: string) {
   const input = value.trim()
   if (
@@ -39,6 +40,7 @@ export function projectValues(input: SaveProjectDto) {
         return true
       })
   }
+  if (input.relatedContent !== undefined) values.relatedContent = normalizeContentRelations(input.relatedContent)
   if (input.links) {
     if (new Set(input.links.map((link) => link.kind)).size !== input.links.length)
       throw new BadRequestException('同一种项目链接只能填写一个地址')

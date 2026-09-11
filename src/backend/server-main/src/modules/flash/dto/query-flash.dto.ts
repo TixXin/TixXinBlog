@@ -42,6 +42,6 @@ export class QueryFlashDto {
 export class SearchFlashDto extends QueryFlashDto {
   @IsString()
   @MinLength(1)
-  @MaxLength(128)
+  @MaxLength(200)
   q!: string
 }

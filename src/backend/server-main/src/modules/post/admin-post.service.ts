@@ -23,6 +23,8 @@ import { PostRevisionsService } from './post-revisions.service'
 import { postSnapshot } from './post-snapshot'
 import { canonicalTaxonomyLabel } from './taxonomy-aliases'
 import { lockMedia, synchronizeMediaReferences } from '../media/media-references'
+import { validateContentRelations } from '../content-relations/content-relations'
+import type { ContentRelation } from '../../common/types/content-relation'
 
 @Injectable()
 export class AdminPostService {
@@ -112,7 +114,7 @@ export class AdminPostService {
     })
   }
 
-  async save(id: number | null, input: SavePostDto, reason?: string) {
+  async save(id: number | null, input: SavePostDto, reason?: string, historicalRelations: ContentRelation[] = []) {
     if (input.cover && !/^https?:\/\//i.test(input.cover) && !/^\/(?!\/)/.test(input.cover)) {
       throw new BadRequestException('封面只允许 HTTP(S) 或站内路径')
     }
@@ -157,6 +159,13 @@ export class AdminPostService {
       const slug = input.slug ?? post.slug ?? ''
       const address = slug ? await em.findOne(PostAddress, { slug }) : null
       if (address && address.post.id !== post.id) throw new ConflictException('该文章地址已被其他文章使用或保留')
+      if (input.relatedContent !== undefined)
+        post.relatedContent = await validateContentRelations(
+          em,
+          input.relatedContent,
+          [...post.relatedContent, ...historicalRelations],
+          id === null ? undefined : { type: 'post', id },
+        )
       Object.assign(post, {
         slug: slug || undefined,
         coverAlt: input.coverAlt ?? post.coverAlt,
@@ -237,7 +246,13 @@ export class AdminPostService {
   }
   async restoreRevision(id: number, historical: number, expected: number) {
     const revision = await this.revisions.detail(id, historical)
-    return this.save(id, { ...revision.snapshot, revision: expected, status: 'draft' }, `恢复修订 ${historical}`)
+    const relatedContent = revision.snapshot.relatedContent ?? []
+    return this.save(
+      id,
+      { ...revision.snapshot, relatedContent, revision: expected, status: 'draft' },
+      `恢复修订 ${historical}`,
+      relatedContent,
+    )
   }
 
   private assertRevision(post: Post, expected: number | undefined) {

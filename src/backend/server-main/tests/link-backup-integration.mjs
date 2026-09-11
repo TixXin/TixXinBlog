@@ -1,5 +1,6 @@
 /** @file link-backup-integration.mjs @description 友链v6严格格式、规范URL跳过与草稿复制、规则兼容、引用与真实断连后结果核查的隔离验收 */
 import assert from 'node:assert/strict'
+import { stripV9Fields } from './legacy-content-package.mjs'
 import { randomUUID } from 'node:crypto'
 import { existsSync } from 'node:fs'
 import { createRequire } from 'node:module'
@@ -113,7 +114,7 @@ try {
   const exported = await request('/admin/backup/export', 'POST', { mediaIncluded: true })
   assert.equal(exported.status, 201)
   const bundle = exported.data
-  assert.equal(bundle.version, 8)
+  assert.equal(bundle.version, 9)
   assert.equal(bundle.links.length, 4)
   assert.deepEqual(bundle.linkSettings, { rules })
   const sourceLink = bundle.links.find((item) => item.sourceId === link.id)
@@ -154,6 +155,7 @@ try {
   for (const version of [1, 2, 3, 4, 5]) {
     const legacy = structuredClone(bundle)
     legacy.version = version
+    stripV9Fields(legacy)
     delete legacy.site.about
     for (const photo of legacy.gallery ?? []) delete photo.values.externalUrl
     delete legacy.links
@@ -426,6 +428,7 @@ try {
   const currentSnapshot = (await request('/admin/backup/export', 'POST', { mediaIncluded: false })).data
   const legacyPayload = structuredClone(currentSnapshot)
   legacyPayload.version = 5
+  stripV9Fields(legacyPayload)
   delete legacyPayload.site.about
   for (const photo of legacyPayload.gallery ?? []) delete photo.values.externalUrl
   delete legacyPayload.links
@@ -438,7 +441,7 @@ try {
   )
   const legacyPreview = (await preview(legacyPayload, 'copy', true)).data.data
   const [stored] = await em.execute('select payload,plan from content_import where id=?', [legacyPreview.ticket])
-  const payloadV5 = { ...stored.payload, version: 5 }
+  const payloadV5 = stripV9Fields({ ...stored.payload, version: 5 })
   delete payloadV5.links
   delete payloadV5.linkSettings
   const planV5 = structuredClone(stored.plan)
@@ -509,6 +512,7 @@ try {
   const completedCases = [{ ticket: oldTicket.ticket, fields: ['links'] }]
   const payloadV1 = structuredClone(legacyPayload)
   payloadV1.version = 1
+  stripV9Fields(payloadV1)
   delete payloadV1.site.about
   for (const field of ['moments', 'guestbook', 'gallery', 'gallerySettings', 'projects']) delete payloadV1[field]
   const previewV1 = (await preview(payloadV1, 'copy')).data.data

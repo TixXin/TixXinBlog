@@ -1,6 +1,7 @@
 /** @file gallery-photo.entity.ts @description 图库作品独立于媒体文件；拍摄日期缺省保留，删除保留提交去重依据 */
 import { Check, Entity, Index, ManyToOne, OptionalProps, PrimaryKey, Property, Unique } from '@mikro-orm/core'
 import { MediaAsset } from './media-asset.entity'
+import type { ContentRelation } from '../common/types/content-relation'
 
 export const GALLERY_STATUSES = ['draft', 'published', 'withdrawn'] as const
 export type GalleryStatus = (typeof GALLERY_STATUSES)[number]
@@ -25,6 +26,8 @@ export class GalleryPhoto {
     | 'revision'
     | 'createdAt'
     | 'updatedAt'
+    | 'relatedContent'
+  @Property({ type: 'json', defaultRaw: "'[]'::jsonb" }) relatedContent: ContentRelation[] = []
   @PrimaryKey({ type: 'integer', autoincrement: true }) id!: number
   @ManyToOne({ entity: () => MediaAsset, deleteRule: 'restrict', nullable: true }) media?: MediaAsset | null
   @Property({ type: 'text', nullable: true }) externalUrl?: string | null

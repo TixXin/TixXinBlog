@@ -3,6 +3,7 @@
  * @description 隔离内容包的导出、媒体/引用校验、草稿迁入、事务回滚、票据幂等与恢复上下文保护。
  */
 import assert from 'node:assert/strict'
+import { stripV9Fields } from './legacy-content-package.mjs'
 import { randomUUID } from 'node:crypto'
 import { existsSync } from 'node:fs'
 import { join } from 'node:path'
@@ -146,7 +147,7 @@ try {
   assert(exported.headers.get('content-disposition').includes('attachment'))
   assert.equal(exported.body.format, 'tixxin-content')
   const bundle = exported.body
-  assert.equal(bundle.version, 8)
+  assert.equal(bundle.version, 9)
   assert.deepEqual(bundle.site.about, about, '管理员内容包保留隐藏资料供迁入恢复')
   assert.deepEqual(bundle.projects, [])
   assert.deepEqual(bundle.links, [])
@@ -195,13 +196,14 @@ try {
   assert.equal(
     (
       await preview(
-        JSON.parse(JSON.stringify(bundle).replace('"version":8', '"version":8,"__proto__":{"polluted":true}')),
+        JSON.parse(JSON.stringify(bundle).replace('"version":9', '"version":9,"__proto__":{"polluted":true}')),
       )
     ).status,
     400,
   )
   const legacy = structuredClone(bundle)
   legacy.version = 1
+  stripV9Fields(legacy)
   delete legacy.site.about
   for (const photo of legacy.gallery ?? []) delete photo.values.externalUrl
   delete legacy.moments
@@ -214,6 +216,7 @@ try {
   assert.equal((await preview(legacy)).body.data.plan.counts.moments, 0)
   const legacyV2 = structuredClone(bundle)
   legacyV2.version = 2
+  stripV9Fields(legacyV2)
   delete legacyV2.site.about
   delete legacyV2.guestbook
   delete legacyV2.gallery
@@ -224,6 +227,7 @@ try {
   assert.equal((await preview(legacyV2)).body.data.plan.counts.guestbook, 0)
   const legacyV3 = structuredClone(bundle)
   legacyV3.version = 3
+  stripV9Fields(legacyV3)
   delete legacyV3.site.about
   delete legacyV3.gallery
   delete legacyV3.gallerySettings
@@ -238,6 +242,7 @@ try {
   assert.equal((await preview({ ...legacyV3, gallerySettings: { gear: [] } })).status, 400)
   const legacyV4 = structuredClone(bundle)
   legacyV4.version = 4
+  stripV9Fields(legacyV4)
   delete legacyV4.site.about
   for (const photo of legacyV4.gallery ?? []) delete photo.values.externalUrl
   delete legacyV4.projects
@@ -250,6 +255,7 @@ try {
   assert.equal((await preview(invalidLegacyGear)).status, 400)
   const legacyV5 = structuredClone(bundle)
   legacyV5.version = 5
+  stripV9Fields(legacyV5)
   delete legacyV5.site.about
   for (const photo of legacyV5.gallery ?? []) delete photo.values.externalUrl
   delete legacyV5.links
@@ -259,6 +265,7 @@ try {
   assert.equal((await preview({ ...legacyV5, linkSettings: { rules: [] } })).status, 400)
   const legacyV7 = structuredClone(bundle)
   legacyV7.version = 7
+  stripV9Fields(legacyV7)
   delete legacyV7.site.about
   const oldSitePlan = await preview(legacyV7, 'skip', true)
   assert.equal(oldSitePlan.status, 201)
@@ -386,7 +393,7 @@ try {
   assert.equal((await ok(`/moments/${moment.id}`)).likes, 1)
   assert(
     (await ok(`/admin/media/${asset.id}/references`)).items.some(
-      (item) => item.url === `/admin/moments?edit=${momentId}`,
+      (item) => item.url === `/admin/moments/${momentId}`,
     ),
   )
   assert.equal((await ok(`/admin/posts/${newId}`)).status, 'draft')

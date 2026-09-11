@@ -5,8 +5,10 @@
 import { Entity, ManyToOne, PrimaryKey, Property, Unique } from '@mikro-orm/core'
 import { Post } from './post.entity'
 import type { PostCategory, PostContentSection, PostStatus } from './post.entity'
+import type { ContentRelation } from '../common/types/content-relation'
 
 export interface PostSnapshot {
+  relatedContent?: ContentRelation[]
   slug?: string
   coverAlt?: string
   seoTitle?: string
