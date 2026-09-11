@@ -2,7 +2,7 @@
 <template>
   <section class="link-settings">
     <h1>友链须知设置</h1>
-    <NuxtLink to="/admin/links">返回友链管理</NuxtLink>
+    <AdminBackLink to="/admin/links">返回友链管理</AdminBackLink>
     <p>以下须知会公开展示。公开申请、邮件通知和自动探活尚未开放，请按实际情况维护说明。</p>
     <ClientOnly
       ><CommonRequestFeedback
@@ -43,7 +43,9 @@
           </div>
           <button type="button" :disabled="draft.rules.length >= 12" @click="draft.rules.push('')">添加须知</button>
         </fieldset>
-        <button type="submit" :disabled="pending || !ready || !dirty">保存友链须知</button>
+        <AdminActionBar
+          ><button type="submit" :disabled="pending || !ready || !dirty">保存友链须知</button></AdminActionBar
+        >
         <p>服务器版本 {{ draft.revision }}{{ dirty ? ' · 有未保存输入' : '' }}</p>
       </form>
       <section v-if="conflict" aria-label="友链须知版本冲突">

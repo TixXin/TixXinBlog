@@ -4,8 +4,8 @@
 -->
 <template>
   <form ref="editorForm" class="post-editor" @submit.prevent="requestSave(draft.status)">
-    <div class="post-editor__actions">
-      <NuxtLink to="/admin/posts">返回文章列表</NuxtLink>
+    <AdminActionBar class="post-editor__actions" position="top">
+      <AdminBackLink to="/admin/posts">返回文章列表</AdminBackLink>
       <span
         >当前状态：{{ draft.status === 'published' ? '已发布' : draft.status === 'archived' ? '已归档' : '草稿' }}</span
       >
@@ -29,7 +29,7 @@
       <NuxtLink v-if="draft.id && draft.status === 'published'" :to="articlePath({ id: draft.id, slug: draft.slug })"
         >查看公开文章</NuxtLink
       >
-    </div>
+    </AdminActionBar>
     <p v-if="error" role="alert">{{ error }}</p>
     <label>标题<input v-model="draft.title" required maxlength="200" :disabled="pending" /></label>
     <label>摘要<textarea v-model="draft.summary" maxlength="1000" rows="2" :disabled="pending" /></label>

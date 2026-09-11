@@ -531,9 +531,11 @@ test('后台六个页面在 390px 下导航可见且无页面横向溢出', asyn
   for (const [path, title] of routes) {
     await page.goto(path)
     await expect(page.getByRole('heading', { name: title, exact: true, level: 1 })).toBeVisible()
+    await page.getByRole('button', { name: '管理导航', exact: true }).click()
     const current = page.getByRole('navigation', { name: '管理导航' }).getByRole('link', { name: title, exact: true })
     await expect(current).toHaveAttribute('aria-current', 'page')
     await expect(current).toBeInViewport()
+    await page.getByRole('button', { name: '关闭管理导航', exact: true }).click()
     await expect(page.locator('.loading-screen')).toHaveCount(0)
     expect(
       await page.locator('.admin-shell').evaluate((element) => element.scrollWidth <= element.clientWidth + 1),
@@ -1011,7 +1013,9 @@ test('站点资料保存失败保留、前台与 feed 同步、配置冲突和�
   await saveSite(page)
   await other.close()
   await page.setViewportSize({ width: 390, height: 844 })
+  await page.getByRole('button', { name: '管理导航', exact: true }).click()
   await expect(page.getByRole('link', { name: '站点设置', exact: true })).toBeVisible()
+  await page.getByRole('button', { name: '关闭管理导航', exact: true }).click()
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1)).toBe(true)
   await captureMotion(page, testInfo, 'site-settings-mobile-preview.png', {
     target: page.getByRole('region', { name: '保存后的公开资料预览', exact: true }),
