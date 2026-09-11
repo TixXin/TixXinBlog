@@ -150,6 +150,21 @@ const composeBase = [
 ]
 const compose = (args, extra = {}) =>
   run('docker', [...composeBase, ...args], { ...cleanEnvironment, RELEASE_VERSION: currentVersion, ...extra })
+const databaseQuery = (source) =>
+  compose(['exec', '-T', 'postgres', 'psql', '-U', 'tixxin', '-d', 'tixxin_blog', '-Atc', source])
+async function volumeInventory() {
+  const names = (await run('docker', ['volume', 'ls', '-q', '--filter', `label=com.docker.compose.project=${prefix}`]))
+    .split('\n')
+    .filter(Boolean)
+    .sort()
+  return Promise.all(
+    names.map(async (name) => {
+      const [volume] = JSON.parse(await run('docker', ['volume', 'inspect', name]))
+      assert.equal(volume.Labels['com.docker.compose.project'], prefix)
+      return { name, createdAt: volume.CreatedAt }
+    }),
+  )
+}
 async function container(service) {
   const id = await compose(['ps', '-a', '-q', service])
   assert(/^[a-f0-9]{12,64}$/.test(id), `容器未唯一就绪：${service}`)
@@ -250,8 +265,10 @@ async function release(targetVersion, options = {}) {
   return { result, calls }
 }
 async function freezeSource() {
+  const git = await run('git', ['rev-parse', 'HEAD'])
+  assert.equal(await run('git', ['status', '--porcelain']), '', '生产隔离验收必须从已提交的干净检出运行')
   await mkdir(context)
-  const listed = (await run('git', ['ls-files', '-c', '-o', '--exclude-standard', '-z'])).split('\0').filter(Boolean)
+  const listed = (await run('git', ['ls-files', '-c', '-z'])).split('\0').filter(Boolean)
   const paths = [...new Set(listed)]
     .filter(
       (path) =>
@@ -276,9 +293,12 @@ async function freezeSource() {
     await copyFile(source, target)
     hash.update(path).update(await readFile(target))
   }
+  assert.equal(await run('git', ['rev-parse', 'HEAD']), git, '冻结期间提交发生变化')
+  assert.equal(await run('git', ['status', '--porcelain']), '', '冻结期间工作区发生变化')
   report.source = {
-    git: await run('git', ['rev-parse', 'HEAD']),
-    dirty: !!(await run('git', ['status', '--porcelain'])),
+    git,
+    dirty: false,
+    trackedOnly: true,
     files: paths.length,
     sha256: hash.digest('hex'),
   }
@@ -336,7 +356,7 @@ try {
     report.assertions.httpsVerified = true
     report.assertions.defaultWorkerStopped = true
   })
-  let token, oldContext, media, post
+  let token, oldContext, media, post, postDigest, mediaDigest, operationGeneration
   await stage('生产身份与非空内容、媒体及关联', async () => {
     await run(
       'docker',
@@ -410,9 +430,34 @@ try {
       ],
     })
     const detail = await secureFetch(origin + `/api/v1/posts/${post.id}`)
-    assert.equal((await detail.json()).data.relatedContent.length, 2)
-    assert.equal((await secureFetch(origin + media.url)).headers.get('content-type'), 'image/webp')
+    const publicPost = (await detail.json()).data
+    assert.equal(publicPost.relatedContent.length, 2)
+    postDigest = createHash('sha256').update(JSON.stringify(publicPost)).digest('hex')
+    const image = await secureFetch(origin + media.url)
+    assert.equal(image.headers.get('content-type'), 'image/webp')
+    mediaDigest = createHash('sha256')
+      .update(Buffer.from(await image.arrayBuffer()))
+      .digest('hex')
+    // 通过真实公开写入生成暂停邮件任务，恢复验证不能只检查空队列上的开关。
+    const guestbook = await secureFetch(origin + '/api/v1/guestbook', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Origin: origin,
+        'X-Content-Context': oldContext,
+        'X-Visitor-Id': randomUUID(),
+      },
+      body: JSON.stringify({
+        requestId: randomUUID(),
+        author: '青禾',
+        content: '看到这里的发布步骤，想了解恢复后如何保护未完成的任务。',
+      }),
+    })
+    assert.equal(guestbook.status, 201)
+    assert.equal(await databaseQuery("select count(*) from background_task where kind='mail' and state='paused'"), '1')
+    operationGeneration = (await operations(['status'])).control.generation
     report.assertions.content = { posts: 1, gallery: 1, projects: 1, managedMedia: 1, structuredRelations: 2 }
+    report.assertions.nonemptyPausedMailQueue = true
   })
   let backupDirectory
   await stage('一次性 worker 与发布互斥', async () => {
@@ -477,6 +522,8 @@ try {
     const manifest = JSON.parse(await readFile(join(backupDirectory, 'manifest.json'), 'utf8'))
     assert.equal(manifest.media.length, 1)
     assert.equal(manifest.counts.post, 1)
+    assert(manifest.counts.site_settings_revision > 0, '完整备份必须包含非空站点历史')
+    assert(manifest.counts.owner_notification > 0, '完整备份必须包含真实通知事件')
     report.assertions.nativeBackup = {
       pgMajor: 16,
       nodeUid: 1000,
@@ -493,6 +540,40 @@ try {
     assert.equal(restored.report.rowDigestsVerified, true)
     assert.equal(restored.report.operationSafety.externalDeliveryPaused, true)
     assert.equal(restored.report.operationSafety.automaticBackupPaused, true)
+    assert.equal(restored.report.operationSafety.restoredMailTasks, 1)
+    assert(restored.report.operationSafety.interruptedBackupTasks > 0)
+    assert.equal(restored.report.operationSafety.generationRotated, true)
+    const connection = new URL(restored.connection.databaseUrl)
+    const queue = JSON.parse(
+      await run(
+        'docker',
+        [
+          'exec',
+          '-e',
+          'PGPASSWORD',
+          restored.connection.container,
+          'psql',
+          '-U',
+          connection.username,
+          '-d',
+          connection.pathname.slice(1),
+          '-Atc',
+          `select json_build_object(
+            'generation',generation,'externalPaused',external_paused,'backupPaused',backup_paused,
+            'activeTasks',(select count(*) from background_task where state in ('queued','retry','running','paused')),
+            'restoredMail',(select count(*) from background_task where kind='mail' and state='restored'),
+            'recoveryRecords',(select count(*) from background_task where result->>'recoveryVerified'='true')
+          ) from operation_control where id='default'`,
+        ],
+        { ...cleanEnvironment, PGPASSWORD: decodeURIComponent(connection.password) },
+      ),
+    )
+    assert.notEqual(queue.generation, operationGeneration)
+    assert.equal(queue.externalPaused, true)
+    assert.equal(queue.backupPaused, true)
+    assert.equal(queue.activeTasks, 0)
+    assert.equal(queue.restoredMail, 1)
+    assert.equal(queue.recoveryRecords, 1)
     const application = await verifyRestoredApplication(
       restored,
       `${repositories.api}:${version}`,
@@ -502,10 +583,18 @@ try {
     )
     assert.equal(application.ready, true)
     assert.equal(application.freshLoginVerified, true)
+    assert.equal(application.oldAuthorizationRejected, true)
+    assert.equal(application.mediaVerified, 1)
+    assert.equal(application.publicPosts, 1)
+    assert.equal(application.publicGalleryPhotos, 1)
+    assert.equal(application.publicProjects, 1)
+    assert.equal(application.galleryOldContextRejected, true)
+    assert.equal(application.projectOldContextRejected, true)
     report.assertions.restore = {
       ...application,
       rowDigestsVerified: true,
       operationSafety: restored.report.operationSafety,
+      historicalQueueVerified: true,
     }
   })
   await stage('已有 worker 的发布协调与版本标識', async () => {
@@ -524,6 +613,8 @@ try {
     await writeEnvironment()
   })
   await stage('真实迁移任务失败与跳过迁移的应用回退', async () => {
+    const volumesBefore = await volumeInventory()
+    assert(volumesBefore.length >= 5, '发布前必须已有独立数据库、媒体、证书、配置及备份卷')
     const before = await compose([
       'exec',
       '-T',
@@ -553,6 +644,8 @@ try {
     const running = await compose(['ps', '--services', '--status', 'running'])
     assert(!running.split('\n').includes('backend'))
     assert(!running.split('\n').includes('frontend'))
+    assert(!running.split('\n').includes('worker'))
+    assert.deepEqual(await volumeInventory(), volumesBefore, '失败不能替换或删除既有持久化卷')
     const { result, calls } = await release(version, { action: 'rollback', databaseCompatible: true, backupDirectory })
     assert.equal(result.status, 'ready')
     assert(!calls.some((call) => call.operation === 'run'), '回退不能执行迁移容器')
@@ -572,12 +665,31 @@ try {
       before,
     )
     assert.equal((await secureFetch(origin + '/api/v1/posts?pageSize=1')).headers.get('x-tixxin-release'), version)
+    assert.deepEqual(await volumeInventory(), volumesBefore, '应用回退不能重建持久化卷')
+    const detail = await secureFetch(origin + `/api/v1/posts/${post.id}`)
+    assert.equal(detail.status, 200)
+    assert.equal(
+      createHash('sha256')
+        .update(JSON.stringify((await detail.json()).data))
+        .digest('hex'),
+      postDigest,
+    )
+    const image = await secureFetch(origin + media.url)
+    assert.equal(image.status, 200)
+    assert.equal(
+      createHash('sha256')
+        .update(Buffer.from(await image.arrayBuffer()))
+        .digest('hex'),
+      mediaDigest,
+    )
     report.assertions.rollback = {
       migrationSkipped: true,
       migrationRowsUnchanged: true,
       previousVersion: nextVersion,
       restoredVersion: version,
       sameSourceAliases: true,
+      persistentVolumesPreserved: true,
+      contentAndMediaPreserved: true,
     }
   })
   await stage('数据库故障恢复与原生备份失败反馈', async () => {
@@ -684,6 +796,36 @@ try {
     '--filter',
     `label=com.docker.compose.project=${prefix}`,
   ]).catch(() => 'unknown')
+  report.cleanup.ownedContainersRemaining = await run('docker', [
+    'ps',
+    '-aq',
+    '--filter',
+    `label=tixxin.production-smoke=${prefix}`,
+  ]).catch(() => 'unknown')
+  report.cleanup.projectImageTagsRemaining = await run('docker', [
+    'image',
+    'ls',
+    '--format',
+    '{{.Repository}}:{{.Tag}}',
+    '--filter',
+    `reference=${prefix}-*`,
+  ]).catch(() => 'unknown')
+  if (restored) {
+    const restoreId = restored.connection.container.slice('tixxin-restore-'.length)
+    report.cleanup.restoreContainersRemaining = await run('docker', [
+      'ps',
+      '-aq',
+      '--filter',
+      `label=tixxin.restore.id=${restoreId}`,
+    ]).catch(() => 'unknown')
+    report.cleanup.restoreVolumesRemaining = await run('docker', [
+      'volume',
+      'ls',
+      '-q',
+      '--filter',
+      `label=tixxin.restore.id=${restoreId}`,
+    ]).catch(() => 'unknown')
+  }
   report.cleanup.projectVolumesRemaining = await run('docker', [
     'volume',
     'ls',
