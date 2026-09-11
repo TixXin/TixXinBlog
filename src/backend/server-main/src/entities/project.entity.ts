@@ -1,6 +1,7 @@
 /** @file project.entity.ts @description 可维护的个人项目，项目进展与站点发布状态独立，封面引用真实媒体 */
 import { Entity, Index, ManyToOne, OptionalProps, PrimaryKey, Property, Unique } from '@mikro-orm/core'
 import { MediaAsset } from './media-asset.entity'
+import type { ContentRelation } from '../common/types/content-relation'
 export const PROJECT_PROGRESS = ['active', 'dev', 'archived'] as const
 export const PROJECT_STATUSES = ['draft', 'published', 'withdrawn'] as const
 export const PROJECT_TAG_COLORS = ['emerald', 'blue', 'amber', 'sky', 'rose', 'slate'] as const
@@ -30,6 +31,8 @@ export class Project {
     | 'revision'
     | 'createdAt'
     | 'updatedAt'
+    | 'relatedContent'
+  @Property({ type: 'json', defaultRaw: "'[]'::jsonb" }) relatedContent: ContentRelation[] = []
   @PrimaryKey({ type: 'integer', autoincrement: true }) id!: number
   @Property({ type: 'text' }) title!: string
   @Property({ type: 'text', default: '' }) description: string = ''

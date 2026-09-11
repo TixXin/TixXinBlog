@@ -11,6 +11,7 @@
 
 import { Collection, Entity, Enum, Index, ManyToMany, OptionalProps, PrimaryKey, Property } from '@mikro-orm/core'
 import { PostTag } from './post-tag.entity'
+import type { ContentRelation } from '../common/types/content-relation'
 
 /** 文章正文块，镜像前端 features/post/types.ts 的 ArticleSection */
 export interface PostContentSection {
@@ -30,7 +31,8 @@ export type PostStatus = (typeof POST_STATUSES)[number]
 
 @Entity({ tableName: 'post' })
 export class Post {
-  [OptionalProps]?: 'revision' | 'seoNoindex'
+  [OptionalProps]?: 'revision' | 'seoNoindex' | 'relatedContent'
+  @Property({ type: 'json', defaultRaw: "'[]'::jsonb" }) relatedContent: ContentRelation[] = []
   @PrimaryKey({ type: 'integer', autoincrement: true })
   id!: number
 

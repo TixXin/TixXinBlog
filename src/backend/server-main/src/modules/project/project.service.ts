@@ -10,6 +10,7 @@ import { lockMedia, mediaUrl, synchronizeMediaReferences } from '../media/media-
 import { submissionHash } from '../moment/moment-values'
 import { projectId, projectValues } from './project-values'
 import type { AdminProjectQuery, ProjectQuery, SaveProjectDto } from './project.dto'
+import { resolveContentRelations, validateContentRelations } from '../content-relations/content-relations'
 const publicProjects = { status: 'published', deletedAt: null } as const
 const links = {
   source: { label: '源代码', icon: 'lucide:github' },
@@ -37,6 +38,7 @@ export class ProjectService {
       ? {
           ...result,
           coverMediaId: project.coverMedia?.id ?? null,
+          relatedContent: project.relatedContent,
           status: project.status,
           sortOrder: project.sortOrder,
           revision: project.revision,
@@ -82,7 +84,10 @@ export class ProjectService {
       populate: ['coverMedia'],
     })
     if (!item) throw new NotFoundException('项目不存在或尚未公开')
-    return this.serialize(item, admin)
+    return {
+      ...this.serialize(item, admin),
+      relatedContent: admin ? item.relatedContent : await resolveContentRelations(this.em, item.relatedContent),
+    }
   }
   async submission(requestId: string) {
     const item = await this.em.findOne(Project, { requestId }, { populate: ['coverMedia'] })
@@ -114,7 +119,13 @@ export class ProjectService {
     if (id !== null && (input.revision === undefined || input.requestId !== undefined))
       throw new BadRequestException('编辑项目需要当前版本，不能携带创建标识')
     const values = projectValues(input),
-      hash = submissionHash(values)
+      hash = submissionHash(
+        Object.fromEntries(
+          Object.entries(values).filter(
+            ([key, value]) => key !== 'relatedContent' || !Array.isArray(value) || value.length > 0,
+          ),
+        ),
+      )
     const savedId = await this.em.transactional(async (em) => {
       await lockMedia(em)
       if (id === null) {
@@ -135,6 +146,13 @@ export class ProjectService {
       if (!item) throw new NotFoundException('项目不存在或已删除')
       if (id !== null && item.revision !== input.revision)
         throw new ConflictException('项目已被修改，请保留输入并重新读取')
+      if (fields.relatedContent !== undefined)
+        fields.relatedContent = await validateContentRelations(
+          em,
+          fields.relatedContent,
+          item.relatedContent,
+          id === null ? undefined : { type: 'project', id },
+        )
       Object.assign(item, fields)
       if (coverMediaId !== undefined) item.coverMedia = media
       if (item.status === 'published' && !item.publishedAt) item.publishedAt = new Date()

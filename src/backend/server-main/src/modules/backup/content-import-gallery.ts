@@ -18,6 +18,7 @@ export async function importGallery(
     const { mediaId, ...values } = source.values
     const photo = em.create(GalleryPhoto, {
       ...values,
+      relatedContent: [],
       status: 'draft',
       media: mediaId ? em.getReference(MediaAsset, mediaId) : null,
       createdAt: new Date(source.createdAt),

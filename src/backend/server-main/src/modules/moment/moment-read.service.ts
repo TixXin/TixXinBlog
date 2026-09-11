@@ -129,6 +129,18 @@ export class MomentReadService {
     })
     return { items: items.map(momentCommentDto), total, page: query.page, pageSize: query.pageSize }
   }
+  async commentLocation(id: string, commentId: string) {
+    await this.require(id, true)
+    const target = await this.em.findOne(MomentComment, { id: commentId, moment: id, deletedAt: null })
+    if (!target) throw new NotFoundException('评论不存在、已删除或不属于这条动态')
+    const preceding = await this.em.count(MomentComment, {
+      moment: id,
+      deletedAt: null,
+      $or: [{ createdAt: { $lt: target.createdAt } }, { createdAt: target.createdAt, id: { $lt: target.id } }],
+    })
+    // 与管理评论面板每页 15 条、时间和编号升序的顺序保持一致。
+    return { commentId, page: Math.floor(preceding / 15) + 1, pageSize: 15 }
+  }
   async overview() {
     const connection = this.em.getConnection()
     const [stats] = await connection.execute<{ totalMoments: number; totalLikes: number; totalComments: number }[]>(`

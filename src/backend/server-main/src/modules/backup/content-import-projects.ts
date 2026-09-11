@@ -18,6 +18,7 @@ export async function importProjects(
     const { coverMediaId, ...values } = source.values
     const project = em.create(Project, {
       ...values,
+      relatedContent: [],
       status: 'draft',
       coverMedia: coverMediaId ? em.getReference(MediaAsset, coverMediaId) : null,
       createdAt: new Date(source.createdAt),

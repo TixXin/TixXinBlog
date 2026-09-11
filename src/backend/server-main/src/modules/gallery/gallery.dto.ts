@@ -19,6 +19,7 @@ import {
 } from 'class-validator'
 import { GALLERY_STATUSES } from '../../entities/gallery-photo.entity'
 import type { GalleryStatus } from '../../entities/gallery-photo.entity'
+import { ContentRelationDto } from '../content-relations/content-relations.dto'
 
 const provided = (_object: unknown, value: unknown) => value !== undefined
 const trim = ({ value }: { value: unknown }) => (typeof value === 'string' ? value.trim() : value)
@@ -32,6 +33,12 @@ export class AdminGalleryQuery extends GalleryQuery {
   @ValidateIf(provided) @IsIn(['all', ...GALLERY_STATUSES]) status?: 'all' | GalleryStatus
 }
 export class SaveGalleryDto {
+  @ValidateIf(provided)
+  @IsArray()
+  @ArrayMaxSize(12)
+  @ValidateNested({ each: true })
+  @Type(() => ContentRelationDto)
+  relatedContent?: ContentRelationDto[]
   @ValidateIf(provided) @IsUUID('4') requestId?: string
   @ValidateIf(provided) @IsInt() @Min(0) revision?: number
   @ValidateIf((_object, value) => value !== undefined && value !== null) @IsUUID('4') mediaId?: string | null

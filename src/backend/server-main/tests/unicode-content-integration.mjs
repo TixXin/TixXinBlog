@@ -1,5 +1,6 @@
 /** @file unicode-content-integration.mjs @description 三域UTF16写入边界与v4-v6导出再预览，使用单次隔离库且不改日常数据 */
 import assert from 'node:assert/strict'
+import { stripV9Fields } from './legacy-content-package.mjs'
 import { randomUUID } from 'node:crypto'
 import { setTimeout as delay } from 'node:timers/promises'
 import { createBrowserTestApp } from './test-app.mjs'
@@ -112,7 +113,7 @@ try {
   const exported = await request('/admin/backup/export', 'POST', { mediaIncluded: true })
   assert.equal(exported.status, 201)
   const bundle = exported.data
-  assert.equal(bundle.version, 8)
+  assert.equal(bundle.version, 9)
   const selected = {
     gallery: bundle.gallery.find((item) => item.sourceId === gallery.id),
     projects: bundle.projects.find((item) => item.sourceId === project.id),
@@ -140,6 +141,7 @@ try {
   for (const version of [4, 5, 6]) {
     const legacy = structuredClone(bundle)
     legacy.version = version
+    stripV9Fields(legacy)
     delete legacy.site.about
     for (const photo of legacy.gallery ?? []) delete photo.values.externalUrl
     if (version < 6) {

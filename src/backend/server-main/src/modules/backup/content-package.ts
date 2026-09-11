@@ -25,6 +25,7 @@ import type { GalleryStatus } from '../../entities/gallery-photo.entity'
 import { galleryExternalUrl } from '../gallery/gallery-values'
 import { projectUrl } from '../project/project-values'
 import { linkLogoUrl, linkUrl } from '../link/link-values'
+import type { ContentRelation } from '../../common/types/content-relation'
 export const MAX_PACKAGE_BYTES = 50 * 1024 * 1024
 export interface PackageComment {
   sourceId: number
@@ -51,6 +52,7 @@ export interface PackageFlash {
   comments: { author: string; avatar: string; content: string; createdAt: string }[]
 }
 export interface PackageMedia {
+  description: string
   id: string
   name: string
   alt: string
@@ -93,7 +95,8 @@ export interface PackageGuestbook {
 }
 export interface ContentPackage {
   format: 'tixxin-content'
-  version: 8
+  version: 9
+  omittedRelations: number
   exportedAt: string
   mediaIncluded: boolean
   posts: PackagePost[]
@@ -119,6 +122,7 @@ export interface PackageGalleryPhoto {
   publishedAt: string | null
   deleted: boolean
   values: {
+    relatedContent: ContentRelation[]
     mediaId: string | null
     externalUrl: string | null
     title: string
@@ -137,6 +141,7 @@ export interface PackageProject {
   publishedAt: string | null
   deleted: boolean
   values: {
+    relatedContent: ContentRelation[]
     title: string
     description: string
     coverMediaId: string | null
@@ -258,13 +263,33 @@ export async function parseContentPackage(buffer: Buffer): Promise<ContentPackag
     'site',
     'requireCommentApproval',
     'media',
+    'omittedRelations',
   ])
   if (
     source.format !== 'tixxin-content' ||
-    ![1, 2, 3, 4, 5, 6, 7, 8].includes(Number(source.version)) ||
+    ![1, 2, 3, 4, 5, 6, 7, 8, 9].includes(Number(source.version)) ||
     typeof source.version !== 'number'
   )
     throw new BadRequestException('不支持的内容包格式或版本')
+  if (Number(source.version) < 9 && source.omittedRelations !== undefined) fail('旧版本不支持关联省略计数')
+  const omittedRelations = Number(source.version) >= 9 ? (source.omittedRelations as number) : 0
+  if (!Number.isSafeInteger(omittedRelations) || omittedRelations < 0 || omittedRelations > 72000) fail('关联省略计数')
+  const relations = (value: unknown, path: string, type: ContentRelation['type'], id: number): ContentRelation[] => {
+    if (Number(source.version) < 9) {
+      if (value !== undefined) fail('旧版本不支持结构化关联')
+      return []
+    }
+    const seen = new Set<string>()
+    return array(value, path, 12).map((item) => {
+      const row = record(item, path, ['type', 'id'])
+      if (!['post', 'project', 'gallery'].includes(String(row.type))) fail('关联类型')
+      const targetId = number(row.id, path + '.id')
+      const key = `${row.type}:${targetId}`
+      if (seen.has(key) || (row.type === type && targetId === id)) fail('重复或自身关联')
+      seen.add(key)
+      return { type: row.type as ContentRelation['type'], id: targetId }
+    })
+  }
   if (source.version === 1 && source.moments !== undefined) fail('v1 不支持朋友圈字段')
   if (Number(source.version) < 3 && source.guestbook !== undefined) fail('v1/v2 不支持留言字段')
   if (Number(source.version) < 4 && (source.gallery !== undefined || source.gallerySettings !== undefined))
@@ -278,6 +303,12 @@ export async function parseContentPackage(buffer: Buffer): Promise<ContentPackag
     const path = `posts[${index}]`
     const item = record(value, path, ['sourceId', 'createdAt', 'publishedAt', 'deleted', 'values', 'comments'])
     const values = dto(SavePostDto, item.values, `${path}.values`)
+    values.relatedContent = relations(
+      (item.values as Record<string, unknown>).relatedContent,
+      `${path}.relatedContent`,
+      'post',
+      number(item.sourceId, `${path}.sourceId`),
+    )
     if (
       'revision' in (item.values as object) ||
       (values.cover && !packageImageUrl(values.cover)) ||
@@ -443,6 +474,7 @@ export async function parseContentPackage(buffer: Buffer): Promise<ContentPackag
       const row = record(value, path, ['sourceId', 'createdAt', 'publishedAt', 'deleted', 'values'])
       const values = record(row.values, `${path}.values`, [
         'mediaId',
+        ...(Number(source.version) >= 9 ? ['relatedContent'] : []),
         ...(Number(source.version) >= 7 ? ['externalUrl'] : []),
         'title',
         'description',
@@ -481,6 +513,12 @@ export async function parseContentPackage(buffer: Buffer): Promise<ContentPackag
         deleted: boolean(row.deleted, `${path}.deleted`),
         values: {
           mediaId: mediaId?.toLowerCase() ?? null,
+          relatedContent: relations(
+            values.relatedContent,
+            `${path}.relatedContent`,
+            'gallery',
+            number(row.sourceId, `${path}.sourceId`),
+          ),
           externalUrl,
           title: text(values.title, `${path}.title`, 160, 1).trim(),
           description: text(values.description, `${path}.description`, 5000).trim(),
@@ -517,6 +555,7 @@ export async function parseContentPackage(buffer: Buffer): Promise<ContentPackag
       const row = record(value, path, ['sourceId', 'createdAt', 'publishedAt', 'deleted', 'values'])
       const values = record(row.values, `${path}.values`, [
         'title',
+        ...(Number(source.version) >= 9 ? ['relatedContent'] : []),
         'description',
         'coverMediaId',
         'tags',
@@ -582,6 +621,12 @@ export async function parseContentPackage(buffer: Buffer): Promise<ContentPackag
         deleted: boolean(row.deleted, `${path}.deleted`),
         values: {
           title: text(values.title, `${path}.title`, 160, 1).trim(),
+          relatedContent: relations(
+            values.relatedContent,
+            `${path}.relatedContent`,
+            'project',
+            number(row.sourceId, `${path}.sourceId`),
+          ),
           description: text(values.description, `${path}.description`, 5000).trim(),
           coverMediaId: coverMediaId?.toLowerCase() ?? null,
           tags,
@@ -713,6 +758,7 @@ export async function parseContentPackage(buffer: Buffer): Promise<ContentPackag
   for (const value of array(source.media, 'media', 300)) {
     const item = record(value, '媒体', [
       'id',
+      ...(Number(source.version) >= 9 ? ['description'] : []),
       'name',
       'alt',
       'sha256',
@@ -776,6 +822,7 @@ export async function parseContentPackage(buffer: Buffer): Promise<ContentPackag
     }
     media.push({
       id: id.toLowerCase(),
+      description: Number(source.version) >= 9 ? text(item.description, '媒体说明', 1000) : '',
       name,
       alt: text(item.alt, '图片说明', 300),
       sha256,
@@ -788,9 +835,18 @@ export async function parseContentPackage(buffer: Buffer): Promise<ContentPackag
     })
   }
   if (new Set(media.map((item) => item.id)).size !== media.length) fail('重复媒体编号')
+  const targets = new Set([
+    ...posts.map((row) => `post:${row.sourceId}`),
+    ...projects.map((row) => `project:${row.sourceId}`),
+    ...gallery.map((row) => `gallery:${row.sourceId}`),
+  ])
+  for (const row of [...posts, ...projects, ...gallery])
+    for (const relation of row.values.relatedContent ?? [])
+      if (!targets.has(`${relation.type}:${relation.id}`)) fail('关联目标不在内容包内，不能把来源编号当作目标站点编号')
   return {
     format: 'tixxin-content',
-    version: 8,
+    version: 9,
+    omittedRelations,
     exportedAt: date(source.exportedAt, '导出时间'),
     mediaIncluded,
     posts,

@@ -22,6 +22,7 @@ import {
 } from '../../entities/project.entity'
 import type { ProjectLink, ProjectProgress, ProjectStatus, ProjectTag } from '../../entities/project.entity'
 import { MaxUtf16Length } from '../../common/validators/max-utf16-length'
+import { ContentRelationDto } from '../content-relations/content-relations.dto'
 const provided = (_object: unknown, value: unknown) => value !== undefined
 const trim = ({ value }: { value: unknown }) => (typeof value === 'string' ? value.trim() : value)
 export class ProjectQuery {
@@ -43,6 +44,12 @@ export class ProjectLinkDto implements ProjectLink {
   @IsString() @MinLength(1) @MaxLength(2048) @Transform(trim) href!: string
 }
 export class SaveProjectDto {
+  @ValidateIf(provided)
+  @IsArray()
+  @ArrayMaxSize(12)
+  @ValidateNested({ each: true })
+  @Type(() => ContentRelationDto)
+  relatedContent?: ContentRelationDto[]
   @ValidateIf(provided) @IsUUID('4') requestId?: string
   @ValidateIf(provided) @IsInt() @Min(0) revision?: number
   @ValidateIf(provided) @IsString() @MinLength(1) @MaxUtf16Length(160) @Transform(trim) title?: string

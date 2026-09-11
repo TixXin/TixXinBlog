@@ -20,7 +20,7 @@ import {
 } from '@nestjs/common'
 import { FileInterceptor } from '@nestjs/platform-express'
 import { Transform, Type } from 'class-transformer'
-import { IsBoolean, IsInt, IsOptional, IsString, IsUUID, Max, MaxLength, Min } from 'class-validator'
+import { IsBoolean, IsIn, IsInt, IsOptional, IsString, IsUUID, Max, MaxLength, Min, ValidateIf } from 'class-validator'
 import type { Response } from 'express'
 import { AdminAuthGuard } from '../../common/guards/admin-auth.guard'
 import { MediaService } from './media.service'
@@ -31,6 +31,8 @@ export class QueryMediaDto {
   @Type(() => Number) @IsInt() @Min(1) page: number = 1
   @Type(() => Number) @IsInt() @Min(1) @Max(100) pageSize: number = 20
   @IsOptional() @IsString() @MaxLength(128) search?: string
+  @IsOptional() @IsIn(['landscape', 'portrait', 'square']) orientation?: 'landscape' | 'portrait' | 'square'
+  @IsOptional() @IsIn(['used', 'unused']) usage?: 'used' | 'unused'
   @Transform(({ value }) => (value === 'true' ? true : value === 'false' ? false : value))
   @IsBoolean()
   deleted: boolean = false
@@ -40,7 +42,8 @@ export class UploadMediaDto {
   @IsString() @MaxLength(300) alt: string = ''
 }
 export class UpdateMediaDto {
-  @IsString() @MaxLength(300) alt!: string
+  @ValidateIf((_object, value) => value !== undefined) @IsString() @MaxLength(300) alt?: string
+  @ValidateIf((_object, value) => value !== undefined) @IsString() @MaxLength(1000) description?: string
 }
 
 @Controller('admin/media')
@@ -67,7 +70,7 @@ export class AdminMediaController {
     return this.media.references(id, query.page)
   }
   @Patch(':id') update(@Param('id', new ParseUUIDPipe({ version: '4' })) id: string, @Body() body: UpdateMediaDto) {
-    return this.media.update(id, body.alt)
+    return this.media.update(id, body)
   }
   @Delete(':id') remove(@Param('id', new ParseUUIDPipe({ version: '4' })) id: string) {
     return this.media.remove(id)

@@ -11,6 +11,11 @@ import { lockMedia, mediaUrl, synchronizeMediaReferences } from '../media/media-
 import { submissionHash } from '../moment/moment-values'
 import { galleryExternalUrl } from './gallery-values'
 import type { AdminGalleryQuery, GalleryQuery, SaveGalleryDto, SaveGallerySettingsDto } from './gallery.dto'
+import {
+  normalizeContentRelations,
+  resolveContentRelations,
+  validateContentRelations,
+} from '../content-relations/content-relations'
 
 const publicPhotos = { deletedAt: null, status: 'published' } as const
 function galleryId(id: number) {
@@ -41,6 +46,7 @@ export class GalleryService {
       ? {
           ...result,
           mediaId: photo.media?.id ?? null,
+          relatedContent: photo.relatedContent,
           externalUrl: photo.externalUrl ?? null,
           takenOn: photo.takenOn ?? null,
           status: photo.status,
@@ -79,7 +85,10 @@ export class GalleryService {
       populate: ['media'],
     })
     if (!item) throw new NotFoundException('作品不存在或尚未公开')
-    return this.serialize(item, admin)
+    return {
+      ...this.serialize(item, admin),
+      relatedContent: admin ? item.relatedContent : await resolveContentRelations(this.em, item.relatedContent),
+    }
   }
   async submission(requestId: string) {
     const item = await this.em.findOne(GalleryPhoto, { requestId }, { populate: ['media'] })
@@ -166,10 +175,15 @@ export class GalleryService {
         ([key, value]) => !['requestId', 'mediaId', 'revision'].includes(key) && value !== undefined,
       ),
     )
+    if (input.relatedContent !== undefined) values.relatedContent = normalizeContentRelations(input.relatedContent)
     // 旧媒体提交没有 externalUrl 字段，显式清空与省略保持相同创建去重语义。
     const hash = submissionHash(
       Object.fromEntries(
-        Object.entries({ mediaId, ...values }).filter(([key, value]) => !(key === 'externalUrl' && value === null)),
+        Object.entries({ mediaId, ...values }).filter(
+          ([key, value]) =>
+            !(key === 'externalUrl' && value === null) &&
+            !(key === 'relatedContent' && Array.isArray(value) && !value.length),
+        ),
       ),
     )
     const savedId = await this.em.transactional(async (em) => {
@@ -189,6 +203,13 @@ export class GalleryService {
         : em.create(GalleryPhoto, { title: input.title!, media: media!, requestId, requestHash: hash })
       if (!photo) throw new NotFoundException('作品不存在或已删除')
       if (id && photo.revision !== input.revision) throw new ConflictException('作品已被修改，请保留输入并重新读取')
+      if (values.relatedContent !== undefined)
+        values.relatedContent = await validateContentRelations(
+          em,
+          values.relatedContent,
+          photo.relatedContent,
+          id === null ? undefined : { type: 'gallery', id },
+        )
       Object.assign(photo, values)
       if (mediaId !== undefined) photo.media = media ?? null
       if (Boolean(photo.media) === Boolean(photo.externalUrl))

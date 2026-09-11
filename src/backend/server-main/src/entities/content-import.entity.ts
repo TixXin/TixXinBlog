@@ -4,7 +4,10 @@
  */
 import { Entity, Index, OptionalProps, PrimaryKey, Property } from '@mikro-orm/core'
 import type { ContentPackage } from '../modules/backup/content-package'
+import type { RelationMapping } from '../modules/backup/content-relation-plan'
 export interface ContentImportPlan {
+  relationMapping?: RelationMapping
+  omittedRelations?: number
   basis: string
   ready: boolean
   errors: string[]
@@ -43,6 +46,7 @@ export interface ContentImportPlan {
   linkSettingsRevision: number
 }
 export interface ContentImportResult {
+  relations?: { applied: number; omitted: number }
   posts: { sourceId: number; id: number }[]
   flashes: { sourceId: string; id: string }[]
   moments: { sourceId: string; id: string }[]

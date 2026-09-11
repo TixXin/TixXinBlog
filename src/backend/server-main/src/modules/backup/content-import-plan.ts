@@ -26,6 +26,8 @@ import { managedMediaIds } from '../media/media-references'
 import type { MediaStorage } from '../media/media-storage'
 import type { ContentExportService } from './content-export.service'
 import { guestbookImportPlan } from './content-guestbook-plan'
+import { createRelationHasher, makeRelationMapping } from './content-relation-plan'
+import type { ContentRelationType } from '../../common/types/content-relation'
 export function postContentHash(values: PackagePost['values']) {
   return packageHash({
     title: values.title.trim(),
@@ -66,15 +68,17 @@ export function momentContentHash(values: PackageMoment['values'], articleHash: 
   })
 }
 export function galleryContentHash(values: PackageGalleryPhoto['values']) {
-  const { status, ...content } = values
+  const { status, relatedContent, ...content } = values
   // 发布状态不参与内容去重，避免已迁入草稿被下一次跳过策略重复创建。
   void status
+  void relatedContent
   return packageHash({ ...content, externalUrl: values.externalUrl ?? null })
 }
 export function projectContentHash(values: PackageProject['values']) {
-  const { status, ...content } = values
+  const { status, relatedContent, ...content } = values
   // 项目进展属于业务内容；站点发布状态不参与去重，草稿迁入后仍可识别同一内容。
   void status
+  void relatedContent
   return packageHash(content)
 }
 export async function normalizedPost(em: EntityManager, values: PackagePost['values']) {
@@ -96,6 +100,14 @@ export async function makeContentPlan(
   ticket: string,
 ): Promise<ContentImportPlan> {
   const current = await exporter.snapshot(false, em)
+  const hashBase = (type: ContentRelationType, values: unknown) =>
+    type === 'post'
+      ? postContentHash(values as PackagePost['values'])
+      : type === 'project'
+        ? projectContentHash(values as PackageProject['values'])
+        : galleryContentHash(values as PackageGalleryPhoto['values'])
+  const currentHash = createRelationHasher(current, hashBase),
+    incomingHash = createRelationHasher(input, hashBase)
   const [addresses, aliases, site, policy, context, gallerySettings, linkSettings] = await Promise.all([
     em.find(PostAddress, {}, { orderBy: { slug: 'asc' } }),
     em.find(TaxonomyAlias, {}, { orderBy: { kind: 'asc', alias: 'asc' } }),
@@ -133,9 +145,9 @@ export async function makeContentPlan(
         ]
       : null,
   })
-  const existingPosts = new Set(current.posts.map((post) => postContentHash(post.values)))
+  const existingPosts = new Set(current.posts.map((post) => currentHash('post', post.sourceId)))
   const existingFlashes = new Set(current.flashes.map((flash) => flashContentHash(flash.values)))
-  const currentPostHashes = new Map(current.posts.map((post) => [post.sourceId, postContentHash(post.values)]))
+  const currentPostHashes = new Map(current.posts.map((post) => [post.sourceId, currentHash('post', post.sourceId)]))
   const sourcePostHashes = new Map<number, string>()
   const existingMoments = new Set(
     current.moments
@@ -159,7 +171,7 @@ export async function makeContentPlan(
     } catch {
       errors.push(`文章 ${source.sourceId} 的历史目录名无法映射，请先调整目录`)
     }
-    const hash = postContentHash(values)
+    const hash = incomingHash('post', source.sourceId, values)
     sourcePostHashes.set(source.sourceId, hash)
     const duplicate = existingPosts.has(hash)
     const skip = strategy === 'skip' && duplicate
@@ -242,10 +254,10 @@ export async function makeContentPlan(
     if (!plan.skip && !source.deleted) requiredValues.push(source.avatar)
   }
   const existingGallery = new Set(
-    current.gallery.filter((photo) => !photo.deleted).map((photo) => galleryContentHash(photo.values)),
+    current.gallery.filter((photo) => !photo.deleted).map((photo) => currentHash('gallery', photo.sourceId)),
   )
   const galleryPlans = (input.gallery ?? []).map((source) => {
-    const hash = galleryContentHash(source.values)
+    const hash = incomingHash('gallery', source.sourceId)
     const skip = source.deleted || (strategy === 'skip' && existingGallery.has(hash))
     if (!skip) {
       existingGallery.add(hash)
@@ -263,10 +275,10 @@ export async function makeContentPlan(
     }
   })
   const existingProjects = new Set(
-    current.projects.filter((project) => !project.deleted).map((project) => projectContentHash(project.values)),
+    current.projects.filter((project) => !project.deleted).map((project) => currentHash('project', project.sourceId)),
   )
   const projectPlans = (input.projects ?? []).map((source) => {
-    const hash = projectContentHash(source.values)
+    const hash = incomingHash('project', source.sourceId)
     const skip = source.deleted || (strategy === 'skip' && existingProjects.has(hash))
     if (!skip) {
       existingProjects.add(hash)
@@ -350,8 +362,18 @@ export async function makeContentPlan(
       errors.push(`标签历史名称 ${tag.label} 无法映射`)
     }
   }
+  const relations = makeRelationMapping(
+    current,
+    input,
+    { post: postPlans, project: projectPlans, gallery: galleryPlans },
+    currentHash,
+    (type, id) => (type === 'post' ? sourcePostHashes.get(id)! : incomingHash(type, id)),
+  )
+  errors.push(...relations.errors)
   return {
     basis,
+    relationMapping: relations.mapping,
+    omittedRelations: relations.omitted,
     ready: errors.length === 0,
     errors: [...new Set(errors)],
     posts: postPlans,

@@ -19,6 +19,7 @@ export function legacyMarkdown(sections: PostContentSection[] = []): string {
 
 export function postSnapshot(post: Post): PostSnapshot {
   return {
+    relatedContent: (post.relatedContent ?? []).map((item) => ({ ...item })),
     slug: post.slug ?? '',
     coverAlt: post.coverAlt ?? '',
     seoTitle: post.seoTitle ?? '',

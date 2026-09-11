@@ -62,6 +62,7 @@ export class PostRevisionsService {
       createdAt: item.createdAt.toISOString(),
       snapshot: {
         ...item.snapshot,
+        relatedContent: item.snapshot.relatedContent ?? [],
         contentRaw: item.snapshot.contentRaw || legacyMarkdown(item.snapshot.contentSections),
       },
     }

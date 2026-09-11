@@ -56,6 +56,10 @@ export class AdminMomentController {
   comments(@Param('id') id: string, @Query() query: MomentPageQuery) {
     return this.read.comments(id, query, '', true)
   }
+  @Get(':id/comments/:commentId/location')
+  commentLocation(@Param('id') id: string, @Param('commentId') commentId: string) {
+    return this.read.commentLocation(id, commentId)
+  }
   @Post(':id/comments')
   comment(@Param('id') id: string, @Body() body: MomentCommentBody, @CurrentAdmin() admin: { id: string }) {
     return this.interactions.comment(id, body, '', admin.id)
