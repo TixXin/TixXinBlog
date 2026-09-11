@@ -55,6 +55,25 @@ async function setup(id: number | null, contentContext = 'current-library', expe
   return editor
 }
 describe('图库编辑请求所有权', () => {
+  it('来源切换的两套输入在刷新恢复与冲突后仍保留', async () => {
+    const editor = await setup(1)
+    const url = 'https://example.org/Photo?sig=Ab%2Fc'
+    editor.change({ source: 'external', externalUrl: url })
+    await flushPromises()
+    wrappers.pop()!.unmount()
+    const restored = await setup(1)
+    restored.restoreRecovery()
+    expect(restored.form).toMatchObject({ source: 'external', externalUrl: url, mediaId: photo().mediaId })
+    mocks.repo.save.mockRejectedValueOnce(Object.assign(new Error('版本冲突'), { statusCode: 409 }))
+    mocks.repo.adminDetail.mockResolvedValueOnce(photo({ revision: 2, title: '其他窗口的标题' }))
+    await restored.save('published')
+    expect(restored.serverVersion.value?.revision).toBe(2)
+    expect(restored.form.externalUrl).toBe(url)
+    restored.mergeConflict()
+    restored.change({ source: 'media' })
+    expect(restored.form.externalUrl).toBe(url)
+    expect(restored.form.mediaId).toBe(photo().mediaId)
+  })
   it('恢复的新库缺少同编号作品时，404不阻止只读查看旧拍摄资料', async () => {
     const before = await setup(1, 'before')
     before.change({ category: '旧分类', takenOn: '2024-01-08', device: '旧器材' })
