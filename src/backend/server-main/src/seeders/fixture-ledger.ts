@@ -29,7 +29,11 @@ export async function fixtureRow(em: EntityManager, kind: FixtureKind, id: strin
 export function fixtureHash(row: Record<string, unknown>) {
   return submissionHash(
     Object.fromEntries(
-      Object.entries(row).filter(([key]) => !['likes', 'views', 'comment_count', 'updated_at'].includes(key)),
+      Object.entries(row).filter(
+        ([key, value]) =>
+          !['likes', 'views', 'comment_count', 'updated_at'].includes(key) &&
+          !(key === 'external_url' && value === null),
+      ),
     ),
   )
 }

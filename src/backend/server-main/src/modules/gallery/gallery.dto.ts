@@ -34,7 +34,11 @@ export class AdminGalleryQuery extends GalleryQuery {
 export class SaveGalleryDto {
   @ValidateIf(provided) @IsUUID('4') requestId?: string
   @ValidateIf(provided) @IsInt() @Min(0) revision?: number
-  @ValidateIf(provided) @IsUUID('4') mediaId?: string
+  @ValidateIf((_object, value) => value !== undefined && value !== null) @IsUUID('4') mediaId?: string | null
+  @ValidateIf((_object, value) => value !== undefined && value !== null)
+  @IsString()
+  @MaxUtf16Length(2048)
+  externalUrl?: string | null
   @ValidateIf(provided) @IsString() @MinLength(1) @MaxUtf16Length(160) @Transform(trim) title?: string
   @ValidateIf(provided) @IsString() @MaxUtf16Length(5000) @Transform(trim) description?: string
   @ValidateIf(provided) @IsString() @MaxUtf16Length(40) @Transform(trim) category?: string

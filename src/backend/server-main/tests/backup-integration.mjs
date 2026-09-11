@@ -142,7 +142,7 @@ try {
   assert(exported.headers.get('content-disposition').includes('attachment'))
   assert.equal(exported.body.format, 'tixxin-content')
   const bundle = exported.body
-  assert.equal(bundle.version, 6)
+  assert.equal(bundle.version, 7)
   assert.deepEqual(bundle.projects, [])
   assert.deepEqual(bundle.links, [])
   assert.deepEqual(bundle.linkSettings, { rules: [] })
@@ -190,13 +190,14 @@ try {
   assert.equal(
     (
       await preview(
-        JSON.parse(JSON.stringify(bundle).replace('"version":6', '"version":6,"__proto__":{"polluted":true}')),
+        JSON.parse(JSON.stringify(bundle).replace('"version":7', '"version":7,"__proto__":{"polluted":true}')),
       )
     ).status,
     400,
   )
   const legacy = structuredClone(bundle)
   legacy.version = 1
+  for (const photo of legacy.gallery ?? []) delete photo.values.externalUrl
   delete legacy.moments
   delete legacy.guestbook
   delete legacy.gallery
@@ -229,6 +230,7 @@ try {
   assert.equal((await preview({ ...legacyV3, gallerySettings: { gear: [] } })).status, 400)
   const legacyV4 = structuredClone(bundle)
   legacyV4.version = 4
+  for (const photo of legacyV4.gallery ?? []) delete photo.values.externalUrl
   delete legacyV4.projects
   delete legacyV4.links
   delete legacyV4.linkSettings
@@ -239,6 +241,7 @@ try {
   assert.equal((await preview(invalidLegacyGear)).status, 400)
   const legacyV5 = structuredClone(bundle)
   legacyV5.version = 5
+  for (const photo of legacyV5.gallery ?? []) delete photo.values.externalUrl
   delete legacyV5.links
   delete legacyV5.linkSettings
   assert.equal((await preview(legacyV5)).body.data.plan.counts.links, 0)

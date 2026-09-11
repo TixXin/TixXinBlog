@@ -132,7 +132,7 @@ export class ContentExportService {
       void announcementUpdatedAt
       const result: ContentPackage = {
         format: 'tixxin-content',
-        version: 6,
+        version: 7,
         exportedAt: new Date().toISOString(),
         mediaIncluded,
         posts: posts.map((post) => {
@@ -209,7 +209,8 @@ export class ContentExportService {
           publishedAt: photo.publishedAt?.toISOString() ?? null,
           deleted: !!photo.deletedAt,
           values: {
-            mediaId: photo.media.id,
+            mediaId: photo.media?.id ?? null,
+            externalUrl: photo.externalUrl ?? null,
             title: photo.title,
             description: photo.description,
             category: photo.category,

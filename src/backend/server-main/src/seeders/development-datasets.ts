@@ -4,6 +4,11 @@ import { seedGuestbookFixtures, GUESTBOOK_DATASET, GUESTBOOK_FIXTURE_COUNT } fro
 import { seedGalleryFixtures, GALLERY_DATASET, GALLERY_FIXTURE_COUNT } from './gallery-fixtures'
 import { seedProjectFixtures, PROJECT_DATASET, PROJECT_FIXTURE_COUNT } from './project-fixtures'
 import { seedLinkFixtures, LINK_DATASET, LINK_FIXTURE_COUNT } from './link-fixtures'
+import {
+  seedGalleryExternalFixtures,
+  GALLERY_EXTERNAL_DATASET,
+  GALLERY_EXTERNAL_PHOTOS,
+} from './gallery-external-fixtures'
 
 export const DEFAULT_DEVELOPMENT_DATASET = CORE_DATASET
 export const DEVELOPMENT_DATASETS = [
@@ -27,5 +32,11 @@ export const DEVELOPMENT_DATASETS = [
     seed: seedProjectFixtures,
   },
   { id: LINK_DATASET, count: LINK_FIXTURE_COUNT, scope: '友链、发布推荐、排序与可选标志', seed: seedLinkFixtures },
+  {
+    id: GALLERY_EXTERNAL_DATASET,
+    count: GALLERY_EXTERNAL_PHOTOS.length,
+    scope: '图库外链、查询参数、横竖比例与发布状态',
+    seed: seedGalleryExternalFixtures,
+  },
 ] as const
 export const DEVELOPMENT_DATASET_NAMES: string[] = DEVELOPMENT_DATASETS.map((dataset) => dataset.id)
