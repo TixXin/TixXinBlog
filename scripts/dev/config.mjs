@@ -45,7 +45,7 @@ export function pnpmCommand(env = process.env) {
   return [process.execPath, [entry, '--version']]
 }
 export function readConfig(root = workspace, inherited = process.env) {
-  if (Number(process.versions.node.split('.')[0]) !== 24) throw new Error('开发链路要求 Node 24')
+  if (Number(process.versions.node.split('.')[0]) !== 25) throw new Error('开发链路要求 Node 25')
   const manifest = JSON.parse(readFileSync(join(root, 'package.json'), 'utf8'))
   if (manifest.name !== 'tixxinblog' || manifest.packageManager !== 'pnpm@9.15.0')
     throw new Error('项目目录或 pnpm 固定版本不匹配')

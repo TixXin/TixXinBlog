@@ -13,7 +13,7 @@
 
 ## 环境要求
 
-- Node.js **24.x**（`>=24 <25`）。
+- Node.js **25.x**（`>=25 <26`）。
 - pnpm **9.15.0**；以下命令通过可用的 Corepack 调用固定版本。
 - PostgreSQL **16**。
 - 使用仓库提供的数据库与部署编排时，需要 Docker 和 Docker Compose。
@@ -27,6 +27,7 @@
    ```sh
    git clone https://github.com/TixXin/TixXinBlog.git
    cd TixXinBlog
+   npm install --global corepack@0.34.6
    corepack pnpm install --frozen-lockfile
    ```
 

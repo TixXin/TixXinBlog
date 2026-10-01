@@ -34,7 +34,7 @@
     "test:backup-restore": "corepack pnpm build && node tests/full-backup-integration.mjs"
   },
   "engines": {
-    "node": ">=24 <25"
+    "node": ">=25 <26"
   },
   "jest": {
     "preset": "ts-jest",
@@ -80,7 +80,7 @@
     "@types/express": "^5.0.6",
     "@types/jest": "^30.0.0",
     "@types/markdown-it": "^14.2.0",
-    "@types/node": "^24.0.0",
+    "@types/node": "^25.9.8",
     "@types/nodemailer": "^8.0.1",
     "eslint": "^10.10.0",
     "eslint-config-prettier": "^10.1.8",

@@ -1,8 +1,8 @@
 # server-main 生产镜像(多阶段)。构建上下文为仓库根目录:
 #   docker build -f src/backend/server-main/Dockerfile -t tixxin-blog-server .
-FROM node:24-alpine AS build
+FROM node:25-alpine AS build
 ENV COREPACK_ENABLE_DOWNLOAD_PROMPT=0
-RUN corepack enable
+RUN npm install --global corepack@0.34.6 && corepack enable
 WORKDIR /repo
 
 # 先复制清单文件,让依赖安装层可被缓存
@@ -22,7 +22,7 @@ ENV NODE_ENV=production
 CMD ["corepack", "pnpm", "migration:up"]
 
 # 独立运行任务镜像：原生 PG16 客户端与脚本随镜像交付，不依赖宿主 Docker socket。
-FROM node:24-alpine AS worker
+FROM node:25-alpine AS worker
 ENV NODE_ENV=production \
     BACKUP_EXECUTION_MODE=native \
     MEDIA_DIRECTORY=/app/var/media \
@@ -39,7 +39,7 @@ USER node
 # 直接运行镜像只读状态；只有显式 profile、配置及 loop --apply 才启用持续执行。
 CMD ["node", "scripts/operations.mjs", "status"]
 
-FROM node:24-alpine AS runtime
+FROM node:25-alpine AS runtime
 ENV NODE_ENV=production \
     PORT=3000
 WORKDIR /app
