@@ -1,10 +1,11 @@
 # 本地开发与测试
 
-使用 Node.js **>=24 <25**、固定 **pnpm 9.15.0** 和 PostgreSQL 16。以下命令从仓库根目录执行，推荐通过 `corepack pnpm` 使用锁定版本。
+使用 Node.js **>=25 <26**、固定 **pnpm 9.15.0** 和 PostgreSQL 16。以下命令从仓库根目录执行，推荐通过 `corepack pnpm` 使用锁定版本。
 
 ## 安装与配置
 
 ```sh
+npm install --global corepack@0.34.6
 corepack pnpm install --frozen-lockfile
 ```
 
@@ -104,6 +105,8 @@ corepack pnpm preview
 开发环境默认不可索引；正式与预发布环境的运行时索引设置见[部署指南](deployment.md)。
 
 ## 验证入口
+
+Node 25 默认暴露服务端 Web Storage；前端单测入口关闭该 API，让 Nuxt 测试环境使用模拟浏览器的存储实现，避免原生空对象覆盖浏览器接口。
 
 ```sh
 corepack pnpm check:secrets

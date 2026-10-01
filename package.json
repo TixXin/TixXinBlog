@@ -29,7 +29,7 @@
     "test:e2e:run": "node src/backend/server-main/tests/browser-runner.mjs"
   },
   "engines": {
-    "node": ">=24 <25"
+    "node": ">=25 <26"
   },
   "packageManager": "pnpm@9.15.0",
   "devDependencies": {

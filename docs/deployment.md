@@ -6,7 +6,7 @@
 
 ## 镜像与环境
 
-使用 Node 24、pnpm 9.15.0 和 Docker。应用镜像必须来自同一提交，并使用同一不可复用标签；推荐完整 Git SHA。不要覆盖已经发布的版本标签。
+使用 Node 25、pnpm 9.15.0 和 Docker。应用镜像必须来自同一提交，并使用同一不可复用标签；推荐完整 Git SHA。不要覆盖已经发布的版本标签。
 
 ```powershell
 $releaseVersion = git rev-parse HEAD

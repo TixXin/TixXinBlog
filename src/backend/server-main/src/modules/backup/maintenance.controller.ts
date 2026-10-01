@@ -37,7 +37,7 @@ export class MaintenanceController {
       contentContextRequired: context.requireContext,
       runtime: {
         node: process.version,
-        nodeSupported: Number(process.versions.node.split('.')[0]) === 24,
+        nodeSupported: Number(process.versions.node.split('.')[0]) === 25,
         environment: process.env.NODE_ENV ?? 'development',
       },
     }

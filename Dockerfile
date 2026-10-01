@@ -1,6 +1,6 @@
-# 前端生产镜像：Node 24 构建，非 root 运行；API 地址由运行环境提供。
-FROM node:24-alpine AS install
-RUN corepack enable
+# 前端生产镜像：Node 25 构建，非 root 运行；API 地址由运行环境提供。
+FROM node:25-alpine AS install
+RUN npm install --global corepack@0.34.6 && corepack enable
 WORKDIR /app
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 COPY patches ./patches
@@ -14,7 +14,7 @@ COPY . .
 RUN corepack pnpm build
 
 # ---- runtime ----
-FROM node:24-alpine AS runtime
+FROM node:25-alpine AS runtime
 WORKDIR /app
 COPY --from=build --chown=node:node /app/src/frontend/web-blog/.output ./.output
 

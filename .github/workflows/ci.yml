@@ -21,7 +21,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: 24
+          node-version: 25
       - name: Development Process Lifecycle
         run: node --test scripts/dev/*.test.mjs
 
@@ -48,11 +48,14 @@ jobs:
 
       - uses: pnpm/action-setup@v4
 
-      # 开发、CI 与两套生产镜像统一使用 Node 24。
+      # 开发、CI 与两套生产镜像统一使用 Node 25。
       - uses: actions/setup-node@v4
         with:
-          node-version: 24
+          node-version: 25
           cache: pnpm
+
+      - name: Install Corepack
+        run: npm install --global corepack@0.34.6
 
       - run: pnpm install --frozen-lockfile
 

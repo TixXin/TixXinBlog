@@ -11,6 +11,8 @@ export default defineVitestConfig({
   test: {
     include: ['tests/unit/**/*.test.ts'],
     environment: 'nuxt',
+    // Node 25 的原生存储不能覆盖模拟浏览器的 localStorage；对子进程显式关闭。
+    execArgv: ['--no-experimental-webstorage'],
     globals: true,
   },
 })
