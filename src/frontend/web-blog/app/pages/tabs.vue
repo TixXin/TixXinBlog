@@ -673,6 +673,7 @@ async function onBookmarkDropped(payload: { bookmarkId: string; targetCategoryId
   width: 100%;
   max-width: 48rem;
   label {
+    cursor: var(--interaction-cursor, pointer);
     font-size: 0.875rem;
     color: var(--text-soft);
   }
@@ -746,7 +747,7 @@ async function onBookmarkDropped(payload: { bookmarkId: string; targetCategoryId
   color: #fff;
   font-size: 0.6875rem;
   font-weight: 600;
-  cursor: pointer;
+  cursor: var(--interaction-cursor, pointer);
   white-space: nowrap;
   transition: opacity 0.18s;
   @media (prefers-reduced-motion: reduce) {
@@ -769,7 +770,7 @@ async function onBookmarkDropped(payload: { bookmarkId: string; targetCategoryId
   border-radius: $radius-full;
   background: transparent;
   color: var(--text-faint);
-  cursor: pointer;
+  cursor: var(--interaction-cursor, pointer);
 
   &:hover {
     color: var(--text-soft);

@@ -190,7 +190,7 @@ watch(() => route.hash, migrateMomentHash)
   height: 44px;
   color: var(--text-soft);
   background: transparent;
-  cursor: pointer;
+  cursor: var(--interaction-cursor, pointer);
   &:hover {
     color: var(--text-main);
     background: var(--surface-2);
@@ -222,7 +222,7 @@ watch(() => route.hash, migrateMomentHash)
   background: var(--accent-soft);
   color: var(--accent-text);
   font-size: 0.8125rem;
-  cursor: pointer;
+  cursor: var(--interaction-cursor, pointer);
   @media (pointer: coarse) {
     min-height: 44px;
   }

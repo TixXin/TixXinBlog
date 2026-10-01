@@ -83,7 +83,11 @@
           <AdminAboutSettingsFields v-if="draft.about" v-model="draft.about" :disabled="pending || !ready" />
           <AdminSiteSettingsPreview :value="draft" label="保存后的公开资料预览" />
           <AdminActionBar
-            ><button type="submit" :disabled="pending || !ready || !dirty || !!submission || !!conflict">
+            ><button
+              :aria-busy="pending"
+              type="submit"
+              :disabled="pending || !ready || !dirty || !!submission || !!conflict"
+            >
               {{ pending ? '处理中…' : '保存并生效' }}
             </button></AdminActionBar
           >

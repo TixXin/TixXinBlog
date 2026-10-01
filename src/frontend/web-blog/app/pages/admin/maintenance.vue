@@ -140,9 +140,7 @@ corepack pnpm --filter server-main run backup:restore --directory &lt;备份目�
         <p>新增 {{ job.plan.counts.media }} 个媒体记录，写入或修复 {{ job.plan.counts.files }} 个图片文件。</p>
         <p>结构化内容关联会按目标编号映射；跳过的现有内容及媒体说明保持原值，迁入的新内容仍是草稿。</p>
         <p v-if="job.plan.omittedRelations" role="status">
-          {{
-            job.plan.omittedRelations
-          }}
+          {{ job.plan.omittedRelations }}
           条关联因目标已删除、缺失或无法映射而省略；不会按来源编号误连当前站点内容。完整备份仍保留原始关系。
         </p>
         <p v-if="job.error" role="alert">{{ job.error }}</p>
@@ -337,6 +335,6 @@ details {
   margin-block: 1rem;
 }
 summary {
-  cursor: pointer;
+  cursor: var(--interaction-cursor, pointer);
 }
 </style>

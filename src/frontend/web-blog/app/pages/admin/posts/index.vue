@@ -39,7 +39,7 @@
             <option value="desc">降序</option>
             <option value="asc">升序</option>
           </select>
-          <button type="submit" :disabled="pending">搜索</button>
+          <button :aria-busy="pending" type="submit" :disabled="pending">搜索</button>
           <button type="button" :disabled="pending" @click="clearFilters">清除筛选</button>
         </form>
         <p v-if="filterError" role="alert">

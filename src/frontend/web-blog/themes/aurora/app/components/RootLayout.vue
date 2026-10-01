@@ -477,7 +477,7 @@ onBeforeUnmount(() => {
   border: 1px solid var(--border-soft);
   background: transparent;
   color: var(--text-soft);
-  cursor: pointer;
+  cursor: var(--interaction-cursor, pointer);
   transition: $transition-fast;
   @media (prefers-reduced-motion: reduce) {
     transition: none;
@@ -577,9 +577,6 @@ onBeforeUnmount(() => {
   border: 1px solid rgb(255 255 255 / 30%);
   border-radius: $radius-full;
   font-size: 0.75rem;
-  &:disabled {
-    cursor: default;
-  }
 }
 
 .aurora-hero__title {
@@ -616,7 +613,7 @@ onBeforeUnmount(() => {
   font-weight: 600;
   font-variant-numeric: tabular-nums;
   color: var(--text-soft);
-  cursor: pointer;
+  cursor: var(--interaction-cursor, pointer);
   padding: 0.25rem 0.5rem;
   min-width: 2.75rem;
   border-radius: $radius-sm;

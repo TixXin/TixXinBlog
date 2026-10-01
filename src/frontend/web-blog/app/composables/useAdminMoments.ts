@@ -36,6 +36,7 @@ export function useAdminMoments() {
     commentsFocusVersion = ref(0)
   const contentContext = useState<string>('page-content-context', () => '')
   let commentsLinkVersion = 0
+  const replyPending = ref(false)
   const replyDraft = ref(''),
     replyRequest = ref(''),
     replyBody = ref('')
@@ -270,15 +271,20 @@ export function useAdminMoments() {
       replyRequest.value = crypto.randomUUID()
     }
     await perform(note, async () => {
-      const result = await repo.comment(note.id, { requestId: replyRequest.value, content }, true)
-      invalidateComments(note.id, result.commentCount)
-      if (alive && actor === auth.currentUser.value?.id) {
-        if (replyDraft.value.trim() === content) replyDraft.value = ''
-        replyRequest.value = ''
-        replyBody.value = ''
-        await openComments(note, Math.max(1, Math.ceil((commentTotal.value + 1) / 15)))
-        await load()
-        toast.success('回复已发送')
+      replyPending.value = true
+      try {
+        const result = await repo.comment(note.id, { requestId: replyRequest.value, content }, true)
+        invalidateComments(note.id, result.commentCount)
+        if (alive && actor === auth.currentUser.value?.id) {
+          if (replyDraft.value.trim() === content) replyDraft.value = ''
+          replyRequest.value = ''
+          replyBody.value = ''
+          await openComments(note, Math.max(1, Math.ceil((commentTotal.value + 1) / 15)))
+          await load()
+          toast.success('回复已发送')
+        }
+      } finally {
+        replyPending.value = false
       }
     })
   }
@@ -378,6 +384,7 @@ export function useAdminMoments() {
     moderate,
     removeComment,
     replyDraft,
+    replyPending,
     reply,
   }
 }

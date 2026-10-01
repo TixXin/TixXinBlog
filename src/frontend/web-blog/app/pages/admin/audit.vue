@@ -24,7 +24,7 @@
         >
         <label>开始日期（UTC）<input v-model="from" type="date" /></label
         ><label>结束日期（UTC）<input v-model="to" type="date" /></label>
-        <button type="submit" :disabled="pending">筛选审计记录</button
+        <button :aria-busy="pending" type="submit" :disabled="pending">筛选审计记录</button
         ><button type="button" :disabled="pending" @click="clear">清除筛选</button
         ><button type="button" :disabled="pending" @click="load">刷新记录</button>
       </form>

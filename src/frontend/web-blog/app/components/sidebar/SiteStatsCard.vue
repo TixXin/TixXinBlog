@@ -139,7 +139,7 @@ const statItems = computed(() => [
   display: flex;
   flex-direction: column;
   align-items: center;
-  cursor: default;
+  cursor: var(--interaction-cursor, default);
 
   &:hover {
     .stats-card__value {

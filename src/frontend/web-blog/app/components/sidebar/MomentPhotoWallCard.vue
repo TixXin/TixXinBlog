@@ -96,7 +96,7 @@ const emit = defineEmits<{
   position: relative;
   border-radius: $radius-sm;
   overflow: hidden;
-  cursor: pointer;
+  cursor: var(--interaction-cursor, pointer);
   aspect-ratio: 1;
 
   /* 第一张图片占 2x2 突出显示 */

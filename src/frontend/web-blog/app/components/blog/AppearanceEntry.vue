@@ -33,7 +33,7 @@ button.appearance-fab {
   height: 2rem;
   border-radius: $radius-sm;
   color: var(--text-soft);
-  cursor: pointer;
+  cursor: var(--interaction-cursor, pointer);
   transition: $transition-fast;
   @media (prefers-reduced-motion: reduce) {
     transition: none;

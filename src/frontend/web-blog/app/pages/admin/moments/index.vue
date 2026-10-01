@@ -165,7 +165,11 @@
           </nav>
           <form v-if="commentNote.status === 'published'" @submit.prevent="reply">
             <label>博主回复<textarea v-model="replyDraft" aria-label="动态博主回复" maxlength="1000" /></label>
-            <button type="submit" :disabled="!replyDraft.trim() || busyIds.includes(commentNote.id)">
+            <button
+              :aria-busy="replyPending"
+              type="submit"
+              :disabled="!replyDraft.trim() || busyIds.includes(commentNote.id)"
+            >
               发送博主回复
             </button>
           </form>
@@ -214,6 +218,7 @@ const {
   moderate,
   removeComment,
   replyDraft,
+  replyPending,
   reply,
 } = useAdminMoments()
 const statusLabels = { draft: '草稿', published: '已发布', archived: '已归档' }

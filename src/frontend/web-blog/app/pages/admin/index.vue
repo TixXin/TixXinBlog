@@ -194,7 +194,7 @@ details {
   margin-top: 1rem;
 }
 summary {
-  cursor: pointer;
+  cursor: var(--interaction-cursor, pointer);
 }
 ul {
   list-style: none;

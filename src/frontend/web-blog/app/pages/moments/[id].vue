@@ -245,7 +245,7 @@ useHead({
   color: var(--text-soft);
   font-size: 0.875rem;
   border-radius: $radius-sm;
-  cursor: pointer;
+  cursor: var(--interaction-cursor, pointer);
   transition: $transition-colors;
   @media (prefers-reduced-motion: reduce) {
     transition: none;

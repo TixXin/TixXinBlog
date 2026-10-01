@@ -34,6 +34,7 @@
     <p v-if="loadError" role="alert" class="moment-comments__notice">{{ loadError }}</p>
     <button
       v-if="hasMore || loadError"
+      :aria-busy="loading"
       type="button"
       class="moment-comments__expand"
       :disabled="loading"
@@ -57,6 +58,7 @@
       <button
         type="button"
         class="moment-comments__send"
+        :aria-busy="submitting"
         :disabled="!draft.trim() || submitting"
         :aria-label="submitting ? '正在发送评论' : '发送评论'"
         @click="$emit('submit')"
@@ -165,7 +167,7 @@ function onEnter(event: KeyboardEvent) {
 .moment-comments__author {
   font-weight: 600;
   color: var(--accent-text);
-  cursor: pointer;
+  cursor: var(--interaction-cursor, pointer);
 
   &.is-owner {
     color: var(--danger);
@@ -182,7 +184,7 @@ function onEnter(event: KeyboardEvent) {
   :deep(.mention) {
     color: var(--accent-text);
     font-weight: 500;
-    cursor: pointer;
+    cursor: var(--interaction-cursor, pointer);
 
     &:hover {
       text-decoration: underline;
@@ -225,7 +227,7 @@ function onEnter(event: KeyboardEvent) {
   color: var(--accent-text);
   font-size: 0.75rem;
   font-weight: 500;
-  cursor: pointer;
+  cursor: var(--interaction-cursor, pointer);
   padding: 0.25rem 0;
   margin-left: 2rem;
   transition: opacity 0.2s;
@@ -281,7 +283,7 @@ function onEnter(event: KeyboardEvent) {
   border-radius: $radius-sm;
   background: var(--accent-action);
   color: #fff;
-  cursor: pointer;
+  cursor: var(--interaction-cursor, pointer);
   transition: opacity 0.2s;
   @media (prefers-reduced-motion: reduce) {
     transition: none;
@@ -289,7 +291,7 @@ function onEnter(event: KeyboardEvent) {
 
   &:disabled {
     opacity: 0.4;
-    cursor: not-allowed;
+    cursor: var(--interaction-cursor, not-allowed);
   }
 
   &:not(:disabled):hover {

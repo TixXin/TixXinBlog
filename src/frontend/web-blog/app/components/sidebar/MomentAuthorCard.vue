@@ -139,7 +139,7 @@ defineProps<{
   flex-direction: column;
   align-items: center;
   gap: 0.125rem;
-  cursor: default;
+  cursor: var(--interaction-cursor, default);
   transition: transform 0.2s ease;
   @media (prefers-reduced-motion: reduce) {
     transition: none;

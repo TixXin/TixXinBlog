@@ -550,7 +550,7 @@ $bar-expanded: 112px;
     0 2px 16px rgba(0, 0, 0, 0.12),
     0 0 0 0 var(--accent-alpha-0);
   z-index: 22;
-  cursor: pointer;
+  cursor: var(--interaction-cursor, pointer);
   transition:
     transform 0.3s cubic-bezier(0.22, 0.68, 0.35, 1),
     box-shadow 0.3s ease,
@@ -858,7 +858,7 @@ $bar-expanded: 112px;
   border-radius: 50%;
   border: none;
   background: var(--surface-2);
-  cursor: pointer;
+  cursor: var(--interaction-cursor, pointer);
   transition:
     background 0.2s ease,
     transform 0.15s ease;
@@ -1128,7 +1128,7 @@ $bar-expanded: 112px;
   border: none;
   background: transparent;
   color: var(--text-muted);
-  cursor: pointer;
+  cursor: var(--interaction-cursor, pointer);
   opacity: 0;
   transition:
     opacity 0.2s ease,
@@ -1207,7 +1207,7 @@ $bar-expanded: 112px;
   border-radius: $radius-sm;
   color: var(--text-soft);
   background: transparent;
-  cursor: pointer;
+  cursor: var(--interaction-cursor, pointer);
   transition:
     color 0.2s ease,
     background 0.2s ease,
@@ -1297,7 +1297,7 @@ $bar-expanded: 112px;
   font-size: 0.8125rem;
   text-align: left;
   border-radius: $radius-sm;
-  cursor: pointer;
+  cursor: var(--interaction-cursor, pointer);
   transition:
     background 0.18s ease,
     color 0.18s ease,

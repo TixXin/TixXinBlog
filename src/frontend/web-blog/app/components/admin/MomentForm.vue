@@ -196,7 +196,7 @@
       </div>
     </fieldset>
     <AdminActionBar class="moment-editor__actions">
-      <button type="submit" :disabled="!ready || loading || saving || !value.content.trim()">
+      <button :aria-busy="saving" type="submit" :disabled="!ready || loading || saving || !value.content.trim()">
         {{ saving ? '正在保存…' : '保存动态' }}
       </button>
       <button
@@ -328,10 +328,10 @@ textarea {
 }
 button {
   min-height: 44px;
-  cursor: pointer;
+  cursor: var(--interaction-cursor, pointer);
 }
 button:disabled {
-  cursor: not-allowed;
+  cursor: var(--interaction-cursor, not-allowed);
   opacity: 0.55;
 }
 .moment-editor__check {

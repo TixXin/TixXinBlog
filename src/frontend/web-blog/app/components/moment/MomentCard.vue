@@ -377,7 +377,7 @@ function onLightBoxChange(index: number) {
     flex-shrink: 0;
     margin: 0;
     accent-color: var(--accent);
-    cursor: default;
+    cursor: var(--interaction-cursor, default);
   }
 
   :deep(blockquote) {
@@ -478,7 +478,7 @@ function onLightBoxChange(index: number) {
   border-radius: $radius-sm;
   overflow: hidden;
   background: var(--surface-2);
-  cursor: zoom-in;
+  cursor: var(--interaction-cursor, zoom-in);
 }
 
 .moment-card__image {
@@ -554,7 +554,7 @@ function onLightBoxChange(index: number) {
   color: var(--text-faint);
   font-size: 0.8125rem;
   border-radius: $radius-sm;
-  cursor: pointer;
+  cursor: var(--interaction-cursor, pointer);
   transition: $transition-colors;
   @media (prefers-reduced-motion: reduce) {
     transition: none;

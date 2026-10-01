@@ -218,7 +218,7 @@ onBeforeUnmount(() => {
   background: transparent;
   color: var(--text-main);
   text-align: left;
-  cursor: pointer;
+  cursor: var(--interaction-cursor, pointer);
   transition:
     background 0.15s,
     color 0.15s;

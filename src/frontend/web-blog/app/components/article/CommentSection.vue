@@ -34,7 +34,12 @@
         />
         <div class="comment-section__actions">
           <span id="article-comment-limit">{{ draft.length }} / 1000</span>
-          <button type="submit" class="comment-section__submit" :disabled="!canSubmit || !hydrated">
+          <button
+            type="submit"
+            class="comment-section__submit"
+            :disabled="!canSubmit || !hydrated"
+            :aria-busy="submitting"
+          >
             {{ submitting ? '正在发表…' : replyTarget ? '发表回复' : '发布评论' }}
           </button>
         </div>
@@ -44,7 +49,13 @@
     </div>
     <p v-if="loadError" role="alert" class="comment-section__error">{{ loadError }}</p>
     <p v-if="likeError" role="alert" class="comment-section__error">{{ likeError }}</p>
-    <button type="button" class="comment-section__refresh" :disabled="busy" @click="$emit('retry')">
+    <button
+      :aria-busy="loading"
+      type="button"
+      class="comment-section__refresh"
+      :disabled="busy"
+      @click="$emit('retry')"
+    >
       {{ loading ? '正在加载评论…' : loadError ? '重试加载评论' : '刷新评论' }}
     </button>
     <p v-if="!loading && !loadError && !comments.length" class="comment-section__empty">暂无评论，来写下第一条吧。</p>
@@ -196,7 +207,7 @@ watch(
   border-radius: $radius-md;
   font-size: 0.75rem;
   font-weight: 600;
-  cursor: pointer;
+  cursor: var(--interaction-cursor, pointer);
   background: var(--accent);
   color: var(--surface-1);
   transition: $transition-fast;
@@ -210,7 +221,7 @@ watch(
 
   &:disabled {
     opacity: 0.5;
-    cursor: not-allowed;
+    cursor: var(--interaction-cursor, not-allowed);
   }
 }
 
@@ -258,7 +269,7 @@ watch(
   border: 1px solid var(--border);
   border-radius: 6px;
   padding: 0.4rem 0.6rem;
-  cursor: pointer;
+  cursor: var(--interaction-cursor, pointer);
 }
 .comment-section__refresh {
   margin-bottom: 1rem;

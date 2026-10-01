@@ -269,7 +269,7 @@ function onUpload(e: Event) {
   color: var(--text-soft);
   font-size: 0.6875rem;
   font-weight: 500;
-  cursor: pointer;
+  cursor: var(--interaction-cursor, pointer);
   transition: $transition-fast;
   @media (prefers-reduced-motion: reduce) {
     transition: none;
@@ -348,7 +348,7 @@ function onUpload(e: Event) {
   border-radius: $radius-sm;
   background: transparent;
   color: var(--text-soft);
-  cursor: pointer;
+  cursor: var(--interaction-cursor, pointer);
   transition:
     background 0.15s,
     color 0.15s;
@@ -395,7 +395,7 @@ function onUpload(e: Event) {
   border-radius: $radius-md;
   background: var(--surface-2);
   color: var(--text-soft);
-  cursor: pointer;
+  cursor: var(--interaction-cursor, pointer);
   text-align: center;
   transition: $transition-fast;
   @media (prefers-reduced-motion: reduce) {
@@ -470,7 +470,7 @@ function onUpload(e: Event) {
   background: transparent;
   color: var(--text-soft);
   font-size: 0.6875rem;
-  cursor: pointer;
+  cursor: var(--interaction-cursor, pointer);
 
   &:hover {
     color: #ef4444;

@@ -150,7 +150,7 @@ onBeforeUnmount(() => {
   border: none;
   background: transparent;
   color: var(--text-soft);
-  cursor: pointer;
+  cursor: var(--interaction-cursor, pointer);
   transition: $transition-fast;
   @media (prefers-reduced-motion: reduce) {
     transition: none;
@@ -262,7 +262,7 @@ onBeforeUnmount(() => {
   border: none;
   background: transparent;
   color: var(--text-soft);
-  cursor: pointer;
+  cursor: var(--interaction-cursor, pointer);
   transition: color 0.2s ease;
   @media (prefers-reduced-motion: reduce) {
     transition: none;
@@ -335,7 +335,7 @@ onBeforeUnmount(() => {
   color: var(--text-main);
   font-size: 0.8125rem;
   font-weight: 500;
-  cursor: pointer;
+  cursor: var(--interaction-cursor, pointer);
   transition: $transition-fast;
   @media (prefers-reduced-motion: reduce) {
     transition: none;
@@ -369,7 +369,7 @@ onBeforeUnmount(() => {
   color: var(--accent-text);
   font-size: 0.8125rem;
   font-weight: 600;
-  cursor: pointer;
+  cursor: var(--interaction-cursor, pointer);
   padding: 0;
   transition: opacity 0.2s ease;
   @media (prefers-reduced-motion: reduce) {

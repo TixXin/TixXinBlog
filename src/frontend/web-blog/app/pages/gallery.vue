@@ -208,7 +208,7 @@ function clearFilters() {
 }
 .gallery-mobile-info summary {
   padding: 0.75rem 0;
-  cursor: pointer;
+  cursor: var(--interaction-cursor, pointer);
 }
 // 结构在 SSR 与水合间保持一致；紧凑入口只在当前主题的固定侧栏不可见时展示。
 @media (min-width: 1440px) {

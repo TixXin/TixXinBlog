@@ -98,7 +98,7 @@ defineEmits<{
   background: var(--surface-3);
   border: 1px solid var(--border);
   border-radius: $radius-md;
-  cursor: pointer;
+  cursor: var(--interaction-cursor, pointer);
   transition: $transition-fast;
   @media (prefers-reduced-motion: reduce) {
     transition: none;

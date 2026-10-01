@@ -97,7 +97,7 @@ ul {
   border-top: 1px solid var(--border);
 }
 summary {
-  cursor: pointer;
+  cursor: var(--interaction-cursor, pointer);
   font-weight: 600;
 }
 .site-preview__about section {

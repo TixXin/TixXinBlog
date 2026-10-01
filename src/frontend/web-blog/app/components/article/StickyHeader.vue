@@ -84,7 +84,7 @@ function handleBack() {
   color: var(--text-soft);
   background: none;
   border: none;
-  cursor: pointer;
+  cursor: var(--interaction-cursor, pointer);
   margin-bottom: 0.375rem;
   transition: $transition-fast;
   @media (prefers-reduced-motion: reduce) {

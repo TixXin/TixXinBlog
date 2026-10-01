@@ -647,7 +647,7 @@ onBeforeUnmount(() => {
   color: var(--text-soft);
   font-size: 0.75rem;
   font-weight: 500;
-  cursor: pointer;
+  cursor: var(--interaction-cursor, pointer);
   transition:
     background 0.18s,
     color 0.18s,
@@ -784,7 +784,7 @@ onBeforeUnmount(() => {
   background: var(--surface-2);
   border: 1px solid transparent;
   border-radius: $radius-full;
-  cursor: pointer;
+  cursor: var(--interaction-cursor, pointer);
   transition:
     background 0.18s,
     color 0.18s,
@@ -849,7 +849,7 @@ onBeforeUnmount(() => {
   color: #fff;
   font-size: 0.6875rem;
   font-weight: 600;
-  cursor: pointer;
+  cursor: var(--interaction-cursor, pointer);
   transition: opacity 0.18s;
   @media (prefers-reduced-motion: reduce) {
     transition: none;
@@ -872,7 +872,7 @@ onBeforeUnmount(() => {
   color: var(--text-main);
   font-size: 0.8125rem;
   text-align: left;
-  cursor: pointer;
+  cursor: var(--interaction-cursor, pointer);
   transition: $transition-fast;
   @media (prefers-reduced-motion: reduce) {
     transition: none;
@@ -915,7 +915,7 @@ onBeforeUnmount(() => {
   background: linear-gradient(135deg, var(--accent-soft), var(--surface-1));
   color: var(--text-main);
   text-align: left;
-  cursor: pointer;
+  cursor: var(--interaction-cursor, pointer);
   transition: $transition-fast;
   @media (prefers-reduced-motion: reduce) {
     transition: none;
@@ -1024,7 +1024,7 @@ onBeforeUnmount(() => {
   gap: 0.25rem;
   color: var(--accent-text);
   font-weight: 600;
-  cursor: pointer;
+  cursor: var(--interaction-cursor, pointer);
   padding: 0.125rem 0.375rem;
   border-radius: $radius-full;
   transition:

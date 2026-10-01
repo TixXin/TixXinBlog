@@ -37,6 +37,7 @@
     />
     <div v-if="hasMore" ref="sentinelRef" class="moment-list__sentinel">
       <button
+        :aria-busy="pending"
         type="button"
         class="moment-list__more"
         :disabled="pending || !!errorMessage || !hydrated"

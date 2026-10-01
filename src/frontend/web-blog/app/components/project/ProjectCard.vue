@@ -75,7 +75,7 @@ const statusLabel = computed(() => projectProgressLabels[props.project.progress]
 <style lang="scss" scoped>
 .project-card__link--unavailable {
   color: var(--text-soft);
-  cursor: default;
+  cursor: var(--interaction-cursor, default);
 }
 .project-card {
   min-width: 0;
@@ -194,7 +194,7 @@ const statusLabel = computed(() => projectProgressLabels[props.project.progress]
   max-width: 100%;
   overflow-wrap: anywhere;
   border: 0;
-  cursor: pointer;
+  cursor: var(--interaction-cursor, pointer);
   padding: 0.125rem 0.5rem;
   font-size: 10px;
   font-weight: 600;

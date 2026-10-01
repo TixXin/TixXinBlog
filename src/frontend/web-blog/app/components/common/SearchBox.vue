@@ -121,13 +121,13 @@ defineEmits<{
   }
 
   &:disabled {
-    cursor: not-allowed;
+    cursor: var(--interaction-cursor, not-allowed);
     opacity: 0.7;
     background: var(--surface-3);
   }
 
   &.is-readonly {
-    cursor: pointer;
+    cursor: var(--interaction-cursor, pointer);
     color: var(--text-soft);
     white-space: nowrap;
     overflow: hidden;
@@ -136,7 +136,7 @@ defineEmits<{
 }
 
 .search-box.is-disabled {
-  cursor: not-allowed;
+  cursor: var(--interaction-cursor, not-allowed);
 }
 
 .search-box:focus-within .search-box__icon {

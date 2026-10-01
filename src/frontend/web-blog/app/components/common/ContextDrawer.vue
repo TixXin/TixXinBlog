@@ -77,7 +77,7 @@ useModalFocus(open, dialog, {
   color: var(--text-main);
   white-space: nowrap;
   font-size: 0.8125rem;
-  cursor: pointer;
+  cursor: var(--interaction-cursor, pointer);
 }
 .context-drawer__overlay {
   position: fixed;
@@ -110,7 +110,7 @@ useModalFocus(open, dialog, {
     width: 44px;
     height: 44px;
     color: var(--text-main);
-    cursor: pointer;
+    cursor: var(--interaction-cursor, pointer);
   }
 }
 .context-drawer__body {

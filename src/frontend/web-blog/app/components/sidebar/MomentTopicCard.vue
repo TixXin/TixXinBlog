@@ -114,7 +114,7 @@ function barWidth(count: number): string {
   font-weight: 600;
   padding: 0.25rem 0.625rem;
   border-radius: $radius-full;
-  cursor: pointer;
+  cursor: var(--interaction-cursor, pointer);
   transition: $transition-fast;
   @media (prefers-reduced-motion: reduce) {
     transition: none;
@@ -147,7 +147,7 @@ function barWidth(count: number): string {
   justify-content: space-between;
   padding: 0.625rem 0.75rem;
   border-radius: $radius-md;
-  cursor: pointer;
+  cursor: var(--interaction-cursor, pointer);
   transition: $transition-fast;
   @media (prefers-reduced-motion: reduce) {
     transition: none;

@@ -216,7 +216,7 @@ function getDockItemStyle(index: number): Record<string, string> {
   padding: 0.375rem 0.625rem;
   border-radius: $radius-md;
   color: var(--text-soft);
-  cursor: pointer;
+  cursor: var(--interaction-cursor, pointer);
   transform: scale(var(--dock-scale, 1)) translateY(calc((var(--dock-scale, 1) - 1) * -8px));
   transform-origin: bottom center;
   transition:
@@ -237,7 +237,7 @@ function getDockItemStyle(index: number): Record<string, string> {
   }
 
   &--action {
-    cursor: default;
+    cursor: var(--interaction-cursor, default);
     --dock-scale: 1 !important;
 
     &:hover {

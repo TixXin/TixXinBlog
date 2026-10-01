@@ -287,7 +287,7 @@ function openHit(hit: LocalHit) {
   border-radius: $radius-full;
   background: transparent;
   color: var(--text-soft);
-  cursor: pointer;
+  cursor: var(--interaction-cursor, pointer);
 
   &:hover {
     background: var(--surface-2);
@@ -306,7 +306,7 @@ function openHit(hit: LocalHit) {
   border-radius: $radius-full;
   background: var(--accent-action);
   color: #fff;
-  cursor: pointer;
+  cursor: var(--interaction-cursor, pointer);
   transition: opacity 0.2s;
   @media (prefers-reduced-motion: reduce) {
     transition: none;
@@ -314,7 +314,7 @@ function openHit(hit: LocalHit) {
 
   &:disabled {
     opacity: 0.4;
-    cursor: not-allowed;
+    cursor: var(--interaction-cursor, not-allowed);
   }
 
   &:not(:disabled):hover {
@@ -376,7 +376,7 @@ function openHit(hit: LocalHit) {
   background: transparent;
   color: var(--text-main);
   text-align: left;
-  cursor: pointer;
+  cursor: var(--interaction-cursor, pointer);
   border-radius: $radius-sm;
   transition: background 0.15s;
   @media (prefers-reduced-motion: reduce) {

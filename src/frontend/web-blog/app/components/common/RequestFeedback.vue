@@ -11,7 +11,7 @@
         <p v-if="description && !pending" class="request-feedback__description">{{ description }}</p>
       </div>
     </div>
-    <button type="button" :aria-disabled="pending" @click="!pending && $emit('retry')">
+    <button :aria-busy="pending" type="button" :aria-disabled="pending" @click="!pending && $emit('retry')">
       <Icon name="lucide:refresh-cw" size="14" aria-hidden="true" />
       {{ pending ? '加载中…' : '重试' }}
     </button>
@@ -63,10 +63,9 @@ defineEmits<{ retry: [] }>()
     border-radius: $radius-md;
     background: var(--surface-3);
     color: var(--accent-text);
-    cursor: pointer;
+    cursor: var(--interaction-cursor, pointer);
 
     &[aria-disabled='true'] {
-      cursor: wait;
       color: var(--text-soft);
     }
   }

@@ -184,6 +184,7 @@
             @keydown.enter="onCommentEnter"
           />
           <button
+            :aria-busy="commentSending"
             type="submit"
             class="fnc__comment-send"
             :disabled="!canInteract || !commentDraft || commentSending || busy"
@@ -399,7 +400,7 @@ onBeforeUnmount(() => {
   color: var(--accent-text);
   background: var(--accent-soft);
   border-radius: $radius-full;
-  cursor: pointer;
+  cursor: var(--interaction-cursor, pointer);
   transition:
     opacity 0.18s,
     background 0.18s;
@@ -492,7 +493,7 @@ onBeforeUnmount(() => {
   color: var(--text-soft);
   font-size: 0.6875rem;
   border-radius: $radius-sm;
-  cursor: pointer;
+  cursor: var(--interaction-cursor, pointer);
   opacity: 1;
   transition:
     opacity 0.2s,
@@ -605,7 +606,7 @@ onBeforeUnmount(() => {
   border-radius: $radius-full;
   background: transparent;
   color: var(--text-faint);
-  cursor: pointer;
+  cursor: var(--interaction-cursor, pointer);
 
   &:hover {
     background: var(--surface-2);
@@ -658,7 +659,7 @@ onBeforeUnmount(() => {
   border-radius: $radius-full;
   background: var(--accent-action);
   color: #fff;
-  cursor: pointer;
+  cursor: var(--interaction-cursor, pointer);
   transition: opacity 0.2s;
   @media (prefers-reduced-motion: reduce) {
     transition: none;
@@ -666,7 +667,7 @@ onBeforeUnmount(() => {
 
   &:disabled {
     opacity: 0.4;
-    cursor: not-allowed;
+    cursor: var(--interaction-cursor, not-allowed);
   }
 
   &:not(:disabled):hover {
@@ -805,7 +806,7 @@ onBeforeUnmount(() => {
     flex-shrink: 0;
     margin: 0;
     accent-color: var(--accent);
-    cursor: default;
+    cursor: var(--interaction-cursor, default);
   }
 
   :deep(hr) {
@@ -842,7 +843,7 @@ onBeforeUnmount(() => {
   padding: 0;
   border: none;
   border-radius: $radius-full;
-  cursor: pointer;
+  cursor: var(--interaction-cursor, pointer);
   transition:
     background 0.18s,
     color 0.18s;

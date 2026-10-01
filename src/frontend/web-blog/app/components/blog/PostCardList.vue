@@ -403,7 +403,7 @@ onUnmounted(() => {
   color: var(--text-soft);
   background: transparent;
   border: 1px solid transparent;
-  cursor: pointer;
+  cursor: var(--interaction-cursor, pointer);
   transition: $transition-fast;
   @media (prefers-reduced-motion: reduce) {
     transition: none;
@@ -417,7 +417,7 @@ onUnmounted(() => {
 
   &:disabled {
     opacity: 0.35;
-    cursor: not-allowed;
+    cursor: var(--interaction-cursor, not-allowed);
   }
 }
 

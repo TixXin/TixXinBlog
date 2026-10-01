@@ -100,7 +100,7 @@ defineEmits<{
   @media (prefers-reduced-motion: reduce) {
     transition: none;
   }
-  cursor: pointer;
+  cursor: var(--interaction-cursor, pointer);
 
   @media (pointer: coarse) {
     min-height: 44px;

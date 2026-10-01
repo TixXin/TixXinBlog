@@ -520,7 +520,7 @@ onBeforeUnmount(() => {
   align-items: center;
   justify-content: space-between;
   gap: 0.75rem;
-  cursor: pointer;
+  cursor: var(--interaction-cursor, pointer);
 }
 
 .appearance-toggle__label {
@@ -536,7 +536,7 @@ onBeforeUnmount(() => {
   border-radius: $radius-full;
   background: var(--surface-3);
   border: 1px solid var(--border);
-  cursor: pointer;
+  cursor: var(--interaction-cursor, pointer);
   transition:
     background 0.2s,
     border-color 0.2s;

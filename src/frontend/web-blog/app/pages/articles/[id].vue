@@ -351,7 +351,7 @@ useHead({
   &--btn {
     border: none;
     background: none;
-    cursor: pointer;
+    cursor: var(--interaction-cursor, pointer);
     padding: 0.25rem 0.5rem;
     border-radius: $radius-sm;
     transition: $transition-fast;

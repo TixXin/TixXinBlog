@@ -104,6 +104,12 @@ corepack pnpm preview
 
 开发环境默认不可索引；正式与预发布环境的运行时索引设置见[部署指南](deployment.md)。
 
+## 交互光标
+
+全站光标由 `_interaction.scss` 按原生控件和交互角色提供基础规则。禁用控件使用 `not-allowed`；只有实际执行请求的操作按钮设置 `aria-busy`，使用 `progress`，不把忙碌容器的状态扩散到子控件。只读文本仍可选择复制。
+
+组件需要图片放大、拖拽或调整尺寸等专用光标时，使用 `cursor: var(--interaction-cursor, zoom-in)` 等原生值作为后备。共享变量优先表达禁用和忙碌状态，避免组件选择器覆盖全站规则。不要仅凭 `tabindex`、悬停效果或父容器的 `aria-busy` 判断控件可操作性。
+
 ## 验证入口
 
 Node 25 默认暴露服务端 Web Storage；前端单测入口关闭该 API，让 Nuxt 测试环境使用模拟浏览器的存储实现，避免原生空对象覆盖浏览器接口。

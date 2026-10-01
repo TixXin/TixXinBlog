@@ -91,7 +91,7 @@ async function copyCode(text: string) {
   border-radius: $radius-sm;
   background: rgba(255, 255, 255, 0.1);
   color: var(--text-faint);
-  cursor: pointer;
+  cursor: var(--interaction-cursor, pointer);
   opacity: 0;
   transition: $transition-fast;
   @media (prefers-reduced-motion: reduce) {

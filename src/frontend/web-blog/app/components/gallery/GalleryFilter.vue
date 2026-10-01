@@ -54,7 +54,7 @@ defineEmits<{
   font-weight: 500;
   border: none;
   border-radius: $radius-sm;
-  cursor: pointer;
+  cursor: var(--interaction-cursor, pointer);
   transition: $transition-fast;
   @media (prefers-reduced-motion: reduce) {
     transition: none;

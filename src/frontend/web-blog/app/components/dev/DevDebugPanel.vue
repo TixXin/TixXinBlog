@@ -678,7 +678,7 @@ onBeforeUnmount(() => {
   font-size: 0.625rem;
   font-weight: 700;
   letter-spacing: 0.06em;
-  cursor: grab;
+  cursor: var(--interaction-cursor, grab);
   user-select: none;
   touch-action: none;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
@@ -703,7 +703,7 @@ onBeforeUnmount(() => {
   }
 
   &.is-dragging {
-    cursor: grabbing;
+    cursor: var(--interaction-cursor, grabbing);
     transform: scale(0.95);
     transition: none;
   }
@@ -793,7 +793,7 @@ onBeforeUnmount(() => {
   justify-content: flex-end;
   padding: 0.125rem;
   color: var(--text-faint);
-  cursor: nwse-resize;
+  cursor: var(--interaction-cursor, nwse-resize);
   user-select: none;
   touch-action: none;
   transition: color 0.18s ease;
@@ -817,10 +817,10 @@ onBeforeUnmount(() => {
   user-select: none;
 
   &.is-draggable {
-    cursor: grab;
+    cursor: var(--interaction-cursor, grab);
 
     &:active {
-      cursor: grabbing;
+      cursor: var(--interaction-cursor, grabbing);
     }
   }
 }
@@ -848,7 +848,7 @@ onBeforeUnmount(() => {
   background: transparent;
   color: var(--text-soft);
   border-radius: $radius-sm;
-  cursor: pointer;
+  cursor: var(--interaction-cursor, pointer);
   transition:
     background 0.18s ease,
     color 0.18s ease;
@@ -863,7 +863,7 @@ onBeforeUnmount(() => {
 
   &:disabled {
     opacity: 0.35;
-    cursor: not-allowed;
+    cursor: var(--interaction-cursor, not-allowed);
   }
 }
 
@@ -878,7 +878,7 @@ onBeforeUnmount(() => {
   font-weight: 700;
   font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
   border-radius: $radius-sm;
-  cursor: pointer;
+  cursor: var(--interaction-cursor, pointer);
   transition:
     background 0.18s ease,
     color 0.18s ease;
@@ -915,7 +915,7 @@ onBeforeUnmount(() => {
   background: transparent;
   color: var(--text-soft);
   border-radius: $radius-sm;
-  cursor: pointer;
+  cursor: var(--interaction-cursor, pointer);
   transition:
     background 0.18s ease,
     color 0.18s ease;
@@ -953,7 +953,7 @@ onBeforeUnmount(() => {
   background: transparent;
   border-radius: $radius-full;
   color: var(--text-soft);
-  cursor: pointer;
+  cursor: var(--interaction-cursor, pointer);
   transition:
     background 0.2s ease,
     color 0.2s ease;
@@ -986,7 +986,7 @@ onBeforeUnmount(() => {
   color: var(--text-soft);
   font-size: 0.6875rem;
   font-weight: 500;
-  cursor: pointer;
+  cursor: var(--interaction-cursor, pointer);
   border-bottom: 2px solid transparent;
   transition:
     color 0.2s ease,
@@ -1061,7 +1061,7 @@ onBeforeUnmount(() => {
 }
 
 .dev-debug-row__value--clickable {
-  cursor: pointer;
+  cursor: var(--interaction-cursor, pointer);
   border-radius: $radius-sm;
   padding: 0.125rem 0.25rem;
   margin: -0.125rem -0.25rem;
@@ -1153,7 +1153,7 @@ onBeforeUnmount(() => {
   color: var(--text-main);
   font-size: 0.6875rem;
   font-weight: 600;
-  cursor: pointer;
+  cursor: var(--interaction-cursor, pointer);
   transition:
     background 0.18s ease,
     border-color 0.18s ease,
@@ -1172,7 +1172,7 @@ onBeforeUnmount(() => {
 
   &:disabled {
     opacity: 0.4;
-    cursor: not-allowed;
+    cursor: var(--interaction-cursor, not-allowed);
   }
 
   &.is-active {
