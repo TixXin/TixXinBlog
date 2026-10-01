@@ -79,7 +79,7 @@
         <option value="">全部使用状态</option>
         <option value="used">已使用（含历史版本）</option>
         <option value="unused">尚未使用</option></select
-      ><button type="submit" :disabled="pending || !ready">搜索</button>
+      ><button :aria-busy="pending" type="submit" :disabled="pending || !ready">搜索</button>
     </form>
     <p>“已使用”包含草稿、归档、评论和历史版本引用；修改素材说明不会改变引用关系。</p>
     <p v-if="error" role="alert">

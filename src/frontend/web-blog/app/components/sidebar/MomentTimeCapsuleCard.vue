@@ -148,7 +148,7 @@ function formatDate(iso: string) {
   border: none;
   background: transparent;
   color: var(--text-faint);
-  cursor: pointer;
+  cursor: var(--interaction-cursor, pointer);
   border-radius: $radius-sm;
   display: inline-flex;
   align-items: center;

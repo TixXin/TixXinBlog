@@ -236,7 +236,7 @@ async function onConfirm() {
   background: transparent;
   border-radius: $radius-full;
   color: var(--text-soft);
-  cursor: pointer;
+  cursor: var(--interaction-cursor, pointer);
 
   &:hover {
     background: var(--surface-2);
@@ -263,7 +263,7 @@ async function onConfirm() {
   border-radius: $radius-md;
   background: var(--surface-2);
   color: var(--text-soft);
-  cursor: pointer;
+  cursor: var(--interaction-cursor, pointer);
   text-align: center;
   transition: $transition-fast;
   @media (prefers-reduced-motion: reduce) {
@@ -359,7 +359,7 @@ async function onConfirm() {
   padding: 0.5rem 0.75rem;
   border: 1px solid var(--border-soft);
   border-radius: $radius-sm;
-  cursor: pointer;
+  cursor: var(--interaction-cursor, pointer);
   transition: $transition-fast;
   @media (prefers-reduced-motion: reduce) {
     transition: none;
@@ -406,7 +406,7 @@ async function onConfirm() {
   color: var(--text-main);
   font-size: 0.75rem;
   font-weight: 500;
-  cursor: pointer;
+  cursor: var(--interaction-cursor, pointer);
   transition: $transition-fast;
   @media (prefers-reduced-motion: reduce) {
     transition: none;
@@ -427,7 +427,7 @@ async function onConfirm() {
 
     &:disabled {
       opacity: 0.4;
-      cursor: not-allowed;
+      cursor: var(--interaction-cursor, not-allowed);
     }
   }
 }

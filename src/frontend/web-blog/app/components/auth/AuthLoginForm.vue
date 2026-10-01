@@ -31,7 +31,7 @@
       />
     </div>
     <p v-if="errorMessage" role="alert">{{ errorMessage }}</p>
-    <button type="submit" class="btn-primary auth-submit" :disabled="submitting || !hydrated">
+    <button :aria-busy="submitting" type="submit" class="btn-primary auth-submit" :disabled="submitting || !hydrated">
       {{ submitting ? '登录中…' : '登录' }}
     </button>
     <button type="button" class="auth-link" @click="emit('switchView', 'forgot')">登录帮助</button>

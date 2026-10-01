@@ -44,7 +44,9 @@
           <button type="button" :disabled="draft.rules.length >= 12" @click="draft.rules.push('')">添加须知</button>
         </fieldset>
         <AdminActionBar
-          ><button type="submit" :disabled="pending || !ready || !dirty">保存友链须知</button></AdminActionBar
+          ><button :aria-busy="pending" type="submit" :disabled="pending || !ready || !dirty">
+            保存友链须知
+          </button></AdminActionBar
         >
         <p>服务器版本 {{ draft.revision }}{{ dirty ? ' · 有未保存输入' : '' }}</p>
       </form>

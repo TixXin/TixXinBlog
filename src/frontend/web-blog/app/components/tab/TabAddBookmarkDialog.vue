@@ -180,7 +180,7 @@ function onSubmit() {
   border-radius: $radius-full;
   background: transparent;
   color: var(--text-soft);
-  cursor: pointer;
+  cursor: var(--interaction-cursor, pointer);
 
   &:hover {
     background: var(--surface-2);
@@ -231,7 +231,7 @@ function onSubmit() {
     border: 1px solid var(--border-soft);
     border-radius: $radius-sm;
     background: transparent;
-    cursor: pointer;
+    cursor: var(--interaction-cursor, pointer);
   }
 
   span {
@@ -254,7 +254,7 @@ function onSubmit() {
   border: 1px solid transparent;
   font-size: 0.8125rem;
   font-weight: 600;
-  cursor: pointer;
+  cursor: var(--interaction-cursor, pointer);
   transition: $transition-fast;
   @media (prefers-reduced-motion: reduce) {
     transition: none;
@@ -281,7 +281,7 @@ function onSubmit() {
 
     &:disabled {
       opacity: 0.5;
-      cursor: not-allowed;
+      cursor: var(--interaction-cursor, not-allowed);
     }
   }
 }

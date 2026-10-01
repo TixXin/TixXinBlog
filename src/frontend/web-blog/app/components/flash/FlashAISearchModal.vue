@@ -321,7 +321,7 @@ function truncate(text: string, max: number): string {
   font-size: 0.75rem;
   line-height: 1.55;
   color: var(--text-main);
-  cursor: pointer;
+  cursor: var(--interaction-cursor, pointer);
   transition:
     background 0.18s,
     color 0.18s;

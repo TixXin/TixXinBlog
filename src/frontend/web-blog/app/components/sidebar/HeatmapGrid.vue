@@ -226,7 +226,7 @@ function onCellLeave(e: Event) {
   width: 10px;
   height: 10px;
   border-radius: 2px;
-  cursor: pointer;
+  cursor: var(--interaction-cursor, pointer);
   transition:
     transform 0.15s,
     box-shadow 0.15s,

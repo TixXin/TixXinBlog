@@ -384,7 +384,7 @@ async function runItem(item: PaletteItem) {
   background: transparent;
   color: var(--text-main);
   text-align: left;
-  cursor: pointer;
+  cursor: var(--interaction-cursor, pointer);
   transition: background 0.15s;
   @media (prefers-reduced-motion: reduce) {
     transition: none;

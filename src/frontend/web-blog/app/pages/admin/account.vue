@@ -164,7 +164,7 @@ button {
   min-width: 0;
 }
 button {
-  cursor: pointer;
+  cursor: var(--interaction-cursor, pointer);
 }
 fieldset:disabled {
   opacity: 0.6;

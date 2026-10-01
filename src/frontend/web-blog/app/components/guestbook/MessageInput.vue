@@ -67,6 +67,7 @@
       <button
         type="button"
         class="message-input__send"
+        :aria-busy="submitting"
         :disabled="!draft.trim() || submitting || !ready"
         @click="submit"
       >
@@ -172,7 +173,7 @@ onBeforeUnmount(() => {
 /* 顶部拖拽手柄：拖动改变输入框高度 */
 .message-input__resize-handle {
   height: 6px;
-  cursor: ns-resize;
+  cursor: var(--interaction-cursor, ns-resize);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -255,7 +256,7 @@ onBeforeUnmount(() => {
   border-radius: $radius-sm;
   background: transparent;
   color: var(--text-faint);
-  cursor: pointer;
+  cursor: var(--interaction-cursor, pointer);
   transition: $transition-fast;
   @media (prefers-reduced-motion: reduce) {
     transition: none;
@@ -329,7 +330,7 @@ onBeforeUnmount(() => {
   border-radius: $radius-sm;
   background: transparent;
   color: var(--text-faint);
-  cursor: pointer;
+  cursor: var(--interaction-cursor, pointer);
   transition:
     color 0.18s,
     background 0.18s;
@@ -354,7 +355,7 @@ onBeforeUnmount(() => {
   background: var(--accent, #5b7cfa);
   font-size: 0.75rem;
   font-weight: 600;
-  cursor: pointer;
+  cursor: var(--interaction-cursor, pointer);
   transition:
     opacity 0.2s,
     transform 0.15s;
@@ -372,7 +373,7 @@ onBeforeUnmount(() => {
 
   &:disabled {
     opacity: 0.4;
-    cursor: not-allowed;
+    cursor: var(--interaction-cursor, not-allowed);
   }
 }
 
@@ -401,7 +402,7 @@ onBeforeUnmount(() => {
   border-radius: $radius-sm;
   background: transparent;
   color: var(--text-faint);
-  cursor: default;
+  cursor: var(--interaction-cursor, default);
   transition:
     background 0.15s,
     color 0.15s;

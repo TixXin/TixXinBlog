@@ -29,7 +29,7 @@
               <option v-for="option in colors" :key="option.value" :value="option.value">{{ option.label }}</option>
             </select></label
           >
-          <button type="submit" :disabled="!label.trim()">
+          <button :aria-busy="saving" type="submit" :disabled="!label.trim()">
             {{ working ? '保存中…' : editingId === null ? '新增' : '保存修改' }}
           </button>
           <button v-if="editingId !== null || label" type="button" @click="resetEditor">取消编辑</button>
@@ -106,6 +106,7 @@ const data = ref<Taxonomy | null>(null)
 const pending = ref(false)
 const ready = ref(false)
 const working = ref(false)
+const saving = ref(false)
 const error = ref('')
 const kind = ref<Kind>('folders')
 const label = ref('')
@@ -173,6 +174,7 @@ function report(cause: unknown, fallback: string) {
 async function save() {
   if (working.value || pending.value) return
   working.value = true
+  saving.value = true
   error.value = ''
   try {
     await api(`/admin/taxonomy/${kind.value}${editingId.value === null ? '' : `/${editingId.value}`}`, {
@@ -188,6 +190,7 @@ async function save() {
     report(cause, '保存失败，输入已保留')
   } finally {
     working.value = false
+    saving.value = false
   }
 }
 async function remove(type: Kind, item: Item) {

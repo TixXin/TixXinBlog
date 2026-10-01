@@ -156,6 +156,7 @@
           <button
             type="button"
             class="fed__submit"
+            :aria-busy="submitting"
             aria-label="发布闪念"
             aria-keyshortcuts="Control+Enter Meta+Enter"
             :disabled="!canSubmit"
@@ -430,7 +431,7 @@ defineExpose({ focus: () => textareaRef.value?.focus() })
   color: var(--text-soft);
   font-size: 0.6875rem;
   font-weight: 600;
-  cursor: pointer;
+  cursor: var(--interaction-cursor, pointer);
   transition: $transition-fast;
   @media (prefers-reduced-motion: reduce) {
     transition: none;
@@ -494,7 +495,7 @@ defineExpose({ focus: () => textareaRef.value?.focus() })
   border-radius: $radius-sm;
   background: transparent;
   color: var(--text-faint);
-  cursor: pointer;
+  cursor: var(--interaction-cursor, pointer);
   transition:
     color 0.18s,
     background 0.18s;
@@ -552,7 +553,7 @@ defineExpose({ focus: () => textareaRef.value?.focus() })
   border: none;
   background: transparent;
   color: var(--accent-text);
-  cursor: pointer;
+  cursor: var(--interaction-cursor, pointer);
   border-radius: $radius-full;
   padding: 0;
 
@@ -590,7 +591,7 @@ defineExpose({ focus: () => textareaRef.value?.focus() })
   border: none;
   background: transparent;
   color: var(--text-soft);
-  cursor: pointer;
+  cursor: var(--interaction-cursor, pointer);
   border-radius: $radius-sm;
   transition:
     color 0.18s,
@@ -755,7 +756,7 @@ defineExpose({ focus: () => textareaRef.value?.focus() })
   color: #fff;
   font-size: 0.75rem;
   font-weight: 600;
-  cursor: pointer;
+  cursor: var(--interaction-cursor, pointer);
   transition: $transition-fast;
   @media (prefers-reduced-motion: reduce) {
     transition: none;
@@ -763,7 +764,7 @@ defineExpose({ focus: () => textareaRef.value?.focus() })
 
   &:disabled {
     opacity: 0.4;
-    cursor: not-allowed;
+    cursor: var(--interaction-cursor, not-allowed);
   }
 
   &:not(:disabled):hover {

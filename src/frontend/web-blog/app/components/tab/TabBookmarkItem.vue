@@ -312,7 +312,7 @@ const nameComputedStyle = computed(() => ({
   border-radius: $radius-full;
   background: var(--surface-2);
   color: var(--text-soft);
-  cursor: pointer;
+  cursor: var(--interaction-cursor, pointer);
   opacity: 0;
   transition: $transition-fast;
   @media (prefers-reduced-motion: reduce) {

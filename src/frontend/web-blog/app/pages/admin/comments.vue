@@ -46,6 +46,7 @@
         <label>开始日期（UTC）<input v-model="from" type="date" :disabled="working" @change="resetPage" /></label>
         <label>结束日期（UTC）<input v-model="to" type="date" :disabled="working" @change="resetPage" /></label>
         <input v-model="search" aria-label="搜索评论" placeholder="搜索评论内容" /><button
+          :aria-busy="pending"
           type="submit"
           :disabled="pending"
         >
@@ -74,7 +75,9 @@
         </label>
         <p>回复文章：{{ replyTarget.postTitle }}</p>
         <blockquote>{{ replyTarget.content }}</blockquote>
-        <button type="submit" :disabled="working || !replyText.trim()">发表博主回复</button>
+        <button :aria-busy="replySubmitting" type="submit" :disabled="working || !replyText.trim()">
+          发表博主回复
+        </button>
         <button type="button" :disabled="working" @click="cancelReply">取消回复</button>
       </form>
       <section
@@ -284,6 +287,7 @@ const postId = ref('')
 const unanswered = ref(false)
 const pending = ref(false)
 const working = ref(false)
+const replySubmitting = ref(false)
 const ready = ref(false)
 const error = ref('')
 const replyTarget = ref<Row | null>(null)
@@ -441,6 +445,7 @@ async function remove(comment: Row) {
 async function sendReply() {
   if (!replyTarget.value || working.value) return
   working.value = true
+  replySubmitting.value = true
   error.value = ''
   const id = replyTarget.value.id
   try {
@@ -456,6 +461,7 @@ async function sendReply() {
     error.value = typeof message === 'string' ? message : '回复失败，内容已保留'
   } finally {
     working.value = false
+    replySubmitting.value = false
   }
 }
 async function moderate(comment: Row, target: CommentStatus) {

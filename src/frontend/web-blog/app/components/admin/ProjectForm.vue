@@ -233,7 +233,7 @@
       版本 {{ saved.revision }}
     </p>
     <AdminActionBar>
-      <button type="submit" :disabled="!ready || loading || saving || !value.title.trim()">
+      <button :aria-busy="saving" type="submit" :disabled="!ready || loading || saving || !value.title.trim()">
         {{ saving ? '正在保存…' : '保存项目' }}</button
       ><button
         type="button"
@@ -395,11 +395,11 @@ textarea {
 }
 button {
   min-height: 44px;
-  cursor: pointer;
+  cursor: var(--interaction-cursor, pointer);
 }
 button:disabled {
   opacity: 0.5;
-  cursor: not-allowed;
+  cursor: var(--interaction-cursor, not-allowed);
 }
 p {
   color: var(--text-muted);

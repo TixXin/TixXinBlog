@@ -247,7 +247,7 @@ function onDayClick(day: CalendarDay) {
   border-radius: $radius-sm;
   background: transparent;
   color: var(--text-soft);
-  cursor: pointer;
+  cursor: var(--interaction-cursor, pointer);
   transition: $transition-fast;
   @media (prefers-reduced-motion: reduce) {
     transition: none;
@@ -260,7 +260,7 @@ function onDayClick(day: CalendarDay) {
 
   &:disabled {
     opacity: 0.3;
-    cursor: not-allowed;
+    cursor: var(--interaction-cursor, not-allowed);
   }
 }
 
@@ -303,7 +303,7 @@ function onDayClick(day: CalendarDay) {
   font-weight: 500;
   color: var(--text-main);
   border-radius: $radius-sm;
-  cursor: default;
+  cursor: var(--interaction-cursor, default);
   transition: $transition-fast;
   @media (prefers-reduced-motion: reduce) {
     transition: none;
@@ -330,11 +330,11 @@ function onDayClick(day: CalendarDay) {
     color: var(--accent-text);
     background: var(--accent-soft);
     border-radius: 50%;
-    cursor: pointer;
+    cursor: var(--interaction-cursor, pointer);
   }
 
   &.has-note.is-today {
-    cursor: pointer;
+    cursor: var(--interaction-cursor, pointer);
   }
 
   &.is-selected {
@@ -406,7 +406,7 @@ function onDayClick(day: CalendarDay) {
   color: var(--accent-text);
   font-size: 0.6875rem;
   font-weight: 600;
-  cursor: pointer;
+  cursor: var(--interaction-cursor, pointer);
   padding: 0.125rem 0;
   transition: opacity 0.15s;
   @media (prefers-reduced-motion: reduce) {

@@ -91,7 +91,7 @@ function tagStyle(color: string) {
   padding: 0.75rem 1rem;
   min-height: var(--post-card-min-h, 112px);
   flex-shrink: 0;
-  cursor: pointer;
+  cursor: var(--interaction-cursor, pointer);
   transition: $transition-fast;
   @media (prefers-reduced-motion: reduce) {
     transition: none;

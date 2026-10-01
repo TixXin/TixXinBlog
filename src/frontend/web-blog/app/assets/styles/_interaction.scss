@@ -1,0 +1,81 @@
+/**
+ * @file _interaction.scss
+ * @description 全站原生光标语义；状态变量让组件专用光标服从禁用和忙碌状态，不提升选择器权重。
+ */
+
+// 仅状态设置共享变量；常态使用语义后备值，后代自然继承不可操作状态。
+:where(
+  a[href],
+  button,
+  select,
+  summary,
+  input:is(
+    [type='button'],
+    [type='submit'],
+    [type='reset'],
+    [type='image'],
+    [type='checkbox'],
+    [type='radio'],
+    [type='range'],
+    [type='color']
+  ),
+  [role='button'],
+  [role='link'],
+  [role='checkbox'],
+  [role='radio'],
+  [role='switch'],
+  [role='tab'],
+  [role='menuitem'],
+  [role='menuitemcheckbox'],
+  [role='menuitemradio'],
+  [role='option'],
+  label:has(input:is([type='checkbox'], [type='radio'], [type='range'], [type='color'], [type='file']), select, button)
+) {
+  cursor: var(--interaction-cursor, pointer);
+}
+
+// 只读文本仍可选择复制；日期、时间和文件输入的复合区域保留浏览器行为。
+:where(
+  input:not([type]),
+  input:is(
+    [type='text'],
+    [type='search'],
+    [type='password'],
+    [type='email'],
+    [type='url'],
+    [type='tel'],
+    [type='number']
+  ),
+  textarea,
+  [contenteditable]:not([contenteditable='false'])
+) {
+  cursor: var(--interaction-cursor, text);
+}
+
+:where(input[type='file'])::file-selector-button {
+  cursor: var(--interaction-cursor, pointer);
+}
+
+:where(
+  :disabled:not(fieldset),
+  [aria-disabled='true'],
+  label:has(
+    input:is([type='checkbox'], [type='radio'], [type='range'], [type='color'], [type='file']):disabled,
+    select:disabled,
+    button:disabled,
+    button[aria-disabled='true']
+  )
+) {
+  --interaction-cursor: not-allowed;
+  cursor: var(--interaction-cursor);
+}
+
+// 只标记正在执行的操作按钮；禁用但没有执行操作的控件仍为 not-allowed。
+:where(
+  button[aria-busy='true'],
+  input:is([type='button'], [type='submit'], [type='reset'])[aria-busy='true'],
+  [role='button'][aria-busy='true']
+) {
+  --interaction-cursor: progress;
+  cursor: var(--interaction-cursor);
+}

@@ -1072,7 +1072,7 @@ function onResetSettings() {
   background: transparent;
   border-radius: $radius-full;
   color: var(--text-soft);
-  cursor: pointer;
+  cursor: var(--interaction-cursor, pointer);
 
   &:hover {
     background: var(--surface-2);
@@ -1111,7 +1111,7 @@ function onResetSettings() {
   color: var(--text-soft);
   font-size: 0.6875rem;
   font-weight: 500;
-  cursor: pointer;
+  cursor: var(--interaction-cursor, pointer);
   text-align: left;
   white-space: nowrap;
   transition: $transition-fast;
@@ -1238,7 +1238,7 @@ function onResetSettings() {
   color: var(--text-soft);
   font-size: 0.625rem;
   font-weight: 500;
-  cursor: pointer;
+  cursor: var(--interaction-cursor, pointer);
   transition: $transition-fast;
   @media (prefers-reduced-motion: reduce) {
     transition: none;
@@ -1265,7 +1265,7 @@ function onResetSettings() {
   background: var(--border);
   border-radius: 2px;
   outline: none;
-  cursor: pointer;
+  cursor: var(--interaction-cursor, pointer);
 
   &::-webkit-slider-thumb {
     appearance: none;
@@ -1273,7 +1273,7 @@ function onResetSettings() {
     height: 14px;
     border-radius: $radius-full;
     background: var(--accent);
-    cursor: pointer;
+    cursor: var(--interaction-cursor, pointer);
     border: 2px solid var(--surface-1);
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
   }
@@ -1283,13 +1283,13 @@ function onResetSettings() {
     height: 14px;
     border-radius: $radius-full;
     background: var(--accent);
-    cursor: pointer;
+    cursor: var(--interaction-cursor, pointer);
     border: 2px solid var(--surface-1);
   }
 
   &:disabled {
     opacity: 0.4;
-    cursor: not-allowed;
+    cursor: var(--interaction-cursor, not-allowed);
   }
 }
 
@@ -1301,7 +1301,7 @@ function onResetSettings() {
   border: none;
   border-radius: 9px;
   background: var(--border);
-  cursor: pointer;
+  cursor: var(--interaction-cursor, pointer);
   transition: background 0.2s;
   @media (prefers-reduced-motion: reduce) {
     transition: none;
@@ -1315,7 +1315,7 @@ function onResetSettings() {
 
   &:disabled {
     opacity: 0.4;
-    cursor: not-allowed;
+    cursor: var(--interaction-cursor, not-allowed);
   }
 }
 
@@ -1351,7 +1351,7 @@ function onResetSettings() {
   padding: 0;
   border: 1px solid var(--border-soft);
   border-radius: 3px;
-  cursor: pointer;
+  cursor: var(--interaction-cursor, pointer);
 
   &::-webkit-color-swatch-wrapper {
     padding: 1px;
@@ -1373,7 +1373,7 @@ function onResetSettings() {
   border-radius: $radius-full;
   background: var(--surface-2);
   color: var(--text-soft);
-  cursor: pointer;
+  cursor: var(--interaction-cursor, pointer);
 
   &:hover {
     color: var(--accent-text);
@@ -1388,7 +1388,7 @@ function onResetSettings() {
   background: transparent;
   color: var(--accent-text);
   font-size: 0.5625rem;
-  cursor: pointer;
+  cursor: var(--interaction-cursor, pointer);
 
   &:hover {
     background: var(--accent-soft);
@@ -1409,7 +1409,7 @@ function onResetSettings() {
   color: var(--text-soft);
   font-size: 0.625rem;
   font-weight: 500;
-  cursor: pointer;
+  cursor: var(--interaction-cursor, pointer);
   transition: $transition-fast;
   @media (prefers-reduced-motion: reduce) {
     transition: none;
@@ -1448,7 +1448,7 @@ function onResetSettings() {
   background-size: cover;
   background-position: center;
   background-color: var(--surface-2);
-  cursor: pointer;
+  cursor: var(--interaction-cursor, pointer);
   overflow: hidden;
   transition: $transition-fast;
   @media (prefers-reduced-motion: reduce) {
@@ -1491,7 +1491,7 @@ function onResetSettings() {
   background: var(--surface-2);
   color: var(--text-soft);
   font-size: 0.6875rem;
-  cursor: pointer;
+  cursor: var(--interaction-cursor, pointer);
   text-align: center;
   transition: $transition-fast;
   @media (prefers-reduced-motion: reduce) {
@@ -1554,7 +1554,7 @@ function onResetSettings() {
   border-radius: $radius-md;
   background: transparent;
   color: var(--text-soft);
-  cursor: pointer;
+  cursor: var(--interaction-cursor, pointer);
   transition: $transition-fast;
   @media (prefers-reduced-motion: reduce) {
     transition: none;
@@ -1597,7 +1597,7 @@ function onResetSettings() {
   background: var(--surface-2);
   color: var(--text-main);
   text-align: left;
-  cursor: pointer;
+  cursor: var(--interaction-cursor, pointer);
   transition: $transition-fast;
   @media (prefers-reduced-motion: reduce) {
     transition: none;

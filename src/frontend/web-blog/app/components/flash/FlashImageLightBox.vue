@@ -133,7 +133,7 @@ onUnmounted(() => {
   border-radius: $radius-full;
   background: rgba(255, 255, 255, 0.1);
   color: #fff;
-  cursor: pointer;
+  cursor: var(--interaction-cursor, pointer);
   transition: background 0.2s;
   @media (prefers-reduced-motion: reduce) {
     transition: none;
@@ -158,7 +158,7 @@ onUnmounted(() => {
   border-radius: $radius-full;
   background: rgba(255, 255, 255, 0.1);
   color: #fff;
-  cursor: pointer;
+  cursor: var(--interaction-cursor, pointer);
   transition: background 0.2s;
   @media (prefers-reduced-motion: reduce) {
     transition: none;

@@ -57,6 +57,7 @@
       <footer>
         <button
           v-if="!result?.completed"
+          :aria-busy="pending"
           type="button"
           :disabled="
             pending ||

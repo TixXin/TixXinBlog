@@ -58,7 +58,9 @@
           </button>
         </fieldset>
         <AdminActionBar
-          ><button type="submit" :disabled="pending || !ready || !dirty">保存器材资料</button></AdminActionBar
+          ><button :aria-busy="pending" type="submit" :disabled="pending || !ready || !dirty">
+            保存器材资料
+          </button></AdminActionBar
         >
         <p>服务器版本 {{ draft.revision }}{{ dirty ? ' · 有未保存输入' : '' }}</p>
       </form>

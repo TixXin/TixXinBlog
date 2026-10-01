@@ -194,7 +194,7 @@ const listStyle = computed(() => {
   border-radius: $radius-card;
   background: transparent;
   color: var(--text-soft);
-  cursor: pointer;
+  cursor: var(--interaction-cursor, pointer);
   transition: $transition-fast;
   @media (prefers-reduced-motion: reduce) {
     transition: none;

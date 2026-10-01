@@ -303,7 +303,7 @@ $side-collapsed: 44px;
   border-radius: $radius-sm;
   background: transparent;
   color: var(--text-faint);
-  cursor: pointer;
+  cursor: var(--interaction-cursor, pointer);
   transition:
     color 0.15s,
     background 0.15s;
@@ -395,7 +395,7 @@ $side-collapsed: 44px;
   color: var(--text-main);
   font-size: 0.75rem;
   text-align: left;
-  cursor: pointer;
+  cursor: var(--interaction-cursor, pointer);
   transition: $transition-fast;
   @media (prefers-reduced-motion: reduce) {
     transition: none;
@@ -466,7 +466,7 @@ $side-collapsed: 44px;
   border-radius: $radius-full;
   background: transparent;
   color: var(--text-soft);
-  cursor: pointer;
+  cursor: var(--interaction-cursor, pointer);
   opacity: 0;
   transition: $transition-fast;
   @media (prefers-reduced-motion: reduce) {
@@ -493,7 +493,7 @@ $side-collapsed: 44px;
   color: var(--text-soft);
   font-size: 0.6875rem;
   font-weight: 500;
-  cursor: pointer;
+  cursor: var(--interaction-cursor, pointer);
   transition: $transition-fast;
   @media (prefers-reduced-motion: reduce) {
     transition: none;
@@ -533,7 +533,7 @@ $side-collapsed: 44px;
   background: transparent;
   color: var(--text-soft);
   font-size: 0.6875rem;
-  cursor: pointer;
+  cursor: var(--interaction-cursor, pointer);
   transition: $transition-fast;
   @media (prefers-reduced-motion: reduce) {
     transition: none;

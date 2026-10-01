@@ -30,6 +30,7 @@
           :aria-pressed="!!comment.liked"
           :aria-label="`${comment.liked ? '取消点赞' : '点赞'} ${comment.author}的评论`"
           :disabled="busy"
+          :aria-busy="pendingLikes.includes(comment.id)"
           @click="$emit('like', comment.id)"
         >
           <Icon name="lucide:thumbs-up" size="14" />
@@ -158,7 +159,7 @@ defineEmits<{ reply: [comment: CommentItem]; like: [id: number] }>()
   background: none;
   font-size: 0.75rem;
   color: var(--text-soft);
-  cursor: pointer;
+  cursor: var(--interaction-cursor, pointer);
   transition: $transition-fast;
   @media (prefers-reduced-motion: reduce) {
     transition: none;
@@ -173,7 +174,6 @@ defineEmits<{ reply: [comment: CommentItem]; like: [id: number] }>()
 }
 .comment-bubble__tool:disabled {
   opacity: 0.6;
-  cursor: wait;
 }
 .comment-bubble__replies {
   list-style: none;

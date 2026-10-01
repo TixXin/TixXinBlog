@@ -293,7 +293,7 @@ function onSubmit() {
   background: transparent;
   border-radius: $radius-full;
   color: var(--text-soft);
-  cursor: pointer;
+  cursor: var(--interaction-cursor, pointer);
 
   &:hover {
     background: var(--surface-2);
@@ -337,7 +337,7 @@ function onSubmit() {
   font-size: 0.75rem;
   font-weight: 600;
   color: var(--accent-text);
-  cursor: pointer;
+  cursor: var(--interaction-cursor, pointer);
   transition: opacity 0.18s;
   @media (prefers-reduced-motion: reduce) {
     transition: none;
@@ -455,7 +455,7 @@ function onSubmit() {
   color: #fff;
   font-size: 0.8125rem;
   font-weight: 600;
-  cursor: pointer;
+  cursor: var(--interaction-cursor, pointer);
   transition: opacity 0.2s;
   @media (prefers-reduced-motion: reduce) {
     transition: none;
@@ -467,7 +467,7 @@ function onSubmit() {
 
   &:disabled {
     opacity: 0.4;
-    cursor: not-allowed;
+    cursor: var(--interaction-cursor, not-allowed);
   }
 }
 

@@ -54,12 +54,8 @@ function select() {
   position: relative;
   border-radius: $radius-md;
   overflow: hidden;
-  cursor: pointer;
+  cursor: var(--interaction-cursor, zoom-in);
   outline: none;
-
-  &[aria-disabled='true'] {
-    cursor: default;
-  }
 
   &:focus-visible {
     box-shadow:

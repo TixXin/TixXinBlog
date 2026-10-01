@@ -9,7 +9,7 @@
       <span
         >当前状态：{{ draft.status === 'published' ? '已发布' : draft.status === 'archived' ? '已归档' : '草稿' }}</span
       >
-      <button type="submit" :disabled="pending">
+      <button :aria-busy="pending" type="submit" :disabled="pending">
         {{ pending ? '保存中…' : draft.status === 'draft' ? '保存草稿' : '保存修改' }}
       </button>
       <button
@@ -396,11 +396,10 @@ function confirmPublish() {
   padding: 0.55rem 0.85rem;
   background: var(--accent);
   color: white;
-  cursor: pointer;
+  cursor: var(--interaction-cursor, pointer);
 }
 .post-editor button:disabled {
   opacity: 0.5;
-  cursor: wait;
 }
 .post-editor__fields {
   display: grid;

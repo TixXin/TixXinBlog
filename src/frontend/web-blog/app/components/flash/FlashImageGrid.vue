@@ -91,7 +91,7 @@ function open(idx: number) {
   border-radius: $radius-sm;
   overflow: hidden;
   background: var(--surface-2);
-  cursor: zoom-in;
+  cursor: var(--interaction-cursor, zoom-in);
 }
 
 .flash-grid__img {

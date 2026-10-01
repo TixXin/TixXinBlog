@@ -446,7 +446,7 @@ onUnmounted(() => {
   font-weight: 600;
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
-  cursor: pointer;
+  cursor: var(--interaction-cursor, pointer);
   transition:
     background-color 0.2s ease,
     border-color 0.2s ease,
@@ -597,13 +597,14 @@ onUnmounted(() => {
   @media (prefers-reduced-motion: reduce) {
     transition: none;
   }
-  cursor: pointer;
+  cursor: var(--interaction-cursor, grab);
 
   &:hover {
     opacity: 0.55;
   }
 
   &.is-dragging {
+    cursor: var(--interaction-cursor, grabbing);
     opacity: 0.65;
   }
 }

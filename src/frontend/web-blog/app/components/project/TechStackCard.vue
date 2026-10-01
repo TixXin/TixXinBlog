@@ -59,7 +59,7 @@ defineEmits<{ tag: [label: string] }>()
   background: transparent;
   padding: 0.25rem 0;
   text-align: left;
-  cursor: pointer;
+  cursor: var(--interaction-cursor, pointer);
 }
 
 .tech-stack__title {

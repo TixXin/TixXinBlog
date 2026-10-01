@@ -485,7 +485,7 @@ function selectPrev() {
   gap: 0.75rem;
   padding: 0.625rem 0.75rem;
   border-radius: $radius-md;
-  cursor: pointer;
+  cursor: var(--interaction-cursor, pointer);
   transition: background 0.15s;
   @media (prefers-reduced-motion: reduce) {
     transition: none;

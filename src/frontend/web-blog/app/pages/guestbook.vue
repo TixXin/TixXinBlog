@@ -59,6 +59,7 @@
           >
             <div v-if="isChatMode && hasMore" ref="topSentinel" class="guestbook-more">
               <button
+                :aria-busy="morePending"
                 type="button"
                 :disabled="pending || morePending || !personalized"
                 @click="moreError ? retryMore() : loadMore()"
@@ -79,6 +80,7 @@
             />
             <div v-if="!isChatMode && hasMore" ref="bottomSentinel" class="guestbook-more">
               <button
+                :aria-busy="morePending"
                 type="button"
                 :disabled="pending || morePending || !personalized"
                 @click="moreError ? retryMore() : loadMore()"

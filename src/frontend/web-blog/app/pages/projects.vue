@@ -278,7 +278,7 @@ button:disabled {
 }
 .projects-compact-info summary {
   padding-block: 1rem;
-  cursor: pointer;
+  cursor: var(--interaction-cursor, pointer);
 }
 @media (min-width: 1440px) {
   .projects-compact-info--nexus {

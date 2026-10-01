@@ -24,7 +24,7 @@
           <option value="published">已发布</option>
           <option value="draft">草稿</option>
           <option value="archived">已归档</option></select
-        ><button type="submit" :disabled="pending">搜索</button>
+        ><button :aria-busy="pending" type="submit" :disabled="pending">搜索</button>
       </form>
       <p v-if="error" role="alert">
         {{ error }} <button type="button" :disabled="pending || working" @click="retryRead">重新加载</button>
@@ -215,11 +215,10 @@ button {
   display: inline-flex;
   align-items: center;
   gap: 0.4rem;
-  cursor: pointer;
+  cursor: var(--interaction-cursor, pointer);
 }
 button:disabled {
   opacity: 0.5;
-  cursor: default;
 }
 .admin-flashes__panel,
 .admin-flashes__list > li {

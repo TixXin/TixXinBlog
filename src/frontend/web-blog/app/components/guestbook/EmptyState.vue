@@ -101,7 +101,7 @@ defineEmits<{
   color: #fff;
   background: linear-gradient(135deg, var(--accent, #5b7cfa), #6366f1);
   box-shadow: 0 2px 8px rgba(91, 124, 250, 0.3);
-  cursor: pointer;
+  cursor: var(--interaction-cursor, pointer);
   transition: $transition-fast;
   @media (prefers-reduced-motion: reduce) {
     transition: none;

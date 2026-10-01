@@ -99,7 +99,7 @@ const dismissed = ref(false)
   border-radius: $radius-sm;
   background: transparent;
   color: var(--text-faint);
-  cursor: pointer;
+  cursor: var(--interaction-cursor, pointer);
   transition: $transition-fast;
   @media (prefers-reduced-motion: reduce) {
     transition: none;
