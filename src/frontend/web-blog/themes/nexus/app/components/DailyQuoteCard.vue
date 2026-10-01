@@ -64,13 +64,12 @@ function refresh() {
   color: var(--text-muted);
   line-height: 1.7;
   font-style: italic;
-  padding-right: 1.5rem;
 }
 
 /* 刷新按钮 */
 .daily-quote-card__refresh {
   position: absolute;
-  bottom: 0.75rem;
+  top: 0.75rem;
   right: 0.75rem;
   display: flex;
   align-items: center;
