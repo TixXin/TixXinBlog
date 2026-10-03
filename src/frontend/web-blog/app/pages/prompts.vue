@@ -11,6 +11,7 @@
       ></template
     >
     <CommonCustomScrollbar
+      tabindex="-1"
       class="prompts-body"
       viewport-class="prompts-viewport"
       :show-back-to-top="false"
@@ -30,13 +31,27 @@
       </section>
       <div class="prompts-toolbar">
         <div class="prompts-views" aria-label="浏览范围">
-          <button type="button" :aria-pressed="!draftView" :disabled="!ready" @click="setView(false)">
+          <button
+            ref="publicViewButton"
+            type="button"
+            :aria-pressed="!draftView"
+            :disabled="!ready"
+            @click="setView(false)"
+          >
             全部灵感<span v-if="metadata">{{ metadata.stats.prompts }}</span></button
           ><button v-if="isOwner" type="button" :aria-pressed="draftView" :disabled="!ready" @click="setView(true)">
             <Icon name="lucide:file-pen-line" size="14" />我的草稿
           </button>
         </div>
-        <CommonSearchBox v-model="keyword" placeholder="搜索画面、提示词…" label="搜索图片提示词" />
+        <CommonSearchBox
+          v-model="keyword"
+          :disabled="!ready"
+          placeholder="搜索画面、提示词…"
+          label="搜索图片提示词"
+          @compositionstart="startComposition"
+          @compositionend="endComposition"
+          @keydown.enter="submitSearch"
+        />
       </div>
       <div class="prompts-filters">
         <label
@@ -94,8 +109,8 @@
         <Icon name="lucide:lock-keyhole" size="13" />草稿仅自己可见，发布后才会出现在灵感图鉴。
       </p>
       <CommonRequestFeedback
-        v-if="currentPending || currentError"
-        :pending="currentPending"
+        v-if="currentPending || pageOutOfRange || currentError"
+        :pending="currentPending || pageOutOfRange"
         :compact="items.length > 0"
         :title="currentError || '正在寻找灵感'"
         @retry="retry"
@@ -103,9 +118,52 @@
       <p v-if="metadataError" class="prompts-result" role="status">
         模型与标签暂时无法读取。<button type="button" @click="refreshMetadata()">重新读取</button>
       </p>
-      <p v-if="stale && !draftView" class="prompts-result" role="status">正在显示上次读取的灵感，当前筛选尚未完成。</p>
+      <p v-if="draftView ? draftStale : stale" class="prompts-result" role="status">
+        正在显示上次读取的{{ draftView ? '草稿' : '灵感' }}，{{
+          currentError ? '本次读取未完成，可重试更新。' : '正在更新结果。'
+        }}
+      </p>
+      <div v-if="filtered" class="prompts-selection" role="group" aria-label="当前筛选条件">
+        <span>{{
+          currentError
+            ? '筛选暂未完成'
+            : currentPending || (draftView ? draftStale : stale)
+              ? '正在筛选…'
+              : `找到 ${total ?? 0} 份${draftView ? '草稿' : '灵感'}`
+        }}</span>
+        <button
+          v-if="query.q"
+          type="button"
+          :disabled="!ready"
+          :aria-label="`移除关键词筛选：${query.q}`"
+          @click="changeQuery({ q: undefined })"
+        >
+          <Icon name="lucide:search" size="12" /><span>{{ query.q }}</span
+          ><Icon name="lucide:x" size="12" />
+        </button>
+        <button
+          v-if="query.model"
+          type="button"
+          :disabled="!ready"
+          :aria-label="`移除模型筛选：${query.model}`"
+          @click="changeQuery({ model: undefined })"
+        >
+          <span>{{ query.model }}</span
+          ><Icon name="lucide:x" size="12" />
+        </button>
+        <button
+          v-if="query.tag"
+          type="button"
+          :disabled="!ready"
+          :aria-label="`移除风格筛选：${query.tag}`"
+          @click="changeQuery({ tag: undefined })"
+        >
+          <span>{{ query.tag }}</span
+          ><Icon name="lucide:x" size="12" />
+        </button>
+      </div>
       <CommonStateBlock
-        v-if="!currentPending && !currentError && !items.length"
+        v-if="!currentPending && !pageOutOfRange && !currentError && !items.length"
         icon="lucide:aperture"
         :title="filtered ? '还没有这样的灵感' : draftView ? '这里留给下一次灵感' : '灵感正在酝酿'"
         :description="
@@ -130,7 +188,7 @@
           @edit="openEditor"
         />
       </div>
-      <footer v-if="total !== null && (items.length || query.page > 1)" class="prompts-bottom">
+      <footer v-if="total !== null && !pageOutOfRange && (items.length || query.page > 1)" class="prompts-bottom">
         <p>{{ total }} 份{{ draftView ? '草稿' : '灵感' }}<span> / </span>每一次尝试，都值得被记录</p>
         <nav v-if="total > 12 || query.page > 1" aria-label="提示词分页">
           <button
@@ -140,7 +198,7 @@
             @click="changeQuery({ page: query.page - 1 })"
           >
             <Icon name="lucide:arrow-left" size="16" /></button
-          ><span>{{ query.page }} / {{ Math.max(1, Math.ceil(total / 12)) }}</span
+          ><span>{{ query.page }} / {{ pageCount }}</span
           ><button
             type="button"
             aria-label="下一页提示词"
@@ -174,8 +232,9 @@
   </CommonPageFrame>
 </template>
 <script setup lang="ts">
-import type { ImagePrompt, ManagedPrompt, PromptPage } from '~/features/prompt/types'
+import type { ImagePrompt, ManagedPrompt } from '~/features/prompt/types'
 import { promptId } from '~/features/prompt/query'
+import { usePromptSearch } from '~/composables/usePromptSearch'
 definePageMeta({ rightSidebar: false })
 const route = useRoute(),
   router = useRouter(),
@@ -198,16 +257,31 @@ const {
   changeQuery,
 } = await usePrompts()
 const draftView = computed(() => isOwner.value && route.query.view === 'drafts')
-const drafts = ref<PromptPage<ManagedPrompt> | null>(null),
-  draftPending = ref(false),
-  draftError = ref('')
-let draftGeneration = 0,
-  detailGeneration = 0,
+const {
+  drafts,
+  pending: draftPending,
+  error: draftError,
+  stale: draftStale,
+  refresh: loadDrafts,
+} = usePromptDrafts(query, draftView)
+const publicViewButton = ref<HTMLButtonElement | null>(null)
+let editorTrigger: HTMLElement | null = null
+let detailGeneration = 0,
   alive = true
 const items = computed(() => (draftView.value ? (drafts.value?.items ?? []) : prompts.value))
 const total = computed(() => (draftView.value ? (drafts.value?.total ?? null) : publicTotal.value))
 const currentPending = computed(() => (draftView.value ? draftPending.value : pending.value))
 const currentError = computed(() => (draftView.value ? draftError.value : error.value?.message || ''))
+const currentStale = computed(() => (draftView.value ? draftStale.value : stale.value))
+const pageCount = computed(() => Math.max(1, Math.ceil((total.value ?? 0) / query.value.pageSize)))
+const pageOutOfRange = computed(
+  () =>
+    total.value !== null &&
+    !currentPending.value &&
+    !currentError.value &&
+    !currentStale.value &&
+    query.value.page > pageCount.value,
+)
 const selectedId = computed(() => promptId(route.query.prompt)),
   selectedItem = ref<ImagePrompt | null>(null)
 const selectedDraft = ref(false),
@@ -216,15 +290,7 @@ const selectedDraft = ref(false),
 const editorOpen = ref(false),
   editorId = ref<number | null>(null)
 let detailController: AbortController | undefined
-const keyword = computed({
-  get: () => (typeof route.query.q === 'string' ? route.query.q : ''),
-  set: (q: string) => {
-    void router.replace({
-      path: '/prompts',
-      query: { ...route.query, q: q || undefined, page: undefined, prompt: undefined },
-    })
-  },
-})
+const { keyword, submit: submitSearch, startComposition, endComposition, replacePreservingInput } = usePromptSearch()
 const filtered = computed(() => !!query.value.q || !!query.value.model || !!query.value.tag)
 const allTags = ref(false)
 const visibleTags = computed(() => {
@@ -239,33 +305,6 @@ useSeoMeta({
   ogType: 'website',
   ogImage: () => prompts.value[0]?.imageUrl,
 })
-async function loadDrafts() {
-  const generation = ++draftGeneration
-  if (!draftView.value) {
-    draftPending.value = false
-    drafts.value = null
-    return
-  }
-  const actor = auth.currentUser.value?.id,
-    ownedContext = context.value
-  draftPending.value = true
-  draftError.value = ''
-  try {
-    const result = await repo.adminList({ ...query.value, status: 'draft' })
-    if (
-      alive &&
-      generation === draftGeneration &&
-      auth.currentUser.value?.id === actor &&
-      context.value === ownedContext
-    )
-      drafts.value = result
-  } catch (cause) {
-    if (alive && generation === draftGeneration)
-      draftError.value = cause instanceof Error ? cause.message : '草稿读取失败。'
-  } finally {
-    if (alive && generation === draftGeneration) draftPending.value = false
-  }
-}
 async function readDetail() {
   const generation = ++detailGeneration
   detailController?.abort()
@@ -313,29 +352,55 @@ function closeDetail() {
 }
 function openEditor(id: number | null) {
   if (!isOwner.value) return
+  editorTrigger = document.activeElement instanceof HTMLElement ? document.activeElement : null
   editorId.value = id
   editorOpen.value = true
 }
-function closeEditor() {
+async function closeEditor() {
   editorOpen.value = false
-  if (route.query.edit) void router.replace({ path: '/prompts', query: { ...route.query, edit: undefined } })
+  if (route.query.edit) await router.replace({ path: '/prompts', query: { ...route.query, edit: undefined } })
+  await nextTick()
+  // 详情重新显示时由其焦点陷阱接管；被筛选移除的卡片则回退到稳定的浏览入口。
+  if (selectedId.value !== null) return
+  const active = document.activeElement
+  if (
+    active instanceof HTMLElement &&
+    active !== document.body &&
+    active !== document.documentElement &&
+    active.isConnected &&
+    !active.closest('.prompt-editor, [inert]')
+  )
+    return
+  if (editorTrigger?.isConnected && !editorTrigger.closest('[inert]')) editorTrigger.focus({ preventScroll: true })
+  else publicViewButton.value?.focus()
 }
 async function saved(item: ManagedPrompt) {
-  await Promise.all([refresh(), refreshMetadata(), draftView.value ? loadDrafts() : Promise.resolve()])
-  if (selectedId.value === item.id) await readDetail()
+  // 状态改变时转到对应列表；关闭编辑器后仍可核对该作品，草稿不会误走公开详情。
+  const nextView = item.status === 'draft' ? 'drafts' : undefined
+  const switchView = draftView.value !== (item.status === 'draft')
+  if (switchView) await router.replace({ path: '/prompts', query: { ...route.query, view: nextView, page: undefined } })
+  await Promise.all([refresh(), refreshMetadata(), !switchView && draftView.value ? loadDrafts() : Promise.resolve()])
+  if (!switchView && selectedId.value === item.id) await readDetail()
 }
 function retry() {
   if (draftView.value) void loadDrafts()
   else void refresh()
 }
-watch(
-  [draftView, () => JSON.stringify(query.value), () => auth.currentUser.value?.id, context],
-  () => void loadDrafts(),
-  { immediate: true },
-)
 watch([selectedId, ready, draftView, () => auth.currentUser.value?.id, context], () => void readDetail(), {
   immediate: true,
 })
+watch(
+  [pageOutOfRange, ready, pageCount],
+  () => {
+    if (!ready.value || !pageOutOfRange.value) return
+    // 只依据当前查询的成功结果修正页码；失败或旧列表不能把用户带到其它页。
+    void replacePreservingInput({
+      path: '/prompts',
+      query: { ...route.query, page: pageCount.value === 1 ? undefined : String(pageCount.value) },
+    })
+  },
+  { immediate: true },
+)
 watch(
   [isOwner, () => route.query.edit, ready],
   () => {
@@ -347,7 +412,6 @@ watch(
 onMounted(() => void auth.restore())
 onScopeDispose(() => {
   alive = false
-  draftGeneration++
   detailGeneration++
   detailController?.abort()
 })
@@ -410,6 +474,7 @@ h1 span {
   color: var(--text-soft);
 }
 .prompts-intro__index strong {
+  font-variant-numeric: tabular-nums;
   font-size: 2.8rem;
   line-height: 1.2;
   font-weight: 300;
@@ -516,8 +581,63 @@ h1 span {
 .prompts-result button {
   color: var(--accent-text);
 }
+.prompts-selection {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  margin: -0.25rem 0 1.25rem;
+  color: var(--text-muted);
+  font-size: 0.75rem;
+}
+.prompts-selection > span {
+  margin-right: 0.25rem;
+  font-variant-numeric: tabular-nums;
+}
+.prompts-selection button {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  max-width: 100%;
+  min-height: 36px;
+  padding: 0.3rem 0.6rem;
+  border: 1px solid var(--border);
+  border-radius: 0.5rem;
+  background: var(--surface-2);
+  color: var(--text-main);
+}
+.prompts-selection button span {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.prompts-selection button:hover {
+  border-color: var(--accent);
+}
+.prompts-tags button,
+.prompts-add,
+.prompts-bottom nav button {
+  transition:
+    background-color 0.16s,
+    border-color 0.16s,
+    color 0.16s;
+}
+.prompts-tags button:hover,
+.prompts-add:hover,
+.prompts-bottom nav button:not(:disabled):hover {
+  background: var(--accent-soft);
+  color: var(--accent-text);
+}
+@media (prefers-reduced-motion: reduce) {
+  .prompts-tags button,
+  .prompts-add,
+  .prompts-bottom nav button {
+    transition: none;
+  }
+}
 .prompts-grid {
-  columns: 3;
+  columns: 15rem;
+  column-count: 3;
   column-gap: 1.25rem;
 }
 .prompts-bottom {
@@ -558,12 +678,12 @@ button:disabled {
 }
 @media (min-width: 1700px) {
   .prompts-grid {
-    columns: 4;
+    column-count: 4;
   }
 }
 @media (max-width: 1050px) {
   .prompts-grid {
-    columns: 2;
+    column-count: 2;
   }
   .prompts-intro__index {
     min-width: auto;
@@ -574,7 +694,7 @@ button:disabled {
     padding: 1rem;
   }
   .prompts-intro {
-    padding-bottom: 1.3rem;
+    padding-bottom: 0.9rem;
     gap: 1rem;
   }
   h1 {
@@ -601,6 +721,7 @@ button:disabled {
     font-size: 0.5rem;
   }
   .prompts-grid {
+    column-width: auto;
     column-gap: 0.75rem;
   }
   .prompts-toolbar {
@@ -608,12 +729,25 @@ button:disabled {
   }
   .prompts-toolbar :deep(.search-box) {
     width: 100%;
+    max-width: none;
   }
   .prompts-add {
     padding-inline: 0.65rem;
   }
   .prompts-filters {
     gap: 0.4rem;
+    margin-bottom: 1rem;
+  }
+  .prompts-tags {
+    flex: 1 1 100%;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    scrollbar-width: thin;
+    padding-block: 0.15rem;
+  }
+  .prompts-tags button {
+    flex-shrink: 0;
+    min-height: 40px;
   }
   .prompts-bottom p {
     line-height: 1.8;
@@ -621,7 +755,7 @@ button:disabled {
 }
 @media (max-width: 380px) {
   .prompts-grid {
-    columns: 1;
+    column-count: 1;
   }
 }
 </style>

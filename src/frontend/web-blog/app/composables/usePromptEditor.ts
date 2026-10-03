@@ -29,8 +29,15 @@ export function usePromptEditor(initialId: number | null, onSaved: (item: Manage
   const owns = (version: number) =>
     alive && version === generation && auth.currentUser.value?.id === actor && context.value === ownedContext
   function persist() {
-    if (!import.meta.client || !actor || (!dirty.value && !pendingCreate.value)) return
+    if (!import.meta.client || !actor) return !dirty.value && !pendingCreate.value
     try {
+      if (!dirty.value && !pendingCreate.value) {
+        // 撤回本次修改后移除过期副本；尚未处理的上次输入仍保留供显式恢复。
+        if (recovery.value) sessionStorage.setItem(storageKey(), JSON.stringify(recovery.value))
+        else sessionStorage.removeItem(storageKey())
+        localError.value = ''
+        return true
+      }
       const value: PromptRecovery = {
         version: 1,
         context: ownedContext,
@@ -43,8 +50,10 @@ export function usePromptEditor(initialId: number | null, onSaved: (item: Manage
       }
       sessionStorage.setItem(storageKey(), JSON.stringify(value))
       localError.value = ''
+      return true
     } catch {
       localError.value = '恢复副本暂时无法保存，请保留当前页面。'
+      return false
     }
   }
   function accept(item: ManagedPrompt) {
@@ -124,14 +133,8 @@ export function usePromptEditor(initialId: number | null, onSaved: (item: Manage
       if (capture === JSON.stringify(form) && originalMatches) Object.assign(form, promptForm(item))
       pendingCreate.value = null
       serverVersion.value = null
-      if (!dirty.value) {
-        try {
-          sessionStorage.removeItem(storageKey())
-          recovery.value = null
-        } catch {
-          /* 已保存内容以服务器为准。 */
-        }
-      } else persist()
+      recovery.value = null
+      persist()
       notice.value = dirty.value
         ? '此前提交已保存，后续输入仍保留，请核对后继续保存。'
         : item.status === 'published'
@@ -167,21 +170,37 @@ export function usePromptEditor(initialId: number | null, onSaved: (item: Manage
       (initialId !== null && value.id !== initialId)
     )
       return
+    if (
+      dirty.value &&
+      JSON.stringify(form) !== JSON.stringify(value.form) &&
+      !window.confirm('恢复副本会替换当前表单中的未保存修改，确定恢复吗？')
+    )
+      return
     Object.assign(form, promptForm(value.form))
     id.value = value.id
     revision.value = value.revision
     requestId = value.requestId
     pendingCreate.value = value.pendingCreate
     recovery.value = null
-    notice.value = '已恢复输入，请核对后保存。'
+    serverVersion.value = null
+    error.value = ''
+    notice.value = value.pendingCreate
+      ? '已恢复输入和待核查提交，再次保存会先核查原提交。'
+      : '已恢复输入，请核对后保存。'
+    persist()
   }
   function discardRecovery() {
-    try {
-      sessionStorage.removeItem(storageKey())
-      recovery.value = null
-    } catch {
-      localError.value = '暂时无法移除恢复副本。'
+    if (saving.value || !recovery.value) return
+    const previous = recovery.value
+    recovery.value = null
+    // 移除上次副本不能一并丢弃重新打开后写入的当前表单。
+    if (!persist()) {
+      recovery.value = previous
+      localError.value = '暂时无法移除上次副本，当前表单仍保留在页面中。'
+      return
     }
+    notice.value =
+      dirty.value || pendingCreate.value ? '已移除上次副本，当前输入仍保留在本标签页。' : '已移除恢复副本。'
   }
   function merge() {
     if (!serverVersion.value || saving.value || !ready.value) return
@@ -195,8 +214,12 @@ export function usePromptEditor(initialId: number | null, onSaved: (item: Manage
   function canClose() {
     if (saving.value) return false
     if (!dirty.value && !pendingCreate.value) return true
-    persist()
-    return window.confirm('还有未保存或待核查的输入，已保留本标签页副本，确定关闭吗？')
+    const preserved = persist()
+    return window.confirm(
+      preserved
+        ? '还有未保存或待核查的输入，已保留本标签页副本，确定关闭吗？'
+        : '还有未保存或待核查的输入，恢复副本未能保存；关闭后可能丢失当前输入。确定关闭吗？',
+    )
   }
   const unload = (event: BeforeUnloadEvent) => {
     if (dirty.value || saving.value || pendingCreate.value) {

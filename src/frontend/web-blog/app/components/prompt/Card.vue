@@ -5,13 +5,14 @@
       <CommonImageFrame
         :src="item.imageUrl"
         :alt="item.imageAlt || item.title"
-        :width="item.width || 3"
-        :height="item.height || 4"
+        :width="item.width || undefined"
+        :height="item.height || undefined"
       />
       <button
         type="button"
         class="prompt-card__open"
         :aria-label="`查看提示词：${item.title}`"
+        :data-focus-key="`prompt-open-${item.id}`"
         :disabled="!ready"
         @click="$emit('open', item.id)"
       >
@@ -26,13 +27,21 @@
       </div>
       <div class="prompt-card__title-row">
         <h3>
-          <button type="button" :disabled="!ready" @click="$emit('open', item.id)">{{ item.title }}</button>
+          <button
+            type="button"
+            :disabled="!ready"
+            :data-focus-key="`prompt-title-${item.id}`"
+            @click="$emit('open', item.id)"
+          >
+            {{ item.title }}
+          </button>
         </h3>
         <button
           v-if="editable"
           class="prompt-card__edit"
           type="button"
           :aria-label="`编辑提示词：${item.title}`"
+          :data-focus-key="`prompt-edit-${item.id}`"
           :disabled="!ready"
           @click="$emit('edit', item.id)"
         >
@@ -53,6 +62,7 @@ defineEmits<{ open: [id: number]; edit: [id: number] }>()
   break-inside: avoid;
   margin: 0 0 1.6rem;
   min-width: 0;
+  overflow-wrap: anywhere;
 }
 .prompt-card__visual {
   position: relative;
@@ -120,7 +130,8 @@ defineEmits<{ open: [id: number]; edit: [id: number] }>()
 }
 .prompt-card__meta {
   display: flex;
-  gap: 0.5rem;
+  flex-wrap: wrap;
+  gap: 0.3rem 0.5rem;
   align-items: center;
   color: var(--text-soft);
   font-size: 0.65rem;
