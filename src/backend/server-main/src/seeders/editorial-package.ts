@@ -1,4 +1,4 @@
-/** @file editorial-package.ts @description 四候选v9子包，只保留阅读关系闭包和必要目录，不复制来源配置、互动或开发样本。 */
+/** @file editorial-package.ts @description 四候选v10子包，只保留阅读关系闭包和必要目录，不复制来源配置、互动或开发样本。 */
 import 'reflect-metadata'
 import { MikroORM } from '@mikro-orm/postgresql'
 import { IsolationLevel } from '@mikro-orm/core'
@@ -57,7 +57,7 @@ export async function buildEditorialPackage(
     throw new Error('本批候选定义为零媒体依赖；发现非预期图片必须先人工复核')
   const subset: ContentPackage = {
     format: 'tixxin-content',
-    version: 9,
+    version: 10,
     omittedRelations: 0,
     exportedAt: source.exportedAt,
     mediaIncluded: false,
@@ -70,12 +70,13 @@ export async function buildEditorialPackage(
     guestbook: [],
     gallery: [],
     links: [],
+    prompts: [],
     media: [],
     gallerySettings: { gear: [] },
     linkSettings: { rules: [] },
     folders: [...new Set(posts.map((post) => post.values.folder))],
     tags,
-    // v9固定结构要求这些键；它们是中性格式占位，导入必须关闭includeSettings，不代表来源/正式配置。
+    // v10固定结构要求这些键；它们是中性格式占位，导入必须关闭includeSettings，不代表来源/正式配置。
     site: {
       name: 'TixXin Blog',
       description: '',
@@ -100,7 +101,7 @@ export async function exportEditorialPackage(output?: string) {
   const root = resolve(__dirname, '../../../..', '..')
   const artifacts = resolve(root, '.artifacts')
   const path = resolve(
-    output ?? resolve(artifacts, 'first-release', `content-${randomUUID()}`, 'editorial-content-v9.json'),
+    output ?? resolve(artifacts, 'first-release', `content-${randomUUID()}`, 'editorial-content-v10.json'),
   )
   const rel = relative(artifacts, path)
   if (!rel || rel.startsWith('..') || isAbsolute(rel) || !path.endsWith('.json'))
@@ -138,7 +139,7 @@ export async function exportEditorialPackage(output?: string) {
             folders: content.folders,
             tags: content.tags.map((tag) => tag.label),
             contentHash: packageHash(content),
-            note: '只包含四份已核查候选；v9必填站点字段为中性占位，导入不得勾选配置。',
+            note: '只包含四份已核查候选；v10必填站点字段为中性占位，导入不得勾选配置。',
           },
         }
       },

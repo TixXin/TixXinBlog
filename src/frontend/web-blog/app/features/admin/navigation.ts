@@ -10,6 +10,7 @@ export const adminNavigation = [
   { path: '/admin/moment-comments', label: '朋友圈评论', icon: 'lucide:message-square' },
   { path: '/admin/guestbook', label: '留言管理', icon: 'lucide:message-circle' },
   { path: '/admin/gallery', label: '图库管理', icon: 'lucide:camera' },
+  { path: '/prompts', label: '灵感管理', icon: 'lucide:aperture' },
   { path: '/admin/projects', label: '项目管理', icon: 'lucide:layers' },
   { path: '/admin/links', label: '友链管理', icon: 'lucide:link' },
   { path: '/admin/media', label: '媒体资源', icon: 'lucide:images' },

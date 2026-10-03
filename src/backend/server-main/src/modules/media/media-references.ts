@@ -16,6 +16,7 @@ import type { GuestbookMessage } from '../../entities/guestbook-message.entity'
 import type { GalleryPhoto } from '../../entities/gallery-photo.entity'
 import type { Project } from '../../entities/project.entity'
 import type { FriendLink } from '../../entities/friend-link.entity'
+import type { ImagePrompt } from '../../entities/image-prompt.entity'
 
 export function mediaUrl(id: string) {
   return `/api/v1/media/${id}.webp`
@@ -54,6 +55,7 @@ export async function synchronizeMediaReferences(
     galleryPhoto?: GalleryPhoto
     project?: Project
     friendLink?: FriendLink
+    imagePrompt?: ImagePrompt
   },
 ) {
   const ids = managedMediaIds(values)

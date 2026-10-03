@@ -39,7 +39,7 @@ corepack pnpm --filter server-main test:integration
 
 ## 内容迁入、备份与任务
 
-内容包导出 v9，兼容 v1–v8；迁入通过预览与票据创建草稿或跳过相同内容，并映射媒体及内容关系。完整备份另行保存数据库历史与受管媒体；恢复时验证实际库存、撤销旧授权并暂停恢复出来的外部任务。操作说明见[备份与恢复](../../../docs/backup-and-recovery.md)。
+内容包导出 v10，兼容 v1–v9；迁入通过预览与票据创建草稿或跳过相同内容，并映射媒体及内容关系。完整备份另行保存数据库历史与受管媒体；恢复时验证实际库存、撤销旧授权并暂停恢复出来的外部任务。操作说明见[备份与恢复](../../../docs/backup-and-recovery.md)。
 
 ```sh
 corepack pnpm --filter server-main backup:full

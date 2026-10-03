@@ -114,7 +114,7 @@ try {
   const exported = await request('/admin/backup/export', 'POST', { mediaIncluded: true })
   assert.equal(exported.status, 201)
   const bundle = exported.data
-  assert.equal(bundle.version, 9)
+  assert.equal(bundle.version, 10)
   assert.equal(bundle.links.length, 4)
   assert.deepEqual(bundle.linkSettings, { rules })
   const sourceLink = bundle.links.find((item) => item.sourceId === link.id)

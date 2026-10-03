@@ -17,6 +17,7 @@ export const FIXTURE_TABLES = {
   guestbook: 'guestbook_message',
   'guestbook-reaction': 'guestbook_reaction',
   gallery: 'gallery_photo',
+  prompt: 'image_prompt',
   project: 'project',
   link: 'friend_link',
   notification: 'owner_notification',

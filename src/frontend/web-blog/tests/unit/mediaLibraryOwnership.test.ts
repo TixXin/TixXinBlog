@@ -49,7 +49,7 @@ afterEach(() => {
   vi.restoreAllMocks()
   vi.unstubAllGlobals()
 })
-async function setup(initialContext = 'library-a') {
+async function setup(initialContext = 'library-a', route = '/admin/media') {
   let state!: ReturnType<typeof useMediaLibrary>, context!: Ref<string>
   const wrapper = await mountSuspended(
     defineComponent({
@@ -60,6 +60,7 @@ async function setup(initialContext = 'library-a') {
         return () => h('div')
       },
     }),
+    { route },
   )
   wrappers.push(wrapper)
   await flushPromises()
@@ -198,4 +199,33 @@ it('重新读取同编号资源后，先前列表对象不能再触发选择或�
   expect(state.canSelect(state.items.value[0]!)).toBe(true)
   await state.saveAlt(stale)
   expect(mocks.api).toHaveBeenCalledTimes(2)
+})
+
+it('公开提示词页的媒体选择器等待首个列表后上传，加载期间不误报身份变化', async () => {
+  let finish!: (value: unknown) => void
+  mocks.api.mockImplementationOnce(
+    () =>
+      new Promise((resolve) => {
+        finish = resolve
+      }),
+  )
+  const { state } = await setup('library-a', '/prompts?edit=1')
+  expect(state.pending.value).toBe(true)
+  expect(state.ready.value).toBe(false)
+  const files = [new File(['image'], 'prompt.png')]
+  choose(state, files)
+  expect(mocks.upload).not.toHaveBeenCalled()
+  expect(state.error.value).toContain('正在读取')
+  expect(state.error.value).not.toContain('账号或内容库已变化')
+  finish({ items: [structuredClone(asset)], total: 1 })
+  await flushPromises()
+  expect(state.ready.value).toBe(true)
+  expect(state.error.value).toBe('')
+  mocks.upload.mockResolvedValueOnce(asset)
+  choose(state, files)
+  await flushPromises()
+  expect(mocks.upload).toHaveBeenCalledTimes(1)
+  expect(state.jobs.value[0]?.status).toBe('done')
+  expect(state.canSelect(state.items.value[0]!)).toBe(true)
+  expect(state.error.value).toBe('')
 })

@@ -653,6 +653,55 @@ export async function restoreFullBackup(path, { output } = {}) {
         verified: true,
       }
     }
+    let promptIntegrity
+    if (actualTables.has('image_prompt')) {
+      const invalid = Number(
+        await psql(
+          container,
+          database,
+          user,
+          password,
+          `select
+            (select count(*) from image_prompt p left join media_asset a on a.id=p.media_id
+              where p.media_id is not null and (a.id is null or a.deleted_at is not null))
+            + (select count(*) from image_prompt where (media_id is null) = (nullif(external_image_url,'') is null))
+            + (select count(*) from image_prompt p where p.media_id is not null and not exists
+                (select 1 from media_reference r where r.image_prompt_id=p.id and r.asset_id=p.media_id
+                  and r.kind='image-prompt' and r.source_key='image-prompt:'||p.id::text))
+            + (select count(*) from media_reference r left join image_prompt p on p.id=r.image_prompt_id
+                where (r.kind='image-prompt' or r.image_prompt_id is not null) and
+                  (p.id is null or p.media_id is null or r.kind<>'image-prompt' or r.asset_id<>p.media_id
+                    or r.source_key<>'image-prompt:'||p.id::text))
+            + (select count(*) from image_prompt where status not in ('draft','published') or revision<0
+                or jsonb_typeof(tags)<>'array' or btrim(title)='' or btrim(prompt)='')
+            + (select count(*) from development_fixture where kind='prompt'
+                and (resource_id !~ '^[1-9][0-9]*$' or snapshot_hash !~ '^[a-f0-9]{64}$'));`,
+        ),
+      )
+      if (invalid) throw new Error('恢复后的图片提示词、图片来源、媒体引用或样本归属校验失败')
+      promptIntegrity = {
+        prompts: counts.image_prompt,
+        fixtures: Number(
+          await psql(
+            container,
+            database,
+            user,
+            password,
+            "select count(*) from development_fixture where kind='prompt'",
+          ),
+        ),
+        mediaReferences: Number(
+          await psql(
+            container,
+            database,
+            user,
+            password,
+            "select count(*) from media_reference where kind='image-prompt'",
+          ),
+        ),
+        verified: true,
+      }
+    }
     await mkdir(join(target, 'media'), { mode: 0o700 })
     for (const media of manifest.media) {
       const file = join(target, 'media', media.key)
@@ -742,6 +791,7 @@ export async function restoreFullBackup(path, { output } = {}) {
       galleryIntegrity,
       projectIntegrity,
       linkIntegrity,
+      promptIntegrity,
       mediaFiles: manifest.media.length,
       revokedRestoredSessions: true,
       requireFreshContentContext: true,
@@ -849,6 +899,25 @@ export async function verifyRestoredApplication(
         ),
       )
     : null
+  const prompts = Object.hasOwn(restored.report.counts, 'image_prompt')
+    ? JSON.parse(
+        await psql(
+          restored.connection.container,
+          database,
+          user,
+          password,
+          `select json_build_object(
+            'total',(select count(*) from image_prompt),
+            'published',(select count(*) from image_prompt where status='published'),
+            'items',coalesce((select json_agg(p) from (
+              select id,title,md5(description) as "descriptionHash",md5(prompt) as "promptHash",
+                md5(negative_prompt) as "negativePromptHash",model,tags,media_id as "mediaId",
+                md5(external_image_url) as "externalImageUrlHash",image_alt as "imageAlt",
+                md5(source_url) as "sourceUrlHash",status,revision from image_prompt order by id limit 5
+              ) p),'[]'::json));`,
+        ),
+      )
+    : null
   try {
     await command(
       [
@@ -891,6 +960,13 @@ export async function verifyRestoredApplication(
         const gallery=${JSON.stringify(gallery)};
         const projects=${JSON.stringify(projects)};
         const friends=${JSON.stringify(friends)};
+        const prompts=${JSON.stringify(prompts)};
+        let promptAdminVerified=false, promptOldContextRejected=false, promptFreshWriteAllowed=false;
+        if(prompts){
+          const list=await fetch('http://127.0.0.1:3000/api/v1/prompts?pageSize=1');
+          const values=(await list.json()).data;
+          if(!list.ok||values.total!==prompts.published||values.items.some(item=>'status' in item||'revision' in item||'requestId' in item))throw Error('public prompts');
+        }
         let linkMetadataVerified=false, linkAdminVerified=false, linkOldContextRejected=false, linkFreshWriteAllowed=false;
         let projectMetadataVerified=false, projectAdminVerified=false, projectOldContextRejected=false, projectFreshWriteAllowed=false;
         if(gallery){
@@ -932,6 +1008,44 @@ export async function verifyRestoredApplication(
           if(!login.ok)throw Error('fresh login');
           const token=(await login.json()).data.accessToken;
           freshLoginVerified=true;
+          if(prompts){
+            const headers={Authorization:'Bearer '+token,'Content-Type':'application/json'};
+            const list=await fetch('http://127.0.0.1:3000/api/v1/admin/prompts?pageSize=1',{headers});
+            if(!list.ok||(await list.json()).data.total!==prompts.total)throw Error('restored prompt admin count');
+            for(const expected of prompts.items){
+              const response=await fetch('http://127.0.0.1:3000/api/v1/admin/prompts/'+expected.id,{headers});
+              const current=(await response.json()).data;
+              if(!response.ok)throw Error('restored prompt admin');
+              const hash=value=>value===null?null:crypto.createHash('md5').update(value).digest('hex');
+              const normalized={...current,descriptionHash:hash(current.description),promptHash:hash(current.prompt),
+                negativePromptHash:hash(current.negativePrompt),sourceUrlHash:hash(current.sourceUrl),externalImageUrlHash:hash(current.externalImageUrl)};
+              if(Object.entries(expected).some(([key,value])=>JSON.stringify(normalized[key])!==JSON.stringify(value)))throw Error('restored prompt fields');
+              if(current.imageUrl!==(current.mediaId?'/api/v1/media/'+current.mediaId+'.webp':current.externalImageUrl))throw Error('restored prompt image');
+              if(expected.status!=='published'){
+                const hidden=await fetch('http://127.0.0.1:3000/api/v1/prompts/'+expected.id);
+                if(hidden.status!==404)throw Error('restored prompt visibility');
+              }
+            }
+            promptAdminVerified=true;
+            if(prompts.items.length){
+              const expected=prompts.items[0],path='http://127.0.0.1:3000/api/v1/admin/prompts/'+expected.id;
+              const payload=JSON.stringify({revision:expected.revision,title:expected.title});
+              const missing=await fetch(path,{method:'PATCH',headers,body:payload});
+              if(missing.status!==428)throw Error('missing restored prompt context');
+              if(process.env.VERIFY_OLD_CONTENT_CONTEXT){
+                const stale=await fetch(path,{method:'PATCH',headers:{...headers,'X-Content-Context':process.env.VERIFY_OLD_CONTENT_CONTEXT},body:payload});
+                if(stale.status!==409)throw Error('stale restored prompt context');
+                promptOldContextRejected=true;
+              }
+              const site=await fetch('http://127.0.0.1:3000/api/v1/site');
+              const freshContext=site.headers.get('x-content-context');
+              if(!freshContext||freshContext===process.env.VERIFY_OLD_CONTENT_CONTEXT)throw Error('restored prompt context generation');
+              const saved=await fetch(path,{method:'PATCH',headers:{...headers,'X-Content-Context':freshContext},body:payload});
+              if(!saved.ok||(await saved.json()).data.revision!==expected.revision+1)throw Error('fresh restored prompt write');
+              promptFreshWriteAllowed=true;
+              await new Promise(resolve=>setTimeout(resolve,1100));
+            }
+          }
           if(gallery?.photo){
             const headers={Authorization:'Bearer '+token,'Content-Type':'application/json'};
             for(const photo of gallery.external ?? []) {
@@ -1049,7 +1163,7 @@ export async function verifyRestoredApplication(
             }
           }
         }
-        process.stdout.write(JSON.stringify({ready:true,publicPosts:body.data.total,publicGalleryPhotos:gallery?.photos??null,galleryGearVerified:!!gallery,publicProjects:projects?.stats.projects??null,projectMetadataVerified,projectAdminVerified,projectOldContextRejected,projectFreshWriteAllowed,publicLinks:friends?.stats.links??null,linkMetadataVerified,linkAdminVerified,linkOldContextRejected,linkFreshWriteAllowed,mediaVerified:media.length,oldAuthorizationChecked:!!process.env.VERIFY_OLD_ACCESS_TOKEN,oldAuthorizationRejected:process.env.VERIFY_OLD_ACCESS_TOKEN?true:null,freshLoginVerified,galleryAdminVerified,galleryOldContextRejected,galleryFreshWriteAllowed,externalGalleryVerified}));
+        process.stdout.write(JSON.stringify({ready:true,publicPrompts:prompts?.published??null,promptAdminVerified,promptOldContextRejected,promptFreshWriteAllowed,publicPosts:body.data.total,publicGalleryPhotos:gallery?.photos??null,galleryGearVerified:!!gallery,publicProjects:projects?.stats.projects??null,projectMetadataVerified,projectAdminVerified,projectOldContextRejected,projectFreshWriteAllowed,publicLinks:friends?.stats.links??null,linkMetadataVerified,linkAdminVerified,linkOldContextRejected,linkFreshWriteAllowed,mediaVerified:media.length,oldAuthorizationChecked:!!process.env.VERIFY_OLD_ACCESS_TOKEN,oldAuthorizationRejected:process.env.VERIFY_OLD_ACCESS_TOKEN?true:null,freshLoginVerified,galleryAdminVerified,galleryOldContextRejected,galleryFreshWriteAllowed,externalGalleryVerified}));
       })().catch((error)=>process.stdout.write(JSON.stringify({errorStage:error.message})))`
     let ready = false
     for (let i = 0; i < 50; i++) {

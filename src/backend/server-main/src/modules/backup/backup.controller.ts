@@ -67,6 +67,7 @@ export class BackupController {
       exportedGallery: content.gallery.length,
       exportedProjects: content.projects.length,
       exportedLinks: content.links.length,
+      exportedPrompts: content.prompts.length,
       exportedMedia: body.mediaIncluded ? content.media.length : 0,
     }
   }
@@ -111,6 +112,7 @@ export class BackupController {
       importedGallery: value.result?.gallery?.length ?? 0,
       importedProjects: value.result?.projects?.length ?? 0,
       importedLinks: value.result?.links?.length ?? 0,
+      importedPrompts: value.result?.prompts?.length ?? 0,
       importedComments: value.result?.comments ?? 0,
       importedMedia: value.result?.media ?? 0,
     }

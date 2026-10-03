@@ -29,6 +29,7 @@ export interface ContentImportView {
     gallery?: { sourceId: number; title: string; skip: boolean; reason: string }[]
     projects?: { sourceId: number; title: string; skip: boolean; reason: string }[]
     links?: { sourceId: number; title: string; skip: boolean; reason: string }[]
+    prompts?: { sourceId: number; title: string; skip: boolean; reason: string }[]
     counts: {
       posts: number
       flashes: number
@@ -37,6 +38,7 @@ export interface ContentImportView {
       gallery?: number
       projects?: number
       links?: number
+      prompts?: number
       comments: number
       skipped: number
       media: number
@@ -53,6 +55,7 @@ export interface ContentImportView {
     gallery?: { sourceId: number; id: number }[]
     projects?: { sourceId: number; id: number }[]
     links?: { sourceId: number; id: number }[]
+    prompts?: { sourceId: number; id: number }[]
     comments: number
     media: number
     files: number

@@ -22,6 +22,38 @@ interface Domain {
 const publicPost = "p.status='published' and p.deleted_at is null"
 export const DATA_DOMAINS: Domain[] = [
   {
+    id: 'prompts',
+    entry: '/prompts',
+    admin: '/prompts?view=manage',
+    table: 'image_prompt',
+    searchColumn: 'title',
+    dataset: 'prompts-v1',
+    source: 'PostgreSQL image_prompt、media_asset、media_reference；原创生成素材及注明来源的视觉参考',
+    scenarios: '两页公开内容、草稿、长提示词、标签、缺省模型、可追溯来源和横竖方构图',
+    query: `select count(*)::int as total,
+      count(*) filter(where p.status='published')::int as published,
+      count(*) filter(where p.status='draft')::int as drafts,
+      count(*) filter(where p.model='')::int as "unspecifiedModel",
+      count(*) filter(where p.source_url<>'')::int as sources,
+      count(*) filter(where jsonb_array_length(p.tags)>0)::int as tagged,
+      count(*) filter(where m.width>m.height)::int as landscape,
+      count(*) filter(where m.width<m.height)::int as portrait,
+      count(*) filter(where m.width=m.height)::int as square,
+      count(*) filter(where p.media_id is not null and exists(select 1 from media_reference r where r.image_prompt_id=p.id and r.asset_id=p.media_id))::int as references
+      from image_prompt p left join media_asset m on m.id=p.media_id`,
+    required: {
+      published: 13,
+      drafts: 1,
+      unspecifiedModel: 1,
+      sources: 1,
+      tagged: 1,
+      landscape: 1,
+      portrait: 1,
+      square: 1,
+      references: 14,
+    },
+  },
+  {
     id: 'writing',
     entry: '/archive',
     admin: '/admin/posts',
@@ -295,14 +327,16 @@ async function inspectOwnership(em: EntityManager, dataset: string, hasLedger: b
   return report
 }
 
-async function inspectContentFiles(em: EntityManager, domain: 'gallery' | 'projects' | 'links') {
+async function inspectContentFiles(em: EntityManager, domain: 'gallery' | 'projects' | 'links' | 'prompts') {
   const storage = new LocalMediaStorage(new ConfigService(process.env))
   const assets = await em.execute<{ id: string; storage_key: string; deleted_at: Date | null }[]>(
     domain === 'gallery'
       ? 'select distinct m.id,m.storage_key,m.deleted_at from media_asset m join gallery_photo g on g.media_id=m.id where g.deleted_at is null'
-      : domain === 'projects'
-        ? 'select distinct m.id,m.storage_key,m.deleted_at from media_asset m join project p on p.cover_media_id=m.id where p.deleted_at is null'
-        : 'select distinct m.id,m.storage_key,m.deleted_at from media_asset m join friend_link l on l.logo_media_id=m.id where l.deleted_at is null',
+      : domain === 'prompts'
+        ? 'select distinct m.id,m.storage_key,m.deleted_at from media_asset m join image_prompt p on p.media_id=m.id'
+        : domain === 'projects'
+          ? 'select distinct m.id,m.storage_key,m.deleted_at from media_asset m join project p on p.cover_media_id=m.id where p.deleted_at is null'
+          : 'select distinct m.id,m.storage_key,m.deleted_at from media_asset m join friend_link l on l.logo_media_id=m.id where l.deleted_at is null',
   )
   const unavailable: string[] = []
   for (const asset of assets) {
@@ -338,8 +372,8 @@ export async function inspectDataCatalog(em: EntityManager, domain?: string, sea
     const ownership = item.dataset
       ? await inspectOwnership(em, item.dataset, tables.has('development_fixture'))
       : undefined
-    const media = ['gallery', 'projects', 'links'].includes(item.id)
-      ? await inspectContentFiles(em, item.id as 'gallery' | 'projects' | 'links')
+    const media = ['gallery', 'projects', 'links', 'prompts'].includes(item.id)
+      ? await inspectContentFiles(em, item.id as 'gallery' | 'projects' | 'links' | 'prompts')
       : undefined
     if (item.id === 'projects' && counts?.covered !== counts?.references)
       missing.push(

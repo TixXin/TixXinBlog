@@ -109,7 +109,7 @@ try {
   const exported = await request('/admin/backup/export', 'POST', { mediaIncluded: true })
   assert.equal(exported.status, 201)
   const bundle = exported.data
-  assert.equal(bundle.version, 9)
+  assert.equal(bundle.version, 10)
   bundle.posts = []
   bundle.projects = []
   assert.equal(bundle.gallery.find((row) => row.sourceId === external.id).values.externalUrl, externalUrl)

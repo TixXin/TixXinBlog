@@ -41,6 +41,8 @@ export const auditActions: Record<string, string> = {
   'project.create': '创建项目',
   'project.update': '编辑发布或排序项目',
   'project.delete': '删除项目',
+  'image-prompt.create': '创建图片提示词',
+  'image-prompt.update': '编辑图片提示词',
   'link.create': '创建友链',
   'link.update': '编辑推荐上下架或排序友链',
   'link.delete': '删除友链',
@@ -141,6 +143,9 @@ export function auditDescriptor(path: string, method: string) {
     } else if (resourceType === 'projects') {
       resourceType = 'project'
       action = method === 'POST' ? 'project.create' : method === 'DELETE' ? 'project.delete' : 'project.update'
+    } else if (resourceType === 'prompts') {
+      resourceType = 'image-prompt'
+      action = method === 'POST' ? 'image-prompt.create' : 'image-prompt.update'
     } else if (resourceType === 'gallery') {
       action = method === 'POST' ? 'gallery.create' : method === 'DELETE' ? 'gallery.delete' : 'gallery.update'
     } else if (resourceType === 'guestbook') {
@@ -210,6 +215,12 @@ const fields: Record<string, string> = {
   gear: '器材介绍',
   progress: '项目进展',
   coverMediaId: '项目封面',
+  prompt: '提示词',
+  negativePrompt: '负面提示词',
+  model: '生成模型',
+  imageAlt: '图片替代说明',
+  externalImageUrl: '外部图片',
+  sourceUrl: '来源链接',
   links: '关联链接',
   url: '站点地址',
   logoMediaId: '友链媒体头像',
@@ -255,6 +266,7 @@ export function auditResult(
     'exportedGallery',
     'exportedProjects',
     'exportedLinks',
+    'exportedPrompts',
     'exportedMedia',
     'importedPosts',
     'importedFlashes',
@@ -263,6 +275,7 @@ export function auditResult(
     'importedGallery',
     'importedProjects',
     'importedLinks',
+    'importedPrompts',
     'importedComments',
     'importedMedia',
   ])

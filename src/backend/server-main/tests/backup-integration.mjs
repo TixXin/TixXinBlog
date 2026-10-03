@@ -139,7 +139,17 @@ try {
   await ok('/admin/gallery/settings', 'PATCH', { gear, revision: (await ok('/admin/gallery/settings')).revision })
   const siteBefore = await ok('/admin/site')
   const { updatedAt: _siteUpdatedAt, announcementUpdatedAt: _announcementUpdatedAt, ...siteInput } = siteBefore
-  const about = { visible: true, introduction: '公开介绍', sections: [{ kind: 'reading', visible: false, items: [{ title: '尚未公开的书单', detail: '只在后台保留', period: '', visible: false }] }] }
+  const about = {
+    visible: true,
+    introduction: '公开介绍',
+    sections: [
+      {
+        kind: 'reading',
+        visible: false,
+        items: [{ title: '尚未公开的书单', detail: '只在后台保留', period: '', visible: false }],
+      },
+    ],
+  }
   await ok('/admin/site', 'PATCH', { ...siteInput, about })
   assert.equal((await request('/admin/backup/export', 'POST', { mediaIncluded: true }, '')).status, 401)
   const exported = await request('/admin/backup/export', 'POST', { mediaIncluded: true })
@@ -147,7 +157,7 @@ try {
   assert(exported.headers.get('content-disposition').includes('attachment'))
   assert.equal(exported.body.format, 'tixxin-content')
   const bundle = exported.body
-  assert.equal(bundle.version, 9)
+  assert.equal(bundle.version, 10)
   assert.deepEqual(bundle.site.about, about, '管理员内容包保留隐藏资料供迁入恢复')
   assert.deepEqual(bundle.projects, [])
   assert.deepEqual(bundle.links, [])
@@ -196,7 +206,7 @@ try {
   assert.equal(
     (
       await preview(
-        JSON.parse(JSON.stringify(bundle).replace('"version":9', '"version":9,"__proto__":{"polluted":true}')),
+        JSON.parse(JSON.stringify(bundle).replace('"version":10', '"version":10,"__proto__":{"polluted":true}')),
       )
     ).status,
     400,
@@ -269,10 +279,17 @@ try {
   delete legacyV7.site.about
   const oldSitePlan = await preview(legacyV7, 'skip', true)
   assert.equal(oldSitePlan.status, 201)
-  const oldSiteResult = await ok(`/admin/backup/imports/${oldSitePlan.body.data.ticket}/execute`, 'POST', { acknowledgement: '导入为新草稿', confirmation: oldSitePlan.body.data.confirmation })
+  const oldSiteResult = await ok(`/admin/backup/imports/${oldSitePlan.body.data.ticket}/execute`, 'POST', {
+    acknowledgement: '导入为新草稿',
+    confirmation: oldSitePlan.body.data.confirmation,
+  })
   assert(oldSiteResult.completed)
   assert.deepEqual((await ok('/admin/site')).about, about, '旧内容包未提供关于页时保留目标资料')
-  assert.equal((await preview({ ...legacyV7, site: { ...legacyV7.site, about } })).status, 400, '旧版本不能偷偷接受新字段')
+  assert.equal(
+    (await preview({ ...legacyV7, site: { ...legacyV7.site, about } })).status,
+    400,
+    '旧版本不能偷偷接受新字段',
+  )
   assert.equal((await preview({ ...bundle, friendApplications: [] })).status, 400)
   const invalidGallery = structuredClone(bundle)
   invalidGallery.gallery[0].values.takenOn = '2025-02-30'
@@ -392,9 +409,7 @@ try {
   assert.equal((await request(`/moments/${momentId}`)).status, 404)
   assert.equal((await ok(`/moments/${moment.id}`)).likes, 1)
   assert(
-    (await ok(`/admin/media/${asset.id}/references`)).items.some(
-      (item) => item.url === `/admin/moments/${momentId}`,
-    ),
+    (await ok(`/admin/media/${asset.id}/references`)).items.some((item) => item.url === `/admin/moments/${momentId}`),
   )
   assert.equal((await ok(`/admin/posts/${newId}`)).status, 'draft')
   assert.equal((await request(`/posts/${newId}`)).status, 404)
