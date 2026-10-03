@@ -126,6 +126,14 @@
 
 以上外部地址均拒绝凭据、控制字符、空白、反斜杠和危险协议；服务端只校验和保存，不抓取站点或图片。文本长度遵循 DTO 与浏览器 maxlength 的 UTF-16 计数，超限拒绝，不截断后悄悄保存。源码见[gallery](../src/backend/server-main/src/modules/gallery/)、[project](../src/backend/server-main/src/modules/project/)、[link](../src/backend/server-main/src/modules/link/)。
 
+## 图片提示词
+
+公开 `GET /prompts`、`GET /prompts/metadata` 与 `GET /prompts/:id` 只返回 `published` 内容。列表支持 `q/model/tag/page/pageSize`，默认每页 12、最大 48，按 ID 倒序；模型和标签匹配忽略大小写。统计与筛选项仅根据已公开内容计算。
+
+博主使用 `GET/POST /admin/prompts`、`GET/PATCH /admin/prompts/:id`；列表额外支持 `status=all|draft|published`。创建须带 UUID v4 `requestId`，未知结果用 `GET /admin/prompts/submissions/:requestId` 核查；编辑必带当前 `revision`，冲突返回 409，不自动覆盖。管理写入沿用来源、认证与内容上下文保护。
+
+标题最多 160、创作笔记 2000、完整提示词 30000、负面提示词 10000、模型 80、图片替代文本 240 个 UTF-16 单位。标签最多 12 项，每项最多 32，去首尾空白并忽略大小写去重。来源地址最多 2048，可为空。图片 `mediaId/externalImageUrl` 必须恰好选一，切换时显式将另一字段设为 `null`。外链沿用图库地址校验，不抓取远程资源；受管图片持有正式媒体引用。源码见 [prompts](../src/backend/server-main/src/modules/prompts/)。
+
 ## 站点、媒体、运营与维护
 
 | 入口                                                                                 | 契约                                                              |

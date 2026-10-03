@@ -13,6 +13,7 @@ import { seedGuestbookBrowserFixture } from './guestbook-fixture.mjs'
 import { seedGalleryBrowserFixture } from './gallery-fixture.mjs'
 import { seedProjectBrowserFixture } from './project-fixture.mjs'
 import { seedLinkBrowserFixture } from './link-fixture.mjs'
+import { seedPromptBrowserFixture } from './prompt-fixture.mjs'
 import { getHttpTestPort } from './http-test-port.mjs'
 
 const frontendDirectory = fileURLToPath(new URL('../../../frontend/web-blog/', import.meta.url))
@@ -56,6 +57,7 @@ try {
   await seedGalleryBrowserFixture(fixture)
   await seedProjectBrowserFixture(fixture)
   await seedLinkBrowserFixture(fixture)
+  await seedPromptBrowserFixture(fixture)
   preview = spawn(process.execPath, ['.output/server/index.mjs'], {
     cwd: frontendDirectory,
     windowsHide: true,

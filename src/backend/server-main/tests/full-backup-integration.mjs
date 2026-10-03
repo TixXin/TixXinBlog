@@ -389,6 +389,44 @@ try {
       submissionHash(Object.fromEntries(Object.entries(copiedRow).filter(([key]) => key !== 'updated_at'))),
     ],
   )
+  await delay(1100)
+  for (const values of [
+    {
+      title: '窗边的光',
+      prompt: 'Soft window light, quiet still life.',
+      mediaId: asset.id,
+      externalImageUrl: null,
+      status: 'published',
+    },
+    {
+      title: '雨后的街道',
+      prompt: 'A quiet alley after rain.\nDelicate reflections.',
+      mediaId: null,
+      externalImageUrl: 'https://images.example.org/Alley.JPG?tag=A&tag=B#Rain',
+      status: 'draft',
+    },
+  ]) {
+    const requestId = randomUUID()
+    const response = await fetch(`${fixture.origin}/api/v1/admin/prompts`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ ...values, requestId, negativePrompt: 'watermark', model: 'Flux', tags: ['光影'] }),
+    })
+    assert.equal(response.status, 201)
+    const prompt = (await response.json()).data
+    const [row] = await ledgerEm.execute('select * from image_prompt where id=?', [prompt.id])
+    assert.equal(row.request_id, requestId)
+    await ledgerEm.execute(
+      'insert into development_fixture (key,dataset,kind,resource_id,snapshot_hash,created_at) values (?,?,?,?,?,now())',
+      [
+        `prompt-restore:${prompt.id}`,
+        'prompt-restore-v1',
+        'prompt',
+        String(prompt.id),
+        submissionHash(Object.fromEntries(Object.entries(row).filter(([key]) => key !== 'updated_at'))),
+      ],
+    )
+  }
   const backup = await createFullBackup({
     output: join(target, 'backup'),
     onProgress: (value) => process.stdout.write(`备份阶段：${value.stage}\n`),
@@ -407,8 +445,8 @@ try {
   assert.equal(backup.manifest.counts.project, 4)
   assert.equal(backup.manifest.counts.friend_link, 6)
   assert.equal(backup.manifest.counts.link_settings, 1)
-  assert.equal(backup.manifest.counts.development_fixture, 11)
-  assert.equal(backup.manifest.counts.media_reference, 13)
+  assert.equal(backup.manifest.counts.development_fixture, 13)
+  assert.equal(backup.manifest.counts.media_reference, 14)
   assert.equal(
     Number((await fixture.testOrm.em.fork().execute('select count(*)::int as count from post'))[0].count),
     108,
@@ -432,7 +470,9 @@ try {
   assert.equal(restored.report.counts.project, 4)
   assert.equal(restored.report.counts.friend_link, 6)
   assert.equal(restored.report.counts.link_settings, 1)
-  assert.equal(restored.report.counts.development_fixture, 11)
+  assert.equal(restored.report.counts.image_prompt, 2)
+  assert.deepEqual(restored.report.promptIntegrity, { prompts: 2, fixtures: 2, mediaReferences: 1, verified: true })
+  assert.equal(restored.report.counts.development_fixture, 13)
   assert.deepEqual(restored.report.linkIntegrity, {
     links: 6,
     settings: 1,
@@ -469,6 +509,10 @@ try {
       })
     : undefined
   if (application) {
+    assert.equal(application.publicPrompts, 1)
+    assert.equal(application.promptAdminVerified, true)
+    assert.equal(application.promptOldContextRejected, true)
+    assert.equal(application.promptFreshWriteAllowed, true)
     assert.equal(application.publicGalleryPhotos, 2)
     assert.equal(application.externalGalleryVerified, true)
     assert.equal(application.galleryGearVerified, true)

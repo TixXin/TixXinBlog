@@ -19,6 +19,7 @@ import type {
   PackageMoment,
   PackageGalleryPhoto,
   PackageProject,
+  PackageImagePrompt,
 } from './content-package'
 import { packageHash } from './content-package'
 import { canonicalTaxonomyLabel } from '../post/taxonomy-aliases'
@@ -81,6 +82,12 @@ export function projectContentHash(values: PackageProject['values']) {
   void relatedContent
   return packageHash(content)
 }
+export function promptContentHash(values: PackageImagePrompt['values']) {
+  const { status, ...content } = values
+  // 发布状态不参与去重，重复迁入已转为草稿的提示词仍能识别。
+  void status
+  return packageHash({ ...content, tags: [...new Set(values.tags)].sort() })
+}
 export async function normalizedPost(em: EntityManager, values: PackagePost['values']) {
   return {
     ...values,
@@ -123,6 +130,7 @@ export async function makeContentPlan(
     gallery: current.gallery,
     projects: current.projects,
     links: current.links,
+    prompts: current.prompts ?? [],
     posts: current.posts.map((post) => ({ id: post.sourceId, values: post.values })),
     flashes: current.flashes.map((flash) => ({ id: flash.sourceId, values: flash.values })),
     moments: current.moments.map((note) => ({
@@ -316,6 +324,21 @@ export async function makeContentPlan(
             : '创建新的友链草稿，保留推荐与排序；不会自动上架',
     }
   })
+  const existingPrompts = new Set((current.prompts ?? []).map((prompt) => promptContentHash(prompt.values)))
+  const promptPlans = (input.prompts ?? []).map((source) => {
+    const hash = promptContentHash(source.values)
+    const skip = strategy === 'skip' && existingPrompts.has(hash)
+    if (!skip) {
+      existingPrompts.add(hash)
+      if (source.values.mediaId) requiredValues.push(`/api/v1/media/${source.values.mediaId}.webp`)
+    }
+    return {
+      sourceId: source.sourceId,
+      title: source.values.title,
+      skip,
+      reason: skip ? '跳过相同图片提示词' : '创建新的提示词草稿，保留提示词、模型、标签和图片来源',
+    }
+  })
   if (includeSettings) requiredValues.push(input.site.avatar)
   const required = new Set(managedMediaIds(requiredValues))
   const incoming = new Map(input.media.map((item) => [item.id, item]))
@@ -383,6 +406,7 @@ export async function makeContentPlan(
     gallery: galleryPlans,
     projects: projectPlans,
     links: linkPlans,
+    prompts: promptPlans,
     media,
     counts: {
       posts: postPlans.filter((item) => !item.skip).length,
@@ -392,6 +416,7 @@ export async function makeContentPlan(
       gallery: galleryPlans.filter((item) => !item.skip).length,
       projects: projectPlans.filter((item) => !item.skip).length,
       links: linkPlans.filter((item) => !item.skip).length,
+      prompts: promptPlans.filter((item) => !item.skip).length,
       comments,
       skipped:
         postPlans.filter((item) => item.skip).length +
@@ -400,7 +425,8 @@ export async function makeContentPlan(
         guestbookPlans.filter((item) => item.skip).length +
         galleryPlans.filter((item) => item.skip).length +
         projectPlans.filter((item) => item.skip).length +
-        linkPlans.filter((item) => item.skip).length,
+        linkPlans.filter((item) => item.skip).length +
+        promptPlans.filter((item) => item.skip).length,
       media: media.filter((item) => item.create).length,
       files: media.filter((item) => item.writeFile).length,
       settings: includeSettings,

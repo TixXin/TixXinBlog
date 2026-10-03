@@ -1,4 +1,4 @@
-/** @file editorial-preparation-integration.ts @description 首发旧稿精确迁正、独立目标v9迁入和隔离发布阅读，所有数据库与媒体均为临时资源。 */
+/** @file editorial-preparation-integration.ts @description 首发旧稿精确迁正、独立目标v10迁入和隔离发布阅读，所有数据库与媒体均为临时资源。 */
 import assert from 'node:assert/strict'
 import { randomUUID } from 'node:crypto'
 import { mkdir, readFile, writeFile } from 'node:fs/promises'
@@ -223,7 +223,11 @@ async function target(packagePath: string) {
     const before = await totals()
     const preview = async (strategy: 'copy' | 'skip') => {
       const file = new FormData()
-      file.append('file', new Blob([JSON.stringify(bundle)], { type: 'application/json' }), 'editorial-content-v9.json')
+      file.append(
+        'file',
+        new Blob([JSON.stringify(bundle)], { type: 'application/json' }),
+        'editorial-content-v10.json',
+      )
       file.append('requestId', randomUUID())
       file.append('strategy', strategy)
       file.append('includeSettings', 'false')
@@ -285,7 +289,7 @@ async function target(packagePath: string) {
     assert.deepEqual(await em.execute('select * from site_settings'), settingsBefore)
     assert.equal((await fixture.testOrm.schema.getUpdateSchemaSQL({ wrap: false })).trim(), '')
     process.stdout.write(
-      '独立隔离目标迁入通过：v9解析/预览/四候选迁入、12条跨库编号映射、配置不变、同票据/跳过幂等和隔离精选阅读。\n',
+      '独立隔离目标迁入通过：v10解析/预览/四候选迁入、12条跨库编号映射、配置不变、同票据/跳过幂等和隔离精选阅读。\n',
     )
   } finally {
     await fixture.close()
@@ -300,7 +304,7 @@ async function main() {
   const directory = resolve(root, '.artifacts/first-release/editorial-validation', randomUUID())
   assert(directory.startsWith(resolve(root, '.artifacts') + sep))
   await mkdir(directory, { recursive: true })
-  const path = join(directory, 'editorial-content-v9.json')
+  const path = join(directory, 'editorial-content-v10.json')
   const sourceRun = await execute(process.execPath, ['--import', 'tsx', __filename, '--source', path], {
     cwd: resolve(__dirname, '..'),
     env: { ...process.env },

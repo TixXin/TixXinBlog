@@ -39,7 +39,7 @@ test.beforeEach(({ page, browserName }) => {
   prepareMotionCapture(page, browserName)
 })
 
-test('v9 内容维护界面迁入两种图库来源与三域草稿，同票据不增殖', async ({ page }, testInfo) => {
+test('v10 内容维护界面迁入两种图库来源与三域草稿，同票据不增殖', async ({ page }, testInfo) => {
   const login = await page.request.post('/api/v1/auth/login', {
     data: { username: process.env.E2E_USERNAME, password: process.env.E2E_PASSWORD },
   })
@@ -99,7 +99,7 @@ test('v9 内容维护界面迁入两种图库来源与三域草稿，同票据�
   await download.saveAs(originalPath)
   const bundle = JSON.parse(await readFile(originalPath, 'utf8')) as DownloadedPackage
   expect(bundle.format).toBe('tixxin-content')
-  expect(bundle.version).toBe(9)
+  expect(bundle.version).toBe(10)
   expect(bundle.mediaIncluded).toBe(true)
   for (const domain of ['gallery', 'projects', 'links'] as const)
     expect(bundle[domain]).toHaveLength(before.get(domain)!.adminTotal)

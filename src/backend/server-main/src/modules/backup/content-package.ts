@@ -25,6 +25,8 @@ import type { GalleryStatus } from '../../entities/gallery-photo.entity'
 import { galleryExternalUrl } from '../gallery/gallery-values'
 import { projectUrl } from '../project/project-values'
 import { linkLogoUrl, linkUrl } from '../link/link-values'
+import { SavePromptDto } from '../prompts/prompts.dto'
+import { promptValues } from '../prompts/prompts-values'
 import type { ContentRelation } from '../../common/types/content-relation'
 export const MAX_PACKAGE_BYTES = 50 * 1024 * 1024
 export interface PackageComment {
@@ -95,7 +97,7 @@ export interface PackageGuestbook {
 }
 export interface ContentPackage {
   format: 'tixxin-content'
-  version: 9
+  version: 10
   omittedRelations: number
   exportedAt: string
   mediaIncluded: boolean
@@ -106,6 +108,7 @@ export interface ContentPackage {
   gallery: PackageGalleryPhoto[]
   projects: PackageProject[]
   links: PackageLink[]
+  prompts: PackageImagePrompt[]
   linkSettings: { rules: string[] } | null
   gallerySettings: {
     gear: { icon: 'lucide:camera' | 'lucide:circle' | 'lucide:smartphone'; name: string; description: string }[]
@@ -150,6 +153,24 @@ export interface PackageProject {
     progress: 'active' | 'dev' | 'archived'
     status: 'draft' | 'published' | 'withdrawn'
     sortOrder: number
+  }
+}
+export interface PackageImagePrompt {
+  sourceId: number
+  createdAt: string
+  publishedAt: string | null
+  values: {
+    title: string
+    description: string
+    prompt: string
+    negativePrompt: string
+    model: string
+    tags: string[]
+    mediaId: string | null
+    externalImageUrl: string | null
+    imageAlt: string
+    sourceUrl: string
+    status: 'draft' | 'published'
   }
 }
 export interface PackageLink {
@@ -256,6 +277,7 @@ export async function parseContentPackage(buffer: Buffer): Promise<ContentPackag
     'gallery',
     'projects',
     'links',
+    'prompts',
     'linkSettings',
     'gallerySettings',
     'folders',
@@ -267,7 +289,7 @@ export async function parseContentPackage(buffer: Buffer): Promise<ContentPackag
   ])
   if (
     source.format !== 'tixxin-content' ||
-    ![1, 2, 3, 4, 5, 6, 7, 8, 9].includes(Number(source.version)) ||
+    ![1, 2, 3, 4, 5, 6, 7, 8, 9, 10].includes(Number(source.version)) ||
     typeof source.version !== 'number'
   )
     throw new BadRequestException('不支持的内容包格式或版本')
@@ -297,6 +319,7 @@ export async function parseContentPackage(buffer: Buffer): Promise<ContentPackag
   if (Number(source.version) < 5 && source.projects !== undefined) fail('v1/v2/v3/v4 不支持项目字段')
   if (Number(source.version) < 6 && (source.links !== undefined || source.linkSettings !== undefined))
     fail('v1/v2/v3/v4/v5 不支持友链或规则配置')
+  if (Number(source.version) < 10 && source.prompts !== undefined) fail('v1–v9 不支持图片提示词')
   const mediaIncluded = boolean(source.mediaIncluded, 'mediaIncluded')
   let commentsTotal = 0
   const posts = array(source.posts, 'posts', 1000).map((value, index): PackagePost => {
@@ -683,6 +706,37 @@ export async function parseContentPackage(buffer: Buffer): Promise<ContentPackag
     },
   )
   if (new Set(links.map((link) => link.sourceId)).size !== links.length) fail('重复友链编号')
+  const prompts = array(Number(source.version) >= 10 ? source.prompts : [], 'prompts', 3000).map(
+    (value, index): PackageImagePrompt => {
+      const path = `prompts[${index}]`
+      const row = record(value, path, ['sourceId', 'createdAt', 'publishedAt', 'values'])
+      const keys = [
+        'title',
+        'description',
+        'prompt',
+        'negativePrompt',
+        'model',
+        'tags',
+        'mediaId',
+        'externalImageUrl',
+        'imageAlt',
+        'sourceUrl',
+        'status',
+      ]
+      const raw = record(row.values, `${path}.values`, keys)
+      if (keys.some((key) => raw[key] === undefined)) fail(`${path}.values`)
+      const values = promptValues(dto(SavePromptDto, raw, `${path}.values`)) as PackageImagePrompt['values']
+      if (Boolean(values.mediaId) === Boolean(values.externalImageUrl)) fail(`${path}.图片来源互斥`)
+      values.mediaId = values.mediaId?.toLowerCase() ?? null
+      return {
+        sourceId: number(row.sourceId, `${path}.sourceId`),
+        createdAt: date(row.createdAt, `${path}.createdAt`),
+        publishedAt: row.publishedAt === null ? null : date(row.publishedAt, `${path}.publishedAt`),
+        values,
+      }
+    },
+  )
+  if (new Set(prompts.map((prompt) => prompt.sourceId)).size !== prompts.length) fail('重复图片提示词编号')
   let linkSettings: ContentPackage['linkSettings'] = null
   if (Number(source.version) >= 6) {
     const settings = record(source.linkSettings, 'linkSettings', ['rules'])
@@ -845,7 +899,7 @@ export async function parseContentPackage(buffer: Buffer): Promise<ContentPackag
       if (!targets.has(`${relation.type}:${relation.id}`)) fail('关联目标不在内容包内，不能把来源编号当作目标站点编号')
   return {
     format: 'tixxin-content',
-    version: 9,
+    version: 10,
     omittedRelations,
     exportedAt: date(source.exportedAt, '导出时间'),
     mediaIncluded,
@@ -856,6 +910,7 @@ export async function parseContentPackage(buffer: Buffer): Promise<ContentPackag
     gallery,
     projects,
     links,
+    prompts,
     linkSettings,
     gallerySettings,
     folders,

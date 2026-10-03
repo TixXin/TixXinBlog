@@ -14,6 +14,7 @@ import { GuestbookMessage } from './guestbook-message.entity'
 import { GalleryPhoto } from './gallery-photo.entity'
 import { Project } from './project.entity'
 import { FriendLink } from './friend-link.entity'
+import { ImagePrompt } from './image-prompt.entity'
 @Entity({ tableName: 'media_reference' })
 @Unique({ properties: ['asset', 'sourceKey'] })
 export class MediaReference {
@@ -34,6 +35,7 @@ export class MediaReference {
     | 'gallery'
     | 'project'
     | 'link'
+    | 'image-prompt'
   @ManyToOne({ entity: () => Post, nullable: true, deleteRule: 'cascade' }) post?: Post
   @ManyToOne({ entity: () => FlashNote, nullable: true, deleteRule: 'cascade' }) flashNote?: FlashNote
   @Property({ type: 'integer', nullable: true }) revision?: number
@@ -46,4 +48,5 @@ export class MediaReference {
   @ManyToOne({ entity: () => GalleryPhoto, nullable: true, deleteRule: 'cascade' }) galleryPhoto?: GalleryPhoto
   @ManyToOne({ entity: () => Project, nullable: true, deleteRule: 'cascade' }) project?: Project
   @ManyToOne({ entity: () => FriendLink, nullable: true, deleteRule: 'cascade' }) friendLink?: FriendLink
+  @ManyToOne({ entity: () => ImagePrompt, nullable: true, deleteRule: 'cascade' }) imagePrompt?: ImagePrompt
 }

@@ -36,6 +36,7 @@ export interface MediaReferences {
       | 'gallery'
       | 'project'
       | 'link'
+      | 'image-prompt'
     title: string
     url: string
     revision?: number

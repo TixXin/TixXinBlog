@@ -101,6 +101,7 @@ export async function removeDevelopmentData(
         'moment-comment',
         'guestbook',
         'gallery',
+        'prompt',
         'project',
         'link',
         'moment',

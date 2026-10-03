@@ -7,6 +7,7 @@ import { seedGuestbookFixtures, GUESTBOOK_DATASET, GUESTBOOK_FIXTURE_COUNT } fro
 import { seedGalleryFixtures, GALLERY_DATASET, GALLERY_FIXTURE_COUNT } from './gallery-fixtures'
 import { seedProjectFixtures, PROJECT_DATASET, PROJECT_FIXTURE_COUNT } from './project-fixtures'
 import { seedLinkFixtures, LINK_DATASET, LINK_FIXTURE_COUNT } from './link-fixtures'
+import { seedPromptFixtures, PROMPT_DATASET, PROMPT_FIXTURE_COUNT } from './prompt-fixtures'
 import {
   seedGalleryExternalFixtures,
   GALLERY_EXTERNAL_DATASET,
@@ -15,6 +16,12 @@ import {
 
 export const DEFAULT_DEVELOPMENT_DATASET = CORE_DATASET
 export const DEVELOPMENT_DATASETS = [
+  {
+    id: PROMPT_DATASET,
+    count: PROMPT_FIXTURE_COUNT,
+    scope: '图片提示词、原创图与可追溯视觉参考、分页、公开草稿及横竖构图',
+    seed: seedPromptFixtures,
+  },
   {
     id: WRITING_DATASET,
     count: WRITING_FIXTURE_COUNT,

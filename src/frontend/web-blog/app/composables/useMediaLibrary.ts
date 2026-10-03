@@ -63,7 +63,12 @@ export function useMediaLibrary(selectable = false) {
     !disposed && owner?.actor === auth.currentUser.value?.id && owner?.context === pageContext.value
   const ownsOperation = (version: number) => ownsWorkspace() && version === ownershipVersion
   function allowAction(asset?: MediaAsset) {
-    if (!ready.value || !ownsWorkspace() || (asset && !items.value.includes(asset))) {
+    // 嵌入公开页面时，文件选择器与列表请求同时挂载；未就绪不代表身份已经变化。
+    if (!ready.value) {
+      if (!error.value) error.value = pending.value ? '媒体库正在读取，请稍候再选择文件。' : '请先读取媒体库后再操作。'
+      return false
+    }
+    if (!ownsWorkspace() || (asset && !items.value.includes(asset))) {
       error.value = ownershipMessage
       return false
     }
@@ -132,6 +137,7 @@ export function useMediaLibrary(selectable = false) {
       if (version !== requestVersion || !ownsOperation(operation)) return
       items.value = result.items
       ready.value = true
+      error.value = ''
       total.value = result.total
       for (const asset of result.items) {
         if (altDrafts[asset.id] === undefined || altDrafts[asset.id] === savedAlts[asset.id])

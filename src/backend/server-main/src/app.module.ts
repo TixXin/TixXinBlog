@@ -18,6 +18,7 @@ import { MomentModule } from './modules/moment/moment.module'
 import { GuestbookModule } from './modules/guestbook/guestbook.module'
 import { GalleryModule } from './modules/gallery/gallery.module'
 import { ProjectModule } from './modules/project/project.module'
+import { PromptsModule } from './modules/prompts/prompts.module'
 import { LinkModule } from './modules/link/link.module'
 import { HealthModule } from './modules/health/health.module'
 import { PostModule } from './modules/post/post.module'
@@ -64,6 +65,7 @@ import { ContentRelationsModule } from './modules/content-relations/content-rela
     GuestbookModule,
     GalleryModule,
     ProjectModule,
+    PromptsModule,
     LinkModule,
     MediaModule,
     SiteModule,
