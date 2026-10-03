@@ -53,10 +53,31 @@ it('读取失败不伪造空列表或零统计，重试恢复真实结果', asyn
   expect(state.error.value?.message).toBe('提示词暂不可用')
   expect(state.prompts.value).toHaveLength(1)
   expect(state.total.value).toBe(1)
+  expect(state.stale.value).toBe(true)
   mocks.list.mockResolvedValueOnce({ items: [], total: 0, page: 1, pageSize: 12 })
   await state.refresh()
   expect(state.total.value).toBe(0)
   expect(state.error.value).toBeUndefined()
+  expect(state.stale.value).toBe(false)
+})
+it('相同查询重新读取时明确保留旧结果，成功后取消过期标记', async () => {
+  const state = await setup()
+  let finish!: (value: unknown) => void
+  mocks.list.mockImplementationOnce(
+    () =>
+      new Promise((resolve) => {
+        finish = resolve
+      }),
+  )
+  const refreshing = state.refresh()
+  await vi.waitFor(() => expect(finish).toBeTypeOf('function'))
+  expect(state.pending.value).toBe(true)
+  expect(state.stale.value).toBe(true)
+  expect(state.prompts.value[0]?.id).toBe(1)
+  finish({ items: [{ ...prompt, id: 2 }], total: 1, page: 1, pageSize: 12 })
+  await refreshing
+  expect(state.prompts.value[0]?.id).toBe(2)
+  expect(state.stale.value).toBe(false)
 })
 it('快速切换模型和风格标签，迟到列表不回滚最新筛选', async () => {
   const state = await setup()

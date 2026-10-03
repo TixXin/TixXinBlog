@@ -57,7 +57,9 @@ export async function usePrompts() {
     ready,
     prompts: computed(() => accepted.value?.page.items ?? []),
     total: computed(() => accepted.value?.page.total ?? null),
-    stale: computed(() => !!accepted.value && accepted.value.key !== key.value),
+    stale: computed(
+      () => !!accepted.value && (accepted.value.key !== key.value || feed.pending.value || !!feed.error.value),
+    ),
     pending: feed.pending,
     error: feed.error,
     refresh: feed.refresh,

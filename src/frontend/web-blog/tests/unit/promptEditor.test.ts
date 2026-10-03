@@ -39,7 +39,11 @@ beforeEach(() => {
   mocks.repo.submission.mockReset()
   mocks.saved.mockReset()
 })
-afterEach(() => wrappers.splice(0).forEach((wrapper) => wrapper.unmount()))
+afterEach(() => {
+  wrappers.splice(0).forEach((wrapper) => wrapper.unmount())
+  vi.restoreAllMocks()
+  vi.unstubAllGlobals()
+})
 async function setup(id: number | null, context = 'prompt-library') {
   let editor!: ReturnType<typeof usePromptEditor>
   wrappers.push(
@@ -151,5 +155,87 @@ describe('图片提示词编辑生命周期', () => {
     expect(restored.recovery.value).toBeNull()
     expect(restored.form.description).toBe('')
     expect(sessionStorage.getItem('tixxin-prompt-editor:owner:prompt-library:1')).toContain('值得留下的笔记')
+  })
+  it('恢复副本存储失败时退出确认明确说明风险，不虚报已经保留', async () => {
+    const editor = await setup(1)
+    const confirm = vi.fn().mockReturnValue(false)
+    vi.stubGlobal('confirm', confirm)
+    const storage = sessionStorage
+    vi.stubGlobal('sessionStorage', {
+      getItem: storage.getItem.bind(storage),
+      removeItem: storage.removeItem.bind(storage),
+      setItem: () => {
+        throw new Error('quota exceeded')
+      },
+    })
+    editor.form.description = '仍在页面里的重要笔记'
+    await flushPromises()
+    expect(editor.localError.value).toContain('无法保存')
+    expect(editor.canClose()).toBe(false)
+    expect(confirm).toHaveBeenCalledWith(expect.stringContaining('恢复副本未能保存'))
+    expect(confirm).not.toHaveBeenCalledWith(expect.stringContaining('已保留本标签页副本'))
+    expect(editor.form.description).toBe('仍在页面里的重要笔记')
+  })
+  it('恢复副本不会未经确认覆盖重新打开后继续写入的文字', async () => {
+    const prior = await setup(1)
+    prior.form.description = '上次的恢复副本'
+    await flushPromises()
+    wrappers.pop()!.unmount()
+    const editor = await setup(1)
+    expect(editor.recovery.value?.form.description).toBe('上次的恢复副本')
+    editor.form.description = '这次刚写的笔记'
+    const confirm = vi.fn().mockReturnValue(false)
+    vi.stubGlobal('confirm', confirm)
+    editor.restoreRecovery()
+    expect(confirm).toHaveBeenCalledWith(expect.stringContaining('替换当前表单'))
+    expect(editor.form.description).toBe('这次刚写的笔记')
+    confirm.mockReturnValue(true)
+    editor.restoreRecovery()
+    expect(editor.form.description).toBe('上次的恢复副本')
+  })
+  it('撤回全部修改后清理过期副本，重新打开不再提示恢复已放弃的输入', async () => {
+    const editor = await setup(1)
+    editor.form.description = '已放弃的笔记'
+    await flushPromises()
+    expect(sessionStorage.getItem('tixxin-prompt-editor:owner:prompt-library:1')).toContain('已放弃的笔记')
+    editor.form.description = ''
+    await flushPromises()
+    expect(editor.dirty.value).toBe(false)
+    expect(sessionStorage.getItem('tixxin-prompt-editor:owner:prompt-library:1')).toBeNull()
+    wrappers.pop()!.unmount()
+    const reopened = await setup(1)
+    expect(reopened.recovery.value).toBeNull()
+  })
+  it('移除上次副本时保留当前新输入，关闭重开仍可恢复本次输入', async () => {
+    const prior = await setup(1)
+    prior.form.description = '上次未保存的笔记'
+    await flushPromises()
+    wrappers.pop()!.unmount()
+    const editor = await setup(1)
+    editor.form.description = '本次新增的笔记'
+    await flushPromises()
+    editor.discardRecovery()
+    expect(editor.recovery.value).toBeNull()
+    expect(editor.form.description).toBe('本次新增的笔记')
+    expect(sessionStorage.getItem('tixxin-prompt-editor:owner:prompt-library:1')).toContain('本次新增的笔记')
+    wrappers.pop()!.unmount()
+    const reopened = await setup(1)
+    expect(reopened.recovery.value?.form.description).toBe('本次新增的笔记')
+  })
+  it('重新打开后撤回本次修改，仍保留尚未处理的上次副本', async () => {
+    const prior = await setup(1)
+    prior.form.description = '上次未保存的笔记'
+    await flushPromises()
+    wrappers.pop()!.unmount()
+    const editor = await setup(1)
+    editor.form.description = '本次暂写的文字'
+    await flushPromises()
+    editor.form.description = ''
+    await flushPromises()
+    expect(editor.dirty.value).toBe(false)
+    expect(sessionStorage.getItem('tixxin-prompt-editor:owner:prompt-library:1')).toContain('上次未保存的笔记')
+    wrappers.pop()!.unmount()
+    const reopened = await setup(1)
+    expect(reopened.recovery.value?.form.description).toBe('上次未保存的笔记')
   })
 })

@@ -4,6 +4,7 @@ import {
   parsePromptRecovery,
   promptForm,
   promptFormError,
+  promptFormErrors,
   promptPayload,
   promptUrlError,
 } from '../../app/features/prompt/editor'
@@ -53,6 +54,26 @@ describe('灵感图鉴输入契约', () => {
     for (const url of ['javascript:alert(1)', 'file:///secret', 'https://user:password@example.com/a'])
       expect(promptUrlError(url)).toBeTruthy()
     expect(promptUrlError('https://example.com/a?token=x')).toBe('')
+  })
+  it('恢复的超长输入逐字段报错而不截断，并使用与服务端一致的UTF-16边界', () => {
+    const form = promptForm({
+      title: '📷'.repeat(81),
+      prompt: '字'.repeat(30001),
+      negativePrompt: '字'.repeat(10001),
+      description: '字'.repeat(2001),
+      model: 'M'.repeat(81),
+      imageAlt: '图'.repeat(241),
+      mediaId: 'image',
+    })
+    const errors = promptFormErrors(form)
+    expect(Object.keys(errors)).toEqual(
+      expect.arrayContaining(['title', 'prompt', 'negativePrompt', 'description', 'model', 'imageAlt']),
+    )
+    expect(form.prompt).toHaveLength(30001)
+    expect(form.title).toHaveLength(162)
+    expect(
+      promptFormErrors(promptForm({ title: '📷'.repeat(80), prompt: '  保留内部\n换行  ', mediaId: 'image' })),
+    ).toEqual({})
   })
   it('恢复副本不引入任意表单字段，数组独立并拒绝损坏状态', () => {
     const raw = {

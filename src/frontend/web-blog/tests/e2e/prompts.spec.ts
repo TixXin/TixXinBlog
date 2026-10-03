@@ -57,7 +57,7 @@ test('公开列表、搜索筛选、复制与深链详情，失败可重试且�
   } else {
     // Firefox/WebKit 不接受 Chromium 的剪贴板权限名；受系统限制时仍须给出可操作的手动复制提示。
     await expect(detail.locator('.prompt-detail__copy-status')).toContainText(
-      /提示词已复制到剪贴板|复制失败，可以选中上方文本手动复制/,
+      /提示词已复制到剪贴板|复制失败，可以选中提示词文本手动复制/,
     )
     await expect(detail.locator('.prompt-detail__text p').first()).toHaveText(first.prompt)
   }
@@ -92,6 +92,23 @@ test('公开列表、搜索筛选、复制与深链详情，失败可重试且�
   await expect(detail).toBeVisible()
   await page.reload()
   await expect(detail).toContainText(first.prompt)
+})
+
+test('过期分页链接回到有效页，清空搜索后保留可继续浏览的列表', async ({ page, request }) => {
+  const data = await samples(request)
+  const lastPage = Math.ceil(data.total / 12)
+  await page.goto('/prompts?page=999')
+  await expect(page).toHaveURL(new RegExp(`page=${lastPage}$`))
+  await expect(page.locator('.prompt-card')).toHaveCount(data.total - (lastPage - 1) * 12)
+  await expect(page.getByRole('button', { name: '下一页提示词', exact: true })).toBeDisabled()
+  await expect(page.getByText('灵感正在酝酿', { exact: true })).toHaveCount(0)
+  const search = page.getByRole('textbox', { name: '搜索图片提示词', exact: true })
+  await search.fill('不存在的画面关键词')
+  await expect(page.getByText('还没有这样的灵感', { exact: true })).toBeVisible()
+  await expect(page).not.toHaveURL(/page=/)
+  await search.fill('')
+  await expect(page.locator('.prompt-card')).toHaveCount(12)
+  await expect(page).not.toHaveURL(/[?&]q=/)
 })
 
 test('博主上传图片、保存草稿、公开、并发编辑与未知保存恢复', async ({ page, request, browser, baseURL }) => {
@@ -180,11 +197,20 @@ test('博主上传图片、保存草稿、公开、并发编辑与未知保存�
     await editor.getByRole('button', { name: '关闭提示词编辑器', exact: true }).click()
     await expect(editor).not.toBeVisible()
     expect((await call(`/admin/prompts/${draft.id}`)).description).toBe('网络中断后也保留这句话。')
-    await page.goto(`/prompts?edit=${draft.id}`)
+    await page.goto(`/prompts?prompt=${draft.id}`)
+    await page
+      .getByRole('dialog', { name: title, exact: true })
+      .getByRole('button', { name: '编辑', exact: true })
+      .click()
     await expect(editor.getByLabel(/^灵感标题/)).toHaveValue(title)
-    await editor.getByRole('button', { name: '保存草稿', exact: true }).click()
+    await editor.getByRole('button', { name: '转为草稿', exact: true }).click()
     await expect(editor.locator('.prompt-editor__feedback')).toContainText('草稿已保存')
+    await expect(page).toHaveURL(/view=drafts/)
     await editor.getByRole('button', { name: '关闭提示词编辑器', exact: true }).click()
+    const privateDetail = page.getByRole('dialog', { name: title, exact: true })
+    await expect(privateDetail).toBeVisible()
+    await expect(privateDetail).toContainText('草稿 · 仅博主可见')
+    await expect(privateDetail.getByRole('alert')).toHaveCount(0)
     expect((await request.get(`/api/v1/prompts/${draft.id}`)).status()).toBe(404)
   } finally {
     await visitor.close()
@@ -252,3 +278,59 @@ for (const theme of ['nexus', 'aurora', 'dock']) {
     })
   }
 }
+
+test('外链按自然比例呈现，移动端长提示词保留关闭入口与分享失败补救', async ({ page, request }) => {
+  const call = await api(request)
+  const externalImageUrl = `https://images.example.com/${randomUUID()}.png`
+  const record = await call('/admin/prompts', 'POST', {
+    requestId: randomUUID(),
+    title: `山色与留白 ${randomUUID()}`,
+    externalImageUrl,
+    prompt: '远山与晨雾形成层次，让光线自然落在湖面上。\n'.repeat(150),
+    status: 'published',
+  })
+  await page.route(externalImageUrl, (route) =>
+    route.fulfill({
+      status: 200,
+      contentType: 'image/png',
+      body: Buffer.from(process.env.E2E_MEDIA_SAMPLE!, 'base64'),
+    }),
+  )
+  await page.addInitScript(() => {
+    Object.defineProperty(navigator, 'clipboard', {
+      configurable: true,
+      value: {
+        writeText: () => Promise.reject(new DOMException('Clipboard denied', 'NotAllowedError')),
+      },
+    })
+  })
+  try {
+    await page.setViewportSize({ width: 390, height: 620 })
+    await page.goto(`/prompts?q=${encodeURIComponent(record.title)}`)
+    const card = page.locator(`[data-prompt-id="${record.id}"]`)
+    await expect(card.locator('.image-frame')).toHaveClass(/image-frame--ready/)
+    await expect(card.locator('.image-frame')).toHaveCSS('aspect-ratio', '24 / 18')
+    await card.getByRole('button', { name: `查看提示词：${record.title}`, exact: true }).click()
+    const detail = page.getByRole('dialog', { name: record.title, exact: true })
+    const share = detail.getByRole('button', { name: '分享灵感', exact: true })
+    await share.scrollIntoViewIfNeeded()
+    await expect(detail.getByRole('button', { name: '关闭提示词详情', exact: true })).toBeInViewport()
+    expect(await detail.locator('.prompt-detail__content').evaluate((node) => node.scrollTop)).toBeGreaterThan(0)
+    await share.click()
+    const link = detail.getByRole('textbox', { name: '分享链接', exact: true })
+    await expect(link).toHaveValue(new RegExp(`/prompts\\?prompt=${record.id}$`))
+    await expect(detail.getByRole('status')).toContainText('下方链接手动复制')
+    await expect(detail.getByRole('status')).toBeInViewport()
+    await expect(link).toBeInViewport()
+    await link.focus()
+    expect(await link.evaluate((node: HTMLInputElement) => node.selectionEnd! - node.selectionStart!)).toBe(
+      (await link.inputValue()).length,
+    )
+    await detail.getByRole('button', { name: '关闭提示词详情', exact: true }).click()
+    await expect(detail).not.toBeVisible()
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1)).toBe(true)
+  } finally {
+    const latest = await call(`/admin/prompts/${record.id}`)
+    await call(`/admin/prompts/${record.id}`, 'PATCH', { revision: latest.revision, status: 'draft' })
+  }
+})
