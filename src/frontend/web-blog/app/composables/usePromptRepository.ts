@@ -6,17 +6,41 @@ import type {
   PromptMetadata,
   PromptPage,
   PromptQuery,
+  PromptConflictKind,
+  PromptRequestError,
 } from '~/features/prompt/types'
 import { promptPayload } from '~/features/prompt/editor'
 export function usePromptRepository() {
   const base = String(useRuntimeConfig().public.apiBaseUrl).replace(/\/$/, ''),
     admin = useAdminApi()
-  function failure(value: unknown) {
+  function failure(value: unknown): PromptRequestError {
     const cause = value as { statusCode?: number; status?: number; data?: { message?: unknown }; message?: string }
     const statusCode = cause?.statusCode ?? cause?.status
+    const sourceMessage =
+      typeof cause?.data?.message === 'string'
+        ? cause.data.message.trim()
+        : typeof cause?.message === 'string' && !/^\[[A-Z]+\]\s/.test(cause.message)
+          ? cause.message.trim()
+          : ''
+    // 409 同时用于版本、内容库和创建去重；只有服务端明确的版本提示允许进入合并流程。
+    let conflictKind: PromptConflictKind | undefined
+    if (statusCode === 409) {
+      conflictKind =
+        sourceMessage === '提示词已被修改，请保留输入并重新读取'
+          ? 'revision'
+          : /^(站点数据上下文已变化|站点数据已恢复|登录账号或内容库已变化)/.test(sourceMessage)
+            ? 'context'
+            : sourceMessage === '此提交已处理，请核查原提示词'
+              ? 'submission'
+              : 'unknown'
+    }
+    let conflictMessage = sourceMessage || '操作发生冲突，请核对当前状态后重试'
+    if (conflictKind === 'context' && !conflictMessage.includes('刷新'))
+      conflictMessage += '；请保留当前输入，刷新页面后重新打开编辑器。'
+    else if (!/保留.*输入|输入.*保留/.test(conflictMessage)) conflictMessage += '；当前输入已保留。'
     const message =
       statusCode === 409
-        ? '这份提示词已被更新，请核对服务器版本后合并；当前输入已保留。'
+        ? conflictMessage
         : statusCode === 401
           ? '登录已失效，请重新登录后重试；当前输入已保留。'
           : statusCode === 404
@@ -26,7 +50,7 @@ export function usePromptRepository() {
               : typeof cause.data?.message === 'string'
                 ? cause.data.message
                 : '操作未完成，请核对输入后重试。'
-    return Object.assign(new Error(message, { cause: value }), { statusCode })
+    return Object.assign(new Error(message, { cause: value }), { statusCode, conflictKind })
   }
   async function read<T>(path: string, query?: PromptQuery, signal?: AbortSignal): Promise<T> {
     try {

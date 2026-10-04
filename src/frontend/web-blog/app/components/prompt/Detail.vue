@@ -10,6 +10,7 @@
       :aria-label="item?.title || '图片提示词'"
       tabindex="-1"
       @click.self="$emit('close')"
+      @keydown="navigateWithKeyboard"
     >
       <div class="prompt-detail__panel">
         <header class="prompt-detail__toolbar">
@@ -18,6 +19,25 @@
               draft ? '草稿 · 仅博主可见' : '图片与创作提示词'
             }}</span
           >
+          <nav v-if="navigationCount > 1 && position > 0" class="prompt-detail__navigation" aria-label="浏览本页灵感">
+            <span title="使用左右方向键切换本页作品">本页 {{ position }} / {{ navigationCount }}</span>
+            <button
+              type="button"
+              aria-label="上一份灵感"
+              :aria-disabled="!canPrevious || pending"
+              @click="requestMove(-1, $event)"
+            >
+              <Icon name="lucide:chevron-left" size="18" />
+            </button>
+            <button
+              type="button"
+              aria-label="下一份灵感"
+              :aria-disabled="!canNext || pending"
+              @click="requestMove(1, $event)"
+            >
+              <Icon name="lucide:chevron-right" size="18" />
+            </button>
+          </nav>
           <button class="prompt-detail__close" type="button" aria-label="关闭提示词详情" @click="$emit('close')">
             <Icon name="lucide:x" size="20" />
           </button>
@@ -25,7 +45,11 @@
         <div v-if="copyMessage" class="prompt-detail__notice">
           <p role="status" class="prompt-detail__copy-status">{{ copyMessage }}</p>
           <label v-if="manualLink" class="prompt-detail__manual-link"
-            >分享链接<input :value="manualLink" readonly @focus="($event.target as HTMLInputElement).select()"
+            >分享链接<input
+              :value="manualLink"
+              readonly
+              @focus="($event.target as HTMLInputElement).select()"
+              @click="($event.target as HTMLInputElement).select()"
           /></label>
         </div>
         <div class="prompt-detail__content">
@@ -62,7 +86,7 @@
                     <h3>图片提示词</h3>
                     <span class="prompt-detail__length">{{ item.prompt.length.toLocaleString('zh-CN') }} 字符</span>
                   </div>
-                  <button type="button" :disabled="copying" @click="copy(item.prompt, 'prompt')">
+                  <button type="button" :aria-disabled="copying" @click="copy(item.prompt, 'prompt')">
                     <Icon :name="copied === 'prompt' ? 'lucide:check' : 'lucide:copy'" size="15" />{{
                       copied === 'prompt' ? '已复制' : '复制提示词'
                     }}
@@ -78,7 +102,7 @@
                       >{{ item.negativePrompt.length.toLocaleString('zh-CN') }} 字符</span
                     >
                   </div>
-                  <button type="button" :disabled="copying" @click="copy(item.negativePrompt, 'negative')">
+                  <button type="button" :aria-disabled="copying" @click="copy(item.negativePrompt, 'negative')">
                     <Icon :name="copied === 'negative' ? 'lucide:check' : 'lucide:copy'" size="14" />{{
                       copied === 'negative' ? '已复制' : '复制'
                     }}
@@ -90,7 +114,7 @@
               <footer>
                 <a v-if="item.sourceUrl" :href="item.sourceUrl" target="_blank" rel="noopener noreferrer"
                   ><Icon name="lucide:external-link" size="15" />查看来源</a
-                ><button v-if="!draft" type="button" :disabled="copying" @click="share">
+                ><button v-if="!draft" type="button" :aria-disabled="copying" @click="share">
                   <Icon name="lucide:link" size="15" />{{ copied === 'link' ? '链接已复制' : '分享灵感' }}</button
                 ><button v-if="editable" type="button" @click="$emit('edit', item.id)">
                   <Icon name="lucide:pencil" size="15" />编辑
@@ -105,15 +129,22 @@
 </template>
 <script setup lang="ts">
 import type { ImagePrompt } from '~/features/prompt/types'
-const props = defineProps<{
-  visible: boolean
-  item: ImagePrompt | null
-  pending: boolean
-  error: string
-  editable: boolean
-  draft: boolean
-}>()
-const emit = defineEmits<{ close: []; retry: []; edit: [id: number] }>()
+const props = withDefaults(
+  defineProps<{
+    visible: boolean
+    item: ImagePrompt | null
+    pending: boolean
+    error: string
+    editable: boolean
+    draft: boolean
+    position?: number
+    navigationCount?: number
+    canPrevious?: boolean
+    canNext?: boolean
+  }>(),
+  { position: 0, navigationCount: 0, canPrevious: false, canNext: false },
+)
+const emit = defineEmits<{ close: []; retry: []; edit: [id: number]; previous: []; next: [] }>()
 const dialog = ref<HTMLElement | null>(null),
   copied = ref(''),
   copyMessage = ref(''),
@@ -121,7 +152,44 @@ const dialog = ref<HTMLElement | null>(null),
   manualLink = ref('')
 let copyGeneration = 0
 let timer: ReturnType<typeof setTimeout> | undefined
-useModalFocus(() => props.visible, dialog, { close: () => emit('close') })
+useModalFocus(() => props.visible, dialog, {
+  close: () => emit('close'),
+  initialFocus: () => dialog.value?.querySelector<HTMLButtonElement>('.prompt-detail__close') ?? null,
+})
+function requestMove(direction: -1 | 1, event: MouseEvent) {
+  if (props.pending || !props.visible || (direction < 0 ? !props.canPrevious : !props.canNext)) return
+  // WebKit鼠标点击按钮不总是赋予焦点；明确保留入口，随后可继续使用方向键。
+  if (event.currentTarget instanceof HTMLElement) event.currentTarget.focus({ preventScroll: true })
+  if (direction < 0) emit('previous')
+  else emit('next')
+}
+function navigateWithKeyboard(event: KeyboardEvent) {
+  if (
+    props.pending ||
+    !props.visible ||
+    event.isComposing ||
+    event.altKey ||
+    event.ctrlKey ||
+    event.metaKey ||
+    event.shiftKey
+  )
+    return
+  const target = event.target instanceof HTMLElement ? event.target : null
+  if (target?.closest('input, textarea, select, [contenteditable="true"]') || window.getSelection()?.toString()) return
+  const direction =
+    event.key === 'ArrowLeft' && props.canPrevious
+      ? 'previous'
+      : event.key === 'ArrowRight' && props.canNext
+        ? 'next'
+        : null
+  if (!direction) return
+  event.preventDefault()
+  // 正文按钮会在载入时被替换；先转到常驻导航入口，避免下一次方向键落到页面背景。
+  const targetLabel = direction === 'previous' ? '上一份灵感' : '下一份灵感'
+  dialog.value?.querySelector<HTMLButtonElement>(`[aria-label="${targetLabel}"]`)?.focus({ preventScroll: true })
+  if (direction === 'previous') emit('previous')
+  else emit('next')
+}
 async function copy(text: string, kind: string) {
   if (copying.value) return
   const generation = ++copyGeneration
@@ -213,6 +281,49 @@ onBeforeUnmount(() => {
   overscroll-behavior: contain;
   min-height: 0;
 }
+.prompt-detail__navigation {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  margin-left: auto;
+  margin-right: 0.75rem;
+}
+.prompt-detail__navigation span {
+  margin-right: 0.45rem;
+  color: var(--text-soft);
+  font-size: 0.7rem;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.prompt-detail__navigation button {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border: 1px solid var(--border);
+  border-radius: 0.5rem;
+  color: var(--text-main);
+}
+.prompt-detail__navigation button:not([aria-disabled='true']):hover {
+  background: var(--accent-soft);
+  color: var(--accent-text);
+}
+@media (max-width: 480px) {
+  .prompt-detail__toolbar > span {
+    font-size: 0.68rem;
+  }
+  .prompt-detail__navigation {
+    gap: 0.2rem;
+    margin-right: 0.35rem;
+  }
+  .prompt-detail__navigation span {
+    font-size: 0.65rem;
+    margin-right: 0.25rem;
+  }
+  .prompt-detail__navigation button {
+    width: 36px;
+  }
+}
 .prompt-detail__close {
   width: 40px;
   height: 40px;
@@ -228,7 +339,7 @@ onBeforeUnmount(() => {
   min-height: min(320px, 60dvh);
   position: sticky;
   top: 0;
-  height: min(78dvh, 820px);
+  height: min(70dvh, 680px);
   padding: 1.5rem;
   display: flex;
   align-items: center;
@@ -300,12 +411,13 @@ onBeforeUnmount(() => {
   border-radius: 0.5rem;
   color: var(--text-main);
 }
-button:disabled {
+button:disabled,
+button[aria-disabled='true'] {
   opacity: 0.5;
   cursor: default;
 }
 .prompt-detail__close:hover,
-.prompt-detail__text button:not(:disabled):hover {
+.prompt-detail__text button:not([aria-disabled='true']):hover {
   background: var(--accent-soft);
   border-color: var(--accent);
 }

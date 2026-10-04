@@ -4,11 +4,13 @@
     <div
       ref="dialog"
       class="prompt-editor"
+      :class="{ 'prompt-editor--login-open': loginOpen && preferLoginModal }"
       role="dialog"
       aria-modal="true"
       aria-labelledby="prompt-editor-title"
       tabindex="-1"
       @click.self="close"
+      @keydown="saveShortcut"
     >
       <section class="prompt-editor__panel">
         <header class="prompt-editor__header">
@@ -26,20 +28,47 @@
             <Icon name="lucide:x" size="20" />
           </button>
         </header>
-        <div v-if="mediaOpen" class="prompt-editor__library">
+        <section
+          v-if="editor.ownershipLost.value"
+          ref="lockedPanel"
+          class="prompt-editor__locked"
+          tabindex="-1"
+          aria-label="编辑输入暂时锁定"
+        >
+          <Icon name="lucide:lock-keyhole" size="24" />
+          <h3>身份或内容库已变化，未保存输入仍保留在此窗口</h3>
+          <p>请恢复原来的博主身份与内容库，再重新读取确认后继续编辑。</p>
+          <p v-if="editor.localError.value" role="alert">{{ editor.localError.value }}请暂时保留此窗口。</p>
+          <button type="button" class="prompt-editor__primary" @click="openLogin('login', true)">重新登录</button>
+        </section>
+        <div v-if="mediaOpen" v-show="!editor.ownershipLost.value" class="prompt-editor__library">
           <button type="button" class="prompt-editor__secondary" @click="closeMedia">
-            <Icon name="lucide:arrow-left" size="16" />返回提示词编辑</button
-          ><AdminMediaWorkspace selectable @selected="selectMedia" @busy="mediaBusy = $event" />
+            <Icon name="lucide:arrow-left" size="16" />返回提示词编辑
+          </button>
+          <!-- 身份失效时移出媒体DOM但保留未上传文件；恢复原身份后由媒体库自行重新核对归属。 -->
+          <KeepAlive
+            ><AdminMediaWorkspace
+              v-if="!editor.ownershipLost.value"
+              selectable
+              @selected="selectMedia"
+              @busy="mediaBusy = $event"
+          /></KeepAlive>
         </div>
-        <template v-else>
+        <template v-if="!editor.ownershipLost.value && !mediaOpen">
           <div ref="feedback" class="prompt-editor__feedback" tabindex="-1">
             <p v-if="editor.loading.value">正在读取提示词…</p>
             <p v-if="editor.error.value" role="alert">
               {{ editor.error.value
-              }}<button v-if="!editor.ready.value" type="button" :disabled="editor.loading.value" @click="editor.load">
+              }}<button
+                v-if="!editor.ready.value && !editor.requiresReload.value"
+                type="button"
+                :disabled="editor.loading.value"
+                @click="editor.load"
+              >
                 重新读取
               </button>
             </p>
+            <p v-if="editor.requiresReload.value">请刷新页面后重新确认登录状态和当前内容库；未保存输入仍在当前表单。</p>
             <p v-if="editor.notice.value">{{ editor.notice.value }}</p>
             <p v-if="editor.localError.value" role="alert">
               {{ editor.localError.value }}<button type="button" @click="editor.persist">重试保存副本</button>
@@ -390,11 +419,13 @@
                   />{{ footerStatus }}
                 </p>
                 <small v-if="form.status === 'published'">转为草稿后，访客将无法查看这份灵感。</small>
+                <small v-else class="prompt-editor__shortcut-hint">Ctrl / ⌘ + S 保存草稿</small>
               </div>
               <div class="prompt-editor__actions">
                 <button
                   type="button"
                   class="prompt-editor__secondary"
+                  :aria-keyshortcuts="form.status === 'draft' ? 'Control+s Meta+s' : undefined"
                   :disabled="!editor.ready.value || editor.loading.value || editor.saving.value"
                   @click="submit('draft')"
                 >
@@ -404,6 +435,7 @@
                 ><button
                   type="button"
                   class="prompt-editor__primary"
+                  :aria-keyshortcuts="form.status === 'published' ? 'Control+s Meta+s' : undefined"
                   :disabled="!editor.ready.value || editor.loading.value || editor.saving.value"
                   @click="submit('published')"
                 >
@@ -425,6 +457,7 @@ import { promptFieldLimits, promptFormErrors } from '~/features/prompt/editor'
 import type { MediaAsset } from '~/features/media/types'
 const props = defineProps<{ id: number | null; models: string[] }>()
 const emit = defineEmits<{ close: []; saved: [item: ManagedPrompt] }>()
+const { open: openLogin, isOpen: loginOpen, preferModal: preferLoginModal } = useLoginDrawer()
 const editor = usePromptEditor(props.id, (item) => emit('saved', item)),
   form = editor.form
 const dialog = ref<HTMLElement | null>(null),
@@ -432,6 +465,7 @@ const dialog = ref<HTMLElement | null>(null),
   mediaBusy = ref(false)
 const formElement = ref<HTMLFormElement | null>(null),
   feedback = ref<HTMLElement | null>(null),
+  lockedPanel = ref<HTMLElement | null>(null),
   mediaButton = ref<HTMLButtonElement | null>(null),
   optionalDetails = ref<HTMLDetailsElement | null>(null)
 const attempted = ref(false),
@@ -471,7 +505,24 @@ function fieldAttributes(field: keyof PromptForm) {
     'aria-describedby': descriptions || undefined,
   }
 }
+function saveShortcut(event: KeyboardEvent) {
+  if (
+    !(event.ctrlKey || event.metaKey) ||
+    event.key.toLowerCase() !== 's' ||
+    event.shiftKey ||
+    event.altKey ||
+    event.isComposing ||
+    event.keyCode === 229 ||
+    mediaOpen.value
+  )
+    return
+  event.preventDefault()
+  // 快捷键沿用当前发布状态，新建时只保存草稿；载入和提交期间不重复触发。
+  if (event.repeat || !editor.ready.value || editor.loading.value || editor.saving.value) return
+  void submit(form.status)
+}
 async function submit(status: PromptStatus) {
+  if (!editor.ready.value || editor.loading.value || editor.saving.value) return
   attempted.value = true
   await editor.save(status)
   const first = Object.keys(fieldErrors.value)[0] as keyof PromptForm | undefined
@@ -517,18 +568,24 @@ function closeMedia() {
   void returnFromMedia()
 }
 function close() {
-  if (mediaOpen.value) {
+  if (mediaOpen.value && !editor.ownershipLost.value) {
     closeMedia()
     return
   }
-  if (editor.canClose()) emit('close')
+  // 页面按URL关闭弹层，统一交给路由守卫保护输入，避免关闭按钮和历史导航重复确认。
+  emit('close')
 }
 function selectMedia(asset: MediaAsset) {
   form.mediaId = asset.id
   form.imageAlt ||= asset.alt
   void returnFromMedia()
 }
-useModalFocus(true, dialog, { close })
+const { isTopModal } = useModalFocus(true, dialog, { close })
+watch(editor.ownershipLost, async (lost) => {
+  if (!lost) return
+  await nextTick()
+  if (isTopModal()) lockedPanel.value?.focus({ preventScroll: true })
+})
 </script>
 <style scoped lang="scss">
 .prompt-editor {
@@ -542,16 +599,44 @@ useModalFocus(true, dialog, { close })
   background: rgba(10, 14, 20, 0.65);
   backdrop-filter: blur(8px);
 }
+.prompt-editor--login-open {
+  // 登录弹窗的共享层级是84；保留编辑器实例和内存，但让认证弹窗在上层接管焦点。
+  z-index: 83;
+}
+.prompt-editor__locked {
+  display: grid;
+  justify-items: start;
+  gap: 0.9rem;
+  padding: 2rem;
+  color: var(--text-main);
+}
+.prompt-editor__locked > :first-child {
+  color: var(--text-soft);
+}
+.prompt-editor__locked p {
+  color: var(--text-soft);
+  font-size: 0.8125rem;
+  line-height: 1.8;
+}
+.prompt-editor__locked:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+}
 .prompt-editor__panel {
   width: min(1050px, 100%);
   max-height: 92dvh;
   overflow: auto;
+  scroll-padding-block: 6rem 8rem;
   border: 1px solid var(--border);
   border-radius: 1.1rem;
   color: var(--text-main);
   background: var(--surface-1);
 }
 .prompt-editor__header {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  background: var(--surface-1);
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -871,6 +956,29 @@ fieldset:disabled {
   .prompt-editor__actions {
     width: 100%;
     justify-content: flex-end;
+  }
+}
+// 键盘弹出或横屏时让操作区回到文档流，避免粘性页脚遮住输入；关闭入口仍可见。
+@media (max-height: 520px) {
+  .prompt-editor {
+    padding: 0.5rem;
+  }
+  .prompt-editor__panel {
+    max-height: calc(100dvh - 1rem);
+    scroll-padding-block: 5rem 1rem;
+  }
+  .prompt-editor__header,
+  .prompt-editor__footer {
+    padding: 0.75rem 1rem;
+  }
+  .prompt-editor__footer {
+    position: static;
+  }
+  .prompt-editor__preview :deep(.image-frame) {
+    height: 160px;
+  }
+  .prompt-editor__placeholder {
+    min-height: 160px;
   }
 }
 </style>

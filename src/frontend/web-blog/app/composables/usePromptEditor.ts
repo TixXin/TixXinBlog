@@ -1,7 +1,8 @@
 /** @file usePromptEditor.ts @description 页内提示词编辑：幂等核查、版本冲突、账号隔离和标签页输入恢复 */
+import { promptId } from '~/features/prompt/query'
 import { parsePromptRecovery, promptForm, promptFormError } from '~/features/prompt/editor'
 import type { PromptRecovery } from '~/features/prompt/editor'
-import type { ManagedPrompt, PromptForm, PromptStatus } from '~/features/prompt/types'
+import type { ManagedPrompt, PromptForm, PromptRequestError, PromptStatus } from '~/features/prompt/types'
 export function usePromptEditor(initialId: number | null, onSaved: (item: ManagedPrompt) => void) {
   const repo = usePromptRepository(),
     auth = useCurrentUser()
@@ -16,18 +17,30 @@ export function usePromptEditor(initialId: number | null, onSaved: (item: Manage
     notice = ref('')
   const localError = ref(''),
     recovery = ref<PromptRecovery | null>(null),
-    serverVersion = ref<ManagedPrompt | null>(null)
+    serverVersion = ref<ManagedPrompt | null>(null),
+    requiresReload = ref(false)
   const baseline = ref(JSON.stringify(form)),
     dirty = computed(() => JSON.stringify(form) !== baseline.value)
   const pendingCreate = ref<PromptForm | null>(null)
+  let storageId = initialId
   let actor = '',
     ownedContext = '',
     requestId = '',
     alive = true,
     generation = 0
-  const storageKey = () => `tixxin-prompt-editor:${actor}:${ownedContext}:${initialId ?? 'new'}`
+  const ownershipLost = computed(() => {
+    const currentActor = auth.currentUser.value?.id,
+      currentContext = context.value,
+      authenticated = auth.isLoggedIn.value
+    return !!actor && (!authenticated || currentActor !== actor || currentContext !== ownedContext)
+  })
+  const storageKey = () => `tixxin-prompt-editor:${actor}:${ownedContext}:${storageId ?? 'new'}`
   const owns = (version: number) =>
-    alive && version === generation && auth.currentUser.value?.id === actor && context.value === ownedContext
+    alive &&
+    version === generation &&
+    auth.isLoggedIn.value &&
+    auth.currentUser.value?.id === actor &&
+    context.value === ownedContext
   function persist() {
     if (!import.meta.client || !actor) return !dirty.value && !pendingCreate.value
     try {
@@ -56,6 +69,16 @@ export function usePromptEditor(initialId: number | null, onSaved: (item: Manage
       return false
     }
   }
+  function moveRecoveryToSavedItem(previousKey: string) {
+    // 新建后继续编辑的输入归属真实作品；新键持久化成功之前保留原副本。
+    const persisted = persist()
+    if (!persisted || previousKey === storageKey()) return
+    try {
+      sessionStorage.removeItem(previousKey)
+    } catch {
+      localError.value = '当前作品的输入已保留，但旧新建副本暂时无法清理。'
+    }
+  }
   function accept(item: ManagedPrompt) {
     id.value = item.id
     revision.value = item.revision
@@ -63,6 +86,7 @@ export function usePromptEditor(initialId: number | null, onSaved: (item: Manage
     baseline.value = JSON.stringify(form)
   }
   async function load() {
+    if (requiresReload.value) return
     const version = ++generation
     loading.value = true
     error.value = ''
@@ -126,7 +150,9 @@ export function usePromptEditor(initialId: number | null, onSaved: (item: Manage
       }
       if (!owns(version)) return
       const originalMatches = JSON.stringify({ ...promptForm(form), status: body.status }) === JSON.stringify(body)
+      const previousKey = storageKey()
       id.value = item.id
+      storageId = item.id
       revision.value = item.revision
       baseline.value = JSON.stringify(promptForm(item))
       // 网络核查期间或保存期间新增的文字始终留在编辑器，不被较早请求覆盖。
@@ -134,7 +160,7 @@ export function usePromptEditor(initialId: number | null, onSaved: (item: Manage
       pendingCreate.value = null
       serverVersion.value = null
       recovery.value = null
-      persist()
+      moveRecoveryToSavedItem(previousKey)
       notice.value = dirty.value
         ? '此前提交已保存，后续输入仍保留，请核对后继续保存。'
         : item.status === 'published'
@@ -144,14 +170,22 @@ export function usePromptEditor(initialId: number | null, onSaved: (item: Manage
     } catch (cause) {
       if (!owns(version)) return
       error.value = cause instanceof Error ? cause.message : '保存失败，当前输入已保留。'
-      const statusCode = (cause as { statusCode?: number }).statusCode
+      const { statusCode, conflictKind } = cause as PromptRequestError
       if (statusCode === 400) pendingCreate.value = null
-      if (statusCode === 409 && id.value) {
-        try {
-          const latest = await repo.adminDetail(id.value)
-          if (owns(version)) serverVersion.value = latest
-        } catch {
-          /* 原始错误和本地输入保持不变。 */
+      if (statusCode === 409) {
+        // 内容库或身份变化不能按同编号的新内容合并；只有明确的作品版本冲突才读取对照。
+        serverVersion.value = null
+        if (conflictKind === 'context') {
+          ready.value = false
+          requiresReload.value = true
+        }
+        if (conflictKind === 'revision' && id.value) {
+          try {
+            const latest = await repo.adminDetail(id.value)
+            if (owns(version)) serverVersion.value = latest
+          } catch {
+            /* 原始错误和本地输入保持不变。 */
+          }
         }
       }
       if (!id.value && pendingCreate.value) error.value += ' 再次保存将先核查原提交，避免重复创建。'
@@ -176,8 +210,10 @@ export function usePromptEditor(initialId: number | null, onSaved: (item: Manage
       !window.confirm('恢复副本会替换当前表单中的未保存修改，确定恢复吗？')
     )
       return
+    const previousKey = storageKey()
     Object.assign(form, promptForm(value.form))
     id.value = value.id
+    storageId = value.id
     revision.value = value.revision
     requestId = value.requestId
     pendingCreate.value = value.pendingCreate
@@ -187,7 +223,7 @@ export function usePromptEditor(initialId: number | null, onSaved: (item: Manage
     notice.value = value.pendingCreate
       ? '已恢复输入和待核查提交，再次保存会先核查原提交。'
       : '已恢复输入，请核对后保存。'
-    persist()
+    moveRecoveryToSavedItem(previousKey)
   }
   function discardRecovery() {
     if (saving.value || !recovery.value) return
@@ -233,15 +269,24 @@ export function usePromptEditor(initialId: number | null, onSaved: (item: Manage
     window.addEventListener('beforeunload', unload)
   })
   onBeforeRouteLeave(canClose)
+  onBeforeRouteUpdate((to, from) => {
+    const editToken = (value: unknown) => (value === 'new' ? 'new' : (promptId(value)?.toString() ?? null))
+    const previous = editToken(from.query.edit),
+      next = editToken(to.query.edit)
+    if (previous === next) return true
+    // 同一份新建作品确认保存后，URL归属真实编号；页内筛选和状态切换也不离开编辑会话。
+    if (previous === 'new' && id.value !== null && next === String(id.value)) return true
+    return canClose()
+  })
   watch(form, persist, { deep: true })
-  watch([() => auth.currentUser.value?.id, context], () => {
-    if (actor && (auth.currentUser.value?.id !== actor || context.value !== ownedContext)) {
+  watch([() => auth.currentUser.value?.id, () => auth.isLoggedIn.value, context], () => {
+    if (actor && (!auth.isLoggedIn.value || auth.currentUser.value?.id !== actor || context.value !== ownedContext)) {
       persist()
       generation++
       ready.value = false
       saving.value = false
       loading.value = false
-      error.value = '登录账号或内容库已变化，请关闭后重新打开；原输入副本已保留。'
+      error.value = '身份或内容库已变化，未保存输入仍保留在此窗口。恢复原身份后请重新读取确认。'
     }
   })
   onScopeDispose(() => {
@@ -261,6 +306,8 @@ export function usePromptEditor(initialId: number | null, onSaved: (item: Manage
     localError,
     recovery,
     serverVersion,
+    requiresReload,
+    ownershipLost,
     dirty,
     pendingCreate,
     load,

@@ -1,5 +1,10 @@
 /** @file types.ts @description 图片提示词的公开展示、管理编辑与查询契约 */
 export type PromptStatus = 'draft' | 'published'
+export type PromptConflictKind = 'revision' | 'context' | 'submission' | 'unknown'
+export interface PromptRequestError extends Error {
+  statusCode?: number
+  conflictKind?: PromptConflictKind
+}
 export interface ImagePrompt {
   id: number
   title: string
