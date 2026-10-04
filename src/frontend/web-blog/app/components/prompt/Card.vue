@@ -31,6 +31,7 @@
             type="button"
             :disabled="!ready"
             :data-focus-key="`prompt-title-${item.id}`"
+            :title="item.title"
             @click="$emit('open', item.id)"
           >
             {{ item.title }}
@@ -134,7 +135,7 @@ defineEmits<{ open: [id: number]; edit: [id: number] }>()
   gap: 0.3rem 0.5rem;
   align-items: center;
   color: var(--text-soft);
-  font-size: 0.65rem;
+  font-size: 0.7rem;
   letter-spacing: 0.05em;
 }
 .prompt-card__meta span + span::before {
@@ -157,6 +158,10 @@ h3 {
   font-weight: 600;
 }
 h3 button {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
   text-align: left;
   color: var(--text-main);
   padding: 0.15rem 0;
@@ -174,8 +179,8 @@ h3 button {
 }
 p {
   color: var(--text-soft);
-  font-size: 0.75rem;
-  line-height: 1.75;
+  font-size: 0.8125rem;
+  line-height: 1.7;
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;

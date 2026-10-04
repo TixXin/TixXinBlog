@@ -169,7 +169,7 @@ test('博主上传图片、保存草稿、公开、并发编辑与未知保存�
       description: '另一个窗口已经修改。',
     })
     await editor.getByRole('button', { name: '保存并更新', exact: true }).click()
-    await expect(editor.getByRole('alert')).toContainText('已被更新')
+    await expect(editor.getByRole('alert')).toContainText('已被修改')
     await expect(editor.getByLabel('一句创作笔记', { exact: true })).toHaveValue('这一份本地输入需要保留。')
     await editor.getByRole('button', { name: '保留当前输入，按最新版本合并', exact: true }).click()
     await editor.getByRole('button', { name: '保存并更新', exact: true }).click()
@@ -247,7 +247,12 @@ for (const theme of ['nexus', 'aurora', 'dock']) {
             page.locator('.prompts-grid .image-frame').evaluateAll((frames) => {
               const visible = frames.filter((frame) => {
                 const box = frame.getBoundingClientRect()
-                return box.top < innerHeight && box.bottom > 0
+                // 固定页框内的滚动区会裁剪低于页框的图片；只对真实相交的图片等待解码。
+                const clip = frame.closest('.prompts-viewport')?.getBoundingClientRect()
+                return (
+                  box.top < Math.min(innerHeight, clip?.bottom ?? innerHeight) &&
+                  box.bottom > Math.max(0, clip?.top ?? 0)
+                )
               })
               return visible.length > 0 && visible.every((frame) => frame.classList.contains('image-frame--ready'))
             }),
@@ -333,4 +338,121 @@ test('外链按自然比例呈现，移动端长提示词保留关闭入口与�
     const latest = await call(`/admin/prompts/${record.id}`)
     await call(`/admin/prompts/${record.id}`, 'PATCH', { revision: latest.revision, status: 'draft' })
   }
+})
+
+test('瀑布流保留最新作品顺序，详情支持连续浏览并归还到最后查看的图片', async ({ page, request }) => {
+  const data = await samples(request)
+  await page.setViewportSize({ width: 1440, height: 900 })
+  await page.goto('/prompts')
+  await expect(page.locator('.prompt-grid__layout')).toHaveAttribute('data-masonry', 'true')
+  const geometry = await page.locator('.prompt-grid__item').evaluateAll((nodes) =>
+    nodes.map((node) => {
+      const rect = node.getBoundingClientRect()
+      return { top: rect.top, bottom: rect.bottom, left: rect.left, right: rect.right }
+    }),
+  )
+  for (let index = 1; index < geometry.length; index++)
+    expect(geometry[index]!.top + 1).toBeGreaterThanOrEqual(geometry[index - 1]!.top)
+  for (let one = 0; one < geometry.length; one++)
+    for (let two = one + 1; two < geometry.length; two++) {
+      const a = geometry[one]!,
+        b = geometry[two]!
+      expect(a.right <= b.left + 1 || b.right <= a.left + 1 || a.bottom <= b.top + 1 || b.bottom <= a.top + 1).toBe(
+        true,
+      )
+    }
+  expect(
+    await page
+      .locator('.prompt-card')
+      .evaluateAll((nodes) => nodes.map((node) => Number(node.getAttribute('data-prompt-id')))),
+  ).toEqual(data.items.map((item: { id: number }) => item.id))
+  await page.getByRole('button', { name: `查看提示词：${data.items[0].title}`, exact: true }).click()
+  await expect(page.getByRole('dialog', { name: data.items[0].title, exact: true })).toBeVisible()
+  await expect(page.getByRole('button', { name: '上一份灵感', exact: true })).toBeDisabled()
+  await page.getByRole('button', { name: '复制提示词', exact: true }).focus()
+  await page.keyboard.press('ArrowRight')
+  await expect(page.getByRole('dialog', { name: data.items[1].title, exact: true })).toBeVisible()
+  await expect(page.getByRole('button', { name: '下一份灵感', exact: true })).toBeFocused()
+  await expect(page.getByRole('navigation', { name: '浏览本页灵感' })).toContainText('本页 2 / 12')
+  await page.getByRole('button', { name: '下一份灵感', exact: true }).click()
+  await expect(page.getByRole('dialog', { name: data.items[2].title, exact: true })).toBeVisible()
+  await expect(page.getByRole('button', { name: '下一份灵感', exact: true })).toBeFocused()
+  await page.keyboard.press('Escape')
+  await expect(page.getByRole('button', { name: `查看提示词：${data.items[2].title}`, exact: true })).toBeFocused()
+})
+
+test('新建保存后继续输入可恢复，浏览器后退只确认一次且支持保存快捷键', async ({ page, request }) => {
+  const call = await api(request),
+    title = `纸上的光 ${randomUUID()}`
+  await login(page)
+  await page.goto('/prompts')
+  await page.locator('.prompts-add').click()
+  await expect(page).toHaveURL(/edit=new/)
+  const editor = page.locator('.prompt-editor')
+  await editor.getByLabel('灵感标题', { exact: true }).fill(title)
+  await editor
+    .getByLabel('完整提示词', { exact: true })
+    .fill('A quiet ceramic studio, warm window light, matte paper texture.')
+  await editor.getByRole('button', { name: '选择或上传图片', exact: true }).click()
+  await expect(editor.getByRole('button', { name: '使用此图片', exact: true }).first()).toBeEnabled()
+  await editor.getByRole('button', { name: '使用此图片', exact: true }).first().click()
+  await editor.getByRole('button', { name: '保存草稿', exact: true }).click()
+  await expect(editor.locator('.prompt-editor__feedback')).toContainText('草稿已保存')
+  const created = (await call(`/admin/prompts?q=${encodeURIComponent(title)}`)).items[0]
+  await expect(page).toHaveURL(new RegExp(`edit=${created.id}`))
+  await editor.getByLabel('一句创作笔记', { exact: true }).fill('保存之后继续写下的灵感。')
+  let confirmations = 0
+  const cancel = async (dialog: import('@playwright/test').Dialog) => {
+    confirmations++
+    await dialog.dismiss()
+  }
+  page.once('dialog', cancel)
+  await page.goBack()
+  expect(confirmations).toBe(1)
+  await expect(page).toHaveURL(new RegExp(`edit=${created.id}`))
+  await expect(editor.getByLabel('一句创作笔记', { exact: true })).toHaveValue('保存之后继续写下的灵感。')
+  page.once('dialog', async (dialog) => {
+    confirmations++
+    await dialog.accept()
+  })
+  await editor.getByRole('button', { name: '关闭提示词编辑器', exact: true }).click()
+  await expect(editor).not.toBeVisible()
+  expect(confirmations).toBe(2)
+  await page.getByRole('button', { name: `编辑提示词：${title}`, exact: true }).click()
+  await expect(editor).toContainText('发现未保存的输入')
+  await editor.getByRole('button', { name: '恢复输入', exact: true }).click()
+  await expect(editor.getByLabel('一句创作笔记', { exact: true })).toHaveValue('保存之后继续写下的灵感。')
+  await editor.getByLabel('一句创作笔记', { exact: true }).press('ControlOrMeta+s')
+  await expect
+    .poll(async () => (await call(`/admin/prompts/${created.id}`)).description)
+    .toBe('保存之后继续写下的灵感。')
+  expect((await call(`/admin/prompts/${created.id}`)).status).toBe('draft')
+  await page.setViewportSize({ width: 390, height: 480 })
+  await expect(editor.getByRole('button', { name: '关闭提示词编辑器', exact: true })).toBeInViewport()
+  await editor.getByLabel('完整提示词', { exact: true }).scrollIntoViewIfNeeded()
+  await expect(editor.getByRole('button', { name: '关闭提示词编辑器', exact: true })).toBeInViewport()
+  await editor.getByRole('button', { name: '关闭提示词编辑器', exact: true }).click()
+  await expect(editor).not.toBeVisible()
+})
+
+test('匿名管理深链先提供登录入口，不显示空白私有详情', async ({ page, request }) => {
+  const data = await samples(request)
+  const adminReads: string[] = []
+  page.on('request', (entry) => {
+    if (new URL(entry.url()).pathname.startsWith('/api/v1/admin/prompts')) adminReads.push(entry.url())
+  })
+  for (const query of [
+    `view=drafts&prompt=${data.items[0].id}`,
+    `prompt=${data.items[0].id}&edit=${data.items[0].id}`,
+  ]) {
+    await page.goto(`/prompts?${query}`)
+    await expect(page.locator('.prompts-auth')).toContainText('博主登录后可继续编辑')
+    await expect(page.locator('.prompt-detail')).toHaveCount(0)
+    await expect(page.locator('.prompt-editor')).toHaveCount(0)
+    await page.locator('.prompts-auth').getByRole('button', { name: '博主登录', exact: true }).click()
+    await expect(page.getByRole('dialog', { name: '博主登录', exact: true })).toBeVisible()
+    await page.keyboard.press('Escape')
+    await expect(page).toHaveURL(new RegExp(`prompt=${data.items[0].id}`))
+  }
+  expect(adminReads).toEqual([])
 })

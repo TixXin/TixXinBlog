@@ -1,6 +1,8 @@
 /** @file promptPresentation.test.ts @description 提示词图片比例、文本复制失败和异步反馈归属 */
 import { afterEach, expect, it, vi } from 'vitest'
 import { mountSuspended } from '@nuxt/test-utils/runtime'
+import { DOMWrapper, mount } from '@vue/test-utils'
+import { defineComponent, h, reactive } from 'vue'
 import PromptCard from '../../app/components/prompt/Card.vue'
 import PromptDetail from '../../app/components/prompt/Detail.vue'
 import type { ImagePrompt } from '../../app/features/prompt/types'
@@ -29,10 +31,10 @@ const imageStub = {
   props: ['width', 'height'],
   template: '<div data-test="image" :data-width="width" :data-height="height" />',
 }
-async function detail() {
+async function detail(overrides: Partial<InstanceType<typeof PromptDetail>['$props']> = {}) {
   const wrapper = await mountSuspended(PromptDetail, {
     attachTo: document.body,
-    props: { visible: true, item, pending: false, error: '', editable: false, draft: false },
+    props: { visible: true, item, pending: false, error: '', editable: false, draft: false, ...overrides },
     global: { stubs: { Teleport: true, CommonImageFrame: imageStub } },
   })
   wrappers.push(wrapper)
@@ -123,4 +125,53 @@ it('关闭入口独立于长文本滚动区，完整提示词和负面词可分�
   await vi.waitFor(() => expect(writeText).toHaveBeenCalledWith(item.prompt))
   await wrapper.get('.prompt-detail__text--negative button').trigger('click')
   await vi.waitFor(() => expect(writeText).toHaveBeenCalledWith(item.negativePrompt))
+})
+it('连续浏览用方向键切换，载入时保留按钮焦点但拒绝重复动作', async () => {
+  const state = reactive({
+    visible: true,
+    item,
+    pending: false,
+    error: '',
+    editable: false,
+    draft: false,
+    position: 1,
+    navigationCount: 2,
+    canNext: true,
+    canPrevious: false,
+  })
+  // 通过真实父组件更新props，保持同一个子组件实例，验证请求状态切换时的焦点归属。
+  const host = mount(defineComponent({ setup: () => () => h(PromptDetail, state) }), {
+    attachTo: document.body,
+    global: { stubs: { Icon: true, CommonImageFrame: imageStub, CommonRequestFeedback: true } },
+  })
+  wrappers.push(host)
+  const wrapper = host.findComponent(PromptDetail)
+  const dialog = new DOMWrapper(document.querySelector<HTMLElement>('.prompt-detail')!)
+  const next = dialog.get<HTMLButtonElement>('[aria-label="下一份灵感"]')
+  next.element.focus()
+  await next.trigger('click')
+  expect(wrapper.emitted('next')).toHaveLength(1)
+  Object.assign(state, { pending: true, canNext: false })
+  await nextTick()
+  expect(document.activeElement).toBe(next.element)
+  expect(next.attributes('aria-disabled')).toBe('true')
+  await next.trigger('click')
+  await dialog.trigger('keydown', { key: 'ArrowRight' })
+  expect(wrapper.emitted('next')).toHaveLength(1)
+  Object.assign(state, { pending: false, position: 2, canPrevious: true, canNext: false })
+  await nextTick()
+  await dialog.trigger('keydown', { key: 'ArrowLeft' })
+  expect(wrapper.emitted('previous')).toHaveLength(1)
+})
+it('分享链接输入中的方向键不切换作品，选中文本和修饰键同样保留原操作', async () => {
+  vi.stubGlobal('navigator', { clipboard: { writeText: vi.fn().mockRejectedValue(new Error('denied')) } })
+  const wrapper = await detail({ position: 1, navigationCount: 2, canNext: true })
+  await wrapper
+    .findAll('footer button')
+    .find((button) => button.text().includes('分享灵感'))!
+    .trigger('click')
+  await vi.waitFor(() => expect(wrapper.find('.prompt-detail__manual-link input').exists()).toBe(true))
+  await wrapper.get('.prompt-detail__manual-link input').trigger('keydown', { key: 'ArrowRight' })
+  await wrapper.get('.prompt-detail').trigger('keydown', { key: 'ArrowRight', shiftKey: true })
+  expect(wrapper.emitted('next')).toBeUndefined()
 })

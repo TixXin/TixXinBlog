@@ -1,6 +1,6 @@
 /** @file promptPage.test.ts @description 真实提示词页面的公开/草稿衔接、独立筛选清除及编辑入口消失后的焦点恢复。 */
 import { afterEach, beforeEach, expect, it, vi } from 'vitest'
-import { computed, defineComponent, h, onMounted, ref } from 'vue'
+import { computed, defineComponent, h, onMounted, onUnmounted, ref } from 'vue'
 import type { PropType, Ref } from 'vue'
 import type { Router } from 'vue-router'
 import { useRoute, useRouter } from '#app'
@@ -20,9 +20,14 @@ const mocks = vi.hoisted(() => ({
   refreshMetadata: vi.fn(),
   refreshDrafts: vi.fn(),
   changeQuery: vi.fn(),
+  openLogin: vi.fn(),
+  editorMounted: vi.fn(),
+  editorUnmounted: vi.fn(),
   auth: {} as {
     currentUser: Ref<{ id: string } | null>
     isLoggedIn: Ref<boolean>
+    authError: Ref<string>
+    restoringPending: Ref<boolean>
     restore: ReturnType<typeof vi.fn>
   },
 }))
@@ -35,6 +40,7 @@ mockNuxtImport(
 )
 mockNuxtImport('usePromptRepository', () => () => ({ detail: mocks.detail, adminDetail: mocks.adminDetail }))
 mockNuxtImport('useCurrentUser', () => () => mocks.auth)
+mockNuxtImport('useLoginDrawer', () => () => ({ open: mocks.openLogin }))
 
 function item(status: PromptStatus = 'published', patch: Partial<ManagedPrompt> = {}): ManagedPrompt {
   return {
@@ -123,9 +129,21 @@ const Editor = defineComponent({
   emits: ['close', 'saved'],
   setup(props, { emit }) {
     const firstButton = ref<HTMLButtonElement | null>(null)
-    onMounted(() => firstButton.value?.focus())
+    const sessionInput = ref('')
+    onMounted(() => {
+      mocks.editorMounted()
+      firstButton.value?.focus()
+    })
+    onUnmounted(() => mocks.editorUnmounted())
     return () =>
       h('section', { class: 'prompt-editor' }, [
+        h('input', {
+          'data-editor-session-input': '',
+          value: sessionInput.value,
+          onInput: (event: Event) => {
+            sessionInput.value = (event.target as HTMLInputElement).value
+          },
+        }),
         h(
           'button',
           {
@@ -163,6 +181,8 @@ beforeEach(() => {
   mocks.auth = {
     currentUser: ref({ id: 'owner' }),
     isLoggedIn: ref(true),
+    authError: ref(''),
+    restoringPending: ref(false),
     restore: vi.fn().mockResolvedValue(true),
   }
   publicItems = ref([item()])
@@ -245,6 +265,8 @@ it('公开详情保存为草稿后转到草稿视图，关闭编辑器继续通�
   expect(mocks.detail).toHaveBeenCalledWith(7, expect.any(AbortSignal))
   const publicReads = mocks.detail.mock.calls.length
   await wrapper.get('[data-edit-detail]').trigger('click')
+  await vi.waitFor(() => expect(wrapper.findComponent(Editor).exists()).toBe(true))
+  expect(router.currentRoute.value.query.edit).toBe('7')
   mocks.detail.mockRejectedValue(new Error('提示词不存在或尚未公开'))
   mocks.adminDetail.mockResolvedValue(item('draft', { prompt: '保存后的私人提示词', revision: 2 }))
   mocks.refresh.mockImplementation(async () => {
@@ -252,11 +274,14 @@ it('公开详情保存为草稿后转到草稿视图，关闭编辑器继续通�
   })
   await wrapper.get('[data-save-draft]').trigger('click')
   await flushPromises()
-  await vi.waitFor(() => expect(router.currentRoute.value.query).toEqual({ prompt: '7', q: '窗', view: 'drafts' }))
+  await vi.waitFor(() =>
+    expect(router.currentRoute.value.query).toEqual({ prompt: '7', q: '窗', view: 'drafts', edit: '7' }),
+  )
   await flushPromises()
   expect(mocks.adminDetail).toHaveBeenCalledWith(7)
   expect(mocks.detail).toHaveBeenCalledTimes(publicReads)
   await wrapper.get('[data-close-editor]').trigger('click')
+  await vi.waitFor(() => expect(wrapper.findComponent(Editor).exists()).toBe(false))
   await flushPromises()
   expect(wrapper.get('[data-detail]').attributes('data-draft')).toBe('true')
   expect(wrapper.get('[data-detail-body]').text()).toBe('保存后的私人提示词')
@@ -268,6 +293,8 @@ it('草稿详情发布后切回公开列表，并通过公开详情接口读取�
   expect(mocks.adminDetail).toHaveBeenCalledWith(7)
   const adminReads = mocks.adminDetail.mock.calls.length
   await wrapper.get('[data-edit-detail]').trigger('click')
+  await vi.waitFor(() => expect(wrapper.findComponent(Editor).exists()).toBe(true))
+  expect(router.currentRoute.value.query.edit).toBe('7')
   const published = item('published', { prompt: '发布后的完整提示词', revision: 2 })
   mocks.detail.mockResolvedValue(published)
   mocks.adminDetail.mockRejectedValue(new Error('旧草稿读取不应继续'))
@@ -277,14 +304,16 @@ it('草稿详情发布后切回公开列表，并通过公开详情接口读取�
   })
   await wrapper.get('[data-save-published]').trigger('click')
   await flushPromises()
-  await vi.waitFor(() => expect(router.currentRoute.value.query).toEqual({ prompt: '7', tag: '光影' }))
+  await vi.waitFor(() => expect(router.currentRoute.value.query).toEqual({ prompt: '7', tag: '光影', edit: '7' }))
   await flushPromises()
-  expect(mocks.detail).toHaveBeenCalledWith(7, expect.any(AbortSignal))
   expect(mocks.adminDetail).toHaveBeenCalledTimes(adminReads)
   expect(mocks.refresh).toHaveBeenCalledOnce()
   expect(mocks.refreshMetadata).toHaveBeenCalledOnce()
   expect(mocks.refreshDrafts).not.toHaveBeenCalled()
   await wrapper.get('[data-close-editor]').trigger('click')
+  await vi.waitFor(() => expect(wrapper.findComponent(Editor).exists()).toBe(false))
+  await flushPromises()
+  await vi.waitFor(() => expect(mocks.detail).toHaveBeenCalledWith(7, expect.any(AbortSignal)))
   await flushPromises()
   expect(wrapper.get('[data-detail]').attributes('data-draft')).toBe('false')
   expect(wrapper.get('[data-detail-body]').text()).toBe('发布后的完整提示词')
@@ -316,6 +345,7 @@ it('保存切换列表移除原编辑入口后，关闭编辑器将焦点交还�
   const trigger = wrapper.get<HTMLButtonElement>('[data-edit-card="7"]')
   trigger.element.focus()
   await trigger.trigger('click')
+  await vi.waitFor(() => expect(wrapper.findComponent(Editor).exists()).toBe(true))
   expect(document.activeElement?.closest('.prompt-editor')).not.toBeNull()
   drafts.value = { items: [], total: 0, page: 1, pageSize: 12 }
   mocks.refresh.mockImplementation(async () => {
@@ -325,6 +355,7 @@ it('保存切换列表移除原编辑入口后，关闭编辑器将焦点交还�
   await flushPromises()
   await vi.waitFor(() => expect(trigger.element.isConnected).toBe(false))
   await wrapper.get('[data-close-editor]').trigger('click')
+  await vi.waitFor(() => expect(wrapper.findComponent(Editor).exists()).toBe(false))
   await flushPromises()
   const fallback = wrapper.get<HTMLButtonElement>('.prompts-views button')
   expect(document.activeElement).toBe(fallback.element)
@@ -376,4 +407,112 @@ it('旧列表完成后自动纠正页码，搜索框仍保留并提交用户刚�
   await vi.waitFor(() => expect(router.currentRoute.value.query.page).toBe('2'))
   expect(input.element.value).toBe('窗边的新光')
   await vi.waitFor(() => expect(router.currentRoute.value.query).toEqual({ q: '窗边的新光', model: 'Flux' }))
+})
+
+it('新建草稿获得编号后保持同一编辑器会话与局部输入，后续保存不重新挂载', async () => {
+  const wrapper = await setup('/prompts?model=Flux')
+  await wrapper.get('.prompts-add').trigger('click')
+  await vi.waitFor(() => expect(router.currentRoute.value.query.edit).toBe('new'))
+  await vi.waitFor(() => expect(wrapper.findComponent(Editor).exists()).toBe(true))
+  const editor = wrapper.getComponent(Editor)
+  const session = editor.vm
+  const root = editor.element
+  expect(editor.props('id')).toBeNull()
+  await editor.get('[data-editor-session-input]').setValue('同一会话中继续补充的创作笔记')
+  await editor.get('[data-save-draft]').trigger('click')
+  await vi.waitFor(() => expect(router.currentRoute.value.query).toEqual({ model: 'Flux', edit: '7', view: 'drafts' }))
+  await flushPromises()
+  const savedEditor = wrapper.getComponent(Editor)
+  expect(savedEditor.vm).toBe(session)
+  expect(savedEditor.element).toBe(root)
+  expect(savedEditor.props('id')).toBe(7)
+  expect(savedEditor.get<HTMLInputElement>('[data-editor-session-input]').element.value).toBe(
+    '同一会话中继续补充的创作笔记',
+  )
+  expect(mocks.editorMounted).toHaveBeenCalledOnce()
+  expect(mocks.editorUnmounted).not.toHaveBeenCalled()
+  await savedEditor.get('[data-save-draft]').trigger('click')
+  await flushPromises()
+  expect(wrapper.getComponent(Editor).vm).toBe(session)
+  expect(mocks.editorMounted).toHaveBeenCalledOnce()
+})
+
+it('路由移除 edit 参数后关闭编辑器，保留浏览筛选并归还稳定焦点', async () => {
+  const wrapper = await setup('/prompts?edit=7&tag=光影')
+  await vi.waitFor(() => expect(wrapper.findComponent(Editor).exists()).toBe(true))
+  await router.replace({ path: '/prompts', query: { ...router.currentRoute.value.query, edit: undefined } })
+  await vi.waitFor(() => expect(wrapper.findComponent(Editor).exists()).toBe(false))
+  expect(router.currentRoute.value.query).toEqual({ tag: '光影' })
+  expect(mocks.editorUnmounted).toHaveBeenCalledOnce()
+  await vi.waitFor(() => expect(document.activeElement).toBe(wrapper.get('.prompts-views button').element))
+  expect(document.activeElement).not.toBe(document.body)
+})
+
+it.each(['new', '7'])('未登录的 edit=%s 显示登录意图，不挂载编辑器或请求管理详情', async (token) => {
+  mocks.auth.currentUser.value = null
+  mocks.auth.isLoggedIn.value = false
+  mocks.auth.restore.mockResolvedValue(false)
+  const wrapper = await setup(`/prompts?edit=${token}&prompt=7&model=Flux`)
+  const banner = wrapper.get('.prompts-auth[role="status"]')
+  expect(banner.text()).toContain('博主登录后可继续编辑')
+  expect(banner.text()).toContain('浏览和复制公开提示词无需登录')
+  expect(wrapper.findComponent(Editor).exists()).toBe(false)
+  expect(mocks.editorMounted).not.toHaveBeenCalled()
+  expect(mocks.adminDetail).not.toHaveBeenCalled()
+  expect(mocks.detail).not.toHaveBeenCalled()
+  expect(mocks.draftFeed.mock.calls[0]![1].value).toBe(false)
+  await banner.get('button').trigger('click')
+  expect(mocks.openLogin).toHaveBeenCalledExactlyOnceWith('login', true)
+  expect(router.currentRoute.value.query).toEqual({ edit: token, prompt: '7', model: 'Flux' })
+  // 登录态确认后再兑现原编辑意图，不能提前读管理数据或丢失目标编号。
+  mocks.auth.currentUser.value = { id: 'owner' }
+  mocks.auth.isLoggedIn.value = true
+  await vi.waitFor(() => expect(wrapper.findComponent(Editor).exists()).toBe(true))
+  expect(wrapper.getComponent(Editor).props('id')).toBe(token === 'new' ? null : 7)
+  expect(wrapper.find('.prompts-auth').exists()).toBe(false)
+})
+
+it('未认证的草稿与编辑深链显示登录提示，不显示空白详情或发起详情请求', async () => {
+  mocks.auth.currentUser.value = null
+  mocks.auth.isLoggedIn.value = false
+  mocks.auth.restore.mockResolvedValue(false)
+  const wrapper = await setup('/prompts?view=drafts&prompt=7')
+  for (const path of ['/prompts?view=drafts&prompt=7', '/prompts?prompt=7&edit=7']) {
+    await router.replace(path)
+    await flushPromises()
+    expect(wrapper.get('.prompts-auth[role="status"]').text()).toContain('博主登录后可继续编辑')
+    expect(wrapper.getComponent(Detail).props('visible')).toBe(false)
+    expect(wrapper.find('[data-detail]').exists()).toBe(false)
+    expect(wrapper.findComponent(Editor).exists()).toBe(false)
+    expect(mocks.adminDetail).not.toHaveBeenCalled()
+    expect(mocks.detail).not.toHaveBeenCalled()
+    expect(mocks.draftFeed.mock.calls[0]![1].value).toBe(false)
+  }
+})
+
+it('同一编辑令牌失去登录态时保留会话实例与局部标记，显式移除 edit 后才关闭', async () => {
+  const wrapper = await setup('/prompts?edit=7&model=Flux')
+  await vi.waitFor(() => expect(wrapper.findComponent(Editor).exists()).toBe(true))
+  const editor = wrapper.getComponent(Editor)
+  const session = editor.vm
+  const root = editor.element
+  await editor.get('[data-editor-session-input]').setValue('登录恢复前保留的本地会话标记')
+  mocks.auth.isLoggedIn.value = false
+  mocks.auth.currentUser.value = null
+  await flushPromises()
+  // 此处只验证父页面保留实例；敏感表单遮蔽与写入锁由真实 Editor 自己的测试负责。
+  const retained = wrapper.getComponent(Editor)
+  expect(retained.vm).toBe(session)
+  expect(retained.element).toBe(root)
+  expect(retained.get<HTMLInputElement>('[data-editor-session-input]').element.value).toBe(
+    '登录恢复前保留的本地会话标记',
+  )
+  expect(mocks.editorMounted).toHaveBeenCalledOnce()
+  expect(mocks.editorUnmounted).not.toHaveBeenCalled()
+  expect(router.currentRoute.value.query).toEqual({ edit: '7', model: 'Flux' })
+  await router.replace({ path: '/prompts', query: { ...router.currentRoute.value.query, edit: undefined } })
+  await vi.waitFor(() => expect(wrapper.findComponent(Editor).exists()).toBe(false))
+  expect(mocks.editorUnmounted).toHaveBeenCalledOnce()
+  expect(mocks.editorMounted).toHaveBeenCalledOnce()
+  expect(router.currentRoute.value.query).toEqual({ model: 'Flux' })
 })

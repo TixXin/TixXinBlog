@@ -103,7 +103,11 @@ export function useCurrentUser() {
         if (result.data.authenticated) {
           const restored = await refresh()
           initialized.value = restored || authError.value === '登录已过期，请重新登录'
-        } else initialized.value = true
+        } else {
+          // 成功确认匿名状态即结束先前的临时读取错误，不把匿名误判为认证失败。
+          initialized.value = true
+          authError.value = ''
+        }
       } catch {
         authError.value = '登录状态暂时无法确认，请重试'
       }

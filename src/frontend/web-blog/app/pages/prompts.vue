@@ -2,7 +2,7 @@
 <template>
   <CommonPageFrame class="main-inner prompts-page" header-key="prompts">
     <template #header
-      ><CommonPageHeader title="灵感图鉴" subtitle="收藏画面的可能，也分享创作的起点" icon="lucide:aperture"
+      ><CommonPageHeader title="灵感图鉴" subtitle="图片提示词与创作笔记" icon="lucide:aperture"
         ><template #action
           ><button v-if="isOwner" type="button" class="prompts-add" :disabled="!ready" @click="openEditor(null)">
             <Icon name="lucide:plus" size="16" /><span>分享灵感</span>
@@ -22,13 +22,22 @@
         <div>
           <p class="prompts-kicker">IMAGE PROMPT COLLECTION</p>
           <h1>从一张图，<span>遇见一种想象。</span></h1>
-          <p class="prompts-intro__description">光影、材质、天马行空。找到喜欢的画面，带走它的提示词。</p>
+          <p class="prompts-intro__description">打开喜欢的画面，查看完整提示词，让下一次创作有迹可循。</p>
         </div>
         <div v-if="metadata" class="prompts-intro__index" aria-label="公开灵感数量">
           <strong>{{ String(metadata.stats.prompts).padStart(2, '0') }}</strong
           ><span>份灵感，持续生长</span><Icon name="lucide:move-up-right" size="22" />
         </div>
       </section>
+      <div v-if="ready && !isOwner && (managementIntent || authError)" class="prompts-auth" role="status">
+        <Icon name="lucide:lock-keyhole" size="18" />
+        <div>
+          <strong>{{ restoringPending ? '正在确认登录状态…' : authError || '博主登录后可继续编辑' }}</strong>
+          <p>浏览和复制公开提示词无需登录。</p>
+        </div>
+        <button v-if="authError" type="button" :disabled="restoringPending" @click="auth.restore()">重新确认</button>
+        <button type="button" :disabled="restoringPending" @click="login.open('login', true)">博主登录</button>
+      </div>
       <div class="prompts-toolbar">
         <div class="prompts-views" aria-label="浏览范围">
           <button
@@ -176,20 +185,17 @@
         :action-label="filtered ? '清除筛选' : isOwner ? '分享第一份灵感' : undefined"
         @action="filtered ? changeQuery({ q: undefined, model: undefined, tag: undefined }) : openEditor(null)"
       />
-      <div v-else class="prompts-grid">
-        <PromptCard
-          v-for="item in items"
-          :key="item.id"
-          :item="item"
-          :ready="ready"
-          :editable="isOwner"
-          :status="draftView ? 'draft' : 'published'"
-          @open="openDetail"
-          @edit="openEditor"
-        />
-      </div>
+      <PromptGrid
+        v-else
+        :items="items"
+        :ready="ready"
+        :editable="isOwner"
+        :draft="draftView"
+        @open="openDetail"
+        @edit="openEditor"
+      />
       <footer v-if="total !== null && !pageOutOfRange && (items.length || query.page > 1)" class="prompts-bottom">
-        <p>{{ total }} 份{{ draftView ? '草稿' : '灵感' }}<span> / </span>每一次尝试，都值得被记录</p>
+        <p>{{ total }} 份{{ draftView ? '草稿' : '灵感' }}<span> / </span>最新收录在前</p>
         <nav v-if="total > 12 || query.page > 1" aria-label="提示词分页">
           <button
             type="button"
@@ -213,18 +219,24 @@
     <template #overlays
       ><ClientOnly
         ><PromptDetail
-          :visible="selectedId !== null && !editorOpen"
+          :visible="selectedId !== null && !editorOpen && (isOwner || !managementIntent)"
           :item="selectedItem"
           :pending="detailPending"
           :error="detailError"
           :editable="isOwner"
           :draft="selectedDraft"
+          :position="navigationIndex + 1"
+          :navigation-count="navigationIndex >= 0 ? items.length : 0"
+          :can-previous="navigationIndex > 0 && !detailPending"
+          :can-next="navigationIndex >= 0 && navigationIndex < items.length - 1 && !detailPending"
+          @previous="moveDetail(-1)"
+          @next="moveDetail(1)"
           @close="closeDetail"
           @retry="readDetail"
           @edit="openEditor" /><PromptEditor
           v-if="editorOpen"
           :id="editorId"
-          :key="editorId ?? 'new'"
+          :key="editorSession"
           :models="metadata?.models.map((item) => item.label) || []"
           @close="closeEditor"
           @saved="saved" /></ClientOnly
@@ -232,16 +244,21 @@
   </CommonPageFrame>
 </template>
 <script setup lang="ts">
-import type { ImagePrompt, ManagedPrompt } from '~/features/prompt/types'
+import type { ManagedPrompt } from '~/features/prompt/types'
 import { promptId } from '~/features/prompt/query'
 import { usePromptSearch } from '~/composables/usePromptSearch'
+import { usePromptDetail } from '~/composables/usePromptDetail'
+import { usePromptSeo } from '~/composables/usePromptSeo'
 definePageMeta({ rightSidebar: false })
 const route = useRoute(),
   router = useRouter(),
-  repo = usePromptRepository(),
   auth = useCurrentUser()
-const { isLoggedIn: isOwner } = auth
-const context = useState<string>('page-content-context', () => '')
+const { isLoggedIn: isOwner, authError, restoringPending } = auth
+const login = useLoginDrawer()
+const managementIntent = computed(() => route.query.edit !== undefined || route.query.view === 'drafts')
+const editToken = computed(() =>
+  route.query.edit === 'new' ? 'new' : (promptId(route.query.edit)?.toString() ?? null),
+)
 const {
   query,
   ready,
@@ -266,8 +283,6 @@ const {
 } = usePromptDrafts(query, draftView)
 const publicViewButton = ref<HTMLButtonElement | null>(null)
 let editorTrigger: HTMLElement | null = null
-let detailGeneration = 0,
-  alive = true
 const items = computed(() => (draftView.value ? (drafts.value?.items ?? []) : prompts.value))
 const total = computed(() => (draftView.value ? (drafts.value?.total ?? null) : publicTotal.value))
 const currentPending = computed(() => (draftView.value ? draftPending.value : pending.value))
@@ -282,14 +297,19 @@ const pageOutOfRange = computed(
     !currentStale.value &&
     query.value.page > pageCount.value,
 )
-const selectedId = computed(() => promptId(route.query.prompt)),
-  selectedItem = ref<ImagePrompt | null>(null)
-const selectedDraft = ref(false),
-  detailPending = ref(false),
-  detailError = ref('')
+const { selectedId, selectedItem, selectedDraft, detailPending, detailError, readDetail } = await usePromptDetail(
+  ready,
+  draftView,
+)
 const editorOpen = ref(false),
-  editorId = ref<number | null>(null)
-let detailController: AbortController | undefined
+  editorId = ref<number | null>(null),
+  editorSession = ref(0)
+let activeEditToken: string | null = null
+const navigationIndex = computed(() =>
+  !currentPending.value && !currentStale.value && !currentError.value
+    ? items.value.findIndex((item) => item.id === selectedId.value)
+    : -1,
+)
 const { keyword, submit: submitSearch, startComposition, endComposition, replacePreservingInput } = usePromptSearch()
 const filtered = computed(() => !!query.value.q || !!query.value.model || !!query.value.tag)
 const allTags = ref(false)
@@ -299,45 +319,7 @@ const visibleTags = computed(() => {
     tags.push({ label: query.value.tag, count: 0 })
   return tags
 })
-useSeoMeta({
-  title: '灵感图鉴 · 图片提示词',
-  description: '收藏画面的可能，也分享创作的起点。浏览图片效果与完整提示词，找到属于自己的灵感。',
-  ogType: 'website',
-  ogImage: () => prompts.value[0]?.imageUrl,
-})
-async function readDetail() {
-  const generation = ++detailGeneration
-  detailController?.abort()
-  const id = selectedId.value
-  selectedItem.value = null
-  selectedDraft.value = false
-  detailError.value = ''
-  detailPending.value = false
-  if (!id || !ready.value) return
-  const controller = new AbortController()
-  detailController = controller
-  const actor = auth.currentUser.value?.id,
-    ownedContext = context.value,
-    admin = draftView.value
-  detailPending.value = true
-  try {
-    const item = admin ? await repo.adminDetail(id) : await repo.detail(id, controller.signal)
-    if (
-      !alive ||
-      generation !== detailGeneration ||
-      controller.signal.aborted ||
-      (admin && (auth.currentUser.value?.id !== actor || context.value !== ownedContext))
-    )
-      return
-    selectedItem.value = item
-    selectedDraft.value = admin && (item as ManagedPrompt).status === 'draft'
-  } catch (cause) {
-    if (alive && generation === detailGeneration && !controller.signal.aborted)
-      detailError.value = cause instanceof Error ? cause.message : '提示词读取失败。'
-  } finally {
-    if (alive && generation === detailGeneration) detailPending.value = false
-  }
-}
+usePromptSeo({ selectedId, selectedItem, selectedDraft, editorOpen, prompts })
 function setView(draft: boolean) {
   void router.push({
     path: '/prompts',
@@ -347,21 +329,28 @@ function setView(draft: boolean) {
 function openDetail(id: number) {
   void router.push({ path: '/prompts', query: { ...route.query, prompt: String(id) } })
 }
-function closeDetail() {
-  void router.replace({ path: '/prompts', query: { ...route.query, prompt: undefined } })
+function moveDetail(direction: -1 | 1) {
+  if (detailPending.value || navigationIndex.value < 0) return
+  const next = items.value[navigationIndex.value + direction]
+  if (next) void router.replace({ path: '/prompts', query: { ...route.query, prompt: String(next.id) } })
+}
+async function closeDetail() {
+  const previousId = selectedId.value
+  await router.replace({ path: '/prompts', query: { ...route.query, prompt: undefined } })
+  await nextTick()
+  if (selectedId.value !== null || editorOpen.value) return
+  const card = document.querySelector<HTMLElement>(`[data-focus-key="prompt-open-${previousId}"]`)
+  if (card) card.focus({ preventScroll: true })
+  else publicViewButton.value?.focus()
 }
 function openEditor(id: number | null) {
   if (!isOwner.value) return
   editorTrigger = document.activeElement instanceof HTMLElement ? document.activeElement : null
-  editorId.value = id
-  editorOpen.value = true
+  void router.push({ path: '/prompts', query: { ...route.query, edit: id === null ? 'new' : String(id) } })
 }
-async function closeEditor() {
-  editorOpen.value = false
-  if (route.query.edit) await router.replace({ path: '/prompts', query: { ...route.query, edit: undefined } })
+async function restoreEditorFocus() {
   await nextTick()
-  // 详情重新显示时由其焦点陷阱接管；被筛选移除的卡片则回退到稳定的浏览入口。
-  if (selectedId.value !== null) return
+  if (editorOpen.value || selectedId.value !== null) return
   const active = document.activeElement
   if (
     active instanceof HTMLElement &&
@@ -374,11 +363,21 @@ async function closeEditor() {
   if (editorTrigger?.isConnected && !editorTrigger.closest('[inert]')) editorTrigger.focus({ preventScroll: true })
   else publicViewButton.value?.focus()
 }
+async function closeEditor() {
+  // 导航守卫是未保存确认的唯一入口；被取消时URL和编辑器都保持原样。
+  await router.replace({ path: '/prompts', query: { ...route.query, edit: undefined } })
+}
 async function saved(item: ManagedPrompt) {
   // 状态改变时转到对应列表；关闭编辑器后仍可核对该作品，草稿不会误走公开详情。
   const nextView = item.status === 'draft' ? 'drafts' : undefined
   const switchView = draftView.value !== (item.status === 'draft')
-  if (switchView) await router.replace({ path: '/prompts', query: { ...route.query, view: nextView, page: undefined } })
+  // 保存后的new→id是同一编辑会话，不重建组件，后续输入归属已确认作品。
+  editorId.value = item.id
+  if (switchView || route.query.edit !== String(item.id))
+    await router.replace({
+      path: '/prompts',
+      query: { ...route.query, edit: String(item.id), view: nextView, page: switchView ? undefined : route.query.page },
+    })
   await Promise.all([refresh(), refreshMetadata(), !switchView && draftView.value ? loadDrafts() : Promise.resolve()])
   if (!switchView && selectedId.value === item.id) await readDetail()
 }
@@ -386,9 +385,6 @@ function retry() {
   if (draftView.value) void loadDrafts()
   else void refresh()
 }
-watch([selectedId, ready, draftView, () => auth.currentUser.value?.id, context], () => void readDetail(), {
-  immediate: true,
-})
 watch(
   [pageOutOfRange, ready, pageCount],
   () => {
@@ -402,19 +398,30 @@ watch(
   { immediate: true },
 )
 watch(
-  [isOwner, () => route.query.edit, ready],
+  [isOwner, editToken, ready],
   () => {
-    const id = promptId(route.query.edit)
-    if (isOwner.value && ready.value && id && !editorOpen.value) openEditor(id)
+    const token = editToken.value
+    const sameSession =
+      token && (activeEditToken === token || (activeEditToken === 'new' && token === String(editorId.value)))
+    if (editorOpen.value && sameSession) {
+      activeEditToken = token
+      return
+    }
+    if (!isOwner.value || !ready.value || !token) {
+      const wasOpen = editorOpen.value
+      editorOpen.value = false
+      activeEditToken = null
+      if (wasOpen) void restoreEditorFocus()
+      return
+    }
+    activeEditToken = token
+    editorId.value = token === 'new' ? null : Number(token)
+    editorSession.value++
+    editorOpen.value = true
   },
   { immediate: true },
 )
 onMounted(() => void auth.restore())
-onScopeDispose(() => {
-  alive = false
-  detailGeneration++
-  detailController?.abort()
-})
 </script>
 <style scoped lang="scss">
 .prompts-body {
@@ -422,7 +429,7 @@ onScopeDispose(() => {
   padding: 0;
 }
 :deep(.prompts-viewport) {
-  padding: 1.8rem 2rem 2rem;
+  padding: 1.4rem 2rem 2rem;
 }
 .prompts-add {
   display: inline-flex;
@@ -441,7 +448,7 @@ onScopeDispose(() => {
   align-items: center;
   justify-content: space-between;
   gap: 2rem;
-  padding: 0.25rem 0 2rem;
+  padding: 0.2rem 0 1.35rem;
   border-bottom: 1px solid var(--border);
 }
 .prompts-kicker {
@@ -492,13 +499,43 @@ h1 span {
   grid-column: 2;
   grid-row: 1;
 }
+.prompts-auth {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.8rem;
+  margin-top: 1rem;
+  padding: 0.9rem 1rem;
+  border: 1px solid var(--border);
+  border-radius: 0.75rem;
+  color: var(--text-muted);
+  background: var(--surface-2);
+}
+.prompts-auth > div {
+  flex: 1;
+  min-width: 160px;
+}
+.prompts-auth strong {
+  font-size: 0.8rem;
+  font-weight: 500;
+}
+.prompts-auth p {
+  font-size: 0.72rem;
+  margin-top: 0.25rem;
+  color: var(--text-soft);
+}
+.prompts-auth button {
+  min-height: 40px;
+  color: var(--accent-text);
+  font-size: 0.75rem;
+}
 .prompts-toolbar {
   display: flex;
   align-items: center;
   justify-content: space-between;
   flex-wrap: wrap;
   gap: 1rem;
-  margin: 1.25rem 0 0.75rem;
+  margin: 1rem 0 0.65rem;
 }
 .prompts-views {
   display: flex;
@@ -635,11 +672,6 @@ h1 span {
     transition: none;
   }
 }
-.prompts-grid {
-  columns: 15rem;
-  column-count: 3;
-  column-gap: 1.25rem;
-}
 .prompts-bottom {
   display: flex;
   flex-wrap: wrap;
@@ -676,15 +708,7 @@ button:disabled {
   opacity: 0.45;
   cursor: default;
 }
-@media (min-width: 1700px) {
-  .prompts-grid {
-    column-count: 4;
-  }
-}
 @media (max-width: 1050px) {
-  .prompts-grid {
-    column-count: 2;
-  }
   .prompts-intro__index {
     min-width: auto;
   }
@@ -720,10 +744,6 @@ button:disabled {
   .prompts-kicker {
     font-size: 0.5rem;
   }
-  .prompts-grid {
-    column-width: auto;
-    column-gap: 0.75rem;
-  }
   .prompts-toolbar {
     gap: 0.75rem;
   }
@@ -751,11 +771,6 @@ button:disabled {
   }
   .prompts-bottom p {
     line-height: 1.8;
-  }
-}
-@media (max-width: 380px) {
-  .prompts-grid {
-    column-count: 1;
   }
 }
 </style>

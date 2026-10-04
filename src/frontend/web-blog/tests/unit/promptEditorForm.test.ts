@@ -9,10 +9,17 @@ import { promptForm } from '../../app/features/prompt/editor'
 import type { ManagedPrompt } from '../../app/features/prompt/types'
 const mocks = vi.hoisted(() => ({
   repo: { adminDetail: vi.fn(), save: vi.fn(), submission: vi.fn() },
-  auth: {} as { currentUser: Ref<{ id: string } | null>; restore: ReturnType<typeof vi.fn> },
+  auth: {} as { currentUser: Ref<{ id: string } | null>; isLoggedIn: Ref<boolean>; restore: ReturnType<typeof vi.fn> },
+  login: { isOpen: { value: false }, preferModal: { value: true }, open: vi.fn() } as {
+    isOpen: Ref<boolean>
+    preferModal: Ref<boolean>
+    open: ReturnType<typeof vi.fn>
+  },
 }))
 mockNuxtImport('usePromptRepository', () => () => mocks.repo)
 mockNuxtImport('useCurrentUser', () => () => mocks.auth)
+mockNuxtImport('useLoginDrawer', () => () => mocks.login)
+mockNuxtImport('onBeforeRouteUpdate', () => () => undefined)
 const wrappers: { unmount(): void }[] = []
 const item = (patch: Partial<ManagedPrompt> = {}): ManagedPrompt => ({
   ...promptForm(),
@@ -32,7 +39,11 @@ const item = (patch: Partial<ManagedPrompt> = {}): ManagedPrompt => ({
 })
 beforeEach(() => {
   sessionStorage.clear()
-  mocks.auth = { currentUser: ref({ id: 'owner' }), restore: vi.fn().mockResolvedValue(true) }
+  mocks.auth = { currentUser: ref({ id: 'owner' }), isLoggedIn: ref(true), restore: vi.fn().mockResolvedValue(true) }
+  mocks.login = { isOpen: ref(false), preferModal: ref(true), open: vi.fn() }
+  mocks.login.open.mockImplementation(() => {
+    mocks.login.isOpen.value = true
+  })
   mocks.repo.adminDetail.mockReset().mockResolvedValue(item())
   mocks.repo.save.mockReset()
   mocks.repo.submission.mockReset()
@@ -40,6 +51,7 @@ beforeEach(() => {
 afterEach(() => {
   wrappers.splice(0).forEach((wrapper) => wrapper.unmount())
   vi.restoreAllMocks()
+  vi.unstubAllGlobals()
 })
 async function setup(id: number | null = null) {
   const wrapper = await mountSuspended(Editor, {
@@ -106,7 +118,9 @@ it('来源不合法时展开更多细节并聚焦对应字段', async () => {
 it('冲突核查显示服务器完整正负词、效果图、图片描述及来源而不覆盖输入', async () => {
   const wrapper = await setup(1)
   await wrapper.get('[data-prompt-field="prompt"]').setValue('本地新提示词')
-  mocks.repo.save.mockRejectedValueOnce(Object.assign(new Error('版本冲突'), { statusCode: 409 }))
+  mocks.repo.save.mockRejectedValueOnce(
+    Object.assign(new Error('版本冲突'), { statusCode: 409, conflictKind: 'revision' }),
+  )
   const negative = '完整负面词 '.repeat(40)
   mocks.repo.adminDetail.mockResolvedValueOnce(
     item({
@@ -164,4 +178,123 @@ it('公开内容明确提供转为草稿动作并在底部报告成功状态', a
   expect(mocks.repo.save).toHaveBeenCalledWith(expect.objectContaining({ status: 'draft' }), expect.any(String), 1, 1)
   expect(wrapper.get('.prompt-editor__footer [role="status"]').text()).toContain('草稿已保存，仅博主可见')
   expect(wrapper.get('.prompt-editor__actions .prompt-editor__secondary').text()).toBe('保存草稿')
+})
+
+it.each([
+  ['Control', 'draft'],
+  ['Meta', 'published'],
+] as const)('%s+S按当前状态保存，不把草稿意外发布', async (modifier, status) => {
+  mocks.repo.adminDetail.mockResolvedValueOnce(item({ status }))
+  const wrapper = await setup(1)
+  mocks.repo.save.mockResolvedValueOnce(item({ status, revision: 2 }))
+  await wrapper.get('[data-prompt-field="description"]').setValue('快捷键保存的笔记')
+  const event = new KeyboardEvent('keydown', {
+    key: 's',
+    bubbles: true,
+    cancelable: true,
+    ctrlKey: modifier === 'Control',
+    metaKey: modifier === 'Meta',
+  })
+  wrapper.get('[data-prompt-field="description"]').element.dispatchEvent(event)
+  await flushPromises()
+  expect(event.defaultPrevented).toBe(true)
+  expect(mocks.repo.save).toHaveBeenCalledTimes(1)
+  expect(mocks.repo.save.mock.calls[0]![0]).toMatchObject({ status, description: '快捷键保存的笔记' })
+})
+it('快捷键忽略输入法组字、媒体选择和重复提交，保留普通输入', async () => {
+  const wrapper = await setup(1)
+  const title = wrapper.get('[data-prompt-field="title"]')
+  const composing = new KeyboardEvent('keydown', {
+    key: 's',
+    metaKey: true,
+    isComposing: true,
+    bubbles: true,
+    cancelable: true,
+  })
+  title.element.dispatchEvent(composing)
+  expect(composing.defaultPrevented).toBe(false)
+  await wrapper.get('[data-prompt-field="mediaId"]').trigger('click')
+  const mediaKey = new KeyboardEvent('keydown', { key: 's', ctrlKey: true, bubbles: true, cancelable: true })
+  wrapper.get('.prompt-editor__library').element.dispatchEvent(mediaKey)
+  expect(mediaKey.defaultPrevented).toBe(false)
+  expect(mocks.repo.save).not.toHaveBeenCalled()
+  await wrapper.get('.prompt-editor__library button:first-child').trigger('click')
+  await flushPromises()
+  let finish!: (value: ManagedPrompt) => void
+  mocks.repo.save.mockImplementationOnce(
+    () =>
+      new Promise((resolve) => {
+        finish = resolve
+      }),
+  )
+  const shortcut = () =>
+    wrapper
+      .get('.prompt-editor')
+      .element.dispatchEvent(new KeyboardEvent('keydown', { key: 's', metaKey: true, bubbles: true, cancelable: true }))
+  shortcut()
+  await vi.waitFor(() => expect(finish).toBeTypeOf('function'))
+  shortcut()
+  expect(mocks.repo.save).toHaveBeenCalledTimes(1)
+  finish(item({ revision: 2 }))
+  await flushPromises()
+})
+
+it('关闭按钮只请求URL关闭，不与页面路由守卫重复确认未保存输入', async () => {
+  const wrapper = await setup(1)
+  await wrapper.get('[data-prompt-field="description"]').setValue('尚未保存的内容')
+  const confirm = vi.fn().mockReturnValue(false)
+  vi.stubGlobal('confirm', confirm)
+  try {
+    await wrapper.get('.prompt-editor__close').trigger('click')
+    expect(wrapper.emitted('close')).toHaveLength(1)
+    expect(confirm).not.toHaveBeenCalled()
+    expect((wrapper.get('[data-prompt-field="description"]').element as HTMLTextAreaElement).value).toBe(
+      '尚未保存的内容',
+    )
+  } finally {
+    vi.unstubAllGlobals()
+  }
+})
+
+it('存储失败并在保存时401失去账号后遮蔽原文，原身份恢复可继续内存中的输入', async () => {
+  const wrapper = await setup(1)
+  const storage = sessionStorage
+  vi.stubGlobal('sessionStorage', {
+    getItem: storage.getItem.bind(storage),
+    removeItem: storage.removeItem.bind(storage),
+    setItem: () => {
+      throw new Error('quota exceeded')
+    },
+  })
+  const secret = '只留在原作者窗口中的未保存完整提示词'
+  await wrapper.get('[data-prompt-field="prompt"]').setValue(secret)
+  mocks.repo.save.mockImplementationOnce(async () => {
+    mocks.auth.currentUser.value = null
+    throw Object.assign(new Error('登录过期'), { statusCode: 401 })
+  })
+  await wrapper.get('.prompt-editor__primary').trigger('click')
+  await flushPromises()
+  expect(wrapper.find('.prompt-editor__form').exists()).toBe(false)
+  expect(wrapper.find('.prompt-editor__comparison').exists()).toBe(false)
+  expect(wrapper.find('[data-prompt-field="prompt"]').exists()).toBe(false)
+  expect(wrapper.text()).not.toContain(secret)
+  expect(wrapper.get('.prompt-editor__locked').text()).toContain('未保存输入仍保留在此窗口')
+  expect(wrapper.get('.prompt-editor__locked').text()).toContain('无法保存')
+  expect((wrapper.get('.prompt-editor__close').element as HTMLButtonElement).disabled).toBe(false)
+  await wrapper.get('.prompt-editor__locked button').trigger('click')
+  expect(mocks.login.open).toHaveBeenCalledWith('login', true)
+  expect(wrapper.get('.prompt-editor').classes()).toContain('prompt-editor--login-open')
+  mocks.auth.currentUser.value = { id: 'another-owner' }
+  await flushPromises()
+  expect(wrapper.find('.prompt-editor__form').exists()).toBe(false)
+  mocks.auth.currentUser.value = { id: 'owner' }
+  mocks.login.isOpen.value = false
+  await flushPromises()
+  expect((wrapper.get('fieldset').element as HTMLFieldSetElement).disabled).toBe(true)
+  mocks.repo.adminDetail.mockResolvedValueOnce(item({ prompt: '服务器此时的内容' }))
+  const reload = wrapper.findAll('.prompt-editor__feedback button').find((button) => button.text() === '重新读取')!
+  await reload.trigger('click')
+  await flushPromises()
+  expect((wrapper.get('fieldset').element as HTMLFieldSetElement).disabled).toBe(false)
+  expect((wrapper.get('[data-prompt-field="prompt"]').element as HTMLTextAreaElement).value).toBe(secret)
 })
