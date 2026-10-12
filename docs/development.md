@@ -62,7 +62,7 @@ corepack pnpm dev:terminal:api
 corepack pnpm dev:terminal:web
 ```
 
-默认入口先启动或复用后端，等待就绪后再启动前端。两端使用独立 Terminal.app 窗口，标题分别为 `TixXinBlog | 后端 API` 和 `TixXinBlog | 前端网站`，日志分开显示。两个窗口在屏幕左侧按一列上下排列（后端在上、前端在下），留出间距；高度根据可用屏幕空间缩小，避开菜单栏和 Dock。`dev:terminal:api` / `dev:terminal:web` 仅处理对应服务，也可使用 `--service=api|web`。已就绪服务直接复用，不重复开窗。
+默认入口先启动或复用后端，等待就绪后再启动前端。两端使用独立 Terminal.app 窗口，标题分别为 `TixXinBlog | 后端 API` 和 `TixXinBlog | 前端网站`，日志分开显示。两个窗口默认在系统枚举的首块副屏左侧按一列上下排列；没有副屏时使用主屏。布局保持一列（后端在上、前端在下），留出间距；高度根据可用屏幕空间缩小，避开菜单栏和 Dock。`dev:terminal:api` / `dev:terminal:web` 仅处理对应服务，也可使用 `--service=api|web`。已就绪服务直接复用，不重复开窗。
 
 每个窗口运行单服务托管器，各自保存 `.artifacts/dev/<会话>/` 日志和 `session.json`；Ctrl+C 只清理本窗口创建的服务与后代。后端停止或重启后，已就绪过的前端保留进程并报告依赖未就绪，后端恢复后继续工作；前端首次启动仍需同源 API 就绪。前端进程退出或端口归属变化时仍会报错退出。启动某一侧失败不会停止另一侧，数据库保持运行。复用服务的日志仍在原会话中查看。
 
