@@ -243,13 +243,16 @@ function measureLoginShape() {
   if (!panel || !avatar || !bar) return
   const panelBox = panel.getBoundingClientRect()
   const avatarBox = avatar.getBoundingClientRect()
+  const drawerGap = Math.max(0, bar.getBoundingClientRect().top - panelBox.bottom)
   loginShape.value = createLoginPanelShape({
     width: panelBox.width,
     height: panelBox.height,
     avatarX: avatarBox.left + avatarBox.width / 2 - panelBox.left,
     avatarY: avatarBox.top + avatarBox.height / 2 - panelBox.top,
-    // 使用未缩放尺寸，悬停只消耗预留间距，不使凹弧跟着抖动。
-    avatarRadius: avatar.offsetWidth / 2,
+    // 按可见头像计算，排除同底色的 3px 外框，避免视觉间隙比卡片间距多一圈。
+    // 未缩放尺寸保证悬停时凹弧不抖动；半像素补偿凹口描边向内占用的空间。
+    avatarRadius: avatar.clientWidth / 2,
+    gap: drawerGap + 0.5,
     cornerRadius: parseFloat(getComputedStyle(bar).borderTopLeftRadius),
   })
 }
