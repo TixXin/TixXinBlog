@@ -182,3 +182,51 @@ test('启动尚未就绪时取消，清理本次进程及孙进程', async (t) =
   await cancelled
   await until(() => !alive(pids.parent) && !alive(pids.child))
 })
+
+test('两个独立会话停止其中一个不会结束另一个服务或其后代', async (t) => {
+  const first = await fixture(t)
+  const second = await fixture(t)
+  const a = createSupervisor({ services: [first.service], directory: first.directory })
+  const b = createSupervisor({ services: [second.service], directory: second.directory })
+  first.handles.push(a)
+  second.handles.push(b)
+  await a.launch()
+  await b.launch()
+  const aPids = JSON.parse(readFileSync(first.pids))
+  const bPids = JSON.parse(readFileSync(second.pids))
+  await a.close()
+  await until(() => !alive(aPids.parent) && !alive(aPids.child))
+  assert.equal((await inspectService(second.service)).state, 'ready')
+  assert(alive(bPids.parent) && alive(bPids.child))
+})
+
+test('独立前端在依赖异常超过就绪时限后保留进程，依赖恢复后重新报告就绪', async () => {
+  const controller = new AbortController()
+  let polls = 0
+  let monitoring = false
+  const messages = []
+  const service = { name: '前端', service: 'web' }
+  const supervisor = createSupervisor({
+    services: [service],
+    directory: here,
+    timeout: 100,
+    stopOnUnhealthy: false,
+    report: (message) => messages.push(message),
+    inspect: async () => {
+      if (!monitoring) return { state: 'ready', identity: { session: 'existing' } }
+      polls++
+      if (polls === 3) controller.abort()
+      return { state: polls < 3 ? 'unhealthy' : 'ready', identity: { session: 'existing' } }
+    },
+    start: () => {
+      throw new Error('不应重复创建已存在服务')
+    },
+  })
+  await supervisor.launch()
+  monitoring = true
+  await supervisor.monitor(controller.signal)
+  assert.equal(polls, 3)
+  assert(messages.some((message) => message.includes('已恢复就绪')))
+  assert(!messages.some((message) => message.includes('本次启动的服务已结束')))
+  await supervisor.close()
+})
