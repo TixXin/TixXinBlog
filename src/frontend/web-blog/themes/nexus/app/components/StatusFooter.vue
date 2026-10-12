@@ -6,9 +6,16 @@
 -->
 
 <template>
-  <div class="nexus-bar" :class="{ 'is-expanded': isExpanded }" @mouseenter="onBarEnter" @mouseleave="onBarLeave">
+  <div
+    ref="barRef"
+    class="nexus-bar"
+    :class="{ 'is-expanded': isExpanded }"
+    @mouseenter="onBarEnter"
+    @mouseleave="onBarLeave"
+  >
     <!-- 头像：半悬浮，hover 触发展开 + 在线状态微标签（登录态下切换为当前用户） -->
     <NuxtLink
+      ref="avatarRef"
       to="/"
       class="nexus-bar__avatar-wrap"
       :style="{ '--avatar-glow-color': avatarGlowColor }"
@@ -156,9 +163,24 @@
     </div>
 
     <!-- 底部栏内嵌登录面板：仅在非 modal 模式下显示（modal 模式由 app.vue 的 AuthModal 接管） -->
-    <Transition name="nexus-login-panel">
-      <div v-if="isLoginOpen && !preferModal" ref="loginPanelRef" class="nexus-bar__login-panel">
-        <AuthPanel />
+    <Transition name="nexus-login-panel" @after-leave="clearLoginShape">
+      <div
+        v-if="isLoginOpen && !preferModal"
+        ref="loginPanelRef"
+        class="nexus-bar__login-panel"
+        :class="{ 'is-shape-ready': loginShape }"
+      >
+        <svg
+          v-if="loginShape"
+          class="nexus-bar__login-surface"
+          :viewBox="`0 0 ${loginShape.width} ${loginShape.height}`"
+          preserveAspectRatio="none"
+          aria-hidden="true"
+          focusable="false"
+        >
+          <path :d="loginShape.path" />
+        </svg>
+        <div class="nexus-bar__login-content"><AuthPanel /></div>
       </div>
     </Transition>
 
@@ -195,6 +217,8 @@
 
 <script setup lang="ts">
 import type { OwnerPresence } from '~/features/site/types'
+import type { ComponentPublicInstance } from 'vue'
+import { createLoginPanelShape } from '~/utils/loginPanelShape'
 
 const route = useRoute()
 const router = useRouter()
@@ -206,6 +230,66 @@ const { isLoggedIn, currentUser, logout } = useCurrentUser()
 const { info } = useToast()
 
 const loginPanelRef = ref<HTMLElement | null>(null)
+const barRef = ref<HTMLElement | null>(null)
+const avatarRef = ref<ComponentPublicInstance | null>(null)
+const loginShape = shallowRef<ReturnType<typeof createLoginPanelShape>>(null)
+let shapeObserver: ResizeObserver | undefined
+let shapeFrame = 0
+
+function measureLoginShape() {
+  const panel = loginPanelRef.value
+  const avatar = avatarRef.value?.$el as HTMLElement | undefined
+  const bar = barRef.value
+  if (!panel || !avatar || !bar) return
+  const panelBox = panel.getBoundingClientRect()
+  const avatarBox = avatar.getBoundingClientRect()
+  loginShape.value = createLoginPanelShape({
+    width: panelBox.width,
+    height: panelBox.height,
+    avatarX: avatarBox.left + avatarBox.width / 2 - panelBox.left,
+    avatarY: avatarBox.top + avatarBox.height / 2 - panelBox.top,
+    // 使用未缩放尺寸，悬停只消耗预留间距，不使凹弧跟着抖动。
+    avatarRadius: avatar.offsetWidth / 2,
+    cornerRadius: parseFloat(getComputedStyle(bar).borderTopLeftRadius),
+  })
+}
+
+function scheduleLoginShape() {
+  if (shapeFrame) return
+  shapeFrame = requestAnimationFrame(() => {
+    shapeFrame = 0
+    measureLoginShape()
+  })
+}
+
+function stopLoginShape() {
+  shapeObserver?.disconnect()
+  shapeObserver = undefined
+  if (shapeFrame) cancelAnimationFrame(shapeFrame)
+  shapeFrame = 0
+  window.removeEventListener('resize', scheduleLoginShape)
+}
+
+function clearLoginShape() {
+  if (!isLoginOpen.value || preferModal.value) loginShape.value = null
+}
+
+watch(
+  [loginPanelRef, isLoginOpen, preferModal],
+  ([panel, open, modal]) => {
+    stopLoginShape()
+    // 离场动画保留最后一帧轮廓，但停止观察，防止关窗后更新。
+    if (!panel || !open || modal) return
+    loginShape.value = null
+    measureLoginShape()
+    shapeObserver = new ResizeObserver(scheduleLoginShape)
+    for (const element of [panel, barRef.value, avatarRef.value?.$el]) {
+      if (element instanceof HTMLElement) shapeObserver.observe(element)
+    }
+    window.addEventListener('resize', scheduleLoginShape)
+  },
+  { flush: 'post' },
+)
 const userMenuButtonRef = ref<HTMLElement | null>(null)
 const userMenuRef = ref<HTMLElement | null>(null)
 const isUserMenuOpen = ref(false)
@@ -467,6 +551,7 @@ watch([isLoginOpen, isUserMenuOpen], ([loginOpen, menuOpen]) => {
 })
 
 onBeforeUnmount(() => {
+  stopLoginShape()
   if (expandTimer) clearTimeout(expandTimer)
   if (collapseTimer) clearTimeout(collapseTimer)
   detachOutsideHandler()
@@ -479,10 +564,11 @@ $bar-height: 72px;
 $bar-expanded: 112px;
 
 .nexus-bar {
-  // 主内容区左边界（相对底部栏左边）：左栏宽 + grid gap
-  --bar-pivot-left: calc(#{$sidebar-left-width} + #{$grid-gap});
-  // 头像区右侧的留空（同 padding-left），便于公式复用
-  --bar-avatar-pad: 7.75rem;
+  // 操作区随头像一起右移，保持设置按钮到导航分隔线的原有间距。
+  --bar-pivot-left: calc(#{$sidebar-left-width} + #{$grid-gap} + var(--bar-avatar-offset));
+  // 头像右移，为凹弧左侧留出完整圆角及水平底边；账号入口同步保持间距。
+  --bar-avatar-offset: 1.5rem;
+  --bar-avatar-pad: calc(7.75rem + var(--bar-avatar-offset));
   // 统一的元素间距：头像-登录-月亮-设置-分隔线-导航 全部使用 1.5rem
   --bar-divider-gap: 1.5rem;
   // 三个左侧按钮的统一尺寸
@@ -540,7 +626,7 @@ $bar-expanded: 112px;
 // ---- 头像（半悬浮，展开时位置不变） ----
 .nexus-bar__avatar-wrap {
   position: absolute;
-  left: 1.25rem;
+  left: calc(1.25rem + var(--bar-avatar-offset));
   bottom: 16px;
   width: 80px;
   height: 80px;
@@ -1357,39 +1443,94 @@ $bar-expanded: 112px;
   left: 0;
   right: 0;
   z-index: 21;
-  padding: 1.75rem 1.5rem;
-  background: var(--surface-1);
-  border: 1px solid var(--border);
-  border-radius: $radius-card;
-  box-shadow: var(--shadow-card);
+  // 补回原边框占用的空间，保持表单位置与卡片高度不变。
+  padding: calc(1.75rem + 1px) calc(1.5rem + 1px);
+  visibility: hidden;
+  pointer-events: none;
+
+  &.is-shape-ready {
+    visibility: visible;
+  }
+}
+
+.nexus-bar__login-surface {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  pointer-events: none;
+  filter: drop-shadow(0 1px 1.5px rgba(0, 0, 0, 0.06)) drop-shadow(0 4px 6px rgba(0, 0, 0, 0.08));
+
+  :global(.dark) & {
+    filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.3)) drop-shadow(0 8px 16px rgba(0, 0, 0, 0.2));
+  }
+
+  path {
+    fill: var(--surface-1);
+    stroke: var(--border);
+    stroke-width: 1px;
+    // 只让真实卡片表面接收点击，凹口保持透明且能点到后方。
+    pointer-events: visiblePainted;
+  }
+}
+
+.nexus-bar__login-content {
+  position: relative;
+  pointer-events: none;
+
+  :deep(.auth-panel) {
+    pointer-events: auto;
+  }
 }
 
 /* 登录面板进出动画 */
 .nexus-login-panel-enter-active {
-  transition:
-    opacity 0.2s ease-out,
-    transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+  transition: opacity 0.2s ease-out;
+  .nexus-bar__login-content {
+    transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
   @media (prefers-reduced-motion: reduce) {
     transition: none;
+    .nexus-bar__login-content {
+      transition: none;
+    }
   }
 }
 
 .nexus-login-panel-leave-active {
-  transition:
-    opacity 0.15s ease-in,
-    transform 0.15s ease-in;
+  transition: opacity 0.15s ease-in;
+  .nexus-bar__login-content {
+    transition: transform 0.15s ease-in;
+  }
   @media (prefers-reduced-motion: reduce) {
     transition: none;
+    .nexus-bar__login-content {
+      transition: none;
+    }
   }
 }
 
 .nexus-login-panel-enter-from {
   opacity: 0;
-  transform: translateY(8px);
+  .nexus-bar__login-content {
+    transform: translateY(8px);
+  }
 }
 
 .nexus-login-panel-leave-to {
   opacity: 0;
-  transform: translateY(8px);
+  .nexus-bar__login-content {
+    transform: translateY(8px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .nexus-login-panel-enter-from,
+  .nexus-login-panel-leave-to {
+    .nexus-bar__login-content {
+      transform: none;
+    }
+  }
 }
 </style>
