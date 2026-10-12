@@ -74,10 +74,12 @@ async function fixture(t, mode = 'ready') {
 for (const mode of ['ready', 'exit', 'unhealthy', 'warming'])
   test(`实际服务 ${mode} 与孙进程清理`, async (t) => {
     const f = await fixture(t, mode)
+    const terminalLines = []
     const supervisor = createSupervisor({
       services: [f.service],
       directory: f.directory,
       timeout: mode === 'unhealthy' ? 6000 : 15000,
+      start: (service, session, logPath) => startOwned(service, session, logPath, (line) => terminalLines.push(line)),
     })
     f.handles.push(supervisor)
     if (mode === 'ready' || mode === 'warming') {
@@ -93,6 +95,9 @@ for (const mode of ['ready', 'exit', 'unhealthy', 'warming'])
     const log = readFileSync(join(f.directory, 'fixture.log'), 'utf8')
     assert(!log.includes(f.service.env.TEST_SECRET))
     assert(log.includes('[已隐藏]'))
+    assert(!terminalLines.join('\n').includes(f.service.env.TEST_SECRET))
+    assert(terminalLines.some((line) => line.includes('[已隐藏]')))
+    assert(terminalLines.every((line) => line.startsWith('[测试服务] ')))
   })
 test('复用已有服务，退出不会停止该服务', async (t) => {
   const f = await fixture(t)

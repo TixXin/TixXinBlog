@@ -4,7 +4,7 @@ import { fileURLToPath } from 'node:url'
 import { appendFileSync } from 'node:fs'
 import { redact } from './config.mjs'
 
-export function startOwned(service, session, logPath) {
+export function startOwned(service, session, logPath, reportLine = () => {}) {
   const encoded = Buffer.from(JSON.stringify([service.entry, ...service.args])).toString('base64')
   const command = process.platform === 'win32' ? 'powershell.exe' : process.execPath
   const args =
@@ -41,7 +41,11 @@ export function startOwned(service, session, logPath) {
   })
   for (const stream of [child.stdout, child.stderr]) {
     let pending = ''
-    const flush = (line) => appendFileSync(logPath, redact(line.replaceAll('\r', ''), service.env) + '\n')
+    const flush = (line) => {
+      const safe = redact(line.replaceAll('\r', ''), service.env)
+      appendFileSync(logPath, safe + '\n')
+      reportLine(`[${service.name}] ${safe}`)
+    }
     stream.on('data', (chunk) => {
       pending += chunk.toString()
       const lines = pending.split('\n')

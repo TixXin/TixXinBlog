@@ -5,6 +5,7 @@ import { setTimeout as delay } from 'node:timers/promises'
 import { readConfig, redact } from './dev/config.mjs'
 import { checkDatabase, inspectService, run, startPostgres } from './dev/checks.mjs'
 import { createSupervisor } from './dev/supervisor.mjs'
+import { startOwned } from './dev/process.mjs'
 
 const mode = process.argv[2]
 const controller = new AbortController()
@@ -29,6 +30,8 @@ if (mode === 'all' && !process.stdin.isTTY) {
 let config
 try {
   if (!['check', 'all'].includes(mode)) throw new Error('用法：corepack pnpm dev:check 或 corepack pnpm dev:all')
+  if (process.argv.slice(3).some((arg) => arg !== '--logs') || (mode !== 'all' && process.argv.includes('--logs')))
+    throw new Error('仅 dev:all 支持 --logs：在当前终端同步显示脱敏服务日志')
   config = readConfig()
   const version = await run(...config.pnpm, { cwd: config.root })
   if (version !== '9.15.0') throw new Error('pnpm 版本必须为 9.15.0')
@@ -60,7 +63,14 @@ try {
   } else if (!controller.signal.aborted) {
     const directory = join(config.root, '.artifacts/dev', `${Date.now()}-${process.pid}`)
     mkdirSync(directory, { recursive: true })
-    supervisor = createSupervisor({ services: [config.api, config.web], directory, timeout: config.timeout, report })
+    supervisor = createSupervisor({
+      services: [config.api, config.web],
+      directory,
+      timeout: config.timeout,
+      report,
+      start: (service, session, logPath) =>
+        startOwned(service, session, logPath, process.argv.includes('--logs') ? report : undefined),
+    })
     manifestPath = join(directory, 'session.json')
     manifest = { pid: process.pid, session: supervisor.session, status: 'starting', services: [] }
     writeFileSync(manifestPath, JSON.stringify(manifest, null, 2))
