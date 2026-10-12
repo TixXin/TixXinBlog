@@ -24,20 +24,51 @@ export function terminalCommand({ root, node, pnpm, path, service }) {
   ].join(' && ')
 }
 
-export function terminalAppleScript(command, service) {
+export async function terminalBounds(service) {
   if (!Object.hasOwn(labels, service)) throw new Error('服务必须为 api 或 web')
+  // AppKit 排除菜单栏和 Dock；转换为 AppleScript 从屏幕左上角计算的坐标。
+  const { stdout } = await execute(
+    '/usr/bin/osascript',
+    [
+      '-l',
+      'JavaScript',
+      '-e',
+      `ObjC.import('AppKit');
+const frame = $.NSScreen.mainScreen.visibleFrame;
+const primaryHeight = $.NSScreen.screens.objectAtIndex(0).frame.size.height;
+JSON.stringify({ left: frame.origin.x, top: primaryHeight - frame.origin.y - frame.size.height, width: frame.size.width, height: frame.size.height });`,
+    ],
+    { cwd: workspace, timeout: 10000 },
+  )
+  const area = JSON.parse(stdout)
+  if (![area.left, area.top, area.width, area.height].every(Number.isFinite) || area.width < 300 || area.height < 300)
+    throw new Error('无法确定可用屏幕范围，未调整终端窗口')
+  const margin = 12
+  const gap = 12
+  const height = Math.min(560, Math.floor((area.height - margin * 2 - gap) / 2))
+  const width = Math.min(960, area.width - margin * 2)
+  const left = Math.round(area.left + margin)
+  const top = Math.round(area.top + margin + (service === 'web' ? height + gap : 0))
+  return [left, top, left + width, top + height]
+}
+
+export function terminalAppleScript(command, service, bounds) {
+  if (!Object.hasOwn(labels, service)) throw new Error('服务必须为 api 或 web')
+  if (!Array.isArray(bounds) || bounds.length !== 4 || !bounds.every(Number.isFinite))
+    throw new Error('终端窗口坐标无效')
   // do script 不指定已有标签，确保不向用户正在使用的 shell 或进程输入命令。
   return `tell application "Terminal"
   activate
   set devTab to do script ${appleQuote(command)}
   set custom title of devTab to ${appleQuote(`TixXinBlog | ${labels[service]}`)}
-  set bounds of front window to ${service === 'api' ? '{40, 60, 1000, 620}' : '{120, 120, 1080, 680}'}
+  set bounds of front window to {${bounds.join(', ')}}
   return id of front window
 end tell`
 }
 
 export async function openTerminal(command, service) {
-  const { stdout } = await execute('/usr/bin/osascript', ['-e', terminalAppleScript(command, service)], {
+  const bounds = await terminalBounds(service)
+  const { stdout } = await execute('/usr/bin/osascript', ['-e', terminalAppleScript(command, service, bounds)], {
     cwd: workspace,
     timeout: 15000,
   })
