@@ -2,7 +2,7 @@
 <template>
   <CommonPageFrame class="main-inner prompts-page" header-key="prompts">
     <template #header
-      ><CommonPageHeader title="灵感图鉴" subtitle="图片提示词与创作笔记" icon="lucide:aperture"
+      ><CommonPageHeader title="灵感图鉴" subtitle="图像生成提示词与创作记录" icon="lucide:aperture"
         ><template #action
           ><button v-if="isOwner" type="button" class="prompts-add" :disabled="!ready" @click="openEditor(null)">
             <Icon name="lucide:plus" size="16" /><span>分享灵感</span>
@@ -24,9 +24,9 @@
           <h1>从一张图，<span>遇见一种想象。</span></h1>
           <p class="prompts-intro__description">打开喜欢的画面，查看完整提示词，让下一次创作有迹可循。</p>
         </div>
-        <div v-if="metadata" class="prompts-intro__index" aria-label="公开灵感数量">
+        <div v-if="metadata" class="prompts-intro__index" aria-label="公开提示词数量">
           <strong>{{ String(metadata.stats.prompts).padStart(2, '0') }}</strong
-          ><span>份灵感，持续生长</span><Icon name="lucide:move-up-right" size="22" />
+          ><span>条提示词</span><Icon name="lucide:move-up-right" size="22" />
         </div>
       </section>
       <div v-if="ready && !isOwner && (managementIntent || authError)" class="prompts-auth" role="status">
@@ -47,7 +47,7 @@
             :disabled="!ready"
             @click="setView(false)"
           >
-            全部灵感<span v-if="metadata">{{ metadata.stats.prompts }}</span></button
+            全部<span v-if="metadata">{{ metadata.stats.prompts }}</span></button
           ><button v-if="isOwner" type="button" :aria-pressed="draftView" :disabled="!ready" @click="setView(true)">
             <Icon name="lucide:file-pen-line" size="14" />我的草稿
           </button>
@@ -55,7 +55,7 @@
         <CommonSearchBox
           v-model="keyword"
           :disabled="!ready"
-          placeholder="搜索画面、提示词…"
+          placeholder="搜索标题、提示词…"
           label="搜索图片提示词"
           @compositionstart="startComposition"
           @compositionend="endComposition"
