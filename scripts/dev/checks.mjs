@@ -30,7 +30,11 @@ export function portOpen(port, host = '127.0.0.1') {
   })
 }
 export async function json(url, timeout = 2500) {
-  const response = await fetch(url, { signal: AbortSignal.timeout(timeout), redirect: 'error' })
+  const response = await fetch(url, {
+    signal: AbortSignal.timeout(timeout),
+    redirect: 'error',
+    headers: { 'x-tixxin-dev-probe': '1' },
+  })
   if (!response.ok) throw new Error(`HTTP ${response.status}`)
   const result = await response.json()
   return result.data ?? result
