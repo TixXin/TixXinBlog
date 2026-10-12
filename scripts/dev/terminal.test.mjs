@@ -18,11 +18,13 @@ test('含空格、引号及 shell 替换字符的路径保持字面值，执行�
   )
   const pnpm = join(root, 'pnpm.js')
   const path = '/usr/bin:/bin:' + root
-  const command = terminalCommand({ root, node: process.execPath, pnpm, path, secret: 'never-forward-this-secret' })
-  const output = execFileSync('/bin/sh', ['-c', command], { encoding: 'utf8' })
-  const result = JSON.parse(output.trim().split('\n').at(-1))
   // macOS 临时目录可能经 /var 符号链接解析，使用实际 cwd 对照。
   const expected = execFileSync(process.execPath, ['-p', 'process.cwd()'], { cwd: root, encoding: 'utf8' }).trim()
-  assert.deepEqual(result, { cwd: expected, args: ['all', '--logs'], pnpm, path })
-  assert(!command.includes('never-forward-this-secret'))
+  for (const service of ['api', 'web']) {
+    const command = terminalCommand({ root, node: process.execPath, pnpm, path, service })
+    const output = execFileSync('/bin/sh', ['-c', command], { encoding: 'utf8' })
+    const result = JSON.parse(output.trim().split('\n').at(-1))
+    assert.deepEqual(result, { cwd: expected, args: [service, '--logs'], pnpm, path })
+  }
+  assert.throws(() => terminalCommand({ root, service: 'all; exit' }), /服务必须为/)
 })

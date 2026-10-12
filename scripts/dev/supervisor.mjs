@@ -12,6 +12,7 @@ export function createSupervisor({
   inspect = inspectService,
   start = startOwned,
   report = () => {},
+  stopOnUnhealthy = true,
 }) {
   if (!Number.isFinite(timeout) || timeout < 100) throw new Error('启动超时必须为至少 100ms 的有效数字')
   const session = randomUUID()
@@ -84,9 +85,9 @@ export function createSupervisor({
           failures.set(entry.service.service, Date.now())
           report(`${entry.service.name}：暂未就绪，等待热重载或服务恢复`)
         }
-        // 配置热重载可能重新编译，沿用明确的就绪时限；实际进程退出即时处理。
+        // 单独托管前端时保留进程等待后端恢复；实际进程退出和归属变化仍即时处理。
         if (
-          (since && Date.now() - since >= timeout) ||
+          (stopOnUnhealthy && since && Date.now() - since >= timeout) ||
           owned.some((handle) => handle.ended) ||
           (status.state === 'foreign' && status.identity)
         ) {

@@ -8,6 +8,7 @@ import { createSupervisor } from './dev/supervisor.mjs'
 import { startOwned } from './dev/process.mjs'
 
 const mode = process.argv[2]
+const running = ['all', 'api', 'web'].includes(mode)
 const controller = new AbortController()
 let supervisor
 let manifestPath
@@ -20,7 +21,7 @@ async function stop() {
 process.once('SIGINT', () => void stop())
 process.once('SIGTERM', () => void stop())
 // 启动尚未就绪时也响应管道结束，避免取消操作后继续创建服务。
-if (mode === 'all' && !process.stdin.isTTY) {
+if (running && !process.stdin.isTTY) {
   process.stdin.resume()
   process.stdin.once('end', () => void stop())
   process.stdin.on('data', (value) => {
@@ -29,15 +30,15 @@ if (mode === 'all' && !process.stdin.isTTY) {
 }
 let config
 try {
-  if (!['check', 'all'].includes(mode)) throw new Error('用法：corepack pnpm dev:check 或 corepack pnpm dev:all')
-  if (process.argv.slice(3).some((arg) => arg !== '--logs') || (mode !== 'all' && process.argv.includes('--logs')))
-    throw new Error('仅 dev:all 支持 --logs：在当前终端同步显示脱敏服务日志')
+  if (!running && mode !== 'check') throw new Error('用法：node scripts/dev.mjs check|all|api|web [--logs]')
+  if (process.argv.slice(3).some((arg) => arg !== '--logs') || (!running && process.argv.includes('--logs')))
+    throw new Error('仅 all/api/web 启动模式支持 --logs：在当前终端同步显示脱敏服务日志')
   config = readConfig()
   const version = await run(...config.pnpm, { cwd: config.root })
   if (version !== '9.15.0') throw new Error('pnpm 版本必须为 9.15.0')
   report('配置：Node 25 / pnpm 9.15.0；环境变量校验通过')
   let database = await checkDatabase(config)
-  if (!database.connected && mode === 'all' && !controller.signal.aborted) {
+  if (!database.connected && (mode === 'all' || mode === 'api') && !controller.signal.aborted) {
     report('PostgreSQL：尝试按已有 Compose 配置启动')
     await startPostgres(config)
     for (let attempt = 0; attempt < 15 && !controller.signal.aborted; attempt++) {
@@ -64,15 +65,16 @@ try {
     const directory = join(config.root, '.artifacts/dev', `${Date.now()}-${process.pid}`)
     mkdirSync(directory, { recursive: true })
     supervisor = createSupervisor({
-      services: [config.api, config.web],
+      services: mode === 'api' ? [config.api] : mode === 'web' ? [config.web] : [config.api, config.web],
       directory,
       timeout: config.timeout,
       report,
+      stopOnUnhealthy: mode !== 'web',
       start: (service, session, logPath) =>
         startOwned(service, session, logPath, process.argv.includes('--logs') ? report : undefined),
     })
     manifestPath = join(directory, 'session.json')
-    manifest = { pid: process.pid, session: supervisor.session, status: 'starting', services: [] }
+    manifest = { pid: process.pid, session: supervisor.session, mode, status: 'starting', services: [] }
     writeFileSync(manifestPath, JSON.stringify(manifest, null, 2))
     const active = await supervisor.launch()
     manifest = {
@@ -85,7 +87,7 @@ try {
       })),
     }
     writeFileSync(manifestPath, JSON.stringify(manifest, null, 2))
-    report('开发链路已就绪；Ctrl+C 结束本次启动。')
+    report(`${mode === 'all' ? '开发链路' : mode === 'api' ? '后端' : '前端'}已就绪；Ctrl+C 仅结束本窗口创建的服务。`)
     await supervisor.monitor(controller.signal)
     await stop()
   }
@@ -99,5 +101,5 @@ try {
       manifestPath,
       JSON.stringify({ ...manifest, status: 'stopped', exitCode: process.exitCode ?? 0 }, null, 2),
     )
-  if (mode === 'all' && !process.stdin.isTTY) process.stdin.destroy()
+  if (running && !process.stdin.isTTY) process.stdin.destroy()
 }

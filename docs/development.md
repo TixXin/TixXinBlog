@@ -58,15 +58,19 @@ Ctrl+C 只清理本次启动器创建的服务与后代，复用的服务保持�
 corepack pnpm dev:terminal --help
 corepack pnpm dev:terminal --dry-run
 corepack pnpm dev:terminal
+corepack pnpm dev:terminal:api
+corepack pnpm dev:terminal:web
 ```
 
-此入口新建一个 Terminal.app 窗口，标题为 `TixXinBlog | 前后端开发`，在屏幕左侧显示。窗口内运行现有 `dev:all --logs`，按服务名前缀同步显示脱敏日志，并保留 `.artifacts/dev/<会话>/` 日志与状态文件。它沿用现有归属探针、真实 API 检查及清理机制；复用服务的历史和后续日志仍在原会话中查看。
+默认入口先启动或复用后端，等待就绪后再启动前端。两端使用独立 Terminal.app 窗口，标题分别为 `TixXinBlog | 后端 API` 和 `TixXinBlog | 前端网站`，日志分开显示。`dev:terminal:api` / `dev:terminal:web` 仅处理对应服务，也可使用 `--service=api|web`。已就绪服务直接复用，不重复开窗。
+
+每个窗口运行单服务托管器，各自保存 `.artifacts/dev/<会话>/` 日志和 `session.json`；Ctrl+C 只清理本窗口创建的服务与后代。后端停止或重启后，已就绪过的前端保留进程并报告依赖未就绪，后端恢复后继续工作；前端首次启动仍需同源 API 就绪。前端进程退出或端口归属变化时仍会报错退出。启动某一侧失败不会停止另一侧，数据库保持运行。复用服务的日志仍在原会话中查看。
 
 启动器的归属与业务巡检携带 `x-tixxin-dev-probe: 1`；开发环境只静默这些已成功的只读巡检访问日志，普通业务请求仍记录。健康检查和巡检出现 4xx、5xx 或错误时保留警告、错误日志，运行状态变化也会显示，避免持续成功检查刷屏。
 
-`--dry-run` 只显示启动命令，不打开窗口或启动服务。启动命令只转交当前 Node、pnpm 和 PATH 路径；业务配置由新终端环境及项目已有环境文件读取，调用方临时设置的业务环境变量不转发。需要临时覆盖时，在本地终端直接设置变量并运行 `corepack pnpm dev:all --logs`。
+`--dry-run` 只显示启动命令，不打开窗口或启动服务。启动命令只转交当前 Node、pnpm 和 PATH 路径；业务配置由新终端环境及项目已有环境文件读取，调用方临时设置的业务环境变量不转发。需要临时覆盖时，在两个本地终端分别设置变量，运行 `corepack pnpm dev:session:api --logs` 和 `corepack pnpm dev:session:web --logs`。
 
-打开窗口不代表服务已就绪，仍需运行 `corepack pnpm dev:check` 核验。Ctrl+C 清理本次服务后，窗口保留；启动失败时也保留错误输出。不要重复打开窗口来处理端口冲突，先核对占用者。macOS 拒绝终端控制权限时，命令会报错，可手动打开终端执行 `dev:all --logs`。其他系统继续使用 `dev:all`。
+打开窗口不代表服务已就绪，仍需运行 `corepack pnpm dev:check` 核验。Ctrl+C 清理本次服务后，窗口保留；启动失败时也保留错误输出。不要重复打开窗口来处理端口冲突，先核对占用者。macOS 拒绝终端控制权限时，命令会报错，可手动打开两个终端，分别执行 `corepack pnpm dev:session:api --logs` 和 `corepack pnpm dev:session:web --logs`。其他系统也可使用这两个入口，或继续使用 `dev:all` 统一启动。
 
 多个栏目同时出现 502 或加载失败时，先检查后端 `/ready`，再检查前端同源 `/api/v1/posts`。区分服务未就绪、配置错误与正常空结果；不得切换 Mock 掩盖真实 API 故障。
 
