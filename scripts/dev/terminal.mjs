@@ -26,7 +26,7 @@ export function terminalCommand({ root, node, pnpm, path, service }) {
 
 export async function terminalBounds(service) {
   if (!Object.hasOwn(labels, service)) throw new Error('服务必须为 api 或 web')
-  // AppKit 排除菜单栏和 Dock；转换为 AppleScript 从屏幕左上角计算的坐标。
+  // 优先首块副屏；索引 0 为主屏，不随当前焦点窗口改变。保留多屏的负坐标。
   const { stdout } = await execute(
     '/usr/bin/osascript',
     [
@@ -34,8 +34,9 @@ export async function terminalBounds(service) {
       'JavaScript',
       '-e',
       `ObjC.import('AppKit');
-const frame = $.NSScreen.mainScreen.visibleFrame;
-const primaryHeight = $.NSScreen.screens.objectAtIndex(0).frame.size.height;
+const screens = $.NSScreen.screens;
+const frame = screens.objectAtIndex(screens.count > 1 ? 1 : 0).visibleFrame;
+const primaryHeight = screens.objectAtIndex(0).frame.size.height;
 JSON.stringify({ left: frame.origin.x, top: primaryHeight - frame.origin.y - frame.size.height, width: frame.size.width, height: frame.size.height });`,
     ],
     { cwd: workspace, timeout: 10000 },
@@ -45,10 +46,12 @@ JSON.stringify({ left: frame.origin.x, top: primaryHeight - frame.origin.y - fra
     throw new Error('无法确定可用屏幕范围，未调整终端窗口')
   const margin = 12
   const gap = 12
-  const height = Math.min(560, Math.floor((area.height - margin * 2 - gap) / 2))
+  // 副屏菜单栏自动隐藏时 visibleFrame 可能包含顶部区域，Terminal 仍会强制避让。
+  const topInset = 32
+  const height = Math.min(560, Math.floor((area.height - topInset - margin - gap) / 2))
   const width = Math.min(960, area.width - margin * 2)
   const left = Math.round(area.left + margin)
-  const top = Math.round(area.top + margin + (service === 'web' ? height + gap : 0))
+  const top = Math.round(area.top + topInset + (service === 'web' ? height + gap : 0))
   return [left, top, left + width, top + height]
 }
 
@@ -80,6 +83,7 @@ async function main() {
   if (args.includes('--help')) {
     console.log('用法：corepack pnpm dev:terminal [--service=all|api|web] [--dry-run]')
     console.log('macOS：前后端各开独立 Terminal.app 窗口；已就绪服务复用。Ctrl+C 仅停止本窗口的服务。')
+    console.log('窗口默认在首块副屏左侧上下排列；没有副屏时使用主屏。')
     console.log('配置读取终端环境和项目 .env 文件；调用方临时业务环境变量不转发。其他系统使用 dev:all。')
     return
   }
