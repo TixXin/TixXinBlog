@@ -50,6 +50,22 @@ corepack pnpm dev:all
 
 Ctrl+C 只清理本次启动器创建的服务与后代，复用的服务保持运行。PostgreSQL 是持久依赖，保留容器和数据卷。需要停止复用服务时，在它原来的终端正常退出。
 
+### macOS 可见终端
+
+由代理启动长期服务时，先运行 `corepack pnpm dev:check`，已就绪则直接复用。需要启动时使用：
+
+```sh
+corepack pnpm dev:terminal --help
+corepack pnpm dev:terminal --dry-run
+corepack pnpm dev:terminal
+```
+
+此入口新建一个 Terminal.app 窗口，标题为 `TixXinBlog | 前后端开发`，在屏幕左侧显示。窗口内运行现有 `dev:all --logs`，按服务名前缀同步显示脱敏日志，并保留 `.artifacts/dev/<会话>/` 日志与状态文件。它沿用现有归属探针、真实 API 检查及清理机制；复用服务的历史和后续日志仍在原会话中查看。
+
+`--dry-run` 只显示启动命令，不打开窗口或启动服务。启动命令只转交当前 Node、pnpm 和 PATH 路径；业务配置由新终端环境及项目已有环境文件读取，调用方临时设置的业务环境变量不转发。需要临时覆盖时，在本地终端直接设置变量并运行 `corepack pnpm dev:all --logs`。
+
+打开窗口不代表服务已就绪，仍需运行 `corepack pnpm dev:check` 核验。Ctrl+C 清理本次服务后，窗口保留；启动失败时也保留错误输出。不要重复打开窗口来处理端口冲突，先核对占用者。macOS 拒绝终端控制权限时，命令会报错，可手动打开终端执行 `dev:all --logs`。其他系统继续使用 `dev:all`。
+
 多个栏目同时出现 502 或加载失败时，先检查后端 `/ready`，再检查前端同源 `/api/v1/posts`。区分服务未就绪、配置错误与正常空结果；不得切换 Mock 掩盖真实 API 故障。
 
 ## 管理员与开发样本
