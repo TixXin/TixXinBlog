@@ -4742,15 +4742,15 @@
         },
         "subscription_id": {
           "name": "subscription_id",
-          "type": "int",
+          "type": "int4",
           "unsigned": false,
           "autoincrement": false,
           "primary": false,
           "nullable": true,
           "unique": false,
           "length": null,
-          "precision": null,
-          "scale": null,
+          "precision": 32,
+          "scale": 0,
           "default": null,
           "comment": null,
           "enumItems": [],
@@ -4888,13 +4888,13 @@
           "deleteRule": "cascade"
         },
         "media_reference_subscription_id_foreign": {
-          "constraintName": "media_reference_subscription_id_foreign",
           "columnNames": ["subscription_id"],
+          "constraintName": "media_reference_subscription_id_foreign",
           "localTableName": "public.media_reference",
-          "referencedColumnNames": ["id"],
           "referencedTableName": "public.subscription",
-          "deleteRule": "cascade",
-          "updateRule": "cascade"
+          "referencedColumnNames": ["id"],
+          "updateRule": "cascade",
+          "deleteRule": "cascade"
         }
       },
       "nativeEnums": {
@@ -8216,15 +8216,15 @@
       "columns": {
         "id": {
           "name": "id",
-          "type": "serial",
-          "unsigned": false,
+          "type": "int4",
+          "unsigned": true,
           "autoincrement": true,
           "primary": true,
           "nullable": false,
           "unique": false,
           "length": null,
-          "precision": null,
-          "scale": null,
+          "precision": 32,
+          "scale": 0,
           "default": null,
           "comment": null,
           "enumItems": [],
@@ -8328,15 +8328,15 @@
         },
         "amount": {
           "name": "amount",
-          "type": "int",
+          "type": "int4",
           "unsigned": false,
           "autoincrement": false,
           "primary": false,
           "nullable": false,
           "unique": false,
           "length": null,
-          "precision": null,
-          "scale": null,
+          "precision": 32,
+          "scale": 0,
           "default": null,
           "comment": null,
           "enumItems": [],
@@ -8488,15 +8488,15 @@
         },
         "sort_order": {
           "name": "sort_order",
-          "type": "int",
+          "type": "int4",
           "unsigned": false,
           "autoincrement": false,
           "primary": false,
           "nullable": false,
           "unique": false,
           "length": null,
-          "precision": null,
-          "scale": null,
+          "precision": 32,
+          "scale": 0,
           "default": "0",
           "comment": null,
           "enumItems": [],
@@ -8504,15 +8504,15 @@
         },
         "revision": {
           "name": "revision",
-          "type": "int",
+          "type": "int4",
           "unsigned": false,
           "autoincrement": false,
           "primary": false,
           "nullable": false,
           "unique": false,
           "length": null,
-          "precision": null,
-          "scale": null,
+          "precision": 32,
+          "scale": 0,
           "default": "0",
           "comment": null,
           "enumItems": [],
@@ -8525,7 +8525,7 @@
           "autoincrement": false,
           "primary": false,
           "nullable": true,
-          "unique": false,
+          "unique": true,
           "length": null,
           "precision": null,
           "scale": null,
@@ -8552,7 +8552,7 @@
         },
         "published_at": {
           "name": "published_at",
-          "type": "timestamptz",
+          "type": "timestamptz(6)",
           "unsigned": false,
           "autoincrement": false,
           "primary": false,
@@ -8568,7 +8568,7 @@
         },
         "deleted_at": {
           "name": "deleted_at",
-          "type": "timestamptz",
+          "type": "timestamptz(6)",
           "unsigned": false,
           "autoincrement": false,
           "primary": false,
@@ -8584,7 +8584,7 @@
         },
         "created_at": {
           "name": "created_at",
-          "type": "timestamptz",
+          "type": "timestamptz(6)",
           "unsigned": false,
           "autoincrement": false,
           "primary": false,
@@ -8600,7 +8600,7 @@
         },
         "updated_at": {
           "name": "updated_at",
-          "type": "timestamptz",
+          "type": "timestamptz(6)",
           "unsigned": false,
           "autoincrement": false,
           "primary": false,
@@ -8619,54 +8619,55 @@
       "schema": "public",
       "indexes": [
         {
-          "keyName": "subscription_filters_idx",
           "columnNames": ["status", "currency", "category", "subscription_status"],
           "composite": true,
           "constraint": false,
-          "primary": false,
-          "unique": false
+          "keyName": "subscription_filters_idx",
+          "unique": false,
+          "primary": false
         },
         {
-          "keyName": "subscription_visibility_order_idx",
-          "columnNames": ["status", "deleted_at", "sort_order", "id"],
-          "composite": true,
+          "columnNames": ["id"],
+          "composite": false,
           "constraint": false,
-          "primary": false,
-          "unique": false
+          "keyName": "subscription_pkey",
+          "unique": true,
+          "primary": true
         },
         {
-          "keyName": "subscription_request_id_unique",
           "columnNames": ["request_id"],
           "composite": false,
           "constraint": true,
-          "primary": false,
-          "unique": true
+          "keyName": "subscription_request_id_unique",
+          "unique": true,
+          "primary": false
         },
         {
-          "keyName": "subscription_pkey",
-          "columnNames": ["id"],
-          "composite": false,
-          "constraint": true,
-          "primary": true,
-          "unique": true
+          "columnNames": ["status", "deleted_at", "sort_order", "id"],
+          "composite": true,
+          "constraint": false,
+          "keyName": "subscription_visibility_order_idx",
+          "unique": false,
+          "primary": false
         }
       ],
       "checks": [
         {
           "name": "subscription_amount_check",
-          "expression": "amount >= 0",
-          "definition": "check ((amount >= 0))"
+          "columnName": "amount",
+          "definition": "CHECK ((amount >= 0))",
+          "expression": "amount >= 0"
         }
       ],
       "foreignKeys": {
         "subscription_icon_media_id_foreign": {
-          "constraintName": "subscription_icon_media_id_foreign",
           "columnNames": ["icon_media_id"],
+          "constraintName": "subscription_icon_media_id_foreign",
           "localTableName": "public.subscription",
-          "referencedColumnNames": ["id"],
           "referencedTableName": "public.media_asset",
-          "deleteRule": "restrict",
-          "updateRule": "cascade"
+          "referencedColumnNames": ["id"],
+          "updateRule": "cascade",
+          "deleteRule": "restrict"
         }
       },
       "nativeEnums": {
@@ -8685,7 +8686,8 @@
           "schema": "public",
           "items": ["draft", "published", "archived"]
         }
-      }
+      },
+      "comment": null
     },
     {
       "columns": {
