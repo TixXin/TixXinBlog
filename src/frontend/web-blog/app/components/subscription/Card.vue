@@ -53,7 +53,8 @@ const props = defineProps<{
 defineEmits<{ edit: []; remove: [] }>()
 const imageFailed = ref(false),
   icon = computed(() => props.item.iconUrl || props.item.faviconUrl)
-watch(icon, () => {
+// 后端重新获取 favicon 后地址不变，新读取的记录仍应重试；图片错误本身不触发循环重载。
+watch([icon, () => props.item], () => {
   imageFailed.value = false
 })
 const website = computed(() => {
