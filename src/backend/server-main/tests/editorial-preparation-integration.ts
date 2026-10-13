@@ -1,4 +1,4 @@
-/** @file editorial-preparation-integration.ts @description 首发旧稿精确迁正、独立目标v10迁入和隔离发布阅读，所有数据库与媒体均为临时资源。 */
+/** @file editorial-preparation-integration.ts @description 首发旧稿精确迁正、独立目标v11迁入和隔离发布阅读，所有数据库与媒体均为临时资源。 */
 import assert from 'node:assert/strict'
 import { randomUUID } from 'node:crypto'
 import { mkdir, readFile, writeFile } from 'node:fs/promises'
@@ -12,6 +12,7 @@ import { ensureFixture } from '../src/seeders/fixture-ledger'
 import { AdminPostService } from '../src/modules/post/admin-post.service'
 import { PostRevisionsService } from '../src/modules/post/post-revisions.service'
 import { ProjectService } from '../src/modules/project/project.service'
+import { SubscriptionService } from '../src/modules/subscription/subscription.service'
 import { editorialCandidates, editorialPostInput, editorialProjectInput } from '../src/seeders/editorial-model'
 import {
   EDITORIAL_CREATE_REASON,
@@ -121,6 +122,14 @@ async function source(packagePath: string) {
       'update site_settings set "values"="values"||\'{"ownerTitle":"private-source-profile-marker","about":{"visible":false,"introduction":"private-source-profile-marker","sections":[]}}\'::jsonb',
     )
     await em.execute('insert into post_folder(label) values (?)', ['private-unselected-folder-marker'])
+    await new SubscriptionService(em).save(null, {
+      requestId: randomUUID(),
+      name: 'private-unselected-subscription-marker',
+      amount: 2000,
+      currency: 'USD',
+      billingCycle: 'monthly',
+      notes: 'private-subscription-notes-marker',
+    })
     const exported = await exportEditorialPackage(packagePath)
     assert.equal(exported.articles, 3)
     assert.equal(exported.projects, 1)
@@ -130,11 +139,24 @@ async function source(packagePath: string) {
       bundle = await parseContentPackage(bytes)
     assert(!bytes.toString().includes('private-source-profile-marker'))
     assert(!bytes.toString().includes('private-unselected-folder-marker'))
+    assert(!bytes.toString().includes('private-unselected-subscription-marker'))
+    assert(!bytes.toString().includes('private-subscription-notes-marker'))
+    assert.equal(bundle.version, 11)
+    assert.deepEqual(bundle.subscriptions, [], '候选文章包不夹带订阅记录')
     assert.deepEqual(bundle.folders, ['博客建设'])
     assert.deepEqual(bundle.tags.map((tag) => tag.label).sort(), ['TixXinBlog', '工程实践'].sort())
     assert(bundle.posts.every((post) => !post.deleted && post.values.status === 'draft' && post.comments.length === 0))
     assert.equal(bundle.projects[0]!.values.status, 'draft')
-    for (const field of ['flashes', 'moments', 'guestbook', 'gallery', 'links', 'media'] as const)
+    for (const field of [
+      'flashes',
+      'moments',
+      'guestbook',
+      'gallery',
+      'links',
+      'prompts',
+      'subscriptions',
+      'media',
+    ] as const)
       assert.equal(bundle[field].length, 0)
     await em.execute('update post set title=? where id=?', ['用户已经改写的候选标题', firstId])
     assert.equal((await prepareEditorialContent(true, database, fixture.backupOptions)).eligible, false)
@@ -226,7 +248,7 @@ async function target(packagePath: string) {
       file.append(
         'file',
         new Blob([JSON.stringify(bundle)], { type: 'application/json' }),
-        'editorial-content-v10.json',
+        'editorial-content-v11.json',
       )
       file.append('requestId', randomUUID())
       file.append('strategy', strategy)
@@ -289,7 +311,7 @@ async function target(packagePath: string) {
     assert.deepEqual(await em.execute('select * from site_settings'), settingsBefore)
     assert.equal((await fixture.testOrm.schema.getUpdateSchemaSQL({ wrap: false })).trim(), '')
     process.stdout.write(
-      '独立隔离目标迁入通过：v10解析/预览/四候选迁入、12条跨库编号映射、配置不变、同票据/跳过幂等和隔离精选阅读。\n',
+      '独立隔离目标迁入通过：v11解析/预览/四候选迁入、12条跨库编号映射、配置不变、同票据/跳过幂等和隔离精选阅读。\n',
     )
   } finally {
     await fixture.close()
@@ -304,7 +326,7 @@ async function main() {
   const directory = resolve(root, '.artifacts/first-release/editorial-validation', randomUUID())
   assert(directory.startsWith(resolve(root, '.artifacts') + sep))
   await mkdir(directory, { recursive: true })
-  const path = join(directory, 'editorial-content-v10.json')
+  const path = join(directory, 'editorial-content-v11.json')
   const sourceRun = await execute(process.execPath, ['--import', 'tsx', __filename, '--source', path], {
     cwd: resolve(__dirname, '..'),
     env: { ...process.env },

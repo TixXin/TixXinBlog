@@ -43,6 +43,7 @@ import { importGuestbook } from './content-import-guestbook'
 import { importGallery } from './content-import-gallery'
 import { importProjects } from './content-import-projects'
 import { importLinks } from './content-import-links'
+import { importSubscriptions } from './content-import-subscriptions'
 import { importPrompts } from './content-import-prompts'
 import { lockGuestbook } from '../guestbook/guestbook-write.service'
 type Admin = { id: string; sessionVersion: number; sessionId: string }
@@ -252,6 +253,7 @@ export class ContentImportService {
           projects: [],
           links: [],
           prompts: [],
+          subscriptions: [],
           comments: 0,
           media: 0,
           files: 0,
@@ -374,6 +376,7 @@ export class ContentImportService {
           await importContentRelations(em, payload, current, result)
           await importLinks(em, payload, current, result)
           await importPrompts(em, payload, current, result)
+          await importSubscriptions(em, payload, current, result)
           if (job.includeSettings) {
             await this.sites.save({ ...payload.site, revision: current.siteRevision }, '从内容包迁入站点资料')
             await this.comments.savePolicy({

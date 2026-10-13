@@ -35,6 +35,21 @@ try {
     body: image,
   })
   assert.equal(uploaded.status, 201)
+  const asset = (await uploaded.json()).data
+  const createdSubscription = await fetch(fixture.origin + '/api/v1/admin/subscriptions', {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${sessionToken}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      name: '云端文档',
+      amount: 1200,
+      currency: 'CNY',
+      billingCycle: 'monthly',
+      iconMediaId: asset.id,
+      requestId: randomUUID(),
+    }),
+  })
+  assert.equal(createdSubscription.status, 201)
+  const subscription = (await createdSubscription.json()).data
   await em.execute("update operation_control set external_paused=false,backup_paused=false where id='default'")
   await em.execute(
     "insert into background_task(id,dedupe_key,kind,state,generation,payload,available_at,created_at) select ?,?,'mail','queued',generation,'{}',now(),now() from operation_control where id='default'",
@@ -159,17 +174,41 @@ try {
   await access(join(restored.connection.mediaDirectory, source.manifest.media[0].key))
   report.checks.push('valid_current_backup_restored_with_exact_inventory_and_forced_pauses')
 
+  // 即便 dump 和清单摘要完全自洽，也必须拒绝损坏的价格事实和缺失图标引用。
+  await em.execute("update subscription set price_history='[]'::jsonb where id=?", [subscription.id])
+  const badHistory = await createFullBackup({ output: join(work, 'invalid-subscription-history') })
+  await rejectedRestore(badHistory.directory, 'rejected-subscription-history', /价格历史校验失败/)
+  await em.execute('update subscription set price_history=?::jsonb where id=?', [
+    JSON.stringify(subscription.priceHistory),
+    subscription.id,
+  ])
+  const [reference] = await em.execute('select * from media_reference where subscription_id=?', [subscription.id])
+  assert(reference)
+  await em.execute('delete from media_reference where subscription_id=?', [subscription.id])
+  const badReference = await createFullBackup({ output: join(work, 'invalid-subscription-reference') })
+  await rejectedRestore(badReference.directory, 'rejected-subscription-reference', /订阅图标引用/)
+  await em.execute('insert into media_reference select * from json_populate_record(null::media_reference, ?::json)', [
+    JSON.stringify(reference),
+  ])
+  report.checks.push('self_consistent_subscription_history_and_icon_corruption_rejected')
+
   // 合法旧库确实没有运行表；不要求它包含当前代码新加的表，也不把现有表当作“旧版”跳过。
   for (const table of ['background_task', 'owner_notification', 'operation_control'])
     await em.execute(`drop table ${table}`)
   await em.execute("delete from mikro_orm_migrations where name='20260911220000_add_operation_tasks'")
+  await em.execute("delete from media_reference where kind='subscription'")
+  await em.execute('alter table media_reference drop column subscription_id')
+  await em.execute('drop table subscription')
+  await em.execute("delete from mikro_orm_migrations where name='20261013010000_add_subscriptions'")
   const legacy = await createFullBackup({ output: join(work, 'legacy-source') })
   const legacyRestored = await restoreFullBackup(legacy.directory, { output: join(work, 'legacy-restored') })
   restoredTargets.push(legacyRestored)
   assert.equal(legacyRestored.report.operationSafety.present, false)
+  assert.equal(legacyRestored.report.subscriptionIntegrity, undefined)
+  assert.equal(Object.hasOwn(legacyRestored.report.counts, 'subscription'), false)
   assert.equal(legacyRestored.report.tableInventoryVerified, true)
   assert.equal(legacyRestored.report.mediaInventoryVerified, true)
-  report.checks.push('actual_legacy_schema_without_operation_tables_remains_supported')
+  report.checks.push('actual_legacy_schema_without_operation_and_subscription_tables_remains_supported')
   report.completed = true
 } finally {
   for (const restored of restoredTargets) await restored.cleanup()

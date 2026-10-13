@@ -31,7 +31,8 @@
     "prepare": "husky",
     "check:secrets": "node scripts/check-secrets.mjs",
     "test:e2e": "corepack pnpm --filter server-main build && corepack pnpm --filter web-blog build && node src/backend/server-main/tests/browser-runner.mjs",
-    "test:e2e:run": "node src/backend/server-main/tests/browser-runner.mjs"
+    "test:e2e:run": "node src/backend/server-main/tests/browser-runner.mjs",
+    "test:subscription-domain": "corepack pnpm --filter @tixxin/subscription-domain test"
   },
   "engines": {
     "node": ">=25 <26"

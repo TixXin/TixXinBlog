@@ -26,6 +26,7 @@ export interface ContentImportPlan {
   projects: { sourceId: number; title: string; skip: boolean; reason: string }[]
   links: { sourceId: number; title: string; skip: boolean; reason: string }[]
   prompts?: { sourceId: number; title: string; skip: boolean; reason: string }[]
+  subscriptions?: { sourceId: number; title: string; skip: boolean; reason: string }[]
   media: { id: string; create: boolean; writeFile: boolean; skip: boolean }[]
   counts: {
     posts: number
@@ -36,6 +37,7 @@ export interface ContentImportPlan {
     projects: number
     links: number
     prompts?: number
+    subscriptions?: number
     comments: number
     skipped: number
     media: number
@@ -57,6 +59,7 @@ export interface ContentImportResult {
   projects: { sourceId: number; id: number }[]
   links: { sourceId: number; id: number }[]
   prompts?: { sourceId: number; id: number }[]
+  subscriptions?: { sourceId: number; id: number }[]
   comments: number
   media: number
   files: number

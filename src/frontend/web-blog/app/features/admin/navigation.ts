@@ -13,6 +13,7 @@ export const adminNavigation = [
   { path: '/prompts', label: '灵感管理', icon: 'lucide:aperture' },
   { path: '/admin/projects', label: '项目管理', icon: 'lucide:layers' },
   { path: '/admin/links', label: '友链管理', icon: 'lucide:link' },
+  { path: '/admin/subscriptions', label: '订阅管理', icon: 'lucide:credit-card' },
   { path: '/admin/media', label: '媒体资源', icon: 'lucide:images' },
   { path: '/admin/taxonomy', label: '分类与标签', icon: 'lucide:tags' },
   { path: '/admin/site', label: '站点设置', icon: 'lucide:settings' },

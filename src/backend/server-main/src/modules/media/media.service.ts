@@ -144,6 +144,7 @@ export class MediaService {
           'guestbookMessage',
           'galleryPhoto',
           'project',
+          'subscription',
           'friendLink',
           'imagePrompt',
         ],
@@ -166,6 +167,7 @@ export class MediaService {
           item.guestbookMessage?.content.slice(0, 100) ??
           item.galleryPhoto?.title ??
           item.project?.title ??
+          item.subscription?.name ??
           item.friendLink?.name ??
           item.imagePrompt?.title ??
           '站点头像',
@@ -188,11 +190,13 @@ export class MediaService {
                           ? `/admin/gallery/${item.galleryPhoto.id}`
                           : item.project
                             ? `/admin/projects/${item.project.id}`
-                            : item.friendLink
-                              ? `/admin/links/${item.friendLink.id}`
-                              : item.imagePrompt
-                                ? `/prompts?edit=${item.imagePrompt.id}`
-                                : '/admin/site',
+                            : item.subscription
+                              ? `/admin/subscriptions/${item.subscription.id}`
+                              : item.friendLink
+                                ? `/admin/links/${item.friendLink.id}`
+                                : item.imagePrompt
+                                  ? `/prompts?edit=${item.imagePrompt.id}`
+                                  : '/admin/site',
       })),
     }
   }

@@ -42,7 +42,7 @@
 
 ## 写入版本与幂等
 
-支持版本的记录在 PATCH/DELETE 时使用读取到的 `revision`，省略字段表示保持原值；只有契约允许时才使用 `null` 或空字符串清空。版本冲突不能自动覆盖。图库、项目、友链与朋友圈的创建使用 UUID v4 `requestId`；相同标识和规范化输入返回原记录，不同输入或已删除提交返回冲突。
+支持版本的记录在 PATCH/DELETE 时使用读取到的 `revision`，省略字段表示保持原值；只有契约允许时才使用 `null` 或空字符串清空。版本冲突不能自动覆盖。图库、项目、友链、图片提示词、平台订阅费与朋友圈的创建使用 UUID v4 `requestId`；相同标识和规范化输入返回原记录，不同输入或已删除提交返回冲突。
 
 未知创建结果可用对应 `/admin/<domain>/submissions/:requestId` 查询。删除保留必要提交墓碑，迟到请求不能复活内容。其他领域的提交/重试字段依其 DTO，不把某个域的标识强加到全部接口。
 
@@ -133,6 +133,24 @@
 博主使用 `GET/POST /admin/prompts`、`GET/PATCH /admin/prompts/:id`；列表额外支持 `status=all|draft|published`。创建须带 UUID v4 `requestId`，未知结果用 `GET /admin/prompts/submissions/:requestId` 核查；编辑必带当前 `revision`，冲突返回 409，不自动覆盖。管理写入沿用来源、认证与内容上下文保护。
 
 标题最多 160、创作笔记 2000、完整提示词 30000、负面提示词 10000、模型 80、图片替代文本 240 个 UTF-16 单位。标签最多 12 项，每项最多 32，去首尾空白并忽略大小写去重。来源地址最多 2048，可为空。图片 `mediaId/externalImageUrl` 必须恰好选一，切换时显式将另一字段设为 `null`。外链沿用图库地址校验，不抓取远程资源；受管图片持有正式媒体引用。源码见 [prompts](../src/backend/server-main/src/modules/prompts/)。
+
+## 平台订阅费
+
+| 方法与路径                                                                   | 作用                                                  |
+| ---------------------------------------------------------------------------- | ----------------------------------------------------- |
+| `GET /subscriptions`、`GET /subscriptions/stats`、`GET /subscriptions/:id`   | 公开记录、全部匹配记录的分币种统计及详情              |
+| `GET/POST /admin/subscriptions`、`GET/PATCH/DELETE /admin/subscriptions/:id` | 管理列表、幂等创建、版本化编辑与软删除                |
+| `GET /admin/subscriptions/submissions/:requestId`                            | 核查原创建结果，不复活已删除提交                      |
+| `PATCH /admin/subscriptions/sort`                                            | 显式编号、目标排序值及 revision 的事务更新            |
+| `POST /admin/subscriptions/fetch-favicon`                                    | 管理员触发受限 favicon 代理；不抓取任意官网或图片地址 |
+
+列表支持 `q/category/currency/subscriptionStatus/page/pageSize/sort`，默认每页 12、最大 48；管理端另有 `status=all|draft|published|withdrawn`。公开接口仅返回 published 且未删除记录，使用白名单排除管理备注、发布状态、revision 和提交身份。金额排序按币种分组，统计覆盖全部匹配记录，与分页无关。
+
+`amount` 为币种最小单位的非负整数，上限 2147483647；支持 CNY、USD、EUR、GBP、JPY、HKD、TWD。JPY 无小数位；不同币种从不直接合计。`billingCycle` 为 monthly/quarterly/yearly/lifetime/one-time，`subscriptionStatus` 为 active/paused/cancelled/trial/expired，后者与发布 `status` 独立。active、已开始的月/季/年付记录进入当前预算；一次性、买断和其他状态不重复计费。日期为真实 `YYYY-MM-DD`，未知留 null，不读取时自动推进逾期日期。
+
+`priceHistory` 由服务端创建初始事件并在价格、币种或周期变化时原子追加；普通 PATCH 禁止覆盖历史和系统字段，未传字段保持原值。`priceChangeReason` 可说明此次变化，不改变价格的文字编辑不新增事件。历史事件包含 id、effectiveAt、recordedAt、amount、currency、billingCycle、可选 reason；内容包通过专门校验保留真实历史。
+
+`iconMediaId` 使用 UUID 关联并受媒体引用保护；自动 favicon 只把规范官网域名交给固定供应商，浏览器读取本站缓存地址。私网/保留出站地址、重定向、超时、超大或非图片响应被拒绝；抓取失败不阻止订阅保存。访客本地模式不调用此写入接口，不将记录上传后端。源码见 [subscription](../src/backend/server-main/src/modules/subscription/)，计算规则见 [共用领域包](../src/shared/subscription-domain/)。
 
 ## 站点、媒体、运营与维护
 

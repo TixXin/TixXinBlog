@@ -702,6 +702,88 @@ export async function restoreFullBackup(path, { output } = {}) {
         verified: true,
       }
     }
+    let subscriptionIntegrity
+    if (actualTables.has('subscription')) {
+      const invalid = Number(
+        await psql(
+          container,
+          database,
+          user,
+          password,
+          `select
+        (select count(*) from subscription s left join media_asset a on a.id=s.icon_media_id
+          where s.icon_media_id is not null and (a.id is null or (s.deleted_at is null and a.deleted_at is not null)))
+        + (select count(*) from subscription s where s.deleted_at is null and s.icon_media_id is not null and not exists
+          (select 1 from media_reference r where r.subscription_id=s.id and r.asset_id=s.icon_media_id
+            and r.kind='subscription' and r.source_key='subscription:'||s.id::text))
+        + (select count(*) from media_reference r left join subscription s on s.id=r.subscription_id
+          where (r.kind='subscription' or r.subscription_id is not null) and
+            (s.id is null or s.deleted_at is not null or s.icon_media_id is null or r.kind<>'subscription'
+              or r.asset_id<>s.icon_media_id or r.source_key<>'subscription:'||s.id::text))
+        + (select count(*) from subscription where revision<0
+          or (request_id is null) <> (request_hash is null)
+          or (request_hash is not null and request_hash !~ '^[a-f0-9]{64}$'))
+        + (select count(*) from development_fixture where kind='subscription'
+          and (resource_id !~ '^[1-9][0-9]*$' or snapshot_hash !~ '^[a-f0-9]{64}$'));`,
+        ),
+      )
+      if (invalid) throw new Error('恢复后的订阅图标引用、提交身份或样本归属校验失败')
+      // 全表摘要证明字节一致；再逐批验证每条业务值和完整历史，不能只抽验当前价格。
+      const { parsePackageSubscriptions } = require('../dist/modules/backup/content-package-subscriptions.js')
+      let lastId = 0,
+        verifiedRecords = 0,
+        historyEvents = 0
+      for (;;) {
+        const rows = JSON.parse(
+          await psql(
+            container,
+            database,
+            user,
+            password,
+            `select coalesce(json_agg(s),'[]'::json) from (
+          select id as "sourceId",created_at as "createdAt",published_at as "publishedAt",deleted_at is not null as deleted,
+            json_build_object('name',name,'description',description,'url',url,'platform',platform,'category',category,
+              'currency',currency,'amount',amount,'billingCycle',billing_cycle,'startDate',start_date,'nextBillingDate',next_billing_date,
+              'subscriptionStatus',subscription_status,'notes',notes,'iconMediaId',icon_media_id,'faviconDomain',favicon_domain,
+              'priceHistory',price_history,'status',status,'sortOrder',sort_order) as values
+          from subscription where id>${lastId} order by id limit 8) s;`,
+          ),
+        )
+        if (!rows.length) break
+        try {
+          parsePackageSubscriptions(rows)
+        } catch {
+          throw new Error('恢复后的订阅金额、日期、状态或价格历史校验失败')
+        }
+        lastId = rows.at(-1).sourceId
+        verifiedRecords += rows.length
+        historyEvents += rows.reduce((sum, row) => sum + row.values.priceHistory.length, 0)
+      }
+      if (verifiedRecords !== counts.subscription) throw new Error('恢复后的订阅逐条校验计数不符')
+      subscriptionIntegrity = {
+        subscriptions: counts.subscription,
+        historyEvents,
+        mediaReferences: Number(
+          await psql(
+            container,
+            database,
+            user,
+            password,
+            "select count(*) from media_reference where kind='subscription'",
+          ),
+        ),
+        fixtures: Number(
+          await psql(
+            container,
+            database,
+            user,
+            password,
+            "select count(*) from development_fixture where kind='subscription'",
+          ),
+        ),
+        verified: true,
+      }
+    }
     await mkdir(join(target, 'media'), { mode: 0o700 })
     for (const media of manifest.media) {
       const file = join(target, 'media', media.key)
@@ -792,6 +874,7 @@ export async function restoreFullBackup(path, { output } = {}) {
       projectIntegrity,
       linkIntegrity,
       promptIntegrity,
+      subscriptionIntegrity,
       mediaFiles: manifest.media.length,
       revokedRestoredSessions: true,
       requireFreshContentContext: true,
@@ -918,11 +1001,29 @@ export async function verifyRestoredApplication(
         ),
       )
     : null
+  const subscriptions = Object.hasOwn(restored.report.counts, 'subscription')
+    ? JSON.parse(
+        await psql(
+          restored.connection.container,
+          database,
+          user,
+          password,
+          `select json_build_object(
+      'total',(select count(*) from subscription where deleted_at is null),
+      'published',(select count(*) from subscription where status='published' and deleted_at is null),
+      'items',coalesce((select json_agg(s) from (select id,name,md5(description) as "descriptionHash",md5(notes) as "notesHash",
+        md5(url) as "urlHash",platform,category,currency,amount,billing_cycle as "billingCycle",start_date as "startDate",
+        next_billing_date as "nextBillingDate",subscription_status as "subscriptionStatus",icon_media_id as "iconMediaId",
+        price_history as "priceHistory",status,sort_order as "sortOrder",revision
+        from subscription where deleted_at is null order by id limit 8) s),'[]'::json),
+      'deletedIds',coalesce((select json_agg(id) from subscription where deleted_at is not null),'[]'::json));`,
+        ),
+      )
+    : null
   try {
     await command(
       [
-        'run',
-        '-d',
+        'create',
         '--pull=never',
         '--name',
         container,
@@ -940,15 +1041,28 @@ export async function verifyRestoredApplication(
         'NODE_ENV=production',
         '-e',
         'MEDIA_DIRECTORY=/app/var/media',
-        '--mount',
-        `type=bind,source=${restored.connection.mediaDirectory},target=/app/var/media,readonly`,
         image,
       ],
       { env: { DATABASE_URL: restored.connection.databaseUrl, JWT_ACCESS_SECRET: accessSecret } },
     )
+    // 媒体复制到本次专用容器，避免依赖宿主 Docker 文件共享；原恢复目录始终保持不变。
+    await command(['cp', '-a', `${restored.connection.mediaDirectory}/.`, `${container}:/app/var/media`])
+    await command(['start', container])
     const source = `
       const crypto = require('node:crypto');
       (async()=>{
+        // 使用生产限流规则，超过窗口时按真实 Retry-After 等待；仍保留所有业务断言。
+        const nativeFetch=globalThis.fetch;
+        let throttleRetries=0;
+        globalThis.fetch=async(...args)=>{
+          const response=await nativeFetch(...args);
+          if(response.status!==429)return response;
+          const seconds=Number(response.headers.get('retry-after'));
+          if(!Number.isInteger(seconds)||seconds<1||seconds>60)throw Error('invalid restore rate-limit retry');
+          throttleRetries++;
+          await new Promise(resolve=>setTimeout(resolve,seconds*1000+100));
+          return nativeFetch(...args);
+        };
         const ready=await fetch('http://127.0.0.1:3000/ready'); if(!ready.ok)throw Error('ready');
         const response=await fetch('http://127.0.0.1:3000/api/v1/posts?pageSize=1'); const body=await response.json();
         if(response.status!==200||body.data.total!==${expected})throw Error('posts');
@@ -961,6 +1075,25 @@ export async function verifyRestoredApplication(
         const projects=${JSON.stringify(projects)};
         const friends=${JSON.stringify(friends)};
         const prompts=${JSON.stringify(prompts)};
+        const subscriptions=${JSON.stringify(subscriptions)};
+        let subscriptionPublicVerified=false,subscriptionAdminVerified=false,subscriptionOldContextRejected=false,subscriptionFreshWriteAllowed=false;
+        if(subscriptions){
+          const list=await fetch('http://127.0.0.1:3000/api/v1/subscriptions?pageSize=1');
+          const values=(await list.json()).data;
+          if(!list.ok||values.total!==subscriptions.published||values.items.some(item=>['notes','status','revision','requestId','requestHash'].some(key=>key in item)))throw Error('restored public subscriptions');
+          const stats=await fetch('http://127.0.0.1:3000/api/v1/subscriptions/stats');
+          if(!stats.ok||(await stats.json()).data.total!==subscriptions.published)throw Error('restored subscription stats');
+          for(const expected of subscriptions.items){
+            const detail=await fetch('http://127.0.0.1:3000/api/v1/subscriptions/'+expected.id);
+            if(expected.status!=='published'){
+              if(detail.status!==404)throw Error('restored subscription visibility');
+            }else{
+              const value=(await detail.json()).data;
+              if(!detail.ok||value.amount!==expected.amount||JSON.stringify(value.priceHistory)!==JSON.stringify(expected.priceHistory)||'notes' in value)throw Error('restored subscription history');
+            }
+          }
+          subscriptionPublicVerified=true;
+        }
         let promptAdminVerified=false, promptOldContextRejected=false, promptFreshWriteAllowed=false;
         if(prompts){
           const list=await fetch('http://127.0.0.1:3000/api/v1/prompts?pageSize=1');
@@ -1008,6 +1141,42 @@ export async function verifyRestoredApplication(
           if(!login.ok)throw Error('fresh login');
           const token=(await login.json()).data.accessToken;
           freshLoginVerified=true;
+          if(subscriptions){
+            const headers={Authorization:'Bearer '+token,'Content-Type':'application/json'};
+            const list=await fetch('http://127.0.0.1:3000/api/v1/admin/subscriptions?pageSize=1',{headers});
+            if(!list.ok||(await list.json()).data.total!==subscriptions.total)throw Error('restored subscription count');
+            const hash=value=>value===null?null:crypto.createHash('md5').update(value).digest('hex');
+            for(const expected of subscriptions.items){
+              const response=await fetch('http://127.0.0.1:3000/api/v1/admin/subscriptions/'+expected.id,{headers});
+              const current=(await response.json()).data;
+              if(!response.ok)throw Error('restored subscription admin');
+              const normalized={...current,descriptionHash:hash(current.description),notesHash:hash(current.notes),urlHash:hash(current.url)};
+              if(Object.entries(expected).some(([key,value])=>JSON.stringify(normalized[key])!==JSON.stringify(value)))throw Error('restored subscription fields');
+            }
+            for(const id of subscriptions.deletedIds){
+              const response=await fetch('http://127.0.0.1:3000/api/v1/admin/subscriptions/'+id,{headers});
+              if(response.status!==404)throw Error('restored deleted subscription');
+            }
+            subscriptionAdminVerified=true;
+            if(subscriptions.items.length){
+              const expected=subscriptions.items[0],path='http://127.0.0.1:3000/api/v1/admin/subscriptions/'+expected.id;
+              const input=JSON.stringify({revision:expected.revision,name:expected.name});
+              const missing=await fetch(path,{method:'PATCH',headers:{...headers,'Content-Type':'application/json'},body:input});
+              if(missing.status!==428)throw Error('missing restored subscription context');
+              if(process.env.VERIFY_OLD_CONTENT_CONTEXT){
+                const stale=await fetch(path,{method:'PATCH',headers:{...headers,'Content-Type':'application/json','X-Content-Context':process.env.VERIFY_OLD_CONTENT_CONTEXT},body:input});
+                if(stale.status!==409)throw Error('stale restored subscription context');
+                subscriptionOldContextRejected=true;
+              }
+              const state=await fetch('http://127.0.0.1:3000/api/v1/site');
+              const freshContext=state.headers.get('x-content-context');
+              if(!freshContext||freshContext===process.env.VERIFY_OLD_CONTENT_CONTEXT)throw Error('restored subscription context generation');
+              const saved=await fetch(path,{method:'PATCH',headers:{...headers,'Content-Type':'application/json','X-Content-Context':freshContext},body:input});
+              const result=(await saved.json()).data;
+              if(!saved.ok||result.revision!==expected.revision+1||JSON.stringify(result.priceHistory)!==JSON.stringify(expected.priceHistory))throw Error('fresh restored subscription write');
+              subscriptionFreshWriteAllowed=true;
+            }
+          }
           if(prompts){
             const headers={Authorization:'Bearer '+token,'Content-Type':'application/json'};
             const list=await fetch('http://127.0.0.1:3000/api/v1/admin/prompts?pageSize=1',{headers});
@@ -1163,7 +1332,7 @@ export async function verifyRestoredApplication(
             }
           }
         }
-        process.stdout.write(JSON.stringify({ready:true,publicPrompts:prompts?.published??null,promptAdminVerified,promptOldContextRejected,promptFreshWriteAllowed,publicPosts:body.data.total,publicGalleryPhotos:gallery?.photos??null,galleryGearVerified:!!gallery,publicProjects:projects?.stats.projects??null,projectMetadataVerified,projectAdminVerified,projectOldContextRejected,projectFreshWriteAllowed,publicLinks:friends?.stats.links??null,linkMetadataVerified,linkAdminVerified,linkOldContextRejected,linkFreshWriteAllowed,mediaVerified:media.length,oldAuthorizationChecked:!!process.env.VERIFY_OLD_ACCESS_TOKEN,oldAuthorizationRejected:process.env.VERIFY_OLD_ACCESS_TOKEN?true:null,freshLoginVerified,galleryAdminVerified,galleryOldContextRejected,galleryFreshWriteAllowed,externalGalleryVerified}));
+        process.stdout.write(JSON.stringify({ready:true,throttleRetries,publicSubscriptions:subscriptions?.published??null,subscriptionPublicVerified,subscriptionAdminVerified,subscriptionOldContextRejected,subscriptionFreshWriteAllowed,publicPrompts:prompts?.published??null,promptAdminVerified,promptOldContextRejected,promptFreshWriteAllowed,publicPosts:body.data.total,publicGalleryPhotos:gallery?.photos??null,galleryGearVerified:!!gallery,publicProjects:projects?.stats.projects??null,projectMetadataVerified,projectAdminVerified,projectOldContextRejected,projectFreshWriteAllowed,publicLinks:friends?.stats.links??null,linkMetadataVerified,linkAdminVerified,linkOldContextRejected,linkFreshWriteAllowed,mediaVerified:media.length,oldAuthorizationChecked:!!process.env.VERIFY_OLD_ACCESS_TOKEN,oldAuthorizationRejected:process.env.VERIFY_OLD_ACCESS_TOKEN?true:null,freshLoginVerified,galleryAdminVerified,galleryOldContextRejected,galleryFreshWriteAllowed,externalGalleryVerified}));
       })().catch((error)=>process.stdout.write(JSON.stringify({errorStage:error.message})))`
     let ready = false
     for (let i = 0; i < 50; i++) {
