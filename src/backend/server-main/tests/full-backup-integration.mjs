@@ -5,7 +5,7 @@
 import assert from 'node:assert/strict'
 import { randomUUID } from 'node:crypto'
 import { createRequire } from 'node:module'
-import { mkdir, readFile, rm, writeFile } from 'node:fs/promises'
+import { mkdir, readFile, readdir, rm, writeFile } from 'node:fs/promises'
 import { join, resolve, sep } from 'node:path'
 import { setTimeout as delay } from 'node:timers/promises'
 import { createBrowserTestApp } from './test-app.mjs'
@@ -427,6 +427,81 @@ try {
       ],
     )
   }
+  await delay(1100)
+  for (const [index, values] of [
+    { name: '工作用云盘', status: 'published', subscriptionStatus: 'active', iconMediaId: asset.id },
+    { name: '独立设计工具', status: 'draft', subscriptionStatus: 'trial', iconMediaId: null },
+    { name: '长期归档', status: 'withdrawn', subscriptionStatus: 'paused', iconMediaId: asset.id },
+    { name: '旧主机', status: 'draft', subscriptionStatus: 'cancelled', iconMediaId: asset.id },
+  ].entries()) {
+    const requestId = randomUUID()
+    const response = await fetch(`${fixture.origin}/api/v1/admin/subscriptions`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      body: JSON.stringify({
+        ...values,
+        requestId,
+        amount: 2000,
+        currency: 'USD',
+        billingCycle: 'monthly',
+        url: 'https://example.org/',
+        description: '工作用的独立方案',
+        notes: '保留私人账目',
+        category: 'cloud',
+        startDate: '2020-01-31',
+        nextBillingDate: '2027-01-31',
+        sortOrder: index,
+      }),
+    })
+    assert.equal(response.status, 201)
+    let subscription = (await response.json()).data
+    if (index === 0) {
+      for (const patch of [
+        { amount: 2400, priceChangeReason: '方案调整' },
+        { amount: 1000, currency: 'JPY', billingCycle: 'yearly', priceChangeReason: '改为年度方案' },
+      ]) {
+        const updated = await fetch(`${fixture.origin}/api/v1/admin/subscriptions/${subscription.id}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+          body: JSON.stringify({ ...patch, revision: subscription.revision }),
+        })
+        assert.equal(updated.status, 200)
+        subscription = (await updated.json()).data
+      }
+      assert.equal(subscription.priceHistory.length, 3)
+      // 可再生图标缓存不属于媒体清单；恢复缺失缓存时也必须保留业务与官网域名。
+      await ledgerEm.execute('update subscription set favicon_domain=? where id=?', ['example.org', subscription.id])
+    }
+    if (index === 3) {
+      const removed = await fetch(
+        `${fixture.origin}/api/v1/admin/subscriptions/${subscription.id}?revision=${subscription.revision}`,
+        {
+          method: 'DELETE',
+          headers: { Authorization: `Bearer ${token}` },
+        },
+      )
+      assert.equal(removed.status, 200)
+    }
+    const [row] = await ledgerEm.execute('select * from subscription where id=?', [subscription.id])
+    assert.equal(row.request_id, requestId)
+    await ledgerEm.execute(
+      'insert into development_fixture (key,dataset,kind,resource_id,snapshot_hash,created_at) values (?,?,?,?,?,now())',
+      [
+        `subscription-restore:${subscription.id}`,
+        'subscription-restore-v1',
+        'subscription',
+        String(subscription.id),
+        submissionHash(Object.fromEntries(Object.entries(row).filter(([key]) => key !== 'updated_at'))),
+      ],
+    )
+    await delay(1100)
+  }
+  const faviconCache = join(process.env.MEDIA_DIRECTORY, '.subscription-favicons')
+  await mkdir(faviconCache)
+  await writeFile(
+    join(faviconCache, 'regenerable.webp'),
+    await readFile(join(process.env.MEDIA_DIRECTORY, `${asset.id}.webp`)),
+  )
   const backup = await createFullBackup({
     output: join(target, 'backup'),
     onProgress: (value) => process.stdout.write(`备份阶段：${value.stage}\n`),
@@ -434,6 +509,8 @@ try {
       await createPost('快照之后的新文章')
     },
   })
+  assert.equal(backup.manifest.counts.subscription, 4)
+  assert(!(await readdir(join(backup.directory, 'media'))).includes('.subscription-favicons'))
   assert.equal(backup.manifest.counts.post, 107)
   assert.equal(backup.manifest.counts.moment, 1)
   assert.equal(backup.manifest.counts.moment_comment, 1)
@@ -445,8 +522,8 @@ try {
   assert.equal(backup.manifest.counts.project, 4)
   assert.equal(backup.manifest.counts.friend_link, 6)
   assert.equal(backup.manifest.counts.link_settings, 1)
-  assert.equal(backup.manifest.counts.development_fixture, 13)
-  assert.equal(backup.manifest.counts.media_reference, 14)
+  assert.equal(backup.manifest.counts.development_fixture, 17)
+  assert.equal(backup.manifest.counts.media_reference, 16)
   assert.equal(
     Number((await fixture.testOrm.em.fork().execute('select count(*)::int as count from post'))[0].count),
     108,
@@ -459,6 +536,15 @@ try {
   await assert.rejects(verifyFullBackup(backup.directory), /校验失败/)
   await writeFile(mediaFile, valid)
   restored = await restoreFullBackup(backup.directory, { output: join(target, 'restored') })
+  assert.equal(restored.report.counts.subscription, 4)
+  assert.deepEqual(restored.report.subscriptionIntegrity, {
+    subscriptions: 4,
+    historyEvents: 6,
+    mediaReferences: 2,
+    fixtures: 4,
+    verified: true,
+  })
+  assert(!(await readdir(restored.connection.mediaDirectory)).includes('.subscription-favicons'))
   assert.equal(restored.report.counts.post, 107)
   assert.equal(restored.report.counts.moment, 1)
   assert.equal(restored.report.counts.moment_comment, 1)
@@ -472,7 +558,7 @@ try {
   assert.equal(restored.report.counts.link_settings, 1)
   assert.equal(restored.report.counts.image_prompt, 2)
   assert.deepEqual(restored.report.promptIntegrity, { prompts: 2, fixtures: 2, mediaReferences: 1, verified: true })
-  assert.equal(restored.report.counts.development_fixture, 13)
+  assert.equal(restored.report.counts.development_fixture, 17)
   assert.deepEqual(restored.report.linkIntegrity, {
     links: 6,
     settings: 1,
@@ -509,6 +595,11 @@ try {
       })
     : undefined
   if (application) {
+    assert.equal(application.publicSubscriptions, 1)
+    assert.equal(application.subscriptionPublicVerified, true)
+    assert.equal(application.subscriptionAdminVerified, true)
+    assert.equal(application.subscriptionOldContextRejected, true)
+    assert.equal(application.subscriptionFreshWriteAllowed, true)
     assert.equal(application.publicPrompts, 1)
     assert.equal(application.promptAdminVerified, true)
     assert.equal(application.promptOldContextRejected, true)
@@ -538,6 +629,7 @@ try {
     backupAndRestoredMediaRemoved: true,
     verification: [
       '并发写入不进入既有快照',
+      '订阅原币种金额、完整价格历史、私有备注、发布与删除状态、图标引用、提交身份和归属账本完整恢复，可再生图标缓存缺失不影响业务',
       '数据库全部表行数与内容摘要一致',
       '媒体字节校验一致',
       '篡改文件拒绝恢复',

@@ -13,6 +13,7 @@ import { MomentComment } from './moment-comment.entity'
 import { GuestbookMessage } from './guestbook-message.entity'
 import { GalleryPhoto } from './gallery-photo.entity'
 import { Project } from './project.entity'
+import { Subscription } from './subscription.entity'
 import { FriendLink } from './friend-link.entity'
 import { ImagePrompt } from './image-prompt.entity'
 @Entity({ tableName: 'media_reference' })
@@ -34,6 +35,7 @@ export class MediaReference {
     | 'guestbook'
     | 'gallery'
     | 'project'
+    | 'subscription'
     | 'link'
     | 'image-prompt'
   @ManyToOne({ entity: () => Post, nullable: true, deleteRule: 'cascade' }) post?: Post
@@ -47,6 +49,7 @@ export class MediaReference {
   guestbookMessage?: GuestbookMessage
   @ManyToOne({ entity: () => GalleryPhoto, nullable: true, deleteRule: 'cascade' }) galleryPhoto?: GalleryPhoto
   @ManyToOne({ entity: () => Project, nullable: true, deleteRule: 'cascade' }) project?: Project
+  @ManyToOne({ entity: () => Subscription, nullable: true, deleteRule: 'cascade' }) subscription?: Subscription
   @ManyToOne({ entity: () => FriendLink, nullable: true, deleteRule: 'cascade' }) friendLink?: FriendLink
   @ManyToOne({ entity: () => ImagePrompt, nullable: true, deleteRule: 'cascade' }) imagePrompt?: ImagePrompt
 }

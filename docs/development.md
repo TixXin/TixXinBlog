@@ -108,6 +108,8 @@ corepack pnpm db:dev remove-data --dataset gallery-v1
 
 开发样本必须覆盖当前功能的常见状态、分页、关联、近期日期和失败恢复。正文使用自然内容，内部稳定标识与用途说明保存在脚本和归属记录中。日常开发样本长期保留；自动回归使用可清理的独立数据库、媒体与账号。
 
+平台订阅代表样本集为 `subscription-v1`（15 条订阅、1 个有来源和许可的受管图标），覆盖七种币种、五种周期、双状态、价格历史与近期日期。金额仅为开发代表值，不代表博主实际消费或商家当前报价；通过 `corepack pnpm db:dev seed-data --dataset subscription-v1` 预览，按本节备份与目标确认流程写入。图标代理的供应商响应由隔离测试控制，样本准备不会请求第三方网络。
+
 重复补种不覆盖用户编辑、重写日期或复活已删除记录。定向清理保护用户修改、外部互动、跨数据集关系和历史媒体引用，未知关联保留；归属账本继续存在，防止以后重新补种已删除内容。
 
 `remove-data`、清空和重建还要求其他数据库客户端断开。工具不主动结束服务；取得应用表锁并重新检查计划，范围变化则退出。`reset` 不使用 `CASCADE`，应用外依赖会令事务失败回滚。工具不删除磁盘媒体、环境文件或已有备份。重建后重新初始化账号不等于恢复原数据；恢复使用[完整备份](backup-and-recovery.md)。
@@ -138,6 +140,7 @@ Node 25 默认暴露服务端 Web Storage；前端单测入口关闭该 API，�
 
 ```sh
 corepack pnpm check:secrets
+corepack pnpm test:subscription-domain
 corepack pnpm lint
 corepack pnpm --filter web-blog exec nuxt typecheck
 corepack pnpm --filter web-blog test
@@ -155,6 +158,7 @@ corepack pnpm --filter server-main test:integration
 | Nuxt/Nest 隔离冷启动与复用 | `corepack pnpm test:dev:integration`                                            |
 | PostgreSQL 启动归属        | `corepack pnpm test:dev:postgres`                                               |
 | 固定版本 Nuxt 补丁         | `corepack pnpm test:nuxt-patches`                                               |
+| 订阅业务与内容迁入         | 后端 `test:subscriptions`，共用计算 `corepack pnpm test:subscription-domain`    |
 | 数据库工具与样本归属       | 后端 `test:database-dev`、`test:development-data`                               |
 | 备份与运行任务             | 后端 `test:backup-integrity`、`test:backup-restore`、`test:operations`          |
 | 浏览器                     | `corepack pnpm test:e2e`，或已有两端生产构建后执行 `corepack pnpm test:e2e:run` |

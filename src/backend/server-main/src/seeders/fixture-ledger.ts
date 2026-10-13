@@ -19,6 +19,7 @@ export const FIXTURE_TABLES = {
   gallery: 'gallery_photo',
   prompt: 'image_prompt',
   project: 'project',
+  subscription: 'subscription',
   link: 'friend_link',
   notification: 'owner_notification',
   task: 'background_task',

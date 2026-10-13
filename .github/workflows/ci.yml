@@ -71,6 +71,9 @@ jobs:
       - name: Nuxt Startup Patch Regression
         run: pnpm test:nuxt-patches
 
+      - name: Subscription Domain
+        run: pnpm test:subscription-domain
+
       - name: Test
         run: pnpm --filter web-blog test
 

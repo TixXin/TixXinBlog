@@ -21,8 +21,10 @@
     "@nuxtjs/robots": "^6.2.0",
     "@nuxtjs/sitemap": "^8.5.0",
     "@tixxin/nuxt-theme-engine": "^0.0.4",
+    "@tixxin/subscription-domain": "workspace:*",
     "@vueuse/core": "^14.4.0",
     "@vueuse/integrations": "^14.4.0",
+    "echarts": "^6.1.0",
     "fuse.js": "^7.5.0",
     "isomorphic-dompurify": "^3.19.0",
     "markdown-it": "^14.3.1",
@@ -30,7 +32,8 @@
     "nuxt": "^4.5.2",
     "shiki": "^4.4.3",
     "sortablejs": "^1.15.7",
-    "vue": "^3.5.42"
+    "vue": "^3.5.42",
+    "vue-echarts": "^8.3.2"
   },
   "devDependencies": {
     "@iconify-json/lucide": "^1.2.129",

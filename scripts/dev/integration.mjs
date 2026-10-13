@@ -37,6 +37,7 @@ symlinkSync(
 )
 for (const name of ['package.json', 'pnpm-workspace.yaml', 'pnpm-lock.yaml', 'patches'])
   cpSync(join(workspace, name), join(target, name), { recursive: true })
+cpSync(join(workspace, 'src/shared'), join(target, 'src/shared'), { recursive: true })
 cpSync(join(workspace, 'scripts/dev.mjs'), join(target, 'scripts/dev.mjs'), { recursive: true })
 cpSync(join(workspace, 'scripts/dev'), join(target, 'scripts/dev'), { recursive: true })
 for (const [source, destination] of [

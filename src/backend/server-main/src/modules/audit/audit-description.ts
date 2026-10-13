@@ -41,6 +41,11 @@ export const auditActions: Record<string, string> = {
   'project.create': '创建项目',
   'project.update': '编辑发布或排序项目',
   'project.delete': '删除项目',
+  'subscription.create': '创建订阅',
+  'subscription.update': '编辑或发布订阅',
+  'subscription.delete': '删除订阅',
+  'subscription.sort': '调整订阅排序',
+  'subscription.favicon': '刷新订阅图标',
   'image-prompt.create': '创建图片提示词',
   'image-prompt.update': '编辑图片提示词',
   'link.create': '创建友链',
@@ -143,6 +148,18 @@ export function auditDescriptor(path: string, method: string) {
     } else if (resourceType === 'projects') {
       resourceType = 'project'
       action = method === 'POST' ? 'project.create' : method === 'DELETE' ? 'project.delete' : 'project.update'
+    } else if (resourceType === 'subscriptions') {
+      resourceType = 'subscription'
+      action =
+        parts[2] === 'fetch-favicon'
+          ? 'subscription.favicon'
+          : parts[2] === 'sort'
+            ? 'subscription.sort'
+            : method === 'POST'
+              ? 'subscription.create'
+              : method === 'DELETE'
+                ? 'subscription.delete'
+                : 'subscription.update'
     } else if (resourceType === 'prompts') {
       resourceType = 'image-prompt'
       action = method === 'POST' ? 'image-prompt.create' : 'image-prompt.update'
@@ -214,6 +231,15 @@ const fields: Record<string, string> = {
   sortOrder: '显示排序',
   gear: '器材介绍',
   progress: '项目进展',
+  amount: '订阅金额',
+  currency: '订阅币种',
+  billingCycle: '计费周期',
+  subscriptionStatus: '订阅状态',
+  startDate: '开始日期',
+  nextBillingDate: '下次扣费日期',
+  iconMediaId: '订阅图标',
+  notes: '管理备注',
+  priceChangeReason: '变价原因',
   coverMediaId: '项目封面',
   prompt: '提示词',
   negativePrompt: '负面提示词',
@@ -265,6 +291,7 @@ export function auditResult(
     'exportedGuestbook',
     'exportedGallery',
     'exportedProjects',
+    'exportedSubscriptions',
     'exportedLinks',
     'exportedPrompts',
     'exportedMedia',
@@ -274,6 +301,7 @@ export function auditResult(
     'importedGuestbook',
     'importedGallery',
     'importedProjects',
+    'importedSubscriptions',
     'importedLinks',
     'importedPrompts',
     'importedComments',

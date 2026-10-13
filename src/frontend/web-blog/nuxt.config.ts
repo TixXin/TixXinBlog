@@ -171,6 +171,8 @@ export default {
       : {}),
   },
   nitro: {
+    // 服务端与项目 Node 25 运行基线一致，保留金额精确聚合所需的 BigInt。
+    esbuild: { options: { target: 'node25' } },
     compressPublicAssets: true,
     routeRules: {
       '/**': {
@@ -223,6 +225,10 @@ export default {
     },
   },
   vite: {
+    // 共用纯领域包保留 CommonJS 供 Nest/Jest 使用，浏览器构建显式转换工作区源码。
+    build: {
+      commonjsOptions: { include: [/node_modules/, /subscription-domain/] },
+    },
     css: {
       preprocessorOptions: {
         scss: {
@@ -234,6 +240,7 @@ export default {
     // 显式声明可让其在启动时一次性预打包（生产构建不受影响）
     optimizeDeps: {
       include: [
+        '@tixxin/subscription-domain',
         'fuse.js',
         'markdown-it',
         'markdown-it-task-lists',

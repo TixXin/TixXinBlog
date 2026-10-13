@@ -85,7 +85,8 @@ corepack pnpm --filter server-main run backup:restore --directory &lt;备份目�
       <section aria-label="选择内容包">
         <h2>迁入内容</h2>
         <p>
-          支持本项目生成的 v1–v10 JSON 内容包，最多 50MB。v10保留图片提示词，v9保留内容关联和媒体说明。
+          支持本项目生成的 v1–v11 JSON 内容包，最多
+          50MB。v11保留平台订阅费与价格历史，v10保留图片提示词，v9保留内容关联和媒体说明。
           外部图片地址不会下载到媒体库。先校验内容包和受管图片引用，再确认导入。
         </p>
         <p>留言迁入后不会自动公开或置顶。已删除留言保留为不可见的引用记录，审核前请核对内容与作者。</p>
@@ -138,6 +139,9 @@ corepack pnpm --filter server-main run backup:restore --directory &lt;备份目�
           条友链草稿，保留推荐、排序和Logo关系，不自动上架；同一规范地址只允许一条公开记录。
         </p>
         <p>迁入 {{ job.plan.counts.prompts ?? 0 }} 条图片提示词，保留模型、标签和图片来源，全部保存为草稿。</p>
+        <p>
+          迁入 {{ job.plan.counts.subscriptions ?? 0 }} 条平台订阅记录，保留币种、价格历史与受管图标，全部保存为草稿。
+        </p>
         <p>新增 {{ job.plan.counts.media }} 个媒体记录，写入或修复 {{ job.plan.counts.files }} 个图片文件。</p>
         <p>结构化内容关联会按目标编号映射；跳过的现有内容及媒体说明保持原值，迁入的新内容仍是草稿。</p>
         <p v-if="job.plan.omittedRelations" role="status">
@@ -167,6 +171,9 @@ corepack pnpm --filter server-main run backup:restore --directory &lt;备份目�
             </li>
             <li v-for="project in job.plan.projects ?? []" :key="`project-${project.sourceId}`">
               {{ project.title }} · {{ project.reason }}
+            </li>
+            <li v-for="subscription in job.plan.subscriptions ?? []" :key="`subscription-${subscription.sourceId}`">
+              {{ subscription.title }}：{{ subscription.reason }}
             </li>
             <li v-for="prompt in job.plan.prompts ?? []" :key="`prompt-${prompt.sourceId}`">
               图片提示词 · {{ prompt.title }}：{{ prompt.reason }}
@@ -199,6 +206,7 @@ corepack pnpm --filter server-main run backup:restore --directory &lt;备份目�
           <p>已迁入 {{ job.result.gallery?.length ?? 0 }} 件图库草稿，检查图片及拍摄信息后再发布。</p>
           <p>已迁入 {{ job.result.projects?.length ?? 0 }} 个项目草稿，检查项目进展、技术标签及有效链接后再发布。</p>
           <p>已迁入 {{ job.result.prompts?.length ?? 0 }} 条图片提示词草稿，可到提示词页面核对后发布。</p>
+          <p>已迁入 {{ job.result.subscriptions?.length ?? 0 }} 条平台订阅草稿，请核对价格历史、日期和图标后再发布。</p>
           <p>已迁入 {{ job.result.links?.length ?? 0 }} 条友链草稿，请核对地址和Logo后再上架。</p>
           <p v-if="job.result.relations">
             已映射 {{ job.result.relations.applied }} 条内容关联，省略 {{ job.result.relations.omitted }} 条失效关联。
@@ -214,6 +222,9 @@ corepack pnpm --filter server-main run backup:restore --directory &lt;备份目�
           <NuxtLink v-if="job.result.guestbook?.length" to="/admin/guestbook">检查迁入留言</NuxtLink>
           <NuxtLink v-if="job.result.gallery?.length" to="/admin/gallery?status=draft">检查图库草稿</NuxtLink>
           <NuxtLink v-if="job.result.projects?.length" to="/admin/projects?status=draft">检查项目草稿</NuxtLink>
+          <NuxtLink v-if="job.result.subscriptions?.length" to="/admin/subscriptions?status=draft"
+            >检查订阅草稿</NuxtLink
+          >
           <NuxtLink v-if="job.result.prompts?.length" to="/prompts?view=manage">检查提示词草稿</NuxtLink>
           <NuxtLink v-if="job.result.links?.length" to="/admin/links?status=draft">检查友链草稿</NuxtLink>
         </template>

@@ -3,10 +3,11 @@
 #
 # 使用 glob 模式，新增项目时无需修改此文件，
 # 只需在 src/frontend/ 或 src/backend/ 下创建含 package.json 的子目录即可。
-# 当前工作区：web-blog（前端）、server-main（后端）。
+# 应用工作区：web-blog（前端）、server-main（后端）；src/shared 保存不启动服务的共用领域包。
 packages:
   - 'src/frontend/*'
   - 'src/backend/*'
+  - 'src/shared/*'
 
 # 允许构建的本地原生依赖
 allowBuilds:

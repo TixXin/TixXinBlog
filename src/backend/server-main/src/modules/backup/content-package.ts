@@ -27,6 +27,9 @@ import { projectUrl } from '../project/project-values'
 import { linkLogoUrl, linkUrl } from '../link/link-values'
 import { SavePromptDto } from '../prompts/prompts.dto'
 import { promptValues } from '../prompts/prompts-values'
+import { parsePackageSubscriptions } from './content-package-subscriptions'
+import type { PackageSubscription } from './content-package-subscriptions'
+export type { PackageSubscription } from './content-package-subscriptions'
 import type { ContentRelation } from '../../common/types/content-relation'
 export const MAX_PACKAGE_BYTES = 50 * 1024 * 1024
 export interface PackageComment {
@@ -97,7 +100,7 @@ export interface PackageGuestbook {
 }
 export interface ContentPackage {
   format: 'tixxin-content'
-  version: 10
+  version: 11
   omittedRelations: number
   exportedAt: string
   mediaIncluded: boolean
@@ -109,6 +112,7 @@ export interface ContentPackage {
   projects: PackageProject[]
   links: PackageLink[]
   prompts: PackageImagePrompt[]
+  subscriptions: PackageSubscription[]
   linkSettings: { rules: string[] } | null
   gallerySettings: {
     gear: { icon: 'lucide:camera' | 'lucide:circle' | 'lucide:smartphone'; name: string; description: string }[]
@@ -278,6 +282,7 @@ export async function parseContentPackage(buffer: Buffer): Promise<ContentPackag
     'projects',
     'links',
     'prompts',
+    'subscriptions',
     'linkSettings',
     'gallerySettings',
     'folders',
@@ -289,7 +294,7 @@ export async function parseContentPackage(buffer: Buffer): Promise<ContentPackag
   ])
   if (
     source.format !== 'tixxin-content' ||
-    ![1, 2, 3, 4, 5, 6, 7, 8, 9, 10].includes(Number(source.version)) ||
+    ![1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11].includes(Number(source.version)) ||
     typeof source.version !== 'number'
   )
     throw new BadRequestException('不支持的内容包格式或版本')
@@ -320,6 +325,8 @@ export async function parseContentPackage(buffer: Buffer): Promise<ContentPackag
   if (Number(source.version) < 6 && (source.links !== undefined || source.linkSettings !== undefined))
     fail('v1/v2/v3/v4/v5 不支持友链或规则配置')
   if (Number(source.version) < 10 && source.prompts !== undefined) fail('v1–v9 不支持图片提示词')
+  if (Number(source.version) < 11 && source.subscriptions !== undefined) fail('v1–v10 不支持平台订阅费')
+  const subscriptions = parsePackageSubscriptions(Number(source.version) >= 11 ? source.subscriptions : [])
   const mediaIncluded = boolean(source.mediaIncluded, 'mediaIncluded')
   let commentsTotal = 0
   const posts = array(source.posts, 'posts', 1000).map((value, index): PackagePost => {
@@ -899,7 +906,7 @@ export async function parseContentPackage(buffer: Buffer): Promise<ContentPackag
       if (!targets.has(`${relation.type}:${relation.id}`)) fail('关联目标不在内容包内，不能把来源编号当作目标站点编号')
   return {
     format: 'tixxin-content',
-    version: 10,
+    version: 11,
     omittedRelations,
     exportedAt: date(source.exportedAt, '导出时间'),
     mediaIncluded,
@@ -911,6 +918,7 @@ export async function parseContentPackage(buffer: Buffer): Promise<ContentPackag
     projects,
     links,
     prompts,
+    subscriptions,
     linkSettings,
     gallerySettings,
     folders,

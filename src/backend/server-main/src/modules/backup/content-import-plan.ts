@@ -20,6 +20,7 @@ import type {
   PackageGalleryPhoto,
   PackageProject,
   PackageImagePrompt,
+  PackageSubscription,
 } from './content-package'
 import { packageHash } from './content-package'
 import { canonicalTaxonomyLabel } from '../post/taxonomy-aliases'
@@ -88,6 +89,13 @@ export function promptContentHash(values: PackageImagePrompt['values']) {
   void status
   return packageHash({ ...content, tags: [...new Set(values.tags)].sort() })
 }
+export function subscriptionContentHash(values: PackageSubscription['values']) {
+  const { status, faviconDomain, ...content } = values
+  // 保留完整历史和业务状态参与去重；发布状态及可再生图标缓存不改变内容身份。
+  void status
+  void faviconDomain
+  return packageHash(content)
+}
 export async function normalizedPost(em: EntityManager, values: PackagePost['values']) {
   return {
     ...values,
@@ -131,6 +139,7 @@ export async function makeContentPlan(
     projects: current.projects,
     links: current.links,
     prompts: current.prompts ?? [],
+    subscriptions: current.subscriptions ?? [],
     posts: current.posts.map((post) => ({ id: post.sourceId, values: post.values })),
     flashes: current.flashes.map((flash) => ({ id: flash.sourceId, values: flash.values })),
     moments: current.moments.map((note) => ({
@@ -339,6 +348,27 @@ export async function makeContentPlan(
       reason: skip ? '跳过相同图片提示词' : '创建新的提示词草稿，保留提示词、模型、标签和图片来源',
     }
   })
+  const existingSubscriptions = new Set(
+    (current.subscriptions ?? []).map((subscription) => subscriptionContentHash(subscription.values)),
+  )
+  const subscriptionPlans = (input.subscriptions ?? []).map((source) => {
+    const hash = subscriptionContentHash(source.values)
+    const skip = source.deleted || (strategy === 'skip' && existingSubscriptions.has(hash))
+    if (!skip) {
+      existingSubscriptions.add(hash)
+      if (source.values.iconMediaId) requiredValues.push(`/api/v1/media/${source.values.iconMediaId}.webp`)
+    }
+    return {
+      sourceId: source.sourceId,
+      title: source.values.name,
+      skip,
+      reason: source.deleted
+        ? '跳过已删除订阅，不自动恢复'
+        : skip
+          ? '跳过相同订阅及完整价格历史，已有记录保持不变'
+          : '创建新的订阅草稿，保留币种、周期、业务状态、价格历史和受管图标',
+    }
+  })
   if (includeSettings) requiredValues.push(input.site.avatar)
   const required = new Set(managedMediaIds(requiredValues))
   const incoming = new Map(input.media.map((item) => [item.id, item]))
@@ -407,6 +437,7 @@ export async function makeContentPlan(
     projects: projectPlans,
     links: linkPlans,
     prompts: promptPlans,
+    subscriptions: subscriptionPlans,
     media,
     counts: {
       posts: postPlans.filter((item) => !item.skip).length,
@@ -417,6 +448,7 @@ export async function makeContentPlan(
       projects: projectPlans.filter((item) => !item.skip).length,
       links: linkPlans.filter((item) => !item.skip).length,
       prompts: promptPlans.filter((item) => !item.skip).length,
+      subscriptions: subscriptionPlans.filter((item) => !item.skip).length,
       comments,
       skipped:
         postPlans.filter((item) => item.skip).length +
@@ -426,7 +458,8 @@ export async function makeContentPlan(
         galleryPlans.filter((item) => item.skip).length +
         projectPlans.filter((item) => item.skip).length +
         linkPlans.filter((item) => item.skip).length +
-        promptPlans.filter((item) => item.skip).length,
+        promptPlans.filter((item) => item.skip).length +
+        subscriptionPlans.filter((item) => item.skip).length,
       media: media.filter((item) => item.create).length,
       files: media.filter((item) => item.writeFile).length,
       settings: includeSettings,

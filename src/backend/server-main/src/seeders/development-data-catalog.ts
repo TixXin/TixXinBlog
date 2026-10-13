@@ -22,6 +22,48 @@ interface Domain {
 const publicPost = "p.status='published' and p.deleted_at is null"
 export const DATA_DOMAINS: Domain[] = [
   {
+    id: 'subscriptions',
+    entry: '/subscriptions',
+    admin: '/admin/subscriptions',
+    table: 'subscription',
+    searchColumn: 'name',
+    dataset: 'subscription-v1',
+    source: 'PostgreSQL subscription、media_asset、media_reference；金额为开发代表值，不代表实际消费或商家报价',
+    scenarios: '七种币种、五种周期、五种订阅状态、公开草稿撤回、日期边界与多次变价',
+    query: `select count(*)::int as total,
+      count(*) filter(where status='published')::int as published,
+      count(*) filter(where status='draft')::int as drafts,
+      count(*) filter(where status='withdrawn')::int as withdrawn,
+      count(distinct currency)::int as currencies,
+      count(distinct billing_cycle)::int as cycles,
+      count(distinct subscription_status)::int as states,
+      count(*) filter(where amount=0)::int as free,
+      count(*) filter(where next_billing_date>=(current_timestamp at time zone 'UTC')::date and next_billing_date<=(current_timestamp at time zone 'UTC')::date+30)::int as upcoming,
+      count(*) filter(where next_billing_date<(current_timestamp at time zone 'UTC')::date)::int as overdue,
+      count(*) filter(where start_date>(current_timestamp at time zone 'UTC')::date)::int as future,
+      count(*) filter(where start_date is null)::int as undated,
+      count(*) filter(where jsonb_array_length(price_history)>1)::int as history,
+      count(*) filter(where icon_media_id is not null)::int as managed,
+      count(*) filter(where icon_media_id is not null and exists(select 1 from media_reference r where r.subscription_id=s.id and r.asset_id=s.icon_media_id))::int as references
+      from subscription s where deleted_at is null`,
+    required: {
+      published: 13,
+      drafts: 1,
+      withdrawn: 1,
+      currencies: 7,
+      cycles: 5,
+      states: 5,
+      free: 1,
+      upcoming: 1,
+      overdue: 1,
+      future: 1,
+      undated: 1,
+      history: 3,
+      managed: 1,
+      references: 1,
+    },
+  },
+  {
     id: 'prompts',
     entry: '/prompts',
     admin: '/prompts?view=manage',
@@ -327,16 +369,21 @@ async function inspectOwnership(em: EntityManager, dataset: string, hasLedger: b
   return report
 }
 
-async function inspectContentFiles(em: EntityManager, domain: 'gallery' | 'projects' | 'links' | 'prompts') {
+async function inspectContentFiles(
+  em: EntityManager,
+  domain: 'gallery' | 'projects' | 'links' | 'prompts' | 'subscriptions',
+) {
   const storage = new LocalMediaStorage(new ConfigService(process.env))
   const assets = await em.execute<{ id: string; storage_key: string; deleted_at: Date | null }[]>(
     domain === 'gallery'
       ? 'select distinct m.id,m.storage_key,m.deleted_at from media_asset m join gallery_photo g on g.media_id=m.id where g.deleted_at is null'
       : domain === 'prompts'
         ? 'select distinct m.id,m.storage_key,m.deleted_at from media_asset m join image_prompt p on p.media_id=m.id'
-        : domain === 'projects'
-          ? 'select distinct m.id,m.storage_key,m.deleted_at from media_asset m join project p on p.cover_media_id=m.id where p.deleted_at is null'
-          : 'select distinct m.id,m.storage_key,m.deleted_at from media_asset m join friend_link l on l.logo_media_id=m.id where l.deleted_at is null',
+        : domain === 'subscriptions'
+          ? 'select distinct m.id,m.storage_key,m.deleted_at from media_asset m join subscription s on s.icon_media_id=m.id where s.deleted_at is null'
+          : domain === 'projects'
+            ? 'select distinct m.id,m.storage_key,m.deleted_at from media_asset m join project p on p.cover_media_id=m.id where p.deleted_at is null'
+            : 'select distinct m.id,m.storage_key,m.deleted_at from media_asset m join friend_link l on l.logo_media_id=m.id where l.deleted_at is null',
   )
   const unavailable: string[] = []
   for (const asset of assets) {
@@ -372,12 +419,16 @@ export async function inspectDataCatalog(em: EntityManager, domain?: string, sea
     const ownership = item.dataset
       ? await inspectOwnership(em, item.dataset, tables.has('development_fixture'))
       : undefined
-    const media = ['gallery', 'projects', 'links', 'prompts'].includes(item.id)
-      ? await inspectContentFiles(em, item.id as 'gallery' | 'projects' | 'links' | 'prompts')
+    const media = ['gallery', 'projects', 'links', 'prompts', 'subscriptions'].includes(item.id)
+      ? await inspectContentFiles(em, item.id as 'gallery' | 'projects' | 'links' | 'prompts' | 'subscriptions')
       : undefined
     if (item.id === 'projects' && counts?.covered !== counts?.references)
       missing.push(
         `项目封面与媒体引用不一致：${counts?.covered ?? 0}件有封面，${counts?.references ?? 0}件有有效引用；请核对关联并从完整备份恢复`,
+      )
+    if (item.id === 'subscriptions' && counts?.managed !== counts?.references)
+      missing.push(
+        `订阅图标与媒体引用不一致：${counts?.managed ?? 0}条关联媒体，${counts?.references ?? 0}条有有效引用；请核对关联并从完整备份恢复`,
       )
     if (item.id === 'links' && counts?.managed !== counts?.references)
       missing.push(

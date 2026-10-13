@@ -15,6 +15,7 @@ export const mockNavItems: NavItem[] = [
   { icon: 'lucide:zap', label: '闪念', to: '/flash' },
   { icon: 'lucide:link', label: '友链', to: '/links', desktopOnly: true },
   { icon: 'lucide:message-circle', label: '留言', to: '/guestbook' },
+  { icon: 'lucide:credit-card', label: '平台订阅费', to: '/subscriptions' },
   { icon: 'lucide:user', label: '关于', to: '/about' },
   { icon: 'lucide:aperture', label: '提示词', to: '/prompts' },
   { icon: 'lucide:layout-grid', label: '标签页', to: '/tabs' },

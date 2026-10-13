@@ -303,6 +303,7 @@ export async function runDevDatabase(
           })
         else await em.nativeDelete(Moment, {})
         if (input.action === 'clear-content') {
+          await em.execute('delete from subscription')
           await em.execute('delete from image_prompt')
           await em.execute('delete from gallery_photo')
           await em.execute('delete from project')

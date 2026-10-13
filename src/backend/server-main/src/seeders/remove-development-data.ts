@@ -103,6 +103,7 @@ export async function removeDevelopmentData(
         'gallery',
         'prompt',
         'project',
+        'subscription',
         'link',
         'moment',
         'flash',

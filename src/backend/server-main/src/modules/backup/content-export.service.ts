@@ -17,6 +17,7 @@ import { GalleryPhoto } from '../../entities/gallery-photo.entity'
 import { GallerySettings } from '../../entities/gallery-settings.entity'
 import { Project } from '../../entities/project.entity'
 import { FriendLink } from '../../entities/friend-link.entity'
+import { Subscription } from '../../entities/subscription.entity'
 import { ImagePrompt } from '../../entities/image-prompt.entity'
 import { LinkSettings } from '../../entities/link-settings.entity'
 import { PostFolder } from '../../entities/post-folder.entity'
@@ -47,12 +48,13 @@ export class ContentExportService {
           projects: number
           links: number
           prompts: number
+          subscriptions: number
           comments: number
           media: number
           bytes: string
         }[]
       >(
-        `select (select count(*)::int from post) as posts, (select count(*)::int from flash_note) as flashes, (select count(*)::int from moment) as moments, (select count(*)::int from guestbook_message) as guestbook, (select count(*)::int from gallery_photo) as gallery, (select count(*)::int from project) as projects, (select count(*)::int from friend_link) as links, (select count(*)::int from image_prompt) as prompts, ((select count(*) from comment)+(select count(*) from flash_comment)+(select count(*) from moment_comment))::int as comments, (select count(*)::int from media_asset) as media, (select coalesce(sum(octet_length(coalesce(content_raw,content_sections::text,''))),0)::text from post) as bytes`,
+        `select (select count(*)::int from post) as posts, (select count(*)::int from flash_note) as flashes, (select count(*)::int from moment) as moments, (select count(*)::int from guestbook_message) as guestbook, (select count(*)::int from gallery_photo) as gallery, (select count(*)::int from project) as projects, (select count(*)::int from friend_link) as links, (select count(*)::int from image_prompt) as prompts, (select count(*)::int from subscription) as subscriptions, ((select count(*) from comment)+(select count(*) from flash_comment)+(select count(*) from moment_comment))::int as comments, (select count(*)::int from media_asset) as media, (select coalesce(sum(octet_length(coalesce(content_raw,content_sections::text,''))),0)::text from post) as bytes`,
       )
       if (
         !counts ||
@@ -64,6 +66,7 @@ export class ContentExportService {
         counts.projects > 2000 ||
         counts.links > 2000 ||
         counts.prompts > 3000 ||
+        counts.subscriptions > 3000 ||
         counts.comments > 10000 ||
         counts.media > 300 ||
         Number(counts.bytes) > MAX_PACKAGE_BYTES
@@ -84,6 +87,7 @@ export class ContentExportService {
       const projects = await em.find(Project, {}, { orderBy: { id: 'asc' } })
       const links = await em.find(FriendLink, {}, { orderBy: { id: 'asc' } })
       const prompts = await em.find(ImagePrompt, {}, { orderBy: { id: 'asc' } })
+      const subscriptions = await em.find(Subscription, {}, { orderBy: { id: 'asc' } })
       const linkSettings = await em.findOneOrFail(LinkSettings, { id: 'default' })
       const gallerySettings = await em.findOneOrFail(GallerySettings, { id: 'default' })
       const momentComments = await em.find(MomentComment, {}, { orderBy: { createdAt: 'asc', id: 'asc' } })
@@ -96,6 +100,7 @@ export class ContentExportService {
         projects.length > 2000 ||
         links.length > 2000 ||
         prompts.length > 3000 ||
+        subscriptions.length > 3000 ||
         comments.length + flashComments.length + momentComments.length > 10000 ||
         assets.length > 300
       )
@@ -137,7 +142,7 @@ export class ContentExportService {
       void announcementUpdatedAt
       const result: ContentPackage = {
         format: 'tixxin-content',
-        version: 10,
+        version: 11,
         omittedRelations: 0,
         exportedAt: new Date().toISOString(),
         mediaIncluded,
@@ -278,6 +283,32 @@ export class ContentExportService {
             imageAlt: prompt.imageAlt,
             sourceUrl: prompt.sourceUrl,
             status: prompt.status,
+          },
+        })),
+        subscriptions: subscriptions.map((subscription) => ({
+          sourceId: subscription.id,
+          createdAt: subscription.createdAt.toISOString(),
+          publishedAt: subscription.publishedAt?.toISOString() ?? null,
+          deleted: !!subscription.deletedAt,
+          values: {
+            name: subscription.name,
+            description: subscription.description,
+            url: subscription.url ?? null,
+            platform: subscription.platform ?? null,
+            category: subscription.category,
+            currency: subscription.currency,
+            amount: subscription.amount,
+            billingCycle: subscription.billingCycle,
+            startDate: subscription.startDate ?? null,
+            nextBillingDate: subscription.nextBillingDate ?? null,
+            subscriptionStatus: subscription.subscriptionStatus,
+            notes: subscription.notes,
+            iconMediaId: subscription.iconMedia?.id ?? null,
+            // favicon 是可再生缓存，仅保存官网域名，不把缓存冒充正式媒体。
+            faviconDomain: subscription.faviconDomain ?? null,
+            priceHistory: subscription.priceHistory,
+            status: subscription.status,
+            sortOrder: subscription.sortOrder,
           },
         })),
         linkSettings: { rules: linkSettings.rules },

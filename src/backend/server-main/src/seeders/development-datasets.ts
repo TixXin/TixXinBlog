@@ -6,6 +6,7 @@ import { seedWritingFixtures, WRITING_DATASET, WRITING_FIXTURE_COUNT } from './w
 import { seedGuestbookFixtures, GUESTBOOK_DATASET, GUESTBOOK_FIXTURE_COUNT } from './guestbook-fixtures'
 import { seedGalleryFixtures, GALLERY_DATASET, GALLERY_FIXTURE_COUNT } from './gallery-fixtures'
 import { seedProjectFixtures, PROJECT_DATASET, PROJECT_FIXTURE_COUNT } from './project-fixtures'
+import { seedSubscriptionFixtures, SUBSCRIPTION_DATASET, SUBSCRIPTION_FIXTURE_COUNT } from './subscription-fixtures'
 import { seedLinkFixtures, LINK_DATASET, LINK_FIXTURE_COUNT } from './link-fixtures'
 import { seedPromptFixtures, PROMPT_DATASET, PROMPT_FIXTURE_COUNT } from './prompt-fixtures'
 import {
@@ -16,6 +17,12 @@ import {
 
 export const DEFAULT_DEVELOPMENT_DATASET = CORE_DATASET
 export const DEVELOPMENT_DATASETS = [
+  {
+    id: SUBSCRIPTION_DATASET,
+    count: SUBSCRIPTION_FIXTURE_COUNT,
+    scope: '平台订阅费、多币种周期和双状态、价格历史、近期日期与受管图标；金额为开发代表值',
+    seed: seedSubscriptionFixtures,
+  },
   {
     id: PROMPT_DATASET,
     count: PROMPT_FIXTURE_COUNT,

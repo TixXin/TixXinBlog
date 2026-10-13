@@ -1,11 +1,13 @@
 # 前端生产镜像：Node 25 构建，非 root 运行；API 地址由运行环境提供。
 FROM node:25-alpine AS install
-RUN npm install --global corepack@0.34.6 && corepack enable
+# 基础镜像已带 Yarn 入口；在镜像内以固定 Corepack 替换该入口。
+RUN npm install --global --force corepack@0.34.6 && corepack enable
 WORKDIR /app
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 COPY patches ./patches
 COPY src/frontend/web-blog/package.json ./src/frontend/web-blog/
 COPY src/backend/server-main/package.json ./src/backend/server-main/
+COPY src/shared/subscription-domain ./src/shared/subscription-domain/
 RUN corepack pnpm install --frozen-lockfile
 
 # ---- build ----

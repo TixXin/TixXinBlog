@@ -33,6 +33,7 @@ import { GuestbookReaction } from '../entities/guestbook-reaction.entity'
 import { GalleryPhoto } from '../entities/gallery-photo.entity'
 import { GallerySettings } from '../entities/gallery-settings.entity'
 import { Project } from '../entities/project.entity'
+import { Subscription } from '../entities/subscription.entity'
 import { ImagePrompt } from '../entities/image-prompt.entity'
 import { FriendLink } from '../entities/friend-link.entity'
 import { LinkSettings } from '../entities/link-settings.entity'
@@ -96,6 +97,7 @@ export const ORM_ENTITIES = [
   GalleryPhoto,
   GallerySettings,
   Project,
+  Subscription,
   ImagePrompt,
   FriendLink,
   LinkSettings,

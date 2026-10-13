@@ -15,6 +15,7 @@ import type { MomentComment } from '../../entities/moment-comment.entity'
 import type { GuestbookMessage } from '../../entities/guestbook-message.entity'
 import type { GalleryPhoto } from '../../entities/gallery-photo.entity'
 import type { Project } from '../../entities/project.entity'
+import type { Subscription } from '../../entities/subscription.entity'
 import type { FriendLink } from '../../entities/friend-link.entity'
 import type { ImagePrompt } from '../../entities/image-prompt.entity'
 
@@ -54,6 +55,7 @@ export async function synchronizeMediaReferences(
     guestbookMessage?: GuestbookMessage
     galleryPhoto?: GalleryPhoto
     project?: Project
+    subscription?: Subscription
     friendLink?: FriendLink
     imagePrompt?: ImagePrompt
   },

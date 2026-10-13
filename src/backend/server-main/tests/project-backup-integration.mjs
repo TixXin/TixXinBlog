@@ -98,7 +98,7 @@ try {
   const exported = await request('/admin/backup/export', 'POST', { mediaIncluded: true })
   assert.equal(exported.status, 201)
   const bundle = exported.data
-  assert.equal(bundle.version, 10)
+  assert.equal(bundle.version, 11)
   assert.equal(bundle.projects.length, 4)
   assert(!JSON.stringify(bundle.projects).includes('requestId'))
   assert(!JSON.stringify(bundle.projects).includes('revision'))

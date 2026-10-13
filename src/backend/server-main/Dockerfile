@@ -2,13 +2,15 @@
 #   docker build -f src/backend/server-main/Dockerfile -t tixxin-blog-server .
 FROM node:25-alpine AS build
 ENV COREPACK_ENABLE_DOWNLOAD_PROMPT=0
-RUN npm install --global corepack@0.34.6 && corepack enable
+# 基础镜像已带 Yarn 入口；在镜像内以固定 Corepack 替换该入口。
+RUN npm install --global --force corepack@0.34.6 && corepack enable
 WORKDIR /repo
 
 # 先复制清单文件,让依赖安装层可被缓存
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 COPY patches ./patches
 COPY src/backend/server-main/package.json src/backend/server-main/
+COPY src/shared/subscription-domain src/shared/subscription-domain/
 # --ignore-scripts:根 prepare(husky)在过滤安装下不可用;argon2 等原生依赖均带预编译产物
 RUN corepack pnpm install --frozen-lockfile --filter server-main --ignore-scripts
 
