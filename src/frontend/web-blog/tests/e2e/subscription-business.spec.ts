@@ -280,3 +280,96 @@ test('公开请求失败显示真实错误并允许恢复，不回退样本', as
   await page.getByRole('button', { name: /重试/ }).click()
   await expect(stats).toContainText('JPY 12,000')
 })
+
+test('favicon 从失败降级到同地址获取成功后，保存刷新恢复现有卡片图标', async ({ page, request }) => {
+  const api = await adminApi(request)
+  const name = `开源支持记录 ${randomUUID()}`
+  const item = await api('/admin/subscriptions', 'POST', {
+    requestId: randomUUID(),
+    name,
+    amount: 1200,
+    currency: 'USD',
+    billingCycle: 'monthly',
+    url: 'https://vuejs.org/',
+    status: 'published',
+  })
+  let failedReads = 0
+  try {
+    await login(page)
+    await page.route('**/api/v1/subscriptions/favicons/*.webp', (route) => {
+      failedReads++
+      return route.fulfill({ status: 404, headers: { 'Cache-Control': 'no-store' }, body: '图标缓存尚未生成' })
+    })
+    await page.goto(`/subscriptions?q=${encodeURIComponent(name)}`)
+    const card = page.getByRole('article', { name, exact: true })
+    await card.scrollIntoViewIfNeeded()
+    await expect.poll(() => failedReads).toBeGreaterThan(0)
+    await expect(card.locator('.subscription-card-icon')).toBeVisible()
+    await expect(card.getByRole('img')).toHaveCount(0)
+    const originalCard = await card.elementHandle()
+    await page.unroute('**/api/v1/subscriptions/favicons/*.webp')
+    await card.getByRole('button', { name: '编辑订阅', exact: true }).click()
+    const fetched = page.waitForResponse(
+      (response) =>
+        new URL(response.url()).pathname === '/api/v1/admin/subscriptions/fetch-favicon' &&
+        response.request().method() === 'POST',
+    )
+    await page.getByRole('button', { name: '获取官网图标', exact: true }).click()
+    const iconResponse = await fetched
+    expect(iconResponse.status()).toBe(201)
+    expect((await iconResponse.json()).data.faviconUrl).toBe(item.faviconUrl)
+    await expect(page.getByText('官网图标已获取。', { exact: true })).toBeVisible()
+    await page.getByRole('button', { name: '保存订阅', exact: true }).click()
+    await expect(page.getByRole('button', { name: '记录一个平台订阅', exact: true })).toBeVisible()
+    await card.scrollIntoViewIfNeeded()
+    expect(await originalCard!.evaluate((element) => element.isConnected)).toBe(true)
+    const icon = card.getByRole('img')
+    await expect(icon).toHaveAttribute('src', item.faviconUrl)
+    await expect.poll(() => icon.evaluate((element) => (element as HTMLImageElement).naturalWidth)).toBeGreaterThan(0)
+  } finally {
+    const latest = await api(`/admin/subscriptions/${item.id}`)
+    await api(`/admin/subscriptions/${item.id}?revision=${latest.revision}`, 'DELETE')
+  }
+})
+
+test('金额上限和长名称在窄屏及动态缩放下保留精确预算与可读图表', async ({ page }, testInfo) => {
+  const errors: string[] = []
+  page.on('pageerror', (error) => errors.push(error.message))
+  const name = '跨地区工具资料与阅读空间'.repeat(16).slice(0, 160)
+  await page.setViewportSize({ width: 320, height: 960 })
+  await page.goto('/subscriptions')
+  await localForm(page, name, '21474836.47', 'USD')
+  await page.getByLabel('开始日期', { exact: true }).fill('2024-01-28')
+  await page.getByLabel('下次扣费日期', { exact: true }).fill(`${new Date().toISOString().slice(0, 7)}-28`)
+  await page.getByRole('button', { name: '保存到当前浏览器', exact: true }).click()
+  const card = page.getByRole('article', { name, exact: true })
+  const stats = page.getByRole('region', { name: '订阅费用统计' })
+  await expect(card).toContainText('USD 21,474,836.47')
+  await expect(stats).toContainText('USD 257,698,037.64')
+  await expect(page.locator('[data-subscription-chart][data-chart-ready="true"]')).toHaveCount(3)
+  for (const width of [320, 390, 1440]) {
+    await page.setViewportSize({ width, height: 960 })
+    await expect
+      .poll(() =>
+        page.locator('[data-subscription-chart]').evaluateAll((elements) =>
+          elements.every((element) => {
+            const svg = element.querySelector('svg')
+            return svg && Math.abs(svg.getBoundingClientRect().width - element.getBoundingClientRect().width) <= 1
+          }),
+        ),
+      )
+      .toBe(true)
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1)).toBe(true)
+    expect(await stats.evaluate((element) => element.scrollWidth <= element.clientWidth + 1)).toBe(true)
+    expect(await card.evaluate((element) => element.scrollWidth <= element.clientWidth + 1)).toBe(true)
+    if (width === 320) await captureMotion(page, testInfo, 'subscription-maximum-amount-320.png', { target: card })
+  }
+  await page.locator('a[href="/about"]:visible').first().click()
+  await expect(page).toHaveURL(/\/about$/)
+  await expect(page.locator('[data-subscription-chart]')).toHaveCount(0)
+  await page.goBack()
+  await page.getByRole('button', { name: '我的订阅', exact: true }).click()
+  await expect(card).toContainText('USD 21,474,836.47')
+  await expect(stats).toContainText('USD 257,698,037.64')
+  expect(errors).toEqual([])
+})
