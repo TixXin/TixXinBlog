@@ -26,7 +26,7 @@ async function main() {
       )
     assert(writingHandbook.length > 10000)
     const first = await seed('writing-v1')
-    assert('created' in first && first.created.length === 6)
+    assert('created' in first && first.created.length === WRITING_FIXTURE_COUNT)
     const em = fixture.testOrm.em.fork()
     const [longPost] = await em.execute(
       "select p.* from post p join development_fixture f on f.resource_id=p.id::text and f.kind='post' where f.key='writing-v1/post/handbook'",
@@ -40,10 +40,14 @@ async function main() {
     const publicProject = await fetch(`${fixture.origin}/api/v1/projects/${project.id}`)
     assert.equal(publicProject.status, 200)
     assert.equal((await publicProject.json()).data.relatedContent.length, 1, '公开关系不泄露写作草稿')
-    assert.equal((await fixtureCleanupPlan(em, 'writing-v1')).remove.length, 6)
+    assert.equal((await fixtureCleanupPlan(em, 'writing-v1')).remove.length, WRITING_FIXTURE_COUNT)
     const repeated = await seed('writing-v1')
     assert('created' in repeated && repeated.created.length === 0)
-    assert.equal((await fixtureCleanupPlan(em, 'writing-v1')).remove.length, 6, '初次完成关联后的指纹与最终内容一致')
+    assert.equal(
+      (await fixtureCleanupPlan(em, 'writing-v1')).remove.length,
+      WRITING_FIXTURE_COUNT,
+      '初次完成关联后的指纹与最终内容一致',
+    )
     // 在本次隔离库打开运行开关，证明种子仍不能排队对外投递。
     process.env.NOTIFICATION_EMAIL_ENABLED = 'true'
     await em.execute("update operation_control set external_paused=false where id='default'")
