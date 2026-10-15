@@ -11,7 +11,7 @@ import {
   subscriptionStorageKey,
   safeSubscriptionUrl,
 } from '../../app/features/subscription/local'
-import { filterSubscriptions, subscriptionQuery } from '../../app/features/subscription/query'
+import { filterSubscriptions, subscriptionQuery, publicSubscriptionQuery } from '../../app/features/subscription/query'
 const wrappers: { unmount(): void }[] = []
 beforeEach(() => {
   const entries = new Map<string, string>()
@@ -61,6 +61,23 @@ async function create(local: ReturnType<typeof useLocalSubscriptions>) {
   return local.data.value.items[0]!
 }
 describe('访客订阅本机闭环', () => {
+  it.each(['USD', 'JPY'] as const)('新建使用当前显示币种 %s，初始化不构成未保存编辑', async (currency) => {
+    const local = await setup()
+    expect(local.edit(undefined, currency)).toBe(true)
+    expect(local.form.currency).toBe(currency)
+    expect(local.dirty.value).toBe(false)
+    local.form.name = '正在记录的工具'
+    expect(local.dirty.value).toBe(true)
+  })
+  it('已有记录编辑保留原币种与金额，不被视图的初始币种覆盖', async () => {
+    const local = await setup(),
+      item = await create(local)
+    expect(local.edit(item, 'JPY')).toBe(true)
+    expect(local.form.currency).toBe('USD')
+    expect(local.form.amountInput).toBe('20.00')
+    expect(local.dirty.value).toBe(false)
+    expect(local.saved.value?.priceHistory).toEqual(item.priceHistory)
+  })
   it('保存并刷新恢复日期和初始价格，文字编辑不变价，价格修改原子追加历史', async () => {
     const local = await setup(),
       item = await create(local)
@@ -285,6 +302,29 @@ describe('访客订阅格式与筛选', () => {
     expect(() => safeSubscriptionUrl('https://name:secret@example.com')).toThrow()
     expect(() => subscriptionBody({ ...subscriptionForm(), currency: 'JPY', amountInput: '1.5' })).toThrow()
     expect(subscriptionBody({ ...subscriptionForm(), currency: 'JPY', amountInput: '1000' }).amount).toBe(1000)
+  })
+  it.each([undefined, '', 'BTC', 'usd', ['USD', 'JPY'], null])(
+    '公开与本地预算查询对无效币种 %j 默认 USD，后台通用查询仍不限币种',
+    (currency) => {
+      expect(publicSubscriptionQuery({ currency }).currency).toBe('USD')
+      expect(subscriptionQuery({ currency }).currency).toBeUndefined()
+    },
+  )
+  it.each(['CNY', 'USD', 'EUR', 'GBP', 'JPY', 'HKD', 'TWD'])('公开与本地预算完整保留显式币种 %s', (currency) => {
+    expect(publicSubscriptionQuery({ currency }).currency).toBe(currency)
+  })
+  it('默认单币种筛选发生在分页前，通用查询仍保留其它币种记录', async () => {
+    const local = await setup(),
+      item = await create(local)
+    const rows = [
+      { ...item, id: 'cny', currency: 'CNY' as const },
+      ...Array.from({ length: 13 }, (_, index) => ({ ...item, id: `usd-${index}` })),
+    ]
+    const filtered = filterSubscriptions(rows, publicSubscriptionQuery({}))
+    expect(filtered).toHaveLength(13)
+    expect(filtered.every((row) => row.currency === 'USD')).toBe(true)
+    expect(filtered.slice(12)).toHaveLength(1)
+    expect(filterSubscriptions(rows, subscriptionQuery({}))).toHaveLength(14)
   })
   it('本地查询在分页前筛选，金额排序先区分币种', async () => {
     const local = await setup(),

@@ -9,6 +9,7 @@ import {
   validateLocalFields,
 } from '~/features/subscription/local'
 import type { LocalSubscription, LocalSubscriptions } from '~/features/subscription/local'
+import type { SubscriptionCurrency } from '~/features/subscription/types'
 import { writeLocalJson } from '~/utils/localPersistence'
 export function useLocalSubscriptions() {
   const data = ref<LocalSubscriptions>({ version: 2, revision: '', items: [] }),
@@ -57,11 +58,11 @@ export function useLocalSubscriptions() {
       error.value = cause instanceof Error ? cause.message : '浏览器存储不可用，当前输入尚未保存。'
     }
   }
-  function edit(item?: LocalSubscription) {
+  function edit(item?: LocalSubscription, initialCurrency?: SubscriptionCurrency) {
     if (saving.value || (dirty.value && !window.confirm('有未保存的本地订阅输入，确定切换吗？'))) return false
     editing.value = true
     editingId.value = item?.id ?? null
-    Object.assign(form, subscriptionForm(item))
+    Object.assign(form, subscriptionForm(item ?? (initialCurrency ? { currency: initialCurrency } : undefined)))
     baseline.value = JSON.stringify(form)
     notice.value = ''
     return true

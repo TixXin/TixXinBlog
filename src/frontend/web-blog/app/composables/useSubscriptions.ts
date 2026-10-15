@@ -1,6 +1,6 @@
 /** @file useSubscriptions.ts @description 公开订阅列表和全量筛选统计同步接纳，SSR 与导航查询一致 */
 import type { SubscriptionQuery } from '~/features/subscription/types'
-import { subscriptionQuery } from '~/features/subscription/query'
+import { publicSubscriptionQuery } from '~/features/subscription/query'
 export async function useSubscriptions() {
   const repo = useSubscriptionRepository(),
     route = useRoute(),
@@ -9,16 +9,16 @@ export async function useSubscriptions() {
     app = useNuxtApp()
   const ready = ref(false),
     hydrating = ref(import.meta.client && app.isHydrating)
-  let initialQuery: SubscriptionQuery = subscriptionQuery(route.query)
+  let initialQuery: SubscriptionQuery = publicSubscriptionQuery(route.query)
   const serverKey = (app.payload.data['subscriptions-feed'] as { key?: string } | undefined)?.key
   if (hydrating.value && serverKey) {
     try {
-      initialQuery = subscriptionQuery(JSON.parse(serverKey))
+      initialQuery = publicSubscriptionQuery(JSON.parse(serverKey))
     } catch {
       /* 回退当前路由。 */
     }
   }
-  const query = computed(() => (hydrating.value ? initialQuery : subscriptionQuery(route.query)))
+  const query = computed(() => (hydrating.value ? initialQuery : publicSubscriptionQuery(route.query)))
   const key = computed(() => JSON.stringify(query.value))
   const feed = useAsyncData('subscriptions-feed', async (_app, { signal }) => {
     const requested = key.value,

@@ -13,6 +13,7 @@ const mocks = vi.hoisted(() => ({
 mockNuxtImport('useSubscriptionRepository', () => () => mocks.repo)
 mockNuxtImport('useCurrentUser', () => () => mocks.auth)
 const wrappers: { unmount(): void }[] = []
+const hosts: HTMLElement[] = []
 const item = {
   ...subscriptionBody(subscriptionForm()),
   id: 1,
@@ -35,6 +36,7 @@ beforeEach(() => {
 })
 afterEach(() => {
   wrappers.splice(0).forEach((wrapper) => wrapper.unmount())
+  hosts.splice(0).forEach((host) => host.remove())
   vi.restoreAllMocks()
 })
 async function setup() {
@@ -97,5 +99,79 @@ describe('订阅编辑私密可见性', () => {
     expect(wrapper.get('textarea[aria-label="订阅备注"]').element).toHaveProperty('value', '新账号备注')
     expect(wrapper.text()).not.toContain('原账号私密备注')
     expect(sessionStorage.getItem('tixxin-subscription-editor:owner:1:owned-library')).toContain('原账号私密备注')
+  })
+})
+
+async function setupFocus(id: number | null) {
+  const editor = ref<InstanceType<typeof Editor> | null>(null)
+  const host = document.createElement('div')
+  document.body.append(host)
+  hosts.push(host)
+  const wrapper = await mountSuspended(
+    defineComponent({
+      setup() {
+        useState('page-content-context').value = 'owned-library'
+        return () => h(Editor, { id, inline: true, ref: editor })
+      },
+    }),
+    {
+      attachTo: host,
+      global: { stubs: { AdminMediaPicker: true, SubscriptionHistory: true, Icon: true } },
+    },
+  )
+  wrappers.push(wrapper)
+  return { editor, wrapper }
+}
+
+describe('订阅编辑入口焦点', () => {
+  it('新建表单仅在页面显式请求后聚焦服务名称', async () => {
+    const { editor, wrapper } = await setupFocus(null)
+    await flushPromises()
+    const input = wrapper.get('input[aria-label="服务名称"]').element
+    expect(document.activeElement).not.toBe(input)
+    editor.value!.focusName()
+    await flushPromises()
+    expect(document.activeElement).toBe(input)
+  })
+  it('等待详情就绪后才把焦点交给可编辑的名称字段', async () => {
+    let finish!: (value: typeof item) => void
+    mocks.repo.adminDetail.mockImplementationOnce(
+      () =>
+        new Promise((resolve) => {
+          finish = resolve
+        }),
+    )
+    const { editor, wrapper } = await setupFocus(1)
+    await vi.waitFor(() => expect(finish).toBeTypeOf('function'))
+    editor.value!.focusName()
+    await flushPromises()
+    const input = wrapper.get('input[aria-label="服务名称"]').element
+    expect(input.closest('fieldset')!.hasAttribute('disabled')).toBe(true)
+    expect(document.activeElement).not.toBe(input)
+    finish(item)
+    await flushPromises()
+    expect(input.closest('fieldset')!.hasAttribute('disabled')).toBe(false)
+    expect(document.activeElement).toBe(input)
+  })
+  it('等待聚焦期间身份失效会取消请求，重新登录不会自行抢焦点', async () => {
+    let finish!: (value: typeof item) => void
+    mocks.repo.adminDetail.mockImplementationOnce(
+      () =>
+        new Promise((resolve) => {
+          finish = resolve
+        }),
+    )
+    const { editor, wrapper } = await setupFocus(1)
+    await vi.waitFor(() => expect(finish).toBeTypeOf('function'))
+    editor.value!.focusName()
+    mocks.auth.isLoggedIn.value = false
+    await flushPromises()
+    finish(item)
+    await flushPromises()
+    expect(wrapper.find('input[aria-label="服务名称"]').exists()).toBe(false)
+    mocks.auth.isLoggedIn.value = true
+    await flushPromises()
+    const input = wrapper.get('input[aria-label="服务名称"]').element
+    expect(document.activeElement).not.toBe(input)
   })
 })
