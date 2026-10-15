@@ -51,8 +51,138 @@ const topics = [
 ]
 const commentStatuses = ['published', 'published', 'pending', 'hidden'] as const
 const likers = ['晨曦', '小林'] as const
-export const CORE_FIXTURE_COUNT = 1 + topics.length * 3 + commentStatuses.length * 2 + 2 + likers.length * 3
+export const CONVERSATION_COUNT = 20 + 4 + 1 + 1 + 6
+export const CORE_FIXTURE_COUNT =
+  2 + topics.length * 3 + commentStatuses.length * 2 + 2 + likers.length * 3 + CONVERSATION_COUNT
 const visitor = (name: string) => createHash('sha256').update(`development/core-v1/${name}`).digest('hex')
+const threadVoices = ['远山', '清和', '松间', '叙白', '南屿', '照野']
+const threadRemarks = [
+  '按这个顺序走了一遍，确实比以前顺手。',
+  '中间那段取舍写得很实在，不是只讲好的一面。',
+  '补充一点：我这边是先确认现象再缩小范围。',
+  '收藏了，等下次遇到同样的情况再回来看。',
+  '最后一条结论对我帮助最大。',
+  '想问下数据量更大的时候还适用吗。',
+  '同样的问题我也遇到过，当时绕了不少路。',
+  '看完顺手把自己的笔记整理了一遍。',
+  '这里的判断依据能再展开讲讲吗。',
+  '谢谢分享，照着做之后省了很多时间。',
+]
+const longRemark =
+  '读完之后又回头看了一遍中间的排查过程。我自己遇到类似情况时，习惯先把现象和时间点记下来，再逐个排除可能的原因，' +
+  '最容易出错的地方是过早认定某个结论，然后把后面的证据都往这个结论上靠。这篇里把走过的弯路也写出来了，对照着看很有帮助，' +
+  '尤其是最后关于什么时候应该停下来重新梳理的那段。'
+/** 公开评论需要足够的条数分页，并覆盖多层回复、审核状态与跨文章分布。 */
+async function seedConversation(
+  em: EntityManager,
+  publishedPosts: string[],
+  site: SiteSettings,
+  progress: FixtureProgress,
+) {
+  if (!publishedPosts.length) return
+  const touched = new Set<string>()
+  const create = async (
+    scenario: string,
+    postId: string,
+    author: string,
+    content: string,
+    status: Comment['status'],
+    parentId: string | null,
+    offsetHours: number,
+  ) =>
+    ensureFixture(
+      em,
+      CORE_DATASET,
+      scenario,
+      'comment',
+      async () => {
+        const post = await em.findOne(Post, { id: Number(postId), status: 'published', deletedAt: null })
+        if (!post) return null
+        const parent = parentId ? await em.findOne(Comment, { id: Number(parentId) }) : null
+        if (parentId && !parent) return null
+        const value = em.create(Comment, {
+          post,
+          parent: parent ?? undefined,
+          depth: parent ? parent.depth + 1 : 0,
+          authorSnapshot: { name: author, avatar: site.values.avatar, visitorIdHash: visitor(author) },
+          content,
+          isOwner: false,
+          status,
+          likes: 0,
+          createdAt: new Date(Date.now() - offsetHours * 3600000),
+        })
+        await em.flush()
+        touched.add(postId)
+        return value.id
+      },
+      progress,
+    )
+  const primary = publishedPosts[0]!
+  const roots: (string | null)[] = []
+  for (let index = 0; index < 20; index++)
+    roots.push(
+      await create(
+        `thread-${index}`,
+        primary,
+        threadVoices[index % threadVoices.length]!,
+        threadRemarks[index % threadRemarks.length]!,
+        index === 5 ? 'pending' : index === 11 ? 'hidden' : 'published',
+        null,
+        48 - index,
+      ),
+    )
+  const replies: (string | null)[] = []
+  for (const [position, rootIndex] of [0, 5, 10, 15].entries())
+    replies.push(
+      roots[rootIndex]
+        ? await create(
+            `reply-${position}`,
+            primary,
+            threadVoices[(position + 2) % threadVoices.length]!,
+            threadRemarks[(position + 4) % threadRemarks.length]!,
+            'published',
+            roots[rootIndex],
+            24 - position,
+          )
+        : null,
+    )
+  if (replies[0])
+    await create(
+      'deep-0',
+      primary,
+      threadVoices[1]!,
+      '接着上面的回复补一句：这一步也可以放到最后再做。',
+      'published',
+      replies[0],
+      12,
+    )
+  await create('long-0', primary, threadVoices[3]!, longRemark, 'published', null, 6)
+  for (const [position, postId] of publishedPosts.slice(1, 4).entries()) {
+    await create(
+      `spread-${position}-0`,
+      postId,
+      threadVoices[position]!,
+      threadRemarks[position * 2]!,
+      'published',
+      null,
+      36 - position,
+    )
+    await create(
+      `spread-${position}-1`,
+      postId,
+      threadVoices[position + 3]!,
+      threadRemarks[position * 2 + 1]!,
+      position === 2 ? 'pending' : 'published',
+      null,
+      30 - position,
+    )
+  }
+  for (const postId of touched) {
+    const post = await em.findOne(Post, { id: Number(postId) })
+    if (post) post.commentCount = await em.count(Comment, { post, ...visibleCommentWhere() })
+  }
+  await em.flush()
+}
 export async function seedCoreFixtures(
   em: EntityManager,
   storage: MediaStorage,
@@ -93,6 +223,7 @@ export async function seedCoreFixtures(
   let primaryPost: string | null = null,
     primaryFlash: string | null = null,
     primaryMoment: string | null = null
+  const publishedPosts: string[] = []
   for (let index = 0; index < topics.length; index++) {
     const status = index === 16 ? 'draft' : index === 17 ? 'archived' : 'published'
     const content = `${topics[index]}。\n\n把当时的想法和处理过程记下来，日后回看时，也能看见自己慢慢进步的轨迹。`
@@ -166,6 +297,7 @@ export async function seedCoreFixtures(
       },
       progress,
     )
+    if (status === 'published' && postId) publishedPosts.push(postId)
     if (index === 0) {
       primaryPost = postId
       primaryFlash = flashId
@@ -265,6 +397,27 @@ export async function seedCoreFixtures(
         progress,
       )
   }
+  await seedConversation(em, publishedPosts, site, progress)
+  // 未被任何内容引用的媒体：媒体库需要可见的孤立资产，清理计划也要有可移除的代表。
+  await ensureFixture(
+    em,
+    CORE_DATASET,
+    'orphan',
+    'media',
+    async () => {
+      const buffer = await readFile(resolve(__dirname, 'gallery-assets/mist.webp'))
+      const id = randomUUID()
+      createdMedia.push(id)
+      const created = await new MediaService(em, storage).upload(
+        { buffer, originalname: 'mist.webp', mimetype: 'image/webp', size: buffer.length },
+        '山间晨雾',
+        id,
+      )
+      await em.nativeUpdate(MediaAsset, { id: created.id }, { description: '山间晨雾，尚未用于任何内容。' })
+      return created.id
+    },
+    progress,
+  )
   for (const name of likers) {
     await ensureFixture(
       em,
