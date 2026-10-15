@@ -102,7 +102,7 @@ async function main() {
     )
     for (const project of projects)
       for (const link of project.links) {
-        assert(['source', 'docs'].includes(link.kind))
+        assert(['source', 'docs', 'demo', 'download'].includes(link.kind))
         assert.equal(new URL(link.href).protocol, 'https:')
         assert.notEqual(link.href, '#')
       }

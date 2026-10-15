@@ -81,7 +81,7 @@ export async function seedPromptFixtures(
             title: item.title,
             description: item.description,
             prompt: item.prompt,
-            negativePrompt: '',
+            negativePrompt: 'negativePrompt' in item ? (item.negativePrompt ?? '') : '',
             model: item.model,
             tags: [...item.tags],
             imageAlt: item.imageAlt,

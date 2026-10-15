@@ -6,6 +6,8 @@ export const PROMPT_ORIGINALS = [
     description: '让朱红成为青绿色画面里唯一醒目的颜色，用远处的小船交代空间尺度。',
     imageAlt: '晨雾笼罩群山与湖水，朱红鸟居倒映在湖面上',
     tags: ['风景', '电影感'],
+    negativePrompt:
+      'text, letters, logo, watermark, signature, people in the foreground, crowded boats, oversaturated colors, harsh contrast, heavy lens flare, tilted horizon',
     prompt:
       'Use case: stylized-concept. Create one original landscape image for a personal image-prompt collection. A solitary vermilion torii gate in a silver-green mountain lake, seen from a quiet stone shore at dawn. Low mist curls across still water; layered dark teal mountain ridges recede into pale gold sky. A tiny single rowing boat far away gives scale. Contemporary cinematic landscape illustration with realistic water reflections, delicate film grain, painterly atmospheric depth, restrained color. Wide 3:2 horizontal framing, gate on the right third, expansive calm negative space to the left, no people close up, no text, no letters, no logos, no watermark. Only the scene, not a UI or collage.',
   },
@@ -15,6 +17,8 @@ export const PROMPT_ORIGINALS = [
     description: '奶油色陶瓷、粗粝石材和透光的果实。用一道斜向窗光，让安静的静物有了时间感。',
     imageAlt: '暖杏色墙前，象牙白陶瓷花瓶与橙色灯笼果立在洞石台上',
     tags: ['静物', '光影'],
+    negativePrompt:
+      'text, letters, logo, watermark, busy background, plastic texture, blown highlights, double exposure, extra limbs, distorted proportions',
     prompt:
       'Use case: product-mockup. Create one original portrait 2:3 still life image for a personal image-prompt collection. A sculptural ivory ceramic vase with one orange physalis branch standing on a rough pale travertine plinth in a peach and warm chalk studio. Late afternoon window light from upper left creates a crisp diagonal shadow across the wall and plinth. Refined tactile editorial product photography; visible subtle ceramic pores, fine stone texture, very restrained matte warm palette, elegant asymmetric composition, generous breathing space, close but not cropped. No text, no letters, no logo, no watermark. Only the scene, not a UI or collage.',
   },
