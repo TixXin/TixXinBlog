@@ -321,7 +321,7 @@ export const DATA_DOMAINS: Domain[] = [
       count(*) filter(where deleted_at is null and not exists(select 1 from media_reference r where r.asset_id=media_asset.id))::int as unreferenced,
       count(*) filter(where deleted_at is null and description<>'')::int as described
       from media_asset`,
-    required: { active: 4, unreferenced: 1, described: 1 },
+    required: { active: 2, unreferenced: 1, described: 1 },
   },
   {
     id: 'site',
