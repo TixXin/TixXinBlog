@@ -131,7 +131,7 @@ export default {
       useMockRepo: process.env.NUXT_PUBLIC_USE_MOCK_REPO === 'true',
       // 文章及评论可独立联调，未配置时兼容原有全局开关。
       postUseMockRepo: (process.env.NUXT_PUBLIC_POST_USE_MOCK_REPO ?? process.env.NUXT_PUBLIC_USE_MOCK_REPO) === 'true',
-      // 后端 API 基址，如 http://localhost:3000/api/v1（useMockRepo=false 时必填）
+      // 后端 API 基址，如 http://localhost:3457/api/v1（useMockRepo=false 时必填）
       apiBaseUrl: '/api/v1',
     },
   },

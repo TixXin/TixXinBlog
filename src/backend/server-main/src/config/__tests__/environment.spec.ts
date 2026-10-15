@@ -33,6 +33,19 @@ describe('环境配置', () => {
     }
   })
 
+  it('本机API默认3457，容器可显式保留内部3000且不改变数据库目标', () => {
+    const base = {
+      DATABASE_URL: 'postgres://dev:fixture-only@127.0.0.1:5433/tixxin_fixture',
+      JWT_ACCESS_SECRET: 'fixture-secret-with-at-least-32-characters',
+    }
+    const local = validateEnv(base)
+    expect(local.PORT).toBe(3457)
+    expect(local.DATABASE_URL).toBe(base.DATABASE_URL)
+    const container = validateEnv({ ...base, NODE_ENV: 'production', PORT: '3000' })
+    expect(container.PORT).toBe(3000)
+    expect(container.DATABASE_URL).toBe(base.DATABASE_URL)
+  })
+
   it('缺失、短密钥和占位值无法用作签名密钥', () => {
     for (const value of [undefined, '', 'short', '<required>'.repeat(4)]) {
       expect(() => getAccessSecret(value)).toThrow('JWT_ACCESS_SECRET')

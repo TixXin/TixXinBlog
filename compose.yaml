@@ -33,7 +33,7 @@ services:
     environment:
       DATABASE_URL: postgres://tixxin:${POSTGRES_PASSWORD}@postgres:5432/tixxin_blog
       JWT_ACCESS_SECRET: ${JWT_ACCESS_SECRET:?请配置随机签名密钥}
-      CORS_ORIGIN: ${SITE_URL:-http://localhost:3457}
+      CORS_ORIGIN: ${SITE_URL:-http://localhost:3458}
       LOG_LEVEL: info
       MEDIA_DIRECTORY: /app/var/media
     volumes:
@@ -47,11 +47,11 @@ services:
     environment:
       NUXT_API_BASE_URL: http://backend:3000/api/v1
       NUXT_PUBLIC_API_BASE_URL: /api/v1
-      NUXT_PUBLIC_SITE_URL: ${SITE_URL:-http://localhost:3457}
+      NUXT_PUBLIC_SITE_URL: ${SITE_URL:-http://localhost:3458}
       NUXT_PUBLIC_USE_MOCK_REPO: 'false'
       NUXT_PUBLIC_POST_USE_MOCK_REPO: 'false'
     ports:
-      - '127.0.0.1:${WEB_PORT:-3457}:3000'
+      - '127.0.0.1:${WEB_PORT:-3458}:3000'
     depends_on:
       backend:
         condition: service_healthy

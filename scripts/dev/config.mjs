@@ -64,7 +64,7 @@ export function readConfig(root = workspace, inherited = process.env) {
     throw new Error('DATABASE_URL 必须指定 PostgreSQL 数据库')
   if (!apiEnv.JWT_ACCESS_SECRET || apiEnv.JWT_ACCESS_SECRET.length < 32)
     throw new Error('后端 JWT_ACCESS_SECRET 需至少 32 位')
-  const apiPort = Number(apiEnv.PORT ?? 3000),
+  const apiPort = Number(apiEnv.PORT ?? 3457),
     webPort = Number(webEnv.NUXT_PORT ?? 3456)
   if (![apiPort, webPort].every((port) => Number.isInteger(port) && port > 0 && port <= 65535) || apiPort === webPort)
     throw new Error('前后端端口必须有效且互不相同')
