@@ -2,13 +2,19 @@
 import type { EntityManager } from '@mikro-orm/postgresql'
 import { DevelopmentFixture } from '../entities/development-fixture.entity'
 import { FIXTURE_TABLES, fixtureHash, fixtureRow } from './fixture-ledger'
+import { VOLUME_DATASET_PREFIX } from './volume-constants'
 import type { FixtureKind } from './fixture-ledger'
 
 const quote = (value: string) => '"' + value.replaceAll('"', '""') + '"'
 const identity = (table: string, id: unknown) => `${table}:${String(id)}`
 type ForeignKey = { sourceTable: string; sourceColumn: string; targetTable: string; columns: number }
 export async function fixtureCleanupPlan(em: EntityManager, dataset: string) {
-  const ownership = await em.find(DevelopmentFixture, dataset === 'all' ? {} : { dataset }, { orderBy: { key: 'asc' } })
+  // 容量档按批次整体清理，不参与逐条指纹保护，也不随 all 进入代表样本的清理计划。
+  const ownership = await em.find(
+    DevelopmentFixture,
+    dataset === 'all' ? { dataset: { $nlike: `${VOLUME_DATASET_PREFIX}%` } } : { dataset },
+    { orderBy: { key: 'asc' } },
+  )
   const rows = new Map<string, Record<string, unknown>>()
   const eligible = new Set<string>(),
     reasons = new Map<string, string>()

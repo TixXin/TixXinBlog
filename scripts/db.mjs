@@ -99,6 +99,14 @@ async function collect(rl, entry, data) {
       )
       if (!picked) return null
       options.domain = picked.value
+    } else if (name === 'scale') {
+      const picked = await choose(
+        rl,
+        '选择容量规模：',
+        data.volume.scales.map((item) => ({ label: `${item.id}（每类约 ${item.count} 条）`, value: item.id })),
+      )
+      if (!picked) return null
+      options.scale = picked.value
     } else {
       const answer = (await ask(rl, `输入${name === 'directory' ? '备份目录' : name}：`)).trim()
       if (!answer) return null

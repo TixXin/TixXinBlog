@@ -8,12 +8,17 @@ async function main() {
     if (args.length) throw new Error('用法：db:dev list；目录只读，不接受参数')
     const { DEV_DATABASE_ACTIONS } = await import('./database-dev')
     const { DEVELOPMENT_DATASETS } = await import('./development-datasets')
+    const { VOLUME_DATASET, VOLUME_SCALES } = await import('./volume-constants')
     process.stdout.write(
       JSON.stringify(
         {
           actions: [...DEV_DATABASE_ACTIONS],
           writeActions: DEV_DATABASE_ACTIONS.filter((item) => item !== 'status'),
           datasets: DEVELOPMENT_DATASETS.map(({ id, count, scope }) => ({ id, count, scope })),
+          volume: {
+            dataset: VOLUME_DATASET,
+            scales: Object.entries(VOLUME_SCALES).map(([id, count]) => ({ id, count })),
+          },
           domains: DATA_DOMAINS.map(({ id, entry, admin, dataset, scenarios }) => ({
             id,
             entry,
@@ -31,6 +36,11 @@ async function main() {
   if (action === 'prepare-profile') {
     const { preparePersonalProfile } = await import('./prepare-personal-profile')
     process.stdout.write(JSON.stringify(await preparePersonalProfile(args), null, 2) + '\n')
+    return
+  }
+  if (action === 'volume') {
+    const { runVolumeData } = await import('./volume-data')
+    await runVolumeData(args)
     return
   }
   if (action === 'remove-data') {

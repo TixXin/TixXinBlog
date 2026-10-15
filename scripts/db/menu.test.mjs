@@ -56,3 +56,14 @@ test('破坏性条目保持标记，备份条目走各自脚本', () => {
   ])
   assert.equal(commandFor('seed-all').script, 'db:dev')
 })
+
+test('容量档条目按规模拼装，并与代表样本分开成组', () => {
+  assert.deepEqual(commandFor('volume-seed', { scale: 'large' }).args, ['volume', '--scale', 'large'])
+  assert.deepEqual(commandFor('volume-clear').args, ['volume', '--clear'])
+  assert.equal(commandFor('volume-seed', { scale: 'small' }).write, true)
+  assert.throws(() => commandFor('volume-seed'), /需要提供 scale/)
+  assert.deepEqual(
+    ENTRIES.filter((entry) => entry.group === '容量数据').map((entry) => entry.id),
+    ['volume-seed', 'volume-clear'],
+  )
+})
