@@ -12,7 +12,10 @@ describe('formatRelativeDate', () => {
   it('ISO时间显示统一日历日期，非法时间不泄露NaN或原文', () => {
     vi.useFakeTimers()
     vi.setSystemTime(new Date('2026-04-03T10:00:00'))
-    expect(formatRelativeDate('2026-03-20T18:20:00.000Z')).toBe('发布于 2026-03-20')
+    // 带时区的时刻按本地日历显示，期望值随运行时区换算，避免断言固定在 UTC 当天。
+    const instant = '2026-03-20T18:20:00.000Z',
+      localDay = new Date(instant).toLocaleDateString('sv-SE')
+    expect(formatRelativeDate(instant)).toBe(`发布于 ${localDay}`)
     expect(formatCalendarDate('2026-04-20')).toBe('2026-04-20')
     expect(formatRelativeDate('not-a-date')).toBe('发布日期未知')
     expect(formatRelativeDate('2026-02-30')).toBe('发布日期未知')
