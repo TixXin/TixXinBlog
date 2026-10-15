@@ -106,12 +106,28 @@ async function main() {
     )
     assert.equal(reseeded.created.length, 0)
     assert.equal(reseeded.ready, false)
+    // 样本定义变更后的重建路径：显式清除失去记录的归属，该数据集才能重新补种。
+    // 清理要求数据库空闲，这里先释放测试自身的连接，后续只依据返回值断言。
+    await fixture.testOrm.close(true)
+    const forgetful = await removeDevelopmentData(
+      ['--dataset', 'all', '--forget-ownership', '--apply', '--confirm', target],
+      () => undefined,
+      fixture.backupOptions,
+    )
+    assert(forgetful.forgotten.length > 0, '清除失去记录的归属')
+    assert(forgetful.forgotten.length < ownership.length, '仍对应实际记录的归属继续保留')
+    const rebuilt = await seedDevelopmentData(
+      ['--dataset', 'all', '--apply', '--confirm', target],
+      () => undefined,
+      fixture.backupOptions,
+    )
+    assert(rebuilt.created.length > 0, '清除归属后可以重新补种')
     process.stdout.write(
-      `样本清理通过：${ownership.length}项归属预览、确认和连接保护、用户编辑/回复/互动/媒体保留、独立备份、账本与文件保留、重复补种不复活\n`,
+      `样本清理通过：${ownership.length}项归属预览、确认和连接保护、用户编辑/回复/互动/媒体保留、独立备份、账本与文件保留、重复补种不复活、清除归属后可重建\n`,
     )
   } finally {
     process.env.NODE_ENV = 'test'
-    if (servicesStopped) await fixture.testOrm.close(true)
+    if (servicesStopped) await fixture.testOrm.close(true).catch(() => undefined)
     await fixture.close()
   }
 }
