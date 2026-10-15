@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 /** @file terminal.mjs @description 在 macOS 可见终端运行完整开发链路；用法：corepack pnpm dev:terminal [--dry-run|--help] */
 import { execFile } from 'node:child_process'
+import { mkdirSync, writeFileSync } from 'node:fs'
 import { promisify } from 'node:util'
 import { pathToFileURL } from 'node:url'
 import { join } from 'node:path'
@@ -14,14 +15,16 @@ const appleQuote = (value) => '"' + String(value).replaceAll('\\', '\\\\').repla
 
 const labels = { api: '后端 API', web: '前端网站' }
 
-export function terminalCommand({ root, node, pnpm, path, service }) {
+export function terminalCommand({ root, node, pnpm, path, service, logPath }) {
   if (!Object.hasOwn(labels, service)) throw new Error('服务必须为 api 或 web')
   // 仅传递启动工具路径；配置与凭据由目标终端环境及现有 .env 文件读取。
-  return [
+  const command = [
     `cd ${shellQuote(root)}`,
     `printf '%s\\n' ${shellQuote(`TixXinBlog | ${labels[service]} · Ctrl+C 仅停止本窗口创建的服务`)}`,
     `/usr/bin/env ${shellQuote('PATH=' + path)} ${shellQuote('npm_execpath=' + pnpm)} ${shellQuote(node)} ${shellQuote(join(root, 'scripts/dev.mjs'))} ${service} --logs`,
   ].join(' && ')
+  // 仅记录本次启动命令的标准输出；tee 忽略 SIGINT，让原启动器完成 Ctrl+C 清理后再结束日志流。
+  return logPath ? `( ${command} ) 2>&1 | /usr/bin/tee -a -i ${shellQuote(logPath)}` : command
 }
 
 export async function terminalBounds(service) {
@@ -85,6 +88,7 @@ async function main() {
     console.log('macOS：前后端各开独立 Terminal.app 窗口；已就绪服务复用。Ctrl+C 仅停止本窗口的服务。')
     console.log('窗口默认在首块副屏左侧上下排列；没有副屏时使用主屏。')
     console.log('配置读取终端环境和项目 .env 文件；调用方临时业务环境变量不转发。其他系统使用 dev:all。')
+    console.log('启动命令输出写入 .artifacts/dev-terminal/；--dry-run 只预览，不创建日志文件。')
     return
   }
   if (args.some((arg) => arg !== '--dry-run' && !/^--service=(all|api|web)$/.test(arg)))
@@ -101,8 +105,11 @@ async function main() {
     pnpm: pnpmCommand()[1][0],
     path: process.env.PATH ?? '',
   }
+  const logDirectory = join(workspace, '.artifacts/dev-terminal')
+  const launchId = `${Date.now()}-${process.pid}`
+  const logPathFor = (service) => join(logDirectory, `${launchId}-${service}.log`)
   if (args.includes('--dry-run')) {
-    for (const service of modes) console.log(terminalCommand({ ...options, service }))
+    for (const service of modes) console.log(terminalCommand({ ...options, service, logPath: logPathFor(service) }))
     return
   }
   const config = readConfig()
@@ -119,14 +126,19 @@ async function main() {
       continue
     }
     if (status.state !== 'stopped') throw new Error(`${labels[mode]}：${status.detail}；请检查原终端后重试`)
-    const id = await openTerminal(terminalCommand({ ...options, service: mode }), mode)
+    const logPath = logPathFor(mode)
+    mkdirSync(logDirectory, { recursive: true, mode: 0o700 })
+    writeFileSync(logPath, '', { flag: 'wx', mode: 0o600 })
+    console.log(`${labels[mode]}：启动日志 ${logPath}`)
+    const id = await openTerminal(terminalCommand({ ...options, service: mode, logPath }), mode)
     console.log(`${labels[mode]}：已打开窗口 ${id}，等待服务就绪`)
     const deadline = Date.now() + config.timeout
     while (true) {
       const current = await inspectService(service)
       if (current.state === 'ready') break
       if (current.state === 'foreign' && current.identity) throw new Error(`${labels[mode]}：${current.detail}`)
-      if (Date.now() >= deadline) throw new Error(`${labels[mode]}就绪超时，请查看窗口 ${id}；已启动的其他服务保持运行`)
+      if (Date.now() >= deadline)
+        throw new Error(`${labels[mode]}就绪超时，请查看启动日志 ${logPath} 或窗口 ${id}；已启动的其他服务保持运行`)
       await delay(500)
     }
     console.log(`${labels[mode]}：已就绪 ${service.origin}`)

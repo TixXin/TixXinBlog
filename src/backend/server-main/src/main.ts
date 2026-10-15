@@ -16,7 +16,7 @@ async function bootstrap(): Promise<void> {
 
   configureApplication(app)
 
-  const port = Number(process.env.PORT ?? 3000)
+  const port = Number(process.env.PORT ?? 3457)
   await app.listen(port)
 }
 

@@ -41,7 +41,7 @@
    | `ADMIN_DEFAULT_PASSWORD`   | 至少 12 字符的随机密码；不要使用模板占位值 |
    | `NODE_ENV` / `CORS_ORIGIN` | `development` / `http://localhost:3456`    |
 
-   前端保留 `NUXT_PUBLIC_API_BASE_URL=/api/v1`，将 `NUXT_API_BASE_URL` 指向本机 API，模板值为 `http://127.0.0.1:3000/api/v1`。两个 Mock 开关均为 `false`。密钥和密码仅放在本地配置或受控环境中，不提交 Git。
+   前端保留 `NUXT_PUBLIC_API_BASE_URL=/api/v1`，将 `NUXT_API_BASE_URL` 指向本机 API，模板值为 `http://127.0.0.1:3457/api/v1`。两个 Mock 开关均为 `false`。密钥和密码仅放在本地配置或受控环境中，不提交 Git。
 
 3. **启动 PostgreSQL。** 已有 PostgreSQL 16 可直接使用；仓库的本机开发配置只需启动 `postgres` 服务：
 
