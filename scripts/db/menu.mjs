@@ -56,6 +56,21 @@ export const ENTRIES = [
   },
   { id: 'reset', group: '重建', label: '重建数据库并重新执行迁移', write: true, danger: true, args: () => ['reset'] },
   {
+    id: 'volume-seed',
+    group: '容量数据',
+    label: '按规模补齐容量文章与评论',
+    needs: ['scale'],
+    write: true,
+    args: ({ scale }) => ['volume', '--scale', scale],
+  },
+  {
+    id: 'volume-clear',
+    group: '容量数据',
+    label: '整批清理容量数据',
+    write: true,
+    args: () => ['volume', '--clear'],
+  },
+  {
     id: 'prepare-profile',
     group: '账号与配置',
     label: '准备博主身份与站点资料',
