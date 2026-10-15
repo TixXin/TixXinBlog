@@ -9,8 +9,9 @@ import type { DevelopmentBackupOptions } from './development-backup'
 import { requireIdle } from './database-dev'
 import { DevelopmentDataError } from './seed-development-data'
 import { fixtureCleanupPlan } from './fixture-cleanup-plan'
-import { FIXTURE_TABLES } from './fixture-ledger'
+import { FIXTURE_TABLES, fixtureRow } from './fixture-ledger'
 import type { FixtureKind } from './fixture-ledger'
+import { VOLUME_DATASET_PREFIX } from './volume-constants'
 import { submissionHash } from '../modules/moment/moment-values'
 import { DEVELOPMENT_DATASET_NAMES } from './development-datasets'
 
@@ -21,7 +22,8 @@ export async function removeDevelopmentData(
 ) {
   let dataset = '',
     apply = false,
-    confirm = ''
+    confirm = '',
+    forget = false
   for (let index = 0; index < args.length; index++) {
     if (
       args[index] === '--dataset' &&
@@ -30,10 +32,11 @@ export async function removeDevelopmentData(
     )
       dataset = args[++index]!
     else if (args[index] === '--apply' && !apply) apply = true
+    else if (args[index] === '--forget-ownership' && !forget) forget = true
     else if (args[index] === '--confirm' && !confirm && args[index + 1]) confirm = args[++index]!
     else
       throw new DevelopmentDataError(
-        `用法：db:dev remove-data --dataset ${DEVELOPMENT_DATASET_NAMES.join('|')}|all [--apply --confirm 数据库名]`,
+        `用法：db:dev remove-data --dataset ${DEVELOPMENT_DATASET_NAMES.join('|')}|all [--forget-ownership] [--apply --confirm 数据库名]`,
       )
   }
   if (!dataset) throw new DevelopmentDataError('请显式指定需要清理的样本集 --dataset')
@@ -68,11 +71,15 @@ export async function removeDevelopmentData(
       dataset,
       target: { database, host: url.hostname, port: Number(url.port || 5432) },
       preview: !apply,
+      // 默认保留归属以防止补种复活；样本定义变更后需要重建时才显式清除。
+      forgetOwnership: forget,
       ...plan,
     }
     write(JSON.stringify(report, null, 2))
-    if (!apply || !plan.remove.length) return report
+    // 重建场景下记录可能已经删光、只剩归属，此时仍需进入事务清除归属。
+    if (!apply || (!plan.remove.length && !forget)) return report
     await requireIdle(orm.em.fork(), application)
+    const forgotten: string[] = []
     const backup = await createDevelopmentBackup(options)
     write(`清理前完整备份：${backup.directory}`)
     await requireIdle(orm.em.fork(), application)
@@ -118,21 +125,46 @@ export async function removeDevelopmentData(
         "update post_tag set count=(select count(*) from post_tag_map m join post p on p.id=m.post_id where m.post_tag_id=post_tag.id and p.status='published' and p.deleted_at is null)",
       )
       await em.execute('update content_context set generation=?,require_context=true', [randomUUID()])
+      // 只清除业务记录已经不存在的归属：仍被保留的记录继续受账本保护，不会因为本次重建被覆盖。
+      // 代价是此前被删除的样本会在下次补种时重新创建，因此该开关只用于样本定义变更后的重建。
+      if (forget) {
+        const owned = await em.execute<{ key: string; kind: string; resource_id: string }[]>(
+          dataset === 'all'
+            ? 'select key,kind,resource_id from development_fixture where dataset not like ? order by key'
+            : 'select key,kind,resource_id from development_fixture where dataset=? order by key',
+          [dataset === 'all' ? `${VOLUME_DATASET_PREFIX}%` : dataset],
+        )
+        for (const row of owned) {
+          if (!(row.kind in FIXTURE_TABLES)) continue
+          if (await fixtureRow(em, row.kind as FixtureKind, row.resource_id)) continue
+          await em.execute('delete from development_fixture where key=?', [row.key])
+          forgotten.push(row.key)
+        }
+      }
       em.create(AuditEntry, {
         action: 'development.remove-data',
         resourceType: 'dataset',
         resourceId: dataset,
         actorName: '本机开发工具',
         state: 'success',
-        summary: { fields: [], counts: { removed: current.remove.length, preserved: current.preserve.length } },
+        summary: {
+          fields: [],
+          counts: {
+            removed: current.remove.length,
+            preserved: current.preserve.length,
+            forgotten: forgotten.length,
+          },
+        },
         finishedAt: new Date(),
       })
       await em.flush()
     })
     write(
-      '指定样本清理完成；已编辑内容、外部互动、归属账本与图片文件保留。重新启动服务并刷新页面后使用新的内容上下文。',
+      forget
+        ? `指定样本清理完成；已清除 ${forgotten.length} 条失去记录的归属，该数据集可以重新补种，此前被删除的样本也会随之重新创建。已编辑内容、外部互动与图片文件保留。重新启动服务并刷新页面后使用新的内容上下文。`
+        : '指定样本清理完成；已编辑内容、外部互动、归属账本与图片文件保留。重新启动服务并刷新页面后使用新的内容上下文。',
     )
-    return { ...report, backup: backup.directory }
+    return { ...report, backup: backup.directory, forgotten }
   } finally {
     await orm.close(true)
   }

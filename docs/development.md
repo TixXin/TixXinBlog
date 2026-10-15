@@ -106,7 +106,7 @@ corepack pnpm db:dev remove-data --dataset gallery-v1
 | `volume --scale <规模>`           | 预览或补齐容量档文章与评论；`--clear` 整批清理                                          |
 | `check-data`                      | 核对各域记录、关联、媒体和代表性场景；可用 `--domain` 限定领域                          |
 | `seed-data --dataset <数据集>`    | 预览增量补齐；数据集及稳定归属由[种子实现](../src/backend/server-main/src/seeders/)维护 |
-| `remove-data --dataset <数据集>`  | 预览指定样本的可删除范围与保护原因                                                      |
+| `remove-data --dataset <数据集>`  | 预览指定样本的可删除范围与保护原因；`--forget-ownership` 另见下文                       |
 | `prepare-profile`                 | 只整理精确匹配、未经编辑的初始资料，保留已修改资料                                      |
 | `clear-moments` / `clear-content` | 清空指定业务范围；不是样本定向清理                                                      |
 | `reset`                           | 删除应用表并重放迁移，会清空账号、内容、配置历史和媒体索引                              |
@@ -124,6 +124,8 @@ corepack pnpm db:dev remove-data --dataset gallery-v1
 平台订阅代表样本集为 `subscription-v1`（15 条订阅、1 个有来源和许可的受管图标），覆盖七种币种、五种周期、双状态、价格历史与近期日期。金额仅为开发代表值，不代表博主实际消费或商家当前报价；通过 `corepack pnpm db:dev seed-data --dataset subscription-v1` 预览，按本节备份与目标确认流程写入。图标代理的供应商响应由隔离测试控制，样本准备不会请求第三方网络。
 
 重复补种不覆盖用户编辑、重写日期或复活已删除记录。定向清理保护用户修改、外部互动、跨数据集关系和历史媒体引用，未知关联保留；归属账本继续存在，防止以后重新补种已删除内容。
+
+样本定义变更后需要让已补种的库跟上时，常规的清理再补种不会生效：归属账本在清理后仍然保留，补种会把这些记录判定为用户已删除并跳过。此时使用 `remove-data --dataset <数据集> --forget-ownership`，在清理的同时清除那些已经没有对应记录的归属，该数据集随后可以重新补种。代价是此前被真正删除的样本也会一并重新创建，因此这个开关只用于重建，不用于日常清理；仍有记录存在的归属继续保留，用户编辑过的内容不会被覆盖。
 
 `remove-data`、清空和重建还要求其他数据库客户端断开。工具不主动结束服务；取得应用表锁并重新检查计划，范围变化则退出。`reset` 不使用 `CASCADE`，应用外依赖会令事务失败回滚。工具不删除磁盘媒体、环境文件或已有备份。重建后重新初始化账号不等于恢复原数据；恢复使用[完整备份](backup-and-recovery.md)。
 
