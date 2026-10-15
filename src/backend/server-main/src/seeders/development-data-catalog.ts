@@ -104,8 +104,15 @@ export const DATA_DOMAINS: Domain[] = [
     dataset: 'writing-v1',
     source: 'PostgreSQL 真实文章、项目、图库与媒体；writing-v1归属',
     scenarios: '万字长文、草稿、有序跨域关联、带来源的素材说明',
-    query: `select count(*)::int as total,count(*) filter(where p.status='published' and p.deleted_at is null and length(p.content_raw)>10000)::int as "longArticles",count(*) filter(where p.status='draft' and p.deleted_at is null)::int as drafts,count(*) filter(where jsonb_array_length(p.related_content)>0 and p.deleted_at is null)::int as linked from post p join development_fixture f on f.resource_id=p.id::text and f.kind='post' where f.dataset='writing-v1'`,
-    required: { longArticles: 1, drafts: 1, linked: 2 },
+    query: `select count(*)::int as total,
+      count(*) filter(where p.status='published' and p.deleted_at is null and length(p.content_raw)>10000)::int as "longArticles",
+      count(*) filter(where p.status='draft' and p.deleted_at is null)::int as drafts,
+      count(*) filter(where jsonb_array_length(p.related_content)>0 and p.deleted_at is null)::int as linked,
+      count(*) filter(where p.deleted_at is null and exists(
+        select 1 from jsonb_array_elements(p.related_content) r join post t on t.id=(r->>'id')::int
+        where r->>'type'='post' and t.status<>'published'))::int as "unpublishedTargets"
+      from post p join development_fixture f on f.resource_id=p.id::text and f.kind='post' where f.dataset='writing-v1'`,
+    required: { longArticles: 2, drafts: 1, linked: 3, unpublishedTargets: 1 },
   },
   {
     id: 'notifications',
