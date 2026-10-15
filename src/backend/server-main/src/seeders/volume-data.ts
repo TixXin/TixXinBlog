@@ -16,7 +16,7 @@ import { createDevelopmentBackup } from './development-backup'
 import type { DevelopmentBackupOptions } from './development-backup'
 import { DevelopmentDataError } from './seed-development-data'
 import type { EntityManager } from '@mikro-orm/postgresql'
-import { VOLUME_DATASET, VOLUME_MARK, VOLUME_SCALES } from './volume-constants'
+import { VOLUME_DATASET, VOLUME_HOT_COMMENTS, VOLUME_HOT_POSTS, VOLUME_MARK, VOLUME_SCALES } from './volume-constants'
 import type { VolumeScale } from './volume-constants'
 
 export { VOLUME_DATASET, VOLUME_MARK, VOLUME_SCALES } from './volume-constants'
@@ -75,6 +75,15 @@ const frames = [
   '把要点压到三条',
 ]
 const voices = ['晨曦', '小林', '远山', '清和', '松间', '叙白', '南屿', '照野']
+const followups = [
+  '',
+  '另外补充一点，实际做的时候顺序还可以再灵活些。',
+  '我这边情况略有不同，不过结论是一致的。',
+  '后来又遇到一次，按这个思路很快就定位到了。',
+  '',
+  '如果中间那步能再细说一点就更好了。',
+  '顺手记在自己的笔记里了，以后好查。',
+]
 const remarks = [
   '读下来很有共鸣，尤其是中间那段取舍。',
   '这个顺序我之前没想过，回头试试看。',
@@ -148,6 +157,13 @@ async function ownedIds(em: EntityManager, kind: string) {
   )
   return rows.map((row) => row.resource_id)
 }
+async function ownedCount(em: EntityManager, pattern: string) {
+  const [row] = await em.execute<{ n: number }[]>(
+    'select count(*)::int as n from development_fixture where dataset=? and key like ?',
+    [VOLUME_DATASET, pattern],
+  )
+  return row?.n ?? 0
+}
 async function record(em: EntityManager, rows: { key: string; kind: string; id: string }[]) {
   for (let index = 0; index < rows.length; index += 200) {
     const chunk = rows.slice(index, index + 200)
@@ -185,6 +201,14 @@ export async function runVolumeData(
   try {
     const existingPosts = await ownedIds(orm.em.fork(), 'post')
     const existingComments = await ownedIds(orm.em.fork(), 'comment')
+    const hotExisting = clear
+      ? []
+      : await Promise.all(
+          VOLUME_HOT_POSTS.map((_, slot) => ownedCount(orm.em.fork(), `${VOLUME_DATASET}/comment/hot-${slot}-%`)),
+        )
+    const hotPending = clear
+      ? 0
+      : VOLUME_HOT_COMMENTS[scale].reduce((total, want, slot) => total + Math.max(0, want - hotExisting[slot]!), 0)
     const target = clear ? 0 : VOLUME_SCALES[scale]
     const plan = {
       dataset: VOLUME_DATASET,
@@ -192,10 +216,19 @@ export async function runVolumeData(
       action: clear ? 'clear' : 'seed',
       scale: clear ? null : scale,
       existing: { posts: existingPosts.length, comments: existingComments.length },
-      pending: clear ? existingPosts.length + existingComments.length : Math.max(0, target - existingPosts.length),
+      pending: clear
+        ? existingPosts.length + existingComments.length
+        : Math.max(0, target - existingPosts.length) + hotPending,
+      hot: clear
+        ? null
+        : VOLUME_HOT_POSTS.map((postIndex, slot) => ({
+            post: postIndex,
+            target: VOLUME_HOT_COMMENTS[scale][slot]!,
+            existing: hotExisting[slot]!,
+          })),
       scope: clear
         ? '按批次整体删除容量文章与评论及其归属记录；不触碰代表样本与用户内容'
-        : `补齐到 ${target} 篇容量文章并按序号附带评论；内容由固定词表确定性生成，重复执行只补缺口`,
+        : `补齐到 ${target} 篇容量文章并按序号附带评论，另有三篇集中承载评论供分页查看；内容由固定词表确定性生成，重复执行只补缺口`,
       apply,
     }
     write(JSON.stringify(plan, null, 2))
@@ -259,6 +292,50 @@ export async function runVolumeData(
               parent ??= value
               owned.push({
                 key: `${VOLUME_DATASET}/comment/${index}-${position}`,
+                kind: 'comment',
+                id: String(value.id),
+              })
+              comments++
+            }
+            post.commentCount = await em.count(Comment, { post, ...visibleCommentWhere() })
+          }
+          // 评论分页需要集中承载：少数文章累积大量评论，并保留一层回复与待审状态。
+          for (const [slot, postIndex] of VOLUME_HOT_POSTS.entries()) {
+            const want = VOLUME_HOT_COMMENTS[scale][slot]!
+            const key = `${VOLUME_DATASET}/post/${postIndex}`
+            const postId =
+              owned.find((row) => row.key === key)?.id ??
+              (
+                await em.execute<{ resource_id: string }[]>(
+                  'select resource_id from development_fixture where dataset=? and key=?',
+                  [VOLUME_DATASET, key],
+                )
+              )[0]?.resource_id
+            if (!postId) continue
+            const post = await em.findOne(Post, { id: Number(postId), status: 'published', deletedAt: null })
+            if (!post) continue
+            const have = await ownedCount(em, `${VOLUME_DATASET}/comment/hot-${slot}-%`)
+            let root: Comment | undefined
+            for (let position = have; position < want; position++) {
+              const value = em.create(Comment, {
+                post,
+                parent: position % 6 === 5 ? root : undefined,
+                depth: position % 6 === 5 && root ? 1 : 0,
+                authorSnapshot: {
+                  name: voices[position % voices.length]!,
+                  avatar: site.values.avatar,
+                  visitorIdHash: visitor(voices[position % voices.length]!, slot * 1000 + position),
+                },
+                content: remarks[position % remarks.length]! + followups[position % followups.length]!,
+                isOwner: false,
+                status: position % 17 === 9 ? 'pending' : position % 29 === 13 ? 'hidden' : 'published',
+                likes: 0,
+                createdAt: new Date(post.createdAt.getTime() + (position + 1) * 600000),
+              })
+              await em.flush()
+              if (position % 6 === 0) root = value
+              owned.push({
+                key: `${VOLUME_DATASET}/comment/hot-${slot}-${position}`,
                 kind: 'comment',
                 id: String(value.id),
               })

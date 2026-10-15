@@ -113,7 +113,7 @@ corepack pnpm db:dev remove-data --dataset gallery-v1
 
 `corepack pnpm db` 不带参数时进入交互菜单，按查看、补充样本、清理、重建、账号与配置、备份分组列出上表同一批命令：先显示目标数据库，执行前打印即将运行的完整命令，写入条目先预览再要求输入数据库名确认，`clear-content` 和 `reset` 还需额外输入动作名。菜单不自行写库，数据集与数据域名单取自 `db:dev list`。带参数的 `corepack pnpm db <命令>` 等价于 `corepack pnpm db:dev <命令>`；非交互终端只打印用法和条目清单并返回非零，便于脚本与 CI 使用。
 
-容量档用于撑起分页、搜索与统计的数据量，与代表样本分开：`corepack pnpm db:dev volume --scale small|large` 预览，`--apply --confirm <数据库名>` 写入，`volume --clear` 整批清理。内容由固定词表按序号确定性生成，重复执行只补缺口，标题、正文和评论使用自然中文，不带任何标记。容量记录归属 `volume-v1`，按批次整体删除，不参与代表样本的逐条指纹保护，也不随 `remove-data --dataset all` 进入保护式清理计划；`check-data` 的全表计数会包含容量数据，核对代表样本覆盖时先清理或改用干净数据库。
+容量档用于撑起分页、搜索与统计的数据量，与代表样本分开：`corepack pnpm db:dev volume --scale small|large` 预览，`--apply --confirm <数据库名>` 写入，`volume --clear` 整批清理。内容由固定词表按序号确定性生成，重复执行只补缺口，标题、正文和评论使用自然中文，不带任何标记。其中三篇文章集中承载评论（small 为 60/30/15 条，large 为 300/150/60 条，含一层回复与待审、隐藏状态），用于查看单篇文章的评论分页；升高规模时这部分同样按缺口补齐。容量记录归属 `volume-v1`，按批次整体删除，不参与代表样本的逐条指纹保护，也不随 `remove-data --dataset all` 进入保护式清理计划；`check-data` 的全表计数会包含容量数据，核对代表样本覆盖时先清理或改用干净数据库。
 
 实际写入需显式追加 `--apply --confirm <数据库名>`。工具只允许核对过的本机非生产目标，要求迁移完成且结构一致，并先通过完整备份流程备份；备份失败不写入。无待处理项时不重复修改数据。
 
