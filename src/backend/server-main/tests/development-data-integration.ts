@@ -63,6 +63,8 @@ async function main() {
     assert.deepEqual(
       full.domains.map((domain) => domain.domain).sort(),
       [
+        'subscriptions',
+        'prompts',
         'writing',
         'notifications',
         'posts',

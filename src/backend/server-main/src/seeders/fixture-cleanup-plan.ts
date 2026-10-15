@@ -9,12 +9,12 @@ const quote = (value: string) => '"' + value.replaceAll('"', '""') + '"'
 const identity = (table: string, id: unknown) => `${table}:${String(id)}`
 type ForeignKey = { sourceTable: string; sourceColumn: string; targetTable: string; columns: number }
 export async function fixtureCleanupPlan(em: EntityManager, dataset: string) {
-  // 容量档按批次整体清理，不参与逐条指纹保护，也不随 all 进入代表样本的清理计划。
-  const ownership = await em.find(
-    DevelopmentFixture,
-    dataset === 'all' ? { dataset: { $nlike: `${VOLUME_DATASET_PREFIX}%` } } : { dataset },
-    { orderBy: { key: 'asc' } },
-  )
+  // 容量档由专用命令按批次整体清理，任何情况下都不进入这里的逐条指纹保护与关联收敛。
+  const ownership = (
+    await em.find(DevelopmentFixture, dataset === 'all' ? {} : { dataset }, {
+      orderBy: { key: 'asc' },
+    })
+  ).filter((item) => !item.dataset.startsWith(VOLUME_DATASET_PREFIX))
   const rows = new Map<string, Record<string, unknown>>()
   const eligible = new Set<string>(),
     reasons = new Map<string, string>()

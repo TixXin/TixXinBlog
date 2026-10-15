@@ -6,6 +6,7 @@ import { join } from 'node:path'
 import { createBrowserTestApp } from './test-app.mjs'
 import { loadLocalEnvironment } from '../src/config/environment'
 import { inspectDataCatalog } from '../src/seeders/development-data-catalog'
+import { CORE_FIXTURE_COUNT } from '../src/seeders/core-fixtures'
 
 async function main() {
   loadLocalEnvironment()
@@ -38,7 +39,7 @@ async function main() {
     await em.execute('drop function reject_core_fixture()')
     const first = await run(true)
     assert.equal(first.ready, true)
-    assert.equal(first.created.length, 71)
+    assert.equal(first.created.length, CORE_FIXTURE_COUNT)
     for (const domain of ['posts', 'comments', 'flashes', 'moments', 'media', 'site'])
       assert.equal((await inspectDataCatalog(em, domain)).ready, true, domain)
     const [image] = await em.execute('select * from media_asset')
@@ -69,8 +70,10 @@ async function main() {
     assert(afterDelete.unavailable.includes('core-v1/flash/0'))
     assert.equal((await em.execute('select count(*)::int as n from flash_note where id=?', [flashId]))[0].n, 0)
     assert.equal((await em.execute('select title from post where id=?', [postId]))[0].title, '用户修改后保留的标题')
-    assert.equal((await em.execute('select count(*)::int as n from development_fixture'))[0].n, 71)
-    process.stdout.write('核心样本验证通过：71条归属、真实图片/互动、全事务回滚、重复不增殖、编辑保留、删除不复活\n')
+    assert.equal((await em.execute('select count(*)::int as n from development_fixture'))[0].n, CORE_FIXTURE_COUNT)
+    process.stdout.write(
+      `核心样本验证通过：${CORE_FIXTURE_COUNT}条归属、真实图片/互动、全事务回滚、重复不增殖、编辑保留、删除不复活\n`,
+    )
   } finally {
     await fixture.close()
   }
