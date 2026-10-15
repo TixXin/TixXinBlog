@@ -56,7 +56,7 @@ async function main() {
     )
 
     await em.execute(
-      "create function reject_subscription_fixture() returns trigger language plpgsql as $$ begin if new.name='日语阅读室' then raise exception 'subscription_fixture_failure'; end if; return new; end $$",
+      "create function reject_subscription_fixture() returns trigger language plpgsql as $$ begin if new.name='Kindle Unlimited（日本）' then raise exception 'subscription_fixture_failure'; end if; return new; end $$",
     )
     await em.execute(
       'create trigger reject_subscription_fixture before insert on subscription for each row execute function reject_subscription_fixture()',
