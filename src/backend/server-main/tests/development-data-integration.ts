@@ -45,9 +45,23 @@ async function main() {
         'insert into moment (id,content,status,created_at,updated_at,published_at,images) values (?,?,?,now(),now(),now(),?::jsonb)',
         [
           randomUUID(),
-          index === 0 ? '100% 可重复的记录' : `目录覆盖 ${index}`,
+          index === 0
+            ? '100% 可重复的记录'
+            : index === 1
+              ? // 覆盖目录要求的超长正文维度
+                `目录覆盖 ${index}：${'把当天的判断和依据都记下来，回看时才知道当时为什么这样选。'.repeat(5)}`
+              : `目录覆盖 ${index}`,
           index === 16 ? 'draft' : index === 17 ? 'archived' : 'published',
-          JSON.stringify(index === 0 ? [image] : []),
+          // 覆盖单图、两列与三列三种配图档位
+          JSON.stringify(
+            index === 0
+              ? [image]
+              : index === 2
+                ? [image, image + '?a']
+                : index === 3
+                  ? [image, image + '?a', image + '?b']
+                  : [],
+          ),
         ],
       )
     const present = await inspectDataCatalog(em, 'moments')

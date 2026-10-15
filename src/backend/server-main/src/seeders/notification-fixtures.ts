@@ -7,7 +7,15 @@ import { randomUUID, createHash } from 'node:crypto'
 import { GuestbookReadService } from '../modules/guestbook/guestbook-read.service'
 import { GuestbookWriteService } from '../modules/guestbook/guestbook-write.service'
 import { GuestbookMessage } from '../entities/guestbook-message.entity'
+import { CreateCommentDto } from '../modules/comment/dto/create-comment.dto'
 import { withoutExternalNotifications } from '../modules/operations/owner-events'
+import { AdminPostService } from '../modules/post/admin-post.service'
+import { PostRevisionsService } from '../modules/post/post-revisions.service'
+import { SavePostDto } from '../modules/post/dto/save-post.dto'
+import { MomentWriteService } from '../modules/moment/moment-write.service'
+import { MomentReadService } from '../modules/moment/moment-read.service'
+import { CommentService } from '../modules/comment/comment.service'
+import { MomentInteractionService } from '../modules/moment/moment-interaction.service'
 
 export const NOTIFICATION_DATASET = 'notifications-v1'
 const questions = [
@@ -36,7 +44,140 @@ const questions = [
   '媒体说明更新后，旧文章的图片引用会保持吗？',
 ]
 const names = ['林间', '许宁', '小南', '星野', '远山', '海风']
-export const NOTIFICATION_FIXTURE_COUNT = questions.length * 3 + 2
+// 通知中心按来源区分留言、文章评论、动态评论与任务故障；留言之外的互动此前没有样本。
+const articleNotes: [string, string][] = [
+  ['远山', '这一节的顺序我照着做了一遍，确实比原来清楚。'],
+  ['海风', '想问下后面还会补充相关的关联阅读吗？'],
+]
+const momentNotes: [string, string][] = [
+  ['林间', '这组照片的光线很舒服，傍晚拍的吗？'],
+  ['星野', '同一个地方我春天去过一次，景色完全不同。'],
+]
+export const CONTENT_NOTIFICATION_COUNT = 2 + (articleNotes.length + momentNotes.length) * 3
+const visitorOf = (name: string) => createHash('sha256').update(`${NOTIFICATION_DATASET}/${name}`).digest('hex')
+/** 文章评论与动态评论各自产生真实通知，覆盖留言之外的通知来源。 */
+async function seedContentNotifications(em: EntityManager, progress: FixtureProgress) {
+  const posts = new AdminPostService(em, new PostRevisionsService(em))
+  const moments = new MomentWriteService(em, new MomentReadService(em))
+  const comments = new CommentService(em)
+  const interactions = new MomentInteractionService(em)
+  const postId = await ensureFixture(
+    em,
+    NOTIFICATION_DATASET,
+    'source',
+    'post',
+    async () => {
+      const input = Object.assign(new SavePostDto(), {
+        title: '把关联阅读整理清楚',
+        summary: '一篇用于串联相关内容的说明，顺带记录通知在各个来源之间的区别。',
+        contentRaw:
+          '# 把关联阅读整理清楚\n\n相关内容的入口放在正文结尾，读者看完一节之后可以顺着继续往下读。\n\n整理时先确认每条关联确实指向还在公开的内容，再决定展示顺序。',
+        folder: '前端开发',
+        category: 'tech',
+        tags: ['技术分享'],
+        status: 'published',
+      })
+      return (await posts.save(null, input, '通知样本来源')).id
+    },
+    progress,
+  )
+  const momentId = await ensureFixture(
+    em,
+    NOTIFICATION_DATASET,
+    'source',
+    'moment',
+    async () => {
+      const saved = await moments.save(null, {
+        content: '傍晚从河堤走回来，顺手拍了几张。',
+        status: 'published',
+        topics: ['生活日常'],
+        images: [],
+        linkedArticleId: null,
+        requestId: randomUUID(),
+        location: '河堤步道',
+        isPinned: false,
+      })
+      return saved.id
+    },
+    progress,
+  )
+  // 通知连带的投递任务同样登记归属，否则清理计划会因为存在未知任务而整组保留。
+  const link = async (scenario: string, kind: 'comment' | 'moment-comment', sourceId: string, read: boolean) => {
+    const notification = await ensureFixture(
+      em,
+      NOTIFICATION_DATASET,
+      scenario,
+      'notification',
+      async () => {
+        const [event] = await em.execute<{ id: string }[]>(
+          'select id from owner_notification where kind=? and source_id=?',
+          [kind, sourceId],
+        )
+        if (!event) return null
+        if (read) await em.execute('update owner_notification set read_at=now() where id=?', [event.id])
+        return event.id
+      },
+      progress,
+    )
+    if (!notification) return
+    await ensureFixture(
+      em,
+      NOTIFICATION_DATASET,
+      scenario,
+      'task',
+      async () => {
+        const [task] = await em.execute<{ id: string }[]>(
+          "select id from background_task where payload->>'notificationId'=?",
+          [notification],
+        )
+        return task?.id ?? null
+      },
+      progress,
+    )
+  }
+  if (postId)
+    for (const [index, [author, content]] of articleNotes.entries()) {
+      const commentId = await ensureFixture(
+        em,
+        NOTIFICATION_DATASET,
+        `article-${index}`,
+        'comment',
+        async () => {
+          const node = await comments.create(
+            Number(postId),
+            Object.assign(new CreateCommentDto(), { requestId: randomUUID(), author, content }),
+            visitorOf(author),
+          )
+          return node.id
+        },
+        progress,
+      )
+      if (commentId) await link(`article-${index}`, 'comment', commentId, index === 1)
+    }
+  if (momentId)
+    for (const [index, [author, content]] of momentNotes.entries()) {
+      const commentId = await ensureFixture(
+        em,
+        NOTIFICATION_DATASET,
+        `moment-${index}`,
+        'moment-comment',
+        async () => {
+          const created = await interactions.comment(
+            momentId,
+            { requestId: randomUUID(), author, content },
+            visitorOf(author),
+          )
+          return created.id
+        },
+        progress,
+      )
+      if (commentId) await link(`moment-${index}`, 'moment-comment', commentId, index === 1)
+    }
+}
+export const NOTIFICATION_FIXTURE_COUNT = questions.length * 3 + 2 + CONTENT_NOTIFICATION_COUNT
+export const NOTIFICATION_EVENT_COUNT = questions.length + articleNotes.length + momentNotes.length
+// 留言样本中两条、文章与动态评论各一条标记为已读，其余保持未读。
+export const NOTIFICATION_READ_COUNT = 2 + 2
 export async function seedNotificationFixtures(
   em: EntityManager,
   _storage: MediaStorage,
@@ -121,5 +262,6 @@ export async function seedNotificationFixtures(
           progress,
         )
     }
+    await seedContentNotifications(em, progress)
   })
 }
