@@ -13,8 +13,9 @@
     <button
       class="dev-debug-fab"
       type="button"
-      :class="{ 'is-open': isOpen, 'is-dragging': isDragging }"
+      :class="{ 'is-open': isOpen, 'is-dragging': isDragging, 'is-hidden': fabHidden }"
       :style="fabStyle"
+      :inert="fabHidden || undefined"
       :aria-label="isOpen ? '关闭 dev 调试面板' : '打开 dev 调试面板'"
       :aria-expanded="isOpen"
       @pointerdown="onFabPointerDown"
@@ -573,6 +574,14 @@ function syncScroll() {
   scrollY.value = Math.round(window.scrollY)
 }
 
+// 向下滚动时收起 FAB，避免遮挡正文；向上滚动、回到顶部、面板打开或拖动中保持可见
+const fabScrollHidden = ref(false)
+watch(scrollY, (y, prev) => {
+  if (Math.abs(y - prev) < 8) return
+  fabScrollHidden.value = y > 80 && y > prev
+})
+const fabHidden = computed(() => fabScrollHidden.value && !isOpen.value && !isDragging.value)
+
 const breakpoint = computed(() => {
   const w = viewport.value.w
   if (w >= 1280) return 'xl'
@@ -686,9 +695,15 @@ onBeforeUnmount(() => {
     background 0.2s ease,
     border-color 0.2s ease,
     transform 0.2s ease,
-    box-shadow 0.2s ease;
+    box-shadow 0.2s ease,
+    opacity 0.2s ease;
   @media (prefers-reduced-motion: reduce) {
     transition: none;
+  }
+
+  &.is-hidden {
+    opacity: 0;
+    pointer-events: none;
   }
 
   &:hover {
