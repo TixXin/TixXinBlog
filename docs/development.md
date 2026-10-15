@@ -92,6 +92,7 @@ corepack pnpm --filter server-main exec node dist/admin-bootstrap.js
 开发样本通过稳定归属账本增量管理，先检查再预览：
 
 ```sh
+corepack pnpm db
 corepack pnpm db:dev status
 corepack pnpm db:dev check-data
 corepack pnpm db:dev seed-data --dataset all
@@ -101,12 +102,15 @@ corepack pnpm db:dev remove-data --dataset gallery-v1
 | 命令                              | 行为                                                                                    |
 | --------------------------------- | --------------------------------------------------------------------------------------- |
 | `status`                          | 始终只读，查看目标与迁移状态                                                            |
+| `list`                            | 只读输出可用动作、数据集与数据域目录，供菜单和脚本取用                                  |
 | `check-data`                      | 核对各域记录、关联、媒体和代表性场景；可用 `--domain` 限定领域                          |
 | `seed-data --dataset <数据集>`    | 预览增量补齐；数据集及稳定归属由[种子实现](../src/backend/server-main/src/seeders/)维护 |
 | `remove-data --dataset <数据集>`  | 预览指定样本的可删除范围与保护原因                                                      |
 | `prepare-profile`                 | 只整理精确匹配、未经编辑的初始资料，保留已修改资料                                      |
 | `clear-moments` / `clear-content` | 清空指定业务范围；不是样本定向清理                                                      |
 | `reset`                           | 删除应用表并重放迁移，会清空账号、内容、配置历史和媒体索引                              |
+
+`corepack pnpm db` 不带参数时进入交互菜单，按查看、补充样本、清理、重建、账号与配置、备份分组列出上表同一批命令：先显示目标数据库，执行前打印即将运行的完整命令，写入条目先预览再要求输入数据库名确认，`clear-content` 和 `reset` 还需额外输入动作名。菜单不自行写库，数据集与数据域名单取自 `db:dev list`。带参数的 `corepack pnpm db <命令>` 等价于 `corepack pnpm db:dev <命令>`；非交互终端只打印用法和条目清单并返回非零，便于脚本与 CI 使用。
 
 实际写入需显式追加 `--apply --confirm <数据库名>`。工具只允许核对过的本机非生产目标，要求迁移完成且结构一致，并先通过完整备份流程备份；备份失败不写入。无待处理项时不重复修改数据。
 
