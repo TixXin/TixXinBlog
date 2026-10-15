@@ -37,7 +37,11 @@ const photos = [
   ['尚未定稿的山色', '风景', 'ridge', '还想再想一想这张照片的排列位置。'],
   ['收起的夜景', '城市', 'night', '整理照片时暂时收起，之后再决定是否放回。'],
 ] as const
-export const GALLERY_FIXTURE_COUNT = GALLERY_ASSETS.length + photos.length
+const detailedPhotos = [
+  ['湖边的清晨', '风景', 'lake', '趁着风还没起来，把湖面和远山一起收进画面。', '山间湖畔步道', '数码单反'],
+  ['楼顶的傍晚', '城市', 'skyline', '太阳落到楼群后面，天色还留着一层暖调。', '市区高层观景平台', '微单相机'],
+] as const
+export const GALLERY_FIXTURE_COUNT = GALLERY_ASSETS.length + photos.length + detailedPhotos.length
 
 export async function seedGalleryFixtures(
   em: EntityManager,
@@ -109,4 +113,31 @@ export async function seedGalleryFixtures(
       progress,
     )
   }
+  // 地点与器材同样是可编辑的手工字段，与拍摄日期一致：描述画面可见的环境与器材类别，不宣称原素材的精确来源。
+  for (const [slot, [title, category, image, description, location, device]] of detailedPhotos.entries())
+    await ensureFixture(
+      em,
+      GALLERY_DATASET,
+      `detailed-${slot}`,
+      'gallery',
+      async () => {
+        const mediaId = media.get(image)
+        if (!mediaId) return null
+        return (
+          await service.save(null, {
+            requestId: randomUUID(),
+            mediaId,
+            title,
+            description,
+            category,
+            takenOn: new Date(now.getTime() - (slot + 2) * 86400000).toISOString().slice(0, 10),
+            location,
+            device,
+            sortOrder: 0,
+            status: 'published',
+          })
+        ).id
+      },
+      progress,
+    )
 }

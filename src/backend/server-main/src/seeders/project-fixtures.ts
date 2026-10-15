@@ -150,8 +150,15 @@ export async function seedProjectFixtures(
       async () => {
         if (cover && !media.has(cover)) return null
         // 唯一源代码地址已经与当前仓库 origin 和公开 GitHub 页面核对；其他链接仅标注文档。
-        const links: { kind: 'source' | 'docs'; href: string }[] =
-          index === 0 ? [{ kind: 'source', href: 'https://github.com/TixXin/TixXinBlog' }] : []
+        // 发布页与演示页按该仓库的默认路径给出，覆盖下载与演示两种链接类型；仓库未启用 Pages 时演示地址可能暂不可访问。
+        const links: { kind: 'source' | 'docs' | 'demo' | 'download'; href: string }[] =
+          index === 0
+            ? [
+                { kind: 'source', href: 'https://github.com/TixXin/TixXinBlog' },
+                { kind: 'download', href: 'https://github.com/TixXin/TixXinBlog/releases' },
+                { kind: 'demo', href: 'https://tixxin.github.io/TixXinBlog/' },
+              ]
+            : []
         if (documentation) links.push({ kind: 'docs', href: docs[documentation] })
         return (
           await service.save(null, {
