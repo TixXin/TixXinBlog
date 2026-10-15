@@ -52,8 +52,6 @@ const topics = [
 const commentStatuses = ['published', 'published', 'pending', 'hidden'] as const
 const likers = ['晨曦', '小林'] as const
 export const CONVERSATION_COUNT = 20 + 4 + 1 + 1 + 6
-export const CORE_FIXTURE_COUNT =
-  2 + topics.length * 3 + commentStatuses.length * 2 + 2 + likers.length * 3 + CONVERSATION_COUNT
 const visitor = (name: string) => createHash('sha256').update(`development/core-v1/${name}`).digest('hex')
 const threadVoices = ['远山', '清和', '松间', '叙白', '南屿', '照野']
 const threadRemarks = [
@@ -183,6 +181,152 @@ async function seedConversation(
   }
   await em.flush()
 }
+// 配图档位对应前端网格：1 张单图，2 与 4 张两列，3 张以上三列；九张用于铺满的边界。
+const burstAssets = [
+  ['ridge', '山脊轮廓'],
+  ['night', '夜色里的街道'],
+  ['pizza', '刚出炉的披萨'],
+  ['lake', '湖面倒影'],
+  ['skyline', '城市天际线'],
+  ['breakfast', '一顿简单的早餐'],
+  ['portrait', '侧光下的人像'],
+  ['mist', '山谷晨雾'],
+] as const
+const burstTexts: Record<number, string> = {
+  2: '周末走了两个地方，顺手各拍了一张。',
+  3: '傍晚沿着河堤慢慢走，光线一直在变。',
+  4: '这一天从早餐开始，到夜里的街道结束。',
+  9: '把这段时间攒下的照片一次放出来，大多是路过时随手拍的。',
+}
+const longFlashText =
+  '把这两周做的事情梳理了一遍：先是把几个老接口的边界补齐，顺手把重复的判断抽成了共用函数；' +
+  '然后是整理图片资源，统一换成更合适的尺寸，页面首屏明显轻了一些；最后花了小半天重新读自己半年前写的笔记，' +
+  '发现当时觉得想清楚的地方，现在看其实留了不少含糊。记录这件事的意义大概就在这里，它让你有机会和过去的判断对账。'
+const longMomentText =
+  '今天把书桌整个清了一遍，抽屉里翻出不少以前的小东西：写坏的笔、几张票根、一本只记了三页的本子。' +
+  '本想全部丢掉，最后还是留了几样。清理的时候一直在想，东西本身其实没那么重要，' +
+  '真正占地方的是「说不定以后会用到」这个念头。留下的那几样，是因为确实还记得当时的事。'
+/** 配图数量与超长正文在闪念和朋友圈各有代表，覆盖前端的单图、两列与三列布局。 */
+async function seedImageBursts(
+  em: EntityManager,
+  storage: MediaStorage,
+  progress: FixtureProgress,
+  createdMedia: string[],
+  baseImage: string,
+  flashes: AdminFlashService,
+  moments: MomentWriteService,
+  date: (index: number) => Date,
+) {
+  const urls: string[] = [baseImage]
+  for (const [name, alt] of burstAssets) {
+    const id = await ensureFixture(
+      em,
+      CORE_DATASET,
+      `asset-${name}`,
+      'media',
+      async () => {
+        const buffer = await readFile(resolve(__dirname, `gallery-assets/${name}.webp`))
+        const mediaId = randomUUID()
+        createdMedia.push(mediaId)
+        const asset = await new MediaService(em, storage).upload(
+          { buffer, originalname: `${name}.webp`, mimetype: 'image/webp', size: buffer.length },
+          alt,
+          mediaId,
+        )
+        return asset.id
+      },
+      progress,
+    )
+    if (id) urls.push(mediaUrl(id))
+  }
+  for (const [slot, count] of [2, 3, 4, 9].entries()) {
+    if (urls.length < count) continue
+    const images = urls.slice(0, count)
+    await ensureFixture(
+      em,
+      CORE_DATASET,
+      `burst-${count}`,
+      'flash',
+      async () => {
+        const saved = await flashes.save(null, {
+          content: burstTexts[count]!,
+          tags: ['生活'],
+          images,
+          type: 'memo',
+          isDraft: false,
+          isArchived: false,
+        })
+        await em.nativeUpdate(FlashNote, { id: saved.id }, { createdAt: date(slot) })
+        return saved.id
+      },
+      progress,
+    )
+    await ensureFixture(
+      em,
+      CORE_DATASET,
+      `burst-${count}`,
+      'moment',
+      async () => {
+        const saved = await moments.save(null, {
+          content: burstTexts[count]!,
+          status: 'published',
+          topics: ['生活日常'],
+          images,
+          linkedArticleId: null,
+          requestId: randomUUID(),
+          location: count === 9 ? '沿河步道' : null,
+          isPinned: false,
+        })
+        await em.nativeUpdate(Moment, { id: saved.id }, { createdAt: date(slot), publishedAt: date(slot) })
+        return saved.id
+      },
+      progress,
+    )
+  }
+  await ensureFixture(
+    em,
+    CORE_DATASET,
+    'long',
+    'flash',
+    async () => {
+      const saved = await flashes.save(null, {
+        content: longFlashText,
+        tags: ['技术'],
+        images: [],
+        type: 'idea',
+        isDraft: false,
+        isArchived: false,
+      })
+      await em.nativeUpdate(FlashNote, { id: saved.id }, { createdAt: date(4) })
+      return saved.id
+    },
+    progress,
+  )
+  await ensureFixture(
+    em,
+    CORE_DATASET,
+    'long',
+    'moment',
+    async () => {
+      const saved = await moments.save(null, {
+        content: longMomentText,
+        status: 'published',
+        topics: ['生活日常'],
+        images: [urls[0]!],
+        linkedArticleId: null,
+        requestId: randomUUID(),
+        location: null,
+        isPinned: false,
+      })
+      await em.nativeUpdate(Moment, { id: saved.id }, { createdAt: date(4), publishedAt: date(4) })
+      return saved.id
+    },
+    progress,
+  )
+}
+export const BURST_COUNT = burstAssets.length + 4 * 2 + 2
+export const CORE_FIXTURE_COUNT =
+  2 + topics.length * 3 + commentStatuses.length * 2 + 2 + likers.length * 3 + CONVERSATION_COUNT + BURST_COUNT
 export async function seedCoreFixtures(
   em: EntityManager,
   storage: MediaStorage,
@@ -398,6 +542,7 @@ export async function seedCoreFixtures(
       )
   }
   await seedConversation(em, publishedPosts, site, progress)
+  await seedImageBursts(em, storage, progress, createdMedia, image, flashes, moments, date)
   // 未被任何内容引用的媒体：媒体库需要可见的孤立资产，清理计划也要有可移除的代表。
   await ensureFixture(
     em,
