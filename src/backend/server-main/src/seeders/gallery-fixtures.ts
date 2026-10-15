@@ -12,34 +12,36 @@ import type { FixtureProgress } from './fixture-ledger'
 
 export const GALLERY_DATASET = 'gallery-v1'
 export const GALLERY_ASSETS = ['ridge', 'night', 'pizza', 'mist', 'skyline', 'breakfast', 'portrait', 'lake'] as const
+// 每张作品记录具体的拍摄地，与画面内容对应；器材不补造，保持缺省。
 const photos = [
-  ['山脊的光', '风景', 'ridge', '群山层层退向天边，云隙间的光线让山脊显出不同的灰度。'],
-  ['夜色渐浓', '城市', 'night', '窗里的灯光陆续亮起，城市在入夜之后展现出另一种秩序。'],
-  ['刚出炉', '餐桌', 'pizza', '热气、芝士和烤得微焦的饼边。'],
-  ['薄雾之间', '风景', 'mist', '山谷被雾缓缓填满，视线沿着草坡和树影向远处延伸。'],
-  ['楼宇之间', '城市', 'skyline', '换一个高度看城市，密集的楼宇也有清晰的节奏。'],
-  ['慢慢吃早餐', '餐桌', 'breakfast', '把早晨留给一顿不用赶时间的早餐。'],
-  ['目光', '人像', 'portrait', '简单的背景，让目光成为画面的中心。'],
-  ['湖与远山', '风景', 'lake', '风吹过湖面，远处的山像一层安静的背景。'],
+  ['山脊的光', '风景', 'ridge', '群山层层退向天边，云隙间的光线让山脊显出不同的灰度。', '四川 · 贡嘎山'],
+  ['夜色渐浓', '城市', 'night', '窗里的灯光陆续亮起，城市在入夜之后展现出另一种秩序。', '上海 · 陆家嘴'],
+  ['刚出炉', '餐桌', 'pizza', '热气、芝士和烤得微焦的饼边。', '杭州 · 湖滨银泰'],
+  ['薄雾之间', '风景', 'mist', '山谷被雾缓缓填满，视线沿着草坡和树影向远处延伸。', '云南 · 西双版纳'],
+  ['楼宇之间', '城市', 'skyline', '换一个高度看城市，密集的楼宇也有清晰的节奏。', '深圳 · 莲花山'],
+  ['慢慢吃早餐', '餐桌', 'breakfast', '把早晨留给一顿不用赶时间的早餐。', '家里'],
+  ['目光', '人像', 'portrait', '简单的背景，让目光成为画面的中心。', '工作室'],
+  ['湖与远山', '风景', 'lake', '风吹过湖面，远处的山像一层安静的背景。', '大理 · 洱海'],
   [
     '远方的层次',
     '风景',
     'ridge',
     '同一片山在不同的观看顺序中有不同的重心。先看明亮的山脊，再慢慢辨认阴影里的纹理；远处的线条逐渐变淡，近处的石壁却仍然清晰。停留久一点，眼睛会发现最初没有注意到的细节。画面没有唯一的中心，可以沿着自己的视线，从云层一路走到最远的山峰。',
+    '四川 · 子梅垭口',
   ],
-  ['街区灯火', '城市', 'night', ''],
-  ['分享一餐', '餐桌', 'pizza', '一张桌子，几块披萨，足够聊很久。'],
-  ['风经过山谷', '风景', 'mist', '把喧闹留在山谷之外。'],
-  ['窗格的节奏', '城市', 'skyline', '横向与纵向的线条，在密集的建筑之间交错。'],
-  ['午前片刻', '餐桌', 'breakfast', ''],
-  ['安静的侧面', '', 'portrait', '让构图简单一点。'],
-  ['水面之外', '风景', 'lake', '留下水面与山之间的空白。'],
-  ['尚未定稿的山色', '风景', 'ridge', '还想再想一想这张照片的排列位置。'],
-  ['收起的夜景', '城市', 'night', '整理照片时暂时收起，之后再决定是否放回。'],
+  ['街区灯火', '城市', 'night', '', '重庆 · 洪崖洞'],
+  ['分享一餐', '餐桌', 'pizza', '一张桌子，几块披萨，足够聊很久。', '深圳 · 海岸城'],
+  ['风经过山谷', '风景', 'mist', '把喧闹留在山谷之外。', '云南 · 普洱'],
+  ['窗格的节奏', '城市', 'skyline', '横向与纵向的线条，在密集的建筑之间交错。', '广州 · 珠江新城'],
+  ['午前片刻', '餐桌', 'breakfast', '', '成都 · 玉林路'],
+  ['安静的侧面', '', 'portrait', '让构图简单一点。', '工作室'],
+  ['水面之外', '风景', 'lake', '留下水面与山之间的空白。', '杭州 · 西湖'],
+  ['尚未定稿的山色', '风景', 'ridge', '还想再想一想这张照片的排列位置。', '四川 · 贡嘎山'],
+  ['收起的夜景', '城市', 'night', '整理照片时暂时收起，之后再决定是否放回。', '上海 · 外滩'],
 ] as const
 const detailedPhotos = [
   ['湖边的清晨', '风景', 'lake', '趁着风还没起来，把湖面和远山一起收进画面。', '山间湖畔步道', '数码单反'],
-  ['楼顶的傍晚', '城市', 'skyline', '太阳落到楼群后面，天色还留着一层暖调。', '市区高层观景平台', '微单相机'],
+  ['楼顶的傍晚', '城市', 'skyline', '太阳落到楼群后面，天色还留着一层暖调。', '深圳 · 福田', '微单相机'],
 ] as const
 export const GALLERY_FIXTURE_COUNT = GALLERY_ASSETS.length + photos.length + detailedPhotos.length
 
@@ -81,7 +83,7 @@ export async function seedGalleryFixtures(
   }
   const service = new GalleryService(em)
   const now = new Date()
-  for (const [index, [title, category, image, description]] of photos.entries()) {
+  for (const [index, [title, category, image, description, location]] of photos.entries()) {
     await ensureFixture(
       em,
       GALLERY_DATASET,
@@ -103,7 +105,7 @@ export async function seedGalleryFixtures(
             description,
             category,
             takenOn,
-            location: '',
+            location,
             device: '',
             sortOrder: index === 7 ? 100 : index % 3,
             status: index === 16 ? 'draft' : index === 17 ? 'withdrawn' : 'published',

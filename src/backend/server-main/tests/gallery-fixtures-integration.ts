@@ -65,9 +65,10 @@ async function main() {
     assert.equal(new Set(photos.map((photo) => photo.id)).size, 18)
     assert(photos.every((photo) => !('status' in photo) && !('mediaId' in photo) && !('storageKey' in photo)))
     assert(photos.every((photo) => !/开发示例|测试数据|演示用途/.test(photo.title + photo.description)))
-    // 默认不补造拍摄资料；只有明确填写过地点与器材的作品带这两项。
-    assert.equal(photos.filter((photo) => photo.location === '' && photo.device === '').length, 16)
-    assert(photos.some((photo) => photo.location !== '' && photo.device !== ''))
+    // 拍摄地逐条记录，器材不补造：只有明确记录过器材的作品带这一项。
+    assert(photos.every((photo) => photo.location !== ''))
+    assert.equal(photos.filter((photo) => photo.device === '').length, 16)
+    assert(photos.some((photo) => photo.device !== ''))
     assert(photos.some((photo) => photo.date === ''))
     assert(photos.some((photo) => photo.width > photo.height))
     assert(photos.some((photo) => photo.width < photo.height))
@@ -77,8 +78,8 @@ async function main() {
       metadata.categories.reduce((total, category) => total + category.count, 0),
       18,
     )
-    // 两条作品填写了地点，其余保持缺省
-    assert.equal(metadata.stats.locations, 2)
+    // 每条作品都记录了拍摄地，统计的是去重后的地点数
+    assert.equal(metadata.stats.locations, 17)
     const sourceFiles = await em.execute('select * from media_asset order by id')
     const hashes = new Set<string>()
     for (const image of sourceFiles) {

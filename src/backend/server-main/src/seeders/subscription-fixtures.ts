@@ -18,20 +18,20 @@ export const SUBSCRIPTION_FIXTURE_COUNT = SUBSCRIPTION_RECORD_COUNT + 1
 const definitions: [string, Currency, number, BillingCycle, SubscriptionCategory, SubscriptionStatus, string | null][] =
   [
     ['ChatGPT Plus', 'USD', 2000, 'monthly', 'ai', 'active', 'https://chatgpt.com/'],
-    ['JetBrains 开发工具', 'USD', 28900, 'yearly', 'development', 'active', 'https://www.jetbrains.com/'],
-    ['云端相册', 'CNY', 6800, 'monthly', 'cloud', 'active', null],
-    ['季度写作空间', 'CNY', 10000, 'quarterly', 'productivity', 'active', null],
-    ['日语阅读室', 'JPY', 1000, 'monthly', 'education', 'active', null],
-    ['iCloud 储存空间', 'HKD', 2300, 'monthly', 'cloud', 'active', 'https://www.apple.com/icloud/'],
+    ['JetBrains All Products Pack', 'USD', 28900, 'yearly', 'development', 'active', 'https://www.jetbrains.com/'],
+    ['阿里云盘 超级会员', 'CNY', 6800, 'monthly', 'cloud', 'active', 'https://www.alipan.com/'],
+    ['印象笔记 专业版', 'CNY', 10000, 'quarterly', 'productivity', 'active', 'https://www.yinxiang.com/'],
+    ['Kindle Unlimited（日本）', 'JPY', 1000, 'monthly', 'education', 'active', 'https://www.amazon.co.jp/'],
+    ['iCloud+ 储存空间', 'HKD', 2300, 'monthly', 'cloud', 'active', 'https://www.apple.com/icloud/'],
     ['Vue 开源支持', 'EUR', 1200, 'quarterly', 'design', 'active', 'https://vuejs.org/'],
-    ['旅行通信套餐', 'GBP', 500, 'monthly', 'communication', 'paused', null],
-    ['音乐收藏', 'TWD', 14900, 'monthly', 'entertainment', 'cancelled', null],
-    ['灵感助手', 'USD', 0, 'monthly', 'ai', 'trial', null],
-    ['旧域名', 'CNY', 8800, 'yearly', 'cloud', 'expired', null],
-    ['离线词典', 'CNY', 29900, 'lifetime', 'education', 'active', null],
-    ['Vue 生态支持', 'CNY', 35000, 'one-time', 'design', 'active', 'https://vuejs.org/'],
-    ['准备启用的跨设备阅读与资料归档空间', 'CNY', 2900, 'monthly', 'other', 'active', null],
-    ['摄影课程', 'JPY', 2000, 'yearly', 'education', 'active', null],
+    ['Three UK 数据套餐', 'GBP', 500, 'monthly', 'communication', 'paused', 'https://www.three.co.uk/'],
+    ['KKBOX', 'TWD', 14900, 'monthly', 'entertainment', 'cancelled', 'https://www.kkbox.com/'],
+    ['Claude Pro', 'USD', 0, 'monthly', 'ai', 'trial', 'https://claude.ai/'],
+    ['阿里云 域名续费', 'CNY', 8800, 'yearly', 'cloud', 'expired', 'https://wanwang.aliyun.com/'],
+    ['欧路词典 增强版', 'CNY', 29900, 'lifetime', 'education', 'active', 'https://www.eudic.net/'],
+    ['Vue 生态赞助', 'CNY', 35000, 'one-time', 'design', 'active', 'https://vuejs.org/'],
+    ['微信读书 无限卡', 'CNY', 2900, 'monthly', 'other', 'active', 'https://weread.qq.com/'],
+    ['スタディサプリ ENGLISH', 'JPY', 2000, 'yearly', 'education', 'active', 'https://eigosapuri.jp/'],
   ]
 function daysFrom(date: string, offset: number) {
   const value = new Date(date + 'T00:00:00.000Z')
@@ -92,13 +92,26 @@ export async function seedSubscriptionFixtures(
           category,
           subscriptionStatus,
           url,
-          platform: index === 0 ? 'OpenAI' : index === 1 ? 'JetBrains' : null,
+          platform:
+            index === 0
+              ? 'OpenAI'
+              : index === 1
+                ? 'JetBrains'
+                : index === 9
+                  ? 'Anthropic'
+                  : index === 2 || index === 10
+                    ? '阿里云'
+                    : null,
           description:
             index === 0
-              ? '用于整理长文结构、查阅资料与梳理开发思路。保留每次调整的价格，定期回看工具使用频率与预算安排。'
+              ? '主要用来整理长文结构和查资料。价格调过两次，记录保留着，方便年底回看这笔开销值不值。'
               : index === 6
-                ? '为经常使用的开源工具留一份持续支持。'
-                : '',
+                ? '通过 Open Collective 给日常在用的开源项目留一份持续支持。'
+                : index === 9
+                  ? '试用期内，到期前决定要不要转正式订阅。'
+                  : index === 13
+                    ? '还在犹豫要不要长期续，先记一笔，下个月再看使用频率。'
+                    : '',
           notes: '',
           startDate,
           nextBillingDate,
@@ -110,7 +123,7 @@ export async function seedSubscriptionFixtures(
           saved = await service.save(saved.id, {
             revision: saved.revision,
             amount: 1900,
-            priceChangeReason: '调整月度方案',
+            priceChangeReason: '官方调整月度方案价格',
           })
           saved = await service.save(saved.id, { revision: saved.revision, amount, priceChangeReason: '更新服务方案' })
         }
@@ -118,14 +131,14 @@ export async function seedSubscriptionFixtures(
           saved = await service.save(saved.id, {
             revision: saved.revision,
             billingCycle,
-            priceChangeReason: '改为季度安排',
+            priceChangeReason: '从月付改为季付',
           })
         if (index === 4)
           saved = await service.save(saved.id, {
             revision: saved.revision,
             currency,
             amount,
-            priceChangeReason: '切换结算币种',
+            priceChangeReason: '从美区账号转到日区结算',
           })
         return saved.id
       },
