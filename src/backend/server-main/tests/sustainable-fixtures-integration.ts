@@ -2,6 +2,12 @@
 import assert from 'node:assert/strict'
 import { loadLocalEnvironment } from '../src/config/environment'
 import { createBrowserTestApp } from './test-app.mjs'
+import {
+  NOTIFICATION_EVENT_COUNT,
+  NOTIFICATION_FIXTURE_COUNT,
+  NOTIFICATION_READ_COUNT,
+} from '../src/seeders/notification-fixtures'
+import { WRITING_FIXTURE_COUNT } from '../src/seeders/writing-fixtures'
 
 async function main() {
   loadLocalEnvironment()
@@ -42,17 +48,17 @@ async function main() {
     process.env.NOTIFICATION_EMAIL_ENABLED = 'true'
     await em.execute("update operation_control set external_paused=false where id='default'")
     const notifications = await seed('notifications-v1')
-    assert('created' in notifications && notifications.created.length === 71)
+    assert('created' in notifications && notifications.created.length === NOTIFICATION_FIXTURE_COUNT)
     const [counts] = await em.execute(
       'select count(*)::int total,count(*) filter(where read_at is null)::int unread from owner_notification',
     )
-    assert.equal(counts.total, 23)
-    assert.equal(counts.unread, 21)
+    assert.equal(counts.total, NOTIFICATION_EVENT_COUNT)
+    assert.equal(counts.unread, NOTIFICATION_EVENT_COUNT - NOTIFICATION_READ_COUNT)
     const tasks = await em.execute('select state,attempts from background_task')
-    assert.equal(tasks.length, 23)
+    assert.equal(tasks.length, NOTIFICATION_EVENT_COUNT)
     assert(tasks.every((task: { state: string; attempts: number }) => task.state === 'paused' && task.attempts === 0))
     const notificationPlan = await fixtureCleanupPlan(em, 'notifications-v1')
-    assert.equal(notificationPlan.remove.length, 71)
+    assert.equal(notificationPlan.remove.length, NOTIFICATION_FIXTURE_COUNT)
     const [event] = await em.execute('select id,source_id from owner_notification where read_at is null limit 1')
     await em.execute('update owner_notification set read_at=now() where id=?', [event.id])
     const protectedPlan = await fixtureCleanupPlan(em, 'notifications-v1')
@@ -67,7 +73,8 @@ async function main() {
     assert('created' in repeatedNotifications && repeatedNotifications.created.length === 0)
     assert.equal(
       (await em.execute('select count(*)::int as count from owner_notification where read_at is null'))[0].count,
-      20,
+      // 上面手动标记了一条未读通知为已读
+      NOTIFICATION_EVENT_COUNT - NOTIFICATION_READ_COUNT - 1,
     )
     await em.execute('update post set title=? where id=?', ['保留手工修订的手册', longPost.id])
     const preserved = await fixtureCleanupPlan(em, 'writing-v1')
@@ -76,7 +83,7 @@ async function main() {
     assert.equal((await em.execute('select title from post where id=?', [longPost.id]))[0].title, '保留手工修订的手册')
     assert.equal((await fixture.testOrm.schema.getUpdateSchemaSQL({ wrap: false })).trim(), '')
     process.stdout.write(
-      '创作和通知样本隔离验证通过：6+71归属、万字长文、公开过滤、真实通知分页、启用环境下仍零排队、指纹兼容与关联家庭保护\n',
+      `创作和通知样本隔离验证通过：${WRITING_FIXTURE_COUNT}+${NOTIFICATION_FIXTURE_COUNT}归属、万字长文、公开过滤、真实通知分页、启用环境下仍零排队、指纹兼容与关联家庭保护\n`,
     )
   } finally {
     if (previousEmail === undefined) delete process.env.NOTIFICATION_EMAIL_ENABLED
