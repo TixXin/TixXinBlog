@@ -25,7 +25,7 @@ async function main() {
     assert.equal(preview.preview, true)
     assert.equal((await em.execute('select count(*)::int as n from development_fixture'))[0].n, 0)
     await em.execute(
-      "create function reject_core_fixture() returns trigger language plpgsql as $$ begin if new.content like '周末的公园散步%' then raise exception 'core_fixture_failure'; end if; return new; end $$",
+      "create function reject_core_fixture() returns trigger language plpgsql as $$ begin if new.content like '23 公里，比上次多五公里%' then raise exception 'core_fixture_failure'; end if; return new; end $$",
     )
     await em.execute(
       'create trigger reject_core_fixture before insert on flash_note for each row execute function reject_core_fixture()',

@@ -26,29 +26,10 @@ import { MomentLike } from '../entities/moment-like.entity'
 import { SiteSettings } from '../entities/site-settings.entity'
 import { visibleCommentWhere } from '../modules/comment/comment-visibility'
 import { ensureFixture } from './fixture-ledger'
+import { CORE_SCENES } from './core-scenes'
 import type { FixtureProgress } from './fixture-ledger'
 
 export const CORE_DATASET = 'core-v1'
-const topics = [
-  '把复杂问题拆成小步骤',
-  '周末的公园散步',
-  '一次慢请求的排查',
-  '读书时记下的句子',
-  '让表单反馈更清楚',
-  '整理桌面与工作习惯',
-  '为旧代码补充边界',
-  '傍晚路过的街角',
-  '从日志定位一次故障',
-  '照片里的光和影',
-  '做好一件小事',
-  '记录一次版本升级',
-  '把想法写成清单',
-  '缓存更新的时机',
-  '读完一本书之后',
-  '页面中的留白与节奏',
-  '暂存的写作计划',
-  '留待以后展开的话题',
-]
 const commentStatuses = ['published', 'published', 'pending', 'hidden'] as const
 const likers = ['晨曦', '小林'] as const
 export const CONVERSATION_COUNT = 20 + 4 + 1 + 1 + 6
@@ -207,17 +188,14 @@ const longMomentText =
   '本想全部丢掉，最后还是留了几样。清理的时候一直在想，东西本身其实没那么重要，' +
   '真正占地方的是「说不定以后会用到」这个念头。留下的那几样，是因为确实还记得当时的事。'
 /** 配图数量与超长正文在闪念和朋友圈各有代表，覆盖前端的单图、两列与三列布局。 */
-async function seedImageBursts(
+/** 上传场景共用的图片素材，按素材名返回媒体地址；重复补种时复用已有资源。 */
+async function ensureSceneAssets(
   em: EntityManager,
   storage: MediaStorage,
   progress: FixtureProgress,
   createdMedia: string[],
-  baseImage: string,
-  flashes: AdminFlashService,
-  moments: MomentWriteService,
-  date: (index: number) => Date,
 ) {
-  const urls: string[] = [baseImage]
+  const assets = new Map<string, string>()
   for (const [name, alt] of burstAssets) {
     const id = await ensureFixture(
       em,
@@ -237,8 +215,18 @@ async function seedImageBursts(
       },
       progress,
     )
-    if (id) urls.push(mediaUrl(id))
+    if (id) assets.set(name, mediaUrl(id))
   }
+  return assets
+}
+async function seedImageBursts(
+  em: EntityManager,
+  progress: FixtureProgress,
+  urls: string[],
+  flashes: AdminFlashService,
+  moments: MomentWriteService,
+  date: (index: number) => Date,
+) {
   for (const [slot, count] of [2, 3, 4, 9].entries()) {
     if (urls.length < count) continue
     const images = urls.slice(0, count)
@@ -383,7 +371,7 @@ async function seedPostEdges(
 }
 export const BURST_COUNT = burstAssets.length + 4 * 2 + 2 + edgeArticles.length
 export const CORE_FIXTURE_COUNT =
-  2 + topics.length * 3 + commentStatuses.length * 2 + 2 + likers.length * 3 + CONVERSATION_COUNT + BURST_COUNT
+  2 + CORE_SCENES.length * 3 + commentStatuses.length * 2 + 2 + likers.length * 3 + CONVERSATION_COUNT + BURST_COUNT
 export async function seedCoreFixtures(
   em: EntityManager,
   storage: MediaStorage,
@@ -393,6 +381,12 @@ export async function seedCoreFixtures(
   const site = await em.findOneOrFail(SiteSettings, { id: 'default' })
   const today = new Date()
   const date = (index: number) => new Date(today.getTime() - index * 86400000)
+  // 按天数派生固定但不规则的时分，避免所有内容堆在同一时刻。
+  const at = (days: number) => {
+    const value = date(days)
+    value.setHours(8 + ((days * 7) % 12), (days * 23) % 60, 0, 0)
+    return value
+  }
   const mediaId = await ensureFixture(
     em,
     CORE_DATASET,
@@ -418,6 +412,9 @@ export async function seedCoreFixtures(
     return
   }
   const image = mediaUrl(mediaId)
+  const assets = await ensureSceneAssets(em, storage, progress, createdMedia)
+  const sceneImages = (names: readonly string[]) =>
+    names.map((name) => assets.get(name)).filter((url): url is string => !!url)
   const posts = new AdminPostService(em, new PostRevisionsService(em))
   const flashes = new AdminFlashService(em, new FlashService(em))
   const moments = new MomentWriteService(em, new MomentReadService(em))
@@ -425,9 +422,11 @@ export async function seedCoreFixtures(
     primaryFlash: string | null = null,
     primaryMoment: string | null = null
   const publishedPosts: string[] = []
-  for (let index = 0; index < topics.length; index++) {
+  for (const [index, scene] of CORE_SCENES.entries()) {
     const status = index === 16 ? 'draft' : index === 17 ? 'archived' : 'published'
-    const content = `${topics[index]}。\n\n把当时的想法和处理过程记下来，日后回看时，也能看见自己慢慢进步的轨迹。`
+    const momentImages = sceneImages(scene.moment.assets)
+    const cover = momentImages[0] ?? ''
+    const when = at(scene.days)
     const postId = await ensureFixture(
       em,
       CORE_DATASET,
@@ -435,18 +434,21 @@ export async function seedCoreFixtures(
       'post',
       async () => {
         const input = Object.assign(new SavePostDto(), {
-          title: topics[index],
-          summary: content,
-          contentRaw: `# ${topics[index]}\n\n${content}\n\n![人物肖像](${image})`,
-          cover: image,
-          coverAlt: '人物肖像',
-          folder: index % 2 ? '随笔日记' : '前端开发',
-          category: index % 2 ? 'life' : 'tech',
-          tags: [index % 2 ? '生活日常' : '技术分享'],
+          title: scene.title,
+          summary: scene.summary,
+          contentRaw: cover
+            ? `# ${scene.title}\n\n${scene.body}\n\n![${scene.title}](${cover})`
+            : `# ${scene.title}\n\n${scene.body}`,
+          cover,
+          coverAlt: cover ? scene.title : '',
+          folder: scene.folder,
+          category: scene.category,
+          tags: [...scene.tags],
+          readTimeMinutes: scene.readTime,
           status,
         })
         const saved = await posts.save(null, input, '开发数据集初次创建')
-        await em.nativeUpdate(Post, { id: saved.id }, { createdAt: date(index), publishedAt: date(index) })
+        await em.nativeUpdate(Post, { id: saved.id }, { createdAt: when, publishedAt: when })
         return saved.id
       },
       progress,
@@ -458,14 +460,14 @@ export async function seedCoreFixtures(
       'flash',
       async () => {
         const saved = await flashes.save(null, {
-          content,
-          tags: [index % 2 ? '生活' : '技术'],
-          images: index % 3 === 0 ? [image] : [],
-          type: index % 3 === 0 ? 'idea' : index % 3 === 1 ? 'todo' : 'memo',
+          content: scene.flash.text,
+          tags: [...scene.flash.tags],
+          images: sceneImages(scene.flash.assets ?? []),
+          type: scene.flash.type,
           isDraft: status === 'draft',
           isArchived: status === 'archived',
         })
-        await em.nativeUpdate(FlashNote, { id: saved.id }, { createdAt: date(index) })
+        await em.nativeUpdate(FlashNote, { id: saved.id }, { createdAt: when })
         return saved.id
       },
       progress,
@@ -480,19 +482,19 @@ export async function seedCoreFixtures(
           ? await em.findOne(Post, { id: Number(postId), status: 'published', deletedAt: null })
           : null
         const saved = await moments.save(null, {
-          content,
+          content: scene.moment.text,
           status,
-          topics: [index % 2 ? '生活日常' : '技术分享'],
-          images: index % 3 === 0 ? [image] : [],
+          topics: [scene.moment.topic],
+          images: momentImages,
           linkedArticleId: index === 0 ? (linked?.id ?? null) : null,
           requestId: randomUUID(),
-          location: index % 2 ? '街角公园' : null,
+          location: scene.moment.place,
           isPinned: false,
         })
         await em.nativeUpdate(
           Moment,
           { id: saved.id },
-          { createdAt: date(index), publishedAt: status === 'published' ? date(index) : null },
+          { createdAt: when, publishedAt: status === 'published' ? when : null },
         )
         return saved.id
       },
@@ -599,7 +601,7 @@ export async function seedCoreFixtures(
       )
   }
   await seedConversation(em, publishedPosts, site, progress)
-  await seedImageBursts(em, storage, progress, createdMedia, image, flashes, moments, date)
+  await seedImageBursts(em, progress, [image, ...assets.values()], flashes, moments, date)
   await seedPostEdges(em, posts, image, progress, date)
   // 未被任何内容引用的媒体：媒体库需要可见的孤立资产，清理计划也要有可移除的代表。
   await ensureFixture(
