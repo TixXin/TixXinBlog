@@ -6,12 +6,34 @@
 -->
 
 <template>
-  <div class="nexus-mobile-fab">
+  <div class="nexus-mobile-fab" :class="{ 'is-hidden': hidden }" :inert="hidden || undefined">
     <BlogThemeSwitcher class="nexus-fab-item" />
     <div class="nexus-fab-divider" />
     <BlogAppearanceEntry class="nexus-fab-item" />
   </div>
 </template>
+
+<script setup lang="ts">
+// 向下滚动时收起浮动入口，避免遮挡正文；向上滚动或回到顶部时恢复
+const hidden = ref(false)
+let lastY = 0
+
+function onScroll() {
+  const y = window.scrollY
+  if (Math.abs(y - lastY) < 8) return
+  hidden.value = y > 80 && y > lastY
+  lastY = y
+}
+
+onMounted(() => {
+  lastY = window.scrollY
+  window.addEventListener('scroll', onScroll, { passive: true })
+})
+
+onBeforeUnmount(() => {
+  window.removeEventListener('scroll', onScroll)
+})
+</script>
 
 <style lang="scss" scoped>
 .nexus-mobile-fab {
@@ -32,9 +54,17 @@
   overflow: visible;
   transition:
     border-color 0.15s ease,
-    box-shadow 0.15s ease;
+    box-shadow 0.15s ease,
+    opacity 0.2s ease,
+    transform 0.2s ease;
   @media (prefers-reduced-motion: reduce) {
     transition: none;
+  }
+
+  &.is-hidden {
+    opacity: 0;
+    transform: translateY(calc(-100% - 1rem));
+    pointer-events: none;
   }
 
   &:hover {
