@@ -324,7 +324,64 @@ async function seedImageBursts(
     progress,
   )
 }
-export const BURST_COUNT = burstAssets.length + 4 * 2 + 2
+// 列表与卡片的边界：没有封面、标题很长、以及同一天发布多篇。
+const edgeArticles: readonly (readonly [string, string, string, number, boolean])[] = [
+  [
+    'plain',
+    '只有文字的一则短记',
+    '这篇没有配图，用来确认列表和详情在缺少封面时的排布。正文不长，标题也普通，是最常见的一种内容形态。',
+    30,
+    false,
+  ],
+  [
+    'long-title',
+    '关于在内容整理过程中如何安排标题长度与摘要信息的一些具体做法和注意事项',
+    '标题很长时，列表卡片、归档行和详情页的处理方式各不相同，需要分别确认换行、截断与悬停提示的表现。',
+    31,
+    true,
+  ],
+  [
+    'same-day',
+    '同一天写下的第二则',
+    '与另一篇发布在同一天，用来确认按日期分组时同组内的排序是否稳定，以及归档页的日期标题会不会重复出现。',
+    30,
+    false,
+  ],
+]
+/** 没有封面、超长标题与同日多篇在列表、归档和卡片上各有不同表现。 */
+async function seedPostEdges(
+  em: EntityManager,
+  posts: AdminPostService,
+  image: string,
+  progress: FixtureProgress,
+  date: (index: number) => Date,
+) {
+  for (const [scenario, title, summary, offset, covered] of edgeArticles)
+    await ensureFixture(
+      em,
+      CORE_DATASET,
+      scenario,
+      'post',
+      async () => {
+        const input = Object.assign(new SavePostDto(), {
+          title,
+          summary,
+          contentRaw: `# ${title}\n\n${summary}\n\n把当时的想法记下来，回看时能看出判断是怎么一步步变化的。`,
+          cover: covered ? image : '',
+          coverAlt: covered ? '人物肖像' : '',
+          folder: '随笔日记',
+          category: 'life',
+          tags: ['生活日常'],
+          status: 'published',
+        })
+        const saved = await posts.save(null, input, '补齐列表边界场景')
+        await em.nativeUpdate(Post, { id: saved.id }, { createdAt: date(offset), publishedAt: date(offset) })
+        return saved.id
+      },
+      progress,
+    )
+}
+export const BURST_COUNT = burstAssets.length + 4 * 2 + 2 + edgeArticles.length
 export const CORE_FIXTURE_COUNT =
   2 + topics.length * 3 + commentStatuses.length * 2 + 2 + likers.length * 3 + CONVERSATION_COUNT + BURST_COUNT
 export async function seedCoreFixtures(
@@ -543,6 +600,7 @@ export async function seedCoreFixtures(
   }
   await seedConversation(em, publishedPosts, site, progress)
   await seedImageBursts(em, storage, progress, createdMedia, image, flashes, moments, date)
+  await seedPostEdges(em, posts, image, progress, date)
   // 未被任何内容引用的媒体：媒体库需要可见的孤立资产，清理计划也要有可移除的代表。
   await ensureFixture(
     em,
