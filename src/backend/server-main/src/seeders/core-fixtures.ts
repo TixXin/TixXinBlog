@@ -173,12 +173,33 @@ const burstAssets = [
   ['portrait', '侧光下的人像'],
   ['mist', '山谷晨雾'],
 ] as const
-const burstTexts: Record<number, string> = {
-  2: '周末走了两个地方，顺手各拍了一张。',
-  3: '傍晚沿着河堤慢慢走，光线一直在变。',
-  4: '这一天从早餐开始，到夜里的街道结束。',
-  9: '把这段时间攒下的照片一次放出来，大多是路过时随手拍的。',
-}
+// 配图档位对应前端网格，但每一组仍然是一次具体的拍摄：地点、正文与选图相互对应。
+const burstScenes = [
+  {
+    assets: ['ridge', 'skyline'],
+    place: '深圳 · 莲花山',
+    text: '同一天，山上和城里各拍了一张。',
+    flash: '山顶和山下的光完全是两种，隔了不到两小时。',
+  },
+  {
+    assets: ['mist', 'ridge', 'lake'],
+    place: '云南 · 西双版纳',
+    text: '等雾散等了半小时，最后三张都留下了。',
+    flash: '晨雾散得比想象中慢，等了半小时。',
+  },
+  {
+    assets: ['breakfast', 'skyline', 'night', 'portrait'],
+    place: null,
+    text: '从早餐拍到夜里，一天下来挑出四张。',
+    flash: '一天四张，从早餐到夜景。',
+  },
+  {
+    assets: ['ridge', 'night', 'pizza', 'lake', 'skyline', 'breakfast', 'portrait', 'mist'],
+    place: null,
+    text: '整理硬盘翻出来的，去年到今年陆陆续续拍的。',
+    flash: '整理硬盘，翻出去年到今年的一堆片子。',
+  },
+] as const
 const longFlashText =
   '把这两周做的事情梳理了一遍：先是把几个老接口的边界补齐，顺手把重复的判断抽成了共用函数；' +
   '然后是整理图片资源，统一换成更合适的尺寸，页面首屏明显轻了一些；最后花了小半天重新读自己半年前写的笔记，' +
@@ -222,14 +243,19 @@ async function ensureSceneAssets(
 async function seedImageBursts(
   em: EntityManager,
   progress: FixtureProgress,
-  urls: string[],
+  assets: Map<string, string>,
+  portrait: string,
   flashes: AdminFlashService,
   moments: MomentWriteService,
   date: (index: number) => Date,
 ) {
-  for (const [slot, count] of [2, 3, 4, 9].entries()) {
-    if (urls.length < count) continue
-    const images = urls.slice(0, count)
+  for (const [slot, scene] of burstScenes.entries()) {
+    // 九张一组需要再补一张人像，凑满铺满三行的边界。
+    const images = [...scene.assets.map((name) => assets.get(name)), ...(slot === 3 ? [portrait] : [])].filter(
+      (url): url is string => !!url,
+    )
+    const count = images.length
+    if (count < scene.assets.length) continue
     await ensureFixture(
       em,
       CORE_DATASET,
@@ -237,7 +263,7 @@ async function seedImageBursts(
       'flash',
       async () => {
         const saved = await flashes.save(null, {
-          content: burstTexts[count]!,
+          content: scene.flash,
           tags: ['生活'],
           images,
           type: 'memo',
@@ -256,13 +282,13 @@ async function seedImageBursts(
       'moment',
       async () => {
         const saved = await moments.save(null, {
-          content: burstTexts[count]!,
+          content: scene.text,
           status: 'published',
           topics: ['生活日常'],
           images,
           linkedArticleId: null,
           requestId: randomUUID(),
-          location: count === 9 ? '沿河步道' : null,
+          location: scene.place,
           isPinned: false,
         })
         await em.nativeUpdate(Moment, { id: saved.id }, { createdAt: date(slot), publishedAt: date(slot) })
@@ -300,7 +326,7 @@ async function seedImageBursts(
         content: longMomentText,
         status: 'published',
         topics: ['生活日常'],
-        images: [urls[0]!],
+        images: [portrait],
         linkedArticleId: null,
         requestId: randomUUID(),
         location: null,
@@ -316,22 +342,22 @@ async function seedImageBursts(
 const edgeArticles: readonly (readonly [string, string, string, number, boolean])[] = [
   [
     'plain',
-    '只有文字的一则短记',
-    '这篇没有配图，用来确认列表和详情在缺少封面时的排布。正文不长，标题也普通，是最常见的一种内容形态。',
+    '把提交信息写成将来查得到的样子',
+    '提交信息写给的是三个月后的自己。这篇没有配图，只有几条用下来确实有效的写法。',
     30,
     false,
   ],
   [
     'long-title',
-    '关于在内容整理过程中如何安排标题长度与摘要信息的一些具体做法和注意事项',
-    '标题很长时，列表卡片、归档行和详情页的处理方式各不相同，需要分别确认换行、截断与悬停提示的表现。',
+    '零成本用 GitHub Actions 跑完构建、测试与部署的完整配置记录',
+    '从零开始配一条流水线：触发条件、缓存策略、测试并行、产物上传，以及几个踩过的坑。标题很长，正好用来确认列表和详情页的换行。',
     31,
     true,
   ],
   [
     'same-day',
-    '同一天写下的第二则',
-    '与另一篇发布在同一天，用来确认按日期分组时同组内的排序是否稳定，以及归档页的日期标题会不会重复出现。',
+    '同一天又写了一篇：关于提交粒度',
+    '上一篇写完想起还有一半没说，索性同一天再写一篇，顺便确认归档按日期分组时同组内的排序。',
     30,
     false,
   ],
@@ -601,7 +627,7 @@ export async function seedCoreFixtures(
       )
   }
   await seedConversation(em, publishedPosts, site, progress)
-  await seedImageBursts(em, progress, [image, ...assets.values()], flashes, moments, date)
+  await seedImageBursts(em, progress, assets, image, flashes, moments, date)
   await seedPostEdges(em, posts, image, progress, date)
   // 未被任何内容引用的媒体：媒体库需要可见的孤立资产，清理计划也要有可移除的代表。
   await ensureFixture(

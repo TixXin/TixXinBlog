@@ -46,12 +46,12 @@ const questions = [
 const names = ['林间', '许宁', '小南', '星野', '远山', '海风']
 // 通知中心按来源区分留言、文章评论、动态评论与任务故障；留言之外的互动此前没有样本。
 const articleNotes: [string, string][] = [
-  ['远山', '这一节的顺序我照着做了一遍，确实比原来清楚。'],
-  ['海风', '想问下后面还会补充相关的关联阅读吗？'],
+  ['远山', '插槽约定这块能展开讲讲吗？尤其是右栏那部分。'],
+  ['海风', '我也在做主题切换，请问降级逻辑是写在主题里还是页面里？'],
 ]
 const momentNotes: [string, string][] = [
-  ['林间', '这组照片的光线很舒服，傍晚拍的吗？'],
-  ['星野', '同一个地方我春天去过一次，景色完全不同。'],
+  ['林间', '期待这篇，我上次改主题改到一半放弃了。'],
+  ['星野', '插槽这个思路可以用在别的地方吗？'],
 ]
 export const CONTENT_NOTIFICATION_COUNT = 2 + (articleNotes.length + momentNotes.length) * 3
 const visitorOf = (name: string) => createHash('sha256').update(`${NOTIFICATION_DATASET}/${name}`).digest('hex')
@@ -68,10 +68,10 @@ async function seedContentNotifications(em: EntityManager, progress: FixtureProg
     'post',
     async () => {
       const input = Object.assign(new SavePostDto(), {
-        title: '把关联阅读整理清楚',
-        summary: '一篇用于串联相关内容的说明，顺带记录通知在各个来源之间的区别。',
+        title: '主题引擎重写：换主题不再需要动页面结构',
+        summary: '把主题相关的判断从页面里收回到主题自己手上，顺带记录改完之后的几处取舍。',
         contentRaw:
-          '# 把关联阅读整理清楚\n\n相关内容的入口放在正文结尾，读者看完一节之后可以顺着继续往下读。\n\n整理时先确认每条关联确实指向还在公开的内容，再决定展示顺序。',
+          '# 主题引擎重写\n\n以前换主题要同时改页面和组件，判断散在两头。这次把插槽约定定死，页面只管内容，主题只管呈现。\n\n改完之后右栏在窄屏下的降级逻辑收敛到一处，三套主题共用同一份内容也不再需要各自兜底。',
         folder: '前端开发',
         category: 'tech',
         tags: ['技术分享'],
@@ -88,13 +88,13 @@ async function seedContentNotifications(em: EntityManager, progress: FixtureProg
     'moment',
     async () => {
       const saved = await moments.save(null, {
-        content: '傍晚从河堤走回来，顺手拍了几张。',
+        content: '主题引擎重写完了，换主题不用再动页面结构。',
         status: 'published',
         topics: ['生活日常'],
         images: [],
         linkedArticleId: null,
         requestId: randomUUID(),
-        location: '河堤步道',
+        location: null,
         isPinned: false,
       })
       return saved.id
