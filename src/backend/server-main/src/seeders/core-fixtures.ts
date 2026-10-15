@@ -34,23 +34,69 @@ const commentStatuses = ['published', 'published', 'pending', 'hidden'] as const
 const likers = ['晨曦', '小林'] as const
 export const CONVERSATION_COUNT = 20 + 4 + 1 + 1 + 6
 const visitor = (name: string) => createHash('sha256').update(`development/core-v1/${name}`).digest('hex')
-const threadVoices = ['远山', '清和', '松间', '叙白', '南屿', '照野']
-const threadRemarks = [
-  '按这个顺序走了一遍，确实比以前顺手。',
-  '中间那段取舍写得很实在，不是只讲好的一面。',
-  '补充一点：我这边是先确认现象再缩小范围。',
-  '收藏了，等下次遇到同样的情况再回来看。',
-  '最后一条结论对我帮助最大。',
-  '想问下数据量更大的时候还适用吗。',
-  '同样的问题我也遇到过，当时绕了不少路。',
-  '看完顺手把自己的笔记整理了一遍。',
-  '这里的判断依据能再展开讲讲吗。',
-  '谢谢分享，照着做之后省了很多时间。',
+// 评论针对所在文章的具体内容，并接出访客提问与博主回复的对话链。
+const threadNotes: readonly (readonly [string, string])[] = [
+  ['远山', '插槽约定这部分能展开说说吗？我现在三套主题各写了一份兜底。'],
+  ['清和', '右栏降级那段很有共鸣，我们是用媒体查询硬切的，窄屏下经常闪一下。'],
+  ['松间', '升级到 4 之后 layouts 的变化确实没在迁移指南里写清楚。'],
+  ['叙白', '想问下页面和主题的边界具体怎么划的，比如面包屑算谁的。'],
+  ['南屿', '收藏了，正好下周要做同样的事。'],
+  ['照野', '我们也是三套主题，最后放弃共用插槽各写各的，维护成本确实高。'],
+  ['远山', '「以前含糊的地方必须写死」这句说到点子上了。'],
+  ['清和', '插槽约定是写在类型里还是只写在文档里？'],
+  ['松间', '一个下午就升完了？我们光是依赖冲突就搞了两天。'],
+  ['叙白', '右栏那块能说下具体的降级顺序吗？'],
+  ['南屿', '我是用 provide/inject 传主题能力的，不知道有没有坑。'],
+  ['照野', '这种重构最好挑没有新需求的时候做，不然两头跑。'],
+  ['远山', '看完把自己的布局约定也整理了一遍，发现有三处重复。'],
+  ['清和', '迁移的时候有没有遇到 SSR 水合不一致？'],
+  ['松间', '写得很清楚，尤其是「哪些由页面决定」那段。'],
+  ['叙白', '我们这边主题是运行时切换的，不知道这个方案能不能支持。'],
+  ['南屿', '插槽名字有统一规范吗，还是各主题自己约定。'],
+  ['照野', '顺带问一句，三套主题的 CSS 变量是怎么组织的？'],
+  ['远山', '之前一直纠结该把判断放哪，这篇帮了大忙。'],
+  ['清和', '期待后续讲主题变量的部分。'],
 ]
-const longRemark =
-  '读完之后又回头看了一遍中间的排查过程。我自己遇到类似情况时，习惯先把现象和时间点记下来，再逐个排除可能的原因，' +
-  '最容易出错的地方是过早认定某个结论，然后把后面的证据都往这个结论上靠。这篇里把走过的弯路也写出来了，对照着看很有帮助，' +
-  '尤其是最后关于什么时候应该停下来重新梳理的那段。'
+// 回复挂在对应主楼下，其中博主回答两条，另两条是访客补充与追问。
+const replyNotes: readonly (readonly [number, string, boolean, string])[] = [
+  [0, '插槽约定写在类型里，页面只声明需要哪些区域，主题决定怎么填；文档只记约定的理由。', true, ''],
+  [5, '主题少的时候各写各的更快，超过三套之后共用的收益才显出来。', true, ''],
+  [10, '同问，我这边的顺序是右栏收进底部折叠，再窄就整个隐藏。', false, '叙白'],
+  [15, '运行时切换是支持的，主题只负责呈现，内容侧不需要重新取数。', true, ''],
+]
+const deepNote: readonly [string, string] = [
+  '远山',
+  '明白了。那如果某个主题不提供这个区域呢，是降级到默认还是直接报错？',
+]
+const longNote: readonly [string, string] = [
+  '松间',
+  '照着这个思路把我们的三套主题梳理了一遍。最费劲的不是写插槽，而是先把「这块内容到底归谁管」问清楚：' +
+    '面包屑、右栏、页脚这三处原先页面和主题都在管，改完之后才发现以前的闪烁就是两边同时写造成的。' +
+    '另外提醒一点，收敛降级逻辑之后记得回头看窄屏，我们漏了一处，右栏折叠后底部多出一段空白，过了两周才有人反馈。',
+]
+const spreadNotes: readonly (readonly [string, string, string, string, string])[] = [
+  [
+    '南屿',
+    '彩田路那段上坡确实折磨，我一般从梅林关那边绕过去。',
+    '照野',
+    '23 公里不错了，我上次 15 公里就歇了三次。',
+    'pending',
+  ],
+  [
+    '清和',
+    '复合索引里排序字段放第几位很关键，顺序错了照样走顺序扫描。',
+    '松间',
+    '我们遇到过类似的，最后是加覆盖索引解决的。',
+    'published',
+  ],
+  [
+    '叙白',
+    '「发散式变化」这个词我第一次读完全没懂，后来被坑过才明白。',
+    '远山',
+    '这本我读了三遍，每次在意的地方都不一样。',
+    'published',
+  ],
+]
 /** 公开评论需要足够的条数分页，并覆盖多层回复、审核状态与跨文章分布。 */
 async function seedConversation(
   em: EntityManager,
@@ -68,6 +114,7 @@ async function seedConversation(
     status: Comment['status'],
     parentId: string | null,
     offsetHours: number,
+    owned = false,
   ) =>
     ensureFixture(
       em,
@@ -83,9 +130,13 @@ async function seedConversation(
           post,
           parent: parent ?? undefined,
           depth: parent ? parent.depth + 1 : 0,
-          authorSnapshot: { name: author, avatar: site.values.avatar, visitorIdHash: visitor(author) },
+          authorSnapshot: {
+            name: owned ? site.values.ownerName : author,
+            avatar: site.values.avatar,
+            visitorIdHash: visitor(owned ? 'owner' : author),
+          },
           content,
-          isOwner: false,
+          isOwner: owned,
           status,
           likes: 0,
           createdAt: new Date(Date.now() - offsetHours * 3600000),
@@ -98,60 +149,46 @@ async function seedConversation(
     )
   const primary = publishedPosts[0]!
   const roots: (string | null)[] = []
-  for (let index = 0; index < 20; index++)
+  for (const [index, [author, content]] of threadNotes.entries())
     roots.push(
       await create(
         `thread-${index}`,
         primary,
-        threadVoices[index % threadVoices.length]!,
-        threadRemarks[index % threadRemarks.length]!,
+        author,
+        content,
         index === 5 ? 'pending' : index === 11 ? 'hidden' : 'published',
         null,
         48 - index,
       ),
     )
   const replies: (string | null)[] = []
-  for (const [position, rootIndex] of [0, 5, 10, 15].entries())
+  for (const [position, [rootIndex, content, owned, author]] of replyNotes.entries())
     replies.push(
       roots[rootIndex]
         ? await create(
             `reply-${position}`,
             primary,
-            threadVoices[(position + 2) % threadVoices.length]!,
-            threadRemarks[(position + 4) % threadRemarks.length]!,
+            author,
+            content,
             'published',
             roots[rootIndex],
             24 - position,
+            owned,
           )
         : null,
     )
-  if (replies[0])
-    await create(
-      'deep-0',
-      primary,
-      threadVoices[1]!,
-      '接着上面的回复补一句：这一步也可以放到最后再做。',
-      'published',
-      replies[0],
-      12,
-    )
-  await create('long-0', primary, threadVoices[3]!, longRemark, 'published', null, 6)
+  // 提问者在博主回复之后继续追问，形成三层对话。
+  if (replies[0]) await create('deep-0', primary, deepNote[0], deepNote[1], 'published', replies[0], 12)
+  await create('long-0', primary, longNote[0], longNote[1], 'published', null, 6)
   for (const [position, postId] of publishedPosts.slice(1, 4).entries()) {
-    await create(
-      `spread-${position}-0`,
-      postId,
-      threadVoices[position]!,
-      threadRemarks[position * 2]!,
-      'published',
-      null,
-      36 - position,
-    )
+    const [firstAuthor, firstText, secondAuthor, secondText, secondStatus] = spreadNotes[position]!
+    await create(`spread-${position}-0`, postId, firstAuthor, firstText, 'published', null, 36 - position)
     await create(
       `spread-${position}-1`,
       postId,
-      threadVoices[position + 3]!,
-      threadRemarks[position * 2 + 1]!,
-      position === 2 ? 'pending' : 'published',
+      secondAuthor,
+      secondText,
+      secondStatus as Comment['status'],
       null,
       30 - position,
     )
