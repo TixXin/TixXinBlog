@@ -21,6 +21,11 @@ export function subscriptionQuery(query: Record<string, unknown>): SubscriptionQ
     pageSize: 12,
   }
 }
+// 公开预算页始终使用单一币种；后台仍可使用不限定币种的通用查询。
+export function publicSubscriptionQuery(query: Record<string, unknown>): SubscriptionQuery {
+  const parsed = subscriptionQuery(query)
+  return { ...parsed, currency: parsed.currency ?? 'USD' }
+}
 export function filterSubscriptions<T extends SubscriptionItem>(items: T[], query: SubscriptionQuery): T[] {
   const keyword = query.q?.toLocaleLowerCase('zh-CN')
   return items

@@ -32,7 +32,7 @@ beforeEach(() => {
   mocks.stats.mockReset().mockResolvedValue(stat)
 })
 afterEach(() => wrappers.splice(0).forEach((wrapper) => wrapper.unmount()))
-async function setup() {
+async function setup(route = '/subscriptions') {
   let state!: Awaited<ReturnType<typeof useSubscriptions>>
   wrappers.push(
     await mountSuspended(
@@ -43,11 +43,44 @@ async function setup() {
           return () => h('div')
         },
       }),
-      { route: '/subscriptions' },
+      { route },
     ),
   )
   return state
 }
+it.each(['/subscriptions', '/subscriptions?currency=BTC', '/subscriptions?currency='])(
+  '%s 默认向列表和全量统计传递 USD',
+  async (route) => {
+    const state = await setup(route)
+    expect(state.query.value.currency).toBe('USD')
+    expect(mocks.list.mock.calls.at(-1)![0]).toMatchObject({ currency: 'USD', page: 1, pageSize: 12 })
+    expect(mocks.stats.mock.calls.at(-1)![0]).toEqual(mocks.list.mock.calls.at(-1)![0])
+    expect(state.stats.value?.currencies.map((entry) => entry.currency)).toEqual(['USD'])
+  },
+)
+it('显式 JPY 分享 URL 同时恢复列表与预算币种，保留无小数单位金额', async () => {
+  const yenItem = { ...item, currency: 'JPY' as const, amount: 1000 }
+  mocks.list.mockResolvedValue({ items: [yenItem], total: 1, page: 1, pageSize: 12 })
+  mocks.stats.mockResolvedValue(statistics([yenItem], '2026-10-13'))
+  const state = await setup('/subscriptions?currency=JPY')
+  expect(state.query.value.currency).toBe('JPY')
+  expect(mocks.list.mock.calls.at(-1)![0]).toEqual(mocks.stats.mock.calls.at(-1)![0])
+  expect(state.items.value[0]).toMatchObject({ currency: 'JPY', amount: 1000 })
+  expect(state.stats.value?.currencies[0]).toMatchObject({ currency: 'JPY', annualAmount: 12000 })
+})
+it('换币种保留其它过滤条件并回到第一页，后续请求仍保持相同口径', async () => {
+  const state = await setup('/subscriptions?currency=USD&page=3&category=ai&subscriptionStatus=active&q=creative')
+  await state.changeQuery({ currency: 'JPY' })
+  await vi.waitFor(() => expect(mocks.list.mock.calls.at(-1)![0].currency).toBe('JPY'))
+  expect(state.query.value).toMatchObject({
+    currency: 'JPY',
+    page: 1,
+    category: 'ai',
+    subscriptionStatus: 'active',
+    q: 'creative',
+  })
+  expect(mocks.stats.mock.calls.at(-1)![0]).toEqual(mocks.list.mock.calls.at(-1)![0])
+})
 it('统计失败不接纳只有列表的新结果，重试同时恢复全量统计', async () => {
   const state = await setup()
   mocks.list.mockResolvedValueOnce({ items: [{ ...item, id: 2 }], total: 20, page: 1, pageSize: 12 })

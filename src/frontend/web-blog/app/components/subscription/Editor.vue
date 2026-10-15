@@ -1,6 +1,6 @@
 <!-- @file Editor.vue @description 后台和前台内联共用订阅编辑工作流，复用版本冲突与恢复副本机制 -->
 <template>
-  <form class="subscription-ui subscription-stack" @submit.prevent="save(editor.form.status)">
+  <form ref="editorForm" class="subscription-ui subscription-stack" @submit.prevent="save(editor.form.status)">
     <header class="subscription-row">
       <h1 v-if="!inline">{{ editor.id.value ? '编辑订阅' : '新建订阅' }}</h1>
       <h2 v-else>{{ editor.id.value ? '编辑平台订阅' : '记录平台订阅' }}</h2>
@@ -114,8 +114,31 @@ const editor = useAdminSubscriptionEditor(props.id, { inline: props.inline }),
   context = useState<string>('page-content-context', () => '')
 const fetchingIcon = ref(false),
   iconMessage = ref(''),
-  faviconUrl = ref<string | null>(null)
-let alive = true
+  faviconUrl = ref<string | null>(null),
+  editorForm = ref<HTMLFormElement | null>(null)
+let alive = true,
+  focusRequested = false
+async function focusWhenReady() {
+  await nextTick()
+  if (!alive || !focusRequested) return
+  if (editor.ownershipLost.value) {
+    focusRequested = false
+    return
+  }
+  if (!editor.ready.value || editor.loading.value || editor.saving.value) return
+  const input = editorForm.value?.querySelector<HTMLInputElement>('input[aria-label="服务名称"]')
+  if (!input || input.matches(':disabled')) return
+  focusRequested = false
+  input.focus({ preventScroll: true })
+}
+function focusName() {
+  focusRequested = true
+  void focusWhenReady()
+}
+// 仅响应页面主动发起的编辑意图，详情异步就绪前不聚焦禁用字段。
+watch([editor.ready, editor.loading, editor.saving, editor.ownershipLost], () => void focusWhenReady(), {
+  flush: 'post',
+})
 async function fetchIcon() {
   const url = editor.form.url,
     actor = auth.currentUser.value?.id,
@@ -143,9 +166,10 @@ const canLeave = editor.canLeave
 function cancel() {
   if (canLeave()) emit('cancel')
 }
-defineExpose({ canLeave, dirty: editor.dirty })
+defineExpose({ canLeave, dirty: editor.dirty, focusName })
 onScopeDispose(() => {
   alive = false
+  focusRequested = false
 })
 </script>
 <style scoped lang="scss">

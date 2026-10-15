@@ -1,7 +1,7 @@
 <!-- @file Filters.vue @description 博主和访客共享筛选展示组件，只发出查询变更 -->
 <template>
   <div class="subscription-ui subscription-grid">
-    <label
+    <label v-if="!compact"
       >搜索订阅<input
         :value="query.q ?? ''"
         type="search"
@@ -20,7 +20,7 @@
         <option value="">全部分类</option>
         <option v-for="(label, key) in categoryLabels" :key="key" :value="key">{{ label }}</option>
       </select></label
-    ><label
+    ><label v-if="!compact"
       >币种<select
         :value="query.currency ?? ''"
         aria-label="筛选订阅币种"
@@ -57,7 +57,7 @@
 <script setup lang="ts">
 import { categoryLabels, stateLabels, currencyOptions } from '~/features/subscription/types'
 import type { SubscriptionQuery } from '~/features/subscription/types'
-defineProps<{ query: SubscriptionQuery; disabled?: boolean }>()
+defineProps<{ query: SubscriptionQuery; disabled?: boolean; compact?: boolean }>()
 const emit = defineEmits<{ change: [value: Record<string, string | number | undefined>] }>()
 function change(key: string, event: Event) {
   emit('change', { [key]: (event.target as HTMLInputElement).value || undefined })
