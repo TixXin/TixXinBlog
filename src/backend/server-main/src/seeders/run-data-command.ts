@@ -4,6 +4,30 @@ import { DATA_DOMAINS } from './development-data-catalog'
 
 async function main() {
   const [action, ...args] = process.argv.slice(2)
+  if (action === 'list') {
+    if (args.length) throw new Error('用法：db:dev list；目录只读，不接受参数')
+    const { DEV_DATABASE_ACTIONS } = await import('./database-dev')
+    const { DEVELOPMENT_DATASETS } = await import('./development-datasets')
+    process.stdout.write(
+      JSON.stringify(
+        {
+          actions: [...DEV_DATABASE_ACTIONS],
+          writeActions: DEV_DATABASE_ACTIONS.filter((item) => item !== 'status'),
+          datasets: DEVELOPMENT_DATASETS.map(({ id, count, scope }) => ({ id, count, scope })),
+          domains: DATA_DOMAINS.map(({ id, entry, admin, dataset, scenarios }) => ({
+            id,
+            entry,
+            admin,
+            dataset,
+            scenarios,
+          })),
+        },
+        null,
+        2,
+      ) + '\n',
+    )
+    return
+  }
   if (action === 'prepare-profile') {
     const { preparePersonalProfile } = await import('./prepare-personal-profile')
     process.stdout.write(JSON.stringify(await preparePersonalProfile(args), null, 2) + '\n')

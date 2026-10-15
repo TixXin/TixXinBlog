@@ -17,7 +17,7 @@ import { mockMoments } from '../../../../frontend/web-blog/app/features/moment/m
 import { createDevelopmentBackup } from './development-backup'
 import type { DevelopmentBackupOptions } from './development-backup'
 
-const actions = [
+export const DEV_DATABASE_ACTIONS = [
   'status',
   'seed-moments',
   'normalize-samples',
@@ -26,6 +26,7 @@ const actions = [
   'clear-content',
   'reset',
 ] as const
+const actions = DEV_DATABASE_ACTIONS
 type Action = (typeof actions)[number]
 class DevDatabaseError extends Error {}
 const seedId = (id: string) => `dev-moment-v1-${id}`
