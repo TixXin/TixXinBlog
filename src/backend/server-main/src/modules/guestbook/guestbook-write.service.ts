@@ -40,7 +40,7 @@ export class GuestbookWriteService {
     body: CreateGuestbookDto | GuestbookBodyDto,
     visitor: string,
     adminId?: string,
-    // 访客提交时由控制器从请求头得出，仅用于展示；博主留言不记录
+    // 由控制器从请求头得出，仅用于展示；访客与博主留言都记录
     client: { browser?: string; region?: string } = {},
   ) {
     const identity = adminId ? `admin:${adminId}` : visitor
@@ -71,8 +71,8 @@ export class GuestbookWriteService {
         replyTo: parent,
         requestId: body.requestId,
         requestHash: hash,
-        browser: adminId ? null : client.browser || null,
-        region: adminId ? null : client.region || null,
+        browser: client.browser || null,
+        region: client.region || null,
       })
       await em.flush()
       await synchronizeMediaReferences(em, `guestbook:${note.id}`, 'guestbook', [avatar], { guestbookMessage: note })

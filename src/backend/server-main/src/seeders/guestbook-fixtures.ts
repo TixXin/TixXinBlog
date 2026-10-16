@@ -43,7 +43,7 @@ function modernBrowser(label: string | undefined) {
   return 'Safari 26'
 }
 /** 早于浏览器与地区字段创建、且未被编辑过的留言补上这两个展示字段，并重新登记指纹 */
-async function backfillClientContext(em: EntityManager, id: number, browser: string, region: string) {
+export async function backfillClientContext(em: EntityManager, id: number, browser: string, region: string) {
   const fixture = await em.findOne(DevelopmentFixture, { kind: 'guestbook', resourceId: String(id) })
   const row = await fixtureRow(em, 'guestbook', String(id))
   if (!fixture || !row || row.deleted_at || row.browser !== null || fixtureHash(row) !== fixture.snapshotHash) return
@@ -52,6 +52,8 @@ async function backfillClientContext(em: EntityManager, id: number, browser: str
   if (updated) fixture.snapshotHash = fixtureHash(updated)
   await em.flush()
 }
+// 博主回复的浏览器与地区按人设固定，与访客一样展示在气泡下方。
+export const OWNER_CLIENT_CONTEXT = { browser: 'Edge 141', region: '广东深圳' }
 const visitor = (name: string) => createHash('sha256').update(`development/guestbook-v1/${name}`).digest('hex')
 export async function seedGuestbookFixtures(
   em: EntityManager,
@@ -111,7 +113,9 @@ export async function seedGuestbookFixtures(
           },
           visitor(source.author),
           source.isOwner ? 'fixture-owner' : undefined,
-          source.isOwner ? {} : { browser: modernBrowser(source.browser), region: source.region ?? '' },
+          source.isOwner
+            ? OWNER_CLIENT_CONTEXT
+            : { browser: modernBrowser(source.browser), region: source.region ?? '' },
         )
         const actual = await em.findOneOrFail(GuestbookMessage, { id: note.id })
         if (actual.status !== status) await service.update(note.id, { revision: actual.revision, status })
@@ -126,9 +130,14 @@ export async function seedGuestbookFixtures(
     )
     if (!id) continue
     ids.set(source.id, Number(id))
-    if (!source.isOwner) await backfillClientContext(em, Number(id), modernBrowser(source.browser), source.region ?? '')
+    await backfillClientContext(
+      em,
+      Number(id),
+      source.isOwner ? OWNER_CLIENT_CONTEXT.browser : modernBrowser(source.browser),
+      source.isOwner ? OWNER_CLIENT_CONTEXT.region : (source.region ?? ''),
+    )
   }
-  await ensureFixture(
+  const welcomeId = await ensureFixture(
     em,
     GUESTBOOK_DATASET,
     'welcome',
@@ -138,6 +147,7 @@ export async function seedGuestbookFixtures(
         { requestId: randomUUID(), content: mockPinnedMessage.content },
         '',
         'fixture-owner',
+        OWNER_CLIENT_CONTEXT,
       )
       if (!(await em.count(GuestbookMessage, { isPinned: true, status: 'published', deletedAt: null }))) {
         const current = await em.findOneOrFail(GuestbookMessage, { id: note.id })
@@ -147,6 +157,8 @@ export async function seedGuestbookFixtures(
     },
     progress,
   )
+  if (welcomeId)
+    await backfillClientContext(em, Number(welcomeId), OWNER_CLIENT_CONTEXT.browser, OWNER_CLIENT_CONTEXT.region)
   for (const [index, source] of messages.slice(0, 4).entries()) {
     for (const reaction of source.reactions ?? []) {
       if (!GUESTBOOK_REACTIONS.includes(reaction.emoji as GuestbookReactionKind)) continue

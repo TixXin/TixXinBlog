@@ -111,7 +111,7 @@
 
 正文最多 500 字符，昵称最多 32 字符；状态为 `published/pending/hidden`。公开游标包含创建时间、编号及筛选指纹，翻页期间的新留言不会改变向旧记录翻页的边界。后台使用页码分页。
 
-回复只指向公开留言；父留言后来隐藏或删除时，公开回复保留并返回 `replyUnavailable`，移除引用正文与作者。公开置顶最多一条，切换置顶会更新受影响版本。访客留言记录 `browser`（由 User-Agent 解析的“家族 主版本”）与 `region`（仅采信可信代理注入的 `CLIENT_REGION_HEADER`，默认 `x-client-region`），只用于展示，服务端不做 IP 地理查询；博主留言与旧记录为空。没有在线或已读字段。源码见[guestbook](../src/backend/server-main/src/modules/guestbook/)。
+回复只指向公开留言；父留言后来隐藏或删除时，公开回复保留并返回 `replyUnavailable`，移除引用正文与作者。公开置顶最多一条，切换置顶会更新受影响版本。访客留言记录 `browser`（由 User-Agent 解析的“家族 主版本”）与 `region`（仅采信可信代理注入的 `CLIENT_REGION_HEADER`，默认 `x-client-region`），只用于展示，服务端不做 IP 地理查询；博主回复同样记录，早于该字段的旧记录为空。没有在线或已读字段。源码见[guestbook](../src/backend/server-main/src/modules/guestbook/)。
 
 ## 图库、项目与友链
 
