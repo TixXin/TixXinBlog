@@ -8,7 +8,17 @@
  * 后端响应契约见 docs/api.md。
  */
 
-import type { ArticleDetail, CommentItem, PostItem, PostMetadata, PostPage, RelatedPost, TocItem } from './types'
+import type {
+  ArticleDetail,
+  CommentItem,
+  PostItem,
+  PostSummary,
+  PostArchivePage,
+  PostArchiveQuery,
+  PostPage,
+  RelatedPost,
+  TocItem,
+} from './types'
 import type { CommentDraft, CommentList } from './commentController'
 import { ensureVisitorId } from '~/utils/visitorId'
 
@@ -66,9 +76,29 @@ export async function fetchPostPage(
   return { ...data, items: data.items.map(normalizePostItem) }
 }
 
-export async function fetchPostMetadata(baseUrl: string): Promise<PostMetadata> {
+export async function fetchPostMetadata(baseUrl: string, signal?: AbortSignal): Promise<PostSummary> {
   return unwrap(
-    await $fetch<ApiEnvelope<PostMetadata>>(`${requireBaseUrl(baseUrl)}/posts/metadata`, { timeout: 10000, retry: 0 }),
+    await $fetch<ApiEnvelope<PostSummary>>(`${requireBaseUrl(baseUrl)}/posts/metadata`, {
+      query: { includeArchive: false },
+      signal,
+      timeout: 10000,
+      retry: 0,
+    }),
+  )
+}
+
+export async function fetchPostArchive(
+  baseUrl: string,
+  query: PostArchiveQuery,
+  signal?: AbortSignal,
+): Promise<PostArchivePage> {
+  return unwrap(
+    await $fetch<ApiEnvelope<PostArchivePage>>(`${requireBaseUrl(baseUrl)}/posts/archive`, {
+      query,
+      signal,
+      timeout: 10000,
+      retry: 0,
+    }),
   )
 }
 
