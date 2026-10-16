@@ -11,9 +11,10 @@ interface RenderEnvironment {
   title?: string
 }
 const parser = new MarkdownIt({ html: false, linkify: true })
+type Token = ReturnType<MarkdownIt['parse']>[number]
 const normalize = (value: string) => value.replace(/\s+/g, ' ').trim()
 /** 正文第一个块是与文章标题相同的一级标题时视为重复标题，页面已在头部展示 */
-function isDuplicateTitle(tokens: MarkdownIt.Token[], index: number, title?: string) {
+function isDuplicateTitle(tokens: Token[], index: number, title?: string) {
   if (!title || index !== 0 || tokens[index]?.tag !== 'h1') return false
   return normalize(tokens[index + 1]?.content ?? '') === normalize(title)
 }
