@@ -94,6 +94,8 @@ import type { FlashNote } from '~/features/flash/types'
 definePageMeta({ rightSidebar: false })
 
 const route = useRoute()
+// 结构化数据里的作者与发布方取自博主维护的站点资料，不在页面内写死
+const { settings: siteSettings } = useSiteSettings()
 
 const id = computed(() => String(route.params.id ?? ''))
 
@@ -158,7 +160,7 @@ useSeoMeta({
   ogTitle: () => `${pageTitle.value} - TixXin 闪念`,
   ogDescription: () => excerpt.value,
   ogType: 'article',
-  ogImage: () => note.value?.images?.[0] ?? '/avatar-photo.webp',
+  ogImage: () => note.value?.images?.[0] ?? siteSettings.value.avatar,
   robots: localOnly ? 'noindex, follow' : 'index, follow',
   twitterCard: 'summary',
   twitterTitle: () => `${pageTitle.value} - TixXin 闪念`,
@@ -179,8 +181,8 @@ useHead({
               datePublished: note.value.createdAt,
               dateModified: note.value.updatedAt,
               keywords: note.value.tags.join(', '),
-              author: { '@type': 'Person', name: 'TixXin' },
-              publisher: { '@type': 'Organization', name: 'TixXin Blog' },
+              author: { '@type': 'Person', name: siteSettings.value.ownerName || siteSettings.value.name },
+              publisher: { '@type': 'Organization', name: siteSettings.value.name },
             }).replace(/</g, String.fromCharCode(92) + 'u003c')
           : '',
       ),

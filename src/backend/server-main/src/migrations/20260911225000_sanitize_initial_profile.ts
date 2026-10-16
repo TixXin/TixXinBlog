@@ -3,6 +3,7 @@ import { Migration } from '@mikro-orm/migrations'
 export class Migration20260911225000_sanitize_initial_profile extends Migration {
   override async up(): Promise<void> {
     // 固定历史默认值，不依赖后续可变的业务常量；about是后续无损增加的空白字段。
+    // 本迁移只对历史库生效：新建库的初始资料已经是中性值，下面的WHERE匹配0行，整段空转且不报错。
     const initial = `{"name":"TixXin Blog","description":"TixXin 的个人博客，分享技术文章、项目经验与生活随笔","ownerName":"TixXin","ownerTitle":"前端开发工程师，热爱开源与技术分享","avatar":"/avatar-photo.webp","avatarAlt":"TixXin 的头像","seoTitle":"","seoDescription":"","announcement":"","announcementUpdatedAt":"","socials":[{"icon":"lucide:github","label":"GitHub","href":"https://github.com/TixXin"},{"icon":"lucide:twitter","label":"Twitter","href":"https://twitter.com/TixXin"},{"icon":"lucide:mail","label":"Email","href":"mailto:hi@tix.xin"}]}`
     this.addSql(`with eligible as (
       select s.id, s."values" || '{"ownerName":"tixxin","ownerTitle":"","avatar":"/avatar.svg","avatarAlt":"博主头像","socials":[],"about":{"visible":false,"introduction":"","sections":[]}}'::jsonb as safe_values

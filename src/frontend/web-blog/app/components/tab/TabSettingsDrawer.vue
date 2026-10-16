@@ -797,7 +797,7 @@
                 <span class="tsd-row__value">TixXin</span>
               </div>
               <p class="tsd-about-text">
-                标签页是 TixXin Blog 的一个实验功能，灵感来自浏览器新标签页管理工具。
+                标签页是本站的一个实验功能，灵感来自浏览器新标签页管理工具。
                 数据保存在当前浏览器，暂不提供云同步。导出文件可用于备份和手动迁移。
               </p>
             </section>

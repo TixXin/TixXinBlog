@@ -135,7 +135,7 @@ function selectYear(event: Event) {
 useSeoMeta({
   title: '归档',
   description: '按时间线回顾全部文章，浏览历年技术沉淀与生活随笔',
-  ogTitle: '归档 - TixXin Blog',
+  ogTitle: '归档',
   ogDescription: '按时间线回顾全部文章，浏览历年技术沉淀与生活随笔',
 })
 

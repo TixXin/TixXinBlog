@@ -954,7 +954,7 @@ test('站点资料保存失败保留、前台与 feed 同步、配置冲突和�
 
   await login(page)
   await page.goto('/admin/site')
-  await expect(page.getByRole('textbox', { name: '站点名称', exact: true })).toHaveValue('TixXin Blog')
+  await expect(page.getByRole('textbox', { name: '站点名称', exact: true })).toHaveValue('My Blog')
   await page.getByRole('textbox', { name: '站点名称', exact: true }).fill('E2E 可维护站点')
   await page.getByRole('textbox', { name: '站点简介', exact: true }).fill('E2E 真实简介 & 内容')
   await page.getByRole('textbox', { name: '博主名称', exact: true }).fill('E2E 博主')
@@ -1023,13 +1023,13 @@ test('站点资料保存失败保留、前台与 feed 同步、配置冲突和�
     target: page.getByRole('region', { name: '保存后的公开资料预览', exact: true }),
   })
   await page.getByRole('button', { name: /^查看版本 0 ·/ }).click()
-  await expect(page.getByRole('region', { name: '历史版本 0 预览', exact: true })).toContainText('TixXin Blog')
+  await expect(page.getByRole('region', { name: '历史版本 0 预览', exact: true })).toContainText('My Blog')
   page.once('dialog', (dialog) => dialog.accept())
   await page.getByRole('button', { name: '恢复此版本到服务器', exact: true }).click()
-  await expect(page.getByRole('textbox', { name: '站点名称', exact: true })).toHaveValue('TixXin Blog')
+  await expect(page.getByRole('textbox', { name: '站点名称', exact: true })).toHaveValue('My Blog')
   await page.goto('/')
   await expect(page.getByRole('complementary', { name: '站点公告', exact: true })).toHaveCount(0)
-  await expect(page).toHaveTitle('TixXin Blog')
+  await expect(page).toHaveTitle('My Blog')
 })
 
 test('跨标签页登录恢复、撤销其他设备和当前会话退出保持真实权限边界', async ({ page, browser, request }, testInfo) => {

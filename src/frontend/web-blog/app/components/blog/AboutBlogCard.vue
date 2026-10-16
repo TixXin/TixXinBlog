@@ -15,7 +15,7 @@
     </div>
 
     <div class="about-blog__content">
-      <p>欢迎来到 TixXin Blog！这是一个基于 Nuxt 4 + Vue 3 构建的现代化博客。</p>
+      <p>欢迎来到 {{ siteName }}！这是一个基于 Nuxt 4 + Vue 3 构建的现代化博客。</p>
       <p>
         本站采用了自研的主题引擎
         <code>@tixxin/nuxt-theme-engine</code
@@ -35,6 +35,11 @@
     </div>
   </div>
 </template>
+
+<script setup lang="ts">
+// 站点名取自博主维护的站点资料，不在组件内写死
+const { siteName } = useSiteInfo()
+</script>
 
 <style lang="scss" scoped>
 .about-blog {

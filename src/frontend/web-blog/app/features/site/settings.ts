@@ -25,10 +25,11 @@ export interface SiteSettingsData {
   revision: number
   updatedAt: string
 }
+// 站点资料服务不可用时的中性兜底；正式值由博主在 /admin/site 维护，此处不写入任何具体站点的身份信息。
 export const defaultSiteSettings: SiteSettingsData = {
-  name: 'TixXin Blog',
-  description: 'TixXin 的个人博客，分享技术文章、项目经验与生活随笔',
-  ownerName: 'tixxin',
+  name: 'My Blog',
+  description: '',
+  ownerName: '',
   ownerTitle: '',
   avatar: '/avatar.svg',
   avatarAlt: '博主头像',
