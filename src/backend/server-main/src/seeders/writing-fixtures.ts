@@ -278,22 +278,22 @@ export async function seedWritingFixtures(
     WRITING_DATASET,
     'handbook',
     'post',
-    async () =>
-      (
-        await posts.save(
-          null,
-          Object.assign(new SavePostDto(), {
-            title: '博客内容与维护手册',
-            summary: '从创作、图片和阅读路径到备份恢复，整理日常维护的核对要点。',
-            contentRaw: writingHandbook,
-            category: 'tech',
-            folder: '博客建设',
-            tags: ['内容维护', '工程实践'],
-            status: 'published',
-          }),
-          '整理内容维护手册',
-        )
-      ).id,
+    async () => {
+      const saved = await posts.save(
+        null,
+        Object.assign(new SavePostDto(), {
+          title: '博客内容与维护手册',
+          summary: '从创作、图片和阅读路径到备份恢复，整理日常维护的核对要点。',
+          contentRaw: writingHandbook,
+          category: 'tech',
+          folder: '博客建设',
+          tags: ['内容维护', '工程实践'],
+          status: 'published',
+        }),
+        '整理内容维护手册',
+      )
+      return saved.id
+    },
     progress,
   )
   const draftId = await ensureFixture(
@@ -378,27 +378,27 @@ export async function seedWritingFixtures(
     WRITING_DATASET,
     'practice',
     'post',
-    async () =>
-      (
-        await posts.save(
-          null,
-          Object.assign(new SavePostDto(), {
-            title: '页面与交互的整理记录',
-            summary: '按处理顺序记录页面和交互上做过的调整，保留当时的现象、处理方式与留下的判断。',
-            contentRaw: practiceArticle,
-            category: 'tech',
-            folder: '博客建设',
-            tags: ['工程实践', '交互设计'],
-            status: 'published',
-            relatedContent: [
-              postId ? { type: 'post', id: Number(postId) } : null,
-              draftId ? { type: 'post', id: Number(draftId) } : null,
-              projectId ? { type: 'project', id: Number(projectId) } : null,
-            ].filter((item): item is ContentRelation => !!item),
-          }),
-          '整理页面与交互记录',
-        )
-      ).id,
+    async () => {
+      const saved = await posts.save(
+        null,
+        Object.assign(new SavePostDto(), {
+          title: '页面与交互的整理记录',
+          summary: '按处理顺序记录页面和交互上做过的调整，保留当时的现象、处理方式与留下的判断。',
+          contentRaw: practiceArticle,
+          category: 'tech',
+          folder: '博客建设',
+          tags: ['工程实践', '交互设计'],
+          status: 'published',
+          relatedContent: [
+            postId ? { type: 'post', id: Number(postId) } : null,
+            draftId ? { type: 'post', id: Number(draftId) } : null,
+            projectId ? { type: 'project', id: Number(projectId) } : null,
+          ].filter((item): item is ContentRelation => !!item),
+        }),
+        '整理页面与交互记录',
+      )
+      return saved.id
+    },
     progress,
   )
   // 只完善本次新建长文的反向阅读入口，并在初次种子事务内登记最终指纹。
@@ -418,5 +418,13 @@ export async function seedWritingFixtures(
     const ledger = await em.findOneOrFail(DevelopmentFixture, { key: postKey })
     ledger.snapshotHash = fixtureHash((await fixtureRow(em, 'post', postId))!)
     await em.flush()
+  }
+  // 浏览量不参与归属指纹，统一放在全部保存之后写入：保存流程会用内存中的初始值覆盖中途的更新。
+  for (const [scenario, views] of [
+    ['handbook', 4120],
+    ['practice', 1960],
+  ] as const) {
+    const owned = await em.findOne(DevelopmentFixture, { key: `${WRITING_DATASET}/post/${scenario}` })
+    if (owned) await em.execute('update post set views=? where id=?', [views, Number(owned.resourceId)])
   }
 }

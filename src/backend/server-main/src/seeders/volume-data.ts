@@ -21,27 +21,32 @@ import type { VolumeScale } from './volume-constants'
 
 export { VOLUME_DATASET, VOLUME_MARK, VOLUME_SCALES } from './volume-constants'
 export const VOLUME_DOMAINS = ['posts', 'comments'] as const
+// 主题避开代表样本已经写过的那些，避免首页出现两篇同题文章。
 const topics = [
-  '接口超时',
-  '缓存更新',
-  '表单校验',
-  '图片加载',
-  '构建耗时',
-  '日志检索',
-  '灰度发布',
-  '依赖升级',
-  '离线缓存',
-  '并发写入',
-  '清晨的通勤',
-  '周末的书店',
-  '阳台上的植物',
-  '一次长途骑行',
-  '厨房里的练习',
-  '雨天的窗边',
-  '旧物整理',
-  '傍晚的河堤',
-  '一张老照片',
-  '深夜的播客',
+  '日志采样',
+  '灰度开关',
+  '埋点口径',
+  '重试策略',
+  '幂等键',
+  '连接池',
+  '分页游标',
+  '文件上传',
+  '队列积压',
+  '证书续期',
+  '内存占用',
+  '错误码',
+  '代码评审',
+  '监控告警',
+  '版本号',
+  '本地缓存',
+  '周末的菜市场',
+  '一场临时的会议',
+  '楼下新开的店',
+  '降温的那几天',
+  '搬家前的清点',
+  '傍晚的便利店',
+  '连下三天的雨',
+  '久违的午睡',
 ]
 const facets = [
   '的取舍',
@@ -54,12 +59,13 @@ const facets = [
   '之后的调整',
   '的记录',
   '的小结',
-  '需要的耐心',
-  '与节奏',
   '的成本',
   '的顺序',
   '的收尾',
 ]
+// 生活类主题本身带「的」，后缀改用逗号接续，避免两个「的」连读。
+const lifeFacets = ['，顺手记一笔', '，和那天的天气', '，没什么特别的', '，当时没多想', '，记下当时的想法']
+const TECH_TOPICS = 16
 const frames = [
   '把过程写下来',
   '留给以后的自己',
@@ -100,20 +106,34 @@ const visitor = (name: string, index: number) =>
   createHash('sha256').update(`development/${VOLUME_DATASET}/${name}/${index}`).digest('hex')
 /** 同一序号始终得到同一篇内容，重复执行只补齐缺口。 */
 export function volumeArticle(index: number) {
-  const topic = topics[index % topics.length]!,
-    facet = facets[Math.floor(index / topics.length) % facets.length]!,
-    frame = frames[Math.floor(index / (topics.length * facets.length)) % frames.length]!
-  const technical = index % topics.length < 10
+  // 主题与侧面合成一个序号再拆开，既走遍全部组合，相邻文章的后缀也不会连成一片。
+  const pair = (index * 43) % (topics.length * facets.length)
+  const topicIndex = pair % topics.length
+  const technical = topicIndex < TECH_TOPICS
+  const slot = Math.floor(pair / topics.length)
+  const topic = topics[topicIndex]!,
+    facet = technical ? facets[slot % facets.length]! : lifeFacets[slot % lifeFacets.length]!,
+    frame = frames[(index * 5) % frames.length]!
   const title = `${topic}${facet}`
-  const body = `${frame}。${topic}这件事本身不复杂，难的是把每一步的判断留下来。\n\n当时的处理顺序是先确认现象，再缩小范围，最后才动手改。中间有一次判断失误，走了回头路，这部分也一并记在下面。\n\n回看时最有用的往往不是结论，而是当时为什么排除了另外几种做法。`
+  // 摘要按序号在几种写法之间轮换，避免列表里连续几条长得一样。
+  const summary = [
+    `${frame}。重点在中间那段判断。`,
+    `记一次关于${topic}的处理，包括当时排除掉的做法。`,
+    `${topic}这件事本身不复杂，难的是把判断留下来。`,
+    `${frame}，顺便把后来改掉的部分也补上。`,
+    `从一个具体的例子说起，最后给出当时的结论。`,
+  ][index % 5]!
+  const body = `${summary}\n\n当时的处理顺序是先确认现象，再缩小范围，最后才动手改。中间有一次判断失误走了回头路，这部分也记在下面。\n\n回看时最有用的往往不是结论，而是当时为什么排除了另外几种做法。`
   return {
     title,
-    summary: `${topic}${facet}：${frame}。`,
+    summary,
     contentRaw: `# ${title}\n\n${body}`,
     folder: technical ? '前端开发' : '随笔日记',
     category: technical ? ('tech' as const) : ('life' as const),
     tags: [technical ? '技术分享' : '生活日常'],
     status: index % 40 === 0 ? ('draft' as const) : index % 40 === 1 ? ('archived' as const) : ('published' as const),
+    // 浏览量带平方项，避免取模产生等差数列。
+    views: 20 + ((index * index * 31 + index * 157 + 11) % 977),
   }
 }
 export function volumeComments(index: number) {
@@ -266,7 +286,11 @@ export async function runVolumeData(
             const saved = await service.save(null, input, '容量档批量生成')
             const created = new Date(now - index * 86400000)
             // post.published_at 为非空列，草稿与归档沿用创建时间，由状态决定是否公开。
-            await em.nativeUpdate(Post, { id: saved.id }, { createdAt: created, publishedAt: created })
+            await em.nativeUpdate(
+              Post,
+              { id: saved.id },
+              { createdAt: created, publishedAt: created, views: article.views },
+            )
             owned.push({ key: `${VOLUME_DATASET}/post/${index}`, kind: 'post', id: String(saved.id) })
             posts++
             if (article.status !== 'published') continue

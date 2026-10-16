@@ -3,6 +3,8 @@
 export interface CoreScene {
   /** 距今天数，按不规则间隔排列：同日两条、相隔数天与相隔数月并存。 */
   days: number
+  /** 累计浏览量，老文章多、冷门文章少，不随序号递增。 */
+  views: number
   title: string
   summary: string
   body: string
@@ -16,6 +18,7 @@ export interface CoreScene {
 export const CORE_SCENES: readonly CoreScene[] = [
   {
     days: 1,
+    views: 1840,
     title: 'Nuxt 4 升级后，三套主题的布局契约重写了一遍',
     summary: '升级本身只花了一个下午，真正费时间的是把三套主题共用的插槽约定重新对齐。',
     body: '升级到 Nuxt 4 之后，页面级的布局从 `layouts/` 挪到了组件内部组织，原先靠全局样式兜底的几处就露出来了。\n\n真正花时间的不是升级，是把三套主题共用的插槽约定重新对齐：哪些区域由页面决定、哪些由主题决定，以前含糊的地方必须写死。重写之后右栏在窄屏下的降级逻辑终于只有一处。',
@@ -33,6 +36,7 @@ export const CORE_SCENES: readonly CoreScene[] = [
   },
   {
     days: 2,
+    views: 420,
     title: '深圳莲花山骑行 23 公里',
     summary: '从家到莲花山北门，沿着彩田路一路上坡，回程走了另一条线。',
     body: '出门的时候九点多，天气比预想的凉。上坡那段骑得很慢，中途停了两次。\n\n山顶风大，把外套拉链拉到顶还是冷。待了二十分钟就下来了，回程绕了另一条路，多了四公里但一路下坡。\n\n总共 23 公里，比上次多了五公里。',
@@ -50,6 +54,7 @@ export const CORE_SCENES: readonly CoreScene[] = [
   },
   {
     days: 2,
+    views: 2360,
     title: 'PostgreSQL 慢查询：一个缺失的复合索引',
     summary: '评论列表在数据量上来之后明显变慢，explain 一看是顺序扫描。',
     body: '评论数过三百之后，文章页的加载肉眼可见地慢了。用 `explain analyze` 看了一眼，`comment` 表在 `post_id` 上走的是顺序扫描。\n\n加了 `(post_id, created_at)` 的复合索引之后，同一条查询从 180ms 降到 4ms。\n\n值得记的是：单列索引当时是有的，但排序字段没进索引，PostgreSQL 还是选择了全表扫。',
@@ -62,6 +67,7 @@ export const CORE_SCENES: readonly CoreScene[] = [
   },
   {
     days: 5,
+    views: 680,
     title: '读《重构》：代码的坏味道，和我自己的那几种',
     summary: '重读这本书，发现书里列的坏味道，我这个项目几乎全占了。',
     body: '这次重读挑了「坏味道」那几章对照自己的代码看。\n\n最明显的是「发散式变化」：改一个数据展示字段要动三个文件。还有「过长参数列」，seeder 里有个函数已经吃到第五个参数了。\n\n书里说重构要有测试兜底，这点深有体会 —— 上次没测试就动结构，回滚花的时间比写的时间长。',
@@ -79,6 +85,7 @@ export const CORE_SCENES: readonly CoreScene[] = [
   },
   {
     days: 9,
+    views: 1120,
     title: '表单校验放在哪一刻',
     summary: '输入时校验太吵，提交时校验太晚，最后落在失焦那一下。',
     body: '一开始是每次按键都校验，结果邮箱还没打完就开始报红。改成只在提交时校验，又变成要等到最后才知道哪里不对。\n\n现在是失焦时校验单个字段、提交时整体复核。错误信息放在字段下方并用 `aria-describedby` 关联，读屏能念到。\n\n整体错误不滚到页面顶部，放在提交按钮旁边 —— 用户的视线本来就在那。',
@@ -91,6 +98,7 @@ export const CORE_SCENES: readonly CoreScene[] = [
   },
   {
     days: 10,
+    views: 530,
     title: '大理洱海环湖，三天拍了四百多张',
     summary: '挑出来能看的不到二十张，但那几张确实值得。',
     body: '环湖骑了两天，第三天在才村码头待了一下午。\n\n清晨的水面最安静，六点多起来还是值得的。中午光线硬，基本按不下快门。傍晚的云层变化快，同一个位置隔十分钟就是另一张照片。\n\n四百多张里挑出不到二十张，但其中三四张我会一直留着。',
@@ -108,6 +116,7 @@ export const CORE_SCENES: readonly CoreScene[] = [
   },
   {
     days: 17,
+    views: 960,
     title: 'Docker Compose 把本地数据库端口挪到 5433',
     summary: '同时跑两个项目，5432 被占了，顺手把整套端口规划了一遍。',
     body: '另一个项目的 Postgres 占着 5432，每次切换都要停一个。\n\n干脆把这个项目整套端口挪开：前端 3456、API 3457、数据库 5433、容器预览 3458。容器内部端口不动，只改宿主映射。\n\n顺手把 `.env.example` 和开发文档一起更新了，省得下次又要翻记录。',
@@ -124,6 +133,7 @@ export const CORE_SCENES: readonly CoreScene[] = [
   },
   {
     days: 23,
+    views: 210,
     title: '一顿不用赶时间的早餐',
     summary: '周末难得不设闹钟，煎蛋煎糊了也无所谓。',
     body: '周末不设闹钟，醒来快十点。\n\n煎蛋的时候火开大了，边缘有点焦。配了昨天剩的面包和一杯手冲，坐在阳台吃完，花了四十分钟。\n\n平时上班的早餐基本是十分钟解决，站着吃完。偶尔慢一次，感觉完全不同。',
@@ -141,6 +151,7 @@ export const CORE_SCENES: readonly CoreScene[] = [
   },
   {
     days: 31,
+    views: 1470,
     title: 'TypeScript 的类型收窄，和我踩过的 as 陷阱',
     summary: '用 as 断言绕过去的地方，后来全都以运行时报错的形式还回来了。',
     body: '早期代码里有不少 `as` 断言，当时只是想让编译通过。\n\n后来有一处接口返回结构变了，类型断言让编译期毫无反应，直到线上报错才发现。\n\n现在的做法是写类型守卫函数，宁可多几行。`in` 操作符和自定义谓词配合着用，大部分场景都够。',
@@ -153,6 +164,7 @@ export const CORE_SCENES: readonly CoreScene[] = [
   },
   {
     days: 44,
+    views: 180,
     title: '整理书桌，翻出三年前的笔记本',
     summary: '里面记的技术方案，现在看有一半是错的。',
     body: '清理抽屉的时候翻出三年前的笔记本，只写了二十来页。\n\n里面记着当时准备用的技术方案，现在看有一半判断是错的。但有意思的是，错的那些当时也写了理由，能看出是怎么想岔的。\n\n笔记本留下来了，其余的扔了大半。',
@@ -165,6 +177,7 @@ export const CORE_SCENES: readonly CoreScene[] = [
   },
   {
     days: 58,
+    views: 2890,
     title: '图片懒加载之后，首屏从 2.1MB 降到 340KB',
     summary: '把首屏之外的图片交给浏览器原生懒加载，顺手换了格式。',
     body: '首页原先一次性加载全部封面，2.1MB。\n\n改动有三处：首屏之外的图片加 `loading="lazy"`、给容器固定宽高比避免跳动、封面统一转 WebP。\n\n改完首屏 340KB。最大的那一项其实是格式转换，懒加载只是顺带。',
@@ -182,6 +195,7 @@ export const CORE_SCENES: readonly CoreScene[] = [
   },
   {
     days: 73,
+    views: 240,
     title: '广州沙面的傍晚',
     summary: '沿着江边走了一圈，老建筑在侧光下很好看。',
     body: '从黄沙地铁站出来，穿过桥就是沙面。\n\n傍晚六点多光线最好，老建筑的立面在侧光下层次很清楚。游客不少，但沿江那段走到西头就安静了。\n\n走了一个多小时，最后在江边坐了会儿才回去。',
@@ -199,6 +213,7 @@ export const CORE_SCENES: readonly CoreScene[] = [
   },
   {
     days: 95,
+    views: 760,
     title: '迁移脚本写错一次之后加的三条检查',
     summary: '一条忘了加 where 的 update，让我重新想了一遍迁移该怎么写。',
     body: '有一次迁移里的 `update` 漏了 `where`，本地库里几百条记录的状态被改成了同一个值。\n\n之后加了三条检查：迁移必须先在隔离库跑一遍、涉及 `update` 和 `delete` 的先用 `select` 数一遍影响行数、迁移文件提交前必须有人看过。\n\n第三条最有用，也最容易跳过。',
@@ -211,6 +226,7 @@ export const CORE_SCENES: readonly CoreScene[] = [
   },
   {
     days: 120,
+    views: 150,
     title: '试着自己做了一次披萨',
     summary: '面团发过头了，但味道意外地不错。',
     body: '第一次自己揉面，发酵时间按菜谱是一小时，结果出门忘了，回来快三小时。\n\n面团发过头，烤出来边缘特别厚。配料用的是现成的番茄酱和马苏里拉。\n\n卖相一般，味道出乎意料地好。下次把发酵时间定个闹钟。',
@@ -228,6 +244,7 @@ export const CORE_SCENES: readonly CoreScene[] = [
   },
   {
     days: 152,
+    views: 1340,
     title: '主题切换时，被忽略的那层对比度',
     summary: '同一批文字在三套主题下，有一套的弱化文本看不清。',
     body: '三套主题共用同一批内容，颜色换了之后对比度不一定还够。\n\n检查的时候发现其中一套的弱化文本（比如发布时间、标签）对比度只有 3.2，低于 4.5 的最低要求。\n\n改法是不再写死灰度值，改用各主题自己定义的变量，切换时跟着一起变。',
@@ -240,6 +257,7 @@ export const CORE_SCENES: readonly CoreScene[] = [
   },
   {
     days: 190,
+    views: 890,
     title: '备份恢复演练：第一次没能跑起来',
     summary: '备份文件是完整的，但恢复出来的应用起不来。',
     body: '第一次做恢复演练，数据库恢复成功，媒体文件也在，但应用启动失败。\n\n原因是恢复出的环境缺少几个运行期配置，这些配置从来不在备份范围内 —— 备份只负责数据。\n\n后来把「恢复后需要补的配置」单独写成清单，和备份放在一起。备份完整不等于能恢复。',
@@ -252,6 +270,7 @@ export const CORE_SCENES: readonly CoreScene[] = [
   },
   {
     days: 240,
+    views: 320,
     title: '关于内容关联的几个未定问题',
     summary: '关联方向、排序和目标状态变化，这三件事还没想清楚。',
     body: '内容关联目前是单向的：从当前内容指向目标，顺序由编辑者维护。\n\n还没想清楚的有三处：目标撤回之后关联要不要自动隐藏、双向关联要不要支持、同一目标被多处关联时如何避免循环。\n\n先把这些记下来，等实际用起来再决定。',
@@ -264,6 +283,7 @@ export const CORE_SCENES: readonly CoreScene[] = [
   },
   {
     days: 300,
+    views: 95,
     title: '那年冬天的夜景，和一台已经卖掉的相机',
     summary: '翻旧照片翻到的，当时的设备现在已经不在手上了。',
     body: '整理图库的时候翻到这组夜景，拍摄时间是前年冬天。\n\n当时用的那台相机后来卖掉了，换了更轻便的。现在看这组照片，噪点比印象中明显，但氛围还在。\n\n设备换了几轮，留下来的照片倒是一张没少。',
