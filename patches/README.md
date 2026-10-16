@@ -1,6 +1,6 @@
-# Nuxt 4.5.2 生命周期修正
+# 固定版本框架生命周期修正
 
-`nuxt@4.5.2.patch`使用pnpm固定版本补丁机制登记在根清单和锁文件中。安装时应用相同差异，两个Docker安装层及隔离开发副本均包含此目录。工作流参考[pnpm patch](https://pnpm.io/cli/patch)及[patch-commit](https://pnpm.io/cli/patch-commit)；本项目实际命令以固定的pnpm9.15.0为准。
+`nuxt@4.5.2.patch`和`@vue__runtime-core@3.5.42.patch`使用pnpm固定版本补丁机制登记在根清单和锁文件中。安装时应用相同差异，两个Docker安装层及隔离开发副本均包含此目录。工作流参考[pnpm patch](https://pnpm.io/cli/patch)及[patch-commit](https://pnpm.io/cli/patch-commit)；本项目实际命令以固定的pnpm9.15.0为准。
 
 ## 范围与原因
 
@@ -11,16 +11,25 @@
 
 本补丁保留清单功能、同源访问控制和所有浏览器错误断言。当前页面的真实清单失败仍按Nuxt原有逻辑清除失败缓存；恢复资源后正常刷新可成功读取，业务列表不伪造结果。
 
+## Vue 异步页面的辅助更新等待
+
+Vue 3.5.42 在异步子树尚未就绪、父节点又发生更新时，为 `asyncDep` 附加一个只处理成功的 `then`。即使原始拒绝已由 Suspense 和应用错误边界处理，这个派生 Promise 仍会成为未处理拒绝；快速取消页面时也会发生。
+
+补丁只为该辅助 `then` 增加第二参数：存在 Suspense 时沿用 `registerDep` 的唯一错误处理链，没有 Suspense 时仍交给 `handleError`。它不在整个链末尾使用 `catch`，因此不会吞掉成功回调自身的异常。ESM、CommonJS 开发和生产产物使用同一修正，不修改取消识别协议，也不在浏览器全局过滤拒绝事件。
+
+`pageRequestBoundary.test.ts` 使用实际安装的 Vue，覆盖未完成子树的父属性更新、卸载后的有标记取消、普通错误、同文案但无标记错误，以及成功解析后保留最新父属性。未应用补丁的负对照会产生额外未处理拒绝；浏览器快速导航仍必须满足零页面错误。
+
 ## 维护与验证
 
 ```sh
 corepack pnpm patch nuxt@4.5.2 --edit-dir .artifacts/nuxt-patch-next
 corepack pnpm patch-commit .artifacts/nuxt-patch-next
 corepack pnpm test:nuxt-patches
+corepack pnpm --filter web-blog exec vitest run tests/unit/pageRequestBoundary.test.ts
 corepack pnpm --filter web-blog test
 ```
 
-不要直接编辑已安装的`node_modules`，也不要设置允许未应用补丁来绕过版本不匹配。升级Nuxt时需对照新源码，删除已经被上游修复的部分或重新生成补丁及锁文件。
+Vue 补丁同样使用 `corepack pnpm patch @vue/runtime-core@3.5.42 --edit-dir .artifacts/vue-runtime-patch-next` 和 `patch-commit` 维护。不要直接编辑已安装的`node_modules`，也不要设置允许未应用补丁来绕过版本不匹配。升级Nuxt或Vue时需对照新源码，删除已经被上游修复的部分或重新生成补丁及锁文件。
 
 测试直接执行安装版本的路由插件与启动钩子，覆盖正常SSR、原生查询/锚点、插件导航、SSG恢复与middleware拒绝。前端单测执行实际payload插件并核对定时器、短期监听和恢复；浏览器测试包含快速刷新后原历史条目仍能返回，以及跨过预取期限的真实卸载和503后刷新恢复。
 

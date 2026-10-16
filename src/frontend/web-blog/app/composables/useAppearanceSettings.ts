@@ -66,8 +66,7 @@ export function useAppearanceSettings() {
   )
   const sidebarAnimationLabel = computed(
     () =>
-      SIDEBAR_ANIMATION_OPTIONS.find((option) => option.value === sidebarAnimationPreset.value)?.label ??
-      '右侧退出和进入',
+      SIDEBAR_ANIMATION_OPTIONS.find((option) => option.value === sidebarAnimationPreset.value)?.label ?? '从右侧进入',
   )
   const colorModeTransitionLabel = computed(
     () =>

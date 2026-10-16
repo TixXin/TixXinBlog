@@ -10,6 +10,9 @@ overrides:
   '@nestjs/platform-express@11.2.3>multer': 2.3.0
 
 patchedDependencies:
+  '@vue/runtime-core@3.5.42':
+    hash: ddgyyazj6i53zw2foerc7fih34
+    path: patches/@vue__runtime-core@3.5.42.patch
   nuxt@4.5.2:
     hash: ktmrcc6cxokwcoqxb2g7rohxri
     path: patches/nuxt@4.5.2.patch
@@ -10626,7 +10629,7 @@ snapshots:
     dependencies:
       '@vue/shared': 3.5.42
 
-  '@vue/runtime-core@3.5.42':
+  '@vue/runtime-core@3.5.42(patch_hash=ddgyyazj6i53zw2foerc7fih34)':
     dependencies:
       '@vue/reactivity': 3.5.42
       '@vue/shared': 3.5.42
@@ -10634,7 +10637,7 @@ snapshots:
   '@vue/runtime-dom@3.5.42':
     dependencies:
       '@vue/reactivity': 3.5.42
-      '@vue/runtime-core': 3.5.42
+      '@vue/runtime-core': 3.5.42(patch_hash=ddgyyazj6i53zw2foerc7fih34)
       '@vue/shared': 3.5.42
       csstype: 3.2.3
 

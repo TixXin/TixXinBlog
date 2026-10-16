@@ -21,13 +21,7 @@
 </template>
 
 <script setup lang="ts">
-import { isPageRequestCancellation } from '~/utils/pageRequestCancellation'
 import { pageMotionPendingKey } from '~/utils/pageMotionRegions'
-
-// 仅终止已销毁页面的初始化；真实网络、渲染和业务错误继续交给Nuxt错误边界。
-onErrorCaptured((error) => {
-  if (isPageRequestCancellation(error)) return false
-})
 
 const { settings: siteSettings } = useSiteSettings()
 const pageHost = ref<HTMLElement | null>(null)

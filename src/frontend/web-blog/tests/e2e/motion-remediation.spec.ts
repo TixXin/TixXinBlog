@@ -9,7 +9,7 @@ import type { Page } from '@playwright/test'
 import { captureMotion, prepareMotionCapture } from './motionScreenshot'
 
 const browserErrors = new WeakMap<Page, string[]>()
-test.beforeEach(({ page, browserName }) => {
+test.beforeEach(async ({ page, browserName }) => {
   prepareMotionCapture(page, browserName)
   const errors: string[] = []
   browserErrors.set(page, errors)
@@ -18,8 +18,36 @@ test.beforeEach(({ page, browserName }) => {
     if (['error', 'warning'].includes(message.type()) && /Hydration|\[Vue warn\]/.test(message.text()))
       errors.push(message.text())
   })
+  await page.addInitScript(() => {
+    const unhandled: { name: string; message: string; stack: string; ownerCancellation: boolean }[] = []
+    Object.assign(window, { motionUnhandledRejections: unhandled })
+    // 仅记录来源，不阻止事件或过滤真实 pageerror。
+    window.addEventListener('unhandledrejection', (event) => {
+      const reason = event.reason
+      unhandled.push({
+        name: String(reason?.name ?? ''),
+        message: String(reason?.message ?? reason),
+        stack: String(reason?.stack ?? ''),
+        ownerCancellation:
+          !!reason &&
+          typeof reason === 'object' &&
+          Reflect.get(reason, Symbol.for('tixxin.page-request-cancelled')) === true,
+      })
+    })
+  })
 })
-test.afterEach(({ page }) => {
+test.afterEach(async ({ page }, testInfo) => {
+  if (!page.isClosed()) {
+    const unhandled = await page.evaluate(
+      () => (window as unknown as { motionUnhandledRejections?: unknown[] }).motionUnhandledRejections ?? [],
+    )
+    if (unhandled.length) {
+      await testInfo.attach('unhandled-promise-rejections', {
+        body: JSON.stringify(unhandled, null, 2),
+        contentType: 'application/json',
+      })
+    }
+  }
   expect(browserErrors.get(page) ?? []).toEqual([])
 })
 
@@ -182,7 +210,11 @@ test('仍在当前文章的真实请求失败继续显示503错误反馈', async
 for (const layout of ['nexus', 'aurora', 'dock']) {
   for (const mode of ['normal', 'off', 'reduce']) {
     for (const gap of [30, 120, 300]) {
-      test(`导航 ${layout}/${mode}/${gap}ms 最终页面完整`, async ({ page, context, baseURL }, testInfo) => {
+      test(`导航 ${layout}/${mode}/${gap}ms 最终页面完整`, async ({ page, context, baseURL, request }, testInfo) => {
+        const siteResponse = await request.get('/api/v1/site')
+        expect(siteResponse.ok()).toBe(true)
+        const ownerName = (await siteResponse.json()).data.ownerName as string
+        expect(ownerName).toBeTruthy()
         await context.addCookies([{ name: 'tixxin-blog-layout-theme', value: layout, url: baseURL! }])
         await page.emulateMedia({ reducedMotion: mode === 'reduce' ? 'reduce' : 'no-preference' })
         await page.goto('/')
@@ -216,7 +248,9 @@ for (const layout of ['nexus', 'aurora', 'dock']) {
         await expect(page.locator('.sidebar-leaving-clone')).toHaveCount(0)
         await expect(page.locator('#__nuxt[inert]')).toHaveCount(0)
         await page.getByRole('link', { name: '关于', exact: true }).click()
-        await expect(page.locator('main')).toContainText('技能示例')
+        await expect(page).toHaveURL(/\/about$/)
+        await expect(page.locator('.about-body').getByRole('heading', { name: ownerName, exact: true })).toBeVisible()
+        await expect(page.locator('.about-body [role="alert"]')).toHaveCount(0)
         if (gap === 30) await captureMotion(page, testInfo, `${layout}-${mode}.png`)
       })
     }
@@ -421,7 +455,7 @@ for (const width of [320, 1440]) {
   })
 }
 
-test('正常页面的标题与正文独立过渡，离场快照不包含标题', async ({ page }) => {
+test('正常页面的标题与正文独立入场，不创建离场快照', async ({ page }) => {
   await page.goto('/')
   await ready(page)
   await page.evaluate(() => {
@@ -464,4 +498,62 @@ test('正常页面的标题与正文独立过渡，离场快照不包含标题',
     body: true,
     cloneHeader: false,
   })
+})
+
+test('图片仅揭示真实内容，忽略 inert 和导航覆盖层中的图片', async ({ page }) => {
+  await page.goto('/')
+  await ready(page)
+  await page.evaluate(async () => {
+    const native = Element.prototype.animate
+    const animated: string[] = []
+    const container = document.createElement('div')
+    container.dataset.imageMotionCheck = ''
+    container.style.cssText = 'position:fixed;left:0;top:0;width:1px;height:1px;overflow:hidden;pointer-events:none'
+    const state = {
+      animated,
+      dispose: () => {
+        Element.prototype.animate = native
+        container.remove()
+      },
+    }
+    Object.assign(window, { imageMotionCheck: state })
+    Element.prototype.animate = function (...args) {
+      if (this instanceof HTMLImageElement && this.dataset.imageMotionKind) animated.push(this.dataset.imageMotionKind)
+      return native.apply(this, args)
+    }
+    const images = ['real', 'inert', 'overlay', 'snapshot', 'sidebar'].map((kind) => {
+      const frame = document.createElement('div')
+      if (kind === 'inert') frame.inert = true
+      if (kind === 'overlay') frame.dataset.pageMotionOverlay = ''
+      if (kind === 'snapshot') frame.dataset.pageMotionClone = ''
+      if (kind === 'sidebar') frame.className = 'sidebar-leaving-clone'
+      const image = document.createElement('img')
+      image.className = 'image-frame__image'
+      image.dataset.imageMotionKind = kind
+      image.src = '/avatar.svg'
+      frame.appendChild(image)
+      container.appendChild(frame)
+      return image
+    })
+    document.body.appendChild(container)
+    await Promise.all(images.map((image) => image.decode()))
+    // 重复 load 不应让同一张真实图片再次播放。
+    images.forEach((image) => {
+      image.dispatchEvent(new Event('load'))
+      image.dispatchEvent(new Event('load'))
+    })
+  })
+  try {
+    await expect
+      .poll(() =>
+        page.evaluate(
+          () => (window as unknown as { imageMotionCheck: { animated: string[] } }).imageMotionCheck.animated,
+        ),
+      )
+      .toEqual(['real'])
+  } finally {
+    await page.evaluate(() =>
+      (window as unknown as { imageMotionCheck: { dispose(): void } }).imageMotionCheck.dispose(),
+    )
+  }
 })

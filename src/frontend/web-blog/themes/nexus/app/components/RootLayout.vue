@@ -103,7 +103,6 @@ const {
   metadata: momentMetadata,
 } = await useMomentOverview({ immediate: isMomentsMode.value })
 const { sidebarAnimationClass } = useAppearanceSettings()
-useSidebarExitAnimation('.aside-right')
 
 // 全屏页（如标签页）开关：开启时隐藏左右两栏，main-content 占满
 const { isFullbleed } = useFullbleedPage()

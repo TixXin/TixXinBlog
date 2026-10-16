@@ -50,7 +50,8 @@
       "@nestjs/platform-express@11.2.3>multer": "2.3.0"
     },
     "patchedDependencies": {
-      "nuxt@4.5.2": "patches/nuxt@4.5.2.patch"
+      "nuxt@4.5.2": "patches/nuxt@4.5.2.patch",
+      "@vue/runtime-core@3.5.42": "patches/@vue__runtime-core@3.5.42.patch"
     }
   }
 }

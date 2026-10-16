@@ -25,7 +25,7 @@ export default {
     },
   },
   compatibilityDate: '2025-07-15',
-  devtools: { enabled: true },
+  devtools: { enabled: process.env.NUXT_DEVTOOLS_ENABLED === 'true' },
   devServer: {
     port: 3456,
     // 开发服务仅监听本机；生产通过构建产物及容器入口提供服务
