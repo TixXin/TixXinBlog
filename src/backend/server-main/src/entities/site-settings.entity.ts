@@ -23,6 +23,8 @@ export interface SiteSettingsValues {
   presenceSignature?: string
   /** 站点上线日期 YYYY-MM-DD，用于“已运行 N 天”；空串按最早发布文章推算 */
   launchedAt?: string
+  /** 在线状态类型：空串表示有状态文案时按“在线”展示；idle 为离开，busy 为忙碌 */
+  presenceStatus?: '' | 'online' | 'idle' | 'busy'
 }
 @Entity({ tableName: 'site_settings' })
 export class SiteSettings {

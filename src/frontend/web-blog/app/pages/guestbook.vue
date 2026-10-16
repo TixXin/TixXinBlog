@@ -13,10 +13,10 @@
         <div class="page-actions guestbook-actions">
           <span
             class="guestbook-presence"
-            :class="{ 'guestbook-presence--online': ownerPresence.status === 'online' }"
+            :class="`guestbook-presence--${ownerPresence.status}`"
             :title="ownerPresence.signature || ownerPresence.label"
             ><span class="guestbook-presence__dot" aria-hidden="true" />{{
-              ownerPresence.status === 'online' ? '在线' : '离线'
+              ownerPresence.status === 'offline' ? '离线' : presenceStatusLabels[ownerPresence.status]
             }}</span
           >
           <CommonSearchBox v-model="search" label="搜索留言" placeholder="搜索留言或作者…" />
@@ -143,6 +143,7 @@
   </CommonPageFrame>
 </template>
 <script setup lang="ts">
+import { presenceStatusLabels } from '~/composables/useSiteInfo'
 import { useMediaQuery } from '@vueuse/core'
 import { resolveScrollRoot, scrollToRoot } from '~/utils/scrollRoot'
 import { guestbookGroups } from '~/features/guestbook/display'
@@ -411,6 +412,22 @@ useSeoMeta({ title: '留言板', description: '留下你的足迹，交流技术
 .guestbook-presence--online .guestbook-presence__dot {
   background: #22c55e;
   box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.2);
+}
+.guestbook-presence--idle {
+  color: var(--presence-idle);
+  border-color: color-mix(in srgb, var(--presence-idle) 35%, transparent);
+  background: color-mix(in srgb, var(--presence-idle) 10%, transparent);
+}
+.guestbook-presence--busy {
+  color: var(--presence-busy);
+  border-color: color-mix(in srgb, var(--presence-busy) 35%, transparent);
+  background: color-mix(in srgb, var(--presence-busy) 10%, transparent);
+}
+.guestbook-presence--idle .guestbook-presence__dot {
+  background: var(--presence-idle);
+}
+.guestbook-presence--busy .guestbook-presence__dot {
+  background: var(--presence-busy);
 }
 .guestbook-actions {
   display: flex;

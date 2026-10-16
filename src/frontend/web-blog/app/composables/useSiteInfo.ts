@@ -29,6 +29,8 @@ function formatDuration(since: string): string {
 }
 
 /** 获取站点页脚信息 */
+/** 状态类型未配文案时的默认展示 */
+export const presenceStatusLabels = { online: '在线', idle: '离开', busy: '忙碌' } as const
 export function useSiteInfo() {
   const { settings, available } = useSiteSettings()
   const footerLinks = computed<FooterLink[]>(() => mockFooterLinks)
@@ -37,12 +39,13 @@ export function useSiteInfo() {
     pingMs: null,
     statusText: available.value ? '站点资料已同步' : '站点资料暂不可用',
   }))
-  // 在线状态与签名由博主在站点资料里维护；两者都为空时保持“离线”且不展示签名
+  // 在线状态、签名与状态类型由博主在站点资料里维护；文案都为空时保持“离线”且不展示签名
   const ownerPresence = computed<OwnerPresenceInfo>(() => {
     const label = settings.value.presenceLabel?.trim() ?? ''
     const signature = settings.value.presenceSignature?.trim() ?? ''
     if (!label && !signature) return { status: 'offline', label: '未提供在线状态', signature: '', since: '' }
-    return { status: 'online', label: label || '在线', signature, since: '' }
+    const status = settings.value.presenceStatus || 'online'
+    return { status, label: label || presenceStatusLabels[status], signature, since: '' }
   })
   const ownerCard = computed<OwnerCardInfo>(() => ({
     name: settings.value.ownerName,

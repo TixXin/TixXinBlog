@@ -25,8 +25,8 @@ export const PREPARED_PROFILE_REASON = '整理已确认称呼与站点定位，�
 /** 资料仍等于新建库的中性初始值或老库的两套历史初始值之一（未经博主编辑）时才允许工具整理 */
 export async function eligibleInitialProfile(em: EntityManager) {
   // 在线状态、签名与上线日期是后加字段：早期写入的初始资料没有这些键，比较时忽略它们，但它们一旦有值即视为已编辑。
-  const later = `- 'presenceLabel' - 'presenceSignature' - 'launchedAt'`
-  const untouched = `coalesce(s."values"->>'presenceLabel','')='' and coalesce(s."values"->>'presenceSignature','')='' and coalesce(s."values"->>'launchedAt','')=''`
+  const later = `- 'presenceLabel' - 'presenceSignature' - 'launchedAt' - 'presenceStatus'`
+  const untouched = `coalesce(s."values"->>'presenceLabel','')='' and coalesce(s."values"->>'presenceSignature','')='' and coalesce(s."values"->>'launchedAt','')='' and coalesce(s."values"->>'presenceStatus','')=''`
   const [match] = await em.execute<{ eligible: boolean }[]>(
     `select exists(select 1 from site_settings s join site_settings_revision r on r.revision=s.revision
       where s.id='default' and ${untouched} and (

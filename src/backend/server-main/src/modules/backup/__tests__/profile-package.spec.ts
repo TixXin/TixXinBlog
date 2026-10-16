@@ -64,6 +64,7 @@ const bundle = () => ({
     presenceLabel: '摆烂中',
     presenceSignature: '今天不想写代码',
     launchedAt: '2021-08-16',
+    presenceStatus: 'idle',
   },
 })
 const parse = (value: unknown) => parseContentPackage(Buffer.from(JSON.stringify(value)))
@@ -74,13 +75,15 @@ describe('站点资料与留言来源字段', () => {
       presenceLabel: '摆烂中',
       presenceSignature: '今天不想写代码',
       launchedAt: '2021-08-16',
+      presenceStatus: 'idle',
     })
     expect(parsed.guestbook[0]).toMatchObject({ browser: 'Chrome 121', region: '广东深圳' })
     expect(parsed.guestbook[1]).not.toHaveProperty('browser')
   })
   it('旧包缺省这些字段仍可导入', async () => {
     const input = bundle()
-    const { presenceLabel, presenceSignature, launchedAt, ...site } = input.site
+    const { presenceLabel, presenceSignature, launchedAt, presenceStatus, ...site } = input.site
+    void presenceStatus
     void presenceLabel
     void presenceSignature
     void launchedAt
@@ -95,6 +98,7 @@ describe('站点资料与留言来源字段', () => {
   })
   it('上线日期格式与来源文案长度受校验', async () => {
     await expect(parse({ ...bundle(), site: { ...bundle().site, launchedAt: '2021/08/16' } })).rejects.toThrow()
+    await expect(parse({ ...bundle(), site: { ...bundle().site, presenceStatus: 'away' } })).rejects.toThrow()
     const long = bundle()
     long.guestbook[0]!.region = '地'.repeat(41)
     await expect(parse(long)).rejects.toThrow()
