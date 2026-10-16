@@ -1,5 +1,7 @@
 /** @file guestbook-write.service.ts @description 留言写入与管理事务；身份、审核、唯一置顶、回应与引用由服务端处理 */
 import { Injectable, BadRequestException, ConflictException, NotFoundException } from '@nestjs/common'
+import { ConfigService } from '@nestjs/config'
+import type { Request } from 'express'
 import { EntityManager } from '@mikro-orm/postgresql'
 import { LockMode } from '@mikro-orm/core'
 import { GuestbookMessage } from '../../entities/guestbook-message.entity'
@@ -12,6 +14,7 @@ import { momentUrl, submissionHash } from '../moment/moment-values'
 import { GuestbookReadService } from './guestbook-read.service'
 import { recordOwnerEvent } from '../operations/owner-events'
 import { guestbookId, PUBLIC_GUESTBOOK } from './guestbook-values'
+import { clientRegion, DEFAULT_CLIENT_REGION_HEADER, parseBrowser } from '../../common/utils/client-context'
 import type { CreateGuestbookDto, GuestbookBodyDto, UpdateGuestbookDto, SetGuestbookReactionDto } from './guestbook.dto'
 
 export async function lockGuestbook(em: EntityManager) {
@@ -22,8 +25,24 @@ export class GuestbookWriteService {
   constructor(
     private readonly em: EntityManager,
     private readonly read: GuestbookReadService,
+    // 样本脚本与测试直接构造服务时不注入配置，此时使用默认地区头名称
+    private readonly config?: ConfigService,
   ) {}
-  async create(body: CreateGuestbookDto | GuestbookBodyDto, visitor: string, adminId?: string) {
+
+  /** 访客提交时的展示来源：浏览器取自 User-Agent，地区只采信可信代理注入的头 */
+  clientContext(request: Request) {
+    return {
+      browser: parseBrowser(request.get('user-agent')),
+      region: clientRegion(request, this.config?.get<string>('CLIENT_REGION_HEADER') || DEFAULT_CLIENT_REGION_HEADER),
+    }
+  }
+  async create(
+    body: CreateGuestbookDto | GuestbookBodyDto,
+    visitor: string,
+    adminId?: string,
+    // 访客提交时由控制器从请求头得出，仅用于展示；博主留言不记录
+    client: { browser?: string; region?: string } = {},
+  ) {
     const identity = adminId ? `admin:${adminId}` : visitor
     const hash = submissionHash({ ...body, replyToId: body.replyToId ?? null })
     const id = await this.em.transactional(async (em) => {
@@ -52,6 +71,8 @@ export class GuestbookWriteService {
         replyTo: parent,
         requestId: body.requestId,
         requestHash: hash,
+        browser: adminId ? null : client.browser || null,
+        region: adminId ? null : client.region || null,
       })
       await em.flush()
       await synchronizeMediaReferences(em, `guestbook:${note.id}`, 'guestbook', [avatar], { guestbookMessage: note })

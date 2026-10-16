@@ -45,6 +45,10 @@
               <Icon name="lucide:map-pin" size="11" />
               {{ message.region }}
             </span>
+            <span v-if="message.browser" class="message-bubble__user-card-region">
+              <Icon name="lucide:globe" size="11" />
+              {{ message.browser }}
+            </span>
           </div>
         </div>
       </Transition>

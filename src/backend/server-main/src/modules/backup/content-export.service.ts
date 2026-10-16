@@ -213,6 +213,8 @@ export class ContentExportService {
           status: message.status,
           isPinned: message.isPinned,
           replyToId: message.replyTo?.id ?? null,
+          ...(message.browser ? { browser: message.browser } : {}),
+          ...(message.region ? { region: message.region } : {}),
         })),
         gallery: gallery.map((photo) => ({
           sourceId: photo.id,

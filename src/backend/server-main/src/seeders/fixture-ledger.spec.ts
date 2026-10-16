@@ -9,6 +9,11 @@ describe('样本指纹兼容', () => {
     expect(fixtureHash({ ...media, description: '' })).toBe(fixtureHash(media))
     expect(fixtureHash({ ...media, description: '来源说明' })).not.toBe(fixtureHash(media))
   })
+  it('留言新增的浏览器与地区列为空时不改变指纹，有值则参与', () => {
+    const note = { id: 3, author: '访客', content: '留言' }
+    expect(fixtureHash({ ...note, browser: null, region: null })).toBe(fixtureHash(note))
+    expect(fixtureHash({ ...note, browser: 'Chrome 141', region: null })).not.toBe(fixtureHash(note))
+  })
   it('既有项目与图库的空说明仍参与指纹', () => {
     expect(fixtureHash({ id: 1, description: '' })).not.toBe(fixtureHash({ id: 1 }))
   })

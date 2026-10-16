@@ -56,6 +56,9 @@ export interface GuestbookRecord {
   replyTo: ReplyRef | null
   replyUnavailable: boolean
   reactions: MessageReaction[]
+  /** 提交时记录的浏览器与地区展示文案，博主留言与旧记录为空 */
+  browser?: string
+  region?: string
 }
 export interface ManagedGuestbookRecord extends GuestbookRecord {
   revision: number

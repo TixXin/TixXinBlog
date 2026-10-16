@@ -1,5 +1,6 @@
 /** @file guestbook.controller.ts @description 公开留言、访客提交及回应，访客身份由已有装饰器在服务器计算 */
-import { Body, Controller, Get, Param, ParseIntPipe, Post, Put, Query, UseGuards } from '@nestjs/common'
+import { Body, Controller, Get, Param, ParseIntPipe, Post, Put, Query, Req, UseGuards } from '@nestjs/common'
+import type { Request } from 'express'
 import { ContentWriteContextGuard } from '../../common/guards/content-write-context.guard'
 import { VisitorIdHash } from '../../common/decorators/visitor-id.decorator'
 import { CreateGuestbookDto, QueryGuestbookDto, SetGuestbookReactionDto } from './guestbook.dto'
@@ -23,8 +24,9 @@ export class GuestbookController {
   @Post() @UseGuards(ContentWriteContextGuard) create(
     @Body() body: CreateGuestbookDto,
     @VisitorIdHash() visitor: string,
+    @Req() request: Request,
   ) {
-    return this.write.create(body, visitor)
+    return this.write.create(body, visitor, undefined, this.write.clientContext(request))
   }
   @Put(':id/reactions') @UseGuards(ContentWriteContextGuard) reaction(
     @Param('id', ParseIntPipe) id: number,

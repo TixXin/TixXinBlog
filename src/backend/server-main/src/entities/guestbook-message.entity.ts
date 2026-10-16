@@ -24,6 +24,10 @@ export class GuestbookMessage {
   @Property({ type: 'integer', default: 0 }) revision: number = 0
   @Property({ type: 'boolean', default: false }) isOwner: boolean = false
   @Property({ type: 'boolean', default: false }) isPinned: boolean = false
+  /** 提交时解析的浏览器“家族 主版本”，仅用于展示 */
+  @Property({ type: 'text', nullable: true }) browser?: string | null
+  /** 可信代理注入的地区文案，仅用于展示 */
+  @Property({ type: 'text', nullable: true }) region?: string | null
   @Property({ type: 'text', nullable: true }) requestId?: string
   @Property({ type: 'text', nullable: true }) requestHash?: string
   @Property({ type: 'datetime', nullable: true }) deletedAt?: Date | null

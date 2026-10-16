@@ -32,6 +32,8 @@ export async function importGuestbook(
       isPinned: false,
       createdAt: new Date(source.createdAt),
       deletedAt: source.deleted ? new Date() : null,
+      browser: source.browser || null,
+      region: source.region || null,
       visitorIdHash: createHash('sha256').update(randomUUID()).digest('hex'),
     })
     created.set(source.sourceId, note)

@@ -98,6 +98,8 @@ export class GuestbookReadService {
         createdAt: note.createdAt.toISOString(),
         isOwner: note.isOwner,
         isPinned: note.isPinned,
+        browser: note.browser ?? undefined,
+        region: note.region ?? undefined,
         moderationStatus: note.status,
         replyTo: parentVisible
           ? {
