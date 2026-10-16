@@ -11,7 +11,6 @@
       <Icon name="lucide:bookmark" size="16" />
       相关文章
     </h3>
-    <p class="related__rule">优先同专栏与共同标签，按发布时间继续浏览。</p>
     <ul class="related__list">
       <li v-for="post in posts" :key="post.id" class="related__item">
         <NuxtLink :to="articlePath(post)" class="related__link">
@@ -68,13 +67,6 @@ defineProps<{
   display: flex;
   flex-direction: column;
   gap: 0.75rem;
-}
-
-.related__rule {
-  margin: -0.5rem 0 1rem;
-  color: var(--text-soft);
-  font-size: 0.75rem;
-  line-height: 1.6;
 }
 
 .related__item {

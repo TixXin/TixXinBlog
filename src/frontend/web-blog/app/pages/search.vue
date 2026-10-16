@@ -90,6 +90,8 @@
 <script setup lang="ts">
 import { searchLocation, searchScope, searchPage } from '~/features/search/query'
 import { searchTypeLabels, SEARCH_PAGE_SIZE } from '~/features/search/types'
+// 搜索页没有右侧栏内容，不保留空白的侧栏占位
+definePageMeta({ rightSidebar: false })
 const route = useRoute(),
   router = useRouter()
 const activeQuery = computed(() => (typeof route.query.q === 'string' ? route.query.q.slice(0, 200) : ''))
