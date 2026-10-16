@@ -16,7 +16,7 @@ Rust 没有垃圾回收器，它用一套规则在编译期决定每个值什么
 
 ```rust
 fn main() {
-    let name = String::from("TixXin");
+    let name = String::from("Alice");
     let greeting = make_greeting(name);
     println!("{}", greeting);
     println!("{}", name); // 错误：value borrowed here after move
@@ -35,7 +35,7 @@ fn make_greeting(n: String) -> String {
 
 ```rust
 fn main() {
-    let name = String::from("TixXin");
+    let name = String::from("Alice");
     let greeting = make_greeting(&name);
     println!("{}", greeting);
     println!("{}", name); // 正常，name 还在

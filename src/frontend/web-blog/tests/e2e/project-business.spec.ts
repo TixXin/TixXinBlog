@@ -253,7 +253,7 @@ test('服务端拒绝无效链接时保留输入，有效链接与技术去重�
   expect((await rejected).status()).toBe(400)
   await expect(page.getByRole('alert')).toBeVisible()
   await expect(href).toHaveValue('javascript:alert(1)')
-  await href.fill('https://github.com/TixXin/TixXinBlog')
+  await href.fill('https://github.com/example/myblog')
   for (const name of ['Vue', 'vue']) {
     await page.getByRole('button', { name: '添加技术标签', exact: true }).click()
     await page
@@ -270,7 +270,7 @@ test('服务端拒绝无效链接时保留输入，有效链接与技术去重�
   const card = page.locator(`[data-project-id="${id}"]`)
   await expect(card.getByRole('link', { name: '源代码', exact: true })).toHaveAttribute(
     'href',
-    'https://github.com/TixXin/TixXinBlog',
+    'https://github.com/example/myblog',
   )
   await expect(card.locator('a[href="#"]')).toHaveCount(0)
 })

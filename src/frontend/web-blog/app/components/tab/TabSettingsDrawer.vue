@@ -794,7 +794,7 @@
               </div>
               <div class="tsd-row">
                 <span class="tsd-row__label">作者</span>
-                <span class="tsd-row__value">TixXin</span>
+                <span class="tsd-row__value">{{ ownerCard.name }}</span>
               </div>
               <p class="tsd-about-text">
                 标签页是本站的一个实验功能，灵感来自浏览器新标签页管理工具。
@@ -813,6 +813,9 @@ import type { CurrentUser } from '~/features/auth/types'
 import type { TabIconStyle, FaviconProvider, WallpaperKind, WallpaperConfig } from '~/composables/useTabSettings'
 import { builtinWallpapers } from '~/features/tab/wallpapers'
 import { idbSet, idbDel } from '~/utils/idbBlob'
+
+// 关于卡片的署名沿用博主维护的站点资料，不在组件里写死
+const { ownerCard } = useSiteInfo()
 
 defineProps<{
   user: CurrentUser | null

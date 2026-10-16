@@ -79,9 +79,9 @@ export async function buildEditorialPackage(
     tags,
     // v11固定结构要求这些键；它们是中性格式占位，导入必须关闭includeSettings，不代表来源/正式配置。
     site: {
-      name: 'TixXin Blog',
+      name: '陈屿的博客',
       description: '',
-      ownerName: 'tixxin',
+      ownerName: '陈屿',
       ownerTitle: '',
       avatar: '',
       avatarAlt: '',

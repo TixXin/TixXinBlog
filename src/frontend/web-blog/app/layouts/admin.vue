@@ -5,7 +5,7 @@
 <template>
   <div class="admin-shell" :class="{ 'admin-shell--login': isLogin }">
     <aside v-if="!isLogin" class="admin-sidebar">
-      <NuxtLink class="admin-brand" to="/admin"><Icon name="lucide:notebook-pen" />TixXin 管理</NuxtLink>
+      <NuxtLink class="admin-brand" to="/admin"><Icon name="lucide:notebook-pen" />{{ siteName }} 管理</NuxtLink>
       <AdminNavigation />
       <NuxtLink class="admin-back" to="/"><Icon name="lucide:arrow-up-right" />返回博客</NuxtLink>
     </aside>
@@ -48,6 +48,8 @@
 </template>
 <script setup lang="ts">
 import { adminNavigation as navigation, adminModule } from '~/features/admin/navigation'
+// 后台品牌沿用博主维护的站点名，不在布局里写死
+const { siteName } = useSiteInfo()
 const main = ref<HTMLElement | null>(null)
 useAdminWorkspace(main)
 const actionTarget = ref<HTMLElement | null>(null)

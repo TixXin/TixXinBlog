@@ -23,7 +23,7 @@
 去掉注释后大概六十行，关键部分贴出来：
 
 ```yaml
-name: tixxinblog-dev
+name: myblog-dev
 
 services:
   db:
@@ -31,13 +31,13 @@ services:
     environment:
       POSTGRES_USER: blog
       POSTGRES_PASSWORD: blog
-      POSTGRES_DB: tixxin_blog
+      POSTGRES_DB: myblog
     ports:
       - '${DB_PORT:-5432}:5432'
     volumes:
       - db-data:/var/lib/postgresql/data
     healthcheck:
-      test: ['CMD-SHELL', 'pg_isready -U blog -d tixxin_blog']
+      test: ['CMD-SHELL', 'pg_isready -U blog -d myblog']
       interval: 3s
       timeout: 3s
       retries: 10
