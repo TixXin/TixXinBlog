@@ -2,10 +2,8 @@
  * @file [...path].ts
  * @description 同源 API 网关：浏览器不感知内网后端地址，认证 Cookie 保持相同路径
  */
-import { canCacheMediaResponse, createProxyTrust, resolveProxyClientIp } from '../../utils/trustedProxy'
-
-let proxyTrustConfig: string | undefined
-let proxyTrust = createProxyTrust('')
+import { canCacheMediaResponse } from '../../utils/trustedProxy'
+import { clientIpForUpstream } from '../../utils/requestIdentity'
 
 export default defineEventHandler(async (event) => {
   setResponseHeader(event, 'cache-control', 'no-store')
@@ -32,16 +30,9 @@ export default defineEventHandler(async (event) => {
   const config = useRuntimeConfig(event)
   const base = String(config.apiBaseUrl).replace(/\/$/, '')
   if (!/^https?:\/\//.test(base)) throw createError({ statusCode: 503, message: '后端连接尚未配置' })
-  const trustConfig = String(config.trustedProxyCidrs || '')
-  if (proxyTrustConfig !== trustConfig) {
-    proxyTrust = createProxyTrust(trustConfig)
-    proxyTrustConfig = trustConfig
-  }
-  const clientIp = resolveProxyClientIp(
-    event.node.req.socket.remoteAddress,
-    getHeader(event, 'x-forwarded-for'),
-    proxyTrust,
-  )
+  // 外部请求按可信代理解析访客 IP；SSR 期间的内部调用沿用 request-identity 中间件登记的外部请求身份，
+  // 后端限流按真实访客计数，而不是把所有 SSR 请求都记在本服务器地址上。
+  const clientIp = clientIpForUpstream(event)
   // h3 默认透传原始请求头；清除其他地址提示，防止下游将其误认为可信身份。
   delete event.node.req.headers.forwarded
   delete event.node.req.headers['x-real-ip']

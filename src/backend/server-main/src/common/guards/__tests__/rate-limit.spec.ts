@@ -29,6 +29,17 @@ describe('RateLimitGuard', () => {
       } as unknown as ExecutionContext)
   }
 
+  it('开发环境不计数，本机浏览器、SSR 与工具共用 127.0.0.1 也不会互相限住', () => {
+    const guard = new RateLimitGuard(new ConfigService({ NODE_ENV: 'development' }))
+    const request = () =>
+      guard.canActivate({
+        switchToHttp: () => ({
+          getRequest: () => ({ path: '/api/v1/posts', method: 'GET', ip: '127.0.0.1', socket: {} }),
+          getResponse: () => ({ setHeader: () => undefined }),
+        }),
+      } as unknown as ExecutionContext)
+    for (let index = 0; index < 130; index++) expect(request()).toBe(true)
+  })
   it('公开读取、媒体和管理读取分别执行 120/600/300 配额并保持 Retry-After', () => {
     const guard = new RateLimitGuard(new ConfigService({ NODE_ENV: 'production' }))
     const headers = new Map<string, string>()
