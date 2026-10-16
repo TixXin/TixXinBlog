@@ -14,6 +14,10 @@ import { SavePostDto } from '../modules/post/dto/save-post.dto'
 import { MomentWriteService } from '../modules/moment/moment-write.service'
 import { MomentReadService } from '../modules/moment/moment-read.service'
 import { GalleryService } from '../modules/gallery/gallery.service'
+import { LinkService } from '../modules/link/link.service'
+import { GallerySettings } from '../entities/gallery-settings.entity'
+import { LinkSettings } from '../entities/link-settings.entity'
+import type { AboutSettingsDto } from '../modules/site/about-settings'
 import { GuestbookReadService } from '../modules/guestbook/guestbook-read.service'
 import { GuestbookWriteService, lockGuestbook } from '../modules/guestbook/guestbook-write.service'
 import { SiteSettingsService } from '../modules/site/site-settings.service'
@@ -69,42 +73,42 @@ export const SHOWCASE_VISITORS = [
 ] as const
 // 封面、动态配图与图库作品共用这批素材；替代文本描述画面本身。
 const ASSETS: readonly (readonly [string, string])[] = [
-  ['code-screen', '显示器上的代码'],
-  ['server-room', '机房里的服务器机柜'],
-  ['laptop-desk', '桌上打开的笔记本电脑'],
+  ['code-screen', '窗边绿植旁打开的笔记本，屏幕上是代码'],
+  ['octocat', '显示器前的章鱼猫手办'],
+  ['code-closeup', '深色屏幕上的代码特写'],
   ['code-editor', '编辑器里的代码'],
-  ['macbook-code', '笔记本屏幕上的代码'],
-  ['terminal', '终端窗口'],
-  ['workspace', '整洁的工作台'],
-  ['laptop-code', '笔记本上的代码片段'],
+  ['macbook-code', '桌上的笔记本与代码'],
+  ['terminal', '显示器上的代码，前面放着一副眼镜'],
+  ['workspace', '书桌上的笔记本和几本书'],
+  ['laptop-code', '白色桌面上的笔记本和一杯咖啡'],
   ['typing', '敲击键盘的双手'],
-  ['devices', '桌上的几台设备'],
+  ['laptop-glow', '暗处半合的笔记本透出屏幕光'],
   ['code-dark', '深色主题下的代码'],
   ['team-desk', '几个人围着桌子协作'],
-  ['sakura', '盛开的樱花'],
-  ['blossom', '枝头的花'],
-  ['garden', '园林一角'],
-  ['sunset-sea', '海边的夕阳'],
-  ['waves', '拍岸的海浪'],
-  ['sushi', '三文鱼刺身'],
-  ['eel-rice', '鳗鱼饭'],
-  ['reading', '翻开的书'],
-  ['cloud-sea', '山顶的云海'],
-  ['summit', '山顶远眺'],
+  ['cactus', '粉色背景前的盆栽仙人掌'],
+  ['tree-canopy', '逆光下的大树树冠'],
+  ['sunflower', '向日葵特写'],
+  ['green-hills', '起伏的绿色山坡'],
+  ['mountain-light', '阳光洒进山谷，远处站着一个人'],
+  ['sushi', '三文鱼寿司卷'],
+  ['sushi-boat', '寿司船拼盘'],
+  ['reading', '木桌上的一本诗集'],
+  ['mountain-valley', '雪山下的河谷与针叶林'],
+  ['summit', '雪山与金色草甸'],
   ['bookshelf', '摆满书的书架'],
-  ['latte', '拉花拿铁'],
-  ['city-night', '城市夜景'],
-  ['cbd-night', '楼群夜色'],
-  ['bay-run', '清晨跑步'],
-  ['bay-sunrise', '海湾日出'],
-  ['bay-track', '空旷的跑道'],
+  ['latte', '几只手举着拉花咖啡'],
+  ['city-night', '傍晚的城市街道'],
+  ['city-aerial', '俯瞰海边的城市楼群'],
+  ['stairs-run', '跑上台阶的双脚'],
+  ['track-aerial', '俯拍跑道上的一组跑者'],
+  ['sprint', '起跑的短跑选手'],
 ]
 // 图库作品与朋友圈里的拍摄情节对应；地点与器材是样本设定。
 const GALLERY_PHOTOS = [
-  ['cloud-sea', '梧桐山的云海', '风景', '清晨七点到山顶，云海刚好漫过山脊。', '深圳 · 梧桐山', '', 50],
-  ['summit', '山顶的风', '风景', '风很大，站稳之后才敢举起相机。', '深圳 · 梧桐山', '', 50],
+  ['mountain-valley', '河谷与雪山', '风景', '远处的雪山压着一层云，近处是成片的针叶林。', '四川 · 新都桥', '', 50],
+  ['summit', '雪线以上', '风景', '回程路上停车拍的，山顶的雪还没化。', '四川 · 康定', '', 50],
   ['city-night', '福田夜色', '城市', '手持 1/4 秒，靠在栏杆上拍到的一张。', '深圳 · 福田CBD', 'Sony A7M4', 7],
-  ['bay-sunrise', '深圳湾日出', '风景', '跑步跑到一半停下来等太阳出来。', '深圳 · 深圳湾', '', 86],
+  ['green-hills', '山坡的绿', '风景', '傍晚的光从侧面打过来，山坡的起伏一下子清楚了。', '深圳 · 七娘山', '', 29],
 ] as const
 interface ShowcaseComment {
   author: (typeof SHOWCASE_VISITORS)[number]
@@ -272,13 +276,105 @@ async function ensureAssets(
   }
   return assets
 }
+const item = (title: string, period: string, detail = '') => ({ title, period, detail, visible: true })
+// 关于页四类栏目：经历按时间倒序，技能写年限与用法，兴趣与在读呼应文章和朋友圈里的内容。
+const SHOWCASE_ABOUT: AboutSettingsDto = {
+  visible: true,
+  introduction:
+    '我是 TixXin，在深圳做前端开发。这里记录 Vue、Nuxt 和 TypeScript 的实践，也写部署运维的踩坑、读过的书和周末去过的地方。文章尽量写清楚“为什么这么做”，而不只是“怎么做”。',
+  sections: [
+    {
+      kind: 'experience',
+      visible: true,
+      items: [
+        item(
+          '高级前端工程师 · 一家做企业服务的公司',
+          '2023 - 至今',
+          '负责中后台产品的前端架构，主导从 Vue 2 迁到 Vue 3 和 Vite，搭了组件库和前端监控，团队从三个人带到七个人。',
+        ),
+        item(
+          '前端工程师 · 一家电商创业公司',
+          '2021 - 2023',
+          '做商城小程序、营销活动页和运营后台，第一次接触 SSR 和性能优化，也是在这里开始写这个博客。',
+        ),
+        item(
+          '前端实习生',
+          '2020 - 2021',
+          '在外包团队写了一年页面，学会了把设计稿还原到像素级，也学会了不在周五下午上线。',
+        ),
+      ],
+    },
+    {
+      kind: 'skill',
+      visible: true,
+      items: [
+        item('Vue / Nuxt', '5 年', '日常主力，组合式函数、SSR 与水合问题是踩坑最多的地方。'),
+        item('TypeScript', '4 年', '类型收窄和泛型约束写得比较多，喜欢让类型替代注释。'),
+        item('CSS / SCSS', '6 年', '设计还原、主题变量和动效，容器查询已经在项目里用起来了。'),
+        item('Node.js / NestJS', '3 年', '写过博客后端和几个内部工具服务，PostgreSQL 打交道最多。'),
+        item('Docker / CI', '3 年', '本地开发环境、GitHub Actions 流水线和小机器上的部署。'),
+      ],
+    },
+    {
+      kind: 'interest',
+      visible: true,
+      items: [
+        item('摄影', '', '周末带相机出门，城市夜景和山里的云海拍得最多。'),
+        item('骑行', '', '深圳湾到大梅沙，一次五十公里左右。'),
+        item('咖啡', '', '在找城市角落里安静的独立咖啡馆。'),
+        item('阅读', '', '一年二十多本，技术和非虚构各一半。'),
+        item('做饭', '', '从完全不会到能做几道像样的菜。'),
+      ],
+    },
+    {
+      kind: 'reading',
+      visible: true,
+      items: [
+        item('重构：改善既有代码的设计', 'Martin Fowler', '第三遍，这次对照自己的代码一条条看坏味道。'),
+        item('人月神话', 'Frederick Brooks', '“没有银弹”那一章值得每年重读。'),
+        item('置身事内', '兰小欢', '读完写了一篇书评，放在随笔日记里。'),
+      ],
+    },
+  ],
+}
+const SHOWCASE_GEAR = [
+  { icon: 'lucide:camera', name: 'Sony A7M4', description: '主力相机，夜景和风光' },
+  { icon: 'lucide:circle', name: 'FE 24-70mm F2.8 GM II', description: '常用镜头，一镜走天下' },
+  { icon: 'lucide:smartphone', name: 'iPhone 16 Pro', description: '随手拍和探店' },
+] as const
+const SHOWCASE_LINK_RULES = [
+  '网站能正常访问，内容积极健康，没有违法违规内容。',
+  '以原创内容为主，近三个月内有文章更新。',
+  '请先在你的站点添加本站友链，再通过留言板或邮件告诉我。',
+  '审核通过后会出现在本页，一般一到三个工作日内回复。',
+]
+/** 画廊器材与友链须知仍是初始空值时才写入，博主维护过的设置保持原样 */
+async function ensureSiteExtras(em: EntityManager, progress: FixtureProgress) {
+  const gallery = await em.findOneOrFail(GallerySettings, { id: 'default' }, { refresh: true })
+  if (gallery.revision === 0 && !gallery.gear.length) {
+    await new GalleryService(em).saveSettings({ revision: 0, gear: SHOWCASE_GEAR.map((gear) => ({ ...gear })) })
+    progress.created.push(`${SHOWCASE_DATASET}/gallery/gear`)
+  } else progress.retained.push(`${SHOWCASE_DATASET}/gallery/gear`)
+  const links = await em.findOneOrFail(LinkSettings, { id: 'default' }, { refresh: true })
+  if (links.revision === 0 && !links.rules.length) {
+    await new LinkService(em).saveSettings({ revision: 0, rules: [...SHOWCASE_LINK_RULES] })
+    progress.created.push(`${SHOWCASE_DATASET}/link/rules`)
+  } else progress.retained.push(`${SHOWCASE_DATASET}/link/rules`)
+}
 /** 资料仍是初始值或由 prepare-profile 整理过时才写入博主资料；博主编辑过的配置原样保留 */
 async function ensureProfile(em: EntityManager, progress: FixtureProgress) {
   const service = new SiteSettingsService(em)
   const current = await service.get()
   const latest = await em.findOne(SiteSettingsRevision, { revision: current.revision })
   if (latest?.reason === SHOWCASE_PROFILE_REASON) {
-    progress.retained.push(`${SHOWCASE_DATASET}/site/profile`)
+    // 最新版本仍是本样本写入的资料（博主保存过会产生新原因的版本）；早期写入时关于页栏目为空，这里补齐
+    if (!current.about.sections.length) {
+      const { updatedAt: _u, announcementUpdatedAt: _a, ...kept } = current
+      void _u
+      void _a
+      await service.save({ ...kept, about: SHOWCASE_ABOUT }, SHOWCASE_PROFILE_REASON)
+      progress.created.push(`${SHOWCASE_DATASET}/site/about`)
+    } else progress.retained.push(`${SHOWCASE_DATASET}/site/profile`)
     return
   }
   if (!(await eligibleInitialProfile(em)) && latest?.reason !== PREPARED_PROFILE_REASON) {
@@ -306,12 +402,7 @@ async function ensureProfile(em: EntityManager, progress: FixtureProgress) {
       presenceLabel: '摆烂中',
       presenceSignature: '今天不想写代码',
       launchedAt: '2021-08-16',
-      about: {
-        visible: true,
-        introduction:
-          '我是 TixXin，在深圳做前端开发。这里记录 Vue、Nuxt 和 TypeScript 的实践，也写部署运维的踩坑、读过的书和周末去过的地方。文章尽量写清楚“为什么这么做”，而不只是“怎么做”。',
-        sections: [],
-      },
+      about: SHOWCASE_ABOUT,
     },
     SHOWCASE_PROFILE_REASON,
   )
@@ -449,9 +540,15 @@ async function seedComments(
     if (!postId) continue
     const published = at(post.days)
     for (const [index, item] of COMMENTS.get(post.key)!.entries()) {
-      // 评论落在发布后一到三周内，但不晚于现在；回复再晚半天到两天。
+      // 首条评论落在发布后一到三周内；较早的文章后续评论多来自搜索，散落在最近三个多月里；均不晚于现在。
+      const seed = index * 37 + post.key.length * 11 + post.days
       const offset = (1 + ((index * 5 + post.key.length) % 20)) * DAY + ((index * 7 + 3) % 11) * 3600000
-      const when = new Date(Math.min(published.getTime() + offset, now.getTime() - 3600000))
+      const late = index > 0 && post.days > 30
+      const when = late
+        ? new Date(
+            Math.max(published.getTime() + offset, now.getTime() - (1 + (seed % 100)) * DAY - (seed % 13) * 3600000),
+          )
+        : new Date(Math.min(published.getTime() + offset, now.getTime() - 3600000))
       const root = await create(`${post.key}/${index}`, postId, item.author, item.content, false, null, when)
       if (item.reply && root) {
         const replyAt = new Date(
@@ -706,6 +803,7 @@ export async function seedShowcaseFixtures(
     : SHOWCASE_POSTS
   if (missing.length) throw new Error(`正文目录不完整，缺少 ${missing.length} 篇：${missing[0]!.key}`)
   await ensureProfile(em, progress)
+  await ensureSiteExtras(em, progress)
   const site = await em.findOneOrFail(SiteSettings, { id: 'default' }, { refresh: true })
   await syncOwnerSnapshots(em, site.values.ownerName)
   const assets = await ensureAssets(em, storage, progress, createdMedia)
