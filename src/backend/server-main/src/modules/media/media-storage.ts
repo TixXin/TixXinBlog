@@ -11,6 +11,7 @@ import { randomUUID } from 'node:crypto'
 export abstract class MediaStorage {
   abstract put(key: string, content: Buffer): Promise<void>
   abstract get(key: string): Promise<Buffer>
+  abstract assertReadable(key: string): Promise<void>
   abstract readIfExists(key: string): Promise<Buffer | null>
   abstract remove(key: string): Promise<void>
   async probe(): Promise<{ readable: boolean; writable: boolean; cleaned: boolean }> {
@@ -69,6 +70,15 @@ export class LocalMediaStorage extends MediaStorage {
   }
   get(key: string) {
     return readFile(this.path(key))
+  }
+  async assertReadable(key: string) {
+    // 条件请求只打开并检查文件，不为 304/HEAD 分配完整图片缓冲区。
+    const file = await open(this.path(key), 'r')
+    try {
+      if (!(await file.stat()).isFile()) throw new Error('媒体资源不是普通文件')
+    } finally {
+      await file.close()
+    }
   }
   async readIfExists(key: string): Promise<Buffer | null> {
     try {

@@ -4,6 +4,8 @@
  */
 import assert from 'node:assert/strict'
 import { randomUUID } from 'node:crypto'
+import { unlink } from 'node:fs/promises'
+import { join } from 'node:path'
 import { setTimeout as delay } from 'node:timers/promises'
 import sharp from 'sharp'
 import { createBrowserTestApp } from './test-app.mjs'
@@ -67,7 +69,19 @@ try {
   const binary = await fetch(`${fixture.origin}${asset.url}`)
   assert.equal(binary.status, 200)
   assert.equal(binary.headers.get('content-type'), 'image/webp')
+  assert.equal(binary.headers.get('cache-control'), 'private, no-cache')
+  const etag = binary.headers.get('etag')
+  assert.match(etag, /^"[a-f0-9]{64}"$/)
   assert.equal((await sharp(Buffer.from(await binary.arrayBuffer())).metadata()).format, 'webp')
+  const revalidated = await fetch(`${fixture.origin}${asset.url}`, { headers: { 'if-none-match': etag } })
+  assert.equal(revalidated.status, 304)
+  assert.equal(await revalidated.text(), '')
+  assert.equal(revalidated.headers.get('cache-control'), 'private, no-cache')
+  assert.equal(revalidated.headers.get('etag'), etag)
+  const head = await fetch(`${fixture.origin}${asset.url}`, { method: 'HEAD' })
+  assert.equal(head.status, 200)
+  assert.equal(await head.text(), '')
+  assert.equal(Number(head.headers.get('content-length')), asset.byteSize)
   const postBody = { title: '媒体引用测试', contentRaw: `![图片](${asset.url})`, cover: asset.url, status: 'draft' }
   const created = await request('/admin/posts', 'POST', postBody)
   assert.equal(created.status, 201)
@@ -99,7 +113,9 @@ try {
   await delay(1100)
   await request(`/admin/media/${unused.id}`, 'PATCH', { description: '回收与恢复时保留的说明' })
   assert.equal((await request(`/admin/media/${unused.id}`, 'DELETE')).status, 200)
-  assert.equal((await fetch(`${fixture.origin}${unused.url}`)).status, 404)
+  const removed = await fetch(`${fixture.origin}${unused.url}`, { headers: { 'if-none-match': etag } })
+  assert.equal(removed.status, 404)
+  assert.equal(removed.headers.get('cache-control'), 'no-store')
   assert.equal((await request(`/admin/media/${unused.id}/restore`, 'POST')).status, 201)
   assert.equal((await fetch(`${fixture.origin}${unused.url}`)).status, 200)
   assert.equal(
@@ -145,6 +161,11 @@ try {
     2,
     '筛选和说明维护不改变历史及业务引用',
   )
+  // 只移除本次隔离目录中的样本，验证命中 ETag 也不能掩盖文件丢失。
+  await unlink(join(process.env.MEDIA_DIRECTORY, `${unused.id}.webp`))
+  const missingFile = await fetch(`${fixture.origin}${unused.url}`, { headers: { 'if-none-match': etag } })
+  assert.equal(missingFile.status, 503)
+  assert.equal(missingFile.headers.get('cache-control'), 'no-store')
   process.stdout.write(
     '媒体集成通过：权限、上传幂等、真实 WebP、说明独立更新、尺寸与历史引用筛选、稳定分页、业务入口及回收恢复\n',
   )

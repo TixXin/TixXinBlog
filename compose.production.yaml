@@ -82,6 +82,7 @@ services:
       DATABASE_URL: postgres://tixxin:${POSTGRES_PASSWORD}@postgres:5432/tixxin_blog
       JWT_ACCESS_SECRET: ${JWT_ACCESS_SECRET:?请配置签名密钥}
       CORS_ORIGIN: ${SITE_URL:?请配置 HTTPS 站点地址}
+      TRUSTED_PROXY_CIDRS: ${API_TRUSTED_PROXY_CIDRS:-}
       LOG_LEVEL: info
       MEDIA_DIRECTORY: /app/var/media
       RELEASE_VERSION: ${RELEASE_VERSION}
@@ -97,6 +98,7 @@ services:
     logging: *logging
     environment:
       NUXT_API_BASE_URL: http://backend:3000/api/v1
+      NUXT_TRUSTED_PROXY_CIDRS: ${WEB_TRUSTED_PROXY_CIDRS:-}
       NUXT_PUBLIC_API_BASE_URL: /api/v1
       NUXT_PUBLIC_SITE_URL: ${SITE_URL:?请配置 HTTPS 站点地址}
       NUXT_PUBLIC_USE_MOCK_REPO: 'false'

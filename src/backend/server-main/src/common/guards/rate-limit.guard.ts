@@ -39,6 +39,8 @@ export class RateLimitGuard implements CanActivate {
     const view = request.path.endsWith('/view')
     const upload = request.path === '/api/v1/admin/media' && request.method === 'POST'
     const write = !['GET', 'HEAD'].includes(request.method)
+    const media = request.path.startsWith('/api/v1/media/')
+    const admin = /^\/api\/v1\/admin(?:\/|$)/.test(request.path)
     const scope = upload
       ? 'media-upload'
       : login
@@ -49,8 +51,12 @@ export class RateLimitGuard implements CanActivate {
             ? 'view'
             : write
               ? 'write'
-              : 'read'
-    const limit = upload ? 20 : login ? 5 : refresh ? 30 : view ? 60 : write ? 10 : 120
+              : media
+                ? 'media-read'
+                : admin
+                  ? 'admin-read'
+                  : 'read'
+    const limit = upload ? 20 : login ? 5 : refresh ? 30 : view ? 60 : write ? 10 : media ? 600 : admin ? 300 : 120
     // 仅测试环境可缩短窗口，生产不能通过错误配置关闭限流。
     const windowMs = this.config.get<string>('NODE_ENV') === 'test' ? 1000 : 60000
     const retryAfter = this.store.consume(`${scope}:${request.ip ?? request.socket.remoteAddress}`, limit, windowMs)

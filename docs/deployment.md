@@ -33,6 +33,16 @@ docker build -f src/backend/server-main/Dockerfile --target worker -t "tixxin-bl
 
 数据库不发布宿主端口，API 由前端同源网关访问。Caddy 转发到前端，前端再转发 `/api/v1` 到 API；版本响应头为 `X-TixXin-Release`。Caddy 在真实域名下会申请证书，正式启用前准备 DNS 和 HTTP/HTTPS 入口。隔离验证使用内部 CA，并真实校验证书，不关闭 TLS 检查或修改系统信任。
 
+### 可信代理、读取配额与媒体缓存
+
+默认两端都忽略转发地址头。生产按真实网络填写 `WEB_TRUSTED_PROXY_CIDRS`（Nuxt 的直接前置 Caddy 地址）和 `API_TRUSTED_PROXY_CIDRS`（API 的直接前置 Nuxt 地址）；值为逗号分隔的明确 IPv4/IPv6 地址或 CIDR，映射为 `NUXT_TRUSTED_PROXY_CIDRS` 与 `TRUSTED_PROXY_CIDRS`。只填写受控代理地址或隔离代理网络的窄 CIDR，不能用全部私网、`0.0.0.0/0`、布尔开关或任意跳数代替核对。容器重建时地址可能变化，需要固定专用代理网络或同步这些配置。未配置时访客会按代理连接地址共享配额，不能把这一默认状态用于面向多访客的正式验收。
+
+当前 Caddy 模板直接接收访客连接，覆盖 `X-Forwarded-For` 并移除其他客户端地址提示；Nuxt 从连接地址向外逐跳验证代理链，再向 API 发送单一客户端 IP，API 只接受可信 Nuxt 连接的转发地址。若 Caddy 前另有 CDN/负载均衡，先按真实拓扑独立配置并验证最外层信任边界，不能直接透传访客的头。部署后用两个独立访客地址和伪造转发头验证配额隔离。
+
+固定 60 秒窗口内，每 IP 的公开业务读取、公开媒体读取和管理读取分别为 120、600、300 次，三个桶互不占用；登录、刷新认证、写入、上传及浏览计数仍保留原有额度。超限响应包含 `Retry-After`，浏览器不立即自动重试。
+
+受管媒体的成功 GET/HEAD 与 304 使用 `Cache-Control: private, no-cache` 及基于已登记 SHA-256 的 ETag。浏览器可以保存字节，但每次复用前都要向服务端验证；服务端先检查资源未删除且磁盘文件可读，命中条件时返回无正文的 304。删除后下一次请求返回 404；文件缺失返回 503，错误及其他业务响应保持 `no-store`。同源网关只为精确的受管媒体路径保留缓存头，不为媒体配置长期 immutable 或共享 CDN 缓存。
+
 `media` 卷挂载到 API `/app/var/media`；worker 只读挂载同一媒体卷，备份写入专用卷，无需 Docker socket。上传资源会转为 WebP；更换存储位置时同时迁移原文件、数据库登记与权限。不要通过 `down -v` 处理服务故障。
 
 ## 站点地址与索引

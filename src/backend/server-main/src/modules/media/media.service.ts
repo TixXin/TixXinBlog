@@ -235,11 +235,21 @@ export class MediaService {
       return this.dto(asset)
     })
   }
-  async read(id: string) {
+  async read(id: string, options: { ifNoneMatch?: string; head?: boolean } = {}) {
     const asset = await this.em.findOne(MediaAsset, { id, deletedAt: null })
     if (!asset) throw new NotFoundException('媒体不存在或已移除')
     try {
-      return await this.storage.get(asset.storageKey)
+      await this.storage.assertReadable(asset.storageKey)
+      const etag = `"${asset.sha256}"`
+      const notModified = (options.ifNoneMatch ?? '')
+        .split(',')
+        .some((tag) => tag.trim() === '*' || tag.trim().replace(/^W\//, '') === etag)
+      return {
+        etag,
+        byteSize: asset.byteSize,
+        notModified,
+        content: notModified || options.head ? undefined : await this.storage.get(asset.storageKey),
+      }
     } catch {
       throw new ServiceUnavailableException('媒体文件暂不可用')
     }

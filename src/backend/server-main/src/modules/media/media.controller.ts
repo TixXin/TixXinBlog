@@ -12,6 +12,7 @@ import {
   Patch,
   Post,
   Query,
+  Req,
   Res,
   UploadedFile,
   UseGuards,
@@ -21,7 +22,7 @@ import {
 import { FileInterceptor } from '@nestjs/platform-express'
 import { Transform, Type } from 'class-transformer'
 import { IsBoolean, IsIn, IsInt, IsOptional, IsString, IsUUID, Max, MaxLength, Min, ValidateIf } from 'class-validator'
-import type { Response } from 'express'
+import type { Request, Response } from 'express'
 import { AdminAuthGuard } from '../../common/guards/admin-auth.guard'
 import { MediaService } from './media.service'
 import { MAX_IMAGE_BYTES } from './media-image'
@@ -83,11 +84,18 @@ export class AdminMediaController {
 export class PublicMediaController {
   constructor(private readonly media: MediaService) {}
   @Get(':file')
-  async read(@Param('file') file: string, @Res() response: Response) {
+  async read(@Param('file') file: string, @Req() request: Request, @Res() response: Response) {
     if (!/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}\.webp$/i.test(file))
       throw new NotFoundException('媒体不存在')
-    const content = await this.media.read(file.slice(0, -5).toLowerCase())
+    const result = await this.media.read(file.slice(0, -5).toLowerCase(), {
+      ifNoneMatch: request.get('if-none-match'),
+      head: request.method === 'HEAD',
+    })
+    response.setHeader('Cache-Control', 'private, no-cache')
+    response.setHeader('ETag', result.etag)
+    if (result.notModified) return response.status(304).end()
     response.type('image/webp').setHeader('Content-Disposition', `inline; filename="${file.toLowerCase()}"`)
-    response.send(content)
+    if (request.method === 'HEAD') return response.setHeader('Content-Length', result.byteSize).end()
+    response.send(result.content)
   }
 }
