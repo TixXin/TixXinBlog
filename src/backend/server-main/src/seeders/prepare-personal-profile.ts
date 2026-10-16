@@ -14,6 +14,7 @@ import {
   EMPTY_INITIAL_ABOUT,
   INITIAL_PROFILE_REASON,
   LEGACY_INITIAL_SITE_VALUES,
+  LEGACY_SANITIZED_SITE_VALUES,
   SAFE_INITIAL_PROFILE_REASON,
   SAFE_INITIAL_SITE_VALUES,
 } from '../modules/site/initial-profile'
@@ -21,7 +22,7 @@ import {
 /** prepare-profile 写入的修订原因；样本集据此识别“仍是工具整理过的资料” */
 export const PREPARED_PROFILE_REASON = '整理已确认称呼与站点定位，收起未经确认的初始资料'
 
-/** 资料仍等于两套初始值之一（未经博主编辑）时才允许工具整理 */
+/** 资料仍等于新建库的中性初始值或老库的两套历史初始值之一（未经博主编辑）时才允许工具整理 */
 export async function eligibleInitialProfile(em: EntityManager) {
   // 在线状态、签名与上线日期是后加字段：早期写入的初始资料没有这些键，比较时忽略它们，但它们一旦有值即视为已编辑。
   const later = `- 'presenceLabel' - 'presenceSignature' - 'launchedAt'`
@@ -29,19 +30,20 @@ export async function eligibleInitialProfile(em: EntityManager) {
   const [match] = await em.execute<{ eligible: boolean }[]>(
     `select exists(select 1 from site_settings s join site_settings_revision r on r.revision=s.revision
       where s.id='default' and ${untouched} and (
-        (s.revision=0 and not exists(select 1 from site_settings_revision where revision=1) and r.reason=? and s."values"-'about'=r."values"-'about' and r."values"-'about' ${later}=?::jsonb ${later}
+        (s.revision=0 and not exists(select 1 from site_settings_revision where revision=1) and r.reason=? and s."values"-'about'=r."values"-'about' and (r."values"-'about' ${later}=?::jsonb ${later} or r."values"-'about' ${later}=(?::jsonb-'about') ${later})
           and coalesce(s."values"->'about',?::jsonb)=?::jsonb and coalesce(r."values"->'about',?::jsonb)=?::jsonb)
         or (s.revision=1 and r.reason=? and s."values"=r."values" and s."values" ${later}=?::jsonb ${later})
       )) as eligible`,
     [
       INITIAL_PROFILE_REASON,
       JSON.stringify(LEGACY_INITIAL_SITE_VALUES),
+      JSON.stringify(SAFE_INITIAL_SITE_VALUES),
       JSON.stringify(EMPTY_INITIAL_ABOUT),
       JSON.stringify(EMPTY_INITIAL_ABOUT),
       JSON.stringify(EMPTY_INITIAL_ABOUT),
       JSON.stringify(EMPTY_INITIAL_ABOUT),
       SAFE_INITIAL_PROFILE_REASON,
-      JSON.stringify(SAFE_INITIAL_SITE_VALUES),
+      JSON.stringify(LEGACY_SANITIZED_SITE_VALUES),
     ],
   )
   return match?.eligible === true

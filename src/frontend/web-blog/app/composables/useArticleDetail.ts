@@ -131,7 +131,7 @@ export async function useArticleDetail(id: string, options: { reuseLoaded?: bool
   const articleExcerpt = computed(() => {
     if (article.value.summary) return article.value.summary
     const firstParagraph = article.value.content?.find((s: { type: string }) => s.type === 'paragraph')
-    return firstParagraph?.text?.slice(0, 160) ?? '阅读 TixXin Blog 上的文章'
+    return firstParagraph?.text?.slice(0, 160) ?? '阅读本站的文章'
   })
 
   if (!useMock)

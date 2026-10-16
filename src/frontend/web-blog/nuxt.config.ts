@@ -48,10 +48,12 @@ export default {
     head: {
       charset: 'utf-8',
       viewport: 'width=device-width, initial-scale=1',
-      titleTemplate: '%s - TixXin Blog',
+      // 以下三项只是站点资料未就绪时的 SSR 首屏兜底；正式值由博主在 /admin/site 维护，
+      // 由 app.vue 的 useHead/useSeoMeta 动态覆盖。此处不放任何具体站点的身份信息。
+      titleTemplate: '%s - My Blog',
       meta: [
-        { name: 'description', content: 'TixXin 的个人博客，分享技术文章、项目经验与生活随笔' },
-        { property: 'og:site_name', content: 'TixXin Blog' },
+        { name: 'description', content: '' },
+        { property: 'og:site_name', content: 'My Blog' },
         { property: 'og:type', content: 'website' },
         { property: 'og:locale', content: 'zh_CN' },
         { name: 'twitter:card', content: 'summary_large_image' },
@@ -118,7 +120,8 @@ export default {
     // 仅信任实际前置代理的地址/CIDR，默认忽略访客提交的转发头。
     trustedProxyCidrs: '',
     public: {
-      siteUrl: 'https://tix.xin',
+      // 公开站点地址，部署时由 NUXT_PUBLIC_SITE_URL 注入；默认值仅供本机开发。
+      siteUrl: process.env.NUXT_PUBLIC_SITE_URL || 'http://localhost:3456',
       analytics: {
         provider: '',
         siteId: '',
@@ -137,9 +140,12 @@ export default {
       apiBaseUrl: '/api/v1',
     },
   },
+  // sitemap 与 robots 的构建期站点标识；地址由部署环境经 NUXT_PUBLIC_SITE_URL 注入。
+  // 不写死兜底地址：本机开发时该变量为 localhost，nuxt-site-config 会提示其不适合作为公开地址，
+  // 属预期现象，生产注入正式域名后不再出现。
   site: {
-    url: 'https://tix.xin',
-    name: 'TixXin Blog',
+    url: process.env.NUXT_PUBLIC_SITE_URL,
+    name: 'My Blog',
   },
   sitemap: {
     strictNuxtContentPaths: true,
@@ -281,11 +287,15 @@ export default {
         '@vueuse/integrations/useSortable',
       ],
     },
-    // 1Panel 反代场景：外部域名 tix.xin -> 容器 localhost:3456
-    // Vite 默认 allowedHosts 只放行 localhost，这里需显式放行自定义域名
+    // 反代场景：外部域名 -> 容器 localhost:3456
+    // Vite 默认 allowedHosts 只放行 localhost，自定义域名需经 NUXT_DEV_ALLOWED_HOSTS 显式放行，
+    // 逗号分隔，例如 example.com,.example.com；留空表示只放行 localhost
     // 'all' 会关闭 DNS rebinding 防护，生产不走 dev server，dev 环境放开可接受
     server: {
-      allowedHosts: ['tix.xin', '.tix.xin'],
+      allowedHosts: (process.env.NUXT_DEV_ALLOWED_HOSTS ?? '')
+        .split(',')
+        .map((host) => host.trim())
+        .filter(Boolean),
       // dev 启动即预转换全部页面、布局与主题壳层（含其静态依赖图），首屏与切页不再逐个按需转换数百个模块
       warmup: {
         clientFiles: [

@@ -23,13 +23,14 @@ export const mockSiteStatus: SiteStatus = {
   statusText: 'All Systems Operational',
 }
 
+// 演示用博主名片，不指向任何真实账号；正式资料由博主在 /admin/site 维护
 export const mockOwnerCard: OwnerCardInfo = {
-  name: 'TixXin',
+  name: '示例博主',
   title: '前端开发工程师，热爱开源与技术分享',
   socials: [
-    { icon: 'lucide:github', label: 'GitHub', href: 'https://github.com/TixXin' },
-    { icon: 'lucide:twitter', label: 'Twitter', href: 'https://twitter.com/TixXin' },
-    { icon: 'lucide:mail', label: 'Email', href: 'mailto:hi@tix.xin' },
+    { icon: 'lucide:github', label: 'GitHub', href: 'https://github.com/example' },
+    { icon: 'lucide:twitter', label: 'Twitter', href: 'https://twitter.com/example' },
+    { icon: 'lucide:mail', label: 'Email', href: 'mailto:hi@example.com' },
   ],
   quotes: [
     '路漫漫其修远兮，吾将上下而求索。',
