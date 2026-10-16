@@ -53,6 +53,7 @@
 | 方法与路径                                                                             | 作用                               |
 | -------------------------------------------------------------------------------------- | ---------------------------------- |
 | `GET /posts`、`GET /posts/metadata`                                                    | 公开列表、搜索、分页与真实目录聚合 |
+| `GET /posts/archive`                                                                   | 按 UTC 年份筛选的稳定分页归档      |
 | `GET /posts/:id`、`GET /posts/by-slug/:slug`                                           | 公开文章详情及地址解析             |
 | `GET /posts/:id/navigation`、`GET /posts/:id/related`                                  | 前后文章与规则相关文章             |
 | `POST /posts/:id/like`、`POST /posts/:id/view`                                         | 访客点赞切换与去重浏览计数         |
@@ -71,6 +72,10 @@
 | `GET/POST /admin/flashes`、`GET/PATCH/DELETE /admin/flashes/:id`                       | 博主闪念管理                       |
 
 文章公开列表只读取列表所需字段，正文检索仍由后端执行。评论可见性需要同时考虑所属文章、祖先、审核和删除状态；缓存计数与公开聚合遵循相同口径。专栏重命名与引用同步在事务内完成，仍被引用的目录项不能直接删除。
+
+`GET /posts/metadata` 保持旧完整响应：`tags/categories/stats/activity/archive`。`includeArchive` 默认为 `true`，只接受 `true` 或 `false`；显式 `false` 返回轻量 `tags/categories/stats/activity`，不查询或返回全量归档。公开页面与主题侧栏使用轻量模式，服务端 sitemap 继续使用完整模式并过滤 `seoNoindex`。
+
+`GET /posts/archive` 接受可选 `year`（1–9999）、`page`（默认 1，最大 1000000）、`pageSize`（默认 50，最大 100），仅返回已发布且未回收文章。响应为 `{ items, total, page, pageSize, years }`；`items` 每项包含 `id/slug/seoNoindex/title/folder/date`，按 `published_at DESC, id DESC` 排序，日期为 ISO UTC。`total` 是当前年份筛选后的总数，`years` 是所有公开年份的 `{ year, count }` 数组，按 UTC 年份倒序；列表、总数与年份计数来自同一查询快照。空年份或越界页返回空 `items`，保留真实总数和全部年份计数。归档页面用 `/archive?year=2026&page=2` 保存筛选与页码，每页只渲染 50 条，不累计历史页 DOM。
 
 批量任务绑定具体 ID、版本和影响范围，有执行期限及逐项结果；重复执行查询原结果。软删除与发布状态分开，永久删除需确认关联集合。媒体不会因删除文章而直接从磁盘移除。
 

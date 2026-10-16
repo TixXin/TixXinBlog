@@ -8,6 +8,7 @@
 import { Controller, Get, Header, Param, ParseIntPipe, Post as HttpPost, Query } from '@nestjs/common'
 import { VisitorIdHash } from '../../common/decorators/visitor-id.decorator'
 import { QueryPostDto } from './dto/query-post.dto'
+import { QueryPostArchiveDto, QueryPostMetadataDto } from './dto/query-post-archive.dto'
 import { ArticleDetailDto, PostListResult, PostService } from './post.service'
 import { PostDiscoveryService } from './post-discovery.service'
 
@@ -24,8 +25,13 @@ export class PostController {
   }
 
   @Get('metadata')
-  metadata() {
-    return this.discovery.metadata()
+  metadata(@Query() query: QueryPostMetadataDto) {
+    return this.discovery.metadata(query.includeArchive)
+  }
+
+  @Get('archive')
+  archive(@Query() query: QueryPostArchiveDto) {
+    return this.discovery.archive(query)
   }
 
   @Get('by-slug/:slug')

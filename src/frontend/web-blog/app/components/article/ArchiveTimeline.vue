@@ -7,16 +7,9 @@
 
 <template>
   <div class="archive-timeline">
-    <section
-      v-for="(y, yearIndex) in years"
-      :key="y.year"
-      class="archive-timeline__year"
-    >
+    <section v-for="(y, yearIndex) in years" :key="y.year" class="archive-timeline__year">
       <div class="archive-timeline__head">
-        <div
-          class="archive-timeline__badge"
-          :class="{ 'archive-timeline__badge--primary': yearIndex === 0 }"
-        >
+        <div class="archive-timeline__badge" :class="{ 'archive-timeline__badge--primary': yearIndex === 0 }">
           <span class="archive-timeline__badge-text">{{ y.shortYear }}</span>
         </div>
         <div class="archive-timeline__head-text">
@@ -28,7 +21,7 @@
       <div class="archive-timeline__track">
         <ArticleArchiveItem
           v-for="(post, postIndex) in y.posts"
-          :key="`${y.year}-${post.date}-${post.title}`"
+          :key="post.href"
           :post="post"
           :is-first="postIndex === 0"
         />

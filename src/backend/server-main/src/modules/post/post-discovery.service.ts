@@ -6,6 +6,7 @@ import { EntityManager } from '@mikro-orm/postgresql'
 import { Injectable, NotFoundException } from '@nestjs/common'
 import { Post } from '../../entities/post.entity'
 import { visibleCommentSql } from '../comment/comment-visibility'
+import type { QueryPostArchiveDto } from './dto/query-post-archive.dto'
 
 interface ArchiveRow {
   slug?: string
@@ -13,7 +14,7 @@ interface ArchiveRow {
   id: number
   title: string
   folder: string
-  published_at: Date
+  published_at: Date | string
 }
 interface TagRow {
   label: string
@@ -26,23 +27,36 @@ interface CategoryRow {
   count: number
 }
 
+function archiveItem(row: ArchiveRow) {
+  return {
+    id: row.id,
+    slug: row.slug,
+    seoNoindex: row.seo_noindex,
+    title: row.title,
+    folder: row.folder,
+    date: new Date(row.published_at).toISOString(),
+  }
+}
+
 @Injectable()
 export class PostDiscoveryService {
   constructor(private readonly em: EntityManager) {}
 
-  async metadata() {
+  async metadata(includeArchive = true) {
     const [archive, tags, categories, sums, commentCount, activity] = await Promise.all([
-      this.em.execute<ArchiveRow[]>(
-        "select id, slug, seo_noindex, title, folder, published_at from post where status = 'published' and deleted_at is null order by published_at desc, id desc",
-      ),
+      includeArchive
+        ? this.em.execute<ArchiveRow[]>(
+            "select id, slug, seo_noindex, title, folder, published_at from post where status = 'published' and deleted_at is null order by published_at desc, id desc",
+          )
+        : Promise.resolve(undefined),
       this.em.execute<TagRow[]>(
         "select t.label,t.slug,t.color,count(*)::int as count from post_tag t join post_tag_map m on m.post_tag_id=t.id join post p on p.id=m.post_id where p.status='published' and p.deleted_at is null group by t.id order by count desc,t.label",
       ),
       this.em.execute<CategoryRow[]>(
         "select folder as name,count(*)::int as count from post where status='published' and deleted_at is null group by folder order by count desc,folder",
       ),
-      this.em.execute<Array<{ views: number }>>(
-        "select coalesce(sum(views),0)::int as views from post where status='published' and deleted_at is null",
+      this.em.execute<Array<{ posts: number; views: number }>>(
+        "select count(*)::int as posts,coalesce(sum(views),0)::int as views from post where status='published' and deleted_at is null",
       ),
       this.em.execute<Array<{ count: number }>>(
         `select count(*)::int as count from comment c join post p on p.id=c.post_id where p.status='published' and p.deleted_at is null and ${visibleCommentSql('c')}`,
@@ -59,20 +73,39 @@ export class PostDiscoveryService {
       categories,
       activity,
       stats: {
-        posts: archive.length,
+        posts: sums[0]?.posts ?? 0,
         views: sums[0]?.views ?? 0,
         comments: commentCount[0]?.count ?? 0,
         tags: tags.length,
         uptimeDays: Math.floor(process.uptime() / 86400),
       },
-      archive: archive.map((row) => ({
-        id: row.id,
-        slug: row.slug,
-        seoNoindex: row.seo_noindex,
-        title: row.title,
-        folder: row.folder,
-        date: new Date(row.published_at).toISOString(),
-      })),
+      ...(archive ? { archive: archive.map(archiveItem) } : {}),
+    }
+  }
+
+  async archive(query: QueryPostArchiveDto) {
+    // 分页、筛选总量与所有年份分布来自同一条语句，避免并发发布造成同响应统计矛盾。
+    const [result] = await this.em.execute<
+      { items: ArchiveRow[]; total: number; years: { year: number; count: number }[] }[]
+    >(
+      `with public_posts as (
+        select id,slug,seo_noindex,title,folder,published_at,
+          extract(year from published_at at time zone 'UTC')::int as year
+        from post where status='published' and deleted_at is null
+      ), selected as (select * from public_posts where (?::int is null or year=?::int)),
+      page_items as (select * from selected order by published_at desc,id desc limit ? offset ?),
+      year_counts as (select year,count(*)::int as count from public_posts group by year)
+      select coalesce((select jsonb_agg(to_jsonb(p) order by published_at desc,id desc) from page_items p),'[]'::jsonb) as items,
+        (select count(*)::int from selected) as total,
+        coalesce((select jsonb_agg(to_jsonb(y) order by year desc) from year_counts y),'[]'::jsonb) as years`,
+      [query.year ?? null, query.year ?? null, query.pageSize, (query.page - 1) * query.pageSize],
+    )
+    return {
+      items: (result?.items ?? []).map(archiveItem),
+      total: result?.total ?? 0,
+      page: query.page,
+      pageSize: query.pageSize,
+      years: result?.years ?? [],
     }
   }
 

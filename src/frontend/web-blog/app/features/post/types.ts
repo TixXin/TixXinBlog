@@ -90,12 +90,39 @@ export interface TocItem {
   level: number
 }
 
-export interface PostMetadata {
+export interface PostSummary {
   activity?: Array<{ date: string; articles: number; comments: number }>
   tags: Array<{ label: string; slug: string; color: string; count: number }>
   categories: Array<{ name: string; count: number }>
   stats: { posts: number; views: number; comments: number; tags: number; uptimeDays: number }
-  archive: Array<{ id: number; slug?: string; seoNoindex?: boolean; title: string; folder: string; date: string }>
+}
+
+export interface PostArchiveItem {
+  id: number
+  slug?: string
+  seoNoindex?: boolean
+  title: string
+  folder: string
+  date: string
+}
+
+/** 兼容旧公开统计与服务端 sitemap 的完整返回。 */
+export interface PostMetadata extends PostSummary {
+  archive: PostArchiveItem[]
+}
+
+export interface PostArchiveQuery {
+  year?: number
+  page: number
+  pageSize: number
+}
+
+export interface PostArchivePage {
+  items: PostArchiveItem[]
+  total: number
+  page: number
+  pageSize: number
+  years: Array<{ year: number; count: number }>
 }
 
 export interface PostPage {
