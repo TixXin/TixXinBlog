@@ -34,6 +34,9 @@
               <strong>{{ note.author }}</strong
               >{{ note.isOwner ? ' · 博主' : '' }} · {{ labels[note.moderationStatus]
               }}{{ note.isPinned ? ' · 置顶' : '' }} · {{ note.createdAt.slice(0, 16).replace('T', ' ') }} UTC
+              <span v-if="note.browser || note.region" class="admin-guestbook__client"
+                >· {{ [note.browser, note.region].filter(Boolean).join(' · ') }}</span
+              >
             </p>
             <p class="admin-guestbook__content">{{ note.content }}</p>
             <p v-if="note.replyTo">引用 {{ note.replyTo.author }}：{{ note.replyTo.content }}</p>

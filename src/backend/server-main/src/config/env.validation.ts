@@ -44,6 +44,11 @@ export class EnvironmentVariables {
   @IsOptional()
   TRUSTED_PROXY_CIDRS: string = ''
 
+  /** 可信代理注入访客地区文案的头名称；留言展示用，未注入则留空 */
+  @IsString()
+  @IsOptional()
+  CLIENT_REGION_HEADER: string = 'x-client-region'
+
   @IsString()
   @Matches(/^postgres(?:ql)?:\/\//, { message: 'DATABASE_URL 必须为 PostgreSQL 连接地址' })
   DATABASE_URL!: string

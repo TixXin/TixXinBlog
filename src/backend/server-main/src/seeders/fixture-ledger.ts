@@ -37,6 +37,8 @@ export function fixtureHash(row: Record<string, unknown>) {
         ([key, value]) =>
           !['likes', 'views', 'comment_count', 'updated_at'].includes(key) &&
           !(key === 'external_url' && value === null) &&
+          // 留言的浏览器与地区列晚于早期样本加入，空值不改变已登记的指纹
+          !(['browser', 'region'].includes(key) && value === null) &&
           !(key === 'related_content' && Array.isArray(value) && value.length === 0) &&
           !(key === 'description' && value === '' && typeof row.storage_key === 'string'),
       ),

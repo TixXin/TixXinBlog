@@ -97,6 +97,9 @@ export interface PackageGuestbook {
   status: GuestbookStatus
   isPinned: boolean
   replyToId: number | null
+  /** v11 起可选：提交时记录的浏览器与地区展示文案 */
+  browser?: string
+  region?: string
 }
 export interface ContentPackage {
   format: 'tixxin-content'
@@ -481,6 +484,8 @@ export async function parseContentPackage(buffer: Buffer): Promise<ContentPackag
         'status',
         'isPinned',
         'replyToId',
+        'browser',
+        'region',
       ])
       const avatar = text(row.avatar, `${path}.avatar`, 2048)
       if (!packageImageUrl(avatar) || !GUESTBOOK_STATUSES.includes(row.status as GuestbookStatus)) fail(path)
@@ -495,6 +500,8 @@ export async function parseContentPackage(buffer: Buffer): Promise<ContentPackag
         status: row.status as GuestbookStatus,
         isPinned: boolean(row.isPinned, `${path}.isPinned`),
         replyToId: row.replyToId === null ? null : number(row.replyToId, `${path}.replyToId`),
+        ...(row.browser !== undefined ? { browser: text(row.browser, `${path}.browser`, 40) } : {}),
+        ...(row.region !== undefined ? { region: text(row.region, `${path}.region`, 40) } : {}),
       }
     },
   )

@@ -83,6 +83,7 @@ services:
       JWT_ACCESS_SECRET: ${JWT_ACCESS_SECRET:?请配置签名密钥}
       CORS_ORIGIN: ${SITE_URL:?请配置 HTTPS 站点地址}
       TRUSTED_PROXY_CIDRS: ${API_TRUSTED_PROXY_CIDRS:-}
+      CLIENT_REGION_HEADER: ${CLIENT_REGION_HEADER:-x-client-region}
       LOG_LEVEL: info
       MEDIA_DIRECTORY: /app/var/media
       RELEASE_VERSION: ${RELEASE_VERSION}
