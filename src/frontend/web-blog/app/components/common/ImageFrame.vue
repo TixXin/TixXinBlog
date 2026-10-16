@@ -5,7 +5,13 @@
   @since 2026-09-07
 -->
 <template>
-  <div class="image-frame" :class="`image-frame--${state}`" :aria-busy="state === 'loading'" :style="frameStyle">
+  <div
+    class="image-frame"
+    :class="`image-frame--${state}`"
+    :data-initial="initial || undefined"
+    :aria-busy="state === 'loading'"
+    :style="frameStyle"
+  >
     <img
       v-if="src"
       :key="attempt"
@@ -44,6 +50,8 @@ const props = withDefaults(
   { src: '', fit: 'cover', loading: 'lazy', maxHeight: undefined, width: undefined, height: undefined },
 )
 const { image, state, attempt, loaded, failed, retry } = useImageState(() => props.src)
+// 首屏 SSR 直出的图片由浏览器原生渐进显示，就绪后不能再把仍在加载的它藏起来；切页后新建的图片才走加载反馈
+const initial = import.meta.server || useNuxtApp().isHydrating
 const emit = defineEmits<{ state: [value: 'loading' | 'ready' | 'error' | 'empty'] }>()
 watch(state, (value) => emit('state', value), { immediate: true })
 const naturalRatio = computed(() =>
@@ -75,7 +83,7 @@ const frameStyle = computed(() => ({
   inset: 0;
   object-fit: var(--image-fit);
   opacity: 1;
-  html.app-client-ready .image-frame--loading &,
+  html.app-client-ready .image-frame--loading:not([data-initial]) &,
   html.app-client-ready .image-frame--error & {
     opacity: 0;
   }

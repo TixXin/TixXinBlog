@@ -105,19 +105,9 @@ export function useAppearanceSettings() {
   })
 
   /**
-   * SSR 期间无法读 localStorage，若直接输出动画类会按默认值播放，
-   * 等客户端还原设置后再切换类已来不及（动画已播完）。
-   * 因此 SSR 阶段和 hydration 期间均返回空字符串，
-   * 水合完成后（onNuxtReady）再输出正确的动画类，避免类名不匹配警告。
+   * 右侧栏入场动画类在 SSR 与水合期间直接按默认预设输出；首屏随 SSR 直出的内容带 data-initial
+   * 标记而不参与入场动画，因此水合后再从 localStorage 还原预设也不会让已显示的侧栏重新播一遍。
    */
-  const hydrated = useState('appearance-hydrated', () => false)
-
-  if (import.meta.client && !hydrated.value) {
-    onNuxtReady(() => {
-      hydrated.value = true
-    })
-  }
-
   const sidebarTransitionName = computed(() => {
     if (reducedMotion.value) return 'sidebar-none'
     switch (sidebarAnimationPreset.value) {
@@ -134,7 +124,6 @@ export function useAppearanceSettings() {
   })
 
   const sidebarAnimationClass = computed(() => {
-    if (!hydrated.value) return ''
     if (reducedMotion.value) return 'anim-sidebar-none'
 
     switch (sidebarAnimationPreset.value) {
