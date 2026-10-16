@@ -7,8 +7,16 @@
 import { expect, test } from '@playwright/test'
 import { writeFile, unlink } from 'node:fs/promises'
 import { resolve } from 'node:path'
+import { prepareMotionCapture, captureMotion } from './motionScreenshot'
 
-test('公开闪念可互动，草稿归档受限，手机工具栏和折叠搜索可用', async ({ page, browser, baseURL }, testInfo) => {
+test.beforeEach(({ page, browserName }) => prepareMotionCapture(page, browserName))
+
+test('公开闪念可互动，草稿归档受限，手机工具栏和折叠搜索可用', async ({
+  page,
+  browser,
+  browserName,
+  baseURL,
+}, testInfo) => {
   await page.goto('/admin/login')
   await page.getByRole('textbox', { name: '用户名', exact: true }).fill(process.env.E2E_USERNAME!)
   await page.getByRole('textbox', { name: '密码', exact: true }).fill(process.env.E2E_PASSWORD!)
@@ -25,7 +33,7 @@ test('公开闪念可互动，草稿归档受限，手机工具栏和折叠搜�
   const bounds = await draftButton.boundingBox()
   expect(bounds!.width).toBeGreaterThan(60)
   expect(bounds!.height).toBeGreaterThanOrEqual(32)
-  await page.locator('.fed').screenshot({ animations: 'disabled', path: testInfo.outputPath('flash-editor-390.png') })
+  await captureMotion(page, testInfo, 'flash-editor-390.png', { target: page.locator('.fed'), animations: 'disabled' })
   await page.getByRole('button', { name: /^发布/ }).click()
   const publicNote = page.locator('.fnc').filter({ hasText: 'UX 公开闪念验收' })
   await expect(publicNote).toBeVisible()
@@ -44,6 +52,7 @@ test('公开闪念可互动，草稿归档受限，手机工具栏和折叠搜�
   const guestContext = await browser.newContext({ baseURL, viewport: { width: 390, height: 844 } })
   try {
     const guest = await guestContext.newPage()
+    prepareMotionCapture(guest, browserName)
     await guest.goto('/flash')
     const note = guest.locator(`#flash-note-${id}`)
     await expect(note.getByRole('button', { name: '点赞', exact: true })).toBeEnabled()
@@ -84,7 +93,7 @@ test('公开闪念可互动，草稿归档受限，手机工具栏和折叠搜�
     await guest.goto(`/flash/${id}`)
     await expect(guest.locator('.aside-right')).toBeHidden()
     await expect(guest.getByText('UX 公开闪念验收', { exact: true })).toBeVisible()
-    await guest.screenshot({ animations: 'disabled', path: testInfo.outputPath('flash-public-detail.png') })
+    await captureMotion(guest, testInfo, 'flash-public-detail.png', { animations: 'disabled' })
   } finally {
     await guestContext.close()
   }

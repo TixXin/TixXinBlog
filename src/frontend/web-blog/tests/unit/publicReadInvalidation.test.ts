@@ -11,6 +11,7 @@ function fixture() {
     'posts',
     'post-summary',
     'archive',
+    'moment-feed',
     'gallery',
     'projects',
     'links',
@@ -26,10 +27,12 @@ describe('公开缓存写后失效入口', () => {
     '/admin/posts/1/revisions/2/restore',
     '/admin/posts/batch/execute',
     '/admin/taxonomy/tags/1',
-  ])('%s 同时撤销文章列表、轻量统计与归档', (path) => {
+  ])('%s 同时撤销文章列表、轻量统计、归档与朋友圈文章引用', (path) => {
     const { app, cache } = fixture()
     invalidatePublicWrite(app, path)
-    for (const key of ['posts', 'post-summary', 'archive']) expect(cache.read(key)).toBeUndefined()
+    for (const key of ['posts', 'post-summary', 'archive', 'moment-feed']) expect(cache.read(key)).toBeUndefined()
+    expect(app.payload.state['$smoment-collection-generation']).toBe(1)
+    expect(cache.put('moment-feed', 'late-linked-article', { title: '旧文章' }, 0, 30_000)).toBe(false)
     expect(cache.read('gallery')).toBeDefined()
   })
   it.each(['gallery', 'projects', 'links', 'prompts', 'subscriptions'])('%s 写入只撤销对应公开领域', (domain) => {

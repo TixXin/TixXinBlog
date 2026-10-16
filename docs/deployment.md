@@ -41,6 +41,8 @@ docker build -f src/backend/server-main/Dockerfile --target worker -t "tixxin-bl
 
 固定 60 秒窗口内，每 IP 的公开业务读取、公开媒体读取和管理读取分别为 120、600、300 次，三个桶互不占用；登录、刷新认证、写入、上传及浏览计数仍保留原有额度。超限响应包含 `Retry-After`，浏览器不立即自动重试。
 
+公开媒体桶也包含精确的 `GET/HEAD /api/v1/subscriptions/favicons/<64位小写十六进制>.webp`，订阅列表与统计仍使用业务读取桶；favicon 经同源网关继续使用 `no-store`。
+
 受管媒体的成功 GET/HEAD 与 304 使用 `Cache-Control: private, no-cache` 及基于已登记 SHA-256 的 ETag。浏览器可以保存字节，但每次复用前都要向服务端验证；服务端先检查资源未删除且磁盘文件可读，命中条件时返回无正文的 304。删除后下一次请求返回 404；文件缺失返回 503，错误及其他业务响应保持 `no-store`。同源网关只为精确的受管媒体路径保留缓存头，不为媒体配置长期 immutable 或共享 CDN 缓存。
 
 `media` 卷挂载到 API `/app/var/media`；worker 只读挂载同一媒体卷，备份写入专用卷，无需 Docker socket。上传资源会转为 WebP；更换存储位置时同时迁移原文件、数据库登记与权限。不要通过 `down -v` 处理服务故障。

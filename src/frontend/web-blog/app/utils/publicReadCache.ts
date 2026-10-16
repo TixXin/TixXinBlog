@@ -8,6 +8,8 @@ export type PublicReadDomain =
   | 'links'
   | 'prompts'
   | 'subscriptions'
+  | 'moment-feed'
+  | 'guestbook-feed'
   | 'moment-overview'
   | 'guestbook-metadata'
 
@@ -56,17 +58,29 @@ export function createPublicReadCache(options: { now?: () => number; maxEntries?
     entries.set(key, entry)
     return { value: entry.value as T, stale: age >= entry.ttl }
   }
-  function put<T>(domain: PublicReadDomain, key: string, value: T, expectedGeneration: number, ttl: number) {
+  function put<T>(
+    domain: PublicReadDomain,
+    key: string,
+    value: T,
+    expectedGeneration: number,
+    ttl: number,
+    additionalBytes = 0,
+    readAt?: number,
+  ) {
     if (generation(domain) !== expectedGeneration || value === undefined) return false
+    if (!Number.isFinite(additionalBytes) || additionalBytes < 0) return false
+    if (readAt !== undefined && !Number.isFinite(readAt)) return false
     let size: number
     try {
-      size = new TextEncoder().encode(JSON.stringify(value)).byteLength
+      size = new TextEncoder().encode(JSON.stringify(value)).byteLength + additionalBytes
     } catch {
       return false
     }
     remove(key)
     if (size > (options.maxBytes ?? 4 * 1024 * 1024)) return false
-    entries.set(key, { domain, value, bytes: size, savedAt: now(), ttl })
+    // 组合分页同时沿用原始读取时刻计算新鲜期和五分钟上限，追加不能延长旧前缀寿命。
+    const writtenAt = now()
+    entries.set(key, { domain, value, bytes: size, savedAt: Math.min(readAt ?? writtenAt, writtenAt), ttl })
     bytes += size
     while (entries.size > (options.maxEntries ?? 32) || bytes > (options.maxBytes ?? 4 * 1024 * 1024)) {
       remove(entries.keys().next().value!)

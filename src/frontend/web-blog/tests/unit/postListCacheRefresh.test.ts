@@ -138,3 +138,29 @@ it('页面未卸载但旧前缀已过期时，继续追加也重新核对前缀'
   await vi.waitFor(() => expect(list.posts.value).toHaveLength(30))
   expect(vi.mocked(fetchPostPage).mock.calls.map((call) => call[1]?.page)).toEqual([1, 1, 2])
 })
+
+it('t29追加后t310离线回访必须冷读取，不能继续展示t0前缀', async () => {
+  let now = 1_000_000
+  vi.spyOn(Date, 'now').mockImplementation(() => now)
+  const catalog = Array.from({ length: 30 }, (_, index) => ({ ...mockPosts[0]!, id: index + 1 }))
+  vi.mocked(fetchPostPage)
+    .mockReset()
+    .mockImplementation(async (_base, query) => {
+      const page = query?.page ?? 1
+      return { items: catalog.slice((page - 1) * 15, page * 15), total: 30, page, pageSize: 15 }
+    })
+  const page = ref(1)
+  const first = await mountList(page)
+  now += 29_000
+  page.value = 2
+  await vi.waitFor(() => expect(first.list.posts.value).toHaveLength(30))
+  first.wrapper.unmount()
+  wrappers.pop()
+  await nextTick()
+  now += 281_000
+  vi.mocked(fetchPostPage).mockRejectedValueOnce(new Error('离线'))
+  const second = await mountList()
+  await flushPromises()
+  expect(second.list.error.value).toBeTruthy()
+  expect(second.list.posts.value).toEqual([])
+})

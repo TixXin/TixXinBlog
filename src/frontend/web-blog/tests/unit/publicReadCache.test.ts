@@ -21,6 +21,18 @@ describe('公开读取缓存', () => {
     expect(cache.read('page')).toBeUndefined()
     expect(cache.size()).toEqual({ entries: 0, bytes: 0 })
   })
+  it('追加快照用原始读取时刻计算两个期限，不重复扣减新鲜期或延长五分钟上限', () => {
+    let now = 0
+    const cache = createPublicReadCache({ now: () => now })
+    cache.put('posts', 'page1', [1], 0, 30_000, 0, 0)
+    now = 29_000
+    cache.put('posts', 'page2', [1, 2], 0, 30_000, 0, 0)
+    expect(cache.read('page2')?.stale).toBe(false)
+    now = 31_000
+    expect(cache.read('page2')?.stale).toBe(true)
+    now = 310_000
+    expect(cache.read('page2')).toBeUndefined()
+  })
   it('按最近访问淘汰，并按 UTF-8 字节限制容量', () => {
     const cache = createPublicReadCache({ maxEntries: 2, maxBytes: 20 })
     cache.put('posts', 'a', '甲', 0, 30_000)
@@ -56,5 +68,12 @@ describe('公开读取缓存', () => {
     publicReadCache(first).put('posts', 'p', [1], 0, 30_000)
     expect(publicReadCache(first).read('p')?.value).toEqual([1])
     expect(publicReadCache(second).read('p')).toBeUndefined()
+  })
+  it('公开投影的弱关联索引共同计费，不能用小投影绕过容量限制', () => {
+    const cache = createPublicReadCache({ maxBytes: 100 })
+    expect(cache.put('guestbook-feed', 'small-public-index', { ids: [1] }, 0, 30_000, 100)).toBe(false)
+    expect(cache.size()).toEqual({ entries: 0, bytes: 0 })
+    expect(cache.put('guestbook-feed', 'accepted', { ids: [1] }, 0, 30_000, 40)).toBe(true)
+    expect(cache.size().bytes).toBe(new TextEncoder().encode(JSON.stringify({ ids: [1] })).byteLength + 40)
   })
 })

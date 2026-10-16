@@ -7,10 +7,10 @@ import assert from 'node:assert/strict'
 import { spawn, execFileSync } from 'node:child_process'
 import { randomUUID } from 'node:crypto'
 import { createRequire } from 'node:module'
-import { cpus, platform, release } from 'node:os'
+import { cpus, platform, release, loadavg } from 'node:os'
 import { basename, dirname, join, resolve } from 'node:path'
 import { existsSync, lstatSync } from 'node:fs'
-import { mkdir, mkdtemp, writeFile, rm } from 'node:fs/promises'
+import { mkdir, mkdtemp, writeFile, rm, rmdir } from 'node:fs/promises'
 import { setTimeout as delay } from 'node:timers/promises'
 import { fileURLToPath } from 'node:url'
 import { createBrowserTestApp } from './test-app.mjs'
@@ -29,16 +29,17 @@ const require = createRequire(import.meta.url)
 const frontendRequire = createRequire(join(frontend, 'package.json'))
 const args = process.argv.slice(2)
 assert(
-  args.every((arg) => /^--samples=\d+$/.test(arg) || ['--devtools-ab', '--help'].includes(arg)),
+  args.every((arg) => /^--samples=\d+$/.test(arg) || ['--devtools-ab', '--profile', '--help'].includes(arg)),
   '未知参数',
 )
 if (args.includes('--help')) {
   console.log(
-    '使用已有生产构建：node src/backend/server-main/tests/navigation-performance.mjs [--samples=28] [--devtools-ab]',
+    '使用已有生产构建：node src/backend/server-main/tests/navigation-performance.mjs [--samples=28] [--devtools-ab]\n独立归因：--profile 仅预热并录制Nexus首页↔朋友圈4轮，不运行DevTools对照；wrapper可设NAVIGATION_PERFORMANCE_PROFILE=true。归因耗时不与正式采样混算。',
   )
   process.exit(0)
 }
 const samples = Number(args.find((arg) => arg.startsWith('--samples='))?.split('=')[1] ?? 28)
+const profileMode = args.includes('--profile') || process.env.NAVIGATION_PERFORMANCE_PROFILE === 'true'
 assert(Number.isInteger(samples) && samples >= 20 && samples <= 200, '每个主题采样次数必须在 20–200 之间')
 assert(existsSync(join(frontend, '.output/server/index.mjs')), '请先完成项目生产前端构建')
 assert(existsSync(fileURLToPath(new URL('../dist/app.module.js', import.meta.url))), '请先完成后端构建')
@@ -46,6 +47,8 @@ const artifactRoot = join(root, '.artifacts/navigation-performance')
 assert(!existsSync(artifactRoot) || !lstatSync(artifactRoot).isSymbolicLink(), '报告目录不能是符号链接')
 await mkdir(artifactRoot, { recursive: true })
 const output = await mkdtemp(join(artifactRoot, 'run-'))
+// 开发生成模块需能向上解析frontend/node_modules；仍使用本次专属目录，不触及日常.nuxt。
+const devRunRoot = join(frontend, '.artifacts/navigation-performance', basename(output))
 const report = {
   completed: false,
   createdAt: new Date().toISOString(),
@@ -56,8 +59,11 @@ const report = {
     os: `${platform()} ${release()}`,
     cpu: cpus()[0]?.model,
     cpuCount: cpus().length,
+    loadAverageAtStart: loadavg(),
+    sourceNote: process.env.NAVIGATION_PERFORMANCE_SOURCE_NOTE ?? null,
     viewport: { width: 1440, height: 1000 },
-    samplesPerTheme: samples,
+    samplesPerTheme: profileMode ? 8 : samples,
+    mode: profileMode ? '单独CPU/Timeline归因，存在采样开销，不与普通性能时间混算' : '完整路线性能采样',
     browser: 'Chromium headless；独立上下文；默认动效；不禁用浏览器缓存',
     timing: '原生 click 捕获至目标 Nuxt page:finish；其后继续观察450ms，包含完整入场和图片动画',
     requests: '请求窗口从准备真实点击开始，包含 hover 预取；transferSize 来自浏览器 Resource Timing，0可表示缓存',
@@ -90,6 +96,12 @@ let database
 let restorePerformanceEnvironment
 let restoreRateLimitProbe
 const observedRateLimits = new Map()
+function redactDiagnostic(value) {
+  return String(value)
+    .replace(/([a-z][a-z\d+.-]*:\/\/)[^\s/:@]+:[^\s/@]+@/gi, '$1[redacted]@')
+    .replace(/Bearer\s+[\w.+-]+/gi, 'Bearer [redacted]')
+    .replace(/((?:DATABASE_URL|JWT_ACCESS_SECRET|PASSWORD|ACCESS_TOKEN)\s*[=:]\s*)[^\s,}]+/gi, '$1[redacted]')
+}
 const onSignal = () => {
   interrupted = true
   void browser?.close().catch(() => {})
@@ -102,7 +114,7 @@ function checkInterrupted() {
 }
 function spawnFrontend(mode, port, devtools) {
   const isDevelopment = mode.startsWith('development')
-  const buildDir = join(output, mode)
+  const buildDir = join(devRunRoot, mode)
   const origin = `http://127.0.0.1:${port}`
   const child = spawn(
     process.execPath,
@@ -193,8 +205,12 @@ async function stopFrontend(item) {
     unreachable = true
   }
   if (item.buildDir) {
-    assert.equal(dirname(item.buildDir), output)
+    assert.equal(dirname(item.buildDir), devRunRoot)
+    assert.equal(basename(devRunRoot), basename(output))
     await rm(item.buildDir, { recursive: true, force: true })
+    await rmdir(devRunRoot).catch((error) => {
+      if (!['ENOENT', 'ENOTEMPTY'].includes(error.code)) throw error
+    })
   }
   item.closed = true
   report.cleanup.children.push({
@@ -204,6 +220,7 @@ async function stopFrontend(item) {
     groupGone,
     unreachable,
     buildRemoved: !item.buildDir || !existsSync(item.buildDir),
+    buildOwnerDirectoryRemoved: !item.buildDir || !existsSync(devRunRoot),
   })
   assert(unreachable, `本次${item.mode}端口清理后仍可访问`)
 }
@@ -486,6 +503,7 @@ async function navigate(page, target, network, records, phase = 'sample') {
       initialDom: sample.initialDom,
       peakDom: sample.peakDom,
       finishDom: sample.finishDom,
+      archiveItems: sample.target === '/archive' ? document.querySelectorAll('.archive-item').length : null,
       snapshots: sample.snapshots,
       snapshotImageAnimations: sample.snapshotImageAnimations,
       longtasks: sample.longtasks,
@@ -502,6 +520,7 @@ async function navigate(page, target, network, records, phase = 'sample') {
   sample.requestCount = sample.requests.length
   sample.phase = phase
   records?.push(sample)
+  if (sample.to === '/archive') assert.equal(sample.archiveItems, 50, '大样本归档第一页必须实际渲染50条')
   sample.optionalResourceFailures = sample.requests.filter(optionalFaviconMiss)
   if (sample.optionalResourceFailures.length) {
     sample.subscriptionFallback = await page.evaluate(
@@ -566,7 +585,7 @@ const routes = [
   '/tabs',
   '/',
 ]
-report.conditions.routeCycle = ['/', ...routes]
+report.conditions.routeCycle = profileMode ? ['/', '/moments', '/'] : ['/', ...routes]
 function aggregate(rows) {
   const values = rows.map((row) => row.clickToPageFinishMs).sort((a, b) => a - b)
   const percentile = (p) => values[Math.min(values.length - 1, Math.ceil(values.length * p) - 1)]
@@ -583,10 +602,53 @@ function aggregate(rows) {
     optionalFavicon404: rows.reduce((sum, row) => sum + row.optionalResourceFailures.length, 0),
   }
 }
+async function recordProfile(page, context, result, network) {
+  const session = await context.newCDPSession(page)
+  const prefix = join(output, 'nexus-home-moments')
+  const tracingComplete = new Promise((done) => session.once('Tracing.tracingComplete', done))
+  await session.send('Profiler.enable')
+  await session.send('Profiler.setSamplingInterval', { interval: 1000 })
+  await session.send('Tracing.start', {
+    categories: 'devtools.timeline,disabled-by-default-devtools.timeline,blink.user_timing,v8',
+    transferMode: 'ReturnAsStream',
+    streamFormat: 'json',
+  })
+  await session.send('Profiler.start')
+  try {
+    for (let round = 0; round < 4; round++)
+      for (const path of ['/moments', '/']) {
+        await page.evaluate(({ round, path }) => performance.mark(`profile-navigation:${round}:${path}`), {
+          round,
+          path,
+        })
+        await navigate(page, path, network, result.samples, 'profile')
+      }
+  } finally {
+    const { profile } = await session.send('Profiler.stop')
+    await writeFile(`${prefix}.cpuprofile`, JSON.stringify(profile))
+    result.cpuProfile = `${prefix}.cpuprofile`
+    await session.send('Tracing.end')
+    const trace = await Promise.race([tracingComplete, delay(10000).then(() => null)])
+    assert(trace?.stream, 'Timeline必须完整结束并返回数据流')
+    const chunks = []
+    try {
+      for (;;) {
+        const chunk = await session.send('IO.read', { handle: trace.stream })
+        chunks.push(Buffer.from(chunk.data, chunk.base64Encoded ? 'base64' : 'utf8'))
+        if (chunk.eof) break
+      }
+      await writeFile(`${prefix}.trace.json`, Buffer.concat(chunks))
+      result.timelineTrace = `${prefix}.trace.json`
+    } finally {
+      await session.send('IO.close', { handle: trace.stream })
+      await session.detach()
+    }
+  }
+}
 async function sampleStage(item) {
   const stage = { mode: item.mode, themes: [] }
   report.stages.push(stage)
-  for (const theme of ['nexus', 'aurora', 'dock']) {
+  for (const theme of profileMode ? ['nexus'] : ['nexus', 'aurora', 'dock']) {
     const context = await browser.newContext({ viewport: report.conditions.viewport, reducedMotion: 'no-preference' })
     const network = []
     const httpErrors = []
@@ -625,7 +687,16 @@ async function sampleStage(item) {
       page.on('response', (response) => {
         const record = requests.get(response.request())
         if (record) record.status = response.status()
-        if (response.status() >= 400) httpErrors.push({ ...record, status: response.status() })
+        if (response.status() >= 400) {
+          const error = record ?? { url: new URL(response.url()).pathname, status: response.status() }
+          httpErrors.push(error)
+          void response.text().then(
+            (body) => {
+              error.responseBody = redactDiagnostic(body).slice(0, 4000)
+            },
+            () => {},
+          )
+        }
       })
       page.on('requestfailed', (request) => {
         const record = requests.get(request)
@@ -648,10 +719,19 @@ async function sampleStage(item) {
       if (item.mode !== 'production') assert.equal(runtime.devtools, item.mode === 'development-on')
       result.runtime = runtime
       await installProbe(page)
-      for (const path of routes) {
+      for (const path of profileMode ? ['/moments', '/'] : routes) {
         await navigate(page, path, network, result.warmups, 'warmup')
         if (path === '/archive')
           await page.screenshot({ path: join(output, `${item.mode}-${theme}-archive.png`), fullPage: true })
+      }
+      if (profileMode) {
+        await recordProfile(page, context, result, network)
+        result.summary = aggregate(result.samples)
+        assert.deepEqual(errors, [], '归因采样不能忽略页面错误')
+        assert(httpErrors.every(optionalFaviconMiss), '归因采样不能忽略核心HTTP错误')
+        await writeFile(join(output, 'report.json'), JSON.stringify(report, null, 2))
+        console.log(`独立CPU/Timeline已保存：${result.cpuProfile}`)
+        continue
       }
       for (let index = 0; index < samples; index++)
         await navigate(page, routes[index % routes.length], network, result.samples)
@@ -731,7 +811,7 @@ try {
   browser = await chromium.launch({ headless: true })
   report.conditions.browserVersion = browser.version()
   const variants = [{ mode: 'production', port, devtools: false }]
-  if (args.includes('--devtools-ab'))
+  if (args.includes('--devtools-ab') && !profileMode)
     variants.push(
       { mode: 'development-off', port: await getHttpTestPort(), devtools: false },
       { mode: 'development-on', port: await getHttpTestPort(), devtools: true },
@@ -772,6 +852,7 @@ try {
     } catch (error) {
       cleanupErrors.push(error.message)
     }
+    await writeFile(join(output, `${item.mode}.server.log`), redactDiagnostic(item.log))
   }
   if (report.conditions.rateLimit) report.conditions.rateLimit.scopes = [...observedRateLimits.values()]
   restoreRateLimitProbe?.()
@@ -814,12 +895,16 @@ try {
     report.cleanup.apiUnreachable &&
     report.cleanup.browserClosed &&
     cleanupErrors.length === 0 &&
-    report.cleanup.children.every((child) => child.exited && child.groupGone && child.unreachable && child.buildRemoved)
+    report.cleanup.children.every(
+      (child) =>
+        child.exited && child.groupGone && child.unreachable && child.buildRemoved && child.buildOwnerDirectoryRemoved,
+    )
   if (!report.cleanup.completed) {
     report.completed = false
     process.exitCode = 1
   }
   report.finishedAt = new Date().toISOString()
+  report.conditions.loadAverageAtFinish = loadavg()
   await writeFile(join(output, 'report.json'), JSON.stringify(report, null, 2))
   process.off('SIGINT', onSignal)
   process.off('SIGTERM', onSignal)

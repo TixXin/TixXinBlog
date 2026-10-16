@@ -18,6 +18,17 @@ describe('RateLimitStore', () => {
 })
 
 describe('RateLimitGuard', () => {
+  function createReadProbe() {
+    const guard = new RateLimitGuard(new ConfigService({ NODE_ENV: 'production' }))
+    return (path: string, method = 'GET') =>
+      guard.canActivate({
+        switchToHttp: () => ({
+          getRequest: () => ({ path, method, ip: '192.0.2.1', socket: {} }),
+          getResponse: () => ({ setHeader: () => undefined }),
+        }),
+      } as unknown as ExecutionContext)
+  }
+
   it('公开读取、媒体和管理读取分别执行 120/600/300 配额并保持 Retry-After', () => {
     const guard = new RateLimitGuard(new ConfigService({ NODE_ENV: 'production' }))
     const headers = new Map<string, string>()
@@ -40,5 +51,47 @@ describe('RateLimitGuard', () => {
     expect(Number(headers.get('Retry-After'))).toBeLessThanOrEqual(60)
     for (let index = 0; index < 20; index++) expect(request('/api/v1/admin/media', 'POST')).toBe(true)
     expect(() => request('/api/v1/admin/media', 'POST')).toThrow('操作过于频繁')
+  })
+
+  it('精确 favicon GET/HEAD 与受管媒体共享 600 次边界，不挤占 JSON 或管理读取桶', () => {
+    const request = createReadProbe()
+    const favicon = `/api/v1/subscriptions/favicons/${'a'.repeat(64)}.webp`
+    for (let index = 0; index < 120; index++) expect(request('/api/v1/subscriptions')).toBe(true)
+    expect(() => request('/api/v1/subscriptions/stats')).toThrow('操作过于频繁')
+    for (let index = 0; index < 599; index++) expect(request(favicon, index % 2 ? 'HEAD' : 'GET')).toBe(true)
+    expect(request('/api/v1/media/image.webp')).toBe(true)
+    expect(() => request(favicon)).toThrow('操作过于频繁')
+    expect(() => request('/api/v1/media/image.webp', 'HEAD')).toThrow('操作过于频繁')
+    for (let index = 0; index < 300; index++) expect(request('/api/v1/admin/subscriptions')).toBe(true)
+    expect(() => request('/api/v1/admin/subscriptions')).toThrow('操作过于频繁')
+  })
+
+  it('伪似 favicon 路径仍受 120 次公开读取配额限制', () => {
+    const prefix = '/api/v1/subscriptions/favicons/'
+    const key = 'a'.repeat(64)
+    for (const path of [
+      `${prefix}${'a'.repeat(63)}.webp`,
+      `${prefix}${'a'.repeat(65)}.webp`,
+      `${prefix}${'A'.repeat(64)}.webp`,
+      `${prefix}${key}.png`,
+      `${prefix}${key}.webp/`,
+      `${prefix}${key}.webp/extra`,
+      `/api/v1/subscriptions/favicons-extra/${key}.webp`,
+      '/api/v1/subscriptions/stats',
+    ]) {
+      const request = createReadProbe()
+      for (let index = 0; index < 120; index++) expect(request(path)).toBe(true)
+      expect(() => request(path)).toThrow('操作过于频繁')
+      expect(request(`${prefix}${key}.webp`)).toBe(true)
+    }
+  })
+
+  it('favicon 形状的写请求仍执行原有 10 次写入配额', () => {
+    const request = createReadProbe()
+    const favicon = `/api/v1/subscriptions/favicons/${'a'.repeat(64)}.webp`
+    for (let index = 0; index < 10; index++) expect(request(favicon, 'POST')).toBe(true)
+    expect(() => request(favicon, 'POST')).toThrow('操作过于频繁')
+    expect(request(favicon, 'HEAD')).toBe(true)
+    expect(request('/api/v1/subscriptions')).toBe(true)
   })
 })

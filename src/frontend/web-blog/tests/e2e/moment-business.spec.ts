@@ -291,11 +291,14 @@ test('分页与筛选共享URL，读取失败保留内容并可重试，迟到�
   await expect(page.locator('.moment-card')).toHaveCount(1)
   await search.fill('样本 01')
   await expect(page.locator('.moment-card__content')).toContainText('样本 01')
-  await search.fill('样本 00')
-  await page.waitForRequest(
+  // 有效回访不会请求；只推进缓存时钟，保留真实的搜索防抖和慢响应竞态。
+  await page.clock.setFixedTime(Date.now() + 31_000)
+  const staleRead = page.waitForRequest(
     (request) =>
       request.url().includes('/api/v1/moments?') && new URL(request.url()).searchParams.get('q') === '样本 00',
   )
+  await search.fill('样本 00')
+  await staleRead
   await search.fill('样本 02')
   await expect(page.locator('.moment-card__content')).toContainText('样本 02')
   await page.waitForTimeout(750)

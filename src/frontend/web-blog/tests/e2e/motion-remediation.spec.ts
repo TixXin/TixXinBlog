@@ -455,40 +455,134 @@ for (const width of [320, 1440]) {
   })
 }
 
-test('正常页面的标题与正文独立入场，不创建离场快照', async ({ page }) => {
+test('正常页面的标题与正文独立入场，不创建离场快照', async ({ page }, testInfo) => {
+  await page.emulateMedia({ reducedMotion: 'no-preference' })
   await page.goto('/')
   await ready(page)
   await page.evaluate(() => {
     const native = Element.prototype.animate
     const regions = { root: false, header: false, body: false, cloneHeader: false }
-    Object.assign(window, { checkedPageRegions: regions })
+    const motions: {
+      region: string
+      duration: number | string | undefined
+      finished: boolean
+      cancelled: boolean
+      started: boolean
+      createdAt: number
+      settledAt: number | null
+      cancelAt?: number
+      cancelStack?: string
+      cancelReason?: string
+    }[] = []
+    Object.assign(window, { checkedPageRegions: regions, checkedPageMotions: motions })
     Element.prototype.animate = function (...args) {
       if (this.hasAttribute('data-page-frame')) regions.root = true
       if (this.hasAttribute('data-page-header')) regions.header = true
       if (this.hasAttribute('data-page-body') && !this.hasAttribute('data-page-motion-clone')) regions.body = true
       if (this.hasAttribute('data-page-motion-clone') && this.querySelector('[data-page-header]'))
         regions.cloneHeader = true
-      return native.apply(this, args)
+      const animation = native.apply(this, args)
+      if (this.matches('[data-page-header],[data-page-body]') && !this.hasAttribute('data-page-motion-clone')) {
+        const motion: (typeof motions)[number] = {
+          region: this.hasAttribute('data-page-header') ? 'header' : 'body',
+          duration: animation.effect?.getTiming().duration,
+          finished: false,
+          cancelled: false,
+          started: animation.playState === 'running' || animation.pending,
+          createdAt: performance.now(),
+          settledAt: null,
+        }
+        motions.push(motion)
+        const cancel = animation.cancel.bind(animation)
+        animation.cancel = () => {
+          motion.cancelAt = performance.now()
+          motion.cancelStack = new Error('动画取消调用').stack
+          cancel()
+        }
+        void animation.finished.then(
+          () => {
+            motion.finished = true
+            motion.settledAt = performance.now()
+          },
+          (error: DOMException) => {
+            motion.cancelled = true
+            motion.settledAt = performance.now()
+            motion.cancelReason = error.name
+          },
+        )
+      }
+      return animation
     }
   })
   await page.getByRole('link', { name: '归档', exact: true }).click()
-  await expect
-    .poll(
-      () =>
-        page.evaluate(
-          () =>
-            document
-              .getAnimations()
-              .filter(
-                (animation) =>
-                  animation.playState === 'running' &&
-                  animation.effect?.target instanceof HTMLElement &&
-                  animation.effect.target.matches('[data-page-header],[data-page-body],[data-page-motion-clone]'),
-              ).length,
-        ),
-      { intervals: [10, 20, 20] },
-    )
-    .toBeGreaterThan(0)
+  try {
+    await expect
+      .poll(
+        () =>
+          page.evaluate(
+            () =>
+              (
+                window as unknown as { checkedPageMotions: { finished: boolean; cancelled: boolean }[] }
+              ).checkedPageMotions.filter((motion) => motion.finished || motion.cancelled).length,
+          ),
+        { intervals: [10, 20, 20] },
+      )
+      .toBe(2)
+  } finally {
+    const diagnostic = await page.evaluate(() => {
+      const app = (
+        document.getElementById('__nuxt') as HTMLElement & {
+          __vue_app__: { $nuxt: { payload: { state: Record<string, unknown> } } }
+        }
+      ).__vue_app__.$nuxt
+      const states = [
+        'motion-reduced',
+        'appearance-content-transition-preset',
+        'page-transition-current',
+        'page-motion-completed',
+      ]
+      return {
+        reducedMotion: matchMedia('(prefers-reduced-motion: reduce)').matches,
+        appearance: localStorage.getItem('tixxin-blog-appearance'),
+        state: Object.fromEntries(states.map((key) => [key, app.payload.state[`$s${key}`]])),
+        regions: (window as unknown as { checkedPageRegions: object }).checkedPageRegions,
+        motions: (window as unknown as { checkedPageMotions: unknown[] }).checkedPageMotions,
+      }
+    })
+    await testInfo.attach('page-motion-lifecycle', {
+      body: JSON.stringify(diagnostic, null, 2),
+      contentType: 'application/json',
+    })
+  }
+  const completedMotions = await page.evaluate(
+    () =>
+      (
+        window as unknown as {
+          checkedPageMotions: {
+            region: string
+            duration: number
+            started: boolean
+            finished: boolean
+            cancelled: boolean
+            createdAt: number
+            settledAt: number
+            cancelReason?: string
+          }[]
+        }
+      ).checkedPageMotions,
+  )
+  expect(completedMotions).toMatchObject([
+    { region: 'header', duration: 120, started: true },
+    { region: 'body', duration: 150, started: true },
+  ])
+  for (const motion of completedMotions) {
+    expect(motion.finished || motion.cancelled).toBe(true)
+    if (motion.cancelled) {
+      // 正常预设允许时限兜底收尾，但不能刚创建就取消来伪造入场。
+      expect(motion.cancelReason).toBe('AbortError')
+      expect(motion.settledAt - motion.createdAt).toBeGreaterThanOrEqual(motion.duration)
+    }
+  }
   await expect(page.locator('[data-page-motion-clone]')).toHaveCount(0)
   await expect(page.locator('main')).toContainText('文章归档')
   await expect(page.locator('[data-page-motion-clone] [id]')).toHaveCount(0)

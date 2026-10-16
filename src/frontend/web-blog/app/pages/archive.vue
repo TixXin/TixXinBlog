@@ -17,8 +17,8 @@
             <h2 class="page-title__heading">文章归档</h2>
             <p class="page-title__sub">
               {{
-                current
-                  ? `${query.year ? `${query.year} 年` : '共'} ${current.total} 篇文章，持续记录中...`
+                displayed
+                  ? `${displayedQuery?.year ? `${displayedQuery.year} 年` : '全部年份'} · 共 ${displayed.total} 篇文章`
                   : archivePending
                     ? '正在加载归档…'
                     : '归档暂时不可用'
@@ -27,7 +27,7 @@
           </div>
         </div>
 
-        <!-- 右侧操作区：仅搜索框 -->
+        <!-- 年份筛选与站内搜索 -->
         <div class="page-actions">
           <label class="archive-year-filter">
             年份
@@ -37,7 +37,7 @@
                 {{ year.year }} 年（{{ year.count }} 篇）
               </option>
               <option v-if="query.year && !years.some((item) => item.year === query.year)" :value="query.year">
-                {{ query.year }} 年（0 篇）
+                {{ query.year }} 年{{ current ? '（0 篇）' : '' }}
               </option>
             </select>
           </label>
@@ -52,11 +52,15 @@
         <CommonRequestFeedback
           v-if="archivePending || archiveError"
           :pending="archivePending"
-          :compact="!!current"
+          :compact="!!displayed"
           title="归档加载失败，请稍后重试"
-          :description="current ? '仍显示当前筛选上次成功加载的归档。' : '暂时无法获取归档内容。'"
+          :description="displayed ? '仍保留上次成功加载的归档，可重试当前筛选。' : '暂时无法获取归档内容。'"
           @retry="refreshArchive()"
         />
+        <p v-if="stale && displayedQuery" class="archive-stale-notice" role="status">
+          当前显示：{{ displayedQuery.year ? `${displayedQuery.year} 年` : '全部年份' }}，第
+          {{ displayedQuery.page }} 页（上次成功结果）。
+        </p>
         <ArticleArchiveTimeline v-if="archiveYears.length" :years="archiveYears" />
         <CommonStateBlock
           v-else-if="!archivePending && !archiveError"
@@ -64,18 +68,18 @@
           title="暂无文章归档"
           description="文章发布后会显示在这里。"
         />
-        <nav v-if="current && pageCount > 1" class="archive-pagination" aria-label="文章归档分页">
+        <nav v-if="displayed && displayedPageCount > 1" class="archive-pagination" aria-label="文章归档分页">
           <button
             type="button"
-            :disabled="!ready || archivePending || query.page <= 1"
+            :disabled="!ready || archivePending || !current || query.page <= 1"
             @click="changeQuery({ page: query.page - 1 })"
           >
             上一页
           </button>
-          <span aria-live="polite">{{ query.page }} / {{ pageCount }}</span>
+          <span aria-live="polite">{{ displayed.page }} / {{ displayedPageCount }}</span>
           <button
             type="button"
-            :disabled="!ready || archivePending || query.page >= pageCount"
+            :disabled="!ready || archivePending || !current || query.page >= pageCount"
             @click="changeQuery({ page: query.page + 1 })"
           >
             下一页
@@ -109,6 +113,9 @@ const {
   query,
   ready,
   current,
+  displayed,
+  displayedQuery,
+  stale,
   years,
   archiveYears,
   pageCount,
@@ -117,6 +124,9 @@ const {
   pending: archivePending,
   refresh: refreshArchive,
 } = archive
+const displayedPageCount = computed(() =>
+  Math.max(1, Math.ceil((displayed.value?.total ?? 0) / (displayed.value?.pageSize ?? 50))),
+)
 function selectYear(event: Event) {
   const value = (event.target as HTMLSelectElement).value
   void changeQuery({ year: value ? Number(value) : undefined, page: 1 })
@@ -151,6 +161,12 @@ function openSearch() {
   gap: 0.5rem;
   color: var(--text-soft);
   font-size: 0.8125rem;
+}
+.archive-stale-notice {
+  margin: 0 0 1rem;
+  color: var(--text-soft);
+  font-size: 0.8125rem;
+  line-height: 1.6;
 }
 .archive-year-filter select,
 .archive-pagination button {
