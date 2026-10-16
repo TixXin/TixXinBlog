@@ -28,7 +28,7 @@ catalog:
 ```jsonc
 // 根目录 package.json
 {
-  "name": "tixxin-blog",
+  "name": "myblog",
   "private": true,
   "packageManager": "pnpm@10.4.1",
   "engines": { "node": ">=22 <23" },
@@ -65,14 +65,14 @@ public-hoist-pattern[]=*prettier*
 ```json
 {
   "dependencies": {
-    "@tixxin/shared": "workspace:*"
+    "@myblog/shared": "workspace:*"
   }
 }
 ```
 
 安装时 pnpm 会把它链接到本地目录，改了 `packages/shared` 里的代码两边立刻能用，不需要 publish。发布的时候（如果要发布的话）`workspace:*` 会被替换成实际版本号。
 
-但这里有个坑我踩了很久：**共享包要不要先编译**。一开始 `@tixxin/shared` 的 `main` 指向 `dist/index.js`，每次改了源码要先 `pnpm --filter shared build`，不然引用方拿到的是旧代码。后来改成 `exports` 直接指向 `src/index.ts`，让 Vite 和 tsx 这些工具自己处理 TypeScript，开发体验好很多。NestJS 那边因为用的是 tsc 编译，还需要在 `tsconfig.json` 里加 `paths` 映射，并且把 `@tixxin/shared` 加进 `include`。
+但这里有个坑我踩了很久：**共享包要不要先编译**。一开始 `@myblog/shared` 的 `main` 指向 `dist/index.js`，每次改了源码要先 `pnpm --filter shared build`，不然引用方拿到的是旧代码。后来改成 `exports` 直接指向 `src/index.ts`，让 Vite 和 tsx 这些工具自己处理 TypeScript，开发体验好很多。NestJS 那边因为用的是 tsc 编译，还需要在 `tsconfig.json` 里加 `paths` 映射，并且把 `@myblog/shared` 加进 `include`。
 
 ## filter 的几种用法
 

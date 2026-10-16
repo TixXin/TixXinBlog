@@ -7,12 +7,12 @@ export const EDITORIAL_REFRESH_REASON = '完善首发候选内容与关联阅读
 export const editorialArticles = [
   {
     key: 'content-boundaries',
-    slug: 'tixxinblog-content-boundaries',
+    slug: 'myblog-content-boundaries',
     pinned: true,
     readTimeMinutes: 5,
-    title: 'TixXinBlog 的内容边界与页面职责',
+    title: 'myblog 的内容边界与页面职责',
     summary: '沿着页面、领域和服务端三层结构，说明哪些内容真正持久化、主题如何共享业务，以及搜索与关联阅读的公开边界。',
-    body: `一套博客同时承载文章、项目和生活记录后，页面数量并不是最难维护的部分。更需要明确的是：数据由谁保存，页面负责哪些交互，以及同一条内容在不同入口里是否遵守相同的公开规则。本文沿着 TixXinBlog 当前代码梳理这些边界。
+    body: `一套博客同时承载文章、项目和生活记录后，页面数量并不是最难维护的部分。更需要明确的是：数据由谁保存，页面负责哪些交互，以及同一条内容在不同入口里是否遵守相同的公开规则。本文沿着 myblog 当前代码梳理这些边界。
 
 ## 从页面到数据库
 
@@ -51,16 +51,16 @@ Nexus、Aurora 和 Dock 通过主题引擎与本地插槽契约组织布局。�
 - src/backend/server-main/src/modules/content-relations/content-relations.ts：关联校验与公开投影。
 - docs/capability-map.md：当前能力与未实现边界。
 
-源码路径相对于 [TixXinBlog 仓库](https://github.com/TixXin/TixXinBlog)，以对应发布版本的检出为准。接下来可以继续看保存失败时的输入保护，再了解内容迁入包与完整备份各自负责什么。`,
+源码路径相对于 [myblog 仓库](https://github.com/example/myblog)，以对应发布版本的检出为准。接下来可以继续看保存失败时的输入保护，再了解内容迁入包与完整备份各自负责什么。`,
   },
   {
     key: 'editing-recovery',
-    slug: 'tixxinblog-editing-recovery',
+    slug: 'myblog-editing-recovery',
     pinned: false,
     readTimeMinutes: 5,
     title: '保存失败之后，如何保住正在写的内容',
     summary: '把版本冲突、本机恢复副本和响应丢失分开处理：保留输入、核对归属，再决定载入、合并或重新提交。',
-    body: `点击保存后没有看到成功提示，并不能直接说明“什么都没有写入”。也可能是另一个标签页先保存了，或者服务器已经完成操作，而响应没有回到当前页面。TixXinBlog 的编辑保护围绕这几种情况分别处理，而不是让用户反复点击同一个按钮。
+    body: `点击保存后没有看到成功提示，并不能直接说明“什么都没有写入”。也可能是另一个标签页先保存了，或者服务器已经完成操作，而响应没有回到当前页面。myblog 的编辑保护围绕这几种情况分别处理，而不是让用户反复点击同一个按钮。
 
 ## 先区分三种状态
 
@@ -112,12 +112,12 @@ Nexus、Aurora 和 Dock 通过主题引擎与本地插槽契约组织布局。�
   },
   {
     key: 'backup-boundaries',
-    slug: 'tixxinblog-content-package-and-backup',
+    slug: 'myblog-content-package-and-backup',
     pinned: false,
     readTimeMinutes: 5,
     title: '内容迁入包与完整备份分别解决什么问题',
     summary: 'v10 内容包用于受控迁入草稿，完整备份用于数据库与媒体恢复；预览、生成、完整性、传输和恢复需要分别核对。',
-    body: `“已经导出文件”和“已经验证恢复”不是同一件事。TixXinBlog 同时提供内容迁入包与完整备份，前者方便组织和搬运内容，后者保留数据库及受管媒体的完整状态。首发准备尤其需要分清二者，避免把日常开发样本连同配置一起搬到正式环境。
+    body: `“已经导出文件”和“已经验证恢复”不是同一件事。myblog 同时提供内容迁入包与完整备份，前者方便组织和搬运内容，后者保留数据库及受管媒体的完整状态。首发准备尤其需要分清二者，避免把日常开发样本连同配置一起搬到正式环境。
 
 ## 内容包迁入的是内容，不是整套运行环境
 
@@ -167,9 +167,9 @@ v10 格式要求包中存在基本站点字段。专用候选包使用中性占�
   },
 ] as const
 export const editorialProject = {
-  title: 'TixXinBlog：技术写作与内容维护',
+  title: 'myblog：技术写作与内容维护',
   description:
-    'TixXinBlog 是使用 Nuxt 4、Vue 3、TypeScript、NestJS、MikroORM 和 PostgreSQL 的个人博客。文章、评论、闪念、朋友圈、留言、图库、项目和友链具有真实 API；Nexus、Aurora、Dock 通过主题契约组织布局。\n\n后台提供版本化编辑、长文章节定位、媒体说明与引用查找，以及文章、项目、图库之间的有序关联。公开搜索按六种内容类型分组预览和分页；运营工作台区分审核、回复、通知已读与备份执行结果。\n\n内容包当前导出 v10 并兼容 v1–v9，完整备份另行保存数据库与受管媒体。邮件和备份任务需要显式配置与启用；书签仍是浏览器 LocalStorage，公开友链申请和访客邮件订阅尚未提供。\n\n本介绍只陈述仓库可核查能力，不包含访问量、用户规模、商业成绩或个人任职经历。源代码地址来自当前仓库 Git remote。',
+    'myblog 是使用 Nuxt 4、Vue 3、TypeScript、NestJS、MikroORM 和 PostgreSQL 的个人博客。文章、评论、闪念、朋友圈、留言、图库、项目和友链具有真实 API；Nexus、Aurora、Dock 通过主题契约组织布局。\n\n后台提供版本化编辑、长文章节定位、媒体说明与引用查找，以及文章、项目、图库之间的有序关联。公开搜索按六种内容类型分组预览和分页；运营工作台区分审核、回复、通知已读与备份执行结果。\n\n内容包当前导出 v10 并兼容 v1–v9，完整备份另行保存数据库与受管媒体。邮件和备份任务需要显式配置与启用；书签仍是浏览器 LocalStorage，公开友链申请和访客邮件订阅尚未提供。\n\n本介绍只陈述仓库可核查能力，不包含访问量、用户规模、商业成绩或个人任职经历。源代码地址来自当前仓库 Git remote。',
   coverMediaId: null,
   progress: 'active' as const,
   status: 'draft' as const,
@@ -179,5 +179,5 @@ export const editorialProject = {
     { label: 'NestJS', color: 'rose' as const },
     { label: 'PostgreSQL', color: 'sky' as const },
   ],
-  links: [{ kind: 'source' as const, href: 'https://github.com/TixXin/TixXinBlog' }],
+  links: [{ kind: 'source' as const, href: 'https://github.com/example/myblog' }],
 }

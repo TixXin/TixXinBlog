@@ -16,14 +16,29 @@ function mockAvatar(name: string, bg: string): string {
 /** 评论者 profile 数据 */
 const profiles: Record<string, MomentUserProfile> = {
   小林: { name: '小林', avatar: mockAvatar('小林', '4ade80'), bio: '摄影爱好者，喜欢用镜头记录生活' },
-  代码小哥: { name: '代码小哥', avatar: mockAvatar('代码小哥', '60a5fa'), bio: '全栈开发，开源爱好者', link: 'https://github.com' },
+  代码小哥: {
+    name: '代码小哥',
+    avatar: mockAvatar('代码小哥', '60a5fa'),
+    bio: '全栈开发，开源爱好者',
+    link: 'https://github.com',
+  },
   前端菜鸟: { name: '前端菜鸟', avatar: mockAvatar('前端菜鸟', 'f472b6'), bio: '正在学习前端的大三学生' },
   美食家小王: { name: '美食家小王', avatar: mockAvatar('美食家小王', 'fb923c'), bio: '吃遍深圳，一个认真的美食博主' },
   读书人: { name: '读书人', avatar: mockAvatar('读书人', 'a78bfa'), bio: '每年阅读 50+ 本书的文学爱好者' },
-  驴友阿杰: { name: '驴友阿杰', avatar: mockAvatar('驴友阿杰', '34d399'), bio: '户外运动达人，已登顶 30+ 座山', link: 'https://example.com' },
+  驴友阿杰: {
+    name: '驴友阿杰',
+    avatar: mockAvatar('驴友阿杰', '34d399'),
+    bio: '户外运动达人，已登顶 30+ 座山',
+    link: 'https://example.com',
+  },
   户外小白: { name: '户外小白', avatar: mockAvatar('户外小白', 'fbbf24'), bio: '刚入坑户外的打工人' },
   咖啡控: { name: '咖啡控', avatar: mockAvatar('咖啡控', 'c084fc'), bio: '每天一杯手冲咖啡' },
-  摄影师老张: { name: '摄影师老张', avatar: mockAvatar('摄影师老张', '38bdf8'), bio: '十年风光摄影经验，索尼用户', link: 'https://example.com' },
+  摄影师老张: {
+    name: '摄影师老张',
+    avatar: mockAvatar('摄影师老张', '38bdf8'),
+    bio: '十年风光摄影经验，索尼用户',
+    link: 'https://example.com',
+  },
   Nuxt爱好者: { name: 'Nuxt爱好者', avatar: mockAvatar('Nuxt爱好者', '2dd4bf'), bio: 'Vue/Nuxt 生态贡献者' },
 }
 
@@ -53,7 +68,7 @@ export const mockMoments: MomentItem[] = [
       },
       {
         id: 'c-1-2',
-        author: 'TixXin',
+        author: '陈屿',
         avatar: '/avatar-photo.webp',
         content: '是的，推荐周中去人少',
         time: '2小时前',
@@ -91,13 +106,21 @@ export const mockMoments: MomentItem[] = [
       },
       {
         id: 'c-2-2',
-        author: 'TixXin',
+        author: '陈屿',
         avatar: '/avatar-photo.webp',
         content: '基于 slot contract 模式，文章里会详细说',
         time: '昨天',
         isOwner: true,
       },
-      { id: 'c-2-3', author: '前端菜鸟', avatar: mockAvatar('前端菜鸟', 'f472b6'), content: '@代码小哥 大佬带带我', time: '10小时前', isOwner: false, profile: profiles['前端菜鸟'] },
+      {
+        id: 'c-2-3',
+        author: '前端菜鸟',
+        avatar: mockAvatar('前端菜鸟', 'f472b6'),
+        content: '@代码小哥 大佬带带我',
+        time: '10小时前',
+        isOwner: false,
+        profile: profiles['前端菜鸟'],
+      },
     ],
   },
   {
@@ -140,7 +163,7 @@ export const mockMoments: MomentItem[] = [
       },
       {
         id: 'c-4-2',
-        author: 'TixXin',
+        author: '陈屿',
         avatar: '/avatar-photo.webp',
         content: '@美食家小王 强烈推荐鳗鱼饭，一定要试',
         time: '4天前',
@@ -157,7 +180,15 @@ export const mockMoments: MomentItem[] = [
     isLiked: false,
     topics: ['读书笔记', '技术分享'],
     comments: [
-      { id: 'c-5-1', author: '读书人', avatar: mockAvatar('读书人', 'a78bfa'), content: '这本书是经典，值得反复看', time: '6天前', isOwner: false, profile: profiles['读书人'] },
+      {
+        id: 'c-5-1',
+        author: '读书人',
+        avatar: mockAvatar('读书人', 'a78bfa'),
+        content: '这本书是经典，值得反复看',
+        time: '6天前',
+        isOwner: false,
+        profile: profiles['读书人'],
+      },
     ],
   },
   {
@@ -205,16 +236,24 @@ export const mockMoments: MomentItem[] = [
       },
       {
         id: 'c-7-2',
-        author: 'TixXin',
+        author: '陈屿',
         avatar: '/avatar-photo.webp',
         content: '早上五点半开始爬，七点到山顶',
         time: '10天前',
         isOwner: true,
       },
-      { id: 'c-7-3', author: '户外小白', avatar: mockAvatar('户外小白', 'fbbf24'), content: '@驴友阿杰 难度大吗？新手能去吗', time: '9天前', isOwner: false, profile: profiles['户外小白'] },
+      {
+        id: 'c-7-3',
+        author: '户外小白',
+        avatar: mockAvatar('户外小白', 'fbbf24'),
+        content: '@驴友阿杰 难度大吗？新手能去吗',
+        time: '9天前',
+        isOwner: false,
+        profile: profiles['户外小白'],
+      },
       {
         id: 'c-7-4',
-        author: 'TixXin',
+        author: '陈屿',
         avatar: '/avatar-photo.webp',
         content: '@户外小白 主要路线不难，就是有点长，带够水就行',
         time: '9天前',
@@ -244,10 +283,18 @@ export const mockMoments: MomentItem[] = [
     location: '深圳·南山',
     topics: ['美食探店', '生活日常'],
     comments: [
-      { id: 'c-9-1', author: '咖啡控', avatar: mockAvatar('咖啡控', 'c084fc'), content: '在哪里呀，求地址！', time: '15天前', isOwner: false, profile: profiles['咖啡控'] },
+      {
+        id: 'c-9-1',
+        author: '咖啡控',
+        avatar: mockAvatar('咖啡控', 'c084fc'),
+        content: '在哪里呀，求地址！',
+        time: '15天前',
+        isOwner: false,
+        profile: profiles['咖啡控'],
+      },
       {
         id: 'c-9-2',
-        author: 'TixXin',
+        author: '陈屿',
         avatar: '/avatar-photo.webp',
         content: '南山大道旁边的小巷子里，叫"慢时光"',
         time: '15天前',
@@ -300,7 +347,7 @@ export const mockMoments: MomentItem[] = [
       },
       {
         id: 'c-12-2',
-        author: 'TixXin',
+        author: '陈屿',
         avatar: '/avatar-photo.webp',
         content: '1/4s，开了 IBIS 防抖，靠在栏杆上稳住',
         time: '23天前',
@@ -342,7 +389,7 @@ export const mockMoments: MomentItem[] = [
       },
       {
         id: 'c-14-2',
-        author: 'TixXin',
+        author: '陈屿',
         avatar: '/avatar-photo.webp',
         content: '官方有迁移指南，主要是目录结构变化，逻辑基本兼容',
         time: '30天前',
@@ -419,6 +466,6 @@ export const mockMomentAuthorStats: MomentAuthorStats = {
   socialLinks: [
     { icon: 'lucide:github', url: 'https://github.com', label: 'GitHub' },
     { icon: 'lucide:twitter', url: 'https://twitter.com', label: 'Twitter' },
-    { icon: 'lucide:mail', url: 'mailto:hi@tixxin.com', label: '邮箱' },
+    { icon: 'lucide:mail', url: 'mailto:hi@example.com', label: '邮箱' },
   ],
 }

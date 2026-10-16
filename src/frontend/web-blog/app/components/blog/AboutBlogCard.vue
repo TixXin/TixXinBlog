@@ -27,7 +27,7 @@
           了解更多
           <Icon name="lucide:arrow-right" size="16" />
         </NuxtLink>
-        <a href="https://github.com/AYumeRNA/TixXinBlog" target="_blank" rel="noopener noreferrer" class="btn-outline">
+        <a href="https://github.com/example/myblog" target="_blank" rel="noopener noreferrer" class="btn-outline">
           <Icon name="lucide:github" size="16" />
           查看源码
         </a>

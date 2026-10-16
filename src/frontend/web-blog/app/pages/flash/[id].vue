@@ -157,13 +157,13 @@ const pageTitle = computed(() => {
 useSeoMeta({
   title: () => pageTitle.value,
   description: () => excerpt.value,
-  ogTitle: () => `${pageTitle.value} - TixXin 闪念`,
+  ogTitle: () => `${pageTitle.value} - ${siteSettings.value.name} 闪念`,
   ogDescription: () => excerpt.value,
   ogType: 'article',
   ogImage: () => note.value?.images?.[0] ?? siteSettings.value.avatar,
   robots: localOnly ? 'noindex, follow' : 'index, follow',
   twitterCard: 'summary',
-  twitterTitle: () => `${pageTitle.value} - TixXin 闪念`,
+  twitterTitle: () => `${pageTitle.value} - ${siteSettings.value.name} 闪念`,
   twitterDescription: () => excerpt.value,
 })
 

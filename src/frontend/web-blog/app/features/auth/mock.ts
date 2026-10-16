@@ -8,8 +8,8 @@ import type { CurrentUser } from './types'
 /** mock 博主用户（owner 角色，对应 mockOwnerCard 身份） */
 export const mockOwnerUser: CurrentUser = {
   id: 'owner-001',
-  nickname: 'TixXin',
-  email: 'admin@tixxin.dev',
+  nickname: '陈屿',
+  email: 'admin@example.com',
   // 与 StatusFooter 浮动头像保持一致
   avatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=200&q=80&sat=-12',
   role: 'owner',
@@ -20,7 +20,7 @@ export const mockOwnerUser: CurrentUser = {
 export const mockVisitorUser: CurrentUser = {
   id: 'visitor-001',
   nickname: '路过的旅人',
-  email: 'visitor@tixxin.dev',
+  email: 'visitor@example.com',
   avatar: 'https://images.unsplash.com/photo-1502685104226-ee32379fefbe?auto=format&fit=crop&w=200&q=80',
   role: 'visitor',
   signature: '保持好奇，温柔以待',

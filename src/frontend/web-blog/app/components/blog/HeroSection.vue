@@ -11,7 +11,7 @@
       <div class="hero-section__avatar">
         <CommonContentImage
           src="/avatar.svg"
-          alt="TixXin"
+          alt="博主头像"
           width="80"
           height="80"
           class="hero-section__avatar-img"
@@ -26,7 +26,7 @@
       </div>
 
       <div class="hero-section__text">
-        <h1 class="hero-section__name">TixXin</h1>
+        <h1 class="hero-section__name">陈屿</h1>
         <p class="hero-section__bio">
           前端开发工程师，热爱技术与生活。<br />
           在这里记录学习心得、项目经验和日常随笔。
@@ -34,7 +34,7 @@
 
         <div class="hero-section__social">
           <a
-            href="https://github.com/AYumeRNA"
+            href="https://github.com/example"
             target="_blank"
             rel="noopener noreferrer"
             class="social-btn"
@@ -42,7 +42,7 @@
           >
             <Icon name="lucide:github" size="18" />
           </a>
-          <a href="mailto:tixxin@example.com" class="social-btn" aria-label="Email">
+          <a href="mailto:hi@example.com" class="social-btn" aria-label="Email">
             <Icon name="lucide:mail" size="18" />
           </a>
         </div>
