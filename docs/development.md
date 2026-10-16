@@ -192,6 +192,6 @@ node src/backend/server-main/tests/browser-runner.mjs blog.spec.ts --browser=fir
 
 需要评估文章列表投影时，可在后端构建后运行 `corepack pnpm --filter server-main exec tsx tests/post-list-performance.ts --compare`。它比较完整业务响应、分页和公开过滤，而非只比较耗时。浏览器性能与服务方法耗时分别记录；明确样本、预热、缓存、硬件及并发条件，不把本机采样直接当作线上收益。
 
-公开栏目导航验收使用 `node src/backend/server-main/tests/navigation-performance.mjs --samples=20 --devtools-ab`，运行前完成前后端生产构建。脚本建立独立数据库和媒体目录，使用至少 2,000 篇公开文章及每页 12 张真实受管图片，分别采样三主题生产导航和独立开发进程的 DevTools 开关对照；报告包含点击到页面就绪、长任务、DOM 峰值、请求与传输量，以及本次资源清理结果。默认只对功能与资源边界作断言，毫秒目标需在同硬件、同样本、相同预热条件下核验；不能把有失败响应的快速轮测当成成功性能结果。
+公开栏目导航验收使用 `node src/backend/server-main/tests/navigation-performance.mjs --samples=28 --devtools-ab`，运行前完成前后端生产构建。脚本建立独立数据库和媒体目录，使用至少 2,000 篇公开文章及每页 12 张真实受管图片，分别采样三主题生产导航和独立开发进程的 DevTools 开关对照；报告包含点击到页面就绪、长任务、DOM 峰值、请求与传输量，以及本次资源清理结果。默认只对功能与资源边界作断言，毫秒目标需在同硬件、同样本、相同预热条件下核验；不能把有失败响应的快速轮测当成成功性能结果。
 
 Git 保存可重复运行的测试源码。截图、录屏、trace、覆盖率、机器报告、运行日志和临时脚本写入 `.artifacts/` 或 `.playwright-mcp/`，不纳入发布文档。分享报告前清除凭据及私人内容。

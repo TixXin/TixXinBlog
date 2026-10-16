@@ -98,8 +98,7 @@ export async function usePostList(options: {
     {
       domain: 'posts',
       query: () => ({ ...filters.value, page: options.page.value, pageSize, mode: options.displayMode.value }),
-      ttl: (value) =>
-        value.prefixReadAt === undefined ? 30_000 : Math.max(0, 30_000 - (Date.now() - value.prefixReadAt)),
+      readAt: (value) => value.prefixReadAt ?? Date.now(),
     },
   )
   watch(

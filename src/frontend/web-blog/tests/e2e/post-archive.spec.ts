@@ -35,9 +35,10 @@ test('归档深链按50条分页，历史恢复与年份筛选保持URL一致', 
   expect(hydration).toEqual([])
 })
 
-test('切页失败不显示其他页为当前结果，重试恢复真实页面', async ({ page }) => {
+test('切页失败保留上次成功页并标明来源，重试恢复真实页面', async ({ page }) => {
   await page.goto('/archive')
   await expect(page.locator('.archive-item')).toHaveCount(50)
+  const previousTitles = await page.locator('.archive-item__title').allTextContents()
   let failed = false
   await page.route('**/api/v1/posts/archive?*', async (route) => {
     if (!failed && new URL(route.request().url()).searchParams.get('page') === '2') {
@@ -51,9 +52,17 @@ test('切页失败不显示其他页为当前结果，重试恢复真实页面',
   })
   await page.getByRole('navigation', { name: '文章归档分页' }).getByRole('button', { name: '下一页' }).click()
   await expect(page.getByText('归档加载失败，请稍后重试', { exact: true })).toBeVisible()
-  await expect(page.locator('.archive-item')).toHaveCount(0)
+  await expect(page).toHaveURL(/page=2/)
+  await expect(page.locator('.archive-item')).toHaveCount(50)
+  await expect(page.locator('.archive-item__title')).toHaveText(previousTitles)
+  await expect(page.locator('.archive-stale-notice')).toContainText('上次成功结果')
+  const pagination = page.getByRole('navigation', { name: '文章归档分页' })
+  await expect(pagination).toContainText('1 /')
+  await expect(pagination.getByRole('button', { name: '上一页' })).toBeDisabled()
+  await expect(pagination.getByRole('button', { name: '下一页' })).toBeDisabled()
   await page.locator('.archive-body').getByRole('button', { name: /重试/ }).click()
   await expect(page.locator('.archive-item')).toHaveCount(50)
+  await expect(page.locator('.archive-stale-notice')).toHaveCount(0)
   await expect(page.getByRole('navigation', { name: '文章归档分页' })).toContainText('2 /')
 })
 

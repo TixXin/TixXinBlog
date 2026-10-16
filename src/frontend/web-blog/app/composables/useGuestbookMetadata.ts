@@ -2,19 +2,54 @@
 import type { GuestbookMetadata } from '~/features/guestbook/types'
 export async function useGuestbookMetadata() {
   const repo = useGuestbookRepository()
-  const retained = useState<GuestbookMetadata | null>('guestbook-metadata-retained', () => null)
-  const result = useAsyncData('guestbook-metadata', (_app, { signal }) => repo.metadata(signal))
-  watch(
-    result.data,
-    (value) => {
-      if (value) retained.value = value
+  const entities = useGuestbookCache()
+  type PublicMetadata = Omit<GuestbookMetadata, 'pinned'> & { pinnedId: number | null; generation: number }
+  const result = usePublicReadData(
+    'guestbook-metadata',
+    async (_app, { signal }): Promise<PublicMetadata> => {
+      const started = entities.clock.value,
+        generation = entities.generation.value
+      const value = await repo.metadata(signal)
+      if (signal.aborted || generation !== entities.generation.value)
+        throw new DOMException('留言统计已失效', 'AbortError')
+      if (value.pinned) entities.accept([value.pinned], started, generation)
+      return {
+        stats: value.stats,
+        members: value.members,
+        rules: value.rules,
+        pinnedId: value.pinned?.id ?? null,
+        generation,
+      }
     },
-    { immediate: true },
+    {
+      domain: 'guestbook-metadata',
+      kind: 'metadata',
+      lazy: true,
+      cache: {
+        project: (value) => value,
+        restore: (value) => {
+          const snapshot = value as PublicMetadata
+          if (snapshot.generation !== entities.generation.value) return undefined
+          const pinned = snapshot.pinnedId === null ? null : entities.entries.value[snapshot.pinnedId]
+          if (snapshot.pinnedId !== null && (!pinned || pinned.moderationStatus !== 'published')) return undefined
+          return snapshot
+        },
+      },
+    },
   )
   await result
-  if (result.data.value) retained.value = result.data.value
   return {
-    data: computed(() => result.data.value ?? retained.value),
+    data: computed<GuestbookMetadata | null>(() => {
+      const value = result.data.value
+      return value
+        ? {
+            stats: value.stats,
+            members: value.members,
+            rules: value.rules,
+            pinned: value.pinnedId === null ? null : (entities.entries.value[value.pinnedId] ?? null),
+          }
+        : null
+    }),
     pending: result.pending,
     error: result.error,
     refresh: result.refresh,

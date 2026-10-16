@@ -39,7 +39,10 @@ export class RateLimitGuard implements CanActivate {
     const view = request.path.endsWith('/view')
     const upload = request.path === '/api/v1/admin/media' && request.method === 'POST'
     const write = !['GET', 'HEAD'].includes(request.method)
-    const media = request.path.startsWith('/api/v1/media/')
+    const media =
+      !write &&
+      (request.path.startsWith('/api/v1/media/') ||
+        /^\/api\/v1\/subscriptions\/favicons\/[a-f0-9]{64}\.webp$/.test(request.path))
     const admin = /^\/api\/v1\/admin(?:\/|$)/.test(request.path)
     const scope = upload
       ? 'media-upload'

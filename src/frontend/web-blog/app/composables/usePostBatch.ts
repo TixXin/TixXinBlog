@@ -56,7 +56,7 @@ export function usePostBatch(onChanged: () => Promise<void>) {
     preview.value = value.preview
     await loadRecent()
     if (value.results.length) {
-      invalidatePublicReads(app, ['posts', 'post-summary', 'archive'])
+      invalidatePublicReads(app, ['posts', 'post-summary', 'archive', 'moment-feed'])
       clearNuxtData((key) => key.startsWith('article-') || key.startsWith('post-'))
       await onChanged()
     }

@@ -11,8 +11,16 @@ export function usePublicReadData<T>(
     kind?: 'list' | 'metadata'
     lazy?: boolean
     immediate?: boolean
-    /** 组合分页响应不得给未重读的前缀重新续期。 */
+    /** 可进一步缩短新鲜期；不会改变五分钟历史上限。 */
     ttl?: (value: T) => number
+    /** 组合分页以最早未重读前缀的时刻统一计算新鲜期与历史上限。 */
+    readAt?: (value: T) => number
+    /** 私有实体仍由领域仓储持有；LRU 只接纳公开投影，弱关联索引也计入容量。 */
+    cache?: {
+      project: (value: T) => unknown
+      restore: (value: unknown) => T | undefined
+      additionalBytes?: (value: T) => number
+    }
   },
 ) {
   const app = useNuxtApp()
@@ -20,14 +28,33 @@ export function usePublicReadData<T>(
   const key = () => publicReadKey(options.domain, options.query?.())
   const ttl = options.kind === 'metadata' ? 60_000 : 30_000
   const valueTtl = (value: T) => Math.min(ttl, Math.max(0, options.ttl?.(value) ?? ttl))
+  function remember(value: T, requested: string, version: number) {
+    const projected = options.cache ? options.cache.project(value) : value
+    cache.put(
+      options.domain,
+      requested,
+      projected,
+      version,
+      valueTtl(value),
+      options.cache?.additionalBytes?.(value) ?? 0,
+      options.readAt?.(value),
+    )
+  }
+  function readCached() {
+    const hit = cache.read<unknown>(key())
+    if (!hit) return undefined
+    const value = options.cache ? options.cache.restore(hit.value) : (hit.value as T)
+    return value === undefined ? undefined : { value, stale: hit.stale }
+  }
   const generation = shallowRef(cache.generation(options.domain))
   const retained = shallowRef<{ key: string; value: T }>()
   const servedStale = ref(false)
   const shared = cache.readerCount(nuxtKey) > 0
-  const initialHit = !app.isHydrating ? cache.read<T>(key()) : undefined
+  const initialHit = !app.isHydrating ? readCached() : undefined
   let revalidate = initialHit?.stale ?? false
   servedStale.value = revalidate
   let disposed = false
+  let mounted = false
   let started = options.immediate !== false
   let controller: AbortController | undefined
   const result = useAsyncData<T>(
@@ -42,7 +69,7 @@ export function usePublicReadData<T>(
       if (ownedSignal.aborted || version !== cache.generation(options.domain)) {
         throw new DOMException('公开读取已失效', 'AbortError')
       }
-      cache.put(options.domain, requested, value, version, valueTtl(value))
+      remember(value, requested, version)
       retained.value = { key: requested, value }
       servedStale.value = false
       return value
@@ -54,14 +81,19 @@ export function usePublicReadData<T>(
       // 同键并发订阅（SSR 预取插件、布局、页面）复用进行中的请求；显式刷新仍按调用方传入的 dedupe 执行
       dedupe: 'defer',
       getCachedData: (_key, context, { cause }) => {
-        if (context.isHydrating && context.payload.data[nuxtKey] !== undefined && cause === 'initial') {
+        // SSR 预取完成后的订阅和首次水合可复用 payload；手动或 hook 刷新不能被旧结果截断。
+        if (
+          cause === 'initial' &&
+          (import.meta.server || context.ssrContext || context.isHydrating) &&
+          context.payload.data[nuxtKey] !== undefined
+        ) {
           const value = context.payload.data[nuxtKey] as T
-          cache.put(options.domain, key(), value, cache.generation(options.domain), valueTtl(value))
+          remember(value, key(), cache.generation(options.domain))
           retained.value = { key: key(), value }
           return value
         }
         if (cause !== 'initial' && cause !== 'watch') return undefined
-        const hit = cache.read<T>(key())
+        const hit = readCached()
         if (hit) {
           retained.value = { key: key(), value: hit.value }
           servedStale.value = hit.stale
@@ -77,7 +109,8 @@ export function usePublicReadData<T>(
   let coldRefresh: Promise<unknown> | undefined
   if (import.meta.client && shared && !app.isHydrating && !initialHit && started && !result.pending.value) {
     result.clear()
-    coldRefresh = rawRefresh({ dedupe: 'cancel', cachedData: undefined })
+    // 懒读取仍由挂载钩子发起，不能让共享键的冷统计重新阻塞页面 setup。
+    if (!options.lazy) coldRefresh = rawRefresh({ dedupe: 'cancel', cachedData: undefined })
   }
   // Nuxt 同键只持有第一个 handler；每个订阅都观察成功数据，才能在刷新失败时一致保留。
   watch(
@@ -96,11 +129,19 @@ export function usePublicReadData<T>(
   }
   function backgroundRefresh() {
     if (!revalidate || disposed || !started || import.meta.server) return
+    // lazy 的初始回填在 beforeMount；提前重验证会被随后回填清掉真实错误。
+    if (options.lazy && !mounted) return
     revalidate = false
     void nextTick(() => {
       if (!disposed && !result.pending.value) void refresh()
     })
   }
+  // 服务端预取插件只有 effectScope，没有组件挂载生命周期。
+  if (import.meta.client && !app.ssrContext)
+    onMounted(() => {
+      mounted = true
+      backgroundRefresh()
+    })
   async function reload() {
     started = true
     controller?.abort()
@@ -108,6 +149,15 @@ export function usePublicReadData<T>(
     if (result.pending.value) result.clear()
     await rawRefresh({ cause: 'watch', dedupe: 'cancel' })
     backgroundRefresh()
+  }
+  function publish(value: T, expectedGeneration: number) {
+    // 游标追加已由领域校验查询和实体代次；这里再拒绝失效或离开后的写回。
+    if (disposed || expectedGeneration !== cache.generation(options.domain)) return false
+    remember(value, key(), expectedGeneration)
+    retained.value = { key: key(), value }
+    servedStale.value = false
+    result.data.value = value as typeof result.data.value
+    return true
   }
   cache.retain(nuxtKey)
   const unsubscribe = cache.subscribe(options.domain, () => {
@@ -140,6 +190,7 @@ export function usePublicReadData<T>(
     refresh,
     execute: refresh,
     reload,
+    publish,
     clear: result.clear,
     generation,
     stale: computed(() => servedStale.value && !!data.value),

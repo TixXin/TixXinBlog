@@ -66,6 +66,26 @@ export interface GuestbookPage {
   total: number
   nextCursor: string | null
 }
+
+/** 视图索引由既有实体缓存持有，不复制留言正文或个人回应。 */
+export interface GuestbookFeedSnapshot {
+  ids: number[]
+  total: number
+  nextCursor: string | null
+  key: string
+  generation: number
+  readAt: number
+  pages: number
+  personalized: boolean
+}
+
+/** 公共 LRU 不保存待审编号、个人总量、游标或互动状态。 */
+export interface GuestbookPublicSnapshot {
+  ids: number[]
+  key: string
+  generation: number
+  readAt: number
+}
 export interface GuestbookMetadata {
   stats: { messages: number; members: number; recent: number; today: number }
   pinned: GuestbookRecord | null

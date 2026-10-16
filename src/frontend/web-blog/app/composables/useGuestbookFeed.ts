@@ -1,5 +1,5 @@
-/** @file useGuestbookFeed.ts @description 留言游标流；保留最后成功内容，读写分离并取消旧查询，滚动交由页面钩子处理 */
-import type { GuestbookRecord, GuestbookQuery } from '~/features/guestbook/types'
+/** @file useGuestbookFeed.ts @description 留言游标流复用公开页索引缓存，实体及个人分页索引仍由原缓存持有 */
+import type { GuestbookFeedSnapshot, GuestbookRecord, GuestbookQuery } from '~/features/guestbook/types'
 export async function useGuestbookFeed(options: {
   q: Ref<string>
   date: Ref<string | null>
@@ -16,6 +16,7 @@ export async function useGuestbookFeed(options: {
     morePending = ref(false),
     moreError = ref(''),
     scheduled = ref(false)
+  const accepted = shallowRef<GuestbookFeedSnapshot | null>(null)
   let moreVersion = 0,
     changeVersion = 0,
     moreController: AbortController | null = null,
@@ -27,42 +28,72 @@ export async function useGuestbookFeed(options: {
     date: options.date.value || undefined,
     pageSize: 20,
   })
-  const result = useAsyncData('guestbook-feed', async (_app, { signal }) => {
+  async function readSnapshot(signal: AbortSignal, requestedPages: number): Promise<GuestbookFeedSnapshot> {
     const current = key.value,
       started = cache.clock.value,
       generation = cache.generation.value,
-      currentQuery = query()
+      currentQuery = query(),
+      readAt = Date.now(),
+      ownedSignal = AbortSignal.any([signal, scope.signal])
     requestedKey.value = current
     let before: string | undefined,
       count = 0,
-      nextCursor: string | null = null
+      nextCursor: string | null = null,
+      loadedPages = 0
     const items: GuestbookRecord[] = []
-    for (let page = 0; page < pages.value; page++) {
-      const value = await repo.list({ ...currentQuery, before }, AbortSignal.any([signal, scope.signal]))
+    for (let page = 0; page < requestedPages; page++) {
+      if (ownedSignal.aborted) throw new DOMException('留言读取已取消', 'AbortError')
+      const value = await repo.list({ ...currentQuery, before }, ownedSignal)
       items.push(...value.items)
       count = value.total
       nextCursor = value.nextCursor
+      loadedPages++
       if (!nextCursor) break
       before = nextCursor
     }
-    return { items, total: count, nextCursor, key: current, started, generation, personalized: import.meta.client }
+    if (ownedSignal.aborted || generation !== cache.generation.value)
+      throw new DOMException('留言读取已失效', 'AbortError')
+    cache.accept(items, started, generation)
+    return {
+      ids: [...new Set(items.map((item) => item.id))],
+      total: count,
+      nextCursor,
+      key: current,
+      generation,
+      readAt,
+      pages: loadedPages,
+      personalized: import.meta.client,
+    }
+  }
+  const result = usePublicReadData('guestbook-feed', (_app, { signal }) => readSnapshot(signal, pages.value), {
+    domain: 'guestbook-feed',
+    query: () => query(),
+    readAt: (value) => value.readAt,
+    cache: {
+      project: cache.project,
+      restore: cache.restore,
+      // 个人视图索引留在既有缓存的弱关联中，字节数仍扣减同一4MiB容量。
+      additionalBytes: (value) => new TextEncoder().encode(JSON.stringify(value)).byteLength,
+    },
   })
-  async function accept(value: typeof result.data.value) {
+  async function accept(value: GuestbookFeedSnapshot | undefined) {
     if (!value || value.key !== key.value || value.generation !== cache.generation.value || scope.signal.aborted) return
     const change = ++changeVersion
     if (import.meta.client) options.beforeChange?.()
-    cache.accept(value.items, value.started, value.generation)
-    ids.value = [...new Set(value.items.map((item) => item.id))]
+    accepted.value = value
+    ids.value = [...value.ids]
     total.value = value.total
     cursor.value = value.nextCursor
+    pages.value = value.pages
     moreError.value = ''
     await nextTick()
     if (import.meta.client && change === changeVersion && !scope.signal.aborted) await options.afterChange?.()
   }
+  let lastAcceptance: Promise<void> = Promise.resolve()
   watch(
     result.data,
     (value) => {
-      void accept(value)
+      lastAcceptance = accept(value)
     },
     { immediate: true },
   )
@@ -70,23 +101,34 @@ export async function useGuestbookFeed(options: {
     moreVersion++
     moreController?.abort()
     morePending.value = false
-    moreError.value = ''
   }
-  let lastRefresh: ReturnType<typeof result.refresh> | null = null
+  let lastRefresh: Promise<void> | null = null
   function refresh(reset = false) {
     cancelMore()
     if (timer) clearTimeout(timer)
     scheduled.value = false
     if (reset) pages.value = 1
-    lastRefresh = result.refresh({ dedupe: 'cancel', cachedData: undefined })
+    lastRefresh = result.refresh()
     return lastRefresh
   }
   watch(
-    cache.generation,
+    result.generation,
+    () => {
+      cancelMore()
+      accepted.value = null
+      ids.value = []
+      total.value = 0
+      cursor.value = null
+    },
+    { flush: 'sync' },
+  )
+  // 在统一失效完成后启动，避免在clear之前发起又被取消；提交方可等待这次确认读取。
+  watch(
+    result.generation,
     () => {
       void refresh()
     },
-    { flush: 'sync' },
+    { flush: 'post' },
   )
   watch(key, () => {
     cancelMore()
@@ -95,7 +137,7 @@ export async function useGuestbookFeed(options: {
     scheduled.value = true
     timer = setTimeout(() => {
       scheduled.value = false
-      void refresh()
+      lastRefresh = result.reload()
     }, 250)
   })
   onMounted(() => {
@@ -119,28 +161,49 @@ export async function useGuestbookFeed(options: {
       currentKey = key.value,
       version = ++moreVersion,
       started = cache.clock.value,
-      generation = cache.generation.value
+      generation = cache.generation.value,
+      readGeneration = result.generation.value
     moreController = new AbortController()
+    const signal = AbortSignal.any([scope.signal, moreController.signal])
     morePending.value = true
     moreError.value = ''
     try {
-      const value = await repo.list({ ...query(), before }, AbortSignal.any([scope.signal, moreController.signal]))
+      let snapshot: GuestbookFeedSnapshot
+      if (!accepted.value || Date.now() - accepted.value.readAt >= 30_000) {
+        // 旧前缀过期后完整核对；新的游标页不能给旧记录重新续期。
+        snapshot = await readSnapshot(signal, pages.value + 1)
+      } else {
+        const value = await repo.list({ ...query(), before }, signal)
+        if (
+          signal.aborted ||
+          version !== moreVersion ||
+          key.value !== currentKey ||
+          cursor.value !== before ||
+          generation !== cache.generation.value
+        )
+          return
+        cache.accept(value.items, started, generation)
+        snapshot = {
+          ids: [...new Set([...ids.value, ...value.items.map((item) => item.id)])],
+          total: value.total,
+          nextCursor: value.nextCursor,
+          key: currentKey,
+          generation,
+          readAt: accepted.value.readAt,
+          pages: pages.value + 1,
+          personalized: import.meta.client,
+        }
+      }
       if (
+        signal.aborted ||
         version !== moreVersion ||
         key.value !== currentKey ||
-        cursor.value !== before ||
         generation !== cache.generation.value
       )
         return
-      const change = ++changeVersion
-      if (import.meta.client) options.beforeChange?.()
-      cache.accept(value.items, started, generation)
-      ids.value = [...new Set([...ids.value, ...value.items.map((item) => item.id)])]
-      cursor.value = value.nextCursor
-      total.value = value.total
-      pages.value++
+      if (!result.publish(snapshot, readGeneration)) return
       await nextTick()
-      if (import.meta.client && change === changeVersion && !scope.signal.aborted) await options.afterChange?.()
+      await lastAcceptance
     } catch (cause) {
       if (version === moreVersion && !scope.signal.aborted)
         moreError.value = cause instanceof Error ? cause.message : '历史留言加载失败，请重试'
@@ -164,11 +227,14 @@ export async function useGuestbookFeed(options: {
     hasMore: computed(() => !!cursor.value),
     morePending,
     moreError,
-    personalized: computed(() => !!result.data.value?.personalized),
+    personalized: computed(() => !!accepted.value?.personalized),
     pending: computed(() => scheduled.value || result.pending.value),
     error: computed(() => (requestedKey.value === key.value ? result.error.value : undefined)),
     refresh,
-    settled: () => lastRefresh ?? Promise.resolve(),
+    settled: async () => {
+      await nextTick()
+      await lastRefresh
+    },
     loadMore,
     retryMore: () => {
       moreError.value = ''

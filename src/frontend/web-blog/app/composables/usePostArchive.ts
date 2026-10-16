@@ -25,6 +25,7 @@ export async function usePostArchive() {
   const query = computed(() => (hydrating.value ? initialQuery : postArchiveQuery(route.query)))
   const key = computed(() => JSON.stringify(query.value))
   const accepted = shallowRef<{ key: string; page: PostArchivePage } | null>(null)
+  let normalizationTarget: string | null = null
   const result = usePublicReadData(
     'post-archive',
     async (_app, { signal }) => {
@@ -68,14 +69,24 @@ export async function usePostArchive() {
     },
     { immediate: true },
   )
-  watch(key, () => {
-    void result.reload()
+  watch(key, (requested) => {
+    // 已确认末页缩减时，归一目标不能用旧分页快照重新打开不存在的下一页。
+    const confirmedOutOfRange = requested === normalizationTarget
+    normalizationTarget = null
+    if (confirmedOutOfRange) void result.refresh()
+    else void result.reload()
   })
   onMounted(() => {
     ready.value = true
     hydrating.value = false
   })
   const current = computed(() => (accepted.value?.key === key.value ? accepted.value.page : null))
+  // 展示保留最后成功页；页码校正始终只使用匹配当前查询的 current。
+  const displayed = computed(() => accepted.value?.page ?? null)
+  const displayedQuery = computed<PostArchiveQuery | null>(() =>
+    accepted.value ? (JSON.parse(accepted.value.key) as PostArchiveQuery) : null,
+  )
+  const stale = computed(() => !!accepted.value && accepted.value.key !== key.value)
   const pageCount = computed(() => Math.max(1, Math.ceil((current.value?.total ?? 0) / query.value.pageSize)))
   async function changeQuery(patch: { year?: number; page?: number }) {
     const next = { ...route.query, ...patch }
@@ -83,8 +94,10 @@ export async function usePostArchive() {
   }
   watch([ready, result.pending, result.error, current], () => {
     if (!ready.value || result.pending.value || result.error.value || !current.value) return
-    if (query.value.page > pageCount.value)
+    if (query.value.page > pageCount.value) {
+      normalizationTarget = JSON.stringify({ ...query.value, page: pageCount.value })
       void router.replace({ query: { ...route.query, page: pageCount.value === 1 ? undefined : pageCount.value } })
+    }
   })
   await result
   scope.assertActive()
@@ -95,10 +108,13 @@ export async function usePostArchive() {
     query,
     ready,
     current,
+    displayed,
+    displayedQuery,
+    stale,
     pageCount,
     changeQuery,
     years: computed(() => accepted.value?.page.years ?? []),
-    archiveYears: computed(() => postArchiveYears(current.value)),
+    archiveYears: computed(() => postArchiveYears(displayed.value)),
     pending: result.pending,
     error: result.error,
     refresh: result.refresh,

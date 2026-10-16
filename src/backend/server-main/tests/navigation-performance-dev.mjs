@@ -1,14 +1,19 @@
 /** @file navigation-performance-dev.mjs @description 性能验收专用短期 Nuxt 开发子进程，生成目录与端口全部归属调用者 */
 import assert from 'node:assert/strict'
 import { createRequire } from 'node:module'
-import { dirname, isAbsolute, relative } from 'node:path'
+import { basename, dirname, isAbsolute, relative, join } from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
 
 const frontend = fileURLToPath(new URL('../../../frontend/web-blog/', import.meta.url))
+const projectRoot = fileURLToPath(new URL('../../../../', import.meta.url))
 const output = process.env.NAVIGATION_PERFORMANCE_OUTPUT
 const buildDir = process.env.NAVIGATION_PERFORMANCE_BUILD_DIR
 assert(output && buildDir && isAbsolute(output) && isAbsolute(buildDir))
-assert.equal(dirname(buildDir), output, '开发中间目录必须属于本次性能验收')
+assert.equal(dirname(output), join(projectRoot, '.artifacts/navigation-performance'), '报告目录必须属于当前工作树')
+const buildOwner = join(frontend, '.artifacts/navigation-performance', basename(output))
+assert(/^run-[a-zA-Z0-9]+$/.test(basename(output)), '报告必须使用本次生成的验收目录')
+assert.equal(dirname(buildDir), buildOwner, '开发中间目录必须属于前端目录内本次性能验收')
+assert(['development-off', 'development-on'].includes(basename(buildDir)), '开发阶段名称不合法')
 assert(!relative(frontend, buildDir).startsWith('.nuxt'), '禁止使用日常开发生成目录')
 const frontendRequire = createRequire(new URL('../../../frontend/web-blog/package.json', import.meta.url))
 const nuxtRequire = createRequire(frontendRequire.resolve('nuxt/package.json'))

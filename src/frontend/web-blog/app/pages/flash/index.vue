@@ -258,6 +258,7 @@ const {
   notes,
   loading,
   loaded,
+  ownerKey,
   isReadOnly,
   tagCloud,
   monthlyCount,
@@ -399,16 +400,14 @@ onMounted(() => {
   void load()
 })
 
-// 登录态变化时重新加载（登入 / 切换用户）
-watch(isLoggedIn, (loggedIn) => {
-  if (!loggedIn) {
-    archiveVersion += 1
-    showArchive.value = false
-    archivedNotes.value = []
-    archiveLoaded.value = false
-    archiveLoading.value = false
-    archiveError.value = null
-  }
+// 登录身份、内容归属或内容库变化时，主列表与私有归档同时切换。
+watch(ownerKey, () => {
+  archiveVersion += 1
+  showArchive.value = false
+  archivedNotes.value = []
+  archiveLoaded.value = false
+  archiveLoading.value = false
+  archiveError.value = null
   void load(true)
 })
 
