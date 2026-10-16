@@ -6,7 +6,7 @@
 -->
 
 <template>
-  <section v-if="announcements.length" class="card announcement-card">
+  <aside v-if="announcements.length" class="card announcement-card" aria-label="站点公告">
     <!-- 标题 -->
     <div class="announcement-card__header">
       <Icon name="lucide:megaphone" size="14" />
@@ -23,7 +23,7 @@
         </div>
       </li>
     </ul>
-  </section>
+  </aside>
 </template>
 
 <script setup lang="ts">
