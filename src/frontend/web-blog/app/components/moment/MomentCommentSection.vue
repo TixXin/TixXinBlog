@@ -11,7 +11,7 @@
       <div v-for="c in comments" :key="c.id" class="moment-comments__item">
         <MomentUserPopover :profile="c.profile" :is-owner="c.isOwner">
           <div class="moment-comments__avatar">
-            <NuxtImg
+            <CommonContentImage
               v-if="c.avatar"
               :src="c.avatar"
               :alt="c.author"

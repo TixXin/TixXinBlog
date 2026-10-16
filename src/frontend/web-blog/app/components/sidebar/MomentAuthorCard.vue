@@ -9,7 +9,7 @@
   <section class="card moment-author-card">
     <div class="moment-author-card__profile">
       <div class="moment-author-card__avatar-ring">
-        <NuxtImg
+        <CommonContentImage
           :src="profile.avatar || '/avatar.svg'"
           :alt="profile.avatarAlt || profile.name"
           width="64"

@@ -19,7 +19,7 @@
         >
           <div class="moment-user-popover__header">
             <div class="moment-user-popover__avatar">
-              <NuxtImg
+              <CommonContentImage
                 v-if="profile.avatar"
                 :src="profile.avatar"
                 :alt="profile.name"

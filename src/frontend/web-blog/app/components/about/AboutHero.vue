@@ -7,7 +7,7 @@
 
 <template>
   <div class="about-hero">
-    <NuxtImg
+    <CommonContentImage
       :src="profile.avatar"
       :alt="profile.name"
       class="about-hero__avatar"
@@ -47,7 +47,7 @@ const AVATAR_FALLBACK =
     '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 112 112" fill="%23666"><rect width="112" height="112" rx="56" fill="%23333"/><text x="56" y="62" text-anchor="middle" font-size="40" fill="%23888">?</text></svg>',
   )
 
-// NuxtImg 的 error 事件在不同加载路径下可能携带 string 或 Event
+// Nuxt Image 的 error 事件在不同加载路径下可能携带 string 或 Event
 function onAvatarError(e: string | Event) {
   if (typeof e === 'string') return
   const img = e.target as HTMLImageElement
