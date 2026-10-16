@@ -12,14 +12,12 @@
         <MomentUserPopover :profile="c.profile" :is-owner="c.isOwner">
           <div class="moment-comments__avatar">
             <CommonContentImage
-              v-if="c.avatar"
-              :src="c.avatar"
+              :src="displayAvatar(c.avatar, c.author, c.isOwner)"
               :alt="c.author"
               width="24"
               height="24"
               class="moment-comments__avatar-img"
             />
-            <Icon v-else name="lucide:user" size="14" class="moment-comments__avatar-fallback" />
           </div>
         </MomentUserPopover>
         <div class="moment-comments__body">
@@ -71,6 +69,7 @@
 <script setup lang="ts">
 import type { MomentCommentItem } from '~/features/moment/types'
 import { renderMomentMarkdown } from '~/composables/useMomentMarkdown'
+import { displayAvatar } from '~/utils/visitorAvatar'
 const props = defineProps<{
   comments: MomentCommentItem[]
   draft: string
@@ -152,10 +151,6 @@ function onEnter(event: KeyboardEvent) {
   width: 100%;
   height: 100%;
   object-fit: cover;
-}
-
-.moment-comments__avatar-fallback {
-  opacity: 0.6;
 }
 
 .moment-comments__body {

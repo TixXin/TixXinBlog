@@ -1,5 +1,6 @@
 /** @file display.ts @description 留言显示时间与日期分组，统一UTC以保持SSR和跨主题顺序一致 */
 import type { DateGroup, GuestbookRecord, GuestMessage } from './types'
+import { displayAvatar } from '~/utils/visitorAvatar'
 export function guestbookDisplay(note: GuestbookRecord): GuestMessage {
   const date = new Date(note.createdAt)
   const time = Number.isFinite(date.getTime())
@@ -12,7 +13,12 @@ export function guestbookDisplay(note: GuestbookRecord): GuestMessage {
         hour12: false,
       }).format(date)
     : ''
-  return { ...note, avatar: note.avatar || '/avatar.svg', time, replyTo: note.replyTo ?? undefined }
+  return {
+    ...note,
+    avatar: displayAvatar(note.avatar, note.author, note.isOwner),
+    time,
+    replyTo: note.replyTo ?? undefined,
+  }
 }
 export function guestbookGroups(notes: GuestbookRecord[], ascending: boolean): DateGroup[] {
   const ordered = [...notes].sort(

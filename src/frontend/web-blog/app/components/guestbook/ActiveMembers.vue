@@ -24,7 +24,7 @@
         <div class="active-members__avatar-wrap">
           <img
             class="active-members__avatar"
-            :src="m.avatar || '/avatar.svg'"
+            :src="displayAvatar(m.avatar, m.name, m.isOwner)"
             :alt="`${m.name} 的头像`"
             width="36"
             height="36"
@@ -41,6 +41,7 @@
 
 <script setup lang="ts">
 import type { ActiveMember } from '~/features/guestbook/types'
+import { displayAvatar } from '~/utils/visitorAvatar'
 
 defineProps<{
   members: ActiveMember[]

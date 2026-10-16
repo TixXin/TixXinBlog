@@ -136,6 +136,7 @@ export interface ActiveMember {
   name: string
   avatar: string
   messageCount: number
+  isOwner?: boolean
   isOnline?: boolean
 }
 
