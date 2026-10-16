@@ -90,7 +90,7 @@ async function seedContentNotifications(em: EntityManager, progress: FixtureProg
       const saved = await moments.save(null, {
         content: '主题引擎重写完了，换主题不用再动页面结构。',
         status: 'published',
-        topics: ['生活日常'],
+        topics: ['技术分享'],
         images: [],
         linkedArticleId: null,
         requestId: randomUUID(),

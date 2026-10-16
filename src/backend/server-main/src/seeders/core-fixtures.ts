@@ -575,7 +575,14 @@ export async function seedCoreFixtures(
     const owned = index === 1
     const author = owned ? site.values.ownerName : ['晨曦', '小林', '远山', '清和'][index]!
     const avatar = owned ? site.values.avatar : image
-    const content = owned ? '谢谢交流，把这些想法记录下来也是很好的收获。' : '读到这里很有共鸣，也想听听大家的经验。'
+    const content = owned
+      ? '补充一句：插槽约定改完之后，三套主题的兜底代码删掉了两百多行。'
+      : [
+          '跟着把自己项目的布局约定也理了一遍，确实清爽不少。',
+          '',
+          '请问插槽约定有没有版本概念？主题升级的时候怎么兼容旧约定。',
+          '这个思路我们试过，但当时没把边界定清楚，最后又退回去了。',
+        ][index] || '跟着把自己项目的布局约定也理了一遍，确实清爽不少。'
     const comment = await ensureFixture(
       em,
       CORE_DATASET,
@@ -621,7 +628,7 @@ export async function seedCoreFixtures(
           visitorIdHash: visitor(author),
           author,
           avatar,
-          content,
+          content: owned ? '对，改完之后右栏那块逻辑只剩一处了。' : '这一下午看来没白熬。',
           status: status as MomentComment['status'],
           isOwner: owned,
           createdAt: date(0),
@@ -650,7 +657,7 @@ export async function seedCoreFixtures(
             authorId: visitor(author),
             authorName: author,
             authorAvatar: avatar,
-            content,
+            content: owned ? '是的，收敛到一处之后维护省心很多。' : '四处收敛到一处，这个数字挺有说服力。',
             createdAt: date(0),
           })
           await em.flush()
