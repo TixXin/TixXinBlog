@@ -464,7 +464,7 @@ export async function seedCoreFixtures(
     'portrait',
     'media',
     async () => {
-      const buffer = await readFile(resolve(__dirname, '../../../../frontend/web-blog/public/avatar-photo.webp'))
+      const buffer = await readFile(resolve(__dirname, 'gallery-assets/portrait.webp'))
       const id = randomUUID()
       createdMedia.push(id)
       const asset = await new MediaService(em, storage).upload(
