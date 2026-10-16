@@ -35,6 +35,7 @@ import type { FixtureKind, FixtureProgress } from './fixture-ledger'
 import { SHOWCASE_POSTS, SHOWCASE_TAG_COLORS } from './showcase-posts'
 import { SHOWCASE_MOMENTS } from './showcase-moments'
 import { eligibleInitialProfile, PREPARED_PROFILE_REASON } from './prepare-personal-profile'
+import { backfillClientContext, OWNER_CLIENT_CONTEXT } from './guestbook-fixtures'
 
 export const SHOWCASE_DATASET = 'showcase-v1'
 // 源素材与正文随仓库保存在 src 下；编译产物里也从同一目录读取。
@@ -647,8 +648,8 @@ async function seedGuestbook(em: EntityManager, progress: FixtureProgress) {
       progress,
     )
     if (!id) continue
-    if ('reply' in item)
-      await ensureFixture(
+    if ('reply' in item) {
+      const replyId = await ensureFixture(
         em,
         SHOWCASE_DATASET,
         `today-${index}/reply`,
@@ -661,11 +662,15 @@ async function seedGuestbook(em: EntityManager, progress: FixtureProgress) {
               { requestId: randomUUID(), content: item.reply, replyToId: parent.id },
               '',
               'fixture-owner',
+              OWNER_CLIENT_CONTEXT,
             )
           ).id
         },
         progress,
       )
+      if (replyId)
+        await backfillClientContext(em, Number(replyId), OWNER_CLIENT_CONTEXT.browser, OWNER_CLIENT_CONTEXT.region)
+    }
     for (const [person, emoji] of item.reactions.entries())
       await ensureFixture(
         em,
