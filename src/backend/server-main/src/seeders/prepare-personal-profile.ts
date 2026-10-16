@@ -18,13 +18,20 @@ import {
   SAFE_INITIAL_SITE_VALUES,
 } from '../modules/site/initial-profile'
 
-async function eligibleInitialProfile(em: EntityManager) {
+/** prepare-profile 写入的修订原因；样本集据此识别“仍是工具整理过的资料” */
+export const PREPARED_PROFILE_REASON = '整理已确认称呼与站点定位，收起未经确认的初始资料'
+
+/** 资料仍等于两套初始值之一（未经博主编辑）时才允许工具整理 */
+export async function eligibleInitialProfile(em: EntityManager) {
+  // 在线状态、签名与上线日期是后加字段：早期写入的初始资料没有这些键，比较时忽略它们，但它们一旦有值即视为已编辑。
+  const later = `- 'presenceLabel' - 'presenceSignature' - 'launchedAt'`
+  const untouched = `coalesce(s."values"->>'presenceLabel','')='' and coalesce(s."values"->>'presenceSignature','')='' and coalesce(s."values"->>'launchedAt','')=''`
   const [match] = await em.execute<{ eligible: boolean }[]>(
     `select exists(select 1 from site_settings s join site_settings_revision r on r.revision=s.revision
-      where s.id='default' and (
-        (s.revision=0 and not exists(select 1 from site_settings_revision where revision=1) and r.reason=? and s."values"-'about'=r."values"-'about' and r."values"-'about'=?::jsonb
+      where s.id='default' and ${untouched} and (
+        (s.revision=0 and not exists(select 1 from site_settings_revision where revision=1) and r.reason=? and s."values"-'about'=r."values"-'about' and r."values"-'about' ${later}=?::jsonb ${later}
           and coalesce(s."values"->'about',?::jsonb)=?::jsonb and coalesce(r."values"->'about',?::jsonb)=?::jsonb)
-        or (s.revision=1 and r.reason=? and s."values"=r."values" and s."values"=?::jsonb)
+        or (s.revision=1 and r.reason=? and s."values"=r."values" and s."values" ${later}=?::jsonb ${later})
       )) as eligible`,
     [
       INITIAL_PROFILE_REASON,
@@ -114,7 +121,7 @@ export async function preparePersonalProfile(args: string[], options: Developmen
             sections: [],
           },
         },
-        '整理已确认称呼与站点定位，收起未经确认的初始资料',
+        PREPARED_PROFILE_REASON,
       )
     })
     if (!saved)

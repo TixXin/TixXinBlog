@@ -11,6 +11,15 @@ import type { SaveSiteSettingsDto } from './site-settings.dto'
 import { lockMedia, synchronizeMediaReferences } from '../media/media-references'
 import { ContentContext } from '../../entities/content-context.entity'
 import { emptyAbout, publicAbout } from './about-settings'
+/** 后加字段在历史记录中可能缺失，读取时统一补空串 */
+function withPresenceDefaults(values: SiteSettingsValues): SiteSettingsValues {
+  return {
+    ...values,
+    presenceLabel: values.presenceLabel ?? '',
+    presenceSignature: values.presenceSignature ?? '',
+    launchedAt: values.launchedAt ?? '',
+  }
+}
 @Injectable()
 export class SiteSettingsService {
   constructor(private readonly em: EntityManager) {}
@@ -20,7 +29,7 @@ export class SiteSettingsService {
   async get(publicView = false) {
     const settings = await this.em.findOneOrFail(SiteSettings, { id: 'default' }, { refresh: true })
     return {
-      ...settings.values,
+      ...withPresenceDefaults(settings.values),
       about: publicView ? publicAbout(settings.values.about) : (settings.values.about ?? emptyAbout()),
       revision: settings.revision,
       updatedAt: settings.updatedAt.toISOString(),
@@ -70,6 +79,10 @@ export class SiteSettingsService {
         seoDescription: input.seoDescription,
         announcement: input.announcement,
         socials: input.socials,
+        // 未提交的后加字段沿用当前值，不把旧客户端的缺省当作清空
+        presenceLabel: input.presenceLabel ?? settings.values.presenceLabel ?? '',
+        presenceSignature: input.presenceSignature ?? settings.values.presenceSignature ?? '',
+        launchedAt: input.launchedAt ?? settings.values.launchedAt ?? '',
       }
       const now = new Date()
       settings.values = {
@@ -120,7 +133,7 @@ export class SiteSettingsService {
     const history = await this.em.findOne(SiteSettingsRevision, { revision })
     if (!history) throw new NotFoundException('站点历史版本不存在')
     return {
-      ...history.values,
+      ...withPresenceDefaults(history.values),
       about: history.values.about ?? emptyAbout(),
       revision: history.revision,
       updatedAt: history.createdAt.toISOString(),

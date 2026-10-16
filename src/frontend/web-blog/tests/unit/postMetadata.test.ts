@@ -19,7 +19,7 @@ afterEach(() => {
 const sample: PostSummary = {
   tags: [{ label: '测试标签', slug: 'test', color: 'sky', count: 1 }],
   categories: [{ name: '测试分类', count: 1 }],
-  stats: { posts: 1, views: 5, comments: 2, tags: 1, uptimeDays: 1 },
+  stats: { posts: 1, views: 5, comments: 2, tags: 1, siteAgeDays: 1 },
 }
 
 async function setup() {

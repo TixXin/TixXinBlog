@@ -41,7 +41,7 @@ export async function usePostMetadata() {
           views: mockPosts.reduce((sum, post) => sum + post.views, 0),
           comments: mockPosts.reduce((sum, post) => sum + post.comments, 0),
           tags: tags.size,
-          uptimeDays: 0,
+          siteAgeDays: 0,
         },
       }
     },
@@ -72,7 +72,7 @@ export async function usePostMetadata() {
       views: stats.views >= 10000 ? `${(stats.views / 10000).toFixed(1)}w` : String(stats.views),
       comments: stats.comments,
       tags: stats.tags,
-      uptimeDays: stats.uptimeDays,
+      siteAgeDays: stats.siteAgeDays,
       activity: metadata.value?.activity,
     }
   })

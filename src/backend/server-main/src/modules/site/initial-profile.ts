@@ -12,6 +12,9 @@ export const LEGACY_INITIAL_SITE_VALUES = {
   seoDescription: '',
   announcement: '',
   announcementUpdatedAt: '',
+  presenceLabel: '',
+  presenceSignature: '',
+  launchedAt: '',
   socials: [
     { icon: 'lucide:github', label: 'GitHub', href: 'https://github.com/TixXin' },
     { icon: 'lucide:twitter', label: 'Twitter', href: 'https://twitter.com/TixXin' },

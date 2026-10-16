@@ -802,6 +802,10 @@ export async function parseContentPackage(buffer: Buffer): Promise<ContentPackag
         'announcement',
         'socials',
         ...(Number(source.version) >= 8 ? ['about'] : []),
+        // v11 起可选携带在线状态、签名与上线日期；缺省按空串处理
+        'presenceLabel',
+        'presenceSignature',
+        'launchedAt',
       ]),
       revision: 0,
     },

@@ -17,6 +17,12 @@ export interface SiteSettingsValues {
   announcement: string
   announcementUpdatedAt: string
   socials: { label: string; href: string; icon: string }[]
+  /** 博主当前状态短语（如“摆烂中”），空串表示不展示在线状态 */
+  presenceLabel?: string
+  /** 状态签名（如“今天不想写代码”） */
+  presenceSignature?: string
+  /** 站点上线日期 YYYY-MM-DD，用于“已运行 N 天”；空串按最早发布文章推算 */
+  launchedAt?: string
 }
 @Entity({ tableName: 'site_settings' })
 export class SiteSettings {

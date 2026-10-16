@@ -11,7 +11,8 @@ export interface SiteStats {
   views: string
   comments: number
   tags: number
-  uptimeDays: number
+  /** 站点已运行天数：上线日期或最早公开文章至今 */
+  siteAgeDays: number
 }
 
 export interface TagItem {

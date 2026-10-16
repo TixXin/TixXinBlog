@@ -21,6 +21,7 @@
             <!-- 默认模式：博主名片、公告、统计 -->
             <div v-if="!isMomentsMode" key="default" class="aside-left__group">
               <OwnerProfileCard />
+              <SiteAnnouncementCard />
               <SidebarSiteStatsCard v-if="siteStats" :stats="siteStats" />
               <p v-else-if="statsError" role="status">站点统计暂时不可用</p>
               <DailyQuoteCard />
@@ -89,6 +90,7 @@
 
 <script setup lang="ts">
 import OwnerProfileCard from './OwnerProfileCard.vue'
+import SiteAnnouncementCard from './SiteAnnouncementCard.vue'
 import DailyQuoteCard from './DailyQuoteCard.vue'
 import SidebarFooterCard from './SidebarFooterCard.vue'
 
