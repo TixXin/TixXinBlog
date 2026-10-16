@@ -2,7 +2,13 @@
  * @file [...path].ts
  * @description 同源 API 网关：浏览器不感知内网后端地址，认证 Cookie 保持相同路径
  */
+import { canCacheMediaResponse, createProxyTrust, resolveProxyClientIp } from '../../utils/trustedProxy'
+
+let proxyTrustConfig: string | undefined
+let proxyTrust = createProxyTrust('')
+
 export default defineEventHandler(async (event) => {
+  setResponseHeader(event, 'cache-control', 'no-store')
   const path = getRouterParam(event, 'path') ?? ''
   if (
     !/^(?:posts|comments|auth|admin|flashes|moments|guestbook|gallery|prompts|projects|subscriptions|links|media|site)(?:\/|$)/.test(
@@ -26,9 +32,23 @@ export default defineEventHandler(async (event) => {
   const config = useRuntimeConfig(event)
   const base = String(config.apiBaseUrl).replace(/\/$/, '')
   if (!/^https?:\/\//.test(base)) throw createError({ statusCode: 503, message: '后端连接尚未配置' })
+  const trustConfig = String(config.trustedProxyCidrs || '')
+  if (proxyTrustConfig !== trustConfig) {
+    proxyTrust = createProxyTrust(trustConfig)
+    proxyTrustConfig = trustConfig
+  }
+  const clientIp = resolveProxyClientIp(
+    event.node.req.socket.remoteAddress,
+    getHeader(event, 'x-forwarded-for'),
+    proxyTrust,
+  )
+  // h3 默认透传原始请求头；清除其他地址提示，防止下游将其误认为可信身份。
+  delete event.node.req.headers.forwarded
+  delete event.node.req.headers['x-real-ip']
+  delete event.node.req.headers['x-forwarded-for']
   try {
     return await proxyRequest(event, `${base}/${path}${requestUrl.search}`, {
-      headers: { 'x-forwarded-for': getRequestIP(event, { xForwardedFor: false }) ?? '127.0.0.1' },
+      headers: { 'x-forwarded-for': clientIp },
       fetchOptions: {
         signal: AbortSignal.timeout(
           path.startsWith('admin/backup/') || path === 'admin/maintenance/media-check'
@@ -38,8 +58,10 @@ export default defineEventHandler(async (event) => {
               : 10000,
         ),
       },
-      onResponse: () => {
-        setResponseHeader(event, 'cache-control', 'no-store')
+      onResponse: (_event, response) => {
+        if (!canCacheMediaResponse(path, event.method, response.status)) {
+          setResponseHeader(event, 'cache-control', 'no-store')
+        }
       },
     })
   } catch {

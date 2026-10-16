@@ -112,6 +112,8 @@ export default {
   runtimeConfig: {
     // 仅服务端使用，可在容器运行时通过 NUXT_API_BASE_URL 覆盖。
     apiBaseUrl: '',
+    // 仅信任实际前置代理的地址/CIDR，默认忽略访客提交的转发头。
+    trustedProxyCidrs: '',
     public: {
       siteUrl: 'https://tix.xin',
       analytics: {

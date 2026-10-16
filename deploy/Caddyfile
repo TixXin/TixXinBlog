@@ -2,5 +2,10 @@
 {$SITE_HOST} {
   encode zstd gzip
   header X-TixXin-Release {$RELEASE_VERSION}
-  reverse_proxy frontend:3000
+  reverse_proxy frontend:3000 {
+    # 当前入口直接面向访客：重建地址，不继承请求中伪造的代理链。
+    header_up X-Forwarded-For {http.request.remote.host}
+    header_up -Forwarded
+    header_up -X-Real-IP
+  }
 }

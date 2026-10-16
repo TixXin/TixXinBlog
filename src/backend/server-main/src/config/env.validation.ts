@@ -9,6 +9,7 @@ import { plainToInstance } from 'class-transformer'
 import { requireDatabaseUrl } from './environment'
 import { IsEnum, IsIn, IsInt, IsOptional, IsString, Matches, Max, Min, MinLength, validateSync } from 'class-validator'
 import { readOperationConfig } from '../modules/operations/operation-config'
+import { parseTrustedProxyCidrs } from '../common/utils/trusted-proxy'
 
 export enum NodeEnv {
   Development = 'development',
@@ -38,6 +39,10 @@ export class EnvironmentVariables {
   @IsString()
   @IsOptional()
   CORS_ORIGIN?: string
+
+  @IsString()
+  @IsOptional()
+  TRUSTED_PROXY_CIDRS: string = ''
 
   @IsString()
   @Matches(/^postgres(?:ql)?:\/\//, { message: 'DATABASE_URL 必须为 PostgreSQL 连接地址' })
@@ -95,6 +100,7 @@ export function validateEnv(config: Record<string, unknown>): EnvironmentVariabl
     throw new Error(`环境变量校验失败 -> ${detail}`)
   }
   requireDatabaseUrl(validated.DATABASE_URL)
+  parseTrustedProxyCidrs(validated.TRUSTED_PROXY_CIDRS)
   readOperationConfig(validated as unknown as NodeJS.ProcessEnv)
   return validated
 }
