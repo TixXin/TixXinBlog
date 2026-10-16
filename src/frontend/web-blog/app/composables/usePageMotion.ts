@@ -1,6 +1,6 @@
 /**
  * @file usePageMotion.ts
- * @description 标题与正文独立过渡；导航共享事务，快照仅属于正文且不阻挡交互
+ * @description 标题与正文独立入场；保留导航事务与焦点完成信号，不复制离场内容
  */
 import { getPageMotionRegions } from '~/utils/pageMotionRegions'
 
@@ -18,9 +18,6 @@ export function usePageMotion(host: Ref<HTMLElement | null>) {
   let previousRoot: HTMLElement | null = null
   let previousHeaderKey = ''
   let focusKey: string | undefined
-  let ghost: HTMLElement | null = null
-  let overlay: HTMLElement | null = null
-  let scrollPositions: { node: HTMLElement; top: number; left: number }[] = []
   let animations: Animation[] = []
   let timer: ReturnType<typeof setTimeout> | undefined
   const disposers: (() => void)[] = []
@@ -36,55 +33,22 @@ export function usePageMotion(host: Ref<HTMLElement | null>) {
     timer = undefined
     animations.forEach((animation) => animation.cancel())
     animations = []
-    overlay?.remove()
-    overlay = null
-    ghost = null
-    scrollPositions = []
   }
   function finish() {
     clean()
     pending.value = false
+    active.value = false
     if (settledVersion !== version) {
       settledVersion = version
       completed.value++
     }
   }
-  function captureBody(element: HTMLElement) {
-    const body = getPageMotionRegions(element).body
-    ghost = body.cloneNode(true) as HTMLElement
-    const originalNodes = [body, ...body.querySelectorAll<HTMLElement>('*')]
-    const clonedNodes = [ghost, ...ghost.querySelectorAll<HTMLElement>('*')]
-    scrollPositions = originalNodes.flatMap((node, index) =>
-      node.scrollTop || node.scrollLeft
-        ? [{ node: clonedNodes[index]!, top: node.scrollTop, left: node.scrollLeft }]
-        : [],
-    )
-    ghost.querySelectorAll('[data-page-motion-status],[data-page-motion-overlay]').forEach((node) => node.remove())
-    for (const node of clonedNodes) {
-      node.removeAttribute('id')
-      node.removeAttribute('data-focus-key')
-    }
-    const bounds = body.getBoundingClientRect()
-    ghost.setAttribute('data-page-motion-clone', '')
-    ghost.setAttribute('aria-hidden', 'true')
-    ghost.inert = true
-    Object.assign(ghost.style, {
-      position: 'absolute',
-      left: '0',
-      top: '0',
-      width: `${bounds.width}px`,
-      height: `${bounds.height}px`,
-      margin: '0',
-      pointerEvents: 'none',
-    })
-  }
-  function play(element: HTMLElement, frames: Keyframe[], duration: number, easing: string, remove = false) {
+  function play(element: HTMLElement, frames: Keyframe[], duration: number, easing: string) {
     const animation = element.animate(frames, { duration, easing, fill: 'both' })
     animations.push(animation)
     // 各区域按自己的时长清理，正文不等待标题，短标题也不会保留finished填充层。
     const settled = animation.finished.then(
       () => {
-        if (remove) element.remove()
         animation.cancel()
       },
       () => {},
@@ -132,7 +96,6 @@ export function usePageMotion(host: Ref<HTMLElement | null>) {
         const duration = wantsReducedMotion() ? 0 : contentTransitionDuration.value
         active.value = duration ? { name: contentTransitionName.value, duration } : false
         pending.value = true
-        if (duration && previousRoot) captureBody(previousRoot)
       }),
     )
     disposers.push(
@@ -145,6 +108,7 @@ export function usePageMotion(host: Ref<HTMLElement | null>) {
         if (to.fullPath === destination) finish()
       }),
     )
+    disposers.push(app.hook('app:error', finish))
     disposers.push(
       app.hook('page:finish', async () => {
         await nextTick()
@@ -177,47 +141,6 @@ export function usePageMotion(host: Ref<HTMLElement | null>) {
               'ease-out',
             ),
           )
-          if (ghost && previousRoot && host.value) {
-            // 新正文的边界决定快照裁切范围，标题变高时旧快照也不能盖住标题。
-            const frame = regions.frame.getBoundingClientRect(),
-              parent = host.value.getBoundingClientRect()
-            overlay = previousRoot.cloneNode(false) as HTMLElement
-            overlay.removeAttribute('id')
-            overlay.removeAttribute('data-page-frame')
-            overlay.setAttribute('data-page-motion-overlay', '')
-            overlay.setAttribute('aria-hidden', 'true')
-            overlay.inert = true
-            Object.assign(overlay.style, {
-              position: 'absolute',
-              left: `${frame.left - parent.left}px`,
-              top: `${frame.top - parent.top}px`,
-              width: `${frame.width}px`,
-              height: `${frame.height}px`,
-              margin: '0',
-              overflow: 'hidden',
-              pointerEvents: 'none',
-              zIndex: '2',
-              contain: 'layout paint',
-            })
-            overlay.appendChild(ghost)
-            host.value.appendChild(overlay)
-            for (const position of scrollPositions) {
-              position.node.scrollTop = position.top
-              position.node.scrollLeft = position.left
-            }
-            tasks.push(
-              play(
-                ghost,
-                [
-                  { opacity: 1, transform: 'translateY(0)' },
-                  { opacity: 0, transform: `translateY(${distance}px)` },
-                ],
-                duration,
-                'ease-in',
-                true,
-              ),
-            )
-          }
           void Promise.all(tasks).then(() => {
             if (transaction === version) finish()
           })
@@ -247,14 +170,14 @@ export function usePageMotion(host: Ref<HTMLElement | null>) {
   )
   watch(host, (next, previous) => {
     if (previous && next !== previous) {
-      version++
       finish()
+      settledVersion = ++version
       previousRoot = null
     }
   })
   onBeforeUnmount(() => {
-    version++
-    clean()
+    finish()
+    settledVersion = ++version
     disposers.forEach((dispose) => dispose())
   })
   return { pending }

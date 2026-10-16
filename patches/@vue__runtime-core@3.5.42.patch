@@ -1,0 +1,42 @@
+diff --git a/dist/runtime-core.cjs.js b/dist/runtime-core.cjs.js
+index 08899205dfe52109b460e9b8fc9847eb5b3241f7..82896dd9a8877ef4088d8291f50b0a5df2ce1335 100644
+--- a/dist/runtime-core.cjs.js
++++ b/dist/runtime-core.cjs.js
+@@ -6243,6 +6243,9 @@ function baseCreateRenderer(options, createHydrationFns) {
+               queuePostRenderEffect(() => {
+                 if (!instance.isUnmounted) update();
+               }, parentSuspense);
++            }, (error) => {
++              // Suspense 已统一报告 setup 错误，辅助更新等待不能再制造未处理的拒绝分支。
++              if (!nonHydratedAsyncRoot.suspense) handleError(error, nonHydratedAsyncRoot, 0);
+             });
+             return;
+           }
+diff --git a/dist/runtime-core.cjs.prod.js b/dist/runtime-core.cjs.prod.js
+index 8b2db9c0e26d3d18bf71bbf0922b61c555018708..a9442cc945028dd17724b079af6db8b5d44ca192 100644
+--- a/dist/runtime-core.cjs.prod.js
++++ b/dist/runtime-core.cjs.prod.js
+@@ -4783,6 +4783,9 @@ function baseCreateRenderer(options, createHydrationFns) {
+               queuePostRenderEffect(() => {
+                 if (!instance.isUnmounted) update();
+               }, parentSuspense);
++            }, (error) => {
++              // Suspense 已统一报告 setup 错误，辅助更新等待不能再制造未处理的拒绝分支。
++              if (!nonHydratedAsyncRoot.suspense) handleError(error, nonHydratedAsyncRoot, 0);
+             });
+             return;
+           }
+diff --git a/dist/runtime-core.esm-bundler.js b/dist/runtime-core.esm-bundler.js
+index f0905f8afe50421feed03b208b19afb26e4bbb73..5038a65734965049a875709230f1e947ca56cc1a 100644
+--- a/dist/runtime-core.esm-bundler.js
++++ b/dist/runtime-core.esm-bundler.js
+@@ -6304,6 +6304,9 @@ function baseCreateRenderer(options, createHydrationFns) {
+               queuePostRenderEffect(() => {
+                 if (!instance.isUnmounted) update();
+               }, parentSuspense);
++            }, (error) => {
++              // Suspense 已统一报告 setup 错误，辅助更新等待不能再制造未处理的拒绝分支。
++              if (!nonHydratedAsyncRoot.suspense) handleError(error, nonHydratedAsyncRoot, 0);
+             });
+             return;
+           }

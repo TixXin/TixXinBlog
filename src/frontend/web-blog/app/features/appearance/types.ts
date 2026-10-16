@@ -38,7 +38,7 @@ export const CONTENT_TRANSITION_OPTIONS: AppearanceOption<ContentTransitionPrese
   {
     value: 'vertical-slide',
     label: '纵向滑动',
-    description: '旧内容向下离场，新内容从上方进入',
+    description: '新内容从上方轻移进入，等待期间保留原内容',
     icon: 'lucide:arrow-up-down',
   },
   {
@@ -49,7 +49,7 @@ export const CONTENT_TRANSITION_OPTIONS: AppearanceOption<ContentTransitionPrese
   },
   {
     value: 'fade',
-    label: '淡入淡出',
+    label: '柔和淡入',
     description: '只切换透明度，不做位移',
     icon: 'lucide:sparkles',
   },
@@ -91,8 +91,8 @@ export const COLOR_MODE_TRANSITION_OPTIONS: AppearanceOption<ColorModeTransition
 export const SIDEBAR_ANIMATION_OPTIONS: AppearanceOption<SidebarAnimationPreset>[] = [
   {
     value: 'fade-in-up',
-    label: '右侧退出和进入',
-    description: '右侧栏从右侧滑出、从右侧滑入',
+    label: '从右侧进入',
+    description: '新侧栏从右侧轻移进入，等待期间保留原侧栏',
     icon: 'lucide:panel-right-open',
   },
   {

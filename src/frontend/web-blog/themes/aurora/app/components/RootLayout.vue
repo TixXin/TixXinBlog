@@ -141,8 +141,6 @@ const isHomePage = computed(() => route.path === '/' || route.path === '/moments
 const { sidebarAnimationClass } = useAppearanceSettings()
 const { open: openLogin } = useLoginDrawer()
 
-useSidebarExitAnimation('.aurora-aside')
-
 const scrollbarRef = ref<{
   viewport: HTMLElement | null
   scrollProgress: number

@@ -42,6 +42,6 @@ export async function seedGalleryBrowserFixture(fixture) {
       count(*) filter(where status='withdrawn' and deleted_at is null)::int as withdrawn
     from gallery_photo
   `)
-  assert.deepEqual(counts, { total: 18, published: 16, draft: 1, withdrawn: 1 })
+  assert.deepEqual(counts, { total: 20, published: 18, draft: 1, withdrawn: 1 })
   return { ...progress, counts }
 }

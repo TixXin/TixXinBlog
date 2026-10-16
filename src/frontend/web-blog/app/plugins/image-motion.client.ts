@@ -10,12 +10,14 @@ export default defineNuxtPlugin({
     const { reducedMotion } = useMotionPreference()
     const selector =
       '.image-frame__image,.post-item__cover-bg img,.owner-profile-card__avatar,.hero-section__avatar-img,.nexus-bar__avatar-img,.moment-card img,.project-card img,.moment-photo-wall-card img'
+    const excluded = '[inert],[data-page-motion-overlay],[data-page-motion-clone],.sidebar-leaving-clone'
     const seen = new WeakMap<HTMLImageElement, string>()
     const running = new Map<HTMLImageElement, () => void>()
     let active = true
     const finishAll = () => [...running.values()].forEach((finish) => finish())
     function reveal(image: HTMLImageElement) {
-      if (!active || !image.matches(selector) || !image.complete || !image.naturalWidth) return
+      if (!active || image.closest(excluded) || !image.matches(selector) || !image.complete || !image.naturalWidth)
+        return
       const source = image.currentSrc || image.src
       if (seen.get(image) === source) return
       seen.set(image, source)
@@ -43,8 +45,8 @@ export default defineNuxtPlugin({
       running.set(image, finish)
       void animation.finished.then(finish, finish)
     }
-    function images(node: Node) {
-      if (!(node instanceof Element)) return []
+    function images(node: Node, includeExcluded = false) {
+      if (!(node instanceof Element) || (!includeExcluded && node.closest(excluded))) return []
       return node instanceof HTMLImageElement ? [node] : [...node.querySelectorAll('img')]
     }
     const onLoad = (event: Event) => {
@@ -53,7 +55,7 @@ export default defineNuxtPlugin({
     const observer = new MutationObserver((records) => {
       for (const record of records) {
         for (const node of record.addedNodes) images(node).forEach(reveal)
-        for (const node of record.removedNodes) images(node).forEach((image) => running.get(image)?.())
+        for (const node of record.removedNodes) images(node, true).forEach((image) => running.get(image)?.())
       }
     })
     const hidden = () => {

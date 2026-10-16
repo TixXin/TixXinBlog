@@ -131,78 +131,29 @@
   transition: none;
 }
 
-// 右侧栏容器：relative 支持克隆元素绝对定位；
-// 入场动画 translateX 溢出由 CustomScrollbar viewport 的 overflow-x:hidden 裁剪，
-// 退场克隆 append 到 .aside-right，由 .page-root 的 overflow:clip 兜底，此处无需额外裁剪
-#right-sidebar-target {
-  position: relative;
-}
-
-// 右侧栏退出动画（router.beforeEach 克隆的元素）：纯淡出，避免 translateX 导致卡片宽度变化
-.sidebar-leaving-clone {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  animation: sidebar-leave 0.15s ease forwards;
-  @media (prefers-reduced-motion: reduce) {
-    animation: none;
-  }
-  pointer-events: none;
-
-  &.sidebar-leave-slide-right {
-    animation: sidebar-leave-slide-right 0.2s ease forwards;
-    @media (prefers-reduced-motion: reduce) {
-      animation: none;
-    }
-  }
-}
-
-@keyframes sidebar-leave {
-  from {
-    opacity: 1;
-  }
-
-  to {
-    opacity: 0;
-  }
-}
-
-@keyframes sidebar-leave-slide-right {
-  from {
-    opacity: 1;
-    transform: translateX(0);
-  }
-
-  to {
-    opacity: 0;
-    transform: translateX(24px);
-  }
-}
-
 // 右侧栏动画预设：通过容器类名控制 Teleport 子元素的入场动画
-.anim-sidebar-up > *:not(.sidebar-leaving-clone) {
+.anim-sidebar-up > * {
   animation: sidebar-slide-in-right 0.35s ease-out both;
   @media (prefers-reduced-motion: reduce) {
     animation: none;
   }
 }
 
-.anim-sidebar-fade > *:not(.sidebar-leaving-clone) {
+.anim-sidebar-fade > * {
   animation: sidebar-fade-in 0.25s ease-out both;
   @media (prefers-reduced-motion: reduce) {
     animation: none;
   }
 }
 
-.anim-sidebar-scale > *:not(.sidebar-leaving-clone) {
+.anim-sidebar-scale > * {
   animation: sidebar-scale-in 0.3s ease-out both;
   @media (prefers-reduced-motion: reduce) {
     animation: none;
   }
 }
 
-.anim-sidebar-none > *:not(.sidebar-leaving-clone) {
+.anim-sidebar-none > * {
   animation: none;
 }
 

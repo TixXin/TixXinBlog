@@ -25,6 +25,12 @@
 
 <script setup lang="ts">
 import { hasColorMotion, runColorMotion } from '~/utils/colorMotion'
+import { isPageRequestCancellation } from '~/utils/pageRequestCancellation'
+
+// 根边界在旧布局卸载后仍存在；只消费有所有者标记的取消，真实错误继续交给 Nuxt。
+onErrorCaptured((error) => {
+  if (isPageRequestCancellation(error)) return false
+})
 
 const colorMode = useColorMode()
 watch(

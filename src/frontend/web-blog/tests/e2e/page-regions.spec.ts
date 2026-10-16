@@ -15,7 +15,17 @@ test.beforeEach(async ({ page, browserName }) => {
   await page.addInitScript(() => {
     const native = Element.prototype.animate
     const records: unknown[] = []
-    Object.assign(window, { regionMotions: records })
+    const copiedRegions: string[] = []
+    Object.assign(window, { regionMotions: records, copiedRegions })
+    new MutationObserver((mutations) => {
+      for (const mutation of mutations) {
+        for (const node of mutation.addedNodes) {
+          if (!(node instanceof Element)) continue
+          const selector = '[data-page-motion-clone],[data-page-motion-overlay],.sidebar-leaving-clone'
+          if (node.matches(selector) || node.querySelector(selector)) copiedRegions.push(node.tagName)
+        }
+      }
+    }).observe(document, { childList: true, subtree: true })
     Element.prototype.animate = function (...args) {
       const animation = native.apply(this, args)
       if (this.matches('[data-page-header],[data-page-body],[data-page-motion-clone],[data-page-frame]')) {
@@ -32,7 +42,10 @@ test.beforeEach(async ({ page, browserName }) => {
     }
   })
 })
-test.afterEach(({ page }) => expect(pageErrors.get(page) ?? []).toEqual([]))
+test.afterEach(async ({ page }) => {
+  expect(pageErrors.get(page) ?? []).toEqual([])
+  expect(await page.evaluate(() => (window as unknown as { copiedRegions: string[] }).copiedRegions)).toEqual([])
+})
 async function ready(page: Page, selector: string) {
   await expect(page.locator('html')).toHaveClass(/app-client-ready/)
   await expect(page.locator('.loading-screen:visible')).toHaveCount(0)
@@ -62,7 +75,7 @@ async function records(page: Page) {
   )
 }
 for (const layout of ['nexus', 'aurora', 'dock']) {
-  test(`共享标题 ${layout} 标签不移动，正文独立进入和退出`, async ({ page, context, baseURL }, testInfo) => {
+  test(`共享标题 ${layout} 标签不移动，正文独立入场且不复制旧内容`, async ({ page, context, baseURL }, testInfo) => {
     await context.addCookies([{ name: 'tixxin-blog-layout-theme', value: layout, url: baseURL! }])
     await page.goto('/')
     await ready(page, '.articles-page')
@@ -89,7 +102,7 @@ for (const layout of ['nexus', 'aurora', 'dock']) {
     const motion = await records(page)
     expect(motion.some((m) => m.root || m.header)).toBe(false)
     expect(motion.some((m) => m.body && !m.clone && m.duration === 150)).toBe(true)
-    expect(motion.some((m) => m.clone)).toBe(true)
+    expect(motion.some((m) => m.clone)).toBe(false)
     await captureMotion(page, testInfo, `${layout}-feed-regions.png`)
     await clear(page)
     await nav.getByRole('link', { name: '全部文章', exact: true }).click()
@@ -97,7 +110,7 @@ for (const layout of ['nexus', 'aurora', 'dock']) {
     expect((await records(page)).some((m) => m.header || m.root)).toBe(false)
   })
 
-  test(`栏目分区 ${layout} 标题120ms淡入，正文快照不覆盖标题`, async ({ page, context, baseURL }, testInfo) => {
+  test(`栏目分区 ${layout} 标题120ms淡入，正文不创建离场快照`, async ({ page, context, baseURL }, testInfo) => {
     await context.addCookies([{ name: 'tixxin-blog-layout-theme', value: layout, url: baseURL! }])
     await page.goto('/')
     await ready(page, '.articles-page')
