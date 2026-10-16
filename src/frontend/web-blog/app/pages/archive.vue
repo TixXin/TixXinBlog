@@ -85,21 +85,19 @@
       <!-- 右侧栏：归档统计 + 分类分布 -->
     </template>
     <template #overlays>
-      <ClientOnly>
-        <Teleport to="#right-sidebar-target">
-          <SidebarRightSidebar>
-            <ArticleArchiveStats v-if="metadata" :stats="archiveStats" :distribution="categoryDistribution" />
-            <CommonRequestFeedback
-              v-else
-              class="card"
-              compact
-              :pending="metadataPending"
-              title="归档统计暂时不可用"
-              @retry="refreshMetadata()"
-            />
-          </SidebarRightSidebar>
-        </Teleport>
-      </ClientOnly>
+      <Teleport to="#right-sidebar-target">
+        <SidebarRightSidebar>
+          <ArticleArchiveStats v-if="metadata" :stats="archiveStats" :distribution="categoryDistribution" />
+          <CommonRequestFeedback
+            v-else
+            class="card"
+            compact
+            :pending="metadataPending"
+            title="归档统计暂时不可用"
+            @retry="refreshMetadata()"
+          />
+        </SidebarRightSidebar>
+      </Teleport>
     </template>
   </CommonPageFrame>
 </template>

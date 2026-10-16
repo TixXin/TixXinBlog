@@ -112,30 +112,28 @@
         @cancel="interactions.cancelIdentity"
         @login="interactions.switchToLogin"
       />
-      <ClientOnly>
-        <Teleport to="#right-sidebar-target">
-          <SidebarRightSidebar>
-            <CommonRequestFeedback
-              v-if="overviewError"
-              class="card"
-              compact
-              title="动态统计暂时不可用"
-              :pending="overviewPending"
-              @retry="refreshOverview()"
-            />
-            <SidebarMomentAuthorCard v-if="rightInfo" :stats="authorStats" :profile="ownerCard" />
-            <SidebarMomentCalendarCard
-              v-if="rightInfo"
-              :moment-dates="momentDates"
-              :date-counts="momentDateCounts"
-              :available="!!metadata"
-              :selected-date="selectedDate"
-              @select-date="selectedDate = $event"
-            />
-            <SidebarMomentTopicCard :topics="momentTopics" :active-topic="null" @select="onTopicSelect" />
-          </SidebarRightSidebar>
-        </Teleport>
-      </ClientOnly>
+      <Teleport to="#right-sidebar-target">
+        <SidebarRightSidebar>
+          <CommonRequestFeedback
+            v-if="overviewError"
+            class="card"
+            compact
+            title="动态统计暂时不可用"
+            :pending="overviewPending"
+            @retry="refreshOverview()"
+          />
+          <SidebarMomentAuthorCard v-if="rightInfo" :stats="authorStats" :profile="ownerCard" />
+          <SidebarMomentCalendarCard
+            v-if="rightInfo"
+            :moment-dates="momentDates"
+            :date-counts="momentDateCounts"
+            :available="!!metadata"
+            :selected-date="selectedDate"
+            @select-date="selectedDate = $event"
+          />
+          <SidebarMomentTopicCard :topics="momentTopics" :active-topic="null" @select="onTopicSelect" />
+        </SidebarRightSidebar>
+      </Teleport>
     </template>
   </CommonPageFrame>
 </template>
