@@ -79,7 +79,7 @@ if (import.meta.client) {
     else resetProgress()
     dismiss()
     document.documentElement.classList.add('app-client-ready')
-    window.dispatchEvent(new Event('tixxin:ready'))
+    window.dispatchEvent(new Event('blog:ready'))
     // 首次客户端切页前 Nuxt 要先读取应用清单核对路由规则；就绪后立即预取，别让它排在第一次点击的路径上
     void getAppManifest().catch(() => {})
   })

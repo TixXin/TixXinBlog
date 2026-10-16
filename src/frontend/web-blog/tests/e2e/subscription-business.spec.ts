@@ -130,7 +130,7 @@ test('博主分享币种与本机筛选独立，切换来源保留各自视图�
   await expect(page.getByRole('textbox', { name: '服务名称', exact: true })).toHaveValue('本机未保存的记录')
   await expect(page.getByRole('textbox', { name: '订阅金额', exact: true })).toHaveValue('12.50')
   await expect(page.getByRole('combobox', { name: '订阅币种', exact: true })).toHaveValue('GBP')
-  expect(await page.evaluate(() => localStorage.getItem('tixxin-my-subscriptions'))).toBeNull()
+  expect(await page.evaluate(() => localStorage.getItem('blog-my-subscriptions'))).toBeNull()
 })
 
 test('公开分页覆盖全量统计，图标来源优先级和浏览器返回一致', async ({ page, request }) => {
@@ -221,7 +221,7 @@ for (const theme of ['nexus', 'aurora', 'dock']) {
     test(`订阅 ${theme}/${width} 明暗、图表和真实筛选`, async ({ page, context, baseURL, request }, testInfo) => {
       const errors: string[] = []
       page.on('pageerror', (error) => errors.push(error.message))
-      await context.addCookies([{ name: 'tixxin-blog-layout-theme', value: theme, url: baseURL! }])
+      await context.addCookies([{ name: 'blog-layout-theme', value: theme, url: baseURL! }])
       await page.setViewportSize({ width, height: 960 })
       await page.emulateMedia({ reducedMotion: 'reduce' })
       await page.addInitScript(() => {
@@ -370,12 +370,12 @@ test('访客本机新增、刷新、变价、跨标签冲突与删除不会上�
 
 test('本地存储损坏与配额不足保留原文和未保存输入', async ({ page }) => {
   await page.goto('/subscriptions')
-  await page.evaluate(() => localStorage.setItem('tixxin-my-subscriptions', '{broken'))
+  await page.evaluate(() => localStorage.setItem('blog-my-subscriptions', '{broken'))
   await page.reload()
   await page.getByRole('button', { name: '我的订阅 · 本机', exact: true }).click()
   await expect(page.getByRole('alert')).toContainText('原始数据已保留')
-  expect(await page.evaluate(() => localStorage.getItem('tixxin-my-subscriptions'))).toBe('{broken')
-  await page.evaluate(() => localStorage.removeItem('tixxin-my-subscriptions'))
+  expect(await page.evaluate(() => localStorage.getItem('blog-my-subscriptions'))).toBe('{broken')
+  await page.evaluate(() => localStorage.removeItem('blog-my-subscriptions'))
   await page.getByRole('button', { name: '重试读取', exact: true }).click()
   await page.getByRole('button', { name: '添加我的订阅', exact: true }).click()
   await page.getByRole('textbox', { name: '服务名称', exact: true }).fill('留住未保存的输入')
@@ -383,14 +383,14 @@ test('本地存储损坏与配额不足保留原文和未保存输入', async ({
   await page.evaluate(() => {
     const original = Storage.prototype.setItem
     Storage.prototype.setItem = function (key, value) {
-      if (key === 'tixxin-my-subscriptions') throw new DOMException('quota', 'QuotaExceededError')
+      if (key === 'blog-my-subscriptions') throw new DOMException('quota', 'QuotaExceededError')
       return original.call(this, key, value)
     }
   })
   await page.getByRole('button', { name: '保存到当前浏览器', exact: true }).click()
   await expect(page.getByRole('alert')).toBeVisible()
   await expect(page.getByRole('textbox', { name: '服务名称', exact: true })).toHaveValue('留住未保存的输入')
-  expect(await page.evaluate(() => localStorage.getItem('tixxin-my-subscriptions'))).toBeNull()
+  expect(await page.evaluate(() => localStorage.getItem('blog-my-subscriptions'))).toBeNull()
   await expect(page.getByRole('status').filter({ hasText: '已保存到当前浏览器' })).toHaveCount(0)
 })
 

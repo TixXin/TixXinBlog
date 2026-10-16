@@ -214,7 +214,7 @@ test('当前生产后台就绪与约80KiB长文输入基线', async ({ page, bro
           (prefix) => {
             for (const key of Object.keys(localStorage)) if (key.startsWith(prefix)) localStorage.removeItem(key)
           },
-          `tixxin-post-recovery:${encodeURIComponent(auth.user.id)}:${post.id}:`,
+          `blog-post-recovery:${encodeURIComponent(auth.user.id)}:${post.id}:`,
         )
       samples[name!]!.push(await sample(page, path!, name === 'longEditor' ? markdown : undefined))
     }

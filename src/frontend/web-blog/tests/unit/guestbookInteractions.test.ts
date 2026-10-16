@@ -162,7 +162,7 @@ it('过期锁住原博主草稿，同账号恢复保留，换账号隔离', asyn
   await flushPromises()
   expect(flow.state.draft).toBe('')
   expect(flow.state.actor).toBe('admin:owner-b')
-  expect(sessionStorage.getItem(`tixxin-guestbook-draft:${scope}:admin:owner-a`)).toContain('账号A的私人草稿')
+  expect(sessionStorage.getItem(`blog-guestbook-draft:${scope}:admin:owner-a`)).toContain('账号A的私人草稿')
 })
 it('换账号后旧请求成功不清空或污染当前账号输入', async () => {
   const { interactions: flow } = await setup()
@@ -190,7 +190,7 @@ it('恢复未知结果时保留提交标识，不因引用暂不可见生成重�
     nonce = crypto.randomUUID()
   const signature = JSON.stringify({ actor: 'admin:owner-a', content: '待确认的回复', replyToId: 42 })
   sessionStorage.setItem(
-    `tixxin-guestbook-draft:${scope}:admin:owner-a`,
+    `blog-guestbook-draft:${scope}:admin:owner-a`,
     JSON.stringify({ content: '待确认的回复', replyId: 42, nonce, signature }),
   )
   const { interactions: flow } = await setup(scope)

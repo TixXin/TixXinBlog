@@ -52,7 +52,7 @@ test('侧栏与抽屉共享日期话题筛选，重新挂载恢复已选月份',
 for (const theme of ['nexus', 'aurora', 'dock']) {
   for (const kind of ['list', 'detail', 'topic']) {
     test(`朋友圈资料 ${theme}/${kind} 固定侧栏与抽屉不重复`, async ({ page, context, baseURL }, testInfo) => {
-      await context.addCookies([{ name: 'tixxin-blog-layout-theme', value: theme, url: baseURL! }])
+      await context.addCookies([{ name: 'blog-layout-theme', value: theme, url: baseURL! }])
       await page.goto('/moments')
       await expect(page.locator('html')).toHaveClass(/app-client-ready/)
       await expect(page.locator('.loading-screen:visible')).toHaveCount(0)

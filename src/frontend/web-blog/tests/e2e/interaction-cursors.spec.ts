@@ -38,7 +38,7 @@ async function login(page: Page) {
 
 for (const theme of ['nexus', 'aurora', 'dock']) {
   test(`${theme} 导航、搜索入口及弹层保留正确交互`, async ({ page, context, baseURL }) => {
-    await context.addCookies([{ name: 'tixxin-blog-layout-theme', value: theme, url: baseURL! }])
+    await context.addCookies([{ name: 'blog-layout-theme', value: theme, url: baseURL! }])
     await page.goto('/')
     await ready(page)
     await cursor(page.getByRole('link', { name: '主页', exact: true }).filter({ visible: true }).first(), 'pointer')

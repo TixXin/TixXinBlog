@@ -139,7 +139,7 @@ test('图库列表保留筛选页码和返回位置，编辑页所属模块清�
 
 for (const theme of ['nexus', 'aurora', 'dock']) {
   test(`${theme}后台入口巡检、减少动态效果及前后台往返`, async ({ page, context }, testInfo) => {
-    await context.addCookies([{ name: 'tixxin-blog-layout-theme', value: theme, url: process.env.E2E_BASE_URL! }])
+    await context.addCookies([{ name: 'blog-layout-theme', value: theme, url: process.env.E2E_BASE_URL! }])
     await page.emulateMedia({ reducedMotion: 'reduce' })
     for (const [path, title] of [
       ['/admin', '管理概览'],

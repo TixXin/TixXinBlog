@@ -59,6 +59,6 @@ it('新内容库编辑不覆盖旧须知副本，也不自动恢复其规则', a
   expect(after.previousRecoveries.value[0]?.value.rules).toEqual(['仅存在旧内容库本机的须知'])
   after.draft.value!.rules = ['恢复后新输入']
   await flushPromises()
-  expect(sessionStorage.getItem('tixxin-link-rules:owner:before')).toContain('仅存在旧内容库本机的须知')
+  expect(sessionStorage.getItem('blog-link-rules:owner:before')).toContain('仅存在旧内容库本机的须知')
   expect(mocks.saveSettings).not.toHaveBeenCalled()
 })

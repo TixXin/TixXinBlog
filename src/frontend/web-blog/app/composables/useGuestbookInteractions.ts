@@ -18,7 +18,7 @@ export function useGuestbookInteractions(
     reacting = ref<number[]>([]),
     reactionErrors = ref<Record<number, string>>({})
   let alive = true
-  const key = (actor = state.actor) => `tixxin-guestbook-draft:${draftScope}:${actor}`
+  const key = (actor = state.actor) => `blog-guestbook-draft:${draftScope}:${actor}`
   const expired = computed(() => !auth.isLoggedIn.value && !!auth.authError.value && state.actor.startsWith('admin:'))
   const ready = computed(
     () => mounted.value && auth.initialized.value && !auth.restoringPending.value && !expired.value,

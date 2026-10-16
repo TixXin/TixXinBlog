@@ -97,7 +97,7 @@ it.each(['actor', 'context'])('%s 切换拒绝旧成功响应并按原归属保�
   await writing
   expect(editor.draft.value).toBeNull()
   expect(mocks.success).not.toHaveBeenCalled()
-  expect(sessionStorage.getItem('tixxin-site-settings:owner:library-a')).toContain('旧页输入')
+  expect(sessionStorage.getItem('blog-site-settings:owner:library-a')).toContain('旧页输入')
   await editor.load()
   expect(editor.ready.value).toBe(true)
   expect(editor.preserved.value).toBeNull()
@@ -188,14 +188,14 @@ it('结果核对仍失败时保留未确认标识与可恢复输入', async () =
   expect(editor.submission.value).not.toBeNull()
   expect(editor.draft.value!.ownerName).toBe('待核对姓名')
   expect(editor.error.value).toContain('仍无法确认')
-  expect(sessionStorage.getItem('tixxin-site-settings:owner:library-a')).toContain('待核对姓名')
+  expect(sessionStorage.getItem('blog-site-settings:owner:library-a')).toContain('待核对姓名')
 })
 it('损坏的原副本不会被正常加载或卸载静默删除', async () => {
   const raw = '{ incomplete'
-  sessionStorage.setItem('tixxin-site-settings:owner:library-a', raw)
+  sessionStorage.setItem('blog-site-settings:owner:library-a', raw)
   const { editor, wrapper } = await setup()
   expect(editor.error.value).toContain('格式不完整')
   editor.draft.value!.ownerName = '新编辑仍在内存'
   wrapper.unmount()
-  expect(sessionStorage.getItem('tixxin-site-settings:owner:library-a')).toBe(raw)
+  expect(sessionStorage.getItem('blog-site-settings:owner:library-a')).toBe(raw)
 })

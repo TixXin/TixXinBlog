@@ -5,7 +5,7 @@
  * @since 2026-04-15
  */
 
-const DB_NAME = 'tixxin-tab-assets'
+const DB_NAME = 'blog-tab-assets'
 const STORE = 'blobs'
 const VERSION = 1
 
@@ -22,10 +22,7 @@ function openDb(): Promise<IDBDatabase> {
   })
 }
 
-function request<T>(
-  mode: IDBTransactionMode,
-  op: (store: IDBObjectStore) => IDBRequest<T>,
-): Promise<T> {
+function request<T>(mode: IDBTransactionMode, op: (store: IDBObjectStore) => IDBRequest<T>): Promise<T> {
   if (typeof window === 'undefined' || !('indexedDB' in window)) {
     return Promise.reject(new Error('IndexedDB unavailable'))
   }
@@ -53,7 +50,5 @@ export function idbDel(key: string): Promise<void> {
 }
 
 export function idbListKeys(): Promise<string[]> {
-  return request<IDBValidKey[]>('readonly', (s) => s.getAllKeys()).then(
-    (keys) => keys.map((k) => String(k)),
-  )
+  return request<IDBValidKey[]>('readonly', (s) => s.getAllKeys()).then((keys) => keys.map((k) => String(k)))
 }

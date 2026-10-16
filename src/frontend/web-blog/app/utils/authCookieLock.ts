@@ -2,7 +2,7 @@
  * @file authCookieLock.ts
  * @description 跨标签页串行处理认证 Cookie；短期标记协调跳转后仍在完成的 keepalive 请求，不保存令牌。
  */
-const KEY = 'tixxin-auth-cookie-pending'
+const KEY = 'blog-auth-cookie-pending'
 const MAX_WAIT = 10500
 function pending() {
   try {
@@ -26,7 +26,7 @@ async function waitForPreviousMutation() {
 }
 let localQueue: Promise<unknown> = Promise.resolve()
 function serialized<T>(action: () => Promise<T>): Promise<T> {
-  if (navigator.locks) return navigator.locks.request('tixxin-auth-cookie', action)
+  if (navigator.locks) return navigator.locks.request('blog-auth-cookie', action)
   const result = localQueue.then(action)
   localQueue = result.then(
     () => undefined,

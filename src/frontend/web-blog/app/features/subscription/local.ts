@@ -2,7 +2,7 @@
 import { appendPriceHistory, isDate, validatePricing, validatePriceHistory } from '@tixxin/subscription-domain'
 import { categoryLabels, stateLabels } from './types'
 import type { SubscriptionEditable, SubscriptionItem } from './types'
-export const subscriptionStorageKey = 'tixxin-my-subscriptions'
+export const subscriptionStorageKey = 'blog-my-subscriptions'
 export const MAX_LOCAL_SUBSCRIPTIONS = 1000
 export const MAX_LOCAL_SUBSCRIPTION_LENGTH = 5000000
 export interface LocalSubscription extends SubscriptionItem, SubscriptionEditable {

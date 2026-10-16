@@ -23,10 +23,10 @@
     root.classList.remove('app-startup-stalled')
     window.removeEventListener('error', failed, true)
     window.removeEventListener('unhandledrejection', rejected)
-    window.removeEventListener('tixxin:ready', finish)
+    window.removeEventListener('blog:ready', finish)
   }
   window.addEventListener('error', failed, true)
   window.addEventListener('unhandledrejection', rejected)
-  window.addEventListener('tixxin:ready', finish)
+  window.addEventListener('blog:ready', finish)
   window.addEventListener('pagehide', () => window.clearTimeout(timer), { once: true })
 })()

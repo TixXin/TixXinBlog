@@ -31,7 +31,7 @@ test.beforeEach(async ({ page, browserName }) => {
         ownerCancellation:
           !!reason &&
           typeof reason === 'object' &&
-          Reflect.get(reason, Symbol.for('tixxin.page-request-cancelled')) === true,
+          Reflect.get(reason, Symbol.for('blog.page-request-cancelled')) === true,
       })
     })
   })
@@ -95,7 +95,7 @@ test('首屏内容就绪后，加载层淡出不再拦截操作', async ({ page 
 for (const layout of ['nexus', 'aurora', 'dock']) {
   for (const mode of ['normal', 'off', 'reduce']) {
     test(`慢请求 ${layout}/${mode} 被导航取消后不会覆盖全宽页面`, async ({ page, context, baseURL }, testInfo) => {
-      await context.addCookies([{ name: 'tixxin-blog-layout-theme', value: layout, url: baseURL! }])
+      await context.addCookies([{ name: 'blog-layout-theme', value: layout, url: baseURL! }])
       await page.emulateMedia({ reducedMotion: mode === 'reduce' ? 'reduce' : 'no-preference' })
       await page.goto('/')
       await ready(page)
@@ -215,7 +215,7 @@ for (const layout of ['nexus', 'aurora', 'dock']) {
         expect(siteResponse.ok()).toBe(true)
         const ownerName = (await siteResponse.json()).data.ownerName as string
         expect(ownerName).toBeTruthy()
-        await context.addCookies([{ name: 'tixxin-blog-layout-theme', value: layout, url: baseURL! }])
+        await context.addCookies([{ name: 'blog-layout-theme', value: layout, url: baseURL! }])
         await page.emulateMedia({ reducedMotion: mode === 'reduce' ? 'reduce' : 'no-preference' })
         await page.goto('/')
         await ready(page)
@@ -259,7 +259,7 @@ for (const layout of ['nexus', 'aurora', 'dock']) {
 
 for (const layout of ['nexus', 'aurora']) {
   test(`取消导航恢复 ${layout} 侧栏`, async ({ page, context, baseURL }) => {
-    await context.addCookies([{ name: 'tixxin-blog-layout-theme', value: layout, url: baseURL! }])
+    await context.addCookies([{ name: 'blog-layout-theme', value: layout, url: baseURL! }])
     await page.goto('/')
     await ready(page)
     await page.evaluate(() => {
@@ -425,7 +425,7 @@ test('Tooltip支持Esc并保留焦点', async ({ page }) => {
 
 for (const width of [320, 1440]) {
   test(`长提示 ${width}px 可键盘阅读、悬停保持且不越界`, async ({ page, context, baseURL }, testInfo) => {
-    await context.addCookies([{ name: 'tixxin-blog-layout-theme', value: 'dock', url: baseURL! }])
+    await context.addCookies([{ name: 'blog-layout-theme', value: 'dock', url: baseURL! }])
     await page.setViewportSize({ width, height: 1000 })
     await page.goto('/about')
     await ready(page)
@@ -543,7 +543,7 @@ test('正常页面的标题与正文独立入场，不创建离场快照', async
       ]
       return {
         reducedMotion: matchMedia('(prefers-reduced-motion: reduce)').matches,
-        appearance: localStorage.getItem('tixxin-blog-appearance'),
+        appearance: localStorage.getItem('blog-appearance'),
         state: Object.fromEntries(states.map((key) => [key, app.payload.state[`$s${key}`]])),
         regions: (window as unknown as { checkedPageRegions: object }).checkedPageRegions,
         motions: (window as unknown as { checkedPageMotions: unknown[] }).checkedPageMotions,

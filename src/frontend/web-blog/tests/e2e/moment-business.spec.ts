@@ -337,7 +337,7 @@ for (const theme of ['nexus', 'aurora', 'dock']) {
       request,
       baseURL,
     }) => {
-      await context.addCookies([{ name: 'tixxin-blog-layout-theme', value: theme, url: baseURL! }])
+      await context.addCookies([{ name: 'blog-layout-theme', value: theme, url: baseURL! }])
       await page.setViewportSize({ width, height: 900 })
       if (width === 320) await page.emulateMedia({ reducedMotion: 'reduce' })
       const call = await api(request)

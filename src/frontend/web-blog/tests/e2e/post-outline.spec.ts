@@ -106,7 +106,7 @@ test('仅定位不会改写本机恢复副本，刷新载入长文后章节仍�
   const readCopies = () =>
     page.evaluate(() =>
       Object.keys(localStorage)
-        .filter((key) => key.startsWith('tixxin-post-recovery:'))
+        .filter((key) => key.startsWith('blog-post-recovery:'))
         .sort()
         .map((key) => localStorage.getItem(key)),
     )

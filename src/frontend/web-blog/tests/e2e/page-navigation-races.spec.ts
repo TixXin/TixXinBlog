@@ -16,7 +16,7 @@ declare global {
 }
 for (const layout of ['nexus', 'aurora', 'dock']) {
   test(`${layout}旧触底请求取消后不能把已进入的文章改回列表`, async ({ page, context, baseURL }, testInfo) => {
-    await context.addCookies([{ name: 'tixxin-blog-layout-theme', value: layout, url: baseURL! }])
+    await context.addCookies([{ name: 'blog-layout-theme', value: layout, url: baseURL! }])
     await page.setViewportSize({ width: 1440, height: 1000 })
     await page.addInitScript(() => {
       window.postNavigationRace = { pageAttempts: 0, oldCancelled: 0, queueFlushed: false }
@@ -108,7 +108,7 @@ for (const layout of ['nexus', 'aurora', 'dock']) {
   })
 
   test(`${layout}鼠标重复打开已聚焦的设置入口，Esc始终归还原按钮`, async ({ page, context, baseURL }) => {
-    await context.addCookies([{ name: 'tixxin-blog-layout-theme', value: layout, url: baseURL! }])
+    await context.addCookies([{ name: 'blog-layout-theme', value: layout, url: baseURL! }])
     await page.emulateMedia({ reducedMotion: 'reduce' })
     await page.goto('/')
     await expect(page.locator('html')).toHaveClass(/app-client-ready/)

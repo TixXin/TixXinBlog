@@ -9,7 +9,7 @@ afterEach(() => vi.restoreAllMocks())
 
 describe('访客请求身份', () => {
   it('复用存储的合法身份，替换不合法的存储值', () => {
-    localStorage.setItem('tixxin-visitor-id', 'invalid id')
+    localStorage.setItem('blog-visitor-id', 'invalid id')
     const id = ensureVisitorId()
     expect(id).not.toBe('invalid id')
     expect(ensureVisitorId()).toBe(id)

@@ -14,12 +14,12 @@ mockNuxtImport('useToast', () => () => ({ error: mocks.error }))
 afterEach(() => {
   vi.restoreAllMocks()
   mocks.error.mockClear()
-  localStorage.removeItem('tixxin-blog-favorites')
+  localStorage.removeItem('blog-favorites')
 })
 
 describe('本机收藏持久化', () => {
   it('保存失败保持原集合与原存储，恢复后成功更新', async () => {
-    localStorage.setItem('tixxin-blog-favorites', JSON.stringify(['old']))
+    localStorage.setItem('blog-favorites', JSON.stringify(['old']))
     let state!: ReturnType<typeof useLikes>
     const wrapper = await mountSuspended(
       defineComponent({
@@ -36,12 +36,12 @@ describe('本机收藏持久化', () => {
       })
       expect(state.toggleFavorite('new')).toBe(false)
       expect([...state.favoritedIds.value]).toEqual(['old'])
-      expect(JSON.parse(localStorage.getItem('tixxin-blog-favorites')!)).toEqual(['old'])
+      expect(JSON.parse(localStorage.getItem('blog-favorites')!)).toEqual(['old'])
       expect(mocks.error).toHaveBeenCalledWith(expect.stringContaining('收藏未保存'))
       write.mockRestore()
       expect(state.toggleFavorite('new')).toBe(true)
       expect([...state.favoritedIds.value]).toEqual(['old', 'new'])
-      expect(JSON.parse(localStorage.getItem('tixxin-blog-favorites')!)).toEqual(['old', 'new'])
+      expect(JSON.parse(localStorage.getItem('blog-favorites')!)).toEqual(['old', 'new'])
     } finally {
       wrapper.unmount()
     }

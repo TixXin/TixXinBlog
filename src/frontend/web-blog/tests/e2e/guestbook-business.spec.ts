@@ -298,7 +298,7 @@ test('脚本接管前不接受丢失的输入，登录恢复期间仍可编写',
 })
 for (const theme of ['nexus', 'aurora', 'dock'])
   test(`留言布局 ${theme} 历史加载和手机输入保持`, async ({ page, context, baseURL }, testInfo) => {
-    await context.addCookies([{ name: 'tixxin-blog-layout-theme', value: theme, url: baseURL! }])
+    await context.addCookies([{ name: 'blog-layout-theme', value: theme, url: baseURL! }])
     await page.setViewportSize({ width: 1600, height: 1000 })
     await page.goto('/guestbook')
     await expect(page.getByRole('button', { name: '添加回应', exact: true }).first()).toBeEnabled()
@@ -332,7 +332,7 @@ for (const theme of ['nexus', 'aurora', 'dock'])
 
 for (const theme of ['nexus', 'aurora', 'dock'])
   test(`历史追加 ${theme} 保留实际可见留言锚点，失败可原游标重试`, async ({ page, context, baseURL }) => {
-    await context.addCookies([{ name: 'tixxin-blog-layout-theme', value: theme, url: baseURL! }])
+    await context.addCookies([{ name: 'blog-layout-theme', value: theme, url: baseURL! }])
     await page.setViewportSize({ width: 1600, height: 1000 })
     await page.goto('/guestbook')
     await expect(page.getByRole('button', { name: '添加回应', exact: true }).first()).toBeEnabled()

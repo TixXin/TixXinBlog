@@ -43,7 +43,7 @@ export function useLinkSettingsEditor() {
     ownedContext = '',
     generation = 0,
     alive = true
-  const prefix = () => `tixxin-link-rules:${actor}`,
+  const prefix = () => `blog-link-rules:${actor}`,
     key = () => editorRecoveryKey(prefix(), ownedContext)
   function persist() {
     if (!import.meta.client || !actor || !draft.value || !dirty.value) return

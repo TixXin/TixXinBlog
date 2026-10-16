@@ -72,7 +72,7 @@ for (const domain of ['project', 'gallery', 'link'] as const) {
               url: 'https://example.com/OnlyInDraft?version=Original',
               logoMediaId: oldMedia,
             }
-    const prefix = `tixxin-${domain}-editor:${auth.user.id}:${current.id}`
+    const prefix = `blog-${domain}-editor:${auth.user.id}:${current.id}`
     const legacy = {
       version: 1,
       context: oldContext,

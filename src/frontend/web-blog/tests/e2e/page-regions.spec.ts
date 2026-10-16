@@ -76,7 +76,7 @@ async function records(page: Page) {
 }
 for (const layout of ['nexus', 'aurora', 'dock']) {
   test(`共享标题 ${layout} 标签不移动，正文独立入场且不复制旧内容`, async ({ page, context, baseURL }, testInfo) => {
-    await context.addCookies([{ name: 'tixxin-blog-layout-theme', value: layout, url: baseURL! }])
+    await context.addCookies([{ name: 'blog-layout-theme', value: layout, url: baseURL! }])
     await page.goto('/')
     await ready(page, '.articles-page')
     const nav = page.getByRole('navigation', { name: '内容类型' })
@@ -112,7 +112,7 @@ for (const layout of ['nexus', 'aurora', 'dock']) {
   })
 
   test(`栏目分区 ${layout} 标题120ms淡入，正文不创建离场快照`, async ({ page, context, baseURL }, testInfo) => {
-    await context.addCookies([{ name: 'tixxin-blog-layout-theme', value: layout, url: baseURL! }])
+    await context.addCookies([{ name: 'blog-layout-theme', value: layout, url: baseURL! }])
     await page.goto('/')
     await ready(page, '.articles-page')
     for (const [name, path] of [
@@ -168,7 +168,7 @@ for (const layout of ['nexus', 'aurora', 'dock']) {
   })
 
   test(`慢导航 ${layout} 保留标题正文，不显示加载提示`, async ({ page, context, baseURL }) => {
-    await context.addCookies([{ name: 'tixxin-blog-layout-theme', value: layout, url: baseURL! }])
+    await context.addCookies([{ name: 'blog-layout-theme', value: layout, url: baseURL! }])
     await page.goto('/moments')
     await ready(page, '.moments-page')
     await clear(page)
@@ -211,11 +211,11 @@ for (const layout of ['nexus', 'aurora', 'dock']) {
 
   for (const mode of ['off', 'reduce']) {
     test(`关闭分区动效 ${layout}/${mode} 仍可切换页面`, async ({ page, context, baseURL }) => {
-      await context.addCookies([{ name: 'tixxin-blog-layout-theme', value: layout, url: baseURL! }])
+      await context.addCookies([{ name: 'blog-layout-theme', value: layout, url: baseURL! }])
       if (mode === 'reduce') await page.emulateMedia({ reducedMotion: 'reduce' })
       else
         await page.addInitScript(() =>
-          localStorage.setItem('tixxin-blog-appearance', JSON.stringify({ contentTransitionPreset: 'none' })),
+          localStorage.setItem('blog-appearance', JSON.stringify({ contentTransitionPreset: 'none' })),
         )
       await page.goto('/')
       await ready(page, '.articles-page')

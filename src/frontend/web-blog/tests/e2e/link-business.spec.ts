@@ -585,7 +585,7 @@ for (const theme of ['nexus', 'aurora', 'dock']) {
       page.on('console', (message) => {
         if (/hydration|NotFoundError|TypeError/i.test(message.text())) issues.push(message.text())
       })
-      await context.addCookies([{ name: 'tixxin-blog-layout-theme', value: theme, url: baseURL! }])
+      await context.addCookies([{ name: 'blog-layout-theme', value: theme, url: baseURL! }])
       await page.setViewportSize({ width, height: 960 })
       await page.emulateMedia({ reducedMotion: width === 320 ? 'reduce' : 'no-preference' })
       await page.goto('/links')

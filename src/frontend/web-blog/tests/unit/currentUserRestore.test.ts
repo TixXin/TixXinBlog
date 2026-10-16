@@ -8,7 +8,7 @@ mockNuxtImport('$fetch', () => mocks.fetch)
 const wrappers: { unmount(): void }[] = []
 beforeEach(() => {
   mocks.fetch.mockReset()
-  localStorage.removeItem('tixxin-auth-cookie-pending')
+  localStorage.removeItem('blog-auth-cookie-pending')
 })
 afterEach(() => {
   wrappers.splice(0).forEach((wrapper) => wrapper.unmount())

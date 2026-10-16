@@ -54,7 +54,7 @@ export class BackupController {
       .type('application/json; charset=utf-8')
       .setHeader(
         'Content-Disposition',
-        `attachment; filename="tixxin-content-${new Date().toISOString().slice(0, 10)}-${id.slice(0, 8)}.json"`,
+        `attachment; filename="blog-content-${new Date().toISOString().slice(0, 10)}-${id.slice(0, 8)}.json"`,
       )
     response.send(JSON.stringify(content))
     // 手动响应只返回计数给内部审计拦截器，不将内容包正文交给日志处理。

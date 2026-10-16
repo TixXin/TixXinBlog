@@ -1,7 +1,7 @@
 /** @file authCookieLock.test.ts @description Cookie 轮换标记只作短期协调，不保存身份，失败与跨文档等待均能结束 */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { withAuthCookieLock, withAuthCookieRead } from '~/utils/authCookieLock'
-const key = 'tixxin-auth-cookie-pending'
+const key = 'blog-auth-cookie-pending'
 describe('认证 Cookie 请求协调', () => {
   beforeEach(() => {
     localStorage.removeItem(key)

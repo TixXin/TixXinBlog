@@ -34,7 +34,7 @@ export function usePromptEditor(initialId: number | null, onSaved: (item: Manage
       authenticated = auth.isLoggedIn.value
     return !!actor && (!authenticated || currentActor !== actor || currentContext !== ownedContext)
   })
-  const storageKey = () => `tixxin-prompt-editor:${actor}:${ownedContext}:${storageId ?? 'new'}`
+  const storageKey = () => `blog-prompt-editor:${actor}:${ownedContext}:${storageId ?? 'new'}`
   const owns = (version: number) =>
     alive &&
     version === generation &&

@@ -10,7 +10,7 @@ test('首页分页早期返回后正确接管SSR列表，往返保留真实历�
   page.on('console', (message) => {
     if (/hydration|NotFoundError|TypeError|ReferenceError|Unhandled/i.test(message.text())) issues.push(message.text())
   })
-  await context.addCookies([{ name: 'tixxin-blog-layout-theme', value: 'nexus', url: baseURL! }])
+  await context.addCookies([{ name: 'blog-layout-theme', value: 'nexus', url: baseURL! }])
   await page.setViewportSize({ width: 390, height: 960 })
   await page.addInitScript(() => {
     addEventListener('popstate', () => {
@@ -190,7 +190,7 @@ async function rapidReloadAndHistory(
 }
 for (const width of [390, 768, 1280, 1439]) {
   test(`项目快速刷新与原生历史切换 ${width}px 不丢列表或产生水合错误`, async ({ page, context, baseURL }, testInfo) => {
-    await context.addCookies([{ name: 'tixxin-blog-layout-theme', value: 'nexus', url: baseURL! }])
+    await context.addCookies([{ name: 'blog-layout-theme', value: 'nexus', url: baseURL! }])
     await page.setViewportSize({ width, height: 960 })
     const evidence = await rapidReloadAndHistory(
       page,
@@ -226,7 +226,7 @@ for (const width of [390, 768, 1280, 1439]) {
   })
 }
 test('图库快速刷新与原生历史切换不丢照片，后续搜索与API一致', async ({ page, context, baseURL }, testInfo) => {
-  await context.addCookies([{ name: 'tixxin-blog-layout-theme', value: 'nexus', url: baseURL! }])
+  await context.addCookies([{ name: 'blog-layout-theme', value: 'nexus', url: baseURL! }])
   await page.setViewportSize({ width: 390, height: 960 })
   const evidence = await rapidReloadAndHistory(
     page,
@@ -265,7 +265,7 @@ test('图库快速刷新与原生历史切换不丢照片，后续搜索与API�
   })
 })
 test('友链快速刷新与原生历史切换不丢记录，后续推荐筛选与API一致', async ({ page, context, baseURL }, testInfo) => {
-  await context.addCookies([{ name: 'tixxin-blog-layout-theme', value: 'nexus', url: baseURL! }])
+  await context.addCookies([{ name: 'blog-layout-theme', value: 'nexus', url: baseURL! }])
   await page.setViewportSize({ width: 390, height: 960 })
   const evidence = await rapidReloadAndHistory(
     page,

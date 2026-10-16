@@ -296,7 +296,7 @@ for (const theme of ['nexus', 'aurora', 'dock']) {
   for (const width of [320, 390, 760, 761, 1440]) {
     test(`${theme} ${width}px 工作台通知运行入口与键盘均可使用`, async ({ page, context }, testInfo) => {
       await admin(page)
-      await context.addCookies([{ name: 'tixxin-blog-layout-theme', value: theme, url: process.env.E2E_BASE_URL! }])
+      await context.addCookies([{ name: 'blog-layout-theme', value: theme, url: process.env.E2E_BASE_URL! }])
       await page.emulateMedia({ reducedMotion: 'reduce' })
       await page.setViewportSize({ width, height: 900 })
       for (const [path, title] of [
@@ -335,7 +335,7 @@ for (const theme of ['nexus', 'aurora', 'dock']) {
   test(`${theme} 关于页只显示已确认公开栏目，缺省不伪造资料`, async ({ page, context }, testInfo) => {
     const api = await admin(page),
       original = await api('/admin/site')
-    await context.addCookies([{ name: 'tixxin-blog-layout-theme', value: theme, url: process.env.E2E_BASE_URL! }])
+    await context.addCookies([{ name: 'blog-layout-theme', value: theme, url: process.env.E2E_BASE_URL! }])
     try {
       await setSite(api, { about: { visible: false, introduction: '隐藏的私人介绍', sections: [] } })
       await page.goto('/about')

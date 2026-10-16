@@ -10,11 +10,11 @@ type Mode = 'normal' | 'off' | 'reduce' | 'fade' | 'soft-slide'
 test.beforeEach(({ page, browserName }) => prepareMotionCapture(page, browserName))
 async function setup(page: Page, context: BrowserContext, baseURL: string, layout: string, mode: Mode, width = 1440) {
   await page.setViewportSize({ width, height: 1000 })
-  await context.addCookies([{ name: 'tixxin-blog-layout-theme', value: layout, url: baseURL }])
+  await context.addCookies([{ name: 'blog-layout-theme', value: layout, url: baseURL }])
   await context.addInitScript(
     (preset) => {
       localStorage.setItem(
-        'tixxin-blog-appearance',
+        'blog-appearance',
         JSON.stringify({
           contentTransitionPreset: preset,
           sidebarAnimationPreset: 'none',

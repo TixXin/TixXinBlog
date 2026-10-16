@@ -2,7 +2,7 @@
 import { beforeEach, afterEach, expect, it, vi } from 'vitest'
 import { editorRecoveryKey, readEditorRecoveries } from '../../app/utils/editorRecoveryStorage'
 import { projectForm, parseProjectRecovery } from '../../app/features/project/editor'
-const prefix = 'tixxin-project-editor:owner:1'
+const prefix = 'blog-project-editor:owner:1'
 const copy = (context: string, title: string) => ({
   version: 1,
   context,

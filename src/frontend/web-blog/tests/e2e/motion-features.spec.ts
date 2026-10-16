@@ -94,7 +94,7 @@ for (const layout of ['nexus', 'aurora', 'dock']) {
   for (const width of [390, 1440]) {
     test(`长文 ${layout}/${width} 快捷键目录与历史`, async ({ page, context, baseURL }, testInfo) => {
       expect(articleId).toBeTruthy()
-      await context.addCookies([{ name: 'tixxin-blog-layout-theme', value: layout, url: baseURL! }])
+      await context.addCookies([{ name: 'blog-layout-theme', value: layout, url: baseURL! }])
       await page.setViewportSize({ width, height: 1000 })
       await page.emulateMedia({ reducedMotion: 'reduce' })
       const path = `/articles/${articleId}`
@@ -129,7 +129,7 @@ for (const layout of ['nexus', 'aurora', 'dock']) {
 
 for (const layout of ['nexus', 'aurora', 'dock']) {
   test(`阅读 ${layout} 回顶可被滚轮中断，运行中reduce完成滚动`, async ({ page, context, baseURL }, testInfo) => {
-    await context.addCookies([{ name: 'tixxin-blog-layout-theme', value: layout, url: baseURL! }])
+    await context.addCookies([{ name: 'blog-layout-theme', value: layout, url: baseURL! }])
     await page.goto(`/articles/${articleId}`)
     await ready(page)
     await page.mouse.move(720, 480)
@@ -174,7 +174,7 @@ for (const layout of ['nexus', 'aurora', 'dock']) {
 }
 
 test('Aurora紧凑顶栏的前后导航项均可通过真实点击到达', async ({ page, context, baseURL }) => {
-  await context.addCookies([{ name: 'tixxin-blog-layout-theme', value: 'aurora', url: baseURL! }])
+  await context.addCookies([{ name: 'blog-layout-theme', value: 'aurora', url: baseURL! }])
   for (const width of [768, 769, 1023]) {
     await page.setViewportSize({ width, height: 1000 })
     await page.goto('/')
@@ -271,7 +271,7 @@ test('AI演示搜索关闭后迟到结果不覆盖新会话', async ({ page }) =
 
 test('Aurora减少模式和默认模式静止，手动播放可暂停', async ({ page, context, baseURL }, testInfo) => {
   test.setTimeout(60000)
-  await context.addCookies([{ name: 'tixxin-blog-layout-theme', value: 'aurora', url: baseURL! }])
+  await context.addCookies([{ name: 'blog-layout-theme', value: 'aurora', url: baseURL! }])
   await page.emulateMedia({ reducedMotion: 'reduce' })
   await page.goto('/')
   await ready(page)
