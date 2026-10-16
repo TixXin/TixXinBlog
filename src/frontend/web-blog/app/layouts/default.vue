@@ -15,6 +15,7 @@
     </div>
   </ThemeComponent>
   <ThemeComponent name="ThemeAccessory" />
+  <!-- 覆盖层与移动导航保持同步水合：延迟水合会让文章页等页面的后续节点对不上 SSR 输出 -->
   <CommonAppearanceDrawer />
   <LayoutMobileNav />
 </template>

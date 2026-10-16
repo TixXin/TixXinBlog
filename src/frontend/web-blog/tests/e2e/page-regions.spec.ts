@@ -101,7 +101,8 @@ for (const layout of ['nexus', 'aurora', 'dock']) {
     await expect(nav.getByRole('link', { name: '朋友圈', exact: true })).toBeFocused()
     const motion = await records(page)
     expect(motion.some((m) => m.root || m.header)).toBe(false)
-    expect(motion.some((m) => m.body && !m.clone && m.duration === 150)).toBe(true)
+    // 默认内容过渡为淡入 140ms
+    expect(motion.some((m) => m.body && !m.clone && m.duration === 140)).toBe(true)
     expect(motion.some((m) => m.clone)).toBe(false)
     await captureMotion(page, testInfo, `${layout}-feed-regions.png`)
     await clear(page)

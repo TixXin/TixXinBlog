@@ -155,7 +155,10 @@ export default {
     // 字重精简：移除未使用的 300（grep 确认 0 处使用），保留 400/500/600/700/800
     // 每个权重对应一个独立 WOFF2 文件，少一个权重 ≈ 减 24KB 字体下载
     // 子集只保留拉丁字符：中文走系统字体，cyrillic/greek/vietnamese 子集只会膨胀 @font-face 声明与内联 CSS
-    families: [{ name: 'Inter', weights: [400, 500, 600, 700, 800], subsets: ['latin', 'latin-ext'] }],
+    // 不下载斜体：站内少量 italic 由浏览器合成，省掉一半字体文件
+    families: [
+      { name: 'Inter', weights: [400, 500, 600, 700, 800], styles: ['normal'], subsets: ['latin', 'latin-ext'] },
+    ],
     defaults: {
       fallbacks: ['system-ui', 'sans-serif'],
     },
@@ -195,6 +198,10 @@ export default {
     },
   },
   css: ['~/assets/styles/main.scss'],
+  features: {
+    // 组件样式改为外链 CSS：首页 HTML 少 100KB 以上，样式文件带内容哈希可长期缓存，回访只传 HTML
+    inlineStyles: false,
+  },
   hooks: {
     // 宿主能力在构建期序列化；客户端不直接导入未激活主题的配置模块。
     'app:templates': (app: { templates: Array<{ filename: string; getContents: () => string; write?: boolean }> }) => {
