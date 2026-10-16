@@ -32,6 +32,8 @@ export class RateLimitGuard implements CanActivate {
   constructor(private readonly config: ConfigService) {}
 
   canActivate(context: ExecutionContext): boolean {
+    // 本机开发：浏览器、SSR 与开发工具都来自 127.0.0.1，按 IP 计数只会把自己限住；配额在生产与测试环境保持原样。
+    if (this.config.get<string>('NODE_ENV') === 'development') return true
     const request = context.switchToHttp().getRequest<Request>()
     if (request.method === 'OPTIONS' || ['/health', '/ready'].includes(request.path)) return true
     const login = request.path.endsWith('/auth/login') || request.path.endsWith('/auth/password')
