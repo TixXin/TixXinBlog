@@ -12,7 +12,6 @@
     <CommonSiteAnnouncement :content="siteSettings.announcement" :date="siteSettings.announcementUpdatedAt" />
     <div ref="pageHost" class="page-motion-host">
       <NuxtPage :transition="false" />
-      <p v-if="pagePending" data-page-motion-status class="page-motion-status" role="status">正在加载内容…</p>
     </div>
   </ThemeComponent>
   <ThemeComponent name="ThemeAccessory" />
@@ -21,12 +20,10 @@
 </template>
 
 <script setup lang="ts">
-import { pageMotionPendingKey } from '~/utils/pageMotionRegions'
-
 const { settings: siteSettings } = useSiteSettings()
 const pageHost = ref<HTMLElement | null>(null)
-const { pending: pagePending } = usePageMotion(pageHost)
-provide(pageMotionPendingKey, pagePending)
+// 切页期间旧内容保持可见、可操作，不再显示"正在加载内容"提示；加载进度由顶部进度条承担
+usePageMotion(pageHost)
 
 const route = useRoute()
 const { enable: enableFullbleed, disable: disableFullbleed } = useFullbleedPage()
@@ -50,23 +47,5 @@ watch(
   min-height: 0;
   min-width: 0;
   width: 100%;
-}
-.page-motion-status {
-  position: absolute;
-  top: 0.5rem;
-  left: 50%;
-  transform: translateX(-50%);
-  z-index: 3;
-  padding: 0.375rem 0.75rem;
-  background: var(--surface-1);
-  border: 1px solid var(--border);
-  border-radius: $radius-full;
-  color: var(--text-soft);
-  font-size: 0.8125rem;
-  pointer-events: none;
-}
-// 普通页在自身正文区提供反馈；特殊页面继续使用外层兜底。
-.page-motion-host:has(> [data-page-frame]) > .page-motion-status {
-  display: none;
 }
 </style>

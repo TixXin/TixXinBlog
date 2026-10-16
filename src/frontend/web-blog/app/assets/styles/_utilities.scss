@@ -131,22 +131,22 @@
   transition: none;
 }
 
-// 右侧栏动画预设：通过容器类名控制 Teleport 子元素的入场动画
-.anim-sidebar-up > * {
+// 右侧栏动画预设：通过容器类名控制 Teleport 子元素的入场动画；首屏 SSR 直出的子元素（data-initial）已在页面上，不再入场
+.anim-sidebar-up > :not([data-initial]) {
   animation: sidebar-slide-in-right 0.35s ease-out both;
   @media (prefers-reduced-motion: reduce) {
     animation: none;
   }
 }
 
-.anim-sidebar-fade > * {
+.anim-sidebar-fade > :not([data-initial]) {
   animation: sidebar-fade-in 0.25s ease-out both;
   @media (prefers-reduced-motion: reduce) {
     animation: none;
   }
 }
 
-.anim-sidebar-scale > * {
+.anim-sidebar-scale > :not([data-initial]) {
   animation: sidebar-scale-in 0.3s ease-out both;
   @media (prefers-reduced-motion: reduce) {
     animation: none;

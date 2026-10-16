@@ -6,10 +6,15 @@
 -->
 
 <template>
-  <div class="right-sidebar-wrapper">
+  <!-- 首屏随 SSR 直出的侧栏标记 data-initial：已经显示在页面上，不再补播入场动画；切页后新建的实例才入场 -->
+  <div class="right-sidebar-wrapper" :data-initial="initial || undefined">
     <slot />
   </div>
 </template>
+
+<script setup lang="ts">
+const initial = import.meta.server || useNuxtApp().isHydrating
+</script>
 
 <style lang="scss" scoped>
 .right-sidebar-wrapper {
