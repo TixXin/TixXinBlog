@@ -431,7 +431,7 @@ function selectPrev() {
   border: 1px solid var(--border);
   background: var(--surface-2);
   color: var(--text-soft);
-  font-family: $font-family-base;
+  font-family: inherit;
   flex-shrink: 0;
 }
 
@@ -561,7 +561,7 @@ function selectPrev() {
     border-radius: 3px;
     border: 1px solid var(--border);
     background: var(--surface-2);
-    font-family: $font-family-base;
+    font-family: inherit;
   }
 }
 

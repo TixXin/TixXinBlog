@@ -778,7 +778,7 @@ defineExpose({ focus: () => textareaRef.value?.focus() })
   padding: 0.0625rem 0.375rem;
   border-radius: $radius-sm;
   background: rgba(255, 255, 255, 0.18);
-  font-family: 'Inter', sans-serif;
+  font-family: inherit;
   font-weight: 600;
   letter-spacing: 0.04em;
 }

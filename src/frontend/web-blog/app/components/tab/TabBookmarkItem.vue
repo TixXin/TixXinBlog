@@ -285,7 +285,7 @@ const nameComputedStyle = computed(() => ({
 .tab-bm__letter {
   font-size: 1.125rem;
   font-weight: 700;
-  font-family: 'Inter', sans-serif;
+  font-family: inherit;
 }
 
 .tab-bm__name {

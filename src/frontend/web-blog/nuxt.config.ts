@@ -56,19 +56,15 @@ export default {
         { property: 'og:locale', content: 'zh_CN' },
         { name: 'twitter:card', content: 'summary_large_image' },
       ],
-      // 生产环境：在 hydration 之前检测 sessionStorage，为 <html> 添加 .visited class，
-      // 使非首次访问直接隐藏 loading 覆盖层，消除闪烁。开发环境不注入，保证刷新可调试
+      // 在 hydration 之前检测 sessionStorage，为 <html> 添加 .visited class，
+      // 使非首次访问直接隐藏 loading 覆盖层，消除闪烁。开发与生产一致；调试时加 ?splash=1 强制显示
       script: [
         { innerHTML: startupGuard, tagPosition: 'head' },
-        ...(process.env.NODE_ENV === 'production'
-          ? [
-              {
-                innerHTML:
-                  "(function(){try{if(sessionStorage.getItem('tixxin-blog-visited')){document.documentElement.classList.add('visited')}}catch(e){}})();",
-                tagPosition: 'head',
-              },
-            ]
-          : []),
+        {
+          innerHTML:
+            "(function(){try{if(sessionStorage.getItem('tixxin-blog-visited')&&!/[?&]splash=1(?:&|$)/.test(location.search)){document.documentElement.classList.add('visited')}}catch(e){}})();",
+          tagPosition: 'head',
+        },
       ],
       noscript: [
         {
@@ -155,7 +151,8 @@ export default {
     provider: 'bunny',
     // 字重精简：移除未使用的 300（grep 确认 0 处使用），保留 400/500/600/700/800
     // 每个权重对应一个独立 WOFF2 文件，少一个权重 ≈ 减 24KB 字体下载
-    families: [{ name: 'Inter', weights: [400, 500, 600, 700, 800] }],
+    // 子集只保留拉丁字符：中文走系统字体，cyrillic/greek/vietnamese 子集只会膨胀 @font-face 声明与内联 CSS
+    families: [{ name: 'Inter', weights: [400, 500, 600, 700, 800], subsets: ['latin', 'latin-ext'] }],
     defaults: {
       fallbacks: ['system-ui', 'sans-serif'],
     },
@@ -254,6 +251,15 @@ export default {
     // 'all' 会关闭 DNS rebinding 防护，生产不走 dev server，dev 环境放开可接受
     server: {
       allowedHosts: ['tix.xin', '.tix.xin'],
+      // dev 启动即预转换首页链路与各主题壳层，首屏不再逐个按需转换数百个模块
+      warmup: {
+        clientFiles: [
+          './app/app.vue',
+          './app/layouts/default.vue',
+          './app/pages/index.vue',
+          './themes/*/app/components/RootLayout.vue',
+        ],
+      },
     },
   },
 }

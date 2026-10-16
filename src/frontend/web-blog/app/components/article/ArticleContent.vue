@@ -47,7 +47,7 @@ function headingTag(section: ArticleSection): 'h2' | 'h3' {
 
 <style lang="scss" scoped>
 .article-content {
-  font-family: $font-family-base;
+  font-family: inherit;
 }
 
 .article-content__heading {

@@ -235,7 +235,7 @@ function onSubmit() {
   }
 
   span {
-    font-family: 'Inter', monospace;
+    font-family: inherit;
     font-size: 0.75rem;
     color: var(--text-soft);
   }

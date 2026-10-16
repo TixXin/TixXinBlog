@@ -68,29 +68,17 @@ useAnalytics()
 
 // 首次访问 loading 动画状态 + 布局主题切换 loading 状态
 const { isLoading, isThemeSwitchLoading, checkFirstVisit, dismiss } = useAppLoading()
-// 首屏加载进度：顶部进度条 + 中央百分比共享
-const { start: startProgress, set: setProgress, finish: finishProgress, reset: resetProgress } = useLoadingProgress()
+// 首屏加载进度：由 00.theme-preload 等真实里程碑推进，这里只负责拉满
+const { finish: finishProgress, reset: resetProgress } = useLoadingProgress()
 
-// 客户端挂载后立即启动假进度（早于 onNuxtReady，最大化可见时间）
-// 非首次访问路径不启动，progress 保持 0，顶部条与中央百分比均不可见
-onMounted(() => {
-  if (checkFirstVisit()) {
-    startProgress()
-  } else {
-    resetProgress()
-  }
-})
-
-// 内容就绪后立即解除首屏等待；加载进度负责反馈，不再增加装饰性等待。
-onNuxtReady(() => {
-  if (checkFirstVisit()) {
-    setProgress(95)
-    finishProgress()
-  } else {
-    resetProgress()
-  }
-  dismiss()
-  document.documentElement.classList.add('app-client-ready')
-  window.dispatchEvent(new Event('tixxin:ready'))
-})
+// 内容就绪即解除首屏等待：直接挂在 Suspense 解析上，不再经 requestIdleCallback 多等一拍
+if (import.meta.client) {
+  useNuxtApp().hook('app:suspense:resolve', () => {
+    if (checkFirstVisit()) finishProgress()
+    else resetProgress()
+    dismiss()
+    document.documentElement.classList.add('app-client-ready')
+    window.dispatchEvent(new Event('tixxin:ready'))
+  })
+}
 </script>

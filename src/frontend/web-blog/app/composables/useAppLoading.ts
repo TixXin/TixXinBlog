@@ -12,42 +12,26 @@ const STORAGE_KEY = 'tixxin-blog-visited'
  *
  * 设计要点：
  * - SSR 与客户端初始 hydration 时 isLoading 始终为 true，避免水合不匹配
- * - 生产环境：通过 sessionStorage + nuxt.config 内联脚本在 hydration 前为 <html>
+ * - 通过 sessionStorage + nuxt.config 内联脚本在 hydration 前为 <html>
  *   添加 .visited class，CSS 用 `display: none !important` 隐藏 loading，消除闪烁
- * - 开发环境：每次刷新都视为首次访问，便于调试 loading 动画效果
- * - 状态层的关闭在 onNuxtReady 后由 app.vue 触发，避免同步改状态引发水合警告
+ * - 开发与生产行为一致；调试品牌层时在地址加 `?splash=1` 强制显示
+ * - 状态层的关闭在 app:suspense:resolve 后由 app.vue 触发，避免水合期间改状态引发警告
  */
 export function useAppLoading() {
   const isLoading = useState('app-loading', () => true)
   // 主题切换 loading：独立于首屏，布局加载期间提供非阻断状态提示。
   const isThemeSwitchLoading = useState('app-theme-switch-loading', () => false)
 
-  // 开发环境：清除旧的 visited 标记，确保每次刷新都能看到 loading
-  if (import.meta.client && import.meta.dev) {
-    try {
-      sessionStorage.removeItem(STORAGE_KEY)
-      document.documentElement.classList.remove('visited')
-    } catch {
-      // ignore
-    }
-  }
-
-  /** 判断当前是否首次访问（仅在客户端调用） */
+  /** 判断当前是否首次访问（仅在客户端调用）；与 <head> 内联脚本的判定保持一致 */
   function checkFirstVisit(): boolean {
     if (!import.meta.client) return true
-    // 开发环境总是显示 loading，便于调试
-    if (import.meta.dev) return true
-    try {
-      return !sessionStorage.getItem(STORAGE_KEY)
-    } catch {
-      return true
-    }
+    return !document.documentElement.classList.contains('visited')
   }
 
-  /** 关闭 loading 并标记已访问（开发环境不写 storage） */
+  /** 关闭 loading 并标记已访问 */
   function dismiss() {
     isLoading.value = false
-    if (import.meta.client && !import.meta.dev) {
+    if (import.meta.client) {
       try {
         sessionStorage.setItem(STORAGE_KEY, '1')
         document.documentElement.classList.add('visited')
