@@ -1,5 +1,6 @@
 /** @file development-datasets.ts @description 版本化样本集统一登记，范围与预期归属数量从各域真实定义汇总 */
 import { seedCoreFixtures, CORE_DATASET, CORE_FIXTURE_COUNT } from './core-fixtures'
+import { seedShowcaseFixtures, SHOWCASE_DATASET, SHOWCASE_FIXTURE_COUNT } from './showcase-fixtures'
 import { seedEditorialFixtures, EDITORIAL_DATASET, EDITORIAL_FIXTURE_COUNT } from './editorial-fixtures'
 import { seedNotificationFixtures, NOTIFICATION_DATASET, NOTIFICATION_FIXTURE_COUNT } from './notification-fixtures'
 import { seedWritingFixtures, WRITING_DATASET, WRITING_FIXTURE_COUNT } from './writing-fixtures'
@@ -17,6 +18,12 @@ import {
 
 export const DEFAULT_DEVELOPMENT_DATASET = CORE_DATASET
 export const DEVELOPMENT_DATASETS = [
+  {
+    id: SHOWCASE_DATASET,
+    count: SHOWCASE_FIXTURE_COUNT,
+    scope: '真实感样本：五十篇长文与评论点赞、十八条朋友圈、图库作品、当天留言及博主资料（资料仅在未编辑时写入）',
+    seed: seedShowcaseFixtures,
+  },
   {
     id: SUBSCRIPTION_DATASET,
     count: SUBSCRIPTION_FIXTURE_COUNT,

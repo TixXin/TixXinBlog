@@ -1,0 +1,19 @@
+[
+  {
+    "author": "CSS魔法师",
+    "content": "fill: forwards 那个坑讲得很到位，我之前也被它折磨过，样式怎么改都不生效。补充一点：commitStyles 要求元素处于渲染状态，display: none 的元素调它会直接抛错，最好在 finished 之后再调。"
+  },
+  {
+    "author": "前端小李",
+    "content": "useSpinner 里用 setInterval 每 50ms 减 0.25 来模拟减速，这个在低刷新率设备上会不会不够平滑？是不是用 requestAnimationFrame 配时间差来算更稳一些？",
+    "reply": "会好一些，我后来确实换成了 rAF 加 deltaTime 的写法，文里为了简短用了 setInterval。不过实际体验上 50ms 的粒度肉眼区别不大，因为真正在动的是动画本身，不是减速逻辑。"
+  },
+  {
+    "author": "摄影爱好者阿杰",
+    "content": "“动画需不需要在运行中被控制”这个分界线很实用。想问 reverse 在打开到一半时点关闭的场景，如果打开动画用了非线性的缓动，倒放的时候缓动曲线也会反过来，视觉上会不会有点怪？"
+  },
+  {
+    "author": "Lemon",
+    "content": "CSS 和 WAAPI 帧率曲线基本重合这个结论很有参考价值，之前一直担心用 JS 驱动动画会更卡。你是用 Performance 面板录的还是有什么更方便的工具？"
+  }
+]

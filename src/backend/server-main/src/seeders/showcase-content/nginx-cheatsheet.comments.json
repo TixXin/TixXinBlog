@@ -1,0 +1,19 @@
+[
+  {
+    "author": "张伟_DevOps",
+    "content": "add_header 子 location 覆盖父级这个坑，我们线上安全头丢了半年才发现，就是因为某个 location 里加了一个 Cache-Control。你用 include 统一引入的做法好。想问下除了 headers_more 模块，官方有没有改过这个继承行为？我记得一直没动。",
+    "reply": "官方到 1.26 都没改，这是设计上的“特性”。headers_more 模块的 more_set_headers 不受继承规则影响，但要编译。我嫌麻烦，还是老老实实每个 location 都 include 一次，反正就那几行。"
+  },
+  {
+    "author": "小鱼儿",
+    "content": "proxy_pass 结尾斜杠的问题我每次都要想半天，你这段讲得比官方文档清楚。不过想确认一下：如果 location 用的是正则匹配，proxy_pass 后面是不是就不能带路径了？我印象中会直接报错。"
+  },
+  {
+    "author": "Lemon",
+    "content": "gzip_comp_level 5 是拐点这个结论跟我自己测的一致，6 以上 CPU 明显上去但体积几乎不动。另外 font/woff2 列进 gzip_types 虽然没坏处，但 Nginx 会白白压一遍再发现压不动，流量大的站还是去掉吧。"
+  },
+  {
+    "author": "Miko",
+    "content": "日志格式加 rt 和 ut 两个字段太实用了，我之前排查慢接口一直以为是后端的锅，加上之后发现有一半时间是 Nginx 在等上游连接，最后是 keepalive 没配。文中那个 upstream 的 keepalive 32 是怎么定的，有什么参考依据吗？"
+  }
+]

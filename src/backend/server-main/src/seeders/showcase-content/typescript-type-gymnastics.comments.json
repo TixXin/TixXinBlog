@@ -1,0 +1,19 @@
+[
+  {
+    "author": "CodeMaster_张",
+    "content": "ExtractParams 那个例子里 ${string} 是惰性匹配这点说得很关键，很多人按正则的直觉去写，结果推断出来全是 never。补充一下，如果路径里有可选段比如 /posts/:slug? 这种，还得再加一层处理问号的分支。"
+  },
+  {
+    "author": "前端小李",
+    "content": "Record<never, never> 和 {} 的区别我之前一直没搞清楚，看完才知道 {} 表示任何非空值。那实际项目里想表示空对象，用 Record<string, never> 是不是也可以？两者有什么差别？",
+    "reply": "Record<string, never> 是“任何键都不允许有值”，语义更严格；Record<never, never> 是“没有键”，和别的类型交叉时更安静，我一般用后者做递归的终止值。"
+  },
+  {
+    "author": "技术小黑",
+    "content": "tsc 从 8 秒涨到 40 秒那段太真实了，我们项目也遇到过，最后是用 tsc --extendedDiagnostics 找出来的那个递归类型。想问你那次是怎么定位到具体哪个类型拖慢的？"
+  },
+  {
+    "author": "Lemon",
+    "content": "“类型是给人看的，不是用来炫技的”这句很认同。我们组之前有同事写了一个两百行的类型来校验路由配置，后来没人敢改，最终还是退回了运行时校验加单测。"
+  }
+]

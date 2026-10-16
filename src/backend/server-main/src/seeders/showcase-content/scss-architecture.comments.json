@@ -1,0 +1,15 @@
+[
+  {
+    "author": "CSS魔法师",
+    "content": "“abstracts 被 @use 多少次都不产生 CSS”这条规则真的关键，我们就是在 mixins 文件里顺手写了个 .clearfix，结果每个组件都带一份。想问 additionalData 注入后编辑器怎么识别那些变量？",
+    "reply": "Stylelint 本身不管变量从哪来，它只看语法，所以没有影响。真正受影响的是编辑器的跳转定义，我是在 VS Code 的 scss 配置里加了 includePaths 才让它认出来的。"
+  },
+  {
+    "author": "Miko",
+    "content": "语义变量落到 CSS 自定义属性这个做法很认同，不过 map.get 在 token 名拼错时返回 null 不报错，建议像 respond 那样也包一个函数加 @error，我们是这么干的，拦了不少低级错误。"
+  },
+  {
+    "author": "前端小白",
+    "content": "214KB 到 96KB 这个数字有点吓人，想问删掉的那 500 多个选择器真的一个都没出问题吗？截图对比是用什么工具做的，手动翻还是有自动化？"
+  }
+]

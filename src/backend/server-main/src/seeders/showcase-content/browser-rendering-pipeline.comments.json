@@ -1,0 +1,15 @@
+[
+  {
+    "author": "CSS魔法师",
+    "content": "hover 阴影改成伪元素预画好再切 opacity 这招我也一直在用，补充一下：伪元素记得加 pointer-events: none，不然会挡住卡片里的链接点击。另外 content-visibility: auto 配合 contain-intrinsic-size 才不会让滚动条乱跳。",
+    "reply": "pointer-events 这个提醒很对，我第一版就踩了这个坑。contain-intrinsic-size 我给列表项设的是 auto 320px，浏览器渲染过一次之后会记住实际高度，比固定值靠谱。"
+  },
+  {
+    "author": "前端小白",
+    "content": "想问一下，文中说选择器性能基本测不出来，那是不是可以理解为平时写 CSS 不用太纠结选择器嵌套深度，优先关注改样式的影响面就行？"
+  },
+  {
+    "author": "前端小李",
+    "content": "几十个卡片加 will-change 导致显存 200MB 这个数字挺吓人的，我之前以为这属性加了没坏处。请问你是在 Layers 面板哪里看到显存占用的？我这边只看到层列表和合成原因。"
+  }
+]

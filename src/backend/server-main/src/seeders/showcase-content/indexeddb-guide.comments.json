@@ -1,0 +1,16 @@
+[
+  {
+    "author": "前端小李",
+    "content": "事务里不能 await 非 IndexedDB 的东西这条救了我，之前一直不明白为什么偶尔会报 TransactionInactiveError，原来是我在事务中间 await 了一个 fetch 去拿远程数据。请问有没有办法让事务“保持住”，还是只能先把数据准备好再开事务？",
+    "reply": "只能先准备好再开事务，这是规范设计上的限制，没有办法手动延长。我的习惯是把所有网络请求和计算放在事务外面，事务里只剩纯粹的读写，这样顺带也让事务尽量短，不容易和其他标签页互相阻塞。"
+  },
+  {
+    "author": "CodeMaster_张",
+    "content": "两千条一个事务 200ms 对比分开写七八秒，这个差距比我想的大得多。补充一个细节：如果是用 idb 的话，批量写可以用 tx.store.add 配合 Promise.all，最后 await tx.done，比一条条 await 快不少。"
+  },
+  {
+    "author": "前端小白",
+    "content": "想问一下迁移那段，如果用户迁移到一半关了页面怎么办？是下次打开再跑一遍吗？那 localStorage 里的旧数据是什么时候删的，会不会出现两边都有的情况？",
+    "reply": "我是先全部写进 IndexedDB、事务 complete 之后才删 localStorage 的 key，中途关页面的话事务会整体回滚，下次打开发现旧 key 还在就重跑一遍。所以短时间内可能两边都有，但以 IndexedDB 里有没有数据为准，不会读错。"
+  }
+]

@@ -1,0 +1,19 @@
+[
+  {
+    "author": "技术小黑",
+    "content": "一百万粒子 70 帧这个数据是在什么设备上测的？我在 M1 Air 上跑类似的 demo 五十万就开始掉了，想知道是机器差距还是我 workgroup_size 没调好。",
+    "reply": "M2 Pro 的 MacBook Pro，集显。workgroup_size 64 在 Apple 芯片上比较稳，你先看看是不是每帧还在 writeBuffer 整个粒子数组，那个会把 CPU 拖死。"
+  },
+  {
+    "author": "前端小李",
+    "content": "“WebGL 像老式机器的开关，WebGPU 像填表”这个比喻太准了。不过 layout: 'auto' 在多管线共用绑定组的时候会出问题，还是手动写 bindGroupLayout 靠谱，这点新手容易踩。"
+  },
+  {
+    "author": "摄影爱好者阿杰",
+    "content": "期待你说的图片滤镜那篇，我现在博客里的照片预览是用 Canvas 2D 做的色调调整，大图卡得厉害。Safari 三成占比的情况下做渐进增强真的值得吗？"
+  },
+  {
+    "author": "小鱼儿",
+    "content": "资源要手动 destroy 这点补充一下：GPUBuffer 不释放在 DevTools 内存面板里看不出来，要去 chrome://gpu 对照才能发现，我之前漏了一个每帧创建的 staging buffer，半小时就崩了。"
+  }
+]
