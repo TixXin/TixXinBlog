@@ -23,7 +23,7 @@
         :class="{ 'is-featured': index === 0 }"
         @click="emit('select-moment', img.momentId)"
       >
-        <NuxtImg
+        <CommonContentImage
           :src="img.src"
           :alt="`照片 ${index + 1}`"
           class="moment-photo-wall__img"

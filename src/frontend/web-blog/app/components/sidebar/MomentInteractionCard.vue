@@ -19,7 +19,7 @@
       <li v-for="(user, index) in users" :key="user.name" class="moment-interaction-card__item">
         <span class="moment-interaction-card__rank" :class="rankClass(index)">{{ index + 1 }}</span>
         <div class="moment-interaction-card__avatar-wrap">
-          <NuxtImg
+          <CommonContentImage
             :src="user.avatar"
             :alt="user.name"
             width="32"

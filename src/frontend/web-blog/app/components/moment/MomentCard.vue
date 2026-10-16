@@ -9,7 +9,7 @@
   <div class="moment-card" :class="{ 'is-pinned': moment.isPinned }">
     <MomentUserPopover :profile="ownerProfile" is-owner placement="top">
       <div class="moment-card__avatar">
-        <NuxtImg
+        <CommonContentImage
           :src="ownerProfile.avatar || '/avatar.svg'"
           :alt="ownerProfile.name"
           width="44"
