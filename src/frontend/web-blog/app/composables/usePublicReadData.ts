@@ -51,6 +51,8 @@ export function usePublicReadData<T>(
       deep: false,
       lazy: options.lazy ?? false,
       immediate: options.immediate ?? true,
+      // 同键并发订阅（SSR 预取插件、布局、页面）复用进行中的请求；显式刷新仍按调用方传入的 dedupe 执行
+      dedupe: 'defer',
       getCachedData: (_key, context, { cause }) => {
         if (context.isHydrating && context.payload.data[nuxtKey] !== undefined && cause === 'initial') {
           const value = context.payload.data[nuxtKey] as T

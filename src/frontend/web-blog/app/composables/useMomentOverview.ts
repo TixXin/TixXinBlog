@@ -5,8 +5,17 @@ export async function useMomentOverview(options: { immediate?: boolean } = {}) {
   const repo = useMomentRepository()
   const { ownerCard } = useSiteInfo()
   const retained = useState<MomentOverview | null>('moment-overview-retained', () => null)
+  // 预取插件、布局与页面都订阅同一键：进行中的请求复用，SSR 内已完成的结果也直接取 payload，
+  // 不再每个订阅方各发一次；浏览器端沿用 Nuxt 默认（水合取 payload，其余取内存缓存）
   const result = useAsyncData('moment-overview', (_app, { signal }) => repo.overview(signal), {
     immediate: options.immediate ?? true,
+    dedupe: 'defer',
+    getCachedData: (key, app, { cause }) => {
+      if (import.meta.server || app.isHydrating) return app.payload.data[key] as MomentOverview | undefined
+      if (cause !== 'refresh:manual' && cause !== 'refresh:hook')
+        return app.static.data[key] as MomentOverview | undefined
+      return undefined
+    },
   })
   watch(
     result.data,
