@@ -1,0 +1,14 @@
+/**
+ * @file ssr-cache-purge.ts
+ * @description 经本站代理的内容写请求完成后清空公开页面的 SSR HTML 缓存，让发布、留言、评论即时可见
+ * @author TixXin
+ * @since 2026-10-16
+ */
+
+export default defineNitroPlugin((nitroApp) => {
+  nitroApp.hooks.hook('afterResponse', (event) => {
+    if (!shouldPurgeSsrCache(event.method, event.path)) return
+    // 写入失败的请求也清一次，代价只是下一次 SSR 重新渲染。
+    void purgeSsrCache().catch(() => {})
+  })
+})
