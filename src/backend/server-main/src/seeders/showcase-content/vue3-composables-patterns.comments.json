@@ -1,0 +1,19 @@
+[
+  {
+    "author": "DevLin",
+    "content": "“参数一律 MaybeRefOrGetter，内部 toValue”这条我们也在用，但有个问题：传 getter 的时候 watch 每次都要重新执行 getter，如果 getter 里有比较贵的计算会不会有性能顾虑？你们有没有遇到过？",
+    "reply": "实际没遇到过瓶颈，getter 一般就是取个 route.params 或者 props 字段。真有贵的计算，调用方先包一层 computed 再传进来就行，composable 内部不用管。"
+  },
+  {
+    "author": "CodeMaster_张",
+    "content": "返回值不要用 reactive 包这一条太重要了，我们上个项目就因为解构 reactive 返回值丢响应性查了一下午。补一句，readonly 包 ref 之后 TS 类型会变成 Readonly<Ref>，调用方赋值直接报错，比运行时警告好。"
+  },
+  {
+    "author": "前端小白",
+    "content": "想问一下 useAsyncState 和 Nuxt 自带的 useAsyncData 怎么选，文里说页面级走 useAsyncData，组件内交互型走 useAsyncState，那组件里一进来就要请求的数据算哪种？"
+  },
+  {
+    "author": "前端小李",
+    "content": "effectScope 直接测 composable 这个方法好，之前一直挂空组件用 mount 来测，又慢又绕。不过 onWatcherCleanup 要 3.5 以上，我们还卡在 3.4，只能继续用 onCleanup 参数。"
+  }
+]

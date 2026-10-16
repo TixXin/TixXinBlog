@@ -1,0 +1,19 @@
+[
+  {
+    "author": "后端大叔",
+    "content": "热点环境 34% 这个数挺有说服力，不过丢包率是怎么估的？ping 看到的丢包和 QUIC 流上的实际丢包差别挺大，建议用 chrome://net-export 导出来看 QUIC session 里的 lost packets。",
+    "reply": "就是 ping 加 mtr 粗估的，确实不严谨，所以表里写了“估”。net-export 这个方法我回头试一下，谢谢提醒。"
+  },
+  {
+    "author": "张伟_DevOps",
+    "content": "补一个坑：有些云厂商的安全组默认不放 UDP，加了 ufw 规则还是走 h2，要去控制台再开一次。我们线上就是这样被卡了一周才发现。"
+  },
+  {
+    "author": "Lemon",
+    "content": "连接迁移那段想问一下，Wi-Fi 切 5G 不断连听起来很美好，但实际浏览器里切网络的时候页面不是照样会重新请求吗？这个特性在普通网页里到底能感知到什么？"
+  },
+  {
+    "author": "夜猫子",
+    "content": "Node 核心没有 HTTP/3 这点说得很准确，我上个月还专门去看了那个 PR，还是 experimental 阶段。所以文里“前面放 Caddy”这个方案估计还要用很久，没必要等。"
+  }
+]

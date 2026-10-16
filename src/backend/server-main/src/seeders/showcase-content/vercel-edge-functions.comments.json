@@ -1,0 +1,15 @@
+[
+  {
+    "author": "后端大叔",
+    "content": "“形状对了非常好用，形状不对就是找麻烦”总结很到位。补充一个常被忽视的点：日志。Edge 的 console.log 在面板上延迟和丢失都比 Node 运行时严重，排查线上问题很痛苦，你那边有感觉吗？",
+    "reply": "有，而且 Edge 的日志只保留很短时间。我后来是在响应里加了一个自定义 header 带上关键的中间状态，preview 环境靠这个排查，正式环境再去掉。"
+  },
+  {
+    "author": "技术小黑",
+    "content": "890KB 离 1MB 这么近有点危险，Nuxt 的 Edge 产物里其实有不少是 h3 和 unstorage 的运行时，可以试试在 nitro 配置里关掉用不到的 storage driver，我这边压掉了差不多 200KB。"
+  },
+  {
+    "author": "小明",
+    "content": "数据库那段正是我纠结的地方，想用 Edge 但又离不开 Postgres。Neon 的 serverless 驱动你实际用过吗？走 HTTP 之后事务怎么办？"
+  }
+]

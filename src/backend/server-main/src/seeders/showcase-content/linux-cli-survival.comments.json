@@ -1,0 +1,20 @@
+[
+  {
+    "author": "后端大叔",
+    "content": "rsync 路径末尾斜杠那段应该用粗体加大，我带过的新人十个有八个在这里多出一层 dist/dist。另外建议补一句 rsync 的 -z 在内网传输时反而会变慢，压缩开销比带宽贵。"
+  },
+  {
+    "author": "前端小白",
+    "content": "tail -f 配 grep 要加 --line-buffered 这个我之前完全不知道，一直以为是服务没报错，原来是没刷出来。请问 journalctl 看 systemd 日志的时候有没有类似实时跟随的参数？",
+    "reply": "有，journalctl -u blog-api -f 就是跟随模式，和 tail -f 一样。如果想只看某个时间之后的，加 --since '10 min ago' 也很好用。"
+  },
+  {
+    "author": "张伟_DevOps",
+    "content": "kill -9 不是默认选项这点说得对，补充一下优雅退出其实是 kill -15 也就是 SIGTERM，Node 服务要自己监听这个信号做清理，不然和 -9 没区别。你们的 API 有处理 SIGTERM 吗？",
+    "reply": "有的，NestJS 开了 enableShutdownHooks 之后会在 SIGTERM 时关掉数据库连接池再退出。没开的话确实和 -9 差不多，这点我应该在文里提一下。"
+  },
+  {
+    "author": "咖啡控",
+    "content": "三年前删掉整个 projects 目录那段太真实了，我的版本是 rm -rf ./ * 中间多了个空格。现在我都给 rm 加了别名要求确认，虽然被同事笑过。"
+  }
+]

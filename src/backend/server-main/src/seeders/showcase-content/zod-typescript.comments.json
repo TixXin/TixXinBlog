@@ -1,0 +1,19 @@
+[
+  {
+    "author": "后端大叔",
+    "content": "ZodPipe 那段有个小问题想确认：NestJS 的管道默认对 body、query、param 都会跑，你这个只注册在 @Body 上没问题，但如果有人图省事挂成全局管道，query 那些没 schema 的参数会怎么处理？",
+    "reply": "我们没挂全局，就是逐个参数显式写 new ZodPipe(schema)，没传 schema 的参数不经过它。挂全局确实要在 transform 里判断 metadata，我觉得显式写更清楚。"
+  },
+  {
+    "author": "前端小白",
+    "content": "z.input 和 z.output 的区别第一次看懂了，之前一直只用 z.infer 然后 readTime 在表单里是字符串报类型错。想问 z.infer 等于其中哪一个？"
+  },
+  {
+    "author": "Luna",
+    "content": "z.coerce.number() 把空字符串转成 0 再被 positive 拦下这个思路好，但 coerce 也会把 '  ' 和 null 转成 0，前端如果想区分“没填”和“填了 0”，可能还是得先用 z.preprocess 把空串转成 undefined。"
+  },
+  {
+    "author": "小鱼儿",
+    "content": "内置 zhCN locale 这个太实用了，我们还在用 3 的时候自己维护了一个一百多行的 errorMap，升到 4 的理由又多了一条。"
+  }
+]

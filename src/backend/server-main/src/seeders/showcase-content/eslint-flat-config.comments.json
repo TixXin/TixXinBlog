@@ -1,0 +1,19 @@
+[
+  {
+    "author": "张伟_DevOps",
+    "content": "ignores 单独放一个对象这点太关键了，我们 CI 上也是第一次跑把 .nuxt 全扫了，日志直接撑爆。想问一下 lint-staged 去掉 --ext 之后，没在 files 里列出的文件类型是静默跳过还是报错？",
+    "reply": "会静默跳过，ESLint 9 对没有匹配到任何配置对象的文件直接忽略，不会报 warning。所以 .vue 这种一定要在 files 里显式写上，我就是靠对比迁移前后的错误数才发现漏了一类文件。"
+  },
+  {
+    "author": "前端小李",
+    "content": "我也卡在 eslint-plugin-import 上，换 import-x 之后 order 规则的分组配置好像和旧版不完全一样，你那边有没有重新调过 groups？"
+  },
+  {
+    "author": "CodeMaster_张",
+    "content": "补充一个：recommendedTypeChecked 慢是正常的，但如果真要开类型检查规则，可以只对 src 目录开，把单测和脚本目录排除掉，我们项目这样做之后耗时从 40 秒降到 15 秒左右，比完全不开要值。"
+  },
+  {
+    "author": "夜猫子",
+    "content": "本地规则那段很实用，不过 messages 里直接写中文提示在终端里对齐会有点怪，我们是把 messageId 对应的文案放英文，再在 PR 模板里解释。纯个人习惯，供参考。"
+  }
+]

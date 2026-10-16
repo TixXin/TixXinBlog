@@ -1,0 +1,15 @@
+[
+  {
+    "author": "后端大叔",
+    "content": "UV_THREADPOOL_SIZE 调到 16 那段补一句：这个变量在 Node 进程启动前就要设好，写在代码里 process.env 赋值经常晚了，因为 require 的某些模块已经触发线程池初始化了。我们当年在 Dockerfile 的 ENV 里设才生效。",
+    "reply": "对，文里只写了“要在任何 libuv 操作之前”，没说清楚实际做法。我们也是放在容器环境变量里，代码里设过一次没生效，排查了半天。"
+  },
+  {
+    "author": "技术小黑",
+    "content": "主模块里 timeout 和 immediate 顺序不确定这个我一直以为是面试八股，今天真跑了一百次，有 6 次 immediate 在前。原来不是书上编的。"
+  },
+  {
+    "author": "CodeMaster_张",
+    "content": "nextTick 饿死循环的例子很直观，不过想补充一个点：async 函数里的 await 本质也是 microtask，如果有人在 while(true) 里只 await Promise.resolve()，同样会饿死 I/O，这个坑比递归 nextTick 更常见。"
+  }
+]

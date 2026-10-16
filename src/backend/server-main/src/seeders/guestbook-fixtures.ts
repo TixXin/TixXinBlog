@@ -13,7 +13,8 @@ import { GuestbookWriteService, lockGuestbook } from '../modules/guestbook/guest
 import { MediaService } from '../modules/media/media.service'
 import type { MediaStorage } from '../modules/media/media-storage'
 import { mediaUrl } from '../modules/media/media-references'
-import { ensureFixture } from './fixture-ledger'
+import { DevelopmentFixture } from '../entities/development-fixture.entity'
+import { ensureFixture, fixtureHash, fixtureRow } from './fixture-ledger'
 import type { FixtureProgress } from './fixture-ledger'
 
 export const GUESTBOOK_DATASET = 'guestbook-v1'
@@ -31,6 +32,26 @@ export const GUESTBOOK_FIXTURE_COUNT =
           .reduce((count, reaction) => count + Math.min(reaction.count, 3), 0),
       0,
     )
+// 旧版留言 Mock 里的浏览器版本对应 2024 年初；样本日期落在最近一个月，版本号按同期主流版本换算。
+function modernBrowser(label: string | undefined) {
+  const match = /^(Chrome|Edge|Firefox|Safari) (\d+)/.exec(label ?? '')
+  if (!match) return ''
+  const minor = Number(match[2]) % 2
+  if (match[1] === 'Chrome') return `Chrome ${141 + minor}`
+  if (match[1] === 'Edge') return `Edge ${141 + minor}`
+  if (match[1] === 'Firefox') return `Firefox ${144 + minor}`
+  return 'Safari 26'
+}
+/** 早于浏览器与地区字段创建、且未被编辑过的留言补上这两个展示字段，并重新登记指纹 */
+async function backfillClientContext(em: EntityManager, id: number, browser: string, region: string) {
+  const fixture = await em.findOne(DevelopmentFixture, { kind: 'guestbook', resourceId: String(id) })
+  const row = await fixtureRow(em, 'guestbook', String(id))
+  if (!fixture || !row || row.deleted_at || row.browser !== null || fixtureHash(row) !== fixture.snapshotHash) return
+  await em.nativeUpdate(GuestbookMessage, { id }, { browser: browser || null, region: region || null })
+  const updated = await fixtureRow(em, 'guestbook', String(id))
+  if (updated) fixture.snapshotHash = fixtureHash(updated)
+  await em.flush()
+}
 const visitor = (name: string) => createHash('sha256').update(`development/guestbook-v1/${name}`).digest('hex')
 export async function seedGuestbookFixtures(
   em: EntityManager,
@@ -90,6 +111,7 @@ export async function seedGuestbookFixtures(
           },
           visitor(source.author),
           source.isOwner ? 'fixture-owner' : undefined,
+          source.isOwner ? {} : { browser: modernBrowser(source.browser), region: source.region ?? '' },
         )
         const actual = await em.findOneOrFail(GuestbookMessage, { id: note.id })
         if (actual.status !== status) await service.update(note.id, { revision: actual.revision, status })
@@ -102,7 +124,9 @@ export async function seedGuestbookFixtures(
       },
       progress,
     )
-    if (id) ids.set(source.id, Number(id))
+    if (!id) continue
+    ids.set(source.id, Number(id))
+    if (!source.isOwner) await backfillClientContext(em, Number(id), modernBrowser(source.browser), source.region ?? '')
   }
   await ensureFixture(
     em,

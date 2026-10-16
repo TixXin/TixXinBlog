@@ -1,0 +1,15 @@
+[
+  {
+    "author": "后端大叔",
+    "content": "pnpm deploy 把镜像从 1.1GB 压到 310MB 这个我得试试。不过有个疑问：deploy 出来的目录里 workspace 包是复制还是软链？我们之前用 docker 多阶段构建时软链在第二阶段直接失效了。"
+  },
+  {
+    "author": "小明",
+    "content": "共享包 exports 直接指向 src/index.ts 这个做法，发布到 npm 的时候怎么办？是不是要在 publishConfig 里再覆盖一份指向 dist 的 exports？",
+    "reply": "对，用 publishConfig 覆盖 exports 和 types，pnpm publish 的时候会自动替换。不过我们的共享包目前只在仓库内部用，没真发过，这个配置是从别的项目抄来备着的。"
+  },
+  {
+    "author": "CodeMaster_张",
+    "content": "onlyBuiltDependencies 那个坑我也踩了，而且比你更惨，是在生产环境 sharp 报错才发现。建议补充一句：pnpm 10 装完会打印一行提示说有脚本被跳过，但在 CI 日志里非常不显眼。"
+  }
+]

@@ -1,0 +1,19 @@
+[
+  {
+    "author": "张伟_DevOps",
+    "content": "PR 只跑 Chromium、合并后跑全部这个策略我们也在用，但有个补充：合并后的全量如果挂了，要有人盯着，不然很容易变成“主分支一直红没人管”。我们是把 WebKit 失败直接发到群里点名。"
+  },
+  {
+    "author": "技术小黑",
+    "content": "想问一下 storageState 存 cookie 的方案，如果后台的 session 有过期时间，CI 上跑到一半过期了怎么办？你们 setup 项目是每次 CI 都重新登一次还是缓存了 auth.json？",
+    "reply": "每次 CI 都重新登，setup 项目几秒钟就跑完，没必要缓存。本地倒是会复用，session 设的 24 小时，够用一天。"
+  },
+  {
+    "author": "DevLin",
+    "content": "关动画解决偶发失败这招有点取巧，等于跑用例的环境和用户看到的不一样。另一个思路是等 transitionend 或者用 toHaveCSS 断言 opacity 为 1 再点，虽然啰嗦但更贴近真实情况。"
+  },
+  {
+    "author": "前端小李",
+    "content": "“写不出 getByRole 的地方就是无障碍没做好的地方”这句太对了，我们按这个标准查了一遍后台，发现一半的图标按钮没有 aria-label，屏幕阅读器读出来全是“按钮”。"
+  }
+]
