@@ -24,6 +24,7 @@
 </template>
 
 <script setup lang="ts">
+import { getAppManifest } from '#app/composables/manifest'
 import { hasColorMotion, runColorMotion } from '~/utils/colorMotion'
 import { isPageRequestCancellation } from '~/utils/pageRequestCancellation'
 
@@ -79,6 +80,8 @@ if (import.meta.client) {
     dismiss()
     document.documentElement.classList.add('app-client-ready')
     window.dispatchEvent(new Event('tixxin:ready'))
+    // 首次客户端切页前 Nuxt 要先读取应用清单核对路由规则；就绪后立即预取，别让它排在第一次点击的路径上
+    void getAppManifest().catch(() => {})
   })
 }
 </script>
