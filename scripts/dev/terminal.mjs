@@ -62,11 +62,21 @@ export function terminalAppleScript(command, service, bounds) {
   if (!Object.hasOwn(labels, service)) throw new Error('服务必须为 api 或 web')
   if (!Array.isArray(bounds) || bounds.length !== 4 || !bounds.every(Number.isFinite))
     throw new Error('终端窗口坐标无效')
+  const title = appleQuote(`TixXinBlog | ${labels[service]}`)
+  // 服务结束后窗口保留错误输出；下次启动前只关闭同一服务且已无运行进程的旧窗口，避免窗口堆积。
+  // 先取窗口 id 再逐个关闭：按序号遍历时关闭会使后续序号前移而漏关。
   // do script 不指定已有标签，确保不向用户正在使用的 shell 或进程输入命令。
   return `tell application "Terminal"
+  repeat with staleId in (get id of every window)
+    try
+      set staleWindow to window id staleId
+      set staleTab to selected tab of staleWindow
+      if custom title of staleTab is ${title} and busy of staleTab is false then close staleWindow
+    end try
+  end repeat
   activate
   set devTab to do script ${appleQuote(command)}
-  set custom title of devTab to ${appleQuote(`TixXinBlog | ${labels[service]}`)}
+  set custom title of devTab to ${title}
   set bounds of front window to {${bounds.join(', ')}}
   return id of front window
 end tell`
