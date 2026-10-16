@@ -170,6 +170,6 @@ describe('图库编辑请求所有权', () => {
     await saving
     expect(editor.form.title).toBe('雨后的街角')
     expect(editor.saved.value?.revision).toBe(0)
-    expect(sessionStorage.getItem('tixxin-gallery-editor:owner:1:current-library')).toContain('前一个账号的输入')
+    expect(sessionStorage.getItem('blog-gallery-editor:owner:1:current-library')).toContain('前一个账号的输入')
   })
 })

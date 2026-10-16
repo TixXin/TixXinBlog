@@ -54,7 +54,7 @@ describe('本地持久化', () => {
   it('异常中断的导入在下一次读取前恢复备份', () => {
     localStorage.setItem('tab:categories:test', '["partial-new"]')
     localStorage.setItem(
-      'tixxin-local-write-backup',
+      'blog-local-write-backup',
       JSON.stringify([
         ['tab:categories:test', '["old"]'],
         ['tab:bookmarks:test', null],
@@ -62,6 +62,6 @@ describe('本地持久化', () => {
     )
     recoverLocalBatch()
     expect(localStorage.getItem('tab:categories:test')).toBe('["old"]')
-    expect(localStorage.getItem('tixxin-local-write-backup')).toBeNull()
+    expect(localStorage.getItem('blog-local-write-backup')).toBeNull()
   })
 })

@@ -45,6 +45,6 @@ it('按账号和内容上下文分别保留器材输入，旧副本不直接恢�
   expect(editor.previousRecoveries.value[0]?.gear[0]?.name).toBe('尚未保存的旧器材')
   editor.draft.value!.gear[0]!.name = '恢复后新输入'
   await flushPromises()
-  expect(sessionStorage.getItem('tixxin-gallery-gear:owner:old')).toContain('尚未保存的旧器材')
-  expect(sessionStorage.getItem('tixxin-gallery-gear:owner:restored')).toContain('恢复后新输入')
+  expect(sessionStorage.getItem('blog-gallery-gear:owner:old')).toContain('尚未保存的旧器材')
+  expect(sessionStorage.getItem('blog-gallery-gear:owner:restored')).toContain('恢复后新输入')
 })

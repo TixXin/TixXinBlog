@@ -230,7 +230,7 @@ for (const theme of ['nexus', 'aurora', 'dock']) {
       request,
       baseURL,
     }, testInfo) => {
-      await context.addCookies([{ name: 'tixxin-blog-layout-theme', value: theme, url: baseURL! }])
+      await context.addCookies([{ name: 'blog-layout-theme', value: theme, url: baseURL! }])
       await context.addInitScript(
         (mode) => localStorage.setItem('nuxt-color-mode', mode),
         width === 390 ? 'light' : 'dark',

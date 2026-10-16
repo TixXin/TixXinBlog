@@ -19,7 +19,7 @@ export function useGallerySettingsEditor() {
     ownedContext = '',
     generation = 0,
     alive = true
-  const prefix = () => `tixxin-gallery-gear:${actor}`
+  const prefix = () => `blog-gallery-gear:${actor}`
   const key = () => `${prefix()}:${ownedContext}`
   function persist() {
     if (!import.meta.client || !actor || !dirty.value || !draft.value) return

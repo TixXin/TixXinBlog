@@ -48,7 +48,7 @@ it('主题重挂不能用旧存储覆盖当前内存输入', async () => {
   first.change({ name: '当前输入', url: 'https://example.com' })
   wrappers.pop()!.unmount()
   sessionStorage.setItem(
-    'tixxin-local-link-draft',
+    'blog-local-link-draft',
     JSON.stringify({ name: '旧副本', url: '', avatar: '', description: '' }),
   )
   const second = await setup(false)

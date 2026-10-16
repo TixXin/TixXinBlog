@@ -40,7 +40,7 @@ const unavailable = {
 for (const theme of ['nexus', 'aurora', 'dock']) {
   test.describe(theme, () => {
     test.beforeEach(async ({ context, baseURL, page }) => {
-      await context.addCookies([{ name: 'tixxin-blog-layout-theme', value: theme, url: baseURL! }])
+      await context.addCookies([{ name: 'blog-layout-theme', value: theme, url: baseURL! }])
       await page.setViewportSize({ width: 1440, height: 1000 })
     })
 

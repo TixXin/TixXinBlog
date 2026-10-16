@@ -100,7 +100,7 @@ export function useLocalSubscriptions() {
       }
     }
     // Web Locks 串行同源写入；不支持的浏览器仍进行写前与写后版本核查。
-    if (navigator.locks) await navigator.locks.request('tixxin-subscriptions-write', mutate)
+    if (navigator.locks) await navigator.locks.request('blog-subscriptions-write', mutate)
     else await mutate()
   }
   async function save() {

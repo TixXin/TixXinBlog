@@ -16,7 +16,7 @@ export function writeLocalBatch(entries: Array<[string, unknown]>): void {
   recoverLocalBatch()
   const snapshots = entries.map(([key]) => [key, localStorage.getItem(key)] as const)
   // 浏览器异常关闭后的恢复证据；备份保存失败时不开始覆盖原记录。
-  const backupKey = 'tixxin-local-write-backup'
+  const backupKey = 'blog-local-write-backup'
   writeLocalJson(backupKey, snapshots)
   try {
     for (const [key, value] of entries) writeLocalJson(key, value)
@@ -38,7 +38,7 @@ export function writeLocalBatch(entries: Array<[string, unknown]>): void {
 /** 上次导入若被异常关闭中断，在下一次读取前恢复同一份原始数据。 */
 export function recoverLocalBatch(): void {
   if (typeof window === 'undefined') return
-  const key = 'tixxin-local-write-backup'
+  const key = 'blog-local-write-backup'
   const raw = localStorage.getItem(key)
   if (!raw) return
   try {

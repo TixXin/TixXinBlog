@@ -47,7 +47,7 @@ export function useAdminSubscriptionEditor(initialId: number | null, options: { 
       requiresReload.value || (!!actor && (!authenticated || currentActor !== actor || currentContext !== ownedContext))
     )
   })
-  const storagePrefix = () => `tixxin-subscription-editor:${actor}:${initialId ?? 'new'}`
+  const storagePrefix = () => `blog-subscription-editor:${actor}:${initialId ?? 'new'}`
   const storageKey = () => editorRecoveryKey(storagePrefix(), ownedContext)
   const owns = (user: string | undefined, version: number) =>
     alive &&

@@ -6,7 +6,7 @@
  * @since 2026-07-20
  */
 
-const STORAGE_KEY = 'tixxin-visitor-id'
+const STORAGE_KEY = 'blog-visitor-id'
 let sessionVisitorId = ''
 
 /** 取(或首次生成)访客 id;仅客户端可用,SSR 场景返回空串由调用方决定跳过 */

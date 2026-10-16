@@ -22,7 +22,7 @@ import {
 } from '~/features/appearance/types'
 import { DEFAULT_LAYOUT_THEME_ID } from '~/features/appearance/themeRegistry'
 
-const STORAGE_KEY = 'tixxin-blog-appearance'
+const STORAGE_KEY = 'blog-appearance'
 
 interface AppearanceStorage {
   contentTransitionPreset: ContentTransitionPreset

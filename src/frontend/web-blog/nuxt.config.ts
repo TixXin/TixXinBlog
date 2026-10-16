@@ -64,7 +64,7 @@ export default {
         { innerHTML: startupGuard, tagPosition: 'head' },
         {
           innerHTML:
-            "(function(){try{if(sessionStorage.getItem('tixxin-blog-visited')&&!/[?&]splash=1(?:&|$)/.test(location.search)){document.documentElement.classList.add('visited')}}catch(e){}})();",
+            "(function(){try{if(sessionStorage.getItem('blog-visited')&&!/[?&]splash=1(?:&|$)/.test(location.search)){document.documentElement.classList.add('visited')}}catch(e){}})();",
           tagPosition: 'head',
         },
       ],
@@ -109,7 +109,7 @@ export default {
   themeEngine: {
     themesDir: './themes',
     defaultTheme: 'nexus',
-    cookieKey: 'tixxin-blog-layout-theme',
+    cookieKey: 'blog-layout-theme',
     lazyLoadThemes: true,
     contractsEntry: '#theme-contracts',
     contractsImportId: '#theme-contracts',

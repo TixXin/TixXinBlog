@@ -36,7 +36,7 @@ async function retainedNotes(page: Page, expected: string) {
   return page.evaluate(
     (value) =>
       Object.keys(sessionStorage)
-        .filter((key) => key.startsWith('tixxin-subscription-editor:'))
+        .filter((key) => key.startsWith('blog-subscription-editor:'))
         .some((key) => {
           try {
             return JSON.parse(sessionStorage.getItem(key)!).form.notes === value

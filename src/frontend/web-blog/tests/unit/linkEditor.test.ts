@@ -106,6 +106,6 @@ it('跨内容库旧地址和Logo完整副本不会被当前输入覆盖', async 
   expect(after.previousRecoveries.value[0]?.value.form.logoUrl).toContain('OldLogo.png')
   after.change({ description: '当前输入' })
   await flushPromises()
-  expect(sessionStorage.getItem('tixxin-link-editor:owner:1:before')).toContain('Order=1&Order=2#Keep')
+  expect(sessionStorage.getItem('blog-link-editor:owner:1:before')).toContain('Order=1&Order=2#Keep')
   expect(mocks.repo.save).not.toHaveBeenCalled()
 })

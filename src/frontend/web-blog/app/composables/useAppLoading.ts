@@ -5,7 +5,7 @@
  * @since 2026-04-11
  */
 
-const STORAGE_KEY = 'tixxin-blog-visited'
+const STORAGE_KEY = 'blog-visited'
 
 /**
  * 首次访问 loading 动画状态管理

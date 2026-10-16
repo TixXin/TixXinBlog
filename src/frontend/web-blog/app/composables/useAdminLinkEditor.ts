@@ -32,7 +32,7 @@ export function useAdminLinkEditor(initialId: number | null) {
     ownedContext = '',
     generation = 0,
     alive = true
-  const storagePrefix = () => `tixxin-link-editor:${actor}:${initialId ?? 'new'}`
+  const storagePrefix = () => `blog-link-editor:${actor}:${initialId ?? 'new'}`
   const storageKey = () => editorRecoveryKey(storagePrefix(), ownedContext)
   const owns = (user: string | undefined, version: number) =>
     alive && generation === version && auth.currentUser.value?.id === user && ownedContext === context.value

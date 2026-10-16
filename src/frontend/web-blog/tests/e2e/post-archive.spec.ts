@@ -68,7 +68,7 @@ test('切页失败保留上次成功页并标明来源，重试恢复真实页�
 
 for (const theme of ['nexus', 'aurora', 'dock']) {
   test(`${theme} 窄屏年份筛选和分页可用且不横向溢出`, async ({ page, context, baseURL }, testInfo) => {
-    await context.addCookies([{ name: 'tixxin-blog-layout-theme', value: theme, url: baseURL! }])
+    await context.addCookies([{ name: 'blog-layout-theme', value: theme, url: baseURL! }])
     await context.addInitScript(
       (mode) => localStorage.setItem('nuxt-color-mode', mode),
       theme === 'aurora' ? 'light' : 'dark',

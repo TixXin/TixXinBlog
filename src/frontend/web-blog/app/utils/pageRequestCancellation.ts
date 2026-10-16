@@ -4,7 +4,7 @@
  * @author TixXin
  * @since 2026-09-08
  */
-const cancellation = Symbol.for('tixxin.page-request-cancelled')
+const cancellation = Symbol.for('blog.page-request-cancelled')
 
 export class PageRequestCancellation extends Error {
   readonly [cancellation] = true

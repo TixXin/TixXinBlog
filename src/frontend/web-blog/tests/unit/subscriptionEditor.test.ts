@@ -146,7 +146,7 @@ describe('订阅恢复副本保护', () => {
     expect(editor.form.notes).toBe('当前新输入')
     editor.discardRecovery()
     expect(editor.recovery.value).toBeNull()
-    expect(sessionStorage.getItem('tixxin-subscription-editor:owner:1:subscriptions-library')).toContain('当前新输入')
+    expect(sessionStorage.getItem('blog-subscription-editor:owner:1:subscriptions-library')).toContain('当前新输入')
     vi.unstubAllGlobals()
   })
   it('恢复与合并在重新读取期间不生效，不让迟到读取覆盖后来恢复的输入', async () => {
@@ -211,5 +211,5 @@ it('服务器内容库冲突不会读取或合并同编号新记录，私密视�
   expect(mocks.repo.adminDetail).not.toHaveBeenCalled()
   await editor.load()
   expect(mocks.repo.adminDetail).not.toHaveBeenCalled()
-  expect(sessionStorage.getItem('tixxin-subscription-editor:owner:1:subscriptions-library')).toContain('旧内容库的输入')
+  expect(sessionStorage.getItem('blog-subscription-editor:owner:1:subscriptions-library')).toContain('旧内容库的输入')
 })

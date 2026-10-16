@@ -81,7 +81,7 @@ describe('图片提示词编辑生命周期', () => {
     expect(editor.form.mediaId).toBe('image-id')
     expect(editor.dirty.value).toBe(true)
     expect(editor.error.value).toContain('断网')
-    expect(sessionStorage.getItem('tixxin-prompt-editor:owner:prompt-library:1')).toContain('完整保留我的新提示词')
+    expect(sessionStorage.getItem('blog-prompt-editor:owner:prompt-library:1')).toContain('完整保留我的新提示词')
   })
   it('未知创建再次保存先核查原请求，不重复提交或覆盖后续输入', async () => {
     const editor = await setup(null)
@@ -150,7 +150,7 @@ describe('图片提示词编辑生命周期', () => {
     await saving
     expect(editor.ready.value).toBe(false)
     expect(mocks.saved).not.toHaveBeenCalled()
-    expect(sessionStorage.getItem('tixxin-prompt-editor:owner:prompt-library:1')).toContain('原账号未保存内容')
+    expect(sessionStorage.getItem('blog-prompt-editor:owner:prompt-library:1')).toContain('原账号未保存内容')
     await editor.save('published')
     expect(mocks.repo.save).toHaveBeenCalledTimes(1)
   })
@@ -167,7 +167,7 @@ describe('图片提示词编辑生命周期', () => {
     const restored = await setup(1, 'restored-library')
     expect(restored.recovery.value).toBeNull()
     expect(restored.form.description).toBe('')
-    expect(sessionStorage.getItem('tixxin-prompt-editor:owner:prompt-library:1')).toContain('值得留下的笔记')
+    expect(sessionStorage.getItem('blog-prompt-editor:owner:prompt-library:1')).toContain('值得留下的笔记')
   })
   it('恢复副本存储失败时退出确认明确说明风险，不虚报已经保留', async () => {
     const editor = await setup(1)
@@ -210,11 +210,11 @@ describe('图片提示词编辑生命周期', () => {
     const editor = await setup(1)
     editor.form.description = '已放弃的笔记'
     await flushPromises()
-    expect(sessionStorage.getItem('tixxin-prompt-editor:owner:prompt-library:1')).toContain('已放弃的笔记')
+    expect(sessionStorage.getItem('blog-prompt-editor:owner:prompt-library:1')).toContain('已放弃的笔记')
     editor.form.description = ''
     await flushPromises()
     expect(editor.dirty.value).toBe(false)
-    expect(sessionStorage.getItem('tixxin-prompt-editor:owner:prompt-library:1')).toBeNull()
+    expect(sessionStorage.getItem('blog-prompt-editor:owner:prompt-library:1')).toBeNull()
     wrappers.pop()!.unmount()
     const reopened = await setup(1)
     expect(reopened.recovery.value).toBeNull()
@@ -230,7 +230,7 @@ describe('图片提示词编辑生命周期', () => {
     editor.discardRecovery()
     expect(editor.recovery.value).toBeNull()
     expect(editor.form.description).toBe('本次新增的笔记')
-    expect(sessionStorage.getItem('tixxin-prompt-editor:owner:prompt-library:1')).toContain('本次新增的笔记')
+    expect(sessionStorage.getItem('blog-prompt-editor:owner:prompt-library:1')).toContain('本次新增的笔记')
     wrappers.pop()!.unmount()
     const reopened = await setup(1)
     expect(reopened.recovery.value?.form.description).toBe('本次新增的笔记')
@@ -246,7 +246,7 @@ describe('图片提示词编辑生命周期', () => {
     editor.form.description = ''
     await flushPromises()
     expect(editor.dirty.value).toBe(false)
-    expect(sessionStorage.getItem('tixxin-prompt-editor:owner:prompt-library:1')).toContain('上次未保存的笔记')
+    expect(sessionStorage.getItem('blog-prompt-editor:owner:prompt-library:1')).toContain('上次未保存的笔记')
     wrappers.pop()!.unmount()
     const reopened = await setup(1)
     expect(reopened.recovery.value?.form.description).toBe('上次未保存的笔记')
@@ -258,8 +258,8 @@ describe('图片提示词编辑生命周期', () => {
     await editor.save('draft')
     editor.form.description = '保存之后继续补写，尚未提交'
     await flushPromises()
-    expect(sessionStorage.getItem('tixxin-prompt-editor:owner:prompt-library:new')).toBeNull()
-    expect(sessionStorage.getItem('tixxin-prompt-editor:owner:prompt-library:7')).toContain('保存之后继续补写')
+    expect(sessionStorage.getItem('blog-prompt-editor:owner:prompt-library:new')).toBeNull()
+    expect(sessionStorage.getItem('blog-prompt-editor:owner:prompt-library:7')).toContain('保存之后继续补写')
     wrappers.pop()!.unmount()
     mocks.repo.adminDetail.mockResolvedValueOnce(item({ id: 7 }))
     const reopened = await setup(7)
@@ -276,8 +276,8 @@ describe('图片提示词编辑生命周期', () => {
     mocks.repo.submission.mockResolvedValueOnce({ state: 'saved', item: item({ id: 8 }) })
     await editor.save('draft')
     expect(editor.dirty.value).toBe(true)
-    expect(sessionStorage.getItem('tixxin-prompt-editor:owner:prompt-library:new')).toBeNull()
-    const recovery = JSON.parse(sessionStorage.getItem('tixxin-prompt-editor:owner:prompt-library:8')!)
+    expect(sessionStorage.getItem('blog-prompt-editor:owner:prompt-library:new')).toBeNull()
+    const recovery = JSON.parse(sessionStorage.getItem('blog-prompt-editor:owner:prompt-library:8')!)
     expect(recovery.id).toBe(8)
     expect(recovery.form.negativePrompt).toBe('未知提交后补写的排除词')
     expect(recovery.pendingCreate).toBeNull()
@@ -309,7 +309,7 @@ describe('图片提示词编辑生命周期', () => {
     await saving
     expect(editor.localError.value).toContain('无法保存')
     expect(editor.form.description).toBe('保存过程中新写的内容')
-    expect(storage.getItem('tixxin-prompt-editor:owner:prompt-library:new')).toContain('保存过程中新写的内容')
+    expect(storage.getItem('blog-prompt-editor:owner:prompt-library:new')).toContain('保存过程中新写的内容')
   })
   it.each(['站点数据上下文已变化，请刷新页面', '登录账号或内容库已变化，请重新核对'])(
     '上下文409保留输入并停用合并，不按同编号读取另一内容库：%s',
@@ -337,7 +337,7 @@ describe('图片提示词编辑生命周期', () => {
       expect(editor.error.value).toBe(message)
       editor.merge()
       expect(editor.form.description).toBe('必须保留的旧上下文笔记')
-      expect(sessionStorage.getItem('tixxin-prompt-editor:owner:prompt-library:1')).toContain('必须保留的旧上下文笔记')
+      expect(sessionStorage.getItem('blog-prompt-editor:owner:prompt-library:1')).toContain('必须保留的旧上下文笔记')
     },
   )
   it.each(['submission', 'unknown', undefined])('非作品版本的409不制造合并入口：%s', async (conflictKind) => {
@@ -360,7 +360,7 @@ describe('图片提示词编辑生命周期', () => {
     expect(mocks.update?.({ query: {} }, { query: { edit: '1' } })).toBe(false)
     expect(confirm).toHaveBeenCalledTimes(1)
     expect(editor.form.description).toBe('后退时需要保留的输入')
-    expect(sessionStorage.getItem('tixxin-prompt-editor:owner:prompt-library:1')).toContain('后退时需要保留的输入')
+    expect(sessionStorage.getItem('blog-prompt-editor:owner:prompt-library:1')).toContain('后退时需要保留的输入')
     confirm.mockReturnValue(true)
     expect(mocks.update?.({ query: {} }, { query: { edit: '1' } })).toBe(true)
     expect(confirm).toHaveBeenCalledTimes(2)

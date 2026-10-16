@@ -5,8 +5,8 @@
  * @since 2026-04-06
  */
 
-const LIKES_KEY = 'tixxin-blog-likes'
-const FAVORITES_KEY = 'tixxin-blog-favorites'
+const LIKES_KEY = 'blog-likes'
+const FAVORITES_KEY = 'blog-favorites'
 
 function loadSet(key: string): Set<string> {
   if (import.meta.server) return new Set()

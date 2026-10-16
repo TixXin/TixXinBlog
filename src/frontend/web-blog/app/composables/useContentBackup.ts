@@ -144,7 +144,7 @@ export function useContentBackup() {
       const anchor = document.createElement('a')
       anchor.href = url
       anchor.download =
-        /filename="([^"]+)"/.exec(response.headers.get('content-disposition') ?? '')?.[1] ?? 'tixxin-content.json'
+        /filename="([^"]+)"/.exec(response.headers.get('content-disposition') ?? '')?.[1] ?? 'blog-content.json'
       anchor.click()
       setTimeout(() => URL.revokeObjectURL(url), 1000)
       toast.success('内容包下载已开始')

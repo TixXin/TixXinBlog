@@ -62,7 +62,7 @@ export function useAdminMomentEditor(initialId: string | null) {
     requestId = '',
     version = 0,
     alive = true
-  const key = () => `tixxin-moment-editor:${actor}:${initialId ?? 'new'}`
+  const key = () => `blog-moment-editor:${actor}:${initialId ?? 'new'}`
   function persistLocal() {
     if (!import.meta.client || !actor || !dirty.value) return
     try {

@@ -82,7 +82,7 @@ describe('订阅编辑私密可见性', () => {
     expect(wrapper.find('[aria-label="订阅恢复副本"]').exists()).toBe(false)
     expect(wrapper.text()).not.toContain('本机未保存私密备注')
     expect(wrapper.text()).not.toContain('另一版本私密备注')
-    expect(sessionStorage.getItem('tixxin-subscription-editor:owner:1:owned-library')).toContain('本机未保存私密备注')
+    expect(sessionStorage.getItem('blog-subscription-editor:owner:1:owned-library')).toContain('本机未保存私密备注')
     mocks.auth.currentUser.value = { id: 'owner' }
     mocks.auth.isLoggedIn.value = true
     context.value = 'owned-library'
@@ -98,7 +98,7 @@ describe('订阅编辑私密可见性', () => {
     await flushPromises()
     expect(wrapper.get('textarea[aria-label="订阅备注"]').element).toHaveProperty('value', '新账号备注')
     expect(wrapper.text()).not.toContain('原账号私密备注')
-    expect(sessionStorage.getItem('tixxin-subscription-editor:owner:1:owned-library')).toContain('原账号私密备注')
+    expect(sessionStorage.getItem('blog-subscription-editor:owner:1:owned-library')).toContain('原账号私密备注')
   })
 })
 

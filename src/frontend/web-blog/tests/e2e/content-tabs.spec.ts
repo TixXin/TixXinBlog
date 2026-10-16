@@ -11,7 +11,7 @@ for (const layout of ['nexus', 'aurora', 'dock']) {
   for (const width of [320, 390, 768, 1024, 1440, 1920]) {
     test(`内容导航 ${layout}/${width} 两页样式一致且可往返`, async ({ page, context, baseURL }, testInfo) => {
       await page.setViewportSize({ width, height: 1000 })
-      await context.addCookies([{ name: 'tixxin-blog-layout-theme', value: layout, url: baseURL! }])
+      await context.addCookies([{ name: 'blog-layout-theme', value: layout, url: baseURL! }])
       const color = width === 390 || width === 1920 ? 'light' : 'dark'
       await context.addInitScript((value) => localStorage.setItem('nuxt-color-mode', value), color)
       await page.emulateMedia({

@@ -24,7 +24,7 @@ export function useSiteSettingsEditor() {
     alive = true
   const owns = (version: number) =>
     alive && generation === version && actor === auth.currentUser.value?.id && ownedContext === context.value
-  const recoveryKey = () => `tixxin-site-settings:${actor}:${ownedContext}`
+  const recoveryKey = () => `blog-site-settings:${actor}:${ownedContext}`
   const conflictLabels = (paths: string[]) => {
     const labels: Record<string, string> = {
       name: '站点名称',

@@ -21,7 +21,7 @@ export interface RecoveryStorage {
   removeItem(key: string): void
 }
 export function recoveryPrefix(owner: string, postId: string | null): string {
-  return `tixxin-post-recovery:${encodeURIComponent(owner)}:${postId ?? 'new'}:`
+  return `blog-post-recovery:${encodeURIComponent(owner)}:${postId ?? 'new'}:`
 }
 function validDraft(value: unknown, postId: string | null): value is AdminPostDraft {
   if (!value || typeof value !== 'object') return false

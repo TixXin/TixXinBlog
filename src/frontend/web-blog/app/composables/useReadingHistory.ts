@@ -13,7 +13,7 @@ export interface HistoryItem {
   visitedAt: string
 }
 
-const HISTORY_KEY = 'tixxin-blog-reading-history'
+const HISTORY_KEY = 'blog-reading-history'
 const MAX_ITEMS = 50
 
 function loadHistory(): HistoryItem[] {

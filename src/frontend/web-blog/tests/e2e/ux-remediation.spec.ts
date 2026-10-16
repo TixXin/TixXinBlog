@@ -62,7 +62,7 @@ test('收藏写入失败不假装成功，存储恢复后可收藏并刷新保�
       Storage.prototype.setItem = original
     }
     Storage.prototype.setItem = function (key, value) {
-      if (key === 'tixxin-blog-favorites') throw new DOMException('quota', 'QuotaExceededError')
+      if (key === 'blog-favorites') throw new DOMException('quota', 'QuotaExceededError')
       original.call(this, key, value)
     }
   })

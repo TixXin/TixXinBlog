@@ -204,7 +204,7 @@ export async function createComment(baseUrl: string, id: string, draft: CommentD
     'SHA-256',
     new TextEncoder().encode(JSON.stringify([baseUrl, id, headers, draft])),
   )
-  const key = `tixxin-comment-submit:${Array.from(new Uint8Array(digest), (byte) => byte.toString(16).padStart(2, '0')).join('')}`
+  const key = `blog-comment-submit:${Array.from(new Uint8Array(digest), (byte) => byte.toString(16).padStart(2, '0')).join('')}`
   let requestId = draft.requestId
   try {
     requestId ??= sessionStorage.getItem(key) ?? crypto.randomUUID()

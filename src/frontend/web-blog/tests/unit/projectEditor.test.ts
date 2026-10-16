@@ -164,6 +164,6 @@ describe('项目管理提交', () => {
     finish(project({ title: '前一账号的输入', revision: 1 }))
     await saving
     expect(editor.form.title).toBe('创作工作台')
-    expect(sessionStorage.getItem('tixxin-project-editor:owner:1:project-library')).toContain('前一账号的输入')
+    expect(sessionStorage.getItem('blog-project-editor:owner:1:project-library')).toContain('前一账号的输入')
   })
 })

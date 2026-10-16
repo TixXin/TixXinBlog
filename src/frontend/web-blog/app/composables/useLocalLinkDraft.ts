@@ -12,7 +12,7 @@ export function useLocalLinkDraft() {
   function persist() {
     if (!ready.value) return
     try {
-      sessionStorage.setItem('tixxin-local-link-draft', JSON.stringify(draft.value))
+      sessionStorage.setItem('blog-local-link-draft', JSON.stringify(draft.value))
       storageError.value = ''
     } catch {
       storageError.value = '本机恢复副本暂时无法保存，请保留当前输入。'
@@ -56,7 +56,7 @@ export function useLocalLinkDraft() {
   }
   onMounted(() => {
     try {
-      const raw = !initialized.value ? sessionStorage.getItem('tixxin-local-link-draft') : null
+      const raw = !initialized.value ? sessionStorage.getItem('blog-local-link-draft') : null
       if (raw && raw.length <= 10000) {
         const value = JSON.parse(raw) as LocalLinkDraft
         if (
