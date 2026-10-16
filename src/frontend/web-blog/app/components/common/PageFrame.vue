@@ -11,16 +11,12 @@
       <div class="page-frame__content" data-page-body>
         <slot />
       </div>
-      <p v-if="pending" class="page-frame__pending" data-page-motion-status role="status">正在加载内容…</p>
     </div>
     <slot name="overlays" />
   </div>
 </template>
 <script setup lang="ts">
-import { pageMotionPendingKey } from '~/utils/pageMotionRegions'
-
 defineProps<{ headerKey: string }>()
-const pending = inject(pageMotionPendingKey, ref(false))
 </script>
 <style lang="scss" scoped>
 .page-frame,
@@ -42,20 +38,5 @@ const pending = inject(pageMotionPendingKey, ref(false))
   position: relative;
   // 裁切入场位移，但不创建第二个滚动容器；弹窗由独立浮层插槽或Teleport承载。
   overflow: clip;
-}
-.page-frame__pending {
-  position: absolute;
-  top: 0.5rem;
-  left: 50%;
-  transform: translateX(-50%);
-  z-index: 3;
-  margin: 0;
-  padding: 0.375rem 0.75rem;
-  border: 1px solid var(--border);
-  border-radius: $radius-full;
-  background: var(--surface-1);
-  color: var(--text-soft);
-  font-size: 0.8125rem;
-  pointer-events: none;
 }
 </style>

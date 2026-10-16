@@ -166,7 +166,7 @@ for (const layout of ['nexus', 'aurora', 'dock']) {
     }
   })
 
-  test(`慢导航 ${layout} 保留标题正文，加载提示仅在正文区`, async ({ page, context, baseURL }) => {
+  test(`慢导航 ${layout} 保留标题正文，不显示加载提示`, async ({ page, context, baseURL }) => {
     await context.addCookies([{ name: 'tixxin-blog-layout-theme', value: layout, url: baseURL! }])
     await page.goto('/moments')
     await ready(page, '.moments-page')
@@ -192,7 +192,9 @@ for (const layout of ['nexus', 'aurora', 'dock']) {
     try {
       await expect(page.locator('.moments-page')).toBeVisible()
       await expect(page.locator('[data-page-header] [aria-current="page"]')).toHaveText('朋友圈')
-      await expect(page.locator('[data-page-body-frame] [data-page-motion-status]')).toBeVisible()
+      // 切页等待期间不再弹"正在加载内容"提示，旧页面保持完整可见
+      await expect(page.locator('[data-page-motion-status]')).toHaveCount(0)
+      await expect(page.locator('[data-page-body] .moment-card').first()).toBeVisible()
       expect(await page.locator('[data-page-header]').evaluate((el) => getComputedStyle(el).opacity)).toBe('1')
       expect(await records(page)).toHaveLength(0)
       await page.emulateMedia({ reducedMotion: 'reduce' })

@@ -70,12 +70,13 @@ export default defineNuxtPlugin({
       },
       { flush: 'sync' },
     )
+    // 首屏 SSR 直出的图片由浏览器原生渐进显示：无论此刻是否加载完成都不再补播揭示，
+    // 否则内容就绪早于图片加载时，已经显示的图片会先消失再淡入。后续真实 load 或新增节点才需要揭示。
+    document
+      .querySelectorAll<HTMLImageElement>('img')
+      .forEach((image) => seen.set(image, image.currentSrc || image.src))
     onNuxtReady(() => {
       if (!active) return
-      // 首屏已加载并显示的SSR图片不再补播，后续真实load或新增节点才需要揭示。
-      document.querySelectorAll<HTMLImageElement>('img').forEach((image) => {
-        if (image.complete && image.naturalWidth) seen.set(image, image.currentSrc || image.src)
-      })
       observer.observe(document.body, { childList: true, subtree: true })
     })
     const dispose = () => {
