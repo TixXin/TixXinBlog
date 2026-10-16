@@ -51,7 +51,7 @@ export class SaveSiteSettingsDto extends ExpectedSiteRevisionDto {
   @Transform(trim) @IsString() @MaxLength(320) seoDescription!: string
   @Transform(trim) @IsString() @MaxLength(1000) announcement!: string
   @IsArray() @ArrayMaxSize(8) @ValidateNested({ each: true }) @Type(() => SiteSocialDto) socials!: SiteSocialDto[]
-  // 以下三项为后加字段，旧客户端与旧内容包可以不带；缺省按空串处理
+  // 以下几项为后加字段，旧客户端与旧内容包可以不带；缺省按空串处理
   @ValidateIf((_object, value) => value !== undefined)
   @Transform(trim)
   @IsString()
@@ -67,4 +67,7 @@ export class SaveSiteSettingsDto extends ExpectedSiteRevisionDto {
   @IsString()
   @Matches(/^(\d{4}-\d{2}-\d{2})?$/, { message: '上线日期需为 YYYY-MM-DD' })
   launchedAt?: string
+  @ValidateIf((_object, value) => value !== undefined)
+  @IsIn(['', 'online', 'idle', 'busy'])
+  presenceStatus?: '' | 'online' | 'idle' | 'busy'
 }

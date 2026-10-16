@@ -40,6 +40,7 @@ export function useSiteSettingsEditor() {
       presenceLabel: '在线状态',
       presenceSignature: '状态签名',
       launchedAt: '站点上线日期',
+      presenceStatus: '状态类型',
       'about.visible': '关于资料显隐',
       'about.introduction': '详细介绍',
       'about.sections.order': '关于栏目顺序',

@@ -38,6 +38,13 @@
               >状态签名<input v-model="draft.presenceSignature" maxlength="60" placeholder="如“今天不想写代码”"
             /></label>
             <label
+              >状态类型<select v-model="draft.presenceStatus">
+                <option v-for="option in presenceStatusOptions" :key="option.value" :value="option.value">
+                  {{ option.label }}
+                </option>
+              </select></label
+            >
+            <label
               >站点上线日期<input v-model="draft.launchedAt" type="date" placeholder="留空按最早公开文章推算"
             /></label>
           </fieldset>
@@ -161,7 +168,7 @@
   </section>
 </template>
 <script setup lang="ts">
-import { siteSocialIcons } from '~/features/site/settings'
+import { presenceStatusOptions, siteSocialIcons } from '~/features/site/settings'
 import type { MediaAsset } from '~/features/media/types'
 definePageMeta({ layout: 'admin' })
 useSeoMeta({ title: '站点设置', robots: 'noindex, nofollow' })

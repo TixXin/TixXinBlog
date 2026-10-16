@@ -367,13 +367,18 @@ async function ensureProfile(em: EntityManager, progress: FixtureProgress) {
   const current = await service.get()
   const latest = await em.findOne(SiteSettingsRevision, { revision: current.revision })
   if (latest?.reason === SHOWCASE_PROFILE_REASON) {
-    // 最新版本仍是本样本写入的资料（博主保存过会产生新原因的版本）；早期写入时关于页栏目为空，这里补齐
-    if (!current.about.sections.length) {
+    // 最新版本仍是本样本写入的资料（博主保存过会产生新原因的版本）
+    // 早期写入时关于页栏目为空、也没有状态类型（“摆烂中”应显示为离开），这里补齐
+    const patch = {
+      ...(!current.about.sections.length ? { about: SHOWCASE_ABOUT } : {}),
+      ...(!current.presenceStatus && current.presenceLabel === '摆烂中' ? { presenceStatus: 'idle' as const } : {}),
+    }
+    if (Object.keys(patch).length) {
       const { updatedAt: _u, announcementUpdatedAt: _a, ...kept } = current
       void _u
       void _a
-      await service.save({ ...kept, about: SHOWCASE_ABOUT }, SHOWCASE_PROFILE_REASON)
-      progress.created.push(`${SHOWCASE_DATASET}/site/about`)
+      await service.save({ ...kept, ...patch }, SHOWCASE_PROFILE_REASON)
+      progress.created.push(`${SHOWCASE_DATASET}/site/upgrade`)
     } else progress.retained.push(`${SHOWCASE_DATASET}/site/profile`)
     return
   }
@@ -401,6 +406,7 @@ async function ensureProfile(em: EntityManager, progress: FixtureProgress) {
       ],
       presenceLabel: '摆烂中',
       presenceSignature: '今天不想写代码',
+      presenceStatus: 'idle',
       launchedAt: '2021-08-16',
       about: SHOWCASE_ABOUT,
     },

@@ -164,7 +164,7 @@
 | `GET /site`                                                                          | 公共站点资料，剔除隐藏关于字段，不缓存；提供内容上下文            |
 | `GET/PATCH /admin/site`、`GET /admin/site/revisions`                                 | 完整资料、版本化保存与历史；具体版本/恢复入口见控制器             |
 
-站点资料含可选的 `presenceLabel`（≤20）、`presenceSignature`（≤60）与 `launchedAt`（`YYYY-MM-DD` 或空）：前两者驱动名片的在线状态与签名，都为空时保持离线；`launchedAt` 决定 `GET /posts/metadata` 里 `stats.siteAgeDays` 的起点，缺省回退到最早公开文章的发布日。旧客户端与旧内容包可不携带这三项，缺省按空串处理且保存时沿用当前值。
+站点资料含可选的 `presenceLabel`（≤20）、`presenceSignature`（≤60）、`presenceStatus`（空串、`online`、`idle`、`busy`）与 `launchedAt`（`YYYY-MM-DD` 或空）：前两者驱动名片的在线状态与签名，都为空时保持离线；`presenceStatus` 决定状态点的类型，空串时按在线展示；`launchedAt` 决定 `GET /posts/metadata` 里 `stats.siteAgeDays` 的起点，缺省回退到最早公开文章的发布日。旧客户端与旧内容包可不携带这几项，缺省按空串处理且保存时沿用当前值。
 | `GET/POST /admin/media`                                                              | 服务端分页筛选与 multipart `file` 上传，可带 `uploadId/alt`       |
 | `PATCH/DELETE /admin/media/:id`、`POST /admin/media/:id/restore`                     | 独立资料更新、回收与恢复                                          |
 | `GET /admin/media/:id/references`、`GET /media/:uuid.webp`                           | 管理引用明细与公开 WebP 字节                                      |

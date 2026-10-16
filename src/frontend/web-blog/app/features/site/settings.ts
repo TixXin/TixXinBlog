@@ -22,6 +22,8 @@ export interface SiteSettingsData {
   presenceSignature: string
   /** 站点上线日期 YYYY-MM-DD，空串由服务端按最早文章推算 */
   launchedAt: string
+  /** 状态类型：空串时有状态文案即按在线展示；idle 为离开，busy 为忙碌 */
+  presenceStatus: PresenceStatusSetting
   revision: number
   updatedAt: string
 }
@@ -41,9 +43,18 @@ export const defaultSiteSettings: SiteSettingsData = {
   presenceLabel: '',
   presenceSignature: '',
   launchedAt: '',
+  presenceStatus: '',
   revision: 0,
   updatedAt: '',
 }
+export type PresenceStatusSetting = '' | 'online' | 'idle' | 'busy'
+/** 后台可选的状态类型与公开展示时的默认文案 */
+export const presenceStatusOptions: { value: PresenceStatusSetting; label: string }[] = [
+  { value: '', label: '自动（有状态文案时显示在线）' },
+  { value: 'online', label: '在线' },
+  { value: 'idle', label: '离开' },
+  { value: 'busy', label: '忙碌' },
+]
 export const siteSocialIcons = [
   'lucide:github',
   'lucide:twitter',

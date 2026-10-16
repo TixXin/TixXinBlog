@@ -18,6 +18,7 @@ function withPresenceDefaults(values: SiteSettingsValues): SiteSettingsValues {
     presenceLabel: values.presenceLabel ?? '',
     presenceSignature: values.presenceSignature ?? '',
     launchedAt: values.launchedAt ?? '',
+    presenceStatus: values.presenceStatus ?? '',
   }
 }
 @Injectable()
@@ -83,6 +84,7 @@ export class SiteSettingsService {
         presenceLabel: input.presenceLabel ?? settings.values.presenceLabel ?? '',
         presenceSignature: input.presenceSignature ?? settings.values.presenceSignature ?? '',
         launchedAt: input.launchedAt ?? settings.values.launchedAt ?? '',
+        presenceStatus: input.presenceStatus ?? settings.values.presenceStatus ?? '',
       }
       const now = new Date()
       settings.values = {
