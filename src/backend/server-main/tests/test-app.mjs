@@ -130,6 +130,25 @@ export async function createBrowserTestApp(corsOrigin) {
       testOrm: orm,
       backupOptions: { backupRoot: backupDirectory.directory },
       close,
+      useProductionEnvironmentForPerformance: () => {
+        assert(app, '隔离应用已停止')
+        assert(/^tixxin_browser_\d+_\d+$/.test(orm.config.get('dbName')))
+        const { ConfigService } = require('@nestjs/config')
+        const config = app.get(ConfigService)
+        const previous = config.get('NODE_ENV')
+        const previousEnvironment = process.env.NODE_ENV
+        assert.equal(previous, 'test', '只能在隔离样本准备完成后切换性能验收环境')
+        // ConfigService.set 同时更新 process.env；恢复句柄必须在性能验收 finally 中调用。
+        config.set('NODE_ENV', 'production')
+        let restored = false
+        return () => {
+          if (restored) return
+          restored = true
+          config.set('NODE_ENV', previous)
+          if (previousEnvironment === undefined) delete process.env.NODE_ENV
+          else process.env.NODE_ENV = previousEnvironment
+        }
+      },
       stopServices: async () => {
         await app?.close()
         app = undefined
