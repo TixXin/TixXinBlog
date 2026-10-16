@@ -573,7 +573,7 @@ test('正常页面的标题与正文独立入场，不创建离场快照', async
   )
   expect(completedMotions).toMatchObject([
     { region: 'header', duration: 120, started: true },
-    { region: 'body', duration: 150, started: true },
+    { region: 'body', duration: 140, started: true },
   ])
   for (const motion of completedMotions) {
     expect(motion.finished || motion.cancelled).toBe(true)

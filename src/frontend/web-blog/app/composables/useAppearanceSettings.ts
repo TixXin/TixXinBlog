@@ -61,12 +61,10 @@ export function useAppearanceSettings() {
 
   const themeLabel = computed(() => COLOR_MODE_LABELS[currentPreference.value])
   const contentTransitionLabel = computed(
-    () =>
-      CONTENT_TRANSITION_OPTIONS.find((option) => option.value === contentTransitionPreset.value)?.label ?? '纵向滑动',
+    () => CONTENT_TRANSITION_OPTIONS.find((option) => option.value === contentTransitionPreset.value)?.label ?? '淡入',
   )
   const sidebarAnimationLabel = computed(
-    () =>
-      SIDEBAR_ANIMATION_OPTIONS.find((option) => option.value === sidebarAnimationPreset.value)?.label ?? '从右侧进入',
+    () => SIDEBAR_ANIMATION_OPTIONS.find((option) => option.value === sidebarAnimationPreset.value)?.label ?? '淡入',
   )
   const colorModeTransitionLabel = computed(
     () =>

@@ -24,8 +24,9 @@ export interface AppearanceOption<T extends string> {
   icon?: string
 }
 
-export const DEFAULT_CONTENT_TRANSITION_PRESET: ContentTransitionPreset = 'vertical-slide'
-export const DEFAULT_SIDEBAR_ANIMATION_PRESET: SidebarAnimationPreset = 'fade-in-up'
+// 默认用最短的淡入：切页时内容尽快稳定，位移类过渡留给用户在界面设置里自选
+export const DEFAULT_CONTENT_TRANSITION_PRESET: ContentTransitionPreset = 'fade'
+export const DEFAULT_SIDEBAR_ANIMATION_PRESET: SidebarAnimationPreset = 'fade'
 export const DEFAULT_COLOR_MODE_TRANSITION_PRESET: ColorModeTransitionPreset = 'circle'
 
 export const COLOR_MODE_LABELS: Record<ThemeOption, string> = {
