@@ -15,7 +15,14 @@ import {
 import { join } from 'node:path'
 import { tmpdir } from 'node:os'
 import { fileURLToPath } from 'node:url'
-import { terminalCommand } from './terminal.mjs'
+import { terminalCommand, terminalAppleScript } from './terminal.mjs'
+
+test('开窗前只关闭同一服务的空闲旧窗口，关闭逻辑先于新建窗口', () => {
+  const script = terminalAppleScript('echo ok', 'api', [0, 0, 100, 100])
+  assert(script.includes('if custom title of staleTab is "TixXinBlog | 后端 API" and busy of staleTab is false'))
+  assert(!script.includes('前端网站'))
+  assert(script.indexOf('close staleWindow') < script.indexOf('do script'))
+})
 
 test('含空格、引号及 shell 替换字符的路径保持字面值，执行完整链路参数', { skip: process.platform === 'win32' }, (t) => {
   const directory = mkdtempSync(join(tmpdir(), 'tixxin-terminal-'))

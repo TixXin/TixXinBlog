@@ -74,7 +74,7 @@ corepack pnpm dev:terminal:web
 
 `--dry-run` 只显示启动命令，不打开窗口或启动服务。启动命令只转交当前 Node、pnpm 和 PATH 路径；业务配置由新终端环境及项目已有环境文件读取，调用方临时设置的业务环境变量不转发。需要临时覆盖时，在两个本地终端分别设置变量，运行 `corepack pnpm dev:session:api --logs` 和 `corepack pnpm dev:session:web --logs`。
 
-打开窗口不代表服务已就绪，仍需运行 `corepack pnpm dev:check` 核验。Ctrl+C 清理本次服务后，窗口保留；启动失败时也保留错误输出。不要重复打开窗口来处理端口冲突，先核对占用者。macOS 拒绝终端控制权限时，命令会报错，可手动打开两个终端，分别执行 `corepack pnpm dev:session:api --logs` 和 `corepack pnpm dev:session:web --logs`。其他系统也可使用这两个入口，或继续使用 `dev:all` 统一启动。
+打开窗口不代表服务已就绪，仍需运行 `corepack pnpm dev:check` 核验。Ctrl+C 清理本次服务后，窗口保留；启动失败时也保留错误输出。下次启动同一服务前，会自动关闭标题相同且已无运行进程的旧窗口，仍在运行的窗口和其他终端不受影响。不要重复打开窗口来处理端口冲突，先核对占用者。macOS 拒绝终端控制权限时，命令会报错，可手动打开两个终端，分别执行 `corepack pnpm dev:session:api --logs` 和 `corepack pnpm dev:session:web --logs`。其他系统也可使用这两个入口，或继续使用 `dev:all` 统一启动。
 
 多个栏目同时出现 502 或加载失败时，先检查后端 `/ready`，再检查前端同源 `/api/v1/posts`。区分服务未就绪、配置错误与正常空结果；不得切换 Mock 掩盖真实 API 故障。
 
