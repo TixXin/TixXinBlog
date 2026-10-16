@@ -140,8 +140,11 @@
 </template>
 
 <script setup lang="ts">
-import { resolveGuestAvatar, isQQEmail } from '~/composables/useGuestIdentity'
+import { resolveGuestAvatar, isQQEmail, useQQAvatarEnabled } from '~/composables/useGuestIdentity'
 import type { GuestIdentity } from '~/composables/useGuestIdentity'
+
+// QQ 头像能力开关，关闭时预览与提示都不再走腾讯头像服务
+const qqAvatarEnabled = useQQAvatarEnabled()
 
 const emit = defineEmits<{
   confirm: [identity: GuestIdentity]
@@ -193,12 +196,12 @@ const avatarPreviewUrl = computed(() => {
     email: form.email,
     avatarUrl: form.avatarUrl,
   }
-  return resolveGuestAvatar(mock)
+  return resolveGuestAvatar(mock, qqAvatarEnabled)
 })
 
 const avatarHint = computed(() => {
   if (form.avatarUrl) return '自定义头像'
-  if (form.email && isQQEmail(form.email)) return 'QQ 头像'
+  if (qqAvatarEnabled && form.email && isQQEmail(form.email)) return 'QQ 头像'
   if (form.nickname) return '首字母头像'
   return '填写昵称后生成'
 })

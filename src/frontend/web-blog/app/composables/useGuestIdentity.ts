@@ -61,13 +61,15 @@ function generateGuestId(): string {
 /**
  * 根据游客身份信息解析最终头像 URL：
  * 1. 有自定义 avatarUrl → 直接返回
- * 2. QQ 邮箱 → q1.qlogo.cn 接口获取 QQ 头像
+ * 2. QQ 邮箱且启用该能力 → q1.qlogo.cn 接口获取 QQ 头像
  * 3. 其他情况 → 返回空字符串，UI 层用首字母文字头像
+ *
+ * qqAvatar 由 NUXT_PUBLIC_QQ_AVATAR_ENABLED 控制，关闭后不向腾讯头像服务发起任何请求。
  */
-export function resolveGuestAvatar(identity: GuestIdentity | null): string {
+export function resolveGuestAvatar(identity: GuestIdentity | null, qqAvatar = true): string {
   if (!identity) return ''
   if (identity.avatarUrl) return identity.avatarUrl
-  if (identity.email) {
+  if (qqAvatar && identity.email) {
     const match = identity.email.match(QQ_EMAIL_RE)
     if (match) {
       return `https://q1.qlogo.cn/g?b=qq&nk=${match[1]}&s=100`
@@ -79,6 +81,11 @@ export function resolveGuestAvatar(identity: GuestIdentity | null): string {
 /** 判断邮箱是否为 QQ 邮箱 */
 export function isQQEmail(email: string): boolean {
   return QQ_EMAIL_RE.test(email)
+}
+
+/** QQ 头像能力开关，未配置时保持开启 */
+export function useQQAvatarEnabled(): boolean {
+  return useRuntimeConfig().public.qqAvatarEnabled !== false
 }
 
 export function useGuestIdentity() {
@@ -115,9 +122,11 @@ export function useGuestIdentity() {
     }
   }
 
+  const qqAvatar = useQQAvatarEnabled()
+
   /** 解析当前游客身份的头像 URL */
   function resolveAvatar(): string {
-    return resolveGuestAvatar(guestIdentity.value)
+    return resolveGuestAvatar(guestIdentity.value, qqAvatar)
   }
 
   return {
