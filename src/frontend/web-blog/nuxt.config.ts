@@ -138,6 +138,9 @@ export default {
       postUseMockRepo: (process.env.NUXT_PUBLIC_POST_USE_MOCK_REPO ?? process.env.NUXT_PUBLIC_USE_MOCK_REPO) === 'true',
       // 后端 API 基址，如 http://localhost:3457/api/v1（useMockRepo=false 时必填）
       apiBaseUrl: '/api/v1',
+      // QQ 邮箱访客自动取 QQ 头像，依赖腾讯的公开头像服务；
+      // 面向中国大陆以外部署时可设 NUXT_PUBLIC_QQ_AVATAR_ENABLED=false 关闭，改用首字母文字头像。
+      qqAvatarEnabled: process.env.NUXT_PUBLIC_QQ_AVATAR_ENABLED !== 'false',
     },
   },
   // sitemap 与 robots 的构建期站点标识；地址由部署环境经 NUXT_PUBLIC_SITE_URL 注入。
