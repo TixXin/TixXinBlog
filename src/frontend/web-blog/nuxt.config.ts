@@ -95,6 +95,9 @@ export default {
   // 换来切页免等代码加载。hover/focus 预取作为补充。dev 下 Nuxt 不预载路由块，
   // 悬停预取由 plugins/route-prefetch.client.ts 单独处理。
   experimental: {
+    // 关闭 payload 提取：Nuxt 会把带缓存规则的路由当作可预取 payload 的页面，每个可见链接都会让
+    // 服务端完整渲染一次目标页并打一轮后端接口，瞬间触发后端限流。本站不预渲染，客户端切页走接口即可。
+    payloadExtraction: false,
     defaults: {
       nuxtLink: {
         prefetchOn: { visibility: true, interaction: true },
@@ -170,6 +173,28 @@ export default {
       ? {
           '/admin': { headers: { 'Cache-Control': 'private, no-store', 'X-Robots-Tag': 'noindex' } },
           '/admin/**': { headers: { 'Cache-Control': 'private, no-store', 'X-Robots-Tag': 'noindex' } },
+          // 公开页面的 SSR HTML 在服务端缓存 60s（stale-while-revalidate）：SSR 本就是匿名视图，
+          // 登录态在客户端恢复；按 cookie 区分键，布局主题 cookie 不同的访客各自一份。
+          // 经本站代理的写请求会清空该缓存（server/plugins/ssr-cache-purge.ts），内容变更不等 60s。
+          ...Object.fromEntries(
+            [
+              '/',
+              '/archive',
+              '/moments',
+              '/moments/**',
+              '/projects',
+              '/gallery',
+              '/flash',
+              '/flash/**',
+              '/links',
+              '/guestbook',
+              '/about',
+              '/prompts',
+              '/subscriptions',
+              '/tabs',
+              '/articles/**',
+            ].map((path) => [path, { cache: { maxAge: 60, swr: true, varies: ['cookie'] } }]),
+          ),
         }
       : {}),
   },
