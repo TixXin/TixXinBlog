@@ -97,7 +97,7 @@ function handleBack() {
 }
 
 .article-sticky-header__title {
-  font-family: $font-family-base;
+  font-family: inherit;
   font-size: clamp(1.25rem, 1.8vw, 1.625rem);
   font-weight: 700;
   color: var(--text-main);

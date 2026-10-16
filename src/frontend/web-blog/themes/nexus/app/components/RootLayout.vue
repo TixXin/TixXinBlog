@@ -26,10 +26,10 @@
               <DailyQuoteCard />
               <SidebarFooterCard />
             </div>
-            <!-- 朋友圈模式：作者名片、动态日历 -->
+            <!-- 朋友圈模式：作者名片、动态日历（Lazy 拆出独立块，首页壳层不再携带日历与热力图） -->
             <div v-else key="moments" class="aside-left__group">
-              <SidebarMomentAuthorCard :stats="momentAuthorStats" :profile="ownerCard" />
-              <SidebarMomentCalendarCard
+              <LazySidebarMomentAuthorCard :stats="momentAuthorStats" :profile="ownerCard" />
+              <LazySidebarMomentCalendarCard
                 :moment-dates="momentDates"
                 :date-counts="momentDateCounts"
                 :available="!!momentMetadata"

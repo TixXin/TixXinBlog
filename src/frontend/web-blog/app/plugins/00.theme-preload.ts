@@ -9,16 +9,17 @@ import { preloadLayoutTheme } from '~/utils/themeRuntime'
 export default defineNuxtPlugin({
   name: 'theme-preload',
   enforce: 'pre',
-  async setup() {
+  async setup(nuxtApp) {
     const { currentTheme } = useThemeEngine()
     const startupError = useState<string | null>('theme-startup-error', () => null)
     const startupContent = useState<string | null>('theme-startup-content', () => null)
+    // 首屏进度的真实里程碑：主题组件逐个就绪推进到 60，挂载前 75，Suspense 解析由 app.vue 拉满
     const progress = import.meta.client ? useLoadingProgress() : null
     progress?.set(10)
+    nuxtApp.hook('app:beforeMount', () => progress?.set(75))
     try {
-      await preloadLayoutTheme(currentTheme.value)
+      await preloadLayoutTheme(currentTheme.value, (done, total) => progress?.set(10 + (50 * done) / total))
       startupError.value = null
-      progress?.set(60)
     } catch {
       // 交给可操作的组件错误态和独立启动守卫恢复，不让首屏品牌层无限等待。
       startupError.value = '当前主题暂时无法加载，请刷新重试。'

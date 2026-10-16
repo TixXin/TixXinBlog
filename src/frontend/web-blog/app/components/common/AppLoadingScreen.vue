@@ -17,15 +17,10 @@
         <!-- 副标题 -->
         <p class="loading-screen__tagline">Blog</p>
 
-        <!-- 进度暗示条 -->
+        <!-- 进度暗示条：真实进度由顶部 AppLoadingTopBar 呈现，此处仅作品牌动态 -->
         <div class="loading-screen__progress">
           <div class="loading-screen__progress-bar" />
         </div>
-
-        <!-- 真实进度百分比：仅首屏 loading 场景显示，主题切换场景（forceVisible）不渲染 -->
-        <p v-if="!forceVisible" class="loading-screen__percent" :aria-label="`加载中 ${displayPercent}%`">
-          {{ displayPercent }}%
-        </p>
       </div>
       <p v-if="!forceVisible" class="loading-screen__recovery" role="alert">
         页面交互暂未启动，你仍可浏览已加载的内容。
@@ -37,29 +32,15 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
-
 defineProps<{
   visible: boolean
   // 强制显示：绕过 html.visited CSS 屏蔽，用于主题切换等首屏之外的场景
   forceVisible?: boolean
 }>()
 
-// 读取首屏加载进度（主题切换场景 DOM 不渲染百分比，composable 仍可安全读取共享 state）
-const { progress } = useLoadingProgress()
+// 首屏品牌层不阻断：SSR 正文已在下方，品牌层由纯 CSS 定时淡出，
+// 内容就绪（app:suspense:resolve）时再由 visible=false 触发退场并移出 DOM
 const route = useRoute()
-
-// Hydration 一致性守卫：
-// 00.theme-preload plugin 在 enforce:'pre' 阶段（hydration 前）会调用 set(10→60)，
-// 导致客户端首次渲染时 progress 已非 0，与 SSR 输出的 "0%" 不一致触发 mismatch。
-// 用 isMounted 把首次 CSR 渲染也强制为 0，onMounted 后才切到真实 progress
-const isMounted = ref(false)
-onMounted(() => {
-  isMounted.value = true
-})
-
-// 向下取整 + 夹紧，防止浮点抖动导致 42% → 43% → 42% 视觉闪烁
-const displayPercent = computed(() => (isMounted.value ? Math.min(100, Math.max(0, Math.floor(progress.value))) : 0))
 </script>
 
 <style lang="scss" scoped>
@@ -76,6 +57,13 @@ const displayPercent = computed(() => (isMounted.value ? Math.min(100, Math.max(
   background-size: var(--bg-dot-size) var(--bg-dot-size);
   // 顶层不参与内容滚动
   overflow: hidden;
+  // 非阻断：品牌层短暂呈现后自动淡出并放行指针事件，不等待水合；就绪更早时由 Transition 退场接管
+  &:not(.loading-screen--force) {
+    animation: loading-splash 0.9s ease forwards;
+    @media (prefers-reduced-motion: reduce) {
+      animation-timing-function: step-end;
+    }
+  }
 }
 
 .loading-screen__recovery {
@@ -115,6 +103,9 @@ const displayPercent = computed(() => (isMounted.value ? Math.min(100, Math.max(
 
 html.app-startup-stalled .loading-screen:not(.loading-screen--force) {
   display: block !important;
+  animation: none;
+  opacity: 1;
+  visibility: visible;
   inset: 0 0 auto;
   padding: 0.5rem;
   background: transparent;
@@ -143,7 +134,7 @@ html.visited .loading-screen:not(.loading-screen--force) {
   align-items: center;
   gap: 0.5rem;
   // 内容入场动画：从下方淡入
-  animation: loading-content-enter 0.5s cubic-bezier(0.22, 0.68, 0.35, 1) both;
+  animation: loading-content-enter 0.3s cubic-bezier(0.22, 0.68, 0.35, 1) both;
   @media (prefers-reduced-motion: reduce) {
     animation: none;
   }
@@ -156,7 +147,8 @@ html.visited .loading-screen:not(.loading-screen--force) {
   letter-spacing: -0.03em;
   line-height: 1;
   margin: 0;
-  font-family: $font-family-base;
+  // 继承全局字体；组件内直接声明 Inter 会让 @nuxt/fonts 向本组件样式重复注入全部 @font-face
+  font-family: inherit;
 
   @media (min-width: $breakpoint-sm) {
     font-size: 3.5rem;
@@ -207,21 +199,6 @@ html.visited .loading-screen:not(.loading-screen--force) {
   }
 }
 
-/* 真实进度百分比文字 */
-.loading-screen__percent {
-  margin: 0.75rem 0 0;
-  font-size: 0.875rem;
-  font-weight: 500;
-  color: var(--text-soft);
-  letter-spacing: 0.05em;
-  // 等宽数字 + 最小宽度 + 居中，防止 0→10→100 宽度变化造成抖动
-  font-variant-numeric: tabular-nums;
-  font-feature-settings: 'tnum';
-  min-width: 3ch;
-  text-align: center;
-  line-height: 1;
-}
-
 @keyframes loading-progress {
   0% {
     transform: translateX(-100%);
@@ -231,6 +208,18 @@ html.visited .loading-screen:not(.loading-screen--force) {
   }
   100% {
     transform: translateX(-100%);
+  }
+}
+
+@keyframes loading-splash {
+  0%,
+  65% {
+    opacity: 1;
+    visibility: visible;
+  }
+  100% {
+    opacity: 0;
+    visibility: hidden;
   }
 }
 
@@ -246,11 +235,14 @@ html.visited .loading-screen:not(.loading-screen--force) {
 }
 
 /* Vue Transition 退出动画：整体向上滑出 + 淡出 */
-.loading-screen-leave-active {
+// 复合选择器压过 .loading-screen:not(--force) 的关键帧声明：退场时取消自动淡出动画，由过渡从当前状态继续，
+// 否则 Vue 会等待 0.9s 的 animation 结束才移出 DOM
+.loading-screen.loading-screen-leave-active {
   pointer-events: none;
+  animation: none;
   transition:
-    opacity 0.5s cubic-bezier(0.22, 0.68, 0.35, 1),
-    transform 0.5s cubic-bezier(0.22, 0.68, 0.35, 1);
+    opacity 0.25s cubic-bezier(0.22, 0.68, 0.35, 1),
+    transform 0.25s cubic-bezier(0.22, 0.68, 0.35, 1);
   @media (prefers-reduced-motion: reduce) {
     transition: none;
   }

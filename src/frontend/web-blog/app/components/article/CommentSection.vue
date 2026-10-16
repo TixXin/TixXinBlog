@@ -172,7 +172,7 @@ watch(
   border: 1px solid var(--border);
   background: var(--surface-2);
   color: var(--text-main);
-  font-family: $font-family-base;
+  font-family: inherit;
   font-size: 0.875rem;
   line-height: 1.5;
   resize: none;
