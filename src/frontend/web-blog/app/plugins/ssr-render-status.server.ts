@@ -16,7 +16,7 @@ export default defineNuxtPlugin({
       const status = ssrDegradedStatus(ssrContext.payload._errors as Record<string, unknown> | undefined)
       if (status === null) return
       setResponseStatus(event, status)
-      setResponseHeader(event, 'Retry-After', '30')
+      setResponseHeader(event, 'Retry-After', 30)
       setResponseHeader(event, 'Cache-Control', 'no-store')
     })
   },
