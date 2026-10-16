@@ -31,6 +31,15 @@
             <label>头像地址<input v-model="draft.avatar" maxlength="1000" /></label>
             <button type="button" @click="pickerOpen = true">从媒体库选择头像</button>
             <label>头像替代文本<input v-model="draft.avatarAlt" maxlength="300" /></label>
+            <label
+              >在线状态<input v-model="draft.presenceLabel" maxlength="20" placeholder="如“摆烂中”，留空不展示"
+            /></label>
+            <label
+              >状态签名<input v-model="draft.presenceSignature" maxlength="60" placeholder="如“今天不想写代码”"
+            /></label>
+            <label
+              >站点上线日期<input v-model="draft.launchedAt" type="date" placeholder="留空按最早公开文章推算"
+            /></label>
           </fieldset>
           <fieldset :disabled="pending || !ready">
             <legend>社交链接（最多 8 个）</legend>

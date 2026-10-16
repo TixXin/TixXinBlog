@@ -38,12 +38,19 @@ function archiveItem(row: ArchiveRow) {
   }
 }
 
+/** 从上线日期到今天的整天数，无效或未来日期按 0 */
+function siteAgeDays(launchedAt: string | null): number {
+  if (!launchedAt) return 0
+  const start = Date.parse(`${launchedAt}T00:00:00Z`)
+  if (Number.isNaN(start)) return 0
+  return Math.max(0, Math.floor((Date.now() - start) / 86400000))
+}
 @Injectable()
 export class PostDiscoveryService {
   constructor(private readonly em: EntityManager) {}
 
   async metadata(includeArchive = true) {
-    const [archive, tags, categories, sums, commentCount, activity] = await Promise.all([
+    const [archive, tags, categories, sums, commentCount, activity, launch] = await Promise.all([
       includeArchive
         ? this.em.execute<ArchiveRow[]>(
             "select id, slug, seo_noindex, title, folder, published_at from post where status = 'published' and deleted_at is null order by published_at desc, id desc",
@@ -67,6 +74,10 @@ export class PostDiscoveryService {
         comments as (select (c.created_at at time zone 'UTC')::date as day,count(*)::int as total from comment c join post p on p.id=c.post_id where p.status='published' and p.deleted_at is null and ${visibleCommentSql('c')} and c.created_at >= (date_trunc('week',now() at time zone 'UTC') - interval '98 days') at time zone 'UTC' group by 1)
         select to_char(d.day,'YYYY-MM-DD') as date,coalesce(a.total,0)::int as articles,coalesce(c.total,0)::int as comments from days d left join articles a using(day) left join comments c using(day) order by d.day
       `),
+      // 站点上线日期优先取站点资料，未填写时按最早公开文章推算
+      this.em.execute<Array<{ launched_at: string | null; first_published: string | null }>>(
+        "select nullif(s.values->>'launchedAt','') as launched_at, to_char(min(p.published_at) at time zone 'UTC','YYYY-MM-DD') as first_published from site_settings s left join post p on p.status='published' and p.deleted_at is null where s.id='default' group by s.values",
+      ),
     ])
     return {
       tags,
@@ -77,7 +88,7 @@ export class PostDiscoveryService {
         views: sums[0]?.views ?? 0,
         comments: commentCount[0]?.count ?? 0,
         tags: tags.length,
-        uptimeDays: Math.floor(process.uptime() / 86400),
+        siteAgeDays: siteAgeDays(launch[0]?.launched_at ?? launch[0]?.first_published ?? null),
       },
       ...(archive ? { archive: archive.map(archiveItem) } : {}),
     }

@@ -16,6 +16,12 @@ export interface SiteSettingsData {
   announcement: string
   announcementUpdatedAt: string
   socials: { label: string; href: string; icon: string }[]
+  /** 博主当前状态短语，空串表示不展示在线状态 */
+  presenceLabel: string
+  /** 状态签名 */
+  presenceSignature: string
+  /** 站点上线日期 YYYY-MM-DD，空串由服务端按最早文章推算 */
+  launchedAt: string
   revision: number
   updatedAt: string
 }
@@ -31,6 +37,9 @@ export const defaultSiteSettings: SiteSettingsData = {
   announcement: '',
   announcementUpdatedAt: '',
   socials: [],
+  presenceLabel: '',
+  presenceSignature: '',
+  launchedAt: '',
   revision: 0,
   updatedAt: '',
 }

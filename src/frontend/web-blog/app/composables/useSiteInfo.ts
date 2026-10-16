@@ -1,6 +1,6 @@
 /**
  * @file useSiteInfo.ts
- * @description 站点信息数据源 composable，组合真实站点资料与静态导航，不生成虚构运行或在线状态
+ * @description 站点信息数据源 composable，组合真实站点资料与静态导航；在线状态只来自博主维护的站点资料
  * @author TixXin
  * @since 2026-03-26
  */
@@ -37,12 +37,13 @@ export function useSiteInfo() {
     pingMs: null,
     statusText: available.value ? '站点资料已同步' : '站点资料暂不可用',
   }))
-  const ownerPresence = computed<OwnerPresenceInfo>(() => ({
-    status: 'offline',
-    label: '未提供在线状态',
-    signature: '',
-    since: '',
-  }))
+  // 在线状态与签名由博主在站点资料里维护；两者都为空时保持“离线”且不展示签名
+  const ownerPresence = computed<OwnerPresenceInfo>(() => {
+    const label = settings.value.presenceLabel?.trim() ?? ''
+    const signature = settings.value.presenceSignature?.trim() ?? ''
+    if (!label && !signature) return { status: 'offline', label: '未提供在线状态', signature: '', since: '' }
+    return { status: 'online', label: label || '在线', signature, since: '' }
+  })
   const ownerCard = computed<OwnerCardInfo>(() => ({
     name: settings.value.ownerName,
     title: settings.value.ownerTitle,

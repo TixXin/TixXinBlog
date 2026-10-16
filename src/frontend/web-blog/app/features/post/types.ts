@@ -94,7 +94,7 @@ export interface PostSummary {
   activity?: Array<{ date: string; articles: number; comments: number }>
   tags: Array<{ label: string; slug: string; color: string; count: number }>
   categories: Array<{ name: string; count: number }>
-  stats: { posts: number; views: number; comments: number; tags: number; uptimeDays: number }
+  stats: { posts: number; views: number; comments: number; tags: number; siteAgeDays: number }
 }
 
 export interface PostArchiveItem {
