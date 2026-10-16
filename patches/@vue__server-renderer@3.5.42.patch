@@ -1,0 +1,100 @@
+diff --git a/dist/server-renderer.cjs.js b/dist/server-renderer.cjs.js
+index 3f485c1b55c58553a35fd1f3575d08dff549ea00..6fcd3ee6daa51ca493b4ebf5fdc9816715834bb6 100644
+--- a/dist/server-renderer.cjs.js
++++ b/dist/server-renderer.cjs.js
+@@ -157,7 +157,8 @@ function ssrRenderSlotInner(slots, slotName, slotProps, fallbackRenderFn, push,
+         isEmptySlot = false;
+       } else {
+         for (let i = 0; i < slotBuffer.length; i++) {
+-          if (!isComment(slotBuffer[i])) {
++          // Teleport 只在原位留下标记注释，内容已进入目标缓冲；标记必须保留，否则客户端水合找不到 Teleport 锚点。
++          if (!isComment(slotBuffer[i]) || isTeleportMarker(slotBuffer[i])) {
+             isEmptySlot = false;
+             break;
+           }
+@@ -190,6 +191,10 @@ function ssrRenderSlotInner(slots, slotName, slotProps, fallbackRenderFn, push,
+   }
+ }
+ const commentTestRE = /^<!--[\s\S]*-->$/;
++const teleportMarkerRE = /^<!--teleport (?:start|end)-->$/;
++function isTeleportMarker(item) {
++  return typeof item === "string" && teleportMarkerRE.test(item);
++}
+ const commentRE = /<!--[^]*?-->/gm;
+ function isComment(item) {
+   if (typeof item !== "string" || !commentTestRE.test(item)) return false;
+diff --git a/dist/server-renderer.cjs.prod.js b/dist/server-renderer.cjs.prod.js
+index 6d88169f5fa6513abc92f5616a2038a9c817d98c..39ddd3dbea1274e70c140f9652d6363ac73c2818 100644
+--- a/dist/server-renderer.cjs.prod.js
++++ b/dist/server-renderer.cjs.prod.js
+@@ -157,7 +157,8 @@ function ssrRenderSlotInner(slots, slotName, slotProps, fallbackRenderFn, push,
+         isEmptySlot = false;
+       } else {
+         for (let i = 0; i < slotBuffer.length; i++) {
+-          if (!isComment(slotBuffer[i])) {
++          // Teleport 只在原位留下标记注释，内容已进入目标缓冲；标记必须保留，否则客户端水合找不到 Teleport 锚点。
++          if (!isComment(slotBuffer[i]) || isTeleportMarker(slotBuffer[i])) {
+             isEmptySlot = false;
+             break;
+           }
+@@ -190,6 +191,10 @@ function ssrRenderSlotInner(slots, slotName, slotProps, fallbackRenderFn, push,
+   }
+ }
+ const commentTestRE = /^<!--[\s\S]*-->$/;
++const teleportMarkerRE = /^<!--teleport (?:start|end)-->$/;
++function isTeleportMarker(item) {
++  return typeof item === "string" && teleportMarkerRE.test(item);
++}
+ const commentRE = /<!--[^]*?-->/gm;
+ function isComment(item) {
+   if (typeof item !== "string" || !commentTestRE.test(item)) return false;
+diff --git a/dist/server-renderer.esm-browser.js b/dist/server-renderer.esm-browser.js
+index 282e1813fb2169bb2480350781d312c2d706d87f..91951e757cfa6300870e3468fcc37fe69c7da114 100644
+--- a/dist/server-renderer.esm-browser.js
++++ b/dist/server-renderer.esm-browser.js
+@@ -8192,7 +8192,8 @@ function ssrRenderSlotInner(slots, slotName, slotProps, fallbackRenderFn, push,
+         isEmptySlot = false;
+       } else {
+         for (let i = 0; i < slotBuffer.length; i++) {
+-          if (!isComment(slotBuffer[i])) {
++          // Teleport 只在原位留下标记注释，内容已进入目标缓冲；标记必须保留，否则客户端水合找不到 Teleport 锚点。
++          if (!isComment(slotBuffer[i]) || isTeleportMarker(slotBuffer[i])) {
+             isEmptySlot = false;
+             break;
+           }
+@@ -8225,6 +8226,10 @@ function ssrRenderSlotInner(slots, slotName, slotProps, fallbackRenderFn, push,
+   }
+ }
+ const commentTestRE = /^<!--[\s\S]*-->$/;
++const teleportMarkerRE = /^<!--teleport (?:start|end)-->$/;
++function isTeleportMarker(item) {
++  return typeof item === "string" && teleportMarkerRE.test(item);
++}
+ const commentRE = /<!--[^]*?-->/gm;
+ function isComment(item) {
+   if (typeof item !== "string" || !commentTestRE.test(item)) return false;
+diff --git a/dist/server-renderer.esm-bundler.js b/dist/server-renderer.esm-bundler.js
+index 428c09a2f945f08a2cfba23e363fa5b123f86dcd..0253c05184d20bb3c98b12218d693833c7ccade6 100644
+--- a/dist/server-renderer.esm-bundler.js
++++ b/dist/server-renderer.esm-bundler.js
+@@ -140,7 +140,8 @@ function ssrRenderSlotInner(slots, slotName, slotProps, fallbackRenderFn, push,
+         isEmptySlot = false;
+       } else {
+         for (let i = 0; i < slotBuffer.length; i++) {
+-          if (!isComment(slotBuffer[i])) {
++          // Teleport 只在原位留下标记注释，内容已进入目标缓冲；标记必须保留，否则客户端水合找不到 Teleport 锚点。
++          if (!isComment(slotBuffer[i]) || isTeleportMarker(slotBuffer[i])) {
+             isEmptySlot = false;
+             break;
+           }
+@@ -173,6 +174,10 @@ function ssrRenderSlotInner(slots, slotName, slotProps, fallbackRenderFn, push,
+   }
+ }
+ const commentTestRE = /^<!--[\s\S]*-->$/;
++const teleportMarkerRE = /^<!--teleport (?:start|end)-->$/;
++function isTeleportMarker(item) {
++  return typeof item === "string" && teleportMarkerRE.test(item);
++}
+ const commentRE = /<!--[^]*?-->/gm;
+ function isComment(item) {
+   if (typeof item !== "string" || !commentTestRE.test(item)) return false;

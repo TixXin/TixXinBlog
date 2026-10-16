@@ -51,7 +51,8 @@
     },
     "patchedDependencies": {
       "nuxt@4.5.2": "patches/nuxt@4.5.2.patch",
-      "@vue/runtime-core@3.5.42": "patches/@vue__runtime-core@3.5.42.patch"
+      "@vue/runtime-core@3.5.42": "patches/@vue__runtime-core@3.5.42.patch",
+      "@vue/server-renderer@3.5.42": "patches/@vue__server-renderer@3.5.42.patch"
     }
   }
 }

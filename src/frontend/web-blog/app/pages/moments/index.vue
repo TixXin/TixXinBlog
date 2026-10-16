@@ -89,32 +89,30 @@
         @cancel="interactions.cancelIdentity"
         @login="interactions.switchToLogin"
       />
-      <ClientOnly>
-        <Teleport to="#right-sidebar-target">
-          <SidebarRightSidebar>
-            <CommonRequestFeedback
-              v-if="overviewError"
-              class="card"
-              compact
-              title="动态统计暂时不可用"
-              :pending="overviewPending"
-              @retry="refreshOverview()"
-            />
-            <SidebarMomentAuthorCard v-if="rightInfo" :stats="authorStats" :profile="ownerCard" />
-            <SidebarMomentPhotoWallCard :images="photoWallImages" @select-moment="onPhotoSelect" />
-            <SidebarMomentCalendarCard
-              v-if="rightInfo"
-              :moment-dates="momentDates"
-              :date-counts="momentDateCounts"
-              :available="!!metadata"
-              :selected-date="selectedDate"
-              @select-date="onDateSelect"
-            />
-            <SidebarMomentTopicCard :topics="momentTopics" :active-topic="selectedTopic" @select="onTopicSelect" />
-            <SidebarMomentTimeCapsuleCard :moments="recollections" />
-          </SidebarRightSidebar>
-        </Teleport>
-      </ClientOnly>
+      <Teleport to="#right-sidebar-target">
+        <SidebarRightSidebar>
+          <CommonRequestFeedback
+            v-if="overviewError"
+            class="card"
+            compact
+            title="动态统计暂时不可用"
+            :pending="overviewPending"
+            @retry="refreshOverview()"
+          />
+          <SidebarMomentAuthorCard v-if="rightInfo" :stats="authorStats" :profile="ownerCard" />
+          <SidebarMomentPhotoWallCard :images="photoWallImages" @select-moment="onPhotoSelect" />
+          <SidebarMomentCalendarCard
+            v-if="rightInfo"
+            :moment-dates="momentDates"
+            :date-counts="momentDateCounts"
+            :available="!!metadata"
+            :selected-date="selectedDate"
+            @select-date="onDateSelect"
+          />
+          <SidebarMomentTopicCard :topics="momentTopics" :active-topic="selectedTopic" @select="onTopicSelect" />
+          <SidebarMomentTimeCapsuleCard :moments="recollections" />
+        </SidebarRightSidebar>
+      </Teleport>
     </template>
   </CommonPageFrame>
 </template>

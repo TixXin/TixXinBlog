@@ -165,72 +165,70 @@
       <!-- 右侧栏 -->
     </template>
     <template #overlays>
-      <ClientOnly>
-        <Teleport to="#right-sidebar-target">
-          <SidebarRightSidebar>
-            <div class="sidebar-list-group">
-              <!-- AI 搜索入口 -->
-              <button type="button" class="flash-ai-card" @click="onAiClick">
-                <Icon name="lucide:sparkles" size="18" class="flash-ai-card__icon" />
-                <div class="flash-ai-card__body">
-                  <span class="flash-ai-card__title">AI 搜索闪念</span>
-                  <span class="flash-ai-card__desc">{{
-                    isLoggedIn ? '让 AI 帮你回顾过去的想法' : '登录后启用 AI 搜索'
-                  }}</span>
-                </div>
-                <Icon name="lucide:chevron-right" size="14" class="flash-ai-card__arrow" />
-              </button>
-
-              <!-- 统计卡片 -->
-              <div class="flash-stat-card">
-                <div class="flash-stat-card__row">
-                  <span class="flash-stat-card__label">{{ isLoggedIn ? '闪念总数' : '博主总数' }}</span>
-                  <span class="flash-stat-card__value">{{ loaded ? notes.length : '—' }}</span>
-                </div>
-                <div class="flash-stat-card__divider" />
-                <div class="flash-stat-card__row">
-                  <span class="flash-stat-card__label">本月新增</span>
-                  <span class="flash-stat-card__value">{{ loaded ? monthlyCount : '—' }}</span>
-                </div>
+      <Teleport to="#right-sidebar-target">
+        <SidebarRightSidebar>
+          <div class="sidebar-list-group">
+            <!-- AI 搜索入口 -->
+            <button type="button" class="flash-ai-card" @click="onAiClick">
+              <Icon name="lucide:sparkles" size="18" class="flash-ai-card__icon" />
+              <div class="flash-ai-card__body">
+                <span class="flash-ai-card__title">AI 搜索闪念</span>
+                <span class="flash-ai-card__desc">{{
+                  isLoggedIn ? '让 AI 帮你回顾过去的想法' : '登录后启用 AI 搜索'
+                }}</span>
               </div>
+              <Icon name="lucide:chevron-right" size="14" class="flash-ai-card__arrow" />
+            </button>
 
-              <!-- 发布日历 -->
-              <SidebarFlashCalendarCard
-                v-if="loaded"
-                :note-dates="noteDates"
-                :selected-date="selectedDate"
-                @select-date="onSelectDate"
-              />
-
-              <!-- 时间胶囊：去年今日 + 随机回顾 -->
-              <SidebarFlashTimeCapsuleCard v-if="loaded" :notes="notes" />
-
-              <!-- 标签云 -->
-              <div v-if="tagCloud.length > 0" class="flash-tag-cloud">
-                <div class="flash-tag-cloud__header">
-                  <Icon name="lucide:tags" size="14" />
-                  <span>标签云</span>
-                </div>
-                <div class="flash-tag-cloud__list">
-                  <button
-                    v-for="t in tagCloud"
-                    :key="t.name"
-                    type="button"
-                    :aria-pressed="activeTag === t.name"
-                    class="flash-tag-cloud__item"
-                    :class="{ 'flash-tag-cloud__item--active': activeTag === t.name }"
-                    :style="{ fontSize: tagFontSize(t.count) }"
-                    @click="onTagFilter(t.name)"
-                  >
-                    #{{ t.name }}
-                    <span class="flash-tag-cloud__count">{{ t.count }}</span>
-                  </button>
-                </div>
+            <!-- 统计卡片 -->
+            <div class="flash-stat-card">
+              <div class="flash-stat-card__row">
+                <span class="flash-stat-card__label">{{ isLoggedIn ? '闪念总数' : '博主总数' }}</span>
+                <span class="flash-stat-card__value">{{ loaded ? notes.length : '—' }}</span>
+              </div>
+              <div class="flash-stat-card__divider" />
+              <div class="flash-stat-card__row">
+                <span class="flash-stat-card__label">本月新增</span>
+                <span class="flash-stat-card__value">{{ loaded ? monthlyCount : '—' }}</span>
               </div>
             </div>
-          </SidebarRightSidebar>
-        </Teleport>
-      </ClientOnly>
+
+            <!-- 发布日历 -->
+            <SidebarFlashCalendarCard
+              v-if="loaded"
+              :note-dates="noteDates"
+              :selected-date="selectedDate"
+              @select-date="onSelectDate"
+            />
+
+            <!-- 时间胶囊：去年今日 + 随机回顾 -->
+            <SidebarFlashTimeCapsuleCard v-if="loaded" :notes="notes" />
+
+            <!-- 标签云 -->
+            <div v-if="tagCloud.length > 0" class="flash-tag-cloud">
+              <div class="flash-tag-cloud__header">
+                <Icon name="lucide:tags" size="14" />
+                <span>标签云</span>
+              </div>
+              <div class="flash-tag-cloud__list">
+                <button
+                  v-for="t in tagCloud"
+                  :key="t.name"
+                  type="button"
+                  :aria-pressed="activeTag === t.name"
+                  class="flash-tag-cloud__item"
+                  :class="{ 'flash-tag-cloud__item--active': activeTag === t.name }"
+                  :style="{ fontSize: tagFontSize(t.count) }"
+                  @click="onTagFilter(t.name)"
+                >
+                  #{{ t.name }}
+                  <span class="flash-tag-cloud__count">{{ t.count }}</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        </SidebarRightSidebar>
+      </Teleport>
       <FlashAISearchModal v-model:visible="aiModalVisible" :notes="notes" @cite-click="onCiteClick" />
       <CommonGuestIdentityModal
         :visible="identityModalVisible"

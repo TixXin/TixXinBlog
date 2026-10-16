@@ -27,7 +27,7 @@ app/features/appearance/themeRegistry.ts
 
 主题中的分发组件可以复用 `app/components/` 的共享实现；需要主题差异时在主题目录替换对应组件。增加逻辑组件时先声明契约，再实现各主题与宿主调用，不绕过现有分发边界。
 
-`app/layouts/default.vue` 稳定持有 `NuxtPage`，作为 `<ThemeComponent name="RootLayout">` 的 slot 内容传入。主题使用 `<slot />`，不额外创建 `NuxtPage`。右侧栏由宿主管理，布局需要提供对应的 `#right-sidebar-target`；紧凑布局和抽屉仍复用同一业务数据。
+`app/layouts/default.vue` 稳定持有 `NuxtPage`，作为 `<ThemeComponent name="RootLayout">` 的 slot 内容传入。主题使用 `<slot />`，不额外创建 `NuxtPage`。右侧栏由宿主管理，布局需要提供一个空的 `<div id="right-sidebar-target">` 挂载点：页面通过 `<Teleport to="#right-sidebar-target">` 直接挂入，不包 `ClientOnly`；SSR 阶段由 `app/plugins/sidebar-teleport.server.ts` 把 Teleport 内容注入该节点，首屏随 HTML 直出，骨架屏以 `:empty` 判断隐藏。紧凑布局和抽屉仍复用同一业务数据。
 
 ## 元数据与宿主能力
 

@@ -251,13 +251,13 @@ export default {
     // 'all' 会关闭 DNS rebinding 防护，生产不走 dev server，dev 环境放开可接受
     server: {
       allowedHosts: ['tix.xin', '.tix.xin'],
-      // dev 启动即预转换首页链路与各主题壳层，首屏不再逐个按需转换数百个模块
+      // dev 启动即预转换全部页面、布局与主题壳层（含其静态依赖图），首屏与切页不再逐个按需转换数百个模块
       warmup: {
         clientFiles: [
           './app/app.vue',
-          './app/layouts/default.vue',
-          './app/pages/index.vue',
-          './themes/*/app/components/RootLayout.vue',
+          './app/layouts/*.vue',
+          './app/pages/**/*.vue',
+          './themes/*/app/components/*.vue',
         ],
       },
     },

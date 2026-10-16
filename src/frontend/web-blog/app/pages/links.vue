@@ -103,27 +103,26 @@
           @persist="local.persist"
         /> </CommonCustomScrollbar></template
     ><template #overlays
-      ><ClientOnly
-        ><Teleport v-if="activeTheme.capabilities.rightSidebar" to="#right-sidebar-target"
-          ><SidebarRightSidebar
-            ><CommonRequestFeedback
-              v-if="metadataPending || metadataError"
-              :pending="metadataPending"
-              :compact="!!metadata"
-              :title="metadataError?.message || '正在读取友链信息'"
-              @retry="refreshMetadata()" /><LinkStats v-if="metadata" :stats="metadata.stats" /><LinkRules
-              v-if="metadata"
-              :rules="metadata.rules" /><LinkSiteInfoCard
-              :info="site.info.value"
-              :ready="site.ready.value"
-              :pending="site.pending.value"
-              :error="site.error.value"
-              :copying="site.copying.value"
-              :copy-error="site.copyError.value"
-              :notice="site.notice.value"
-              :retained-text="site.retainedText.value"
-              @retry="site.refresh"
-              @copy="site.copy" /></SidebarRightSidebar></Teleport></ClientOnly></template
+      ><Teleport v-if="activeTheme.capabilities.rightSidebar" to="#right-sidebar-target"
+        ><SidebarRightSidebar
+          ><CommonRequestFeedback
+            v-if="metadataPending || metadataError"
+            :pending="metadataPending"
+            :compact="!!metadata"
+            :title="metadataError?.message || '正在读取友链信息'"
+            @retry="refreshMetadata()" /><LinkStats v-if="metadata" :stats="metadata.stats" /><LinkRules
+            v-if="metadata"
+            :rules="metadata.rules" /><LinkSiteInfoCard
+            :info="site.info.value"
+            :ready="site.ready.value"
+            :pending="site.pending.value"
+            :error="site.error.value"
+            :copying="site.copying.value"
+            :copy-error="site.copyError.value"
+            :notice="site.notice.value"
+            :retained-text="site.retainedText.value"
+            @retry="site.refresh"
+            @copy="site.copy" /></SidebarRightSidebar></Teleport></template
   ></CommonPageFrame>
 </template>
 <script setup lang="ts">

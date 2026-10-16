@@ -1,6 +1,6 @@
 # 固定版本框架生命周期修正
 
-`nuxt@4.5.2.patch`和`@vue__runtime-core@3.5.42.patch`使用pnpm固定版本补丁机制登记在根清单和锁文件中。安装时应用相同差异，两个Docker安装层及隔离开发副本均包含此目录。工作流参考[pnpm patch](https://pnpm.io/cli/patch)及[patch-commit](https://pnpm.io/cli/patch-commit)；本项目实际命令以固定的pnpm9.15.0为准。
+`nuxt@4.5.2.patch`、`@vue__runtime-core@3.5.42.patch`和`@vue__server-renderer@3.5.42.patch`使用pnpm固定版本补丁机制登记在根清单和锁文件中。安装时应用相同差异，两个Docker安装层及隔离开发副本均包含此目录。工作流参考[pnpm patch](https://pnpm.io/cli/patch)及[patch-commit](https://pnpm.io/cli/patch-commit)；本项目实际命令以固定的pnpm9.15.0为准。
 
 ## 范围与原因
 
@@ -19,6 +19,12 @@ Vue 3.5.42 在异步子树尚未就绪、父节点又发生更新时，为 `asyn
 
 `pageRequestBoundary.test.ts` 使用实际安装的 Vue，覆盖未完成子树的父属性更新、卸载后的有标记取消、普通错误、同文案但无标记错误，以及成功解析后保留最新父属性。未应用补丁的负对照会产生额外未处理拒绝；浏览器快速导航仍必须满足零页面错误。
 
+## Vue SSR 插槽中的 Teleport 标记
+
+`@vue/server-renderer` 的 `ssrRenderSlotInner` 会把输出里只有注释的插槽当作空插槽丢弃。`<Teleport>` 在原位只留下 `<!--teleport start--><!--teleport end-->` 两条标记，内容已经进入目标缓冲，因此"插槽里只有一个 Teleport"会被整体丢掉：目标里有内容、原位却没有标记，客户端水合时找不到 Teleport 锚点，表现为 `Hydration completed but contains mismatches`。本项目的页面右侧栏正是通过 `CommonPageFrame` 的 `overlays` 插槽 Teleport 到布局挂载点并由 `sidebar-teleport.server.ts` 注入 SSR 内容。
+
+补丁只在判空循环里把 Teleport 标记视为非空；普通注释插槽仍走后备内容。CommonJS 与 ESM 的开发、生产产物使用同一修正；`esm-browser.prod.js` 为压缩产物且本项目不使用浏览器端 SSR，未修改。`ssrTeleportSlot.test.ts` 使用实际安装的渲染器覆盖这两种情况。
+
 ## 维护与验证
 
 ```sh
@@ -29,7 +35,7 @@ corepack pnpm --filter web-blog exec vitest run tests/unit/pageRequestBoundary.t
 corepack pnpm --filter web-blog test
 ```
 
-Vue 补丁同样使用 `corepack pnpm patch @vue/runtime-core@3.5.42 --edit-dir .artifacts/vue-runtime-patch-next` 和 `patch-commit` 维护。不要直接编辑已安装的`node_modules`，也不要设置允许未应用补丁来绕过版本不匹配。升级Nuxt或Vue时需对照新源码，删除已经被上游修复的部分或重新生成补丁及锁文件。
+Vue 补丁同样使用 `corepack pnpm patch @vue/runtime-core@3.5.42 --edit-dir .artifacts/vue-runtime-patch-next`（服务端渲染器为 `@vue/server-renderer@3.5.42`）和 `patch-commit` 维护。不要直接编辑已安装的`node_modules`，也不要设置允许未应用补丁来绕过版本不匹配。升级Nuxt或Vue时需对照新源码，删除已经被上游修复的部分或重新生成补丁及锁文件。
 
 测试直接执行安装版本的路由插件与启动钩子，覆盖正常SSR、原生查询/锚点、插件导航、SSG恢复与middleware拒绝。前端单测执行实际payload插件并核对定时器、短期监听和恢复；浏览器测试包含快速刷新后原历史条目仍能返回，以及跨过预取期限的真实卸载和503后刷新恢复。
 

@@ -79,25 +79,23 @@
       />
     </template>
     <template #overlays>
-      <ClientOnly>
-        <Teleport to="#right-sidebar-target">
-          <SidebarRightSidebar>
-            <SidebarPostFilters
-              :tags="tags"
-              :categories="categories"
-              :available="!!metadata"
-              :pending="metadataPending"
-              :error="!!metadataError"
-              :active-tag="selectedTag"
-              :active-category="selectedCategory"
-              @select-tag="onTagSelect"
-              @select-category="onCategorySelect"
-              @retry="refreshMetadata()"
-            />
-            <BlogSubscribeCard />
-          </SidebarRightSidebar>
-        </Teleport>
-      </ClientOnly>
+      <Teleport to="#right-sidebar-target">
+        <SidebarRightSidebar>
+          <SidebarPostFilters
+            :tags="tags"
+            :categories="categories"
+            :available="!!metadata"
+            :pending="metadataPending"
+            :error="!!metadataError"
+            :active-tag="selectedTag"
+            :active-category="selectedCategory"
+            @select-tag="onTagSelect"
+            @select-category="onCategorySelect"
+            @retry="refreshMetadata()"
+          />
+          <BlogSubscribeCard />
+        </SidebarRightSidebar>
+      </Teleport>
     </template>
   </CommonPageFrame>
 </template>

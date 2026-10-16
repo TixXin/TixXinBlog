@@ -85,21 +85,20 @@
         @next="move(1)"
         @retry="readSelection"
       />
-      <ClientOnly
-        ><Teleport v-if="activeTheme.capabilities.rightSidebar" to="#right-sidebar-target"
-          ><SidebarRightSidebar>
-            <CommonRequestFeedback
-              v-if="metadataPending || metadataError"
-              :pending="metadataPending"
-              :compact="!!metadata"
-              :title="metadataError?.message || '正在读取图库统计'"
-              @retry="refreshMetadata()"
-            />
-            <GalleryStats v-if="metadata" :stats="stats" /><GalleryGearCard
-              v-if="metadata"
-              :gear="metadata.gear"
-            /> </SidebarRightSidebar></Teleport
-      ></ClientOnly>
+      <Teleport v-if="activeTheme.capabilities.rightSidebar" to="#right-sidebar-target"
+        ><SidebarRightSidebar>
+          <CommonRequestFeedback
+            v-if="metadataPending || metadataError"
+            :pending="metadataPending"
+            :compact="!!metadata"
+            :title="metadataError?.message || '正在读取图库统计'"
+            @retry="refreshMetadata()"
+          />
+          <GalleryStats v-if="metadata" :stats="stats" /><GalleryGearCard
+            v-if="metadata"
+            :gear="metadata.gear"
+          /> </SidebarRightSidebar
+      ></Teleport>
     </template>
   </CommonPageFrame>
 </template>

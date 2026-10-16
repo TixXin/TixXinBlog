@@ -129,15 +129,15 @@
           <ArticleTableOfContents :items="tocItems" :active-id="activeId" :progress="progress" @navigate="close" />
         </CommonContextDrawer>
       </Teleport>
-      <Teleport to="#right-sidebar-target">
-        <SidebarRightSidebar>
-          <ArticleTableOfContents :items="tocItems" :active-id="activeId" :progress="progress" />
-          <ArticleRelatedPosts :posts="relatedPosts" />
-          <SidebarReadingHistoryCard />
-          <AboutDonateCard />
-        </SidebarRightSidebar>
-      </Teleport>
     </ClientOnly>
+    <Teleport to="#right-sidebar-target">
+      <SidebarRightSidebar>
+        <ArticleTableOfContents :items="tocItems" :active-id="activeId" :progress="progress" />
+        <ArticleRelatedPosts :posts="relatedPosts" />
+        <SidebarReadingHistoryCard />
+        <AboutDonateCard />
+      </SidebarRightSidebar>
+    </Teleport>
   </div>
 </template>
 
