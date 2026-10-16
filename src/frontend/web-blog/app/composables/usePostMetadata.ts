@@ -16,6 +16,21 @@ const COLORS: Record<string, string> = {
   amber: '#f59e0b',
 }
 
+// 专栏图标按名称关键词匹配，未命中的专栏使用默认文件夹图标。
+const CATEGORY_ICONS: readonly { match: RegExp; icon: string; color: string }[] = [
+  { match: /前端|web|ui/i, icon: 'lucide:code-xml', color: '#3b82f6' },
+  { match: /随笔|日记|生活/, icon: 'lucide:flame', color: '#f97316' },
+  { match: /devops|运维|部署/i, icon: 'lucide:terminal', color: '#0ea5e9' },
+  { match: /后端|服务|数据库/, icon: 'lucide:server', color: '#10b981' },
+  { match: /复盘|工作|职业/, icon: 'lucide:briefcase', color: '#a855f7' },
+  { match: /博客|建设|站点/, icon: 'lucide:layout-template', color: '#eab308' },
+]
+export function categoryIcon(name: string) {
+  const hit = CATEGORY_ICONS.find((item) => item.match.test(name))
+  const color = hit?.color ?? '#0ea5e9'
+  const [r, g, b] = [1, 3, 5].map((offset) => parseInt(color.slice(offset, offset + 2), 16))
+  return { icon: hit?.icon ?? 'lucide:folder', iconColor: color, iconBg: `rgba(${r}, ${g}, ${b}, 0.12)` }
+}
 export async function usePostMetadata() {
   const config = useRuntimeConfig()
   // 轻量统计复用公开读取缓存；失败保留与写后失效统一由缓存生命周期处理。
@@ -57,12 +72,7 @@ export async function usePostMetadata() {
     })),
   )
   const categories = computed<CategoryItem[]>(() =>
-    (metadata.value?.categories ?? []).map((category) => ({
-      ...category,
-      icon: 'lucide:folder',
-      iconColor: '#0ea5e9',
-      iconBg: 'rgba(14, 165, 233, 0.1)',
-    })),
+    (metadata.value?.categories ?? []).map((category) => ({ ...category, ...categoryIcon(category.name) })),
   )
   const siteStats = computed<SiteStats | null>(() => {
     const stats = metadata.value?.stats

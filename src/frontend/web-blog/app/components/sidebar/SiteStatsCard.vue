@@ -16,7 +16,7 @@
       <div class="stats-card__uptime-left">
         <span class="stats-card__ping-dot" />
         <div class="stats-card__uptime-text">
-          <span class="stats-card__uptime-label">站点已运行</span>
+          <span class="stats-card__uptime-label">站点已稳定运行</span>
           <span class="stats-card__uptime-days">{{ stats.siteAgeDays.toLocaleString() }} 天</span>
         </div>
       </div>

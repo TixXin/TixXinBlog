@@ -9,6 +9,8 @@
   <div class="page-root theme-dock">
     <main class="dock-body">
       <div class="main-content">
+        <!-- 本主题没有公告卡片，公告以横条形式放在内容区顶部 -->
+        <CommonSiteAnnouncement :content="siteSettings.announcement" :date="siteSettings.announcementUpdatedAt" />
         <slot />
       </div>
     </main>
@@ -59,6 +61,7 @@
 import { scrollToRoot } from '~/utils/scrollRoot'
 const route = useRoute()
 const { navItems } = useNavItems()
+const { settings: siteSettings } = useSiteSettings()
 const windowScroll = ref(0)
 let scrollFrame = 0
 let cancelScroll: (() => void) | undefined

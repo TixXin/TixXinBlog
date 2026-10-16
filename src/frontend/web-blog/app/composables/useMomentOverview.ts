@@ -3,7 +3,7 @@ import type { MomentOverview } from '~/features/moment/types'
 import { MOMENT_TOPIC_DEFINITIONS } from '~/features/moment/topics'
 export async function useMomentOverview(options: { immediate?: boolean } = {}) {
   const repo = useMomentRepository()
-  const { ownerCard } = useSiteInfo()
+  const { ownerCard, ownerPresence } = useSiteInfo()
   const result = usePublicReadData<MomentOverview>('moment-overview', (_app, { signal }) => repo.overview(signal), {
     domain: 'moment-overview',
     kind: 'metadata',
@@ -16,7 +16,15 @@ export async function useMomentOverview(options: { immediate?: boolean } = {}) {
     totalMoments: metadata.value?.stats.totalMoments ?? null,
     totalLikes: metadata.value?.stats.totalLikes ?? null,
     totalComments: metadata.value?.stats.totalComments ?? null,
-    currentMood: result.error.value ? '统计暂时不可用' : '公开动态统计',
+    // 心情一栏展示博主在站点资料里维护的签名；未填写时回退为统计说明
+    currentMood: result.error.value
+      ? '统计暂时不可用'
+      : ownerPresence.value.signature ||
+        (ownerPresence.value.status === 'online' ? ownerPresence.value.label : '公开动态统计'),
+    moodIcon:
+      !result.error.value && (ownerPresence.value.signature || ownerPresence.value.status === 'online')
+        ? 'lucide:smile'
+        : 'lucide:chart-no-axes-column',
     moodUpdatedAt: '',
     socialLinks: ownerCard.value.socials.map((link) => ({ icon: link.icon, url: link.href, label: link.label })),
   }))

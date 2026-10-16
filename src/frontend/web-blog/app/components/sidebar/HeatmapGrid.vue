@@ -8,7 +8,7 @@
 <template>
   <div class="heatmap">
     <div class="heatmap__header">
-      <span class="heatmap__title">公开内容</span>
+      <span class="heatmap__title">活跃度</span>
       <span class="heatmap__subtitle">最近 15 周 · UTC</span>
     </div>
     <div class="heatmap__body">
