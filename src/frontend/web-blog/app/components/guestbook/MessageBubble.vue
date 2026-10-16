@@ -93,7 +93,8 @@
             class="message-bubble__tail"
             :class="message.isOwner ? 'message-bubble__tail--owner' : 'message-bubble__tail--guest'"
           />
-          {{ message.content }}
+          <!-- 换行保留只作用在正文上，模板缩进产生的空白不再变成首行缩进 -->
+          <span class="message-bubble__text">{{ message.content }}</span>
         </div>
         <!-- 操作按钮 -->
         <div class="message-bubble__actions" :class="{ 'message-bubble__actions--left': message.isOwner }">
@@ -492,6 +493,10 @@ onBeforeUnmount(() => {
 }
 
 /* ---- 气泡主体 ---- */
+.message-bubble__text {
+  white-space: pre-wrap;
+}
+
 .message-bubble__content {
   position: relative;
   font-size: 0.8125rem;
@@ -500,7 +505,7 @@ onBeforeUnmount(() => {
   border-radius: 1rem;
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
   word-break: break-word;
-  white-space: pre-wrap;
+  white-space: normal;
 
   &--guest {
     color: var(--text-main);
