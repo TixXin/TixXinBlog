@@ -524,6 +524,8 @@ test('真实列表失败保留成功页，慢查询不覆盖新结果', async ({
   await expect(page.locator(`[data-link-id="${first.id}"]`)).toBeVisible()
   await search.fill(second.name)
   await expect(page.locator(`[data-link-id="${second.id}"]`)).toBeVisible()
+  // 回访在有效期内不会发请求；推进日期进入后台重验证，再检查真实慢请求竞态。
+  await page.clock.setFixedTime(Date.now() + 31_000)
   slow = true
   const delayed = page.waitForRequest(
     (request) =>

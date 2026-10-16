@@ -175,7 +175,7 @@ test('公开分页覆盖全量统计，图标来源优先级和浏览器返回�
     await expect(managed).toHaveAttribute('src', /^\/api\/v1\/media\//)
     await expect.poll(() => managed.evaluate((image) => (image as HTMLImageElement).naturalWidth)).toBeGreaterThan(0)
     await page.goto('/subscriptions?currency=CNY')
-    const automatic = page.getByRole('article', { name: 'Vue 生态支持', exact: true }).getByRole('img')
+    const automatic = page.getByRole('article', { name: 'Vue 生态赞助', exact: true }).getByRole('img')
     await automatic.scrollIntoViewIfNeeded()
     await expect(automatic).toHaveAttribute('src', /^\/api\/v1\/subscriptions\/favicons\//)
     await expect.poll(() => automatic.evaluate((image) => (image as HTMLImageElement).naturalWidth)).toBeGreaterThan(0)

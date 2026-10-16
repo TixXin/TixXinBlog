@@ -2,9 +2,11 @@
  * @file usePostBatch.ts
  * @description 批量预览和执行分离；失败保留凭证，允许查询结果及幂等续办。
  */
+import { invalidatePublicReads } from '~/utils/invalidatePublicReads'
 import type { PostBatchAction, PostBatchPreview, PostBatchResult, PostSelection } from '~/features/post/batchTypes'
 
 export function usePostBatch(onChanged: () => Promise<void>) {
+  const app = useNuxtApp()
   const api = useAdminApi()
   const preview = ref<PostBatchPreview | null>(null)
   const result = ref<PostBatchResult | null>(null)
@@ -54,6 +56,7 @@ export function usePostBatch(onChanged: () => Promise<void>) {
     preview.value = value.preview
     await loadRecent()
     if (value.results.length) {
+      invalidatePublicReads(app, ['posts', 'post-summary', 'archive'])
       clearNuxtData((key) => key.startsWith('article-') || key.startsWith('post-'))
       await onChanged()
     }

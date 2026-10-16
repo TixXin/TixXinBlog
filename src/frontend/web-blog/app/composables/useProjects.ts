@@ -26,16 +26,22 @@ export async function useProjects() {
     ready.value = true
     hydrating.value = false
   })
-  const feed = useAsyncData('projects-feed', async (_app, { signal }) => {
-    const current = key.value
-    return { key: current, page: await repo.list(query.value, AbortSignal.any([scope.signal, signal])) }
-  })
+  const feed = usePublicReadData(
+    'projects-feed',
+    async (_app, { signal }) => {
+      const current = key.value
+      return { key: current, page: await repo.list(query.value, AbortSignal.any([scope.signal, signal])) }
+    },
+    { domain: 'projects', query: () => query.value },
+  )
   // Nuxt 内置 watch 会等待尚未完成的防抖调用；查询切换必须立即取消旧读取。
   watch(key, () => {
-    void feed.refresh({ dedupe: 'cancel', cachedData: undefined })
+    void feed.reload()
   })
-  const metadata = useAsyncData('projects-metadata', (_app, { signal }) =>
-    repo.metadata(AbortSignal.any([scope.signal, signal])),
+  const metadata = usePublicReadData(
+    'projects-metadata',
+    (_app, { signal }) => repo.metadata(AbortSignal.any([scope.signal, signal])),
+    { domain: 'projects', query: () => ({ resource: 'metadata' }), kind: 'metadata', lazy: true },
   )
   watch(
     feed.data,
@@ -44,12 +50,19 @@ export async function useProjects() {
     },
     { immediate: true },
   )
+  watch(
+    feed.generation,
+    () => {
+      accepted.value = null
+    },
+    { flush: 'sync' },
+  )
   function changeQuery(patch: Record<string, string | number | undefined>) {
     return router.push({ path: '/projects', query: { ...route.query, page: undefined, ...patch } })
   }
-  await Promise.all([feed, metadata])
+  await feed
   scope.assertActive()
-  if (feed.data.value && feed.data.value.key !== key.value) await feed.refresh()
+  if (feed.data.value && feed.data.value.key !== key.value) await feed.reload()
   scope.assertActive()
   if (feed.data.value?.key === key.value) accepted.value = feed.data.value
   return {
@@ -57,7 +70,11 @@ export async function useProjects() {
     ready,
     projects: computed(() => accepted.value?.page.items ?? []),
     total: computed(() => accepted.value?.page.total ?? null),
-    stale: computed(() => !!accepted.value && accepted.value.key !== key.value),
+    stale: computed(
+      () =>
+        !!accepted.value &&
+        (accepted.value.key !== key.value || feed.stale.value || feed.pending.value || !!feed.error.value),
+    ),
     pending: feed.pending,
     error: feed.error,
     refresh: feed.refresh,

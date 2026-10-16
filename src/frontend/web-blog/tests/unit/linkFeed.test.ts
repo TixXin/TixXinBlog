@@ -1,4 +1,5 @@
 /** @file linkFeed.test.ts @description 真实友链列表保留错误前内容，并在水合完成后消费当前URL */
+import { publicReadCache } from '../../app/utils/publicReadCache'
 import { beforeEach, afterEach, expect, it, vi } from 'vitest'
 import { defineComponent, h, onMounted } from 'vue'
 import { mockNuxtImport, mountSuspended } from '@nuxt/test-utils/runtime'
@@ -19,6 +20,7 @@ const link = {
 }
 const wrappers: { unmount(): void }[] = []
 beforeEach(() => {
+  publicReadCache(useNuxtApp()).invalidate(['links'])
   mocks.list.mockReset().mockResolvedValue({ items: [link], total: 1, page: 1, pageSize: 12 })
   mocks.metadata.mockReset().mockResolvedValue({ stats: { links: 1, featured: 0, domains: 1 }, rules: [] })
 })

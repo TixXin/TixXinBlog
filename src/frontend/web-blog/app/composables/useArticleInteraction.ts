@@ -2,9 +2,11 @@
  * @file useArticleInteraction.ts
  * @description 文章互动以服务端为准：挂载后计数、恢复点赞状态、失败反馈与请求互斥
  */
+import { invalidatePublicReads } from '~/utils/invalidatePublicReads'
 import { fetchPostInteraction, recordPostView, togglePostLike } from '~/features/post/api'
 
 export function useArticleInteraction(id: string, initial: { likes: number; views: number }) {
+  const app = useNuxtApp()
   const config = useRuntimeConfig()
   const useMock = config.public.postUseMockRepo !== false
   const likes = ref(initial.likes)
@@ -49,7 +51,7 @@ export function useArticleInteraction(id: string, initial: { likes: number; view
         const result = await togglePostLike(config.public.apiBaseUrl, id)
         liked.value = result.liked
         likes.value = result.likes
-        clearNuxtData('post-list')
+        invalidatePublicReads(app, ['posts', 'post-summary'])
       }
     } catch {
       error.value = '点赞操作失败，请重试同步状态'

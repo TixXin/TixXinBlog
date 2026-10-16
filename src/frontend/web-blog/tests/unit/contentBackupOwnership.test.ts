@@ -5,6 +5,7 @@ import type { Ref } from 'vue'
 import { mockNuxtImport, mountSuspended } from '@nuxt/test-utils/runtime'
 import { useContentBackup } from '../../app/composables/useContentBackup'
 import type { ContentImportView } from '../../app/features/backup/types'
+import { publicReadCache, publicReadKey } from '../../app/utils/publicReadCache'
 
 const mocks = vi.hoisted(() => ({
   auth: {} as {
@@ -330,4 +331,21 @@ it('同一账号和内容库确认导入后正常接受完成结果并刷新设�
   expect(state.error.value).toBe('')
   expect(mocks.refreshSite).toHaveBeenCalledTimes(1)
   expect(mocks.success).toHaveBeenCalledWith('内容已迁入为新草稿')
+})
+
+it('执行响应丢失后通过查询确认完成，也撤销旧图库与友链设置缓存', async () => {
+  const { state } = await setup()
+  const cache = publicReadCache(useNuxtApp())
+  const key = publicReadKey('gallery', { resource: 'metadata' })
+  cache.put('gallery', key, { gear: ['导入前器材'] }, cache.generation('gallery'), 60000)
+  const id = 'confirmed-after-response-loss'
+  const completed = {
+    ...ticket(id, true),
+    result: { posts: [], flashes: [], comments: 0, media: 0, files: 0, settings: true },
+  }
+  mocks.api.mockImplementation(async (path: string) => (path.endsWith(id) ? completed : []))
+  await state.read(id)
+  expect(state.job.value?.completed).toBe(true)
+  expect(mocks.refreshSite).toHaveBeenCalledTimes(1)
+  expect(cache.read(key)).toBeUndefined()
 })

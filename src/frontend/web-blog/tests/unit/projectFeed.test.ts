@@ -1,4 +1,5 @@
 /** @file projectFeed.test.ts @description 项目列表失败保留真实成功页，URL 查询只接受最后响应 */
+import { publicReadCache } from '../../app/utils/publicReadCache'
 import { afterEach, beforeEach, expect, it, vi } from 'vitest'
 import { defineComponent, h, onMounted } from 'vue'
 import { mockNuxtImport, mountSuspended } from '@nuxt/test-utils/runtime'
@@ -19,6 +20,7 @@ const project = {
 }
 const wrappers: { unmount(): void }[] = []
 beforeEach(() => {
+  publicReadCache(useNuxtApp()).invalidate(['projects'])
   mocks.list.mockReset().mockResolvedValue({ items: [project], total: 1, page: 1, pageSize: 12 })
   mocks.metadata
     .mockReset()

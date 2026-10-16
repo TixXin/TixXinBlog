@@ -36,15 +36,21 @@ export async function useGallery() {
   let openerId: number | null = null,
     moveVersion = 0
   let pendingFocus: { id: number; key: string; root: HTMLElement } | null = null
-  const feed = useAsyncData('gallery-feed', async (_app, { signal }) => {
-    const current = key.value
-    return { key: current, page: await repo.list(query.value, AbortSignal.any([signal, scope.signal])) }
-  })
+  const feed = usePublicReadData(
+    'gallery-feed',
+    async (_app, { signal }) => {
+      const current = key.value
+      return { key: current, page: await repo.list(query.value, AbortSignal.any([signal, scope.signal])) }
+    },
+    { domain: 'gallery', query: () => query.value },
+  )
   watch(key, () => {
-    void feed.refresh({ dedupe: 'cancel', cachedData: undefined })
+    void feed.reload()
   })
-  const overview = useAsyncData('gallery-metadata', (_app, { signal }) =>
-    repo.metadata(AbortSignal.any([signal, scope.signal])),
+  const overview = usePublicReadData(
+    'gallery-metadata',
+    (_app, { signal }) => repo.metadata(AbortSignal.any([signal, scope.signal])),
+    { domain: 'gallery', query: () => ({ resource: 'metadata' }), kind: 'metadata', lazy: true },
   )
   const requestedSelection = ref({ id: selectedId.value, key: selectionKey.value })
   const selection = useAsyncData('gallery-selection', async (_app, { signal }) => {
@@ -124,6 +130,13 @@ export async function useGallery() {
     hydrating.value = false
     normalizeLocation()
   })
+  watch(
+    feed.generation,
+    () => {
+      accepted.value = null
+    },
+    { flush: 'sync' },
+  )
   function changeQuery(patch: Record<string, string | number | undefined>) {
     return router.push({ path: '/gallery', query: { ...route.query, photo: undefined, page: undefined, ...patch } })
   }
@@ -161,9 +174,9 @@ export async function useGallery() {
     moveVersion++
     pendingFocus = null
   })
-  await Promise.all([feed, overview, selection])
+  await Promise.all([feed, selection])
   scope.assertActive()
-  if (feed.data.value && feed.data.value.key !== key.value) await feed.refresh()
+  if (feed.data.value && feed.data.value.key !== key.value) await feed.reload()
   scope.assertActive()
   if (feed.data.value?.key === key.value) accepted.value = feed.data.value
   if (
@@ -182,7 +195,11 @@ export async function useGallery() {
     pending: feed.pending,
     error: feed.error,
     refresh: feed.refresh,
-    stale: computed(() => !!accepted.value && accepted.value.key !== key.value),
+    stale: computed(
+      () =>
+        !!accepted.value &&
+        (accepted.value.key !== key.value || feed.stale.value || feed.pending.value || !!feed.error.value),
+    ),
     metadata: overview.data,
     metadataPending: overview.pending,
     metadataError: overview.error,

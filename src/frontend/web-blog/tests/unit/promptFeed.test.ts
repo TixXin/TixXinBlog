@@ -1,4 +1,5 @@
 /** @file promptFeed.test.ts @description 提示词列表失败保留真实成功页，URL 查询只接受最后响应 */
+import { publicReadCache } from '../../app/utils/publicReadCache'
 import { afterEach, beforeEach, expect, it, vi } from 'vitest'
 import { defineComponent, h, onMounted } from 'vue'
 import { mockNuxtImport, mountSuspended } from '@nuxt/test-utils/runtime'
@@ -22,6 +23,7 @@ const prompt = {
 }
 const wrappers: { unmount(): void }[] = []
 beforeEach(() => {
+  publicReadCache(useNuxtApp()).invalidate(['prompts'])
   mocks.list.mockReset().mockResolvedValue({ items: [prompt], total: 1, page: 1, pageSize: 12 })
   mocks.metadata.mockReset().mockResolvedValue({
     stats: { prompts: 1, models: 1, tags: 0 },

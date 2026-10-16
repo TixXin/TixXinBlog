@@ -359,6 +359,8 @@ test('失败不显示伪空列表，慢查询不会覆盖新筛选', async ({ pa
   await expect(page.locator(`[data-project-id="${first.id}"]`)).toBeVisible()
   await search.fill(second.title)
   await expect(page.locator(`[data-project-id="${second.id}"]`)).toBeVisible()
+  // 回访在有效期内不会发请求；推进日期进入后台重验证，再检查真实慢请求竞态。
+  await page.clock.setFixedTime(Date.now() + 31_000)
   slow = true
   const waiting = page.waitForRequest(
     (request) =>

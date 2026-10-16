@@ -26,16 +26,22 @@ export async function usePrompts() {
     ready.value = true
     hydrating.value = false
   })
-  const feed = useAsyncData('prompts-feed', async (_app, { signal }) => {
-    const current = key.value
-    return { key: current, page: await repo.list(query.value, AbortSignal.any([scope.signal, signal])) }
-  })
+  const feed = usePublicReadData(
+    'prompts-feed',
+    async (_app, { signal }) => {
+      const current = key.value
+      return { key: current, page: await repo.list(query.value, AbortSignal.any([scope.signal, signal])) }
+    },
+    { domain: 'prompts', query: () => query.value },
+  )
   // Nuxt 内置 watch 会等待尚未完成的防抖调用；查询切换必须立即取消旧读取。
   watch(key, () => {
-    void feed.refresh({ dedupe: 'cancel', cachedData: undefined })
+    void feed.reload()
   })
-  const metadata = useAsyncData('prompts-metadata', (_app, { signal }) =>
-    repo.metadata(AbortSignal.any([scope.signal, signal])),
+  const metadata = usePublicReadData(
+    'prompts-metadata',
+    (_app, { signal }) => repo.metadata(AbortSignal.any([scope.signal, signal])),
+    { domain: 'prompts', query: () => ({ resource: 'metadata' }), kind: 'metadata', lazy: true },
   )
   watch(
     feed.data,
@@ -44,12 +50,19 @@ export async function usePrompts() {
     },
     { immediate: true },
   )
+  watch(
+    feed.generation,
+    () => {
+      accepted.value = null
+    },
+    { flush: 'sync' },
+  )
   function changeQuery(patch: Record<string, string | number | undefined>) {
     return router.push({ path: '/prompts', query: { ...route.query, page: undefined, prompt: undefined, ...patch } })
   }
-  await Promise.all([feed, metadata])
+  await feed
   scope.assertActive()
-  if (feed.data.value && feed.data.value.key !== key.value) await feed.refresh()
+  if (feed.data.value && feed.data.value.key !== key.value) await feed.reload()
   scope.assertActive()
   if (feed.data.value?.key === key.value) accepted.value = feed.data.value
   return {
