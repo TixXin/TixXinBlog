@@ -174,6 +174,23 @@
           <span class="message-bubble__reaction-count">{{ r.count }}</span>
         </button>
       </div>
+
+      <!-- 浏览器与地区 -->
+      <p
+        v-if="message.browser || message.region"
+        class="message-bubble__foot"
+        :class="{ 'message-bubble__foot--end': message.isOwner }"
+      >
+        <span v-if="message.browser" class="message-bubble__browser">
+          <Icon name="lucide:monitor" size="11" class="message-bubble__browser-icon" />
+          {{ message.browser }}
+        </span>
+        <span v-if="message.browser && message.region" class="message-bubble__dot">·</span>
+        <span v-if="message.region" class="message-bubble__region">
+          <Icon name="lucide:map-pin" size="11" class="message-bubble__region-icon" />
+          {{ message.region }}
+        </span>
+      </p>
     </div>
   </div>
 </template>

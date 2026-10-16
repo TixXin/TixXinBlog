@@ -40,7 +40,7 @@
     </div>
 
     <div class="moment-author-card__mood">
-      <Icon name="lucide:chart-no-axes-column" size="14" class="moment-author-card__mood-icon" />
+      <Icon :name="stats.moodIcon ?? 'lucide:chart-no-axes-column'" size="14" class="moment-author-card__mood-icon" />
       <span class="moment-author-card__mood-text">{{ stats.currentMood }}</span>
       <span v-if="stats.moodUpdatedAt" class="moment-author-card__mood-time">{{ stats.moodUpdatedAt }}</span>
     </div>
@@ -70,6 +70,8 @@ export interface MomentAuthorStats {
   totalComments: number | null
   currentMood: string
   moodUpdatedAt: string
+  /** 心情图标，缺省为统计图标 */
+  moodIcon?: string
   socialLinks?: { icon: string; url: string; label: string }[]
 }
 

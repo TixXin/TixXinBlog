@@ -11,6 +11,14 @@
           </div>
         </div>
         <div class="page-actions guestbook-actions">
+          <span
+            class="guestbook-presence"
+            :class="{ 'guestbook-presence--online': ownerPresence.status === 'online' }"
+            :title="ownerPresence.signature || ownerPresence.label"
+            ><span class="guestbook-presence__dot" aria-hidden="true" />{{
+              ownerPresence.status === 'online' ? '在线' : '离线'
+            }}</span
+          >
           <CommonSearchBox v-model="search" label="搜索留言" placeholder="搜索留言或作者…" />
           <button v-if="search || selectedDate" type="button" class="guestbook-clear" @click="clearFilters">
             清除筛选
@@ -144,6 +152,7 @@ const pageScope = usePageRequestScope(),
   router = useRouter()
 const { activeTheme, currentThemeId } = useLayoutTheme()
 const { isLoggedIn } = useCurrentUser()
+const { ownerPresence } = useSiteInfo()
 const internalWidth = useMediaQuery('(min-width:1024px)'),
   nexusRight = useMediaQuery('(min-width:1440px)'),
   auroraRight = useMediaQuery('(min-width:1280px)')
@@ -375,6 +384,33 @@ useSeoMeta({ title: '留言板', description: '留下你的足迹，交流技术
 }
 .guestbook-center :deep(.guestbook-viewport) {
   overflow-anchor: none;
+}
+.guestbook-presence {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.25rem 0.625rem;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  white-space: nowrap;
+}
+.guestbook-presence__dot {
+  width: 0.4rem;
+  height: 0.4rem;
+  border-radius: 50%;
+  background: var(--text-faint);
+}
+.guestbook-presence--online {
+  color: #22c55e;
+  border-color: rgba(34, 197, 94, 0.3);
+  background: rgba(34, 197, 94, 0.08);
+}
+.guestbook-presence--online .guestbook-presence__dot {
+  background: #22c55e;
+  box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.2);
 }
 .guestbook-actions {
   display: flex;
