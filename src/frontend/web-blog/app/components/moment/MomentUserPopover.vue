@@ -20,14 +20,12 @@
           <div class="moment-user-popover__header">
             <div class="moment-user-popover__avatar">
               <CommonContentImage
-                v-if="profile.avatar"
-                :src="profile.avatar"
+                :src="displayAvatar(profile.avatar, profile.name, isOwner)"
                 :alt="profile.name"
                 width="40"
                 height="40"
                 class="moment-user-popover__avatar-img"
               />
-              <Icon v-else name="lucide:user" size="20" />
             </div>
             <div class="moment-user-popover__info">
               <span class="moment-user-popover__name" :class="{ 'is-owner': isOwner }">{{ profile.name }}</span>
@@ -53,6 +51,7 @@
 
 <script setup lang="ts">
 import type { MomentUserProfile } from '~/features/moment/types'
+import { displayAvatar } from '~/utils/visitorAvatar'
 
 const props = defineProps<{
   profile?: MomentUserProfile

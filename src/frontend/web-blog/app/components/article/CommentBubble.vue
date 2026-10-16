@@ -8,7 +8,7 @@
 <template>
   <div class="comment-bubble" :data-comment-id="comment.id">
     <img
-      :src="comment.avatar || '/avatar.svg'"
+      :src="displayAvatar(comment.avatar, comment.author, comment.isOwner)"
       :alt="comment.author"
       class="comment-bubble__avatar"
       :class="{ 'comment-bubble__avatar--sm': small }"
@@ -68,6 +68,7 @@
 
 <script setup lang="ts">
 import type { CommentItem } from '~/features/post/types'
+import { displayAvatar } from '~/utils/visitorAvatar'
 
 withDefaults(
   defineProps<{
