@@ -10,6 +10,7 @@
 import { mockArticleDetail, mockTocItems, mockPosts } from '~/features/post/mock'
 import { fetchArticleDetail, fetchPostNavigation, fetchRelatedPosts } from '~/features/post/api'
 import type { ArticleDetail, RelatedPost, TocItem } from '~/features/post/types'
+import { articleTocItems } from '~/utils/articleMarkdown'
 
 interface LoadedArticleSnapshot {
   requestId: string
@@ -103,7 +104,7 @@ export async function useArticleDetail(id: string, options: { reuseLoaded?: bool
     navigation = computed(() => data.value?.navigation ?? { prev: null, next: null })
     discoveryError.value = data.value!.discoveryError
     article = computed<ArticleDetail>(() => data.value!.detail)
-    tocItems = computed<TocItem[]>(() => data.value?.detail.toc ?? [])
+    tocItems = computed<TocItem[]>(() => articleTocItems(data.value?.detail.toc ?? [], data.value?.detail.title ?? ''))
   }
 
   const relatedPosts = computed<RelatedPost[]>(() => {
