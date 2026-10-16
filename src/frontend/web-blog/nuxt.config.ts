@@ -90,13 +90,14 @@ export default {
     preference: 'dark',
     fallback: 'dark',
   },
-  // NuxtLink prefetch 策略：默认 visibility（链接进入视口即预取），导致首页
-  // 11 篇文章卡片挂载后挨个预取 /articles/N/_payload.json + 各路由 CSS/JS 共 ~350KB
-  // 改为 interaction 模式：仅在 hover/focus 时触发，命中延迟 50-100ms 但首屏请求数大幅下降
+  // NuxtLink prefetch 策略：此处配置会与 Nuxt 默认的 visibility: true 深合并，
+  // 因此可见即预取始终生效；生产下这只是在空闲时预载各栏目的路由块（HTTP/2，约数百 KB），
+  // 换来切页免等代码加载。hover/focus 预取作为补充。dev 下 Nuxt 不预载路由块，
+  // 悬停预取由 plugins/route-prefetch.client.ts 单独处理。
   experimental: {
     defaults: {
       nuxtLink: {
-        prefetchOn: { interaction: true },
+        prefetchOn: { visibility: true, interaction: true },
       },
     },
   },
