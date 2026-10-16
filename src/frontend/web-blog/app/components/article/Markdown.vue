@@ -52,8 +52,17 @@ const html = computed(() => renderArticleMarkdown(props.content, props.title))
     background: var(--surface-2);
     margin-bottom: 1rem;
   }
+  // 只写 monospace 会触发浏览器的等宽默认字号（约 13px），中文正文里的行内代码显得过小；用明确字体栈避开
   :deep(code) {
+    font-family: ui-monospace, 'SF Mono', SFMono-Regular, Menlo, Consolas, 'Liberation Mono', monospace;
     font-size: 0.875em;
+  }
+  :deep(:not(pre) > code) {
+    padding: 0.125em 0.375em;
+    border-radius: 0.3rem;
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    overflow-wrap: anywhere;
   }
   :deep(img) {
     max-width: 100%;
