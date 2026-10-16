@@ -40,8 +40,8 @@ const photos = [
   ['收起的夜景', '城市', 'night', '整理照片时暂时收起，之后再决定是否放回。', '上海 · 外滩'],
 ] as const
 const detailedPhotos = [
-  ['湖边的清晨', '风景', 'lake', '趁着风还没起来，把湖面和远山一起收进画面。', '山间湖畔步道', '数码单反'],
-  ['楼顶的傍晚', '城市', 'skyline', '太阳落到楼群后面，天色还留着一层暖调。', '深圳 · 福田', '微单相机'],
+  ['湖边的清晨', '风景', 'lake', '趁着风还没起来，把湖面和远山一起收进画面。', '大理 · 才村码头', '富士 X-T4'],
+  ['楼顶的傍晚', '城市', 'skyline', '太阳落到楼群后面，天色还留着一层暖调。', '深圳 · 福田', '富士 X-T4'],
 ] as const
 export const GALLERY_FIXTURE_COUNT = GALLERY_ASSETS.length + photos.length + detailedPhotos.length
 
