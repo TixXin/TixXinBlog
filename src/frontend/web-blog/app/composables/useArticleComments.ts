@@ -2,6 +2,7 @@
  * @file useArticleComments.ts
  * @description 评论数据源及游客身份协调；SSR 读取公共评论，挂载后恢复设备点赞状态
  */
+import { invalidatePublicReads } from '~/utils/invalidatePublicReads'
 import { createComment, fetchComments, toggleCommentLike } from '~/features/post/api'
 import { createCommentController, findComment } from '~/features/post/commentController'
 import type { CommentList, CommentTransport } from '~/features/post/commentController'
@@ -94,7 +95,7 @@ export async function useArticleComments(id: string) {
       toast.success(useMock ? '演示评论已添加' : state.submitNotice.value)
       // 列表离开文章后重新取数，避免首页沿用发表前的缓存计数。
       if (!useMock) {
-        clearNuxtData('post-list')
+        invalidatePublicReads(nuxtApp, ['posts', 'post-summary'])
         void refreshNuxtData('post-metadata')
       }
     }

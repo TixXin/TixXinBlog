@@ -21,10 +21,6 @@ export function invalidatePublicWrite(app: NuxtApp, path: string) {
     invalidatePublicReads(app, ['moment-overview', 'post-summary'])
   } else if (domain === 'guestbook') {
     invalidatePublicReads(app, ['guestbook-metadata'])
-  } else if (domain === 'flashes') {
-    app.payload.state['$sflash-notes-loaded'] = false
-    app.payload.state['$sflash-notes'] = []
-    app.payload.state['$sflash-load-version'] = Number(app.payload.state['$sflash-load-version'] ?? 0) + 1
   } else if (domain === 'media' || domain === 'site') {
     invalidatePublicReads(app)
   }

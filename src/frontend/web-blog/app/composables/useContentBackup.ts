@@ -2,6 +2,7 @@
  * @file useContentBackup.ts
  * @description 内容包下载与幂等导入绑定发起账号、内容库和提交快照；身份变化后保留原文件与票据。
  */
+import { invalidatePublicReads } from '~/utils/invalidatePublicReads'
 import type { ContentImportView } from '~/features/backup/types'
 interface BackupOwner {
   actor?: string
@@ -15,6 +16,7 @@ interface BackupSelection {
   includeSettings: boolean
 }
 export function useContentBackup() {
+  const app = useNuxtApp()
   const auth = useCurrentUser()
   const api = useAdminApi()
   const site = useSiteSettings()
@@ -193,6 +195,8 @@ export function useContentBackup() {
   }
   async function accept(value: ContentImportView, owner: BackupOwner) {
     assertOwner(owner)
+    // 执行响应丢失后查询同一票据，也必须撤销导入前的公开数据。
+    if (value.completed) invalidatePublicReads(app)
     job.value = value
     jobOwner = { ...owner }
     if (value.completed && value.result?.settings) {

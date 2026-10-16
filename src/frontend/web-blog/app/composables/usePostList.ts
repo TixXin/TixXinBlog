@@ -24,6 +24,9 @@ export async function usePostList(options: {
   }))
   const scopeKey = computed(() => JSON.stringify({ ...filters.value, mode: options.displayMode.value }))
   const pages = new Map<number, PostItem[]>()
+  let acceptedPage = 0,
+    acceptedScope = '',
+    prefixReadAt = 0
   watch(
     [filters, options.displayMode],
     () => {
@@ -33,54 +36,93 @@ export async function usePostList(options: {
     },
     { flush: 'sync' },
   )
-  type CollectionPage = PostPage & { scopeKey: string; chunks: { page: number; items: PostItem[] }[] }
-  const result = useAsyncData('post-list', async (_app, { signal }): Promise<CollectionPage> => {
-    const query = { ...filters.value, page: options.page.value, pageSize }
-    const requestedScope = scopeKey.value
-    const continuous = options.displayMode.value === 'waterfall'
-    const chunks = continuous
-      ? new Map([...pages.entries()].filter(([page]) => page <= query.page))
-      : new Map<number, PostItem[]>()
-    let knownTotal: number | null = chunks.size ? total.value : null
-    // 冷启动连续模式的历史URL按页补齐前缀；常规触底仅请求尚未加载的新页。
-    for (let page = continuous ? 1 : query.page; page <= query.page; page++) {
-      if (signal.aborted) throw new DOMException('请求已被替换', 'AbortError')
-      if (continuous && knownTotal !== null && page > Math.max(1, Math.ceil(knownTotal / pageSize))) break
-      if (chunks.has(page) && page !== query.page) continue
-      let value: PostPage
-      if (config.public.postUseMockRepo !== false) {
-        const filtered = mockPosts.filter(
-          (post) =>
-            (!query.tag || post.tags.some((tag) => tag.label === query.tag)) &&
-            (!query.folder || post.folder === query.folder),
-        )
-        value = {
-          items: filtered.slice((page - 1) * pageSize, page * pageSize),
-          total: filtered.length,
-          page,
-          pageSize,
+  type CollectionPage = PostPage & {
+    scopeKey: string
+    prefixReadAt: number
+    chunks: { page: number; items: PostItem[] }[]
+  }
+  const result = usePublicReadData(
+    'post-list',
+    async (_app, { signal }): Promise<CollectionPage> => {
+      const query = { ...filters.value, page: options.page.value, pageSize }
+      const requestedScope = scopeKey.value
+      const startedAt = Date.now()
+      const continuous = options.displayMode.value === 'waterfall'
+      // 只有连续追加下一页才能复用前缀；同页手动刷新和过期重验证必须重新核对完整已读范围。
+      const appending =
+        continuous &&
+        acceptedScope === requestedScope &&
+        query.page === acceptedPage + 1 &&
+        acceptedPage > 0 &&
+        startedAt - prefixReadAt < 30_000 &&
+        Array.from({ length: acceptedPage }, (_, index) => index + 1).every((page) => pages.has(page))
+      const chunks = appending
+        ? new Map([...pages.entries()].filter(([page]) => page <= query.page))
+        : new Map<number, PostItem[]>()
+      let knownTotal: number | null = chunks.size ? total.value : null
+      // 冷启动连续模式的历史URL按页补齐前缀；常规触底仅请求尚未加载的新页。
+      for (let page = continuous ? 1 : query.page; page <= query.page; page++) {
+        if (signal.aborted) throw new DOMException('请求已被替换', 'AbortError')
+        if (continuous && knownTotal !== null && page > Math.max(1, Math.ceil(knownTotal / pageSize))) break
+        if (chunks.has(page) && page !== query.page) continue
+        let value: PostPage
+        if (config.public.postUseMockRepo !== false) {
+          const filtered = mockPosts.filter(
+            (post) =>
+              (!query.tag || post.tags.some((tag) => tag.label === query.tag)) &&
+              (!query.folder || post.folder === query.folder),
+          )
+          value = {
+            items: filtered.slice((page - 1) * pageSize, page * pageSize),
+            total: filtered.length,
+            page,
+            pageSize,
+          }
+        } else {
+          value = await fetchPostPage(config.public.apiBaseUrl, { ...query, page }, signal)
         }
-      } else {
-        value = await fetchPostPage(config.public.apiBaseUrl, { ...query, page }, signal)
+        knownTotal = value.total
+        chunks.set(page, value.items)
       }
-      knownTotal = value.total
-      chunks.set(page, value.items)
-    }
-    return {
-      items: chunks.get(query.page) ?? [],
-      total: knownTotal ?? 0,
-      page: query.page,
-      pageSize,
-      scopeKey: requestedScope,
-      chunks: [...chunks.entries()].sort(([a], [b]) => a - b).map(([page, items]) => ({ page, items })),
-    }
-  })
+      return {
+        items: chunks.get(query.page) ?? [],
+        total: knownTotal ?? 0,
+        page: query.page,
+        pageSize,
+        scopeKey: requestedScope,
+        // 追加页不能重置旧前缀的有效期；完整重读后才建立新快照起点。
+        prefixReadAt: appending ? prefixReadAt : startedAt,
+        chunks: [...chunks.entries()].sort(([a], [b]) => a - b).map(([page, items]) => ({ page, items })),
+      }
+    },
+    {
+      domain: 'posts',
+      query: () => ({ ...filters.value, page: options.page.value, pageSize, mode: options.displayMode.value }),
+      ttl: (value) =>
+        value.prefixReadAt === undefined ? 30_000 : Math.max(0, 30_000 - (Date.now() - value.prefixReadAt)),
+    },
+  )
+  watch(
+    result.generation,
+    () => {
+      pages.clear()
+      acceptedPage = 0
+      acceptedScope = ''
+      prefixReadAt = 0
+      accumulated.value = []
+      total.value = 0
+    },
+    { flush: 'sync' },
+  )
   // 当前 Nuxt 的自动参数监听会等待旧请求结束；筛选变化需要立即取消旧任务并取新条件。
-  watch([filters, options.page, options.displayMode], () => result.refresh({ dedupe: 'cancel', cachedData: undefined }))
+  watch([filters, options.page, options.displayMode], () => result.reload())
   function acceptPage(value: CollectionPage | undefined) {
     // 旧条件的响应不能重新填入当前列表；初始缓存也必须进入累计集合。
     if (!value || value.scopeKey !== scopeKey.value || value.page !== options.page.value) return
     total.value = value.total
+    acceptedPage = value.page
+    acceptedScope = value.scopeKey
+    prefixReadAt = value.prefixReadAt ?? Date.now()
     pages.clear()
     for (const chunk of value.chunks) pages.set(chunk.page, chunk.items)
     const ordered = [...pages.entries()].sort(([a], [b]) => a - b).flatMap(([, items]) => items)
@@ -92,7 +134,7 @@ export async function usePostList(options: {
     result.data.value &&
     (result.data.value.scopeKey !== scopeKey.value || result.data.value.page !== options.page.value)
   )
-    await result.refresh({ dedupe: 'cancel', cachedData: undefined })
+    await result.reload()
   // SSR 不持续运行响应式监听；首次请求完成后也要直接种入返回页面。
   acceptPage(result.data.value)
   return {

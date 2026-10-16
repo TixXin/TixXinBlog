@@ -1,4 +1,5 @@
 /** @file galleryFeed.test.ts @description 图库公开读取失败保留列表，已撤回作品不继续使用旧灯箱缓存 */
+import { publicReadCache } from '../../app/utils/publicReadCache'
 import { beforeEach, afterEach, expect, it, vi } from 'vitest'
 import { defineComponent, h, onMounted } from 'vue'
 import { mockNuxtImport, mountSuspended } from '@nuxt/test-utils/runtime'
@@ -17,6 +18,7 @@ const item = {
 }
 const wrappers: { unmount(): void }[] = []
 beforeEach(() => {
+  publicReadCache(useNuxtApp()).invalidate(['gallery'])
   mocks.list.mockReset().mockResolvedValue({ items: [item], total: 1, page: 1, pageSize: 12 })
   mocks.detail.mockReset().mockResolvedValue(item)
   mocks.navigation

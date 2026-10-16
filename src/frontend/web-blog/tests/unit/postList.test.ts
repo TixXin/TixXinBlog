@@ -4,13 +4,14 @@
  * @author TixXin
  * @since 2026-09-07
  */
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent, h, nextTick, ref } from 'vue'
 import { flushPromises } from '@vue/test-utils'
 import { mountSuspended } from '@nuxt/test-utils/runtime'
 import { usePostList } from '../../app/composables/usePostList'
 import { mockPosts } from '../../app/features/post/mock'
 import { fetchPostPage } from '../../app/features/post/api'
+import { publicReadCache } from '../../app/utils/publicReadCache'
 
 // 只替换数据传输；不修改启动路由器也会使用的全局 runtimeConfig。
 vi.mock('../../app/features/post/api', async () => {
@@ -33,6 +34,9 @@ vi.mock('../../app/features/post/api', async () => {
 })
 
 const wrappers: { unmount(): void }[] = []
+beforeEach(() => {
+  publicReadCache(useNuxtApp()).invalidate(['posts'])
+})
 afterEach(() => wrappers.splice(0).forEach((wrapper) => wrapper.unmount()))
 
 async function setup(initialPage = 1, initialMode: 'waterfall' | 'pagination' = 'pagination') {

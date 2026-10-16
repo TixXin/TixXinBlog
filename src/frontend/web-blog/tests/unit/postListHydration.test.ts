@@ -6,6 +6,7 @@ import { usePostList } from '../../app/composables/usePostList'
 import { usePostListRoute } from '../../app/composables/usePostListRoute'
 import { fetchPostPage } from '../../app/features/post/api'
 import { mockPosts } from '../../app/features/post/mock'
+import { publicReadCache } from '../../app/utils/publicReadCache'
 
 vi.mock('../../app/features/post/api', () => ({ fetchPostPage: vi.fn() }))
 // 叶子组件不在 RouterView 下；只省略守卫注册，离开锁另由 postListNavigation 回归覆盖。
@@ -50,6 +51,7 @@ it.each([
       defineComponent({
         async setup() {
           app = useNuxtApp()
+          publicReadCache(app).invalidate(['posts'])
           priorHydrating = app.isHydrating
           priorServerRendered = app.payload.serverRendered
           clearNuxtData('post-list')

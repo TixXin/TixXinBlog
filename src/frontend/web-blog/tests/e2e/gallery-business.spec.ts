@@ -201,6 +201,8 @@ test('列表真实失败可重试且慢查询不覆盖新的 URL 筛选', async 
   await expect(page.getByRole('button', { name: `查看照片：${one.title}`, exact: true })).toBeVisible()
   await search.fill(two.title)
   await expect(page.getByRole('button', { name: `查看照片：${two.title}`, exact: true })).toBeVisible()
+  // 回访在有效期内不会发请求；推进日期进入后台重验证，再检查真实慢请求竞态。
+  await page.clock.setFixedTime(Date.now() + 31_000)
   slow = true
   const waiting = page.waitForRequest(
     (r) => new URL(r.url()).pathname === '/api/v1/gallery' && new URL(r.url()).searchParams.get('q') === one.title,

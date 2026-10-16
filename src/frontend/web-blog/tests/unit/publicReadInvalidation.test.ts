@@ -47,4 +47,11 @@ describe('公开缓存写后失效入口', () => {
     invalidatePublicReads(app)
     for (const domain of domains) expect(cache.read(domain)).toBeUndefined()
   })
+  it('闪念继续由原有仓储接纳写入结果，不清空包含私有草稿的现有集合', () => {
+    const { app } = fixture()
+    const notes = [{ id: 'kept', isDraft: true }]
+    app.payload.state['$sflash-notes'] = notes
+    invalidatePublicWrite(app, '/admin/flashes/new')
+    expect(app.payload.state['$sflash-notes']).toBe(notes)
+  })
 })

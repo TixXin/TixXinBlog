@@ -121,6 +121,15 @@ const {
   clearFilters,
   replacePage,
 } = usePostListRoute()
+const metadataTask = usePostMetadata()
+const postsTask = usePostList({
+  page: postPage,
+  selectedTag,
+  selectedCategory,
+  displayMode: listDisplayMode,
+  resetOnScopeChange: false,
+})
+const [metadataResult, postsResult] = await Promise.all([metadataTask, postsTask])
 const {
   metadata,
   tags,
@@ -128,20 +137,8 @@ const {
   pending: metadataPending,
   error: metadataError,
   refresh: refreshMetadata,
-} = await usePostMetadata()
-const {
-  posts,
-  total: postTotal,
-  pending: postsPending,
-  error: postsError,
-  refresh: refreshPosts,
-} = await usePostList({
-  page: postPage,
-  selectedTag,
-  selectedCategory,
-  displayMode: listDisplayMode,
-  resetOnScopeChange: false,
-})
+} = metadataResult
+const { posts, total: postTotal, pending: postsPending, error: postsError, refresh: refreshPosts } = postsResult
 const activeFilterLabel = computed(() => [selectedCategory.value, selectedTag.value].filter(Boolean).join(' · '))
 async function retryArticles() {
   if (postsPending.value) return

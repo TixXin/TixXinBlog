@@ -2,10 +2,12 @@
  * @file useAdminApi.ts
  * @description 管理接口统一认证和单次刷新重试；认证失败不伪装为成功
  */
+import { invalidatePublicWrite } from '~/utils/invalidatePublicReads'
 import { ensureVisitorId } from '~/utils/visitorId'
 
 export function useAdminApi() {
   const auth = useCurrentUser()
+  const app = useNuxtApp()
   const pageContext = useState<string>('page-content-context', () => '')
   return async function adminApi<T>(
     path: string,
@@ -49,6 +51,7 @@ export function useAdminApi() {
         timeout: options.timeout ?? 10000,
       })
       assertOwnership()
+      if (options.method && options.method !== 'GET') invalidatePublicWrite(app, path)
       return result
     }
     try {

@@ -20,13 +20,17 @@ export async function useSubscriptions() {
   }
   const query = computed(() => (hydrating.value ? initialQuery : publicSubscriptionQuery(route.query)))
   const key = computed(() => JSON.stringify(query.value))
-  const feed = useAsyncData('subscriptions-feed', async (_app, { signal }) => {
-    const requested = key.value,
-      current = query.value,
-      ownedSignal = AbortSignal.any([scope.signal, signal])
-    const [page, stats] = await Promise.all([repo.list(current, ownedSignal), repo.stats(current, ownedSignal)])
-    return { key: requested, page, stats }
-  })
+  const feed = usePublicReadData(
+    'subscriptions-feed',
+    async (_app, { signal }) => {
+      const requested = key.value,
+        current = query.value,
+        ownedSignal = AbortSignal.any([scope.signal, signal])
+      const [page, stats] = await Promise.all([repo.list(current, ownedSignal), repo.stats(current, ownedSignal)])
+      return { key: requested, page, stats }
+    },
+    { domain: 'subscriptions', query: () => query.value },
+  )
   const accepted = ref<NonNullable<typeof feed.data.value> | null>(null)
   watch(
     feed.data,
@@ -36,8 +40,15 @@ export async function useSubscriptions() {
     { immediate: true },
   )
   watch(key, () => {
-    void feed.refresh({ dedupe: 'cancel', cachedData: undefined })
+    void feed.reload()
   })
+  watch(
+    feed.generation,
+    () => {
+      accepted.value = null
+    },
+    { flush: 'sync' },
+  )
   onMounted(() => {
     ready.value = true
     hydrating.value = false

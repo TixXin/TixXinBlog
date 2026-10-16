@@ -2,6 +2,7 @@
  * @file useCurrentUser.ts
  * @description 真实管理员登录态：访问令牌仅留在内存，刷新令牌使用同源 HttpOnly Cookie
  */
+import { invalidatePublicReads } from '~/utils/invalidatePublicReads'
 import type { CurrentUser } from '~/features/auth/types'
 import { withAuthCookieLock, withAuthCookieRead } from '~/utils/authCookieLock'
 import { clearCommentDrafts } from '~/features/post/commentSession'
@@ -26,6 +27,7 @@ export function useCurrentUser() {
   const isLoggedIn = computed(() => currentUser.value !== null && accessToken.value !== null)
 
   function accept(payload: AuthPayload) {
+    if (currentUser.value?.id !== payload.user.id) invalidatePublicReads(nuxtApp)
     if (currentUser.value && currentUser.value.id !== payload.user.id) {
       clearCommentDrafts(nuxtApp)
       clearMomentDrafts(nuxtApp)
@@ -73,6 +75,7 @@ export function useCurrentUser() {
         const status = (cause as { statusCode?: number }).statusCode
         if (status === 401) {
           if (currentUser.value) {
+            invalidatePublicReads(nuxtApp)
             clearCommentDrafts(nuxtApp)
             clearMomentDrafts(nuxtApp)
           }
@@ -124,6 +127,7 @@ export function useCurrentUser() {
     loggingOut = true
     try {
       if (refreshing) await refreshing
+      invalidatePublicReads(nuxtApp)
       clearCommentDrafts(nuxtApp)
       clearMomentDrafts(nuxtApp)
       currentUser.value = null
@@ -150,6 +154,7 @@ export function useCurrentUser() {
           timeout: 10000,
         }),
       )
+      invalidatePublicReads(nuxtApp)
       clearCommentDrafts(nuxtApp)
       currentUser.value = null
       clearMomentDrafts(nuxtApp)

@@ -40,6 +40,11 @@ test('公开列表、搜索筛选、复制与深链详情，失败可重试且�
   if (browserName === 'chromium') await context.grantPermissions(['clipboard-read', 'clipboard-write'])
   const data = await samples(request),
     first = data.items[0]
+  const metadataResponse = await request.get('/api/v1/prompts/metadata')
+  expect(metadataResponse.ok()).toBe(true)
+  const models = (await metadataResponse.json()).data.models as { label: string; count: number }[]
+  expect(models.length).toBeGreaterThanOrEqual(3)
+  const model = models[0]!
   await page.goto('/prompts')
   await expect(page.locator('.prompt-card')).toHaveCount(12)
   await expect(page.locator('.prompts-add')).toHaveCount(0)
@@ -64,9 +69,9 @@ test('公开列表、搜索筛选、复制与深链详情，失败可重试且�
   await page.keyboard.press('Escape')
   await expect(detail).not.toBeVisible()
   await expect(open).toBeFocused()
-  await page.getByRole('combobox', { name: '筛选生成模型' }).selectOption('ImageGen')
-  await expect(page.locator('.prompt-card')).toHaveCount(3)
-  await expect(page).toHaveURL(/model=ImageGen/)
+  await page.getByRole('combobox', { name: '筛选生成模型' }).selectOption(model.label)
+  await expect(page.locator('.prompt-card')).toHaveCount(Math.min(12, model.count))
+  await expect.poll(() => new URL(page.url()).searchParams.get('model')).toBe(model.label)
   await page.getByRole('button', { name: '清除筛选', exact: true }).click()
   await expect(page.locator('.prompt-card')).toHaveCount(12)
 
