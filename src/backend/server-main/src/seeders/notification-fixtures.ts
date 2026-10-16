@@ -9,6 +9,7 @@ import { GuestbookWriteService } from '../modules/guestbook/guestbook-write.serv
 import { GuestbookMessage } from '../entities/guestbook-message.entity'
 import { CreateCommentDto } from '../modules/comment/dto/create-comment.dto'
 import { withoutExternalNotifications } from '../modules/operations/owner-events'
+import { Post } from '../entities/post.entity'
 import { AdminPostService } from '../modules/post/admin-post.service'
 import { PostRevisionsService } from '../modules/post/post-revisions.service'
 import { SavePostDto } from '../modules/post/dto/save-post.dto'
@@ -77,7 +78,9 @@ async function seedContentNotifications(em: EntityManager, progress: FixtureProg
         tags: ['技术分享'],
         status: 'published',
       })
-      return (await posts.save(null, input, '通知样本来源')).id
+      const saved = await posts.save(null, input, '通知样本来源')
+      await em.nativeUpdate(Post, { id: saved.id }, { views: 530 })
+      return saved.id
     },
     progress,
   )

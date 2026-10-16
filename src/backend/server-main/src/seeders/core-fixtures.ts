@@ -426,7 +426,15 @@ async function seedPostEdges(
           status: 'published',
         })
         const saved = await posts.save(null, input, '补齐列表边界场景')
-        await em.nativeUpdate(Post, { id: saved.id }, { createdAt: date(offset), publishedAt: date(offset) })
+        await em.nativeUpdate(
+          Post,
+          { id: saved.id },
+          {
+            createdAt: date(offset),
+            publishedAt: date(offset),
+            views: covered ? 870 : scenario === 'plain' ? 240 : 160,
+          },
+        )
         return saved.id
       },
       progress,
@@ -511,7 +519,7 @@ export async function seedCoreFixtures(
           status,
         })
         const saved = await posts.save(null, input, '开发数据集初次创建')
-        await em.nativeUpdate(Post, { id: saved.id }, { createdAt: when, publishedAt: when })
+        await em.nativeUpdate(Post, { id: saved.id }, { createdAt: when, publishedAt: when, views: scene.views })
         return saved.id
       },
       progress,
