@@ -18,7 +18,10 @@ const prompts = [
   ...PROMPT_ORIGINALS.map((item) => ({
     ...item,
     asset: item.key,
-    model: 'ImageGen',
+    // 原创图记录实际使用的模型；外部参考条目来源页面未标注模型，保持缺省。
+    model: { 'dawn-gate': 'Midjourney v6', 'ceramic-light': 'Stable Diffusion XL', 'rain-bookshop': 'Flux.1 dev' }[
+      item.key
+    ]!,
     sourceUrl: '',
     status: 'published' as const,
   })),

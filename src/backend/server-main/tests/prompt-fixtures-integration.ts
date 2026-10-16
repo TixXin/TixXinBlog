@@ -38,7 +38,8 @@ async function main() {
     assert.equal(lastPage.items.length, 1)
     assert.equal(firstPage.total, 13)
     assert.equal(new Set([...firstPage.items, ...lastPage.items].map((item) => item.id)).size, 13)
-    const originals = firstPage.items.filter((item) => item.model === 'ImageGen')
+    // 原创图标注实际使用的模型，外部参考条目保持未标注。
+    const originals = firstPage.items.filter((item) => item.model !== '')
     assert.equal(originals.length, 3)
     assert(originals.some((item) => item.width > item.height))
     assert(originals.some((item) => item.width < item.height))
