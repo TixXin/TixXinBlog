@@ -9,8 +9,8 @@
 
 <script setup lang="ts">
 import { renderArticleMarkdown } from '~/utils/articleMarkdown'
-const props = defineProps<{ content: string }>()
-const html = computed(() => renderArticleMarkdown(props.content))
+const props = defineProps<{ content: string; title?: string }>()
+const html = computed(() => renderArticleMarkdown(props.content, props.title))
 </script>
 
 <style scoped lang="scss">

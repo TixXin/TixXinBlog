@@ -84,7 +84,7 @@
           {{ interactionError }} <button type="button" @click="reloadInteraction">重试</button>
         </p>
         <div ref="readingContent" class="article-reading-content">
-          <ArticleMarkdown v-if="article.contentRaw" :content="article.contentRaw" />
+          <ArticleMarkdown v-if="article.contentRaw" :content="article.contentRaw" :title="article.title" />
           <ArticleContent v-else :sections="article.content" />
         </div>
         <CommonRelatedContent :items="article.relatedContent" />
