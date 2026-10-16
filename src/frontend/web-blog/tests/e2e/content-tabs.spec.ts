@@ -32,6 +32,26 @@ for (const layout of ['nexus', 'aurora', 'dock']) {
             page.locator(root).evaluate((el) => el.getAnimations().filter((a) => a.playState === 'running').length),
           )
           .toBe(0)
+        // 内容就绪早于主题壳层的入场位移动画结束；几何对比必须等导航及其祖先上的有限次动画播完。
+        await expect
+          .poll(() =>
+            nav.evaluate((el) => {
+              let node: Element | null = el
+              let running = 0
+              while (node) {
+                running += node
+                  .getAnimations()
+                  .filter(
+                    (a) =>
+                      a.playState === 'running' &&
+                      (a.effect as KeyframeEffect | null)?.getTiming().iterations !== Infinity,
+                  ).length
+                node = node.parentElement
+              }
+              return running
+            }),
+          )
+          .toBe(0)
         const result = await nav.evaluate((el) => {
           const rect = el.getBoundingClientRect()
           return {
