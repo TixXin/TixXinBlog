@@ -15,7 +15,7 @@
         </span>
         感谢支持
       </h3>
-      <p class="donate-card__desc">打赏暂未开放。感谢你阅读、收藏或分享喜欢的文章。</p>
+      <p class="donate-card__desc">如果某篇文章帮到了你，收藏、分享或留一句话就是最好的支持。</p>
       <span class="donate-card__status">打赏暂未开放</span>
     </div>
   </section>
