@@ -484,8 +484,8 @@ export async function parseContentPackage(buffer: Buffer): Promise<ContentPackag
         'status',
         'isPinned',
         'replyToId',
-        'browser',
-        'region',
+        // v11 起可选携带提交时的浏览器与地区；旧版本出现即按未知字段拒绝。
+        ...(Number(source.version) >= 11 ? ['browser', 'region'] : []),
       ])
       const avatar = text(row.avatar, `${path}.avatar`, 2048)
       if (!packageImageUrl(avatar) || !GUESTBOOK_STATUSES.includes(row.status as GuestbookStatus)) fail(path)
@@ -802,11 +802,8 @@ export async function parseContentPackage(buffer: Buffer): Promise<ContentPackag
         'announcement',
         'socials',
         ...(Number(source.version) >= 8 ? ['about'] : []),
-        // v11 起可选携带在线状态、签名、状态类型与上线日期；缺省按空串处理
-        'presenceLabel',
-        'presenceSignature',
-        'presenceStatus',
-        'launchedAt',
+        // v11 起可选携带在线状态、签名、状态类型与上线日期；旧版本出现即按未知字段拒绝。
+        ...(Number(source.version) >= 11 ? ['presenceLabel', 'presenceSignature', 'presenceStatus', 'launchedAt'] : []),
       ]),
       revision: 0,
     },

@@ -1,6 +1,13 @@
 /** @file legacy-content-package.mjs @description 维护回归显式构造v11之前的真实字段集，不放宽生产解析器 */
 export function stripV11Fields(value) {
   delete value.subscriptions
+  // v11 才引入的标量字段：旧包必须显式移除，解析器才应接受。
+  for (const key of ['presenceLabel', 'presenceSignature', 'presenceStatus', 'launchedAt'])
+    if (value.site) delete value.site[key]
+  for (const row of value.guestbook ?? []) {
+    delete row.browser
+    delete row.region
+  }
   return value
 }
 export function stripV10Fields(value) {
