@@ -195,7 +195,8 @@
 
   // 标题型页头底部与顶部留白对称，副标题和操作区不再贴着分隔线；
   // 标签页型页头保持 0，让选中下划线压在分隔线上
-  &:has(> .page-title) {
+  &:has(> .page-title),
+  &:has(> .page-header__info) {
     padding-bottom: 1.25rem;
 
     @media (min-width: $breakpoint-lg) and (max-width: #{$breakpoint-xl - 1px}) {
