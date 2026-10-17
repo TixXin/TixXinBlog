@@ -56,3 +56,48 @@ describe('闪念传输错误', () => {
     await expect(repo.list('owner')).resolves.toEqual([])
   })
 })
+
+describe('闪念公开分页读取', () => {
+  const envelope = (data: unknown) => ({ code: 0, message: 'ok', data })
+  const empty = { items: [], total: 0, page: 1, pageSize: 20 }
+
+  it('标签走列表接口，关键词走搜索接口，只读取请求的那一页', async () => {
+    const list = vi.fn((event: { path: string }) => {
+      void event
+      return envelope(empty)
+    })
+    const search = vi.fn((event: { path: string }) => {
+      void event
+      return envelope(empty)
+    })
+    registerEndpoint('/api/v1/flashes', list)
+    registerEndpoint('/api/v1/flashes/search', search)
+    const admin = vi.fn()
+    const repo = new HttpFlashRepository('/api/v1', admin, () => false)
+    await repo.listPublicPage({ page: 2, pageSize: 20, tag: '生活' })
+    await repo.listPublicPage({ page: 1, pageSize: 20, q: ' 山顶 ' })
+    expect(list).toHaveBeenCalledTimes(1)
+    expect(search).toHaveBeenCalledTimes(1)
+    const listQuery = new URL(list.mock.calls[0]![0].path, 'http://local').searchParams
+    expect(Object.fromEntries(listQuery)).toEqual({ page: '2', pageSize: '20', tag: '生活' })
+    const searchQuery = new URL(search.mock.calls[0]![0].path, 'http://local').searchParams
+    expect(Object.fromEntries(searchQuery)).toEqual({ page: '1', pageSize: '20', q: '山顶' })
+    expect(admin).not.toHaveBeenCalled()
+  })
+
+  it('标签与关键词同时传入时拒绝请求，不静默丢弃其中一个条件', async () => {
+    const repo = new HttpFlashRepository('/api/v1', vi.fn(), () => false)
+    await expect(repo.listPublicPage({ page: 1, pageSize: 20, tag: '生活', q: '山顶' })).rejects.toThrow(
+      '公开闪念接口不支持同时按标签和关键词分页',
+    )
+  })
+
+  it('分页读取失败同样转换为可读提示并保留状态码', async () => {
+    registerEndpoint(
+      '/api/v1/flashes',
+      () => new Response(JSON.stringify({ message: '操作过于频繁' }), { status: 429 }),
+    )
+    const repo = new HttpFlashRepository('/api/v1', vi.fn(), () => false)
+    await expect(repo.listPublicPage({ page: 1, pageSize: 20 })).rejects.toMatchObject({ statusCode: 429 })
+  })
+})

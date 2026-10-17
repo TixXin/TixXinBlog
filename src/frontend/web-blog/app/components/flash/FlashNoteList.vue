@@ -1,12 +1,12 @@
 <!--
   @file FlashNoteList.vue
-  @description 闪念笔记流：双列瀑布流布局，支持空状态与加载态
+  @description 闪念笔记流：双列瀑布流布局，支持空状态、加载态与“加载更多”（按钮 + 接近底部自动加载）
   @author TixXin
   @since 2026-04-11
 -->
 
 <template>
-  <div class="flash-note-list">
+  <div class="flash-note-list" :aria-busy="loading || morePending">
     <CommonRequestFeedback
       v-if="loading || errorMessage"
       :pending="loading"
@@ -42,13 +42,35 @@
         @tag-click="$emit('tag-click', $event)"
       />
     </div>
+
+    <div v-if="notes.length && hasMore" ref="sentinelRef" class="flash-note-list__more">
+      <p v-if="moreError" class="flash-note-list__more-error" role="alert">{{ moreError }}</p>
+      <button
+        ref="moreButtonRef"
+        type="button"
+        class="flash-note-list__more-button"
+        :aria-busy="morePending"
+        :disabled="!hydrated"
+        :aria-disabled="morePending"
+        @click="requestMore"
+      >
+        <Icon :name="moreError ? 'lucide:rotate-ccw' : 'lucide:chevrons-down'" size="14" aria-hidden="true" />
+        {{ morePending ? '正在加载…' : moreError ? '重试加载更多' : '加载更多闪念' }}
+      </button>
+    </div>
+    <div v-else-if="notes.length && !loading && !errorMessage" ref="endRef" class="flash-note-list__end" tabindex="-1">
+      <span class="flash-note-list__end-line" aria-hidden="true" />
+      <span class="flash-note-list__end-text">没有更多了</span>
+      <span class="flash-note-list__end-line" aria-hidden="true" />
+    </div>
   </div>
 </template>
 
 <script setup lang="ts">
+import { useIntersectionObserver } from '@vueuse/core'
 import type { FlashNote, FlashCommentSubmission } from '~/features/flash/types'
 
-defineProps<{
+const props = defineProps<{
   notes: FlashNote[]
   loading?: boolean
   errorMessage?: string | null
@@ -61,10 +83,15 @@ defineProps<{
   guestId?: string | null
   /** AI 引用高亮的笔记 id */
   highlightedId?: string | null
+  /** 是否还有未展示的闪念（服务端下一页或概览中的下一批） */
+  hasMore?: boolean
+  morePending?: boolean
+  moreError?: string | null
 }>()
 
-defineEmits<{
+const emit = defineEmits<{
   retry: []
+  more: []
   remove: [id: string]
   edit: [note: FlashNote]
   'toggle-like': [id: string]
@@ -74,6 +101,45 @@ defineEmits<{
   'remove-comment': [payload: { noteId: string; commentId: string }]
   'tag-click': [tag: string]
 }>()
+
+// 水合前按钮保持禁用，SSR 与首次客户端渲染一致；挂载后才允许点击和自动加载
+const sentinelRef = ref<HTMLElement | null>(null)
+const moreButtonRef = ref<HTMLButtonElement | null>(null)
+const endRef = ref<HTMLElement | null>(null)
+const hydrated = ref(false)
+// 加载中只用 aria-disabled：真正禁用会让 Chrome 把焦点丢回页面
+function requestMore() {
+  if (!props.morePending) emit('more')
+}
+// 键盘用户读完最后一页时按钮被移除，焦点交给结束提示，不掉回页面顶部
+watch(
+  () => props.hasMore,
+  async (more, before) => {
+    if (more || !before || document.activeElement !== moreButtonRef.value) return
+    await nextTick()
+    endRef.value?.focus({ preventScroll: true })
+  },
+  { flush: 'pre' },
+)
+onMounted(() => {
+  hydrated.value = true
+})
+// 接近列表底部时自动加载；失败后不自动重试，等待用户点击，避免请求风暴
+useIntersectionObserver(
+  sentinelRef,
+  (entries) => {
+    if (
+      entries.some((entry) => entry.isIntersecting) &&
+      hydrated.value &&
+      props.hasMore &&
+      !props.morePending &&
+      !props.moreError &&
+      !props.loading
+    )
+      emit('more')
+  },
+  { rootMargin: '200px' },
+)
 </script>
 
 <style lang="scss" scoped>
@@ -100,6 +166,60 @@ defineEmits<{
     /* 关键：避免卡片在两列之间被截断 */
     break-inside: avoid;
   }
+}
+
+.flash-note-list__more {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.25rem 0 1rem;
+}
+
+.flash-note-list__more-error {
+  margin: 0;
+  color: var(--text-soft);
+  font-size: 0.8125rem;
+}
+
+.flash-note-list__more-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  min-height: 44px;
+  padding: 0.5rem 1rem;
+  border: 1px solid var(--border);
+  border-radius: $radius-md;
+  background: var(--surface-1);
+  color: var(--accent-text);
+  font-size: 0.8125rem;
+  cursor: pointer;
+
+  &:disabled,
+  &[aria-disabled='true'] {
+    cursor: default;
+    opacity: 0.7;
+  }
+}
+
+.flash-note-list__end {
+  display: flex;
+  outline: none;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.5rem 0 1rem;
+}
+
+.flash-note-list__end-line {
+  flex: 1;
+  height: 1px;
+  background: var(--border-soft);
+}
+
+.flash-note-list__end-text {
+  font-size: 0.75rem;
+  color: var(--text-faint);
+  white-space: nowrap;
 }
 
 .flash-note-list__empty {

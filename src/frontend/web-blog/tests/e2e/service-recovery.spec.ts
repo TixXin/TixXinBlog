@@ -75,9 +75,11 @@ for (const theme of ['nexus', 'aurora', 'dock']) {
     })
 
     test('公开闪念失败不是空列表，手机与桌面重试后仍能筛选', async ({ page, browserName }, testInfo) => {
+      // 公开首屏由 SSR 直出，浏览器拦截不到；从站内导航进入，让首屏分页在客户端读取并失败
+      await page.goto('/about')
       let fail = true
       await page.route('**/api/v1/flashes?**', (route) => (fail ? route.fulfill(unavailable) : route.continue()))
-      await page.goto('/flash')
+      await page.locator('a[href="/flash"]:visible').first().click()
       const feedback = page.locator('.flash-note-list .request-feedback')
       await expect(feedback).toContainText('闪念服务暂时不可用')
       await expect(page.locator('.flash-note-list__empty')).toHaveCount(0)

@@ -7,14 +7,29 @@
  * 设计原则：
  * - 所有数据操作都委托给 FlashNoteRepository，本文件不直接读写 localStorage
  * - 跨页面通过 useState 共享实体列表，公开回访按 30 秒新鲜期重新验证
+ * - 真实接口的公开视图按页读取：SSR 直出第一页，后续页按需追加；标签与关键词交给后端分页，
+ *   后端暂不支持的类型、日期筛选与侧栏聚合使用挂载后空闲时读取的公开概览（listPublic）
  * - 未登录时回退展示博主（owner）的闪念列表（只读）；登录后切换到当前用户自己的列表
  * - 写操作仅对登录用户开放，未登录触发 useLoginDrawer.open()
  */
 
-import type { FlashComment, FlashNote, FlashNoteDraft } from '~/features/flash/types'
+import type { FlashComment, FlashNote, FlashNoteDraft, FlashPublicPageQuery } from '~/features/flash/types'
 import { defaultFlashNoteSeeds, FLASH_SEEDS_VERSION } from '~/features/flash/mock'
 import { mockOwnerUser } from '~/features/auth/mock'
-import { FLASH_PUBLIC_FRESH_MS, FLASH_PUBLIC_STALE_MS, invalidateFlashNotes } from '~/features/flash/state'
+import {
+  FLASH_PUBLIC_FRESH_MS,
+  FLASH_PUBLIC_PAGE_SIZE,
+  FLASH_PUBLIC_STALE_MS,
+  invalidateFlashNotes,
+} from '~/features/flash/state'
+
+/** 公开分页的服务端条件：标签与关键词互斥，均为空表示全部公开闪念 */
+export interface FlashPublicFilter {
+  tag: string | null
+  q: string
+}
+
+const isPublicNote = (note: FlashNote) => !note.isDraft && !note.isArchived
 
 /**
  * 增量补种：seed 版本升级时，把当前 list 里没有的 seed id 补进 storage。
@@ -56,6 +71,24 @@ export function useFlashNotes() {
   const loadedAt = useState('flash-notes-loaded-at', () => 0)
   const invalidated = useState('flash-notes-invalidated', () => false)
   const loadedOwner = useState('flash-notes-owner', () => '')
+  // 公开分页状态：随 SSR payload 下发，水合时不重复请求首屏
+  const total = useState('flash-notes-total', () => 0)
+  const pagesLoaded = useState('flash-notes-pages', () => 0)
+  const loadedQuery = useState('flash-notes-query', () => '')
+  const publicTotal = useState<number | null>('flash-public-total', () => null)
+  const serverRendered = useState('flash-notes-ssr', () => false)
+  const moreLoading = useState('flash-more-loading', () => false)
+  const moreError = useState<string | null>('flash-more-error', () => null)
+  // 公开概览：仅客户端读取，用于侧栏聚合与后端不支持的筛选，不进入 SSR payload
+  const overview = useState<FlashNote[]>('flash-overview', () => [])
+  const overviewLoaded = useState('flash-overview-loaded', () => false)
+  const overviewLoading = useState('flash-overview-loading', () => false)
+  const overviewError = useState<string | null>('flash-overview-error', () => null)
+  const overviewLoadedAt = useState('flash-overview-loaded-at', () => 0)
+  const overviewVersion = useState('flash-overview-version', () => 0)
+  /** 当前实例的公开查询；离开页面后回访从“全部”开始，与页面筛选控件的初始值一致 */
+  const publicFilter = ref<FlashPublicFilter>({ tag: null, q: '' })
+  const publicQueryKey = computed(() => JSON.stringify([publicFilter.value.tag, publicFilter.value.q]))
   const contentContext = useState<string>('page-content-context', () => '')
   /** 当前展示的所有者：owner（未登录回退）或 self（登录后看自己的） */
   const viewingScope = useState<'self' | 'owner'>('flash-notes-scope', () => 'owner')
@@ -79,6 +112,26 @@ export function useFlashNotes() {
 
   /** 是否处于只读模式：未登录时只能浏览博主的闪念 */
   const isReadOnly = computed(() => !isLoggedIn.value)
+  /** 未登录且仓库支持单页读取时按页加载；登录后的私有视图与本地演示仓库保持整表读取 */
+  const pagedPublic = computed(() => !isLoggedIn.value && typeof repo.listPublicPage === 'function')
+  const hasMore = computed(
+    () => pagedPublic.value && loaded.value && pagesLoaded.value * FLASH_PUBLIC_PAGE_SIZE < total.value,
+  )
+
+  // SSR 写入的读取时刻来自服务器时钟；水合时按本机时钟重新起算，避免时钟偏差把首屏判成过期并清空。
+  if (import.meta.client && app.isHydrating && serverRendered.value) {
+    loadedAt.value = Date.now()
+    serverRendered.value = false
+  }
+
+  function pageQuery(page: number, filter: FlashPublicFilter): FlashPublicPageQuery {
+    return {
+      page,
+      pageSize: FLASH_PUBLIC_PAGE_SIZE,
+      ...(filter.tag ? { tag: filter.tag } : {}),
+      ...(filter.q ? { q: filter.q } : {}),
+    }
+  }
 
   /**
    * 加载笔记列表。
@@ -86,26 +139,63 @@ export function useFlashNotes() {
    * - 未登录：回退展示博主（mockOwnerUser）的闪念列表，同样支持 seed
    */
   const loadVersion = useState('flash-load-version', () => 0)
-  async function load(force = false) {
+  /**
+   * @param options.rethrow SSR 首屏需要把上游失败交给 AsyncData，降级页才会以 503 返回而不进入页面缓存
+   */
+  async function load(force = false, options: { rethrow?: boolean } = {}) {
     synchronizeOwner()
     const owner = ownerKey.value
     const targetUserId = contentOwnerId.value
     const nextScope: 'self' | 'owner' = isLoggedIn.value ? 'self' : 'owner'
+    const paged = pagedPublic.value
+    const queryKey = paged ? publicQueryKey.value : ''
+    const sameQuery = loadedQuery.value === queryKey
     const age = Date.now() - loadedAt.value
     const timedPublicRead = nextScope === 'owner' && !shouldSeedLocally
-    const fresh = !invalidated.value && (shouldSeedLocally || (age >= 0 && age < FLASH_PUBLIC_FRESH_MS))
+    const fresh = sameQuery && !invalidated.value && (shouldSeedLocally || (age >= 0 && age < FLASH_PUBLIC_FRESH_MS))
     if (loaded.value && !force && fresh) return
 
     const version = ++loadVersion.value
     const ownsLoad = () => version === loadVersion.value && owner === ownerKey.value
-    // 私有实体仍由原仓储接纳写入；公开数据超过 5 分钟或已撤销时不再展示旧结果。
-    if (timedPublicRead && (invalidated.value || age < 0 || age > FLASH_PUBLIC_STALE_MS)) {
+    // 私有实体仍由原仓储接纳写入；公开数据超过 5 分钟、已撤销或换了查询条件时不再展示旧结果。
+    if (timedPublicRead && (!sameQuery || invalidated.value || age < 0 || age > FLASH_PUBLIC_STALE_MS)) {
       notes.value = []
       loaded.value = false
+      total.value = 0
+      pagesLoaded.value = 0
     }
     loading.value = true
     error.value = null
+    moreLoading.value = false
+    moreError.value = null
     try {
+      if (paged && repo.listPublicPage) {
+        const filter = { ...publicFilter.value }
+        // 重新验证时核对已展示的完整范围，避免回访后只剩第一页
+        const pageCount = sameQuery && loaded.value ? Math.max(1, pagesLoaded.value) : 1
+        const collected = new Map<string, FlashNote>()
+        let count = 0
+        let read = 0
+        for (let page = 1; page <= pageCount; page++) {
+          const result = await repo.listPublicPage(pageQuery(page, filter))
+          if (!ownsLoad()) return
+          result.items.filter(isPublicNote).forEach((note) => collected.set(note.id, note))
+          count = result.total
+          read = page
+          if (!result.items.length || page * FLASH_PUBLIC_PAGE_SIZE >= result.total) break
+        }
+        notes.value = [...collected.values()]
+        total.value = count
+        pagesLoaded.value = read
+        loadedQuery.value = queryKey
+        if (!filter.tag && !filter.q) publicTotal.value = count
+        if (import.meta.server) serverRendered.value = true
+        viewingScope.value = nextScope
+        loaded.value = true
+        loadedAt.value = Date.now()
+        invalidated.value = false
+        return
+      }
       let list = await repo.list(targetUserId)
       if (!ownsLoad()) return
       if (shouldSeedLocally) {
@@ -125,15 +215,83 @@ export function useFlashNotes() {
         }
       }
       if (!ownsLoad()) return
-      notes.value = nextScope === 'owner' ? list.filter((note) => !note.isDraft && !note.isArchived) : list
+      notes.value = nextScope === 'owner' ? list.filter(isPublicNote) : list
+      total.value = notes.value.length
+      pagesLoaded.value = 0
+      loadedQuery.value = queryKey
       viewingScope.value = nextScope
       loaded.value = true
       loadedAt.value = Date.now()
       invalidated.value = false
     } catch (e) {
       if (ownsLoad()) error.value = e instanceof Error ? e.message : String(e)
+      if (options.rethrow) throw e
     } finally {
       if (ownsLoad()) loading.value = false
+    }
+  }
+
+  /** 切换公开分页的服务端条件；条件不变时不重复请求 */
+  function setPublicFilter(next: FlashPublicFilter) {
+    const normalized = { tag: next.tag || null, q: next.q.trim() }
+    if (normalized.tag && normalized.q) throw new Error('标签与关键词需要分别查询')
+    if (JSON.stringify([normalized.tag, normalized.q]) === publicQueryKey.value) return
+    publicFilter.value = normalized
+    if (pagedPublic.value) void load()
+  }
+
+  /** 追加下一页公开闪念；查询、身份或读取代次变化后迟到的结果直接丢弃 */
+  async function loadMore() {
+    if (!hasMore.value || loading.value || moreLoading.value || !repo.listPublicPage) return
+    if (loadedQuery.value !== publicQueryKey.value) return
+    const version = loadVersion.value
+    const owner = ownerKey.value
+    const queryKey = loadedQuery.value
+    const owns = () => version === loadVersion.value && owner === ownerKey.value && queryKey === loadedQuery.value
+    const page = pagesLoaded.value + 1
+    moreLoading.value = true
+    moreError.value = null
+    try {
+      const result = await repo.listPublicPage(pageQuery(page, publicFilter.value))
+      if (!owns()) return
+      // 翻页期间有新发布会让偏移整体后移，按编号去重后再追加
+      const seen = new Set(notes.value.map((note) => note.id))
+      notes.value = [...notes.value, ...result.items.filter((note) => isPublicNote(note) && !seen.has(note.id))]
+      total.value = result.total
+      pagesLoaded.value = page
+    } catch (e) {
+      if (owns()) moreError.value = e instanceof Error ? e.message : String(e)
+    } finally {
+      if (owns()) moreLoading.value = false
+    }
+  }
+
+  /**
+   * 读取全部公开闪念作为概览：侧栏日历、统计、时间胶囊与标签云，以及后端暂不支持的类型/日期筛选。
+   * 只在客户端挂载后调用，不阻塞首屏；带访客头读取，顺带补齐首屏 SSR 缺少的个人点赞状态。
+   */
+  async function loadOverview(force = false) {
+    if (import.meta.server || !pagedPublic.value || !repo.listPublic) return
+    const age = Date.now() - overviewLoadedAt.value
+    if (overviewLoaded.value && !force && age >= 0 && age < FLASH_PUBLIC_FRESH_MS) return
+    if (overviewLoading.value) return
+    const version = ++overviewVersion.value
+    const owner = ownerKey.value
+    const owns = () => version === overviewVersion.value && owner === ownerKey.value
+    overviewLoading.value = true
+    overviewError.value = null
+    try {
+      const list = (await repo.listPublic()).filter(isPublicNote)
+      if (!owns()) return
+      overview.value = list
+      overviewLoaded.value = true
+      overviewLoadedAt.value = Date.now()
+      const latest = new Map(list.map((note) => [note.id, note]))
+      notes.value = notes.value.map((note) => latest.get(note.id) ?? note)
+    } catch (e) {
+      if (owns()) overviewError.value = e instanceof Error ? e.message : String(e)
+    } finally {
+      if (owns()) overviewLoading.value = false
     }
   }
 
@@ -144,8 +302,11 @@ export function useFlashNotes() {
     assertOwner(owner)
     invalidateFlashNotes(app)
     notes.value = apply(notes.value)
+    if (pagedPublic.value && overview.value.length) overview.value = apply(overview.value)
     // 写入先完成而首次列表仍在途中时，撤销旧响应后重新取得完整集合。
     if (!loaded.value) void load(true)
+    // 在途概览随写入作废；尚未取得概览时重新读取，侧栏不停在空白
+    if (pagedPublic.value && !overviewLoaded.value) void loadOverview(true)
   }
 
   /** 创建一条新闪念。未登录则打开登录弹窗。 */
@@ -320,10 +481,19 @@ export function useFlashNotes() {
     return true
   }
 
+  /** 侧栏聚合的数据源：公开分页视图用概览，私有视图与本地演示仍是完整集合 */
+  const aggregateNotes = computed(() => (pagedPublic.value ? overview.value : notes.value))
+  const aggregatesReady = computed(() => (pagedPublic.value ? overviewLoaded.value : loaded.value))
+  /** 公开闪念总数：概览就绪前用首屏分页返回的总数 */
+  const totalCount = computed<number | null>(() => {
+    if (!pagedPublic.value) return loaded.value ? notes.value.length : null
+    return overviewLoaded.value ? overview.value.length : publicTotal.value
+  })
+
   /** 标签聚合：按出现次数倒序 */
   const tagCloud = computed<{ name: string; count: number }[]>(() => {
     const map = new Map<string, number>()
-    notes.value.forEach((n) => {
+    aggregateNotes.value.forEach((n) => {
       n.tags.forEach((t) => {
         map.set(t, (map.get(t) ?? 0) + 1)
       })
@@ -335,7 +505,7 @@ export function useFlashNotes() {
   const monthlyCount = computed(() => {
     const now = new Date()
     const ym = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`
-    return notes.value.filter((n) => n.createdAt.startsWith(ym)).length
+    return aggregateNotes.value.filter((n) => n.createdAt.startsWith(ym)).length
   })
 
   return {
@@ -346,9 +516,24 @@ export function useFlashNotes() {
     viewingScope,
     ownerKey,
     isReadOnly,
+    pagedPublic,
+    total,
+    hasMore,
+    moreLoading,
+    moreError,
+    overview,
+    overviewLoaded,
+    overviewLoading,
+    overviewError,
+    aggregateNotes,
+    aggregatesReady,
+    totalCount,
     tagCloud,
     monthlyCount,
     load,
+    loadMore,
+    loadOverview,
+    setPublicFilter,
     add,
     update,
     remove,
