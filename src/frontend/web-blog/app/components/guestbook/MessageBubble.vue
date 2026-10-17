@@ -154,44 +154,40 @@
         </div>
       </Transition>
 
-      <!-- 已有的反应 -->
+      <!-- 已有的反应与浏览器、地区同排，空间不足时才换行 -->
       <div
-        v-if="reactions.length > 0"
-        class="message-bubble__reactions"
-        :class="{ 'message-bubble__reactions--end': message.isOwner }"
+        v-if="reactions.length > 0 || message.browser || message.region"
+        class="message-bubble__extras"
+        :class="{ 'message-bubble__extras--end': message.isOwner }"
       >
-        <button
-          v-for="r in reactions"
-          :key="r.emoji"
-          type="button"
-          class="message-bubble__reaction"
-          :class="{ 'message-bubble__reaction--active': r.reacted }"
-          :aria-label="`${reactionMeta(r.emoji).label}，${r.count} 次回应`"
-          :aria-pressed="r.reacted"
-          :disabled="!interactive || reacting || message.moderationStatus !== 'published'"
-          @click="toggleReaction(r.emoji)"
-        >
-          <Icon :name="reactionMeta(r.emoji).icon" size="15" />
-          <span class="message-bubble__reaction-count">{{ r.count }}</span>
-        </button>
+        <div v-if="reactions.length > 0" class="message-bubble__reactions">
+          <button
+            v-for="r in reactions"
+            :key="r.emoji"
+            type="button"
+            class="message-bubble__reaction"
+            :class="{ 'message-bubble__reaction--active': r.reacted }"
+            :aria-label="`${reactionMeta(r.emoji).label}，${r.count} 次回应`"
+            :aria-pressed="r.reacted"
+            :disabled="!interactive || reacting || message.moderationStatus !== 'published'"
+            @click="toggleReaction(r.emoji)"
+          >
+            <Icon :name="reactionMeta(r.emoji).icon" size="15" />
+            <span class="message-bubble__reaction-count">{{ r.count }}</span>
+          </button>
+        </div>
+        <p v-if="message.browser || message.region" class="message-bubble__foot message-bubble__foot--inline">
+          <span v-if="message.browser" class="message-bubble__browser">
+            <Icon name="lucide:monitor" size="11" class="message-bubble__browser-icon" />
+            {{ message.browser }}
+          </span>
+          <span v-if="message.browser && message.region" class="message-bubble__dot">·</span>
+          <span v-if="message.region" class="message-bubble__region">
+            <Icon name="lucide:map-pin" size="11" class="message-bubble__region-icon" />
+            {{ message.region }}
+          </span>
+        </p>
       </div>
-
-      <!-- 浏览器与地区 -->
-      <p
-        v-if="message.browser || message.region"
-        class="message-bubble__foot"
-        :class="{ 'message-bubble__foot--end': message.isOwner }"
-      >
-        <span v-if="message.browser" class="message-bubble__browser">
-          <Icon name="lucide:monitor" size="11" class="message-bubble__browser-icon" />
-          {{ message.browser }}
-        </span>
-        <span v-if="message.browser && message.region" class="message-bubble__dot">·</span>
-        <span v-if="message.region" class="message-bubble__region">
-          <Icon name="lucide:map-pin" size="11" class="message-bubble__region-icon" />
-          {{ message.region }}
-        </span>
-      </p>
     </div>
   </div>
 </template>
@@ -674,14 +670,22 @@ onBeforeUnmount(() => {
 }
 
 /* ---- 反应列表 ---- */
+.message-bubble__extras {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.25rem 0.625rem;
+
+  // 博主消息靠右：回应贴近气泡右缘，设备信息排在其左侧
+  &--end {
+    flex-direction: row-reverse;
+  }
+}
+
 .message-bubble__reactions {
   display: flex;
   flex-wrap: wrap;
   gap: 0.25rem;
-
-  &--end {
-    justify-content: flex-end;
-  }
 }
 
 .message-bubble__reaction {
@@ -732,8 +736,8 @@ onBeforeUnmount(() => {
   color: var(--text-faint);
   margin-top: 0.125rem;
 
-  &--end {
-    justify-content: flex-end;
+  &--inline {
+    margin-top: 0;
   }
 }
 

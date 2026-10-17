@@ -7,7 +7,6 @@
 
 <template>
   <div class="card message-input">
-    <p class="message-input__notice">{{ identityLabel }} · 最多500字，Ctrl / ⌘ + Enter发送</p>
     <p v-if="error" role="alert" class="message-input__notice">{{ error }}</p>
     <p v-if="notice" role="status" class="message-input__notice">{{ notice }}</p>
     <p v-if="storageError" role="alert" class="message-input__notice">{{ storageError }}</p>
@@ -51,19 +50,24 @@
         @keydown="onEditorKeydown"
       />
       <!-- 右上角展开/收起按钮 -->
-      <button
-        type="button"
-        class="message-input__expand-toggle"
-        :title="isExpanded ? '收起输入框' : '展开输入框'"
-        @click="toggleExpand"
-      >
-        <Icon :name="isExpanded ? 'lucide:minimize-2' : 'lucide:maximize-2'" size="12" />
-      </button>
+      <CommonTooltip :content="isExpanded ? '收起输入框' : '展开输入框'">
+        <button
+          type="button"
+          class="message-input__expand-toggle"
+          :aria-label="isExpanded ? '收起输入框' : '展开输入框'"
+          @click="toggleExpand"
+        >
+          <Icon :name="isExpanded ? 'lucide:minimize-2' : 'lucide:maximize-2'" size="12" />
+        </button>
+      </CommonTooltip>
     </div>
 
     <!-- 底部工具栏 -->
     <div class="message-input__footer">
-      <small>{{ draft.length }} / 500</small>
+      <span class="message-input__hint">{{ identityLabel }} · Ctrl / ⌘ + Enter 发送</span>
+      <small class="message-input__count" :class="{ 'message-input__count--full': draft.length >= 500 }"
+        >{{ draft.length }} / 500</small
+      >
       <button
         type="button"
         class="message-input__send"
@@ -156,7 +160,7 @@ onBeforeUnmount(() => {
   color: var(--text-soft);
   font-size: 0.8125rem;
   line-height: 1.6;
-  margin-bottom: 0.5rem;
+  padding: 0.5rem 0.75rem 0;
 }
 .message-input {
   flex-shrink: 0;
@@ -381,8 +385,34 @@ onBeforeUnmount(() => {
 .message-input__footer {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  padding: 0.125rem 0.5rem 0.5rem;
+  gap: 0.75rem;
+  padding: 0.125rem 0.5rem 0.5rem 0.75rem;
+}
+
+.message-input__hint {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  font-size: 0.6875rem;
+  color: var(--text-faint);
+  white-space: nowrap;
+  text-overflow: ellipsis;
+
+  // 触屏通常没有快捷键，窄屏只保留字数与发送
+  @media (max-width: #{$breakpoint-sm - 1px}) {
+    visibility: hidden;
+  }
+}
+
+.message-input__count {
+  flex-shrink: 0;
+  font-size: 0.6875rem;
+  color: var(--text-soft);
+  font-variant-numeric: tabular-nums;
+
+  &--full {
+    color: var(--danger);
+  }
 }
 
 .message-input__toolbar {
