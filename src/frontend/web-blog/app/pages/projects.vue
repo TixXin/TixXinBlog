@@ -76,9 +76,7 @@
           @retry="refresh()"
         />
         <p v-if="stale" role="status" class="projects-result">当前筛选尚未完成，以下保留上一次成功读取的项目。</p>
-        <p v-else-if="total !== null" role="status" class="projects-result">
-          共 {{ total }} 个项目 · 第 {{ query.page }} 页
-        </p>
+        <p v-else-if="total" role="status" class="projects-result">共 {{ total }} 个项目 · 第 {{ query.page }} 页</p>
         <CommonStateBlock
           v-if="!pending && !error && !projects.length"
           icon="lucide:layers"
@@ -246,6 +244,10 @@ function clearFilters() {
   align-items: center;
   margin-bottom: 1rem;
 }
+// 清除筛选按钮与下拉框底边对齐，而不是居中于“标签 + 下拉框”整体
+.projects-filters {
+  align-items: flex-end;
+}
 .projects-filters label {
   display: grid;
   gap: 0.35rem;
@@ -263,6 +265,7 @@ button {
   padding: 0.5rem 0.75rem;
   background: var(--surface-2);
   color: var(--text-main);
+  font-size: 0.875rem;
 }
 button:disabled {
   opacity: 0.5;

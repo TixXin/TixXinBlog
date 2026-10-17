@@ -51,11 +51,11 @@
           :disabled="!interactive"
           @click="$emit('open', project.id)"
         >
-          <Icon name="lucide:book-open" size="14" />项目详情与关联阅读
+          <Icon name="lucide:file-text" size="14" />项目详情与关联阅读
         </button>
         <template v-for="link in project.links" :key="link.kind">
           <a :href="link.href" class="project-card__link" target="_blank" rel="noopener noreferrer">
-            <Icon :name="link.icon" size="14" /> {{ link.label }}
+            <Icon :name="link.icon" size="14" />{{ link.label }}
           </a>
         </template>
         <p v-if="!project.links.length" class="project-card__link--unavailable">尚未提供公开链接</p>
@@ -190,7 +190,7 @@ const statusLabel = computed(() => projectProgressLabels[props.project.progress]
 }
 
 .project-card__tag {
-  min-height: 44px;
+  min-height: 1.625rem;
   max-width: 100%;
   overflow-wrap: anywhere;
   border: 0;
@@ -199,6 +199,10 @@ const statusLabel = computed(() => projectProgressLabels[props.project.progress]
   font-size: 10px;
   font-weight: 600;
   border-radius: 0.25rem;
+  // 精确指针下保持紧凑标签，触屏设备再放大到 44px 触控目标
+  @media (pointer: coarse) {
+    min-height: 44px;
+  }
 
   &--emerald {
     background: var(--tag-emerald-bg);
@@ -230,13 +234,16 @@ const statusLabel = computed(() => projectProgressLabels[props.project.progress]
   flex-wrap: wrap;
   display: flex;
   align-items: center;
-  gap: 0.75rem;
+  gap: 0 1rem;
   padding-top: 0.5rem;
   border-top: 1px solid var(--border);
 }
 
 .project-card__link {
-  min-height: 44px;
+  min-height: 2.25rem;
+  @media (pointer: coarse) {
+    min-height: 44px;
+  }
   display: flex;
   align-items: center;
   gap: 0.375rem;

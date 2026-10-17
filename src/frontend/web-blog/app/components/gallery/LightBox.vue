@@ -109,8 +109,8 @@ useModalFocus(() => props.visible, dialogRef, { close: onClose })
   top: 1.5rem;
   right: 1.5rem;
   z-index: 10;
-  width: 2.5rem;
-  height: 2.5rem;
+  width: 2.75rem;
+  height: 2.75rem;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -166,6 +166,7 @@ useModalFocus(() => props.visible, dialogRef, { close: onClose })
 .lightbox__desc button {
   display: inline-flex;
   align-items: center;
+  gap: 0.25rem;
   padding: 0.5rem 0.75rem;
   border: 1px solid #ffffff55;
   border-radius: 0.5rem;
