@@ -267,6 +267,8 @@ function formatRelative(iso: string): string {
   if (diff < minute) return '刚刚'
   if (diff < hour) return `${Math.floor(diff / minute)} 分钟前`
   if (diff < day) return `${Math.floor(diff / hour)} 小时前`
+  // 与文章列表的“昨天”说法保持一致
+  if (diff < 2 * day) return '昨天'
   if (diff < 7 * day) return `${Math.floor(diff / day)} 天前`
   return formatCalendarDate(iso)
 }

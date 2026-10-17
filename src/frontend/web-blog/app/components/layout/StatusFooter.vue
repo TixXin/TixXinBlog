@@ -25,9 +25,11 @@
         </template>
       </div>
       <div class="footer__divider" aria-hidden="true" />
-      <CommonTooltip content="仅表示本次资料读取结果，不代表全站运行监控" placement="top">
+      <CommonTooltip :content="apiLatencyTip" placement="top">
         <div class="footer__status" role="status" tabindex="0">
-          <span class="footer__ping"><Icon name="lucide:activity" size="12" /> 延迟未测量</span>
+          <span v-if="pingMs !== null" class="footer__ping"
+            ><Icon name="lucide:activity" size="12" /> API {{ pingMs }} ms</span
+          >
           <span class="footer__dot" />
           <span class="footer__operational">{{ siteStatus.statusText }}</span>
         </div>
@@ -39,6 +41,7 @@
 <script setup lang="ts">
 const currentYear = new Date().getFullYear()
 const { siteName, footerLinks, poweredBy, siteStatus } = useSiteInfo()
+const { pingMs } = useApiLatency()
 </script>
 
 <style lang="scss" scoped>

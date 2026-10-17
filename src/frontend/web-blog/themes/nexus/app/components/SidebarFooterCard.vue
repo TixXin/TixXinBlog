@@ -12,9 +12,12 @@
 
     <!-- 页脚链接 -->
     <nav class="sidebar-footer-card__links" aria-label="站点链接">
-      <a v-for="link in footerLinks" :key="link.label" :href="link.href" class="sidebar-footer-card__link">
-        {{ link.label }}
-      </a>
+      <template v-for="link in footerLinks" :key="link.label">
+        <a v-if="link.external" :href="link.href" class="sidebar-footer-card__link" target="_blank" rel="noopener">
+          {{ link.label }}
+        </a>
+        <NuxtLink v-else :to="link.href" class="sidebar-footer-card__link">{{ link.label }}</NuxtLink>
+      </template>
     </nav>
 
     <!-- 分隔线 -->
@@ -32,20 +35,23 @@
     </div>
 
     <!-- 运行状态 -->
-    <div class="sidebar-footer-card__status">
-      <span class="sidebar-footer-card__ping">
-        <Icon name="lucide:activity" size="12" />
-        延迟未测量
-      </span>
-      <span class="sidebar-footer-card__dot" />
-      <span class="sidebar-footer-card__operational">{{ siteStatus.statusText }}</span>
-    </div>
+    <CommonTooltip :content="apiLatencyTip" placement="top">
+      <div class="sidebar-footer-card__status" role="status" tabindex="0">
+        <span v-if="pingMs !== null" class="sidebar-footer-card__ping">
+          <Icon name="lucide:activity" size="12" />
+          API {{ pingMs }} ms
+        </span>
+        <span class="sidebar-footer-card__dot" />
+        <span class="sidebar-footer-card__operational">{{ siteStatus.statusText }}</span>
+      </div>
+    </CommonTooltip>
   </section>
 </template>
 
 <script setup lang="ts">
 const currentYear = new Date().getFullYear()
 const { siteName, footerLinks, poweredBy, siteStatus } = useSiteInfo()
+const { pingMs } = useApiLatency()
 </script>
 
 <style lang="scss" scoped>
