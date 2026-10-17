@@ -13,6 +13,7 @@
     @mouseleave="onLeave"
     @focusin="onEnter"
     @focusout="onLeave"
+    @pointerdown="onPress"
   >
     <slot />
   </span>
@@ -96,9 +97,20 @@ watch(
   },
 )
 
+/** 只有键盘焦点才展示提示；鼠标点击带来的焦点不算，否则移开鼠标后提示仍滞留 */
+function isKeyboardFocus(target: EventTarget | null) {
+  try {
+    return !(target instanceof Element) || target.matches(':focus-visible')
+  } catch {
+    return true
+  }
+}
+
 function onEnter(event: Event) {
-  if (event.type === 'focusin') triggerFocus = true
-  else triggerHover = true
+  if (event.type === 'focusin') {
+    if (!isKeyboardFocus(event.target)) return
+    triggerFocus = true
+  } else triggerHover = true
   if (showTimer) clearTimeout(showTimer)
   if (props.disabled) return
   if (dismissed) return
@@ -122,6 +134,16 @@ function onLeave(event: Event) {
     showTimer = null
   }
   scheduleHide()
+}
+
+/** 按下触发元素即视为已读提示，收起并在指针离开前不再弹出 */
+function onPress() {
+  dismissed = true
+  visible.value = false
+  if (showTimer) {
+    clearTimeout(showTimer)
+    showTimer = null
+  }
 }
 
 function scheduleHide() {
