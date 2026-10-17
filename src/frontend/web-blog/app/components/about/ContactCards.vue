@@ -13,7 +13,7 @@
         <div class="contact-cards__icon">
           <Icon :name="c.icon" size="20" />
         </div>
-        <div>
+        <div class="contact-cards__text">
           <p class="contact-cards__type">{{ c.type }}</p>
           <p class="contact-cards__value">{{ c.value }}</p>
         </div>
@@ -32,33 +32,31 @@ defineProps<{
 </script>
 
 <style lang="scss" scoped>
+/* 标题与卡片网格沿用资料栏目（经历、技能、书单）的版式，保持整页节奏一致 */
 .contact-cards__title {
-  font-size: 1rem;
-  font-weight: 700;
+  font-size: 1.1rem;
+  font-weight: 600;
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  margin-bottom: 1.25rem;
+  margin-bottom: 1rem;
 }
 
 .contact-cards__grid {
   display: grid;
-  grid-template-columns: 1fr;
-  gap: 1rem;
-
-  @media (min-width: $breakpoint-sm) {
-    grid-template-columns: repeat(2, 1fr);
-  }
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 15rem), 1fr));
+  gap: 0.75rem;
 }
 
 .contact-cards__item {
   display: flex;
   align-items: center;
-  gap: 1rem;
-  padding: 1rem;
-  background: var(--surface-1);
+  gap: 0.875rem;
+  min-width: 0;
+  padding: 0.875rem 1rem;
+  background: var(--surface-2);
   border: 1px solid var(--border);
-  border-radius: $radius-card;
+  border-radius: 0.75rem;
   text-decoration: none;
   color: inherit;
   transition: $transition-normal;
@@ -93,15 +91,22 @@ defineProps<{
   }
 }
 
+.contact-cards__text {
+  min-width: 0;
+}
+
 .contact-cards__type {
-  font-size: 0.75rem;
-  font-weight: 700;
+  font-size: 0.875rem;
+  font-weight: 600;
   margin: 0;
 }
 
 .contact-cards__value {
-  font-size: 11px;
+  overflow: hidden;
+  font-size: 0.75rem;
   color: var(--text-soft);
+  text-overflow: ellipsis;
+  white-space: nowrap;
   margin: 0;
 }
 </style>

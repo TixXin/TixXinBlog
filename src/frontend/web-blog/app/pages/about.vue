@@ -9,7 +9,14 @@
   <div class="main-inner">
     <CommonCustomScrollbar class="about-body" viewport-class="about-viewport" :show-back-to-top="false" primary>
       <AboutHero :profile="profile" />
-      <p v-if="error" role="alert">{{ error }} <button type="button" @click="refresh">重试</button></p>
+      <CommonRequestFeedback
+        v-if="error"
+        class="about-feedback"
+        compact
+        :title="error"
+        description="下方仍显示上次成功读取或默认的资料。"
+        @retry="refresh()"
+      />
       <AboutProfileContent :value="settings.about" />
       <AboutContactCards v-if="contacts.length" :contacts="contacts" />
     </CommonCustomScrollbar>
@@ -58,5 +65,9 @@ const contacts = computed(() =>
 
 :deep(.about-viewport) {
   padding: 1rem 2rem 2rem;
+}
+
+.about-feedback {
+  margin-bottom: 1.5rem;
 }
 </style>

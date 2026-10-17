@@ -34,7 +34,6 @@ defineProps<{
 <style lang="scss" scoped>
 .archive-item {
   position: relative;
-  padding-left: 1.75rem;
 
   &--first {
     padding-top: 0;
@@ -43,8 +42,8 @@ defineProps<{
 
 .archive-item__dot {
   position: absolute;
-  /* 与父轨道的 border-left + padding-left 对齐，使圆点压在时间线上 */
-  left: calc(-1.5rem - 1px + 0.3125rem);
+  /* 回退父轨道的留白与半个线宽，再减去半个圆点宽度，使圆点圆心压在 2px 时间线中央 */
+  left: calc(-1 * var(--archive-track-gap, 1.5rem) - 1px - 0.3125rem);
   top: 0.35rem;
   width: 0.625rem;
   height: 0.625rem;

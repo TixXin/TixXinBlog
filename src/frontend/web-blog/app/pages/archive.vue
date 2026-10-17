@@ -27,10 +27,10 @@
           </div>
         </div>
 
-        <!-- 年份筛选与站内搜索 -->
+        <!-- 年份筛选与站内搜索；手机端隐藏“年份”字样，让筛选与搜索并排一行 -->
         <div class="page-actions">
           <label class="archive-year-filter">
-            年份
+            <span class="archive-year-filter__label">年份</span>
             <select aria-label="归档年份" :value="query.year ?? ''" :disabled="!ready" @change="selectYear">
               <option value="">全部年份</option>
               <option v-for="year in years" :key="year.year" :value="year.year">
@@ -161,6 +161,18 @@ function openSearch() {
   gap: 0.5rem;
   color: var(--text-soft);
   font-size: 0.8125rem;
+}
+.archive-year-filter__label {
+  flex-shrink: 0;
+
+  @media (max-width: #{$breakpoint-sm - 1px}) {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+  }
 }
 .archive-stale-notice {
   margin: 0 0 1rem;

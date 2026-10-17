@@ -5,10 +5,23 @@
 
 <template>
   <section class="comment-section" aria-label="文章评论">
-    <h2 class="comment-section__title">
-      <Icon name="lucide:message-circle" size="20" />
-      评论 <span class="comment-section__count">({{ total }})</span>
-    </h2>
+    <!-- 标题行：左侧标题与总数，右侧刷新/重试，避免按钮孤立在输入框与列表之间 -->
+    <div class="comment-section__head">
+      <h2 class="comment-section__title">
+        <Icon name="lucide:message-circle" size="20" />
+        评论 <span class="comment-section__count">({{ total }})</span>
+      </h2>
+      <button
+        :aria-busy="loading"
+        type="button"
+        class="comment-section__refresh"
+        :disabled="busy"
+        @click="$emit('retry')"
+      >
+        <Icon name="lucide:refresh-cw" size="14" :class="{ 'is-spinning': loading }" aria-hidden="true" />
+        {{ loading ? '正在加载评论…' : loadError ? '重试加载评论' : '刷新评论' }}
+      </button>
+    </div>
     <div class="comment-section__composer">
       <div class="comment-section__avatar comment-section__avatar--placeholder">
         <Icon name="lucide:user" size="16" />
@@ -33,7 +46,7 @@
           aria-describedby="article-comment-limit"
         />
         <div class="comment-section__actions">
-          <span id="article-comment-limit">{{ draft.length }} / 1000</span>
+          <span id="article-comment-limit" class="comment-section__limit">{{ draft.length }} / 1000</span>
           <button
             type="submit"
             class="comment-section__submit"
@@ -44,20 +57,11 @@
           </button>
         </div>
         <p v-if="submitError" role="alert" class="comment-section__error">{{ submitError }}</p>
-        <p v-if="submitNotice && !submitError" role="status">{{ submitNotice }}</p>
+        <p v-if="submitNotice && !submitError" role="status" class="comment-section__notice">{{ submitNotice }}</p>
       </form>
     </div>
     <p v-if="loadError" role="alert" class="comment-section__error">{{ loadError }}</p>
     <p v-if="likeError" role="alert" class="comment-section__error">{{ likeError }}</p>
-    <button
-      :aria-busy="loading"
-      type="button"
-      class="comment-section__refresh"
-      :disabled="busy"
-      @click="$emit('retry')"
-    >
-      {{ loading ? '正在加载评论…' : loadError ? '重试加载评论' : '刷新评论' }}
-    </button>
     <p v-if="!loading && !loadError && !comments.length" class="comment-section__empty">暂无评论，来写下第一条吧。</p>
     <ul class="comment-section__list" :aria-busy="loading">
       <li v-for="item in comments" :key="item.id" class="comment-section__thread">
@@ -121,11 +125,20 @@ watch(
   border-top: 1px solid var(--border-soft);
 }
 
+.comment-section__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-bottom: 1.5rem;
+}
+
 .comment-section__title {
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  margin: 0 0 1.5rem;
+  margin: 0;
   font-size: 1.125rem;
   font-weight: 700;
   color: var(--text-main);
@@ -160,8 +173,8 @@ watch(
 }
 
 .comment-section__form {
+  position: relative;
   flex: 1;
-  min-width: 0;
   min-width: 0;
 }
 
@@ -247,13 +260,32 @@ watch(
   flex-direction: column;
   gap: 1rem;
 }
-.comment-section__error {
-  color: var(--text-main);
+.comment-section__limit {
+  font-size: 0.75rem;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-soft);
+}
+.comment-section__error,
+.comment-section__notice {
+  margin: 0.5rem 0 0;
+  font-size: 0.8125rem;
+  line-height: 1.6;
   overflow-wrap: anywhere;
 }
+.comment-section__error {
+  color: var(--danger);
+}
+.comment-section__notice {
+  color: var(--text-muted);
+}
+/* 占位文字已说明用途，标签只保留给读屏，头像与输入框顶部对齐 */
 .comment-section__label {
-  display: block;
-  margin-bottom: 0.5rem;
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
 }
 .comment-section__reply-target {
   display: flex;
@@ -262,19 +294,53 @@ watch(
   margin-bottom: 0.75rem;
   overflow-wrap: anywhere;
 }
+.comment-section__reply-target {
+  align-items: center;
+  font-size: 0.8125rem;
+  color: var(--text-muted);
+}
 .comment-section__reply-target button,
 .comment-section__refresh {
-  color: var(--accent-text);
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  min-height: 2rem;
+  color: var(--text-muted);
   background: var(--surface-2);
   border: 1px solid var(--border);
-  border-radius: 6px;
-  padding: 0.4rem 0.6rem;
+  border-radius: $radius-md;
+  padding: 0.25rem 0.625rem;
+  font-size: 0.75rem;
   cursor: var(--interaction-cursor, pointer);
+  transition: $transition-fast;
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
+
+  &:hover:not(:disabled) {
+    color: var(--text-main);
+    border-color: var(--border-hover);
+  }
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: var(--interaction-cursor, not-allowed);
+  }
 }
-.comment-section__refresh {
-  margin-bottom: 1rem;
+.comment-section__refresh .is-spinning {
+  animation: comment-refresh-spin 0.9s linear infinite;
+  @media (prefers-reduced-motion: reduce) {
+    animation: none;
+  }
+}
+@keyframes comment-refresh-spin {
+  to {
+    transform: rotate(360deg);
+  }
 }
 .comment-section__empty {
+  margin: 0 0 1rem;
+  font-size: 0.875rem;
   color: var(--text-muted);
 }
 </style>
