@@ -432,7 +432,10 @@ for (const width of [320, 1440]) {
     const trigger = page.locator('.footer__status')
     await trigger.scrollIntoViewIfNeeded()
     await trigger.focus()
-    const tooltip = page.getByRole('tooltip', { name: '仅表示本次资料读取结果，不代表全站运行监控', exact: true })
+    const tooltip = page.getByRole('tooltip', {
+      name: '延迟取自本页最近一次接口请求，状态仅表示本次资料读取结果，不代表全站运行监控',
+      exact: true,
+    })
     await expect(tooltip).toBeVisible()
     const metrics = await tooltip.evaluate((element) => ({ width: element.clientWidth, scroll: element.scrollWidth }))
     expect(metrics.scroll).toBeLessThanOrEqual(metrics.width + 1)

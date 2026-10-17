@@ -46,22 +46,20 @@ defineProps<{ link: LinkItem }>()
     border-color: var(--border-hover);
   }
 }
-.link-card__avatar {
-  width: 100%;
-  max-width: 9rem;
-  height: 9rem;
+// 站点图标与占位统一尺寸，避免大 Logo 与占位卡片高度参差
+.link-card__avatar,
+.link-card__placeholder {
+  flex-shrink: 0;
+  width: 4.5rem;
+  height: 4.5rem;
   margin-bottom: 0.75rem;
   border-radius: $radius-md;
 }
 .link-card__placeholder {
-  width: 4rem;
-  height: 4rem;
   display: grid;
   place-items: center;
-  border-radius: 50%;
   color: var(--text-soft);
   background: var(--surface-2);
-  margin-bottom: 0.75rem;
 }
 .link-card__name {
   margin: 0;

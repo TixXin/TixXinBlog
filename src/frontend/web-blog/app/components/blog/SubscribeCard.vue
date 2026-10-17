@@ -1,6 +1,6 @@
 <!--
   @file SubscribeCard.vue
-  @description 可用RSS订阅入口，并说明邮件订阅尚未开放
+  @description 可用 RSS 订阅入口，并说明邮件订阅尚未开放
   @author TixXin
   @since 2025-03-17
 -->
@@ -15,8 +15,8 @@
         </span>
         订阅更新
       </h3>
-      <p class="subscribe-card__desc">使用RSS阅读器订阅最新文章。邮件订阅尚未开放。</p>
-      <a href="/rss.xml" class="btn-primary subscribe-card__btn"><Icon name="lucide:rss" size="16" />RSS订阅</a>
+      <p class="subscribe-card__desc">使用 RSS 阅读器订阅最新文章，邮件订阅尚未开放。</p>
+      <a href="/rss.xml" class="btn-primary subscribe-card__btn"><Icon name="lucide:rss" size="16" />RSS 订阅</a>
     </div>
   </section>
 </template>

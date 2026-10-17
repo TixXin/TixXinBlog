@@ -170,6 +170,26 @@ onMounted(migrateMomentHash)
 watch(() => route.hash, migrateMomentHash)
 </script>
 <style lang="scss" scoped>
+// 窄屏下筛选入口只留图标，文字仅供读屏，让搜索、筛选和显示模式保持同一行
+@media (max-width: #{$breakpoint-sm - 1px}) {
+  .page-context-entry :deep(.context-entry__button) {
+    width: 44px;
+    padding: 0;
+
+    > span:last-child {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+      white-space: nowrap;
+    }
+  }
+  .page-actions .search-box {
+    flex-basis: 6rem;
+    min-width: 6rem;
+  }
+}
 .display-mode-toggle {
   display: flex;
   border: 1px solid var(--border);
