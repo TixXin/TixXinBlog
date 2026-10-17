@@ -17,6 +17,7 @@
         :reaction-error="reactionErrors?.[msg.id]"
         @react="$emit('react', $event)"
         @reply="(m) => $emit('reply', m)"
+        @jump="$emit('jump', $event)"
       />
     </TransitionGroup>
   </div>
@@ -34,6 +35,7 @@ const props = defineProps<{
 
 defineEmits<{
   reply: [message: GuestMessage]
+  jump: [value: { target: number; from: number }]
   react: [value: { id: number; emoji: string; reacted: boolean; complete?: () => void }]
 }>()
 

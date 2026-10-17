@@ -87,6 +87,7 @@
               :reaction-errors="interactions.reactionErrors.value"
               @reply="reply"
               @react="interactions.react"
+              @jump="jumpToMessage"
             />
             <div v-if="!isChatMode && hasMore" ref="bottomSentinel" class="guestbook-more">
               <button
@@ -103,6 +104,13 @@
               已显示当前范围的全部留言
             </p>
           </CommonCustomScrollbar>
+          <!-- 跳转引用时的查找进度与返回入口 -->
+          <p v-if="locating" class="guestbook-jump-pill" role="status">
+            <Icon name="lucide:loader-2" size="14" class="guestbook-jump-pill__spin" />正在查找原留言…
+          </p>
+          <button v-else-if="jumpOrigin !== null" type="button" class="guestbook-jump-pill" @click="backToOrigin">
+            <Icon name="lucide:corner-down-left" size="14" />回到回复处
+          </button>
           <button
             v-if="isChatMode && !atBottom"
             type="button"
@@ -288,6 +296,72 @@ function initialize() {
   bindScroll()
   setupObserver()
 }
+const { info: toastInfo } = useToast()
+/** 从哪条回复跳过去，用于“回到回复处” */
+const jumpOrigin = ref<number | null>(null)
+const locating = ref(false)
+let locatedTimer: ReturnType<typeof setTimeout> | null = null
+function findMessage(id: number) {
+  return messagesWrap.value?.querySelector<HTMLElement>(`[data-guestbook-id="${id}"]`) ?? null
+}
+function revealMessage(node: HTMLElement, instant = false) {
+  followingLatest = false
+  const reduced = instant || matchMedia('(prefers-reduced-motion: reduce)').matches
+  node.scrollIntoView({ block: 'center', behavior: reduced ? 'auto' : 'smooth' })
+  // 先移除再强制回流，连续跳到同一条时也能重新播放高亮
+  node.classList.remove('message-bubble--located')
+  void node.offsetWidth
+  node.classList.add('message-bubble--located')
+  if (locatedTimer) clearTimeout(locatedTimer)
+  locatedTimer = setTimeout(() => node.classList.remove('message-bubble--located'), 1700)
+}
+function morePendingSettled() {
+  if (!morePending.value) return Promise.resolve()
+  return new Promise<void>((resolve) => {
+    const stop = watch(morePending, (busy) => {
+      if (busy) return
+      stop()
+      resolve()
+    })
+  })
+}
+/** 原留言不在已加载范围时逐页加载更早的历史，最多 20 页，避免无限翻页 */
+async function jumpToMessage({ target, from }: { target: number; from: number }) {
+  if (locating.value) return
+  let node = findMessage(target)
+  const loadedHistory = !node
+  if (!node) {
+    locating.value = true
+    try {
+      for (let page = 0; !node && page < 20; page++) {
+        await morePendingSettled()
+        if (!hasMore.value || !personalized.value || moreError.value) break
+        await loadMore()
+        await nextTick()
+        if (pageScope.signal.aborted) return
+        node = findMessage(target)
+      }
+    } finally {
+      locating.value = false
+    }
+  }
+  if (!node) {
+    toastInfo(search.value || selectedDate.value ? '原留言不在当前筛选结果中，清除筛选后再试' : '原留言暂不可见')
+    return
+  }
+  jumpOrigin.value = from
+  if (loadedHistory) {
+    // 新历史插入后列表会先恢复阅读位置，等两帧布局稳定再直接定位，避免平滑滚动被打断
+    await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)))
+    if (pageScope.signal.aborted) return
+  }
+  revealMessage(node, loadedHistory)
+}
+function backToOrigin() {
+  const node = jumpOrigin.value === null ? null : findMessage(jumpOrigin.value)
+  jumpOrigin.value = null
+  if (node) revealMessage(node)
+}
 function focusInput() {
   nextTick(() => document.querySelector<HTMLTextAreaElement>('.message-input__editor')?.focus())
 }
@@ -361,6 +435,7 @@ onMounted(async () => {
   initialize()
 })
 onBeforeUnmount(() => {
+  if (locatedTimer) clearTimeout(locatedTimer)
   observer?.disconnect()
   bottomResize?.disconnect()
   boundScroll?.removeEventListener('scroll', checkBottom)
@@ -473,6 +548,38 @@ useSeoMeta({ title: '留言板', description: '留下你的足迹，交流技术
   font-size: 0.75rem;
   text-align: center;
   color: var(--text-soft);
+}
+.guestbook-jump-pill {
+  position: absolute;
+  bottom: 1rem;
+  left: 50%;
+  z-index: 5;
+  transform: translateX(-50%);
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  min-height: 44px;
+  margin: 0;
+  padding: 0 1rem;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--surface-1);
+  box-shadow: var(--shadow-card);
+  color: var(--text-main);
+  font-size: 0.75rem;
+  white-space: nowrap;
+}
+button.guestbook-jump-pill {
+  cursor: var(--interaction-cursor, pointer);
+  &:hover {
+    border-color: var(--border-hover);
+  }
+}
+.guestbook-jump-pill__spin {
+  animation: spin 1.2s linear infinite;
+  @media (prefers-reduced-motion: reduce) {
+    animation: none;
+  }
 }
 .guestbook-scroll-bottom {
   position: absolute;
