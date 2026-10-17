@@ -31,6 +31,8 @@ docker build -f src/backend/server-main/Dockerfile --target worker -t "tixxin-bl
 | `SITE_HOST`、`SITE_URL`                                                                                 | 对外域名与对应 HTTPS origin                             |
 | `HTTPS_BIND_ADDRESS`、`HTTP_PORT`、`HTTPS_PORT`                                                         | 默认仅绑定本机；对外开放需明确配置入口、防火墙和 DNS    |
 
+API 未设置 `NODE_ENV` 时按 `production` 处理：限流生效、刷新 Cookie 带 `Secure`、日志级别缺省 `info`，且 `MEDIA_DIRECTORY` 必须是绝对路径，否则拒绝启动。镜像已设置 `NODE_ENV=production` 与 `MEDIA_DIRECTORY=/app/var/media`。只有显式的 `development`/`test` 才允许通过 `RATE_LIMIT_DISABLED=true` 关闭限流，生产忽略该开关。
+
 数据库不发布宿主端口，API 由前端同源网关访问。Caddy 转发到前端，前端再转发 `/api/v1` 到 API；版本响应头为 `X-TixXin-Release`。Caddy 在真实域名下会申请证书，正式启用前准备 DNS 和 HTTP/HTTPS 入口。隔离验证使用内部 CA，并真实校验证书，不关闭 TLS 检查或修改系统信任。
 
 ### 可信代理、读取配额与媒体缓存
@@ -38,6 +40,8 @@ docker build -f src/backend/server-main/Dockerfile --target worker -t "tixxin-bl
 默认两端都忽略转发地址头。生产按真实网络填写 `WEB_TRUSTED_PROXY_CIDRS`（Nuxt 的直接前置 Caddy 地址）和 `API_TRUSTED_PROXY_CIDRS`（API 的直接前置 Nuxt 地址）；值为逗号分隔的明确 IPv4/IPv6 地址或 CIDR，映射为 `NUXT_TRUSTED_PROXY_CIDRS` 与 `TRUSTED_PROXY_CIDRS`。只填写受控代理地址或隔离代理网络的窄 CIDR，不能用全部私网、`0.0.0.0/0`、布尔开关或任意跳数代替核对。容器重建时地址可能变化，需要固定专用代理网络或同步这些配置。未配置时访客会按代理连接地址共享配额，不能把这一默认状态用于面向多访客的正式验收。
 
 当前 Caddy 模板直接接收访客连接，覆盖 `X-Forwarded-For` 并移除其他客户端地址提示；Nuxt 从连接地址向外逐跳验证代理链，再向 API 发送单一客户端 IP，API 只接受可信 Nuxt 连接的转发地址。若 Caddy 前另有 CDN/负载均衡，先按真实拓扑独立配置并验证最外层信任边界，不能直接透传访客的头。部署后用两个独立访客地址和伪造转发头验证配额隔离。
+
+限流按真实客户端地址计数：IPv4 按单地址，IPv6 按 `/64` 前缀归并。计数表有上限，满时先清理过期窗口、再淘汰最早的窗口，不会因表满拒绝新访客。
 
 固定 60 秒窗口内，每 IP 的公开业务读取、公开媒体读取和管理读取分别为 120、600、300 次，三个桶互不占用；登录、刷新认证、写入、上传及浏览计数仍保留原有额度。超限响应包含 `Retry-After`，浏览器不立即自动重试。
 
@@ -86,6 +90,19 @@ docker compose --env-file $releaseEnv -f compose.production.yaml run --rm --no-d
 
 该命令只创建账号，同名账号已存在时拒绝覆盖；完成后移除终端密码环境变量，再访问 `/admin/login`。`seed:dev` 会插入开发内容，不能用于生产初始化。个人资料和首批内容在后台明确维护、审核后发布。
 
+## 重置管理员密码
+
+忘记密码或怀疑凭据泄露时，在服务器本机通过一次性容器执行；该操作没有 HTTP 入口。新密码至少 12 位，可在受控终端设置 `ADMIN_RESET_PASSWORD`，未设置时在交互终端隐藏输入两次。存在多个管理员时用 `ADMIN_RESET_USERNAME` 指定账号：
+
+```powershell
+docker compose --env-file $releaseEnv -f compose.production.yaml run --rm --no-deps -it backend node dist/admin-reset-password.js
+docker compose --env-file $releaseEnv -f compose.production.yaml run --rm --no-deps -e ADMIN_RESET_USERNAME -e ADMIN_RESET_PASSWORD backend node dist/admin-reset-password.js
+```
+
+命令以 argon2id 保存新密码，递增会话版本并撤销全部会话与刷新令牌，所有已登录设备需重新登录；同一事务写入“命令行重置密码”审计。本机开发先 `corepack pnpm --filter server-main build`，再执行 `corepack pnpm --filter server-main exec node dist/admin-reset-password.js`。完成后移除终端中的密码环境变量。
+
+初始化与重置命令对配置缺失、账号已存在或不存在、密码不合规等情况输出具体原因；数据库等未知异常只输出脱敏提示，不打印连接参数。
+
 ## 已有站点发布
 
 先为实际目标创建最新一致完整备份，并完成清单/文件校验；需要时另外做隔离恢复。备份必须包含数据库和登记媒体，普通 dump 不能代替完整备份。目标、快照时间和媒体范围由操作者核对，脚本不能证明任意输入目录属于即将升级的站点。
@@ -124,6 +141,10 @@ docker compose --env-file $releaseEnv -f compose.production.yaml --profile worke
 ```
 
 持续执行还要求 `OPERATIONS_WORKER_ENABLED=true`。邮件和备份各有环境开关及数据库暂停状态，缺一不可；恢复旧队列不会因启动 worker 自动重投。
+
+每个 API 响应带 `X-Request-Id`，与响应体 `traceId`、访问日志 `req.id` 及管理审计的 trace 编号一致；上游 `x-trace-id` 仅接受 UUID 或不超过 64 位的 `[A-Za-z0-9._-]`，否则重新生成。未知异常和 5xx 在服务端日志记录堆栈与 `traceId`，客户端只收到通用提示。API 收到 `SIGTERM`/`SIGINT` 后 `/ready` 立即返回 503，再继续原有关闭流程；启动失败记录错误并以非零码退出。
+
+Caddy 入口为响应追加 `Strict-Transport-Security: max-age=31536000`（不含子域和 preload）与禁用摄像头、麦克风、定位、支付和 USB 的 `Permissions-Policy`；API 不返回 `X-Powered-By`。
 
 服务日志写 stdout/stderr，Compose 按服务轮转；日志不是备份。通过 `/ready`、实际公开 API、媒体读取、管理登录、任务状态和存储完整性检查观察系统。版本升级后验证公开内容、后台写入、索引和备份，不能只用容器 running 状态判断可用。
 

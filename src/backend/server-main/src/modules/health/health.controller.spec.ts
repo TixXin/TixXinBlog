@@ -3,10 +3,11 @@ import { NotFoundException } from '@nestjs/common'
 import type { Request } from 'express'
 import type { EntityManager } from '@mikro-orm/postgresql'
 import { HealthController } from './health.controller'
+import { ReadinessState } from './readiness-state'
 
 describe('开发服务归属探针', () => {
   const original = { ...process.env }
-  const controller = new HealthController({} as EntityManager)
+  const controller = new HealthController({} as EntityManager, new ReadinessState())
   const request = (address: string) => ({ socket: { remoteAddress: address } }) as Request
   afterEach(() => {
     process.env = { ...original }

@@ -5,6 +5,7 @@
  * @since 2026-07-20
  */
 
+import { isAbsolute } from 'node:path'
 import { plainToInstance } from 'class-transformer'
 import { requireDatabaseUrl } from './environment'
 import { IsEnum, IsIn, IsInt, IsOptional, IsString, Matches, Max, Min, MinLength, validateSync } from 'class-validator'
@@ -22,9 +23,10 @@ export enum NodeEnv {
  * 必需配置和可用通道以同工作区 .env.example 与 docs/operations.md 为准。
  */
 export class EnvironmentVariables {
+  /** 缺省按生产处理：漏配时保持限流、Secure Cookie 与 info 日志；本机开发由启动器或 .env.local 显式声明。 */
   @IsEnum(NodeEnv)
   @IsOptional()
-  NODE_ENV: NodeEnv = NodeEnv.Development
+  NODE_ENV: NodeEnv = NodeEnv.Production
 
   @IsInt()
   @Min(1)
@@ -34,7 +36,17 @@ export class EnvironmentVariables {
 
   @IsString()
   @IsOptional()
-  LOG_LEVEL: string = 'debug'
+  LOG_LEVEL: string = 'info'
+
+  /** 仅非生产环境可显式关闭限流，生产配置为 true 也不会生效。 */
+  @IsIn(['true', 'false'])
+  @IsOptional()
+  RATE_LIMIT_DISABLED = 'false'
+
+  /** 受管媒体目录；生产必须为绝对路径，避免随工作目录变化写到错误位置。 */
+  @IsString()
+  @IsOptional()
+  MEDIA_DIRECTORY?: string
 
   @IsString()
   @IsOptional()
@@ -105,6 +117,10 @@ export function validateEnv(config: Record<string, unknown>): EnvironmentVariabl
     throw new Error(`环境变量校验失败 -> ${detail}`)
   }
   requireDatabaseUrl(validated.DATABASE_URL)
+  if (validated.NODE_ENV === NodeEnv.Production) {
+    const media = validated.MEDIA_DIRECTORY?.trim()
+    if (!media || !isAbsolute(media)) throw new Error('环境变量校验失败 -> MEDIA_DIRECTORY: 生产环境必须配置为绝对路径')
+  }
   parseTrustedProxyCidrs(validated.TRUSTED_PROXY_CIDRS)
   readOperationConfig(validated as unknown as NodeJS.ProcessEnv)
   return validated

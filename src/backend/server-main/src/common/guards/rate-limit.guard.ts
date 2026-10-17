@@ -5,18 +5,24 @@
 import { CanActivate, ExecutionContext, HttpException, HttpStatus, Injectable } from '@nestjs/common'
 import { ConfigService } from '@nestjs/config'
 import type { Request, Response } from 'express'
+import { isIP } from 'node:net'
 
 /** 有界固定窗口计数器，可通过时钟注入验证过期和突发请求。 */
 export class RateLimitStore {
+  // Map 按插入顺序迭代；新窗口总是重新插入，因此首个条目即最早开启窗口的条目。
   private readonly entries = new Map<string, { count: number; expires: number }>()
+
+  constructor(private readonly capacity = 10000) {}
+
+  get size(): number {
+    return this.entries.size
+  }
 
   consume(key: string, limit: number, windowMs: number, now = Date.now()): number {
     let entry = this.entries.get(key)
     if (!entry || entry.expires <= now) {
-      for (const [oldKey, value] of this.entries) {
-        if (value.expires <= now) this.entries.delete(oldKey)
-      }
-      if (this.entries.size >= 10000 && !this.entries.has(key)) return Math.ceil(windowMs / 1000)
+      if (entry) this.entries.delete(key)
+      if (this.entries.size >= this.capacity) this.evict(now)
       entry = { count: 0, expires: now + windowMs }
       this.entries.set(key, entry)
     }
@@ -24,6 +30,51 @@ export class RateLimitStore {
     entry.count += 1
     return 0
   }
+
+  /** 表满时先清理已过期条目；仍满则淘汰最早的窗口，新客户端不会因表满被一律拒绝。 */
+  private evict(now: number): void {
+    for (const [key, value] of this.entries) {
+      if (value.expires <= now) this.entries.delete(key)
+    }
+    for (const key of this.entries.keys()) {
+      if (this.entries.size < this.capacity) break
+      this.entries.delete(key)
+    }
+  }
+}
+
+/** IPv4 按单地址计数；IPv6 按 /64 归并，避免同一前缀轮换地址绕过配额。 */
+export function rateLimitClientKey(address: string | undefined): string {
+  if (!address) return 'unknown'
+  const value = address.trim().toLowerCase()
+  const mapped = /^::ffff:(\d{1,3}(?:\.\d{1,3}){3})$/.exec(value)
+  if (mapped) return mapped[1]!
+  if (!value.includes(':') || isIP(value) !== 6) return value
+  const groups = expandIpv6(value)
+  if (!groups) return value
+  // ::/64 内是回环、IPv4 映射等特殊地址，不归并，避免不同 IPv4 访客共用一个桶。
+  if (groups.slice(0, 4).every((part) => part === '0')) return groups.join(':')
+  return `${groups.slice(0, 4).join(':')}::/64`
+}
+
+function expandIpv6(value: string): string[] | null {
+  // 内嵌 IPv4 的非映射写法极少见，直接按原值计数。
+  const address = value.split('%')[0]!
+  if (address.includes('.')) return null
+  const [head, rest, extra] = address.split('::')
+  if (extra !== undefined) return null
+  const left = head ? head.split(':') : []
+  const right = rest ? rest.split(':') : []
+  const groups =
+    rest === undefined ? left : [...left, ...Array<string>(8 - left.length - right.length).fill('0'), ...right]
+  if (groups.length !== 8) return null
+  return groups.map((part) => Number.parseInt(part || '0', 16).toString(16))
+}
+
+/** 限流关闭开关：仅 development/test 且显式 true 时生效。 */
+export function rateLimitDisabled(config: ConfigService): boolean {
+  const environment = config.get<string>('NODE_ENV') ?? 'production'
+  return ['development', 'test'].includes(environment) && config.get<string>('RATE_LIMIT_DISABLED') === 'true'
 }
 
 @Injectable()
@@ -32,8 +83,8 @@ export class RateLimitGuard implements CanActivate {
   constructor(private readonly config: ConfigService) {}
 
   canActivate(context: ExecutionContext): boolean {
-    // 本机开发：浏览器、SSR 与开发工具都来自 127.0.0.1，按 IP 计数只会把自己限住；配额在生产与测试环境保持原样。
-    if (this.config.get<string>('NODE_ENV') === 'development') return true
+    // 本机开发需显式 RATE_LIMIT_DISABLED=true 才关闭限流；生产忽略该开关，漏配 NODE_ENV 时按生产处理。
+    if (rateLimitDisabled(this.config)) return true
     const request = context.switchToHttp().getRequest<Request>()
     if (request.method === 'OPTIONS' || ['/health', '/ready'].includes(request.path)) return true
     const login = request.path.endsWith('/auth/login') || request.path.endsWith('/auth/password')
@@ -64,7 +115,11 @@ export class RateLimitGuard implements CanActivate {
     const limit = upload ? 20 : login ? 5 : refresh ? 30 : view ? 60 : write ? 10 : media ? 600 : admin ? 300 : 120
     // 仅测试环境可缩短窗口，生产不能通过错误配置关闭限流。
     const windowMs = this.config.get<string>('NODE_ENV') === 'test' ? 1000 : 60000
-    const retryAfter = this.store.consume(`${scope}:${request.ip ?? request.socket.remoteAddress}`, limit, windowMs)
+    const retryAfter = this.store.consume(
+      `${scope}:${rateLimitClientKey(request.ip ?? request.socket.remoteAddress)}`,
+      limit,
+      windowMs,
+    )
     if (retryAfter) {
       context.switchToHttp().getResponse<Response>().setHeader('Retry-After', String(retryAfter))
       throw new HttpException('操作过于频繁，请稍后重试', HttpStatus.TOO_MANY_REQUESTS)

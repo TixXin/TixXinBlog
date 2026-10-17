@@ -67,6 +67,31 @@ describe('CommentService', () => {
     expect(em.create).not.toHaveBeenCalled()
   })
 
+  it('头像复用白名单：拒绝非 HTTP(S) 协议，默认头像与 HTTPS 地址可用', async () => {
+    for (const avatar of [
+      'javascript:alert(1)',
+      'data:image/svg+xml,<svg/>',
+      '//evil.example/a.png',
+      'https://u:p@x.example/a',
+    ]) {
+      const { service, em } = setup()
+      await expect(service.create(1, { ...input, avatar }, 'hash')).rejects.toMatchObject({ status: 400 })
+      expect(em.create).not.toHaveBeenCalled()
+    }
+    for (const [avatar, stored] of [
+      [undefined, '/avatar.svg'],
+      ['/avatar.svg', '/avatar.svg'],
+      ['https://q1.qlogo.cn/g?b=qq&nk=10001&s=100', 'https://q1.qlogo.cn/g?b=qq&nk=10001&s=100'],
+    ] as const) {
+      const { service, em } = setup()
+      await service.create(1, { ...input, avatar }, 'hash')
+      expect(em.create).toHaveBeenCalledWith(
+        Comment,
+        expect.objectContaining({ authorSnapshot: expect.objectContaining({ avatar: stored }) }),
+      )
+    }
+  })
+
   it('第三层不能继续回复', async () => {
     const { service, em } = setup('published', 2)
     await expect(service.create(1, { ...input, parentId: 10 }, 'hash')).rejects.toMatchObject({ code: 1003 })

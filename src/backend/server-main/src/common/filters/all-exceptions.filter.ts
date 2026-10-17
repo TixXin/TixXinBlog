@@ -1,11 +1,11 @@
 /**
  * @file all-exceptions.filter.ts
- * @description 全局异常过滤器：所有错误统一包装为 { code, message, data: null, traceId }
+ * @description 全局异常过滤器：所有错误统一包装为 { code, message, data: null, traceId }，服务端异常记录堆栈
  * @author TixXin
  * @since 2026-07-20
  */
 
-import { ArgumentsHost, Catch, ExceptionFilter, HttpException, HttpStatus } from '@nestjs/common'
+import { ArgumentsHost, Catch, ExceptionFilter, HttpException, HttpStatus, Logger } from '@nestjs/common'
 import type { Request, Response } from 'express'
 import { ErrorCode, HTTP_STATUS_TO_ERROR_CODE } from '../constants/error-codes'
 import { BusinessException } from '../exceptions/business.exception'
@@ -13,6 +13,8 @@ import { getTraceId } from '../utils/trace-id'
 
 @Catch()
 export class AllExceptionsFilter implements ExceptionFilter {
+  private readonly logger = new Logger('AllExceptionsFilter')
+
   catch(exception: unknown, host: ArgumentsHost): void {
     const ctx = host.switchToHttp()
     const response = ctx.getResponse<Response>()
@@ -40,6 +42,14 @@ export class AllExceptionsFilter implements ExceptionFilter {
       } else {
         message = exception.message
       }
+    }
+
+    // 未知异常与所有 5xx 在服务端记录堆栈和 traceId；客户端只收到通用文案与 traceId。
+    if (!(exception instanceof HttpException) || status >= 500) {
+      this.logger.error(
+        { err: exception instanceof Error ? exception : new Error(String(exception)), traceId, status },
+        `请求处理异常 ${request.method} ${request.path ?? request.url}`,
+      )
     }
 
     response.status(status).json({ code, message, data: null, traceId })

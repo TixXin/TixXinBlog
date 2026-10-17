@@ -8,6 +8,7 @@
 import { FilterQuery, LockMode } from '@mikro-orm/core'
 import { EntityManager } from '@mikro-orm/postgresql'
 import { BadRequestException, HttpStatus, Injectable } from '@nestjs/common'
+import { ConfigService } from '@nestjs/config'
 import { BusinessException } from '../../common/exceptions/business.exception'
 import { FlashComment } from '../../entities/flash-comment.entity'
 import { FlashLike } from '../../entities/flash-like.entity'
@@ -16,6 +17,8 @@ import { CreateFlashCommentDto } from './dto/create-flash-comment.dto'
 import { QueryFlashDto, SearchFlashDto } from './dto/query-flash.dto'
 import { MediaAsset } from '../../entities/media-asset.entity'
 import { lockMedia, managedMediaIds, synchronizeMediaReferences } from '../media/media-references'
+import { publicAuthorId } from '../../common/utils/public-author-id'
+import { momentUrl } from '../moment/moment-values'
 
 /** 域错误码(api.md 附录 A):3001 闪念不存在 */
 const FLASH_NOT_FOUND = 3001
@@ -60,7 +63,15 @@ export interface FlashListResult {
 
 @Injectable()
 export class FlashService {
-  constructor(private readonly em: EntityManager) {}
+  constructor(
+    private readonly em: EntityManager,
+    private readonly config: ConfigService,
+  ) {}
+
+  /** 公开响应不返回原始访客哈希，避免与留言成员等其他模块的访客标识关联。 */
+  private authorId(visitorIdHash: string): string {
+    return publicAuthorId(this.config.getOrThrow<string>('JWT_ACCESS_SECRET'), 'flash-comment', visitorIdHash)
+  }
 
   /** 列表:草稿不对外;置顶前置 + createdAt 倒序(对齐前端 LocalFlashRepository.list) */
   async findMany(query: QueryFlashDto, visitor = ''): Promise<FlashListResult> {
@@ -155,7 +166,8 @@ export class FlashService {
         flashNote: note,
         authorId: visitorIdHash,
         authorName: dto.authorName,
-        authorAvatar: dto.authorAvatar ?? DEFAULT_AVATAR,
+        // 与朋友圈、留言共用头像白名单：默认头像、本站媒体或完整 HTTP(S) 地址。
+        authorAvatar: dto.authorAvatar === undefined ? DEFAULT_AVATAR : momentUrl(dto.authorAvatar, true, true),
         content: dto.content,
         createdAt: new Date(),
       })
@@ -167,7 +179,7 @@ export class FlashService {
       await em.flush()
       return {
         id: comment.id,
-        authorId: comment.authorId,
+        authorId: this.authorId(comment.authorId),
         authorName: comment.authorName,
         authorAvatar: comment.authorAvatar,
         content: comment.content,
@@ -206,7 +218,7 @@ export class FlashService {
         .sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime())
         .map((c) => ({
           id: c.id,
-          authorId: c.authorId,
+          authorId: this.authorId(c.authorId),
           authorName: c.authorName,
           authorAvatar: c.authorAvatar,
           content: c.content,

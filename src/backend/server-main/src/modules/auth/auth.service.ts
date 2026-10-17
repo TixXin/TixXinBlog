@@ -8,7 +8,7 @@
 import { createHash, randomBytes } from 'node:crypto'
 import { LockMode } from '@mikro-orm/core'
 import { EntityManager } from '@mikro-orm/postgresql'
-import { BadRequestException, HttpStatus, Injectable } from '@nestjs/common'
+import { BadRequestException, HttpStatus, Injectable, Logger } from '@nestjs/common'
 import { JwtService } from '@nestjs/jwt'
 import * as argon2 from 'argon2'
 import { ErrorCode } from '../../common/constants/error-codes'
@@ -19,12 +19,18 @@ import { AdminSession } from '../../entities/admin-session.entity'
 import { AuthSessionsService } from './auth-sessions.service'
 import { isUUID } from 'class-validator'
 import { ACCESS_TOKEN_TTL_SECONDS, REFRESH_TOKEN_TTL_MS } from './auth.constants'
+import { AuditService } from '../audit/audit.service'
 
 export interface AccessTokenPayload {
   sub: string
   username: string
   version: number
   sid: string
+}
+
+/** 已轮换的刷新令牌被再次使用时的处置结果，用于事务提交后写审计。 */
+interface RefreshReuse {
+  reuse: { userId: string; username: string; sessionId?: string; revokedTokens: number }
 }
 
 export interface LoginResult {
@@ -44,10 +50,13 @@ const dummyPasswordHash = argon2.hash('non-account-timing-placeholder')
 
 @Injectable()
 export class AuthService {
+  private readonly logger = new Logger('AuthService')
+
   constructor(
     private readonly em: EntityManager,
     private readonly jwtService: JwtService,
     private readonly sessions: AuthSessionsService,
+    private readonly audit: AuditService,
   ) {}
 
   async login(username: string, password: string, userAgent?: string): Promise<LoginResult> {
@@ -76,9 +85,12 @@ export class AuthService {
     })
   }
 
-  /** 刷新:校验 cookie 中的 refresh token,轮换(旧 token 立即作废)并签发新 access */
-  async refresh(refreshTokenPlain: string, userAgent?: string): Promise<LoginResult> {
-    return this.em.transactional(async (em) => {
+  /**
+   * 刷新:校验 cookie 中的 refresh token,轮换(旧 token 立即作废)并签发新 access。
+   * 已轮换作废的令牌再次出现视为泄露重放：撤销所属会话的全部令牌并写审计。
+   */
+  async refresh(refreshTokenPlain: string, userAgent?: string, traceId?: string): Promise<LoginResult> {
+    const result = await this.em.transactional(async (em): Promise<LoginResult | RefreshReuse> => {
       // 与改密保持同一锁顺序：先管理员，再刷新记录，避免漏撤销或锁顺序死锁。
       const candidate = await em.findOne(RefreshToken, { tokenHash: sha256(refreshTokenPlain) })
       if (!candidate) throw new BusinessException(ErrorCode.RefreshTokenExpired, '登录已失效', HttpStatus.UNAUTHORIZED)
@@ -94,6 +106,10 @@ export class AuthService {
         { lockMode: LockMode.PESSIMISTIC_WRITE, refresh: true },
       )
       const now = new Date()
+      if (record?.revokedAt && record.expiresAt > now) {
+        const reuse = await this.revokeReusedChain(em, user, record, now)
+        if (reuse) return reuse
+      }
       if (!record || record.revokedAt || record.expiresAt <= now) {
         throw new BusinessException(
           ErrorCode.RefreshTokenExpired,
@@ -128,6 +144,63 @@ export class AuthService {
       await em.flush()
       return this.buildLoginResult(user, nextPlain, session.id)
     })
+    if ('reuse' in result) {
+      await this.auditRefreshReuse(result.reuse, traceId)
+      throw new BusinessException(ErrorCode.RefreshTokenExpired, '登录已失效，请重新登录', HttpStatus.UNAUTHORIZED)
+    }
+    return result
+  }
+
+  /**
+   * 撤销重放令牌所在的令牌链：有会话时撤销该会话及其全部令牌；
+   * 旧记录无会话时撤销该管理员全部无会话令牌。会话已被正常撤销（登出、改密）时不视为重放。
+   */
+  private async revokeReusedChain(
+    em: EntityManager,
+    user: AdminUser,
+    record: RefreshToken,
+    now: Date,
+  ): Promise<RefreshReuse | undefined> {
+    if (record.session) {
+      const session = await em.findOne(
+        AdminSession,
+        { id: record.session.id, adminUser: user },
+        { lockMode: LockMode.PESSIMISTIC_WRITE, refresh: true },
+      )
+      if (!session || session.revokedAt || session.expiresAt <= now) return undefined
+      session.revokedAt = now
+      const revokedTokens = await em.nativeUpdate(RefreshToken, { session, revokedAt: null }, { revokedAt: now })
+      await em.flush()
+      return { reuse: { userId: user.id, username: user.username, sessionId: session.id, revokedTokens } }
+    }
+    const revokedTokens = await em.nativeUpdate(
+      RefreshToken,
+      { adminUser: user, session: null, revokedAt: null },
+      { revokedAt: now },
+    )
+    if (!revokedTokens) return undefined
+    return { reuse: { userId: user.id, username: user.username, revokedTokens } }
+  }
+
+  /** 重放处置已在事务内提交；审计存储不可用时只记日志，不回滚撤销。 */
+  private async auditRefreshReuse(reuse: RefreshReuse['reuse'], traceId?: string): Promise<void> {
+    const actor = { id: reuse.userId, name: reuse.username, sessionId: reuse.sessionId }
+    try {
+      const id = await this.audit.begin(
+        { action: 'auth.refresh-reuse', resourceType: 'session', resourceId: reuse.sessionId },
+        actor,
+        traceId && isUUID(traceId) ? traceId : undefined,
+      )
+      await this.audit.complete(id, {
+        actor,
+        resourceId: reuse.sessionId,
+        state: 'success',
+        statusCode: HttpStatus.UNAUTHORIZED,
+        summary: { fields: [], counts: { revokedTokens: reuse.revokedTokens } },
+      })
+    } catch {
+      this.logger.warn(`刷新令牌重放已撤销会话 ${reuse.sessionId ?? '(旧令牌)'}，但审计写入失败`)
+    }
   }
 
   /** 登出撤销请求中可验证的 Cookie 与访问令牌会话；两者可能因再次登录而不同。 */

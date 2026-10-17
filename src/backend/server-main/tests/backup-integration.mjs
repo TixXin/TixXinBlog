@@ -533,6 +533,22 @@ try {
   const checked = await ok('/admin/maintenance/media-check', 'POST')
   assert.equal(checked.problems.length, 0)
   assert.equal(checked.checked, 3)
+  const expiring = await preview(bundle)
+  assert.equal(expiring.status, 201, expiring.body.message)
+  const expiredTicket = expiring.body.data.ticket
+  await em.execute("update content_import set expires_at = now() - interval '1 minute' where id=?", [expiredTicket])
+  const expiredExecute = await request(`/admin/backup/imports/${expiredTicket}/execute`, 'POST', {
+    acknowledgement: '导入为新草稿',
+    confirmation: expiring.body.data.confirmation,
+  })
+  assert.equal(expiredExecute.status, 400)
+  assert.equal(
+    (await em.execute('select completed_at from content_import where id=?', [expiredTicket]))[0].completed_at,
+    null,
+  )
+  const expiredRead = await ok(`/admin/backup/imports/${expiredTicket}`)
+  assert.equal(expiredRead.expired, true)
+  assert.equal((await em.execute('select payload from content_import where id=?', [expiredTicket]))[0].payload, null)
   const oldContext = (await request('/site')).headers.get('x-content-context')
   assert(oldContext)
   const nextContext = randomUUID()

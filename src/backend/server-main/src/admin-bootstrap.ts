@@ -4,20 +4,21 @@
  */
 import { MikroORM } from '@mikro-orm/postgresql'
 import * as argon2 from 'argon2'
+import { AdminCliError, assertAdminPassword, describeCliFailure } from './admin-cli'
 import { mikroOrmOptions } from './config/mikro-orm.options'
 import { AdminUser } from './entities/admin-user.entity'
 
 async function main(): Promise<void> {
   const username = process.env.ADMIN_DEFAULT_USERNAME?.trim()
-  const password = process.env.ADMIN_DEFAULT_PASSWORD
-  if (!username || username.length > 64 || !password || password.length < 12 || password === '<required>') {
-    throw new Error('请显式配置 ADMIN_DEFAULT_USERNAME 和至少 12 位的 ADMIN_DEFAULT_PASSWORD')
+  if (!username || username.length > 64) {
+    throw new AdminCliError('请显式配置 ADMIN_DEFAULT_USERNAME（1–64 个字符）')
   }
+  const password = assertAdminPassword(process.env.ADMIN_DEFAULT_PASSWORD, ' ADMIN_DEFAULT_PASSWORD ')
   const orm = await MikroORM.init(mikroOrmOptions)
   try {
     const em = orm.em.fork()
     if (await em.findOne(AdminUser, { username })) {
-      throw new Error('该管理员已存在；初始化命令不会覆盖已有密码')
+      throw new AdminCliError('该管理员已存在；初始化命令不会覆盖已有密码')
     }
     await em.persistAndFlush(
       em.create(AdminUser, {
@@ -33,8 +34,10 @@ async function main(): Promise<void> {
   }
 }
 
-void main().catch(() => {
-  // 数据库错误可能含连接参数，CLI 不输出原始异常。
-  process.stderr.write('管理员初始化失败，请检查配置、迁移状态及账号是否已存在\n')
+void main().catch((error: unknown) => {
+  // 明确的业务错误原样输出；数据库错误可能含连接参数，只输出脱敏提示。
+  process.stderr.write(
+    `管理员初始化失败：${describeCliFailure(error, '数据库或运行环境异常，请检查连接配置与迁移状态')}\n`,
+  )
   process.exitCode = 1
 })
