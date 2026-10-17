@@ -2,8 +2,10 @@
  * @file publicContent.ts
  * @description 订阅和站点地图共用的公开 API 数据源，不读取客户端 Mock 或私人 Cookie
  */
+import { createHash } from 'node:crypto'
 import type { H3Event } from 'h3'
-import type { PostMetadata, PostPage } from '~/features/post/types'
+import type { ArticleDetail, PostMetadata, PostPage } from '~/features/post/types'
+import { renderArticleMarkdown } from '~/utils/articleMarkdown'
 import type { FlashNote } from '~/features/flash/types'
 import type { MomentItem, MomentPage } from '~/features/moment/types'
 import type { SiteSettingsData } from '~/features/site/settings'
@@ -40,6 +42,100 @@ export async function publicMoments(event: H3Event): Promise<MomentItem[]> {
   return data.items
     .filter((note) => (!('status' in note) || note.status === 'published') && !('deletedAt' in note && note.deletedAt))
     .slice(0, 30)
+}
+
+/** 站点地图分页读取的上限：每类最多 maxPages 页，避免单次生成拖垮上游 */
+export async function publicPagedItems<T>(event: H3Event, path: string, pageSize: number, maxPages = 20): Promise<T[]> {
+  const items: T[] = []
+  for (let page = 1; page <= maxPages; page += 1) {
+    const separator = path.includes('?') ? '&' : '?'
+    const data = await publicApi<{ items: T[]; total: number }>(
+      event,
+      `${path}${separator}page=${page}&pageSize=${pageSize}`,
+    )
+    items.push(...data.items)
+    if (data.items.length < pageSize || items.length >= data.total) break
+  }
+  return items
+}
+
+/** 文章全文的订阅渲染结果按文章缓存 10 分钟；键位于 cache:nitro 前缀下，内容写请求会随 SSR 缓存一并清空 */
+const cachedArticleFeedHtml = defineCachedFunction(
+  async (event: H3Event, id: string): Promise<string> => {
+    const detail = await publicApi<ArticleDetail>(event, `/posts/${encodeURIComponent(id)}`)
+    return detail.contentRaw ? renderArticleMarkdown(detail.contentRaw, detail.title) : ''
+  },
+  { name: 'feed-article-html', maxAge: 600, getKey: (_event: H3Event, id: string) => id },
+)
+
+/** 读取文章全文 HTML 并把站内相对地址改为绝对地址；读取失败时返回空串，由订阅回退为摘要 */
+export async function publicArticleFeedHtml(event: H3Event, id: string, articleUrl: string): Promise<string> {
+  try {
+    return absolutizeHtml(await cachedArticleFeedHtml(event, id), articleUrl)
+  } catch {
+    return ''
+  }
+}
+
+/** 订阅阅读器不知道页面地址，src/href 需相对文章地址解析；非 http(s) 地址保持原样 */
+export function absolutizeHtml(html: string, base: string): string {
+  return html.replace(/(\s(?:src|href))="([^"]*)"/g, (match, attribute: string, value: string) => {
+    const raw = value.replace(/&amp;/g, '&')
+    try {
+      const url = new URL(raw, base)
+      if (!['http:', 'https:'].includes(url.protocol)) return match
+      return `${attribute}="${url.href.replace(/&/g, '&amp;').replace(/"/g, '&quot;')}"`
+    } catch {
+      return match
+    }
+  })
+}
+
+/** 并发受限的映射，避免订阅生成时同时打满上游 */
+export async function mapLimit<T, R>(items: T[], limit: number, task: (item: T) => Promise<R>): Promise<R[]> {
+  const results: R[] = new Array(items.length)
+  let cursor = 0
+  async function worker() {
+    while (cursor < items.length) {
+      const index = cursor++
+      results[index] = await task(items[index]!)
+    }
+  }
+  await Promise.all(Array.from({ length: Math.min(limit, items.length) }, worker))
+  return results
+}
+
+/** 订阅内容中最新的时间点，作为 lastBuildDate 与 Last-Modified；同样内容生成同样正文，ETag 才稳定 */
+export function latestDate(values: (string | undefined | null)[]): Date {
+  const times = values.map((value) => (value ? Date.parse(value) : NaN)).filter((time) => Number.isFinite(time))
+  return new Date(times.length ? Math.max(...times) : 0)
+}
+
+/**
+ * 订阅响应：短期 HTTP 缓存（5 分钟）+ ETag/Last-Modified 条件请求。
+ * 服务端不缓存整份订阅，撤回与上游故障在下一次请求即反映；失败响应由调用方预先设置的 no-store 保持不缓存。
+ */
+export function sendFeed(event: H3Event, body: string, lastModified: Date): string {
+  const etag = `W/"${createHash('sha1').update(body).digest('base64url')}"`
+  setResponseHeaders(event, {
+    'content-type': 'application/rss+xml; charset=utf-8',
+    'cache-control': 'public, max-age=300',
+    etag,
+    'last-modified': lastModified.toUTCString(),
+  })
+  const ifNoneMatch = getRequestHeader(event, 'if-none-match')
+  const ifModifiedSince = getRequestHeader(event, 'if-modified-since')
+  const strip = (tag: string) => tag.trim().replace(/^W\//, '')
+  // If-None-Match 优先；只有缺失时才比较 If-Modified-Since（RFC 9110）
+  const notModified = ifNoneMatch
+    ? ifNoneMatch.split(',').some((tag) => tag.trim() === '*' || strip(tag) === strip(etag))
+    : Boolean(ifModifiedSince) &&
+      Math.floor(lastModified.getTime() / 1000) <= Math.floor(Date.parse(ifModifiedSince!) / 1000)
+  if (notModified) {
+    setResponseStatus(event, 304)
+    return ''
+  }
+  return body
 }
 
 export function publicFeedUrl(value: string | undefined, site: string): string | undefined {

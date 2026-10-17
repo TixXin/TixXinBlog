@@ -77,7 +77,7 @@
             {{ total }}
           </span>
           <ClientOnly>
-            <CommonShareButtons :title="article.title" class="article-page__share" />
+            <CommonShareButtons :title="article.title" :url="canonicalUrl" class="article-page__share" />
           </ClientOnly>
         </div>
         <p v-if="interactionError" role="alert" class="article-page__inline-error">
@@ -86,7 +86,8 @@
         </p>
         <div ref="readingContent" class="article-reading-content">
           <ArticleMarkdown v-if="article.contentRaw" :content="article.contentRaw" :title="article.title" />
-          <ArticleContent v-else :sections="article.content" />
+          <!-- 结构化正文含代码高亮（Shiki），懒加载使其不进入文章页首屏 chunk -->
+          <LazyArticleContent v-else :sections="article.content" />
         </div>
         <CommonRelatedContent :items="article.relatedContent" />
         <ArticleNav :prev="navigation.prev" :next="navigation.next" :error="discoveryError" />
@@ -144,6 +145,7 @@
 
 <script setup lang="ts">
 import { useMediaQuery } from '@vueuse/core'
+import { absoluteUrl } from '~/utils/absoluteUrl'
 const route = useRoute()
 const { currentThemeId, switchingState } = useLayoutTheme()
 const nexusSidebarVisible = useMediaQuery('(min-width: 1440px)')
@@ -169,7 +171,7 @@ const canonicalPath = articlePath(article.value)
 if (route.path !== canonicalPath)
   await navigateTo({ path: canonicalPath, query: route.query, hash: route.hash }, { redirectCode: 301, replace: true })
 requestScope.assertActive()
-const publicSite = String(useRuntimeConfig().public.siteUrl).replace(/\/$/, '')
+const publicSite = useSiteUrl()
 const { settings: siteSettings } = useSiteSettings()
 const canonicalUrl = computed(() => `${publicSite}${articlePath(article.value)}`)
 const seoDescription = computed(() => article.value.seoDescription || articleExcerpt.value)
@@ -229,48 +231,61 @@ function formatCount(n: number) {
   return n.toLocaleString('zh-CN')
 }
 
-useSeoMeta({
+usePageSeo({
   title: () => article.value.seoTitle || article.value.title,
   description: () => seoDescription.value,
-  ogTitle: () => article.value.seoTitle || article.value.title,
-  ogDescription: () => seoDescription.value,
-  ogType: 'article',
-  ogUrl: () => canonicalUrl.value,
-  robots: () => (article.value.seoNoindex ? 'noindex, follow' : 'index, follow'),
-  ogImage: () => article.value.cover,
-  twitterCard: 'summary_large_image',
-  twitterTitle: () => article.value.seoTitle || article.value.title,
-  twitterDescription: () => seoDescription.value,
+  type: 'article',
+  canonical: () => canonicalUrl.value,
+  image: () => article.value.cover,
+  imageAlt: () => article.value.coverAlt || article.value.title,
+  // 可索引时不写 robots，保留模块默认的 max-image-preview 等指令
+  robots: () => (article.value.seoNoindex ? 'noindex, follow' : undefined),
+})
+useSeoMeta({
+  articlePublishedTime: () => article.value.date || undefined,
+  articleSection: () => article.value.category || undefined,
 })
 
-useHead({
-  link: [{ rel: 'canonical', href: canonicalUrl }],
-  script: [
+const articleImage = computed(() => absoluteUrl(article.value.cover, publicSite))
+const authorName = computed(() => siteSettings.value.ownerName || siteSettings.value.name)
+// 详情接口暂未返回标签与更新时间，keywords 与 dateModified 待后端提供后再补
+useJsonLd('article', () => ({
+  '@context': 'https://schema.org',
+  '@type': 'BlogPosting',
+  headline: article.value.seoTitle || article.value.title,
+  description: seoDescription.value,
+  url: canonicalUrl.value,
+  mainEntityOfPage: { '@type': 'WebPage', '@id': canonicalUrl.value },
+  ...(articleImage.value ? { image: [articleImage.value] } : {}),
+  datePublished: article.value.date,
+  ...(article.value.category ? { articleSection: article.value.category } : {}),
+  inLanguage: 'zh-CN',
+  author: { '@type': 'Person', name: authorName.value, url: publicSite + '/about' },
+  publisher: { '@type': 'Person', name: authorName.value, url: publicSite + '/' },
+}))
+useJsonLd('breadcrumb', () => ({
+  '@context': 'https://schema.org',
+  '@type': 'BreadcrumbList',
+  itemListElement: [
+    { '@type': 'ListItem', position: 1, name: '首页', item: publicSite + '/' },
+    ...(article.value.category
+      ? [
+          {
+            '@type': 'ListItem',
+            position: 2,
+            name: article.value.category,
+            item: `${publicSite}/?category=${encodeURIComponent(article.value.category)}`,
+          },
+        ]
+      : []),
     {
-      type: 'application/ld+json',
-      innerHTML: computed(() =>
-        JSON.stringify({
-          '@context': 'https://schema.org',
-          '@type': 'Article',
-          headline: article.value.title,
-          image: article.value.cover,
-          datePublished: article.value.date,
-          author: {
-            '@type': 'Person',
-            name: siteSettings.value.ownerName,
-            url: publicSite,
-          },
-          publisher: {
-            '@type': 'Organization',
-            name: siteSettings.value.name,
-          },
-          description: seoDescription.value,
-          mainEntityOfPage: canonicalUrl.value,
-        }).replace(/</g, String.fromCharCode(92) + 'u003c'),
-      ),
+      '@type': 'ListItem',
+      position: article.value.category ? 3 : 2,
+      name: article.value.title,
+      item: canonicalUrl.value,
     },
   ],
-})
+}))
 </script>
 
 <style lang="scss" scoped>

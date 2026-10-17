@@ -1,6 +1,6 @@
 <!--
   @file ShareButtons.vue
-  @description 社交分享按钮组件，支持复制链接、Twitter/X、微博
+  @description 社交分享按钮组件，支持系统分享、复制链接、Twitter/X、微博；分享地址使用规范地址（canonical）
   @author TixXin
   @since 2026-04-06
 -->
@@ -8,6 +8,9 @@
 <template>
   <div class="share-buttons">
     <span class="share-buttons__label">分享</span>
+    <button v-if="canNativeShare" type="button" class="share-buttons__btn" aria-label="系统分享" @click="shareNative">
+      <Icon name="lucide:share-2" size="14" />
+    </button>
     <button type="button" class="share-buttons__btn" aria-label="复制链接" @click="copyLink">
       <Icon :name="copied ? 'lucide:check' : 'lucide:link'" size="14" />
     </button>
@@ -35,15 +38,32 @@ onBeforeUnmount(() => {
   if (copyTimer) clearTimeout(copyTimer)
 })
 
-const shareUrl = computed(() => {
+// 分享地址优先使用显式传入值，其次读取页面 canonical，避免把筛选、跟踪等查询参数带出去
+function shareUrl() {
   if (props.url) return props.url
-  if (import.meta.client) return window.location.href
-  return ''
+  if (!import.meta.client) return ''
+  const canonical = document.querySelector<HTMLLinkElement>('link[rel="canonical"]')?.href
+  return canonical || window.location.origin + window.location.pathname
+}
+
+// navigator.share 只在客户端挂载后探测，保持 SSR 与首帧一致
+const canNativeShare = ref(false)
+onMounted(() => {
+  canNativeShare.value = typeof navigator.share === 'function'
 })
+
+async function shareNative() {
+  try {
+    await navigator.share({ title: props.title, url: shareUrl() })
+  } catch (error) {
+    // 用户取消分享属于正常结果，不提示
+    if ((error as DOMException)?.name !== 'AbortError' && alive) notifyCopyFailure('系统分享不可用，请改用复制链接。')
+  }
+}
 
 async function copyLink() {
   try {
-    await navigator.clipboard.writeText(shareUrl.value)
+    await navigator.clipboard.writeText(shareUrl())
     if (!alive) return
     copied.value = true
     if (copyTimer) clearTimeout(copyTimer)
@@ -53,14 +73,21 @@ async function copyLink() {
   }
 }
 
+// 第三方分享窗口不持有本页 opener，也不接收来源地址
+function openShareWindow(url: string) {
+  window.open(url, '_blank', 'noopener,noreferrer,width=600,height=400')
+}
+
 function shareTwitter() {
-  const url = `https://twitter.com/intent/tweet?text=${encodeURIComponent(props.title)}&url=${encodeURIComponent(shareUrl.value)}`
-  window.open(url, '_blank', 'width=600,height=400')
+  openShareWindow(
+    `https://twitter.com/intent/tweet?text=${encodeURIComponent(props.title)}&url=${encodeURIComponent(shareUrl())}`,
+  )
 }
 
 function shareWeibo() {
-  const url = `https://service.weibo.com/share/share.php?title=${encodeURIComponent(props.title)}&url=${encodeURIComponent(shareUrl.value)}`
-  window.open(url, '_blank', 'width=600,height=400')
+  openShareWindow(
+    `https://service.weibo.com/share/share.php?title=${encodeURIComponent(props.title)}&url=${encodeURIComponent(shareUrl())}`,
+  )
 }
 </script>
 

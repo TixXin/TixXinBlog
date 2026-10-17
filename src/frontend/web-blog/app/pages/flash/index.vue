@@ -14,7 +14,7 @@
             <Icon name="lucide:zap" size="18" />
           </div>
           <div class="page-title__text">
-            <h2 class="page-title__heading">闪念</h2>
+            <h1 class="page-title__heading">闪念</h1>
             <p class="page-title__sub">
               {{ isLoggedIn ? '记录稍纵即逝的灵感' : '博主的灵感碎片' }}
             </p>
@@ -795,18 +795,19 @@ onBeforeUnmount(() => {
     background: var(--surface-3);
   }
 
+  // 当前项白字需 ≥4.5:1：统一用深一档的操作色
   &.is-active {
     color: #fff;
-    background: var(--accent);
+    background: var(--accent-action);
   }
 
   // type 专属配色
   &[data-type='idea'].is-active {
-    background: #f59e0b;
+    background: #a15104;
   }
 
   &[data-type='todo'].is-active {
-    background: #3b82f6;
+    background: #2563eb;
   }
 }
 

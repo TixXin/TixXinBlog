@@ -166,11 +166,13 @@ const {
   refreshMetadata,
   changeQuery,
 } = await useProjects()
-useSeoMeta({
+const shareProject = computed(() => projects.value.find((project) => project.cover))
+usePageSeo({
   title: '项目展示',
   description: '记录个人项目与创作实践，按项目进展和技术标签浏览',
-  ogType: 'website',
-  ogImage: () => projects.value.find((project) => project.cover)?.cover ?? undefined,
+  type: 'website',
+  image: () => shareProject.value?.cover,
+  imageAlt: () => shareProject.value?.title,
 })
 const keyword = computed({
   get: () => (!ready.value ? (query.value.q ?? '') : typeof route.query.q === 'string' ? route.query.q : ''),

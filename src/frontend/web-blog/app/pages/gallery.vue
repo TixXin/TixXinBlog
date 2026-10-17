@@ -133,11 +133,12 @@ const {
   open,
   close,
 } = await useGallery()
-useSeoMeta({
+usePageSeo({
   title: '画廊',
   description: '用镜头记录生活的美好瞬间，浏览摄影作品与拍摄故事',
-  ogType: 'website',
-  ogImage: () => photos.value[0]?.srcLarge,
+  type: 'website',
+  image: () => photos.value[0]?.srcLarge,
+  imageAlt: () => photos.value[0]?.title,
 })
 const keyword = computed({
   get: () => (!ready.value ? (query.value.q ?? '') : typeof route.query.q === 'string' ? route.query.q : ''),

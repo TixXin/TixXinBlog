@@ -358,7 +358,7 @@ watch(
     ownerExpanded.value = false
   },
 )
-useSeoMeta({
+usePageSeo({
   title: '平台订阅费',
   description: '按原币种记录个人工具和服务的订阅费用、价格变化与预计续费。访客可在当前浏览器记录自己的订阅。',
 })

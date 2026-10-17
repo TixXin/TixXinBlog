@@ -136,7 +136,7 @@ import { mockOwnerUser } from '~/features/auth/mock'
 
 definePageMeta({ fullbleed: true })
 
-useSeoMeta({
+usePageSeo({
   title: '标签页',
   description: '你的个人起始页：搜索 + 书签 + 分类管理',
 })

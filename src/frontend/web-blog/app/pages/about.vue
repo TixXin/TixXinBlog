@@ -31,13 +31,37 @@
 </template>
 
 <script setup lang="ts">
+import { socialProfiles } from '~/utils/absoluteUrl'
 const { settings, error, refresh } = useSiteSettings()
 
-useSeoMeta({
+const siteUrl = useSiteUrl()
+const aboutDescription = computed(() => settings.value.ownerTitle || settings.value.description)
+usePageSeo({
   title: '关于我',
-  description: () => settings.value.ownerTitle || settings.value.description,
-  ogTitle: () => `关于我 - ${settings.value.name}`,
-  ogDescription: () => settings.value.ownerTitle || settings.value.description,
+  shareTitle: () => `关于我 - ${settings.value.name}`,
+  description: () => aboutDescription.value,
+  type: 'profile',
+})
+const profileImage = useDefaultShareImage()
+useJsonLd('profile', () => {
+  const sameAs = socialProfiles(settings.value.socials)
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'ProfilePage',
+    url: `${siteUrl}/about`,
+    name: `关于我 - ${settings.value.name}`,
+    inLanguage: 'zh-CN',
+    mainEntity: {
+      '@type': 'Person',
+      '@id': `${siteUrl}/#person`,
+      name: settings.value.ownerName || settings.value.name,
+      url: `${siteUrl}/about`,
+      ...(aboutDescription.value ? { description: aboutDescription.value } : {}),
+      ...(settings.value.ownerTitle ? { jobTitle: settings.value.ownerTitle } : {}),
+      ...(profileImage.value ? { image: profileImage.value.url } : {}),
+      ...(sameAs.length ? { sameAs } : {}),
+    },
+  }
 })
 
 const { ownerCard } = useSiteInfo()

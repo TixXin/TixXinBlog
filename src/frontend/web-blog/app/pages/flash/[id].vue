@@ -9,6 +9,7 @@
   <CommonPageFrame class="main-inner flash-detail-page" header-key="flash-return">
     <template #header>
       <div class="main-content__header flash-detail-header">
+        <h1 class="sr-only">{{ pageTitle }}</h1>
         <NuxtLink to="/flash" class="back-btn" aria-label="返回闪念">
           <Icon name="lucide:arrow-left" size="16" />
           <span>返回闪念</span>
@@ -93,6 +94,7 @@
 </template>
 
 <script setup lang="ts">
+import { absoluteUrl } from '~/utils/absoluteUrl'
 import type { FlashNote } from '~/features/flash/types'
 definePageMeta({ rightSidebar: false })
 
@@ -157,41 +159,47 @@ const pageTitle = computed(() => {
   return `${first}${note.value.content.length > 36 ? '…' : ''}`
 })
 
-useSeoMeta({
+const site = useSiteUrl()
+const flashUrl = computed(() => `${site}/flash/${encodeURIComponent(id.value)}`)
+const flashImage = computed(() => absoluteUrl(note.value?.images?.[0], site))
+usePageSeo({
   title: () => pageTitle.value,
   description: () => excerpt.value,
-  ogTitle: () => `${pageTitle.value} - ${siteSettings.value.name} 闪念`,
-  ogDescription: () => excerpt.value,
-  ogType: 'article',
-  ogImage: () => note.value?.images?.[0] ?? siteSettings.value.avatar,
-  robots: localOnly ? 'noindex, follow' : 'index, follow',
-  twitterCard: 'summary',
-  twitterTitle: () => `${pageTitle.value} - ${siteSettings.value.name} 闪念`,
-  twitterDescription: () => excerpt.value,
+  shareTitle: () => `${pageTitle.value} - ${siteSettings.value.name} 闪念`,
+  type: 'article',
+  canonical: () => flashUrl.value,
+  // 无配图时交回全局默认分享图（小卡片）
+  image: () => flashImage.value,
+  imageAlt: () => note.value?.imageAlts?.[0] || pageTitle.value,
+  robots: () => (localOnly ? 'noindex, follow' : undefined),
+})
+useSeoMeta({
+  articlePublishedTime: () => note.value?.createdAt,
+  articleModifiedTime: () => note.value?.updatedAt,
+  articleTag: () => (note.value?.tags.length ? note.value.tags : undefined),
 })
 
-useHead({
-  script: [
-    {
-      type: 'application/ld+json',
-      innerHTML: computed(() =>
-        note.value
-          ? JSON.stringify({
-              '@context': 'https://schema.org',
-              '@type': 'SocialMediaPosting',
-              headline: pageTitle.value,
-              articleBody: note.value.content,
-              datePublished: note.value.createdAt,
-              dateModified: note.value.updatedAt,
-              keywords: note.value.tags.join(', '),
-              author: { '@type': 'Person', name: siteSettings.value.ownerName || siteSettings.value.name },
-              publisher: { '@type': 'Organization', name: siteSettings.value.name },
-            }).replace(/</g, String.fromCharCode(92) + 'u003c')
-          : '',
-      ),
-    },
-  ],
-})
+useJsonLd('flash', () =>
+  note.value
+    ? {
+        '@context': 'https://schema.org',
+        '@type': 'SocialMediaPosting',
+        headline: pageTitle.value,
+        articleBody: note.value.content,
+        url: flashUrl.value,
+        mainEntityOfPage: flashUrl.value,
+        datePublished: note.value.createdAt,
+        ...(note.value.updatedAt ? { dateModified: note.value.updatedAt } : {}),
+        ...(note.value.tags.length ? { keywords: note.value.tags.join(', ') } : {}),
+        ...(flashImage.value ? { image: [flashImage.value] } : {}),
+        author: {
+          '@type': 'Person',
+          name: siteSettings.value.ownerName || siteSettings.value.name,
+          url: site + '/about',
+        },
+      }
+    : null,
+)
 </script>
 
 <style lang="scss" scoped>

@@ -9,6 +9,8 @@
   <CommonPageFrame class="main-inner moments-page" header-key="feed">
     <template #header>
       <div class="main-content__header">
+        <!-- 页签是视觉标题，读屏与大纲需要一个页面级 h1 -->
+        <h1 class="sr-only">朋友圈</h1>
         <BlogPostTabs :tabs="tabs" model-value="moments" />
         <div class="page-actions">
           <CommonSearchBox
@@ -182,10 +184,11 @@ function onDateSelect(value: string | null) {
 function onPhotoSelect(id: string) {
   void navigateTo({ path: '/moments/' + encodeURIComponent(id), query: filterQuery.value })
 }
-useSeoMeta({
+usePageSeo({
   title: '朋友圈',
   description: '记录生活点滴，分享日常碎片',
-  ogTitle: () => ownerCard.value.name + ' 的朋友圈',
+  shareTitle: () => ownerCard.value.name + ' 的朋友圈',
+  type: 'website',
 })
 </script>
 

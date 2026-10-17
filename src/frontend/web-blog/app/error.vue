@@ -11,6 +11,7 @@
       <CommonStateBlock
         :icon="errorConfig.icon"
         :title="errorConfig.title"
+        :level="1"
         :description="errorConfig.description"
         :status-code="errorStatus"
         :action-label="errorStatus >= 500 ? '重试当前页面' : '返回首页'"
@@ -29,9 +30,6 @@ import type { NuxtError } from '#app'
 
 const props = defineProps<{ error: NuxtError }>()
 const errorStatus = computed(() => props.error.statusCode ?? 500)
-useHead({ htmlAttrs: { lang: 'zh-CN' } })
-useSeoMeta({ robots: 'noindex, follow' })
-
 const errorConfig = computed(() => {
   const code = props.error?.statusCode ?? 500
   const data = props.error.data as { title?: string } | undefined
@@ -57,6 +55,19 @@ const errorConfig = computed(() => {
     title: '出错了',
     description: props.error?.message || '发生了未知错误',
   }
+})
+
+// 错误页不经过 app.vue，站名与标题模板需在此按站点设置重新声明，避免落回构建期兜底站名
+const { settings: siteSettings } = useSiteSettings()
+useHead({
+  htmlAttrs: { lang: 'zh-CN' },
+  titleTemplate: (title) => (title ? `${title} - ${siteSettings.value.name}` : siteSettings.value.name),
+  title: () => errorConfig.value.title,
+})
+useSeoMeta({
+  robots: 'noindex, follow',
+  ogSiteName: () => siteSettings.value.name,
+  ogTitle: () => errorConfig.value.title,
 })
 
 const handleHome = () => clearError({ redirect: '/' })

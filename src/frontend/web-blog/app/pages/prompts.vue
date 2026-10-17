@@ -21,7 +21,7 @@
       <section class="prompts-intro" aria-label="图片提示词分享">
         <div>
           <p class="prompts-kicker">IMAGE PROMPT COLLECTION</p>
-          <h1>从一张图，<span>遇见一种想象。</span></h1>
+          <p class="prompts-intro__title">从一张图，<span>遇见一种想象。</span></p>
           <p class="prompts-intro__description">打开喜欢的画面，查看完整提示词，让下一次创作有迹可循。</p>
         </div>
         <div v-if="metadata" class="prompts-intro__index" aria-label="公开提示词数量">
@@ -457,7 +457,7 @@ onMounted(() => void auth.restore())
   color: var(--text-soft);
   font-weight: 500;
 }
-h1 {
+.prompts-intro__title {
   font-size: clamp(1.4rem, 2.7vw, 2.25rem);
   font-weight: 500;
   letter-spacing: -0.035em;
@@ -465,7 +465,7 @@ h1 {
   margin: 0.6rem 0;
   color: var(--text-main);
 }
-h1 span {
+.prompts-intro__title span {
   color: var(--text-soft);
 }
 .prompts-intro__description {
@@ -724,10 +724,10 @@ button:disabled {
     padding-bottom: 0.9rem;
     gap: 1rem;
   }
-  h1 {
+  .prompts-intro__title {
     font-size: 1.3rem;
   }
-  h1 span {
+  .prompts-intro__title span {
     display: block;
   }
   .prompts-intro__description {
