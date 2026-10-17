@@ -56,7 +56,7 @@
             :class="{ 'is-liked': articleLiked }"
             :disabled="interactionPending || !interactionLoaded"
             :aria-pressed="articleLiked"
-            aria-label="点赞文章"
+            :aria-label="`点赞文章，${articleLikes} 个赞`"
             @click="toggleArticleLike"
           >
             <Icon :name="'lucide:heart'" size="14" />
@@ -80,8 +80,9 @@
             <CommonShareButtons :title="article.title" class="article-page__share" />
           </ClientOnly>
         </div>
-        <p v-if="interactionError" role="alert">
-          {{ interactionError }} <button type="button" @click="reloadInteraction">重试</button>
+        <p v-if="interactionError" role="alert" class="article-page__inline-error">
+          {{ interactionError }}
+          <button type="button" @click="reloadInteraction">重试</button>
         </p>
         <div ref="readingContent" class="article-reading-content">
           <ArticleMarkdown v-if="article.contentRaw" :content="article.contentRaw" :title="article.title" />
@@ -295,10 +296,10 @@ useHead({
 }
 
 .article-page__inner {
-  // 底部加厚缓冲，避免评论框滚到底时紧贴 dock
-  padding: 0 2rem 4rem;
+  // 顶部与粘性页头分隔线留出间距，封面不再贴线；底部加厚缓冲，避免评论框滚到底时紧贴 dock
+  padding: 1.5rem 2rem 4rem;
   @media (max-width: 480px) {
-    padding: 0 0.75rem 5rem;
+    padding: 1rem 0.75rem 5rem;
   }
 }
 
@@ -333,12 +334,13 @@ useHead({
   font-size: 0.8125rem;
 }
 
+/* 统计项统一内边距，整行左移同等距离，让首项图标与正文左缘对齐、各项间距一致 */
 .article-page__stats {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 1rem;
-  margin-bottom: 1.5rem;
+  gap: 0.5rem;
+  margin: 0 0 1.5rem -0.5rem;
   font-size: 0.8125rem;
   color: var(--text-soft);
 }
@@ -347,12 +349,12 @@ useHead({
   display: inline-flex;
   align-items: center;
   gap: 0.375rem;
+  padding: 0.25rem 0.5rem;
 
   &--btn {
     border: none;
     background: none;
     cursor: var(--interaction-cursor, pointer);
-    padding: 0.25rem 0.5rem;
     border-radius: $radius-sm;
     transition: $transition-fast;
     @media (prefers-reduced-motion: reduce) {
@@ -378,5 +380,29 @@ useHead({
 
 .article-page__share {
   margin-left: auto;
+}
+
+.article-page__inline-error {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  margin: -0.75rem 0 1.5rem;
+  font-size: 0.8125rem;
+  color: var(--text-soft);
+
+  button {
+    padding: 0.25rem 0.625rem;
+    border: 1px solid var(--border);
+    border-radius: $radius-md;
+    background: var(--surface-2);
+    color: var(--text-muted);
+    font-size: 0.75rem;
+    cursor: var(--interaction-cursor, pointer);
+
+    &:hover {
+      color: var(--text-main);
+    }
+  }
 }
 </style>

@@ -97,14 +97,15 @@ defineProps<{
   color: var(--text-soft);
 }
 
+/* 轨道线落在年份徽章的中轴上；条目圆点通过 --archive-track-gap 压在线上 */
 .archive-timeline__track {
-  margin-left: calc(2.5rem / 2 + 1rem);
-  padding-left: 1.5rem;
+  --archive-track-gap: 1.5rem;
+  margin-left: calc(2.5rem / 2 - 1px);
+  padding-left: var(--archive-track-gap);
   border-left: 2px solid var(--border-soft);
 
   @media (max-width: $breakpoint-sm) {
-    margin-left: 0.75rem;
-    padding-left: 1.25rem;
+    --archive-track-gap: 1.25rem;
   }
 }
 </style>

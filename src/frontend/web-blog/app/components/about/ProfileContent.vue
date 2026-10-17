@@ -15,15 +15,18 @@
           <p v-if="item.detail" class="profile-content__detail">{{ item.detail }}</p>
         </li>
       </ol>
-      <!-- 兴趣：标签，说明放在提示里 -->
+      <!-- 兴趣：标签，说明放在提示里；有说明的标签可聚焦，触屏点按也能看到 -->
       <ul v-else-if="section.kind === 'interest'" class="profile-chips">
-        <li
-          v-for="(item, index) in section.items"
-          :key="index"
-          class="profile-chips__item"
-          :title="item.detail || undefined"
-        >
-          {{ item.title }}
+        <li v-for="(item, index) in section.items" :key="index">
+          <CommonTooltip :content="item.detail || undefined" :disabled="!item.detail">
+            <span
+              class="profile-chips__item"
+              :class="{ 'profile-chips__item--detail': item.detail }"
+              :tabindex="item.detail ? 0 : undefined"
+            >
+              {{ item.title }}
+            </span>
+          </CommonTooltip>
         </li>
       </ul>
       <!-- 技能与书单：两列卡片；书单的时间段字段作为作者 -->
@@ -31,7 +34,12 @@
         <li v-for="(item, index) in section.items" :key="index" class="profile-grid__item">
           <div class="profile-grid__head">
             <h3 class="profile-grid__title">
-              <Icon v-if="section.kind === 'reading'" name="lucide:book-open" size="14" />{{ item.title }}
+              <Icon
+                v-if="section.kind === 'reading'"
+                class="profile-grid__icon"
+                name="lucide:book-open"
+                size="14"
+              /><span>{{ item.title }}</span>
             </h3>
             <span v-if="item.period" class="profile-grid__meta">{{ item.period }}</span>
           </div>
@@ -84,7 +92,8 @@ const sectionIcons = {
   list-style: none;
   padding: 0 0 0 1.5rem;
   margin: 0;
-  border-left: 1px solid var(--border);
+  /* 2px 线在暗色下也能看清；圆点按线宽居中 */
+  border-left: 2px solid var(--border);
 }
 .profile-timeline__item {
   position: relative;
@@ -95,7 +104,7 @@ const sectionIcons = {
 }
 .profile-timeline__dot {
   position: absolute;
-  left: calc(-1.5rem - 0.3125rem);
+  left: calc(-1.5rem - 1px - 0.3125rem);
   top: 0.35rem;
   width: 0.625rem;
   height: 0.625rem;
@@ -125,6 +134,7 @@ const sectionIcons = {
   margin: 0;
 }
 .profile-chips__item {
+  display: inline-block;
   padding: 0.375rem 0.75rem;
   border-radius: 0.5rem;
   font-size: 0.85rem;
@@ -146,23 +156,41 @@ const sectionIcons = {
   border-radius: 0.75rem;
   background: var(--surface-2);
 }
+.profile-chips__item--detail {
+  cursor: help;
+  transition: border-color 0.15s ease;
+  &:hover {
+    border-color: var(--border-hover);
+  }
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
+}
+/* 标题可能折行：图标与右侧元信息都对齐首行，而不是整块居中 */
 .profile-grid__head {
   display: flex;
-  align-items: baseline;
+  align-items: flex-start;
   justify-content: space-between;
   gap: 0.5rem;
   margin-bottom: 0.25rem;
 }
 .profile-grid__title {
-  display: inline-flex;
-  align-items: center;
+  display: flex;
+  align-items: flex-start;
   gap: 0.375rem;
+  min-width: 0;
   font-weight: 600;
   font-size: 0.95rem;
+  line-height: 1.5;
+}
+.profile-grid__icon {
+  flex-shrink: 0;
+  margin-top: calc((1.5em - 14px) / 2);
 }
 .profile-grid__meta {
   flex-shrink: 0;
   font-size: 0.75rem;
+  line-height: calc(0.95rem * 1.5);
   color: var(--text-soft);
 }
 </style>

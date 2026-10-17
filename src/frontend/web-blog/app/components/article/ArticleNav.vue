@@ -7,7 +7,7 @@
 
 <template>
   <nav class="article-nav" aria-label="相邻文章">
-    <p v-if="error" role="status">相邻文章暂时无法加载</p>
+    <p v-if="error" role="status" class="article-nav__error">相邻文章暂时无法加载</p>
     <NuxtLink v-if="prev" :to="articlePath(prev)" class="article-nav__card article-nav__card--prev">
       <Icon name="lucide:chevron-left" size="20" class="article-nav__icon" />
       <div class="article-nav__text">
@@ -43,6 +43,13 @@ defineProps<{ prev: RelatedPost | null; next: RelatedPost | null; error?: boolea
   }
 }
 
+.article-nav__error {
+  grid-column: 1 / -1;
+  margin: 0;
+  font-size: 0.8125rem;
+  color: var(--text-soft);
+}
+
 .article-nav__card {
   display: flex;
   align-items: center;
@@ -62,6 +69,17 @@ defineProps<{ prev: RelatedPost | null; next: RelatedPost | null; error?: boolea
   &:hover {
     border-color: var(--border-hover);
     box-shadow: var(--shadow-card-hover);
+  }
+
+  /* 上一篇固定左列、下一篇固定右列：只有一侧时不会把“下一篇”挤到左边 */
+  @media (min-width: $breakpoint-sm) {
+    &--prev {
+      grid-column: 1;
+    }
+
+    &--next {
+      grid-column: 2;
+    }
   }
 
   &--next {
@@ -95,9 +113,8 @@ defineProps<{ prev: RelatedPost | null; next: RelatedPost | null; error?: boolea
 
 .article-nav__label {
   margin: 0 0 0.125rem;
-  font-size: 0.625rem;
+  font-size: 0.6875rem;
   font-weight: 600;
-  text-transform: uppercase;
   letter-spacing: 0.04em;
   color: var(--text-soft);
 }
