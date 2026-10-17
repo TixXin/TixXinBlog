@@ -1,11 +1,11 @@
-/** @file flashNotesState.test.ts @description 闪念实体复用、公开时效、私有集合保留与写后迟到响应隔离。 */
+/** @file flashNotesState.test.ts @description 闪念实体复用、公开时效、私有集合保留、写后迟到响应隔离、服务端筛选与概览接口。 */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent, h, nextTick, ref } from 'vue'
 import type { Ref } from 'vue'
 import { flushPromises } from '@vue/test-utils'
 import { mockNuxtImport, mountSuspended } from '@nuxt/test-utils/runtime'
 import type { CurrentUser } from '../../app/features/auth/types'
-import type { FlashNote } from '../../app/features/flash/types'
+import type { FlashNote, FlashOverview } from '../../app/features/flash/types'
 import { useFlashNotes } from '../../app/composables/useFlashNotes'
 import { invalidateFlashNotes } from '../../app/features/flash/state'
 import { invalidatePublicReads, invalidatePublicWrite } from '../../app/utils/invalidatePublicReads'
@@ -16,6 +16,7 @@ const mocks = vi.hoisted(() => ({
   repo: {
     list: vi.fn(),
     listPublic: vi.fn(),
+    overview: vi.fn(),
     listArchived: vi.fn(),
     create: vi.fn(),
     update: vi.fn(),
@@ -359,7 +360,20 @@ describe('闪念读取所有权', () => {
 })
 
 describe('闪念公开分页', () => {
-  type PageQuery = { page: number; pageSize: number; tag?: string; q?: string }
+  type PageQuery = { page: number; pageSize: number; tag?: string; q?: string; type?: string; date?: string }
+  const overviewOf = (patch: Partial<FlashOverview> = {}): FlashOverview => ({
+    total: 3,
+    monthCount: 2,
+    dates: [{ date: '2026-10-01', count: 3 }],
+    tags: [
+      { name: '生活', count: 2 },
+      { name: '技术', count: 2 },
+    ],
+    onThisDay: null,
+    recollections: [],
+    likedIds: [],
+    ...patch,
+  })
   const listPublicPage =
     vi.fn<(query: PageQuery) => Promise<{ items: FlashNote[]; total: number; page: number; pageSize: number }>>()
   const pageOf = (ids: string[], total: number, page = 1) => ({
@@ -397,7 +411,7 @@ describe('闪念公开分页', () => {
     expect(listPublicPage).toHaveBeenCalledTimes(2)
   })
 
-  it('标签与关键词交给后端分页，二者不能同时作为服务端条件', async () => {
+  it('标签与关键词交给后端分页，二者可以同时作为服务端条件', async () => {
     listPublicPage.mockResolvedValue(pageOf(['all'], 1))
     const { state } = await setup()
     await state.load()
@@ -415,7 +429,33 @@ describe('闪念公开分页', () => {
     expect(state.notes.value.map((item) => item.id)).toEqual(['found'])
     state.setPublicFilter({ tag: null, q: '山顶' })
     expect(listPublicPage).toHaveBeenCalledTimes(3)
-    expect(() => state.setPublicFilter({ tag: '生活', q: '山顶' })).toThrow('标签与关键词需要分别查询')
+    listPublicPage.mockResolvedValueOnce(pageOf(['both'], 1))
+    state.setPublicFilter({ tag: '生活', q: '山顶' })
+    await flushPromises()
+    expect(listPublicPage).toHaveBeenLastCalledWith({ page: 1, pageSize: 20, tag: '生活', q: '山顶' })
+    expect(state.notes.value.map((item) => item.id)).toEqual(['both'])
+  })
+
+  it('类型与日期筛选同样走后端分页，加载更多沿用同一条件', async () => {
+    listPublicPage.mockResolvedValueOnce(pageOf(range('a', 20), 30))
+    const { state } = await setup()
+    await state.load()
+    listPublicPage.mockResolvedValueOnce(pageOf(range('i', 20), 25))
+    state.setPublicFilter({ tag: null, q: '', type: 'idea', date: '2026-10-14' })
+    await flushPromises()
+    expect(listPublicPage).toHaveBeenLastCalledWith({ page: 1, pageSize: 20, type: 'idea', date: '2026-10-14' })
+    expect(state.total.value).toBe(25)
+    expect(state.hasMore.value).toBe(true)
+    // 筛选结果不计入“博主总数”
+    expect(state.totalCount.value).toBe(30)
+    listPublicPage.mockResolvedValueOnce(pageOf(range('j', 5), 25, 2))
+    await state.loadMore()
+    expect(listPublicPage).toHaveBeenLastCalledWith({ page: 2, pageSize: 20, type: 'idea', date: '2026-10-14' })
+    expect(state.notes.value).toHaveLength(25)
+    // 空值与未传等价，不重复请求
+    state.setPublicFilter({ tag: '', q: ' ', type: 'idea', date: '2026-10-14' })
+    expect(listPublicPage).toHaveBeenCalledTimes(3)
+    expect(mocks.repo.listPublic).not.toHaveBeenCalled()
   })
 
   it('切换条件后迟到的追加页被丢弃，不混入新条件的列表', async () => {
@@ -485,42 +525,78 @@ describe('闪念公开分页', () => {
     expect(state.hasMore.value).toBe(true)
   })
 
-  it('概览就绪前侧栏不出聚合，就绪后统计全部公开闪念并补齐首屏个人点赞状态', async () => {
+  it('概览就绪前侧栏不出聚合，就绪后用概览接口统计并补齐首屏个人点赞状态，不再全量读取', async () => {
     listPublicPage.mockResolvedValueOnce(pageOf(['a1', 'a2'], 3))
     const { state } = await setup()
     await state.load()
     expect(state.aggregatesReady.value).toBe(false)
     expect(state.tagCloud.value).toEqual([])
-    mocks.repo.listPublic.mockResolvedValueOnce([
-      { ...note('a1'), liked: true, likes: 1, tags: ['生活'] },
-      { ...note('a2'), tags: ['生活', '技术'] },
-      { ...note('a3'), tags: ['技术'] },
-      { ...note('draft', '草稿', true), tags: ['私有'] },
-    ])
+    expect(state.totalCount.value).toBe(3)
+    mocks.repo.overview.mockResolvedValueOnce(overviewOf({ total: 4, likedIds: ['a1'] }))
     await state.loadOverview()
     expect(state.aggregatesReady.value).toBe(true)
-    expect(state.totalCount.value).toBe(3)
-    expect(state.aggregateNotes.value.map((item) => item.id)).toEqual(['a1', 'a2', 'a3'])
+    expect(state.totalCount.value).toBe(4)
+    expect(state.monthlyCount.value).toBe(2)
+    expect(state.overview.value?.dates).toEqual([{ date: '2026-10-01', count: 3 }])
     expect(state.tagCloud.value).toEqual([
       { name: '生活', count: 2 },
       { name: '技术', count: 2 },
     ])
     expect(state.notes.value.find((item) => item.id === 'a1')?.liked).toBe(true)
+    expect(state.notes.value.find((item) => item.id === 'a2')?.liked).toBeFalsy()
+    expect(mocks.repo.listPublic).not.toHaveBeenCalled()
     // 30 秒内不重复读取概览
     await state.loadOverview()
-    expect(mocks.repo.listPublic).toHaveBeenCalledTimes(1)
+    expect(mocks.repo.overview).toHaveBeenCalledTimes(1)
+    now += 30_000
+    mocks.repo.overview.mockResolvedValueOnce(overviewOf())
+    await state.loadOverview()
+    expect(mocks.repo.overview).toHaveBeenCalledTimes(2)
   })
 
-  it('点赞同时更新列表与概览中的同一实体', async () => {
-    listPublicPage.mockResolvedValueOnce(pageOf(['a1'], 2))
+  it('概览失败保留错误且侧栏不就绪，强制重试后恢复', async () => {
+    listPublicPage.mockResolvedValueOnce(pageOf(['a1'], 1))
     const { state } = await setup()
     await state.load()
-    mocks.repo.listPublic.mockResolvedValueOnce([note('a1'), note('a2')])
+    mocks.repo.overview.mockRejectedValueOnce(new Error('闪念服务暂时不可用，请稍后重试'))
+    await state.loadOverview()
+    expect(state.aggregatesReady.value).toBe(false)
+    expect(state.overviewError.value).toBe('闪念服务暂时不可用，请稍后重试')
+    mocks.repo.overview.mockResolvedValueOnce(overviewOf())
+    await state.loadOverview(true)
+    expect(state.aggregatesReady.value).toBe(true)
+    expect(state.overviewError.value).toBeNull()
+  })
+
+  it('点赞同步列表与概览中的已赞编号，在途概览随写入作废并重新读取', async () => {
+    listPublicPage.mockResolvedValueOnce(pageOf(['a1', 'a2'], 2))
+    const { state } = await setup()
+    await state.load()
+    mocks.repo.overview.mockResolvedValueOnce(overviewOf({ likedIds: ['a1'] }))
     await state.loadOverview()
     mocks.repo.toggleLike.mockResolvedValueOnce({ ...note('a2'), liked: true, likes: 1 })
     await state.toggleLike('a2')
-    expect(state.overview.value.find((item) => item.id === 'a2')?.liked).toBe(true)
-    expect(state.notes.value.map((item) => item.id)).toEqual(['a1'])
+    expect(state.overview.value?.likedIds).toEqual(['a1', 'a2'])
+    expect(state.notes.value.find((item) => item.id === 'a2')?.liked).toBe(true)
+    mocks.repo.toggleLike.mockResolvedValueOnce({ ...note('a1'), liked: false, likes: 0 })
+    await state.toggleLike('a1')
+    expect(state.overview.value?.likedIds).toEqual(['a2'])
+
+    // 概览尚未取得时写入：旧请求作废，重新读取的结果才生效
+    invalidateFlashNotes(useNuxtApp(), { clear: true })
+    listPublicPage.mockResolvedValueOnce(pageOf(['a1', 'a2'], 2))
+    await state.load()
+    const stale = deferred<FlashOverview>()
+    mocks.repo.overview.mockReturnValueOnce(stale.promise)
+    const pending = state.loadOverview()
+    mocks.repo.overview.mockResolvedValueOnce(overviewOf({ likedIds: ['a1', 'a2'] }))
+    mocks.repo.toggleLike.mockResolvedValueOnce({ ...note('a1'), liked: true, likes: 1 })
+    await state.toggleLike('a1')
+    await flushPromises()
+    stale.resolve(overviewOf({ likedIds: [] }))
+    await pending
+    expect(state.overview.value?.likedIds).toEqual(['a1', 'a2'])
+    expect(state.notes.value.every((item) => item.liked)).toBe(true)
   })
 
   it('登录后的私有视图忽略分页接口，仍读取包含草稿的完整集合', async () => {
@@ -534,5 +610,10 @@ describe('闪念公开分页', () => {
     expect(state.notes.value.map((item) => item.id)).toEqual(['draft', 'public'])
     await state.loadOverview()
     expect(mocks.repo.listPublic).not.toHaveBeenCalled()
+    expect(mocks.repo.overview).not.toHaveBeenCalled()
+    // 私有视图的侧栏由已持有的完整集合计算
+    expect(state.aggregatesReady.value).toBe(true)
+    expect(state.totalCount.value).toBe(2)
+    expect(state.overview.value?.dates).toEqual([{ date: '2026-10-01', count: 2 }])
   })
 })

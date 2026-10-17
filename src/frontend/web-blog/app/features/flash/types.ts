@@ -91,14 +91,43 @@ export interface FlashCommentSubmission {
   complete?: (saved: boolean) => void
 }
 
-/** 公开列表分页查询：仅包含后端 /flashes 与 /flashes/search 支持的条件 */
+/** 公开列表分页查询：与后端 /flashes 与 /flashes/search 的筛选条件对齐，可任意组合 */
 export interface FlashPublicPageQuery {
   page: number
   pageSize: number
-  /** 按标签精确筛选（GET /flashes?tag=） */
+  /** 按标签精确筛选（tag=） */
   tag?: string
-  /** 正文模糊或标签精确搜索（GET /flashes/search?q=），与 tag 互斥 */
+  /** 正文或标签包含关键词（走 /flashes/search?q=），可与其余条件组合 */
   q?: string
+  /** 按类型筛选（type=） */
+  type?: FlashType
+  /** 按 UTC 日筛选（date=YYYY-MM-DD），与发布日历口径一致 */
+  date?: string
+}
+
+/** 时间胶囊条目：只含摘录与时间 */
+export interface FlashRecollection {
+  id: string
+  content: string
+  createdAt: string
+}
+
+/** 闪念概览：侧栏统计、日历、标签云与时间胶囊共用，与后端 GET /flashes/overview 对齐 */
+export interface FlashOverview {
+  /** 闪念总数 */
+  total: number
+  /** 当前 UTC 自然月新增数 */
+  monthCount: number
+  /** 有闪念的 UTC 日期与条数 */
+  dates: { date: string; count: number }[]
+  /** 标签计数，次数倒序 */
+  tags: { name: string; count: number }[]
+  /** 往年今日（UTC 月日相同、年份更早）最近一条 */
+  onThisDay: FlashRecollection | null
+  /** 随机回顾候选 */
+  recollections: FlashRecollection[]
+  /** 当前访客已点赞的闪念编号 */
+  likedIds: string[]
 }
 
 /** 公开列表单页结果，与后端 FlashListResult 对齐 */

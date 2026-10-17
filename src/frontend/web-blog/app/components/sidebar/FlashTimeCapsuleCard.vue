@@ -1,6 +1,6 @@
 <!--
   @file FlashTimeCapsuleCard.vue
-  @description 闪念时间胶囊侧栏卡：去年今日 + 随机回顾
+  @description 闪念时间胶囊侧栏卡：往年今日 + 随机回顾，数据来自闪念概览
   @author TixXin
   @since 2026-04-17
 -->
@@ -42,51 +42,37 @@
 </template>
 
 <script setup lang="ts">
-import type { FlashNote } from '~/features/flash/types'
+import type { FlashRecollection } from '~/features/flash/types'
 
 const props = defineProps<{
-  notes: FlashNote[]
+  /** 往年今日（UTC 月日相同、年份更早）最近一条，由闪念概览提供 */
+  onThisDay: FlashRecollection | null
+  /** 随机回顾候选（概览接口随机抽取的摘录） */
+  recollections: FlashRecollection[]
 }>()
 
-// 去年今日：月日匹配且年份更早，取最近一条
-const throwback = computed<FlashNote | null>(() => {
-  const today = new Date()
-  const mm = String(today.getMonth() + 1).padStart(2, '0')
-  const dd = String(today.getDate()).padStart(2, '0')
-  const todayMd = `${mm}-${dd}`
-  const todayYear = today.getFullYear()
-
-  const hits = props.notes
-    .filter((n) => {
-      const d = new Date(n.createdAt)
-      const md = `${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
-      return md === todayMd && d.getFullYear() < todayYear
-    })
-    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
-
-  return hits[0] ?? null
-})
+const throwback = computed(() => props.onThisDay)
 
 // 随机回顾：onMounted 后初始化种子，避免 SSR/CSR 不一致
 const randomSeed = ref(0)
-const randomNote = computed<FlashNote | null>(() => {
-  if (props.notes.length === 0) return null
-  const idx = randomSeed.value % props.notes.length
-  return props.notes[idx] ?? null
+const randomNote = computed<FlashRecollection | null>(() => {
+  if (props.recollections.length === 0) return null
+  const idx = randomSeed.value % props.recollections.length
+  return props.recollections[idx] ?? null
 })
 
 function rollRandom() {
-  if (props.notes.length <= 1) return
-  let next = Math.floor(Math.random() * props.notes.length)
-  if (next === randomSeed.value % props.notes.length) {
-    next = (next + 1) % props.notes.length
+  if (props.recollections.length <= 1) return
+  let next = Math.floor(Math.random() * props.recollections.length)
+  if (next === randomSeed.value % props.recollections.length) {
+    next = (next + 1) % props.recollections.length
   }
   randomSeed.value = next
 }
 
 onMounted(() => {
-  if (props.notes.length > 1) {
-    randomSeed.value = Math.floor(Math.random() * props.notes.length)
+  if (props.recollections.length > 1) {
+    randomSeed.value = Math.floor(Math.random() * props.recollections.length)
   }
 })
 
@@ -97,9 +83,9 @@ function truncate(s: string, n: number) {
   return t.length > n ? `${t.slice(0, n)}…` : t
 }
 
+/** 日期按 UTC 展示，与发布日历和“往年今日”的匹配口径一致 */
 function formatDate(iso: string) {
-  const d = new Date(iso)
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+  return new Date(iso).toISOString().slice(0, 10)
 }
 </script>
 

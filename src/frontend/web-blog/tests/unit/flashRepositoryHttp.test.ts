@@ -85,11 +85,57 @@ describe('闪念公开分页读取', () => {
     expect(admin).not.toHaveBeenCalled()
   })
 
-  it('标签与关键词同时传入时拒绝请求，不静默丢弃其中一个条件', async () => {
+  it('标签、类型、日期与关键词组合时全部交给搜索接口，不静默丢弃任何条件', async () => {
+    const list = vi.fn(() => envelope(empty))
+    const search = vi.fn((event: { path: string }) => {
+      void event
+      return envelope(empty)
+    })
+    registerEndpoint('/api/v1/flashes', list)
+    registerEndpoint('/api/v1/flashes/search', search)
     const repo = new HttpFlashRepository('/api/v1', vi.fn(), () => false)
-    await expect(repo.listPublicPage({ page: 1, pageSize: 20, tag: '生活', q: '山顶' })).rejects.toThrow(
-      '公开闪念接口不支持同时按标签和关键词分页',
-    )
+    await repo.listPublicPage({ page: 1, pageSize: 20, tag: '生活', q: '山顶', type: 'memo', date: '2026-10-14' })
+    expect(list).not.toHaveBeenCalled()
+    const query = new URL(search.mock.calls[0]![0].path, 'http://local').searchParams
+    expect(Object.fromEntries(query)).toEqual({
+      page: '1',
+      pageSize: '20',
+      q: '山顶',
+      tag: '生活',
+      type: 'memo',
+      date: '2026-10-14',
+    })
+  })
+
+  it('类型与日期筛选走列表接口', async () => {
+    const list = vi.fn((event: { path: string }) => {
+      void event
+      return envelope(empty)
+    })
+    registerEndpoint('/api/v1/flashes', list)
+    const repo = new HttpFlashRepository('/api/v1', vi.fn(), () => false)
+    await repo.listPublicPage({ page: 1, pageSize: 20, type: 'idea', date: '2026-10-01' })
+    const query = new URL(list.mock.calls[0]![0].path, 'http://local').searchParams
+    expect(Object.fromEntries(query)).toEqual({ page: '1', pageSize: '20', type: 'idea', date: '2026-10-01' })
+  })
+
+  it('概览一次请求读取聚合结果，失败时同样给出可读提示', async () => {
+    const data = {
+      total: 3,
+      monthCount: 1,
+      dates: [{ date: '2026-10-14', count: 3 }],
+      tags: [{ name: '生活', count: 2 }],
+      onThisDay: null,
+      recollections: [],
+      likedIds: ['a1'],
+    }
+    const overview = vi.fn(() => envelope(data))
+    registerEndpoint('/api/v1/flashes/overview', overview)
+    const repo = new HttpFlashRepository('/api/v1', vi.fn(), () => false)
+    await expect(repo.overview()).resolves.toEqual(data)
+    expect(overview).toHaveBeenCalledTimes(1)
+    registerEndpoint('/api/v1/flashes/overview', () => new Response('{}', { status: 503 }))
+    await expect(repo.overview()).rejects.toMatchObject({ message: '闪念服务暂时不可用，请稍后重试', statusCode: 503 })
   })
 
   it('分页读取失败同样转换为可读提示并保留状态码', async () => {

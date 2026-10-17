@@ -1,15 +1,15 @@
 /**
  * @file flash.controller.ts
- * @description 闪念接口:列表 / 搜索 / 详情 / 点赞 / 评论(api.md §7.6;admin CRUD 与 ai-search 后续补充)
+ * @description 闪念接口:列表 / 搜索 / 公开概览 / 详情 / 点赞 / 评论(api.md §7.6;admin CRUD 与 ai-search 后续补充)
  * @author TixXin
  * @since 2026-07-20
  */
 
-import { Body, Controller, Get, Param, Post as HttpPost, Query } from '@nestjs/common'
+import { Body, Controller, Get, Header, Param, Post as HttpPost, Query } from '@nestjs/common'
 import { VisitorIdHash } from '../../common/decorators/visitor-id.decorator'
 import { CreateFlashCommentDto } from './dto/create-flash-comment.dto'
 import { QueryFlashDto, SearchFlashDto } from './dto/query-flash.dto'
-import { FlashListResult, FlashNoteDto, FlashService } from './flash.service'
+import { FlashListResult, FlashNoteDto, FlashOverview, FlashService } from './flash.service'
 
 @Controller('flashes')
 export class FlashController {
@@ -24,6 +24,13 @@ export class FlashController {
   @Get('search')
   search(@Query() query: SearchFlashDto, @VisitorIdHash({ optional: true }) visitor: string): Promise<FlashListResult> {
     return this.flashService.search(query, visitor)
+  }
+
+  /** 侧栏聚合;含访客已赞编号,按访客区分,不进入共享缓存 */
+  @Get('overview')
+  @Header('Cache-Control', 'private, no-store')
+  overview(@VisitorIdHash({ optional: true }) visitor: string): Promise<FlashOverview> {
+    return this.flashService.overview(visitor)
   }
 
   @Get(':id')

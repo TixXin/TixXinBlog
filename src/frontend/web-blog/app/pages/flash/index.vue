@@ -198,16 +198,20 @@
             </div>
 
             <!-- 发布日历 -->
-            <!-- 日历、时间胶囊与标签云依赖全部公开闪念；公开视图在挂载后读取概览，SSR 不输出，避免水合差异 -->
+            <!-- 日历、时间胶囊与标签云来自概览；公开视图在挂载后读取概览接口，SSR 不输出，避免水合差异 -->
             <SidebarFlashCalendarCard
-              v-if="aggregatesReady"
-              :note-dates="noteDates"
+              v-if="aggregatesReady && overview"
+              :dates="overview.dates"
               :selected-date="selectedDate"
               @select-date="onSelectDate"
             />
 
             <!-- 时间胶囊：去年今日 + 随机回顾 -->
-            <SidebarFlashTimeCapsuleCard v-if="aggregatesReady" :notes="aggregateNotes" />
+            <SidebarFlashTimeCapsuleCard
+              v-if="aggregatesReady && overview"
+              :on-this-day="overview.onThisDay"
+              :recollections="overview.recollections"
+            />
 
             <!-- 标签云 -->
             <div v-if="tagCloud.length > 0" class="flash-tag-cloud">
@@ -247,7 +251,6 @@
 
 <script setup lang="ts">
 import { resolveScrollRoot, scrollToRoot } from '~/utils/scrollRoot'
-import { FLASH_PUBLIC_PAGE_SIZE } from '~/features/flash/state'
 import type { FlashNote, FlashType, FlashCommentSubmission } from '~/features/flash/types'
 
 useSeoMeta({
@@ -272,10 +275,6 @@ const {
   moreLoading,
   moreError,
   overview,
-  overviewLoaded,
-  overviewLoading,
-  overviewError,
-  aggregateNotes,
   aggregatesReady,
   totalCount,
   tagCloud,
@@ -316,8 +315,6 @@ function onSelectDate(date: string | null) {
   selectedDate.value = date
 }
 
-const noteDates = computed(() => aggregateNotes.value.map((n) => n.createdAt.slice(0, 10)))
-
 // ---- 类型筛选 ----
 const typeFilter = ref<FlashType | null>(null)
 const typeTabs: { id: FlashType; icon: string; label: string }[] = [
@@ -344,7 +341,7 @@ watch(searchQuery, (v) => {
   }, 300)
 })
 
-/** 在已取得的集合上叠加 type/标签/日期/搜索关键词（私有视图、归档箱与公开概览共用） */
+/** 在已取得的集合上叠加 type/标签/日期/搜索关键词（私有视图与归档箱使用；日期按 UTC 日） */
 function filterLocal(source: FlashNote[]) {
   let result = source
   if (typeFilter.value) {
@@ -365,51 +362,27 @@ function filterLocal(source: FlashNote[]) {
   return result
 }
 
-/**
- * 公开视图的筛选路由：后端 /flashes 支持 tag、/flashes/search 支持 q，二者不可同时使用，
- * 也不支持类型与日期。能交给后端时按页读取；否则在公开概览上筛选并分批展示。
- */
-const serverFilterable = computed(
-  () => !typeFilter.value && !selectedDate.value && !(activeTag.value && debouncedQuery.value),
-)
-const overviewMode = computed(() => pagedPublic.value && !showArchive.value && !serverFilterable.value)
-watch([pagedPublic, serverFilterable, activeTag, debouncedQuery], () => {
+/** 公开视图的筛选全部交给后端分页：类型、标签、UTC 日期与关键词可任意组合 */
+watch([pagedPublic, typeFilter, activeTag, selectedDate, debouncedQuery], () => {
   if (!pagedPublic.value) return
-  if (serverFilterable.value) setPublicFilter({ tag: activeTag.value, q: debouncedQuery.value })
-  else void loadOverview()
-})
-
-/** 概览模式下的分批展示上限，筛选变化时回到第一批 */
-const clientLimit = ref(FLASH_PUBLIC_PAGE_SIZE)
-watch([typeFilter, activeTag, selectedDate, debouncedQuery], () => {
-  clientLimit.value = FLASH_PUBLIC_PAGE_SIZE
+  setPublicFilter({ tag: activeTag.value, q: debouncedQuery.value, type: typeFilter.value, date: selectedDate.value })
 })
 
 const matchedNotes = computed(() => {
   if (showArchive.value) return filterLocal(archivedNotes.value)
   if (!pagedPublic.value) return filterLocal(notes.value)
-  if (overviewMode.value) return filterLocal(overview.value)
-  // 服务端已按标签/关键词筛选，直接展示已加载的页
+  // 服务端已按全部条件筛选，直接展示已加载的页
   return notes.value
 })
-/** 筛选后的闪念列表：归档箱 | 主列表，叠加 type/标签/日期/搜索关键词 */
-const filteredNotes = computed(() =>
-  overviewMode.value ? matchedNotes.value.slice(0, clientLimit.value) : matchedNotes.value,
-)
+/** 筛选后的闪念列表：归档箱 | 主列表 */
+const filteredNotes = matchedNotes
 /** 结果条数：服务端分页用接口总数，其余为本地筛选结果 */
-const resultCount = computed(() =>
-  pagedPublic.value && !showArchive.value && !overviewMode.value ? total.value : matchedNotes.value.length,
-)
-const listHasMore = computed(() => {
-  if (showArchive.value) return false
-  if (overviewMode.value) return matchedNotes.value.length > clientLimit.value
-  return hasMore.value
-})
-const listMorePending = computed(() => !overviewMode.value && moreLoading.value)
-const listMoreError = computed(() => (overviewMode.value ? null : moreError.value))
+const resultCount = computed(() => (pagedPublic.value && !showArchive.value ? total.value : matchedNotes.value.length))
+const listHasMore = computed(() => !showArchive.value && hasMore.value)
+const listMorePending = computed(() => moreLoading.value)
+const listMoreError = computed(() => moreError.value)
 function onMore() {
-  if (overviewMode.value) clientLimit.value += FLASH_PUBLIC_PAGE_SIZE
-  else void loadMore()
+  void loadMore()
 }
 
 // ---- AI 引用高亮 ----
@@ -472,24 +445,11 @@ await useAsyncData('flash-public-first-page', async (app) => {
   return true
 })
 
-let cancelOverview: (() => void) | undefined
-/** 公开概览不在首屏关键路径上：浏览器空闲后再读取，供侧栏聚合与个人点赞状态使用 */
-function scheduleOverview() {
-  cancelOverview?.()
-  if (!pagedPublic.value) return
-  if (typeof window.requestIdleCallback === 'function') {
-    const handle = window.requestIdleCallback(() => void loadOverview(), { timeout: 2000 })
-    cancelOverview = () => window.cancelIdleCallback(handle)
-  } else {
-    const handle = window.setTimeout(() => void loadOverview(), 300)
-    cancelOverview = () => window.clearTimeout(handle)
-  }
-}
+// 公开概览是一次小体量聚合请求，挂载后直接读取（不进入 SSR，侧栏随后出现，首帧与服务端一致）
 onMounted(() => {
   void load()
-  scheduleOverview()
+  void loadOverview()
 })
-onBeforeUnmount(() => cancelOverview?.())
 
 // 登录身份、内容归属或内容库变化时，主列表与私有归档同时切换。
 watch(ownerKey, () => {
@@ -500,7 +460,7 @@ watch(ownerKey, () => {
   archiveLoading.value = false
   archiveError.value = null
   void load(true)
-  scheduleOverview()
+  void loadOverview()
 })
 
 const editingNote = ref<FlashNote | null>(null)
@@ -584,12 +544,9 @@ const archiveLoading = ref(false)
 const archiveLoaded = ref(false)
 const archiveError = ref<string | null>(null)
 let archiveVersion = 0
-const listError = computed(() =>
-  showArchive.value ? archiveError.value : overviewMode.value ? overviewError.value : storageError.value,
-)
+const listError = computed(() => (showArchive.value ? archiveError.value : storageError.value))
 const listPending = computed(() => {
   if (showArchive.value) return archiveLoading.value || (!archiveLoaded.value && !archiveError.value)
-  if (overviewMode.value) return overviewLoading.value || (!overviewLoaded.value && !overviewError.value)
   return loading.value || (!loaded.value && !storageError.value)
 })
 const emptyMessage = computed(() => {
@@ -618,8 +575,11 @@ async function refreshArchived() {
 async function retryList() {
   if (listPending.value) return
   if (showArchive.value) await refreshArchived()
-  else if (overviewMode.value) await loadOverview(true)
-  else await load(true)
+  else {
+    // 概览随列表一起失败时同步重试；已就绪且未过期时 loadOverview 直接返回
+    void loadOverview()
+    await load(true)
+  }
 }
 
 onBeforeUnmount(() => {
@@ -636,7 +596,7 @@ async function onToggleLike(id: string) {
   pendingIds.value.push(id)
   try {
     await toggleLike(id)
-    const changed = notes.value.find((note) => note.id === id) ?? overview.value.find((note) => note.id === id)
+    const changed = notes.value.find((note) => note.id === id)
     success(changed?.liked ? '已点赞' : '已取消点赞')
   } catch (cause) {
     showError(cause instanceof Error ? cause.message : '点赞失败，请重试')

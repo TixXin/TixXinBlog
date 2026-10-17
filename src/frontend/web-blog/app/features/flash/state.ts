@@ -29,7 +29,7 @@ export function invalidateFlashNotes(app: NuxtApp, options: { clear?: boolean } 
     state['$sflash-notes-pages'] = 0
     state['$sflash-notes-query'] = ''
     state['$sflash-public-total'] = null
-    state['$sflash-overview'] = []
+    state['$sflash-overview'] = null
     state['$sflash-overview-loaded'] = false
   }
 }
