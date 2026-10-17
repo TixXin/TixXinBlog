@@ -1,16 +1,89 @@
 <!--
   @file Markdown.vue
-  @description 管理后台编辑和前台文章共用的安全 Markdown 预览；正文标题由渲染工具降一级输出
+  @description 管理后台编辑和前台文章共用的安全 Markdown 预览；正文标题由渲染工具降一级输出。
+               含代码块时先按需加载精简高亮器（服务端渲染与客户端水合都等待加载，保证 HTML 一致），
+               复制按钮在客户端挂载到代码块标题栏，正文图片点击打开文章灯箱
 -->
 <template>
   <!-- eslint-disable-next-line vue/no-v-html -->
-  <article class="article-markdown" v-html="html" />
+  <article ref="rootRef" v-bind="$attrs" class="article-markdown" @click="openImage" v-html="html" />
+  <Teleport v-for="block in codeBlocks" :key="block.key" :to="block.target">
+    <ArticleCodeCopyButton :code="block.code" />
+  </Teleport>
+  <LazyArticleImageLightbox
+    v-if="lightboxIndex !== null"
+    v-model:index="lightboxIndex"
+    :images="lightboxImages"
+    @close="lightboxIndex = null"
+  />
 </template>
 
 <script setup lang="ts">
 import { renderArticleMarkdown } from '~/utils/articleMarkdown'
+import { collectCodeLanguages, loadCodeHighlighter, type CodeHighlighter } from '~/utils/highlightCode'
+import type { ArticleLightboxImage } from '~/components/article/ImageLightbox.vue'
+
+defineOptions({ inheritAttrs: false })
 const props = defineProps<{ content: string; title?: string }>()
-const html = computed(() => renderArticleMarkdown(props.content, props.title))
+
+const highlighter = shallowRef<CodeHighlighter | null>(null)
+const languages = computed(() => collectCodeLanguages(props.content))
+let loading = 0
+async function ensureHighlighter(names: string[]) {
+  const ticket = ++loading
+  try {
+    const loaded = await loadCodeHighlighter(names)
+    // 新语言加载完成后换一个外观对象，触发正文重新渲染；过期请求不覆盖较新的结果
+    if (ticket === loading) highlighter.value = { highlight: (code, language) => loaded.highlight(code, language) }
+  } catch {
+    // 高亮器加载失败时保持纯文本代码块
+  }
+}
+// 服务端与水合阶段必须等待高亮器，否则客户端首帧与服务端 HTML 不一致；之后的编辑预览在后台加载
+const nuxtApp = useNuxtApp()
+if (languages.value.length && (import.meta.server || nuxtApp.isHydrating)) await ensureHighlighter(languages.value)
+else if (import.meta.client && languages.value.length) void ensureHighlighter(languages.value)
+watch(languages, (names, previous) => {
+  if (import.meta.client && names.length && names.join() !== previous?.join()) void ensureHighlighter(names)
+})
+
+const html = computed(() => renderArticleMarkdown(props.content, props.title, { highlighter: highlighter.value }))
+
+// 复制按钮：客户端在每个代码块标题栏的挂载位渲染，SSR 只输出静态结构
+const rootRef = ref<HTMLElement | null>(null)
+const codeBlocks = shallowRef<{ key: string; target: HTMLElement; code: string }[]>([])
+let generation = 0
+function collectCodeBlocks() {
+  const root = rootRef.value
+  if (!root) return
+  generation++
+  codeBlocks.value = [...root.querySelectorAll<HTMLElement>('.article-code')].flatMap((block, index) => {
+    const target = block.querySelector<HTMLElement>('.article-code__actions')
+    const code = block.querySelector('pre code')?.textContent ?? ''
+    return target ? [{ key: `${generation}-${index}`, target, code }] : []
+  })
+}
+onMounted(collectCodeBlocks)
+watch(html, collectCodeBlocks, { flush: 'post' })
+
+// 图片灯箱：只收集正文中带放大触发器的图片，在同一篇文章内切换
+const lightboxImages = shallowRef<ArticleLightboxImage[]>([])
+const lightboxIndex = ref<number | null>(null)
+function openImage(event: MouseEvent) {
+  const trigger = event.target instanceof Element ? event.target.closest('[data-article-image]') : null
+  const root = rootRef.value
+  if (!trigger || !root) return
+  const triggers = [...root.querySelectorAll('[data-article-image]')]
+  lightboxImages.value = triggers.map((element) => {
+    const image = element.querySelector('img')
+    // 灯箱用原图地址而非 srcset 选中的缩小变体
+    return { src: image?.src ?? '', alt: image?.alt ?? '' }
+  })
+  lightboxIndex.value = Math.max(0, triggers.indexOf(trigger))
+}
+watch(html, () => {
+  lightboxIndex.value = null
+})
 </script>
 
 <style scoped lang="scss">
@@ -46,12 +119,70 @@ const html = computed(() => renderArticleMarkdown(props.content, props.title))
   :deep(ol) {
     padding-left: 1.5rem;
   }
-  :deep(pre) {
-    overflow-x: auto;
-    padding: 1rem;
+  // 代码块：容器限宽不撑破布局，长行在 pre 内横向滚动；配色取 Shiki 双主题变量，随 html.dark 切换
+  :deep(.article-code) {
+    max-width: 100%;
+    margin: 0 0 1.25rem;
+    border: 1px solid var(--border);
     border-radius: 0.75rem;
     background: var(--surface-2);
-    margin-bottom: 1rem;
+    overflow: hidden;
+  }
+  :deep(.article-code__header) {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+    min-height: 2.5rem;
+    padding: 0.25rem 0.5rem 0.25rem 1rem;
+    border-bottom: 1px solid var(--border);
+  }
+  :deep(.article-code__lang) {
+    color: var(--text-muted);
+    font-size: 0.75rem;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    line-height: 1.2;
+    overflow-wrap: normal;
+  }
+  :deep(.article-code__actions) {
+    display: inline-flex;
+    flex-shrink: 0;
+    min-height: 2rem;
+  }
+  :deep(pre) {
+    margin: 0;
+    padding: 1rem;
+    overflow-x: auto;
+    background: var(--surface-2);
+    border-radius: 0.75rem;
+    font-size: 0.875rem;
+    line-height: 1.65;
+    tab-size: 2;
+    overflow-wrap: normal;
+  }
+  :deep(.article-code pre) {
+    border-radius: 0;
+    background: transparent;
+  }
+  :deep(pre:focus-visible) {
+    outline: 2px solid var(--accent);
+    outline-offset: -2px;
+  }
+  :deep(pre code) {
+    display: block;
+    width: max-content;
+    min-width: 100%;
+    font-size: inherit;
+    white-space: pre;
+    overflow-wrap: normal;
+  }
+  :deep(.shiki),
+  :deep(.shiki span) {
+    color: var(--shiki-light);
+    font-style: var(--shiki-light-font-style);
+    font-weight: var(--shiki-light-font-weight);
+    text-decoration: var(--shiki-light-text-decoration);
   }
   // 只写 monospace 会触发浏览器的等宽默认字号（约 13px），中文正文里的行内代码显得过小；用明确字体栈避开
   :deep(code) {
@@ -69,6 +200,23 @@ const html = computed(() => renderArticleMarkdown(props.content, props.title))
     max-width: 100%;
     height: auto;
     border-radius: 0.5rem;
+  }
+  // 正文图片放大触发器：去掉按钮默认外观，保留键盘焦点环
+  :deep(.article-image) {
+    display: inline-block;
+    max-width: 100%;
+    padding: 0;
+    border: 0;
+    border-radius: 0.5rem;
+    background: none;
+    font: inherit;
+    line-height: 0;
+    vertical-align: top;
+    cursor: zoom-in;
+  }
+  :deep(.article-image:focus-visible) {
+    outline: 2px solid var(--accent);
+    outline-offset: 3px;
   }
   :deep(a) {
     color: var(--accent-text);
@@ -90,5 +238,14 @@ const html = computed(() => renderArticleMarkdown(props.content, props.title))
     padding: 0.5rem;
     border: 1px solid var(--border);
   }
+}
+
+// 暗色模式切换只改变量选择，不需要重新高亮（祖先 html.dark 写在作用域选择器之前）
+:is(html.dark) .article-markdown :deep(.shiki),
+:is(html.dark) .article-markdown :deep(.shiki span) {
+  color: var(--shiki-dark);
+  font-style: var(--shiki-dark-font-style);
+  font-weight: var(--shiki-dark-font-weight);
+  text-decoration: var(--shiki-dark-text-decoration);
 }
 </style>
