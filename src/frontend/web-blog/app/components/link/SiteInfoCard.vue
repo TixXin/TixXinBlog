@@ -15,10 +15,19 @@
         <dd>{{ item.value }}</dd>
       </div>
     </dl>
-    <button type="button" :disabled="!ready || !info || pending || copying || !!error" @click="$emit('copy')">
-      {{ copying ? '正在复制…' : '复制本站资料' }}
-    </button>
-    <button type="button" :disabled="!ready || pending" @click="$emit('retry')">刷新本站资料</button>
+    <div class="site-info__actions">
+      <button
+        type="button"
+        class="site-info__btn site-info__btn--primary"
+        :disabled="!ready || !info || pending || copying || !!error"
+        @click="$emit('copy')"
+      >
+        <Icon name="lucide:copy" size="14" aria-hidden="true" />{{ copying ? '正在复制…' : '复制本站资料' }}
+      </button>
+      <button type="button" class="site-info__btn" :disabled="!ready || pending" @click="$emit('retry')">
+        <Icon name="lucide:refresh-cw" size="14" aria-hidden="true" />刷新本站资料
+      </button>
+    </div>
     <p v-if="notice" role="status">{{ notice }}</p>
     <p v-if="copyError" role="alert">{{ copyError }}</p>
     <label v-if="copyError && retainedText"
@@ -83,11 +92,52 @@ textarea {
   color: var(--text-main);
   background: var(--surface-2);
 }
-button {
-  min-height: 44px;
+// 两个操作并排等宽，间距统一；窄卡片时自动换行
+.site-info__actions {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(8.5rem, 1fr));
+  gap: 0.5rem;
 }
-button:disabled {
-  opacity: 0.5;
+.site-info__btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.375rem;
+  min-height: 44px;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  white-space: nowrap;
+  cursor: var(--interaction-cursor, pointer);
+  transition: $transition-colors;
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
+
+  &:not(:disabled):hover {
+    border-color: var(--accent);
+    color: var(--accent-text);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: var(--interaction-cursor, not-allowed);
+  }
+}
+.site-info__btn--primary {
+  border-color: transparent;
+  background: var(--accent-action);
+  color: #fff;
+
+  &:not(:disabled):hover {
+    border-color: transparent;
+    color: #fff;
+    opacity: 0.88;
+  }
 }
 p,
 label {

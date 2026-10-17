@@ -43,7 +43,7 @@
 
     <footer class="fnc__footer">
       <!-- type 标识：仅非 memo（默认态）显示，避免视觉冗余 -->
-      <span v-if="typeMeta" class="fnc__type" :class="`fnc__type--${note.type}`" :title="`类型：${typeMeta.label}`">
+      <span v-if="typeMeta" class="fnc__type" :class="`fnc__type--${note.type}`">
         <Icon :name="typeMeta.icon" size="11" />
         {{ typeMeta.label }}
       </span>
@@ -383,7 +383,8 @@ onBeforeUnmount(() => {
   font-size: 0.875rem;
   line-height: 1.7;
   color: var(--text-main);
-  white-space: pre-wrap;
+  /* markdown-it 已开启 breaks 处理换行；pre-wrap 会把段落间的 \n 渲染成多余空行 */
+  white-space: normal;
   word-break: break-word;
 }
 
@@ -505,7 +506,7 @@ onBeforeUnmount(() => {
     transition: none;
   }
 
-  &:hover {
+  &:hover:not(:disabled) {
     color: var(--accent-text);
     background: var(--accent-soft);
   }
@@ -515,10 +516,16 @@ onBeforeUnmount(() => {
     opacity: 1;
   }
 
-  &--danger:hover {
+  &--danger:hover:not(:disabled) {
     color: var(--danger);
     background: rgba(239, 68, 68, 0.1);
   }
+}
+// 只读详情页 / 草稿中不可互动的按钮：弱化并去掉悬停反馈，避免误以为能点
+// 前缀 .fnc 提高优先级，压过卡片悬停时统一设为 opacity: 1 的规则
+.fnc .fnc__action:disabled {
+  opacity: 0.45;
+  cursor: var(--interaction-cursor, not-allowed);
 }
 @media (pointer: coarse) {
   .fnc__action {

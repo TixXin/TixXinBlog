@@ -92,8 +92,9 @@ defineEmits<{
     column-count: 2;
   }
 
+  /* 块级 flex 才能让列平衡生效；inline-flex 会把少量结果全部挤进第一列 */
   > * {
-    display: inline-flex;
+    display: flex;
     width: 100%;
     margin-bottom: 0.875rem;
     /* 关键：避免卡片在两列之间被截断 */

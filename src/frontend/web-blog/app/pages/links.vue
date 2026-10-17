@@ -67,7 +67,14 @@
           </button>
         </nav>
         <details class="links-compact-info" :class="`links-compact-info--${sidebarPlacement}`">
-          <summary>友链统计、须知与本站资料</summary>
+          <summary>
+            <Icon
+              name="lucide:chevron-right"
+              size="16"
+              class="links-compact-info__chevron"
+              aria-hidden="true"
+            />友链统计、须知与本站资料
+          </summary>
           <CommonRequestFeedback
             v-if="metadataPending || metadataError"
             :pending="metadataPending"
@@ -189,9 +196,35 @@ select,
   padding: 0.5rem 0.75rem;
   background: var(--surface-2);
   color: var(--text-main);
+  // 与页面其余控件保持同一字号，避免浏览器默认字号显得突兀
+  font-size: 0.8125rem;
+  cursor: var(--interaction-cursor, pointer);
+  transition: $transition-colors;
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
+
+  &:not(:disabled):hover {
+    border-color: var(--accent);
+    color: var(--accent-text);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+  }
 }
-button:disabled {
+button:disabled,
+select:disabled {
   opacity: 0.5;
+  cursor: var(--interaction-cursor, not-allowed);
+}
+.links-pagination span {
+  min-width: 3.5rem;
+  text-align: center;
+  font-size: 0.8125rem;
+  color: var(--text-soft);
+  font-variant-numeric: tabular-nums;
 }
 .links-result {
   margin-bottom: 1rem;
@@ -203,8 +236,35 @@ button:disabled {
   margin-top: 1rem;
 }
 .links-compact-info summary {
-  padding-block: 1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  min-height: 44px;
+  padding-block: 0.5rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--text-main);
+  list-style: none;
   cursor: var(--interaction-cursor, pointer);
+
+  // 用 Lucide 箭头替换浏览器默认三角标记
+  &::-webkit-details-marker {
+    display: none;
+  }
+}
+.links-compact-info__chevron {
+  flex-shrink: 0;
+  color: var(--text-soft);
+  transition: transform 0.2s ease;
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
+}
+.links-compact-info[open] .links-compact-info__chevron {
+  transform: rotate(90deg);
+}
+.links-compact-info[open] > :not(summary) + :not(summary) {
+  margin-top: 0.75rem;
 }
 @media (min-width: 1440px) {
   .links-compact-info--nexus {

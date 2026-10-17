@@ -7,7 +7,7 @@
 
 <template>
   <section class="card link-rules">
-    <h3 class="link-rules__title"><Icon name="lucide:link" size="14" /> 友链须知</h3>
+    <h3 class="link-rules__title"><Icon name="lucide:link" size="16" />友链须知</h3>
     <div class="link-rules__list">
       <div v-for="(rule, index) in rules" :key="index" class="link-rules__item">
         <span class="link-rules__badge">{{ index + 1 }}</span>
@@ -35,14 +35,13 @@ defineProps<{
 }
 
 .link-rules__title {
-  font-size: 0.8125rem;
+  /* 与友链概览、本站资料卡片标题保持同一字号与间距 */
+  font-size: 0.875rem;
   font-weight: 700;
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  margin-bottom: 1.25rem;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
+  margin-bottom: 1rem;
 }
 
 .link-rules__list {

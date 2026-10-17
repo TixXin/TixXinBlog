@@ -44,9 +44,12 @@
             </article>
 
             <p class="flash-detail-hint">
-              <Icon name="lucide:info" size="12" />
-              详情页为只读视图，点赞 / 评论请
-              <NuxtLink to="/flash" class="flash-detail-hint__link">回到主页</NuxtLink>
+              <Icon name="lucide:info" size="12" class="flash-detail-hint__icon" />
+              <span
+                >详情页为只读视图，点赞 / 评论请<NuxtLink to="/flash" class="flash-detail-hint__link"
+                  >回到闪念列表</NuxtLink
+                ></span
+              >
             </p>
 
             <nav class="flash-detail-nav" aria-label="闪念导航">
@@ -257,7 +260,12 @@ useHead({
   border-radius: $radius-sm;
 }
 
+.flash-detail-hint__icon {
+  flex-shrink: 0;
+}
+
 .flash-detail-hint__link {
+  margin-left: 0.25rem;
   color: var(--accent-text);
   text-decoration: none;
 
@@ -270,6 +278,11 @@ useHead({
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 0.75rem;
+
+  // 手机端两列太窄，标题只剩几个字；改为单列并去掉占位
+  @media (max-width: $breakpoint-sm) {
+    grid-template-columns: minmax(0, 1fr);
+  }
 }
 
 .flash-detail-nav__item {
@@ -302,6 +315,10 @@ useHead({
 
 .flash-detail-nav__placeholder {
   visibility: hidden;
+
+  @media (max-width: $breakpoint-sm) {
+    display: none;
+  }
 }
 
 .flash-detail-nav__arrow {

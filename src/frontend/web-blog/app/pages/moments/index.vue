@@ -56,10 +56,10 @@
     <template #default>
       <!-- 头部 Tab 栏 + 搜索 -->
       <div v-if="searchKeyword || selectedTopic || selectedDate" class="moments-filter-summary">
-        <span role="status"
-          >当前筛选：{{ [searchKeyword, selectedTopic, selectedDate].filter(Boolean).join(' · ') }}</span
-        >
-        <button type="button" class="filter-clear" @click="clearFilters">清除动态筛选</button>
+        <span role="status" class="moments-filter-summary__label">当前筛选：{{ filterSummary }}</span>
+        <button type="button" class="filter-clear filter-clear--chip" @click="clearFilters">
+          <Icon name="lucide:x" size="12" aria-hidden="true" />清除动态筛选
+        </button>
       </div>
       <CommonCustomScrollbar class="moments-body" viewport-class="moments-viewport" primary>
         <div class="moments-content">
@@ -163,6 +163,16 @@ async function loadMore() {
 async function retryFeed() {
   await Promise.all([refreshFeed(), ...(overviewError.value ? [refreshOverview()] : [])])
 }
+// 筛选摘要：话题补 #、关键词加前缀，与闪念页的筛选条说法一致
+const filterSummary = computed(() =>
+  [
+    searchKeyword.value ? '关键词：' + searchKeyword.value : '',
+    selectedTopic.value ? '#' + selectedTopic.value : '',
+    selectedDate.value,
+  ]
+    .filter(Boolean)
+    .join(' · '),
+)
 function onTopicSelect(value: string | null) {
   selectedTopic.value = value
 }
@@ -184,15 +194,56 @@ useSeoMeta({
   display: flex;
   flex-wrap: wrap;
   align-items: center;
+  justify-content: space-between;
   gap: 0.5rem;
-  padding: 0.5rem 1rem;
+  // 与下方列表内容的左右留白对齐
+  padding: 0.75rem 1rem 0;
   font-size: 0.8125rem;
   color: var(--text-soft);
+
+  @media (min-width: $breakpoint-md) {
+    padding: 1rem 2rem 0;
+  }
+}
+.moments-filter-summary__label {
+  min-width: 0;
+  overflow-wrap: anywhere;
 }
 .filter-clear {
   min-height: 44px;
   padding: 0.5rem;
   color: var(--accent-text);
+}
+// 筛选条里的清除按钮：做成小胶囊，避免看起来像普通文字
+.filter-clear--chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  min-height: 32px;
+  padding: 0.25rem 0.75rem;
+  border: 1px solid var(--border-soft);
+  border-radius: $radius-full;
+  background: var(--surface-2);
+  font-size: 0.75rem;
+  cursor: var(--interaction-cursor, pointer);
+  transition: $transition-colors;
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
+
+  &:hover {
+    border-color: var(--accent);
+    background: var(--accent-soft);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+  }
+
+  @media (pointer: coarse) {
+    min-height: 44px;
+  }
 }
 .moments-page {
   display: flex;
