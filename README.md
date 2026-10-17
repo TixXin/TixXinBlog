@@ -7,6 +7,8 @@
 [![Nuxt](https://img.shields.io/badge/Nuxt-4-00DC82?logo=nuxt&logoColor=white)](https://nuxt.com/)
 [![NestJS](https://img.shields.io/badge/NestJS-11-E0234E?logo=nestjs&logoColor=white)](https://nestjs.com/)
 
+**中文** | [English](README.en.md)
+
 面向单博主的个人博客系统，包含公开网站和内置创作后台。前端使用 Nuxt 4 / Vue 3，后端使用 NestJS / MikroORM / PostgreSQL。
 
 在线实例：<https://tix.xin>（作者本人的博客，内容与本仓库的演示数据无关）。
