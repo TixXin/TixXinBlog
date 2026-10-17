@@ -20,7 +20,11 @@
             }}</span
           >
           <nav v-if="navigationCount > 1 && position > 0" class="prompt-detail__navigation" aria-label="浏览本页灵感">
-            <span title="使用左右方向键切换本页作品">本页 {{ position }} / {{ navigationCount }}</span>
+            <CommonTooltip content="使用左右方向键切换本页作品" placement="bottom"
+              ><span class="prompt-detail__navigation-count"
+                >本页 {{ position }} / {{ navigationCount }}</span
+              ></CommonTooltip
+            >
             <button
               type="button"
               aria-label="上一份灵感"
@@ -288,7 +292,7 @@ onBeforeUnmount(() => {
   margin-left: auto;
   margin-right: 0.75rem;
 }
-.prompt-detail__navigation span {
+.prompt-detail__navigation-count {
   margin-right: 0.45rem;
   color: var(--text-soft);
   font-size: 0.7rem;
@@ -316,7 +320,7 @@ onBeforeUnmount(() => {
     gap: 0.2rem;
     margin-right: 0.35rem;
   }
-  .prompt-detail__navigation span {
+  .prompt-detail__navigation-count {
     font-size: 0.65rem;
     margin-right: 0.25rem;
   }
@@ -339,7 +343,8 @@ onBeforeUnmount(() => {
   min-height: min(320px, 60dvh);
   position: sticky;
   top: 0;
-  height: min(70dvh, 680px);
+  // 与浮层可视区域等高（面板上限减去工具栏），避免左侧图片区下方露出空白
+  height: calc(min(90dvh, 960px) - 1.2rem - 41px);
   padding: 1.5rem;
   display: flex;
   align-items: center;

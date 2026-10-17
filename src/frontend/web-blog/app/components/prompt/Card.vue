@@ -16,7 +16,9 @@
         :disabled="!ready"
         @click="$emit('open', item.id)"
       >
-        <span><Icon name="lucide:scan-text" size="16" />查看提示词<Icon name="lucide:arrow-up-right" size="15" /></span>
+        <span class="prompt-card__open-label"
+          ><Icon name="lucide:scan-text" size="16" />查看提示词<Icon name="lucide:arrow-up-right" size="15"
+        /></span>
       </button>
       <span v-if="status === 'draft'" class="prompt-card__draft">草稿</span>
     </div>
@@ -27,15 +29,16 @@
       </div>
       <div class="prompt-card__title-row">
         <h3>
-          <button
-            type="button"
-            :disabled="!ready"
-            :data-focus-key="`prompt-title-${item.id}`"
-            :title="item.title"
-            @click="$emit('open', item.id)"
-          >
-            {{ item.title }}
-          </button>
+          <CommonTooltip :content="item.title" placement="top">
+            <button
+              type="button"
+              :disabled="!ready"
+              :data-focus-key="`prompt-title-${item.id}`"
+              @click="$emit('open', item.id)"
+            >
+              {{ item.title }}
+            </button>
+          </CommonTooltip>
         </h3>
         <button
           v-if="editable"
@@ -90,7 +93,7 @@ defineEmits<{ open: [id: number]; edit: [id: number] }>()
   justify-content: center;
   padding: 1rem;
 }
-.prompt-card__open span {
+.prompt-card__open-label {
   display: inline-flex;
   align-items: center;
   gap: 0.5rem;
@@ -106,8 +109,8 @@ defineEmits<{ open: [id: number]; edit: [id: number] }>()
     opacity 0.2s,
     transform 0.2s;
 }
-.prompt-card__open:hover span,
-.prompt-card__open:focus-visible span {
+.prompt-card__open:hover .prompt-card__open-label,
+.prompt-card__open:focus-visible .prompt-card__open-label {
   opacity: 1;
   transform: none;
 }
@@ -188,15 +191,24 @@ p {
   margin-top: 0.15rem;
 }
 @media (hover: none) {
-  .prompt-card__open span {
+  .prompt-card__open {
+    padding: 0.75rem;
+  }
+  .prompt-card__open-label {
     opacity: 1;
     transform: none;
+    gap: 0.3rem;
     font-size: 0.68rem;
     padding: 0.4rem 0.65rem;
+    white-space: nowrap;
+  }
+  // 窄卡片上省略装饰箭头，保证“查看提示词”不折行
+  .prompt-card__open-label > :last-child {
+    display: none;
   }
 }
 @media (prefers-reduced-motion: reduce) {
-  .prompt-card__open span {
+  .prompt-card__open-label {
     transition: none;
   }
 }

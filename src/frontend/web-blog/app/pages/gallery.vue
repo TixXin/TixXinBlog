@@ -31,14 +31,12 @@
           @retry="refresh()"
         />
         <p v-if="stale" role="status" class="gallery-result">正在显示上一次成功读取的照片，当前筛选尚未完成。</p>
-        <p v-else-if="total !== null" class="gallery-result" role="status">
-          共 {{ total }} 张照片 · 第 {{ query.page }} 页
-        </p>
+        <p v-else-if="total" class="gallery-result" role="status">共 {{ total }} 张照片 · 第 {{ query.page }} 页</p>
         <CommonStateBlock
           v-if="!pending && !error && !photos.length"
           icon="lucide:images"
           :title="filtered ? '没有找到照片' : '尚无公开作品'"
-          :description="filtered ? '试试其他标题、描述或地点。' : '照片公开后会展示在这里。'"
+          :description="emptyDescription"
           :action-label="filtered ? '清除筛选' : undefined"
           @action="clearFilters"
         />
@@ -151,6 +149,14 @@ const keyword = computed({
   },
 })
 const filtered = computed(() => !!query.value.q || query.value.category !== undefined)
+// 只按分类筛选时没有关键词可换，提示切换分类；有关键词时提示搜索覆盖的字段
+const emptyDescription = computed(() =>
+  query.value.q
+    ? '换个关键词试试，搜索会匹配标题、描述和地点。'
+    : filtered.value
+      ? '这个分类下还没有公开照片，看看其他分类吧。'
+      : '照片公开后会展示在这里。',
+)
 const categories = computed(() => [
   { label: '全部', value: undefined, count: metadata.value?.stats.photos },
   ...(metadata.value?.categories ?? []),

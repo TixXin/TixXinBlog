@@ -8,7 +8,7 @@
 <template>
   <section class="card gear-card">
     <h3 class="gear-card__title">
-      <Icon name="lucide:info" size="16" />
+      <Icon name="lucide:aperture" size="16" />
       <span>摄影器材</span>
     </h3>
     <ul class="gear-card__list">

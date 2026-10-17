@@ -26,7 +26,7 @@
         </div>
         <div v-if="metadata" class="prompts-intro__index" aria-label="公开提示词数量">
           <strong>{{ String(metadata.stats.prompts).padStart(2, '0') }}</strong
-          ><span>条提示词</span><Icon name="lucide:move-up-right" size="22" />
+          ><span class="prompts-intro__label">条提示词</span><Icon name="lucide:move-up-right" size="22" />
         </div>
       </section>
       <div v-if="ready && !isOwner && (managementIntent || authError)" class="prompts-auth" role="status">
@@ -47,7 +47,7 @@
             :disabled="!ready"
             @click="setView(false)"
           >
-            全部<span v-if="metadata">{{ metadata.stats.prompts }}</span></button
+            全部<span v-if="metadata" class="prompts-views__count">{{ metadata.stats.prompts }}</span></button
           ><button v-if="isOwner" type="button" :aria-pressed="draftView" :disabled="!ready" @click="setView(true)">
             <Icon name="lucide:file-pen-line" size="14" />我的草稿
           </button>
@@ -488,7 +488,7 @@ h1 span {
   letter-spacing: -0.05em;
   color: var(--text-main);
 }
-.prompts-intro__index span {
+.prompts-intro__label {
   grid-column: 1 / -1;
   grid-row: 2;
   font-size: 0.6rem;
@@ -554,7 +554,7 @@ h1 span {
   color: var(--text-main);
   border-color: var(--accent);
 }
-.prompts-views button span {
+.prompts-views__count {
   font-size: 0.6rem;
   color: var(--text-soft);
   padding: 0.1rem 0.4rem;
@@ -589,6 +589,9 @@ h1 span {
   gap: 0.35rem;
 }
 .prompts-tags button {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
   min-height: 34px;
   font-size: 0.72rem;
   padding: 0.35rem 0.7rem;
@@ -734,7 +737,7 @@ button:disabled {
   .prompts-intro__index strong {
     font-size: 2.2rem;
   }
-  .prompts-intro__index span {
+  .prompts-intro__label {
     width: 80px;
     font-size: 0.55rem;
   }
