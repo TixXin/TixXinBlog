@@ -25,7 +25,8 @@
       class="gallery-item__img"
     />
     <div class="gallery-item__overlay">
-      <h4 class="gallery-item__title">{{ photo.title }}</h4>
+      <!-- 卡片整体是按钮，内部不放标题元素，名称由 aria-label 提供 -->
+      <p class="gallery-item__title">{{ photo.title }}</p>
       <p class="gallery-item__meta">
         {{ [photo.date, photo.location].filter(Boolean).join(' · ') || '拍摄信息未填写' }}
       </p>

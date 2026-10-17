@@ -49,6 +49,11 @@ body {
   border-radius: 4px;
 }
 
+// 主内容容器只作为跳转链接与路由切换的焦点落点（tabindex=-1），整块描边会干扰阅读
+#main-content:focus {
+  outline: none;
+}
+
 input:focus-visible,
 textarea:focus-visible {
   outline: none;

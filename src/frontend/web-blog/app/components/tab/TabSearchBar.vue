@@ -15,6 +15,7 @@
           v-model="query"
           type="text"
           class="tab-search__input"
+          aria-label="搜索书签或网页"
           :placeholder="placeholder"
           autocomplete="off"
           spellcheck="false"
@@ -31,7 +32,7 @@
       </div>
       <div class="tab-search__hint">
         <span>按 Enter 在 {{ engineLabel }} 中搜索</span>
-        <span v-if="localHits.length > 0" class="tab-search__hint-sep">·</span>
+        <span v-if="localHits.length > 0" class="tab-search__hint-sep" aria-hidden="true">·</span>
         <span v-if="localHits.length > 0">↓ 选择本地结果</span>
       </div>
     </form>

@@ -28,7 +28,7 @@
         ><span v-if="item.tags[0]">{{ item.tags[0] }}</span>
       </div>
       <div class="prompt-card__title-row">
-        <h3>
+        <h2>
           <CommonTooltip :content="item.title" placement="top">
             <button
               type="button"
@@ -39,7 +39,7 @@
               {{ item.title }}
             </button>
           </CommonTooltip>
-        </h3>
+        </h2>
         <button
           v-if="editable"
           class="prompt-card__edit"
@@ -152,7 +152,7 @@ defineEmits<{ open: [id: number]; edit: [id: number] }>()
   gap: 0.5rem;
   margin-top: 0.3rem;
 }
-h3 {
+h2 {
   flex: 1;
   min-width: 0;
   margin: 0;
@@ -160,7 +160,7 @@ h3 {
   line-height: 1.6;
   font-weight: 600;
 }
-h3 button {
+h2 button {
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;

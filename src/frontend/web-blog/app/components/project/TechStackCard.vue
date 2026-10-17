@@ -7,7 +7,7 @@
 
 <template>
   <section class="card tech-stack">
-    <h3 class="tech-stack__title"><Icon name="lucide:code-2" size="14" /> 技术栈分布</h3>
+    <h2 class="tech-stack__title"><Icon name="lucide:code-2" size="14" /> 技术栈分布</h2>
     <p class="tech-stack__description">使用该技术的公开项目占比。一个项目可使用多种技术，比例不表示代码语言占比。</p>
     <p v-if="!stack.length" class="tech-stack__description">公开项目尚未填写技术标签。</p>
     <div class="tech-stack__list">

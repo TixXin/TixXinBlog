@@ -8,10 +8,10 @@
 <template>
   <section class="toc card">
     <div class="toc__header">
-      <h3 class="toc__title">
+      <h2 class="toc__title">
         <Icon name="lucide:list" size="16" />
         文章目录
-      </h3>
+      </h2>
       <span v-if="progress !== undefined" class="toc__progress">{{ Math.round(progress) }}%</span>
     </div>
     <nav class="toc__nav" aria-label="文章目录">

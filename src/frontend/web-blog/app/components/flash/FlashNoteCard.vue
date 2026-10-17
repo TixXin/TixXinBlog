@@ -56,7 +56,7 @@
         <Icon name="lucide:clock-3" size="11" />
         {{ relativeTime }}
       </NuxtLink>
-      <span v-else class="fnc__time">{{ relativeTime }} · 未公开</span>
+      <span v-else class="fnc__time">{{ relativeTime }} <span aria-hidden="true">·</span> 未公开</span>
       <div class="fnc__actions">
         <button
           type="button"
@@ -395,6 +395,7 @@ onBeforeUnmount(() => {
 }
 
 .fnc__tag {
+  position: relative;
   display: inline-flex;
   align-items: center;
   padding: 0.125rem 0.5rem;
@@ -409,6 +410,13 @@ onBeforeUnmount(() => {
     background 0.18s;
   @media (prefers-reduced-motion: reduce) {
     transition: none;
+  }
+
+  // 视觉尺寸不变，伪元素把点击区扩到至少 24px 高
+  &::after {
+    content: '';
+    position: absolute;
+    inset: -4px -3px;
   }
 
   &:hover {
@@ -429,6 +437,7 @@ onBeforeUnmount(() => {
 }
 
 .fnc__time {
+  position: relative;
   white-space: nowrap;
   display: inline-flex;
   align-items: center;
@@ -440,6 +449,13 @@ onBeforeUnmount(() => {
   transition: color 0.18s;
   @media (prefers-reduced-motion: reduce) {
     transition: none;
+  }
+
+  // 视觉尺寸不变，伪元素把点击区扩到至少 24px 高
+  &::after {
+    content: '';
+    position: absolute;
+    inset: -4px -2px;
   }
 
   &:hover {

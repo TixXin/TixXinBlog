@@ -7,10 +7,10 @@
 
 <template>
   <section ref="containerRef" class="card chat-stats">
-    <h3 class="chat-stats__title">
+    <h2 class="chat-stats__title">
       <Icon name="lucide:bar-chart-2" size="14" />
       对话统计
-    </h3>
+    </h2>
     <div class="chat-stats__grid">
       <div v-for="(item, index) in stats" :key="item.label" class="chat-stats__cell">
         <p class="chat-stats__value">

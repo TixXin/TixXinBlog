@@ -48,7 +48,7 @@
         class="page-columns anim-fade-in-up anim-delay-2"
         :class="{ 'page-columns--without-sidebar': !showRightSidebar }"
       >
-        <main class="main-content">
+        <main id="main-content" class="main-content" tabindex="-1">
           <slot />
         </main>
         <aside v-show="showRightSidebar" class="aside-right">

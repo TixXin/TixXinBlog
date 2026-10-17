@@ -8,10 +8,10 @@
 <template>
   <section class="card flash-calendar-card">
     <div class="flash-calendar-card__header">
-      <h3 class="flash-calendar-card__title">
+      <h2 class="flash-calendar-card__title">
         <Icon name="lucide:calendar-days" size="16" />
         发布日历
-      </h3>
+      </h2>
       <div class="flash-calendar-card__nav">
         <button type="button" class="flash-calendar-card__nav-btn" aria-label="上一月" @click="prevMonth">
           <Icon name="lucide:chevron-left" size="14" />
@@ -431,7 +431,7 @@ function onDayClick(day: CalendarDay) {
   gap: 0.25rem;
   font-size: 0.6875rem;
   font-weight: 600;
-  color: #f59e0b;
+  color: var(--warning-text);
 }
 
 .flash-calendar-card__streak-icon {

@@ -8,10 +8,10 @@
 <template>
   <section class="card moment-interaction-card">
     <header class="moment-interaction-card__header">
-      <h3 class="moment-interaction-card__title">
+      <h2 class="moment-interaction-card__title">
         <Icon name="lucide:sparkles" size="14" class="moment-interaction-card__title-icon" />
         互动之星
-      </h3>
+      </h2>
       <span class="moment-interaction-card__count">{{ totalUsers }} 位朋友</span>
     </header>
 

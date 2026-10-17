@@ -7,10 +7,10 @@
 
 <template>
   <section class="card chat-rules">
-    <h3 class="chat-rules__title">
+    <h2 class="chat-rules__title">
       <Icon name="lucide:shield" size="14" />
       对话守则
-    </h3>
+    </h2>
     <div class="chat-rules__list">
       <div v-for="rule in rules" :key="rule.id" class="chat-rules__item">
         <span class="chat-rules__badge">{{ rule.id }}</span>

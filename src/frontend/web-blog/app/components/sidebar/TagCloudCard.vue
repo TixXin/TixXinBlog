@@ -8,7 +8,7 @@
 <template>
   <section class="card tag-cloud-card">
     <div class="tag-cloud-card__header">
-      <h3 class="tag-cloud-card__title"><Icon name="lucide:hash" size="16" /> 探索标签</h3>
+      <h2 class="tag-cloud-card__title"><Icon name="lucide:hash" size="16" /> 探索标签</h2>
       <span class="tag-cloud-card__count text-xs">{{ tags.length }} 个标签</span>
     </div>
     <div class="tag-cloud-card__tags" role="group" aria-label="按标签筛选">

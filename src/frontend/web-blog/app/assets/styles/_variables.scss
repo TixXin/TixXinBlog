@@ -1,6 +1,6 @@
 /**
  * @file _variables.scss
- * @description CSS 自定义属性（运行时主题变量），定义亮色和暗色主题的颜色体系；封面叠层（--surface-cover-overlay、--surface-cover-overlay-vt、--text-on-cover*、--cover-overlay-*）、置顶徽标（--pin-badge-*）、Tooltip 浮层（--tooltip-*）
+ * @description CSS 自定义属性（运行时主题变量），定义亮色和暗色主题的颜色体系；封面叠层（--surface-cover-overlay、--surface-cover-overlay-vt、--text-on-cover*、--cover-overlay-*）、置顶徽标（--pin-badge-*）、语义文字色（--success-text、--warning-text、--danger-text）、Tooltip 浮层（--tooltip-*）
  * @author TixXin
  * @since 2025-03-17
  */
@@ -110,6 +110,11 @@
   --presence-idle: #f59e0b;
   --presence-busy: #ef4444;
   --presence-offline: #9ca3af;
+
+  /* --- 语义文字色：状态色作文字时用深一档，在 surface-1/2 及 10% 同色底上 ≥4.5:1 --- */
+  --success-text: #047857;
+  --warning-text: #a15104;
+  --danger-text: #b91c1c;
 
   /* --- 热力图色阶 --- */
   --heatmap-0: #ebedf0;
@@ -228,6 +233,11 @@
   --presence-idle: #fbbf24;
   --presence-busy: #f87171;
   --presence-offline: #6b7280;
+
+  /* --- 语义文字色：暗色下取更亮一档，在 surface-1/2 及 16% 同色底上 ≥4.5:1 --- */
+  --success-text: #34d399;
+  --warning-text: #fbbf24;
+  --danger-text: #fca5a5;
 
   /* --- 热力图色阶 --- */
   --heatmap-0: rgba(100, 116, 139, 0.2);

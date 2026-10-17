@@ -60,14 +60,14 @@
 
     <!-- 内容切换区域 -->
     <div class="nexus-bar__body">
-      <!-- 收起态：操作图标 + 导航 + 进度 -->
-      <div class="nexus-bar__row-nav">
+      <!-- 收起态：操作图标 + 导航 + 进度；键盘焦点进入时收起展开态，避免聚焦到透明元素 -->
+      <div class="nexus-bar__row-nav" @focusin="onNavFocusIn">
         <div class="nexus-bar__actions">
           <BlogThemeSwitcher />
           <BlogAppearanceEntry />
         </div>
         <div class="nexus-bar__separator" aria-hidden="true" />
-        <nav class="nexus-bar__nav" aria-label="站点导航">
+        <nav id="site-navigation" class="nexus-bar__nav" aria-label="站点导航">
           <NuxtLink
             v-for="item in navItems"
             :key="item.to"
@@ -110,8 +110,8 @@
         </Transition>
       </div>
 
-      <!-- 展开态：横向布局 — 左侧身份信息 | 右侧一言+社交 -->
-      <div class="nexus-bar__row-owner">
+      <!-- 展开态：横向布局 — 左侧身份信息 | 右侧一言+社交；收起时透明且 inert，不进入 Tab 顺序与读屏 -->
+      <div class="nexus-bar__row-owner" :inert="!isExpanded">
         <div class="nexus-bar__owner-card">
           <!-- 左列：名字、头衔、在线状态（登录态下切换为当前用户身份） -->
           <div class="nexus-bar__owner-left">
@@ -126,12 +126,12 @@
               />
               <span class="nexus-bar__owner-status-label">{{ effectivePresence.label }}</span>
               <span v-if="effectivePresence.signature" class="nexus-bar__owner-status-sig">
-                · {{ effectivePresence.signature }}
+                <span aria-hidden="true">· </span>{{ effectivePresence.signature }}
               </span>
             </div>
           </div>
           <!-- 分隔线 -->
-          <div class="nexus-bar__owner-divider" />
+          <div class="nexus-bar__owner-divider" aria-hidden="true" />
           <!-- 右列：一言 + 社交链接 -->
           <div class="nexus-bar__owner-right">
             <div class="nexus-bar__owner-quote-row">
@@ -169,6 +169,10 @@
         ref="loginPanelRef"
         class="nexus-bar__login-panel"
         :class="{ 'is-shape-ready': loginShape }"
+        role="dialog"
+        aria-modal="true"
+        :aria-labelledby="loginTitleId"
+        tabindex="-1"
       >
         <svg
           v-if="loginShape"
@@ -180,7 +184,7 @@
         >
           <path :d="loginShape.path" />
         </svg>
-        <div class="nexus-bar__login-content"><AuthPanel /></div>
+        <div class="nexus-bar__login-content"><AuthPanel :title-id="loginTitleId" /></div>
       </div>
     </Transition>
 
@@ -230,6 +234,13 @@ const { isLoggedIn, currentUser, logout } = useCurrentUser()
 const { info } = useToast()
 
 const loginPanelRef = ref<HTMLElement | null>(null)
+const loginTitleId = 'nexus-login-panel-title'
+// 内嵌登录面板按模态对话框管理：打开聚焦首个输入框、Tab 约束在面板内、Esc 关闭并归还焦点
+useModalFocus(
+  computed(() => isLoginOpen.value && !preferModal.value),
+  loginPanelRef,
+  { close: () => closeLogin(), initialFocus: () => loginPanelRef.value?.querySelector('input') ?? null },
+)
 const barRef = ref<HTMLElement | null>(null)
 const avatarRef = ref<ComponentPublicInstance | null>(null)
 const loginShape = shallowRef<ReturnType<typeof createLoginPanelShape>>(null)
@@ -397,6 +408,16 @@ function refreshQuote() {
 // ---- 展开/收起逻辑 ----
 const { isFooterExpanded } = useFooterExpand()
 const isExpanded = isFooterExpanded
+
+/** 收起态导航获得焦点时立即收起展开态，保证获焦元素可见 */
+function onNavFocusIn() {
+  if (!isExpanded.value) return
+  if (expandTimer) {
+    clearTimeout(expandTimer)
+    expandTimer = null
+  }
+  isExpanded.value = false
+}
 let expandTimer: ReturnType<typeof setTimeout> | null = null
 let collapseTimer: ReturnType<typeof setTimeout> | null = null
 
@@ -1208,6 +1229,7 @@ $bar-expanded: 112px;
 }
 
 .nexus-bar__quote-refresh {
+  position: relative;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1230,6 +1252,23 @@ $bar-expanded: 112px;
 
   .nexus-bar__owner-quote-row:hover & {
     opacity: 1;
+  }
+
+  // 键盘聚焦时与悬停一样显示，并给出可见焦点环
+  &:focus-visible {
+    opacity: 1;
+    color: var(--accent-text);
+    outline: 2px solid var(--focus-ring);
+    outline-offset: 1px;
+    border-radius: $radius-full;
+  }
+
+  // 视觉 20px 不变，伪元素把点击区扩到 28px
+  &::before {
+    content: '';
+    position: absolute;
+    inset: -4px;
+    border-radius: $radius-full;
   }
 
   &:hover {

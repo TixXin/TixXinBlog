@@ -43,7 +43,8 @@
           maxlength="1000"
           placeholder="写下你的评论..."
           :disabled="submitting || !hydrated"
-          aria-describedby="article-comment-limit"
+          :aria-invalid="!!submitError || undefined"
+          :aria-describedby="submitError ? 'article-comment-limit article-comment-error' : 'article-comment-limit'"
         />
         <div class="comment-section__actions">
           <span id="article-comment-limit" class="comment-section__limit">{{ draft.length }} / 1000</span>
@@ -56,8 +57,13 @@
             {{ submitting ? '正在发表…' : replyTarget ? '发表回复' : '发布评论' }}
           </button>
         </div>
-        <p v-if="submitError" role="alert" class="comment-section__error">{{ submitError }}</p>
-        <p v-if="submitNotice && !submitError" role="status" class="comment-section__notice">{{ submitNotice }}</p>
+        <p v-if="submitError" id="article-comment-error" role="alert" class="comment-section__error">
+          {{ submitError }}
+        </p>
+        <!-- 播报区常驻，只切换内部提示，保证读屏能播报新插入的状态 -->
+        <div aria-live="polite">
+          <p v-if="submitNotice && !submitError" role="status" class="comment-section__notice">{{ submitNotice }}</p>
+        </div>
       </form>
     </div>
     <p v-if="loadError" role="alert" class="comment-section__error">{{ loadError }}</p>
@@ -273,7 +279,7 @@ watch(
   overflow-wrap: anywhere;
 }
 .comment-section__error {
-  color: var(--danger);
+  color: var(--danger-text);
 }
 .comment-section__notice {
   color: var(--text-muted);

@@ -9,12 +9,12 @@
   <section class="card donate-card">
     <div class="donate-card__decor" />
     <div class="donate-card__content">
-      <h3 class="donate-card__title">
+      <h2 class="donate-card__title">
         <span class="donate-card__icon">
           <Icon name="lucide:coffee" size="16" />
         </span>
         感谢支持
-      </h3>
+      </h2>
       <p class="donate-card__desc">如果某篇文章帮到了你，收藏、分享或留一句话就是最好的支持。</p>
       <span class="donate-card__status">打赏暂未开放</span>
     </div>

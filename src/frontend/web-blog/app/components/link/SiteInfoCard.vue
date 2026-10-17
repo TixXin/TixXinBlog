@@ -1,7 +1,7 @@
 <!-- @file SiteInfoCard.vue @description 真实本站友链资料与复制反馈，数据不可用时禁止复制默认资料 -->
 <template>
   <section class="card site-info" aria-label="本站友链资料">
-    <h3><Icon name="lucide:clipboard" size="16" />本站友链资料</h3>
+    <h2><Icon name="lucide:clipboard" size="16" />本站友链资料</h2>
     <CommonRequestFeedback
       v-if="pending || error"
       :pending="pending"
@@ -54,7 +54,7 @@ defineEmits<{ retry: []; copy: [] }>()
   padding: 1.25rem;
   overflow-wrap: anywhere;
 }
-h3 {
+h2 {
   display: flex;
   align-items: center;
   gap: 0.5rem;

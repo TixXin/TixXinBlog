@@ -16,7 +16,7 @@
       format="webp"
       @error="onAvatarError"
     />
-    <h2 class="about-hero__name">{{ profile.name }}</h2>
+    <h1 class="about-hero__name">{{ profile.name }}</h1>
     <p class="about-hero__bio">{{ profile.bio }}</p>
     <div class="about-hero__socials">
       <a

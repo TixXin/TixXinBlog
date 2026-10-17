@@ -7,10 +7,10 @@
 
 <template>
   <section class="card gallery-stats">
-    <h3 class="gallery-stats__title">
+    <h2 class="gallery-stats__title">
       <Icon name="lucide:camera" size="16" />
       <span>画廊统计</span>
-    </h3>
+    </h2>
     <ul class="gallery-stats__list">
       <li v-for="row in stats" :key="row.label" class="gallery-stats__row">
         <span class="gallery-stats__label">{{ row.label }}</span>

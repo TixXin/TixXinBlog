@@ -8,10 +8,10 @@
 <template>
   <section class="card moment-photo-wall">
     <div class="moment-photo-wall__header">
-      <h3 class="moment-photo-wall__title">
+      <h2 class="moment-photo-wall__title">
         <Icon name="lucide:image" size="16" />
         精选照片
-      </h3>
+      </h2>
       <span class="moment-photo-wall__count">{{ images.length }}</span>
     </div>
 
