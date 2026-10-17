@@ -85,6 +85,8 @@ const displayItems = computed(() => history.value.slice(0, 5))
   align-items: center;
   justify-content: space-between;
   gap: 0.5rem;
+  // 内边距只为悬停底色留位，负外边距抵消，文字与卡片标题左缘对齐
+  margin-inline: -0.5rem;
   padding: 0.375rem 0.5rem;
   border-radius: $radius-sm;
   text-decoration: none;

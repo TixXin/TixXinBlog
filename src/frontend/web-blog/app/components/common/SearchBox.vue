@@ -73,6 +73,10 @@ defineEmits<{
   @media (min-width: $breakpoint-sm) and (max-width: #{$breakpoint-xl - 1px}) {
     max-width: 12rem;
   }
+  // 手机端页头操作区换行后，搜索框占满剩余宽度
+  @media (max-width: #{$breakpoint-sm - 1px}) {
+    max-width: none;
+  }
 }
 
 .search-box__icon {
