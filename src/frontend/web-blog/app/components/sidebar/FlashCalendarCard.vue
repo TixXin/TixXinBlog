@@ -68,7 +68,7 @@
         </span>
         <span class="flash-calendar-card__legend">
           <span class="flash-calendar-card__legend-dot" />
-          本月 {{ monthNoteCount }} 条
+          本月 {{ monthNoteCount }} 条 · UTC
         </span>
       </div>
     </div>
@@ -87,14 +87,15 @@ const emit = defineEmits<{
 
 const weekdays = ['一', '二', '三', '四', '五', '六', '日']
 
-const viewYear = ref(new Date().getFullYear())
-const viewMonth = ref(new Date().getMonth())
+// 闪念日期按 createdAt 的 UTC 日期分组，日历的“今天”、月份与星期也统一用 UTC，与动态日历一致
+const viewYear = ref(new Date().getUTCFullYear())
+const viewMonth = ref(new Date().getUTCMonth())
 
 const monthLabel = computed(() => `${viewYear.value}年${viewMonth.value + 1}月`)
 
 const isCurrentMonth = computed(() => {
   const now = new Date()
-  return viewYear.value === now.getFullYear() && viewMonth.value === now.getMonth()
+  return viewYear.value === now.getUTCFullYear() && viewMonth.value === now.getUTCMonth()
 })
 
 function prevMonth() {
@@ -118,8 +119,8 @@ function nextMonth() {
 
 function goToday() {
   const now = new Date()
-  viewYear.value = now.getFullYear()
-  viewMonth.value = now.getMonth()
+  viewYear.value = now.getUTCFullYear()
+  viewMonth.value = now.getUTCMonth()
 }
 
 interface CalendarDay {
@@ -143,19 +144,18 @@ const noteDateMap = computed(() => {
 const calendarDays = computed<(CalendarDay | null)[]>(() => {
   const y = viewYear.value
   const m = viewMonth.value
-  const firstDay = new Date(y, m, 1)
-  const daysInMonth = new Date(y, m + 1, 0).getDate()
+  const firstDay = new Date(Date.UTC(y, m, 1))
+  const daysInMonth = new Date(Date.UTC(y, m + 1, 0)).getUTCDate()
 
-  const startOffset = (firstDay.getDay() + 6) % 7
-  const today = new Date()
-  const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`
+  const startOffset = (firstDay.getUTCDay() + 6) % 7
+  const todayStr = new Date().toISOString().slice(0, 10)
 
   const result: (CalendarDay | null)[] = []
   for (let i = 0; i < startOffset; i++) result.push(null)
 
   for (let d = 1; d <= daysInMonth; d++) {
     const dateStr = `${y}-${String(m + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`
-    const isFuture = new Date(y, m, d) > today
+    const isFuture = dateStr > todayStr
     const noteCount = noteDateMap.value.get(dateStr) || 0
     result.push({
       num: d,
@@ -178,12 +178,12 @@ const monthNoteCount = computed(() => {
 const streak = computed(() => {
   const sortedDates = [...new Set(props.noteDates.map((d) => d.slice(0, 10)))].sort().reverse()
   if (sortedDates.length === 0) return 0
+  // 全程 UTC：本地 setHours 与 toISOString 混用会在东八区等时区错位一天
   const today = new Date()
-  today.setHours(0, 0, 0, 0)
+  today.setUTCHours(0, 0, 0, 0)
 
   let count = 0
-  const startDate = new Date(sortedDates[0]!)
-  startDate.setHours(0, 0, 0, 0)
+  const startDate = new Date(`${sortedDates[0]!}T00:00:00Z`)
   const diffDays = Math.floor((today.getTime() - startDate.getTime()) / 86400000)
   if (diffDays > 1) return 0
 
@@ -191,7 +191,7 @@ const streak = computed(() => {
   const checkDate = new Date(startDate)
   while (dateSet.has(checkDate.toISOString().slice(0, 10))) {
     count++
-    checkDate.setDate(checkDate.getDate() - 1)
+    checkDate.setUTCDate(checkDate.getUTCDate() - 1)
   }
   return count
 })
