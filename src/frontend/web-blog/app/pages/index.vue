@@ -58,6 +58,8 @@
       </div>
     </template>
     <template #default>
+      <!-- 首页没有可见的页面标题，补一个仅供辅助技术与搜索引擎读取的 h1 -->
+      <h1 class="sr-only">{{ siteSettings.name }}</h1>
       <div v-if="activeFilterLabel" class="articles-filter-summary">
         <span role="status">当前筛选：{{ activeFilterLabel }}</span>
         <button type="button" class="filter-badge" :aria-label="`清除筛选：${activeFilterLabel}`" @click="clearFilters">
@@ -101,15 +103,62 @@
 </template>
 <script setup lang="ts">
 import { mockPostTabs } from '~/features/post/mock'
+import { readPostListQuery, writePostListQuery } from '~/features/post/listQuery'
+import { socialProfiles } from '~/utils/absoluteUrl'
 
 const { settings: siteSettings } = useSiteSettings()
-useSeoMeta({
-  title: () => siteSettings.value.seoTitle || siteSettings.value.name,
-  description: () => siteSettings.value.seoDescription || siteSettings.value.description,
-  ogTitle: () => siteSettings.value.seoTitle || siteSettings.value.name,
-  ogDescription: () => siteSettings.value.seoDescription || siteSettings.value.description,
-})
 const route = useRoute()
+const siteUrl = useSiteUrl()
+// 分页与筛选页采用「自引用 canonical + 区分标题」：每页内容不同，不统一指向第一页；
+// canonical 只保留 category/tag/page 三个规范参数，去掉显示模式与跟踪参数。
+const listSeo = computed(() => {
+  const { page, tag, category } = readPostListQuery(route.query)
+  const label = [category ? `分类 ${category}` : '', tag ? `标签 ${tag}` : '', page > 1 ? `第 ${page} 页` : '']
+    .filter(Boolean)
+    .join(' · ')
+  const search = new URLSearchParams(writePostListQuery({ page, tag, category, mode: 'pagination' })).toString()
+  return { label, canonical: `/${search ? `?${search}` : ''}` }
+})
+const homeTitle = computed(() => siteSettings.value.seoTitle || siteSettings.value.name)
+const homeDescription = computed(() => siteSettings.value.seoDescription || siteSettings.value.description)
+usePageSeo({
+  title: () => listSeo.value.label || homeTitle.value,
+  shareTitle: () => (listSeo.value.label ? `${listSeo.value.label} - ${siteSettings.value.name}` : homeTitle.value),
+  description: () => homeDescription.value,
+  type: 'website',
+  canonical: () => listSeo.value.canonical,
+})
+const homeImage = useDefaultShareImage()
+useJsonLd('home', () => ({
+  '@context': 'https://schema.org',
+  '@graph': [
+    {
+      '@type': 'WebSite',
+      '@id': `${siteUrl}/#website`,
+      url: `${siteUrl}/`,
+      name: siteSettings.value.name,
+      ...(homeDescription.value ? { description: homeDescription.value } : {}),
+      inLanguage: 'zh-CN',
+      publisher: { '@id': `${siteUrl}/#person` },
+      potentialAction: {
+        '@type': 'SearchAction',
+        target: { '@type': 'EntryPoint', urlTemplate: `${siteUrl}/search?q={search_term_string}` },
+        'query-input': 'required name=search_term_string',
+      },
+    },
+    {
+      '@type': 'Person',
+      '@id': `${siteUrl}/#person`,
+      name: siteSettings.value.ownerName || siteSettings.value.name,
+      url: `${siteUrl}/about`,
+      ...(siteSettings.value.ownerTitle ? { jobTitle: siteSettings.value.ownerTitle } : {}),
+      ...(homeImage.value ? { image: homeImage.value.url } : {}),
+      ...(socialProfiles(siteSettings.value.socials).length
+        ? { sameAs: socialProfiles(siteSettings.value.socials) }
+        : {}),
+    },
+  ],
+}))
 const tabs = mockPostTabs
 const {
   page: postPage,

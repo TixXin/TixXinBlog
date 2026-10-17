@@ -100,7 +100,7 @@ const activePage = computed(() => (activeType.value === 'all' ? 1 : searchPage(r
 const keyword = ref(activeQuery.value),
   mounted = ref(false)
 const { groups, total, isSearching, error, search, cancel } = useSearch()
-useSeoMeta({
+usePageSeo({
   title: '站内搜索',
   robots: 'noindex, follow',
   description: '按类型检索本站公开文章、项目、友链、图库、闪念与朋友圈。',

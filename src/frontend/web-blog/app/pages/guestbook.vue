@@ -6,7 +6,7 @@
         <div class="page-title">
           <div class="page-title__icon-wrap" aria-hidden="true"><Icon name="lucide:message-circle" size="18" /></div>
           <div class="page-title__text">
-            <h2 class="page-title__heading">留言板</h2>
+            <h1 class="page-title__heading">留言板</h1>
             <!-- 博主在线状态是信息而非操作，跟在留言数后面，操作区只留搜索 -->
             <p class="page-title__sub guestbook-subline">
               <span>{{ metadata?.stats.messages.toLocaleString('zh-CN') ?? '—' }} 条公开留言</span>
@@ -525,7 +525,7 @@ useSeoMeta({ title: '留言板', description: '留下你的足迹，交流技术
   background: var(--text-faint);
 }
 .guestbook-presence--online {
-  color: #22c55e;
+  color: var(--success-text);
   border-color: rgba(34, 197, 94, 0.3);
   background: rgba(34, 197, 94, 0.08);
 }
@@ -534,12 +534,12 @@ useSeoMeta({ title: '留言板', description: '留下你的足迹，交流技术
   box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.2);
 }
 .guestbook-presence--idle {
-  color: var(--presence-idle);
+  color: var(--warning-text);
   border-color: color-mix(in srgb, var(--presence-idle) 35%, transparent);
   background: color-mix(in srgb, var(--presence-idle) 10%, transparent);
 }
 .guestbook-presence--busy {
-  color: var(--presence-busy);
+  color: var(--danger-text);
   border-color: color-mix(in srgb, var(--presence-busy) 35%, transparent);
   background: color-mix(in srgb, var(--presence-busy) 10%, transparent);
 }

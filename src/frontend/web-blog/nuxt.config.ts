@@ -11,6 +11,9 @@ import dockHostConfig from './themes/dock/theme.config'
 import { readFileSync } from 'node:fs'
 
 const startupGuard = readFileSync(new URL('./public/startup-guard.js', import.meta.url), 'utf8')
+// 站点资料不可用时的中性站名，与 app/features/site/settings.ts 的 defaultSiteSettings.name 保持一致；
+// 运行时以博主在 /admin/site 维护的站名为准（app.vue 与 error.vue 动态覆盖）。
+const fallbackSiteName = 'My Blog'
 
 export default {
   // Nuxt 启动历史与清单预取的固定版本修正维护在仓库根目录 patches/。
@@ -48,15 +51,12 @@ export default {
     head: {
       charset: 'utf-8',
       viewport: 'width=device-width, initial-scale=1',
-      // 以下三项只是站点资料未就绪时的 SSR 首屏兜底；正式值由博主在 /admin/site 维护，
-      // 由 app.vue 的 useHead/useSeoMeta 动态覆盖。此处不放任何具体站点的身份信息。
-      titleTemplate: '%s - My Blog',
+      // 以下只是站点资料未就绪时的 SSR 兜底；正式站名、描述、og:type 与 twitter:card 由 app.vue
+      // （错误页由 error.vue）按站点设置动态输出。此处不放任何具体站点的身份信息，也不输出空描述。
+      titleTemplate: `%s - ${fallbackSiteName}`,
       meta: [
-        { name: 'description', content: '' },
-        { property: 'og:site_name', content: 'My Blog' },
-        { property: 'og:type', content: 'website' },
+        { property: 'og:site_name', content: fallbackSiteName },
         { property: 'og:locale', content: 'zh_CN' },
-        { name: 'twitter:card', content: 'summary_large_image' },
       ],
       // 在 hydration 之前检测 sessionStorage，为 <html> 添加 .visited class，
       // 使非首次访问直接隐藏 loading 覆盖层，消除闪烁。开发与生产一致；调试时加 ?splash=1 强制显示
@@ -148,17 +148,20 @@ export default {
   // 属预期现象，生产注入正式域名后不再出现。
   site: {
     url: process.env.NUXT_PUBLIC_SITE_URL,
-    name: 'My Blog',
+    name: fallbackSiteName,
   },
   sitemap: {
     strictNuxtContentPaths: true,
-    exclude: ['/admin', '/admin/**', '/_theme-engine-devtools'],
+    // 搜索页 noindex，标签页是访客个人起始页（本地书签），均不收录
+    exclude: ['/admin', '/admin/**', '/_theme-engine-devtools', '/search', '/tabs'],
     sources: ['/api/__sitemap__/urls'],
     cacheMaxAgeSeconds: 0,
   },
   robots: {
-    allow: '/',
-    disallow: ['/admin/', '/_theme-engine-devtools'],
+    // 受管媒体经 /api/v1/media/ 提供，文章封面与分享图需对搜索引擎和分享卡片爬虫保持可抓取（最长匹配优先）
+    allow: ['/', '/api/v1/media/'],
+    // /admin 无斜杠形式同样屏蔽；其余 /api/ 为接口转发，不作为页面收录
+    disallow: ['/admin', '/admin/', '/api/', '/_theme-engine-devtools'],
   },
   fonts: {
     // 单 provider 模式：仅初始化 bunny，跳过 google/googleicons 等其他内置 provider

@@ -14,7 +14,7 @@
             <Icon name="lucide:archive" size="18" />
           </div>
           <div class="page-title__text">
-            <h2 class="page-title__heading">文章归档</h2>
+            <h1 class="page-title__heading">文章归档</h1>
             <p class="page-title__sub">
               {{
                 displayed
@@ -132,11 +132,10 @@ function selectYear(event: Event) {
   void changeQuery({ year: value ? Number(value) : undefined, page: 1 })
 }
 
-useSeoMeta({
+usePageSeo({
   title: '归档',
   description: '按时间线回顾全部文章，浏览历年技术沉淀与生活随笔',
-  ogTitle: '归档',
-  ogDescription: '按时间线回顾全部文章，浏览历年技术沉淀与生活随笔',
+  type: 'website',
 })
 
 const searchModal = inject<{ open: () => void } | null>('searchModal', null)

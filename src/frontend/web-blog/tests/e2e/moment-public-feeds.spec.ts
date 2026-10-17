@@ -77,7 +77,11 @@ test('真实新动态进入最新30条，草稿归档和撤回不公开，旧置
 
   const rssResponse = await request.get('/moments.xml')
   expect(rssResponse.status()).toBe(200)
-  expect(rssResponse.headers()['cache-control']).toBe('no-store')
+  // RSS 改为短期 HTTP 缓存 + 条件请求；服务端不缓存整份订阅，撤回仍在下一次请求反映
+  expect(rssResponse.headers()['cache-control']).toBe('public, max-age=300')
+  const etag = rssResponse.headers()['etag']!
+  expect(etag).toMatch(/^W\/"/)
+  expect((await request.get('/moments.xml', { headers: { 'If-None-Match': etag } })).status()).toBe(304)
   const xml = await rssResponse.text()
   expect(xml).not.toContain('<![CDATA[')
   const parsed = await page.evaluate((source) => {
@@ -115,7 +119,7 @@ test('真实新动态进入最新30条，草稿归档和撤回不公开，旧置
   for (const path of ['/api/moments.json', '/moments.xml']) {
     const response = await request.get(path)
     expect(response.status()).toBe(200)
-    expect(response.headers()['cache-control']).toBe('no-store')
+    expect(response.headers()['cache-control']).toBe(path.endsWith('.xml') ? 'public, max-age=300' : 'no-store')
     expect(await response.text()).not.toContain(published.id)
     expect((await request.post(path)).status()).toBe(405)
   }

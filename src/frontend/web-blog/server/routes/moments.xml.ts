@@ -2,7 +2,15 @@
  * @file moments.xml.ts
  * @description 朋友圈 RSS 仅发布真实公开动态，使用运行时站点地址并及时反映撤回
  */
-import { escapeXml, publicMoments, publicSiteSettings, publicSiteUrl, publicFeedUrl } from '../utils/publicContent'
+import {
+  escapeXml,
+  latestDate,
+  publicFeedUrl,
+  publicMoments,
+  publicSiteSettings,
+  publicSiteUrl,
+  sendFeed,
+} from '../utils/publicContent'
 
 const imageTypes: Record<string, string> = {
   jpg: 'image/jpeg',
@@ -14,10 +22,12 @@ const imageTypes: Record<string, string> = {
 }
 
 export default defineEventHandler(async (event) => {
+  // 失败响应不缓存；成功时由 sendFeed 改为短期缓存
   setResponseHeader(event, 'cache-control', 'no-store')
   assertMethod(event, ['GET', 'HEAD'])
   const site = publicSiteUrl(event)
   const [moments, settings] = await Promise.all([publicMoments(event), publicSiteSettings(event)])
+  const creator = escapeXml(settings.ownerName || settings.name)
   const items = moments
     .map((moment) => {
       const oneLine = moment.content.replace(/\s+/g, ' ').trim()
@@ -35,16 +45,20 @@ export default defineEventHandler(async (event) => {
       return `<item><title>${escapeXml(title)}</title>
 <link>${escapeXml(link)}</link><guid isPermaLink="true">${escapeXml(link)}</guid>
 <description>${escapeXml(description)}</description><pubDate>${new Date(moment.date).toUTCString()}</pubDate>
-${categories}${enclosure}</item>`
+<dc:creator>${creator}</dc:creator>${categories}${enclosure}</item>`
     })
     .join('\n')
-  setResponseHeader(event, 'content-type', 'application/rss+xml; charset=utf-8')
-  return `<?xml version="1.0" encoding="UTF-8"?>
-<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel>
+  const updated = latestDate([settings.updatedAt, ...moments.map((moment) => moment.date)])
+  return sendFeed(
+    event,
+    `<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom" xmlns:dc="http://purl.org/dc/elements/1.1/"><channel>
 <title>${escapeXml(settings.name)} 朋友圈</title><link>${escapeXml(site + '/moments')}</link>
 <description>${escapeXml(settings.description)}</description><language>zh-CN</language>
-<lastBuildDate>${new Date().toUTCString()}</lastBuildDate>
+<lastBuildDate>${updated.toUTCString()}</lastBuildDate>
 <atom:link href="${escapeXml(site + '/moments.xml')}" rel="self" type="application/rss+xml" />
 ${items}
-</channel></rss>`
+</channel></rss>`,
+    updated,
+  )
 })

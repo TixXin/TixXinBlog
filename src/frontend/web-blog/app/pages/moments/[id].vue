@@ -9,6 +9,7 @@
   <CommonPageFrame class="main-inner moment-detail-page" header-key="moment-return">
     <template #header>
       <div class="main-content__header moment-detail-header">
+        <h1 class="sr-only">{{ pageTitle }}</h1>
         <NuxtLink :to="{ path: '/moments', query: filterQuery }" class="back-btn" aria-label="返回朋友圈">
           <Icon name="lucide:arrow-left" size="16" />
           <span>返回朋友圈</span>
@@ -139,6 +140,7 @@
 </template>
 
 <script setup lang="ts">
+import { absoluteUrl } from '~/utils/absoluteUrl'
 const pageScope = usePageRequestScope()
 const route = useRoute()
 const id = computed(() => String(route.params.id ?? ''))
@@ -185,35 +187,41 @@ function onTopicSelect(value: string | null) {
 }
 const excerpt = computed(() => moment.value?.content.replace(/\s+/g, ' ').slice(0, 120) ?? '动态不存在')
 const pageTitle = computed(() => truncate(excerpt.value, 36))
-useSeoMeta({
+const site = useSiteUrl()
+const momentUrl = computed(() => `${site}/moments/${encodeURIComponent(id.value)}`)
+const momentImages = computed(() =>
+  (moment.value?.images ?? []).map((image) => absoluteUrl(image, site)).filter((image) => image !== undefined),
+)
+usePageSeo({
   title: () => pageTitle.value,
   description: () => excerpt.value,
-  ogTitle: () => pageTitle.value + ' - ' + ownerCard.value.name + ' 朋友圈',
-  ogDescription: () => excerpt.value,
-  ogType: 'article',
-  ogImage: () => moment.value?.images?.[0] ?? ownerCard.value.avatar,
-  twitterCard: 'summary_large_image',
+  shareTitle: () => pageTitle.value + ' - ' + ownerCard.value.name + ' 朋友圈',
+  type: 'article',
+  canonical: () => momentUrl.value,
+  // 无配图时交回全局默认分享图（小卡片）
+  image: () => momentImages.value[0],
+  imageAlt: () => moment.value?.imageAlts?.[0] || pageTitle.value,
 })
-useHead({
-  script: [
-    {
-      type: 'application/ld+json',
-      innerHTML: computed(() =>
-        moment.value
-          ? JSON.stringify({
-              '@context': 'https://schema.org',
-              '@type': 'SocialMediaPosting',
-              headline: pageTitle.value,
-              articleBody: moment.value.content,
-              datePublished: moment.value.date,
-              image: moment.value.images ?? [],
-              author: { '@type': 'Person', name: ownerCard.value.name },
-            }).replace(/</g, String.fromCharCode(92) + 'u003c')
-          : '',
-      ),
-    },
-  ],
+useSeoMeta({
+  articlePublishedTime: () => moment.value?.date,
+  articleTag: () => (moment.value?.topics?.length ? moment.value.topics : undefined),
 })
+useJsonLd('moment', () =>
+  moment.value
+    ? {
+        '@context': 'https://schema.org',
+        '@type': 'SocialMediaPosting',
+        headline: pageTitle.value,
+        articleBody: moment.value.content,
+        url: momentUrl.value,
+        mainEntityOfPage: momentUrl.value,
+        datePublished: moment.value.date,
+        ...(momentImages.value.length ? { image: momentImages.value } : {}),
+        ...(moment.value.topics?.length ? { keywords: moment.value.topics.join(', ') } : {}),
+        author: { '@type': 'Person', name: ownerCard.value.name, url: site + '/about' },
+      }
+    : null,
+)
 </script>
 
 <style lang="scss" scoped>

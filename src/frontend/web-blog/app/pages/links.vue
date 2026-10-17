@@ -156,7 +156,7 @@ const {
   refreshMetadata,
   changeQuery,
 } = await useLinks()
-useSeoMeta({ title: '友情链接', description: '浏览博主维护的友情链接与站点资料', ogType: 'website' })
+usePageSeo({ title: '友情链接', description: '浏览博主维护的友情链接与站点资料', type: 'website' })
 const keyword = computed({
   get: () => (!ready.value ? (query.value.q ?? '') : typeof route.query.q === 'string' ? route.query.q : ''),
   set: (q: string) => {

@@ -1,6 +1,7 @@
 /** @file usePromptSeo.ts @description 公开分享链接绑定选中作品；私有状态不输出作品内容，缺失目标不借用列表首图。 */
 import type { Ref } from 'vue'
 import type { ImagePrompt } from '~/features/prompt/types'
+import { absoluteUrl } from '~/utils/absoluteUrl'
 
 interface PromptSeoOptions {
   selectedId: Ref<number | null>
@@ -8,15 +9,6 @@ interface PromptSeoOptions {
   selectedDraft: Ref<boolean>
   editorOpen: Ref<boolean>
   prompts: Ref<ImagePrompt[]>
-}
-function absoluteUrl(value: string | undefined, base: string) {
-  if (!value) return undefined
-  try {
-    const url = new URL(value, base + '/')
-    return ['http:', 'https:'].includes(url.protocol) && !url.username && !url.password ? url.href : undefined
-  } catch {
-    return undefined
-  }
 }
 function excerpt(value: string) {
   const characters = [...value.replace(/\s+/g, ' ').trim()]
@@ -72,14 +64,18 @@ export function usePromptSeo(options: PromptSeoOptions) {
     ogDescription: () => seo.value.description,
     ogType: () => seo.value.type,
     ogUrl: () => seo.value.canonical,
+    // null 显式移除全局默认分享图：私有与缺失目标不输出任何分享图
     ogImage: () => seo.value.image ?? null,
-    ogImageAlt: () => seo.value.imageAlt ?? null,
-    robots: () => seo.value.robots,
+    ogImageAlt: () => (seo.value.image ? seo.value.imageAlt : null) ?? null,
+    // 可索引时不覆盖 robots 模块的默认指令（含 max-image-preview 等）
+    robots: () => (seo.value.robots === 'index, follow' ? undefined : seo.value.robots),
     twitterCard: () => (seo.value.image ? 'summary_large_image' : 'summary'),
     twitterTitle: () => seo.value.title,
     twitterDescription: () => seo.value.description,
     twitterImage: () => seo.value.image ?? null,
   })
-  useHead(() => ({ link: seo.value.canonical ? [{ rel: 'canonical', href: seo.value.canonical }] : [] }))
+  useHead(() => ({
+    link: seo.value.canonical ? [{ key: 'canonical', rel: 'canonical', href: seo.value.canonical }] : [],
+  }))
   return seo
 }
