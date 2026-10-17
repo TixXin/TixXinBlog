@@ -102,7 +102,8 @@ export function readConfig(root = workspace, inherited = process.env) {
     readyPath: '/ready',
     workspace: id,
     database: databaseFingerprint(apiEnv.DATABASE_URL),
-    env: { ...apiEnv, NODE_ENV: 'development' },
+    // 本机浏览器、SSR 与测试工具同为 127.0.0.1，按 IP 限流只会限住自己；开发会话默认关闭，环境文件显式设为 false 可恢复
+    env: { RATE_LIMIT_DISABLED: 'true', ...apiEnv, NODE_ENV: 'development' },
   }
   const web = {
     name: '前端',
