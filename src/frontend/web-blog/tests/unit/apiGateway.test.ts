@@ -58,7 +58,7 @@ it('真实网关保留媒体 304 和 Retry-After，拒绝伪造地址，其他�
   const backend = await listen(
     createServer((request, response) => {
       receivedHeaders = request.headers
-      response.setHeader('cache-control', 'private, no-cache')
+      response.setHeader('cache-control', 'public, max-age=31536000, immutable')
       if (request.url === '/api/v1/posts') {
         response.end('posts')
       } else if (request.url === '/api/v1/posts/limited') {
@@ -93,7 +93,7 @@ it('真实网关保留媒体 304 和 Retry-After，拒绝伪造地址，其他�
   })
   expect(initial.status).toBe(200)
   expect(await initial.text()).toBe('image-bytes')
-  expect(initial.headers.get('cache-control')).toBe('private, no-cache')
+  expect(initial.headers.get('cache-control')).toBe('public, max-age=31536000, immutable')
   expect(receivedHeaders['x-forwarded-for']).toBe('127.0.0.1')
   expect(receivedHeaders['x-real-ip']).toBeUndefined()
   expect(receivedHeaders.forwarded).toBeUndefined()
@@ -101,7 +101,7 @@ it('真实网关保留媒体 304 和 Retry-After，拒绝伪造地址，其他�
   expect(revalidated.status).toBe(304)
   expect(await revalidated.text()).toBe('')
   expect(revalidated.headers.get('etag')).toBe('"sha256"')
-  expect(revalidated.headers.get('cache-control')).toBe('private, no-cache')
+  expect(revalidated.headers.get('cache-control')).toBe('public, max-age=31536000, immutable')
   const head = await fetch(`${gateway}/api/v1/${path}`, { method: 'HEAD' })
   expect(head.status).toBe(200)
   expect(await head.text()).toBe('')
