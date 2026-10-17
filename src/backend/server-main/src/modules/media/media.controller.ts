@@ -91,7 +91,8 @@ export class PublicMediaController {
       ifNoneMatch: request.get('if-none-match'),
       head: request.method === 'HEAD',
     })
-    response.setHeader('Cache-Control', 'private, no-cache')
+    // 资源键由 UUID 与内容摘要决定，文件不可变；公开媒体可长期缓存，删除后由 404 收敛。
+    response.setHeader('Cache-Control', 'public, max-age=31536000, immutable')
     response.setHeader('ETag', result.etag)
     if (result.notModified) return response.status(304).end()
     response.type('image/webp').setHeader('Content-Disposition', `inline; filename="${file.toLowerCase()}"`)
