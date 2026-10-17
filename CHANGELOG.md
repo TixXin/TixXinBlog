@@ -6,6 +6,40 @@
 
 ## [未发布]
 
+### 新增
+
+- 管理员重置密码命令 `node dist/admin-reset-password.js`：仅在服务器本机通过一次性容器执行，无 HTTP 入口；重置后撤销全部会话与刷新令牌并写入审计
+- 站点图标与 Web App Manifest，替换框架默认 favicon；分享按钮使用 canonical 地址并支持系统分享
+- 首页输出 WebSite/Person、关于页输出 ProfilePage、文章改为 BlogPosting 并附面包屑结构化数据
+- 跳到主内容/导航链接；客户端路由切换后焦点移到主内容并播报页面变化
+- 留言板搜索高亮命中词，区分“筛选无结果”与“历史已到头”；输入框随正文自动增高
+
+### 变更
+
+- 全站页面输出 canonical、og:url 与 Twitter 卡片，分享图片统一为绝对地址
+- 文章 RSS 改为全文并补 `atom:link` 与 `lastBuildDate`；三个订阅源支持短期缓存与条件请求
+- sitemap 收录闪念、朋友圈详情与话题页并排除 noindex 页面；robots 屏蔽后台与接口、放行媒体
+- 受管媒体改为 `public, max-age=31536000, immutable` 长期缓存，删除或缺失仍返回错误且不缓存
+- 文章搜索新增 pg_trgm GIN 索引，媒体引用新增删除与级联查询索引；升级时由正式迁移应用
+- 每个 API 响应带 `X-Request-Id`，与响应体 `traceId`、访问日志和审计编号一致；5xx 在服务端记录堆栈
+- API 收到关闭信号后 `/ready` 立即返回 503
+- 限流计数表满时淘汰过期与最早的窗口，不再拒绝新访客；IPv6 按 `/64` 前缀计数
+- 本机统一启动器启动的 API 默认关闭限流，可在后端 `.env.local` 显式恢复
+
+### 修复
+
+- 内容包 v1–v10 不再接受 v11 专属字段（留言 `browser`/`region`、站点 `presence*`/`launchedAt`）
+- 错误页标题显示真实站名
+- 页面唯一 h1 与标题层级；nexus 底栏收起后不可聚焦，登录面板改为模态对话框；补足浅色警示文字等对比度、表单错误关联与小触控目标
+- 闪念日历统一按 UTC 计算今天与连续天数
+
+### 安全
+
+- API 未设置 `NODE_ENV` 时按 `production` 处理：限流生效、刷新 Cookie 带 `Secure`、日志级别缺省 `info`；关闭限流需显式 `RATE_LIMIT_DISABLED=true` 且生产环境忽略；生产 `MEDIA_DIRECTORY` 必须为绝对路径
+- 刷新令牌重放时撤销整个会话并写入审计
+- 闪念评论不再公开可与留言成员关联的作者标识；文章与闪念评论头像使用同一地址白名单
+- API 不再返回 `X-Powered-By`；Caddy 模板增加 HSTS 与 `Permissions-Policy`
+
 ## [0.1.0] - 2026-10-17
 
 首个公开版本。自 2026-03-20 起开发，共 519 次提交。

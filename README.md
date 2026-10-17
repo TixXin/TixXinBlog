@@ -110,7 +110,7 @@ docs/                    当前使用、架构与维护指南
 scripts/                 开发启动、检查和发布工具
 deploy/                  生产环境与 HTTPS 配置模板
 patches/                 固定依赖版本所需的补丁
-.github/workflows/       持续集成
+.github/workflows/       持续集成与版本发布
 ```
 
 共享格式、提交钩子和依赖配置保留在根目录；个人编辑器配置和运行产物不进入版本库。模块内职责见[架构指南](docs/architecture.md)。
@@ -122,7 +122,7 @@ corepack pnpm build
 corepack pnpm --filter server-main build
 ```
 
-根目录 `build` 构建前端，后端单独构建。生产编排使用 `compose.production.yaml` 和 `deploy/` 模板；部署前需要设置实际域名、固定镜像版本、密钥和持久化存储，并先执行迁移。步骤见[部署指南](docs/deployment.md)，数据维护见[备份与恢复](docs/backup-and-recovery.md)。
+根目录 `build` 构建前端，后端单独构建；全部根脚本见[脚本说明](docs/scripts.md)。生产编排使用 `compose.production.yaml` 和 `deploy/` 模板；部署前需要设置实际域名、固定镜像版本、密钥和持久化存储，并先执行迁移。推送 `v*` 标签后，Release 工作流会把 web、api、migration、worker 四个多架构镜像推送到 GHCR 并创建 GitHub Release；也可以在目标主机自行构建。两条路径、Linux/PowerShell 命令与本机生产式预览见[部署指南](docs/deployment.md)，数据维护见[备份与恢复](docs/backup-and-recovery.md)。
 
 开发环境、代码职责、测试和 PR 要求见 [CONTRIBUTING.md](CONTRIBUTING.md)。[文档导航](docs/README.md)提供开发、架构、API、内容和主题说明。参与前请阅读[行为准则](CODE_OF_CONDUCT.md)。版本变更记录在 [CHANGELOG.md](CHANGELOG.md)。
 

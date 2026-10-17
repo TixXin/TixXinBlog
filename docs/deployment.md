@@ -4,9 +4,68 @@
 
 发布、应用回退和数据恢复是不同流程。应用回退不执行旧迁移；需要恢复数据时使用[备份与恢复](backup-and-recovery.md)。
 
+命令示例以 Linux 服务器的 bash 为主，随后给出等价的 Windows PowerShell 写法。两种写法的变量一一对应：`release_version`/`$releaseVersion` 为应用版本，`release_env`/`$releaseEnv` 为生产环境文件，`origin`/`$origin` 为站点 HTTPS origin，`backup_directory`/`$backupDirectory` 为已校验的完整备份目录。
+
 ## 镜像与环境
 
-使用 Node 25、pnpm 9.15.0 和 Docker。应用镜像必须来自同一提交，并使用同一不可复用标签；推荐完整 Git SHA。不要覆盖已经发布的版本标签。
+应用由四个镜像组成，必须来自同一提交并使用同一不可复用标签，不要覆盖已经发布的版本标签：
+
+| 镜像      | 构建方式                                                   | 作用                                                                     |
+| --------- | ---------------------------------------------------------- | ------------------------------------------------------------------------ |
+| web       | 根 `Dockerfile`（`runtime`）                               | Nuxt 前端与同源 API 网关                                                 |
+| api       | `src/backend/server-main/Dockerfile` 的 `runtime` target   | 只启动 HTTP                                                              |
+| migration | `src/backend/server-main/Dockerfile` 的 `migration` target | 只执行正式迁移                                                           |
+| worker    | `src/backend/server-main/Dockerfile` 的 `worker` target    | 携带生产依赖、维护脚本和 PostgreSQL 16 客户端，直接运行镜像时只读 status |
+
+发布脚本只检查目标主机上已有的镜像，以 `--pull never` 启动，不构建、推送或拉取镜像。下面两条路径任选其一，在执行预检前把四个镜像准备到目标主机。PostgreSQL 16 与 Caddy 2 也应固定经过核验的完整 tag 或 digest。
+
+目标主机还需要 Docker Compose、Node 25，以及与应用版本对应的仓库检出：发布脚本、`compose.production.yaml` 和 `deploy/Caddyfile` 都从检出中读取。
+
+### 使用预构建镜像
+
+推送 `v*` 标签后，[Release 工作流](../.github/workflows/release.yml)依次校验标签与根 `package.json` 版本一致、标签提交已合入 main、CHANGELOG 有对应段落，运行 CI 中的静态检查、单元测试、迁移回放和依赖审计；随后在原生 amd64/arm64 托管机上构建四个镜像，以无标签摘要推送到 GHCR，两个平台的 web/api/migration 都通过容器冒烟后，才合并为多架构清单、打上版本标签并创建 GitHub Release。浏览器与隔离集成回归不在该工作流内重复，打标签前应确认对应提交在 main 上的 CI 已通过。镜像地址为 `ghcr.io/<所有者>/<仓库名>-<镜像>`（全小写），本仓库即 `ghcr.io/tixxin/tixxinblog-web`、`-api`、`-migration`、`-worker`。
+
+每个镜像只有两类标签：去掉 `v` 的版本号（如 `0.2.0`）和 `sha-<完整提交 SHA>`，不提供 `latest`。镜像同时包含 linux/amd64 与 linux/arm64，并附 SBOM 与构建来源证明；Release 说明列出每个镜像的清单摘要。
+
+在环境文件中填写 GHCR 仓库（见[生产模板](../deploy/production.env.example)中的示例），`RELEASE_VERSION` 使用版本号，然后在目标主机拉取并核对摘要：
+
+```sh
+release_version=0.2.0
+image_prefix=ghcr.io/tixxin/tixxinblog
+for name in web api migration worker; do
+  docker pull "$image_prefix-$name:$release_version"
+  docker image inspect --format '{{index .RepoDigests 0}}' "$image_prefix-$name:$release_version"
+done
+```
+
+PowerShell：
+
+```powershell
+$releaseVersion = '0.2.0'
+$imagePrefix = 'ghcr.io/tixxin/tixxinblog'
+foreach ($name in 'web', 'api', 'migration', 'worker') {
+  docker pull "${imagePrefix}-${name}:${releaseVersion}"
+  docker image inspect --format '{{index .RepoDigests 0}}' "${imagePrefix}-${name}:${releaseVersion}"
+}
+```
+
+输出的摘要应与 Release 说明一致。GHCR 包为私有时，先用具有 `read:packages` 权限的令牌执行 `docker login ghcr.io`。需要检查来源证明或 SBOM 时，可执行 `docker buildx imagetools inspect <镜像引用> --format '{{ json .Provenance }}'`（SBOM 使用 `.SBOM`）。
+
+fork 的仓库推送自己的 `v*` 标签即可得到同名规则的镜像；首次推送后在 GitHub 包设置中确认可见性和仓库访问权限。
+
+### 自行构建
+
+在目标主机或可信构建机上，从干净检出的同一提交构建四个镜像，推荐以完整 Git SHA 作为版本。构建上下文是仓库根：
+
+```sh
+release_version="$(git rev-parse HEAD)"
+docker build -t "tixxin-blog-web:$release_version" .
+docker build -f src/backend/server-main/Dockerfile --target runtime -t "tixxin-blog-api:$release_version" .
+docker build -f src/backend/server-main/Dockerfile --target migration -t "tixxin-blog-migration:$release_version" .
+docker build -f src/backend/server-main/Dockerfile --target worker -t "tixxin-blog-worker:$release_version" .
+```
+
+PowerShell：
 
 ```powershell
 $releaseVersion = git rev-parse HEAD
@@ -16,20 +75,39 @@ docker build -f src/backend/server-main/Dockerfile --target migration -t "tixxin
 docker build -f src/backend/server-main/Dockerfile --target worker -t "tixxin-blog-worker:$releaseVersion" .
 ```
 
-构建上下文是仓库根。API runtime 只启动 HTTP；migration 只执行正式迁移；worker 携带生产依赖、维护脚本和 PostgreSQL 16 客户端，直接运行镜像时默认只读 status。发布脚本不构建、推送或拉取镜像，需要提前在目标主机准备全部已验证镜像。PostgreSQL 16 与 Caddy 2 也应固定经过核验的完整 tag 或 digest。
+在其他机器构建时，自行推送到可信镜像仓库或用 `docker save`/`docker load` 转移，并核对目标主机上的镜像 ID 与构建结果一致。
 
-将[生产模板](../deploy/production.env.example)复制到仓库外受控目录，填写实际值。不要提交秘密文件或包含完整展开环境的 `docker compose config` 输出。
+### 环境文件
 
-| 配置                                                                                                    | 要求                                                    |
-| ------------------------------------------------------------------------------------------------------- | ------------------------------------------------------- |
-| `RELEASE_PROJECT`                                                                                       | 独立且稳定的 Compose 项目名；首次安装后不随意改变卷归属 |
-| `RELEASE_VERSION`                                                                                       | 已构建、不可复用的应用版本                              |
-| `WEB_IMAGE_REPOSITORY`、`API_IMAGE_REPOSITORY`、`MIGRATION_IMAGE_REPOSITORY`、`WORKER_IMAGE_REPOSITORY` | 对应同一版本的镜像仓库                                  |
-| `POSTGRES_IMAGE`、`CADDY_IMAGE`                                                                         | 本机已有且明确固定的依赖镜像                            |
-| `POSTGRES_PASSWORD`                                                                                     | 至少 32 位随机十六进制值，避免连接 URL 保留字符问题     |
-| `JWT_ACCESS_SECRET`                                                                                     | 至少 32 位随机签名密钥                                  |
-| `SITE_HOST`、`SITE_URL`                                                                                 | 对外域名与对应 HTTPS origin                             |
-| `HTTPS_BIND_ADDRESS`、`HTTP_PORT`、`HTTPS_PORT`                                                         | 默认仅绑定本机；对外开放需明确配置入口、防火墙和 DNS    |
+将[生产模板](../deploy/production.env.example)复制到仓库外受控目录，填写实际值并限制文件权限。不要提交秘密文件或包含完整展开环境的 `docker compose config` 输出。数据库密码和签名密钥可用 `openssl rand -hex 32` 生成。
+
+```sh
+install -d -m 700 ../tixxin-private
+cp -n deploy/production.env.example ../tixxin-private/production.env
+chmod 600 ../tixxin-private/production.env
+```
+
+PowerShell：
+
+```powershell
+New-Item -ItemType Directory -Force ../tixxin-private | Out-Null
+if (-not (Test-Path ../tixxin-private/production.env)) {
+  Copy-Item deploy/production.env.example ../tixxin-private/production.env
+}
+```
+
+两段命令都不会覆盖已有的环境文件；复制后编辑实际值。
+
+| 配置                                                                                                    | 要求                                                                                   |
+| ------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------- |
+| `RELEASE_PROJECT`                                                                                       | 独立且稳定的 Compose 项目名；首次安装后不随意改变卷归属                                |
+| `RELEASE_VERSION`                                                                                       | 已准备、不可复用的应用版本；预构建镜像填版本号（如 `0.2.0`），自行构建推荐完整 Git SHA |
+| `WEB_IMAGE_REPOSITORY`、`API_IMAGE_REPOSITORY`、`MIGRATION_IMAGE_REPOSITORY`、`WORKER_IMAGE_REPOSITORY` | 对应同一版本的镜像仓库；预构建镜像填 GHCR 地址，不带标签                               |
+| `POSTGRES_IMAGE`、`CADDY_IMAGE`                                                                         | 本机已有且明确固定的依赖镜像                                                           |
+| `POSTGRES_PASSWORD`                                                                                     | 至少 32 位随机十六进制值，避免连接 URL 保留字符问题                                    |
+| `JWT_ACCESS_SECRET`                                                                                     | 至少 32 位随机签名密钥                                                                 |
+| `SITE_HOST`、`SITE_URL`                                                                                 | 对外域名与对应 HTTPS origin                                                            |
+| `HTTPS_BIND_ADDRESS`、`HTTP_PORT`、`HTTPS_PORT`                                                         | 默认仅绑定本机；对外开放需明确配置入口、防火墙和 DNS                                   |
 
 API 未设置 `NODE_ENV` 时按 `production` 处理：限流生效、刷新 Cookie 带 `Secure`、日志级别缺省 `info`，且 `MEDIA_DIRECTORY` 必须是绝对路径，否则拒绝启动。镜像已设置 `NODE_ENV=production` 与 `MEDIA_DIRECTORY=/app/var/media`。只有显式的 `development`/`test` 才允许通过 `RATE_LIMIT_DISABLED=true` 关闭限流，生产忽略该开关。
 
@@ -47,9 +125,11 @@ API 未设置 `NODE_ENV` 时按 `production` 处理：限流生效、刷新 Cook
 
 公开媒体桶也包含精确的 `GET/HEAD /api/v1/subscriptions/favicons/<64位小写十六进制>.webp`，订阅列表与统计仍使用业务读取桶；favicon 经同源网关继续使用 `no-store`。
 
-受管媒体的成功 GET/HEAD 与 304 使用 `Cache-Control: private, no-cache` 及基于已登记 SHA-256 的 ETag。浏览器可以保存字节，但每次复用前都要向服务端验证；服务端先检查资源未删除且磁盘文件可读，命中条件时返回无正文的 304。删除后下一次请求返回 404；文件缺失返回 503，错误及其他业务响应保持 `no-store`。同源网关只为精确的受管媒体路径保留缓存头，不为媒体配置长期 immutable 或共享 CDN 缓存。
+受管媒体的成功 GET/HEAD 与 304 使用 `Cache-Control: public, max-age=31536000, immutable` 及基于已登记 SHA-256 的 ETag（资源键由 UUID 决定、字节不可变）。条件请求先检查资源未删除且磁盘文件可读，命中时返回无正文的 304。删除后下一次请求返回 404；文件缺失返回 503，错误及其他业务响应保持 `no-store`。同源网关只为精确的受管媒体路径保留缓存头。
 
-`media` 卷挂载到 API `/app/var/media`；worker 只读挂载同一媒体卷，备份写入专用卷，无需 Docker socket。上传资源会转为 WebP；更换存储位置时同时迁移原文件、数据库登记与权限。不要通过 `down -v` 处理服务故障。
+公开读取可带 `?w=320|640|960|1280` 取等比缩小的 WebP 变体（质量 80，ETag 为 `"<sha256>-w<宽度>"`），前端列表图据此输出 `srcset/sizes`；其他宽度返回 400，请求宽度不小于原图时直接返回原图。变体在首次请求时生成，缓存到 `MEDIA_DIRECTORY/.media-variants/<媒体UUID>-w<宽度>-<SHA-256前16位>.webp`，同一变体并发只生成一次，全进程同时最多生成 2 个。变体是可再生缓存：回收媒体或移除原文件时同步删除，恢复后按需重新生成；整个 `.media-variants/` 目录可随时删除以回收磁盘（每个媒体最多 4 份，合计通常不超过原图体积），无需停机。缓存写入失败（磁盘满、只读挂载）只影响缓存，不影响响应。
+
+`media` 卷挂载到 API `/app/var/media`；worker 只读挂载同一媒体卷，备份写入专用卷，无需 Docker socket。上传资源会转为 WebP；更换存储位置时同时迁移原文件、数据库登记与权限，`.media-variants/` 不必迁移。不要通过 `down -v` 处理服务故障。
 
 ## 站点地址与索引
 
@@ -59,9 +139,31 @@ API 未设置 `NODE_ENV` 时按 `production` 处理：限流生效、刷新 Cook
 
 预发布可设置运行时 `NUXT_SITE_ENV=staging` 或 `NUXT_SITE_INDEXABLE=false`。这些设置优先于构建缺省；不要全局强制 indexable 使预发布内容可索引。使用同一产物分别检查正式与预发布配置。
 
+## 访问统计
+
+统计默认关闭，可接入 Umami 或 Plausible。前端在运行时读取下列配置，因此预构建镜像同样适用；生产环境文件中的 `ANALYTICS_*` 由 `compose.production.yaml` 映射为前端的 `NUXT_PUBLIC_ANALYTICS_*`：
+
+| 生产环境文件           | 前端运行时变量                     | 说明                                                           |
+| ---------------------- | ---------------------------------- | -------------------------------------------------------------- |
+| `ANALYTICS_PROVIDER`   | `NUXT_PUBLIC_ANALYTICS_PROVIDER`   | `umami` 或 `plausible`；留空关闭                               |
+| `ANALYTICS_SITE_ID`    | `NUXT_PUBLIC_ANALYTICS_SITE_ID`    | Umami 的 website ID，或 Plausible 中登记的站点域名             |
+| `ANALYTICS_SCRIPT_URL` | `NUXT_PUBLIC_ANALYTICS_SCRIPT_URL` | 统计脚本的完整地址，如自建 Umami 的 `https://<域名>/script.js` |
+
+只有同时设置服务商和脚本地址才会注入脚本。修改环境文件后重新创建前端容器即可生效，无需重新构建镜像；已有站点按[已有站点发布](#已有站点发布)流程切换，或在维护窗口内执行 `docker compose --env-file "$release_env" -f compose.production.yaml up -d --no-deps --no-build --pull never frontend`，只重建前端容器。
+
+前端在运行时读取 `NUXT_PUBLIC_ANALYTICS_SCRIPT_URL`，把该脚本的 origin 追加到 CSP 的 `script-src` 与 `connect-src`，预构建镜像无需重新构建；Umami 与 Plausible 默认向脚本同源地址上报，因此只放行脚本 origin。上报地址与脚本不同源时需另行调整 CSP。统计脚本只在浏览器端注入，访客开启“请勿追踪”（DNT）或全球隐私控制（GPC）时不加载。接入后在浏览器开发者工具中核对脚本加载和上报请求均成功。
+
 ## 预检与首次安装
 
 以下示例中的配置和备份路径应替换为实际仓库外目录：
+
+```sh
+release_env=../tixxin-private/production.env
+origin=https://blog.example.com
+node scripts/release/release.mjs --env-file "$release_env" --version "$release_version" --origin "$origin"
+```
+
+PowerShell：
 
 ```powershell
 $releaseEnv = '../tixxin-private/production.env'
@@ -72,6 +174,13 @@ node scripts/release/release.mjs --env-file $releaseEnv --version $releaseVersio
 默认只解析配置、检查入口约定和本地镜像，不创建服务或卷。脚本显式指定环境文件，并清除当前 shell 对模板变量的覆盖，仅 `--version` 覆盖文件版本。预检不证明 DNS、证书签发、生产凭据有效性或数据库兼容性。
 
 首次安装要求项目尚无容器且全部目标卷不存在：
+
+```sh
+node scripts/release/release.mjs --env-file "$release_env" --version "$release_version" --origin "$origin" --initialize
+node scripts/release/release.mjs --env-file "$release_env" --version "$release_version" --origin "$origin" --initialize --apply
+```
+
+PowerShell：
 
 ```powershell
 node scripts/release/release.mjs --env-file $releaseEnv --version $releaseVersion --origin $origin --initialize
@@ -84,15 +193,34 @@ node scripts/release/release.mjs --env-file $releaseEnv --version $releaseVersio
 
 在受控终端环境设置 `ADMIN_DEFAULT_USERNAME` 与至少 12 位随机 `ADMIN_DEFAULT_PASSWORD`，不要把密码写入命令参数或日志。服务镜像就绪后执行：
 
+```sh
+read -rp '登录名：' ADMIN_DEFAULT_USERNAME && export ADMIN_DEFAULT_USERNAME
+read -rsp '密码：' ADMIN_DEFAULT_PASSWORD && echo && export ADMIN_DEFAULT_PASSWORD
+docker compose --env-file "$release_env" -f compose.production.yaml run --rm --no-deps -e ADMIN_DEFAULT_USERNAME -e ADMIN_DEFAULT_PASSWORD backend node dist/admin-bootstrap.js
+unset ADMIN_DEFAULT_USERNAME ADMIN_DEFAULT_PASSWORD
+```
+
+PowerShell：
+
 ```powershell
+$env:ADMIN_DEFAULT_USERNAME = Read-Host '登录名'
+$env:ADMIN_DEFAULT_PASSWORD = Read-Host '密码' -MaskInput
 docker compose --env-file $releaseEnv -f compose.production.yaml run --rm --no-deps -e ADMIN_DEFAULT_USERNAME -e ADMIN_DEFAULT_PASSWORD backend node dist/admin-bootstrap.js
+Remove-Item Env:ADMIN_DEFAULT_USERNAME, Env:ADMIN_DEFAULT_PASSWORD
 ```
 
 该命令只创建账号，同名账号已存在时拒绝覆盖；完成后移除终端密码环境变量，再访问 `/admin/login`。`seed:dev` 会插入开发内容，不能用于生产初始化。个人资料和首批内容在后台明确维护、审核后发布。
 
 ## 重置管理员密码
 
-忘记密码或怀疑凭据泄露时，在服务器本机通过一次性容器执行；该操作没有 HTTP 入口。新密码至少 12 位，可在受控终端设置 `ADMIN_RESET_PASSWORD`，未设置时在交互终端隐藏输入两次。存在多个管理员时用 `ADMIN_RESET_USERNAME` 指定账号：
+忘记密码或怀疑凭据泄露时，在服务器本机通过一次性容器执行；该操作没有 HTTP 入口。新密码至少 12 位，可在受控终端设置 `ADMIN_RESET_PASSWORD`，未设置时在交互终端隐藏输入两次。存在多个管理员时用 `ADMIN_RESET_USERNAME` 指定账号。第一条交互输入，第二条从环境变量读取：
+
+```sh
+docker compose --env-file "$release_env" -f compose.production.yaml run --rm --no-deps -it backend node dist/admin-reset-password.js
+docker compose --env-file "$release_env" -f compose.production.yaml run --rm --no-deps -e ADMIN_RESET_USERNAME -e ADMIN_RESET_PASSWORD backend node dist/admin-reset-password.js
+```
+
+PowerShell：
 
 ```powershell
 docker compose --env-file $releaseEnv -f compose.production.yaml run --rm --no-deps -it backend node dist/admin-reset-password.js
@@ -106,6 +234,14 @@ docker compose --env-file $releaseEnv -f compose.production.yaml run --rm --no-d
 ## 已有站点发布
 
 先为实际目标创建最新一致完整备份，并完成清单/文件校验；需要时另外做隔离恢复。备份必须包含数据库和登记媒体，普通 dump 不能代替完整备份。目标、快照时间和媒体范围由操作者核对，脚本不能证明任意输入目录属于即将升级的站点。
+
+```sh
+backup_directory=../tixxin-private/backups/verified-backup
+node scripts/release/release.mjs --env-file "$release_env" --version "$release_version" --origin "$origin" --backup-directory "$backup_directory"
+node scripts/release/release.mjs --env-file "$release_env" --version "$release_version" --origin "$origin" --backup-directory "$backup_directory" --apply
+```
+
+PowerShell：
 
 ```powershell
 $backupDirectory = '../tixxin-private/backups/verified-backup'
@@ -123,8 +259,16 @@ node scripts/release/release.mjs --env-file $releaseEnv --version $releaseVersio
 
 确认目标应用兼容当前数据库结构及新写入数据后，才使用回退模式：
 
+```sh
+rollback_version=0.1.0 # 替换为已验证的旧版本
+node scripts/release/release.mjs --env-file "$release_env" --version "$rollback_version" --origin "$origin" --action rollback --database-compatible --backup-directory "$backup_directory"
+```
+
+PowerShell：
+
 ```powershell
-node scripts/release/release.mjs --env-file $releaseEnv --version <已验证旧版本> --origin $origin --action rollback --database-compatible --backup-directory $backupDirectory
+$rollbackVersion = '0.1.0' # 替换为已验证的旧版本
+node scripts/release/release.mjs --env-file $releaseEnv --version $rollbackVersion --origin $origin --action rollback --database-compatible --backup-directory $backupDirectory
 ```
 
 核对预检后追加 `--apply`。回退只切换应用镜像，保持持久化卷，跳过迁移并检查入口；`--database-compatible` 是操作者的明确判断，不是自动兼容验证。
@@ -134,6 +278,13 @@ node scripts/release/release.mjs --env-file $releaseEnv --version <已验证旧�
 ## 可选 worker 与运行观察
 
 SMTP、自动备份和持续 worker 默认关闭。先按[运行维护](operations.md)配置通道和数据库控制状态，再明确启用：
+
+```sh
+docker compose --env-file "$release_env" -f compose.production.yaml --profile worker run --rm worker node scripts/operations.mjs status
+docker compose --env-file "$release_env" -f compose.production.yaml --profile worker up -d --no-build --pull never worker
+```
+
+PowerShell：
 
 ```powershell
 docker compose --env-file $releaseEnv -f compose.production.yaml --profile worker run --rm worker node scripts/operations.mjs status
@@ -150,7 +301,78 @@ Caddy 入口为响应追加 `Strict-Transport-Security: max-age=31536000`（不�
 
 ## 本地编排与隔离验证
 
-需要不接触已有部署的本地编排时，按 `compose.yaml` 配置独立环境文件，执行 `docker compose --env-file <本地配置> up --build -d`。该编排使用独立卷；本机 HTTP 入口不能替代真实 HTTPS 登录和发布验证。
+需要不接触已有部署、也不复用开发数据库的生产式本机预览时，使用根 `compose.yaml`。它从源码构建前端、API 和迁移镜像，`up` 时先运行一次性迁移再启动 API 与前端，只在 `127.0.0.1` 发布前端端口；数据库与媒体使用该 Compose 项目自己的卷（项目名默认取仓库目录名）。本机 HTTP 入口不能替代真实 HTTPS 登录和发布验证。
+
+| 变量                | 要求                                                           |
+| ------------------- | -------------------------------------------------------------- |
+| `POSTGRES_PASSWORD` | 必填，随机十六进制值                                           |
+| `JWT_ACCESS_SECRET` | 必填，至少 32 位随机值                                         |
+| `WEB_PORT`          | 可选，宿主端口，默认 `3458`                                    |
+| `SITE_URL`          | 可选，默认 `http://localhost:3458`；修改 `WEB_PORT` 时同步修改 |
+
+1. 在仓库外建立环境文件（已有文件不要覆盖）：
+
+   ```sh
+   preview_env=../tixxin-local/compose.env
+   install -d -m 700 ../tixxin-local
+   test -e "$preview_env" || (
+     umask 077
+     printf 'POSTGRES_PASSWORD=%s\nJWT_ACCESS_SECRET=%s\nWEB_PORT=3458\nSITE_URL=http://localhost:3458\n' \
+       "$(openssl rand -hex 32)" "$(openssl rand -hex 32)" > "$preview_env"
+   )
+   ```
+
+   PowerShell（7.2 及以上）：
+
+   ```powershell
+   $previewEnv = '../tixxin-local/compose.env'
+   New-Item -ItemType Directory -Force ../tixxin-local | Out-Null
+   function New-HexSecret { -join ([Security.Cryptography.RandomNumberGenerator]::GetBytes(32) | ForEach-Object { $_.ToString('x2') }) }
+   if (-not (Test-Path $previewEnv)) {
+     "POSTGRES_PASSWORD=$(New-HexSecret)", "JWT_ACCESS_SECRET=$(New-HexSecret)", 'WEB_PORT=3458', 'SITE_URL=http://localhost:3458' |
+       Set-Content -Encoding utf8NoBOM $previewEnv
+   }
+   ```
+
+2. 构建并启动，等待 `backend` 与 `frontend` 为 healthy、`migration` 已成功退出：
+
+   ```sh
+   docker compose --env-file "$preview_env" up --build -d
+   docker compose --env-file "$preview_env" ps -a
+   ```
+
+   PowerShell：
+
+   ```powershell
+   docker compose --env-file $previewEnv up --build -d
+   docker compose --env-file $previewEnv ps -a
+   ```
+
+3. 初始化管理员。与[生产初始化](#初始化管理员)相同，密码至少 12 位，只通过环境变量传入：
+
+   ```sh
+   read -rp '登录名：' ADMIN_DEFAULT_USERNAME && export ADMIN_DEFAULT_USERNAME
+   read -rsp '密码：' ADMIN_DEFAULT_PASSWORD && echo && export ADMIN_DEFAULT_PASSWORD
+   docker compose --env-file "$preview_env" run --rm --no-deps -e ADMIN_DEFAULT_USERNAME -e ADMIN_DEFAULT_PASSWORD backend node dist/admin-bootstrap.js
+   unset ADMIN_DEFAULT_USERNAME ADMIN_DEFAULT_PASSWORD
+   ```
+
+   PowerShell：
+
+   ```powershell
+   $env:ADMIN_DEFAULT_USERNAME = Read-Host '登录名'
+   $env:ADMIN_DEFAULT_PASSWORD = Read-Host '密码' -MaskInput
+   docker compose --env-file $previewEnv run --rm --no-deps -e ADMIN_DEFAULT_USERNAME -e ADMIN_DEFAULT_PASSWORD backend node dist/admin-bootstrap.js
+   Remove-Item Env:ADMIN_DEFAULT_USERNAME, Env:ADMIN_DEFAULT_PASSWORD
+   ```
+
+   忘记预览账号密码时，用同样的方式运行 `backend node dist/admin-reset-password.js`，参数见[重置管理员密码](#重置管理员密码)。
+
+4. 按 `SITE_URL` 的地址打开网站与 `/admin/login`。API 按生产模式运行，刷新 Cookie 带 `Secure`；请通过 `localhost` 访问，浏览器对本机 HTTP 上 Secure Cookie 的处理不一致时，以真实 HTTPS 环境的验证为准。新库没有公开内容，也不执行开发 seed。
+
+5. 停止预览使用 `docker compose --env-file "$preview_env" down`（PowerShell 将变量换成 `$previewEnv`），数据卷保留。只有确认不再需要这份预览数据时才追加 `-v` 删除本项目的卷；不要对生产项目使用 `down -v`。
+
+发布脚本与生产式编排的自动化验证：
 
 ```sh
 node --test scripts/release/release.test.mjs scripts/release/production-artifact-cleanup.test.mjs

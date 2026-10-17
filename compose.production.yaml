@@ -104,6 +104,10 @@ services:
       NUXT_PUBLIC_SITE_URL: ${SITE_URL:?请配置 HTTPS 站点地址}
       NUXT_PUBLIC_USE_MOCK_REPO: 'false'
       NUXT_PUBLIC_POST_USE_MOCK_REPO: 'false'
+      # 访问统计默认关闭；运行时读取，无需重新构建镜像。
+      NUXT_PUBLIC_ANALYTICS_PROVIDER: ${ANALYTICS_PROVIDER:-}
+      NUXT_PUBLIC_ANALYTICS_SITE_ID: ${ANALYTICS_SITE_ID:-}
+      NUXT_PUBLIC_ANALYTICS_SCRIPT_URL: ${ANALYTICS_SCRIPT_URL:-}
     depends_on:
       backend:
         condition: service_healthy
