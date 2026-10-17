@@ -79,6 +79,8 @@ for (const theme of ['nexus', 'aurora', 'dock']) {
       await page.goto('/about')
       let fail = true
       await page.route('**/api/v1/flashes?**', (route) => (fail ? route.fulfill(unavailable) : route.continue()))
+      // 侧栏概览是独立接口，同时故障时统计不能显示为 0
+      await page.route('**/api/v1/flashes/overview', (route) => (fail ? route.fulfill(unavailable) : route.continue()))
       await page.locator('a[href="/flash"]:visible').first().click()
       const feedback = page.locator('.flash-note-list .request-feedback')
       await expect(feedback).toContainText('闪念服务暂时不可用')

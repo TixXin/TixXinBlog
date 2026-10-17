@@ -77,7 +77,8 @@
 
 <script setup lang="ts">
 const props = defineProps<{
-  noteDates: string[] // ISO 日期字符串数组（前 10 字符即可）
+  /** 有闪念的 UTC 日期与条数（来自闪念概览），可覆盖任意历史月份 */
+  dates: { date: string; count: number }[]
   selectedDate?: string | null
 }>()
 
@@ -134,9 +135,9 @@ interface CalendarDay {
 
 const noteDateMap = computed(() => {
   const map = new Map<string, number>()
-  props.noteDates.forEach((d) => {
-    const key = d.slice(0, 10)
-    map.set(key, (map.get(key) || 0) + 1)
+  props.dates.forEach(({ date, count }) => {
+    const key = date.slice(0, 10)
+    map.set(key, (map.get(key) || 0) + count)
   })
   return map
 })
@@ -172,11 +173,11 @@ const calendarDays = computed<(CalendarDay | null)[]>(() => {
 
 const monthNoteCount = computed(() => {
   const prefix = `${viewYear.value}-${String(viewMonth.value + 1).padStart(2, '0')}`
-  return props.noteDates.filter((d) => d.startsWith(prefix)).length
+  return props.dates.reduce((sum, { date, count }) => (date.startsWith(prefix) ? sum + count : sum), 0)
 })
 
 const streak = computed(() => {
-  const sortedDates = [...new Set(props.noteDates.map((d) => d.slice(0, 10)))].sort().reverse()
+  const sortedDates = [...noteDateMap.value.keys()].sort().reverse()
   if (sortedDates.length === 0) return 0
   // 全程 UTC：本地 setHours 与 toISOString 混用会在东八区等时区错位一天
   const today = new Date()

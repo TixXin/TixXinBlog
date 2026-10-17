@@ -9,6 +9,7 @@ import type {
   FlashCommentDraft,
   FlashNote,
   FlashNoteDraft,
+  FlashOverview,
   FlashPublicPage,
   FlashPublicPageQuery,
 } from './types'
@@ -102,14 +103,24 @@ export class HttpFlashRepository implements FlashNoteRepository {
     } while ((page - 1) * 100 < total)
     return [...notes.values()]
   }
-  /** 公开列表只读一页：SSR 首屏与“加载更多”共用，服务端负责标签与关键词筛选。 */
+  /** 公开列表只读一页：SSR 首屏与“加载更多”共用，服务端负责标签、类型、日期与关键词筛选。 */
   listPublicPage(query: FlashPublicPageQuery): Promise<FlashPublicPage> {
     const tag = query.tag?.trim()
     const q = query.q?.trim()
-    if (tag && q) return Promise.reject(new Error('公开闪念接口不支持同时按标签和关键词分页'))
     return this.publicRequest<FlashPublicPage>(q ? '/flashes/search' : '/flashes', {
-      query: { page: query.page, pageSize: query.pageSize, ...(q ? { q } : {}), ...(tag ? { tag } : {}) },
+      query: {
+        page: query.page,
+        pageSize: query.pageSize,
+        ...(q ? { q } : {}),
+        ...(tag ? { tag } : {}),
+        ...(query.type ? { type: query.type } : {}),
+        ...(query.date ? { date: query.date } : {}),
+      },
     })
+  }
+  /** 公开概览：一次聚合读取，带访客头以取得个人已赞编号 */
+  overview(): Promise<FlashOverview> {
+    return this.publicRequest<FlashOverview>('/flashes/overview')
   }
   list(_userId: string) {
     return this.all(false)

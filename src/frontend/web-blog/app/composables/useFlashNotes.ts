@@ -7,13 +7,21 @@
  * 设计原则：
  * - 所有数据操作都委托给 FlashNoteRepository，本文件不直接读写 localStorage
  * - 跨页面通过 useState 共享实体列表，公开回访按 30 秒新鲜期重新验证
- * - 真实接口的公开视图按页读取：SSR 直出第一页，后续页按需追加；标签与关键词交给后端分页，
- *   后端暂不支持的类型、日期筛选与侧栏聚合使用挂载后空闲时读取的公开概览（listPublic）
+ * - 真实接口的公开视图按页读取：SSR 直出第一页，后续页按需追加；标签、类型、UTC 日期与关键词均交给后端分页，
+ *   侧栏聚合（日历、统计、标签云、时间胶囊）与访客已赞状态来自挂载后读取的公开概览接口（GET /flashes/overview）
  * - 未登录时回退展示博主（owner）的闪念列表（只读）；登录后切换到当前用户自己的列表
  * - 写操作仅对登录用户开放，未登录触发 useLoginDrawer.open()
  */
 
-import type { FlashComment, FlashNote, FlashNoteDraft, FlashPublicPageQuery } from '~/features/flash/types'
+import type {
+  FlashComment,
+  FlashNote,
+  FlashNoteDraft,
+  FlashOverview,
+  FlashPublicPageQuery,
+  FlashType,
+} from '~/features/flash/types'
+import { summarizeFlashNotes } from '~/features/flash/overview'
 import { defaultFlashNoteSeeds, FLASH_SEEDS_VERSION } from '~/features/flash/mock'
 import { mockOwnerUser } from '~/features/auth/mock'
 import {
@@ -23,11 +31,22 @@ import {
   invalidateFlashNotes,
 } from '~/features/flash/state'
 
-/** 公开分页的服务端条件：标签与关键词互斥，均为空表示全部公开闪念 */
+/** 公开分页的服务端条件：可任意组合，全部为空表示全部公开闪念 */
 export interface FlashPublicFilter {
   tag: string | null
   q: string
+  type?: FlashType | null
+  /** UTC 日（YYYY-MM-DD） */
+  date?: string | null
 }
+
+/** 规范化筛选条件，空值统一为 null / 空串，便于比较与生成查询键 */
+function normalizeFilter(filter: FlashPublicFilter): Required<FlashPublicFilter> {
+  return { tag: filter.tag || null, q: filter.q.trim(), type: filter.type || null, date: filter.date || null }
+}
+const filterKey = (filter: Required<FlashPublicFilter>) =>
+  JSON.stringify([filter.tag, filter.q, filter.type, filter.date])
+const isUnfiltered = (filter: Required<FlashPublicFilter>) => !filter.tag && !filter.q && !filter.type && !filter.date
 
 const isPublicNote = (note: FlashNote) => !note.isDraft && !note.isArchived
 
@@ -79,16 +98,16 @@ export function useFlashNotes() {
   const serverRendered = useState('flash-notes-ssr', () => false)
   const moreLoading = useState('flash-more-loading', () => false)
   const moreError = useState<string | null>('flash-more-error', () => null)
-  // 公开概览：仅客户端读取，用于侧栏聚合与后端不支持的筛选，不进入 SSR payload
-  const overview = useState<FlashNote[]>('flash-overview', () => [])
+  // 公开概览：仅客户端读取，用于侧栏聚合与访客已赞状态，不进入 SSR payload
+  const overview = useState<FlashOverview | null>('flash-overview', () => null)
   const overviewLoaded = useState('flash-overview-loaded', () => false)
   const overviewLoading = useState('flash-overview-loading', () => false)
   const overviewError = useState<string | null>('flash-overview-error', () => null)
   const overviewLoadedAt = useState('flash-overview-loaded-at', () => 0)
   const overviewVersion = useState('flash-overview-version', () => 0)
   /** 当前实例的公开查询；离开页面后回访从“全部”开始，与页面筛选控件的初始值一致 */
-  const publicFilter = ref<FlashPublicFilter>({ tag: null, q: '' })
-  const publicQueryKey = computed(() => JSON.stringify([publicFilter.value.tag, publicFilter.value.q]))
+  const publicFilter = ref<Required<FlashPublicFilter>>({ tag: null, q: '', type: null, date: null })
+  const publicQueryKey = computed(() => filterKey(publicFilter.value))
   const contentContext = useState<string>('page-content-context', () => '')
   /** 当前展示的所有者：owner（未登录回退）或 self（登录后看自己的） */
   const viewingScope = useState<'self' | 'owner'>('flash-notes-scope', () => 'owner')
@@ -124,12 +143,14 @@ export function useFlashNotes() {
     serverRendered.value = false
   }
 
-  function pageQuery(page: number, filter: FlashPublicFilter): FlashPublicPageQuery {
+  function pageQuery(page: number, filter: Required<FlashPublicFilter>): FlashPublicPageQuery {
     return {
       page,
       pageSize: FLASH_PUBLIC_PAGE_SIZE,
       ...(filter.tag ? { tag: filter.tag } : {}),
       ...(filter.q ? { q: filter.q } : {}),
+      ...(filter.type ? { type: filter.type } : {}),
+      ...(filter.date ? { date: filter.date } : {}),
     }
   }
 
@@ -188,7 +209,7 @@ export function useFlashNotes() {
         total.value = count
         pagesLoaded.value = read
         loadedQuery.value = queryKey
-        if (!filter.tag && !filter.q) publicTotal.value = count
+        if (isUnfiltered(filter)) publicTotal.value = count
         if (import.meta.server) serverRendered.value = true
         viewingScope.value = nextScope
         loaded.value = true
@@ -233,9 +254,8 @@ export function useFlashNotes() {
 
   /** 切换公开分页的服务端条件；条件不变时不重复请求 */
   function setPublicFilter(next: FlashPublicFilter) {
-    const normalized = { tag: next.tag || null, q: next.q.trim() }
-    if (normalized.tag && normalized.q) throw new Error('标签与关键词需要分别查询')
-    if (JSON.stringify([normalized.tag, normalized.q]) === publicQueryKey.value) return
+    const normalized = normalizeFilter(next)
+    if (filterKey(normalized) === publicQueryKey.value) return
     publicFilter.value = normalized
     if (pagedPublic.value) void load()
   }
@@ -266,12 +286,20 @@ export function useFlashNotes() {
     }
   }
 
+  /** 按概览中的已赞编号补齐列表的个人点赞状态（SSR 首屏不带访客身份） */
+  function applyLiked(likedIds: string[]) {
+    const liked = new Set(likedIds)
+    notes.value = notes.value.map((note) =>
+      !!note.liked === liked.has(note.id) ? note : { ...note, liked: liked.has(note.id) },
+    )
+  }
+
   /**
-   * 读取全部公开闪念作为概览：侧栏日历、统计、时间胶囊与标签云，以及后端暂不支持的类型/日期筛选。
-   * 只在客户端挂载后调用，不阻塞首屏；带访客头读取，顺带补齐首屏 SSR 缺少的个人点赞状态。
+   * 读取公开概览（一次聚合请求）：侧栏日历、统计、时间胶囊与标签云，以及首屏缺少的个人点赞状态。
+   * 只在客户端挂载后调用，不阻塞首屏；30 秒内复用，写后失效或身份变化时作废在途结果。
    */
   async function loadOverview(force = false) {
-    if (import.meta.server || !pagedPublic.value || !repo.listPublic) return
+    if (import.meta.server || !pagedPublic.value || !repo.overview) return
     const age = Date.now() - overviewLoadedAt.value
     if (overviewLoaded.value && !force && age >= 0 && age < FLASH_PUBLIC_FRESH_MS) return
     if (overviewLoading.value) return
@@ -281,13 +309,12 @@ export function useFlashNotes() {
     overviewLoading.value = true
     overviewError.value = null
     try {
-      const list = (await repo.listPublic()).filter(isPublicNote)
+      const result = await repo.overview()
       if (!owns()) return
-      overview.value = list
+      overview.value = result
       overviewLoaded.value = true
       overviewLoadedAt.value = Date.now()
-      const latest = new Map(list.map((note) => [note.id, note]))
-      notes.value = notes.value.map((note) => latest.get(note.id) ?? note)
+      applyLiked(result.likedIds)
     } catch (e) {
       if (owns()) overviewError.value = e instanceof Error ? e.message : String(e)
     } finally {
@@ -302,7 +329,6 @@ export function useFlashNotes() {
     assertOwner(owner)
     invalidateFlashNotes(app)
     notes.value = apply(notes.value)
-    if (pagedPublic.value && overview.value.length) overview.value = apply(overview.value)
     // 写入先完成而首次列表仍在途中时，撤销旧响应后重新取得完整集合。
     if (!loaded.value) void load(true)
     // 在途概览随写入作废；尚未取得概览时重新读取，侧栏不停在空白
@@ -386,6 +412,12 @@ export function useFlashNotes() {
     const owner = ownerKey.value
     const updated = await repo.toggleLike(id)
     acceptWrite(owner, (current) => current.map((n) => (n.id === id ? updated : n)))
+    // 概览中的已赞编号同步本次结果，翻到下一页或回访时不回退
+    const current = overview.value
+    if (pagedPublic.value && current) {
+      const others = current.likedIds.filter((likedId) => likedId !== id)
+      overview.value = { ...current, likedIds: updated.liked ? [...others, id] : others }
+    }
     return true
   }
 
@@ -481,32 +513,23 @@ export function useFlashNotes() {
     return true
   }
 
-  /** 侧栏聚合的数据源：公开分页视图用概览，私有视图与本地演示仍是完整集合 */
-  const aggregateNotes = computed(() => (pagedPublic.value ? overview.value : notes.value))
+  /** 侧栏聚合：公开分页视图用概览接口，私有视图与本地演示由已持有的完整集合计算 */
+  const overviewData = computed<FlashOverview | null>(() => {
+    if (pagedPublic.value) return overview.value
+    return loaded.value ? summarizeFlashNotes(notes.value) : null
+  })
   const aggregatesReady = computed(() => (pagedPublic.value ? overviewLoaded.value : loaded.value))
   /** 公开闪念总数：概览就绪前用首屏分页返回的总数 */
   const totalCount = computed<number | null>(() => {
     if (!pagedPublic.value) return loaded.value ? notes.value.length : null
-    return overviewLoaded.value ? overview.value.length : publicTotal.value
+    return overview.value?.total ?? publicTotal.value
   })
 
   /** 标签聚合：按出现次数倒序 */
-  const tagCloud = computed<{ name: string; count: number }[]>(() => {
-    const map = new Map<string, number>()
-    aggregateNotes.value.forEach((n) => {
-      n.tags.forEach((t) => {
-        map.set(t, (map.get(t) ?? 0) + 1)
-      })
-    })
-    return [...map.entries()].map(([name, count]) => ({ name, count })).sort((a, b) => b.count - a.count)
-  })
+  const tagCloud = computed<{ name: string; count: number }[]>(() => overviewData.value?.tags ?? [])
 
-  /** 本月新增数量 */
-  const monthlyCount = computed(() => {
-    const now = new Date()
-    const ym = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`
-    return aggregateNotes.value.filter((n) => n.createdAt.startsWith(ym)).length
-  })
+  /** 本月（UTC）新增数量 */
+  const monthlyCount = computed(() => overviewData.value?.monthCount ?? 0)
 
   return {
     notes,
@@ -521,11 +544,10 @@ export function useFlashNotes() {
     hasMore,
     moreLoading,
     moreError,
-    overview,
+    overview: overviewData,
     overviewLoaded,
     overviewLoading,
     overviewError,
-    aggregateNotes,
     aggregatesReady,
     totalCount,
     tagCloud,

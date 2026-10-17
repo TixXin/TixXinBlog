@@ -67,7 +67,8 @@
 | `GET /admin/taxonomy`                                                                  | 专栏和标签；写入入口在同一控制器   |
 | `GET /admin/comments`、`GET/PATCH /admin/comments/policy`                              | 评论管理与版本化审核策略           |
 | `POST /admin/comments/:id/moderation`、`POST /admin/comments/:id/reply`                | 影响范围确认后的审核与博主直接回复 |
-| `GET /flashes`、`GET /flashes/search`、`GET /flashes/:id`                              | 公开闪念列表、搜索及详情           |
+| `GET /flashes`、`GET /flashes/search`、`GET /flashes/:id`                              | 公开闪念列表、筛选、搜索及详情     |
+| `GET /flashes/overview`                                                                | 侧栏聚合与访客已赞，私有不缓存     |
 | `POST /flashes/:id/like`、`POST /flashes/:id/comments`                                 | 闪念互动                           |
 | `GET/POST /admin/flashes`、`GET/PATCH/DELETE /admin/flashes/:id`                       | 博主闪念管理                       |
 
@@ -82,6 +83,10 @@
 `GET /posts/archive` 接受可选 `year`（1–9999）、`page`（默认 1，最大 1000000）、`pageSize`（默认 50，最大 100），仅返回已发布且未回收文章。响应为 `{ items, total, page, pageSize, years }`；`items` 每项包含 `id/slug/seoNoindex/title/folder/date/updatedAt`（`updatedAt` 口径同文章详情），按 `published_at DESC, id DESC` 排序，日期为 ISO UTC。`total` 是当前年份筛选后的总数，`years` 是所有公开年份的 `{ year, count }` 数组，按 UTC 年份倒序；列表、总数与年份计数来自同一查询快照。空年份或越界页返回空 `items`，保留真实总数和全部年份计数。归档页面用 `/archive?year=2026&page=2` 保存筛选与页码，每页只渲染 50 条，不累计历史页 DOM。
 
 批量任务绑定具体 ID、版本和影响范围，有执行期限及逐项结果；重复执行查询原结果。软删除与发布状态分开，永久删除需确认关联集合。媒体不会因删除文章而直接从磁盘移除。
+
+`GET /flashes` 接受 `page`（默认 1）、`pageSize`（默认 20，最大 100）及可任意组合的筛选：`tag`（标签精确匹配）、`type`（`idea`/`todo`/`memo`）、`date`（`YYYY-MM-DD`，按 UTC 日）、`from`/`to`（`YYYY-MM-DD`，含首尾的 UTC 日范围，与 `date` 同时出现取交集）；日期须为真实存在的公历日，非法参数返回 400。`GET /flashes/search` 另需 `q`（1–200 字），匹配正文或任一标签包含关键词（不区分大小写，`%`/`_` 按字面处理），并可与上述筛选组合。列表与搜索只返回本站已发布、未归档的闪念，均按置顶优先、`createdAt` 倒序、编号倒序稳定分页，响应为 `{ items, total, page, pageSize }`，`total` 为筛选后的总数；带 `X-Visitor-Id` 时 `items[].liked` 反映该访客的点赞状态。
+
+`GET /flashes/overview` 一次返回闪念页侧栏所需的聚合，全部由数据库聚合或限量查询得到、只读：`total`（公开总数）、`monthCount`（当前 UTC 自然月新增）、`dates`（有闪念的 UTC 日期 `{ date, count }`，日期倒序，覆盖全部历史以支持日历翻月与连续天数）、`tags`（`{ name, count }`，次数倒序、同次数按名称）、`onThisDay`（UTC 月日与今天相同且年份更早的最近一条，无则 `null`）、`recollections`（随机抽取的最多 12 条回顾）与 `likedIds`（当前访客已点赞的公开闪念编号，未带 `X-Visitor-Id` 时为空数组）。`onThisDay` 与 `recollections` 只含 `{ id, content, createdAt }`，`content` 截取前 300 字。响应按访客区分，`Cache-Control: private, no-store`；限流与其他公开读取接口相同。公开闪念页 SSR 直出第一页列表，挂载后读取概览补齐侧栏与首屏个人点赞状态，类型、日期、标签与关键词筛选均走后端分页。
 
 源码入口：[post](../src/backend/server-main/src/modules/post/)、[comment](../src/backend/server-main/src/modules/comment/)、[flash](../src/backend/server-main/src/modules/flash/)。
 
