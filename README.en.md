@@ -46,13 +46,13 @@ Run everything from the repository root. Existing configuration, database volume
 
 2. **Prepare local configuration for both services.** Copy the [frontend template](src/frontend/web-blog/.env.example) to `.env` beside it, and the [backend template](src/backend/server-main/.env.example) to `.env.local` beside it. Never overwrite existing files. The values that matter:
 
-   | Backend setting              | Requirement                                                        |
-   | ---------------------------- | ------------------------------------------------------------------ |
-   | `DATABASE_URL`               | Points at the PostgreSQL database you intend to use                 |
-   | `JWT_ACCESS_SECRET`          | A random secret of at least 32 characters                           |
-   | `ADMIN_DEFAULT_USERNAME`     | The login name to create for the blog owner                         |
-   | `ADMIN_DEFAULT_PASSWORD`     | A random password of at least 12 characters — not the placeholder   |
-   | `NODE_ENV` / `CORS_ORIGIN`   | `development` / `http://localhost:3456`                             |
+   | Backend setting            | Requirement                                                       |
+   | -------------------------- | ----------------------------------------------------------------- |
+   | `DATABASE_URL`             | Points at the PostgreSQL database you intend to use               |
+   | `JWT_ACCESS_SECRET`        | A random secret of at least 32 characters                         |
+   | `ADMIN_DEFAULT_USERNAME`   | The login name to create for the blog owner                       |
+   | `ADMIN_DEFAULT_PASSWORD`   | A random password of at least 12 characters — not the placeholder |
+   | `NODE_ENV` / `CORS_ORIGIN` | `development` / `http://localhost:3456`                           |
 
    On the frontend keep `NUXT_PUBLIC_API_BASE_URL=/api/v1` and point `NUXT_API_BASE_URL` at your local API (the template uses `http://127.0.0.1:3457/api/v1`). Both mock switches stay `false`. Keep secrets in local configuration or a managed environment — never commit them.
 
@@ -93,15 +93,15 @@ Run everything from the repository root. Existing configuration, database volume
 
 ## Routes worth knowing
 
-| Purpose                                 | Path                                                                   |
-| --------------------------------------- | ---------------------------------------------------------------------- |
-| Posts, archive, cross-domain search     | `/`, `/archive`, `/search`                                              |
-| Subscription expenses                   | `/subscriptions`; admin at `/admin/subscriptions`; visitor records stay in the browser |
-| Image prompts                           | `/prompts`; the owner can add, edit and manage drafts in place          |
-| About, projects, gallery                | `/about`, `/projects`, `/gallery`                                       |
-| Flash notes, moments, guestbook         | `/flash`, `/moments`, `/guestbook`                                      |
-| Authoring and profile upkeep            | `/admin`, `/admin/site`, `/admin/media`                                 |
-| Notifications and backups               | `/admin/notifications`, `/admin/operations`, `/admin/maintenance`       |
+| Purpose                             | Path                                                                                   |
+| ----------------------------------- | -------------------------------------------------------------------------------------- |
+| Posts, archive, cross-domain search | `/`, `/archive`, `/search`                                                             |
+| Subscription expenses               | `/subscriptions`; admin at `/admin/subscriptions`; visitor records stay in the browser |
+| Image prompts                       | `/prompts`; the owner can add, edit and manage drafts in place                         |
+| About, projects, gallery            | `/about`, `/projects`, `/gallery`                                                      |
+| Flash notes, moments, guestbook     | `/flash`, `/moments`, `/guestbook`                                                     |
+| Authoring and profile upkeep        | `/admin`, `/admin/site`, `/admin/media`                                                |
+| Notifications and backups           | `/admin/notifications`, `/admin/operations`, `/admin/maintenance`                      |
 
 ## Repository layout
 
@@ -112,7 +112,7 @@ docs/                    Current usage, architecture and maintenance guides
 scripts/                 Development startup, checks and release tooling
 deploy/                  Production and HTTPS configuration templates
 patches/                 Patches required to pin dependency behaviour
-.github/workflows/       Continuous integration
+.github/workflows/       Continuous integration and releases
 ```
 
 Shared formatting, commit hooks and dependency configuration live at the root; personal editor settings and build artefacts stay out of version control. Module responsibilities are described in the [architecture guide](docs/architecture.md).
@@ -124,7 +124,7 @@ corepack pnpm build
 corepack pnpm --filter server-main build
 ```
 
-The root `build` builds the frontend; the backend builds separately. Production orchestration uses `compose.production.yaml` and the templates under `deploy/`. Before deploying, set your real domain, pin image versions, provide secrets and persistent storage, and run migrations first. See the [deployment guide](docs/deployment.md) and [backup and recovery](docs/backup-and-recovery.md).
+The root `build` builds the frontend; the backend builds separately. Every root script is described in the [scripts reference](docs/scripts.md). Production orchestration uses `compose.production.yaml` and the templates under `deploy/`. Before deploying, set your real domain, pin image versions, provide secrets and persistent storage, and run migrations first. Pushing a `v*` tag runs the Release workflow, which publishes multi-arch `web`, `api`, `migration` and `worker` images to GHCR and creates a GitHub Release; you can also build the images yourself on the target host. Both paths, Linux and PowerShell commands, and a local production-style preview are covered in the [deployment guide](docs/deployment.md) and [backup and recovery](docs/backup-and-recovery.md) (both in Chinese).
 
 Development setup, module boundaries, testing and PR expectations are in [CONTRIBUTING.md](CONTRIBUTING.md). The [documentation index](docs/README.md) covers development, architecture, API, content and themes. Please read the [Code of Conduct](CODE_OF_CONDUCT.md) before taking part. Release notes live in [CHANGELOG.md](CHANGELOG.md).
 

@@ -20,7 +20,7 @@ corepack pnpm install --frozen-lockfile
 | 前端 `NUXT_API_BASE_URL`        | 服务端使用的后端地址，包含 `/api/v1`                    |
 | 前端 `NUXT_PUBLIC_API_BASE_URL` | 浏览器同源入口，保持 `/api/v1`                          |
 | 前端 `NUXT_PUBLIC_SITE_URL`     | 对外站点 origin；影响分享、canonical 和订阅地址         |
-| 前端 `NUXT_DEVTOOLS_ENABLED`   | 默认关闭 Nuxt DevTools；仅 `true` 启用，修改后重启前端 |
+| 前端 `NUXT_DEVTOOLS_ENABLED`    | 默认关闭 Nuxt DevTools；仅 `true` 启用，修改后重启前端  |
 | `NUXT_PORT`                     | 统一启动器使用的前端端口，默认 3456                     |
 
 Nuxt DevTools 默认关闭，避免调试器在每次状态变化时遍历整份页面数据。需要调试时，在前端启动终端临时设置 `NUXT_DEVTOOLS_ENABLED=true` 后启动或重启前端；关闭面板不等于停用调试器。项目自带的 DEV 面板仍可使用。性能采样保持 DevTools 关闭，并分别记录开发与生产构建结果。
@@ -48,6 +48,8 @@ corepack pnpm --filter server-main migration:check
 corepack pnpm dev:check
 corepack pnpm dev:all
 ```
+
+全部根脚本的实际命令与边界见[根脚本说明](scripts.md)。
 
 `dev:check` 只读核对配置、依赖、数据库认证、待迁移项以及服务归属和就绪状态；未运行、冲突或故障返回非零。`dev:all` 先检查数据库，再启动或复用本项目 API 与前端；完整链路要求真实 API 模式。
 
