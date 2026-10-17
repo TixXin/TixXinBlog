@@ -15,6 +15,7 @@ interface ArchiveRow {
   title: string
   folder: string
   published_at: Date | string
+  updated_at: Date | string
 }
 interface TagRow {
   label: string
@@ -35,8 +36,13 @@ function archiveItem(row: ArchiveRow) {
     title: row.title,
     folder: row.folder,
     date: new Date(row.published_at).toISOString(),
+    updatedAt: new Date(row.updated_at).toISOString(),
   }
 }
+
+/** 内容修订时间：取当前修订快照写入时间，早于发布时间或缺失时回退发布时间（与 PostService.contentUpdatedAt 同口径） */
+const CONTENT_UPDATED_AT_SQL = `greatest(p.published_at, coalesce((select r.created_at from post_revision r
+  where r.post_id = p.id and r.revision = p.revision), p.published_at)) as updated_at`
 
 /** 从上线日期到今天的整天数，无效或未来日期按 0 */
 function siteAgeDays(launchedAt: string | null): number {
@@ -53,7 +59,8 @@ export class PostDiscoveryService {
     const [archive, tags, categories, sums, commentCount, activity, launch] = await Promise.all([
       includeArchive
         ? this.em.execute<ArchiveRow[]>(
-            "select id, slug, seo_noindex, title, folder, published_at from post where status = 'published' and deleted_at is null order by published_at desc, id desc",
+            `select p.id, p.slug, p.seo_noindex, p.title, p.folder, p.published_at, ${CONTENT_UPDATED_AT_SQL}
+            from post p where p.status = 'published' and p.deleted_at is null order by p.published_at desc, p.id desc`,
           )
         : Promise.resolve(undefined),
       this.em.execute<TagRow[]>(
@@ -100,9 +107,9 @@ export class PostDiscoveryService {
       { items: ArchiveRow[]; total: number; years: { year: number; count: number }[] }[]
     >(
       `with public_posts as (
-        select id,slug,seo_noindex,title,folder,published_at,
-          extract(year from published_at at time zone 'UTC')::int as year
-        from post where status='published' and deleted_at is null
+        select p.id,p.slug,p.seo_noindex,p.title,p.folder,p.published_at,${CONTENT_UPDATED_AT_SQL},
+          extract(year from p.published_at at time zone 'UTC')::int as year
+        from post p where p.status='published' and p.deleted_at is null
       ), selected as (select * from public_posts where (?::int is null or year=?::int)),
       page_items as (select * from selected order by published_at desc,id desc limit ? offset ?),
       year_counts as (select year,count(*)::int as count from public_posts group by year)

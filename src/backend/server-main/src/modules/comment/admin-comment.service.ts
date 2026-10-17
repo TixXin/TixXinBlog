@@ -47,6 +47,8 @@ export class AdminCommentService {
     }
     const [items, total] = await this.em.findAndCount(Comment, where, {
       populate: ['post'],
+      // 列表只展示文章标题与状态，限定关联列避免每条评论连带读取文章正文。
+      fields: ['*', 'post.id', 'post.title', 'post.status', 'post.deletedAt'],
       orderBy: { createdAt: 'desc', id: 'desc' },
       limit: query.pageSize,
       offset: (query.page - 1) * query.pageSize,
@@ -106,7 +108,11 @@ export class AdminCommentService {
   }
 
   async context(id: number, page: number) {
-    const target = await this.em.findOne(Comment, { id }, { populate: ['post'] })
+    const target = await this.em.findOne(
+      Comment,
+      { id },
+      { populate: ['post'], fields: ['*', 'post.id', 'post.title', 'post.status'] },
+    )
     if (!target) throw new NotFoundException('评论不存在')
     const ancestors: Comment[] = []
     let cursor = target
@@ -125,7 +131,12 @@ export class AdminCommentService {
         offset: (page - 1) * 20,
       },
     )
-    const serialize = (comment: Comment) => ({
+    const serialize = (
+      comment: Pick<
+        Comment,
+        'id' | 'status' | 'revision' | 'authorSnapshot' | 'content' | 'depth' | 'isOwner' | 'createdAt'
+      >,
+    ) => ({
       id: comment.id,
       status: comment.status,
       revision: comment.revision,

@@ -9,6 +9,17 @@
 const STORAGE_KEY = 'blog-visitor-id'
 let sessionVisitorId = ''
 
+/** 只读已持久化的访客 id，不生成新值；用于判断本设备是否可能已有个人互动记录 */
+export function hasStoredVisitorId(): boolean {
+  if (typeof window === 'undefined') return false
+  try {
+    const existing = window.localStorage.getItem(STORAGE_KEY)
+    return !!existing && /^[\x21-\x7e]{8,128}$/.test(existing)
+  } catch {
+    return !!sessionVisitorId
+  }
+}
+
 /** 取(或首次生成)访客 id;仅客户端可用,SSR 场景返回空串由调用方决定跳过 */
 export function ensureVisitorId(): string {
   if (typeof window === 'undefined') return ''

@@ -3,6 +3,9 @@
  * @description 文章业务逻辑：分页列表、详情映射、点赞切换、浏览 1 小时去重计数
  * @author TixXin
  * @since 2026-07-20
+ *
+ * 公开详情的 updatedAt 取当前修订快照的写入时间：实体 updatedAt 会随浏览、点赞与评论计数变化，
+ * 不能代表内容修改时间，直接用于 dateModified 与站点地图 lastmod 会造成无意义的频繁变更。
  */
 
 import { FilterQuery, LockMode } from '@mikro-orm/core'
@@ -13,6 +16,7 @@ import { Post, PostContentSection } from '../../entities/post.entity'
 import { PostLike } from '../../entities/post-like.entity'
 import { PostView } from '../../entities/post-view.entity'
 import { PostAddress } from '../../entities/post-address.entity'
+import { PostRevision } from '../../entities/post-revision.entity'
 import { QueryPostDto } from './dto/query-post.dto'
 import { resolveContentRelations } from '../content-relations/content-relations'
 
@@ -39,6 +43,11 @@ export interface PostItemDto {
 
 /** 详情，字段对齐前端 ArticleDetail（含 toc 扩展） */
 export interface ArticleDetailDto {
+  /** 内容最后修订时间（ISO UTC），不受浏览、点赞与评论计数影响 */
+  updatedAt: string
+  tags: PostItemDto['tags']
+  /** 仅在摘要为空时提供，取首个正文段落前 160 字，供描述与分享兜底 */
+  excerpt?: string
   relatedContent?: Awaited<ReturnType<typeof resolveContentRelations>>
   slug?: string
   summary?: string
@@ -55,7 +64,8 @@ export interface ArticleDetailDto {
   views: number
   likes: number
   comments: number
-  content: PostContentSection[]
+  /** 结构化正文仅在没有 Markdown 原文的旧文章上返回，避免同一正文传输两遍 */
+  content?: PostContentSection[]
   contentRaw?: string
   toc: Array<{ id: string; text: string; level: number }>
 }
@@ -65,6 +75,19 @@ export interface PostListResult {
   total: number
   page: number
   pageSize: number
+}
+
+/** 浏览计数结果：counted 表示本次是否计入（同一访客每小时只计一次） */
+export interface PostViewResult {
+  views: number
+  likes: number
+  liked: boolean
+  counted: boolean
+}
+
+/** 内容修订时间早于发布时间（如预约或回填发布日期）时按发布时间计，缺修订记录的旧数据同样回退。 */
+export function contentUpdatedAt(publishedAt: Date, revisedAt?: Date | null): Date {
+  return revisedAt && revisedAt > publishedAt ? revisedAt : publishedAt
 }
 
 const SORT_FIELD_MAP = { date: 'publishedAt', views: 'views', likes: 'likes' } as const
@@ -144,15 +167,27 @@ export class PostService {
   }
 
   async findDetail(id: number): Promise<ArticleDetailDto> {
-    const post = await this.em.findOne(Post, { id, status: 'published', deletedAt: null }, { populate: ['tags'] })
+    const post = await this.em.findOne(
+      Post,
+      { id, status: 'published', deletedAt: null },
+      { populate: ['tags'], fields: ['*', 'tags.label', 'tags.color'] },
+    )
     if (!post) throw new BusinessException(POST_NOT_FOUND, '文章不存在', HttpStatus.NOT_FOUND)
 
-    const content = post.contentSections ?? []
+    const [relatedContent, revision] = await Promise.all([
+      resolveContentRelations(this.em, post.relatedContent),
+      this.em.findOne(PostRevision, { post: post.id, revision: post.revision }, { fields: ['createdAt'] }),
+    ])
+    const sections = post.contentSections ?? []
+    const excerpt = post.summary
+      ? undefined
+      : sections.find((section) => section.type === 'paragraph' && section.text)?.text?.slice(0, 160)
     return {
       id: String(post.id),
-      relatedContent: await resolveContentRelations(this.em, post.relatedContent),
+      relatedContent,
       slug: post.slug,
       summary: post.summary,
+      ...(excerpt ? { excerpt } : {}),
       coverAlt: post.coverAlt,
       seoTitle: post.seoTitle,
       seoDescription: post.seoDescription,
@@ -160,15 +195,17 @@ export class PostService {
       title: post.title,
       cover: post.cover ?? '',
       date: post.publishedAt.toISOString(),
+      updatedAt: contentUpdatedAt(post.publishedAt, revision?.createdAt).toISOString(),
       // 契约约定：详情页 category 展示专栏名（api.md §7.2 示例为"前端开发"）
       category: post.folder,
+      tags: post.tags.getItems().map((tag) => ({ label: tag.label, color: tag.color })),
       readTime: `${post.readTimeMinutes} 分钟`,
       views: post.views,
       likes: post.likes,
       comments: post.commentCount,
-      content,
-      contentRaw: post.contentRaw,
-      toc: content
+      // 有 Markdown 原文时前端只渲染原文；目录仍由结构化正文中的标题生成。
+      ...(post.contentRaw ? { contentRaw: post.contentRaw } : { content: sections }),
+      toc: sections
         .filter((s) => s.type === 'heading' && s.id && s.text)
         .map((s) => ({ id: s.id as string, text: s.text as string, level: s.level ?? 2 })),
     }
@@ -196,8 +233,11 @@ export class PostService {
     })
   }
 
-  /** 浏览计数按整点小时桶去重，所有增量由行锁串行保护。 */
-  async addView(id: number, visitorIdHash: string): Promise<{ views: number }> {
+  /**
+   * 浏览计数按整点小时桶去重，所有增量由行锁串行保护。
+   * 同时返回当前访客的点赞状态，文章页挂载后一次请求即可同步互动计数。
+   */
+  async addView(id: number, visitorIdHash: string): Promise<PostViewResult> {
     return this.em.transactional(async (em) => {
       const post = await em.findOne(
         Post,
@@ -207,18 +247,24 @@ export class PostService {
       if (!post) throw new BusinessException(POST_NOT_FOUND, '文章不存在', HttpStatus.NOT_FOUND)
       const hourBucket = new Date()
       hourBucket.setMinutes(0, 0, 0)
+      // 事务内共用一条连接，逐条查询，不用 Promise.all。
       const seen = await em.findOne(PostView, { post, visitorIdHash, hourBucket })
+      const like = await em.findOne(PostLike, { post, visitorIdHash }, { fields: ['id'] })
       if (!seen) {
         em.create(PostView, { post, visitorIdHash, hourBucket, createdAt: new Date() })
         post.views += 1
         await em.flush()
       }
-      return { views: post.views }
+      return { views: post.views, likes: post.likes, liked: !!like, counted: !seen }
     })
   }
 
   async interaction(id: number, visitorIdHash: string): Promise<{ liked: boolean; likes: number; views: number }> {
-    const post = await this.em.findOne(Post, { id, status: 'published', deletedAt: null })
+    const post = await this.em.findOne(
+      Post,
+      { id, status: 'published', deletedAt: null },
+      { fields: ['id', 'likes', 'views'] },
+    )
     if (!post) throw new BusinessException(POST_NOT_FOUND, '文章不存在', HttpStatus.NOT_FOUND)
     const like = visitorIdHash ? await this.em.findOne(PostLike, { post, visitorIdHash }) : null
     return { liked: !!like, likes: post.likes, views: post.views }

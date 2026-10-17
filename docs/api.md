@@ -71,11 +71,15 @@
 | `POST /flashes/:id/like`、`POST /flashes/:id/comments`                                 | 闪念互动                           |
 | `GET/POST /admin/flashes`、`GET/PATCH/DELETE /admin/flashes/:id`                       | 博主闪念管理                       |
 
-文章公开列表只读取列表所需字段，正文检索仍由后端执行。评论可见性需要同时考虑所属文章、祖先、审核和删除状态；缓存计数与公开聚合遵循相同口径。专栏重命名与引用同步在事务内完成，仍被引用的目录项不能直接删除。
+文章公开列表只读取列表所需字段，正文检索仍由后端执行。
 
-`GET /posts/metadata` 保持旧完整响应：`tags/categories/stats/activity/archive`。`includeArchive` 默认为 `true`，只接受 `true` 或 `false`；显式 `false` 返回轻量 `tags/categories/stats/activity`，不查询或返回全量归档。公开页面与主题侧栏使用轻量模式，服务端 sitemap 继续使用完整模式并过滤 `seoNoindex`。
+`GET /posts/:id` 与 `GET /posts/by-slug/:slug` 返回公开详情：`tags` 与列表同为 `{ label, color }` 数组；`updatedAt` 是内容最后修订时间（当前修订快照的写入时间，早于发布时间或缺少快照时取发布时间），不随浏览、点赞或评论计数变化，用于 `dateModified`、`article:modified_time` 与站点地图 `lastmod`。有 Markdown 原文时只返回 `contentRaw`，不再返回结构化 `content`；没有原文的旧文章仍返回 `content` 供结构化渲染。`toc` 始终由结构化正文中的标题生成。摘要为空时额外返回 `excerpt`（首个正文段落前 160 字）作为描述兜底。
 
-`GET /posts/archive` 接受可选 `year`（1–9999）、`page`（默认 1，最大 1000000）、`pageSize`（默认 50，最大 100），仅返回已发布且未回收文章。响应为 `{ items, total, page, pageSize, years }`；`items` 每项包含 `id/slug/seoNoindex/title/folder/date`，按 `published_at DESC, id DESC` 排序，日期为 ISO UTC。`total` 是当前年份筛选后的总数，`years` 是所有公开年份的 `{ year, count }` 数组，按 UTC 年份倒序；列表、总数与年份计数来自同一查询快照。空年份或越界页返回空 `items`，保留真实总数和全部年份计数。归档页面用 `/archive?year=2026&page=2` 保存筛选与页码，每页只渲染 50 条，不累计历史页 DOM。
+`POST /posts/:id/view` 按访客每整点小时去重计数，响应 `{ views, likes, liked, counted }`（私有、不缓存）：`counted` 表示本次是否计入，`likes/liked` 与 `GET /posts/:id/interaction` 同口径，文章页挂载后一次请求即可同步计数与点赞状态；计数失败时前端再回退到 `interaction`。评论可见性需要同时考虑所属文章、祖先、审核和删除状态；缓存计数与公开聚合遵循相同口径。专栏重命名与引用同步在事务内完成，仍被引用的目录项不能直接删除。
+
+`GET /posts/metadata` 保持旧完整响应：`tags/categories/stats/activity/archive`。`includeArchive` 默认为 `true`，只接受 `true` 或 `false`；显式 `false` 返回轻量 `tags/categories/stats/activity`，不查询或返回全量归档。完整模式的 `archive` 项与 `GET /posts/archive` 字段相同（含 `updatedAt`）。公开页面与主题侧栏使用轻量模式，服务端 sitemap 继续使用完整模式、过滤 `seoNoindex` 并以 `updatedAt` 作为文章 `lastmod`。
+
+`GET /posts/archive` 接受可选 `year`（1–9999）、`page`（默认 1，最大 1000000）、`pageSize`（默认 50，最大 100），仅返回已发布且未回收文章。响应为 `{ items, total, page, pageSize, years }`；`items` 每项包含 `id/slug/seoNoindex/title/folder/date/updatedAt`（`updatedAt` 口径同文章详情），按 `published_at DESC, id DESC` 排序，日期为 ISO UTC。`total` 是当前年份筛选后的总数，`years` 是所有公开年份的 `{ year, count }` 数组，按 UTC 年份倒序；列表、总数与年份计数来自同一查询快照。空年份或越界页返回空 `items`，保留真实总数和全部年份计数。归档页面用 `/archive?year=2026&page=2` 保存筛选与页码，每页只渲染 50 条，不累计历史页 DOM。
 
 批量任务绑定具体 ID、版本和影响范围，有执行期限及逐项结果；重复执行查询原结果。软删除与发布状态分开，永久删除需确认关联集合。媒体不会因删除文章而直接从磁盘移除。
 
@@ -97,7 +101,7 @@
 
 状态为 `draft/published/archived`，公开入口排除非公开和删除项。列表默认按置顶、发布时间、创建时间、ID 倒序；`pinnedFirst=false` 用于纯时间订阅。UTC 日期为 `YYYY-MM-DD`，筛选使用半开区间。
 
-评论按动态、服务端访客身份和 `requestId` 去重，隐藏/删除后的旧提交不能重新公开。编辑可以保留已失效的原文章关系，新关系只允许可选择目标；公开投影不泄露私有文章。源码见[moment](../src/backend/server-main/src/modules/moment/)。
+评论按动态、服务端访客身份和 `requestId` 去重，隐藏/删除后的旧提交不能重新公开。编辑可以保留已失效的原文章关系，新关系只允许可选择目标；公开投影不泄露私有文章，引用文章只读取卡片所需的标题、摘要、封面、地址与可见性列，不读取正文。`GET /moments/overview` 的 `dates` 包含全部有公开动态的 UTC 日期（日历可翻到任意历史月份并计算连续天数），`recollections` 不含引用文章。源码见[moment](../src/backend/server-main/src/modules/moment/)。
 
 ## 留言
 
@@ -159,25 +163,25 @@
 
 ## 站点、媒体、运营与维护
 
-| 入口                                                                                 | 契约                                                              |
-| ------------------------------------------------------------------------------------ | ----------------------------------------------------------------- |
-| `GET /site`                                                                          | 公共站点资料，剔除隐藏关于字段，不缓存；提供内容上下文            |
-| `GET/PATCH /admin/site`、`GET /admin/site/revisions`                                 | 完整资料、版本化保存与历史；具体版本/恢复入口见控制器             |
+| 入口                                                 | 契约                                                   |
+| ---------------------------------------------------- | ------------------------------------------------------ |
+| `GET /site`                                          | 公共站点资料，剔除隐藏关于字段，不缓存；提供内容上下文 |
+| `GET/PATCH /admin/site`、`GET /admin/site/revisions` | 完整资料、版本化保存与历史；具体版本/恢复入口见控制器  |
 
 站点资料含可选的 `presenceLabel`（≤20）、`presenceSignature`（≤60）、`presenceStatus`（空串、`online`、`idle`、`busy`）与 `launchedAt`（`YYYY-MM-DD` 或空）：前两者驱动名片的在线状态与签名，都为空时保持离线；`presenceStatus` 决定状态点的类型，空串时按在线展示；`launchedAt` 决定 `GET /posts/metadata` 里 `stats.siteAgeDays` 的起点，缺省回退到最早公开文章的发布日。旧客户端与旧内容包可不携带这几项，缺省按空串处理且保存时沿用当前值。
-| `GET/POST /admin/media`                                                              | 服务端分页筛选与 multipart `file` 上传，可带 `uploadId/alt`       |
-| `PATCH/DELETE /admin/media/:id`、`POST /admin/media/:id/restore`                     | 独立资料更新、回收与恢复                                          |
-| `GET /admin/media/:id/references`、`GET /media/:uuid.webp`                           | 管理引用明细与公开 WebP 字节                                      |
-| `GET /admin/content-relations`                                                       | 管理端选择有向关联目标，最终关系随来源内容版本保存                |
-| `GET /admin/overview`                                                                | 服务端真实草稿、互动待办与最近编辑聚合                            |
-| `GET /admin/notifications`、`GET /admin/notifications/summary`                       | 通知分页与未读统计；详情实时解析业务状态                          |
-| `POST /admin/notifications/:id/read`                                                 | 仅改变已读，不完成审核或回复                                      |
-| `GET /admin/operations`、`GET /admin/operations/tasks/:id`                           | 脱敏运行摘要与指定任务                                            |
-| `POST /admin/operations/tasks/:id/retry`                                             | 核对当前状态后的显式人工重试                                      |
-| `GET /admin/maintenance/diagnostics`、`POST /admin/maintenance/media-check`          | 数据库/结构就绪与登记媒体完整性                                   |
-| `POST /admin/backup/export`                                                          | 内容包下载，可选择是否包含媒体                                    |
-| `POST /admin/backup/imports/preview`                                                 | multipart `file/requestId/strategy/includeSettings`，生成预览票据 |
-| `GET /admin/backup/imports`、`GET /admin/backup/imports/:id`                         | 当前管理员的票据与原结果                                          |
-| `POST /admin/backup/imports/:id/repreview`、`POST /admin/backup/imports/:id/execute` | 重新预览或绑定摘要执行；执行需契约要求的确认文本与 confirmation   |
+| `GET/POST /admin/media` | 服务端分页筛选与 multipart `file` 上传，可带 `uploadId/alt` |
+| `PATCH/DELETE /admin/media/:id`、`POST /admin/media/:id/restore` | 独立资料更新、回收与恢复 |
+| `GET /admin/media/:id/references`、`GET /media/:uuid.webp[?w=320\|640\|960\|1280]` | 管理引用明细与公开 WebP 字节；`w` 取白名单宽度的缓存变体，其他值 400 |
+| `GET /admin/content-relations` | 管理端选择有向关联目标，最终关系随来源内容版本保存 |
+| `GET /admin/overview` | 服务端真实草稿、互动待办与最近编辑聚合 |
+| `GET /admin/notifications`、`GET /admin/notifications/summary` | 通知分页与未读统计；详情实时解析业务状态 |
+| `POST /admin/notifications/:id/read` | 仅改变已读，不完成审核或回复 |
+| `GET /admin/operations`、`GET /admin/operations/tasks/:id` | 脱敏运行摘要与指定任务 |
+| `POST /admin/operations/tasks/:id/retry` | 核对当前状态后的显式人工重试 |
+| `GET /admin/maintenance/diagnostics`、`POST /admin/maintenance/media-check` | 数据库/结构就绪与登记媒体完整性 |
+| `POST /admin/backup/export` | 内容包下载，可选择是否包含媒体 |
+| `POST /admin/backup/imports/preview` | multipart `file/requestId/strategy/includeSettings`，生成预览票据 |
+| `GET /admin/backup/imports`、`GET /admin/backup/imports/:id` | 当前管理员的票据与原结果 |
+| `POST /admin/backup/imports/:id/repreview`、`POST /admin/backup/imports/:id/execute` | 重新预览或绑定摘要执行；执行需契约要求的确认文本与 confirmation |
 
 媒体搜索参数为 `search/orientation/usage/deleted`，说明与替代文本独立保存；被当前或历史内容引用的资源拒绝回收。内容包票据绑定管理员、内容代次、目标版本和预览摘要，重复执行返回原结果。接口层约束不能替代[备份恢复](backup-and-recovery.md)与[运行任务](operations.md)中的完整操作流程。

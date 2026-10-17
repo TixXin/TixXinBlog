@@ -1,6 +1,6 @@
 /**
  * @file useArticleComments.ts
- * @description 评论数据源及游客身份协调；SSR 读取公共评论，挂载后恢复设备点赞状态
+ * @description 评论数据源及游客身份协调；SSR 读取公共评论，水合后仅在设备已有访客身份时恢复点赞状态
  */
 import { invalidatePublicReads } from '~/utils/invalidatePublicReads'
 import { createComment, fetchComments, toggleCommentLike } from '~/features/post/api'
@@ -8,6 +8,7 @@ import { createCommentController, findComment } from '~/features/post/commentCon
 import type { CommentList, CommentTransport } from '~/features/post/commentController'
 import { mockComments } from '~/features/post/mock'
 import { getCommentSession, rememberCommentSession } from '~/features/post/commentSession'
+import { hasStoredVisitorId } from '~/utils/visitorId'
 
 export async function useArticleComments(id: string) {
   const initialRequest = usePageRequestScope()
@@ -61,9 +62,12 @@ export async function useArticleComments(id: string) {
         like: (commentId) => toggleCommentLike(base, commentId),
       }
 
+  // SSR 读取不带设备身份，水合后需按设备恢复点赞与自己的待审评论；客户端导航时首次读取已携带身份，无需再读。
+  // 本设备从未生成过访客 id 时不可能有个人记录，也跳过整树重读。
+  const personalizeAfterHydration = !useMock && nuxtApp.isHydrating === true && hasStoredVisitorId()
   // 生命周期钩子必须在首个 await 之前注册，避免异步 composable 丢失组件实例。
   onMounted(() => {
-    if (!useMock) void controller!.reload()
+    if (personalizeAfterHydration) void controller!.reload()
   })
   if (!controller) {
     // 只取消当前视图的初始读取；共享控制器的提交、重试和草稿继续由应用会话持有。

@@ -87,7 +87,7 @@
         <div ref="readingContent" class="article-reading-content">
           <ArticleMarkdown v-if="article.contentRaw" :content="article.contentRaw" :title="article.title" />
           <!-- 结构化正文含代码高亮（Shiki），懒加载使其不进入文章页首屏 chunk -->
-          <LazyArticleContent v-else :sections="article.content" />
+          <LazyArticleContent v-else :sections="article.content ?? []" />
         </div>
         <CommonRelatedContent :items="article.relatedContent" />
         <ArticleNav :prev="navigation.prev" :next="navigation.next" :error="discoveryError" />
@@ -162,8 +162,13 @@ const readingContent = ref<HTMLElement | null>(null)
 const scrollRoot = computed(() => scrollbarRef.value?.viewport ?? null)
 
 const requestScope = usePageRequestScope()
+const routeArticleId = route.params.id as string
+// 数字地址的评论与详情同时读取；自定义地址需等详情解析出文章 ID 后再读。
+const earlyComments = isNumericArticleId(routeArticleId) ? useArticleComments(routeArticleId) : undefined
+// 详情失败时页面直接抛错，提前发起的评论结果被丢弃，这里只避免未处理的拒绝。
+earlyComments?.catch(() => undefined)
 const { article, relatedPosts, navigation, discoveryError, tocItems, articleExcerpt } = await useArticleDetail(
-  route.params.id as string,
+  routeArticleId,
   { reuseLoaded: switchingState.value === 'loading' },
 )
 requestScope.assertActive()
@@ -195,7 +200,7 @@ const {
   cancelReply,
   like,
   reload,
-} = await useArticleComments(article.value.id)
+} = await (earlyComments ?? useArticleComments(article.value.id))
 requestScope.assertActive()
 const { open: openLoginDrawer } = useLoginDrawer()
 function switchToLogin() {
@@ -241,14 +246,19 @@ usePageSeo({
   // 可索引时不写 robots，保留模块默认的 max-image-preview 等指令
   robots: () => (article.value.seoNoindex ? 'noindex, follow' : undefined),
 })
+const articleTags = computed(() => (article.value.tags ?? []).map((tag) => tag.label))
 useSeoMeta({
   articlePublishedTime: () => article.value.date || undefined,
+  articleModifiedTime: () => article.value.updatedAt || undefined,
   articleSection: () => article.value.category || undefined,
+  articleTag: () => (articleTags.value.length ? articleTags.value : undefined),
+})
+useHead({
+  meta: () => (articleTags.value.length ? [{ name: 'keywords', content: articleTags.value.join(',') }] : []),
 })
 
 const articleImage = computed(() => absoluteUrl(article.value.cover, publicSite))
 const authorName = computed(() => siteSettings.value.ownerName || siteSettings.value.name)
-// 详情接口暂未返回标签与更新时间，keywords 与 dateModified 待后端提供后再补
 useJsonLd('article', () => ({
   '@context': 'https://schema.org',
   '@type': 'BlogPosting',
@@ -258,6 +268,8 @@ useJsonLd('article', () => ({
   mainEntityOfPage: { '@type': 'WebPage', '@id': canonicalUrl.value },
   ...(articleImage.value ? { image: [articleImage.value] } : {}),
   datePublished: article.value.date,
+  ...(article.value.updatedAt ? { dateModified: article.value.updatedAt } : {}),
+  ...(articleTags.value.length ? { keywords: articleTags.value.join(',') } : {}),
   ...(article.value.category ? { articleSection: article.value.category } : {}),
   inLanguage: 'zh-CN',
   author: { '@type': 'Person', name: authorName.value, url: publicSite + '/about' },

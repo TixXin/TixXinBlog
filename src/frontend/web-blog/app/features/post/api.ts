@@ -138,9 +138,17 @@ export async function fetchPostInteraction(
   )
 }
 
-export async function recordPostView(baseUrl: string, id: string): Promise<{ views: number }> {
+/** 浏览计数结果附带当前访客互动状态；counted 表示本次是否计入（同一访客每小时一次） */
+export interface PostViewResult {
+  views: number
+  likes: number
+  liked: boolean
+  counted: boolean
+}
+
+export async function recordPostView(baseUrl: string, id: string): Promise<PostViewResult> {
   return unwrap(
-    await $fetch<ApiEnvelope<{ views: number }>>(`${requireBaseUrl(baseUrl)}/posts/${encodeURIComponent(id)}/view`, {
+    await $fetch<ApiEnvelope<PostViewResult>>(`${requireBaseUrl(baseUrl)}/posts/${encodeURIComponent(id)}/view`, {
       method: 'POST',
       headers: commentVisitorHeaders(),
       timeout: 10000,
