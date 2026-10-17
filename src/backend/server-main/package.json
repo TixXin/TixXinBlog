@@ -11,6 +11,7 @@
     "lint:fix": "eslint src mikro-orm.config.ts --fix",
     "typecheck": "tsc --noEmit",
     "test": "jest",
+    "test:coverage": "jest --coverage",
     "test:watch": "jest --watch",
     "mikro-orm": "mikro-orm",
     "migration:create": "tsx scripts/migrate.ts create",
@@ -46,6 +47,27 @@
       "js",
       "json",
       "ts"
+    ],
+    "collectCoverageFrom": [
+      "**/*.ts",
+      "!**/*.spec.ts",
+      "!**/*.d.ts",
+      "!main.ts",
+      "!bootstrap.ts",
+      "!migrations/**",
+      "!seeders/**",
+      "!entities/**",
+      "!config/**"
+    ],
+    "coveragePathIgnorePatterns": [
+      "/node_modules/",
+      "/dist/"
+    ],
+    "coverageDirectory": "../coverage",
+    "coverageReporters": [
+      "text-summary",
+      "lcov",
+      "json-summary"
     ]
   },
   "dependencies": {
