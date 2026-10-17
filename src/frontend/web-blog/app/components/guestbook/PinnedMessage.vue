@@ -31,7 +31,7 @@ const dismissed = ref(false)
 </script>
 
 <style lang="scss" scoped>
-// 页头内的整宽圆角条，用主题柔和强调色区分，不加重边框
+// 圆角磨砂条：吸顶时消息从下方滑过，半透明加模糊保证文字可读
 .pinned-message {
   flex-shrink: 0;
   display: flex;
@@ -39,8 +39,12 @@ const dismissed = ref(false)
   gap: 0.625rem;
   min-width: 0;
   padding: 0.375rem 0.375rem 0.375rem 0.875rem;
-  background: var(--surface-2);
+  background: color-mix(in srgb, var(--surface-2) 82%, transparent);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid var(--border-soft);
   border-radius: $radius-md;
+  box-shadow: 0 4px 12px rgb(0 0 0 / 4%);
 }
 
 .pinned-message__icon {

@@ -7,11 +7,12 @@
 
 <template>
   <div
+    ref="rootRef"
     class="message-bubble"
     :data-guestbook-id="message.id"
     :class="[
       message.isOwner ? 'message-bubble--owner' : 'message-bubble--guest',
-      { 'message-bubble--picker-open': showReactionPicker },
+      { 'message-bubble--picker-open': showReactionPicker, 'message-bubble--actions-open': actionsOpen },
     ]"
   >
     <!-- 头像 -->
@@ -93,6 +94,7 @@
         <div
           class="message-bubble__content"
           :class="message.isOwner ? 'message-bubble__content--owner' : 'message-bubble__content--guest'"
+          @click="onContentTap"
         >
           <!-- 气泡尾巴 -->
           <span
@@ -259,6 +261,21 @@ function toggleReactionPicker() {
   showReactionPicker.value = true
 }
 
+/** 触屏没有悬停：轻点气泡切换操作按钮，点到本条消息以外即收起 */
+const actionsOpen = ref(false)
+const rootRef = ref<HTMLElement | null>(null)
+function onContentTap() {
+  if (!matchMedia('(hover: none)').matches || getSelection()?.toString()) return
+  actionsOpen.value = !actionsOpen.value
+}
+function onOutsideTap(event: PointerEvent) {
+  if (!rootRef.value?.contains(event.target as Node)) actionsOpen.value = false
+}
+watch(actionsOpen, (open) => {
+  if (open) document.addEventListener('pointerdown', onOutsideTap, true)
+  else document.removeEventListener('pointerdown', onOutsideTap, true)
+})
+
 /** 浮层打开时，点击浮层与触发按钮以外的区域即收起 */
 function onOutsidePointer(event: PointerEvent) {
   const target = event.target as Node
@@ -322,6 +339,7 @@ function addReaction(emoji: string) {
 
 onBeforeUnmount(() => {
   unbindPickerDismiss()
+  document.removeEventListener('pointerdown', onOutsideTap, true)
   if (copyTimer) clearTimeout(copyTimer)
 })
 </script>
@@ -463,6 +481,10 @@ onBeforeUnmount(() => {
 
   &--end {
     align-items: flex-end;
+  }
+
+  @media (max-width: #{$breakpoint-sm - 1px}) {
+    max-width: 88%;
   }
 }
 
@@ -672,6 +694,10 @@ onBeforeUnmount(() => {
   display: flex;
   gap: 0.125rem;
   opacity: 0;
+  // 触屏隐藏时不接收点击，避免误触看不见的按钮；鼠标设备总是先悬停才会点到，保持可点
+  @media (hover: none) {
+    pointer-events: none;
+  }
   transition: opacity 0.15s ease;
   @media (prefers-reduced-motion: reduce) {
     transition: none;
@@ -681,12 +707,32 @@ onBeforeUnmount(() => {
   // 鼠标点击留下的焦点不算，移开即淡出；键盘焦点与打开的表情浮层保持显示
   .message-bubble:hover &,
   .message-bubble:has(:focus-visible) &,
-  .message-bubble--picker-open & {
+  .message-bubble--picker-open &,
+  .message-bubble--actions-open & {
     opacity: 1;
+    pointer-events: auto;
   }
 
   &--left {
     order: -1;
+  }
+
+  // 窄屏不给按钮常驻占位，轻点后浮在气泡外上角，气泡拿回整行宽度
+  @media (max-width: #{$breakpoint-sm - 1px}) {
+    position: absolute;
+    bottom: calc(100% + 0.25rem);
+    right: 0;
+    z-index: 6;
+    padding: 0.125rem;
+    border: 1px solid var(--border-soft);
+    border-radius: $radius-sm;
+    background: var(--surface-1);
+    box-shadow: var(--shadow-card);
+
+    &--left {
+      right: auto;
+      left: 0;
+    }
   }
 }
 
@@ -796,6 +842,10 @@ $actions-inset: 3 * 1.5rem + 2 * 0.125rem + 0.25rem;
   gap: 0.25rem 0.625rem;
   padding-right: $actions-inset;
 
+  @media (max-width: #{$breakpoint-sm - 1px}) {
+    padding-right: 0;
+  }
+
   .message-bubble__reactions {
     order: 1;
     margin-left: auto;
@@ -805,6 +855,10 @@ $actions-inset: 3 * 1.5rem + 2 * 0.125rem + 0.25rem;
   &--end {
     padding-right: 0;
     padding-left: $actions-inset;
+
+    @media (max-width: #{$breakpoint-sm - 1px}) {
+      padding-left: 0;
+    }
 
     .message-bubble__reactions {
       order: 0;
