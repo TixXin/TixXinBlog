@@ -28,6 +28,19 @@ export const POST_STATUSES = ['draft', 'published', 'archived'] as const
 export type PostStatus = (typeof POST_STATUSES)[number]
 
 @Entity({ tableName: 'post' })
+// 公开搜索使用标题/摘要/正文的 %kw% ILIKE；pg_trgm GIN 让包含检索不必全表扫描。
+@Index({
+  name: 'post_title_trgm_idx',
+  expression: 'create index "post_title_trgm_idx" on "post" using gin ("title" gin_trgm_ops)',
+})
+@Index({
+  name: 'post_summary_trgm_idx',
+  expression: 'create index "post_summary_trgm_idx" on "post" using gin ("summary" gin_trgm_ops)',
+})
+@Index({
+  name: 'post_content_raw_trgm_idx',
+  expression: 'create index "post_content_raw_trgm_idx" on "post" using gin ("content_raw" gin_trgm_ops)',
+})
 export class Post {
   [OptionalProps]?: 'revision' | 'seoNoindex' | 'relatedContent'
   @Property({ type: 'json', defaultRaw: "'[]'::jsonb" }) relatedContent: ContentRelation[] = []
