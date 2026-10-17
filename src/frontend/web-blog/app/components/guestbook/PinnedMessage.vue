@@ -7,7 +7,6 @@
 
 <template>
   <div v-if="!dismissed" class="pinned-message">
-    <div class="pinned-message__indicator" />
     <Icon name="lucide:pin" size="14" class="pinned-message__icon" />
     <div class="pinned-message__body">
       <span class="pinned-message__label">置顶</span>
@@ -32,26 +31,17 @@ const dismissed = ref(false)
 </script>
 
 <style lang="scss" scoped>
+// 内嵌圆角条，左右与消息列表的内边距对齐，不再贴着卡片边缘
 .pinned-message {
   flex-shrink: 0;
   display: flex;
   align-items: center;
   gap: 0.625rem;
-  padding: 0.625rem 1rem;
+  margin: 0.75rem 1.25rem 0;
+  padding: 0.5rem 0.5rem 0.5rem 0.875rem;
   background: color-mix(in srgb, var(--accent, #5b7cfa) 6%, var(--surface-1));
-  border-bottom: 1px solid var(--border-soft);
-  position: relative;
-  overflow: hidden;
-}
-
-.pinned-message__indicator {
-  position: absolute;
-  left: 0;
-  top: 0;
-  bottom: 0;
-  width: 3px;
-  background: var(--accent, #5b7cfa);
-  border-radius: 0 2px 2px 0;
+  border: 1px solid color-mix(in srgb, var(--accent, #5b7cfa) 18%, var(--border-soft));
+  border-radius: $radius-md;
 }
 
 .pinned-message__icon {

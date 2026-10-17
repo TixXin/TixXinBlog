@@ -7,18 +7,20 @@
           <div class="page-title__icon-wrap" aria-hidden="true"><Icon name="lucide:message-circle" size="18" /></div>
           <div class="page-title__text">
             <h2 class="page-title__heading">留言板</h2>
-            <p class="page-title__sub">{{ metadata?.stats.messages.toLocaleString('zh-CN') ?? '—' }} 条公开留言</p>
+            <!-- 博主在线状态是信息而非操作，跟在留言数后面，操作区只留搜索 -->
+            <p class="page-title__sub guestbook-subline">
+              <span>{{ metadata?.stats.messages.toLocaleString('zh-CN') ?? '—' }} 条公开留言</span>
+              <CommonTooltip :content="ownerPresence.signature || ownerPresence.label">
+                <span class="guestbook-presence" :class="`guestbook-presence--${ownerPresence.status}`" tabindex="0"
+                  ><span class="guestbook-presence__dot" aria-hidden="true" />博主{{
+                    ownerPresence.status === 'offline' ? '离线' : presenceStatusLabels[ownerPresence.status]
+                  }}</span
+                >
+              </CommonTooltip>
+            </p>
           </div>
         </div>
         <div class="page-actions guestbook-actions">
-          <span
-            class="guestbook-presence"
-            :class="`guestbook-presence--${ownerPresence.status}`"
-            :title="ownerPresence.signature || ownerPresence.label"
-            ><span class="guestbook-presence__dot" aria-hidden="true" />{{
-              ownerPresence.status === 'offline' ? '离线' : presenceStatusLabels[ownerPresence.status]
-            }}</span
-          >
           <CommonSearchBox v-model="search" label="搜索留言" placeholder="搜索留言或作者…" />
           <button v-if="search || selectedDate" type="button" class="guestbook-clear" @click="clearFilters">
             清除筛选
@@ -387,13 +389,20 @@ useSeoMeta({ title: '留言板', description: '留下你的足迹，交流技术
 .guestbook-center :deep(.guestbook-viewport) {
   overflow-anchor: none;
 }
+.guestbook-subline {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.25rem 0.5rem;
+}
 .guestbook-presence {
   display: inline-flex;
   align-items: center;
-  gap: 0.375rem;
-  padding: 0.25rem 0.625rem;
+  gap: 0.3125rem;
+  padding: 0 0.5rem;
   border-radius: 999px;
-  font-size: 0.75rem;
+  font-size: 0.6875rem;
+  line-height: 1.25rem;
   color: var(--text-muted);
   background: var(--surface-2);
   border: 1px solid var(--border);

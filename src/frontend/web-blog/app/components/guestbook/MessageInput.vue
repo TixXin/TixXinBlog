@@ -165,7 +165,8 @@ onBeforeUnmount(() => {
 .message-input {
   flex-shrink: 0;
   margin: 0.375rem 0.5rem 0.5rem;
-  border-radius: $radius-sm $radius-sm $radius-card $radius-card;
+  // 与外层卡片同心：外圆角减去 0.5rem 外边距，四角一致
+  border-radius: calc(#{$radius-card} - 0.5rem);
   border: 1px solid var(--border-soft);
   background: var(--surface-1-alpha-90);
   backdrop-filter: blur(8px);
