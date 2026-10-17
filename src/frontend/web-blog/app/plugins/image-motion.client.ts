@@ -9,7 +9,7 @@ export default defineNuxtPlugin({
   setup(app) {
     const { reducedMotion } = useMotionPreference()
     const selector =
-      '.image-frame__image,.post-item__cover-bg img,.owner-profile-card__avatar,.hero-section__avatar-img,.nexus-bar__avatar-img,.moment-card img,.project-card img,.moment-photo-wall-card img'
+      '.image-frame__image,.post-item__cover-bg img,.owner-profile-card__avatar,.nexus-bar__avatar-img,.moment-card img,.project-card img,.moment-photo-wall-card img'
     const excluded = '[inert],[data-page-motion-overlay],[data-page-motion-clone],.sidebar-leaving-clone'
     const seen = new WeakMap<HTMLImageElement, string>()
     const running = new Map<HTMLImageElement, () => void>()
