@@ -34,8 +34,6 @@
           /></CommonContextDrawer>
           <NuxtLink v-if="isLoggedIn" to="/admin/guestbook" class="guestbook-clear">管理</NuxtLink>
         </div>
-        <!-- 置顶公告归入页头，位于分隔线之上，消息在分隔线下方滚动而不被公告条截断 -->
-        <GuestbookPinnedMessage v-if="pinned" :key="pinned.id" :message="pinned" class="guestbook-pinned" />
       </div>
     </template>
     <template #default>
@@ -68,6 +66,10 @@
             primary
             :primary-direction="isChatMode ? 'down' : 'up'"
           >
+            <!-- 置顶公告是滚动区首项：初始占自己的位置，聊天模式下吸顶，消息从磨砂底下滑过而不是被截断 -->
+            <div v-if="pinned" class="guestbook-pinned" :class="{ 'guestbook-pinned--sticky': isChatMode }">
+              <GuestbookPinnedMessage :key="pinned.id" :message="pinned" />
+            </div>
             <div v-if="isChatMode && hasMore" ref="topSentinel" class="guestbook-more">
               <button
                 :aria-busy="morePending"
@@ -466,11 +468,21 @@ useSeoMeta({ title: '留言板', description: '留下你的足迹，交流技术
   overflow-anchor: none;
 }
 .guestbook-pinned {
-  width: 100%;
-  // 横排页头里独占一行；竖排（手机）时 flex-basis 会作用于高度，只在横排设置
-  @media (min-width: $breakpoint-sm) {
-    flex-basis: 100%;
+  padding: 0.75rem 1.25rem 0;
+  // 关闭公告后不留空白带
+  &:empty {
+    display: none;
   }
+}
+// 滚动视口是吸顶参照；顶部实色带挡住滚上来的消息，底部渐隐过渡到正文。
+// 手机论坛模式按页面滚动且顶部有悬浮按钮，保持普通流
+.guestbook-pinned--sticky {
+  position: sticky;
+  top: 0;
+  z-index: 4;
+  padding-bottom: 0.75rem;
+  margin-bottom: -0.75rem;
+  background: linear-gradient(to bottom, var(--surface-1) calc(100% - 0.75rem), transparent);
 }
 .guestbook-subline {
   display: flex;
