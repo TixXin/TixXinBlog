@@ -12,8 +12,13 @@ TixXinBlog 根目录 package.json 脚本说明
 [dev]
   用法：corepack pnpm dev
   定义：corepack pnpm --filter web-blog dev
-  说明：直接启动 Nuxt 前端开发服务，支持热更新；默认地址为 http://localhost:3456。
-  注意：只启动前端，不负责启动后端或检查数据库；真实接口开发通常使用 dev:all。
+  说明：直接启动 Nuxt 前端开发服务，支持热更新；默认监听 http://127.0.0.1:3456。
+  注意：3456 不可用时，Nuxt 可能自动选择其他端口（如 3000），以终端打印的 Local 地址为准。
+        本命令不会复用已经运行的前端；启动前可运行 dev:check，避免重复启动。
+        “只启动前端”是指本命令不启动后端，不代表页面只能使用 Mock 或没有数据。
+        前端仍会按现有配置访问已运行的后端：浏览器请求同源 /api/v1，由 Nuxt 转发至
+        NUXT_API_BASE_URL 指定的 API；因此单独启动前端也能显示数据库中已有的内容。
+        本命令不检查数据库；需要启动完整真实接口链路时使用 dev:all，macOS 分窗使用 dev:terminal。
 
 [dev:blog]
   用法：corepack pnpm dev:blog
