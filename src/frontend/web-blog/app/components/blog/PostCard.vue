@@ -12,10 +12,11 @@
         :src="post.cover"
         :alt="`${post.title} 封面`"
         loading="lazy"
+        :priority="priority"
         format="webp"
         width="400"
         height="155"
-        sizes="(min-width: 640px) 45vw, 100vw"
+        sizes="(min-width: 640px) 380px, 50vw"
         @error="coverError = true"
       />
     </div>
@@ -59,8 +60,11 @@
 import type { PostItem } from '~/features/post/types'
 import { formatRelativeDate } from '~/composables/useRelativeDate'
 
+// priority：列表首屏卡片的封面立即加载并提高抓取优先级
+// 封面桌面端占卡片右侧 45%（实测不超过约 380px）；移动端是 15% 透明度的背景，按半屏宽度取变体即可
 const props = defineProps<{
   post: PostItem
+  priority?: boolean
 }>()
 
 const coverError = ref(false)

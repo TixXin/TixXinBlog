@@ -46,12 +46,19 @@
           name="PostCard"
           :post="post"
           :data-index="index"
+          :priority="index < 2"
         />
       </TransitionGroup>
 
       <!-- 保持容器稳定，仅在已接受的新文章到齐后播放可取消过渡。 -->
       <div v-else ref="pageListRef" class="post-list">
-        <ThemeComponent v-for="post in displayedPosts" :key="post.id" name="PostCard" :post="post" />
+        <ThemeComponent
+          v-for="(post, index) in displayedPosts"
+          :key="post.id"
+          name="PostCard"
+          :post="post"
+          :priority="index < 2"
+        />
       </div>
 
       <p v-if="!pending && !errorMessage && filteredPosts.length === 0" class="post-list__empty">暂无相关文章</p>

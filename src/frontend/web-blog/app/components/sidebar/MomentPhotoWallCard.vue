@@ -1,6 +1,6 @@
 <!--
   @file MomentPhotoWallCard.vue
-  @description 朋友圈右侧栏精选照片墙，展示获赞最多的图片动态
+  @description 朋友圈右侧栏精选照片墙，展示获赞最多的图片动态；首张跨两格约 180px，其余约 90px
   @author TixXin
   @since 2026-04-10
 -->
@@ -31,6 +31,7 @@
           loading="lazy"
           width="200"
           height="200"
+          :sizes="index === 0 ? '180px' : '90px'"
         />
         <div class="moment-photo-wall__overlay">
           <Icon name="lucide:eye" size="14" />

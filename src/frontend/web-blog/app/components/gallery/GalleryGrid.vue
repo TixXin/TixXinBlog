@@ -7,8 +7,9 @@
 
 <template>
   <div class="gallery-grid">
-    <div v-for="photo in photos" :key="photo.id" class="gallery-grid__cell">
-      <GalleryItem :photo="photo" :ready="ready" @click="ready && $emit('select', photo)" />
+    <div v-for="(photo, index) in photos" :key="photo.id" class="gallery-grid__cell">
+      <!-- CSS columns 先填满第一列，按高度平衡后第二列起点不固定；前两张必在首列顶部，作为首屏优先图 -->
+      <GalleryItem :photo="photo" :ready="ready" :priority="index < 2" @click="ready && $emit('select', photo)" />
     </div>
   </div>
 </template>

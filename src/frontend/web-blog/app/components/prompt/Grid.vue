@@ -2,10 +2,11 @@
 <template>
   <div class="prompts-grid">
     <div ref="grid" class="prompt-grid__layout" @load.capture="schedule" @error.capture="schedule">
-      <div v-for="item in items" :key="item.id" class="prompt-grid__item">
+      <div v-for="(item, index) in items" :key="item.id" class="prompt-grid__item">
         <PromptCard
           :item="item"
           :ready="ready"
+          :priority="index < 2"
           :editable="editable"
           :status="draft ? 'draft' : 'published'"
           @open="$emit('open', $event)"

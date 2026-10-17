@@ -15,7 +15,14 @@
       class="flash-grid__cell"
       @click="open(idx)"
     >
-      <img :src="img" :alt="descriptions?.[idx] || '闪念配图'" loading="lazy" class="flash-grid__img" />
+      <img
+        :alt="descriptions?.[idx] || '闪念配图'"
+        loading="lazy"
+        class="flash-grid__img"
+        :sizes="imageSizes"
+        :srcset="managedImageSrcset(img)"
+        :src="img"
+      />
     </button>
 
     <ClientOnly>
@@ -32,6 +39,8 @@
 </template>
 
 <script setup lang="ts">
+import { managedImageSrcset } from '~/utils/managedImage'
+
 const props = withDefaults(
   defineProps<{
     images: string[]
@@ -49,6 +58,16 @@ const gridClass = computed(() => {
   if (len === 2 || len === 4) return 'flash-grid--2'
   return 'flash-grid--3'
 })
+
+// 受管图片按网格单元实际宽度取变体：单图最宽 240px，网格容器最宽 380px 分两列或三列；窄屏随卡片收窄
+const imageSizes = computed(
+  () =>
+    ({
+      'flash-grid--1': '240px',
+      'flash-grid--2': '(max-width: 480px) 40vw, 190px',
+      'flash-grid--3': '(max-width: 480px) 26vw, 130px',
+    })[gridClass.value],
+)
 
 function open(idx: number) {
   currentIndex.value = idx
