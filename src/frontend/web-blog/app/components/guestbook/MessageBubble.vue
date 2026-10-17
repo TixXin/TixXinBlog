@@ -71,16 +71,19 @@
         </template>
       </div>
 
-      <!-- 回复引用 -->
-      <div
+      <!-- 回复引用：点击跳到原留言 -->
+      <button
         v-if="message.replyTo"
-        class="message-bubble__reply"
+        type="button"
+        class="message-bubble__reply message-bubble__reply--link"
         :class="{ 'message-bubble__reply--end': message.isOwner }"
+        :aria-label="`跳到 ${message.replyTo.author} 的原留言：${message.replyTo.content}`"
+        @click="$emit('jump', { target: message.replyTo.id, from: message.id })"
       >
         <Icon name="lucide:corner-up-right" size="12" class="message-bubble__reply-icon" />
         <span class="message-bubble__reply-author">{{ message.replyTo.author }}</span>
         <span class="message-bubble__reply-content">{{ message.replyTo.content }}</span>
-      </div>
+      </button>
 
       <p v-if="message.replyUnavailable" class="message-bubble__reply">所引用的留言暂不可见</p>
       <p v-if="message.moderationStatus === 'pending'" class="message-bubble__foot">待审核，仅自己可见</p>
@@ -211,6 +214,7 @@ const props = defineProps<{
 const emit = defineEmits<{
   react: [value: { id: number; emoji: string; reacted: boolean; complete?: () => void }]
   reply: [message: GuestMessage]
+  jump: [value: { target: number; from: number }]
 }>()
 
 const copied = ref(false)
@@ -520,6 +524,48 @@ onBeforeUnmount(() => {
   &--end {
     border-left: none;
     border-right: 2px solid var(--accent, #5b7cfa);
+  }
+
+  &--link {
+    font: inherit;
+    text-align: left;
+    color: inherit;
+    border-top: none;
+    border-bottom: none;
+    cursor: var(--interaction-cursor, pointer);
+    transition: background 0.15s ease;
+    @media (prefers-reduced-motion: reduce) {
+      transition: none;
+    }
+
+    &:hover {
+      background: color-mix(in srgb, var(--accent, #5b7cfa) 10%, var(--surface-2));
+    }
+
+    &:focus-visible {
+      outline: 2px solid var(--accent, #5b7cfa);
+      outline-offset: 1px;
+    }
+  }
+}
+
+// 定位到的原留言短暂高亮，便于在长列表里找到
+.message-bubble--located .message-bubble__content {
+  animation: message-located 1.6s ease-out;
+  @media (prefers-reduced-motion: reduce) {
+    animation: none;
+    outline: 2px solid var(--accent, #5b7cfa);
+    outline-offset: 2px;
+  }
+}
+
+@keyframes message-located {
+  0%,
+  35% {
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent, #5b7cfa) 45%, transparent);
+  }
+  100% {
+    box-shadow: 0 0 0 3px transparent;
   }
 }
 
