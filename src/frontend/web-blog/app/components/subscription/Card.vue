@@ -38,7 +38,7 @@
           class="subscription-list-status"
           :class="`subscription-list-status--${item.subscriptionStatus}`"
         >
-          <Icon name="lucide:circle" size="8" aria-hidden="true" />
+          <span class="subscription-list-status__dot" aria-hidden="true" />
           <span>{{ stateLabels[item.subscriptionStatus] }}<small v-if="future"> · 未来开始</small></span>
         </span>
         <span
@@ -48,6 +48,9 @@
         >
           <span>{{ item.nextBillingDate ?? '扣费日期未设置' }}</span>
           <span v-if="overdue" class="subscription-list-date-note">已逾期，请核对</span>
+          <span v-else-if="dueHint" class="subscription-list-date-note subscription-list-date-note--soon">{{
+            dueHint
+          }}</span>
         </span>
       </span>
       <Icon class="subscription-list-chevron" name="lucide:chevron-right" size="17" aria-hidden="true" />
@@ -168,6 +171,14 @@ const open = ref(false),
   icon = computed(() => props.item.iconUrl || props.item.faviconUrl)
 const future = computed(() => !!props.item.startDate && props.item.startDate > props.today),
   overdue = computed(() => !!props.item.nextBillingDate && props.item.nextBillingDate < props.today)
+/** 7 天内的扣费给出相对提示；日期均为 YYYY-MM-DD，按 UTC 日计算差值避免时区偏移 */
+const dueHint = computed(() => {
+  const next = props.item.nextBillingDate
+  if (!next || overdue.value) return ''
+  const days = Math.round((Date.parse(`${next}T00:00:00Z`) - Date.parse(`${props.today}T00:00:00Z`)) / 86_400_000)
+  if (!Number.isFinite(days) || days > 7) return ''
+  return days === 0 ? '今天扣费' : days === 1 ? '明天扣费' : `${days} 天后扣费`
+})
 const cycleSuffix = computed(
   () =>
     ({ monthly: '/ 月', quarterly: '/ 季', yearly: '/ 年', lifetime: '买断', 'one-time': '一次性' })[
@@ -303,12 +314,17 @@ async function requestRemove() {
   gap: 0.55rem;
   color: var(--text-muted);
   font-size: 0.875rem;
-  :deep(svg) {
-    fill: currentColor;
-  }
   &--active {
     color: var(--tag-emerald-text);
   }
+}
+// 实心圆点；图标组件以遮罩渲染，fill 不生效，改用纯 CSS
+.subscription-list-status__dot {
+  flex-shrink: 0;
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 50%;
+  background: currentColor;
 }
 .subscription-list-date {
   display: grid;
@@ -323,6 +339,10 @@ async function requestRemove() {
 }
 .subscription-list-date-note {
   font-size: 0.72rem;
+  &--soon {
+    color: var(--accent-text);
+    font-weight: 600;
+  }
 }
 .subscription-list-chevron {
   justify-self: end;

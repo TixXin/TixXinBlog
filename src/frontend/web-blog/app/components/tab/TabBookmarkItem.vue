@@ -6,9 +6,10 @@
 -->
 
 <template>
+  <!-- 书签须是网格的直接子元素（拖拽排序依赖），不包 Tooltip；原生提示补上被截断的全名 -->
   <a
     :href="bookmark.url"
-    :title="bookmark.url"
+    :title="`${bookmark.name}\n${bookmark.url}`"
     target="_blank"
     rel="noopener"
     class="tab-bm"

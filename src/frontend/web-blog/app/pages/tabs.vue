@@ -725,6 +725,13 @@ async function onBookmarkDropped(payload: { bookmarkId: string; targetCategoryId
     bottom: 0.75rem;
   }
 }
+// Nexus 底栏（72px 高、距底 16px）在常见桌面宽度下铺满右侧，提示改到底栏上方，避免压住导航项
+// 提示经 Teleport 挂到 body，主题标记取 html 上的 data-theme
+:root[data-theme='nexus'] .tabs-guest-toast {
+  @media (min-width: $breakpoint-lg) {
+    bottom: calc(72px + 16px + 0.75rem);
+  }
+}
 
 .tabs-guest-toast__icon {
   flex-shrink: 0;
