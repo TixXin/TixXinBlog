@@ -1,11 +1,24 @@
 /**
  * @file media-image.ts
- * @description 校验真实图片格式并重新编码，丢弃尾随内容和原始元信息。
+ * @description 校验真实图片格式并重新编码，丢弃尾随内容和原始元信息；按白名单宽度生成可再生的 WebP 变体。
  */
 import { BadRequestException } from '@nestjs/common'
 import sharp from 'sharp'
 
 export const MAX_IMAGE_BYTES = 8 * 1024 * 1024
+// 解码像素上限：原图上传后最长边不超过 4096，变体解码同样受限，防止异常文件耗尽内存。
+export const MAX_INPUT_PIXELS = 40000000
+/**
+ * 公开变体宽度白名单（CSS 像素 × 设备像素比后的目标宽度）：
+ * 320 覆盖九宫格与侧栏缩略图（约 80–160px 的 2x 屏），640 覆盖列表卡片（约 230–320px 的 2x 屏），
+ * 960 覆盖双列画廊与 3x 手机卡片，1280 覆盖宽屏单列与大图；更大的需求直接使用原图。
+ * 前端 app/utils/managedImage.ts 保留同一列表，修改时需同步。
+ */
+export const MEDIA_VARIANT_WIDTHS = [320, 640, 960, 1280] as const
+export type MediaVariantWidth = (typeof MEDIA_VARIANT_WIDTHS)[number]
+export function isMediaVariantWidth(value: number): value is MediaVariantWidth {
+  return (MEDIA_VARIANT_WIDTHS as readonly number[]).includes(value)
+}
 export interface UploadedImage {
   buffer: Buffer
   originalname: string
@@ -39,7 +52,7 @@ export async function normalizeImage(file?: UploadedImage) {
         : null
   if (!format) throw new BadRequestException('文件内容不是受支持的图片')
   try {
-    const image = sharp(bytes, { limitInputPixels: 40000000, failOn: 'warning' })
+    const image = sharp(bytes, { limitInputPixels: MAX_INPUT_PIXELS, failOn: 'warning' })
     const metadata = await image.metadata()
     if (metadata.format !== format || !metadata.width || !metadata.height || (metadata.pages ?? 1) > 1)
       throw new Error('不支持的图片内容')
@@ -53,4 +66,13 @@ export async function normalizeImage(file?: UploadedImage) {
   } catch {
     throw new BadRequestException('图片解码失败、尺寸过大或包含不支持的多帧内容')
   }
+}
+
+/** 从已规范化的原图生成指定宽度的 WebP 变体；不放大、不保留元信息。 */
+export async function resizeImageVariant(original: Buffer, width: MediaVariantWidth) {
+  return sharp(original, { limitInputPixels: MAX_INPUT_PIXELS, failOn: 'warning' })
+    .resize({ width, withoutEnlargement: true })
+    .webp({ quality: 80 })
+    .timeout({ seconds: 8 })
+    .toBuffer()
 }

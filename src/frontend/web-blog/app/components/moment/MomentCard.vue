@@ -60,10 +60,12 @@
           @click="openLightBox(idx)"
         >
           <img
-            :src="img"
             :alt="moment.imageAlts?.[idx] || `动态配图 ${idx + 1}`"
             class="moment-card__image"
             loading="lazy"
+            :sizes="imageSizes"
+            :srcset="managedImageSrcset(img)"
+            :src="img"
           />
         </button>
       </div>
@@ -164,6 +166,7 @@
 import type { MomentItem, MomentUserProfile } from '~/features/moment/types'
 import type { MomentInteractionState } from '~/features/moment/session'
 import { renderMomentMarkdown } from '~/composables/useMomentMarkdown'
+import { managedImageSrcset } from '~/utils/managedImage'
 const props = defineProps<{
   moment: MomentItem
   ownerProfile: MomentUserProfile
@@ -232,6 +235,16 @@ const gridClass = computed(() => {
   const size = props.moment.images?.length || 0
   return size === 1 ? 'grid-1' : size === 2 || size === 4 ? 'grid-2' : 'grid-3'
 })
+// 受管图片按网格单元实际宽度取变体：单图最宽 240px，网格容器最宽 400px 分两列或三列；
+// 窄屏网格随卡片收窄（390px 视口实测两列约 129px、三列约 84px）
+const imageSizes = computed(
+  () =>
+    ({
+      'grid-1': '240px',
+      'grid-2': '(max-width: 480px) 34vw, 200px',
+      'grid-3': '(max-width: 480px) 22vw, 135px',
+    })[gridClass.value],
+)
 const lightBoxVisible = ref(false),
   lightBoxIndex = ref(0)
 function openLightBox(index: number) {

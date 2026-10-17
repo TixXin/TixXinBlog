@@ -8,10 +8,11 @@
 <template>
   <div class="project-grid">
     <ProjectCard
-      v-for="project in projects"
+      v-for="(project, index) in projects"
       :key="project.id"
       :project="project"
       :interactive="interactive"
+      :priority="index < 2"
       :heading-level="2"
       show-details
       @tag="$emit('tag', $event)"

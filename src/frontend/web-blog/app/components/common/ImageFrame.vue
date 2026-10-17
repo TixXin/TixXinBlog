@@ -1,6 +1,7 @@
 <!--
   @file ImageFrame.vue
-  @description 保留图片比例的加载容器：慢图和破图保持占位，提供可键盘操作的重试
+  @description 保留图片比例的加载容器：慢图和破图保持占位，提供可键盘操作的重试；
+  受管媒体输出白名单宽度的 srcset，priority 用于首屏关键图
   @author TixXin
   @since 2026-09-07
 -->
@@ -17,11 +18,14 @@
       :key="attempt"
       ref="image"
       class="image-frame__image"
-      :src="src"
       :alt="alt"
       :width="width"
       :height="height"
-      :loading="loading"
+      :loading="priority ? 'eager' : loading"
+      :fetchpriority="priority ? 'high' : undefined"
+      :sizes="srcset ? (sizes ?? '100vw') : undefined"
+      :srcset="srcset"
+      :src="src"
       referrerpolicy="no-referrer"
       @load="loaded"
       @error="failed"
@@ -37,6 +41,8 @@
   </div>
 </template>
 <script setup lang="ts">
+import { managedImageSrcset } from '~/utils/managedImage'
+
 const props = withDefaults(
   defineProps<{
     src?: string
@@ -45,10 +51,26 @@ const props = withDefaults(
     height?: number
     fit?: 'cover' | 'contain'
     loading?: 'eager' | 'lazy'
+    /** 首屏关键图：立即加载并提高抓取优先级，覆盖 loading */
+    priority?: boolean
+    /** 实际显示宽度描述，仅受管媒体生效；已知原图宽度但未传时按视口宽度 */
+    sizes?: string
     maxHeight?: string
   }>(),
-  { src: '', fit: 'cover', loading: 'lazy', maxHeight: undefined, width: undefined, height: undefined },
+  {
+    src: '',
+    fit: 'cover',
+    loading: 'lazy',
+    priority: false,
+    sizes: undefined,
+    maxHeight: undefined,
+    width: undefined,
+    height: undefined,
+  },
 )
+// 已知原图宽度时只列出更小的变体并补上原图；原图宽度和 sizes 都未知（如闪念灯箱）时保持原图，
+// 避免全屏查看被限制在最大变体宽度。外链图片不生成 srcset
+const srcset = computed(() => (props.width || props.sizes ? managedImageSrcset(props.src, props.width) : undefined))
 const { image, state, attempt, loaded, failed, retry } = useImageState(() => props.src)
 // 首屏 SSR 直出的图片由浏览器原生渐进显示，就绪后不能再把仍在加载的它藏起来；切页后新建的图片才走加载反馈
 const initial = import.meta.server || useNuxtApp().isHydrating

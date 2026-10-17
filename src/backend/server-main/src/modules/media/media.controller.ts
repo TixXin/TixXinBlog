@@ -1,6 +1,6 @@
 /**
  * @file media.controller.ts
- * @description 管理员媒体上传与资源维护；公开接口只返回规范化后的图片字节。
+ * @description 管理员媒体上传与资源维护；公开接口只返回规范化后的图片字节，可用 `?w=` 取白名单宽度的变体。
  */
 import {
   Body,
@@ -18,6 +18,7 @@ import {
   UseGuards,
   UseInterceptors,
   NotFoundException,
+  BadRequestException,
 } from '@nestjs/common'
 import { FileInterceptor } from '@nestjs/platform-express'
 import { Transform, Type } from 'class-transformer'
@@ -25,8 +26,8 @@ import { IsBoolean, IsIn, IsInt, IsOptional, IsString, IsUUID, Max, MaxLength, M
 import type { Request, Response } from 'express'
 import { AdminAuthGuard } from '../../common/guards/admin-auth.guard'
 import { MediaService } from './media.service'
-import { MAX_IMAGE_BYTES } from './media-image'
-import type { UploadedImage } from './media-image'
+import { MAX_IMAGE_BYTES, MEDIA_VARIANT_WIDTHS, isMediaVariantWidth } from './media-image'
+import type { MediaVariantWidth, UploadedImage } from './media-image'
 
 export class QueryMediaDto {
   @Type(() => Number) @IsInt() @Min(1) page: number = 1
@@ -84,14 +85,23 @@ export class AdminMediaController {
 export class PublicMediaController {
   constructor(private readonly media: MediaService) {}
   @Get(':file')
-  async read(@Param('file') file: string, @Req() request: Request, @Res() response: Response) {
+  async read(@Param('file') file: string, @Query('w') w: unknown, @Req() request: Request, @Res() response: Response) {
     if (!/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}\.webp$/i.test(file))
       throw new NotFoundException('媒体不存在')
+    // 只接受白名单宽度，任意宽度会让外部请求无限制地生成缓存文件。
+    let width: MediaVariantWidth | undefined
+    if (w !== undefined) {
+      const value = typeof w === 'string' && /^[1-9][0-9]{2,3}$/.test(w) ? Number(w) : Number.NaN
+      if (!isMediaVariantWidth(value))
+        throw new BadRequestException(`图片宽度只支持 ${MEDIA_VARIANT_WIDTHS.join('、')}`)
+      width = value
+    }
     const result = await this.media.read(file.slice(0, -5).toLowerCase(), {
       ifNoneMatch: request.get('if-none-match'),
       head: request.method === 'HEAD',
+      width,
     })
-    // 资源键由 UUID 与内容摘要决定，文件不可变；公开媒体可长期缓存，删除后由 404 收敛。
+    // 资源键由 UUID 与内容摘要决定，文件不可变；公开媒体及其变体可长期缓存，删除后由 404 收敛。
     response.setHeader('Cache-Control', 'public, max-age=31536000, immutable')
     response.setHeader('ETag', result.etag)
     if (result.notModified) return response.status(304).end()

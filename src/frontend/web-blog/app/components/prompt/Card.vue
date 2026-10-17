@@ -7,6 +7,8 @@
         :alt="item.imageAlt || item.title"
         :width="item.width || undefined"
         :height="item.height || undefined"
+        :priority="priority"
+        sizes="(min-width: 640px) 330px, 50vw"
       />
       <button
         type="button"
@@ -58,7 +60,14 @@
 </template>
 <script setup lang="ts">
 import type { ImagePrompt, PromptStatus } from '~/features/prompt/types'
-defineProps<{ item: ImagePrompt; ready: boolean; editable?: boolean; status?: PromptStatus }>()
+// priority：首行作品立即加载；瀑布流列宽实测不超过约 330px，窄屏两列各约半屏
+defineProps<{
+  item: ImagePrompt
+  ready: boolean
+  editable?: boolean
+  status?: PromptStatus
+  priority?: boolean
+}>()
 defineEmits<{ open: [id: number]; edit: [id: number] }>()
 </script>
 <style scoped lang="scss">

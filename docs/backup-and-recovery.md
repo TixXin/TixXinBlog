@@ -101,7 +101,7 @@ node src/backend/server-main/scripts/full-backup.mjs create --mode native --outp
 
 备份包含 `database.dump`、`media/` 和 `manifest.json`。数据库使用同一 `pg_export_snapshot`，全部 public 表计数/行摘要和媒体登记清单来自同一快照；后续写入不混入。媒体按清单复制并逐个校验字节和 SHA-256，包括回收状态但仍登记的资源。文件缺失或摘要不符时不会产生完成清单，没有 manifest 的目录属于未完成备份。
 
-完整备份包含私人草稿、密码哈希和授权记录，应存入受控目录。源码、运行环境秘密、人工放入 public 的静态文件和外部图片字节不在此数据备份范围，需按各自来源保管。数据库 dump 不能替代媒体备份。平台订阅 favicon 属于可再生缓存，`MEDIA_DIRECTORY/.subscription-favicons/` 不进入登记媒体清单，恢复无缓存仍保留官网域名与完整业务记录；受管图标则按正式媒体备份。
+完整备份包含私人草稿、密码哈希和授权记录，应存入受控目录。源码、运行环境秘密、人工放入 public 的静态文件和外部图片字节不在此数据备份范围，需按各自来源保管。数据库 dump 不能替代媒体备份。平台订阅 favicon 属于可再生缓存，`MEDIA_DIRECTORY/.subscription-favicons/` 不进入登记媒体清单，恢复无缓存仍保留官网域名与完整业务记录；受管图标则按正式媒体备份。受管媒体的宽度变体同样是派生缓存，`MEDIA_DIRECTORY/.media-variants/` 不进入登记清单、完整备份和内容包（内容包只导出 `<媒体UUID>.webp` 原图），恢复后由公开读取按需重新生成。
 
 ## 校验与独立恢复
 

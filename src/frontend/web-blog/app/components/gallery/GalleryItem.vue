@@ -22,6 +22,8 @@
       :alt="photo.title"
       :width="photo.width"
       :height="photo.height"
+      :priority="priority"
+      sizes="(min-width: 640px) 380px, 50vw"
       class="gallery-item__img"
     />
     <div class="gallery-item__overlay">
@@ -37,9 +39,11 @@
 <script setup lang="ts">
 import type { PhotoItem } from '~/features/gallery/types'
 
+// priority：画廊首行作品立即加载；两列瀑布流每列实测不超过约 380px
 const props = defineProps<{
   photo: PhotoItem
   ready: boolean
+  priority?: boolean
 }>()
 
 const emit = defineEmits<{

@@ -14,6 +14,8 @@
         :alt="project.title"
         :width="project.width ?? undefined"
         :height="project.height ?? undefined"
+        :priority="priority"
+        sizes="(min-width: 768px) 420px, 100vw"
         class="project-card__image"
       />
       <div v-else class="project-card__no-cover">
@@ -68,7 +70,14 @@
 import { projectProgressLabels } from '~/features/project/types'
 import type { ProjectItem } from '~/features/project/types'
 // headingLevel：列表直接位于页面 h1 下时传 2；默认 3 用于“项目详情”h2 之下
-const props = defineProps<{ project: ProjectItem; interactive: boolean; showDetails?: boolean; headingLevel?: 2 | 3 }>()
+// priority：首行项目封面立即加载；平板以上两列封面实测不超过约 420px，窄屏单列占满
+const props = defineProps<{
+  project: ProjectItem
+  interactive: boolean
+  showDetails?: boolean
+  headingLevel?: 2 | 3
+  priority?: boolean
+}>()
 defineEmits<{ tag: [label: string]; open: [id: number] }>()
 const statusLabel = computed(() => projectProgressLabels[props.project.progress])
 </script>
