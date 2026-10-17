@@ -42,12 +42,22 @@
         :value="draft"
         :disabled="!hydrated"
         class="message-input__editor"
+        :class="{ 'message-input__editor--resizing': resizing }"
         :style="{ height: editorHeight + 'px' }"
         placeholder="输入留言内容..."
         aria-label="留言内容"
         :maxlength="500"
         @input="$emit('update:draft', ($event.target as HTMLTextAreaElement).value)"
         @keydown="onEditorKeydown"
+      />
+      <!-- 同宽同样式的隐藏副本，只用来量出正文自然高度，真实输入框的高度才能平滑过渡 -->
+      <textarea
+        ref="mirrorRef"
+        :value="draft"
+        class="message-input__editor message-input__editor--mirror"
+        aria-hidden="true"
+        tabindex="-1"
+        readonly
       />
       <!-- 右上角展开/收起按钮 -->
       <CommonTooltip :content="isExpanded ? '收起输入框' : '展开输入框'">
@@ -110,12 +120,58 @@ const textareaRef = ref<HTMLTextAreaElement | null>(null),
 onMounted(() => {
   hydrated.value = true
 })
-const editorHeight = ref(72),
-  isExpanded = ref(false)
+/**
+ * 高度规则：默认随正文在 baseHeight 与 AUTO_MAX 之间自动伸缩；
+ * 拖拽或收起属于明确选择，进入手动高度，清空正文（如发送后）再回到自动
+ */
+const MIN_HEIGHT = 72,
+  EXPANDED_HEIGHT = 240,
+  AUTO_MAX = 200
+const baseHeight = ref(MIN_HEIGHT),
+  manualHeight = ref<number | null>(null),
+  contentHeight = ref(0),
+  resizing = ref(false),
+  mirrorRef = ref<HTMLTextAreaElement | null>(null)
+const editorHeight = computed(
+  () => manualHeight.value ?? Math.max(baseHeight.value, Math.min(contentHeight.value, AUTO_MAX)),
+)
+const isExpanded = computed(() => editorHeight.value > 100)
 function toggleExpand() {
-  isExpanded.value = !isExpanded.value
-  editorHeight.value = isExpanded.value ? 144 : 72
+  if (isExpanded.value) {
+    baseHeight.value = MIN_HEIGHT
+    manualHeight.value = MIN_HEIGHT
+  } else {
+    baseHeight.value = EXPANDED_HEIGHT
+    manualHeight.value = null
+  }
 }
+/** 副本高度为 0 时 scrollHeight 即正文加内边距的自然高度 */
+function measureContent() {
+  const mirror = mirrorRef.value
+  if (!mirror) return
+  mirror.value = props.draft
+  contentHeight.value = Math.ceil(mirror.scrollHeight)
+}
+watch(
+  () => props.draft,
+  (draft) => {
+    if (!draft) manualHeight.value = null
+    nextTick(measureContent)
+  },
+)
+let widthObserver: ResizeObserver | null = null,
+  lastWidth = 0
+onMounted(() => {
+  measureContent()
+  // 宽度变化会改变折行，需要重新量；只看宽度，避免高度过渡本身反复触发
+  widthObserver = new ResizeObserver(([entry]) => {
+    const width = Math.round(entry?.contentRect.width ?? 0)
+    if (width === lastWidth) return
+    lastWidth = width
+    measureContent()
+  })
+  if (textareaRef.value) widthObserver.observe(textareaRef.value)
+})
 let resizeStartY = 0,
   resizeStartHeight = 0
 function onResizePointerDown(event: PointerEvent) {
@@ -124,15 +180,16 @@ function onResizePointerDown(event: PointerEvent) {
   ;(event.currentTarget as HTMLElement).setPointerCapture?.(event.pointerId)
   resizeStartY = event.clientY
   resizeStartHeight = editorHeight.value
+  resizing.value = true
   window.addEventListener('pointermove', onResizePointerMove)
   window.addEventListener('pointerup', onResizePointerUp, { once: true })
 }
 function onResizePointerMove(event: PointerEvent) {
-  editorHeight.value = Math.max(44, Math.min(320, resizeStartHeight + resizeStartY - event.clientY))
+  manualHeight.value = Math.max(44, Math.min(320, resizeStartHeight + resizeStartY - event.clientY))
 }
 function onResizePointerUp() {
   window.removeEventListener('pointermove', onResizePointerMove)
-  isExpanded.value = editorHeight.value > 100
+  resizing.value = false
 }
 function submit() {
   if (props.ready && !props.submitting && props.draft.trim()) emit('send')
@@ -150,6 +207,7 @@ watch(
   },
 )
 onBeforeUnmount(() => {
+  widthObserver?.disconnect()
   window.removeEventListener('pointermove', onResizePointerMove)
   window.removeEventListener('pointerup', onResizePointerUp)
 })
@@ -314,6 +372,28 @@ onBeforeUnmount(() => {
   outline: none;
   resize: none;
   overflow-y: auto;
+  // 随正文自动增高或缩回时平滑过渡；拖拽时跟手，减少动态效果时直接切换
+  transition: height 0.24s cubic-bezier(0.22, 0.68, 0.35, 1);
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
+
+  &--resizing {
+    transition: none;
+  }
+
+  &--mirror {
+    position: absolute;
+    top: 0;
+    left: 0.75rem;
+    width: calc(100% - 1.5rem);
+    height: 0;
+    min-height: 0;
+    overflow: hidden;
+    visibility: hidden;
+    pointer-events: none;
+    transition: none;
+  }
 
   &::placeholder {
     color: var(--text-faint);
