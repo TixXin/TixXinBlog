@@ -25,15 +25,22 @@ async function main() {
     assert.equal(page.items.length, 20)
     assert.equal(page.total, 26)
     assert(page.nextCursor)
+    // 浏览器与地区是公开展示字段（见 docs/api.md）；访客身份、提交去重与版本字段不得随公开接口下发。
     assert(
       page.items.every(
         (note) =>
           note.moderationStatus === 'published' &&
           !note.content.includes('[开发示例]') &&
-          !('region' in note) &&
-          !('status' in note),
+          !('status' in note) &&
+          !('visitorIdHash' in note) &&
+          !('requestId' in note) &&
+          !('requestHash' in note) &&
+          !('revision' in note) &&
+          !('updatedAt' in note) &&
+          !('deletedAt' in note),
       ),
     )
+    assert(page.items.some((note) => typeof note.browser === 'string' && typeof note.region === 'string'))
     const metadata = (await (await fetch(fixture.origin + '/api/v1/guestbook/metadata')).json()).data
     assert.equal(metadata.stats.messages, 26)
     assert(metadata.pinned?.isOwner)

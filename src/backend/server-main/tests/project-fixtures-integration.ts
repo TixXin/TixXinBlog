@@ -59,8 +59,9 @@ async function main() {
 
     const seeded = await seed()
     assert.equal(seeded.ready, true)
-    assert.equal(seeded.created.length, 21)
-    assert.equal(seeded.expectedRecords, 21)
+    // 18 个项目 + 10 张与内容对应的封面素材
+    assert.equal(seeded.created.length, 28)
+    assert.equal(seeded.expectedRecords, 28)
     assert.equal(
       (await em.execute('select count(*)::int as count from gallery_photo'))[0].count,
       0,
@@ -71,7 +72,7 @@ async function main() {
     assert.equal(catalog.domains[0].counts.published, 16)
     assert.equal(catalog.domains[0].counts.drafts, 1)
     assert.equal(catalog.domains[0].counts.withdrawn, 1)
-    assert.equal(catalog.domains[0].media.available, 3)
+    assert.equal(catalog.domains[0].media.available, 10)
     assert.equal(catalog.domains[0].counts.covered, catalog.domains[0].counts.references)
     assert.deepEqual((await inspectDataCatalog(em, 'projects', '没有这个项目')).domains[0].filter, {
       matched: 0,
@@ -98,7 +99,7 @@ async function main() {
     const sources = projects.flatMap((project) => project.links.filter((link) => link.kind === 'source'))
     assert.deepEqual(
       sources.map((link) => link.href),
-      ['https://github.com/TixXin/TixXinBlog'],
+      ['https://github.com/example/myblog'],
     )
     for (const project of projects)
       for (const link of project.links) {
@@ -109,7 +110,7 @@ async function main() {
     assert.equal((await get('/projects?progress=active')).total, 8)
     assert.equal((await get('/projects?progress=dev')).total, 4)
     assert.equal((await get('/projects?progress=archived')).total, 4)
-    assert.equal((await get('/projects?q=TixXinBlog')).total, 1)
+    assert.equal((await get('/projects?q=myblog')).total, 1)
     const metadata = await get('/projects/metadata')
     const labels = new Set(projects.flatMap((project) => project.tags.map((tag) => tag.label.toLowerCase())))
     assert.deepEqual(metadata.stats, { projects: 16, active: 8, dev: 4, archived: 4, tags: labels.size })
@@ -124,7 +125,7 @@ async function main() {
     }
 
     const media = await em.execute('select * from media_asset order by id')
-    assert.equal(new Set(media.map((image) => image.sha256)).size, 3)
+    assert.equal(new Set(media.map((image) => image.sha256)).size, 10)
     for (const image of media) {
       const response = await fetch(fixture.origin + `/api/v1/media/${image.id}.webp`)
       assert.equal(response.status, 200)
@@ -139,10 +140,10 @@ async function main() {
     const ownership = await em.execute('select * from development_fixture order by key')
     const browserRepeat = await seedProjectBrowserFixture(fixture)
     assert.equal(browserRepeat.created.length, 0)
-    assert.equal(browserRepeat.retained.length, 21)
+    assert.equal(browserRepeat.retained.length, 28)
     assert.equal((await seed()).created.length, 0)
     assert.deepEqual(await em.execute('select * from project order by id'), snapshots)
-    assert.equal((await cleanup()).remove.length, 21)
+    assert.equal((await cleanup()).remove.length, 28)
 
     const absent = join(process.env.MEDIA_DIRECTORY!, media[0].storage_key)
     const bytes = await readFile(absent)
@@ -183,7 +184,8 @@ async function main() {
     const ledgerBefore = await em.execute('select * from development_fixture order by key')
     const guarded = await cleanup()
     assert(guarded.preserve.some((item) => item.key === 'project-v1/media/mist'))
-    assert(guarded.preserve.some((item) => item.key === 'project-v1/media/skyline'))
+    // code-screen 是被编辑过的 project/0 的封面，随该项目一并保留。
+    assert(guarded.preserve.some((item) => item.key === 'project-v1/media/code-screen'))
     assert(guarded.remove.some((item) => item.key === 'project-v1/media/ridge'))
     assert(guarded.remove.some((item) => item.key === 'project-v1/project/4'))
     assert(guarded.preserve.some((item) => item.key === 'project-v1/project/0'))
@@ -216,7 +218,7 @@ async function main() {
     assert.equal((await seed()).created.length, 0)
     assert.equal((await fixture.testOrm.schema.getUpdateSchemaSQL({ wrap: false })).trim(), '')
     process.stdout.write(
-      '项目样本通过：独立18项目/3封面、两页公开、三种进展、有效文档链接、真实图片与统计、失败回滚、归属幂等、编辑删除保护、跨数据集图库引用保护及清理不复活\n',
+      '项目样本通过：独立18项目/10封面、两页公开、三种进展、有效文档链接、真实图片与统计、失败回滚、归属幂等、编辑删除保护、跨数据集图库引用保护及清理不复活\n',
     )
   } finally {
     if (reconnected) await fixture.testOrm.close(true)
