@@ -1,0 +1,146 @@
+name: 缺陷报告
+description: 报告可复现的功能异常
+title: '[Bug] '
+labels: ['bug']
+body:
+  - type: markdown
+    attributes:
+      value: |
+        感谢反馈。请先把代码更新到 `main` 最新提交确认问题仍然存在。
+
+        **安全漏洞请不要提交到这里**，改用仓库 Security 页签的私密漏洞报告，详见 [SECURITY.md](https://github.com/TixXin/TixXinBlog/blob/main/SECURITY.md)。
+
+        日志和截图请先去除访问令牌、数据库连接串、密码和个人信息。
+
+  - type: checkboxes
+    id: preflight
+    attributes:
+      label: 提交前确认
+      options:
+        - label: 我搜索过已有 Issue，没有重复的报告
+          required: true
+        - label: 这不是安全漏洞
+          required: true
+
+  - type: textarea
+    id: summary
+    attributes:
+      label: 问题描述
+      description: 用一两句话说明发生了什么
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: 复现步骤
+      description: 从干净状态开始，列出能稳定复现的最小步骤
+      placeholder: |
+        1. 执行 `corepack pnpm dev:all`
+        2. 打开 http://localhost:3456/admin
+        3. 点击 ...
+        4. 出现 ...
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: 期望行为
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: 实际行为
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: scope
+    attributes:
+      label: 影响范围
+      description: 可多选
+      options:
+        - label: 公开前台（文章、闪念、朋友圈、留言、图库、项目等）
+        - label: 创作后台 `/admin`
+        - label: 后端 API
+        - label: 部署、迁移或运行维护
+        - label: 不确定
+
+  - type: input
+    id: version
+    attributes:
+      label: 代码版本
+      description: 所用的提交哈希或标签，可用 `git rev-parse --short HEAD` 获取
+      placeholder: 0a853aa
+    validations:
+      required: true
+
+  - type: input
+    id: node
+    attributes:
+      label: Node.js 版本
+      description: '`node -v`；项目要求 `>=25 <26`'
+      placeholder: v25.0.0
+    validations:
+      required: true
+
+  - type: input
+    id: pnpm
+    attributes:
+      label: pnpm 版本
+      description: '`corepack pnpm -v`；项目固定 9.15.0'
+      placeholder: 9.15.0
+    validations:
+      required: true
+
+  - type: input
+    id: postgres
+    attributes:
+      label: PostgreSQL 版本
+      description: 项目要求 16
+      placeholder: '16.4'
+    validations:
+      required: true
+
+  - type: dropdown
+    id: deployment
+    attributes:
+      label: 运行方式
+      options:
+        - 本地开发（corepack pnpm dev:all）
+        - 本地构建产物（build 后运行）
+        - Docker / Docker Compose
+        - 其他
+    validations:
+      required: true
+
+  - type: input
+    id: os
+    attributes:
+      label: 操作系统
+      placeholder: macOS 15.6 / Ubuntu 24.04 / Windows 11
+    validations:
+      required: true
+
+  - type: input
+    id: browser
+    attributes:
+      label: 浏览器与版本
+      description: 仅界面问题需要填写
+      placeholder: Chrome 140
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: 相关日志
+      description: 前端控制台、后端输出或构建日志；会自动按代码块渲染
+      render: text
+
+  - type: textarea
+    id: extra
+    attributes:
+      label: 补充信息
+      description: 截图、录屏、已尝试的排查、怀疑的代码位置等

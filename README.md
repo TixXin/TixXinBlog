@@ -1,6 +1,15 @@
 # TixXinBlog
 
+[![CI](https://github.com/TixXin/TixXinBlog/actions/workflows/ci.yml/badge.svg)](https://github.com/TixXin/TixXinBlog/actions/workflows/ci.yml)
+[![Backend CI](https://github.com/TixXin/TixXinBlog/actions/workflows/backend-ci.yml/badge.svg)](https://github.com/TixXin/TixXinBlog/actions/workflows/backend-ci.yml)
+[![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](LICENSE)
+[![Node](https://img.shields.io/badge/node-%3E%3D25%20%3C26-5FA04E?logo=nodedotjs&logoColor=white)](https://nodejs.org/)
+[![Nuxt](https://img.shields.io/badge/Nuxt-4-00DC82?logo=nuxt&logoColor=white)](https://nuxt.com/)
+[![NestJS](https://img.shields.io/badge/NestJS-11-E0234E?logo=nestjs&logoColor=white)](https://nestjs.com/)
+
 面向单博主的个人博客系统，包含公开网站和内置创作后台。前端使用 Nuxt 4 / Vue 3，后端使用 NestJS / MikroORM / PostgreSQL。
+
+在线实例：<https://tix.xin>（作者本人的博客，内容与本仓库的演示数据无关）。
 
 ## 可以做什么
 
@@ -113,8 +122,12 @@ corepack pnpm --filter server-main build
 
 根目录 `build` 构建前端，后端单独构建。生产编排使用 `compose.production.yaml` 和 `deploy/` 模板；部署前需要设置实际域名、固定镜像版本、密钥和持久化存储，并先执行迁移。步骤见[部署指南](docs/deployment.md)，数据维护见[备份与恢复](docs/backup-and-recovery.md)。
 
-开发环境、代码职责、测试和 PR 要求见 [CONTRIBUTING.md](CONTRIBUTING.md)。[文档导航](docs/README.md)提供开发、架构、API、内容和主题说明。
+开发环境、代码职责、测试和 PR 要求见 [CONTRIBUTING.md](CONTRIBUTING.md)。[文档导航](docs/README.md)提供开发、架构、API、内容和主题说明。参与前请阅读[行为准则](CODE_OF_CONDUCT.md)。版本变更记录在 [CHANGELOG.md](CHANGELOG.md)。
+
+## 安全
+
+报告安全漏洞请走仓库的私密漏洞报告渠道，不要提交公开 issue，详见 [SECURITY.md](SECURITY.md)。
 
 ## 许可证
 
-代码许可证见 [LICENSE](LICENSE)（GNU GPL v3）。第三方素材的来源和许可按其随附说明处理。
+代码许可证见 [LICENSE](LICENSE)（GNU GPL v3），[LICENSE_CN](LICENSE_CN) 为同一协议的中文译本，仅供理解参考，发生歧义时以英文原文为准。第三方素材的来源和许可按其随附说明处理。
