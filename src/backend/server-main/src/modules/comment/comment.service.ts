@@ -35,7 +35,8 @@ export class CommentService {
   constructor(private readonly em: EntityManager) {}
 
   async getTree(postId: number, visitorIdHash = ''): Promise<{ items: CommentTreeNode[]; total: number }> {
-    const post = await this.em.findOne(Post, { id: postId })
+    // 存在性与可见性检查只需状态列，避免读取整篇正文。
+    const post = await this.em.findOne(Post, { id: postId }, { fields: ['id', 'status', 'deletedAt'] })
     if (!post || post.status !== 'published' || post.deletedAt)
       throw new BusinessException(POST_NOT_FOUND, '文章不存在', HttpStatus.NOT_FOUND)
 

@@ -9,7 +9,7 @@ import { Controller, Get, Header, Param, ParseIntPipe, Post as HttpPost, Query }
 import { VisitorIdHash } from '../../common/decorators/visitor-id.decorator'
 import { QueryPostDto } from './dto/query-post.dto'
 import { QueryPostArchiveDto, QueryPostMetadataDto } from './dto/query-post-archive.dto'
-import { ArticleDetailDto, PostListResult, PostService } from './post.service'
+import { ArticleDetailDto, PostListResult, PostService, PostViewResult } from './post.service'
 import { PostDiscoveryService } from './post-discovery.service'
 
 @Controller('posts')
@@ -63,7 +63,8 @@ export class PostController {
   }
 
   @HttpPost(':id/view')
-  addView(@Param('id', ParseIntPipe) id: number, @VisitorIdHash() visitorIdHash: string): Promise<{ views: number }> {
+  @Header('Cache-Control', 'private, no-store')
+  addView(@Param('id', ParseIntPipe) id: number, @VisitorIdHash() visitorIdHash: string): Promise<PostViewResult> {
     return this.postService.addView(id, visitorIdHash)
   }
 

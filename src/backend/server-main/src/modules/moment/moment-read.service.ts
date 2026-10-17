@@ -7,6 +7,7 @@ import { Moment } from '../../entities/moment.entity'
 import { MomentLike } from '../../entities/moment-like.entity'
 import { MomentComment } from '../../entities/moment-comment.entity'
 import { MediaAsset } from '../../entities/media-asset.entity'
+import type { Post } from '../../entities/post.entity'
 import type { QueryAdminMomentsDto, QueryMomentsDto, MomentPageQuery, QueryAdminMomentCommentsDto } from './moment.dto'
 import { momentWhere, publicMoments } from './moment-values'
 import { managedMediaIds } from '../media/media-references'
@@ -21,6 +22,24 @@ interface CommentRow {
   is_owner: boolean
   status: string
 }
+// 公开投影只用到引用文章的卡片字段与可见性；限定列避免连带读取 Markdown 原文和 JSONB 正文。
+const LINKED_ARTICLE_FIELDS = [
+  '*',
+  'linkedArticle.id',
+  'linkedArticle.slug',
+  'linkedArticle.title',
+  'linkedArticle.summary',
+  'linkedArticle.cover',
+  'linkedArticle.status',
+  'linkedArticle.deletedAt',
+] as const
+/** 序列化所需的动态投影：引用文章只保证加载卡片字段 */
+type MomentProjection = Omit<Moment, 'linkedArticle'> & {
+  linkedArticle?: Pick<Post, 'id' | 'slug' | 'title' | 'summary' | 'cover' | 'status' | 'deletedAt'> | null
+}
+// 回顾卡片只展示截断正文与日期。
+const RECOLLECTION_FIELDS = ['id', 'content', 'publishedAt', 'createdAt'] as const
+
 export function momentCommentDto(comment: MomentComment) {
   return {
     id: comment.id,
@@ -46,6 +65,7 @@ export class MomentReadService {
     }
     const [items, total] = await this.em.findAndCount(Moment, where, {
       populate: ['linkedArticle'],
+      fields: [...LINKED_ARTICLE_FIELDS],
       orderBy: {
         ...(query.pinnedFirst !== false ? { isPinned: 'desc' as const } : {}),
         publishedAt: 'desc',
@@ -61,7 +81,7 @@ export class MomentReadService {
     const note = await this.em.findOne(
       Moment,
       { id, ...(admin ? { deletedAt: null } : publicMoments) },
-      { populate: ['linkedArticle'], refresh: true },
+      { populate: ['linkedArticle'], fields: [...LINKED_ARTICLE_FIELDS], refresh: true },
     )
     if (!note) throw new NotFoundException('动态不存在或尚未公开')
     return note
@@ -148,40 +168,49 @@ export class MomentReadService {
   }
   async overview() {
     const connection = this.em.getConnection()
-    const [stats] = await connection.execute<{ totalMoments: number; totalLikes: number; totalComments: number }[]>(`
+    const today = new Date()
+    const from = new Date(Date.UTC(today.getUTCFullYear() - 1, today.getUTCMonth(), today.getUTCDate()))
+    // 各聚合互不依赖，并发执行；均为事务外只读查询，各自从连接池取连接。
+    // 照片与回顾按不同字段部分加载，可能命中同一条动态；各用独立 fork 的身份映射，
+    // 避免并发合并部分实体，也不污染请求级 EntityManager。
+    const [[stats], topics, dates, photos, recent, anniversary] = await Promise.all([
+      connection.execute<{ totalMoments: number; totalLikes: number; totalComments: number }[]>(`
       select count(*)::int as "totalMoments", coalesce(sum(likes),0)::int as "totalLikes",
       (select count(*)::int from moment_comment c join moment m on m.id=c.moment_id
        where m.status='published' and m.deleted_at is null and c.status='published' and c.deleted_at is null) as "totalComments"
-      from moment where status='published' and deleted_at is null`)
-    const topics = await connection.execute<{ name: string; count: number }[]>(`
+      from moment where status='published' and deleted_at is null`),
+      connection.execute<{ name: string; count: number }[]>(`
       select topic as name,count(*)::int as count from moment cross join lateral jsonb_array_elements_text(topics) topic
-      where status='published' and deleted_at is null group by topic order by count desc,topic asc`)
-    const dates = await connection.execute<{ date: string; count: number }[]>(`
+      where status='published' and deleted_at is null group by topic order by count desc,topic asc`),
+      // 日历可翻到任意历史月份并统计连续天数，因此保留全部有动态的日期（每天一行，体量随天数线性增长）。
+      connection.execute<{ date: string; count: number }[]>(`
       select to_char(published_at at time zone 'UTC','YYYY-MM-DD') as date,count(*)::int as count
-      from moment where status='published' and deleted_at is null group by date order by date desc`)
-    const photos = await this.em.find(
-      Moment,
-      { ...publicMoments, [raw((alias) => `jsonb_array_length(${alias}.images)`)]: { $gt: 0 } },
-      {
-        orderBy: { likes: 'desc', publishedAt: 'desc', id: 'desc' },
-        limit: 9,
-      },
-    )
-    const recent = await this.em.find(Moment, publicMoments, {
-      populate: ['linkedArticle'],
-      orderBy: { [raw('random()')]: 'asc' },
-      limit: 12,
-    })
-    const today = new Date()
-    const from = new Date(Date.UTC(today.getUTCFullYear() - 1, today.getUTCMonth(), today.getUTCDate()))
-    const anniversary =
+      from moment where status='published' and deleted_at is null group by date order by date desc`),
+      this.em.fork().find(
+        Moment,
+        { ...publicMoments, [raw((alias) => `jsonb_array_length(${alias}.images)`)]: { $gt: 0 } },
+        {
+          fields: ['id', 'images'],
+          orderBy: { likes: 'desc', publishedAt: 'desc', id: 'desc' },
+          limit: 9,
+        },
+      ),
+      // 回顾只展示正文摘录与日期，不需要引用文章。
+      this.em.fork().find(Moment, publicMoments, {
+        fields: [...RECOLLECTION_FIELDS],
+        orderBy: { [raw('random()')]: 'asc' },
+        limit: 12,
+      }),
       from.getUTCMonth() === today.getUTCMonth()
-        ? await this.em.findOne(
-            Moment,
-            { ...publicMoments, publishedAt: { $gte: from, $lt: new Date(from.getTime() + 86400000) } },
-            { orderBy: { publishedAt: 'desc', id: 'desc' } },
-          )
-        : null
+        ? this.em
+            .fork()
+            .findOne(
+              Moment,
+              { ...publicMoments, publishedAt: { $gte: from, $lt: new Date(from.getTime() + 86400000) } },
+              { fields: [...RECOLLECTION_FIELDS], orderBy: { publishedAt: 'desc', id: 'desc' } },
+            )
+        : Promise.resolve(null),
+    ])
     if (anniversary && !recent.some((item) => item.id === anniversary.id)) recent.push(anniversary)
     return {
       stats,
@@ -195,7 +224,7 @@ export class MomentReadService {
       })),
     }
   }
-  async serialize(items: Moment[], visitor: string, admin: boolean) {
+  async serialize(items: MomentProjection[], visitor: string, admin: boolean) {
     if (!items.length) return []
     const ids = items.map((item) => item.id)
     const marks = ids.map(() => '?').join(',')

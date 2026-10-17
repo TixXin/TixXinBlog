@@ -25,6 +25,11 @@ interface LoadedArticleSnapshot {
 // 每个Nuxt应用只保留当前文章；不跨SSR请求共享，也不写入持久化存储。
 const loadedArticles = new WeakMap<object, LoadedArticleSnapshot>()
 
+/** 纯数字地址就是文章 ID，补充读取无需等待详情解析 */
+export function isNumericArticleId(id: string) {
+  return /^\d+$/.test(id)
+}
+
 export async function useArticleDetail(id: string, options: { reuseLoaded?: boolean } = {}) {
   const requestScope = usePageRequestScope()
   const nuxtApp = useNuxtApp()
@@ -76,12 +81,22 @@ export async function useArticleDetail(id: string, options: { reuseLoaded?: bool
     const base = config.public.apiBaseUrl
     // 单个作用域内完成详情和补充读取，避免await之后再创建脱离页面的AsyncData订阅。
     const detailResult = await useAsyncData(`article-snapshot-${id}`, async (_app, { signal }) => {
+      const discoveryAbort = new AbortController()
       const requestSignal = AbortSignal.any([signal, requestScope.signal])
-      const detail = await fetchArticleDetail(base, id, requestSignal)
-      const [related, adjacent] = await Promise.allSettled([
-        fetchRelatedPosts(base, detail.id, requestSignal),
-        fetchPostNavigation(base, detail.id, requestSignal),
-      ])
+      const discoverySignal = AbortSignal.any([requestSignal, discoveryAbort.signal])
+      // 数字地址可与详情同时请求推荐与相邻文章；自定义地址须先由详情解析出数字 ID。
+      // 详情失败时中止并丢弃已发起的补充读取，错误仍由详情决定。
+      const discovery = (postId: string) =>
+        Promise.allSettled([
+          fetchRelatedPosts(base, postId, discoverySignal),
+          fetchPostNavigation(base, postId, discoverySignal),
+        ])
+      const early = isNumericArticleId(id) ? discovery(id) : undefined
+      const detail = await fetchArticleDetail(base, id, requestSignal).catch((error: unknown) => {
+        discoveryAbort.abort()
+        throw error
+      })
+      const [related, adjacent] = await (early ?? discovery(detail.id))
       return {
         detail,
         related: related.status === 'fulfilled' ? related.value : [],
@@ -128,8 +143,10 @@ export async function useArticleDetail(id: string, options: { reuseLoaded?: bool
       }))
   })
 
+  // 摘要优先；缺摘要时用后端首段摘录，旧结构化正文与演示数据仍可从段落兜底。
   const articleExcerpt = computed(() => {
     if (article.value.summary) return article.value.summary
+    if (article.value.excerpt) return article.value.excerpt
     const firstParagraph = article.value.content?.find((s: { type: string }) => s.type === 'paragraph')
     return firstParagraph?.text?.slice(0, 160) ?? '阅读本站的文章'
   })

@@ -59,7 +59,13 @@ export interface ArticleDetail {
   views: number
   likes: number
   comments: number
-  content: ArticleSection[]
+  /** 内容最后修订时间（ISO UTC），不随浏览与点赞变化；演示数据缺省 */
+  updatedAt?: string
+  tags?: PostTag[]
+  /** 摘要为空时后端提供的首段摘录 */
+  excerpt?: string
+  /** 结构化正文仅在没有 Markdown 原文的旧文章上返回 */
+  content?: ArticleSection[]
   contentRaw?: string
 }
 
@@ -104,6 +110,8 @@ export interface PostArchiveItem {
   title: string
   folder: string
   date: string
+  /** 内容最后修订时间（ISO UTC），供站点地图 lastmod */
+  updatedAt?: string
 }
 
 /** 兼容旧公开统计与服务端 sitemap 的完整返回。 */
