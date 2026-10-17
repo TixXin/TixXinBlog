@@ -99,7 +99,7 @@ async function main() {
     const sources = projects.flatMap((project) => project.links.filter((link) => link.kind === 'source'))
     assert.deepEqual(
       sources.map((link) => link.href),
-      ['https://github.com/example/myblog'],
+      ['https://github.com/TixXin/TixXinBlog'],
     )
     for (const project of projects)
       for (const link of project.links) {
@@ -110,7 +110,7 @@ async function main() {
     assert.equal((await get('/projects?progress=active')).total, 8)
     assert.equal((await get('/projects?progress=dev')).total, 4)
     assert.equal((await get('/projects?progress=archived')).total, 4)
-    assert.equal((await get('/projects?q=myblog')).total, 1)
+    assert.equal((await get('/projects?q=TixXinBlog')).total, 1)
     const metadata = await get('/projects/metadata')
     const labels = new Set(projects.flatMap((project) => project.tags.map((tag) => tag.label.toLowerCase())))
     assert.deepEqual(metadata.stats, { projects: 16, active: 8, dev: 4, archived: 4, tags: labels.size })

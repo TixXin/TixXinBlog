@@ -52,7 +52,7 @@ export const SHOWCASE_MOMENTS: readonly ShowcaseMoment[] = [
     linkedPost: 'nuxt3-fullstack-blog',
     comments: [
       { author: '代码小哥', content: '期待文章，主题引擎是怎么做的？', hoursAfter: 5 },
-      { author: '陈屿', content: '基于 slot contract 模式，文章里会详细说', owner: true, hoursAfter: 7 },
+      { author: 'TixXin', content: '基于 slot contract 模式，文章里会详细说', owner: true, hoursAfter: 7 },
       { author: '前端菜鸟', content: '@代码小哥 大佬带带我', hoursAfter: 20 },
     ],
   },
@@ -67,7 +67,7 @@ export const SHOWCASE_MOMENTS: readonly ShowcaseMoment[] = [
     device: 'Sony A7M4',
     comments: [
       { author: '摄影师老张', content: '手持长曝？快门速度多少？', hoursAfter: 9 },
-      { author: '陈屿', content: '1/4s，开了 IBIS 防抖，靠在栏杆上稳住', owner: true, hoursAfter: 11 },
+      { author: 'TixXin', content: '1/4s，开了 IBIS 防抖，靠在栏杆上稳住', owner: true, hoursAfter: 11 },
     ],
   },
   {
@@ -81,7 +81,7 @@ export const SHOWCASE_MOMENTS: readonly ShowcaseMoment[] = [
     device: 'iPhone 16 Pro',
     comments: [
       { author: '美食家小王', content: '这家我也去过，确实不错！', hoursAfter: 3 },
-      { author: '陈屿', content: '@美食家小王 下次试试拼盘，比单点划算', owner: true, hoursAfter: 4 },
+      { author: 'TixXin', content: '@美食家小王 下次试试拼盘，比单点划算', owner: true, hoursAfter: 4 },
     ],
   },
   {
@@ -104,7 +104,7 @@ export const SHOWCASE_MOMENTS: readonly ShowcaseMoment[] = [
     location: '深圳·南山',
     comments: [
       { author: '咖啡控', content: '在哪里呀，求地址！', hoursAfter: 2 },
-      { author: '陈屿', content: '南山大道旁边的小巷子里，叫“慢时光”', owner: true, hoursAfter: 3 },
+      { author: 'TixXin', content: '南山大道旁边的小巷子里，叫“慢时光”', owner: true, hoursAfter: 3 },
     ],
   },
   {
@@ -159,9 +159,9 @@ export const SHOWCASE_MOMENTS: readonly ShowcaseMoment[] = [
     location: '四川·新都桥',
     comments: [
       { author: '驴友阿杰', content: '川西的雪山确实绝了！走的哪条线？', hoursAfter: 6 },
-      { author: '陈屿', content: '318 进去，新都桥住一晚，再往塔公走', owner: true, hoursAfter: 8 },
+      { author: 'TixXin', content: '318 进去，新都桥住一晚，再往塔公走', owner: true, hoursAfter: 8 },
       { author: '户外小白', content: '@驴友阿杰 新手自驾能去吗？', hoursAfter: 30 },
-      { author: '陈屿', content: '@户外小白 路况还行，主要注意高反，备好氧气慢慢开', owner: true, hoursAfter: 33 },
+      { author: 'TixXin', content: '@户外小白 路况还行，主要注意高反，备好氧气慢慢开', owner: true, hoursAfter: 33 },
     ],
   },
   {
@@ -175,7 +175,7 @@ export const SHOWCASE_MOMENTS: readonly ShowcaseMoment[] = [
     device: 'MacBook Pro',
     comments: [
       { author: 'Nuxt爱好者', content: '升级麻烦吗？有 breaking changes 吗？', hoursAfter: 12 },
-      { author: '陈屿', content: '官方有迁移指南，主要是目录结构变化，逻辑基本兼容', owner: true, hoursAfter: 15 },
+      { author: 'TixXin', content: '官方有迁移指南，主要是目录结构变化，逻辑基本兼容', owner: true, hoursAfter: 15 },
     ],
   },
   {
@@ -254,7 +254,7 @@ export const SHOWCASE_MOMENTS: readonly ShowcaseMoment[] = [
     location: '深圳·仙湖植物园',
     comments: [
       { author: '小林', content: '好美啊！这个季节去植物园最合适了', hoursAfter: 4 },
-      { author: '陈屿', content: '是的，推荐周中去人少', owner: true, hoursAfter: 6 },
+      { author: 'TixXin', content: '是的，推荐周中去人少', owner: true, hoursAfter: 6 },
     ],
   },
 ]

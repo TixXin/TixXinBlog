@@ -19,7 +19,7 @@ async function main() {
     assert.equal(prepared.changed, true)
     assert(prepared.backup)
     const [after] = await fixture.testOrm.em.execute('select * from site_settings')
-    assert.equal(after.values.ownerName, '陈屿')
+    assert.equal(after.values.ownerName, 'tixxin')
     assert.deepEqual(after.values.socials, [])
     assert.equal(after.values.about.visible, true)
     for (const key of ['name', 'description', 'announcement', 'seoTitle', 'seoDescription'])

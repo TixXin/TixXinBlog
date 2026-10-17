@@ -33,7 +33,7 @@ export function editorialPostInput(key: EditorialKey, relatedContent: ContentRel
     contentRaw: article.body,
     category: 'tech' as const,
     folder: '博客建设',
-    tags: ['myblog', '工程实践'],
+    tags: ['TixXinBlog', '工程实践'],
     status: 'draft' as const,
     slug: legacy ? '' : latest.slug,
     pinned: legacy ? false : latest.pinned,

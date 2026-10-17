@@ -329,14 +329,14 @@ export async function seedWritingFixtures(
         await new ProjectService(em).save(null, {
           title: '博客内容工作台',
           description:
-            '围绕myblog的真实内容组织创作、媒体、阅读入口和维护记录。图片封面来自Unsplash城市素材，来源说明随媒体保留。',
+            '围绕TixXinBlog的真实内容组织创作、媒体、阅读入口和维护记录。图片封面来自Unsplash城市素材，来源说明随媒体保留。',
           requestId: randomUUID(),
           status: 'published',
           progress: 'active',
           sortOrder: 0,
           coverMediaId: mediaId,
           tags: [{ label: 'Nuxt', color: 'emerald' }],
-          links: [{ kind: 'source', href: 'https://github.com/example/myblog' }],
+          links: [{ kind: 'source', href: 'https://github.com/TixXin/TixXinBlog' }],
           relatedContent: [postId, draftId]
             .filter((id): id is string => !!id)
             .map((id) => ({ type: 'post' as const, id: Number(id) })),
