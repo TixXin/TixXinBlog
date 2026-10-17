@@ -1,13 +1,20 @@
 /**
  * @file logging.ts
- * @description 结构化日志统一脱敏配置，禁止认证凭据进入请求及响应日志
+ * @description 结构化日志统一脱敏配置，禁止认证凭据进入请求及响应日志；请求编号与 traceId 一致
  */
 import type { Params } from 'nestjs-pino'
+import { getTraceId } from '../common/utils/trace-id'
 
 export function createLoggingOptions(level = 'info', development = false): Params {
   return {
     pinoHttp: {
       level,
+      // request.id 与响应体 traceId、X-Request-Id 共用同一值，便于按响应定位日志与审计。
+      genReqId: (req, res) => {
+        const traceId = getTraceId(req)
+        if (!res.headersSent) res.setHeader('X-Request-Id', traceId)
+        return traceId
+      },
       redact: {
         paths: [
           'req.headers.authorization',

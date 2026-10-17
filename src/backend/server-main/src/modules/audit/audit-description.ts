@@ -8,6 +8,8 @@ export const auditActions: Record<string, string> = {
   'auth.login': '登录',
   'auth.logout': '退出会话',
   'auth.password': '修改密码',
+  'auth.password-reset': '命令行重置密码',
+  'auth.refresh-reuse': '刷新令牌重放并撤销会话',
   'session.revoke': '撤销会话',
   'session.others': '撤销其他会话',
   'post.create': '新建文章',

@@ -1,7 +1,13 @@
 # Caddy 自动 HTTPS；对外启用之前核对 DNS、端口及证书签发授权。
 {$SITE_HOST} {
   encode zstd gzip
-  header X-TixXin-Release {$RELEASE_VERSION}
+  header {
+    X-TixXin-Release {$RELEASE_VERSION}
+    # 仅约束本站点，不含 includeSubDomains/preload，避免影响同域其他子站点；确认全站 HTTPS 后再按需加长或扩展。
+    Strict-Transport-Security "max-age=31536000"
+    # 站点不使用这些浏览器能力，统一禁用。
+    Permissions-Policy "camera=(), microphone=(), geolocation=(), payment=(), usb=()"
+  }
   reverse_proxy frontend:3000 {
     # 当前入口直接面向访客：重建地址，不继承请求中伪造的代理链。
     header_up X-Forwarded-For {http.request.remote.host}

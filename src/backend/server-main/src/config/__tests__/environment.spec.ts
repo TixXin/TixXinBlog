@@ -8,7 +8,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { loadLocalEnvironment } from '../environment'
 import { validateEnv } from '../env.validation'
-import { getAccessSecret } from '../../modules/auth/auth.constants'
+import { getAccessSecret, getRefreshCookieOptions } from '../../modules/auth/auth.constants'
 
 describe('环境配置', () => {
   it('进程变量优先于本地文件，本地文件优先于通用文件', () => {
@@ -38,10 +38,10 @@ describe('环境配置', () => {
       DATABASE_URL: 'postgres://dev:fixture-only@127.0.0.1:5433/tixxin_fixture',
       JWT_ACCESS_SECRET: 'fixture-secret-with-at-least-32-characters',
     }
-    const local = validateEnv(base)
+    const local = validateEnv({ ...base, NODE_ENV: 'development' })
     expect(local.PORT).toBe(3457)
     expect(local.DATABASE_URL).toBe(base.DATABASE_URL)
-    const container = validateEnv({ ...base, NODE_ENV: 'production', PORT: '3000' })
+    const container = validateEnv({ ...base, NODE_ENV: 'production', PORT: '3000', MEDIA_DIRECTORY: '/app/var/media' })
     expect(container.PORT).toBe(3000)
     expect(container.DATABASE_URL).toBe(base.DATABASE_URL)
   })
@@ -53,5 +53,58 @@ describe('环境配置', () => {
     const secret = 'test-secret-with-at-least-32-characters'
     expect(getAccessSecret(secret)).toBe(secret)
     expect(() => validateEnv({ NODE_ENV: 'production', JWT_ACCESS_SECRET: secret })).toThrow('DATABASE_URL')
+  })
+
+  describe('安全默认值', () => {
+    const base = {
+      DATABASE_URL: 'postgres://dev:fixture-only@127.0.0.1:5433/tixxin_fixture',
+      JWT_ACCESS_SECRET: 'fixture-secret-with-at-least-32-characters',
+    }
+
+    it('缺省 NODE_ENV 按生产处理，日志缺省 info，限流开关缺省关闭', () => {
+      const validated = validateEnv({ ...base, MEDIA_DIRECTORY: '/srv/media' })
+      expect(validated.NODE_ENV).toBe('production')
+      expect(validated.LOG_LEVEL).toBe('info')
+      expect(validated.RATE_LIMIT_DISABLED).toBe('false')
+    })
+
+    it('生产环境 MEDIA_DIRECTORY 必填且为绝对路径，开发与测试允许相对路径', () => {
+      expect(() => validateEnv(base)).toThrow('MEDIA_DIRECTORY')
+      expect(() => validateEnv({ ...base, NODE_ENV: 'production', MEDIA_DIRECTORY: './var/media' })).toThrow(
+        'MEDIA_DIRECTORY',
+      )
+      expect(validateEnv({ ...base, NODE_ENV: 'production', MEDIA_DIRECTORY: '/app/var/media' }).MEDIA_DIRECTORY).toBe(
+        '/app/var/media',
+      )
+      expect(validateEnv({ ...base, NODE_ENV: 'development', MEDIA_DIRECTORY: './var/media' }).NODE_ENV).toBe(
+        'development',
+      )
+      expect(validateEnv({ ...base, NODE_ENV: 'test' }).NODE_ENV).toBe('test')
+    })
+
+    it('RATE_LIMIT_DISABLED 只接受 true/false', () => {
+      expect(() => validateEnv({ ...base, NODE_ENV: 'development', RATE_LIMIT_DISABLED: 'yes' })).toThrow(
+        'RATE_LIMIT_DISABLED',
+      )
+    })
+
+    it('刷新 Cookie 仅在显式 development/test 下不带 Secure', () => {
+      const previous = process.env.NODE_ENV
+      try {
+        for (const [mode, secure] of [
+          ['development', false],
+          ['test', false],
+          ['production', true],
+          [undefined, true],
+          ['staging', true],
+        ] as const) {
+          if (mode === undefined) delete process.env.NODE_ENV
+          else process.env.NODE_ENV = mode
+          expect(getRefreshCookieOptions().secure).toBe(secure)
+        }
+      } finally {
+        process.env.NODE_ENV = previous
+      }
+    })
   })
 })

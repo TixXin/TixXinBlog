@@ -8,7 +8,7 @@
 import { NestFactory } from '@nestjs/core'
 import { Logger } from 'nestjs-pino'
 import { AppModule } from './app.module'
-import { configureApplication } from './bootstrap'
+import { configureApplication, reportBootstrapFailure } from './bootstrap'
 
 async function bootstrap(): Promise<void> {
   const app = await NestFactory.create(AppModule, { bufferLogs: true })
@@ -20,4 +20,4 @@ async function bootstrap(): Promise<void> {
   await app.listen(port)
 }
 
-void bootstrap()
+bootstrap().catch((error: unknown) => reportBootstrapFailure(error))

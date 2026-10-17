@@ -32,7 +32,8 @@ export function getRefreshCookieOptions(): {
   return {
     httpOnly: true,
     sameSite: 'lax',
-    secure: process.env.NODE_ENV === 'production',
+    // 仅显式的本机开发与测试允许明文 HTTP；缺省或未知环境按生产带 Secure。
+    secure: !['development', 'test'].includes(process.env.NODE_ENV ?? ''),
     // 限定 cookie 只随鉴权接口发送,减少暴露面
     path: '/api/v1/auth',
     maxAge: REFRESH_TOKEN_TTL_MS,

@@ -8,19 +8,22 @@
 import { Test } from '@nestjs/testing'
 import { HealthController } from '../health.controller'
 import { EntityManager } from '@mikro-orm/postgresql'
+import { ReadinessState } from '../readiness-state'
 
 describe('HealthController', () => {
   let controller: HealthController
+  let readiness: ReadinessState
   const execute = jest.fn()
 
   beforeEach(async () => {
     execute.mockReset().mockResolvedValue([{ '?column?': 1 }])
     const moduleRef = await Test.createTestingModule({
       controllers: [HealthController],
-      providers: [{ provide: EntityManager, useValue: { getConnection: () => ({ execute }) } }],
+      providers: [ReadinessState, { provide: EntityManager, useValue: { getConnection: () => ({ execute }) } }],
     }).compile()
 
     controller = moduleRef.get(HealthController)
+    readiness = moduleRef.get(ReadinessState)
   })
 
   it('health 返回 ok 与运行时长', () => {
@@ -38,5 +41,22 @@ describe('HealthController', () => {
   it('数据库不可用时返回 503', async () => {
     execute.mockRejectedValue(new Error('offline'))
     await expect(controller.ready()).rejects.toMatchObject({ status: 503 })
+  })
+
+  it('收到关闭信号后 ready 立即返回 503，不再查询数据库，health 仍存活', async () => {
+    readiness.watchSignals(['SIGUSR2'])
+    process.emit('SIGUSR2', 'SIGUSR2')
+    await expect(controller.ready()).rejects.toMatchObject({ status: 503 })
+    expect(execute).not.toHaveBeenCalled()
+    expect(controller.health().status).toBe('ok')
+  })
+
+  it('模块销毁时标记关闭并移除本实例的信号监听', () => {
+    const before = process.listenerCount('SIGUSR2')
+    readiness.watchSignals(['SIGUSR2'])
+    expect(process.listenerCount('SIGUSR2')).toBe(before + 1)
+    readiness.onModuleDestroy()
+    expect(readiness.isShuttingDown).toBe(true)
+    expect(process.listenerCount('SIGUSR2')).toBe(before)
   })
 })

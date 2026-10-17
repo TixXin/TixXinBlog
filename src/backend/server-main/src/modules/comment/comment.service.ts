@@ -21,6 +21,7 @@ import { CreateCommentDto } from './dto/create-comment.dto'
 import { CommentPolicy } from '../../entities/comment-policy.entity'
 import { visibleCommentWhere } from './comment-visibility'
 import { lockMedia, synchronizeMediaReferences } from '../media/media-references'
+import { momentUrl } from '../moment/moment-values'
 
 /** 域错误码(api.md 附录 A) */
 const POST_NOT_FOUND = 1001
@@ -68,6 +69,8 @@ export class CommentService {
     visitorIdHash: string,
     isOwner = false,
   ): Promise<CommentTreeNode> {
+    // 与朋友圈、留言共用头像白名单：默认头像、本站媒体或完整 HTTP(S) 地址，拒绝 javascript: 等协议。
+    const avatar = dto.avatar === undefined ? DEFAULT_AVATAR : momentUrl(dto.avatar, true, true)
     return this.em.transactional(async (em) => {
       await lockMedia(em)
       const post = await em.findOne(Post, { id: postId }, { lockMode: LockMode.PESSIMISTIC_WRITE })
@@ -80,7 +83,7 @@ export class CommentService {
 
       const digest = (value: unknown) => createHash('sha256').update(JSON.stringify(value)).digest('hex')
       const submissionId = dto.requestId ? digest([postId, visitorIdHash, isOwner, dto.requestId]) : null
-      const requestHash = digest([dto.author, dto.avatar ?? DEFAULT_AVATAR, dto.content, dto.parentId ?? null])
+      const requestHash = digest([dto.author, avatar, dto.content, dto.parentId ?? null])
       if (submissionId) {
         const previous = await em.findOne(CommentSubmission, { id: submissionId }, { populate: ['comment'] })
         if (previous) {
@@ -125,7 +128,7 @@ export class CommentService {
         post,
         parent,
         depth: parent ? parent.depth + 1 : 0,
-        authorSnapshot: { name: dto.author, avatar: dto.avatar ?? DEFAULT_AVATAR, visitorIdHash },
+        authorSnapshot: { name: dto.author, avatar, visitorIdHash },
         content: dto.content,
         likes: 0,
         isOwner,

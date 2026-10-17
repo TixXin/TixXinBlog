@@ -27,6 +27,7 @@ import { getRefreshCookieOptions, REFRESH_COOKIE_NAME } from './auth.constants'
 import { AuthService, LoginResult } from './auth.service'
 import { LoginDto } from './dto/login.dto'
 import { ChangePasswordDto } from './dto/change-password.dto'
+import { getTraceId } from '../../common/utils/trace-id'
 import { AuthOriginGuard } from '../../common/guards/auth-origin.guard'
 import { AuthSessionsService } from './auth-sessions.service'
 import type { AuditRequest } from '../audit/audit-request'
@@ -103,7 +104,7 @@ export class AuthController {
   @HttpCode(HttpStatus.OK)
   async refresh(@Req() req: Request, @Res({ passthrough: true }) res: Response): Promise<AuthPayload> {
     const cookie = (req.cookies as Record<string, string> | undefined)?.[REFRESH_COOKIE_NAME] ?? ''
-    const result = await this.authService.refresh(cookie, req.headers['user-agent'])
+    const result = await this.authService.refresh(cookie, req.headers['user-agent'], getTraceId(req))
     res.cookie(REFRESH_COOKIE_NAME, result.refreshTokenPlain, getRefreshCookieOptions())
     return toPayload(result)
   }

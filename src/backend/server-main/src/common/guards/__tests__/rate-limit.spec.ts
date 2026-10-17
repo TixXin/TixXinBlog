@@ -4,7 +4,7 @@
  */
 import { ConfigService } from '@nestjs/config'
 import type { ExecutionContext } from '@nestjs/common'
-import { RateLimitGuard, RateLimitStore } from '../rate-limit.guard'
+import { RateLimitGuard, RateLimitStore, rateLimitClientKey } from '../rate-limit.guard'
 
 describe('RateLimitStore', () => {
   it('突发请求超过配额时给出重试时间，过期后恢复', () => {
@@ -14,6 +14,35 @@ describe('RateLimitStore', () => {
     expect(store.consume('login:ip-a', 2, 60000, 2)).toBe(60)
     expect(store.consume('login:ip-b', 2, 60000, 3)).toBe(0)
     expect(store.consume('login:ip-a', 2, 60000, 60001)).toBe(0)
+  })
+
+  it('表满时优先清理过期条目，仍满则淘汰最早窗口，新客户端不被一律拒绝', () => {
+    const store = new RateLimitStore(3)
+    expect(store.consume('read:a', 1, 1000, 0)).toBe(0)
+    expect(store.consume('read:b', 1, 60000, 1)).toBe(0)
+    expect(store.consume('read:c', 1, 60000, 2)).toBe(0)
+    // a 已过期，被清理后 d 入表，b、c 的计数保持
+    expect(store.consume('read:d', 1, 60000, 1500)).toBe(0)
+    expect(store.size).toBe(3)
+    expect(store.consume('read:b', 1, 60000, 1600)).toBeGreaterThan(0)
+    // 全部未过期时淘汰最早开启的 b
+    expect(store.consume('read:e', 1, 60000, 1700)).toBe(0)
+    expect(store.size).toBe(3)
+    expect(store.consume('read:c', 1, 60000, 1800)).toBeGreaterThan(0)
+    expect(store.consume('read:b', 1, 60000, 1900)).toBe(0)
+  })
+})
+
+describe('rateLimitClientKey', () => {
+  it('IPv6 按 /64 归并，IPv4 与映射地址按单地址计数', () => {
+    expect(rateLimitClientKey('2001:db8:1:2:3:4:5:6')).toBe('2001:db8:1:2::/64')
+    expect(rateLimitClientKey('2001:DB8:0001:0002:ffff::1')).toBe('2001:db8:1:2::/64')
+    expect(rateLimitClientKey('2001:db8:1:3::1')).toBe('2001:db8:1:3::/64')
+    expect(rateLimitClientKey('192.0.2.1')).toBe('192.0.2.1')
+    expect(rateLimitClientKey('::ffff:192.0.2.1')).toBe('192.0.2.1')
+    expect(rateLimitClientKey('::ffff:c000:201')).not.toBe(rateLimitClientKey('::ffff:c000:202'))
+    expect(rateLimitClientKey('::1')).toBe('0:0:0:0:0:0:0:1')
+    expect(rateLimitClientKey(undefined)).toBe('unknown')
   })
 })
 
@@ -29,16 +58,43 @@ describe('RateLimitGuard', () => {
       } as unknown as ExecutionContext)
   }
 
-  it('开发环境不计数，本机浏览器、SSR 与工具共用 127.0.0.1 也不会互相限住', () => {
-    const guard = new RateLimitGuard(new ConfigService({ NODE_ENV: 'development' }))
-    const request = () =>
+  function createLocalProbe(config: Record<string, string | undefined>) {
+    const guard = new RateLimitGuard(new ConfigService(config))
+    return () =>
       guard.canActivate({
         switchToHttp: () => ({
           getRequest: () => ({ path: '/api/v1/posts', method: 'GET', ip: '127.0.0.1', socket: {} }),
           getResponse: () => ({ setHeader: () => undefined }),
         }),
       } as unknown as ExecutionContext)
+  }
+
+  it('开发环境显式 RATE_LIMIT_DISABLED=true 时不计数，本机浏览器、SSR 与工具不会互相限住', () => {
+    const request = createLocalProbe({ NODE_ENV: 'development', RATE_LIMIT_DISABLED: 'true' })
     for (let index = 0; index < 130; index++) expect(request()).toBe(true)
+  })
+
+  it.each([{ NODE_ENV: 'development' }, { NODE_ENV: 'production', RATE_LIMIT_DISABLED: 'true' }, {}])(
+    '未显式关闭、生产环境或缺省环境仍执行配额：%j',
+    (config) => {
+      const request = createLocalProbe(config)
+      for (let index = 0; index < 120; index++) expect(request()).toBe(true)
+      expect(() => request()).toThrow('操作过于频繁')
+    },
+  )
+
+  it('同一 IPv6 /64 内轮换地址共享配额', () => {
+    const guard = new RateLimitGuard(new ConfigService({ NODE_ENV: 'production' }))
+    const request = (ip: string) =>
+      guard.canActivate({
+        switchToHttp: () => ({
+          getRequest: () => ({ path: '/api/v1/posts', method: 'POST', ip, socket: {} }),
+          getResponse: () => ({ setHeader: () => undefined }),
+        }),
+      } as unknown as ExecutionContext)
+    for (let index = 0; index < 10; index++) expect(request(`2001:db8:5:6::${index + 1}`)).toBe(true)
+    expect(() => request('2001:db8:5:6:ffff::99')).toThrow('操作过于频繁')
+    expect(request('2001:db8:5:7::1')).toBe(true)
   })
   it('公开读取、媒体和管理读取分别执行 120/600/300 配额并保持 Retry-After', () => {
     const guard = new RateLimitGuard(new ConfigService({ NODE_ENV: 'production' }))
