@@ -198,8 +198,7 @@ export const defaultFlashNoteSeeds: FlashNoteDraft[] = [
   },
   {
     id: 'flash-seed-throwback-2025',
-    content:
-      '一年前的今天，刚开始用闪念笔记应用。当时还在折腾选哪一款，现在已经把这事内置进自己的博客了。',
+    content: '一年前的今天，刚开始用闪念笔记应用。当时还在折腾选哪一款，现在已经把这事内置进自己的博客了。',
     tags: ['复盘', '产品'],
     type: 'memo',
     createdAt: '2025-04-17T12:00:00Z',

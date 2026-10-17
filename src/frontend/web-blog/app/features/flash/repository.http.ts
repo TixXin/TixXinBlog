@@ -4,7 +4,14 @@
  */
 import { ensureVisitorId } from '~/utils/visitorId'
 import type { FlashNoteRepository } from './repository'
-import type { FlashComment, FlashCommentDraft, FlashNote, FlashNoteDraft } from './types'
+import type {
+  FlashComment,
+  FlashCommentDraft,
+  FlashNote,
+  FlashNoteDraft,
+  FlashPublicPage,
+  FlashPublicPageQuery,
+} from './types'
 
 type AdminFetch = <T>(
   path: string,
@@ -18,12 +25,6 @@ interface Envelope<T> {
   code: number
   data: T
   message: string
-}
-interface FlashPage {
-  items: FlashNote[]
-  total: number
-  page: number
-  pageSize: number
 }
 
 /** 公开与管理读取采用相同错误边界，页面不显示请求地址或 FetchError 原文。 */
@@ -87,11 +88,11 @@ export class HttpFlashRepository implements FlashNoteRepository {
     let page = 1
     let total: number
     do {
-      const result: FlashPage = privateView
-        ? await this.adminRequest<FlashPage>('/admin/flashes', {
+      const result: FlashPublicPage = privateView
+        ? await this.adminRequest<FlashPublicPage>('/admin/flashes', {
             query: { page, pageSize: 100, archived: String(archived), search: query || undefined },
           })
-        : await this.publicRequest<FlashPage>(query ? '/flashes/search' : '/flashes', {
+        : await this.publicRequest<FlashPublicPage>(query ? '/flashes/search' : '/flashes', {
             query: { page, pageSize: 100, ...(query ? { q: query } : {}) },
           })
       result.items.forEach((note) => notes.set(note.id, note))
@@ -100,6 +101,15 @@ export class HttpFlashRepository implements FlashNoteRepository {
       page += 1
     } while ((page - 1) * 100 < total)
     return [...notes.values()]
+  }
+  /** 公开列表只读一页：SSR 首屏与“加载更多”共用，服务端负责标签与关键词筛选。 */
+  listPublicPage(query: FlashPublicPageQuery): Promise<FlashPublicPage> {
+    const tag = query.tag?.trim()
+    const q = query.q?.trim()
+    if (tag && q) return Promise.reject(new Error('公开闪念接口不支持同时按标签和关键词分页'))
+    return this.publicRequest<FlashPublicPage>(q ? '/flashes/search' : '/flashes', {
+      query: { page: query.page, pageSize: query.pageSize, ...(q ? { q } : {}), ...(tag ? { tag } : {}) },
+    })
   }
   list(_userId: string) {
     return this.all(false)

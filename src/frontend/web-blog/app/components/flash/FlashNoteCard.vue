@@ -246,6 +246,19 @@ const canInteract = computed(() => props.interactive && !props.note.isDraft && !
 const commentSending = ref(false)
 const relativeTime = computed(() => formatRelative(props.note.createdAt))
 
+// 列表由 SSR 直出：服务端与水合首帧使用随 payload 下发的同一时刻和 UTC 日历日期，
+// 挂载后再换成本机时钟与本地时区，相对时间和日期不会因时钟或时区差异产生水合不一致。
+const renderClock = useState('flash-render-clock', () => Date.now())
+const clockReady = ref(false)
+onMounted(() => {
+  clockReady.value = true
+})
+function calendarDate(iso: string): string {
+  if (clockReady.value) return formatCalendarDate(iso)
+  const time = new Date(iso).getTime()
+  return Number.isFinite(time) ? new Date(time).toISOString().slice(0, 10) : '日期未知'
+}
+
 // 类型元信息：idea/todo 显示，memo 默认态隐藏避免冗余
 const TYPE_META: Record<string, { icon: string; label: string } | undefined> = {
   idea: { icon: 'lucide:lightbulb', label: '灵感' },
@@ -258,8 +271,8 @@ const renderedContent = computed(() => renderFlashMarkdown(props.note.content))
 
 function formatRelative(iso: string): string {
   const created = new Date(iso).getTime()
-  const now = Date.now()
-  if (!Number.isFinite(created) || created > now) return formatCalendarDate(iso)
+  const now = clockReady.value ? Date.now() : renderClock.value
+  if (!Number.isFinite(created) || created > now) return calendarDate(iso)
   const diff = now - created
   const minute = 60 * 1000
   const hour = 60 * minute
@@ -270,7 +283,7 @@ function formatRelative(iso: string): string {
   // 与文章列表的“昨天”说法保持一致
   if (diff < 2 * day) return '昨天'
   if (diff < 7 * day) return `${Math.floor(diff / day)} 天前`
-  return formatCalendarDate(iso)
+  return calendarDate(iso)
 }
 
 function canDeleteComment(_authorId: string): boolean {

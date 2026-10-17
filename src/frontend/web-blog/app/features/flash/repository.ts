@@ -9,11 +9,23 @@
  * HttpFlashRepository（$fetch /api/flash-notes），调用方代码无需改动。
  */
 
-import type { FlashComment, FlashCommentDraft, FlashNote, FlashNoteDraft } from './types'
+import type {
+  FlashComment,
+  FlashCommentDraft,
+  FlashNote,
+  FlashNoteDraft,
+  FlashPublicPage,
+  FlashPublicPageQuery,
+} from './types'
 
 export interface FlashNoteRepository {
   /** 公开详情与聚合入口使用，不随管理员登录态包含草稿。 */
   listPublic?(): Promise<FlashNote[]>
+  /**
+   * 公开列表单页读取（服务端分页）：tag 走 GET /flashes?tag=，q 走 GET /flashes/search?q=。
+   * 后端不支持 tag 与 q 同时生效，调用方不得同时传入；仅真实接口实现，本地演示仓库沿用整表读取。
+   */
+  listPublicPage?(query: FlashPublicPageQuery): Promise<FlashPublicPage>
   /** 列出指定用户的**非归档**闪念，按 createdAt 倒序；isArchived=true 的条目由 listArchived 返回 */
   list(userId: string): Promise<FlashNote[]>
   /** 列出指定用户的**已归档**闪念 */

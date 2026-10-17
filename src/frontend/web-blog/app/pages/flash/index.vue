@@ -62,7 +62,7 @@
             placeholder="搜索闪念内容或标签..."
             @keydown.escape="closeSearch"
           />
-          <span v-if="debouncedQuery" class="flash-page__search-count"> {{ filteredNotes.length }} 条结果 </span>
+          <span v-if="debouncedQuery" class="flash-page__search-count"> {{ resultCount }} 条结果 </span>
           <button type="button" class="flash-page__filter-clear" aria-label="收起搜索" @click="closeSearch">
             <Icon name="lucide:x" size="16" />
           </button>
@@ -119,7 +119,7 @@
                   .filter(Boolean)
                   .join(' · ')
               }}
-              · {{ filteredNotes.length }} 条结果
+              · {{ resultCount }} 条结果
             </span>
             <button type="button" class="flash-page__filter-clear" @click="clearFilters">
               <Icon name="lucide:x" size="12" />
@@ -136,7 +136,11 @@
             :current-user-id="currentUserId"
             :guest-id="guestId"
             :highlighted-id="highlightedNoteId"
+            :has-more="listHasMore"
+            :more-pending="listMorePending"
+            :more-error="listMoreError"
             @retry="retryList"
+            @more="onMore"
             @remove="onRemove"
             @edit="onEdit"
             @toggle-like="onToggleLike"
@@ -184,25 +188,26 @@
             <div class="flash-stat-card">
               <div class="flash-stat-card__row">
                 <span class="flash-stat-card__label">{{ isLoggedIn ? '闪念总数' : '博主总数' }}</span>
-                <span class="flash-stat-card__value">{{ loaded ? notes.length : '—' }}</span>
+                <span class="flash-stat-card__value">{{ totalCount ?? '—' }}</span>
               </div>
               <div class="flash-stat-card__divider" />
               <div class="flash-stat-card__row">
                 <span class="flash-stat-card__label">本月新增</span>
-                <span class="flash-stat-card__value">{{ loaded ? monthlyCount : '—' }}</span>
+                <span class="flash-stat-card__value">{{ aggregatesReady ? monthlyCount : '—' }}</span>
               </div>
             </div>
 
             <!-- 发布日历 -->
+            <!-- 日历、时间胶囊与标签云依赖全部公开闪念；公开视图在挂载后读取概览，SSR 不输出，避免水合差异 -->
             <SidebarFlashCalendarCard
-              v-if="loaded"
+              v-if="aggregatesReady"
               :note-dates="noteDates"
               :selected-date="selectedDate"
               @select-date="onSelectDate"
             />
 
             <!-- 时间胶囊：去年今日 + 随机回顾 -->
-            <SidebarFlashTimeCapsuleCard v-if="loaded" :notes="notes" />
+            <SidebarFlashTimeCapsuleCard v-if="aggregatesReady" :notes="aggregateNotes" />
 
             <!-- 标签云 -->
             <div v-if="tagCloud.length > 0" class="flash-tag-cloud">
@@ -242,6 +247,7 @@
 
 <script setup lang="ts">
 import { resolveScrollRoot, scrollToRoot } from '~/utils/scrollRoot'
+import { FLASH_PUBLIC_PAGE_SIZE } from '~/features/flash/state'
 import type { FlashNote, FlashType, FlashCommentSubmission } from '~/features/flash/types'
 
 useSeoMeta({
@@ -260,9 +266,24 @@ const {
   loaded,
   ownerKey,
   isReadOnly,
+  pagedPublic,
+  total,
+  hasMore,
+  moreLoading,
+  moreError,
+  overview,
+  overviewLoaded,
+  overviewLoading,
+  overviewError,
+  aggregateNotes,
+  aggregatesReady,
+  totalCount,
   tagCloud,
   monthlyCount,
   load,
+  loadMore,
+  loadOverview,
+  setPublicFilter,
   add,
   update,
   remove,
@@ -295,7 +316,7 @@ function onSelectDate(date: string | null) {
   selectedDate.value = date
 }
 
-const noteDates = computed(() => notes.value.map((n) => n.createdAt.slice(0, 10)))
+const noteDates = computed(() => aggregateNotes.value.map((n) => n.createdAt.slice(0, 10)))
 
 // ---- 类型筛选 ----
 const typeFilter = ref<FlashType | null>(null)
@@ -319,13 +340,13 @@ let searchTimer: ReturnType<typeof setTimeout> | null = null
 watch(searchQuery, (v) => {
   if (searchTimer) clearTimeout(searchTimer)
   searchTimer = setTimeout(() => {
-    debouncedQuery.value = v.trim().toLowerCase()
+    debouncedQuery.value = v.trim()
   }, 300)
 })
 
-/** 筛选后的闪念列表：归档箱 | 主列表，叠加 type/标签/日期/搜索关键词 */
-const filteredNotes = computed(() => {
-  let result = showArchive.value ? archivedNotes.value : notes.value
+/** 在已取得的集合上叠加 type/标签/日期/搜索关键词（私有视图、归档箱与公开概览共用） */
+function filterLocal(source: FlashNote[]) {
+  let result = source
   if (typeFilter.value) {
     result = result.filter((n) => n.type === typeFilter.value)
   }
@@ -336,13 +357,60 @@ const filteredNotes = computed(() => {
     result = result.filter((n) => n.createdAt.slice(0, 10) === selectedDate.value)
   }
   if (debouncedQuery.value) {
-    const q = debouncedQuery.value
+    const q = debouncedQuery.value.toLowerCase()
     result = result.filter(
       (n) => n.content.toLowerCase().includes(q) || n.tags.some((t) => t.toLowerCase().includes(q)),
     )
   }
   return result
+}
+
+/**
+ * 公开视图的筛选路由：后端 /flashes 支持 tag、/flashes/search 支持 q，二者不可同时使用，
+ * 也不支持类型与日期。能交给后端时按页读取；否则在公开概览上筛选并分批展示。
+ */
+const serverFilterable = computed(
+  () => !typeFilter.value && !selectedDate.value && !(activeTag.value && debouncedQuery.value),
+)
+const overviewMode = computed(() => pagedPublic.value && !showArchive.value && !serverFilterable.value)
+watch([pagedPublic, serverFilterable, activeTag, debouncedQuery], () => {
+  if (!pagedPublic.value) return
+  if (serverFilterable.value) setPublicFilter({ tag: activeTag.value, q: debouncedQuery.value })
+  else void loadOverview()
 })
+
+/** 概览模式下的分批展示上限，筛选变化时回到第一批 */
+const clientLimit = ref(FLASH_PUBLIC_PAGE_SIZE)
+watch([typeFilter, activeTag, selectedDate, debouncedQuery], () => {
+  clientLimit.value = FLASH_PUBLIC_PAGE_SIZE
+})
+
+const matchedNotes = computed(() => {
+  if (showArchive.value) return filterLocal(archivedNotes.value)
+  if (!pagedPublic.value) return filterLocal(notes.value)
+  if (overviewMode.value) return filterLocal(overview.value)
+  // 服务端已按标签/关键词筛选，直接展示已加载的页
+  return notes.value
+})
+/** 筛选后的闪念列表：归档箱 | 主列表，叠加 type/标签/日期/搜索关键词 */
+const filteredNotes = computed(() =>
+  overviewMode.value ? matchedNotes.value.slice(0, clientLimit.value) : matchedNotes.value,
+)
+/** 结果条数：服务端分页用接口总数，其余为本地筛选结果 */
+const resultCount = computed(() =>
+  pagedPublic.value && !showArchive.value && !overviewMode.value ? total.value : matchedNotes.value.length,
+)
+const listHasMore = computed(() => {
+  if (showArchive.value) return false
+  if (overviewMode.value) return matchedNotes.value.length > clientLimit.value
+  return hasMore.value
+})
+const listMorePending = computed(() => !overviewMode.value && moreLoading.value)
+const listMoreError = computed(() => (overviewMode.value ? null : moreError.value))
+function onMore() {
+  if (overviewMode.value) clientLimit.value += FLASH_PUBLIC_PAGE_SIZE
+  else void loadMore()
+}
 
 // ---- AI 引用高亮 ----
 const highlightedNoteId = ref<string | null>(null)
@@ -396,9 +464,32 @@ function onAiClick() {
   aiModalVisible.value = true
 }
 
+// 公开视图首屏在服务端直出第一页；上游失败交给 AsyncData，降级页以 503 返回且不进入页面缓存。
+// 水合阶段沿用服务端输出的状态（包括失败态），重试交给挂载后的 load()，首帧与 SSR 保持一致。
+await useAsyncData('flash-public-first-page', async (app) => {
+  if (import.meta.client && app.isHydrating) return true
+  if (pagedPublic.value) await load(false, { rethrow: import.meta.server })
+  return true
+})
+
+let cancelOverview: (() => void) | undefined
+/** 公开概览不在首屏关键路径上：浏览器空闲后再读取，供侧栏聚合与个人点赞状态使用 */
+function scheduleOverview() {
+  cancelOverview?.()
+  if (!pagedPublic.value) return
+  if (typeof window.requestIdleCallback === 'function') {
+    const handle = window.requestIdleCallback(() => void loadOverview(), { timeout: 2000 })
+    cancelOverview = () => window.cancelIdleCallback(handle)
+  } else {
+    const handle = window.setTimeout(() => void loadOverview(), 300)
+    cancelOverview = () => window.clearTimeout(handle)
+  }
+}
 onMounted(() => {
   void load()
+  scheduleOverview()
 })
+onBeforeUnmount(() => cancelOverview?.())
 
 // 登录身份、内容归属或内容库变化时，主列表与私有归档同时切换。
 watch(ownerKey, () => {
@@ -409,6 +500,7 @@ watch(ownerKey, () => {
   archiveLoading.value = false
   archiveError.value = null
   void load(true)
+  scheduleOverview()
 })
 
 const editingNote = ref<FlashNote | null>(null)
@@ -492,12 +584,14 @@ const archiveLoading = ref(false)
 const archiveLoaded = ref(false)
 const archiveError = ref<string | null>(null)
 let archiveVersion = 0
-const listError = computed(() => (showArchive.value ? archiveError.value : storageError.value))
-const listPending = computed(() =>
-  showArchive.value
-    ? archiveLoading.value || (!archiveLoaded.value && !archiveError.value)
-    : loading.value || (!loaded.value && !storageError.value),
+const listError = computed(() =>
+  showArchive.value ? archiveError.value : overviewMode.value ? overviewError.value : storageError.value,
 )
+const listPending = computed(() => {
+  if (showArchive.value) return archiveLoading.value || (!archiveLoaded.value && !archiveError.value)
+  if (overviewMode.value) return overviewLoading.value || (!overviewLoaded.value && !overviewError.value)
+  return loading.value || (!loaded.value && !storageError.value)
+})
 const emptyMessage = computed(() => {
   if (activeTag.value || selectedDate.value || debouncedQuery.value || typeFilter.value)
     return '没有匹配的闪念，请调整筛选条件'
@@ -523,7 +617,9 @@ async function refreshArchived() {
 
 async function retryList() {
   if (listPending.value) return
-  await (showArchive.value ? refreshArchived() : load(true))
+  if (showArchive.value) await refreshArchived()
+  else if (overviewMode.value) await loadOverview(true)
+  else await load(true)
 }
 
 onBeforeUnmount(() => {
@@ -540,7 +636,8 @@ async function onToggleLike(id: string) {
   pendingIds.value.push(id)
   try {
     await toggleLike(id)
-    success(notes.value.find((note) => note.id === id)?.liked ? '已点赞' : '已取消点赞')
+    const changed = notes.value.find((note) => note.id === id) ?? overview.value.find((note) => note.id === id)
+    success(changed?.liked ? '已点赞' : '已取消点赞')
   } catch (cause) {
     showError(cause instanceof Error ? cause.message : '点赞失败，请重试')
   } finally {

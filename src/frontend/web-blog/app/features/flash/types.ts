@@ -91,6 +91,24 @@ export interface FlashCommentSubmission {
   complete?: (saved: boolean) => void
 }
 
+/** 公开列表分页查询：仅包含后端 /flashes 与 /flashes/search 支持的条件 */
+export interface FlashPublicPageQuery {
+  page: number
+  pageSize: number
+  /** 按标签精确筛选（GET /flashes?tag=） */
+  tag?: string
+  /** 正文模糊或标签精确搜索（GET /flashes/search?q=），与 tag 互斥 */
+  q?: string
+}
+
+/** 公开列表单页结果，与后端 FlashListResult 对齐 */
+export interface FlashPublicPage {
+  items: FlashNote[]
+  total: number
+  page: number
+  pageSize: number
+}
+
 /** AI 搜索返回结构 */
 export interface FlashAISearchResult {
   /** 模板拼接出的回答正文 */
