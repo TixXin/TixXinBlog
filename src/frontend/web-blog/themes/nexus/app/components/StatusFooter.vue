@@ -249,9 +249,10 @@ function measureLoginShape() {
     height: panelBox.height,
     avatarX: avatarBox.left + avatarBox.width / 2 - panelBox.left,
     avatarY: avatarBox.top + avatarBox.height / 2 - panelBox.top,
-    // 按可见头像计算，排除同底色的 3px 外框，避免视觉间隙比卡片间距多一圈。
+    // 3px 外框与页面背景对比明显，视觉上属于头像本体，需按含外框的尺寸避让，
+    // 否则凹弧间隙会比卡片与底栏的间距窄一圈外框。
     // 未缩放尺寸保证悬停时凹弧不抖动；半像素补偿凹口描边向内占用的空间。
-    avatarRadius: avatar.clientWidth / 2,
+    avatarRadius: avatar.offsetWidth / 2,
     gap: drawerGap + 0.5,
     cornerRadius: parseFloat(getComputedStyle(bar).borderTopLeftRadius),
   })
