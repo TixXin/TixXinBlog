@@ -1,0 +1,11 @@
+blank_issues_enabled: false
+contact_links:
+  - name: 文档与使用说明
+    url: https://github.com/TixXin/TixXinBlog/blob/main/docs/README.md
+    about: 安装、开发、内容管理、备份、部署和主题相关的说明，提问前建议先查阅。
+  - name: 贡献指南
+    url: https://github.com/TixXin/TixXinBlog/blob/main/CONTRIBUTING.md
+    about: 代码职责、验证命令、提交与 PR 要求。
+  - name: 报告安全漏洞
+    url: https://github.com/TixXin/TixXinBlog/security/advisories/new
+    about: 安全问题请通过私密漏洞报告提交，不要创建公开 Issue。

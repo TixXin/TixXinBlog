@@ -1,6 +1,6 @@
 {
   "name": "tixxinblog",
-  "version": "0.0.1",
+  "version": "0.1.0",
   "private": true,
   "description": "Nuxt 4 与 NestJS 个人博客，提供真实内容、创作后台与持久运营维护。",
   "type": "module",

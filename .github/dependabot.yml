@@ -1,0 +1,100 @@
+# Dependabot 依赖更新配置
+# 文档：https://docs.github.com/code-security/dependabot/dependabot-version-updates/configuration-options-for-the-dependabot.yml-file
+#
+# 本仓库是 pnpm workspace：根目录持有 pnpm-lock.yaml 与共享开发依赖，
+# 两个应用工作区各自声明运行依赖，因此需要分别配置目录。
+version: 2
+updates:
+  # 根工作区：共享开发依赖、格式化与提交钩子
+  - package-ecosystem: npm
+    directory: '/'
+    schedule:
+      interval: weekly
+      day: monday
+      time: '09:00'
+      timezone: Asia/Shanghai
+    open-pull-requests-limit: 5
+    versioning-strategy: increase
+    commit-message:
+      prefix: 'chore(deps)'
+      prefix-development: 'chore(deps-dev)'
+      include: scope
+    labels:
+      - dependencies
+    groups:
+      根工作区次版本与补丁:
+        patterns:
+          - '*'
+        update-types:
+          - minor
+          - patch
+
+  # 前端：Nuxt 4 / Vue 3
+  - package-ecosystem: npm
+    directory: '/src/frontend/web-blog'
+    schedule:
+      interval: weekly
+      day: monday
+      time: '09:00'
+      timezone: Asia/Shanghai
+    open-pull-requests-limit: 5
+    versioning-strategy: increase
+    commit-message:
+      prefix: 'chore(deps)'
+      prefix-development: 'chore(deps-dev)'
+      include: scope
+    labels:
+      - dependencies
+      - web-blog
+    groups:
+      前端次版本与补丁:
+        patterns:
+          - '*'
+        update-types:
+          - minor
+          - patch
+
+  # 后端：NestJS / MikroORM
+  - package-ecosystem: npm
+    directory: '/src/backend/server-main'
+    schedule:
+      interval: weekly
+      day: monday
+      time: '09:00'
+      timezone: Asia/Shanghai
+    open-pull-requests-limit: 5
+    versioning-strategy: increase
+    commit-message:
+      prefix: 'chore(deps)'
+      prefix-development: 'chore(deps-dev)'
+      include: scope
+    labels:
+      - dependencies
+      - server-main
+    groups:
+      后端次版本与补丁:
+        patterns:
+          - '*'
+        update-types:
+          - minor
+          - patch
+
+  # 持续集成使用的 Actions
+  - package-ecosystem: github-actions
+    directory: '/'
+    schedule:
+      interval: weekly
+      day: monday
+      time: '09:00'
+      timezone: Asia/Shanghai
+    open-pull-requests-limit: 3
+    commit-message:
+      prefix: 'ci(deps)'
+      include: scope
+    labels:
+      - dependencies
+      - ci
+    groups:
+      Actions 更新:
+        patterns:
+          - '*'
