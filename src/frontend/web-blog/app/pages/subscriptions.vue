@@ -137,7 +137,7 @@
           </CommonContextDrawer>
           <p class="subscription-note">
             <template v-if="nextRenewal"
-              >下次续费：{{ nextRenewal.name }} · {{ nextRenewal.date }} ·
+              >下次续费：{{ nextRenewal.name }} · {{ nextRenewal.date }}{{ renewalDayHint }} ·
               {{ formatAmount(nextRenewal.amount, currency) }}</template
             >
             <template v-else>暂无待续费日期</template>
@@ -250,6 +250,14 @@ const filterCount = computed(
 )
 const selectedStats = computed(() => stats.value?.currencies.find((item) => item.currency === currency.value))
 const nextRenewal = computed(() => selectedStats.value?.upcoming.find((item) => !item.overdue))
+/** 今天或明天续费时在日期后补充提示，避免只看日期还要心算 */
+const renewalDayHint = computed(() => {
+  const date = nextRenewal.value?.date,
+    base = stats.value?.asOf ?? today.value
+  if (!date || !base) return ''
+  const days = Math.round((Date.parse(`${date}T00:00:00Z`) - Date.parse(`${base}T00:00:00Z`)) / 86_400_000)
+  return days === 0 ? '（今天）' : days === 1 ? '（明天）' : ''
+})
 const overdueCount = computed(() => selectedStats.value?.upcoming.filter((item) => item.overdue).length ?? 0)
 watch(
   [() => query.value.q, mode, currency],

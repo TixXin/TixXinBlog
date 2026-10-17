@@ -119,9 +119,10 @@ const option = computed<EChartsOption>(() => {
       ],
     }
   if (props.kind === 'bar' && props.horizontal) {
+    // 数值标签为 15px 粗体，每字约 9px，另加 12px 标签间距与少量余量，避免窄屏时右侧被裁切
     const valueWidth = Math.min(
-      136,
-      Math.max(54, ...(props.formattedValues ?? []).map((value) => value.length * 7 + 14)),
+      160,
+      Math.max(64, ...(props.formattedValues ?? []).map((value) => value.length * 9 + 20)),
     )
     return {
       ...base,
