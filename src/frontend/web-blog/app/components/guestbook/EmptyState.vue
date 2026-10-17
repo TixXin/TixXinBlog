@@ -1,6 +1,6 @@
 <!--
   @file EmptyState.vue
-  @description 留言板空消息状态引导
+  @description 留言板空状态：无留言时引导首条留言，筛选无结果时引导清除筛选
   @author TixXin
   @since 2026-04-10
 -->
@@ -10,20 +10,40 @@
     <div class="guestbook-empty__illustration">
       <div class="guestbook-empty__circle guestbook-empty__circle--outer" />
       <div class="guestbook-empty__circle guestbook-empty__circle--inner" />
-      <Icon name="lucide:message-circle" size="40" class="guestbook-empty__icon" />
+      <Icon :name="filter ? 'lucide:search-x' : 'lucide:message-circle'" size="40" class="guestbook-empty__icon" />
     </div>
-    <h3 class="guestbook-empty__title">还没有留言</h3>
-    <p class="guestbook-empty__desc">成为第一个留言的人吧，和大家分享你的想法</p>
-    <button type="button" class="guestbook-empty__cta" @click="$emit('compose')">
-      <Icon name="lucide:pen-line" size="14" />
-      写下第一条留言
-    </button>
+    <!-- 有搜索或日期筛选时说明的是“没找到”，不能误导成留言板为空 -->
+    <template v-if="filter">
+      <h3 class="guestbook-empty__title">没有找到相关留言</h3>
+      <p class="guestbook-empty__desc">
+        {{ filter }} 暂无匹配<br />
+        换个关键词，或清除筛选查看全部留言
+      </p>
+      <button type="button" class="guestbook-empty__cta" @click="$emit('clear')">
+        <Icon name="lucide:x" size="14" />
+        清除筛选
+      </button>
+    </template>
+    <template v-else>
+      <h3 class="guestbook-empty__title">还没有留言</h3>
+      <p class="guestbook-empty__desc">成为第一个留言的人吧，和大家分享你的想法</p>
+      <button type="button" class="guestbook-empty__cta" @click="$emit('compose')">
+        <Icon name="lucide:pen-line" size="14" />
+        写下第一条留言
+      </button>
+    </template>
   </div>
 </template>
 
 <script setup lang="ts">
+defineProps<{
+  /** 当前筛选的可读描述，如“关键词「Vue」”；为空表示未筛选 */
+  filter?: string
+}>()
+
 defineEmits<{
   compose: []
+  clear: []
 }>()
 </script>
 

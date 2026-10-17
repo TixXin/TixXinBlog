@@ -63,11 +63,21 @@
       <div class="message-bubble__meta" :class="{ 'message-bubble__meta--reverse': message.isOwner }">
         <template v-if="message.isOwner">
           <span class="message-bubble__time">{{ message.time }}</span>
-          <span class="message-bubble__name">{{ message.author }}</span>
+          <span class="message-bubble__name"
+            ><template v-for="(part, index) in authorParts" :key="index"
+              ><mark v-if="part.match" class="message-bubble__mark">{{ part.text }}</mark
+              ><template v-else>{{ part.text }}</template></template
+            ></span
+          >
           <span class="message-bubble__owner-badge">博主</span>
         </template>
         <template v-else>
-          <span class="message-bubble__name">{{ message.author }}</span>
+          <span class="message-bubble__name"
+            ><template v-for="(part, index) in authorParts" :key="index"
+              ><mark v-if="part.match" class="message-bubble__mark">{{ part.text }}</mark
+              ><template v-else>{{ part.text }}</template></template
+            ></span
+          >
           <span class="message-bubble__time">{{ message.time }}</span>
         </template>
       </div>
@@ -102,7 +112,12 @@
             :class="message.isOwner ? 'message-bubble__tail--owner' : 'message-bubble__tail--guest'"
           />
           <!-- 换行保留只作用在正文上，模板缩进产生的空白不再变成首行缩进 -->
-          <span class="message-bubble__text">{{ message.content }}</span>
+          <span class="message-bubble__text"
+            ><template v-for="(part, index) in contentParts" :key="index"
+              ><mark v-if="part.match" class="message-bubble__mark">{{ part.text }}</mark
+              ><template v-else>{{ part.text }}</template></template
+            ></span
+          >
         </div>
         <!-- 操作按钮 -->
         <div class="message-bubble__actions" :class="{ 'message-bubble__actions--left': message.isOwner }">
@@ -211,6 +226,7 @@ const props = defineProps<{
   interactive?: boolean
   reacting?: boolean
   reactionError?: string
+  highlight?: string
 }>()
 
 const emit = defineEmits<{
@@ -218,6 +234,10 @@ const emit = defineEmits<{
   reply: [message: GuestMessage]
   jump: [value: { target: number; from: number }]
 }>()
+
+/** 按关键词切分正文（忽略大小写），用文本节点渲染而非 v-html，避免注入 */
+const contentParts = computed(() => splitHighlight(props.message.content, props.highlight))
+const authorParts = computed(() => splitHighlight(props.message.author, props.highlight))
 
 const copied = ref(false)
 const { error: showError } = useToast()
@@ -589,6 +609,14 @@ onBeforeUnmount(() => {
   100% {
     box-shadow: 0 0 0 3px transparent;
   }
+}
+
+// 实色浅黄配深色字，在浅色、深色气泡与暗色模式下都保持对比度
+.message-bubble__mark {
+  padding: 0 0.125rem;
+  border-radius: 0.1875rem;
+  color: #1e293b;
+  background: #fde68a;
 }
 
 .message-bubble__reply-icon {

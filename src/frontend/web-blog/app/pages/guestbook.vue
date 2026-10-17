@@ -70,6 +70,10 @@
             <div v-if="pinned" class="guestbook-pinned" :class="{ 'guestbook-pinned--sticky': isChatMode }">
               <GuestbookPinnedMessage :key="pinned.id" :message="pinned" />
             </div>
+            <!-- 聊天模式向上翻历史，到头的提示也放在最上方 -->
+            <p v-if="isChatMode && historyComplete" class="guestbook-end guestbook-end--top">
+              {{ filterLabel ? '以上是全部匹配的留言' : '已经到最早的留言了' }}
+            </p>
             <div v-if="isChatMode && hasMore" ref="topSentinel" class="guestbook-more">
               <button
                 :aria-busy="morePending"
@@ -82,12 +86,18 @@
               <p v-if="moreError" role="alert">{{ moreError }}</p>
             </div>
             <GuestbookMessageSkeleton v-if="pending && !items.length" />
-            <GuestbookEmptyState v-else-if="!pending && !feedError && !items.length" @compose="focusInput" />
+            <GuestbookEmptyState
+              v-else-if="!pending && !feedError && !items.length"
+              :filter="filterLabel"
+              @compose="focusInput"
+              @clear="clearFilters"
+            />
             <GuestbookMessageList
               :groups="groups"
               :interactive="personalized && !pending"
               :reacting="interactions.reacting.value"
               :reaction-errors="interactions.reactionErrors.value"
+              :highlight="search"
               @reply="reply"
               @react="interactions.react"
               @jump="jumpToMessage"
@@ -103,9 +113,7 @@
               </button>
               <p v-if="moreError" role="alert">{{ moreError }}</p>
             </div>
-            <p v-if="!hasMore && items.length && !pending && !feedError" class="guestbook-end">
-              已显示当前范围的全部留言
-            </p>
+            <p v-if="!isChatMode && historyComplete" class="guestbook-end">已显示当前范围的全部留言</p>
           </CommonCustomScrollbar>
           <!-- 跳转引用时的查找进度与返回入口 -->
           <p v-if="locating" class="guestbook-jump-pill" role="status">
@@ -191,6 +199,12 @@ const search = computed({
 })
 const selectedDate = computed(() => (typeof route.query.date === 'string' ? route.query.date : null))
 const clearFilters = () => router.replace({ path: '/guestbook' })
+/** 当前筛选的可读描述，空状态与历史提示据此区分“没找到”和“没有留言” */
+const filterLabel = computed(() =>
+  [search.value && `关键词「${search.value}」`, selectedDate.value && `日期 ${selectedDate.value}`]
+    .filter(Boolean)
+    .join('、'),
+)
 let observer: IntersectionObserver | null = null,
   bottomResize: ResizeObserver | null = null,
   followingLatest = false,
@@ -392,6 +406,7 @@ const {
   refresh: refreshFeed,
 } = feed
 const { data: metadata, pending: metadataPending, error: metadataError, refresh: refreshMetadata } = overview
+const historyComplete = computed(() => !hasMore.value && items.value.length > 0 && !pending.value && !feedError.value)
 const { settings: siteSettings } = useSiteSettings()
 const groups = computed(() => guestbookGroups(items.value, isChatMode.value, siteSettings.value.avatar))
 const pinned = computed(() =>
@@ -543,6 +558,12 @@ useSeoMeta({ title: '留言板', description: '留下你的足迹，交流技术
 .guestbook-actions :deep(.search-box) {
   min-width: 0;
   flex: 1;
+}
+.guestbook-clear {
+  font-size: 0.8125rem;
+}
+.guestbook-end.guestbook-end--top {
+  padding: 1rem 1rem 0;
 }
 .guestbook-clear,
 .guestbook-more button {
