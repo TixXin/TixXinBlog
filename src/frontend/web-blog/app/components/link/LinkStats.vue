@@ -1,7 +1,7 @@
 <!-- @file LinkStats.vue @description 公开友链真实统计，推荐与域名数均来自当前记录 -->
 <template>
   <section class="card link-stats">
-    <h3><Icon name="lucide:chart-no-axes-column" size="16" />友链概览</h3>
+    <h2><Icon name="lucide:chart-no-axes-column" size="16" />友链概览</h2>
     <dl>
       <div>
         <dt>公开友链</dt>
@@ -27,7 +27,7 @@ defineProps<{ stats: LinkMetadata['stats'] }>()
 .link-stats {
   padding: 1.25rem;
 }
-h3 {
+h2 {
   display: flex;
   align-items: center;
   gap: 0.5rem;

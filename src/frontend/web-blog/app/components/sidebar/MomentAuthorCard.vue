@@ -18,7 +18,7 @@
           format="webp"
         />
       </div>
-      <h3 class="moment-author-card__name">{{ profile.name }}</h3>
+      <h2 class="moment-author-card__name">{{ profile.name }}</h2>
       <p class="moment-author-card__bio">{{ profile.title }}</p>
     </div>
 

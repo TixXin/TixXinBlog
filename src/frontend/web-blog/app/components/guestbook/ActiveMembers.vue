@@ -7,10 +7,10 @@
 
 <template>
   <section class="card active-members">
-    <h3 class="active-members__title">
+    <h2 class="active-members__title">
       <Icon name="lucide:users" size="14" />
       活跃成员
-    </h3>
+    </h2>
     <ul class="active-members__list">
       <li v-for="(m, index) in members" :key="`${m.name}-${index}`" class="active-members__row">
         <!-- 排名标识 -->

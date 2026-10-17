@@ -10,6 +10,7 @@ import MarkdownIt from 'markdown-it'
 // @ts-expect-error -- markdown-it-task-lists 未发布 .d.ts 类型声明
 import taskLists from 'markdown-it-task-lists'
 import DOMPurify from 'isomorphic-dompurify'
+import { markdownTaskLabels } from '~/utils/markdownTaskLabels'
 
 // 单实例复用，避免列表中每条闪念重建 MarkdownIt 实例
 const md = new MarkdownIt({
@@ -17,7 +18,9 @@ const md = new MarkdownIt({
   linkify: true,
   breaks: true,
   typographer: true,
-}).use(taskLists, { enabled: false, label: false })
+})
+  .use(taskLists, { enabled: false, label: false })
+  .use(markdownTaskLabels)
 
 // 外链统一加 target=_blank + noopener
 const defaultLinkRender =
@@ -49,6 +52,6 @@ export function renderFlashMarkdown(raw: string): string {
   const html = md.render(raw)
   return DOMPurify.sanitize(html, {
     // 允许外链属性 + 任务清单 checkbox 的 type/checked/disabled
-    ADD_ATTR: ['target', 'rel', 'type', 'checked', 'disabled'],
+    ADD_ATTR: ['target', 'rel', 'type', 'checked', 'disabled', 'aria-label'],
   })
 }

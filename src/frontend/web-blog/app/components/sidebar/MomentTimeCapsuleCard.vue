@@ -8,10 +8,10 @@
 <template>
   <section v-if="hasContent" class="card moment-capsule-card">
     <div class="moment-capsule-card__header">
-      <h3 class="moment-capsule-card__title">
+      <h2 class="moment-capsule-card__title">
         <Icon name="lucide:hourglass" size="16" />
         时间胶囊
-      </h3>
+      </h2>
     </div>
 
     <!-- 去年今日 -->
@@ -143,6 +143,7 @@ function formatDate(iso: string) {
 }
 
 .moment-capsule-card__refresh {
+  position: relative;
   margin-left: auto;
   padding: 0.125rem;
   border: none;
@@ -156,6 +157,13 @@ function formatDate(iso: string) {
   transition: $transition-colors;
   @media (prefers-reduced-motion: reduce) {
     transition: none;
+  }
+
+  // 视觉 15px 不变，伪元素把点击区扩到 25px
+  &::after {
+    content: '';
+    position: absolute;
+    inset: -5px;
   }
 
   &:hover {

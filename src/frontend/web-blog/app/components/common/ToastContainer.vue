@@ -1,6 +1,6 @@
 <!--
   @file ToastContainer.vue
-  @description 全局 Toast 容器
+  @description 全局 Toast 容器；普通提示礼貌播报，错误提示走 assertive 区域
   @author TixXin
   @since 2026-04-04
 -->
@@ -9,17 +9,29 @@
   <Teleport to="body">
     <div class="toast-container" aria-live="polite" aria-atomic="false">
       <TransitionGroup name="toast-list">
-        <div v-for="toast in toasts" :key="toast.id" class="toast-item" :class="`toast-item--${toast.type}`">
+        <!-- 错误类由下方 assertive 区域播报，这里对读屏隐藏，避免重复朗读 -->
+        <div
+          v-for="toast in toasts"
+          :key="toast.id"
+          class="toast-item"
+          :class="`toast-item--${toast.type}`"
+          :aria-hidden="toast.type === 'error' || undefined"
+        >
           <Icon :name="getIcon(toast.type)" size="16" class="toast-item__icon" />
           <span class="toast-item__message">{{ toast.message }}</span>
         </div>
       </TransitionGroup>
+    </div>
+    <!-- 错误提示立即打断播报 -->
+    <div class="sr-only" aria-live="assertive" aria-atomic="false">
+      <p v-for="toast in errorToasts" :key="toast.id">{{ toast.message }}</p>
     </div>
   </Teleport>
 </template>
 
 <script setup lang="ts">
 const { toasts } = useToast()
+const errorToasts = computed(() => toasts.value.filter((toast) => toast.type === 'error'))
 
 function getIcon(type: string) {
   switch (type) {

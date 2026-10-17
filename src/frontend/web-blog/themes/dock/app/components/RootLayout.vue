@@ -7,7 +7,7 @@
 
 <template>
   <div class="page-root theme-dock">
-    <main class="dock-body">
+    <main id="main-content" class="dock-body" tabindex="-1">
       <div class="main-content">
         <!-- 本主题没有公告卡片，公告以横条形式放在内容区顶部 -->
         <CommonSiteAnnouncement :content="siteSettings.announcement" :date="siteSettings.announcementUpdatedAt" />
@@ -17,7 +17,7 @@
 
     <div id="right-sidebar-target" class="dock-sidebar-sink" />
 
-    <nav class="dock-bar" aria-label="主导航" @mouseleave="onDockLeave">
+    <nav id="site-navigation" class="dock-bar" aria-label="主导航" @mouseleave="onDockLeave">
       <div class="dock-bar__inner">
         <NuxtLink
           v-for="(item, index) in navItems"

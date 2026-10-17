@@ -39,7 +39,7 @@
           class="lightbox__img"
         />
         <div v-if="photo" class="lightbox__caption" aria-live="polite">
-          <h4 class="lightbox__title">{{ photo.title }}</h4>
+          <h2 class="lightbox__title">{{ photo.title }}</h2>
           <p class="lightbox__desc">{{ photo.description }}</p>
           <p class="lightbox__desc">
             {{ photo.date ? `拍摄于 ${photo.date}` : '拍摄日期未填写'

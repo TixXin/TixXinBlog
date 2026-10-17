@@ -7,8 +7,11 @@
 
 <template>
   <div class="card message-input">
-    <p v-if="error" role="alert" class="message-input__notice">{{ error }}</p>
-    <p v-if="notice" role="status" class="message-input__notice">{{ notice }}</p>
+    <p v-if="error" :id="errorId" role="alert" class="message-input__notice">{{ error }}</p>
+    <!-- 播报区常驻，只切换内部提示，保证读屏能播报新插入的状态 -->
+    <div aria-live="polite">
+      <p v-if="notice" role="status" class="message-input__notice">{{ notice }}</p>
+    </div>
     <p v-if="storageError" role="alert" class="message-input__notice">{{ storageError }}</p>
     <div v-if="hasRecovery" class="message-input__notice" aria-label="留言输入恢复">
       发现本标签页未发送的输入。
@@ -46,6 +49,8 @@
         :style="{ height: editorHeight + 'px' }"
         placeholder="输入留言内容..."
         aria-label="留言内容"
+        :aria-invalid="!!error || undefined"
+        :aria-describedby="error ? errorId : undefined"
         :maxlength="500"
         @input="$emit('update:draft', ($event.target as HTMLTextAreaElement).value)"
         @keydown="onEditorKeydown"
@@ -74,7 +79,9 @@
 
     <!-- 底部工具栏 -->
     <div class="message-input__footer">
-      <span class="message-input__hint">{{ identityLabel }} · Ctrl / ⌘ + Enter 发送</span>
+      <span class="message-input__hint"
+        >{{ identityLabel }} <span aria-hidden="true">·</span> Ctrl / ⌘ + Enter 发送</span
+      >
       <small class="message-input__count" :class="{ 'message-input__count--full': draft.length >= 500 }"
         >{{ draft.length }} / 500</small
       >
@@ -114,6 +121,8 @@ const emit = defineEmits<{
   discard: []
   login: []
 }>()
+// 错误提示与输入框通过 aria-describedby 关联
+const errorId = useId()
 const textareaRef = ref<HTMLTextAreaElement | null>(null),
   hydrated = ref(false)
 // SSR 阶段尚无输入事件监听，挂载后立即开放编辑，不等待登录恢复。
@@ -421,6 +430,13 @@ onBeforeUnmount(() => {
     background 0.18s;
   @media (prefers-reduced-motion: reduce) {
     transition: none;
+  }
+
+  // 视觉 20px 不变，伪元素把点击区扩到 28px
+  &::before {
+    content: '';
+    position: absolute;
+    inset: -4px;
   }
 
   &:hover {

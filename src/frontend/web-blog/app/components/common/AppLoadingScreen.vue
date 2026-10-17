@@ -10,9 +10,9 @@
     <div v-if="visible" class="loading-screen" :class="{ 'loading-screen--force': forceVisible }">
       <div class="loading-screen__content" aria-hidden="true">
         <!-- 品牌名：Tix 用主文字色，Xin 用强调色 -->
-        <h1 class="loading-screen__brand">
+        <p class="loading-screen__brand">
           <span class="loading-screen__brand-tix">Tix</span><span class="loading-screen__brand-xin">Xin</span>
-        </h1>
+        </p>
 
         <!-- 副标题 -->
         <p class="loading-screen__tagline">Blog</p>

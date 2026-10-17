@@ -21,13 +21,13 @@
     </nav>
 
     <!-- 分隔线 -->
-    <div class="sidebar-footer-card__divider" />
+    <div class="sidebar-footer-card__divider" aria-hidden="true" />
 
     <!-- 技术栈 -->
     <div class="sidebar-footer-card__powered">
       <span class="sidebar-footer-card__powered-label">Powered by</span>
       <template v-for="(item, idx) in poweredBy" :key="item.label">
-        <span v-if="idx > 0" class="sidebar-footer-card__powered-amp">&amp;</span>
+        <span v-if="idx > 0" class="sidebar-footer-card__powered-amp" aria-hidden="true">&amp;</span>
         <a :href="item.href" class="sidebar-footer-card__powered-link" target="_blank" rel="noopener">
           {{ item.label }}
         </a>
@@ -79,11 +79,19 @@ const { pingMs } = useApiLatency()
 }
 
 .sidebar-footer-card__link {
+  position: relative;
   font-size: 0.6875rem;
   color: var(--text-muted);
   transition: color 0.2s;
   @media (prefers-reduced-motion: reduce) {
     transition: none;
+  }
+
+  // 视觉尺寸不变，伪元素把点击区扩到至少 24px 高
+  &::after {
+    content: '';
+    position: absolute;
+    inset: -4px -3px;
   }
 
   &:hover {
@@ -115,11 +123,19 @@ const { pingMs } = useApiLatency()
 }
 
 .sidebar-footer-card__powered-link {
+  position: relative;
   font-weight: 600;
   color: var(--text-main);
   transition: opacity 0.2s;
   @media (prefers-reduced-motion: reduce) {
     transition: none;
+  }
+
+  // 视觉尺寸不变，伪元素把点击区扩到至少 24px 高
+  &::after {
+    content: '';
+    position: absolute;
+    inset: -4px -3px;
   }
 
   &:hover {

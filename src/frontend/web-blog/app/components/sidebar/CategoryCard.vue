@@ -8,7 +8,7 @@
 <template>
   <section class="card category-card">
     <div class="category-card__header">
-      <h3 class="category-card__title"><Icon name="lucide:folder-open" size="16" /> 专栏分类</h3>
+      <h2 class="category-card__title"><Icon name="lucide:folder-open" size="16" /> 专栏分类</h2>
     </div>
     <ul class="category-card__list">
       <li v-for="cat in categories" :key="cat.name">

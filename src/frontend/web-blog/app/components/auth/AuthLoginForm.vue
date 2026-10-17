@@ -1,6 +1,6 @@
 <!--
   @file AuthLoginForm.vue
-  @description 真实博主登录表单，认证成功后才更新界面状态
+  @description 真实博主登录表单，认证成功后才更新界面状态；登录失败原因通过 aria-describedby 关联到字段
 -->
 <template>
   <form class="auth-login" @submit.prevent="onSubmit">
@@ -14,6 +14,8 @@
         autocomplete="username"
         maxlength="64"
         required
+        :aria-invalid="!!errorMessage || undefined"
+        :aria-describedby="errorMessage ? 'login-error' : undefined"
         :disabled="submitting || !hydrated"
       />
     </div>
@@ -27,10 +29,13 @@
         autocomplete="current-password"
         maxlength="128"
         required
+        :aria-invalid="!!errorMessage || undefined"
+        :aria-describedby="errorMessage ? 'login-error' : undefined"
         :disabled="submitting || !hydrated"
       />
     </div>
-    <p v-if="errorMessage" role="alert">{{ errorMessage }}</p>
+    <!-- 凭据错误同时关联到两个输入框，读屏聚焦字段时可听到原因 -->
+    <p v-if="errorMessage" id="login-error" role="alert">{{ errorMessage }}</p>
     <button :aria-busy="submitting" type="submit" class="btn-primary auth-submit" :disabled="submitting || !hydrated">
       {{ submitting ? '登录中…' : '登录' }}
     </button>

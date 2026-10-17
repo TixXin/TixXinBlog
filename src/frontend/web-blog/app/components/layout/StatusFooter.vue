@@ -6,7 +6,8 @@
 -->
 
 <template>
-  <footer class="site-footer">
+  <!-- 主题根布局已提供 <footer> 地标，这里用普通容器避免重复 contentinfo -->
+  <div class="site-footer">
     <div class="footer__left">
       <span class="footer__copyright">&copy; {{ currentYear }} {{ siteName }}. All rights reserved.</span>
       <nav class="footer__links" aria-label="页脚链接">
@@ -20,7 +21,7 @@
       <div class="footer__powered">
         <span class="footer__powered-label">Powered by</span>
         <template v-for="(item, idx) in poweredBy" :key="item.label">
-          <span v-if="idx > 0" class="footer__powered-amp">&amp;</span>
+          <span v-if="idx > 0" class="footer__powered-amp" aria-hidden="true">&amp;</span>
           <a :href="item.href" class="footer__powered-link" target="_blank" rel="noopener">{{ item.label }}</a>
         </template>
       </div>
@@ -35,7 +36,7 @@
         </div>
       </CommonTooltip>
     </div>
-  </footer>
+  </div>
 </template>
 
 <script setup lang="ts">
@@ -76,10 +77,18 @@ const { pingMs } = useApiLatency()
   min-width: 0;
 
   a {
+    position: relative;
     font-size: 0.6875rem;
     transition: color 0.2s;
     @media (prefers-reduced-motion: reduce) {
       transition: none;
+    }
+
+    // 视觉尺寸不变，伪元素把点击区扩到至少 24px 高
+    &::after {
+      content: '';
+      position: absolute;
+      inset: -4px -3px;
     }
 
     &:hover {
@@ -115,11 +124,19 @@ const { pingMs } = useApiLatency()
 }
 
 .footer__powered-link {
+  position: relative;
   font-weight: 600;
   color: var(--text-main);
   transition: opacity 0.2s;
   @media (prefers-reduced-motion: reduce) {
     transition: none;
+  }
+
+  // 视觉尺寸不变，伪元素把点击区扩到至少 24px 高
+  &::after {
+    content: '';
+    position: absolute;
+    inset: -4px -3px;
   }
 
   &:hover {

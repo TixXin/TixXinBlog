@@ -7,17 +7,17 @@
 
 <template>
   <section class="related card">
-    <h3 class="related__title">
+    <h2 class="related__title">
       <Icon name="lucide:bookmark" size="16" />
       相关文章
-    </h3>
+    </h2>
     <ul class="related__list">
       <li v-for="post in posts" :key="post.id" class="related__item">
         <NuxtLink :to="articlePath(post)" class="related__link">
           <p class="related__post-title">{{ post.title }}</p>
           <div class="related__meta">
             <span>{{ post.date }}</span>
-            <span class="related__sep">·</span>
+            <span class="related__sep" aria-hidden="true">·</span>
             <span>{{ post.category }}</span>
           </div>
         </NuxtLink>

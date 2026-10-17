@@ -9,7 +9,7 @@
   <div class="auth-panel" @click.stop>
     <!-- 头部 -->
     <div class="auth-panel__header">
-      <h3 class="auth-panel__title">{{ viewTitle }}</h3>
+      <h2 :id="titleId" class="auth-panel__title">{{ viewTitle }}</h2>
       <div class="auth-panel__actions">
         <button type="button" class="auth-panel__close" aria-label="关闭" @click="close">
           <Icon name="lucide:x" size="18" />
@@ -36,6 +36,9 @@
 
 <script setup lang="ts">
 import type { AuthView } from '~/features/auth/types'
+
+/** titleId：外层对话框通过 aria-labelledby 引用面板标题 */
+defineProps<{ titleId?: string }>()
 
 const { currentView, close, switchView } = useLoginDrawer()
 

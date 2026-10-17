@@ -19,7 +19,7 @@
           <Icon name="lucide:pen-tool" size="20" />
           <span class="aurora-topbar__title">{{ siteSettings.name }}</span>
         </NuxtLink>
-        <nav class="aurora-topbar__nav">
+        <nav id="site-navigation" class="aurora-topbar__nav" aria-label="主导航">
           <NuxtLink
             v-for="item in navItems"
             :key="item.to"
@@ -75,7 +75,8 @@
           <div class="aurora-hero__overlay" />
         </div>
         <div class="aurora-hero__inner">
-          <h1 class="aurora-hero__title">{{ siteSettings.name }}</h1>
+          <!-- 站点名是品牌展示，不占用页面唯一 h1（首页 h1 由页面自身提供） -->
+          <p class="aurora-hero__title">{{ siteSettings.name }}</p>
           <p class="aurora-hero__subtitle">{{ siteSettings.description }}</p>
         </div>
         <button
@@ -92,7 +93,7 @@
       </section>
 
       <div class="aurora-body">
-        <main class="aurora-main">
+        <main id="main-content" class="aurora-main" tabindex="-1">
           <div class="main-content">
             <!-- 本主题没有公告卡片，公告以横条形式放在内容区顶部 -->
             <CommonSiteAnnouncement :content="siteSettings.announcement" :date="siteSettings.announcementUpdatedAt" />

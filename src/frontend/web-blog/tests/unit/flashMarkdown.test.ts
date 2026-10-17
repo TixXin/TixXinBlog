@@ -23,6 +23,9 @@ describe('renderFlashMarkdown', () => {
     const html = renderFlashMarkdown('- [x] 已完成\n- [ ] 未完成')
     expect(html).toContain('type="checkbox"')
     expect(html).toContain('checked')
+    // 复选框以事项文字作为可访问名称
+    expect(html).toContain('aria-label="已完成"')
+    expect(html).toContain('aria-label="未完成"')
   })
 
   it('linkify 自动识别裸链并为外链加 target=_blank', () => {

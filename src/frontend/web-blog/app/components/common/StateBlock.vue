@@ -10,7 +10,7 @@
     <div class="state-block__icon-wrap">
       <Icon :name="icon" size="48" class="state-block__icon" />
     </div>
-    <h2 class="state-block__title">{{ title }}</h2>
+    <component :is="`h${level}`" class="state-block__title">{{ title }}</component>
     <p v-if="description" class="state-block__desc">{{ description }}</p>
     <span v-if="statusCode" class="state-block__code">{{ statusCode }}</span>
     <button v-if="actionLabel" type="button" class="state-block__action" @click="$emit('action')">
@@ -22,13 +22,18 @@
 </template>
 
 <script setup lang="ts">
-defineProps<{
-  icon: string
-  title: string
-  description?: string
-  statusCode?: number | string
-  actionLabel?: string
-}>()
+withDefaults(
+  defineProps<{
+    icon: string
+    title: string
+    description?: string
+    statusCode?: number | string
+    actionLabel?: string
+    /** 标题级别：页面内区块用默认 2；整页错误/空态且页面没有其他标题时传 1 */
+    level?: 1 | 2 | 3
+  }>(),
+  { description: undefined, statusCode: undefined, actionLabel: undefined, level: 2 },
+)
 
 defineEmits<{
   action: []

@@ -7,10 +7,10 @@
 
 <template>
   <section class="card gear-card">
-    <h3 class="gear-card__title">
+    <h2 class="gear-card__title">
       <Icon name="lucide:aperture" size="16" />
       <span>摄影器材</span>
-    </h3>
+    </h2>
     <ul class="gear-card__list">
       <li v-for="(item, index) in gear" :key="`${item.name}-${index}`" class="gear-card__item">
         <div class="gear-card__icon-wrap">

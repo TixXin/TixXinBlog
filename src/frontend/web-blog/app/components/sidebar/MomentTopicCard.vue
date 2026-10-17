@@ -8,10 +8,10 @@
 <template>
   <section class="card moment-topic-card">
     <div class="moment-topic-card__header">
-      <h3 class="moment-topic-card__title">
+      <h2 class="moment-topic-card__title">
         <Icon name="lucide:hash" size="16" />
         热门话题
-      </h3>
+      </h2>
       <button
         type="button"
         class="moment-topic-card__view-all"
@@ -239,7 +239,7 @@ function barWidth(count: number): string {
   font-size: 0.5625rem;
   font-weight: 700;
   color: #fff;
-  background: var(--accent);
+  background: var(--accent-action);
   padding: 1px 5px;
   border-radius: $radius-full;
   line-height: 1.4;

@@ -22,7 +22,7 @@
         </MomentUserPopover>
         <div class="moment-comments__body">
           <span class="moment-comments__author" :class="{ 'is-owner': c.isOwner }">{{ c.author }}</span>
-          <span class="moment-comments__sep">：</span>
+          <span class="moment-comments__sep" aria-hidden="true">：</span>
           <!-- eslint-disable-next-line vue/no-v-html -- 评论 Markdown 已通过 DOMPurify 净化 -->
           <span class="moment-comments__text markdown-body-inline" v-html="renderCommentBody(c.content)" />
           <small v-if="c.moderationStatus === 'pending'">（待审核，仅自己可见）</small>
@@ -41,7 +41,10 @@
       {{ loading ? '正在加载评论…' : loadError ? '重试加载评论' : '查看更多评论' }}
     </button>
     <p v-if="submitError" role="alert" class="moment-comments__notice">{{ submitError }}</p>
-    <p v-if="notice" role="status" class="moment-comments__notice">{{ notice }}</p>
+    <!-- 播报区常驻，只切换内部提示，保证读屏能播报新插入的状态 -->
+    <div aria-live="polite">
+      <p v-if="notice" role="status" class="moment-comments__notice">{{ notice }}</p>
+    </div>
     <div class="moment-comments__input-wrap" :aria-busy="submitting">
       <input
         :value="draft"
@@ -165,7 +168,7 @@ function onEnter(event: KeyboardEvent) {
   cursor: var(--interaction-cursor, pointer);
 
   &.is-owner {
-    color: var(--danger);
+    color: var(--danger-text);
   }
 }
 

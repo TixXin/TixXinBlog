@@ -1,6 +1,6 @@
 <!--
   @file Markdown.vue
-  @description 管理后台编辑和前台文章共用的安全 Markdown 预览
+  @description 管理后台编辑和前台文章共用的安全 Markdown 预览；正文标题由渲染工具降一级输出
 -->
 <template>
   <!-- eslint-disable-next-line vue/no-v-html -->
@@ -27,13 +27,14 @@ const html = computed(() => renderArticleMarkdown(props.content, props.title))
     margin: 1.5rem 0 0.75rem;
     scroll-margin-top: 5rem;
   }
-  :deep(h1) {
+  // 正文标题已降一级渲染（# → h2），字号按原 Markdown 级别保持
+  :deep(h2) {
     font-size: 1.6rem;
   }
-  :deep(h2) {
+  :deep(h3) {
     font-size: 1.3rem;
   }
-  :deep(h3) {
+  :deep(h4) {
     font-size: 1.1rem;
   }
   :deep(p),

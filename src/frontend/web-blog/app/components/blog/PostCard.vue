@@ -233,7 +233,7 @@ function tagStyle(color: string) {
   display: inline-flex;
   align-items: center;
   gap: 0.25rem;
-  color: var(--danger);
+  color: var(--danger-text);
   font-weight: 600;
   font-size: 0.6875rem;
   flex-shrink: 0;

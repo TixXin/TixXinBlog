@@ -8,10 +8,10 @@
 <template>
   <section v-if="hasContent" class="card flash-capsule-card">
     <div class="flash-capsule-card__header">
-      <h3 class="flash-capsule-card__title">
+      <h2 class="flash-capsule-card__title">
         <Icon name="lucide:hourglass" size="16" />
         时间胶囊
-      </h3>
+      </h2>
     </div>
 
     <div v-if="throwback" class="flash-capsule-card__block">
@@ -140,6 +140,7 @@ function formatDate(iso: string) {
 }
 
 .flash-capsule-card__refresh {
+  position: relative;
   margin-left: auto;
   padding: 0.125rem;
   border: none;
@@ -155,6 +156,13 @@ function formatDate(iso: string) {
     background 0.18s;
   @media (prefers-reduced-motion: reduce) {
     transition: none;
+  }
+
+  // 视觉 15px 不变，伪元素把点击区扩到 25px
+  &::after {
+    content: '';
+    position: absolute;
+    inset: -5px;
   }
 
   &:hover {

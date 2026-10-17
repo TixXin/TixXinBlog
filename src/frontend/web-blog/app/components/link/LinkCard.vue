@@ -11,11 +11,11 @@
       fit="contain"
     />
     <div v-else class="link-card__placeholder" aria-label="未设置站点图片"><Icon name="lucide:globe" size="28" /></div>
-    <h3 class="link-card__name">
+    <h2 class="link-card__name">
       <a :href="link.url" target="_blank" rel="noopener noreferrer"
         >{{ link.name }}<Icon name="lucide:external-link" size="13"
       /></a>
-    </h3>
+    </h2>
     <span v-if="link.isFeatured" class="link-card__featured">推荐</span>
     <p class="link-card__desc">{{ link.description || '暂未填写站点介绍' }}</p>
     <p class="link-card__domain">{{ link.domain }}</p>

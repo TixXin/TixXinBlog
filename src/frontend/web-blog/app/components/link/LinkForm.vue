@@ -1,7 +1,7 @@
 <!-- @file LinkForm.vue @description 友链资料仅在本机整理与复制，在线申请明确未开放 -->
 <template>
   <section class="link-form">
-    <h3><Icon name="lucide:clipboard-pen" size="18" />整理友链资料</h3>
+    <h2><Icon name="lucide:clipboard-pen" size="18" />整理友链资料</h2>
     <p>在线申请尚未开放。你可以在下方整理并复制友链资料；内容只保存在本标签页，不会自动提交给博主。</p>
     <form @submit.prevent="$emit('copy')">
       <fieldset :disabled="!ready">
@@ -75,7 +75,7 @@ function change<K extends keyof LocalLinkDraft>(key: K, value: LocalLinkDraft[K]
   margin-top: 1.5rem;
   overflow-wrap: anywhere;
 }
-h3 {
+h2 {
   display: flex;
   align-items: center;
   gap: 0.5rem;

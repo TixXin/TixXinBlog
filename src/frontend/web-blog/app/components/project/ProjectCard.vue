@@ -27,7 +27,7 @@
       </div>
     </div>
     <div class="project-card__body">
-      <h3 class="project-card__title">{{ project.title }}</h3>
+      <component :is="`h${headingLevel ?? 3}`" class="project-card__title">{{ project.title }}</component>
       <p class="project-card__desc">{{ project.description }}</p>
       <div class="project-card__tags">
         <button
@@ -67,7 +67,8 @@
 <script setup lang="ts">
 import { projectProgressLabels } from '~/features/project/types'
 import type { ProjectItem } from '~/features/project/types'
-const props = defineProps<{ project: ProjectItem; interactive: boolean; showDetails?: boolean }>()
+// headingLevel：列表直接位于页面 h1 下时传 2；默认 3 用于“项目详情”h2 之下
+const props = defineProps<{ project: ProjectItem; interactive: boolean; showDetails?: boolean; headingLevel?: 2 | 3 }>()
 defineEmits<{ tag: [label: string]; open: [id: number] }>()
 const statusLabel = computed(() => projectProgressLabels[props.project.progress])
 </script>

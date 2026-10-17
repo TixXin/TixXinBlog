@@ -207,7 +207,7 @@
             <Icon name="lucide:monitor" size="11" class="message-bubble__browser-icon" />
             {{ message.browser }}
           </span>
-          <span v-if="message.browser && message.region" class="message-bubble__dot">·</span>
+          <span v-if="message.browser && message.region" class="message-bubble__dot" aria-hidden="true">·</span>
           <span v-if="message.region" class="message-bubble__region">
             <Icon name="lucide:map-pin" size="11" class="message-bubble__region-icon" />
             {{ message.region }}
@@ -629,7 +629,7 @@ onBeforeUnmount(() => {
   flex-shrink: 0;
   font-size: 0.625rem;
   font-weight: 600;
-  color: var(--accent, #5b7cfa);
+  color: var(--accent-text);
 }
 
 .message-bubble__reply-content {
@@ -906,6 +906,7 @@ $actions-inset: 3 * 1.5rem + 2 * 0.125rem + 0.25rem;
 }
 
 .message-bubble__reaction {
+  position: relative;
   display: inline-flex;
   align-items: center;
   gap: 0.25rem;
@@ -918,6 +919,13 @@ $actions-inset: 3 * 1.5rem + 2 * 0.125rem + 0.25rem;
   transition: $transition-fast;
   @media (prefers-reduced-motion: reduce) {
     transition: none;
+  }
+
+  // 视觉 21px 不变，伪元素把点击区扩到 25px
+  &::after {
+    content: '';
+    position: absolute;
+    inset: -3px -1px;
   }
 
   &:hover {

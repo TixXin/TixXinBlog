@@ -8,10 +8,10 @@
 <template>
   <section class="card moment-calendar-card">
     <div class="moment-calendar-card__header">
-      <h3 class="moment-calendar-card__title">
+      <h2 class="moment-calendar-card__title">
         <Icon name="lucide:calendar-days" size="16" />
         动态日历
-      </h3>
+      </h2>
       <div class="moment-calendar-card__nav">
         <button type="button" class="moment-calendar-card__nav-btn" aria-label="上一月" @click="prevMonth">
           <Icon name="lucide:chevron-left" size="14" />
@@ -473,7 +473,7 @@ function onDayClick(day: CalendarDay) {
   gap: 0.25rem;
   font-size: 0.6875rem;
   font-weight: 600;
-  color: #f59e0b;
+  color: var(--warning-text);
 }
 
 .moment-calendar-card__streak-icon {

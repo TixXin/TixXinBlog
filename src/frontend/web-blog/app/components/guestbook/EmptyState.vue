@@ -14,7 +14,7 @@
     </div>
     <!-- 有搜索或日期筛选时说明的是“没找到”，不能误导成留言板为空 -->
     <template v-if="filter">
-      <h3 class="guestbook-empty__title">没有找到相关留言</h3>
+      <h2 class="guestbook-empty__title">没有找到相关留言</h2>
       <p class="guestbook-empty__desc">
         {{ filter }} 暂无匹配<br />
         换个关键词，或清除筛选查看全部留言
@@ -25,7 +25,7 @@
       </button>
     </template>
     <template v-else>
-      <h3 class="guestbook-empty__title">还没有留言</h3>
+      <h2 class="guestbook-empty__title">还没有留言</h2>
       <p class="guestbook-empty__desc">成为第一个留言的人吧，和大家分享你的想法</p>
       <button type="button" class="guestbook-empty__cta" @click="$emit('compose')">
         <Icon name="lucide:pen-line" size="14" />

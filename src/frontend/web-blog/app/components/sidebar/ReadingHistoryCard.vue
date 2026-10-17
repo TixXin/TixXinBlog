@@ -8,7 +8,7 @@
 <template>
   <section v-if="history.length" class="card reading-history-card">
     <div class="reading-history-card__header">
-      <h3 class="reading-history-card__title"><Icon name="lucide:history" size="16" /> 最近阅读</h3>
+      <h2 class="reading-history-card__title"><Icon name="lucide:history" size="16" /> 最近阅读</h2>
       <button type="button" class="reading-history-card__clear" aria-label="清除阅读历史" @click="clearHistory">
         <Icon name="lucide:trash-2" size="12" />
       </button>

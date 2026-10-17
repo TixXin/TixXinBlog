@@ -74,7 +74,7 @@ async function sample(page: Page, path: string, body?: string) {
         fontStatus: document.fonts.status,
         viewport: { width: innerWidth, height: innerHeight },
         rows: document.querySelectorAll('.admin-posts__table tbody tr').length,
-        headings: document.querySelectorAll('.post-editor__preview .article-markdown h2').length,
+        headings: document.querySelectorAll('.post-editor__preview .article-markdown h3').length,
       }
     })
     const requestSnapshot = requests.slice()
@@ -190,7 +190,7 @@ test('当前生产后台就绪与约80KiB长文输入基线', async ({ page, bro
                 !document.querySelector<HTMLTextAreaElement>('.post-editor__body textarea')!.disabled &&
                 document.querySelector<HTMLTextAreaElement>('.post-editor__body textarea')!.value.length ===
                   contentLength &&
-                document.querySelectorAll('.post-editor__preview .article-markdown h2').length === 80
+                document.querySelectorAll('.post-editor__preview .article-markdown h3').length === 80
         if (ready) state.readyMs = performance.now()
         else requestAnimationFrame(check)
       }

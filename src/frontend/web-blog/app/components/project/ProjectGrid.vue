@@ -12,6 +12,7 @@
       :key="project.id"
       :project="project"
       :interactive="interactive"
+      :heading-level="2"
       show-details
       @tag="$emit('tag', $event)"
       @open="$emit('open', $event)"

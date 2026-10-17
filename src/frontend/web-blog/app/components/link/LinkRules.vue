@@ -7,7 +7,7 @@
 
 <template>
   <section class="card link-rules">
-    <h3 class="link-rules__title"><Icon name="lucide:link" size="16" />友链须知</h3>
+    <h2 class="link-rules__title"><Icon name="lucide:link" size="16" />友链须知</h2>
     <div class="link-rules__list">
       <div v-for="(rule, index) in rules" :key="index" class="link-rules__item">
         <span class="link-rules__badge">{{ index + 1 }}</span>

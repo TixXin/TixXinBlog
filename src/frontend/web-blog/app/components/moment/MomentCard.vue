@@ -430,6 +430,7 @@ function onLightBoxChange(index: number) {
 }
 
 .moment-card__topic-tag {
+  position: relative;
   font-size: 0.75rem;
   color: var(--accent-text);
   background: var(--accent-soft);
@@ -441,9 +442,16 @@ function onLightBoxChange(index: number) {
     transition: none;
   }
 
+  // 视觉尺寸不变，伪元素把点击区扩到至少 24px 高
+  &::after {
+    content: '';
+    position: absolute;
+    inset: -3px -3px;
+  }
+
   &:hover {
     color: #fff;
-    background: var(--accent);
+    background: var(--accent-action);
   }
 }
 
