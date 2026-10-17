@@ -59,6 +59,7 @@ test('开发默认端口隔离：前端3456、API3457，数据库仍读取显式
   assert.equal(config.api.port, 3457)
   assert.equal(config.api.origin, 'http://127.0.0.1:3457')
   assert.equal(config.web.env.NUXT_API_BASE_URL, config.api.origin + '/api/v1')
+  assert.equal(config.api.env.RATE_LIMIT_DISABLED, 'true')
   assert.equal(config.database.port, '5433')
 })
 

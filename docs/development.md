@@ -53,7 +53,7 @@ corepack pnpm dev:all
 
 `dev` / `dev:blog` 只启动前端，`dev:api` 只启动后端。端口上已有服务时，启动器仅复用归属探针匹配的本项目实例，不结束陌生进程。Nuxt 监听端口后仍可能在编译，必须等业务接口与探针就绪；`TIXXIN_DEV_TIMEOUT_MS` 可调整等待时限。
 
-数据库端口未监听时，统一启动器可以启动配置匹配的 PostgreSQL Compose 服务；已有监听但认证失败、外部数据库或配置不一致时退出。启动不隐式迁移、seed、清空或重建数据库。
+数据库端口未监听时，统一启动器可以启动配置匹配的 PostgreSQL Compose 服务；已有监听但认证失败、外部数据库或配置不一致时退出。启动不隐式迁移、seed、清空或重建数据库。统一启动的 API 默认注入 `RATE_LIMIT_DISABLED=true`：本机浏览器、SSR 与测试工具同为 127.0.0.1，按 IP 限流只会限住自己；需要验证限流时在 `.env.local` 显式写 `RATE_LIMIT_DISABLED=false`。生产环境忽略该开关。
 
 Ctrl+C 只清理本次启动器创建的服务与后代，复用的服务保持运行。PostgreSQL 是持久依赖，保留容器和数据卷。需要停止复用服务时，在它原来的终端正常退出。
 
