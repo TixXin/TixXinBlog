@@ -1,4 +1,4 @@
-<!-- @file guestbook.vue @description 博主留言管理：筛选、回复、审核、置顶和删除，复用真实发送与输入恢复 -->
+<!-- @file guestbook.vue @description 博主留言管理：筛选、回复、审核、置顶和删除（含当前页批量公开、隐藏与删除），复用真实发送与输入恢复 -->
 <template>
   <section class="admin-guestbook">
     <header>
@@ -28,8 +28,35 @@
           @retry="load"
         />
         <p v-if="!pending && !error && !items.length">当前条件下暂无留言。</p>
+        <AdminBatchBar
+          v-if="items.length"
+          noun="留言"
+          :count="selection.count.value"
+          :page-count="items.length"
+          :all-selected="selection.allSelected.value"
+          :partially-selected="selection.partiallySelected.value"
+          :actions="batchActions"
+          :disabled="pending || busy.length > 0"
+          :busy="batchBusy"
+          @toggle-all="selection.toggleAll"
+          @action="(key) => batch(key as 'published' | 'hidden' | 'delete')"
+          @clear="selection.clear"
+        />
         <ul class="admin-guestbook__list">
-          <li v-for="note in items" :key="note.id" :data-admin-guestbook-id="note.id">
+          <li
+            v-for="note in items"
+            :key="note.id"
+            :data-admin-guestbook-id="note.id"
+            :class="{ 'is-selected': selection.isSelected(note.id) }"
+          >
+            <label class="admin-guestbook__select"
+              ><input
+                type="checkbox"
+                :checked="selection.isSelected(note.id)"
+                :disabled="pending || busy.includes(note.id)"
+                :aria-label="`选择 ${note.author} 的留言：${note.content.slice(0, 40)}`"
+                @change="selection.toggle(note.id, ($event.target as HTMLInputElement).checked)"
+            /></label>
             <p>
               <strong>{{ note.author }}</strong
               >{{ note.isOwner ? ' · 博主' : '' }} · {{ labels[note.moderationStatus]
@@ -125,6 +152,7 @@
 <script setup lang="ts">
 import type { ManagedGuestbookRecord } from '~/features/guestbook/types'
 import { guestbookDisplay } from '~/features/guestbook/display'
+import type { AdminBatchAction } from '~/composables/useAdminBatchSelection'
 definePageMeta({ layout: 'admin' })
 useSeoMeta({ title: '留言管理', robots: 'noindex, nofollow' })
 const {
@@ -149,8 +177,16 @@ const {
   apply,
   setPage,
   change,
+  selection,
+  batchBusy,
+  batch,
   retryDetail,
 } = useAdminGuestbook()
+const batchActions: AdminBatchAction[] = [
+  { key: 'published', label: '批量公开', icon: 'lucide:check' },
+  { key: 'hidden', label: '批量隐藏', icon: 'lucide:eye-off' },
+  { key: 'delete', label: '批量删除', icon: 'lucide:trash-2', danger: true },
+]
 const interactions = useGuestbookInteractions(async () => {
   await load()
 }, 'admin')
@@ -235,6 +271,29 @@ onBeforeRouteLeave(() => {
   border: 1px solid var(--border);
   border-radius: 0.75rem;
   min-width: 0;
+}
+.admin-guestbook__list > li {
+  position: relative;
+  padding-left: 3rem;
+}
+.admin-guestbook__list > li.is-selected {
+  border-color: var(--accent);
+}
+.admin-guestbook .admin-guestbook__select {
+  position: absolute;
+  top: 0.75rem;
+  left: 0.5rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 44px;
+  min-height: 44px;
+}
+.admin-guestbook .admin-guestbook__select input {
+  width: 1.1rem;
+  height: 1.1rem;
+  min-height: 0;
+  padding: 0;
 }
 .admin-guestbook__content {
   white-space: pre-wrap;

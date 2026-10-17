@@ -82,6 +82,7 @@
         :options="options"
         :pending="pending"
         :error="error"
+        :dirty="dirty"
         @save="save"
         @reviewing="reviewingPublication = $event"
     /></ClientOnly>

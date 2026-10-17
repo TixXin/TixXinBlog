@@ -67,12 +67,15 @@
 | `GET /admin/taxonomy`                                                                  | 专栏和标签；写入入口在同一控制器   |
 | `GET /admin/comments`、`GET/PATCH /admin/comments/policy`                              | 评论管理与版本化审核策略           |
 | `POST /admin/comments/:id/moderation`、`POST /admin/comments/:id/reply`                | 影响范围确认后的审核与博主直接回复 |
+| `POST /admin/comments/batch/moderation`、`POST /admin/comments/batch/delete`           | 按版本逐条校验的批量审核与删除     |
 | `GET /flashes`、`GET /flashes/search`、`GET /flashes/:id`                              | 公开闪念列表、筛选、搜索及详情     |
 | `GET /flashes/overview`                                                                | 侧栏聚合与访客已赞，私有不缓存     |
 | `POST /flashes/:id/like`、`POST /flashes/:id/comments`                                 | 闪念互动                           |
 | `GET/POST /admin/flashes`、`GET/PATCH/DELETE /admin/flashes/:id`                       | 博主闪念管理                       |
 
 文章公开列表只读取列表所需字段，正文检索仍由后端执行。
+
+评论与留言批量接口请求体为 `items: [{ id, revision }]`（1–100 条、编号不重复），审核另带 `status`；评论用 `POST`，留言用 `PATCH/DELETE`（删除的 JSON 体同样放 `items`）。整批在单个事务内执行，逐条校验版本：不存在或版本已变化的项跳过并在 `results[].reason` 返回 `not_found`/`conflict`，其余项照常生效；响应含 `successCount/failedCount`，评论删除另含级联回复在内的 `deleted`。批量审核只改选中项自身状态，以版本号代替单条接口的影响范围指纹；整批记一条汇总审计（沿用审核/删除动作，部分失败记为 partial）。
 
 `GET /posts/:id` 与 `GET /posts/by-slug/:slug` 返回公开详情：`tags` 与列表同为 `{ label, color }` 数组；`updatedAt` 是内容最后修订时间（当前修订快照的写入时间，早于发布时间或缺少快照时取发布时间），不随浏览、点赞或评论计数变化，用于 `dateModified`、`article:modified_time` 与站点地图 `lastmod`。有 Markdown 原文时只返回 `contentRaw`，不再返回结构化 `content`；没有原文的旧文章仍返回 `content` 供结构化渲染。`toc` 始终由结构化正文中的标题生成。摘要为空时额外返回 `excerpt`（首个正文段落前 160 字）作为描述兜底。
 
@@ -117,6 +120,7 @@
 | `POST /guestbook`                                                    | `requestId/content/author`，可选 `avatar/replyToId`                      |
 | `PUT /guestbook/:id/reactions`                                       | 设置目标回应状态                                                         |
 | `GET/POST /admin/guestbook`、`GET/PATCH/DELETE /admin/guestbook/:id` | 博主分页、回复、审核、隐藏、置顶与软删除                                 |
+| `PATCH/DELETE /admin/guestbook/batch`                                | 按版本逐条校验的批量审核与软删除                                         |
 
 正文最多 500 字符，昵称最多 32 字符；状态为 `published/pending/hidden`。公开游标包含创建时间、编号及筛选指纹，翻页期间的新留言不会改变向旧记录翻页的边界。后台使用页码分页。
 
@@ -181,6 +185,7 @@
 | `GET /admin/overview` | 服务端真实草稿、互动待办与最近编辑聚合 |
 | `GET /admin/notifications`、`GET /admin/notifications/summary` | 通知分页与未读统计；详情实时解析业务状态 |
 | `POST /admin/notifications/:id/read` | 仅改变已读，不完成审核或回复 |
+| `POST /admin/notifications/read-all` | 一次标记全部未读为已读，返回 `updated/unread`；不完成审核或回复 |
 | `GET /admin/operations`、`GET /admin/operations/tasks/:id` | 脱敏运行摘要与指定任务 |
 | `POST /admin/operations/tasks/:id/retry` | 核对当前状态后的显式人工重试 |
 | `GET /admin/maintenance/diagnostics`、`POST /admin/maintenance/media-check` | 数据库/结构就绪与登记媒体完整性 |

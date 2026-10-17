@@ -1,6 +1,6 @@
 <!--
   @file PostEditor.vue
-  @description 文章编辑、章节定位与实时预览，保存和发布由页面数据源处理
+  @description 文章编辑、章节定位与实时预览，保存和发布由页面数据源处理；支持 Ctrl/⌘+S 保存与正文粘贴/拖拽上传图片
 -->
 <template>
   <form ref="editorForm" class="post-editor" @submit.prevent="requestSave(draft.status)">
@@ -9,13 +9,21 @@
       <span
         >当前状态：{{ draft.status === 'published' ? '已发布' : draft.status === 'archived' ? '已归档' : '草稿' }}</span
       >
-      <button :aria-busy="pending" type="submit" :disabled="pending">
-        {{ pending ? '保存中…' : draft.status === 'draft' ? '保存草稿' : '保存修改' }}
-      </button>
+      <CommonTooltip :content="`保存（${saveShortcut}）`">
+        <button
+          ref="saveButton"
+          :aria-busy="pending"
+          type="submit"
+          :disabled="pending || imageUpload.uploading.value > 0"
+          aria-keyshortcuts="Control+S Meta+S"
+        >
+          {{ pending ? '保存中…' : draft.status === 'draft' ? '保存草稿' : '保存修改' }}
+        </button>
+      </CommonTooltip>
       <button
         v-if="draft.status !== 'published'"
         type="button"
-        :disabled="pending || !draft.title.trim() || !draft.contentRaw.trim()"
+        :disabled="pending || imageUpload.uploading.value > 0 || !draft.title.trim() || !draft.contentRaw.trim()"
         @click="requestSave('published')"
       >
         发布文章
@@ -140,6 +148,10 @@
     </section>
     <label class="post-editor__check"><input v-model="draft.pinned" type="checkbox" :disabled="pending" />置顶</label>
     <button type="button" :disabled="pending" @click="openMedia('body')">向正文插入媒体图片</button>
+    <p :id="bodyHintId" class="post-editor__hint">
+      可直接粘贴或拖入 JPEG、PNG、WebP 图片（单张不超过 8MB），将上传到媒体库并插入正文。
+    </p>
+    <p class="post-editor__hint" role="status">{{ imageUpload.status.value }}</p>
     <PostOutline :headings="headings" :disabled="pending || composing" @navigate="navigateHeading" />
     <div class="post-editor__body">
       <label
@@ -149,8 +161,12 @@
           rows="24"
           maxlength="200000"
           :disabled="pending"
+          :aria-describedby="bodyHintId"
           @compositionstart="composing = true"
           @compositionend="composing = false"
+          @paste="imageUpload.onPaste"
+          @dragover="imageUpload.onDragOver"
+          @drop="imageUpload.onDrop"
         />
       </label>
       <section class="post-editor__preview" aria-label="文章预览">
@@ -201,9 +217,16 @@ import { focusTextareaHeading } from '~/utils/textareaHeadingPosition'
 const draft = defineModel<AdminPostDraft>({ required: true })
 const tags = defineModel<string>('tags', { required: true })
 const props = withDefaults(
-  defineProps<{ pending: boolean; error: string; options?: { folders: string[]; tags: string[] } }>(),
+  defineProps<{
+    pending: boolean
+    error: string
+    options?: { folders: string[]; tags: string[] }
+    /** 是否有未保存到服务器的修改；未传入时视为有修改，快捷键照常保存 */
+    dirty?: boolean
+  }>(),
   {
     options: () => ({ folders: [], tags: [] }),
+    dirty: true,
   },
 )
 const folderListId = useId()
@@ -227,6 +250,16 @@ function addTag(tag: string) {
 const emit = defineEmits<{ save: [status: AdminPostDraft['status']]; reviewing: [value: boolean] }>()
 const editorForm = ref<HTMLFormElement | null>(null)
 const bodyInput = ref<HTMLTextAreaElement | null>(null)
+const saveButton = ref<HTMLButtonElement | null>(null)
+const bodyHintId = useId()
+const imageUpload = useAdminMarkdownImageUpload(bodyInput, { disabled: () => props.pending })
+// 快捷键与“保存”按钮走同一个表单提交：已发布文章同样先打开发布前检查。
+const { label: saveShortcut } = useAdminSaveShortcut({
+  form: editorForm,
+  submitter: () => saveButton.value,
+  dirty: () => props.dirty,
+  enabled: () => !mediaOpen.value,
+})
 const composing = ref(false)
 // textarea 的原生值将 CRLF 规范为 LF；只为定位计算转换，不回写存储的正文。
 const headings = computed(() => postHeadings(draft.value.contentRaw.replace(/\r\n?/g, '\n')))
@@ -400,6 +433,11 @@ function confirmPublish() {
 }
 .post-editor button:disabled {
   opacity: 0.5;
+}
+.post-editor__hint {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 0.875rem;
 }
 .post-editor__fields {
   display: grid;

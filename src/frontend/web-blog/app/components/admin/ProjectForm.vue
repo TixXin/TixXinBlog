@@ -1,6 +1,6 @@
 <!-- @file ProjectForm.vue @description 项目编辑展示表单，公开状态、项目进展和媒体文件分别管理 -->
 <template>
-  <form class="project-editor" @submit.prevent="$emit('save', value.status)">
+  <form ref="editorForm" class="project-editor" @submit.prevent="$emit('save', value.status)">
     <header>
       <h1>{{ id ? '编辑项目' : '新建项目' }}</h1>
       <AdminBackLink to="/admin/projects">返回项目管理</AdminBackLink
@@ -233,8 +233,16 @@
       版本 {{ saved.revision }}
     </p>
     <AdminActionBar>
-      <button :aria-busy="saving" type="submit" :disabled="!ready || loading || saving || !value.title.trim()">
-        {{ saving ? '正在保存…' : '保存项目' }}</button
+      <CommonTooltip :content="`保存（${saveShortcut}）`"
+        ><button
+          ref="saveButton"
+          :aria-busy="saving"
+          type="submit"
+          aria-keyshortcuts="Control+S Meta+S"
+          :disabled="!ready || loading || saving || !value.title.trim()"
+        >
+          {{ saving ? '正在保存…' : '保存项目' }}
+        </button></CommonTooltip
       ><button
         type="button"
         :disabled="!ready || loading || saving || !value.title.trim()"
@@ -296,6 +304,14 @@ const emit = defineEmits<{
   persist: []
   merge: []
 }>()
+const editorForm = ref<HTMLFormElement | null>(null),
+  saveButton = ref<HTMLButtonElement | null>(null)
+// Ctrl/⌘+S 复用“保存”按钮的表单提交；按钮禁用（未就绪、保存中、校验未过）或无修改时不提交。
+const { label: saveShortcut } = useAdminSaveShortcut({
+  form: editorForm,
+  submitter: () => saveButton.value,
+  dirty: () => props.dirty,
+})
 const mediaOpen = ref(false),
   selectedMedia = ref<MediaAsset | null>(null)
 const colorLabels = { emerald: '翠绿', blue: '蓝色', amber: '琥珀', sky: '天蓝', rose: '玫红', slate: '灰色' }

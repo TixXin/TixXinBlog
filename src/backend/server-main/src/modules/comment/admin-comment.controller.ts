@@ -1,6 +1,6 @@
 /**
  * @file admin-comment.controller.ts
- * @description 评论管理：分页检索、真实博主回复及带级联计数维护的删除
+ * @description 评论管理：分页检索、真实博主回复、带级联计数维护的删除，以及按版本校验的批量审核与删除
  */
 import {
   Body,
@@ -16,6 +16,10 @@ import {
 } from '@nestjs/common'
 import { Type } from 'class-transformer'
 import {
+  ArrayMaxSize,
+  ArrayMinSize,
+  ArrayUnique,
+  IsArray,
   IsBoolean,
   IsDateString,
   IsIn,
@@ -27,6 +31,7 @@ import {
   MaxLength,
   Min,
   MinLength,
+  ValidateNested,
 } from 'class-validator'
 import { AdminAuthGuard } from '../../common/guards/admin-auth.guard'
 import { CurrentAdmin } from '../../common/decorators/current-admin.decorator'
@@ -58,6 +63,24 @@ export class SaveCommentPolicyDto {
   @IsBoolean() requireApproval!: boolean
   @IsInt() @Min(0) revision!: number
 }
+/** 单次批量上限；与列表最大分页一致，避免一次事务锁住过多文章 */
+export const COMMENT_BATCH_LIMIT = 100
+export class CommentSelectionDto {
+  @IsInt() @Min(1) id!: number
+  @IsInt() @Min(0) revision!: number
+}
+export class BatchCommentDeleteDto {
+  @IsArray()
+  @ArrayMinSize(1)
+  @ArrayMaxSize(COMMENT_BATCH_LIMIT)
+  @ArrayUnique((item: CommentSelectionDto | null) => item?.id)
+  @ValidateNested({ each: true })
+  @Type(() => CommentSelectionDto)
+  items!: CommentSelectionDto[]
+}
+export class BatchCommentModerationDto extends BatchCommentDeleteDto {
+  @IsIn(COMMENT_STATUSES) status!: CommentStatus
+}
 export class AdminReplyDto {
   @IsString() @MinLength(1) @MaxLength(1000) content!: string
 }
@@ -76,6 +99,15 @@ export class AdminCommentController {
   @Patch('policy')
   savePolicy(@Body() body: SaveCommentPolicyDto) {
     return this.moderation.savePolicy(body)
+  }
+  // 批量路由须先于 :id 路由声明；路径沿用 moderation 与删除的审计动作映射，整批写一条汇总审计。
+  @HttpPost('batch/moderation')
+  batchModerate(@Body() body: BatchCommentModerationDto) {
+    return this.comments.batchModerate(body.status, body.items)
+  }
+  @HttpPost('batch/delete')
+  batchRemove(@Body() body: BatchCommentDeleteDto) {
+    return this.comments.batchRemove(body.items)
   }
   @HttpPost(':id/moderation')
   moderate(@Param('id', ParseIntPipe) id: number, @Body() body: ModerateCommentDto) {

@@ -1,4 +1,4 @@
-/** @file notification.controller.ts @description 管理员站内通知入口；公开访客无法访问运行和互动汇总 */
+/** @file notification.controller.ts @description 管理员站内通知入口；公开访客无法访问运行和互动汇总；支持单条与全部标记已读 */
 import { Controller, Get, Param, ParseUUIDPipe, Post, Query, UseGuards } from '@nestjs/common'
 import { Type } from 'class-transformer'
 import { IsIn, IsInt, Min } from 'class-validator'
@@ -20,6 +20,10 @@ export class NotificationController {
   }
   @Get(':id') detail(@Param('id', new ParseUUIDPipe({ version: '4' })) id: string) {
     return this.service.detail(id)
+  }
+  /** 全部标记已读只改变已读时间，不完成审核或回复 */
+  @Post('read-all') readAll() {
+    return this.service.readAll()
   }
   @Post(':id/read') read(@Param('id', new ParseUUIDPipe({ version: '4' })) id: string) {
     return this.service.read(id)

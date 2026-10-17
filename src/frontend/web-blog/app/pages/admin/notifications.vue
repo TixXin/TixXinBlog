@@ -1,4 +1,4 @@
-<!-- @file notifications.vue @description 博主站内通知，已读与业务状态分别展示，状态来源于实时业务查询 -->
+<!-- @file notifications.vue @description 博主站内通知，已读与业务状态分别展示，状态来源于实时业务查询；支持全部标记已读并同步导航未读徽章 -->
 <template>
   <section class="notifications">
     <h1 ref="heading" tabindex="-1">互动通知</h1>
@@ -49,7 +49,19 @@
       </section>
     </template>
     <template v-if="data">
-      <p>未读 {{ data.unread }} 条 · 当前筛选 {{ data.total }} 条</p>
+      <div class="notifications__summary">
+        <p>未读 {{ data.unread }} 条 · 当前筛选 {{ data.total }} 条</p>
+        <button
+          v-if="data.unread"
+          type="button"
+          :aria-busy="working === 'all'"
+          :disabled="!!working"
+          @click="markAllRead"
+        >
+          <Icon name="lucide:check-check" aria-hidden="true" />{{ working === 'all' ? '正在标记…' : '全部标记已读' }}
+        </button>
+      </div>
+      <p class="notifications__status" role="status">{{ statusMessage }}</p>
       <p v-if="!data.items.length">当前筛选下没有通知。</p>
       <ol ref="list">
         <li v-for="item in data.items" :key="item.id" :data-notification-id="item.id" tabindex="-1">
@@ -101,7 +113,17 @@ const {
   '指定通知不存在或暂时无法读取，请重试或查看通知列表',
 )
 const working = ref(''),
-  actionError = ref('')
+  actionError = ref(''),
+  statusMessage = ref('')
+const { success } = useToast()
+const unreadBadge = useAdminNotificationUnread()
+// 列表响应自带服务器未读数，直接同步导航徽章。
+watch(
+  () => data.value?.unread,
+  (value) => {
+    if (typeof value === 'number') unreadBadge.set(value)
+  },
+)
 const list = ref<HTMLOListElement | null>(null),
   heading = ref<HTMLHeadingElement | null>(null),
   focusedPanel = ref<HTMLElement | null>(null)
@@ -126,6 +148,7 @@ watch(
   () => {
     working.value = ''
     actionError.value = ''
+    statusMessage.value = ''
     focused.value = null
   },
   { flush: 'sync' },
@@ -140,6 +163,31 @@ watch(focused, async (value) => {
 })
 async function refreshAll() {
   await Promise.all([refresh(), refreshFocused()])
+}
+/** 全部已读只改变已读时间，不处理审核与回复；完成后刷新列表与导航徽章，焦点回到标题 */
+async function markAllRead() {
+  if (working.value) return
+  const owns = captureOwnership()
+  working.value = 'all'
+  actionError.value = ''
+  statusMessage.value = ''
+  try {
+    const result = await api<{ updated: number; unread: number }>('/admin/notifications/read-all', {
+      method: 'POST',
+      body: {},
+    })
+    if (!owns()) return
+    unreadBadge.set(result.unread)
+    statusMessage.value = result.updated ? `已将 ${result.updated} 条通知标记为已读` : '没有需要标记的未读通知'
+    if (result.updated) success(statusMessage.value)
+    await refreshAll()
+    await nextTick()
+    if (owns()) heading.value?.focus()
+  } catch {
+    if (owns()) actionError.value = '全部已读未确认，请刷新核对；这不会改变互动处理状态。'
+  } finally {
+    if (owns()) working.value = ''
+  }
 }
 async function markRead(id: string) {
   if (working.value) return
@@ -182,6 +230,7 @@ p {
   color: var(--text-muted);
   margin-block: 0.75rem;
 }
+.notifications__summary,
 nav,
 li div,
 .notifications__actions {
@@ -205,7 +254,13 @@ li,
 a {
   color: var(--accent);
 }
+.notifications__status {
+  margin-block: 0;
+}
 button {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
   padding: 0.6rem;
   border: 1px solid var(--border);
   border-radius: 0.5rem;

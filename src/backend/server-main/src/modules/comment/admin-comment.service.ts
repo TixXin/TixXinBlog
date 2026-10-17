@@ -1,6 +1,7 @@
 /**
  * @file admin-comment.service.ts
- * @description 评论管理业务；删除锁定文章并重新计算真实评论总数，避免与新评论竞争
+ * @description 评论管理业务；删除锁定文章并重新计算真实评论总数，避免与新评论竞争；
+ * 批量审核与删除在单个事务内逐条校验版本，跳过不存在或已变化的评论并返回逐条结果。
  */
 import { FilterQuery, LockMode, raw } from '@mikro-orm/core'
 import { EntityManager } from '@mikro-orm/postgresql'
@@ -12,6 +13,18 @@ import { CommentService } from './comment.service'
 import type { CommentStatus } from '../../entities/comment.entity'
 import { CommentModerationService } from './comment-moderation.service'
 import { unansweredCommentSql, visibleCommentWhere } from './comment-visibility'
+
+/** 批量操作的单条结果：not_found 表示评论已不存在，conflict 表示提交版本与当前版本不一致 */
+export interface CommentBatchItemResult {
+  id: number
+  ok: boolean
+  reason?: 'not_found' | 'conflict'
+  revision?: number
+}
+interface CommentSelection {
+  id: number
+  revision: number
+}
 
 @Injectable()
 export class AdminCommentService {
@@ -181,6 +194,85 @@ export class AdminCommentService {
       post.commentCount = await em.count(Comment, { post, ...visibleCommentWhere() })
       await em.flush()
       return { ok: true, deleted: deleteTotal }
+    })
+  }
+  /** 先按编号升序锁定涉及文章，再锁定选中评论；与单条审核、删除及新评论计数使用同一把文章行锁 */
+  private async lockSelection(em: EntityManager, items: CommentSelection[]) {
+    const ids = items.map((item) => item.id)
+    const located = await em.find(Comment, { id: { $in: ids } }, { fields: ['id', 'post'] })
+    const postIds = [...new Set(located.map((comment) => comment.post.id))].sort((a, b) => a - b)
+    const posts = postIds.length
+      ? await em.find(
+          Post,
+          { id: { $in: postIds } },
+          { lockMode: LockMode.PESSIMISTIC_WRITE, orderBy: { id: 'asc' }, refresh: true },
+        )
+      : []
+    const comments = await em.find(
+      Comment,
+      { id: { $in: ids } },
+      { lockMode: LockMode.PESSIMISTIC_WRITE, orderBy: { id: 'asc' }, refresh: true },
+    )
+    return { posts, comments: new Map(comments.map((comment) => [comment.id, comment])) }
+  }
+  private check(item: CommentSelection, comment: Comment | undefined): CommentBatchItemResult {
+    if (!comment) return { id: item.id, ok: false, reason: 'not_found' }
+    if (comment.revision !== item.revision)
+      return { id: item.id, ok: false, reason: 'conflict', revision: comment.revision }
+    return { id: item.id, ok: true, revision: comment.revision }
+  }
+  private async recount(em: EntityManager, posts: Post[]) {
+    for (const post of posts) post.commentCount = await em.count(Comment, { post, ...visibleCommentWhere() })
+    await em.flush()
+  }
+  private summary(results: CommentBatchItemResult[]) {
+    const successCount = results.filter((item) => item.ok).length
+    return { successCount, failedCount: results.length - successCount, results }
+  }
+
+  /**
+   * 批量审核只改变选中评论自身状态（与单条审核一致，回复保留各自状态）。
+   * 单条审核用影响范围指纹确认；列表批量只能看到每条评论的版本，因此以版本号作为乐观并发凭据。
+   */
+  async batchModerate(status: CommentStatus, items: CommentSelection[]) {
+    return this.em.transactional(async (em) => {
+      const { posts, comments } = await this.lockSelection(em, items)
+      const moderatedAt = new Date()
+      const results = items.map((item) => {
+        const comment = comments.get(item.id)
+        const result = this.check(item, comment)
+        if (!result.ok || !comment || comment.status === status) return result
+        comment.status = status
+        comment.revision += 1
+        comment.moderatedAt = moderatedAt
+        return { ...result, revision: comment.revision }
+      })
+      await em.flush()
+      await this.recount(em, posts)
+      return { ok: true, status, ...this.summary(results) }
+    })
+  }
+
+  /** 批量删除同样级联删除所有层级回复；任一选中项是另一选中项的后代时只计一次 */
+  async batchRemove(items: CommentSelection[]) {
+    return this.em.transactional(async (em) => {
+      const { posts, comments } = await this.lockSelection(em, items)
+      const results = items.map((item) => this.check(item, comments.get(item.id)))
+      const ids = results.filter((item) => item.ok).map((item) => item.id)
+      let deleted = 0
+      if (ids.length) {
+        const [row] = await em.execute<{ count: number }[]>(
+          `with recursive tree as (
+          select id from comment where id in (?) union
+          select c.id from comment c join tree t on c.parent_id=t.id
+        ) select count(*)::int as count from tree`,
+          [ids],
+        )
+        deleted = row?.count ?? 0
+        await em.nativeDelete(Comment, { id: { $in: ids } })
+      }
+      await this.recount(em, posts)
+      return { ok: true, deleted, ...this.summary(results) }
     })
   }
   async reply(id: number, raw: string, admin: { id: string; username: string }) {

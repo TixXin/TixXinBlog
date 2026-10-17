@@ -1,6 +1,6 @@
 <!-- @file MomentForm.vue @description 动态编辑展示表单，数据与保存事件由页面提供 -->
 <template>
-  <form class="moment-editor" @submit.prevent="$emit('save', value.status)">
+  <form ref="editorForm" class="moment-editor" @submit.prevent="$emit('save', value.status)">
     <header class="moment-editor__heading">
       <h1>{{ id ? '编辑动态' : '发布动态' }}</h1>
       <AdminBackLink to="/admin/moments">返回动态管理</AdminBackLink>
@@ -196,9 +196,17 @@
       </div>
     </fieldset>
     <AdminActionBar class="moment-editor__actions">
-      <button :aria-busy="saving" type="submit" :disabled="!ready || loading || saving || !value.content.trim()">
-        {{ saving ? '正在保存…' : '保存动态' }}
-      </button>
+      <CommonTooltip :content="`保存（${saveShortcut}）`"
+        ><button
+          ref="saveButton"
+          :aria-busy="saving"
+          type="submit"
+          aria-keyshortcuts="Control+S Meta+S"
+          :disabled="!ready || loading || saving || !value.content.trim()"
+        >
+          {{ saving ? '正在保存…' : '保存动态' }}
+        </button></CommonTooltip
+      >
       <button
         type="button"
         :disabled="!ready || loading || saving || !value.content.trim()"
@@ -248,6 +256,14 @@ const emit = defineEmits<{
   persist: []
   'search-articles': [query: string]
 }>()
+const editorForm = ref<HTMLFormElement | null>(null),
+  saveButton = ref<HTMLButtonElement | null>(null)
+// Ctrl/⌘+S 复用“保存”按钮的表单提交；按钮禁用（未就绪、保存中、校验未过）或无修改时不提交。
+const { label: saveShortcut } = useAdminSaveShortcut({
+  form: editorForm,
+  submitter: () => saveButton.value,
+  dirty: () => props.dirty,
+})
 const mediaOpen = ref(false),
   linkMode = ref('none'),
   articleSearch = ref('')
