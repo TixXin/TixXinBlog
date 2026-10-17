@@ -2,7 +2,7 @@
  * @file media-reference.entity.ts
  * @description 媒体引用索引，随内容事务更新，覆盖当前文章、修订和闪念。
  */
-import { Entity, ManyToOne, PrimaryKey, Property, Unique } from '@mikro-orm/core'
+import { Entity, Index, ManyToOne, PrimaryKey, Property, Unique } from '@mikro-orm/core'
 import { MediaAsset } from './media-asset.entity'
 import { Post } from './post.entity'
 import { FlashNote } from './flash-note.entity'
@@ -21,7 +21,8 @@ import { ImagePrompt } from './image-prompt.entity'
 export class MediaReference {
   @PrimaryKey({ type: 'integer', autoincrement: true }) id!: number
   @ManyToOne({ entity: () => MediaAsset, deleteRule: 'restrict' }) asset!: MediaAsset
-  @Property({ type: 'text' }) sourceKey!: string
+  // 删除/替换引用按 sourceKey 定位；归属外键随内容删除级联，均需独立索引。
+  @Property({ type: 'text' }) @Index() sourceKey!: string
   @Property({ type: 'text' }) kind!:
     | 'post'
     | 'revision'
@@ -38,18 +39,21 @@ export class MediaReference {
     | 'subscription'
     | 'link'
     | 'image-prompt'
-  @ManyToOne({ entity: () => Post, nullable: true, deleteRule: 'cascade' }) post?: Post
-  @ManyToOne({ entity: () => FlashNote, nullable: true, deleteRule: 'cascade' }) flashNote?: FlashNote
+  @ManyToOne({ entity: () => Post, nullable: true, deleteRule: 'cascade' }) @Index() post?: Post
+  @ManyToOne({ entity: () => FlashNote, nullable: true, deleteRule: 'cascade' }) @Index() flashNote?: FlashNote
   @Property({ type: 'integer', nullable: true }) revision?: number
-  @ManyToOne({ entity: () => Comment, nullable: true, deleteRule: 'cascade' }) comment?: Comment
-  @ManyToOne({ entity: () => FlashComment, nullable: true, deleteRule: 'cascade' }) flashComment?: FlashComment
-  @ManyToOne({ entity: () => Moment, nullable: true, deleteRule: 'cascade' }) moment?: Moment
-  @ManyToOne({ entity: () => MomentComment, nullable: true, deleteRule: 'cascade' }) momentComment?: MomentComment
+  @ManyToOne({ entity: () => Comment, nullable: true, deleteRule: 'cascade' }) @Index() comment?: Comment
+  @ManyToOne({ entity: () => FlashComment, nullable: true, deleteRule: 'cascade' }) @Index() flashComment?: FlashComment
+  @ManyToOne({ entity: () => Moment, nullable: true, deleteRule: 'cascade' }) @Index() moment?: Moment
+  @ManyToOne({ entity: () => MomentComment, nullable: true, deleteRule: 'cascade' })
+  @Index()
+  momentComment?: MomentComment
   @ManyToOne({ entity: () => GuestbookMessage, nullable: true, deleteRule: 'cascade' })
+  @Index()
   guestbookMessage?: GuestbookMessage
-  @ManyToOne({ entity: () => GalleryPhoto, nullable: true, deleteRule: 'cascade' }) galleryPhoto?: GalleryPhoto
-  @ManyToOne({ entity: () => Project, nullable: true, deleteRule: 'cascade' }) project?: Project
-  @ManyToOne({ entity: () => Subscription, nullable: true, deleteRule: 'cascade' }) subscription?: Subscription
-  @ManyToOne({ entity: () => FriendLink, nullable: true, deleteRule: 'cascade' }) friendLink?: FriendLink
-  @ManyToOne({ entity: () => ImagePrompt, nullable: true, deleteRule: 'cascade' }) imagePrompt?: ImagePrompt
+  @ManyToOne({ entity: () => GalleryPhoto, nullable: true, deleteRule: 'cascade' }) @Index() galleryPhoto?: GalleryPhoto
+  @ManyToOne({ entity: () => Project, nullable: true, deleteRule: 'cascade' }) @Index() project?: Project
+  @ManyToOne({ entity: () => Subscription, nullable: true, deleteRule: 'cascade' }) @Index() subscription?: Subscription
+  @ManyToOne({ entity: () => FriendLink, nullable: true, deleteRule: 'cascade' }) @Index() friendLink?: FriendLink
+  @ManyToOne({ entity: () => ImagePrompt, nullable: true, deleteRule: 'cascade' }) @Index() imagePrompt?: ImagePrompt
 }
