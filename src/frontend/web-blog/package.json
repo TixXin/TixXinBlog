@@ -3,6 +3,16 @@
   "version": "0.1.0",
   "type": "module",
   "private": true,
+  "license": "GPL-3.0-only",
+  "homepage": "https://github.com/TixXin/TixXinBlog#readme",
+  "bugs": {
+    "url": "https://github.com/TixXin/TixXinBlog/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/TixXin/TixXinBlog.git",
+    "directory": "src/frontend/web-blog"
+  },
   "scripts": {
     "build": "nuxt build --envName production-build",
     "dev": "nuxt dev",

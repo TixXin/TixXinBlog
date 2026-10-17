@@ -3,6 +3,15 @@
   "version": "0.1.0",
   "private": true,
   "description": "Nuxt 4 与 NestJS 个人博客，提供真实内容、创作后台与持久运营维护。",
+  "license": "GPL-3.0-only",
+  "homepage": "https://github.com/TixXin/TixXinBlog#readme",
+  "bugs": {
+    "url": "https://github.com/TixXin/TixXinBlog/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/TixXin/TixXinBlog.git"
+  },
   "type": "module",
   "scripts": {
     "dev": "corepack pnpm --filter web-blog dev",
