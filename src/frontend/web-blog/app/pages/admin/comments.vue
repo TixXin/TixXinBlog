@@ -1,6 +1,6 @@
 <!--
   @file comments.vue
-  @description 评论管理页面：检索、博主回复及明确确认后的删除
+  @description 评论管理页面：检索、博主回复、明确确认后的删除，以及当前页多选的批量审核与删除
 -->
 <template>
   <section class="admin-comments">
@@ -135,8 +135,30 @@
           </button>
         </template>
       </section>
-      <ul>
-        <li v-for="comment in items" :key="comment.id">
+      <AdminBatchBar
+        v-if="items.length"
+        noun="评论"
+        :count="selection.count.value"
+        :page-count="items.length"
+        :all-selected="selection.allSelected.value"
+        :partially-selected="selection.partiallySelected.value"
+        :actions="batchActions"
+        :disabled="pending || working"
+        :busy="batchBusy"
+        @toggle-all="selection.toggleAll"
+        @action="runBatch"
+        @clear="selection.clear"
+      />
+      <ul class="admin-comments__list">
+        <li v-for="comment in items" :key="comment.id" :class="{ 'is-selected': selection.isSelected(comment.id) }">
+          <label class="admin-comments__select"
+            ><input
+              type="checkbox"
+              :checked="selection.isSelected(comment.id)"
+              :disabled="pending || working"
+              :aria-label="`选择 ${comment.author} 的评论：${comment.content.slice(0, 40)}`"
+              @change="selection.toggle(comment.id, ($event.target as HTMLInputElement).checked)"
+          /></label>
           <NuxtLink
             :to="comment.postStatus === 'published' ? `/articles/${comment.postId}` : `/admin/posts/${comment.postId}`"
             >{{ comment.postTitle }}</NuxtLink
@@ -195,6 +217,8 @@
   </section>
 </template>
 <script setup lang="ts">
+import { describeBatchResult } from '~/composables/useAdminBatchSelection'
+import type { AdminBatchAction, AdminBatchResult } from '~/composables/useAdminBatchSelection'
 definePageMeta({ layout: 'admin' })
 useSeoMeta({ title: '评论管理', robots: 'noindex, nofollow' })
 interface CommentText {
@@ -299,6 +323,14 @@ const contextPanel = ref<HTMLElement | null>(null)
 const replyInput = ref<HTMLTextAreaElement | null>(null)
 let listVersion = 0
 let contextVersion = 0
+const selection = useAdminBatchSelection(items)
+const batchBusy = ref('')
+const batchActions: AdminBatchAction[] = [
+  { key: 'published', label: '批量通过', icon: 'lucide:check' },
+  { key: 'hidden', label: '批量隐藏', icon: 'lucide:eye-off' },
+  { key: 'spam', label: '标记垃圾', icon: 'lucide:shield-alert' },
+  { key: 'delete', label: '批量删除', icon: 'lucide:trash-2', danger: true },
+]
 const replyDirty = computed(() => !!replyTarget.value && !!replyText.value.trim())
 function allowDiscard() {
   return !replyDirty.value || window.confirm('有尚未发送的博主回复，确定放弃吗？')
@@ -442,6 +474,53 @@ async function remove(comment: Row) {
     working.value = false
   }
 }
+/** 批量审核只改选中评论自身状态；批量删除级联删除所有层级回复，需要明确确认 */
+async function runBatch(action: string) {
+  if (working.value || pending.value) return
+  const selected = selection.selectedItems.value
+  if (!selected.length) return
+  if (replyDirty.value) {
+    error.value = '请先发送或明确取消当前回复，再批量处理评论'
+    return
+  }
+  const remove = action === 'delete'
+  if (remove && !window.confirm(`将永久删除选中的 ${selected.length} 条评论及其所有层级回复，无法恢复。确定删除吗？`))
+    return
+  working.value = true
+  batchBusy.value = action
+  error.value = ''
+  const items = selected.map((comment) => ({ id: comment.id, revision: comment.revision }))
+  try {
+    const result = remove
+      ? await api<AdminBatchResult & { deleted?: number }>('/admin/comments/batch/delete', {
+          method: 'POST',
+          body: { items },
+        })
+      : await api<AdminBatchResult & { deleted?: number }>('/admin/comments/batch/moderation', {
+          method: 'POST',
+          body: { status: action, items },
+        })
+    const message = describeBatchResult(
+      result,
+      remove ? '已删除' : `已设为${statusLabels[action as CommentStatus]}`,
+      '评论',
+    )
+    selection.clear()
+    if (remove) closeContext()
+    clearNuxtData((key) => key.startsWith('article-') || key.startsWith('post-'))
+    await Promise.all([remove ? loadArticles() : Promise.resolve(), load()])
+    if (!remove && context.value) await showContext(context.value.target.id, context.value.page)
+    // 列表重新读取会清空错误提示，因此在刷新之后再展示跳过项。
+    if (result.failedCount) error.value = message
+    else success(remove ? `${message}（含回复共 ${result.deleted ?? 0} 条）` : message)
+  } catch (cause) {
+    const message = (cause as { data?: { message?: unknown } }).data?.message
+    error.value = typeof message === 'string' ? message : '批量操作失败，未确认是否生效，请刷新列表核对'
+  } finally {
+    working.value = false
+    batchBusy.value = ''
+  }
+}
 async function sendReply() {
   if (!replyTarget.value || working.value) return
   working.value = true
@@ -552,6 +631,29 @@ onBeforeUnmount(() => {
   padding: 1rem;
   margin-block: 1rem;
   overflow-wrap: anywhere;
+}
+.admin-comments__list li {
+  position: relative;
+  padding-left: 3rem;
+}
+.admin-comments__list li.is-selected {
+  border-color: var(--accent);
+}
+.admin-comments .admin-comments__select {
+  position: absolute;
+  top: 0.75rem;
+  left: 0.5rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 44px;
+  min-height: 44px;
+}
+.admin-comments .admin-comments__select input {
+  width: 1.1rem;
+  height: 1.1rem;
+  margin: 0;
+  padding: 0;
 }
 .admin-comments a {
   color: var(--accent);

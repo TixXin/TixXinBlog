@@ -24,7 +24,7 @@
         <p>这些输入不自动写入当前内容库，请核对后手动录入。</p>
         <LinkRules v-for="copy in previousRecoveries" :key="copy.key" :rules="copy.value.rules" />
       </section>
-      <form v-if="draft" @submit.prevent="save">
+      <form v-if="draft" ref="editorForm" @submit.prevent="save">
         <fieldset :disabled="pending || !ready">
           <legend>友链须知（最多12条）</legend>
           <div v-for="(rule, index) in draft.rules" :key="index">
@@ -44,9 +44,16 @@
           <button type="button" :disabled="draft.rules.length >= 12" @click="draft.rules.push('')">添加须知</button>
         </fieldset>
         <AdminActionBar
-          ><button :aria-busy="pending" type="submit" :disabled="pending || !ready || !dirty">
-            保存友链须知
-          </button></AdminActionBar
+          ><CommonTooltip :content="`保存（${saveShortcut}）`"
+            ><button
+              :aria-busy="pending"
+              type="submit"
+              aria-keyshortcuts="Control+S Meta+S"
+              :disabled="pending || !ready || !dirty"
+            >
+              保存友链须知
+            </button></CommonTooltip
+          ></AdminActionBar
         >
         <p>服务器版本 {{ draft.revision }}{{ dirty ? ' · 有未保存输入' : '' }}</p>
       </form>
@@ -62,6 +69,9 @@
 <script setup lang="ts">
 definePageMeta({ layout: 'admin' })
 useSeoMeta({ title: '友链须知设置', robots: 'noindex, nofollow' })
+const editorForm = ref<HTMLFormElement | null>(null)
+// Ctrl/⌘+S 复用保存按钮提交；无修改时按钮禁用，快捷键同样不提交。
+const { label: saveShortcut } = useAdminSaveShortcut({ form: editorForm })
 const {
   draft,
   conflict,

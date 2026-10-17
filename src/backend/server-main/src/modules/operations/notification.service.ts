@@ -1,4 +1,4 @@
-/** @file notification.service.ts @description 博主通知分页与独立已读状态，批量解析当前业务状态 */
+/** @file notification.service.ts @description 博主通知分页与独立已读状态（含全部已读），批量解析当前业务状态 */
 import { Injectable, NotFoundException } from '@nestjs/common'
 import { EntityManager } from '@mikro-orm/postgresql'
 import type { FilterQuery } from '@mikro-orm/core'
@@ -55,5 +55,12 @@ export class NotificationService {
     )
     if (!rows.length) throw new NotFoundException('通知不存在')
     return rows[0]
+  }
+  /** 单条 SQL 原子标记全部未读；返回本次实际标记的数量，以及之后新到达的未读数 */
+  async readAll() {
+    const [row] = await this.em.execute<{ updated: number }[]>(
+      'with marked as (update owner_notification set read_at=now() where read_at is null returning 1) select count(*)::int as updated from marked',
+    )
+    return { updated: row?.updated ?? 0, unread: await this.em.count(OwnerNotification, { readAt: null }) }
   }
 }

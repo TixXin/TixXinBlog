@@ -1,12 +1,16 @@
-/** @file useAdminGuestbook.ts @description 留言管理列表、焦点目标和版本化操作，不用迟到响应覆盖当前查询 */
+/** @file useAdminGuestbook.ts @description 留言管理列表、焦点目标和版本化操作（含当前页批量审核与删除），不用迟到响应覆盖当前查询 */
 import type { ManagedGuestbookRecord } from '~/features/guestbook/types'
+import { describeBatchResult } from '~/composables/useAdminBatchSelection'
+import type { AdminBatchResult } from '~/composables/useAdminBatchSelection'
 export function useAdminGuestbook() {
   const route = useRoute(),
     router = useRouter(),
     app = useNuxtApp(),
     auth = useCurrentUser(),
     repo = useGuestbookRepository(),
-    cache = useGuestbookCache()
+    cache = useGuestbookCache(),
+    adminApi = useAdminApi(),
+    toast = useToast()
   const read = (name: string) => (typeof route.query[name] === 'string' ? (route.query[name] as string) : '')
   const q = ref(read('q')),
     status = ref(read('status') || 'all'),
@@ -25,6 +29,8 @@ export function useAdminGuestbook() {
     detailPending = ref(false),
     detailError = ref('')
   const focusId = ref<number | null>(null)
+  const selection = useAdminBatchSelection(items),
+    batchBusy = ref('')
   let version = 0,
     detailVersion = 0,
     alive = true,
@@ -126,6 +132,53 @@ export function useAdminGuestbook() {
       busy.value = busy.value.filter((id) => id !== note.id)
     }
   }
+  /** 批量公开、隐藏或删除当前页选中的留言；删除需确认，跳过已删除或已变化的项并提示刷新核对 */
+  async function batch(action: 'published' | 'hidden' | 'delete') {
+    const notes = selection.selectedItems.value
+    if (!notes.length || batchBusy.value || busy.value.length || !auth.isLoggedIn.value) return
+    const remove = action === 'delete'
+    if (remove && !window.confirm(`删除选中的 ${notes.length} 条留言？公开回复会保留，但不再展示这些留言的引用正文。`))
+      return
+    const identity = auth.currentUser.value?.id
+    const ids = notes.map((note) => note.id)
+    batchBusy.value = action
+    busy.value.push(...ids)
+    error.value = ''
+    try {
+      const body = { items: notes.map((note) => ({ id: note.id, revision: note.revision })) }
+      const result = remove
+        ? await adminApi<AdminBatchResult>('/admin/guestbook/batch', { method: 'DELETE', body })
+        : await adminApi<AdminBatchResult>('/admin/guestbook/batch', {
+            method: 'PATCH',
+            body: { ...body, status: action },
+          })
+      ids.forEach((id) => cache.invalidate(id))
+      void app.runWithContext(() => refreshNuxtData('guestbook-metadata'))
+      if (!alive || identity !== auth.currentUser.value?.id) return
+      selection.clear()
+      if (selected.value && ids.includes(selected.value.id)) {
+        if (remove) close()
+        else await focus(selected.value.id)
+      }
+      await load()
+      const message = describeBatchResult(
+        result,
+        remove ? '已删除' : action === 'published' ? '已公开' : '已隐藏',
+        '留言',
+      )
+      // 列表重新读取会清空错误提示，因此在刷新之后再展示跳过项。
+      if (result.failedCount) error.value = message
+      else toast.success(message)
+    } catch (cause) {
+      if (alive && identity === auth.currentUser.value?.id) {
+        const detail = (cause as { data?: { message?: unknown } }).data?.message
+        error.value = typeof detail === 'string' ? detail : '批量操作失败，未确认是否生效，请刷新列表核对'
+      }
+    } finally {
+      batchBusy.value = ''
+      busy.value = busy.value.filter((id) => !ids.includes(id))
+    }
+  }
   onMounted(async () => {
     await load()
     const id = Number(read('focus'))
@@ -184,6 +237,9 @@ export function useAdminGuestbook() {
     apply,
     setPage,
     change,
+    selection,
+    batchBusy,
+    batch,
     retryDetail: () => focusId.value !== null && focus(focusId.value),
   }
 }

@@ -22,7 +22,7 @@
         <p>这些副本已单独保留，不会覆盖当前设置。请先核对当前服务器资料，再将需要的文字手动填入表单。</p>
         <GalleryGearCard v-for="item in previousRecoveries" :key="item.key" :gear="item.gear" />
       </section>
-      <form v-if="draft" @submit.prevent="save">
+      <form v-if="draft" ref="editorForm" @submit.prevent="save">
         <fieldset :disabled="pending || !ready">
           <legend>器材列表（最多 12 项）</legend>
           <div v-for="(item, index) in draft.gear" :key="index" class="gallery-settings__item">
@@ -58,9 +58,16 @@
           </button>
         </fieldset>
         <AdminActionBar
-          ><button :aria-busy="pending" type="submit" :disabled="pending || !ready || !dirty">
-            保存器材资料
-          </button></AdminActionBar
+          ><CommonTooltip :content="`保存（${saveShortcut}）`"
+            ><button
+              :aria-busy="pending"
+              type="submit"
+              aria-keyshortcuts="Control+S Meta+S"
+              :disabled="pending || !ready || !dirty"
+            >
+              保存器材资料
+            </button></CommonTooltip
+          ></AdminActionBar
         >
         <p>服务器版本 {{ draft.revision }}{{ dirty ? ' · 有未保存输入' : '' }}</p>
       </form>
@@ -76,6 +83,9 @@
 <script setup lang="ts">
 definePageMeta({ layout: 'admin' })
 useSeoMeta({ title: '摄影器材设置', robots: 'noindex, nofollow' })
+const editorForm = ref<HTMLFormElement | null>(null)
+// Ctrl/⌘+S 复用保存按钮提交；无修改时按钮禁用，快捷键同样不提交。
+const { label: saveShortcut } = useAdminSaveShortcut({ form: editorForm })
 const {
   draft,
   conflict,

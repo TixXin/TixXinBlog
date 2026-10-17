@@ -1,6 +1,6 @@
 <!-- @file GalleryForm.vue @description 图库作品编辑表单，媒体文件与作品发布状态分别说明 -->
 <template>
-  <form class="gallery-editor" @submit.prevent="$emit('save', value.status)">
+  <form ref="editorForm" class="gallery-editor" @submit.prevent="$emit('save', value.status)">
     <header>
       <h1>{{ id ? '编辑照片作品' : '新建照片作品' }}</h1>
       <AdminBackLink to="/admin/gallery">返回图库管理</AdminBackLink
@@ -215,12 +215,16 @@
       版本 {{ saved.revision }}
     </p>
     <AdminActionBar>
-      <button
-        :aria-busy="saving"
-        type="submit"
-        :disabled="!ready || saving || loading || !value.title.trim() || !sourceValid"
-      >
-        {{ saving ? '正在保存…' : '保存作品' }}</button
+      <CommonTooltip :content="`保存（${saveShortcut}）`"
+        ><button
+          ref="saveButton"
+          :aria-busy="saving"
+          type="submit"
+          aria-keyshortcuts="Control+S Meta+S"
+          :disabled="!ready || saving || loading || !value.title.trim() || !sourceValid"
+        >
+          {{ saving ? '正在保存…' : '保存作品' }}
+        </button></CommonTooltip
       ><button
         type="button"
         :disabled="!ready || saving || loading || !value.title.trim() || !sourceValid"
@@ -272,6 +276,14 @@ const emit = defineEmits<{
   persist: []
   merge: []
 }>()
+const editorForm = ref<HTMLFormElement | null>(null),
+  saveButton = ref<HTMLButtonElement | null>(null)
+// Ctrl/⌘+S 复用“保存”按钮的表单提交；按钮禁用（未就绪、保存中、校验未过）或无修改时不提交。
+const { label: saveShortcut } = useAdminSaveShortcut({
+  form: editorForm,
+  submitter: () => saveButton.value,
+  dirty: () => props.dirty,
+})
 const mediaOpen = ref(false),
   statusLabels = { draft: '草稿', published: '已公开', withdrawn: '已撤回' }
 const selectedMedia = ref<MediaAsset | null>(null)
