@@ -31,22 +31,21 @@ const dismissed = ref(false)
 </script>
 
 <style lang="scss" scoped>
-// 内嵌圆角条，左右与消息列表的内边距对齐，不再贴着卡片边缘
+// 页头内的整宽圆角条，用主题柔和强调色区分，不加重边框
 .pinned-message {
   flex-shrink: 0;
   display: flex;
   align-items: center;
   gap: 0.625rem;
-  margin: 0.75rem 1.25rem 0;
-  padding: 0.5rem 0.5rem 0.5rem 0.875rem;
-  background: color-mix(in srgb, var(--accent, #5b7cfa) 6%, var(--surface-1));
-  border: 1px solid color-mix(in srgb, var(--accent, #5b7cfa) 18%, var(--border-soft));
+  min-width: 0;
+  padding: 0.375rem 0.375rem 0.375rem 0.875rem;
+  background: var(--surface-2);
   border-radius: $radius-md;
 }
 
 .pinned-message__icon {
   flex-shrink: 0;
-  color: var(--accent, #5b7cfa);
+  color: var(--accent-text);
   transform: rotate(45deg);
 }
 
@@ -62,10 +61,10 @@ const dismissed = ref(false)
   flex-shrink: 0;
   font-size: 0.625rem;
   font-weight: 700;
-  color: var(--accent, #5b7cfa);
+  color: var(--accent-text);
   padding: 0.0625rem 0.375rem;
-  border-radius: 3px;
-  background: color-mix(in srgb, var(--accent, #5b7cfa) 12%, transparent);
+  border-radius: 0.25rem;
+  background: var(--accent-soft);
 }
 
 .pinned-message__content {
@@ -83,8 +82,8 @@ const dismissed = ref(false)
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 1.5rem;
-  height: 1.5rem;
+  width: 2rem;
+  height: 2rem;
   border: none;
   border-radius: $radius-sm;
   background: transparent;

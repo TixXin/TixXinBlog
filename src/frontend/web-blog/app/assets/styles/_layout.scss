@@ -192,6 +192,25 @@
     padding: 1.25rem 1.25rem 0;
     gap: 0.75rem;
   }
+
+  // 标题型页头底部与顶部留白对称，副标题和操作区不再贴着分隔线；
+  // 标签页型页头保持 0，让选中下划线压在分隔线上
+  &:has(> .page-title) {
+    padding-bottom: 1.25rem;
+
+    @media (min-width: $breakpoint-lg) and (max-width: #{$breakpoint-xl - 1px}) {
+      padding-bottom: 1rem;
+    }
+
+    // 手机端操作区自带的底部留白交给页头统一处理，避免与页头留白叠加
+    @media (max-width: #{$breakpoint-sm - 1px}) {
+      padding-bottom: 1rem;
+
+      > .page-actions {
+        padding-bottom: 0;
+      }
+    }
+  }
 }
 
 /* ==== 页头标题块：图标 + 标题 + 副标题（全站统一） ==== */

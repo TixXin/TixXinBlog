@@ -34,11 +34,12 @@
           /></CommonContextDrawer>
           <NuxtLink v-if="isLoggedIn" to="/admin/guestbook" class="guestbook-clear">管理</NuxtLink>
         </div>
+        <!-- 置顶公告归入页头，位于分隔线之上，消息在分隔线下方滚动而不被公告条截断 -->
+        <GuestbookPinnedMessage v-if="pinned" :key="pinned.id" :message="pinned" class="guestbook-pinned" />
       </div>
     </template>
     <template #default>
       <div class="guestbook-center" :data-display-mode="isChatMode ? 'chat' : 'forum'">
-        <GuestbookPinnedMessage v-if="pinned" :key="pinned.id" :message="pinned" />
         <template v-if="!isChatMode"
           ><GuestbookMessageInput
             v-bind="composerProps"
@@ -463,6 +464,13 @@ useSeoMeta({ title: '留言板', description: '留下你的足迹，交流技术
 }
 .guestbook-center :deep(.guestbook-viewport) {
   overflow-anchor: none;
+}
+.guestbook-pinned {
+  width: 100%;
+  // 横排页头里独占一行；竖排（手机）时 flex-basis 会作用于高度，只在横排设置
+  @media (min-width: $breakpoint-sm) {
+    flex-basis: 100%;
+  }
 }
 .guestbook-subline {
   display: flex;
