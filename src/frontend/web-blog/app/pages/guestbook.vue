@@ -313,7 +313,8 @@ const {
   refresh: refreshFeed,
 } = feed
 const { data: metadata, pending: metadataPending, error: metadataError, refresh: refreshMetadata } = overview
-const groups = computed(() => guestbookGroups(items.value, isChatMode.value))
+const { settings: siteSettings } = useSiteSettings()
+const groups = computed(() => guestbookGroups(items.value, isChatMode.value, siteSettings.value.avatar))
 const pinned = computed(() =>
   metadata.value?.pinned ? { ...metadata.value.pinned, time: metadata.value.pinned.createdAt.slice(0, 10) } : null,
 )
