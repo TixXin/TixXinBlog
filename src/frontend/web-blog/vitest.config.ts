@@ -14,5 +14,32 @@ export default defineVitestConfig({
     // Node 25 的原生存储不能覆盖模拟浏览器的 localStorage；对子进程显式关闭。
     execArgv: ['--no-experimental-webstorage'],
     globals: true,
+    // 覆盖率只收集与展示，不设阈值门禁，避免首次引入即让 CI 变红。
+    coverage: {
+      provider: 'v8',
+      reportsDirectory: './coverage',
+      reporter: ['text-summary', 'lcov', 'json-summary'],
+      // 只统计测试实际加载到的文件：全量 instrument 需要把整个 app 目录
+      // 的 .vue 经 Nuxt 环境转换，CI 耗时与不稳定性都会明显上升。
+      all: false,
+      include: ['app/**/*.{ts,vue}', 'server/**/*.ts'],
+      exclude: [
+        '**/node_modules/**',
+        '**/.nuxt/**',
+        '**/.nuxt-production/**',
+        '**/.output/**',
+        '**/dist/**',
+        '**/coverage/**',
+        'tests/**',
+        'themes/**',
+        'theme-contracts/**',
+        'public/**',
+        '**/*.d.ts',
+        '**/types.ts',
+        '**/*.config.{ts,mjs}',
+        '**/mocks/**',
+        '**/*.mock.ts',
+      ],
+    },
   },
 })

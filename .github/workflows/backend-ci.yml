@@ -69,6 +69,19 @@ jobs:
       - name: Test
         run: pnpm --filter server-main test
 
+      # 覆盖率只收集与上传，不设阈值门禁。
+      - name: Backend Coverage
+        run: pnpm --filter server-main test:coverage
+
+      - name: Backend Coverage Report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-coverage
+          path: src/backend/server-main/coverage
+          if-no-files-found: ignore
+          retention-days: 7
+
       # 在全新数据库上重放全部迁移,并校验实体与 schema 零漂移(development.md §8.1)
       - name: Migration Up + Check
         run: |

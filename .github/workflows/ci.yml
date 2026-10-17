@@ -77,6 +77,19 @@ jobs:
       - name: Test
         run: pnpm --filter web-blog test
 
+      # 覆盖率只收集与上传，不设阈值门禁。
+      - name: Frontend Coverage
+        run: pnpm --filter web-blog exec vitest run --coverage
+
+      - name: Frontend Coverage Report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-coverage
+          path: src/frontend/web-blog/coverage
+          if-no-files-found: ignore
+          retention-days: 7
+
       - name: Build
         run: pnpm build
 
