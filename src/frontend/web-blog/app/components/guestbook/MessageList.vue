@@ -15,6 +15,7 @@
         :interactive="interactive"
         :reacting="reacting?.includes(msg.id)"
         :reaction-error="reactionErrors?.[msg.id]"
+        :highlight="highlight"
         @react="$emit('react', $event)"
         @reply="(m) => $emit('reply', m)"
         @jump="$emit('jump', $event)"
@@ -31,6 +32,8 @@ const props = defineProps<{
   interactive?: boolean
   reacting?: number[]
   reactionErrors?: Record<number, string>
+  /** 搜索关键词，命中处在正文与作者名里高亮 */
+  highlight?: string
 }>()
 
 defineEmits<{
