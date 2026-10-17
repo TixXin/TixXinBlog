@@ -27,7 +27,7 @@
     <div class="moment-card__body">
       <div class="moment-card__header">
         <span class="moment-card__author">{{ ownerProfile.name }}</span>
-        <span v-if="moment.mood" class="moment-card__mood" :title="moment.mood">{{ moment.mood }}</span>
+        <span v-if="moment.mood" class="moment-card__mood">{{ moment.mood }}</span>
         <span v-if="moment.isPinned" class="moment-card__pin" aria-label="置顶">
           <Icon name="lucide:pin" size="11" />
           置顶
@@ -498,8 +498,10 @@ function onLightBoxChange(index: number) {
 // 底部栏
 .moment-card__footer {
   display: flex;
-  align-items: center;
+  // 窄屏元信息换行时，操作按钮对齐首行而不是悬在两行中间
+  align-items: flex-start;
   justify-content: space-between;
+  gap: 0.5rem;
   margin-top: 0.5rem;
 }
 
@@ -507,7 +509,11 @@ function onLightBoxChange(index: number) {
   display: flex;
   align-items: center;
   flex-wrap: wrap;
-  gap: 0.75rem;
+  min-width: 0;
+  gap: 0.25rem 0.75rem;
+  // 与操作按钮的上下内边距一致，保证首行与按钮垂直居中对齐
+  padding-block: 0.25rem;
+  line-height: 1.5rem;
   font-size: 0.8125rem;
   color: var(--text-faint);
 }
@@ -540,6 +546,7 @@ function onLightBoxChange(index: number) {
 // 操作按钮
 .moment-card__actions {
   display: flex;
+  flex-shrink: 0;
   align-items: center;
   gap: 0.25rem;
 }
@@ -548,6 +555,7 @@ function onLightBoxChange(index: number) {
   display: flex;
   align-items: center;
   gap: 0.375rem;
+  min-height: 2rem;
   padding: 0.25rem 0.5rem;
   border: none;
   background: transparent;
@@ -575,6 +583,19 @@ function onLightBoxChange(index: number) {
     .fill-current {
       fill: currentColor;
     }
+  }
+}
+
+// 触屏放大操作热区到 44px，元信息首行同步下移保持对齐
+@media (pointer: coarse) {
+  .moment-action-btn {
+    min-width: 44px;
+    min-height: 44px;
+    justify-content: center;
+  }
+
+  .moment-card__meta {
+    padding-block: 0.625rem;
   }
 }
 

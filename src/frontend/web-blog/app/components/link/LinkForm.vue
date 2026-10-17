@@ -118,10 +118,38 @@ button {
   color: var(--text-main);
   background: var(--surface-1);
 }
+input {
+  font-size: 0.875rem;
+  transition: border-color 0.18s;
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
+
+  &:focus-visible {
+    outline: none;
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px var(--accent-soft);
+  }
+}
 button {
   width: auto;
+  padding-inline: 1rem;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  cursor: var(--interaction-cursor, pointer);
+
+  &:not(:disabled):hover {
+    border-color: var(--accent);
+    color: var(--accent-text);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+  }
 }
 button:disabled {
   opacity: 0.5;
+  cursor: var(--interaction-cursor, not-allowed);
 }
 </style>
