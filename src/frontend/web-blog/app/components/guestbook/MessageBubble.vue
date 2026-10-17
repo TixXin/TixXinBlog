@@ -9,7 +9,10 @@
   <div
     class="message-bubble"
     :data-guestbook-id="message.id"
-    :class="message.isOwner ? 'message-bubble--owner' : 'message-bubble--guest'"
+    :class="[
+      message.isOwner ? 'message-bubble--owner' : 'message-bubble--guest',
+      { 'message-bubble--picker-open': showReactionPicker },
+    ]"
   >
     <!-- 头像 -->
     <div class="message-bubble__avatar-wrap" @mouseenter="showUserCard = true" @mouseleave="showUserCard = false">
@@ -114,7 +117,7 @@
               <Icon :name="copied ? 'lucide:check' : 'lucide:copy'" size="13" />
             </button>
           </CommonTooltip>
-          <CommonTooltip content="表情">
+          <CommonTooltip content="表情" :disabled="showReactionPicker">
             <button
               ref="reactionButton"
               type="button"
@@ -122,39 +125,42 @@
               aria-label="添加回应"
               :disabled="!interactive || reacting || message.moderationStatus !== 'published'"
               :aria-expanded="showReactionPicker"
-              @click="showReactionPicker = !showReactionPicker"
+              @click="toggleReactionPicker"
             >
               <Icon name="lucide:smile-plus" size="13" />
             </button>
           </CommonTooltip>
         </div>
+        <!-- 反应选择器：浮层定位在气泡旁，不参与排版 -->
+        <Transition name="picker-fade">
+          <div
+            v-if="showReactionPicker"
+            ref="reactionPicker"
+            role="group"
+            aria-label="选择回应"
+            class="message-bubble__reaction-picker"
+            :class="{
+              'message-bubble__reaction-picker--end': message.isOwner,
+              'message-bubble__reaction-picker--above': pickerAbove,
+            }"
+            @keydown.escape.stop="closeReactions"
+          >
+            <button
+              v-for="option in reactionOptions"
+              :key="option.value"
+              type="button"
+              :aria-label="option.label"
+              :disabled="reacting"
+              class="message-bubble__reaction-pick"
+              @click="addReaction(option.value)"
+            >
+              <Icon :name="option.icon" size="16" />
+            </button>
+          </div>
+        </Transition>
       </div>
 
-      <!-- 反应 emoji 选择器 -->
-      <Transition name="picker-fade">
-        <div
-          v-if="showReactionPicker"
-          role="group"
-          aria-label="选择回应"
-          class="message-bubble__reaction-picker"
-          :class="{ 'message-bubble__reaction-picker--end': message.isOwner }"
-          @keydown.escape.stop="closeReactions"
-        >
-          <button
-            v-for="option in reactionOptions"
-            :key="option.value"
-            type="button"
-            :aria-label="option.label"
-            :disabled="reacting"
-            class="message-bubble__reaction-pick"
-            @click="addReaction(option.value)"
-          >
-            <Icon :name="option.icon" size="16" />
-          </button>
-        </div>
-      </Transition>
-
-      <!-- 已有的反应与浏览器、地区同排，空间不足时才换行 -->
+      <!-- 浏览器、地区与已有反应同排：设备信息靠头像一侧，反应靠气泡外缘，空间不足时才换行 -->
       <div
         v-if="reactions.length > 0 || message.browser || message.region"
         class="message-bubble__extras"
@@ -225,6 +231,49 @@ const reactionOptions = [
   { value: '💡', icon: 'lucide:lightbulb', label: '灵感' },
 ]
 const reactionButton = ref<HTMLButtonElement | null>(null)
+const reactionPicker = ref<HTMLElement | null>(null)
+/** 气泡下方空间不足（会被滚动区或输入框遮住）时改为向上弹出 */
+const pickerAbove = ref(false)
+const PICKER_SPACE = 64
+
+/** 最近的滚动容器，用来判断浮层能否完整显示在气泡下方 */
+function scrollParent(el: HTMLElement | null) {
+  for (let node = el?.parentElement; node; node = node.parentElement) {
+    if (/(auto|scroll)/.test(getComputedStyle(node).overflowY)) return node
+  }
+  return null
+}
+
+function toggleReactionPicker() {
+  if (showReactionPicker.value) {
+    showReactionPicker.value = false
+    return
+  }
+  const button = reactionButton.value
+  const bottomLimit = scrollParent(button)?.getBoundingClientRect().bottom ?? window.innerHeight
+  pickerAbove.value = !!button && button.getBoundingClientRect().bottom + PICKER_SPACE > bottomLimit
+  showReactionPicker.value = true
+}
+
+/** 浮层打开时，点击浮层与触发按钮以外的区域即收起 */
+function onOutsidePointer(event: PointerEvent) {
+  const target = event.target as Node
+  if (reactionPicker.value?.contains(target) || reactionButton.value?.contains(target)) return
+  showReactionPicker.value = false
+}
+/** 焦点仍在触发按钮上时也能用 Esc 收起 */
+function onPickerEscape(event: KeyboardEvent) {
+  if (event.key === 'Escape') closeReactions()
+}
+function unbindPickerDismiss() {
+  document.removeEventListener('pointerdown', onOutsidePointer, true)
+  document.removeEventListener('keydown', onPickerEscape)
+}
+watch(showReactionPicker, (open) => {
+  if (!open) return unbindPickerDismiss()
+  document.addEventListener('pointerdown', onOutsidePointer, true)
+  document.addEventListener('keydown', onPickerEscape)
+})
 const reactionMeta = (value: string) =>
   reactionOptions.find((option) => option.value === value) ?? { icon: 'lucide:smile', label: '回应' }
 function closeReactions() {
@@ -268,6 +317,7 @@ function addReaction(emoji: string) {
 }
 
 onBeforeUnmount(() => {
+  unbindPickerDismiss()
   if (copyTimer) clearTimeout(copyTimer)
 })
 </script>
@@ -285,6 +335,12 @@ onBeforeUnmount(() => {
 
   &--owner {
     flex-direction: row-reverse;
+  }
+
+  // 浮层打开时整条消息抬到相邻消息之上，避免被后续消息覆盖
+  &--picker-open {
+    position: relative;
+    z-index: 5;
   }
 }
 
@@ -576,8 +632,10 @@ onBeforeUnmount(() => {
   }
   flex-shrink: 0;
 
+  // 鼠标点击留下的焦点不算，移开即淡出；键盘焦点与打开的表情浮层保持显示
   .message-bubble:hover &,
-  .message-bubble:focus-within & {
+  .message-bubble:has(:focus-visible) &,
+  .message-bubble--picker-open & {
     opacity: 1;
   }
 
@@ -611,17 +669,29 @@ onBeforeUnmount(() => {
 
 /* ---- 反应 emoji 选择器 ---- */
 .message-bubble__reaction-picker {
+  position: absolute;
+  top: calc(100% + 0.375rem);
+  left: 0;
+  z-index: 15;
   display: flex;
+  flex-wrap: wrap;
+  max-width: min(17.5rem, calc(100vw - 2rem));
   gap: 0.125rem;
   padding: 0.25rem;
   border-radius: $radius-md;
   background: var(--surface-1);
   border: 1px solid var(--border);
   box-shadow: var(--shadow-card-hover, 0 4px 12px rgba(0, 0, 0, 0.12));
-  width: fit-content;
+  width: max-content;
 
   &--end {
-    align-self: flex-end;
+    left: auto;
+    right: 0;
+  }
+
+  &--above {
+    top: auto;
+    bottom: calc(100% + 0.375rem);
   }
 }
 
@@ -670,15 +740,34 @@ onBeforeUnmount(() => {
 }
 
 /* ---- 反应列表 ---- */
+// 操作按钮常驻占位（3 个按钮 + 间距 + 与气泡的间隔），反应需让出这段宽度才能对齐气泡外缘
+$actions-inset: 3 * 1.5rem + 2 * 0.125rem + 0.25rem;
+
 .message-bubble__extras {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   gap: 0.25rem 0.625rem;
+  padding-right: $actions-inset;
 
-  // 博主消息靠右：回应贴近气泡右缘，设备信息排在其左侧
+  .message-bubble__reactions {
+    order: 1;
+    margin-left: auto;
+  }
+
+  // 博主消息镜像：反应在左侧外缘，设备信息贴近头像
   &--end {
-    flex-direction: row-reverse;
+    padding-right: 0;
+    padding-left: $actions-inset;
+
+    .message-bubble__reactions {
+      order: 0;
+      margin-left: 0;
+    }
+
+    .message-bubble__foot {
+      margin-left: auto;
+    }
   }
 }
 
