@@ -11,38 +11,33 @@ interface AnalyticsConfig {
   scriptUrl: string
 }
 
+/** 浏览器发出“请勿追踪”或全球隐私控制信号时不加载统计 */
+function prefersNoTracking() {
+  const nav = navigator as Navigator & { globalPrivacyControl?: boolean }
+  return nav.doNotTrack === '1' || nav.globalPrivacyControl === true
+}
+
 export function useAnalytics() {
   const config = useRuntimeConfig()
   const analytics = (config.public?.analytics ?? {}) as Partial<AnalyticsConfig>
 
   if (!analytics.provider || !analytics.scriptUrl) return
+  // 只在浏览器注入：SSR 页面按 cookie 共享缓存，服务端无法为每位访客单独尊重 DNT/GPC
+  if (import.meta.server) return
+  if (prefersNoTracking()) return
 
-  // Respect Do Not Track
-  if (import.meta.client && navigator.doNotTrack === '1') return
-
-  if (analytics.provider === 'umami') {
-    useHead({
-      script: [
-        {
-          src: analytics.scriptUrl,
-          'data-website-id': analytics.siteId,
-          async: true,
-          defer: true,
-        },
-      ],
-    })
-  } else if (analytics.provider === 'plausible') {
-    useHead({
-      script: [
-        {
-          src: analytics.scriptUrl,
-          'data-domain': analytics.siteId,
-          async: true,
-          defer: true,
-        },
-      ],
-    })
-  }
+  const dataAttribute = analytics.provider === 'umami' ? 'data-website-id' : 'data-domain'
+  if (analytics.provider !== 'umami' && analytics.provider !== 'plausible') return
+  useHead({
+    script: [
+      {
+        src: analytics.scriptUrl,
+        [dataAttribute]: analytics.siteId,
+        async: true,
+        defer: true,
+      },
+    ],
+  })
 }
 
 type WindowWithAnalytics = Window & {

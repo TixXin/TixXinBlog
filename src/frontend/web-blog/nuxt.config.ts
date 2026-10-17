@@ -226,6 +226,11 @@ export default {
             // useMockRepo=false 时浏览器需直连后端 API，把 API origin 加入 connect-src 白名单
             "connect-src 'self'",
             "frame-ancestors 'none'",
+            // 站点不使用插件、内嵌框架与跨站表单；统计脚本来源由 server/plugins/csp-analytics.ts 在运行时追加
+            "object-src 'none'",
+            "frame-src 'none'",
+            "base-uri 'self'",
+            "form-action 'self'",
           ].join('; '),
           'X-Content-Type-Options': 'nosniff',
           'X-Frame-Options': 'DENY',
