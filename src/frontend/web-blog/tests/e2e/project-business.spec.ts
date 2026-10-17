@@ -253,7 +253,7 @@ test('服务端拒绝无效链接时保留输入，有效链接与技术去重�
   expect((await rejected).status()).toBe(400)
   await expect(page.getByRole('alert')).toBeVisible()
   await expect(href).toHaveValue('javascript:alert(1)')
-  await href.fill('https://github.com/example/myblog')
+  await href.fill('https://github.com/TixXin/TixXinBlog')
   for (const name of ['Vue', 'vue']) {
     await page.getByRole('button', { name: '添加技术标签', exact: true }).click()
     await page
@@ -270,7 +270,7 @@ test('服务端拒绝无效链接时保留输入，有效链接与技术去重�
   const card = page.locator(`[data-project-id="${id}"]`)
   await expect(card.getByRole('link', { name: '源代码', exact: true })).toHaveAttribute(
     'href',
-    'https://github.com/example/myblog',
+    'https://github.com/TixXin/TixXinBlog',
   )
   await expect(card.locator('a[href="#"]')).toHaveCount(0)
 })
@@ -429,7 +429,7 @@ for (const theme of ['nexus', 'aurora', 'dock']) {
         if (/hydration|NotFoundError|TypeError/i.test(message.text())) issues.push(message.text())
       })
       await publicSample(request)
-      await context.addCookies([{ name: 'blog-layout-theme', value: theme, url: baseURL! }])
+      await context.addCookies([{ name: 'tixxin-blog-layout-theme', value: theme, url: baseURL! }])
       await page.setViewportSize({ width, height: 960 })
       await page.emulateMedia({ reducedMotion: width === 320 ? 'reduce' : 'no-preference' })
       await page.goto('/projects')

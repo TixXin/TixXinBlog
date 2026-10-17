@@ -180,7 +180,7 @@ async function main() {
     assert.equal(prepared.revision, initialRevision + 1)
     assert(prepared.backup)
     assert.equal((await current()).values.about.visible, true)
-    assert((await current()).values.about.introduction.includes('myblog'))
+    assert((await current()).values.about.introduction.includes('TixXinBlog'))
     assert.deepEqual((await history())[0].values, LEGACY_HISTORY_VALUES)
     assert.equal((await preparePersonalProfile(args, fixture.backupOptions)).changed, false)
 

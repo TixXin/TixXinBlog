@@ -68,7 +68,7 @@ export const mockMoments: MomentItem[] = [
       },
       {
         id: 'c-1-2',
-        author: '陈屿',
+        author: 'TixXin',
         avatar: '/avatar-photo.webp',
         content: '是的，推荐周中去人少',
         time: '2小时前',
@@ -106,7 +106,7 @@ export const mockMoments: MomentItem[] = [
       },
       {
         id: 'c-2-2',
-        author: '陈屿',
+        author: 'TixXin',
         avatar: '/avatar-photo.webp',
         content: '基于 slot contract 模式，文章里会详细说',
         time: '昨天',
@@ -163,7 +163,7 @@ export const mockMoments: MomentItem[] = [
       },
       {
         id: 'c-4-2',
-        author: '陈屿',
+        author: 'TixXin',
         avatar: '/avatar-photo.webp',
         content: '@美食家小王 强烈推荐鳗鱼饭，一定要试',
         time: '4天前',
@@ -236,7 +236,7 @@ export const mockMoments: MomentItem[] = [
       },
       {
         id: 'c-7-2',
-        author: '陈屿',
+        author: 'TixXin',
         avatar: '/avatar-photo.webp',
         content: '早上五点半开始爬，七点到山顶',
         time: '10天前',
@@ -253,7 +253,7 @@ export const mockMoments: MomentItem[] = [
       },
       {
         id: 'c-7-4',
-        author: '陈屿',
+        author: 'TixXin',
         avatar: '/avatar-photo.webp',
         content: '@户外小白 主要路线不难，就是有点长，带够水就行',
         time: '9天前',
@@ -294,7 +294,7 @@ export const mockMoments: MomentItem[] = [
       },
       {
         id: 'c-9-2',
-        author: '陈屿',
+        author: 'TixXin',
         avatar: '/avatar-photo.webp',
         content: '南山大道旁边的小巷子里，叫"慢时光"',
         time: '15天前',
@@ -347,7 +347,7 @@ export const mockMoments: MomentItem[] = [
       },
       {
         id: 'c-12-2',
-        author: '陈屿',
+        author: 'TixXin',
         avatar: '/avatar-photo.webp',
         content: '1/4s，开了 IBIS 防抖，靠在栏杆上稳住',
         time: '23天前',
@@ -389,7 +389,7 @@ export const mockMoments: MomentItem[] = [
       },
       {
         id: 'c-14-2',
-        author: '陈屿',
+        author: 'TixXin',
         avatar: '/avatar-photo.webp',
         content: '官方有迁移指南，主要是目录结构变化，逻辑基本兼容',
         time: '30天前',
@@ -466,6 +466,6 @@ export const mockMomentAuthorStats: MomentAuthorStats = {
   socialLinks: [
     { icon: 'lucide:github', url: 'https://github.com', label: 'GitHub' },
     { icon: 'lucide:twitter', url: 'https://twitter.com', label: 'Twitter' },
-    { icon: 'lucide:mail', url: 'mailto:hi@example.com', label: '邮箱' },
+    { icon: 'lucide:mail', url: 'mailto:hi@tixxin.com', label: '邮箱' },
   ],
 }

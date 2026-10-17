@@ -281,7 +281,7 @@ const item = (title: string, period: string, detail = '') => ({ title, period, d
 const SHOWCASE_ABOUT: AboutSettingsDto = {
   visible: true,
   introduction:
-    '我是陈屿，在深圳做前端开发。这里记录 Vue、Nuxt 和 TypeScript 的实践，也写部署运维的踩坑、读过的书和周末去过的地方。文章尽量写清楚“为什么这么做”，而不只是“怎么做”。',
+    '我是 TixXin，在深圳做前端开发。这里记录 Vue、Nuxt 和 TypeScript 的实践，也写部署运维的踩坑、读过的书和周末去过的地方。文章尽量写清楚“为什么这么做”，而不只是“怎么做”。',
   sections: [
     {
       kind: 'experience',
@@ -392,17 +392,17 @@ async function ensureProfile(em: EntityManager, progress: FixtureProgress) {
   await service.save(
     {
       ...values,
-      name: '陈屿的博客',
-      description: '记录 Vue、Nuxt 与 TypeScript 的实践，也写部署运维的踩坑、读过的书和周末去过的地方。',
-      ownerName: '陈屿',
+      name: 'TixXin Blog',
+      description: 'TixXin 的个人博客，分享技术文章、项目经验与生活随笔',
+      ownerName: 'TixXin',
       ownerTitle: '前端开发工程师，热爱开源与技术分享',
       avatar: '/avatar-photo.webp',
-      avatarAlt: '陈屿的头像',
+      avatarAlt: 'TixXin 的头像',
       announcement: '博客已迁移至新服务器，访问速度大幅提升！',
       socials: [
-        { icon: 'lucide:github', label: 'GitHub', href: 'https://github.com/example' },
-        { icon: 'lucide:twitter', label: 'Twitter', href: 'https://twitter.com/example' },
-        { icon: 'lucide:mail', label: 'Email', href: 'mailto:hi@example.com' },
+        { icon: 'lucide:github', label: 'GitHub', href: 'https://github.com/TixXin' },
+        { icon: 'lucide:twitter', label: 'Twitter', href: 'https://twitter.com/TixXin' },
+        { icon: 'lucide:mail', label: 'Email', href: 'mailto:hi@tix.xin' },
       ],
       presenceLabel: '摆烂中',
       presenceSignature: '今天不想写代码',

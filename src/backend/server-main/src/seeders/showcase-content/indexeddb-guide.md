@@ -32,7 +32,7 @@
 先把打开和迁移封成一个 Promise：
 
 ```ts
-const DB_NAME = 'myblog'
+const DB_NAME = 'tixxin-blog'
 const DB_VERSION = 2
 
 export interface BookmarkRecord {
@@ -147,7 +147,7 @@ interface BlogDB extends DBSchema {
   }
 }
 
-const db = await openDB<BlogDB>('myblog', 2, {
+const db = await openDB<BlogDB>('tixxin-blog', 2, {
   upgrade(db, oldVersion, _newVersion, tx) {
     if (oldVersion < 1) {
       const store = db.createObjectStore('bookmarks', { keyPath: 'id', autoIncrement: true })

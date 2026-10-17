@@ -785,7 +785,7 @@ export const mockComments: CommentItem[] = [
     replies: [
       {
         id: 11,
-        author: '陈屿',
+        author: 'TixXin',
         avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&fit=crop&w=80&q=80',
         content: '谢谢支持，编译器系列已经在路上了。',
         time: '2024-03-11',
@@ -814,7 +814,7 @@ export const mockComments: CommentItem[] = [
   },
   {
     id: 4,
-    author: '陈屿',
+    author: 'TixXin',
     avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&fit=crop&w=80&q=80',
     content: '本文侧重原理脉络，effectScope 确实是组合式 API 里很值得单独展开的一块，后面会补一篇短文说明。',
     time: '2024-03-10',

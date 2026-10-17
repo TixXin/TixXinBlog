@@ -3,9 +3,9 @@
 export const legacyEditorialArticles = [
   {
     key: 'content-boundaries',
-    title: 'myblog 的内容边界与页面职责',
+    title: 'TixXinBlog 的内容边界与页面职责',
     summary: '从页面、领域与服务端三个层次梳理个人博客的内容链路。',
-    body: `# myblog 的内容边界与页面职责
+    body: `# TixXinBlog 的内容边界与页面职责
 
 ## 页面负责组织，组件负责展示
 
@@ -73,7 +73,7 @@ src/backend/server-main/src/modules/backup/content-package.ts、content-import.s
   },
 ] as const
 export const legacyEditorialProject = {
-  title: 'myblog：内容与维护',
+  title: 'TixXinBlog：内容与维护',
   description:
     '基于 Nuxt 4、Vue 3、TypeScript、NestJS、MikroORM 与 PostgreSQL 的个人博客。文章、闪念、朋友圈、留言、图库、项目和友链使用真实业务接口，三套主题通过契约组织。后台提供版本保护、媒体管理、内容包迁入与完整备份恢复；书签仍保存在当前浏览器，友链公开申请尚未开放。',
   coverMediaId: null,
@@ -85,6 +85,6 @@ export const legacyEditorialProject = {
     { label: 'NestJS', color: 'rose' as const },
     { label: 'PostgreSQL', color: 'sky' as const },
   ],
-  links: [{ kind: 'source' as const, href: 'https://github.com/example/myblog' }],
+  links: [{ kind: 'source' as const, href: 'https://github.com/TixXin/TixXinBlog' }],
   relatedContent: [],
 }

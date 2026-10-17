@@ -36,7 +36,7 @@ const docs = {
 } as const
 const projects = [
   [
-    'myblog',
+    'TixXinBlog',
     'active',
     'code-screen',
     ['Nuxt', 'Vue', 'TypeScript', 'NestJS', 'PostgreSQL'],
@@ -190,9 +190,9 @@ export async function seedProjectFixtures(
         const links: { kind: 'source' | 'docs' | 'demo' | 'download'; href: string }[] =
           index === 0
             ? [
-                { kind: 'source', href: 'https://github.com/example/myblog' },
-                { kind: 'download', href: 'https://github.com/example/myblog/releases' },
-                { kind: 'demo', href: 'https://example.github.io/myblog/' },
+                { kind: 'source', href: 'https://github.com/TixXin/TixXinBlog' },
+                { kind: 'download', href: 'https://github.com/TixXin/TixXinBlog/releases' },
+                { kind: 'demo', href: 'https://tixxin.github.io/TixXinBlog/' },
               ]
             : []
         if (documentation) links.push({ kind: 'docs', href: docs[documentation] })

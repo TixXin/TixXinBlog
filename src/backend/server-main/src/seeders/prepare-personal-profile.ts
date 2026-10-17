@@ -86,7 +86,7 @@ export async function preparePersonalProfile(args: string[], options: Developmen
       apply,
       eligible: initial,
       scope: '只整理未编辑的初始姓名、头衔、头像、联系方式及关于页；保留其他配置和全部历史',
-      confirmed: { ownerName: '陈屿' },
+      confirmed: { ownerName: 'tixxin' },
       source: '本轮用户确认称呼；站点介绍依据当前仓库能力与用户内容定位',
       revision: current.revision,
     }
@@ -111,7 +111,7 @@ export async function preparePersonalProfile(args: string[], options: Developmen
       return new SiteSettingsService(em).save(
         {
           ...values,
-          ownerName: '陈屿',
+          ownerName: 'tixxin',
           ownerTitle: '技术笔记、项目实践与生活记录',
           avatar: '/avatar.svg',
           avatarAlt: '博主头像',
@@ -119,7 +119,7 @@ export async function preparePersonalProfile(args: string[], options: Developmen
           about: {
             visible: true,
             introduction:
-              '这里主要记录 Web 技术实践，整理 myblog 的实现与维护过程。项目用于介绍具体实现，图库用于整理图片与来源，生活记录保留独立入口。',
+              '这里主要记录 Web 技术实践，整理 TixXinBlog 的实现与维护过程。项目用于介绍具体实现，图库用于整理图片与来源，生活记录保留独立入口。',
             sections: [],
           },
         },
