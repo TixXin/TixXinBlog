@@ -14,7 +14,7 @@
         </div>
         <div class="archive-timeline__head-text">
           <h3 class="archive-timeline__title">{{ y.year }} 年</h3>
-          <p class="archive-timeline__count">共 {{ y.count }} 篇</p>
+          <p class="archive-timeline__count">全年共 {{ y.count }} 篇</p>
         </div>
       </div>
 

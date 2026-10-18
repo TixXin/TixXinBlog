@@ -92,7 +92,7 @@ describe('文章发现 GET 响应白名单', () => {
     })
     expect(execute).toHaveBeenCalledWith(
       expect.stringContaining("from post p where p.status='published' and p.deleted_at is null"),
-      [2026, 2026, 50, 0],
+      [2026, null, null, 50, 0],
     )
     const sql = execute.mock.calls[0][0] as string
     expect(sql).toContain('select year,count(*)::int as count from public_posts group by year')

@@ -1,4 +1,4 @@
-/** @file post-discovery.service.spec.ts @description 文章发现统计与归档的公开过滤、聚合、分页及日期边界 */
+/** @file post-discovery.service.spec.ts @description 文章发现统计与归档的公开过滤、聚合、年月过滤、稳定分页及日期边界 */
 import type { EntityManager } from '@mikro-orm/postgresql'
 import { PostDiscoveryService } from './post-discovery.service'
 
@@ -220,7 +220,7 @@ describe('文章按年分页归档', () => {
       years,
     })
     expect(execute).toHaveBeenCalledTimes(1)
-    expect(execute).toHaveBeenCalledWith(expect.any(String), [2026, 2026, 2, 2])
+    expect(execute).toHaveBeenCalledWith(expect.any(String), [2026, null, null, 2, 2])
   })
 
   it('未指定年份时以空值绑定筛选并从首页读取', async () => {
@@ -234,7 +234,7 @@ describe('文章按年分页归档', () => {
       pageSize: 50,
       years: [],
     })
-    expect(execute).toHaveBeenCalledWith(expect.any(String), [null, null, 50, 0])
+    expect(execute).toHaveBeenCalledWith(expect.any(String), [null, null, null, 50, 0])
   })
 
   it('同一查询快照限定公开文章并对页面与年份使用稳定排序', async () => {
@@ -247,7 +247,8 @@ describe('文章按年分页归档', () => {
     const sql = (execute.mock.calls[0][0] as string).replace(/\s+/g, ' ').trim()
     expect(sql).toContain("from post p where p.status='published' and p.deleted_at is null")
     expect(sql).toContain("extract(year from p.published_at at time zone 'UTC')::int as year")
-    expect(sql).toContain('selected as (select * from public_posts where (?::int is null or year=?::int))')
+    expect(sql).toContain('selected as ( select public_posts.* from public_posts cross join period')
+    expect(sql).toContain('where period.start_date is null or (')
     expect(sql).toContain('page_items as (select * from selected order by published_at desc,id desc limit ? offset ?)')
     expect(sql).toContain('jsonb_agg(to_jsonb(p) order by published_at desc,id desc) from page_items p')
     expect(sql).toContain('(select count(*)::int from selected) as total')
@@ -256,7 +257,7 @@ describe('文章按年分页归档', () => {
     expect(sql).toContain('greatest(p.published_at, coalesce((select r.created_at from post_revision r')
     expect(sql).toContain('where r.post_id = p.id and r.revision = p.revision), p.published_at)) as updated_at')
     expect(sql).not.toContain('p.updated_at')
-    expect(execute).toHaveBeenCalledWith(expect.any(String), [2025, 2025, 20, 40])
+    expect(execute).toHaveBeenCalledWith(expect.any(String), [2025, null, null, 20, 40])
   })
 
   it.each([
@@ -289,6 +290,100 @@ describe('文章按年分页归档', () => {
       page: 7,
       pageSize: 10,
       years: [],
+    })
+  })
+})
+
+describe('文章归档年月范围', () => {
+  it.each([
+    { year: undefined, month: undefined, expected: [null, null, null] },
+    { year: 2026, month: undefined, expected: [2026, null, null] },
+    { year: 2026, month: 3, expected: [2026, 3, 3] },
+    { year: 2026, month: 12, expected: [2026, 12, 12] },
+    { year: 1, month: 1, expected: [1, 1, 1] },
+    { year: 9999, month: 12, expected: [9999, 12, 12] },
+  ])('参数化传入年 $year 月 $month 的范围和分页', async ({ year, month, expected }) => {
+    const execute = jest.fn().mockResolvedValue([{ items: [], total: 0, years: [] }])
+    const service = new PostDiscoveryService({ execute } as unknown as EntityManager)
+    await service.archive({ year, month, page: 2, pageSize: 50 })
+
+    expect(execute).toHaveBeenCalledTimes(1)
+    const [sql, parameters] = execute.mock.calls[0] as [string, unknown[]]
+    expect(parameters).toEqual([...expected, 50, 50])
+    // 由数据库构造 UTC 左闭右开范围，避免本机时区及 JavaScript 对 1–99 年的特殊处理。
+    expect(sql).toContain('make_date(?::int,coalesce(?::int,1),1)')
+    expect(sql).toContain("case when ?::int is null then interval '1 year' else interval '1 month' end")
+    expect(sql).toContain("published_at >= period.start_date::timestamp at time zone 'UTC'")
+    expect(sql).toContain("published_at < (period.start_date + period.duration) at time zone 'UTC'")
+    expect(sql).toContain('where period.start_date is null or')
+    expect(sql).toContain("from post p where p.status='published' and p.deleted_at is null")
+    expect(sql).toContain('page_items as (select * from selected order by published_at desc,id desc limit ? offset ?)')
+    expect(sql).toContain('(select count(*)::int from selected) as total')
+    expect(sql).toContain('year_counts as (select year,count(*)::int as count from public_posts group by year)')
+  })
+
+  it('当月响应保留完整年份计数、真实总数和规范化文章日期', async () => {
+    const years = [
+      { year: 2026, count: 80 },
+      { year: 2025, count: 20 },
+    ]
+    const execute = jest.fn().mockResolvedValue([
+      {
+        items: [
+          {
+            id: 8,
+            slug: 'spring',
+            seo_noindex: false,
+            title: '春日记录',
+            folder: '随笔',
+            published_at: '2026-03-31T23:30:00-00:00',
+            updated_at: '2026-04-02T08:00:00+00:00',
+          },
+        ],
+        total: 51,
+        years,
+      },
+    ])
+    const service = new PostDiscoveryService({ execute } as unknown as EntityManager)
+
+    expect(await service.archive({ year: 2026, month: 3, page: 2, pageSize: 50 })).toEqual({
+      items: [
+        {
+          id: 8,
+          slug: 'spring',
+          seoNoindex: false,
+          title: '春日记录',
+          folder: '随笔',
+          date: '2026-03-31T23:30:00.000Z',
+          updatedAt: '2026-04-02T08:00:00.000Z',
+        },
+      ],
+      total: 51,
+      page: 2,
+      pageSize: 50,
+      years,
+    })
+  })
+
+  it('空月份或越界页保持空列表、真实筛选总数与全局年份', async () => {
+    const years = [{ year: 2026, count: 80 }]
+    const execute = jest.fn().mockResolvedValueOnce([{ items: [], total: 0, years }])
+    execute.mockResolvedValueOnce([{ items: [], total: 51, years }])
+    const service = new PostDiscoveryService({ execute } as unknown as EntityManager)
+
+    expect(await service.archive({ year: 2026, month: 1, page: 1, pageSize: 50 })).toEqual({
+      items: [],
+      total: 0,
+      page: 1,
+      pageSize: 50,
+      years,
+    })
+    expect(await service.archive({ year: 2026, month: 3, page: 3, pageSize: 50 })).toEqual({
+      items: [],
+      total: 51,
+      page: 3,
+      pageSize: 50,
+      years,
     })
   })
 })

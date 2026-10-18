@@ -1,6 +1,6 @@
 <!--
   @file archive.vue
-  @description 文章归档按年份筛选与分页展示，统计使用轻量公开数据源
+  @description 文章归档按年月筛选与分页展示，可分享地址与 SSR 元信息同步，统计使用轻量公开数据源
   @author TixXin
   @since 2026-04-11
 -->
@@ -18,7 +18,7 @@
             <p class="page-title__sub">
               {{
                 displayed
-                  ? `${displayedQuery?.year ? `${displayedQuery.year} 年` : '全部年份'} · 共 ${displayed.total} 篇文章`
+                  ? `${postArchivePeriod(displayedQuery ?? query)} · 共 ${displayed.total} 篇文章`
                   : archivePending
                     ? '正在加载归档…'
                     : '归档暂时不可用'
@@ -27,7 +27,7 @@
           </div>
         </div>
 
-        <!-- 年份筛选与站内搜索；手机端隐藏“年份”字样，让筛选与搜索并排一行 -->
+        <!-- 原生年月筛选支持键盘和读屏，窄屏操作区自动换行。 -->
         <div class="page-actions">
           <label class="archive-year-filter">
             <span class="archive-year-filter__label">年份</span>
@@ -39,6 +39,18 @@
               <option v-if="query.year && !years.some((item) => item.year === query.year)" :value="query.year">
                 {{ query.year }} 年{{ current ? '（0 篇）' : '' }}
               </option>
+            </select>
+          </label>
+          <label class="archive-year-filter">
+            <span class="archive-year-filter__label">月份</span>
+            <select
+              aria-label="归档月份"
+              :value="query.month ?? ''"
+              :disabled="!ready || !query.year"
+              @change="selectMonth"
+            >
+              <option value="">{{ query.year ? '全部月份' : '请先选择年份' }}</option>
+              <option v-for="month in 12" :key="month" :value="month">{{ month }} 月</option>
             </select>
           </label>
           <CommonSearchBox placeholder="搜索文章标题、内容..." readonly @click="openSearch" />
@@ -58,8 +70,7 @@
           @retry="refreshArchive()"
         />
         <p v-if="stale && displayedQuery" class="archive-stale-notice" role="status">
-          当前显示：{{ displayedQuery.year ? `${displayedQuery.year} 年` : '全部年份' }}，第
-          {{ displayedQuery.page }} 页（上次成功结果）。
+          当前显示：{{ postArchivePeriod(displayedQuery) }}，第 {{ displayedQuery.page }} 页（上次成功结果）。
         </p>
         <ArticleArchiveTimeline v-if="archiveYears.length" :years="archiveYears" />
         <CommonStateBlock
@@ -107,6 +118,8 @@
 </template>
 
 <script setup lang="ts">
+import { postArchivePeriod, postArchiveSeo } from '~/features/post/archive'
+
 const [summary, archive] = await Promise.all([usePostMetadata(), usePostArchive()])
 const { metadata, archiveStats, categoryDistribution, pending: metadataPending, refresh: refreshMetadata } = summary
 const {
@@ -131,10 +144,16 @@ function selectYear(event: Event) {
   const value = (event.target as HTMLSelectElement).value
   void changeQuery({ year: value ? Number(value) : undefined, page: 1 })
 }
+function selectMonth(event: Event) {
+  const value = (event.target as HTMLSelectElement).value
+  void changeQuery({ month: value ? Number(value) : undefined })
+}
 
+const seo = computed(() => postArchiveSeo(query.value))
 usePageSeo({
-  title: '归档',
-  description: '按时间线回顾全部文章，浏览历年技术沉淀与生活随笔',
+  title: () => seo.value.title,
+  description: () => seo.value.description,
+  canonical: () => seo.value.canonical,
   type: 'website',
 })
 
@@ -195,7 +214,8 @@ function openSearch() {
   gap: 1rem;
   margin-top: 1.5rem;
 }
-.archive-pagination button:disabled {
+.archive-pagination button:disabled,
+.archive-year-filter select:disabled {
   opacity: 0.45;
   cursor: not-allowed;
 }
