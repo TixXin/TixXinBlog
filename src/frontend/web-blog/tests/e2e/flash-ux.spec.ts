@@ -71,11 +71,16 @@ test('公开闪念可互动，草稿归档受限，手机工具栏和折叠搜�
     await note.getByRole('button', { name: '评论', exact: true }).click()
     const comment = note.getByRole('textbox', { name: '闪念评论内容', exact: true })
     await comment.fill('UX 网络恢复后评论')
+    // 服务端拒绝打开不足 1 秒即提交的访客表单（MIN_FORM_ELAPSED_MS），按真实访客的最短填写时长停留。
+    await guest.waitForTimeout(1100)
     await guest.route(`**/api/v1/flashes/${id}/comments`, (route) => route.abort())
     await note.getByRole('button', { name: '发送评论', exact: true }).click()
     await guest.getByRole('textbox', { name: '昵称 *', exact: true }).fill('UX 闪念访客')
     await guest.getByRole('button', { name: '确认身份', exact: true }).click()
-    await expect(guest.getByText('闪念服务暂时不可用，请稍后重试', { exact: true })).toBeVisible()
+    // 错误 Toast 的文案同时写入读屏 assertive 区域，只断言可见的 Toast 条目。
+    await expect(
+      guest.locator('.toast-item__message').filter({ hasText: /^闪念服务暂时不可用，请稍后重试$/ }),
+    ).toBeVisible()
     await expect(comment).toHaveValue('UX 网络恢复后评论')
     await expect(note.getByRole('button', { name: '发送评论', exact: true })).toBeEnabled()
     await guest.unroute(`**/api/v1/flashes/${id}/comments`)
@@ -92,7 +97,8 @@ test('公开闪念可互动，草稿归档受限，手机工具栏和折叠搜�
     await guest.getByRole('button', { name: '清除全部筛选', exact: true }).click()
     await guest.goto(`/flash/${id}`)
     await expect(guest.locator('.aside-right')).toBeHidden()
-    await expect(guest.getByText('UX 公开闪念验收', { exact: true })).toBeVisible()
+    // 详情页另有读屏专用 h1 复述正文，只断言可见的闪念正文。
+    await expect(guest.locator('.flash-detail-content').getByText('UX 公开闪念验收', { exact: true })).toBeVisible()
     await captureMotion(guest, testInfo, 'flash-public-detail.png', { animations: 'disabled' })
   } finally {
     await guestContext.close()
@@ -148,7 +154,7 @@ test('闪念网络失败不伪装不存在，重试仍回到原详情', async ({
     }
   }
   await page.getByRole('button', { name: '重试当前页面', exact: true }).click()
-  await expect(page.getByText('UX 详情故障恢复', { exact: true })).toBeVisible()
+  await expect(page.locator('.flash-detail-content').getByText('UX 详情故障恢复', { exact: true })).toBeVisible()
   await expect(page).toHaveURL(new RegExp(`/flash/${id}$`))
   await expect(page.locator('.aside-right')).toBeHidden()
 })

@@ -49,7 +49,7 @@ test('发布编辑置顶撤回删除跨刷新与另一浏览器上下文一致',
   const id = page.url().split('/').pop()!
   expect((await request.get(`/api/v1/moments/${id}`)).status()).toBe(404)
   await page.getByRole('button', { name: '发布动态', exact: true }).click()
-  await expect(page.getByRole('status')).toContainText('动态已发布')
+  await expect(page.getByRole('main', { name: '管理内容' }).getByRole('status')).toContainText('动态已发布')
   await page.reload()
   await expect(page.getByRole('textbox', { name: '动态正文', exact: true })).toHaveValue(content)
   const other = await browser.newContext({ baseURL })
@@ -59,7 +59,7 @@ test('发布编辑置顶撤回删除跨刷新与另一浏览器上下文一致',
     await expect(reader.locator('.moment-card__content')).toHaveText(content)
     await page.getByRole('textbox', { name: '动态正文', exact: true }).fill(content + ' 已编辑')
     await page.getByRole('button', { name: '保存动态', exact: true }).click()
-    await expect(page.getByRole('status')).toContainText('动态已发布')
+    await expect(page.getByRole('main', { name: '管理内容' }).getByRole('status')).toContainText('动态已发布')
     await reader.reload()
     await expect(reader.locator('.moment-card__content')).toHaveText(content + ' 已编辑')
     await page.goto(`/admin/moments?q=${encodeURIComponent(content)}`)
@@ -116,7 +116,7 @@ test('未知发布结果重试不重复写入，迟到成功保留新输入，�
   await page.getByRole('textbox', { name: '动态正文', exact: true }).fill(content + ' 第一版')
   await page.getByRole('button', { name: '保存动态', exact: true }).click()
   await page.getByRole('textbox', { name: '动态正文', exact: true }).fill(content + ' 尚未提交的下一版')
-  await expect(page.getByRole('status')).toContainText('动态已发布')
+  await expect(page.getByRole('main', { name: '管理内容' }).getByRole('status')).toContainText('动态已发布')
   await expect(page.getByRole('textbox', { name: '动态正文', exact: true })).toHaveValue(content + ' 尚未提交的下一版')
   page.once('dialog', (dialog) => dialog.accept())
   await page.reload()
@@ -208,7 +208,7 @@ test('媒体选择上传、文章引用、图片说明与编辑释放引用一�
   await page.goto(`/admin/moments/${id}`)
   await page.getByRole('button', { name: '移除配图 1', exact: true }).click()
   await page.getByRole('button', { name: '保存动态', exact: true }).click()
-  await expect(page.getByRole('status')).toContainText('动态已发布')
+  await expect(page.getByRole('main', { name: '管理内容' }).getByRole('status')).toContainText('动态已发布')
   expect((await call(`/admin/media/${imageId}/references`)).total).toBe(0)
 })
 
@@ -226,6 +226,8 @@ test('访客评论失败保留输入，同一提交重试只产生一条待审�
     await page.getByRole('button', { name: '查看动态评论', exact: true }).click()
     const input = page.getByRole('textbox', { name: '动态评论内容', exact: true })
     await input.fill('断连后保留的访客评论')
+    // 服务端拒绝打开不足 1 秒即提交的访客表单（MIN_FORM_ELAPSED_MS），按真实访客的最短填写时长停留。
+    await page.waitForTimeout(1100)
     let attempts = 0
     await page.route(`**/api/v1/moments/${note.id}/comments`, async (route) => {
       if (route.request().method() !== 'POST') return route.continue()
@@ -284,7 +286,7 @@ test('分页与筛选共享URL，读取失败保留内容并可重试，迟到�
     await route.continue()
   })
   await search.fill('样本 00')
-  await expect(page.locator('.moment-list [role="alert"]')).toContainText('已保留原内容')
+  await expect(page.locator('.moment-list [role="alert"]')).toContainText('仍显示上次成功加载的动态')
   expect(await page.locator('.moment-card').count()).toBe(30)
   fail = false
   await page.locator('.moment-list').getByRole('button', { name: '重试', exact: true }).click()
