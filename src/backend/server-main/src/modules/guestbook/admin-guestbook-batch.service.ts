@@ -13,7 +13,7 @@ import { lockMedia } from '../media/media-references'
 import { lockGuestbook } from './guestbook-write.service'
 
 /** 单条结果：not_found 表示留言不存在（或审核时已删除），conflict 表示提交版本已过期 */
-export interface GuestbookBatchItemResult {
+interface GuestbookBatchItemResult {
   id: number
   ok: boolean
   reason?: 'not_found' | 'conflict'

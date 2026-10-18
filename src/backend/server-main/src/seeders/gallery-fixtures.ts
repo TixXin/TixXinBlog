@@ -11,7 +11,7 @@ import { ensureFixture } from './fixture-ledger'
 import type { FixtureProgress } from './fixture-ledger'
 
 export const GALLERY_DATASET = 'gallery-v1'
-export const GALLERY_ASSETS = ['ridge', 'night', 'pizza', 'mist', 'skyline', 'breakfast', 'portrait', 'lake'] as const
+const GALLERY_ASSETS = ['ridge', 'night', 'pizza', 'mist', 'skyline', 'breakfast', 'portrait', 'lake'] as const
 // 每张作品记录具体的拍摄地，与画面内容对应；器材不补造，保持缺省。
 const photos = [
   ['山脊的光', '风景', 'ridge', '群山层层退向天边，云隙间的光线让山脊显出不同的灰度。', '四川 · 贡嘎山'],

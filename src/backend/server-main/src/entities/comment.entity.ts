@@ -9,7 +9,7 @@ import { Entity, Index, ManyToOne, OptionalProps, PrimaryKey, Property } from '@
 import { Post } from './post.entity'
 
 /** 评论作者快照：访客无账号体系,冗余存展示信息 + 访客哈希（development.md §4.1） */
-export interface CommentAuthorSnapshot {
+interface CommentAuthorSnapshot {
   name: string
   avatar: string
   visitorIdHash?: string

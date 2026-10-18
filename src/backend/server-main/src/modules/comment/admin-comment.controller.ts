@@ -42,7 +42,7 @@ import { CommentModerationService } from './comment-moderation.service'
 import { COMMENT_STATUSES } from '../../entities/comment.entity'
 import type { CommentStatus } from '../../entities/comment.entity'
 
-export class QueryAdminCommentsDto {
+class QueryAdminCommentsDto {
   @Type(() => Number) @IsInt() @Min(1) page: number = 1
   @Type(() => Number) @IsInt() @Min(1) @Max(100) pageSize: number = 20
   @Type(() => Number) @IsInt() @Min(1) @IsOptional() postId?: number

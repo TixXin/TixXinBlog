@@ -17,7 +17,7 @@ import { editorialPostSnapshot, editorialProjectInput, editorialRelations } from
 import { editorialArticles, EDITORIAL_CONTENT_VERSION } from './editorial-content'
 import { editorialTarget } from './editorial-maintenance'
 
-export async function buildEditorialPackage(
+async function buildEditorialPackage(
   source: ContentPackage,
   review: Awaited<ReturnType<typeof inspectEditorialContent>>,
 ) {

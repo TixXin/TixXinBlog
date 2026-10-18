@@ -73,7 +73,7 @@ function expandIpv6(value: string): string[] | null {
 }
 
 /** 限流关闭开关：仅 development/test 且显式 true 时生效。 */
-export function rateLimitDisabled(config: ConfigService): boolean {
+function rateLimitDisabled(config: ConfigService): boolean {
   const environment = config.get<string>('NODE_ENV') ?? 'production'
   return ['development', 'test'].includes(environment) && config.get<string>('RATE_LIMIT_DISABLED') === 'true'
 }

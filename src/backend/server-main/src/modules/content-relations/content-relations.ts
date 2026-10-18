@@ -4,7 +4,7 @@ import type { EntityManager } from '@mikro-orm/postgresql'
 import { CONTENT_RELATION_TYPES } from '../../common/types/content-relation'
 import type { ContentRelation, ContentRelationType } from '../../common/types/content-relation'
 
-export const relationTables = { post: 'post', project: 'project', gallery: 'gallery_photo' } as const
+const relationTables = { post: 'post', project: 'project', gallery: 'gallery_photo' } as const
 interface TargetRow {
   id: number
   title: string

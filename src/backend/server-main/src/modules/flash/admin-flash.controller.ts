@@ -55,7 +55,7 @@ export class SaveFlashDto {
   @ValidateIf((_object, value) => value !== undefined) @IsBoolean() isArchived?: boolean
   @ValidateIf((_object, value) => value !== undefined) @IsBoolean() isDraft?: boolean
 }
-export class QueryAdminFlashesDto {
+class QueryAdminFlashesDto {
   @IsOptional() @IsIn(['all', 'draft', 'published', 'archived']) status?: 'all' | 'draft' | 'published' | 'archived'
   @Type(() => Number) @IsInt() @Min(1) page: number = 1
   @Type(() => Number) @IsInt() @Min(1) @Max(100) pageSize: number = 100

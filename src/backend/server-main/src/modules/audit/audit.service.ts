@@ -14,7 +14,7 @@ export interface AuditActor {
   name?: string
   sessionId?: string
 }
-export interface AuditCompletion {
+interface AuditCompletion {
   finishedAt?: Date
   actor?: AuditActor
   state: AuditState

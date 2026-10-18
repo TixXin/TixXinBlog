@@ -54,7 +54,7 @@ export function readHiddenLine(prompt: string, input: Readable = process.stdin, 
   })
 }
 
-export interface ResetPasswordResult {
+interface ResetPasswordResult {
   id: string
   username: string
   sessionVersion: number

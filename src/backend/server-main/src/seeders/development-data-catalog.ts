@@ -432,7 +432,7 @@ export const DATA_DOMAINS: Domain[] = [
     required: { published: 21, pending: 1, hidden: 1, replies: 1, owner: 1, pinned: 1, recent: 1 },
   },
 ]
-export const STATIC_DATA_DOMAINS = [
+const STATIC_DATA_DOMAINS = [
   {
     id: 'bookmarks',
     entry: '/tabs',

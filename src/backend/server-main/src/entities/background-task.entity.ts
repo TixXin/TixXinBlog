@@ -1,7 +1,6 @@
 /** @file background-task.entity.ts @description 持久任务、有限重试与租约；投递不确定状态禁止自动重投 */
 import { Entity, Index, PrimaryKey, Property, Unique } from '@mikro-orm/core'
-export type BackgroundTaskState =
-  'queued' | 'running' | 'retry' | 'succeeded' | 'failed' | 'uncertain' | 'paused' | 'restored'
+type BackgroundTaskState = 'queued' | 'running' | 'retry' | 'succeeded' | 'failed' | 'uncertain' | 'paused' | 'restored'
 export type BackgroundTaskKind = 'mail' | 'backup'
 @Entity({ tableName: 'background_task' })
 @Index({ name: 'background_task_due_index', properties: ['kind', 'state', 'availableAt'] })

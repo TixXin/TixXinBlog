@@ -17,7 +17,7 @@ interface TaskRow {
   max_attempts: number
   lease_token: string
 }
-export interface TaskOutcome {
+interface TaskOutcome {
   state: string
   taskId?: string
   errorCode?: string

@@ -12,7 +12,7 @@ import { IsEnum, IsIn, IsInt, IsOptional, IsString, Matches, Max, Min, MinLength
 import { readOperationConfig } from '../modules/operations/operation-config'
 import { parseTrustedProxyCidrs } from '../common/utils/trusted-proxy'
 
-export enum NodeEnv {
+enum NodeEnv {
   Development = 'development',
   Production = 'production',
   Test = 'test',
@@ -22,7 +22,7 @@ export enum NodeEnv {
  * 校验当前运行配置，保留旧可选字段的兼容性；声明字段不代表对应服务已经接入。
  * 必需配置和可用通道以同工作区 .env.example 与 docs/operations.md 为准。
  */
-export class EnvironmentVariables {
+class EnvironmentVariables {
   /** 缺省按生产处理：漏配时保持限流、Secure Cookie 与 info 日志；本机开发由启动器或 .env.local 显式声明。 */
   @IsEnum(NodeEnv)
   @IsOptional()

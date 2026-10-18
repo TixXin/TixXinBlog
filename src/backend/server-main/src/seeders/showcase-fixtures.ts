@@ -49,7 +49,7 @@ const SHOWCASE_PROFILE_REASON = '整理为真实感样本的博主资料：姓�
 const visitor = (name: string) => createHash('sha256').update(`development/showcase-v1/${name}`).digest('hex')
 const DAY = 86400000
 /** 评论作者名单；评论文件只接受这些名字，避免正文作者与头像不一致 */
-export const SHOWCASE_VISITORS = [
+const SHOWCASE_VISITORS = [
   '小明',
   'DevLin',
   '前端小白',

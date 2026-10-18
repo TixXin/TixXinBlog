@@ -32,7 +32,7 @@ import type { FixtureProgress } from './fixture-ledger'
 export const CORE_DATASET = 'core-v1'
 const commentStatuses = ['published', 'published', 'pending', 'hidden'] as const
 const likers = ['晨曦', '小林'] as const
-export const CONVERSATION_COUNT = 20 + 4 + 1 + 1 + 6
+const CONVERSATION_COUNT = 20 + 4 + 1 + 1 + 6
 const visitor = (name: string) => createHash('sha256').update(`development/core-v1/${name}`).digest('hex')
 // 评论针对所在文章的具体内容，并接出访客提问与博主回复的对话链。
 const threadNotes: readonly (readonly [string, string])[] = [
@@ -440,7 +440,7 @@ async function seedPostEdges(
       progress,
     )
 }
-export const BURST_COUNT = burstAssets.length + 4 * 2 + 2 + edgeArticles.length
+const BURST_COUNT = burstAssets.length + 4 * 2 + 2 + edgeArticles.length
 export const CORE_FIXTURE_COUNT =
   2 + CORE_SCENES.length * 3 + commentStatuses.length * 2 + 2 + likers.length * 3 + CONVERSATION_COUNT + BURST_COUNT
 export async function seedCoreFixtures(

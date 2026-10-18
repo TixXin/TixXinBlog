@@ -58,7 +58,7 @@ import { join } from 'node:path'
 // 迁移和 Seeder 不经过 Nest 引导，同样必须先读取配置再构造连接参数。
 loadLocalEnvironment()
 
-export const ORM_ENTITIES = [
+const ORM_ENTITIES = [
   OperationControl,
   BackgroundTask,
   OwnerNotification,

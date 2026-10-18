@@ -30,7 +30,7 @@ import type { ContentExportService } from './content-export.service'
 import { guestbookImportPlan } from './content-guestbook-plan'
 import { createRelationHasher, makeRelationMapping } from './content-relation-plan'
 import type { ContentRelationType } from '../../common/types/content-relation'
-export function postContentHash(values: PackagePost['values']) {
+function postContentHash(values: PackagePost['values']) {
   return packageHash({
     title: values.title.trim(),
     summary: values.summary ?? '',
@@ -47,7 +47,7 @@ export function postContentHash(values: PackagePost['values']) {
     tags: [...new Set(values.tags.map((tag) => tag.trim()))].sort(),
   })
 }
-export function flashContentHash(values: PackageFlash['values']) {
+function flashContentHash(values: PackageFlash['values']) {
   return packageHash({
     content: values.content?.trim() ?? '',
     tags: [...new Set((values.tags ?? []).map((tag) => tag.trim()))].sort(),
@@ -56,7 +56,7 @@ export function flashContentHash(values: PackageFlash['values']) {
     isPinned: values.isPinned ?? false,
   })
 }
-export function momentContentHash(values: PackageMoment['values'], articleHash: string | null) {
+function momentContentHash(values: PackageMoment['values'], articleHash: string | null) {
   return packageHash({
     content: values.content?.trim() ?? '',
     topics: [...new Set(values.topics ?? [])].sort(),
@@ -69,14 +69,14 @@ export function momentContentHash(values: PackageMoment['values'], articleHash: 
     isPinned: values.isPinned ?? false,
   })
 }
-export function galleryContentHash(values: PackageGalleryPhoto['values']) {
+function galleryContentHash(values: PackageGalleryPhoto['values']) {
   const { status, relatedContent, ...content } = values
   // 发布状态不参与内容去重，避免已迁入草稿被下一次跳过策略重复创建。
   void status
   void relatedContent
   return packageHash({ ...content, externalUrl: values.externalUrl ?? null })
 }
-export function projectContentHash(values: PackageProject['values']) {
+function projectContentHash(values: PackageProject['values']) {
   const { status, relatedContent, ...content } = values
   // 项目进展属于业务内容；站点发布状态不参与去重，草稿迁入后仍可识别同一内容。
   void status

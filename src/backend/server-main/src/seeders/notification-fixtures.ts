@@ -54,7 +54,7 @@ const momentNotes: [string, string][] = [
   ['林间', '期待这篇，我上次改主题改到一半放弃了。'],
   ['星野', '插槽这个思路可以用在别的地方吗？'],
 ]
-export const CONTENT_NOTIFICATION_COUNT = 2 + (articleNotes.length + momentNotes.length) * 3
+const CONTENT_NOTIFICATION_COUNT = 2 + (articleNotes.length + momentNotes.length) * 3
 const visitorOf = (name: string) => createHash('sha256').update(`${NOTIFICATION_DATASET}/${name}`).digest('hex')
 /** 文章评论与动态评论各自产生真实通知，覆盖留言之外的通知来源。 */
 async function seedContentNotifications(em: EntityManager, progress: FixtureProgress) {

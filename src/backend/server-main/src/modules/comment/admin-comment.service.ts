@@ -15,7 +15,7 @@ import { CommentModerationService } from './comment-moderation.service'
 import { unansweredCommentSql, visibleCommentWhere } from './comment-visibility'
 
 /** 批量操作的单条结果：not_found 表示评论已不存在，conflict 表示提交版本与当前版本不一致 */
-export interface CommentBatchItemResult {
+interface CommentBatchItemResult {
   id: number
   ok: boolean
   reason?: 'not_found' | 'conflict'

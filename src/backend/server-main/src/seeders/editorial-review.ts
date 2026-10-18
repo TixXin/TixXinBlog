@@ -17,8 +17,8 @@ import {
   editorialRelations,
 } from './editorial-model'
 import type { EditorialIds, EditorialKey } from './editorial-model'
-export type EditorialStage = 'legacy' | 'unlinked' | 'ready' | 'edited' | 'deleted' | 'missing-ownership'
-export interface EditorialReviewItem {
+type EditorialStage = 'legacy' | 'unlinked' | 'ready' | 'edited' | 'deleted' | 'missing-ownership'
+interface EditorialReviewItem {
   key: EditorialKey
   kind: 'post' | 'project'
   id: number | null
@@ -33,7 +33,7 @@ function normalizedSnapshot(value: unknown) {
   if (!Array.isArray(snapshot.tags) || !snapshot.tags.every((tag) => typeof tag === 'string')) return null
   return { ...snapshot, relatedContent: snapshot.relatedContent ?? [], tags: [...snapshot.tags].sort() }
 }
-export async function editorialPostValues(em: EntityManager, row: Record<string, unknown>) {
+async function editorialPostValues(em: EntityManager, row: Record<string, unknown>) {
   const tags = await em.execute<{ label: string }[]>(
     'select t.label from post_tag t join post_tag_map m on m.post_tag_id=t.id where m.post_id=? order by t.label',
     [row.id],
@@ -58,7 +58,7 @@ export async function editorialPostValues(em: EntityManager, row: Record<string,
     tags: tags.map((item) => item.label).sort(),
   }
 }
-export function editorialProjectValues(row: Record<string, unknown>) {
+function editorialProjectValues(row: Record<string, unknown>) {
   return {
     title: row.title,
     description: row.description,

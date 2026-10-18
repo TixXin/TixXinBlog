@@ -2,7 +2,7 @@
 import type { PostCategory } from '../entities/post.entity'
 import type { PostTagColor } from '../entities/post-tag.entity'
 
-export interface ShowcasePost {
+interface ShowcasePost {
   /** 稳定归属键，同时是 showcase-content 下正文与评论文件名 */
   key: string
   title: string
