@@ -92,8 +92,9 @@ const emit = defineEmits<{
 }>()
 const visitorForm = useVisitorSubmissionForm({ submitting: () => !!props.submitting, error: () => props.submitError })
 const { website } = visitorForm
+const siteUrl = useSiteUrl()
 function renderCommentBody(text: string) {
-  return renderMomentMarkdown(text, { inline: true, mentions: true })
+  return renderMomentMarkdown(text, { inline: true, mentions: true, ugc: true, siteUrl })
 }
 function onEnter(event: KeyboardEvent) {
   if (event.isComposing || props.submitting || !props.draft.trim()) return

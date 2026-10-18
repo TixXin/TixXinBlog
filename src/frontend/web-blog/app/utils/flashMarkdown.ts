@@ -11,6 +11,7 @@ import MarkdownIt from 'markdown-it'
 import taskLists from 'markdown-it-task-lists'
 import DOMPurify from 'isomorphic-dompurify'
 import { markdownTaskLabels } from '~/utils/markdownTaskLabels'
+import { markdownLinks, type MarkdownLinkEnvironment, type MarkdownLinkOptions } from '~/utils/markdownLinks'
 
 // 单实例复用，避免列表中每条闪念重建 MarkdownIt 实例
 const md = new MarkdownIt({
@@ -21,24 +22,7 @@ const md = new MarkdownIt({
 })
   .use(taskLists, { enabled: false, label: false })
   .use(markdownTaskLabels)
-
-// 外链统一加 target=_blank + noopener
-const defaultLinkRender =
-  md.renderer.rules.link_open ??
-  function (tokens, idx, options, _env, self) {
-    return self.renderToken(tokens, idx, options)
-  }
-
-md.renderer.rules.link_open = (tokens, idx, options, env, self) => {
-  const token = tokens[idx]
-  if (!token) return defaultLinkRender(tokens, idx, options, env, self)
-  const href = token.attrGet('href') ?? ''
-  if (/^https?:\/\//i.test(href)) {
-    token.attrSet('target', '_blank')
-    token.attrSet('rel', 'noopener noreferrer')
-  }
-  return defaultLinkRender(tokens, idx, options, env, self)
-}
+  .use(markdownLinks)
 
 /**
  * 将闪念内容 Markdown 转为安全 HTML。
@@ -47,9 +31,9 @@ md.renderer.rules.link_open = (tokens, idx, options, env, self) => {
  * - linkify 自动识别裸链为 <a>
  * - 输出经 DOMPurify 净化，防止 XSS
  */
-export function renderFlashMarkdown(raw: string): string {
+export function renderFlashMarkdown(raw: string, options: MarkdownLinkOptions = {}): string {
   if (!raw) return ''
-  const html = md.render(raw)
+  const html = md.render(raw, { markdownLinks: options } satisfies MarkdownLinkEnvironment)
   return DOMPurify.sanitize(html, {
     // 允许外链属性 + 任务清单 checkbox 的 type/checked/disabled
     ADD_ATTR: ['target', 'rel', 'type', 'checked', 'disabled', 'aria-label'],

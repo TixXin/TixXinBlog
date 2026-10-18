@@ -270,7 +270,8 @@ const TYPE_META: Record<string, { icon: string; label: string } | undefined> = {
 const typeMeta = computed(() => (props.note.type ? TYPE_META[props.note.type] : undefined))
 
 /** 轻量 markdown 渲染 —— 覆盖编辑器工具栏支持的子集 */
-const renderedContent = computed(() => renderFlashMarkdown(props.note.content))
+const siteUrl = useSiteUrl()
+const renderedContent = computed(() => renderFlashMarkdown(props.note.content, { siteUrl }))
 
 function formatRelative(iso: string): string {
   const created = new Date(iso).getTime()
