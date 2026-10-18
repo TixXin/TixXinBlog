@@ -35,9 +35,10 @@ export async function useArticleDetail(id: string, options: { reuseLoaded?: bool
   const requestScope = usePageRequestScope()
   const nuxtApp = useNuxtApp()
   const config = useRuntimeConfig()
+  const base = config.public.apiBaseUrl
   const useMock = config.public.postUseMockRepo !== false
   const cached = loadedArticles.get(nuxtApp)
-  if (!useMock && options.reuseLoaded && cached?.requestId === id && cached.base === config.public.apiBaseUrl) {
+  if (!useMock && options.reuseLoaded && cached?.requestId === id && cached.base === base) {
     return {
       article: computed(() => cached.article),
       relatedPosts: computed(() => cached.relatedPosts),
@@ -85,9 +86,10 @@ export async function useArticleDetail(id: string, options: { reuseLoaded?: bool
       post ? { id: String(post.id), slug: post.slug, title: post.title, date: post.date, category: post.folder } : null
     navigation.value = { prev: map(candidates[position - 1]), next: map(candidates[position + 1]) }
   } else {
-    const base = config.public.apiBaseUrl
+    // 接口地址也是数据身份的一部分，避免同一文章沿用其他接口的结果或请求闭包。
+    const snapshotKey = `article-snapshot-${JSON.stringify([base, id])}`
     // 单个作用域内完成详情和补充读取，避免await之后再创建脱离页面的AsyncData订阅。
-    const detailResult = await useAsyncData(`article-snapshot-${id}`, async (_app, { signal }) => {
+    const detailResult = await useAsyncData(snapshotKey, async (_app, { signal }) => {
       const discoveryAbort = new AbortController()
       const requestSignal = AbortSignal.any([signal, requestScope.signal])
       const discoverySignal = AbortSignal.any([requestSignal, discoveryAbort.signal])
@@ -171,7 +173,7 @@ export async function useArticleDetail(id: string, options: { reuseLoaded?: bool
   if (!useMock)
     loadedArticles.set(nuxtApp, {
       requestId: id,
-      base: config.public.apiBaseUrl,
+      base,
       article: article.value,
       relatedPosts: relatedPosts.value,
       navigation: navigation.value,

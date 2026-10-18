@@ -19,6 +19,10 @@ mockNuxtImport('useRouter', () => () => ({
     fullPath: `${path}?${new URLSearchParams(query)}`,
   }),
   push: mocks.push,
+  replace: vi.fn(),
+  beforeEach: () => () => undefined,
+  afterEach: () => () => undefined,
+  onError: () => () => undefined,
 }))
 
 const batchActions = [

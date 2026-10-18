@@ -44,6 +44,7 @@ let config: ReturnType<typeof useRuntimeConfig> | undefined
 let originalConfig: { apiBaseUrl: string; postUseMockRepo: boolean } | undefined
 
 beforeEach(() => {
+  clearNuxtData((key) => key.startsWith('article-snapshot-'))
   vi.mocked(fetchArticleDetail).mockReset().mockResolvedValue(detail)
   vi.mocked(fetchRelatedPosts).mockReset().mockResolvedValue([])
   vi.mocked(fetchPostNavigation).mockReset().mockResolvedValue({ prev: previous, next })
@@ -68,7 +69,6 @@ async function setup(id = '9', options: { reuseLoaded?: boolean; mock?: boolean;
           }
           config.public.apiBaseUrl = options.base ?? '/api/v1'
           config.public.postUseMockRepo = options.mock ?? false
-          clearNuxtData(`article-snapshot-${id}`)
           try {
             state = await useArticleDetail(id, options)
           } catch (caught) {
@@ -173,15 +173,26 @@ it('自定义地址的推荐与导航均使用详情解析后的真实 ID', asyn
 })
 
 it('主题切换复用当前文章时保留专栏，接口地址变化时重新读取', async () => {
-  await setup()
+  const { state: original } = await setup()
   const { state } = await setup('9', { reuseLoaded: true })
   expect(state?.navigationFolder.value).toBe('前端开发')
   expect(state?.navigation.value).toEqual({ prev: previous, next })
   expect(fetchPostNavigation).toHaveBeenCalledTimes(1)
   expect(fetchArticleDetail).toHaveBeenCalledTimes(1)
-  await setup('9', { reuseLoaded: true, base: '/other-api' })
+  const changedDetail = { ...detail, title: '新的阅读笔记', category: '新的专栏' }
+  const changedNavigation = { prev: null, next: { ...next, category: '新的专栏' } }
+  vi.mocked(fetchArticleDetail).mockResolvedValueOnce(changedDetail)
+  vi.mocked(fetchPostNavigation).mockResolvedValueOnce(changedNavigation)
+  const { state: changed } = await setup('9', { reuseLoaded: true, base: '/other-api' })
   expect(fetchPostNavigation).toHaveBeenCalledTimes(2)
   expect(fetchArticleDetail).toHaveBeenLastCalledWith('/other-api', '9', expect.any(AbortSignal))
+  expect(fetchRelatedPosts).toHaveBeenLastCalledWith('/other-api', '9', expect.any(AbortSignal))
+  expect(fetchPostNavigation).toHaveBeenLastCalledWith('/other-api', '9', expect.any(AbortSignal), 'folder')
+  expect(changed?.article.value).toEqual(changedDetail)
+  expect(changed?.navigation.value).toEqual(changedNavigation)
+  expect(changed?.navigationFolder.value).toBe('新的专栏')
+  expect(original?.article.value).toEqual(detail)
+  expect(original?.navigation.value).toEqual({ prev: previous, next })
 })
 
 it('详情失败取消提前开始的推荐，不再发起导航且保留详情错误', async () => {

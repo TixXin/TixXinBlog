@@ -53,13 +53,13 @@ function database() {
   const execute = jest.fn<Promise<unknown[]>, [string, unknown[]?]>().mockRejectedValue(new Error('未安排的查询'))
   const manager = {
     execute,
-    transactional: jest.fn(async (callback: (em: EntityManager) => Promise<unknown>) =>
+    transactional: jest.fn(async (callback: (em: EntityManager) => Promise<unknown>): Promise<unknown> =>
       callback(manager as unknown as EntityManager),
     ),
   }
   const locked = {
     execute: jest.fn().mockResolvedValue([{ owned: true }]),
-    transactional: jest.fn(async (callback: (em: EntityManager) => Promise<unknown>) =>
+    transactional: jest.fn(async (callback: (em: EntityManager) => Promise<unknown>): Promise<unknown> =>
       callback(locked as unknown as EntityManager),
     ),
   }
