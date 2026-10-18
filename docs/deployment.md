@@ -295,7 +295,9 @@ docker compose --env-file $releaseEnv -f compose.production.yaml --profile worke
 
 每个 API 响应带 `X-Request-Id`，与响应体 `traceId`、访问日志 `req.id` 及管理审计的 trace 编号一致；上游 `x-trace-id` 仅接受 UUID 或不超过 64 位的 `[A-Za-z0-9._-]`，否则重新生成。未知异常和 5xx 在服务端日志记录堆栈与 `traceId`，客户端只收到通用提示。API 收到 `SIGTERM`/`SIGINT` 后 `/ready` 立即返回 503，再继续原有关闭流程；启动失败记录错误并以非零码退出。
 
-Caddy 入口为响应追加 `Strict-Transport-Security: max-age=31536000`（不含子域和 preload）与禁用摄像头、麦克风、定位、支付和 USB 的 `Permissions-Policy`；API 不返回 `X-Powered-By`。
+Caddy 入口为响应追加 `Strict-Transport-Security: max-age=86400`（不含子域和 preload）与禁用摄像头、麦克风、定位、支付和 USB 的 `Permissions-Policy`；API 不返回 `X-Powered-By`。
+
+HSTS 生效后，访客浏览器在有效期内只用 HTTPS 访问本站，证书过期或配置错误时显示不可绕过的错误页，也无法临时退回 HTTP；撤销需改为 `max-age=0` 且只对再次通过 HTTPS 访问的浏览器生效。因此先用一天观察证书自动续期与迁移流程，确认稳定（建议至少一至两周、经历一次续期）后再在 `deploy/Caddyfile` 中改为 `max-age=31536000`。只有确认所有子域长期支持 HTTPS 时才考虑 `includeSubDomains`；`preload` 撤销需等待浏览器版本更新，个人站点一般不需要。
 
 服务日志写 stdout/stderr，Compose 按服务轮转；日志不是备份。通过 `/ready`、实际公开 API、媒体读取、管理登录、任务状态和存储完整性检查观察系统。版本升级后验证公开内容、后台写入、索引和备份，不能只用容器 running 状态判断可用。
 

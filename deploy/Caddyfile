@@ -3,8 +3,9 @@
   encode zstd gzip
   header {
     X-TixXin-Release {$RELEASE_VERSION}
-    # 仅约束本站点，不含 includeSubDomains/preload，避免影响同域其他子站点；确认全站 HTTPS 后再按需加长或扩展。
-    Strict-Transport-Security "max-age=31536000"
+    # 先用一天观察：浏览器会在有效期内拒绝 HTTP 且证书错误不可绕过，证书续期与迁移稳定后再按文档逐步加长。
+    # 仅约束本站点，不含 includeSubDomains/preload，避免影响同域其他子站点。
+    Strict-Transport-Security "max-age=86400"
     # 站点不使用这些浏览器能力，统一禁用。
     Permissions-Policy "camera=(), microphone=(), geolocation=(), payment=(), usb=()"
   }
