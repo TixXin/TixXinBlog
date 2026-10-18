@@ -151,10 +151,11 @@ async function loadMore() {
 function onTopicSelect(value: string | null) {
   selectedTopic.value = value
 }
-useSeoMeta({
+usePageSeo({
   title: () => '#' + topicName.value,
+  shareTitle: () => '#' + topicName.value + ' - ' + ownerCard.value.name + ' 朋友圈',
   description: () => '朋友圈中关于 ' + topicName.value + ' 的公开动态',
-  ogTitle: () => '#' + topicName.value + ' - ' + ownerCard.value.name + ' 朋友圈',
+  type: 'website',
 })
 </script>
 
