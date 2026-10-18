@@ -89,6 +89,12 @@ describe('发布辅助', () => {
     expect(suggestedSummary('# 标题\n\n**正文** [链接](https://example.com)\n```js\nsecret code\n```')).toBe(
       '标题 正文 链接',
     )
+    expect(
+      suggestedSummary(
+        '<img src="/m/1.webp" alt="山景" width="600">\n<!-- 草稿备注 -->\n雨后<br/>散步 <span>小记</span>',
+      ),
+    ).toBe('雨后 散步 小记')
+    expect(suggestedSummary('3 < 5 且 a<b')).toBe('3 < 5 且 a<b')
     expect(suggestedSummary('长'.repeat(500))).toHaveLength(160)
     expect(suggestedSummary('['.repeat(200000))).toBe('['.repeat(160))
   })

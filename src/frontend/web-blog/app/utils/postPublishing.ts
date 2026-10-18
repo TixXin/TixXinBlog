@@ -76,11 +76,16 @@ export function suggestedReadTime(content: string): number {
   return postReadingStats(content).minutes
 }
 export function suggestedSummary(content: string): string {
-  return content
-    .replace(/```[\s\S]*?```/g, ' ')
-    .replace(/!?\[([^[\]]*)\]\([^()]*\)/g, '$1')
-    .replace(/[#>*_`]/g, '')
-    .replace(/\s+/g, ' ')
-    .trim()
-    .slice(0, 160)
+  return (
+    content
+      .replace(/```[\s\S]*?```/g, ' ')
+      // 正文内嵌的 HTML 注释与标签（如 <img>、<br>）不进入摘要，只保留其间文字
+      .replace(/<!--[\s\S]*?-->/g, ' ')
+      .replace(/<\/?[a-zA-Z][^<>]*>/g, ' ')
+      .replace(/!?\[([^[\]]*)\]\([^()]*\)/g, '$1')
+      .replace(/[#>*_`]/g, '')
+      .replace(/\s+/g, ' ')
+      .trim()
+      .slice(0, 160)
+  )
 }
