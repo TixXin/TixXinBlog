@@ -71,6 +71,14 @@ describe('动态 sitemap 来源', () => {
         { id: 2, date: '2026-02-01' },
         { id: 3, slug: 'hidden', date: '2026-03-01', seoNoindex: true },
       ],
+      tags: [
+        { label: '读书 & 笔记', slug: 'reading', color: 'blue', count: 2 },
+        { label: '未使用', slug: 'unused', color: 'blue', count: 0 },
+      ],
+      categories: [
+        { name: '城市/散步', count: 1 },
+        { name: '空专栏', count: 0 },
+      ],
     })
     data.set('/flashes?page=1&pageSize=100', {
       items: [
@@ -91,6 +99,9 @@ describe('动态 sitemap 来源', () => {
     expect(await handler(event())).toEqual([
       { loc: '/articles/%E4%B8%AD%E6%96%87%20%26%20%E8%B7%AF%E5%BE%84', lastmod: '2026-10-01' },
       { loc: '/articles/2', lastmod: '2026-02-01' },
+      // 标签与专栏路径已编码一次并声明 _encoded，零篇条目不收录。
+      { loc: '/tags/%E8%AF%BB%E4%B9%A6%20%26%20%E7%AC%94%E8%AE%B0', _encoded: true },
+      { loc: '/categories/%E5%9F%8E%E5%B8%82%2F%E6%95%A3%E6%AD%A5', _encoded: true },
       { loc: '/flash/note-1', lastmod: '2026-10-02' },
       { loc: '/flash/note-2', lastmod: '2026-05-01' },
       { loc: '/moments/moment-1' },
@@ -171,6 +182,16 @@ describe('动态 sitemap 来源', () => {
   })
 
   it('真实空数据返回空来源，不填入演示内容', async () => {
+    data.set('/posts/metadata', { archive: [], tags: [], categories: [] })
     expect(await handler(event())).toEqual([])
+  })
+
+  it('文章元数据缺少标签与专栏字段时按空目录处理，其余来源照常收录', async () => {
+    data.set('/posts/metadata', { archive: [{ id: 1, date: '2026-10-01' }] })
+    data.set('/moments/overview', { topics: [{ name: '阅读' }] })
+    expect(await handler(event())).toEqual([
+      { loc: '/articles/1', lastmod: '2026-10-01' },
+      { loc: '/moments/topic/阅读' },
+    ])
   })
 })

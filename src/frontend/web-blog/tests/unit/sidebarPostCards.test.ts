@@ -1,4 +1,4 @@
-/** @file sidebarPostCards.test.ts @description 文章侧栏卡片的空数据、请求反馈、筛选可达性与真实统计回归 */
+/** @file sidebarPostCards.test.ts @description 文章侧栏卡片的空数据、请求反馈、独立筛选按钮可达性与真实统计回归 */
 import { afterEach, describe, expect, it } from 'vitest'
 import { mount, type DOMWrapper } from '@vue/test-utils'
 import TagCloudCard from '../../app/components/sidebar/TagCloudCard.vue'
@@ -56,18 +56,26 @@ function mountFilters(overrides: Partial<InstanceType<typeof PostFilters>['$prop
 }
 
 describe('标签云卡片', () => {
-  it('真实空列表显示零个标签和空态，不创建筛选操作', () => {
+  it('真实空列表显示零个标签和空态，不创建标签页入口或筛选操作', () => {
     const wrapper = keep(mount(TagCloudCard, { ...mountOptions(), props: { tags: [] } }))
     expect(wrapper.text()).toContain('0 个标签')
     expect(wrapper.text()).toContain('暂无标签')
-    expect(wrapper.get('[role="group"]').attributes('aria-label')).toBe('按标签筛选')
+    expect(wrapper.get('[role="group"]').attributes('aria-label')).toBe('浏览标签或筛选首页文章')
+    expect(wrapper.findAll('.tag-cloud-card__tag')).toHaveLength(0)
     expect(wrapper.findAll('button')).toHaveLength(0)
   })
 
-  it('每个标签只显示一次，原生按钮可聚焦且选中状态随父级更新', async () => {
+  it('每个标签只显示一次，独立筛选按钮可聚焦且选中状态随父级更新', async () => {
     const wrapper = keep(mount(TagCloudCard, { ...mountOptions(), props: { tags, activeTag: 'Vue 进阶' } }))
+    const items = wrapper.findAll('.tag-cloud-card__tag')
     const buttons = wrapper.findAll('button')
+    expect(items).toHaveLength(2)
     expect(buttons).toHaveLength(2)
+    expect(buttons.map((button) => button.attributes('aria-label'))).toEqual([
+      '在首页筛选标签：Vue 进阶',
+      '在首页筛选标签：山间步道',
+    ])
+    expect(items.map((item) => item.classes().includes('is-active'))).toEqual([true, false])
     expect(wrapper.text()).toContain('2 个标签')
     expect(wrapper.findAll('.tag-cloud-card__tag-count').map((count) => count.text())).toEqual(['12', '0'])
     expect(buttons.map((button) => button.attributes('aria-pressed'))).toEqual(['true', 'false'])
@@ -80,9 +88,11 @@ describe('标签云卡片', () => {
     expect(buttons[1]!.attributes('aria-pressed')).toBe('false')
     await wrapper.setProps({ activeTag: '山间步道' })
     expect(buttons.map((button) => button.attributes('aria-pressed'))).toEqual(['false', 'true'])
-    expect(buttons[1]!.classes()).toContain('is-active')
+    // 选中样式落在包含标签页入口与筛选按钮的整枚标签上。
+    expect(items.map((item) => item.classes().includes('is-active'))).toEqual([false, true])
     await wrapper.setProps({ activeTag: null })
     expect(buttons.every((button) => button.attributes('aria-pressed') === 'false')).toBe(true)
+    expect(items.some((item) => item.classes().includes('is-active'))).toBe(false)
   })
 })
 
@@ -94,15 +104,22 @@ describe('分类卡片', () => {
     expect(wrapper.findAll('button')).toHaveLength(0)
   })
 
-  it('保留零篇分类，原生按钮可聚焦并把完整分类名交给父级', async () => {
+  it('保留零篇分类，独立筛选按钮可聚焦并把完整分类名交给父级', async () => {
     const wrapper = keep(
       mount(CategoryCard, {
         ...mountOptions(),
         props: { categories, activeCategory: '前端札记' },
       }),
     )
+    const items = wrapper.findAll('li .category-card__item')
     const buttons = wrapper.findAll('li button')
+    expect(items).toHaveLength(2)
     expect(buttons).toHaveLength(2)
+    expect(buttons.map((button) => button.attributes('aria-label'))).toEqual([
+      '在首页筛选专栏：前端札记',
+      '在首页筛选专栏：生活碎片',
+    ])
+    expect(items.map((item) => item.classes().includes('is-active'))).toEqual([true, false])
     expect(wrapper.findAll('.category-card__badge').map((badge) => badge.text())).toEqual(['8', '0'])
     expect(buttons.map((button) => button.attributes('aria-pressed'))).toEqual(['true', 'false'])
     for (const button of buttons) expectFocusableButton(button)
@@ -110,9 +127,11 @@ describe('分类卡片', () => {
     expect(wrapper.emitted('select')).toEqual([['生活碎片']])
     await wrapper.setProps({ activeCategory: '生活碎片' })
     expect(buttons.map((button) => button.attributes('aria-pressed'))).toEqual(['false', 'true'])
-    expect(buttons[1]!.classes()).toContain('is-active')
+    // 选中样式落在专栏页入口上，筛选按钮通过 aria-pressed 表达状态。
+    expect(items.map((item) => item.classes().includes('is-active'))).toEqual([false, true])
     await wrapper.setProps({ activeCategory: null })
     expect(buttons.every((button) => button.attributes('aria-pressed') === 'false')).toBe(true)
+    expect(items.some((item) => item.classes().includes('is-active'))).toBe(false)
   })
 })
 
@@ -161,16 +180,22 @@ describe('文章筛选组合卡片', () => {
       activeCategory: '生活碎片',
     })
     expect(wrapper.get('[role="status"]').text()).toBe('正在加载…')
-    expect(wrapper.get('.tag-cloud-card__tag[aria-pressed="true"]').text()).toContain('山间步道')
-    expect(wrapper.get('.category-card__item[aria-pressed="true"]').text()).toContain('生活碎片')
+    expect(wrapper.get('.tag-cloud-card__filter[aria-pressed="true"]').attributes('aria-label')).toBe(
+      '在首页筛选标签：山间步道',
+    )
+    expect(wrapper.get('.tag-cloud-card__tag.is-active').text()).toContain('山间步道')
+    expect(wrapper.get('.category-card__filter[aria-pressed="true"]').attributes('aria-label')).toBe(
+      '在首页筛选专栏：生活碎片',
+    )
+    expect(wrapper.get('.category-card__item.is-active').text()).toContain('生活碎片')
     expect(wrapper.text()).not.toContain('暂无')
   })
 
   it('刷新失败保留旧数据并透传选择与重试，成功恢复后撤下错误反馈', async () => {
     const wrapper = mountFilters({ tags, categories, available: true, error: true })
     expect(wrapper.get('[role="alert"]').text()).toContain('仍显示上次成功加载的数据。')
-    await wrapper.get('.tag-cloud-card__tag').trigger('click')
-    await wrapper.get('.category-card__item').trigger('click')
+    await wrapper.get('.tag-cloud-card__filter').trigger('click')
+    await wrapper.get('.category-card__filter').trigger('click')
     await wrapper.get('.request-feedback button').trigger('click')
     expect(wrapper.emitted('select-tag')).toEqual([['Vue 进阶']])
     expect(wrapper.emitted('select-category')).toEqual([['前端札记']])
