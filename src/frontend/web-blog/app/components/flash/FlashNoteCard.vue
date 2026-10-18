@@ -81,7 +81,7 @@
           @click="commentOpen = !commentOpen"
         >
           <Icon name="lucide:message-circle" size="14" />
-          <span v-if="note.comments.length > 0" class="fnc__action-count">{{ note.comments.length }}</span>
+          <span v-if="commentCount > 0" class="fnc__action-count">{{ commentCount }}</span>
         </button>
         <button type="button" class="fnc__action" aria-label="复制" @click="onCopy">
           <Icon :name="copied ? 'lucide:check' : 'lucide:copy'" size="14" />
@@ -157,6 +157,10 @@
               <div class="fnc__comment-head">
                 <span class="fnc__comment-name">{{ c.authorName }}</span>
                 <span class="fnc__comment-time">{{ formatRelative(c.createdAt) }}</span>
+                <small v-if="c.moderationStatus === 'pending'" class="fnc__comment-status">{{
+                  canDeleteComment(c.authorId) ? '待审核' : '待审核，仅自己可见'
+                }}</small>
+                <small v-else-if="c.moderationStatus === 'hidden'" class="fnc__comment-status">已隐藏</small>
               </div>
               <div class="fnc__comment-text">{{ c.content }}</div>
             </div>
@@ -203,6 +207,7 @@
 <script setup lang="ts">
 import type { FlashNote, FlashCommentSubmission } from '~/features/flash/types'
 import { renderFlashMarkdown } from '~/utils/flashMarkdown'
+import { publishedCommentCount } from '~/features/flash/comments'
 
 const props = withDefaults(
   defineProps<{
@@ -246,6 +251,8 @@ const confirmingDelete = ref(false)
 let deleteTimer: ReturnType<typeof setTimeout> | null = null
 
 const liked = computed(() => !!props.note.liked)
+/** 计数只计已发布评论；访客本人待审评论只出现在列表中并带提示 */
+const commentCount = computed(() => publishedCommentCount(props.note))
 const canInteract = computed(() => props.interactive && !props.note.isDraft && !props.note.isArchived)
 const commentSending = ref(false)
 const relativeTime = computed(() => formatRelative(props.note.createdAt))
@@ -628,6 +635,11 @@ onBeforeUnmount(() => {
   font-size: 0.75rem;
   font-weight: 600;
   color: var(--text-main);
+}
+
+.fnc__comment-status {
+  font-size: 0.7rem;
+  color: var(--text-muted);
 }
 
 .fnc__comment-time {

@@ -1,7 +1,7 @@
 /** @file types.ts @description 博主通知与任务状态的前端公开管理投影，不含密钥与存储路径 */
 export interface OwnerNotification {
   id: string
-  kind: 'comment' | 'guestbook' | 'moment-comment' | 'task'
+  kind: 'comment' | 'guestbook' | 'moment-comment' | 'flash-comment' | 'task'
   reason: string
   readAt: string | null
   createdAt: string

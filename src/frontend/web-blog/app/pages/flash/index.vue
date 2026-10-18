@@ -252,6 +252,7 @@
 <script setup lang="ts">
 import { resolveScrollRoot, scrollToRoot } from '~/utils/scrollRoot'
 import type { FlashNote, FlashType, FlashCommentSubmission } from '~/features/flash/types'
+import { commentSubmittedMessage } from '~/features/flash/comments'
 
 usePageSeo({
   title: '闪念',
@@ -626,7 +627,7 @@ async function onAddComment(payload: FlashCommentSubmission) {
       { website: payload.website, formElapsedMs: payload.formElapsedMs },
     )
     payload.complete?.(!!created)
-    if (created) success('评论已发送')
+    if (created) success(commentSubmittedMessage(created))
   } catch (cause) {
     payload.complete?.(false)
     showError(cause instanceof Error ? cause.message : '评论失败，内容已保留')

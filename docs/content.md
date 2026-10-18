@@ -21,18 +21,18 @@
 
 ## 写作、发布与恢复
 
-| 业务   | 公开入口                         | 管理入口与状态                                             |
-| ------ | -------------------------------- | ---------------------------------------------------------- |
-| 文章   | `/`、`/archive`、`/articles/:id` | `/admin/posts`；草稿、发布、归档及独立回收状态             |
-| 闪念   | `/flash`、`/flash/:id`           | `/admin/flashes`；草稿/发布与归档行为按表单分别处理        |
-| 朋友圈 | `/moments`                       | `/admin/moments`；`draft/published/archived`、置顶与评论   |
-| 留言   | `/guestbook`                     | `/admin/guestbook`；`published/pending/hidden`、回复与置顶 |
-| 图库   | `/gallery`                       | `/admin/gallery`；`draft/published/withdrawn`              |
-| 项目   | `/projects`                      | `/admin/projects`；发布状态与项目进展分别维护              |
-| 友链   | `/links`                         | `/admin/links`；`draft/published/withdrawn` 与独立推荐状态 |
-| 提示词 | `/prompts`                       | 登录博主页内添加和编辑；`draft/published`                  |
-| 订阅费 | `/subscriptions`                 | `/admin/subscriptions`；发布状态与订阅活跃状态分别维护     |
-| 书签   | `/tabs`                          | 当前浏览器存储，使用页面提供的导入/导出入口                |
+| 业务   | 公开入口                         | 管理入口与状态                                                                           |
+| ------ | -------------------------------- | ---------------------------------------------------------------------------------------- |
+| 文章   | `/`、`/archive`、`/articles/:id` | `/admin/posts`；草稿、发布、归档及独立回收状态                                           |
+| 闪念   | `/flash`、`/flash/:id`           | `/admin/flashes`；草稿/发布与归档行为按表单分别处理；评论在 `/admin/flash-comments` 审核 |
+| 朋友圈 | `/moments`                       | `/admin/moments`；`draft/published/archived`、置顶与评论                                 |
+| 留言   | `/guestbook`                     | `/admin/guestbook`；`published/pending/hidden`、回复与置顶                               |
+| 图库   | `/gallery`                       | `/admin/gallery`；`draft/published/withdrawn`                                            |
+| 项目   | `/projects`                      | `/admin/projects`；发布状态与项目进展分别维护                                            |
+| 友链   | `/links`                         | `/admin/links`；`draft/published/withdrawn` 与独立推荐状态                               |
+| 提示词 | `/prompts`                       | 登录博主页内添加和编辑；`draft/published`                                                |
+| 订阅费 | `/subscriptions`                 | `/admin/subscriptions`；发布状态与订阅活跃状态分别维护                                   |
+| 书签   | `/tabs`                          | 当前浏览器存储，使用页面提供的导入/导出入口                                              |
 
 文章编辑器支持 Markdown、封面、专栏、标签、发布检查和历史修订。自定义地址、历史地址重定向、canonical、robots 与 sitemap 由正式发布状态控制；撤回内容不应继续出现在公开查询或订阅中。
 
@@ -47,6 +47,8 @@
 朋友圈支持正文、图片、话题、日期筛选、文章关系、置顶与真实互动。公开列表默认置顶优先；订阅按时间读取最新公开内容。图片、话题、日历和回顾从实际公开记录聚合，不根据样本静态填写数量。
 
 访客评论遵循站点审核策略，博主回复身份由认证和站点配置确定。未通过审核的内容仅在允许的身份范围内反馈。隐藏、归档或删除后，公开聚合与引用同步遵循可见性规则。
+
+闪念评论同样遵循站点审核策略（在 `/admin/comments` 切换“先审后发”）：开启后访客评论先进入待审核，提交后提示“已提交，待博主审核后公开”，待审评论只在提交者本机列表中带“待审核，仅自己可见”标注，评论数只计已公开评论。`/admin/flash-comments` 按待审核、已公开、已隐藏筛选，可单条或对当前页批量通过、隐藏和删除；以选中时看到的状态校验，已被其他操作改变的项跳过并提示刷新。新评论进入互动通知，工作台显示闪念评论待审数量。
 
 留言可按作者、正文或日期筛选，聊天式与论坛式展示使用同一业务数据。Ctrl/Command+Enter 发送，失败保留正文并沿用原提交标识重试。回复只引用公开留言；父留言隐藏或删除后，回复仍可存在，但不会泄露原作者或正文。
 

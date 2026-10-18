@@ -14,6 +14,7 @@ describe('工作台入口', () => {
     expect(overviewTasks.map((item) => item.to)).toEqual([
       '/admin/comments?status=pending',
       '/admin/moment-comments?status=pending',
+      '/admin/flash-comments?status=pending',
       '/admin/guestbook?status=pending',
       '/admin/comments?unanswered=true',
       '/admin/guestbook?unanswered=true',

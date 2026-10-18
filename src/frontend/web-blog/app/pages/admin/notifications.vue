@@ -127,7 +127,13 @@ watch(
 const list = ref<HTMLOListElement | null>(null),
   heading = ref<HTMLHeadingElement | null>(null),
   focusedPanel = ref<HTMLElement | null>(null)
-const kinds = { comment: '文章评论', guestbook: '留言互动', 'moment-comment': '朋友圈评论', task: '运行异常' }
+const kinds = {
+  comment: '文章评论',
+  guestbook: '留言互动',
+  'moment-comment': '朋友圈评论',
+  'flash-comment': '闪念评论',
+  task: '运行异常',
+}
 const states = {
   pending_review: '等待审核',
   awaiting_reply: '尚待博主回复',
