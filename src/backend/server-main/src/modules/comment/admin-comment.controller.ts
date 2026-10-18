@@ -100,7 +100,7 @@ export class AdminCommentController {
   savePolicy(@Body() body: SaveCommentPolicyDto) {
     return this.moderation.savePolicy(body)
   }
-  // 批量路由须先于 :id 路由声明；路径沿用 moderation 与删除的审计动作映射，整批写一条汇总审计。
+  // 批量路由须先于 :id 路由声明；使用独立批量动作，整批写一条汇总审计。
   @HttpPost('batch/moderation')
   batchModerate(@Body() body: BatchCommentModerationDto) {
     return this.comments.batchModerate(body.status, body.items)

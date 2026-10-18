@@ -22,6 +22,8 @@ export const auditActions: Record<string, string> = {
   'comment.reply': '博主回复',
   'comment.delete': '删除评论及回复',
   'comment.moderate': '审核评论',
+  'comment.batch.moderate': '批量审核评论',
+  'comment.batch.delete': '批量删除评论',
   'comment.policy': '修改审核策略',
   'media.upload': '上传图片',
   'media.update': '修改图片说明',
@@ -37,6 +39,8 @@ export const auditActions: Record<string, string> = {
   'guestbook.create': '发布或回复留言',
   'guestbook.update': '审核或置顶留言',
   'guestbook.delete': '删除留言',
+  'guestbook.batch.moderate': '批量审核留言',
+  'guestbook.batch.delete': '批量删除留言',
   'gallery.create': '创建图库作品',
   'gallery.update': '编辑发布或排序图库作品',
   'gallery.delete': '删除图库作品',
@@ -103,14 +107,18 @@ export function auditDescriptor(path: string, method: string) {
       }
     } else if (resourceType === 'comments') {
       resourceType = 'comment'
-      action =
-        parts[2] === 'policy'
-          ? 'comment.policy'
-          : parts[3] === 'reply'
-            ? 'comment.reply'
-            : parts[3] === 'moderation'
-              ? 'comment.moderate'
-              : 'comment.delete'
+      if (parts[2] === 'batch') {
+        action = parts[3] === 'moderation' ? 'comment.batch.moderate' : 'comment.batch.delete'
+      } else {
+        action =
+          parts[2] === 'policy'
+            ? 'comment.policy'
+            : parts[3] === 'reply'
+              ? 'comment.reply'
+              : parts[3] === 'moderation'
+                ? 'comment.moderate'
+                : 'comment.delete'
+      }
     } else if (resourceType === 'media')
       action =
         parts[3] === 'restore'
@@ -168,7 +176,11 @@ export function auditDescriptor(path: string, method: string) {
     } else if (resourceType === 'gallery') {
       action = method === 'POST' ? 'gallery.create' : method === 'DELETE' ? 'gallery.delete' : 'gallery.update'
     } else if (resourceType === 'guestbook') {
-      action = method === 'POST' ? 'guestbook.create' : method === 'DELETE' ? 'guestbook.delete' : 'guestbook.update'
+      if (parts[2] === 'batch') {
+        action = method === 'DELETE' ? 'guestbook.batch.delete' : 'guestbook.batch.moderate'
+      } else {
+        action = method === 'POST' ? 'guestbook.create' : method === 'DELETE' ? 'guestbook.delete' : 'guestbook.update'
+      }
     } else if (resourceType === 'taxonomy') {
       action = 'taxonomy.write'
       resourceId = identifier(parts[3])

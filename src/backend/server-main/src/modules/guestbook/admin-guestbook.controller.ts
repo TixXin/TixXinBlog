@@ -46,7 +46,7 @@ export class AdminGuestbookController {
   @Post() create(@Body() body: GuestbookBodyDto, @CurrentAdmin() admin: { id: string }, @Req() request: Request) {
     return this.write.create(body, '', admin.id, this.write.clientContext(request))
   }
-  // 批量路由须先于 :id 声明；PATCH/DELETE 沿用 guestbook.update / guestbook.delete 审计映射，整批写一条汇总审计。
+  // 批量路由须先于 :id 声明；PATCH/DELETE 使用独立批量动作，整批写一条汇总审计。
   @Patch('batch') batchModerate(@Body() body: BatchGuestbookModerationDto) {
     return this.batch.moderate(body.status, body.items)
   }

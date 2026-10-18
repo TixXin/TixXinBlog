@@ -40,7 +40,7 @@ describe('留言批量请求', () => {
     ).toHaveLength(0)
   })
 
-  it('批量路由在管理员守卫下，先于 :id 注册，并沿用留言审核与删除审计动作', () => {
+  it('批量路由在管理员守卫下，先于 :id 注册，并使用独立批量审计动作', () => {
     expect(Reflect.getMetadata(GUARDS_METADATA, AdminGuestbookController)).toContain(AdminAuthGuard)
     const names = Object.getOwnPropertyNames(AdminGuestbookController.prototype)
     const route = (name: string) => ({
@@ -52,10 +52,12 @@ describe('留言批量请求', () => {
     expect(names.indexOf('batchModerate')).toBeLessThan(names.indexOf('update'))
     expect(names.indexOf('batchRemove')).toBeLessThan(names.indexOf('remove'))
     expect(auditDescriptor('/api/v1/admin/guestbook/batch', 'PATCH')).toMatchObject({
-      action: 'guestbook.update',
+      action: 'guestbook.batch.moderate',
       resourceId: undefined,
     })
-    expect(auditDescriptor('/api/v1/admin/guestbook/batch', 'DELETE')).toMatchObject({ action: 'guestbook.delete' })
+    expect(auditDescriptor('/api/v1/admin/guestbook/batch', 'DELETE')).toMatchObject({
+      action: 'guestbook.batch.delete',
+    })
   })
 })
 

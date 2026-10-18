@@ -56,15 +56,15 @@ describe('评论批量请求校验', () => {
     ).toHaveLength(0)
   })
 
-  it('批量接口与单条接口同在管理员守卫下，并沿用审核、删除审计动作', () => {
+  it('批量接口与单条接口同在管理员守卫下，并使用独立批量审计动作', () => {
     expect(Reflect.getMetadata(GUARDS_METADATA, AdminCommentController)).toContain(AdminAuthGuard)
     expect(auditDescriptor('/api/v1/admin/comments/batch/moderation', 'POST')).toEqual({
-      action: 'comment.moderate',
+      action: 'comment.batch.moderate',
       resourceType: 'comment',
       resourceId: undefined,
     })
     expect(auditDescriptor('/api/v1/admin/comments/batch/delete', 'POST')).toMatchObject({
-      action: 'comment.delete',
+      action: 'comment.batch.delete',
       resourceType: 'comment',
     })
   })
