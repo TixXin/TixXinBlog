@@ -173,7 +173,7 @@ describe('文章评论蜜罐透传', () => {
     state.draft.value = '保留回复草稿'
     state.reply(item())
     vi.mocked(transport.create).mockRejectedValueOnce({ data: { message: '提交失败，请稍后重试' } })
-    const fields = { website: ' robot ', formRenderedAt: 1_000_000 }
+    const fields = { website: ' robot ', formElapsedMs: 1_000_000 }
     expect(await state.submit(identity, fields)).toBe(false)
     expect(transport.create).toHaveBeenCalledWith({ ...identity, ...fields, content: '保留回复草稿', parentId: 1 })
     expect(state.draft.value).toBe('保留回复草稿')

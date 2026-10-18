@@ -60,36 +60,36 @@ async function setup() {
 it('拒绝后保留正文，重新渲染的计时不改变相同业务提交的 requestId', async () => {
   const { flow, id } = await setup()
   mocks.comment.mockRejectedValueOnce(new Error('提交失败，请稍后重试'))
-  await flow.submit({ id, website: ' robot ', formRenderedAt: 1000 })
+  await flow.submit({ id, website: ' robot ', formElapsedMs: 1000 })
   const first = mocks.comment.mock.calls[0]![1]
-  expect(first).toMatchObject({ website: ' robot ', formRenderedAt: 1000, content: '回复草稿' })
+  expect(first).toMatchObject({ website: ' robot ', formElapsedMs: 1000, content: '回复草稿' })
   expect(flow.states[id]?.draft).toBe('回复草稿')
   expect(flow.states[id]?.comments).toHaveLength(0)
-  await flow.submit({ id, website: '', formRenderedAt: 3000 })
+  await flow.submit({ id, website: '', formElapsedMs: 3000 })
   expect(mocks.comment.mock.calls[1]![1]).toMatchObject({
     requestId: first.requestId,
     website: '',
-    formRenderedAt: 3000,
+    formElapsedMs: 3000,
   })
   expect(flow.states[id]?.draft).toBe('')
 })
 it('首次选择访客身份后仍用原表单字段继续提交', async () => {
   mocks.identity.value = false
   const { flow, id } = await setup()
-  const submission = { id, website: ' robot ', formRenderedAt: 1000 }
+  const submission = { id, website: ' robot ', formElapsedMs: 1000 }
   await flow.submit(submission)
   expect(mocks.comment).not.toHaveBeenCalled()
   mocks.identity.value = true
   flow.confirmIdentity()
   await flushPromises()
-  expect(mocks.comment.mock.calls[0]?.[1]).toMatchObject({ website: ' robot ', formRenderedAt: 1000 })
+  expect(mocks.comment.mock.calls[0]?.[1]).toMatchObject({ website: ' robot ', formElapsedMs: 1000 })
   expect(flow.states[id]?.draft).toBe('')
 })
 it('博主评论不向管理写入混入防垃圾字段', async () => {
   mocks.owner = true
   const { flow, id } = await setup()
-  await flow.submit({ id, website: 'robot', formRenderedAt: 1000 })
+  await flow.submit({ id, website: 'robot', formElapsedMs: 1000 })
   expect(mocks.comment.mock.calls[0]?.[1]).not.toHaveProperty('website')
-  expect(mocks.comment.mock.calls[0]?.[1]).not.toHaveProperty('formRenderedAt')
+  expect(mocks.comment.mock.calls[0]?.[1]).not.toHaveProperty('formElapsedMs')
   expect(mocks.comment.mock.calls[0]?.[2]).toBe(true)
 })

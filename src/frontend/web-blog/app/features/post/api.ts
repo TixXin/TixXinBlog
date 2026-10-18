@@ -222,7 +222,7 @@ export async function createComment(baseUrl: string, id: string, draft: CommentD
   // 提交凭据跨响应丢失与刷新保留；不在存储键中保存评论正文或访客原始身份。
   const businessDraft = { ...draft }
   delete businessDraft.website
-  delete businessDraft.formRenderedAt
+  delete businessDraft.formElapsedMs
   const digest = await crypto.subtle.digest(
     'SHA-256',
     new TextEncoder().encode(JSON.stringify([baseUrl, id, headers, businessDraft])),

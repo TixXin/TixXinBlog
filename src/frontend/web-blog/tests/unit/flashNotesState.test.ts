@@ -621,7 +621,7 @@ describe('闪念公开分页', () => {
 it('闪念评论编排将原始蜜罐和渲染时刻交给仓储', async () => {
   const { state } = await setup()
   mocks.repo.addComment.mockResolvedValue({ id: 'comment', content: '正文' })
-  const fields = { website: ' robot ', formRenderedAt: 1000 }
+  const fields = { website: ' robot ', formElapsedMs: 1000 }
   await state.addComment('public', '正文', { id: 'guest', name: '访客', avatar: '/avatar.svg' }, fields)
   expect(mocks.repo.addComment).toHaveBeenCalledWith('public', {
     authorId: 'guest',

@@ -172,7 +172,7 @@ export class HttpFlashRepository implements FlashNoteRepository {
         authorAvatar: draft.authorAvatar || undefined,
         content: draft.content,
         website: draft.website,
-        formRenderedAt: draft.formRenderedAt,
+        formElapsedMs: draft.formElapsedMs,
       },
     })
   }

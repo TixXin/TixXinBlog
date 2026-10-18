@@ -12,6 +12,8 @@ import { ValidateVisitorSubmissionField } from '../../../common/validation/visit
 
 export class CreateCommentDto {
   @ValidateVisitorSubmissionField('website') website?: string
+  @ValidateVisitorSubmissionField('formElapsedMs') formElapsedMs?: number
+  /** 旧客户端的表单渲染时间戳，仅校验类型，不再与服务器时钟比较 */
   @ValidateVisitorSubmissionField('formRenderedAt') formRenderedAt?: number
   @IsOptional() @IsUUID('4') requestId?: string
   @IsString()

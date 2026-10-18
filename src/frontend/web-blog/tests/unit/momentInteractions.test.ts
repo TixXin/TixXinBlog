@@ -48,7 +48,7 @@ const comment = (id = 'comment-a', patch: Partial<MomentCommentItem> = {}): Mome
 })
 // 访客提交携带蜜罐与表单渲染时间，由服务端判定机器人；博主身份发送时不附带。
 const renderedAt = Date.parse('2026-10-18T07:59:00Z')
-const submission = { id: note.id, website: '', formRenderedAt: renderedAt }
+const submission = { id: note.id, website: '', formElapsedMs: renderedAt }
 const page = (items: MomentCommentItem[], number = 1, total = items.length): MomentCommentPage => ({
   items,
   page: number,
@@ -254,7 +254,7 @@ describe('朋友圈提交与草稿', () => {
         avatar: '/avatar.svg',
         requestId: expect.any(String),
         website: '',
-        formRenderedAt: renderedAt,
+        formElapsedMs: renderedAt,
       },
       false,
     )
