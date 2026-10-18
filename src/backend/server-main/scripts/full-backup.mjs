@@ -414,7 +414,8 @@ export async function restoreFullBackup(path, { output } = {}) {
     let ready = false
     for (let i = 0; i < 60; i++) {
       try {
-        await command(['exec', container, 'pg_isready', '-U', user, '-d', database])
+        // 官方镜像初始化时先起只监听 socket 的临时服务、随后重启；走 TCP 检查才能等到恢复连接实际使用的正式服务。
+        await command(['exec', container, 'pg_isready', '-h', '127.0.0.1', '-U', user, '-d', database])
         ready = true
         break
       } catch {
