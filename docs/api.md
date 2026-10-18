@@ -178,6 +178,8 @@
 | `GET/PATCH /admin/site`、`GET /admin/site/revisions` | 完整资料、版本化保存与历史；具体版本/恢复入口见控制器  |
 
 站点资料含可选的 `presenceLabel`（≤20）、`presenceSignature`（≤60）、`presenceStatus`（空串、`online`、`idle`、`busy`）与 `launchedAt`（`YYYY-MM-DD` 或空）：前两者驱动名片的在线状态与签名，都为空时保持离线；`presenceStatus` 决定状态点的类型，空串时按在线展示；`launchedAt` 决定 `GET /posts/metadata` 里 `stats.siteAgeDays` 的起点，缺省回退到最早公开文章的发布日。旧客户端与旧内容包可不携带这几项，缺省按空串处理且保存时沿用当前值。
+
+站点资料还包含 `navigation`（`{ type: 'route', key, visible }` 或 `{ type: 'external', label, url, newTab, visible }`，`key` 限内置模块白名单且不重复，`home` 不可隐藏，外链 ≤4 个且仅 http(s)，缺失的内置模块按显示追加）、`footerLinks`（≤8 个 `{ label, url, newTab }`，`url` 为站内路径或 http(s)，不重复）、`quotes`（≤30 条、每条 1–120 字、去首尾空白后不重复）、`icpNumber`（≤40）、`icpUrl`（空或 http(s)，≤300）与 `copyright`（≤200，不含换行）。这些字段同样可选：未提交时沿用当前值，历史记录缺失时读取按缺省值补齐（缺省等于此前前端内置的导航、页脚链接与一言）。导航隐藏只影响展示，不做访问控制。
 | `GET/POST /admin/media` | 服务端分页筛选与 multipart `file` 上传，可带 `uploadId/alt` |
 | `PATCH/DELETE /admin/media/:id`、`POST /admin/media/:id/restore` | 独立资料更新、回收与恢复 |
 | `GET /admin/media/:id/references`、`GET /media/:uuid.webp[?w=320\|640\|960\|1280]` | 管理引用明细与公开 WebP 字节；`w` 取白名单宽度的缓存变体，其他值 400 |

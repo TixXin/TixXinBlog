@@ -11,14 +11,24 @@ import type { SaveSiteSettingsDto } from './site-settings.dto'
 import { lockMedia, synchronizeMediaReferences } from '../media/media-references'
 import { ContentContext } from '../../entities/content-context.entity'
 import { emptyAbout, publicAbout } from './about-settings'
-/** 后加字段在历史记录中可能缺失，读取时统一补空串 */
-function withPresenceDefaults(values: SiteSettingsValues): SiteSettingsValues {
-  return {
+import { normalizeSiteExtrasInput, SiteExtrasError, withSiteExtrasDefaults } from './site-navigation'
+/** 后加字段在历史记录中可能缺失，读取时统一补空串；导航与页脚等按缺省值补齐 */
+export function withPresenceDefaults(values: SiteSettingsValues) {
+  return withSiteExtrasDefaults({
     ...values,
     presenceLabel: values.presenceLabel ?? '',
     presenceSignature: values.presenceSignature ?? '',
     launchedAt: values.launchedAt ?? '',
     presenceStatus: values.presenceStatus ?? '',
+  })
+}
+/** 校验导航、页脚、每日一言与备案字段；内容包解析与后台保存共用同一规则 */
+export function validateSiteExtras(input: Parameters<typeof normalizeSiteExtrasInput>[0]) {
+  try {
+    return normalizeSiteExtrasInput(input)
+  } catch (error) {
+    if (error instanceof SiteExtrasError) throw new BadRequestException(error.message)
+    throw error
   }
 }
 @Injectable()
@@ -54,6 +64,7 @@ export class SiteSettingsService {
   }
   async save(input: SaveSiteSettingsDto, reason = '更新站点资料') {
     this.validateUrls(input)
+    const extras = validateSiteExtras(input)
     if (
       input.about &&
       new Set(input.about.sections.map((section) => section.kind)).size !== input.about.sections.length
@@ -68,6 +79,7 @@ export class SiteSettingsService {
       )
       if (settings.revision !== input.revision)
         throw new ConflictException('站点资料已更新，请读取最新版本并比较；当前输入未保存')
+      const current = withSiteExtrasDefaults(settings.values)
       const values = {
         about: input.about ?? settings.values.about ?? emptyAbout(),
         name: input.name,
@@ -85,6 +97,12 @@ export class SiteSettingsService {
         presenceSignature: input.presenceSignature ?? settings.values.presenceSignature ?? '',
         launchedAt: input.launchedAt ?? settings.values.launchedAt ?? '',
         presenceStatus: input.presenceStatus ?? settings.values.presenceStatus ?? '',
+        navigation: extras.navigation ?? current.navigation,
+        footerLinks: extras.footerLinks ?? current.footerLinks,
+        quotes: extras.quotes ?? current.quotes,
+        icpNumber: extras.icpNumber ?? current.icpNumber,
+        icpUrl: extras.icpUrl ?? current.icpUrl,
+        copyright: extras.copyright ?? current.copyright,
       }
       const now = new Date()
       settings.values = {

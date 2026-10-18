@@ -16,6 +16,9 @@ import type { MomentCommentStatus } from '../../entities/moment-comment.entity'
 import { GUESTBOOK_STATUSES } from '../../entities/guestbook-message.entity'
 import type { GuestbookStatus } from '../../entities/guestbook-message.entity'
 import { SaveSiteSettingsDto } from '../site/site-settings.dto'
+import { normalizeSiteExtrasInput, SiteExtrasError } from '../site/site-navigation'
+/** v12 引入的站点字段 */
+const SITE_EXTRA_KEYS = ['navigation', 'footerLinks', 'quotes', 'icpNumber', 'icpUrl', 'copyright']
 import { COMMENT_STATUSES } from '../../entities/comment.entity'
 import type { CommentStatus } from '../../entities/comment.entity'
 import { POST_TAG_COLORS } from '../../entities/post-tag.entity'
@@ -103,7 +106,7 @@ export interface PackageGuestbook {
 }
 export interface ContentPackage {
   format: 'tixxin-content'
-  version: 11
+  version: 12
   omittedRelations: number
   exportedAt: string
   mediaIncluded: boolean
@@ -297,7 +300,7 @@ export async function parseContentPackage(buffer: Buffer): Promise<ContentPackag
   ])
   if (
     source.format !== 'tixxin-content' ||
-    ![1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11].includes(Number(source.version)) ||
+    ![1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].includes(Number(source.version)) ||
     typeof source.version !== 'number'
   )
     throw new BadRequestException('不支持的内容包格式或版本')
@@ -804,12 +807,20 @@ export async function parseContentPackage(buffer: Buffer): Promise<ContentPackag
         ...(Number(source.version) >= 8 ? ['about'] : []),
         // v11 起可选携带在线状态、签名、状态类型与上线日期；旧版本出现即按未知字段拒绝。
         ...(Number(source.version) >= 11 ? ['presenceLabel', 'presenceSignature', 'presenceStatus', 'launchedAt'] : []),
+        // v12 起可选携带导航、页脚链接、每日一言、备案号与版权文案；v1–v11 出现即按未知字段拒绝。
+        ...(Number(source.version) >= 12 ? SITE_EXTRA_KEYS : []),
       ]),
       revision: 0,
     },
     '站点资料',
   )
   const { revision: ignoredRevision, ...site } = siteData
+  try {
+    Object.assign(site, normalizeSiteExtrasInput(site))
+  } catch (error) {
+    if (error instanceof SiteExtrasError) fail('站点导航与页脚')
+    throw error
+  }
   if (site.about && new Set(site.about.sections.map((section) => section.kind)).size !== site.about.sections.length)
     fail('关于页栏目重复')
   if (ignoredRevision !== 0 || !packageImageUrl(site.avatar)) fail('站点头像')
@@ -915,7 +926,7 @@ export async function parseContentPackage(buffer: Buffer): Promise<ContentPackag
       if (!targets.has(`${relation.type}:${relation.id}`)) fail('关联目标不在内容包内，不能把来源编号当作目标站点编号')
   return {
     format: 'tixxin-content',
-    version: 11,
+    version: 12,
     omittedRelations,
     exportedAt: date(source.exportedAt, '导出时间'),
     mediaIncluded,

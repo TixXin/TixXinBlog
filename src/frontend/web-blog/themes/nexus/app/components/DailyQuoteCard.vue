@@ -1,12 +1,12 @@
 <!--
   @file DailyQuoteCard.vue
-  @description Nexus 左侧栏每日一言卡片，随机展示名言并支持刷新
+  @description Nexus 左侧栏每日一言卡片，随机展示站点设置中的一言并支持刷新；列表为空时不展示
   @author TixXin
   @since 2026-04-10
 -->
 
 <template>
-  <section class="card daily-quote-card">
+  <section v-if="dailyQuote" class="card daily-quote-card">
     <!-- 装饰引号 -->
     <Icon name="lucide:quote" size="20" class="daily-quote-card__decor-icon" />
 
@@ -26,13 +26,11 @@
 </template>
 
 <script setup lang="ts">
-import { mockOwnerCard } from '~/features/site/mock'
-
-const { dailyQuote } = useSiteInfo()
+const { dailyQuote, ownerCard } = useSiteInfo()
 const rotation = ref(0)
 
 function refresh() {
-  const quotes = mockOwnerCard.quotes
+  const quotes = ownerCard.value.quotes
   const current = dailyQuote.value
   let next = current
   /* 避免连续出现同一条 */

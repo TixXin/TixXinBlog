@@ -8,8 +8,17 @@
 export interface FooterLink {
   label: string
   href: string
-  /** 外链：true 走 <a target="_blank">，false/undefined 走 <NuxtLink> 内部路由 */
+  /** 非 Nuxt 页面（站外地址或 /rss.xml 等服务端文件）：true 走原生 <a>，false/undefined 走 <NuxtLink> */
   external?: boolean
+  /** 是否在新窗口打开 */
+  newTab?: boolean
+}
+
+/** 站点设置中的页脚链接：站内路径或 http(s) 地址 */
+export interface SiteFooterLinkSetting {
+  label: string
+  url: string
+  newTab: boolean
 }
 
 export interface PoweredByItem {

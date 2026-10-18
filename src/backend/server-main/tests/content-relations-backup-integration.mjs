@@ -55,7 +55,7 @@ try {
   const exported = await request('/admin/backup/export', 'POST', { mediaIncluded: true })
   assert.equal(exported.status, 201)
   const bundle = exported.body
-  assert.equal(bundle.version, 11)
+  assert.equal(bundle.version, 12)
   bundle.posts = bundle.posts.filter((row) => [a.id, b.id].includes(row.sourceId))
   bundle.projects = bundle.projects.filter((row) => row.sourceId === p.id)
   bundle.gallery = bundle.gallery.filter((row) => row.sourceId === g.id)

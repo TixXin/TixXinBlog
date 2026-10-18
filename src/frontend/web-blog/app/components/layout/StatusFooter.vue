@@ -1,6 +1,6 @@
 <!--
   @file StatusFooter.vue
-  @description 站点底部页脚组件，展示版权信息、链接和系统状态
+  @description 站点底部页脚组件，展示版权信息、备案号、链接和系统状态；文案与链接来自站点设置
   @author TixXin
   @since 2025-03-17
 -->
@@ -9,10 +9,23 @@
   <!-- 主题根布局已提供 <footer> 地标，这里用普通容器避免重复 contentinfo -->
   <div class="site-footer">
     <div class="footer__left">
-      <span class="footer__copyright">&copy; {{ currentYear }} {{ siteName }}. All rights reserved.</span>
-      <nav class="footer__links" aria-label="页脚链接">
-        <template v-for="link in footerLinks" :key="link.label">
-          <a v-if="link.external" :href="link.href" target="_blank" rel="noopener">{{ link.label }}</a>
+      <span class="footer__copyright"
+        >{{ copyrightText
+        }}<template v-if="icp">
+          <a class="footer__icp" :href="icp.href" target="_blank" rel="noopener noreferrer">{{
+            icp.number
+          }}</a></template
+        ></span
+      >
+      <nav v-if="footerLinks.length" class="footer__links" aria-label="页脚链接">
+        <template v-for="link in footerLinks" :key="link.href">
+          <a
+            v-if="link.external"
+            :href="link.href"
+            :target="link.newTab ? '_blank' : undefined"
+            :rel="link.newTab ? 'noopener' : undefined"
+            >{{ link.label }}</a
+          >
           <NuxtLink v-else :to="link.href">{{ link.label }}</NuxtLink>
         </template>
       </nav>
@@ -40,8 +53,7 @@
 </template>
 
 <script setup lang="ts">
-const currentYear = new Date().getFullYear()
-const { siteName, footerLinks, poweredBy, siteStatus } = useSiteInfo()
+const { copyrightText, icp, footerLinks, poweredBy, siteStatus } = useSiteInfo()
 const { pingMs } = useApiLatency()
 </script>
 
@@ -67,6 +79,16 @@ const { pingMs } = useApiLatency()
   font-size: 0.6875rem;
   line-height: 1.4;
   letter-spacing: 0.01em;
+}
+
+.footer__icp {
+  margin-left: 0.5rem;
+  color: inherit;
+  text-decoration: none;
+
+  &:hover {
+    color: var(--accent-text);
+  }
 }
 
 .footer__links {

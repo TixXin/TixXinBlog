@@ -1,6 +1,6 @@
 <!--
   @file SidebarFooterCard.vue
-  @description Nexus 左侧栏站点信息卡片，展示版权、链接、技术栈和运行状态
+  @description Nexus 左侧栏站点信息卡片，展示版权、备案号、链接、技术栈和运行状态；文案与链接来自站点设置
   @author TixXin
   @since 2026-04-09
 -->
@@ -8,12 +8,23 @@
 <template>
   <section class="card sidebar-footer-card">
     <!-- 版权信息 -->
-    <p class="sidebar-footer-card__copyright">&copy; {{ currentYear }} {{ siteName }}. All rights reserved.</p>
+    <p class="sidebar-footer-card__copyright">
+      {{ copyrightText }}
+      <a v-if="icp" class="sidebar-footer-card__icp" :href="icp.href" target="_blank" rel="noopener noreferrer">{{
+        icp.number
+      }}</a>
+    </p>
 
     <!-- 页脚链接 -->
-    <nav class="sidebar-footer-card__links" aria-label="站点链接">
-      <template v-for="link in footerLinks" :key="link.label">
-        <a v-if="link.external" :href="link.href" class="sidebar-footer-card__link" target="_blank" rel="noopener">
+    <nav v-if="footerLinks.length" class="sidebar-footer-card__links" aria-label="站点链接">
+      <template v-for="link in footerLinks" :key="link.href">
+        <a
+          v-if="link.external"
+          :href="link.href"
+          class="sidebar-footer-card__link"
+          :target="link.newTab ? '_blank' : undefined"
+          :rel="link.newTab ? 'noopener' : undefined"
+        >
           {{ link.label }}
         </a>
         <NuxtLink v-else :to="link.href" class="sidebar-footer-card__link">{{ link.label }}</NuxtLink>
@@ -49,8 +60,7 @@
 </template>
 
 <script setup lang="ts">
-const currentYear = new Date().getFullYear()
-const { siteName, footerLinks, poweredBy, siteStatus } = useSiteInfo()
+const { copyrightText, icp, footerLinks, poweredBy, siteStatus } = useSiteInfo()
 const { pingMs } = useApiLatency()
 </script>
 
@@ -70,6 +80,15 @@ const { pingMs } = useApiLatency()
   font-size: 0.6875rem;
   color: var(--text-muted);
   line-height: 1.4;
+}
+
+.sidebar-footer-card__icp {
+  color: inherit;
+  text-decoration: none;
+
+  &:hover {
+    color: var(--accent-text);
+  }
 }
 
 .sidebar-footer-card__links {

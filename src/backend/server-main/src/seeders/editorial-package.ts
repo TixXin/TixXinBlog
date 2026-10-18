@@ -57,7 +57,7 @@ export async function buildEditorialPackage(
     throw new Error('本批候选定义为零媒体依赖；发现非预期图片必须先人工复核')
   const subset: ContentPackage = {
     format: 'tixxin-content',
-    version: 11,
+    version: 12,
     omittedRelations: 0,
     exportedAt: source.exportedAt,
     mediaIncluded: false,
@@ -77,7 +77,7 @@ export async function buildEditorialPackage(
     linkSettings: { rules: [] },
     folders: [...new Set(posts.map((post) => post.values.folder))],
     tags,
-    // v11固定结构要求这些键；它们是中性格式占位，导入必须关闭includeSettings，不代表来源/正式配置。
+    // v12固定结构要求这些键；它们是中性格式占位，导入必须关闭includeSettings，不代表来源/正式配置。
     site: {
       name: 'TixXin Blog',
       description: '',

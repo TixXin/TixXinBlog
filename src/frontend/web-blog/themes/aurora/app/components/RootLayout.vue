@@ -24,6 +24,7 @@
             v-for="item in navItems"
             :key="item.to"
             :to="item.to"
+            :target="item.newTab ? '_blank' : undefined"
             class="aurora-topbar__link"
             :class="{ active: isActive(item.to) }"
           >

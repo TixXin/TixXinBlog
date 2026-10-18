@@ -51,11 +51,34 @@
         </ol>
       </section>
     </details>
+    <div v-if="value.navigation" class="site-preview__extras" role="group" aria-label="导航与页脚">
+      <p><strong>导航与页脚</strong></p>
+      <p>
+        导航：{{
+          (value.navigation ?? [])
+            .map((entry) =>
+              entry.type === 'route'
+                ? `${navRouteCatalog[entry.key]?.label ?? entry.key}${entry.visible ? '' : '（隐藏）'}`
+                : `${entry.label}↗${entry.visible ? '' : '（隐藏）'}`,
+            )
+            .join(' · ') || '使用默认导航'
+        }}
+      </p>
+      <p>
+        页脚链接：{{ (value.footerLinks ?? []).map((link) => `${link.label}（${link.url}）`).join(' · ') || '不展示' }}
+      </p>
+      <p>每日一言：{{ value.quotes?.length ? `${value.quotes.length} 条` : '不展示' }}</p>
+      <p>版权：{{ formatCopyright(value.copyright, year, value.name) }}</p>
+      <p>备案号：{{ value.icpNumber || '不展示' }}</p>
+    </div>
   </section>
 </template>
 <script setup lang="ts">
 import type { SiteSettingsData } from '~/features/site/settings'
 import { aboutSectionLabels } from '~/features/about/settings'
+import { navRouteCatalog } from '~/features/nav/routes'
+import { formatCopyright } from '~/features/site/footer'
+const year = new Date().getFullYear()
 const props = defineProps<{
   value: Omit<SiteSettingsData, 'revision' | 'updatedAt' | 'announcementUpdatedAt'>
   label: string
