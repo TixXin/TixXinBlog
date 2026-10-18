@@ -5,6 +5,7 @@ import {
   IsArray,
   IsIn,
   IsInt,
+  IsObject,
   IsString,
   IsUUID,
   Max,
@@ -22,6 +23,7 @@ import {
 } from '../../entities/project.entity'
 import type { ProjectLink, ProjectProgress, ProjectStatus, ProjectTag } from '../../entities/project.entity'
 import { MaxUtf16Length } from '../../common/validators/max-utf16-length'
+import { numberFromString } from '../../common/transforms/number-from-string'
 import { ContentRelationDto } from '../content-relations/content-relations.dto'
 const provided = (_object: unknown, value: unknown) => value !== undefined
 const trim = ({ value }: { value: unknown }) => (typeof value === 'string' ? value.trim() : value)
@@ -47,6 +49,7 @@ export class SaveProjectDto {
   @ValidateIf(provided)
   @IsArray()
   @ArrayMaxSize(12)
+  @IsObject({ each: true })
   @ValidateNested({ each: true })
   @Type(() => ContentRelationDto)
   relatedContent?: ContentRelationDto[]
@@ -58,12 +61,14 @@ export class SaveProjectDto {
   @ValidateIf(provided)
   @IsArray()
   @ArrayMaxSize(20)
+  @IsObject({ each: true })
   @ValidateNested({ each: true })
   @Type(() => ProjectTagDto)
   tags?: ProjectTagDto[]
   @ValidateIf(provided)
   @IsArray()
   @ArrayMaxSize(4)
+  @IsObject({ each: true })
   @ValidateNested({ each: true })
   @Type(() => ProjectLinkDto)
   links?: ProjectLinkDto[]
@@ -72,5 +77,5 @@ export class SaveProjectDto {
   @ValidateIf(provided) @IsInt() @Min(-1000000) @Max(1000000) sortOrder?: number
 }
 export class ProjectRevisionDto {
-  @Type(() => Number) @IsInt() @Min(0) revision!: number
+  @Transform(numberFromString) @IsInt() @Min(0) revision!: number
 }

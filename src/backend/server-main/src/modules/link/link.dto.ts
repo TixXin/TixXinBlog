@@ -17,6 +17,7 @@ import {
 import { LINK_STATUSES } from '../../entities/friend-link.entity'
 import type { LinkStatus } from '../../entities/friend-link.entity'
 import { MaxUtf16Length } from '../../common/validators/max-utf16-length'
+import { numberFromString } from '../../common/transforms/number-from-string'
 const provided = (_object: unknown, value: unknown) => value !== undefined
 const trim = ({ value }: { value: unknown }) => (typeof value === 'string' ? value.trim() : value)
 export class LinkQuery {
@@ -46,7 +47,7 @@ export class SaveLinkDto {
   @ValidateIf(provided) @IsInt() @Min(-1000000) @Max(1000000) sortOrder?: number
 }
 export class LinkRevisionDto {
-  @Type(() => Number) @IsInt() @Min(0) revision!: number
+  @Transform(numberFromString) @IsInt() @Min(0) revision!: number
 }
 export class SaveLinkSettingsDto {
   @IsInt() @Min(0) revision!: number

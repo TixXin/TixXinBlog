@@ -2,7 +2,17 @@
 import { Body, Controller, Delete, Get, Param, ParseIntPipe, Patch, Post, Query, Req, UseGuards } from '@nestjs/common'
 import type { Request } from 'express'
 import { Type } from 'class-transformer'
-import { ArrayMaxSize, ArrayMinSize, ArrayUnique, IsArray, IsIn, IsInt, Min, ValidateNested } from 'class-validator'
+import {
+  ArrayMaxSize,
+  ArrayMinSize,
+  ArrayUnique,
+  IsArray,
+  IsIn,
+  IsInt,
+  IsObject,
+  Min,
+  ValidateNested,
+} from 'class-validator'
 import { AdminAuthGuard } from '../../common/guards/admin-auth.guard'
 import { CurrentAdmin } from '../../common/decorators/current-admin.decorator'
 import { GUESTBOOK_STATUSES } from '../../entities/guestbook-message.entity'
@@ -22,6 +32,7 @@ export class BatchGuestbookDeleteDto {
   @ArrayMinSize(1)
   @ArrayMaxSize(GUESTBOOK_BATCH_LIMIT)
   @ArrayUnique((item: GuestbookSelectionDto | null) => item?.id)
+  @IsObject({ each: true })
   @ValidateNested({ each: true })
   @Type(() => GuestbookSelectionDto)
   items!: GuestbookSelectionDto[]

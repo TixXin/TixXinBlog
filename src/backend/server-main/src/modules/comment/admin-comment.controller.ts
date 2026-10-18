@@ -14,7 +14,7 @@ import {
   Query,
   UseGuards,
 } from '@nestjs/common'
-import { Type } from 'class-transformer'
+import { Transform, Type } from 'class-transformer'
 import {
   ArrayMaxSize,
   ArrayMinSize,
@@ -24,6 +24,7 @@ import {
   IsDateString,
   IsIn,
   IsInt,
+  IsObject,
   IsOptional,
   IsString,
   Matches,
@@ -34,6 +35,7 @@ import {
   ValidateNested,
 } from 'class-validator'
 import { AdminAuthGuard } from '../../common/guards/admin-auth.guard'
+import { numberFromString } from '../../common/transforms/number-from-string'
 import { CurrentAdmin } from '../../common/decorators/current-admin.decorator'
 import { AdminCommentService } from './admin-comment.service'
 import { CommentModerationService } from './comment-moderation.service'
@@ -52,7 +54,7 @@ export class QueryAdminCommentsDto {
 }
 export class DeleteAdminCommentDto {
   @IsString() @Matches(/^[a-f0-9]{64}$/) expectedFingerprint!: string
-  @Type(() => Number) @IsInt() @Min(1) @IsOptional() expectedTotal?: number
+  @Transform(numberFromString) @IsInt() @Min(1) @IsOptional() expectedTotal?: number
 }
 export class ModerateCommentDto {
   @IsIn(COMMENT_STATUSES) status!: CommentStatus
@@ -74,6 +76,7 @@ export class BatchCommentDeleteDto {
   @ArrayMinSize(1)
   @ArrayMaxSize(COMMENT_BATCH_LIMIT)
   @ArrayUnique((item: CommentSelectionDto | null) => item?.id)
+  @IsObject({ each: true })
   @ValidateNested({ each: true })
   @Type(() => CommentSelectionDto)
   items!: CommentSelectionDto[]

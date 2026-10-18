@@ -7,6 +7,7 @@ import {
   IsBoolean,
   IsIn,
   IsInt,
+  IsObject,
   IsString,
   IsUUID,
   Max,
@@ -32,6 +33,7 @@ import type {
   SubscriptionStatus,
 } from '@tixxin/subscription-domain'
 import { MaxUtf16Length } from '../../common/validators/max-utf16-length'
+import { numberFromString } from '../../common/transforms/number-from-string'
 const provided = (_object: unknown, value: unknown) => value !== undefined
 const nullable = (_object: unknown, value: unknown) => value !== undefined && value !== null
 const trim = ({ value }: { value: unknown }) => (typeof value === 'string' ? value.trim() : value)
@@ -69,7 +71,7 @@ export class SaveSubscriptionDto {
   @ValidateIf(provided) @IsString() @MaxUtf16Length(500) @Transform(trim) priceChangeReason?: string
 }
 export class SubscriptionRevisionDto {
-  @Type(() => Number) @IsInt() @Min(0) @Max(2147483647) revision!: number
+  @Transform(numberFromString) @IsInt() @Min(0) @Max(2147483647) revision!: number
 }
 export class SubscriptionSortItemDto extends SubscriptionRevisionDto {
   @IsInt() @Min(1) @Max(2147483647) id!: number
@@ -79,6 +81,7 @@ export class SubscriptionSortDto {
   @IsArray()
   @ArrayMinSize(1)
   @ArrayMaxSize(48)
+  @IsObject({ each: true })
   @ValidateNested({ each: true })
   @Type(() => SubscriptionSortItemDto)
   items!: SubscriptionSortItemDto[]

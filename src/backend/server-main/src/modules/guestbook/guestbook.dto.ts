@@ -19,6 +19,7 @@ import { GUESTBOOK_STATUSES } from '../../entities/guestbook-message.entity'
 import type { GuestbookStatus } from '../../entities/guestbook-message.entity'
 import { GUESTBOOK_REACTIONS } from '../../entities/guestbook-reaction.entity'
 import type { GuestbookReactionKind } from '../../entities/guestbook-reaction.entity'
+import { numberFromString } from '../../common/transforms/number-from-string'
 import { ValidateVisitorSubmissionField } from '../../common/validation/visitor-submission'
 const trim = ({ value }: { value: unknown }) => (typeof value === 'string' ? value.trim() : value)
 export class GuestbookFilters {
@@ -52,7 +53,7 @@ export class UpdateGuestbookDto {
   @ValidateIf((_object, value) => value !== undefined) @IsBoolean() isPinned?: boolean
 }
 export class DeleteGuestbookDto {
-  @Type(() => Number) @IsInt() @Min(0) revision!: number
+  @Transform(numberFromString) @IsInt() @Min(0) revision!: number
 }
 export class SetGuestbookReactionDto {
   @IsIn(GUESTBOOK_REACTIONS) emoji!: GuestbookReactionKind

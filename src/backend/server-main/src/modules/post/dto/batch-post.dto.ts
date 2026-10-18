@@ -10,6 +10,7 @@ import {
   IsArray,
   IsIn,
   IsInt,
+  IsObject,
   IsOptional,
   IsString,
   IsUUID,
@@ -29,6 +30,7 @@ export class PreviewPostBatchDto {
   @ArrayMinSize(1)
   @ArrayMaxSize(50)
   @ArrayUnique((item: PostSelectionDto | null) => item?.id)
+  @IsObject({ each: true })
   @ValidateNested({ each: true })
   @Type(() => PostSelectionDto)
   items!: PostSelectionDto[]

@@ -6,7 +6,7 @@
  */
 
 import { Transform } from 'class-transformer'
-import { IsOptional, IsString, MaxLength, MinLength } from 'class-validator'
+import { IsString, MaxLength, MinLength, ValidateIf } from 'class-validator'
 import { ValidateVisitorSubmissionField } from '../../../common/validation/visitor-submission'
 
 export class CreateFlashCommentDto {
@@ -20,7 +20,7 @@ export class CreateFlashCommentDto {
 
   @IsString()
   @MaxLength(512)
-  @IsOptional()
+  @ValidateIf((_object, value) => value !== undefined)
   authorAvatar?: string
 
   @IsString()

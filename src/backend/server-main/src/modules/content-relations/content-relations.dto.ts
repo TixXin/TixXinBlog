@@ -5,6 +5,7 @@ import {
   IsArray,
   IsIn,
   IsInt,
+  IsObject,
   IsOptional,
   IsString,
   Max,
@@ -21,6 +22,7 @@ export class ContentRelationDto implements ContentRelation {
 export class ResolveContentRelationsDto {
   @IsArray()
   @ArrayMaxSize(12)
+  @IsObject({ each: true })
   @ValidateNested({ each: true })
   @Type(() => ContentRelationDto)
   relatedContent!: ContentRelationDto[]
