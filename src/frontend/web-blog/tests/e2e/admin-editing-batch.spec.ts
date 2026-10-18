@@ -23,7 +23,7 @@ test('新建文章按 Ctrl/⌘+S 保存草稿，无改动时再次按键不重�
   await page
     .getByRole('textbox', { name: '标题', exact: true })
     .fill(`快捷键保存的写作笔记 ${randomUUID().slice(0, 6)}`)
-  await page.getByRole('textbox', { name: '专栏', exact: true }).fill('写作')
+  await page.getByRole('combobox', { name: '专栏', exact: true }).fill('写作')
   await body.fill('# 记录\n\n使用快捷键保存草稿。')
   const saved = page.waitForResponse(
     (response) => response.url().endsWith('/api/v1/admin/posts') && response.request().method() === 'POST',
@@ -63,7 +63,7 @@ test('正文粘贴 PNG 先插入占位，上传到媒体库后替换为 Markdown
   })
   await expect(body).toHaveValue(/段落开头!\[上传中…\]\(uploading:[0-9a-f]{8}\)/)
   expect((await uploaded).status()).toBe(201)
-  await expect(body).toHaveValue(/^段落开头!\[写作流程示意\]\(\/media\/[0-9a-f-]+\.webp\)$/)
+  await expect(body).toHaveValue(/^段落开头!\[写作流程示意\]\(\/api\/v1\/media\/[0-9a-f-]+\.webp\)$/)
   // 只有文本的粘贴不被接管，保持浏览器默认行为。
   const prevented = await body.evaluate((element: HTMLTextAreaElement) => {
     const data = new DataTransfer()
