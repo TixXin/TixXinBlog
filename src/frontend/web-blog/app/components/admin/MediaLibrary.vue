@@ -169,7 +169,9 @@
     <p v-if="batchProgress" role="status">
       正在处理所选资源：{{ batchProgress.completed }} / {{ batchProgress.total }}
     </p>
-    <section v-if="batchResults.length" class="media-library__results" aria-label="批量回收结果" aria-live="polite">
+    <!-- 完成后只播报一条汇总，逐项结果不整体实时播报，避免读屏重复朗读整块列表 -->
+    <p v-if="batchSummary" role="status" class="media-library__batch-summary">{{ batchSummary }}</p>
+    <section v-if="batchResults.length" class="media-library__results" aria-label="批量回收结果">
       <h3>批量回收结果</h3>
       <ul>
         <li v-for="result in batchResults" :key="result.id">
@@ -346,6 +348,13 @@ const {
   remove,
   restore,
 } = props.controller
+/** 批量回收完成后的汇总；处理中由进度状态播报 */
+const batchSummary = computed(() => {
+  if (batchProgress.value || !batchResults.value.length) return ''
+  const count = (status: MediaRemovalResult['status']) =>
+    batchResults.value.filter((result) => result.status === status).length
+  return `批量回收完成：已回收 ${count('removed')}、保留 ${count('referenced')}、失败 ${count('failed')}`
+})
 const batchHintId = `media-batch-hint-${useId()}`
 /** 批量回收不可用时的原因，按优先级给出可操作的说明 */
 const batchHint = computed(() => {
