@@ -133,7 +133,8 @@ function loadCore() {
     import('shiki/core'),
     import('shiki/engine/javascript'),
     import('shiki/themes/github-light.mjs'),
-    import('shiki/themes/github-dark.mjs'),
+    // 高对比主题的注释色在站点 --surface-2 背景上达到 4.5:1，亮色主题保持不变。
+    import('shiki/themes/github-dark-high-contrast.mjs'),
   ])
     .then(([{ createHighlighterCore }, { createJavaScriptRegexEngine }, light, dark]) =>
       createHighlighterCore({
@@ -158,7 +159,7 @@ function createFacade(core: HighlighterCore): CodeHighlighter {
       try {
         return core.codeToHtml(code, {
           lang: resolved,
-          themes: { light: 'github-light', dark: 'github-dark' },
+          themes: { light: 'github-light', dark: 'github-dark-high-contrast' },
           // 只输出 --shiki-light/--shiki-dark 变量，由样式按站点明暗模式选择
           defaultColor: false,
         })

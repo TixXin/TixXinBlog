@@ -42,7 +42,7 @@ describe('renderArticleMarkdown', () => {
 
 describe('renderArticleMarkdown 代码块与图片', () => {
   it('预加载语言后输出 Shiki 高亮，消毒保留 class 与双主题变量', async () => {
-    const markdown = '```ts\nconst answer: number = 42\n```'
+    const markdown = '```ts\nconst answer: number = 42\n// 保留注释对比度\n```'
     expect(collectCodeLanguages(markdown)).toEqual(['typescript'])
     const highlighter = await loadCodeHighlighter(collectCodeLanguages(markdown))
     const doc = parse(renderArticleMarkdown(markdown, undefined, { highlighter }))
@@ -52,9 +52,14 @@ describe('renderArticleMarkdown 代码块与图片', () => {
     expect(block.querySelector('.article-code__actions')).not.toBeNull()
     const pre = block.querySelector('pre.shiki')!
     expect(pre.getAttribute('tabindex')).toBe('0')
-    expect(pre.querySelector('code')?.textContent).toBe('const answer: number = 42')
+    expect(pre.querySelector('code')?.textContent).toBe('const answer: number = 42\n// 保留注释对比度')
     const token = [...pre.querySelectorAll<HTMLElement>('span[style]')].find((span) => span.textContent === 'const')!
     expect(token.getAttribute('style')).toMatch(/--shiki-light:#[0-9a-f]+;--shiki-dark:#[0-9a-f]+/i)
+    const comment = [...pre.querySelectorAll<HTMLElement>('span[style]')].find(
+      (span) => span.textContent === '// 保留注释对比度',
+    )!
+    expect(comment.style.getPropertyValue('--shiki-light').toLowerCase()).toBe('#6a737d')
+    expect(comment.style.getPropertyValue('--shiki-dark').toLowerCase()).toBe('#bdc4cc')
   })
 
   it('未加载高亮器或未知语言回退为转义后的纯文本代码块', async () => {

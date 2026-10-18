@@ -27,12 +27,16 @@ afterEach(() => {
 
 describe('CodeBlock', () => {
   it('已注册语言输出 Shiki 双主题变量，显示语言标签并可复制原始代码', async () => {
-    const code = 'const total: number = 1'
+    const code = 'const total: number = 1\n// 保留注释对比度'
     const wrapper = await mountSuspended(CodeBlock, { props: { code, language: 'ts' } })
     expect(wrapper.get('.article-content__code-lang').text()).toBe('TypeScript')
     const pre = wrapper.get('pre.shiki')
     expect(pre.get('code').text()).toBe(code)
     expect(pre.find('span[style*="--shiki-dark"]').exists()).toBe(true)
+    const comment = pre.findAll('span[style]').find((span) => span.text() === '// 保留注释对比度')!
+    const commentStyle = (comment.element as HTMLElement).style
+    expect(commentStyle.getPropertyValue('--shiki-light').toLowerCase()).toBe('#6a737d')
+    expect(commentStyle.getPropertyValue('--shiki-dark').toLowerCase()).toBe('#bdc4cc')
     const button = wrapper.get('button[aria-label="复制代码"]')
     expect(button.attributes('type')).toBe('button')
     await button.trigger('click')

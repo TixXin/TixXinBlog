@@ -38,8 +38,8 @@ test('旧正文标题样式、未知语言回退和同前缀高亮在生产浏�
   await expect(blocks.nth(2).locator('code')).toHaveText('const sharedPrefixValue = "second"')
   await expect(blocks.nth(1).locator('.shiki')).toHaveCount(1)
   await expect(page.locator('html')).toHaveClass(/dark/)
-  // github-dark 的关键字颜色为 #f97583；不能保留浅色主题的深红色。
-  await expect(blocks.nth(1).locator('code .line > span').first()).toHaveCSS('color', 'rgb(249, 117, 131)')
+  // github-dark-high-contrast 的关键字颜色为 #ff9492；不能保留浅色主题的深红色。
+  await expect(blocks.nth(1).locator('code .line > span').first()).toHaveCSS('color', 'rgb(255, 148, 146)')
   expect(dialogs).toEqual([])
   await expect(page.locator('.loading-screen')).toHaveCount(0)
   await captureMotion(page, testInfo, 'legacy-content.png', { target: page.locator('.article-content') })
