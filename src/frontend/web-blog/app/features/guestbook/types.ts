@@ -4,6 +4,7 @@
  * @author TixXin
  * @since 2026-03-20
  */
+import type { VisitorSubmissionFields } from '~/features/visitor/types'
 
 /** 消息反应（emoji reaction） */
 export interface MessageReaction {
@@ -95,7 +96,8 @@ export interface GuestbookMetadata {
   members: (ActiveMember & { id: string; isOwner: boolean })[]
   rules: ChatRule[]
 }
-export interface GuestbookSubmission {
+
+export interface GuestbookSubmission extends VisitorSubmissionFields {
   requestId: string
   content: string
   replyToId?: number | null

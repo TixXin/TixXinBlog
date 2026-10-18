@@ -7,6 +7,7 @@
 
 import { Body, Controller, Get, Header, Param, Post as HttpPost, Query } from '@nestjs/common'
 import { VisitorIdHash } from '../../common/decorators/visitor-id.decorator'
+import { validateVisitorSubmission } from '../../common/validation/visitor-submission'
 import { CreateFlashCommentDto } from './dto/create-flash-comment.dto'
 import { QueryFlashDto, SearchFlashDto } from './dto/query-flash.dto'
 import { FlashListResult, FlashNoteDto, FlashOverview, FlashService } from './flash.service'
@@ -52,6 +53,6 @@ export class FlashController {
     @Body() dto: CreateFlashCommentDto,
     @VisitorIdHash() visitorIdHash: string,
   ): Promise<FlashNoteDto['comments'][number]> {
-    return this.flashService.addComment(id, dto, visitorIdHash)
+    return this.flashService.addComment(id, validateVisitorSubmission(dto), visitorIdHash)
   }
 }

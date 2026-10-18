@@ -617,3 +617,17 @@ describe('闪念公开分页', () => {
     expect(state.overview.value?.dates).toEqual([{ date: '2026-10-01', count: 2 }])
   })
 })
+
+it('闪念评论编排将原始蜜罐和渲染时刻交给仓储', async () => {
+  const { state } = await setup()
+  mocks.repo.addComment.mockResolvedValue({ id: 'comment', content: '正文' })
+  const fields = { website: ' robot ', formRenderedAt: 1000 }
+  await state.addComment('public', '正文', { id: 'guest', name: '访客', avatar: '/avatar.svg' }, fields)
+  expect(mocks.repo.addComment).toHaveBeenCalledWith('public', {
+    authorId: 'guest',
+    authorName: '访客',
+    authorAvatar: '/avatar.svg',
+    content: '正文',
+    ...fields,
+  })
+})

@@ -215,3 +215,31 @@ it('身份恢复尚未结束就卸载时，不安装遗留的页面退出监听'
   await flushPromises()
   expect(listener.mock.calls.some((call) => call[0] === 'beforeunload')).toBe(false)
 })
+
+it('访客蜜罐原值透传且不进入恢复副本，重新渲染后重试复用原提交凭据', async () => {
+  mocks.auth.currentUser.value = null
+  const { interactions: flow, scope } = await setup()
+  flow.setDraft('访客回复')
+  mocks.create.mockRejectedValueOnce(new Error('提交失败，请稍后重试'))
+  await flow.submit({ website: ' robot ', formRenderedAt: 1000 })
+  const first = mocks.create.mock.calls[0]![0]
+  expect(first).toMatchObject({ website: ' robot ', formRenderedAt: 1000 })
+  expect(flow.state.draft).toBe('访客回复')
+  const stored = sessionStorage.getItem(`blog-guestbook-draft:${scope}:${flow.state.actor}`)!
+  expect(JSON.parse(stored)).not.toHaveProperty('website')
+  expect(JSON.parse(stored)).not.toHaveProperty('formRenderedAt')
+  await flow.submit({ website: '', formRenderedAt: 3000 })
+  expect(mocks.create.mock.calls[1]![0]).toMatchObject({
+    requestId: first.requestId,
+    website: '',
+    formRenderedAt: 3000,
+  })
+  expect(flow.state.draft).toBe('')
+})
+it('博主留言不把访客防垃圾字段带入管理写入', async () => {
+  const { interactions: flow } = await setup()
+  flow.setDraft('博主回复')
+  await flow.submit({ website: 'robot', formRenderedAt: 1000 })
+  expect(mocks.create.mock.calls[0]![0]).not.toHaveProperty('website')
+  expect(mocks.create.mock.calls[0]![0]).not.toHaveProperty('formRenderedAt')
+})

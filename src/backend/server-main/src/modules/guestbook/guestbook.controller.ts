@@ -3,6 +3,7 @@ import { Body, Controller, Get, Param, ParseIntPipe, Post, Put, Query, Req, UseG
 import type { Request } from 'express'
 import { ContentWriteContextGuard } from '../../common/guards/content-write-context.guard'
 import { VisitorIdHash } from '../../common/decorators/visitor-id.decorator'
+import { validateVisitorSubmission } from '../../common/validation/visitor-submission'
 import { CreateGuestbookDto, QueryGuestbookDto, SetGuestbookReactionDto } from './guestbook.dto'
 import { GuestbookReadService } from './guestbook-read.service'
 import { GuestbookWriteService } from './guestbook-write.service'
@@ -26,7 +27,8 @@ export class GuestbookController {
     @VisitorIdHash() visitor: string,
     @Req() request: Request,
   ) {
-    return this.write.create(body, visitor, undefined, this.write.clientContext(request))
+    const submission = validateVisitorSubmission(body)
+    return this.write.create(submission, visitor, undefined, this.write.clientContext(request))
   }
   @Put(':id/reactions') @UseGuards(ContentWriteContextGuard) reaction(
     @Param('id', ParseIntPipe) id: number,

@@ -7,8 +7,11 @@
 
 import { Transform, Type } from 'class-transformer'
 import { IsInt, IsOptional, IsString, IsUUID, MaxLength, Min, MinLength } from 'class-validator'
+import { ValidateVisitorSubmissionField } from '../../../common/validation/visitor-submission'
 
 export class CreateCommentDto {
+  @ValidateVisitorSubmissionField('website') website?: string
+  @ValidateVisitorSubmissionField('formRenderedAt') formRenderedAt?: number
   @IsOptional() @IsUUID('4') requestId?: string
   @IsString()
   @Transform(({ value }: { value: unknown }) => (typeof value === 'string' ? value.trim() : value))

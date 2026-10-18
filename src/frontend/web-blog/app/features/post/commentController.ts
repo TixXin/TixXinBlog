@@ -3,9 +3,10 @@
  * @description 评论状态与操作：隔离传输层，处理草稿、回复、失败恢复及请求互斥
  */
 import { computed, ref } from 'vue'
+import type { VisitorSubmissionFields } from '~/features/visitor/types'
 import type { CommentItem } from './types'
 
-export interface CommentDraft {
+export interface CommentDraft extends VisitorSubmissionFields {
   requestId?: string
   author: string
   avatar?: string
@@ -78,7 +79,10 @@ export function createCommentController(transport: CommentTransport, initial: Co
     if (!submitting.value) replyTarget.value = null
   }
 
-  async function submit(identity: { author: string; avatar?: string }): Promise<boolean> {
+  async function submit(
+    identity: { author: string; avatar?: string },
+    fields: VisitorSubmissionFields = {},
+  ): Promise<boolean> {
     if (busy.value) return false
     const content = draft.value.trim()
     if (!content || content.length > 1000) {
@@ -89,7 +93,12 @@ export function createCommentController(transport: CommentTransport, initial: Co
     submitting.value = true
     submitError.value = ''
     try {
-      const created = await transport.create({ ...identity, content, ...(target ? { parentId: target.id } : {}) })
+      const created = await transport.create({
+        ...identity,
+        ...fields,
+        content,
+        ...(target ? { parentId: target.id } : {}),
+      })
       const parent = target ? findComment(comments.value, target.id) : undefined
       if (created.moderationStatus !== 'pending' && !findComment(comments.value, created.id)) {
         if (parent) (parent.replies ??= []).push(created)

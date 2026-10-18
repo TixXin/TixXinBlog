@@ -4,6 +4,11 @@
  * @author TixXin
  * @since 2026-04-04
  */
+import type { VisitorSubmissionFields } from '~/features/visitor/types'
+
+export interface MomentCommentSubmission extends VisitorSubmissionFields {
+  id: string
+}
 
 /** 用户简要信息，用于 hover 信息卡展示 */
 export interface MomentUserProfile {

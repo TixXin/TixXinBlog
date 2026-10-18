@@ -1,6 +1,7 @@
 /** @file moment.controller.ts @description 朋友圈公开入口；仅返回已发布内容，访客写入采用现有身份与限流规范 */
 import { Body, Controller, Get, Param, Post, Put, Query } from '@nestjs/common'
 import { VisitorIdHash } from '../../common/decorators/visitor-id.decorator'
+import { validateVisitorSubmission } from '../../common/validation/visitor-submission'
 import { CreateMomentCommentDto, MomentPageQuery, QueryMomentsDto, SetMomentLikeDto } from './moment.dto'
 import { MomentReadService } from './moment-read.service'
 import { MomentInteractionService } from './moment-interaction.service'
@@ -37,7 +38,7 @@ export class MomentController {
   }
   @Post(':id/comments')
   comment(@Param('id') id: string, @Body() body: CreateMomentCommentDto, @VisitorIdHash() visitor: string) {
-    return this.interactions.comment(id, body, visitor)
+    return this.interactions.comment(id, validateVisitorSubmission(body), visitor)
   }
   @Put(':id/like')
   like(@Param('id') id: string, @Body() body: SetMomentLikeDto, @VisitorIdHash() visitor: string) {

@@ -7,8 +7,11 @@
 
 import { Transform } from 'class-transformer'
 import { IsOptional, IsString, MaxLength, MinLength } from 'class-validator'
+import { ValidateVisitorSubmissionField } from '../../../common/validation/visitor-submission'
 
 export class CreateFlashCommentDto {
+  @ValidateVisitorSubmissionField('website') website?: string
+  @ValidateVisitorSubmissionField('formRenderedAt') formRenderedAt?: number
   @IsString()
   @Transform(({ value }: { value: unknown }) => (typeof value === 'string' ? value.trim() : value))
   @MinLength(1)

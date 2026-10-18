@@ -26,7 +26,8 @@
       <div class="comment-section__avatar comment-section__avatar--placeholder">
         <Icon name="lucide:user" size="16" />
       </div>
-      <form class="comment-section__form" @submit.prevent="$emit('submit')">
+      <form class="comment-section__form" @submit.prevent="$emit('submit', visitorForm.fields())">
+        <CommonSubmissionTrap v-model="website" />
         <div v-if="replyTarget" class="comment-section__reply-target" role="status">
           回复 {{ replyTarget.author }}
           <button type="button" :disabled="submitting" @click="$emit('cancel-reply')">取消回复</button>
@@ -84,6 +85,7 @@
 </template>
 
 <script setup lang="ts">
+import type { VisitorSubmissionFields } from '~/features/visitor/types'
 import type { CommentItem } from '~/features/post/types'
 
 const props = defineProps<{
@@ -100,6 +102,8 @@ const props = defineProps<{
   likeError: string
   pendingLikes: number[]
 }>()
+const visitorForm = useVisitorSubmissionForm({ submitting: () => props.submitting, error: () => props.submitError })
+const { website } = visitorForm
 const draft = defineModel<string>({ required: true })
 const input = ref<HTMLTextAreaElement | null>(null)
 const hydrated = ref(false)
@@ -107,7 +111,7 @@ onMounted(() => {
   hydrated.value = true
 })
 defineEmits<{
-  submit: []
+  submit: [fields: VisitorSubmissionFields]
   retry: []
   reply: [comment: CommentItem]
   'cancel-reply': []

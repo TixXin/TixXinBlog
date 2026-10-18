@@ -1,6 +1,6 @@
 /** @file useMomentInteractions.ts @description 朋友圈互动编排；展示组件只接收状态与事件 */
 import { momentSession, seedMomentState } from '~/features/moment/session'
-import type { MomentItem } from '~/features/moment/types'
+import type { MomentCommentSubmission, MomentItem } from '~/features/moment/types'
 
 export function useMomentInteractions() {
   const app = useNuxtApp()
@@ -12,7 +12,7 @@ export function useMomentInteractions() {
   const login = useLoginDrawer()
   const toast = useToast()
   const identityVisible = ref(false)
-  let waitingId: string | null = null
+  let waitingSubmission: MomentCommentSubmission | null = null
   const protectInput = (event: BeforeUnloadEvent) => {
     if (Object.values(session.states).some((state) => state.draft.trim() || state.submitting)) {
       event.preventDefault()
@@ -80,7 +80,8 @@ export function useMomentInteractions() {
       if (epoch === session.epoch && version === state.version) state.loading = false
     }
   }
-  async function submit(id: string) {
+  async function submit(submission: MomentCommentSubmission) {
+    const { id, ...fields } = submission
     const state = stateFor(id)
     if (!state || state.submitting || !state.draft.trim()) return
     if (!auth.initialized.value || auth.restoringPending.value) {
@@ -89,7 +90,7 @@ export function useMomentInteractions() {
       return
     }
     if (!auth.isLoggedIn.value && !identity.hasIdentity.value) {
-      waitingId = id
+      waitingSubmission = submission
       identityVisible.value = true
       return
     }
@@ -110,7 +111,7 @@ export function useMomentInteractions() {
     state.notice = ''
     const version = state.version
     try {
-      const result = await repo.comment(id, { ...value, requestId: state.requestId }, owner)
+      const result = await repo.comment(id, { ...value, requestId: state.requestId, ...(owner ? {} : fields) }, owner)
       if (epoch !== session.epoch) return
       if (version !== state.version) {
         if (state.draft.trim() === content) state.draft = ''
@@ -136,20 +137,20 @@ export function useMomentInteractions() {
   }
   function confirmIdentity() {
     identityVisible.value = false
-    const id = waitingId
-    waitingId = null
-    if (id) void submit(id)
+    const submission = waitingSubmission
+    waitingSubmission = null
+    if (submission) void submit(submission)
   }
   function cancelIdentity() {
     identityVisible.value = false
-    waitingId = null
+    waitingSubmission = null
   }
   function switchToLogin() {
     identityVisible.value = false
     login.open('login')
   }
   watch(auth.isLoggedIn, (loggedIn) => {
-    if (loggedIn && waitingId) confirmIdentity()
+    if (loggedIn && waitingSubmission) confirmIdentity()
   })
   return {
     states: session.states,

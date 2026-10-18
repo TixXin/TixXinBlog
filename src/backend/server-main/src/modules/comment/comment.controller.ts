@@ -7,6 +7,7 @@
 
 import { Body, Controller, Get, Header, Param, ParseIntPipe, Post as HttpPost } from '@nestjs/common'
 import { VisitorIdHash } from '../../common/decorators/visitor-id.decorator'
+import { validateVisitorSubmission } from '../../common/validation/visitor-submission'
 import { CommentService } from './comment.service'
 import { CommentTreeNode } from './comment-tree'
 import { CreateCommentDto } from './dto/create-comment.dto'
@@ -30,7 +31,7 @@ export class CommentController {
     @Body() dto: CreateCommentDto,
     @VisitorIdHash() visitorIdHash: string,
   ): Promise<CommentTreeNode> {
-    return this.commentService.create(postId, dto, visitorIdHash)
+    return this.commentService.create(postId, validateVisitorSubmission(dto), visitorIdHash)
   }
 
   @HttpPost('comments/:id/like')

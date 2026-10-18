@@ -166,3 +166,18 @@ describe('评论控制器', () => {
     expect(state.loadError.value).toContain('已提交')
   })
 })
+
+describe('文章评论蜜罐透传', () => {
+  it('回复提交原样发送蜜罐和计时，服务端拒绝不清草稿或回复目标', async () => {
+    const { state, transport } = setup({ items: [item()], total: 1 })
+    state.draft.value = '保留回复草稿'
+    state.reply(item())
+    vi.mocked(transport.create).mockRejectedValueOnce({ data: { message: '提交失败，请稍后重试' } })
+    const fields = { website: ' robot ', formRenderedAt: 1_000_000 }
+    expect(await state.submit(identity, fields)).toBe(false)
+    expect(transport.create).toHaveBeenCalledWith({ ...identity, ...fields, content: '保留回复草稿', parentId: 1 })
+    expect(state.draft.value).toBe('保留回复草稿')
+    expect(state.replyTarget.value?.id).toBe(1)
+    expect(state.total.value).toBe(1)
+  })
+})

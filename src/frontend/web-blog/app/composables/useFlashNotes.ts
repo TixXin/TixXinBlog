@@ -13,6 +13,7 @@
  * - 写操作仅对登录用户开放，未登录触发 useLoginDrawer.open()
  */
 
+import type { VisitorSubmissionFields } from '~/features/visitor/types'
 import type {
   FlashComment,
   FlashNote,
@@ -469,6 +470,7 @@ export function useFlashNotes() {
     noteId: string,
     content: string,
     guestAuthor?: { id: string; name: string; avatar: string },
+    fields: VisitorSubmissionFields = {},
   ): Promise<FlashComment | null> {
     let authorId: string
     let authorName: string
@@ -489,6 +491,7 @@ export function useFlashNotes() {
 
     const owner = ownerKey.value
     const created = await repo.addComment(noteId, {
+      ...fields,
       authorId,
       authorName,
       authorAvatar,
