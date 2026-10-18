@@ -139,3 +139,60 @@ it('真实网关保留媒体 304 和 Retry-After，拒绝伪造地址，其他�
   expect(unreachable.status).toBe(502)
   expect(unreachable.headers.get('cache-control')).toBe('no-store')
 })
+
+it('客户端错误上报经同源网关转发，保留 Origin 校验与限流响应', async () => {
+  const received: { method?: string; url?: string; body: string }[] = []
+  let limited = false
+  const backend = await listen(
+    createServer(async (request, response) => {
+      let body = ''
+      for await (const chunk of request) body += chunk
+      received.push({ method: request.method, url: request.url, body })
+      response.setHeader('content-type', 'application/json')
+      response.statusCode = limited ? 429 : 202
+      if (limited) response.setHeader('retry-after', '60')
+      response.end(JSON.stringify({ code: 0, message: 'ok', data: { accepted: true }, traceId: 'gateway-test' }))
+    }),
+  )
+  for (const [key, value] of Object.entries(h3)) vi.stubGlobal(key, value)
+  runtimeConfig.apiBaseUrl = `${backend}/api/v1`
+  runtimeConfig.trustedProxyCidrs = ''
+  const handler = (await import('../../server/api/v1/[...path]')).default
+  const app = h3.createApp().use(
+    h3.eventHandler((event: Parameters<typeof handler>[0]) => {
+      event.context.params = { path: event.path.slice('/api/v1/'.length) }
+      return handler(event)
+    }),
+  )
+  const gateway = await listen(createServer(h3.toNodeListener(app)))
+  const body = JSON.stringify({ source: 'window', message: '加载失败', url: 'https://example.com/posts' })
+  const submit = (origin: string, path = 'client-errors') =>
+    fetch(`${gateway}/api/v1/${path}`, {
+      method: 'POST',
+      headers: { origin, 'content-type': 'application/json' },
+      body,
+    })
+
+  const accepted = await submit(gateway)
+  expect(accepted.status).toBe(202)
+  expect(await accepted.json()).toEqual({
+    code: 0,
+    message: 'ok',
+    data: { accepted: true },
+    traceId: 'gateway-test',
+  })
+  expect(accepted.headers.get('cache-control')).toBe('no-store')
+  expect(received).toEqual([{ method: 'POST', url: '/api/v1/client-errors', body }])
+
+  for (const origin of ['https://other.example.com', 'null', 'invalid-origin']) {
+    expect((await submit(origin)).status).toBe(403)
+  }
+  expect((await submit(gateway, 'client-errors-other')).status).toBe(404)
+  expect(received).toHaveLength(1)
+
+  limited = true
+  const rejected = await submit(gateway)
+  expect(rejected.status).toBe(429)
+  expect(rejected.headers.get('retry-after')).toBe('60')
+  expect(rejected.headers.get('cache-control')).toBe('no-store')
+})

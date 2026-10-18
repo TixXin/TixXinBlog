@@ -6,6 +6,7 @@ import type { IncomingMessage } from 'node:http'
 import type { Params } from 'nestjs-pino'
 import { stdSerializers } from 'pino-http'
 import { getTraceId } from '../common/utils/trace-id'
+import { isClientErrorPath } from '../common/utils/client-error-report'
 
 const REDACTED = '[REDACTED]'
 const sensitiveFields = [
@@ -62,8 +63,21 @@ export function createLoggingOptions(level = 'info', development = false): Param
       serializers: {
         req: (req: IncomingMessage) => {
           const { id, method, url, headers, remoteAddress, remotePort } = stdSerializers.req(req)
+          const path = url ? redactRequestUrl(url) : url
+          // 客户端错误上报入口只保留正文类型与长度，不记录 Referer、Cookie 及任意附加请求头。
+          if (path && isClientErrorPath(path)) {
+            const { 'content-type': contentType, 'content-length': contentLength } = headers
+            return {
+              id,
+              method,
+              url: '/api/v1/client-errors',
+              headers: { 'content-type': contentType, 'content-length': contentLength },
+              remoteAddress,
+              remotePort,
+            }
+          }
           // 白名单排除 Express 的 query/params 及正文，不把敏感输入复制到其他字段。
-          return { id, method, url: url ? redactRequestUrl(url) : url, headers, remoteAddress, remotePort }
+          return { id, method, url: path, headers, remoteAddress, remotePort }
         },
         res: stdSerializers.res,
         err: serializeError,

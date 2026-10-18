@@ -9,7 +9,7 @@ export default defineEventHandler(async (event) => {
   setResponseHeader(event, 'cache-control', 'no-store')
   const path = getRouterParam(event, 'path') ?? ''
   if (
-    !/^(?:posts|comments|auth|admin|flashes|moments|guestbook|gallery|prompts|projects|subscriptions|links|media|site)(?:\/|$)/.test(
+    !/^(?:posts|comments|auth|admin|flashes|moments|guestbook|gallery|prompts|projects|subscriptions|links|media|site|client-errors)(?:\/|$)/.test(
       path,
     ) ||
     path.split('/').some((part) => part === '..' || part === '.')

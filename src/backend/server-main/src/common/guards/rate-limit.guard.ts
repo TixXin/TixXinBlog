@@ -6,6 +6,7 @@ import { CanActivate, ExecutionContext, HttpException, HttpStatus, Injectable } 
 import { ConfigService } from '@nestjs/config'
 import type { Request, Response } from 'express'
 import { isIP } from 'node:net'
+import { isClientErrorPath } from '../utils/client-error-report'
 
 /** 有界固定窗口计数器，可通过时钟注入验证过期和突发请求。 */
 export class RateLimitStore {
@@ -80,6 +81,9 @@ export function rateLimitDisabled(config: ConfigService): boolean {
 @Injectable()
 export class RateLimitGuard implements CanActivate {
   private readonly store = new RateLimitStore()
+  private readonly clientErrorStore = new RateLimitStore()
+  // 全局配额独立存储，不能被大量新 IP 挤出后重新计数。
+  private readonly clientErrorGlobalStore = new RateLimitStore(1)
   constructor(private readonly config: ConfigService) {}
 
   canActivate(context: ExecutionContext): boolean {
@@ -87,6 +91,14 @@ export class RateLimitGuard implements CanActivate {
     if (rateLimitDisabled(this.config)) return true
     const request = context.switchToHttp().getRequest<Request>()
     if (request.method === 'OPTIONS' || ['/health', '/ready'].includes(request.path)) return true
+    if (request.method === 'POST' && isClientErrorPath(request.path)) {
+      const client = rateLimitClientKey(request.ip ?? request.socket.remoteAddress)
+      const retryAfter =
+        this.clientErrorStore.consume(client, 5, 60000) ||
+        this.clientErrorGlobalStore.consume('client-errors', 100, 60000)
+      if (retryAfter) this.reject(context, retryAfter)
+      return true
+    }
     const login = request.path.endsWith('/auth/login') || request.path.endsWith('/auth/password')
     const refresh = request.path.endsWith('/auth/refresh')
     const view = request.path.endsWith('/view')
@@ -120,10 +132,12 @@ export class RateLimitGuard implements CanActivate {
       limit,
       windowMs,
     )
-    if (retryAfter) {
-      context.switchToHttp().getResponse<Response>().setHeader('Retry-After', String(retryAfter))
-      throw new HttpException('操作过于频繁，请稍后重试', HttpStatus.TOO_MANY_REQUESTS)
-    }
+    if (retryAfter) this.reject(context, retryAfter)
     return true
+  }
+
+  private reject(context: ExecutionContext, retryAfter: number): never {
+    context.switchToHttp().getResponse<Response>().setHeader('Retry-After', String(retryAfter))
+    throw new HttpException('操作过于频繁，请稍后重试', HttpStatus.TOO_MANY_REQUESTS)
   }
 }
