@@ -149,6 +149,12 @@ describe('内容包输入与限额', () => {
     await expect(parse(value)).rejects.toThrow('根对象')
   })
 
+  it('仍接受上一导出版本 v11 的内容包，解析结果升级为当前版本', async () => {
+    // v11 不含 v12 新增的站点导航与页脚字段，其余结构一致；缺失字段由读取时补默认值。
+    const input = bundle()
+    expect(await parse({ ...input, version: 11 })).toEqual(input)
+  })
+
   it.each([0, 13, -1, 12.5, '12', null])('拒绝不支持或错误类型的版本：%j', async (version) => {
     await expect(parse({ ...bundle(), version })).rejects.toThrow('不支持的内容包格式或版本')
   })
