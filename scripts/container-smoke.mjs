@@ -77,9 +77,12 @@ try {
     POSTGRES_DB: 'tixxin_blog',
   })
   start(names.pg, ['--env-file', pgEnv, '-v', `${names.volume}:/var/lib/postgresql/data`, 'postgres:16-alpine'])
+  // 初始化阶段的临时服务只监听 socket，按 TCP 检查以等到迁移实际连接的正式服务。
   await until(
     () =>
-      docker(['exec', names.pg, 'pg_isready', '-U', 'tixxin', '-d', 'tixxin_blog']).includes('accepting connections'),
+      docker(['exec', names.pg, 'pg_isready', '-h', '127.0.0.1', '-U', 'tixxin', '-d', 'tixxin_blog']).includes(
+        'accepting connections',
+      ),
     'PostgreSQL',
   )
   const migrationEnv = envFile('migration.env', { DATABASE_URL: databaseUrl })
