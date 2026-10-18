@@ -17,6 +17,7 @@
   <ClientOnly>
     <CommonToastContainer />
     <CommonSearchModal v-model:visible="isSearchOpen" />
+    <CommonKeyboardShortcutsHelp v-model:visible="isShortcutHelpOpen" />
     <AuthModal />
     <!-- Dev 调试面板：仅 dev 模式渲染，prod 构建被 DevOnly 整段 tree-shake -->
     <DevOnly>
@@ -96,7 +97,7 @@ const isSearchOpen = ref(false)
 const searchController = { open: () => (isSearchOpen.value = true) }
 provide('searchModal', searchController)
 // 根组件不能inject自己provide的值，快捷键直接复用同一控制器。
-useKeyboardShortcuts(searchController)
+const { isShortcutHelpOpen } = useKeyboardShortcuts(searchController)
 useAnalytics()
 
 // 首次访问 loading 动画状态 + 布局主题切换 loading 状态
