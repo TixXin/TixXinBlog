@@ -27,7 +27,11 @@ function loadHistory(): HistoryItem[] {
 }
 
 function saveHistory(items: HistoryItem[]) {
-  localStorage.setItem(HISTORY_KEY, JSON.stringify(items))
+  try {
+    localStorage.setItem(HISTORY_KEY, JSON.stringify(items))
+  } catch {
+    // 历史记录与阅读位置均为可选功能，存储不可用时不阻断文章挂载。
+  }
 }
 
 export function useReadingHistory() {
@@ -49,7 +53,11 @@ export function useReadingHistory() {
 
   function clearHistory() {
     history.value = []
-    localStorage.removeItem(HISTORY_KEY)
+    try {
+      localStorage.removeItem(HISTORY_KEY)
+    } catch {
+      // 仍允许清除本次会话内的历史展示。
+    }
   }
 
   return {
