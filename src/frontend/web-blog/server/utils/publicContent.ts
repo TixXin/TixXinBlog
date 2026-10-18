@@ -9,6 +9,7 @@ import { renderArticleMarkdown } from '~/utils/articleMarkdown'
 import type { FlashNote } from '~/features/flash/types'
 import type { MomentItem, MomentPage } from '~/features/moment/types'
 import type { SiteSettingsData } from '~/features/site/settings'
+import { articlePath } from '~/utils/articlePath'
 
 export async function publicApi<T>(event: H3Event, path: string): Promise<T> {
   const base = String(useRuntimeConfig(event).apiBaseUrl).replace(/\/$/, '')
@@ -59,21 +60,57 @@ export async function publicPagedItems<T>(event: H3Event, path: string, pageSize
   return items
 }
 
-/** 文章全文的订阅渲染结果按文章缓存 10 分钟；键位于 cache:nitro 前缀下，内容写请求会随 SSR 缓存一并清空 */
-const cachedArticleFeedHtml = defineCachedFunction(
-  async (event: H3Event, id: string): Promise<string> => {
+/** 全文与内容修订时间共用 10 分钟缓存；键位于 cache:nitro 前缀下，内容写请求会随 SSR 缓存一并清空 */
+const cachedArticleFeedContent = defineCachedFunction(
+  async (event: H3Event, id: string) => {
     const detail = await publicApi<ArticleDetail>(event, `/posts/${encodeURIComponent(id)}`)
-    return detail.contentRaw ? renderArticleMarkdown(detail.contentRaw, detail.title) : ''
+    return {
+      html: detail.contentRaw ? renderArticleMarkdown(detail.contentRaw, detail.title) : '',
+      updatedAt: detail.updatedAt,
+    }
   },
-  { name: 'feed-article-html', maxAge: 600, getKey: (_event: H3Event, id: string) => id },
+  { name: 'feed-article-content', maxAge: 600, getKey: (_event: H3Event, id: string) => id },
 )
 
-/** 读取文章全文 HTML 并把站内相对地址改为绝对地址；读取失败时返回空串，由订阅回退为摘要 */
-export async function publicArticleFeedHtml(event: H3Event, id: string, articleUrl: string): Promise<string> {
+/** 读取文章全文并把站内相对地址改为文章绝对地址；读取或渲染失败返回 undefined，由订阅回退为摘要 */
+export async function publicArticleFeedContent(event: H3Event, id: string, articleUrl: string) {
   try {
-    return absolutizeHtml(await cachedArticleFeedHtml(event, id), articleUrl)
+    const content = await cachedArticleFeedContent(event, id)
+    return { html: absolutizeHtml(content.html, articleUrl), updatedAt: content.updatedAt }
   } catch {
-    return ''
+    return undefined
+  }
+}
+
+/** 三种文章订阅共用公开列表、稳定标识、绝对地址与全文读取；详情失败时保留摘要和发布时间 */
+export async function publicArticleFeed(event: H3Event) {
+  // 列表与站点读取失败不缓存；成功时由 sendFeed 改为短期缓存。
+  setResponseHeader(event, 'cache-control', 'no-store')
+  assertMethod(event, ['GET', 'HEAD'])
+  const site = publicSiteUrl(event)
+  const [{ items }, settings] = await Promise.all([publicPosts(event), publicSiteSettings(event)])
+  const entries = await mapLimit(items, 4, async (post) => {
+    const url = `${site}${articlePath(post)}`
+    const content = await publicArticleFeedContent(event, String(post.id), url)
+    const published = latestDate([post.date]).toISOString()
+    const modified = content?.updatedAt ? latestDate([post.date, content.updatedAt]).toISOString() : undefined
+    return {
+      post,
+      // 标识与 slug 解耦，文章改名后阅读器仍识别为同一条目。
+      id: `${site}/articles/${post.id}`,
+      url,
+      html: content?.html ?? '',
+      published,
+      modified,
+      updated: modified ?? published,
+    }
+  })
+  return {
+    site,
+    settings,
+    creator: settings.ownerName || settings.name,
+    entries,
+    updated: latestDate([settings.updatedAt, ...entries.map((entry) => entry.updated)]),
   }
 }
 
@@ -139,10 +176,15 @@ export function latestDate(values: (string | undefined | null)[]): Date {
  * 订阅响应：短期 HTTP 缓存（5 分钟）+ ETag/Last-Modified 条件请求。
  * 服务端不缓存整份订阅，撤回与上游故障在下一次请求即反映；失败响应由调用方预先设置的 no-store 保持不缓存。
  */
-export function sendFeed(event: H3Event, body: string, lastModified: Date): string {
+export function sendFeed(
+  event: H3Event,
+  body: string,
+  lastModified: Date,
+  contentType = 'application/rss+xml',
+): string {
   const etag = `W/"${createHash('sha1').update(body).digest('base64url')}"`
   setResponseHeaders(event, {
-    'content-type': 'application/rss+xml; charset=utf-8',
+    'content-type': `${contentType}; charset=utf-8`,
     'cache-control': 'public, max-age=300',
     etag,
     'last-modified': lastModified.toUTCString(),
