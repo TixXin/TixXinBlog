@@ -79,12 +79,23 @@ test('长标题与正文在三主题和手机可读，目录不遮挡且文末�
     for (const width of [320, 1440]) {
       await page.setViewportSize({ width, height: 1000 })
       await page.goto('/')
+      await expect(page.locator('html')).toHaveClass(/app-client-ready/)
       const card = page.locator('.post-item').filter({ hasText: title })
       await expect(card).toBeVisible()
-      const metrics = await card.locator('.post-item__summary').evaluate((element) => ({
-        height: element.getBoundingClientRect().height,
-        line: Number.parseFloat(getComputedStyle(element).lineHeight),
-      }))
+      // 首页列表在水合后可能按缓存刷新重建卡片；在页面内一次性查找并测量，避免拿到已被替换脱离文档的旧节点
+      const measure = () =>
+        page.evaluate((text) => {
+          const summary = [...document.querySelectorAll('.post-item')]
+            .find((item) => item.textContent?.includes(text))
+            ?.querySelector('.post-item__summary')
+          if (!summary?.isConnected) return null
+          return {
+            height: summary.getBoundingClientRect().height,
+            line: Number.parseFloat(getComputedStyle(summary).lineHeight),
+          }
+        }, title)
+      await expect.poll(measure).not.toBeNull()
+      const metrics = (await measure())!
       expect(metrics.height).toBeGreaterThanOrEqual(metrics.line - 1)
       expect(Math.abs(metrics.height / metrics.line - Math.round(metrics.height / metrics.line))).toBeLessThan(0.05)
       await card.screenshot({ animations: 'disabled', path: testInfo.outputPath(`long-card-cover-${width}.png`) })

@@ -95,7 +95,17 @@ test('真实刷新开始后旧文档不再预取清单，新文档仍正常读�
   await expect(page.locator('html')).toHaveClass(/app-client-ready/)
   await expect(page.locator('.project-card')).toHaveCount(12)
   const originalDocument = await page.evaluate(() => performance.timeOrigin)
-  expect(record.events.filter((event) => event.event === 'manifest-fetch')).toHaveLength(0)
+  const originalFetches = () =>
+    record.events.filter((event) => event.document === originalDocument && event.event === 'manifest-fetch')
+  // 应用就绪后会立即预取一次清单（不排在首次切页路径上），等这次读取完成后再开始刷新
+  await expect
+    .poll(() =>
+      record.events.some(
+        (event) => event.document === originalDocument && event.event === 'manifest-response' && event.status === 200,
+      ),
+    )
+    .toBe(true)
+  expect(originalFetches().map((event) => event.phase)).toEqual(['active'])
   holdingNavigation = true
   const refreshed = page.reload({ waitUntil: 'commit' })
   try {
@@ -106,9 +116,8 @@ test('真实刷新开始后旧文档不再预取清单，新文档仍正常读�
     // 暂缓新 HTML，明确跨过 Nuxt 的 1000ms 预取期限，逼出旧文档的定时器；不是等待界面稳定。
     // 在 Node 侧计时，避免浏览器等待新文档时阻塞 evaluate，与导航门禁互相等待。
     await delay(1100)
-    expect(
-      record.events.filter((event) => event.document === originalDocument && event.event === 'manifest-fetch'),
-    ).toHaveLength(0)
+    // 卸载开始后旧文档不得再发起清单读取，只保留就绪时那一次
+    expect(originalFetches().map((event) => event.phase)).toEqual(['active'])
     expect(record.errors).toEqual([])
   } finally {
     release()

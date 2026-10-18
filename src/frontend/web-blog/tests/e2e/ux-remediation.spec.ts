@@ -22,6 +22,14 @@ test('关闭JavaScript时首屏仍包含服务端文章列表', async ({ browser
   }
 })
 
+/**
+ * 访客表单要求从打开到提交至少 1 秒（防机器人的最短填写时间，过快提交会被服务端拒绝）。
+ * 真实访客的输入必然超过这个时长；自动化 fill 是瞬时的，这里补足填写耗时后再提交。
+ */
+async function respectMinimumFillTime(page: Page) {
+  await page.waitForTimeout(1100)
+}
+
 async function openAppearance(page: Page) {
   const entry = page.getByRole('button', { name: '界面设置', exact: true })
   if (!(await entry.isVisible())) await page.getByRole('button', { name: '更多导航', exact: true }).click()
@@ -67,7 +75,10 @@ test('收藏写入失败不假装成功，存储恢复后可收藏并刷新保�
     }
   })
   await page.getByRole('button', { name: '收藏', exact: true }).click()
-  await expect(page.getByText('收藏未保存：浏览器存储不可用或空间不足，请重试')).toBeVisible()
+  // 错误 toast 另有一份仅供读屏的 assertive 播报，这里核对可见的提示条
+  await expect(
+    page.locator('.toast-item__message', { hasText: '收藏未保存：浏览器存储不可用或空间不足，请重试' }),
+  ).toBeVisible()
   await expect(page.getByRole('button', { name: '收藏', exact: true })).toBeVisible()
   await page.evaluate(() => (window as unknown as { restoreFavoriteStorage: () => void }).restoreFavoriteStorage())
   await page.getByRole('button', { name: '收藏', exact: true }).click()
@@ -100,6 +111,7 @@ test('未上线动作前置说明，项目无占位链接，手机留言真实�
   expect(inputTop).toBeLessThan(844)
   const content = '手机上留下的想法 ' + crypto.randomUUID()
   await input.fill(content)
+  await respectMinimumFillTime(page)
   await page.getByRole('button', { name: '发送留言', exact: true }).click()
   await page.getByPlaceholder('你的昵称', { exact: true }).fill('小林')
   await page.getByRole('button', { name: '确认身份', exact: true }).click()
@@ -296,7 +308,9 @@ test('搜索可以循环焦点、Esc关闭、保留原生结果链接并恢复�
   await dialog.getByRole('button', { name: '关闭搜索' }).press('Escape')
   await expect(dialog).toHaveCount(0)
   await expect(entry).toBeFocused()
-  await expect(page.locator('[inert]')).toHaveCount(0)
+  // 弹层只给 body 直接子节点加 inert；Nexus 底栏收起时的身份行自身常驻 inert，不属于弹层残留
+  await expect(page.locator('body > [inert]')).toHaveCount(0)
+  expect(await entry.evaluate((element) => !!element.closest('[inert]'))).toBe(false)
 })
 
 test('三主题的手机登录只打开一个表单并归还焦点', async ({ page }) => {
@@ -344,6 +358,7 @@ test('评论请求在途切换主题仍保持忙碌状态并只提交一次', as
       resume = () => route.continue()
     } else return route.continue()
   })
+  await respectMinimumFillTime(page)
   await page.getByRole('button', { name: '发布评论', exact: true }).click()
   await page.getByRole('textbox', { name: '昵称 *', exact: true }).fill('UX 在途访客')
   await page.getByRole('button', { name: '确认身份', exact: true }).click()
@@ -386,7 +401,9 @@ test('书签设置与导入嵌套时只关闭顶层，命令面板无结果也�
   const query = palette.getByRole('textbox', { name: '搜索书签、分类和命令', exact: true })
   await expect(query).toBeFocused()
   await query.fill('没有这个书签zzzzzz')
-  await expect(palette.getByText('无匹配结果')).toBeVisible()
+  // 无结果提示同时有可见文案和仅供读屏的 status 播报
+  await expect(palette.locator('span').filter({ hasText: /^无匹配结果$/ })).toBeVisible()
+  await expect(palette.getByRole('status')).toHaveText('无匹配结果')
   await query.press('Tab')
   await palette.getByRole('button', { name: '关闭命令面板', exact: true }).press('Escape')
   await expect(palette).toHaveCount(0)
@@ -412,6 +429,9 @@ for (const fromLastPage of [false, true]) {
       await expect(cards).toHaveCount(total - (pageCount - 1) * 15)
     }
     await page.getByRole('button', { name: '连续加载', exact: true }).click()
+    await expect(page.getByRole('button', { name: '连续加载', exact: true })).toHaveAttribute('aria-pressed', 'true')
+    // 切到连续模式会换用另一套列表容器重建卡片；等新卡片（带 data-index）就位后再取节点，避免拿到被替换的旧卡片
+    await expect(page.locator('.post-list > [data-index]')).toHaveCount(15)
     await expect(cards).toHaveCount(15)
     const first = await cards.evaluateAll((nodes) => nodes.map((node) => node.getAttribute('href')))
     let failed = false
@@ -449,6 +469,7 @@ test('三主题六个有向切换保留评论草稿与回复目标，且无空�
   page.on('pageerror', (error) => errors.push(error.message))
   await page.goto('/articles/1')
   await page.getByRole('textbox', { name: '评论内容', exact: true }).fill('UX 主题回复目标')
+  await respectMinimumFillTime(page)
   await page.getByRole('button', { name: '发布评论', exact: true }).click()
   await page.getByRole('textbox', { name: '昵称 *', exact: true }).fill('UX 主题访客')
   await page.getByRole('button', { name: '确认身份', exact: true }).click()

@@ -252,7 +252,7 @@ test('取消导航保留现有标题和正文，查询更新不触发标题过�
   await expect(page.locator('[data-page-motion-status]:visible')).toHaveCount(0)
   expect(await records(page)).toHaveLength(0)
   await page.getByRole('button', { name: '下一页', exact: true }).click()
-  await expect(page.locator('.post-item').first()).toHaveAttribute('href', '/articles/91')
+  await expect(page.locator('.post-item a.post-item__content').first()).toHaveAttribute('href', '/articles/91')
   expect((await records(page)).some((m) => m.header || m.root)).toBe(false)
 })
 
