@@ -29,6 +29,7 @@ function correctPage() {
   const lastPage = Math.max(1, Math.ceil(total.value / pageSize))
   if (page.value > lastPage) return changePage(lastPage, true)
 }
-await correctPage()
+// 越界纠正只在挂载后执行：服务端渲染或水合期间改写 URL 不会刷新本页的路由与列表，会留下“地址回到末页、内容仍是空页”的状态
+onMounted(correctPage)
 watch([total, pending, error], correctPage)
 </script>

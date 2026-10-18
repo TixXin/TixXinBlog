@@ -156,7 +156,8 @@ describe('标签独立页', () => {
     await mountPage(TagPage, '/tags/Vue%203?page=9')
     await flushPromises()
     expect(useRoute().params.name).toBe('Vue 3')
-    expect(useRoute().query.page).toBe('2')
+    // 越界纠正在挂载后发起替换导航，等待路由真正落到末页
+    await vi.waitFor(() => expect(useRoute().query.page).toBe('2'))
     mocks.summary = { ...summary, tags: summary.tags.map((tag) => ({ ...tag, count: 0 })) }
     await expect(mountPage(TagPage, '/tags/Vue%203')).rejects.toMatchObject({ statusCode: 404 })
     mocks.summary = summary
