@@ -35,7 +35,6 @@
         </p>
         <div v-if="article.cover" class="article-page__cover-wrap">
           <CommonContentImage
-            v-if="!coverError"
             :src="article.cover"
             :alt="article.coverAlt || article.title"
             class="article-page__cover"
@@ -44,12 +43,7 @@
             width="800"
             height="320"
             sizes="(min-width: 640px) 80vw, 100vw"
-            @error="coverError = true"
           />
-          <div v-else class="article-page__cover-fallback">
-            <Icon name="lucide:image-off" size="32" />
-            <span>封面加载失败</span>
-          </div>
         </div>
         <div class="article-page__stats">
           <span class="article-page__stat">
@@ -167,7 +161,6 @@ const needsCompactToc = computed(
     (currentThemeId.value === 'nexus' ? !nexusSidebarVisible.value : !auroraSidebarVisible.value),
 )
 const isMockArticle = useRuntimeConfig().public.postUseMockRepo !== false
-const coverError = ref(false)
 const scrollbarRef = ref<{ viewport: HTMLElement | null } | null>(null)
 const readingContent = ref<HTMLElement | null>(null)
 const scrollRoot = computed(() => scrollbarRef.value?.viewport ?? null)
@@ -359,19 +352,6 @@ useJsonLd('breadcrumb', () => ({
   width: 100%;
   height: 100%;
   object-fit: cover;
-}
-
-.article-page__cover-fallback {
-  width: 100%;
-  height: 100%;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 0.5rem;
-  background: var(--surface-2);
-  color: var(--text-faint);
-  font-size: 0.8125rem;
 }
 
 /* 统计项统一内边距，整行左移同等距离，让首项图标与正文左缘对齐、各项间距一致 */

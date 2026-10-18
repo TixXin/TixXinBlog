@@ -7,6 +7,7 @@
 <template>
   <!-- eslint-disable-next-line vue/no-v-html -->
   <article ref="rootRef" v-bind="$attrs" class="article-markdown" @click="openImage" v-html="html" />
+  <CommonMarkdownImages :root="rootRef" :html="html" />
   <Teleport v-for="block in codeBlocks" :key="block.key" :to="block.target">
     <ArticleCodeCopyButton :code="block.code" />
   </Teleport>
@@ -78,7 +79,7 @@ function openImage(event: MouseEvent) {
   if (!trigger || !root) return
   const triggers = [...root.querySelectorAll('[data-article-image]')]
   lightboxImages.value = triggers.map((element) => {
-    const image = element.querySelector('img')
+    const image = element.closest('.markdown-image')?.querySelector('img') ?? element.querySelector('img')
     // 灯箱用原图地址而非 srcset 选中的缩小变体
     return { src: image?.src ?? '', alt: image?.alt ?? '' }
   })

@@ -16,11 +16,7 @@
           height="44"
           class="moment-card__avatar-img"
           format="webp"
-          @error="avatarError = true"
         />
-        <div v-if="avatarError" class="moment-card__avatar-fallback">
-          <Icon name="lucide:user" size="24" />
-        </div>
       </div>
     </MomentUserPopover>
 
@@ -35,7 +31,8 @@
       </div>
 
       <!-- eslint-disable-next-line vue/no-v-html -- 输入已通过 DOMPurify 净化 -->
-      <div class="moment-card__content markdown-body" v-html="renderedContent" />
+      <div ref="contentRef" class="moment-card__content markdown-body" v-html="renderedContent" />
+      <CommonMarkdownImages :root="contentRef" :html="renderedContent" />
 
       <!-- 话题标签：点击跳转话题聚合页 -->
       <div v-if="moment.topics && moment.topics.length > 0" class="moment-card__topics">
@@ -51,23 +48,23 @@
 
       <!-- 图片网格 -->
       <div v-if="moment.images && moment.images.length > 0" class="moment-card__images" :class="gridClass">
-        <button
-          v-for="(img, idx) in moment.images"
-          :key="idx"
-          type="button"
-          class="moment-card__image-wrap"
-          :aria-label="`查看动态配图 ${idx + 1}`"
-          @click="openLightBox(idx)"
-        >
-          <img
+        <div v-for="(img, idx) in moment.images" :key="img + idx" class="moment-card__image-wrap">
+          <CommonImageFrame
             :alt="moment.imageAlts?.[idx] || `动态配图 ${idx + 1}`"
             class="moment-card__image"
             loading="lazy"
             :sizes="imageSizes"
-            :srcset="managedImageSrcset(img)"
             :src="img"
+            @state="updateImageFailure(img + idx, $event)"
           />
-        </button>
+          <button
+            v-if="img && !imageFailures[img + idx]"
+            type="button"
+            class="moment-card__image-preview"
+            :aria-label="`查看动态配图 ${idx + 1}`"
+            @click="openLightBox(idx)"
+          />
+        </div>
       </div>
 
       <!-- 引用卡片：站内文章优先，否则外链 OG 卡 -->
@@ -166,7 +163,6 @@
 import type { MomentCommentSubmission, MomentItem, MomentUserProfile } from '~/features/moment/types'
 import type { MomentInteractionState } from '~/features/moment/session'
 import { renderMomentMarkdown } from '~/composables/useMomentMarkdown'
-import { managedImageSrcset } from '~/utils/managedImage'
 const props = defineProps<{
   moment: MomentItem
   ownerProfile: MomentUserProfile
@@ -180,21 +176,15 @@ const emit = defineEmits<{
   comment: [submission: MomentCommentSubmission]
   comments: [id: string]
 }>()
-const avatarError = ref(false),
-  hydrated = ref(false)
+const hydrated = ref(false)
 onMounted(() => {
   hydrated.value = true
 })
-watch(
-  () => props.ownerProfile.avatar,
-  () => {
-    avatarError.value = false
-  },
-)
 // 与日期筛选和日历采用同一 UTC 日期键。
 const formattedDate = computed(() => props.moment.date.slice(0, 10))
 const siteUrl = useSiteUrl()
 const renderedContent = computed(() => renderMomentMarkdown(props.moment.content, { siteUrl }))
+const contentRef = ref<HTMLElement | null>(null)
 const isLiked = computed(() => props.moment.isLiked)
 const likes = computed(() => props.moment.likes)
 const commentCount = computed(() => props.moment.commentCount ?? props.moment.comments?.length ?? 0)
@@ -236,6 +226,12 @@ const gridClass = computed(() => {
   const size = props.moment.images?.length || 0
   return size === 1 ? 'grid-1' : size === 2 || size === 4 ? 'grid-2' : 'grid-3'
 })
+// 预览入口与失败重试保持同级，避免按钮嵌套或重试误开灯箱。
+const imageFailures = ref<Record<string, boolean>>({})
+function updateImageFailure(key: string, state: 'loading' | 'ready' | 'error' | 'empty') {
+  // 重试期间仍显示反馈按钮，成功前不重新覆盖预览入口。
+  if (state !== 'loading') imageFailures.value[key] = state === 'error'
+}
 // 受管图片按网格单元实际宽度取变体：单图最宽 240px，网格容器最宽 400px 分两列或三列；
 // 窄屏网格随卡片收窄（390px 视口实测两列约 129px、三列约 84px）
 const imageSizes = computed(
@@ -496,17 +492,20 @@ function onLightBoxChange(index: number) {
 }
 
 .moment-card__image-wrap {
+  position: relative;
   aspect-ratio: 1;
   border-radius: $radius-sm;
   overflow: hidden;
   background: var(--surface-2);
-  cursor: var(--interaction-cursor, zoom-in);
 }
 
 .moment-card__image {
   width: 100%;
   height: 100%;
-  object-fit: cover;
+  max-height: 300px;
+}
+
+.moment-card__image :deep(.image-frame__image) {
   transition: transform 0.3s ease;
   @media (prefers-reduced-motion: reduce) {
     transition: none;
@@ -514,6 +513,23 @@ function onLightBoxChange(index: number) {
 
   .moment-card__image-wrap:hover & {
     transform: scale(1.05);
+  }
+}
+
+.moment-card__image-preview {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  padding: 0;
+  border: 0;
+  border-radius: inherit;
+  background: transparent;
+  cursor: var(--interaction-cursor, zoom-in);
+
+  &:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: -3px;
   }
 }
 

@@ -3,7 +3,7 @@
  * @description 代码块组件回归：共用精简高亮器输出双主题变量、未知语言文本兜底、语言标签与复制按钮；
  *              文章 Markdown 组件挂载复制按钮并能打开正文图片灯箱
  */
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 import { mockNuxtImport, mountSuspended } from '@nuxt/test-utils/runtime'
 import { flushPromises } from '@vue/test-utils'
 import CodeBlock from '../../app/components/common/CodeBlock.vue'
@@ -87,10 +87,15 @@ describe('ArticleMarkdown 渐进增强', () => {
   })
 
   it('点击正文图片打开灯箱，可在同一篇文章内切换并关闭', async () => {
+    // happy-dom 不解码图片，未加载节点会被视作失败图而只显示重试；这里保持真实的加载中状态。
+    const complete = vi.spyOn(HTMLImageElement.prototype, 'complete', 'get').mockReturnValue(false)
+    onTestFinished(() => complete.mockRestore())
     const wrapper = await mountSuspended(ArticleMarkdown, {
       props: { content: '![第一张](/a.webp)\n\n文字\n\n![](/b.webp)' },
       attachTo: document.body,
     })
+    // 正文图片在客户端挂载后由共享图片组件接管，等待增强完成再查找入口。
+    await flushPromises()
     const triggers = document.querySelectorAll<HTMLButtonElement>('[data-article-image]')
     expect(triggers).toHaveLength(2)
     triggers[0]!.click()

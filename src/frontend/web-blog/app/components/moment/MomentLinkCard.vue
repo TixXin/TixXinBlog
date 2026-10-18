@@ -6,17 +6,27 @@
 -->
 
 <template>
-  <a
-    :href="link.url"
-    target="_blank"
-    rel="noopener noreferrer"
-    class="moment-link-card"
-    :class="{ 'has-image': !!link.image }"
-  >
+  <div class="moment-link-card" :class="{ 'has-image': !!link.image }">
     <div v-if="link.image" class="moment-link-card__cover">
-      <img :src="link.image" :alt="link.title" loading="lazy" @error="onImageError" />
+      <CommonImageFrame
+        :key="link.image"
+        :src="link.image"
+        :alt="link.title"
+        loading="lazy"
+        sizes="80px"
+        compact
+        @state="updateCoverFailure(link.image, $event)"
+      />
+      <a
+        v-if="!coverFailures[link.image]"
+        :href="link.url"
+        target="_blank"
+        rel="noopener noreferrer"
+        :aria-label="`打开链接：${link.title}`"
+        class="moment-link-card__cover-link"
+      />
     </div>
-    <div class="moment-link-card__body">
+    <a :href="link.url" target="_blank" rel="noopener noreferrer" class="moment-link-card__body">
       <div class="moment-link-card__head">
         <img
           v-if="link.favicon && !faviconError"
@@ -31,8 +41,8 @@
       </div>
       <div class="moment-link-card__title">{{ link.title }}</div>
       <p v-if="link.description" class="moment-link-card__desc">{{ link.description }}</p>
-    </div>
-  </a>
+    </a>
+  </div>
 </template>
 
 <script setup lang="ts">
@@ -43,10 +53,10 @@ const props = defineProps<{
 }>()
 
 const faviconError = ref(false)
-const imageLoadFailed = ref(false)
-
-function onImageError() {
-  imageLoadFailed.value = true
+const coverFailures = ref<Record<string, boolean>>({})
+function updateCoverFailure(source: string | undefined, state: 'loading' | 'ready' | 'error' | 'empty') {
+  // 图片恢复前不让覆盖链接挡住重试，换图时按地址隔离状态。
+  if (source && state !== 'loading') coverFailures.value[source] = state === 'error'
 }
 
 // 站点名优先用显式声明，回退到从 URL 提取 host
@@ -88,6 +98,7 @@ const siteLabel = computed(() => {
 }
 
 .moment-link-card__cover {
+  position: relative;
   flex-shrink: 0;
   width: 80px;
   height: 60px;
@@ -95,19 +106,37 @@ const siteLabel = computed(() => {
   overflow: hidden;
   background: var(--surface-3);
 
-  img {
+  :deep(.image-frame) {
     width: 100%;
     height: 100%;
-    object-fit: cover;
+  }
+}
+
+.moment-link-card__cover-link {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+
+  &:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: -3px;
   }
 }
 
 .moment-link-card__body {
+  text-decoration: none;
+  color: inherit;
+  border-radius: $radius-sm;
   flex: 1;
   min-width: 0;
   display: flex;
   flex-direction: column;
   gap: 0.25rem;
+
+  &:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 3px;
+  }
 }
 
 .moment-link-card__head {

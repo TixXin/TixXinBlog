@@ -218,7 +218,7 @@ describe('朋友圈灯箱图片', () => {
     await frame.get('img').trigger('error')
     expect(frame.classes()).toContain('image-frame--error')
     expect(frame.attributes('aria-busy')).toBe('false')
-    expect(frame.text()).toContain('图片暂时无法加载')
+    expect(frame.text()).toContain('图片加载失败')
     const failedImage = frame.get('img').element
     await frame.get('[aria-label="重新加载图片：预览图片"]').trigger('click')
     expect(wrapper.emitted('close')).toBeUndefined()
@@ -232,7 +232,7 @@ describe('朋友圈灯箱图片', () => {
     await wrapper.setProps({ currentIndex: 1 })
     expect(frame.get('img').attributes('src')).toBe(nextSrc)
     expect(frame.classes()).toContain('image-frame--loading')
-    expect(frame.text()).not.toContain('图片暂时无法加载')
+    expect(frame.text()).not.toContain('图片加载失败')
     expect(frame.attributes('aria-busy')).toBe('true')
     await loadImage(frame.get<HTMLImageElement>('img').element)
     expect(frame.classes()).toContain('image-frame--ready')

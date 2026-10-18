@@ -135,7 +135,7 @@ describe('画廊加载失败占位', () => {
     await wrapper.get('img').trigger('error')
     expect(frame.classes()).toContain('image-frame--error')
     expect(frame.attributes('aria-busy')).toBe('false')
-    expect(frame.text()).toContain('图片暂时无法加载')
+    expect(frame.text()).toContain('图片加载失败')
     expect(frame.attributes('style')).toContain('aspect-ratio: 1000 / 750')
     expect(wrapper.get('.gallery-item__title').text()).toBe(photo.title)
 

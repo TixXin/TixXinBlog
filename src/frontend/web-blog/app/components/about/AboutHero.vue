@@ -14,7 +14,6 @@
       width="112"
       height="112"
       format="webp"
-      @error="onAvatarError"
     />
     <h1 class="about-hero__name">{{ profile.name }}</h1>
     <p class="about-hero__bio">{{ profile.bio }}</p>
@@ -40,19 +39,6 @@ import type { Profile } from '~/features/about/types'
 defineProps<{
   profile: Profile
 }>()
-
-const AVATAR_FALLBACK =
-  'data:image/svg+xml,' +
-  encodeURIComponent(
-    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 112 112" fill="%23666"><rect width="112" height="112" rx="56" fill="%23333"/><text x="56" y="62" text-anchor="middle" font-size="40" fill="%23888">?</text></svg>',
-  )
-
-// Nuxt Image 的 error 事件在不同加载路径下可能携带 string 或 Event
-function onAvatarError(e: string | Event) {
-  if (typeof e === 'string') return
-  const img = e.target as HTMLImageElement
-  img.src = AVATAR_FALLBACK
-}
 </script>
 
 <style lang="scss" scoped>

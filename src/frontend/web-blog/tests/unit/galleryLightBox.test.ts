@@ -203,7 +203,7 @@ describe('画廊灯箱媒体与失败反馈', () => {
     expect(frame.attributes('aria-busy')).toBe('true')
     await dialog.get('img').trigger('error')
     expect(frame.classes()).toContain('image-frame--error')
-    expect(frame.text()).toContain('图片暂时无法加载')
+    expect(frame.text()).toContain('图片加载失败')
     expect(frame.attributes('aria-busy')).toBe('false')
     expect(dialog.get('h2').text()).toBe(photo.title)
 
@@ -221,7 +221,7 @@ describe('画廊灯箱媒体与失败反馈', () => {
     expect(dialog.attributes('aria-label')).toBe('山间云海')
     expect(dialog.get('img').attributes('src')).toBe('https://images.example.com/cloud.webp')
     expect(frame.classes()).toContain('image-frame--loading')
-    expect(frame.text()).not.toContain('图片暂时无法加载')
+    expect(frame.text()).not.toContain('图片加载失败')
   })
 
   it('作品详情读取中和失败状态使用读屏反馈，重新读取只触发详情重试', async () => {

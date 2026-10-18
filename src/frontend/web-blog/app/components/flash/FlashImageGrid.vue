@@ -7,23 +7,23 @@
 
 <template>
   <div v-if="images.length > 0" class="flash-grid" :class="gridClass">
-    <button
-      v-for="(img, idx) in images"
-      :key="img + idx"
-      type="button"
-      :aria-label="`预览图片：${descriptions[idx] || idx + 1}`"
-      class="flash-grid__cell"
-      @click="open(idx)"
-    >
-      <img
+    <div v-for="(img, idx) in images" :key="img + idx" class="flash-grid__cell">
+      <CommonImageFrame
         :alt="descriptions?.[idx] || '闪念配图'"
         loading="lazy"
         class="flash-grid__img"
         :sizes="imageSizes"
-        :srcset="managedImageSrcset(img)"
         :src="img"
+        @state="updateImageFailure(img + idx, $event)"
       />
-    </button>
+      <button
+        v-if="img && !imageFailures[img + idx]"
+        type="button"
+        :aria-label="`预览图片：${descriptions[idx] || idx + 1}`"
+        class="flash-grid__preview"
+        @click="open(idx)"
+      />
+    </div>
 
     <ClientOnly>
       <FlashImageLightBox
@@ -39,8 +39,6 @@
 </template>
 
 <script setup lang="ts">
-import { managedImageSrcset } from '~/utils/managedImage'
-
 const props = withDefaults(
   defineProps<{
     images: string[]
@@ -51,6 +49,12 @@ const props = withDefaults(
 
 const lightBoxVisible = ref(false)
 const currentIndex = ref(0)
+// 独立预览按钮在失败时退让给重试，键盘和指针都不会误开灯箱。
+const imageFailures = ref<Record<string, boolean>>({})
+function updateImageFailure(key: string, state: 'loading' | 'ready' | 'error' | 'empty') {
+  // 重试期间保留反馈与焦点，成功后才恢复预览入口。
+  if (state !== 'loading') imageFailures.value[key] = state === 'error'
+}
 
 const gridClass = computed(() => {
   const len = props.images.length
@@ -101,6 +105,7 @@ function open(idx: number) {
   }
 }
 .flash-grid__cell {
+  position: relative;
   border: 0;
   padding: 0;
 }
@@ -110,13 +115,15 @@ function open(idx: number) {
   border-radius: $radius-sm;
   overflow: hidden;
   background: var(--surface-2);
-  cursor: var(--interaction-cursor, zoom-in);
 }
 
 .flash-grid__img {
   width: 100%;
   height: 100%;
-  object-fit: cover;
+  max-height: 280px;
+}
+
+.flash-grid__img :deep(.image-frame__image) {
   transition: transform 0.3s ease;
   @media (prefers-reduced-motion: reduce) {
     transition: none;
@@ -124,6 +131,23 @@ function open(idx: number) {
 
   .flash-grid__cell:hover & {
     transform: scale(1.04);
+  }
+}
+
+.flash-grid__preview {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  padding: 0;
+  border: 0;
+  border-radius: inherit;
+  background: transparent;
+  cursor: var(--interaction-cursor, zoom-in);
+
+  &:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: -3px;
   }
 }
 </style>

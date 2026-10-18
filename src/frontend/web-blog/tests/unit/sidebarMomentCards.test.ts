@@ -2,7 +2,7 @@
  * @file sidebarMomentCards.test.ts
  * @description 朋友圈侧栏卡片的空数据、不可用统计、图片失败与可访问交互回归
  */
-import { afterEach, describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
 import MomentPhotoWallCard from '../../app/components/sidebar/MomentPhotoWallCard.vue'
 import MomentInteractionCard from '../../app/components/sidebar/MomentInteractionCard.vue'
@@ -34,9 +34,15 @@ const topics = [
   { name: '阅读', icon: 'lucide:book-open', color: '#b45309', count: 4, description: '读过的书与感想' },
 ]
 
+beforeEach(() => {
+  // happy-dom 不解码图片，未加载的节点会被当作已完成的失败图；由用例显式派发失败事件。
+  vi.spyOn(HTMLImageElement.prototype, 'complete', 'get').mockReturnValue(false)
+})
+
 afterEach(() => {
   wrappers.splice(0).forEach((wrapper) => wrapper.unmount())
   hosts.splice(0).forEach((host) => host.remove())
+  vi.restoreAllMocks()
 })
 
 function mountHost() {
@@ -99,14 +105,17 @@ describe('朋友圈精选照片墙', () => {
     expect(items[1]!.classes()).not.toContain('is-featured')
     expect(photos[0]!.attributes()).toMatchObject({ alt: '照片 1', sizes: '180px', loading: 'lazy' })
     expect(photos[8]!.attributes()).toMatchObject({ alt: '照片 9', sizes: '90px', loading: 'lazy' })
-    await items[0]!.trigger('click')
-    await items[8]!.trigger('click')
+    const entries = wrapper.findAll('.moment-photo-wall__open')
+    expect(entries).toHaveLength(9)
+    await entries[0]!.trigger('click')
+    await entries[8]!.trigger('click')
     expect(wrapper.emitted('select-moment')).toEqual([['moment-1'], ['moment-9']])
   })
 
   it('照片入口使用有名称的原生按钮，可获得键盘焦点且不会提交外围表单', async () => {
     const wrapper = await photoWall([{ src: mediaSrc, momentId: 'moment-focus' }])
-    const entry = wrapper.get<HTMLElement>('.moment-photo-wall__item')
+    // 入口按钮与图片失败时的重试按钮同级，避免按钮嵌套。
+    const entry = wrapper.get<HTMLElement>('.moment-photo-wall__item > .moment-photo-wall__open')
     // 原生按钮由浏览器提供 Enter/空格激活；DOM 单测验证语义和焦点，不伪造键盘默认行为。
     expect(entry.element.tagName).toBe('BUTTON')
     expect(entry.attributes('type')).toBe('button')
@@ -116,14 +125,18 @@ describe('朋友圈精选照片墙', () => {
     expect(document.activeElement).toBe(entry.element)
   })
 
-  it('图片加载失败后保留原地址与替代文本，动态入口仍然可用', async () => {
+  it('图片加载失败后显示带替代文本的重试，重试沿用原地址，动态入口仍然可用', async () => {
     const wrapper = await photoWall([{ src: mediaSrc, momentId: 'moment-error' }])
     const photo = wrapper.get('img')
     await photo.trigger('error')
+    // 失败占位替换破图，替代文本进入重试按钮名称；重试不选择动态。
+    const retry = wrapper.get('button[aria-label="图片加载失败，重试：照片 1"]')
+    await retry.trigger('click')
     expect(wrapper.get('img').attributes('src')).toBe(mediaSrc)
     expect(wrapper.get('img').attributes('alt')).toBe('照片 1')
     expect(wrapper.emitted('select-moment')).toBeUndefined()
-    await wrapper.get('.moment-photo-wall__item').trigger('click')
+    await wrapper.get('img').trigger('error')
+    await wrapper.get('.moment-photo-wall__open').trigger('click')
     expect(wrapper.emitted('select-moment')).toEqual([['moment-error']])
     await wrapper.setProps({ images: [] })
     expect(wrapper.find('img').exists()).toBe(false)
