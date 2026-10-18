@@ -28,9 +28,11 @@ export default defineEventHandler(async (event) => {
     .map((note) => {
       const link = `${site}/flash/${encodeURIComponent(note.id)}`
       const categories = (note.tags ?? []).map((tag) => `<category>${escapeXml(tag)}</category>`).join('')
+      // 闪念是纯文本；XML 解码后的描述仍须安全，不能让阅读器把原文当成 HTML 标签。
+      const description = escapeXml(note.content)
       return `<item><title>${escapeXml(feedTitle(note.content))}</title>
 <link>${escapeXml(link)}</link><guid isPermaLink="true">${escapeXml(link)}</guid>
-<description>${escapeXml(note.content)}</description><pubDate>${new Date(note.createdAt).toUTCString()}</pubDate>
+<description>${escapeXml(description)}</description><pubDate>${new Date(note.createdAt).toUTCString()}</pubDate>
 <dc:creator>${escapeXml(creator)}</dc:creator>${categories}</item>`
     })
     .join('\n')
