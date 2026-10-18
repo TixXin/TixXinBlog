@@ -7,6 +7,9 @@
 
 import type { VisitorSubmissionFields } from '~/features/visitor/types'
 
+/** 评论审核状态：与文章/朋友圈评论同一取值；pending 只在提交者本机可见 */
+export type FlashCommentStatus = 'published' | 'pending' | 'hidden'
+
 /** 单条评论 */
 export interface FlashComment {
   /** 评论 id */
@@ -21,6 +24,16 @@ export interface FlashComment {
   content: string
   /** 创建时间 ISO 字符串 */
   createdAt: string
+  /** 审核状态；本地演示数据缺省视为已发布 */
+  moderationStatus?: FlashCommentStatus
+}
+
+/** 后台跨闪念审核列表项，与后端 GET /admin/flashes/comments 对齐 */
+export interface ManagedFlashComment extends FlashComment {
+  moderationStatus: FlashCommentStatus
+  flashId: string
+  flashContent: string
+  flashStatus: 'draft' | 'published' | 'archived'
 }
 
 /** 闪念类型：灵感 / 待办 / 随记 —— 与 FlashEditor 顶部 mood 切换一致 */
@@ -48,7 +61,9 @@ export interface FlashNote {
   /** 点赞数 */
   likes: number
   liked?: boolean
-  /** 评论列表 */
+  /** 已发布评论数（后端口径，不含待审与隐藏）；本地演示数据缺省时按评论列表计算 */
+  commentCount?: number
+  /** 评论列表：公开读取为已发布评论及当前访客本人的待审评论 */
   comments: FlashComment[]
   /** 是否置顶（在列表中前置展示） */
   isPinned?: boolean

@@ -39,6 +39,7 @@ export const overviewDomains = [
 export const overviewTasks = [
   { key: 'pendingComments', label: '文章评论待审核', to: '/admin/comments?status=pending' },
   { key: 'pendingMomentComments', label: '朋友圈评论待审核', to: '/admin/moment-comments?status=pending' },
+  { key: 'pendingFlashComments', label: '闪念评论待审核', to: '/admin/flash-comments?status=pending' },
   { key: 'pendingGuestbook', label: '留言待审核', to: '/admin/guestbook?status=pending' },
   { key: 'unanswered', label: '文章评论待回复', to: '/admin/comments?unanswered=true' },
   { key: 'unansweredGuestbook', label: '留言待回复', to: '/admin/guestbook?unanswered=true' },

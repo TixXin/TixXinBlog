@@ -6,6 +6,7 @@ export const adminNavigation = [
   { path: '/admin/posts', label: '文章管理', icon: 'lucide:files' },
   { path: '/admin/comments', label: '评论管理', icon: 'lucide:messages-square' },
   { path: '/admin/flashes', label: '闪念管理', icon: 'lucide:lightbulb' },
+  { path: '/admin/flash-comments', label: '闪念评论', icon: 'lucide:message-square-dot' },
   { path: '/admin/moments', label: '朋友圈管理', icon: 'lucide:messages-square' },
   { path: '/admin/moment-comments', label: '朋友圈评论', icon: 'lucide:message-square' },
   { path: '/admin/guestbook', label: '留言管理', icon: 'lucide:message-circle' },

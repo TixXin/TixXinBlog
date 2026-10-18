@@ -23,6 +23,7 @@ import type {
   FlashType,
 } from '~/features/flash/types'
 import { summarizeFlashNotes } from '~/features/flash/overview'
+import { appendComment, withoutComment } from '~/features/flash/comments'
 import { defaultFlashNoteSeeds, FLASH_SEEDS_VERSION } from '~/features/flash/mock'
 import { mockOwnerUser } from '~/features/auth/mock'
 import {
@@ -497,9 +498,7 @@ export function useFlashNotes() {
       authorAvatar,
       content,
     })
-    acceptWrite(owner, (current) =>
-      current.map((n) => (n.id === noteId ? { ...n, comments: [...n.comments, created] } : n)),
-    )
+    acceptWrite(owner, (current) => current.map((n) => (n.id === noteId ? appendComment(n, created) : n)))
     return created
   }
 
@@ -510,9 +509,7 @@ export function useFlashNotes() {
   async function removeComment(noteId: string, commentId: string): Promise<boolean> {
     const owner = ownerKey.value
     await repo.removeComment(noteId, commentId)
-    acceptWrite(owner, (current) =>
-      current.map((n) => (n.id === noteId ? { ...n, comments: n.comments.filter((c) => c.id !== commentId) } : n)),
-    )
+    acceptWrite(owner, (current) => current.map((n) => (n.id === noteId ? withoutComment(n, commentId) : n)))
     return true
   }
 

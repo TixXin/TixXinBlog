@@ -1,6 +1,6 @@
 <!--
   @file flashes.vue
-  @description 后台闪念管理，复用闪念编辑器与现有管理员接口。
+  @description 后台闪念管理，复用闪念编辑器与现有管理员接口；评论面板标注审核状态，审核入口在闪念评论页。
 -->
 <template>
   <section class="admin-flashes">
@@ -54,6 +54,7 @@
         <h2>闪念评论（{{ commentNote.comments.length }}）</h2>
         <p class="admin-flashes__content">{{ commentNote.content }}</p>
         <button type="button" :disabled="working" @click="commentNote = null">关闭评论</button>
+        <NuxtLink to="/admin/flash-comments">审核闪念评论</NuxtLink>
         <p v-if="!commentNote.comments.length">暂无评论</p>
         <p v-if="commentTargetMessage" role="status">{{ commentTargetMessage }}</p>
         <ul>
@@ -66,6 +67,7 @@
           >
             <strong>{{ comment.authorName }}</strong
             ><time>{{ formatDate(comment.createdAt) }}</time>
+            <span> · {{ commentLabels[comment.moderationStatus ?? 'published'] }}</span>
             <p>{{ comment.content }}</p>
             <button type="button" :disabled="working" @click="removeComment(comment.id)">删除评论</button>
           </li>
@@ -166,6 +168,7 @@ watch(commentNote, async () => {
   target?.focus({ preventScroll: true })
   target?.scrollIntoView({ block: 'center', behavior: 'instant' })
 })
+const commentLabels = { published: '已公开', pending: '待审核', hidden: '已隐藏' }
 function formatDate(value: string) {
   return new Date(value).toLocaleString('zh-CN', { hour12: false })
 }
