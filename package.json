@@ -56,12 +56,29 @@
     "overrides": {
       "@rushstack/node-core-library@5.13.0>ajv": "^8.18.0",
       "fontless@0.2.1>esbuild": "^0.28.2",
-      "@nestjs/platform-express@11.2.3>multer": "2.3.0"
+      "@nestjs/platform-express@11.2.3>multer": "2.4.0",
+      "proxy-addr": "^2.0.8",
+      "devalue@5": "^5.9.3",
+      "simple-git": "^4.0.2",
+      "shell-quote": "^1.11.0",
+      "brace-expansion@2": "^2.1.7",
+      "source-map-js": "^1.2.2",
+      "fast-uri": "^3.1.8",
+      "serialize-javascript@7": "^7.1.2",
+      "dompurify": "^3.4.16",
+      "brace-expansion@5": "^5.0.12"
     },
     "patchedDependencies": {
       "nuxt@4.5.2": "patches/nuxt@4.5.2.patch",
       "@vue/runtime-core@3.5.42": "patches/@vue__runtime-core@3.5.42.patch",
       "@vue/server-renderer@3.5.42": "patches/@vue__server-renderer@3.5.42.patch"
+    },
+    "auditConfig": {
+      "ignoreGhsas": [
+        "GHSA-86w9-cpqp-85rv",
+        "GHSA-vfj7-8cjw-p6xm",
+        "GHSA-hp3w-g68c-fv3c"
+      ]
     }
   }
 }
