@@ -1,5 +1,5 @@
 /** @file outline.ts @description Markdown 章节与源码位置，使用解析器行映射排除代码围栏并区分同名标题。 */
-import MarkdownIt from 'markdown-it'
+import { parsePostMarkdown } from '~/utils/postMarkdown'
 
 export interface PostHeading {
   text: string
@@ -8,12 +8,9 @@ export interface PostHeading {
   offset: number
 }
 
-const parser = new MarkdownIt({ html: false, linkify: true })
-
-export function postHeadings(raw: string): PostHeading[] {
+export function postHeadings(raw: string, tokens = parsePostMarkdown(raw)): PostHeading[] {
   const starts = [0]
   for (const match of raw.matchAll(/\r\n|\r|\n/g)) starts.push(match.index + match[0].length)
-  const tokens = parser.parse(raw, {})
   return tokens.flatMap((token, index) => {
     if (token.type !== 'heading_open' || !token.map) return []
     const inline = tokens[index + 1]
