@@ -15,9 +15,16 @@ export function useKeyboardShortcuts(search?: { open: () => void }) {
 
   const tabPalette = useTabCommandPalette()
   const { settings: tabSettings } = useTabSettings()
+  const isShortcutHelpOpen = ref(false)
+
+  // 页面切换后释放帮助层及其焦点约束，后台不继承公开站点的帮助状态。
+  watch(
+    () => route.path,
+    () => (isShortcutHelpOpen.value = false),
+  )
 
   async function handleKeydown(e: KeyboardEvent) {
-    if (e.isComposing || e.getModifierState('AltGraph')) return
+    if (e.defaultPrevented || e.isComposing || e.getModifierState('AltGraph') || isShortcutHelpOpen.value) return
     // Ctrl/Cmd + K: 唤起搜索（优先响应，不受输入框限制）
     // 在 /tabs 路由下切换到标签页命令面板，其它路由走通用 searchModal
     if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
@@ -30,12 +37,33 @@ export function useKeyboardShortcuts(search?: { open: () => void }) {
       return
     }
 
-    // 忽略在输入框内的按键
+    // 编辑区域的后代节点也属于输入目标；选择框与自定义输入组件同样保留原有键盘行为。
+    const target = e.target instanceof HTMLElement ? e.target : null
     if (
-      e.target instanceof HTMLInputElement ||
-      e.target instanceof HTMLTextAreaElement ||
-      (e.target as HTMLElement).isContentEditable
+      target?.isContentEditable ||
+      target?.closest(
+        'input, textarea, select, [contenteditable]:not([contenteditable="false"]), [role="textbox"], [role="combobox"]',
+      )
     ) {
+      return
+    }
+
+    // 允许 Shift+/ 产生的问号，但不抢占组合键、后台或已有模态层的交互。
+    if (e.key === '?') {
+      if (
+        e.ctrlKey ||
+        e.metaKey ||
+        e.altKey ||
+        e.repeat ||
+        route.path === '/admin' ||
+        route.path.startsWith('/admin/') ||
+        isDrawerOpen.value ||
+        document.querySelector('[aria-modal="true"], dialog[open]')
+      ) {
+        return
+      }
+      e.preventDefault()
+      isShortcutHelpOpen.value = true
       return
     }
 
@@ -93,4 +121,6 @@ export function useKeyboardShortcuts(search?: { open: () => void }) {
   onBeforeUnmount(() => {
     window.removeEventListener('keydown', handleKeydown)
   })
+
+  return { isShortcutHelpOpen }
 }

@@ -6,7 +6,7 @@ import { mockNuxtImport } from '@nuxt/test-utils/runtime'
 import App from '../../app/app.vue'
 import { PageRequestCancellation } from '../../app/utils/pageRequestCancellation'
 
-mockNuxtImport('useKeyboardShortcuts', () => () => {})
+mockNuxtImport('useKeyboardShortcuts', () => () => ({ isShortcutHelpOpen: ref(false) }))
 mockNuxtImport('useAppLoading', () => () => ({
   isLoading: ref(false),
   isThemeSwitchLoading: ref(false),
