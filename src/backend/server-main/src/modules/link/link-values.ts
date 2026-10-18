@@ -5,7 +5,7 @@ import type { SaveLinkDto } from './link.dto'
 export function linkUrl(value: string) {
   const input = value.trim()
   if (
-    !/^https?:\/\//i.test(input) ||
+    !/^https?:\/\/[^/]/i.test(input) ||
     /[\\\s]/u.test(input) ||
     [...input].some((character) => character.charCodeAt(0) < 32 || character.charCodeAt(0) === 127)
   )
