@@ -60,7 +60,7 @@ JSON.stringify({ left: frame.origin.x, top: primaryHeight - frame.origin.y - fra
 
 export function terminalAppleScript(command, service, bounds) {
   if (!Object.hasOwn(labels, service)) throw new Error('服务必须为 api 或 web')
-  if (!Array.isArray(bounds) || bounds.length !== 4 || !bounds.every(Number.isFinite))
+  if (!Array.isArray(bounds) || bounds.length !== 4 || !Array.from(bounds).every(Number.isFinite))
     throw new Error('终端窗口坐标无效')
   const title = appleQuote(`TixXinBlog | ${labels[service]}`)
   // 服务结束后窗口保留错误输出；下次启动前只关闭同一服务且已无运行进程的旧窗口，避免窗口堆积。
