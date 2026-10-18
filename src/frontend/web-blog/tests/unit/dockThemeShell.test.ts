@@ -18,11 +18,14 @@ mockNuxtImport('useSiteSettings', () => () => ({
   available: ref(true),
   refresh: vi.fn().mockResolvedValue(undefined),
 }))
+// 页脚文案、备案号与链接来自站点设置，这里按 useSiteInfo 的展示结构提供。
 mockNuxtImport('useSiteInfo', () => () => ({
   siteName: ref('岛上来信'),
+  copyrightText: ref('© 2026 岛上来信. All rights reserved.'),
+  icp: ref({ number: '沪ICP备2026001234号', href: 'https://beian.miit.gov.cn/' }),
   footerLinks: ref([
-    { label: '关于', href: '/about' },
-    { label: '源码', href: 'https://github.com/TixXin/TixXinBlog', external: true },
+    { label: '关于', href: '/about', external: false, newTab: false },
+    { label: '源码', href: 'https://github.com/TixXin/TixXinBlog', external: true, newTab: true },
   ]),
   poweredBy: ref([{ label: 'Nuxt', href: 'https://nuxt.com' }]),
   siteStatus: ref({ statusText: '站点资料已同步' }),
@@ -175,6 +178,9 @@ describe('Dock 主题外壳', () => {
     expect(wrapper.findAll('footer')).toHaveLength(1)
     const footer = wrapper.get('footer')
     expect(footer.get('.footer__copyright').text()).toContain('岛上来信')
+    const icp = footer.get('a.footer__icp')
+    expect(icp.text()).toBe('沪ICP备2026001234号')
+    expect(icp.attributes('href')).toBe('https://beian.miit.gov.cn/')
     const links = footer.get('nav[aria-label="页脚链接"]')
     expect(links.get('a[href="/about"]').text()).toBe('关于')
     const external = links.get('a[href="https://github.com/TixXin/TixXinBlog"]')
