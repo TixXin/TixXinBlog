@@ -151,13 +151,15 @@ async function onFile(e: Event) {
 }
 
 async function onConfirm() {
-  if (!payload.value) return
+  const submitted = payload.value
+  if (!submitted || importing.value) return
   importing.value = true
   try {
-    const ok = await importBulk(payload.value, mode.value)
+    const ok = await importBulk(submitted, mode.value)
     if (ok) {
-      success(`已导入 ${payload.value.categories.length} 个分类、${payload.value.bookmarks.length} 个书签`)
-      close()
+      success(`已导入 ${submitted.categories.length} 个分类、${submitted.bookmarks.length} 个书签`)
+      // 导入期间可能关闭窗口或选择另一份文件，只关闭本次提交对应的预览。
+      if (payload.value === submitted) close()
     } else {
       toastError('导入失败，请先登录后再试')
     }
