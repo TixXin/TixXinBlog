@@ -156,6 +156,8 @@ it('引用页按返回的分页大小判断下一页，并识别平台订阅和�
     items: [
       { kind: 'subscription', title: '云端工作台', url: '/admin/subscriptions' },
       { kind: 'revision', title: '山林随笔', url: '/admin/posts/post-1', revision: 4 },
+      // 后端当前内容引用的 revision 列为 null
+      { kind: 'post', title: '秋日来信', url: '/admin/posts/post-2', revision: null },
     ],
   })
   await state.showReferences('media-1')
@@ -163,6 +165,8 @@ it('引用页按返回的分页大小判断下一页，并识别平台订阅和�
   const panel = wrapper.get('.media-library__references')
   expect(panel.text()).toContain('平台订阅图标')
   expect(panel.text()).toContain('文章历史版本 4')
+  expect(panel.text()).toContain('秋日来信 · 当前文章')
+  expect(panel.text()).not.toContain('null')
   expect(panel.get('.media-library__pagination span').text()).toBe('1 / 2')
   const next = panel.findAll('button').find((button) => button.text() === '下一页引用')!
   expect(next.attributes('disabled')).toBeUndefined()

@@ -364,9 +364,11 @@ const removalStatusLabels: Record<MediaRemovalResult['status'], string> = {
   referenced: '因引用而保留',
   failed: '处理失败',
 }
+// 只有历史版本引用带版本号；当前内容的引用记录 revision 为 null，不能拼进标签。
 function referenceLabel(item: MediaReferences['items'][number]) {
   const label = referenceLabels[item.kind]
-  return item.revision === undefined ? label : `${label} ${item.revision}`
+  const versioned = item.kind === 'revision' || item.kind === 'site-revision'
+  return versioned && item.revision != null ? `${label} ${item.revision}` : label
 }
 function openReferences(id: string, event: Event) {
   referenceTrigger = event.currentTarget instanceof HTMLElement ? event.currentTarget : null

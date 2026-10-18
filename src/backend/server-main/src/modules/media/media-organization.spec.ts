@@ -67,7 +67,8 @@ describe('媒体整理契约', () => {
   })
   it('当前与历史引用数量原样返回，导航使用已有正式业务上下文', async () => {
     const items = [
-      { kind: 'post', post: { id: 1, title: '文章' } },
+      // 当前内容引用的 revision 列在数据库中为 null
+      { kind: 'post', revision: null, post: { id: 1, title: '文章' } },
       { kind: 'revision', revision: 2, post: { id: 1, title: '文章' } },
       { kind: 'comment', comment: { id: 9 }, post: { id: 1, title: '文章' } },
       { kind: 'flash', flashNote: { id: 'flash-a', content: '闪念' } },
@@ -104,6 +105,7 @@ describe('媒体整理契约', () => {
       '/admin/site',
       '/admin/site',
     ])
+    expect(result.items[0]).toMatchObject({ kind: 'post', revision: null })
     expect(result.items[1]).toMatchObject({ kind: 'revision', revision: 2 })
     expect(result.items[11]).toMatchObject({ title: '平台订阅' })
     expect(result.items[12]).toMatchObject({ title: '图片提示词' })
