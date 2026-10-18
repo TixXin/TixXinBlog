@@ -6,7 +6,7 @@
 -->
 
 <template>
-  <div class="main-inner">
+  <div class="main-inner article-detail-page">
     <Teleport to="body">
       <CommonReadingProgress :progress="progress" />
     </Teleport>
