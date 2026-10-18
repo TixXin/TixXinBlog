@@ -80,6 +80,13 @@ useHead(() => ({
     { rel: 'apple-touch-icon', href: '/apple-touch-icon.png' },
     { rel: 'manifest', href: '/site.webmanifest' },
     { rel: 'alternate', type: 'application/rss+xml', title: `${siteSettings.value.name} RSS`, href: '/rss.xml' },
+    { rel: 'alternate', type: 'application/atom+xml', title: `${siteSettings.value.name} Atom`, href: '/atom.xml' },
+    {
+      rel: 'alternate',
+      type: 'application/feed+json',
+      title: `${siteSettings.value.name} JSON Feed`,
+      href: '/feed.json',
+    },
     { rel: 'alternate', type: 'application/rss+xml', title: `${siteSettings.value.name} 闪念 RSS`, href: '/flash.xml' },
     {
       rel: 'alternate',

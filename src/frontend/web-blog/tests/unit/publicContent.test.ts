@@ -294,8 +294,8 @@ describe('文章订阅正文', () => {
     renderMarkdown.mockReturnValue('<a href="../archive">归档</a>')
 
     await expect(
-      content.publicArticleFeedHtml(event(), '中文/编号', 'https://blog.example.test/articles/story'),
-    ).resolves.toBe('<a href="https://blog.example.test/archive">归档</a>')
+      content.publicArticleFeedContent(event(), '中文/编号', 'https://blog.example.test/articles/story'),
+    ).resolves.toMatchObject({ html: '<a href="https://blog.example.test/archive">归档</a>' })
     expect(upstream.mock.calls[0]?.[0]).toBe(
       'https://api.example.test/api/v1/posts/%E4%B8%AD%E6%96%87%2F%E7%BC%96%E5%8F%B7',
     )
@@ -304,18 +304,24 @@ describe('文章订阅正文', () => {
 
   it('没有原文时返回空串供调用方采用摘要，不渲染不存在的正文', async () => {
     upstream.mockResolvedValue({ code: 0, data: { title: '旧日札记' } })
-    await expect(content.publicArticleFeedHtml(event(), '1', 'https://blog.example.test/articles/1')).resolves.toBe('')
+    await expect(
+      content.publicArticleFeedContent(event(), '1', 'https://blog.example.test/articles/1'),
+    ).resolves.toMatchObject({ html: '' })
     expect(renderMarkdown).not.toHaveBeenCalled()
   })
 
-  it('正文读取或渲染失败时返回摘要后备标记', async () => {
+  it('正文读取或渲染失败时返回空结果，由订阅回退摘要', async () => {
     upstream.mockRejectedValueOnce(new Error('正文上游不可用'))
-    await expect(content.publicArticleFeedHtml(event(), '1', 'https://blog.example.test/articles/1')).resolves.toBe('')
+    await expect(
+      content.publicArticleFeedContent(event(), '1', 'https://blog.example.test/articles/1'),
+    ).resolves.toBeUndefined()
     upstream.mockResolvedValueOnce({ code: 0, data: { title: '札记', contentRaw: '正文' } })
     renderMarkdown.mockImplementationOnce(() => {
       throw new Error('渲染失败')
     })
-    await expect(content.publicArticleFeedHtml(event(), '2', 'https://blog.example.test/articles/2')).resolves.toBe('')
+    await expect(
+      content.publicArticleFeedContent(event(), '2', 'https://blog.example.test/articles/2'),
+    ).resolves.toBeUndefined()
   })
 })
 
