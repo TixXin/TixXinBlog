@@ -5,7 +5,7 @@
 <template>
   <ul class="audit-log">
     <li v-for="item in items" :key="item.id" :data-state="item.state">
-      <header>
+      <header class="audit-log__header">
         <h2>{{ item.actionLabel }}</h2>
         <strong>{{ auditStateLabels[item.state] }}</strong>
       </header>
@@ -55,8 +55,10 @@ function date(value: string) {
 .audit-log {
   list-style: none;
   padding: 0;
+  min-width: 0;
 }
 li {
+  min-width: 0;
   border: 1px solid var(--border);
   background: var(--surface-2);
   padding: 1rem;
@@ -64,13 +66,14 @@ li {
   margin-block: 1rem;
   overflow-wrap: anywhere;
 }
-header {
+.audit-log__header {
   display: flex;
   flex-wrap: wrap;
   gap: 1rem;
   justify-content: space-between;
 }
 h2 {
+  min-width: 0;
   font-size: 1.1rem;
 }
 p {

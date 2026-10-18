@@ -68,7 +68,7 @@
             预览批量操作
           </button>
         </div>
-        <div class="admin-posts__table">
+        <div class="admin-posts__table" role="region" aria-label="文章列表，宽屏可横向滚动" tabindex="0">
           <table>
             <thead>
               <tr>
@@ -346,6 +346,10 @@ onBeforeUnmount(() => {
 })
 </script>
 <style scoped lang="scss">
+.admin-posts {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
 .admin-posts h1 {
   font-size: 1.6rem;
   margin-bottom: 1rem;
@@ -366,11 +370,17 @@ onBeforeUnmount(() => {
 .admin-posts button,
 .admin-posts input,
 .admin-posts select {
+  min-width: 0;
+  max-width: 100%;
   background: var(--surface-2);
   color: var(--text-main);
   border: 1px solid var(--border);
   border-radius: 0.4rem;
   padding: 0.5rem;
+}
+.admin-posts button {
+  white-space: normal;
+  overflow-wrap: anywhere;
 }
 .admin-posts small {
   display: block;
@@ -378,7 +388,13 @@ onBeforeUnmount(() => {
   margin-top: 0.4rem;
 }
 .admin-posts__table {
+  min-width: 0;
+  max-width: 100%;
   overflow-x: auto;
+}
+.admin-posts__table:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
 }
 .admin-posts table {
   border-collapse: collapse;
@@ -391,6 +407,11 @@ onBeforeUnmount(() => {
   text-align: left;
 }
 @media (max-width: 700px) {
+  .admin-posts__filters > *,
+  .admin-posts__batch select,
+  .admin-posts__batch button {
+    width: 100%;
+  }
   .admin-posts table,
   .admin-posts tbody,
   .admin-posts tr,

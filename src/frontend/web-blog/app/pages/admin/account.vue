@@ -13,7 +13,7 @@
         最近登录：{{ new Date(profile.lastLoginAt).toLocaleString('zh-CN', { hour12: false }) }}
       </p>
       <p v-if="loadError" role="alert">{{ loadError }} <button type="button" @click="load">重试</button></p>
-      <form @submit.prevent="changePassword">
+      <form class="account__password" @submit.prevent="changePassword">
         <h2>修改密码</h2>
         <p>使用 12–128 位的新密码。成功后当前及其他设备的旧登录均失效，需要重新登录。</p>
         <fieldset :disabled="pending || sessions.pending.value || !profile || !isLoggedIn">
@@ -122,7 +122,9 @@ onBeforeUnmount(() => {
 </script>
 <style scoped lang="scss">
 .account {
+  min-width: 0;
   max-width: 680px;
+  overflow-wrap: anywhere;
 }
 h1 {
   font-size: 1.6rem;
@@ -137,7 +139,7 @@ p {
   color: var(--text-muted);
   margin: 0.75rem 0;
 }
-form {
+.account__password {
   border: 1px solid var(--border);
   background: var(--surface-2);
   padding: 1.5rem;
@@ -146,12 +148,14 @@ form {
 }
 fieldset {
   display: grid;
+  min-width: 0;
   gap: 1rem;
   padding: 0;
   border: 0;
 }
 label {
   display: grid;
+  min-width: 0;
   gap: 0.5rem;
 }
 input,
@@ -162,11 +166,19 @@ button {
   color: var(--text-main);
   background: var(--surface-1);
   min-width: 0;
+  max-width: 100%;
 }
 button {
   cursor: var(--interaction-cursor, pointer);
+  white-space: normal;
+  overflow-wrap: anywhere;
 }
 fieldset:disabled {
   opacity: 0.6;
+}
+@media (max-width: 760px) {
+  .account__password {
+    padding: 1rem;
+  }
 }
 </style>

@@ -179,7 +179,7 @@ it('引用页按返回的分页大小判断下一页，并识别平台订阅和�
   expect(panel.text()).toContain('文章历史版本 4')
   expect(panel.text()).toContain('秋日来信 · 当前文章')
   expect(panel.text()).not.toContain('null')
-  expect(panel.get('.media-library__pagination span').text()).toBe('1 / 2')
+  expect(panel.get('.media-library__reference-pagination span').text()).toBe('1 / 2')
   const next = panel.findAll('button').find((button) => button.text() === '下一页引用')!
   expect(next.attributes('disabled')).toBeUndefined()
   await next.trigger('click')

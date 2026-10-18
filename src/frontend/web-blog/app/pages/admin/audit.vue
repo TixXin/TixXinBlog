@@ -9,7 +9,7 @@
       记录管理写入的操作者、对象、结果和提交字段，不保存密码、令牌或完整内容。提交字段表示本次请求携带的字段，不代表每个值都发生变化。
     </p>
     <ClientOnly>
-      <form @submit.prevent="navigate(1)">
+      <form class="admin-audit__filters" @submit.prevent="navigate(1)">
         <label
           >管理操作<select v-model="action">
             <option value="">全部操作</option>
@@ -40,9 +40,11 @@
       <p v-if="error" role="alert">{{ error }}</p>
       <AdminAuditLog :items="items" />
       <p v-if="!pending && !error && !items.length">暂无符合条件的审计记录</p>
-      <button type="button" :disabled="pending || page <= 1" @click="navigate(page - 1)">上一页记录</button
-      ><span> {{ page }} / {{ Math.max(1, Math.ceil(total / 20)) }} · 共 {{ total }} 条 </span
-      ><button type="button" :disabled="pending || page * 20 >= total" @click="navigate(page + 1)">下一页记录</button>
+      <nav class="admin-audit__pagination" aria-label="审计记录分页">
+        <button type="button" :disabled="pending || page <= 1" @click="navigate(page - 1)">上一页记录</button
+        ><span> {{ page }} / {{ Math.max(1, Math.ceil(total / 20)) }} · 共 {{ total }} 条 </span
+        ><button type="button" :disabled="pending || page * 20 >= total" @click="navigate(page + 1)">下一页记录</button>
+      </nav>
     </ClientOnly>
   </section>
 </template>
@@ -70,6 +72,16 @@ const {
 } = useAuditLogs()
 </script>
 <style scoped>
+.admin-audit {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.admin-audit__pagination {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem;
+}
 h1 {
   font-size: 1.6rem;
 }
@@ -77,7 +89,7 @@ p {
   margin-block: 0.75rem;
   color: var(--text-muted);
 }
-form {
+.admin-audit__filters {
   display: flex;
   flex-wrap: wrap;
   align-items: end;
@@ -86,6 +98,7 @@ form {
 }
 label {
   display: grid;
+  min-width: 0;
   gap: 0.5rem;
 }
 button,
@@ -97,8 +110,20 @@ input {
   border-radius: 0.5rem;
   padding: 0.6rem;
   max-width: 100%;
+  min-width: 0;
+  min-height: 44px;
+  box-sizing: border-box;
 }
 button:disabled {
   opacity: 0.5;
+}
+@media (max-width: 640px) {
+  .admin-audit__filters > label {
+    flex: 1 1 100%;
+  }
+  .admin-audit__filters input,
+  .admin-audit__filters select {
+    width: 100%;
+  }
 }
 </style>

@@ -149,6 +149,7 @@ const { data, pending, error, notice, busy, query, filter, load, mutate, isLogge
 <style scoped lang="scss">
 .admin-projects {
   display: grid;
+  min-width: 0;
   gap: 1rem;
   overflow-wrap: anywhere;
 }
@@ -186,6 +187,7 @@ label {
 input,
 select,
 button {
+  min-width: 0;
   max-width: 100%;
   min-height: 44px;
   padding: 0.5rem 0.7rem;
@@ -225,6 +227,15 @@ button:disabled {
   color: var(--text-muted);
 }
 @media (max-width: 600px) {
+  .admin-projects__filters > label,
+  .admin-projects__filters > button {
+    flex: 1 1 100%;
+  }
+  .admin-projects__filters input,
+  .admin-projects__filters select,
+  .admin-projects__filters button {
+    width: 100%;
+  }
   .admin-projects__list li {
     grid-template-columns: minmax(0, 1fr);
   }

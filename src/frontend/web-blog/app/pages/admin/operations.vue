@@ -3,7 +3,7 @@
   <section class="operations">
     <h1>运行状态</h1>
     <p>备份生成、完整性校验、传输和恢复演练分别记录；邮件接受也不等于收件人已经阅读。</p>
-    <nav>
+    <nav class="operations__toolbar" aria-label="运行状态操作">
       <NuxtLink to="/admin/notifications">互动通知</NuxtLink><NuxtLink to="/admin/maintenance">备份与维护</NuxtLink
       ><button type="button" :disabled="pending" @click="refresh">刷新状态</button>
     </nav>
@@ -72,7 +72,7 @@
           :disabled="!!working"
           @retry="retryTask"
         />
-        <nav aria-label="任务分页">
+        <nav class="operations__pagination" aria-label="任务分页">
           <NuxtLink v-if="page > 1" :to="{ query: { page: page - 1 } }">上一页</NuxtLink
           ><span>{{ page }} / {{ Math.max(1, Math.ceil(data.runtime.total / 20)) }}</span
           ><NuxtLink v-if="page * 20 < data.runtime.total" :to="{ query: { page: page + 1 } }">下一页</NuxtLink>
@@ -176,6 +176,7 @@ async function retryTask(task: OperationTask) {
 </script>
 <style scoped lang="scss">
 .operations {
+  min-width: 0;
   overflow-wrap: anywhere;
 }
 h1 {
@@ -192,12 +193,20 @@ p {
 [role='alert'] {
   color: var(--text-main);
 }
-nav {
+.operations__toolbar,
+.operations__pagination {
   display: flex;
   flex-wrap: wrap;
   gap: 1rem;
   margin-block: 1rem;
   align-items: center;
+}
+.operations__toolbar a,
+.operations__toolbar button,
+.operations__pagination a {
+  min-width: 0;
+  max-width: 100%;
+  min-height: 44px;
 }
 a {
   color: var(--accent);

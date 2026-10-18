@@ -10,7 +10,7 @@
     @cancel.prevent="close"
     @close="open = false"
   >
-    <header>
+    <header class="media-picker__toolbar">
       <h2 id="media-picker-title">选择媒体图片</h2>
       <button type="button" @click="close">关闭媒体选择器</button>
     </header>
@@ -64,17 +64,23 @@ function select(asset: MediaAsset) {
 .media-picker::backdrop {
   background: rgba(0, 0, 0, 0.6);
 }
-header {
+.media-picker__toolbar {
   display: flex;
+  flex-wrap: wrap;
   justify-content: space-between;
-  gap: 1rem;
+  gap: 0.75rem;
   align-items: center;
 }
 h2 {
+  min-width: 0;
   font-size: 1.25rem;
   font-weight: 600;
 }
 button {
+  min-width: 0;
+  max-width: 100%;
+  min-height: 44px;
+  white-space: normal;
   padding: 0.6rem;
   border: 1px solid var(--border);
   border-radius: 0.5rem;

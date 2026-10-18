@@ -133,6 +133,7 @@ const labels = { draft: '草稿', published: '已公开', withdrawn: '已撤回'
 <style scoped lang="scss">
 .admin-gallery {
   display: grid;
+  min-width: 0;
   gap: 1rem;
   overflow-wrap: anywhere;
 }
@@ -170,6 +171,7 @@ label {
 input,
 select,
 button {
+  min-width: 0;
   max-width: 100%;
   min-height: 44px;
   padding: 0.5rem 0.7rem;
@@ -199,6 +201,15 @@ button:disabled {
   white-space: pre-wrap;
 }
 @media (max-width: 600px) {
+  .admin-gallery__filters > label,
+  .admin-gallery__filters > button {
+    flex: 1 1 100%;
+  }
+  .admin-gallery__filters input,
+  .admin-gallery__filters select,
+  .admin-gallery__filters button {
+    width: 100%;
+  }
   .admin-gallery__list li {
     grid-template-columns: minmax(0, 1fr);
   }
