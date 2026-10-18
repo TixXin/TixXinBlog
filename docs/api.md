@@ -77,7 +77,7 @@
 | `GET /posts`、`GET /posts/metadata`                                                    | 公开列表、搜索、分页与真实目录聚合     |
 | `GET /posts/archive`                                                                   | 按 UTC 年份筛选的稳定分页归档          |
 | `GET /posts/:id`、`GET /posts/by-slug/:slug`                                           | 公开文章详情及地址解析                 |
-| `GET /posts/:id/navigation`                                                            | 前后文章，支持 `scope=all/folder`      |
+| `GET /posts/:id/navigation`                                                            | 前后文章，支持 `scope=all/folder/auto` |
 | `GET /posts/:id/related`                                                               | 规则相关文章                           |
 | `POST /posts/:id/like`、`POST /posts/:id/view`                                         | 访客点赞切换与去重浏览计数             |
 | `GET /posts/:id/interaction`                                                           | 当前访客互动状态，私有且不缓存         |
@@ -103,7 +103,7 @@
 
 文章公开列表只读取列表所需字段，正文检索仍由后端执行。
 
-`GET /posts/:id/navigation` 接受可选 `scope`：省略或 `all` 保持全站顺序，`folder` 只查询当前文章所属专栏，其他值返回 400。响应保持 `{ prev, next }`，每侧为文章摘要或 `null`；仅包含已发布且未回收文章，当前文章不可公开时返回 404。沿用发布时间、编号倒序的列表顺序：`prev` 是较新的最近一篇，`next` 是较旧的最近一篇，同发布时间按编号区分。`folder` 模式下当前文章无专栏或专栏内无其他公开文章时返回双 `null`，接口自身不回退全站。文章详情页有专栏时优先请求该模式并标注专栏名；仅当两侧均为空时回退全站，没有专栏则直接使用全站。专栏内只有一侧有相邻文章时保留另一侧为空；请求失败显示加载错误，不当作空结果回退。
+`GET /posts/:id/navigation` 接受可选 `scope`：省略或 `all` 保持全站顺序，`folder` 只查询当前文章所属专栏，`auto` 先查同专栏、专栏两侧均为空（或文章无专栏）时在同一请求内回退全站，其他值返回 400。响应为 `{ prev, next }`，每侧为文章摘要或 `null`；`auto` 另带 `fallback`，`true` 表示结果来自全站。仅包含已发布且未回收文章，当前文章不可公开时返回 404。沿用发布时间、编号倒序的列表顺序：`prev` 是较新的最近一篇，`next` 是较旧的最近一篇，同发布时间按编号区分。`folder` 模式下当前文章无专栏或专栏内无其他公开文章时返回双 `null`，接口自身不回退全站。文章详情页使用 `auto`：数字地址与详情并行请求，自定义地址在详情解析出编号后请求；`fallback` 为 `false` 且文章有专栏时按详情的专栏名标注，否则不标注。专栏内只有一侧有相邻文章时保留另一侧为空；请求失败显示加载错误，不当作空结果。
 
 评论与留言批量接口请求体为 `items: [{ id, revision }]`（1–100 条、编号不重复），审核另带 `status`；评论用 `POST`，留言用 `PATCH/DELETE`（删除的 JSON 体同样放 `items`）。整批在单个事务内执行，逐条校验版本：不存在或版本已变化的项跳过并在 `results[].reason` 返回 `not_found`/`conflict`，其余项照常生效；响应含 `successCount/failedCount`，评论删除另含级联回复在内的 `deleted`。批量审核只改选中项自身状态，以版本号代替单条接口的影响范围指纹；整批记一条汇总审计，评论使用 `comment.batch.moderate` / `comment.batch.delete`，留言使用 `guestbook.batch.moderate` / `guestbook.batch.delete`，后台显示对应的“批量审核/删除评论/留言”标签，部分失败记为 partial。已有单条动作和历史审计记录保持原有含义，不回填历史批量记录。
 

@@ -93,32 +93,33 @@ export async function useArticleDetail(id: string, options: { reuseLoaded?: bool
       const discoveryAbort = new AbortController()
       const requestSignal = AbortSignal.any([signal, requestScope.signal])
       const discoverySignal = AbortSignal.any([requestSignal, discoveryAbort.signal])
-      // 数字地址的推荐仍与详情并行；导航等详情确定专栏，自定义地址也复用解析后的数字 ID。
+      // 数字地址的推荐和上下篇都与详情并行；自定义地址等详情解析出数字 ID 后再读取。
+      // 上下篇用 auto 范围：服务端按文章专栏查找，专栏两侧为空时在同一请求内回退全站并标明。
       // 详情失败时中止并丢弃已发起的补充读取，错误仍由详情决定。
       const detailRead = fetchArticleDetail(base, id, requestSignal).catch((error: unknown) => {
         discoveryAbort.abort()
         throw error
       })
-      const relatedRead = isNumericArticleId(id)
+      const numeric = isNumericArticleId(id)
+      const relatedRead = numeric
         ? fetchRelatedPosts(base, id, discoverySignal)
         : detailRead.then((detail) => fetchRelatedPosts(base, detail.id, discoverySignal))
-      const navigationRead = detailRead.then(async (detail) => {
-        const folder = detail.category
-        if (folder.trim()) {
-          const adjacent = await fetchPostNavigation(base, detail.id, discoverySignal, 'folder')
-          if (adjacent.prev || adjacent.next) return { navigation: adjacent, folder }
-        }
-        // 只在专栏两侧都为空时回退；读取失败继续交给错误态，不混合两种范围的相邻文章。
-        return { navigation: await fetchPostNavigation(base, detail.id, discoverySignal), folder: null }
-      })
+      const navigationRead = numeric
+        ? fetchPostNavigation(base, id, discoverySignal, 'auto')
+        : detailRead.then((detail) => fetchPostNavigation(base, detail.id, discoverySignal, 'auto'))
       const discovery = Promise.allSettled([relatedRead, navigationRead])
       const detail = await detailRead
       const [related, adjacent] = await discovery
+      // 专栏标签取自详情；回退全站的结果不标注专栏。
+      const folder = detail.category.trim() ? detail.category : null
       return {
         detail,
         related: related.status === 'fulfilled' ? related.value : [],
-        navigation: adjacent.status === 'fulfilled' ? adjacent.value.navigation : { prev: null, next: null },
-        navigationFolder: adjacent.status === 'fulfilled' ? adjacent.value.folder : null,
+        navigation:
+          adjacent.status === 'fulfilled'
+            ? { prev: adjacent.value.prev, next: adjacent.value.next }
+            : { prev: null, next: null },
+        navigationFolder: adjacent.status === 'fulfilled' && !adjacent.value.fallback ? folder : null,
         discoveryError: related.status === 'rejected' || adjacent.status === 'rejected',
       }
     })
