@@ -39,7 +39,7 @@ export const DEFAULT_LAYOUT_THEME_ID = 'nexus'
 export const themeHostConfigs: Record<string, ThemeHostConfig> = generatedHostConfigs
 
 export function isKnownLayoutThemeId(id: string): boolean {
-  return id in themeHostConfigs
+  return Object.hasOwn(themeHostConfigs, id)
 }
 
 export function ensureKnownThemeId(id: string): string {
