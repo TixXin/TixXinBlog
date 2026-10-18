@@ -4,7 +4,7 @@
  * @author TixXin
  * @since 2026-07-20
  *
- * 仅在 runtimeConfig.public.postUseMockRepo === false 时被调用(见 usePostList / useArticleDetail)。
+ * 公开列表和详情仅在 postUseMockRepo === false 时调用；草稿预览始终访问真实接口。
  * 后端响应契约见 docs/api.md。
  */
 
@@ -18,10 +18,12 @@ import type {
   PostPage,
   PostNavigation,
   PostNavigationScope,
+  PostPreviewDetail,
   RelatedPost,
   TocItem,
 } from './types'
 import type { CommentDraft, CommentList } from './commentController'
+import { postPreviewError, postPreviewToken } from './preview'
 import { ensureVisitorId } from '~/utils/visitorId'
 
 /** 后端统一响应包装，业务错误与 HTTP 状态分别处理。 */
@@ -189,6 +191,30 @@ export async function fetchArticleDetail(baseUrl: string, id: string, signal?: A
   })
   const detail = unwrap(envelope)
   return { ...detail, date: detail.date.slice(0, 10) }
+}
+
+/** 预览每次读取最新保存正文，不复用公开缓存或发送访客互动身份。 */
+export async function fetchPostPreview(
+  baseUrl: string,
+  token: string,
+  signal?: AbortSignal,
+): Promise<PostPreviewDetail> {
+  if (!postPreviewToken(token)) throw postPreviewError({ statusCode: 400 })
+  try {
+    const detail = unwrap(
+      await $fetch<ApiEnvelope<PostPreviewDetail>>(`${requireBaseUrl(baseUrl)}/posts/preview`, {
+        query: { token },
+        signal,
+        cache: 'no-store',
+        referrerPolicy: 'no-referrer',
+        timeout: 10000,
+        retry: 0,
+      }),
+    )
+    return { ...detail, date: detail.date.slice(0, 10) }
+  } catch (error) {
+    throw postPreviewError(error)
+  }
 }
 
 /** 评论 time 为 ISO 串,展示层沿用 mock 的 YYYY-MM-DD 习惯,递归归一化 */

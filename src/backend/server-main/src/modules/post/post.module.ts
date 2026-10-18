@@ -21,6 +21,7 @@ import { AdminTaxonomyController } from './admin-taxonomy.controller'
 import { AdminTaxonomyService } from './admin-taxonomy.service'
 import { PostRevisionsService } from './post-revisions.service'
 import { PostBatchService } from './post-batch.service'
+import { PostPreviewService } from './post-preview.service'
 
 @Module({
   imports: [MikroOrmModule.forFeature([Post, PostTag, PostLike, PostView])],
@@ -32,6 +33,7 @@ import { PostBatchService } from './post-batch.service'
     AdminTaxonomyService,
     PostRevisionsService,
     PostBatchService,
+    PostPreviewService,
   ],
   exports: [AdminPostService],
 })

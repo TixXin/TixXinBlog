@@ -69,6 +69,19 @@ export interface ArticleDetail {
   contentRaw?: string
 }
 
+/** 草稿预览签发结果，仅在当前编辑页面内存中保存。 */
+export interface PostPreviewLink {
+  token: string
+  expiresAt: string
+}
+
+/** 预览使用正文详情投影，始终关闭索引和评论。 */
+export type PostPreviewDetail = ArticleDetail & {
+  toc: TocItem[]
+  commentEnabled: false
+  seoNoindex: true
+}
+
 export interface CommentItem {
   moderationStatus?: 'published' | 'pending'
   id: number

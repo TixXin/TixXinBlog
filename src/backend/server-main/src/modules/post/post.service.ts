@@ -8,7 +8,7 @@
  * 不能代表内容修改时间，直接用于 dateModified 与站点地图 lastmod 会造成无意义的频繁变更。
  */
 
-import { FilterQuery, LockMode } from '@mikro-orm/core'
+import { FilterQuery, Loaded, LockMode } from '@mikro-orm/core'
 import { EntityManager } from '@mikro-orm/postgresql'
 import { HttpStatus, Injectable } from '@nestjs/common'
 import { BusinessException } from '../../common/exceptions/business.exception'
@@ -174,6 +174,11 @@ export class PostService {
     )
     if (!post) throw new BusinessException(POST_NOT_FOUND, '文章不存在', HttpStatus.NOT_FOUND)
 
+    return this.toArticleDetail(post)
+  }
+
+  /** 调用方先完成可见性校验，公开详情和签名预览共用正文投影。 */
+  async toArticleDetail(post: Loaded<Post, 'tags', '*' | 'tags.label' | 'tags.color'>): Promise<ArticleDetailDto> {
     const [relatedContent, revision] = await Promise.all([
       resolveContentRelations(this.em, post.relatedContent),
       this.em.findOne(PostRevision, { post: post.id, revision: post.revision }, { fields: ['createdAt'] }),

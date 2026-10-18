@@ -22,6 +22,7 @@ import { PostRevisionsService } from './post-revisions.service'
 import { CurrentAdmin } from '../../common/decorators/current-admin.decorator'
 import { PostBatchService } from './post-batch.service'
 import { ExecutePostBatchDto, PreviewPostBatchDto } from './dto/batch-post.dto'
+import { PostPreviewService } from './post-preview.service'
 
 @Controller('admin/posts')
 @UseGuards(AdminAuthGuard)
@@ -30,6 +31,7 @@ export class AdminPostController {
     private readonly posts: AdminPostService,
     private readonly revisions: PostRevisionsService,
     private readonly batch: PostBatchService,
+    private readonly previews: PostPreviewService,
   ) {}
   @Get()
   list(@Query() query: QueryAdminPostsDto) {
@@ -67,6 +69,10 @@ export class AdminPostController {
   @Post(':id/restore')
   restore(@Param('id', ParseIntPipe) id: number, @Query() query: ExpectedPostRevisionDto) {
     return this.posts.restore(id, query.revision)
+  }
+  @Post(':id/preview-link')
+  previewLink(@Param('id', ParseIntPipe) id: number) {
+    return this.previews.issue(id)
   }
   @Get(':id')
   detail(@Param('id', ParseIntPipe) id: number) {

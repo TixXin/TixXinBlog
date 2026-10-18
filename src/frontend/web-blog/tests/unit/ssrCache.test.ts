@@ -17,6 +17,7 @@ describe('shouldPurgeSsrCache', () => {
     expect(shouldPurgeSsrCache('POST', '/api/v1/posts/12/view')).toBe(false)
     expect(shouldPurgeSsrCache('POST', '/api/v1/moments/9/like')).toBe(false)
     expect(shouldPurgeSsrCache('POST', '/api/v1/auth/refresh')).toBe(false)
+    expect(shouldPurgeSsrCache('POST', '/api/v1/admin/posts/12/preview-link')).toBe(false)
     expect(shouldPurgeSsrCache('POST', '/other')).toBe(false)
   })
 

@@ -34,6 +34,21 @@
         <p v-if="autoSavePaused">服务器自动保存已暂停，请比较恢复内容或冲突后手动保存。</p>
         <p v-if="dirty">有尚未保存到服务器的修改。</p>
       </section>
+      <AdminPostPreviewLink
+        v-if="ready"
+        :saved="!!draft.id"
+        :available="preview.available.value"
+        :dirty="dirty"
+        :busy="pending"
+        :pending="preview.pending.value"
+        :copying="preview.copying.value"
+        :url="preview.url.value"
+        :expires-at="preview.link.value?.expiresAt ?? ''"
+        :error="preview.error.value"
+        :notice="preview.notice.value"
+        @generate="preview.generate"
+        @copy="preview.copy"
+      />
       <section v-if="recovery.recoveries.value.length" class="post-workspace__recoveries" aria-label="本机恢复副本">
         <h2>发现本机恢复副本</h2>
         <p>这些内容可能来自上次刷新、断网或其他编辑标签页。请先比较，再决定是否载入。</p>
@@ -131,6 +146,7 @@ const {
   restoreHistorical,
   reviewingPublication,
 } = usePostEditor(props.id)
+const preview = usePostPreviewLink(draft, pending)
 function formatDate(value: string) {
   return new Date(value).toLocaleString('zh-CN', { hour12: false })
 }

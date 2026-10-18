@@ -14,6 +14,15 @@ const startupGuard = readFileSync(new URL('./public/startup-guard.js', import.me
 // 站点资料不可用时的中性站名，与 app/features/site/settings.ts 的 defaultSiteSettings.name 保持一致；
 // 运行时以博主在 /admin/site 维护的站名为准（app.vue 与 error.vue 动态覆盖）。
 const fallbackSiteName = 'My Blog'
+const postPreviewRouteRules = {
+  cache: false as const,
+  prerender: false,
+  headers: {
+    'Cache-Control': 'private, no-store',
+    'X-Robots-Tag': 'noindex, nofollow, noarchive',
+    'Referrer-Policy': 'no-referrer',
+  },
+}
 
 export default {
   // Nuxt 启动历史与清单预取的固定版本修正维护在仓库根目录 patches/。
@@ -153,7 +162,7 @@ export default {
   sitemap: {
     strictNuxtContentPaths: true,
     // 搜索页 noindex，标签页是访客个人起始页（本地书签），均不收录
-    exclude: ['/admin', '/admin/**', '/_theme-engine-devtools', '/search', '/tabs'],
+    exclude: ['/admin', '/admin/**', '/_theme-engine-devtools', '/search', '/tabs', '/posts/preview'],
     sources: ['/api/__sitemap__/urls'],
     cacheMaxAgeSeconds: 0,
   },
@@ -161,7 +170,7 @@ export default {
     // 受管媒体经 /api/v1/media/ 提供，文章封面与分享图需对搜索引擎和分享卡片爬虫保持可抓取（最长匹配优先）
     allow: ['/', '/api/v1/media/'],
     // /admin 无斜杠形式同样屏蔽；其余 /api/ 为接口转发，不作为页面收录
-    disallow: ['/admin', '/admin/', '/api/', '/_theme-engine-devtools'],
+    disallow: ['/admin', '/admin/', '/api/', '/_theme-engine-devtools', '/posts/preview'],
   },
   fonts: {
     // 单 provider 模式：仅初始化 bunny，跳过 google/googleicons 等其他内置 provider
@@ -181,6 +190,10 @@ export default {
   routeRules: {
     // /articles 独立列表已与首页 / 合并，统一重定向到首页
     '/articles': { redirect: '/' },
+    // 预览带有持有即授权的令牌，成功与失败页面均禁止缓存、索引和来源地址传播。
+    '/posts/preview': postPreviewRouteRules,
+    '/api/v1/posts/preview': postPreviewRouteRules,
+    '/api/v1/admin/posts/*/preview-link': postPreviewRouteRules,
     ...(process.env.NODE_ENV === 'production'
       ? {
           '/admin': { headers: { 'Cache-Control': 'private, no-store', 'X-Robots-Tag': 'noindex' } },

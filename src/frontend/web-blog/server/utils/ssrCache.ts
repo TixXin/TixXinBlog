@@ -6,7 +6,7 @@
  */
 
 // 只统计浏览量、点赞计数和登录态的接口不改变页面主体内容，不触发清缓存；其余写请求都视为内容变更。
-const IGNORED = [/\/view$/, /\/like$/, /^\/api\/v1\/auth\//]
+const IGNORED = [/\/view$/, /\/like$/, /^\/api\/v1\/auth\//, /^\/api\/v1\/admin\/posts\/\d+\/preview-link$/]
 
 export function shouldPurgeSsrCache(method: string, path: string): boolean {
   if (method === 'GET' || method === 'HEAD' || method === 'OPTIONS') return false
