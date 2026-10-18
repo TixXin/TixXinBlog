@@ -2,7 +2,7 @@
  * @file audit-description.spec.ts
  * @description 审计动作映射与摘要白名单：不把正文、密码或任意路径写入审计
  */
-import { auditDescriptor, auditResult } from './audit-description'
+import { auditActions, auditDescriptor, auditResult } from './audit-description'
 
 const uuid = '3f2504e0-4f89-41d3-9a0c-0305e82c3301'
 
@@ -43,6 +43,35 @@ describe('auditDescriptor', () => {
       action: 'post.batch.execute',
       resourceType: 'post-batch',
     })
+  })
+
+  it.each([
+    ['comments/batch/moderation', 'POST', 'comment', 'comment.batch.moderate', '批量审核评论'],
+    ['comments/batch/delete', 'POST', 'comment', 'comment.batch.delete', '批量删除评论'],
+    ['guestbook/batch', 'PATCH', 'guestbook', 'guestbook.batch.moderate', '批量审核留言'],
+    ['guestbook/batch', 'DELETE', 'guestbook', 'guestbook.batch.delete', '批量删除留言'],
+  ] as const)('批量路径 %s %s 使用独立动作和中文标签', (path, method, resourceType, action, label) => {
+    for (const prefix of ['/api/v1', '']) {
+      expect(auditDescriptor(`${prefix}/admin/${path}`, method)).toEqual({
+        action,
+        resourceType,
+        resourceId: undefined,
+      })
+    }
+    expect(auditActions[action]).toBe(label)
+  })
+
+  it.each([
+    ['comments/12/moderation', 'POST', 'comment', '12', 'comment.moderate', '审核评论'],
+    ['comments/12', 'DELETE', 'comment', '12', 'comment.delete', '删除评论及回复'],
+    ['comments/12/reply', 'POST', 'comment', '12', 'comment.reply', '博主回复'],
+    ['comments/policy', 'PATCH', 'comment', undefined, 'comment.policy', '修改审核策略'],
+    ['guestbook', 'POST', 'guestbook', undefined, 'guestbook.create', '发布或回复留言'],
+    ['guestbook/12', 'PATCH', 'guestbook', '12', 'guestbook.update', '审核或置顶留言'],
+    ['guestbook/12', 'DELETE', 'guestbook', '12', 'guestbook.delete', '删除留言'],
+  ] as const)('单条路径 %s %s 保持原有动作和中文标签', (path, method, resourceType, resourceId, action, label) => {
+    expect(auditDescriptor(`/api/v1/admin/${path}`, method)).toEqual({ action, resourceType, resourceId })
+    expect(auditActions[action]).toBe(label)
   })
 
   it('媒体、备份与未知管理写入有稳定归类', () => {
