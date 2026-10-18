@@ -2,6 +2,9 @@
  * @file batchTypes.ts
  * @description 明确范围的文章批量预览与持久化执行结果契约。
  */
+export const POST_BATCH_LIMIT = 50
+export const POST_SELECTION_LIMIT = 500
+
 export type PostBatchAction = 'withdraw' | 'archive' | 'trash' | 'restore' | 'delete'
 export interface PostSelection {
   id: number
