@@ -21,8 +21,9 @@
           </div>
         </div>
 
-        <!-- 右侧操作区：归档箱 toggle + 搜索切换按钮 -->
+        <!-- 右侧操作区：RSS 订阅、归档箱与搜索切换 -->
         <div class="page-actions">
+          <BlogRssLink href="/flash.xml" label="闪念" compact />
           <button
             v-if="isLoggedIn"
             type="button"

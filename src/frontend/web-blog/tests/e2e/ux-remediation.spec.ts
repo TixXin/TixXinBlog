@@ -78,7 +78,7 @@ test('收藏写入失败不假装成功，存储恢复后可收藏并刷新保�
 
 test('未上线动作前置说明，项目无占位链接，手机留言真实持久化', async ({ page }, testInfo) => {
   await page.goto('/')
-  await expect(page.getByText('使用 RSS 阅读器订阅最新文章，邮件订阅尚未开放。')).toBeVisible()
+  await expect(page.getByText('使用 RSS 阅读器分别订阅文章、闪念和朋友圈更新，邮件订阅尚未开放。')).toBeVisible()
   await page.goto('/projects')
   await expect(page.locator('.project-card').first()).toBeVisible()
   await expect(page.locator('.project-card a[href="#"]')).toHaveCount(0)

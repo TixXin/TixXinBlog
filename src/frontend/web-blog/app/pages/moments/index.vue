@@ -13,6 +13,7 @@
         <h1 class="sr-only">朋友圈</h1>
         <BlogPostTabs :tabs="tabs" model-value="moments" />
         <div class="page-actions">
+          <BlogRssLink href="/moments.xml" label="朋友圈" compact />
           <CommonSearchBox
             v-model="searchKeyword"
             placeholder="搜索动态内容 / 话题 / 地点..."
