@@ -52,6 +52,8 @@ function select(asset: MediaAsset) {
 </script>
 <style scoped lang="scss">
 .media-picker {
+  /* 全局重置清掉了原生 dialog 的 margin:auto，需补回才能在视口居中 */
+  margin: auto;
   width: min(1000px, calc(100vw - 2rem));
   max-height: 90dvh;
   overflow: auto;
