@@ -40,3 +40,9 @@ Vue 补丁同样使用 `corepack pnpm patch @vue/runtime-core@3.5.42 --edit-dir 
 测试直接执行安装版本的路由插件与启动钩子，覆盖正常SSR、原生查询/锚点、插件导航、SSG恢复与middleware拒绝。前端单测执行实际payload插件并核对定时器、短期监听和恢复；浏览器测试包含快速刷新后原历史条目仍能返回，以及跨过预取期限的真实卸载和503后刷新恢复。
 
 原始诊断仅保留在本机`.artifacts/link-stage/`：`native-history-writer-conclusion.json`、`native-history-writer-attempt-*.json`、`manifest-lifecycle-conclusion.json`及关联trace。原版负对照已明确复现，两处补丁均应在重新构建后验证，不能用增加等待或过滤错误替代。
+
+## Nuxt DevTools 的 simple-git 导入
+
+`@nuxt__devtools@3.4.2.patch` 只改 `dist/chunks/module-main.mjs` 的一行导入：`import Git from 'simple-git'` 改为 `import { simpleGit as Git } from 'simple-git'`。根清单为修复安全公告把 `simple-git` 覆盖到 4.x，4.x 只提供具名导出 `simpleGit`，原默认导入在加载 DevTools 模块时直接抛出 `SyntaxError`。
+
+日常开发与 CI 主机因 `nuxt.config.ts` 默认关闭 DevTools 不受影响，但前端 Docker 安装层只复制清单、在没有项目配置时执行 `nuxt prepare`，会按默认值加载 DevTools 并使镜像构建失败；本地设置 `NUXT_DEVTOOLS_ENABLED=true` 时同样会失败。补丁不改变 DevTools 行为，升级 DevTools 到原生兼容 simple-git 4 的版本后应删除。
