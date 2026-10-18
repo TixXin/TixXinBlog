@@ -27,6 +27,7 @@
           :aria-label="item.label"
           class="dock-item"
           :class="{ active: isActive(item.to) }"
+          :aria-current="isActive(item.to) ? 'page' : undefined"
           :style="getDockItemStyle(index)"
           @mouseenter="onDockItemEnter(index)"
         >
@@ -87,8 +88,9 @@ onBeforeUnmount(() => {
 })
 
 function isActive(to: string) {
-  if (route.path === to) return true
-  if (to === '/' && route.path === '/moments') return true
+  const path = route.path.replace(/\/$/, '') || '/'
+  if (path === to) return true
+  if (to === '/' && path === '/moments') return true
   return false
 }
 

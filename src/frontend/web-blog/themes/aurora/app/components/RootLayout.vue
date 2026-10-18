@@ -27,6 +27,7 @@
             :target="item.newTab ? '_blank' : undefined"
             class="aurora-topbar__link"
             :class="{ active: isActive(item.to) }"
+            :aria-current="isActive(item.to) ? 'page' : undefined"
           >
             <Icon :name="item.icon" size="16" />
             <span>{{ item.label }}</span>
@@ -135,8 +136,9 @@ const route = useRoute()
 const { navItems } = useNavItems()
 
 function isActive(to: string) {
-  if (route.path === to) return true
-  if (to === '/' && route.path === '/moments') return true
+  const path = route.path.replace(/\/$/, '') || '/'
+  if (path === to) return true
+  if (to === '/' && path === '/moments') return true
   return false
 }
 

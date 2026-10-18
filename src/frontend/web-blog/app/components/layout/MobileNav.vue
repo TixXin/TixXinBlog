@@ -61,8 +61,9 @@ const primaryItems = computed(() =>
 )
 
 function isActive(to: string) {
-  if (route.path === to) return true
-  if (to === '/' && route.path === '/moments') return true
+  const path = route.path.replace(/\/$/, '') || '/'
+  if (path === to) return true
+  if (to === '/' && path === '/moments') return true
   return false
 }
 </script>

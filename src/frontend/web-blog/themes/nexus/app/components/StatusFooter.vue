@@ -412,7 +412,7 @@ const isExpanded = isFooterExpanded
 
 /** 收起态导航获得焦点时立即收起展开态，保证获焦元素可见 */
 function onNavFocusIn() {
-  if (!isExpanded.value) return
+  // 尚未展开时也要取消悬停计时，避免稍后隐藏已获焦的导航。
   if (expandTimer) {
     clearTimeout(expandTimer)
     expandTimer = null
