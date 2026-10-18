@@ -90,11 +90,14 @@ export interface RelatedPost {
   category: string
 }
 
-export type PostNavigationScope = 'all' | 'folder'
+/** 上下篇范围：全站、仅同专栏，或同专栏为空时由服务端回退全站 */
+export type PostNavigationScope = 'all' | 'folder' | 'auto'
 
 export interface PostNavigation {
   prev: RelatedPost | null
   next: RelatedPost | null
+  /** 仅 auto 范围返回：true 表示同专栏为空，结果来自全站 */
+  fallback?: boolean
 }
 
 export interface TocItem {

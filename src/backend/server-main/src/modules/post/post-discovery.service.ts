@@ -135,7 +135,18 @@ export class PostDiscoveryService {
       { fields: ['id', 'publishedAt', 'folder'] },
     )
     if (!current) throw new NotFoundException('文章不存在')
-    // 同专栏模式不混入全站文章，是否回退由调用方统一决定。
+    if (scope !== 'auto') return this.adjacent(current, scope)
+    // auto：有专栏且专栏内至少一侧有文章时用同专栏结果，否则一次请求内回退全站，并标明是否回退。
+    if (current.folder?.trim()) {
+      const inFolder = await this.adjacent(current, 'folder')
+      if (inFolder.prev || inFolder.next) return { ...inFolder, fallback: false }
+    }
+    return { ...(await this.adjacent(current, 'all')), fallback: true }
+  }
+
+  /** 按发布时间与编号查找两侧公开文章；folder 模式不混入全站文章 */
+  private async adjacent(current: Pick<Post, 'id' | 'publishedAt' | 'folder'>, scope: 'all' | 'folder') {
+    const id = current.id
     if (scope === 'folder' && !current.folder?.trim()) return { prev: null, next: null }
     const folderFilter = scope === 'folder' ? { folder: current.folder } : {}
     const fields = ['id', 'slug', 'title', 'publishedAt', 'folder'] as const

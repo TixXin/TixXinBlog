@@ -99,7 +99,51 @@ describe('文章上下篇导航', () => {
     expect(findOne).toHaveBeenCalledTimes(1)
   })
 
-  it.each(['all', 'folder'] as const)('当前文章不存在或不可公开时，范围 %s 统一返回 404', async (scope) => {
+  it('auto 范围专栏内有相邻文章时直接返回同专栏结果，标明未回退', async () => {
+    const { service, findOne } = setup()
+    findOne.mockResolvedValueOnce(current).mockResolvedValueOnce(null).mockResolvedValueOnce(next)
+    expect(await service.navigation(7, 'auto')).toEqual({
+      prev: null,
+      next: { id: '6', slug: undefined, title: '请求隔离', date: '2026-10-01T10:00:00.000Z', category: '工程笔记' },
+      fallback: false,
+    })
+    expect(findOne).toHaveBeenCalledTimes(3)
+    for (const [, where] of findOne.mock.calls.slice(1)) expect(where.folder).toBe('工程笔记')
+  })
+
+  it('auto 范围专栏两侧为空时在同一请求内回退全站，并标明已回退', async () => {
+    const { service, findOne } = setup()
+    findOne
+      .mockResolvedValueOnce(current)
+      .mockResolvedValueOnce(null)
+      .mockResolvedValueOnce(null)
+      .mockResolvedValueOnce({ ...prev, folder: '生活记录' })
+      .mockResolvedValueOnce(null)
+    expect(await service.navigation(7, 'auto')).toMatchObject({
+      prev: { id: '8', category: '生活记录' },
+      next: null,
+      fallback: true,
+    })
+    expect(findOne).toHaveBeenCalledTimes(5)
+    for (const [, where] of findOne.mock.calls.slice(1, 3)) expect(where.folder).toBe('工程笔记')
+    for (const [, where] of findOne.mock.calls.slice(3)) {
+      expect(where).toMatchObject({ status: 'published', deletedAt: null })
+      expect(where).not.toHaveProperty('folder')
+    }
+  })
+
+  it.each(['', '  ', undefined])('auto 范围当前文章无专栏（%j）时直接读取全站', async (folder) => {
+    const { service, findOne } = setup()
+    findOne
+      .mockResolvedValueOnce({ ...current, folder })
+      .mockResolvedValueOnce(prev)
+      .mockResolvedValueOnce(null)
+    expect(await service.navigation(7, 'auto')).toMatchObject({ prev: { id: '8' }, next: null, fallback: true })
+    expect(findOne).toHaveBeenCalledTimes(3)
+    for (const [, where] of findOne.mock.calls.slice(1)) expect(where).not.toHaveProperty('folder')
+  })
+
+  it.each(['all', 'folder', 'auto'] as const)('当前文章不存在或不可公开时，范围 %s 统一返回 404', async (scope) => {
     const { service, findOne } = setup()
     findOne.mockResolvedValueOnce(null)
     await expect(service.navigation(7, scope)).rejects.toMatchObject({ status: 404 })
