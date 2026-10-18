@@ -21,6 +21,7 @@ Thumbs.db
 # 浏览器测试与本地验收产物（不按图片扩展名忽略，保留正式素材）
 .playwright-mcp/
 /.artifacts/
+/.lighthouseci/
 /docs/**/evidence/
 /docs/git-validation/
 test-results/
