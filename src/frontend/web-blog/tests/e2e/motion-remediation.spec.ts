@@ -124,7 +124,7 @@ for (const layout of ['nexus', 'aurora', 'dock']) {
         await route.continue().catch(() => {})
       })
       try {
-        await page.locator('a.post-item[href="/articles/105"]').click()
+        await page.locator('.post-item a.post-item__content[href="/articles/105"]').click()
         await expect.poll(() => blocked).toBeGreaterThan(0)
         expect((await page.locator('main').innerText()).length).toBeGreaterThan(100)
         await page.getByRole('link', { name: '标签页', exact: true }).click()
@@ -163,17 +163,18 @@ for (const part of ['related', 'navigation', 'comments']) {
     const gate = new Promise<void>((resolve) => {
       release = resolve
     })
+    // 补充读取会带查询参数（如上下篇的 scope=auto），按路径匹配而不是整串 URL
+    const target = (url: URL) => url.pathname === `/api/v1/posts/105/${part}`
     page.on('requestfailed', (request) => {
-      if (request.url().endsWith(`/api/v1/posts/105/${part}`))
-        cancelled.push(request.failure()?.errorText ?? 'cancelled')
+      if (target(new URL(request.url()))) cancelled.push(request.failure()?.errorText ?? 'cancelled')
     })
-    await page.route(`**/api/v1/posts/105/${part}`, async (route) => {
+    await page.route(target, async (route) => {
       blocked++
       await gate
       await route.continue().catch(() => {})
     })
     try {
-      await page.locator('a.post-item[href="/articles/105"]').click()
+      await page.locator('.post-item a.post-item__content[href="/articles/105"]').click()
       await expect.poll(() => blocked).toBeGreaterThan(0)
       await page.getByRole('link', { name: '标签页', exact: true }).click()
       await expect(page.locator('.tabs-page')).toBeVisible()
@@ -202,7 +203,7 @@ test('仍在当前文章的真实请求失败继续显示503错误反馈', async
       body: JSON.stringify({ statusCode: 503, message: '隔离网络错误验收' }),
     }),
   )
-  await page.locator('a.post-item[href="/articles/105"]').click()
+  await page.locator('.post-item a.post-item__content[href="/articles/105"]').click()
   await expect(page.getByRole('heading', { name: '服务器错误', exact: true })).toBeVisible()
   await expect(page.getByRole('button', { name: '重试当前页面', exact: true })).toBeVisible()
 })
@@ -391,7 +392,9 @@ test('照片失败保持占位，恢复后可重试且不跳动', async ({ page,
   const photo = (await response.json()).data.items[0]
   expect(photo.src).toMatch(/^\/api\/v1\/media\/[a-f0-9-]+\.webp$/)
   let failures = 0
-  await page.route(`**${photo.src}`, (route) => {
+  // 受管图片按显示宽度请求缓存变体（?w=…），按路径匹配原图及其全部变体
+  const photoRequest = (url: URL) => url.pathname === photo.src
+  await page.route(photoRequest, (route) => {
     failures++
     return route.abort()
   })
@@ -402,7 +405,7 @@ test('照片失败保持占位，恢复后可重试且不跳动', async ({ page,
   expect(failures).toBeGreaterThan(0)
   const failed = await first.boundingBox()
   await captureMotion(page, testInfo, 'image-failed.png')
-  await page.unroute(`**${photo.src}`)
+  await page.unroute(photoRequest)
   await first.getByRole('button', { name: /重新加载图片/ }).click()
   await expect(first.locator('.image-frame')).toHaveClass(/image-frame--ready/)
   const loaded = await first.boundingBox()

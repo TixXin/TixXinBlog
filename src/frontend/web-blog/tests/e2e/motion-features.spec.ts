@@ -140,7 +140,10 @@ for (const layout of ['nexus', 'aurora', 'dock']) {
     }
     await expect.poll(() => readingPosition(page)).toBeGreaterThan(2000)
     const before = await readingPosition(page)
-    const top = page.getByRole('button', { name: '返回顶部', exact: true }).filter({ visible: true }).first()
+    const top = page
+      .getByRole('button', { name: /^返回顶部/ })
+      .filter({ visible: true })
+      .first()
     await top.click()
     await expect.poll(() => readingPosition(page), { intervals: [10, 20] }).toBeLessThan(before - 5)
     const moving = await readingPosition(page)
@@ -173,7 +176,12 @@ for (const layout of ['nexus', 'aurora', 'dock']) {
   })
 }
 
-test('Aurora紧凑顶栏的前后导航项均可通过真实点击到达', async ({ page, context, baseURL }) => {
+test('Aurora紧凑顶栏的前后导航项均可通过真实点击到达', async ({ page, context, baseURL, request }) => {
+  // 新建库的站点资料为中性值，关于页标题取自真实站点资料而不是写死的示例文案
+  const siteResponse = await request.get('/api/v1/site')
+  expect(siteResponse.ok()).toBe(true)
+  const ownerName = (await siteResponse.json()).data.ownerName as string
+  expect(ownerName).toBeTruthy()
   await context.addCookies([{ name: 'blog-layout-theme', value: 'aurora', url: baseURL! }])
   for (const width of [768, 769, 1023]) {
     await page.setViewportSize({ width, height: 1000 })
@@ -181,7 +189,9 @@ test('Aurora紧凑顶栏的前后导航项均可通过真实点击到达', async
     await ready(page)
     const navigation = page.locator('.aurora-topbar__nav')
     await navigation.getByRole('link', { name: '关于', exact: true }).click()
-    await expect(page.locator('main')).toContainText('技能示例')
+    await expect(page).toHaveURL(/\/about$/)
+    await expect(page.locator('.about-body').getByRole('heading', { name: ownerName, exact: true })).toBeVisible()
+    await expect(page.locator('.about-body [role="alert"]')).toHaveCount(0)
     await navigation.getByRole('link', { name: '归档', exact: true }).click()
     await expect(page.locator('main')).toContainText('文章归档')
     await navigation.getByRole('link', { name: '主页', exact: true }).click()
