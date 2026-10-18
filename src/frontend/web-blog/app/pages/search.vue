@@ -8,11 +8,14 @@
       <CommonCustomScrollbar class="search-page" viewport-class="search-page__viewport" primary>
         <form class="search-page__form" @submit.prevent="submit">
           <input
+            ref="inputRef"
             v-model="keyword"
             type="search"
             aria-label="搜索站内公开内容"
             placeholder="输入关键词"
             maxlength="200"
+            :aria-describedby="keyboardHintId"
+            @keydown="onInputKeydown"
           />
           <button type="submit">搜索</button>
         </form>
@@ -26,6 +29,9 @@
           >
         </nav>
         <p class="search-page__scope">文章检索标题、摘要、正文与标签；其他类型检索各自公开的介绍、正文或分类字段。</p>
+        <p :id="keyboardHintId" class="search-page__keyboard">
+          在搜索框按 ↑↓ 进入结果，继续按方向键切换，按 Enter 打开。
+        </p>
         <p v-if="!activeQuery.trim()">输入关键词开始搜索。</p>
         <template v-else>
           <CommonRequestFeedback
@@ -35,7 +41,7 @@
             :title="error || '正在搜索公开内容'"
             @retry="refresh"
           />
-          <template v-if="mounted && !isSearching">
+          <div v-if="mounted && !isSearching" ref="resultListRef" @keydown="onResultKeydown">
             <p v-if="activeType === 'all'">各类型分别预览前 3 项；选择类型查看该类型的全部结果。</p>
             <section
               v-for="group in groups"
@@ -56,15 +62,29 @@
               <p v-else-if="!group.items.length">当前条件下没有结果。</p>
               <ul v-else>
                 <li v-for="item in group.items" :key="item.id">
-                  <a v-if="item.type === 'link'" :href="item.url" target="_blank" rel="noopener noreferrer">
-                    <Icon :name="item.icon" />{{ item.title }}<Icon name="lucide:external-link" />
+                  <a
+                    v-if="item.type === 'link'"
+                    :href="item.url"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    data-search-result
+                  >
+                    <Icon :name="item.icon" aria-hidden="true" /><SearchHighlight
+                      :text="item.title"
+                      :keyword="activeQuery"
+                    /><Icon name="lucide:external-link" aria-hidden="true" />
+                    <span class="sr-only">（在新标签页打开）</span>
                   </a>
-                  <NuxtLink v-else :to="item.url"><Icon :name="item.icon" />{{ item.title }}</NuxtLink>
-                  <p>{{ item.description }}</p>
+                  <NuxtLink v-else :to="item.url" data-search-result
+                    ><Icon :name="item.icon" aria-hidden="true" /><SearchHighlight
+                      :text="item.title"
+                      :keyword="activeQuery"
+                  /></NuxtLink>
+                  <p><SearchHighlight :text="item.description" :keyword="activeQuery" /></p>
                 </li>
               </ul>
             </section>
-          </template>
+          </div>
           <nav
             v-if="
               !isSearching && activeType !== 'all' && total !== null && (total > SEARCH_PAGE_SIZE || activePage > 1)
@@ -88,6 +108,7 @@
   </CommonPageFrame>
 </template>
 <script setup lang="ts">
+import SearchHighlight from '~/components/common/SearchHighlight.vue'
 import { searchLocation, searchScope, searchPage } from '~/features/search/query'
 import { searchTypeLabels, SEARCH_PAGE_SIZE } from '~/features/search/types'
 // 搜索页没有右侧栏内容，不保留空白的侧栏占位
@@ -99,6 +120,9 @@ const activeType = computed(() => searchScope(route.query.type))
 const activePage = computed(() => (activeType.value === 'all' ? 1 : searchPage(route.query.page)))
 const keyword = ref(activeQuery.value),
   mounted = ref(false)
+const inputRef = ref<HTMLInputElement | null>(null)
+const resultListRef = ref<HTMLElement | null>(null)
+const keyboardHintId = useId()
 const { groups, total, isSearching, error, search, cancel } = useSearch()
 usePageSeo({
   title: '站内搜索',
@@ -110,8 +134,52 @@ function submit() {
   if (router.resolve(location).fullPath === route.fullPath) void refresh()
   else void router.push(location)
 }
+
+function resultLinks() {
+  return Array.from(resultListRef.value?.querySelectorAll<HTMLAnchorElement>('a[data-search-result]') ?? [])
+}
+
+function isResultArrow(event: KeyboardEvent) {
+  return (
+    !event.isComposing &&
+    event.keyCode !== 229 &&
+    !event.altKey &&
+    !event.ctrlKey &&
+    !event.metaKey &&
+    !event.shiftKey &&
+    (event.key === 'ArrowDown' || event.key === 'ArrowUp')
+  )
+}
+
+function focusResult(link: HTMLAnchorElement | undefined) {
+  if (!link) return
+  link.focus({ preventScroll: true })
+  // 键盘定位不播放滚动动画，也不依赖主题的动效设置。
+  link.scrollIntoView({ block: 'nearest', behavior: 'instant' })
+}
+
+function onInputKeydown(event: KeyboardEvent) {
+  if (!isResultArrow(event) || isSearching.value || keyword.value.trim() !== activeQuery.value.trim()) return
+  const links = resultLinks()
+  if (!links.length) return
+  event.preventDefault()
+  focusResult(event.key === 'ArrowDown' ? links[0] : links.at(-1))
+}
+
+function onResultKeydown(event: KeyboardEvent) {
+  if (!isResultArrow(event) || isSearching.value) return
+  const target = event.target instanceof Element ? event.target.closest('a[data-search-result]') : null
+  const links = resultLinks()
+  const index = links.findIndex((link) => link === target)
+  if (index < 0) return
+  event.preventDefault()
+  focusResult(links[(index + (event.key === 'ArrowDown' ? 1 : -1) + links.length) % links.length])
+}
+
 async function refresh() {
   const path = route.fullPath
+  // 刷新移除当前结果前归还焦点，避免键盘用户落到页面之外。
+  if (resultListRef.value?.contains(document.activeElement)) inputRef.value?.focus({ preventScroll: true })
   await search(activeQuery.value, activeType.value, activePage.value)
   if (route.fullPath !== path || error.value || total.value === null || activeType.value === 'all') return
   const lastPage = Math.max(1, Math.ceil(total.value / SEARCH_PAGE_SIZE))
@@ -205,6 +273,14 @@ li a {
   align-items: center;
   gap: 0.4rem;
   max-width: 100%;
+}
+li a:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 4px;
+  border-radius: 0.25rem;
+}
+.search-highlight {
+  min-width: 0;
 }
 a {
   color: var(--accent);

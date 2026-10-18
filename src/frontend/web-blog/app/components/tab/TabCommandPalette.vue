@@ -16,6 +16,7 @@
           aria-modal="true"
           aria-label="书签命令面板"
           tabindex="-1"
+          @keydown.stop="onKeydown"
         >
           <div class="tab-palette__search">
             <Icon name="lucide:search" size="16" class="tab-palette__icon" />
@@ -28,7 +29,6 @@
               placeholder="搜索书签 / 分类 / 动作，↑↓ 选择，Enter 执行，Esc 关闭"
               autocomplete="off"
               spellcheck="false"
-              @keydown.stop="onKeydown"
             />
             <button type="button" class="tab-palette__close" aria-label="关闭命令面板" @click="close">
               <Icon name="lucide:x" size="18" />
@@ -52,6 +52,7 @@
                 :aria-current="focusedId === item.id ? 'true' : undefined"
                 :data-id="item.id"
                 @mouseenter="focusedId = item.id"
+                @focus="focusedId = item.id"
                 @click="runItem(item)"
               >
                 <span class="tab-palette__item-icon">
@@ -59,14 +60,19 @@
                   <span v-else>{{ item.icon }}</span>
                 </span>
                 <div class="tab-palette__item-text">
-                  <div class="tab-palette__item-title">{{ item.title }}</div>
-                  <div v-if="item.subtitle" class="tab-palette__item-sub">{{ item.subtitle }}</div>
+                  <div class="tab-palette__item-title">
+                    <SearchHighlight :text="item.title" :keyword="query" />
+                  </div>
+                  <div v-if="item.subtitle" class="tab-palette__item-sub">
+                    <SearchHighlight :text="item.subtitle" :keyword="query" />
+                  </div>
                 </div>
                 <kbd v-if="item.shortcut" class="tab-palette__kbd">{{ item.shortcut }}</kbd>
               </button>
             </template>
           </div>
 
+          <p class="sr-only" role="status" aria-live="polite" aria-atomic="true">{{ selectionStatus }}</p>
           <div class="tab-palette__footer">
             <span> <kbd>↑</kbd><kbd>↓</kbd> 导航 </span>
             <span><kbd>Enter</kbd> 执行</span>
@@ -80,6 +86,7 @@
 
 <script setup lang="ts">
 import Fuse from 'fuse.js'
+import SearchHighlight from '~/components/common/SearchHighlight.vue'
 
 export interface CommandAction {
   id: string
@@ -187,42 +194,66 @@ const sectionList = computed<PaletteSection[]>(() => {
 })
 
 const flattenedItems = computed<PaletteItem[]>(() => sectionList.value.flatMap((s) => s.items))
+const selectionStatus = computed(() => {
+  const items = flattenedItems.value
+  const index = items.findIndex((item) => item.id === focusedId.value)
+  const item = items[index]
+  return item ? `已选择第 ${index + 1} 项，共 ${items.length} 项：${item.title}` : '无匹配结果'
+})
 
-// 打开时聚焦输入 + 重置状态
-watch(open, (v) => {
-  if (v) {
+// 打开时清空查询。输入框在面板渲染后才挂上 ref，等引用出现再聚焦。
+watch(
+  open,
+  (v) => {
+    if (!v) return
     query.value = ''
-    focusedId.value = null
-    nextTick(() => inputRef.value?.focus())
-  }
-})
+    focusedId.value = flattenedItems.value[0]?.id ?? null
+  },
+  { immediate: true },
+)
+watch(
+  inputRef,
+  (input) => {
+    if (open.value && input?.isConnected) input.focus({ preventScroll: true })
+  },
+  { flush: 'post' },
+)
 
-// 结果变化时默认选中第一项
-watch(filteredItems, (list) => {
-  focusedId.value = list[0]?.id ?? null
-})
+// 按实际分组后的显示顺序选择首项，避免模糊搜索的原始排名与键盘顺序不一致。
+watch(
+  flattenedItems,
+  (list) => {
+    focusedId.value = list[0]?.id ?? null
+  },
+  { immediate: true },
+)
 
 function onKeydown(e: KeyboardEvent) {
-  if (e.isComposing) return
+  if (e.isComposing || e.keyCode === 229) return
+  const target = e.target instanceof HTMLElement ? e.target : null
+  const focusedButton = target?.closest<HTMLButtonElement>('.tab-palette__item')
+  // 关闭按钮保留原生 Enter 行为；输入框和结果按钮共同支持方向键导航。
+  if (e.key !== 'Escape' && target !== inputRef.value && !focusedButton) return
   const items = flattenedItems.value
   if (items.length === 0) {
     if (e.key === 'Escape') close()
     return
   }
-  const idx = items.findIndex((i) => i.id === focusedId.value)
+  const currentId = focusedButton?.dataset.id ?? focusedId.value
+  const idx = items.findIndex((i) => i.id === currentId)
   if (e.key === 'ArrowDown') {
     e.preventDefault()
     const next = items[(idx + 1) % items.length]
     if (next) focusedId.value = next.id
-    scrollToFocused()
+    scrollToFocused(!!focusedButton)
   } else if (e.key === 'ArrowUp') {
     e.preventDefault()
-    const prev = items[(idx - 1 + items.length) % items.length]
+    const prev = items[idx < 0 ? items.length - 1 : (idx - 1 + items.length) % items.length]
     if (prev) focusedId.value = prev.id
-    scrollToFocused()
+    scrollToFocused(!!focusedButton)
   } else if (e.key === 'Enter') {
     e.preventDefault()
-    const current = items.find((i) => i.id === focusedId.value)
+    const current = items[idx]
     if (current) runItem(current)
   } else if (e.key === 'Escape') {
     e.preventDefault()
@@ -230,12 +261,13 @@ function onKeydown(e: KeyboardEvent) {
   }
 }
 
-function scrollToFocused() {
+function scrollToFocused(moveFocus: boolean) {
   nextTick(() => {
     const id = focusedId.value
     if (!id || !listRef.value) return
-    const el = listRef.value.querySelector(`[data-id="${id}"]`) as HTMLElement | null
-    el?.scrollIntoView({ block: 'nearest' })
+    const el = [...listRef.value.querySelectorAll<HTMLElement>('[data-id]')].find((item) => item.dataset.id === id)
+    if (moveFocus) el?.focus({ preventScroll: true })
+    el?.scrollIntoView({ block: 'nearest', behavior: 'instant' })
   })
 }
 

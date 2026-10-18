@@ -29,4 +29,38 @@ describe('splitHighlight', () => {
   it('未命中时返回整段文本', () => {
     expect(splitHighlight('深色主题', 'CSS')).toEqual([{ text: '深色主题', match: false }])
   })
+
+  it('缺省关键词、空文本与连续命中均保留完整原文', () => {
+    expect(splitHighlight('原文')).toEqual([{ text: '原文', match: false }])
+    expect(splitHighlight('原文', null)).toEqual([{ text: '原文', match: false }])
+    expect(splitHighlight('', 'Vue')).toEqual([{ text: '', match: false }])
+    expect(splitHighlight('哈哈哈哈', '哈哈')).toEqual([
+      { text: '哈哈', match: true },
+      { text: '哈哈', match: true },
+    ])
+  })
+
+  it('去除关键词首尾空白，正则特殊字符仍按字面匹配', () => {
+    const keyword = '.*+?^${}()|[]\\'
+    expect(splitHighlight(`前${keyword}后`, `  ${keyword}  `)).toEqual([
+      { text: '前', match: false },
+      { text: keyword, match: true },
+      { text: '后', match: false },
+    ])
+    expect(splitHighlight('ab', '.')).toEqual([{ text: 'ab', match: false }])
+  })
+
+  it('Unicode 大小写长度变化不会错位或丢字', () => {
+    expect(splitHighlight('İ Vue 与 VUE', 'vue')).toEqual([
+      { text: 'İ ', match: false },
+      { text: 'Vue', match: true },
+      { text: ' 与 ', match: false },
+      { text: 'VUE', match: true },
+    ])
+    expect(splitHighlight('🌸花🌸', '🌸')).toEqual([
+      { text: '🌸', match: true },
+      { text: '花', match: false },
+      { text: '🌸', match: true },
+    ])
+  })
 })
