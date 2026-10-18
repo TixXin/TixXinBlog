@@ -30,9 +30,11 @@ export default defineEventHandler(async (event) => {
       // 全文先渲染为安全 HTML，再整体转义为 XML 文本，不使用 CDATA，避免终止符注入
       const content = bodies[index] ? `<content:encoded>${escapeXml(bodies[index])}</content:encoded>` : ''
       const tags = (post.tags ?? []).map((tag) => `<category>${escapeXml(tag.label)}</category>`).join('')
+      // 阅读器解开 XML 后会按 HTML 展示摘要，先转义纯文本，避免重新产生可执行标签。
+      const description = escapeXml(post.summary)
       return `<item><title>${escapeXml(post.title)}</title>
 <link>${escapeXml(link)}</link><guid>${escapeXml(`${site}/articles/${post.id}`)}</guid>
-<description>${escapeXml(post.summary)}</description>${content}
+<description>${escapeXml(description)}</description>${content}
 <pubDate>${new Date(post.date).toUTCString()}</pubDate><dc:creator>${escapeXml(creator)}</dc:creator>
 <category>${escapeXml(post.folder)}</category>${tags}</item>`
     })

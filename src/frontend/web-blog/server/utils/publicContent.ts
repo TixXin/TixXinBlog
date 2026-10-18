@@ -77,17 +77,41 @@ export async function publicArticleFeedHtml(event: H3Event, id: string, articleU
   }
 }
 
-/** 订阅阅读器不知道页面地址，src/href 需相对文章地址解析；非 http(s) 地址保持原样 */
+/** 订阅阅读器不知道页面地址，src/href/srcset 需相对文章地址解析；非 http(s) 地址保持原样 */
 export function absolutizeHtml(html: string, base: string): string {
-  return html.replace(/(\s(?:src|href))="([^"]*)"/g, (match, attribute: string, value: string) => {
+  const absoluteUrl = (value: string) => {
     const raw = value.replace(/&amp;/g, '&')
     try {
       const url = new URL(raw, base)
-      if (!['http:', 'https:'].includes(url.protocol)) return match
-      return `${attribute}="${url.href.replace(/&/g, '&amp;').replace(/"/g, '&quot;')}"`
+      if (!['http:', 'https:'].includes(url.protocol)) return value
+      return url.href.replace(/&/g, '&amp;').replace(/"/g, '&quot;')
     } catch {
-      return match
+      return value
     }
+  }
+  return html.replace(/(\s(?:src|href|srcset))="([^"]*)"/g, (_match, attribute: string, value: string) => {
+    if (attribute.trim() !== 'srcset') return `${attribute}="${absoluteUrl(value)}"`
+
+    // srcset 的 URL 内可含逗号（如 data URI），按 URL 和描述符逐项读取，不能直接 split(',')。
+    let remaining = value
+    let result = ''
+    while (remaining) {
+      const prefix = remaining.match(/^[\s,]*/)![0]
+      result += prefix
+      remaining = remaining.slice(prefix.length)
+      if (!remaining) break
+      const token = remaining.match(/^\S+/)![0]
+      const url = token.replace(/,+$/, '')
+      result += absoluteUrl(url) + token.slice(url.length)
+      remaining = remaining.slice(token.length)
+      if (url === token) {
+        // 宽度或密度描述符保持原样，逗号之后才开始下一候选地址。
+        const descriptor = remaining.match(/^[^,]*(?:,|$)/)![0]
+        result += descriptor
+        remaining = remaining.slice(descriptor.length)
+      }
+    }
+    return `${attribute}="${result}"`
   })
 }
 

@@ -1,6 +1,6 @@
 // @vitest-environment node
 /** @file requestIdentity.test.ts @description 访客 IP 来源：外部请求按可信代理解析，内部调用沿用登记身份，没有登记不捏造地址 */
-import { expect, it, vi } from 'vitest'
+import { beforeEach, expect, it, vi } from 'vitest'
 import { mockNuxtImport } from '@nuxt/test-utils/runtime'
 import type { H3Event } from 'h3'
 import {
@@ -12,6 +12,10 @@ import {
 
 const runtimeConfig = vi.hoisted(() => ({ apiBaseUrl: '', trustedProxyCidrs: '127.0.0.1/32' }))
 mockNuxtImport('useRuntimeConfig', () => () => runtimeConfig)
+
+beforeEach(() => {
+  runtimeConfig.trustedProxyCidrs = '127.0.0.1/32'
+})
 
 function event(remoteAddress: string | undefined, forwardedFor?: string) {
   return {
@@ -41,4 +45,24 @@ it('内部调用沿用外部请求登记的访客身份，没有登记时保持�
   })
   // 其它异步分支不受该登记影响
   await new Promise<void>((resolve) => setTimeout(resolve, 0))
+})
+
+it('运行时收回或更换代理信任后立即按新配置解析', () => {
+  const request = event('127.0.0.1', '203.0.113.5')
+  expect(resolveEventClientIp(request)).toBe('203.0.113.5')
+
+  runtimeConfig.trustedProxyCidrs = ''
+  expect(resolveEventClientIp(request)).toBe('127.0.0.1')
+  runtimeConfig.trustedProxyCidrs = '192.0.2.0/24'
+  expect(resolveEventClientIp(request)).toBe('127.0.0.1')
+  expect(resolveEventClientIp(event('192.0.2.8', '203.0.113.6'))).toBe('203.0.113.6')
+})
+
+it('非法运行配置不沿用旧信任，修正后可以恢复解析', () => {
+  const request = event('127.0.0.1', '203.0.113.5')
+  expect(resolveEventClientIp(request)).toBe('203.0.113.5')
+  runtimeConfig.trustedProxyCidrs = 'true'
+  expect(() => resolveEventClientIp(request)).toThrow('NUXT_TRUSTED_PROXY_CIDRS')
+  runtimeConfig.trustedProxyCidrs = ''
+  expect(resolveEventClientIp(request)).toBe('127.0.0.1')
 })
