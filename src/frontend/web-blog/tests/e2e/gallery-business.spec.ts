@@ -71,14 +71,14 @@ test('创建上传发布编辑排序撤回删除在刷新与另一个上下文�
   try {
     const reader = await other.newPage()
     await page.getByRole('button', { name: '发布作品', exact: true }).click()
-    await expect(page.getByRole('status')).toContainText('作品已保存')
+    await expect(page.getByRole('main', { name: '管理内容' }).getByRole('status')).toContainText('作品已保存')
     await page.reload()
     await expect(page.getByRole('textbox', { name: '作品标题', exact: true })).toHaveValue(title)
     await reader.goto(`/gallery?photo=${id}`)
     await expect(reader.getByRole('dialog', { name: title, exact: true })).toBeVisible()
     await page.getByRole('textbox', { name: '作品说明', exact: true }).fill('再次整理后的作品说明。')
     await page.getByRole('button', { name: '保存作品', exact: true }).click()
-    await expect(page.getByRole('status')).toContainText('作品已保存')
+    await expect(page.getByRole('main', { name: '管理内容' }).getByRole('status')).toContainText('作品已保存')
     await reader.reload()
     await expect(reader.getByRole('dialog')).toContainText('再次整理后的作品说明')
     await page.goto(`/admin/gallery?q=${encodeURIComponent(title)}`)
@@ -141,7 +141,7 @@ test('未知创建核查原提交，迟到保存和刷新恢复保留新输入',
   await page.getByRole('button', { name: '保存作品', exact: true }).click()
   await expect.poll(() => delayed).toBe(true)
   await description.fill('等待响应时的新输入')
-  await expect(page.getByRole('status')).toContainText('当前新增输入仍保留')
+  await expect(page.getByRole('main', { name: '管理内容' }).getByRole('status')).toContainText('当前新增输入仍保留')
   await expect(description).toHaveValue('等待响应时的新输入')
   page.once('dialog', (dialog) => dialog.accept())
   await page.reload()
@@ -168,13 +168,20 @@ test('并发版本冲突不会覆盖本机作品输入', async ({ page, request 
   await expect(page.getByRole('textbox', { name: '作品说明', exact: true })).toHaveValue('本标签页的修改')
   await page.getByRole('button', { name: '保留输入，按最新版本继续合并', exact: true }).click()
   await page.getByRole('button', { name: '保存作品', exact: true }).click()
-  await expect(page.getByRole('status')).toContainText('作品已保存')
+  await expect(page.getByRole('main', { name: '管理内容' }).getByRole('status')).toContainText('作品已保存')
   expect((await call(`/admin/gallery/${photo.id}`)).description).toBe('本标签页的修改')
 })
 test('列表真实失败可重试且慢查询不覆盖新的 URL 筛选', async ({ page, request }) => {
   const sample = await publicSample(request),
     one = sample.items[0],
     two = sample.items[1]
+  // 失败后保留上一次成功的列表，断言须等到筛选结果真正替换列表，不能被旧列表里的同名照片提前满足。
+  const matches = async (q: string) =>
+    (await (await request.get(`/api/v1/gallery?q=${encodeURIComponent(q)}&pageSize=12`)).json()).data.items.length
+  const oneCount = await matches(one.title),
+    twoCount = await matches(two.title)
+  expect(oneCount).toBeLessThan(12)
+  expect(twoCount).toBeLessThan(12)
   await page.goto('/gallery')
   await expect(page.locator('.gallery-item')).toHaveCount(12)
   let failures = 0,
@@ -198,8 +205,11 @@ test('列表真实失败可重试且慢查询不覆盖新的 URL 筛选', async 
   expect(failures).toBe(1)
   await expect(page.locator('.gallery-item')).toHaveCount(12)
   await page.locator('.gallery-body').getByRole('button', { name: '重试', exact: true }).click()
+  await expect(page.locator('.gallery-item')).toHaveCount(oneCount)
   await expect(page.getByRole('button', { name: `查看照片：${one.title}`, exact: true })).toBeVisible()
   await search.fill(two.title)
+  await expect(page).toHaveURL(new RegExp(`q=${encodeURIComponent(two.title)}`))
+  await expect(page.locator('.gallery-item')).toHaveCount(twoCount)
   await expect(page.getByRole('button', { name: `查看照片：${two.title}`, exact: true })).toBeVisible()
   // 回访在有效期内不会发请求；推进日期进入后台重验证，再检查真实慢请求竞态。
   await page.clock.setFixedTime(Date.now() + 31_000)
@@ -212,6 +222,7 @@ test('列表真实失败可重试且慢查询不覆盖新的 URL 筛选', async 
   await search.fill(two.title)
   await expect(page.getByRole('button', { name: `查看照片：${two.title}`, exact: true })).toBeVisible()
   await page.waitForTimeout(800)
+  await expect(page.locator('.gallery-item')).toHaveCount(twoCount)
   await expect(page.getByRole('button', { name: `查看照片：${one.title}`, exact: true })).toHaveCount(0)
 })
 test('关闭 JavaScript 仍输出真实图库标题、照片与筛选计数', async ({ browser, request, baseURL }) => {
@@ -257,13 +268,14 @@ test('更换作品图片释放自身引用并保留朋友圈共用文件', async
   const asset = (await call(`/admin/media?search=${replacement.mediaId}`)).items[0]
   await picker.getByRole('textbox', { name: '搜索媒体', exact: true }).fill(asset.name)
   await picker.getByRole('button', { name: '搜索', exact: true }).click()
+  // 样本中可能有同名文件，按媒体地址锁定要替换的那一张。
   await picker
     .locator('.media-library__grid > li')
-    .filter({ hasText: asset.name })
+    .filter({ has: page.locator(`img[src="${asset.url}"]`) })
     .getByRole('button', { name: '使用此图片', exact: true })
     .click()
   await page.getByRole('button', { name: '保存作品', exact: true }).click()
-  await expect(page.getByRole('status')).toContainText('作品已保存')
+  await expect(page.getByRole('main', { name: '管理内容' }).getByRole('status')).toContainText('作品已保存')
   expect((await call(`/admin/media/${original.mediaId}/references`)).total).toBe(originalCount + 1)
   expect((await call(`/admin/media/${replacement.mediaId}/references`)).total).toBe(replacementCount + 1)
   const latest = await call(`/admin/gallery/${photo.id}`)
@@ -291,7 +303,7 @@ test('器材配置可维护，保存后公开侧栏使用同一份资料', async
       .last()
       .fill('日常散步时随身携带。')
     await page.getByRole('button', { name: '保存器材资料', exact: true }).click()
-    await expect(page.getByRole('status')).toContainText('器材资料已保存')
+    await expect(page.getByRole('main', { name: '管理内容' }).getByRole('status')).toContainText('器材资料已保存')
     await page.reload()
     await expect(names.last()).toHaveValue('随身相机')
     const metadata = (await (await request.get('/api/v1/gallery/metadata')).json()).data
