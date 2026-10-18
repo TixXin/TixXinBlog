@@ -444,8 +444,11 @@ async function retryHistory() {
     await retryMore()
   } finally {
     const restoreFocus = trigger && document.activeElement === trigger
+    // 聊天视图的重试反馈位于消息上方，收起时高度变化会推动可见留言；按收起前的锚点复位。
+    captureAnchor()
     retryingMore.value = false
     await nextTick()
+    restoreAnchor()
     if (restoreFocus && !trigger.isConnected && !pageScope.signal.aborted) {
       const sentinel = isChatMode.value ? topSentinel.value : bottomSentinel.value
       const target = sentinel?.querySelector<HTMLButtonElement>('button:not(:disabled)') ?? messagesWrap.value
