@@ -172,7 +172,8 @@ async function main() {
     await em.execute(
       'update gallery_settings set gear=\'[{"icon":"lucide:camera","name":"随身相机","description":"日常记录"}]\'::jsonb,revision=1 where id=\'default\'',
     )
-    assert.equal((await run('status')).counts.gallery_photo, 18)
+    // gallery-v1 共 20 件作品：18 件基础作品（含 1 草稿、1 撤回）加 2 件带地点与器材的作品（1326936 新增）
+    assert.equal((await run('status')).counts.gallery_photo, 20)
     assert.equal((await run('status')).counts.project, 18)
     assert.equal((await run('status')).counts.friend_link, 18)
     await fixture.testOrm.em.fork().execute('create view database_dev_guard as select id from moment')
@@ -191,8 +192,10 @@ async function main() {
     assert.equal(cleared.after?.friend_link, 0)
     assert.equal(cleared.after?.link_settings, 1)
     assert.equal(cleared.after?.gallery_settings, 1)
-    assert.equal(cleared.after?.development_fixture, 68)
-    assert.equal(cleared.after?.media_asset, 14)
+    // 清空内容保留归属登记以免补种复活：gallery-v1 20 作品 + 8 素材，project-v1 18 项目 + 10 封面（b1377ad 起按内容配图），link-v1 18 友链 + 3 素材
+    assert.equal(cleared.after?.development_fixture, 77)
+    // 清空内容不删受管素材：图库 8 + 项目封面 10 + 友链 3，与上方登记的 media 归属一一对应
+    assert.equal(cleared.after?.media_asset, 21)
     assert.equal(cleared.after?.admin_user, preview.counts.admin_user)
     assert.equal(cleared.after?.site_settings, 1)
     const beforeRejectedReset = await run('status')
