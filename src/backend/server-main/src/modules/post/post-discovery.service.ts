@@ -181,15 +181,27 @@ export class PostDiscoveryService {
       { fields: ['id', 'folder'] },
     )
     if (!current) throw new NotFoundException('文章不存在')
+    // 共同标签每个 3 分，同专栏加 2 分；按发布年龄平滑衰减，180 天后分数减半。
+    // 有共同标签的文章优先，不足 4 篇时才按最新顺序补入同专栏文章，不用全站无关内容凑数。
+    // 在同一条查询内完成两层排序与截断，避免先取最新候选漏掉高相关旧文或重复补齐。
     const rows = await this.em.execute<ArchiveRow[]>(
-      `
-      select p.id,p.slug,p.title,p.folder,p.published_at from post p
-      where p.status='published' and p.deleted_at is null and p.id<>?
-      order by ((case when p.folder=? then 2 else 0 end) +
-        (select count(*) from post_tag_map m where m.post_id=p.id and m.post_tag_id in
-          (select post_tag_id from post_tag_map where post_id=?))) desc,
-        p.published_at desc,p.id desc limit 4`,
-      [id, current.folder, id],
+      `with shared_tags as (
+        select m.post_id,count(distinct m.post_tag_id)::int as tag_count
+        from post_tag_map m join post_tag_map source on source.post_tag_id=m.post_tag_id
+        where source.post_id=? group by m.post_id
+      ), candidates as (
+        select p.id,p.slug,p.title,p.folder,p.published_at,coalesce(t.tag_count,0) as tag_count,
+          case when t.tag_count>0 then
+            (t.tag_count*3 + case when p.folder=? then 2 else 0 end) /
+            (1 + greatest(extract(epoch from (current_timestamp-p.published_at)),0) / 86400.0 / 180)
+          else 0 end as score
+        from post p left join shared_tags t on t.post_id=p.id
+        where p.status='published' and p.deleted_at is null and p.id<>?
+          and (t.tag_count>0 or p.folder=?)
+      )
+      select id,slug,title,folder,published_at from candidates
+      order by (tag_count>0) desc,score desc,published_at desc,id desc limit 4`,
+      [id, current.folder, id, current.folder],
     )
     return rows.map((row) => ({
       id: String(row.id),
