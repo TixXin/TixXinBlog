@@ -1,8 +1,48 @@
 /**
  * @file postPublishing.ts
- * @description 文章发布摘要、正文字数与阅读时间估算，供编辑器实时展示并由用户采用。
+ * @description 文章发布摘要、正文字数与阅读时间估算、正文图片替代文本检查，供编辑器实时展示并由用户确认。
  */
+import MarkdownIt from 'markdown-it'
+import type { PostImageAltWarning } from '~/features/post/types'
 import { parsePostMarkdown } from '~/utils/postMarkdown'
+
+const parser = new MarkdownIt({ html: false, linkify: true })
+type Token = ReturnType<MarkdownIt['parse']>[number]
+const imageOffsets = new WeakMap<Token, number>()
+
+// 图片 token 默认没有源码位置；仅扩展此检查器的状态，在解析器生成图片时记录起点。
+parser.inline.State = class extends parser.inline.State {
+  override push(type: string, tag: string, nesting: -1 | 0 | 1) {
+    const token = super.push(type, tag, nesting)
+    if (type === 'image') imageOffsets.set(token, this.pos)
+    return token
+  }
+}
+
+/** 与正文渲染使用相同的 Markdown 语义，代码、转义语法与未解析引用不作为图片。 */
+export function missingImageAltPositions(content: string): PostImageAltWarning[] {
+  const warnings: PostImageAltWarning[] = []
+  let imageNumber = 0
+  let tableLine = 0
+  for (const token of parser.parse(content, {})) {
+    // 表格单元格的 inline token 没有 map，沿用所属表格行的源码映射。
+    if (token.type === 'tr_open') tableLine = token.map?.[0] ?? 0
+    if (token.type === 'tr_close') tableLine = 0
+    if (token.type !== 'inline') continue
+    let line = (token.map?.[0] ?? tableLine) + 1
+    let cursor = 0
+    for (const child of token.children ?? []) {
+      if (child.type !== 'image') continue
+      imageNumber++
+      const offset = imageOffsets.get(child) ?? cursor
+      line += token.content.slice(cursor, offset).match(/\n/g)?.length ?? 0
+      cursor = offset
+      const alt = parser.renderer.renderInlineAsText(child.children ?? [], parser.options, {})
+      if (!alt.trim()) warnings.push({ line, imageNumber })
+    }
+  }
+  return warnings
+}
 
 /** 只统计可阅读的行内正文；代码块、图片与链接目标不参与，行内代码保留。 */
 export function postReadingStats(content: string, tokens = parsePostMarkdown(content)) {

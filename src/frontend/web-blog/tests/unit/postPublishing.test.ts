@@ -1,9 +1,9 @@
 /**
  * @file postPublishing.test.ts
- * @description 发布辅助规则：Markdown 正文字数、中英文阅读估算、摘要和安全地址生成。
+ * @description 发布辅助规则：Markdown 正文字数、图片替代文本及位置、中英文阅读估算、摘要和安全地址生成。
  */
 import { describe, expect, it } from 'vitest'
-import { postReadingStats, suggestedReadTime, suggestedSummary } from '~/utils/postPublishing'
+import { missingImageAltPositions, postReadingStats, suggestedReadTime, suggestedSummary } from '~/utils/postPublishing'
 import { articlePath } from '~/utils/articlePath'
 describe('发布辅助', () => {
   it('汉字逐字、英文和数字按词计数，混排无需空格且忽略标点、空白和表情', () => {
@@ -96,5 +96,110 @@ describe('发布辅助', () => {
     expect(articlePath({ id: 1, slug: 'vue-guide' })).toBe('/articles/vue-guide')
     expect(articlePath({ id: 1 })).toBe('/articles/1')
     expect(articlePath({ id: 1, slug: '../x' })).toBe('/articles/..%2Fx')
+  })
+})
+
+describe('正文图片替代文本检查', () => {
+  it('识别空白替代文本，按图片实际顺序区分同一行的多张图片', () => {
+    const raw = '# 图片\n\n![山间清晨](/a.webp) ![](/b.webp) ![ \t ](/c.webp "只有标题")\n![](/d.webp)'
+    expect(missingImageAltPositions(raw)).toEqual([
+      { line: 3, imageNumber: 2 },
+      { line: 3, imageNumber: 3 },
+      { line: 4, imageNumber: 4 },
+    ])
+  })
+
+  it('支持引用图片、带括号和尖括号的地址及链接内的图片', () => {
+    const raw = [
+      '前言',
+      '![][cover]',
+      '[![](/image_(1).webp)](https://example.com)',
+      '![](<https://example.com/a b.webp> "标题")',
+      '![完整说明][cover] ![][missing]',
+      '',
+      '[cover]: /cover.webp "封面标题"',
+    ].join('\n')
+    expect(missingImageAltPositions(raw)).toEqual([
+      { line: 2, imageNumber: 1 },
+      { line: 3, imageNumber: 2 },
+      { line: 4, imageNumber: 3 },
+    ])
+  })
+
+  it('跳过代码围栏、缩进代码、行内代码、转义语法、无效链接及原始 HTML', () => {
+    const raw = [
+      '````md',
+      '![](/fenced.webp)',
+      '```',
+      '````',
+      '',
+      '~~~',
+      '![](/tilde.webp)',
+      '~~~',
+      '',
+      '    ![](/indented.webp)',
+      '',
+      '`![](/inline.webp)` \\![](/escaped.webp) ![](/incomplete',
+      '<img src="/raw.webp"> ![](javascript:alert(1))',
+      '![](/real.webp)',
+    ].join('\n')
+    expect(missingImageAltPositions(raw)).toEqual([{ line: 14, imageNumber: 1 }])
+    expect(missingImageAltPositions('```md\n![](/unclosed.webp)')).toEqual([])
+  })
+
+  it('按渲染后的替代文本判断，实体空格仍告警，格式、转义和嵌套图片说明有效', () => {
+    const raw = [
+      '![&nbsp;&#32;](/empty.webp)',
+      '![**远山** 与 `湖面`](/formatted.webp)',
+      '![\\[画面\\]](/escaped.webp)',
+      '![![内层说明](/inner.webp)](/outer.webp)',
+      '![](/last.webp)',
+    ].join('\n')
+    expect(missingImageAltPositions(raw)).toEqual([
+      { line: 1, imageNumber: 1 },
+      { line: 5, imageNumber: 5 },
+    ])
+  })
+
+  it('保留多行图片的起始行，兼容 CRLF 与 CR，不受前面的行内代码换行影响', () => {
+    const raw = '开头\r\n`跨行\r代码`\r\n![ \r\n ](\r\n /a.webp\r\n)\r\n![](/b.webp)'
+    expect(missingImageAltPositions(raw)).toEqual([
+      { line: 4, imageNumber: 1 },
+      { line: 8, imageNumber: 2 },
+    ])
+  })
+
+  it('列表、引用、标题和表格使用实际源码行，不把引用定义算作图片', () => {
+    const raw = [
+      '> 前言',
+      '> ![](/quote.webp)',
+      '',
+      '- 列表',
+      '  ![][ref]',
+      '',
+      '## ![](/heading.webp)',
+      '',
+      '| ![](/head.webp) | 图片 |',
+      '| --- | --- |',
+      '| 内容 | ![](/cell.webp) ![](/cell2.webp) |',
+      '',
+      '[ref]: /ref.webp',
+    ].join('\n')
+    expect(missingImageAltPositions(raw)).toEqual([
+      { line: 2, imageNumber: 1 },
+      { line: 5, imageNumber: 2 },
+      { line: 7, imageNumber: 3 },
+      { line: 9, imageNumber: 4 },
+      { line: 11, imageNumber: 5 },
+      { line: 11, imageNumber: 6 },
+    ])
+  })
+
+  it('无图片或说明齐全时没有警告，长文中的缺失图片不会截断', () => {
+    expect(missingImageAltPositions('')).toEqual([])
+    expect(missingImageAltPositions('正文 ![窗前的花](/flower.webp)')).toEqual([])
+    const warnings = missingImageAltPositions(Array.from({ length: 150 }, (_, i) => `![](/${i}.webp)`).join('\n'))
+    expect(warnings).toHaveLength(150)
+    expect(warnings.at(-1)).toEqual({ line: 150, imageNumber: 150 })
   })
 })
