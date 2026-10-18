@@ -107,17 +107,20 @@ test('默认USD且所有七个币种都可分享，预算与列表只有一个�
   await expect(page.getByRole('region', { name: '订阅费用统计' })).toContainText('JPY 12,000')
 })
 
-test('博主分享币种与本机筛选独立，切换来源保留各自视图且本机编辑默认折叠', async ({ page }) => {
+test('切换数据来源沿用同一币种，本机切换不改地址且本机编辑默认折叠', async ({ page }) => {
+  // 币种是页面级语境：切换来源后继续查看同一币种；本机来源的切换只在本页生效，不写入博主视图地址。
   await page.goto('/subscriptions?currency=JPY')
   await expect(currencyButton(page, 'JPY')).toHaveAttribute('aria-pressed', 'true')
   await page.getByRole('button', { name: '我的订阅 · 本机', exact: true }).click()
-  await expect(currencyButton(page, 'USD')).toHaveAttribute('aria-pressed', 'true')
+  await expect(currencyButton(page, 'JPY')).toHaveAttribute('aria-pressed', 'true')
   await expect(page.getByRole('textbox', { name: '服务名称', exact: true })).toHaveCount(0)
   await currencyButton(page, 'GBP').click()
   await expect(currencyButton(page, 'GBP')).toHaveAttribute('aria-pressed', 'true')
   await expect(page).toHaveURL(/currency=JPY/)
   await page.getByRole('button', { name: '博主订阅', exact: true }).click()
-  await expect(currencyButton(page, 'JPY')).toHaveAttribute('aria-pressed', 'true')
+  await expect(currencyButton(page, 'GBP')).toHaveAttribute('aria-pressed', 'true')
+  await expect(page).toHaveURL(/currency=GBP/)
+  await expect(page.getByRole('region', { name: '订阅费用统计', exact: true })).toHaveAttribute('data-currency', 'GBP')
   await page.getByRole('button', { name: '我的订阅 · 本机', exact: true }).click()
   await expect(currencyButton(page, 'GBP')).toHaveAttribute('aria-pressed', 'true')
   await page.getByRole('button', { name: '添加我的订阅', exact: true }).click()
@@ -243,11 +246,13 @@ for (const theme of ['nexus', 'aurora', 'dock']) {
       await currencyButton(page, 'JPY').click()
       await expect(page).toHaveURL(/currency=JPY/)
       await expect(stats).toContainText('JPY 12,000')
-      await expect(page.getByRole('article', { name: '日语阅读室', exact: true })).toContainText('JPY 1,000')
-      const yenDetail = await openDetail(page, '日语阅读室')
+      await expect(page.getByRole('article', { name: 'Kindle Unlimited（日本）', exact: true })).toContainText(
+        'JPY 1,000',
+      )
+      const yenDetail = await openDetail(page, 'Kindle Unlimited（日本）')
       await yenDetail.locator('summary').click()
       await expect(yenDetail.getByRole('heading', { name: /第 .* 段/ })).toHaveCount(2)
-      await closeDetail(page, '日语阅读室')
+      await closeDetail(page, 'Kindle Unlimited（日本）')
       await currencyButton(page, 'USD').click()
       await expect(stats).toContainText('USD 529.00')
       await currencyButton(page, 'USD').scrollIntoViewIfNeeded()
@@ -408,7 +413,7 @@ test('公开请求失败显示真实错误并允许恢复，不回退样本', as
   await currencyButton(page, 'JPY').click()
   await expect(page.getByText('订阅服务暂时不可用，请稍后重试', { exact: true })).toBeVisible()
   await expect(stats).toHaveCount(0)
-  await expect(page.getByRole('article', { name: '日语阅读室', exact: true })).toHaveCount(0)
+  await expect(page.getByRole('article', { name: 'Kindle Unlimited（日本）', exact: true })).toHaveCount(0)
   await page.unroute('**/api/v1/subscriptions*')
   await page.getByRole('button', { name: /重试/ }).click()
   await expect(stats).toContainText('JPY 12,000')
@@ -433,13 +438,20 @@ test('favicon 从失败降级到同地址获取成功后，保存刷新恢复现
       failedReads++
       return route.fulfill({ status: 404, headers: { 'Cache-Control': 'no-store' }, body: '图标缓存尚未生成' })
     })
+    // 已登录页面水合后恢复会话会让公开读取失效并在客户端重读列表，后续须针对重读后的卡片。
+    const reread = page.waitForResponse(
+      (response) =>
+        new URL(response.url()).pathname === '/api/v1/subscriptions' && response.request().method() === 'GET',
+    )
     await page.goto(`/subscriptions?q=${encodeURIComponent(name)}`)
+    expect((await reread).status()).toBe(200)
     const card = page.getByRole('article', { name, exact: true })
     await card.scrollIntoViewIfNeeded()
     await expect.poll(() => failedReads).toBeGreaterThan(0)
     await expect(card.locator('.subscription-list-icon')).toBeVisible()
     await expect(card.getByRole('img')).toHaveCount(0)
-    const originalCard = await card.elementHandle()
+    // 写后失效会撤销旧代次并重读列表，卡片节点可能重建；这里验证不经整页重载即在卡片中恢复图标。
+    await page.evaluate(() => ((window as unknown as { __sameDocument?: boolean }).__sameDocument = true))
     await page.unroute('**/api/v1/subscriptions/favicons/*.webp')
     await (await openDetail(page, name)).getByRole('button', { name: '编辑订阅', exact: true }).click()
     const fetched = page.waitForResponse(
@@ -455,7 +467,7 @@ test('favicon 从失败降级到同地址获取成功后，保存刷新恢复现
     await page.getByRole('button', { name: '保存订阅', exact: true }).click()
     await expect(page.getByRole('button', { name: '记录一个平台订阅', exact: true })).toBeVisible()
     await card.scrollIntoViewIfNeeded()
-    expect(await originalCard!.evaluate((element) => element.isConnected)).toBe(true)
+    expect(await page.evaluate(() => (window as unknown as { __sameDocument?: boolean }).__sameDocument)).toBe(true)
     const icon = card.getByRole('img')
     await expect(icon).toHaveAttribute('src', item.faviconUrl)
     await expect.poll(() => icon.evaluate((element) => (element as HTMLImageElement).naturalWidth)).toBeGreaterThan(0)
