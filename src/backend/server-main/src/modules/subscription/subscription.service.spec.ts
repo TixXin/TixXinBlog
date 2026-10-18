@@ -34,6 +34,12 @@ function fixture() {
   return { item, em, service }
 }
 describe('订阅服务契约', () => {
+  beforeEach(() => {
+    jest.useFakeTimers().setSystemTime(new Date('2026-10-18T12:00:00.000Z'))
+  })
+  afterEach(() => {
+    jest.useRealTimers()
+  })
   it('公开响应明确排除管理备注、创建凭据和版本', () => {
     const { item, service } = fixture()
     item.requestId = randomUUID()
@@ -72,6 +78,62 @@ describe('订阅服务契约', () => {
     expect(item.priceHistory[1]).toEqual(
       expect.objectContaining({ amount: 2500, currency: 'USD', billingCycle: 'monthly', reason: '套餐升级' }),
     )
+  })
+  it.each(['CNY', 'EUR', 'GBP', 'JPY', 'HKD', 'TWD'] as const)(
+    '只把币种改成 %s 也追加价格事件，保留原整数金额与旧历史',
+    async (currency) => {
+      const { item, service } = fixture()
+      const previous = structuredClone(item.priceHistory[0])
+      const result = await service.save(1, { revision: 2, currency, priceChangeReason: '  更换结算币种  ' })
+
+      expect(result).toMatchObject({ amount: 2000, currency, billingCycle: 'monthly', revision: 3 })
+      expect(item.priceHistory).toHaveLength(2)
+      expect(item.priceHistory[0]).toEqual(previous)
+      expect(item.priceHistory[1]).toEqual({
+        id: expect.any(String),
+        amount: 2000,
+        currency,
+        billingCycle: 'monthly',
+        effectiveAt: '2026-10-18T12:00:00.000Z',
+        recordedAt: '2026-10-18T12:00:00.000Z',
+        reason: '更换结算币种',
+      })
+      expect(item.priceHistory[1]!.id).not.toBe(previous!.id)
+    },
+  )
+  it.each(['quarterly', 'yearly', 'lifetime', 'one-time'] as const)(
+    '只把周期改成 %s 也追加历史，金额保持最小单位',
+    async (billingCycle) => {
+      const { item, service } = fixture()
+      const previous = structuredClone(item.priceHistory[0])
+      await service.save(1, { revision: 2, billingCycle })
+      expect(item.priceHistory).toHaveLength(2)
+      expect(item.priceHistory[0]).toEqual(previous)
+      expect(item.priceHistory[1]).toMatchObject({ amount: 2000, currency: 'USD', billingCycle })
+      expect(item.priceHistory[1]).not.toHaveProperty('reason')
+    },
+  )
+  it('金额、币种和周期同时变更只追加一个完整事件，允许零金额', async () => {
+    const { item, service } = fixture()
+    const previous = structuredClone(item.priceHistory[0])
+    await service.save(1, { revision: 2, amount: 0, currency: 'JPY', billingCycle: 'yearly' })
+    expect(item.priceHistory).toHaveLength(2)
+    expect(item.priceHistory[0]).toEqual(previous)
+    expect(item.priceHistory[1]).toMatchObject({ amount: 0, currency: 'JPY', billingCycle: 'yearly' })
+    expect(item).toMatchObject({ amount: 0, currency: 'JPY', billingCycle: 'yearly', revision: 3 })
+  })
+  it('显式提交相同价格与币种周期不会因变价说明重复追加历史', async () => {
+    const { item, service } = fixture()
+    const previous = structuredClone(item.priceHistory)
+    await service.save(1, {
+      revision: 2,
+      amount: 2000,
+      currency: 'USD',
+      billingCycle: 'monthly',
+      priceChangeReason: '仅补充说明',
+    })
+    expect(item.priceHistory).toEqual(previous)
+    expect(item.revision).toBe(3)
   })
   it('过期版本在修改记录与历史前拒绝', async () => {
     const { item, em, service } = fixture()
