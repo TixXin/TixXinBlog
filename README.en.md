@@ -13,7 +13,7 @@ A personal blog system for a single author, bundling the public site and its aut
 
 Live instance: <https://tix.xin> (the author's own blog; its content is unrelated to the demo data in this repository).
 
-> **Note on language.** The interface, seeded demo content and the documents under `docs/` are written in Chinese, and the project has no i18n layer yet. This page exists so you can evaluate the project before committing to that.
+> **Note on language.** The interface and seeded demo content are written in Chinese, and the project has no i18n layer yet. The [documentation index](docs/en/README.md), [development guide](docs/en/development.md) and [deployment guide](docs/en/deployment.md) are available in English; the other guides remain in Chinese.
 
 ## What it does
 
@@ -89,7 +89,7 @@ Run everything from the repository root. Existing configuration, database volume
 
    This starts or reuses the project's services. It never migrates, seeds or resets the database implicitly. Run `corepack pnpm dev:check` in another terminal to verify the chain.
 
-7. **Start using it.** Open the [site](http://localhost:3456) and the [back office](http://localhost:3456/admin), sign in with the account you created, fill in your own details under site settings, then create content. A fresh database has no public posts; preparing demo data is an explicit step described in the [development guide](docs/development.md).
+7. **Start using it.** Open the [site](http://localhost:3456) and the [back office](http://localhost:3456/admin), sign in with the account you created, fill in your own details under site settings, then create content. A fresh database has no public posts; preparing demo data is an explicit step described in the [development guide](docs/en/development.md).
 
 ## Routes worth knowing
 
@@ -124,9 +124,9 @@ corepack pnpm build
 corepack pnpm --filter server-main build
 ```
 
-The root `build` builds the frontend; the backend builds separately. Every root script is described in the [scripts reference](docs/scripts.md). Production orchestration uses `compose.production.yaml` and the templates under `deploy/`. Before deploying, set your real domain, pin image versions, provide secrets and persistent storage, and run migrations first. Pushing a `v*` tag runs the Release workflow, which publishes multi-arch `web`, `api`, `migration` and `worker` images to GHCR and creates a GitHub Release; you can also build the images yourself on the target host. Both paths, Linux and PowerShell commands, and a local production-style preview are covered in the [deployment guide](docs/deployment.md) and [backup and recovery](docs/backup-and-recovery.md) (both in Chinese).
+The root `build` builds the frontend; the backend builds separately. Every root script is described in the [scripts reference](docs/scripts.md). Production orchestration uses `compose.production.yaml` and the templates under `deploy/`. Before deploying, set your real domain, pin image versions, provide secrets and persistent storage, and run migrations first. Pushing a `v*` tag runs the Release workflow, which publishes multi-arch `web`, `api`, `migration` and `worker` images to GHCR and creates a GitHub Release; you can also build the images yourself on the target host. Both paths, Linux and PowerShell commands, and a local production-style preview are covered in the [deployment guide](docs/en/deployment.md). See [backup and recovery](docs/backup-and-recovery.md) (in Chinese) for data recovery procedures.
 
-Development setup, module boundaries, testing and PR expectations are in [CONTRIBUTING.md](CONTRIBUTING.md). The [documentation index](docs/README.md) covers development, architecture, API, content and themes. Please read the [Code of Conduct](CODE_OF_CONDUCT.md) before taking part. Release notes live in [CHANGELOG.md](CHANGELOG.md).
+Development setup, module boundaries, testing and PR expectations are in [CONTRIBUTING.md](CONTRIBUTING.md). The [documentation index](docs/en/README.md) covers development, architecture, API, content and themes, with links to the English guides and the remaining Chinese references. Please read the [Code of Conduct](CODE_OF_CONDUCT.md) before taking part. Release notes live in [CHANGELOG.md](CHANGELOG.md).
 
 Contributions are welcome in English — issues and pull requests do not have to be written in Chinese.
 
