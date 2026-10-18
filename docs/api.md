@@ -71,35 +71,13 @@
 
 ## 文章、目录、评论与闪念
 
-| 方法与路径                                                                             | 作用                               |
-| -------------------------------------------------------------------------------------- | ---------------------------------- |
-| `GET /posts`、`GET /posts/metadata`                                                    | 公开列表、搜索、分页与真实目录聚合 |
-| `GET /posts/archive`                                                                   | 按 UTC 年份筛选的稳定分页归档      |
-| `GET /posts/:id`、`GET /posts/by-slug/:slug`                                           | 公开文章详情及地址解析             |
-| `GET /posts/:id/navigation`                                                            | 前后文章，支持 `scope=all/folder`  |
-| `GET /posts/:id/related`                                                               | 规则相关文章                       |
-| `POST /posts/:id/like`、`POST /posts/:id/view`                                         | 访客点赞切换与去重浏览计数         |
-| `GET /posts/:id/interaction`                                                           | 当前访客互动状态，私有且不缓存     |
-| `GET/POST /posts/:id/comments`、`POST /comments/:id/like`                              | 文章评论、回复与点赞               |
-| `GET/POST /admin/posts`、`GET/PATCH/DELETE /admin/posts/:id`                           | 管理列表、创建、版本化编辑及回收   |
-| `GET /admin/posts/:id/revisions`、`GET /admin/posts/:id/revisions/:revision`           | 修订列表与具体快照                 |
-| `POST /admin/posts/:id/revisions/:historical/restore`、`POST /admin/posts/:id/restore` | 恢复历史内容或回收记录             |
-| `POST /admin/posts/batch/preview`、`POST /admin/posts/batch/execute`                   | 明确编号及版本的批量预览和执行     |
-| `GET /admin/posts/batch`、`GET /admin/posts/batch/:ticket`                             | 最近批量任务及原票据结果           |
-| `GET /admin/taxonomy`                                                                  | 专栏和标签；写入入口在同一控制器   |
-| `GET /admin/comments`、`GET/PATCH /admin/comments/policy`                              | 评论管理与版本化审核策略           |
-| `POST /admin/comments/:id/moderation`、`POST /admin/comments/:id/reply`                | 影响范围确认后的审核与博主直接回复 |
-| `POST /admin/comments/batch/moderation`、`POST /admin/comments/batch/delete`           | 按版本逐条校验的批量审核与删除     |
-| `GET /flashes`、`GET /flashes/search`、`GET /flashes/:id`                              | 公开闪念列表、筛选、搜索及详情     |
-| `GET /flashes/overview`                                                                | 侧栏聚合与访客已赞，私有不缓存     |
-| `POST /flashes/:id/like`、`POST /flashes/:id/comments`                                 | 闪念互动                           |
-| `GET/POST /admin/flashes`、`GET/PATCH/DELETE /admin/flashes/:id`                       | 博主闪念管理                       |
 | 方法与路径                                                                             | 作用                                   |
 | -------------------------------------------------------------------------------------- | -------------------------------------- |
 | `GET /posts`、`GET /posts/metadata`                                                    | 公开列表、搜索、分页与真实目录聚合     |
 | `GET /posts/archive`                                                                   | 按 UTC 年份筛选的稳定分页归档          |
 | `GET /posts/:id`、`GET /posts/by-slug/:slug`                                           | 公开文章详情及地址解析                 |
-| `GET /posts/:id/navigation`、`GET /posts/:id/related`                                  | 前后文章与规则相关文章                 |
+| `GET /posts/:id/navigation`                                                            | 前后文章，支持 `scope=all/folder`      |
+| `GET /posts/:id/related`                                                               | 规则相关文章                           |
 | `POST /posts/:id/like`、`POST /posts/:id/view`                                         | 访客点赞切换与去重浏览计数             |
 | `GET /posts/:id/interaction`                                                           | 当前访客互动状态，私有且不缓存         |
 | `GET/POST /posts/:id/comments`、`POST /comments/:id/like`                              | 文章评论、回复与点赞                   |
@@ -126,7 +104,6 @@
 
 `GET /posts/:id/navigation` 接受可选 `scope`：省略或 `all` 保持全站顺序，`folder` 只查询当前文章所属专栏，其他值返回 400。响应保持 `{ prev, next }`，每侧为文章摘要或 `null`；仅包含已发布且未回收文章，当前文章不可公开时返回 404。沿用发布时间、编号倒序的列表顺序：`prev` 是较新的最近一篇，`next` 是较旧的最近一篇，同发布时间按编号区分。`folder` 模式下当前文章无专栏或专栏内无其他公开文章时返回双 `null`，接口自身不回退全站。文章详情页有专栏时优先请求该模式并标注专栏名；仅当两侧均为空时回退全站，没有专栏则直接使用全站。专栏内只有一侧有相邻文章时保留另一侧为空；请求失败显示加载错误，不当作空结果回退。
 
-评论与留言批量接口请求体为 `items: [{ id, revision }]`（1–100 条、编号不重复），审核另带 `status`；评论用 `POST`，留言用 `PATCH/DELETE`（删除的 JSON 体同样放 `items`）。整批在单个事务内执行，逐条校验版本：不存在或版本已变化的项跳过并在 `results[].reason` 返回 `not_found`/`conflict`，其余项照常生效；响应含 `successCount/failedCount`，评论删除另含级联回复在内的 `deleted`。批量审核只改选中项自身状态，以版本号代替单条接口的影响范围指纹；整批记一条汇总审计（沿用审核/删除动作，部分失败记为 partial）。
 评论与留言批量接口请求体为 `items: [{ id, revision }]`（1–100 条、编号不重复），审核另带 `status`；评论用 `POST`，留言用 `PATCH/DELETE`（删除的 JSON 体同样放 `items`）。整批在单个事务内执行，逐条校验版本：不存在或版本已变化的项跳过并在 `results[].reason` 返回 `not_found`/`conflict`，其余项照常生效；响应含 `successCount/failedCount`，评论删除另含级联回复在内的 `deleted`。批量审核只改选中项自身状态，以版本号代替单条接口的影响范围指纹；整批记一条汇总审计，评论使用 `comment.batch.moderate` / `comment.batch.delete`，留言使用 `guestbook.batch.moderate` / `guestbook.batch.delete`，后台显示对应的“批量审核/删除评论/留言”标签，部分失败记为 partial。已有单条动作和历史审计记录保持原有含义，不回填历史批量记录。
 
 `GET /posts/:id` 与 `GET /posts/by-slug/:slug` 返回公开详情：`tags` 与列表同为 `{ label, color }` 数组；`updatedAt` 是内容最后修订时间（当前修订快照的写入时间，早于发布时间或缺少快照时取发布时间），不随浏览、点赞或评论计数变化，用于 `dateModified`、`article:modified_time` 与站点地图 `lastmod`。有 Markdown 原文时只返回 `contentRaw`，不再返回结构化 `content`；没有原文的旧文章仍返回 `content` 供结构化渲染。`toc` 始终由结构化正文中的标题生成。摘要为空时额外返回 `excerpt`（首个正文段落前 160 字）作为描述兜底。
@@ -241,30 +218,16 @@
 
 ## 站点、媒体、运营与维护
 
-| 入口                                                                                  | 契约                                                   |
-| ------------------------------------------------------------------------------------- | ------------------------------------------------------ |
-| `GET /site`                                                                           | 公共站点资料，剔除隐藏关于字段，不缓存；提供内容上下文 |
-| `GET/PATCH /admin/site`、`GET /admin/site/revisions`                                  | 完整资料、版本化保存与历史                             |
-| `GET /admin/site/revisions/:revision`、`POST /admin/site/revisions/:revision/restore` | 读取指定历史版本与恢复资料                             |
+| 入口                                                                                  | 契约                                                             |
+| ------------------------------------------------------------------------------------- | ---------------------------------------------------------------- |
+| `GET /site`                                                                           | 公共站点资料，剔除隐藏关于字段与隐藏外链，不缓存；提供内容上下文 |
+| `GET/PATCH /admin/site`、`GET /admin/site/revisions`                                  | 完整资料、版本化保存与历史                                       |
+| `GET /admin/site/revisions/:revision`、`POST /admin/site/revisions/:revision/restore` | 读取指定历史版本与恢复资料                                       |
 
 站点资料含可选的 `presenceLabel`（≤20）、`presenceSignature`（≤60）、`presenceStatus`（空串、`online`、`idle`、`busy`）与 `launchedAt`（`YYYY-MM-DD` 或空）：前两者驱动名片的在线状态与签名，都为空时保持离线；`presenceStatus` 决定状态点的类型，空串时按在线展示；`launchedAt` 决定 `GET /posts/metadata` 里 `stats.siteAgeDays` 的起点，缺省回退到最早公开文章的发布日。旧客户端与旧内容包可不携带这几项，缺省按空串处理且保存时沿用当前值。
 
-站点资料还包含 `navigation`（`{ type: 'route', key, visible }` 或 `{ type: 'external', label, url, newTab, visible }`，`key` 限内置模块白名单且不重复，`home` 不可隐藏，外链 ≤4 个且仅 http(s)，缺失的内置模块按显示追加）、`footerLinks`（≤8 个 `{ label, url, newTab }`，`url` 为站内路径或 http(s)，不重复）、`quotes`（≤30 条、每条 1–120 字、去首尾空白后不重复）、`icpNumber`（≤40）、`icpUrl`（空或 http(s)，≤300）与 `copyright`（≤200，不含换行）。这些字段同样可选：未提交时沿用当前值，历史记录缺失时读取按缺省值补齐（缺省等于此前前端内置的导航、页脚链接与一言）。导航隐藏只影响展示，不做访问控制。
-| `GET/POST /admin/media` | 服务端分页筛选与 multipart `file` 上传，可带 `uploadId/alt` |
-| `PATCH/DELETE /admin/media/:id`、`POST /admin/media/:id/restore` | 独立资料更新、回收与恢复 |
-| `GET /admin/media/:id/references`、`GET /media/:uuid.webp[?w=320\|640\|960\|1280]` | 管理引用明细与公开 WebP 字节；`w` 取白名单宽度的缓存变体，其他值 400 |
-| `GET /admin/content-relations` | 管理端选择有向关联目标，最终关系随来源内容版本保存 |
-| `GET /admin/overview` | 服务端真实草稿、互动待办与最近编辑聚合 |
-| `GET /admin/notifications`、`GET /admin/notifications/summary` | 通知分页与未读统计；详情实时解析业务状态 |
-| `POST /admin/notifications/:id/read` | 仅改变已读，不完成审核或回复 |
-| `POST /admin/notifications/read-all` | 一次标记全部未读为已读，返回 `updated/unread`；不完成审核或回复 |
-| `GET /admin/operations`、`GET /admin/operations/tasks/:id` | 脱敏运行摘要与指定任务 |
-| `POST /admin/operations/tasks/:id/retry` | 核对当前状态后的显式人工重试 |
-| `GET /admin/maintenance/diagnostics`、`POST /admin/maintenance/media-check` | 数据库/结构就绪与登记媒体完整性 |
-| `POST /admin/backup/export` | 内容包下载，可选择是否包含媒体 |
-| `POST /admin/backup/imports/preview` | multipart `file/requestId/strategy/includeSettings`，生成预览票据 |
-| `GET /admin/backup/imports`、`GET /admin/backup/imports/:id` | 当前管理员的票据与原结果 |
-| `POST /admin/backup/imports/:id/repreview`、`POST /admin/backup/imports/:id/execute` | 重新预览或绑定摘要执行；执行需契约要求的确认文本与 confirmation |
+站点资料还包含 `navigation`（`{ type: 'route', key, visible }` 或 `{ type: 'external', label, url, newTab, visible }`，`key` 限内置模块白名单且不重复，`home` 不可隐藏，外链 ≤4 个且仅 http(s)，缺失的内置模块按显示追加）、`footerLinks`（≤8 个 `{ label, url, newTab }`，`url` 为站内路径或 http(s)，不重复）、`quotes`（≤30 条、每条 1–120 字、去首尾空白后不重复）、`icpNumber`（≤40）、`icpUrl`（空或 http(s)，≤300）与 `copyright`（≤200，不含换行）。这些字段同样可选：未提交时沿用当前值，历史记录缺失时读取按缺省值补齐（缺省等于此前前端内置的导航、页脚链接与一言）。导航隐藏只影响展示，不做访问控制；公开 `GET /site` 不返回隐藏的外链，隐藏的内置模块仍保留条目以维持显隐与顺序。
+
 | 入口                                                                                 | 契约                                                                                                                        |
 | ------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------- |
 | `GET/POST /admin/media`                                                              | 服务端分页筛选与 multipart `file` 上传，可带 `uploadId/alt`                                                                 |
@@ -289,6 +252,7 @@
 媒体搜索参数为 `search/orientation/usage/deleted`，说明与替代文本独立保存；被当前或历史内容引用的资源拒绝回收。内容包票据绑定管理员、内容代次、目标版本和预览摘要，重复执行返回原结果。接口层约束不能替代[备份恢复](backup-and-recovery.md)与[运行任务](operations.md)中的完整操作流程。
 
 `GET /admin/media/:id/references` 仅管理员可读，接受从 1 开始的 `page`，固定每页 20 项，响应为 `{ total, page, pageSize, items: [{ kind, revision?, title, url }] }`；包括草稿、归档及历史修订，媒体不存在时返回 404。后台批量回收复用此查询与单条 `DELETE /admin/media/:id`，逐项执行并展示结果，不是整批原子事务。删除会在共享媒体锁内重新统计全部引用，有引用时返回 409；成功只标记回收并清理图片变体，保留原文件供恢复。
+
 ## 附录 A：统一响应错误码
 
 本表登记统一 JSON 响应顶层的 `code`，包含已定义但尚未启用的预留码；任务诊断字符串、底层系统错误码和批量结果中的 `reason` 不属于此表。通用码及 HTTP 映射定义在 [error-codes.ts](../src/backend/server-main/src/common/constants/error-codes.ts)，域错误码定义在对应业务服务中。
