@@ -72,34 +72,36 @@
 
 ## 文章、目录、评论与闪念
 
-| 方法与路径                                                                             | 作用                                   |
-| -------------------------------------------------------------------------------------- | -------------------------------------- |
-| `GET /posts`、`GET /posts/metadata`                                                    | 公开列表、搜索、分页与真实目录聚合     |
-| `GET /posts/archive`                                                                   | 按 UTC 年份筛选的稳定分页归档          |
-| `GET /posts/:id`、`GET /posts/by-slug/:slug`                                           | 公开文章详情及地址解析                 |
-| `GET /posts/:id/navigation`                                                            | 前后文章，支持 `scope=all/folder/auto` |
-| `GET /posts/:id/related`                                                               | 规则相关文章                           |
-| `POST /posts/:id/like`、`POST /posts/:id/view`                                         | 访客点赞切换与去重浏览计数             |
-| `GET /posts/:id/interaction`                                                           | 当前访客互动状态，私有且不缓存         |
-| `GET/POST /posts/:id/comments`、`POST /comments/:id/like`                              | 文章评论、回复与点赞                   |
-| `GET/POST /admin/posts`、`GET/PATCH/DELETE /admin/posts/:id`                           | 管理列表、创建、版本化编辑及回收       |
-| `GET /admin/posts/filters`                                                             | 管理列表可用的专栏与标签筛选项         |
-| `GET /admin/posts/:id/revisions`、`GET /admin/posts/:id/revisions/:revision`           | 修订列表与具体快照                     |
-| `POST /admin/posts/:id/revisions/:historical/restore`、`POST /admin/posts/:id/restore` | 恢复历史内容或回收记录                 |
-| `POST /admin/posts/batch/preview`、`POST /admin/posts/batch/execute`                   | 明确编号及版本的批量预览和执行         |
-| `GET /admin/posts/batch`、`GET /admin/posts/batch/:ticket`                             | 最近批量任务及原票据结果               |
-| `GET /admin/taxonomy`                                                                  | 专栏和标签                             |
-| `POST /admin/taxonomy/:kind`、`PATCH/DELETE /admin/taxonomy/:kind/:id`                 | 新增、重命名和删除专栏或标签           |
-| `GET /admin/comments`、`GET/PATCH /admin/comments/policy`                              | 评论管理与版本化审核策略               |
-| `GET /admin/comments/articles`、`GET /admin/comments/:id/context`                      | 评论所属文章选项与目标评论上下文       |
-| `POST /admin/comments/:id/moderation`、`POST /admin/comments/:id/reply`                | 影响范围确认后的审核与博主直接回复     |
-| `DELETE /admin/comments/:id`                                                           | 校验影响范围指纹后的单条及级联回复删除 |
-| `POST /admin/comments/batch/moderation`、`POST /admin/comments/batch/delete`           | 按版本逐条校验的批量审核与删除         |
-| `GET /flashes`、`GET /flashes/search`、`GET /flashes/:id`                              | 公开闪念列表、筛选、搜索及详情         |
-| `GET /flashes/overview`                                                                | 侧栏聚合与访客已赞，私有不缓存         |
-| `POST /flashes/:id/like`、`POST /flashes/:id/comments`                                 | 闪念互动                               |
-| `GET/POST /admin/flashes`、`GET/PATCH/DELETE /admin/flashes/:id`                       | 博主闪念管理                           |
-| `DELETE /admin/flashes/:id/comments/:commentId`                                        | 删除指定闪念评论                       |
+| 方法与路径                                                                                   | 作用                                       |
+| -------------------------------------------------------------------------------------------- | ------------------------------------------ |
+| `GET /posts`、`GET /posts/metadata`                                                          | 公开列表、搜索、分页与真实目录聚合         |
+| `GET /posts/archive`                                                                         | 按 UTC 年份筛选的稳定分页归档              |
+| `GET /posts/:id`、`GET /posts/by-slug/:slug`                                                 | 公开文章详情及地址解析                     |
+| `GET /posts/:id/navigation`                                                                  | 前后文章，支持 `scope=all/folder/auto`     |
+| `GET /posts/:id/related`                                                                     | 规则相关文章                               |
+| `POST /posts/:id/like`、`POST /posts/:id/view`                                               | 访客点赞切换与去重浏览计数                 |
+| `GET /posts/:id/interaction`                                                                 | 当前访客互动状态，私有且不缓存             |
+| `GET/POST /posts/:id/comments`、`POST /comments/:id/like`                                    | 文章评论、回复与点赞                       |
+| `GET/POST /admin/posts`、`GET/PATCH/DELETE /admin/posts/:id`                                 | 管理列表、创建、版本化编辑及回收           |
+| `GET /admin/posts/filters`                                                                   | 管理列表可用的专栏与标签筛选项             |
+| `GET /admin/posts/:id/revisions`、`GET /admin/posts/:id/revisions/:revision`                 | 修订列表与具体快照                         |
+| `POST /admin/posts/:id/revisions/:historical/restore`、`POST /admin/posts/:id/restore`       | 恢复历史内容或回收记录                     |
+| `POST /admin/posts/batch/preview`、`POST /admin/posts/batch/execute`                         | 明确编号及版本的批量预览和执行             |
+| `GET /admin/posts/batch`、`GET /admin/posts/batch/:ticket`                                   | 最近批量任务及原票据结果                   |
+| `GET /admin/taxonomy`                                                                        | 专栏和标签                                 |
+| `POST /admin/taxonomy/:kind`、`PATCH/DELETE /admin/taxonomy/:kind/:id`                       | 新增、重命名和删除专栏或标签               |
+| `GET /admin/comments`、`GET/PATCH /admin/comments/policy`                                    | 评论管理与版本化审核策略                   |
+| `GET /admin/comments/articles`、`GET /admin/comments/:id/context`                            | 评论所属文章选项与目标评论上下文           |
+| `POST /admin/comments/:id/moderation`、`POST /admin/comments/:id/reply`                      | 影响范围确认后的审核与博主直接回复         |
+| `DELETE /admin/comments/:id`                                                                 | 校验影响范围指纹后的单条及级联回复删除     |
+| `POST /admin/comments/batch/moderation`、`POST /admin/comments/batch/delete`                 | 按版本逐条校验的批量审核与删除             |
+| `GET /flashes`、`GET /flashes/search`、`GET /flashes/:id`                                    | 公开闪念列表、筛选、搜索及详情             |
+| `GET /flashes/overview`                                                                      | 侧栏聚合与访客已赞，私有不缓存             |
+| `POST /flashes/:id/like`、`POST /flashes/:id/comments`                                       | 闪念互动                                   |
+| `GET/POST /admin/flashes`、`GET/PATCH/DELETE /admin/flashes/:id`                             | 博主闪念管理                               |
+| `DELETE /admin/flashes/:id/comments/:commentId`                                              | 删除指定闪念评论                           |
+| `GET /admin/flashes/comments`、`PATCH /admin/flashes/:id/comments/:commentId`                | 跨闪念评论审核列表与单条通过/隐藏          |
+| `POST /admin/flashes/comments/batch/moderation`、`POST /admin/flashes/comments/batch/delete` | 按提交状态逐条校验的闪念评论批量审核与删除 |
 
 文章公开列表只读取列表所需字段，正文检索仍由后端执行。
 
@@ -122,6 +124,10 @@
 `GET /flashes` 接受 `page`（默认 1）、`pageSize`（默认 20，最大 100）及可任意组合的筛选：`tag`（标签精确匹配）、`type`（`idea`/`todo`/`memo`）、`date`（`YYYY-MM-DD`，按 UTC 日）、`from`/`to`（`YYYY-MM-DD`，含首尾的 UTC 日范围，与 `date` 同时出现取交集）；日期须为真实存在的公历日，非法参数返回 400。`GET /flashes/search` 另需 `q`（1–200 字），匹配正文或任一标签包含关键词（不区分大小写，`%`/`_` 按字面处理），并可与上述筛选组合。列表与搜索只返回本站已发布、未归档的闪念，均按置顶优先、`createdAt` 倒序、编号倒序稳定分页，响应为 `{ items, total, page, pageSize }`，`total` 为筛选后的总数；带 `X-Visitor-Id` 时 `items[].liked` 反映该访客的点赞状态。
 
 `GET /flashes/overview` 一次返回闪念页侧栏所需的聚合，全部由数据库聚合或限量查询得到、只读：`total`（公开总数）、`monthCount`（当前 UTC 自然月新增）、`dates`（有闪念的 UTC 日期 `{ date, count }`，日期倒序，覆盖全部历史以支持日历翻月与连续天数）、`tags`（`{ name, count }`，次数倒序、同次数按名称）、`onThisDay`（UTC 月日与今天相同且年份更早的最近一条，无则 `null`）、`recollections`（随机抽取的最多 12 条回顾）与 `likedIds`（当前访客已点赞的公开闪念编号，未带 `X-Visitor-Id` 时为空数组）。`onThisDay` 与 `recollections` 只含 `{ id, content, createdAt }`，`content` 截取前 300 字。响应按访客区分，`Cache-Control: private, no-store`；限流与其他公开读取接口相同。公开闪念页 SSR 直出第一页列表，挂载后读取概览补齐侧栏与首屏个人点赞状态，类型、日期、标签与关键词筛选均走后端分页。
+
+闪念评论与文章、朋友圈评论共用站点评论策略（`/admin/comments/policy`）：`POST /flashes/:id/comments` 在开启先审后发时创建 `pending` 评论，否则为 `published`，响应带 `moderationStatus`（`published`/`pending`/`hidden`，与朋友圈评论同名同取值），并按状态写入 `flash-comment` 站内通知（`pending_review`/`new_comment`）。公开列表、搜索与详情的 `comments` 只返回已发布评论，以及携带 `X-Visitor-Id` 时该访客本人提交的待审评论（仅提交者本机可见，SSR 匿名读取不含待审）；`commentCount` 只计已发布评论。隐藏评论不公开。存量评论与旧内容包迁入的评论按已发布处理。
+
+`GET /admin/flashes/comments` 接受 `status`（`all`/`published`/`pending`/`hidden`，默认 `all`）、`page`、`pageSize`（默认 20，最大 100）和用于通知跳转的 `commentId`，按提交时间倒序返回 `{ items, total, page, pageSize }`，每项含评论字段、`moderationStatus` 及所属闪念 `flashId/flashContent/flashStatus`。单条审核 `PATCH /admin/flashes/:id/comments/:commentId` 请求体为 `{ status, expectedStatus }`，当前状态既不是 `expectedStatus` 也不是目标状态时返回 409。批量接口请求体为 `items: [{ id, expectedStatus }]`（1–100 条、编号不重复），审核另带 `status`；整批单事务、逐条锁行校验，不存在或不属于本站闪念的项返回 `not_found`，状态已变化的项返回 `conflict`，其余照常生效；删除与单条一致为物理删除，媒体引用随外键清理。审计动作分别为 `flash.comment.moderate`、`flash.comment.delete`、`flash.comment.batch.moderate`、`flash.comment.batch.delete`；闪念本身的写入仍记为 `flash.write`。
 
 源码入口：[post](../src/backend/server-main/src/modules/post/)、[comment](../src/backend/server-main/src/modules/comment/)、[flash](../src/backend/server-main/src/modules/flash/)。
 

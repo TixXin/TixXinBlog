@@ -1,6 +1,6 @@
 /**
  * @file admin-flash.service.ts
- * @description 单站点闪念写入；不接受客户端所有者 ID，保留原有 tixxin 内容归属
+ * @description 单站点闪念写入；不接受客户端所有者 ID，保留原有 tixxin 内容归属；后台读取返回全部审核状态的评论
  */
 import { FilterQuery, LockMode } from '@mikro-orm/core'
 import { EntityManager } from '@mikro-orm/postgresql'
@@ -37,7 +37,7 @@ export class AdminFlashService {
       offset: (query.page - 1) * query.pageSize,
     })
     return {
-      items: await this.publicFlashes.serialize(notes, visitor),
+      items: await this.publicFlashes.serialize(notes, visitor, true),
       total,
       page: query.page,
       pageSize: query.pageSize,
@@ -46,7 +46,7 @@ export class AdminFlashService {
   async detail(id: string) {
     const note = await this.em.findOne(FlashNote, { id, userId: SITE_OWNER_ID }, { populate: ['comments'] })
     if (!note) throw new NotFoundException('闪念不存在')
-    return (await this.publicFlashes.serialize([note], ''))[0]!
+    return (await this.publicFlashes.serialize([note], '', true))[0]!
   }
   async save(id: string | null, input: SaveFlashDto) {
     if (!id && !input.content) throw new BadRequestException('闪念内容不能为空')
@@ -88,7 +88,7 @@ export class AdminFlashService {
       })
       await em.flush()
       await em.populate(note, ['comments'])
-      return (await this.publicFlashes.serialize([note], ''))[0]!
+      return (await this.publicFlashes.serialize([note], '', true))[0]!
     })
   }
   async remove(id: string) {

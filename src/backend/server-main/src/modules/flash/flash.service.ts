@@ -1,6 +1,7 @@
 /**
  * @file flash.service.ts
- * @description 闪念业务:列表与搜索(置顶前置,可按标签/类型/UTC 日期组合筛选)、公开概览聚合、详情、点赞切换、访客评论
+ * @description 闪念业务:列表与搜索(置顶前置,可按标签/类型/UTC 日期组合筛选)、公开概览聚合、详情、点赞切换、访客评论;
+ *   评论按评论策略决定先审后发,公开读取只返回已发布评论与当前访客本人的待审评论
  * @author TixXin
  * @since 2026-07-20
  */
@@ -11,6 +12,8 @@ import { BadRequestException, HttpStatus, Injectable } from '@nestjs/common'
 import { ConfigService } from '@nestjs/config'
 import { BusinessException } from '../../common/exceptions/business.exception'
 import { FlashComment } from '../../entities/flash-comment.entity'
+import type { FlashCommentStatus } from '../../entities/flash-comment.entity'
+import { CommentPolicy } from '../../entities/comment-policy.entity'
 import { FlashLike } from '../../entities/flash-like.entity'
 import { FlashNote, FlashType } from '../../entities/flash-note.entity'
 import { CreateFlashCommentDto } from './dto/create-flash-comment.dto'
@@ -19,6 +22,7 @@ import { MediaAsset } from '../../entities/media-asset.entity'
 import { lockMedia, managedMediaIds, synchronizeMediaReferences } from '../media/media-references'
 import { publicAuthorId } from '../../common/utils/public-author-id'
 import { momentUrl } from '../moment/moment-values'
+import { recordOwnerEvent } from '../operations/owner-events'
 
 /** 域错误码(api.md 附录 A):3001 闪念不存在 */
 const FLASH_NOT_FOUND = 3001
@@ -61,17 +65,28 @@ export interface FlashNoteDto {
   updatedAt: string
   likes: number
   liked: boolean
-  comments: Array<{
-    id: string
-    authorId: string
-    authorName: string
-    authorAvatar: string
-    content: string
-    createdAt: string
-  }>
+  /** 已发布评论数;不含待审与隐藏评论,也不含访客本人可见的待审评论 */
+  commentCount: number
+  comments: FlashCommentDto[]
   isPinned: boolean
   isArchived: boolean
   isDraft: boolean
+}
+
+/** 闪念评论响应;moderationStatus 与朋友圈评论同名同取值 */
+export interface FlashCommentDto {
+  id: string
+  authorId: string
+  authorName: string
+  authorAvatar: string
+  content: string
+  createdAt: string
+  moderationStatus: FlashCommentStatus
+}
+
+/** 公开读取的评论可见性:已发布评论,以及当前访客本人提交的待审评论(仅其本机可见) */
+export function visibleToVisitor(comment: Pick<FlashComment, 'status' | 'authorId'>, visitor: string): boolean {
+  return comment.status === 'published' || (comment.status === 'pending' && !!visitor && comment.authorId === visitor)
 }
 
 /** 时间胶囊条目:只带摘录与时间,不返回完整正文与互动 */
@@ -271,11 +286,7 @@ export class FlashService {
     })
   }
 
-  async addComment(
-    id: string,
-    dto: CreateFlashCommentDto,
-    visitorIdHash: string,
-  ): Promise<FlashNoteDto['comments'][number]> {
+  async addComment(id: string, dto: CreateFlashCommentDto, visitorIdHash: string): Promise<FlashCommentDto> {
     return this.em.transactional(async (em) => {
       await lockMedia(em)
       const note = await em.findOne(
@@ -284,6 +295,8 @@ export class FlashService {
         { lockMode: LockMode.PESSIMISTIC_WRITE },
       )
       if (!note) throw new BusinessException(FLASH_NOT_FOUND, '闪念不存在', HttpStatus.NOT_FOUND)
+      // 与文章、朋友圈评论共用站点评论策略;每次读取最新值,避免博主刚开启先审后发时仍直接公开。
+      const policy = await em.findOne(CommentPolicy, { id: 'default' }, { refresh: true })
       const comment = em.create(FlashComment, {
         flashNote: note,
         authorId: visitorIdHash,
@@ -291,6 +304,7 @@ export class FlashService {
         // 与朋友圈、留言共用头像白名单：默认头像、本站媒体或完整 HTTP(S) 地址。
         authorAvatar: dto.authorAvatar === undefined ? DEFAULT_AVATAR : momentUrl(dto.authorAvatar, true, true),
         content: dto.content,
+        status: policy?.requireApproval ? 'pending' : 'published',
         createdAt: new Date(),
       })
       await em.flush()
@@ -299,18 +313,30 @@ export class FlashService {
         flashComment: comment,
       })
       await em.flush()
-      return {
-        id: comment.id,
-        authorId: this.authorId(comment.authorId),
-        authorName: comment.authorName,
-        authorAvatar: comment.authorAvatar,
-        content: comment.content,
-        createdAt: comment.createdAt.toISOString(),
-      }
+      await recordOwnerEvent(
+        em,
+        'flash-comment',
+        comment.id,
+        comment.status === 'pending' ? 'pending_review' : 'new_comment',
+      )
+      return this.commentDto(comment)
     })
   }
 
-  async serialize(notes: FlashNote[], visitor: string): Promise<FlashNoteDto[]> {
+  commentDto(comment: FlashComment): FlashCommentDto {
+    return {
+      id: comment.id,
+      authorId: this.authorId(comment.authorId),
+      authorName: comment.authorName,
+      authorAvatar: comment.authorAvatar,
+      content: comment.content,
+      createdAt: comment.createdAt.toISOString(),
+      moderationStatus: comment.status,
+    }
+  }
+
+  /** admin 为 true 时返回全部状态的评论供后台审核;公开读取按 visibleToVisitor 过滤 */
+  async serialize(notes: FlashNote[], visitor: string, admin = false): Promise<FlashNoteDto[]> {
     const ids = managedMediaIds(notes.map((note) => note.images))
     const assets = ids.length ? await this.em.find(MediaAsset, { id: { $in: ids } }) : []
     const descriptions = new Map(assets.map((asset) => [asset.id, asset.alt]))
@@ -319,10 +345,17 @@ export class FlashService {
         ? await this.em.find(FlashLike, { visitorIdHash: visitor, flashNote: { $in: notes.map((note) => note.id) } })
         : []
     const liked = new Set(likes.map((like) => like.flashNote.id))
-    return notes.map((note) => this.toDto(note, liked.has(note.id), descriptions))
+    return notes.map((note) => this.toDto(note, liked.has(note.id), descriptions, visitor, admin))
   }
 
-  private toDto(note: FlashNote, liked: boolean, descriptions: Map<string, string>): FlashNoteDto {
+  private toDto(
+    note: FlashNote,
+    liked: boolean,
+    descriptions: Map<string, string>,
+    visitor: string,
+    admin: boolean,
+  ): FlashNoteDto {
+    const comments = note.comments.getItems()
     return {
       id: note.id,
       userId: note.userId,
@@ -335,17 +368,11 @@ export class FlashService {
       updatedAt: note.updatedAt.toISOString(),
       likes: note.likes,
       liked,
-      comments: note.comments
-        .getItems()
+      commentCount: comments.filter((c) => c.status === 'published').length,
+      comments: comments
+        .filter((c) => admin || visibleToVisitor(c, visitor))
         .sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime())
-        .map((c) => ({
-          id: c.id,
-          authorId: this.authorId(c.authorId),
-          authorName: c.authorName,
-          authorAvatar: c.authorAvatar,
-          content: c.content,
-          createdAt: c.createdAt.toISOString(),
-        })),
+        .map((c) => this.commentDto(c)),
       isPinned: note.isPinned,
       isArchived: note.isArchived,
       isDraft: note.isDraft,

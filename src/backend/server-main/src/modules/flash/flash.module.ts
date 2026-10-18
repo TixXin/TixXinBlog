@@ -14,11 +14,12 @@ import { FlashController } from './flash.controller'
 import { FlashService } from './flash.service'
 import { AdminFlashController } from './admin-flash.controller'
 import { AdminFlashService } from './admin-flash.service'
+import { AdminFlashCommentService } from './admin-flash-comment.service'
 
 @Module({
   imports: [MikroOrmModule.forFeature([FlashNote, FlashComment, FlashLike])],
   controllers: [FlashController, AdminFlashController],
-  providers: [FlashService, AdminFlashService],
+  providers: [FlashService, AdminFlashService, AdminFlashCommentService],
   exports: [AdminFlashService],
 })
 export class FlashModule {}

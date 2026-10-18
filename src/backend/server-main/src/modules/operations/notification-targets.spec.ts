@@ -19,6 +19,8 @@ describe('通知目标解析', () => {
       { id: 'another-comment', kind: 'comment', sourceId: '42' },
       { id: 'guestbook-note', kind: 'guestbook', sourceId: '41' },
       { id: 'moment-note', kind: 'moment-comment', sourceId: '41' },
+      { id: 'flash-note', kind: 'flash-comment', sourceId: 'flash-c1' },
+      { id: 'flash-published', kind: 'flash-comment', sourceId: 'flash-c2' },
     ]
     const em = {
       execute: jest
@@ -29,18 +31,27 @@ describe('通知目标解析', () => {
         ])
         .mockResolvedValueOnce([{ id: '41', state: 'awaiting_reply' }])
         .mockResolvedValueOnce([{ id: '41', state: 'available', parent: 'moment-3' }])
+        .mockResolvedValueOnce([
+          { id: 'flash-c1', state: 'pending_review' },
+          { id: 'flash-c2', state: 'available' },
+        ])
         .mockResolvedValueOnce([{ id: 'task-1', state: 'failed' }]),
     }
 
     const result = await resolveNotificationTargets(em as unknown as EntityManager, notifications)
 
-    expect(em.execute).toHaveBeenCalledTimes(4)
+    expect(em.execute).toHaveBeenCalledTimes(5)
     expect(em.execute).toHaveBeenNthCalledWith(1, expect.stringContaining('from comment c join post p'), ['41', '42'])
     expect(em.execute).toHaveBeenNthCalledWith(2, expect.stringContaining('from guestbook_message g'), ['41'])
     expect(em.execute).toHaveBeenNthCalledWith(3, expect.stringContaining('from moment_comment c join moment m'), [
       '41',
     ])
-    expect(em.execute).toHaveBeenNthCalledWith(4, expect.stringContaining('from background_task'), ['task-1'])
+    expect(em.execute).toHaveBeenNthCalledWith(
+      4,
+      expect.stringContaining('from flash_comment c left join flash_note n'),
+      ['flash-c1', 'flash-c2'],
+    )
+    expect(em.execute).toHaveBeenNthCalledWith(5, expect.stringContaining('from background_task'), ['task-1'])
     expect(result).toEqual(
       new Map([
         ['comment-note', { state: 'pending_review', url: '/admin/comments?commentId=41' }],
@@ -48,12 +59,14 @@ describe('通知目标解析', () => {
         ['another-comment', { state: 'handled', url: '/admin/comments?commentId=42' }],
         ['guestbook-note', { state: 'awaiting_reply', url: '/admin/guestbook?focus=41' }],
         ['moment-note', { state: 'available', url: '/admin/moments?comments=moment-3&commentId=41' }],
+        ['flash-note', { state: 'pending_review', url: '/admin/flash-comments?status=pending&commentId=flash-c1' }],
+        ['flash-published', { state: 'available', url: '/admin/flash-comments?commentId=flash-c2' }],
         ['task-note', { state: 'failed', url: '/admin/operations?task=task-1' }],
       ]),
     )
   })
 
-  it.each(['comment', 'guestbook', 'moment-comment', 'task'] as const)(
+  it.each(['comment', 'guestbook', 'moment-comment', 'flash-comment', 'task'] as const)(
     '%s 的业务记录缺失时保留通知并隐藏链接',
     async (kind) => {
       const em = { execute: jest.fn().mockResolvedValue([]) }
@@ -67,7 +80,7 @@ describe('通知目标解析', () => {
     },
   )
 
-  it.each(['comment', 'guestbook', 'moment-comment', 'task'] as const)(
+  it.each(['comment', 'guestbook', 'moment-comment', 'flash-comment', 'task'] as const)(
     '%s 的业务状态不可用时不生成可点击目标',
     async (kind) => {
       const em = { execute: jest.fn().mockResolvedValue([{ id: '41', state: 'unavailable', parent: 'moment-3' }]) }
