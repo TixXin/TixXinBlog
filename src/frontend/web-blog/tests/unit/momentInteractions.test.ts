@@ -46,6 +46,9 @@ const comment = (id = 'comment-a', patch: Partial<MomentCommentItem> = {}): Mome
   moderationStatus: 'published',
   ...patch,
 })
+// 访客提交携带蜜罐与表单渲染时间，由服务端判定机器人；博主身份发送时不附带。
+const renderedAt = Date.parse('2026-10-18T07:59:00Z')
+const submission = { id: note.id, website: '', formRenderedAt: renderedAt }
 const page = (items: MomentCommentItem[], number = 1, total = items.length): MomentCommentPage => ({
   items,
   page: number,
@@ -199,7 +202,7 @@ describe('朋友圈点赞与评论读取', () => {
     const { flow, state, store } = await setup()
     flow.draft({ id: note.id, value: '旧身份输入' })
     const liking = flow.like({ id: note.id, liked: true })
-    const sending = flow.submit(note.id)
+    const sending = flow.submit(submission)
     clearMomentDrafts(useNuxtApp())
     flow.draft({ id: note.id, value: '新身份输入' })
     liked.resolve({ isLiked: true, likes: 3 })
@@ -223,7 +226,7 @@ describe('朋友圈提交与草稿', () => {
     mocks.auth.restoringPending.value = true
     const { flow, state } = await setup()
     flow.draft({ id: note.id, value: '先写下来' })
-    await flow.submit(note.id)
+    await flow.submit(submission)
     expect(mocks.comment).not.toHaveBeenCalled()
     expect(mocks.auth.restore).toHaveBeenCalledOnce()
     expect(state.draft).toBe('先写下来')
@@ -236,7 +239,7 @@ describe('朋友圈提交与草稿', () => {
     mocks.comment.mockResolvedValueOnce({ ...comment('pending', { moderationStatus: 'pending' }), commentCount: 1 })
     const { flow, state, store } = await setup()
     flow.draft({ id: note.id, value: '  沿途风景很好  ' })
-    await flow.submit(note.id)
+    await flow.submit(submission)
     expect(flow.identityVisible.value).toBe(true)
     expect(mocks.comment).not.toHaveBeenCalled()
     mocks.identity.hasIdentity.value = true
@@ -245,7 +248,14 @@ describe('朋友圈提交与草稿', () => {
     await flushPromises()
     expect(mocks.comment).toHaveBeenCalledWith(
       note.id,
-      { content: '沿途风景很好', author: '小林', avatar: '/avatar.svg', requestId: expect.any(String) },
+      {
+        content: '沿途风景很好',
+        author: '小林',
+        avatar: '/avatar.svg',
+        requestId: expect.any(String),
+        website: '',
+        formRenderedAt: renderedAt,
+      },
       false,
     )
     expect(flow.identityVisible.value).toBe(false)
@@ -263,12 +273,12 @@ describe('朋友圈提交与草稿', () => {
     mocks.identity.hasIdentity.value = false
     const { flow, state } = await setup()
     flow.draft({ id: note.id, value: '博主回复' })
-    await flow.submit(note.id)
+    await flow.submit(submission)
     flow.cancelIdentity()
     flow.confirmIdentity()
     expect(mocks.comment).not.toHaveBeenCalled()
     expect(state.draft).toBe('博主回复')
-    await flow.submit(note.id)
+    await flow.submit(submission)
     flow.switchToLogin()
     expect(flow.identityVisible.value).toBe(false)
     expect(mocks.open).toHaveBeenCalledWith('login')
@@ -282,14 +292,14 @@ describe('朋友圈提交与草稿', () => {
     mocks.comment.mockRejectedValueOnce(new Error('响应丢失')).mockRejectedValueOnce(new Error('仍未确认'))
     const { flow, state } = await setup()
     flow.draft({ id: note.id, value: '第一版' })
-    await flow.submit(note.id)
+    await flow.submit(submission)
     const first = mocks.comment.mock.calls[0]![1]
     expect(first.requestId).toMatch(/^[0-9a-f-]{36}$/)
     expect(state).toMatchObject({ draft: '第一版', submitError: '响应丢失', submitting: false })
-    await flow.submit(note.id)
+    await flow.submit(submission)
     expect(mocks.comment.mock.calls[1]![1]).toEqual(first)
     flow.draft({ id: note.id, value: '修改后的内容' })
-    await flow.submit(note.id)
+    await flow.submit(submission)
     expect(mocks.comment.mock.calls[2]![1].requestId).not.toBe(first.requestId)
     expect(state).toMatchObject({ draft: '', submitting: false, submitError: '', requestId: '' })
   })
@@ -301,8 +311,8 @@ describe('朋友圈提交与草稿', () => {
     state.comments = [comment()]
     state.total = 1
     flow.draft({ id: note.id, value: '发送内容' })
-    const sending = flow.submit(note.id)
-    await flow.submit(note.id)
+    const sending = flow.submit(submission)
+    await flow.submit(submission)
     expect(mocks.comment).toHaveBeenCalledOnce()
     flow.draft({ id: note.id, value: '下一条输入' })
     result.resolve({ ...comment(), commentCount: 1 })
@@ -318,7 +328,7 @@ describe('朋友圈提交与草稿', () => {
     mocks.comments.mockResolvedValueOnce(page([comment('current')]))
     const { flow, state } = await setup()
     flow.draft({ id: note.id, value: '提交内容' })
-    const sending = flow.submit(note.id)
+    const sending = flow.submit(submission)
     invalidateMomentComments(useNuxtApp(), note.id)
     result.resolve({ ...comment('old'), commentCount: 1 })
     await sending
@@ -332,7 +342,7 @@ describe('朋友圈提交与草稿', () => {
   it('限制草稿长度，空白不发送；退出保护在卸载后移除', async () => {
     const { flow, state, wrapper } = await setup()
     flow.draft({ id: note.id, value: ' ' })
-    await flow.submit(note.id)
+    await flow.submit(submission)
     expect(mocks.comment).not.toHaveBeenCalled()
     const clean = new Event('beforeunload', { cancelable: true })
     window.dispatchEvent(clean)

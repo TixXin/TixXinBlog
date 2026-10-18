@@ -100,18 +100,21 @@ async function load(id = '7', options: { reuseLoaded?: boolean } = {}) {
 }
 
 describe('文章详情读取', () => {
-  it('数字地址同时读取详情、推荐和相邻文章，并按正文规则过滤重复标题', async () => {
+  it('数字地址同时读取详情和推荐，相邻文章按详情专栏读取，并按正文规则过滤重复标题', async () => {
     const pending = deferred<Detail>()
     mocks.detail.mockReturnValueOnce(pending.promise)
     const view = await setup()
     expect(mocks.detail).toHaveBeenCalledWith('/api/v1', '7', expect.any(AbortSignal))
     expect(mocks.related).toHaveBeenCalledWith('/api/v1', '7', expect.any(AbortSignal))
-    expect(mocks.navigation).toHaveBeenCalledWith('/api/v1', '7', expect.any(AbortSignal))
+    // 上下篇优先同专栏，需等详情确定专栏后再读取。
+    expect(mocks.navigation).not.toHaveBeenCalled()
     pending.resolve(article())
     const { state } = await view.result
+    expect(mocks.navigation).toHaveBeenCalledWith('/api/v1', '7', expect.any(AbortSignal), 'folder')
     expect(state!.article.value.id).toBe('7')
     expect(state!.relatedPosts.value).toEqual([related])
     expect(state!.navigation.value).toEqual({ prev: related, next: null })
+    expect(state!.navigationFolder.value).toBe('生活')
     expect(state!.tocItems.value).toEqual([{ id: 'heading-2', text: '河畔', level: 2 }])
     expect(state!.discoveryError.value).toBe(false)
   })
@@ -126,7 +129,7 @@ describe('文章详情读取', () => {
     const { state } = await view.result
     expect(state!.article.value.id).toBe('42')
     expect(mocks.related).toHaveBeenCalledWith('/api/v1', '42', expect.any(AbortSignal))
-    expect(mocks.navigation).toHaveBeenCalledWith('/api/v1', '42', expect.any(AbortSignal))
+    expect(mocks.navigation).toHaveBeenCalledWith('/api/v1', '42', expect.any(AbortSignal), 'folder')
   })
 
   it.each(['related', 'navigation'] as const)('%s 失败仍展示真实详情及另一项补充结果', async (failed) => {
@@ -145,7 +148,8 @@ describe('文章详情读取', () => {
     expect(state).toBeUndefined()
     expect(error).toMatchObject({ statusCode: statusCode === 404 ? 404 : 503, fatal: true })
     expect((mocks.related.mock.calls[0]![2] as AbortSignal).aborted).toBe(true)
-    expect((mocks.navigation.mock.calls[0]![2] as AbortSignal).aborted).toBe(true)
+    // 相邻文章依赖详情确定的专栏，详情失败时不会发起。
+    expect(mocks.navigation).not.toHaveBeenCalled()
   })
 
   it('页面销毁撤销详情与补充读取，迟到结果不能完成页面初始化', async () => {
