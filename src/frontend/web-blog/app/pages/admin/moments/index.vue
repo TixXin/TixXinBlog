@@ -255,7 +255,9 @@ async function hideComments() {
 }
 .admin-moments {
   display: grid;
+  min-width: 0;
   gap: 1rem;
+  overflow-wrap: anywhere;
 }
 header,
 .admin-moments__actions,
@@ -306,6 +308,11 @@ textarea {
 .admin-moments__filters input {
   max-width: 240px;
 }
+.admin-moments__filters label {
+  display: grid;
+  min-width: 0;
+  gap: 0.35rem;
+}
 ul {
   list-style: none;
   padding: 0;
@@ -329,5 +336,14 @@ li,
 .admin-moments__comments p {
   overflow-wrap: anywhere;
   white-space: pre-wrap;
+}
+@media (max-width: 600px) {
+  .admin-moments__filters > input,
+  .admin-moments__filters > select,
+  .admin-moments__filters label,
+  .admin-moments__filters label input {
+    width: 100%;
+    max-width: 100%;
+  }
 }
 </style>

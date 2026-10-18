@@ -132,8 +132,10 @@ async function leave() {
 }
 .admin-header nav {
   display: flex;
+  flex-wrap: wrap;
   gap: 1rem;
   flex: 1;
+  min-width: 0;
 }
 .admin-header a {
   color: var(--accent);

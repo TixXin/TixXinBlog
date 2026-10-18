@@ -131,6 +131,7 @@ const { data, pending, error, notice, busy, query, filter, load, mutate, isLogge
 <style scoped lang="scss">
 .admin-links {
   display: grid;
+  min-width: 0;
   gap: 1rem;
   overflow-wrap: anywhere;
 }
@@ -168,6 +169,7 @@ label {
 input,
 select,
 button {
+  min-width: 0;
   max-width: 100%;
   min-height: 44px;
   padding: 0.5rem 0.7rem;
@@ -193,5 +195,17 @@ button:disabled {
 }
 .admin-links__url {
   font-size: 0.8125rem;
+  overflow-wrap: anywhere;
+}
+@media (max-width: 600px) {
+  .admin-links__filters > label,
+  .admin-links__filters > button {
+    flex: 1 1 100%;
+  }
+  .admin-links__filters input,
+  .admin-links__filters select,
+  .admin-links__filters button {
+    width: 100%;
+  }
 }
 </style>

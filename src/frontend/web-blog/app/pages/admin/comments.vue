@@ -31,7 +31,7 @@
         </p>
         <p>通知渠道尚未接入，不会向评论者发送邮件或消息。</p>
       </section>
-      <form @submit.prevent="resetPage">
+      <form class="admin-comments__filters" @submit.prevent="resetPage">
         <select v-model="postId" aria-label="按文章筛选评论" :disabled="working" @change="resetPage">
           <option value="">全部文章</option>
           <option v-for="article in articles" :key="article.id" :value="String(article.id)">{{ article.title }}</option>
@@ -118,21 +118,23 @@
               <button type="button" @click="showContext(reply.id)">查看此回复上下文</button>
             </li>
           </ul>
-          <button
-            type="button"
-            :disabled="contextPending || context.page <= 1"
-            @click="showContext(context.target.id, context.page - 1)"
-          >
-            上一页回复
-          </button>
-          <span>{{ context.page }} / {{ Math.max(1, Math.ceil(context.total / 20)) }}</span>
-          <button
-            type="button"
-            :disabled="contextPending || context.page * 20 >= context.total"
-            @click="showContext(context.target.id, context.page + 1)"
-          >
-            下一页回复
-          </button>
+          <nav class="admin-comments__pagination" aria-label="上下文回复分页">
+            <button
+              type="button"
+              :disabled="contextPending || context.page <= 1"
+              @click="showContext(context.target.id, context.page - 1)"
+            >
+              上一页回复
+            </button>
+            <span>{{ context.page }} / {{ Math.max(1, Math.ceil(context.total / 20)) }}</span>
+            <button
+              type="button"
+              :disabled="contextPending || context.page * 20 >= context.total"
+              @click="showContext(context.target.id, context.page + 1)"
+            >
+              下一页回复
+            </button>
+          </nav>
         </template>
       </section>
       <AdminBatchBar
@@ -173,46 +175,50 @@
             {{ comment.visible ? '当前公开可见' : '当前不公开（自身、上级评论或文章状态限制）' }}
           </p>
           <p v-if="comment.postStatus !== 'published'">文章未公开，当前不能新增回复。</p>
-          <button type="button" :disabled="working" @click="showContext(comment.id)">查看上下文</button>
-          <button
-            v-if="comment.depth < 2 && comment.visible"
-            type="button"
-            :disabled="working"
-            @click="startReply(comment)"
-          >
-            回复
-          </button>
-          <button type="button" :disabled="pending || working" @click="remove(comment)">删除评论及回复</button>
-          <button
-            v-if="comment.status !== 'published'"
-            type="button"
-            :disabled="pending || working"
-            @click="moderate(comment, 'published')"
-          >
-            通过或恢复公开
-          </button>
-          <button
-            v-if="comment.status === 'published'"
-            type="button"
-            :disabled="pending || working"
-            @click="moderate(comment, 'hidden')"
-          >
-            隐藏评论
-          </button>
-          <button
-            v-if="comment.status !== 'spam'"
-            type="button"
-            :disabled="pending || working"
-            @click="moderate(comment, 'spam')"
-          >
-            标记垃圾
-          </button>
+          <div class="admin-comments__actions">
+            <button type="button" :disabled="working" @click="showContext(comment.id)">查看上下文</button>
+            <button
+              v-if="comment.depth < 2 && comment.visible"
+              type="button"
+              :disabled="working"
+              @click="startReply(comment)"
+            >
+              回复
+            </button>
+            <button type="button" :disabled="pending || working" @click="remove(comment)">删除评论及回复</button>
+            <button
+              v-if="comment.status !== 'published'"
+              type="button"
+              :disabled="pending || working"
+              @click="moderate(comment, 'published')"
+            >
+              通过或恢复公开
+            </button>
+            <button
+              v-if="comment.status === 'published'"
+              type="button"
+              :disabled="pending || working"
+              @click="moderate(comment, 'hidden')"
+            >
+              隐藏评论
+            </button>
+            <button
+              v-if="comment.status !== 'spam'"
+              type="button"
+              :disabled="pending || working"
+              @click="moderate(comment, 'spam')"
+            >
+              标记垃圾
+            </button>
+          </div>
         </li>
       </ul>
       <p v-if="!pending && !error && !items.length">暂无评论</p>
-      <button type="button" :disabled="pending || page <= 1" @click="previousPage">上一页</button>
-      <span>{{ page }} / {{ Math.max(1, Math.ceil(total / 20)) }} · {{ total }} 条</span>
-      <button type="button" :disabled="pending || page * 20 >= total" @click="nextPage">下一页</button>
+      <nav class="admin-comments__pagination" aria-label="评论分页">
+        <button type="button" :disabled="pending || page <= 1" @click="previousPage">上一页</button>
+        <span>{{ page }} / {{ Math.max(1, Math.ceil(total / 20)) }} · {{ total }} 条</span>
+        <button type="button" :disabled="pending || page * 20 >= total" @click="nextPage">下一页</button>
+      </nav>
     </ClientOnly>
   </section>
 </template>
@@ -614,6 +620,28 @@ onBeforeUnmount(() => {
 })
 </script>
 <style scoped>
+.admin-comments {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.admin-comments__filters,
+.admin-comments__actions,
+.admin-comments__pagination {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+}
+.admin-comments__filters {
+  margin-block: 1rem;
+}
+.admin-comments__filters > label {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  min-width: 0;
+}
 .admin-comments h1 {
   font-size: 1.5rem;
   margin-bottom: 1rem;
@@ -626,6 +654,7 @@ onBeforeUnmount(() => {
 .admin-comments__context,
 .admin-comments__policy,
 .admin-comments__reply {
+  min-width: 0;
   border: 1px solid var(--border);
   border-radius: 0.75rem;
   padding: 1rem;
@@ -668,9 +697,47 @@ onBeforeUnmount(() => {
   border-radius: 0.4rem;
   padding: 0.5rem;
   margin: 0.25rem;
+  min-width: 0;
+  max-width: calc(100% - 0.5rem);
+  box-sizing: border-box;
 }
 .admin-comments textarea {
   width: 100%;
   display: block;
+}
+.admin-comments__filters > select,
+.admin-comments__filters > input:not([type='checkbox']) {
+  flex: 1 1 12rem;
+}
+.admin-comments__filters input,
+.admin-comments__filters select,
+.admin-comments__filters button,
+.admin-comments__actions button,
+.admin-comments__pagination button {
+  margin: 0;
+  max-width: 100%;
+}
+.admin-comments__filters input:not([type='checkbox']),
+.admin-comments__filters select,
+.admin-comments button {
+  min-height: 44px;
+}
+@media (max-width: 640px) {
+  .admin-comments__filters > label,
+  .admin-comments__filters > select,
+  .admin-comments__filters > input:not([type='checkbox']) {
+    flex: 1 1 100%;
+    width: 100%;
+  }
+  .admin-comments__filters input[type='date'] {
+    flex: 1 1 100%;
+    width: 100%;
+  }
+  .admin-comments__context ol {
+    padding-left: 1rem;
+  }
+  .admin-comments blockquote {
+    margin-inline: 0;
+  }
 }
 </style>

@@ -41,7 +41,7 @@
           <h2>{{ group.title }}（{{ group.items.length }}）</h2>
           <p>引用总数包含草稿和归档；有引用的目录项不能删除。</p>
           <p v-if="!group.items.length">暂无{{ group.title }}</p>
-          <div v-else class="taxonomy__table">
+          <div v-else class="taxonomy__table" role="region" :aria-label="`${group.title}列表，可横向滚动`" tabindex="0">
             <table>
               <thead>
                 <tr>
@@ -233,6 +233,10 @@ onMounted(async () => {
 onBeforeUnmount(() => window.removeEventListener('beforeunload', beforeUnload))
 </script>
 <style scoped lang="scss">
+.taxonomy {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
 h1 {
   font-size: 1.6rem;
   font-weight: 700;
@@ -256,6 +260,8 @@ h2 {
 }
 .taxonomy__group,
 .taxonomy__editor {
+  min-width: 0;
+  max-width: 100%;
   padding: 1.25rem;
   border: 1px solid var(--border);
   background: var(--surface-2);
@@ -263,6 +269,7 @@ h2 {
   margin: 1rem 0;
 }
 fieldset {
+  min-width: 0;
   display: flex;
   flex-wrap: wrap;
   align-items: end;
@@ -272,11 +279,14 @@ fieldset {
 }
 label {
   display: grid;
+  min-width: 0;
   gap: 0.4rem;
 }
 input,
 select,
 button {
+  min-width: 0;
+  max-width: 100%;
   background: var(--surface-1);
   color: var(--text-main);
   border: 1px solid var(--border);
@@ -293,7 +303,13 @@ a {
   color: var(--accent);
 }
 .taxonomy__table {
+  min-width: 0;
+  max-width: 100%;
   overflow-x: auto;
+}
+.taxonomy__table:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
 }
 table {
   width: 100%;

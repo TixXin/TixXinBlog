@@ -26,6 +26,7 @@ async function entered() {
 <style scoped>
 .admin-login {
   max-width: 400px;
+  min-width: 0;
   margin: 3rem auto;
   padding: 1.5rem;
   border: 1px solid var(--border);

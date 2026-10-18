@@ -9,10 +9,12 @@
       <section aria-label="运行诊断">
         <h2>运行诊断</h2>
         <p>读取真实服务、迁移和存储状态。存储探测不代表全部媒体文件完整，文件完整性可单独核验。</p>
-        <button type="button" :disabled="diagnostics.pending.value" @click="diagnostics.load">刷新运行诊断</button
-        ><button type="button" :disabled="diagnostics.pending.value" @click="diagnostics.checkMedia">
-          核验现有媒体文件
-        </button>
+        <div class="maintenance__actions">
+          <button type="button" :disabled="diagnostics.pending.value" @click="diagnostics.load">刷新运行诊断</button>
+          <button type="button" :disabled="diagnostics.pending.value" @click="diagnostics.checkMedia">
+            核验现有媒体文件
+          </button>
+        </div>
         <p v-if="diagnostics.pending.value" role="status">正在检查…</p>
         <p v-if="diagnostics.error.value" role="alert">{{ diagnostics.error.value }}</p>
         <ul v-if="diagnostics.data.value">
@@ -90,11 +92,11 @@ corepack pnpm --filter server-main run backup:restore --directory &lt;备份目�
           外部图片地址不会下载到媒体库。先校验内容包和受管图片引用，再确认导入。
         </p>
         <p>留言迁入后不会自动公开或置顶。已删除留言保留为不可见的引用记录，审核前请核对内容与作者。</p>
-        <label
+        <label class="maintenance__field"
           >选择内容包<input type="file" accept="application/json,.json" :disabled="pending" @change="chooseFile"
         /></label>
         <p v-if="file">已选 {{ file.name }} · {{ (file.size / 1024).toFixed(1) }}KB</p>
-        <label
+        <label class="maintenance__field"
           >重复内容策略<select v-model="strategy" :disabled="pending">
             <option value="skip">跳过相同内容；友链按规范地址跳过</option>
             <option value="copy">为全部内容创建新草稿副本</option>
@@ -113,8 +115,10 @@ corepack pnpm --filter server-main run backup:restore --directory &lt;备份目�
         <p>
           友链的跳过策略按规范站点地址判断；复制策略即使地址相同也会建立新草稿，保留推荐与排序。路径大小写、末尾斜杠、参数顺序和片段不会被擅自改写；同地址草稿上架前需核对现有公开记录。
         </p>
-        <button type="button" :disabled="pending || !file" @click="preview">生成导入预览</button
-        ><button v-if="requestId" type="button" :disabled="pending" @click="read(requestId)">查询本次上传票据</button>
+        <div class="maintenance__actions">
+          <button type="button" :disabled="pending || !file" @click="preview">生成导入预览</button>
+          <button v-if="requestId" type="button" :disabled="pending" @click="read(requestId)">查询本次上传票据</button>
+        </div>
       </section>
       <p v-if="pending" role="status">正在处理，请等待服务器结果…</p>
       <p v-if="error" role="alert">{{ error }}</p>
@@ -234,16 +238,19 @@ corepack pnpm --filter server-main run backup:restore --directory &lt;备份目�
               new Date(job.expiresAt).toLocaleString('zh-CN', { hour12: false })
             }}。执行时重新校验目标变化，数据库变更统一提交；未能确认结果时请查询同一票据。
           </p>
-          <label
+          <label class="maintenance__field"
             >输入“导入为新草稿”确认<input v-model="acknowledgement" :disabled="pending" autocomplete="off"
           /></label>
-          <button
-            type="button"
-            :disabled="pending || !job.plan.ready || acknowledgement !== '导入为新草稿'"
-            @click="execute"
-          >
-            确认导入预览内容</button
-          ><button type="button" :disabled="pending" @click="repreview">重新生成此票据的预览</button>
+          <div class="maintenance__actions">
+            <button
+              type="button"
+              :disabled="pending || !job.plan.ready || acknowledgement !== '导入为新草稿'"
+              @click="execute"
+            >
+              确认导入预览内容
+            </button>
+            <button type="button" :disabled="pending" @click="repreview">重新生成此票据的预览</button>
+          </div>
         </template>
         <button type="button" :disabled="pending" @click="read()">查询导入结果</button>
       </section>
@@ -303,7 +310,27 @@ pre {
   font-size: 0.8rem;
 }
 .maintenance {
+  min-width: 0;
   overflow-wrap: anywhere;
+}
+.maintenance__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-block: 0.5rem;
+}
+.maintenance__actions button {
+  margin: 0;
+}
+.maintenance__field {
+  display: grid;
+  gap: 0.5rem;
+  min-width: 0;
+}
+.maintenance__field input,
+.maintenance__field select {
+  width: 100%;
+  min-width: 0;
 }
 h1 {
   font-size: 1.6rem;
@@ -338,6 +365,9 @@ button {
 }
 button {
   margin: 0.4rem 0.5rem 0.4rem 0;
+  min-width: 0;
+  white-space: normal;
+  overflow-wrap: anywhere;
 }
 button:disabled {
   opacity: 0.5;
@@ -353,5 +383,11 @@ details {
 }
 summary {
   cursor: var(--interaction-cursor, pointer);
+}
+@media (max-width: 760px) {
+  .maintenance,
+  .maintenance > section {
+    padding: 0.75rem;
+  }
 }
 </style>

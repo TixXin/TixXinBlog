@@ -24,7 +24,7 @@
     <p v-if="notice" role="status">{{ notice }}</p>
     <template v-if="data">
       <p v-if="!pending && !error && !data.items.length">当前条件下暂无评论。</p>
-      <ul>
+      <ul class="moment-comments__list">
         <li v-for="item in data.items" :key="item.id">
           <p>
             <strong>{{ item.author }}</strong
@@ -170,6 +170,7 @@ onBeforeUnmount(() => {
 <style scoped lang="scss">
 .moment-comments {
   min-width: 0;
+  overflow-wrap: anywhere;
 }
 h1 {
   font-size: 1.75rem;
@@ -189,6 +190,7 @@ ul {
   padding: 0;
 }
 li {
+  min-width: 0;
   padding: 1rem;
   margin: 1rem 0;
   border: 1px solid var(--border);
@@ -206,6 +208,9 @@ a {
 }
 .moment-comments__actions a,
 button {
+  min-width: 0;
+  max-width: 100%;
+  box-sizing: border-box;
   min-height: 44px;
   display: inline-flex;
   align-items: center;
@@ -221,5 +226,10 @@ button {
 }
 :disabled {
   opacity: 0.5;
+}
+@media (max-width: 640px) {
+  .moment-comments__list > li {
+    padding: 0.75rem;
+  }
 }
 </style>

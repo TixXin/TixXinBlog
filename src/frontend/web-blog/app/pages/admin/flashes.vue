@@ -174,6 +174,10 @@ function formatDate(value: string) {
 }
 </script>
 <style scoped lang="scss">
+.admin-flashes {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
 [data-comment-target='true'] {
   outline: 2px solid var(--accent);
   outline-offset: 3px;
@@ -208,6 +212,8 @@ time,
 button,
 input,
 select {
+  min-width: 0;
+  max-width: 100%;
   color: var(--text-main);
   background: var(--surface-2);
   border: 1px solid var(--border);
@@ -258,7 +264,7 @@ a {
   color: var(--accent);
 }
 @media (max-width: 600px) {
-  .admin-flashes__filters input {
+  .admin-flashes__filters > * {
     width: 100%;
   }
   .admin-flashes__panel,

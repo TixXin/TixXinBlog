@@ -101,7 +101,7 @@
             </div>
           </li>
         </ul>
-        <nav v-if="total > 20" class="admin-guestbook__actions" aria-label="管理留言分页">
+        <nav v-if="total > 20" class="admin-guestbook__actions admin-guestbook__pagination" aria-label="管理留言分页">
           <button type="button" :disabled="pending || page <= 1" @click="setPage(page - 1)">上一页留言</button
           ><span>{{ page }} / {{ Math.ceil(total / 20) }}，共 {{ total }} 条</span
           ><button type="button" :disabled="pending || page * 20 >= total" @click="setPage(page + 1)">
@@ -238,6 +238,7 @@ onBeforeRouteLeave(() => {
 <style scoped lang="scss">
 .admin-guestbook {
   min-width: 0;
+  overflow-wrap: anywhere;
 }
 .admin-guestbook header,
 .admin-guestbook__filters,
@@ -258,6 +259,8 @@ onBeforeRouteLeave(() => {
   background: var(--surface-2);
   color: var(--text-main);
   max-width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
 }
 .admin-guestbook__list {
   list-style: none;
@@ -305,5 +308,27 @@ onBeforeRouteLeave(() => {
 }
 .admin-guestbook :disabled {
   opacity: 0.5;
+}
+.admin-guestbook__filters > label {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  min-width: 0;
+}
+@media (max-width: 640px) {
+  .admin-guestbook__filters > input,
+  .admin-guestbook__filters > select,
+  .admin-guestbook__filters > label {
+    flex: 1 1 100%;
+    width: 100%;
+  }
+  .admin-guestbook__filters input[type='date'] {
+    flex: 1 1 100%;
+    width: 100%;
+  }
+  .admin-guestbook blockquote {
+    margin-inline: 0;
+  }
 }
 </style>

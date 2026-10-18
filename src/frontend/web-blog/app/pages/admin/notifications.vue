@@ -3,7 +3,7 @@
   <section class="notifications">
     <h1 ref="heading" tabindex="-1">互动通知</h1>
     <p>已读只表示你看过通知。审核和回复请进入对应内容处理。</p>
-    <nav aria-label="通知筛选">
+    <nav class="notifications__filters" aria-label="通知筛选">
       <NuxtLink :to="{ query: { filter: 'all' } }">全部</NuxtLink
       ><NuxtLink :to="{ query: { filter: 'unread' } }">未读</NuxtLink
       ><NuxtLink to="/admin/operations">邮件与运行状态</NuxtLink>
@@ -63,18 +63,18 @@
       </div>
       <p class="notifications__status" role="status">{{ statusMessage }}</p>
       <p v-if="!data.items.length">当前筛选下没有通知。</p>
-      <ol ref="list">
+      <ol ref="list" class="notifications__list">
         <li v-for="item in data.items" :key="item.id" :data-notification-id="item.id" tabindex="-1">
           <h2>{{ kinds[item.kind] }}<span v-if="!item.readAt"> · 未读</span></h2>
           <p>{{ states[item.state] }} · {{ new Date(item.createdAt).toLocaleString('zh-CN') }}</p>
-          <div>
+          <div class="notifications__actions">
             <NuxtLink v-if="item.url" :to="item.url">查看对应内容</NuxtLink
             ><span v-else>内容已删除或隐藏，当前无法打开。</span>
             <button v-if="!item.readAt" type="button" :disabled="!!working" @click="markRead(item.id)">标记已读</button>
           </div>
         </li>
       </ol>
-      <nav aria-label="通知分页">
+      <nav class="notifications__pagination" aria-label="通知分页">
         <NuxtLink v-if="page > 1" :to="{ query: { filter, page: page - 1 } }">上一页</NuxtLink
         ><span>{{ page }} / {{ Math.max(1, Math.ceil(data.total / 20)) }}</span
         ><NuxtLink v-if="page * 20 < data.total" :to="{ query: { filter, page: page + 1 } }">下一页</NuxtLink>
@@ -223,6 +223,7 @@ async function markRead(id: string) {
 </script>
 <style scoped lang="scss">
 .notifications {
+  min-width: 0;
   overflow-wrap: anywhere;
 }
 h1 {
@@ -237,8 +238,8 @@ p {
   margin-block: 0.75rem;
 }
 .notifications__summary,
-nav,
-li div,
+.notifications__filters,
+.notifications__pagination,
 .notifications__actions {
   display: flex;
   flex-wrap: wrap;
@@ -252,18 +253,25 @@ ol {
 }
 li,
 .notifications__focused {
+  min-width: 0;
   padding: 1rem;
   border: 1px solid var(--border);
   border-radius: 0.75rem;
   margin-block: 1rem;
 }
 a {
+  min-width: 0;
+  max-width: 100%;
   color: var(--accent);
 }
 .notifications__status {
   margin-block: 0;
 }
 button {
+  min-width: 0;
+  min-height: 44px;
+  max-width: 100%;
+  box-sizing: border-box;
   display: inline-flex;
   align-items: center;
   gap: 0.35rem;
@@ -272,5 +280,21 @@ button {
   border-radius: 0.5rem;
   color: var(--text-main);
   background: var(--surface-2);
+}
+.notifications__filters a,
+.notifications__pagination a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+}
+@media (max-width: 640px) {
+  .notifications__summary {
+    align-items: flex-start;
+    gap: 0.5rem;
+  }
+  .notifications__summary > p,
+  .notifications__actions > span {
+    flex: 1 1 100%;
+  }
 }
 </style>

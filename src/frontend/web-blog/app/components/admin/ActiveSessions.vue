@@ -7,10 +7,12 @@
     <h2>活跃会话</h2>
     <p>退出或撤销会立即阻止后续管理请求；正在处理的操作可能仍会完成。成功续期后到期时间延后 7 天。</p>
     <p>设备名称由客户端提供的标识概括，仅供识别，不代表可信设备认证。时间按本机时区显示。</p>
-    <button type="button" :disabled="pending || disabled" @click="$emit('load', page)">刷新会话</button
-    ><button type="button" :disabled="pending || disabled || total <= 1" @click="$emit('revoke-others')">
-      撤销其他全部会话
-    </button>
+    <div class="active-sessions__toolbar">
+      <button type="button" :disabled="pending || disabled" @click="$emit('load', page)">刷新会话</button>
+      <button type="button" :disabled="pending || disabled || total <= 1" @click="$emit('revoke-others')">
+        撤销其他全部会话
+      </button>
+    </div>
     <p v-if="pending" role="status">正在处理会话…</p>
     <p v-if="error" role="alert">{{ error }}</p>
     <ul>
@@ -25,12 +27,15 @@
       </li>
     </ul>
     <p v-if="!pending && !error && !items.length">没有可显示的有效会话</p>
-    <button type="button" :disabled="pending || disabled || page <= 1" @click="$emit('load', page - 1)">
-      上一页会话</button
-    ><span> {{ page }} / {{ Math.max(1, Math.ceil(total / 20)) }} · 共 {{ total }} 个 </span
-    ><button type="button" :disabled="pending || disabled || page * 20 >= total" @click="$emit('load', page + 1)">
-      下一页会话
-    </button>
+    <nav class="active-sessions__pagination" aria-label="会话分页">
+      <button type="button" :disabled="pending || disabled || page <= 1" @click="$emit('load', page - 1)">
+        上一页会话
+      </button>
+      <span> {{ page }} / {{ Math.max(1, Math.ceil(total / 20)) }} · 共 {{ total }} 个 </span>
+      <button type="button" :disabled="pending || disabled || page * 20 >= total" @click="$emit('load', page + 1)">
+        下一页会话
+      </button>
+    </nav>
   </section>
 </template>
 <script setup lang="ts">
@@ -50,8 +55,22 @@ function date(value: string) {
 </script>
 <style scoped>
 .active-sessions {
+  min-width: 0;
   margin-top: 2rem;
   overflow-wrap: anywhere;
+}
+.active-sessions__toolbar,
+.active-sessions__pagination {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+}
+.active-sessions__toolbar button,
+.active-sessions__pagination button {
+  margin: 0;
+  min-height: 44px;
+  white-space: normal;
 }
 h2 {
   font-size: 1.2rem;
@@ -68,12 +87,17 @@ ul {
   list-style: none;
 }
 li {
+  min-width: 0;
   padding: 1rem;
   margin-block: 1rem;
   border: 1px solid var(--border);
   border-radius: 0.75rem;
 }
 button {
+  max-width: 100%;
+  min-width: 0;
+  white-space: normal;
+  overflow-wrap: anywhere;
   background: var(--surface-2);
   color: var(--text-main);
   border: 1px solid var(--border);

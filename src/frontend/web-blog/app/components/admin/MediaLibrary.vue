@@ -21,7 +21,7 @@
     </div>
     <ul v-if="jobs.length" class="media-library__jobs">
       <li v-for="job in jobs" :key="job.id">
-        <span
+        <span class="media-library__job-name"
           >{{ job.name }} ·
           {{
             job.status === 'done'
@@ -55,6 +55,7 @@
     <form class="media-library__filters" @submit.prevent="searchMedia">
       <input
         v-model="search"
+        class="media-library__search"
         :disabled="!ready || working"
         placeholder="搜索文件名、替代文本或素材说明"
         aria-label="搜索媒体"
@@ -118,7 +119,7 @@
             <NuxtLink :to="item.url">{{ item.title }}</NuxtLink> · {{ referenceLabel(item) }}
           </li>
         </ul>
-        <div v-if="references.total" class="media-library__pagination">
+        <div v-if="references.total" class="media-library__reference-pagination">
           <button
             type="button"
             :disabled="!ready || working || references.page <= 1"
@@ -194,7 +195,7 @@
     </section>
     <p v-if="!pending && !error && !items.length">暂无媒体资源</p>
     <ul class="media-library__grid">
-      <li v-for="asset in items" :key="asset.id">
+      <li v-for="asset in items" :key="asset.id" class="media-library__card">
         <label v-if="!selectable && deleted === 'false' && !asset.deleted" class="media-library__selection">
           <input
             type="checkbox"
@@ -207,7 +208,7 @@
         </label>
         <img v-if="!asset.deleted" :src="asset.url" :alt="asset.alt || asset.name" loading="lazy" />
         <div v-else class="media-library__removed"><Icon name="lucide:image-off" />已移入回收</div>
-        <strong>{{ asset.name }}</strong>
+        <strong class="media-library__asset-name">{{ asset.name }}</strong>
         <p>{{ asset.width }} × {{ asset.height }} · {{ Math.ceil(asset.byteSize / 1024) }} KB</p>
         <label
           >替代文本<input
@@ -281,7 +282,8 @@
     <div class="media-library__pagination">
       <button type="button" :disabled="!ready || pending || working || page <= 1" @click="changePage(page - 1)">
         上一页资源</button
-      ><span>{{ page }} / {{ Math.max(1, Math.ceil(total / 20)) }} · 共 {{ total }} 项</span
+      ><span class="media-library__page-summary"
+        >{{ page }} / {{ Math.max(1, Math.ceil(total / 20)) }} · 共 {{ total }} 项</span
       ><button
         type="button"
         :disabled="!ready || pending || working || page * 20 >= total"
@@ -421,6 +423,11 @@ watch(referenceId, async (id, previousId) => {
 })
 </script>
 <style scoped lang="scss">
+.media-library {
+  min-width: 0;
+  max-width: 100%;
+  overflow-wrap: anywhere;
+}
 .media-library__drop {
   border: 2px dashed var(--border);
   padding: 1rem;
@@ -429,6 +436,7 @@ watch(referenceId, async (id, previousId) => {
 }
 label {
   display: grid;
+  min-width: 0;
   gap: 0.4rem;
   margin: 0.7rem 0;
 }
@@ -446,6 +454,7 @@ button {
   border: 1px solid var(--border);
   border-radius: 0.5rem;
   min-width: 0;
+  max-width: 100%;
 }
 textarea {
   width: 100%;
@@ -463,12 +472,14 @@ ul {
 }
 .media-library__grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 220px), 1fr));
   gap: 1rem;
 }
 .media-library__grid > li,
+.media-library__card,
 .media-library__references,
 .media-library__results {
+  min-width: 0;
   border: 1px solid var(--border);
   padding: 1rem;
   border-radius: 0.8rem;
@@ -489,6 +500,7 @@ ul {
 }
 .media-library__actions,
 .media-library__filters,
+.media-library__reference-pagination,
 .media-library__pagination,
 .media-library__batch {
   display: flex;
@@ -529,8 +541,20 @@ ul {
   outline: 2px solid var(--accent);
   outline-offset: 3px;
 }
+.media-library__search {
+  flex: 1 1 15rem;
+}
+.media-library__asset-name,
+.media-library__job-name {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.media-library__asset-name {
+  display: block;
+}
 .media-library__jobs li {
   display: grid;
+  min-width: 0;
   gap: 0.4rem;
   padding: 0.7rem 0;
 }
@@ -541,8 +565,29 @@ a {
   color: var(--accent);
 }
 @media (max-width: 500px) {
+  // 窄屏筛选独占一行，避免原生控件按内容宽度挤出容器。
+  .media-library__filters {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .media-library__filters > * {
+    width: 100%;
+  }
   .media-library__grid {
     grid-template-columns: minmax(0, 1fr);
+  }
+  .media-library__actions > button,
+  .media-library__reference-pagination > button {
+    flex: 1 1 8rem;
+  }
+  .media-library__pagination {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .media-library__page-summary {
+    grid-column: 1 / -1;
+    grid-row: 1;
+    text-align: center;
   }
 }
 </style>
