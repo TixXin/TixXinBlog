@@ -1,5 +1,5 @@
 /** @file showcase-moments.ts @description 真实感样本集的朋友圈清单：正文、配图、地点与设备、关联文章及访客评论，延续旧版朋友圈页面的内容 */
-export interface ShowcaseMomentComment {
+interface ShowcaseMomentComment {
   author: string
   content: string
   /** 博主回复 */
@@ -7,7 +7,7 @@ export interface ShowcaseMomentComment {
   /** 距动态发布的小时数 */
   hoursAfter: number
 }
-export interface ShowcaseMoment {
+interface ShowcaseMoment {
   key: string
   content: string
   /** showcase-assets 下的素材名 */

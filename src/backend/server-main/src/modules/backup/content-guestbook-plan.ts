@@ -4,7 +4,7 @@ import type { ContentImportPlan } from '../../entities/content-import.entity'
 import { packageHash } from './content-package'
 import type { PackageGuestbook } from './content-package'
 
-export function guestbookHashes(messages: PackageGuestbook[]) {
+function guestbookHashes(messages: PackageGuestbook[]) {
   const byId = new Map(messages.map((message) => [message.sourceId, message]))
   const hashes = new Map<number, string>()
   for (const message of messages) {

@@ -8,11 +8,11 @@
 import { Transform, Type } from 'class-transformer'
 import { IsBoolean, IsIn, IsInt, IsOptional, IsString, Max, MaxLength, Min } from 'class-validator'
 
-export const POST_QUERY_CATEGORIES = ['tech', 'life', 'all'] as const
-export type PostQueryCategory = (typeof POST_QUERY_CATEGORIES)[number]
+const POST_QUERY_CATEGORIES = ['tech', 'life', 'all'] as const
+type PostQueryCategory = (typeof POST_QUERY_CATEGORIES)[number]
 
-export const POST_QUERY_SORTS = ['date', 'views', 'likes'] as const
-export type PostQuerySort = (typeof POST_QUERY_SORTS)[number]
+const POST_QUERY_SORTS = ['date', 'views', 'likes'] as const
+type PostQuerySort = (typeof POST_QUERY_SORTS)[number]
 
 export class QueryPostDto {
   @Type(() => Number)

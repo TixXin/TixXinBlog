@@ -11,7 +11,7 @@ import { map, Observable } from 'rxjs'
 import { ErrorCode } from '../constants/error-codes'
 import { getTraceId } from '../utils/trace-id'
 
-export interface ApiResponse<T> {
+interface ApiResponse<T> {
   code: number
   message: string
   data: T

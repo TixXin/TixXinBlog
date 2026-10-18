@@ -11,7 +11,7 @@ import type { Request } from 'express'
 import { devIdentity } from './dev-identity'
 import { ReadinessState } from './readiness-state'
 
-export interface HealthStatus {
+interface HealthStatus {
   status: 'ok'
   uptimeSeconds: number
   timestamp: string

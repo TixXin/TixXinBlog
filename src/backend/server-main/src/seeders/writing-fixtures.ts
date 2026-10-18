@@ -231,7 +231,7 @@ const practiceSections: readonly (readonly [string, string, string])[] = [
     '每一节都保留了当时考虑过但没有采用的方案和原因。过段时间回看，如果条件变了，可以直接从这些被排除的选项里重新挑，而不用从头推一遍。',
   ],
 ]
-export const practiceArticle =
+const practiceArticle =
   '# 页面与交互的整理记录\n\n这篇按处理顺序记录页面和交互上做过的调整，每一节保留当时的现象、处理方式和留下的判断。\n\n' +
   practiceSections
     .map(

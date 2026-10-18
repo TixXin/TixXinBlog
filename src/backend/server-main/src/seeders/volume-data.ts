@@ -19,8 +19,6 @@ import type { EntityManager } from '@mikro-orm/postgresql'
 import { VOLUME_DATASET, VOLUME_HOT_COMMENTS, VOLUME_HOT_POSTS, VOLUME_MARK, VOLUME_SCALES } from './volume-constants'
 import type { VolumeScale } from './volume-constants'
 
-export { VOLUME_DATASET, VOLUME_MARK, VOLUME_SCALES } from './volume-constants'
-export const VOLUME_DOMAINS = ['posts', 'comments'] as const
 // 主题避开代表样本已经写过的那些，避免首页出现两篇同题文章。
 const topics = [
   '日志采样',
@@ -105,7 +103,7 @@ const remarks = [
 const visitor = (name: string, index: number) =>
   createHash('sha256').update(`development/${VOLUME_DATASET}/${name}/${index}`).digest('hex')
 /** 同一序号始终得到同一篇内容，重复执行只补齐缺口。 */
-export function volumeArticle(index: number) {
+function volumeArticle(index: number) {
   // 主题与侧面合成一个序号再拆开，既走遍全部组合，相邻文章的后缀也不会连成一片。
   const pair = (index * 43) % (topics.length * facets.length)
   const topicIndex = pair % topics.length
@@ -136,7 +134,7 @@ export function volumeArticle(index: number) {
     views: 20 + ((index * index * 31 + index * 157 + 11) % 977),
   }
 }
-export function volumeComments(index: number) {
+function volumeComments(index: number) {
   // 每四篇中有一篇不带评论，其余按序号给出 1~3 条，并在其中穿插一层回复。
   const total = index % 4
   return Array.from({ length: total }, (_, position) => ({

@@ -24,7 +24,7 @@ export interface PostBatchPlanItem {
   fingerprint: string
   impact: PostBatchImpact
 }
-export interface PostBatchResult {
+interface PostBatchResult {
   id: number
   success: boolean
   message: string

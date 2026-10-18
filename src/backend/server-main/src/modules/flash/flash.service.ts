@@ -90,7 +90,7 @@ export function visibleToVisitor(comment: Pick<FlashComment, 'status' | 'authorI
 }
 
 /** 时间胶囊条目:只带摘录与时间,不返回完整正文与互动 */
-export interface FlashRecollection {
+interface FlashRecollection {
   id: string
   content: string
   createdAt: string

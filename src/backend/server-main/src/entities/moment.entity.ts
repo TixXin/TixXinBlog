@@ -5,7 +5,7 @@ import { Post } from './post.entity'
 
 export const MOMENT_STATUSES = ['draft', 'published', 'archived'] as const
 export type MomentStatus = (typeof MOMENT_STATUSES)[number]
-export interface MomentLink {
+interface MomentLink {
   url: string
   title: string
   description?: string

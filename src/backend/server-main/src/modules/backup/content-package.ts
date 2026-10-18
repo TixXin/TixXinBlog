@@ -186,7 +186,7 @@ export interface PackageImagePrompt {
     status: 'draft' | 'published'
   }
 }
-export interface PackageLink {
+interface PackageLink {
   sourceId: number
   createdAt: string
   publishedAt: string | null
@@ -244,7 +244,7 @@ function record(value: unknown, path: string, keys: string[]): Record<string, un
   if (Object.keys(result).some((key) => !keys.includes(key))) return fail(path)
   return result
 }
-export function packageImageUrl(value: string): boolean {
+function packageImageUrl(value: string): boolean {
   if (!value || /^\/(?!\/)[^\\\s]*$/.test(value)) return true
   try {
     const url = new URL(value)

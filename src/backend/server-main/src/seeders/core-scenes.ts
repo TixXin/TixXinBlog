@@ -1,6 +1,6 @@
 /** @file core-scenes.ts @description 核心样本的内容场景：每张卡是一件具体的事，文章、闪念与朋友圈的字段相互印证 */
 
-export interface CoreScene {
+interface CoreScene {
   /** 距今天数，按不规则间隔排列：同日两条、相隔数天与相隔数月并存。 */
   days: number
   /** 累计浏览量，老文章多、冷门文章少，不随序号递增。 */
