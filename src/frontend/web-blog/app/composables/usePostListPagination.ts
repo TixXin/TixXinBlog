@@ -18,17 +18,24 @@ export function usePostListPagination(options: {
   const pageSize = 15
   const sentinelRef = ref<HTMLElement | null>(null)
   const currentPage = options.currentPage
+  // 首页、标签页和专栏页共用这组分页。离开锁只认挂载时的路径，避免翻页写回别的页面。
+  const sourcePath = useRoute().path
   let leavingTo: string | undefined
   const router = useRouter()
+  function onSourcePage() {
+    return router.currentRoute.value.path === sourcePath
+  }
   onBeforeRouteLeave((to) => {
     leavingTo = to.fullPath
     observer?.disconnect()
   })
   const removeAfter = router.afterEach((to, from, failure) => {
     if (
-      router.currentRoute.value.path === '/' &&
-      ((!failure && to.path === '/') ||
-        (to.fullPath === leavingTo && from.path === '/' && isNavigationFailure(failure, NavigationFailureType.aborted)))
+      onSourcePage() &&
+      ((!failure && to.path === sourcePath) ||
+        (to.fullPath === leavingTo &&
+          from.path === sourcePath &&
+          isNavigationFailure(failure, NavigationFailureType.aborted)))
     ) {
       leavingTo = undefined
       pageRequested.value = false
@@ -61,14 +68,7 @@ export function usePostListPagination(options: {
     return pages
   })
   function goToPage(page: number) {
-    if (
-      leavingTo ||
-      router.currentRoute.value.path !== '/' ||
-      page < 1 ||
-      page > totalPages.value ||
-      page === currentPage.value
-    )
-      return
+    if (leavingTo || !onSourcePage() || page < 1 || page > totalPages.value || page === currentPage.value) return
     // 触底追加需要串行；显式翻页允许新请求替换正在等待的旧页。
     if (options.displayMode.value === 'waterfall') {
       if (pageRequested.value || options.pending.value) return
@@ -82,7 +82,7 @@ export function usePostListPagination(options: {
     observer?.disconnect()
     if (
       leavingTo ||
-      router.currentRoute.value.path !== '/' ||
+      !onSourcePage() ||
       options.displayMode.value !== 'waterfall' ||
       !sentinelRef.value ||
       options.error.value

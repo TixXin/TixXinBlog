@@ -121,7 +121,7 @@
 
 `POST /posts/:id/view` 按访客每整点小时去重计数，响应 `{ views, likes, liked, counted }`（私有、不缓存）：`counted` 表示本次是否计入，`likes/liked` 与 `GET /posts/:id/interaction` 同口径，文章页挂载后一次请求即可同步计数与点赞状态；计数失败时前端再回退到 `interaction`。评论可见性需要同时考虑所属文章、祖先、审核和删除状态；缓存计数与公开聚合遵循相同口径。专栏重命名与引用同步在事务内完成，仍被引用的目录项不能直接删除。
 
-`GET /posts/metadata` 保持旧完整响应：`tags/categories/stats/activity/archive`。`includeArchive` 默认为 `true`，只接受 `true` 或 `false`；显式 `false` 返回轻量 `tags/categories/stats/activity`，不查询或返回全量归档。完整模式的 `archive` 项与 `GET /posts/archive` 字段相同（含 `updatedAt`）。公开页面与主题侧栏使用轻量模式，服务端 sitemap 继续使用完整模式、过滤 `seoNoindex` 并以 `updatedAt` 作为文章 `lastmod`。
+`GET /posts/metadata` 保持旧完整响应：`tags/categories/stats/activity/archive`。`includeArchive` 默认为 `true`，只接受 `true` 或 `false`；显式 `false` 返回轻量 `tags/categories/stats/activity`，不查询或返回全量归档。完整模式的 `archive` 项与 `GET /posts/archive` 字段相同（含 `updatedAt`）。公开页面与主题侧栏使用轻量模式，服务端 sitemap 继续使用完整模式、过滤 `seoNoindex` 并以 `updatedAt` 作为文章 `lastmod`。仍有公开文章的标签与专栏也写入站点地图：路径使用标签原名或专栏名称并只编码一次，这两类页面没有更新时间，不写 `lastmod`。
 
 `GET /posts/archive` 接受可选 `year`（1–9999）、`month`（1–12，必须同时提供有效 `year`）、`page`（默认 1，最大 1000000）、`pageSize`（默认 50，最大 100），非法 API 参数返回 400，仅返回已发布且未回收文章。响应为 `{ items, total, page, pageSize, years }`；`items` 每项包含 `id/slug/seoNoindex/title/folder/date/updatedAt`（`updatedAt` 口径同文章详情），按 `published_at DESC, id DESC` 排序，日期为 ISO UTC。`total` 是当前年月筛选后的总数，`years` 是所有公开年份的 `{ year, count }` 数组，按 UTC 年份倒序；年月过滤在分页前执行，列表、总数与年份计数来自同一查询快照。空时间段或越界页返回空 `items`，保留真实总数和全部年份计数。
 

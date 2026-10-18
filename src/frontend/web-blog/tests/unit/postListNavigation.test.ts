@@ -134,6 +134,17 @@ it('另一旧导航被拒绝时不能解开当前离开目标，成功返回本�
   expect(requested).toHaveBeenCalledWith(3)
   expect(mocks.router.replace).toHaveBeenCalledOnce()
 })
+it('标签页沿用同一分页锁，只在自己的路径上翻页', async () => {
+  mocks.route.path = '/tags/示例标签'
+  mocks.route.query = {}
+  mocks.router.currentRoute.value = { path: '/tags/示例标签', fullPath: '/tags/示例标签' }
+  const { pagination, requested } = await setup()
+  pagination.goToPage(2)
+  expect(requested).toHaveBeenCalledExactlyOnceWith(2)
+  mocks.router.currentRoute.value = article
+  pagination.goToPage(3)
+  expect(requested).toHaveBeenCalledOnce()
+})
 it('即时路由已到详情而 Nuxt route 仍是列表时，不能写回列表 URL', async () => {
   const { state, pagination, requested } = await setup()
   mocks.router.currentRoute.value = article

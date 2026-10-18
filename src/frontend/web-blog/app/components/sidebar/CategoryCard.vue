@@ -1,6 +1,6 @@
 <!--
   @file CategoryCard.vue
-  @description 右侧栏专栏分类卡片组件，展示分类列表及文章数量
+  @description 专栏独立页入口与首页筛选，展示专栏列表及文章数量
   @author TixXin
   @since 2025-03-17
 -->
@@ -11,13 +11,11 @@
       <h2 class="category-card__title"><Icon name="lucide:folder-open" size="16" /> 专栏分类</h2>
     </div>
     <ul class="category-card__list">
-      <li v-for="cat in categories" :key="cat.name">
-        <button
-          type="button"
+      <li v-for="cat in categories" :key="cat.name" class="category-card__row">
+        <NuxtLink
+          :to="postCategoryPath(cat.name)"
           class="category-card__item"
           :class="{ 'is-active': activeCategory === cat.name }"
-          :aria-pressed="activeCategory === cat.name"
-          @click="$emit('select', cat.name)"
         >
           <div class="category-card__left">
             <span class="category-card__icon" :style="{ color: cat.iconColor, background: cat.iconBg }">
@@ -29,7 +27,18 @@
             <span class="category-card__badge">{{ cat.count }}</span>
             <Icon name="lucide:chevron-right" size="14" class="category-card__arrow" />
           </div>
-        </button>
+        </NuxtLink>
+        <CommonTooltip :content="`在首页筛选专栏：${cat.name}`">
+          <button
+            type="button"
+            class="category-card__filter"
+            :aria-label="`在首页筛选专栏：${cat.name}`"
+            :aria-pressed="activeCategory === cat.name"
+            @click="$emit('select', cat.name)"
+          >
+            <Icon name="lucide:list-filter" size="15" aria-hidden="true" />
+          </button>
+        </CommonTooltip>
       </li>
     </ul>
     <p v-if="!categories.length" class="text-sm text-soft">暂无分类</p>
@@ -38,6 +47,7 @@
 
 <script setup lang="ts">
 import type { CategoryItem } from '~/features/stats/types'
+import { postCategoryPath } from '~/features/post/taxonomy'
 
 defineProps<{
   categories: CategoryItem[]
@@ -73,8 +83,15 @@ defineEmits<{
   gap: 0.25rem;
 }
 
+.category-card__row {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
 .category-card__item {
-  width: 100%;
+  flex: 1;
+  min-width: 0;
   min-height: 44px;
   text-align: left;
   color: var(--text-main);
@@ -108,13 +125,38 @@ defineEmits<{
   }
 }
 
+.category-card__filter {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 32px;
+  min-height: 44px;
+  border-radius: $radius-md;
+  color: var(--text-soft);
+  cursor: var(--interaction-cursor, pointer);
+
+  @media (pointer: coarse) {
+    width: 44px;
+  }
+
+  &:hover,
+  &[aria-pressed='true'] {
+    color: var(--accent-text);
+    background: var(--accent-soft);
+  }
+}
+
 .category-card__left {
   display: flex;
   align-items: center;
   gap: 0.75rem;
+  min-width: 0;
+  overflow-wrap: anywhere;
 }
 
 .category-card__icon {
+  flex-shrink: 0;
   width: 2rem;
   height: 2rem;
   border-radius: $radius-sm;
@@ -128,6 +170,7 @@ defineEmits<{
   display: flex;
   align-items: center;
   gap: 0.375rem;
+  flex-shrink: 0;
 }
 
 .category-card__badge {

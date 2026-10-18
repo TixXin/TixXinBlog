@@ -485,7 +485,12 @@ test('320至1024px均能使用文章筛选、目录、书签分组和登录', as
     await page.goto('/')
     await page.getByRole('button', { name: '筛选文章', exact: true }).click()
     const filters = page.getByRole('dialog', { name: '筛选文章', exact: true })
-    const tag = filters.getByRole('group', { name: '按标签筛选' }).getByRole('button', { name: /示例标签/ })
+    const tagGroup = filters.getByRole('group', { name: '浏览标签或筛选首页文章' })
+    await expect(tagGroup.getByRole('link', { name: /示例标签/ })).toHaveAttribute(
+      'href',
+      `/tags/${encodeURIComponent('示例标签')}`,
+    )
+    const tag = tagGroup.getByRole('button', { name: '在首页筛选标签：示例标签', exact: true })
     await tag.press('Space')
     await expect(tag).toHaveAttribute('aria-pressed', 'true')
     await filters.getByRole('button', { name: '关闭筛选文章' }).click()

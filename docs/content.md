@@ -21,20 +21,20 @@
 
 ## 写作、发布与恢复
 
-| 业务   | 公开入口                         | 管理入口与状态                                                                           |
-| ------ | -------------------------------- | ---------------------------------------------------------------------------------------- |
-| 文章   | `/`、`/archive`、`/articles/:id` | `/admin/posts`；草稿、发布、归档及独立回收状态                                           |
-| 闪念   | `/flash`、`/flash/:id`           | `/admin/flashes`；草稿/发布与归档行为按表单分别处理；评论在 `/admin/flash-comments` 审核 |
-| 朋友圈 | `/moments`                       | `/admin/moments`；`draft/published/archived`、置顶与评论                                 |
-| 留言   | `/guestbook`                     | `/admin/guestbook`；`published/pending/hidden`、回复与置顶                               |
-| 图库   | `/gallery`                       | `/admin/gallery`；`draft/published/withdrawn`                                            |
-| 项目   | `/projects`                      | `/admin/projects`；发布状态与项目进展分别维护                                            |
-| 友链   | `/links`                         | `/admin/links`；`draft/published/withdrawn` 与独立推荐状态                               |
-| 提示词 | `/prompts`                       | 登录博主页内添加和编辑；`draft/published`                                                |
-| 订阅费 | `/subscriptions`                 | `/admin/subscriptions`；发布状态与订阅活跃状态分别维护                                   |
-| 书签   | `/tabs`                          | 当前浏览器存储，使用页面提供的导入/导出入口                                              |
+| 业务   | 公开入口                                                             | 管理入口与状态                                                                           |
+| ------ | -------------------------------------------------------------------- | ---------------------------------------------------------------------------------------- |
+| 文章   | `/`、`/tags/:name`、`/categories/:name`、`/archive`、`/articles/:id` | `/admin/posts`；草稿、发布、归档及独立回收状态                                           |
+| 闪念   | `/flash`、`/flash/:id`                                               | `/admin/flashes`；草稿/发布与归档行为按表单分别处理；评论在 `/admin/flash-comments` 审核 |
+| 朋友圈 | `/moments`                                                           | `/admin/moments`；`draft/published/archived`、置顶与评论                                 |
+| 留言   | `/guestbook`                                                         | `/admin/guestbook`；`published/pending/hidden`、回复与置顶                               |
+| 图库   | `/gallery`                                                           | `/admin/gallery`；`draft/published/withdrawn`                                            |
+| 项目   | `/projects`                                                          | `/admin/projects`；发布状态与项目进展分别维护                                            |
+| 友链   | `/links`                                                             | `/admin/links`；`draft/published/withdrawn` 与独立推荐状态                               |
+| 提示词 | `/prompts`                                                           | 登录博主页内添加和编辑；`draft/published`                                                |
+| 订阅费 | `/subscriptions`                                                     | `/admin/subscriptions`；发布状态与订阅活跃状态分别维护                                   |
+| 书签   | `/tabs`                                                              | 当前浏览器存储，使用页面提供的导入/导出入口                                              |
 
-文章编辑器支持 Markdown、封面、专栏、标签、发布检查和历史修订。自定义地址、历史地址重定向、canonical、robots 与 sitemap 由正式发布状态控制；撤回内容不应继续出现在公开查询或订阅中。
+文章编辑器支持 Markdown、封面、专栏、标签、发布检查和历史修订。自定义地址、历史地址重定向、canonical、robots 与 sitemap 由正式发布状态控制；撤回内容不应继续出现在公开查询或订阅中。首页标签云和专栏卡片进入 `/tags/:name` 与 `/categories/:name`，地址使用标签原名或专栏名称；同一卡片上的筛选按钮仍留在首页。公开列表按页展示，每页有独立标题、描述和自引用 canonical。
 
 归档支持分享全年与单月：例如 `/archive?year=2026` 和 `/archive?year=2026&month=3`。年月按文章发布时间的 UTC 日期划分，筛选与页码保存在地址中；切换年份显示该年全年，选定年份后可再选月份。页面标题与规范地址随年月和页码变化，侧栏及年份标题的统计仍表示全站与全年数量。
 

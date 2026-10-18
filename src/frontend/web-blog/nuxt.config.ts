@@ -218,6 +218,8 @@ export default {
               '/subscriptions',
               '/tabs',
               '/articles/**',
+              '/tags/**',
+              '/categories/**',
             ].map((path) => [path, { cache: { maxAge: 60, swr: true, varies: ['cookie'] } }]),
           ),
         }
