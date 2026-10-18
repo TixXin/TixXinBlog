@@ -43,7 +43,8 @@ CMD ["node", "scripts/operations.mjs", "status"]
 
 FROM node:25-alpine AS runtime
 ENV NODE_ENV=production \
-    PORT=3000
+    PORT=3000 \
+    MEDIA_DIRECTORY=/app/var/media
 WORKDIR /app
 COPY --from=build --chown=node:node /out .
 RUN mkdir -p /app/var/media && chown -R node:node /app/var
