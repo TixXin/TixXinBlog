@@ -153,11 +153,18 @@
       <span role="status">已选择 {{ selectedIds.length }} 项</span>
       <button type="button" :disabled="!canBatchSelect || !selectedIds.length" @click="clearSelection">清空选择</button>
       <CommonTooltip content="被当前内容或历史版本引用的媒体会保留，并列出引用位置。">
-        <button type="button" :disabled="!canBatchSelect || !selectedIds.length" @click="removeSelected">
+        <button
+          type="button"
+          :disabled="!canBatchSelect || !selectedIds.length"
+          :aria-describedby="batchHint ? batchHintId : undefined"
+          @click="removeSelected"
+        >
           <Icon name="lucide:trash-2" aria-hidden="true" />
           批量移入回收
         </button>
       </CommonTooltip>
+      <!-- 禁用原因常驻显示，读屏通过 aria-describedby 获知按钮不可用的原因 -->
+      <p v-if="batchHint" :id="batchHintId" class="media-library__batch-hint">{{ batchHint }}</p>
     </div>
     <p v-if="batchProgress" role="status">
       正在处理所选资源：{{ batchProgress.completed }} / {{ batchProgress.total }}
@@ -284,7 +291,7 @@
   </section>
 </template>
 <script setup lang="ts">
-import { nextTick, ref, useId, watch } from 'vue'
+import { computed, nextTick, ref, useId, watch } from 'vue'
 import type { MediaAsset, MediaReferences, MediaRemovalResult } from '~/features/media/types'
 import type { useMediaLibrary } from '~/composables/useMediaLibrary'
 const props = defineProps<{ selectable: boolean; controller: ReturnType<typeof useMediaLibrary> }>()
@@ -339,6 +346,16 @@ const {
   remove,
   restore,
 } = props.controller
+const batchHintId = `media-batch-hint-${useId()}`
+/** 批量回收不可用时的原因，按优先级给出可操作的说明 */
+const batchHint = computed(() => {
+  if (canBatchSelect.value) return selectedIds.value.length ? '' : '请先勾选本页要回收的资源。'
+  if (!ready.value || pending.value) return '媒体库读取完成后才能批量回收。'
+  if (working.value || uploading.value) return '上传或其他操作进行中，完成后才能批量回收。'
+  if (jobs.value.some((job) => !!job.file)) return '仍有未完成的上传任务，请重试或移除后再批量回收。'
+  if (hasDirtyMetadata.value) return '请先保存替代文本或素材说明的修改，再批量回收。'
+  return '登录账号或内容库已变化，请重新读取媒体库后再批量回收。'
+})
 const referenceHeading = ref<HTMLElement | null>(null)
 const referenceHeadingId = `media-references-${useId()}`
 let referenceTrigger: HTMLElement | null = null
@@ -470,6 +487,12 @@ ul {
   gap: 0.5rem;
   align-items: center;
   margin: 0.8rem 0;
+}
+.media-library__batch-hint {
+  flex-basis: 100%;
+  margin: 0;
+  font-size: 0.8125rem;
+  color: var(--text-muted);
 }
 .media-library__selection {
   display: flex;
