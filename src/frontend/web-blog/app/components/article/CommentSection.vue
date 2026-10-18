@@ -123,7 +123,10 @@ watch(
     if (target) {
       await nextTick()
       input.value?.focus()
-      input.value?.scrollIntoView({ block: 'center', behavior: 'smooth' })
+      input.value?.scrollIntoView({
+        block: 'center',
+        behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth',
+      })
     }
   },
 )
