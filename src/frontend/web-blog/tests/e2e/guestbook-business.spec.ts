@@ -365,7 +365,7 @@ for (const theme of ['nexus', 'aurora', 'dock'])
     else await page.getByRole('button', { name: '加载更多留言', exact: true }).scrollIntoViewIfNeeded()
     await expect(page.locator('.guestbook-more [role="alert"]')).toBeVisible()
     expect(await page.locator('.message-bubble').count()).toBe(initial)
-    await page.getByRole('button', { name: theme === 'nexus' ? '重试加载历史' : '重试加载更多', exact: true }).click()
+    await page.locator('.guestbook-more').getByRole('button', { name: '重试', exact: true }).click()
     await waiting
     const anchor = await page.locator('.guestbook-viewport').evaluate((node) => {
       let root: HTMLElement | null = node as HTMLElement

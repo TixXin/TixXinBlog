@@ -124,9 +124,14 @@
         :title="currentError || '正在寻找灵感'"
         @retry="retry"
       />
-      <p v-if="metadataError" class="prompts-result" role="status">
-        模型与标签暂时无法读取。<button type="button" @click="refreshMetadata()">重新读取</button>
-      </p>
+      <CommonRequestFeedback
+        v-if="metadataError || metadataRetrying"
+        compact
+        :pending="metadataPending"
+        title="模型与标签加载失败"
+        description="已加载的提示词仍可浏览，请重试更新筛选项与统计。"
+        @retry="retryMetadata"
+      />
       <p v-if="draftView ? draftStale : stale" class="prompts-result" role="status">
         正在显示上次读取的{{ draftView ? '草稿' : '灵感' }}，{{
           currentError ? '本次读取未完成，可重试更新。' : '正在更新结果。'
@@ -269,10 +274,21 @@ const {
   error,
   refresh,
   metadata,
+  metadataPending,
   metadataError,
   refreshMetadata,
   changeQuery,
 } = await usePrompts()
+const metadataRetrying = ref(false)
+async function retryMetadata() {
+  if (metadataPending.value) return
+  metadataRetrying.value = true
+  try {
+    await refreshMetadata()
+  } finally {
+    metadataRetrying.value = false
+  }
+}
 const draftView = computed(() => isOwner.value && route.query.view === 'drafts')
 const {
   drafts,

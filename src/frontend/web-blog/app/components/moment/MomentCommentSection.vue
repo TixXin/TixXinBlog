@@ -35,16 +35,24 @@
         </div>
       </div>
     </div>
-    <p v-if="loadError" role="alert" class="moment-comments__notice">{{ loadError }}</p>
+    <CommonRequestFeedback
+      v-if="loadError"
+      ref="feedbackRef"
+      compact
+      :pending="loading"
+      :title="loadError"
+      @retry="$emit('load-more')"
+    />
     <button
-      v-if="hasMore || loadError"
+      v-else-if="hasMore"
+      ref="moreButtonRef"
       :aria-busy="loading"
       type="button"
       class="moment-comments__expand"
-      :disabled="loading"
-      @click="$emit('load-more')"
+      :aria-disabled="loading"
+      @click="!loading && $emit('load-more')"
     >
-      {{ loading ? '正在加载评论…' : loadError ? '重试加载评论' : '查看更多评论' }}
+      {{ loading ? '正在加载评论…' : '查看更多评论' }}
     </button>
     <p v-if="submitError" role="alert" class="moment-comments__notice">{{ submitError }}</p>
     <!-- 播报区常驻，只切换内部提示，保证读屏能播报新插入的状态 -->
@@ -54,6 +62,7 @@
     <CommonSubmissionTrap v-model="website" />
     <div class="moment-comments__input-wrap" :aria-busy="submitting">
       <input
+        ref="inputRef"
         :value="draft"
         type="text"
         aria-label="动态评论内容"
@@ -99,6 +108,24 @@ const emit = defineEmits<{
 }>()
 const visitorForm = useVisitorSubmissionForm({ submitting: () => !!props.submitting, error: () => props.submitError })
 const { website } = visitorForm
+const feedbackRef = ref<{ $el: HTMLElement } | null>(null)
+const moreButtonRef = ref<HTMLButtonElement | null>(null)
+const inputRef = ref<HTMLInputElement | null>(null)
+// 失败和恢复可能替换读取按钮；只接续仍停在旧按钮上的焦点，不打断已经移到其它控件的用户。
+watch(
+  [() => props.loadError, () => props.hasMore],
+  async () => {
+    const previous = feedbackRef.value?.$el.querySelector<HTMLButtonElement>('button') ?? moreButtonRef.value
+    if (!previous || document.activeElement !== previous) return
+    await nextTick()
+    if (previous.isConnected || (document.activeElement !== previous && document.activeElement !== document.body))
+      return
+    const target =
+      feedbackRef.value?.$el.querySelector<HTMLButtonElement>('button') ?? moreButtonRef.value ?? inputRef.value
+    target?.focus({ preventScroll: true })
+  },
+  { flush: 'pre' },
+)
 const siteUrl = useSiteUrl()
 // 评论属于访客内容，外链按 ugc 规则渲染。
 const renderedComments = computed(() =>

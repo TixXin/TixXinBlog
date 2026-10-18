@@ -44,9 +44,16 @@
     </div>
 
     <div v-if="notes.length && hasMore" ref="sentinelRef" class="flash-note-list__more">
-      <p v-if="moreError" class="flash-note-list__more-error" role="alert">{{ moreError }}</p>
+      <CommonRequestFeedback
+        v-if="showMoreFeedback"
+        compact
+        :pending="morePending"
+        title="更多闪念加载失败"
+        :description="moreError || '已加载的闪念仍可浏览，请重试继续加载。'"
+        @retry="retryMore"
+      />
       <button
-        ref="moreButtonRef"
+        v-else
         type="button"
         class="flash-note-list__more-button"
         :aria-busy="morePending"
@@ -54,8 +61,8 @@
         :aria-disabled="morePending"
         @click="requestMore"
       >
-        <Icon :name="moreError ? 'lucide:rotate-ccw' : 'lucide:chevrons-down'" size="14" aria-hidden="true" />
-        {{ morePending ? '正在加载…' : moreError ? '重试加载更多' : '加载更多闪念' }}
+        <Icon name="lucide:chevrons-down" size="14" aria-hidden="true" />
+        {{ morePending ? '正在加载…' : '加载更多闪念' }}
       </button>
     </div>
     <div v-else-if="notes.length && !loading && !errorMessage" ref="endRef" class="flash-note-list__end" tabindex="-1">
@@ -104,20 +111,34 @@ const emit = defineEmits<{
 
 // 水合前按钮保持禁用，SSR 与首次客户端渲染一致；挂载后才允许点击和自动加载
 const sentinelRef = ref<HTMLElement | null>(null)
-const moreButtonRef = ref<HTMLButtonElement | null>(null)
 const endRef = ref<HTMLElement | null>(null)
 const hydrated = ref(false)
+const retryingMore = ref(false)
+const showMoreFeedback = computed(() => !!props.moreError || retryingMore.value)
 // 加载中只用 aria-disabled：真正禁用会让 Chrome 把焦点丢回页面
 function requestMore() {
   if (!props.morePending) emit('more')
 }
-// 键盘用户读完最后一页时按钮被移除，焦点交给结束提示，不掉回页面顶部
+function retryMore() {
+  if (props.morePending) return
+  retryingMore.value = true
+  requestMore()
+}
 watch(
-  () => props.hasMore,
-  async (more, before) => {
-    if (more || !before || document.activeElement !== moreButtonRef.value) return
+  () => props.morePending,
+  (pending, previous) => {
+    if (!pending && previous) retryingMore.value = false
+  },
+  { flush: 'sync' },
+)
+// 失败和恢复时把焦点交给对应按钮；读完最后一页时交给结束提示，不掉回页面顶部。
+watch(
+  [() => props.hasMore, showMoreFeedback],
+  async () => {
+    if (!sentinelRef.value?.contains(document.activeElement)) return
     await nextTick()
-    endRef.value?.focus({ preventScroll: true })
+    const target = sentinelRef.value?.querySelector<HTMLButtonElement>('button') ?? endRef.value
+    target?.focus({ preventScroll: true })
   },
   { flush: 'pre' },
 )
@@ -174,12 +195,6 @@ useIntersectionObserver(
   align-items: center;
   gap: 0.5rem;
   padding: 0.25rem 0 1rem;
-}
-
-.flash-note-list__more-error {
-  margin: 0;
-  color: var(--text-soft);
-  font-size: 0.8125rem;
 }
 
 .flash-note-list__more-button {

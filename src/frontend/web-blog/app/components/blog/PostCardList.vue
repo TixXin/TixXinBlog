@@ -9,10 +9,14 @@
   <div class="post-card-list-root">
     <div v-if="posts.length && (pending || errorMessage)" class="post-list-feedback">
       <p v-if="pending" role="status">正在加载文章…</p>
-      <div v-else role="alert">
-        {{ errorMessage }}<span v-if="posts.length">，已保留原列表。</span>
-        <button type="button" @click="$emit('retry')">重试</button>
-      </div>
+      <CommonRequestFeedback
+        v-else
+        class="post-list-feedback__error"
+        compact
+        :title="errorMessage"
+        description="仍显示上次成功加载的文章。"
+        @retry="$emit('retry')"
+      />
     </div>
     <CommonCustomScrollbar
       ref="scrollbarRef"
@@ -273,11 +277,7 @@ onUnmounted(() => {
   p {
     margin: 0;
   }
-  button {
-    min-height: 44px;
-    margin-left: 0.5rem;
-    padding: 0 0.5rem;
-    color: var(--accent-text);
+  &__error {
     pointer-events: auto;
   }
 }

@@ -26,6 +26,14 @@
           :selected-date="selectedDate"
           @select-date="selectedDate = $event"
         >
+          <CommonRequestFeedback
+            v-if="overviewError"
+            compact
+            title="动态统计暂时不可用"
+            :description="metadata ? '仍显示上次成功读取的动态统计。' : undefined"
+            :pending="overviewPending"
+            @retry="refreshOverview()"
+          />
           <SidebarMomentTopicCard :topics="momentTopics" :active-topic="null" @select="onTopicSelect" />
         </MomentInfoDrawer>
       </div>
@@ -53,6 +61,7 @@
               <CommonRequestFeedback
                 v-if="detailError"
                 compact
+                :pending="detailPending"
                 title="动态更新失败，仍显示已加载的内容"
                 @retry="refreshDetail()"
               />
@@ -72,6 +81,7 @@
             <CommonRequestFeedback
               v-if="navigationError"
               compact
+              :pending="navigationPending"
               title="动态导航暂时不可用"
               @retry="refreshNavigation()"
             />
@@ -120,6 +130,7 @@
             class="card"
             compact
             title="动态统计暂时不可用"
+            :description="metadata ? '仍显示上次成功读取的动态统计。' : undefined"
             :pending="overviewPending"
             @retry="refreshOverview()"
           />
@@ -166,6 +177,7 @@ const {
   error: detailError,
   refresh: refreshDetail,
   navigation,
+  navigationPending,
   navigationError,
   refreshNavigation,
 } = detail

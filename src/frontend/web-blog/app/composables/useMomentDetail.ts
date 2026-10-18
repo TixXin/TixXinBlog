@@ -51,6 +51,7 @@ export async function useMomentDetail(id: Ref<string>) {
     error: result.error,
     refresh: result.refresh,
     navigation: navigation.data,
+    navigationPending: navigation.pending,
     navigationError: navigation.error,
     refreshNavigation: navigation.refresh,
   }

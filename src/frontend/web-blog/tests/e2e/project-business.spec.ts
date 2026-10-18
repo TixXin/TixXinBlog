@@ -320,7 +320,7 @@ test('全局搜索真实项目可导航，项目搜索失败保留其他来源�
   await expect(dialog.getByRole('alert')).toContainText('项目搜索暂时不可用')
   expect(failed).toBe(1)
   await expect(dialog.locator('a[href^="/articles/"]').first()).toBeVisible()
-  await dialog.getByRole('button', { name: '重试搜索', exact: true }).click()
+  await dialog.locator('.request-feedback').getByRole('button', { name: '重试', exact: true }).click()
   const result = dialog.getByRole('link').filter({ hasText: title })
   await expect(result).toHaveAttribute('href', '/projects?project=' + project.id)
   await result.click()

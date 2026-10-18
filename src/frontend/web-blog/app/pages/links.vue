@@ -79,7 +79,8 @@
             v-if="metadataPending || metadataError"
             :pending="metadataPending"
             :compact="!!metadata"
-            :title="metadataError?.message || '正在读取友链信息'"
+            :title="metadataFeedbackTitle"
+            :description="metadataFeedbackDescription"
             @retry="refreshMetadata()"
           /><LinkStats v-if="metadata" :stats="metadata.stats" /><LinkRules
             v-if="metadata"
@@ -116,7 +117,8 @@
             v-if="metadataPending || metadataError"
             :pending="metadataPending"
             :compact="!!metadata"
-            :title="metadataError?.message || '正在读取友链信息'"
+            :title="metadataFeedbackTitle"
+            :description="metadataFeedbackDescription"
             @retry="refreshMetadata()" /><LinkStats v-if="metadata" :stats="metadata.stats" /><LinkRules
             v-if="metadata"
             :rules="metadata.rules" /><LinkSiteInfoCard
@@ -156,6 +158,13 @@ const {
   refreshMetadata,
   changeQuery,
 } = await useLinks()
+// 失败用稳定标题；具体原因放在说明里，有旧资料时同时说明仍在显示。
+const metadataFeedbackTitle = computed(() => (metadataError.value ? '友链资料暂时不可用' : '正在读取友链信息'))
+const metadataFeedbackDescription = computed(() => {
+  if (!metadataError.value) return undefined
+  const message = metadataError.value.message
+  return metadata.value ? `仍显示上次成功读取的友链资料。${message}` : message
+})
 usePageSeo({ title: '友情链接', description: '浏览博主维护的友情链接与站点资料', type: 'website' })
 const keyword = computed({
   get: () => (!ready.value ? (query.value.q ?? '') : typeof route.query.q === 'string' ? route.query.q : ''),

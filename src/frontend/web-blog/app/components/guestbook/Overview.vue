@@ -5,7 +5,8 @@
       v-if="pending || error"
       compact
       :pending="pending"
-      :title="error || '正在读取留言统计'"
+      :title="error ? '留言统计暂时不可用' : '正在读取留言统计'"
+      :description="error ? (data ? `仍显示上次成功读取的留言统计。${error}` : error) : undefined"
       @retry="$emit('retry')"
     />
     <GuestbookChatStats :stats="stats" />

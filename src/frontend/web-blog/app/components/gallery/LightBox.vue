@@ -23,10 +23,15 @@
         <Icon name="lucide:x" size="24" />
       </button>
       <div class="lightbox__inner">
-        <p v-if="pending" role="status" class="lightbox__desc">正在读取作品…</p>
-        <p v-if="error" role="alert" class="lightbox__desc">
-          {{ error }} <button type="button" :disabled="!ready || pending" @click="$emit('retry')">重新读取</button>
-        </p>
+        <CommonRequestFeedback
+          v-if="pending || error"
+          class="lightbox__feedback"
+          compact
+          :pending="pending || !ready"
+          title="照片加载失败"
+          :description="error"
+          @retry="$emit('retry')"
+        />
         <CommonImageFrame
           v-if="photo"
           :src="photo.srcLarge"
@@ -142,6 +147,13 @@ useModalFocus(() => props.visible, dialogRef, { close: onClose })
   --text-muted: #ffffffb3;
   --accent: #bfdcff;
 }
+.lightbox__feedback {
+  --text-main: #fff;
+  --text-soft: #ffffffb3;
+  --accent-text: #bfdcff;
+  --surface-3: #ffffff18;
+  --border: #ffffff55;
+}
 
 .lightbox__img {
   display: block;
@@ -162,8 +174,7 @@ useModalFocus(() => props.visible, dialogRef, { close: onClose })
   min-height: 44px;
   color: white;
 }
-.lightbox__navigation button,
-.lightbox__desc button {
+.lightbox__navigation button {
   display: inline-flex;
   align-items: center;
   gap: 0.25rem;

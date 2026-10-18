@@ -64,7 +64,8 @@
             v-if="metadataPending || metadataError"
             :pending="metadataPending"
             :compact="!!metadata"
-            :title="metadataError?.message || '正在读取图库统计'"
+            :title="metadataFeedbackTitle"
+            :description="metadataFeedbackDescription"
             @retry="refreshMetadata()"
           /><GalleryStats v-if="metadata" :stats="stats" /><GalleryGearCard v-if="metadata" :gear="metadata.gear" />
         </details>
@@ -89,7 +90,8 @@
             v-if="metadataPending || metadataError"
             :pending="metadataPending"
             :compact="!!metadata"
-            :title="metadataError?.message || '正在读取图库统计'"
+            :title="metadataFeedbackTitle"
+            :description="metadataFeedbackDescription"
             @retry="refreshMetadata()"
           />
           <GalleryStats v-if="metadata" :stats="stats" /><GalleryGearCard
@@ -133,6 +135,13 @@ const {
   open,
   close,
 } = await useGallery()
+// 失败用稳定标题；具体原因放在说明里，有旧统计时同时说明仍在显示。
+const metadataFeedbackTitle = computed(() => (metadataError.value ? '图库统计暂时不可用' : '正在读取图库统计'))
+const metadataFeedbackDescription = computed(() => {
+  if (!metadataError.value) return undefined
+  const message = metadataError.value.message
+  return metadata.value ? `仍显示上次成功读取的图库统计。${message}` : message
+})
 usePageSeo({
   title: '画廊',
   description: '用镜头记录生活的美好瞬间，浏览摄影作品与拍摄故事',

@@ -60,7 +60,6 @@ export function useMomentInteractions() {
     const state = stateFor(id)
     if (!state || state.loading) return
     state.loading = true
-    state.loadError = ''
     const epoch = session.epoch
     const version = state.version
     const page = reset || !state.initialized ? 1 : state.page + 1
@@ -73,6 +72,7 @@ export function useMomentInteractions() {
       state.total = result.total
       state.page = result.page
       state.initialized = true
+      state.loadError = ''
     } catch (cause) {
       if (epoch === session.epoch && version === state.version)
         state.loadError = cause instanceof Error ? cause.message : '评论加载失败，请重试'

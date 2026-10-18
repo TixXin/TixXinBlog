@@ -104,11 +104,12 @@
         <SidebarRightSidebar>
           <ArticleArchiveStats v-if="metadata" :stats="archiveStats" :distribution="categoryDistribution" />
           <CommonRequestFeedback
-            v-else
+            v-if="metadataError || !metadata"
             class="card"
             compact
             :pending="metadataPending"
             title="归档统计暂时不可用"
+            :description="metadata ? '仍显示上次成功读取的归档统计。' : undefined"
             @retry="refreshMetadata()"
           />
         </SidebarRightSidebar>
@@ -121,7 +122,14 @@
 import { postArchivePeriod, postArchiveSeo } from '~/features/post/archive'
 
 const [summary, archive] = await Promise.all([usePostMetadata(), usePostArchive()])
-const { metadata, archiveStats, categoryDistribution, pending: metadataPending, refresh: refreshMetadata } = summary
+const {
+  metadata,
+  archiveStats,
+  categoryDistribution,
+  pending: metadataPending,
+  error: metadataError,
+  refresh: refreshMetadata,
+} = summary
 const {
   query,
   ready,

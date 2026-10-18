@@ -148,9 +148,13 @@
         </footer>
         <ClientOnly>
           <section v-show="mode === 'local'" ref="localPanel" class="subscription-stack subscription-local-panel">
-            <p v-if="local.error.value" role="alert">
-              {{ local.error.value }} <button type="button" @click="local.load()">重试读取</button>
-            </p>
+            <CommonRequestFeedback
+              v-if="local.error.value"
+              compact
+              title="本地订阅未能完成"
+              :description="local.error.value"
+              @retry="local.load()"
+            />
             <p v-if="local.notice.value" role="status">{{ local.notice.value }}</p>
             <div v-if="local.conflict.value" class="subscription-panel">
               <p>

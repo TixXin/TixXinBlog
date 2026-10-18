@@ -46,10 +46,13 @@
               <Icon name="lucide:loader-2" size="16" class="search-modal__spinner" />
               搜索中...
             </div>
-            <div v-else-if="error" class="search-modal__empty" role="alert">
-              <span>{{ error }}</span>
-              <button type="button" class="btn-primary" @click="search(query)">重试搜索</button>
-            </div>
+            <CommonRequestFeedback
+              v-else-if="error"
+              compact
+              title="搜索加载失败"
+              :description="error"
+              @retry="search(query)"
+            />
             <template v-if="!isSearching">
               <section
                 v-for="group in groups"

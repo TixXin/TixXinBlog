@@ -8,6 +8,7 @@ import { flushPromises } from '@vue/test-utils'
 import { mockNuxtImport, mountSuspended } from '@nuxt/test-utils/runtime'
 import PromptsPage from '../../app/pages/prompts.vue'
 import SearchBox from '../../app/components/common/SearchBox.vue'
+import RequestFeedback from '../../app/components/common/RequestFeedback.vue'
 import { promptQuery } from '../../app/features/prompt/query'
 import type { ImagePrompt, ManagedPrompt, PromptPage, PromptStatus } from '../../app/features/prompt/types'
 
@@ -174,6 +175,8 @@ let feedTotal: Ref<number | null>
 let feedPending: Ref<boolean>
 let feedStale: Ref<boolean>
 let feedError: Ref<Error | null>
+let metadataError: Ref<Error | null>
+let metadataPending: Ref<boolean>
 const wrappers: { unmount(): void }[] = []
 
 beforeEach(() => {
@@ -190,6 +193,8 @@ beforeEach(() => {
   feedPending = ref(false)
   feedStale = ref(false)
   feedError = ref(null)
+  metadataError = ref(null)
+  metadataPending = ref(false)
   drafts = ref({ items: [item('draft')], total: 1, page: 1, pageSize: 12 })
   mocks.detail.mockResolvedValue(item())
   mocks.adminDetail.mockResolvedValue(item('draft'))
@@ -217,7 +222,8 @@ beforeEach(() => {
         models: [{ label: 'Flux', count: 1 }],
         tags: [{ label: '光影', count: 1 }],
       }),
-      metadataError: ref(null),
+      metadataError,
+      metadataPending,
       refreshMetadata: mocks.refreshMetadata,
       changeQuery: mocks.changeQuery,
     }
@@ -248,7 +254,7 @@ async function setup(route = '/prompts', realSearch = false) {
         Icon: true,
         CommonSearchBox: realSearch ? SearchBox : true,
         CommonStateBlock: true,
-        CommonRequestFeedback: true,
+        CommonRequestFeedback: RequestFeedback,
         PromptCard: Card,
         PromptDetail: Detail,
         PromptEditor: Editor,
@@ -259,6 +265,37 @@ async function setup(route = '/prompts', realSearch = false) {
   await flushPromises()
   return wrapper
 }
+
+it('筛选元数据独立失败时保留列表，使用统一反馈重试且在途不重复请求', async () => {
+  metadataError.value = new Error('元数据接口不可用')
+  let finish!: () => void
+  mocks.refreshMetadata.mockImplementation(
+    () =>
+      new Promise<void>((resolve) => {
+        metadataPending.value = true
+        metadataError.value = null
+        finish = () => {
+          metadataPending.value = false
+          resolve()
+        }
+      }),
+  )
+  const wrapper = await setup('/prompts?model=Flux')
+  const feedback = wrapper.getComponent(RequestFeedback)
+  expect(feedback.get('[role="alert"]').text()).toContain('模型与标签加载失败')
+  expect(wrapper.get('[data-card="7"]').text()).toContain('窗边的光')
+  await feedback.get('button').trigger('click')
+  expect(mocks.refreshMetadata).toHaveBeenCalledOnce()
+  expect(feedback.get('button').attributes('aria-disabled')).toBe('true')
+  await feedback.get('button').trigger('click')
+  expect(mocks.refreshMetadata).toHaveBeenCalledOnce()
+  expect(mocks.refresh).not.toHaveBeenCalled()
+  expect(router.currentRoute.value.query).toEqual({ model: 'Flux' })
+  finish()
+  await flushPromises()
+  expect(wrapper.findComponent(RequestFeedback).exists()).toBe(false)
+  expect(wrapper.get('[data-card="7"]').text()).toContain('窗边的光')
+})
 
 it('公开详情保存为草稿后转到草稿视图，关闭编辑器继续通过管理接口核对正文', async () => {
   const wrapper = await setup('/prompts?prompt=7&q=窗&page=2')

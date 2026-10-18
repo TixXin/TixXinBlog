@@ -38,7 +38,8 @@
             v-if="!mounted || isSearching || error"
             :pending="!mounted || isSearching"
             :compact="groups.length > 0"
-            :title="error || '正在搜索公开内容'"
+            title="搜索加载失败"
+            :description="error || undefined"
             @retry="refresh"
           />
           <div v-if="mounted && !isSearching" ref="resultListRef" @keydown="onResultKeydown">

@@ -48,11 +48,13 @@
               <span>AI 正在翻阅你的闪念...</span>
             </div>
 
-            <!-- error -->
-            <div v-else-if="aiSearch.status.value === 'error'" class="flash-ai-modal__error">
-              <Icon name="lucide:alert-triangle" size="18" />
-              <span>{{ aiSearch.errorMsg.value }}</span>
-            </div>
+            <CommonRequestFeedback
+              v-else-if="aiSearch.status.value === 'error'"
+              compact
+              title="闪念搜索失败"
+              :description="aiSearch.errorMsg.value || undefined"
+              @retry="submit()"
+            />
 
             <!-- success -->
             <div
@@ -256,17 +258,6 @@ function truncate(text: string, max: number): string {
   to {
     transform: rotate(360deg);
   }
-}
-
-.flash-ai-modal__error {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  padding: 1rem;
-  color: var(--danger);
-  background: var(--surface-2);
-  border-radius: $radius-md;
-  font-size: 0.8125rem;
 }
 
 .flash-ai-modal__result {

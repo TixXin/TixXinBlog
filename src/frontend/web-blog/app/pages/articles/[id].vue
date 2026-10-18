@@ -80,10 +80,13 @@
             <CommonShareButtons :title="article.title" :url="canonicalUrl" class="article-page__share" />
           </ClientOnly>
         </div>
-        <p v-if="interactionError" role="alert" class="article-page__inline-error">
-          {{ interactionError }}
-          <button type="button" @click="reloadInteraction">重试</button>
-        </p>
+        <CommonRequestFeedback
+          v-if="interactionError"
+          :title="interactionError"
+          :pending="interactionPending"
+          compact
+          @retry="reloadInteraction"
+        />
         <div ref="readingContent" class="article-reading-content">
           <ArticleMarkdown v-if="article.contentRaw" :content="article.contentRaw" :title="article.title" />
           <!-- 结构化正文含代码高亮（Shiki），懒加载使其不进入文章页首屏 chunk -->
@@ -95,6 +98,8 @@
           :next="navigation.next"
           :folder="navigationFolder"
           :error="discoveryError"
+          :pending="discoveryPending"
+          @retry="retryDiscovery"
         />
         <ArticleCommentSection
           v-model="draft"
@@ -171,8 +176,17 @@ const routeArticleId = route.params.id as string
 const earlyComments = isNumericArticleId(routeArticleId) ? useArticleComments(routeArticleId) : undefined
 // 详情失败时页面直接抛错，提前发起的评论结果被丢弃，这里只避免未处理的拒绝。
 earlyComments?.catch(() => undefined)
-const { article, relatedPosts, navigation, navigationFolder, discoveryError, tocItems, articleExcerpt } =
-  await useArticleDetail(routeArticleId, { reuseLoaded: switchingState.value === 'loading' })
+const {
+  article,
+  relatedPosts,
+  navigation,
+  navigationFolder,
+  discoveryError,
+  discoveryPending,
+  retryDiscovery,
+  tocItems,
+  articleExcerpt,
+} = await useArticleDetail(routeArticleId, { reuseLoaded: switchingState.value === 'loading' })
 requestScope.assertActive()
 const canonicalPath = articlePath(article.value)
 if (route.path !== canonicalPath)
@@ -400,29 +414,5 @@ useJsonLd('breadcrumb', () => ({
 
 .article-page__share {
   margin-left: auto;
-}
-
-.article-page__inline-error {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 0.5rem;
-  margin: -0.75rem 0 1.5rem;
-  font-size: 0.8125rem;
-  color: var(--text-soft);
-
-  button {
-    padding: 0.25rem 0.625rem;
-    border: 1px solid var(--border);
-    border-radius: $radius-md;
-    background: var(--surface-2);
-    color: var(--text-muted);
-    font-size: 0.75rem;
-    cursor: var(--interaction-cursor, pointer);
-
-    &:hover {
-      color: var(--text-main);
-    }
-  }
 }
 </style>

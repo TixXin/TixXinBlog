@@ -19,13 +19,12 @@
     <template #default>
       <CommonCustomScrollbar class="flash-detail-body" viewport-class="flash-detail-viewport" primary>
         <div class="flash-detail-content">
-          <CommonStateBlock
+          <CommonRequestFeedback
             v-if="loadError"
-            icon="lucide:cloud-off"
+            :pending="detailResult.pending.value"
             title="闪念加载失败"
             description="暂时无法读取公开闪念，请稍后重试。"
-            action-label="重试加载"
-            @action="refreshNotes()"
+            @retry="refreshNotes()"
           />
           <CommonStateBlock
             v-else-if="loadFinished && !note"

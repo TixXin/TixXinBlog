@@ -108,7 +108,8 @@
             v-if="metadataPending || metadataError"
             :pending="metadataPending"
             :compact="!!metadata"
-            :title="metadataError?.message || '正在读取项目统计'"
+            :title="metadataFeedbackTitle"
+            :description="metadataFeedbackDescription"
             @retry="refreshMetadata()"
           /><ProjectStats v-if="metadata" :stats="stats" /><ProjectTechStackCard
             v-if="metadata"
@@ -126,7 +127,8 @@
               v-if="metadataPending || metadataError"
               :pending="metadataPending"
               :compact="!!metadata"
-              :title="metadataError?.message || '正在读取项目统计'"
+              :title="metadataFeedbackTitle"
+              :description="metadataFeedbackDescription"
               @retry="refreshMetadata()" /><ProjectStats v-if="metadata" :stats="stats" /><ProjectTechStackCard
               v-if="metadata"
               :stack="metadata.tags"
@@ -166,6 +168,13 @@ const {
   refreshMetadata,
   changeQuery,
 } = await useProjects()
+// 失败用稳定标题；具体原因放在说明里，有旧统计时同时说明仍在显示。
+const metadataFeedbackTitle = computed(() => (metadataError.value ? '项目统计暂时不可用' : '正在读取项目统计'))
+const metadataFeedbackDescription = computed(() => {
+  if (!metadataError.value) return undefined
+  const message = metadataError.value.message
+  return metadata.value ? `仍显示上次成功读取的项目统计。${message}` : message
+})
 const shareProject = computed(() => projects.value.find((project) => project.cover))
 usePageSeo({
   title: '项目展示',

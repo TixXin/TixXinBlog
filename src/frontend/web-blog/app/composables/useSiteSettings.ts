@@ -4,12 +4,24 @@
  */
 import { defaultSiteSettings } from '~/features/site/settings'
 import type { SiteSettingsData } from '~/features/site/settings'
+// 每个 Nuxt 应用的进行中读取；并发调用共享同一请求，等待方也能拿到真实结果。
+const inflight = new WeakMap<object, Promise<void>>()
 export function useSiteSettings() {
+  const nuxtApp = useNuxtApp()
   const settings = useState<SiteSettingsData>('site-settings', () => structuredClone(defaultSiteSettings))
   const available = useState('site-settings-available', () => false)
   const error = useState('site-settings-error', () => '')
+  const pending = useState('site-settings-pending', () => false)
   const pageContext = useState<string>('page-content-context', () => '')
-  async function refresh() {
+  function refresh() {
+    const running = inflight.get(nuxtApp)
+    if (running) return running
+    const task = load().finally(() => inflight.delete(nuxtApp))
+    inflight.set(nuxtApp, task)
+    return task
+  }
+  async function load() {
+    pending.value = true
     try {
       const response = await $fetch.raw<{ data: SiteSettingsData }>('/api/v1/site', { timeout: 10000, retry: 0 })
       if (!response._data) throw new Error('missing site data')
@@ -20,6 +32,8 @@ export function useSiteSettings() {
     } catch {
       available.value = false
       error.value = '站点资料暂时无法读取'
+    } finally {
+      pending.value = false
     }
   }
   function accept(value: SiteSettingsData) {
@@ -27,5 +41,5 @@ export function useSiteSettings() {
     available.value = true
     error.value = ''
   }
-  return { settings, available, error, refresh, accept }
+  return { settings, available, error, pending, refresh, accept }
 }

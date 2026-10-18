@@ -47,9 +47,17 @@ it('回退全站不标注专栏，缺失的一侧不渲染链接', async () => {
   expect(wrapper.get('.article-nav__card--next').attributes('href')).toBe('/articles/8')
 })
 
-it('导航失败提供读屏状态，不伪造可点击的空文章', async () => {
+it('导航失败提供读屏警示与重试，不伪造可点击的空文章', async () => {
   const wrapper = await setup({ prev: null, next: null, error: true })
-  expect(wrapper.get('[role="status"]').text()).toBe('相邻文章暂时无法加载')
+  expect(wrapper.get('[role="alert"]').text()).toBe('部分文章信息加载失败请重试加载相邻文章和相关推荐。')
   expect(wrapper.findAll('a')).toHaveLength(0)
   expect(wrapper.find('.article-nav__folder').exists()).toBe(false)
+  const retry = wrapper.get('.request-feedback button')
+  await retry.trigger('click')
+  expect(wrapper.emitted('retry')).toEqual([[]])
+  // 重试期间按钮忙碌，重复点击不再发出事件
+  await wrapper.setProps({ pending: true })
+  expect(retry.attributes('aria-busy')).toBe('true')
+  await retry.trigger('click')
+  expect(wrapper.emitted('retry')).toEqual([[]])
 })
