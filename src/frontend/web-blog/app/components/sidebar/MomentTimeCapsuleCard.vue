@@ -101,8 +101,9 @@ function truncate(s: string, n: number) {
   return t.length > n ? `${t.slice(0, n)}…` : t
 }
 
+/** 日期按 UTC 展示，与去年今日的匹配口径一致。 */
 function formatDate(iso: string) {
-  return iso.slice(0, 10)
+  return new Date(iso).toISOString().slice(0, 10)
 }
 </script>
 

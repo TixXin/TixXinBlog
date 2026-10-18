@@ -34,9 +34,14 @@
     </div>
 
     <div class="flash-calendar-card__grid">
-      <span
+      <button
         v-for="(day, idx) in calendarDays"
         :key="idx"
+        type="button"
+        :disabled="!day?.hasNote"
+        :aria-hidden="!day || undefined"
+        :aria-label="day ? `${day.dateStr}，${day.noteCount} 条闪念` : undefined"
+        :aria-pressed="day?.dateStr === selectedDate"
         class="flash-calendar-card__day"
         :class="{
           'is-empty': !day,
@@ -52,7 +57,7 @@
           {{ day.num }}
           <span v-if="day.hasNote" class="flash-calendar-card__dot" />
         </template>
-      </span>
+      </button>
     </div>
 
     <div class="flash-calendar-card__footer">
@@ -91,6 +96,19 @@ const weekdays = ['一', '二', '三', '四', '五', '六', '日']
 // 闪念日期按 createdAt 的 UTC 日期分组，日历的“今天”、月份与星期也统一用 UTC，与动态日历一致
 const viewYear = ref(new Date().getUTCFullYear())
 const viewMonth = ref(new Date().getUTCMonth())
+
+// 与动态日历一致：切换侧栏或抽屉后，从共享筛选恢复已选日期所在月份。
+watch(
+  () => props.selectedDate,
+  (value) => {
+    if (!value) return
+    const date = new Date(`${value}T12:00:00Z`)
+    if (Number.isNaN(date.getTime()) || date.toISOString().slice(0, 10) !== value) return
+    viewYear.value = date.getUTCFullYear()
+    viewMonth.value = date.getUTCMonth()
+  },
+  { immediate: true },
+)
 
 const monthLabel = computed(() => `${viewYear.value}年${viewMonth.value + 1}月`)
 
