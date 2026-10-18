@@ -61,6 +61,8 @@ it('发布前列出封面与正文缺失位置，警告供读屏读取且允许�
     '正文第 3 张图片（第 3 行）缺少替代文本。',
   ])
   expect(dialog.attributes('aria-describedby')).toBe('publish-alt-description')
+  // 打开时聚焦标题，长警告列表不会让默认焦点把标题滚出视口
+  expect(dialog.get('#publish-check-title').attributes()).toMatchObject({ tabindex: '-1', autofocus: '' })
   expect(dialog.get('#publish-alt-description').text()).toContain('也可仍然发布')
   expect(button('仍然公开发布').attributes('disabled')).toBeUndefined()
   await button('仍然公开发布').trigger('click')

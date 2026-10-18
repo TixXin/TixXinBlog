@@ -202,7 +202,8 @@
     :aria-describedby="hasMissingAlt ? 'publish-alt-description' : undefined"
     @close="$emit('reviewing', false)"
   >
-    <h2 id="publish-check-title">发布前检查</h2>
+    <!-- 打开时焦点落在标题：内容超出高度时默认聚焦底部按钮会把标题和摘要滚出视口 -->
+    <h2 id="publish-check-title" tabindex="-1" autofocus>发布前检查</h2>
     <p>{{ draft.status === 'published' ? '确认后将更新当前公开文章。' : '确认后文章将公开，访客可以阅读和互动。' }}</p>
     <dl>
       <dt>标题</dt>
@@ -399,6 +400,8 @@ function confirmPublish() {
   color: var(--text-muted);
 }
 .post-editor__publish {
+  /* 全局重置清掉了原生 dialog 的 margin:auto，需补回才能在视口居中 */
+  margin: auto;
   max-width: min(640px, calc(100vw - 2rem));
   max-height: 85dvh;
   overflow: auto;
