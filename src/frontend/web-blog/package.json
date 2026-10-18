@@ -47,6 +47,7 @@
     "vue-echarts": "^8.3.2"
   },
   "devDependencies": {
+    "@axe-core/playwright": "^4.14.0",
     "@iconify-json/lucide": "^1.2.129",
     "@nuxt/test-utils": "^4.2.0",
     "@playwright/test": "^1.63.0",
