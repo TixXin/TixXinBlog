@@ -246,13 +246,13 @@
       ><button
         type="button"
         :disabled="!ready || loading || saving || !value.title.trim()"
-        @click="$emit('save', 'draft')"
+        @click="requestSave('draft')"
       >
         保存草稿</button
       ><button
         type="button"
         :disabled="!ready || loading || saving || !value.title.trim()"
-        @click="$emit('save', 'published')"
+        @click="requestSave('published')"
       >
         发布项目</button
       ><span>{{ dirty ? '有尚未保存输入' : saved ? '当前输入已保存' : '尚未保存' }}</span>
@@ -315,6 +315,9 @@ const { label: saveShortcut } = useAdminSaveShortcut({
 const mediaOpen = ref(false),
   selectedMedia = ref<MediaAsset | null>(null)
 const colorLabels = { emerald: '翠绿', blue: '蓝色', amber: '琥珀', sky: '天蓝', rose: '玫红', slate: '灰色' }
+function requestSave(status: ProjectPublicationStatus) {
+  if (editorForm.value?.reportValidity()) emit('save', status)
+}
 function change<K extends keyof ProjectEditable>(key: K, value: ProjectEditable[K]) {
   emit('change', { [key]: value })
 }

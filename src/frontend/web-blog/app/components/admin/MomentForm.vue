@@ -210,14 +210,14 @@
       <button
         type="button"
         :disabled="!ready || loading || saving || !value.content.trim()"
-        @click="$emit('save', 'draft')"
+        @click="requestSave('draft')"
       >
         保存草稿
       </button>
       <button
         type="button"
         :disabled="!ready || loading || saving || !value.content.trim()"
-        @click="$emit('save', 'published')"
+        @click="requestSave('published')"
       >
         发布动态
       </button>
@@ -268,6 +268,9 @@ const mediaOpen = ref(false),
   linkMode = ref('none'),
   articleSearch = ref('')
 const statusText = { draft: '草稿', published: '已发布', archived: '已归档' }
+function requestSave(status: MomentStatus) {
+  if (editorForm.value?.reportValidity()) emit('save', status)
+}
 function change<K extends keyof MomentEditable>(key: K, value: MomentEditable[K]) {
   emit('change', { [key]: value })
 }

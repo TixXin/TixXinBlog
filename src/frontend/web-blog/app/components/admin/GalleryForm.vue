@@ -85,14 +85,16 @@
               type="url"
               maxlength="2048"
               :aria-invalid="!!value.externalUrl && !!urlError"
-              aria-describedby="gallery-url-help"
+              :aria-describedby="
+                value.externalUrl && urlError ? 'gallery-url-help gallery-url-error' : 'gallery-url-help'
+              "
               @input="change('externalUrl', ($event.target as HTMLInputElement).value)"
           /></label>
           <p id="gallery-url-help">
             填写完整 HTTP(S) 图片直链，可带查询参数。地址不会被服务器下载或检查；HTTPS 页面中的 HTTP
             图片可能被浏览器阻止。
           </p>
-          <p v-if="value.externalUrl && urlError" role="alert">{{ urlError }}</p>
+          <p v-if="value.externalUrl && urlError" id="gallery-url-error" role="alert">{{ urlError }}</p>
           <template v-else-if="value.externalUrl">
             <p>地址格式合法，可以保存。预览结果不决定保存结果。</p>
             <CommonImageFrame
@@ -228,13 +230,13 @@
       ><button
         type="button"
         :disabled="!ready || saving || loading || !value.title.trim() || !sourceValid"
-        @click="$emit('save', 'draft')"
+        @click="requestSave('draft')"
       >
         保存草稿</button
       ><button
         type="button"
         :disabled="!ready || saving || loading || !value.title.trim() || !sourceValid"
-        @click="$emit('save', 'published')"
+        @click="requestSave('published')"
       >
         发布作品</button
       ><span>{{ dirty ? '有尚未保存输入' : saved ? '当前输入已保存' : '尚未保存' }}</span>
@@ -278,6 +280,10 @@ const emit = defineEmits<{
 }>()
 const editorForm = ref<HTMLFormElement | null>(null),
   saveButton = ref<HTMLButtonElement | null>(null)
+// 显式草稿和发布按钮同样先校验日期、排序等原生约束，保持与主提交一致。
+function requestSave(status: GalleryStatus) {
+  if (editorForm.value?.reportValidity()) emit('save', status)
+}
 // Ctrl/⌘+S 复用“保存”按钮的表单提交；按钮禁用（未就绪、保存中、校验未过）或无修改时不提交。
 const { label: saveShortcut } = useAdminSaveShortcut({
   form: editorForm,
