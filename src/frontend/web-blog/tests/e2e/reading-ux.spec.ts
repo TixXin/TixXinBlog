@@ -14,11 +14,14 @@ async function chooseTheme(page: Page, name: string) {
 }
 async function openContents(page: Page) {
   const button = page.getByRole('button', { name: '文章目录', exact: true })
+  const aside = page.locator('.aside-right, .aurora-aside').filter({ visible: true })
+  // 刚改视口时布局仍在切换，先等窄屏目录按钮或宽屏侧栏之一就位，再按实际布局选择入口
+  await expect(button.or(aside).first()).toBeVisible()
   if (await button.isVisible()) {
     await button.click()
     return page.getByRole('dialog', { name: '文章目录', exact: true })
   }
-  return page.locator('.aside-right, .aurora-aside').filter({ visible: true })
+  return aside
 }
 
 test('长标题与正文在三主题和手机可读，目录不遮挡且文末进度完成', async ({ page }, testInfo) => {
