@@ -131,7 +131,7 @@ describe('订阅行扣费提醒', () => {
     expect(billing.classes()).toContain('subscription-list-date--overdue')
     expect(billing.get('.subscription-list-date-note').text()).toBe('已逾期，请核对')
     expect(billing.find('.subscription-list-date-note--soon').exists()).toBe(false)
-    await wrapper.get('.subscription-list-row').trigger('click')
+    await wrapper.get('.subscription-list-open').trigger('click')
     await flushPromises()
 
     const dialog = new DOMWrapper(document.querySelector<HTMLElement>('[role="dialog"]')!)
@@ -173,7 +173,7 @@ describe('订阅行原币金额与周期', () => {
     const wrapper = await setup({ amount: 123456, currency })
 
     expect(wrapper.get('.subscription-list-price strong').text()).toBe(expected)
-    await wrapper.get('.subscription-list-row').trigger('click')
+    await wrapper.get('.subscription-list-open').trigger('click')
     await flushPromises()
     const dialog = new DOMWrapper(document.querySelector<HTMLElement>('[role="dialog"]')!)
     expect(dialog.get('.subscription-detail-price strong').text()).toBe(expected)
@@ -239,7 +239,7 @@ describe('订阅行状态与可访问详情', () => {
     document.body.append(host)
     hosts.push(host)
     const wrapper = await setup({ nextBillingDate: '2026-10-16' }, '2026-10-15', host)
-    const row = wrapper.get('.subscription-list-row')
+    const row = wrapper.get('.subscription-list-open')
 
     expect(row.element.tagName).toBe('BUTTON')
     expect(row.attributes('type')).toBe('button')

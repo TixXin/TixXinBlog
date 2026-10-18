@@ -242,7 +242,7 @@ button,
 }
 [aria-current='page'] {
   border-color: var(--accent);
-  color: var(--accent);
+  color: var(--accent-text);
 }
 .search-page__scope,
 p,
@@ -284,7 +284,8 @@ li a:focus-visible {
   min-width: 0;
 }
 a {
-  color: var(--accent);
+  /* 文字使用 accent-text：暗色模式下 accent 压在卡片面上对比度不足 4.5:1 */
+  color: var(--accent-text);
   overflow-wrap: anywhere;
 }
 p {

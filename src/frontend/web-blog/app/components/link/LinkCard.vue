@@ -10,7 +10,9 @@
       :height="link.height ?? 64"
       fit="contain"
     />
-    <div v-else class="link-card__placeholder" aria-label="未设置站点图片"><Icon name="lucide:globe" size="28" /></div>
+    <div v-else class="link-card__placeholder" role="img" aria-label="未设置站点图片">
+      <Icon name="lucide:globe" size="28" />
+    </div>
     <h2 class="link-card__name">
       <a :href="link.url" target="_blank" rel="noopener noreferrer"
         >{{ link.name }}<Icon name="lucide:external-link" size="13"

@@ -40,7 +40,7 @@
         type="button"
         :disabled="!day?.hasNote"
         :aria-hidden="!day || undefined"
-        :aria-label="day ? `${day.dateStr}，${day.noteCount} 条闪念` : undefined"
+        :aria-label="day ? `${dayLabel(day.dateStr)}，${day.noteCount} 条闪念` : undefined"
         :aria-pressed="day?.dateStr === selectedDate"
         class="flash-calendar-card__day"
         :class="{
@@ -92,6 +92,12 @@ const emit = defineEmits<{
 }>()
 
 const weekdays = ['一', '二', '三', '四', '五', '六', '日']
+
+/** 日期按钮的读屏名称；日数不补零，保证可见的日数是可访问名的一部分 */
+function dayLabel(dateStr: string) {
+  const [year, month, day] = dateStr.split('-').map(Number)
+  return `${year}年${month}月${day}日`
+}
 
 // 闪念日期按 createdAt 的 UTC 日期分组，日历的“今天”、月份与星期也统一用 UTC，与动态日历一致
 const viewYear = ref(new Date().getUTCFullYear())

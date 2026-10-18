@@ -40,7 +40,7 @@
         type="button"
         :disabled="!day?.hasMoment"
         :aria-hidden="!day || undefined"
-        :aria-label="day ? `${day.dateStr}，${day.momentCount} 条动态` : undefined"
+        :aria-label="day ? `${dayLabel(day.dateStr)}，${day.momentCount} 条动态` : undefined"
         :aria-pressed="day?.dateStr === selectedDate"
         class="moment-calendar-card__day"
         :class="{
@@ -98,6 +98,12 @@ const emit = defineEmits<{
 }>()
 
 const weekdays = ['一', '二', '三', '四', '五', '六', '日']
+
+/** 日期按钮的读屏名称；日数不补零，保证可见的日数是可访问名的一部分 */
+function dayLabel(dateStr: string) {
+  const [year, month, day] = dateStr.split('-').map(Number)
+  return `${year}年${month}月${day}日`
+}
 
 const viewYear = ref(new Date().getUTCFullYear())
 const viewMonth = ref(new Date().getUTCMonth())
