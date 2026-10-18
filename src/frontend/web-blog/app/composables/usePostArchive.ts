@@ -1,7 +1,7 @@
 /** @file usePostArchive.ts @description 归档按年月和页码读取，保留成功结果并隔离迟到响应 */
 import { fetchPostArchive } from '~/features/post/api'
 import { mockPosts } from '~/features/post/mock'
-import { postArchiveQuery, postArchiveYears } from '~/features/post/archive'
+import { postArchiveQuery, postArchiveRouteCorrection, postArchiveYears } from '~/features/post/archive'
 import type { PostArchivePage, PostArchiveQuery } from '~/features/post/types'
 
 export async function usePostArchive() {
@@ -87,6 +87,10 @@ export async function usePostArchive() {
   onMounted(() => {
     ready.value = true
     hydrating.value = false
+    // 非法年月或页码已按忽略后的查询显示，挂载后再用 replace 纠正地址栏，避免 SSR 导航和水合不一致；
+    // 纠正后解析结果不变，key 不变，不会重新请求
+    const corrected = postArchiveRouteCorrection(route.query)
+    if (corrected && router.currentRoute.value.path === '/archive') void router.replace({ query: corrected })
   })
   const current = computed(() => (accepted.value?.key === key.value ? accepted.value.page : null))
   // 展示保留最后成功页；页码校正始终只使用匹配当前查询的 current。
