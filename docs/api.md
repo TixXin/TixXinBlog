@@ -66,8 +66,8 @@
 | `GET /posts`、`GET /posts/metadata`                                                    | 公开列表、搜索、分页与真实目录聚合 |
 | `GET /posts/archive`                                                                   | 按 UTC 年份筛选的稳定分页归档      |
 | `GET /posts/:id`、`GET /posts/by-slug/:slug`                                           | 公开文章详情及地址解析             |
-| `GET /posts/:id/navigation`                                                           | 前后文章，支持 `scope=all/folder`  |
-| `GET /posts/:id/related`                                                              | 规则相关文章                       |
+| `GET /posts/:id/navigation`                                                            | 前后文章，支持 `scope=all/folder`  |
+| `GET /posts/:id/related`                                                               | 规则相关文章                       |
 | `POST /posts/:id/like`、`POST /posts/:id/view`                                         | 访客点赞切换与去重浏览计数         |
 | `GET /posts/:id/interaction`                                                           | 当前访客互动状态，私有且不缓存     |
 | `GET/POST /posts/:id/comments`、`POST /comments/:id/like`                              | 文章评论、回复与点赞               |
