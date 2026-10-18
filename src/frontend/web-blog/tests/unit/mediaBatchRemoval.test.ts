@@ -15,11 +15,12 @@ const mocks = vi.hoisted(() => ({
   api: vi.fn(),
   cancel: vi.fn(),
   success: vi.fn(),
+  info: vi.fn(),
 }))
 mockNuxtImport('useCurrentUser', () => () => mocks.auth)
 mockNuxtImport('useAdminApi', () => () => mocks.api)
 mockNuxtImport('useMediaUpload', () => () => ({ upload: vi.fn(), cancel: mocks.cancel }))
-mockNuxtImport('useToast', () => () => ({ success: mocks.success }))
+mockNuxtImport('useToast', () => () => ({ success: mocks.success, info: mocks.info }))
 mockNuxtImport('onBeforeRouteLeave', () => () => undefined)
 mockNuxtImport('onBeforeRouteUpdate', () => () => undefined)
 

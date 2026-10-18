@@ -10,7 +10,7 @@ const mocks = vi.hoisted(() => ({ api: vi.fn(), actor: { id: 'media-owner' }, ca
 mockNuxtImport('useCurrentUser', () => () => ({ currentUser: ref(mocks.actor), restore: async () => true }))
 mockNuxtImport('useAdminApi', () => () => mocks.api)
 mockNuxtImport('useMediaUpload', () => () => ({ upload: vi.fn(), cancel: mocks.cancel }))
-mockNuxtImport('useToast', () => () => ({ success: vi.fn() }))
+mockNuxtImport('useToast', () => () => ({ success: vi.fn(), info: vi.fn() }))
 mockNuxtImport('onBeforeRouteLeave', () => () => undefined)
 mockNuxtImport('onBeforeRouteUpdate', () => () => undefined)
 const asset = {

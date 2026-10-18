@@ -23,7 +23,7 @@ export function useMediaLibrary(selectable = false) {
   const auth = useCurrentUser()
   const pageContext = useState<string>('page-content-context', () => '')
   const uploader = useMediaUpload()
-  const { success } = useToast()
+  const { success, info } = useToast()
   const route = useRoute()
   const router = useRouter()
   const search = ref(!selectable && typeof route.query.search === 'string' ? route.query.search : '')
@@ -503,15 +503,23 @@ export function useMediaLibrary(selectable = false) {
       working.value = false
     }
   }
-  onBeforeRouteLeave(
-    () =>
-      !busy.value ||
-      window.confirm(
-        batchProgress.value
-          ? '批量回收仍在进行，离开后停止后续操作；已发出的删除请求可能已经生效。请返回媒体库重新读取核对结果。确定离开吗？'
-          : '仍有上传或未保存的替代文本、素材说明，离开会停止等待并放弃未保存输入；已上传资源保留。确定离开吗？',
-      ),
-  )
+  onBeforeRouteLeave(() => {
+    if (!busy.value) return true
+    const batch = !!batchProgress.value
+    const leave = window.confirm(
+      batch
+        ? '批量回收仍在进行，离开后停止后续操作；已发出的删除请求可能已经生效。请返回媒体库重新读取核对结果。确定离开吗？'
+        : '仍有上传或未保存的替代文本、素材说明，离开会停止等待并放弃未保存输入；已上传资源保留。确定离开吗？',
+    )
+    // 选择留下时说明页面为何没有跳转，以及当前任务的状态。
+    if (!leave)
+      info(
+        batch
+          ? '已留在媒体库：批量回收继续进行，完成后会显示处理结果。'
+          : '已留在媒体库：上传与未保存的说明均已保留，完成或保存后再离开。',
+      )
+    return leave
+  })
   function beforeUnload(event: BeforeUnloadEvent) {
     if (busy.value) {
       event.preventDefault()
