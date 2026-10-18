@@ -111,13 +111,22 @@ export class PostDiscoveryService {
         select p.id,p.slug,p.seo_noindex,p.title,p.folder,p.published_at,${CONTENT_UPDATED_AT_SQL},
           extract(year from p.published_at at time zone 'UTC')::int as year
         from post p where p.status='published' and p.deleted_at is null
-      ), selected as (select * from public_posts where (?::int is null or year=?::int)),
+      ), period as (
+        select make_date(?::int,coalesce(?::int,1),1) as start_date,
+          case when ?::int is null then interval '1 year' else interval '1 month' end as duration
+      ), selected as (
+        select public_posts.* from public_posts cross join period
+        where period.start_date is null or (
+          published_at >= period.start_date::timestamp at time zone 'UTC'
+          and published_at < (period.start_date + period.duration) at time zone 'UTC'
+        )
+      ),
       page_items as (select * from selected order by published_at desc,id desc limit ? offset ?),
       year_counts as (select year,count(*)::int as count from public_posts group by year)
       select coalesce((select jsonb_agg(to_jsonb(p) order by published_at desc,id desc) from page_items p),'[]'::jsonb) as items,
         (select count(*)::int from selected) as total,
         coalesce((select jsonb_agg(to_jsonb(y) order by year desc) from year_counts y),'[]'::jsonb) as years`,
-      [query.year ?? null, query.year ?? null, query.pageSize, (query.page - 1) * query.pageSize],
+      [query.year ?? null, query.month ?? null, query.month ?? null, query.pageSize, (query.page - 1) * query.pageSize],
     )
     return {
       items: (result?.items ?? []).map(archiveItem),

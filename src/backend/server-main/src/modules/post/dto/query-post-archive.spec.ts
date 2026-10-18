@@ -1,4 +1,4 @@
-/** @file query-post-archive.spec.ts @description 轻量统计严格布尔参数与归档查询上下界 */
+/** @file query-post-archive.spec.ts @description 轻量统计严格布尔参数与归档年月、分页查询边界 */
 import 'reflect-metadata'
 import { plainToInstance } from 'class-transformer'
 import { validateSync } from 'class-validator'
@@ -24,5 +24,30 @@ describe('文章归档查询边界', () => {
       { pageSize: '101' },
     ])
       expect(validateSync(plainToInstance(QueryPostArchiveDto, query))).not.toHaveLength(0)
+  })
+
+  it.each(['1', '3', '12'])('接受同年有效月份 %s 并转换为数字', (month) => {
+    const query = plainToInstance(QueryPostArchiveDto, { year: '2026', month })
+    expect(validateSync(query)).toEqual([])
+    expect(query).toMatchObject({ year: 2026, month: Number(month), page: 1, pageSize: 50 })
+  })
+
+  it.each([
+    { month: '3' },
+    { year: '', month: '3' },
+    { year: null, month: '3' },
+    { year: '2026', month: '0' },
+    { year: '2026', month: '13' },
+    { year: '2026', month: '3.5' },
+    { year: '2026', month: '1e1' },
+    { year: '2026', month: '' },
+    { year: '2026', month: '春季' },
+    { year: '2026', month: null },
+    { year: '2026', month: true },
+    { year: '2026', month: ['3'] },
+    { year: '2026', month: ['3', '4'] },
+    { year: ['2026'], month: '3' },
+  ])('拒绝无年份、非法或重复的月份参数：%j', (query) => {
+    expect(validateSync(plainToInstance(QueryPostArchiveDto, query))).not.toHaveLength(0)
   })
 })

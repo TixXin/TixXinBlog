@@ -144,6 +144,7 @@ export interface PostMetadata extends PostSummary {
 
 export interface PostArchiveQuery {
   year?: number
+  month?: number
   page: number
   pageSize: number
 }

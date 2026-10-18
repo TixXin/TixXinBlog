@@ -1,4 +1,4 @@
-/** @file usePostArchive.ts @description 归档按年和页码读取，保留同查询成功结果并隔离迟到响应 */
+/** @file usePostArchive.ts @description 归档按年月和页码读取，保留成功结果并隔离迟到响应 */
 import { fetchPostArchive } from '~/features/post/api'
 import { mockPosts } from '~/features/post/mock'
 import { postArchiveQuery, postArchiveYears } from '~/features/post/archive'
@@ -17,7 +17,11 @@ export async function usePostArchive() {
   if (hydrating.value && serverKey) {
     try {
       const serverQuery = JSON.parse(serverKey) as PostArchiveQuery
-      initialQuery = postArchiveQuery({ ...serverQuery, year: serverQuery.year?.toString() })
+      initialQuery = postArchiveQuery({
+        ...serverQuery,
+        year: serverQuery.year?.toString(),
+        month: serverQuery.month?.toString(),
+      })
     } catch {
       /* 无有效 SSR 查询时使用当前 URL。 */
     }
@@ -41,7 +45,11 @@ export async function usePostArchive() {
           const year = Number(post.date.slice(0, 4))
           counts.set(year, (counts.get(year) ?? 0) + 1)
         }
-        const filtered = all.filter((post) => !current.year || Number(post.date.slice(0, 4)) === current.year)
+        const filtered = all.filter(
+          (post) =>
+            (!current.year || Number(post.date.slice(0, 4)) === current.year) &&
+            (!current.month || Number(post.date.slice(5, 7)) === current.month),
+        )
         page = {
           ...current,
           total: filtered.length,
@@ -88,9 +96,20 @@ export async function usePostArchive() {
   )
   const stale = computed(() => !!accepted.value && accepted.value.key !== key.value)
   const pageCount = computed(() => Math.max(1, Math.ceil((current.value?.total ?? 0) / query.value.pageSize)))
-  async function changeQuery(patch: { year?: number; page?: number }) {
-    const next = { ...route.query, ...patch }
-    return router.push({ path: '/archive', query: { ...next, page: next.page === 1 ? undefined : next.page } })
+  async function changeQuery(patch: { year?: number; month?: number; page?: number }) {
+    const next = { ...query.value, ...patch }
+    // 换年回到全年，月份筛选与换年默认回第一页；翻页继续保留当前年月。
+    if (('year' in patch && !('month' in patch)) || !next.year) next.month = undefined
+    if ('year' in patch || 'month' in patch) next.page = patch.page ?? 1
+    return router.push({
+      path: '/archive',
+      query: {
+        ...route.query,
+        year: next.year,
+        month: next.month,
+        page: next.page === 1 ? undefined : next.page,
+      },
+    })
   }
   watch([ready, result.pending, result.error, current], () => {
     if (!ready.value || result.pending.value || result.error.value || !current.value) return

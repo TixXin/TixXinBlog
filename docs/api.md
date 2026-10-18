@@ -75,7 +75,7 @@
 | 方法与路径                                                                                   | 作用                                       |
 | -------------------------------------------------------------------------------------------- | ------------------------------------------ |
 | `GET /posts`、`GET /posts/metadata`                                                          | 公开列表、搜索、分页与真实目录聚合         |
-| `GET /posts/archive`                                                                         | 按 UTC 年份筛选的稳定分页归档              |
+| `GET /posts/archive`                                                                         | 按 UTC 年月筛选的稳定分页归档              |
 | `GET /posts/:id`、`GET /posts/by-slug/:slug`                                                 | 公开文章详情及地址解析                     |
 | `GET /posts/:id/navigation`                                                                  | 前后文章，支持 `scope=all/folder/auto`     |
 | `GET /posts/:id/related`                                                                     | 规则相关文章                               |
@@ -123,7 +123,9 @@
 
 `GET /posts/metadata` 保持旧完整响应：`tags/categories/stats/activity/archive`。`includeArchive` 默认为 `true`，只接受 `true` 或 `false`；显式 `false` 返回轻量 `tags/categories/stats/activity`，不查询或返回全量归档。完整模式的 `archive` 项与 `GET /posts/archive` 字段相同（含 `updatedAt`）。公开页面与主题侧栏使用轻量模式，服务端 sitemap 继续使用完整模式、过滤 `seoNoindex` 并以 `updatedAt` 作为文章 `lastmod`。
 
-`GET /posts/archive` 接受可选 `year`（1–9999）、`page`（默认 1，最大 1000000）、`pageSize`（默认 50，最大 100），仅返回已发布且未回收文章。响应为 `{ items, total, page, pageSize, years }`；`items` 每项包含 `id/slug/seoNoindex/title/folder/date/updatedAt`（`updatedAt` 口径同文章详情），按 `published_at DESC, id DESC` 排序，日期为 ISO UTC。`total` 是当前年份筛选后的总数，`years` 是所有公开年份的 `{ year, count }` 数组，按 UTC 年份倒序；列表、总数与年份计数来自同一查询快照。空年份或越界页返回空 `items`，保留真实总数和全部年份计数。归档页面用 `/archive?year=2026&page=2` 保存筛选与页码，每页只渲染 50 条，不累计历史页 DOM。
+`GET /posts/archive` 接受可选 `year`（1–9999）、`month`（1–12，必须同时提供有效 `year`）、`page`（默认 1，最大 1000000）、`pageSize`（默认 50，最大 100），非法 API 参数返回 400，仅返回已发布且未回收文章。响应为 `{ items, total, page, pageSize, years }`；`items` 每项包含 `id/slug/seoNoindex/title/folder/date/updatedAt`（`updatedAt` 口径同文章详情），按 `published_at DESC, id DESC` 排序，日期为 ISO UTC。`total` 是当前年月筛选后的总数，`years` 是所有公开年份的 `{ year, count }` 数组，按 UTC 年份倒序；年月过滤在分页前执行，列表、总数与年份计数来自同一查询快照。空时间段或越界页返回空 `items`，保留真实总数和全部年份计数。
+
+归档页面沿用查询参数地址：`/archive?year=2026` 分享全年，`/archive?year=2026&month=3` 分享该年该月，`&page=2` 访问下一页；每页只渲染 50 条，不累计历史页 DOM。SSR 直接读取对应年月分页，标题和 canonical 同步区分年月及非首页页码，canonical 省略第一页与无关参数。年份选择切回该年全年，月份选择回到第一页，翻页保留年月。页面 URL 的非法筛选沿用归一规则：非法年份忽略，缺少年份或非法月份忽略月份；有效数字去除前导零后用于 API 和 canonical，不改变原链接的可访问性。
 
 批量任务绑定具体 ID、版本和影响范围，有执行期限及逐项结果；重复执行查询原结果。软删除与发布状态分开，永久删除需确认关联集合。媒体不会因删除文章而直接从磁盘移除。
 
