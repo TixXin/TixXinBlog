@@ -3,7 +3,8 @@
  * @description 文章 Markdown 安全渲染，目录 ID 与后端解析顺序一致；正文开头与标题相同的一级标题不再重复展示；
  *              页面已有文章标题 h1，正文标题整体降一级输出（# → h2 … h6 封顶），目录层级仍按 Markdown 原级别；
  *              代码块输出带语言标签与复制按钮挂载位的静态结构，高亮器由调用方预先加载后同步传入，
- *              服务端与客户端水合得到同一份 HTML；正文图片懒加载（受管媒体附带宽度变体 srcset）并包裹为放大触发按钮
+ *              服务端与客户端水合得到同一份 HTML；标题末尾预留锚点挂载位，并用 aria-labelledby 把按钮排除在标题名之外，
+ *              正文图片懒加载并可放大
  */
 import MarkdownIt from 'markdown-it'
 import DOMPurify from 'isomorphic-dompurify'
@@ -36,7 +37,8 @@ function demotedHeadingTag(tag: string) {
   return `h${Math.min(level + 1, 6)}`
 }
 parser.renderer.rules.heading_open = (tokens, index, options, environment: RenderEnvironment, renderer) => {
-  tokens[index]?.attrSet('id', `heading-${++environment.headingIndex}`)
+  const id = `heading-${++environment.headingIndex}`
+  tokens[index]?.attrSet('id', id)
   if (isDuplicateTitle(tokens, index, environment.title)) {
     // 仍占用 heading-1 编号，保证后续锚点与后端目录一致；标题文本与闭合标签一并隐藏
     tokens[index + 1]!.children = []
@@ -47,10 +49,14 @@ parser.renderer.rules.heading_open = (tokens, index, options, environment: Rende
   const tag = demotedHeadingTag(tokens[index]!.tag)
   tokens[index]!.tag = tag
   if (tokens[index + 2]?.type === 'heading_close') tokens[index + 2]!.tag = tag
-  return renderer.renderToken(tokens, index, options)
+  // 标题可访问名只指向正文；锚点按钮留在该节点之外，避免读屏把“复制标题链接”读进标题
+  tokens[index]!.attrSet('aria-labelledby', `${id}-text`)
+  return `${renderer.renderToken(tokens, index, options)}<span id="${id}-text">`
 }
 parser.renderer.rules.heading_close = (tokens, index, options, _environment, renderer) =>
-  tokens[index]?.hidden ? '' : renderer.renderToken(tokens, index, options)
+  tokens[index]?.hidden
+    ? ''
+    : `</span><span class="article-heading__anchor"></span>${renderer.renderToken(tokens, index, options)}`
 
 /**
  * 代码块：外层容器 + 标题栏（语言标签、复制按钮挂载位）+ 代码。
