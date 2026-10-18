@@ -65,6 +65,15 @@ try {
     body: JSON.stringify({ content: '恢复闪念内容', images: [asset.url], isDraft: true }),
   })
   assert.equal(flash.status, 201)
+  const flashId = (await flash.json()).data.id
+  // 三种审核状态各一条，恢复报告须逐项计数，避免空表让 flashCommentIntegrity 空转通过。
+  for (const status of ['published', 'pending', 'hidden'])
+    await fixture.testOrm.em
+      .fork()
+      .execute(
+        'insert into flash_comment (id,flash_note_id,author_id,author_name,author_avatar,content,status,created_at) values (?,?,?,?,?,?,?,now())',
+        [randomUUID(), flashId, `restore-${status}`, '恢复访客', '', `恢复闪念评论（${status}）`, status],
+      )
   const momentRequestId = randomUUID()
   const momentResponse = await fetch(`${fixture.origin}/api/v1/admin/moments`, {
     method: 'POST',
@@ -514,6 +523,7 @@ try {
   assert.equal(backup.manifest.counts.post, 107)
   assert.equal(backup.manifest.counts.moment, 1)
   assert.equal(backup.manifest.counts.moment_comment, 1)
+  assert.equal(backup.manifest.counts.flash_comment, 3)
   assert.equal(backup.manifest.counts.moment_like, 1)
   assert.equal(backup.manifest.counts.guestbook_message, 2)
   assert.equal(backup.manifest.counts.guestbook_reaction, 1)
@@ -548,6 +558,15 @@ try {
   assert.equal(restored.report.counts.post, 107)
   assert.equal(restored.report.counts.moment, 1)
   assert.equal(restored.report.counts.moment_comment, 1)
+  assert.equal(restored.report.counts.flash_comment, 3)
+  assert.deepEqual(restored.report.flashCommentIntegrity, {
+    comments: 3,
+    statusColumn: true,
+    published: 1,
+    pending: 1,
+    hidden: 1,
+    verified: true,
+  })
   assert.equal(restored.report.counts.moment_like, 1)
   assert.equal(restored.report.counts.guestbook_message, 2)
   assert.equal(restored.report.counts.guestbook_reaction, 1)

@@ -36,7 +36,8 @@ try {
   const initialPublic = await ok('/site', 'GET', undefined, false)
   assert.equal(Object.hasOwn(initialPublic, 'revision'), false)
   const initial = await ok('/admin/site')
-  assert.equal(initialPublic.name, 'TixXin Blog')
+  // 新建库写入中性初始资料，不含博主身份（见 SAFE_INITIAL_SITE_VALUES）。
+  assert.equal(initialPublic.name, 'My Blog')
   assert.equal(initialPublic.announcement, '')
   assert.equal((await request('/admin/site', 'GET', undefined, false)).status, 401)
   assert.equal((await request('/admin/site/revisions', 'GET', undefined, false)).status, 401)
