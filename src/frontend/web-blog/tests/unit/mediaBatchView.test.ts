@@ -208,7 +208,16 @@ it('批量结果逐项展示成功、失败和保护原因，引用结果可继�
   ]
   await nextTick()
   const result = wrapper.get('.media-library__results')
-  expect(result.attributes('aria-live')).toBe('polite')
+  // 逐项结果不整体实时播报，只用一条状态汇总三类结果
+  expect(result.attributes('aria-live')).toBeUndefined()
+  expect(wrapper.get('.media-library__batch-summary').attributes('role')).toBe('status')
+  expect(wrapper.get('.media-library__batch-summary').text()).toBe('批量回收完成：已回收 1、保留 1、失败 1')
+  // 处理中只播报进度，不提前给出汇总
+  state.batchProgress.value = { completed: 3, total: 4 }
+  await nextTick()
+  expect(wrapper.find('.media-library__batch-summary').exists()).toBe(false)
+  state.batchProgress.value = null
+  await nextTick()
   expect(result.text()).toContain('湖面.webp · 已移入回收')
   expect(result.text()).toContain('旧站点图标.webp · 因引用而保留')
   expect(result.text()).toContain('站点历史版本 2')
