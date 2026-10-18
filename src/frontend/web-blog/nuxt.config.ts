@@ -220,7 +220,15 @@ export default {
               '/articles/**',
               '/tags/**',
               '/categories/**',
-            ].map((path) => [path, { cache: { maxAge: 60, swr: true, varies: ['cookie'] } }]),
+            ].map((path) => [
+              path,
+              {
+                cache: { maxAge: 60, swr: true, varies: ['cookie'] },
+                // 条件请求命中时 Nitro 会回 public, max-age=60，浏览器随后直接复用本地副本；
+                // 必须声明随 Cookie 变化，否则切换布局主题后刷新仍拿到旧主题的 HTML，水合错位成空白页。
+                headers: { Vary: 'Cookie' },
+              },
+            ]),
           ),
         }
       : {}),
