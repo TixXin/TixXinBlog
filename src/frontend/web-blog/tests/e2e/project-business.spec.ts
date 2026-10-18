@@ -86,7 +86,7 @@ test('无封面项目创建发布与进展独立，刷新重新登录和另一�
   expect(draft).toMatchObject({ coverMediaId: null, progress: 'archived', status: 'draft' })
   expect((await request.get(`/api/v1/projects/${id}`)).status()).toBe(404)
   await page.getByRole('button', { name: '发布项目', exact: true }).click()
-  await expect(page.getByRole('status')).toContainText('项目已保存')
+  await expect(page.getByRole('main', { name: '管理内容' }).getByRole('status')).toContainText('项目已保存')
   await page.reload()
   await expect(page.getByRole('textbox', { name: '项目标题', exact: true })).toHaveValue(title)
   const other = await browser.newContext({ baseURL })
@@ -100,7 +100,7 @@ test('无封面项目创建发布与进展独立，刷新重新登录和另一�
     await expect(card).toContainText('尚未提供公开链接')
     await page.getByRole('combobox', { name: '项目进展', exact: true }).selectOption('dev')
     await page.getByRole('button', { name: '保存项目', exact: true }).click()
-    await expect(page.getByRole('status')).toContainText('项目已保存')
+    await expect(page.getByRole('main', { name: '管理内容' }).getByRole('status')).toContainText('项目已保存')
     await reader.reload()
     await expect(card).toContainText('开发中')
     await captureMotion(reader, testInfo, 'project-without-cover.png')
@@ -138,7 +138,7 @@ test('封面选择上传替换与删除只释放当前项目引用', async ({ pa
   await page.goto(`/admin/projects/${project.id}`)
   await upload(page)
   await page.getByRole('button', { name: '保存项目', exact: true }).click()
-  await expect(page.getByRole('status')).toContainText('项目已保存')
+  await expect(page.getByRole('main', { name: '管理内容' }).getByRole('status')).toContainText('项目已保存')
   let latest = await call(`/admin/projects/${project.id}`)
   expect(latest.coverMediaId).not.toBe(photo.mediaId)
   expect((await call(`/admin/media/${photo.mediaId}/references`)).total).toBe(oldReferences)
@@ -146,7 +146,7 @@ test('封面选择上传替换与删除只释放当前项目引用', async ({ pa
   expect((await request.get(latest.cover)).status()).toBe(200)
   await page.getByRole('button', { name: '移除封面', exact: true }).click()
   await page.getByRole('button', { name: '保存项目', exact: true }).click()
-  await expect(page.getByRole('status')).toContainText('项目已保存')
+  await expect(page.getByRole('main', { name: '管理内容' }).getByRole('status')).toContainText('项目已保存')
   expect((await call(`/admin/media/${latest.coverMediaId}/references`)).total).toBe(0)
   expect((await call(`/admin/gallery/${photo.id}`)).mediaId).toBe(photo.mediaId)
   latest = await call(`/admin/projects/${project.id}`)
@@ -188,7 +188,7 @@ test('未知创建核查同一提交，迟到保存和刷新恢复保留后续�
   await page.getByRole('button', { name: '保存项目', exact: true }).click()
   await expect.poll(() => delayed).toBe(true)
   await description.fill('等待期间继续输入的说明')
-  await expect(page.getByRole('status')).toContainText('当前新增输入仍保留')
+  await expect(page.getByRole('main', { name: '管理内容' }).getByRole('status')).toContainText('当前新增输入仍保留')
   page.once('dialog', (dialog) => dialog.accept())
   await page.reload()
   await expect(page.getByLabel('项目恢复副本')).toBeVisible()
@@ -214,7 +214,7 @@ test('版本冲突保留本地字段，显式合并后成功保存同一项目',
   await page.getByRole('button', { name: '保留输入，按最新版本继续合并', exact: true }).click()
   await page.getByRole('combobox', { name: '项目进展', exact: true }).selectOption('active')
   await page.getByRole('button', { name: '保存项目', exact: true }).click()
-  await expect(page.getByRole('status')).toContainText('项目已保存')
+  await expect(page.getByRole('main', { name: '管理内容' }).getByRole('status')).toContainText('项目已保存')
   expect((await call(`/admin/projects/${project.id}`)).description).toBe('本地待保存介绍')
 })
 
@@ -233,7 +233,7 @@ test('真实会话撤销后原地登录恢复项目输入再提交', async ({ pa
   await page.getByRole('button', { name: '登录', exact: true }).click()
   await expect(page.getByRole('button', { name: '保存项目', exact: true })).toBeEnabled()
   await page.getByRole('button', { name: '保存项目', exact: true }).click()
-  await expect(page.getByRole('status')).toContainText('项目已保存')
+  await expect(page.getByRole('main', { name: '管理内容' }).getByRole('status')).toContainText('项目已保存')
   expect((await call(`/admin/projects/${project.id}`)).description).toBe('登录过期时尚未保存的介绍')
 })
 
@@ -245,14 +245,29 @@ test('服务端拒绝无效链接时保留输入，有效链接与技术去重�
   await page.getByRole('button', { name: '添加项目链接', exact: true }).click()
   const href = page.getByRole('textbox', { name: '链接地址 1', exact: true })
   await href.fill('javascript:alert(1)')
-  const rejected = page.waitForResponse(
-    (response) =>
-      new URL(response.url()).pathname === '/api/v1/admin/projects' && response.request().method() === 'POST',
-  )
+  let writes = 0
+  page.on('request', (request) => {
+    if (new URL(request.url()).pathname === '/api/v1/admin/projects' && request.method() === 'POST') writes++
+  })
+  // 前端保存前执行原生校验，非法链接停在当前字段且不发请求；服务端对同样输入仍独立返回 400。
   await page.getByRole('button', { name: '发布项目', exact: true }).click()
-  expect((await rejected).status()).toBe(400)
-  await expect(page.getByRole('alert')).toBeVisible()
+  await expect(href).toBeFocused()
+  expect(await href.evaluate((element: HTMLInputElement) => element.validity.valid)).toBe(false)
+  expect(writes).toBe(0)
   await expect(href).toHaveValue('javascript:alert(1)')
+  const token = (
+    await (
+      await request.post('/api/v1/auth/login', {
+        data: { username: process.env.E2E_USERNAME, password: process.env.E2E_PASSWORD },
+      })
+    ).json()
+  ).data.accessToken as string
+  const rejected = await request.post('/api/v1/admin/projects', {
+    headers: { Authorization: `Bearer ${token}` },
+    data: { requestId: randomUUID(), title, links: [{ kind: 'source', href: 'javascript:alert(1)' }] },
+  })
+  expect(rejected.status()).toBe(400)
+  expect((await (await request.get('/api/v1/projects?q=' + encodeURIComponent(title))).json()).data.total).toBe(0)
   await href.fill('https://github.com/TixXin/TixXinBlog')
   for (const name of ['Vue', 'vue']) {
     await page.getByRole('button', { name: '添加技术标签', exact: true }).click()
@@ -333,6 +348,13 @@ test('失败不显示伪空列表，慢查询不会覆盖新筛选', async ({ pa
   const sample = await publicSample(request),
     first = sample.items[0]!,
     second = sample.items[1]!
+  // 失败后保留上一次成功的列表，断言须等到筛选结果真正替换列表，不能被旧列表里的同一项目提前满足。
+  const matches = async (q: string) =>
+    (await (await request.get(`/api/v1/projects?q=${encodeURIComponent(q)}&pageSize=12`)).json()).data.items.length
+  const firstCount = await matches(first.title),
+    secondCount = await matches(second.title)
+  expect(firstCount).toBeLessThan(12)
+  expect(secondCount).toBeLessThan(12)
   await page.goto('/projects')
   await expect(page.locator('.project-card')).toHaveCount(12)
   let failed = 0,
@@ -356,8 +378,11 @@ test('失败不显示伪空列表，慢查询不会覆盖新筛选', async ({ pa
   expect(failed).toBe(1)
   await expect(page.locator('.project-card')).toHaveCount(12)
   await page.locator('.projects-body').getByRole('button', { name: '重试', exact: true }).click()
+  await expect(page.locator('.project-card')).toHaveCount(firstCount)
   await expect(page.locator(`[data-project-id="${first.id}"]`)).toBeVisible()
   await search.fill(second.title)
+  await expect(page).toHaveURL(new RegExp(`q=${encodeURIComponent(second.title)}`))
+  await expect(page.locator('.project-card')).toHaveCount(secondCount)
   await expect(page.locator(`[data-project-id="${second.id}"]`)).toBeVisible()
   // 回访在有效期内不会发请求；推进日期进入后台重验证，再检查真实慢请求竞态。
   await page.clock.setFixedTime(Date.now() + 31_000)
@@ -372,6 +397,7 @@ test('失败不显示伪空列表，慢查询不会覆盖新筛选', async ({ pa
   await search.fill(second.title)
   await expect(page.locator(`[data-project-id="${second.id}"]`)).toBeVisible()
   await page.waitForTimeout(1000)
+  await expect(page.locator('.project-card')).toHaveCount(secondCount)
   await expect(page.locator(`[data-project-id="${first.id}"]`)).toHaveCount(0)
 })
 
@@ -429,7 +455,7 @@ for (const theme of ['nexus', 'aurora', 'dock']) {
         if (/hydration|NotFoundError|TypeError/i.test(message.text())) issues.push(message.text())
       })
       await publicSample(request)
-      await context.addCookies([{ name: 'tixxin-blog-layout-theme', value: theme, url: baseURL! }])
+      await context.addCookies([{ name: 'blog-layout-theme', value: theme, url: baseURL! }])
       await page.setViewportSize({ width, height: 960 })
       await page.emulateMedia({ reducedMotion: width === 320 ? 'reduce' : 'no-preference' })
       await page.goto('/projects')

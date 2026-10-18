@@ -91,7 +91,7 @@ test('创建编辑上架推荐排序下架删除跨刷新与另一上下文一�
   const id = page.url().split('/').pop()!
   expect((await request.get(`/api/v1/links/${id}`)).status()).toBe(404)
   await page.getByRole('button', { name: '上架友链', exact: true }).click()
-  await expect(page.getByRole('status')).toContainText('友链已保存')
+  await expect(page.getByRole('main', { name: '管理内容' }).getByRole('status')).toContainText('友链已保存')
   await page.reload()
   await expect(page.getByRole('textbox', { name: '友链站点地址', exact: true })).toHaveValue(url)
   const context = await browser.newContext({ baseURL })
@@ -104,7 +104,7 @@ test('创建编辑上架推荐排序下架删除跨刷新与另一上下文一�
     await expect(card.getByLabel('未设置站点图片')).toBeVisible()
     await page.getByRole('textbox', { name: '友链站点介绍', exact: true }).fill('整理设计与开发资料的个人站点。')
     await page.getByRole('button', { name: '保存友链', exact: true }).click()
-    await expect(page.getByRole('status')).toContainText('友链已保存')
+    await expect(page.getByRole('main', { name: '管理内容' }).getByRole('status')).toContainText('友链已保存')
     await reader.reload()
     await expect(card).toContainText('整理设计与开发资料')
     await page.goto(`/admin/links?q=${encodeURIComponent(name)}`)
@@ -172,7 +172,7 @@ test('重复URL返回400后可改地址重提，同域大小写路径与参数�
   await expect(input).toHaveValue(original)
   await input.fill(changed + 'Again')
   await page.getByRole('button', { name: '保存友链', exact: true }).click()
-  await expect(page.getByRole('status')).toContainText('友链已保存')
+  await expect(page.getByRole('main', { name: '管理内容' }).getByRole('status')).toContainText('友链已保存')
 })
 
 test('Logo选择上传替换删除只释放本条引用，其他业务文件保留', async ({ page, request }) => {
@@ -189,7 +189,7 @@ test('Logo选择上传替换删除只释放本条引用，其他业务文件保�
   await page.goto(`/admin/links/${link.id}`)
   await upload(page)
   await page.getByRole('button', { name: '保存友链', exact: true }).click()
-  await expect(page.getByRole('status')).toContainText('友链已保存')
+  await expect(page.getByRole('main', { name: '管理内容' }).getByRole('status')).toContainText('友链已保存')
   let saved = await call(`/admin/links/${link.id}`)
   expect(saved.logoMediaId).not.toBe(photo.mediaId)
   expect(saved.logoUrl).toBeNull()
@@ -198,7 +198,7 @@ test('Logo选择上传替换删除只释放本条引用，其他业务文件保�
   expect((await request.get(saved.avatar)).status()).toBe(200)
   await page.getByRole('button', { name: '移除Logo', exact: true }).click()
   await page.getByRole('button', { name: '保存友链', exact: true }).click()
-  await expect(page.getByRole('status')).toContainText('友链已保存')
+  await expect(page.getByRole('main', { name: '管理内容' }).getByRole('status')).toContainText('友链已保存')
   expect((await call(`/admin/media/${saved.logoMediaId}/references`)).total).toBe(0)
   expect((await call(`/admin/gallery/${photo.id}`)).mediaId).toBe(photo.mediaId)
   saved = await call(`/admin/links/${link.id}`)
@@ -216,12 +216,28 @@ test('外部Logo必须HTTPS，图片失败重试独立于外链且不抓取站�
   await page.getByRole('textbox', { name: '友链站点地址', exact: true }).fill(address)
   const logoInput = page.getByRole('textbox', { name: '外部Logo地址', exact: true })
   await logoInput.fill(logo.replace('https:', 'http:'))
-  const rejected = page.waitForResponse(
-    (response) => new URL(response.url()).pathname === '/api/v1/admin/links' && response.request().method() === 'POST',
-  )
+  let writes = 0
+  page.on('request', (request) => {
+    if (new URL(request.url()).pathname === '/api/v1/admin/links' && request.method() === 'POST') writes++
+  })
+  // 前端保存前执行原生校验，HTTP Logo 停在当前字段且不发请求；服务端对同样输入仍独立返回 400。
   await page.getByRole('button', { name: '上架友链', exact: true }).click()
-  expect((await rejected).status()).toBe(400)
+  await expect(logoInput).toBeFocused()
+  expect(await logoInput.evaluate((element: HTMLInputElement) => element.validity.valid)).toBe(false)
+  expect(writes).toBe(0)
   await expect(logoInput).toHaveValue(logo.replace('https:', 'http:'))
+  const token = (
+    await (
+      await request.post('/api/v1/auth/login', {
+        data: { username: process.env.E2E_USERNAME, password: process.env.E2E_PASSWORD },
+      })
+    ).json()
+  ).data.accessToken as string
+  const rejected = await request.post('/api/v1/admin/links', {
+    headers: { Authorization: `Bearer ${token}` },
+    data: { requestId: randomUUID(), name: '外部图片站点', url: address, logoUrl: logo.replace('https:', 'http:') },
+  })
+  expect(rejected.status()).toBe(400)
   let imageFailures = 0,
     fail = true,
     siteRequests = 0
@@ -240,7 +256,12 @@ test('外部Logo必须HTTPS，图片失败重试独立于外链且不抓取站�
   await expect(page).toHaveURL(/\/admin\/links\/\d+$/)
   const id = page.url().split('/').pop()!
   expect((await call(`/admin/links/${id}`)).logoMediaId).toBeNull()
+  // 已登录页面水合后恢复会话会让公开读取失效并在客户端重读列表，重试须在重读后的卡片上进行。
+  const reread = page.waitForResponse(
+    (response) => new URL(response.url()).pathname === '/api/v1/links' && response.request().method() === 'GET',
+  )
   await page.goto('/links?q=' + encodeURIComponent('外部图片站点'))
+  expect((await reread).status()).toBe(200)
   const card = page.locator(`[data-link-id="${id}"]`),
     retry = card.getByRole('button', { name: /重新加载图片/ })
   await expect(retry).toBeVisible()
@@ -288,7 +309,7 @@ test('未知创建核查原提交，迟到保存与刷新恢复保留新输入',
   await page.getByRole('button', { name: '保存友链', exact: true }).click()
   await expect.poll(() => delayed).toBe(true)
   await description.fill('尚未提交的后一版')
-  await expect(page.getByRole('status')).toContainText('当前新增输入仍保留')
+  await expect(page.getByRole('main', { name: '管理内容' }).getByRole('status')).toContainText('当前新增输入仍保留')
   page.once('dialog', (dialog) => dialog.accept())
   await page.reload()
   await expect(page.getByLabel('友链恢复副本')).toBeVisible()
@@ -312,7 +333,7 @@ test('版本冲突可比较并显式合并，真实会话失效后原地恢复�
   await expect(page.getByLabel('友链服务器版本')).toContainText('另一窗口介绍')
   await page.getByRole('button', { name: '保留输入，按最新版本继续合并', exact: true }).click()
   await page.getByRole('button', { name: '保存友链', exact: true }).click()
-  await expect(page.getByRole('status')).toContainText('友链已保存')
+  await expect(page.getByRole('main', { name: '管理内容' }).getByRole('status')).toContainText('友链已保存')
   await description.fill('会话过期时的新输入')
   await call(`/auth/sessions/${sid}`, 'DELETE')
   await page.getByRole('button', { name: '保存友链', exact: true }).click()
@@ -323,7 +344,7 @@ test('版本冲突可比较并显式合并，真实会话失效后原地恢复�
   await page.getByRole('button', { name: '登录', exact: true }).click()
   await expect(page.getByRole('button', { name: '保存友链', exact: true })).toBeEnabled()
   await page.getByRole('button', { name: '保存友链', exact: true }).click()
-  await expect(page.getByRole('status')).toContainText('友链已保存')
+  await expect(page.getByRole('main', { name: '管理内容' }).getByRole('status')).toContainText('友链已保存')
   expect((await call(`/admin/links/${link.id}`)).description).toBe('会话过期时的新输入')
 })
 
@@ -346,7 +367,7 @@ test('友链须知可保存和版本合并，公开metadata来自同一配置', 
     await expect(page.getByLabel('友链须知版本冲突')).toContainText('另一窗口保存的须知')
     await page.getByRole('button', { name: '保留输入，按最新版本继续合并', exact: true }).click()
     await page.getByRole('button', { name: '保存友链须知', exact: true }).click()
-    await expect(page.getByRole('status')).toContainText('友链须知已保存')
+    await expect(page.getByRole('main', { name: '管理内容' }).getByRole('status')).toContainText('友链须知已保存')
     expect((await (await request.get('/api/v1/links/metadata')).json()).data.rules).toContain(
       '介绍和地址变化时，请同步更新站点资料。',
     )
