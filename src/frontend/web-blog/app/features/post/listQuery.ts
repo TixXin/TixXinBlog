@@ -32,3 +32,8 @@ export function writePostListQuery(state: PostListQueryState): Record<string, st
   if (state.mode === 'waterfall') query.mode = 'continuous'
   return query
 }
+
+/** 地址栏的 page 是否已是规范写法：第 1 页省略参数，其余页为不带前导零的十进制整数 */
+export function isCanonicalPageParam(raw: unknown, page: number): boolean {
+  return page > 1 ? raw === String(page) : raw === undefined
+}

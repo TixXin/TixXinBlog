@@ -4,7 +4,7 @@ import { defineComponent, h } from 'vue'
 import { mountSuspended } from '@nuxt/test-utils/runtime'
 import { usePostArchive } from '../../app/composables/usePostArchive'
 import { fetchPostArchive } from '../../app/features/post/api'
-import { postArchiveQuery, postArchiveYears } from '../../app/features/post/archive'
+import { postArchiveQuery, postArchiveRouteCorrection, postArchiveYears } from '../../app/features/post/archive'
 import type { PostArchivePage } from '../../app/features/post/types'
 import { invalidatePublicReads } from '../../app/utils/invalidatePublicReads'
 
@@ -80,6 +80,36 @@ it.each([
   { input: { year: ['2026', '2025'], month: '3' }, expected: { year: undefined, page: 1 } },
 ])('年月查询归一：$input', ({ input, expected }) => {
   expect(postArchiveQuery(input)).toEqual({ ...expected, pageSize: 50 })
+})
+
+it.each([
+  { input: { year: '2026', month: '3', page: '2' }, expected: null },
+  { input: {}, expected: null },
+  { input: { month: '13' }, expected: {} },
+  { input: { month: '3' }, expected: {} },
+  { input: { year: '2026', month: '13' }, expected: { year: '2026' } },
+  { input: { year: '2026', month: '03', page: '02' }, expected: { year: '2026', month: '3', page: '2' } },
+  { input: { page: 'abc', utm_source: 'share' }, expected: { utm_source: 'share' } },
+  { input: { page: '0' }, expected: {} },
+  { input: { page: '1' }, expected: {} },
+])('地址栏归一：$input', ({ input, expected }) => {
+  const corrected = postArchiveRouteCorrection(input)
+  // 值为 undefined 的键交给路由器丢弃，比较时只看实际写入地址的参数
+  expect(corrected && Object.fromEntries(Object.entries(corrected).filter(([, value]) => value !== undefined))).toEqual(
+    expected,
+  )
+})
+
+it('非法年月和页码挂载后替换为规范地址，保留其它参数且不重新读取', async () => {
+  const state = await setup('/archive?year=2026&month=13&page=abc&utm_source=share')
+  expect(vi.mocked(fetchPostArchive).mock.calls[0]?.[1]).toEqual({ year: 2026, page: 1, pageSize: 50 })
+  await vi.waitFor(() =>
+    expect(testApp.$router.currentRoute.value.query).toEqual({ year: '2026', utm_source: 'share' }),
+  )
+  expect(state.query.value).toEqual({ year: 2026, page: 1, pageSize: 50 })
+  expect(fetchPostArchive).toHaveBeenCalledOnce()
+  await setup('/archive?month=5')
+  await vi.waitFor(() => expect(testApp.$router.currentRoute.value.fullPath).toBe('/archive'))
 })
 
 it('深链首次读取即携带年月与分页，筛选切换和翻页与 URL 一致', async () => {

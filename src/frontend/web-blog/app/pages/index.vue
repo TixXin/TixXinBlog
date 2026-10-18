@@ -105,7 +105,7 @@
 </template>
 <script setup lang="ts">
 import { mockPostTabs } from '~/features/post/mock'
-import { readPostListQuery, writePostListQuery } from '~/features/post/listQuery'
+import { isCanonicalPageParam, readPostListQuery, writePostListQuery } from '~/features/post/listQuery'
 import { socialProfiles } from '~/utils/absoluteUrl'
 
 const { settings: siteSettings } = useSiteSettings()
@@ -231,6 +231,10 @@ watch(
   },
   { immediate: true },
 )
+// 0、abc 等非规范页码已按第 1 页显示，挂载后用 replace 纠正地址栏；SSR 与水合期间不改写 URL
+onMounted(() => {
+  if (!isCanonicalPageParam(route.query.page, postPage.value)) void replacePage(postPage.value)
+})
 
 // 旧分享链接仍可使用，进入后归一到同一朋友圈页面和数据源。
 function migrateMomentHash() {

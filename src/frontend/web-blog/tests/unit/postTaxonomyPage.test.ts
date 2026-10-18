@@ -167,6 +167,20 @@ describe('标签独立页', () => {
     await expect(mountPage(TagPage, '/tags/Vue%203')).rejects.toMatchObject({ statusCode: 503 })
   })
 
+  it.each(['0', 'abc', '01'])('非规范页码 %s 按第 1 页显示，挂载后替换为不带页码的地址', async (raw) => {
+    const wrapper = await mountPage(TagPage, `/tags/Vue%203?page=${raw}`)
+    expect(wrapper.get('.list-state').text()).toBe('1/16/')
+    await vi.waitFor(() => expect(useRoute().query.page).toBeUndefined())
+    expect(useRoute().params.name).toBe('Vue 3')
+    expect(mocks.list).toHaveBeenCalledOnce()
+  })
+
+  it('前导零页码替换为规范写法并保持当前页', async () => {
+    await mountPage(TagPage, '/tags/Vue%203?page=02')
+    await vi.waitFor(() => expect(useRoute().query.page).toBe('2'))
+    expect(mocks.list.mock.calls[0]?.[0].page.value).toBe(2)
+  })
+
   it('文章加载失败时保留页面并提供重试', async () => {
     mocks.listError = new Error('上游失败')
     mocks.posts = []
@@ -196,6 +210,13 @@ describe('专栏独立页', () => {
     )
     expect(document.title).toContain('专栏：前端 / 工程')
     expect(document.title).not.toContain('第')
+  })
+
+  it('非法页码按第 1 页显示，挂载后替换为不带页码的地址', async () => {
+    const wrapper = await mountPage(CategoryPage, `/categories/${encodeURIComponent('前端 / 工程')}?page=abc`)
+    expect(wrapper.get('.list-state').text()).toBe('1/16/')
+    await vi.waitFor(() => expect(useRoute().query.page).toBeUndefined())
+    expect(useRoute().params.slug).toBe('前端 / 工程')
   })
 
   it('没有公开文章的专栏返回 404', async () => {
