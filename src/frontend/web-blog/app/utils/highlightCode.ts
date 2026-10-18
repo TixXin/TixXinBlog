@@ -157,12 +157,14 @@ function createFacade(core: HighlighterCore): CodeHighlighter {
       const resolved = resolveCodeLanguage(language)
       if (!resolved || !loadedLanguages.has(resolved)) return null
       try {
-        return core.codeToHtml(code, {
+        const html = core.codeToHtml(code, {
           lang: resolved,
           themes: { light: 'github-light', dark: 'github-dark-high-contrast' },
           // 只输出 --shiki-light/--shiki-dark 变量，由样式按站点明暗模式选择
           defaultColor: false,
         })
+        // 完整转义文本中的注释结束符，兼容会把裸结束符误判为标记的 HTML 解析器。
+        return html.replace(/(--!?)>/g, '$1&gt;')
       } catch {
         return null
       }

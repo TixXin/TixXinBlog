@@ -48,7 +48,7 @@ function setup() {
     sessions,
     response,
     res: response as unknown as Response,
-    controller: new AuthController(auth as AuthService, sessions as AuthSessionsService),
+    controller: new AuthController(auth as unknown as AuthService, sessions as unknown as AuthSessionsService),
   }
 }
 

@@ -371,7 +371,8 @@ describe('内容包媒体完整性', () => {
   })
 
   it('不含图片的包接受媒体清单，拒绝标记与字节不一致', async () => {
-    const { base64: _base64, ...metadata } = media()
+    const metadata = media()
+    delete metadata.base64
     expect((await parseMedia([metadata], false)).media).toEqual([metadata])
     await expect(parseMedia([metadata])).rejects.toThrow('媒体包含标记与字节不一致')
     await expect(parseMedia([media()], false)).rejects.toThrow('媒体包含标记与字节不一致')
