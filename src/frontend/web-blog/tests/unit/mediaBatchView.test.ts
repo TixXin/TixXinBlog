@@ -69,7 +69,13 @@ it('原生复选框提供文件名标签、全选和半选，批量操作跟随�
   const all = wrapper.get<HTMLInputElement>('.media-library__batch input[type="checkbox"]')
   const remove = wrapper.findAll('button').find((button) => button.text() === '批量移入回收')!
   expect(remove.attributes('disabled')).toBeDefined()
+  // 禁用原因常驻显示，并通过 aria-describedby 关联到按钮
+  const hint = () => wrapper.find('.media-library__batch-hint')
+  expect(hint().text()).toBe('请先勾选本页要回收的资源。')
+  expect(remove.attributes('aria-describedby')).toBe(hint().attributes('id'))
   await wrapper.get('input[aria-label="选择 山间晨光.webp"]').setValue(true)
+  expect(hint().exists()).toBe(false)
+  expect(remove.attributes('aria-describedby')).toBeUndefined()
   expect(all.element.checked).toBe(false)
   expect(all.element.indeterminate).toBe(true)
   expect(wrapper.get('.media-library__batch [role="status"]').text()).toBe('已选择 1 项')
@@ -82,6 +88,12 @@ it('原生复选框提供文件名标签、全选和半选，批量操作跟随�
   await nextTick()
   expect(all.attributes('disabled')).toBeDefined()
   expect(remove.attributes('disabled')).toBeDefined()
+  expect(hint().text()).toBe('上传或其他操作进行中，完成后才能批量回收。')
+  expect(remove.attributes('aria-describedby')).toBe(hint().attributes('id'))
+  state.working.value = false
+  state.altDrafts['media-1'] = '尚未保存的说明'
+  await nextTick()
+  expect(hint().text()).toBe('请先保存替代文本或素材说明的修改，再批量回收。')
 })
 
 it('嵌入选择器与回收资源视图不展示多选或批量回收', async () => {
