@@ -11,7 +11,8 @@
         <BlogPostTabs :tabs="tabs" model-value="all" />
         <div class="page-actions">
           <CommonSearchBox placeholder="搜索站内文章、标签..." readonly @click="openSearch" />
-          <CommonContextDrawer class="page-context-entry" label="筛选文章" icon="lucide:list-filter">
+          <!-- 侧栏隐藏时（Dock、窄屏）由同一抽屉提供筛选与订阅，与侧栏内容一一对应，不会与订阅卡同时出现 -->
+          <CommonContextDrawer class="page-context-entry" label="筛选与订阅" icon="lucide:list-filter">
             <SidebarPostFilters
               :tags="tags"
               :categories="categories"
@@ -27,6 +28,7 @@
             <button v-if="activeFilterLabel" type="button" class="filter-badge" @click="clearFilters">
               清除筛选：{{ activeFilterLabel }}
             </button>
+            <BlogSubscribeCard embedded />
           </CommonContextDrawer>
           <div class="display-mode-toggle" role="group" aria-label="文章列表显示模式">
             <CommonTooltip content="连续加载">

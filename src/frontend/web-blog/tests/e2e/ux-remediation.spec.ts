@@ -483,8 +483,8 @@ test('320至1024px均能使用文章筛选、目录、书签分组和登录', as
   for (const width of [320, 390, 768, 1024]) {
     await page.setViewportSize({ width, height: 844 })
     await page.goto('/')
-    await page.getByRole('button', { name: '筛选文章', exact: true }).click()
-    const filters = page.getByRole('dialog', { name: '筛选文章', exact: true })
+    await page.getByRole('button', { name: '筛选与订阅', exact: true }).click()
+    const filters = page.getByRole('dialog', { name: '筛选与订阅', exact: true })
     const tagGroup = filters.getByRole('group', { name: '浏览标签或筛选首页文章' })
     await expect(tagGroup.getByRole('link', { name: /示例标签/ })).toHaveAttribute(
       'href',
@@ -493,8 +493,8 @@ test('320至1024px均能使用文章筛选、目录、书签分组和登录', as
     const tag = tagGroup.getByRole('button', { name: '在首页筛选标签：示例标签', exact: true })
     await tag.press('Space')
     await expect(tag).toHaveAttribute('aria-pressed', 'true')
-    await filters.getByRole('button', { name: '关闭筛选文章' }).click()
-    await expect(page.getByRole('button', { name: '筛选文章', exact: true })).toBeFocused()
+    await filters.getByRole('button', { name: '关闭筛选与订阅' }).click()
+    await expect(page.getByRole('button', { name: '筛选与订阅', exact: true })).toBeFocused()
     await page.goto('/articles/106')
     await page.getByRole('button', { name: '文章目录', exact: true }).click()
     await expect(page.getByRole('dialog', { name: '文章目录', exact: true }).getByRole('link').first()).toBeVisible()
