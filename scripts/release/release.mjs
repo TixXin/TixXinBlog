@@ -24,7 +24,7 @@ export function parseOptions(args) {
     if (value === '--apply') options.apply = true
     else if (value === '--initialize') options.initialize = true
     else if (value === '--database-compatible') options.databaseCompatible = true
-    else if (names[value] && args[index + 1] && !args[index + 1].startsWith('--')) {
+    else if (Object.hasOwn(names, value) && args[index + 1] && !args[index + 1].startsWith('--')) {
       if (Object.hasOwn(options, names[value]) && names[value] !== 'action') throw new Error('参数重复')
       options[names[value]] = args[++index]
     } else throw new Error('未知参数或缺少参数值')
