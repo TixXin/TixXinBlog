@@ -119,6 +119,12 @@ export interface TocItem {
   level: number
 }
 
+/** 发布前缺少替代文本的正文图片位置，行号与图片序号均从 1 开始。 */
+export interface PostImageAltWarning {
+  line: number
+  imageNumber: number
+}
+
 export interface PostSummary {
   activity?: Array<{ date: string; articles: number; comments: number }>
   tags: Array<{ label: string; slug: string; color: string; count: number }>

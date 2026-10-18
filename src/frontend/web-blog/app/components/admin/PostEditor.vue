@@ -1,6 +1,6 @@
 <!--
   @file PostEditor.vue
-  @description 文章编辑、实时字数与阅读时间估算、章节定位及预览；保存和发布由页面处理，支持保存快捷键与图片上传
+  @description 文章编辑、实时字数与阅读时间估算、章节定位及预览，发布前提示缺失替代文本；保存和发布由页面处理，支持保存快捷键与图片上传
 -->
 <template>
   <form ref="editorForm" class="post-editor" @submit.prevent="requestSave(draft.status)">
@@ -199,6 +199,7 @@
     ref="publishDialog"
     class="post-editor__publish"
     aria-labelledby="publish-check-title"
+    :aria-describedby="hasMissingAlt ? 'publish-alt-description' : undefined"
     @close="$emit('reviewing', false)"
   >
     <h2 id="publish-check-title">发布前检查</h2>
@@ -219,16 +220,28 @@
     </dl>
     <p v-if="!draft.cover">未设置封面，将以无封面样式展示。</p>
     <p v-if="coverFailed">封面预览失败，确认地址正确后再发布。</p>
+    <section v-if="hasMissingAlt" class="post-editor__alt-warnings" aria-labelledby="publish-alt-title">
+      <h3 id="publish-alt-title">替代文本警告</h3>
+      <p id="publish-alt-description">以下图片缺少替代文本，读屏用户可能无法理解图片内容。可返回补充，也可仍然发布。</p>
+      <ul>
+        <li v-if="missingCoverAlt">封面缺少替代文本，请填写“封面替代文本”。</li>
+        <li v-for="image in missingImageAlts" :key="image.imageNumber">
+          正文第 {{ image.imageNumber }} 张图片（第 {{ image.line }} 行）缺少替代文本。
+        </li>
+      </ul>
+    </section>
     <p>地址唯一性会在保存时再次校验；保存失败不会清空输入。</p>
     <button type="button" :disabled="pending" @click="publishDialog?.close()">返回编辑</button
-    ><button type="button" :disabled="pending" @click="confirmPublish">确认公开发布</button>
+    ><button type="button" :disabled="pending" @click="confirmPublish">
+      {{ hasMissingAlt ? '仍然公开发布' : '确认公开发布' }}
+    </button>
   </dialog>
   <AdminMediaPicker v-model:open="mediaOpen" @selected="selectMedia" />
 </template>
 <script setup lang="ts">
 import type { AdminPostDraft } from '~/features/post/adminTypes'
 import { contentRelationSummary } from '~/features/content-relation/editor'
-import { postReadingStats, suggestedSummary } from '~/utils/postPublishing'
+import { missingImageAltPositions, postReadingStats, suggestedSummary } from '~/utils/postPublishing'
 import { parsePostMarkdown } from '~/utils/postMarkdown'
 import type { MediaAsset } from '~/features/media/types'
 import PostOutline from './PostOutline.vue'
@@ -311,6 +324,9 @@ function selectMedia(asset: MediaAsset) {
   draft.value.contentRaw = `${text.slice(0, start)}\n![${alt}](${asset.url})\n${text.slice(end)}`
 }
 const publishDialog = ref<HTMLDialogElement | null>(null)
+const missingImageAlts = computed(() => missingImageAltPositions(draft.value.contentRaw))
+const missingCoverAlt = computed(() => Boolean(draft.value.cover.trim() && !draft.value.coverAlt?.trim()))
+const hasMissingAlt = computed(() => missingCoverAlt.value || missingImageAlts.value.length > 0)
 const coverFailed = ref(false)
 watch(
   () => draft.value.cover,
@@ -414,6 +430,22 @@ function confirmPublish() {
   border-radius: 0.5rem;
   color: var(--text-main);
   background: var(--surface-2);
+}
+.post-editor__alt-warnings {
+  padding: 1rem;
+  border: 1px solid var(--border);
+  border-radius: 0.5rem;
+  background: var(--surface-2);
+}
+.post-editor__alt-warnings h3 {
+  font-weight: 700;
+}
+.post-editor__alt-warnings ul {
+  padding-inline-start: 1.25rem;
+  list-style: disc;
+}
+.post-editor__alt-warnings li + li {
+  margin-top: 0.5rem;
 }
 .post-editor__tag-options {
   display: flex;
