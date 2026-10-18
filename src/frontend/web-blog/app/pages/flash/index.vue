@@ -253,9 +253,10 @@
 import { resolveScrollRoot, scrollToRoot } from '~/utils/scrollRoot'
 import type { FlashNote, FlashType, FlashCommentSubmission } from '~/features/flash/types'
 
-useSeoMeta({
+usePageSeo({
   title: '闪念',
-  description: '记录每一个稍纵即逝的灵感，配合 AI 搜索回顾你的想法历史',
+  description: '博主随手记下的灵感、待办与生活碎片。',
+  type: 'website',
 })
 
 const { isLoggedIn, currentUser } = useCurrentUser()

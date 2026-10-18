@@ -458,7 +458,7 @@ onBeforeUnmount(() => {
   bottomResize?.disconnect()
   boundScroll?.removeEventListener('scroll', checkBottom)
 })
-useSeoMeta({ title: '留言板', description: '留下你的足迹，交流技术与生活。', ogTitle: '留言板', ogType: 'website' })
+usePageSeo({ title: '留言板', description: '留下你的足迹，交流技术与生活。', type: 'website' })
 </script>
 <style scoped lang="scss">
 .guestbook-center {
