@@ -39,18 +39,16 @@ describe('代码高亮注释对比度', () => {
       const tokens = [...doc.querySelectorAll<HTMLElement>('code span[style]')]
       expect(tokens.length).toBeGreaterThan(0)
 
-      for (const [mode, selector, color, fallbackColor] of [
-        ['light', ':root', lightCommentColor, '#24292e'],
-        ['dark', '.dark', '#bdc4cc', '#f0f3f6'],
+      for (const [mode, selector, color] of [
+        ['light', ':root', lightCommentColor],
+        ['dark', '.dark', '#bdc4cc'],
       ]) {
         // 三套布局共用此变量；直接读取源码，背景调整后仍会检验实际配色。
         const background = themeVariables.split(`${selector} {`)[1]!.match(/--surface-2:\s*(#[\da-f]{6});/i)![1]!
         for (const token of tokens) {
           const foreground = token.style.getPropertyValue(`--shiki-${mode}`).toLowerCase()
-          // 首次编译语法可能耗尽 Shiki 默认分词预算而使用正文色；两条路径都必须可读。
-          // 复用语法后仍严格检查注释色，避免将始终未高亮的输出误判为正常。
-          if (firstRender) expect([color, fallbackColor]).toContain(foreground)
-          else expect(foreground).toBe(color)
+          // 首次编译语法与复用语法都必须输出注释色，不能退化为无高亮的正文色。
+          expect(foreground, `${firstRender ? '首次' : '复用'} ${mode}`).toBe(color)
           const light = Math.max(luminance(foreground), luminance(background))
           const dark = Math.min(luminance(foreground), luminance(background))
           expect((light + 0.05) / (dark + 0.05), `${mode} ${foreground}/${background}`).toBeGreaterThanOrEqual(4.5)

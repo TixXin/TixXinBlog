@@ -125,6 +125,9 @@ export interface CodeHighlighter {
   highlight(code: string, language?: string | null): string | null
 }
 
+/** 单行分词时间上限（毫秒） */
+const TOKENIZE_TIME_LIMIT = 5000
+
 let corePromise: Promise<HighlighterCore> | undefined
 const loadedLanguages = new Set<string>(['text'])
 
@@ -162,6 +165,9 @@ function createFacade(core: HighlighterCore): CodeHighlighter {
           themes: { light: 'github-light', dark: 'github-dark-high-contrast' },
           // 只输出 --shiki-light/--shiki-dark 变量，由样式按站点明暗模式选择
           defaultColor: false,
+          // 语法规则在首次使用时才编译，默认 500ms 预算可能在首次渲染时耗尽，剩余文本退化为无高亮正文色；
+          // 放宽到 5s 保证首次输出与后续一致，同时仍为异常输入保留上限，避免长时间阻塞渲染。
+          tokenizeTimeLimit: TOKENIZE_TIME_LIMIT,
         })
         // 完整转义文本中的注释结束符，兼容会把裸结束符误判为标记的 HTML 解析器。
         return html.replace(/(--!?)>/g, '$1&gt;')
