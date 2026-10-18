@@ -291,9 +291,22 @@ watch(() => route.hash, migrateMomentHash)
   flex-wrap: wrap;
   gap: 0.5rem;
   align-items: center;
-  padding: 0.5rem 1rem;
+  // 左右留白与下方文章列表视口（PostCardList 的 .post-list-viewport）各断点保持一致
+  padding: 0.75rem 1rem 0;
   font-size: 0.8125rem;
   color: var(--text-soft);
+
+  @media (min-width: $breakpoint-sm) {
+    padding: 0.75rem 1.5rem 0;
+  }
+
+  @media (min-width: $breakpoint-lg) and (max-width: #{$breakpoint-xl - 1px}) {
+    padding: 0.75rem 1.25rem 0;
+  }
+
+  @media (min-width: $breakpoint-xl) {
+    padding: 0.75rem 2rem 0;
+  }
 }
 .filter-badge {
   display: inline-flex;
