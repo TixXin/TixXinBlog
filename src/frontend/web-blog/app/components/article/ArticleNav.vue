@@ -6,10 +6,11 @@
 -->
 
 <template>
-  <nav class="article-nav" aria-label="相邻文章">
+  <nav class="article-nav" :aria-label="folder ? `${folder}专栏的相邻文章` : '相邻文章'">
+    <p v-if="folder" class="article-nav__folder">同专栏 · {{ folder }}</p>
     <p v-if="error" role="status" class="article-nav__error">相邻文章暂时无法加载</p>
     <NuxtLink v-if="prev" :to="articlePath(prev)" class="article-nav__card article-nav__card--prev">
-      <Icon name="lucide:chevron-left" size="20" class="article-nav__icon" />
+      <Icon name="lucide:chevron-left" size="20" class="article-nav__icon" aria-hidden="true" />
       <div class="article-nav__text">
         <p class="article-nav__label">上一篇</p>
         <p class="article-nav__title">{{ prev.title }}</p>
@@ -20,14 +21,14 @@
         <p class="article-nav__label">下一篇</p>
         <p class="article-nav__title">{{ next.title }}</p>
       </div>
-      <Icon name="lucide:chevron-right" size="20" class="article-nav__icon" />
+      <Icon name="lucide:chevron-right" size="20" class="article-nav__icon" aria-hidden="true" />
     </NuxtLink>
   </nav>
 </template>
 
 <script setup lang="ts">
 import type { RelatedPost } from '~/features/post/types'
-defineProps<{ prev: RelatedPost | null; next: RelatedPost | null; error?: boolean }>()
+defineProps<{ prev: RelatedPost | null; next: RelatedPost | null; folder?: string | null; error?: boolean }>()
 </script>
 
 <style lang="scss" scoped>
@@ -43,11 +44,13 @@ defineProps<{ prev: RelatedPost | null; next: RelatedPost | null; error?: boolea
   }
 }
 
-.article-nav__error {
+.article-nav__error,
+.article-nav__folder {
   grid-column: 1 / -1;
   margin: 0;
   font-size: 0.8125rem;
   color: var(--text-soft);
+  overflow-wrap: anywhere;
 }
 
 .article-nav__card {
@@ -69,6 +72,11 @@ defineProps<{ prev: RelatedPost | null; next: RelatedPost | null; error?: boolea
   &:hover {
     border-color: var(--border-hover);
     box-shadow: var(--shadow-card-hover);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--text-main);
+    outline-offset: 3px;
   }
 
   /* 上一篇固定左列、下一篇固定右列：只有一侧时不会把“下一篇”挤到左边 */
@@ -104,6 +112,12 @@ defineProps<{ prev: RelatedPost | null; next: RelatedPost | null; error?: boolea
   .article-nav__card--next:hover & {
     transform: translateX(4px);
     color: var(--text-muted);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .article-nav__card:hover & {
+      transform: none;
+    }
   }
 }
 

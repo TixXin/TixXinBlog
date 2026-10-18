@@ -9,6 +9,7 @@ import { Controller, Get, Header, Param, ParseIntPipe, Post as HttpPost, Query }
 import { VisitorIdHash } from '../../common/decorators/visitor-id.decorator'
 import { QueryPostDto } from './dto/query-post.dto'
 import { QueryPostArchiveDto, QueryPostMetadataDto } from './dto/query-post-archive.dto'
+import { QueryPostNavigationDto } from './dto/query-post-navigation.dto'
 import { ArticleDetailDto, PostListResult, PostService, PostViewResult } from './post.service'
 import { PostDiscoveryService } from './post-discovery.service'
 
@@ -40,8 +41,8 @@ export class PostController {
   }
 
   @Get(':id/navigation')
-  navigation(@Param('id', ParseIntPipe) id: number) {
-    return this.discovery.navigation(id)
+  navigation(@Param('id', ParseIntPipe) id: number, @Query() query: QueryPostNavigationDto) {
+    return this.discovery.navigation(id, query.scope)
   }
 
   @Get(':id/related')
