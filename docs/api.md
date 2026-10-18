@@ -2,7 +2,17 @@
 
 业务 API 的统一前缀为 `/api/v1`。浏览器通过 Nuxt 同源网关访问；后端连通性使用 `/health` 与 `/ready`，其中就绪检查包含数据库连接状态。以下路径省略业务前缀。
 
-本文说明稳定的接口边界和主要入口；精确字段、默认值和限制以[当前控制器与 DTO](../src/backend/server-main/src/modules/)为准。前端类型位于 `src/frontend/web-blog/app/features/<domain>/`，不从旧设计或示例响应推导新字段。
+本文列出后端控制器声明的全部路由；精确字段、默认值和限制以[当前控制器与 DTO](../src/backend/server-main/src/modules/)为准。前端类型位于 `src/frontend/web-blog/app/features/<domain>/`，不从旧设计或示例响应推导新字段。
+
+路由以行内代码 `方法 /路径` 列出，允许 `GET/POST` 等方法合写；参数名与控制器一致，查询参数另行说明，不用领域占位符省略接口。后端 `src/api-documentation.spec.ts` 递归读取控制器装饰器元数据，双向检查文档遗漏和已不存在的路由；随 `corepack pnpm --filter server-main test` 运行，无需启动应用或连接数据库。此检查仅覆盖声明的 HTTP 方法与路径，不校验 DTO、权限、响应字段或框架隐式提供的 HEAD/OPTIONS。
+
+## 健康与开发探针
+
+| 方法与路径          | 作用                                                                                                               |
+| ------------------- | ------------------------------------------------------------------------------------------------------------------ |
+| `GET /health`       | 存活探针，无 `/api/v1` 前缀                                                                                        |
+| `GET /ready`        | 就绪探针，无 `/api/v1` 前缀；数据库不可用或服务正在关闭时返回 503                                                  |
+| `GET /dev/identity` | 实际地址为 `/api/v1/dev/identity`，仅 development 环境且来自 loopback 地址时提供开发实例归属信息，其余情况返回 404 |
 
 ## 响应、身份与错误
 
@@ -84,6 +94,33 @@
 | `GET /flashes/overview`                                                                | 侧栏聚合与访客已赞，私有不缓存     |
 | `POST /flashes/:id/like`、`POST /flashes/:id/comments`                                 | 闪念互动                           |
 | `GET/POST /admin/flashes`、`GET/PATCH/DELETE /admin/flashes/:id`                       | 博主闪念管理                       |
+| 方法与路径                                                                             | 作用                                   |
+| -------------------------------------------------------------------------------------- | -------------------------------------- |
+| `GET /posts`、`GET /posts/metadata`                                                    | 公开列表、搜索、分页与真实目录聚合     |
+| `GET /posts/archive`                                                                   | 按 UTC 年份筛选的稳定分页归档          |
+| `GET /posts/:id`、`GET /posts/by-slug/:slug`                                           | 公开文章详情及地址解析                 |
+| `GET /posts/:id/navigation`、`GET /posts/:id/related`                                  | 前后文章与规则相关文章                 |
+| `POST /posts/:id/like`、`POST /posts/:id/view`                                         | 访客点赞切换与去重浏览计数             |
+| `GET /posts/:id/interaction`                                                           | 当前访客互动状态，私有且不缓存         |
+| `GET/POST /posts/:id/comments`、`POST /comments/:id/like`                              | 文章评论、回复与点赞                   |
+| `GET/POST /admin/posts`、`GET/PATCH/DELETE /admin/posts/:id`                           | 管理列表、创建、版本化编辑及回收       |
+| `GET /admin/posts/filters`                                                             | 管理列表可用的专栏与标签筛选项         |
+| `GET /admin/posts/:id/revisions`、`GET /admin/posts/:id/revisions/:revision`           | 修订列表与具体快照                     |
+| `POST /admin/posts/:id/revisions/:historical/restore`、`POST /admin/posts/:id/restore` | 恢复历史内容或回收记录                 |
+| `POST /admin/posts/batch/preview`、`POST /admin/posts/batch/execute`                   | 明确编号及版本的批量预览和执行         |
+| `GET /admin/posts/batch`、`GET /admin/posts/batch/:ticket`                             | 最近批量任务及原票据结果               |
+| `GET /admin/taxonomy`                                                                  | 专栏和标签                             |
+| `POST /admin/taxonomy/:kind`、`PATCH/DELETE /admin/taxonomy/:kind/:id`                 | 新增、重命名和删除专栏或标签           |
+| `GET /admin/comments`、`GET/PATCH /admin/comments/policy`                              | 评论管理与版本化审核策略               |
+| `GET /admin/comments/articles`、`GET /admin/comments/:id/context`                      | 评论所属文章选项与目标评论上下文       |
+| `POST /admin/comments/:id/moderation`、`POST /admin/comments/:id/reply`                | 影响范围确认后的审核与博主直接回复     |
+| `DELETE /admin/comments/:id`                                                           | 校验影响范围指纹后的单条及级联回复删除 |
+| `POST /admin/comments/batch/moderation`、`POST /admin/comments/batch/delete`           | 按版本逐条校验的批量审核与删除         |
+| `GET /flashes`、`GET /flashes/search`、`GET /flashes/:id`                              | 公开闪念列表、筛选、搜索及详情         |
+| `GET /flashes/overview`                                                                | 侧栏聚合与访客已赞，私有不缓存         |
+| `POST /flashes/:id/like`、`POST /flashes/:id/comments`                                 | 闪念互动                               |
+| `GET/POST /admin/flashes`、`GET/PATCH/DELETE /admin/flashes/:id`                       | 博主闪念管理                           |
+| `DELETE /admin/flashes/:id/comments/:commentId`                                        | 删除指定闪念评论                       |
 
 文章公开列表只读取列表所需字段，正文检索仍由后端执行。
 
@@ -121,7 +158,9 @@
 | `PUT /moments/:id/like`                                          | 设置目标点赞状态                                 |
 | `GET/POST /admin/moments`、`GET/PATCH/DELETE /admin/moments/:id` | 管理、版本化编辑和创建去重                       |
 | `GET /admin/moments/submissions/:requestId`                      | 核查未知创建结果                                 |
+| `GET /admin/moments/comments`                                    | 跨动态分页管理评论                               |
 | `GET/POST /admin/moments/:id/comments`                           | 管理评论与博主回复                               |
+| `GET /admin/moments/:id/comments/:commentId/location`            | 定位指定评论所在分页                             |
 | `PATCH/DELETE /admin/moments/:id/comments/:commentId`            | 审核与删除；审核使用目标和 `expectedStatus` 比较 |
 
 状态为 `draft/published/archived`，公开入口排除非公开和删除项。列表默认按置顶、发布时间、创建时间、ID 倒序；`pinnedFirst=false` 用于纯时间订阅。UTC 日期为 `YYYY-MM-DD`，筛选使用半开区间。
@@ -145,7 +184,19 @@
 
 ## 图库、项目与友链
 
-三个领域均有公开 `GET /<domain>`、`GET /<domain>/metadata`、`GET /<domain>/:id`，以及管理 `GET/POST /admin/<domain>`、`GET/PATCH/DELETE /admin/<domain>/:id` 和创建提交查询。`domain` 分别为 `gallery`、`projects`、`links`；公开默认每页 12、最大 48，非公开/删除记录不返回管理状态、版本、提交标识或存储键。
+三个领域的公开列表默认每页 12、最大 48，非公开/删除记录不返回管理状态、版本、提交标识或存储键。
+
+| 方法与路径                                                         | 作用                                     |
+| ------------------------------------------------------------------ | ---------------------------------------- |
+| `GET /gallery`、`GET /gallery/metadata`、`GET /gallery/:id`        | 公开图库列表、聚合与详情                 |
+| `GET/POST /admin/gallery`、`GET/PATCH/DELETE /admin/gallery/:id`   | 管理图库列表、幂等创建、版本化编辑与删除 |
+| `GET /admin/gallery/submissions/:requestId`                        | 核查图库创建结果                         |
+| `GET /projects`、`GET /projects/metadata`、`GET /projects/:id`     | 公开项目列表、聚合与详情                 |
+| `GET/POST /admin/projects`、`GET/PATCH/DELETE /admin/projects/:id` | 管理项目列表、幂等创建、版本化编辑与删除 |
+| `GET /admin/projects/submissions/:requestId`                       | 核查项目创建结果                         |
+| `GET /links`、`GET /links/metadata`、`GET /links/:id`              | 公开友链列表、聚合与详情                 |
+| `GET/POST /admin/links`、`GET/PATCH/DELETE /admin/links/:id`       | 管理友链列表、幂等创建、版本化编辑与删除 |
+| `GET /admin/links/submissions/:requestId`                          | 核查友链创建结果                         |
 
 | 领域 | 查询与约束                                                                                |
 | ---- | ----------------------------------------------------------------------------------------- |
@@ -174,6 +225,7 @@
 | 方法与路径                                                                   | 作用                                                  |
 | ---------------------------------------------------------------------------- | ----------------------------------------------------- |
 | `GET /subscriptions`、`GET /subscriptions/stats`、`GET /subscriptions/:id`   | 公开记录、全部匹配记录的分币种统计及详情              |
+| `GET /subscriptions/favicons/:key`                                           | 读取已缓存的 favicon 图片                             |
 | `GET/POST /admin/subscriptions`、`GET/PATCH/DELETE /admin/subscriptions/:id` | 管理列表、幂等创建、版本化编辑与软删除                |
 | `GET /admin/subscriptions/submissions/:requestId`                            | 核查原创建结果，不复活已删除提交                      |
 | `PATCH /admin/subscriptions/sort`                                            | 显式编号、目标排序值及 revision 的事务更新            |
@@ -189,10 +241,11 @@
 
 ## 站点、媒体、运营与维护
 
-| 入口                                                 | 契约                                                   |
-| ---------------------------------------------------- | ------------------------------------------------------ |
-| `GET /site`                                          | 公共站点资料，剔除隐藏关于字段，不缓存；提供内容上下文 |
-| `GET/PATCH /admin/site`、`GET /admin/site/revisions` | 完整资料、版本化保存与历史；具体版本/恢复入口见控制器  |
+| 入口                                                                                  | 契约                                                   |
+| ------------------------------------------------------------------------------------- | ------------------------------------------------------ |
+| `GET /site`                                                                           | 公共站点资料，剔除隐藏关于字段，不缓存；提供内容上下文 |
+| `GET/PATCH /admin/site`、`GET /admin/site/revisions`                                  | 完整资料、版本化保存与历史                             |
+| `GET /admin/site/revisions/:revision`、`POST /admin/site/revisions/:revision/restore` | 读取指定历史版本与恢复资料                             |
 
 站点资料含可选的 `presenceLabel`（≤20）、`presenceSignature`（≤60）、`presenceStatus`（空串、`online`、`idle`、`busy`）与 `launchedAt`（`YYYY-MM-DD` 或空）：前两者驱动名片的在线状态与签名，都为空时保持离线；`presenceStatus` 决定状态点的类型，空串时按在线展示；`launchedAt` 决定 `GET /posts/metadata` 里 `stats.siteAgeDays` 的起点，缺省回退到最早公开文章的发布日。旧客户端与旧内容包可不携带这几项，缺省按空串处理且保存时沿用当前值。
 
@@ -212,6 +265,26 @@
 | `POST /admin/backup/imports/preview` | multipart `file/requestId/strategy/includeSettings`，生成预览票据 |
 | `GET /admin/backup/imports`、`GET /admin/backup/imports/:id` | 当前管理员的票据与原结果 |
 | `POST /admin/backup/imports/:id/repreview`、`POST /admin/backup/imports/:id/execute` | 重新预览或绑定摘要执行；执行需契约要求的确认文本与 confirmation |
+| 入口                                                                                 | 契约                                                                                                                        |
+| ------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------- |
+| `GET/POST /admin/media`                                                              | 服务端分页筛选与 multipart `file` 上传，可带 `uploadId/alt`                                                                 |
+| `PATCH/DELETE /admin/media/:id`、`POST /admin/media/:id/restore`                     | 独立资料更新、回收与恢复                                                                                                    |
+| `GET /admin/media/:id/references`、`GET /media/:file`                                | 管理引用明细与公开 WebP 字节；`file` 必须为 UUID v4 加 `.webp`，可选查询参数 `w` 仅接受 320、640、960、1280，其他值返回 400 |
+| `GET /admin/content-relations`                                                       | 管理端选择有向关联目标，最终关系随来源内容版本保存                                                                          |
+| `POST /admin/content-relations/resolve`                                              | 只读解析指定关联目标，返回其当前可见状态                                                                                    |
+| `GET /admin/overview`                                                                | 服务端真实草稿、互动待办与最近编辑聚合                                                                                      |
+| `GET /admin/notifications`、`GET /admin/notifications/summary`                       | 通知分页与未读统计；详情实时解析业务状态                                                                                    |
+| `GET /admin/notifications/:id`                                                       | 读取单条通知及实时业务状态                                                                                                  |
+| `POST /admin/notifications/:id/read`                                                 | 仅改变已读，不完成审核或回复                                                                                                |
+| `POST /admin/notifications/read-all`                                                 | 一次标记全部未读为已读，返回 `updated/unread`；不完成审核或回复                                                             |
+| `GET /admin/audit`、`GET /admin/audit/actions`                                       | 审计日志分页检索与可筛选动作，不提供修改或删除入口                                                                          |
+| `GET /admin/operations`、`GET /admin/operations/tasks/:id`                           | 脱敏运行摘要与指定任务                                                                                                      |
+| `POST /admin/operations/tasks/:id/retry`                                             | 核对当前状态后的显式人工重试                                                                                                |
+| `GET /admin/maintenance/diagnostics`、`POST /admin/maintenance/media-check`          | 数据库/结构就绪与登记媒体完整性                                                                                             |
+| `POST /admin/backup/export`                                                          | 内容包下载，可选择是否包含媒体                                                                                              |
+| `POST /admin/backup/imports/preview`                                                 | multipart `file/requestId/strategy/includeSettings`，生成预览票据                                                           |
+| `GET /admin/backup/imports`、`GET /admin/backup/imports/:id`                         | 当前管理员的票据与原结果                                                                                                    |
+| `POST /admin/backup/imports/:id/repreview`、`POST /admin/backup/imports/:id/execute` | 重新预览或绑定摘要执行；执行需契约要求的确认文本与 confirmation                                                             |
 
 媒体搜索参数为 `search/orientation/usage/deleted`，说明与替代文本独立保存；被当前或历史内容引用的资源拒绝回收。内容包票据绑定管理员、内容代次、目标版本和预览摘要，重复执行返回原结果。接口层约束不能替代[备份恢复](backup-and-recovery.md)与[运行任务](operations.md)中的完整操作流程。
 
