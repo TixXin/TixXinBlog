@@ -1,0 +1,66 @@
+{
+  "description": "访客文本安全回归共享语料：后端只保存原文，前端按实际文本或 Markdown 路径安全渲染；载荷均小于最短的 500 字符限制。",
+  "attacks": [
+    { "name": "script 标签", "input": "安全正文 <script>alert(1)</script>" },
+    { "name": "混合大小写脚本标签", "input": "安全正文 <ScRiPt>alert(1)</sCrIpT>" },
+    { "name": "图片事件属性", "input": "安全正文 <img src=x onerror=alert(1)>" },
+    { "name": "焦点事件属性", "input": "安全正文 <input autofocus onfocus=alert(1)>" },
+    { "name": "原始 HTML 危险链接", "input": "安全正文 <a href=javascript:alert(1)>点击</a>" },
+    { "name": "Markdown javascript 链接", "input": "安全正文 [点击](javascript:alert(1))" },
+    { "name": "Markdown 混合大小写协议", "input": "安全正文 [点击](JaVaScRiPt:alert(1))" },
+    { "name": "Markdown 自动链接", "input": "安全正文 <javascript:alert(1)>" },
+    { "name": "Markdown 引用链接", "input": "安全正文 [点击][链接]\n\n[链接]: javascript:alert(1)" },
+    { "name": "HTML 实体编码协议", "input": "安全正文 [点击](jav&#x61;script:alert(1))" },
+    { "name": "HTML 十进制实体协议", "input": "安全正文 [点击](java&#115;cript&#58;alert(1))" },
+    { "name": "HTML 命名实体混淆", "input": "安全正文 [点击](javascript&colon;alert(1))" },
+    { "name": "实体制表符协议", "input": "安全正文 [点击](java&#x09;script:alert(1))" },
+    { "name": "实体换行协议", "input": "安全正文 [点击](java&#x0a;script:alert(1))" },
+    { "name": "实体回车协议", "input": "安全正文 [点击](java&#x0d;script:alert(1))" },
+    { "name": "原始控制字符协议", "input": "安全正文 <a href=\"java\tscript:alert(1)\">点击</a>" },
+    { "name": "百分号编码协议", "input": "安全正文 [点击](java%73cript:alert(1))" },
+    {
+      "name": "data HTML 链接",
+      "input": "安全正文 [点击](data:text/html;base64,PHNjcmlwdD5hbGVydCgxKTwvc2NyaXB0Pg==)"
+    },
+    { "name": "data SVG 图片", "input": "安全正文 ![图片](data:image/svg+xml;base64,PHN2ZyBvbmxvYWQ9YWxlcnQoMSk+)" },
+    { "name": "javascript 图片", "input": "安全正文 ![图片](javascript:alert(1))" },
+    { "name": "SVG 事件", "input": "安全正文 <svg onload=alert(1)><circle /></svg>" },
+    {
+      "name": "SVG 命名空间链接",
+      "input": "安全正文 <svg><a xlink:href=\"javascript:alert(1)\"><text>点击</text></a></svg>"
+    },
+    { "name": "iframe srcdoc", "input": "安全正文 <iframe srcdoc=\"<script>alert(1)</script>\"></iframe>" },
+    {
+      "name": "iframe data 地址",
+      "input": "安全正文 <iframe src=\"data:text/html,<script>alert(1)</script>\"></iframe>"
+    },
+    { "name": "CSS expression", "input": "安全正文 <div style=\"width:expression(alert(1))\">点击</div>" },
+    { "name": "CSS 危险 URL", "input": "安全正文 <style>body{background:url(javascript:alert(1))}</style>" },
+    { "name": "实体编码标签", "input": "安全正文 &lt;img src=x onerror=alert(1)&gt;" },
+    { "name": "双重实体编码标签", "input": "安全正文 &amp;lt;svg onload=alert(1)&amp;gt;" },
+    { "name": "Unicode 零宽协议", "input": "安全正文 [点击](java\u200bscript:alert(1))" },
+    { "name": "Unicode BOM 协议", "input": "安全正文 [点击](\ufeffjavascript:alert(1))" },
+    { "name": "Unicode 全角协议", "input": "安全正文 [点击](ｊａｖａｓｃｒｉｐｔ：alert(1))" },
+    { "name": "Unicode 双向控制符", "input": "安全正文 \u202e<svg onload=alert(1)>\u202c" },
+    {
+      "name": "链接标题属性逃逸",
+      "input": "安全正文 [点击](https://example.test/ \"&quot; onmouseover=&quot;alert(1)\")"
+    },
+    { "name": "图片说明属性逃逸", "input": "安全正文 ![\" onerror=\"alert(1)](https://example.test/image.png)" },
+    { "name": "提及与危险标签混排", "input": "安全正文 @访客<img src=x onerror=alert(1)>" },
+    {
+      "name": "提及与链接标题混排",
+      "input": "安全正文 [点击](https://example.test/ \"@访客&quot; onmouseover=&quot;alert(1)\")"
+    },
+    { "name": "代码中的危险标签", "input": "安全正文 `<script>alert(1)</script>`" },
+    { "name": "代码块中的危险标签", "input": "安全正文\n\n```html\n<img src=x onerror=alert(1)>\n```" },
+    {
+      "name": "畸形标签与命名空间",
+      "input": "安全正文 <math><mtext><table><mglyph><style><!--</style><img title=\"--><img src=x onerror=alert(1)>\">"
+    }
+  ],
+  "normal": {
+    "name": "正常中文与 Markdown",
+    "input": "安全正文 **重点**、*斜体* 和 `a < b`\n[站内](/posts/hello) [外链](https://example.test/read?q=1&lang=zh) @小明"
+  }
+}
