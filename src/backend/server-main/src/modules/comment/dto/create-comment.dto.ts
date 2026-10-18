@@ -5,8 +5,9 @@
  * @since 2026-07-20
  */
 
-import { Transform, Type } from 'class-transformer'
+import { Transform } from 'class-transformer'
 import { IsInt, IsOptional, IsString, IsUUID, MaxLength, Min, MinLength } from 'class-validator'
+import { numberFromString } from '../../../common/transforms/number-from-string'
 import { ValidateVisitorSubmissionField } from '../../../common/validation/visitor-submission'
 
 export class CreateCommentDto {
@@ -19,10 +20,11 @@ export class CreateCommentDto {
   @MaxLength(32)
   author!: string
 
+  // null 与省略等价：服务层回退默认头像，并与省略头像的重试保持幂等
   @IsString()
   @MaxLength(512)
   @IsOptional()
-  avatar?: string
+  avatar?: string | null
 
   @IsString()
   @Transform(({ value }: { value: unknown }) => (typeof value === 'string' ? value.trim() : value))
@@ -30,7 +32,7 @@ export class CreateCommentDto {
   @MaxLength(1000)
   content!: string
 
-  @Type(() => Number)
+  @Transform(numberFromString)
   @IsInt()
   @Min(1)
   @IsOptional()

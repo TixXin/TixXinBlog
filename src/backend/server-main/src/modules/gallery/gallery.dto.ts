@@ -1,9 +1,10 @@
 /** @file gallery.dto.ts @description 图库请求边界；作品尺寸及公开时间禁止客户端伪造 */
 import { Transform, Type } from 'class-transformer'
-import { ArrayMaxSize, IsArray, ValidateNested } from 'class-validator'
+import { ArrayMaxSize, IsArray, IsObject, ValidateNested } from 'class-validator'
 import { GALLERY_GEAR_ICONS } from '../../entities/gallery-settings.entity'
 import type { GalleryGear } from '../../entities/gallery-settings.entity'
 import { MaxUtf16Length } from '../../common/validators/max-utf16-length'
+import { numberFromString } from '../../common/transforms/number-from-string'
 import {
   IsDateString,
   IsIn,
@@ -36,6 +37,7 @@ export class SaveGalleryDto {
   @ValidateIf(provided)
   @IsArray()
   @ArrayMaxSize(12)
+  @IsObject({ each: true })
   @ValidateNested({ each: true })
   @Type(() => ContentRelationDto)
   relatedContent?: ContentRelationDto[]
@@ -59,7 +61,7 @@ export class SaveGalleryDto {
   @ValidateIf(provided) @IsInt() @Min(-1000000) @Max(1000000) sortOrder?: number
 }
 export class GalleryRevisionDto {
-  @Type(() => Number) @IsInt() @Min(0) revision!: number
+  @Transform(numberFromString) @IsInt() @Min(0) revision!: number
 }
 
 export class GalleryGearDto implements GalleryGear {
@@ -69,5 +71,10 @@ export class GalleryGearDto implements GalleryGear {
 }
 export class SaveGallerySettingsDto {
   @IsInt() @Min(0) revision!: number
-  @IsArray() @ArrayMaxSize(12) @ValidateNested({ each: true }) @Type(() => GalleryGearDto) gear!: GalleryGearDto[]
+  @IsArray()
+  @ArrayMaxSize(12)
+  @IsObject({ each: true })
+  @ValidateNested({ each: true })
+  @Type(() => GalleryGearDto)
+  gear!: GalleryGearDto[]
 }

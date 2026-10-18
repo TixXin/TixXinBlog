@@ -16,6 +16,7 @@ import {
   MaxLength,
   Min,
   MinLength,
+  ValidateIf,
 } from 'class-validator'
 import { AdminAuthGuard } from '../../common/guards/admin-auth.guard'
 import { VisitorIdHash } from '../../common/decorators/visitor-id.decorator'
@@ -24,23 +25,28 @@ import type { FlashType } from '../../entities/flash-note.entity'
 import { AdminFlashService } from './admin-flash.service'
 
 export class SaveFlashDto {
-  @IsOptional()
+  @ValidateIf((_object, value) => value !== undefined)
   @IsString()
   @MinLength(1)
   @MaxLength(50000)
   @Transform(({ value }: { value: unknown }) => (typeof value === 'string' ? value.trim() : value))
   content?: string
-  @IsOptional() @IsArray() @ArrayMaxSize(20) @IsString({ each: true }) @MaxLength(64, { each: true }) tags?: string[]
-  @IsOptional()
+  @ValidateIf((_object, value) => value !== undefined)
+  @IsArray()
+  @ArrayMaxSize(20)
+  @IsString({ each: true })
+  @MaxLength(64, { each: true })
+  tags?: string[]
+  @ValidateIf((_object, value) => value !== undefined)
   @IsArray()
   @ArrayMaxSize(9)
   @IsString({ each: true })
   @MaxLength(2048, { each: true })
   images?: string[]
-  @IsOptional() @IsIn(FLASH_TYPES) type?: FlashType
-  @IsOptional() @IsBoolean() isPinned?: boolean
-  @IsOptional() @IsBoolean() isArchived?: boolean
-  @IsOptional() @IsBoolean() isDraft?: boolean
+  @ValidateIf((_object, value) => value !== undefined) @IsIn(FLASH_TYPES) type?: FlashType
+  @ValidateIf((_object, value) => value !== undefined) @IsBoolean() isPinned?: boolean
+  @ValidateIf((_object, value) => value !== undefined) @IsBoolean() isArchived?: boolean
+  @ValidateIf((_object, value) => value !== undefined) @IsBoolean() isDraft?: boolean
 }
 export class QueryAdminFlashesDto {
   @IsOptional() @IsIn(['all', 'draft', 'published', 'archived']) status?: 'all' | 'draft' | 'published' | 'archived'

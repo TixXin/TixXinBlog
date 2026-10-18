@@ -10,6 +10,7 @@ import {
   IsBoolean,
   IsIn,
   IsInt,
+  IsObject,
   IsOptional,
   IsString,
   Max,
@@ -23,11 +24,13 @@ import {
 import { POST_CATEGORIES, POST_STATUSES } from '../../../entities/post.entity'
 import type { PostCategory, PostStatus } from '../../../entities/post.entity'
 import { ContentRelationDto } from '../../content-relations/content-relations.dto'
+import { numberFromString } from '../../../common/transforms/number-from-string'
 
 export class SavePostDto {
   @ValidateIf((_object, value) => value !== undefined)
   @IsArray()
   @ArrayMaxSize(12)
+  @IsObject({ each: true })
   @ValidateNested({ each: true })
   @Type(() => ContentRelationDto)
   relatedContent?: ContentRelationDto[]
@@ -76,7 +79,7 @@ export class SavePostDto {
   @IsBoolean()
   pinned: boolean = false
 
-  @Type(() => Number)
+  @Transform(numberFromString)
   @IsInt()
   @Min(1)
   @Max(300)
@@ -134,5 +137,5 @@ export class QueryAdminPostsDto {
 }
 
 export class ExpectedPostRevisionDto {
-  @Type(() => Number) @IsInt() @Min(0) revision!: number
+  @Transform(numberFromString) @IsInt() @Min(0) revision!: number
 }

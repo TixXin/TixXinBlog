@@ -7,6 +7,7 @@ import {
   IsDateString,
   IsIn,
   IsInt,
+  IsObject,
   IsOptional,
   IsString,
   IsUUID,
@@ -22,6 +23,7 @@ import { MOMENT_STATUSES } from '../../entities/moment.entity'
 import type { MomentStatus } from '../../entities/moment.entity'
 import { MOMENT_COMMENT_STATUSES } from '../../entities/moment-comment.entity'
 import type { MomentCommentStatus } from '../../entities/moment-comment.entity'
+import { numberFromString } from '../../common/transforms/number-from-string'
 import { ValidateVisitorSubmissionField } from '../../common/validation/visitor-submission'
 
 const provided = (_object: unknown, value: unknown) => value !== undefined
@@ -73,12 +75,12 @@ export class SaveMomentDto {
   @IsOptional() @IsString() @MaxLength(80) @Transform(trim) device?: string | null
   @IsOptional() @IsString() @MaxLength(80) @Transform(trim) mood?: string | null
   @IsOptional() @IsInt() @Min(1) linkedArticleId?: number | null
-  @IsOptional() @ValidateNested() @Type(() => MomentLinkDto) linkedLink?: MomentLinkDto | null
+  @IsOptional() @IsObject() @ValidateNested() @Type(() => MomentLinkDto) linkedLink?: MomentLinkDto | null
   @ValidateIf(provided) @IsIn(MOMENT_STATUSES) status?: MomentStatus
   @ValidateIf(provided) @IsBoolean() isPinned?: boolean
 }
 export class MomentRevisionDto {
-  @Type(() => Number) @IsInt() @Min(0) revision!: number
+  @Transform(numberFromString) @IsInt() @Min(0) revision!: number
 }
 export class SetMomentLikeDto {
   @IsBoolean() liked!: boolean

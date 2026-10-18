@@ -8,6 +8,7 @@ import {
   IsArray,
   IsIn,
   IsInt,
+  IsObject,
   IsString,
   Matches,
   MaxLength,
@@ -41,6 +42,7 @@ export class ExpectedSiteRevisionDto {
 }
 export class SaveSiteSettingsDto extends ExpectedSiteRevisionDto {
   @ValidateIf((_object, value) => value !== undefined)
+  @IsObject()
   @ValidateNested()
   @Type(() => AboutSettingsDto)
   about?: AboutSettingsDto
@@ -53,7 +55,12 @@ export class SaveSiteSettingsDto extends ExpectedSiteRevisionDto {
   @Transform(trim) @IsString() @MaxLength(160) seoTitle!: string
   @Transform(trim) @IsString() @MaxLength(320) seoDescription!: string
   @Transform(trim) @IsString() @MaxLength(1000) announcement!: string
-  @IsArray() @ArrayMaxSize(8) @ValidateNested({ each: true }) @Type(() => SiteSocialDto) socials!: SiteSocialDto[]
+  @IsArray()
+  @ArrayMaxSize(8)
+  @IsObject({ each: true })
+  @ValidateNested({ each: true })
+  @Type(() => SiteSocialDto)
+  socials!: SiteSocialDto[]
   // 以下几项为后加字段，旧客户端与旧内容包可以不带；缺省按空串处理
   @ValidateIf((_object, value) => value !== undefined)
   @Transform(trim)
