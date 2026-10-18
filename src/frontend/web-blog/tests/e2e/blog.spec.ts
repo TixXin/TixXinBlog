@@ -16,6 +16,11 @@ interface PreviewResponseLoss {
 
 test.beforeEach(({ page, browserName }) => prepareMotionCapture(page, browserName))
 
+// 服务端拒绝打开不足 1 秒即提交的访客表单（MIN_FORM_ELAPSED_MS），提交前按真实访客的最短填写时长停留。
+const visitorFillPause = (page: Page) => page.waitForTimeout(1100)
+// Toast 的错误文案同时写入读屏 assertive 区域，断言只取可见的 Toast 条目。
+const toast = (page: Page, text: string | RegExp) => page.locator('.toast-item__message').filter({ hasText: text })
+
 test('旧正文标题样式、未知语言回退和同前缀高亮在生产浏览器中正确', async ({ page }, testInfo) => {
   await page.addInitScript(() => localStorage.setItem('nuxt-color-mode', 'dark'))
   const dialogs: string[] = []
@@ -147,12 +152,14 @@ test('真实登录、草稿发布、公开发现和撤回形成完整闭环', as
 test('游客评论、回复、点赞刷新及网络失败重试不丢草稿', async ({ page, request }) => {
   await page.goto('/articles/1')
   await page.getByRole('textbox', { name: '评论内容', exact: true }).fill('E2E 根评论')
+  await visitorFillPause(page)
   await page.getByRole('button', { name: '发布评论', exact: true }).click()
   await page.getByRole('textbox', { name: '昵称 *', exact: true }).fill('E2E 游客')
   await page.getByRole('button', { name: '确认身份', exact: true }).click()
   await expect(page.getByText('E2E 根评论', { exact: true })).toBeVisible()
   await page.getByRole('button', { name: '回复 E2E 游客的评论', exact: true }).click()
   await page.getByRole('textbox', { name: '回复内容', exact: true }).fill('E2E 回复')
+  await visitorFillPause(page)
   await page.getByRole('button', { name: '发表回复', exact: true }).click()
   await expect(page.getByText('E2E 回复', { exact: true })).toBeVisible()
   await page.getByRole('button', { name: '点赞 E2E 游客的评论', exact: true }).first().click()
@@ -165,6 +172,7 @@ test('游客评论、回复、点赞刷新及网络失败重试不丢草稿', as
     route.request().method() === 'POST' ? route.abort() : route.continue(),
   )
   await page.getByRole('textbox', { name: '评论内容', exact: true }).fill('E2E 网络恢复')
+  await visitorFillPause(page)
   await page.getByRole('button', { name: '发布评论', exact: true }).click()
   await expect(page.getByRole('alert').filter({ hasText: '草稿已保留' })).toBeVisible()
   await expect(page.getByRole('textbox', { name: '评论内容', exact: true })).toHaveValue('E2E 网络恢复')
@@ -187,6 +195,7 @@ test('三套主题在 390px 下可评论，Dock 导航保持可访问名称', as
     const bounds = await input.boundingBox()
     expect(bounds!.x).toBeGreaterThanOrEqual(0)
     expect(bounds!.x + bounds!.width).toBeLessThanOrEqual(390)
+    await visitorFillPause(page)
     await page.getByRole('button', { name: '发布评论', exact: true }).click()
     if (index === 0) {
       await page.getByRole('textbox', { name: '昵称 *', exact: true }).fill('E2E 主题游客')
@@ -221,7 +230,7 @@ test('书签存储失败保留表单，非法导入不会覆盖已有数据', as
   })
   await dialog.getByRole('button', { name: '添加', exact: true }).click()
   await expect(dialog).toBeVisible()
-  await expect(page.getByText(/本地保存失败/)).toBeVisible()
+  await expect(toast(page, /本地保存失败/)).toBeVisible()
   await expect(dialog.getByRole('textbox', { name: '名称', exact: true })).toHaveValue('E2E 本地保存')
   await page.evaluate(() => (window as unknown as { restoreStorage: () => void }).restoreStorage())
   await dialog.getByRole('button', { name: '添加', exact: true }).click()
@@ -257,7 +266,7 @@ test('真实闪念发布失败保留输入，编辑与归档同步公开 feed', 
   await page.locator('.fed').getByRole('button', { name: /^发布/ }).click()
   await expect(editor).toHaveValue('E2E 闪念发布')
   await expect.poll(() => abortedSubmissions).toBe(1)
-  await expect(page.getByText('闪念服务暂时不可用，请稍后重试', { exact: true })).toBeVisible()
+  await expect(toast(page, /^闪念服务暂时不可用，请稍后重试$/)).toBeVisible()
   await page.unroute('**/api/v1/admin/flashes')
   const retried = page.waitForResponse(
     (response) =>
@@ -787,7 +796,7 @@ test('媒体上传重试、替代文本、封面正文闪念选择与引用保�
   await page.goto('/admin/media')
   await asset.getByRole('button', { name: '移入回收', exact: true }).click()
   await expect(page.getByRole('alert')).toContainText('资源仍被引用')
-  await expect(page.getByRole('region', { name: '媒体引用', exact: true })).toContainText('历史版本')
+  await expect(page.getByRole('region', { name: /^e2e-media\.png · 引用位置/ })).toContainText('历史版本')
   await page.goto('/admin/flashes')
   await page.getByRole('button', { name: '新建闪念', exact: true }).click()
   await page.getByRole('textbox', { name: '闪念正文', exact: true }).fill('E2E 媒体引用闪念')
@@ -903,6 +912,7 @@ test('评论先审后发、审核失败重试、隐藏和恢复同步公开页�
   await expect(approval).toBeChecked()
   await page.goto('/articles/5')
   await page.getByRole('textbox', { name: '评论内容', exact: true }).fill('E2E 审核后公开评论')
+  await visitorFillPause(page)
   await page.getByRole('button', { name: '发布评论', exact: true }).click()
   await page.getByRole('textbox', { name: '昵称 *', exact: true }).fill('E2E 审核访客')
   await page.getByRole('button', { name: '确认身份', exact: true }).click()
@@ -998,9 +1008,12 @@ test('站点资料保存失败保留、前台与 feed 同步、配置冲突和�
   await expect(page.locator('link[rel="alternate"][href="/rss.xml"]')).toHaveCount(1)
   await expect(page.locator('link[rel="alternate"][href="/rss.xml"]')).toHaveAttribute('title', 'E2E 可维护站点 RSS')
   await page.goto('/articles/1')
-  const structured = JSON.parse((await page.locator('script[type="application/ld+json"]').textContent())!)
+  const structured = JSON.parse(
+    (await page.locator('script[type="application/ld+json"][data-hid="ld-article"]').textContent())!,
+  )
   expect(structured.author.name).toBe('E2E 博主')
-  expect(structured.publisher.name).toBe('E2E 可维护站点')
+  // 单博主站点的文章发布者是博主本人（与首页 #person 一致），不是站点名称。
+  expect(structured.publisher).toMatchObject({ '@type': 'Person', name: 'E2E 博主' })
   await page.goto('/admin/site')
   const other = await page.context().newPage()
   await other.goto('/admin/site')

@@ -53,7 +53,10 @@ async function assertSettled(page: Page, expectedPage: number) {
   const { data } = await response.json()
   const cards = page.locator('.post-list .post-item')
   await expect(cards).toHaveCount(data.items.length)
-  await expect(cards.first()).toHaveAttribute('href', `/articles/${data.items[0].id}`)
+  await expect(page.locator('.post-list .post-item__content').first()).toHaveAttribute(
+    'href',
+    `/articles/${data.items[0].id}`,
+  )
   await expect(page.getByRole('navigation', { name: '文章分页' }).locator('[aria-current="page"]')).toHaveText(
     String(expectedPage),
   )
@@ -105,7 +108,7 @@ for (const layout of ['nexus', 'aurora', 'dock']) {
     ).toHaveAttribute('aria-current', 'page')
     await page.goBack()
     await expect(page).toHaveURL(/page=2$/)
-    await expect(page.locator('.post-list .post-item').first()).toHaveAttribute('href', '/articles/91')
+    await expect(page.locator('.post-list .post-item__content').first()).toHaveAttribute('href', '/articles/91')
     await expect(page.getByRole('navigation', { name: '文章分页' }).locator('[aria-current="page"]')).toHaveText('2')
   })
 
@@ -125,7 +128,7 @@ for (const layout of ['nexus', 'aurora', 'dock']) {
           await route.continue()
         },
       )
-      const original = await page.locator('.post-list .post-item').first().getAttribute('href')
+      const original = await page.locator('.post-list .post-item__content').first().getAttribute('href')
       await page.getByRole('button', { name: '下一页', exact: true }).click()
       await expect.poll(() => intercepted).toBe(true)
       const waiting = await page.evaluate(
@@ -190,7 +193,7 @@ for (const layout of ['nexus', 'aurora', 'dock']) {
       try {
         await expect(page.getByRole('button', { name: '3', exact: true })).toBeEnabled()
         await page.getByRole('button', { name: '3', exact: true }).click()
-        await expect(page.locator('.post-list .post-item').first()).toHaveAttribute('href', '/articles/76')
+        await expect(page.locator('.post-list .post-item__content').first()).toHaveAttribute('href', '/articles/76')
         await page.getByRole('button', { name: '4', exact: true }).click()
         await assertSettled(page, 4)
       } finally {
@@ -213,10 +216,10 @@ for (const layout of ['nexus', 'aurora', 'dock']) {
       (route) =>
         fail ? route.fulfill({ status: 503, contentType: 'application/json', body: '{}' }) : route.continue(),
     )
-    const original = await page.locator('.post-list .post-item').first().getAttribute('href')
+    const original = await page.locator('.post-list .post-item__content').first().getAttribute('href')
     await page.getByRole('button', { name: '2', exact: true }).click()
-    await expect(page.getByRole('alert')).toContainText('已保留原列表')
-    await expect(page.locator('.post-list .post-item').first()).toHaveAttribute('href', original!)
+    await expect(page.getByRole('alert')).toContainText('仍显示上次成功加载的文章')
+    await expect(page.locator('.post-list .post-item__content').first()).toHaveAttribute('href', original!)
     expect(
       await page.evaluate(() => (window as unknown as { postPageAnimations: unknown[] }).postPageAnimations.length),
     ).toBe(0)
@@ -230,7 +233,7 @@ for (const layout of ['nexus', 'aurora', 'dock']) {
     await captureMotion(page, testInfo, `${layout}-last-page.png`)
     await page.getByRole('button', { name: '连续加载', exact: true }).click()
     await expect(page.locator('.post-list .post-item')).toHaveCount(15)
-    await expect(page.locator('.post-list .post-item').first()).toHaveAttribute('href', '/articles/106')
+    await expect(page.locator('.post-list .post-item__content').first()).toHaveAttribute('href', '/articles/106')
     await page.getByRole('button', { name: '分页显示', exact: true }).click()
     await expect(page.locator('.post-list .post-item')).toHaveCount(15)
     await expect(page.getByRole('navigation', { name: '文章分页' }).locator('[aria-current="page"]')).toHaveText('1')
