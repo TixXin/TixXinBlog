@@ -19,7 +19,7 @@
       to="/"
       class="nexus-bar__avatar-wrap"
       :style="{ '--avatar-glow-color': avatarGlowColor }"
-      :aria-label="`返回首页（当前：${displayName}）`"
+      :aria-label="avatarLinkLabel"
       @mouseenter="onAvatarEnter"
     >
       <img
@@ -35,13 +35,9 @@
         @error="onAvatarError"
       />
       <span v-else class="nexus-bar__avatar-fallback">{{ avatarFallback }}</span>
-      <span
-        class="nexus-bar__presence-badge"
-        :class="`nexus-bar__presence-badge--${effectivePresence.status}`"
-        :aria-label="`状态：${effectivePresence.label}`"
-      >
+      <span class="nexus-bar__presence-badge" :class="`nexus-bar__presence-badge--${effectivePresence.status}`">
         <span class="nexus-bar__presence-badge-dot" />
-        <span class="nexus-bar__presence-badge-text">{{ effectivePresence.label.slice(0, 2) }}</span>
+        <span class="nexus-bar__presence-badge-text">{{ presenceBadgeText }}</span>
       </span>
     </NuxtLink>
 
@@ -86,7 +82,7 @@
             v-if="showProgress"
             class="nexus-bar__progress"
             type="button"
-            :aria-label="scrollDirection === 'down' ? '返回底部' : '返回顶部'"
+            :aria-label="`${scrollDirection === 'down' ? '返回底部' : '返回顶部'}，已读 ${displayProgress}%`"
             @click="onProgressClick"
           >
             <svg class="nexus-bar__progress-ring" viewBox="0 0 36 36">
@@ -359,6 +355,24 @@ const effectivePresence = computed(() => {
 })
 
 const avatarGlowColor = computed(() => GLOW_COLOR_MAP[effectivePresence.value.status])
+
+// 头像角标只放得下两个字：短标签原样显示，长标签按状态给出完整的两字词，避免截成“未提”这类半截词
+const PRESENCE_SHORT_TEXT: Record<OwnerPresence, string> = {
+  online: '在线',
+  idle: '空闲',
+  busy: '忙碌',
+  offline: '离线',
+}
+const presenceBadgeText = computed(() => {
+  const { label, status } = effectivePresence.value
+  return label.length <= 2 ? label : PRESENCE_SHORT_TEXT[status]
+})
+// 可见的角标文字必须是链接可访问名的一部分；完整状态说明跟在后面
+const avatarLinkLabel = computed(() => {
+  const { label } = effectivePresence.value
+  const status = label === presenceBadgeText.value ? label : `${presenceBadgeText.value}，${label}`
+  return `返回首页，当前：${displayName.value}，状态：${status}`
+})
 
 /** 仅博主或未登录态展示个人社交链接（访客没有个人 socials） */
 const showSocials = computed(() => !isLoggedIn.value || currentUser.value?.role === 'owner')

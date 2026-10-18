@@ -33,7 +33,8 @@ const publicPages: PublicPage[] = [
   { name: '文章详情', path: '/articles/1', content: ['.article-markdown'] },
   { name: '文章归档', path: '/archive', content: ['.archive-page a[href^="/articles/"]'] },
   { name: '朋友圈', path: '/moments', content: ['.moment-card'] },
-  { name: '画廊', path: '/gallery', content: ['button[aria-label^="查看照片："]'] },
+  // 照片卡片是 role="button" 的 article（内部可放失败重试按钮），按角色而不是标签名匹配
+  { name: '画廊', path: '/gallery', content: ['[role="button"][aria-label^="查看照片："]'] },
   { name: '项目', path: '/projects', content: ['[data-project-id]'] },
   { name: '友链', path: '/links', content: ['[data-link-id]'] },
   { name: '留言板', path: '/guestbook', content: ['[data-guestbook-id]'] },
@@ -109,7 +110,15 @@ for (const theme of ['nexus', 'dock', 'aurora'] as const) {
 
           // 标题或布局壳层出现不代表请求完成；防止加载态、错误页或空列表使扫描虚假通过。
           for (const selector of target.content) await expect(page.locator(selector).first()).toBeVisible()
+          // 首屏以下的懒加载图片进入视口前一直标记 aria-busy；逐个滚到视口让它们真实加载完，再回到顶部扫描
+          await page.evaluate(async () => {
+            for (const frame of document.querySelectorAll('.image-frame[aria-busy="true"]')) {
+              frame.scrollIntoView({ block: 'center' })
+              await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)))
+            }
+          })
           await expect(page.locator('[aria-busy="true"]')).toHaveCount(0)
+          await page.evaluate(() => window.scrollTo(0, 0))
           await expect(page.locator('.request-feedback [role="alert"], .comment-section__error')).toHaveCount(0)
           await page.evaluate(() => document.fonts.ready.then(() => undefined))
 

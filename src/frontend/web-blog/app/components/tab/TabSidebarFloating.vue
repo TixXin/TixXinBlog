@@ -53,6 +53,8 @@
       >
         <Icon v-if="cat.icon" :name="cat.icon" size="15" class="tab-side__cat-icon" />
         <span v-if="!collapsed" class="tab-side__cat-name">{{ cat.name }}</span>
+        <!-- 名称与数量之间保留空白文本，否则可见文字连成“AI10”，与可访问名对不上；弹性布局中不占位 -->
+        <template v-if="!collapsed && tabSettings.showCounts">{{ ' ' }}</template>
         <span v-if="!collapsed && tabSettings.showCounts" class="tab-side__cat-count">
           {{ counts[cat.id] || 0 }}
         </span>

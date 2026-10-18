@@ -74,7 +74,7 @@ describe.each<CalendarKind>(['moment', 'flash'])('%s 侧栏日历', (kind) => {
     ])
     expect(wrapper.get(`${prefix}__legend`).text()).toContain('本月 6 条')
     expect(wrapper.get(`${prefix}__streak`).text()).toBe('连续 3 天')
-    expect(wrapper.get(`${prefix}__day.is-today`).attributes('aria-label')).toContain('2024-02-29，3 条')
+    expect(wrapper.get(`${prefix}__day.is-today`).attributes('aria-label')).toContain('2024年2月29日，3 条')
   })
 
   it.each([
@@ -160,7 +160,7 @@ describe('朋友圈日历数据来源与不可用状态', () => {
     expect(wrapper.find('.has-moment').exists()).toBe(false)
     await wrapper.setProps({ available: true, dateCounts: { '2024-02-29': 4 } })
     expect(wrapper.get('.moment-calendar-card__legend').text()).toBe('本月 4 条动态 · UTC')
-    expect(wrapper.get('.has-moment').attributes('aria-label')).toBe('2024-02-29，4 条动态')
+    expect(wrapper.get('.has-moment').attributes('aria-label')).toBe('2024年2月29日，4 条动态')
   })
 
   it('兼容 ISO 日期列表重复计数，并优先采用概览聚合', async () => {

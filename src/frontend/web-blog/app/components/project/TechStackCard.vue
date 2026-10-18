@@ -16,12 +16,13 @@
         :key="item.label"
         type="button"
         class="tech-stack__item"
-        :aria-label="`筛选技术：${item.label}`"
         :disabled="!interactive"
         @click="$emit('tag', item.label)"
       >
         <div class="tech-stack__meta">
-          <span class="tech-stack__name">{{ item.label }}</span>
+          <!-- 名称由可见文字组成，读屏前缀放在隐藏文本里，避免可访问名与可见文字不一致 -->
+          <span class="tech-stack__name"><span class="sr-only">筛选技术：</span>{{ item.label }}</span>
+          {{ ' ' }}
           <span class="tech-stack__percent">{{ item.count }} 项 · {{ item.percent }}%</span>
         </div>
         <div class="tech-stack__track">

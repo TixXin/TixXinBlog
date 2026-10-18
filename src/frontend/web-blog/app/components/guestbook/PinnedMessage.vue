@@ -65,7 +65,8 @@ const dismissed = ref(false)
   flex-shrink: 0;
   font-size: 0.625rem;
   font-weight: 700;
-  color: var(--accent-text);
+  /* 10px 小字压在强调色底上，暗色模式 accent-text 只有 4.4:1，改用正文色保证对比度 */
+  color: var(--text-main);
   padding: 0.0625rem 0.375rem;
   border-radius: 0.25rem;
   background: var(--accent-soft);
