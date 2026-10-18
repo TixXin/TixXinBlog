@@ -1,6 +1,6 @@
 <!--
   @file MessageBubble.vue
-  @description 单条留言气泡，访客左对齐、博主右对齐，支持回复引用、反应、消息状态
+  @description 单条留言气泡，按组首尾显示身份与设备地区，保留逐条时间、回复、反应和消息状态
   @author TixXin
   @since 2026-03-20
 -->
@@ -12,7 +12,12 @@
     :data-guestbook-id="message.id"
     :class="[
       message.isOwner ? 'message-bubble--owner' : 'message-bubble--guest',
-      { 'message-bubble--picker-open': showReactionPicker, 'message-bubble--actions-open': actionsOpen },
+      {
+        'message-bubble--picker-open': showReactionPicker,
+        'message-bubble--actions-open': actionsOpen,
+        'message-bubble--continuation': !groupStart,
+        'message-bubble--group-end': groupEnd,
+      },
     ]"
   >
     <!-- 头像 -->
@@ -101,24 +106,29 @@
       <p v-if="reactionError" role="alert" class="message-bubble__foot">{{ reactionError }}</p>
       <!-- 气泡主体 -->
       <div class="message-bubble__body">
-        <div
-          class="message-bubble__content"
-          :class="message.isOwner ? 'message-bubble__content--owner' : 'message-bubble__content--guest'"
-          @click="onContentTap"
-        >
-          <!-- 气泡尾巴 -->
-          <span
-            class="message-bubble__tail"
-            :class="message.isOwner ? 'message-bubble__tail--owner' : 'message-bubble__tail--guest'"
-          />
-          <!-- 换行保留只作用在正文上，模板缩进产生的空白不再变成首行缩进 -->
-          <span class="message-bubble__text"
-            ><template v-for="(part, index) in contentParts" :key="index"
-              ><mark v-if="part.match" class="message-bubble__mark">{{ part.text }}</mark
-              ><template v-else>{{ part.text }}</template></template
-            ></span
+        <CommonTooltip :content="message.time">
+          <div
+            class="message-bubble__content"
+            :class="message.isOwner ? 'message-bubble__content--owner' : 'message-bubble__content--guest'"
+            tabindex="0"
+            role="group"
+            :aria-label="`${message.author}${message.isOwner ? '（博主）' : ''}，${message.time}`"
+            @click="onContentTap"
           >
-        </div>
+            <!-- 气泡尾巴只在组首显示，后续消息与同侧正文对齐 -->
+            <span
+              class="message-bubble__tail"
+              :class="message.isOwner ? 'message-bubble__tail--owner' : 'message-bubble__tail--guest'"
+            />
+            <!-- 换行保留只作用在正文上，模板缩进产生的空白不再变成首行缩进 -->
+            <span class="message-bubble__text"
+              ><template v-for="(part, index) in contentParts" :key="index"
+                ><mark v-if="part.match" class="message-bubble__mark">{{ part.text }}</mark
+                ><template v-else>{{ part.text }}</template></template
+              ></span
+            >
+          </div>
+        </CommonTooltip>
         <!-- 操作按钮 -->
         <div class="message-bubble__actions" :class="{ 'message-bubble__actions--left': message.isOwner }">
           <CommonTooltip content="回复">
@@ -184,7 +194,10 @@
       <div
         v-if="reactions.length > 0 || message.browser || message.region"
         class="message-bubble__extras"
-        :class="{ 'message-bubble__extras--end': message.isOwner }"
+        :class="{
+          'message-bubble__extras--end': message.isOwner,
+          'message-bubble__extras--metadata-only': reactions.length === 0,
+        }"
       >
         <div v-if="reactions.length > 0" class="message-bubble__reactions">
           <button
@@ -221,13 +234,19 @@
 <script setup lang="ts">
 import type { GuestMessage } from '~/features/guestbook/types'
 
-const props = defineProps<{
-  message: GuestMessage
-  interactive?: boolean
-  reacting?: boolean
-  reactionError?: string
-  highlight?: string
-}>()
+const props = withDefaults(
+  defineProps<{
+    message: GuestMessage
+    /** 单独使用气泡时默认保留完整身份与设备地区。 */
+    groupStart?: boolean
+    groupEnd?: boolean
+    interactive?: boolean
+    reacting?: boolean
+    reactionError?: string
+    highlight?: string
+  }>(),
+  { groupStart: true, groupEnd: true, reactionError: undefined, highlight: undefined },
+)
 
 const emit = defineEmits<{
   react: [value: { id: number; emoji: string; reacted: boolean; complete?: () => void }]
@@ -390,6 +409,28 @@ onBeforeUnmount(() => {
 .message-bubble__avatar-wrap {
   position: relative;
   flex-shrink: 0;
+}
+
+// 仅聊天视图合并身份与设备地区；头像槽保留占位，论坛模式仍显示每条完整信息。
+[data-display-mode='chat'] .message-bubble {
+  &--continuation {
+    .message-bubble__avatar-wrap {
+      visibility: hidden;
+      pointer-events: none;
+    }
+
+    .message-bubble__meta,
+    .message-bubble__tail {
+      display: none;
+    }
+  }
+
+  &:not(.message-bubble--group-end) {
+    .message-bubble__foot--inline,
+    .message-bubble__extras--metadata-only {
+      display: none;
+    }
+  }
 }
 
 .message-bubble__avatar {
@@ -654,6 +695,11 @@ onBeforeUnmount(() => {
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
   word-break: break-word;
   white-space: normal;
+
+  &:focus-visible {
+    outline: 2px solid var(--accent, #5b7cfa);
+    outline-offset: 2px;
+  }
 
   &--guest {
     color: var(--text-main);
