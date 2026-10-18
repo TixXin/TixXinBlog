@@ -13,6 +13,15 @@
   <LayoutSkipLinks />
   <ThemeComponent name="RootLayout">
     <div ref="pageHost" class="page-motion-host">
+      <CommonRequestFeedback
+        v-if="siteError"
+        data-page-motion-status
+        compact
+        :pending="sitePending"
+        :title="siteError"
+        description="仍显示上次成功读取或默认的站点资料。"
+        @retry="refreshSite()"
+      />
       <NuxtPage :transition="false" />
     </div>
   </ThemeComponent>
@@ -23,6 +32,7 @@
 </template>
 
 <script setup lang="ts">
+const { error: siteError, pending: sitePending, refresh: refreshSite } = useSiteSettings()
 const pageHost = ref<HTMLElement | null>(null)
 // 切页期间旧内容保持可见、可操作，不再显示"正在加载内容"提示；加载进度由顶部进度条承担
 usePageMotion(pageHost)

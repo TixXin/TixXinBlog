@@ -35,7 +35,16 @@
     </ClientOnly>
 
     <div class="tabs-page__center" @contextmenu.self.prevent="onBlankContextMenu">
-      <p v-if="storageError" role="alert">{{ storageError }}</p>
+      <!-- 初次读取失败走统一重试；排序未保存仍是就地提示，避免重试把警告清掉。 -->
+      <CommonRequestFeedback
+        v-if="bookmarkLoadFailed"
+        compact
+        :pending="bookmarkLoading"
+        title="书签加载失败"
+        :description="storageError || '暂时无法读取当前浏览器中的书签。'"
+        @retry="retryBookmarks"
+      />
+      <p v-else-if="storageError" role="alert">{{ storageError }}</p>
       <div v-if="tabSettings.showGreeting || tabSettings.showDate" class="tabs-page__greeting">
         <h1 v-if="tabSettings.showGreeting" class="tabs-page__hello">{{ greetingLine }}</h1>
         <p v-if="tabSettings.showDate" class="tabs-page__date">{{ today }}</p>
@@ -145,6 +154,8 @@ const { currentUser, isLoggedIn } = useCurrentUser()
 const { open: openLoginDrawer } = useLoginDrawer()
 const {
   error: storageError,
+  loaded: bookmarksLoaded,
+  loading: bookmarkLoading,
   categories,
   bookmarks,
   visibleBookmarks,
@@ -162,6 +173,17 @@ const {
   reorderCategories,
   refreshFavicon,
 } = useTabBookmarks()
+const bookmarkRetrying = ref(false)
+const bookmarkLoadFailed = computed(() => bookmarkRetrying.value || (!bookmarksLoaded.value && !!storageError.value))
+async function retryBookmarks() {
+  if (bookmarkLoading.value) return
+  bookmarkRetrying.value = true
+  try {
+    await load(true)
+  } finally {
+    bookmarkRetrying.value = false
+  }
+}
 
 const { success, info, error: showError } = useToast()
 const tabPalette = useTabCommandPalette()

@@ -48,7 +48,7 @@
             @discard="interactions.discardRecovery"
             @login="interactions.openLogin"
         /></template>
-        <div ref="messagesWrap" class="guestbook-center__messages-wrap">
+        <div ref="messagesWrap" class="guestbook-center__messages-wrap" tabindex="-1">
           <div v-if="pending || feedError" class="guestbook-feedback">
             <CommonRequestFeedback
               :compact="items.length > 0"
@@ -74,16 +74,24 @@
             <p v-if="isChatMode && historyComplete" class="guestbook-end guestbook-end--top">
               {{ filterLabel ? '以上是全部匹配的留言' : '已经到最早的留言了' }}
             </p>
-            <div v-if="isChatMode && hasMore" ref="topSentinel" class="guestbook-more">
+            <div v-if="isChatMode && (hasMore || retryingMore)" ref="topSentinel" class="guestbook-more">
+              <CommonRequestFeedback
+                v-if="moreError || retryingMore"
+                compact
+                :pending="pending || morePending || retryingMore || !personalized"
+                title="历史留言加载失败"
+                :description="moreError"
+                @retry="retryHistory()"
+              />
               <button
+                v-else
                 :aria-busy="morePending"
                 type="button"
                 :disabled="pending || morePending || !personalized"
-                @click="moreError ? retryMore() : loadMore()"
+                @click="loadMore()"
               >
-                {{ morePending ? '正在加载历史…' : moreError ? '重试加载历史' : '加载历史留言' }}
+                {{ morePending ? '正在加载历史…' : '加载历史留言' }}
               </button>
-              <p v-if="moreError" role="alert">{{ moreError }}</p>
             </div>
             <GuestbookMessageSkeleton v-if="pending && !items.length" />
             <GuestbookEmptyState
@@ -102,16 +110,24 @@
               @react="interactions.react"
               @jump="jumpToMessage"
             />
-            <div v-if="!isChatMode && hasMore" ref="bottomSentinel" class="guestbook-more">
+            <div v-if="!isChatMode && (hasMore || retryingMore)" ref="bottomSentinel" class="guestbook-more">
+              <CommonRequestFeedback
+                v-if="moreError || retryingMore"
+                compact
+                :pending="pending || morePending || retryingMore || !personalized"
+                title="历史留言加载失败"
+                :description="moreError"
+                @retry="retryHistory()"
+              />
               <button
+                v-else
                 :aria-busy="morePending"
                 type="button"
                 :disabled="pending || morePending || !personalized"
-                @click="moreError ? retryMore() : loadMore()"
+                @click="loadMore()"
               >
-                {{ morePending ? '正在加载…' : moreError ? '重试加载更多' : '加载更多留言' }}
+                {{ morePending ? '正在加载…' : '加载更多留言' }}
               </button>
-              <p v-if="moreError" role="alert">{{ moreError }}</p>
             </div>
             <p v-if="!isChatMode && historyComplete" class="guestbook-end">已显示当前范围的全部留言</p>
           </CommonCustomScrollbar>
@@ -186,7 +202,8 @@ const rightVisible = computed(
 )
 const infoOpen = ref(false),
   mounted = ref(false),
-  atBottom = ref(true)
+  atBottom = ref(true),
+  retryingMore = ref(false)
 const scrollbar = ref<{ viewport: HTMLElement | null } | null>(null),
   messagesWrap = ref<HTMLElement | null>(null)
 const topSentinel = ref<HTMLElement | null>(null),
@@ -405,6 +422,37 @@ const {
   retryMore,
   refresh: refreshFeed,
 } = feed
+// 原加载按钮被错误反馈替换时，把键盘焦点交给同一历史区域的重试入口。
+watch(moreError, async (error, previous) => {
+  if (!import.meta.client || !error || previous) return
+  const sentinel = isChatMode.value ? topSentinel.value : bottomSentinel.value
+  const trigger = document.activeElement
+  if (!(trigger instanceof HTMLElement) || !sentinel?.contains(trigger)) return
+  await nextTick()
+  if (pageScope.signal.aborted || trigger.isConnected || document.activeElement !== document.body) return
+  sentinel.querySelector<HTMLButtonElement>('.request-feedback button')?.focus({ preventScroll: true })
+})
+/** 清除错误时保留重试入口；读取完成后把键盘焦点交回可继续浏览的位置。 */
+async function retryHistory() {
+  if (retryingMore.value || pending.value || morePending.value || !personalized.value) return
+  const trigger =
+    document.activeElement instanceof HTMLElement && document.activeElement.closest('.guestbook-more')
+      ? document.activeElement
+      : null
+  retryingMore.value = true
+  try {
+    await retryMore()
+  } finally {
+    const restoreFocus = trigger && document.activeElement === trigger
+    retryingMore.value = false
+    await nextTick()
+    if (restoreFocus && !trigger.isConnected && !pageScope.signal.aborted) {
+      const sentinel = isChatMode.value ? topSentinel.value : bottomSentinel.value
+      const target = sentinel?.querySelector<HTMLButtonElement>('button:not(:disabled)') ?? messagesWrap.value
+      target?.focus({ preventScroll: true })
+    }
+  }
+}
 const { data: metadata, pending: metadataPending, error: metadataError, refresh: refreshMetadata } = overview
 const historyComplete = computed(() => !hasMore.value && items.value.length > 0 && !pending.value && !feedError.value)
 const { settings: siteSettings } = useSiteSettings()

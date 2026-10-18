@@ -23,7 +23,14 @@
               <OwnerProfileCard />
               <SiteAnnouncementCard />
               <SidebarSiteStatsCard v-if="siteStats" :stats="siteStats" />
-              <p v-else-if="statsError" role="status">站点统计暂时不可用</p>
+              <CommonRequestFeedback
+                v-if="statsError"
+                compact
+                :pending="statsPending"
+                title="站点统计暂时不可用"
+                :description="siteStats ? '仍显示上次成功读取的站点统计。' : undefined"
+                @retry="refreshStats()"
+              />
               <DailyQuoteCard />
               <SidebarFooterCard />
             </div>
@@ -94,7 +101,7 @@ import SiteAnnouncementCard from './SiteAnnouncementCard.vue'
 import DailyQuoteCard from './DailyQuoteCard.vue'
 import SidebarFooterCard from './SidebarFooterCard.vue'
 
-const { siteStats, error: statsError } = await usePostMetadata()
+const { siteStats, error: statsError, pending: statsPending, refresh: refreshStats } = await usePostMetadata()
 const route = useRoute()
 const isMomentsMode = computed(() => route.path.startsWith('/moments'))
 const {

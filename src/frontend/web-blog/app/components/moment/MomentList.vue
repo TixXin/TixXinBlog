@@ -17,9 +17,13 @@
     />
     <div v-if="moments.length && (pending || errorMessage)" class="moment-list__feedback">
       <p v-if="pending" role="status">正在加载动态…</p>
-      <div v-else role="alert">
-        {{ errorMessage }}，已保留原内容。<button type="button" @click="$emit('retry')">重试</button>
-      </div>
+      <CommonRequestFeedback
+        v-else
+        compact
+        :title="errorMessage || '动态加载失败，请重试'"
+        description="仍显示上次成功加载的动态。"
+        @retry="$emit('retry')"
+      />
     </div>
     <MomentCard
       v-for="moment in moments"
@@ -120,11 +124,6 @@ useIntersectionObserver(
     background: var(--surface-1);
     font-size: 0.8125rem;
     pointer-events: auto;
-  }
-  button {
-    min-height: 44px;
-    padding: 0 0.5rem;
-    color: var(--accent-text);
   }
 }
 .moment-list__more {

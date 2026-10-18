@@ -8,7 +8,15 @@
 <template>
   <nav class="article-nav" :aria-label="folder ? `${folder}专栏的相邻文章` : '相邻文章'">
     <p v-if="folder" class="article-nav__folder">同专栏 · {{ folder }}</p>
-    <p v-if="error" role="status" class="article-nav__error">相邻文章暂时无法加载</p>
+    <CommonRequestFeedback
+      v-if="error"
+      class="article-nav__error"
+      title="部分文章信息加载失败"
+      description="请重试加载相邻文章和相关推荐。"
+      :pending="pending"
+      compact
+      @retry="$emit('retry')"
+    />
     <NuxtLink v-if="prev" :to="articlePath(prev)" class="article-nav__card article-nav__card--prev">
       <Icon name="lucide:chevron-left" size="20" class="article-nav__icon" aria-hidden="true" />
       <div class="article-nav__text">
@@ -28,7 +36,14 @@
 
 <script setup lang="ts">
 import type { RelatedPost } from '~/features/post/types'
-defineProps<{ prev: RelatedPost | null; next: RelatedPost | null; folder?: string | null; error?: boolean }>()
+defineProps<{
+  prev: RelatedPost | null
+  next: RelatedPost | null
+  folder?: string | null
+  error?: boolean
+  pending?: boolean
+}>()
+defineEmits<{ retry: [] }>()
 </script>
 
 <style lang="scss" scoped>
@@ -47,6 +62,9 @@ defineProps<{ prev: RelatedPost | null; next: RelatedPost | null; folder?: strin
 .article-nav__error,
 .article-nav__folder {
   grid-column: 1 / -1;
+}
+
+.article-nav__folder {
   margin: 0;
   font-size: 0.8125rem;
   color: var(--text-soft);

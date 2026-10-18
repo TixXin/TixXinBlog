@@ -227,19 +227,22 @@ describe('画廊灯箱媒体与失败反馈', () => {
   it('作品详情读取中和失败状态使用读屏反馈，重新读取只触发详情重试', async () => {
     const { wrapper, dialog } = await setup({ photo: null, pending: true })
     expect(dialog.attributes('aria-label')).toBe('照片预览')
-    expect(dialog.get('[role="status"]').text()).toBe('正在读取作品…')
+    expect(dialog.get('[role="status"]').text()).toBe('正在加载…')
+    expect(dialog.get('.request-feedback button').attributes('aria-disabled')).toBe('true')
     expect(dialog.find('img').exists()).toBe(false)
 
     await wrapper.setProps({ pending: false, error: '作品暂时无法读取' })
     expect(dialog.find('[role="status"]').exists()).toBe(false)
-    expect(dialog.get('[role="alert"]').text()).toContain('作品暂时无法读取')
-    await dialog.get('[role="alert"] button').trigger('click')
+    expect(dialog.get('[role="alert"]').text()).toBe('照片加载失败作品暂时无法读取')
+    await dialog.get('.request-feedback button').trigger('click')
     expect(wrapper.emitted('retry')).toEqual([[]])
     expect(wrapper.emitted('close')).toBeUndefined()
 
     await wrapper.setProps({ pending: true })
-    expect(dialog.get<HTMLButtonElement>('[role="alert"] button').element.disabled).toBe(true)
-    await dialog.get('[role="alert"] button').trigger('click')
+    // 重试期间按钮保持可聚焦但标记忙碌，重复点击不再发出重试
+    expect(dialog.get('.request-feedback button').attributes('aria-disabled')).toBe('true')
+    expect(dialog.get('.request-feedback button').attributes('aria-busy')).toBe('true')
+    await dialog.get('.request-feedback button').trigger('click')
     expect(wrapper.emitted('retry')).toHaveLength(1)
   })
 })

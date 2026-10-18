@@ -376,7 +376,7 @@ test('本地存储损坏与配额不足保留原文和未保存输入', async ({
   await expect(page.getByRole('alert')).toContainText('原始数据已保留')
   expect(await page.evaluate(() => localStorage.getItem('blog-my-subscriptions'))).toBe('{broken')
   await page.evaluate(() => localStorage.removeItem('blog-my-subscriptions'))
-  await page.getByRole('button', { name: '重试读取', exact: true }).click()
+  await page.locator('.subscription-local-panel').getByRole('button', { name: '重试', exact: true }).click()
   await page.getByRole('button', { name: '添加我的订阅', exact: true }).click()
   await page.getByRole('textbox', { name: '服务名称', exact: true }).fill('留住未保存的输入')
   await page.getByRole('textbox', { name: '订阅金额', exact: true }).fill('8')

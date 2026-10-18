@@ -127,6 +127,14 @@
               清除全部筛选
             </button>
           </div>
+          <CommonRequestFeedback
+            v-if="overviewError || overviewRetrying"
+            compact
+            :pending="overviewLoading"
+            title="闪念概览加载失败"
+            description="日历、标签与统计暂时无法更新，已加载的闪念仍可浏览。"
+            @retry="retryOverview"
+          />
           <FlashNoteList
             :notes="filteredNotes"
             :pending-ids="pendingIds"
@@ -278,6 +286,8 @@ const {
   moreLoading,
   moreError,
   overview,
+  overviewLoading,
+  overviewError,
   aggregatesReady,
   totalCount,
   tagCloud,
@@ -296,6 +306,17 @@ const {
   addComment,
   removeComment,
 } = useFlashNotes()
+
+const overviewRetrying = ref(false)
+async function retryOverview() {
+  if (overviewLoading.value) return
+  overviewRetrying.value = true
+  try {
+    await loadOverview(true)
+  } finally {
+    overviewRetrying.value = false
+  }
+}
 
 const currentUserId = computed(() => currentUser.value?.id ?? null)
 const guestId = computed(() => guestIdentity.value?.id ?? null)

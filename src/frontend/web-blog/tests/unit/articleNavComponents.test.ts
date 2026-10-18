@@ -65,7 +65,7 @@ describe('文章相邻导航', () => {
 
     expect(wrapper.get('nav').attributes('aria-label')).toBe('相邻文章')
     expect(wrapper.findAll('a')).toHaveLength(0)
-    expect(wrapper.find('[role="status"]').exists()).toBe(false)
+    expect(wrapper.find('.request-feedback').exists()).toBe(false)
   })
 
   it.each([
@@ -77,7 +77,7 @@ describe('文章相邻导航', () => {
     expect(wrapper.findAll('a')).toHaveLength(1)
     expect(wrapper.get(`a.article-nav__card--${side}`).text()).toContain(label)
     expect(wrapper.get('a').text()).toContain(title)
-    expect(wrapper.find('[role="status"]').exists()).toBe(false)
+    expect(wrapper.find('.request-feedback').exists()).toBe(false)
   })
 
   it('双向导航使用真实链接，分别采用 slug 与 ID 地址，并可取得原生焦点', async () => {
@@ -98,16 +98,16 @@ describe('文章相邻导航', () => {
     }
   })
 
-  it('读取失败时用状态区域播报，仍保留已取得的相邻文章', async () => {
+  it('读取失败时用警示区域播报并提供重试，仍保留已取得的相邻文章', async () => {
     const wrapper = await mountNav({ prev: previous, next: null, error: true })
 
-    expect(wrapper.get('[role="status"]').text()).toBe('相邻文章暂时无法加载')
+    expect(wrapper.get('[role="alert"]').text()).toBe('部分文章信息加载失败请重试加载相邻文章和相关推荐。')
     expect(wrapper.get('a').attributes('href')).toBe('/articles/reading-notes')
     expect(wrapper.get('a').text()).toContain(previous.title)
 
     await wrapper.setProps({ prev: null })
     expect(wrapper.findAll('a')).toHaveLength(0)
-    expect(wrapper.get('[role="status"]').text()).toBe('相邻文章暂时无法加载')
+    expect(wrapper.get('[role="alert"]').text()).toBe('部分文章信息加载失败请重试加载相邻文章和相关推荐。')
   })
 
   it('切换文章和恢复请求后同步移除旧标题、旧链接与错误状态', async () => {
@@ -121,7 +121,7 @@ describe('文章相邻导航', () => {
     expect(wrapper.get('a').text()).toContain(replacement.title)
     expect(wrapper.text()).not.toContain(previous.title)
     expect(wrapper.text()).not.toContain(next.title)
-    expect(wrapper.find('[role="status"]').exists()).toBe(false)
+    expect(wrapper.find('.request-feedback').exists()).toBe(false)
   })
 })
 

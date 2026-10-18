@@ -5,13 +5,15 @@
 
 <template>
   <section class="comment-section" aria-label="文章评论">
-    <!-- 标题行：左侧标题与总数，右侧刷新/重试，避免按钮孤立在输入框与列表之间 -->
+    <!-- 标题行保留常规刷新；读取失败时由下方统一反馈提供唯一重试入口 -->
     <div class="comment-section__head">
       <h2 class="comment-section__title">
         <Icon name="lucide:message-circle" size="20" />
         评论 <span class="comment-section__count">({{ total }})</span>
       </h2>
       <button
+        v-if="!loadError"
+        ref="refreshButton"
         :aria-busy="loading"
         type="button"
         class="comment-section__refresh"
@@ -19,7 +21,7 @@
         @click="$emit('retry')"
       >
         <Icon name="lucide:refresh-cw" size="14" :class="{ 'is-spinning': loading }" aria-hidden="true" />
-        {{ loading ? '正在加载评论…' : loadError ? '重试加载评论' : '刷新评论' }}
+        {{ loading ? '正在加载评论…' : '刷新评论' }}
       </button>
     </div>
     <div class="comment-section__composer">
@@ -67,7 +69,15 @@
         </div>
       </form>
     </div>
-    <p v-if="loadError" role="alert" class="comment-section__error">{{ loadError }}</p>
+    <CommonRequestFeedback
+      v-if="loadError"
+      ref="loadFeedback"
+      title="评论加载失败"
+      :description="loadError"
+      :pending="busy"
+      compact
+      @retry="$emit('retry')"
+    />
     <p v-if="likeError" role="alert" class="comment-section__error">{{ likeError }}</p>
     <p v-if="!loading && !loadError && !comments.length" class="comment-section__empty">暂无评论，来写下第一条吧。</p>
     <ul class="comment-section__list" :aria-busy="loading">
@@ -106,6 +116,8 @@ const visitorForm = useVisitorSubmissionForm({ submitting: () => props.submittin
 const { website } = visitorForm
 const draft = defineModel<string>({ required: true })
 const input = ref<HTMLTextAreaElement | null>(null)
+const refreshButton = ref<HTMLButtonElement | null>(null)
+const loadFeedback = ref<{ $el: HTMLElement } | null>(null)
 const hydrated = ref(false)
 onMounted(() => {
   hydrated.value = true
@@ -117,6 +129,22 @@ defineEmits<{
   'cancel-reply': []
   like: [id: number]
 }>()
+// 刷新按钮与错误态重试按钮互换时保留操作位置，不打断已转到输入框等位置的用户。
+watch(
+  () => !!props.loadError,
+  async (failed) => {
+    if (!hydrated.value) return
+    const previousButton = failed
+      ? refreshButton.value
+      : loadFeedback.value?.$el.querySelector<HTMLButtonElement>('button')
+    if (!previousButton || document.activeElement !== previousButton) return
+    await nextTick()
+    if (document.activeElement !== document.body && document.activeElement !== previousButton) return
+    const nextButton = failed ? loadFeedback.value?.$el.querySelector<HTMLButtonElement>('button') : refreshButton.value
+    nextButton?.focus({ preventScroll: true })
+  },
+)
+
 watch(
   () => props.replyTarget,
   async (target) => {

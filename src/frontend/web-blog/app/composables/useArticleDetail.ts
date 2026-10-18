@@ -38,26 +38,24 @@ export async function useArticleDetail(id: string, options: { reuseLoaded?: bool
   const base = config.public.apiBaseUrl
   const useMock = config.public.postUseMockRepo !== false
   const cached = loadedArticles.get(nuxtApp)
-  if (!useMock && options.reuseLoaded && cached?.requestId === id && cached.base === base) {
-    return {
-      article: computed(() => cached.article),
-      relatedPosts: computed(() => cached.relatedPosts),
-      navigation: computed(() => cached.navigation),
-      navigationFolder: computed(() => cached.navigationFolder),
-      discoveryError: ref(cached.discoveryError),
-      tocItems: computed(() => cached.tocItems),
-      articleExcerpt: computed(() => cached.excerpt),
-    }
-  }
-
   let article: ComputedRef<ArticleDetail>
   let tocItems: Ref<TocItem[]>
-  let relatedFromApi: Ref<RelatedPost[] | undefined> = ref()
-  let navigation: Ref<PostNavigation> = ref({ prev: null, next: null })
-  let navigationFolder: Ref<string | null> = ref(null)
+  // 推荐与相邻文章用可写 ref：首读、主题复用和单独重试都写回同一份状态。
+  const relatedFromApi = ref<RelatedPost[]>([])
+  const navigation = ref<PostNavigation>({ prev: null, next: null })
+  const navigationFolder = ref<string | null>(null)
   const discoveryError = ref(false)
+  const discoveryPending = ref(false)
 
-  if (useMock) {
+  if (!useMock && options.reuseLoaded && cached?.requestId === id && cached.base === base) {
+    // 主题切换复用已加载文章，不重新读取；补充读取失败时仍可通过 retryDiscovery 重试。
+    article = computed(() => cached.article)
+    relatedFromApi.value = cached.relatedPosts
+    navigation.value = cached.navigation
+    navigationFolder.value = cached.navigationFolder
+    discoveryError.value = cached.discoveryError
+    tocItems = ref(cached.tocItems)
+  } else if (useMock) {
     if (!mockPosts.some((post) => String(post.id) === id))
       throw createError({ statusCode: 404, statusMessage: 'Not Found', data: { title: '文章不存在' }, fatal: true })
     article = computed<ArticleDetail>(() => {
@@ -134,9 +132,9 @@ export async function useArticleDetail(id: string, options: { reuseLoaded?: bool
       })
     }
     const data = detailResult.data
-    relatedFromApi = computed(() => data.value?.related ?? [])
-    navigation = computed(() => data.value?.navigation ?? { prev: null, next: null })
-    navigationFolder = computed(() => data.value?.navigationFolder ?? null)
+    relatedFromApi.value = data.value!.related
+    navigation.value = data.value!.navigation
+    navigationFolder.value = data.value!.navigationFolder
     discoveryError.value = data.value!.discoveryError
     article = computed<ArticleDetail>(() => data.value!.detail)
     tocItems = computed<TocItem[]>(() => articleTocItems(data.value?.detail.toc ?? [], data.value?.detail.title ?? ''))
@@ -184,12 +182,44 @@ export async function useArticleDetail(id: string, options: { reuseLoaded?: bool
       excerpt: articleExcerpt.value,
     })
 
+  async function retryDiscovery() {
+    if (useMock || discoveryPending.value || requestScope.signal.aborted) return
+    discoveryPending.value = true
+    try {
+      const [related, adjacent] = await Promise.allSettled([
+        fetchRelatedPosts(base, article.value.id, requestScope.signal),
+        fetchPostNavigation(base, article.value.id, requestScope.signal, 'auto'),
+      ])
+      // 页面已卸载时丢弃迟到结果；某一路失败时保留另一路已读到的内容。
+      if (requestScope.signal.aborted) return
+      if (related.status === 'fulfilled') relatedFromApi.value = related.value
+      if (adjacent.status === 'fulfilled') {
+        // 与首读一致：同专栏结果标注专栏名，回退全站时不标注。
+        const folder = article.value.category.trim() ? article.value.category : null
+        navigation.value = { prev: adjacent.value.prev, next: adjacent.value.next }
+        navigationFolder.value = adjacent.value.fallback ? null : folder
+      }
+      discoveryError.value = related.status === 'rejected' || adjacent.status === 'rejected'
+      const snapshot = loadedArticles.get(nuxtApp)
+      if (snapshot?.requestId === id && snapshot.base === base) {
+        snapshot.relatedPosts = relatedPosts.value
+        snapshot.navigation = navigation.value
+        snapshot.navigationFolder = navigationFolder.value
+        snapshot.discoveryError = discoveryError.value
+      }
+    } finally {
+      discoveryPending.value = false
+    }
+  }
+
   return {
     article,
     relatedPosts,
     navigation,
     navigationFolder,
     discoveryError,
+    discoveryPending,
+    retryDiscovery,
     tocItems,
     articleExcerpt,
   }

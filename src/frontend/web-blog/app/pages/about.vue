@@ -9,14 +9,6 @@
   <div class="main-inner">
     <CommonCustomScrollbar class="about-body" viewport-class="about-viewport" :show-back-to-top="false" primary>
       <AboutHero :profile="profile" />
-      <CommonRequestFeedback
-        v-if="error"
-        class="about-feedback"
-        compact
-        :title="error"
-        description="下方仍显示上次成功读取或默认的资料。"
-        @retry="refresh()"
-      />
       <AboutProfileContent :value="settings.about" />
       <AboutContactCards v-if="contacts.length" :contacts="contacts" />
     </CommonCustomScrollbar>
@@ -32,7 +24,7 @@
 
 <script setup lang="ts">
 import { socialProfiles } from '~/utils/absoluteUrl'
-const { settings, error, refresh } = useSiteSettings()
+const { settings } = useSiteSettings()
 
 const siteUrl = useSiteUrl()
 const aboutDescription = computed(() => settings.value.ownerTitle || settings.value.description)
@@ -89,9 +81,5 @@ const contacts = computed(() =>
 
 :deep(.about-viewport) {
   padding: 1rem 2rem 2rem;
-}
-
-.about-feedback {
-  margin-bottom: 1.5rem;
 }
 </style>

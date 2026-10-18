@@ -30,17 +30,18 @@ export function useArticleInteraction(id: string, initial: { likes: number; view
   async function load() {
     if (useMock || pending.value) return
     pending.value = true
-    error.value = ''
+    let viewSyncFailed = false
     try {
       // 浏览计数接口同时返回当前访客的点赞状态，正常路径只需一次请求。
       const result = await recordPostView(config.public.apiBaseUrl, id).catch(async () => {
-        error.value = '浏览计数暂未同步，可以重试'
+        viewSyncFailed = true
         return fetchPostInteraction(config.public.apiBaseUrl, id)
       })
       likes.value = result.likes
       views.value = result.views
       liked.value = result.liked
       loaded.value = true
+      error.value = viewSyncFailed ? '浏览计数暂未同步，可以重试' : ''
       if ('counted' in result && result.counted) bumpSiteViews()
     } catch {
       error.value = '文章互动状态加载失败，请重试'

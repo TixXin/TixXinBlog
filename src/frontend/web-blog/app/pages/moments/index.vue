@@ -34,6 +34,7 @@
               v-if="overviewError"
               compact
               title="动态统计暂时不可用"
+              :description="metadata ? '仍显示上次成功读取的动态统计。' : undefined"
               :pending="overviewPending"
               @retry="refreshOverview()"
             />
@@ -99,6 +100,7 @@
             class="card"
             compact
             title="动态统计暂时不可用"
+            :description="metadata ? '仍显示上次成功读取的动态统计。' : undefined"
             :pending="overviewPending"
             @retry="refreshOverview()"
           />
