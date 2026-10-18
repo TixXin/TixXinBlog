@@ -1,13 +1,14 @@
 /**
  * @file urls.ts
- * @description 动态站点地图来源：公开文章、闪念详情、朋友圈详情与话题页，不收录草稿、归档或 noindex 内容。
+ * @description 动态站点地图来源：公开文章及其标签和专栏、闪念详情、朋友圈详情与话题页，不收录草稿、归档或 noindex 文章。
  * lastmod 只写入接口能提供的时间：文章用内容修订时间 updatedAt（旧接口缺省时回退发布日期），闪念用 updatedAt，
- * 朋友圈与话题暂无更新时间则不写。
+ * 标签、专栏、朋友圈与话题暂无更新时间则不写。
  */
 import type { FlashNote } from '~/features/flash/types'
 import type { MomentItem, MomentOverview } from '~/features/moment/types'
 import { publicApi, publicMetadata, publicPagedItems } from '../../utils/publicContent'
 import { articlePath } from '~/utils/articlePath'
+import { postCategoryPath, postTagPath } from '~/features/post/taxonomy'
 
 export default defineEventHandler(async (event) => {
   // 文章是核心来源，读取失败时整体失败；其余来源失败时跳过，不让单一领域拖垮站点地图
@@ -21,6 +22,11 @@ export default defineEventHandler(async (event) => {
     ...data.archive
       .filter((post) => !post.seoNoindex)
       .map((post) => ({ loc: articlePath(post), lastmod: post.updatedAt || post.date })),
+    // 路径段已由共用规则编码；告诉站点地图保留编码，避免中文和保留字符被二次编码。
+    ...data.tags.filter((tag) => tag.count > 0).map((tag) => ({ loc: postTagPath(tag.label), _encoded: true })),
+    ...data.categories
+      .filter((category) => category.count > 0)
+      .map((category) => ({ loc: postCategoryPath(category.name), _encoded: true })),
     ...flashes
       .filter((note) => !note.isDraft && !note.isArchived)
       .map((note) => ({ loc: `/flash/${note.id}`, lastmod: note.updatedAt || note.createdAt })),

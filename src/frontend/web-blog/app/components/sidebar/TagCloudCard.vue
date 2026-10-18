@@ -1,6 +1,6 @@
 <!--
   @file TagCloudCard.vue
-  @description 可用键盘与触屏操作的静态标签云，标签不重复或自动移动
+  @description 标签独立页入口与首页筛选，支持键盘与触屏操作
   @author TixXin
   @since 2025-03-17
 -->
@@ -11,20 +11,30 @@
       <h2 class="tag-cloud-card__title"><Icon name="lucide:hash" size="16" /> 探索标签</h2>
       <span class="tag-cloud-card__count text-xs">{{ tags.length }} 个标签</span>
     </div>
-    <div class="tag-cloud-card__tags" role="group" aria-label="按标签筛选">
-      <button
+    <div class="tag-cloud-card__tags" role="group" aria-label="浏览标签或筛选首页文章">
+      <div
         v-for="tag in tags"
         :key="tag.name"
-        type="button"
-        :aria-pressed="activeTag === tag.name"
         class="tag-cloud-card__tag"
         :class="{ 'is-active': activeTag === tag.name }"
-        @click="$emit('select', tag.name)"
       >
-        <span class="tag-cloud-card__hash" aria-hidden="true" :style="{ color: tag.color }">#</span>
-        {{ tag.name }}
-        <span class="tag-cloud-card__tag-count">{{ tag.count }}</span>
-      </button>
+        <NuxtLink :to="postTagPath(tag.name)" class="tag-cloud-card__link">
+          <span class="tag-cloud-card__hash" aria-hidden="true" :style="{ color: tag.color }">#</span>
+          {{ tag.name }}
+          <span class="tag-cloud-card__tag-count">{{ tag.count }}</span>
+        </NuxtLink>
+        <CommonTooltip :content="`在首页筛选标签：${tag.name}`">
+          <button
+            type="button"
+            class="tag-cloud-card__filter"
+            :aria-label="`在首页筛选标签：${tag.name}`"
+            :aria-pressed="activeTag === tag.name"
+            @click="$emit('select', tag.name)"
+          >
+            <Icon name="lucide:list-filter" size="13" aria-hidden="true" />
+          </button>
+        </CommonTooltip>
+      </div>
     </div>
     <p v-if="!tags.length" class="tag-cloud-card__empty">暂无标签</p>
   </section>
@@ -32,6 +42,7 @@
 
 <script setup lang="ts">
 import type { TagItem } from '~/features/stats/types'
+import { postTagPath } from '~/features/post/taxonomy'
 
 withDefaults(
   defineProps<{
@@ -85,11 +96,9 @@ defineEmits<{
 
 .tag-cloud-card__tag {
   display: inline-flex;
-  align-items: center;
-  gap: 4px;
+  align-items: stretch;
+  max-width: 100%;
   overflow-wrap: anywhere;
-  min-height: 32px;
-  padding: 0.375rem 0.25rem;
   border-radius: 9px;
   font-size: 0.75rem;
   font-weight: 600;
@@ -100,12 +109,6 @@ defineEmits<{
   @media (prefers-reduced-motion: reduce) {
     transition: none;
   }
-  cursor: var(--interaction-cursor, pointer);
-
-  @media (pointer: coarse) {
-    min-height: 44px;
-  }
-
   &:hover {
     background: var(--accent-soft);
     color: var(--text-main);
@@ -117,6 +120,44 @@ defineEmits<{
     color: var(--text-main);
     border-color: var(--accent);
     box-shadow: inset 0 -2px 0 var(--accent);
+  }
+}
+
+.tag-cloud-card__link {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+  min-height: 32px;
+  padding: 0.375rem 0.25rem;
+  border-radius: 9px 0 0 9px;
+
+  @media (pointer: coarse) {
+    min-height: 44px;
+  }
+}
+
+.tag-cloud-card__filter {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 28px;
+  min-height: 32px;
+  border-left: 1px solid var(--border);
+  border-radius: 0 9px 9px 0;
+  color: var(--text-soft);
+  cursor: var(--interaction-cursor, pointer);
+
+  @media (pointer: coarse) {
+    width: 44px;
+    min-height: 44px;
+  }
+
+  &:hover,
+  &[aria-pressed='true'] {
+    color: var(--accent-text);
+    background: var(--accent-soft);
   }
 }
 

@@ -18,7 +18,7 @@
               :available="!!metadata"
               :pending="metadataPending"
               :error="!!metadataError"
-              :active-tag="selectedTag"
+              :active-tag="activeTagName"
               :active-category="selectedCategory"
               @select-tag="onTagSelect"
               @select-category="onCategorySelect"
@@ -89,7 +89,7 @@
             :available="!!metadata"
             :pending="metadataPending"
             :error="!!metadataError"
-            :active-tag="selectedTag"
+            :active-tag="activeTagName"
             :active-category="selectedCategory"
             @select-tag="onTagSelect"
             @select-category="onCategorySelect"
@@ -109,18 +109,26 @@ import { socialProfiles } from '~/utils/absoluteUrl'
 const { settings: siteSettings } = useSiteSettings()
 const route = useRoute()
 const siteUrl = useSiteUrl()
+const homeTitle = computed(() => siteSettings.value.seoTitle || siteSettings.value.name)
+const homeDescription = computed(() => siteSettings.value.seoDescription || siteSettings.value.description)
+const homeImage = useDefaultShareImage()
+// 目录在下方与文章并行读取。标题先注册，目录返回后再把 slug 换成标签名称。
+const postSummary = shallowRef<{ tags: Array<{ label: string; slug: string }> } | null>(null)
 // 分页与筛选页采用「自引用 canonical + 区分标题」：每页内容不同，不统一指向第一页；
 // canonical 只保留 category/tag/page 三个规范参数，去掉显示模式与跟踪参数。
 const listSeo = computed(() => {
   const { page, tag, category } = readPostListQuery(route.query)
-  const label = [category ? `分类 ${category}` : '', tag ? `标签 ${tag}` : '', page > 1 ? `第 ${page} 页` : '']
+  const tagLabel = postSummary.value?.tags.find((item) => item.slug === tag)?.label ?? tag
+  const label = [
+    category ? `分类 ${category}` : '',
+    tagLabel ? `标签 ${tagLabel}` : '',
+    page > 1 ? `第 ${page} 页` : '',
+  ]
     .filter(Boolean)
     .join(' · ')
   const search = new URLSearchParams(writePostListQuery({ page, tag, category, mode: 'pagination' })).toString()
   return { label, canonical: `/${search ? `?${search}` : ''}` }
 })
-const homeTitle = computed(() => siteSettings.value.seoTitle || siteSettings.value.name)
-const homeDescription = computed(() => siteSettings.value.seoDescription || siteSettings.value.description)
 usePageSeo({
   title: () => listSeo.value.label || homeTitle.value,
   shareTitle: () => (listSeo.value.label ? `${listSeo.value.label} - ${siteSettings.value.name}` : homeTitle.value),
@@ -128,7 +136,6 @@ usePageSeo({
   type: 'website',
   canonical: () => listSeo.value.canonical,
 })
-const homeImage = useDefaultShareImage()
 useJsonLd('home', () => ({
   '@context': 'https://schema.org',
   '@graph': [
@@ -186,13 +193,25 @@ const {
   refresh: refreshMetadata,
 } = metadataResult
 const { posts, total: postTotal, pending: postsPending, error: postsError, refresh: refreshPosts } = postsResult
-const activeFilterLabel = computed(() => [selectedCategory.value, selectedTag.value].filter(Boolean).join(' · '))
+// 接口按 slug 筛选，卡片仍展示标签名称；保留元数据与文章的首屏并行读取。
+const activeTagName = computed(
+  () => metadata.value?.tags.find((tag) => tag.slug === selectedTag.value)?.label ?? selectedTag.value,
+)
+watch(
+  metadata,
+  (value) => {
+    postSummary.value = value ?? null
+  },
+  { immediate: true },
+)
+const activeFilterLabel = computed(() => [selectedCategory.value, activeTagName.value].filter(Boolean).join(' · '))
 async function retryArticles() {
   if (postsPending.value) return
   await Promise.all([refreshPosts(), ...(metadataError.value ? [refreshMetadata()] : [])])
 }
 function onTagSelect(tag: string) {
-  selectedTag.value = selectedTag.value === tag ? null : tag
+  const slug = metadata.value?.tags.find((item) => item.label === tag)?.slug ?? tag
+  selectedTag.value = activeTagName.value === tag ? null : slug
 }
 function onCategorySelect(category: string) {
   selectedCategory.value = selectedCategory.value === category ? null : category
