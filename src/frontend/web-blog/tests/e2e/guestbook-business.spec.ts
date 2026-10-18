@@ -39,12 +39,15 @@ async function adminApi(request: APIRequestContext) {
     }
   }
 }
+// 服务端拒绝打开不足 1 秒即提交的访客表单（MIN_FORM_ELAPSED_MS），提交前按真实访客的最短填写时长停留。
+const visitorFillPause = (page: Page) => page.waitForTimeout(1100)
 test('访客未知发送结果重试不重复，另一上下文和刷新读取一致', async ({ page, request, browser, baseURL }) => {
   const content = '一次留下来的留言 ' + randomUUID()
   await page.goto('/guestbook')
   await expect(page.getByRole('button', { name: '添加回应', exact: true }).first()).toBeEnabled()
   const input = page.getByRole('textbox', { name: '留言内容', exact: true })
   await input.fill(content)
+  await visitorFillPause(page)
   let attempts = 0
   await page.route('**/api/v1/guestbook', async (route) => {
     if (route.request().method() !== 'POST') return route.continue()
@@ -85,6 +88,7 @@ test('真实回复和回应持久化，隐藏父留言不泄露引用', async ({
   await expect(page.getByRole('button', { name: '赞，1 次回应', exact: true })).toHaveAttribute('aria-pressed', 'true')
   await page.getByRole('button', { name: /回复.*的留言/ }).click()
   await page.getByRole('textbox', { name: '留言内容', exact: true }).fill('子回复内容 ' + key)
+  await visitorFillPause(page)
   await page.getByRole('button', { name: '发送留言', exact: true }).click()
   await identify(page)
   await expect(page.getByRole('textbox', { name: '留言内容', exact: true })).toHaveValue('')
@@ -173,12 +177,14 @@ test('统计失败显示未知而非零，重试与实际公开聚合一致', as
   await page.getByRole('link', { name: '留言', exact: true }).click()
   const overview = page.locator('.guestbook-overview:visible')
   await expect(overview.getByRole('alert')).toBeVisible()
-  await expect(page.locator('.page-title__sub')).toHaveText('— 条公开留言')
+  // 副标题在留言数后附带博主在线状态，只断言留言数部分。
+  const count = page.locator('.page-title__sub > span').first()
+  await expect(count).toHaveText('— 条公开留言')
   await expect(page.locator('.message-bubble').first()).toBeVisible()
   failed = false
   await overview.getByRole('button', { name: '重试', exact: true }).click()
   const total = (await (await request.get('/api/v1/guestbook/metadata')).json()).data.stats.messages
-  await expect(page.locator('.page-title__sub')).toHaveText(`${total} 条公开留言`)
+  await expect(count).toHaveText(`${total.toLocaleString('zh-CN')} 条公开留言`)
   await expect(overview.getByRole('alert')).toHaveCount(0)
 })
 

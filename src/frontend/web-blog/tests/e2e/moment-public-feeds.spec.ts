@@ -157,6 +157,14 @@ test('独立订阅进程不转发私人身份，XML特殊字符安全，上游50
       response.end(JSON.stringify({ code: 1, message: '隔离上游暂不可用' }))
       return
     }
+    // 只模拟订阅实际依赖的两个上游接口；其他接口（如错误页布局读取的文章元数据）按不存在处理，
+    // 避免把动态样本当作任意接口的响应而误判 503 页面泄露。
+    const pathname = new URL(incoming.url!, 'http://upstream').pathname
+    if (pathname !== '/api/v1/site' && pathname !== '/api/v1/moments') {
+      response.statusCode = 404
+      response.end(JSON.stringify({ code: 404, message: '隔离上游未提供该接口' }))
+      return
+    }
     const data = incoming.url?.startsWith('/api/v1/site')
       ? { name: '来信 < & "站点" >', description: '日常 ]]> 与 <生活>' }
       : {
