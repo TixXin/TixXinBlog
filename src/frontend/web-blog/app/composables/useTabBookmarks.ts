@@ -125,6 +125,10 @@ export function useTabBookmarks() {
 
   /** 手动刷新单个书签的 favicon */
   async function refreshFavicon(id: string): Promise<boolean> {
+    if (!isLoggedIn.value || !currentUser.value) {
+      openLoginDrawer('login')
+      return false
+    }
     const bm = bookmarks.value.find((b) => b.id === id)
     if (!bm) return false
     const { settings } = useTabSettings()
