@@ -7,6 +7,8 @@ test.beforeEach(({ page, browserName }) => prepareMotionCapture(page, browserNam
 // commit 由渲染进程上报，浏览器进程把新文档登记为活动帧可能稍晚；慢机器上此刻读取会话历史会报
 // “Not attached to an active page”。等浏览器的当前历史项与已提交地址一致，再立即执行原生前进后退。
 async function waitForBrowserCommit(page: Page) {
+  // 只有 Chromium 有分进程登记的时差，也只有它提供 CDP；WebKit 等浏览器直接继续
+  if (page.context().browser()?.browserType().name() !== 'chromium') return
   const session = await page.context().newCDPSession(page)
   try {
     await expect
