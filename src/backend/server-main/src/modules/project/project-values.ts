@@ -11,6 +11,7 @@ export function projectUrl(value: string) {
     throw new BadRequestException('项目链接不能包含空白、控制字符或反斜杠')
   let normalized: string
   try {
+    if (!/^https?:\/\/[^/]/i.test(input)) throw new Error('invalid')
     const url = new URL(input)
     if (!['http:', 'https:'].includes(url.protocol) || !url.hostname || url.username || url.password)
       throw new Error('invalid')
