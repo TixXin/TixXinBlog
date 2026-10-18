@@ -14,6 +14,7 @@ async function captureRequest({
   status = 200,
   attachedError = false,
   traceId = undefined as string | undefined,
+  referer = undefined as string | undefined,
 } = {}) {
   const lines: string[] = []
   const options = createLoggingOptions('debug', development).pinoHttp
@@ -32,13 +33,15 @@ async function captureRequest({
       headers: {
         ...(probe ? { 'x-tixxin-dev-probe': '1' } : {}),
         ...(traceId ? { 'x-trace-id': traceId } : {}),
+        ...(referer ? { referer } : {}),
         authorization: 'Bearer logging-test-secret',
       },
     })
     await response.text()
     requestId = response.headers.get('x-request-id')
     return lines.map(
-      (line) => JSON.parse(line) as { level: number; req: { id: string; headers: Record<string, string> } },
+      (line) =>
+        JSON.parse(line) as { level: number; req: { id: string; url: string; headers: Record<string, string> } },
     )
   } finally {
     await new Promise<void>((resolve, reject) => server.close((error) => (error ? reject(error) : resolve())))
@@ -73,6 +76,23 @@ describe('巡检访问日志', () => {
     const logs = await captureRequest(options)
     expect(logs).toHaveLength(1)
     expect(logs[0]?.level).toBe(expected)
+  })
+})
+
+describe('预览凭据日志脱敏', () => {
+  it.each(['token', '%74oken', 'TOKEN'])('成功与失败请求均移除 %s 查询值和来源链接', async (name) => {
+    for (const status of [200, 404, 500]) {
+      const logs = await captureRequest({
+        path: `/api/v1/posts/preview?${name}=private-draft-secret&token=another-secret`,
+        referer: 'https://blog.example/posts/preview?token=referer-secret',
+        status,
+      })
+      expect(logs).toHaveLength(1)
+      // 日志只保留路径，整段查询字符串（含任意大小写或编码的 token）都不进入日志
+      expect(logs[0]?.req.url).toBe('/api/v1/posts/preview')
+      expect(logs[0]?.req.headers.referer).toBe('[REDACTED]')
+      expect(JSON.stringify(logs)).not.toMatch(/private-draft-secret|another-secret|referer-secret/)
+    }
   })
 })
 

@@ -12,12 +12,14 @@ import { QueryPostArchiveDto, QueryPostMetadataDto } from './dto/query-post-arch
 import { QueryPostNavigationDto } from './dto/query-post-navigation.dto'
 import { ArticleDetailDto, PostListResult, PostService, PostViewResult } from './post.service'
 import { PostDiscoveryService } from './post-discovery.service'
+import { PostPreviewService } from './post-preview.service'
 
 @Controller('posts')
 export class PostController {
   constructor(
     private readonly postService: PostService,
     private readonly discovery: PostDiscoveryService,
+    private readonly previews: PostPreviewService,
   ) {}
 
   @Get()
@@ -38,6 +40,11 @@ export class PostController {
   @Get('by-slug/:slug')
   bySlug(@Param('slug') slug: string): Promise<ArticleDetailDto> {
     return this.postService.findBySlug(slug)
+  }
+
+  @Get('preview')
+  preview(@Query('token') token: unknown) {
+    return this.previews.read(token)
   }
 
   @Get(':id/navigation')

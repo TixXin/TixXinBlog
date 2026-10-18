@@ -38,6 +38,11 @@ describe('auditDescriptor', () => {
       resourceId: '12',
     })
     expect(auditDescriptor('/api/v1/admin/posts/12', 'DELETE')).toMatchObject({ action: 'post.archive' })
+    expect(auditDescriptor('/api/v1/admin/posts/12/preview-link', 'POST')).toEqual({
+      action: 'post.preview-link',
+      resourceType: 'post',
+      resourceId: '12',
+    })
     expect(auditDescriptor('/api/v1/admin/posts/12/revisions', 'POST')).toMatchObject({ action: 'post.revision' })
     expect(auditDescriptor('/api/v1/admin/posts/batch/execute', 'POST')).toMatchObject({
       action: 'post.batch.execute',
@@ -99,6 +104,14 @@ describe('auditDescriptor', () => {
 })
 
 describe('auditResult', () => {
+  it('生成预览链接的令牌及到期时间不写入审计', () => {
+    expect(auditResult({}, { token: 'private-preview-token', expiresAt: '2026-10-25T00:00:00.000Z' })).toEqual({
+      summary: { fields: [] },
+      resourceId: undefined,
+      partial: false,
+      failed: false,
+    })
+  })
   it('只保留白名单字段名，不记录正文、密码和令牌值', () => {
     const result = auditResult(
       { title: '标题', contentRaw: 'secret-body', password: 'secret-password', tags: ['a'], revision: 3 },

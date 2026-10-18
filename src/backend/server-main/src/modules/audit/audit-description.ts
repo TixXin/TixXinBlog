@@ -14,6 +14,7 @@ export const auditActions: Record<string, string> = {
   'session.others': '撤销其他会话',
   'post.create': '新建文章',
   'post.update': '保存文章',
+  'post.preview-link': '生成草稿预览链接',
   'post.archive': '归档文章',
   'post.restore': '恢复文章',
   'post.revision': '恢复文章修订',
@@ -99,15 +100,17 @@ export function auditDescriptor(path: string, method: string) {
       } else {
         resourceType = 'post'
         action =
-          parts[3] === 'revisions'
-            ? 'post.revision'
-            : parts[3] === 'restore'
-              ? 'post.restore'
-              : method === 'DELETE'
-                ? 'post.archive'
-                : method === 'POST'
-                  ? 'post.create'
-                  : 'post.update'
+          parts[3] === 'preview-link'
+            ? 'post.preview-link'
+            : parts[3] === 'revisions'
+              ? 'post.revision'
+              : parts[3] === 'restore'
+                ? 'post.restore'
+                : method === 'DELETE'
+                  ? 'post.archive'
+                  : method === 'POST'
+                    ? 'post.create'
+                    : 'post.update'
       }
     } else if (resourceType === 'comments') {
       resourceType = 'comment'

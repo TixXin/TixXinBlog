@@ -5,6 +5,8 @@
  * @since 2026-04-06
  */
 
+import { isPostPreviewPath } from '~/utils/postPreviewPrivacy'
+
 interface AnalyticsConfig {
   provider: 'umami' | 'plausible' | ''
   siteId: string
@@ -18,6 +20,8 @@ function prefersNoTracking() {
 }
 
 export function useAnalytics() {
+  // 预览页面不加载第三方脚本，避免自动页面统计采集令牌及未发布内容。
+  if (isPostPreviewPath(useRoute().path)) return
   const config = useRuntimeConfig()
   const analytics = (config.public?.analytics ?? {}) as Partial<AnalyticsConfig>
 
@@ -47,6 +51,7 @@ type WindowWithAnalytics = Window & {
 
 export function trackEvent(name: string, data?: Record<string, string | number>) {
   if (import.meta.server) return
+  if (isPostPreviewPath(window.location.pathname)) return
   const w = window as WindowWithAnalytics
   if (w.umami) {
     w.umami.track(name, data)

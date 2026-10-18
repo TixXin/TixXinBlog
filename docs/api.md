@@ -88,6 +88,8 @@
 | `POST /admin/posts/:id/revisions/:historical/restore`、`POST /admin/posts/:id/restore`       | 恢复历史内容或回收记录                     |
 | `POST /admin/posts/batch/preview`、`POST /admin/posts/batch/execute`                         | 明确编号及版本的批量预览和执行             |
 | `GET /admin/posts/batch`、`GET /admin/posts/batch/:ticket`                                   | 最近批量任务及原票据结果                   |
+| `POST /admin/posts/:id/preview-link`                                                         | 为未删除草稿签发 7 天预览链接              |
+| `GET /posts/preview`                                                                         | 校验签名后读取最新已保存草稿               |
 | `GET /admin/taxonomy`                                                                        | 专栏和标签                                 |
 | `POST /admin/taxonomy/:kind`、`PATCH/DELETE /admin/taxonomy/:kind/:id`                       | 新增、重命名和删除专栏或标签               |
 | `GET /admin/comments`、`GET/PATCH /admin/comments/policy`                                    | 评论管理与版本化审核策略                   |
@@ -108,6 +110,10 @@
 `GET /posts/:id/navigation` 接受可选 `scope`：省略或 `all` 保持全站顺序，`folder` 只查询当前文章所属专栏，`auto` 先查同专栏、专栏两侧均为空（或文章无专栏）时在同一请求内回退全站，其他值返回 400。查询参数按 DTO 白名单校验（全局 `forbidNonWhitelisted`），除 `scope` 外携带任何其他查询参数（如统计或缓存用的附加参数）同样返回 400，调用方不要追加未声明的参数。响应为 `{ prev, next }`，每侧为文章摘要或 `null`；`auto` 另带 `fallback`，`true` 表示结果来自全站。仅包含已发布且未回收文章，当前文章不可公开时返回 404。沿用发布时间、编号倒序的列表顺序：`prev` 是较新的最近一篇，`next` 是较旧的最近一篇，同发布时间按编号区分。`folder` 模式下当前文章无专栏或专栏内无其他公开文章时返回双 `null`，接口自身不回退全站。文章详情页使用 `auto`：数字地址与详情并行请求，自定义地址在详情解析出编号后请求；`fallback` 为 `false` 且文章有专栏时按详情的专栏名标注，否则不标注。专栏内只有一侧有相邻文章时保留另一侧为空；请求失败显示加载错误，不当作空结果。
 
 评论与留言批量接口请求体为 `items: [{ id, revision }]`（1–100 条、编号不重复），审核另带 `status`；评论用 `POST`，留言用 `PATCH/DELETE`（删除的 JSON 体同样放 `items`）。整批在单个事务内执行，逐条校验版本：不存在或版本已变化的项跳过并在 `results[].reason` 返回 `not_found`/`conflict`，其余项照常生效；响应含 `successCount/failedCount`，评论删除另含级联回复在内的 `deleted`。批量审核只改选中项自身状态，以版本号代替单条接口的影响范围指纹；整批记一条汇总审计，评论使用 `comment.batch.moderate` / `comment.batch.delete`，留言使用 `guestbook.batch.moderate` / `guestbook.batch.delete`，后台显示对应的“批量审核/删除评论/留言”标签，部分失败记为 partial。已有单条动作和历史审计记录保持原有含义，不回填历史批量记录。
+
+`POST /admin/posts/:id/preview-link` 只接受已登录管理员和当前内容上下文，不为已发布、已归档或已回收文章签发。响应是 `{ token, expiresAt }`：`expiresAt` 为签发后 7 天的 ISO UTC 时间。令牌是无状态 HMAC，由部署访问密钥 `JWT_ACCESS_SECRET` 派生出用途专用密钥后签名，不写入数据库，也不进入审计摘要或访问日志。载荷只绑定文章编号、当时的内容代次和到期时间，不绑定修订号。因此保存修改后旧链接仍然有效，直到到期，并返回最新已保存的正文；重新签发不会撤销此前的链接。发布、归档、回收，或完整恢复/重建轮换内容代次，以及轮换 `JWT_ACCESS_SECRET`，都会使旧链接失效。
+
+`GET /posts/preview` 通过查询参数 `token` 传递签名，公开读取，不需要登录，也不接受访客身份。签名、格式、到期、代次不匹配或文章已不可预览时统一返回 404，文案为「预览链接无效或已过期」，不区分原因。成功时沿用公开详情投影，并强制 `commentEnabled: false`、`seoNoindex: true`；不增加浏览、不写入点赞，评论接口对草稿保持拒绝。成功与失败响应都带 `Cache-Control: private, no-store`、`X-Robots-Tag: noindex, nofollow, noarchive` 和 `Referrer-Policy: no-referrer`。日志只记录请求路径，不含查询字符串，来源地址整体脱敏。前台页面为 `/posts/preview`，顶部标明「预览，尚未发布」，不收录、不统计、不开放评论。
 
 `GET /posts/:id` 与 `GET /posts/by-slug/:slug` 返回公开详情：`tags` 与列表同为 `{ label, color }` 数组；`updatedAt` 是内容最后修订时间（当前修订快照的写入时间，早于发布时间或缺少快照时取发布时间），不随浏览、点赞或评论计数变化，用于 `dateModified`、`article:modified_time` 与站点地图 `lastmod`。有 Markdown 原文时只返回 `contentRaw`，不再返回结构化 `content`；没有原文的旧文章仍返回 `content` 供结构化渲染。`toc` 始终由结构化正文中的标题生成。摘要为空时额外返回 `excerpt`（首个正文段落前 160 字）作为描述兜底。
 

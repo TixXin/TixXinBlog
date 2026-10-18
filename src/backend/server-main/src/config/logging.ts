@@ -96,6 +96,8 @@ export function createLoggingOptions(level = 'info', development = false): Param
           'res.headers["set-cookie"]',
           'req.headers["x-visitor-id"]',
           ...sensitiveFields.flatMap((field) => [field, `req.body.${field}`]),
+          'req.headers.referrer',
+          'req.query.token',
         ],
         censor: REDACTED,
       },
