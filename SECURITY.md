@@ -60,3 +60,15 @@
 ## 维护者备注
 
 私密漏洞报告默认是关闭的。仓库所有者需要先在 **Settings → Code security and analysis → Private vulnerability reporting** 中启用该功能，上面第 1 步描述的入口才会出现在 Security 页签中。在启用之前，本页给出的上报路径不可用。
+
+## 依赖审计例外
+
+CI 与发布流程执行 `pnpm audit --prod --audit-level=high`。以下公告上游暂无修复版本，经评估不影响运行时，记录在根 `package.json` 的 `pnpm.auditConfig.ignoreGhsas` 中；上游发布修复后应移除例外并升级：
+
+| 公告                              | 依赖链                           | 不影响运行时的原因                                    |
+| --------------------------------- | -------------------------------- | ----------------------------------------------------- |
+| GHSA-86w9-cpqp-85rv（node-forge） | Nuxt CLI → listhen               | 仅开发服务器生成本地 HTTPS 证书时使用，不进入生产产物 |
+| GHSA-vfj7-8cjw-p6xm（braces）     | MikroORM → globby → micromatch   | 只在启动时按仓库内固定模式发现实体，不处理外部输入    |
+| GHSA-hp3w-g68c-fv3c（sprintf-js） | MikroORM 迁移 → umzug → argparse | 仅迁移命令行解析使用，参数来自部署者本人              |
+
+间接依赖的安全版本通过根 `package.json` 的 `pnpm.overrides` 固定；升级 Nuxt 时需同时核对 `patches/` 中的补丁。

@@ -87,11 +87,11 @@
     "cookie-parser": "^1.4.7",
     "markdown-it": "^14.2.0",
     "nestjs-pino": "^4.6.1",
-    "nodemailer": "^10.0.3",
+    "nodemailer": "^10.0.9",
     "pino-http": "^11.0.0",
     "reflect-metadata": "^0.2.2",
     "rxjs": "^7.8.2",
-    "sharp": "0.35.4",
+    "sharp": "0.35.5",
     "@tixxin/subscription-domain": "workspace:*"
   },
   "devDependencies": {
