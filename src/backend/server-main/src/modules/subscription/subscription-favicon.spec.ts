@@ -361,7 +361,11 @@ describe('favicon代理边界', () => {
         .toBuffer()
       response(png)
       expect((await service.fetch('https://github.com/path?private=1')).state).toBe('ready')
-      expect((await service.read(`${faviconKey('github.com')}.webp`)).length).toBeGreaterThan(0)
+      const image = await service.read(`${faviconKey('github.com')}.webp`)
+      // 公开 GET 只读取 WebP 字节，缓存状态及源地址不作为 JSON 元信息返回。
+      expect(Buffer.isBuffer(image)).toBe(true)
+      expect((await sharp(image).metadata()).format).toBe('webp')
+      expect(image.equals(await normalizeFavicon(png))).toBe(true)
       await service.fetch('https://github.com')
       expect(requestMock).toHaveBeenCalledTimes(1)
       await expect(service.read('../secret')).rejects.toThrow()
