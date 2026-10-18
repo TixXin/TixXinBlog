@@ -10,17 +10,18 @@ import DOMPurify from 'isomorphic-dompurify'
 import type { TocItem } from '~/features/post/types'
 import { codeLanguageLabel, resolveCodeLanguage, type CodeHighlighter } from '~/utils/highlightCode'
 import { managedImageSrcset } from '~/utils/managedImage'
+import { markdownLinks, type MarkdownLinkEnvironment, type MarkdownLinkOptions } from '~/utils/markdownLinks'
 
-interface RenderEnvironment {
+interface RenderEnvironment extends MarkdownLinkEnvironment {
   headingIndex: number
   title?: string
   highlighter?: CodeHighlighter | null
 }
-export interface ArticleMarkdownOptions {
+export interface ArticleMarkdownOptions extends MarkdownLinkOptions {
   /** 已加载所需语言的高亮器；缺省时代码块按纯文本输出 */
   highlighter?: CodeHighlighter | null
 }
-const parser = new MarkdownIt({ html: false, linkify: true })
+const parser = new MarkdownIt({ html: false, linkify: true }).use(markdownLinks)
 type Token = ReturnType<MarkdownIt['parse']>[number]
 const escapeHtml = parser.utils.escapeHtml
 const normalize = (value: string) => value.replace(/\s+/g, ' ').trim()
@@ -110,10 +111,11 @@ export function renderArticleMarkdown(raw: string, title?: string, options: Arti
     headingIndex: 0,
     title,
     highlighter: options.highlighter,
+    markdownLinks: options,
   } satisfies RenderEnvironment)
   DOMPurify.addHook('uponSanitizeAttribute', filterStyle)
   try {
-    return DOMPurify.sanitize(html, { ADD_ATTR: ['loading', 'decoding'] })
+    return DOMPurify.sanitize(html, { ADD_ATTR: ['loading', 'decoding', 'target', 'rel'] })
   } finally {
     DOMPurify.removeHook('uponSanitizeAttribute', filterStyle)
   }

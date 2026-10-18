@@ -25,6 +25,7 @@ import type { ArticleLightboxImage } from '~/components/article/ImageLightbox.vu
 
 defineOptions({ inheritAttrs: false })
 const props = defineProps<{ content: string; title?: string }>()
+const siteUrl = useSiteUrl()
 
 const highlighter = shallowRef<CodeHighlighter | null>(null)
 const languages = computed(() => collectCodeLanguages(props.content))
@@ -47,7 +48,9 @@ watch(languages, (names, previous) => {
   if (import.meta.client && names.length && names.join() !== previous?.join()) void ensureHighlighter(names)
 })
 
-const html = computed(() => renderArticleMarkdown(props.content, props.title, { highlighter: highlighter.value }))
+const html = computed(() =>
+  renderArticleMarkdown(props.content, props.title, { highlighter: highlighter.value, siteUrl }),
+)
 
 // 复制按钮：客户端在每个代码块标题栏的挂载位渲染，SSR 只输出静态结构
 const rootRef = ref<HTMLElement | null>(null)

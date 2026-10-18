@@ -193,7 +193,8 @@ watch(
 )
 // 与日期筛选和日历采用同一 UTC 日期键。
 const formattedDate = computed(() => props.moment.date.slice(0, 10))
-const renderedContent = computed(() => renderMomentMarkdown(props.moment.content))
+const siteUrl = useSiteUrl()
+const renderedContent = computed(() => renderMomentMarkdown(props.moment.content, { siteUrl }))
 const isLiked = computed(() => props.moment.isLiked)
 const likes = computed(() => props.moment.likes)
 const commentCount = computed(() => props.moment.commentCount ?? props.moment.comments?.length ?? 0)

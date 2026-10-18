@@ -6,6 +6,8 @@
 -->
 
 <template>
+  <!-- Markdown 的静态 HTML 复用此 Lucide CSS 图标；由 Icon 在 SSR 与客户端统一注册，避免逐链接挂载。 -->
+  <span hidden aria-hidden="true"><Icon name="lucide:external-link" mode="css" /></span>
   <!-- 浏览器顶部加载进度条：NProgress 风格，与中央百分比共享 useLoadingProgress -->
   <CommonAppLoadingTopBar />
   <CommonAppLoadingScreen :visible="isLoading" />
