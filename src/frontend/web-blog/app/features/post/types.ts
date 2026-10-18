@@ -90,6 +90,13 @@ export interface RelatedPost {
   category: string
 }
 
+export type PostNavigationScope = 'all' | 'folder'
+
+export interface PostNavigation {
+  prev: RelatedPost | null
+  next: RelatedPost | null
+}
+
 export interface TocItem {
   id: string
   text: string

@@ -9,7 +9,7 @@
 
 import { mockArticleDetail, mockTocItems, mockPosts } from '~/features/post/mock'
 import { fetchArticleDetail, fetchPostNavigation, fetchRelatedPosts } from '~/features/post/api'
-import type { ArticleDetail, RelatedPost, TocItem } from '~/features/post/types'
+import type { ArticleDetail, PostNavigation, RelatedPost, TocItem } from '~/features/post/types'
 import { articleTocItems } from '~/utils/articleMarkdown'
 
 interface LoadedArticleSnapshot {
@@ -17,7 +17,8 @@ interface LoadedArticleSnapshot {
   base: string
   article: ArticleDetail
   relatedPosts: RelatedPost[]
-  navigation: { prev: RelatedPost | null; next: RelatedPost | null }
+  navigation: PostNavigation
+  navigationFolder: string | null
   discoveryError: boolean
   tocItems: TocItem[]
   excerpt: string
@@ -41,6 +42,7 @@ export async function useArticleDetail(id: string, options: { reuseLoaded?: bool
       article: computed(() => cached.article),
       relatedPosts: computed(() => cached.relatedPosts),
       navigation: computed(() => cached.navigation),
+      navigationFolder: computed(() => cached.navigationFolder),
       discoveryError: ref(cached.discoveryError),
       tocItems: computed(() => cached.tocItems),
       articleExcerpt: computed(() => cached.excerpt),
@@ -50,7 +52,8 @@ export async function useArticleDetail(id: string, options: { reuseLoaded?: bool
   let article: ComputedRef<ArticleDetail>
   let tocItems: Ref<TocItem[]>
   let relatedFromApi: Ref<RelatedPost[] | undefined> = ref()
-  let navigation: Ref<{ prev: RelatedPost | null; next: RelatedPost | null }> = ref({ prev: null, next: null })
+  let navigation: Ref<PostNavigation> = ref({ prev: null, next: null })
+  let navigationFolder: Ref<string | null> = ref(null)
   const discoveryError = ref(false)
 
   if (useMock) {
@@ -73,10 +76,14 @@ export async function useArticleDetail(id: string, options: { reuseLoaded?: bool
     })
     tocItems = ref<TocItem[]>(mockTocItems)
     const sorted = [...mockPosts].sort((a, b) => b.date.localeCompare(a.date) || b.id - a.id)
-    const position = sorted.findIndex((post) => String(post.id) === id)
+    const folder = article.value.category
+    const sameFolder = folder.trim() ? sorted.filter((post) => post.folder === folder) : []
+    const candidates = sameFolder.length > 1 ? sameFolder : sorted
+    navigationFolder.value = sameFolder.length > 1 ? folder : null
+    const position = candidates.findIndex((post) => String(post.id) === id)
     const map = (post: (typeof mockPosts)[number] | undefined): RelatedPost | null =>
-      post ? { id: String(post.id), title: post.title, date: post.date, category: post.folder } : null
-    navigation.value = { prev: map(sorted[position - 1]), next: map(sorted[position + 1]) }
+      post ? { id: String(post.id), slug: post.slug, title: post.title, date: post.date, category: post.folder } : null
+    navigation.value = { prev: map(candidates[position - 1]), next: map(candidates[position + 1]) }
   } else {
     const base = config.public.apiBaseUrl
     // 单个作用域内完成详情和补充读取，避免await之后再创建脱离页面的AsyncData订阅。
@@ -84,23 +91,32 @@ export async function useArticleDetail(id: string, options: { reuseLoaded?: bool
       const discoveryAbort = new AbortController()
       const requestSignal = AbortSignal.any([signal, requestScope.signal])
       const discoverySignal = AbortSignal.any([requestSignal, discoveryAbort.signal])
-      // 数字地址可与详情同时请求推荐与相邻文章；自定义地址须先由详情解析出数字 ID。
+      // 数字地址的推荐仍与详情并行；导航等详情确定专栏，自定义地址也复用解析后的数字 ID。
       // 详情失败时中止并丢弃已发起的补充读取，错误仍由详情决定。
-      const discovery = (postId: string) =>
-        Promise.allSettled([
-          fetchRelatedPosts(base, postId, discoverySignal),
-          fetchPostNavigation(base, postId, discoverySignal),
-        ])
-      const early = isNumericArticleId(id) ? discovery(id) : undefined
-      const detail = await fetchArticleDetail(base, id, requestSignal).catch((error: unknown) => {
+      const detailRead = fetchArticleDetail(base, id, requestSignal).catch((error: unknown) => {
         discoveryAbort.abort()
         throw error
       })
-      const [related, adjacent] = await (early ?? discovery(detail.id))
+      const relatedRead = isNumericArticleId(id)
+        ? fetchRelatedPosts(base, id, discoverySignal)
+        : detailRead.then((detail) => fetchRelatedPosts(base, detail.id, discoverySignal))
+      const navigationRead = detailRead.then(async (detail) => {
+        const folder = detail.category
+        if (folder.trim()) {
+          const adjacent = await fetchPostNavigation(base, detail.id, discoverySignal, 'folder')
+          if (adjacent.prev || adjacent.next) return { navigation: adjacent, folder }
+        }
+        // 只在专栏两侧都为空时回退；读取失败继续交给错误态，不混合两种范围的相邻文章。
+        return { navigation: await fetchPostNavigation(base, detail.id, discoverySignal), folder: null }
+      })
+      const discovery = Promise.allSettled([relatedRead, navigationRead])
+      const detail = await detailRead
+      const [related, adjacent] = await discovery
       return {
         detail,
         related: related.status === 'fulfilled' ? related.value : [],
-        navigation: adjacent.status === 'fulfilled' ? adjacent.value : { prev: null, next: null },
+        navigation: adjacent.status === 'fulfilled' ? adjacent.value.navigation : { prev: null, next: null },
+        navigationFolder: adjacent.status === 'fulfilled' ? adjacent.value.folder : null,
         discoveryError: related.status === 'rejected' || adjacent.status === 'rejected',
       }
     })
@@ -117,6 +133,7 @@ export async function useArticleDetail(id: string, options: { reuseLoaded?: bool
     const data = detailResult.data
     relatedFromApi = computed(() => data.value?.related ?? [])
     navigation = computed(() => data.value?.navigation ?? { prev: null, next: null })
+    navigationFolder = computed(() => data.value?.navigationFolder ?? null)
     discoveryError.value = data.value!.discoveryError
     article = computed<ArticleDetail>(() => data.value!.detail)
     tocItems = computed<TocItem[]>(() => articleTocItems(data.value?.detail.toc ?? [], data.value?.detail.title ?? ''))
@@ -158,6 +175,7 @@ export async function useArticleDetail(id: string, options: { reuseLoaded?: bool
       article: article.value,
       relatedPosts: relatedPosts.value,
       navigation: navigation.value,
+      navigationFolder: navigationFolder.value,
       discoveryError: discoveryError.value,
       tocItems: tocItems.value,
       excerpt: articleExcerpt.value,
@@ -167,6 +185,7 @@ export async function useArticleDetail(id: string, options: { reuseLoaded?: bool
     article,
     relatedPosts,
     navigation,
+    navigationFolder,
     discoveryError,
     tocItems,
     articleExcerpt,

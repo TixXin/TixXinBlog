@@ -7,6 +7,7 @@ import { Injectable, NotFoundException } from '@nestjs/common'
 import { Post } from '../../entities/post.entity'
 import { visibleCommentSql } from '../comment/comment-visibility'
 import type { QueryPostArchiveDto } from './dto/query-post-archive.dto'
+import type { PostNavigationScope } from './dto/query-post-navigation.dto'
 
 interface ArchiveRow {
   slug?: string
@@ -127,13 +128,16 @@ export class PostDiscoveryService {
     }
   }
 
-  async navigation(id: number) {
+  async navigation(id: number, scope: PostNavigationScope = 'all') {
     const current = await this.em.findOne(
       Post,
       { id, status: 'published', deletedAt: null },
-      { fields: ['id', 'publishedAt'] },
+      { fields: ['id', 'publishedAt', 'folder'] },
     )
     if (!current) throw new NotFoundException('文章不存在')
+    // 同专栏模式不混入全站文章，是否回退由调用方统一决定。
+    if (scope === 'folder' && !current.folder?.trim()) return { prev: null, next: null }
+    const folderFilter = scope === 'folder' ? { folder: current.folder } : {}
     const fields = ['id', 'slug', 'title', 'publishedAt', 'folder'] as const
     const [prev, next] = await Promise.all([
       this.em.findOne(
@@ -141,6 +145,7 @@ export class PostDiscoveryService {
         {
           status: 'published',
           deletedAt: null,
+          ...folderFilter,
           $or: [{ publishedAt: { $gt: current.publishedAt } }, { publishedAt: current.publishedAt, id: { $gt: id } }],
         },
         { fields: [...fields], orderBy: { publishedAt: 'asc', id: 'asc' } },
@@ -150,6 +155,7 @@ export class PostDiscoveryService {
         {
           status: 'published',
           deletedAt: null,
+          ...folderFilter,
           $or: [{ publishedAt: { $lt: current.publishedAt } }, { publishedAt: current.publishedAt, id: { $lt: id } }],
         },
         { fields: [...fields], orderBy: { publishedAt: 'desc', id: 'desc' } },

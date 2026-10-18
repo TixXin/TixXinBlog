@@ -16,6 +16,8 @@ import type {
   PostArchivePage,
   PostArchiveQuery,
   PostPage,
+  PostNavigation,
+  PostNavigationScope,
   RelatedPost,
   TocItem,
 } from './types'
@@ -106,12 +108,15 @@ export async function fetchPostNavigation(
   baseUrl: string,
   id: string,
   signal?: AbortSignal,
-): Promise<{ prev: RelatedPost | null; next: RelatedPost | null }> {
+  scope: PostNavigationScope = 'all',
+): Promise<PostNavigation> {
   return unwrap(
-    await $fetch<ApiEnvelope<{ prev: RelatedPost | null; next: RelatedPost | null }>>(
-      `${requireBaseUrl(baseUrl)}/posts/${encodeURIComponent(id)}/navigation`,
-      { signal, timeout: 10000, retry: 0 },
-    ),
+    await $fetch<ApiEnvelope<PostNavigation>>(`${requireBaseUrl(baseUrl)}/posts/${encodeURIComponent(id)}/navigation`, {
+      query: { scope },
+      signal,
+      timeout: 10000,
+      retry: 0,
+    }),
   )
 }
 

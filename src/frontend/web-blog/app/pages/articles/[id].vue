@@ -90,7 +90,12 @@
           <LazyArticleContent v-else :sections="article.content ?? []" />
         </div>
         <CommonRelatedContent :items="article.relatedContent" />
-        <ArticleNav :prev="navigation.prev" :next="navigation.next" :error="discoveryError" />
+        <ArticleNav
+          :prev="navigation.prev"
+          :next="navigation.next"
+          :folder="navigationFolder"
+          :error="discoveryError"
+        />
         <ArticleCommentSection
           v-model="draft"
           :comments="comments"
@@ -167,10 +172,8 @@ const routeArticleId = route.params.id as string
 const earlyComments = isNumericArticleId(routeArticleId) ? useArticleComments(routeArticleId) : undefined
 // 详情失败时页面直接抛错，提前发起的评论结果被丢弃，这里只避免未处理的拒绝。
 earlyComments?.catch(() => undefined)
-const { article, relatedPosts, navigation, discoveryError, tocItems, articleExcerpt } = await useArticleDetail(
-  routeArticleId,
-  { reuseLoaded: switchingState.value === 'loading' },
-)
+const { article, relatedPosts, navigation, navigationFolder, discoveryError, tocItems, articleExcerpt } =
+  await useArticleDetail(routeArticleId, { reuseLoaded: switchingState.value === 'loading' })
 requestScope.assertActive()
 const canonicalPath = articlePath(article.value)
 if (route.path !== canonicalPath)
