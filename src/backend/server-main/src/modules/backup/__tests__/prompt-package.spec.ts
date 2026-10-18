@@ -62,7 +62,7 @@ describe('图片提示词内容包', () => {
   it('完整保留提示词换行及外链编码语义', async () => {
     const input = bundle()
     const parsed = await parse(input)
-    expect(parsed.version).toBe(12)
+    expect(parsed.version).toBe(13)
     expect(parsed.prompts).toEqual(input.prompts)
   })
 

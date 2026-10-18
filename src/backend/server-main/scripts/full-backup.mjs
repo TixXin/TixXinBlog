@@ -784,6 +784,56 @@ export async function restoreFullBackup(path, { output } = {}) {
         verified: true,
       }
     }
+    // 闪念评论审核状态已计入全表行摘要；这里额外核对取值与所属闪念，旧备份没有该列时只报告缺列。
+    let flashCommentIntegrity
+    if (actualTables.has('flash_comment')) {
+      const statusColumn =
+        Number(
+          await psql(
+            container,
+            database,
+            user,
+            password,
+            "select count(*) from information_schema.columns where table_schema='public' and table_name='flash_comment' and column_name='status'",
+          ),
+        ) === 1
+      const invalid = Number(
+        await psql(
+          container,
+          database,
+          user,
+          password,
+          `select (select count(*) from flash_comment c left join flash_note n on n.id=c.flash_note_id where n.id is null)${
+            statusColumn
+              ? " + (select count(*) from flash_comment where status not in ('published','pending','hidden'))"
+              : ''
+          };`,
+        ),
+      )
+      if (invalid) throw new Error('恢复后的闪念评论审核状态或所属闪念校验失败')
+      const statusCount = async (status) =>
+        Number(
+          await psql(
+            container,
+            database,
+            user,
+            password,
+            `select count(*) from flash_comment where status='${status}'`,
+          ),
+        )
+      flashCommentIntegrity = {
+        comments: counts.flash_comment,
+        statusColumn,
+        ...(statusColumn
+          ? {
+              published: await statusCount('published'),
+              pending: await statusCount('pending'),
+              hidden: await statusCount('hidden'),
+            }
+          : {}),
+        verified: true,
+      }
+    }
     await mkdir(join(target, 'media'), { mode: 0o700 })
     for (const media of manifest.media) {
       const file = join(target, 'media', media.key)
@@ -875,6 +925,7 @@ export async function restoreFullBackup(path, { output } = {}) {
       linkIntegrity,
       promptIntegrity,
       subscriptionIntegrity,
+      flashCommentIntegrity,
       mediaFiles: manifest.media.length,
       revokedRestoredSessions: true,
       requireFreshContentContext: true,

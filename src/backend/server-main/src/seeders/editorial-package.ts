@@ -57,7 +57,7 @@ export async function buildEditorialPackage(
     throw new Error('本批候选定义为零媒体依赖；发现非预期图片必须先人工复核')
   const subset: ContentPackage = {
     format: 'tixxin-content',
-    version: 12,
+    version: 13,
     omittedRelations: 0,
     exportedAt: source.exportedAt,
     mediaIncluded: false,
