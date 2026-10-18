@@ -1,12 +1,12 @@
 <!--
   @file SubscribeCard.vue
-  @description 文章、闪念与朋友圈 RSS 订阅入口，并说明邮件订阅尚未开放
+  @description 文章、闪念与朋友圈 RSS 订阅入口，并说明邮件订阅尚未开放；embedded 用于侧栏隐藏时的紧凑抽屉
   @author TixXin
   @since 2025-03-17
 -->
 
 <template>
-  <section class="card subscribe-card">
+  <section class="card subscribe-card" :class="{ 'subscribe-card--embedded': embedded }">
     <div class="subscribe-card__decor" />
     <div class="subscribe-card__content">
       <h3 class="subscribe-card__title">
@@ -25,6 +25,11 @@
   </section>
 </template>
 
+<script setup lang="ts">
+// 侧栏卡片只在宽屏显示；侧栏隐藏时页面把同一订阅内容放进紧凑抽屉，此时不受宽屏断点限制
+withDefaults(defineProps<{ embedded?: boolean }>(), { embedded: false })
+</script>
+
 <style lang="scss" scoped>
 .subscribe-card {
   padding: 1.25rem;
@@ -33,6 +38,11 @@
   display: none;
 
   @media (min-width: $breakpoint-lg) {
+    display: block;
+  }
+
+  // 抽屉与筛选卡片同列排布，任何宽度都显示
+  &--embedded {
     display: block;
   }
 }

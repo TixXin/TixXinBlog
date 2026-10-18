@@ -79,4 +79,17 @@ describe('RSS 订阅入口', () => {
     expect(wrapper.get('.subscribe-card__desc').text()).toContain('文章、闪念和朋友圈')
     expect(wrapper.get('.subscribe-card__desc').text()).toContain('邮件订阅尚未开放')
   })
+
+  it('抽屉形态保留三个订阅源，并标记为不受宽屏断点隐藏', async () => {
+    const wrapper = await mountSuspended(SubscribeCard, { props: { embedded: true } })
+    wrappers.push(wrapper)
+    expect(wrapper.get('section').classes()).toContain('subscribe-card--embedded')
+    expect(wrapper.findAll('a').map((link) => link.attributes('href'))).toEqual(feeds.map((feed) => feed.href))
+  })
+
+  it('侧栏形态不带抽屉标记，保持只在宽屏侧栏出现', async () => {
+    const wrapper = await mountSuspended(SubscribeCard)
+    wrappers.push(wrapper)
+    expect(wrapper.get('section').classes()).not.toContain('subscribe-card--embedded')
+  })
 })
