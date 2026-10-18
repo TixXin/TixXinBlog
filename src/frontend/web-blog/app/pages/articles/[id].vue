@@ -24,6 +24,12 @@
         :read-time="article.readTime"
       />
       <div class="article-page__inner">
+        <ArticleReadingResume
+          v-if="resumeProgress !== null"
+          :progress="resumeProgress"
+          :read-time="article.readTime"
+          @resume="resumeReading"
+        />
         <p v-if="isMockArticle" class="article-page__demo-note">
           演示文章：正文为通用排版示例，不代表标题对应的正式内容。
         </p>
@@ -223,7 +229,11 @@ const {
 } = useArticleInteraction(article.value.id, article.value)
 const { addToHistory } = useReadingHistory()
 
-const { progress } = useReadingProgress(scrollRoot, readingContent)
+const { progress, resumeProgress, resumeReading } = useReadingProgress(
+  scrollRoot,
+  readingContent,
+  () => article.value.id,
+)
 const { activeId } = useTableOfContents(() => tocItems.value)
 
 onMounted(() => {
