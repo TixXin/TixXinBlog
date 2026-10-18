@@ -42,6 +42,7 @@
 </template>
 
 <script setup lang="ts">
+import { markdownPlainText } from '~/utils/markdownPlainText'
 import type { FlashRecollection } from '~/features/flash/types'
 
 const props = defineProps<{
@@ -78,8 +79,9 @@ onMounted(() => {
 
 const hasContent = computed(() => !!throwback.value || !!randomNote.value)
 
+// 侧栏不渲染富文本，先去掉 Markdown 标记，避免露出 `- [x]`、`**` 等原始符号
 function truncate(s: string, n: number) {
-  const t = s.replace(/\s+/g, ' ')
+  const t = markdownPlainText(s)
   return t.length > n ? `${t.slice(0, n)}…` : t
 }
 
