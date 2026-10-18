@@ -1,7 +1,9 @@
-# 持续集成：只读检出源码，同一分支或 PR 的新提交取消过时检查。
+# 持续集成：只读检出源码，同一分支或 PR 的新提交取消过时检查；也供 Release 在标签提交上复用。
 name: CI
 
 on:
+  # Release 在标签提交上调用，不受下方路径过滤影响。
+  workflow_call:
   push:
     branches: [main]
     paths-ignore:
@@ -15,7 +17,8 @@ permissions:
   contents: read
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
+  # 被 Release 调用时 github.workflow 取调用方名称，固定前缀避免与 Release 及另一份 CI 共用并发组而互相取消。
+  group: ci-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
@@ -147,3 +150,67 @@ jobs:
 
       - name: Audit Dependencies
         run: pnpm audit --prod --audit-level=high
+
+  webkit-smoke:
+    name: WebKit Core E2E
+    runs-on: ubuntu-latest
+    # 含依赖安装、WebKit 系统库、两端生产构建，以及两个完整 spec。上限只约束本 job。
+    timeout-minutes: 60
+    env:
+      DATABASE_URL: postgres://tixxin:tixxin@localhost:5432/tixxin_blog
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: tixxin
+          POSTGRES_PASSWORD: tixxin
+          POSTGRES_DB: tixxin_blog
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U tixxin -d tixxin_blog"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 10
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+
+      - uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4.3.0
+
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: 25
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
+
+      - name: Install Corepack
+        run: npm install --global corepack@0.34.6
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: Install WebKit
+        run: pnpm --filter web-blog exec playwright install --with-deps webkit
+
+      - name: Build Frontend
+        run: pnpm build
+
+      - name: Build Backend for Browser Tests
+        run: pnpm --filter server-main build
+
+      # 核心发布、评论、三主题与管理闭环；保留整个文件的断言和代表数据。
+      - name: WebKit Blog Core on Isolated Database
+        run: pnpm test:e2e:run blog.spec.ts --browser=webkit
+
+      # 单独运行以重新建库，避免前一个文件的写入污染水合与历史导航验收。
+      - name: WebKit Hydration and History on Isolated Database
+        run: pnpm test:e2e:run hydration-history.spec.ts --browser=webkit
+
+      - name: WebKit Failure Artifacts
+        if: failure()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: webkit-e2e-failure
+          path: .playwright-mcp/e2e-results
+          retention-days: 5
