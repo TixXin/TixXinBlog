@@ -1,0 +1,92 @@
+# @file lighthouse.yml
+# @description 手动采集生产前端的移动端性能预算，操作与边界见 docs/lighthouse-ci.md。
+name: Lighthouse CI
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: lighthouse-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  lighthouse:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    env:
+      NUXT_DEVTOOLS_ENABLED: 'false'
+      NUXT_PUBLIC_USE_MOCK_REPO: 'true'
+      NUXT_PUBLIC_POST_USE_MOCK_REPO: 'true'
+      NUXT_API_BASE_URL: http://127.0.0.1:4174/api/v1
+      NUXT_PUBLIC_API_BASE_URL: /api/v1
+      NUXT_PUBLIC_SITE_URL: http://127.0.0.1:4173
+      NUXT_SITE_ENV: production
+      HOST: 127.0.0.1
+      PORT: '4173'
+      NITRO_HOST: 127.0.0.1
+      NITRO_PORT: '4173'
+      NUXT_TELEMETRY_DISABLED: '1'
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 25
+          cache: pnpm
+
+      - name: 安装固定版本工具及项目依赖
+        run: |
+          npm install --global corepack@0.34.6
+          corepack pnpm install --frozen-lockfile
+
+      - name: 构建生产前端
+        run: corepack pnpm build
+
+      # 复用锁文件中已有的 Playwright；同一 Chromium 用于就绪检查与 Lighthouse。
+      - name: 准备 Chromium
+        working-directory: src/frontend/web-blog
+        run: |
+          corepack pnpm exec playwright install --with-deps chromium
+          node --input-type=module -e "import { chromium } from '@playwright/test'; console.log('CHROME_PATH=' + chromium.executablePath())" >> "$GITHUB_ENV"
+
+      - name: 启动生产产物、核验页面并采集
+        run: |
+          mkdir -p .artifacts/lighthouse
+          node scripts/lighthouse/ci.mjs serve-fixture > .artifacts/lighthouse/fixture.log 2>&1 &
+          fixture_pid=$!
+          node src/frontend/web-blog/.output/server/index.mjs > .artifacts/lighthouse/web.log 2>&1 &
+          web_pid=$!
+          cleanup() {
+            kill "$web_pid" "$fixture_pid" 2>/dev/null || true
+            wait "$web_pid" "$fixture_pid" 2>/dev/null || true
+          }
+          trap cleanup EXIT
+          node scripts/lighthouse/ci.mjs check-pages
+          npx --yes --package=@lhci/cli@0.15.1 lhci collect --config=.lighthouserc.cjs
+
+      - name: 执行预算断言
+        id: budgets
+        run: npx --yes --package=@lhci/cli@0.15.1 lhci assert --config=.lighthouserc.cjs
+
+      # 预算失败也导出可读报告，断言步骤的非零状态继续令工作流失败。
+      - name: 导出 HTML 与 JSON 报告
+        if: ${{ !cancelled() && steps.budgets.outcome != 'skipped' }}
+        run: npx --yes --package=@lhci/cli@0.15.1 lhci upload --config=.lighthouserc.cjs
+
+      - name: 保存报告与启动日志
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: lighthouse-${{ github.run_id }}-${{ github.run_attempt }}
+          path: |
+            .lighthouseci/
+            .artifacts/lighthouse/
+          include-hidden-files: true
+          if-no-files-found: warn
+          retention-days: 14
