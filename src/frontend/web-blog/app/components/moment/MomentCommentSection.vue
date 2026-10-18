@@ -45,6 +45,7 @@
     <div aria-live="polite">
       <p v-if="notice" role="status" class="moment-comments__notice">{{ notice }}</p>
     </div>
+    <CommonSubmissionTrap v-model="website" />
     <div class="moment-comments__input-wrap" :aria-busy="submitting">
       <input
         :value="draft"
@@ -62,7 +63,7 @@
         :aria-busy="submitting"
         :disabled="!draft.trim() || submitting"
         :aria-label="submitting ? '正在发送评论' : '发送评论'"
-        @click="$emit('submit')"
+        @click="$emit('submit', visitorForm.fields())"
       >
         <Icon :name="submitting ? 'lucide:loader-circle' : 'lucide:send'" size="14" />
       </button>
@@ -70,6 +71,7 @@
   </div>
 </template>
 <script setup lang="ts">
+import type { VisitorSubmissionFields } from '~/features/visitor/types'
 import type { MomentCommentItem } from '~/features/moment/types'
 import { renderMomentMarkdown } from '~/composables/useMomentMarkdown'
 import { displayAvatar } from '~/utils/visitorAvatar'
@@ -83,14 +85,20 @@ const props = defineProps<{
   loadError?: string
   hasMore?: boolean
 }>()
-const emit = defineEmits<{ 'update:draft': [value: string]; submit: []; 'load-more': [] }>()
+const emit = defineEmits<{
+  'update:draft': [value: string]
+  submit: [fields: VisitorSubmissionFields]
+  'load-more': []
+}>()
+const visitorForm = useVisitorSubmissionForm({ submitting: () => !!props.submitting, error: () => props.submitError })
+const { website } = visitorForm
 function renderCommentBody(text: string) {
   return renderMomentMarkdown(text, { inline: true, mentions: true })
 }
 function onEnter(event: KeyboardEvent) {
   if (event.isComposing || props.submitting || !props.draft.trim()) return
   event.preventDefault()
-  emit('submit')
+  emit('submit', visitorForm.fields())
 }
 </script>
 

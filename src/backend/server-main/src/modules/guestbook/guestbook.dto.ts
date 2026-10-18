@@ -19,6 +19,7 @@ import { GUESTBOOK_STATUSES } from '../../entities/guestbook-message.entity'
 import type { GuestbookStatus } from '../../entities/guestbook-message.entity'
 import { GUESTBOOK_REACTIONS } from '../../entities/guestbook-reaction.entity'
 import type { GuestbookReactionKind } from '../../entities/guestbook-reaction.entity'
+import { ValidateVisitorSubmissionField } from '../../common/validation/visitor-submission'
 const trim = ({ value }: { value: unknown }) => (typeof value === 'string' ? value.trim() : value)
 export class GuestbookFilters {
   @IsOptional() @IsString() @MaxLength(200) @Transform(trim) q?: string
@@ -40,6 +41,8 @@ export class GuestbookBodyDto {
   @IsOptional() @IsInt() @Min(1) @Max(2147483647) replyToId?: number | null
 }
 export class CreateGuestbookDto extends GuestbookBodyDto {
+  @ValidateVisitorSubmissionField('website') website?: string
+  @ValidateVisitorSubmissionField('formRenderedAt') formRenderedAt?: number
   @IsString() @MinLength(1) @MaxLength(32) @Transform(trim) author!: string
   @IsOptional() @IsString() @MaxLength(2048) avatar?: string
 }

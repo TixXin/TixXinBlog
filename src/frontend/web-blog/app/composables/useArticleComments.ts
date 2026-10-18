@@ -2,6 +2,7 @@
  * @file useArticleComments.ts
  * @description 评论数据源及游客身份协调；SSR 读取公共评论，水合后仅在设备已有访客身份时恢复点赞状态
  */
+import type { VisitorSubmissionFields } from '~/features/visitor/types'
 import { invalidatePublicReads } from '~/utils/invalidatePublicReads'
 import { createComment, fetchComments, toggleCommentLike } from '~/features/post/api'
 import { createCommentController, findComment } from '~/features/post/commentController'
@@ -87,7 +88,9 @@ export async function useArticleComments(id: string) {
   }
   const state = controller
 
-  async function submit() {
+  let pendingFields: VisitorSubmissionFields = {}
+  async function submit(fields?: VisitorSubmissionFields) {
+    if (fields) pendingFields = fields
     if (!state.canSubmit.value) return
     // 评论始终以游客身份提交；前端模拟登录不代表后端管理员权限。
     if (!guestIdentity.value) {
@@ -95,7 +98,9 @@ export async function useArticleComments(id: string) {
       return
     }
     identityVisible.value = false
-    if (await state.submit({ author: guestIdentity.value.nickname, avatar: resolveAvatar() || undefined })) {
+    if (
+      await state.submit({ author: guestIdentity.value.nickname, avatar: resolveAvatar() || undefined }, pendingFields)
+    ) {
       toast.success(useMock ? '演示评论已添加' : state.submitNotice.value)
       // 列表离开文章后重新取数，避免首页沿用发表前的缓存计数。
       if (!useMock) {

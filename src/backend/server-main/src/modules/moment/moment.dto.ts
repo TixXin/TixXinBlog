@@ -22,6 +22,7 @@ import { MOMENT_STATUSES } from '../../entities/moment.entity'
 import type { MomentStatus } from '../../entities/moment.entity'
 import { MOMENT_COMMENT_STATUSES } from '../../entities/moment-comment.entity'
 import type { MomentCommentStatus } from '../../entities/moment-comment.entity'
+import { ValidateVisitorSubmissionField } from '../../common/validation/visitor-submission'
 
 const provided = (_object: unknown, value: unknown) => value !== undefined
 const trim = ({ value }: { value: unknown }) => (typeof value === 'string' ? value.trim() : value)
@@ -87,6 +88,8 @@ export class MomentCommentBody {
   @IsString() @MinLength(1) @MaxLength(1000) @Transform(trim) content!: string
 }
 export class CreateMomentCommentDto extends MomentCommentBody {
+  @ValidateVisitorSubmissionField('website') website?: string
+  @ValidateVisitorSubmissionField('formRenderedAt') formRenderedAt?: number
   @IsString() @MinLength(1) @MaxLength(32) @Transform(trim) author!: string
   @IsOptional() @IsString() @MaxLength(2048) avatar?: string
 }

@@ -167,7 +167,13 @@ export class HttpFlashRepository implements FlashNoteRepository {
   addComment(id: string, draft: FlashCommentDraft): Promise<FlashComment> {
     return this.publicRequest(`/flashes/${encodeURIComponent(id)}/comments`, {
       method: 'POST',
-      body: { authorName: draft.authorName, authorAvatar: draft.authorAvatar || undefined, content: draft.content },
+      body: {
+        authorName: draft.authorName,
+        authorAvatar: draft.authorAvatar || undefined,
+        content: draft.content,
+        website: draft.website,
+        formRenderedAt: draft.formRenderedAt,
+      },
     })
   }
   async removeComment(id: string, commentId: string): Promise<void> {

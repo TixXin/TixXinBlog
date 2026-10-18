@@ -1,4 +1,5 @@
 /** @file repository.ts @description 朋友圈数据访问契约，公开内容与管理写入保持边界 */
+import type { VisitorSubmissionFields } from '~/features/visitor/types'
 import type {
   ManagedMoment,
   MomentCommentItem,
@@ -20,7 +21,7 @@ export interface MomentRepository {
   like(id: string, liked: boolean): Promise<{ isLiked: boolean; likes: number }>
   comment(
     id: string,
-    value: { requestId: string; content: string; author?: string; avatar?: string },
+    value: { requestId: string; content: string; author?: string; avatar?: string } & VisitorSubmissionFields,
     owner: boolean,
   ): Promise<MomentCommentItem & { commentCount: number }>
   adminList(query: MomentQuery & { status?: string }): Promise<MomentPage & { items: ManagedMoment[] }>

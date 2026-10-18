@@ -7,6 +7,7 @@
 
 <template>
   <div class="card message-input">
+    <CommonSubmissionTrap v-model="website" />
     <p v-if="error" :id="errorId" role="alert" class="message-input__notice">{{ error }}</p>
     <!-- 播报区常驻，只切换内部提示，保证读屏能播报新插入的状态 -->
     <div aria-live="polite">
@@ -100,6 +101,7 @@
 </template>
 
 <script setup lang="ts">
+import type { VisitorSubmissionFields } from '~/features/visitor/types'
 import type { ReplyRef } from '~/features/guestbook/types'
 const props = defineProps<{
   draft: string
@@ -115,12 +117,14 @@ const props = defineProps<{
 }>()
 const emit = defineEmits<{
   'update:draft': [value: string]
-  send: []
+  send: [fields: VisitorSubmissionFields]
   cancelReply: []
   restore: []
   discard: []
   login: []
 }>()
+const visitorForm = useVisitorSubmissionForm({ submitting: () => props.submitting, error: () => props.error })
+const { website } = visitorForm
 // 错误提示与输入框通过 aria-describedby 关联
 const errorId = useId()
 const textareaRef = ref<HTMLTextAreaElement | null>(null),
@@ -201,7 +205,7 @@ function onResizePointerUp() {
   resizing.value = false
 }
 function submit() {
-  if (props.ready && !props.submitting && props.draft.trim()) emit('send')
+  if (props.ready && !props.submitting && props.draft.trim()) emit('send', visitorForm.fields())
 }
 function onEditorKeydown(event: KeyboardEvent) {
   if (!event.isComposing && event.key === 'Enter' && (event.ctrlKey || event.metaKey)) {

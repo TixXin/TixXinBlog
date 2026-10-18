@@ -173,6 +173,7 @@
 
         <!-- 评论表单：游客和登录用户均可评论 -->
         <form class="fnc__comment-form" @submit.prevent="onSubmitComment">
+          <CommonSubmissionTrap v-model="website" />
           <input
             v-model.trim="commentDraft"
             :disabled="!canInteract || commentSending || busy"
@@ -234,6 +235,8 @@ const { success, error: toastError } = useToast()
 
 const commentOpen = ref(false)
 const commentDraft = ref('')
+const visitorForm = useVisitorSubmissionForm({ active: () => commentOpen.value })
+const { website } = visitorForm
 const copied = ref(false)
 let copyTimer: ReturnType<typeof setTimeout> | null = null
 
@@ -327,8 +330,12 @@ function onSubmitComment() {
   emit('add-comment', {
     noteId: props.note.id,
     content,
+    ...visitorForm.fields(),
     complete: (saved) => {
-      if (saved && commentDraft.value.trim() === content) commentDraft.value = ''
+      if (saved) {
+        if (commentDraft.value.trim() === content) commentDraft.value = ''
+        visitorForm.restart()
+      }
       commentSending.value = false
     },
   })

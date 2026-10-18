@@ -143,7 +143,7 @@
           :load-error="state?.loadError"
           :has-more="!state?.initialized || (state?.comments.length ?? 0) < (state?.total ?? 0)"
           @update:draft="$emit('draft', { id: moment.id, value: $event })"
-          @submit="$emit('comment', moment.id)"
+          @submit="$emit('comment', { id: moment.id, ...$event })"
           @load-more="$emit('comments', moment.id)"
         />
       </Transition>
@@ -163,7 +163,7 @@
 </template>
 
 <script setup lang="ts">
-import type { MomentItem, MomentUserProfile } from '~/features/moment/types'
+import type { MomentCommentSubmission, MomentItem, MomentUserProfile } from '~/features/moment/types'
 import type { MomentInteractionState } from '~/features/moment/session'
 import { renderMomentMarkdown } from '~/composables/useMomentMarkdown'
 import { managedImageSrcset } from '~/utils/managedImage'
@@ -177,7 +177,7 @@ const props = defineProps<{
 const emit = defineEmits<{
   like: [value: { id: string; liked: boolean; complete: (success: boolean) => void }]
   draft: [value: { id: string; value: string }]
-  comment: [id: string]
+  comment: [submission: MomentCommentSubmission]
   comments: [id: string]
 }>()
 const avatarError = ref(false),

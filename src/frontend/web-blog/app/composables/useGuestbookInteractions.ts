@@ -1,4 +1,5 @@
 /** @file useGuestbookInteractions.ts @description 留言身份、输入恢复与真实发送/回应，服务端确认前不清空草稿 */
+import type { VisitorSubmissionFields } from '~/features/visitor/types'
 import { guestbookSession, parseGuestbookRecovery } from '~/features/guestbook/session'
 import type { GuestMessage, GuestbookRecord } from '~/features/guestbook/types'
 import { ensureVisitorId } from '~/utils/visitorId'
@@ -118,7 +119,9 @@ export function useGuestbookInteractions(
     state.recovery = null
     persist()
   }
-  async function submit() {
+  let pendingFields: VisitorSubmissionFields = {}
+  async function submit(fields?: VisitorSubmissionFields) {
+    if (fields) pendingFields = fields
     if (state.submitting || !state.draft.trim()) return
     if (!ready.value) {
       state.error = '请先确认登录状态，输入已保留。'
@@ -147,7 +150,7 @@ export function useGuestbookInteractions(
     state.notice = ''
     persist()
     try {
-      const record = await repo.create({ ...body, requestId: state.nonce }, owner)
+      const record = await repo.create({ ...body, requestId: state.nonce, ...(owner ? {} : pendingFields) }, owner)
       cache.invalidate()
       if (state.epoch !== epoch) return
       if (state.revision === revision) {

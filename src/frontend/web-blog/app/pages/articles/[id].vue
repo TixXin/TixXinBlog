@@ -118,7 +118,7 @@
         />
         <CommonGuestIdentityModal
           :visible="identityVisible"
-          @confirm="submit"
+          @confirm="submit()"
           @cancel="identityVisible = false"
           @login="switchToLogin"
         />

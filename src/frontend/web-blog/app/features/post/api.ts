@@ -213,9 +213,12 @@ function commentVisitorHeaders(): Record<string, string> {
 export async function createComment(baseUrl: string, id: string, draft: CommentDraft): Promise<CommentItem> {
   const headers = commentVisitorHeaders()
   // 提交凭据跨响应丢失与刷新保留；不在存储键中保存评论正文或访客原始身份。
+  const businessDraft = { ...draft }
+  delete businessDraft.website
+  delete businessDraft.formRenderedAt
   const digest = await crypto.subtle.digest(
     'SHA-256',
-    new TextEncoder().encode(JSON.stringify([baseUrl, id, headers, draft])),
+    new TextEncoder().encode(JSON.stringify([baseUrl, id, headers, businessDraft])),
   )
   const key = `blog-comment-submit:${Array.from(new Uint8Array(digest), (byte) => byte.toString(16).padStart(2, '0')).join('')}`
   let requestId = draft.requestId

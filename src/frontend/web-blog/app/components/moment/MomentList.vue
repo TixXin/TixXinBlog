@@ -60,7 +60,7 @@
 </template>
 <script setup lang="ts">
 import { useIntersectionObserver } from '@vueuse/core'
-import type { MomentItem, MomentUserProfile } from '~/features/moment/types'
+import type { MomentCommentSubmission, MomentItem, MomentUserProfile } from '~/features/moment/types'
 import type { MomentInteractionState } from '~/features/moment/session'
 const props = defineProps<{
   moments: MomentItem[]
@@ -75,7 +75,7 @@ const props = defineProps<{
 const emit = defineEmits<{
   retry: []
   more: []
-  comment: [id: string]
+  comment: [submission: MomentCommentSubmission]
   comments: [id: string]
   draft: [value: { id: string; value: string }]
   like: [value: { id: string; liked: boolean; complete: (success: boolean) => void }]

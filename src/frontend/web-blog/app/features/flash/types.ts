@@ -5,6 +5,8 @@
  * @since 2026-04-11
  */
 
+import type { VisitorSubmissionFields } from '~/features/visitor/types'
+
 /** 单条评论 */
 export interface FlashComment {
   /** 评论 id */
@@ -77,7 +79,7 @@ export interface FlashNoteDraft {
 }
 
 /** 创建评论时的草稿 */
-export interface FlashCommentDraft {
+export interface FlashCommentDraft extends VisitorSubmissionFields {
   authorId: string
   authorName: string
   authorAvatar: string
@@ -85,7 +87,7 @@ export interface FlashCommentDraft {
 }
 
 /** 表单提交的完成通知只在组件事件中使用，不发送给 API。 */
-export interface FlashCommentSubmission {
+export interface FlashCommentSubmission extends VisitorSubmissionFields {
   noteId: string
   content: string
   complete?: (saved: boolean) => void
