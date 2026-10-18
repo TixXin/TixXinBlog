@@ -7,9 +7,11 @@ import { createHash } from 'node:crypto'
 import { plainToInstance } from 'class-transformer'
 import { validateSync } from 'class-validator'
 import { ConfigService } from '@nestjs/config'
+import { RawQueryFragment } from '@mikro-orm/core'
 import type { EntityManager } from '@mikro-orm/postgresql'
 import { FlashComment } from '../../entities/flash-comment.entity'
-import type { FlashNote } from '../../entities/flash-note.entity'
+import { FlashLike } from '../../entities/flash-like.entity'
+import { FlashNote } from '../../entities/flash-note.entity'
 import { FlashService } from './flash.service'
 import { QueryFlashDto, SearchFlashDto } from './dto/query-flash.dto'
 
@@ -153,8 +155,13 @@ describe('FlashService 公开列表与搜索筛选', () => {
     expect(base).toMatchObject({ tags: { $contains: ['生活'] }, type: 'memo', isDraft: false, isArchived: false })
     expect(base.createdAt.$gte).toEqual(new Date('2026-10-14T00:00:00.000Z'))
     expect(matched.$or[0]).toEqual({ content: { $ilike: '%100\\%\\_好%' } })
-    // 第二个条件是标签包含关键词（不区分大小写）的原生片段
-    expect(Object.keys(matched.$or[1])).toHaveLength(1)
+    // 检查标签分支的实际 SQL 和绑定参数，避免仅存在片段却未正确转义。
+    const keys = Object.keys(matched.$or[1])
+    expect(keys).toHaveLength(1)
+    const fragment = RawQueryFragment.getKnownFragment(keys[0]!)
+    expect(fragment?.sql).toContain('jsonb_array_elements_text(')
+    expect(fragment?.sql).toContain('as tag where tag ilike ?')
+    expect(fragment?.params).toEqual(['%100\\%\\_好%'])
     expect(options.orderBy).toEqual([{ isPinned: 'desc' }, { createdAt: 'desc' }, { id: 'desc' }])
   })
 
@@ -170,6 +177,121 @@ describe('FlashService 公开列表与搜索筛选', () => {
     expect(validateSync(query({ date: '2026-02-30' }))).toHaveLength(1)
     expect(validateSync(query({ from: '2026/01/01' }))).toHaveLength(1)
     expect(validateSync(query({ to: '2026-10-14T00:00:00Z' }))).toHaveLength(1)
+  })
+})
+
+describe('FlashService 搜索分页与边界', () => {
+  const managers: ReturnType<typeof setup>['em'][] = []
+
+  function searchSetup() {
+    const context = setup()
+    managers.push(context.em)
+    return context
+  }
+
+  afterEach(() => {
+    // mock 不执行 ORM 的片段消费，只移除本组查询生成的缓存键。
+    for (const em of managers.splice(0)) {
+      for (const [, where] of em.findAndCount.mock.calls) {
+        for (const clause of where.$and[1].$or) {
+          for (const key of Object.keys(clause)) RawQueryFragment.remove(key)
+        }
+      }
+    }
+  })
+
+  it.each([
+    ['%', '%\\%%'],
+    ['_', '%\\_%'],
+    ['\\', '%\\\\%'],
+    ['中文100%_\\路径', '%中文100\\%\\_\\\\路径%'],
+  ])('正文与标签对 %s 使用相同的字面模式且始终限制公开归属', async (q, expected) => {
+    const { service, em } = searchSetup()
+    await service.search(searchQuery({ q }))
+    expect(em.findAndCount).toHaveBeenCalledTimes(1)
+    const [entity, where] = em.findAndCount.mock.calls[0]!
+    expect(entity).toBe(FlashNote)
+    expect(where.$and).toHaveLength(2)
+    expect(where.$and[0]).toEqual({ userId: 'tixxin', isDraft: false, isArchived: false })
+    const clauses = where.$and[1].$or
+    expect(clauses).toHaveLength(2)
+    expect(clauses[0]).toEqual({ content: { $ilike: expected } })
+    const keys = Object.keys(clauses[1])
+    expect(keys).toHaveLength(1)
+    expect(clauses[1][keys[0]!]).toBe(true)
+    const fragment = RawQueryFragment.getKnownFragment(keys[0]!, false)
+    expect(fragment?.sql).toContain('exists(select 1 from jsonb_array_elements_text(')
+    expect(fragment?.sql).toContain('.tags) as tag where tag ilike ?)')
+    expect(fragment?.sql).not.toContain(expected)
+    expect(fragment?.params).toEqual([expected])
+  })
+
+  it('第二页使用稳定排序，响应总数不受当前页条数影响且按访客读取点赞', async () => {
+    const { service, em } = searchSetup()
+    const note = {
+      id: 'spring-note',
+      userId: 'tixxin',
+      content: '散步途中的灵感',
+      tags: ['生活'],
+      images: [],
+      type: 'idea',
+      createdAt: new Date('2026-03-01T08:00:00+08:00'),
+      updatedAt: new Date('2026-03-02T08:00:00+08:00'),
+      likes: 3,
+      comments: { getItems: () => [] },
+      isPinned: true,
+      isArchived: false,
+      isDraft: false,
+    }
+    em.findAndCount.mockResolvedValue([[note], 7])
+    em.find.mockResolvedValue([{ flashNote: { id: note.id } }])
+    expect(await service.search(searchQuery({ q: '灵感', page: 2, pageSize: 3 }), visitor)).toEqual({
+      items: [
+        {
+          ...note,
+          createdAt: '2026-03-01T00:00:00.000Z',
+          updatedAt: '2026-03-02T00:00:00.000Z',
+          imageAlts: [],
+          liked: true,
+          comments: [],
+        },
+      ],
+      total: 7,
+      page: 2,
+      pageSize: 3,
+    })
+    expect(em.findAndCount.mock.calls[0]![2]).toEqual({
+      populate: ['comments'],
+      orderBy: [{ isPinned: 'desc' }, { createdAt: 'desc' }, { id: 'desc' }],
+      limit: 3,
+      offset: 3,
+    })
+    expect(em.find).toHaveBeenCalledTimes(1)
+    expect(em.find).toHaveBeenCalledWith(FlashLike, { visitorIdHash: visitor, flashNote: { $in: ['spring-note'] } })
+  })
+
+  it.each([
+    { page: 1, total: 0 },
+    { page: 4, total: 5 },
+  ])('空页 $page 保留总数 $total，携带访客也不读取无结果的点赞与媒体', async ({ page, total }) => {
+    const { service, em } = searchSetup()
+    em.findAndCount.mockResolvedValue([[], total])
+    expect(await service.search(searchQuery({ q: '灵感', page, pageSize: 2 }), visitor)).toEqual({
+      items: [],
+      total,
+      page,
+      pageSize: 2,
+    })
+    expect(em.findAndCount.mock.calls[0]![2]).toMatchObject({ limit: 2, offset: (page - 1) * 2 })
+    expect(em.find).not.toHaveBeenCalled()
+  })
+
+  it('读取失败继续抛出原始错误，不伪装成空搜索结果', async () => {
+    const { service, em } = searchSetup()
+    const error = new Error('闪念检索不可用')
+    em.findAndCount.mockRejectedValue(error)
+    await expect(service.search(searchQuery({ q: '灵感' }))).rejects.toBe(error)
+    expect(em.find).not.toHaveBeenCalled()
   })
 })
 
