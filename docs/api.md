@@ -22,7 +22,7 @@
 { "code": 0, "message": "ok", "data": {}, "traceId": "request-trace" }
 ```
 
-错误使用对应 HTTP 状态，响应为 `{ code, message, data: null, traceId }`。图片、内容包下载和订阅使用各自的文件格式，不套 JSON envelope。不要只看 HTTP 是否完成或 `data` 是否为空来推断成功；保留 `traceId` 便于定位，日志不应包含令牌或正文。
+错误使用对应 HTTP 状态，响应为 `{ code, message, data: null, traceId }`，完整码表见[附录 A](#附录-a统一响应错误码)。图片、内容包下载和订阅使用各自的文件格式，不套 JSON envelope。不要只看 HTTP 是否完成或 `data` 是否为空来推断成功；保留 `traceId` 便于定位，日志不应包含令牌或正文。
 
 | HTTP 状态 | 客户端处理                                                 |
 | --------- | ---------------------------------------------------------- |
@@ -289,3 +289,39 @@
 媒体搜索参数为 `search/orientation/usage/deleted`，说明与替代文本独立保存；被当前或历史内容引用的资源拒绝回收。内容包票据绑定管理员、内容代次、目标版本和预览摘要，重复执行返回原结果。接口层约束不能替代[备份恢复](backup-and-recovery.md)与[运行任务](operations.md)中的完整操作流程。
 
 `GET /admin/media/:id/references` 仅管理员可读，接受从 1 开始的 `page`，固定每页 20 项，响应为 `{ total, page, pageSize, items: [{ kind, revision?, title, url }] }`；包括草稿、归档及历史修订，媒体不存在时返回 404。后台批量回收复用此查询与单条 `DELETE /admin/media/:id`，逐项执行并展示结果，不是整批原子事务。删除会在共享媒体锁内重新统计全部引用，有引用时返回 409；成功只标记回收并清理图片变体，保留原文件供恢复。
+## 附录 A：统一响应错误码
+
+本表登记统一 JSON 响应顶层的 `code`，包含已定义但尚未启用的预留码；任务诊断字符串、底层系统错误码和批量结果中的 `reason` 不属于此表。通用码及 HTTP 映射定义在 [error-codes.ts](../src/backend/server-main/src/common/constants/error-codes.ts)，域错误码定义在对应业务服务中。
+
+[全局异常过滤器](../src/backend/server-main/src/common/filters/all-exceptions.filter.ts)按以下顺序生成错误响应：`BusinessException` 原样使用其 `code` 和 HTTP 状态（未传状态时默认 422）；普通 NestJS `HttpException` 按 `HTTP_STATUS_TO_ERROR_CODE` 映射；未映射的 HTTP 状态使用 `90`，并保留异常原本的 HTTP 状态；非 HTTP 异常使用 `90` / HTTP 500。`code` 与 HTTP 状态不是一一对应关系，客户端应结合二者与 `message` 处理。
+
+<!-- api-error-codes:start -->
+
+| code   | 含义与来源                                          | HTTP 状态                  | 触发场景                                                                                                                                                                              |
+| ------ | --------------------------------------------------- | -------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `0`    | 成功；`ErrorCode.Ok`                                | 2xx（由接口决定）          | 普通 JSON 请求成功，由响应拦截器包装；此值不是错误。                                                                                                                                  |
+| `10`   | 参数校验失败；`ErrorCode.ParamInvalid`              | 400                        | DTO / 路径参数校验失败，或业务通过 `BadRequestException` 拒绝输入，例如日期、URL、媒体关联、内容包字段或确认文字不合法。                                                              |
+| `11`   | 参数缺失；`ErrorCode.ParamMissing`                  | 400                        | 必须提供访客身份的入口缺少有效的字符串 `X-Visitor-Id` 请求头，或值去除首尾空白后为空。                                                                                                |
+| `12`   | 参数格式错误；`ErrorCode.ParamMalformed`            | 400                        | `X-Visitor-Id` 去除首尾空白后，不符合 8–128 位可打印 ASCII（不含空格）的格式要求。                                                                                                    |
+| `20`   | 未鉴权或身份失效；`ErrorCode.Unauthorized`          | 401                        | 缺少或非法 Bearer token、账号密码不匹配、账号凭据变化、会话撤销或失效；也承接普通 HTTP 401 异常。                                                                                     |
+| `21`   | 访问令牌过期；`ErrorCode.AccessTokenExpired`        | 401                        | 管理员守卫校验 JWT 时收到 `TokenExpiredError`。                                                                                                                                       |
+| `22`   | 刷新令牌失效；`ErrorCode.RefreshTokenExpired`       | 401                        | 刷新令牌缺失、未知、过期、已撤销，所属会话失效，或检测到已轮换刷新令牌重放并完成撤销。                                                                                                |
+| `23`   | 权限不足；`ErrorCode.Forbidden`                     | 403                        | 来源守卫拒绝跨站认证或写入操作；也承接普通 HTTP 403 异常。                                                                                                                            |
+| `24`   | IP 黑名单；`ErrorCode.IpBlocked`                    | 未绑定（预留）             | 常量已定义，当前没有抛出路径或 HTTP 状态映射。                                                                                                                                        |
+| `30`   | 资源不存在或不可见；`ErrorCode.NotFound`            | 404                        | 普通 `NotFoundException`，以及评论或父评论不存在、不可见等显式业务异常；多数领域管理和公开读取使用此码。                                                                              |
+| `40`   | 状态冲突；`ErrorCode.Conflict`                      | 409                        | 记录版本、内容上下文、提交标识、导入票据或影响范围已变化；重复提交内容不一致、记录已删除或关联仍被引用等冲突。                                                                        |
+| `50`   | 命中敏感词；`ErrorCode.SensitiveWord`               | 未绑定（预留）             | 常量已定义，当前没有抛出路径或 HTTP 状态映射；不表示已启用敏感词拦截。                                                                                                                |
+| `51`   | 业务规则拒绝；`ErrorCode.BusinessRejected`          | 422                        | 普通 HTTP 422 异常的通用映射；当前已归档文章评论的显式业务异常使用 `1002`。                                                                                                           |
+| `60`   | 请求限流；`ErrorCode.RateLimited`                   | 429                        | 应用级限流窗口配额耗尽；访客标识不能绕过真实连接 IP 的限制。                                                                                                                          |
+| `90`   | 服务端异常或未映射状态兜底；`ErrorCode.ServerError` | 500；413、428 等未映射状态 | 未知异常或 HTTP 500；内容包大小、记录或图片规模超限返回 HTTP 413；缺少恢复后要求的内容上下文，或旧文章保存缺少必要版本时返回 HTTP 428。其他未登记的 HTTP 状态也保留原状态并使用此码。 |
+| `91`   | 依赖暂不可用；`ErrorCode.DependencyUnavailable`     | 503                        | 登录状态无法校验、审计存储不可用或补全积压、媒体保存或读取失败、导入执行失败或结果暂不能确认，以及就绪检查发现关闭中或数据库未就绪。                                                  |
+| `1001` | 文章不存在或不可见；`POST_NOT_FOUND`                | 404                        | 文章公开详情、地址解析、互动或评论入口找不到可访问文章；定义在 `post.service.ts` 与 `comment.service.ts`。                                                                            |
+| `1002` | 文章已归档，拒绝评论；`POST_ARCHIVED`               | 422                        | 向已归档且未删除的文章提交评论；定义在 `comment.service.ts`。                                                                                                                         |
+| `1003` | 评论层级超限；`COMMENT_DEPTH_EXCEEDED`              | 409                        | 回复将超过最多 3 层的评论深度；定义在 `comment.service.ts`。                                                                                                                          |
+| `3001` | 闪念不存在或不可见；`FLASH_NOT_FOUND`               | 404                        | 公开闪念详情、点赞或评论入口找不到可访问闪念；定义在 `flash.service.ts`。                                                                                                             |
+
+<!-- api-error-codes:end -->
+
+业务异常的定义与调用入口：[BusinessException](../src/backend/server-main/src/common/exceptions/business.exception.ts)、[访客身份装饰器](../src/backend/server-main/src/common/decorators/visitor-id.decorator.ts)、[管理员守卫](../src/backend/server-main/src/common/guards/admin-auth.guard.ts)、[认证服务](../src/backend/server-main/src/modules/auth/auth.service.ts)、[文章服务](../src/backend/server-main/src/modules/post/post.service.ts)、[评论服务](../src/backend/server-main/src/modules/comment/comment.service.ts)、[闪念服务](../src/backend/server-main/src/modules/flash/flash.service.ts)。成功码由[响应拦截器](../src/backend/server-main/src/common/interceptors/response-wrap.interceptor.ts)生成。
+
+维护错误码时，同时更新本表并运行后端单测中的文档覆盖检查。新增码不能只补 `ErrorCode`：模块内传入 `BusinessException` 的域常量和字面量也必须登记。
