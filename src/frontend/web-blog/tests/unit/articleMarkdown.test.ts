@@ -54,10 +54,11 @@ describe('renderArticleMarkdown', () => {
     expect(renderArticleMarkdown(markdown)).toBe(html)
     const doc = parse(html)
     const heading = doc.querySelector('h2#heading-1')!
-    expect(heading.textContent).toBe('粗体 与 链接')
+    // 外链附带读屏专用的新窗口提示，标题可访问名称应包含它
+    expect(heading.textContent).toBe('粗体 与 链接（在新窗口打开）')
     expect(heading.getAttribute('aria-labelledby')).toBe('heading-1-text')
     const label = heading.querySelector('#heading-1-text')
-    expect(label?.textContent).toBe('粗体 与 链接')
+    expect(label?.textContent).toBe('粗体 与 链接（在新窗口打开）')
     expect(label?.querySelector('strong')?.textContent).toBe('粗体')
     expect(label?.querySelector('a')?.getAttribute('href')).toBe('https://example.com')
     expect(label?.querySelector('.article-heading__anchor')).toBeNull()
