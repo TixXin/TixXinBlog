@@ -14,7 +14,7 @@ const mocks = vi.hoisted(() => ({ api: vi.fn() }))
 mockNuxtImport('useCurrentUser', () => () => ({ currentUser: ref({ id: 'owner' }), restore: async () => true }))
 mockNuxtImport('useAdminApi', () => () => mocks.api)
 mockNuxtImport('useMediaUpload', () => () => ({ upload: vi.fn(), cancel: vi.fn() }))
-mockNuxtImport('useToast', () => () => ({ success: vi.fn() }))
+mockNuxtImport('useToast', () => () => ({ success: vi.fn(), info: vi.fn() }))
 mockNuxtImport('onBeforeRouteLeave', () => () => undefined)
 mockNuxtImport('onBeforeRouteUpdate', () => () => undefined)
 

@@ -13,12 +13,13 @@ const mocks = vi.hoisted(() => ({
   upload: vi.fn(),
   cancel: vi.fn(),
   success: vi.fn(),
+  info: vi.fn(),
   leave: null as (() => boolean) | null,
 }))
 mockNuxtImport('useCurrentUser', () => () => mocks.auth)
 mockNuxtImport('useAdminApi', () => () => mocks.api)
 mockNuxtImport('useMediaUpload', () => () => ({ upload: mocks.upload, cancel: mocks.cancel }))
-mockNuxtImport('useToast', () => () => ({ success: mocks.success }))
+mockNuxtImport('useToast', () => () => ({ success: mocks.success, info: mocks.info }))
 mockNuxtImport('onBeforeRouteLeave', () => (callback: () => boolean) => {
   mocks.leave = callback
 })
@@ -133,7 +134,13 @@ it('队列第一张回包时账号已切换，第二张不上传且两份文件�
   await flushPromises()
   expect(mocks.upload).toHaveBeenCalledTimes(1)
   vi.stubGlobal('confirm', vi.fn().mockReturnValue(false))
+  mocks.info.mockClear()
   expect(mocks.leave?.()).toBe(false)
+  // 选择留下时用提示说明未跳转的原因
+  expect(mocks.info).toHaveBeenCalledExactlyOnceWith('已留在媒体库：上传与未保存的说明均已保留，完成或保存后再离开。')
+  vi.mocked(window.confirm).mockReturnValueOnce(true)
+  expect(mocks.leave?.()).toBe(true)
+  expect(mocks.info).toHaveBeenCalledOnce()
   mocks.auth.currentUser.value = { id: 'actor-a' }
   await state.load()
   expect(state.canSelect(state.items.value[0]!)).toBe(false)
