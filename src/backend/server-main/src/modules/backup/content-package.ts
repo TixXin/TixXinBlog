@@ -13,6 +13,8 @@ import { SaveMomentDto } from '../moment/moment.dto'
 import { momentUrl, momentValues } from '../moment/moment-values'
 import { MOMENT_COMMENT_STATUSES } from '../../entities/moment-comment.entity'
 import type { MomentCommentStatus } from '../../entities/moment-comment.entity'
+import { FLASH_COMMENT_STATUSES } from '../../entities/flash-comment.entity'
+import type { FlashCommentStatus } from '../../entities/flash-comment.entity'
 import { GUESTBOOK_STATUSES } from '../../entities/guestbook-message.entity'
 import type { GuestbookStatus } from '../../entities/guestbook-message.entity'
 import { SaveSiteSettingsDto } from '../site/site-settings.dto'
@@ -57,7 +59,8 @@ export interface PackageFlash {
   sourceId: string
   createdAt: string
   values: SaveFlashDto
-  comments: { author: string; avatar: string; content: string; createdAt: string }[]
+  /** status 自 v13 起必填；v1–v12 不得携带，读取时按已发布处理 */
+  comments: { author: string; avatar: string; content: string; status: FlashCommentStatus; createdAt: string }[]
 }
 export interface PackageMedia {
   description: string
@@ -106,7 +109,7 @@ export interface PackageGuestbook {
 }
 export interface ContentPackage {
   format: 'tixxin-content'
-  version: 12
+  version: 13
   omittedRelations: number
   exportedAt: string
   mediaIncluded: boolean
@@ -300,7 +303,7 @@ export async function parseContentPackage(buffer: Buffer): Promise<ContentPackag
   ])
   if (
     source.format !== 'tixxin-content' ||
-    ![1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].includes(Number(source.version)) ||
+    ![1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13].includes(Number(source.version)) ||
     typeof source.version !== 'number'
   )
     throw new BadRequestException('不支持的内容包格式或版本')
@@ -406,14 +409,24 @@ export async function parseContentPackage(buffer: Buffer): Promise<ContentPackag
       (values.tags ?? []).some((tag) => !tag.trim())
     )
       fail('闪念内容、标签或图片')
+    // v13 才引入闪念评论审核状态：旧包按未知字段拒绝夹带，读取时一律视为已发布。
+    const withStatus = Number(source.version) >= 13
     const comments = array(row.comments, '闪念评论', 10000).map((value) => {
-      const comment = record(value, '闪念评论', ['author', 'avatar', 'content', 'createdAt'])
+      const comment = record(value, '闪念评论', [
+        'author',
+        'avatar',
+        'content',
+        'createdAt',
+        ...(withStatus ? ['status'] : []),
+      ])
       const avatar = text(comment.avatar, '闪念评论头像', 2048)
       if (!packageImageUrl(avatar)) fail('闪念评论头像')
+      if (withStatus && !FLASH_COMMENT_STATUSES.includes(comment.status as FlashCommentStatus)) fail('闪念评论状态')
       return {
         author: text(comment.author, '闪念评论作者', 80, 1),
         avatar,
         content: text(comment.content, '闪念评论内容', 1000, 1),
+        status: withStatus ? (comment.status as FlashCommentStatus) : 'published',
         createdAt: date(comment.createdAt, '闪念评论时间'),
       }
     })
@@ -926,7 +939,7 @@ export async function parseContentPackage(buffer: Buffer): Promise<ContentPackag
       if (!targets.has(`${relation.type}:${relation.id}`)) fail('关联目标不在内容包内，不能把来源编号当作目标站点编号')
   return {
     format: 'tixxin-content',
-    version: 12,
+    version: 13,
     omittedRelations,
     exportedAt: date(source.exportedAt, '导出时间'),
     mediaIncluded,

@@ -355,6 +355,8 @@ export class ContentImportService {
                 authorName: comment.author,
                 authorAvatar: comment.avatar || '/avatar.svg',
                 content: comment.content,
+                // 闪念迁入为草稿，评论保留原审核状态；旧包（含升级前生成的预览票据）按已发布处理。
+                status: comment.status ?? 'published',
                 createdAt: new Date(comment.createdAt),
               })
               await em.flush()

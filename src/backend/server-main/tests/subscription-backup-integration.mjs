@@ -90,7 +90,7 @@ try {
   const exported = await request('/admin/backup/export', 'POST', { mediaIncluded: true })
   assert.equal(exported.status, 201)
   const bundle = exported.body
-  assert.equal(bundle.version, 12)
+  assert.equal(bundle.version, 13)
   assert.equal(bundle.subscriptions.length, 3)
   const source = bundle.subscriptions.find((row) => row.sourceId === managed.id)
   assert.deepEqual(source.values.priceHistory, managed.priceHistory)

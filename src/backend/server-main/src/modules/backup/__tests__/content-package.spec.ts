@@ -17,7 +17,7 @@ const timestamp = '2026-10-01T12:00:00.000Z'
 const mediaId = 'bb2a48c1-d233-4c45-9c1e-a21e9a56fd20'
 const bundle = (): ContentPackage => ({
   format: 'tixxin-content',
-  version: 12,
+  version: 13,
   omittedRelations: 0,
   exportedAt: timestamp,
   mediaIncluded: false,
@@ -155,7 +155,12 @@ describe('内容包输入与限额', () => {
     expect(await parse({ ...input, version: 11 })).toEqual(input)
   })
 
-  it.each([0, 13, -1, 12.5, '12', null])('拒绝不支持或错误类型的版本：%j', async (version) => {
+  it('仍接受上一导出版本 v12 的内容包，解析结果升级为当前版本', async () => {
+    const input = bundle()
+    expect(await parse({ ...input, version: 12 })).toEqual(input)
+  })
+
+  it.each([0, 14, -1, 12.5, '13', null])('拒绝不支持或错误类型的版本：%j', async (version) => {
     await expect(parse({ ...bundle(), version })).rejects.toThrow('不支持的内容包格式或版本')
   })
 
@@ -303,6 +308,7 @@ describe('内容包编号与关系', () => {
             author: '小林',
             avatar: '',
             content: '春天真好。',
+            status: 'published',
             createdAt: timestamp,
           },
         ],

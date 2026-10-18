@@ -70,7 +70,7 @@
 
 ## 6. 演进内容包版本、预览与导入
 
-当前导出 **v12**，解析器接受 **v1–v12**，即兼容导入 v1–v11，当前版本也可重新导入。精确格式以 `src/backend/server-main/src/modules/backup/content-package.ts` 为准。友链与规则从 v6 引入：v1–v5 夹带 `links/linkSettings` 会拒绝，正常旧包将其规范化为 `links: []`、`linkSettings: null`。
+当前导出 **v13**，解析器接受 **v1–v13**，即兼容导入 v1–v12，当前版本也可重新导入。精确格式以 `src/backend/server-main/src/modules/backup/content-package.ts` 为准。友链与规则从 v6 引入：v1–v5 夹带 `links/linkSettings` 会拒绝，正常旧包将其规范化为 `links: []`、`linkSettings: null`。
 
 新增可迁移模块或持久字段时，显式演进版本并核对以下完整链路，不重新解释旧版本，也不静默丢弃未知字段：
 

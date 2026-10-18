@@ -113,7 +113,7 @@ try {
   const exported = await request('/admin/backup/export', 'POST', { mediaIncluded: true })
   assert.equal(exported.status, 201)
   const bundle = exported.data
-  assert.equal(bundle.version, 12)
+  assert.equal(bundle.version, 13)
   const selected = {
     gallery: bundle.gallery.find((item) => item.sourceId === gallery.id),
     projects: bundle.projects.find((item) => item.sourceId === project.id),

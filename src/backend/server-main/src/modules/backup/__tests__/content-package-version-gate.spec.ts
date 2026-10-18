@@ -1,6 +1,7 @@
 /**
  * @file content-package-version-gate.spec.ts
- * @description 内容包版本门禁回归：v11 专属字段不能被 v1–v10 旧包夹带，v12 专属字段不能被 v1–v11 旧包夹带
+ * @description 内容包版本门禁回归：v11 专属字段不能被 v1–v10 旧包夹带，v12 专属字段不能被 v1–v11 旧包夹带，
+ *   v13 的闪念评论审核状态不能被 v1–v12 旧包夹带，旧包闪念评论按已发布读取
  */
 import 'reflect-metadata'
 import { parseContentPackage } from '../content-package'
@@ -18,14 +19,30 @@ const guestbookMessage = () => ({
   replyToId: null,
 })
 
+/** v13 起闪念评论带审核状态 */
+const flashNote = () => ({
+  sourceId: 'flash-1',
+  createdAt: '2026-10-10T08:00:00.000Z',
+  values: { content: '一条闪念' },
+  comments: [
+    {
+      author: '小林',
+      avatar: '',
+      content: '待审的评论',
+      status: 'pending',
+      createdAt: '2026-10-10T09:00:00.000Z',
+    },
+  ],
+})
+
 const base = () => ({
   format: 'tixxin-content',
-  version: 12,
+  version: 13,
   omittedRelations: 0,
   exportedAt: '2026-10-16T12:00:00.000Z',
   mediaIncluded: false,
   posts: [],
-  flashes: [],
+  flashes: [flashNote()],
   moments: [],
   guestbook: [guestbookMessage()],
   gallery: [],
@@ -81,6 +98,10 @@ function legacy(version: number) {
   const input = base() as unknown as Record<string, unknown>
   const site = input.site as Record<string, unknown>
   input.version = version
+  if (version >= 13) return input
+  for (const flash of input.flashes as ReturnType<typeof flashNote>[])
+    for (const comment of flash.comments) delete (comment as Partial<typeof comment>).status
+  if (version >= 12) return input
   for (const key of V12_SITE_KEYS) delete site[key]
   if (version >= 11) return input
   delete input.subscriptions
@@ -122,7 +143,7 @@ describe('内容包版本门禁', () => {
 
   it('v10 不带 v11 字段仍可导入', async () => {
     const parsed = await parse(legacy(10))
-    expect(parsed.version).toBe(12)
+    expect(parsed.version).toBe(13)
     expect(parsed.site.presenceLabel).toBeUndefined()
     expect(parsed.guestbook[0]?.browser).toBeUndefined()
   })
@@ -149,7 +170,7 @@ describe('内容包 v12 站点导航与页脚门禁', () => {
 
   it('v11 不带 v12 字段仍可导入，新字段留空由目标站沿用现值', async () => {
     const parsed = await parse(legacy(11))
-    expect(parsed.version).toBe(12)
+    expect(parsed.version).toBe(13)
     expect(parsed.site.navigation).toBeUndefined()
     expect(parsed.site.quotes).toBeUndefined()
     expect(parsed.subscriptions).toEqual([])
@@ -194,6 +215,36 @@ describe('内容包 v12 站点导航与页脚门禁', () => {
   ])('v12 拒绝非法值：%s', async (_name, patch) => {
     const input = base()
     Object.assign(input.site, patch)
+    await expect(parse(input)).rejects.toThrow('内容包字段不合法')
+  })
+})
+
+describe('内容包 v13 闪念评论审核状态门禁', () => {
+  const versions = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
+  it.each(versions)('v%i 拒绝夹带闪念评论 status', async (version) => {
+    const input = legacy(version)
+    ;(input.flashes as ReturnType<typeof flashNote>[])[0]!.comments[0]!.status = 'published'
+    await expect(parse(input)).rejects.toThrow('内容包字段不合法')
+  })
+
+  it.each(versions)('v%i 不带 status 仍可导入，闪念评论按已发布处理', async (version) => {
+    const parsed = await parse(legacy(version))
+    expect(parsed.version).toBe(13)
+    expect(parsed.flashes[0]?.comments).toEqual([
+      { author: '小林', avatar: '', content: '待审的评论', status: 'published', createdAt: '2026-10-10T09:00:00.000Z' },
+    ])
+  })
+
+  it('v13 保留闪念评论的审核状态', async () => {
+    const parsed = await parse(base())
+    expect(parsed.flashes[0]?.comments[0]?.status).toBe('pending')
+  })
+
+  it.each([undefined, 'spam', 'deleted', '', null])('v13 拒绝缺失或非法的闪念评论状态：%j', async (status) => {
+    const input = base()
+    const comment = input.flashes[0]!.comments[0]! as Record<string, unknown>
+    if (status === undefined) delete comment.status
+    else comment.status = status
     await expect(parse(input)).rejects.toThrow('内容包字段不合法')
   })
 })
