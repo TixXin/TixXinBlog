@@ -32,7 +32,7 @@
             :aria-label="showArchive ? '返回主列表' : '查看归档箱'"
             @click="toggleArchiveView"
           >
-            <Icon :name="showArchive ? 'lucide:archive-restore' : 'lucide:archive'" size="14" />
+            <Icon :name="showArchive ? 'lucide:archive-restore' : 'lucide:archive'" size="16" />
             <span>{{ showArchive ? '返回主列表' : '归档箱' }}</span>
           </button>
           <button
@@ -45,7 +45,7 @@
             aria-controls="flash-search"
             @click="searchExpanded = !searchExpanded"
           >
-            <Icon name="lucide:search" size="14" />
+            <Icon name="lucide:search" size="16" />
             <span>搜索</span>
           </button>
         </div>
@@ -715,17 +715,21 @@ onBeforeUnmount(() => {
 }
 
 /* ---- 右上角搜索切换按钮 ---- */
+/* 与同排 RSS 入口及全站页头紧凑按钮（筛选抽屉入口等）同一规范：44px 触控高度、13px 文字、浅底描边 */
 .flash-page__search-toggle {
   display: inline-flex;
   align-items: center;
-  gap: 0.375rem;
-  padding: 0.375rem 0.75rem;
+  justify-content: center;
+  gap: 0.5rem;
+  min-height: 44px;
+  padding: 0.5rem 0.75rem;
   border: 1px solid var(--border);
   border-radius: $radius-md;
-  background: transparent;
-  color: var(--text-soft);
-  font-size: 0.75rem;
+  background: var(--surface-2);
+  color: var(--text-main);
+  font-size: 0.8125rem;
   font-weight: 500;
+  white-space: nowrap;
   cursor: var(--interaction-cursor, pointer);
   transition:
     background 0.18s,
@@ -736,8 +740,13 @@ onBeforeUnmount(() => {
   }
 
   &:hover {
-    color: var(--text-main);
-    background: var(--surface-2);
+    border-color: var(--border-hover);
+    background: var(--surface-3);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
   }
 
   &.is-active {
