@@ -48,7 +48,8 @@ export class AdminOverviewController {
           (select count(*)::int from guestbook_message where status='pending' and deleted_at is null) as "pendingGuestbook",
           (select count(*)::int from guestbook_message g where ${unansweredGuestbookSql('g')}) as "unansweredGuestbook",
           (select count(*)::int from moment_comment c join moment m on m.id=c.moment_id
-            where c.status='pending' and c.deleted_at is null and m.deleted_at is null) as "pendingMomentComments"
+            where c.status='pending' and c.deleted_at is null and m.deleted_at is null) as "pendingMomentComments",
+          (select count(*)::int from flash_comment where status='pending') as "pendingFlashComments"
       `),
       // 每域先限量再合并，应用端只接收全局最近十二项，不拉取完整内容。
       connection.execute<RecentContent[]>(`

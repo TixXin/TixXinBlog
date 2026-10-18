@@ -30,6 +30,10 @@ export const auditActions: Record<string, string> = {
   'media.recycle': '回收图片',
   'media.restore': '恢复图片',
   'flash.write': '管理闪念',
+  'flash.comment.moderate': '审核闪念评论',
+  'flash.comment.delete': '删除闪念评论',
+  'flash.comment.batch.moderate': '批量审核闪念评论',
+  'flash.comment.batch.delete': '批量删除闪念评论',
   'moment.create': '发布动态',
   'moment.update': '更新动态',
   'moment.delete': '删除动态',
@@ -130,7 +134,12 @@ export function auditDescriptor(path: string, method: string) {
               : 'media.update'
     else if (resourceType === 'flashes') {
       resourceType = 'flash'
-      action = 'flash.write'
+      if (parts[2] === 'comments' && parts[3] === 'batch') {
+        resourceType = 'flash-comment'
+        action = parts[4] === 'moderation' ? 'flash.comment.batch.moderate' : 'flash.comment.batch.delete'
+      } else if (parts[3] === 'comments') {
+        action = method === 'DELETE' ? 'flash.comment.delete' : 'flash.comment.moderate'
+      } else action = 'flash.write'
     } else if (resourceType === 'moments') {
       resourceType = 'moment'
       action =

@@ -76,6 +76,7 @@ const expectedNote = {
   updatedAt: date.toISOString(),
   likes: 3,
   liked: false,
+  commentCount: 1,
   comments: [
     {
       id: 'flash-comment',
@@ -84,6 +85,7 @@ const expectedNote = {
       authorAvatar: '/avatar.svg',
       content: '沿岸的风景很美',
       createdAt: date.toISOString(),
+      moderationStatus: 'published',
     },
   ],
   isPinned: true,

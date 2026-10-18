@@ -50,6 +50,8 @@ describe('auditDescriptor', () => {
     ['comments/batch/delete', 'POST', 'comment', 'comment.batch.delete', '批量删除评论'],
     ['guestbook/batch', 'PATCH', 'guestbook', 'guestbook.batch.moderate', '批量审核留言'],
     ['guestbook/batch', 'DELETE', 'guestbook', 'guestbook.batch.delete', '批量删除留言'],
+    ['flashes/comments/batch/moderation', 'POST', 'flash-comment', 'flash.comment.batch.moderate', '批量审核闪念评论'],
+    ['flashes/comments/batch/delete', 'POST', 'flash-comment', 'flash.comment.batch.delete', '批量删除闪念评论'],
   ] as const)('批量路径 %s %s 使用独立动作和中文标签', (path, method, resourceType, action, label) => {
     for (const prefix of ['/api/v1', '']) {
       expect(auditDescriptor(`${prefix}/admin/${path}`, method)).toEqual({
@@ -69,6 +71,9 @@ describe('auditDescriptor', () => {
     ['guestbook', 'POST', 'guestbook', undefined, 'guestbook.create', '发布或回复留言'],
     ['guestbook/12', 'PATCH', 'guestbook', '12', 'guestbook.update', '审核或置顶留言'],
     ['guestbook/12', 'DELETE', 'guestbook', '12', 'guestbook.delete', '删除留言'],
+    [`flashes/${uuid}/comments/c1`, 'PATCH', 'flash', uuid, 'flash.comment.moderate', '审核闪念评论'],
+    [`flashes/${uuid}/comments/c1`, 'DELETE', 'flash', uuid, 'flash.comment.delete', '删除闪念评论'],
+    [`flashes/${uuid}`, 'PATCH', 'flash', uuid, 'flash.write', '管理闪念'],
   ] as const)('单条路径 %s %s 保持原有动作和中文标签', (path, method, resourceType, resourceId, action, label) => {
     expect(auditDescriptor(`/api/v1/admin/${path}`, method)).toEqual({ action, resourceType, resourceId })
     expect(auditActions[action]).toBe(label)

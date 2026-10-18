@@ -2120,6 +2120,22 @@
           "comment": null,
           "enumItems": [],
           "mappedType": "datetime"
+        },
+        "status": {
+          "name": "status",
+          "type": "text",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
+          "unique": false,
+          "length": null,
+          "precision": null,
+          "scale": null,
+          "default": "'published'",
+          "comment": null,
+          "enumItems": [],
+          "mappedType": "text"
         }
       },
       "name": "flash_comment",
@@ -2130,6 +2146,14 @@
           "composite": false,
           "constraint": false,
           "keyName": "flash_comment_flash_note_id_index",
+          "unique": false,
+          "primary": false
+        },
+        {
+          "columnNames": ["flash_note_id", "status", "created_at"],
+          "composite": true,
+          "constraint": false,
+          "keyName": "flash_comment_flash_note_id_status_created_at_index",
           "unique": false,
           "primary": false
         },

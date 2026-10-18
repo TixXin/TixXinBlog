@@ -72,7 +72,15 @@ describe('FlashService 评论身份', () => {
       likes: 0,
       comments: {
         getItems: () => [
-          { id: 'c1', authorId: visitor, authorName: '访客', authorAvatar: '', content: 'x', createdAt: new Date(0) },
+          {
+            id: 'c1',
+            authorId: visitor,
+            authorName: '访客',
+            authorAvatar: '',
+            content: 'x',
+            status: 'published',
+            createdAt: new Date(0),
+          },
         ],
       },
       isPinned: false,
@@ -253,6 +261,7 @@ describe('FlashService 搜索分页与边界', () => {
           updatedAt: '2026-03-02T00:00:00.000Z',
           imageAlts: [],
           liked: true,
+          commentCount: 0,
           comments: [],
         },
       ],
