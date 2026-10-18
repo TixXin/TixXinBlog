@@ -522,6 +522,12 @@ test('320至1024px均能使用文章筛选、目录、书签分组和登录', as
     await page.getByRole('button', { name: '关闭文章目录', exact: true }).click()
     await page.goto('/tabs')
     await expect(page.getByLabel('书签分组', { exact: true })).toBeVisible()
+    // 提交按钮须留在搜索框内：输入框固有宽度随系统字体变化，越界在较宽字体下会撑出视口
+    const [searchBox, searchSubmit] = await Promise.all([
+      page.locator('.tab-search__inner').boundingBox(),
+      page.locator('.tab-search__inner').getByRole('button', { name: '搜索', exact: true }).boundingBox(),
+    ])
+    expect(searchSubmit!.x + searchSubmit!.width).toBeLessThanOrEqual(searchBox!.x + searchBox!.width)
     await page.getByRole('button', { name: '书签设置', exact: true }).click()
     await expect(page.getByRole('dialog', { name: '标签页设置' })).toBeVisible()
     await page.keyboard.press('Escape')
