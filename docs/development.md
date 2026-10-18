@@ -194,6 +194,22 @@ node src/backend/server-main/tests/browser-runner.mjs blog.spec.ts --browser=fir
 
 会持久修改公共查询结果的场景，按浏览器分别启动新运行器与新数据库，避免前一浏览器的数据污染后一浏览器。测试仅清理自身拥有的数据库、媒体、进程和容器，不能清空日常开发库。
 
+### 公开页面可访问性回归
+
+[`accessibility.spec.ts`](../src/frontend/web-blog/tests/e2e/accessibility.spec.ts) 使用 `@axe-core/playwright` 扫描整页，覆盖 Nexus、Dock、Aurora 三主题与 light/dark 两种模式。14 个公开页面各自生成独立用例，共 84 项：文章首页与详情、归档、朋友圈、画廊、项目、友链、留言板、图片提示词、平台订阅费、站内搜索结果、闪念空态、关于我和书签。导航、侧栏、页脚也纳入扫描。
+
+```sh
+corepack pnpm test:e2e accessibility.spec.ts
+# 已有当前源码对应的前后端生产构建时，可省去构建步骤
+corepack pnpm test:e2e:run accessibility.spec.ts
+```
+
+两条命令都通过现有 runner 建立隔离数据库、媒体和动态端口服务，需要 PostgreSQL 与 Playwright Chromium。用例复用 runner 的真实样本，不登录、不自行写入样本，不得绕过 `playwright.config.ts` 的 `E2E_ISOLATED` 检查直接指向日常开发服务。运行器当前没有闪念样本，因此这里只覆盖闪念真实空态，不代表已覆盖闪念详情。
+
+扫描前确认实际主题、明暗模式、水合、业务内容和请求就绪，以减少动态效果模式保持页面稳定，不把加载态或请求错误当成正常页面。所有 axe 默认规则保持开启；`critical`、`serious` 违规导致失败，其他级别和需人工确认的 `incomplete` 结果仍保存在每个用例的 `axe-results` JSON 附件中，产物位于 `.playwright-mcp/e2e-results/`。允许清单是用例中的 `allowedViolations`。当前为空，因为还没有经维护者接受的豁免。新增条目必须写明规则 id、axe 节点 `target` 和非空理由，并可限定页面、主题与明暗模式；只放行列出的节点。适用于当前用例但没有命中节点的条目会使该用例失败。不得用 `disableRules`、排除整块页面或空 `target` 掩盖问题。
+
+自动扫描只覆盖当前桌面页面状态，不能代替键盘操作、焦点恢复、读屏、窄屏、弹层和正常动效的验收；参见[主题验证](themes.md#验证)与 [Playwright 可访问性测试说明](https://playwright.dev/docs/accessibility-testing)。
+
 需要评估文章列表投影时，可在后端构建后运行 `corepack pnpm --filter server-main exec tsx tests/post-list-performance.ts --compare`。它比较完整业务响应、分页和公开过滤，而非只比较耗时。浏览器性能与服务方法耗时分别记录；明确样本、预热、缓存、硬件及并发条件，不把本机采样直接当作线上收益。
 
 公开栏目导航验收使用 `node src/backend/server-main/tests/navigation-performance.mjs --samples=28 --devtools-ab`，运行前完成前后端生产构建。脚本建立独立数据库和媒体目录，使用至少 2,000 篇公开文章及每页 12 张真实受管图片，分别采样三主题生产导航和独立开发进程的 DevTools 开关对照；报告包含点击到页面就绪、长任务、DOM 峰值、请求与传输量，以及本次资源清理结果。默认只对功能与资源边界作断言，毫秒目标需在同硬件、同样本、相同预热条件下核验；不能把有失败响应的快速轮测当成成功性能结果。
