@@ -100,7 +100,7 @@ for (const width of [320, 390, 1440]) {
     await expect(cards).toHaveCount(1)
     await expect(cards.first()).toContainText(landscape.name)
     await cards.first().getByRole('button', { name: '查看引用', exact: true }).click()
-    const references = page.getByRole('region', { name: '媒体引用', exact: true })
+    const references = page.getByRole('region', { name: `${landscape.name} · 引用位置` })
     await expect(references).toContainText('引用位置（2）')
     await references.getByRole('link', { name: title, exact: true }).first().click()
     await expect(page).toHaveURL(new RegExp(`/admin/posts/${postId}$`))

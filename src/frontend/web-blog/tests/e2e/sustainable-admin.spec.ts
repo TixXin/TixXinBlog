@@ -131,6 +131,9 @@ test('六域草稿与五类待办均来自真实列表，并能进入筛选落�
     { requestId: randomUUID(), author: '读者', content: '这段记录很有启发。' },
     false,
   )
+  // 闪念评论先审后发，访客评论进入待审核队列。
+  const flash = await api('/admin/flashes', 'POST', { content: `公开的灵感 ${suffix}`, isDraft: false })
+  await api(`/flashes/${flash.id}/comments`, 'POST', { authorName: '读者', content: '这条灵感值得展开写写。' }, false)
   const current = await api('/admin/overview')
   await page.getByRole('button', { name: '刷新工作台', exact: true }).click()
   for (const task of overviewTasks) {
@@ -144,7 +147,12 @@ test('六域草稿与五类待办均来自真实列表，并能进入筛选落�
     await page.keyboard.press('Enter')
     const target = new URL(task.to, 'http://localhost')
     await expect.poll(() => new URL(page.url()).pathname + new URL(page.url()).search).toBe(task.to)
-    const endpoint = target.pathname === '/admin/moment-comments' ? '/admin/moments/comments' + target.search : task.to
+    const endpoint =
+      target.pathname === '/admin/moment-comments'
+        ? '/admin/moments/comments' + target.search
+        : target.pathname === '/admin/flash-comments'
+          ? '/admin/flashes/comments' + target.search
+          : task.to
     expect((await api(endpoint)).total).toBe(count)
     if (task.key === 'pendingComments')
       await expect(page.getByRole('combobox', { name: '评论状态', exact: true })).toHaveValue('pending')
@@ -154,6 +162,10 @@ test('六域草稿与五类待办均来自真实列表，并能进入筛选落�
       await expect(
         page.getByRole('navigation', { name: '朋友圈评论筛选' }).locator('[aria-current="page"]'),
       ).toHaveText('待审核')
+    else if (task.key === 'pendingFlashComments')
+      await expect(page.getByRole('navigation', { name: '闪念评论筛选' }).locator('[aria-current="page"]')).toHaveText(
+        '待审核',
+      )
     else
       await expect(
         page.getByRole('checkbox', {

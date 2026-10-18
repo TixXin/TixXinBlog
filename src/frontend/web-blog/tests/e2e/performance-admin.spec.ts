@@ -3,6 +3,7 @@ import { expect, test } from '@playwright/test'
 import type { Page, Request, Response } from '@playwright/test'
 import { writeFile } from 'node:fs/promises'
 import { cpus, platform, arch } from 'node:os'
+import { overviewDomains, overviewTasks } from '../../app/features/admin/overview'
 
 interface BrowserProbe {
   readyMs: number | null
@@ -172,14 +173,14 @@ test('当前生产后台就绪与约80KiB长文输入基线', async ({ page, bro
   expect(after.items).toHaveLength(20)
   await page.setViewportSize({ width: 1440, height: 1000 })
   await page.addInitScript(
-    ({ id, contentLength }) => {
+    ({ id, contentLength, statCount }) => {
       const state: BrowserProbe = { readyMs: null }
       ;(window as unknown as ProbeWindow).__adminProbe = state
       const check = () => {
         const path = location.pathname
         const ready =
           path === '/admin'
-            ? document.querySelectorAll('.overview__stats strong').length === 11 &&
+            ? document.querySelectorAll('.overview__stats strong').length === statCount &&
               !!document.querySelector('.operations-summary')?.textContent?.includes('最近备份完整性校验')
             : path === '/admin/posts'
               ? document.querySelectorAll('.admin-posts__table tbody tr').length === 20 &&
@@ -196,7 +197,8 @@ test('当前生产后台就绪与约80KiB长文输入基线', async ({ page, bro
       }
       requestAnimationFrame(check)
     },
-    { id: post.id, contentLength: markdown.length },
+    // 工作台每个待办和每个内容域各有一个计数。
+    { id: post.id, contentLength: markdown.length, statCount: overviewTasks.length + overviewDomains.length },
   )
   const samples: Record<string, Awaited<ReturnType<typeof sample>>[]> = {},
     warmups: Record<string, Awaited<ReturnType<typeof sample>>> = {}

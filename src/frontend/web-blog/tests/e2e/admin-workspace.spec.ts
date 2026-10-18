@@ -1,6 +1,7 @@
 /** @file admin-workspace.spec.ts @description 隔离后台滚动职责、移动抽屉、操作区、列表返回与三主题入口 */
 import { expect, test } from '@playwright/test'
 import type { Page } from '@playwright/test'
+import { adminNavigation } from '../../app/features/admin/navigation'
 import { captureMotion, prepareMotionCapture } from './motionScreenshot'
 
 test.beforeEach(async ({ page, browserName }) => {
@@ -69,7 +70,8 @@ test('桌面长表单只滚动右侧，长导航独立滚动且所有入口可�
   expect(await navigation.evaluate((node) => node.scrollHeight > node.clientHeight)).toBe(true)
   await navigation.getByRole('link', { name: '管理概览', exact: true }).focus()
   await expect(navigation.getByRole('link').first()).toBeFocused()
-  for (let i = 1; i < 15; i++) {
+  await expect(navigation.getByRole('link')).toHaveCount(adminNavigation.length)
+  for (let i = 1; i < adminNavigation.length; i++) {
     await page.keyboard.press('Tab')
     await expect(navigation.getByRole('link').nth(i)).toBeFocused()
   }
