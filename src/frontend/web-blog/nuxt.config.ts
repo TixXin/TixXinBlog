@@ -9,6 +9,7 @@ import nexusHostConfig from './themes/nexus/theme.config'
 import auroraHostConfig from './themes/aurora/theme.config'
 import dockHostConfig from './themes/dock/theme.config'
 import { readFileSync } from 'node:fs'
+import { SSR_CACHED_PAGES } from './server/utils/ssrCacheRoutes'
 
 const startupGuard = readFileSync(new URL('./public/startup-guard.js', import.meta.url), 'utf8')
 // 站点资料不可用时的中性站名，与 app/features/site/settings.ts 的 defaultSiteSettings.name 保持一致；
@@ -202,30 +203,12 @@ export default {
           // 登录态在客户端恢复；按 cookie 区分键，布局主题 cookie 不同的访客各自一份。
           // 经本站代理的写请求会清空该缓存（server/plugins/ssr-cache-purge.ts），内容变更不等 60s。
           ...Object.fromEntries(
-            [
-              '/',
-              '/archive',
-              '/moments',
-              '/moments/**',
-              '/projects',
-              '/gallery',
-              '/flash',
-              '/flash/**',
-              '/links',
-              '/guestbook',
-              '/about',
-              '/prompts',
-              '/subscriptions',
-              '/tabs',
-              '/articles/**',
-              '/tags/**',
-              '/categories/**',
-            ].map((path) => [
+            SSR_CACHED_PAGES.map((path) => [
               path,
               {
                 cache: { maxAge: 60, swr: true, varies: ['cookie'] },
-                // 条件请求命中时 Nitro 会回 public, max-age=60，浏览器随后直接复用本地副本；
-                // 必须声明随 Cookie 变化，否则切换布局主题后刷新仍拿到旧主题的 HTML，水合错位成空白页。
+                // 浏览器缓存头由 server/plugins/ssr-cache-browser.ts 改为 no-cache；仍声明随 Cookie 变化，
+                // 防止中间缓存把不同布局主题的 HTML 混用，导致水合错位。
                 headers: { Vary: 'Cookie' },
               },
             ]),
