@@ -111,6 +111,19 @@ const cells = computed<HeatmapCell[]>(() =>
     }
   }),
 )
+
+// 刷新后日期数量可能减少，保留有效的 Tab 入口并清除已移除日期的提示。
+watch(
+  () => cells.value.length,
+  (length) => {
+    focusedIndex.value = Math.max(0, Math.min(focusedIndex.value, length - 1))
+    if (hoveredIdx.value !== null && hoveredIdx.value >= length) {
+      hoveredIdx.value = null
+      tooltipVisible.value = false
+    }
+  },
+)
+
 function moveCell(event: KeyboardEvent, index: number) {
   const changes: Record<string, number> = { ArrowUp: -1, ArrowDown: 1, ArrowLeft: -7, ArrowRight: 7 }
   const change = changes[event.key]

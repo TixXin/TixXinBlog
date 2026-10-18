@@ -16,11 +16,13 @@
     </div>
 
     <div class="moment-photo-wall__grid">
-      <div
+      <button
         v-for="(img, index) in images.slice(0, 9)"
         :key="index"
+        type="button"
         class="moment-photo-wall__item"
         :class="{ 'is-featured': index === 0 }"
+        :aria-label="`查看照片 ${index + 1} 所属动态`"
         @click="emit('select-moment', img.momentId)"
       >
         <CommonContentImage
@@ -33,10 +35,10 @@
           height="200"
           :sizes="index === 0 ? '180px' : '90px'"
         />
-        <div class="moment-photo-wall__overlay">
+        <span class="moment-photo-wall__overlay" aria-hidden="true">
           <Icon name="lucide:eye" size="14" />
-        </div>
-      </div>
+        </span>
+      </button>
     </div>
   </section>
 </template>
@@ -95,10 +97,18 @@ const emit = defineEmits<{
 
 .moment-photo-wall__item {
   position: relative;
+  padding: 0;
+  border: 0;
+  background: transparent;
   border-radius: $radius-sm;
   overflow: hidden;
   cursor: var(--interaction-cursor, pointer);
   aspect-ratio: 1;
+
+  &:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+  }
 
   /* 第一张图片占 2x2 突出显示 */
   &.is-featured {
@@ -132,7 +142,8 @@ const emit = defineEmits<{
   }
 }
 
-.moment-photo-wall__item:hover {
+.moment-photo-wall__item:hover,
+.moment-photo-wall__item:focus-visible {
   .moment-photo-wall__img {
     transform: scale(1.03);
   }
