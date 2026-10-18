@@ -15,6 +15,7 @@ async function captureRequest({
   attachedError = false,
   traceId = undefined as string | undefined,
   referer = undefined as string | undefined,
+  extraHeaders = {} as Record<string, string>,
 } = {}) {
   const lines: string[] = []
   const options = createLoggingOptions('debug', development).pinoHttp
@@ -35,6 +36,7 @@ async function captureRequest({
         ...(traceId ? { 'x-trace-id': traceId } : {}),
         ...(referer ? { referer } : {}),
         authorization: 'Bearer logging-test-secret',
+        ...extraHeaders,
       },
     })
     await response.text()
@@ -93,6 +95,27 @@ describe('预览凭据日志脱敏', () => {
       expect(logs[0]?.req.headers.referer).toBe('[REDACTED]')
       expect(JSON.stringify(logs)).not.toMatch(/private-draft-secret|another-secret|referer-secret/)
     }
+  })
+})
+
+describe('客户端错误访问日志', () => {
+  it.each([202, 400, 429])('状态 %s 的请求地址与来源请求头均不泄露查询或任意附加信息', async (status) => {
+    const logs = await captureRequest({
+      development: false,
+      probe: false,
+      method: 'POST',
+      path: '/API/V1/CLIENT-ERRORS/?token=url-secret',
+      status,
+      extraHeaders: {
+        referer: 'https://blog.example.com/admin?token=referer-secret',
+        'x-private-context': 'header-secret',
+        'content-type': 'application/json',
+      },
+    })
+    expect(logs).toHaveLength(1)
+    expect(logs[0]?.req.url).toBe('/api/v1/client-errors')
+    expect(logs[0]?.req.headers['content-type']).toBe('application/json')
+    expect(JSON.stringify(logs)).not.toMatch(/url-secret|referer-secret|header-secret|logging-test-secret/)
   })
 })
 

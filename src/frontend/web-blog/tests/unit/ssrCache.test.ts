@@ -93,4 +93,11 @@ describe('purgeSsrCache', () => {
 
     await expect(purgeSsrCache()).rejects.toBe(failure)
   })
+
+  it('客户端错误上报不清空缓存，也不豁免其他相似路径', () => {
+    expect(shouldPurgeSsrCache('POST', '/api/v1/client-errors')).toBe(false)
+    expect(shouldPurgeSsrCache('POST', '/api/v1/client-errors/?source=window')).toBe(false)
+    expect(shouldPurgeSsrCache('POST', '/api/v1/client-errors-other')).toBe(true)
+    expect(shouldPurgeSsrCache('POST', '/api/v1/client-errors/settings')).toBe(true)
+  })
 })

@@ -12,6 +12,8 @@ export function shouldPurgeSsrCache(method: string, path: string): boolean {
   if (method === 'GET' || method === 'HEAD' || method === 'OPTIONS') return false
   const pathname = path.split('?')[0] ?? path
   if (!pathname.startsWith('/api/v1/')) return false
+  // 客户端错误上报只记录日志，不改变公开页面内容。
+  if (method === 'POST' && /^\/api\/v1\/client-errors\/?$/.test(pathname)) return false
   return !IGNORED.some((pattern) => pattern.test(pathname))
 }
 

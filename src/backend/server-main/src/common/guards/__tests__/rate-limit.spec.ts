@@ -47,6 +47,51 @@ describe('rateLimitClientKey', () => {
 })
 
 describe('RateLimitGuard', () => {
+  // 配额测试独立于机器负载；固定窗口只在专门的过期用例中显式推进。
+  beforeEach(() => jest.spyOn(Date, 'now').mockReturnValue(0))
+  afterEach(() => jest.restoreAllMocks())
+
+  function createClientErrorProbe(config = { NODE_ENV: 'production', RATE_LIMIT_DISABLED: 'true' }) {
+    const guard = new RateLimitGuard(new ConfigService(config))
+    return (ip = '192.0.2.1', path = '/api/v1/client-errors') =>
+      guard.canActivate({
+        switchToHttp: () => ({
+          getRequest: () => ({ path, method: 'POST', ip, socket: {} }),
+          getResponse: () => ({ setHeader: () => undefined }),
+        }),
+      } as unknown as ExecutionContext)
+  }
+
+  it('客户端错误按 IPv6 /64 限制五次且与公开互动写入配额独立，生产不能关闭', () => {
+    const request = createClientErrorProbe()
+    for (let index = 0; index < 5; index++) expect(request(`2001:db8:1:2::${index + 1}`)).toBe(true)
+    expect(() => request('2001:db8:1:2::99')).toThrow('操作过于频繁')
+    expect(request('2001:db8:1:3::1')).toBe(true)
+    for (let index = 0; index < 10; index++) expect(request('2001:db8:1:2::1', '/api/v1/guestbook')).toBe(true)
+    expect(() => request('2001:db8:1:2::1', '/api/v1/guestbook')).toThrow('操作过于频繁')
+  })
+
+  it('多个客户端共享单实例每分钟 100 次上限', () => {
+    const request = createClientErrorProbe()
+    for (let index = 0; index < 100; index++) expect(request(`192.0.2.${index + 1}`)).toBe(true)
+    expect(() => request('198.51.100.1')).toThrow('操作过于频繁')
+    expect(request('198.51.100.1', '/api/v1/guestbook')).toBe(true)
+  })
+
+  it('错误上报在测试环境也保持完整一分钟窗口，过期后恢复', () => {
+    const now = jest.spyOn(Date, 'now').mockReturnValue(0)
+    try {
+      const request = createClientErrorProbe({ NODE_ENV: 'test', RATE_LIMIT_DISABLED: 'false' })
+      for (let index = 0; index < 5; index++) expect(request()).toBe(true)
+      now.mockReturnValue(1001)
+      expect(() => request()).toThrow('操作过于频繁')
+      now.mockReturnValue(60000)
+      expect(request()).toBe(true)
+    } finally {
+      now.mockRestore()
+    }
+  })
+
   function createReadProbe() {
     const guard = new RateLimitGuard(new ConfigService({ NODE_ENV: 'production' }))
     return (path: string, method = 'GET') =>
