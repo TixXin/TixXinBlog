@@ -7,7 +7,7 @@
 
 <template>
   <main class="error-page">
-    <div class="error-page__card">
+    <div class="error-page__card" :class="{ 'error-page__card--discovery': errorStatus === 404 }">
       <CommonStateBlock
         :icon="errorConfig.icon"
         :title="errorConfig.title"
@@ -21,12 +21,28 @@
           返回首页
         </button>
       </CommonStateBlock>
+      <div v-if="errorStatus === 404" class="error-page__discovery">
+        <form class="error-page__search" role="search" aria-label="站内搜索" @submit.prevent="handleSearch">
+          <CommonSearchBox v-model="keyword" label="搜索关键词" placeholder="搜索站内内容..." />
+          <button type="submit" class="error-page__search-submit">搜索</button>
+        </form>
+        <p v-if="recentError" class="error-page__notice" role="status">
+          近期文章暂时无法加载，你仍可搜索站内内容或返回首页。
+        </p>
+        <p v-else-if="recentStatus === 'idle' || recentPending" class="error-page__notice" role="status">
+          正在加载近期文章…
+        </p>
+        <BlogRecentPosts v-else-if="recentPosts.length" :posts="recentPosts" />
+        <p v-else class="error-page__notice" role="status">暂无已发布文章。</p>
+      </div>
     </div>
   </main>
 </template>
 
 <script setup lang="ts">
 import type { NuxtError } from '#app'
+import { fetchPostPage } from '~/features/post/api'
+import { searchLocation } from '~/features/search/query'
 
 const props = defineProps<{ error: NuxtError }>()
 const errorStatus = computed(() => props.error.statusCode ?? 500)
@@ -70,6 +86,36 @@ useSeoMeta({
   ogTitle: () => errorConfig.value.title,
 })
 
+const router = useRouter()
+const keyword = ref('')
+const config = useRuntimeConfig()
+const recentQuery = { page: 1, pageSize: 5, pinnedFirst: false }
+const {
+  data: recentPage,
+  error: recentError,
+  pending: recentPending,
+  status: recentStatus,
+  execute: loadRecentPosts,
+} = usePublicReadData(
+  'error-recent-posts',
+  (_app, { signal }) => fetchPostPage(config.public.apiBaseUrl, recentQuery, signal),
+  {
+    domain: 'posts',
+    query: () => recentQuery,
+    immediate: false,
+  },
+)
+const recentPosts = computed(() => recentPage.value?.items.slice(0, 5) ?? [])
+// 推荐内容只在 404 挂载后读取，慢请求与读取失败都不阻塞错误页及其恢复入口。
+onMounted(() => {
+  if (errorStatus.value === 404) void loadRecentPosts()
+})
+
+function handleSearch() {
+  if (!keyword.value.trim()) return
+  return clearError({ redirect: router.resolve(searchLocation(keyword.value)).fullPath })
+}
+
 const handleHome = () => clearError({ redirect: '/' })
 function handlePrimary() {
   if (errorStatus.value >= 500) window.location.reload()
@@ -103,5 +149,91 @@ function handlePrimary() {
   border-radius: $radius-lg;
   box-shadow: var(--shadow-card);
   padding: 2rem 1.5rem;
+
+  &--discovery {
+    max-width: 40rem;
+  }
+}
+
+.error-page__search {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 1.5rem;
+
+  .search-box {
+    flex: 1;
+    min-width: 0;
+    max-width: none;
+  }
+}
+
+.error-page__search-submit {
+  flex-shrink: 0;
+  min-height: 44px;
+  padding: 0.5rem 1rem;
+  border: 1px solid var(--border);
+  border-radius: $radius-full;
+  background: var(--surface-2);
+  color: var(--text-main);
+
+  &:hover {
+    background: var(--accent-soft);
+  }
+}
+
+.error-page__discovery {
+  :deep(.recent-posts) {
+    margin-bottom: 0;
+  }
+
+  :deep(.recent-posts__header) {
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+
+  :deep(.recent-posts__more) {
+    min-height: 44px;
+    align-items: center;
+  }
+
+  :deep(a:focus-visible),
+  button:focus-visible {
+    outline: 2px solid var(--accent-text);
+    outline-offset: 3px;
+  }
+}
+
+.error-page__notice {
+  color: var(--text-muted);
+  line-height: 1.6;
+}
+
+@media (max-width: #{$breakpoint-sm - 1px}) {
+  .error-page {
+    padding: 1rem;
+  }
+
+  .error-page__card {
+    padding: 1.5rem 1rem;
+
+    :deep(.state-block) {
+      padding: 1.5rem 0.5rem;
+    }
+
+    :deep(.recent-posts) {
+      padding: 1rem;
+    }
+
+    :deep(.recent-post-item__cover) {
+      width: 64px;
+      height: 48px;
+    }
+
+    :deep(.recent-post-item__meta) {
+      flex-wrap: wrap;
+      gap: 0.25rem 0.75rem;
+    }
+  }
 }
 </style>

@@ -12,7 +12,7 @@
         <Icon name="lucide:clock" size="18" class="recent-posts__icon" />
         近期文章
       </h2>
-      <NuxtLink to="/articles" class="recent-posts__more">
+      <NuxtLink to="/" class="recent-posts__more">
         全部文章
         <Icon name="lucide:chevron-right" size="14" />
       </NuxtLink>

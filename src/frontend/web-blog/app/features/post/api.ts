@@ -64,7 +64,14 @@ function normalizePostItem(item: PostItem): PostItem {
 /** 后端分页与筛选，保留 total 供页码和瀑布流使用。 */
 export async function fetchPostPage(
   baseUrl: string,
-  query: { page?: number; pageSize?: number; tag?: string; folder?: string; search?: string } = {},
+  query: {
+    page?: number
+    pageSize?: number
+    tag?: string
+    folder?: string
+    search?: string
+    pinnedFirst?: boolean
+  } = {},
   signal?: AbortSignal,
 ): Promise<PostPage> {
   const base = requireBaseUrl(baseUrl)
