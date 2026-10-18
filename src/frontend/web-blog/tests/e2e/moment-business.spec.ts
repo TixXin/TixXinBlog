@@ -270,7 +270,11 @@ test('分页与筛选共享URL，读取失败保留内容并可重试，迟到�
   await expect(page.locator('.moment-list')).toHaveAttribute('aria-busy', 'false')
   const ids = await page.locator('.moment-card').evaluateAll((items) => items.map((item) => item.id))
   expect(ids).toHaveLength(15)
-  await page.getByRole('button', { name: '加载更多动态', exact: true }).click()
+  // 列表底部进入视口即由无限滚动加载下一页，按钮只是同一动作的兜底入口；
+  // 滚到按钮后再点击会与自动加载竞争，慢机器上点击重试的再次滚动还会多翻一页。
+  const more = page.getByRole('button', { name: '加载更多动态', exact: true })
+  await expect(more).toBeEnabled()
+  await more.scrollIntoViewIfNeeded()
   await expect(page).toHaveURL(/page=2/)
   await expect(page.locator('.moment-card')).toHaveCount(30)
   expect(new Set(await page.locator('.moment-card').evaluateAll((items) => items.map((item) => item.id))).size).toBe(30)
