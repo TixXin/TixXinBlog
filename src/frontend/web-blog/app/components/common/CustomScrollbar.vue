@@ -343,13 +343,34 @@ onMounted(() => {
     })
   }
 
-  // 主滚动区域：根据方向注册全局回到起始位置方法
-  if (props.primary) {
-    globalScrollDirection.value = props.primaryDirection
-    myResetFn = props.primaryDirection === 'down' ? () => scrollToBottom(true) : () => scrollToTop(true)
-    globalScrollResetFn.value = myResetFn
-  }
+  // 主滚动区域：挂载时登记；聊天模式会在父页面 mounted 之后才把方向改成 down
+  syncPrimaryBinding()
 })
+
+// 方向或主滚动身份变化后重绑。只在 onMounted 读一次会把留言板聊天模式永久记成返回顶部。
+watch(() => [props.primary, props.primaryDirection] as const, syncPrimaryBinding)
+
+/** 按当前方向登记回到起点的方法，并立刻改写进度，避免等下一次滚动才翻转圆环。 */
+function syncPrimaryBinding() {
+  if (!props.primary) {
+    releasePrimaryBinding()
+    return
+  }
+  globalScrollDirection.value = props.primaryDirection
+  myResetFn = props.primaryDirection === 'down' ? () => scrollToBottom(true) : () => scrollToTop(true)
+  globalScrollResetFn.value = myResetFn
+  globalProgress.value = props.primaryDirection === 'down' ? 100 - scrollProgress.value : scrollProgress.value
+}
+
+/** 本实例不再是主滚动条时，只清掉自己登记的全局状态。 */
+function releasePrimaryBinding() {
+  if (myResetFn && globalScrollResetFn.value === myResetFn) {
+    globalProgress.value = 0
+    globalScrollResetFn.value = null
+    globalScrollDirection.value = 'up'
+  }
+  myResetFn = null
+}
 
 onBeforeUnmount(() => {
   cancelOwnScroll?.()
@@ -364,13 +385,8 @@ onUnmounted(() => {
   document.removeEventListener('mousemove', onDragMove)
   document.removeEventListener('mouseup', onDragEnd)
 
-  // 主滚动区域：仅在本实例仍为活跃主滚动条时清理全局状态
-  // out-in 页面过渡中新页面先 mount 再旧页面 unmount，需避免覆盖新页面已设置的值
-  if (props.primary && globalScrollResetFn.value === myResetFn) {
-    globalProgress.value = 0
-    globalScrollResetFn.value = null
-    globalScrollDirection.value = 'up'
-  }
+  // 仅清掉本实例登记的状态。out-in 过渡里新页面先挂载，旧页面卸载时不得覆盖新登记。
+  releasePrimaryBinding()
 })
 </script>
 
