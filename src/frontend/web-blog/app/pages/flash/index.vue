@@ -623,7 +623,7 @@ async function onAddComment(payload: FlashCommentSubmission) {
       payload.noteId,
       payload.content,
       !isLoggedIn.value && guest ? { id: guest.id, name: guest.nickname, avatar: resolveAvatar() } : undefined,
-      { website: payload.website, formRenderedAt: payload.formRenderedAt },
+      { website: payload.website, formElapsedMs: payload.formElapsedMs },
     )
     payload.complete?.(!!created)
     if (created) success('评论已发送')

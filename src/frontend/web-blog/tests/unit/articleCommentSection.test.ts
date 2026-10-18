@@ -96,7 +96,7 @@ describe('CommentSection 评论表单', () => {
     expect(wrapper.get<HTMLButtonElement>('button[type="submit"]').element.disabled).toBe(false)
     await wrapper.get('form').trigger('submit')
     // 提交事件携带访客防机器人字段：空蜜罐与表单渲染时间，由页面随请求发送。
-    expect(wrapper.emitted('submit')).toEqual([[{ website: '', formRenderedAt: expect.any(Number) }]])
+    expect(wrapper.emitted('submit')).toEqual([[{ website: '', formElapsedMs: expect.any(Number) }]])
   })
 
   it('失败原因关联到输入框且优先播报，成功提示使用常驻礼貌播报区', async () => {

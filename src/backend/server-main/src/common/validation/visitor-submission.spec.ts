@@ -1,6 +1,7 @@
 /** @file visitor-submission.spec.ts @description 四类访客写入的 DTO 白名单、蜜罐与时间边界、业务调用及管理回复回归。 */
 import { BadRequestException, ValidationPipe } from '@nestjs/common'
 import type { Request } from 'express'
+import { MAX_FORM_ELAPSED_MS } from './visitor-submission'
 import { CommentController } from '../../modules/comment/comment.controller'
 import type { CommentService } from '../../modules/comment/comment.service'
 import { CreateCommentDto } from '../../modules/comment/dto/create-comment.dto'
@@ -31,21 +32,11 @@ const pipe = new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true, t
 
 const rejectedFields: Record<string, unknown>[] = [
   ...['https://spam.example', ' ', '\n', null, 0, false, {}, []].map((website) => ({ website })),
-  ...[
-    now - 999,
-    now,
-    now + 1,
-    0,
-    -1,
-    1.5,
-    Number.MAX_SAFE_INTEGER + 1,
-    NaN,
-    Infinity,
-    '1790000000000',
-    null,
-    {},
-    [],
-  ].map((formRenderedAt) => ({ formRenderedAt })),
+  ...[999, 0, -1, 1.5, MAX_FORM_ELAPSED_MS + 1, Number.MAX_SAFE_INTEGER + 1, NaN, Infinity, '2000', null, {}, []].map(
+    (formElapsedMs) => ({ formElapsedMs }),
+  ),
+  // 旧字段只校验类型，非法值仍拒绝
+  ...[0, -1, 1.5, NaN, '1790000000000', null, {}, []].map((formRenderedAt) => ({ formRenderedAt })),
 ]
 
 const cases = [
@@ -132,8 +123,16 @@ afterEach(() => {
 describe.each(cases)('$name 防垃圾契约', ({ dto, body, setup }) => {
   const metadata = { type: 'body' as const, metatype: dto }
 
-  it('旧客户端可省略字段，白名单保留合法空蜜罐与恰好 1000ms 的时间戳', async () => {
-    for (const fields of [{}, { website: '' }, { website: '', formRenderedAt: now - 1000 }, { formRenderedAt: 1 }]) {
+  it('旧客户端可省略字段，白名单保留合法空蜜罐、恰好 1000ms 与上限的填写时长', async () => {
+    for (const fields of [
+      {},
+      { website: '' },
+      { website: '', formElapsedMs: 1000 },
+      { formElapsedMs: MAX_FORM_ELAPSED_MS },
+      // 旧客户端的渲染时间戳不再与服务器时钟比较，时钟偏快的设备也不会被拒绝
+      { formRenderedAt: now + 3_600_000 },
+      { formRenderedAt: 1 },
+    ]) {
       await expect(pipe.transform({ ...body, ...fields }, metadata)).resolves.toMatchObject({ ...body, ...fields })
     }
   })
@@ -142,7 +141,7 @@ describe.each(cases)('$name 防垃圾契约', ({ dto, body, setup }) => {
     await expect(pipe.transform({ ...body, otherField: '' }, metadata)).rejects.toBeInstanceOf(BadRequestException)
   })
 
-  it('非空蜜罐、非法类型、不足 1000ms 及未来时间均返回统一参数错误', async () => {
+  it('非空蜜罐、非法类型、不足 1000ms 及超出上限的填写时长均返回统一参数错误', async () => {
     for (const fields of rejectedFields) {
       await expect(pipe.transform({ ...body, ...fields }, metadata)).rejects.toMatchObject({
         response: { statusCode: 400, message: [message] },
@@ -159,19 +158,20 @@ describe.each(cases)('$name 防垃圾契约', ({ dto, body, setup }) => {
     expect(auxiliary).not.toHaveBeenCalled()
   })
 
-  it('合法及旧请求保持原业务参数和响应，重新渲染时间不进入幂等摘要', async () => {
+  it('合法及旧请求保持原业务参数和响应，填写时长不进入幂等摘要', async () => {
     const { invoke, write, expectedArgs } = setup()
     for (const fields of [
       {},
-      { website: '', formRenderedAt: now - 2000 },
-      { website: '', formRenderedAt: now - 1000 },
+      { website: '', formElapsedMs: 2000 },
+      { website: '', formElapsedMs: 1000 },
+      { website: '', formRenderedAt: now + 60_000 },
     ]) {
       const input = { ...body, ...fields }
       await expect(invoke(input)).resolves.toBe(saved)
       expect(write).toHaveBeenLastCalledWith(...expectedArgs(body))
       expect(input).toEqual({ ...body, ...fields })
     }
-    expect(write).toHaveBeenCalledTimes(3)
+    expect(write).toHaveBeenCalledTimes(4)
   })
 })
 

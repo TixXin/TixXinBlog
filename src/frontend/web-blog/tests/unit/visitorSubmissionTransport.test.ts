@@ -11,7 +11,7 @@ const mocks = vi.hoisted(() => ({ fetch: vi.fn(), admin: vi.fn() }))
 mockNuxtImport('$fetch', () => mocks.fetch)
 mockNuxtImport('useAdminApi', () => () => mocks.admin)
 const wrappers: { unmount(): void }[] = []
-const fields = { website: ' robot ', formRenderedAt: 1000 }
+const fields = { website: ' robot ', formElapsedMs: 1000 }
 const comment = { id: 1, author: '访客', content: '正文', time: '2026-10-18T00:00:00Z', likes: 0, avatar: '' }
 beforeEach(() => {
   mocks.fetch.mockReset().mockResolvedValue({ code: 0, data: comment })
@@ -54,8 +54,8 @@ describe('公开提交的传输边界', () => {
     mocks.fetch.mockRejectedValueOnce(new Error('响应丢失'))
     await expect(createComment('/api/v1', '1', { ...business, ...fields })).rejects.toThrow('响应丢失')
     expect(mocks.fetch.mock.calls[0]?.[1].body).toEqual({ ...business, ...fields, requestId })
-    await createComment('/api/v1', '1', { ...business, website: '', formRenderedAt: 3000 })
-    expect(mocks.fetch.mock.calls[1]?.[1].body).toEqual({ ...business, website: '', formRenderedAt: 3000, requestId })
+    await createComment('/api/v1', '1', { ...business, website: '', formElapsedMs: 3000 })
+    expect(mocks.fetch.mock.calls[1]?.[1].body).toEqual({ ...business, website: '', formElapsedMs: 3000, requestId })
     expect(sessionStorage.getItem(key)).toBeNull()
   })
   it('闪念公开请求不会在字段白名单转换中丢掉蜜罐与时间戳', async () => {

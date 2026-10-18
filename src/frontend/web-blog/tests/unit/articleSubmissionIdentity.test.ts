@@ -45,7 +45,7 @@ it('打开身份面板后无参数确认沿用原字段，不发送访客个人�
     ),
   )
   flow.draft.value = '保留的评论'
-  await flow.submit({ website: '', formRenderedAt: 1000 })
+  await flow.submit({ website: '', formElapsedMs: 1000 })
   expect(flow.identityVisible.value).toBe(true)
   expect(mocks.create).not.toHaveBeenCalled()
   mocks.identity.value = { nickname: '访客', website: 'https://personal.example' }
@@ -55,7 +55,7 @@ it('打开身份面板后无参数确认沿用原字段，不发送访客个人�
     avatar: undefined,
     content: '保留的评论',
     website: '',
-    formRenderedAt: 1000,
+    formElapsedMs: 1000,
   })
   expect(flow.draft.value).toBe('')
 })

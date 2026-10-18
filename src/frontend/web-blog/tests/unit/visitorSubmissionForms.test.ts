@@ -15,9 +15,10 @@ import type { VisitorSubmissionFields } from '~/features/visitor/types'
 
 mockNuxtImport('useToast', () => () => ({ success: vi.fn(), error: vi.fn() }))
 const wrappers: VueWrapper[] = []
+// 计时使用单调时钟，用例推进 performance.now 模拟填写耗时。
 let now = 1_000_000
 beforeEach(() => {
-  vi.spyOn(Date, 'now').mockImplementation(() => now)
+  vi.spyOn(performance, 'now').mockImplementation(() => now)
 })
 afterEach(() => {
   wrappers.splice(0).forEach((wrapper) => wrapper.unmount())
@@ -78,7 +79,7 @@ describe('公开表单防垃圾字段', () => {
       else if (kind === 'guestbook') await wrapper.get('button.message-input__send').trigger('click')
       else await wrapper.get('button[aria-label="发送评论"]').trigger('click')
       const event = kind === 'guestbook' ? 'send' : kind === 'flash' ? 'add-comment' : 'submit'
-      expect(wrapper.emitted(event)?.[0]?.[0]).toMatchObject({ website: '  robot.example  ', formRenderedAt: now })
+      expect(wrapper.emitted(event)?.[0]?.[0]).toMatchObject({ website: '  robot.example  ', formElapsedMs: 0 })
     },
   )
 
@@ -90,18 +91,18 @@ describe('公开表单防垃圾字段', () => {
     now += 2000
     await wrapper.setProps({ submitting: false, submitError: '提交失败，请稍后重试' })
     await wrapper.get('form').trigger('submit')
-    expect(wrapper.emitted('submit')?.[0]?.[0]).toEqual({ website: 'robot', formRenderedAt: now - 2000 })
+    expect(wrapper.emitted('submit')?.[0]?.[0]).toEqual({ website: 'robot', formElapsedMs: 2000 })
     expect((wrapper.get('textarea').element as HTMLTextAreaElement).value).toBe('文章回复草稿')
     await wrapper.setProps({ submitting: true, submitError: '' })
     now += 2000
     await wrapper.setProps({ submitting: false, modelValue: '' })
     await wrapper.get('form').trigger('submit')
-    expect(wrapper.emitted('submit')?.[1]?.[0]).toEqual({ website: '', formRenderedAt: now })
+    expect(wrapper.emitted('submit')?.[1]?.[0]).toEqual({ website: '', formElapsedMs: 0 })
     now += 2000
     const remounted = await mountSuspended(CommentSection, { props: articleProps })
     wrappers.push(remounted)
     await remounted.get('form').trigger('submit')
-    expect(remounted.emitted('submit')?.[0]?.[0]).toMatchObject({ formRenderedAt: now })
+    expect(remounted.emitted('submit')?.[0]?.[0]).toMatchObject({ formElapsedMs: 0 })
   })
 
   it('闪念只从展开时开始计时，失败保留草稿，成功与重新展开重新计时', async () => {
@@ -113,13 +114,13 @@ describe('公开表单防垃圾字段', () => {
     await wrapper.get('input[name="website"]').setValue('robot')
     await wrapper.get('form').trigger('submit')
     const first = wrapper.emitted('add-comment')![0]![0] as FlashCommentSubmission
-    expect(first).toMatchObject({ formRenderedAt: now, website: 'robot' })
+    expect(first).toMatchObject({ formElapsedMs: 0, website: 'robot' })
     first.complete?.(false)
     await wrapper.vm.$nextTick()
     now += 2000
     await wrapper.get('form').trigger('submit')
     const retry = wrapper.emitted('add-comment')![1]![0] as FlashCommentSubmission
-    expect(retry).toMatchObject({ content: '保留草稿', formRenderedAt: now - 2000, website: 'robot' })
+    expect(retry).toMatchObject({ content: '保留草稿', formElapsedMs: 2000, website: 'robot' })
     retry.complete?.(true)
     await wrapper.vm.$nextTick()
     expect((wrapper.get('input[aria-label="闪念评论内容"]').element as HTMLInputElement).value).toBe('')
@@ -130,7 +131,7 @@ describe('公开表单防垃圾字段', () => {
     await wrapper.get('input[aria-label="闪念评论内容"]').setValue('下一条')
     await wrapper.get('form').trigger('submit')
     expect(wrapper.emitted('add-comment')![2]![0] as VisitorSubmissionFields).toMatchObject({
-      formRenderedAt: now,
+      formElapsedMs: 0,
       website: '',
     })
   })
@@ -160,7 +161,7 @@ it('朋友圈完整列表经 Card 与表单向页面透传蜜罐字段', async (
   wrappers.push(wrapper)
   await wrapper.get('input[name="website"]').setValue(' robot ')
   await wrapper.get('button[aria-label="发送评论"]').trigger('click')
-  expect(wrapper.emitted('comment')?.[0]?.[0]).toEqual({ id: 'moment', website: ' robot ', formRenderedAt: now })
+  expect(wrapper.emitted('comment')?.[0]?.[0]).toEqual({ id: 'moment', website: ' robot ', formElapsedMs: 0 })
 })
 
 it('表单建立时不生成服务端计时，挂载后才取得客户端时刻', async () => {
@@ -176,6 +177,25 @@ it('表单建立时不生成服务端计时，挂载后才取得客户端时刻'
     }),
   )
   wrappers.push(wrapper)
-  expect(initial).toEqual({ website: '', formRenderedAt: undefined })
-  expect(form.fields()).toEqual({ website: '', formRenderedAt: now })
+  expect(initial).toEqual({ website: '', formElapsedMs: undefined })
+  expect(form.fields()).toEqual({ website: '', formElapsedMs: 0 })
+})
+
+it('填写时长只取单调时钟差值，不受设备时间偏差影响，并截断到服务端上限', async () => {
+  // 设备时钟比服务端快一天，不应影响上报的填写时长。
+  vi.spyOn(Date, 'now').mockReturnValue(Date.parse('2026-10-19T00:00:00Z'))
+  let form!: ReturnType<typeof useVisitorSubmissionForm>
+  const wrapper = await mountSuspended(
+    defineComponent({
+      setup() {
+        form = useVisitorSubmissionForm()
+        return () => h('div')
+      },
+    }),
+  )
+  wrappers.push(wrapper)
+  now += 1500.4
+  expect(form.fields()).toEqual({ website: '', formElapsedMs: 1500 })
+  now += 31 * 24 * 60 * 60 * 1000
+  expect(form.fields().formElapsedMs).toBe(30 * 24 * 60 * 60 * 1000)
 })
