@@ -94,6 +94,8 @@
 
 `GET /posts/:id` 与 `GET /posts/by-slug/:slug` 返回公开详情：`tags` 与列表同为 `{ label, color }` 数组；`updatedAt` 是内容最后修订时间（当前修订快照的写入时间，早于发布时间或缺少快照时取发布时间），不随浏览、点赞或评论计数变化，用于 `dateModified`、`article:modified_time` 与站点地图 `lastmod`。有 Markdown 原文时只返回 `contentRaw`，不再返回结构化 `content`；没有原文的旧文章仍返回 `content` 供结构化渲染。`toc` 始终由结构化正文中的标题生成。摘要为空时额外返回 `excerpt`（首个正文段落前 160 字）作为描述兜底。
 
+`GET /posts/:id/related` 返回最多 4 项的数组，每项仍为 `{ id, slug, title, category, date }`（`id` 为字符串、`category` 为专栏、`date` 为 ISO UTC）。来源必须已发布且未回收，否则返回 404；候选同样仅含公开文章并排除来源自身。优先推荐有共同标签的文章，按 `(共同标签数 × 3 + 同专栏加 2 分) / (1 + 发布年龄天数 / 180)` 降序排列；标签按编号去重，发布年龄以查询时刻计算，未来日期按 0 天处理。相同分数按发布时间、编号倒序。标签推荐不足 4 篇时，用尚未入选的同专栏最新文章补齐；仍不足则返回实际数量，不补入跨专栏且无共同标签的文章。该排序不影响人工维护的 `relatedContent`。
+
 `POST /posts/:id/view` 按访客每整点小时去重计数，响应 `{ views, likes, liked, counted }`（私有、不缓存）：`counted` 表示本次是否计入，`likes/liked` 与 `GET /posts/:id/interaction` 同口径，文章页挂载后一次请求即可同步计数与点赞状态；计数失败时前端再回退到 `interaction`。评论可见性需要同时考虑所属文章、祖先、审核和删除状态；缓存计数与公开聚合遵循相同口径。专栏重命名与引用同步在事务内完成，仍被引用的目录项不能直接删除。
 
 `GET /posts/metadata` 保持旧完整响应：`tags/categories/stats/activity/archive`。`includeArchive` 默认为 `true`，只接受 `true` 或 `false`；显式 `false` 返回轻量 `tags/categories/stats/activity`，不查询或返回全量归档。完整模式的 `archive` 项与 `GET /posts/archive` 字段相同（含 `updatedAt`）。公开页面与主题侧栏使用轻量模式，服务端 sitemap 继续使用完整模式、过滤 `seoNoindex` 并以 `updatedAt` 作为文章 `lastmod`。
