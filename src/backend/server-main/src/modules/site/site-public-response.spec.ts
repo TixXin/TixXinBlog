@@ -3,6 +3,8 @@ import 'reflect-metadata'
 import type { EntityManager } from '@mikro-orm/postgresql'
 import { SiteSettings } from '../../entities/site-settings.entity'
 import { SiteSettingsService } from './site-settings.service'
+import { SITE_NAV_KEYS } from './site-navigation'
+import type { SiteNavItem } from './site-navigation'
 
 const publicValues = {
   name: '山间笔记',
@@ -21,6 +23,27 @@ const publicValues = {
   presenceSignature: '今天也有新发现',
   presenceStatus: 'idle' as const,
   launchedAt: '2026-01-01',
+  // 导航、页脚、一言、备案与版权是博主维护的公开展示内容；隐藏的内置模块保留条目以维持显隐语义。
+  navigation: [
+    ...SITE_NAV_KEYS.map((key): SiteNavItem => ({ type: 'route', key, visible: key !== 'tabs' })),
+    { type: 'external', label: '作品集', url: 'https://portfolio.example.test', newTab: true, visible: true },
+  ] as SiteNavItem[],
+  footerLinks: [
+    { label: '关于本站', url: '/about', newTab: false },
+    { label: 'RSS 订阅', url: '/rss.xml', newTab: true },
+  ],
+  quotes: ['慢慢走，欣赏啊。'],
+  icpNumber: '沪ICP备2026001234号',
+  icpUrl: 'https://beian.miit.gov.cn/',
+  copyright: '© {year} {siteName}',
+}
+// 博主隐藏的外链不得出现在公开响应中。
+const hiddenExternal: SiteNavItem = {
+  type: 'external',
+  label: '尚未公开的作品',
+  url: 'https://draft.example.test/private',
+  newTab: false,
+  visible: false,
 }
 const publicAbout = {
   visible: true,
@@ -41,6 +64,7 @@ function fixture() {
     updatedAt: new Date('2026-10-02T00:00:00.000Z'),
     values: {
       ...structuredClone(publicValues),
+      navigation: [...structuredClone(publicValues.navigation), structuredClone(hiddenExternal)],
       about: {
         ...structuredClone(publicAbout),
         sections: [

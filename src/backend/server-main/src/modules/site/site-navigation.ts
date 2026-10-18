@@ -231,3 +231,11 @@ export function withSiteExtrasDefaults<T extends Partial<SiteExtrasValues>>(valu
     copyright: values.copyright ?? '',
   }
 }
+
+/**
+ * 公开读取的导航：隐藏的外链不对外返回，避免暴露博主未公开的地址；
+ * 内置模块即使隐藏也保留条目，否则前端会按缺失模块补回为可见。
+ */
+export function publicSiteNavigation(navigation: readonly SiteNavItem[]): SiteNavItem[] {
+  return navigation.filter((item) => item.type === 'route' || item.visible)
+}
