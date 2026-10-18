@@ -17,7 +17,7 @@ const timestamp = '2026-10-01T12:00:00.000Z'
 const mediaId = 'bb2a48c1-d233-4c45-9c1e-a21e9a56fd20'
 const bundle = (): ContentPackage => ({
   format: 'tixxin-content',
-  version: 11,
+  version: 12,
   omittedRelations: 0,
   exportedAt: timestamp,
   mediaIncluded: false,
@@ -149,7 +149,7 @@ describe('内容包输入与限额', () => {
     await expect(parse(value)).rejects.toThrow('根对象')
   })
 
-  it.each([0, 12, -1, 11.5, '11', null])('拒绝不支持或错误类型的版本：%j', async (version) => {
+  it.each([0, 13, -1, 12.5, '12', null])('拒绝不支持或错误类型的版本：%j', async (version) => {
     await expect(parse({ ...bundle(), version })).rejects.toThrow('不支持的内容包格式或版本')
   })
 
