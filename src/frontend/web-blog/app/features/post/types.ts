@@ -10,6 +10,20 @@ export interface PostTag {
   color: 'emerald' | 'rose' | 'sky' | 'orange' | 'blue' | 'amber'
 }
 
+/** 后台文章列表投影，批量选择保留读取时的版本。 */
+export interface AdminPostListRow {
+  id: number
+  revision: number
+  deleted: boolean
+  title: string
+  status: 'draft' | 'published' | 'archived'
+  category: 'tech' | 'life'
+  folder: string
+  tags: string[]
+  pinned: boolean
+  updatedAt: string
+}
+
 export interface PostItem {
   slug?: string
   id: number

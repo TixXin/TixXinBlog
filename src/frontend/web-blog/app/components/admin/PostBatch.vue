@@ -16,6 +16,14 @@
     </header>
     <p v-if="pending" role="status">正在处理，请等待服务器结果…</p>
     <p v-if="error" role="alert">{{ error }}</p>
+    <p v-if="batchCount > 1" role="status">
+      共选择 {{ totalCount }} 篇，分 {{ batchCount }} 批处理，当前第 {{ batchIndex }} 批，每批最多
+      {{ POST_BATCH_LIMIT }} 篇。每批须分别预览并确认，后续批次不会自动执行。
+    </p>
+    <p v-if="batchCount > 1 && (!result?.completed || batchIndex < batchCount)">
+      关闭后剩余批次不会执行；已提交批次仍可在“最近批量操作”中查询。
+    </p>
+    <button v-if="!preview && canNext" type="button" :disabled="pending" @click="$emit('next')">重试本批预览</button>
     <template v-if="preview">
       <p>
         操作：{{ postBatchLabels[preview.action] }}。本次明确选择 {{ preview.items.length }} 篇，可执行
@@ -30,6 +38,9 @@
       <p>
         预览创建后 5
         分钟内有效；执行时再次检查版本和影响范围，变化条目会跳过。已执行记录可在文章管理下方“最近批量操作”中重新打开。
+      </p>
+      <p v-if="preview.expiresIn <= 0 && !result?.completed" role="status">
+        凭证已过期，不能继续执行。请先查询执行结果，核对剩余文章后关闭面板并重新选择、预览。
       </p>
       <ul aria-label="批量影响范围">
         <li v-for="item in preview.items" :key="item.id">
@@ -70,6 +81,7 @@
           {{ attempted ? '继续执行未处理条目' : '确认执行' }}
         </button>
         <button v-if="attempted" type="button" :disabled="pending" @click="$emit('query')">查询执行结果</button>
+        <button v-if="canNext" type="button" :disabled="pending" @click="$emit('next')">预览下一批</button>
         <button type="button" :disabled="pending" @click="close">
           {{ result?.completed ? '完成并关闭' : attempted ? '关闭，稍后查询' : '取消并关闭' }}
         </button>
@@ -78,17 +90,24 @@
   </dialog>
 </template>
 <script setup lang="ts">
-import { postBatchLabels } from '~/features/post/batchTypes'
+import { POST_BATCH_LIMIT, postBatchLabels } from '~/features/post/batchTypes'
 import type { PostBatchPreview, PostBatchResult } from '~/features/post/batchTypes'
 import { getModalFocusOrigin } from '~/utils/modalFocusOrigin'
-const props = defineProps<{
-  preview: PostBatchPreview | null
-  result: PostBatchResult | null
-  pending: boolean
-  error: string
-  attempted: boolean
-}>()
-defineEmits<{ execute: []; query: [] }>()
+const props = withDefaults(
+  defineProps<{
+    preview: PostBatchPreview | null
+    result: PostBatchResult | null
+    pending: boolean
+    error: string
+    attempted: boolean
+    batchIndex?: number
+    batchCount?: number
+    totalCount?: number
+    canNext?: boolean
+  }>(),
+  { batchIndex: 1, batchCount: 1, totalCount: 0, canNext: false },
+)
+defineEmits<{ execute: []; query: []; next: [] }>()
 const open = defineModel<boolean>('open', { required: true })
 const acknowledgement = defineModel<string>('acknowledgement', { required: true })
 const dialog = ref<HTMLDialogElement | null>(null)

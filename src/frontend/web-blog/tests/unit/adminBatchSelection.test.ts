@@ -1,4 +1,4 @@
-/** @file adminBatchSelection.test.ts @description 后台批量选择：当前页全选/半选、可访问名与数量播报、评论与留言批量接口契约、删除确认与跳过项提示 */
+/** @file adminBatchSelection.test.ts @description 后台批量选择：当前页及跨页快照、数量上限、可访问名与播报、评论留言接口和删除确认 */
 import { afterEach, beforeEach, expect, it, vi } from 'vitest'
 import { defineComponent, h, nextTick, reactive, ref } from 'vue'
 import type { Ref } from 'vue'
@@ -7,6 +7,7 @@ import { mockNuxtImport, mountSuspended } from '@nuxt/test-utils/runtime'
 import BatchBar from '../../app/components/admin/BatchBar.vue'
 import CommentsPage from '../../app/pages/admin/comments.vue'
 import { describeBatchResult, useAdminBatchSelection } from '../../app/composables/useAdminBatchSelection'
+import type { AdminBatchSelectionOptions } from '../../app/composables/useAdminBatchSelection'
 import { useAdminGuestbook } from '../../app/composables/useAdminGuestbook'
 
 const mocks = vi.hoisted(() => ({
@@ -86,6 +87,144 @@ it('当前页全选与半选；列表刷新后只保留仍在当前页的选中�
   expect(selection.count.value).toBe(2)
   selection.toggleAll()
   expect(selection.count.value).toBe(0)
+})
+
+/** 在组件作用域内创建选择器，卸载时同步释放列表监听。 */
+async function mountSelection(items: Ref<{ id: number; revision: number }[]>, options: AdminBatchSelectionOptions) {
+  let selection!: ReturnType<typeof useAdminBatchSelection<{ id: number; revision: number }>>
+  const wrapper = await mountSuspended(
+    defineComponent({
+      setup() {
+        selection = useAdminBatchSelection(items, options)
+        return () => h('div')
+      },
+    }),
+  )
+  wrappers.push(wrapper)
+  return selection
+}
+
+it('跨页模式保留选择，当前页全选和取消不影响其他页，空页不出现半选', async () => {
+  const items = ref([
+    { id: 1, revision: 2 },
+    { id: 2, revision: 3 },
+  ])
+  const selection = await mountSelection(items, { preserveAcrossPages: true })
+  selection.toggle(1)
+  items.value = [
+    { id: 3, revision: 4 },
+    { id: 4, revision: 5 },
+  ]
+  await nextTick()
+  expect(selection.selectedItems.value).toEqual([{ id: 1, revision: 2 }])
+  expect(selection.count.value).toBe(1)
+  expect(selection.allSelected.value).toBe(false)
+  expect(selection.partiallySelected.value).toBe(false)
+  selection.toggle(3)
+  expect(selection.partiallySelected.value).toBe(true)
+  selection.toggleAll(true)
+  expect(selection.selectedIds.value).toEqual([1, 3, 4])
+  expect(selection.count.value).toBe(3)
+  expect(selection.allSelected.value).toBe(true)
+  selection.toggleAll(false)
+  expect(selection.selectedIds.value).toEqual([1])
+  expect(selection.partiallySelected.value).toBe(false)
+  items.value = []
+  await nextTick()
+  expect(selection.count.value).toBe(1)
+  expect(selection.allSelected.value).toBe(false)
+  expect(selection.partiallySelected.value).toBe(false)
+})
+
+it('跨页快照保留选择时版本，列表原地变更和重新读取不会更新，明确重选后才使用新版本', async () => {
+  const items = ref([{ id: 1, revision: 2 }])
+  const selection = await mountSelection(items, { preserveAcrossPages: true })
+  selection.toggle(1)
+  items.value[0]!.revision = 3
+  await nextTick()
+  expect(selection.selectedItems.value).toEqual([{ id: 1, revision: 2 }])
+  items.value = [{ id: 1, revision: 4 }]
+  await nextTick()
+  selection.toggle(1, true)
+  selection.toggleAll(true)
+  expect(selection.selectedItems.value).toEqual([{ id: 1, revision: 2 }])
+  selection.toggle(1, false)
+  selection.toggle(1, true)
+  expect(selection.selectedItems.value).toEqual([{ id: 1, revision: 4 }])
+  expect(selection.toggle(99)).toBe(false)
+  expect(selection.selectedIds.value).toEqual([1])
+})
+
+it('跨页选择数量上限同时约束单选、当前页全选与全部替换，超限不部分写入', async () => {
+  const items = ref([{ id: 1, revision: 1 }])
+  const selection = await mountSelection(items, { preserveAcrossPages: true, limit: 2 })
+  expect(selection.toggle(1)).toBe(true)
+  items.value = [
+    { id: 2, revision: 2 },
+    { id: 3, revision: 3 },
+  ]
+  await nextTick()
+  expect(selection.toggleAll(true)).toBe(false)
+  expect(selection.selectedIds.value).toEqual([1])
+  expect(selection.selectedItems.value).toEqual([{ id: 1, revision: 1 }])
+  expect(selection.toggle(2)).toBe(true)
+  expect(selection.toggle(3)).toBe(false)
+  expect(selection.replaceSelection([{ id: 4, revision: 4 }, ...items.value])).toBe(false)
+  expect(selection.selectedItems.value).toEqual([
+    { id: 1, revision: 1 },
+    { id: 2, revision: 2 },
+  ])
+  expect(selection.toggle(2, true)).toBe(true)
+  selection.remove([1])
+  expect(selection.toggle(3)).toBe(true)
+  expect(selection.count.value).toBe(2)
+})
+
+it('全部替换按编号去重并创建快照，移除与清空释放旧快照，重新选择使用当前版本', async () => {
+  const items = ref([{ id: 1, revision: 7 }])
+  const selection = await mountSelection(items, { preserveAcrossPages: true, limit: 2 })
+  selection.toggle(1)
+  const rows = [
+    { id: 2, revision: 2 },
+    { id: 2, revision: 3 },
+    { id: 3, revision: 4 },
+  ]
+  expect(selection.replaceSelection(rows)).toBe(true)
+  rows[0]!.revision = 5
+  expect(selection.selectedItems.value).toEqual([
+    { id: 2, revision: 2 },
+    { id: 3, revision: 4 },
+  ])
+  selection.remove([2, 99])
+  expect(selection.selectedIds.value).toEqual([3])
+  expect(selection.selectedItems.value).toEqual([{ id: 3, revision: 4 }])
+  selection.clear()
+  expect(selection.count.value).toBe(0)
+  expect(selection.selectedIds.value).toEqual([])
+  items.value = [{ id: 3, revision: 8 }]
+  await nextTick()
+  selection.toggleAll(true)
+  expect(selection.selectedItems.value).toEqual([{ id: 3, revision: 8 }])
+  expect(selection.replaceSelection([])).toBe(true)
+  expect(selection.count.value).toBe(0)
+})
+
+it('默认当前页模式仍读取当前版本，并在配置上限时原子拒绝超限全选', async () => {
+  const items = ref([
+    { id: 1, revision: 1 },
+    { id: 2, revision: 1 },
+  ])
+  const selection = await mountSelection(items, { limit: 1 })
+  selection.toggle(1)
+  items.value = [
+    { id: 1, revision: 2 },
+    { id: 2, revision: 1 },
+  ]
+  await nextTick()
+  expect(selection.selectedItems.value).toEqual([{ id: 1, revision: 2 }])
+  expect(selection.toggleAll(true)).toBe(false)
+  expect(selection.toggle(2)).toBe(false)
+  expect(selection.selectedIds.value).toEqual([1])
 })
 
 it('批量结果文案区分成功、已不存在与已被修改', () => {
