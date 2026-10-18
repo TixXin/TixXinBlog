@@ -1,0 +1,58 @@
+# 安全检查独立于安装、构建和数据库任务，覆盖文档改动与新披露的依赖漏洞。
+name: Security
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  schedule:
+    # 每周一 03:43 UTC 重查默认分支，即使锁文件未变也查询最新公告。
+    - cron: '43 3 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  secrets:
+    name: Check Secrets
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: 25
+
+      # 复用现有规则，直接扫描当前文件；不安装依赖，也不执行生命周期脚本。
+      - name: Scan Repository Files
+        run: node scripts/check-secrets.mjs
+
+  dependency-audit:
+    name: Audit Dependencies
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: 25
+
+      - uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4.3.0
+        with:
+          run_install: false
+
+      # 直接审计根锁文件，沿用生产依赖范围和既有公告例外；注册表错误仍使检查失败。
+      - name: Audit Production Dependencies
+        run: pnpm audit --prod --audit-level=high

@@ -1,3 +1,4 @@
+# 后端持续集成：限制令牌权限，并取消同一分支或 PR 的过时检查。
 name: Backend CI
 
 on:
@@ -22,6 +23,13 @@ on:
       - 'deploy/**'
       - 'scripts/release/**'
 
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   backend:
     runs-on: ubuntu-latest
@@ -43,14 +51,18 @@ jobs:
           --health-retries 10
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
 
-      - uses: pnpm/action-setup@v4
+      - uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4.3.0
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
           node-version: 25
           cache: pnpm
+          # 与前端共享根锁文件，缓存只保存 pnpm 包存储，不保存 node_modules。
+          cache-dependency-path: pnpm-lock.yaml
 
       - name: Install Corepack
         run: npm install --global corepack@0.34.6
@@ -75,7 +87,7 @@ jobs:
 
       - name: Backend Coverage Report
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: backend-coverage
           path: src/backend/server-main/coverage
@@ -129,7 +141,7 @@ jobs:
 
       - name: Restore Verification Report
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: restore-verification
           path: |

@@ -1,3 +1,4 @@
+# 持续集成：只读检出源码，同一分支或 PR 的新提交取消过时检查。
 name: CI
 
 on:
@@ -10,6 +11,13 @@ on:
     paths-ignore:
       - 'docs/**'
 
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   development-runner:
     strategy:
@@ -18,8 +26,10 @@ jobs:
     runs-on: ${{ matrix.os }}
     timeout-minutes: 5
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
           node-version: 25
       - name: Development Process Lifecycle
@@ -44,15 +54,19 @@ jobs:
           --health-timeout 3s
           --health-retries 10
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
 
-      - uses: pnpm/action-setup@v4
+      - uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4.3.0
 
       # 开发、CI 与两套生产镜像统一使用 Node 25。
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
           node-version: 25
           cache: pnpm
+          # 复用 setup-node 的系统、架构、包管理器与锁文件哈希缓存键。
+          cache-dependency-path: pnpm-lock.yaml
 
       - name: Install Corepack
         run: npm install --global corepack@0.34.6
@@ -83,7 +97,7 @@ jobs:
 
       - name: Frontend Coverage Report
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: frontend-coverage
           path: src/frontend/web-blog/coverage
@@ -110,7 +124,7 @@ jobs:
 
       - name: Browser Failure Artifacts
         if: failure()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: browser-e2e-failure
           path: .playwright-mcp/e2e-results
