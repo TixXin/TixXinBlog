@@ -160,13 +160,13 @@
       ><button
         type="button"
         :disabled="!ready || loading || saving || !value.name.trim() || !value.url.trim()"
-        @click="$emit('save', 'draft')"
+        @click="requestSave('draft')"
       >
         保存草稿</button
       ><button
         type="button"
         :disabled="!ready || loading || saving || !value.name.trim() || !value.url.trim()"
-        @click="$emit('save', 'published')"
+        @click="requestSave('published')"
       >
         上架友链</button
       ><span>{{ dirty ? '有尚未保存输入' : saved ? '当前输入已保存' : '尚未保存' }}</span>
@@ -214,6 +214,9 @@ const { label: saveShortcut } = useAdminSaveShortcut({
 })
 const mediaOpen = ref(false),
   selectedMedia = ref<MediaAsset | null>(null)
+function requestSave(status: LinkStatus) {
+  if (editorForm.value?.reportValidity()) emit('save', status)
+}
 function change<K extends keyof LinkEditable>(key: K, value: LinkEditable[K]) {
   emit('change', { [key]: value })
 }
