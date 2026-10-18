@@ -243,7 +243,8 @@ export default {
             "frame-ancestors 'none'",
             // 站点不使用插件、内嵌框架与跨站表单；统计脚本来源由 server/plugins/csp-analytics.ts 在运行时追加
             "object-src 'none'",
-            "frame-src 'none'",
+            // 开发模式的错误详情浮层通过 data: iframe 展示堆栈，仅开发放行；生产仍禁止内嵌框架
+            process.env.NODE_ENV === 'production' ? "frame-src 'none'" : "frame-src 'self' data:",
             "base-uri 'self'",
             "form-action 'self'",
           ].join('; '),
