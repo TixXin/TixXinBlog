@@ -11,7 +11,12 @@ import type { SaveSiteSettingsDto } from './site-settings.dto'
 import { lockMedia, synchronizeMediaReferences } from '../media/media-references'
 import { ContentContext } from '../../entities/content-context.entity'
 import { emptyAbout, publicAbout } from './about-settings'
-import { normalizeSiteExtrasInput, SiteExtrasError, withSiteExtrasDefaults } from './site-navigation'
+import {
+  normalizeSiteExtrasInput,
+  publicSiteNavigation,
+  SiteExtrasError,
+  withSiteExtrasDefaults,
+} from './site-navigation'
 /** 后加字段在历史记录中可能缺失，读取时统一补空串；导航与页脚等按缺省值补齐 */
 export function withPresenceDefaults(values: SiteSettingsValues) {
   return withSiteExtrasDefaults({
@@ -39,8 +44,10 @@ export class SiteSettingsService {
   }
   async get(publicView = false) {
     const settings = await this.em.findOneOrFail(SiteSettings, { id: 'default' }, { refresh: true })
+    const values = withPresenceDefaults(settings.values)
     return {
-      ...withPresenceDefaults(settings.values),
+      ...values,
+      ...(publicView ? { navigation: publicSiteNavigation(values.navigation) } : {}),
       about: publicView ? publicAbout(settings.values.about) : (settings.values.about ?? emptyAbout()),
       ...(publicView ? {} : { revision: settings.revision }),
       updatedAt: settings.updatedAt.toISOString(),

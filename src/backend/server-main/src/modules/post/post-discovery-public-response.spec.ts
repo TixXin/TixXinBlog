@@ -130,7 +130,8 @@ describe('文章发现 GET 响应白名单', () => {
     )
     expect(execute).toHaveBeenCalledWith(
       expect.stringContaining("where p.status='published' and p.deleted_at is null and p.id<>?"),
-      [9, '随笔', 9],
+      // 依次为共同标签源文章、同专栏加分、排除自身、同专栏候选条件
+      [9, '随笔', 9, '随笔'],
     )
   })
 
