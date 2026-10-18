@@ -118,7 +118,7 @@ it('粘贴图片在光标处插入占位，上传成功后替换为标准 Markdo
   await wrapper.vm.$nextTick()
   // 上传中禁止保存，避免把占位写入服务器。
   expect(wrapper.get('button[type="submit"]').attributes('disabled')).toBeDefined()
-  expect(wrapper.get('[role="status"].post-editor__hint').text()).toBe('正在上传 1 张图片')
+  expect(wrapper.get('[role="status"][aria-label="正文图片上传状态"]').text()).toBe('正在上传 1 张图片')
   expect(mocks.upload).toHaveBeenCalledWith(expect.any(File), expect.any(String), '', expect.any(Function))
   // 上传期间用户继续输入，占位仍能被准确定位。
   body.setRangeText('（续写）', body.value.length, body.value.length, 'end')
@@ -127,7 +127,7 @@ it('粘贴图片在光标处插入占位，上传成功后替换为标准 Markdo
   await flushPromises()
   expect(draft.contentRaw).toBe('前文![](/media/a1.webp)后文（续写）')
   expect(mocks.toast.info).toHaveBeenCalledWith(expect.stringContaining('替代文本'))
-  expect(wrapper.get('[role="status"].post-editor__hint').text()).toBe('图片上传处理完成')
+  expect(wrapper.get('[role="status"][aria-label="正文图片上传状态"]').text()).toBe('图片上传处理完成')
 })
 
 it('拖入多张图片并行上传；失败项替换为可见错误并提示，成功项不受影响', async () => {

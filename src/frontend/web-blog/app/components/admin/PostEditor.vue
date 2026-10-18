@@ -1,6 +1,6 @@
 <!--
   @file PostEditor.vue
-  @description 文章编辑、章节定位与实时预览，保存和发布由页面数据源处理；支持 Ctrl/⌘+S 保存与正文粘贴/拖拽上传图片
+  @description 文章编辑、实时字数与阅读时间估算、章节定位及预览；保存和发布由页面处理，支持保存快捷键与图片上传
 -->
 <template>
   <form ref="editorForm" class="post-editor" @submit.prevent="requestSave(draft.status)">
@@ -72,18 +72,38 @@
       >
       <label>标签（逗号分隔）<input v-model="tags" :disabled="pending" /></label>
       <label
-        >阅读分钟<input v-model.number="draft.readTimeMinutes" type="number" min="1" max="300" :disabled="pending"
+        >阅读分钟<input
+          v-model.number="draft.readTimeMinutes"
+          type="number"
+          min="1"
+          max="300"
+          :aria-describedby="`${readingStatsId} ${readingHintId}`"
+          :disabled="pending"
       /></label>
     </div>
-    <p>
-      建议阅读时间约 {{ suggestedMinutes }} 分钟（按中文约 350 字/分钟、英文约 220 词/分钟估算）。<button
-        type="button"
-        :disabled="pending"
-        @click="draft.readTimeMinutes = suggestedMinutes"
-      >
-        采用建议时间
-      </button>
-    </p>
+    <div class="post-editor__reading">
+      <p :id="readingStatsId" data-post-reading-stats>
+        正文字数：{{ readingStats.wordCount.toLocaleString('zh-CN') }}（中文
+        {{ readingStats.chineseCharacters.toLocaleString('zh-CN') }} 字，英文及数字
+        {{ readingStats.words.toLocaleString('zh-CN') }} 词） · 建议阅读时间约 {{ readingStats.minutes }} 分钟
+      </p>
+      <CommonTooltip content="按当前正文字数填入阅读分钟，之后仍可手动修改">
+        <button
+          type="button"
+          data-post-apply-reading-time
+          :aria-describedby="`${readingStatsId} ${readingHintId}`"
+          :disabled="pending || !readingStats.wordCount"
+          @click="applyReadingTime"
+        >
+          按字数估算阅读时长
+        </button>
+      </CommonTooltip>
+      <p :id="readingHintId" class="post-editor__hint">
+        中文按字、英文及数字按词计数，不计代码块和图片。按中文约 350 字/分钟、英文及数字约 220
+        词/分钟估算；仅点击按钮时填入阅读分钟，可继续手动修改。
+      </p>
+      <p class="post-editor__hint" role="status" aria-label="阅读时长填入状态">{{ readingTimeStatus }}</p>
+    </div>
     <div v-if="options.tags.length" class="post-editor__tag-options" aria-label="已有标签">
       <span>添加已有标签：</span
       ><button
@@ -151,7 +171,7 @@
     <p :id="bodyHintId" class="post-editor__hint">
       可直接粘贴或拖入 JPEG、PNG、WebP 图片（单张不超过 8MB），将上传到媒体库并插入正文。
     </p>
-    <p class="post-editor__hint" role="status">{{ imageUpload.status.value }}</p>
+    <p class="post-editor__hint" role="status" aria-label="正文图片上传状态">{{ imageUpload.status.value }}</p>
     <PostOutline :headings="headings" :disabled="pending || composing" @navigate="navigateHeading" />
     <div class="post-editor__body">
       <label
@@ -161,7 +181,7 @@
           rows="24"
           maxlength="200000"
           :disabled="pending"
-          :aria-describedby="bodyHintId"
+          :aria-describedby="`${bodyHintId} ${readingStatsId}`"
           @compositionstart="composing = true"
           @compositionend="composing = false"
           @paste="imageUpload.onPaste"
@@ -208,7 +228,8 @@
 <script setup lang="ts">
 import type { AdminPostDraft } from '~/features/post/adminTypes'
 import { contentRelationSummary } from '~/features/content-relation/editor'
-import { suggestedReadTime, suggestedSummary } from '~/utils/postPublishing'
+import { postReadingStats, suggestedSummary } from '~/utils/postPublishing'
+import { parsePostMarkdown } from '~/utils/postMarkdown'
 import type { MediaAsset } from '~/features/media/types'
 import PostOutline from './PostOutline.vue'
 import { postHeadings } from '~/features/post/outline'
@@ -262,7 +283,10 @@ const { label: saveShortcut } = useAdminSaveShortcut({
 })
 const composing = ref(false)
 // textarea 的原生值将 CRLF 规范为 LF；只为定位计算转换，不回写存储的正文。
-const headings = computed(() => postHeadings(draft.value.contentRaw.replace(/\r\n?/g, '\n')))
+const normalizedContent = computed(() => draft.value.contentRaw.replace(/\r\n?/g, '\n'))
+// 章节与统计复用一次完整解析，避免长文每次输入额外解析一遍 Markdown。
+const markdownTokens = computed(() => parsePostMarkdown(normalizedContent.value))
+const headings = computed(() => postHeadings(normalizedContent.value, markdownTokens.value))
 function navigateHeading(heading: PostHeading) {
   if (props.pending || composing.value || !bodyInput.value) return
   focusTextareaHeading(bodyInput.value, heading.offset)
@@ -294,7 +318,16 @@ watch(
     coverFailed.value = false
   },
 )
-const suggestedMinutes = computed(() => suggestedReadTime(draft.value.contentRaw))
+const readingStatsId = useId()
+const readingHintId = useId()
+// 统计仅派生自正文，不写入草稿；载入、恢复与继续编辑都保留已有阅读分钟。
+const readingStats = computed(() => postReadingStats(normalizedContent.value, markdownTokens.value))
+const readingTimeStatus = ref('')
+function applyReadingTime() {
+  if (props.pending || !readingStats.value.wordCount) return
+  draft.value.readTimeMinutes = readingStats.value.minutes
+  readingTimeStatus.value = `已填入 ${readingStats.value.minutes} 分钟，可继续手动修改。`
+}
 const siteUrl = String(useRuntimeConfig().public.siteUrl).replace(/\/$/, '')
 const addressPreview = computed(
   () => `${siteUrl}/articles/${draft.value.slug || draft.value.id || '保存后分配文章编号'}`,
@@ -438,6 +471,18 @@ function confirmPublish() {
   margin: 0;
   color: var(--text-muted);
   font-size: 0.875rem;
+}
+.post-editor__reading {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 1rem;
+}
+.post-editor__reading p {
+  margin: 0;
+}
+.post-editor__reading .post-editor__hint {
+  flex-basis: 100%;
 }
 .post-editor__fields {
   display: grid;
