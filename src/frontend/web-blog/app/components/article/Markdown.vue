@@ -2,7 +2,7 @@
   @file Markdown.vue
   @description 管理后台编辑和前台文章共用的安全 Markdown 预览；正文标题由渲染工具降一级输出。
                含代码块时先按需加载精简高亮器（服务端渲染与客户端水合都等待加载，保证 HTML 一致），
-               复制按钮在客户端挂载到代码块标题栏，正文图片点击打开文章灯箱
+               复制按钮在客户端挂载到代码块标题栏及正文标题，正文图片点击打开文章灯箱
 -->
 <template>
   <!-- eslint-disable-next-line vue/no-v-html -->
@@ -10,6 +10,9 @@
   <CommonMarkdownImages :root="rootRef" :html="html" />
   <Teleport v-for="block in codeBlocks" :key="block.key" :to="block.target">
     <ArticleCodeCopyButton :code="block.code" />
+  </Teleport>
+  <Teleport v-for="heading in headings" :key="heading.key" :to="heading.target">
+    <ArticleHeadingAnchorButton :heading-id="heading.id" :heading-text="heading.text" />
   </Teleport>
   <LazyArticleImageLightbox
     v-if="lightboxIndex !== null"
@@ -53,11 +56,12 @@ const html = computed(() =>
   renderArticleMarkdown(props.content, props.title, { highlighter: highlighter.value, siteUrl }),
 )
 
-// 复制按钮：客户端在每个代码块标题栏的挂载位渲染，SSR 只输出静态结构
+// 复制按钮：客户端复用静态挂载位，SSR 不读取浏览器地址或输出交互组件
 const rootRef = ref<HTMLElement | null>(null)
 const codeBlocks = shallowRef<{ key: string; target: HTMLElement; code: string }[]>([])
+const headings = shallowRef<{ key: string; target: HTMLElement; id: string; text: string }[]>([])
 let generation = 0
-function collectCodeBlocks() {
+function collectCopyTargets() {
   const root = rootRef.value
   if (!root) return
   generation++
@@ -66,9 +70,18 @@ function collectCodeBlocks() {
     const code = block.querySelector('pre code')?.textContent ?? ''
     return target ? [{ key: `${generation}-${index}`, target, code }] : []
   })
+  headings.value = [...root.querySelectorAll<HTMLElement>('h2[id], h3[id], h4[id], h5[id], h6[id]')].flatMap(
+    (heading, index) => {
+      const target = heading.querySelector<HTMLElement>('.article-heading__anchor')
+      // 复制提示沿用标题正文；按钮在命名节点之外，避免图标或状态文案进入可访问名
+      const label = heading.querySelector<HTMLElement>(`#${heading.id}-text`)
+      const text = (label ?? heading).textContent?.replace(/\s+/g, ' ').trim() ?? ''
+      return target ? [{ key: `${generation}-${index}`, target, id: heading.id, text }] : []
+    },
+  )
 }
-onMounted(collectCodeBlocks)
-watch(html, collectCodeBlocks, { flush: 'post' })
+onMounted(collectCopyTargets)
+watch(html, collectCopyTargets, { flush: 'post' })
 
 // 图片灯箱：只收集正文中带放大触发器的图片，在同一篇文章内切换
 const lightboxImages = shallowRef<ArticleLightboxImage[]>([])
@@ -113,6 +126,32 @@ watch(html, () => {
   }
   :deep(h4) {
     font-size: 1.1rem;
+  }
+  // 保留按钮空间避免悬停时标题重排；透明按钮仍可 Tab 聚焦，触屏直接显示入口
+  :deep(.article-heading__anchor) {
+    display: inline-flex;
+    margin-inline-start: 0.35rem;
+    vertical-align: middle;
+    font-size: 1rem;
+    line-height: 1;
+    opacity: 0;
+    transition: opacity 0.15s ease;
+
+    &:empty {
+      display: none;
+    }
+
+    @media (hover: none) {
+      opacity: 1;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      transition: none;
+    }
+  }
+  :deep(:is(h2, h3, h4, h5, h6):hover .article-heading__anchor),
+  :deep(:is(h2, h3, h4, h5, h6):focus-within .article-heading__anchor) {
+    opacity: 1;
   }
   :deep(p),
   :deep(ul),

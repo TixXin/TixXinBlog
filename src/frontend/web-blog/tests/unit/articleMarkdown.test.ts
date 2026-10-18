@@ -1,34 +1,71 @@
 /**
  * @file articleMarkdown.test.ts
  * @description 正文开头的重复标题不展示，锚点编号仍与后端目录一致，正文标题整体降一级；
- *              代码块高亮、消毒后保留主题变量、未知语言回退纯文本，正文图片懒加载并可放大
+ *              标题输出静态锚点挂载位，代码块高亮并保留主题变量，未知语言回退纯文本，正文图片懒加载并可放大
  */
 import { describe, expect, it } from 'vitest'
 import { articleTocItems, renderArticleMarkdown } from '~/utils/articleMarkdown'
 import { collectCodeLanguages, loadCodeHighlighter } from '~/utils/highlightCode'
 
 const parse = (html: string) => new DOMParser().parseFromString(html, 'text/html')
+const anchorSlot = '<span class="article-heading__anchor"></span>'
+const headingHtml = (tag: string, id: string, inner: string) =>
+  `<${tag} id="${id}" aria-labelledby="${id}-text"><span id="${id}-text">${inner}</span>${anchorSlot}</${tag}>`
 
 describe('renderArticleMarkdown', () => {
   it('跳过与标题相同的首个一级标题，后续锚点从 heading-2 开始', () => {
     const html = renderArticleMarkdown('# 我的标题\n\n正文\n\n## 第一节', '我的标题')
     expect(html).not.toContain('我的标题')
-    expect(html).toContain('<h3 id="heading-2">第一节</h3>')
+    expect(html).toContain(headingHtml('h3', 'heading-2', '第一节'))
+    expect(parse(html).querySelectorAll('.article-heading__anchor')).toHaveLength(1)
   })
   it('标题不同或不在开头时照常渲染', () => {
-    expect(renderArticleMarkdown('# 另一个标题\n\n正文', '我的标题')).toContain('<h2 id="heading-1">另一个标题</h2>')
-    expect(renderArticleMarkdown('引子\n\n# 我的标题', '我的标题')).toContain('<h2 id="heading-1">我的标题</h2>')
-    expect(renderArticleMarkdown('# 我的标题')).toContain('<h2 id="heading-1">我的标题</h2>')
+    expect(renderArticleMarkdown('# 另一个标题\n\n正文', '我的标题')).toContain(
+      headingHtml('h2', 'heading-1', '另一个标题'),
+    )
+    expect(renderArticleMarkdown('引子\n\n# 我的标题', '我的标题')).toContain(
+      headingHtml('h2', 'heading-1', '我的标题'),
+    )
+    expect(renderArticleMarkdown('# 我的标题')).toContain(headingHtml('h2', 'heading-1', '我的标题'))
   })
   it('正文标题整体降一级，h6 封顶且不输出 h1', () => {
     const html = renderArticleMarkdown('# 一\n\n## 二\n\n### 三\n\n#### 四\n\n##### 五\n\n###### 六')
     expect(html).not.toContain('<h1')
-    expect(html).toContain('<h2 id="heading-1">一</h2>')
-    expect(html).toContain('<h3 id="heading-2">二</h3>')
-    expect(html).toContain('<h4 id="heading-3">三</h4>')
-    expect(html).toContain('<h5 id="heading-4">四</h5>')
-    expect(html).toContain('<h6 id="heading-5">五</h6>')
-    expect(html).toContain('<h6 id="heading-6">六</h6>')
+    expect(html).toContain(headingHtml('h2', 'heading-1', '一'))
+    expect(html).toContain(headingHtml('h3', 'heading-2', '二'))
+    expect(html).toContain(headingHtml('h4', 'heading-3', '三'))
+    expect(html).toContain(headingHtml('h5', 'heading-4', '四'))
+    expect(html).toContain(headingHtml('h6', 'heading-5', '五'))
+    expect(html).toContain(headingHtml('h6', 'heading-6', '六'))
+    const doc = parse(html)
+    expect(doc.querySelectorAll('.article-heading__anchor')).toHaveLength(6)
+    expect([...doc.querySelectorAll('.article-heading__anchor')].every((slot) => !slot.hasChildNodes())).toBe(true)
+    expect(doc.querySelector('button, [role="status"], [role="tooltip"]')).toBeNull()
+    for (const heading of doc.querySelectorAll('h2, h3, h4, h5, h6')) {
+      const label = heading.querySelector(`#${heading.id}-text`)
+      expect(heading.getAttribute('aria-labelledby')).toBe(`${heading.id}-text`)
+      expect(label?.textContent).toBeTruthy()
+      expect(label?.querySelector('.article-heading__anchor')).toBeNull()
+    }
+  })
+  it('重复渲染保持相同静态结构，富文本与 Setext 标题保留内容，挂载位不会嵌入标题内的链接', () => {
+    const markdown = '# **粗体** 与 [链接](https://example.com)\n\n段落\n\n小节 `代码`\n---\n\n```md\n## 伪标题\n```'
+    const html = renderArticleMarkdown(markdown)
+    expect(renderArticleMarkdown(markdown)).toBe(html)
+    const doc = parse(html)
+    const heading = doc.querySelector('h2#heading-1')!
+    expect(heading.textContent).toBe('粗体 与 链接')
+    expect(heading.getAttribute('aria-labelledby')).toBe('heading-1-text')
+    const label = heading.querySelector('#heading-1-text')
+    expect(label?.textContent).toBe('粗体 与 链接')
+    expect(label?.querySelector('strong')?.textContent).toBe('粗体')
+    expect(label?.querySelector('a')?.getAttribute('href')).toBe('https://example.com')
+    expect(label?.querySelector('.article-heading__anchor')).toBeNull()
+    expect(heading.querySelector('a .article-heading__anchor')).toBeNull()
+    expect(heading.lastElementChild?.className).toBe('article-heading__anchor')
+    expect(doc.querySelector('h3#heading-2 code')?.textContent).toBe('代码')
+    expect(doc.querySelectorAll('.article-heading__anchor')).toHaveLength(2)
+    expect(doc.querySelector('pre .article-heading__anchor')).toBeNull()
   })
   it('目录去掉重复的首项', () => {
     const items = [
