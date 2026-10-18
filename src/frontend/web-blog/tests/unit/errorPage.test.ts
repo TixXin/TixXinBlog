@@ -85,7 +85,8 @@ describe('404 内容发现', () => {
     expect(wrapper.findAll('.recent-post-item__title').map((item) => item.text())).toEqual(
       posts.map((post) => post.title),
     )
-    expect(wrapper.get('.recent-post-item').attributes('href')).toBe('/articles/autumn-notes-5')
+    // 封面与正文链接分开，正文链接承载文章地址。
+    expect(wrapper.get('.recent-post-item__content').attributes('href')).toBe('/articles/autumn-notes-5')
     expect(wrapper.get('.recent-posts__more').attributes('href')).toBe('/')
     expect(wrapper.find('[role="status"]').exists()).toBe(false)
   })

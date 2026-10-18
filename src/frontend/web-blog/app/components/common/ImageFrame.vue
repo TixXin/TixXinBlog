@@ -7,6 +7,7 @@
 -->
 <template>
   <div
+    ref="frame"
     class="image-frame"
     :class="`image-frame--${state}`"
     :data-initial="initial || undefined"
@@ -30,13 +31,18 @@
       @load="loaded"
       @error="failed"
     />
-    <span v-if="state === 'loading'" class="image-frame__status" aria-hidden="true">图片加载中…</span>
-    <div v-else-if="state === 'error' || state === 'empty'" class="image-frame__status">
+    <CommonImageFailure
+      v-if="failureVisible"
+      :alt="alt"
+      :retry-label="`重新加载图片：${alt}`"
+      :compact="compact"
+      :retrying="state === 'loading'"
+      @retry="retryImage"
+    />
+    <span v-else-if="state === 'loading'" class="image-frame__status" aria-hidden="true">图片加载中…</span>
+    <div v-else-if="state === 'empty'" class="image-frame__status">
       <Icon name="lucide:image-off" size="22" aria-hidden="true" />
-      <span>{{ state === 'empty' ? '暂无图片' : '图片暂时无法加载' }}</span>
-      <button v-if="src" type="button" :aria-label="`重新加载图片：${alt}`" @click.stop.prevent="retry" @keydown.stop>
-        重新加载
-      </button>
+      <span>暂无图片</span>
     </div>
   </div>
 </template>
@@ -56,6 +62,8 @@ const props = withDefaults(
     /** 实际显示宽度描述，仅受管媒体生效；已知原图宽度但未传时按视口宽度 */
     sizes?: string
     maxHeight?: string
+    /** 小型封面只显示失败图标按钮，完整说明由 Tooltip 和读屏标签提供 */
+    compact?: boolean
   }>(),
   {
     src: '',
@@ -66,6 +74,7 @@ const props = withDefaults(
     maxHeight: undefined,
     width: undefined,
     height: undefined,
+    compact: false,
   },
 )
 // 已知原图宽度时只列出更小的变体并补上原图；原图宽度和 sizes 都未知（如闪念灯箱）时保持原图，
@@ -76,10 +85,42 @@ const { image, state, attempt, loaded, failed, retry } = useImageState(() => pro
 const initial = import.meta.server || useNuxtApp().isHydrating
 const emit = defineEmits<{ state: [value: 'loading' | 'ready' | 'error' | 'empty'] }>()
 watch(state, (value) => emit('state', value), { immediate: true })
-const naturalRatio = computed(() =>
-  state.value === 'ready' && image.value?.naturalWidth && image.value.naturalHeight
-    ? `${image.value.naturalWidth} / ${image.value.naturalHeight}`
-    : '3 / 2',
+const naturalRatio = ref('3 / 2')
+const failureVisible = ref(false)
+const frame = ref<HTMLElement | null>(null)
+let restoreFocus = false
+function retryImage() {
+  restoreFocus = !!frame.value?.contains(document.activeElement)
+  retry()
+}
+watch(state, (value) => {
+  if (value === 'error') failureVisible.value = true
+  if (value === 'ready' || value === 'empty') failureVisible.value = false
+  if (value === 'ready' && image.value?.naturalWidth && image.value.naturalHeight) {
+    naturalRatio.value = `${image.value.naturalWidth} / ${image.value.naturalHeight}`
+  }
+  if (value === 'ready' && restoreFocus) {
+    const source = props.src
+    const focused = frame.value?.contains(document.activeElement)
+    restoreFocus = false
+    void nextTick(() => {
+      if (!focused || source !== props.src || state.value !== 'ready' || document.activeElement !== document.body)
+        return
+      if (!image.value) return
+      // 成功后保留键盘位置，但不为普通图片额外增加 Tab 停靠点。
+      image.value.tabIndex = -1
+      image.value.focus({ preventScroll: true })
+    })
+  }
+})
+watch(
+  () => props.src,
+  () => {
+    naturalRatio.value = '3 / 2'
+    failureVisible.value = false
+    restoreFocus = false
+  },
+  { flush: 'sync' },
 )
 const frameStyle = computed(() => ({
   aspectRatio: props.width && props.height ? `${props.width} / ${props.height}` : naturalRatio.value,
@@ -121,14 +162,6 @@ const frameStyle = computed(() => ({
   color: var(--text-soft);
   font-size: 0.8125rem;
   padding: 0.75rem;
-  button {
-    min-height: 44px;
-    padding: 0.5rem 0.875rem;
-    color: var(--accent-text);
-    border: 1px solid var(--border);
-    border-radius: $radius-sm;
-    background: var(--surface-1);
-  }
 }
 
 // 未启动JavaScript时保留原生图片；启动后的异步图片才显示交互加载反馈。

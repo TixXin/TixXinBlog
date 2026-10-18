@@ -22,7 +22,15 @@
         <Icon name="lucide:x" size="22" aria-hidden="true" />
       </button>
       <figure class="article-lightbox__figure" @click.self="emit('close')">
-        <img :key="image.src" class="article-lightbox__image" :src="image.src" :alt="image.alt" decoding="async" />
+        <CommonImageFrame
+          :key="image.src"
+          class="article-lightbox__image"
+          :src="image.src"
+          :alt="image.alt"
+          loading="eager"
+          fit="contain"
+          max-height="calc(100dvh - 11rem)"
+        />
         <figcaption :id="captionId" class="article-lightbox__caption" aria-live="polite">
           <span v-if="image.alt">{{ image.alt }}</span>
           <span v-else class="article-lightbox__muted">图片未提供说明</span>
@@ -101,6 +109,7 @@ useModalFocus(() => !!image.value, dialogRef, {
   flex-direction: column;
   align-items: center;
   gap: 0.75rem;
+  width: min(72rem, 100%);
   max-width: min(72rem, 100%);
   margin: 0;
   min-height: 0;

@@ -1,5 +1,5 @@
 /** @file managedImage.test.ts @description 受管媒体 srcset 只对站内媒体生成白名单宽度，外链与首屏优先级行为保持预期 */
-import { afterEach, describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { mountSuspended } from '@nuxt/test-utils/runtime'
 import { isManagedImage, managedImageSrcset, MANAGED_IMAGE_WIDTHS } from '../../app/utils/managedImage'
 import ContentImage from '../../app/components/common/ContentImage.vue'
@@ -7,7 +7,14 @@ import ImageFrame from '../../app/components/common/ImageFrame.vue'
 
 const src = '/api/v1/media/3b8ada68-c31e-458a-9bde-12cf04e2473e.webp'
 const wrappers: { unmount(): void }[] = []
-afterEach(() => wrappers.splice(0).forEach((wrapper) => wrapper.unmount()))
+beforeEach(() => {
+  // DOM 环境不下载图片；本组校验请求属性，图片状态用独立测试显式驱动。
+  vi.spyOn(HTMLImageElement.prototype, 'complete', 'get').mockReturnValue(false)
+})
+afterEach(() => {
+  wrappers.splice(0).forEach((wrapper) => wrapper.unmount())
+  vi.restoreAllMocks()
+})
 
 describe('受管图片 srcset', () => {
   it('只识别站内受管媒体地址', () => {

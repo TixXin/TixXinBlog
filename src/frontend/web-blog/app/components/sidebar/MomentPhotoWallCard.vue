@@ -16,14 +16,12 @@
     </div>
 
     <div class="moment-photo-wall__grid">
-      <button
+      <!-- 动态入口与图片重试按钮互为同级，避免按钮嵌套；失败时入口收到角落，不遮挡重试 -->
+      <div
         v-for="(img, index) in images.slice(0, 9)"
-        :key="index"
-        type="button"
+        :key="img.src + index"
         class="moment-photo-wall__item"
         :class="{ 'is-featured': index === 0 }"
-        :aria-label="`查看照片 ${index + 1} 所属动态`"
-        @click="emit('select-moment', img.momentId)"
       >
         <CommonContentImage
           :src="img.src"
@@ -34,11 +32,21 @@
           width="200"
           height="200"
           :sizes="index === 0 ? '180px' : '90px'"
+          @state="imageFailures[img.src + index] = $event === 'error'"
         />
-        <span class="moment-photo-wall__overlay" aria-hidden="true">
-          <Icon name="lucide:eye" size="14" />
-        </span>
-      </button>
+        <button
+          type="button"
+          class="moment-photo-wall__open"
+          :class="{ 'is-failed': imageFailures[img.src + index] }"
+          :aria-label="`查看照片 ${index + 1} 所属动态`"
+          @click="emit('select-moment', img.momentId)"
+        >
+          <span v-if="!imageFailures[img.src + index]" class="moment-photo-wall__overlay" aria-hidden="true">
+            <Icon name="lucide:eye" size="14" />
+          </span>
+          <Icon v-else name="lucide:eye" size="12" aria-hidden="true" />
+        </button>
+      </div>
     </div>
   </section>
 </template>
@@ -56,6 +64,7 @@ defineProps<{
 const emit = defineEmits<{
   'select-moment': [momentId: string]
 }>()
+const imageFailures = ref<Record<string, boolean>>({})
 </script>
 
 <style lang="scss" scoped>
@@ -97,23 +106,42 @@ const emit = defineEmits<{
 
 .moment-photo-wall__item {
   position: relative;
-  padding: 0;
-  border: 0;
-  background: transparent;
   border-radius: $radius-sm;
   overflow: hidden;
-  cursor: var(--interaction-cursor, pointer);
   aspect-ratio: 1;
-
-  &:focus-visible {
-    outline: 2px solid var(--accent);
-    outline-offset: 2px;
-  }
 
   /* 第一张图片占 2x2 突出显示 */
   &.is-featured {
     grid-column: span 2;
     grid-row: span 2;
+  }
+}
+
+.moment-photo-wall__open {
+  position: absolute;
+  inset: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  border-radius: inherit;
+  cursor: var(--interaction-cursor, pointer);
+
+  &:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: -2px;
+  }
+
+  /* 图片失败时只占右上角，失败占位中的重试按钮保持可点击 */
+  &.is-failed {
+    inset: 4px 4px auto auto;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    border-radius: $radius-full;
+    background: var(--surface-3);
+    color: var(--text-muted);
   }
 }
 
@@ -128,6 +156,7 @@ const emit = defineEmits<{
 }
 
 .moment-photo-wall__overlay {
+  pointer-events: none;
   position: absolute;
   inset: 0;
   display: flex;
@@ -143,8 +172,8 @@ const emit = defineEmits<{
 }
 
 .moment-photo-wall__item:hover,
-.moment-photo-wall__item:focus-visible {
-  .moment-photo-wall__img {
+.moment-photo-wall__item:focus-within {
+  .moment-photo-wall__img:not(.content-image-failure) {
     transform: scale(1.03);
   }
 

@@ -8,7 +8,7 @@
 <template>
   <div class="moment-comments">
     <div v-if="comments.length" class="moment-comments__list">
-      <div v-for="c in comments" :key="c.id" class="moment-comments__item">
+      <div v-for="c in renderedComments" :key="c.id" class="moment-comments__item">
         <MomentUserPopover :profile="c.profile" :is-owner="c.isOwner">
           <div class="moment-comments__avatar">
             <CommonContentImage
@@ -23,8 +23,14 @@
         <div class="moment-comments__body">
           <span class="moment-comments__author" :class="{ 'is-owner': c.isOwner }">{{ c.author }}</span>
           <span class="moment-comments__sep" aria-hidden="true">：</span>
-          <!-- eslint-disable-next-line vue/no-v-html -- 评论 Markdown 已通过 DOMPurify 净化 -->
-          <span class="moment-comments__text markdown-body-inline" v-html="renderCommentBody(c.content)" />
+          <!-- eslint-disable vue/no-v-html -- 评论 Markdown 已通过 DOMPurify 净化 -->
+          <span
+            :ref="(element) => setCommentRoot(c.id, element)"
+            class="moment-comments__text markdown-body-inline"
+            v-html="c.html"
+          />
+          <!-- eslint-enable vue/no-v-html -->
+          <CommonMarkdownImages :root="commentRoots.get(c.id) ?? null" :html="c.html" />
           <small v-if="c.moderationStatus === 'pending'">（待审核，仅自己可见）</small>
         </div>
       </div>
@@ -71,6 +77,7 @@
   </div>
 </template>
 <script setup lang="ts">
+import type { ComponentPublicInstance } from 'vue'
 import type { VisitorSubmissionFields } from '~/features/visitor/types'
 import type { MomentCommentItem } from '~/features/moment/types'
 import { renderMomentMarkdown } from '~/composables/useMomentMarkdown'
@@ -93,8 +100,18 @@ const emit = defineEmits<{
 const visitorForm = useVisitorSubmissionForm({ submitting: () => !!props.submitting, error: () => props.submitError })
 const { website } = visitorForm
 const siteUrl = useSiteUrl()
-function renderCommentBody(text: string) {
-  return renderMomentMarkdown(text, { inline: true, mentions: true, ugc: true, siteUrl })
+// 评论属于访客内容，外链按 ugc 规则渲染。
+const renderedComments = computed(() =>
+  props.comments.map((comment) => ({
+    ...comment,
+    html: renderMomentMarkdown(comment.content, { inline: true, mentions: true, ugc: true, siteUrl }),
+  })),
+)
+// 按稳定评论编号跟踪正文挂载点；头像已有共享组件，不参与 Markdown 图片增强。
+const commentRoots = shallowReactive(new Map<string, HTMLElement>())
+function setCommentRoot(id: string, element: Element | ComponentPublicInstance | null) {
+  if (element instanceof HTMLElement) commentRoots.set(id, element)
+  else commentRoots.delete(id)
 }
 function onEnter(event: KeyboardEvent) {
   if (event.isComposing || props.submitting || !props.draft.trim()) return

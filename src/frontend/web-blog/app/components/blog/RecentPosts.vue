@@ -19,8 +19,8 @@
     </div>
 
     <div class="recent-posts__list">
-      <NuxtLink v-for="post in posts" :key="post.id" :to="articlePath(post)" class="recent-post-item">
-        <div class="recent-post-item__content">
+      <div v-for="post in posts" :key="post.id" class="recent-post-item">
+        <NuxtLink :to="articlePath(post)" class="recent-post-item__content">
           <h3 class="recent-post-item__title">{{ post.title }}</h3>
           <div class="recent-post-item__meta">
             <span class="meta-item">
@@ -32,9 +32,10 @@
               {{ post.category }}
             </span>
           </div>
-        </div>
+        </NuxtLink>
         <div v-if="post.cover" class="recent-post-item__cover">
           <CommonContentImage
+            :key="post.cover"
             :src="post.cover"
             :alt="post.title"
             width="120"
@@ -42,9 +43,16 @@
             class="recent-post-item__img"
             format="webp"
             loading="lazy"
+            @state="updateCoverFailure(`${post.id}:${post.cover}`, $event)"
+          />
+          <NuxtLink
+            v-if="!coverFailures[`${post.id}:${post.cover}`]"
+            :to="articlePath(post)"
+            :aria-label="`阅读文章：${post.title}`"
+            class="recent-post-item__cover-link"
           />
         </div>
-      </NuxtLink>
+      </div>
     </div>
   </div>
 </template>
@@ -56,6 +64,11 @@ import { formatRelativeDate } from '~/composables/useRelativeDate'
 defineProps<{
   posts: PostItem[]
 }>()
+const coverFailures = ref<Record<string, boolean>>({})
+function updateCoverFailure(key: string, state: 'loading' | 'ready' | 'error' | 'empty') {
+  // 失败后的重试仍让出封面区域，成功后才恢复覆盖链接。
+  if (state !== 'loading') coverFailures.value[key] = state === 'error'
+}
 </script>
 
 <style lang="scss" scoped>
@@ -134,11 +147,19 @@ defineProps<{
 }
 
 .recent-post-item__content {
+  color: inherit;
+  text-decoration: none;
+  border-radius: $radius-sm;
   flex: 1;
   min-width: 0;
   display: flex;
   flex-direction: column;
   justify-content: center;
+
+  &:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 3px;
+  }
 }
 
 .recent-post-item__title {
@@ -173,6 +194,7 @@ defineProps<{
 }
 
 .recent-post-item__cover {
+  position: relative;
   width: 100px;
   height: 68px;
   border-radius: $radius-sm;
@@ -183,6 +205,17 @@ defineProps<{
   @media (min-width: $breakpoint-sm) {
     width: 120px;
     height: 80px;
+  }
+}
+
+.recent-post-item__cover-link {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+
+  &:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: -3px;
   }
 }
 

@@ -6,8 +6,8 @@
 -->
 
 <template>
-  <NuxtLink :to="articlePath(post)" class="post-item">
-    <div v-if="post.cover && !coverError" class="post-item__cover-bg">
+  <article class="post-item" :class="{ 'post-item--cover-error': coverError }">
+    <div v-if="post.cover" class="post-item__cover-bg">
       <CommonContentImage
         :src="post.cover"
         :alt="`${post.title} 封面`"
@@ -17,11 +17,12 @@
         width="400"
         height="155"
         sizes="(min-width: 640px) 380px, 50vw"
-        @error="coverError = true"
+        compact
+        @state="coverError = $event === 'error'"
       />
     </div>
 
-    <div class="post-item__content">
+    <NuxtLink :to="articlePath(post)" class="post-item__content">
       <div class="post-item__header">
         <div class="post-item__title-wrapper">
           <span v-if="post.pinned" class="post-item__pin"> <Icon name="lucide:pin" size="12" /> 置顶 </span>
@@ -52,8 +53,8 @@
           <span class="post-item__meta-item"><Icon name="lucide:message-square" size="12" /> {{ post.comments }}</span>
         </div>
       </div>
-    </div>
-  </NuxtLink>
+    </NuxtLink>
+  </article>
 </template>
 
 <script setup lang="ts">
@@ -164,10 +165,14 @@ function tagStyle(color: string) {
     -webkit-mask-image: linear-gradient(to right, transparent 0%, black 25%, black 100%);
   }
 
-  img {
+  :deep(img),
+  :deep(.content-image-failure) {
     width: 100%;
     height: 100%;
     object-fit: cover;
+  }
+
+  :deep(img) {
     transition: transform 0.5s ease;
     @media (prefers-reduced-motion: reduce) {
       transition: none;
@@ -175,13 +180,46 @@ function tagStyle(color: string) {
   }
 }
 
+// 封面仍占原背景盒；错误时只有右侧的小重试入口在正文链接上方，不覆盖整卡内容。
+.post-item--cover-error .post-item__cover-bg {
+  z-index: 3;
+  opacity: 1;
+  mask-image: none;
+  -webkit-mask-image: none;
+
+  :deep(.image-failure) {
+    background: transparent;
+  }
+
+  :deep(.image-failure__retry) {
+    position: absolute;
+    top: 50%;
+    right: 1rem;
+    width: 44px;
+    height: 44px;
+    transform: translateY(-50%);
+    pointer-events: auto;
+    border: 1px solid var(--border);
+    border-radius: $radius-sm;
+    background: var(--surface-1);
+  }
+}
+
 .post-item__content {
+  color: inherit;
+  text-decoration: none;
+  border-radius: $radius-sm;
   position: relative;
   z-index: 1; /* 确保内容在背景图之上 */
   flex: 1;
   min-width: 0;
   display: flex;
   flex-direction: column;
+
+  &:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 3px;
+  }
 }
 
 .post-item__header {

@@ -30,7 +30,8 @@
     </div>
 
     <!-- eslint-disable-next-line vue/no-v-html -->
-    <div class="fnc__content" v-html="renderedContent" />
+    <div ref="contentRef" class="fnc__content" v-html="renderedContent" />
+    <CommonMarkdownImages :root="contentRef" :html="renderedContent" />
 
     <FlashImageGrid v-if="note.images && note.images.length > 0" :images="note.images" :descriptions="note.imageAlts" />
 
@@ -272,6 +273,7 @@ const typeMeta = computed(() => (props.note.type ? TYPE_META[props.note.type] : 
 /** 轻量 markdown 渲染 —— 覆盖编辑器工具栏支持的子集 */
 const siteUrl = useSiteUrl()
 const renderedContent = computed(() => renderFlashMarkdown(props.note.content, { siteUrl }))
+const contentRef = ref<HTMLElement | null>(null)
 
 function formatRelative(iso: string): string {
   const created = new Date(iso).getTime()

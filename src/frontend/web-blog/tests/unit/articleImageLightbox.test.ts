@@ -15,6 +15,8 @@ let originalOverflow = ''
 
 beforeEach(() => {
   originalOverflow = document.body.style.overflow
+  // happy-dom 不解码图片，未加载节点会被视作已完成的失败图并出现重试按钮；这里保持真实的加载中状态。
+  vi.spyOn(HTMLImageElement.prototype, 'complete', 'get').mockReturnValue(false)
   const originalRects = HTMLElement.prototype.getClientRects
   const rectangle = new DOMRect(0, 0, 44, 44)
   const rectangles = Object.assign([rectangle], { item: (index: number) => (index === 0 ? rectangle : null) })
