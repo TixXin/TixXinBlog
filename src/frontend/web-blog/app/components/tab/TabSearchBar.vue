@@ -267,6 +267,8 @@ function openHit(hit: LocalHit) {
 
 .tab-search__input {
   flex: 1;
+  // 输入框的固有宽度随字体变化，不归零时窄屏会把提交按钮挤出搜索框和视口
+  min-width: 0;
   border: none;
   outline: none;
   background: transparent;
@@ -280,6 +282,7 @@ function openHit(hit: LocalHit) {
 
 .tab-search__clear {
   display: flex;
+  flex-shrink: 0;
   align-items: center;
   justify-content: center;
   width: 24px;
@@ -298,6 +301,7 @@ function openHit(hit: LocalHit) {
 
 .tab-search__submit {
   display: flex;
+  flex-shrink: 0;
   align-items: center;
   justify-content: center;
   width: 36px;
