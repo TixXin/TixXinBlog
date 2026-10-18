@@ -4,6 +4,27 @@ import type { Page, TestInfo } from '@playwright/test'
 import { prepareMotionCapture, captureMotion } from './motionScreenshot'
 test.beforeEach(({ page, browserName }) => prepareMotionCapture(page, browserName))
 
+// commit 由渲染进程上报，浏览器进程把新文档登记为活动帧可能稍晚；慢机器上此刻读取会话历史会报
+// “Not attached to an active page”。等浏览器的当前历史项与已提交地址一致，再立即执行原生前进后退。
+async function waitForBrowserCommit(page: Page) {
+  const session = await page.context().newCDPSession(page)
+  try {
+    await expect
+      .poll(async () => {
+        try {
+          const { currentIndex, entries } = await session.send('Page.getNavigationHistory')
+          return entries[currentIndex]?.url === page.url()
+        } catch (error) {
+          if (error instanceof Error && error.message.includes('Not attached to an active page')) return false
+          throw error
+        }
+      })
+      .toBe(true)
+  } finally {
+    await session.detach()
+  }
+}
+
 test('首页分页早期返回后正确接管SSR列表，往返保留真实历史槽位', async ({ page, context, baseURL }, testInfo) => {
   const issues: string[] = []
   page.on('pageerror', (error) => issues.push(error.message))
@@ -55,6 +76,7 @@ test('首页分页早期返回后正确接管SSR列表，往返保留真实历�
   await expect.poll(ids).toEqual(secondIds)
   // 返回从文档commit后立即发起；在第一页核查水合结果，不能先前进掩盖首帧空VNode。
   await page.reload({ waitUntil: 'commit' })
+  await waitForBrowserCommit(page)
   await page.goBack({ waitUntil: 'commit' })
   await expect(page).toHaveURL((url) => url.pathname + url.search === firstUrl)
   await expect(page.locator('html')).toHaveClass(/app-client-ready/)
@@ -140,10 +162,12 @@ async function rapidReloadAndHistory(
   // 从 commit 起立即操作浏览器历史，不等待 ready、控件启用、动画或任何人为延时。
   await page.reload({ waitUntil: 'commit' })
   timings.push({ event: 'reload-committed', elapsedMs: Date.now() - startedAt, url: page.url() })
+  await waitForBrowserCommit(page)
   await page.goBack({ waitUntil: 'commit' })
   timings.push({ event: 'back-returned', elapsedMs: Date.now() - startedAt, url: page.url() })
   await expect(page).not.toHaveURL(/page=2/)
   timings.push({ event: 'back-url-observed', elapsedMs: Date.now() - startedAt, url: page.url() })
+  await waitForBrowserCommit(page)
   await page.goForward({ waitUntil: 'commit' })
   timings.push({ event: 'forward-returned', elapsedMs: Date.now() - startedAt, url: page.url() })
   await expect(page).toHaveURL(/page=2/)
