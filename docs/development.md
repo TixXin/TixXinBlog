@@ -210,6 +210,13 @@ corepack pnpm test:e2e:run accessibility.spec.ts
 
 自动扫描只覆盖当前桌面页面状态，不能代替键盘操作、焦点恢复、读屏、窄屏、弹层和正常动效的验收；参见[主题验证](themes.md#验证)与 [Playwright 可访问性测试说明](https://playwright.dev/docs/accessibility-testing)。
 
+[CI](../.github/workflows/ci.yml) 的 `lint-and-build` 按默认 [Playwright 配置](../src/frontend/web-blog/playwright.config.ts) 跑 Chromium 全量。该配置没有 `projects`，`browserName` 默认为 `chromium`，`workers` 为 1，命令行 `--browser=webkit` 会覆盖这次运行的浏览器。WebKit 核心冒烟与全量回归并行，范围是 `blog.spec.ts` 与 `hydration-history.spec.ts` 两个完整文件：前者覆盖分页、发布撤回、评论、三主题移动端和后台闭环，后者覆盖水合与原生历史。每个文件单独调用隔离运行器，避免写入互相影响。`performance-admin.spec.ts` 固定断言 Chromium，留在全量 job。`playwright.motion.config.ts` 的多浏览器项目只用于单独的动效验收，默认 CI 配置仍是 `playwright.config.ts`。准备好当前源码的两端生产构建、PostgreSQL 和 WebKit 后，可复现相同范围：
+
+```sh
+corepack pnpm test:e2e:run blog.spec.ts --browser=webkit
+corepack pnpm test:e2e:run hydration-history.spec.ts --browser=webkit
+```
+
 需要评估文章列表投影时，可在后端构建后运行 `corepack pnpm --filter server-main exec tsx tests/post-list-performance.ts --compare`。它比较完整业务响应、分页和公开过滤，而非只比较耗时。浏览器性能与服务方法耗时分别记录；明确样本、预热、缓存、硬件及并发条件，不把本机采样直接当作线上收益。
 
 公开栏目导航验收使用 `node src/backend/server-main/tests/navigation-performance.mjs --samples=28 --devtools-ab`，运行前完成前后端生产构建。脚本建立独立数据库和媒体目录，使用至少 2,000 篇公开文章及每页 12 张真实受管图片，分别采样三主题生产导航和独立开发进程的 DevTools 开关对照；报告包含点击到页面就绪、长任务、DOM 峰值、请求与传输量，以及本次资源清理结果。默认只对功能与资源边界作断言，毫秒目标需在同硬件、同样本、相同预热条件下核验；不能把有失败响应的快速轮测当成成功性能结果。

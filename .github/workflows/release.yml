@@ -78,76 +78,25 @@ jobs:
           if-no-files-found: error
           retention-days: 7
 
-  # 与 CI/Backend CI 相同的快速门禁；完整浏览器与集成回归以标签提交在 main 上的 CI 结果为准。
+  # 同一标签提交上并行复用完整 CI 与 Backend CI，全部通过后才构建镜像。
+  # 调用 job 的 permissions 是被调用工作流的上限；两份工作流自身声明 contents: read，缓存与产物上传使用运行时令牌，不需要额外权限。
   verify:
-    name: Verify Release Commit
+    name: Verify Full CI
     needs: prepare
-    runs-on: ubuntu-24.04
-    timeout-minutes: 30
     permissions:
       contents: read
-    env:
-      DATABASE_URL: postgres://tixxin:tixxin@localhost:5432/tixxin_blog
-      COREPACK_ENABLE_DOWNLOAD_PROMPT: '0'
-    services:
-      postgres:
-        image: postgres:16-alpine
-        env:
-          POSTGRES_USER: tixxin
-          POSTGRES_PASSWORD: tixxin
-          POSTGRES_DB: tixxin_blog
-        ports:
-          - 5432:5432
-        options: >-
-          --health-cmd "pg_isready -U tixxin -d tixxin_blog"
-          --health-interval 5s
-          --health-timeout 3s
-          --health-retries 10
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          persist-credentials: false
+    uses: ./.github/workflows/ci.yml
 
-      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
-        with:
-          node-version: 25
-
-      - name: Install Corepack
-        run: npm install --global corepack@0.34.6
-
-      - run: corepack pnpm install --frozen-lockfile
-
-      - name: Check Secrets
-        run: corepack pnpm check:secrets
-
-      - name: Frontend Lint, Type Check and Tests
-        run: |
-          corepack pnpm lint
-          corepack pnpm --filter web-blog exec nuxt typecheck
-          corepack pnpm test:nuxt-patches
-          corepack pnpm test:subscription-domain
-          corepack pnpm --filter web-blog test
-
-      - name: Backend Lint, Type Check and Tests
-        run: |
-          corepack pnpm --filter server-main lint
-          corepack pnpm --filter server-main typecheck
-          corepack pnpm --filter server-main test
-
-      - name: Migration Up + Check
-        run: |
-          corepack pnpm --filter server-main migration:up
-          corepack pnpm --filter server-main migration:check
-
-      - name: Release Script Tests
-        run: node --test scripts/release/release.test.mjs scripts/release/production-artifact-cleanup.test.mjs
-
-      - name: Audit Dependencies
-        run: corepack pnpm audit --prod --audit-level=high
+  verify-backend:
+    name: Verify Full Backend CI
+    needs: prepare
+    permissions:
+      contents: read
+    uses: ./.github/workflows/backend-ci.yml
 
   build:
     name: Build ${{ matrix.image.name }} (${{ matrix.platform.arch }})
-    needs: [prepare, verify]
+    needs: [prepare, verify, verify-backend]
     runs-on: ${{ matrix.platform.runner }}
     timeout-minutes: 60
     permissions:

@@ -1,7 +1,9 @@
-# 后端持续集成：限制令牌权限，并取消同一分支或 PR 的过时检查。
+# 后端持续集成：限制令牌权限，并取消同一分支或 PR 的过时检查；也供 Release 在标签提交上复用。
 name: Backend CI
 
 on:
+  # Release 在标签提交上调用，不受下方路径过滤影响。
+  workflow_call:
   push:
     branches: [main]
     paths:
@@ -27,7 +29,8 @@ permissions:
   contents: read
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
+  # 被 Release 调用时 github.workflow 取调用方名称，固定前缀避免与 Release 及另一份 CI 共用并发组而互相取消。
+  group: backend-ci-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
