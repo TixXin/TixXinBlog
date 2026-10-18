@@ -19,6 +19,17 @@ export function invalidatePublicReads(app: NuxtApp, domains?: PublicReadDomain[]
   if (!domains || domains.includes('guestbook-metadata')) app.payload.state['$sguestbook-metadata-retained'] = null
 }
 
+/**
+ * 匿名访客恢复或登录为博主时只撤销按身份区分的状态。
+ * 公开读取不携带访问令牌，刷新 Cookie 只发往 /api/v1/auth，文章、归档、图库、项目、友链等栏目结果不随登录变化；
+ * 整体撤销会让水合后已显示的列表清空重建，带登录态的博主每次打开公开页面都会闪空一次。
+ * 闪念会切换到包含草稿的管理读取，朋友圈与留言带有按身份区分的互动状态，仍需撤销。
+ */
+export function invalidateIdentityReads(app: NuxtApp) {
+  invalidateFlashNotes(app)
+  invalidatePublicReads(app, ['moment-feed', 'guestbook-feed'])
+}
+
 export function invalidatePublicWrite(app: NuxtApp, path: string) {
   const domain = path.split('/')[2]
   if (['posts', 'taxonomy', 'folders', 'tags'].includes(domain ?? '')) {

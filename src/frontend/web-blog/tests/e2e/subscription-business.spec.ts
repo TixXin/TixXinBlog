@@ -438,13 +438,7 @@ test('favicon 从失败降级到同地址获取成功后，保存刷新恢复现
       failedReads++
       return route.fulfill({ status: 404, headers: { 'Cache-Control': 'no-store' }, body: '图标缓存尚未生成' })
     })
-    // 已登录页面水合后恢复会话会让公开读取失效并在客户端重读列表，后续须针对重读后的卡片。
-    const reread = page.waitForResponse(
-      (response) =>
-        new URL(response.url()).pathname === '/api/v1/subscriptions' && response.request().method() === 'GET',
-    )
     await page.goto(`/subscriptions?q=${encodeURIComponent(name)}`)
-    expect((await reread).status()).toBe(200)
     const card = page.getByRole('article', { name, exact: true })
     await card.scrollIntoViewIfNeeded()
     await expect.poll(() => failedReads).toBeGreaterThan(0)

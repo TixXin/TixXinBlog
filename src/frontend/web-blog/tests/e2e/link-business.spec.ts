@@ -256,12 +256,7 @@ test('外部Logo必须HTTPS，图片失败重试独立于外链且不抓取站�
   await expect(page).toHaveURL(/\/admin\/links\/\d+$/)
   const id = page.url().split('/').pop()!
   expect((await call(`/admin/links/${id}`)).logoMediaId).toBeNull()
-  // 已登录页面水合后恢复会话会让公开读取失效并在客户端重读列表，重试须在重读后的卡片上进行。
-  const reread = page.waitForResponse(
-    (response) => new URL(response.url()).pathname === '/api/v1/links' && response.request().method() === 'GET',
-  )
   await page.goto('/links?q=' + encodeURIComponent('外部图片站点'))
-  expect((await reread).status()).toBe(200)
   const card = page.locator(`[data-link-id="${id}"]`),
     retry = card.getByRole('button', { name: /重新加载图片/ })
   await expect(retry).toBeVisible()
@@ -543,7 +538,11 @@ test('真实列表失败保留成功页，慢查询不覆盖新结果', async ({
   await expect(page.locator('.link-card')).toHaveCount(12)
   await page.locator('.links-body').getByRole('button', { name: '重试', exact: true }).click()
   await expect(page.locator(`[data-link-id="${first.id}"]`)).toBeVisible()
+  // 样本中第二条友链也出现在第一条的搜索结果里，卡片可见不代表已切换查询；以地址栏为准，
+  // 否则下一次输入会在切换导航完成前落回当前查询而被路由判为重复导航。
+  const searched = (name: string) => (url: URL) => url.searchParams.get('q') === name
   await search.fill(second.name)
+  await expect(page).toHaveURL(searched(second.name))
   await expect(page.locator(`[data-link-id="${second.id}"]`)).toBeVisible()
   // 回访在有效期内不会发请求；推进日期进入后台重验证，再检查真实慢请求竞态。
   await page.clock.setFixedTime(Date.now() + 31_000)
@@ -556,6 +555,7 @@ test('真实列表失败保留成功页，慢查询不覆盖新结果', async ({
   await search.fill(first.name)
   await delayed
   await search.fill(second.name)
+  await expect(page).toHaveURL(searched(second.name))
   await expect(page.locator(`[data-link-id="${second.id}"]`)).toBeVisible()
   await page.waitForTimeout(900)
   await expect(page.locator(`[data-link-id="${first.id}"]`)).toHaveCount(0)
