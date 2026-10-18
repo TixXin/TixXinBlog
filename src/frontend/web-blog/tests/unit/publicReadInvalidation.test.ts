@@ -1,7 +1,11 @@
 /** @file publicReadInvalidation.test.ts @description 管理写入按领域失效，公开读取缓存不保留已撤回内容 */
 import { describe, expect, it } from 'vitest'
 import type { NuxtApp } from '#app'
-import { invalidatePublicReads, invalidatePublicWrite } from '../../app/utils/invalidatePublicReads'
+import {
+  invalidateIdentityReads,
+  invalidatePublicReads,
+  invalidatePublicWrite,
+} from '../../app/utils/invalidatePublicReads'
 import { publicReadCache, type PublicReadDomain } from '../../app/utils/publicReadCache'
 
 function fixture() {
@@ -49,6 +53,17 @@ describe('公开缓存写后失效入口', () => {
     expect(cache.read('archive')).toBeDefined()
     invalidatePublicReads(app)
     for (const domain of domains) expect(cache.read(domain)).toBeUndefined()
+  })
+  it('匿名进入登录态只撤销按身份区分的朋友圈与留言，已显示的公开栏目保留', () => {
+    const { app, cache } = fixture()
+    cache.put('guestbook-feed', 'guestbook-feed', { title: '留言' }, 0, 30_000)
+    invalidateIdentityReads(app)
+    for (const key of ['moment-feed', 'guestbook-feed']) expect(cache.read(key)).toBeUndefined()
+    expect(app.payload.state['$smoment-collection-generation']).toBe(1)
+    expect(app.payload.state['$sguestbook-generation']).toBe(1)
+    for (const key of ['posts', 'post-summary', 'archive', 'gallery', 'projects', 'links', 'prompts', 'subscriptions'])
+      expect(cache.read(key)).toBeDefined()
+    expect(cache.generation('posts')).toBe(0)
   })
   it('闪念继续由原有仓储接纳写入结果，不清空包含私有草稿的现有集合', () => {
     const { app } = fixture()

@@ -2,7 +2,7 @@
  * @file useCurrentUser.ts
  * @description 真实管理员登录态：访问令牌仅留在内存，刷新令牌使用同源 HttpOnly Cookie
  */
-import { invalidatePublicReads } from '~/utils/invalidatePublicReads'
+import { invalidateIdentityReads, invalidatePublicReads } from '~/utils/invalidatePublicReads'
 import type { CurrentUser } from '~/features/auth/types'
 import { withAuthCookieLock, withAuthCookieRead } from '~/utils/authCookieLock'
 import { clearCommentDrafts } from '~/features/post/commentSession'
@@ -27,7 +27,9 @@ export function useCurrentUser() {
   const isLoggedIn = computed(() => currentUser.value !== null && accessToken.value !== null)
 
   function accept(payload: AuthPayload) {
-    if (currentUser.value?.id !== payload.user.id) invalidatePublicReads(nuxtApp)
+    // 换账号整体撤销；从匿名进入登录态时公开栏目结果不变，只撤销按身份区分的状态
+    if (currentUser.value && currentUser.value.id !== payload.user.id) invalidatePublicReads(nuxtApp)
+    else if (!currentUser.value) invalidateIdentityReads(nuxtApp)
     if (currentUser.value && currentUser.value.id !== payload.user.id) {
       clearCommentDrafts(nuxtApp)
       clearMomentDrafts(nuxtApp)
