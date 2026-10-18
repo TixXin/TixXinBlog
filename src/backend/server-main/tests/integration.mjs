@@ -88,9 +88,23 @@ try {
     [0, 1].map(() => request('/api/v1/auth/refresh', { method: 'POST', cookie: login.cookie })),
   )
   assert.deepEqual(rotations.map((item) => item.status).sort(), [200, 401], '同一 refresh token 只能成功消费一次')
-  const session = rotations.find((item) => item.status === 200)
-  const token = session.body.data.accessToken
+  // 已轮换令牌再次出现按重放处置：撤销整条会话链，胜出方新签的 access 与 refresh 一并失效并留审计。
+  const rotated = rotations.find((item) => item.status === 200)
+  const rotatedSessionId = jwt.decode(rotated.body.data.accessToken).sid
   assert.equal((await request('/api/v1/auth/refresh', { method: 'POST', cookie: login.cookie })).status, 401)
+  assert.equal((await request('/api/v1/admin/posts', { token: rotated.body.data.accessToken })).status, 401)
+  assert.equal((await request('/api/v1/auth/refresh', { method: 'POST', cookie: rotated.cookie })).status, 401)
+  const reuseAudits = await em.execute(
+    "select resource_id, state from audit_entry where action='auth.refresh-reuse' and resource_id=?",
+    [rotatedSessionId],
+  )
+  assert.deepEqual(reuseAudits, [{ resource_id: rotatedSessionId, state: 'success' }], '重放撤销只写一次审计')
+  const session = await request('/api/v1/auth/login', {
+    method: 'POST',
+    body: { username: 'integration-admin', password },
+  })
+  assert.equal(session.status, 200)
+  const token = session.body.data.accessToken
 
   const draft = {
     title: '集成测试文章',
