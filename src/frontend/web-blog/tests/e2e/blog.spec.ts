@@ -1252,6 +1252,8 @@ test('内容包下载、上传断线查询与导入结果重读不重复创建�
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1)).toBe(true)
   await captureMotion(page, testInfo, 'content-import-mobile.png', { target: preview })
   await preview.getByRole('button', { name: '查询导入结果', exact: true }).click()
+  // 等本次重读结束再核对结果链接，否则会在旧 DOM 上通过计数断言并在请求进行中点击。
+  await expect(preview.getByRole('button', { name: '查询导入结果', exact: true })).toBeEnabled()
   await expect(preview.getByRole('link', { name: /^检查新文章草稿/ })).toHaveCount(1)
   await preview.getByRole('link', { name: /^检查新文章草稿/ }).click()
   await expect(page.getByRole('textbox', { name: 'Markdown 正文', exact: true })).toHaveValue('内容包迁入验证正文')
