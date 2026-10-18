@@ -2,7 +2,13 @@
  * @file useMediaLibrary.ts
  * @description 媒体工作区的请求、上传队列与草稿保护；展示组件仅通过 props 接收状态和动作。
  */
-import type { MediaAsset, MediaOrientation, MediaReferences, MediaUsage } from '~/features/media/types'
+import type {
+  MediaAsset,
+  MediaOrientation,
+  MediaReferences,
+  MediaRemovalResult,
+  MediaUsage,
+} from '~/features/media/types'
 export function useMediaLibrary(selectable = false) {
   interface UploadJob {
     id: string
@@ -50,9 +56,27 @@ export function useMediaLibrary(selectable = false) {
   const error = ref('')
   const references = ref<MediaReferences | null>(null)
   const referenceId = ref('')
+  const referenceLoading = ref(false)
+  const referenceError = ref('')
+  const selectedIds = ref<string[]>([])
+  const batchResults = ref<MediaRemovalResult[]>([])
+  const batchProgress = ref<{ completed: number; total: number } | null>(null)
+  const referenceName = computed(
+    () =>
+      items.value.find((asset) => asset.id === referenceId.value)?.name ??
+      batchResults.value.find((result) => result.id === referenceId.value)?.name ??
+      referenceId.value,
+  )
+  const selectableItems = computed(() => items.value.filter((asset) => !asset.deleted))
+  const allSelected = computed(
+    () =>
+      selectableItems.value.length > 0 && selectableItems.value.every((asset) => selectedIds.value.includes(asset.id)),
+  )
+  const someSelected = computed(() => selectedIds.value.length > 0 && !allSelected.value)
   let disposed = false
   let requestVersion = 0
   let ownershipVersion = 0
+  let referenceVersion = 0
   let owner: { actor: string; context: string } | null = null
   const busy = computed(
     () => working.value || uploading.value || hasDirtyMetadata.value || jobs.value.some((job) => !!job.file),
@@ -62,6 +86,29 @@ export function useMediaLibrary(selectable = false) {
   const ownsWorkspace = () =>
     !disposed && owner?.actor === auth.currentUser.value?.id && owner?.context === pageContext.value
   const ownsOperation = (version: number) => ownsWorkspace() && version === ownershipVersion
+  const canBatchSelect = computed(
+    () => !selectable && deleted.value === 'false' && ready.value && ownsWorkspace() && !pending.value && !busy.value,
+  )
+  function clearSelection() {
+    selectedIds.value = []
+  }
+  function toggleSelection(asset: MediaAsset) {
+    if (!canBatchSelect.value || !allowAction(asset) || asset.deleted) return
+    selectedIds.value = selectedIds.value.includes(asset.id)
+      ? selectedIds.value.filter((id) => id !== asset.id)
+      : [...selectedIds.value, asset.id]
+  }
+  function toggleAll() {
+    if (!canBatchSelect.value || !allowAction()) return
+    selectedIds.value = allSelected.value ? [] : selectableItems.value.map((asset) => asset.id)
+  }
+  function closeReferences() {
+    referenceVersion++
+    references.value = null
+    referenceId.value = ''
+    referenceLoading.value = false
+    referenceError.value = ''
+  }
   function allowAction(asset?: MediaAsset) {
     // 嵌入公开页面时，文件选择器与列表请求同时挂载；未就绪不代表身份已经变化。
     if (!ready.value) {
@@ -89,8 +136,10 @@ export function useMediaLibrary(selectable = false) {
       pending.value = false
       items.value = []
       total.value = 0
-      references.value = null
-      referenceId.value = ''
+      closeReferences()
+      clearSelection()
+      batchResults.value = []
+      batchProgress.value = null
       error.value = ownershipMessage
       uploader.cancel()
       for (const job of jobs.value) {
@@ -107,6 +156,7 @@ export function useMediaLibrary(selectable = false) {
   }
   async function load() {
     if (disposed) return
+    clearSelection()
     const actor = auth.currentUser.value?.id
     if (!actor) {
       ready.value = false
@@ -173,7 +223,7 @@ export function useMediaLibrary(selectable = false) {
     return true
   }
   async function searchMedia() {
-    if (!allowAction()) return
+    if (working.value || uploading.value || pending.value || !allowAction()) return
     if (hasDirtyMetadata.value) {
       error.value = '请先保存或取消替代文本和素材说明修改'
       return
@@ -182,7 +232,7 @@ export function useMediaLibrary(selectable = false) {
     if (!(await syncAddress())) await load()
   }
   async function changePage(value: number) {
-    if (!allowAction()) return
+    if (working.value || uploading.value || pending.value || !allowAction()) return
     if (hasDirtyMetadata.value) {
       error.value = '请先保存或取消替代文本和素材说明修改'
       return
@@ -204,6 +254,7 @@ export function useMediaLibrary(selectable = false) {
     },
   )
   onBeforeRouteUpdate(() => {
+    if (working.value || uploading.value) return false
     if (!hasDirtyMetadata.value) return true
     if (!window.confirm('替代文本或素材说明尚未保存，确定放弃修改并切换筛选吗？')) return false
     for (const [id, value] of Object.entries(savedAlts)) altDrafts[id] = value
@@ -211,7 +262,7 @@ export function useMediaLibrary(selectable = false) {
     return true
   })
   function enqueue(files: File[]) {
-    if (!allowAction() || uploading.value) return
+    if (!allowAction() || uploading.value || working.value) return
     if (hasDirtyMetadata.value) {
       error.value = '请先保存或取消替代文本和素材说明修改'
       return
@@ -311,17 +362,103 @@ export function useMediaLibrary(selectable = false) {
   const saveAlt = (asset: MediaAsset) => saveField(asset, 'alt')
   const saveDescription = (asset: MediaAsset) => saveField(asset, 'description')
   async function showReferences(id: string, currentPage = 1) {
-    if (working.value || !allowAction() || !items.value.some((asset) => asset.id === id)) return
+    if (
+      working.value ||
+      !allowAction() ||
+      !Number.isSafeInteger(currentPage) ||
+      currentPage < 1 ||
+      (!items.value.some((asset) => asset.id === id) && !batchResults.value.some((result) => result.id === id))
+    )
+      return
     const operation = ownershipVersion
-    working.value = true
+    const version = ++referenceVersion
+    referenceId.value = id
+    references.value = null
+    referenceError.value = ''
+    referenceLoading.value = true
     try {
-      referenceId.value = id
       const result = await api<MediaReferences>(`/admin/media/${id}/references`, { query: { page: currentPage } })
-      if (ownsOperation(operation)) references.value = result
+      if (ownsOperation(operation) && version === referenceVersion) references.value = result
     } catch {
-      if (ownsOperation(operation)) error.value = '引用读取失败，请重试'
+      if (ownsOperation(operation) && version === referenceVersion) referenceError.value = '引用读取失败，请重试'
+    } finally {
+      if (version === referenceVersion) referenceLoading.value = false
+    }
+  }
+  function referencedResult(asset: MediaAsset, refs: MediaReferences): MediaRemovalResult {
+    return {
+      id: asset.id,
+      name: asset.name,
+      status: 'referenced',
+      message: `仍有 ${refs.total} 处引用（含历史修订），未移入回收`,
+      references: refs,
+    }
+  }
+  async function removeBatchAsset(asset: MediaAsset, operation: number): Promise<MediaRemovalResult | undefined> {
+    let checked = false
+    try {
+      const refs = await api<MediaReferences>(`/admin/media/${asset.id}/references`)
+      if (!ownsOperation(operation)) return
+      if (refs.total) return referencedResult(asset, refs)
+      checked = true
+      // 预检只用于说明；最终是否可删仍由后端在共享媒体锁内重新检查。
+      await api(`/admin/media/${asset.id}`, { method: 'DELETE' })
+      if (!ownsOperation(operation)) return
+      return { id: asset.id, name: asset.name, status: 'removed', message: '已移入回收，可恢复' }
+    } catch (cause) {
+      if (!ownsOperation(operation)) return
+      if (checked) {
+        try {
+          const refs = await api<MediaReferences>(`/admin/media/${asset.id}/references`)
+          if (!ownsOperation(operation)) return
+          if (refs.total) return referencedResult(asset, refs)
+        } catch {
+          if (!ownsOperation(operation)) return
+          // 删除失败后的补查也可能失败；保留失败结果，不推断无引用或自动重试删除。
+        }
+      }
+      const message = (cause as { data?: { message?: string } } | null)?.data?.message ?? errorText(cause)
+      return {
+        id: asset.id,
+        name: asset.name,
+        status: 'failed',
+        message: checked ? `${message}；请重新读取核对回收状态` : `引用检查失败，未执行删除：${message}`,
+      }
+    }
+  }
+  async function removeSelected() {
+    if (!canBatchSelect.value || !allowAction()) return
+    const selected = selectableItems.value.filter((asset) => selectedIds.value.includes(asset.id))
+    if (!selected.length) return
+    const operation = ownershipVersion
+    if (
+      !window.confirm(
+        `将所选 ${selected.length} 张图片中未被引用的资源移入回收？被引用的资源会保留并列出引用位置。回收后链接不可访问，文件保留，可恢复。`,
+      ) ||
+      !ownsOperation(operation) ||
+      !canBatchSelect.value
+    )
+      return
+    working.value = true
+    error.value = ''
+    closeReferences()
+    batchResults.value = []
+    batchProgress.value = { completed: 0, total: selected.length }
+    try {
+      for (const asset of selected) {
+        if (!ownsOperation(operation)) break
+        const result = await removeBatchAsset(asset, operation)
+        if (!result || !ownsOperation(operation)) break
+        batchResults.value.push(result)
+        batchProgress.value = { completed: batchResults.value.length, total: selected.length }
+      }
+      if (!ownsOperation(operation)) return
+      const removed = batchResults.value.filter((result) => result.status === 'removed').length
+      if (removed) success(`已将 ${removed} 张图片移入回收`)
+      await load()
     } finally {
       working.value = false
+      batchProgress.value = null
     }
   }
   async function remove(asset: MediaAsset) {
@@ -332,6 +469,7 @@ export function useMediaLibrary(selectable = false) {
       const refs = await api<MediaReferences>(`/admin/media/${asset.id}/references`)
       if (!ownsOperation(operation)) return
       if (refs.total) {
+        closeReferences()
         referenceId.value = asset.id
         references.value = refs
         error.value = '资源仍被引用，不能移除'
@@ -369,7 +507,9 @@ export function useMediaLibrary(selectable = false) {
     () =>
       !busy.value ||
       window.confirm(
-        '仍有上传或未保存的替代文本、素材说明，离开会停止等待并放弃未保存输入；已上传资源保留。确定离开吗？',
+        batchProgress.value
+          ? '批量回收仍在进行，离开后停止后续操作；已发出的删除请求可能已经生效。请返回媒体库重新读取核对结果。确定离开吗？'
+          : '仍有上传或未保存的替代文本、素材说明，离开会停止等待并放弃未保存输入；已上传资源保留。确定离开吗？',
       ),
   )
   function beforeUnload(event: BeforeUnloadEvent) {
@@ -423,6 +563,20 @@ export function useMediaLibrary(selectable = false) {
     error,
     references,
     referenceId,
+    referenceName,
+    referenceLoading,
+    referenceError,
+    closeReferences,
+    selectedIds,
+    allSelected,
+    someSelected,
+    canBatchSelect,
+    toggleSelection,
+    toggleAll,
+    clearSelection,
+    removeSelected,
+    batchResults,
+    batchProgress,
     busy,
     canSelect,
     load,

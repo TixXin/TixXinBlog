@@ -212,3 +212,5 @@
 | `POST /admin/backup/imports/:id/repreview`、`POST /admin/backup/imports/:id/execute` | 重新预览或绑定摘要执行；执行需契约要求的确认文本与 confirmation |
 
 媒体搜索参数为 `search/orientation/usage/deleted`，说明与替代文本独立保存；被当前或历史内容引用的资源拒绝回收。内容包票据绑定管理员、内容代次、目标版本和预览摘要，重复执行返回原结果。接口层约束不能替代[备份恢复](backup-and-recovery.md)与[运行任务](operations.md)中的完整操作流程。
+
+`GET /admin/media/:id/references` 仅管理员可读，接受从 1 开始的 `page`，固定每页 20 项，响应为 `{ total, page, pageSize, items: [{ kind, revision?, title, url }] }`；包括草稿、归档及历史修订，媒体不存在时返回 404。后台批量回收复用此查询与单条 `DELETE /admin/media/:id`，逐项执行并展示结果，不是整批原子事务。删除会在共享媒体锁内重新统计全部引用，有引用时返回 409；成功只标记回收并清理图片变体，保留原文件供恢复。

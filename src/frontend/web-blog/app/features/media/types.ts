@@ -35,10 +35,18 @@ export interface MediaReferences {
       | 'guestbook'
       | 'gallery'
       | 'project'
+      | 'subscription'
       | 'link'
       | 'image-prompt'
     title: string
     url: string
     revision?: number
   }[]
+}
+export interface MediaRemovalResult {
+  id: string
+  name: string
+  status: 'removed' | 'referenced' | 'failed'
+  message: string
+  references?: MediaReferences
 }
