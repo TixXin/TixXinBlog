@@ -107,7 +107,10 @@ describe('归档展示组件', () => {
     const wrapper = await mountSuspended(ArchiveTimeline, { props: { years }, attachTo: host })
     wrappers.push(wrapper)
     expect(wrapper.findAll('h3').map((title) => title.text())).toEqual(['2026 年', '2025 年'])
-    expect(wrapper.findAll('.archive-timeline__count').map((count) => count.text())).toEqual(['共 12 篇', '共 1 篇'])
+    expect(wrapper.findAll('.archive-timeline__count').map((count) => count.text())).toEqual([
+      '全年共 12 篇',
+      '全年共 1 篇',
+    ])
     const links = wrapper.findAll('a')
     expect(links.map((link) => link.attributes('href'))).toEqual([
       '/articles/autumn',

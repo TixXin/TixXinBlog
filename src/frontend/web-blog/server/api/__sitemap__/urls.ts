@@ -23,8 +23,9 @@ export default defineEventHandler(async (event) => {
       .filter((post) => !post.seoNoindex)
       .map((post) => ({ loc: articlePath(post), lastmod: post.updatedAt || post.date })),
     // 路径段已由共用规则编码；告诉站点地图保留编码，避免中文和保留字符被二次编码。
-    ...data.tags.filter((tag) => tag.count > 0).map((tag) => ({ loc: postTagPath(tag.label), _encoded: true })),
-    ...data.categories
+    // 旧接口或部分降级响应可能缺少目录字段，按空目录处理，不让标签与专栏拖垮整个站点地图。
+    ...(data.tags ?? []).filter((tag) => tag.count > 0).map((tag) => ({ loc: postTagPath(tag.label), _encoded: true })),
+    ...(data.categories ?? [])
       .filter((category) => category.count > 0)
       .map((category) => ({ loc: postCategoryPath(category.name), _encoded: true })),
     ...flashes
