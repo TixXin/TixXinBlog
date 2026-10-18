@@ -43,4 +43,19 @@ describe('AuthOriginGuard', () => {
   it('端口不同的同域名 Origin 拒绝', () => {
     expect(() => guard().canActivate(context('https://blog.example.com:8443'))).toThrow(ForbiddenException)
   })
+
+  it('显式端口与 Host 一致时放行', () => {
+    expect(guard().canActivate(context('https://blog.example.com:8443', 'blog.example.com:8443'))).toBe(true)
+  })
+
+  it.each(['null', 'https://blog.example.com.evil.example', 'https://evil.blog.example.com'])(
+    '不透明或相似域名来源不得获得同源权限：%s',
+    (origin) => {
+      expect(() => guard().canActivate(context(origin))).toThrow(ForbiddenException)
+    },
+  )
+
+  it('通配符配置不能放行任意认证来源', () => {
+    expect(() => guard('*').canActivate(context('https://evil.example'))).toThrow(ForbiddenException)
+  })
 })
