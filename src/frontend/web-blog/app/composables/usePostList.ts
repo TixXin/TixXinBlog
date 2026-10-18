@@ -13,6 +13,8 @@ export async function usePostList(options: {
   displayMode: Ref<'waterfall' | 'pagination'>
   /** URL受控列表在用户操作时自行归一页码，浏览器历史恢复不能再次重置。 */
   resetOnScopeChange?: boolean
+  /** 独立筛选页使用各自的数据键：Nuxt 同键只保留首个 handler，与首页或上一个分类页共用会沿用旧筛选条件。 */
+  key?: string
 }) {
   const config = useRuntimeConfig()
   const pageSize = 15
@@ -42,7 +44,7 @@ export async function usePostList(options: {
     chunks: { page: number; items: PostItem[] }[]
   }
   const result = usePublicReadData(
-    'post-list',
+    options.key ?? 'post-list',
     async (_app, { signal }): Promise<CollectionPage> => {
       const query = { ...filters.value, page: options.page.value, pageSize }
       const requestedScope = scopeKey.value

@@ -134,6 +134,8 @@ describe('标签独立页', () => {
     expect(options.selectedCategory.value).toBeNull()
     expect(options.displayMode.value).toBe('pagination')
     expect(options.resetOnScopeChange).toBe(false)
+    // 独立数据键：客户端从首页或其他分类页跳转时不会复用旧页面的筛选 handler
+    expect(options.key).toBe('post-list:tag:Vue 3')
     expect(wrapper.get('h1').text()).toContain('标签：Vue 3')
     expect(wrapper.get('article').text()).toBe('组合式函数笔记')
     await wrapper.get('.next-page').trigger('click')
@@ -182,6 +184,7 @@ describe('专栏独立页', () => {
     const options = mocks.list.mock.calls[0]?.[0]
     expect(options.selectedTag.value).toBeNull()
     expect(options.selectedCategory.value).toBe('前端 / 工程')
+    expect(options.key).toBe('post-list:category:前端 / 工程')
     expect(options.page.value).toBe(1)
     expect(wrapper.get('h1').text()).toContain('专栏：前端 / 工程')
     expect(wrapper.text()).toContain('浏览专栏「前端 / 工程」下的公开文章。')

@@ -110,7 +110,10 @@ export function usePostEditor(id: string | null) {
       recovery.clearSaved(recoveredSourceKey)
       recoveredSourceKey = undefined
       if (!automatic) success(status === 'published' ? '文章已发布' : status === 'draft' ? '草稿已保存' : '文章已归档')
-      clearNuxtData((key) => key.startsWith('article-') || key === 'post-list' || key === 'post-metadata')
+      clearNuxtData(
+        (key) =>
+          key.startsWith('article-') || key === 'post-list' || key.startsWith('post-list:') || key === 'post-metadata',
+      )
       if (!id) await navigateTo(`/admin/posts/${draft.value.id}`, { replace: true })
     } catch (cause) {
       autoSavePaused.value = true

@@ -60,6 +60,7 @@ export async function usePostTaxonomyRoute(kind: PostTaxonomyKind) {
     page,
     changePage,
     listOptions: {
+      key: `post-list:${kind}:${taxonomy.name}`,
       page,
       selectedTag: ref(taxonomy.tag),
       selectedCategory: ref(taxonomy.folder),
