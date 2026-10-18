@@ -1,0 +1,218 @@
+/**
+ * @file _print.scss
+ * @description 三主题共用的文章打印样式，仅在文章详情存在时启用，保留标题、元信息、封面与正文。
+ */
+
+@media print {
+  // 用页面标记限定范围，后台 Markdown 预览与其它公开页不受影响。
+  html:has(.article-detail-page),
+  body:has(.article-detail-page) {
+    height: auto !important;
+    min-height: 0 !important;
+    overflow: visible !important;
+    background: #fff !important;
+    color: #000 !important;
+    color-scheme: light;
+  }
+
+  body:has(.article-detail-page) {
+    margin: 0 !important;
+    padding: 0 !important;
+
+    // body 级 Teleport 和应用根的附加节点包含目录抽屉、灯箱、导航、通知及加载覆盖层。
+    > :not(#__nuxt),
+    #__nuxt > :not(:has(.article-detail-page)),
+    .aside-left,
+    .aside-right,
+    .footer-row,
+    .aurora-topbar,
+    .aurora-aside,
+    .aurora-footer,
+    .dock-bar,
+    .dock-footer,
+    .site-announcement,
+    #right-sidebar-target,
+    .custom-scrollbar__track,
+    .custom-scrollbar__back-to-top,
+    .article-page__stats,
+    .article-page__inline-error,
+    .article-sticky-header__back,
+    .article-nav,
+    .related-content,
+    .comment-section,
+    .article-code__actions,
+    .code-copy {
+      display: none !important;
+    }
+
+    // 解除主题祖先链与文章自身的视口限高、网格和滚动裁剪，让长文参与自然分页。
+    #__nuxt,
+    .page-root,
+    .page-root :has(.article-detail-page),
+    .article-detail-page,
+    .article-page,
+    .article-viewport,
+    .article-page__inner {
+      display: block !important;
+      position: static !important;
+      width: auto !important;
+      max-width: none !important;
+      height: auto !important;
+      min-height: 0 !important;
+      max-height: none !important;
+      margin: 0 !important;
+      padding: 0 !important;
+      overflow: visible !important;
+      border: 0 !important;
+      border-radius: 0 !important;
+      background: #fff !important;
+      box-shadow: none !important;
+      mask-image: none !important;
+    }
+
+    // 打印不保留入场位移、淡入透明度、滚动渐变或暗色代码高亮。
+    .page-root,
+    .page-root * {
+      animation: none !important;
+      transition: none !important;
+      transform: none !important;
+      opacity: 1 !important;
+      filter: none !important;
+      backdrop-filter: none !important;
+      text-shadow: none !important;
+      box-shadow: none !important;
+      color: #000 !important;
+    }
+
+    .article-detail-page,
+    .article-detail-page * {
+      background: transparent !important;
+      border-color: #999 !important;
+    }
+
+    .article-detail-page {
+      font-size: 11pt;
+      line-height: 1.65;
+      overflow-wrap: anywhere;
+    }
+
+    .article-sticky-header {
+      position: static !important;
+      padding: 0 0 10pt !important;
+      margin-bottom: 14pt;
+      break-inside: avoid;
+      break-after: avoid;
+    }
+
+    .article-sticky-header__title {
+      font-size: 22pt !important;
+      line-height: 1.3;
+    }
+
+    .article-sticky-header__meta {
+      font-size: 9pt;
+    }
+
+    .article-reading-content {
+      :is(p, li, blockquote) {
+        font-size: 11pt !important;
+        line-height: 1.65 !important;
+        orphans: 3;
+        widows: 3;
+      }
+
+      :is(h2, h3, h4, h5, h6) {
+        break-after: avoid;
+        break-inside: avoid;
+      }
+
+      h2 {
+        font-size: 17pt !important;
+      }
+
+      h3 {
+        font-size: 14pt !important;
+      }
+
+      :is(h4, h5, h6) {
+        font-size: 12pt !important;
+      }
+
+      a[href] {
+        text-decoration: underline;
+      }
+
+      // 锚点仍用于文章内定位，不追加无意义的页内片段；其余地址原样保留，长 URL 可折行。
+      a[href]:not([href='']):not([href^='#'])::after {
+        content: ' (' attr(href) ')';
+        font-size: 9pt;
+        font-weight: normal;
+        overflow-wrap: anywhere;
+      }
+
+      // 两种正文渲染共用规则；代码容器可跨页，不能用整块避分页造成长代码丢失。
+      .article-code,
+      .article-content__code-wrap,
+      .article-content__pre,
+      pre,
+      pre code {
+        width: auto !important;
+        min-width: 0 !important;
+        max-width: 100% !important;
+        height: auto !important;
+        max-height: none !important;
+        overflow: visible !important;
+        break-inside: auto;
+      }
+
+      pre,
+      pre code,
+      pre span {
+        white-space: pre-wrap !important;
+        overflow-wrap: anywhere !important;
+        word-break: normal !important;
+        font-size: 9pt !important;
+        line-height: 1.5 !important;
+      }
+
+      table {
+        display: table !important;
+        width: 100%;
+        table-layout: fixed;
+        overflow: visible !important;
+      }
+
+      tr {
+        break-inside: avoid;
+      }
+
+      // 结构化列表用实心圆点，打印关闭背景图形时也保持列表层次。
+      .article-content__bullet {
+        border: 3px solid #000 !important;
+      }
+    }
+
+    .article-page__cover-wrap,
+    .article-image,
+    figure,
+    img {
+      break-inside: avoid;
+      page-break-inside: avoid;
+    }
+
+    .article-page__cover-wrap {
+      height: auto !important;
+      overflow: visible !important;
+    }
+
+    // 保留正文的图片按钮及图注；高图按纸张内容区缩放，避免跨页或被封面裁剪。
+    .article-detail-page img {
+      max-width: 100% !important;
+      max-height: min(22cm, 80vh);
+      width: auto !important;
+      height: auto !important;
+      object-fit: contain !important;
+      margin-inline: auto;
+    }
+  }
+}
