@@ -40,7 +40,8 @@ export interface MediaReferences {
       | 'image-prompt'
     title: string
     url: string
-    revision?: number
+    /** 历史版本引用的版本号；当前内容引用为 null */
+    revision?: number | null
   }[]
 }
 export interface MediaRemovalResult {
