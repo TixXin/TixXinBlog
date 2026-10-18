@@ -33,9 +33,11 @@ try {
     const { updatedAt: _updatedAt, announcementUpdatedAt: _announcementUpdatedAt, ...input } = value
     return input
   }
-  const initial = await ok('/site', 'GET', undefined, false)
-  assert.equal(initial.name, 'TixXin Blog')
-  assert.equal(initial.announcement, '')
+  const initialPublic = await ok('/site', 'GET', undefined, false)
+  assert.equal(Object.hasOwn(initialPublic, 'revision'), false)
+  const initial = await ok('/admin/site')
+  assert.equal(initialPublic.name, 'TixXin Blog')
+  assert.equal(initialPublic.announcement, '')
   assert.equal((await request('/admin/site', 'GET', undefined, false)).status, 401)
   assert.equal((await request('/admin/site/revisions', 'GET', undefined, false)).status, 401)
   const initialHistory = await ok('/admin/site/revisions')
@@ -73,7 +75,7 @@ try {
   assert.equal((await request('/admin/site', 'PATCH', input)).status, 409)
   assert.equal((await ok('/admin/site/revisions')).total, initialHistory.total + 1)
   assert.equal((await ok('/admin/site/revisions/0')).name, initial.name)
-  const beforeFailure = await ok('/site')
+  const beforeFailure = await ok('/admin/site')
   assert.equal(
     (
       await request('/admin/site', 'PATCH', {
@@ -83,7 +85,7 @@ try {
     ).status,
     409,
   )
-  assert.equal((await ok('/site')).revision, beforeFailure.revision)
+  assert.equal((await ok('/admin/site')).revision, beforeFailure.revision)
   assert.equal((await ok('/admin/site/revisions')).total, initialHistory.total + 1)
   const restored = await ok(`/admin/site/revisions/${initial.revision}/restore`, 'POST', { revision: changed.revision })
   assert.equal(restored.name, initial.name)
@@ -113,13 +115,13 @@ try {
   await ok('/admin/site', 'PATCH', { ...editable(avatar), avatar: '' })
   assert.equal((await ok(`/admin/media/${asset.id}/references`)).total, 1)
   assert.equal((await request(`/admin/media/${asset.id}`, 'DELETE')).status, 409, '历史配置仍引用头像')
-  const current = await ok('/site')
+  const current = await ok('/admin/site')
   await delay(1100)
   const concurrent = await Promise.all(
     ['A', 'B'].map((name) => request('/admin/site', 'PATCH', { ...editable(current), name })),
   )
   assert.deepEqual(concurrent.map((item) => item.status).sort(), [200, 409])
-  assert.equal((await ok('/site')).revision, current.revision + 1)
+  assert.equal((await ok('/admin/site')).revision, current.revision + 1)
   const profileBase = await ok('/admin/site')
   const about = {
     visible: true,

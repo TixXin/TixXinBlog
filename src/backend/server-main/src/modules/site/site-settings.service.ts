@@ -42,7 +42,7 @@ export class SiteSettingsService {
     return {
       ...withPresenceDefaults(settings.values),
       about: publicView ? publicAbout(settings.values.about) : (settings.values.about ?? emptyAbout()),
-      revision: settings.revision,
+      ...(publicView ? {} : { revision: settings.revision }),
       updatedAt: settings.updatedAt.toISOString(),
     }
   }
