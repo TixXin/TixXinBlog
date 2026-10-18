@@ -583,7 +583,20 @@ test('无JavaScript仍输出真实友链和本站资料，复制与整理输入�
     await expect(page.getByRole('heading', { name: '友情链接', exact: true })).toBeVisible()
     await expect(page.locator('.link-card')).toHaveCount(12)
     await expect(page.locator('.link-card').first()).toContainText(first.items[0]!.name)
-    await page.locator('.links-compact-info summary').click()
+    const summary = page.locator('.links-compact-info summary')
+    // 无脚本时 Playwright 点击重试的退避计时依赖页面定时器而永不触发，入场位移中点击会一直挂起；
+    // 先等摘要及其祖先的入场动画结束，让首次稳定性检查即可通过。
+    await expect
+      .poll(() =>
+        summary.evaluate((node) =>
+          document.getAnimations().every((animation) => {
+            const target = (animation.effect as KeyframeEffect | null)?.target
+            return !(target instanceof Element && target.contains(node)) || animation.playState === 'finished'
+          }),
+        ),
+      )
+      .toBe(true)
+    await summary.click()
     await expect(page.locator('.site-info:visible')).toContainText(settings.name)
     await expect(page.getByRole('button', { name: '复制本站资料', exact: true })).toBeDisabled()
     await expect(page.getByRole('textbox', { name: '整理站点名称', exact: true })).toBeDisabled()
