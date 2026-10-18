@@ -1,9 +1,51 @@
 /**
  * @file logging.ts
- * @description 结构化日志统一脱敏配置，禁止认证凭据进入请求及响应日志；请求编号与 traceId 一致
+ * @description 结构化日志统一脱敏配置，保护请求、响应与异常日志；请求编号与 traceId 一致
  */
+import type { IncomingMessage } from 'node:http'
 import type { Params } from 'nestjs-pino'
+import { stdSerializers } from 'pino-http'
 import { getTraceId } from '../common/utils/trace-id'
+
+const REDACTED = '[REDACTED]'
+const sensitiveFields = [
+  'password',
+  'currentPassword',
+  'newPassword',
+  'passwordHash',
+  'accessToken',
+  'refreshToken',
+  'refreshTokenPlain',
+  'token',
+  'tokenHash',
+  'ticket',
+  'visitorId',
+  'visitorIdHash',
+  'email',
+]
+
+/** URL 只保留定位所需的路径；批处理结果路径包含私密票据，静态操作名可保留。 */
+export function redactRequestUrl(url: string): string {
+  return url
+    .split(/[?#]/)[0]!
+    .replace(/(\/admin\/posts\/batch\/)(?!preview(?:\/|$)|execute(?:\/|$))[^/]+/i, `$1${REDACTED}`)
+}
+
+/** 异常消息可能含 SQL 参数或原始输入，只保留类型和去掉完整消息后的调用帧。 */
+function serializeError(error: unknown) {
+  if (!(error instanceof Error)) return { type: 'Error', message: REDACTED }
+  const type = error.constructor.name
+  const prefix = error.message ? `${error.name}: ${error.message}\n` : `${error.name}\n`
+  // 不只删首行：多行消息、cause 与异常附加属性均不能重新带入日志。
+  const frames = error.stack?.startsWith(prefix)
+    ? error.stack
+        .slice(prefix.length)
+        .split('\n')
+        .filter((line) => /^\s+at /.test(line))
+        .join('\n')
+    : undefined
+  return { type, message: REDACTED, ...(frames ? { stack: `${type}: ${REDACTED}\n${frames}` } : {}) }
+}
 
 export function createLoggingOptions(level = 'info', development = false): Params {
   return {
@@ -15,27 +57,47 @@ export function createLoggingOptions(level = 'info', development = false): Param
         if (!res.headersSent) res.setHeader('X-Request-Id', traceId)
         return traceId
       },
+      // HTTP 中间件与 Nest 请求上下文外的 Pino 均直接使用同一组原始值序列化器。
+      wrapSerializers: false,
+      serializers: {
+        req: (req: IncomingMessage) => {
+          const { id, method, url, headers, remoteAddress, remotePort } = stdSerializers.req(req)
+          // 白名单排除 Express 的 query/params 及正文，不把敏感输入复制到其他字段。
+          return { id, method, url: url ? redactRequestUrl(url) : url, headers, remoteAddress, remotePort }
+        },
+        res: stdSerializers.res,
+        err: serializeError,
+      },
+      hooks: {
+        logMethod(args, method) {
+          const [value, message] = args
+          // Pino 会在 err 序列化前把原始 message 复制到 msg，必须提前阻断这个隐式出口。
+          if (
+            message === undefined &&
+            (value instanceof Error ||
+              (value !== null &&
+                typeof value === 'object' &&
+                'err' in value &&
+                value.err &&
+                (!('msg' in value) || value.msg === undefined)))
+          ) {
+            method.call(this, value, REDACTED)
+            return
+          }
+          method.apply(this, args)
+        },
+      },
       redact: {
         paths: [
           'req.headers.authorization',
+          'req.headers["proxy-authorization"]',
           'req.headers.cookie',
+          'req.headers.referer',
           'res.headers["set-cookie"]',
           'req.headers["x-visitor-id"]',
-          'req.body.password',
-          'req.body.currentPassword',
-          'req.body.newPassword',
-          'currentPassword',
-          'newPassword',
-          'req.body.refreshToken',
-          'req.body.accessToken',
-          'req.body.ticket',
-          'ticket',
-          'password',
-          'accessToken',
-          'refreshToken',
-          'refreshTokenPlain',
+          ...sensitiveFields.flatMap((field) => [field, `req.body.${field}`]),
         ],
-        censor: '[REDACTED]',
+        censor: REDACTED,
       },
       customLogLevel: (req, res, error) => {
         // 按完成结果决定静默，避免健康探针失败也被 ignore 隐藏。

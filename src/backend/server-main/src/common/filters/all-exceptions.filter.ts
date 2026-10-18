@@ -7,6 +7,7 @@
 
 import { ArgumentsHost, Catch, ExceptionFilter, HttpException, HttpStatus, Logger } from '@nestjs/common'
 import type { Request, Response } from 'express'
+import { redactRequestUrl } from '../../config/logging'
 import { ErrorCode, HTTP_STATUS_TO_ERROR_CODE } from '../constants/error-codes'
 import { BusinessException } from '../exceptions/business.exception'
 import { getTraceId } from '../utils/trace-id'
@@ -48,7 +49,7 @@ export class AllExceptionsFilter implements ExceptionFilter {
     if (!(exception instanceof HttpException) || status >= 500) {
       this.logger.error(
         { err: exception instanceof Error ? exception : new Error(String(exception)), traceId, status },
-        `请求处理异常 ${request.method} ${request.path ?? request.url}`,
+        `请求处理异常 ${request.method} ${redactRequestUrl(request.path ?? request.url)}`,
       )
     }
 
