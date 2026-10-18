@@ -1,6 +1,6 @@
 <!--
   @file SubscribeCard.vue
-  @description 可用 RSS 订阅入口，并说明邮件订阅尚未开放
+  @description 文章、闪念与朋友圈 RSS 订阅入口，并说明邮件订阅尚未开放
   @author TixXin
   @since 2025-03-17
 -->
@@ -11,12 +11,16 @@
     <div class="subscribe-card__content">
       <h3 class="subscribe-card__title">
         <span class="subscribe-card__icon">
-          <Icon name="lucide:mail" size="16" />
+          <Icon name="lucide:rss" size="16" aria-hidden="true" />
         </span>
         订阅更新
       </h3>
-      <p class="subscribe-card__desc">使用 RSS 阅读器订阅最新文章，邮件订阅尚未开放。</p>
-      <a href="/rss.xml" class="btn-primary subscribe-card__btn"><Icon name="lucide:rss" size="16" />RSS 订阅</a>
+      <p class="subscribe-card__desc">使用 RSS 阅读器分别订阅文章、闪念和朋友圈更新，邮件订阅尚未开放。</p>
+      <div class="subscribe-card__feeds">
+        <BlogRssLink href="/rss.xml" label="文章" />
+        <BlogRssLink href="/flash.xml" label="闪念" />
+        <BlogRssLink href="/moments.xml" label="朋友圈" />
+      </div>
     </div>
   </section>
 </template>
@@ -80,24 +84,9 @@
   margin-bottom: 1rem;
 }
 
-.subscribe-card__form {
+.subscribe-card__feeds {
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
-}
-
-.subscribe-card__input {
-  border-radius: $radius-md;
-  padding: 0.5rem 1rem;
-}
-
-.subscribe-card__btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 44px;
-  gap: 0.5rem;
-  width: 100%;
-  border-radius: $radius-md;
 }
 </style>
