@@ -19,10 +19,9 @@
               class="search-modal__input"
               placeholder="搜索文章、项目、图库等内容…"
               aria-label="搜索站内公开内容"
+              :aria-describedby="keyboardHintId"
               maxlength="200"
-              @keydown.enter="onEnter"
-              @keydown.down.prevent="selectNext"
-              @keydown.up.prevent="selectPrev"
+              @keydown="onResultKeydown"
             />
             <button v-if="query" type="button" class="search-modal__close" aria-label="清空搜索" @click="query = ''">
               <Icon name="lucide:delete" size="16" />
@@ -70,14 +69,20 @@
                       class="search-modal__item"
                       :class="{ 'search-modal__item--active': selectedIndex === results.indexOf(item) }"
                       :data-result-selected="selectedIndex === results.indexOf(item)"
+                      :data-result-index="results.indexOf(item)"
                       @click="onResultClick($event, item)"
                       @mouseenter="selectedIndex = results.indexOf(item)"
                       @focus="selectedIndex = results.indexOf(item)"
+                      @keydown="onResultKeydown"
                     >
                       <Icon :name="item.icon" size="16" class="search-modal__item-icon" />
                       <div class="search-modal__item-content">
-                        <span class="search-modal__item-title">{{ item.title }}</span>
-                        <span class="search-modal__item-desc line-clamp-1">{{ item.description }}</span>
+                        <span class="search-modal__item-title">
+                          <SearchHighlight :text="item.title" :keyword="query" />
+                        </span>
+                        <span class="search-modal__item-desc line-clamp-1">
+                          <SearchHighlight :text="item.description" :keyword="query" />
+                        </span>
                       </div>
                       <span class="search-modal__item-type">{{ typeLabel(item.type) }}</span>
                     </a>
@@ -107,6 +112,8 @@
                   : `第 ${page} 页${total === null ? '' : `，共 ${total} 项`}`
             }}
           </p>
+          <p :id="keyboardHintId" class="sr-only">使用上下方向键选择结果，按 Enter 打开。</p>
+          <p class="sr-only" role="status" aria-live="polite" aria-atomic="true">{{ selectionAnnouncement }}</p>
           <nav
             v-if="query.trim() && type !== 'all' && total !== null && (total > SEARCH_PAGE_SIZE || page > 1)"
             class="search-modal__filters"
@@ -139,6 +146,7 @@
 </template>
 
 <script setup lang="ts">
+import SearchHighlight from '~/components/common/SearchHighlight.vue'
 import type { SearchResultItem } from '~/composables/useSearch'
 import { searchTypeLabels, SEARCH_PAGE_SIZE } from '~/features/search/types'
 import { searchLocation } from '~/features/search/query'
@@ -148,9 +156,15 @@ const visible = defineModel<boolean>('visible', { default: false })
 const inputRef = ref<HTMLInputElement | null>(null)
 const dialogRef = ref<HTMLElement | null>(null)
 const resultListRef = ref<HTMLElement | null>(null)
-const selectedIndex = ref(0)
+const selectedIndex = ref(-1)
+const keyboardHintId = useId()
 
 const { query, type, page, groups, results, total, isSearching, error, search, cancel } = useSearch({ remember: true })
+const navigableResults = computed(() => (query.value.trim() && !isSearching.value ? results.value : []))
+const selectionAnnouncement = computed(() => {
+  const item = navigableResults.value[selectedIndex.value]
+  return item ? `第 ${selectedIndex.value + 1} 项，共 ${navigableResults.value.length} 项，${item.title}` : ''
+})
 watch([total, isSearching], () => {
   if (isSearching.value || total.value === null || type.value === 'all') return
   const lastPage = Math.max(1, Math.ceil(total.value / SEARCH_PAGE_SIZE))
@@ -177,7 +191,7 @@ watch(visible, (v) => {
     restoreTrigger = true
     destination = null
     waitForPageTransition = false
-    selectedIndex.value = 0
+    selectedIndex.value = -1
     void search(query.value)
     nextTick(() => inputRef.value?.focus())
   } else cancel()
@@ -186,7 +200,7 @@ watch(visible, (v) => {
 watch([query, type, page], ([q, scope, currentPage], [oldQuery, oldType], onCleanup) => {
   cancel()
   if (!visible.value) return
-  selectedIndex.value = 0
+  resetSelection()
   if ((q !== oldQuery || scope !== oldType) && currentPage !== 1) {
     page.value = 1
     return
@@ -285,14 +299,16 @@ function onResultClick(event: MouseEvent, item: Pick<SearchResultItem, 'type' | 
   navigateTo(item)
 }
 
-function onEnter(event: KeyboardEvent) {
-  if (event.isComposing) return
-  // 焦点会在关闭时变化，必须先取消Enter默认激活，避免重新点击搜索入口。
-  event.preventDefault()
-  navigateToFirst()
+function resetSelection() {
+  selectedIndex.value = -1
+  // 结果刷新会移除原链接；将焦点交回输入框，避免落到弹窗外。
+  if (resultListRef.value?.contains(document.activeElement)) {
+    void nextTick(() => inputRef.value?.focus({ preventScroll: true }))
+  }
 }
 
-watch([selectedIndex, results], () =>
+watch([results, isSearching], resetSelection)
+watch(selectedIndex, () =>
   nextTick(() => {
     resultListRef.value
       ?.querySelector<HTMLElement>('[data-result-selected="true"]')
@@ -300,21 +316,32 @@ watch([selectedIndex, results], () =>
   }),
 )
 
-function navigateToFirst() {
-  if (isSearching.value) return
-  const item = results.value[Math.min(selectedIndex.value, results.value.length - 1)]
-  if (item) navigateTo(item)
-}
-
-function selectNext() {
-  if (selectedIndex.value < results.value.length - 1) {
-    selectedIndex.value++
+function onResultKeydown(event: KeyboardEvent) {
+  // 输入法候选项和带修饰键的浏览器快捷键不属于结果导航。
+  if (event.isComposing || event.keyCode === 229 || event.ctrlKey || event.metaKey || event.altKey || event.shiftKey)
+    return
+  if (!['ArrowDown', 'ArrowUp', 'Enter'].includes(event.key) || !navigableResults.value.length) return
+  const target = event.currentTarget
+  const fromLink = target instanceof HTMLAnchorElement
+  const currentIndex = fromLink ? Number(target.dataset.resultIndex) : selectedIndex.value
+  // 关闭弹窗会改变焦点；先取消 Enter 的默认激活，避免重新点击搜索入口。
+  event.preventDefault()
+  if (event.key === 'Enter') {
+    const item = navigableResults.value[Math.max(0, currentIndex)]
+    if (item) void navigateTo(item)
+    return
   }
-}
-
-function selectPrev() {
-  if (selectedIndex.value > 0) {
-    selectedIndex.value--
+  selectedIndex.value =
+    currentIndex < 0
+      ? event.key === 'ArrowDown'
+        ? 0
+        : navigableResults.value.length - 1
+      : Math.max(0, Math.min(navigableResults.value.length - 1, currentIndex + (event.key === 'ArrowDown' ? 1 : -1)))
+  // 输入框保留编辑焦点并播报选择；从链接导航时同步原生焦点。
+  if (fromLink) {
+    resultListRef.value
+      ?.querySelector<HTMLElement>(`[data-result-index="${selectedIndex.value}"]`)
+      ?.focus({ preventScroll: true })
   }
 }
 </script>
@@ -565,7 +592,7 @@ function selectPrev() {
   }
 }
 
-/* Transition */
+/* 弹窗进出动效 */
 .search-modal-enter-active,
 .search-modal-leave-active {
   transition: opacity 0.2s ease;

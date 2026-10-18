@@ -11,15 +11,17 @@ export interface HighlightPart {
 }
 
 export function splitHighlight(text: string, keyword?: string | null): HighlightPart[] {
-  const needle = keyword?.trim().toLocaleLowerCase()
+  const needle = keyword?.trim()
   if (!needle) return [{ text, match: false }]
-  const haystack = text.toLocaleLowerCase()
+  // 在原文中匹配，避免 Unicode 转小写改变长度后导致切片错位；关键词按字面量处理。
+  const pattern = new RegExp(needle.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'giu')
   const parts: HighlightPart[] = []
   let cursor = 0
-  for (let index = haystack.indexOf(needle); index !== -1; index = haystack.indexOf(needle, cursor)) {
+  for (const match of text.matchAll(pattern)) {
+    const index = match.index
     if (index > cursor) parts.push({ text: text.slice(cursor, index), match: false })
-    parts.push({ text: text.slice(index, index + needle.length), match: true })
-    cursor = index + needle.length
+    parts.push({ text: match[0], match: true })
+    cursor = index + match[0].length
   }
   if (cursor < text.length) parts.push({ text: text.slice(cursor), match: false })
   return parts.length ? parts : [{ text, match: false }]
