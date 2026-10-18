@@ -24,6 +24,7 @@ import { PostFolder } from '../../entities/post-folder.entity'
 import { PostTag } from '../../entities/post-tag.entity'
 import { MediaAsset } from '../../entities/media-asset.entity'
 import { SiteSettings } from '../../entities/site-settings.entity'
+import { withPresenceDefaults } from '../site/site-settings.service'
 import { CommentPolicy } from '../../entities/comment-policy.entity'
 import { MediaStorage } from '../media/media-storage'
 import { postSnapshot } from '../post/post-snapshot'
@@ -137,12 +138,13 @@ export class ContentExportService {
         })
         byFlash.set(comment.flashNote.id, group)
       }
-      const { announcementUpdatedAt, ...siteValues } = site.values
+      // 导出前补齐后加字段，v12 包总是携带完整的导航、页脚与备案配置。
+      const { announcementUpdatedAt, ...siteValues } = withPresenceDefaults(site.values)
       // 公告时间随完整数据库备份保留；内容迁入会按新配置保存时刻生成。
       void announcementUpdatedAt
       const result: ContentPackage = {
         format: 'tixxin-content',
-        version: 11,
+        version: 12,
         omittedRelations: 0,
         exportedAt: new Date().toISOString(),
         mediaIncluded,

@@ -15,11 +15,15 @@ const comparable = (value: unknown): unknown => {
   return value
 }
 const equal = (left: unknown, right: unknown) => JSON.stringify(comparable(left)) === JSON.stringify(comparable(right))
-export const normalizeSiteSettings = (value: SiteSettingsData): SiteSettingsData => ({
+/** 导航、页脚、每日一言、备案与版权为后加字段：旧恢复副本或旧接口可能缺失，规范化时按缺省值补齐 */
+const LATER_KEYS = ['navigation', 'footerLinks', 'quotes', 'icpNumber', 'icpUrl', 'copyright'] as const
+export const normalizeSiteSettings = (value: SiteSettingsData): SiteSettingsData => {
   // 设置只含 JSON 数据；Vue 响应式代理不能直接 structuredClone。
-  ...JSON.parse(JSON.stringify(value)),
-  about: JSON.parse(JSON.stringify(value.about ?? emptyAbout())),
-})
+  const copy = JSON.parse(JSON.stringify(value)) as SiteSettingsData
+  for (const key of LATER_KEYS)
+    if (copy[key] === undefined) Object.assign(copy, { [key]: structuredClone(defaultSiteSettings[key]) })
+  return { ...copy, about: JSON.parse(JSON.stringify(value.about ?? emptyAbout())) }
+}
 export function sameSiteValues(left: SiteSettingsData, right: SiteSettingsData) {
   const values = ({
     revision: _revision,
@@ -90,14 +94,54 @@ export interface SiteSettingsRecovery {
   preserved: SiteSettingsCopy | null
   submission: SiteSettingsCopy | null
 }
+const shortText = (value: unknown, max = 2000) => typeof value === 'string' && value.length <= max
+/** 恢复副本中的导航、页脚与一言只做结构检查，具体规则由服务端校验 */
+function isLaterLists(item: Partial<SiteSettingsData>) {
+  const { navigation, footerLinks, quotes } = item
+  if (
+    navigation !== undefined &&
+    !(
+      Array.isArray(navigation) &&
+      navigation.length <= 30 &&
+      navigation.every(
+        (entry) =>
+          entry &&
+          typeof entry.visible === 'boolean' &&
+          ((entry.type === 'route' && shortText(entry.key, 40)) ||
+            (entry.type === 'external' &&
+              shortText(entry.label) &&
+              shortText(entry.url) &&
+              typeof entry.newTab === 'boolean')),
+      )
+    )
+  )
+    return false
+  if (
+    footerLinks !== undefined &&
+    !(
+      Array.isArray(footerLinks) &&
+      footerLinks.length <= 30 &&
+      footerLinks.every(
+        (link) => link && shortText(link.label) && shortText(link.url) && typeof link.newTab === 'boolean',
+      )
+    )
+  )
+    return false
+  return (
+    quotes === undefined || (Array.isArray(quotes) && quotes.length <= 100 && quotes.every((quote) => shortText(quote)))
+  )
+}
 function isSettings(value: unknown): value is SiteSettingsData {
   if (!value || typeof value !== 'object' || Array.isArray(value)) return false
   const item = value as SiteSettingsData
   if (Object.keys(item).some((key) => !Object.hasOwn(defaultSiteSettings, key) && key !== 'about')) return false
   for (const key of Object.keys(defaultSiteSettings) as (keyof SiteSettingsData)[]) {
-    if (['socials', 'revision'].includes(key)) continue
+    if (['socials', 'revision', 'navigation', 'footerLinks', 'quotes'].includes(key)) continue
+    // 后加的字符串字段在旧恢复副本中可以缺失
+    if (item[key] === undefined && (LATER_KEYS as readonly string[]).includes(key)) continue
     if (typeof item[key] !== 'string' || (item[key] as string).length > 10000) return false
   }
+  if (!isLaterLists(item)) return false
   if (
     !Number.isSafeInteger(item.revision) ||
     item.revision < 0 ||

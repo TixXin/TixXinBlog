@@ -1,44 +1,16 @@
 /**
  * @file mock.ts
- * @description 站点模块 mock 数据，提供页脚链接、技术栈信息和系统状态
+ * @description 站点模块演示数据（系统状态、公告与在线状态样例），不进入生产路径；
+ * 页脚链接、每日一言与导航已由站点设置提供，缺省值见 footer.ts 与 nav/routes.ts
  * @author TixXin
  * @since 2025-03-17
  */
 
-import type { FooterLink, OwnerCardInfo, OwnerPresenceInfo, PoweredByItem, SiteAnnouncement, SiteStatus } from './types'
-
-export const mockFooterLinks: FooterLink[] = [
-  { label: '关于本站', href: '/about' },
-  { label: 'RSS 订阅', href: '/rss.xml', external: true },
-  { label: '站点地图', href: '/sitemap.xml', external: true },
-]
-
-export const mockPoweredBy: PoweredByItem[] = [
-  { label: 'Nuxt', href: 'https://nuxt.com' },
-  { label: 'Vue', href: 'https://vuejs.org' },
-]
+import type { OwnerPresenceInfo, SiteAnnouncement, SiteStatus } from './types'
 
 export const mockSiteStatus: SiteStatus = {
   pingMs: 18,
   statusText: 'All Systems Operational',
-}
-
-// 演示用博主名片；正式资料由博主在 /admin/site 维护，fork 后按需替换
-export const mockOwnerCard: OwnerCardInfo = {
-  name: 'TixXin',
-  title: '前端开发工程师，热爱开源与技术分享',
-  socials: [
-    { icon: 'lucide:github', label: 'GitHub', href: 'https://github.com/TixXin' },
-    { icon: 'lucide:twitter', label: 'Twitter', href: 'https://twitter.com/TixXin' },
-    { icon: 'lucide:mail', label: 'Email', href: 'mailto:hi@tix.xin' },
-  ],
-  quotes: [
-    '路漫漫其修远兮，吾将上下而求索。',
-    '保持热爱，奔赴山海。',
-    '种一棵树最好的时间是十年前，其次是现在。',
-    '心之所向，素履以往。',
-    '不积跬步，无以至千里。',
-  ],
 }
 
 export const mockAnnouncements: SiteAnnouncement[] = [

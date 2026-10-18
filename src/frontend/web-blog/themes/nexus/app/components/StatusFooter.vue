@@ -72,6 +72,7 @@
             v-for="item in navItems"
             :key="item.to"
             :to="item.to"
+            :target="item.newTab ? '_blank' : undefined"
             class="nexus-bar__link"
             :class="{ 'is-active': isActive(item.to) }"
             :aria-current="isActive(item.to) ? 'page' : undefined"
@@ -134,7 +135,7 @@
           <div class="nexus-bar__owner-divider" aria-hidden="true" />
           <!-- 右列：一言 + 社交链接 -->
           <div class="nexus-bar__owner-right">
-            <div class="nexus-bar__owner-quote-row">
+            <div v-if="dailyQuote" class="nexus-bar__owner-quote-row">
               <p class="nexus-bar__owner-quote">
                 <Transition name="nexus-quote-swap" mode="out-in">
                   <span :key="dailyQuote">「{{ dailyQuote }}」</span>

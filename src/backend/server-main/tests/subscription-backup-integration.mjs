@@ -3,7 +3,7 @@ import assert from 'node:assert/strict'
 import { randomUUID } from 'node:crypto'
 import { setTimeout as delay } from 'node:timers/promises'
 import { createBrowserTestApp } from './test-app.mjs'
-import { stripV9Fields, stripV10Fields, stripV11Fields } from './legacy-content-package.mjs'
+import { stripV9Fields, stripV10Fields, stripV11Fields, stripV12Fields } from './legacy-content-package.mjs'
 
 const fixture = await createBrowserTestApp('http://localhost')
 try {
@@ -90,7 +90,7 @@ try {
   const exported = await request('/admin/backup/export', 'POST', { mediaIncluded: true })
   assert.equal(exported.status, 201)
   const bundle = exported.body
-  assert.equal(bundle.version, 11)
+  assert.equal(bundle.version, 12)
   assert.equal(bundle.subscriptions.length, 3)
   const source = bundle.subscriptions.find((row) => row.sourceId === managed.id)
   assert.deepEqual(source.values.priceHistory, managed.priceHistory)
@@ -156,6 +156,12 @@ try {
       assert.deepEqual((await ok(`/admin/subscriptions/${managed.id}`)).priceHistory, managed.priceHistory)
     }
   }
+  // v11 保留订阅，但不得夹带 v12 的站点导航与页脚字段
+  const legacyV11 = stripV12Fields({ ...structuredClone(bundle), version: 11 })
+  const acceptedV11 = await preview(legacyV11)
+  assert.equal(acceptedV11.status, 201, 'v11')
+  assert.equal(acceptedV11.body.data.plan.counts.skipped, 3)
+  assert.equal((await preview({ ...legacyV11, site: { ...legacyV11.site, quotes: ['一言'] } })).status, 400)
   const missing = structuredClone(bundle)
   missing.subscriptions = [source]
   missing.subscriptions[0].values.iconMediaId = randomUUID()

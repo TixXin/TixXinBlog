@@ -11,6 +11,7 @@
       <li v-for="item in navItems" :key="item.label">
         <NuxtLink
           :to="item.to"
+          :target="item.newTab ? '_blank' : undefined"
           class="nav-item"
           :class="{ active: isActive(item.to) }"
           :aria-current="isActive(item.to) ? 'page' : undefined"

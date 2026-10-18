@@ -1,6 +1,6 @@
 /**
  * @file useSiteInfo.ts
- * @description 站点信息数据源 composable，组合真实站点资料与静态导航；在线状态只来自博主维护的站点资料
+ * @description 站点信息数据源 composable：页脚链接、每日一言、备案号与版权文案、在线状态均来自博主维护的站点资料
  * @author TixXin
  * @since 2026-03-26
  */
@@ -13,7 +13,14 @@ import type {
   SiteAnnouncement,
   SiteStatus,
 } from '~/features/site/types'
-import { mockFooterLinks, mockOwnerCard, mockPoweredBy } from '~/features/site/mock'
+import {
+  DEFAULT_ICP_URL,
+  buildFooterLinks,
+  defaultQuotes,
+  formatCopyright,
+  pickQuote,
+  poweredByItems,
+} from '~/features/site/footer'
 
 /** 将 ISO 时间字符串转为相对时间描述 */
 function formatDuration(since: string): string {
@@ -33,8 +40,19 @@ function formatDuration(since: string): string {
 export const presenceStatusLabels = { online: '在线', idle: '离开', busy: '忙碌' } as const
 export function useSiteInfo() {
   const { settings, available } = useSiteSettings()
-  const footerLinks = computed<FooterLink[]>(() => mockFooterLinks)
-  const poweredBy = computed<PoweredByItem[]>(() => mockPoweredBy)
+  const footerLinks = computed<FooterLink[]>(() => buildFooterLinks(settings.value.footerLinks))
+  const poweredBy = computed<PoweredByItem[]>(() => poweredByItems)
+  // 旧接口未返回一言时沿用缺省列表；博主清空列表时不展示一言
+  const quotes = computed<string[]>(() => settings.value.quotes ?? defaultQuotes())
+  /** 备案号与链接；未填写备案号时不展示 */
+  const icp = computed(() => {
+    const number = settings.value.icpNumber?.trim() ?? ''
+    return number ? { number, href: settings.value.icpUrl?.trim() || DEFAULT_ICP_URL } : null
+  })
+  /** 版权文案，年份按当前年份渲染 */
+  const copyrightText = computed(() =>
+    formatCopyright(settings.value.copyright, new Date().getFullYear(), settings.value.name),
+  )
   const siteStatus = computed<SiteStatus>(() => ({
     pingMs: null,
     statusText: available.value ? '站点资料已同步' : '站点资料暂不可用',
@@ -53,17 +71,14 @@ export function useSiteInfo() {
     socials: settings.value.socials,
     avatar: settings.value.avatar,
     avatarAlt: settings.value.avatarAlt,
-    quotes: mockOwnerCard.quotes,
+    quotes: quotes.value,
   }))
 
   /** 状态持续时间的可读描述 */
   const presenceDuration = computed(() => formatDuration(ownerPresence.value.since))
 
   /** 每日一言（每次页面加载随机选一条，SSR 安全） */
-  const dailyQuote = useState('daily-quote', () => {
-    const quotes = mockOwnerCard.quotes
-    return quotes[Math.floor(Math.random() * quotes.length)]
-  })
+  const dailyQuote = useState('daily-quote', () => pickQuote(quotes.value))
 
   /** 站点公告（最多 3 条） */
   const announcements = computed<SiteAnnouncement[]>(() =>
@@ -83,6 +98,8 @@ export function useSiteInfo() {
     siteName: computed(() => settings.value.name),
     footerLinks,
     poweredBy,
+    copyrightText,
+    icp,
     siteStatus,
     ownerPresence,
     presenceDuration,

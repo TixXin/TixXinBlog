@@ -72,7 +72,7 @@ try {
   const exported = await request('/admin/backup/export', 'POST', { mediaIncluded: true })
   assert.equal(exported.status, 201)
   const bundle = exported.data
-  assert.equal(bundle.version, 11)
+  assert.equal(bundle.version, 12)
   assert.equal(bundle.prompts.length, 2)
   assert.equal(bundle.prompts.find((row) => row.sourceId === managed.id).values.mediaId, asset.id)
   assert.equal(

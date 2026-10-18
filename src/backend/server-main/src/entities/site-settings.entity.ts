@@ -4,7 +4,9 @@
  */
 import { Entity, PrimaryKey, Property } from '@mikro-orm/core'
 import type { AboutSettingsDto } from '../modules/site/about-settings'
-export interface SiteSettingsValues {
+import type { SiteExtrasValues } from '../modules/site/site-navigation'
+/** 导航、页脚链接、每日一言、备案号与版权文案为后加 JSON 键，旧记录缺失时读取按缺省值补齐 */
+export interface SiteSettingsValues extends Partial<SiteExtrasValues> {
   about?: AboutSettingsDto
   name: string
   description: string

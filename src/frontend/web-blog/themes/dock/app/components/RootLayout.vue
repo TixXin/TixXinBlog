@@ -23,6 +23,7 @@
           v-for="(item, index) in navItems"
           :key="item.to"
           :to="item.to"
+          :target="item.newTab ? '_blank' : undefined"
           :aria-label="item.label"
           class="dock-item"
           :class="{ active: isActive(item.to) }"

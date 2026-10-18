@@ -3,6 +3,10 @@
  * @description 公开站点设置契约与服务不可用时的基础资料，不包含模拟运行指标。
  */
 import type { AboutSettings } from '~/features/about/types'
+import type { SiteNavEntry } from '~/features/nav/types'
+import { defaultNavigation } from '~/features/nav/routes'
+import type { SiteFooterLinkSetting } from './types'
+import { defaultFooterLinks, defaultQuotes } from './footer'
 export interface SiteSettingsData {
   about?: AboutSettings
   name: string
@@ -24,6 +28,18 @@ export interface SiteSettingsData {
   launchedAt: string
   /** 状态类型：空串时有状态文案即按在线展示；idle 为离开，busy 为忙碌 */
   presenceStatus: PresenceStatusSetting
+  /** 导航：内置模块显隐与顺序，以及少量外链 */
+  navigation: SiteNavEntry[]
+  /** 页脚链接 */
+  footerLinks: SiteFooterLinkSetting[]
+  /** 每日一言候选 */
+  quotes: string[]
+  /** ICP 备案号，空串不展示 */
+  icpNumber: string
+  /** 备案号链接，空串时指向工信部备案查询 */
+  icpUrl: string
+  /** 自定义版权文案，空串使用默认格式 */
+  copyright: string
   revision: number
   updatedAt: string
 }
@@ -44,6 +60,12 @@ export const defaultSiteSettings: SiteSettingsData = {
   presenceSignature: '',
   launchedAt: '',
   presenceStatus: '',
+  navigation: defaultNavigation(),
+  footerLinks: defaultFooterLinks(),
+  quotes: defaultQuotes(),
+  icpNumber: '',
+  icpUrl: '',
+  copyright: '',
   revision: 0,
   updatedAt: '',
 }

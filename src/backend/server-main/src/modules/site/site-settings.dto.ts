@@ -17,6 +17,9 @@ import {
   ValidateIf,
 } from 'class-validator'
 import { AboutSettingsDto } from './about-settings'
+import { SITE_LIMITS, SITE_NAV_KEYS, SiteFooterLinkDto, SiteNavItemDto } from './site-navigation'
+/** 内置模块数加外链上限 */
+const SITE_NAV_LIMIT = SITE_NAV_KEYS.length + SITE_LIMITS.externalNav
 const trim = ({ value }: { value: unknown }) => (typeof value === 'string' ? value.trim() : value)
 class SiteSocialDto {
   @Transform(trim) @IsString() @MinLength(1) @MaxLength(40) label!: string
@@ -70,4 +73,38 @@ export class SaveSiteSettingsDto extends ExpectedSiteRevisionDto {
   @ValidateIf((_object, value) => value !== undefined)
   @IsIn(['', 'online', 'idle', 'busy'])
   presenceStatus?: '' | 'online' | 'idle' | 'busy'
+  // 导航、页脚、每日一言、备案与版权同为后加字段：缺省时沿用当前值；跨字段规则见 site-navigation.ts
+  @ValidateIf((_object, value) => value !== undefined)
+  @IsArray()
+  @ArrayMaxSize(SITE_NAV_LIMIT)
+  @ValidateNested({ each: true })
+  @Type(() => SiteNavItemDto)
+  navigation?: SiteNavItemDto[]
+  @ValidateIf((_object, value) => value !== undefined)
+  @IsArray()
+  @ArrayMaxSize(SITE_LIMITS.footerLinks)
+  @ValidateNested({ each: true })
+  @Type(() => SiteFooterLinkDto)
+  footerLinks?: SiteFooterLinkDto[]
+  @ValidateIf((_object, value) => value !== undefined)
+  @IsArray()
+  @ArrayMaxSize(SITE_LIMITS.quotes)
+  @IsString({ each: true })
+  @MaxLength(SITE_LIMITS.quote, { each: true })
+  quotes?: string[]
+  @ValidateIf((_object, value) => value !== undefined)
+  @Transform(trim)
+  @IsString()
+  @MaxLength(SITE_LIMITS.icpNumber)
+  icpNumber?: string
+  @ValidateIf((_object, value) => value !== undefined)
+  @Transform(trim)
+  @IsString()
+  @MaxLength(SITE_LIMITS.icpUrl)
+  icpUrl?: string
+  @ValidateIf((_object, value) => value !== undefined)
+  @Transform(trim)
+  @IsString()
+  @MaxLength(SITE_LIMITS.copyright)
+  copyright?: string
 }

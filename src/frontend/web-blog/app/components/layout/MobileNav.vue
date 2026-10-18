@@ -11,6 +11,7 @@
       <li v-for="item in primaryItems" :key="item.label">
         <NuxtLink
           :to="item.to"
+          :target="item.newTab ? '_blank' : undefined"
           class="mobile-nav__item"
           :class="{ active: isActive(item.to) }"
           :aria-current="isActive(item.to) ? 'page' : undefined"
@@ -26,6 +27,7 @@
               v-for="item in navItems"
               :key="item.to"
               :to="item.to"
+              :target="item.newTab ? '_blank' : undefined"
               :aria-current="isActive(item.to) ? 'page' : undefined"
               @click="close"
             >

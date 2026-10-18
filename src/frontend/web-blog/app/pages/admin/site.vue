@@ -1,6 +1,6 @@
 <!--
   @file site.vue
-  @description 站点公开资料编辑、预览、失败保留和历史恢复。
+  @description 站点公开资料、导航与页脚编辑、预览、失败保留和历史恢复；支持 Ctrl/⌘+S 保存。
 -->
 <template>
   <section class="admin-site">
@@ -21,7 +21,7 @@
           服务器版本 {{ draft.revision }} · 保存于
           {{ new Date(draft.updatedAt).toLocaleString('zh-CN', { hour12: false }) }}{{ dirty ? ' · 有未保存输入' : '' }}
         </p>
-        <form @submit.prevent="save">
+        <form ref="editorForm" @submit.prevent="submit">
           <fieldset :disabled="pending || !ready">
             <legend>站点和博主资料</legend>
             <label>站点名称<input v-model="draft.name" maxlength="80" required /></label>
@@ -96,16 +96,20 @@
               />
             </label>
           </fieldset>
+          <AdminSiteNavigationFields v-model="draft" :disabled="pending || !ready" />
           <AdminAboutSettingsFields v-if="draft.about" v-model="draft.about" :disabled="pending || !ready" />
           <AdminSiteSettingsPreview :value="draft" label="保存后的公开资料预览" />
           <AdminActionBar
-            ><button
-              :aria-busy="pending"
-              type="submit"
-              :disabled="pending || !ready || !dirty || !!submission || !!conflict"
-            >
-              {{ pending ? '处理中…' : '保存并生效' }}
-            </button></AdminActionBar
+            ><CommonTooltip :content="`保存（${saveShortcut}）`"
+              ><button
+                :aria-busy="pending"
+                type="submit"
+                aria-keyshortcuts="Control+S Meta+S"
+                :disabled="pending || !ready || !dirty || !!submission || !!conflict"
+              >
+                {{ pending ? '处理中…' : '保存并生效' }}
+              </button></CommonTooltip
+            ></AdminActionBar
           >
         </form>
         <section v-if="conflict" aria-label="站点配置冲突">
@@ -169,6 +173,7 @@
 </template>
 <script setup lang="ts">
 import { presenceStatusOptions, siteSocialIcons } from '~/features/site/settings'
+import { siteExtrasErrors } from '~/features/site/extras'
 import type { MediaAsset } from '~/features/media/types'
 definePageMeta({ layout: 'admin' })
 useSeoMeta({ title: '站点设置', robots: 'noindex, nofollow' })
@@ -199,6 +204,17 @@ const {
   recoverPreserved,
 } = useSiteSettingsEditor()
 const pickerOpen = ref(false)
+const editorForm = ref<HTMLFormElement | null>(null)
+const { label: saveShortcut } = useAdminSaveShortcut({ form: editorForm, dirty: () => dirty.value })
+/** 导航与页脚有即时校验错误时不提交，焦点移到第一个错误输入框 */
+function submit() {
+  if (draft.value && Object.keys(siteExtrasErrors(draft.value)).length) {
+    editorForm.value?.querySelector<HTMLElement>('[aria-invalid="true"]')?.focus()
+    error.value = '导航与页脚有需要修改的输入，请按提示修正后再保存'
+    return
+  }
+  save()
+}
 function selectAvatar(asset: MediaAsset) {
   if (draft.value) {
     draft.value.avatar = asset.url
