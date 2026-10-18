@@ -45,4 +45,31 @@ describe('buildCommentTree', () => {
     const [node] = buildCommentTree([row(1, null, 0)])
     expect(node).toMatchObject({ author: '用户1', avatar: '/avatar.svg', content: '评论 1', likes: 0, isOwner: false })
   })
+
+  it('明确保留点赞与博主身份，缺少访客点赞状态时默认未点赞', () => {
+    const root = { ...row(1, null, 0), likes: 8, liked: true, isOwner: true }
+    const reply = { ...row(2, 1, 1), liked: false }
+    const tree = buildCommentTree([root, reply, row(3, null, 2)])
+
+    expect(tree[0]).toMatchObject({ likes: 8, liked: true, isOwner: true })
+    expect(tree[0]?.replies[0]).toMatchObject({ liked: false, isOwner: false })
+    expect(tree[1]?.liked).toBe(false)
+  })
+
+  it('父节点晚于子节点出现时仍按编号挂载，且不改写输入记录', () => {
+    const rows = [row(3, 2, 0), row(2, 1, 1), row(1, null, 2)]
+    const original = structuredClone(rows)
+    rows.forEach(Object.freeze)
+    Object.freeze(rows)
+
+    const tree = buildCommentTree(rows)
+
+    expect(tree).toHaveLength(1)
+    expect(tree[0]?.id).toBe(1)
+    expect(tree[0]?.replies[0]?.id).toBe(2)
+    expect(tree[0]?.replies[0]?.replies[0]?.id).toBe(3)
+    expect(rows).toEqual(original)
+    tree[0]!.replies.length = 0
+    expect(buildCommentTree(rows)[0]?.replies[0]?.id).toBe(2)
+  })
 })

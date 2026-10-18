@@ -71,7 +71,7 @@ export class CommentService {
     isOwner = false,
   ): Promise<CommentTreeNode> {
     // 与朋友圈、留言共用头像白名单：默认头像、本站媒体或完整 HTTP(S) 地址，拒绝 javascript: 等协议。
-    const avatar = dto.avatar === undefined ? DEFAULT_AVATAR : momentUrl(dto.avatar, true, true)
+    const avatar = momentUrl(dto.avatar ?? DEFAULT_AVATAR, true, true)
     return this.em.transactional(async (em) => {
       await lockMedia(em)
       const post = await em.findOne(Post, { id: postId }, { lockMode: LockMode.PESSIMISTIC_WRITE })
