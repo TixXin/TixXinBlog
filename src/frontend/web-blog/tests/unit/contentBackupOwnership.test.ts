@@ -18,13 +18,16 @@ const mocks = vi.hoisted(() => ({
   fetch: Object.assign(vi.fn(), { raw: vi.fn() }),
   refreshSite: vi.fn(),
   success: vi.fn(),
+  leaveGuard: undefined as (() => boolean) | undefined,
 }))
 mockNuxtImport('useCurrentUser', () => () => mocks.auth)
 mockNuxtImport('useAdminApi', () => () => mocks.api)
 mockNuxtImport('useSiteSettings', () => () => ({ refresh: mocks.refreshSite }))
 mockNuxtImport('useToast', () => () => ({ success: mocks.success }))
 mockNuxtImport('$fetch', () => mocks.fetch)
-mockNuxtImport('onBeforeRouteLeave', () => () => undefined)
+mockNuxtImport('onBeforeRouteLeave', () => (guard: () => boolean) => {
+  mocks.leaveGuard = guard
+})
 const wrappers: { unmount(): void }[] = []
 const source = () => new File(['{"format":"tixxin-content","version":4}'], 'gallery.json', { type: 'application/json' })
 const ticket = (id: string, completed = false): ContentImportView => ({
@@ -348,4 +351,30 @@ it('执行响应丢失后通过查询确认完成，也撤销旧图库与友链�
   expect(state.job.value?.completed).toBe(true)
   expect(mocks.refreshSite).toHaveBeenCalledTimes(1)
   expect(cache.read(key)).toBeUndefined()
+})
+it('只读的票据查询进行中离开不弹确认，执行导入进行中仍需确认', async () => {
+  const { state } = await setup()
+  const confirm = vi.fn().mockReturnValue(false)
+  vi.stubGlobal('confirm', confirm)
+  let respond!: (value: ContentImportView) => void
+  mocks.api.mockImplementation((path: string) =>
+    path.endsWith('/imports') ? Promise.resolve([]) : new Promise((resolve) => (respond = resolve)),
+  )
+  const reading = state.read('ticket-a')
+  await vi.waitFor(() => expect(respond).toBeTypeOf('function'))
+  expect(state.pending.value).toBe(true)
+  expect(mocks.leaveGuard!()).toBe(true)
+  expect(confirm).not.toHaveBeenCalled()
+  respond(ticket('ticket-a'))
+  await reading
+  state.acknowledgement.value = '导入为新草稿'
+  const executing = state.execute()
+  await vi.waitFor(() =>
+    expect(mocks.api).toHaveBeenCalledWith('/admin/backup/imports/ticket-a/execute', expect.anything()),
+  )
+  expect(mocks.leaveGuard!()).toBe(false)
+  expect(confirm).toHaveBeenCalledTimes(1)
+  respond(ticket('ticket-a', true))
+  await executing
+  expect(mocks.leaveGuard!()).toBe(true)
 })

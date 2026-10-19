@@ -284,3 +284,74 @@ test('v10 内容维护界面迁入两种图库来源与三域草稿，同票据�
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1)).toBe(true)
   await captureMotion(page, testInfo, 'v7-three-domains-result-mobile.png', { target: preview })
 })
+
+test('查询导入结果进行中点击结果链接仍直接进入文章编辑页', async ({ page }) => {
+  const login = await page.request.post('/api/v1/auth/login', {
+    data: { username: process.env.E2E_USERNAME, password: process.env.E2E_PASSWORD },
+  })
+  expect(login.status()).toBe(200)
+  const accessToken = ((await login.json()).data as { accessToken: string }).accessToken
+  const context = (await page.request.get('/api/v1/site')).headers()['x-content-context']
+  expect(context).toBeTruthy()
+  const headers = { Authorization: `Bearer ${accessToken}`, 'X-Content-Context': context! }
+  const exported = await page.request.post('/api/v1/admin/backup/export', { headers, data: { mediaIncluded: false } })
+  expect(exported.status()).toBe(201)
+  const data = (await exported.json()) as Record<string, unknown> & {
+    posts: { deleted: boolean; values: { title: string } }[]
+  }
+  // 只迁入一篇现有文章的副本，其余领域清空，结果页只有一条文章草稿链接。
+  const source = data.posts.find((post) => !post.deleted)
+  expect(source).toBeTruthy()
+  for (const [key, value] of Object.entries(data)) if (Array.isArray(value)) data[key] = []
+  data.posts = [source!]
+  const planned = await page.request.post('/api/v1/admin/backup/imports/preview', {
+    headers,
+    multipart: {
+      file: { name: 'single-post.json', mimeType: 'application/json', buffer: Buffer.from(JSON.stringify(data)) },
+      requestId: randomUUID(),
+      strategy: 'copy',
+      includeSettings: 'false',
+    },
+  })
+  expect(planned.status()).toBe(201)
+  const plan = (await planned.json()).data as ContentImportView
+  expect(plan.plan.counts.posts).toBe(1)
+  const executed = await page.request.post(`/api/v1/admin/backup/imports/${plan.ticket}/execute`, {
+    headers,
+    data: { acknowledgement: '导入为新草稿', confirmation: plan.confirmation },
+  })
+  expect(executed.status()).toBe(201)
+  const copy = ((await executed.json()).data as ContentImportView).result!.posts[0]!
+  const dialogs: string[] = []
+  page.on('dialog', (dialog) => {
+    dialogs.push(dialog.message())
+    void dialog.dismiss()
+  })
+  await page.goto(`/admin/maintenance?import=${plan.ticket}`)
+  const preview = page.getByRole('region', { name: '内容导入预览', exact: true })
+  const query = preview.getByRole('button', { name: '查询导入结果', exact: true })
+  const link = preview.getByRole('link', { name: `检查新文章草稿 #${copy.id}`, exact: true })
+  await expect(query).toBeEnabled()
+  await expect(link).toBeVisible()
+  // 挂起本次重读，直到点击链接之后才放行，稳定复现“请求中点击”。
+  let release!: () => void
+  const held = new Promise<void>((resolve) => (release = resolve))
+  let intercepted!: () => void
+  const reading = new Promise<void>((resolve) => (intercepted = resolve))
+  await page.route(`**/api/v1/admin/backup/imports/${plan.ticket}`, async (route) => {
+    intercepted()
+    await held
+    await route.continue().catch(() => undefined)
+  })
+  try {
+    await query.click()
+    await reading
+    await expect(query).toBeDisabled()
+    await link.click()
+    await expect(page).toHaveURL(new RegExp(`/admin/posts/${copy.id}$`))
+    await expect(page.getByRole('textbox', { name: '标题', exact: true })).toHaveValue(source!.values.title)
+  } finally {
+    release()
+  }
+  expect(dialogs).toEqual([])
+})
