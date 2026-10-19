@@ -74,6 +74,7 @@ export const auditActionKeys: Readonly<Record<string, MessageKey>> = {
   'backup.preview': 'audit.action.backupPreview',
   'backup.execute': 'audit.action.backupExecute',
   'backup.repreview': 'audit.action.backupRepreview',
+  'setup.complete': 'audit.action.setupComplete',
 }
 
 /** 动作的中文标签（历史兼容与单测使用） */

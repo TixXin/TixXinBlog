@@ -57,6 +57,19 @@ test('配置绑定站点、版本与非占位密钥', () => {
   assert.throws(() => validateConfiguration(config, options))
 })
 
+test('初始化令牌可留空，配置时必须足够长且不含空白', () => {
+  const options = parseOptions(input)
+  const config = configuration('isolated-release')
+  for (const token of [undefined, '', 'f'.repeat(64)]) {
+    config.services.backend.environment.SETUP_TOKEN = token
+    assert.equal(validateConfiguration(config, options).project, 'isolated-release')
+  }
+  for (const token of ['short', `${'f'.repeat(32)} x`]) {
+    config.services.backend.environment.SETUP_TOKEN = token
+    assert.throws(() => validateConfiguration(config, options), /SETUP_TOKEN/)
+  }
+})
+
 for (const mode of [
   'preview',
   'deploy',

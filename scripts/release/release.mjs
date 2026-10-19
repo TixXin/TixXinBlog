@@ -98,6 +98,10 @@ export function validateConfiguration(config, options) {
   const secret = services.backend.environment?.JWT_ACCESS_SECRET
   if (typeof secret !== 'string' || secret.length < 32 || secret.startsWith('replace-'))
     throw new Error('签名密钥尚未正确配置')
+  // 与后端启动校验一致；提前拒绝，避免停服、迁移之后才因 API 无法启动而失败。
+  const setupToken = services.backend.environment?.SETUP_TOKEN
+  if (setupToken && (setupToken.length < 32 || /\s/.test(setupToken)))
+    throw new Error('SETUP_TOKEN 配置时至少需要 32 个字符且不能包含空白')
   const images = Object.fromEntries(
     ['frontend', 'backend', 'migration', 'postgres', 'edge'].map((name) => [name, services[name].image]),
   )

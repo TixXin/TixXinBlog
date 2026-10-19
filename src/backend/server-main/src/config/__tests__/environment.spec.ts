@@ -88,6 +88,15 @@ describe('环境配置', () => {
       )
     })
 
+    it('SETUP_TOKEN 可选；配置时至少 32 个字符且不含空白，空值视为未配置', () => {
+      const test = { ...base, NODE_ENV: 'test' }
+      expect(validateEnv(test).SETUP_TOKEN).toBeUndefined()
+      expect(validateEnv({ ...test, SETUP_TOKEN: '' }).SETUP_TOKEN).toBe('')
+      expect(validateEnv({ ...test, SETUP_TOKEN: 'a'.repeat(32) }).SETUP_TOKEN).toBe('a'.repeat(32))
+      expect(() => validateEnv({ ...test, SETUP_TOKEN: 'a'.repeat(31) })).toThrow('SETUP_TOKEN')
+      expect(() => validateEnv({ ...test, SETUP_TOKEN: `${'a'.repeat(32)} b` })).toThrow('SETUP_TOKEN')
+    })
+
     it('刷新 Cookie 仅在显式 development/test 下不带 Secure', () => {
       const previous = process.env.NODE_ENV
       try {

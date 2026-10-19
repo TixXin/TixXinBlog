@@ -25,9 +25,10 @@ export function configureApplication(app: INestApplication): void {
     response.setHeader('X-Request-Id', getTraceId(request))
     response.setHeader('X-Content-Type-Options', 'nosniff')
     response.setHeader('Cache-Control', 'no-store')
-    // 预览凭据与私有正文在鉴权、限流或参数失败时也不能被缓存、索引或随来源头外传。
+    // 预览凭据、私有正文与初始化令牌在鉴权、限流或参数失败时也不能被缓存、索引或随来源头外传。
     if (
       /^\/api\/v1\/posts\/preview\/?$/i.test(request.path) ||
+      /^\/api\/v1\/setup(?:\/|$)/i.test(request.path) ||
       /^\/api\/v1\/admin\/posts\/[^/]+\/preview-link\/?$/i.test(request.path)
     ) {
       response.setHeader('Cache-Control', 'private, no-store')

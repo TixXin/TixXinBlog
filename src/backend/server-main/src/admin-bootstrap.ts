@@ -3,8 +3,13 @@
  * @description 初始化生产管理员，不插入演示内容，也不覆盖已有账号。
  */
 import { MikroORM } from '@mikro-orm/postgresql'
-import * as argon2 from 'argon2'
-import { AdminCliError, assertAdminPassword, describeCliFailure } from './admin-cli'
+import {
+  AdminCliError,
+  assertAdminPassword,
+  createAdminAccount,
+  describeCliFailure,
+  hashAdminPassword,
+} from './admin-cli'
 import { mikroOrmOptions } from './config/mikro-orm.options'
 import { AdminUser } from './entities/admin-user.entity'
 
@@ -20,14 +25,8 @@ async function main(): Promise<void> {
     if (await em.findOne(AdminUser, { username })) {
       throw new AdminCliError('该管理员已存在；初始化命令不会覆盖已有密码')
     }
-    await em.persistAndFlush(
-      em.create(AdminUser, {
-        username,
-        sessionVersion: 0,
-        passwordHash: await argon2.hash(password, { type: argon2.argon2id }),
-        createdAt: new Date(),
-      }),
-    )
+    createAdminAccount(em, { username, passwordHash: await hashAdminPassword(password) })
+    await em.flush()
     process.stdout.write('管理员初始化完成\n')
   } finally {
     await orm.close(true)

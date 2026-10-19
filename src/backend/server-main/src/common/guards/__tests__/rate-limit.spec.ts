@@ -4,7 +4,7 @@
  */
 import { ConfigService } from '@nestjs/config'
 import type { ExecutionContext } from '@nestjs/common'
-import { RateLimitGuard, RateLimitStore, rateLimitClientKey } from '../rate-limit.guard'
+import { RateLimitGuard, RateLimitStore, SETUP_RATE_LIMIT, rateLimitClientKey } from '../rate-limit.guard'
 
 describe('RateLimitStore', () => {
   it('突发请求超过配额时给出重试时间，过期后恢复', () => {
@@ -69,6 +69,19 @@ describe('RateLimitGuard', () => {
     expect(request('2001:db8:1:3::1')).toBe(true)
     for (let index = 0; index < 10; index++) expect(request('2001:db8:1:2::1', '/api/v1/guestbook')).toBe(true)
     expect(() => request('2001:db8:1:2::1', '/api/v1/guestbook')).toThrow('操作过于频繁')
+  })
+
+  it('初始化向导提交按 IP 每 10 分钟 5 次，独立于普通写入与登录，生产不能关闭', () => {
+    const request = createClientErrorProbe()
+    for (let index = 0; index < SETUP_RATE_LIMIT; index++) expect(request('192.0.2.7', '/api/v1/setup')).toBe(true)
+    expect(() => request('192.0.2.7', '/api/v1/setup')).toThrow('操作过于频繁')
+    expect(request('192.0.2.8', '/api/v1/setup')).toBe(true)
+    expect(request('192.0.2.7', '/api/v1/guestbook')).toBe(true)
+    // 普通写入窗口是 60 秒；setup 窗口 10 分钟内仍拒绝。
+    jest.spyOn(Date, 'now').mockReturnValue(5 * 60000)
+    expect(() => request('192.0.2.7', '/api/v1/setup')).toThrow('操作过于频繁')
+    jest.spyOn(Date, 'now').mockReturnValue(10 * 60000 + 1)
+    expect(request('192.0.2.7', '/api/v1/setup')).toBe(true)
   })
 
   it('多个客户端共享单实例每分钟 100 次上限', () => {

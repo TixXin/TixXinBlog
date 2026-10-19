@@ -21,12 +21,46 @@ export class AdminCliError extends Error {
   override readonly name = 'AdminCliError'
 }
 
+/** 管理员密码长度规则，与后台改密 DTO 一致 */
+export const ADMIN_PASSWORD_MIN_LENGTH = 12
+export const ADMIN_PASSWORD_MAX_LENGTH = 128
+
+/** 密码规则的判定结果；命令行与浏览器初始化向导各自把它渲染为对应文案 */
+export type AdminPasswordProblem = 'missing' | 'tooShort' | 'tooLong'
+
+/** 判定密码是否合规：拒绝空值与模板占位值，长度 12–128；不做 trim，保持用户实际输入 */
+export function adminPasswordProblem(password: string | undefined): AdminPasswordProblem | null {
+  if (!password || password === '<required>') return 'missing'
+  if (password.length < ADMIN_PASSWORD_MIN_LENGTH) return 'tooShort'
+  if (password.length > ADMIN_PASSWORD_MAX_LENGTH) return 'tooLong'
+  return null
+}
+
 /** 与后台改密一致：12–128 位，拒绝模板占位值。 */
 export function assertAdminPassword(password: string | undefined, label = '新密码'): string {
-  if (!password || password === '<required>') throw new AdminCliError(`请提供${label}`)
-  if (password.length < 12) throw new AdminCliError(`${label}至少需要 12 个字符`)
-  if (password.length > 128) throw new AdminCliError(`${label}不能超过 128 个字符`)
-  return password
+  const problem = adminPasswordProblem(password)
+  if (problem === 'missing') throw new AdminCliError(`请提供${label}`)
+  if (problem === 'tooShort') throw new AdminCliError(`${label}至少需要 ${ADMIN_PASSWORD_MIN_LENGTH} 个字符`)
+  if (problem === 'tooLong') throw new AdminCliError(`${label}不能超过 ${ADMIN_PASSWORD_MAX_LENGTH} 个字符`)
+  return password!
+}
+
+/** 管理员密码哈希：argon2id，参数见 development.md §14 */
+export function hashAdminPassword(password: string): Promise<string> {
+  return argon2.hash(password, { type: argon2.argon2id, memoryCost: 65536, timeCost: 3, parallelism: 4 })
+}
+
+/**
+ * 新建管理员记录（不 flush）：命令行初始化与浏览器初始化向导共用。
+ * 调用方负责事务、并发保护与审计；passwordHash 由 hashAdminPassword 预先计算，避免在持锁事务内做慢哈希。
+ */
+export function createAdminAccount(em: EntityManager, input: { username: string; passwordHash: string }): AdminUser {
+  return em.create(AdminUser, {
+    username: input.username,
+    sessionVersion: 0,
+    passwordHash: input.passwordHash,
+    createdAt: new Date(),
+  })
 }
 
 /** 业务错误原样输出；数据库等未知异常可能带连接参数，只输出脱敏提示。 */
@@ -87,12 +121,7 @@ export async function resetAdminPassword(
     if (await argon2.verify(user.passwordHash, password).catch(() => false))
       throw new AdminCliError('新密码不能与当前密码相同')
     const now = new Date()
-    user.passwordHash = await argon2.hash(password, {
-      type: argon2.argon2id,
-      memoryCost: 65536,
-      timeCost: 3,
-      parallelism: 4,
-    })
+    user.passwordHash = await hashAdminPassword(password)
     user.sessionVersion += 1
     const revokedSessions = await tx.nativeUpdate(
       AdminSession,

@@ -36,6 +36,7 @@ import { AuditInterceptor } from './modules/audit/audit.interceptor'
 import { BackupModule } from './modules/backup/backup.module'
 import { ContentRelationsModule } from './modules/content-relations/content-relations.module'
 import { ClientErrorModule } from './modules/client-error/client-error.module'
+import { SetupModule } from './modules/setup/setup.module'
 
 @Module({
   imports: [
@@ -77,6 +78,7 @@ import { ClientErrorModule } from './modules/client-error/client-error.module'
     BackupModule,
     ContentRelationsModule,
     ClientErrorModule,
+    SetupModule,
   ],
   providers: [
     { provide: APP_GUARD, useClass: RateLimitGuard },

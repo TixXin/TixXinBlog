@@ -73,6 +73,9 @@ function expandIpv6(value: string): string[] | null {
   return groups.map((part) => Number.parseInt(part || '0', 16).toString(16))
 }
 
+/** 初始化向导每个客户端在一个窗口内的提交次数上限，比登录（每分钟 5 次）更严格 */
+export const SETUP_RATE_LIMIT = 5
+
 /** 限流关闭开关：仅 development/test 且显式 true 时生效。 */
 function rateLimitDisabled(config: ConfigService): boolean {
   const environment = config.get<string>('NODE_ENV') ?? 'production'
@@ -97,6 +100,17 @@ export class RateLimitGuard implements CanActivate {
       const retryAfter =
         this.clientErrorStore.consume(client, 5, 60000) ||
         this.clientErrorGlobalStore.consume('client-errors', 100, 60000)
+      if (retryAfter) this.reject(context, retryAfter)
+      return true
+    }
+    // 初始化向导提交：令牌是高熵随机值，配额只需挡住滥用；按 IP 每 10 分钟 5 次，独立于登录与普通写入。
+    if (request.method === 'POST' && /^\/api\/v1\/setup\/?$/.test(request.path)) {
+      const setupWindowMs = this.config.get<string>('NODE_ENV') === 'test' ? 1000 : 600000
+      const retryAfter = this.store.consume(
+        `setup:${rateLimitClientKey(request.ip ?? request.socket.remoteAddress)}`,
+        SETUP_RATE_LIMIT,
+        setupWindowMs,
+      )
       if (retryAfter) this.reject(context, retryAfter)
       return true
     }

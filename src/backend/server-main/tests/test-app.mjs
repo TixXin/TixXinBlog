@@ -14,7 +14,12 @@ const require = createRequire(import.meta.url)
 const backendDirectory = fileURLToPath(new URL('../', import.meta.url))
 let fixtureRequested = false
 
-export async function createBrowserTestApp(corsOrigin) {
+/**
+ * 创建隔离应用。options.setupWizard 为 true 时不预置管理员，并配置随机 SETUP_TOKEN，
+ * 供浏览器初始化向导验收；其余样本照常写入，缺省行为不变。
+ */
+export async function createBrowserTestApp(corsOrigin, options = {}) {
+  const setupWizard = options.setupWizard === true
   // Nest 模块缓存会保留首次数据库配置；必须在任何配置读取和建库之前拒绝同进程复建。
   assert.equal(fixtureRequested, false, '每个测试进程只允许创建一次隔离应用；其他场景请使用独立进程')
   fixtureRequested = true
@@ -53,6 +58,8 @@ export async function createBrowserTestApp(corsOrigin) {
       MEDIA_DIRECTORY: mediaDirectory.directory,
       JWT_ACCESS_SECRET: randomBytes(48).toString('hex'),
       CORS_ORIGIN: corsOrigin,
+      // 缺省模式显式清空，避免本机环境文件里的令牌意外打开向导。
+      SETUP_TOKEN: setupWizard ? randomBytes(32).toString('hex') : '',
     })
     const { NestFactory } = require('@nestjs/core')
     const { AppModule } = require('../dist/app.module.js')
@@ -77,13 +84,15 @@ export async function createBrowserTestApp(corsOrigin) {
     ).toString('base64')
     const username = 'e2e-admin'
     const password = randomBytes(18).toString('base64url')
-    em.create(AdminUser, { username, passwordHash: await argon2.hash(password), createdAt: new Date() })
     const accountUsername = 'e2e-password-admin'
-    em.create(AdminUser, {
-      username: accountUsername,
-      passwordHash: await argon2.hash(password),
-      createdAt: new Date(),
-    })
+    if (!setupWizard) {
+      em.create(AdminUser, { username, passwordHash: await argon2.hash(password), createdAt: new Date() })
+      em.create(AdminUser, {
+        username: accountUsername,
+        passwordHash: await argon2.hash(password),
+        createdAt: new Date(),
+      })
+    }
     const tag = em.create(PostTag, { label: '示例标签', slug: '示例标签', color: 'sky', count: 106 })
     em.create(PostFolder, { label: '示例专栏' })
     for (let index = 0; index < 106; index += 1) {
@@ -123,9 +132,11 @@ export async function createBrowserTestApp(corsOrigin) {
     await app.listen(await getHttpTestPort(), '127.0.0.1')
     return {
       origin: await app.getUrl(),
-      username,
-      password,
-      accountUsername,
+      // 向导模式下账号尚不存在：用例按 setupToken 自行创建，用户名与密码不对外提供。
+      username: setupWizard ? undefined : username,
+      password: setupWizard ? undefined : password,
+      accountUsername: setupWizard ? undefined : accountUsername,
+      setupToken: setupWizard ? process.env.SETUP_TOKEN : undefined,
       mediaSample,
       testOrm: orm,
       backupOptions: { backupRoot: backupDirectory.directory },

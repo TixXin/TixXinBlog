@@ -73,6 +73,7 @@ export const auditMessages = defineMessages({
   'audit.action.backupPreview': { zh: '预览内容导入', en: 'Preview content import' },
   'audit.action.backupExecute': { zh: '执行内容导入', en: 'Run content import' },
   'audit.action.backupRepreview': { zh: '更新导入预览', en: 'Refresh import preview' },
+  'audit.action.setupComplete': { zh: '浏览器初始化博主账号', en: 'Set up owner account in browser' },
   'audit.action.fallback': { zh: '管理操作', en: 'Admin action' },
   'audit.field.title': { zh: '标题', en: 'Title' },
   'audit.field.summary': { zh: '摘要', en: 'Summary' },

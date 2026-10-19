@@ -86,6 +86,14 @@ class EnvironmentVariables {
   @IsOptional()
   ADMIN_DEFAULT_PASSWORD?: string
 
+  /**
+   * 浏览器初始化向导的一次性令牌；未配置或为空时 /setup 接口整体关闭，只能用命令行初始化管理员。
+   * 配置后至少 32 个字符，且不得含空白；建议使用随机十六进制值（如 openssl rand -hex 32）。
+   */
+  @IsString()
+  @IsOptional()
+  SETUP_TOKEN?: string
+
   @IsIn(['true', 'false']) @IsOptional() OPERATIONS_WORKER_ENABLED = 'false'
   @IsIn(['true', 'false']) @IsOptional() NOTIFICATION_EMAIL_ENABLED = 'false'
   @IsString() @IsOptional() NOTIFICATION_SMTP_HOST?: string
@@ -121,6 +129,9 @@ export function validateEnv(config: Record<string, unknown>): EnvironmentVariabl
     const media = validated.MEDIA_DIRECTORY?.trim()
     if (!media || !isAbsolute(media)) throw new Error('环境变量校验失败 -> MEDIA_DIRECTORY: 生产环境必须配置为绝对路径')
   }
+  const setupToken = validated.SETUP_TOKEN
+  if (setupToken && (setupToken.length < 32 || /\s/.test(setupToken)))
+    throw new Error('环境变量校验失败 -> SETUP_TOKEN: 配置时至少需要 32 个字符且不能包含空白')
   parseTrustedProxyCidrs(validated.TRUSTED_PROXY_CIDRS)
   readOperationConfig(validated as unknown as NodeJS.ProcessEnv)
   return validated

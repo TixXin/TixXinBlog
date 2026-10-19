@@ -96,6 +96,8 @@ services:
       RELEASE_VERSION: ${RELEASE_VERSION}
       # 与前端站点默认语言同值；博主未保存时的默认页脚链接与每日一言按此语言返回。
       SITE_DEFAULT_LOCALE: ${NUXT_PUBLIC_DEFAULT_LOCALE:-zh-CN}
+      # 浏览器初始化向导的一次性令牌；留空时 /setup 关闭，只能用 admin-bootstrap 命令初始化管理员。
+      SETUP_TOKEN: ${SETUP_TOKEN:-}
     volumes:
       - media:/app/var/media
     depends_on:
