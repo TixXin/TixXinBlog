@@ -2,12 +2,11 @@
  * @file postPublishing.ts
  * @description 文章发布摘要、正文字数与阅读时间估算、正文图片替代文本检查，供编辑器实时展示并由用户确认。
  */
-import MarkdownIt from 'markdown-it'
+import MarkdownIt, { type Token } from 'markdown-it'
 import type { PostImageAltWarning } from '~/features/post/types'
 import { parsePostMarkdown } from '~/utils/postMarkdown'
 
 const parser = new MarkdownIt({ html: false, linkify: true })
-type Token = ReturnType<MarkdownIt['parse']>[number]
 const imageOffsets = new WeakMap<Token, number>()
 
 // 图片 token 默认没有源码位置；仅扩展此检查器的状态，在解析器生成图片时记录起点。

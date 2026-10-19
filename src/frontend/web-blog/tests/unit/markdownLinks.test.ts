@@ -56,6 +56,17 @@ describe.each(renderers)('$name Markdown 外链', ({ render }) => {
     expect(links[2]?.getAttribute('href')).toBe('//images.example.net')
   })
 
+  it('无协议裸域名仍自动识别为外链，中文标点结束链接', () => {
+    const doc = parse(render('访问 www.example.net 或 example.org/docs。详见 https://example.com/guide，谢谢'))
+    const links = [...doc.querySelectorAll('a')]
+    expect(links.map((link) => link.getAttribute('href'))).toEqual([
+      'http://www.example.net',
+      'http://example.org/docs',
+      'https://example.com/guide',
+    ])
+    links.forEach((link) => expectNewWindow(link))
+  })
+
   it('评论与访客模式同时加 nofollow 和 ugc，保留新窗口安全属性', () => {
     const doc = parse(render('[访客推荐](https://example.net) https://example.org', { ugc: true }))
     const links = [...doc.querySelectorAll('a')]

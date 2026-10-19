@@ -2,7 +2,7 @@
  * @file markdownLinks.ts
  * @description Markdown 共用外链规则：区分博主与访客内容，保留站内导航，并追加新窗口图标与读屏说明
  */
-import type MarkdownIt from 'markdown-it'
+import type { Env, MarkdownIt, Token } from 'markdown-it'
 
 export interface MarkdownLinkOptions {
   /** 公开站点地址；由宿主传入，保证 SSR 与客户端使用同一个同源判定 */
@@ -11,7 +11,8 @@ export interface MarkdownLinkOptions {
   ugc?: boolean
 }
 
-export interface MarkdownLinkEnvironment {
+/** 继承 markdown-it 的 Env，使渲染环境可直接传给 render/parse，规则内再按本接口读取 */
+export interface MarkdownLinkEnvironment extends Env {
   markdownLinks?: MarkdownLinkOptions
 }
 
@@ -41,6 +42,12 @@ function isExternalLink(href: string, siteUrl?: string): boolean {
   }
 }
 
+/** markdown-it 15 的属性值类型为 string | number；链接属性统一按字符串读取，缺失时为空串 */
+function attrText(token: Token, name: string): string {
+  const value = token.attrGet(name)
+  return value === null ? '' : String(value)
+}
+
 /** 规则在 linkify 和任务清单之后运行，选项仅取本次 render 的环境，不保存在共享解析器上 */
 export function markdownLinks(md: MarkdownIt) {
   md.core.ruler.push('markdown-links', (state) => {
@@ -51,11 +58,11 @@ export function markdownLinks(md: MarkdownIt) {
       const newWindows: boolean[] = []
       for (const token of block.children) {
         if (token.type === 'link_open') {
-          const external = isExternalLink(token.attrGet('href') ?? '', siteUrl)
+          const external = isExternalLink(attrText(token, 'href'), siteUrl)
           if (external) token.attrSet('target', '_blank')
-          const newWindow = token.attrGet('target') === '_blank'
+          const newWindow = attrText(token, 'target') === '_blank'
           if (external || newWindow) {
-            const rel = new Set((token.attrGet('rel') ?? '').toLowerCase().split(/\s+/).filter(Boolean))
+            const rel = new Set(attrText(token, 'rel').toLowerCase().split(/\s+/).filter(Boolean))
             rel.delete('opener')
             for (const value of ['noopener', 'noreferrer', ...(ugc ? ['nofollow', 'ugc'] : [])]) rel.add(value)
             token.attrSet('rel', [...rel].join(' '))

@@ -5,9 +5,7 @@
  * @author TixXin
  * @since 2026-10-18
  */
-import type MarkdownIt from 'markdown-it'
-
-type Token = ReturnType<MarkdownIt['parse']>[number]
+import type { MarkdownIt, Token } from 'markdown-it'
 
 const checkboxPattern = /^<input class="task-list-item-checkbox"/
 
