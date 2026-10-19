@@ -23,6 +23,8 @@ const md = new MarkdownIt({
   .use(taskLists, { enabled: false, label: false })
   .use(markdownTaskLabels)
   .use(markdownLinks)
+// linkify-it 6 默认关闭无协议链接识别；保留 www.example.com、example.com 等裸域名自动链接，避免已发布内容丢失链接
+md.linkify.set({ fuzzyLink: true })
 
 /**
  * 将闪念内容 Markdown 转为安全 HTML。

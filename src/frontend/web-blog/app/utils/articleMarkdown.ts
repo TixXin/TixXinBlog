@@ -6,7 +6,7 @@
  *              服务端与客户端水合得到同一份 HTML；标题末尾预留锚点挂载位，并用 aria-labelledby 把按钮排除在标题名之外，
  *              正文图片懒加载并可放大
  */
-import MarkdownIt from 'markdown-it'
+import MarkdownIt, { type Env, type Token } from 'markdown-it'
 import DOMPurify from 'isomorphic-dompurify'
 import type { TocItem } from '~/features/post/types'
 import { codeLanguageLabel, resolveCodeLanguage, type CodeHighlighter } from '~/utils/highlightCode'
@@ -23,9 +23,17 @@ export interface ArticleMarkdownOptions extends MarkdownLinkOptions {
   highlighter?: CodeHighlighter | null
 }
 const parser = new MarkdownIt({ html: false, linkify: true }).use(markdownLinks)
-type Token = ReturnType<MarkdownIt['parse']>[number]
+// linkify-it 6 默认关闭无协议链接识别；保留 www.example.com、example.com 等裸域名自动链接，避免已发布内容丢失链接
+parser.linkify.set({ fuzzyLink: true })
 const escapeHtml = parser.utils.escapeHtml
 const normalize = (value: string) => value.replace(/\s+/g, ' ').trim()
+/**
+ * 渲染规则的 env 在 markdown-it 15 中声明为 Env | undefined；本解析器只由 renderArticleMarkdown 调用，
+ * 且其传入的环境经 satisfies RenderEnvironment 校验，因此这里把基础 Env 收窄为具体环境。
+ */
+function renderEnvironment(environment: Env | undefined): RenderEnvironment {
+  return environment as RenderEnvironment
+}
 /** 正文第一个块是与文章标题相同的一级标题时视为重复标题，页面已在头部展示 */
 function isDuplicateTitle(tokens: Token[], index: number, title?: string) {
   if (!title || index !== 0 || tokens[index]?.tag !== 'h1') return false
@@ -36,7 +44,8 @@ function demotedHeadingTag(tag: string) {
   const level = Number(tag.slice(1)) || 1
   return `h${Math.min(level + 1, 6)}`
 }
-parser.renderer.rules.heading_open = (tokens, index, options, environment: RenderEnvironment, renderer) => {
+parser.renderer.rules.heading_open = (tokens, index, options, env, renderer) => {
+  const environment = renderEnvironment(env)
   const id = `heading-${++environment.headingIndex}`
   tokens[index]?.attrSet('id', id)
   if (isDuplicateTitle(tokens, index, environment.title)) {
@@ -62,7 +71,8 @@ parser.renderer.rules.heading_close = (tokens, index, options, _environment, ren
  * 代码块：外层容器 + 标题栏（语言标签、复制按钮挂载位）+ 代码。
  * 复制按钮由客户端挂载到 .article-code__actions，SSR 只输出静态结构；未知语言回退纯文本 pre。
  */
-parser.renderer.rules.fence = (tokens, index, _options, environment: RenderEnvironment) => {
+parser.renderer.rules.fence = (tokens, index, _options, env) => {
+  const environment = renderEnvironment(env)
   const token = tokens[index]!
   const language = token.info.trim().split(/\s+/)[0] ?? ''
   // 去掉围栏内容末尾换行，避免高亮输出空行、复制结果多一行
@@ -93,7 +103,9 @@ parser.renderer.rules.image = (tokens, index, options, environment, renderer) =>
   token.attrSet('loading', 'lazy')
   token.attrSet('decoding', 'async')
   // 受管媒体提供白名单宽度变体；正文栏最宽约 800px，窄屏按视口宽度选择
-  const srcset = managedImageSrcset(token.attrGet('src'))
+  // 属性值类型为 string | number，图片地址只接受字符串
+  const src = token.attrGet('src')
+  const srcset = managedImageSrcset(typeof src === 'string' ? src : null)
   if (srcset) {
     token.attrSet('srcset', srcset)
     token.attrSet('sizes', '(max-width: 768px) 100vw, 800px')
