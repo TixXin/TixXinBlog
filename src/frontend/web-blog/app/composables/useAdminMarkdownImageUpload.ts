@@ -9,6 +9,7 @@
  */
 import type { Ref } from 'vue'
 import type { MediaAsset } from '~/features/media/types'
+import { currentTranslate, type Translate } from '~/utils/format'
 
 /** 与后端 MAX_IMAGE_BYTES 一致 */
 export const MARKDOWN_IMAGE_MAX_BYTES = 8 * 1024 * 1024
@@ -24,19 +25,22 @@ export interface PreparedImage {
   alt: string
 }
 
-/** 只取受支持类型的图片文件；其余（含非图片）返回原因，便于提示 */
-export function prepareImageFiles(files: File[]) {
+/**
+ * 只取受支持类型的图片文件；其余（含非图片）返回原因，便于提示
+ * @param t 翻译函数；缺省时在调用时读取当前界面语言
+ */
+export function prepareImageFiles(files: File[], t: Translate = currentTranslate()) {
   const accepted: PreparedImage[] = []
   const rejected: { name: string; reason: string }[] = []
   for (const file of files) {
     const extension = IMAGE_TYPES[file.type]
     const name = file.name || 'image'
     if (!extension && !EXTENSION.test(name)) {
-      rejected.push({ name, reason: '仅支持 JPEG、PNG 和 WebP 图片' })
+      rejected.push({ name, reason: t('admin-content.imageUpload.unsupportedType') })
       continue
     }
     if (!file.size || file.size > MARKDOWN_IMAGE_MAX_BYTES) {
-      rejected.push({ name, reason: '图片需不超过 8MB' })
+      rejected.push({ name, reason: t('admin-content.imageUpload.tooLarge') })
       continue
     }
     // 后端拒绝控制字符、路径分隔符与双向控制符，且要求受支持扩展名；粘贴的文件可能没有合法名称。
@@ -86,6 +90,7 @@ export function useAdminMarkdownImageUpload(
 ) {
   const uploader = useMediaUpload()
   const { error: toastError, success, info } = useToast()
+  const { t } = useI18n()
   const uploading = ref(0)
   const status = ref('')
 
@@ -120,17 +125,18 @@ export function useAdminMarkdownImageUpload(
   async function uploadFiles(files: File[]) {
     const element = textarea.value
     if (!element || !files.length) return
-    const { accepted, rejected } = prepareImageFiles(files)
-    for (const item of rejected) toastError(`${item.name}：${item.reason}`)
+    const { accepted, rejected } = prepareImageFiles(files, t)
+    for (const item of rejected)
+      toastError(t('admin-content.imageUpload.rejected', { name: item.name, reason: item.reason }))
     if (!accepted.length) return
     const jobs = accepted.map((item) => {
       const id = crypto.randomUUID()
-      return { ...item, id, token: `![上传中…](uploading:${id.slice(0, 8)})` }
+      return { ...item, id, token: `![${t('admin-content.imageUpload.placeholder')}](uploading:${id.slice(0, 8)})` }
     })
     // 多张图片各占一行，占位标识唯一，用户继续输入也能准确定位替换位置。
     insertAtSelection(element, jobs.map((job) => job.token).join('\n'))
     uploading.value += jobs.length
-    status.value = `正在上传 ${uploading.value} 张图片`
+    status.value = t('admin-content.imageUpload.uploading', { count: uploading.value }, uploading.value)
     let missingAlt = 0
     await Promise.all(
       jobs.map(async (job) => {
@@ -139,19 +145,25 @@ export function useAdminMarkdownImageUpload(
           const alt = job.alt || asset.alt
           if (!alt) missingAlt++
           if (!replaceToken(job.token, markdownImage(alt, asset.url)))
-            info(`${job.file.name} 已上传到媒体库，但正文中的占位已被删除，未插入图片`)
+            info(t('admin-content.imageUpload.placeholderRemoved', { name: job.file.name }))
         } catch (cause) {
-          const message = cause instanceof Error ? cause.message : '上传失败，请重试'
-          replaceToken(job.token, `![上传失败：${job.file.name.replace(/[[\]\\]/g, '')}（${message}）]()`)
-          toastError(`${job.file.name} 上传失败：${message}`)
+          const message = cause instanceof Error ? cause.message : t('admin-content.imageUpload.failedFallback')
+          const marker = t('admin-content.imageUpload.failedMarker', {
+            name: job.file.name.replace(/[[\]\\]/g, ''),
+            message,
+          })
+          replaceToken(job.token, `![${marker}]()`)
+          toastError(t('admin-content.imageUpload.failedToast', { name: job.file.name, message }))
         } finally {
           uploading.value--
         }
       }),
     )
-    status.value = uploading.value ? `正在上传 ${uploading.value} 张图片` : '图片上传处理完成'
-    if (missingAlt) info(`有 ${missingAlt} 张图片没有替代文本，请在方括号中补充图片描述`)
-    else if (jobs.length) success(`已插入 ${jobs.length} 张图片`)
+    status.value = uploading.value
+      ? t('admin-content.imageUpload.uploading', { count: uploading.value }, uploading.value)
+      : t('admin-content.imageUpload.finished')
+    if (missingAlt) info(t('admin-content.imageUpload.missingAlt', { count: missingAlt }, missingAlt))
+    else if (jobs.length) success(t('admin-content.imageUpload.inserted', { count: jobs.length }, jobs.length))
   }
 
   function blocked() {

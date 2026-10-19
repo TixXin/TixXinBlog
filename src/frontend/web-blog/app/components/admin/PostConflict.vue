@@ -3,77 +3,137 @@
   @description 显示本地与服务器完整内容，必须显式比较后选择，不自动覆盖。
 -->
 <template>
-  <section class="post-conflict" aria-label="文章版本冲突">
-    <h2>{{ title }}</h2>
-    <p>{{ description }}</p>
+  <section class="post-conflict" :aria-label="$t('admin-content.postConflict.region')">
+    <h2>{{ titleText }}</h2>
+    <p>{{ descriptionText }}</p>
     <div class="post-conflict__columns">
       <section v-for="item in versions" :key="item.label">
-        <h3>{{ item.label }} · 版本 {{ item.draft.revision ?? '未知' }}</h3>
-        <p>标题：{{ item.draft.title }}</p>
-        <p>摘要：{{ item.draft.summary }}</p>
-        <p>有序关联：{{ contentRelationSummary(item.draft.relatedContent) }}</p>
-        <p>专栏：{{ item.draft.folder }} · 标签：{{ item.draft.tags.join('、') }}</p>
-        <p>封面：{{ item.draft.cover || '无' }}</p>
-        <p>地址：{{ item.draft.slug || '数字编号' }} · 封面描述：{{ item.draft.coverAlt || '未设置' }}</p>
-        <p>SEO 标题：{{ item.draft.seoTitle || '使用文章标题' }}</p>
+        <h3>
+          {{
+            $t('admin-content.postConflict.versionHeading', {
+              label: item.label,
+              revision: item.draft.revision ?? $t('admin-content.postConflict.unknown'),
+            })
+          }}
+        </h3>
+        <p>{{ $t('admin-content.postConflict.fieldTitle', { value: item.draft.title }) }}</p>
+        <p>{{ $t('admin-content.postConflict.fieldSummary', { value: item.draft.summary }) }}</p>
         <p>
-          SEO 描述：{{ item.draft.seoDescription || '使用摘要' }} · 收录：{{
-            item.draft.seoNoindex ? '不收录' : '允许'
+          {{
+            $t('admin-content.postConflict.fieldRelations', {
+              value: contentRelationSummary(item.draft.relatedContent),
+            })
           }}
         </p>
         <p>
-          状态：{{ item.draft.status }} · 阅读分钟：{{ item.draft.readTimeMinutes }} · 置顶：{{
-            item.draft.pinned ? '是' : '否'
+          {{
+            $t('admin-content.postConflict.fieldTaxonomy', {
+              folder: item.draft.folder,
+              tags: item.draft.tags.join($t('admin-content.postConflict.tagSeparator')),
+            })
           }}
         </p>
-        <label>{{ item.label }}正文<textarea readonly rows="12" :value="item.draft.contentRaw" /></label>
+        <p>
+          {{
+            $t('admin-content.postConflict.fieldCover', {
+              value: item.draft.cover || $t('admin-content.postConflict.none'),
+            })
+          }}
+        </p>
+        <p>
+          {{
+            $t('admin-content.postConflict.fieldAddress', {
+              slug: item.draft.slug || $t('admin-content.postConflict.numericAddress'),
+              alt: item.draft.coverAlt || $t('admin-content.postConflict.notSet'),
+            })
+          }}
+        </p>
+        <p>
+          {{
+            $t('admin-content.postConflict.fieldSeoTitle', {
+              value: item.draft.seoTitle || $t('admin-content.postConflict.useTitle'),
+            })
+          }}
+        </p>
+        <p>
+          {{
+            $t('admin-content.postConflict.fieldSeo', {
+              description: item.draft.seoDescription || $t('admin-content.postConflict.useSummary'),
+              indexing: item.draft.seoNoindex
+                ? $t('admin-content.postConflict.noindex')
+                : $t('admin-content.postConflict.index'),
+            })
+          }}
+        </p>
+        <p>
+          {{
+            $t('admin-content.postConflict.fieldMeta', {
+              status: item.draft.status,
+              minutes: item.draft.readTimeMinutes,
+              pinned: item.draft.pinned ? $t('admin-content.postConflict.yes') : $t('admin-content.postConflict.no'),
+            })
+          }}
+        </p>
+        <label
+          >{{ $t('admin-content.postConflict.bodyLabel', { label: item.label })
+          }}<textarea readonly rows="12" :value="item.draft.contentRaw" />
+        </label>
       </section>
     </div>
     <details class="post-conflict__diff">
-      <summary>查看正文差异：移除 {{ difference.removed.length }} 行，新增 {{ difference.added.length }} 行</summary>
-      <p>从{{ serverLabel }}到{{ localLabel }}；中间变化区域完整显示，前后各保留最多三行上下文。</p>
+      <summary>
+        {{
+          $t('admin-content.postConflict.diffSummary', {
+            removed: difference.removed.length,
+            added: difference.added.length,
+          })
+        }}
+      </summary>
+      <p>{{ $t('admin-content.postConflict.diffHint', { from: serverLabelText, to: localLabelText }) }}</p>
       <pre>{{ difference.prefix.slice(-3).join('\n') }}</pre>
-      <pre v-if="difference.removed.length" class="post-conflict__removed" aria-label="移除的正文">{{
-        difference.removed.join('\n')
-      }}</pre>
-      <pre v-if="difference.added.length" class="post-conflict__added" aria-label="新增的正文">{{
-        difference.added.join('\n')
-      }}</pre>
+      <pre
+        v-if="difference.removed.length"
+        class="post-conflict__removed"
+        :aria-label="$t('admin-content.postConflict.removed')"
+        >{{ difference.removed.join('\n') }}</pre>
+      <pre
+        v-if="difference.added.length"
+        class="post-conflict__added"
+        :aria-label="$t('admin-content.postConflict.added')"
+        >{{ difference.added.join('\n') }}</pre>
       <pre>{{ difference.suffix.slice(0, 3).join('\n') }}</pre>
     </details>
-    <button type="button" @click="$emit('useServer')">{{ useServerLabel }}</button
-    ><button type="button" @click="$emit('keepLocal')">{{ keepLocalLabel }}</button>
+    <button type="button" @click="$emit('useServer')">{{ useServerLabelText }}</button
+    ><button type="button" @click="$emit('keepLocal')">{{ keepLocalLabelText }}</button>
   </section>
 </template>
 <script setup lang="ts">
 import type { AdminPostDraft } from '~/features/post/adminTypes'
 import { postDifference } from '~/utils/postDifference'
 import { contentRelationSummary } from '~/features/content-relation/editor'
-const props = withDefaults(
-  defineProps<{
-    local: AdminPostDraft
-    server: AdminPostDraft
-    title?: string
-    description?: string
-    localLabel?: string
-    serverLabel?: string
-    useServerLabel?: string
-    keepLocalLabel?: string
-  }>(),
-  {
-    title: '服务器已有更新',
-    description: '当前输入仍保留。请比较两份内容，选择载入服务器版本，或保留当前输入继续合并。',
-    localLabel: '当前输入',
-    serverLabel: '服务器',
-    useServerLabel: '载入服务器版本并暂存当前输入',
-    keepLocalLabel: '保留当前输入，基于最新版本继续合并',
-  },
-)
+const props = defineProps<{
+  local: AdminPostDraft
+  server: AdminPostDraft
+  title?: string
+  description?: string
+  localLabel?: string
+  serverLabel?: string
+  useServerLabel?: string
+  keepLocalLabel?: string
+}>()
+const { t } = useI18n()
+// 未传入的标题与按钮文案使用默认的服务器冲突说明，随界面语言变化
+const titleText = computed(() => props.title ?? t('admin-content.postConflict.defaultTitle'))
+const descriptionText = computed(() => props.description ?? t('admin-content.postConflict.defaultDescription'))
+const localLabelText = computed(() => props.localLabel ?? t('admin-content.postConflict.defaultLocal'))
+const serverLabelText = computed(() => props.serverLabel ?? t('admin-content.postConflict.defaultServer'))
+const useServerLabelText = computed(() => props.useServerLabel ?? t('admin-content.postConflict.defaultUseServer'))
+const keepLocalLabelText = computed(() => props.keepLocalLabel ?? t('admin-content.postConflict.defaultKeepLocal'))
 defineEmits<{ useServer: []; keepLocal: [] }>()
 const difference = computed(() => postDifference(props.server.contentRaw, props.local.contentRaw))
 const versions = computed(() => [
-  { label: props.localLabel, draft: props.local },
-  { label: props.serverLabel, draft: props.server },
+  { label: localLabelText.value, draft: props.local },
+  { label: serverLabelText.value, draft: props.server },
 ])
 </script>
 <style scoped lang="scss">

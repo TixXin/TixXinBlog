@@ -11,59 +11,81 @@
     @close="open = false"
   >
     <header>
-      <h2 id="post-batch-title">批量操作确认</h2>
-      <button type="button" :disabled="pending" @click="close">关闭</button>
+      <h2 id="post-batch-title">{{ $t('admin-content.postBatch.title') }}</h2>
+      <button type="button" :disabled="pending" @click="close">{{ $t('admin-content.postBatch.close') }}</button>
     </header>
-    <p v-if="pending" role="status">正在处理，请等待服务器结果…</p>
+    <p v-if="pending" role="status">{{ $t('admin-content.postBatch.pending') }}</p>
     <p v-if="error" role="alert">{{ error }}</p>
     <p v-if="batchCount > 1" role="status">
-      共选择 {{ totalCount }} 篇，分 {{ batchCount }} 批处理，当前第 {{ batchIndex }} 批，每批最多
-      {{ POST_BATCH_LIMIT }} 篇。每批须分别预览并确认，后续批次不会自动执行。
+      {{
+        $t('admin-content.postBatch.queue', {
+          total: totalCount,
+          count: batchCount,
+          index: batchIndex,
+          limit: POST_BATCH_LIMIT,
+        })
+      }}
     </p>
     <p v-if="batchCount > 1 && (!result?.completed || batchIndex < batchCount)">
-      关闭后剩余批次不会执行；已提交批次仍可在“最近批量操作”中查询。
+      {{ $t('admin-content.postBatch.closeHint') }}
     </p>
-    <button v-if="!preview && canNext" type="button" :disabled="pending" @click="$emit('next')">重试本批预览</button>
+    <button v-if="!preview && canNext" type="button" :disabled="pending" @click="$emit('next')">
+      {{ $t('admin-content.postBatch.retryPreview') }}
+    </button>
     <template v-if="preview">
       <p>
-        操作：{{ postBatchLabels[preview.action] }}。本次明确选择 {{ preview.items.length }} 篇，可执行
-        {{ preview.allowedCount }} 篇。
+        {{
+          $t('admin-content.postBatch.summary', {
+            action: $t(postBatchLabelKey(preview.action)),
+            selected: preview.items.length,
+            allowed: preview.allowedCount,
+          })
+        }}
       </p>
       <p v-if="preview.action === 'delete'">
-        永久删除文章及其评论、修订、历史地址和互动记录，无法从回收站恢复。媒体文件保留；下表列出删除的引用记录数量。
+        {{ $t('admin-content.postBatch.effect.delete') }}
       </p>
-      <p v-else-if="preview.action === 'trash'">文章退出公开展示，正文、评论、修订和地址均保留，恢复后为草稿。</p>
-      <p v-else-if="preview.action === 'archive'">文章退出公开展示并归档，内容与评论保留。</p>
-      <p v-else>文章变为不公开的草稿，已有评论、修订和地址保留。</p>
+      <p v-else-if="preview.action === 'trash'">{{ $t('admin-content.postBatch.effect.trash') }}</p>
+      <p v-else-if="preview.action === 'archive'">{{ $t('admin-content.postBatch.effect.archive') }}</p>
+      <p v-else>{{ $t('admin-content.postBatch.effect.draft') }}</p>
       <p>
-        预览创建后 5
-        分钟内有效；执行时再次检查版本和影响范围，变化条目会跳过。已执行记录可在文章管理下方“最近批量操作”中重新打开。
+        {{ $t('admin-content.postBatch.ticketHint') }}
       </p>
       <p v-if="preview.expiresIn <= 0 && !result?.completed" role="status">
-        凭证已过期，不能继续执行。请先查询执行结果，核对剩余文章后关闭面板并重新选择、预览。
+        {{ $t('admin-content.postBatch.expired') }}
       </p>
-      <ul aria-label="批量影响范围">
+      <ul :aria-label="$t('admin-content.postBatch.impactLabel')">
         <li v-for="item in preview.items" :key="item.id">
           <strong>{{ item.title }}</strong
-          ><span>文章 #{{ item.id }} · 版本 {{ item.revision }}</span>
-          <p>{{ item.allowed ? '可执行' : item.reason }}</p>
+          ><span>{{ $t('admin-content.postBatch.itemMeta', { id: item.id, revision: item.revision }) }}</span>
+          <p>{{ item.allowed ? $t('admin-content.postBatch.allowed') : item.reason }}</p>
           <p v-if="preview.action === 'delete'">
-            {{ item.impact.comments }} 条评论 · {{ item.impact.revisions }} 个修订 · {{ item.impact.addresses }} 个地址
-            · {{ item.impact.mediaReferences }} 条媒体引用 · {{ item.impact.likes }} 条文章点赞 ·
-            {{ item.impact.commentLikes ?? 0 }} 条评论点赞 · {{ item.impact.views }} 条访问去重记录
+            {{ impactSummary(item.impact) }}
           </p>
           <p v-if="outcome(item.id)" :role="outcome(item.id)?.success ? 'status' : undefined">
-            {{ outcome(item.id)?.success ? '成功' : '未执行' }}：{{ outcome(item.id)?.message }}
+            {{
+              $t('admin-content.postBatch.outcome', {
+                state: outcome(item.id)?.success
+                  ? $t('admin-content.postBatch.succeeded')
+                  : $t('admin-content.postBatch.skipped'),
+                message: outcome(item.id)?.message,
+              })
+            }}
           </p>
         </li>
       </ul>
       <p v-if="result" role="status">
-        成功 {{ result.successCount }} 篇，失败 {{ result.failedCount }} 篇，待处理 {{ result.pendingCount }} 篇。{{
-          result.completed ? '本批处理已结束。' : ''
-        }}
+        {{
+          $t('admin-content.postBatch.result', {
+            success: result.successCount,
+            failed: result.failedCount,
+            pending: result.pendingCount,
+          })
+        }}{{ result.completed ? $t('admin-content.postBatch.resultDone') : '' }}
       </p>
       <label v-if="preview.action === 'delete' && !result?.completed"
-        >输入“永久删除”确认<input v-model="acknowledgement" :disabled="pending" autocomplete="off"
+        >{{ $t('admin-content.postBatch.acknowledge', { phrase: POST_DELETE_ACKNOWLEDGEMENT })
+        }}<input v-model="acknowledgement" :disabled="pending" autocomplete="off"
       /></label>
       <footer>
         <button
@@ -74,23 +96,33 @@
             pending ||
             !preview.allowedCount ||
             preview.expiresIn <= 0 ||
-            (preview.action === 'delete' && acknowledgement !== '永久删除')
+            (preview.action === 'delete' && acknowledgement !== POST_DELETE_ACKNOWLEDGEMENT)
           "
           @click="$emit('execute')"
         >
-          {{ attempted ? '继续执行未处理条目' : '确认执行' }}
+          {{ attempted ? $t('admin-content.postBatch.continue') : $t('admin-content.postBatch.execute') }}
         </button>
-        <button v-if="attempted" type="button" :disabled="pending" @click="$emit('query')">查询执行结果</button>
-        <button v-if="canNext" type="button" :disabled="pending" @click="$emit('next')">预览下一批</button>
+        <button v-if="attempted" type="button" :disabled="pending" @click="$emit('query')">
+          {{ $t('admin-content.postBatch.query') }}
+        </button>
+        <button v-if="canNext" type="button" :disabled="pending" @click="$emit('next')">
+          {{ $t('admin-content.postBatch.next') }}
+        </button>
         <button type="button" :disabled="pending" @click="close">
-          {{ result?.completed ? '完成并关闭' : attempted ? '关闭，稍后查询' : '取消并关闭' }}
+          {{
+            result?.completed
+              ? $t('admin-content.postBatch.done')
+              : attempted
+                ? $t('admin-content.postBatch.closeLater')
+                : $t('admin-content.postBatch.cancel')
+          }}
         </button>
       </footer>
     </template>
   </dialog>
 </template>
 <script setup lang="ts">
-import { POST_BATCH_LIMIT, postBatchLabels } from '~/features/post/batchTypes'
+import { POST_BATCH_LIMIT, POST_DELETE_ACKNOWLEDGEMENT, postBatchLabelKey } from '~/features/post/batchTypes'
 import type { PostBatchPreview, PostBatchResult } from '~/features/post/batchTypes'
 import { getModalFocusOrigin } from '~/utils/modalFocusOrigin'
 const props = withDefaults(
@@ -112,6 +144,17 @@ const open = defineModel<boolean>('open', { required: true })
 const acknowledgement = defineModel<string>('acknowledgement', { required: true })
 const dialog = ref<HTMLDialogElement | null>(null)
 let focusOrigin: HTMLElement | null = null
+const { t } = useI18n()
+const impactKinds = ['comments', 'revisions', 'addresses', 'mediaReferences', 'likes', 'commentLikes', 'views'] as const
+/** 永久删除影响的各类记录数，逐项按数量选择单复数 */
+function impactSummary(impact: PostBatchPreview['items'][number]['impact']) {
+  return impactKinds
+    .map((kind) => {
+      const count = impact[kind] ?? 0
+      return t(`admin-content.postBatch.impact.${kind}`, { count }, count)
+    })
+    .join(' · ')
+}
 function outcome(id: number) {
   return props.result?.results.find((item) => item.id === id)
 }

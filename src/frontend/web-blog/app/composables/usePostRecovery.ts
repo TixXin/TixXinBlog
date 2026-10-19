@@ -7,6 +7,7 @@ import { readPostRecoveries, recoveryPrefix, writePostRecovery } from '~/utils/p
 import type { PostRecoveryItem } from '~/utils/postRecovery'
 
 export function usePostRecovery(postId: string | null) {
+  const { t } = useI18n()
   const recoveries = ref<PostRecoveryItem[]>([])
   const localSavedAt = ref('')
   const localError = ref('')
@@ -18,9 +19,9 @@ export function usePostRecovery(postId: string | null) {
       const result = readPostRecoveries(localStorage, prefix, postId)
       recoveries.value = result.items.filter((item) => item.key !== activeKey)
       if (result.invalidCount)
-        localError.value = `${result.invalidCount} 份本机副本格式异常，已保留原数据并跳过自动读取`
+        localError.value = t('admin-content.postRecovery.invalid', { count: result.invalidCount }, result.invalidCount)
     } catch {
-      localError.value = '无法读取本机副本，请检查浏览器存储权限'
+      localError.value = t('admin-content.postRecovery.readFailed')
     }
   }
   function initialize(owner: string) {
@@ -35,7 +36,7 @@ export function usePostRecovery(postId: string | null) {
       localError.value = ''
       return true
     } catch {
-      localError.value = '本机副本保存失败，当前输入仍在页面；请勿关闭页面，可重试或保存到服务器'
+      localError.value = t('admin-content.postRecovery.writeFailed')
       return false
     }
   }
@@ -54,7 +55,7 @@ export function usePostRecovery(postId: string | null) {
       localError.value = ''
       reload()
     } catch {
-      localError.value = '服务器已保存，但本机旧副本未能清理；可以稍后重新查看'
+      localError.value = t('admin-content.postRecovery.clearFailed')
     }
   }
   function discard(key: string) {
@@ -63,7 +64,7 @@ export function usePostRecovery(postId: string | null) {
       localStorage.removeItem(key)
       reload()
     } catch {
-      localError.value = '无法移除本机副本，请稍后重试'
+      localError.value = t('admin-content.postRecovery.discardFailed')
     }
   }
   return { recoveries, localSavedAt, localError, initialize, reload, persist, preserve, clearSaved, discard }

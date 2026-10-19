@@ -1,19 +1,29 @@
 <!-- @file PostOutline.vue @description 长文章章节选择；明确定位操作保持原生键盘选项和正文输入彼此独立。 -->
 <template>
-  <section class="post-outline" aria-label="正文章节导航">
+  <section class="post-outline" :aria-label="$t('admin-content.postOutline.region')">
     <label>
-      正文章节（{{ headings.length }}）
-      <select v-model="selected" aria-label="选择正文章节" :disabled="disabled || !headings.length">
-        <option value="">选择要编辑的章节</option>
+      {{ $t('admin-content.postOutline.label', { count: headings.length }) }}
+      <select
+        v-model="selected"
+        :aria-label="$t('admin-content.postOutline.select')"
+        :disabled="disabled || !headings.length"
+      >
+        <option value="">{{ $t('admin-content.postOutline.placeholder') }}</option>
         <option v-for="(heading, index) in headings" :key="index" :value="String(index)">
-          {{ '\u3000'.repeat(heading.level - 1) }}{{ heading.text || '未命名标题' }} · 第 {{ heading.line }} 行
+          {{ '\u3000'.repeat(heading.level - 1)
+          }}{{
+            $t('admin-content.postOutline.option', {
+              text: heading.text || $t('admin-content.postOutline.untitled'),
+              line: heading.line,
+            })
+          }}
         </option>
       </select>
     </label>
     <button type="button" data-post-outline-jump :disabled="disabled || !target" @click="jump">
-      <Icon name="lucide:list-tree" aria-hidden="true" />定位章节
+      <Icon name="lucide:list-tree" aria-hidden="true" />{{ $t('admin-content.postOutline.jump') }}
     </button>
-    <p>{{ headings.length ? '定位后光标移到标题行首。' : '添加 Markdown 标题后，可在这里定位章节。' }}</p>
+    <p>{{ headings.length ? $t('admin-content.postOutline.hint') : $t('admin-content.postOutline.empty') }}</p>
   </section>
 </template>
 <script setup lang="ts">

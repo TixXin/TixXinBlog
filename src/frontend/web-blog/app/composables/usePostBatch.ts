@@ -3,12 +3,13 @@
  * @description 分批预览和执行分离；失败保留凭证，允许查询结果及幂等续办。
  */
 import { invalidatePublicReads } from '~/utils/invalidatePublicReads'
-import { POST_BATCH_LIMIT, POST_SELECTION_LIMIT } from '~/features/post/batchTypes'
+import { POST_BATCH_LIMIT, POST_DELETE_ACKNOWLEDGEMENT, POST_SELECTION_LIMIT } from '~/features/post/batchTypes'
 import type { PostBatchAction, PostBatchPreview, PostBatchResult, PostSelection } from '~/features/post/batchTypes'
 
 export function usePostBatch(onChanged: (result: PostBatchResult) => Promise<void>) {
   const app = useNuxtApp()
   const api = useAdminApi()
+  const { t } = useI18n()
   const { currentUser } = useCurrentUser()
   const context = useState<string>('page-content-context', () => '')
   const preview = ref<PostBatchPreview | null>(null)
@@ -87,18 +88,20 @@ export function usePostBatch(onChanged: (result: PostBatchResult) => Promise<voi
       const value = await api<typeof recent.value>('/admin/posts/batch')
       if (owns(version) && request === recentGeneration) recent.value = value
     } catch {
-      if (owns(version) && request === recentGeneration) recentError.value = '最近批量操作加载失败'
+      if (owns(version) && request === recentGeneration) recentError.value = t('admin-content.postBatch.recentFailed')
     }
   }
-  function message(cause: unknown, fallback: string) {
+  function message(cause: unknown, fallbackKey: string) {
+    const key = `admin-content.postBatch.${fallbackKey}`
+    // 校验管道返回的数组明细是字段级技术信息，批量面板只展示业务字符串 message，其余显示兜底说明。
     const detail = (cause as { data?: { message?: unknown } }).data?.message
-    return typeof detail === 'string' ? detail : fallback
+    return typeof detail === 'string' ? apiErrorMessage(cause, key, { t }) : t(key)
   }
   function keepUnfinishedTicket() {
     if (!attempted.value || !preview.value || result.value?.completed) return false
     if (queried.value && result.value && preview.value.expiresIn <= 0) return false
     open.value = true
-    error.value = '当前批次尚未确认结束，请先查询结果或使用原凭证继续执行，再发起其他批量操作。'
+    error.value = t('admin-content.postBatch.unfinished')
     return true
   }
   async function previewCurrent() {
@@ -115,7 +118,7 @@ export function usePostBatch(onChanged: (result: PostBatchResult) => Promise<voi
       })
       if (owns(version)) preview.value = value
     } catch (cause) {
-      if (owns(version)) error.value = message(cause, '本批预览失败，尚未执行；可重试本批，已完成批次不会重复提交。')
+      if (owns(version)) error.value = message(cause, 'previewFailed')
     } finally {
       if (owns(version)) pending.value = false
     }
@@ -126,7 +129,7 @@ export function usePostBatch(onChanged: (result: PostBatchResult) => Promise<voi
     if (items.length > POST_SELECTION_LIMIT) {
       clearQueue()
       resetPreview()
-      error.value = `一次最多选择 ${POST_SELECTION_LIMIT} 篇，请缩小范围后重试。`
+      error.value = t('admin-content.postBatch.selectionLimit', { limit: POST_SELECTION_LIMIT })
       return
     }
     clearQueue()
@@ -156,7 +159,7 @@ export function usePostBatch(onChanged: (result: PostBatchResult) => Promise<voi
     try {
       await onChanged(value)
     } catch {
-      if (owns(version)) error.value = '批量结果已收到，但文章列表刷新失败，请刷新列表后核对。'
+      if (owns(version)) error.value = t('admin-content.postBatch.refreshFailed')
     }
   }
   async function inspect(ticket: string) {
@@ -177,7 +180,7 @@ export function usePostBatch(onChanged: (result: PostBatchResult) => Promise<voi
       await receive(await api<PostBatchResult>(`/admin/posts/batch/${ticket}`), version)
       if (owns(version)) queried.value = true
     } catch (cause) {
-      if (owns(version)) error.value = message(cause, '操作记录加载失败，请关闭后重试')
+      if (owns(version)) error.value = message(cause, 'recordFailed')
     } finally {
       if (owns(version)) pending.value = false
     }
@@ -190,7 +193,7 @@ export function usePostBatch(onChanged: (result: PostBatchResult) => Promise<voi
       result.value?.completed ||
       !preview.value.allowedCount ||
       preview.value.expiresIn <= 0 ||
-      (preview.value.action === 'delete' && acknowledgement.value !== '永久删除')
+      (preview.value.action === 'delete' && acknowledgement.value !== POST_DELETE_ACKNOWLEDGEMENT)
     )
       return
     const version = ++generation
@@ -207,8 +210,7 @@ export function usePostBatch(onChanged: (result: PostBatchResult) => Promise<voi
         version,
       )
     } catch (cause) {
-      if (owns(version))
-        error.value = message(cause, '未收到完整执行结果。请查询结果，或使用同一凭证继续执行；已处理条目不会重复修改。')
+      if (owns(version)) error.value = message(cause, 'executeFailed')
     } finally {
       if (owns(version)) pending.value = false
     }
@@ -222,7 +224,7 @@ export function usePostBatch(onChanged: (result: PostBatchResult) => Promise<voi
       await receive(await api<PostBatchResult>(`/admin/posts/batch/${preview.value.ticket}`), version)
       if (owns(version)) queried.value = true
     } catch (cause) {
-      if (owns(version)) error.value = message(cause, '结果查询失败，凭证仍保留，可重试')
+      if (owns(version)) error.value = message(cause, 'queryFailed')
     } finally {
       if (owns(version)) pending.value = false
     }

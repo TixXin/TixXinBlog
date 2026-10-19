@@ -11,6 +11,7 @@ export function usePostEditor(id: string | null) {
   const auth = useCurrentUser()
   const route = useRoute()
   const { success } = useToast()
+  const { t } = useI18n()
   const draft = ref<AdminPostDraft>({
     relatedContent: [],
     title: '',
@@ -64,7 +65,7 @@ export function usePostEditor(id: string | null) {
     try {
       if (id) draft.value = await api<AdminPostDraft>(`/admin/posts/${id}`)
       if (draft.value.deletedAt) {
-        error.value = '文章已在回收站，请先在文章管理中恢复为草稿'
+        error.value = t('admin-content.postSave.inTrash')
         return
       }
       tags.value = draft.value.tags.join(', ')
@@ -75,10 +76,10 @@ export function usePostEditor(id: string | null) {
       try {
         options.value = await api('/admin/posts/filters')
       } catch {
-        error.value = '目录选项加载失败，仍可手动填写专栏与标签'
+        error.value = t('admin-content.postSave.optionsFailed')
       }
     } catch {
-      error.value = '文章加载失败，请检查登录状态后重试'
+      error.value = t('admin-content.postSave.loadFailed')
     } finally {
       pending.value = false
     }
@@ -109,7 +110,7 @@ export function usePostEditor(id: string | null) {
       autoSavePaused.value = false
       recovery.clearSaved(recoveredSourceKey)
       recoveredSourceKey = undefined
-      if (!automatic) success(status === 'published' ? '文章已发布' : status === 'draft' ? '草稿已保存' : '文章已归档')
+      if (!automatic) success(t(`admin-content.postSave.saved.${status}`))
       clearNuxtData(
         (key) =>
           key.startsWith('article-') || key === 'post-list' || key.startsWith('post-list:') || key === 'post-metadata',
@@ -117,14 +118,13 @@ export function usePostEditor(id: string | null) {
       if (!id) await navigateTo(`/admin/posts/${draft.value.id}`, { replace: true })
     } catch (cause) {
       autoSavePaused.value = true
-      const message = (cause as { data?: { message?: unknown } }).data?.message
-      error.value = typeof message === 'string' ? message : '保存失败，未保存内容仍在当前页面'
+      error.value = apiErrorMessage(cause, 'admin-content.postSave.saveFailed', { t })
       if (savedId && [409, 428].includes((cause as { statusCode?: number }).statusCode ?? 0)) {
         try {
           const latest = await api<AdminPostDraft>(`/admin/posts/${savedId}`)
           if (latest.revision !== draft.value.revision) conflict.value = latest
         } catch {
-          error.value += '；服务器版本读取失败，可稍后再次保存重试，本地输入仍保留'
+          error.value = t('admin-content.postSave.serverReadFailed', { message: error.value })
         }
       }
     } finally {
@@ -149,7 +149,7 @@ export function usePostEditor(id: string | null) {
     draft.value.revision = conflict.value.revision
     autoSavePaused.value = true
     conflict.value = null
-    error.value = '已保留当前输入，请合并需要的服务器修改后再次保存；服务器原内容仍在修订历史中'
+    error.value = t('admin-content.postSave.keptLocal')
   }
   function recoverPreservedLocal() {
     if (!preservedLocal.value) return
@@ -169,7 +169,7 @@ export function usePostEditor(id: string | null) {
         : structuredClone(toRaw(localForCompare.value))
       recoverySelection.value = item
     } catch {
-      error.value = '无法读取最新服务器版本，暂不恢复；本机副本仍保留，请恢复连接后重试'
+      error.value = t('admin-content.postSave.recoveryServerFailed')
     } finally {
       recoveryReviewPending.value = false
     }
@@ -190,7 +190,7 @@ export function usePostEditor(id: string | null) {
     recoverySelection.value = null
     recoveryServer.value = null
     autoSavePaused.value = true
-    error.value = '恢复副本已载入编辑器，尚未写入服务器；请检查后手动保存'
+    error.value = t('admin-content.postSave.recoveryApplied')
     recovery.persist(localForCompare.value)
   }
   function skipRecovery() {
@@ -198,7 +198,7 @@ export function usePostEditor(id: string | null) {
     recoveryServer.value = null
   }
   function discardRecovery(item: PostRecoveryItem) {
-    if (!window.confirm('移除这份本机恢复副本？服务器内容不会改变，副本删除后无法恢复。')) return
+    if (!window.confirm(t('admin-content.postSave.discardRecoveryConfirm'))) return
     recovery.discard(item.key)
   }
   function continueWithoutRecovery() {
@@ -234,17 +234,12 @@ export function usePostEditor(id: string | null) {
     }
     tags.value = draft.value.tags.join(', ')
     autoSavePaused.value = true
-    error.value = '历史修订已载入，尚未写入服务器；请合并检查后手动保存'
+    error.value = t('admin-content.postSave.historyLoaded')
     recovery.persist(localForCompare.value)
   }
   async function restoreHistorical(historical: number) {
     if (pending.value || !draft.value.id) return
-    if (
-      !window.confirm(
-        '恢复将创建新的服务器草稿；若文章当前公开，将撤回公开内容。未保存输入会先保留为本机副本。确定恢复吗？',
-      )
-    )
-      return
+    if (!window.confirm(t('admin-content.postSave.restoreRevisionConfirm'))) return
     if (dirty.value && !recovery.preserve(localForCompare.value)) return
     pending.value = true
     error.value = ''
@@ -259,11 +254,10 @@ export function usePostEditor(id: string | null) {
       autoSavePaused.value = false
       recovery.clearSaved()
       clearNuxtData((key) => key.startsWith('post-') || key.startsWith('article-'))
-      success('修订已恢复为新的服务器草稿，互动计数保留')
+      success(t('admin-content.postSave.revisionRestored'))
     } catch (cause) {
       autoSavePaused.value = true
-      const message = (cause as { data?: { message?: unknown } }).data?.message
-      error.value = typeof message === 'string' ? message : '修订恢复失败，当前输入仍保留'
+      error.value = apiErrorMessage(cause, 'admin-content.postSave.revisionRestoreFailed', { t })
       if ((cause as { statusCode?: number }).statusCode === 409) {
         try {
           const latest = await api<AdminPostDraft>(`/admin/posts/${draft.value.id}`)
@@ -299,7 +293,7 @@ export function usePostEditor(id: string | null) {
     if (document.visibilityState === 'hidden') persistLocal()
   }
 
-  onBeforeRouteLeave(() => !dirty.value || window.confirm('有尚未保存的内容，确定离开吗？'))
+  onBeforeRouteLeave(() => !dirty.value || window.confirm(t('admin-content.postSave.leaveConfirm')))
   // 路由守卫无法覆盖浏览器刷新与关闭标签页，使用原生离开提示保护未保存内容。
   function warnBeforeUnload(event: BeforeUnloadEvent) {
     if (!dirty.value) return

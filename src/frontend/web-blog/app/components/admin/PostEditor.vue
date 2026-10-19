@@ -5,11 +5,15 @@
 <template>
   <form ref="editorForm" class="post-editor" @submit.prevent="requestSave(draft.status)">
     <AdminActionBar class="post-editor__actions" position="top">
-      <AdminBackLink to="/admin/posts">返回文章列表</AdminBackLink>
-      <span
-        >当前状态：{{ draft.status === 'published' ? '已发布' : draft.status === 'archived' ? '已归档' : '草稿' }}</span
-      >
-      <CommonTooltip :content="`保存（${saveShortcut}）`">
+      <AdminBackLink to="/admin/posts">{{ $t('admin-content.postEditor.backToList') }}</AdminBackLink>
+      <span>{{
+        $t('admin-content.postEditor.currentStatus', {
+          status: $t(
+            `admin-content.postStatus.${draft.status === 'published' || draft.status === 'archived' ? draft.status : 'draft'}`,
+          ),
+        })
+      }}</span>
+      <CommonTooltip :content="$t('admin-content.postEditor.saveTooltip', { shortcut: saveShortcut })">
         <button
           ref="saveButton"
           :aria-busy="pending"
@@ -17,7 +21,13 @@
           :disabled="pending || imageUpload.uploading.value > 0"
           aria-keyshortcuts="Control+S Meta+S"
         >
-          {{ pending ? '保存中…' : draft.status === 'draft' ? '保存草稿' : '保存修改' }}
+          {{
+            pending
+              ? $t('admin-content.postEditor.saving')
+              : draft.status === 'draft'
+                ? $t('admin-content.postEditor.saveDraft')
+                : $t('admin-content.postEditor.saveChanges')
+          }}
         </button>
       </CommonTooltip>
       <button
@@ -26,27 +36,33 @@
         :disabled="pending || imageUpload.uploading.value > 0 || !draft.title.trim() || !draft.contentRaw.trim()"
         @click="requestSave('published')"
       >
-        发布文章
+        {{ $t('admin-content.postEditor.publish') }}
       </button>
       <button v-if="draft.status === 'published'" type="button" :disabled="pending" @click="$emit('save', 'draft')">
-        撤回为草稿
+        {{ $t('admin-content.postEditor.withdraw') }}
       </button>
       <button v-if="draft.status === 'archived'" type="button" :disabled="pending" @click="$emit('save', 'draft')">
-        恢复为草稿
+        {{ $t('admin-content.postEditor.restore') }}
       </button>
-      <NuxtLink v-if="draft.id && draft.status === 'published'" :to="articlePath({ id: draft.id, slug: draft.slug })"
-        >查看公开文章</NuxtLink
-      >
+      <NuxtLink v-if="draft.id && draft.status === 'published'" :to="articlePath({ id: draft.id, slug: draft.slug })">{{
+        $t('admin-content.postEditor.viewPublic')
+      }}</NuxtLink>
     </AdminActionBar>
     <p v-if="error" role="alert">{{ error }}</p>
-    <label>标题<input v-model="draft.title" required maxlength="200" :disabled="pending" /></label>
-    <label>摘要<textarea v-model="draft.summary" maxlength="1000" rows="2" :disabled="pending" /></label>
+    <label
+      >{{ $t('admin-content.postEditor.title')
+      }}<input v-model="draft.title" required maxlength="200" :disabled="pending"
+    /></label>
+    <label
+      >{{ $t('admin-content.postEditor.summary')
+      }}<textarea v-model="draft.summary" maxlength="1000" rows="2" :disabled="pending" />
+    </label>
     <button
       type="button"
       :disabled="pending || !draft.contentRaw.trim()"
       @click="draft.summary = suggestedSummary(draft.contentRaw)"
     >
-      从正文生成摘要
+      {{ $t('admin-content.postEditor.generateSummary') }}
     </button>
     <AdminContentRelations
       v-bind="relations.props.value"
@@ -61,18 +77,21 @@
     />
     <div class="post-editor__fields">
       <label
-        >专栏<input v-model="draft.folder" :list="folderListId" maxlength="64" required :disabled="pending"
+        >{{ $t('admin-content.postEditor.folder')
+        }}<input v-model="draft.folder" :list="folderListId" maxlength="64" required :disabled="pending"
       /></label>
       <datalist :id="folderListId"><option v-for="folder in options.folders" :key="folder" :value="folder" /></datalist>
       <label
-        >类别<select v-model="draft.category" :disabled="pending">
-          <option value="tech">技术</option>
-          <option value="life">生活</option>
+        >{{ $t('admin-content.postEditor.category')
+        }}<select v-model="draft.category" :disabled="pending">
+          <option value="tech">{{ $t('admin-content.postCategory.tech') }}</option>
+          <option value="life">{{ $t('admin-content.postCategory.life') }}</option>
         </select></label
       >
-      <label>标签（逗号分隔）<input v-model="tags" :disabled="pending" /></label>
+      <label>{{ $t('admin-content.postEditor.tags') }}<input v-model="tags" :disabled="pending" /></label>
       <label
-        >阅读分钟<input
+        >{{ $t('admin-content.postEditor.readTime')
+        }}<input
           v-model.number="draft.readTimeMinutes"
           type="number"
           min="1"
@@ -83,11 +102,16 @@
     </div>
     <div class="post-editor__reading">
       <p :id="readingStatsId" data-post-reading-stats>
-        正文字数：{{ readingStats.wordCount.toLocaleString('zh-CN') }}（中文
-        {{ readingStats.chineseCharacters.toLocaleString('zh-CN') }} 字，英文及数字
-        {{ readingStats.words.toLocaleString('zh-CN') }} 词） · 建议阅读时间约 {{ readingStats.minutes }} 分钟
+        {{
+          $t('admin-content.postEditor.readingStats', {
+            total: formatNumber(readingStats.wordCount),
+            chinese: formatNumber(readingStats.chineseCharacters),
+            words: formatNumber(readingStats.words),
+            minutes: readingStats.minutes,
+          })
+        }}
       </p>
-      <CommonTooltip content="按当前正文字数填入阅读分钟，之后仍可手动修改">
+      <CommonTooltip :content="$t('admin-content.postEditor.readingTooltip')">
         <button
           type="button"
           data-post-apply-reading-time
@@ -95,17 +119,22 @@
           :disabled="pending || !readingStats.wordCount"
           @click="applyReadingTime"
         >
-          按字数估算阅读时长
+          {{ $t('admin-content.postEditor.applyReadingTime') }}
         </button>
       </CommonTooltip>
       <p :id="readingHintId" class="post-editor__hint">
-        中文按字、英文及数字按词计数，不计代码块和图片。按中文约 350 字/分钟、英文及数字约 220
-        词/分钟估算；仅点击按钮时填入阅读分钟，可继续手动修改。
+        {{ $t('admin-content.postEditor.readingHint') }}
       </p>
-      <p class="post-editor__hint" role="status" aria-label="阅读时长填入状态">{{ readingTimeStatus }}</p>
+      <p class="post-editor__hint" role="status" :aria-label="$t('admin-content.postEditor.readingStatusLabel')">
+        {{ readingTimeStatus }}
+      </p>
     </div>
-    <div v-if="options.tags.length" class="post-editor__tag-options" aria-label="已有标签">
-      <span>添加已有标签：</span
+    <div
+      v-if="options.tags.length"
+      class="post-editor__tag-options"
+      :aria-label="$t('admin-content.postEditor.existingTags')"
+    >
+      <span>{{ $t('admin-content.postEditor.addExistingTag') }}</span
       ><button
         v-for="tag in options.tags"
         :key="tag"
@@ -117,65 +146,104 @@
       </button>
     </div>
     <label
-      >封面地址<input v-model="draft.cover" maxlength="2048" :disabled="pending" placeholder="https:// 或站内图片路径"
+      >{{ $t('admin-content.postEditor.cover')
+      }}<input
+        v-model="draft.cover"
+        maxlength="2048"
+        :disabled="pending"
+        :placeholder="$t('admin-content.postEditor.coverPlaceholder')"
     /></label>
     <label
-      >封面替代文本<input v-model="draft.coverAlt" maxlength="300" :disabled="pending" placeholder="简要描述图片内容"
+      >{{ $t('admin-content.postEditor.coverAlt')
+      }}<input
+        v-model="draft.coverAlt"
+        maxlength="300"
+        :disabled="pending"
+        :placeholder="$t('admin-content.postEditor.coverAltPlaceholder')"
     /></label>
-    <button type="button" :disabled="pending" @click="openMedia('cover')">从媒体库选择封面</button>
+    <button type="button" :disabled="pending" @click="openMedia('cover')">
+      {{ $t('admin-content.postEditor.pickCover') }}
+    </button>
     <div v-if="draft.cover" class="post-editor__cover-preview">
-      <img v-if="!coverFailed" :src="draft.cover" :alt="draft.coverAlt || '文章封面预览'" @error="coverFailed = true" />
+      <img
+        v-if="!coverFailed"
+        :src="draft.cover"
+        :alt="draft.coverAlt || $t('admin-content.postEditor.coverPreviewAlt')"
+        @error="coverFailed = true"
+      />
       <p v-else role="status">
-        封面预览加载失败，请检查地址或稍后重试。<button type="button" @click="coverFailed = false">重试封面预览</button>
+        {{ $t('admin-content.postEditor.coverFailed')
+        }}<button type="button" @click="coverFailed = false">{{ $t('admin-content.postEditor.retryCover') }}</button>
       </p>
     </div>
-    <section class="post-editor__seo" aria-label="文章地址与 SEO">
-      <h2>文章地址与 SEO</h2>
+    <section class="post-editor__seo" :aria-label="$t('admin-content.postEditor.seoSection')">
+      <h2>{{ $t('admin-content.postEditor.seoSection') }}</h2>
       <label
-        >文章地址标识<input
+        >{{ $t('admin-content.postEditor.slug')
+        }}<input
           v-model="draft.slug"
           maxlength="120"
           pattern="[a-z][a-z0-9]*(-[a-z0-9]+)*"
           :disabled="pending"
-          placeholder="例如 vue-reactivity，留空使用数字地址"
+          :placeholder="$t('admin-content.postEditor.slugPlaceholder')"
           @blur="normalizeSlug"
       /></label>
-      <p>以小写字母开头，只使用小写字母、数字和连字符。修改后旧地址仍指向本文。</p>
+      <p>{{ $t('admin-content.postEditor.slugHint') }}</p>
       <label
-        >SEO 标题<input v-model="draft.seoTitle" maxlength="160" :disabled="pending" placeholder="留空使用文章标题"
+        >{{ $t('admin-content.postEditor.seoTitle')
+        }}<input
+          v-model="draft.seoTitle"
+          maxlength="160"
+          :disabled="pending"
+          :placeholder="$t('admin-content.postEditor.seoTitlePlaceholder')"
       /></label>
       <label
-        >SEO 描述<textarea
+        >{{ $t('admin-content.postEditor.seoDescription')
+        }}<textarea
           v-model="draft.seoDescription"
           maxlength="320"
           rows="3"
           :disabled="pending"
-          placeholder="留空使用文章摘要或正文摘要"
+          :placeholder="$t('admin-content.postEditor.seoDescriptionPlaceholder')"
         />
       </label>
       <label class="post-editor__check"
-        ><input
-          v-model="draft.seoNoindex"
-          type="checkbox"
-          :disabled="pending"
-        />不让搜索引擎收录（文章仍公开可访问）</label
+        ><input v-model="draft.seoNoindex" type="checkbox" :disabled="pending" />{{
+          $t('admin-content.postEditor.noindex')
+        }}</label
       >
-      <div class="post-editor__search-preview" aria-label="搜索结果预览">
-        <strong>{{ draft.seoTitle || draft.title || '文章标题' }}</strong>
+      <div class="post-editor__search-preview" :aria-label="$t('admin-content.postEditor.searchPreview')">
+        <strong>{{ draft.seoTitle || draft.title || $t('admin-content.postEditor.titlePlaceholder') }}</strong>
         <p>{{ addressPreview }}</p>
-        <p>{{ draft.seoDescription || draft.summary || suggestedSummary(draft.contentRaw) || '文章描述' }}</p>
+        <p>
+          {{
+            draft.seoDescription ||
+            draft.summary ||
+            suggestedSummary(draft.contentRaw) ||
+            $t('admin-content.postEditor.descriptionPlaceholder')
+          }}
+        </p>
       </div>
     </section>
-    <label class="post-editor__check"><input v-model="draft.pinned" type="checkbox" :disabled="pending" />置顶</label>
-    <button type="button" :disabled="pending" @click="openMedia('body')">向正文插入媒体图片</button>
+    <label class="post-editor__check"
+      ><input v-model="draft.pinned" type="checkbox" :disabled="pending" />{{
+        $t('admin-content.postEditor.pinned')
+      }}</label
+    >
+    <button type="button" :disabled="pending" @click="openMedia('body')">
+      {{ $t('admin-content.postEditor.insertMedia') }}
+    </button>
     <p :id="bodyHintId" class="post-editor__hint">
-      可直接粘贴或拖入 JPEG、PNG、WebP 图片（单张不超过 8MB），将上传到媒体库并插入正文。
+      {{ $t('admin-content.postEditor.bodyHint') }}
     </p>
-    <p class="post-editor__hint" role="status" aria-label="正文图片上传状态">{{ imageUpload.status.value }}</p>
+    <p class="post-editor__hint" role="status" :aria-label="$t('admin-content.postEditor.uploadStatusLabel')">
+      {{ imageUpload.status.value }}
+    </p>
     <PostOutline :headings="headings" :disabled="pending || composing" @navigate="navigateHeading" />
     <div class="post-editor__body">
       <label
-        >Markdown 正文<textarea
+        >{{ $t('admin-content.postEditor.body')
+        }}<textarea
           ref="bodyInput"
           v-model="draft.contentRaw"
           rows="24"
@@ -189,8 +257,8 @@
           @drop="imageUpload.onDrop"
         />
       </label>
-      <section class="post-editor__preview" aria-label="文章预览">
-        <h2>预览</h2>
+      <section class="post-editor__preview" :aria-label="$t('admin-content.postEditor.previewLabel')">
+        <h2>{{ $t('admin-content.postEditor.preview') }}</h2>
         <ArticleMarkdown :content="draft.contentRaw" />
       </section>
     </div>
@@ -203,38 +271,50 @@
     @close="$emit('reviewing', false)"
   >
     <!-- 打开时焦点落在标题：内容超出高度时默认聚焦底部按钮会把标题和摘要滚出视口 -->
-    <h2 id="publish-check-title" tabindex="-1" autofocus>发布前检查</h2>
-    <p>{{ draft.status === 'published' ? '确认后将更新当前公开文章。' : '确认后文章将公开，访客可以阅读和互动。' }}</p>
+    <h2 id="publish-check-title" tabindex="-1" autofocus>{{ $t('admin-content.postEditor.publishCheck') }}</h2>
+    <p>
+      {{
+        draft.status === 'published'
+          ? $t('admin-content.postEditor.publishUpdate')
+          : $t('admin-content.postEditor.publishNew')
+      }}
+    </p>
     <dl>
-      <dt>标题</dt>
+      <dt>{{ $t('admin-content.postEditor.checkTitle') }}</dt>
       <dd>{{ draft.title }}</dd>
-      <dt>文章地址</dt>
+      <dt>{{ $t('admin-content.postEditor.checkAddress') }}</dt>
       <dd>{{ addressPreview }}</dd>
-      <dt>专栏与标签</dt>
-      <dd>{{ draft.folder }} · {{ selectedTags.join('、') || '无标签' }}</dd>
-      <dt>搜索收录</dt>
-      <dd>{{ draft.seoNoindex ? '不收录，但仍公开可访问' : '允许收录，并进入站点地图' }}</dd>
-      <dt>有序关联</dt>
+      <dt>{{ $t('admin-content.postEditor.checkTaxonomy') }}</dt>
+      <dd>
+        {{ draft.folder }} ·
+        {{ selectedTags.join($t('admin-content.postEditor.tagSeparator')) || $t('admin-content.postEditor.noTags') }}
+      </dd>
+      <dt>{{ $t('admin-content.postEditor.checkIndexing') }}</dt>
+      <dd>
+        {{ draft.seoNoindex ? $t('admin-content.postEditor.indexingOff') : $t('admin-content.postEditor.indexingOn') }}
+      </dd>
+      <dt>{{ $t('admin-content.postEditor.checkRelations') }}</dt>
       <dd>{{ contentRelationSummary(draft.relatedContent) }}</dd>
-      <dt>摘要</dt>
+      <dt>{{ $t('admin-content.postEditor.checkSummary') }}</dt>
       <dd>{{ draft.seoDescription || draft.summary || suggestedSummary(draft.contentRaw) }}</dd>
     </dl>
-    <p v-if="!draft.cover">未设置封面，将以无封面样式展示。</p>
-    <p v-if="coverFailed">封面预览失败，确认地址正确后再发布。</p>
+    <p v-if="!draft.cover">{{ $t('admin-content.postEditor.noCover') }}</p>
+    <p v-if="coverFailed">{{ $t('admin-content.postEditor.coverCheckFailed') }}</p>
     <section v-if="hasMissingAlt" class="post-editor__alt-warnings" aria-labelledby="publish-alt-title">
-      <h3 id="publish-alt-title">替代文本警告</h3>
-      <p id="publish-alt-description">以下图片缺少替代文本，读屏用户可能无法理解图片内容。可返回补充，也可仍然发布。</p>
+      <h3 id="publish-alt-title">{{ $t('admin-content.postEditor.altWarning') }}</h3>
+      <p id="publish-alt-description">{{ $t('admin-content.postEditor.altDescription') }}</p>
       <ul>
-        <li v-if="missingCoverAlt">封面缺少替代文本，请填写“封面替代文本”。</li>
+        <li v-if="missingCoverAlt">{{ $t('admin-content.postEditor.altCover') }}</li>
         <li v-for="image in missingImageAlts" :key="image.imageNumber">
-          正文第 {{ image.imageNumber }} 张图片（第 {{ image.line }} 行）缺少替代文本。
+          {{ $t('admin-content.postEditor.altImage', { image: image.imageNumber, line: image.line }) }}
         </li>
       </ul>
     </section>
-    <p>地址唯一性会在保存时再次校验；保存失败不会清空输入。</p>
-    <button type="button" :disabled="pending" @click="publishDialog?.close()">返回编辑</button
+    <p>{{ $t('admin-content.postEditor.slugCheckHint') }}</p>
+    <button type="button" :disabled="pending" @click="publishDialog?.close()">
+      {{ $t('admin-content.postEditor.backToEdit') }}</button
     ><button type="button" :disabled="pending" @click="confirmPublish">
-      {{ hasMissingAlt ? '仍然公开发布' : '确认公开发布' }}
+      {{ hasMissingAlt ? $t('admin-content.postEditor.publishAnyway') : $t('admin-content.postEditor.confirmPublish') }}
     </button>
   </dialog>
   <AdminMediaPicker v-model:open="mediaOpen" @selected="selectMedia" />
@@ -249,6 +329,7 @@ import PostOutline from './PostOutline.vue'
 import { postHeadings } from '~/features/post/outline'
 import type { PostHeading } from '~/features/post/outline'
 import { focusTextareaHeading } from '~/utils/textareaHeadingPosition'
+const { t } = useI18n()
 const draft = defineModel<AdminPostDraft>({ required: true })
 const tags = defineModel<string>('tags', { required: true })
 const props = withDefaults(
@@ -343,11 +424,11 @@ const readingTimeStatus = ref('')
 function applyReadingTime() {
   if (props.pending || !readingStats.value.wordCount) return
   draft.value.readTimeMinutes = readingStats.value.minutes
-  readingTimeStatus.value = `已填入 ${readingStats.value.minutes} 分钟，可继续手动修改。`
+  readingTimeStatus.value = t('admin-content.postEditor.readingApplied', { minutes: readingStats.value.minutes })
 }
 const siteUrl = String(useRuntimeConfig().public.siteUrl).replace(/\/$/, '')
 const addressPreview = computed(
-  () => `${siteUrl}/articles/${draft.value.slug || draft.value.id || '保存后分配文章编号'}`,
+  () => `${siteUrl}/articles/${draft.value.slug || draft.value.id || t('admin-content.postEditor.addressPending')}`,
 )
 function normalizeSlug() {
   draft.value.slug = (draft.value.slug ?? '').trim().toLowerCase()

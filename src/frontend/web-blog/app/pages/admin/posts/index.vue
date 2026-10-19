@@ -4,50 +4,69 @@
 -->
 <template>
   <section class="admin-posts">
-    <h1>文章管理</h1>
+    <h1>{{ $t('admin-content.postList.title') }}</h1>
     <ClientOnly>
       <div v-if="isLoggedIn">
         <form class="admin-posts__filters" @submit.prevent="resetPage">
-          <NuxtLink to="/admin/posts/new">新建文章</NuxtLink>
-          <input v-model="search" placeholder="搜索文章标题" aria-label="搜索文章标题" />
-          <select v-model="status" aria-label="文章状态" @change="resetPage">
-            <option value="">全部状态</option>
-            <option value="draft">草稿</option>
-            <option value="published">已发布</option>
-            <option value="archived">已归档</option>
-            <option value="trash">回收站</option>
+          <NuxtLink to="/admin/posts/new">{{ $t('admin-content.postList.newPost') }}</NuxtLink>
+          <input
+            v-model="search"
+            :placeholder="$t('admin-content.postList.searchPlaceholder')"
+            :aria-label="$t('admin-content.postList.searchPlaceholder')"
+          />
+          <select v-model="status" :aria-label="$t('admin-content.postList.statusFilter')" @change="resetPage">
+            <option value="">{{ $t('admin-content.postList.allStatuses') }}</option>
+            <option value="draft">{{ $t('admin-content.postStatus.draft') }}</option>
+            <option value="published">{{ $t('admin-content.postStatus.published') }}</option>
+            <option value="archived">{{ $t('admin-content.postStatus.archived') }}</option>
+            <option value="trash">{{ $t('admin-content.postStatus.trash') }}</option>
           </select>
-          <select v-model="category" aria-label="内容类型" @change="resetPage">
-            <option value="">全部类型</option>
-            <option value="tech">技术</option>
-            <option value="life">生活</option>
+          <select v-model="category" :aria-label="$t('admin-content.postList.categoryFilter')" @change="resetPage">
+            <option value="">{{ $t('admin-content.postList.allCategories') }}</option>
+            <option value="tech">{{ $t('admin-content.postCategory.tech') }}</option>
+            <option value="life">{{ $t('admin-content.postCategory.life') }}</option>
           </select>
-          <select v-model="folder" aria-label="专栏筛选" @change="resetPage">
-            <option value="">全部专栏</option>
+          <select v-model="folder" :aria-label="$t('admin-content.postList.folderFilter')" @change="resetPage">
+            <option value="">{{ $t('admin-content.postList.allFolders') }}</option>
             <option v-for="value in filters.folders" :key="value" :value="value">{{ value }}</option>
           </select>
-          <select v-model="tag" aria-label="标签筛选" @change="resetPage">
-            <option value="">全部标签</option>
+          <select v-model="tag" :aria-label="$t('admin-content.postList.tagFilter')" @change="resetPage">
+            <option value="">{{ $t('admin-content.postList.allTags') }}</option>
             <option v-for="value in filters.tags" :key="value" :value="value">{{ value }}</option>
           </select>
-          <select v-model="sort" aria-label="排序字段" @change="applyOrdering('sort', $event)">
-            <option value="updatedAt">更新时间</option>
-            <option value="publishedAt">发布时间</option>
-            <option value="title">标题</option>
+          <select
+            v-model="sort"
+            :aria-label="$t('admin-content.postList.sortField')"
+            @change="applyOrdering('sort', $event)"
+          >
+            <option value="updatedAt">{{ $t('admin-content.postList.sortUpdatedAt') }}</option>
+            <option value="publishedAt">{{ $t('admin-content.postList.sortPublishedAt') }}</option>
+            <option value="title">{{ $t('admin-content.postList.sortTitle') }}</option>
           </select>
-          <select v-model="order" aria-label="排序方向" @change="applyOrdering('order', $event)">
-            <option value="desc">降序</option>
-            <option value="asc">升序</option>
+          <select
+            v-model="order"
+            :aria-label="$t('admin-content.postList.sortOrder')"
+            @change="applyOrdering('order', $event)"
+          >
+            <option value="desc">{{ $t('admin-content.postList.desc') }}</option>
+            <option value="asc">{{ $t('admin-content.postList.asc') }}</option>
           </select>
-          <button :aria-busy="pending" type="submit" :disabled="pending">搜索</button>
-          <button type="button" :disabled="pending" @click="clearFilters">清除筛选</button>
+          <button :aria-busy="pending" type="submit" :disabled="pending">
+            {{ $t('admin-content.postList.search') }}
+          </button>
+          <button type="button" :disabled="pending" @click="clearFilters">
+            {{ $t('admin-content.postList.clearFilters') }}
+          </button>
         </form>
         <p v-if="filterError" role="alert">
-          筛选选项加载失败 <button type="button" @click="loadFilters">重试选项</button>
+          {{ $t('admin-content.postList.filtersFailed') }}
+          <button type="button" @click="loadFilters">{{ $t('admin-content.postList.retryFilters') }}</button>
         </p>
-        <p v-if="error" role="alert">{{ error }} <button type="button" @click="load">重试</button></p>
-        <p v-if="pending" role="status">正在加载文章…</p>
-        <div class="admin-posts__batch" role="group" aria-label="文章批量操作">
+        <p v-if="error" role="alert">
+          {{ error }} <button type="button" @click="load">{{ $t('admin-content.postList.retry') }}</button>
+        </p>
+        <p v-if="pending" role="status">{{ $t('admin-content.postList.loading') }}</p>
+        <div class="admin-posts__batch" role="group" :aria-label="$t('admin-content.postList.batchGroup')">
           <label
             ><input
               ref="pageToggle"
@@ -55,19 +74,21 @@
               :checked="allSelected"
               :disabled="selectionDisabled || !items.length"
               @change="togglePage($event)"
-            />选择本页全部</label
+            />{{ $t('admin-content.postList.selectPage') }}</label
           >
-          <span role="status" aria-live="polite" aria-atomic="true">已选 {{ selectedCount }} 篇（跨页保留）</span>
+          <span role="status" aria-live="polite" aria-atomic="true">{{
+            $t('admin-content.postList.selectedCount', { count: selectedCount })
+          }}</span>
           <button
             type="button"
             :disabled="batch.pending.value || (!selectedCount && !selectingAll)"
             @click="clearSelection"
           >
-            {{ selectingAll ? '取消全选并清空' : '清空选择' }}
+            {{
+              selectingAll ? $t('admin-content.postList.cancelSelectAll') : $t('admin-content.postList.clearSelection')
+            }}
           </button>
-          <CommonTooltip
-            :content="`按当前已应用的筛选读取全部文章；最多 ${POST_SELECTION_LIMIT} 篇，超限请缩小筛选范围。`"
-          >
+          <CommonTooltip :content="$t('admin-content.postList.selectAllHint', { limit: POST_SELECTION_LIMIT })">
             <button
               type="button"
               :aria-busy="selectingAll"
@@ -75,79 +96,98 @@
               aria-describedby="post-selection-help"
               @click="selectAllFiltered"
             >
-              {{ selectingAll ? '正在读取筛选结果…' : '选择全部筛选结果' }}
+              {{ selectingAll ? $t('admin-content.postList.selectingAll') : $t('admin-content.postList.selectAll') }}
             </button>
           </CommonTooltip>
-          <select v-model="batchAction" aria-label="批量操作" :disabled="selectionDisabled">
-            <option v-for="(label, action) in postBatchLabels" :key="action" :value="action">{{ label }}</option>
+          <select
+            v-model="batchAction"
+            :aria-label="$t('admin-content.postList.batchAction')"
+            :disabled="selectionDisabled"
+          >
+            <option v-for="action in postBatchActions" :key="action" :value="action">
+              {{ $t(postBatchLabelKey(action)) }}
+            </option>
           </select>
           <button type="button" :disabled="selectionDisabled || !selectedCount" @click="reviewBatch">
-            预览批量操作
+            {{ $t('admin-content.postList.reviewBatch') }}
           </button>
         </div>
         <p id="post-selection-help" class="admin-posts__help">
-          翻页和排序保留选择；更改筛选后清空。最多选择 {{ POST_SELECTION_LIMIT }} 篇，每批最多
-          {{ POST_BATCH_LIMIT }} 篇，逐批预览并确认。{{
-            total > POST_SELECTION_LIMIT ? '筛选结果超过上限，请缩小范围后全选。' : ''
-          }}
+          {{ $t('admin-content.postList.selectionHelp', { selection: POST_SELECTION_LIMIT, batch: POST_BATCH_LIMIT })
+          }}{{ total > POST_SELECTION_LIMIT ? $t('admin-content.postList.selectionOverLimit') : '' }}
         </p>
         <p v-if="selectionError" role="alert">{{ selectionError }}</p>
-        <div class="admin-posts__table" role="region" aria-label="文章列表，宽屏可横向滚动" tabindex="0">
+        <div
+          class="admin-posts__table"
+          role="region"
+          :aria-label="$t('admin-content.postList.tableRegion')"
+          tabindex="0"
+        >
           <table>
             <thead>
               <tr>
-                <th>标题</th>
-                <th>状态</th>
-                <th>分类与标签</th>
-                <th>更新时间</th>
-                <th>操作</th>
+                <th>{{ $t('admin-content.postList.colTitle') }}</th>
+                <th>{{ $t('admin-content.postList.colStatus') }}</th>
+                <th>{{ $t('admin-content.postList.colTaxonomy') }}</th>
+                <th>{{ $t('admin-content.postList.colUpdatedAt') }}</th>
+                <th>{{ $t('admin-content.postList.colActions') }}</th>
               </tr>
             </thead>
             <tbody>
               <tr v-for="post in items" :key="post.id">
-                <td data-label="标题">
+                <td :data-label="$t('admin-content.postList.colTitle')">
                   <input
                     type="checkbox"
                     :checked="selection.isSelected(post.id)"
-                    :aria-label="`选择文章：${post.title}`"
+                    :aria-label="$t('admin-content.postList.selectPost', { title: post.title })"
                     :disabled="selectionDisabled"
                     @change="togglePost(post.id, $event)"
                   />
-                  <Icon v-if="post.pinned" name="lucide:pin" aria-label="已置顶" />{{ post.title }}
+                  <Icon v-if="post.pinned" name="lucide:pin" :aria-label="$t('admin-content.postList.pinned')" />{{
+                    post.title
+                  }}
                 </td>
-                <td data-label="状态">{{ post.deleted ? '回收站' : statusLabels[post.status] }}</td>
-                <td data-label="分类与标签">
-                  {{ post.category === 'tech' ? '技术' : '生活' }} / {{ post.folder
-                  }}<small>{{ post.tags.join(' · ') || '无标签' }}</small>
+                <td :data-label="$t('admin-content.postList.colStatus')">
+                  {{ $t(`admin-content.postStatus.${post.deleted ? 'trash' : post.status}`) }}
                 </td>
-                <td data-label="更新时间">{{ new Date(post.updatedAt).toLocaleString('zh-CN', { hour12: false }) }}</td>
-                <td data-label="操作">
-                  <NuxtLink v-if="!post.deleted" :to="`/admin/posts/${post.id}`">编辑</NuxtLink
+                <td :data-label="$t('admin-content.postList.colTaxonomy')">
+                  {{ $t(`admin-content.postCategory.${post.category === 'tech' ? 'tech' : 'life'}`) }} / {{ post.folder
+                  }}<small>{{ post.tags.join(' · ') || $t('admin-content.postList.noTags') }}</small>
+                </td>
+                <td :data-label="$t('admin-content.postList.colUpdatedAt')">
+                  {{ formatDateTime(post.updatedAt, { hour12: false }) }}
+                </td>
+                <td :data-label="$t('admin-content.postList.colActions')">
+                  <NuxtLink v-if="!post.deleted" :to="`/admin/posts/${post.id}`">{{
+                    $t('admin-content.postList.edit')
+                  }}</NuxtLink
                   ><button
                     v-if="post.status !== 'archived' && !post.deleted"
                     type="button"
                     :disabled="navigationDisabled"
                     @click="archive(post)"
                   >
-                    归档
+                    {{ $t('admin-content.postList.archive') }}
                   </button>
                   <button v-else type="button" :disabled="navigationDisabled" @click="restorePost(post)">
-                    恢复为草稿
+                    {{ $t('admin-content.postList.restore') }}
                   </button>
                 </td>
               </tr>
             </tbody>
           </table>
         </div>
-        <p v-if="!pending && !error && !items.length">暂无文章</p>
-        <nav class="admin-posts__pagination" aria-label="文章列表分页">
-          <button type="button" :disabled="navigationDisabled || page <= 1" @click="goToPage(page - 1)">上一页</button>
+        <p v-if="!pending && !error && !items.length">{{ $t('admin-content.postList.empty') }}</p>
+        <nav class="admin-posts__pagination" :aria-label="$t('admin-content.postList.pagination')">
+          <button type="button" :disabled="navigationDisabled || page <= 1" @click="goToPage(page - 1)">
+            {{ $t('admin-content.postList.prevPage') }}
+          </button>
           <template v-for="(entry, index) in pageEntries" :key="index">
             <span v-if="entry === 'ellipsis'" aria-hidden="true">…</span>
             <button
               v-else
               type="button"
-              :aria-label="`第 ${entry} 页`"
+              :aria-label="$t('admin-content.postList.pageLabel', { page: entry })"
               :aria-current="entry === page ? 'page' : undefined"
               :disabled="navigationDisabled"
               @click="goToPage(entry)"
@@ -156,11 +196,13 @@
             </button>
           </template>
           <button type="button" :disabled="navigationDisabled || page >= totalPages" @click="goToPage(page + 1)">
-            下一页
+            {{ $t('admin-content.postList.nextPage') }}
           </button>
-          <span role="status" aria-live="polite">第 {{ page }} / {{ totalPages }} 页 · 共 {{ total }} 篇</span>
+          <span role="status" aria-live="polite">{{
+            $t('admin-content.postList.pageStatus', { page, totalPages, total })
+          }}</span>
           <form class="admin-posts__jump" @submit.prevent="jumpToPage">
-            <label for="admin-posts-page">跳至页码</label>
+            <label for="admin-posts-page">{{ $t('admin-content.postList.jumpLabel') }}</label>
             <input
               id="admin-posts-page"
               v-model="jumpPage"
@@ -172,7 +214,7 @@
               required
               :disabled="navigationDisabled"
             />
-            <button type="submit" :disabled="navigationDisabled">跳转</button>
+            <button type="submit" :disabled="navigationDisabled">{{ $t('admin-content.postList.jump') }}</button>
           </form>
         </nav>
         <AdminPostBatch
@@ -191,34 +233,47 @@
           @query="batch.queryResult"
           @next="batch.nextBatch"
         />
-        <section class="admin-posts__history" aria-label="最近批量操作">
-          <h2>最近批量操作</h2>
-          <p>最近 10 次已开始的操作，刷新页面后仍可查看结果。</p>
+        <section class="admin-posts__history" :aria-label="$t('admin-content.postList.recentTitle')">
+          <h2>{{ $t('admin-content.postList.recentTitle') }}</h2>
+          <p>{{ $t('admin-content.postList.recentHint') }}</p>
           <p v-if="batch.recentError.value" role="alert">
-            {{ batch.recentError.value }} <button type="button" @click="batch.loadRecent">重试记录</button>
+            {{ batch.recentError.value }}
+            <button type="button" @click="batch.loadRecent">{{ $t('admin-content.postList.retryRecent') }}</button>
           </p>
-          <p v-else-if="!batch.recent.value.length">暂无执行记录</p>
+          <p v-else-if="!batch.recent.value.length">{{ $t('admin-content.postList.recentEmpty') }}</p>
           <ul>
             <li v-for="item in batch.recent.value" :key="item.ticket">
               <button type="button" :disabled="batch.pending.value" @click="batch.inspect(item.ticket)">
-                {{ postBatchLabels[item.action] }} · {{ item.count }} 篇 ·
-                {{ new Date(item.createdAt).toLocaleString('zh-CN', { hour12: false }) }} ·
-                {{ item.completed ? '已结束' : '尚未完成' }}
+                {{
+                  $t('admin-content.postList.recentItem', {
+                    action: $t(postBatchLabelKey(item.action)),
+                    count: item.count,
+                    time: formatDateTime(item.createdAt, { hour12: false }),
+                    state: item.completed
+                      ? $t('admin-content.postList.recentCompleted')
+                      : $t('admin-content.postList.recentPending'),
+                  })
+                }}
               </button>
             </li>
           </ul>
         </section>
       </div>
-      <p v-else>请先<NuxtLink to="/admin/login">登录博主账号</NuxtLink>。</p>
+      <i18n-t v-else keypath="admin-content.postList.loginPrompt" tag="p" scope="global">
+        <template #link>
+          <NuxtLink to="/admin/login">{{ $t('admin-content.postList.loginLink') }}</NuxtLink>
+        </template>
+      </i18n-t>
     </ClientOnly>
   </section>
 </template>
 <script setup lang="ts">
-import { POST_BATCH_LIMIT, POST_SELECTION_LIMIT, postBatchLabels } from '~/features/post/batchTypes'
+import { POST_BATCH_LIMIT, POST_SELECTION_LIMIT, postBatchActions, postBatchLabelKey } from '~/features/post/batchTypes'
 import type { PostBatchAction } from '~/features/post/batchTypes'
 import type { AdminPostListRow as Row } from '~/features/post/types'
 definePageMeta({ layout: 'admin', key: '/admin/posts' })
-useSeoMeta({ title: '文章管理', robots: 'noindex, nofollow' })
+const { t } = useI18n()
+useSeoMeta({ title: () => t('admin-content.postList.title'), robots: 'noindex, nofollow' })
 const { isLoggedIn, currentUser, restore } = useCurrentUser()
 const contentContext = useState<string>('page-content-context', () => '')
 const { success } = useToast()
@@ -231,6 +286,8 @@ const page = ref(1)
 const pageSize = 20
 // 与管理列表 DTO 的 pageSize 上限一致，全选时按此分页读取。
 const filterPageSize = 100
+/** 全选过程中检测到筛选结果变化：提示文案可直接展示，与读取失败区分 */
+class FilterChangedError extends Error {}
 const jumpPage = ref<number | string>(1)
 const pageToggle = ref<HTMLInputElement | null>(null)
 const totalPages = computed(() => Math.max(1, Math.ceil(total.value / pageSize)))
@@ -294,7 +351,7 @@ function togglePost(id: number, event: Event) {
   const input = event.target as HTMLInputElement
   selectionError.value = selection.toggle(id, input.checked)
     ? ''
-    : `最多选择 ${POST_SELECTION_LIMIT} 篇，请先清空部分选择。`
+    : t('admin-content.postList.selectionLimit', { limit: POST_SELECTION_LIMIT })
   input.checked = selection.isSelected(id)
 }
 function togglePage(event: Event) {
@@ -302,7 +359,7 @@ function togglePage(event: Event) {
   const input = event.target as HTMLInputElement
   selectionError.value = selection.toggleAll(input.checked)
     ? ''
-    : `最多选择 ${POST_SELECTION_LIMIT} 篇，本页未加入选择。`
+    : t('admin-content.postList.pageSelectionLimit', { limit: POST_SELECTION_LIMIT })
   input.checked = allSelected.value
   input.indeterminate = partiallySelected.value
 }
@@ -330,27 +387,24 @@ async function selectAllFiltered() {
       })
       if (version !== selectionVersion) return
       if (result.total !== expectedTotal || result.items.length !== Math.min(filterPageSize, expectedTotal - rows.size))
-        throw new Error('筛选结果已变化，请刷新列表后重新全选。')
+        throw new FilterChangedError(t('admin-content.postList.filterChanged'))
       for (const row of result.items) {
-        if (rows.has(row.id)) throw new Error('筛选结果顺序已变化，请刷新列表后重新全选。')
+        if (rows.has(row.id)) throw new FilterChangedError(t('admin-content.postList.filterReordered'))
         rows.set(row.id, row)
       }
     }
     if (version !== selectionVersion) return
-    if (rows.size !== expectedTotal) throw new Error('筛选结果已变化，请刷新列表后重新全选。')
+    if (rows.size !== expectedTotal) throw new FilterChangedError(t('admin-content.postList.filterChanged'))
     selection.replaceSelection([...rows.values()])
   } catch (cause) {
     if (version === selectionVersion)
       selectionError.value =
-        cause instanceof Error && cause.message.startsWith('筛选结果')
-          ? cause.message
-          : '读取全部筛选结果失败，原有选择已保留，请重试。'
+        cause instanceof FilterChangedError ? cause.message : t('admin-content.postList.selectAllFailed')
   } finally {
     if (version === selectionVersion) selectingAll.value = false
   }
 }
 let requestVersion = 0
-const statusLabels = { draft: '草稿', published: '已发布', archived: '已归档' }
 function syncQuery() {
   const text = (key: string) => (typeof route.query[key] === 'string' ? (route.query[key] as string) : '')
   const nextStatus = ['draft', 'published', 'archived', 'trash'].includes(text('status')) ? text('status') : ''
@@ -463,7 +517,7 @@ async function load() {
   } catch {
     if (version === requestVersion) {
       items.value = []
-      error.value = '文章列表加载失败，请检查登录状态后重试'
+      error.value = t('admin-content.postList.loadFailed')
     }
   } finally {
     if (version === requestVersion) pending.value = false
@@ -474,8 +528,8 @@ async function changeStatus(post: Row, restoreArchived: boolean) {
   if (
     !window.confirm(
       restoreArchived
-        ? `将“${post.title}”恢复为草稿？恢复后仍不公开。`
-        : `将“${post.title}”移入归档？文章及评论保留，可恢复为草稿。`,
+        ? t('admin-content.postList.restoreConfirm', { title: post.title })
+        : t('admin-content.postList.archiveConfirm', { title: post.title }),
     )
   )
     return
@@ -487,11 +541,13 @@ async function changeStatus(post: Row, restoreArchived: boolean) {
       query: { revision: post.revision },
     })
     clearNuxtData((key) => key.startsWith('article-') || key.startsWith('post-'))
-    success(restoreArchived ? '已恢复为草稿' : '文章已归档')
+    success(restoreArchived ? t('admin-content.postList.restored') : t('admin-content.postList.archived'))
     selection.remove([post.id])
     await load()
   } catch {
-    error.value = restoreArchived ? '恢复失败，请稍后重试' : '归档失败，请稍后重试'
+    error.value = restoreArchived
+      ? t('admin-content.postList.restoreFailed')
+      : t('admin-content.postList.archiveFailed')
   } finally {
     working.value = false
   }

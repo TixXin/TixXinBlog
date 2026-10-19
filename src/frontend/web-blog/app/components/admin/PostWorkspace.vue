@@ -5,34 +5,54 @@
 <template>
   <section class="post-workspace">
     <p v-if="error && !ready" role="alert">{{ error }}</p>
-    <NuxtLink v-if="draft.deletedAt" to="/admin/posts?status=trash">前往文章回收站</NuxtLink>
+    <NuxtLink v-if="draft.deletedAt" to="/admin/posts?status=trash">{{
+      $t('admin-content.postWorkspace.goToTrash')
+    }}</NuxtLink>
     <ClientOnly>
-      <section v-if="ready" class="post-workspace__saving" aria-label="文章保存状态">
+      <section v-if="ready" class="post-workspace__saving" :aria-label="$t('admin-content.postWorkspace.savingStatus')">
         <p>
-          服务器：{{
-            automaticSaving
-              ? '正在自动保存草稿…'
-              : pending
-                ? '正在保存…'
-                : draft.savedAt
-                  ? `已保存于 ${formatDate(draft.savedAt)} · 版本 ${draft.revision}`
-                  : '尚未保存'
+          {{
+            $t('admin-content.postWorkspace.server', {
+              state: automaticSaving
+                ? $t('admin-content.postWorkspace.autoSaving')
+                : pending
+                  ? $t('admin-content.postWorkspace.saving')
+                  : draft.savedAt
+                    ? $t('admin-content.postWorkspace.savedAtRevision', {
+                        time: formatTime(draft.savedAt),
+                        revision: draft.revision,
+                      })
+                    : $t('admin-content.postWorkspace.notSaved'),
+            })
           }}
         </p>
         <p>
-          本机恢复副本：{{
-            recovery.localSavedAt.value ? `已保存于 ${formatDate(recovery.localSavedAt.value)}` : '输入修改后自动保存'
-          }}。本机副本不会发布内容。
+          {{
+            $t('admin-content.postWorkspace.local', {
+              state: recovery.localSavedAt.value
+                ? $t('admin-content.postWorkspace.savedAt', { time: formatTime(recovery.localSavedAt.value) })
+                : $t('admin-content.postWorkspace.localAuto'),
+            })
+          }}
         </p>
         <p v-if="recovery.localError.value" role="alert">
-          {{ recovery.localError.value }} <button type="button" @click="persistLocal">重试本机保存</button>
+          {{ recovery.localError.value }}
+          <button type="button" @click="persistLocal">{{ $t('admin-content.postWorkspace.retryLocal') }}</button>
         </p>
-        <label><input v-model="serverAutoSave" type="checkbox" />空闲 15 秒后自动保存服务器草稿</label>
+        <label
+          ><input v-model="serverAutoSave" type="checkbox" />{{
+            $t('admin-content.postWorkspace.autoSaveToggle')
+          }}</label
+        >
         <p v-if="draft.status !== 'draft'">
-          当前文章{{ draft.status === 'published' ? '已发布' : '已归档' }}，自动保存仅写本机副本；服务器内容需手动保存。
+          {{
+            draft.status === 'published'
+              ? $t('admin-content.postWorkspace.nonDraftPublished')
+              : $t('admin-content.postWorkspace.nonDraftArchived')
+          }}
         </p>
-        <p v-if="autoSavePaused">服务器自动保存已暂停，请比较恢复内容或冲突后手动保存。</p>
-        <p v-if="dirty">有尚未保存到服务器的修改。</p>
+        <p v-if="autoSavePaused">{{ $t('admin-content.postWorkspace.autoSavePaused') }}</p>
+        <p v-if="dirty">{{ $t('admin-content.postWorkspace.dirty') }}</p>
       </section>
       <AdminPostPreviewLink
         v-if="ready"
@@ -49,21 +69,32 @@
         @generate="preview.generate"
         @copy="preview.copy"
       />
-      <section v-if="recovery.recoveries.value.length" class="post-workspace__recoveries" aria-label="本机恢复副本">
-        <h2>发现本机恢复副本</h2>
-        <p>这些内容可能来自上次刷新、断网或其他编辑标签页。请先比较，再决定是否载入。</p>
+      <section
+        v-if="recovery.recoveries.value.length"
+        class="post-workspace__recoveries"
+        :aria-label="$t('admin-content.postWorkspace.recoveriesLabel')"
+      >
+        <h2>{{ $t('admin-content.postWorkspace.recoveriesTitle') }}</h2>
+        <p>{{ $t('admin-content.postWorkspace.recoveriesHint') }}</p>
         <ul>
           <li v-for="item in recovery.recoveries.value" :key="item.key">
-            <span
-              >{{ item.draft.title || '未命名草稿' }} · {{ formatDate(item.savedAt) }} · 基于版本
-              {{ item.draft.revision ?? '新建' }}</span
-            >
+            <span>{{
+              $t('admin-content.postWorkspace.recoveryItem', {
+                title: item.draft.title || $t('admin-content.postWorkspace.untitled'),
+                time: formatTime(item.savedAt),
+                revision: item.draft.revision ?? $t('admin-content.postWorkspace.newRevision'),
+              })
+            }}</span>
             <button type="button" :disabled="pending || recoveryReviewPending" @click="reviewRecovery(item)">
-              比较恢复副本</button
-            ><button type="button" :disabled="pending" @click="discardRecovery(item)">移除副本</button>
+              {{ $t('admin-content.postWorkspace.compareRecovery') }}</button
+            ><button type="button" :disabled="pending" @click="discardRecovery(item)">
+              {{ $t('admin-content.postWorkspace.discardRecovery') }}
+            </button>
           </li>
         </ul>
-        <button type="button" :disabled="pending" @click="continueWithoutRecovery">暂不恢复，继续编辑当前内容</button>
+        <button type="button" :disabled="pending" @click="continueWithoutRecovery">
+          {{ $t('admin-content.postWorkspace.continueWithout') }}
+        </button>
       </section>
     </ClientOnly>
     <AdminPostConflict
@@ -77,17 +108,20 @@
       v-if="recoverySelection && recoveryServer"
       :local="recoverySelection.draft"
       :server="recoveryServer"
-      title="恢复副本与服务器内容比较"
-      description="载入只改变编辑器，不会立即写入服务器；请检查并合并后手动保存。"
-      local-label="本机副本"
-      server-label="最新服务器"
-      use-server-label="取消恢复，保留副本"
-      keep-local-label="载入本机副本继续编辑"
+      :title="$t('admin-content.postWorkspace.compareTitle')"
+      :description="$t('admin-content.postWorkspace.compareDescription')"
+      :local-label="$t('admin-content.postWorkspace.compareLocal')"
+      :server-label="$t('admin-content.postWorkspace.compareServer')"
+      :use-server-label="$t('admin-content.postWorkspace.compareUseServer')"
+      :keep-local-label="$t('admin-content.postWorkspace.compareKeepLocal')"
       @use-server="skipRecovery"
       @keep-local="applyRecovery"
     />
     <p v-if="preservedLocal">
-      此前输入已保留为本机副本。<button type="button" @click="recoverPreservedLocal">恢复此前输入继续编辑</button>
+      {{ $t('admin-content.postWorkspace.preserved')
+      }}<button type="button" @click="recoverPreservedLocal">
+        {{ $t('admin-content.postWorkspace.recoverPreserved') }}
+      </button>
     </p>
     <ClientOnly
       ><AdminPostEditor
@@ -147,8 +181,8 @@ const {
   reviewingPublication,
 } = usePostEditor(props.id)
 const preview = usePostPreviewLink(draft, pending)
-function formatDate(value: string) {
-  return new Date(value).toLocaleString('zh-CN', { hour12: false })
+function formatTime(value: string) {
+  return formatDateTime(value, { hour12: false })
 }
 </script>
 <style scoped lang="scss">

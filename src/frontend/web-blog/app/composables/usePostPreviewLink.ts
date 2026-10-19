@@ -5,6 +5,7 @@ import type { PostPreviewLink } from '~/features/post/types'
 
 export function usePostPreviewLink(draft: Ref<AdminPostDraft>, busy: Ref<boolean>) {
   const api = useAdminApi()
+  const { t } = useI18n()
   const auth = useCurrentUser()
   const context = useState<string>('page-content-context', () => '')
   const link = ref<PostPreviewLink | null>(null)
@@ -52,11 +53,10 @@ export function usePostPreviewLink(draft: Ref<AdminPostDraft>, busy: Ref<boolean
       const result = await api<PostPreviewLink>(`/admin/posts/${postId}/preview-link`, { method: 'POST' })
       if (!alive || generation !== current) return
       link.value = result
-      notice.value = '预览链接已生成，可复制分享。'
+      notice.value = t('admin-content.postPreview.generated')
     } catch (cause) {
       if (!alive || generation !== current) return
-      const message = (cause as { data?: { message?: unknown } }).data?.message
-      error.value = typeof message === 'string' ? message : '预览链接生成失败，请检查登录状态后重试。'
+      error.value = apiErrorMessage(cause, 'admin-content.postPreview.generateFailed', { t })
     } finally {
       if (alive && generation === current) pending.value = false
     }
@@ -71,9 +71,9 @@ export function usePostPreviewLink(draft: Ref<AdminPostDraft>, busy: Ref<boolean
     notice.value = ''
     try {
       await navigator.clipboard.writeText(target)
-      if (alive && generation === current) notice.value = '预览链接已复制。'
+      if (alive && generation === current) notice.value = t('admin-content.postPreview.copied')
     } catch {
-      if (alive && generation === current) error.value = '复制失败，链接仍保留在下方，可手动选择并复制。'
+      if (alive && generation === current) error.value = t('admin-content.postPreview.copyFailed')
     } finally {
       if (alive && generation === current) copying.value = false
     }

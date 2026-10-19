@@ -1,16 +1,16 @@
 <!-- @file PostPreviewLink.vue @description 草稿预览链接的分享说明、有效期与可访问复制入口。 -->
 <template>
   <section class="post-preview-link" :aria-labelledby="titleId">
-    <h2 :id="titleId">分享草稿预览</h2>
+    <h2 :id="titleId">{{ $t('admin-content.postPreview.title') }}</h2>
     <p :id="descriptionId">
-      链接有效期为 7 天，持有链接的人无需登录即可查看。修改文章后旧链接仍有效直到过期，并显示最新保存的内容。
+      {{ $t('admin-content.postPreview.description') }}
     </p>
-    <p>文章发布、归档或移入回收站后不可预览。</p>
-    <p v-if="!saved">请先保存草稿，再生成预览链接。</p>
-    <p v-else-if="!available">仅未删除的草稿可生成预览链接，请先保存为草稿。</p>
-    <p v-if="dirty">当前有未保存的修改，预览只显示服务器已保存的内容；生成链接不会保存当前输入。</p>
+    <p>{{ $t('admin-content.postPreview.unavailableStates') }}</p>
+    <p v-if="!saved">{{ $t('admin-content.postPreview.notSaved') }}</p>
+    <p v-else-if="!available">{{ $t('admin-content.postPreview.notDraft') }}</p>
+    <p v-if="dirty">{{ $t('admin-content.postPreview.dirty') }}</p>
     <div class="post-preview-link__actions">
-      <CommonTooltip content="仅为已保存的草稿生成 7 天预览链接，不会保存当前输入">
+      <CommonTooltip :content="$t('admin-content.postPreview.generateTooltip')">
         <button
           type="button"
           :disabled="!available || busy || pending"
@@ -19,25 +19,39 @@
           @click="$emit('generate')"
         >
           <Icon name="lucide:link" size="16" aria-hidden="true" />
-          {{ pending ? '正在生成…' : url ? '生成新预览链接' : '生成预览链接' }}
+          {{
+            pending
+              ? $t('admin-content.postPreview.generating')
+              : url
+                ? $t('admin-content.postPreview.regenerate')
+                : $t('admin-content.postPreview.generate')
+          }}
         </button>
       </CommonTooltip>
       <template v-if="url">
-        <CommonTooltip content="复制完整预览链接，请仅分享给可信任的人">
+        <CommonTooltip :content="$t('admin-content.postPreview.copyTooltip')">
           <button type="button" :disabled="busy || pending || copying" :aria-busy="copying" @click="$emit('copy')">
             <Icon name="lucide:copy" size="16" aria-hidden="true" />
-            {{ copying ? '正在复制…' : '复制链接' }}
+            {{ copying ? $t('admin-content.postPreview.copying') : $t('admin-content.postPreview.copy') }}
           </button>
         </CommonTooltip>
-        <a :href="url" target="_blank" rel="noopener noreferrer" referrerpolicy="no-referrer">在新标签页打开预览</a>
+        <a :href="url" target="_blank" rel="noopener noreferrer" referrerpolicy="no-referrer">{{
+          $t('admin-content.postPreview.open')
+        }}</a>
       </template>
     </div>
     <template v-if="url">
       <p>
-        有效期至 <time :datetime="expiresAt">{{ expiresLabel }}</time
-        >。重新生成不会撤销之前的链接。
+        <i18n-t keypath="admin-content.postPreview.expires" scope="global">
+          <template #time>
+            <time :datetime="expiresAt">{{ expiresLabel }}</time>
+          </template>
+        </i18n-t>
       </p>
-      <label>预览链接<input :value="url" type="url" readonly autocomplete="off" spellcheck="false" /></label>
+      <label
+        >{{ $t('admin-content.postPreview.linkLabel')
+        }}<input :value="url" type="url" readonly autocomplete="off" spellcheck="false"
+      /></label>
     </template>
     <p v-if="error" role="alert">{{ error }}</p>
     <p role="status" aria-live="polite">{{ notice }}</p>
@@ -60,9 +74,7 @@ const props = defineProps<{
 defineEmits<{ generate: []; copy: [] }>()
 const titleId = useId()
 const descriptionId = useId()
-const expiresLabel = computed(() =>
-  props.expiresAt ? new Date(props.expiresAt).toLocaleString('zh-CN', { hour12: false }) : '',
-)
+const expiresLabel = computed(() => formatDateTime(props.expiresAt, { hour12: false }))
 </script>
 
 <style scoped lang="scss">

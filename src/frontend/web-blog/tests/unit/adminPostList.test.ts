@@ -18,7 +18,8 @@ const mocks = vi.hoisted(() => ({
     isLoggedIn: Ref<boolean>
     restore: ReturnType<typeof vi.fn>
   },
-  route: {} as { path: string; fullPath: string; query: Record<string, string> },
+  // i18n 插件安装时会读取路由的 query，桩对象需先带上 query
+  route: { path: '', fullPath: '', query: {} } as { path: string; fullPath: string; query: Record<string, string> },
   batch: {} as Record<string, unknown>,
   changed: undefined as ((result: PostBatchResult) => Promise<void>) | undefined,
 }))
@@ -34,6 +35,10 @@ mockNuxtImport('useRouter', () => () => ({
   }),
   afterEach: () => () => undefined,
   beforeEach: () => () => undefined,
+  // i18n 插件安装时需要的路由钩子与配置
+  beforeResolve: () => () => undefined,
+  onError: () => () => undefined,
+  options: {},
 }))
 mockNuxtImport('usePostBatch', () => (changed: (result: PostBatchResult) => Promise<void>) => {
   mocks.changed = changed

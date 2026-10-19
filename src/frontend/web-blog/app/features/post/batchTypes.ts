@@ -40,10 +40,10 @@ export interface PostBatchResult {
   pendingCount: number
   completed: boolean
 }
-export const postBatchLabels: Record<PostBatchAction, string> = {
-  withdraw: '撤回为草稿',
-  archive: '归档',
-  trash: '移入回收站',
-  restore: '恢复为草稿',
-  delete: '永久删除',
+/** 批量操作名称的字典 key，由调用方按当前界面语言翻译 */
+export const postBatchActions: readonly PostBatchAction[] = ['withdraw', 'archive', 'trash', 'restore', 'delete']
+export function postBatchLabelKey(action: PostBatchAction) {
+  return `admin-content.postBatch.actions.${action}`
 }
+/** 永久删除的确认文字：后端逐字校验，属于接口约定，不随界面语言变化 */
+export const POST_DELETE_ACKNOWLEDGEMENT = '永久删除'

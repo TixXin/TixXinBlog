@@ -4,11 +4,12 @@
 -->
 <template>
   <section>
-    <h1>新建文章</h1>
+    <h1>{{ $t('admin-content.postList.newTitle') }}</h1>
     <AdminPostWorkspace :id="null" />
   </section>
 </template>
 <script setup lang="ts">
 definePageMeta({ layout: 'admin' })
-useSeoMeta({ title: '新建文章', robots: 'noindex, nofollow' })
+const { t } = useI18n()
+useSeoMeta({ title: () => t('admin-content.postList.newTitle'), robots: 'noindex, nofollow' })
 </script>
