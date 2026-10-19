@@ -4,6 +4,11 @@
  */
 import type { SiteSettingsData } from '~/features/site/settings'
 import type { GearItem } from '~/features/gallery/types'
+/**
+ * 执行导入时须原样输入并提交的确认短语。后端按该中文原文校验（backup.controller 的 IsIn），
+ * 属于接口协议而非界面文案，不随界面语言变化；界面提示通过插值展示它。
+ */
+export const IMPORT_ACKNOWLEDGEMENT = '导入为新草稿'
 export interface ContentImportView {
   ticket: string
   confirmation: string

@@ -5,6 +5,7 @@
 export function useMaintenanceDiagnostics() {
   const api = useAdminApi()
   const auth = useCurrentUser()
+  const { t } = useI18n()
   const pending = ref(false)
   const error = ref('')
   const data = ref<{
@@ -29,7 +30,7 @@ export function useMaintenanceDiagnostics() {
     try {
       data.value = await api('/admin/maintenance/diagnostics')
     } catch {
-      error.value = '运行诊断读取失败，请检查登录或后端连接'
+      error.value = t('admin-system.maintenance.diagnostics.loadFailed')
     } finally {
       pending.value = false
     }
@@ -42,7 +43,7 @@ export function useMaintenanceDiagnostics() {
     try {
       media.value = await api('/admin/maintenance/media-check', { method: 'POST', timeout: 120000 })
     } catch {
-      error.value = '媒体核验未能完成，请稍后重试'
+      error.value = t('admin-system.maintenance.diagnostics.mediaFailed')
     } finally {
       pending.value = false
     }

@@ -378,3 +378,24 @@ it('只读的票据查询进行中离开不弹确认，执行导入进行中仍�
   await executing
   expect(mocks.leaveGuard!()).toBe(true)
 })
+it('切到英文后文件校验与失败兜底使用英文，接口给出的 message 原样显示', async () => {
+  await useNuxtApp().$i18n.setLocale('en')
+  try {
+    const { state } = await setup()
+    state.choose(new File(['{}'], 'notes.txt', { type: 'text/plain' }))
+    expect(state.error.value).toBe('Choose a JSON content package no larger than 50MB')
+    state.choose(source())
+    mocks.fetch.mockRejectedValueOnce(Object.assign(new Error('boom'), { statusCode: 500 }))
+    await state.preview()
+    expect(state.error.value).toBe(
+      "The preview couldn't be confirmed. The file is kept; retry or check this upload ticket.",
+    )
+    mocks.api.mockRejectedValueOnce(
+      Object.assign(new Error('bad'), { statusCode: 400, data: { message: '票据不存在' } }),
+    )
+    await state.read('ticket-a')
+    expect(state.error.value).toBe('票据不存在')
+  } finally {
+    await useNuxtApp().$i18n.setLocale('zh-CN')
+  }
+})

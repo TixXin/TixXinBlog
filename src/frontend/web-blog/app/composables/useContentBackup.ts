@@ -3,7 +3,8 @@
  * @description 内容包下载与幂等导入绑定发起账号、内容库和提交快照；身份变化后保留原文件与票据。
  */
 import { invalidatePublicReads } from '~/utils/invalidatePublicReads'
-import type { ContentImportView } from '~/features/backup/types'
+import { IMPORT_ACKNOWLEDGEMENT, type ContentImportView } from '~/features/backup/types'
+import { apiErrorMessage } from '~/utils/apiError'
 interface BackupOwner {
   actor?: string
   context: string
@@ -23,6 +24,7 @@ export function useContentBackup() {
   const pageContext = useState<string>('page-content-context', () => '')
   const route = useRoute()
   const toast = useToast()
+  const { t } = useI18n()
   const pending = ref(false)
   // 只有上传、执行、重新预览和下载这类有副作用的请求需要离开确认；只读的票据查询随时可以离开
   const guarded = ref(false)
@@ -45,7 +47,8 @@ export function useContentBackup() {
     identityInitialized = !!auth.currentUser.value,
     selectionActor = auth.currentUser.value?.id,
     jobOwner: BackupOwner | null = null
-  const ownershipMessage = '登录账号或内容库已变化，原文件和上传票据仍保留；请重新读取并核对后操作'
+  // 每次取用时按当前界面语言生成，切换语言后提示随之更新。
+  const ownershipMessage = () => t('admin-system.backup.ownershipChanged')
   const captureOwner = (): BackupOwner => ({
     actor: auth.currentUser.value?.id,
     context: pageContext.value,
@@ -56,14 +59,13 @@ export function useContentBackup() {
     owner.generation === generation &&
     owner.actor === auth.currentUser.value?.id &&
     owner.context === pageContext.value
-  const ownershipError = () => Object.assign(new Error(ownershipMessage), { statusCode: 409, ownershipChanged: true })
+  const ownershipError = () => Object.assign(new Error(ownershipMessage()), { statusCode: 409, ownershipChanged: true })
   function assertOwner(owner: BackupOwner) {
     if (!owns(owner)) throw ownershipError()
   }
-  function detail(cause: unknown, fallback: string) {
-    if ((cause as { ownershipChanged?: boolean })?.ownershipChanged) return ownershipMessage
-    const message = (cause as { data?: { message?: unknown } })?.data?.message
-    return typeof message === 'string' ? message : fallback
+  function detail(cause: unknown, fallbackKey: string) {
+    if ((cause as { ownershipChanged?: boolean })?.ownershipChanged) return ownershipMessage()
+    return apiErrorMessage(cause, fallbackKey, { t })
   }
   async function authenticated<T>(
     owner: BackupOwner,
@@ -109,8 +111,8 @@ export function useContentBackup() {
     error.value = ''
     return { owner: captureOwner(), version: ++operation }
   }
-  async function fail(cause: unknown, fallback: string, owner: BackupOwner, version: number) {
-    let message = detail(cause, fallback)
+  async function fail(cause: unknown, fallbackKey: string, owner: BackupOwner, version: number) {
+    let message = detail(cause, fallbackKey)
     const blob = (cause as { data?: unknown })?.data
     if (blob instanceof Blob && owns(owner)) {
       try {
@@ -120,7 +122,7 @@ export function useContentBackup() {
         /* Blob 错误无法解码时使用固定提示，保留文件及票据。 */
       }
     }
-    if (alive && version === operation) error.value = owns(owner) ? message : ownershipMessage
+    if (alive && version === operation) error.value = owns(owner) ? message : ownershipMessage()
   }
   function finish(version: number) {
     if (alive && version === operation) pending.value = guarded.value = false
@@ -150,9 +152,9 @@ export function useContentBackup() {
         /filename="([^"]+)"/.exec(response.headers.get('content-disposition') ?? '')?.[1] ?? 'blog-content.json'
       anchor.click()
       setTimeout(() => URL.revokeObjectURL(url), 1000)
-      toast.success('内容包下载已开始')
+      toast.success(t('admin-system.backup.downloadStarted'))
     } catch (cause) {
-      await fail(cause, '内容包下载失败，请检查登录或服务状态', owner, version)
+      await fail(cause, 'admin-system.backup.exportFailed', owner, version)
     } finally {
       finish(version)
     }
@@ -160,7 +162,7 @@ export function useContentBackup() {
   function choose(selected: File | null) {
     if (pending.value) return
     if (selected && (selected.size > 50 * 1024 * 1024 || !selected.name.toLowerCase().endsWith('.json'))) {
-      error.value = '请选择不超过 50MB 的 JSON 内容包'
+      error.value = t('admin-system.backup.fileInvalid')
       return
     }
     file.value = selected
@@ -190,7 +192,7 @@ export function useContentBackup() {
       const values = await authenticated(owner, () => api<typeof recent.value>('/admin/backup/imports'), false)
       if (version === recentVersion && owns(owner)) recent.value = values
     } catch {
-      if (alive && version === recentVersion && owns(owner)) recentError.value = '导入记录读取失败'
+      if (alive && version === recentVersion && owns(owner)) recentError.value = t('admin-system.backup.recentFailed')
     }
   }
   function loadRecent() {
@@ -239,7 +241,7 @@ export function useContentBackup() {
       acknowledgement.value = ''
       await accept(value.data, owner)
     } catch (cause) {
-      await fail(cause, '预览未能确认，文件仍保留；可重试或查询本次上传票据', owner, version)
+      await fail(cause, 'admin-system.backup.previewFailed', owner, version)
     } finally {
       finish(version)
     }
@@ -253,7 +255,7 @@ export function useContentBackup() {
         owner,
       )
     } catch (cause) {
-      await fail(cause, '票据读取失败，请稍后重试', owner, version)
+      await fail(cause, 'admin-system.backup.readFailed', owner, version)
     } finally {
       finish(version)
     }
@@ -279,13 +281,13 @@ export function useContentBackup() {
         owner,
       )
     } catch (cause) {
-      await fail(cause, '重新预览失败，请稍后重试', owner, version)
+      await fail(cause, 'admin-system.backup.repreviewFailed', owner, version)
     } finally {
       finish(version)
     }
   }
   async function execute() {
-    if (!job.value || pending.value || !jobOwner || acknowledgement.value !== '导入为新草稿') return
+    if (!job.value || pending.value || !jobOwner || acknowledgement.value !== IMPORT_ACKNOWLEDGEMENT) return
     const ticket = job.value.ticket,
       expected = jobOwner
     const body = { acknowledgement: acknowledgement.value, confirmation: job.value.confirmation }
@@ -307,11 +309,11 @@ export function useContentBackup() {
       )
       assertOwner(owner)
       if (job.value?.completed) {
-        toast.success('内容已迁入为新草稿')
+        toast.success(t('admin-system.backup.executeSucceeded'))
         clearNuxtData((key) => key.startsWith('post-') || key.startsWith('article-'))
       }
     } catch (cause) {
-      await fail(cause, '导入结果未能确认，请查询同一票据；重复执行不会再次创建已完成内容', owner, version)
+      await fail(cause, 'admin-system.backup.executeFailed', owner, version)
     } finally {
       finish(version)
     }
@@ -349,7 +351,7 @@ export function useContentBackup() {
         selectionActor = actor
         changingActor = false
       }
-      if (previousActor || context !== previousContext) error.value = ownershipMessage
+      if (previousActor || context !== previousContext) error.value = ownershipMessage()
     },
     { flush: 'sync' },
   )
@@ -377,9 +379,7 @@ export function useContentBackup() {
     recentVersion++
     window.removeEventListener('beforeunload', beforeUnload)
   })
-  onBeforeRouteLeave(
-    () => !guarded.value || window.confirm('请求仍在处理中，离开后可通过导入票据查询结果。确定离开吗？'),
-  )
+  onBeforeRouteLeave(() => !guarded.value || window.confirm(t('admin-system.backup.leaveConfirm')))
   return {
     pending,
     error,

@@ -4,44 +4,79 @@
 -->
 <template>
   <section class="maintenance">
-    <h1>备份与维护</h1>
+    <h1>{{ t('admin-system.maintenance.title') }}</h1>
     <ClientOnly>
-      <section aria-label="运行诊断">
-        <h2>运行诊断</h2>
-        <p>读取真实服务、迁移和存储状态。存储探测不代表全部媒体文件完整，文件完整性可单独核验。</p>
+      <section :aria-label="t('admin-system.maintenance.diagnostics.title')">
+        <h2>{{ t('admin-system.maintenance.diagnostics.title') }}</h2>
+        <p>{{ t('admin-system.maintenance.diagnostics.intro') }}</p>
         <div class="maintenance__actions">
-          <button type="button" :disabled="diagnostics.pending.value" @click="diagnostics.load">刷新运行诊断</button>
+          <button type="button" :disabled="diagnostics.pending.value" @click="diagnostics.load">
+            {{ t('admin-system.maintenance.diagnostics.refresh') }}
+          </button>
           <button type="button" :disabled="diagnostics.pending.value" @click="diagnostics.checkMedia">
-            核验现有媒体文件
+            {{ t('admin-system.maintenance.diagnostics.checkMedia') }}
           </button>
         </div>
-        <p v-if="diagnostics.pending.value" role="status">正在检查…</p>
+        <p v-if="diagnostics.pending.value" role="status">{{ t('admin-system.maintenance.diagnostics.checking') }}</p>
         <p v-if="diagnostics.error.value" role="alert">{{ diagnostics.error.value }}</p>
         <ul v-if="diagnostics.data.value">
-          <li>数据库连接：{{ diagnostics.data.value.databaseReachable ? '可用' : '不可用' }}</li>
           <li>
-            待应用迁移 {{ diagnostics.data.value.pendingMigrations }} 个 ·
-            {{ diagnostics.data.value.schemaDrift ? '结构与代码不一致' : '结构与代码一致' }}
-          </li>
-          <li>
-            媒体存储：{{
-              diagnostics.data.value.storage.readable &&
-              diagnostics.data.value.storage.writable &&
-              diagnostics.data.value.storage.cleaned
-                ? '读写与清理探测通过'
-                : '探测存在问题'
+            {{
+              t('admin-system.maintenance.diagnostics.database', {
+                state: t(
+                  diagnostics.data.value.databaseReachable
+                    ? 'admin-system.maintenance.diagnostics.available'
+                    : 'admin-system.maintenance.diagnostics.unavailable',
+                ),
+              })
             }}
-            · {{ diagnostics.data.value.mediaRecords }} 个登记资源
           </li>
           <li>
-            运行环境 {{ diagnostics.data.value.runtime.environment }} · Node {{ diagnostics.data.value.runtime.node
-            }}{{ diagnostics.data.value.runtime.nodeSupported ? '' : '（版本不受支持）' }}
+            {{
+              t('admin-system.maintenance.diagnostics.migrations', {
+                count: diagnostics.data.value.pendingMigrations,
+                drift: t(
+                  diagnostics.data.value.schemaDrift
+                    ? 'admin-system.maintenance.diagnostics.schemaDrifted'
+                    : 'admin-system.maintenance.diagnostics.schemaAligned',
+                ),
+              })
+            }}
+          </li>
+          <li>
+            {{
+              t('admin-system.maintenance.diagnostics.storage', {
+                state: t(
+                  diagnostics.data.value.storage.readable &&
+                    diagnostics.data.value.storage.writable &&
+                    diagnostics.data.value.storage.cleaned
+                    ? 'admin-system.maintenance.diagnostics.storagePassed'
+                    : 'admin-system.maintenance.diagnostics.storageFailed',
+                ),
+                count: diagnostics.data.value.mediaRecords,
+              })
+            }}
+          </li>
+          <li>
+            {{
+              t('admin-system.maintenance.diagnostics.runtime', {
+                environment: diagnostics.data.value.runtime.environment,
+                node: diagnostics.data.value.runtime.node,
+                unsupported: diagnostics.data.value.runtime.nodeSupported
+                  ? ''
+                  : t('admin-system.maintenance.diagnostics.nodeUnsupported'),
+              })
+            }}
           </li>
         </ul>
         <template v-if="diagnostics.media.value"
           ><p role="status">
-            已核验 {{ diagnostics.media.value.checked }} 个媒体文件，发现
-            {{ diagnostics.media.value.problems.length }} 项问题。
+            {{
+              t('admin-system.maintenance.diagnostics.mediaSummary', {
+                checked: diagnostics.media.value.checked,
+                problems: diagnostics.media.value.problems.length,
+              })
+            }}
           </p>
           <ul>
             <li v-for="item in diagnostics.media.value.problems" :key="item.id">
@@ -51,117 +86,136 @@
           </ul></template
         >
       </section>
-      <section aria-label="完整备份与恢复">
-        <h2>完整备份与恢复</h2>
-        <p>
-          完整备份保存数据库、历史修订、账号记录和全部受管媒体，生成一致快照及校验清单。恢复命令新建无外部网络的容器，不覆盖当前站点。
-        </p>
-        <p>在项目终端生成完整备份：</p>
+      <section :aria-label="t('admin-system.maintenance.fullBackup.title')">
+        <h2>{{ t('admin-system.maintenance.fullBackup.title') }}</h2>
+        <p>{{ t('admin-system.maintenance.fullBackup.intro') }}</p>
+        <p>{{ t('admin-system.maintenance.fullBackup.generateHint') }}</p>
         <pre><code>corepack pnpm --filter server-main run backup:full</code></pre>
-        <p>校验与隔离恢复使用生成的备份目录：</p>
-        <pre><code>corepack pnpm --filter server-main run backup:verify --directory &lt;备份目录&gt;
-corepack pnpm --filter server-main run backup:restore --directory &lt;备份目录&gt;</code></pre>
-        <p>
-          恢复后会撤销备份中的登录授权，并要求旧页面刷新后再修改数据。连接配置保存在恢复目录，应用连接不会自动切换。完整步骤见项目文档
-          docs/backup-and-recovery.md。
-        </p>
+        <p>{{ t('admin-system.maintenance.fullBackup.verifyHint') }}</p>
+        <pre><code>corepack pnpm --filter server-main run backup:verify --directory &lt;{{ t('admin-system.maintenance.fullBackup.directory') }}&gt;
+corepack pnpm --filter server-main run backup:restore --directory &lt;{{ t('admin-system.maintenance.fullBackup.directory') }}&gt;</code></pre>
+        <p>{{ t('admin-system.maintenance.fullBackup.afterRestore') }}</p>
       </section>
-      <section aria-label="导出内容包">
-        <h2>导出内容包</h2>
-        <p>
-          用于迁入文章、闪念、朋友圈、图库、项目、友链、图片提示词、评论、留言、目录和当前站点资料。文章、图库作品、项目、友链和提示词迁入为草稿；留言迁入为待审，隐藏和删除状态保留。
-        </p>
-        <p>
-          内容包不包含账号、登录凭据、访客控制标识、点赞、回应、历史修订和互动去重记录；完整数据库与媒体恢复使用维护流程。
-        </p>
-        <label><input v-model="mediaIncluded" type="checkbox" :disabled="pending" />包含受管媒体图片文件</label>
+      <section :aria-label="t('admin-system.maintenance.export.title')">
+        <h2>{{ t('admin-system.maintenance.export.title') }}</h2>
+        <p>{{ t('admin-system.maintenance.export.scope') }}</p>
+        <p>{{ t('admin-system.maintenance.export.excluded') }}</p>
+        <label
+          ><input v-model="mediaIncluded" type="checkbox" :disabled="pending" />{{
+            t('admin-system.maintenance.export.includeMedia')
+          }}</label
+        >
         <p>
           {{
             mediaIncluded
-              ? '文件内包含受管图片字节；外链图片仍使用原地址。'
-              : '仅包含媒体清单；迁入时需已有可用资源或另行恢复图片文件。'
+              ? t('admin-system.maintenance.export.withMedia')
+              : t('admin-system.maintenance.export.withoutMedia')
           }}
         </p>
-        <button type="button" :disabled="pending" @click="exportPackage">下载内容包</button>
+        <button type="button" :disabled="pending" @click="exportPackage">
+          {{ t('admin-system.maintenance.export.download') }}
+        </button>
       </section>
-      <section aria-label="选择内容包">
-        <h2>迁入内容</h2>
-        <p>
-          支持本项目生成的 v1–v13 JSON 内容包，最多
-          50MB。v13保留闪念评论审核状态，v12保留导航、页脚链接、每日一言与备案信息，v11保留平台订阅费与价格历史，v10保留图片提示词，v9保留内容关联和媒体说明。
-          外部图片地址不会下载到媒体库。先校验内容包和受管图片引用，再确认导入。
-        </p>
-        <p>留言迁入后不会自动公开或置顶。已删除留言保留为不可见的引用记录，审核前请核对内容与作者。</p>
+      <section :aria-label="t('admin-system.maintenance.import.choosePackage')">
+        <h2>{{ t('admin-system.maintenance.import.title') }}</h2>
+        <p>{{ t('admin-system.maintenance.import.formats') }}</p>
+        <p>{{ t('admin-system.maintenance.import.guestbookNote') }}</p>
         <label class="maintenance__field"
-          >选择内容包<input type="file" accept="application/json,.json" :disabled="pending" @change="chooseFile"
+          >{{ t('admin-system.maintenance.import.choosePackage')
+          }}<input type="file" accept="application/json,.json" :disabled="pending" @change="chooseFile"
         /></label>
-        <p v-if="file">已选 {{ file.name }} · {{ (file.size / 1024).toFixed(1) }}KB</p>
+        <p v-if="file">
+          {{
+            t('admin-system.maintenance.import.selectedFile', { name: file.name, size: (file.size / 1024).toFixed(1) })
+          }}
+        </p>
         <label class="maintenance__field"
-          >重复内容策略<select v-model="strategy" :disabled="pending">
-            <option value="skip">跳过相同内容；友链按规范地址跳过</option>
-            <option value="copy">为全部内容创建新草稿副本</option>
+          >{{ t('admin-system.maintenance.import.strategy')
+          }}<select v-model="strategy" :disabled="pending">
+            <option value="skip">{{ t('admin-system.maintenance.import.strategySkip') }}</option>
+            <option value="copy">{{ t('admin-system.maintenance.import.strategyCopy') }}</option>
           </select></label
         >
         <label
-          ><input
-            v-model="includeSettings"
-            type="checkbox"
-            :disabled="pending"
-          />同时迁入站点资料、器材介绍、友链须知和评论审核设置</label
+          ><input v-model="includeSettings" type="checkbox" :disabled="pending" />{{
+            t('admin-system.maintenance.import.includeSettings')
+          }}</label
         >
-        <p>
-          相同内容判定不比较发布状态和互动数。目录遵循本站历史名称规则。新副本重新累计浏览和点赞，正文中的链接保留原文，发布前请核对。
-        </p>
-        <p>
-          友链的跳过策略按规范站点地址判断；复制策略即使地址相同也会建立新草稿，保留推荐与排序。路径大小写、末尾斜杠、参数顺序和片段不会被擅自改写；同地址草稿上架前需核对现有公开记录。
-        </p>
+        <p>{{ t('admin-system.maintenance.import.duplicateRule') }}</p>
+        <p>{{ t('admin-system.maintenance.import.linkRule') }}</p>
         <div class="maintenance__actions">
-          <button type="button" :disabled="pending || !file" @click="preview">生成导入预览</button>
-          <button v-if="requestId" type="button" :disabled="pending" @click="read(requestId)">查询本次上传票据</button>
+          <button type="button" :disabled="pending || !file" @click="preview">
+            {{ t('admin-system.maintenance.import.preview') }}
+          </button>
+          <button v-if="requestId" type="button" :disabled="pending" @click="read(requestId)">
+            {{ t('admin-system.maintenance.import.queryTicket') }}
+          </button>
         </div>
       </section>
-      <p v-if="pending" role="status">正在处理，请等待服务器结果…</p>
+      <p v-if="pending" role="status">{{ t('admin-system.maintenance.processing') }}</p>
       <p v-if="error" role="alert">{{ error }}</p>
-      <section v-if="job" aria-label="内容导入预览">
-        <h2>{{ job.completed ? '导入结果' : '导入预览' }}</h2>
-        <p>
-          票据 {{ job.ticket }} · {{ job.strategy === 'skip' ? '跳过相同内容' : '创建全部新副本' }} ·
-          {{ job.includeSettings ? '包含站点资料与审核设置' : '保留当前站点设置' }}
-        </p>
-        <p>
-          计划新建 {{ job.plan.counts.posts }} 篇文章草稿、{{ job.plan.counts.flashes }} 条闪念草稿、{{
-            job.plan.counts.moments ?? 0
+      <section v-if="job" :aria-label="t('admin-system.maintenance.job.label')">
+        <h2>
+          {{
+            job.completed
+              ? t('admin-system.maintenance.job.resultTitle')
+              : t('admin-system.maintenance.job.previewTitle')
           }}
-          条朋友圈草稿，迁入 {{ job.plan.counts.comments }} 条评论；跳过 {{ job.plan.counts.skipped }} 项相同内容。
-        </p>
-        <p>迁入 {{ job.plan.counts.guestbook ?? 0 }} 条留言及其回复关系，按预览保留为待审、隐藏或已删除状态。</p>
-        <p>迁入 {{ job.plan.counts.gallery ?? 0 }} 件图库作品，分类、拍摄信息、排序和媒体关系保留，作品保持非公开。</p>
-        <p>迁入 {{ job.plan.counts.projects ?? 0 }} 个项目，保留项目进展、技术标签、排序和封面关系，全部保存为草稿。</p>
+        </h2>
         <p>
-          迁入
-          {{ job.plan.counts.links ?? 0 }}
-          条友链草稿，保留推荐、排序和Logo关系，不自动上架；同一规范地址只允许一条公开记录。
+          {{
+            t('admin-system.maintenance.job.ticketLine', {
+              ticket: job.ticket,
+              strategy: t(
+                job.strategy === 'skip'
+                  ? 'admin-system.maintenance.job.strategySkip'
+                  : 'admin-system.maintenance.job.strategyCopy',
+              ),
+              settings: t(
+                job.includeSettings
+                  ? 'admin-system.maintenance.job.settingsIncluded'
+                  : 'admin-system.maintenance.job.settingsKept',
+              ),
+            })
+          }}
         </p>
-        <p>迁入 {{ job.plan.counts.prompts ?? 0 }} 条图片提示词，保留模型、标签和图片来源，全部保存为草稿。</p>
         <p>
-          迁入 {{ job.plan.counts.subscriptions ?? 0 }} 条平台订阅记录，保留币种、价格历史与受管图标，全部保存为草稿。
+          {{
+            t('admin-system.maintenance.job.planCore', {
+              posts: job.plan.counts.posts,
+              flashes: job.plan.counts.flashes,
+              moments: job.plan.counts.moments ?? 0,
+              comments: job.plan.counts.comments,
+              skipped: job.plan.counts.skipped,
+            })
+          }}
         </p>
-        <p>新增 {{ job.plan.counts.media }} 个媒体记录，写入或修复 {{ job.plan.counts.files }} 个图片文件。</p>
-        <p>结构化内容关联会按目标编号映射；跳过的现有内容及媒体说明保持原值，迁入的新内容仍是草稿。</p>
+        <p>{{ t('admin-system.maintenance.job.planGuestbook', { count: job.plan.counts.guestbook ?? 0 }) }}</p>
+        <p>{{ t('admin-system.maintenance.job.planGallery', { count: job.plan.counts.gallery ?? 0 }) }}</p>
+        <p>{{ t('admin-system.maintenance.job.planProjects', { count: job.plan.counts.projects ?? 0 }) }}</p>
+        <p>{{ t('admin-system.maintenance.job.planLinks', { count: job.plan.counts.links ?? 0 }) }}</p>
+        <p>{{ t('admin-system.maintenance.job.planPrompts', { count: job.plan.counts.prompts ?? 0 }) }}</p>
+        <p>{{ t('admin-system.maintenance.job.planSubscriptions', { count: job.plan.counts.subscriptions ?? 0 }) }}</p>
+        <p>
+          {{
+            t('admin-system.maintenance.job.planMedia', { media: job.plan.counts.media, files: job.plan.counts.files })
+          }}
+        </p>
+        <p>{{ t('admin-system.maintenance.job.relationsNote') }}</p>
         <p v-if="job.plan.omittedRelations" role="status">
-          {{ job.plan.omittedRelations }}
-          条关联因目标已删除、缺失或无法映射而省略；不会按来源编号误连当前站点内容。完整备份仍保留原始关系。
+          {{ t('admin-system.maintenance.job.omittedRelations', { count: job.plan.omittedRelations }) }}
         </p>
         <p v-if="job.error" role="alert">{{ job.error }}</p>
-        <p v-if="job.expired">预览已过期，请重新选择文件生成票据。</p>
+        <p v-if="job.expired">{{ t('admin-system.maintenance.job.expired') }}</p>
         <ul>
           <li v-for="issue in job.plan.errors" :key="issue">{{ issue }}</li>
         </ul>
         <details>
-          <summary>查看文章、闪念、朋友圈、图库、项目、友链与留言清单</summary>
+          <summary>{{ t('admin-system.maintenance.job.itemsSummary') }}</summary>
           <ul>
             <li v-for="post in job.plan.posts" :key="`post-${post.sourceId}`">
-              {{ post.title }} · {{ post.reason }}{{ post.slug ? ` · 地址标识 ${post.slug}` : '' }}
+              {{ post.title }} · {{ post.reason
+              }}{{ post.slug ? t('admin-system.maintenance.job.slugSuffix', { slug: post.slug }) : '' }}
             </li>
             <li v-for="flash in job.plan.flashes" :key="flash.sourceId">{{ flash.title }} · {{ flash.reason }}</li>
             <li v-for="moment in job.plan.moments ?? []" :key="`moment-${moment.sourceId}`">
@@ -177,10 +231,15 @@ corepack pnpm --filter server-main run backup:restore --directory &lt;备份目�
               {{ project.title }} · {{ project.reason }}
             </li>
             <li v-for="subscription in job.plan.subscriptions ?? []" :key="`subscription-${subscription.sourceId}`">
-              {{ subscription.title }}：{{ subscription.reason }}
+              {{
+                t('admin-system.maintenance.job.subscriptionItem', {
+                  title: subscription.title,
+                  reason: subscription.reason,
+                })
+              }}
             </li>
             <li v-for="prompt in job.plan.prompts ?? []" :key="`prompt-${prompt.sourceId}`">
-              图片提示词 · {{ prompt.title }}：{{ prompt.reason }}
+              {{ t('admin-system.maintenance.job.promptItem', { title: prompt.title, reason: prompt.reason }) }}
             </li>
             <li v-for="link in job.plan.links ?? []" :key="`link-${link.sourceId}`">
               {{ link.title }} · {{ link.reason }}
@@ -190,81 +249,130 @@ corepack pnpm --filter server-main run backup:restore --directory &lt;备份目�
         <AdminSiteSettingsPreview
           v-if="job.settingsPreview && !job.completed"
           :value="job.settingsPreview"
-          label="将写入的站点资料"
+          :label="t('admin-system.maintenance.job.settingsPreview')"
         />
-        <section v-if="job.gallerySettingsPreview && !job.completed" aria-label="将写入的器材资料">
-          <h3>将写入的器材资料</h3>
+        <section
+          v-if="job.gallerySettingsPreview && !job.completed"
+          :aria-label="t('admin-system.maintenance.job.gearPreview')"
+        >
+          <h3>{{ t('admin-system.maintenance.job.gearPreview') }}</h3>
           <GalleryGearCard :gear="job.gallerySettingsPreview.gear" />
         </section>
-        <section v-if="job.linkSettingsPreview && !job.completed" aria-label="将写入的友链须知">
+        <section
+          v-if="job.linkSettingsPreview && !job.completed"
+          :aria-label="t('admin-system.maintenance.job.linkRulesPreview')"
+        >
           <LinkRules :rules="job.linkSettingsPreview.rules" />
         </section>
         <template v-if="job.result">
           <p role="status">
-            已创建 {{ job.result.posts.length }} 篇文章草稿、{{ job.result.flashes.length }} 条闪念草稿、{{
-              job.result.moments?.length ?? 0
+            {{
+              t('admin-system.maintenance.job.resultCore', {
+                posts: job.result.posts.length,
+                flashes: job.result.flashes.length,
+                moments: job.result.moments?.length ?? 0,
+                comments: job.result.comments,
+              })
             }}
-            条朋友圈草稿，迁入 {{ job.result.comments }} 条评论。
           </p>
-          <p>已迁入 {{ job.result.guestbook?.length ?? 0 }} 条非公开留言，回复关系已重建。</p>
-          <p>已迁入 {{ job.result.gallery?.length ?? 0 }} 件图库草稿，检查图片及拍摄信息后再发布。</p>
-          <p>已迁入 {{ job.result.projects?.length ?? 0 }} 个项目草稿，检查项目进展、技术标签及有效链接后再发布。</p>
-          <p>已迁入 {{ job.result.prompts?.length ?? 0 }} 条图片提示词草稿，可到提示词页面核对后发布。</p>
-          <p>已迁入 {{ job.result.subscriptions?.length ?? 0 }} 条平台订阅草稿，请核对价格历史、日期和图标后再发布。</p>
-          <p>已迁入 {{ job.result.links?.length ?? 0 }} 条友链草稿，请核对地址和Logo后再上架。</p>
+          <p>{{ t('admin-system.maintenance.job.resultGuestbook', { count: job.result.guestbook?.length ?? 0 }) }}</p>
+          <p>{{ t('admin-system.maintenance.job.resultGallery', { count: job.result.gallery?.length ?? 0 }) }}</p>
+          <p>{{ t('admin-system.maintenance.job.resultProjects', { count: job.result.projects?.length ?? 0 }) }}</p>
+          <p>{{ t('admin-system.maintenance.job.resultPrompts', { count: job.result.prompts?.length ?? 0 }) }}</p>
+          <p>
+            {{
+              t('admin-system.maintenance.job.resultSubscriptions', { count: job.result.subscriptions?.length ?? 0 })
+            }}
+          </p>
+          <p>{{ t('admin-system.maintenance.job.resultLinks', { count: job.result.links?.length ?? 0 }) }}</p>
           <p v-if="job.result.relations">
-            已映射 {{ job.result.relations.applied }} 条内容关联，省略 {{ job.result.relations.omitted }} 条失效关联。
+            {{
+              t('admin-system.maintenance.job.resultRelations', {
+                applied: job.result.relations.applied,
+                omitted: job.result.relations.omitted,
+              })
+            }}
           </p>
           <ul>
             <li v-for="post in job.result.posts" :key="post.id">
-              <NuxtLink :to="`/admin/posts/${post.id}`">检查新文章草稿 #{{ post.id }}</NuxtLink
-              >（来源 #{{ post.sourceId }}）
+              <NuxtLink :to="`/admin/posts/${post.id}`">{{
+                t('admin-system.maintenance.job.checkPost', { id: post.id })
+              }}</NuxtLink
+              >{{ t('admin-system.maintenance.job.postSource', { id: post.sourceId }) }}
             </li>
           </ul>
-          <NuxtLink v-if="job.result.flashes.length" to="/admin/flashes?status=draft">检查闪念草稿</NuxtLink>
-          <NuxtLink v-if="job.result.moments?.length" to="/admin/moments?status=draft">检查朋友圈草稿</NuxtLink>
-          <NuxtLink v-if="job.result.guestbook?.length" to="/admin/guestbook">检查迁入留言</NuxtLink>
-          <NuxtLink v-if="job.result.gallery?.length" to="/admin/gallery?status=draft">检查图库草稿</NuxtLink>
-          <NuxtLink v-if="job.result.projects?.length" to="/admin/projects?status=draft">检查项目草稿</NuxtLink>
-          <NuxtLink v-if="job.result.subscriptions?.length" to="/admin/subscriptions?status=draft"
-            >检查订阅草稿</NuxtLink
-          >
-          <NuxtLink v-if="job.result.prompts?.length" to="/prompts?view=manage">检查提示词草稿</NuxtLink>
-          <NuxtLink v-if="job.result.links?.length" to="/admin/links?status=draft">检查友链草稿</NuxtLink>
+          <NuxtLink v-if="job.result.flashes.length" to="/admin/flashes?status=draft">{{
+            t('admin-system.maintenance.job.checkFlashes')
+          }}</NuxtLink>
+          <NuxtLink v-if="job.result.moments?.length" to="/admin/moments?status=draft">{{
+            t('admin-system.maintenance.job.checkMoments')
+          }}</NuxtLink>
+          <NuxtLink v-if="job.result.guestbook?.length" to="/admin/guestbook">{{
+            t('admin-system.maintenance.job.checkGuestbook')
+          }}</NuxtLink>
+          <NuxtLink v-if="job.result.gallery?.length" to="/admin/gallery?status=draft">{{
+            t('admin-system.maintenance.job.checkGallery')
+          }}</NuxtLink>
+          <NuxtLink v-if="job.result.projects?.length" to="/admin/projects?status=draft">{{
+            t('admin-system.maintenance.job.checkProjects')
+          }}</NuxtLink>
+          <NuxtLink v-if="job.result.subscriptions?.length" to="/admin/subscriptions?status=draft">{{
+            t('admin-system.maintenance.job.checkSubscriptions')
+          }}</NuxtLink>
+          <NuxtLink v-if="job.result.prompts?.length" to="/prompts?view=manage">{{
+            t('admin-system.maintenance.job.checkPrompts')
+          }}</NuxtLink>
+          <NuxtLink v-if="job.result.links?.length" to="/admin/links?status=draft">{{
+            t('admin-system.maintenance.job.checkLinks')
+          }}</NuxtLink>
         </template>
         <template v-if="!job.completed && !job.expired">
           <p>
-            预览到期：{{
-              new Date(job.expiresAt).toLocaleString('zh-CN', { hour12: false })
-            }}。执行时重新校验目标变化，数据库变更统一提交；未能确认结果时请查询同一票据。
+            {{
+              t('admin-system.maintenance.job.expiresAt', { time: formatDateTime(job.expiresAt, { hour12: false }) })
+            }}
           </p>
           <label class="maintenance__field"
-            >输入“导入为新草稿”确认<input v-model="acknowledgement" :disabled="pending" autocomplete="off"
+            >{{ t('admin-system.maintenance.job.acknowledge', { phrase: IMPORT_ACKNOWLEDGEMENT })
+            }}<input v-model="acknowledgement" :disabled="pending" autocomplete="off"
           /></label>
           <div class="maintenance__actions">
             <button
               type="button"
-              :disabled="pending || !job.plan.ready || acknowledgement !== '导入为新草稿'"
+              :disabled="pending || !job.plan.ready || acknowledgement !== IMPORT_ACKNOWLEDGEMENT"
               @click="execute"
             >
-              确认导入预览内容
+              {{ t('admin-system.maintenance.job.execute') }}
             </button>
-            <button type="button" :disabled="pending" @click="repreview">重新生成此票据的预览</button>
+            <button type="button" :disabled="pending" @click="repreview">
+              {{ t('admin-system.maintenance.job.repreview') }}
+            </button>
           </div>
         </template>
-        <button type="button" :disabled="pending" @click="read()">查询导入结果</button>
+        <button type="button" :disabled="pending" @click="read()">
+          {{ t('admin-system.maintenance.job.readResult') }}
+        </button>
       </section>
-      <section aria-label="最近导入记录">
-        <h2>最近导入记录</h2>
+      <section :aria-label="t('admin-system.maintenance.recent.title')">
+        <h2>{{ t('admin-system.maintenance.recent.title') }}</h2>
         <p v-if="recentError" role="alert">
-          {{ recentError }} <button type="button" @click="loadRecent">重试记录</button>
+          {{ recentError }}
+          <button type="button" @click="loadRecent">{{ t('admin-system.maintenance.recent.retry') }}</button>
         </p>
-        <p v-else-if="!recent.length">暂无导入记录</p>
+        <p v-else-if="!recent.length">{{ t('admin-system.maintenance.recent.empty') }}</p>
         <ul>
           <li v-for="item in recent" :key="item.ticket">
             <button type="button" :disabled="pending" @click="read(item.ticket)">
-              {{ new Date(item.createdAt).toLocaleString('zh-CN', { hour12: false }) }} ·
-              {{ item.completed ? '已完成' : item.expired ? '已过期' : '预览或执行中' }}
+              {{ formatDateTime(item.createdAt, { hour12: false }) }} ·
+              {{
+                t(
+                  item.completed
+                    ? 'admin-system.maintenance.recent.completed'
+                    : item.expired
+                      ? 'admin-system.maintenance.recent.expired'
+                      : 'admin-system.maintenance.recent.running',
+                )
+              }}
             </button>
           </li>
         </ul>
@@ -273,8 +381,12 @@ corepack pnpm --filter server-main run backup:restore --directory &lt;备份目�
   </section>
 </template>
 <script setup lang="ts">
+import { IMPORT_ACKNOWLEDGEMENT } from '~/features/backup/types'
+import { formatDateTime } from '~/utils/format'
+
 definePageMeta({ layout: 'admin', key: '/admin/maintenance' })
-useSeoMeta({ title: '备份与维护', robots: 'noindex, nofollow' })
+const { t } = useI18n()
+useSeoMeta({ title: () => t('admin-system.maintenance.title'), robots: 'noindex, nofollow' })
 const {
   pending,
   error,
