@@ -7,6 +7,7 @@ import type {
   SubscriptionQuery,
   SubscriptionStats,
 } from '~/features/subscription/types'
+import { apiConflictKind } from '~/utils/apiError'
 export function useSubscriptionRepository() {
   const base = String(useRuntimeConfig().public.apiBaseUrl).replace(/\/$/, ''),
     admin = useAdminApi(),
@@ -25,17 +26,8 @@ export function useSubscriptionRepository() {
             : cause instanceof Error
               ? cause.message
               : t('misc.subscription.repository.incomplete')
-    // 与提示词编辑器一致：内容库409不能误作同一记录的版本合并。
-    const conflictKind =
-      statusCode !== 409
-        ? undefined
-        : message === '订阅已被修改，请保留输入并重新读取'
-          ? 'revision'
-          : /^(站点数据上下文已变化|站点数据已恢复|登录账号或内容库已变化)/.test(message)
-            ? 'context'
-            : message === '此提交已处理，请核查原订阅'
-              ? 'submission'
-              : 'unknown'
+    // 与提示词编辑器一致：内容库409不能误作同一记录的版本合并；按业务码与 ownershipChanged 判断，不比对文案。
+    const conflictKind = statusCode === 409 ? apiConflictKind(value) : undefined
     return Object.assign(new Error(message, { cause: value }), { statusCode, conflictKind })
   }
   async function read<T>(path: string, query?: SubscriptionQuery, signal?: AbortSignal): Promise<T> {

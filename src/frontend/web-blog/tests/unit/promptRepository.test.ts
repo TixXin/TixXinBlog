@@ -11,10 +11,10 @@ const wrappers: { unmount(): void }[] = []
 const form = promptForm({ title: '窗边光影', prompt: 'A quiet sunlit room', mediaId: 'selected-image' })
 const revisionMessage = '提示词已被修改，请保留输入并重新读取'
 
-function apiFailure(message: string, statusCode = 409) {
+function apiFailure(message: string, statusCode = 409, code = 40) {
   return Object.assign(new Error(`[PATCH] "/api/v1/admin/prompts/7": ${statusCode} Conflict`), {
     statusCode,
-    data: { code: 40, message, data: null, traceId: 'request-trace' },
+    data: { code, message, data: null, traceId: 'request-trace' },
   })
 }
 async function setup() {
@@ -37,7 +37,7 @@ afterEach(() => wrappers.splice(0).forEach((wrapper) => wrapper.unmount()))
 describe('图片提示词请求冲突分流', () => {
   it('后端统一错误信封明确提示版本冲突时才标记 revision', async () => {
     const repository = await setup()
-    const cause = apiFailure(revisionMessage)
+    const cause = apiFailure(revisionMessage, 409, 41)
     mocks.admin.mockRejectedValueOnce(cause)
     await expect(repository.save(form, 'request-id', 7, 1)).rejects.toMatchObject({
       statusCode: 409,
@@ -54,7 +54,7 @@ describe('图片提示词请求冲突分流', () => {
       () =>
         new Response(
           JSON.stringify({
-            code: 40,
+            code: 41,
             message: revisionMessage,
             data: null,
             traceId: 'http-trace',
@@ -74,7 +74,7 @@ describe('图片提示词请求冲突分流', () => {
   it('内容库恢复的 409 保留刷新指引，不假称提示词版本改变', async () => {
     const repository = await setup()
     const message = '站点数据上下文已变化，请保留输入并刷新页面后再编辑'
-    mocks.admin.mockRejectedValueOnce(apiFailure(message))
+    mocks.admin.mockRejectedValueOnce(apiFailure(message, 409, 42))
     await expect(repository.save(form, 'request-id', 7, 1)).rejects.toMatchObject({
       statusCode: 409,
       conflictKind: 'context',
@@ -85,7 +85,7 @@ describe('图片提示词请求冲突分流', () => {
   it('useAdminApi 直接抛出的身份 Error.message 也归为 context', async () => {
     const repository = await setup()
     const message = '登录账号或内容库已变化，请保留输入并重新核对后操作'
-    mocks.admin.mockRejectedValueOnce(Object.assign(new Error(message), { statusCode: 409 }))
+    mocks.admin.mockRejectedValueOnce(Object.assign(new Error(message), { statusCode: 409, ownershipChanged: true }))
     await expect(repository.save(form, 'request-id', 7, 1)).rejects.toMatchObject({
       statusCode: 409,
       conflictKind: 'context',
@@ -96,7 +96,7 @@ describe('图片提示词请求冲突分流', () => {
   it('创建去重冲突保持原提交核查语义，不诱导合并或自动重试', async () => {
     const repository = await setup()
     const message = '此提交已处理，请核查原提示词'
-    mocks.admin.mockRejectedValueOnce(apiFailure(message))
+    mocks.admin.mockRejectedValueOnce(apiFailure(message, 409, 44))
     await expect(repository.save(form, 'request-id')).rejects.toMatchObject({
       statusCode: 409,
       conflictKind: 'submission',
@@ -118,6 +118,24 @@ describe('图片提示词请求冲突分流', () => {
     },
   )
 
+  it('英文界面下按业务码分流，不依赖中文文案', async () => {
+    const repository = await setup()
+    const message = 'This prompt has been modified. Keep your input and reload it.'
+    mocks.admin.mockRejectedValueOnce(apiFailure(message, 409, 41))
+    await expect(repository.save(form, 'request-id', 7, 1)).rejects.toMatchObject({
+      statusCode: 409,
+      conflictKind: 'revision',
+      message,
+    })
+    mocks.admin.mockRejectedValueOnce(apiFailure('The site data context has changed.', 409, 42))
+    await expect(repository.save(form, 'request-id', 7, 1)).rejects.toMatchObject({ conflictKind: 'context' })
+    mocks.admin.mockRejectedValueOnce(apiFailure('This submission was already processed.', 409, 44))
+    await expect(repository.save(form, 'request-id')).rejects.toMatchObject({ conflictKind: 'submission' })
+    // 仅中文文案相同、业务码为通用冲突时不再进入合并流程
+    mocks.admin.mockRejectedValueOnce(apiFailure(revisionMessage))
+    await expect(repository.save(form, 'request-id', 7, 1)).rejects.toMatchObject({ conflictKind: 'unknown' })
+  })
+
   it('无业务信息的 409 不展示请求地址或凭空生成版本合并提示', async () => {
     const repository = await setup()
     mocks.admin.mockRejectedValueOnce(
@@ -132,7 +150,7 @@ describe('图片提示词请求冲突分流', () => {
 
   it('非 409 即使正文提及版本也不能开启合并，服务故障不泄露内部详情', async () => {
     const repository = await setup()
-    mocks.admin.mockRejectedValueOnce(apiFailure(revisionMessage, 503))
+    mocks.admin.mockRejectedValueOnce(apiFailure(revisionMessage, 503, 41))
     await expect(repository.save(form, 'request-id', 7, 1)).rejects.toMatchObject({
       statusCode: 503,
       conflictKind: undefined,

@@ -35,3 +35,33 @@ export function apiErrorMessage(
   const t = options.t ?? currentTranslate()
   return options.params ? t(fallbackKey, options.params) : t(fallbackKey)
 }
+
+/** 后端统一错误信封中的冲突业务码（与 server-main 的 ErrorCode 一致，见 docs/api.md 附录 A） */
+export const API_CONFLICT_CODES = {
+  revision: 41,
+  contextChanged: 42,
+  contextRestored: 43,
+  submission: 44,
+} as const
+
+export type ApiConflictKind = 'revision' | 'context' | 'submission' | 'unknown'
+
+/** 取后端错误信封的业务码；非信封错误返回 null */
+export function apiResponseCode(cause: unknown): number | null {
+  const data = (cause as { data?: unknown } | null | undefined)?.data
+  const code = data && typeof data === 'object' ? (data as { code?: unknown }).code : undefined
+  return typeof code === 'number' && Number.isInteger(code) ? code : null
+}
+
+/**
+ * 409 冲突的种类：按后端业务码与 useAdminApi 的 ownershipChanged 标识判断，不依赖随语言变化的 message。
+ * revision 才允许进入合并流程；context 表示登录账号或内容库已变化，需要刷新。
+ */
+export function apiConflictKind(cause: unknown): ApiConflictKind {
+  if ((cause as { ownershipChanged?: unknown } | null | undefined)?.ownershipChanged === true) return 'context'
+  const code = apiResponseCode(cause)
+  if (code === API_CONFLICT_CODES.revision) return 'revision'
+  if (code === API_CONFLICT_CODES.contextChanged || code === API_CONFLICT_CODES.contextRestored) return 'context'
+  if (code === API_CONFLICT_CODES.submission) return 'submission'
+  return 'unknown'
+}

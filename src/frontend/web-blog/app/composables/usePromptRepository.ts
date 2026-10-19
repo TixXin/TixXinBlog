@@ -10,7 +10,7 @@ import type {
   PromptRequestError,
 } from '~/features/prompt/types'
 import { promptPayload } from '~/features/prompt/editor'
-import { apiErrorMessage } from '~/utils/apiError'
+import { apiConflictKind, apiErrorMessage } from '~/utils/apiError'
 export function usePromptRepository() {
   const base = String(useRuntimeConfig().public.apiBaseUrl).replace(/\/$/, ''),
     admin = useAdminApi()
@@ -25,19 +25,9 @@ export function usePromptRepository() {
         : typeof cause?.message === 'string' && !/^\[[A-Z]+\]\s/.test(cause.message)
           ? cause.message.trim()
           : ''
-    // 409 同时用于版本、内容库和创建去重；只有服务端明确的版本提示允许进入合并流程。
-    // 下列比对的是后端协议原文，不随界面语言翻译。
-    let conflictKind: PromptConflictKind | undefined
-    if (statusCode === 409) {
-      conflictKind =
-        sourceMessage === '提示词已被修改，请保留输入并重新读取'
-          ? 'revision'
-          : /^(站点数据上下文已变化|站点数据已恢复|登录账号或内容库已变化)/.test(sourceMessage)
-            ? 'context'
-            : sourceMessage === '此提交已处理，请核查原提示词'
-              ? 'submission'
-              : 'unknown'
-    }
+    // 409 同时用于版本、内容库和创建去重；只有后端明确的版本冲突码允许进入合并流程。
+    // 按业务码与 ownershipChanged 判断，不比对随界面语言变化的提示文案。
+    const conflictKind: PromptConflictKind | undefined = statusCode === 409 ? apiConflictKind(value) : undefined
     let conflictMessage = sourceMessage || t('misc.prompt.repository.conflict')
     if (conflictKind === 'context' && !/刷新|refresh/i.test(conflictMessage))
       conflictMessage += t('misc.prompt.repository.contextSuffix')
