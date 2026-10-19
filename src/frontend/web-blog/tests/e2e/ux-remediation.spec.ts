@@ -442,6 +442,9 @@ for (const fromLastPage of [false, true]) {
     await expect(page.locator('.post-list > [data-index]')).toHaveCount(15)
     await expect(cards).toHaveCount(15)
     const first = await cards.evaluateAll((nodes) => nodes.map((node) => node.getAttribute('href')))
+    // 切换模式后的 2 秒内页面会把列表恢复到顶部，只有真实输入才结束恢复；程序化滚动在慢机上会被拉回而不触底。
+    await cards.first().hover()
+    await page.mouse.wheel(0, 250)
     await cards.last().scrollIntoViewIfNeeded()
     await expect(page.getByRole('alert').filter({ hasText: '文章加载失败' })).toBeVisible()
     expect(await cards.evaluateAll((nodes) => nodes.map((node) => node.getAttribute('href')))).toEqual(first)
