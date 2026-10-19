@@ -170,6 +170,16 @@
                 </button>
               </div>
             </section>
+
+            <section class="appearance-section" data-testid="appearance-locale">
+              <div class="appearance-section__head">
+                <h3 class="appearance-section__title">
+                  <Icon name="lucide:languages" size="14" class="appearance-section__icon" aria-hidden="true" />
+                  {{ t('common.locale.title') }}
+                </h3>
+              </div>
+              <LayoutLocaleSwitch />
+            </section>
           </div>
 
           <section class="appearance-section">
@@ -210,6 +220,8 @@
 
 <script setup lang="ts">
 import { COLOR_MODE_LABELS, type ThemeOption } from '~/features/appearance/types'
+
+const { t } = useI18n()
 
 const {
   isDrawerOpen,
@@ -401,6 +413,11 @@ onBeforeUnmount(() => {
   font-size: 0.8125rem;
   font-weight: 700;
   color: var(--text-main);
+}
+
+.appearance-section__icon {
+  margin-right: 0.375rem;
+  color: var(--text-soft);
 }
 
 .appearance-section__value {
