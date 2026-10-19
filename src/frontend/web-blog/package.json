@@ -34,7 +34,7 @@
     "@tixxin/nuxt-theme-engine": "^0.0.4",
     "@tixxin/subscription-domain": "workspace:*",
     "@vueuse/core": "^14.4.0",
-    "@vueuse/integrations": "^14.4.0",
+    "@vueuse/integrations": "^15.0.0",
     "echarts": "^6.1.0",
     "fuse.js": "^7.5.0",
     "isomorphic-dompurify": "^3.19.0",
