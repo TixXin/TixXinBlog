@@ -1,0 +1,178 @@
+# TixXinBlog 1Panel 应用编排：PostgreSQL、迁移、API、前端；HTTPS 与证书交给 1Panel 网站（OpenResty）。
+# 密钥由 scripts/init.sh 生成在 data/secrets/，不进入安装表单；内部子网由脚本选定并写入 .env。
+# 1Panel 会把表单项写入同目录 .env，并可能改写其中一个服务的 restart 与资源限制，因此不使用 YAML 锚点，
+# 迁移服务也不依赖退出状态（见 migration 注释）。
+services:
+  frontend:
+    image: ghcr.io/tixxin/tixxinblog-web:0.3.0
+    container_name: ${CONTAINER_NAME}
+    restart: always
+    networks:
+      - app
+    # 只绑定本机：OpenResty 以 host 网络运行，经 127.0.0.1 反向代理到这里。
+    ports:
+      - '127.0.0.1:${PANEL_APP_PORT_HTTP}:3000'
+    environment:
+      NUXT_API_BASE_URL: http://backend:3000/api/v1
+      # 宿主机经端口映射进入容器时，来源地址是本项目网络的网关，位于该子网内；子网内其余地址只有本应用容器。
+      NUXT_TRUSTED_PROXY_CIDRS: ${TIXXIN_NETWORK_SUBNET:-172.31.250.0/24}
+      NUXT_PUBLIC_API_BASE_URL: /api/v1
+      NUXT_PUBLIC_SITE_URL: https://${SITE_HOST}
+      NUXT_PUBLIC_USE_MOCK_REPO: 'false'
+      NUXT_PUBLIC_POST_USE_MOCK_REPO: 'false'
+      NUXT_PUBLIC_DEFAULT_LOCALE: ${SITE_LOCALE:-zh-CN}
+    healthcheck:
+      test:
+        [
+          'CMD',
+          'node',
+          '-e',
+          "fetch('http://127.0.0.1:3000/').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))",
+        ]
+      interval: 10s
+      timeout: 5s
+      start_period: 30s
+      retries: 6
+    depends_on:
+      backend:
+        condition: service_healthy
+    logging:
+      driver: json-file
+      options:
+        max-size: '10m'
+        max-file: '5'
+    labels:
+      createdBy: 'Apps'
+
+  backend:
+    image: ghcr.io/tixxin/tixxinblog-api:0.3.0
+    container_name: ${CONTAINER_NAME}-api
+    restart: always
+    networks:
+      - app
+    # DATABASE_URL、JWT_ACCESS_SECRET、SETUP_TOKEN；文件缺失时 API 启动校验会明确报错。
+    env_file:
+      - path: ./data/secrets/app.env
+        required: false
+    environment:
+      CORS_ORIGIN: https://${SITE_HOST}
+      # API 的直接前置是本项目内的前端容器。
+      TRUSTED_PROXY_CIDRS: ${TIXXIN_NETWORK_SUBNET:-172.31.250.0/24}
+      CLIENT_REGION_HEADER: x-client-region
+      LOG_LEVEL: info
+      MEDIA_DIRECTORY: /app/var/media
+      RELEASE_VERSION: '0.3.0'
+      SITE_DEFAULT_LOCALE: ${SITE_LOCALE:-zh-CN}
+      OPERATIONS_WORKER_ENABLED: 'false'
+      NOTIFICATION_EMAIL_ENABLED: 'false'
+      NOTIFICATION_SITE_URL: https://${SITE_HOST}
+      BACKUP_SCHEDULE_ENABLED: 'false'
+      BACKUP_EXECUTION_MODE: native
+      BACKUP_DIRECTORY: /app/var/backups
+    volumes:
+      - ./data/media:/app/var/media
+    healthcheck:
+      test:
+        [
+          'CMD',
+          'node',
+          '-e',
+          "fetch('http://127.0.0.1:3000/ready').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))",
+        ]
+      interval: 10s
+      timeout: 5s
+      start_period: 30s
+      retries: 6
+    depends_on:
+      migration:
+        condition: service_healthy
+    logging:
+      driver: json-file
+      options:
+        max-size: '10m'
+        max-file: '5'
+    labels:
+      createdBy: 'Apps'
+
+  # 每次 compose up（安装、升级、重建）都执行正式迁移；已是最新时为空操作。
+  # 成功后保持空闲并以健康检查表示完成：1Panel 会把安装表单的重启策略（默认 always）写到随机一个服务上，
+  # 若落在一次性退出的容器上，service_completed_successfully 会一直等不到结束状态。
+  migration:
+    image: ghcr.io/tixxin/tixxinblog-migration:0.3.0
+    container_name: ${CONTAINER_NAME}-migration
+    restart: 'no'
+    networks:
+      - app
+    env_file:
+      - path: ./data/secrets/app.env
+        required: false
+    environment:
+      # 为 en 时迁移把仍未编辑的初始站点资料改为英文。
+      SITE_DEFAULT_LOCALE: ${SITE_LOCALE:-zh-CN}
+    command:
+      - sh
+      - -c
+      - |
+        set -eu
+        rm -f /tmp/tixxin-migrated
+        if [ -z "$${DATABASE_URL:-}" ]; then
+          echo '缺少 data/secrets/app.env，请在应用目录执行 bash scripts/init.sh 后重建应用' >&2
+          exit 1
+        fi
+        corepack pnpm migration:up
+        touch /tmp/tixxin-migrated
+        echo '数据库迁移完成'
+        trap 'exit 0' TERM INT
+        while :; do sleep 3600 & wait $$!; done
+    healthcheck:
+      test: ['CMD', 'test', '-f', '/tmp/tixxin-migrated']
+      interval: 3s
+      timeout: 3s
+      start_period: 15m
+      retries: 3
+    depends_on:
+      postgres:
+        condition: service_healthy
+    logging:
+      driver: json-file
+      options:
+        max-size: '10m'
+        max-file: '5'
+    labels:
+      createdBy: 'Apps'
+
+  postgres:
+    image: postgres:16-alpine
+    container_name: ${CONTAINER_NAME}-postgres
+    restart: always
+    networks:
+      - app
+    # POSTGRES_PASSWORD；仅首次初始化空数据目录时生效。
+    env_file:
+      - path: ./data/secrets/postgres.env
+        required: false
+    environment:
+      POSTGRES_USER: tixxin
+      POSTGRES_DB: tixxin_blog
+    volumes:
+      - ./data/postgres:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U tixxin -d tixxin_blog']
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    logging:
+      driver: json-file
+      options:
+        max-size: '10m'
+        max-file: '5'
+    labels:
+      createdBy: 'Apps'
+
+# 项目私有网络：数据库与 API 不加入共享的 1panel-network，也不发布宿主端口。
+# 子网由 scripts/init.sh 在本机挑选未占用的 /24 并记录到 data/network.env，可信代理与之同源。
+networks:
+  app:
+    ipam:
+      config:
+        - subnet: ${TIXXIN_NETWORK_SUBNET:-172.31.250.0/24}

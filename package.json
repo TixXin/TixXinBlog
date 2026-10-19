@@ -37,7 +37,7 @@
     "start": "corepack pnpm --filter web-blog start",
     "lint": "corepack pnpm --filter web-blog exec eslint .",
     "lint:fix": "corepack pnpm --filter web-blog exec eslint . --fix",
-    "lint:shell": "shellcheck deploy/install.sh deploy/tixxin scripts/release/package-deploy.sh scripts/release/install-smoke.sh",
+    "lint:shell": "shellcheck deploy/install.sh deploy/tixxin scripts/release/package-deploy.sh scripts/release/install-smoke.sh deploy/1panel/tixxin-blog/0.3.0/scripts/prepare.sh deploy/1panel/tixxin-blog/0.3.0/scripts/init.sh deploy/1panel/tixxin-blog/0.3.0/scripts/upgrade.sh",
     "format": "prettier --write \"src/**/*.{vue,ts,js,scss,json,md}\"",
     "prepare": "husky",
     "check:secrets": "node scripts/check-secrets.mjs",

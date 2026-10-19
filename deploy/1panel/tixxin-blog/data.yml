@@ -1,0 +1,34 @@
+# TixXinBlog 1Panel 应用元数据（应用商店目录格式）；版本目录内为安装表单与编排。
+name: TixXinBlog
+tags:
+  - 建站
+title: 单博主个人博客，自带后台与浏览器初始化向导
+description: 单博主个人博客，自带后台与浏览器初始化向导
+additionalProperties:
+  key: tixxin-blog
+  name: TixXinBlog
+  tags:
+    - Website
+  shortDescZh: 单博主个人博客，自带后台与浏览器初始化向导
+  shortDescEn: A single-author personal blog with a built-in admin panel and setup wizard
+  description:
+    en: A single-author personal blog with a built-in admin panel and setup wizard
+    es-es: Un blog personal de un solo autor con panel de administración y asistente de configuración
+    ja: 管理画面とセットアップウィザードを備えた個人ブログ
+    ms: Blog peribadi seorang penulis dengan panel pentadbir dan wizard persediaan
+    pt-br: Um blog pessoal de autor único com painel de administração e assistente de configuração
+    ru: Персональный блог одного автора со встроенной админ-панелью и мастером настройки
+    ko: 관리자 패널과 설정 마법사를 갖춘 1인 개인 블로그
+    zh: 单博主个人博客，自带后台与浏览器初始化向导
+    zh-Hant: 單博主個人部落格，內建後台與瀏覽器初始化精靈
+    tr: Yönetim paneli ve kurulum sihirbazı içeren tek yazarlı kişisel blog
+  type: website
+  crossVersionUpdate: true
+  limit: 0
+  recommend: 0
+  website: https://github.com/TixXin/TixXinBlog
+  github: https://github.com/TixXin/TixXinBlog
+  document: https://github.com/TixXin/TixXinBlog/tree/main/docs
+  architectures:
+    - amd64
+    - arm64

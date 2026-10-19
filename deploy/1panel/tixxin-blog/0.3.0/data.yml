@@ -1,0 +1,65 @@
+# TixXinBlog 0.3.0 安装表单：只询问站点域名、站点语言与本机 HTTP 端口。
+# 数据库密码、签名密钥与初始化令牌由 scripts/init.sh 用宿主机随机源生成，不使用表单的 random 默认值
+# （1Panel 的 random 只在默认值后追加 6 位字母数字，强度与格式都不满足要求）。
+additionalProperties:
+  formFields:
+    - default: blog.example.com
+      edit: true
+      envKey: SITE_HOST
+      labelEn: Site domain
+      labelZh: 站点域名
+      label:
+        en: Site domain (without https://)
+        es-es: Dominio del sitio (sin https://)
+        ja: サイトのドメイン（https:// なし）
+        ms: Domain laman (tanpa https://)
+        pt-br: Domínio do site (sem https://)
+        ru: Домен сайта (без https://)
+        ko: 사이트 도메인 (https:// 제외)
+        zh: 站点域名（不带 https://）
+        zh-Hant: 網站網域（不含 https://）
+        tr: Site alan adı (https:// olmadan)
+      required: true
+      type: text
+    - default: zh-CN
+      edit: true
+      envKey: SITE_LOCALE
+      labelEn: Site language
+      labelZh: 站点语言
+      label:
+        en: Site language
+        es-es: Idioma del sitio
+        ja: サイトの言語
+        ms: Bahasa laman
+        pt-br: Idioma do site
+        ru: Язык сайта
+        ko: 사이트 언어
+        zh: 站点语言
+        zh-Hant: 網站語言
+        tr: Site dili
+      required: true
+      type: select
+      values:
+        - label: 简体中文
+          value: zh-CN
+        - label: English
+          value: en
+    - default: 3458
+      edit: true
+      envKey: PANEL_APP_PORT_HTTP
+      labelEn: HTTP port (local only)
+      labelZh: HTTP 端口（仅本机）
+      label:
+        en: HTTP port (local only)
+        es-es: Puerto HTTP (solo local)
+        ja: HTTP ポート（ローカルのみ）
+        ms: Port HTTP (tempatan sahaja)
+        pt-br: Porta HTTP (somente local)
+        ru: HTTP-порт (только локально)
+        ko: HTTP 포트 (로컬 전용)
+        zh: HTTP 端口（仅本机）
+        zh-Hant: HTTP 連接埠（僅本機）
+        tr: HTTP bağlantı noktası (yalnızca yerel)
+      required: true
+      rule: paramPort
+      type: number
