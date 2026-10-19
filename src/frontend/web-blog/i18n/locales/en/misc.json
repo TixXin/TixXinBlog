@@ -948,7 +948,7 @@
         "removeCategoryConfirm": "Delete this category? Its bookmarks will be deleted too.",
         "saveFailed": "Couldn't save. Your input has been kept.",
         "seoDescription": "Your personal start page: search, bookmarks, and categories",
-        "seoTitle": "Start Page",
+        "seoTitle": "Tabs",
         "settings": "Bookmark settings",
         "storageNote": "Bookmarks are stored in this browser and can be edited after signing in. Export a backup from Bookmark settings."
       },

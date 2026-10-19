@@ -7,6 +7,7 @@ import BatchBar from '../../app/components/admin/BatchBar.vue'
 import ContentRelations from '../../app/components/admin/ContentRelations.vue'
 import ActiveSessions from '../../app/components/admin/ActiveSessions.vue'
 import { describeBatchResult } from '../../app/composables/useAdminBatchSelection'
+import { contentRelationSummary } from '../../app/features/content-relation/editor'
 import { adminNavigation } from '../../app/features/admin/navigation'
 import { overviewDomains, overviewTasks } from '../../app/features/admin/overview'
 import type { OperationTask as Task } from '../../app/features/notification/types'
@@ -94,6 +95,17 @@ it('默认中文：任务、审计、批量与关联文案逐字保持原文', a
   expect(relations.find('h2').text()).toBe('关联内容（1 / 12）')
   expect(relations.text()).toContain('文章 #3 · Hello · 目标缺失')
   expect(relations.text()).toContain('30 项')
+  const t = i18n().t
+  expect(
+    contentRelationSummary(
+      [
+        { type: 'gallery', id: 7 },
+        { type: 'post', id: 3 },
+      ],
+      t,
+    ),
+  ).toBe('图库 #7 → 文章 #3')
+  expect(contentRelationSummary([], t)).toBe('未设置')
 })
 
 it('英文冒烟：导航、工作台、任务、审计、会话、批量与关联文案切换为英文', async () => {
@@ -154,11 +166,34 @@ it('英文冒烟：导航、工作台、任务、审计、会话、批量与关�
     expect(describeBatchResult(batchResult, 'Hid', 'comments', t)).toBe(
       'Hid 2 comments; 1 already gone; 1 changed elsewhere — refresh and select again',
     )
+    // 名称按数量取单复数：单条时不出现「1 comments」
+    const noun = (count: number) => t('admin-content.comments.batch.noun', count)
+    const single = await mountSuspended(BatchBar, {
+      props: { noun, count: 1, pageCount: 5, allSelected: false, partiallySelected: true, actions: [] },
+    })
+    expect(single.attributes('aria-label')).toBe('Bulk actions for comments')
+    expect(single.text()).toContain('1 comment selected')
+    expect(
+      describeBatchResult({ successCount: 1, failedCount: 0, results: [{ id: 1, ok: true }] }, 'Deleted', noun, t),
+    ).toBe('Deleted 1 comment')
+    expect(describeBatchResult({ successCount: 0, failedCount: 0, results: [] }, 'Deleted', noun, t)).toBe(
+      'No comments were changed',
+    )
 
     const relations = await mountSuspended(ContentRelations, { props: relationProps })
     expect(relations.find('h2').text()).toBe('Related content (1 / 12)')
     expect(relations.text()).toContain('Post #3 · Hello · Target missing')
     expect(relations.text()).toContain('30 items')
+    expect(
+      contentRelationSummary(
+        [
+          { type: 'project', id: 7 },
+          { type: 'post', id: 3 },
+        ],
+        t,
+      ),
+    ).toBe('Project #7 → Post #3')
+    expect(contentRelationSummary(undefined, t)).toBe('Not set')
   } finally {
     await i18n().setLocale('zh-CN')
   }

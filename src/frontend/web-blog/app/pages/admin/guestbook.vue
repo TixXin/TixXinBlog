@@ -37,7 +37,7 @@
         <p v-if="!pending && !error && !items.length">{{ $t('admin-media.guestbook.empty') }}</p>
         <AdminBatchBar
           v-if="items.length"
-          :noun="$t('admin-media.guestbook.batchNoun')"
+          :noun="(count: number) => $t('admin-media.guestbook.batchNoun', count)"
           :count="selection.count.value"
           :page-count="items.length"
           :all-selected="selection.allSelected.value"

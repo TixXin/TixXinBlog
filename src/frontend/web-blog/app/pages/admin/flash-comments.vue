@@ -31,7 +31,7 @@
       <p v-if="!pending && !error && !data.items.length">{{ t('admin-content.flashComments.empty') }}</p>
       <AdminBatchBar
         v-if="data.items.length"
-        :noun="t('admin-content.flashComments.batch.noun')"
+        :noun="(count: number) => t('admin-content.flashComments.batch.noun', count)"
         :count="selection.count.value"
         :page-count="data.items.length"
         :all-selected="selection.allSelected.value"
@@ -256,7 +256,7 @@ async function batch(action: 'published' | 'hidden' | 'delete') {
             ? 'admin-content.flashComments.batch.approved'
             : 'admin-content.flashComments.batch.hidden',
       ),
-      t('admin-content.flashComments.batch.noun'),
+      (count: number) => t('admin-content.flashComments.batch.noun', count),
       // 在 await 之后调用，显式传入翻译函数，不依赖当时的组件上下文
       t,
     )

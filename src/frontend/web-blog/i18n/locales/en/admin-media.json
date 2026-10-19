@@ -494,7 +494,7 @@
       "unansweredHint": "Shows only published, undeleted top-level visitor messages without a public direct reply from the owner; they count again if that reply is hidden or deleted.",
       "loading": "Loading messages",
       "empty": "No messages match the current filters.",
-      "batchNoun": "messages",
+      "batchNoun": "message | messages",
       "selectLabel": "Select message from {author}: {content}",
       "ownerSuffix": " · Owner",
       "pinnedSuffix": " · Pinned",
@@ -529,7 +529,7 @@
       "batchRemoveConfirm": "Delete the selected message? Public replies are kept, but they will no longer show its quoted text. | Delete the {count} selected messages? Public replies are kept, but they will no longer show the quoted text of these messages.",
       "batchDone": {
         "published": "Published",
-        "hidden": "Hidden",
+        "hidden": "Hid",
         "delete": "Deleted"
       },
       "batchFailed": "The batch action failed and its effect is unconfirmed. Refresh the list to check"

@@ -239,7 +239,7 @@
       "queue": "{total} posts selected, processed in {count} batches of up to {limit}. This is batch {index}. Each batch must be previewed and confirmed separately; later batches never run automatically.",
       "closeHint": "Closing skips the remaining batches. Submitted batches can still be checked under “Recent bulk actions”.",
       "retryPreview": "Retry this batch preview",
-      "summary": "Action: {action}. {selected} posts explicitly selected, {allowed} can be processed.",
+      "summary": "Action: {action}. Selected: {selected}; can be processed: {allowed}.",
       "effect": {
         "delete": "Permanently deletes the posts with their comments, revisions, past URLs and engagement records; they can't be restored from the trash. Media files are kept. The list below shows how many referencing records will be deleted.",
         "trash": "The posts are removed from public view. Body, comments, revisions and URLs are kept, and restored posts become drafts.",
@@ -460,7 +460,7 @@
         "loadFailed": "Couldn't load the context. Select the comment again; it may have been deleted."
       },
       "batch": {
-        "noun": "comments",
+        "noun": "comment | comments",
         "approve": "Approve",
         "hide": "Hide",
         "spam": "Mark as spam",
@@ -539,13 +539,13 @@
       "updated": "Comment status updated",
       "changeFailed": "Couldn't confirm the action. Check the latest status and try again.",
       "batch": {
-        "noun": "flash comments",
+        "noun": "flash comment | flash comments",
         "approve": "Approve",
         "hide": "Hide",
         "delete": "Delete",
         "deleted": "Deleted",
         "approved": "Approved",
-        "hidden": "Hidden",
+        "hidden": "Hid",
         "deleteConfirm": "Delete the {count} selected flash comments? This can't be undone.",
         "failed": "The bulk action failed and may not have taken effect. Refresh the list to check."
       }

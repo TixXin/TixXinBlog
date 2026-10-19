@@ -168,7 +168,8 @@ export function useAdminGuestbook() {
       const message = describeBatchResult(
         result,
         t(`admin-media.guestbook.batchDone.${action}`),
-        t('admin-media.guestbook.batchNoun'),
+        (count: number) => t('admin-media.guestbook.batchNoun', count),
+        t,
       )
       // 列表重新读取会清空错误提示，因此在刷新之后再展示跳过项。
       if (result.failedCount) error.value = message

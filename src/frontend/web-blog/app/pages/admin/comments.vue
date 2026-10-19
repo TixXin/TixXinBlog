@@ -195,7 +195,7 @@
       </section>
       <AdminBatchBar
         v-if="items.length"
-        :noun="t('admin-content.comments.batch.noun')"
+        :noun="(count: number) => t('admin-content.comments.batch.noun', count)"
         :count="selection.count.value"
         :page-count="items.length"
         :all-selected="selection.allSelected.value"
@@ -585,7 +585,7 @@ async function runBatch(action: string) {
       remove
         ? t('admin-content.comments.batch.deleted')
         : t('admin-content.comments.batch.setTo', { status: statusLabels.value[action as CommentStatus] }),
-      t('admin-content.comments.batch.noun'),
+      (count: number) => t('admin-content.comments.batch.noun', count),
       // 在 await 之后调用，显式传入翻译函数，不依赖当时的组件上下文
       t,
     )

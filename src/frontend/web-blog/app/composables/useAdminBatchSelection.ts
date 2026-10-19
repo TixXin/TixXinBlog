@@ -13,6 +13,17 @@ export interface AdminBatchAction {
   icon: string
   danger?: boolean
 }
+/**
+ * 批量操作的对象名称：固定文本，或按数量返回单复数形式的函数（如 `(n) => t('…noun', n)`，
+ * 英文字典写成 `comment | comments`）。固定文本用于不区分单复数的语言或旧调用方。
+ */
+export type AdminBatchNoun = string | ((count: number) => string)
+
+/** 取对象名称；不带具体数量的句子（如「没有评论被修改」）用复数形式 */
+export function batchNounText(noun: AdminBatchNoun, count = 2) {
+  return typeof noun === 'function' ? noun(count) : noun
+}
+
 /** 批量接口逐条结果的公共形状 */
 export interface AdminBatchResult {
   successCount: number
@@ -128,20 +139,23 @@ export function useAdminBatchSelection<T extends { id: number | string }>(
 
 /**
  * 汇总批量结果文案：跳过的项说明原因，便于刷新后核对。
- * done（如「已删除」）与 noun（如「评论」）由调用方传入已翻译文本；t 缺省取当前 Nuxt 上下文的翻译函数，
+ * done（如「已删除」）与 noun（如「评论」）由调用方传入已翻译文本，noun 可传按数量取单复数的函数；
+ * t 缺省取当前 Nuxt 上下文的翻译函数，
  * 在 await 之后调用时请显式传入 useI18n().t。
  */
 export function describeBatchResult(
   result: AdminBatchResult,
   done: string,
-  noun: string,
+  noun: AdminBatchNoun,
   t: Translate = currentTranslate(),
 ) {
   const K = 'admin-system.shared.batch.'
-  const parts = result.successCount ? [t(`${K}done`, { done, count: result.successCount, noun })] : []
+  const parts = result.successCount
+    ? [t(`${K}done`, { done, count: result.successCount, noun: batchNounText(noun, result.successCount) })]
+    : []
   const missing = result.results.filter((item) => item.reason === 'not_found').length
   const conflict = result.results.filter((item) => item.reason === 'conflict').length
   if (missing) parts.push(t(`${K}missing`, { count: missing }))
   if (conflict) parts.push(t(`${K}conflict`, { count: conflict }))
-  return parts.join(t(`${K}separator`)) || t(`${K}nothing`, { noun })
+  return parts.join(t(`${K}separator`)) || t(`${K}nothing`, { noun: batchNounText(noun) })
 }

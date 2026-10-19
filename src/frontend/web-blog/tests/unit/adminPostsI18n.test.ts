@@ -153,8 +153,8 @@ describe('后台文章域英文冒烟', () => {
         'Image 1 in the body (line 1) has no alt text.',
       ])
       expect(dialog.text()).toContain('Publish anyway')
-      // 除博主填写的标题、摘要、专栏外不应残留中文；有序关联摘要来自共享的关联模块，待其迁移后再纳入
-      const text = dialog.text().replace(/旅行记录|山间的一天|生活|未设置/g, '')
+      // 除博主填写的标题、摘要、专栏外不应残留中文
+      const text = dialog.text().replace(/旅行记录|山间的一天|生活/g, '')
       expect(text).not.toMatch(/[一-鿿]/)
     })
   })
@@ -162,7 +162,7 @@ describe('后台文章域英文冒烟', () => {
   it('批量确认面板按数量使用英文单复数，确认文字仍是后端要求的原文', async () => {
     await inEnglish(async () => {
       const wrapper = await mountBatch()
-      expect(wrapper.text()).toContain('Action: Delete permanently. 1 posts explicitly selected, 1 can be processed.')
+      expect(wrapper.text()).toContain('Action: Delete permanently. Selected: 1; can be processed: 1.')
       expect(wrapper.text()).toContain(
         '1 comment · 3 revisions · 1 URL · 2 media references · 5 post likes · 0 comment likes · 30 view records',
       )

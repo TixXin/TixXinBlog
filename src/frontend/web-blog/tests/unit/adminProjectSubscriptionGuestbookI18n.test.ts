@@ -61,7 +61,10 @@ const stubs = {
   CommonTooltip: passthrough,
   AdminMediaPicker: true,
   AdminContentRelations: true,
-  AdminBatchBar: defineComponent({ props: ['noun', 'actions'], template: '<div>{{ noun }}</div>' }),
+  AdminBatchBar: defineComponent({
+    props: ['noun', 'actions'],
+    template: `<div>{{ typeof noun === 'function' ? noun(2) : noun }}</div>`,
+  }),
   CommonImageFrame: true,
   CommonRequestFeedback: true,
   SubscriptionFilters: true,
