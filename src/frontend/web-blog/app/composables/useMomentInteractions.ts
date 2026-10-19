@@ -11,6 +11,8 @@ export function useMomentInteractions() {
   const identity = useGuestIdentity()
   const login = useLoginDrawer()
   const toast = useToast()
+  // 在 Nuxt 上下文内取得翻译函数，异步互动完成后的提示仍按当前界面语言生成
+  const t = currentTranslate()
   const identityVisible = ref(false)
   let waitingSubmission: MomentCommentSubmission | null = null
   const protectInput = (event: BeforeUnloadEvent) => {
@@ -50,7 +52,8 @@ export function useMomentInteractions() {
       complete?.(true)
       void app.runWithContext(() => refreshNuxtData('moment-overview'))
     } catch (cause) {
-      if (epoch === session.epoch) toast.error(cause instanceof Error ? cause.message : '点赞失败，请重试')
+      if (epoch === session.epoch)
+        toast.error(cause instanceof Error ? cause.message : t('flash-moment.interactions.likeFailed'))
       complete?.(false)
     } finally {
       if (epoch === session.epoch) state.likePending = false
@@ -75,7 +78,7 @@ export function useMomentInteractions() {
       state.loadError = ''
     } catch (cause) {
       if (epoch === session.epoch && version === state.version)
-        state.loadError = cause instanceof Error ? cause.message : '评论加载失败，请重试'
+        state.loadError = cause instanceof Error ? cause.message : t('flash-moment.interactions.commentsLoadFailed')
     } finally {
       if (epoch === session.epoch && version === state.version) state.loading = false
     }
@@ -85,7 +88,7 @@ export function useMomentInteractions() {
     const state = stateFor(id)
     if (!state || state.submitting || !state.draft.trim()) return
     if (!auth.initialized.value || auth.restoringPending.value) {
-      state.submitError = '正在确认登录状态，请稍后再次发送；输入已保留。'
+      state.submitError = t('flash-moment.interactions.authPending')
       void auth.restore()
       return
     }
@@ -115,7 +118,7 @@ export function useMomentInteractions() {
       if (epoch !== session.epoch) return
       if (version !== state.version) {
         if (state.draft.trim() === content) state.draft = ''
-        state.notice = '提交已处理，评论状态已变化，请重新加载查看。'
+        state.notice = t('flash-moment.interactions.stateChanged')
         void comments(id, true)
         return
       }
@@ -126,11 +129,14 @@ export function useMomentInteractions() {
       if (state.draft.trim() === content) state.draft = ''
       state.requestId = ''
       state.requestBody = ''
-      state.notice = result.moderationStatus === 'pending' ? '评论已提交，审核通过后公开。' : '评论已发送。'
+      state.notice =
+        result.moderationStatus === 'pending'
+          ? t('flash-moment.interactions.commentPending')
+          : t('flash-moment.interactions.commentSent')
       void app.runWithContext(() => refreshNuxtData('moment-overview'))
     } catch (cause) {
       if (epoch === session.epoch)
-        state.submitError = cause instanceof Error ? cause.message : '评论发送失败，内容已保留'
+        state.submitError = cause instanceof Error ? cause.message : t('flash-moment.interactions.commentFailed')
     } finally {
       if (epoch === session.epoch) state.submitting = false
     }

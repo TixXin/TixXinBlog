@@ -3,7 +3,12 @@
   @description 朋友圈紧凑信息入口，只展示固定侧栏未提供的作者资料和日历
 -->
 <template>
-  <CommonContextDrawer v-model:open="open" class="page-context-entry" :label="label" icon="lucide:list-filter">
+  <CommonContextDrawer
+    v-model:open="open"
+    class="page-context-entry"
+    :label="label || $t('flash-moment.infoDrawer.label')"
+    icon="lucide:list-filter"
+  >
     <div class="moment-info-drawer">
       <SidebarMomentAuthorCard v-if="showInfo" :stats="stats" :profile="profile" />
       <SidebarMomentCalendarCard
@@ -33,7 +38,7 @@ withDefaults(
     showInfo: boolean
     label?: string
   }>(),
-  { label: '筛选动态', available: true, dateCounts: undefined },
+  { label: '', available: true, dateCounts: undefined },
 )
 const open = defineModel<boolean>('open', { default: false })
 defineEmits<{ selectDate: [date: string | null] }>()

@@ -24,9 +24,9 @@
       <div class="moment-card__header">
         <span class="moment-card__author">{{ ownerProfile.name }}</span>
         <span v-if="moment.mood" class="moment-card__mood">{{ moment.mood }}</span>
-        <span v-if="moment.isPinned" class="moment-card__pin" aria-label="置顶">
+        <span v-if="moment.isPinned" class="moment-card__pin" :aria-label="$t('flash-moment.momentCard.pinned')">
           <Icon name="lucide:pin" size="11" />
-          置顶
+          {{ $t('flash-moment.momentCard.pinned') }}
         </span>
       </div>
 
@@ -50,7 +50,7 @@
       <div v-if="moment.images && moment.images.length > 0" class="moment-card__images" :class="gridClass">
         <div v-for="(img, idx) in moment.images" :key="img + idx" class="moment-card__image-wrap">
           <CommonImageFrame
-            :alt="moment.imageAlts?.[idx] || `动态配图 ${idx + 1}`"
+            :alt="moment.imageAlts?.[idx] || $t('flash-moment.momentCard.imageAlt', { index: idx + 1 })"
             class="moment-card__image"
             loading="lazy"
             :sizes="imageSizes"
@@ -61,7 +61,7 @@
             v-if="img && !imageFailures[img + idx]"
             type="button"
             class="moment-card__image-preview"
-            :aria-label="`查看动态配图 ${idx + 1}`"
+            :aria-label="$t('flash-moment.momentCard.viewImage', { index: idx + 1 })"
             @click="openLightBox(idx)"
           />
         </div>
@@ -77,7 +77,7 @@
           <NuxtLink
             :to="{ path: `/moments/${moment.id}`, query: detailQuery }"
             class="moment-card__time"
-            :aria-label="`查看动态详情 · ${formattedDate}`"
+            :aria-label="$t('flash-moment.momentCard.viewDetail', { date: formattedDate })"
           >
             {{ formattedDate }}
           </NuxtLink>
@@ -97,7 +97,7 @@
             type="button"
             class="moment-action-btn"
             :class="{ 'is-active': showComments }"
-            aria-label="查看动态评论"
+            :aria-label="$t('flash-moment.momentCard.viewComments')"
             :aria-expanded="showComments"
             @click="toggleComments"
           >
@@ -110,7 +110,7 @@
             type="button"
             class="moment-action-btn"
             :class="{ 'is-liked': isLiked }"
-            :aria-label="isLiked ? '取消动态点赞' : '点赞动态'"
+            :aria-label="isLiked ? $t('flash-moment.momentCard.unlike') : $t('flash-moment.momentCard.like')"
             :aria-pressed="isLiked"
             :disabled="state?.likePending || syncing || !hydrated"
             @click="toggleLike"
@@ -183,7 +183,8 @@ onMounted(() => {
 // 与日期筛选和日历采用同一 UTC 日期键。
 const formattedDate = computed(() => props.moment.date.slice(0, 10))
 const siteUrl = useSiteUrl()
-const renderedContent = computed(() => renderMomentMarkdown(props.moment.content, { siteUrl }))
+const { t } = useI18n()
+const renderedContent = computed(() => renderMomentMarkdown(props.moment.content, { siteUrl, t }))
 const contentRef = ref<HTMLElement | null>(null)
 const isLiked = computed(() => props.moment.isLiked)
 const likes = computed(() => props.moment.likes)

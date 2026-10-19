@@ -22,7 +22,7 @@
         :href="link.url"
         target="_blank"
         rel="noopener noreferrer"
-        :aria-label="`打开链接：${link.title}`"
+        :aria-label="$t('flash-moment.linkCard.open', { title: link.title })"
         class="moment-link-card__cover-link"
       />
     </div>

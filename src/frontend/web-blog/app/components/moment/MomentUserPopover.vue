@@ -29,7 +29,7 @@
             </div>
             <div class="moment-user-popover__info">
               <span class="moment-user-popover__name" :class="{ 'is-owner': isOwner }">{{ profile.name }}</span>
-              <span v-if="isOwner" class="moment-user-popover__badge">博主</span>
+              <span v-if="isOwner" class="moment-user-popover__badge">{{ $t('flash-moment.userPopover.owner') }}</span>
             </div>
           </div>
           <p v-if="profile.bio" class="moment-user-popover__bio">{{ profile.bio }}</p>
@@ -41,7 +41,7 @@
             class="moment-user-popover__link"
           >
             <Icon name="lucide:external-link" size="12" />
-            主页
+            {{ $t('flash-moment.userPopover.homepage') }}
           </a>
         </div>
       </Transition>

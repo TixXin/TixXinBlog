@@ -1,9 +1,10 @@
 /** @file useMomentOverview.ts @description 朋友圈真实聚合与站点资料，失败保留最后成功结果 */
 import type { MomentOverview } from '~/features/moment/types'
-import { MOMENT_TOPIC_DEFINITIONS } from '~/features/moment/topics'
+import { findMomentTopic } from '~/features/moment/topics'
 export async function useMomentOverview(options: { immediate?: boolean } = {}) {
   const repo = useMomentRepository()
   const { ownerCard, ownerPresence } = useSiteInfo()
+  const t = currentTranslate()
   const result = usePublicReadData<MomentOverview>('moment-overview', (_app, { signal }) => repo.overview(signal), {
     domain: 'moment-overview',
     kind: 'metadata',
@@ -18,9 +19,9 @@ export async function useMomentOverview(options: { immediate?: boolean } = {}) {
     totalComments: metadata.value?.stats.totalComments ?? null,
     // 心情一栏展示博主在站点资料里维护的签名；未填写时回退为统计说明
     currentMood: result.error.value
-      ? '统计暂时不可用'
+      ? t('flash-moment.overview.statsUnavailable')
       : ownerPresence.value.signature ||
-        (ownerPresence.value.status === 'online' ? ownerPresence.value.label : '公开动态统计'),
+        (ownerPresence.value.status === 'online' ? ownerPresence.value.label : t('flash-moment.overview.publicStats')),
     moodIcon:
       !result.error.value && (ownerPresence.value.signature || ownerPresence.value.status === 'online')
         ? 'lucide:smile'
@@ -36,7 +37,7 @@ export async function useMomentOverview(options: { immediate?: boolean } = {}) {
   }))
   const momentTopics = computed(() =>
     (metadata.value?.topics ?? []).map((topic) => ({
-      ...(MOMENT_TOPIC_DEFINITIONS.find((item) => item.name === topic.name) ?? {
+      ...(findMomentTopic(topic.name, t) ?? {
         name: topic.name,
         icon: 'lucide:hash',
         color: '#5b7cfa',

@@ -15,11 +15,16 @@
         role="dialog"
         tabindex="-1"
         aria-modal="true"
-        aria-label="图片预览"
+        :aria-label="$t('flash-moment.lightbox.dialog')"
         @click.self="onClose"
       >
         <!-- 关闭按钮 -->
-        <button type="button" class="moment-lightbox__close" aria-label="关闭" @click="onClose">
+        <button
+          type="button"
+          class="moment-lightbox__close"
+          :aria-label="$t('flash-moment.lightbox.close')"
+          @click="onClose"
+        >
           <Icon name="lucide:x" size="24" />
         </button>
 
@@ -28,7 +33,7 @@
           v-if="currentIndex > 0"
           type="button"
           class="moment-lightbox__nav moment-lightbox__nav--prev"
-          aria-label="上一张"
+          :aria-label="$t('flash-moment.lightbox.prev')"
           @click="onPrev"
         >
           <Icon name="lucide:chevron-left" size="28" />
@@ -38,7 +43,7 @@
         <div class="moment-lightbox__content" @click.self="onClose">
           <CommonImageFrame
             :src="images[currentIndex]"
-            alt="预览图片"
+            :alt="$t('flash-moment.lightbox.imageAlt')"
             class="moment-lightbox__img"
             fit="contain"
             loading="eager"
@@ -55,7 +60,7 @@
           v-if="currentIndex < images.length - 1"
           type="button"
           class="moment-lightbox__nav moment-lightbox__nav--next"
-          aria-label="下一张"
+          :aria-label="$t('flash-moment.lightbox.next')"
           @click="onNext"
         >
           <Icon name="lucide:chevron-right" size="28" />

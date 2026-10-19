@@ -20,7 +20,7 @@
       <NuxtLink
         v-if="!coverFailures[article.cover]"
         :to="article.url"
-        :aria-label="`阅读文章：${article.title}`"
+        :aria-label="$t('flash-moment.articleCard.read', { title: article.title })"
         class="moment-article-card__cover-link"
       />
     </div>

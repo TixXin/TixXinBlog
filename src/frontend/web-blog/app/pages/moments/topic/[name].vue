@@ -9,13 +9,13 @@
   <CommonPageFrame class="main-inner moment-topic-page" header-key="moment-return">
     <template #header>
       <div class="main-content__header moment-topic-header">
-        <NuxtLink to="/moments" class="back-btn" aria-label="返回朋友圈">
+        <NuxtLink to="/moments" class="back-btn" :aria-label="$t('flash-moment.momentDetail.back')">
           <Icon name="lucide:arrow-left" size="16" />
-          <span>返回朋友圈</span>
+          <span>{{ $t('flash-moment.momentDetail.back') }}</span>
         </NuxtLink>
         <MomentInfoDrawer
           v-model:open="drawerOpen"
-          label="动态信息"
+          :label="$t('flash-moment.momentDetail.infoLabel')"
           :show-info="drawerInfo"
           :stats="authorStats"
           :profile="ownerCard"
@@ -41,7 +41,7 @@
             <div class="moment-topic-hero__text">
               <h1 class="moment-topic-hero__name">#{{ topicMeta.name }}</h1>
               <p v-if="topicMeta.description" class="moment-topic-hero__desc">{{ topicMeta.description }}</p>
-              <p class="moment-topic-hero__count">共 {{ feedError && !moments.length ? '—' : total }} 条动态</p>
+              <p class="moment-topic-hero__count">{{ countLabel }}</p>
             </div>
           </header>
 
@@ -52,7 +52,7 @@
             </div>
             <div class="moment-topic-hero__text">
               <h1 class="moment-topic-hero__name">#{{ topicName }}</h1>
-              <p class="moment-topic-hero__count">共 {{ feedError && !moments.length ? '—' : total }} 条动态</p>
+              <p class="moment-topic-hero__count">{{ countLabel }}</p>
             </div>
           </header>
 
@@ -88,8 +88,8 @@
             v-if="overviewError"
             class="card"
             compact
-            title="动态统计暂时不可用"
-            :description="metadata ? '仍显示上次成功读取的动态统计。' : undefined"
+            :title="$t('flash-moment.moments.statsUnavailable')"
+            :description="metadata ? $t('flash-moment.moments.statsStale') : undefined"
             :pending="overviewPending"
             @retry="refreshOverview()"
           />
@@ -111,6 +111,7 @@
 
 <script setup lang="ts">
 import { findMomentTopic } from '~/features/moment/topics'
+const { t } = useI18n()
 const pageScope = usePageRequestScope()
 const route = useRoute()
 const { selectedDate, selectedTopic, searchKeyword, page, setPage, filterQuery } = useMomentFilters()
@@ -135,9 +136,14 @@ const {
 const { moments, total, pending: feedPending, error: feedError, refresh: refreshFeed } = feed
 const { rightInfo, drawerInfo, drawerOpen } = useMomentSidebarPlacement()
 const topicName = computed(() => String(route.params.name ?? ''))
-const topicMeta = computed(() => findMomentTopic(topicName.value))
+const topicMeta = computed(() => findMomentTopic(topicName.value, t))
 const heroStyle = computed(() => ({ '--topic-color': topicMeta.value?.color ?? 'var(--accent)' }))
 const hasMore = computed(() => moments.value.length < total.value)
+/** 话题动态数：首屏读取失败且没有已加载动态时显示占位符 */
+const countLabel = computed(() => {
+  const unknown = !!feedError.value && !moments.value.length
+  return t('flash-moment.topic.count', { count: unknown ? '—' : total.value }, unknown ? 2 : total.value)
+})
 const advancing = ref(false)
 watch(moments, interactions.seed, { immediate: true })
 async function loadMore() {
@@ -154,8 +160,8 @@ function onTopicSelect(value: string | null) {
 }
 usePageSeo({
   title: () => '#' + topicName.value,
-  shareTitle: () => '#' + topicName.value + ' - ' + ownerCard.value.name + ' 朋友圈',
-  description: () => '朋友圈中关于 ' + topicName.value + ' 的公开动态',
+  shareTitle: () => t('flash-moment.topic.shareTitle', { topic: topicName.value, name: ownerCard.value.name }),
+  description: () => t('flash-moment.topic.seoDescription', { topic: topicName.value }),
   type: 'website',
 })
 </script>

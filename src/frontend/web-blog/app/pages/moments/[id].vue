@@ -10,13 +10,17 @@
     <template #header>
       <div class="main-content__header moment-detail-header">
         <h1 class="sr-only">{{ pageTitle }}</h1>
-        <NuxtLink :to="{ path: '/moments', query: filterQuery }" class="back-btn" aria-label="返回朋友圈">
+        <NuxtLink
+          :to="{ path: '/moments', query: filterQuery }"
+          class="back-btn"
+          :aria-label="$t('flash-moment.momentDetail.back')"
+        >
           <Icon name="lucide:arrow-left" size="16" />
-          <span>返回朋友圈</span>
+          <span>{{ $t('flash-moment.momentDetail.back') }}</span>
         </NuxtLink>
         <MomentInfoDrawer
           v-model:open="drawerOpen"
-          label="动态信息"
+          :label="$t('flash-moment.momentDetail.infoLabel')"
           :show-info="drawerInfo"
           :stats="authorStats"
           :profile="ownerCard"
@@ -29,8 +33,8 @@
           <CommonRequestFeedback
             v-if="overviewError"
             compact
-            title="动态统计暂时不可用"
-            :description="metadata ? '仍显示上次成功读取的动态统计。' : undefined"
+            :title="$t('flash-moment.moments.statsUnavailable')"
+            :description="metadata ? $t('flash-moment.moments.statsStale') : undefined"
             :pending="overviewPending"
             @retry="refreshOverview()"
           />
@@ -46,12 +50,12 @@
           <CommonStateBlock
             v-if="!moment"
             icon="lucide:search-x"
-            title="动态不存在"
-            description="这条动态可能已被删除或链接有误"
+            :title="$t('flash-moment.momentDetail.notFound')"
+            :description="$t('flash-moment.momentDetail.notFoundDesc')"
           >
             <NuxtLink to="/moments" class="back-link">
               <Icon name="lucide:arrow-left" size="14" />
-              返回朋友圈
+              {{ $t('flash-moment.momentDetail.back') }}
             </NuxtLink>
           </CommonStateBlock>
 
@@ -62,7 +66,7 @@
                 v-if="detailError"
                 compact
                 :pending="detailPending"
-                title="动态更新失败，仍显示已加载的内容"
+                :title="$t('flash-moment.momentDetail.refreshFailed')"
                 @retry="refreshDetail()"
               />
               <MomentCard
@@ -82,10 +86,10 @@
               v-if="navigationError"
               compact
               :pending="navigationPending"
-              title="动态导航暂时不可用"
+              :title="$t('flash-moment.momentDetail.navUnavailable')"
               @retry="refreshNavigation()"
             />
-            <nav class="moment-detail-nav" aria-label="动态导航">
+            <nav class="moment-detail-nav" :aria-label="$t('flash-moment.momentDetail.nav')">
               <NuxtLink
                 v-if="prevMoment"
                 :to="{ path: `/moments/${prevMoment.id}`, query: filterQuery }"
@@ -93,7 +97,7 @@
               >
                 <Icon name="lucide:chevron-left" size="18" class="moment-detail-nav__arrow" />
                 <div class="moment-detail-nav__text">
-                  <span class="moment-detail-nav__label">上一条</span>
+                  <span class="moment-detail-nav__label">{{ $t('flash-moment.momentDetail.prev') }}</span>
                   <span class="moment-detail-nav__title">{{ truncate(prevMoment.content, 40) }}</span>
                 </div>
               </NuxtLink>
@@ -105,7 +109,7 @@
                 class="moment-detail-nav__item moment-detail-nav__item--next"
               >
                 <div class="moment-detail-nav__text">
-                  <span class="moment-detail-nav__label">下一条</span>
+                  <span class="moment-detail-nav__label">{{ $t('flash-moment.momentDetail.next') }}</span>
                   <span class="moment-detail-nav__title">{{ truncate(nextMoment.content, 40) }}</span>
                 </div>
                 <Icon name="lucide:chevron-right" size="18" class="moment-detail-nav__arrow" />
@@ -129,8 +133,8 @@
             v-if="overviewError"
             class="card"
             compact
-            title="动态统计暂时不可用"
-            :description="metadata ? '仍显示上次成功读取的动态统计。' : undefined"
+            :title="$t('flash-moment.moments.statsUnavailable')"
+            :description="metadata ? $t('flash-moment.moments.statsStale') : undefined"
             :pending="overviewPending"
             @retry="refreshOverview()"
           />
@@ -154,6 +158,7 @@
 import { absoluteUrl } from '~/utils/absoluteUrl'
 const pageScope = usePageRequestScope()
 const route = useRoute()
+const { t } = useI18n()
 const id = computed(() => String(route.params.id ?? ''))
 const { selectedDate, selectedTopic, filterQuery } = useMomentFilters()
 const interactions = useMomentInteractions()
@@ -197,7 +202,9 @@ function truncate(value: string, max: number) {
 function onTopicSelect(value: string | null) {
   selectedTopic.value = value
 }
-const excerpt = computed(() => moment.value?.content.replace(/\s+/g, ' ').slice(0, 120) ?? '动态不存在')
+const excerpt = computed(
+  () => moment.value?.content.replace(/\s+/g, ' ').slice(0, 120) ?? t('flash-moment.momentDetail.notFound'),
+)
 const pageTitle = computed(() => truncate(excerpt.value, 36))
 const site = useSiteUrl()
 const momentUrl = computed(() => `${site}/moments/${encodeURIComponent(id.value)}`)
@@ -207,7 +214,7 @@ const momentImages = computed(() =>
 usePageSeo({
   title: () => pageTitle.value,
   description: () => excerpt.value,
-  shareTitle: () => pageTitle.value + ' - ' + ownerCard.value.name + ' 朋友圈',
+  shareTitle: () => t('flash-moment.momentDetail.shareTitle', { title: pageTitle.value, name: ownerCard.value.name }),
   type: 'article',
   canonical: () => momentUrl.value,
   // 无配图时交回全局默认分享图（小卡片）

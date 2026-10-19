@@ -1,23 +1,27 @@
 /** @file useMomentRepository.ts @description 朋友圈同源 HTTP 仓储，失败使用可读提示并保留状态码 */
 import type { MomentRepository } from '~/features/moment/repository'
 import { ensureVisitorId } from '~/utils/visitorId'
+import { flashMomentMessage } from '~/features/flash/messages'
 
 export function useMomentRepository(): MomentRepository {
   const base = String(useRuntimeConfig().public.apiBaseUrl).replace(/\/$/, '')
   const admin = useAdminApi()
   const pageContext = useState<string>('page-content-context', () => '')
+  // 在 Nuxt 上下文内取得翻译函数，异步请求失败时仍按当前界面语言生成提示
+  const translate = currentTranslate()
+  const message = (key: string) => flashMomentMessage(key, translate)
   function failure(cause: unknown): Error {
     const error = cause as { statusCode?: number; status?: number; data?: { message?: unknown } }
     const statusCode = error?.statusCode ?? error?.status
-    const message =
+    const text =
       !statusCode || statusCode >= 500
-        ? '朋友圈服务暂时不可用，请稍后重试'
+        ? message('flash-moment.request.momentUnavailable')
         : typeof error.data?.message === 'string'
           ? error.data.message
           : statusCode === 404
-            ? '动态不存在或尚未公开'
-            : '操作未完成，请检查输入后重试'
-    return Object.assign(new Error(message, { cause }), { statusCode })
+            ? message('flash-moment.request.momentNotFound')
+            : message('flash-moment.request.momentInvalid')
+    return Object.assign(new Error(text, { cause }), { statusCode })
   }
   async function request<T>(
     path: string,
@@ -40,7 +44,7 @@ export function useMomentRepository(): MomentRepository {
         retry: 0,
         timeout: 10000,
       })
-      if (response.code !== 0) throw new Error('朋友圈请求未成功')
+      if (response.code !== 0) throw new Error(message('flash-moment.request.momentFailed'))
       return response.data
     } catch (cause) {
       throw failure(cause)

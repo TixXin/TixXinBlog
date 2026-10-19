@@ -3,6 +3,8 @@ export async function useMomentDetail(id: Ref<string>) {
   const repo = useMomentRepository()
   const store = useMomentStore()
   const scope = usePageRequestScope()
+  // 在 setup 同步阶段取得翻译函数，等待读取后抛出的错误页标题仍跟随界面语言
+  const t = currentTranslate()
   const result = useAsyncData(`moment-detail:${id.value}`, async (_app, { signal }) => {
     const started = store.clock.value
     const generation = store.generation.value
@@ -41,7 +43,7 @@ export async function useMomentDetail(id: Ref<string>) {
     const missing = result.error.value.statusCode === 404
     throw createError({
       statusCode: missing ? 404 : 502,
-      data: { title: missing ? '动态不存在' : '动态加载失败' },
+      data: { title: missing ? t('flash-moment.momentDetail.notFound') : t('flash-moment.momentDetail.loadFailed') },
       fatal: true,
     })
   }

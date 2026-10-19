@@ -11,17 +11,17 @@
       v-if="!moments.length && (pending || errorMessage)"
       :pending="pending"
       :compact="moments.length > 0"
-      :title="errorMessage || '正在加载动态'"
-      :description="moments.length ? '仍显示上次成功加载的动态。' : undefined"
+      :title="errorMessage || $t('flash-moment.momentList.loading')"
+      :description="moments.length ? $t('flash-moment.momentList.staleDesc') : undefined"
       @retry="$emit('retry')"
     />
     <div v-if="moments.length && (pending || errorMessage)" class="moment-list__feedback">
-      <p v-if="pending" role="status">正在加载动态…</p>
+      <p v-if="pending" role="status">{{ $t('flash-moment.momentList.loadingStatus') }}</p>
       <CommonRequestFeedback
         v-else
         compact
-        :title="errorMessage || '动态加载失败，请重试'"
-        description="仍显示上次成功加载的动态。"
+        :title="errorMessage || $t('flash-moment.momentList.failed')"
+        :description="$t('flash-moment.momentList.staleDesc')"
         @retry="$emit('retry')"
       />
     </div>
@@ -49,18 +49,22 @@
         :aria-disabled="pending"
         @click="requestMore"
       >
-        {{ pending ? '正在加载…' : '加载更多动态' }}
+        {{ pending ? $t('flash-moment.momentList.morePending') : $t('flash-moment.momentList.more') }}
       </button>
     </div>
     <div v-else-if="moments.length && !pending && !errorMessage" class="moment-list__end">
-      <span class="moment-list__end-line" /><span class="moment-list__end-text">没有更多了</span
+      <span class="moment-list__end-line" /><span class="moment-list__end-text">{{
+        $t('flash-moment.momentList.end')
+      }}</span
       ><span class="moment-list__end-line" />
     </div>
     <CommonStateBlock
       v-if="!moments.length && !pending && !errorMessage"
       icon="lucide:message-square"
-      :title="filtered ? '没有找到相关动态' : '暂无动态'"
-      :description="filtered ? '调整或清除筛选后再试。' : '公开发布的动态会显示在这里。'"
+      :title="filtered ? $t('flash-moment.momentList.emptyFiltered') : $t('flash-moment.momentList.empty')"
+      :description="
+        filtered ? $t('flash-moment.momentList.emptyFilteredDesc') : $t('flash-moment.momentList.emptyDesc')
+      "
     />
   </div>
 </template>

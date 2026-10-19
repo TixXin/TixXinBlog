@@ -22,7 +22,7 @@
         </MomentUserPopover>
         <div class="moment-comments__body">
           <span class="moment-comments__author" :class="{ 'is-owner': c.isOwner }">{{ c.author }}</span>
-          <span class="moment-comments__sep" aria-hidden="true">：</span>
+          <span class="moment-comments__sep" aria-hidden="true">{{ $t('flash-moment.momentComments.separator') }}</span>
           <!-- eslint-disable vue/no-v-html -- 评论 Markdown 已通过 DOMPurify 净化 -->
           <span
             :ref="(element) => setCommentRoot(c.id, element)"
@@ -31,7 +31,7 @@
           />
           <!-- eslint-enable vue/no-v-html -->
           <CommonMarkdownImages :root="commentRoots.get(c.id) ?? null" :html="c.html" />
-          <small v-if="c.moderationStatus === 'pending'">（待审核，仅自己可见）</small>
+          <small v-if="c.moderationStatus === 'pending'">{{ $t('flash-moment.momentComments.pendingSelf') }}</small>
         </div>
       </div>
     </div>
@@ -52,7 +52,7 @@
       :aria-disabled="loading"
       @click="!loading && $emit('load-more')"
     >
-      {{ loading ? '正在加载评论…' : '查看更多评论' }}
+      {{ loading ? $t('flash-moment.momentComments.loading') : $t('flash-moment.momentComments.more') }}
     </button>
     <p v-if="submitError" role="alert" class="moment-comments__notice">{{ submitError }}</p>
     <!-- 播报区常驻，只切换内部提示，保证读屏能播报新插入的状态 -->
@@ -65,9 +65,9 @@
         ref="inputRef"
         :value="draft"
         type="text"
-        aria-label="动态评论内容"
+        :aria-label="$t('flash-moment.momentComments.input')"
         class="moment-comments__input"
-        placeholder="写评论..."
+        :placeholder="$t('flash-moment.momentComments.placeholder')"
         maxlength="1000"
         @input="$emit('update:draft', ($event.target as HTMLInputElement).value)"
         @keydown.enter="onEnter"
@@ -77,7 +77,7 @@
         class="moment-comments__send"
         :aria-busy="submitting"
         :disabled="!draft.trim() || submitting"
-        :aria-label="submitting ? '正在发送评论' : '发送评论'"
+        :aria-label="submitting ? $t('flash-moment.momentComments.sending') : $t('flash-moment.momentComments.send')"
         @click="$emit('submit', visitorForm.fields())"
       >
         <Icon :name="submitting ? 'lucide:loader-circle' : 'lucide:send'" size="14" />
@@ -127,11 +127,12 @@ watch(
   { flush: 'pre' },
 )
 const siteUrl = useSiteUrl()
+const { t } = useI18n()
 // 评论属于访客内容，外链按 ugc 规则渲染。
 const renderedComments = computed(() =>
   props.comments.map((comment) => ({
     ...comment,
-    html: renderMomentMarkdown(comment.content, { inline: true, mentions: true, ugc: true, siteUrl }),
+    html: renderMomentMarkdown(comment.content, { inline: true, mentions: true, ugc: true, siteUrl, t }),
   })),
 )
 // 按稳定评论编号跟踪正文挂载点；头像已有共享组件，不参与 Markdown 图片增强。

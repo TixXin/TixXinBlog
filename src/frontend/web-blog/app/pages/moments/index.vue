@@ -10,13 +10,13 @@
     <template #header>
       <div class="main-content__header">
         <!-- 页签是视觉标题，读屏与大纲需要一个页面级 h1 -->
-        <h1 class="sr-only">朋友圈</h1>
+        <h1 class="sr-only">{{ $t('flash-moment.moments.title') }}</h1>
         <BlogPostTabs :tabs="tabs" model-value="moments" />
         <div class="page-actions">
-          <BlogRssLink href="/moments.xml" label="朋友圈" compact />
+          <BlogRssLink href="/moments.xml" :label="$t('article.rss.moments')" compact />
           <CommonSearchBox
             v-model="searchKeyword"
-            placeholder="搜索动态内容 / 话题 / 地点..."
+            :placeholder="$t('flash-moment.moments.searchPlaceholder')"
             class="moments-header__search"
           />
           <MomentInfoDrawer
@@ -33,8 +33,8 @@
             <CommonRequestFeedback
               v-if="overviewError"
               compact
-              title="动态统计暂时不可用"
-              :description="metadata ? '仍显示上次成功读取的动态统计。' : undefined"
+              :title="$t('flash-moment.moments.statsUnavailable')"
+              :description="metadata ? $t('flash-moment.moments.statsStale') : undefined"
               :pending="overviewPending"
               @retry="refreshOverview()"
             />
@@ -45,14 +45,19 @@
               class="filter-clear"
               @click="clearFilters"
             >
-              清除动态筛选
+              {{ $t('flash-moment.moments.clearFilters') }}
             </button>
             <SidebarMomentPhotoWallCard :images="photoWallImages" @select-moment="onPhotoSelect" />
             <SidebarMomentTimeCapsuleCard :moments="recollections" />
           </MomentInfoDrawer>
-          <NuxtLink v-if="isOwner" to="/admin/moments/new" class="moments-header__publish" aria-label="发布新动态">
+          <NuxtLink
+            v-if="isOwner"
+            to="/admin/moments/new"
+            class="moments-header__publish"
+            :aria-label="$t('flash-moment.moments.publishAria')"
+          >
             <Icon name="lucide:plus" size="14" />
-            <span>发布</span>
+            <span>{{ $t('flash-moment.moments.publish') }}</span>
           </NuxtLink>
         </div>
       </div>
@@ -60,9 +65,11 @@
     <template #default>
       <!-- 头部 Tab 栏 + 搜索 -->
       <div v-if="searchKeyword || selectedTopic || selectedDate" class="moments-filter-summary">
-        <span role="status" class="moments-filter-summary__label">当前筛选：{{ filterSummary }}</span>
+        <span role="status" class="moments-filter-summary__label">{{
+          $t('flash-moment.moments.filterCurrent', { summary: filterSummary })
+        }}</span>
         <button type="button" class="filter-clear filter-clear--chip" @click="clearFilters">
-          <Icon name="lucide:x" size="12" aria-hidden="true" />清除动态筛选
+          <Icon name="lucide:x" size="12" aria-hidden="true" />{{ $t('flash-moment.moments.clearFilters') }}
         </button>
       </div>
       <CommonCustomScrollbar class="moments-body" viewport-class="moments-viewport" primary>
@@ -99,8 +106,8 @@
             v-if="overviewError"
             class="card"
             compact
-            title="动态统计暂时不可用"
-            :description="metadata ? '仍显示上次成功读取的动态统计。' : undefined"
+            :title="$t('flash-moment.moments.statsUnavailable')"
+            :description="metadata ? $t('flash-moment.moments.statsStale') : undefined"
             :pending="overviewPending"
             @retry="refreshOverview()"
           />
@@ -149,6 +156,7 @@ const { moments, total, pending: feedPending, error: feedError, refresh: refresh
 const { rightInfo, drawerInfo, drawerOpen } = useMomentSidebarPlacement()
 const { isLoggedIn: isOwner } = useCurrentUser()
 const tabs = mockPostTabs
+const { t } = useI18n()
 const hasMore = computed(() => moments.value.length < total.value)
 const advancing = ref(false)
 watch(moments, interactions.seed, { immediate: true })
@@ -171,7 +179,7 @@ async function retryFeed() {
 // 筛选摘要：话题补 #、关键词加前缀，与闪念页的筛选条说法一致
 const filterSummary = computed(() =>
   [
-    searchKeyword.value ? '关键词：' + searchKeyword.value : '',
+    searchKeyword.value ? t('flash-moment.moments.filterKeyword', { keyword: searchKeyword.value }) : '',
     selectedTopic.value ? '#' + selectedTopic.value : '',
     selectedDate.value,
   ]
@@ -188,9 +196,9 @@ function onPhotoSelect(id: string) {
   void navigateTo({ path: '/moments/' + encodeURIComponent(id), query: filterQuery.value })
 }
 usePageSeo({
-  title: '朋友圈',
-  description: '记录生活点滴，分享日常碎片',
-  shareTitle: () => ownerCard.value.name + ' 的朋友圈',
+  title: () => t('flash-moment.moments.seoTitle'),
+  description: () => t('flash-moment.moments.seoDescription'),
+  shareTitle: () => t('flash-moment.moments.shareTitle', { name: ownerCard.value.name }),
   type: 'website',
 })
 </script>
