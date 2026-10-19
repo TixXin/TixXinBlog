@@ -1,5 +1,6 @@
 /** @file editor.ts @description 图库编辑字段白名单与绑定内容上下文的恢复副本 */
 import type { GalleryEditable, ManagedPhoto } from './types'
+import type { Translate } from '~/utils/format'
 import { copyContentRelations, validContentRelations } from '~/features/content-relation/editor'
 export function galleryForm(photo?: Partial<ManagedPhoto>): GalleryEditable {
   return {
@@ -93,26 +94,44 @@ export function galleryPayload(form: GalleryEditable) {
   }
 }
 
-export function galleryUrlError(value: string): string {
-  if (!value) return '请输入完整的图片地址'
+/** 外链图片地址校验，返回错误文案的字典 key，空串表示通过 */
+export function galleryUrlErrorKey(value: string): GalleryUrlErrorKey | '' {
+  if (!value) return 'misc.gallery.url.required'
   if (
     !/^https?:\/\/[^/]/i.test(value) ||
     /[\\\s]/u.test(value) ||
     [...value].some((char) => char.charCodeAt(0) < 32 || char.charCodeAt(0) === 127) ||
     value.length > 2048
   )
-    return '请使用完整的 HTTP(S) 地址，不含空白、控制字符或反斜杠'
+    return 'misc.gallery.url.invalidFormat'
   try {
     const url = new URL(value)
     if (!['http:', 'https:'].includes(url.protocol) || !url.hostname || url.username || url.password)
-      return '地址不完整或含有凭据'
+      return 'misc.gallery.url.incompleteOrCredentials'
     let decoded = value
     for (let i = 0; i < 2; i++)
       decoded = decoded.replace(/%([0-9a-f]{2})/gi, (_all, hex: string) => String.fromCharCode(parseInt(hex, 16)))
     if (/\/api\/v1\/media\/[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}\.webp/i.test(decoded))
-      return '媒体库图片请通过媒体选择器关联'
+      return 'misc.gallery.url.managedMedia'
   } catch {
-    return '请输入完整有效的图片地址'
+    return 'misc.gallery.url.invalid'
   }
   return ''
+}
+
+// 未传翻译函数时的中文兜底：本模块也被 Node 端 e2e 直接导入，不能依赖 Nuxt 上下文
+const galleryUrlErrorFallback = {
+  'misc.gallery.url.required': '请输入完整的图片地址',
+  'misc.gallery.url.invalidFormat': '请使用完整的 HTTP(S) 地址，不含空白、控制字符或反斜杠',
+  'misc.gallery.url.incompleteOrCredentials': '地址不完整或含有凭据',
+  'misc.gallery.url.managedMedia': '媒体库图片请通过媒体选择器关联',
+  'misc.gallery.url.invalid': '请输入完整有效的图片地址',
+} as const
+export type GalleryUrlErrorKey = keyof typeof galleryUrlErrorFallback
+
+/** 外链图片地址的校验错误文案，空串表示通过；传入 t 时随界面语言，未传时为中文 */
+export function galleryUrlError(value: string, t?: Translate): string {
+  const key = galleryUrlErrorKey(value)
+  if (!key) return ''
+  return t ? t(key) : galleryUrlErrorFallback[key]
 }

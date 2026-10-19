@@ -7,9 +7,9 @@
 
 <template>
   <section class="card tech-stack">
-    <h2 class="tech-stack__title"><Icon name="lucide:code-2" size="14" /> 技术栈分布</h2>
-    <p class="tech-stack__description">使用该技术的公开项目占比。一个项目可使用多种技术，比例不表示代码语言占比。</p>
-    <p v-if="!stack.length" class="tech-stack__description">公开项目尚未填写技术标签。</p>
+    <h2 class="tech-stack__title"><Icon name="lucide:code-2" size="14" /> {{ $t('misc.project.techStack.title') }}</h2>
+    <p class="tech-stack__description">{{ $t('misc.project.techStack.description') }}</p>
+    <p v-if="!stack.length" class="tech-stack__description">{{ $t('misc.project.techStack.empty') }}</p>
     <div class="tech-stack__list">
       <button
         v-for="item in stack"
@@ -21,9 +21,14 @@
       >
         <div class="tech-stack__meta">
           <!-- 名称由可见文字组成，读屏前缀放在隐藏文本里，避免可访问名与可见文字不一致 -->
-          <span class="tech-stack__name"><span class="sr-only">筛选技术：</span>{{ item.label }}</span>
+          <span class="tech-stack__name"
+            ><span class="sr-only">{{ $t('misc.project.techStack.filterPrefix') }}</span
+            >{{ item.label }}</span
+          >
           {{ ' ' }}
-          <span class="tech-stack__percent">{{ item.count }} 项 · {{ item.percent }}%</span>
+          <span class="tech-stack__percent">{{
+            $t('misc.project.techStack.share', { count: item.count, percent: item.percent }, item.count)
+          }}</span>
         </div>
         <div class="tech-stack__track">
           <div class="tech-stack__fill" :style="{ width: `${item.percent}%` }" />

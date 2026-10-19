@@ -13,13 +13,19 @@
       class="lightbox"
       role="dialog"
       aria-modal="true"
-      :aria-label="photo?.title || '照片预览'"
+      :aria-label="photo?.title || $t('misc.gallery.lightbox.label')"
       tabindex="-1"
       @click.self="onClose"
       @keydown.left.prevent="ready && canPrevious && !pending && $emit('previous')"
       @keydown.right.prevent="ready && canNext && !pending && $emit('next')"
     >
-      <button type="button" class="lightbox__close" aria-label="关闭" :disabled="!ready" @click="onClose">
+      <button
+        type="button"
+        class="lightbox__close"
+        :aria-label="$t('misc.shared.close')"
+        :disabled="!ready"
+        @click="onClose"
+      >
         <Icon name="lucide:x" size="24" />
       </button>
       <div class="lightbox__inner">
@@ -28,7 +34,7 @@
           class="lightbox__feedback"
           compact
           :pending="pending || !ready"
-          title="照片加载失败"
+          :title="$t('misc.gallery.lightbox.loadFailed')"
           :description="error"
           @retry="$emit('retry')"
         />
@@ -47,17 +53,20 @@
           <h2 class="lightbox__title">{{ photo.title }}</h2>
           <p class="lightbox__desc">{{ photo.description }}</p>
           <p class="lightbox__desc">
-            {{ photo.date ? `拍摄于 ${photo.date}` : '拍摄日期未填写'
+            {{
+              photo.date
+                ? $t('misc.gallery.lightbox.takenOn', { date: photo.date })
+                : $t('misc.gallery.lightbox.noDate')
             }}<template v-if="photo.location"> · {{ photo.location }}</template
             ><template v-if="photo.device"> · {{ photo.device }}</template>
           </p>
         </div>
         <CommonRelatedContent v-if="photo" :items="photo.relatedContent" />
-        <nav class="lightbox__navigation" aria-label="切换照片">
+        <nav class="lightbox__navigation" :aria-label="$t('misc.gallery.lightbox.navigation')">
           <button type="button" :disabled="!ready || !canPrevious || pending" @click="$emit('previous')">
-            <Icon name="lucide:chevron-left" />上一张</button
+            <Icon name="lucide:chevron-left" />{{ $t('misc.gallery.lightbox.previous') }}</button
           ><button type="button" :disabled="!ready || !canNext || pending" @click="$emit('next')">
-            下一张<Icon name="lucide:chevron-right" />
+            {{ $t('misc.gallery.lightbox.next') }}<Icon name="lucide:chevron-right" />
           </button>
         </nav>
       </div>

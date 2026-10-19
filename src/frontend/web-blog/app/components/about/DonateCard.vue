@@ -13,10 +13,10 @@
         <span class="donate-card__icon">
           <Icon name="lucide:coffee" size="16" />
         </span>
-        感谢支持
+        {{ $t('misc.about.donate.title') }}
       </h2>
-      <p class="donate-card__desc">如果某篇文章帮到了你，收藏、分享或留一句话就是最好的支持。</p>
-      <span class="donate-card__status">打赏暂未开放</span>
+      <p class="donate-card__desc">{{ $t('misc.about.donate.description') }}</p>
+      <span class="donate-card__status">{{ $t('misc.about.donate.unavailable') }}</span>
     </div>
   </section>
 </template>

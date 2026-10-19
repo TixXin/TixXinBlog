@@ -2,9 +2,16 @@
 <template>
   <CommonPageFrame class="main-inner" header-key="gallery">
     <template #header>
-      <CommonPageHeader title="画廊" subtitle="用镜头记录生活的美好瞬间" icon="lucide:image">
+      <CommonPageHeader
+        :title="$t('misc.gallery.page.title')"
+        :subtitle="$t('misc.gallery.page.subtitle')"
+        icon="lucide:image"
+      >
         <template #action
-          ><CommonSearchBox v-model="keyword" placeholder="搜索照片、地点..." label="搜索画廊照片"
+          ><CommonSearchBox
+            v-model="keyword"
+            :placeholder="$t('misc.gallery.page.searchPlaceholder')"
+            :label="$t('misc.gallery.page.searchLabel')"
         /></template>
       </CommonPageHeader>
     </template>
@@ -27,27 +34,33 @@
           v-if="pending || error"
           :pending="pending"
           :compact="photos.length > 0"
-          :title="error?.message || '正在读取照片'"
+          :title="error?.message || $t('misc.gallery.page.loading')"
           @retry="refresh()"
         />
-        <p v-if="stale" role="status" class="gallery-result">正在显示上一次成功读取的照片，当前筛选尚未完成。</p>
-        <p v-else-if="total" class="gallery-result" role="status">共 {{ total }} 张照片 · 第 {{ query.page }} 页</p>
+        <p v-if="stale" role="status" class="gallery-result">{{ $t('misc.gallery.page.stale') }}</p>
+        <p v-else-if="total" class="gallery-result" role="status">
+          {{ $t('misc.gallery.page.summary', { count: total, page: query.page }, total) }}
+        </p>
         <CommonStateBlock
           v-if="!pending && !error && !photos.length"
           icon="lucide:images"
-          :title="filtered ? '没有找到照片' : '尚无公开作品'"
+          :title="filtered ? $t('misc.gallery.empty.filteredTitle') : $t('misc.gallery.empty.title')"
           :description="emptyDescription"
-          :action-label="filtered ? '清除筛选' : undefined"
+          :action-label="filtered ? $t('misc.gallery.page.clearFilters') : undefined"
           @action="clearFilters"
         />
         <GalleryGrid v-else :photos="photos" :ready="ready" @select="open" />
-        <nav v-if="total !== null && (total > 12 || query.page > 1)" class="gallery-pagination" aria-label="图库分页">
+        <nav
+          v-if="total !== null && (total > 12 || query.page > 1)"
+          class="gallery-pagination"
+          :aria-label="$t('misc.gallery.page.pagination')"
+        >
           <button
             type="button"
             :disabled="!ready || query.page <= 1 || pending"
             @click="changeQuery({ page: query.page - 1 })"
           >
-            上一页
+            {{ $t('misc.shared.prevPage') }}
           </button>
           <span>{{ query.page }} / {{ Math.max(1, Math.ceil(total / 12)) }}</span>
           <button
@@ -55,11 +68,11 @@
             :disabled="!ready || query.page * 12 >= total || pending"
             @click="changeQuery({ page: query.page + 1 })"
           >
-            下一页
+            {{ $t('misc.shared.nextPage') }}
           </button>
         </nav>
         <details class="gallery-mobile-info" :class="`gallery-mobile-info--${sidebarPlacement}`">
-          <summary>图库统计与器材</summary>
+          <summary>{{ $t('misc.gallery.page.compactInfo') }}</summary>
           <CommonRequestFeedback
             v-if="metadataPending || metadataError"
             :pending="metadataPending"
@@ -103,6 +116,7 @@
   </CommonPageFrame>
 </template>
 <script setup lang="ts">
+const { t } = useI18n()
 const route = useRoute(),
   router = useRouter()
 const { currentThemeId, activeTheme } = useLayoutTheme()
@@ -136,15 +150,17 @@ const {
   close,
 } = await useGallery()
 // 失败用稳定标题；具体原因放在说明里，有旧统计时同时说明仍在显示。
-const metadataFeedbackTitle = computed(() => (metadataError.value ? '图库统计暂时不可用' : '正在读取图库统计'))
+const metadataFeedbackTitle = computed(() =>
+  metadataError.value ? t('misc.gallery.metadata.unavailable') : t('misc.gallery.metadata.loading'),
+)
 const metadataFeedbackDescription = computed(() => {
   if (!metadataError.value) return undefined
   const message = metadataError.value.message
-  return metadata.value ? `仍显示上次成功读取的图库统计。${message}` : message
+  return metadata.value ? t('misc.gallery.metadata.staleDescription', { message }) : message
 })
 usePageSeo({
-  title: '画廊',
-  description: '用镜头记录生活的美好瞬间，浏览摄影作品与拍摄故事',
+  title: () => t('misc.gallery.page.title'),
+  description: () => t('misc.gallery.page.seoDescription'),
   type: 'website',
   image: () => photos.value[0]?.srcLarge,
   imageAlt: () => photos.value[0]?.title,
@@ -162,21 +178,21 @@ const filtered = computed(() => !!query.value.q || query.value.category !== unde
 // 只按分类筛选时没有关键词可换，提示切换分类；有关键词时提示搜索覆盖的字段
 const emptyDescription = computed(() =>
   query.value.q
-    ? '换个关键词试试，搜索会匹配标题、描述和地点。'
+    ? t('misc.gallery.empty.keywordDescription')
     : filtered.value
-      ? '这个分类下还没有公开照片，看看其他分类吧。'
-      : '照片公开后会展示在这里。',
+      ? t('misc.gallery.empty.categoryDescription')
+      : t('misc.gallery.empty.description'),
 )
 const categories = computed(() => [
-  { label: '全部', value: undefined, count: metadata.value?.stats.photos },
+  { label: t('misc.gallery.filter.all'), value: undefined, count: metadata.value?.stats.photos },
   ...(metadata.value?.categories ?? []),
 ])
 const stats = computed(() =>
   metadata.value
     ? [
-        { label: '公开照片', value: String(metadata.value.stats.photos) },
-        { label: '拍摄地点', value: String(metadata.value.stats.locations) },
-        { label: '分类', value: String(metadata.value.stats.categories) },
+        { label: t('misc.gallery.stats.photos'), value: String(metadata.value.stats.photos) },
+        { label: t('misc.gallery.stats.locations'), value: String(metadata.value.stats.locations) },
+        { label: t('misc.gallery.stats.categories'), value: String(metadata.value.stats.categories) },
       ]
     : [],
 )

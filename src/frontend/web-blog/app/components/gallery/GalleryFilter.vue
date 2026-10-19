@@ -6,7 +6,7 @@
 -->
 
 <template>
-  <div class="gallery-filter" role="group" aria-label="照片分类筛选">
+  <div class="gallery-filter" role="group" :aria-label="$t('misc.gallery.filter.label')">
     <button
       v-for="cat in categories"
       :key="cat.value === undefined ? 'all' : `category:${cat.value}`"

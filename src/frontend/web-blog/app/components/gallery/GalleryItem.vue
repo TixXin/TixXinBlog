@@ -12,7 +12,7 @@
     :tabindex="ready ? 0 : -1"
     :aria-disabled="!ready"
     :data-focus-key="`gallery-photo-${photo.id}`"
-    :aria-label="`查看照片：${photo.title}`"
+    :aria-label="$t('misc.gallery.item.view', { title: photo.title })"
     @click="select"
     @keydown.enter.prevent="select"
     @keydown.space.prevent="select"
@@ -30,7 +30,7 @@
       <!-- 卡片整体是按钮，内部不放标题元素，名称由 aria-label 提供 -->
       <p class="gallery-item__title">{{ photo.title }}</p>
       <p class="gallery-item__meta">
-        {{ [photo.date, photo.location].filter(Boolean).join(' · ') || '拍摄信息未填写' }}
+        {{ [photo.date, photo.location].filter(Boolean).join(' · ') || $t('misc.gallery.item.noMeta') }}
       </p>
     </div>
   </article>

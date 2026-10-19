@@ -4,6 +4,7 @@ export function useGallerySettingsEditor() {
   const repo = useGalleryRepository(),
     auth = useCurrentUser(),
     app = useNuxtApp(),
+    { t } = useI18n(),
     context = useState<string>('page-content-context', () => '')
   const draft = ref<GallerySettings | null>(null),
     conflict = ref<GallerySettings | null>(null),
@@ -26,7 +27,7 @@ export function useGallerySettingsEditor() {
     try {
       sessionStorage.setItem(key(), JSON.stringify({ context: ownedContext, gear: draft.value.gear }))
     } catch {
-      error.value = '器材恢复副本保存失败，请保留当前页面并重试。'
+      error.value = t('misc.gallery.settingsEditor.persistFailed')
     }
   }
   function readRecovery() {
@@ -57,7 +58,7 @@ export function useGallerySettingsEditor() {
         }
       }
     } catch {
-      error.value = '器材恢复副本无法读取。'
+      error.value = t('misc.gallery.settingsEditor.recoveryUnreadable')
     }
   }
   async function load() {
@@ -67,7 +68,7 @@ export function useGallerySettingsEditor() {
     pending.value = true
     error.value = ''
     try {
-      if (!(await auth.restore())) throw new Error('请先登录博主账号。')
+      if (!(await auth.restore())) throw new Error(t('misc.gallery.settingsEditor.loginRequired'))
       const user = auth.currentUser.value!.id,
         startedContext = context.value
       const value = await repo.settings()
@@ -81,7 +82,8 @@ export function useGallerySettingsEditor() {
       ready.value = true
       readRecovery()
     } catch (cause) {
-      if (alive && version === generation) error.value = cause instanceof Error ? cause.message : '器材设置读取失败'
+      if (alive && version === generation)
+        error.value = cause instanceof Error ? cause.message : t('misc.gallery.settingsEditor.loadFailed')
     } finally {
       if (alive && version === generation) pending.value = false
     }
@@ -111,13 +113,13 @@ export function useGallerySettingsEditor() {
       try {
         sessionStorage.removeItem(key())
       } catch {
-        error.value = '设置已保存，但本标签页副本未能移除。'
+        error.value = t('misc.gallery.settingsEditor.recoveryNotRemoved')
       }
-      notice.value = '器材资料已保存。'
+      notice.value = t('misc.gallery.settingsEditor.saved')
       void app.runWithContext(() => refreshNuxtData('gallery-metadata'))
     } catch (cause) {
       if (!owns()) return
-      error.value = cause instanceof Error ? cause.message : '保存失败，输入已保留'
+      error.value = cause instanceof Error ? cause.message : t('misc.gallery.settingsEditor.saveFailed')
       if ((cause as { statusCode?: number }).statusCode === 409) {
         try {
           const value = await repo.settings()
@@ -140,7 +142,7 @@ export function useGallerySettingsEditor() {
     if (draft.value && conflict.value) {
       draft.value.revision = conflict.value.revision
       conflict.value = null
-      notice.value = '当前输入已保留，请核对后再次保存。'
+      notice.value = t('misc.gallery.settingsEditor.mergeNotice')
     }
   }
   const unload = (event: BeforeUnloadEvent) => {
@@ -179,7 +181,7 @@ export function useGallerySettingsEditor() {
       generation++
       pending.value = false
       ready.value = false
-      error.value = '内容库已恢复或切换，请刷新后重新核对器材设置。'
+      error.value = t('misc.gallery.settingsEditor.contextChanged')
     }
   })
   onMounted(() => {
@@ -190,7 +192,7 @@ export function useGallerySettingsEditor() {
     if (pending.value) return false
     if (!dirty.value) return true
     persist()
-    return window.confirm('器材资料尚未保存，已保留本标签页副本，确定离开吗？')
+    return window.confirm(t('misc.gallery.settingsEditor.leaveConfirm'))
   })
   onScopeDispose(() => {
     persist()

@@ -4,7 +4,7 @@
     <p v-if="visible.introduction" class="profile-content__intro">{{ visible.introduction }}</p>
     <section v-for="section in visible.sections" :key="section.kind" class="profile-content__section">
       <h2 class="profile-content__heading">
-        <Icon :name="sectionIcons[section.kind]" size="18" /> {{ aboutSectionLabels[section.kind] }}
+        <Icon :name="sectionIcons[section.kind]" size="18" /> {{ aboutSectionLabel(section.kind, t) }}
       </h2>
       <!-- 经历：时间线，时间段作为标签 -->
       <ol v-if="section.kind === 'experience'" class="profile-timeline">
@@ -51,7 +51,8 @@
 </template>
 <script setup lang="ts">
 import type { AboutSettings } from '~/features/about/types'
-import { aboutSectionLabels, publicAbout } from '~/features/about/settings'
+import { aboutSectionLabel, publicAbout } from '~/features/about/settings'
+const { t } = useI18n()
 const props = defineProps<{ value?: AboutSettings }>()
 const visible = computed(() => publicAbout(props.value))
 const sectionIcons = {

@@ -9,7 +9,7 @@
   <section class="card gallery-stats">
     <h2 class="gallery-stats__title">
       <Icon name="lucide:camera" size="16" />
-      <span>画廊统计</span>
+      <span>{{ $t('misc.gallery.stats.title') }}</span>
     </h2>
     <ul class="gallery-stats__list">
       <li v-for="row in stats" :key="row.label" class="gallery-stats__row">

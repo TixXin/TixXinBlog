@@ -2,12 +2,15 @@
 <template>
   <CommonPageFrame class="main-inner" header-key="projects">
     <template #header
-      ><CommonPageHeader title="项目展示" subtitle="记录创作、实践与持续维护的项目" icon="lucide:layers"
+      ><CommonPageHeader
+        :title="$t('misc.project.page.title')"
+        :subtitle="$t('misc.project.page.subtitle')"
+        icon="lucide:layers"
         ><template #action
           ><CommonSearchBox
             v-model="keyword"
-            label="搜索项目"
-            placeholder="搜索项目、介绍..." /></template></CommonPageHeader
+            :label="$t('misc.project.page.searchLabel')"
+            :placeholder="$t('misc.project.page.searchPlaceholder')" /></template></CommonPageHeader
     ></template>
     <template #default
       ><CommonCustomScrollbar
@@ -21,16 +24,16 @@
           ref="focusedProject"
           class="projects-focus"
           tabindex="-1"
-          aria-label="指定项目"
+          :aria-label="$t('misc.project.focus.label')"
         >
           <header>
-            <h2>项目详情</h2>
-            <button type="button" @click="focus.close">关闭项目详情</button>
+            <h2>{{ $t('misc.project.focus.title') }}</h2>
+            <button type="button" @click="focus.close">{{ $t('misc.project.focus.close') }}</button>
           </header>
           <CommonRequestFeedback
             v-if="focus.pending.value || focus.error.value"
             :pending="focus.pending.value"
-            :title="focus.error.value || '正在读取指定项目'"
+            :title="focus.error.value || $t('misc.project.focus.loading')"
             @retry="focus.load"
           />
           <ProjectCard v-if="focus.item.value" :project="focus.item.value" :interactive="ready" @tag="filterTag" />
@@ -38,23 +41,27 @@
         </section>
         <div class="projects-filters">
           <label
-            >项目进展<select
+            >{{ $t('misc.project.filter.progress')
+            }}<select
               :value="query.progress ?? ''"
-              aria-label="筛选项目进展"
+              :aria-label="$t('misc.project.filter.progressLabel')"
               :disabled="!ready"
               @change="changeQuery({ progress: ($event.target as HTMLSelectElement).value || undefined })"
             >
-              <option value="">全部进展</option>
-              <option v-for="(label, value) in projectProgressLabels" :key="value" :value="value">{{ label }}</option>
+              <option value="">{{ $t('misc.project.filter.allProgress') }}</option>
+              <option v-for="value in projectProgresses" :key="value" :value="value">
+                {{ projectProgressLabel(value, t) }}
+              </option>
             </select></label
           ><label
-            >技术标签<select
+            >{{ $t('misc.project.filter.tag')
+            }}<select
               :value="query.tag?.toLocaleLowerCase('zh-CN') ?? ''"
-              aria-label="筛选项目技术"
+              :aria-label="$t('misc.project.filter.tagLabel')"
               :disabled="!ready"
               @change="changeQuery({ tag: ($event.target as HTMLSelectElement).value || undefined })"
             >
-              <option value="">全部技术</option>
+              <option value="">{{ $t('misc.project.filter.allTags') }}</option>
               <option v-if="query.tag && !knownTag" :value="query.tag.toLocaleLowerCase('zh-CN')">
                 {{ query.tag }}
               </option>
@@ -63,47 +70,57 @@
                 :key="tag.label"
                 :value="tag.label.toLocaleLowerCase('zh-CN')"
               >
-                {{ tag.label }}（{{ tag.count }}）
+                {{ $t('misc.project.filter.tagOption', { label: tag.label, count: tag.count }) }}
               </option>
             </select></label
-          ><button v-if="filtered" type="button" :disabled="!ready" @click="clearFilters">清除筛选</button>
+          ><button v-if="filtered" type="button" :disabled="!ready" @click="clearFilters">
+            {{ $t('misc.project.page.clearFilters') }}
+          </button>
         </div>
         <CommonRequestFeedback
           v-if="pending || error"
           :pending="pending"
           :compact="projects.length > 0"
-          :title="error?.message || '正在读取项目'"
+          :title="error?.message || $t('misc.project.page.loading')"
           @retry="refresh()"
         />
-        <p v-if="stale" role="status" class="projects-result">当前筛选尚未完成，以下保留上一次成功读取的项目。</p>
-        <p v-else-if="total" role="status" class="projects-result">共 {{ total }} 个项目 · 第 {{ query.page }} 页</p>
+        <p v-if="stale" role="status" class="projects-result">
+          {{ $t('misc.project.page.stale') }}
+        </p>
+        <p v-else-if="total" role="status" class="projects-result">
+          {{ $t('misc.project.page.summary', { count: total, page: query.page }, total) }}
+        </p>
         <CommonStateBlock
           v-if="!pending && !error && !projects.length"
           icon="lucide:layers"
-          :title="filtered ? '没有找到项目' : '尚无公开项目'"
-          :description="filtered ? '试试其他关键词、进展或技术标签。' : '项目公开后会展示在这里。'"
-          :action-label="filtered ? '清除筛选' : undefined"
+          :title="filtered ? $t('misc.project.empty.filteredTitle') : $t('misc.project.empty.title')"
+          :description="filtered ? $t('misc.project.empty.filteredDescription') : $t('misc.project.empty.description')"
+          :action-label="filtered ? $t('misc.project.page.clearFilters') : undefined"
           @action="clearFilters"
         />
         <ProjectGrid v-else :projects="projects" :interactive="ready" @tag="filterTag" @open="openProject" />
-        <nav v-if="total !== null && (total > 12 || query.page > 1)" class="projects-pagination" aria-label="项目分页">
+        <nav
+          v-if="total !== null && (total > 12 || query.page > 1)"
+          class="projects-pagination"
+          :aria-label="$t('misc.project.page.pagination')"
+        >
           <button
             type="button"
             :disabled="!ready || pending || query.page <= 1"
             @click="changeQuery({ page: query.page - 1 })"
           >
-            上一页</button
+            {{ $t('misc.shared.prevPage') }}</button
           ><span>{{ query.page }} / {{ Math.max(1, Math.ceil(total / 12)) }}</span
           ><button
             type="button"
             :disabled="!ready || pending || query.page * 12 >= total"
             @click="changeQuery({ page: query.page + 1 })"
           >
-            下一页
+            {{ $t('misc.shared.nextPage') }}
           </button>
         </nav>
         <details class="projects-compact-info" :class="`projects-compact-info--${sidebarPlacement}`">
-          <summary>项目统计与技术栈</summary>
+          <summary>{{ $t('misc.project.page.compactInfo') }}</summary>
           <CommonRequestFeedback
             v-if="metadataPending || metadataError"
             :pending="metadataPending"
@@ -138,7 +155,8 @@
   </CommonPageFrame>
 </template>
 <script setup lang="ts">
-import { projectProgressLabels } from '~/features/project/types'
+import { projectProgressLabel, projectProgresses } from '~/features/project/types'
+const { t } = useI18n()
 const focus = useProjectFocus()
 const focusedProject = ref<HTMLElement | null>(null)
 watch([focus.item, focus.error], async () => {
@@ -169,16 +187,18 @@ const {
   changeQuery,
 } = await useProjects()
 // 失败用稳定标题；具体原因放在说明里，有旧统计时同时说明仍在显示。
-const metadataFeedbackTitle = computed(() => (metadataError.value ? '项目统计暂时不可用' : '正在读取项目统计'))
+const metadataFeedbackTitle = computed(() =>
+  metadataError.value ? t('misc.project.metadata.unavailable') : t('misc.project.metadata.loading'),
+)
 const metadataFeedbackDescription = computed(() => {
   if (!metadataError.value) return undefined
   const message = metadataError.value.message
-  return metadata.value ? `仍显示上次成功读取的项目统计。${message}` : message
+  return metadata.value ? t('misc.project.metadata.staleDescription', { message }) : message
 })
 const shareProject = computed(() => projects.value.find((project) => project.cover))
 usePageSeo({
-  title: '项目展示',
-  description: '记录个人项目与创作实践，按项目进展和技术标签浏览',
+  title: () => t('misc.project.page.title'),
+  description: () => t('misc.project.page.seoDescription'),
   type: 'website',
   image: () => shareProject.value?.cover,
   imageAlt: () => shareProject.value?.title,
@@ -198,11 +218,11 @@ const knownTag = computed(() =>
 const stats = computed(() =>
   metadata.value
     ? [
-        { label: '公开项目', value: String(metadata.value.stats.projects) },
-        { label: '维护中', value: String(metadata.value.stats.active) },
-        { label: '开发中', value: String(metadata.value.stats.dev) },
-        { label: '已归档', value: String(metadata.value.stats.archived) },
-        { label: '技术标签', value: String(metadata.value.stats.tags) },
+        { label: t('misc.project.stats.projects'), value: String(metadata.value.stats.projects) },
+        { label: t('misc.project.stats.active'), value: String(metadata.value.stats.active) },
+        { label: t('misc.project.stats.dev'), value: String(metadata.value.stats.dev) },
+        { label: t('misc.project.stats.archived'), value: String(metadata.value.stats.archived) },
+        { label: t('misc.project.stats.tags'), value: String(metadata.value.stats.tags) },
       ]
     : [],
 )

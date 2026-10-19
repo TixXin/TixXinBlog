@@ -25,24 +25,24 @@
 <script setup lang="ts">
 import { socialProfiles } from '~/utils/absoluteUrl'
 const { settings } = useSiteSettings()
+const { t, locale } = useI18n()
 
 const siteUrl = useSiteUrl()
 const aboutDescription = computed(() => settings.value.ownerTitle || settings.value.description)
 usePageSeo({
-  title: '关于我',
-  shareTitle: () => `关于我 - ${settings.value.name}`,
+  title: () => t('misc.about.page.title'),
+  shareTitle: () => t('misc.about.page.shareTitle', { name: settings.value.name }),
   description: () => aboutDescription.value,
   type: 'profile',
 })
 const profileImage = useDefaultShareImage()
-const { locale } = useI18n()
 useJsonLd('profile', () => {
   const sameAs = socialProfiles(settings.value.socials)
   return {
     '@context': 'https://schema.org',
     '@type': 'ProfilePage',
     url: `${siteUrl}/about`,
-    name: `关于我 - ${settings.value.name}`,
+    name: t('misc.about.page.shareTitle', { name: settings.value.name }),
     inLanguage: locale.value,
     mainEntity: {
       '@type': 'Person',

@@ -19,7 +19,7 @@
         class="project-card__image"
       />
       <div v-else class="project-card__no-cover">
-        <Icon name="lucide:panels-top-left" size="32" /><span>暂无封面</span>
+        <Icon name="lucide:panels-top-left" size="32" /><span>{{ $t('misc.project.card.noCover') }}</span>
       </div>
       <div v-if="project.cover" class="project-card__overlay" />
       <div class="project-card__badges">
@@ -38,7 +38,7 @@
           class="project-card__tag"
           :class="`project-card__tag--${tag.color}`"
           type="button"
-          :aria-label="`筛选技术：${tag.label}`"
+          :aria-label="$t('misc.project.card.filterTag', { tag: tag.label })"
           :disabled="!interactive"
           @click="$emit('tag', tag.label)"
         >
@@ -53,22 +53,24 @@
           :disabled="!interactive"
           @click="$emit('open', project.id)"
         >
-          <Icon name="lucide:file-text" size="14" />项目详情与关联阅读
+          <Icon name="lucide:file-text" size="14" />{{ $t('misc.project.card.details') }}
         </button>
         <template v-for="link in project.links" :key="link.kind">
           <a :href="link.href" class="project-card__link" target="_blank" rel="noopener noreferrer">
-            <Icon :name="link.icon" size="14" />{{ link.label }}
+            <Icon :name="link.icon" size="14" />{{ linkLabel(link) }}
           </a>
         </template>
-        <p v-if="!project.links.length" class="project-card__link--unavailable">尚未提供公开链接</p>
+        <p v-if="!project.links.length" class="project-card__link--unavailable">
+          {{ $t('misc.project.card.noLinks') }}
+        </p>
       </div>
     </div>
   </article>
 </template>
 
 <script setup lang="ts">
-import { projectProgressLabels } from '~/features/project/types'
-import type { ProjectItem } from '~/features/project/types'
+import { projectLinkLabel, projectLinkLabelKeys, projectProgressLabel } from '~/features/project/types'
+import type { ProjectItem, ProjectLink } from '~/features/project/types'
 // headingLevel：列表直接位于页面 h1 下时传 2；默认 3 用于“项目详情”h2 之下
 // priority：首行项目封面立即加载；平板以上两列封面实测不超过约 420px，窄屏单列占满
 const props = defineProps<{
@@ -79,7 +81,12 @@ const props = defineProps<{
   priority?: boolean
 }>()
 defineEmits<{ tag: [label: string]; open: [id: number] }>()
-const statusLabel = computed(() => projectProgressLabels[props.project.progress])
+const { t } = useI18n()
+const statusLabel = computed(() => projectProgressLabel(props.project.progress, t))
+// 后端返回的链接名称是中文固定值，已知类型按界面语言取名称，未知类型原样显示
+function linkLabel(link: ProjectLink) {
+  return Object.hasOwn(projectLinkLabelKeys, link.kind) ? projectLinkLabel(link.kind, t) : link.label
+}
 </script>
 
 <style lang="scss" scoped>

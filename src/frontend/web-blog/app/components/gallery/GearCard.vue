@@ -9,7 +9,7 @@
   <section class="card gear-card">
     <h2 class="gear-card__title">
       <Icon name="lucide:aperture" size="16" />
-      <span>摄影器材</span>
+      <span>{{ $t('misc.gallery.gear.title') }}</span>
     </h2>
     <ul class="gear-card__list">
       <li v-for="(item, index) in gear" :key="`${item.name}-${index}`" class="gear-card__item">
@@ -22,7 +22,7 @@
         </div>
       </li>
     </ul>
-    <p v-if="!gear.length" class="gear-card__desc">尚未填写器材资料。</p>
+    <p v-if="!gear.length" class="gear-card__desc">{{ $t('misc.gallery.gear.empty') }}</p>
   </section>
 </template>
 

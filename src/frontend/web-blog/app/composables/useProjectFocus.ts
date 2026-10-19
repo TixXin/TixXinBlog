@@ -3,7 +3,8 @@ import type { ProjectItem } from '~/features/project/types'
 export function useProjectFocus() {
   const route = useRoute(),
     router = useRouter(),
-    repo = useProjectRepository()
+    repo = useProjectRepository(),
+    { t } = useI18n()
   const target = computed(() => (typeof route.query.project === 'string' ? route.query.project : ''))
   const item = ref<ProjectItem | null>(null),
     pending = ref(false),
@@ -20,7 +21,7 @@ export function useProjectFocus() {
     if (!target.value) return
     const id = Number(target.value)
     if (!/^\d+$/.test(target.value) || !Number.isSafeInteger(id) || id < 1 || id > 2147483647) {
-      error.value = '项目编号无效，请从项目列表继续浏览。'
+      error.value = t('misc.project.focus.invalidId')
       return
     }
     controller = new AbortController()
@@ -29,7 +30,8 @@ export function useProjectFocus() {
       const value = await repo.detail(id, controller.signal)
       if (alive && current === generation) item.value = value
     } catch (cause) {
-      if (alive && current === generation) error.value = cause instanceof Error ? cause.message : '项目读取失败，请重试'
+      if (alive && current === generation)
+        error.value = cause instanceof Error ? cause.message : t('misc.project.focus.loadFailed')
     } finally {
       if (alive && current === generation) pending.value = false
     }

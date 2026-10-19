@@ -7,7 +7,7 @@
 
 <template>
   <div class="contact-cards">
-    <h3 class="contact-cards__title"><Icon name="lucide:send" size="18" /> 联系我</h3>
+    <h3 class="contact-cards__title"><Icon name="lucide:send" size="18" /> {{ $t('misc.about.contact.title') }}</h3>
     <div class="contact-cards__grid">
       <a v-for="c in contacts" :key="c.type" :href="c.href" class="contact-cards__item" target="_blank" rel="noopener">
         <div class="contact-cards__icon">
@@ -19,7 +19,7 @@
         </div>
       </a>
     </div>
-    <p v-if="contacts.length === 0">暂未公开联系方式</p>
+    <p v-if="contacts.length === 0">{{ $t('misc.about.contact.empty') }}</p>
   </div>
 </template>
 

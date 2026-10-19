@@ -1,1 +1,194 @@
-{}
+{
+  "misc": {
+    "about": {
+      "page": {
+        "title": "About",
+        "shareTitle": "About - {name}"
+      },
+      "section": {
+        "experience": "Experience",
+        "skill": "Skills",
+        "interest": "Interests",
+        "reading": "Reading list"
+      },
+      "contact": {
+        "title": "Get in touch",
+        "empty": "No public contact details yet"
+      },
+      "donate": {
+        "title": "Thanks for your support",
+        "description": "If a post helped you, bookmarking, sharing, or leaving a note is the best support there is.",
+        "unavailable": "Tips aren't open yet"
+      }
+    },
+    "gallery": {
+      "page": {
+        "title": "Gallery",
+        "subtitle": "Beautiful everyday moments, captured through the lens",
+        "seoDescription": "Beautiful everyday moments captured through the lens: browse photos and the stories behind them",
+        "searchPlaceholder": "Search photos, places...",
+        "searchLabel": "Search gallery photos",
+        "loading": "Loading photos",
+        "stale": "Showing the last photos that loaded successfully. These filters are still loading.",
+        "summary": "1 photo · Page {page} | {count} photos · Page {page}",
+        "clearFilters": "Clear filters",
+        "pagination": "Gallery pages",
+        "compactInfo": "Gallery stats & gear"
+      },
+      "empty": {
+        "filteredTitle": "No photos found",
+        "title": "No public photos yet",
+        "keywordDescription": "Try a different keyword. Search matches titles, descriptions, and places.",
+        "categoryDescription": "There are no public photos in this category yet. Try another one.",
+        "description": "Photos will appear here once they're published."
+      },
+      "metadata": {
+        "unavailable": "Gallery stats are temporarily unavailable",
+        "loading": "Loading gallery stats",
+        "staleDescription": "Still showing the last gallery stats that loaded. {message}"
+      },
+      "filter": {
+        "label": "Filter photos by category",
+        "all": "All"
+      },
+      "stats": {
+        "title": "Gallery stats",
+        "photos": "Public photos",
+        "locations": "Places",
+        "categories": "Categories"
+      },
+      "gear": {
+        "title": "Camera gear",
+        "empty": "No gear details yet."
+      },
+      "item": {
+        "view": "View photo: {title}",
+        "noMeta": "No shooting details"
+      },
+      "lightbox": {
+        "label": "Photo preview",
+        "loadFailed": "Couldn't load the photo",
+        "takenOn": "Taken on {date}",
+        "noDate": "Date not provided",
+        "navigation": "Browse photos",
+        "previous": "Previous",
+        "next": "Next"
+      },
+      "url": {
+        "required": "Please enter the full image URL",
+        "invalidFormat": "Use a full HTTP(S) URL without spaces, control characters, or backslashes",
+        "incompleteOrCredentials": "The URL is incomplete or contains credentials",
+        "managedMedia": "Attach media library images with the media picker",
+        "invalid": "Please enter a complete, valid image URL"
+      },
+      "repository": {
+        "unavailable": "The gallery service is temporarily unavailable. Please try again later.",
+        "notFound": "This photo doesn't exist or isn't public yet.",
+        "incomplete": "The gallery request didn't complete."
+      },
+      "settingsEditor": {
+        "persistFailed": "Couldn't save a recovery copy of the gear list. Keep this page open and try again.",
+        "recoveryUnreadable": "The gear recovery copy couldn't be read.",
+        "loginRequired": "Please sign in to the owner account first.",
+        "loadFailed": "Couldn't load gear settings",
+        "recoveryNotRemoved": "Settings saved, but this tab's recovery copy couldn't be removed.",
+        "saved": "Gear details saved.",
+        "saveFailed": "Save failed. Your input has been kept.",
+        "mergeNotice": "Your input has been kept. Review it and save again.",
+        "contextChanged": "The content library was restored or switched. Refresh and review the gear settings again.",
+        "leaveConfirm": "Your gear details aren't saved yet. A copy is kept in this tab. Leave anyway?"
+      }
+    },
+    "project": {
+      "page": {
+        "title": "Projects",
+        "subtitle": "Things I've built, experimented with, and keep maintaining",
+        "seoDescription": "Personal projects and creative work, browsable by status and tech tags",
+        "searchLabel": "Search projects",
+        "searchPlaceholder": "Search projects, descriptions...",
+        "clearFilters": "Clear filters",
+        "loading": "Loading projects",
+        "stale": "These filters are still loading. Showing the last projects that loaded successfully.",
+        "summary": "1 project · Page {page} | {count} projects · Page {page}",
+        "pagination": "Project pages",
+        "compactInfo": "Project stats & tech stack"
+      },
+      "focus": {
+        "label": "Selected project",
+        "title": "Project details",
+        "close": "Close project details",
+        "loading": "Loading project",
+        "invalidId": "That project ID isn't valid. Please continue from the project list.",
+        "loadFailed": "Couldn't load the project. Please try again."
+      },
+      "filter": {
+        "progress": "Status",
+        "progressLabel": "Filter by project status",
+        "allProgress": "All statuses",
+        "tag": "Tech",
+        "tagLabel": "Filter by technology",
+        "allTags": "All technologies",
+        "tagOption": "{label} ({count})"
+      },
+      "empty": {
+        "filteredTitle": "No projects found",
+        "title": "No public projects yet",
+        "filteredDescription": "Try a different keyword, status, or tech tag.",
+        "description": "Projects will appear here once they're published."
+      },
+      "metadata": {
+        "unavailable": "Project stats are temporarily unavailable",
+        "loading": "Loading project stats",
+        "staleDescription": "Still showing the last project stats that loaded. {message}"
+      },
+      "stats": {
+        "title": "Overview",
+        "projects": "Public projects",
+        "active": "Maintained",
+        "dev": "In development",
+        "archived": "Archived",
+        "tags": "Tech tags"
+      },
+      "progress": {
+        "active": "Maintained",
+        "dev": "In development",
+        "archived": "Archived"
+      },
+      "status": {
+        "draft": "Draft",
+        "published": "Published",
+        "withdrawn": "Withdrawn"
+      },
+      "link": {
+        "source": "Source code",
+        "demo": "Live demo",
+        "docs": "Docs",
+        "download": "Download"
+      },
+      "card": {
+        "noCover": "No cover image",
+        "filterTag": "Filter by technology: {tag}",
+        "details": "Details & related reading",
+        "noLinks": "No public links yet"
+      },
+      "techStack": {
+        "title": "Tech stack",
+        "description": "Share of public projects using each technology. A project can use several, so this isn't a breakdown of code by language.",
+        "empty": "No tech tags have been added to public projects yet.",
+        "filterPrefix": "Filter by technology: ",
+        "share": "1 project · {percent}% | {count} projects · {percent}%"
+      },
+      "repository": {
+        "unavailable": "The project service is temporarily unavailable. Please try again later.",
+        "notFound": "This project doesn't exist or isn't public yet.",
+        "incomplete": "The project request didn't complete."
+      }
+    },
+    "shared": {
+      "prevPage": "Previous",
+      "nextPage": "Next",
+      "close": "Close",
+      "requestRejected": "The request couldn't be completed. Please check your input and try again."
+    }
+  }
+}

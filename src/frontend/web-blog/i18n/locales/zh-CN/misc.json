@@ -1,1 +1,194 @@
-{}
+{
+  "misc": {
+    "about": {
+      "page": {
+        "title": "关于我",
+        "shareTitle": "关于我 - {name}"
+      },
+      "section": {
+        "experience": "经历",
+        "skill": "技能",
+        "interest": "兴趣",
+        "reading": "书单"
+      },
+      "contact": {
+        "title": "联系我",
+        "empty": "暂未公开联系方式"
+      },
+      "donate": {
+        "title": "感谢支持",
+        "description": "如果某篇文章帮到了你，收藏、分享或留一句话就是最好的支持。",
+        "unavailable": "打赏暂未开放"
+      }
+    },
+    "gallery": {
+      "page": {
+        "title": "画廊",
+        "subtitle": "用镜头记录生活的美好瞬间",
+        "seoDescription": "用镜头记录生活的美好瞬间，浏览摄影作品与拍摄故事",
+        "searchPlaceholder": "搜索照片、地点...",
+        "searchLabel": "搜索画廊照片",
+        "loading": "正在读取照片",
+        "stale": "正在显示上一次成功读取的照片，当前筛选尚未完成。",
+        "summary": "共 {count} 张照片 · 第 {page} 页",
+        "clearFilters": "清除筛选",
+        "pagination": "图库分页",
+        "compactInfo": "图库统计与器材"
+      },
+      "empty": {
+        "filteredTitle": "没有找到照片",
+        "title": "尚无公开作品",
+        "keywordDescription": "换个关键词试试，搜索会匹配标题、描述和地点。",
+        "categoryDescription": "这个分类下还没有公开照片，看看其他分类吧。",
+        "description": "照片公开后会展示在这里。"
+      },
+      "metadata": {
+        "unavailable": "图库统计暂时不可用",
+        "loading": "正在读取图库统计",
+        "staleDescription": "仍显示上次成功读取的图库统计。{message}"
+      },
+      "filter": {
+        "label": "照片分类筛选",
+        "all": "全部"
+      },
+      "stats": {
+        "title": "画廊统计",
+        "photos": "公开照片",
+        "locations": "拍摄地点",
+        "categories": "分类"
+      },
+      "gear": {
+        "title": "摄影器材",
+        "empty": "尚未填写器材资料。"
+      },
+      "item": {
+        "view": "查看照片：{title}",
+        "noMeta": "拍摄信息未填写"
+      },
+      "lightbox": {
+        "label": "照片预览",
+        "loadFailed": "照片加载失败",
+        "takenOn": "拍摄于 {date}",
+        "noDate": "拍摄日期未填写",
+        "navigation": "切换照片",
+        "previous": "上一张",
+        "next": "下一张"
+      },
+      "url": {
+        "required": "请输入完整的图片地址",
+        "invalidFormat": "请使用完整的 HTTP(S) 地址，不含空白、控制字符或反斜杠",
+        "incompleteOrCredentials": "地址不完整或含有凭据",
+        "managedMedia": "媒体库图片请通过媒体选择器关联",
+        "invalid": "请输入完整有效的图片地址"
+      },
+      "repository": {
+        "unavailable": "图库服务暂时不可用，请稍后重试",
+        "notFound": "作品不存在或尚未公开",
+        "incomplete": "图库请求未完成"
+      },
+      "settingsEditor": {
+        "persistFailed": "器材恢复副本保存失败，请保留当前页面并重试。",
+        "recoveryUnreadable": "器材恢复副本无法读取。",
+        "loginRequired": "请先登录博主账号。",
+        "loadFailed": "器材设置读取失败",
+        "recoveryNotRemoved": "设置已保存，但本标签页副本未能移除。",
+        "saved": "器材资料已保存。",
+        "saveFailed": "保存失败，输入已保留",
+        "mergeNotice": "当前输入已保留，请核对后再次保存。",
+        "contextChanged": "内容库已恢复或切换，请刷新后重新核对器材设置。",
+        "leaveConfirm": "器材资料尚未保存，已保留本标签页副本，确定离开吗？"
+      }
+    },
+    "project": {
+      "page": {
+        "title": "项目展示",
+        "subtitle": "记录创作、实践与持续维护的项目",
+        "seoDescription": "记录个人项目与创作实践，按项目进展和技术标签浏览",
+        "searchLabel": "搜索项目",
+        "searchPlaceholder": "搜索项目、介绍...",
+        "clearFilters": "清除筛选",
+        "loading": "正在读取项目",
+        "stale": "当前筛选尚未完成，以下保留上一次成功读取的项目。",
+        "summary": "共 {count} 个项目 · 第 {page} 页",
+        "pagination": "项目分页",
+        "compactInfo": "项目统计与技术栈"
+      },
+      "focus": {
+        "label": "指定项目",
+        "title": "项目详情",
+        "close": "关闭项目详情",
+        "loading": "正在读取指定项目",
+        "invalidId": "项目编号无效，请从项目列表继续浏览。",
+        "loadFailed": "项目读取失败，请重试"
+      },
+      "filter": {
+        "progress": "项目进展",
+        "progressLabel": "筛选项目进展",
+        "allProgress": "全部进展",
+        "tag": "技术标签",
+        "tagLabel": "筛选项目技术",
+        "allTags": "全部技术",
+        "tagOption": "{label}（{count}）"
+      },
+      "empty": {
+        "filteredTitle": "没有找到项目",
+        "title": "尚无公开项目",
+        "filteredDescription": "试试其他关键词、进展或技术标签。",
+        "description": "项目公开后会展示在这里。"
+      },
+      "metadata": {
+        "unavailable": "项目统计暂时不可用",
+        "loading": "正在读取项目统计",
+        "staleDescription": "仍显示上次成功读取的项目统计。{message}"
+      },
+      "stats": {
+        "title": "项目概览",
+        "projects": "公开项目",
+        "active": "维护中",
+        "dev": "开发中",
+        "archived": "已归档",
+        "tags": "技术标签"
+      },
+      "progress": {
+        "active": "维护中",
+        "dev": "开发中",
+        "archived": "已归档"
+      },
+      "status": {
+        "draft": "草稿",
+        "published": "已公开",
+        "withdrawn": "已撤回"
+      },
+      "link": {
+        "source": "源代码",
+        "demo": "在线预览",
+        "docs": "文档",
+        "download": "下载"
+      },
+      "card": {
+        "noCover": "暂无封面",
+        "filterTag": "筛选技术：{tag}",
+        "details": "项目详情与关联阅读",
+        "noLinks": "尚未提供公开链接"
+      },
+      "techStack": {
+        "title": "技术栈分布",
+        "description": "使用该技术的公开项目占比。一个项目可使用多种技术，比例不表示代码语言占比。",
+        "empty": "公开项目尚未填写技术标签。",
+        "filterPrefix": "筛选技术：",
+        "share": "{count} 项 · {percent}%"
+      },
+      "repository": {
+        "unavailable": "项目服务暂时不可用，请稍后重试",
+        "notFound": "项目不存在或尚未公开",
+        "incomplete": "项目请求未完成"
+      }
+    },
+    "shared": {
+      "prevPage": "上一页",
+      "nextPage": "下一页",
+      "close": "关闭",
+      "requestRejected": "操作未完成，请核对输入后重试"
+    }
+  }
+}

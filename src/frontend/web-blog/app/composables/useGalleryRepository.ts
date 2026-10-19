@@ -13,17 +13,19 @@ import { galleryPayload } from '~/features/gallery/editor'
 export function useGalleryRepository() {
   const base = String(useRuntimeConfig().public.apiBaseUrl).replace(/\/$/, '')
   const admin = useAdminApi()
+  // 在创建时取翻译函数：失败处理发生在 await 之后，已脱离 Nuxt 上下文
+  const t = currentTranslate()
   function failure(value: unknown) {
     const cause = value as { statusCode?: number; status?: number; data?: { message?: unknown } }
     const statusCode = cause?.statusCode ?? cause?.status
     const message =
       !statusCode || statusCode >= 500
-        ? '图库服务暂时不可用，请稍后重试'
+        ? t('misc.gallery.repository.unavailable')
         : typeof cause.data?.message === 'string'
           ? cause.data.message
           : statusCode === 404
-            ? '作品不存在或尚未公开'
-            : '操作未完成，请核对输入后重试'
+            ? t('misc.gallery.repository.notFound')
+            : t('misc.shared.requestRejected')
     return Object.assign(new Error(message, { cause: value }), { statusCode })
   }
   async function read<T>(path: string, query?: GalleryQuery, signal?: AbortSignal): Promise<T> {
@@ -34,7 +36,7 @@ export function useGalleryRepository() {
         timeout: 10000,
         retry: 0,
       })
-      if (result.code !== 0) throw new Error('图库请求未完成')
+      if (result.code !== 0) throw new Error(t('misc.gallery.repository.incomplete'))
       return result.data
     } catch (cause) {
       throw failure(cause)

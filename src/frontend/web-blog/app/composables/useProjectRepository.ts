@@ -9,18 +9,20 @@ import type {
 } from '~/features/project/types'
 export function useProjectRepository() {
   const base = String(useRuntimeConfig().public.apiBaseUrl).replace(/\/$/, ''),
-    admin = useAdminApi()
+    admin = useAdminApi(),
+    // 在创建时取翻译函数：失败处理发生在 await 之后，已脱离 Nuxt 上下文
+    t = currentTranslate()
   function failure(value: unknown) {
     const cause = value as { statusCode?: number; status?: number; data?: { message?: unknown } },
       statusCode = cause?.statusCode ?? cause?.status
     const message =
       !statusCode || statusCode >= 500
-        ? '项目服务暂时不可用，请稍后重试'
+        ? t('misc.project.repository.unavailable')
         : typeof cause.data?.message === 'string'
           ? cause.data.message
           : statusCode === 404
-            ? '项目不存在或尚未公开'
-            : '操作未完成，请核对输入后重试'
+            ? t('misc.project.repository.notFound')
+            : t('misc.shared.requestRejected')
     return Object.assign(new Error(message, { cause: value }), { statusCode })
   }
   async function read<T>(path: string, query?: ProjectQuery, signal?: AbortSignal): Promise<T> {
@@ -31,7 +33,7 @@ export function useProjectRepository() {
         timeout: 10000,
         retry: 0,
       })
-      if (result.code !== 0) throw new Error('项目请求未完成')
+      if (result.code !== 0) throw new Error(t('misc.project.repository.incomplete'))
       return result.data
     } catch (cause) {
       throw failure(cause)
