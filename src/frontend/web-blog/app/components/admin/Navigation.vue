@@ -1,6 +1,6 @@
 <!-- @file Navigation.vue @description 桌面与移动共用管理导航，活动项只滚动导航自身；互动通知显示未读徽章 -->
 <template>
-  <nav ref="nav" class="admin-navigation" aria-label="管理导航">
+  <nav ref="nav" class="admin-navigation" :aria-label="t('admin-system.nav.label')">
     <NuxtLink
       v-for="item in adminNavigation"
       :key="item.path"
@@ -8,16 +8,17 @@
       tabindex="0"
       :aria-current="activePath === item.path ? 'page' : undefined"
     >
-      <Icon :name="item.icon" />{{ item.label
+      <Icon :name="item.icon" />{{ t(item.labelKey)
       }}<span v-if="item.path === '/admin/notifications' && unread" class="admin-navigation__badge"
         ><span aria-hidden="true">{{ unread > 99 ? '99+' : unread }}</span
-        ><span class="sr-only">，{{ unread }} 条未读</span></span
+        ><span class="sr-only">{{ t('admin-system.nav.unread', { count: unread }) }}</span></span
       >
     </NuxtLink>
   </nav>
 </template>
 <script setup lang="ts">
 import { adminNavigation, adminModule } from '~/features/admin/navigation'
+const { t } = useI18n()
 const route = useRoute()
 const nav = ref<HTMLElement | null>(null)
 const activePath = computed(() => adminModule(route.path)?.path)

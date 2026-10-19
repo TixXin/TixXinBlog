@@ -1,56 +1,59 @@
 <!-- @file notifications.vue @description 博主站内通知，已读与业务状态分别展示，状态来源于实时业务查询；支持全部标记已读并同步导航未读徽章 -->
 <template>
   <section class="notifications">
-    <h1 ref="heading" tabindex="-1">互动通知</h1>
-    <p>已读只表示你看过通知。审核和回复请进入对应内容处理。</p>
-    <nav class="notifications__filters" aria-label="通知筛选">
-      <NuxtLink :to="{ query: { filter: 'all' } }">全部</NuxtLink
-      ><NuxtLink :to="{ query: { filter: 'unread' } }">未读</NuxtLink
-      ><NuxtLink to="/admin/operations">邮件与运行状态</NuxtLink>
+    <h1 ref="heading" tabindex="-1">{{ t('admin-system.notifications.title') }}</h1>
+    <p>{{ t('admin-system.notifications.intro') }}</p>
+    <nav class="notifications__filters" :aria-label="t('admin-system.notifications.filters')">
+      <NuxtLink :to="{ query: { filter: 'all' } }">{{ t('admin-system.notifications.filterAll') }}</NuxtLink
+      ><NuxtLink :to="{ query: { filter: 'unread' } }">{{ t('admin-system.notifications.filterUnread') }}</NuxtLink
+      ><NuxtLink to="/admin/operations">{{ t('admin-system.notifications.operationsLink') }}</NuxtLink>
     </nav>
     <CommonRequestFeedback
       v-if="pending || error"
       :pending="pending"
-      :title="error || '正在读取通知'"
+      :title="error || t('admin-system.notifications.loading')"
       :compact="!!data"
       @retry="refresh"
     />
-    <p v-if="error && data">当前显示上次读取结果，请重试后判断业务状态。</p>
+    <p v-if="error && data">{{ t('admin-system.notifications.stale') }}</p>
     <p v-if="actionError" role="alert">
-      {{ actionError }} <button type="button" @click="refreshAll">核对当前状态</button>
+      {{ actionError }} <button type="button" @click="refreshAll">{{ t('admin-system.notifications.recheck') }}</button>
     </p>
     <template v-if="notificationId">
-      <p v-if="!validNotificationId" role="alert">指定通知编号无效，请从通知列表重新进入。</p>
+      <p v-if="!validNotificationId" role="alert">{{ t('admin-system.notifications.invalidId') }}</p>
       <CommonRequestFeedback
         v-else-if="focusedPending || focusedError"
         :pending="focusedPending"
-        :title="focusedError || '正在读取指定通知'"
+        :title="focusedError || t('admin-system.notifications.focusedLoading')"
         :compact="!!focused"
         @retry="refreshFocused"
       />
-      <p v-if="focusedError && focused">以下保留此前通知，请重试后判断业务状态。</p>
+      <p v-if="focusedError && focused">{{ t('admin-system.notifications.focusedStale') }}</p>
       <section
         v-if="focused"
         ref="focusedPanel"
         class="notifications__focused"
-        aria-label="指定通知"
+        :aria-label="t('admin-system.notifications.focused')"
         :data-focused-notification-id="focused.id"
         tabindex="-1"
       >
-        <h2>指定通知 · {{ kinds[focused.kind] }}<span v-if="!focused.readAt"> · 未读</span></h2>
-        <p>{{ states[focused.state] }} · {{ new Date(focused.createdAt).toLocaleString('zh-CN') }}</p>
+        <h2>
+          {{ t('admin-system.notifications.focused') }} · {{ t(`admin-system.notifications.kinds.${focused.kind}`)
+          }}<span v-if="!focused.readAt"> · {{ t('admin-system.notifications.unread') }}</span>
+        </h2>
+        <p>{{ t(`admin-system.notifications.states.${focused.state}`) }} · {{ formatDateTime(focused.createdAt) }}</p>
         <div class="notifications__actions">
-          <NuxtLink v-if="focused.url" :to="focused.url">查看对应内容</NuxtLink
-          ><span v-else>内容已删除或隐藏，当前无法打开。</span>
+          <NuxtLink v-if="focused.url" :to="focused.url">{{ t('admin-system.notifications.viewContent') }}</NuxtLink
+          ><span v-else>{{ t('admin-system.notifications.contentGone') }}</span>
           <button v-if="!focused.readAt" type="button" :disabled="!!working" @click="markRead(focused.id)">
-            标记已读
+            {{ t('admin-system.notifications.markRead') }}
           </button>
         </div>
       </section>
     </template>
     <template v-if="data">
       <div class="notifications__summary">
-        <p>未读 {{ data.unread }} 条 · 当前筛选 {{ data.total }} 条</p>
+        <p>{{ t('admin-system.notifications.summary', { unread: data.unread, total: data.total }) }}</p>
         <button
           v-if="data.unread"
           type="button"
@@ -58,26 +61,37 @@
           :disabled="!!working"
           @click="markAllRead"
         >
-          <Icon name="lucide:check-check" aria-hidden="true" />{{ working === 'all' ? '正在标记…' : '全部标记已读' }}
+          <Icon name="lucide:check-check" aria-hidden="true" />{{
+            working === 'all' ? t('admin-system.notifications.markingAll') : t('admin-system.notifications.markAllRead')
+          }}
         </button>
       </div>
       <p class="notifications__status" role="status">{{ statusMessage }}</p>
-      <p v-if="!data.items.length">当前筛选下没有通知。</p>
+      <p v-if="!data.items.length">{{ t('admin-system.notifications.empty') }}</p>
       <ol ref="list" class="notifications__list">
         <li v-for="item in data.items" :key="item.id" :data-notification-id="item.id" tabindex="-1">
-          <h2>{{ kinds[item.kind] }}<span v-if="!item.readAt"> · 未读</span></h2>
-          <p>{{ states[item.state] }} · {{ new Date(item.createdAt).toLocaleString('zh-CN') }}</p>
+          <h2>
+            {{ t(`admin-system.notifications.kinds.${item.kind}`)
+            }}<span v-if="!item.readAt"> · {{ t('admin-system.notifications.unread') }}</span>
+          </h2>
+          <p>{{ t(`admin-system.notifications.states.${item.state}`) }} · {{ formatDateTime(item.createdAt) }}</p>
           <div class="notifications__actions">
-            <NuxtLink v-if="item.url" :to="item.url">查看对应内容</NuxtLink
-            ><span v-else>内容已删除或隐藏，当前无法打开。</span>
-            <button v-if="!item.readAt" type="button" :disabled="!!working" @click="markRead(item.id)">标记已读</button>
+            <NuxtLink v-if="item.url" :to="item.url">{{ t('admin-system.notifications.viewContent') }}</NuxtLink
+            ><span v-else>{{ t('admin-system.notifications.contentGone') }}</span>
+            <button v-if="!item.readAt" type="button" :disabled="!!working" @click="markRead(item.id)">
+              {{ t('admin-system.notifications.markRead') }}
+            </button>
           </div>
         </li>
       </ol>
-      <nav class="notifications__pagination" aria-label="通知分页">
-        <NuxtLink v-if="page > 1" :to="{ query: { filter, page: page - 1 } }">上一页</NuxtLink
+      <nav class="notifications__pagination" :aria-label="t('admin-system.notifications.pagination')">
+        <NuxtLink v-if="page > 1" :to="{ query: { filter, page: page - 1 } }">{{
+          t('admin-system.operations.prev')
+        }}</NuxtLink
         ><span>{{ page }} / {{ Math.max(1, Math.ceil(data.total / 20)) }}</span
-        ><NuxtLink v-if="page * 20 < data.total" :to="{ query: { filter, page: page + 1 } }">下一页</NuxtLink>
+        ><NuxtLink v-if="page * 20 < data.total" :to="{ query: { filter, page: page + 1 } }">{{
+          t('admin-system.operations.next')
+        }}</NuxtLink>
       </nav>
     </template>
   </section>
@@ -85,7 +99,8 @@
 <script setup lang="ts">
 import type { NotificationList, OwnerNotification } from '~/features/notification/types'
 definePageMeta({ layout: 'admin' })
-useSeoMeta({ title: '互动通知', robots: 'noindex, nofollow' })
+const { t } = useI18n()
+useSeoMeta({ title: () => t('admin-system.notifications.title'), robots: 'noindex, nofollow' })
 const route = useRoute(),
   api = useAdminApi(),
   auth = useCurrentUser()
@@ -98,7 +113,7 @@ const validNotificationId = computed(() =>
 )
 const { data, pending, error, refresh, captureOwnership } = useAdminReadResource(
   () => api<NotificationList>('/admin/notifications', { query: { page: page.value, filter: filter.value } }),
-  '通知读取失败，请重试',
+  () => t('admin-system.notifications.loadFailed'),
 )
 const {
   data: focused,
@@ -110,7 +125,7 @@ const {
     validNotificationId.value
       ? api<OwnerNotification>(`/admin/notifications/${notificationId.value}`)
       : Promise.resolve(null),
-  '指定通知不存在或暂时无法读取，请重试或查看通知列表',
+  () => t('admin-system.notifications.focusedFailed'),
 )
 const working = ref(''),
   actionError = ref(''),
@@ -127,21 +142,6 @@ watch(
 const list = ref<HTMLOListElement | null>(null),
   heading = ref<HTMLHeadingElement | null>(null),
   focusedPanel = ref<HTMLElement | null>(null)
-const kinds = {
-  comment: '文章评论',
-  guestbook: '留言互动',
-  'moment-comment': '朋友圈评论',
-  'flash-comment': '闪念评论',
-  task: '运行异常',
-}
-const states = {
-  pending_review: '等待审核',
-  awaiting_reply: '尚待博主回复',
-  available: '可以查看',
-  handled: '对应事项已处理',
-  unavailable: '对应内容不可用',
-  failed: '任务需要处理',
-}
 watch(
   () => route.fullPath,
   () => {
@@ -184,13 +184,15 @@ async function markAllRead() {
     })
     if (!owns()) return
     unreadBadge.set(result.unread)
-    statusMessage.value = result.updated ? `已将 ${result.updated} 条通知标记为已读` : '没有需要标记的未读通知'
+    statusMessage.value = result.updated
+      ? t('admin-system.notifications.markedAll', { count: result.updated }, result.updated)
+      : t('admin-system.notifications.nothingToMark')
     if (result.updated) success(statusMessage.value)
     await refreshAll()
     await nextTick()
     if (owns()) heading.value?.focus()
   } catch {
-    if (owns()) actionError.value = '全部已读未确认，请刷新核对；这不会改变互动处理状态。'
+    if (owns()) actionError.value = t('admin-system.notifications.markAllFailed')
   } finally {
     if (owns()) working.value = ''
   }
@@ -215,7 +217,7 @@ async function markRead(id: string) {
         )?.focus()
     }
   } catch {
-    if (owns()) actionError.value = '已读状态未确认，请刷新核对；这不会改变互动处理状态。'
+    if (owns()) actionError.value = t('admin-system.notifications.markFailed')
   } finally {
     if (owns()) working.value = ''
   }

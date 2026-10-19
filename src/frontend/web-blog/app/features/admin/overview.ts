@@ -1,10 +1,17 @@
-/** @file overview.ts @description 工作台域入口、状态筛选与编辑地址；闪念使用已有行内编辑器。 */
+/** @file overview.ts @description 工作台域入口、状态筛选与编辑地址；闪念使用已有行内编辑器；名称为字典 key。 */
 import type { OverviewContent } from './types'
 export const overviewDomains = [
-  { domain: 'post', label: '文章', path: '/admin/posts', total: 'posts', drafts: 'drafts', icon: 'lucide:file-text' },
+  {
+    domain: 'post',
+    labelKey: 'admin-system.overview.domains.post',
+    path: '/admin/posts',
+    total: 'posts',
+    drafts: 'drafts',
+    icon: 'lucide:file-text',
+  },
   {
     domain: 'flash',
-    label: '闪念',
+    labelKey: 'admin-system.overview.domains.flash',
     path: '/admin/flashes',
     total: 'flashes',
     drafts: 'flashDrafts',
@@ -12,7 +19,7 @@ export const overviewDomains = [
   },
   {
     domain: 'moment',
-    label: '朋友圈',
+    labelKey: 'admin-system.overview.domains.moment',
     path: '/admin/moments',
     total: 'moments',
     drafts: 'momentDrafts',
@@ -20,7 +27,7 @@ export const overviewDomains = [
   },
   {
     domain: 'gallery',
-    label: '图库',
+    labelKey: 'admin-system.overview.domains.gallery',
     path: '/admin/gallery',
     total: 'gallery',
     drafts: 'galleryDrafts',
@@ -28,21 +35,48 @@ export const overviewDomains = [
   },
   {
     domain: 'project',
-    label: '项目',
+    labelKey: 'admin-system.overview.domains.project',
     path: '/admin/projects',
     total: 'projects',
     drafts: 'projectDrafts',
     icon: 'lucide:folder-code',
   },
-  { domain: 'link', label: '友链', path: '/admin/links', total: 'links', drafts: 'linkDrafts', icon: 'lucide:link' },
+  {
+    domain: 'link',
+    labelKey: 'admin-system.overview.domains.link',
+    path: '/admin/links',
+    total: 'links',
+    drafts: 'linkDrafts',
+    icon: 'lucide:link',
+  },
 ] as const
 export const overviewTasks = [
-  { key: 'pendingComments', label: '文章评论待审核', to: '/admin/comments?status=pending' },
-  { key: 'pendingMomentComments', label: '朋友圈评论待审核', to: '/admin/moment-comments?status=pending' },
-  { key: 'pendingFlashComments', label: '闪念评论待审核', to: '/admin/flash-comments?status=pending' },
-  { key: 'pendingGuestbook', label: '留言待审核', to: '/admin/guestbook?status=pending' },
-  { key: 'unanswered', label: '文章评论待回复', to: '/admin/comments?unanswered=true' },
-  { key: 'unansweredGuestbook', label: '留言待回复', to: '/admin/guestbook?unanswered=true' },
+  {
+    key: 'pendingComments',
+    labelKey: 'admin-system.overview.tasks.pendingComments',
+    to: '/admin/comments?status=pending',
+  },
+  {
+    key: 'pendingMomentComments',
+    labelKey: 'admin-system.overview.tasks.pendingMomentComments',
+    to: '/admin/moment-comments?status=pending',
+  },
+  {
+    key: 'pendingFlashComments',
+    labelKey: 'admin-system.overview.tasks.pendingFlashComments',
+    to: '/admin/flash-comments?status=pending',
+  },
+  {
+    key: 'pendingGuestbook',
+    labelKey: 'admin-system.overview.tasks.pendingGuestbook',
+    to: '/admin/guestbook?status=pending',
+  },
+  { key: 'unanswered', labelKey: 'admin-system.overview.tasks.unanswered', to: '/admin/comments?unanswered=true' },
+  {
+    key: 'unansweredGuestbook',
+    labelKey: 'admin-system.overview.tasks.unansweredGuestbook',
+    to: '/admin/guestbook?unanswered=true',
+  },
 ] as const
 export function overviewEditorPath(item: Pick<OverviewContent, 'domain' | 'id'>) {
   const domain = overviewDomains.find((value) => value.domain === item.domain)!

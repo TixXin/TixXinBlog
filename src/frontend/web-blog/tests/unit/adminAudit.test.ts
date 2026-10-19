@@ -9,7 +9,8 @@ import type { AuditItem } from '../../app/features/audit/types'
 const mocks = vi.hoisted(() => ({
   api: vi.fn(),
   push: vi.fn(),
-  route: {} as { path: string; fullPath: string; query: Record<string, string> },
+  // 测试应用启动时 i18n 插件即读取路由，初值需带 query
+  route: { path: '/', fullPath: '/', query: {} } as { path: string; fullPath: string; query: Record<string, string> },
 }))
 mockNuxtImport('useAdminApi', () => () => mocks.api)
 mockNuxtImport('useCurrentUser', () => () => ({ restore: async () => true }))

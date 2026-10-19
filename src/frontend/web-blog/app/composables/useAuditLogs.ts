@@ -2,10 +2,11 @@
  * @file useAuditLogs.ts
  * @description 审计筛选分页保持在 URL，忽略过期请求返回，读取失败保留筛选条件。
  */
-import { auditStateLabels } from '~/features/audit/types'
+import { isAuditState } from '~/features/audit/types'
 import type { AuditItem, AuditState } from '~/features/audit/types'
 export function useAuditLogs() {
   const api = useAdminApi()
+  const t = currentTranslate()
   const auth = useCurrentUser()
   const route = useRoute()
   const router = useRouter()
@@ -25,7 +26,7 @@ export function useAuditLogs() {
     try {
       actions.value = await api('/admin/audit/actions')
     } catch {
-      actionsError.value = '操作筛选选项读取失败'
+      actionsError.value = t('admin-system.audit.actionsFailed')
     }
   }
   const health = ref({ waitingResults: 0, retryQueue: 0, droppedRetries: 0 })
@@ -34,7 +35,7 @@ export function useAuditLogs() {
   function sync() {
     const text = (key: string) => (typeof route.query[key] === 'string' ? String(route.query[key]) : '')
     action.value = text('action')
-    state.value = Object.hasOwn(auditStateLabels, text('state')) ? (text('state') as AuditState) : ''
+    state.value = isAuditState(text('state')) ? (text('state') as AuditState) : ''
     from.value = text('from')
     to.value = text('to')
     const number = Number(text('page'))
@@ -73,7 +74,7 @@ export function useAuditLogs() {
     } catch {
       if (current === version) {
         items.value = []
-        error.value = '审计记录读取失败，请检查登录或筛选条件后重试'
+        error.value = t('admin-system.audit.loadFailed')
       }
     } finally {
       if (current === version) pending.value = false

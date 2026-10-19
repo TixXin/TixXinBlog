@@ -4,15 +4,16 @@
 -->
 <template>
   <section class="admin-login">
-    <h1>博主登录</h1>
-    <p v-if="route.query.changed === '1'" role="status">密码已修改，请使用新密码重新登录。</p>
+    <h1>{{ t('admin-system.layout.titleLogin') }}</h1>
+    <p v-if="route.query.changed === '1'" role="status">{{ t('admin-system.login.changed') }}</p>
     <AuthLoginForm @authenticated="entered" @switch-view="showHelp = !showHelp" />
-    <p v-if="showHelp">请使用站点维护者提供的博主账号；需要恢复密码时请联系维护者。</p>
+    <p v-if="showHelp">{{ t('admin-system.login.help') }}</p>
   </section>
 </template>
 <script setup lang="ts">
 definePageMeta({ layout: 'admin' })
-useSeoMeta({ title: '博主登录', robots: 'noindex, nofollow' })
+const { t } = useI18n()
+useSeoMeta({ title: () => t('admin-system.layout.titleLogin'), robots: 'noindex, nofollow' })
 const route = useRoute()
 const showHelp = ref(false)
 async function entered() {

@@ -1,7 +1,8 @@
 /**
  * @file types.ts
- * @description 审计展示契约与固定标签，不包含任何原始凭据或请求正文。
+ * @description 审计展示契约与固定标签（名称由调用方按 admin-system 字典翻译），不包含任何原始凭据或请求正文。
  */
+import type { Translate } from '~/utils/format'
 export type AuditState = 'pending' | 'success' | 'partial' | 'failure' | 'unknown'
 export interface AuditItem {
   id: string
@@ -24,43 +25,51 @@ export interface AuditItem {
   finishedAt?: string
   traceId?: string
 }
-export const auditStateLabels: Record<AuditState, string> = {
-  pending: '结果待确认',
-  success: '成功',
-  partial: '部分成功',
-  failure: '失败',
-  unknown: '结果未确认',
+/** 审计结果状态，名称见 admin-system.audit.states.* */
+export const auditStates: readonly AuditState[] = ['pending', 'success', 'partial', 'failure', 'unknown']
+/** 有字典名称的审计对象类型，名称见 admin-system.audit.resources.* */
+const auditResourceTypes = new Set([
+  'post',
+  'post-batch',
+  'comment',
+  'media',
+  'flash',
+  'taxonomy',
+  'site',
+  'account',
+  'session',
+  'admin',
+  'content-import',
+])
+/** 有字典名称的审计计数项，名称见 admin-system.audit.counts.* */
+const auditCountKeys = new Set([
+  'successCount',
+  'failedCount',
+  'pendingCount',
+  'allowedCount',
+  'deleted',
+  'revoked',
+  'byteSize',
+  'width',
+  'height',
+  'exportedPosts',
+  'exportedFlashes',
+  'exportedMedia',
+  'importedPosts',
+  'importedFlashes',
+  'importedComments',
+  'importedMedia',
+])
+export function isAuditState(value: string): value is AuditState {
+  return (auditStates as readonly string[]).includes(value)
 }
-export const auditResourceLabels: Record<string, string> = {
-  post: '文章',
-  'post-batch': '文章批次',
-  comment: '评论',
-  media: '媒体',
-  flash: '闪念',
-  taxonomy: '分类标签',
-  site: '站点资料',
-  account: '账号',
-  session: '会话',
-  admin: '管理对象',
-  'content-import': '内容迁入',
+/** 审计对象名称；未知类型统一显示为「管理对象」 */
+export function auditResourceLabel(type: string, t: Translate) {
+  return t(`admin-system.audit.resources.${auditResourceTypes.has(type) ? type : 'admin'}`)
 }
-export const auditCountLabels: Record<string, string> = {
-  successCount: '成功条目',
-  failedCount: '失败条目',
-  pendingCount: '未处理条目',
-  allowedCount: '可执行条目',
-  deleted: '删除数量',
-  revoked: '撤销数量',
-  byteSize: '资源字节数',
-  width: '图片宽度',
-  height: '图片高度',
-  exportedPosts: '导出文章',
-  exportedFlashes: '导出闪念',
-  exportedMedia: '包含图片文件',
-  importedPosts: '迁入文章草稿',
-  importedFlashes: '迁入闪念草稿',
-  importedComments: '迁入评论',
-  importedMedia: '新增媒体',
+/** 审计计数项名称；未知计数项原样显示 key */
+export function auditCountLabel(key: string, t: Translate) {
+  return auditCountKeys.has(key) ? t(`admin-system.audit.counts.${key}`) : key
 }
 export function auditResourceLink(item: AuditItem): string | undefined {
   if (item.resourceType === 'content-import')

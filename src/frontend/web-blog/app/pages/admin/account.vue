@@ -4,29 +4,28 @@
 -->
 <template>
   <section class="account">
-    <h1>账号安全</h1>
+    <h1>{{ t('admin-system.account.title') }}</h1>
     <ClientOnly>
       <p v-if="profile">
-        当前账号：<strong>{{ profile.username }}</strong>
+        {{ t('admin-system.account.currentAccount') }}<strong>{{ profile.username }}</strong>
       </p>
       <p v-if="profile?.lastLoginAt">
-        最近登录：{{ new Date(profile.lastLoginAt).toLocaleString('zh-CN', { hour12: false }) }}
+        {{ t('admin-system.account.lastLogin', { time: formatDateTime(profile.lastLoginAt, { hour12: false }) }) }}
       </p>
-      <p v-if="loadError" role="alert">{{ loadError }} <button type="button" @click="load">重试</button></p>
+      <p v-if="loadError" role="alert">
+        {{ loadError }} <button type="button" @click="load">{{ t('admin-system.account.retry') }}</button>
+      </p>
       <form class="account__password" @submit.prevent="changePassword">
-        <h2>修改密码</h2>
-        <p>使用 12–128 位的新密码。成功后当前及其他设备的旧登录均失效，需要重新登录。</p>
+        <h2>{{ t('admin-system.account.passwordTitle') }}</h2>
+        <p>{{ t('admin-system.account.passwordHint') }}</p>
         <fieldset :disabled="pending || sessions.pending.value || !profile || !isLoggedIn">
           <label
-            >当前密码<input
-              v-model="currentPassword"
-              type="password"
-              autocomplete="current-password"
-              maxlength="128"
-              required
+            >{{ t('admin-system.account.currentPassword')
+            }}<input v-model="currentPassword" type="password" autocomplete="current-password" maxlength="128" required
           /></label>
           <label
-            >新密码<input
+            >{{ t('admin-system.account.newPassword')
+            }}<input
               v-model="newPassword"
               type="password"
               autocomplete="new-password"
@@ -35,7 +34,8 @@
               required
           /></label>
           <label
-            >确认新密码<input
+            >{{ t('admin-system.account.confirmPassword')
+            }}<input
               v-model="confirmation"
               type="password"
               autocomplete="new-password"
@@ -44,7 +44,9 @@
               required
           /></label>
           <p v-if="error" role="alert">{{ error }}</p>
-          <button type="submit">{{ pending ? '正在修改…' : '修改密码并退出所有会话' }}</button>
+          <button type="submit">
+            {{ pending ? t('admin-system.account.submitting') : t('admin-system.account.submit') }}
+          </button>
         </fieldset>
       </form>
       <AdminActiveSessions
@@ -63,7 +65,8 @@
 </template>
 <script setup lang="ts">
 definePageMeta({ layout: 'admin' })
-useSeoMeta({ title: '账号安全', robots: 'noindex, nofollow' })
+const { t } = useI18n()
+useSeoMeta({ title: () => t('admin-system.account.title'), robots: 'noindex, nofollow' })
 const auth = useCurrentUser()
 const { isLoggedIn } = auth
 const api = useAdminApi()
@@ -81,18 +84,18 @@ async function load() {
   try {
     profile.value = await api('/auth/me')
   } catch {
-    loadError.value = '账号信息读取失败，请检查登录后重试'
+    loadError.value = t('admin-system.account.loadFailed')
   }
 }
 async function changePassword() {
   if (pending.value) return
   error.value = ''
   if (newPassword.value !== confirmation.value) {
-    error.value = '两次新密码不一致'
+    error.value = t('admin-system.account.mismatch')
     return
   }
   if (newPassword.value === currentPassword.value) {
-    error.value = '新密码不能与当前密码相同'
+    error.value = t('admin-system.account.samePassword')
     return
   }
   pending.value = true
@@ -103,11 +106,10 @@ async function changePassword() {
     })
     currentPassword.value = newPassword.value = confirmation.value = ''
     await auth.clearSession()
-    success('密码已修改，所有旧会话已退出，请使用新密码登录')
+    success(t('admin-system.account.changed'))
     await navigateTo({ path: '/admin/login', query: { changed: '1' } })
   } catch (cause) {
-    const message = (cause as { data?: { message?: unknown } }).data?.message
-    error.value = typeof message === 'string' ? message : '请求未能确认成功。若旧密码已失效，请使用新密码重新登录'
+    error.value = apiErrorMessage(cause, 'admin-system.account.changeUncertain')
   } finally {
     pending.value = false
   }

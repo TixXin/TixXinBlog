@@ -7,6 +7,7 @@ export function useAdminSessions() {
   const api = useAdminApi()
   const auth = useCurrentUser()
   const toast = useToast()
+  const t = currentTranslate()
   const items = ref<AdminSessionItem[]>([])
   const page = ref(1)
   const total = ref(0)
@@ -24,7 +25,7 @@ export function useAdminSessions() {
       total.value = result.total
       page.value = currentPage
     } catch {
-      error.value = '会话列表读取失败，请重试'
+      error.value = t('admin-system.sessions.loadFailed')
     } finally {
       pending.value = false
     }
@@ -34,8 +35,8 @@ export function useAdminSessions() {
     if (
       !window.confirm(
         item.current
-          ? '撤销当前会话会立即退出并清空当前账号页输入，确定继续吗？'
-          : `撤销“${item.device}”的会话？该会话之后的管理请求将被拒绝。`,
+          ? t('admin-system.sessions.confirmRevokeCurrent')
+          : t('admin-system.sessions.confirmRevoke', { device: item.device }),
       )
     )
       return
@@ -48,9 +49,9 @@ export function useAdminSessions() {
         await navigateTo('/admin/login')
         return
       }
-      toast.success('所选会话已撤销')
+      toast.success(t('admin-system.sessions.revoked'))
     } catch {
-      error.value = '未能确认撤销结果，请刷新会话列表后检查'
+      error.value = t('admin-system.sessions.revokeUncertain')
     } finally {
       pending.value = false
     }
@@ -58,19 +59,14 @@ export function useAdminSessions() {
   }
   async function revokeOthers() {
     if (pending.value || total.value <= 1) return
-    if (
-      !window.confirm(
-        `撤销当前账号的其他全部会话？当前列表共 ${total.value} 个有效会话；操作时以服务器上的其他会话为准，当前会话保留。`,
-      )
-    )
-      return
+    if (!window.confirm(t('admin-system.sessions.confirmRevokeOthers', { count: total.value }))) return
     pending.value = true
     error.value = ''
     try {
       const result = await api<{ revoked: number }>('/auth/sessions/revoke-others', { method: 'POST' })
-      toast.success(`已撤销 ${result.revoked} 个其他会话`)
+      toast.success(t('admin-system.sessions.revokedOthers', { count: result.revoked }))
     } catch {
-      error.value = '未能确认撤销结果，请刷新列表后检查'
+      error.value = t('admin-system.sessions.revokeOthersUncertain')
     } finally {
       pending.value = false
     }

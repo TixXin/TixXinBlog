@@ -2,9 +2,20 @@
 import { expect, test } from '@playwright/test'
 import type { Page } from '@playwright/test'
 import { randomUUID } from 'node:crypto'
+import { readFileSync } from 'node:fs'
 import { setTimeout as pause } from 'node:timers/promises'
 import { overviewDomains, overviewTasks } from '../../app/features/admin/overview'
 import { captureMotion, prepareMotionCapture } from './motionScreenshot'
+
+// 工作台名称来自 admin-system 字典 key，按默认中文界面解析
+const zhAdminSystem = JSON.parse(
+  readFileSync(new URL('../../i18n/locales/zh-CN/admin-system.json', import.meta.url), 'utf8'),
+) as Record<string, unknown>
+function zh(key: string): string {
+  return key
+    .split('.')
+    .reduce<unknown>((node, part) => (node as Record<string, unknown>)?.[part], zhAdminSystem) as string
+}
 
 test.beforeEach(({ page, browserName }) => {
   expect(process.env.E2E_ISOLATED).toBe('true')
@@ -97,9 +108,7 @@ test('六域草稿与五类待办均来自真实列表，并能进入筛选落�
       link: '筛选友链发布状态',
     }
     await expect(page.getByRole('combobox', { name: filters[domain.domain], exact: true })).toHaveValue('draft')
-    await expect(
-      page.getByRole('heading', { name: `${domain.label === '图库' ? '图库' : domain.label}管理`, exact: true }),
-    ).toBeVisible()
+    await expect(page.getByRole('heading', { name: `${zh(domain.labelKey)}管理`, exact: true })).toBeVisible()
     await page.goBack()
     await expect(page.getByRole('heading', { name: '创作与草稿', exact: true })).toBeVisible()
   }
@@ -141,7 +150,7 @@ test('六域草稿与五类待办均来自真实列表，并能进入筛选落�
     expect(count).toBeGreaterThan(0)
     const link = page
       .getByRole('region', { name: '待处理互动', exact: true })
-      .getByRole('link', { name: new RegExp(`${task.label}\\s*${count}$`) })
+      .getByRole('link', { name: new RegExp(`${zh(task.labelKey)}\\s*${count}$`) })
     await expect(link).toBeVisible()
     await link.focus()
     await page.keyboard.press('Enter')

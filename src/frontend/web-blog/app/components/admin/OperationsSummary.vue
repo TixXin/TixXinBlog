@@ -1,58 +1,71 @@
 <!-- @file OperationsSummary.vue @description 工作台通知与维护摘要分别读取，失败不显示零值或可恢复承诺 -->
 <template>
   <section class="operations-summary" aria-labelledby="operations-summary-title">
-    <h2 id="operations-summary-title">通知与维护</h2>
+    <h2 id="operations-summary-title">{{ t('admin-system.opsSummary.title') }}</h2>
     <CommonRequestFeedback
       v-if="pending || error"
       :pending="pending"
-      :title="error || '正在读取通知与维护'"
+      :title="error || t('admin-system.opsSummary.loading')"
       :compact="!!data"
       @retry="refresh"
     />
     <template v-if="data">
       <p>
         <NuxtLink to="/admin/notifications"
-          >互动通知<span v-if="data.notifications"> · {{ data.notifications.unread }} 条未读</span></NuxtLink
-        ><span v-if="!data.notifications"> · 未读数量暂不可用</span>
+          >{{ t('admin-system.opsSummary.notifications')
+          }}<span v-if="data.notifications">
+            ·
+            {{
+              t('admin-system.opsSummary.unread', { count: data.notifications.unread }, data.notifications.unread)
+            }}</span
+          ></NuxtLink
+        ><span v-if="!data.notifications"> · {{ t('admin-system.opsSummary.unreadUnavailable') }}</span>
       </p>
-      <p>通知已读不改变上方审核、回复待办。</p>
+      <p>{{ t('admin-system.opsSummary.readNote') }}</p>
       <template v-if="data.operations?.runtime">
         <p v-if="data.operations.runtime.failures" role="alert">
-          有 {{ data.operations.runtime.failures }} 项失败或不确定任务需要核对。
-        </p>
-        <p>
-          最近备份完整性校验：{{
-            data.operations.runtime.lastVerifiedBackup
-              ? new Date(data.operations.runtime.lastVerifiedBackup).toLocaleString('zh-CN')
-              : '尚无运行记录'
+          {{
+            t(
+              'admin-system.opsSummary.failures',
+              { count: data.operations.runtime.failures },
+              data.operations.runtime.failures,
+            )
           }}
         </p>
         <p>
-          最近恢复演练：{{
-            data.operations.runtime.lastRecovery
-              ? new Date(data.operations.runtime.lastRecovery).toLocaleString('zh-CN')
-              : '尚无运行记录'
+          {{
+            t('admin-system.opsSummary.lastVerifiedBackup', {
+              time: formatDateTime(data.operations.runtime.lastVerifiedBackup) || t('admin-system.opsSummary.noRecord'),
+            })
+          }}
+        </p>
+        <p>
+          {{
+            t('admin-system.opsSummary.lastRecovery', {
+              time: formatDateTime(data.operations.runtime.lastRecovery) || t('admin-system.opsSummary.noRecord'),
+            })
           }}
         </p>
         <p v-if="data.operations.backupOverdue || data.operations.storage?.low" role="alert">
-          备份逾期或存储空间不足，请查看运行检查。
+          {{ t('admin-system.opsSummary.backupWarning') }}
         </p>
       </template>
-      <p v-else role="alert">维护运行记录暂不可用。</p>
+      <p v-else role="alert">{{ t('admin-system.opsSummary.runtimeUnavailable') }}</p>
       <button
         v-if="!data.notifications || !data.operations?.runtime"
         type="button"
         :disabled="pending"
         @click="refresh"
       >
-        重新读取维护摘要
+        {{ t('admin-system.opsSummary.reload') }}
       </button>
     </template>
-    <NuxtLink to="/admin/operations">查看运行、投递与备份记录</NuxtLink>
+    <NuxtLink to="/admin/operations">{{ t('admin-system.opsSummary.viewOperations') }}</NuxtLink>
   </section>
 </template>
 <script setup lang="ts">
 import type { OperationStatus } from '~/features/notification/types'
+const { t } = useI18n()
 const api = useAdminApi()
 const { data, pending, error, refresh } = useAdminReadResource(async () => {
   const [notifications, operations] = await Promise.allSettled([

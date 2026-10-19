@@ -5,40 +5,61 @@
 <template>
   <div class="admin-shell" :class="{ 'admin-shell--login': isLogin }">
     <aside v-if="!isLogin" class="admin-sidebar">
-      <NuxtLink class="admin-brand" to="/admin"><Icon name="lucide:notebook-pen" />{{ siteName }} 管理</NuxtLink>
+      <NuxtLink class="admin-brand" to="/admin"
+        ><Icon name="lucide:notebook-pen" />{{ t('admin-system.layout.brand', { name: siteName }) }}</NuxtLink
+      >
       <AdminNavigation />
-      <NuxtLink class="admin-back" to="/"><Icon name="lucide:arrow-up-right" />返回博客</NuxtLink>
+      <NuxtLink class="admin-back" to="/"
+        ><Icon name="lucide:arrow-up-right" />{{ t('admin-system.layout.backToBlog') }}</NuxtLink
+      >
     </aside>
     <header class="admin-header">
-      <CommonContextDrawer v-if="!isLogin" v-model:open="drawerOpen" class="admin-mobile-navigation" label="管理导航">
+      <CommonContextDrawer
+        v-if="!isLogin"
+        v-model:open="drawerOpen"
+        class="admin-mobile-navigation"
+        :label="t('admin-system.nav.label')"
+      >
         <AdminNavigation />
-        <NuxtLink class="admin-back" to="/">返回博客<Icon name="lucide:arrow-up-right" /></NuxtLink>
+        <NuxtLink class="admin-back" to="/"
+          >{{ t('admin-system.layout.backToBlog') }}<Icon name="lucide:arrow-up-right"
+        /></NuxtLink>
       </CommonContextDrawer>
-      <nav aria-label="面包屑">
-        <NuxtLink :to="isLogin ? '/' : '/admin'">{{ isLogin ? '返回博客' : '后台' }}</NuxtLink
+      <nav :aria-label="t('admin-system.layout.breadcrumb')">
+        <NuxtLink :to="isLogin ? '/' : '/admin'">{{
+          isLogin ? t('admin-system.layout.backToBlog') : t('admin-system.layout.breadcrumbRoot')
+        }}</NuxtLink
         ><span aria-hidden="true">/</span><span>{{ pageTitle }}</span>
       </nav>
       <button v-if="actionTarget" type="button" class="admin-jump-actions" @click="jumpToActions">
-        表单操作<Icon name="lucide:arrow-down-to-line" />
+        {{ t('admin-system.layout.jumpToActions') }}<Icon name="lucide:arrow-down-to-line" />
       </button>
       <ClientOnly
-        ><button type="button" aria-label="切换明暗主题" @click="toggleColor">
+        ><button type="button" :aria-label="t('admin-system.layout.toggleColor')" @click="toggleColor">
           <Icon :name="colorMode.value === 'dark' ? 'lucide:sun' : 'lucide:moon'" /></button
-        ><button v-if="isLoggedIn" type="button" :disabled="leaving" @click="leave">退出登录</button></ClientOnly
+        ><button v-if="isLoggedIn" type="button" :disabled="leaving" @click="leave">
+          {{ t('admin-system.layout.logout') }}
+        </button></ClientOnly
       >
     </header>
-    <main ref="main" class="admin-main" aria-label="管理内容" tabindex="-1">
+    <main ref="main" class="admin-main" :aria-label="t('admin-system.layout.main')" tabindex="-1">
       <div class="admin-content">
-        <ClientOnly><p v-if="restoringPending" role="status">正在确认登录状态…</p></ClientOnly>
         <ClientOnly
-          ><section v-if="!isLogin && authError" class="admin-session" aria-label="登录状态提示">
+          ><p v-if="restoringPending" role="status">{{ t('admin-system.layout.restoring') }}</p></ClientOnly
+        >
+        <ClientOnly
+          ><section
+            v-if="!isLogin && authError"
+            class="admin-session"
+            :aria-label="t('admin-system.layout.sessionNotice')"
+          >
             <p role="alert">{{ authError }}</p>
             <AuthLoginForm
               v-if="!isLoggedIn"
               @authenticated="reauthenticated"
               @switch-view="sessionHelp = !sessionHelp"
             />
-            <p v-if="sessionHelp">请使用博主账号重新登录；当前页面不会跳转，未保存内容保留。</p>
+            <p v-if="sessionHelp">{{ t('admin-system.layout.sessionHelp') }}</p>
           </section></ClientOnly
         >
         <NuxtPage />
@@ -48,6 +69,7 @@
 </template>
 <script setup lang="ts">
 import { adminNavigation as navigation, adminModule } from '~/features/admin/navigation'
+const { t } = useI18n()
 // 后台品牌沿用博主维护的站点名，不在布局里写死
 const { siteName } = useSiteInfo()
 const main = ref<HTMLElement | null>(null)
@@ -85,14 +107,15 @@ const colorMode = useColorMode()
 const leaving = ref(false)
 const isLogin = computed(() => route.path === '/admin/login')
 const activePath = computed(() => adminModule(route.path)?.path)
+const activeItem = computed(() => navigation.find((item) => item.path === activePath.value))
 const pageTitle = computed(() =>
   isLogin.value
-    ? '博主登录'
+    ? t('admin-system.layout.titleLogin')
     : route.path === '/admin/posts/new'
-      ? '新建文章'
+      ? t('admin-system.layout.titleNewPost')
       : /^\/admin\/posts\/\d+$/.test(route.path)
-        ? '编辑文章'
-        : (navigation.find((item) => item.path === activePath.value)?.label ?? '内容管理'),
+        ? t('admin-system.layout.titleEditPost')
+        : t(activeItem.value?.labelKey ?? 'admin-system.layout.titleFallback'),
 )
 function toggleColor() {
   colorMode.preference = colorMode.value === 'dark' ? 'light' : 'dark'
@@ -104,7 +127,7 @@ async function leave() {
     await logout()
     await navigateTo('/admin/login')
   } catch {
-    error('退出失败，请稍后重试')
+    error(t('admin-system.layout.logoutFailed'))
   } finally {
     leaving.value = false
   }
