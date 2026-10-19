@@ -3,7 +3,7 @@
  * @description 站点设置编辑、失败保留、版本冲突与历史恢复。
  */
 import type { SiteSettingsData } from '~/features/site/settings'
-import { emptyAbout, publicAbout, aboutSectionLabels } from '~/features/about/settings'
+import { emptyAbout, publicAbout, aboutSectionLabel, aboutSectionLabelKeys } from '~/features/about/settings'
 import {
   mergeSiteSettings,
   normalizeSiteSettings,
@@ -56,9 +56,9 @@ export function useSiteSettingsEditor() {
       'about.introduction': t(`${S}.fields.aboutIntroduction`),
       'about.sections.order': t(`${S}.fields.aboutOrder`),
       ...Object.fromEntries(
-        Object.keys(aboutSectionLabels).map((kind) => [
+        (Object.keys(aboutSectionLabelKeys) as (keyof typeof aboutSectionLabelKeys)[]).map((kind) => [
           `about.${kind}`,
-          t(`${S}.fields.aboutSection`, { section: t(`admin-system.siteAbout.sections.${kind}`) }),
+          t(`${S}.fields.aboutSection`, { section: aboutSectionLabel(kind, t) }),
         ]),
       ),
     }

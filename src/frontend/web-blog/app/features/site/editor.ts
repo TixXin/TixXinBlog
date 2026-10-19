@@ -1,5 +1,5 @@
 /** @file editor.ts @description 站点配置按字段及栏目三方合并；恢复副本严格校验，不凭条目索引猜测身份 */
-import { emptyAbout, aboutSectionLabels } from '../about/settings'
+import { emptyAbout, aboutSectionLabelKeys } from '../about/settings'
 import type { AboutSection } from '../about/types'
 import { defaultSiteSettings } from './settings'
 import type { SiteSettingsData } from './settings'
@@ -49,7 +49,7 @@ export function mergeSiteSettings(base: SiteSettingsData, local: SiteSettingsDat
     input = local.about ?? emptyAbout(),
     latest = server.about ?? emptyAbout()
   const sections = new Map<AboutSection['kind'], AboutSection>()
-  for (const kind of Object.keys(aboutSectionLabels) as AboutSection['kind'][]) {
+  for (const kind of Object.keys(aboutSectionLabelKeys) as AboutSection['kind'][]) {
     const section = choose(
       before.sections.find((item) => item.kind === kind),
       input.sections.find((item) => item.kind === kind),
@@ -173,7 +173,7 @@ function isSettings(value: unknown): value is SiteSettingsData {
     about.sections.every(
       (section) =>
         section &&
-        Object.hasOwn(aboutSectionLabels, section.kind) &&
+        Object.hasOwn(aboutSectionLabelKeys, section.kind) &&
         typeof section.visible === 'boolean' &&
         Array.isArray(section.items) &&
         section.items.length <= 30 &&

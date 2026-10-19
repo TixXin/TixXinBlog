@@ -289,12 +289,6 @@
       }
     },
     "siteAbout": {
-      "sections": {
-        "experience": "Experience",
-        "skill": "Skills",
-        "interest": "Interests",
-        "reading": "Reading"
-      },
       "legend": "About page",
       "hint": "Name, bio, avatar and contact details come from the site profile above. Only fill in what you're happy to make public; empty sections aren't shown.",
       "visible": "Publish the About page content below",

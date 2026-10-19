@@ -289,12 +289,6 @@
       }
     },
     "siteAbout": {
-      "sections": {
-        "experience": "经历",
-        "skill": "技能",
-        "interest": "兴趣",
-        "reading": "书单"
-      },
       "legend": "关于页资料",
       "hint": "姓名、简介、头像与联系方式复用上方站点资料。仅填写你确认可公开的内容；空栏目不展示。",
       "visible": "公开以下关于页资料",

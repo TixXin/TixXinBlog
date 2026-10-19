@@ -65,7 +65,7 @@
       <p v-if="!value.about.sections.length">{{ t('admin-system.sitePreview.noSections') }}</p>
       <section v-for="section in value.about.sections" :key="section.kind">
         <h4>
-          {{ t(`admin-system.siteAbout.sections.${section.kind}`) }} ·
+          {{ aboutSectionLabel(section.kind, t) }} ·
           {{
             section.visible ? t('admin-system.sitePreview.sectionPublic') : t('admin-system.sitePreview.sectionHidden')
           }}
@@ -129,6 +129,7 @@
 import type { SiteSettingsData } from '~/features/site/settings'
 import { navRouteCatalog } from '~/features/nav/routes'
 import { formatCopyright } from '~/features/site/footer'
+import { aboutSectionLabel } from '~/features/about/settings'
 const { t } = useI18n()
 const year = new Date().getFullYear()
 const props = defineProps<{

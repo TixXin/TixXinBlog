@@ -56,14 +56,14 @@ it('导航与页脚编辑区切到英文', async () => {
   })
 })
 
-it('关于页资料与预览切到英文，栏目名使用英文', async () => {
+it('关于页资料与预览切到英文，栏目名使用关于页字典的英文名', async () => {
   await inEnglish(async () => {
     const fields = await mountSuspended(
       defineComponent({ setup: () => () => h(AboutSettingsFields, { modelValue: structuredClone(about) }) }),
     )
     wrappers.push(fields)
     expect(fields.text()).toContain('Publish the About page content below')
-    expect(fields.text()).toContain('Reading entry 1')
+    expect(fields.text()).toContain('Reading list entry 1')
     expect(fields.find('[aria-label="Remove entry 1"]').exists()).toBe(true)
 
     const preview = await mountSuspended(SiteSettingsPreview, {
@@ -71,7 +71,7 @@ it('关于页资料与预览切到英文，栏目名使用英文', async () => {
     })
     wrappers.push(preview)
     expect(preview.get('summary').text()).toContain('Not public')
-    expect(preview.findAll('h4').map((item) => item.text())).toEqual(['Reading · Section hidden'])
+    expect(preview.findAll('h4').map((item) => item.text())).toEqual(['Reading list · Section hidden'])
     expect(preview.text()).toContain('Navigation and footer')
   })
 })

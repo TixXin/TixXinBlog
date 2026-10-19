@@ -98,10 +98,10 @@
 </template>
 <script setup lang="ts">
 import type { AboutSettings, AboutSection } from '~/features/about/types'
-import { aboutSectionLabels } from '~/features/about/settings'
+import { aboutSectionLabel, aboutSectionLabelKeys } from '~/features/about/settings'
 const { t } = useI18n()
 const value = defineModel<AboutSettings>({ required: true })
-const sectionName = (kind: AboutSection['kind']) => t(`admin-system.siteAbout.sections.${kind}`)
+const sectionName = (kind: AboutSection['kind']) => aboutSectionLabel(kind, t)
 const itemName = (title: string, index: number) =>
   title || t('admin-system.siteAbout.itemFallback', { index: index + 1 })
 defineProps<{ disabled?: boolean }>()
@@ -114,7 +114,7 @@ function itemKey(item: object) {
   return keys.get(raw)!
 }
 const remaining = computed(() =>
-  (Object.keys(aboutSectionLabels) as AboutSection['kind'][]).filter(
+  (Object.keys(aboutSectionLabelKeys) as AboutSection['kind'][]).filter(
     (kind) => !value.value.sections.some((section) => section.kind === kind),
   ),
 )
