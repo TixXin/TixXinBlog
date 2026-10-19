@@ -1,14 +1,14 @@
 <!-- @file Stats.vue @description 单币种月均预算与分类年化开销，统计说明和完整文字明细按需展开 -->
 <template>
-  <section class="subscription-overview" aria-label="订阅费用统计" :data-currency="currency">
+  <section class="subscription-overview" :aria-label="$t('misc.subscription.stats.label')" :data-currency="currency">
     <div class="subscription-overview__main">
       <div class="subscription-budget">
         <div class="subscription-budget__heading">
-          <h2>{{ currency }} 月均预算</h2>
+          <h2>{{ $t('misc.subscription.stats.monthlyTitle', { currency }) }}</h2>
           <button
             type="button"
             class="subscription-budget__info"
-            aria-label="查看预算统计口径"
+            :aria-label="$t('misc.subscription.stats.methodToggle')"
             :aria-expanded="methodOpen"
             :aria-controls="methodId"
             @click="methodOpen = !methodOpen"
@@ -16,73 +16,102 @@
             <Icon name="lucide:info" size="18" />
           </button>
         </div>
-        <p class="subscription-budget__amount" :aria-label="`${formatAmount(monthlyAmount, currency)} 每月预算`">
+        <p
+          class="subscription-budget__amount"
+          :aria-label="$t('misc.subscription.stats.monthlyLabel', { amount: formatAmount(monthlyAmount, currency) })"
+        >
           <strong :class="{ 'subscription-budget__number--long': monthlyNumber.length > 10 }">{{
             monthlyNumber
           }}</strong
-          ><span>/ 月</span>
+          ><span>{{ $t('misc.subscription.cycleSuffix.monthly') }}</span>
         </p>
         <p class="subscription-budget__annual">
-          年化 {{ formatAmount(annualAmount, currency) }}<span aria-hidden="true"> · </span
-          ><span>{{ selected?.recurringCount ?? 0 }} 项持续订阅</span>
+          {{ $t('misc.subscription.stats.annual', { amount: formatAmount(annualAmount, currency) })
+          }}<span aria-hidden="true"> · </span
+          ><span>{{
+            $t(
+              'misc.subscription.stats.recurringCount',
+              { count: selected?.recurringCount ?? 0 },
+              selected?.recurringCount ?? 0,
+            )
+          }}</span>
         </p>
       </div>
       <figure class="subscription-breakdown">
-        <figcaption>年化费用构成 · {{ currency }}</figcaption>
+        <figcaption>{{ $t('misc.subscription.stats.breakdownTitle', { currency }) }}</figcaption>
         <ClientOnly v-if="positiveCategories.length">
           <LazySubscriptionChart
             kind="bar"
             horizontal
             :height="chartHeight"
-            :labels="positiveCategories.map((item) => categoryLabels[item.category])"
+            :labels="positiveCategories.map((item) => categoryLabel(item.category, t))"
             :values="positiveCategories.map((item) => Number(amountInput(item.annualAmount, currency)))"
             :formatted-values="positiveCategories.map((item) => amountNumber(item.annualAmount))"
             :currency="currency"
-            :label="`${currency}分类年化费用横向条形图；完整金额可在分类明细中阅读`"
+            :label="$t('misc.subscription.stats.chartLabel', { currency })"
           />
           <template #fallback
             ><div class="subscription-breakdown__loading" :style="{ minHeight: `${chartHeight}px` }" role="status">
-              正在载入分类开销，金额可在下方明细查看。
+              {{ $t('misc.subscription.stats.chartLoading') }}
             </div></template
           >
         </ClientOnly>
         <p v-else class="subscription-breakdown__empty">
-          {{ selected?.count ? '当前币种没有非零持续费用。' : `当前筛选下没有 ${currency} 订阅。` }}
+          {{
+            selected?.count
+              ? $t('misc.subscription.stats.noRecurring')
+              : $t('misc.subscription.stats.noItems', { currency })
+          }}
         </p>
         <details class="subscription-disclosure">
-          <summary>查看分类明细<Icon name="lucide:chevron-down" size="14" /></summary>
+          <summary>{{ $t('misc.subscription.stats.details') }}<Icon name="lucide:chevron-down" size="14" /></summary>
           <ul v-if="selected?.categories.length" class="subscription-breakdown__list">
             <li v-for="category in orderedCategories" :key="category.category">
               <span
-                >{{ categoryLabels[category.category] }}<small>{{ category.count }} 条记录</small></span
-              ><strong>{{ formatAmount(category.annualAmount, currency) }} / 年</strong>
+                >{{ categoryLabel(category.category, t)
+                }}<small>{{
+                  $t('misc.subscription.stats.recordCount', { count: category.count }, category.count)
+                }}</small></span
+              ><strong>{{
+                $t('misc.subscription.stats.perYear', { amount: formatAmount(category.annualAmount, currency) })
+              }}</strong>
             </li>
           </ul>
-          <p v-else>当前筛选下没有分类记录。</p>
+          <p v-else>{{ $t('misc.subscription.stats.noCategories') }}</p>
         </details>
       </figure>
     </div>
-    <div v-if="methodOpen" :id="methodId" class="subscription-budget__method" role="region" aria-label="预算统计口径">
+    <div
+      v-if="methodOpen"
+      :id="methodId"
+      class="subscription-budget__method"
+      role="region"
+      :aria-label="$t('misc.subscription.stats.methodLabel')"
+    >
       <p>
-        统计截至 {{ stats.asOf }}（UTC 日期），涵盖当前筛选下全部匹配的 {{ currency }} 订阅，共
-        {{ selected?.count ?? 0 }} 条。不同币种分别计算，不做汇率换算。
+        {{
+          $t(
+            'misc.subscription.stats.methodScope',
+            { asOf: stats.asOf, currency, count: selected?.count ?? 0 },
+            selected?.count ?? 0,
+          )
+        }}
       </p>
+      <p>{{ $t('misc.subscription.stats.methodRecurring') }}</p>
       <p>
-        持续费用仅计入已开始的活跃月付、季付、年付订阅。月均为年化预算除以
-        12，实际扣费按计费周期发生；暂停、取消、试用、过期和未来开始的记录不计入当前预算。
-      </p>
-      <p>
-        一次性与买断不计入持续费用，记录金额为
-        {{ formatAmount(selected?.oneTimeAmount ?? 0, currency) }}，不代表已支付总额。
+        {{
+          $t('misc.subscription.stats.methodOneTime', { amount: formatAmount(selected?.oneTimeAmount ?? 0, currency) })
+        }}
       </p>
     </div>
   </section>
 </template>
 <script setup lang="ts">
 import { formatAmount, amountInput } from '@tixxin/subscription-domain'
-import { categoryLabels } from '~/features/subscription/types'
+import { categoryLabel } from '~/features/subscription/labels'
 import type { SubscriptionStats, SubscriptionCurrency } from '~/features/subscription/types'
 const props = defineProps<{ stats: SubscriptionStats; currency: SubscriptionCurrency }>()
+const { t } = useI18n()
 const methodId = useId(),
   methodOpen = ref(false)
 const selected = computed(() => props.stats.currencies.find((item) => item.currency === props.currency))

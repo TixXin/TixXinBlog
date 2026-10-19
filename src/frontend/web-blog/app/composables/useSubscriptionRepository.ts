@@ -9,20 +9,22 @@ import type {
 } from '~/features/subscription/types'
 export function useSubscriptionRepository() {
   const base = String(useRuntimeConfig().public.apiBaseUrl).replace(/\/$/, ''),
-    admin = useAdminApi()
+    admin = useAdminApi(),
+    t = currentTranslate()
   function failure(value: unknown) {
     const cause = value as { statusCode?: number; status?: number; data?: { message?: unknown } },
       statusCode = cause?.statusCode ?? cause?.status
+    // 5xx 一律显示友好文案，只信任 4xx 的后端 message；按调用时的界面语言取兜底文案。
     const message =
       !statusCode || statusCode >= 500
-        ? '订阅服务暂时不可用，请稍后重试'
+        ? t('misc.subscription.repository.unavailable')
         : typeof cause.data?.message === 'string'
           ? cause.data.message
           : statusCode === 404
-            ? '订阅不存在或尚未公开'
+            ? t('misc.subscription.repository.notFound')
             : cause instanceof Error
               ? cause.message
-              : '操作未完成，请核对输入后重试'
+              : t('misc.subscription.repository.incomplete')
     // 与提示词编辑器一致：内容库409不能误作同一记录的版本合并。
     const conflictKind =
       statusCode !== 409
@@ -44,7 +46,7 @@ export function useSubscriptionRepository() {
         timeout: 10000,
         retry: 0,
       })
-      if (result.code !== 0) throw new Error('订阅读取未完成')
+      if (result.code !== 0) throw new Error(t('misc.subscription.repository.readIncomplete'))
       return result.data
     } catch (cause) {
       throw failure(cause)

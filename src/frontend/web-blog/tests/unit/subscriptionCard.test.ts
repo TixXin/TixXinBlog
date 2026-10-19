@@ -269,3 +269,25 @@ describe('订阅行状态与可访问详情', () => {
     expect(document.activeElement).toBe(row.element)
   })
 })
+
+describe('订阅行英文界面', () => {
+  const i18n = () => useNuxtApp().$i18n
+  it('切到英文后分类、周期后缀、状态与扣费提醒使用英文，原币金额格式不变', async () => {
+    await i18n().setLocale('en')
+    try {
+      const wrapper = await setup({ nextBillingDate: '2026-10-18', startDate: '2026-11-01' })
+      const text = wrapper.text()
+      expect(text).toContain('Developer tools')
+      expect(text).toContain('/ mo')
+      expect(text).toContain('Active')
+      expect(text).toContain('starts later')
+      expect(text).toContain('Bills in 3 days')
+      expect(wrapper.get('.subscription-list-price strong').text()).toBe('USD 20.00')
+      expect(wrapper.get('.subscription-list-open').attributes('aria-label')).toBe(
+        'View subscription details for 云端工作台',
+      )
+    } finally {
+      await i18n().setLocale('zh-CN')
+    }
+  })
+})

@@ -8,7 +8,7 @@
           v-if="icon && !imageFailed"
           ref="rowImage"
           :src="icon"
-          :alt="`${item.name}图标`"
+          :alt="$t('misc.subscription.card.iconAlt', { name: item.name })"
           width="44"
           height="44"
           loading="lazy"
@@ -20,7 +20,7 @@
         <button
           type="button"
           class="subscription-list-open"
-          :aria-label="`查看${item.name}的订阅详情`"
+          :aria-label="$t('misc.subscription.card.openLabel', { name: item.name })"
           aria-haspopup="dialog"
           :aria-expanded="open"
           :aria-describedby="`${rowId}-price ${rowId}-state ${rowId}-date`"
@@ -29,7 +29,7 @@
         >
           <span class="subscription-list-name">{{ item.name }}</span>
         </button>
-        <span class="subscription-list-category">{{ categoryLabels[item.category] }}</span>
+        <span class="subscription-list-category">{{ categoryLabel(item.category, t) }}</span>
       </span>
       <span :id="`${rowId}-price`" class="subscription-list-price">
         <strong>{{ formatAmount(item.amount, item.currency) }}</strong>
@@ -42,15 +42,18 @@
           :class="`subscription-list-status--${item.subscriptionStatus}`"
         >
           <span class="subscription-list-status__dot" aria-hidden="true" />
-          <span>{{ stateLabels[item.subscriptionStatus] }}<small v-if="future"> · 未来开始</small></span>
+          <span
+            >{{ stateLabel(item.subscriptionStatus, t)
+            }}<small v-if="future"> · {{ $t('misc.subscription.card.future') }}</small></span
+          >
         </span>
         <span
           :id="`${rowId}-date`"
           class="subscription-list-date"
           :class="{ 'subscription-list-date--overdue': overdue }"
         >
-          <span>{{ item.nextBillingDate ?? '扣费日期未设置' }}</span>
-          <span v-if="overdue" class="subscription-list-date-note">已逾期，请核对</span>
+          <span>{{ item.nextBillingDate ?? $t('misc.subscription.card.billingDateUnset') }}</span>
+          <span v-if="overdue" class="subscription-list-date-note">{{ $t('misc.subscription.card.overdue') }}</span>
           <span v-else-if="dueHint" class="subscription-list-date-note subscription-list-date-note--soon">{{
             dueHint
           }}</span>
@@ -66,12 +69,19 @@
             class="subscription-ui subscription-detail-panel"
             role="dialog"
             aria-modal="true"
-            :aria-label="`${item.name}订阅详情`"
+            :aria-label="$t('misc.subscription.card.dialogLabel', { name: item.name })"
             tabindex="-1"
           >
             <header class="subscription-detail-header">
-              <span>{{ local ? '我的订阅 · 仅本机' : '平台订阅详情' }}</span>
-              <button type="button" class="subscription-detail-close" aria-label="关闭订阅详情" @click="open = false">
+              <span>{{
+                local ? $t('misc.subscription.card.localHeading') : $t('misc.subscription.card.blogHeading')
+              }}</span>
+              <button
+                type="button"
+                class="subscription-detail-close"
+                :aria-label="$t('misc.subscription.card.close')"
+                @click="open = false"
+              >
                 <Icon name="lucide:x" size="20" aria-hidden="true" />
               </button>
             </header>
@@ -81,7 +91,7 @@
                   <img
                     v-if="icon && !imageFailed"
                     :src="icon"
-                    :alt="`${item.name}图标`"
+                    :alt="$t('misc.subscription.card.iconAlt', { name: item.name })"
                     width="44"
                     height="44"
                     @error="imageFailed = true"
@@ -89,7 +99,7 @@
                   <Icon v-else name="lucide:credit-card" size="22" aria-hidden="true" />
                 </span>
                 <div>
-                  <p class="subscription-list-category">{{ categoryLabels[item.category] }}</p>
+                  <p class="subscription-list-category">{{ categoryLabel(item.category, t) }}</p>
                   <h2>{{ item.name }}</h2>
                 </div>
               </div>
@@ -100,33 +110,38 @@
               <p v-if="item.description" class="subscription-detail-description">{{ item.description }}</p>
               <dl class="subscription-detail-facts">
                 <div>
-                  <dt>平台或供应商</dt>
-                  <dd>{{ item.platform || '未填写' }}</dd>
+                  <dt>{{ $t('misc.subscription.card.platform') }}</dt>
+                  <dd>{{ item.platform || $t('misc.subscription.card.notFilled') }}</dd>
                 </div>
                 <div>
-                  <dt>订阅状态</dt>
-                  <dd>{{ stateLabels[item.subscriptionStatus] }}{{ future ? ' · 未来开始' : '' }}</dd>
+                  <dt>{{ $t('misc.subscription.card.status') }}</dt>
+                  <dd>
+                    {{ stateLabel(item.subscriptionStatus, t)
+                    }}{{ future ? ` · ${t('misc.subscription.card.future')}` : '' }}
+                  </dd>
                 </div>
                 <div>
-                  <dt>计费周期</dt>
-                  <dd>{{ cycleLabels[item.billingCycle] }}</dd>
+                  <dt>{{ $t('misc.subscription.card.cycle') }}</dt>
+                  <dd>{{ cycleLabel(item.billingCycle, t) }}</dd>
                 </div>
                 <div>
-                  <dt>开始日期</dt>
-                  <dd>{{ item.startDate ?? '未设置' }}</dd>
+                  <dt>{{ $t('misc.subscription.card.startDate') }}</dt>
+                  <dd>{{ item.startDate ?? $t('misc.subscription.card.unset') }}</dd>
                 </div>
                 <div>
-                  <dt>下次扣费</dt>
+                  <dt>{{ $t('misc.subscription.card.nextBilling') }}</dt>
                   <dd :class="{ 'subscription-list-date--overdue': overdue }">
-                    {{ item.nextBillingDate ?? '未设置' }}{{ overdue ? ' · 已逾期，请核对' : '' }}
+                    {{ item.nextBillingDate ?? $t('misc.subscription.card.unset')
+                    }}{{ overdue ? ` · ${t('misc.subscription.card.overdue')}` : '' }}
                   </dd>
                 </div>
                 <div v-if="website">
-                  <dt>服务官网</dt>
+                  <dt>{{ $t('misc.subscription.card.website') }}</dt>
                   <dd>
                     <a :href="website" target="_blank" rel="noopener noreferrer">
-                      访问官网 <Icon name="lucide:external-link" size="14" aria-hidden="true" />
-                      <span class="sr-only">（在新标签页打开）</span>
+                      {{ $t('misc.subscription.card.visitWebsite') }}
+                      <Icon name="lucide:external-link" size="14" aria-hidden="true" />
+                      <span class="sr-only">{{ $t('misc.subscription.card.newTab') }}</span>
                     </a>
                   </dd>
                 </div>
@@ -134,7 +149,7 @@
               <SubscriptionHistory :history="item.priceHistory" />
               <footer v-if="editable || local" class="subscription-detail-actions">
                 <button v-if="editable" type="button" :disabled="busy" @click="requestEdit">
-                  <Icon name="lucide:pencil" size="15" aria-hidden="true" />编辑订阅
+                  <Icon name="lucide:pencil" size="15" aria-hidden="true" />{{ $t('misc.subscription.card.edit') }}
                 </button>
                 <button
                   v-if="local"
@@ -143,7 +158,7 @@
                   :disabled="busy"
                   @click="requestRemove"
                 >
-                  <Icon name="lucide:trash-2" size="15" aria-hidden="true" />删除订阅
+                  <Icon name="lucide:trash-2" size="15" aria-hidden="true" />{{ $t('misc.subscription.card.remove') }}
                 </button>
               </footer>
             </div>
@@ -155,7 +170,7 @@
 </template>
 <script setup lang="ts">
 import { formatAmount } from '@tixxin/subscription-domain'
-import { categoryLabels, cycleLabels, stateLabels } from '~/features/subscription/types'
+import { categoryLabel, cycleLabel, cycleSuffix as cycleSuffixLabel, stateLabel } from '~/features/subscription/labels'
 import type { SubscriptionItem } from '~/features/subscription/types'
 import { safeSubscriptionUrl } from '~/features/subscription/local'
 const props = defineProps<{
@@ -166,6 +181,7 @@ const props = defineProps<{
   busy?: boolean
 }>()
 const emit = defineEmits<{ edit: []; remove: [] }>()
+const { t } = useI18n()
 const rowId = useId()
 const open = ref(false),
   dialog = ref<HTMLElement | null>(null),
@@ -180,14 +196,13 @@ const dueHint = computed(() => {
   if (!next || overdue.value) return ''
   const days = Math.round((Date.parse(`${next}T00:00:00Z`) - Date.parse(`${props.today}T00:00:00Z`)) / 86_400_000)
   if (!Number.isFinite(days) || days > 7) return ''
-  return days === 0 ? '今天扣费' : days === 1 ? '明天扣费' : `${days} 天后扣费`
+  return days === 0
+    ? t('misc.subscription.card.dueToday')
+    : days === 1
+      ? t('misc.subscription.card.dueTomorrow')
+      : t('misc.subscription.card.dueInDays', { days })
 })
-const cycleSuffix = computed(
-  () =>
-    ({ monthly: '/ 月', quarterly: '/ 季', yearly: '/ 年', lifetime: '买断', 'one-time': '一次性' })[
-      props.item.billingCycle
-    ],
-)
+const cycleSuffix = computed(() => cycleSuffixLabel(props.item.billingCycle, t))
 // 后端重新获取 favicon 后地址不变，新读取的记录仍应重试；图片错误本身不触发循环重载。
 function checkLoadedImage() {
   const image = rowImage.value

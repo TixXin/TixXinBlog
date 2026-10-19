@@ -2,7 +2,11 @@
 <template>
   <CommonPageFrame class="main-inner subscriptions-page" header-key="subscriptions">
     <template #header>
-      <CommonPageHeader title="平台订阅费" subtitle="按币种，理清每一笔持续开销。" icon="lucide:credit-card" />
+      <CommonPageHeader
+        :title="$t('misc.subscription.page.title')"
+        :subtitle="$t('misc.subscription.page.subtitle')"
+        icon="lucide:credit-card"
+      />
     </template>
     <CommonCustomScrollbar
       class="subscriptions-body"
@@ -11,27 +15,32 @@
       primary
     >
       <div class="subscription-ui subscription-workspace">
-        <nav class="subscription-source" aria-label="订阅数据来源">
-          <button type="button" :aria-pressed="mode === 'blog'" @click="switchMode('blog')">博主订阅</button>
+        <nav class="subscription-source" :aria-label="$t('misc.subscription.page.sourceLabel')">
+          <button type="button" :aria-pressed="mode === 'blog'" @click="switchMode('blog')">
+            {{ $t('misc.subscription.page.sourceBlog') }}
+          </button>
           <button type="button" :aria-pressed="mode === 'local'" @click="switchMode('local')">
-            我的订阅<span> · 本机</span>
+            {{ $t('misc.subscription.page.sourceLocal')
+            }}<span> · {{ $t('misc.subscription.page.sourceLocalHint') }}</span>
           </button>
           <button
             v-if="mode === 'local' && !local.editing.value"
             type="button"
             class="subscription-add-entry"
-            aria-label="添加我的订阅"
+            :aria-label="$t('misc.subscription.page.addLocalLabel')"
             :disabled="!local.ready.value"
             @click="addLocal"
           >
-            <Icon name="lucide:plus" size="18" /><span>添加订阅</span>
+            <Icon name="lucide:plus" size="18" /><span>{{ $t('misc.subscription.page.addLocal') }}</span>
           </button>
-          <NuxtLink v-if="mode === 'blog' && auth.isLoggedIn.value" to="/admin/subscriptions">订阅管理</NuxtLink>
+          <NuxtLink v-if="mode === 'blog' && auth.isLoggedIn.value" to="/admin/subscriptions">{{
+            $t('misc.subscription.page.manage')
+          }}</NuxtLink>
         </nav>
         <p v-if="mode === 'local'" class="subscription-note subscription-local-note">
-          仅保存在当前浏览器，不会上传或公开；清理浏览器数据会丢失。
+          {{ $t('misc.subscription.page.localNote') }}
         </p>
-        <nav class="subscription-currencies" aria-label="订阅币种">
+        <nav class="subscription-currencies" :aria-label="$t('misc.subscription.page.currencyLabel')">
           <button
             v-for="code in currencyOptions"
             :key="code"
@@ -46,61 +55,82 @@
         <CommonRequestFeedback
           v-if="mode === 'blog' && (feed.pending.value || feed.error.value)"
           :pending="feed.pending.value"
-          :title="feed.error.value?.message || '正在读取平台订阅'"
+          :title="feed.error.value?.message || $t('misc.subscription.page.loading')"
           @retry="feed.refresh()"
         />
-        <p v-if="mode === 'local' && !local.ready.value" role="status">本地数据尚未就绪，修复存储问题后可重试。</p>
+        <p v-if="mode === 'local' && !local.ready.value" role="status">
+          {{ $t('misc.subscription.page.localNotReady') }}
+        </p>
         <SubscriptionStats v-if="stats" :stats="stats" :currency="currency" />
-        <section class="subscription-list" :aria-label="`${currency}订阅列表`" :aria-busy="pending">
+        <section
+          class="subscription-list"
+          :aria-label="$t('misc.subscription.page.listLabel', { currency })"
+          :aria-busy="pending"
+        >
           <div class="subscription-toolbar">
             <h2>
-              {{ currency }} 订阅<span v-if="total !== null" role="status"> · {{ total }}</span>
+              {{ $t('misc.subscription.page.listTitle', { currency })
+              }}<span v-if="total !== null" role="status"> · {{ total }}</span>
             </h2>
             <form class="subscription-search" role="search" @submit.prevent="search">
               <CommonSearchBox
                 v-model="searchText"
-                label="搜索当前币种订阅"
-                placeholder="搜索当前币种…"
+                :label="$t('misc.subscription.page.searchLabel')"
+                :placeholder="$t('misc.subscription.page.searchPlaceholder')"
                 :disabled="!controlsReady"
                 @change="search"
               />
             </form>
             <CommonContextDrawer
               v-model:open="filtersOpen"
-              :label="filterCount ? `筛选 · ${filterCount}` : '筛选'"
+              :label="
+                filterCount
+                  ? $t('misc.subscription.page.filtersCount', { count: filterCount })
+                  : $t('misc.subscription.page.filters')
+              "
               icon="lucide:sliders-horizontal"
             >
               <template #default="{ close }">
                 <div class="subscription-ui subscription-stack">
-                  <p class="subscription-note">筛选同时应用于 {{ currency }} 的预算、清单与续费预测。</p>
+                  <p class="subscription-note">{{ $t('misc.subscription.page.filtersNote', { currency }) }}</p>
                   <SubscriptionFilters :query="query" compact :disabled="!controlsReady" @change="changeQuery" />
                   <div class="subscription-row">
-                    <button type="button" @click="clearFilters">重置筛选</button
-                    ><button type="button" @click="close">查看结果</button>
+                    <button type="button" @click="clearFilters">{{ $t('misc.subscription.page.resetFilters') }}</button
+                    ><button type="button" @click="close">{{ $t('misc.subscription.page.viewResults') }}</button>
                   </div>
                 </div>
               </template>
             </CommonContextDrawer>
           </div>
-          <div v-if="filtered || sorted" class="subscription-active-filters" aria-label="已应用的筛选">
-            <span v-if="query.q">搜索：{{ query.q }}</span>
-            <span v-if="query.category">{{ categoryLabels[query.category] }}</span>
-            <span v-if="query.subscriptionStatus">{{ stateLabels[query.subscriptionStatus] }}</span>
+          <div
+            v-if="filtered || sorted"
+            class="subscription-active-filters"
+            :aria-label="$t('misc.subscription.page.activeFilters')"
+          >
+            <span v-if="query.q">{{ $t('misc.subscription.page.activeSearch', { q: query.q }) }}</span>
+            <span v-if="query.category">{{ categoryLabel(query.category, t) }}</span>
+            <span v-if="query.subscriptionStatus">{{ stateLabel(query.subscriptionStatus, t) }}</span>
             <span v-if="sorted">{{ sortLabel }}</span>
-            <button type="button" @click="clearFilters">清除筛选 <Icon name="lucide:x" size="14" /></button>
+            <button type="button" @click="clearFilters">
+              {{ $t('misc.subscription.page.clearFilters') }} <Icon name="lucide:x" size="14" />
+            </button>
           </div>
           <CommonStateBlock
             v-if="total === 0 && !pending"
             icon="lucide:credit-card"
-            :title="filtered ? '没有匹配的订阅' : `暂无 ${currency} 订阅`"
+            :title="
+              filtered
+                ? $t('misc.subscription.page.emptyFilteredTitle')
+                : $t('misc.subscription.page.emptyTitle', { currency })
+            "
             :description="
               filtered
-                ? '试试其他关键词、分类或状态。'
+                ? $t('misc.subscription.page.emptyFilteredDescription')
                 : mode === 'local'
-                  ? '添加一个平台，或切换币种查看已有记录。'
-                  : '可切换币种，查看博主的其他订阅。'
+                  ? $t('misc.subscription.page.emptyLocalDescription')
+                  : $t('misc.subscription.page.emptyBlogDescription')
             "
-            :action-label="filtered ? '清除筛选' : undefined"
+            :action-label="filtered ? $t('misc.subscription.page.clearFilters') : undefined"
             @action="clearFilters"
           />
           <SubscriptionCard
@@ -118,31 +148,39 @@
         <nav
           v-if="total !== null && (total > query.pageSize || query.page > 1)"
           class="subscription-row subscription-pagination"
-          aria-label="订阅分页"
+          :aria-label="$t('misc.subscription.page.pagination')"
         >
           <button type="button" :disabled="query.page <= 1 || pending" @click="changeQuery({ page: query.page - 1 })">
-            上一页</button
+            {{ $t('misc.subscription.page.prevPage') }}</button
           ><span>{{ query.page }} / {{ Math.max(1, Math.ceil(total / query.pageSize)) }}</span
           ><button
             type="button"
             :disabled="query.page * query.pageSize >= total || pending"
             @click="changeQuery({ page: query.page + 1 })"
           >
-            下一页
+            {{ $t('misc.subscription.page.nextPage') }}
           </button>
         </nav>
         <footer v-if="stats" class="subscription-footer">
-          <CommonContextDrawer v-model:open="forecastOpen" label="查看续费预测" icon="lucide:calendar-days">
+          <CommonContextDrawer
+            v-model:open="forecastOpen"
+            :label="$t('misc.subscription.page.forecast')"
+            icon="lucide:calendar-days"
+          >
             <SubscriptionForecast :stats="stats" :currency="currency" />
           </CommonContextDrawer>
           <p class="subscription-note">
-            <template v-if="nextRenewal"
-              >下次续费：{{ nextRenewal.name }} · {{ nextRenewal.date }}{{ renewalDayHint }} ·
-              {{ formatAmount(nextRenewal.amount, currency) }}</template
-            >
-            <template v-else>暂无待续费日期</template>
+            <template v-if="nextRenewal">{{
+              $t('misc.subscription.page.nextRenewal', {
+                name: nextRenewal.name,
+                date: nextRenewal.date,
+                hint: renewalDayHint,
+                amount: formatAmount(nextRenewal.amount, currency),
+              })
+            }}</template>
+            <template v-else>{{ $t('misc.subscription.page.noRenewal') }}</template>
             <button v-if="overdueCount" type="button" class="subscription-overdue" @click="forecastOpen = true">
-              {{ overdueCount }} 项日期已过，待核对
+              {{ $t('misc.subscription.page.overdueCount', { count: overdueCount }, overdueCount) }}
             </button>
           </p>
         </footer>
@@ -151,21 +189,27 @@
             <CommonRequestFeedback
               v-if="local.error.value"
               compact
-              title="本地订阅未能完成"
+              :title="$t('misc.subscription.page.localFailed')"
               :description="local.error.value"
               @retry="local.load()"
             />
             <p v-if="local.notice.value" role="status">{{ local.notice.value }}</p>
             <div v-if="local.conflict.value" class="subscription-panel">
               <p>
-                当前输入已保留。合并会保留本页实际改过的字段，其余字段采用最新记录；同一字段双方都修改时保留本页输入，请对照下方内容核对。
+                {{ $t('misc.subscription.page.conflictBody') }}
               </p>
               <SubscriptionRecovery v-if="local.latest.value" :value="subscriptionForm(local.latest.value)" />
-              <p v-else-if="local.editingId.value">最新数据中已没有这条记录，不能按原身份继续保存。</p>
-              <button type="button" @click="local.mergeLatest">读取最新记录并保留输入</button>
+              <p v-else-if="local.editingId.value">{{ $t('misc.subscription.page.conflictDeleted') }}</p>
+              <button type="button" @click="local.mergeLatest">{{ $t('misc.subscription.page.mergeLatest') }}</button>
             </div>
             <form v-if="local.editing.value" class="subscription-panel subscription-stack" @submit.prevent="saveLocal">
-              <h2>{{ local.editingId.value ? '编辑我的订阅' : '添加我的订阅' }}</h2>
+              <h2>
+                {{
+                  local.editingId.value
+                    ? $t('misc.subscription.page.editLocal')
+                    : $t('misc.subscription.page.addLocalLabel')
+                }}
+              </h2>
               <SubscriptionFields
                 :value="local.form"
                 :disabled="!local.ready.value || local.saving.value"
@@ -178,8 +222,12 @@
                   :disabled="!local.ready.value || local.saving.value || local.conflict.value"
                   :aria-busy="local.saving.value"
                 >
-                  {{ local.saving.value ? '正在保存…' : '保存到当前浏览器' }}</button
-                ><button type="button" :disabled="local.saving.value" @click="local.cancel">取消编辑</button>
+                  {{
+                    local.saving.value ? $t('misc.subscription.editor.saving') : $t('misc.subscription.page.saveLocal')
+                  }}</button
+                ><button type="button" :disabled="local.saving.value" @click="local.cancel">
+                  {{ $t('misc.subscription.editor.cancel') }}
+                </button>
               </div>
             </form>
           </section>
@@ -187,7 +235,7 @@
         <ClientOnly>
           <section v-if="auth.isLoggedIn.value" v-show="mode === 'blog'" ref="ownerPanel" class="subscription-panel">
             <button v-if="!ownerExpanded" type="button" class="subscription-add" @click="openOwner(null)">
-              <Icon name="lucide:plus" /> 记录一个平台订阅
+              <Icon name="lucide:plus" /> {{ $t('misc.subscription.page.addOwner') }}
             </button>
             <SubscriptionEditor
               v-if="ownerExpanded"
@@ -208,11 +256,13 @@
 import { statistics, parseAmount, formatAmount } from '@tixxin/subscription-domain'
 import type { SubscriptionItem, SubscriptionQuery } from '~/features/subscription/types'
 import { filterSubscriptions, publicSubscriptionQuery } from '~/features/subscription/query'
-import { currencyOptions, categoryLabels, stateLabels } from '~/features/subscription/types'
+import { currencyOptions } from '~/features/subscription/types'
+import { categoryLabel, stateLabel } from '~/features/subscription/labels'
 import { subscriptionForm } from '~/features/subscription/editor'
 const feed = await useSubscriptions(),
   local = useLocalSubscriptions(),
   auth = useCurrentUser()
+const { t } = useI18n()
 definePageMeta({ rightSidebar: false })
 const route = useRoute()
 const mode = ref<'blog' | 'local'>('blog'),
@@ -247,7 +297,9 @@ const filtered = computed(() => !!(query.value.q || query.value.category || quer
 // 本机数据不依赖公开接口，两种来源各自判断控件是否可用。
 const controlsReady = computed(() => (mode.value === 'blog' ? feed.ready.value : local.ready.value))
 const sorted = computed(() => query.value.sort !== 'manual')
-const sortLabel = computed(() => (query.value.sort === 'amount-asc' ? '金额升序' : '金额降序'))
+const sortLabel = computed(() =>
+  t(query.value.sort === 'amount-asc' ? 'misc.subscription.page.sortAsc' : 'misc.subscription.page.sortDesc'),
+)
 const filterCount = computed(
   () =>
     Number(!!query.value.category) + Number(!!query.value.subscriptionStatus) + Number(query.value.sort !== 'manual'),
@@ -260,7 +312,11 @@ const renewalDayHint = computed(() => {
     base = stats.value?.asOf ?? today.value
   if (!date || !base) return ''
   const days = Math.round((Date.parse(`${date}T00:00:00Z`) - Date.parse(`${base}T00:00:00Z`)) / 86_400_000)
-  return days === 0 ? '（今天）' : days === 1 ? '（明天）' : ''
+  return days === 0
+    ? t('misc.subscription.page.renewalToday')
+    : days === 1
+      ? t('misc.subscription.page.renewalTomorrow')
+      : ''
 })
 const overdueCount = computed(() => selectedStats.value?.upcoming.filter((item) => item.overdue).length ?? 0)
 watch(
@@ -303,7 +359,7 @@ function clearFilters() {
 function switchMode(next: 'blog' | 'local') {
   if (next === mode.value || local.saving.value) return
   if (mode.value === 'blog' && ownerEditor.value && !ownerEditor.value.canLeave()) return
-  if (mode.value === 'local' && local.dirty.value && !window.confirm('本地编辑输入会保留在此页，确定切换数据来源吗？'))
+  if (mode.value === 'local' && local.dirty.value && !window.confirm(t('misc.subscription.page.confirmSwitchSource')))
     return
   // 币种是页面级语境，切换来源后继续查看同一币种。
   const carried = currency.value
@@ -325,7 +381,9 @@ async function editItem(item: SubscriptionItem) {
     if (record && local.edit(record)) {
       await nextTick()
       localPanel.value?.scrollIntoView({ block: 'start' })
-      localPanel.value?.querySelector<HTMLInputElement>('input[aria-label="服务名称"]')?.focus({ preventScroll: true })
+      localPanel.value
+        ?.querySelector<HTMLInputElement>('input[data-subscription-field="name"]')
+        ?.focus({ preventScroll: true })
     }
   }
 }
@@ -344,7 +402,9 @@ async function addLocal() {
   if (!local.edit(undefined, currency.value)) return
   await nextTick()
   localPanel.value?.scrollIntoView({ block: 'start' })
-  localPanel.value?.querySelector<HTMLInputElement>('input[aria-label="服务名称"]')?.focus({ preventScroll: true })
+  localPanel.value
+    ?.querySelector<HTMLInputElement>('input[data-subscription-field="name"]')
+    ?.focus({ preventScroll: true })
 }
 async function saveLocal() {
   const savedCurrency = local.form.currency
@@ -363,8 +423,8 @@ watch(
   },
 )
 usePageSeo({
-  title: '平台订阅费',
-  description: '按原币种记录个人工具和服务的订阅费用、价格变化与预计续费。访客可在当前浏览器记录自己的订阅。',
+  title: () => t('misc.subscription.page.title'),
+  description: () => t('misc.subscription.page.seoDescription'),
 })
 </script>
 <style scoped lang="scss">

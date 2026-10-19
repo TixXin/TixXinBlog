@@ -1,10 +1,15 @@
 /** @file local.ts @description 访客订阅的版本化存储校验；损坏数据保留原文，历史迁移不补造过去价格 */
 import { appendPriceHistory, isDate, validatePricing, validatePriceHistory } from '@tixxin/subscription-domain'
 import { categoryLabels, stateLabels } from './types'
+import { currentTranslate } from '~/utils/format'
 import type { SubscriptionEditable, SubscriptionItem } from './types'
 export const subscriptionStorageKey = 'blog-my-subscriptions'
 export const MAX_LOCAL_SUBSCRIPTIONS = 1000
 export const MAX_LOCAL_SUBSCRIPTION_LENGTH = 5000000
+/** 按调用时的界面语言生成本机订阅错误，对应字典 misc.subscription.local.* */
+function localError(key: string, params?: Record<string, unknown>) {
+  return new Error(currentTranslate()(`misc.subscription.local.${key}`, params))
+}
 export interface LocalSubscription extends SubscriptionItem, SubscriptionEditable {
   id: string
   revision: number
@@ -23,15 +28,14 @@ export function safeSubscriptionUrl(value: unknown): string | null {
     value.length > 2048 ||
     [...value].some((character) => character.charCodeAt(0) <= 32 || character.charCodeAt(0) === 127)
   )
-    throw new Error('官网地址必须是有效的 HTTP 或 HTTPS 地址')
+    throw localError('urlInvalid')
   let url: URL
   try {
     url = new URL(value)
   } catch {
-    throw new Error('官网地址必须是有效的 HTTP 或 HTTPS 地址')
+    throw localError('urlInvalid')
   }
-  if (!['https:', 'http:'].includes(url.protocol) || url.username || url.password)
-    throw new Error('官网地址不能包含危险协议或登录凭据')
+  if (!['https:', 'http:'].includes(url.protocol) || url.username || url.password) throw localError('urlUnsafe')
   return url.href
 }
 export function validateLocalFields(value: SubscriptionEditable) {
@@ -48,16 +52,16 @@ export function validateLocalFields(value: SubscriptionEditable) {
     !Object.hasOwn(categoryLabels, value.category) ||
     !Object.hasOwn(stateLabels, value.subscriptionStatus)
   )
-    throw new Error('订阅字段无效，请核对名称、分类和说明')
+    throw localError('fieldsInvalid')
   safeSubscriptionUrl(value.url)
   if (
     (value.startDate !== null && !isDate(value.startDate)) ||
     (value.nextBillingDate !== null && !isDate(value.nextBillingDate))
   )
-    throw new Error('请填写真实存在的日期')
+    throw localError('dateInvalid')
   if (value.startDate && value.nextBillingDate && value.nextBillingDate < value.startDate)
-    throw new Error('下次扣费日期不能早于开始日期')
-  if (value.priceChangeReason && value.priceChangeReason.length > 500) throw new Error('变价原因最多 500 字')
+    throw localError('nextBeforeStart')
+  if (value.priceChangeReason && value.priceChangeReason.length > 500) throw localError('reasonTooLong', { max: 500 })
 }
 export function parseLocalSubscriptions(raw: string | null, now = new Date().toISOString()): LocalSubscriptions {
   if (raw === null) return { version: 2, revision: '', items: [] }
@@ -121,16 +125,15 @@ export function parseLocalSubscriptions(raw: string | null, now = new Date().toI
     })
     return { version: 2, revision: envelope.revision ?? '', items }
   } catch {
-    throw new Error('本地订阅数据损坏、字段无效或版本不兼容。原始数据已保留，请保留浏览器数据并修复后重试。')
+    throw localError('corrupted')
   }
 }
 
 /** 写入和读取使用相同边界，拒绝制造刷新后无法读取的本机内容。 */
 export function serializeLocalSubscriptions(value: LocalSubscriptions): string {
-  if (value.items.length > MAX_LOCAL_SUBSCRIPTIONS) throw new Error('本地订阅最多保存 1000 条，新增内容尚未保存。')
+  if (value.items.length > MAX_LOCAL_SUBSCRIPTIONS) throw localError('tooMany', { max: MAX_LOCAL_SUBSCRIPTIONS })
   const raw = JSON.stringify(value)
-  if (raw.length > MAX_LOCAL_SUBSCRIPTION_LENGTH)
-    throw new Error('本地订阅内容超过存储格式上限，内容尚未保存；原始数据保持不变。')
+  if (raw.length > MAX_LOCAL_SUBSCRIPTION_LENGTH) throw localError('tooLarge')
   parseLocalSubscriptions(raw)
   return raw
 }

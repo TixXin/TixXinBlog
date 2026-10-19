@@ -1,10 +1,14 @@
 <!-- @file Forecast.vue @description 抽屉内的单币种续费预测与扣费日期清单，统计说明和文字明细默认折叠 -->
 <template>
-  <section class="subscription-forecast" :aria-label="`${currency}续费预测`" :data-currency="currency">
+  <section
+    class="subscription-forecast"
+    :aria-label="$t('misc.subscription.forecast.label', { currency })"
+    :data-currency="currency"
+  >
     <header>
-      <p class="subscription-forecast__eyebrow">{{ currency }} · 当前筛选</p>
-      <h2>未来 12 个月预计续费</h2>
-      <p>本月剩余日期及随后 11 个自然月。</p>
+      <p class="subscription-forecast__eyebrow">{{ $t('misc.subscription.forecast.eyebrow', { currency }) }}</p>
+      <h2>{{ $t('misc.subscription.forecast.title') }}</h2>
+      <p>{{ $t('misc.subscription.forecast.range') }}</p>
     </header>
     <ClientOnly v-if="forecast.length">
       <LazySubscriptionChart
@@ -14,53 +18,54 @@
         :values="forecast.map((month) => Number(amountInput(month.amount, currency)))"
         :formatted-values="forecast.map((month) => formatAmount(month.amount, currency).slice(currency.length + 1))"
         :currency="currency"
-        :label="`${currency}未来12个月预计续费金额；文字明细可在下方展开`"
+        :label="$t('misc.subscription.forecast.chartLabel', { currency })"
       />
       <template #fallback
         ><p class="subscription-forecast__placeholder" role="status">
-          正在载入预测图，完整金额可在文字明细中查看。
+          {{ $t('misc.subscription.forecast.chartLoading') }}
         </p></template
       >
     </ClientOnly>
-    <p v-else class="subscription-forecast__empty">当前筛选下没有 {{ currency }} 订阅，暂无续费预测。</p>
+    <p v-else class="subscription-forecast__empty">{{ $t('misc.subscription.forecast.noItems', { currency }) }}</p>
     <p v-if="forecast.length && !forecast.some((month) => month.amount > 0)" class="subscription-forecast__note">
-      当前条件下没有非零续费预测。
+      {{ $t('misc.subscription.forecast.noPositive') }}
     </p>
     <details class="subscription-forecast__details">
-      <summary>查看预计续费文字明细<Icon name="lucide:chevron-down" size="15" /></summary>
+      <summary>
+        {{ $t('misc.subscription.forecast.amountsSummary') }}<Icon name="lucide:chevron-down" size="15" />
+      </summary>
       <ul v-if="forecast.length" class="subscription-forecast__amounts">
         <li v-for="month in forecast" :key="month.month">
           <span>{{ month.month }}</span
           ><strong>{{ formatAmount(month.amount, currency) }}</strong>
         </li>
       </ul>
-      <p v-else>暂无可展示的月份记录。</p>
+      <p v-else>{{ $t('misc.subscription.forecast.noMonths') }}</p>
     </details>
-    <section class="subscription-forecast__payments" aria-label="下次扣费清单">
-      <h3>下次扣费清单</h3>
+    <section class="subscription-forecast__payments" :aria-label="$t('misc.subscription.forecast.payments')">
+      <h3>{{ $t('misc.subscription.forecast.payments') }}</h3>
       <ul v-if="upcoming.length">
         <li v-for="item in upcoming" :key="item.id">
           <div>
             <strong>{{ item.name }}</strong
             ><span
               >{{ item.date
-              }}<span v-if="item.overdue" class="subscription-forecast__overdue"> · 已逾期，请核对</span></span
+              }}<span v-if="item.overdue" class="subscription-forecast__overdue">
+                · {{ $t('misc.subscription.card.overdue') }}</span
+              ></span
             >
           </div>
           <strong>{{ formatAmount(item.amount, currency) }}</strong>
         </li>
       </ul>
-      <p v-else class="subscription-forecast__empty">当前筛选没有可用的扣费日期。</p>
+      <p v-else class="subscription-forecast__empty">{{ $t('misc.subscription.forecast.noPayments') }}</p>
     </section>
     <details class="subscription-forecast__details">
-      <summary>预测与扣费说明<Icon name="lucide:chevron-down" size="15" /></summary>
-      <p>
-        截至 {{ stats.asOf }}（UTC
-        日期），按当前价格、状态和有效扣费日期估算，并非实际历史支出。试用、暂停、取消和过期记录不生成续费预测；缺少可靠日期的记录不会猜测扣款时间。
-      </p>
-      <p>
-        清单展示每项订阅的下一次扣费日期，逾期记录保留原日期。这里只提供页面提醒，不会自动扣款或发送通知；其他币种需要切换后分别查看。
-      </p>
+      <summary>
+        {{ $t('misc.subscription.forecast.notesSummary') }}<Icon name="lucide:chevron-down" size="15" />
+      </summary>
+      <p>{{ $t('misc.subscription.forecast.notesEstimate', { asOf: stats.asOf }) }}</p>
+      <p>{{ $t('misc.subscription.forecast.notesPayments') }}</p>
     </details>
   </section>
 </template>

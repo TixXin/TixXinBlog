@@ -3,168 +3,186 @@
   <fieldset class="subscription-ui" :disabled="disabled">
     <div class="subscription-grid">
       <label
-        >服务名称<input
+        >{{ $t('misc.subscription.fields.name')
+        }}<input
           :value="value.name"
           required
           maxlength="160"
-          aria-label="服务名称"
+          :aria-label="$t('misc.subscription.fields.name')"
+          data-subscription-field="name"
           @input="change('name', input($event))"
       /></label>
       <label
-        >平台或供应商<input
+        >{{ $t('misc.subscription.fields.platform')
+        }}<input
           :value="value.platform ?? ''"
           maxlength="160"
-          aria-label="平台或供应商"
+          :aria-label="$t('misc.subscription.fields.platform')"
           @input="change('platform', input($event) || null)"
       /></label>
     </div>
     <label
-      >{{ managed ? '公开描述' : '描述'
+      >{{ managed ? $t('misc.subscription.fields.publicDescription') : $t('misc.subscription.fields.description')
       }}<textarea
         :value="value.description"
         maxlength="5000"
         rows="3"
-        aria-label="订阅描述"
+        :aria-label="$t('misc.subscription.fields.descriptionLabel')"
         @input="change('description', input($event))"
       />
     </label>
     <label
-      >官网地址<input
+      >{{ $t('misc.subscription.fields.url')
+      }}<input
         :value="value.url ?? ''"
         type="url"
         pattern="https?://.+"
         maxlength="2048"
         placeholder="https://"
-        aria-label="官网地址"
+        :aria-label="$t('misc.subscription.fields.url')"
         @input="change('url', input($event) || null)"
     /></label>
     <div class="subscription-grid">
       <label
-        >分类<select
+        >{{ $t('misc.subscription.fields.category')
+        }}<select
           :value="value.category"
-          aria-label="订阅分类"
+          :aria-label="$t('misc.subscription.fields.categoryLabel')"
           @change="change('category', input($event) as SubscriptionForm['category'])"
         >
-          <option v-for="(label, key) in categoryLabels" :key="key" :value="key">{{ label }}</option>
+          <option v-for="key in categoryKeys" :key="key" :value="key">{{ categoryLabel(key, t) }}</option>
         </select></label
       >
       <label
-        >币种<select
+        >{{ $t('misc.subscription.fields.currency')
+        }}<select
           :value="value.currency"
-          aria-label="订阅币种"
+          :aria-label="$t('misc.subscription.fields.currencyLabel')"
           @change="change('currency', input($event) as SubscriptionForm['currency'])"
         >
           <option v-for="currency in currencyOptions" :key="currency" :value="currency">{{ currency }}</option>
         </select></label
       >
       <label
-        >原始金额<input
+        >{{ $t('misc.subscription.fields.amount')
+        }}<input
           :value="value.amountInput"
           inputmode="decimal"
           required
           maxlength="40"
-          aria-label="订阅金额"
+          :aria-label="$t('misc.subscription.fields.amountLabel')"
           @input="change('amountInput', input($event))"
       /></label>
       <label
-        >计费周期<select
+        >{{ $t('misc.subscription.fields.cycle')
+        }}<select
           :value="value.billingCycle"
-          aria-label="计费周期"
+          :aria-label="$t('misc.subscription.fields.cycle')"
           @change="change('billingCycle', input($event) as SubscriptionForm['billingCycle'])"
         >
-          <option v-for="(label, key) in cycleLabels" :key="key" :value="key">{{ label }}</option>
+          <option v-for="key in cycleKeys" :key="key" :value="key">{{ cycleLabel(key, t) }}</option>
         </select></label
       >
     </div>
-    <p class="subscription-note">
-      按原币种记录，不换算汇率。JPY 只接受整数；其他币种最多两位小数。一次性和买断不计入持续费用。
-    </p>
+    <p class="subscription-note">{{ $t('misc.subscription.fields.amountNote') }}</p>
     <div class="subscription-grid">
       <label
-        >订阅状态<select
+        >{{ $t('misc.subscription.fields.status')
+        }}<select
           :value="value.subscriptionStatus"
-          aria-label="订阅状态"
+          :aria-label="$t('misc.subscription.fields.status')"
           @change="change('subscriptionStatus', input($event) as SubscriptionForm['subscriptionStatus'])"
         >
-          <option v-for="(label, key) in stateLabels" :key="key" :value="key">{{ label }}</option>
+          <option v-for="key in stateKeys" :key="key" :value="key">{{ stateLabel(key, t) }}</option>
         </select></label
       >
       <label
-        >开始日期<input
+        >{{ $t('misc.subscription.fields.startDate')
+        }}<input
           :value="value.startDate ?? ''"
           type="date"
-          aria-label="开始日期"
+          :aria-label="$t('misc.subscription.fields.startDate')"
           @input="change('startDate', input($event) || null)"
       /></label>
       <label
-        >下次扣费日期<input
+        >{{ $t('misc.subscription.fields.nextBillingDate')
+        }}<input
           :value="value.nextBillingDate ?? ''"
           type="date"
           :min="value.startDate ?? undefined"
-          aria-label="下次扣费日期"
+          :aria-label="$t('misc.subscription.fields.nextBillingDate')"
           @input="change('nextBillingDate', input($event) || null)"
       /></label>
     </div>
-    <p class="subscription-note">日期未设置时不推测扣款；逾期日期保留原值。试用不假定结束后必然收费。</p>
+    <p class="subscription-note">{{ $t('misc.subscription.fields.dateNote') }}</p>
     <label v-if="changed"
-      >变价原因<textarea
+      >{{ $t('misc.subscription.fields.priceChangeReason')
+      }}<textarea
         :value="value.priceChangeReason ?? ''"
         rows="2"
         maxlength="500"
-        aria-label="变价原因"
-        placeholder="可选，例如套餐调整"
+        :aria-label="$t('misc.subscription.fields.priceChangeReason')"
+        :placeholder="$t('misc.subscription.fields.priceChangeReasonPlaceholder')"
         @input="change('priceChangeReason', input($event))"
       />
     </label>
-    <p v-if="changed" class="subscription-note">保存后追加当前新价格快照；既有价格历史保持只读。</p>
+    <p v-if="changed" class="subscription-note">{{ $t('misc.subscription.fields.priceChangeNote') }}</p>
     <label
-      >{{ managed ? '管理备注（不公开）' : '私人备注（仅本机）'
+      >{{ managed ? $t('misc.subscription.fields.managedNotes') : $t('misc.subscription.fields.localNotes')
       }}<textarea
         :value="value.notes"
         maxlength="5000"
         rows="3"
-        aria-label="订阅备注"
+        :aria-label="$t('misc.subscription.fields.notesLabel')"
         @input="change('notes', input($event))"
       />
     </label>
     <template v-if="managed">
-      <section aria-label="订阅图标" class="subscription-stack">
+      <section :aria-label="$t('misc.subscription.fields.icon')" class="subscription-stack">
         <div class="subscription-row">
-          <h3>订阅图标</h3>
-          <button type="button" @click="mediaOpen = true">选择或上传图标</button
-          ><button v-if="value.iconMediaId" type="button" @click="change('iconMediaId', null)">移除受管图标</button
+          <h3>{{ $t('misc.subscription.fields.icon') }}</h3>
+          <button type="button" @click="mediaOpen = true">{{ $t('misc.subscription.fields.pickIcon') }}</button
+          ><button v-if="value.iconMediaId" type="button" @click="change('iconMediaId', null)">
+            {{ $t('misc.subscription.fields.removeIcon') }}</button
           ><button type="button" :disabled="!value.url || fetchingIcon" @click="$emit('favicon')">
-            {{ fetchingIcon ? '正在获取图标…' : '获取官网图标' }}
+            {{ fetchingIcon ? $t('misc.subscription.fields.fetchingIcon') : $t('misc.subscription.fields.fetchIcon') }}
           </button>
         </div>
         <img
           v-if="value.iconMediaId"
           class="subscription-icon-preview"
           :src="`/api/v1/media/${value.iconMediaId}.webp`"
-          alt="手动选择的图标"
+          :alt="$t('misc.subscription.fields.manualIconAlt')"
         />
-        <img v-else-if="faviconUrl" class="subscription-icon-preview" :src="faviconUrl" alt="自动获取的官网图标" />
-        <p class="subscription-note">手动受管图标优先于官网 favicon；获取失败使用默认图标，不影响保存。</p>
+        <img
+          v-else-if="faviconUrl"
+          class="subscription-icon-preview"
+          :src="faviconUrl"
+          :alt="$t('misc.subscription.fields.faviconAlt')"
+        />
+        <p class="subscription-note">{{ $t('misc.subscription.fields.iconNote') }}</p>
         <p v-if="iconMessage" role="status">{{ iconMessage }}</p>
       </section>
       <div class="subscription-grid">
         <label
-          >发布状态<select
+          >{{ $t('misc.subscription.fields.publication')
+          }}<select
             :value="value.status"
-            aria-label="订阅发布状态"
+            :aria-label="$t('misc.subscription.fields.publicationLabel')"
             @change="change('status', input($event) as SubscriptionForm['status'])"
           >
-            <option v-for="(label, key) in publicationLabels" :key="key" :value="key">{{ label }}</option>
+            <option v-for="key in publicationKeys" :key="key" :value="key">{{ publicationLabel(key, t) }}</option>
           </select></label
         >
         <label
-          >排序值（越大越靠前）<input
+          >{{ $t('misc.subscription.fields.sortOrder')
+          }}<input
             :value="value.sortOrder"
             type="number"
             min="-1000000"
             max="1000000"
             step="1"
-            aria-label="订阅排序值"
+            :aria-label="$t('misc.subscription.fields.sortOrderLabel')"
             @input="change('sortOrder', Number(input($event)))"
         /></label>
       </div>
@@ -180,7 +198,14 @@ import {
   publicationLabels,
   currencyOptions,
 } from '~/features/subscription/types'
-import type { SubscriptionForm } from '~/features/subscription/types'
+import type {
+  SubscriptionCategory,
+  SubscriptionCycle,
+  SubscriptionForm,
+  SubscriptionPublication,
+  SubscriptionState,
+} from '~/features/subscription/types'
+import { categoryLabel, cycleLabel, publicationLabel, stateLabel } from '~/features/subscription/labels'
 import type { MediaAsset } from '~/features/media/types'
 defineProps<{
   value: SubscriptionForm
@@ -192,6 +217,11 @@ defineProps<{
   iconMessage?: string
 }>()
 const emit = defineEmits<{ change: [value: Partial<SubscriptionForm>]; favicon: [] }>()
+const { t } = useI18n()
+const categoryKeys = Object.keys(categoryLabels) as SubscriptionCategory[],
+  cycleKeys = Object.keys(cycleLabels) as SubscriptionCycle[],
+  stateKeys = Object.keys(stateLabels) as SubscriptionState[],
+  publicationKeys = Object.keys(publicationLabels) as SubscriptionPublication[]
 const mediaOpen = ref(false)
 const input = (event: Event) => (event.target as HTMLInputElement).value
 function change<K extends keyof SubscriptionForm>(key: K, value: SubscriptionForm[K]) {

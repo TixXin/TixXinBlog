@@ -1,33 +1,34 @@
 <!-- @file Recovery.vue @description 恢复与冲突对比使用完整字段，避免只显示摘要丢失可核对信息 -->
 <template>
   <dl class="subscription-recovery">
-    <template v-for="(label, key) in labels" :key="key"
-      ><dt>{{ label }}</dt>
-      <dd>{{ String(value[key] ?? '') || '未填写' }}</dd></template
+    <template v-for="key in fields" :key="key"
+      ><dt>{{ $t(`misc.subscription.recovery.${key}`) }}</dt>
+      <dd>{{ String(value[key] ?? '') || $t('misc.subscription.recovery.notFilled') }}</dd></template
     >
   </dl>
 </template>
 <script setup lang="ts">
 import type { SubscriptionForm } from '~/features/subscription/types'
 defineProps<{ value: SubscriptionForm }>()
-const labels: Record<keyof SubscriptionForm, string> = {
-  name: '服务名称',
-  description: '描述',
-  url: '官网',
-  platform: '供应商',
-  category: '分类',
-  currency: '币种',
-  amountInput: '金额',
-  billingCycle: '周期',
-  startDate: '开始日期',
-  nextBillingDate: '下次扣费',
-  subscriptionStatus: '订阅状态',
-  notes: '私人备注',
-  iconMediaId: '受管图标',
-  status: '发布状态',
-  sortOrder: '排序',
-  priceChangeReason: '变价原因',
-}
+// 展示顺序即表单字段顺序；名称取字典 misc.subscription.recovery.<字段>。
+const fields: (keyof SubscriptionForm)[] = [
+  'name',
+  'description',
+  'url',
+  'platform',
+  'category',
+  'currency',
+  'amountInput',
+  'billingCycle',
+  'startDate',
+  'nextBillingDate',
+  'subscriptionStatus',
+  'notes',
+  'iconMediaId',
+  'status',
+  'sortOrder',
+  'priceChangeReason',
+]
 </script>
 <style scoped>
 .subscription-recovery {

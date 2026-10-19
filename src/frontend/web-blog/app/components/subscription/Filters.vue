@@ -2,63 +2,72 @@
 <template>
   <div class="subscription-ui subscription-grid">
     <label v-if="!compact"
-      >搜索订阅<input
+      >{{ $t('misc.subscription.filters.search')
+      }}<input
         :value="query.q ?? ''"
         type="search"
         maxlength="200"
-        aria-label="搜索订阅"
-        placeholder="名称、平台或描述"
+        :aria-label="$t('misc.subscription.filters.search')"
+        :placeholder="$t('misc.subscription.filters.searchPlaceholder')"
         :disabled="disabled"
         @change="change('q', $event)" /></label
     ><label
-      >分类<select
+      >{{ $t('misc.subscription.filters.category')
+      }}<select
         :value="query.category ?? ''"
-        aria-label="筛选订阅分类"
+        :aria-label="$t('misc.subscription.filters.categoryLabel')"
         :disabled="disabled"
         @change="change('category', $event)"
       >
-        <option value="">全部分类</option>
-        <option v-for="(label, key) in categoryLabels" :key="key" :value="key">{{ label }}</option>
+        <option value="">{{ $t('misc.subscription.filters.allCategories') }}</option>
+        <option v-for="key in categoryKeys" :key="key" :value="key">{{ categoryLabel(key, t) }}</option>
       </select></label
     ><label v-if="!compact"
-      >币种<select
+      >{{ $t('misc.subscription.filters.currency')
+      }}<select
         :value="query.currency ?? ''"
-        aria-label="筛选订阅币种"
+        :aria-label="$t('misc.subscription.filters.currencyLabel')"
         :disabled="disabled"
         @change="change('currency', $event)"
       >
-        <option value="">全部币种（独立统计）</option>
+        <option value="">{{ $t('misc.subscription.filters.allCurrencies') }}</option>
         <option v-for="currency in currencyOptions" :key="currency" :value="currency">{{ currency }}</option>
       </select></label
     ><label
-      >订阅状态<select
+      >{{ $t('misc.subscription.filters.status')
+      }}<select
         :value="query.subscriptionStatus ?? ''"
-        aria-label="筛选订阅状态"
+        :aria-label="$t('misc.subscription.filters.statusLabel')"
         :disabled="disabled"
         @change="change('subscriptionStatus', $event)"
       >
-        <option value="">全部订阅状态</option>
-        <option v-for="(label, key) in stateLabels" :key="key" :value="key">{{ label }}</option>
+        <option value="">{{ $t('misc.subscription.filters.allStatuses') }}</option>
+        <option v-for="key in stateKeys" :key="key" :value="key">{{ stateLabel(key, t) }}</option>
       </select></label
     ><label
-      >排列方式<select
+      >{{ $t('misc.subscription.filters.sort')
+      }}<select
         :value="query.sort ?? 'manual'"
-        aria-label="订阅排列方式"
+        :aria-label="$t('misc.subscription.filters.sortLabel')"
         :disabled="disabled"
         @change="change('sort', $event)"
       >
-        <option value="manual">默认排序</option>
-        <option value="amount-asc">币种内原始金额升序</option>
-        <option value="amount-desc">币种内原始金额降序</option>
+        <option value="manual">{{ $t('misc.subscription.filters.sortManual') }}</option>
+        <option value="amount-asc">{{ $t('misc.subscription.filters.sortAmountAsc') }}</option>
+        <option value="amount-desc">{{ $t('misc.subscription.filters.sortAmountDesc') }}</option>
       </select></label
     >
   </div>
 </template>
 <script setup lang="ts">
 import { categoryLabels, stateLabels, currencyOptions } from '~/features/subscription/types'
-import type { SubscriptionQuery } from '~/features/subscription/types'
+import type { SubscriptionCategory, SubscriptionQuery, SubscriptionState } from '~/features/subscription/types'
+import { categoryLabel, stateLabel } from '~/features/subscription/labels'
 defineProps<{ query: SubscriptionQuery; disabled?: boolean; compact?: boolean }>()
 const emit = defineEmits<{ change: [value: Record<string, string | number | undefined>] }>()
+const { t } = useI18n()
+const categoryKeys = Object.keys(categoryLabels) as SubscriptionCategory[],
+  stateKeys = Object.keys(stateLabels) as SubscriptionState[]
 function change(key: string, event: Event) {
   emit('change', { [key]: (event.target as HTMLInputElement).value || undefined })
 }

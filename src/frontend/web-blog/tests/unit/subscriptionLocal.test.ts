@@ -297,6 +297,24 @@ describe('访客订阅格式与筛选', () => {
     ).toThrow('格式上限')
     expect(localStorage.getItem(subscriptionStorageKey)).toBe(original)
   })
+  it('英文界面下本机校验与共享领域错误使用英文提示', async () => {
+    const i18n = useNuxtApp().$i18n
+    await i18n.setLocale('en')
+    try {
+      expect(() => parseLocalSubscriptions('{')).toThrow('The original data has been kept')
+      expect(() => safeSubscriptionUrl('javascript:alert(1)')).toThrow('unsafe protocol')
+      const local = await setup()
+      local.edit()
+      Object.assign(local.form, { name: 'Cloud IDE', currency: 'JPY', amountInput: '1.5' })
+      await local.save()
+      expect(local.error.value).toBe('Enter a valid amount')
+      Object.assign(local.form, { currency: 'USD', amountInput: '1.505' })
+      await local.save()
+      expect(local.error.value).toBe('This currency allows at most 2 decimal places')
+    } finally {
+      await i18n.setLocale('zh-CN')
+    }
+  })
   it('拒绝危险官网与凭据，金额与币种使用共享领域校验', () => {
     expect(() => safeSubscriptionUrl('javascript:alert(1)')).toThrow()
     expect(() => safeSubscriptionUrl('https://name:secret@example.com')).toThrow()

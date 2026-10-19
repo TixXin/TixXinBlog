@@ -11,7 +11,9 @@ import {
 import type { LocalSubscription, LocalSubscriptions } from '~/features/subscription/local'
 import type { SubscriptionCurrency } from '~/features/subscription/types'
 import { writeLocalJson } from '~/utils/localPersistence'
+import { subscriptionErrorMessage } from '~/features/subscription/labels'
 export function useLocalSubscriptions() {
+  const { t } = useI18n()
   const data = ref<LocalSubscriptions>({ version: 2, revision: '', items: [] }),
     ready = ref(false),
     saving = ref(false),
@@ -34,14 +36,14 @@ export function useLocalSubscriptions() {
       if (preserve && dirty.value && raw !== acceptedRaw) {
         latest.value = next.items.find((item) => item.id === editingId.value) ?? null
         conflict.value = true
-        error.value = '另一个标签页修改了本地订阅，当前输入已保留。核对最新记录后再合并。'
+        error.value = t('misc.subscription.local.otherTabChanged')
         return
       }
       if (preserve && editing.value && editingId.value && raw !== acceptedRaw) {
         const latest = next.items.find((item) => item.id === editingId.value)
         if (!latest) {
           conflict.value = true
-          error.value = '正在编辑的记录已被另一标签页删除，当前输入已保留。'
+          error.value = t('misc.subscription.local.editingDeleted')
           return
         }
         Object.assign(form, subscriptionForm(latest))
@@ -55,11 +57,11 @@ export function useLocalSubscriptions() {
       latest.value = null
     } catch (cause) {
       ready.value = false
-      error.value = cause instanceof Error ? cause.message : '浏览器存储不可用，当前输入尚未保存。'
+      error.value = subscriptionErrorMessage(cause, t) ?? t('misc.subscription.local.storageUnavailable')
     }
   }
   function edit(item?: LocalSubscription, initialCurrency?: SubscriptionCurrency) {
-    if (saving.value || (dirty.value && !window.confirm('有未保存的本地订阅输入，确定切换吗？'))) return false
+    if (saving.value || (dirty.value && !window.confirm(t('misc.subscription.local.confirmSwitch')))) return false
     editing.value = true
     editingId.value = item?.id ?? null
     Object.assign(form, subscriptionForm(item ?? (initialCurrency ? { currency: initialCurrency } : undefined)))
@@ -68,7 +70,7 @@ export function useLocalSubscriptions() {
     return true
   }
   function cancel() {
-    if (saving.value || (dirty.value && !window.confirm('放弃当前未保存的本地订阅输入？'))) return false
+    if (saving.value || (dirty.value && !window.confirm(t('misc.subscription.local.confirmDiscard')))) return false
     editing.value = false
     editingId.value = null
     Object.assign(form, subscriptionForm())
@@ -85,14 +87,14 @@ export function useLocalSubscriptions() {
       if (current !== expectedRaw) {
         latest.value = parseLocalSubscriptions(current).items.find((item) => item.id === editingId.value) ?? null
         conflict.value = true
-        throw new Error('另一标签页已修改记录。当前输入已保留，请先核对最新数据。')
+        throw new Error(t('misc.subscription.local.writeConflict'))
       }
       const next = { version: 2 as const, revision: crypto.randomUUID(), items: transform(snapshot) }
       const raw = serializeLocalSubscriptions(next)
       writeLocalJson(subscriptionStorageKey, next)
       if (localStorage.getItem(subscriptionStorageKey) !== raw) {
         conflict.value = true
-        throw new Error('本地保存与另一标签页发生冲突，请核对存储中的最新数据。')
+        throw new Error(t('misc.subscription.local.saveConflict'))
       }
       if (alive) {
         data.value = next
@@ -115,7 +117,7 @@ export function useLocalSubscriptions() {
       const original = saved.value,
         now = new Date().toISOString(),
         id = editingId.value ?? crypto.randomUUID()
-      if (editingId.value && !original) throw new Error('该记录已删除，不能重新保存为原记录；当前输入仍保留。')
+      if (editingId.value && !original) throw new Error(t('misc.subscription.local.recordDeleted'))
       const item: LocalSubscription = {
         ...body,
         url: safeSubscriptionUrl(body.url),
@@ -143,18 +145,23 @@ export function useLocalSubscriptions() {
         Object.assign(form, subscriptionForm(item))
         editing.value = false
       }
-      notice.value = '已保存到当前浏览器。'
+      notice.value = t('misc.subscription.local.saved')
     } catch (cause) {
-      if (alive) error.value = cause instanceof Error ? cause.message : '保存失败，当前输入尚未保存。'
+      if (alive) error.value = subscriptionErrorMessage(cause, t) ?? t('misc.subscription.local.saveFailed')
     } finally {
       if (alive) saving.value = false
     }
   }
   async function remove(item: LocalSubscription) {
-    if (!ready.value || saving.value || conflict.value || !window.confirm(`删除本地订阅「${item.name}」及其价格历史？`))
+    if (
+      !ready.value ||
+      saving.value ||
+      conflict.value ||
+      !window.confirm(t('misc.subscription.local.confirmRemove', { name: item.name }))
+    )
       return
     if (dirty.value && editingId.value === item.id) {
-      error.value = '请先保存或取消当前编辑，再删除这条记录。'
+      error.value = t('misc.subscription.local.removeWhileEditing')
       return
     }
     saving.value = true
@@ -164,10 +171,10 @@ export function useLocalSubscriptions() {
         editing.value = false
         editingId.value = null
       }
-      notice.value = '本地订阅已删除。'
+      notice.value = t('misc.subscription.local.removed')
       error.value = ''
     } catch (cause) {
-      error.value = cause instanceof Error ? cause.message : '删除未完成'
+      error.value = subscriptionErrorMessage(cause, t) ?? t('misc.subscription.local.removeFailed')
     } finally {
       saving.value = false
     }
@@ -179,7 +186,7 @@ export function useLocalSubscriptions() {
     if (!ready.value) return
     if (editingId.value && !saved.value) {
       conflict.value = true
-      error.value = '正在编辑的记录已被另一标签页删除。请保留输入，取消后新建记录。'
+      error.value = t('misc.subscription.local.mergeDeleted')
       return
     }
     const incoming = subscriptionForm(saved.value ?? undefined)
@@ -190,7 +197,7 @@ export function useLocalSubscriptions() {
     }
     Object.assign(form, merged)
     baseline.value = JSON.stringify(incoming)
-    notice.value = '已合并最新记录：保留本页改动，其余字段采用最新值。请核对后手动保存。'
+    notice.value = t('misc.subscription.local.merged')
   }
   function storage(event: StorageEvent) {
     if (event.key === subscriptionStorageKey || event.key === null) load()
@@ -207,7 +214,7 @@ export function useLocalSubscriptions() {
     window.addEventListener('beforeunload', unload)
   })
   onBeforeRouteLeave(() =>
-    saving.value ? false : !dirty.value || window.confirm('本地订阅有未保存输入，确定离开吗？'),
+    saving.value ? false : !dirty.value || window.confirm(t('misc.subscription.local.confirmLeave')),
   )
   onScopeDispose(() => {
     alive = false
