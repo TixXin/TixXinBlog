@@ -46,7 +46,7 @@
       v-if="!readOnly"
       type="button"
       class="tab-bm__remove"
-      :aria-label="`删除 ${bookmark.name}`"
+      :aria-label="$t('misc.tab.item.remove', { name: bookmark.name })"
       @click.prevent.stop="emit('remove', bookmark.id)"
     >
       <Icon name="lucide:x" size="11" />

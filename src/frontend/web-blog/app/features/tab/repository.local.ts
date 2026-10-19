@@ -131,7 +131,7 @@ export class LocalTabRepository implements TabBookmarkRepository {
   }
 
   createBookmark(userId: string, draft: BookmarkDraft): Promise<Bookmark> {
-    requireText(draft.name, '书签名称')
+    requireText(draft.name, 'bookmarkName')
     requireWebUrl(draft.url)
     const bookmarks = readJson<Bookmark>(bookmarkKey(userId))
     const sameCat = bookmarks.filter((b) => b.categoryId === draft.categoryId)
@@ -152,7 +152,7 @@ export class LocalTabRepository implements TabBookmarkRepository {
   }
 
   updateBookmark(id: string, patch: BookmarkPatch): Promise<Bookmark> {
-    if (patch.name !== undefined) requireText(patch.name, '书签名称')
+    if (patch.name !== undefined) requireText(patch.name, 'bookmarkName')
     if (patch.url !== undefined) requireWebUrl(patch.url)
     if (typeof window === 'undefined') {
       return Promise.reject(new Error('LocalTabRepository.updateBookmark called on server'))

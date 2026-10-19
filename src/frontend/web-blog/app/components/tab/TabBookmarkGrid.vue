@@ -7,7 +7,7 @@
 
 <template>
   <div class="tab-grid" :class="viewClass" :style="gridRootStyle">
-    <p v-if="!readOnly" class="tab-grid__hint">可拖拽排序，也可聚焦书签后按 Alt＋上/下方向键调整顺序。</p>
+    <p v-if="!readOnly" class="tab-grid__hint">{{ $t('misc.tab.grid.hint') }}</p>
     <div ref="listEl" class="tab-grid__list" :style="listStyle">
       <TabBookmarkItem
         v-for="bm in localList"
@@ -24,7 +24,7 @@
         <span class="tab-grid__add-icon">
           <Icon name="lucide:plus" size="22" />
         </span>
-        <span class="tab-grid__add-name">添加</span>
+        <span class="tab-grid__add-name">{{ $t('misc.tab.grid.add') }}</span>
       </button>
     </div>
   </div>

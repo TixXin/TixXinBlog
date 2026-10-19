@@ -14,30 +14,37 @@
         class="tab-dialog"
         role="dialog"
         aria-modal="true"
-        :aria-label="isEdit ? '编辑书签' : '添加书签'"
+        :aria-label="isEdit ? $t('misc.tab.bookmarkDialog.editTitle') : $t('misc.tab.bookmarkDialog.addTitle')"
         tabindex="-1"
         @click.self="close"
       >
         <div class="tab-dialog__panel">
           <header class="tab-dialog__header">
             <Icon :name="isEdit ? 'lucide:edit-3' : 'lucide:bookmark-plus'" size="18" />
-            <h2 class="tab-dialog__title">{{ isEdit ? '编辑书签' : '添加书签' }}</h2>
-            <button type="button" class="tab-dialog__close" aria-label="关闭" @click="close">
+            <h2 class="tab-dialog__title">
+              {{ isEdit ? $t('misc.tab.bookmarkDialog.editTitle') : $t('misc.tab.bookmarkDialog.addTitle') }}
+            </h2>
+            <button type="button" class="tab-dialog__close" :aria-label="$t('misc.tab.common.close')" @click="close">
               <Icon name="lucide:x" size="16" />
             </button>
           </header>
 
           <form class="tab-dialog__form" @submit.prevent="onSubmit">
             <label class="tab-dialog__field">
-              <span>名称</span>
-              <input v-model.trim="name" type="text" required placeholder="例如：GitHub" />
+              <span>{{ $t('misc.tab.bookmarkDialog.name') }}</span>
+              <input
+                v-model.trim="name"
+                type="text"
+                required
+                :placeholder="$t('misc.tab.bookmarkDialog.namePlaceholder')"
+              />
             </label>
             <label class="tab-dialog__field">
-              <span>网址</span>
+              <span>{{ $t('misc.tab.bookmarkDialog.url') }}</span>
               <input v-model.trim="url" type="url" required placeholder="https://example.com" />
             </label>
             <label class="tab-dialog__field">
-              <span>分类</span>
+              <span>{{ $t('misc.tab.bookmarkDialog.category') }}</span>
               <select v-model="categoryId" required>
                 <option v-for="cat in categories" :key="cat.id" :value="cat.id">
                   {{ cat.name }}
@@ -45,7 +52,7 @@
               </select>
             </label>
             <label class="tab-dialog__field">
-              <span>颜色（可选）</span>
+              <span>{{ $t('misc.tab.bookmarkDialog.color') }}</span>
               <div class="tab-dialog__color">
                 <input v-model="color" type="color" />
                 <span>{{ color }}</span>
@@ -53,9 +60,11 @@
             </label>
 
             <div class="tab-dialog__actions">
-              <button type="button" class="tab-dialog__btn tab-dialog__btn--ghost" @click="close">取消</button>
+              <button type="button" class="tab-dialog__btn tab-dialog__btn--ghost" @click="close">
+                {{ $t('misc.tab.common.cancel') }}
+              </button>
               <button type="submit" class="tab-dialog__btn tab-dialog__btn--primary" :disabled="!canSubmit">
-                {{ isEdit ? '保存' : '添加' }}
+                {{ isEdit ? $t('misc.tab.bookmarkDialog.save') : $t('misc.tab.bookmarkDialog.add') }}
               </button>
             </div>
           </form>

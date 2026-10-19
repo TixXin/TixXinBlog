@@ -772,6 +772,411 @@
         "dateInvalid": "订阅日期无效",
         "nextBeforeStart": "下次扣费不能早于订阅开始日期"
       }
+    },
+    "tab": {
+      "bookmarkDialog": {
+        "add": "添加",
+        "addTitle": "添加书签",
+        "category": "分类",
+        "color": "颜色（可选）",
+        "editTitle": "编辑书签",
+        "name": "名称",
+        "namePlaceholder": "例如：GitHub",
+        "save": "保存",
+        "url": "网址"
+      },
+      "bookmarks": {
+        "reorderBookmarksFailed": "书签排序未保存，浏览器存储不可用或空间不足。",
+        "reorderCategoriesFailed": "分组排序未保存，浏览器存储不可用或空间不足。"
+      },
+      "categoryDialog": {
+        "icon": "选择图标",
+        "name": "分类名称",
+        "namePlaceholder": "例如：工作、阅读、游戏",
+        "submit": "创建分类",
+        "title": "新建分类"
+      },
+      "common": {
+        "bookmark": "书签",
+        "bookmarkCount": "{count} 个书签",
+        "cancel": "取消",
+        "category": "分类",
+        "close": "关闭"
+      },
+      "grid": {
+        "add": "添加",
+        "hint": "可拖拽排序，也可聚焦书签后按 Alt＋上/下方向键调整顺序。"
+      },
+      "iconPicker": {
+        "clear": "清除",
+        "icons": {
+          "bookOpen": "学习",
+          "bookmark": "书签",
+          "bot": "机器人",
+          "box": "产品",
+          "briefcase": "工作",
+          "camera": "摄影",
+          "cloud": "云",
+          "code": "代码",
+          "coffee": "咖啡",
+          "compass": "导航",
+          "cpu": "硬件",
+          "database": "数据库",
+          "download": "下载",
+          "fish": "摸鱼",
+          "folder": "文件夹",
+          "gamepad2": "游戏",
+          "globe": "网站",
+          "graduationCap": "教育",
+          "heart": "喜欢",
+          "home": "主页",
+          "image": "图片",
+          "layoutGrid": "网格",
+          "lightbulb": "灵感",
+          "mapPin": "位置",
+          "music": "音乐",
+          "newspaper": "新闻",
+          "palette": "调色板",
+          "penTool": "钢笔",
+          "rocket": "火箭",
+          "server": "服务器",
+          "shield": "安全",
+          "shoppingBag": "购物",
+          "sparkles": "AI",
+          "star": "收藏",
+          "terminal": "终端",
+          "trophy": "成就",
+          "users": "社交",
+          "video": "视频",
+          "wrench": "工具",
+          "zap": "闪电"
+        },
+        "noEmoji": "没有匹配的 emoji",
+        "noIcons": "没有匹配的图标",
+        "preview": "预览",
+        "readFailed": "读取图片失败，请重试",
+        "searchEmoji": "搜索 emoji...",
+        "searchIcons": "搜索图标...",
+        "tooLarge": "图片过大（{size}KB）。请压缩至 32KB 以内。",
+        "upload": "上传",
+        "uploadClick": "点击上传",
+        "uploadDrag": "或拖拽图片",
+        "uploadHint": "建议 64×64 PNG / SVG，单图 < 32KB"
+      },
+      "import": {
+        "bookmarkUnit": "个书签",
+        "categoryCount": "{count} 个分类",
+        "categoryUnit": "个分类",
+        "chooseFile": "选择文件",
+        "confirm": "确认导入",
+        "failed": "导入失败",
+        "fileHint": "支持 JSON 导出文件或浏览器书签 HTML",
+        "loginRequired": "导入失败，请先登录后再试",
+        "mode": "导入策略",
+        "modes": {
+          "append": {
+            "desc": "全部新增，允许同名重复",
+            "label": "追加"
+          },
+          "merge": {
+            "desc": "同名分类跳过，相同 URL 的书签跳过",
+            "label": "合并（推荐）"
+          },
+          "replace": {
+            "desc": "先清空当前数据，再导入新数据",
+            "label": "覆盖"
+          }
+        },
+        "parseFailed": "解析失败",
+        "success": "已导入 {categories}、{bookmarks}",
+        "title": "导入书签"
+      },
+      "item": {
+        "remove": "删除 {name}"
+      },
+      "menu": {
+        "addBookmark": "新建书签",
+        "addCategory": "新建分类",
+        "changeIcon": "更改图标",
+        "copyUrl": "复制 URL",
+        "edit": "编辑",
+        "iconPrompt": "Lucide 图标名（如 lucide:folder）",
+        "loginToAdd": "登录以新建书签",
+        "loginToEdit": "登录以编辑",
+        "loginToEditCategory": "登录以编辑分类",
+        "moveTo": "移至分类",
+        "openCategory": "打开该分类",
+        "openNewTab": "打开（新标签）",
+        "openPalette": "打开命令面板",
+        "openSettings": "打开设置",
+        "pin": "置顶",
+        "refreshFavicon": "刷新 favicon",
+        "remove": "删除",
+        "removeCategory": "删除分类",
+        "rename": "重命名",
+        "renamePrompt": "新分类名称",
+        "switchView": "切换视图",
+        "unpin": "取消置顶",
+        "urlCopied": "URL 已复制",
+        "viewCategory": "查看该分类"
+      },
+      "netscape": {
+        "importedGroup": "导入",
+        "untitledGroup": "未命名分组"
+      },
+      "page": {
+        "allBookmarks": "全部书签",
+        "close": "关闭",
+        "date": "{year} 年 {month} 月 {day} 日 · {weekday}",
+        "greeting": {
+          "afternoon": "下午好",
+          "evening": "晚上好",
+          "lateNight": "夜深了",
+          "morning": "早上好",
+          "noon": "中午好"
+        },
+        "greetingLine": "{greeting}，{name}",
+        "groupLabel": "书签分组",
+        "groupOption": "{name}（{count}）",
+        "guestBrowsing": "正在浏览博主的标签页",
+        "guestWelcome": "欢迎来到 {name} 的标签页",
+        "loadFailed": "书签加载失败",
+        "loadFailedDescription": "暂时无法读取当前浏览器中的书签。",
+        "login": "登录",
+        "newCategory": "新建分类",
+        "readOnlyBlocked": "浏览模式下无法修改，请先登录",
+        "removeCategoryConfirm": "确认删除该分类？该分类下的书签也会一并删除。",
+        "saveFailed": "保存失败，输入已保留",
+        "seoDescription": "你的个人起始页：搜索 + 书签 + 分类管理",
+        "seoTitle": "标签页",
+        "settings": "书签设置",
+        "storageNote": "书签保存在当前浏览器，登录后可编辑；可在书签设置中导出备份。"
+      },
+      "palette": {
+        "addBookmark": "新建书签",
+        "addBookmarkSubtitle": "打开书签编辑对话框",
+        "addCategory": "新建分类",
+        "close": "关闭命令面板",
+        "currentView": "当前视图",
+        "dialogLabel": "书签命令面板",
+        "disableDrag": "关闭拖拽排序",
+        "dismiss": "关闭",
+        "empty": "无匹配结果",
+        "enableDrag": "开启拖拽排序",
+        "import": "导入书签",
+        "importSubtitle": "JSON 或浏览器 HTML",
+        "inputLabel": "搜索书签、分类和命令",
+        "navigate": "导航",
+        "openSettings": "打开设置",
+        "placeholder": "搜索书签 / 分类 / 动作，↑↓ 选择，Enter 执行，Esc 关闭",
+        "run": "执行",
+        "sectionActions": "动作",
+        "selectionStatus": "已选择第 {index} 项，共 {total} 项：{title}",
+        "switchView": "切换视图：{view}"
+      },
+      "search": {
+        "clear": "清空",
+        "engine": {
+          "baidu": "百度",
+          "custom": "自定义搜索"
+        },
+        "enterHint": "按 Enter 在 {engine} 中搜索",
+        "inputLabel": "搜索书签或网页",
+        "localHint": "↓ 选择本地结果",
+        "placeholder": "搜索任何东西，或输入网址…",
+        "submit": "搜索"
+      },
+      "settings": {
+        "about": {
+          "author": "作者",
+          "text": "标签页是本站的一个实验功能，灵感来自浏览器新标签页管理工具。 数据保存在当前浏览器，暂不提供云同步。导出文件可用于备份和手动迁移。",
+          "title": "关于",
+          "version": "版本"
+        },
+        "data": {
+          "clear": "清空所有书签",
+          "clearConfirm": "确认清空所有分类与书签？此操作不可撤销。",
+          "clearDesc": "仅清书签与分类，设置保留",
+          "cleared": "已清空书签数据，刷新后生效",
+          "export": "导出 JSON",
+          "exportDesc": "备份全部分类 / 书签 / 设置",
+          "exportFailed": "导出失败",
+          "exported": "已导出 JSON 文件",
+          "hint": "数据只保存在当前浏览器，不会自动跨设备同步。请定期导出备份。",
+          "import": "导入数据",
+          "importDesc": "支持 JSON 备份或浏览器书签 HTML",
+          "reset": "重置所有设置",
+          "resetConfirm": "确认重置所有设置？壁纸与布局将回到默认。",
+          "resetDesc": "图标 / 布局 / 壁纸 / 搜索等",
+          "resetDone": "已重置设置，刷新后生效",
+          "title": "数据管理"
+        },
+        "dialogLabel": "标签页设置",
+        "icon": {
+          "faviconAutoFetch": "自动抓取 favicon",
+          "faviconProvider": "favicon 源",
+          "gap": "图标间距",
+          "maxWidth": "区域最大宽度",
+          "nameColor": "名称颜色",
+          "nameSize": "文字大小",
+          "opacity": "不透明度",
+          "radius": "图标圆角",
+          "resetColor": "恢复默认颜色",
+          "showName": "显示图标名称",
+          "size": "图标大小",
+          "style": "图标风格",
+          "styles": {
+            "default": "默认",
+            "flat": "扁平",
+            "rounded": "圆形"
+          },
+          "switchUnit": "切换{unit}",
+          "title": "图标设置"
+        },
+        "layout": {
+          "columns": "列数",
+          "columnsAuto": "自适应",
+          "columnsCount": "{count} 列",
+          "dragEnabled": "启用拖拽排序",
+          "dragHint": "拖动书签卡片可在同分类内重新排序；拖到左侧分类按钮可跨分类移动。",
+          "title": "布局",
+          "viewMode": "视图模式",
+          "viewModeDesc": {
+            "cards": "宽卡片含描述",
+            "compact": "小图标密排",
+            "grid": "默认大图标 + 名称",
+            "list": "横向行式含 URL"
+          }
+        },
+        "nav": {
+          "about": "关于",
+          "data": "数据",
+          "icon": "图标",
+          "layout": "布局",
+          "profile": "个人信息",
+          "search": "搜索",
+          "sidebar": "侧边栏",
+          "theme": "主题/壁纸",
+          "time": "时间"
+        },
+        "profile": {
+          "email": "邮箱",
+          "guest": "访客",
+          "owner": "博主",
+          "role": "角色",
+          "title": "个人信息",
+          "username": "用户名"
+        },
+        "resetSection": "恢复默认",
+        "search": {
+          "custom": "自定义",
+          "customUrl": "自定义搜索 URL",
+          "customUrlHint": "使用 {placeholder} 占位符表示查询词位置。",
+          "engine": "搜索引擎",
+          "palette": "Cmd/Ctrl+K 命令面板",
+          "paletteHint": "命令面板支持模糊搜索书签 / 分类 / 切视图 / 打开设置等动作。",
+          "title": "搜索"
+        },
+        "sidebar": {
+          "blur": "毛玻璃效果",
+          "defaultCollapsed": "默认折叠",
+          "opacity": "背景不透明度",
+          "radius": "侧边栏圆角",
+          "showCounts": "显示书签计数",
+          "title": "侧边栏"
+        },
+        "theme": {
+          "blur": "模糊半径",
+          "colorMode": "颜色模式",
+          "dark": "暗色",
+          "editing": "编辑",
+          "gradientAngle": "渐变角度",
+          "gradientFrom": "渐变起色",
+          "gradientTo": "渐变终色",
+          "imageUrl": "图片 URL",
+          "independent": "亮暗独立壁纸",
+          "kind": "壁纸类型",
+          "kinds": {
+            "gradient": "渐变",
+            "none": "无",
+            "preset": "图库",
+            "solid": "纯色",
+            "upload": "上传"
+          },
+          "light": "亮色",
+          "maskOpacity": "遮罩不透明度",
+          "noise": "噪点纹理",
+          "solidColor": "纯色",
+          "system": "跟随",
+          "title": "主题与壁纸",
+          "tooLarge": "图片过大（{size}MB），请压缩至 5MB 以内。",
+          "uploadFailed": "上传失败，请重试",
+          "uploadHint": "选择本地壁纸（< 5MB，存储在本地）",
+          "vignette": "暗角"
+        },
+        "time": {
+          "showDate": "显示日期",
+          "showGreeting": "显示问候语",
+          "showSeconds": "显示秒数",
+          "title": "时间与问候"
+        },
+        "title": "设置"
+      },
+      "sidebar": {
+        "addCategory": "新建分类",
+        "categoryLabel": "{name}，{count}",
+        "donate": "打赏",
+        "notLoggedIn": "未登录",
+        "settings": "设置",
+        "toggle": "折叠/展开"
+      },
+      "validation": {
+        "bookmarkCategoryOrOrder": "书签分类或排序字段不正确",
+        "categoryColorOrOrder": "分类颜色或排序字段不正确",
+        "descriptionInvalid": "书签描述格式不正确",
+        "duplicateBookmarkId": "书签 ID 重复",
+        "duplicateCategory": "分类 ID 或名称重复",
+        "duplicateCategoryName": "导入文件包含重复的分类名称",
+        "field": {
+          "bookmarkId": "书签 ID",
+          "bookmarkName": "书签名称",
+          "bookmarkOwner": "书签所有者",
+          "bookmarkUrl": "书签地址",
+          "categoryIcon": "分类图标",
+          "categoryId": "分类 ID",
+          "categoryName": "分类名称",
+          "categoryOwner": "分类所有者"
+        },
+        "fieldInvalid": "{field}格式不正确",
+        "fileTooLarge": "导入文件不能超过 {size}",
+        "iconInvalid": "书签图标格式不正确",
+        "jsonStructure": "非法的 JSON 结构",
+        "missingFields": "缺少 categories 或 bookmarks 字段",
+        "netscapeBrowserOnly": "Netscape 书签解析需在浏览器端执行",
+        "netscapeNoRoot": "未找到 {tag} 根节点，可能不是有效的书签文件",
+        "tooMany": "导入最多支持 {categories} 个分类和 {bookmarks} 个书签",
+        "unknownCategory": "书签引用了不存在的分类",
+        "unsupportedVersion": "不支持此导出格式版本",
+        "urlProtocol": "书签地址只允许不含账号密码的 HTTP 或 HTTPS 地址"
+      },
+      "viewMode": {
+        "cards": "卡片",
+        "compact": "紧凑",
+        "grid": "网格",
+        "list": "列表"
+      },
+      "wallpapers": {
+        "abstractGradient": "抽象渐变",
+        "aurora": "极光",
+        "cityNight": "夜景",
+        "deepSpace": "深邃星空",
+        "desertDunes": "沙丘",
+        "forestFog": "雾林深处",
+        "minimalWhite": "极简白",
+        "mountainDawn": "山峦拂晓",
+        "oceanHorizon": "海平线",
+        "pastelSky": "薄纱天际"
+      }
     }
   }
 }

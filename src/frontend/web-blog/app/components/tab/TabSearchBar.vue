@@ -15,7 +15,7 @@
           v-model="query"
           type="text"
           class="tab-search__input"
-          aria-label="搜索书签或网页"
+          :aria-label="$t('misc.tab.search.inputLabel')"
           :placeholder="placeholder"
           autocomplete="off"
           spellcheck="false"
@@ -23,17 +23,28 @@
           @blur="onBlur"
           @keydown.down.prevent="focusFirstHit"
         />
-        <button v-if="query" type="button" class="tab-search__clear" aria-label="清空" @click="query = ''">
+        <button
+          v-if="query"
+          type="button"
+          class="tab-search__clear"
+          :aria-label="$t('misc.tab.search.clear')"
+          @click="query = ''"
+        >
           <Icon name="lucide:x" size="14" />
         </button>
-        <button type="submit" class="tab-search__submit" :disabled="!query.trim()" aria-label="搜索">
+        <button
+          type="submit"
+          class="tab-search__submit"
+          :disabled="!query.trim()"
+          :aria-label="$t('misc.tab.search.submit')"
+        >
           <Icon name="lucide:arrow-right" size="16" />
         </button>
       </div>
       <div class="tab-search__hint">
-        <span>按 Enter 在 {{ engineLabel }} 中搜索</span>
+        <span>{{ $t('misc.tab.search.enterHint', { engine: engineLabel }) }}</span>
         <span v-if="localHits.length > 0" class="tab-search__hint-sep" aria-hidden="true">·</span>
-        <span v-if="localHits.length > 0">↓ 选择本地结果</span>
+        <span v-if="localHits.length > 0">{{ $t('misc.tab.search.localHint') }}</span>
       </div>
     </form>
 
@@ -72,11 +83,12 @@
 <script setup lang="ts">
 import Fuse from 'fuse.js'
 
+const { t } = useI18n()
 const { settings } = useTabSettings()
 const { bookmarks, categories, selectCategory } = useTabBookmarks()
 
 const query = ref('')
-const placeholder = '搜索任何东西，或输入网址…'
+const placeholder = computed(() => t('misc.tab.search.placeholder'))
 const focused = ref(false)
 const focusedIdx = ref(-1)
 const inputRef = ref<HTMLInputElement | null>(null)
@@ -98,16 +110,16 @@ const allHits = computed<LocalHit[]>(() => {
     title: b.name,
     sub: b.url,
     icon: b.icon,
-    typeLabel: '书签',
+    typeLabel: t('misc.tab.common.bookmark'),
     source: 'bookmark',
     payload: { url: b.url },
   }))
   const catList: LocalHit[] = categories.value.map((c) => ({
     id: `cat-${c.id}`,
     title: c.name,
-    sub: '分类',
+    sub: t('misc.tab.common.category'),
     icon: c.icon,
-    typeLabel: '分类',
+    typeLabel: t('misc.tab.common.category'),
     source: 'category',
     payload: { id: c.id },
   }))
@@ -141,9 +153,9 @@ const engineLabel = computed(() => {
     case 'duckduckgo':
       return 'DuckDuckGo'
     case 'baidu':
-      return '百度'
+      return t('misc.tab.search.engine.baidu')
     case 'custom':
-      return '自定义搜索'
+      return t('misc.tab.search.engine.custom')
     case 'google':
     default:
       return 'Google'

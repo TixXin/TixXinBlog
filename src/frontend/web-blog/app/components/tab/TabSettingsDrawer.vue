@@ -15,13 +15,13 @@
         class="tab-settings-drawer"
         role="dialog"
         aria-modal="true"
-        aria-label="标签页设置"
+        :aria-label="$t('misc.tab.settings.dialogLabel')"
         tabindex="-1"
       >
         <header class="tsd-header">
           <Icon name="lucide:settings" size="16" />
-          <h2 class="tsd-header__title">设置</h2>
-          <button type="button" class="tsd-header__close" aria-label="关闭" @click="close">
+          <h2 class="tsd-header__title">{{ $t('misc.tab.settings.title') }}</h2>
+          <button type="button" class="tsd-header__close" :aria-label="$t('misc.tab.common.close')" @click="close">
             <Icon name="lucide:x" size="16" />
           </button>
         </header>
@@ -47,28 +47,30 @@
           <div class="tsd-content">
             <!-- ==================== 个人信息 ==================== -->
             <section v-if="activeSection === 'profile'" class="tsd-section">
-              <h3 class="tsd-section__title">个人信息</h3>
+              <h3 class="tsd-section__title">{{ $t('misc.tab.settings.profile.title') }}</h3>
               <div class="tsd-row">
-                <span class="tsd-row__label">用户名</span>
-                <span class="tsd-row__value">{{ user?.nickname || '未登录' }}</span>
+                <span class="tsd-row__label">{{ $t('misc.tab.settings.profile.username') }}</span>
+                <span class="tsd-row__value">{{ user?.nickname || $t('misc.tab.sidebar.notLoggedIn') }}</span>
               </div>
               <div class="tsd-row">
-                <span class="tsd-row__label">角色</span>
-                <span class="tsd-row__value tsd-chip">{{ user?.role === 'owner' ? '博主' : '访客' }}</span>
+                <span class="tsd-row__label">{{ $t('misc.tab.settings.profile.role') }}</span>
+                <span class="tsd-row__value tsd-chip">{{
+                  user?.role === 'owner' ? $t('misc.tab.settings.profile.owner') : $t('misc.tab.settings.profile.guest')
+                }}</span>
               </div>
               <div class="tsd-row">
-                <span class="tsd-row__label">邮箱</span>
+                <span class="tsd-row__label">{{ $t('misc.tab.settings.profile.email') }}</span>
                 <span class="tsd-row__value">{{ user?.email || '—' }}</span>
               </div>
             </section>
 
             <!-- ==================== 布局 ==================== -->
             <section v-else-if="activeSection === 'layout'" class="tsd-section">
-              <h3 class="tsd-section__title">布局</h3>
+              <h3 class="tsd-section__title">{{ $t('misc.tab.settings.layout.title') }}</h3>
               <!-- 视图模式：四格缩略卡 -->
               <div class="tsd-row tsd-row--col">
                 <div class="tsd-row__head">
-                  <span class="tsd-row__label">视图模式</span>
+                  <span class="tsd-row__label">{{ $t('misc.tab.settings.layout.viewMode') }}</span>
                 </div>
                 <div class="tsd-view-grid">
                   <button
@@ -91,9 +93,13 @@
                 :class="{ 'tsd-row--disabled': s.viewMode !== 'grid' && s.viewMode !== 'compact' }"
               >
                 <div class="tsd-row__head">
-                  <span class="tsd-row__label">列数</span>
+                  <span class="tsd-row__label">{{ $t('misc.tab.settings.layout.columns') }}</span>
                   <span class="tsd-row__val-badge">
-                    {{ s.gridColumns === 'auto' ? '自适应' : `${s.gridColumns} 列` }}
+                    {{
+                      s.gridColumns === 'auto'
+                        ? $t('misc.tab.settings.layout.columnsAuto')
+                        : $t('misc.tab.settings.layout.columnsCount', { count: s.gridColumns }, s.gridColumns)
+                    }}
                   </span>
                 </div>
                 <input
@@ -110,7 +116,7 @@
               <!-- 图标间距 -->
               <div class="tsd-row tsd-row--col">
                 <div class="tsd-row__head">
-                  <span class="tsd-row__label">图标间距</span>
+                  <span class="tsd-row__label">{{ $t('misc.tab.settings.icon.gap') }}</span>
                   <span class="tsd-row__val-badge">{{ s.iconGap }}px</span>
                 </div>
                 <input
@@ -125,7 +131,7 @@
               </div>
               <!-- 启用拖拽 -->
               <div class="tsd-row">
-                <span class="tsd-row__label">启用拖拽排序</span>
+                <span class="tsd-row__label">{{ $t('misc.tab.settings.layout.dragEnabled') }}</span>
                 <button
                   type="button"
                   class="tsd-toggle"
@@ -137,20 +143,20 @@
               </div>
               <p class="tsd-hint">
                 <Icon name="lucide:info" size="11" />
-                拖动书签卡片可在同分类内重新排序；拖到左侧分类按钮可跨分类移动。
+                {{ $t('misc.tab.settings.layout.dragHint') }}
               </p>
               <button type="button" class="tsd-reset" @click="resetSection('view')">
                 <Icon name="lucide:rotate-ccw" size="12" />
-                恢复默认
+                {{ $t('misc.tab.settings.resetSection') }}
               </button>
             </section>
 
             <!-- ==================== 图标 ==================== -->
             <section v-else-if="activeSection === 'icon'" class="tsd-section">
-              <h3 class="tsd-section__title">图标设置</h3>
+              <h3 class="tsd-section__title">{{ $t('misc.tab.settings.icon.title') }}</h3>
               <!-- 图标风格 -->
               <div class="tsd-row">
-                <span class="tsd-row__label">图标风格</span>
+                <span class="tsd-row__label">{{ $t('misc.tab.settings.icon.style') }}</span>
                 <div class="tsd-options">
                   <button
                     v-for="opt in iconStyleOptions"
@@ -168,7 +174,7 @@
               <!-- 图标大小 -->
               <div class="tsd-row tsd-row--col">
                 <div class="tsd-row__head">
-                  <span class="tsd-row__label">图标大小</span>
+                  <span class="tsd-row__label">{{ $t('misc.tab.settings.icon.size') }}</span>
                   <span class="tsd-row__val-badge">{{ s.iconSize }}px</span>
                 </div>
                 <input
@@ -184,7 +190,7 @@
               <!-- 图标圆角 -->
               <div class="tsd-row tsd-row--col">
                 <div class="tsd-row__head">
-                  <span class="tsd-row__label">图标圆角</span>
+                  <span class="tsd-row__label">{{ $t('misc.tab.settings.icon.radius') }}</span>
                   <span class="tsd-row__val-badge">{{ effectiveIconRadius }}px</span>
                 </div>
                 <input
@@ -201,7 +207,7 @@
               <!-- 不透明度 -->
               <div class="tsd-row tsd-row--col">
                 <div class="tsd-row__head">
-                  <span class="tsd-row__label">不透明度</span>
+                  <span class="tsd-row__label">{{ $t('misc.tab.settings.icon.opacity') }}</span>
                   <span class="tsd-row__val-badge">{{ Math.round(s.iconOpacity * 100) }}%</span>
                 </div>
                 <input
@@ -217,7 +223,7 @@
               <!-- 图标间距 -->
               <div class="tsd-row tsd-row--col">
                 <div class="tsd-row__head">
-                  <span class="tsd-row__label">图标间距</span>
+                  <span class="tsd-row__label">{{ $t('misc.tab.settings.icon.gap') }}</span>
                   <span class="tsd-row__val-badge">{{ s.iconGap }}px</span>
                 </div>
                 <input
@@ -232,7 +238,7 @@
               </div>
               <!-- 显示图标名称 -->
               <div class="tsd-row">
-                <span class="tsd-row__label">显示图标名称</span>
+                <span class="tsd-row__label">{{ $t('misc.tab.settings.icon.showName') }}</span>
                 <button
                   type="button"
                   class="tsd-toggle"
@@ -245,7 +251,7 @@
               <!-- 文字大小 -->
               <div class="tsd-row tsd-row--col" :class="{ 'tsd-row--disabled': !s.showIconName }">
                 <div class="tsd-row__head">
-                  <span class="tsd-row__label">文字大小</span>
+                  <span class="tsd-row__label">{{ $t('misc.tab.settings.icon.nameSize') }}</span>
                   <span class="tsd-row__val-badge">{{ s.nameSize }}px</span>
                 </div>
                 <input
@@ -261,7 +267,7 @@
               </div>
               <!-- 名称颜色 -->
               <div class="tsd-row" :class="{ 'tsd-row--disabled': !s.showIconName }">
-                <span class="tsd-row__label">名称颜色</span>
+                <span class="tsd-row__label">{{ $t('misc.tab.settings.icon.nameColor') }}</span>
                 <div class="tsd-color-pick">
                   <input
                     type="color"
@@ -274,7 +280,7 @@
                     v-if="s.nameColor"
                     type="button"
                     class="tsd-color-pick__clear"
-                    title="恢复默认颜色"
+                    :title="$t('misc.tab.settings.icon.resetColor')"
                     @click="update('nameColor', '')"
                   >
                     <Icon name="lucide:x" size="10" />
@@ -284,7 +290,7 @@
               <!-- 区域最大宽度 -->
               <div class="tsd-row tsd-row--col">
                 <div class="tsd-row__head">
-                  <span class="tsd-row__label">区域最大宽度</span>
+                  <span class="tsd-row__label">{{ $t('misc.tab.settings.icon.maxWidth') }}</span>
                   <span class="tsd-row__val-badge">
                     {{ s.gridMaxWidth }}{{ s.gridMaxWidthUnit }}
                     <button
@@ -292,7 +298,7 @@
                       class="tsd-unit-toggle"
                       @click="update('gridMaxWidthUnit', s.gridMaxWidthUnit === 'px' ? '%' : 'px')"
                     >
-                      {{ s.gridMaxWidthUnit === 'px' ? '切换%' : '切换px' }}
+                      {{ $t('misc.tab.settings.icon.switchUnit', { unit: s.gridMaxWidthUnit === 'px' ? '%' : 'px' }) }}
                     </button>
                   </span>
                 </div>
@@ -308,7 +314,7 @@
               </div>
               <!-- 自动抓取 favicon -->
               <div class="tsd-row">
-                <span class="tsd-row__label">自动抓取 favicon</span>
+                <span class="tsd-row__label">{{ $t('misc.tab.settings.icon.faviconAutoFetch') }}</span>
                 <button
                   type="button"
                   class="tsd-toggle"
@@ -320,7 +326,7 @@
               </div>
               <!-- favicon provider -->
               <div class="tsd-row" :class="{ 'tsd-row--disabled': !s.faviconAutoFetch }">
-                <span class="tsd-row__label">favicon 源</span>
+                <span class="tsd-row__label">{{ $t('misc.tab.settings.icon.faviconProvider') }}</span>
                 <div class="tsd-options">
                   <button
                     v-for="opt in faviconProviderOptions"
@@ -337,15 +343,15 @@
               </div>
               <button type="button" class="tsd-reset" @click="resetSection('icon')">
                 <Icon name="lucide:rotate-ccw" size="12" />
-                恢复默认
+                {{ $t('misc.tab.settings.resetSection') }}
               </button>
             </section>
 
             <!-- ==================== 时间 ==================== -->
             <section v-else-if="activeSection === 'time'" class="tsd-section">
-              <h3 class="tsd-section__title">时间与问候</h3>
+              <h3 class="tsd-section__title">{{ $t('misc.tab.settings.time.title') }}</h3>
               <div class="tsd-row">
-                <span class="tsd-row__label">显示问候语</span>
+                <span class="tsd-row__label">{{ $t('misc.tab.settings.time.showGreeting') }}</span>
                 <button
                   type="button"
                   class="tsd-toggle"
@@ -356,7 +362,7 @@
                 </button>
               </div>
               <div class="tsd-row">
-                <span class="tsd-row__label">显示日期</span>
+                <span class="tsd-row__label">{{ $t('misc.tab.settings.time.showDate') }}</span>
                 <button
                   type="button"
                   class="tsd-toggle"
@@ -367,7 +373,7 @@
                 </button>
               </div>
               <div class="tsd-row" :class="{ 'tsd-row--disabled': !s.showDate }">
-                <span class="tsd-row__label">显示秒数</span>
+                <span class="tsd-row__label">{{ $t('misc.tab.settings.time.showSeconds') }}</span>
                 <button
                   type="button"
                   class="tsd-toggle"
@@ -380,17 +386,17 @@
               </div>
               <button type="button" class="tsd-reset" @click="resetSection('time')">
                 <Icon name="lucide:rotate-ccw" size="12" />
-                恢复默认
+                {{ $t('misc.tab.settings.resetSection') }}
               </button>
             </section>
 
             <!-- ==================== 主题/壁纸 ==================== -->
             <section v-else-if="activeSection === 'theme'" class="tsd-section">
-              <h3 class="tsd-section__title">主题与壁纸</h3>
+              <h3 class="tsd-section__title">{{ $t('misc.tab.settings.theme.title') }}</h3>
 
               <!-- 颜色模式 -->
               <div class="tsd-row">
-                <span class="tsd-row__label">颜色模式</span>
+                <span class="tsd-row__label">{{ $t('misc.tab.settings.theme.colorMode') }}</span>
                 <div class="tsd-options">
                   <button
                     v-for="opt in colorModeOptions"
@@ -408,7 +414,7 @@
 
               <!-- 亮暗独立壁纸开关 -->
               <div class="tsd-row">
-                <span class="tsd-row__label">亮暗独立壁纸</span>
+                <span class="tsd-row__label">{{ $t('misc.tab.settings.theme.independent') }}</span>
                 <button
                   type="button"
                   class="tsd-toggle"
@@ -421,7 +427,7 @@
 
               <!-- 当前编辑的配置目标 -->
               <div v-if="s.wallpaperIndependent" class="tsd-row">
-                <span class="tsd-row__label">编辑</span>
+                <span class="tsd-row__label">{{ $t('misc.tab.settings.theme.editing') }}</span>
                 <div class="tsd-options">
                   <button
                     type="button"
@@ -430,7 +436,7 @@
                     @click="wallpaperEditing = 'light'"
                   >
                     <Icon name="lucide:sun" size="12" />
-                    <span>亮色</span>
+                    <span>{{ $t('misc.tab.settings.theme.light') }}</span>
                   </button>
                   <button
                     type="button"
@@ -439,7 +445,7 @@
                     @click="wallpaperEditing = 'dark'"
                   >
                     <Icon name="lucide:moon" size="12" />
-                    <span>暗色</span>
+                    <span>{{ $t('misc.tab.settings.theme.dark') }}</span>
                   </button>
                 </div>
               </div>
@@ -447,7 +453,7 @@
               <!-- 类型选择 -->
               <div class="tsd-row tsd-row--col">
                 <div class="tsd-row__head">
-                  <span class="tsd-row__label">壁纸类型</span>
+                  <span class="tsd-row__label">{{ $t('misc.tab.settings.theme.kind') }}</span>
                 </div>
                 <div class="tsd-wp-kinds">
                   <button
@@ -466,7 +472,7 @@
 
               <!-- solid -->
               <div v-if="currentWallpaper.kind === 'solid'" class="tsd-row">
-                <span class="tsd-row__label">纯色</span>
+                <span class="tsd-row__label">{{ $t('misc.tab.settings.theme.solidColor') }}</span>
                 <input
                   type="color"
                   class="tsd-color-pick__input"
@@ -478,7 +484,7 @@
               <!-- gradient -->
               <template v-if="currentWallpaper.kind === 'gradient'">
                 <div class="tsd-row">
-                  <span class="tsd-row__label">渐变起色</span>
+                  <span class="tsd-row__label">{{ $t('misc.tab.settings.theme.gradientFrom') }}</span>
                   <input
                     type="color"
                     class="tsd-color-pick__input"
@@ -487,7 +493,7 @@
                   />
                 </div>
                 <div class="tsd-row">
-                  <span class="tsd-row__label">渐变终色</span>
+                  <span class="tsd-row__label">{{ $t('misc.tab.settings.theme.gradientTo') }}</span>
                   <input
                     type="color"
                     class="tsd-color-pick__input"
@@ -497,7 +503,7 @@
                 </div>
                 <div class="tsd-row tsd-row--col">
                   <div class="tsd-row__head">
-                    <span class="tsd-row__label">渐变角度</span>
+                    <span class="tsd-row__label">{{ $t('misc.tab.settings.theme.gradientAngle') }}</span>
                     <span class="tsd-row__val-badge">{{ currentWallpaper.gradient?.angle ?? 135 }}°</span>
                   </div>
                   <input
@@ -521,11 +527,11 @@
                     type="button"
                     class="tsd-wp-thumb"
                     :class="{ 'tsd-wp-thumb--active': currentWallpaper.presetId === wp.id }"
-                    :title="wp.name"
+                    :title="$t(wp.nameKey)"
                     :style="{ backgroundImage: `url(${wp.thumb})` }"
                     @click="patchWallpaper({ presetId: wp.id })"
                   >
-                    <span class="tsd-wp-thumb__label">{{ wp.name }}</span>
+                    <span class="tsd-wp-thumb__label">{{ $t(wp.nameKey) }}</span>
                   </button>
                 </div>
               </div>
@@ -533,7 +539,7 @@
               <!-- url -->
               <div v-if="currentWallpaper.kind === 'url'" class="tsd-row tsd-row--col">
                 <div class="tsd-row__head">
-                  <span class="tsd-row__label">图片 URL</span>
+                  <span class="tsd-row__label">{{ $t('misc.tab.settings.theme.imageUrl') }}</span>
                 </div>
                 <input
                   type="text"
@@ -549,7 +555,7 @@
                 <label class="tsd-wp-upload">
                   <input type="file" accept="image/*" @change="onWallpaperUpload" />
                   <Icon name="lucide:upload" size="18" />
-                  <span>选择本地壁纸（&lt; 5MB，存储在本地）</span>
+                  <span>{{ $t('misc.tab.settings.theme.uploadHint') }}</span>
                 </label>
                 <p v-if="uploadError" class="tsd-upload-error">
                   <Icon name="lucide:alert-circle" size="11" />
@@ -560,7 +566,7 @@
               <!-- 叠加层：遮罩/模糊/噪点/暗角 -->
               <div class="tsd-row tsd-row--col">
                 <div class="tsd-row__head">
-                  <span class="tsd-row__label">遮罩不透明度</span>
+                  <span class="tsd-row__label">{{ $t('misc.tab.settings.theme.maskOpacity') }}</span>
                   <span class="tsd-row__val-badge">{{ Math.round(s.wallpaperMaskOpacity * 100) }}%</span>
                 </div>
                 <input
@@ -575,7 +581,7 @@
               </div>
               <div class="tsd-row tsd-row--col">
                 <div class="tsd-row__head">
-                  <span class="tsd-row__label">模糊半径</span>
+                  <span class="tsd-row__label">{{ $t('misc.tab.settings.theme.blur') }}</span>
                   <span class="tsd-row__val-badge">{{ s.wallpaperBlur }}px</span>
                 </div>
                 <input
@@ -589,7 +595,7 @@
                 />
               </div>
               <div class="tsd-row">
-                <span class="tsd-row__label">噪点纹理</span>
+                <span class="tsd-row__label">{{ $t('misc.tab.settings.theme.noise') }}</span>
                 <button
                   type="button"
                   class="tsd-toggle"
@@ -600,7 +606,7 @@
                 </button>
               </div>
               <div class="tsd-row">
-                <span class="tsd-row__label">暗角</span>
+                <span class="tsd-row__label">{{ $t('misc.tab.settings.theme.vignette') }}</span>
                 <button
                   type="button"
                   class="tsd-toggle"
@@ -613,16 +619,16 @@
 
               <button type="button" class="tsd-reset" @click="resetSection('wallpaper')">
                 <Icon name="lucide:rotate-ccw" size="12" />
-                恢复默认
+                {{ $t('misc.tab.settings.resetSection') }}
               </button>
             </section>
 
             <!-- ==================== 搜索 ==================== -->
             <section v-else-if="activeSection === 'search'" class="tsd-section">
-              <h3 class="tsd-section__title">搜索</h3>
+              <h3 class="tsd-section__title">{{ $t('misc.tab.settings.search.title') }}</h3>
               <div class="tsd-row tsd-row--col">
                 <div class="tsd-row__head">
-                  <span class="tsd-row__label">搜索引擎</span>
+                  <span class="tsd-row__label">{{ $t('misc.tab.settings.search.engine') }}</span>
                 </div>
                 <div class="tsd-wp-kinds">
                   <button
@@ -639,7 +645,7 @@
               </div>
               <div v-if="s.searchEngine === 'custom'" class="tsd-row tsd-row--col">
                 <div class="tsd-row__head">
-                  <span class="tsd-row__label">自定义搜索 URL</span>
+                  <span class="tsd-row__label">{{ $t('misc.tab.settings.search.customUrl') }}</span>
                 </div>
                 <input
                   type="text"
@@ -650,11 +656,13 @@
                 />
                 <p class="tsd-hint">
                   <Icon name="lucide:info" size="11" />
-                  使用 <code>%s</code> 占位符表示查询词位置。
+                  <i18n-t keypath="misc.tab.settings.search.customUrlHint" scope="global">
+                    <template #placeholder><code>%s</code></template>
+                  </i18n-t>
                 </p>
               </div>
               <div class="tsd-row">
-                <span class="tsd-row__label">Cmd/Ctrl+K 命令面板</span>
+                <span class="tsd-row__label">{{ $t('misc.tab.settings.search.palette') }}</span>
                 <button
                   type="button"
                   class="tsd-toggle"
@@ -666,19 +674,19 @@
               </div>
               <p class="tsd-hint">
                 <Icon name="lucide:keyboard" size="11" />
-                命令面板支持模糊搜索书签 / 分类 / 切视图 / 打开设置等动作。
+                {{ $t('misc.tab.settings.search.paletteHint') }}
               </p>
               <button type="button" class="tsd-reset" @click="resetSection('search')">
                 <Icon name="lucide:rotate-ccw" size="12" />
-                恢复默认
+                {{ $t('misc.tab.settings.resetSection') }}
               </button>
             </section>
 
             <!-- ==================== 侧边栏 ==================== -->
             <section v-else-if="activeSection === 'sidebar'" class="tsd-section">
-              <h3 class="tsd-section__title">侧边栏</h3>
+              <h3 class="tsd-section__title">{{ $t('misc.tab.settings.sidebar.title') }}</h3>
               <div class="tsd-row">
-                <span class="tsd-row__label">默认折叠</span>
+                <span class="tsd-row__label">{{ $t('misc.tab.settings.sidebar.defaultCollapsed') }}</span>
                 <button
                   type="button"
                   class="tsd-toggle"
@@ -689,7 +697,7 @@
                 </button>
               </div>
               <div class="tsd-row">
-                <span class="tsd-row__label">显示书签计数</span>
+                <span class="tsd-row__label">{{ $t('misc.tab.settings.sidebar.showCounts') }}</span>
                 <button
                   type="button"
                   class="tsd-toggle"
@@ -701,7 +709,7 @@
               </div>
               <div class="tsd-row tsd-row--col">
                 <div class="tsd-row__head">
-                  <span class="tsd-row__label">侧边栏圆角</span>
+                  <span class="tsd-row__label">{{ $t('misc.tab.settings.sidebar.radius') }}</span>
                   <span class="tsd-row__val-badge">{{ s.sidebarRadius }}px</span>
                 </div>
                 <input
@@ -716,7 +724,7 @@
               </div>
               <div class="tsd-row tsd-row--col">
                 <div class="tsd-row__head">
-                  <span class="tsd-row__label">背景不透明度</span>
+                  <span class="tsd-row__label">{{ $t('misc.tab.settings.sidebar.opacity') }}</span>
                   <span class="tsd-row__val-badge">{{ Math.round(s.sidebarOpacity * 100) }}%</span>
                 </div>
                 <input
@@ -730,7 +738,7 @@
                 />
               </div>
               <div class="tsd-row">
-                <span class="tsd-row__label">毛玻璃效果</span>
+                <span class="tsd-row__label">{{ $t('misc.tab.settings.sidebar.blur') }}</span>
                 <button
                   type="button"
                   class="tsd-toggle"
@@ -742,44 +750,44 @@
               </div>
               <button type="button" class="tsd-reset" @click="resetSection('sidebar')">
                 <Icon name="lucide:rotate-ccw" size="12" />
-                恢复默认
+                {{ $t('misc.tab.settings.resetSection') }}
               </button>
             </section>
 
             <!-- ==================== 数据管理 ==================== -->
             <section v-else-if="activeSection === 'data'" class="tsd-section">
-              <h3 class="tsd-section__title">数据管理</h3>
+              <h3 class="tsd-section__title">{{ $t('misc.tab.settings.data.title') }}</h3>
               <p class="tsd-hint">
                 <Icon name="lucide:info" size="11" />
-                数据只保存在当前浏览器，不会自动跨设备同步。请定期导出备份。
+                {{ $t('misc.tab.settings.data.hint') }}
               </p>
               <div class="tsd-data-actions">
                 <button type="button" class="tsd-data-btn" @click="onExport">
                   <Icon name="lucide:download" size="14" />
                   <div>
-                    <div class="tsd-data-btn__title">导出 JSON</div>
-                    <div class="tsd-data-btn__desc">备份全部分类 / 书签 / 设置</div>
+                    <div class="tsd-data-btn__title">{{ $t('misc.tab.settings.data.export') }}</div>
+                    <div class="tsd-data-btn__desc">{{ $t('misc.tab.settings.data.exportDesc') }}</div>
                   </div>
                 </button>
                 <button type="button" class="tsd-data-btn" @click="emit('openImport')">
                   <Icon name="lucide:upload" size="14" />
                   <div>
-                    <div class="tsd-data-btn__title">导入数据</div>
-                    <div class="tsd-data-btn__desc">支持 JSON 备份或浏览器书签 HTML</div>
+                    <div class="tsd-data-btn__title">{{ $t('misc.tab.settings.data.import') }}</div>
+                    <div class="tsd-data-btn__desc">{{ $t('misc.tab.settings.data.importDesc') }}</div>
                   </div>
                 </button>
                 <button type="button" class="tsd-data-btn tsd-data-btn--danger" @click="onClearBookmarks">
                   <Icon name="lucide:trash-2" size="14" />
                   <div>
-                    <div class="tsd-data-btn__title">清空所有书签</div>
-                    <div class="tsd-data-btn__desc">仅清书签与分类，设置保留</div>
+                    <div class="tsd-data-btn__title">{{ $t('misc.tab.settings.data.clear') }}</div>
+                    <div class="tsd-data-btn__desc">{{ $t('misc.tab.settings.data.clearDesc') }}</div>
                   </div>
                 </button>
                 <button type="button" class="tsd-data-btn tsd-data-btn--danger" @click="onResetSettings">
                   <Icon name="lucide:rotate-ccw" size="14" />
                   <div>
-                    <div class="tsd-data-btn__title">重置所有设置</div>
-                    <div class="tsd-data-btn__desc">图标 / 布局 / 壁纸 / 搜索等</div>
+                    <div class="tsd-data-btn__title">{{ $t('misc.tab.settings.data.reset') }}</div>
+                    <div class="tsd-data-btn__desc">{{ $t('misc.tab.settings.data.resetDesc') }}</div>
                   </div>
                 </button>
               </div>
@@ -787,18 +795,17 @@
 
             <!-- ==================== 关于 ==================== -->
             <section v-else-if="activeSection === 'about'" class="tsd-section">
-              <h3 class="tsd-section__title">关于</h3>
+              <h3 class="tsd-section__title">{{ $t('misc.tab.settings.about.title') }}</h3>
               <div class="tsd-row">
-                <span class="tsd-row__label">版本</span>
+                <span class="tsd-row__label">{{ $t('misc.tab.settings.about.version') }}</span>
                 <span class="tsd-row__value tsd-row__value--mono">v1.0.0</span>
               </div>
               <div class="tsd-row">
-                <span class="tsd-row__label">作者</span>
+                <span class="tsd-row__label">{{ $t('misc.tab.settings.about.author') }}</span>
                 <span class="tsd-row__value">{{ ownerCard.name }}</span>
               </div>
               <p class="tsd-about-text">
-                标签页是本站的一个实验功能，灵感来自浏览器新标签页管理工具。
-                数据保存在当前浏览器，暂不提供云同步。导出文件可用于备份和手动迁移。
+                {{ $t('misc.tab.settings.about.text') }}
               </p>
             </section>
           </div>
@@ -821,6 +828,7 @@ defineProps<{
   user: CurrentUser | null
 }>()
 const emit = defineEmits<{ openImport: [] }>()
+const { t } = useI18n()
 
 const visible = defineModel<boolean>('visible', { default: false })
 const dialogRef = ref<HTMLElement | null>(null)
@@ -840,38 +848,52 @@ const effectiveIconRadius = computed(() =>
   s.value.iconStyle === 'rounded' ? Math.floor(s.value.iconSize / 2) : s.value.iconRadius,
 )
 
-const sections = [
-  { id: 'profile', label: '个人信息', icon: 'lucide:user' },
-  { id: 'layout', label: '布局', icon: 'lucide:layout-grid' },
-  { id: 'icon', label: '图标', icon: 'lucide:image' },
-  { id: 'time', label: '时间', icon: 'lucide:clock' },
-  { id: 'theme', label: '主题/壁纸', icon: 'lucide:paintbrush' },
-  { id: 'search', label: '搜索', icon: 'lucide:search' },
-  { id: 'sidebar', label: '侧边栏', icon: 'lucide:panel-left' },
-  { id: 'data', label: '数据', icon: 'lucide:database' },
-  { id: 'about', label: '关于', icon: 'lucide:info' },
-] as const
+const sections = computed(() =>
+  (
+    [
+      { id: 'profile', icon: 'lucide:user' },
+      { id: 'layout', icon: 'lucide:layout-grid' },
+      { id: 'icon', icon: 'lucide:image' },
+      { id: 'time', icon: 'lucide:clock' },
+      { id: 'theme', icon: 'lucide:paintbrush' },
+      { id: 'search', icon: 'lucide:search' },
+      { id: 'sidebar', icon: 'lucide:panel-left' },
+      { id: 'data', icon: 'lucide:database' },
+      { id: 'about', icon: 'lucide:info' },
+    ] as const
+  ).map((sec) => ({ ...sec, label: t(`misc.tab.settings.nav.${sec.id}`) })),
+)
 
-const searchEngineOptions: { value: 'google' | 'bing' | 'duckduckgo' | 'baidu' | 'custom'; label: string }[] = [
-  { value: 'google', label: 'Google' },
-  { value: 'bing', label: 'Bing' },
-  { value: 'duckduckgo', label: 'DuckDuckGo' },
-  { value: 'baidu', label: '百度' },
-  { value: 'custom', label: '自定义' },
-]
+const searchEngineOptions = computed<{ value: 'google' | 'bing' | 'duckduckgo' | 'baidu' | 'custom'; label: string }[]>(
+  () => [
+    { value: 'google', label: 'Google' },
+    { value: 'bing', label: 'Bing' },
+    { value: 'duckduckgo', label: 'DuckDuckGo' },
+    { value: 'baidu', label: t('misc.tab.search.engine.baidu') },
+    { value: 'custom', label: t('misc.tab.settings.search.custom') },
+  ],
+)
 
-const iconStyleOptions: { value: TabIconStyle; label: string; icon: string }[] = [
-  { value: 'default', label: '默认', icon: 'lucide:square' },
-  { value: 'rounded', label: '圆形', icon: 'lucide:circle' },
-  { value: 'flat', label: '扁平', icon: 'lucide:minus' },
-]
+const iconStyleOptions = computed<{ value: TabIconStyle; label: string; icon: string }[]>(() => [
+  { value: 'default', label: t('misc.tab.settings.icon.styles.default'), icon: 'lucide:square' },
+  { value: 'rounded', label: t('misc.tab.settings.icon.styles.rounded'), icon: 'lucide:circle' },
+  { value: 'flat', label: t('misc.tab.settings.icon.styles.flat'), icon: 'lucide:minus' },
+])
 
-const viewModeOptions: { value: 'grid' | 'compact' | 'list' | 'cards'; label: string; icon: string; desc: string }[] = [
-  { value: 'grid', label: '网格', icon: 'lucide:layout-grid', desc: '默认大图标 + 名称' },
-  { value: 'compact', label: '紧凑', icon: 'lucide:grid-2x2', desc: '小图标密排' },
-  { value: 'list', label: '列表', icon: 'lucide:list', desc: '横向行式含 URL' },
-  { value: 'cards', label: '卡片', icon: 'lucide:square-stack', desc: '宽卡片含描述' },
-]
+const viewModeOptions = computed(() =>
+  (
+    [
+      { value: 'grid', icon: 'lucide:layout-grid' },
+      { value: 'compact', icon: 'lucide:grid-2x2' },
+      { value: 'list', icon: 'lucide:list' },
+      { value: 'cards', icon: 'lucide:square-stack' },
+    ] as const
+  ).map((opt) => ({
+    ...opt,
+    label: t(`misc.tab.viewMode.${opt.value}`),
+    desc: t(`misc.tab.settings.layout.viewModeDesc.${opt.value}`),
+  })),
+)
 
 const faviconProviderOptions: { value: FaviconProvider; label: string }[] = [
   { value: 'google', label: 'Google' },
@@ -879,14 +901,14 @@ const faviconProviderOptions: { value: FaviconProvider; label: string }[] = [
   { value: 'icon-horse', label: 'Icon Horse' },
 ]
 
-const wallpaperKinds: { value: WallpaperKind; label: string; icon: string }[] = [
-  { value: 'none', label: '无', icon: 'lucide:ban' },
-  { value: 'solid', label: '纯色', icon: 'lucide:square' },
-  { value: 'gradient', label: '渐变', icon: 'lucide:paintbrush' },
-  { value: 'preset', label: '图库', icon: 'lucide:image' },
+const wallpaperKinds = computed<{ value: WallpaperKind; label: string; icon: string }[]>(() => [
+  { value: 'none', label: t('misc.tab.settings.theme.kinds.none'), icon: 'lucide:ban' },
+  { value: 'solid', label: t('misc.tab.settings.theme.kinds.solid'), icon: 'lucide:square' },
+  { value: 'gradient', label: t('misc.tab.settings.theme.kinds.gradient'), icon: 'lucide:paintbrush' },
+  { value: 'preset', label: t('misc.tab.settings.theme.kinds.preset'), icon: 'lucide:image' },
   { value: 'url', label: 'URL', icon: 'lucide:link' },
-  { value: 'upload', label: '上传', icon: 'lucide:upload' },
-]
+  { value: 'upload', label: t('misc.tab.settings.theme.kinds.upload'), icon: 'lucide:upload' },
+])
 
 /** 当前编辑哪一份壁纸配置（亮 / 暗）；联动模式下始终编辑 light */
 const wallpaperEditing = ref<'light' | 'dark'>('light')
@@ -934,7 +956,7 @@ async function onWallpaperUpload(e: Event) {
   if (!file) return
   uploadError.value = ''
   if (file.size > 5 * 1024 * 1024) {
-    uploadError.value = `图片过大（${(file.size / 1024 / 1024).toFixed(1)}MB），请压缩至 5MB 以内。`
+    uploadError.value = t('misc.tab.settings.theme.tooLarge', { size: (file.size / 1024 / 1024).toFixed(1) })
     input.value = ''
     return
   }
@@ -946,16 +968,16 @@ async function onWallpaperUpload(e: Event) {
     await idbSet(key, file)
     writeWallpaper({ ...currentWallpaper.value, kind: 'upload', uploadKey: key })
   } catch (err) {
-    uploadError.value = err instanceof Error ? err.message : '上传失败，请重试'
+    uploadError.value = err instanceof Error ? err.message : t('misc.tab.settings.theme.uploadFailed')
   }
   input.value = ''
 }
 
-const colorModeOptions = [
-  { value: 'light', label: '亮色', icon: 'lucide:sun' },
-  { value: 'dark', label: '暗色', icon: 'lucide:moon' },
-  { value: 'system', label: '跟随', icon: 'lucide:monitor' },
-]
+const colorModeOptions = computed(() => [
+  { value: 'light', label: t('misc.tab.settings.theme.light'), icon: 'lucide:sun' },
+  { value: 'dark', label: t('misc.tab.settings.theme.dark'), icon: 'lucide:moon' },
+  { value: 'system', label: t('misc.tab.settings.theme.system'), icon: 'lucide:monitor' },
+])
 
 function close() {
   visible.value = false
@@ -983,14 +1005,14 @@ async function onExport() {
     }
     const stamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19)
     triggerDownload(`tabs-${stamp}.json`, buildExportJson(payload))
-    success('已导出 JSON 文件')
+    success(t('misc.tab.settings.data.exported'))
   } catch (err) {
-    toastError(err instanceof Error ? err.message : '导出失败')
+    toastError(err instanceof Error ? err.message : t('misc.tab.settings.data.exportFailed'))
   }
 }
 
 function onClearBookmarks() {
-  if (!window.confirm('确认清空所有分类与书签？此操作不可撤销。')) return
+  if (!window.confirm(t('misc.tab.settings.data.clearConfirm'))) return
   if (typeof window === 'undefined') return
   const prefixes = ['tab:categories:', 'tab:bookmarks:']
   const keysToDel: string[] = []
@@ -999,14 +1021,14 @@ function onClearBookmarks() {
     if (k && prefixes.some((p) => k.startsWith(p))) keysToDel.push(k)
   }
   keysToDel.forEach((k) => localStorage.removeItem(k))
-  success('已清空书签数据，刷新后生效')
+  success(t('misc.tab.settings.data.cleared'))
 }
 
 function onResetSettings() {
-  if (!window.confirm('确认重置所有设置？壁纸与布局将回到默认。')) return
+  if (!window.confirm(t('misc.tab.settings.data.resetConfirm'))) return
   if (typeof window === 'undefined') return
   localStorage.removeItem('tab-settings')
-  success('已重置设置，刷新后生效')
+  success(t('misc.tab.settings.data.resetDone'))
 }
 </script>
 

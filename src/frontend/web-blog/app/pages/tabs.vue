@@ -40,8 +40,8 @@
         v-if="bookmarkLoadFailed"
         compact
         :pending="bookmarkLoading"
-        title="书签加载失败"
-        :description="storageError || '暂时无法读取当前浏览器中的书签。'"
+        :title="$t('misc.tab.page.loadFailed')"
+        :description="storageError || $t('misc.tab.page.loadFailedDescription')"
         @retry="retryBookmarks"
       />
       <p v-else-if="storageError" role="alert">{{ storageError }}</p>
@@ -52,25 +52,25 @@
 
       <TabSearchBar />
       <div class="tabs-page__compact-tools">
-        <label for="bookmark-group">书签分组</label>
+        <label for="bookmark-group">{{ $t('misc.tab.page.groupLabel') }}</label>
         <select
           id="bookmark-group"
           :value="activeCategoryId ?? ''"
           @change="selectCategory(($event.target as HTMLSelectElement).value || null)"
         >
-          <option value="">全部书签</option>
+          <option value="">{{ $t('misc.tab.page.allBookmarks') }}</option>
           <option v-for="category in categories" :key="category.id" :value="category.id">
-            {{ category.name }}（{{ categoryCounts[category.id] || 0 }}）
+            {{ $t('misc.tab.page.groupOption', { name: category.name, count: categoryCounts[category.id] || 0 }) }}
           </option>
         </select>
         <button type="button" aria-haspopup="dialog" :aria-expanded="settingsOpen" @click="settingsOpen = true">
-          <Icon name="lucide:settings" size="18" />书签设置
+          <Icon name="lucide:settings" size="18" />{{ $t('misc.tab.page.settings') }}
         </button>
         <button v-if="!isReadOnly" type="button" @click="onAddCategoryClick">
-          <Icon name="lucide:folder-plus" size="18" />新建分类
+          <Icon name="lucide:folder-plus" size="18" />{{ $t('misc.tab.page.newCategory') }}
         </button>
       </div>
-      <p class="tabs-page__storage-note">书签保存在当前浏览器，登录后可编辑；可在书签设置中导出备份。</p>
+      <p class="tabs-page__storage-note">{{ $t('misc.tab.page.storageNote') }}</p>
 
       <div class="tabs-page__panel" @contextmenu.self.prevent="onBlankContextMenu">
         <TabBookmarkGrid
@@ -115,12 +115,17 @@
         <Transition name="tabs-guest-toast">
           <div v-if="isReadOnly && !guestToastDismissed" class="tabs-guest-toast">
             <Icon name="lucide:info" size="14" class="tabs-guest-toast__icon" />
-            <span class="tabs-guest-toast__text">正在浏览博主的标签页</span>
+            <span class="tabs-guest-toast__text">{{ $t('misc.tab.page.guestBrowsing') }}</span>
             <button type="button" class="tabs-guest-toast__login" @click="onLogin">
-              登录
+              {{ $t('misc.tab.page.login') }}
               <Icon name="lucide:log-in" size="11" />
             </button>
-            <button type="button" class="tabs-guest-toast__close" aria-label="关闭" @click="guestToastDismissed = true">
+            <button
+              type="button"
+              class="tabs-guest-toast__close"
+              :aria-label="$t('misc.tab.page.close')"
+              @click="guestToastDismissed = true"
+            >
               <Icon name="lucide:x" size="12" />
             </button>
           </div>
@@ -145,9 +150,11 @@ import { mockOwnerUser } from '~/features/auth/mock'
 
 definePageMeta({ fullbleed: true })
 
+const { t } = useI18n()
+
 usePageSeo({
-  title: '标签页',
-  description: '你的个人起始页：搜索 + 书签 + 分类管理',
+  title: () => t('misc.tab.page.seoTitle'),
+  description: () => t('misc.tab.page.seoDescription'),
 })
 
 const { currentUser, isLoggedIn } = useCurrentUser()
@@ -201,8 +208,8 @@ const sidebarCollapsed = ref(tabSettings.value.defaultCollapsed)
 const paletteActions = computed<CommandAction[]>(() => {
   const switchView = (mode: TabViewMode): CommandAction => ({
     id: `view-${mode}`,
-    title: `切换视图：${viewLabel(mode)}`,
-    subtitle: tabSettings.value.viewMode === mode ? '当前视图' : '',
+    title: t('misc.tab.palette.switchView', { view: viewLabel(mode) }),
+    subtitle: tabSettings.value.viewMode === mode ? t('misc.tab.palette.currentView') : '',
     icon: viewIcon(mode),
     section: 'actions',
     run: () => updateSetting('viewMode', mode),
@@ -210,8 +217,8 @@ const paletteActions = computed<CommandAction[]>(() => {
   return [
     {
       id: 'add-bookmark',
-      title: '新建书签',
-      subtitle: '打开书签编辑对话框',
+      title: t('misc.tab.palette.addBookmark'),
+      subtitle: t('misc.tab.palette.addBookmarkSubtitle'),
       icon: 'lucide:plus',
       shortcut: 'N',
       section: 'actions',
@@ -219,7 +226,7 @@ const paletteActions = computed<CommandAction[]>(() => {
     },
     {
       id: 'add-category',
-      title: '新建分类',
+      title: t('misc.tab.palette.addCategory'),
       icon: 'lucide:folder-plus',
       section: 'actions',
       run: () => {
@@ -232,7 +239,7 @@ const paletteActions = computed<CommandAction[]>(() => {
     switchView('cards'),
     {
       id: 'open-settings',
-      title: '打开设置',
+      title: t('misc.tab.palette.openSettings'),
       icon: 'lucide:settings',
       section: 'actions',
       run: () => {
@@ -241,15 +248,15 @@ const paletteActions = computed<CommandAction[]>(() => {
     },
     {
       id: 'toggle-drag',
-      title: tabSettings.value.dragEnabled ? '关闭拖拽排序' : '开启拖拽排序',
+      title: tabSettings.value.dragEnabled ? t('misc.tab.palette.disableDrag') : t('misc.tab.palette.enableDrag'),
       icon: 'lucide:move',
       section: 'actions',
       run: () => updateSetting('dragEnabled', !tabSettings.value.dragEnabled),
     },
     {
       id: 'import',
-      title: '导入书签',
-      subtitle: 'JSON 或浏览器 HTML',
+      title: t('misc.tab.palette.import'),
+      subtitle: t('misc.tab.palette.importSubtitle'),
       icon: 'lucide:upload',
       section: 'actions',
       run: () => {
@@ -260,16 +267,7 @@ const paletteActions = computed<CommandAction[]>(() => {
 })
 
 function viewLabel(mode: TabViewMode): string {
-  switch (mode) {
-    case 'grid':
-      return '网格'
-    case 'compact':
-      return '紧凑'
-    case 'list':
-      return '列表'
-    case 'cards':
-      return '卡片'
-  }
+  return t(`misc.tab.viewMode.${mode}`)
 }
 
 function viewIcon(mode: TabViewMode): string {
@@ -290,25 +288,30 @@ const displayUser = computed(() => currentUser.value ?? mockOwnerUser)
 
 const greeting = computed(() => {
   const h = new Date().getHours()
-  if (h < 6) return '夜深了'
-  if (h < 11) return '早上好'
-  if (h < 14) return '中午好'
-  if (h < 18) return '下午好'
-  if (h < 22) return '晚上好'
-  return '夜深了'
+  if (h < 6) return t('misc.tab.page.greeting.lateNight')
+  if (h < 11) return t('misc.tab.page.greeting.morning')
+  if (h < 14) return t('misc.tab.page.greeting.noon')
+  if (h < 18) return t('misc.tab.page.greeting.afternoon')
+  if (h < 22) return t('misc.tab.page.greeting.evening')
+  return t('misc.tab.page.greeting.lateNight')
 })
 
 const greetingLine = computed(() => {
-  if (!isLoggedIn.value) return `欢迎来到 ${mockOwnerUser.nickname} 的标签页`
-  return `${greeting.value}，${currentUser.value?.nickname ?? ''}`
+  if (!isLoggedIn.value) return t('misc.tab.page.guestWelcome', { name: mockOwnerUser.nickname })
+  return t('misc.tab.page.greetingLine', { greeting: greeting.value, name: currentUser.value?.nickname ?? '' })
 })
 
 const today = computed(() => {
   const d = new Date()
-  const week = ['日', '一', '二', '三', '四', '五', '六'][d.getDay()]
-  let str = `${d.getFullYear()} 年 ${d.getMonth() + 1} 月 ${d.getDate()} 日 · 星期${week}`
+  let str = t('misc.tab.page.date', {
+    year: d.getFullYear(),
+    month: d.getMonth() + 1,
+    monthName: formatDate(d, { month: 'long' }),
+    day: d.getDate(),
+    weekday: formatDate(d, { weekday: 'long' }),
+  })
   if (tabSettings.value.showSeconds) {
-    str += ` · ${d.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}`
+    str += ` · ${formatDateTime(d, { hour: '2-digit', minute: '2-digit', second: '2-digit' })}`
   }
   return str
 })
@@ -345,7 +348,7 @@ async function onSubmitBookmark(draft: BookmarkDraft) {
   try {
     if (await addBookmark(draft)) addBookmarkVisible.value = false
   } catch (cause) {
-    showError(cause instanceof Error ? cause.message : '保存失败，输入已保留')
+    showError(cause instanceof Error ? cause.message : t('misc.tab.page.saveFailed'))
   }
 }
 
@@ -362,7 +365,7 @@ function onDonate() {
 }
 
 async function onRemoveCategory(id: string) {
-  if (!window.confirm('确认删除该分类？该分类下的书签也会一并删除。')) return
+  if (!window.confirm(t('misc.tab.page.removeCategoryConfirm'))) return
   await removeCategory(id)
 }
 
@@ -374,7 +377,7 @@ async function onUpdateBookmarkFromDialog(payload: { id: string; patch: Bookmark
   try {
     if (await updateBookmark(payload.id, payload.patch)) addBookmarkVisible.value = false
   } catch (cause) {
-    showError(cause instanceof Error ? cause.message : '保存失败，输入已保留')
+    showError(cause instanceof Error ? cause.message : t('misc.tab.page.saveFailed'))
   }
 }
 
@@ -386,7 +389,7 @@ const ctxItems = ref<ContextMenuItem[]>([])
 const ctxFocusKey = ref<string | undefined>()
 const editingBookmark = ref<Bookmark | null>(null)
 
-const copyToClipboard = async (text: string, msg = 'URL 已复制') => {
+const copyToClipboard = async (text: string, msg = t('misc.tab.menu.urlCopied')) => {
   try {
     await navigator.clipboard.writeText(text)
     success(msg)
@@ -405,18 +408,18 @@ function onBookmarkContextMenu(payload: { bookmark: Bookmark; x: number; y: numb
   if (isReadOnly.value) {
     ctxItems.value = [
       {
-        label: '打开（新标签）',
+        label: t('misc.tab.menu.openNewTab'),
         icon: 'lucide:external-link',
         run: () => window.open(bm.url, '_blank', 'noopener'),
       },
       {
-        label: '复制 URL',
+        label: t('misc.tab.menu.copyUrl'),
         icon: 'lucide:clipboard',
         run: () => copyToClipboard(bm.url),
       },
       { type: 'divider' },
       {
-        label: '登录以编辑',
+        label: t('misc.tab.menu.loginToEdit'),
         icon: 'lucide:log-in',
         run: () => openLoginDrawer('login'),
       },
@@ -427,12 +430,12 @@ function onBookmarkContextMenu(payload: { bookmark: Bookmark; x: number; y: numb
 
   ctxItems.value = [
     {
-      label: '打开（新标签）',
+      label: t('misc.tab.menu.openNewTab'),
       icon: 'lucide:external-link',
       run: () => window.open(bm.url, '_blank', 'noopener'),
     },
     {
-      label: '编辑',
+      label: t('misc.tab.menu.edit'),
       icon: 'lucide:edit-3',
       run: () => {
         editingBookmark.value = bm
@@ -440,22 +443,22 @@ function onBookmarkContextMenu(payload: { bookmark: Bookmark; x: number; y: numb
       },
     },
     {
-      label: '复制 URL',
+      label: t('misc.tab.menu.copyUrl'),
       icon: 'lucide:clipboard',
       run: () => copyToClipboard(bm.url),
     },
     {
-      label: bm.pinned ? '取消置顶' : '置顶',
+      label: bm.pinned ? t('misc.tab.menu.unpin') : t('misc.tab.menu.pin'),
       icon: bm.pinned ? 'lucide:pin-off' : 'lucide:pin',
       run: () => updateBookmark(bm.id, { pinned: !bm.pinned }),
     },
     {
-      label: '刷新 favicon',
+      label: t('misc.tab.menu.refreshFavicon'),
       icon: 'lucide:refresh-cw',
       run: () => refreshFavicon(bm.id),
     },
     {
-      label: '移至分类',
+      label: t('misc.tab.menu.moveTo'),
       icon: 'lucide:folder-symlink',
       submenu: categories.value
         .filter((c) => c.id !== bm.categoryId)
@@ -467,7 +470,7 @@ function onBookmarkContextMenu(payload: { bookmark: Bookmark; x: number; y: numb
     },
     { type: 'divider' },
     {
-      label: '删除',
+      label: t('misc.tab.menu.remove'),
       icon: 'lucide:trash-2',
       danger: true,
       run: () => removeBookmark(bm.id),
@@ -487,13 +490,13 @@ function onCategoryContextMenu(payload: { categoryId: string; x: number; y: numb
   if (isReadOnly.value) {
     ctxItems.value = [
       {
-        label: '查看该分类',
+        label: t('misc.tab.menu.viewCategory'),
         icon: 'lucide:eye',
         run: () => selectCategory(cat.id),
       },
       { type: 'divider' },
       {
-        label: '登录以编辑分类',
+        label: t('misc.tab.menu.loginToEditCategory'),
         icon: 'lucide:log-in',
         run: () => openLoginDrawer('login'),
       },
@@ -504,31 +507,31 @@ function onCategoryContextMenu(payload: { categoryId: string; x: number; y: numb
 
   ctxItems.value = [
     {
-      label: '打开该分类',
+      label: t('misc.tab.menu.openCategory'),
       icon: 'lucide:eye',
       run: () => selectCategory(cat.id),
     },
     {
-      label: '重命名',
+      label: t('misc.tab.menu.rename'),
       icon: 'lucide:edit-3',
       run: async () => {
-        const next = window.prompt('新分类名称', cat.name)?.trim()
+        const next = window.prompt(t('misc.tab.menu.renamePrompt'), cat.name)?.trim()
         if (next && next !== cat.name) {
           await updateCategoryMeta(cat.id, { name: next })
         }
       },
     },
     {
-      label: '更改图标',
+      label: t('misc.tab.menu.changeIcon'),
       icon: 'lucide:shapes',
       run: async () => {
-        const next = window.prompt('Lucide 图标名（如 lucide:folder）', cat.icon || '')?.trim()
+        const next = window.prompt(t('misc.tab.menu.iconPrompt'), cat.icon || '')?.trim()
         if (next) await updateCategoryMeta(cat.id, { icon: next })
       },
     },
     { type: 'divider' },
     {
-      label: '删除分类',
+      label: t('misc.tab.menu.removeCategory'),
       icon: 'lucide:trash-2',
       danger: true,
       run: () => onRemoveCategory(cat.id),
@@ -545,20 +548,20 @@ function onBlankContextMenu(e: MouseEvent) {
 
   const common: ContextMenuItem[] = [
     {
-      label: '打开命令面板',
+      label: t('misc.tab.menu.openPalette'),
       icon: 'lucide:command',
       shortcut: 'Ctrl+K',
       run: () => tabPalette.open(),
     },
     {
-      label: '打开设置',
+      label: t('misc.tab.menu.openSettings'),
       icon: 'lucide:settings',
       run: () => {
         settingsOpen.value = true
       },
     },
     {
-      label: '切换视图',
+      label: t('misc.tab.menu.switchView'),
       icon: 'lucide:layout-grid',
       submenu: (['grid', 'compact', 'list', 'cards'] as TabViewMode[]).map((m) => ({
         label: viewLabel(m),
@@ -573,7 +576,7 @@ function onBlankContextMenu(e: MouseEvent) {
       ...common,
       { type: 'divider' },
       {
-        label: '登录以新建书签',
+        label: t('misc.tab.menu.loginToAdd'),
         icon: 'lucide:log-in',
         run: () => openLoginDrawer('login'),
       },
@@ -581,12 +584,12 @@ function onBlankContextMenu(e: MouseEvent) {
   } else {
     ctxItems.value = [
       {
-        label: '新建书签',
+        label: t('misc.tab.menu.addBookmark'),
         icon: 'lucide:plus',
         run: () => onAddBookmarkClick(),
       },
       {
-        label: '新建分类',
+        label: t('misc.tab.menu.addCategory'),
         icon: 'lucide:folder-plus',
         run: () => {
           addCategoryVisible.value = true
@@ -617,7 +620,7 @@ async function onReorderCategories(updates: CategoryReorderUpdate[]) {
 
 /** 只读模式下被 Grid 拦截的拖拽动作 */
 function onReadOnlyBlocked() {
-  info('浏览模式下无法修改，请先登录')
+  info(t('misc.tab.page.readOnlyBlocked'))
 }
 
 function onAddCategoryClick() {

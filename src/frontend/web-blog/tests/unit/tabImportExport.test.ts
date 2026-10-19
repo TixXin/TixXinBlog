@@ -205,3 +205,23 @@ describe('导入大小与浏览器下载', () => {
     expect(revokeUrl).toHaveBeenCalledExactlyOnceWith('blob:tab-export')
   })
 })
+
+describe('导入校验文案', () => {
+  it('英文界面下校验错误与默认分组名跟随语言', async () => {
+    const i18n = useNuxtApp().$i18n
+    await i18n.setLocale('en')
+    try {
+      expect(() => parseImportJson('{"version":1}')).toThrow('Missing the categories or bookmarks field')
+      expect(() => parseNetscapeBookmarks('<html><body>none</body></html>')).toThrow('No root <DL> element found')
+      expect(() => parseNetscapeBookmarks('<DL><DT><A HREF="javascript:alert(1)">x</A></DT></DL>')).toThrow(
+        'Bookmark URLs must use HTTP or HTTPS',
+      )
+      const parsed = parseNetscapeBookmarks(
+        '<DL><DT><H3></H3><DL><DT><A HREF="https://nuxt.com">Nuxt</A></DT></DL></DT></DL>',
+      )
+      expect(parsed.categories.map((category) => category.name)).toEqual(['Imported', 'Untitled group'])
+    } finally {
+      await i18n.setLocale('zh-CN')
+    }
+  })
+})

@@ -240,4 +240,21 @@ describe('书签导入对话框', () => {
     await chooseFile(wrapper)
     expect(wrapper.get<HTMLInputElement>('input[value="merge"]').element.checked).toBe(true)
   })
+
+  it('英文界面下对话框、预览单位、策略与导入提示跟随语言', async () => {
+    const i18n = useNuxtApp().$i18n
+    await i18n.setLocale('en')
+    try {
+      const wrapper = await setup()
+      expect(wrapper.get('[role="dialog"]').attributes('aria-label')).toBe('Import bookmarks')
+      await chooseFile(wrapper)
+      expect(wrapper.findAll('.tid-preview__label').map((label) => label.text())).toEqual(['category', 'bookmark'])
+      expect(wrapper.text()).toContain('Merge (recommended)')
+      await wrapper.get('.tid-btn--primary').trigger('click')
+      await flushPromises()
+      expect(mocks.success).toHaveBeenCalledExactlyOnceWith('Imported 1 category and 1 bookmark')
+    } finally {
+      await i18n.setLocale('zh-CN')
+    }
+  })
 })

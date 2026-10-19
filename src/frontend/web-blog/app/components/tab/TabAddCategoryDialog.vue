@@ -9,11 +9,23 @@
   <Teleport to="body">
     <Transition name="tab-cat-dialog">
       <div v-if="visible" class="tab-cat-dialog-overlay" @click.self="close">
-        <div ref="dialogRef" class="tab-cat-dialog" role="dialog" aria-modal="true" aria-label="新建分类" tabindex="-1">
+        <div
+          ref="dialogRef"
+          class="tab-cat-dialog"
+          role="dialog"
+          aria-modal="true"
+          :aria-label="$t('misc.tab.categoryDialog.title')"
+          tabindex="-1"
+        >
           <header class="tab-cat-dialog__header">
             <Icon name="lucide:folder-plus" size="16" />
-            <h3 class="tab-cat-dialog__title">新建分类</h3>
-            <button type="button" class="tab-cat-dialog__close" aria-label="关闭" @click="close">
+            <h3 class="tab-cat-dialog__title">{{ $t('misc.tab.categoryDialog.title') }}</h3>
+            <button
+              type="button"
+              class="tab-cat-dialog__close"
+              :aria-label="$t('misc.tab.common.close')"
+              @click="close"
+            >
               <Icon name="lucide:x" size="16" />
             </button>
           </header>
@@ -22,7 +34,7 @@
             <!-- 分类名称 -->
             <div class="tab-cat-dialog__field">
               <label class="tab-cat-dialog__label" for="cat-name">
-                分类名称 <span class="tab-cat-dialog__required">*</span>
+                {{ $t('misc.tab.categoryDialog.name') }} <span class="tab-cat-dialog__required">*</span>
               </label>
               <input
                 id="cat-name"
@@ -30,7 +42,7 @@
                 v-model.trim="form.name"
                 type="text"
                 class="tab-cat-dialog__input"
-                placeholder="例如：工作、阅读、游戏"
+                :placeholder="$t('misc.tab.categoryDialog.namePlaceholder')"
                 maxlength="20"
                 required
               />
@@ -38,13 +50,13 @@
 
             <!-- 图标选择 -->
             <div class="tab-cat-dialog__field">
-              <label class="tab-cat-dialog__label"> 选择图标 </label>
+              <label class="tab-cat-dialog__label"> {{ $t('misc.tab.categoryDialog.icon') }} </label>
               <TabIconPicker v-model="form.icon" />
             </div>
 
             <button type="submit" class="tab-cat-dialog__submit" :disabled="!form.name">
               <Icon name="lucide:check" size="14" />
-              <span>创建分类</span>
+              <span>{{ $t('misc.tab.categoryDialog.submit') }}</span>
             </button>
           </form>
         </div>

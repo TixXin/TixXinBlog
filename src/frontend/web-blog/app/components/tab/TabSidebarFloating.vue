@@ -8,7 +8,12 @@
 <template>
   <aside class="tab-side" :class="{ 'tab-side--collapsed': collapsed }" :style="sidebarStyle">
     <!-- 折叠/展开切换 -->
-    <button type="button" class="tab-side__toggle" aria-label="折叠/展开" @click="collapsed = !collapsed">
+    <button
+      type="button"
+      class="tab-side__toggle"
+      :aria-label="$t('misc.tab.sidebar.toggle')"
+      @click="collapsed = !collapsed"
+    >
       <Icon :name="collapsed ? 'lucide:chevron-right' : 'lucide:chevron-left'" size="14" />
     </button>
 
@@ -19,8 +24,8 @@
         <img v-else :src="user.avatar" :alt="user.nickname" />
       </div>
       <div v-if="!collapsed" class="tab-side__user">
-        <div class="tab-side__name">{{ user?.nickname || '未登录' }}</div>
-        <div class="tab-side__sub">{{ totalCount }} 个书签</div>
+        <div class="tab-side__name">{{ user?.nickname || $t('misc.tab.sidebar.notLoggedIn') }}</div>
+        <div class="tab-side__sub">{{ $t('misc.tab.common.bookmarkCount', { count: totalCount }, totalCount) }}</div>
       </div>
     </div>
 
@@ -35,7 +40,12 @@
         :data-category-id="cat.id"
         :data-focus-key="`category:${cat.id}`"
         :title="collapsed ? cat.name : undefined"
-        :aria-label="`${cat.name}，${counts[cat.id] || 0} 个书签`"
+        :aria-label="
+          $t('misc.tab.sidebar.categoryLabel', {
+            name: cat.name,
+            count: $t('misc.tab.common.bookmarkCount', { count: counts[cat.id] || 0 }, counts[cat.id] || 0),
+          })
+        "
         :aria-pressed="activeId === cat.id"
         class="tab-side__cat"
         :class="{
@@ -64,10 +74,10 @@
     <!-- 新建分类 -->
     <template v-if="!readOnly">
       <div class="tab-side__divider" />
-      <CommonTooltip v-if="collapsed" content="新建分类" placement="right">
+      <CommonTooltip v-if="collapsed" :content="$t('misc.tab.sidebar.addCategory')" placement="right">
         <button
           type="button"
-          aria-label="新建分类"
+          :aria-label="$t('misc.tab.sidebar.addCategory')"
           class="tab-side__action tab-side__action--icon"
           @click="emit('addCategory')"
         >
@@ -76,31 +86,31 @@
       </CommonTooltip>
       <button v-else type="button" class="tab-side__action" @click="emit('addCategory')">
         <Icon name="lucide:folder-plus" size="14" />
-        <span>新建分类</span>
+        <span>{{ $t('misc.tab.sidebar.addCategory') }}</span>
       </button>
     </template>
 
     <!-- 底部弹性空间 + 功能按钮 -->
     <div class="tab-side__spacer" />
     <div class="tab-side__bottom">
-      <CommonTooltip v-if="collapsed" content="设置" placement="right">
+      <CommonTooltip v-if="collapsed" :content="$t('misc.tab.sidebar.settings')" placement="right">
         <button type="button" class="tab-side__bottom-btn" @click="emit('openSettings')">
           <Icon name="lucide:settings" size="15" />
         </button>
       </CommonTooltip>
       <button v-else type="button" class="tab-side__bottom-btn" @click="emit('openSettings')">
         <Icon name="lucide:settings" size="15" />
-        <span v-if="!collapsed">设置</span>
+        <span v-if="!collapsed">{{ $t('misc.tab.sidebar.settings') }}</span>
       </button>
 
-      <CommonTooltip v-if="collapsed" content="打赏" placement="right">
+      <CommonTooltip v-if="collapsed" :content="$t('misc.tab.sidebar.donate')" placement="right">
         <button type="button" class="tab-side__bottom-btn" @click="emit('openDonate')">
           <Icon name="lucide:heart" size="15" />
         </button>
       </CommonTooltip>
       <button v-else type="button" class="tab-side__bottom-btn" @click="emit('openDonate')">
         <Icon name="lucide:heart" size="15" />
-        <span v-if="!collapsed">打赏</span>
+        <span v-if="!collapsed">{{ $t('misc.tab.sidebar.donate') }}</span>
       </button>
     </div>
   </aside>

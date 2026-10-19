@@ -28,7 +28,12 @@
     <div v-if="activeTab === 'lucide'" class="icon-picker__pane">
       <div class="icon-picker__search">
         <Icon name="lucide:search" size="12" class="icon-picker__search-icon" />
-        <input v-model="searchQuery" type="text" class="icon-picker__search-input" placeholder="搜索图标..." />
+        <input
+          v-model="searchQuery"
+          type="text"
+          class="icon-picker__search-input"
+          :placeholder="$t('misc.tab.iconPicker.searchIcons')"
+        />
       </div>
       <div class="icon-picker__grid">
         <button
@@ -43,14 +48,19 @@
           <Icon :name="icon.name" size="16" />
         </button>
       </div>
-      <div v-if="filteredIcons.length === 0" class="icon-picker__empty">没有匹配的图标</div>
+      <div v-if="filteredIcons.length === 0" class="icon-picker__empty">{{ $t('misc.tab.iconPicker.noIcons') }}</div>
     </div>
 
     <!-- Emoji -->
     <div v-else-if="activeTab === 'emoji'" class="icon-picker__pane">
       <div class="icon-picker__search">
         <Icon name="lucide:search" size="12" class="icon-picker__search-icon" />
-        <input v-model="emojiQuery" type="text" class="icon-picker__search-input" placeholder="搜索 emoji..." />
+        <input
+          v-model="emojiQuery"
+          type="text"
+          class="icon-picker__search-input"
+          :placeholder="$t('misc.tab.iconPicker.searchEmoji')"
+        />
       </div>
       <div class="icon-picker__grid icon-picker__grid--emoji">
         <button
@@ -65,7 +75,7 @@
           {{ e.char }}
         </button>
       </div>
-      <div v-if="filteredEmojis.length === 0" class="icon-picker__empty">没有匹配的 emoji</div>
+      <div v-if="filteredEmojis.length === 0" class="icon-picker__empty">{{ $t('misc.tab.iconPicker.noEmoji') }}</div>
     </div>
 
     <!-- 上传 -->
@@ -74,8 +84,9 @@
         <input type="file" accept="image/*" class="icon-picker__upload-input" @change="onUpload" />
         <Icon name="lucide:upload" size="24" />
         <span class="icon-picker__upload-hint">
-          <strong>点击上传</strong>或拖拽图片
-          <small>建议 64×64 PNG / SVG，单图 &lt; 32KB</small>
+          <strong>{{ $t('misc.tab.iconPicker.uploadClick') }}</strong
+          >{{ $t('misc.tab.iconPicker.uploadDrag') }}
+          <small>{{ $t('misc.tab.iconPicker.uploadHint') }}</small>
         </span>
       </label>
       <p v-if="uploadError" class="icon-picker__upload-error">
@@ -83,10 +94,10 @@
         {{ uploadError }}
       </p>
       <div v-if="isDataUrl" class="icon-picker__upload-preview">
-        <img :src="modelValue" alt="预览" />
+        <img :src="modelValue" :alt="$t('misc.tab.iconPicker.preview')" />
         <button type="button" class="icon-picker__upload-clear" @click="$emit('update:modelValue', '')">
           <Icon name="lucide:x" size="11" />
-          清除
+          {{ $t('misc.tab.iconPicker.clear') }}
         </button>
       </div>
     </div>
@@ -96,14 +107,15 @@
 <script setup lang="ts">
 const props = defineProps<{ modelValue: string }>()
 const emit = defineEmits<{ 'update:modelValue': [value: string] }>()
+const { t } = useI18n()
 
 type TabKey = 'lucide' | 'emoji' | 'upload'
 
-const tabs: { value: TabKey; label: string; icon: string }[] = [
+const tabs = computed<{ value: TabKey; label: string; icon: string }[]>(() => [
   { value: 'lucide', label: 'Lucide', icon: 'lucide:shapes' },
   { value: 'emoji', label: 'Emoji', icon: 'lucide:smile' },
-  { value: 'upload', label: '上传', icon: 'lucide:upload' },
-]
+  { value: 'upload', label: t('misc.tab.iconPicker.upload'), icon: 'lucide:upload' },
+])
 
 const isDataUrl = computed(() => props.modelValue.startsWith('data:'))
 const activeTab = ref<TabKey>(isDataUrl.value ? 'upload' : props.modelValue.startsWith('lucide:') ? 'lucide' : 'emoji')
@@ -114,46 +126,50 @@ const uploadError = ref('')
 
 /** Lucide 常用图标 40+（保持原有） */
 const iconList = [
-  { name: 'lucide:home', label: '主页', keywords: '主页 home 首页' },
-  { name: 'lucide:star', label: '收藏', keywords: '收藏 star 常用' },
-  { name: 'lucide:heart', label: '喜欢', keywords: '喜欢 heart 爱心' },
-  { name: 'lucide:sparkles', label: 'AI', keywords: 'ai 智能 sparkles' },
-  { name: 'lucide:bot', label: '机器人', keywords: '机器人 bot ai' },
-  { name: 'lucide:terminal', label: '终端', keywords: '终端 terminal 程序员 代码' },
-  { name: 'lucide:code', label: '代码', keywords: '代码 code 编程' },
-  { name: 'lucide:palette', label: '调色板', keywords: '设计 palette 颜色' },
-  { name: 'lucide:box', label: '产品', keywords: '产品 box 盒子' },
-  { name: 'lucide:server', label: '服务器', keywords: '服务器 server' },
-  { name: 'lucide:fish', label: '摸鱼', keywords: '摸鱼 fish 娱乐' },
-  { name: 'lucide:folder', label: '文件夹', keywords: '文件夹 folder' },
-  { name: 'lucide:book-open', label: '学习', keywords: '学习 book 阅读' },
-  { name: 'lucide:lightbulb', label: '灵感', keywords: '灵感 lightbulb 想法' },
-  { name: 'lucide:wrench', label: '工具', keywords: '工具 wrench' },
-  { name: 'lucide:globe', label: '网站', keywords: '网站 globe 世界' },
-  { name: 'lucide:music', label: '音乐', keywords: '音乐 music' },
-  { name: 'lucide:gamepad-2', label: '游戏', keywords: '游戏 gamepad' },
-  { name: 'lucide:camera', label: '摄影', keywords: '摄影 camera 相机' },
-  { name: 'lucide:shopping-bag', label: '购物', keywords: '购物 shopping' },
-  { name: 'lucide:newspaper', label: '新闻', keywords: '新闻 newspaper 资讯' },
-  { name: 'lucide:rocket', label: '火箭', keywords: '火箭 rocket 发射' },
-  { name: 'lucide:zap', label: '闪电', keywords: '闪电 zap 快速' },
-  { name: 'lucide:bookmark', label: '书签', keywords: '书签 bookmark' },
-  { name: 'lucide:compass', label: '导航', keywords: '导航 compass 探索' },
-  { name: 'lucide:cpu', label: '硬件', keywords: '硬件 cpu 芯片' },
-  { name: 'lucide:database', label: '数据库', keywords: '数据库 database' },
-  { name: 'lucide:shield', label: '安全', keywords: '安全 shield 防护' },
-  { name: 'lucide:cloud', label: '云', keywords: '云 cloud' },
-  { name: 'lucide:download', label: '下载', keywords: '下载 download' },
-  { name: 'lucide:image', label: '图片', keywords: '图片 image 照片' },
-  { name: 'lucide:video', label: '视频', keywords: '视频 video' },
-  { name: 'lucide:pen-tool', label: '钢笔', keywords: '钢笔 pen 绘画' },
-  { name: 'lucide:layout-grid', label: '网格', keywords: '网格 layout grid' },
-  { name: 'lucide:users', label: '社交', keywords: '社交 users 用户' },
-  { name: 'lucide:trophy', label: '成就', keywords: '成就 trophy 奖杯' },
-  { name: 'lucide:coffee', label: '咖啡', keywords: '咖啡 coffee 休息' },
-  { name: 'lucide:graduation-cap', label: '教育', keywords: '教育 graduation 毕业' },
-  { name: 'lucide:briefcase', label: '工作', keywords: '工作 briefcase 办公' },
-  { name: 'lucide:map-pin', label: '位置', keywords: '位置 map pin 地图' },
+  { name: 'lucide:home', labelKey: 'misc.tab.iconPicker.icons.home', keywords: '主页 home 首页' },
+  { name: 'lucide:star', labelKey: 'misc.tab.iconPicker.icons.star', keywords: '收藏 star 常用' },
+  { name: 'lucide:heart', labelKey: 'misc.tab.iconPicker.icons.heart', keywords: '喜欢 heart 爱心' },
+  { name: 'lucide:sparkles', labelKey: 'misc.tab.iconPicker.icons.sparkles', keywords: 'ai 智能 sparkles' },
+  { name: 'lucide:bot', labelKey: 'misc.tab.iconPicker.icons.bot', keywords: '机器人 bot ai' },
+  { name: 'lucide:terminal', labelKey: 'misc.tab.iconPicker.icons.terminal', keywords: '终端 terminal 程序员 代码' },
+  { name: 'lucide:code', labelKey: 'misc.tab.iconPicker.icons.code', keywords: '代码 code 编程' },
+  { name: 'lucide:palette', labelKey: 'misc.tab.iconPicker.icons.palette', keywords: '设计 palette 颜色' },
+  { name: 'lucide:box', labelKey: 'misc.tab.iconPicker.icons.box', keywords: '产品 box 盒子' },
+  { name: 'lucide:server', labelKey: 'misc.tab.iconPicker.icons.server', keywords: '服务器 server' },
+  { name: 'lucide:fish', labelKey: 'misc.tab.iconPicker.icons.fish', keywords: '摸鱼 fish 娱乐' },
+  { name: 'lucide:folder', labelKey: 'misc.tab.iconPicker.icons.folder', keywords: '文件夹 folder' },
+  { name: 'lucide:book-open', labelKey: 'misc.tab.iconPicker.icons.bookOpen', keywords: '学习 book 阅读' },
+  { name: 'lucide:lightbulb', labelKey: 'misc.tab.iconPicker.icons.lightbulb', keywords: '灵感 lightbulb 想法' },
+  { name: 'lucide:wrench', labelKey: 'misc.tab.iconPicker.icons.wrench', keywords: '工具 wrench' },
+  { name: 'lucide:globe', labelKey: 'misc.tab.iconPicker.icons.globe', keywords: '网站 globe 世界' },
+  { name: 'lucide:music', labelKey: 'misc.tab.iconPicker.icons.music', keywords: '音乐 music' },
+  { name: 'lucide:gamepad-2', labelKey: 'misc.tab.iconPicker.icons.gamepad2', keywords: '游戏 gamepad' },
+  { name: 'lucide:camera', labelKey: 'misc.tab.iconPicker.icons.camera', keywords: '摄影 camera 相机' },
+  { name: 'lucide:shopping-bag', labelKey: 'misc.tab.iconPicker.icons.shoppingBag', keywords: '购物 shopping' },
+  { name: 'lucide:newspaper', labelKey: 'misc.tab.iconPicker.icons.newspaper', keywords: '新闻 newspaper 资讯' },
+  { name: 'lucide:rocket', labelKey: 'misc.tab.iconPicker.icons.rocket', keywords: '火箭 rocket 发射' },
+  { name: 'lucide:zap', labelKey: 'misc.tab.iconPicker.icons.zap', keywords: '闪电 zap 快速' },
+  { name: 'lucide:bookmark', labelKey: 'misc.tab.iconPicker.icons.bookmark', keywords: '书签 bookmark' },
+  { name: 'lucide:compass', labelKey: 'misc.tab.iconPicker.icons.compass', keywords: '导航 compass 探索' },
+  { name: 'lucide:cpu', labelKey: 'misc.tab.iconPicker.icons.cpu', keywords: '硬件 cpu 芯片' },
+  { name: 'lucide:database', labelKey: 'misc.tab.iconPicker.icons.database', keywords: '数据库 database' },
+  { name: 'lucide:shield', labelKey: 'misc.tab.iconPicker.icons.shield', keywords: '安全 shield 防护' },
+  { name: 'lucide:cloud', labelKey: 'misc.tab.iconPicker.icons.cloud', keywords: '云 cloud' },
+  { name: 'lucide:download', labelKey: 'misc.tab.iconPicker.icons.download', keywords: '下载 download' },
+  { name: 'lucide:image', labelKey: 'misc.tab.iconPicker.icons.image', keywords: '图片 image 照片' },
+  { name: 'lucide:video', labelKey: 'misc.tab.iconPicker.icons.video', keywords: '视频 video' },
+  { name: 'lucide:pen-tool', labelKey: 'misc.tab.iconPicker.icons.penTool', keywords: '钢笔 pen 绘画' },
+  { name: 'lucide:layout-grid', labelKey: 'misc.tab.iconPicker.icons.layoutGrid', keywords: '网格 layout grid' },
+  { name: 'lucide:users', labelKey: 'misc.tab.iconPicker.icons.users', keywords: '社交 users 用户' },
+  { name: 'lucide:trophy', labelKey: 'misc.tab.iconPicker.icons.trophy', keywords: '成就 trophy 奖杯' },
+  { name: 'lucide:coffee', labelKey: 'misc.tab.iconPicker.icons.coffee', keywords: '咖啡 coffee 休息' },
+  {
+    name: 'lucide:graduation-cap',
+    labelKey: 'misc.tab.iconPicker.icons.graduationCap',
+    keywords: '教育 graduation 毕业',
+  },
+  { name: 'lucide:briefcase', labelKey: 'misc.tab.iconPicker.icons.briefcase', keywords: '工作 briefcase 办公' },
+  { name: 'lucide:map-pin', labelKey: 'misc.tab.iconPicker.icons.mapPin', keywords: '位置 map pin 地图' },
 ]
 
 /** 常用 emoji（覆盖场景：表情、物品、符号） */
@@ -210,10 +226,15 @@ const emojiList: { char: string; keywords: string }[] = [
   { char: '💰', keywords: '钱 money 薪水' },
 ]
 
+/** 名称按当前语言翻译；keywords 是中英混合的搜索别名，两种语言下都可检索 */
+const localizedIcons = computed(() => iconList.map((icon) => ({ ...icon, label: t(icon.labelKey) })))
+
 const filteredIcons = computed(() => {
   const q = searchQuery.value.toLowerCase().trim()
-  if (!q) return iconList
-  return iconList.filter((i) => i.keywords.includes(q) || i.label.includes(q) || i.name.includes(q))
+  if (!q) return localizedIcons.value
+  return localizedIcons.value.filter(
+    (i) => i.keywords.includes(q) || i.label.toLowerCase().includes(q) || i.name.includes(q),
+  )
 })
 
 const filteredEmojis = computed(() => {
@@ -228,7 +249,7 @@ function onUpload(e: Event) {
   if (!file) return
   uploadError.value = ''
   if (file.size > 32 * 1024) {
-    uploadError.value = `图片过大（${Math.round(file.size / 1024)}KB）。请压缩至 32KB 以内。`
+    uploadError.value = t('misc.tab.iconPicker.tooLarge', { size: Math.round(file.size / 1024) })
     input.value = ''
     return
   }
@@ -238,7 +259,7 @@ function onUpload(e: Event) {
     emit('update:modelValue', reader.result)
   }
   reader.onerror = () => {
-    uploadError.value = '读取图片失败，请重试'
+    uploadError.value = t('misc.tab.iconPicker.readFailed')
   }
   reader.readAsDataURL(file)
   input.value = ''

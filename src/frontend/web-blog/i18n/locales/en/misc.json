@@ -772,6 +772,411 @@
         "dateInvalid": "Invalid subscription date",
         "nextBeforeStart": "Next billing can't be earlier than the subscription start date"
       }
+    },
+    "tab": {
+      "bookmarkDialog": {
+        "add": "Add",
+        "addTitle": "Add bookmark",
+        "category": "Category",
+        "color": "Color (optional)",
+        "editTitle": "Edit bookmark",
+        "name": "Name",
+        "namePlaceholder": "e.g. GitHub",
+        "save": "Save",
+        "url": "URL"
+      },
+      "bookmarks": {
+        "reorderBookmarksFailed": "Bookmark order wasn't saved. Browser storage is unavailable or full.",
+        "reorderCategoriesFailed": "Group order wasn't saved. Browser storage is unavailable or full."
+      },
+      "categoryDialog": {
+        "icon": "Choose an icon",
+        "name": "Category name",
+        "namePlaceholder": "e.g. Work, Reading, Games",
+        "submit": "Create category",
+        "title": "New category"
+      },
+      "common": {
+        "bookmark": "Bookmark",
+        "bookmarkCount": "{count} bookmark | {count} bookmarks",
+        "cancel": "Cancel",
+        "category": "Category",
+        "close": "Close"
+      },
+      "grid": {
+        "add": "Add",
+        "hint": "Drag to reorder, or focus a bookmark and press Alt + Up/Down arrow to move it."
+      },
+      "iconPicker": {
+        "clear": "Clear",
+        "icons": {
+          "bookOpen": "Learning",
+          "bookmark": "Bookmark",
+          "bot": "Robot",
+          "box": "Product",
+          "briefcase": "Work",
+          "camera": "Photography",
+          "cloud": "Cloud",
+          "code": "Code",
+          "coffee": "Coffee",
+          "compass": "Navigation",
+          "cpu": "Hardware",
+          "database": "Database",
+          "download": "Download",
+          "fish": "Leisure",
+          "folder": "Folder",
+          "gamepad2": "Games",
+          "globe": "Website",
+          "graduationCap": "Education",
+          "heart": "Like",
+          "home": "Home",
+          "image": "Images",
+          "layoutGrid": "Grid",
+          "lightbulb": "Ideas",
+          "mapPin": "Location",
+          "music": "Music",
+          "newspaper": "News",
+          "palette": "Palette",
+          "penTool": "Pen",
+          "rocket": "Rocket",
+          "server": "Server",
+          "shield": "Security",
+          "shoppingBag": "Shopping",
+          "sparkles": "AI",
+          "star": "Favorites",
+          "terminal": "Terminal",
+          "trophy": "Achievements",
+          "users": "Social",
+          "video": "Video",
+          "wrench": "Tools",
+          "zap": "Lightning"
+        },
+        "noEmoji": "No matching emoji",
+        "noIcons": "No matching icons",
+        "preview": "Preview",
+        "readFailed": "Couldn't read the image. Please try again.",
+        "searchEmoji": "Search emoji...",
+        "searchIcons": "Search icons...",
+        "tooLarge": "Image is too large ({size}KB). Please compress it to 32KB or less.",
+        "upload": "Upload",
+        "uploadClick": "Click to upload",
+        "uploadDrag": " or drag an image here",
+        "uploadHint": "64×64 PNG / SVG recommended, under 32KB per image"
+      },
+      "import": {
+        "bookmarkUnit": "bookmark | bookmarks",
+        "categoryCount": "{count} category | {count} categories",
+        "categoryUnit": "category | categories",
+        "chooseFile": "Choose a file",
+        "confirm": "Import",
+        "failed": "Import failed",
+        "fileHint": "Supports JSON exports or browser bookmark HTML files",
+        "loginRequired": "Import failed. Please sign in and try again.",
+        "mode": "Import mode",
+        "modes": {
+          "append": {
+            "desc": "Adds everything, allowing duplicate names",
+            "label": "Append"
+          },
+          "merge": {
+            "desc": "Skips categories with the same name and bookmarks with the same URL",
+            "label": "Merge (recommended)"
+          },
+          "replace": {
+            "desc": "Clears current data, then imports the new data",
+            "label": "Replace"
+          }
+        },
+        "parseFailed": "Couldn't parse the file",
+        "success": "Imported {categories} and {bookmarks}",
+        "title": "Import bookmarks"
+      },
+      "item": {
+        "remove": "Delete {name}"
+      },
+      "menu": {
+        "addBookmark": "New bookmark",
+        "addCategory": "New category",
+        "changeIcon": "Change icon",
+        "copyUrl": "Copy URL",
+        "edit": "Edit",
+        "iconPrompt": "Lucide icon name (e.g. lucide:folder)",
+        "loginToAdd": "Sign in to add bookmarks",
+        "loginToEdit": "Sign in to edit",
+        "loginToEditCategory": "Sign in to edit categories",
+        "moveTo": "Move to category",
+        "openCategory": "Open this category",
+        "openNewTab": "Open in new tab",
+        "openPalette": "Open command palette",
+        "openSettings": "Open settings",
+        "pin": "Pin",
+        "refreshFavicon": "Refresh favicon",
+        "remove": "Delete",
+        "removeCategory": "Delete category",
+        "rename": "Rename",
+        "renamePrompt": "New category name",
+        "switchView": "Switch view",
+        "unpin": "Unpin",
+        "urlCopied": "URL copied",
+        "viewCategory": "View this category"
+      },
+      "netscape": {
+        "importedGroup": "Imported",
+        "untitledGroup": "Untitled group"
+      },
+      "page": {
+        "allBookmarks": "All bookmarks",
+        "close": "Close",
+        "date": "{weekday}, {monthName} {day}, {year}",
+        "greeting": {
+          "afternoon": "Good afternoon",
+          "evening": "Good evening",
+          "lateNight": "It's late",
+          "morning": "Good morning",
+          "noon": "Good afternoon"
+        },
+        "greetingLine": "{greeting}, {name}",
+        "groupLabel": "Bookmark group",
+        "groupOption": "{name} ({count})",
+        "guestBrowsing": "You're viewing the blogger's start page",
+        "guestWelcome": "Welcome to {name}'s start page",
+        "loadFailed": "Couldn't load bookmarks",
+        "loadFailedDescription": "Bookmarks in this browser can't be read right now.",
+        "login": "Sign in",
+        "newCategory": "New category",
+        "readOnlyBlocked": "Changes aren't available while browsing. Please sign in first.",
+        "removeCategoryConfirm": "Delete this category? Its bookmarks will be deleted too.",
+        "saveFailed": "Couldn't save. Your input has been kept.",
+        "seoDescription": "Your personal start page: search, bookmarks, and categories",
+        "seoTitle": "Start Page",
+        "settings": "Bookmark settings",
+        "storageNote": "Bookmarks are stored in this browser and can be edited after signing in. Export a backup from Bookmark settings."
+      },
+      "palette": {
+        "addBookmark": "New bookmark",
+        "addBookmarkSubtitle": "Open the bookmark editor",
+        "addCategory": "New category",
+        "close": "Close command palette",
+        "currentView": "Current view",
+        "dialogLabel": "Bookmark command palette",
+        "disableDrag": "Turn off drag to reorder",
+        "dismiss": "Close",
+        "empty": "No matches",
+        "enableDrag": "Turn on drag to reorder",
+        "import": "Import bookmarks",
+        "importSubtitle": "JSON or browser HTML",
+        "inputLabel": "Search bookmarks, categories, and commands",
+        "navigate": "Navigate",
+        "openSettings": "Open settings",
+        "placeholder": "Search bookmarks / categories / actions. ↑↓ to select, Enter to run, Esc to close",
+        "run": "Run",
+        "sectionActions": "Actions",
+        "selectionStatus": "Selected item {index} of {total}: {title}",
+        "switchView": "Switch view: {view}"
+      },
+      "search": {
+        "clear": "Clear",
+        "engine": {
+          "baidu": "Baidu",
+          "custom": "Custom search"
+        },
+        "enterHint": "Press Enter to search with {engine}",
+        "inputLabel": "Search bookmarks or the web",
+        "localHint": "↓ to pick a local result",
+        "placeholder": "Search anything, or enter a URL…",
+        "submit": "Search"
+      },
+      "settings": {
+        "about": {
+          "author": "Author",
+          "text": "The start page is an experimental feature of this site, inspired by browser new-tab managers. Data is stored in this browser with no cloud sync for now. Exported files can be used for backups and manual migration.",
+          "title": "About",
+          "version": "Version"
+        },
+        "data": {
+          "clear": "Clear all bookmarks",
+          "clearConfirm": "Clear all categories and bookmarks? This cannot be undone.",
+          "clearDesc": "Clears bookmarks and categories only; settings are kept",
+          "cleared": "Bookmark data cleared. Refresh to apply.",
+          "export": "Export JSON",
+          "exportDesc": "Back up all categories, bookmarks, and settings",
+          "exportFailed": "Export failed",
+          "exported": "JSON file exported",
+          "hint": "Data is stored only in this browser and isn't synced across devices. Export backups regularly.",
+          "import": "Import data",
+          "importDesc": "Supports JSON backups or browser bookmark HTML files",
+          "reset": "Reset all settings",
+          "resetConfirm": "Reset all settings? Wallpaper and layout will return to defaults.",
+          "resetDesc": "Icons, layout, wallpaper, search, and more",
+          "resetDone": "Settings reset. Refresh to apply.",
+          "title": "Data management"
+        },
+        "dialogLabel": "Start page settings",
+        "icon": {
+          "faviconAutoFetch": "Fetch favicons automatically",
+          "faviconProvider": "Favicon source",
+          "gap": "Icon spacing",
+          "maxWidth": "Max area width",
+          "nameColor": "Name color",
+          "nameSize": "Text size",
+          "opacity": "Opacity",
+          "radius": "Icon corner radius",
+          "resetColor": "Restore default color",
+          "showName": "Show icon names",
+          "size": "Icon size",
+          "style": "Icon style",
+          "styles": {
+            "default": "Default",
+            "flat": "Flat",
+            "rounded": "Round"
+          },
+          "switchUnit": "Use {unit}",
+          "title": "Icon settings"
+        },
+        "layout": {
+          "columns": "Columns",
+          "columnsAuto": "Auto",
+          "columnsCount": "{count} column | {count} columns",
+          "dragEnabled": "Drag to reorder",
+          "dragHint": "Drag bookmark cards to reorder them within a category, or drop them on a category in the sidebar to move them.",
+          "title": "Layout",
+          "viewMode": "View mode",
+          "viewModeDesc": {
+            "cards": "Wide cards with descriptions",
+            "compact": "Small, densely packed icons",
+            "grid": "Large icons with names (default)",
+            "list": "Horizontal rows with URLs"
+          }
+        },
+        "nav": {
+          "about": "About",
+          "data": "Data",
+          "icon": "Icons",
+          "layout": "Layout",
+          "profile": "Profile",
+          "search": "Search",
+          "sidebar": "Sidebar",
+          "theme": "Theme/Wallpaper",
+          "time": "Time"
+        },
+        "profile": {
+          "email": "Email",
+          "guest": "Visitor",
+          "owner": "Blogger",
+          "role": "Role",
+          "title": "Profile",
+          "username": "Username"
+        },
+        "resetSection": "Restore defaults",
+        "search": {
+          "custom": "Custom",
+          "customUrl": "Custom search URL",
+          "customUrlHint": "Use the {placeholder} placeholder where the search term should go.",
+          "engine": "Search engine",
+          "palette": "Cmd/Ctrl+K command palette",
+          "paletteHint": "The command palette fuzzy-searches bookmarks, categories, and actions like switching views or opening settings.",
+          "title": "Search"
+        },
+        "sidebar": {
+          "blur": "Frosted glass effect",
+          "defaultCollapsed": "Collapsed by default",
+          "opacity": "Background opacity",
+          "radius": "Sidebar corner radius",
+          "showCounts": "Show bookmark counts",
+          "title": "Sidebar"
+        },
+        "theme": {
+          "blur": "Blur radius",
+          "colorMode": "Color mode",
+          "dark": "Dark",
+          "editing": "Editing",
+          "gradientAngle": "Gradient angle",
+          "gradientFrom": "Gradient start",
+          "gradientTo": "Gradient end",
+          "imageUrl": "Image URL",
+          "independent": "Separate light/dark wallpapers",
+          "kind": "Wallpaper type",
+          "kinds": {
+            "gradient": "Gradient",
+            "none": "None",
+            "preset": "Gallery",
+            "solid": "Solid",
+            "upload": "Upload"
+          },
+          "light": "Light",
+          "maskOpacity": "Overlay opacity",
+          "noise": "Noise texture",
+          "solidColor": "Solid color",
+          "system": "System",
+          "title": "Theme & wallpaper",
+          "tooLarge": "Image is too large ({size}MB). Please compress it to 5MB or less.",
+          "uploadFailed": "Upload failed. Please try again.",
+          "uploadHint": "Choose a local wallpaper (< 5MB, stored locally)",
+          "vignette": "Vignette"
+        },
+        "time": {
+          "showDate": "Show date",
+          "showGreeting": "Show greeting",
+          "showSeconds": "Show seconds",
+          "title": "Time & greeting"
+        },
+        "title": "Settings"
+      },
+      "sidebar": {
+        "addCategory": "New category",
+        "categoryLabel": "{name}, {count}",
+        "donate": "Tip",
+        "notLoggedIn": "Not signed in",
+        "settings": "Settings",
+        "toggle": "Collapse/expand"
+      },
+      "validation": {
+        "bookmarkCategoryOrOrder": "Bookmark category or sort order is invalid",
+        "categoryColorOrOrder": "Category color or sort order is invalid",
+        "descriptionInvalid": "Bookmark description is invalid",
+        "duplicateBookmarkId": "Duplicate bookmark ID",
+        "duplicateCategory": "Duplicate category ID or name",
+        "duplicateCategoryName": "The import file contains duplicate category names",
+        "field": {
+          "bookmarkId": "Bookmark ID",
+          "bookmarkName": "Bookmark name",
+          "bookmarkOwner": "Bookmark owner",
+          "bookmarkUrl": "Bookmark URL",
+          "categoryIcon": "Category icon",
+          "categoryId": "Category ID",
+          "categoryName": "Category name",
+          "categoryOwner": "Category owner"
+        },
+        "fieldInvalid": "{field} is invalid",
+        "fileTooLarge": "Import files must be {size} or smaller",
+        "iconInvalid": "Bookmark icon is invalid",
+        "jsonStructure": "Invalid JSON structure",
+        "missingFields": "Missing the categories or bookmarks field",
+        "netscapeBrowserOnly": "Netscape bookmark files can only be parsed in the browser",
+        "netscapeNoRoot": "No root {tag} element found. This may not be a valid bookmark file",
+        "tooMany": "Imports support at most {categories} categories and {bookmarks} bookmarks",
+        "unknownCategory": "A bookmark refers to a category that does not exist",
+        "unsupportedVersion": "This export format version is not supported",
+        "urlProtocol": "Bookmark URLs must use HTTP or HTTPS and must not contain a username or password"
+      },
+      "viewMode": {
+        "cards": "Cards",
+        "compact": "Compact",
+        "grid": "Grid",
+        "list": "List"
+      },
+      "wallpapers": {
+        "abstractGradient": "Abstract Gradient",
+        "aurora": "Aurora",
+        "cityNight": "City Night",
+        "deepSpace": "Deep Space",
+        "desertDunes": "Dunes",
+        "forestFog": "Misty Forest",
+        "minimalWhite": "Minimal White",
+        "mountainDawn": "Mountain Dawn",
+        "oceanHorizon": "Ocean Horizon",
+        "pastelSky": "Pastel Sky"
+      }
     }
   }
 }

@@ -14,7 +14,7 @@
           class="tab-palette__panel"
           role="dialog"
           aria-modal="true"
-          aria-label="书签命令面板"
+          :aria-label="$t('misc.tab.palette.dialogLabel')"
           tabindex="-1"
           @keydown.stop="onKeydown"
         >
@@ -24,20 +24,20 @@
               ref="inputRef"
               v-model="query"
               type="text"
-              aria-label="搜索书签、分类和命令"
+              :aria-label="$t('misc.tab.palette.inputLabel')"
               class="tab-palette__input"
-              placeholder="搜索书签 / 分类 / 动作，↑↓ 选择，Enter 执行，Esc 关闭"
+              :placeholder="$t('misc.tab.palette.placeholder')"
               autocomplete="off"
               spellcheck="false"
             />
-            <button type="button" class="tab-palette__close" aria-label="关闭命令面板" @click="close">
+            <button type="button" class="tab-palette__close" :aria-label="$t('misc.tab.palette.close')" @click="close">
               <Icon name="lucide:x" size="18" />
             </button>
           </div>
 
           <div v-if="sectionList.length === 0" class="tab-palette__empty">
             <Icon name="lucide:search-x" size="20" />
-            <span>无匹配结果</span>
+            <span>{{ $t('misc.tab.palette.empty') }}</span>
           </div>
 
           <div v-else ref="listRef" class="tab-palette__list">
@@ -74,9 +74,9 @@
 
           <p class="sr-only" role="status" aria-live="polite" aria-atomic="true">{{ selectionStatus }}</p>
           <div class="tab-palette__footer">
-            <span> <kbd>↑</kbd><kbd>↓</kbd> 导航 </span>
-            <span><kbd>Enter</kbd> 执行</span>
-            <span><kbd>Esc</kbd> 关闭</span>
+            <span> <kbd>↑</kbd><kbd>↓</kbd> {{ $t('misc.tab.palette.navigate') }} </span>
+            <span><kbd>Enter</kbd> {{ $t('misc.tab.palette.run') }}</span>
+            <span><kbd>Esc</kbd> {{ $t('misc.tab.palette.dismiss') }}</span>
           </div>
         </div>
       </div>
@@ -99,6 +99,7 @@ export interface CommandAction {
 }
 
 const props = defineProps<{ actions: CommandAction[] }>()
+const { t } = useI18n()
 
 const { paletteOpen, close } = useTabCommandPalette()
 const open = paletteOpen
@@ -141,7 +142,7 @@ const allItems = computed<PaletteItem[]>(() => {
   const catItems: PaletteItem[] = categories.value.map((c) => ({
     id: `cat-${c.id}`,
     title: c.name,
-    subtitle: '分类',
+    subtitle: t('misc.tab.common.category'),
     icon: c.icon || 'lucide:folder',
     source: 'category',
     payload: c,
@@ -187,9 +188,9 @@ const sectionList = computed<PaletteSection[]>(() => {
     else catList.push(it)
   }
   const sections: PaletteSection[] = []
-  if (actions.length > 0) sections.push({ id: 'actions', label: '动作', items: actions })
-  if (bmList.length > 0) sections.push({ id: 'bookmarks', label: '书签', items: bmList })
-  if (catList.length > 0) sections.push({ id: 'categories', label: '分类', items: catList })
+  if (actions.length > 0) sections.push({ id: 'actions', label: t('misc.tab.palette.sectionActions'), items: actions })
+  if (bmList.length > 0) sections.push({ id: 'bookmarks', label: t('misc.tab.common.bookmark'), items: bmList })
+  if (catList.length > 0) sections.push({ id: 'categories', label: t('misc.tab.common.category'), items: catList })
   return sections
 })
 
@@ -198,7 +199,9 @@ const selectionStatus = computed(() => {
   const items = flattenedItems.value
   const index = items.findIndex((item) => item.id === focusedId.value)
   const item = items[index]
-  return item ? `已选择第 ${index + 1} 项，共 ${items.length} 项：${item.title}` : '无匹配结果'
+  return item
+    ? t('misc.tab.palette.selectionStatus', { index: index + 1, total: items.length, title: item.title })
+    : t('misc.tab.palette.empty')
 })
 
 // 打开时清空查询。输入框在面板渲染后才挂上 ref，等引用出现再聚焦。

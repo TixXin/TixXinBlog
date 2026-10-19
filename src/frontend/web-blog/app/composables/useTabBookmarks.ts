@@ -33,6 +33,8 @@ export function useTabBookmarks() {
     currentUser.value?.role === 'owner' ? mockOwnerUser.id : (currentUser.value?.id ?? mockOwnerUser.id),
   )
   const { open: openLoginDrawer } = useLoginDrawer()
+  // 用全局 i18n 实例而非 useI18n：本 composable 也会在插件或测试中脱离组件 setup 调用
+  const { t } = useNuxtApp().$i18n
 
   const categories = useState<BookmarkCategory[]>('tab-categories', () => [])
   const bookmarks = useState<Bookmark[]>('tab-bookmarks', () => [])
@@ -228,7 +230,7 @@ export function useTabBookmarks() {
     try {
       await repo.reorderBookmarks(contentOwnerId.value, updates)
     } catch {
-      error.value = '书签排序未保存，浏览器存储不可用或空间不足。'
+      error.value = t('misc.tab.bookmarks.reorderBookmarksFailed')
       return false
     }
     error.value = null
@@ -248,7 +250,7 @@ export function useTabBookmarks() {
     try {
       await repo.reorderCategories(contentOwnerId.value, updates)
     } catch {
-      error.value = '分组排序未保存，浏览器存储不可用或空间不足。'
+      error.value = t('misc.tab.bookmarks.reorderCategoriesFailed')
       return false
     }
     error.value = null

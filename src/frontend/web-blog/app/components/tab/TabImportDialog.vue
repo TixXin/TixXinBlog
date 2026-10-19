@@ -15,13 +15,13 @@
         class="tid-dialog"
         role="dialog"
         aria-modal="true"
-        aria-label="导入书签"
+        :aria-label="$t('misc.tab.import.title')"
         tabindex="-1"
       >
         <header class="tid-header">
           <Icon name="lucide:download" size="16" />
-          <h2>导入书签</h2>
-          <button type="button" class="tid-close" aria-label="关闭" @click="close">
+          <h2>{{ $t('misc.tab.import.title') }}</h2>
+          <button type="button" class="tid-close" :aria-label="$t('misc.tab.common.close')" @click="close">
             <Icon name="lucide:x" size="16" />
           </button>
         </header>
@@ -31,8 +31,8 @@
             <input type="file" accept=".json,.html,.htm" @change="onFile" />
             <Icon name="lucide:upload-cloud" size="28" />
             <span class="tid-dropzone__hint">
-              <strong>选择文件</strong>
-              <small>支持 JSON 导出文件或浏览器书签 HTML</small>
+              <strong>{{ $t('misc.tab.import.chooseFile') }}</strong>
+              <small>{{ $t('misc.tab.import.fileHint') }}</small>
             </span>
           </label>
 
@@ -44,22 +44,24 @@
           <div v-if="payload" class="tid-preview">
             <div class="tid-preview__stat">
               <span class="tid-preview__num">{{ payload.categories.length }}</span>
-              <span class="tid-preview__label">个分类</span>
+              <span class="tid-preview__label">{{
+                $t('misc.tab.import.categoryUnit', payload.categories.length)
+              }}</span>
             </div>
             <div class="tid-preview__stat">
               <span class="tid-preview__num">{{ payload.bookmarks.length }}</span>
-              <span class="tid-preview__label">个书签</span>
+              <span class="tid-preview__label">{{ $t('misc.tab.import.bookmarkUnit', payload.bookmarks.length) }}</span>
             </div>
           </div>
 
           <div v-if="payload" class="tid-mode">
-            <span class="tid-mode__label">导入策略</span>
+            <span class="tid-mode__label">{{ $t('misc.tab.import.mode') }}</span>
             <div class="tid-mode__options">
-              <label v-for="opt in modeOptions" :key="opt.value" class="tid-mode__opt">
-                <input v-model="mode" type="radio" :value="opt.value" />
+              <label v-for="opt in modeOptions" :key="opt" class="tid-mode__opt">
+                <input v-model="mode" type="radio" :value="opt" />
                 <div>
-                  <div class="tid-mode__opt-title">{{ opt.label }}</div>
-                  <div class="tid-mode__opt-desc">{{ opt.desc }}</div>
+                  <div class="tid-mode__opt-title">{{ $t(`misc.tab.import.modes.${opt}.label`) }}</div>
+                  <div class="tid-mode__opt-desc">{{ $t(`misc.tab.import.modes.${opt}.desc`) }}</div>
                 </div>
               </label>
             </div>
@@ -67,10 +69,10 @@
         </div>
 
         <footer class="tid-footer">
-          <button type="button" class="tid-btn" @click="close">取消</button>
+          <button type="button" class="tid-btn" @click="close">{{ $t('misc.tab.common.cancel') }}</button>
           <button type="button" class="tid-btn tid-btn--primary" :disabled="!payload || importing" @click="onConfirm">
             <Icon v-if="importing" name="lucide:loader-2" size="12" class="tid-spin" />
-            确认导入
+            {{ $t('misc.tab.import.confirm') }}
           </button>
         </footer>
       </div>
@@ -97,11 +99,10 @@ const mode = ref<ImportMode>('merge')
 const error = ref('')
 const importing = ref(false)
 
-const modeOptions: { value: ImportMode; label: string; desc: string }[] = [
-  { value: 'merge', label: '合并（推荐）', desc: '同名分类跳过，相同 URL 的书签跳过' },
-  { value: 'append', label: '追加', desc: '全部新增，允许同名重复' },
-  { value: 'replace', label: '覆盖', desc: '先清空当前数据，再导入新数据' },
-]
+const { t } = useI18n()
+
+/** 导入策略；名称与说明见字典 misc.tab.import.modes.* */
+const modeOptions: ImportMode[] = ['merge', 'append', 'replace']
 
 watch(visible, (v) => {
   if (!v) {
@@ -122,7 +123,7 @@ async function onFile(e: Event) {
   error.value = ''
   payload.value = null
   try {
-    if (file.size > MAX_IMPORT_BYTES) throw new Error('导入文件不能超过 5 MB')
+    if (file.size > MAX_IMPORT_BYTES) throw new Error(t('misc.tab.validation.fileTooLarge', { size: '5 MB' }))
     const raw = await file.text()
     if (file.name.toLowerCase().endsWith('.json')) {
       const exp = parseImportJson(raw)
@@ -131,7 +132,7 @@ async function onFile(e: Event) {
         bookmarks: exp.bookmarks.map((b) => {
           const cat = exp.categories.find((c) => c.id === b.categoryId)
           return {
-            categoryName: cat?.name ?? '导入',
+            categoryName: cat?.name ?? t('misc.tab.netscape.importedGroup'),
             name: b.name,
             url: b.url,
             icon: b.icon,
@@ -144,7 +145,7 @@ async function onFile(e: Event) {
       payload.value = parseNetscapeBookmarks(raw)
     }
   } catch (err) {
-    error.value = err instanceof Error ? err.message : '解析失败'
+    error.value = err instanceof Error ? err.message : t('misc.tab.import.parseFailed')
   } finally {
     input.value = ''
   }
@@ -157,14 +158,19 @@ async function onConfirm() {
   try {
     const ok = await importBulk(submitted, mode.value)
     if (ok) {
-      success(`已导入 ${submitted.categories.length} 个分类、${submitted.bookmarks.length} 个书签`)
+      success(
+        t('misc.tab.import.success', {
+          categories: t('misc.tab.import.categoryCount', submitted.categories.length),
+          bookmarks: t('misc.tab.common.bookmarkCount', submitted.bookmarks.length),
+        }),
+      )
       // 导入期间可能关闭窗口或选择另一份文件，只关闭本次提交对应的预览。
       if (payload.value === submitted) close()
     } else {
-      toastError('导入失败，请先登录后再试')
+      toastError(t('misc.tab.import.loginRequired'))
     }
   } catch (err) {
-    toastError(err instanceof Error ? err.message : '导入失败')
+    toastError(err instanceof Error ? err.message : t('misc.tab.import.failed'))
   } finally {
     importing.value = false
   }

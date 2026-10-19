@@ -12,16 +12,18 @@
  */
 
 import type { ImportPayload } from './types'
-import { requireImportText, validateImportPayload } from './validation'
+import { currentTranslate } from '~/utils/format'
+import { requireImportText, tabValidationError, validateImportPayload } from './validation'
 
 export function parseNetscapeBookmarks(html: string): ImportPayload {
   requireImportText(html)
+  const t = currentTranslate()
   if (typeof window === 'undefined') {
-    throw new Error('Netscape 书签解析需在浏览器端执行')
+    throw tabValidationError('netscapeBrowserOnly')
   }
   const doc = new DOMParser().parseFromString(html, 'text/html')
   const root = doc.querySelector('DL')
-  if (!root) throw new Error('未找到 <DL> 根节点，可能不是有效的书签文件')
+  if (!root) throw tabValidationError('netscapeNoRoot', { tag: '<DL>' })
 
   const categories: ImportPayload['categories'] = []
   const bookmarks: ImportPayload['bookmarks'] = []
@@ -42,7 +44,7 @@ export function parseNetscapeBookmarks(html: string): ImportPayload {
       const h3 = child.querySelector(':scope > H3')
       const a = child.querySelector(':scope > A')
       if (h3) {
-        const name = h3.textContent?.trim() || '未命名分组'
+        const name = h3.textContent?.trim() || t('misc.tab.netscape.untitledGroup')
         ensureCategory(name)
         const subDl = child.querySelector(':scope > DL')
         if (subDl) walk(subDl, name)
@@ -62,8 +64,9 @@ export function parseNetscapeBookmarks(html: string): ImportPayload {
   }
 
   // 默认分类：没被归入分组的顶层书签
-  ensureCategory('导入')
-  walk(root, '导入')
+  const fallbackCategory = t('misc.tab.netscape.importedGroup')
+  ensureCategory(fallbackCategory)
+  walk(root, fallbackCategory)
 
   const payload = { categories, bookmarks }
   validateImportPayload(payload)
