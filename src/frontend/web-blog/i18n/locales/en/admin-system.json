@@ -56,7 +56,8 @@
       "titleNewPost": "New post",
       "titleEditPost": "Edit post",
       "titleFallback": "Content management",
-      "logoutFailed": "Couldn't sign out. Please try again later."
+      "logoutFailed": "Couldn't sign out. Please try again later.",
+      "titleSetup": "Set up site"
     },
     "maintenance": {
       "title": "Backup & Maintenance",
@@ -740,7 +741,10 @@
     },
     "login": {
       "changed": "Password changed. Sign in again with your new password.",
-      "help": "Use the author account provided by the site maintainer. Contact the maintainer if you need to recover your password."
+      "help": "Use the author account provided by the site maintainer. Contact the maintainer if you need to recover your password.",
+      "setupNeeded": "This site has no owner account yet. Finish setup first using the link printed when installation finished.",
+      "setupLink": "Open the setup wizard",
+      "setupDone": "Your owner account has been created. Sign in with the username and password you just set."
     },
     "auth": {
       "expired": "Your session has expired. Please sign in again.",
@@ -792,6 +796,42 @@
         "missing": "Target missing",
         "unknown": "Not checked yet"
       }
+    },
+    "setup": {
+      "title": "Set up site",
+      "intro": "Create the owner account for this newly installed site. This page closes permanently once the account exists.",
+      "checking": "Checking site status…",
+      "unavailable": "This site has already been set up, or browser setup is not enabled. Sign in to the dashboard; if you forgot your password, use the reset command on the server.",
+      "statusFailed": "Site status cannot be checked right now. Please try again later.",
+      "retry": "Retry",
+      "toLogin": "Go to sign-in",
+      "tokenLabel": "Setup token",
+      "tokenHelp": "The link printed when installation finished already contains the token and fills it in automatically. You can also copy SETUP_TOKEN from the server’s .env file.",
+      "tokenFromLink": "The token was read from the link and removed from the address bar.",
+      "usernameLabel": "Username",
+      "usernameHelp": "1–64 characters, used to sign in to the dashboard.",
+      "passwordLabel": "Password",
+      "confirmLabel": "Confirm password",
+      "passwordRules": "Password requirements",
+      "ruleLength": "{min}–{max} characters",
+      "ruleMatch": "Both entries match",
+      "ruleMet": "met",
+      "ruleUnmet": "not met",
+      "passwordTip": "Use a long random password from a password manager, and do not reuse it on other sites.",
+      "siteNameLabel": "Site name (optional)",
+      "siteNameHelp": "Shown in page titles and navigation. You can change it later under Site settings in the dashboard.",
+      "localeLabel": "Site language",
+      "localeHelp": "Language of the initial owner profile. The default interface language comes from the deployment settings, and visitors can switch it themselves.",
+      "localeZh": "中文",
+      "localeEn": "English",
+      "mismatch": "The passwords do not match",
+      "tooShort": "The password must be at least {min} characters",
+      "tooLong": "The password cannot exceed {max} characters",
+      "tokenMissing": "Enter the setup token",
+      "submit": "Create owner account",
+      "submitting": "Creating…",
+      "failed": "Setup could not be completed. Please try again later.",
+      "success": "Owner account created. Please sign in."
     }
   }
 }

@@ -105,17 +105,20 @@ watch(
 )
 const colorMode = useColorMode()
 const leaving = ref(false)
-const isLogin = computed(() => route.path === '/admin/login')
+// 登录页与初始化向导都不需要后台导航
+const isLogin = computed(() => route.path === '/admin/login' || route.path === '/setup')
 const activePath = computed(() => adminModule(route.path)?.path)
 const activeItem = computed(() => navigation.find((item) => item.path === activePath.value))
 const pageTitle = computed(() =>
-  isLogin.value
-    ? t('admin-system.layout.titleLogin')
-    : route.path === '/admin/posts/new'
-      ? t('admin-system.layout.titleNewPost')
-      : /^\/admin\/posts\/\d+$/.test(route.path)
-        ? t('admin-system.layout.titleEditPost')
-        : t(activeItem.value?.labelKey ?? 'admin-system.layout.titleFallback'),
+  route.path === '/setup'
+    ? t('admin-system.layout.titleSetup')
+    : isLogin.value
+      ? t('admin-system.layout.titleLogin')
+      : route.path === '/admin/posts/new'
+        ? t('admin-system.layout.titleNewPost')
+        : /^\/admin\/posts\/\d+$/.test(route.path)
+          ? t('admin-system.layout.titleEditPost')
+          : t(activeItem.value?.labelKey ?? 'admin-system.layout.titleFallback'),
 )
 function toggleColor() {
   colorMode.preference = colorMode.value === 'dark' ? 'light' : 'dark'

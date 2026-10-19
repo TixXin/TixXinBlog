@@ -205,3 +205,49 @@ it('客户端错误上报经同源网关转发，保留 Origin 校验与限流�
   expect(rejected.headers.get('retry-after')).toBe('60')
   expect(rejected.headers.get('cache-control')).toBe('no-store')
 })
+
+it('初始化向导经同源网关转发：状态查询与提交放行，跨站提交和相近路径拒绝', async () => {
+  const received: { method?: string; url?: string; body: string }[] = []
+  const backend = await listen(
+    createServer(async (request, response) => {
+      let body = ''
+      for await (const chunk of request) body += chunk
+      received.push({ method: request.method, url: request.url, body })
+      response.setHeader('content-type', 'application/json')
+      response.statusCode = request.method === 'POST' ? 201 : 200
+      const data = request.method === 'POST' ? { username: 'owner' } : { needsSetup: true }
+      response.end(JSON.stringify({ code: 0, message: 'ok', data, traceId: 'gateway-setup' }))
+    }),
+  )
+  for (const [key, value] of Object.entries(h3)) vi.stubGlobal(key, value)
+  runtimeConfig.apiBaseUrl = `${backend}/api/v1`
+  runtimeConfig.trustedProxyCidrs = ''
+  const handler = (await import('../../server/api/v1/[...path]')).default
+  const app = h3.createApp().use(
+    h3.eventHandler((event: Parameters<typeof handler>[0]) => {
+      event.context.params = { path: event.path.slice('/api/v1/'.length) }
+      return handler(event)
+    }),
+  )
+  const gateway = await listen(createServer(h3.toNodeListener(app)))
+  const status = await fetch(`${gateway}/api/v1/setup/status`)
+  expect(status.status).toBe(200)
+  expect((await status.json()).data).toEqual({ needsSetup: true })
+  const body = JSON.stringify({ token: 'f'.repeat(64), username: 'owner', password: 'correct-horse-battery' })
+  const submit = (origin: string, path = 'setup') =>
+    fetch(`${gateway}/api/v1/${path}`, {
+      method: 'POST',
+      headers: { origin, 'content-type': 'application/json' },
+      body,
+    })
+  const created = await submit(gateway)
+  expect(created.status).toBe(201)
+  expect(created.headers.get('cache-control')).toBe('no-store')
+  expect(received).toEqual([
+    { method: 'GET', url: '/api/v1/setup/status', body: '' },
+    { method: 'POST', url: '/api/v1/setup', body },
+  ])
+  expect((await submit('https://other.example.com')).status).toBe(403)
+  expect((await submit(gateway, 'setupx')).status).toBe(404)
+  expect(received).toHaveLength(2)
+})

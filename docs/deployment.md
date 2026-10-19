@@ -115,6 +115,7 @@ if (-not (Test-Path ../tixxin-private/production.env)) {
 | `JWT_ACCESS_SECRET`                                                                                     | 至少 32 位随机签名密钥                                                                                                                                                                                                   |
 | `SITE_HOST`、`SITE_URL`                                                                                 | 对外域名与对应 HTTPS origin                                                                                                                                                                                              |
 | `NUXT_PUBLIC_DEFAULT_LOCALE`                                                                            | 站点默认界面语言，`zh-CN`（缺省）或 `en`，其余值按 `zh-CN` 处理；运行时读取，访客可在「界面设置」中切换，选择保存在 `blog-locale` cookie；为 `en` 时，执行迁移会把仍未编辑的初始站点资料改为英文，博主编辑过的内容不改写 |
+| `SETUP_TOKEN`                                                                                           | 可选，浏览器初始化向导的一次性令牌，至少 32 个字符且不含空白（建议 `openssl rand -hex 32`）；留空时向导关闭，见[初始化管理员](#初始化管理员)                                                                             |
 | `TIXXIN_NETWORK_SUBNET`                                                                                 | 可选，项目内部网络子网，缺省 `172.31.250.0/24`；与宿主机已有网络冲突时改为其他未使用的私网 `/24`，见[内部网络](#内部网络)                                                                                                |
 | `HTTPS_BIND_ADDRESS`、`HTTP_PORT`、`HTTPS_PORT`                                                         | 默认仅绑定本机，外网访问不到、也无法签发证书；直接对外服务时改为 `0.0.0.0` 或公网网卡地址，并配置防火墙和 DNS                                                                                                            |
 
@@ -214,6 +215,17 @@ node scripts/release/release.mjs --env-file $releaseEnv --version $releaseVersio
 执行依次启动空数据库、运行正式迁移、启动 API/前端/HTTPS，再验证就绪、同源公开 API 和版本头。不执行开发 seed。首次安装失败时保留已创建卷；不要反复使用 `--initialize` 绕过检查，核对现场并备份后改走已有站点流程。
 
 ## 初始化管理员
+
+### 浏览器初始化向导
+
+环境文件配置了 `SETUP_TOKEN` 时，站点启动后打开 `https://<域名>/setup?token=<令牌>`，在页面上设置登录名、密码（12–128 个字符）、站点名称和站点语言即可创建首个博主账号，随后跳转到 `/admin/login`。页面只在浏览器渲染（服务端响应不回显带令牌的地址），读取令牌后立即从地址栏移除；页面不进入 SSR 缓存、不被索引，也不发送 Referer。
+
+- 只有数据库里没有任何管理员时向导才开放；账号创建后向导与接口永久关闭（`/api/v1/setup` 返回 404），令牌即使泄露也无法再次使用。完成后可从环境文件删除 `SETUP_TOKEN`，下次发布时生效。
+- 后台登录页检测到需要初始化时会显示前往向导的提示。
+- 提交受独立限流保护（每个地址每 10 分钟 5 次）；并发提交只有一次成功。
+- 未配置 `SETUP_TOKEN` 时向导关闭，使用下面的命令行方式初始化。
+
+### 命令行初始化
 
 在受控终端环境设置 `ADMIN_DEFAULT_USERNAME` 与至少 12 位随机 `ADMIN_DEFAULT_PASSWORD`，不要把密码写入命令参数或日志。服务镜像就绪后执行：
 

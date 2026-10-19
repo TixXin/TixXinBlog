@@ -56,7 +56,8 @@
       "titleNewPost": "新建文章",
       "titleEditPost": "编辑文章",
       "titleFallback": "内容管理",
-      "logoutFailed": "退出失败，请稍后重试"
+      "logoutFailed": "退出失败，请稍后重试",
+      "titleSetup": "初始化站点"
     },
     "maintenance": {
       "title": "备份与维护",
@@ -740,7 +741,10 @@
     },
     "login": {
       "changed": "密码已修改，请使用新密码重新登录。",
-      "help": "请使用站点维护者提供的博主账号；需要恢复密码时请联系维护者。"
+      "help": "请使用站点维护者提供的博主账号；需要恢复密码时请联系维护者。",
+      "setupNeeded": "站点还没有博主账号。请先使用安装完成时输出的链接完成初始化。",
+      "setupLink": "前往初始化向导",
+      "setupDone": "博主账号已创建，请使用刚设置的登录名和密码登录。"
     },
     "auth": {
       "expired": "登录已过期，请重新登录",
@@ -792,6 +796,42 @@
         "missing": "目标缺失",
         "unknown": "尚未核查"
       }
+    },
+    "setup": {
+      "title": "初始化站点",
+      "intro": "为全新安装的站点创建博主账号。账号创建后此页面会永久关闭。",
+      "checking": "正在确认站点状态…",
+      "unavailable": "此站点已完成初始化，或未开启浏览器初始化。请前往后台登录；忘记密码时请在服务器上使用重置命令。",
+      "statusFailed": "暂时无法确认站点状态，请稍后重试。",
+      "retry": "重试",
+      "toLogin": "前往后台登录",
+      "tokenLabel": "初始化令牌",
+      "tokenHelp": "安装完成时输出的链接已包含令牌，会自动填入；也可以从服务器的 .env 文件中复制 SETUP_TOKEN。",
+      "tokenFromLink": "已从链接读取令牌，并已从地址栏移除。",
+      "usernameLabel": "登录名",
+      "usernameHelp": "1–64 个字符，用于登录后台。",
+      "passwordLabel": "密码",
+      "confirmLabel": "确认密码",
+      "passwordRules": "密码要求",
+      "ruleLength": "{min}–{max} 个字符",
+      "ruleMatch": "两次输入一致",
+      "ruleMet": "已满足",
+      "ruleUnmet": "未满足",
+      "passwordTip": "建议使用密码管理器生成的长随机密码，不要与其他网站重复。",
+      "siteNameLabel": "站点名称（可选）",
+      "siteNameHelp": "显示在页面标题和导航中，之后可在后台「站点资料」修改。",
+      "localeLabel": "站点语言",
+      "localeHelp": "用于初始博主资料的语言；界面默认语言由部署配置决定，访客可自行切换。",
+      "localeZh": "中文",
+      "localeEn": "English",
+      "mismatch": "两次输入的密码不一致",
+      "tooShort": "密码至少需要 {min} 个字符",
+      "tooLong": "密码不能超过 {max} 个字符",
+      "tokenMissing": "请填写初始化令牌",
+      "submit": "创建博主账号",
+      "submitting": "正在创建…",
+      "failed": "初始化未完成，请稍后重试",
+      "success": "博主账号已创建，请登录后台"
     }
   }
 }

@@ -21,6 +21,18 @@ const fallbackSiteName = 'My Blog'
 const defaultLocale = resolveDefaultLocale(process.env.NUXT_PUBLIC_DEFAULT_LOCALE)
 /** 每种语言按域拆成多个字典文件，切换到该语言时一并懒加载 */
 const localeFiles = (locale: string) => DICTIONARY_DOMAINS.map((domain) => `${locale}/${domain}.json`)
+// 初始化向导：首屏地址可能带一次性令牌，任何环境都不缓存、不索引、不外传来源地址。
+// 只做客户端渲染：服务端直出的 HTML 与水合数据会回显完整请求地址，令牌不能进入任何响应正文。
+const setupRouteRules = {
+  ssr: false,
+  cache: false as const,
+  prerender: false,
+  headers: {
+    'Cache-Control': 'private, no-store',
+    'X-Robots-Tag': 'noindex, nofollow, noarchive',
+    'Referrer-Policy': 'no-referrer',
+  },
+}
 const postPreviewRouteRules = {
   cache: false as const,
   prerender: false,
@@ -195,7 +207,7 @@ export default {
   sitemap: {
     strictNuxtContentPaths: true,
     // 搜索页 noindex，标签页是访客个人起始页（本地书签），均不收录
-    exclude: ['/admin', '/admin/**', '/_theme-engine-devtools', '/search', '/tabs', '/posts/preview'],
+    exclude: ['/admin', '/admin/**', '/_theme-engine-devtools', '/search', '/tabs', '/posts/preview', '/setup'],
     sources: ['/api/__sitemap__/urls'],
     cacheMaxAgeSeconds: 0,
   },
@@ -203,7 +215,7 @@ export default {
     // 受管媒体经 /api/v1/media/ 提供，文章封面与分享图需对搜索引擎和分享卡片爬虫保持可抓取（最长匹配优先）
     allow: ['/', '/api/v1/media/'],
     // /admin 无斜杠形式同样屏蔽；其余 /api/ 为接口转发，不作为页面收录
-    disallow: ['/admin', '/admin/', '/api/', '/_theme-engine-devtools', '/posts/preview'],
+    disallow: ['/admin', '/admin/', '/api/', '/_theme-engine-devtools', '/posts/preview', '/setup'],
   },
   fonts: {
     // 单 provider 模式：仅初始化 bunny，跳过 google/googleicons 等其他内置 provider
@@ -227,6 +239,7 @@ export default {
     '/posts/preview': postPreviewRouteRules,
     '/api/v1/posts/preview': postPreviewRouteRules,
     '/api/v1/admin/posts/*/preview-link': postPreviewRouteRules,
+    '/setup': setupRouteRules,
     ...(process.env.NODE_ENV === 'production'
       ? {
           '/admin': { headers: { 'Cache-Control': 'private, no-store', 'X-Robots-Tag': 'noindex' } },

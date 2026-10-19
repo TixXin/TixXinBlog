@@ -117,6 +117,7 @@ Neither command sequence overwrites an existing environment file. Edit the actua
 | `JWT_ACCESS_SECRET`                                                                                     | A random signing key of at least 32 characters                                                                                                                                                                                                                                                                                                                                    |
 | `SITE_HOST`, `SITE_URL`                                                                                 | The public domain and its corresponding HTTPS origin                                                                                                                                                                                                                                                                                                                              |
 | `NUXT_PUBLIC_DEFAULT_LOCALE`                                                                            | The site's default interface language, `zh-CN` (default) or `en`; any other value falls back to `zh-CN`. Read at runtime; visitors can switch languages in the appearance settings, and their choice is stored in the `blog-locale` cookie. When it is `en`, migrations switch a still-unedited initial site profile to English; anything the owner has edited is never rewritten |
+| `SETUP_TOKEN`                                                                                           | Optional one-time token for the browser setup wizard, at least 32 characters with no whitespace (for example `openssl rand -hex 32`); leave it empty to disable the wizard, see [Initializing the Administrator](#initializing-the-administrator)                                                                                                                                 |
 | `TIXXIN_NETWORK_SUBNET`                                                                                 | Optional subnet of the project's internal network, `172.31.250.0/24` by default; change it to another unused private `/24` if it conflicts with an existing host network, see [Internal Network](#internal-network)                                                                                                                                                               |
 | `HTTPS_BIND_ADDRESS`, `HTTP_PORT`, `HTTPS_PORT`                                                         | Bound to the local host only by default, so the site is unreachable and cannot obtain certificates; for direct public serving set `0.0.0.0` or the public interface address, and configure the firewall and DNS                                                                                                                                                                   |
 
@@ -216,6 +217,17 @@ node scripts/release/release.mjs --env-file $releaseEnv --version $releaseVersio
 Execution starts an empty database, runs formal migrations, starts the API/frontend/HTTPS services, then verifies readiness, the same-origin public API, and release headers. It does not run the development seed. If initial installation fails, created volumes are preserved. Do not repeatedly use `--initialize` to bypass checks. Inspect the current state, back it up, then use the existing-site procedure.
 
 ## Initializing the Administrator
+
+### Browser Setup Wizard
+
+When the environment file sets `SETUP_TOKEN`, open `https://<domain>/setup?token=<token>` once the site is running. Choose a login name, a password (12–128 characters), the site name, and the site language to create the first owner account, then you are taken to `/admin/login`. The page renders only in the browser (no server response echoes the tokenized address) and removes the token from the address bar as soon as it reads it; it is never stored in the SSR cache or indexed, and sends no Referer.
+
+- The wizard is open only while the database has no administrator. After the account is created, the wizard and its API close permanently (`/api/v1/setup` returns 404), so a leaked token cannot be reused. You can then remove `SETUP_TOKEN` from the environment file; it takes effect on the next release.
+- The admin sign-in page shows a link to the wizard while setup is still needed.
+- Submissions have their own rate limit (5 per address every 10 minutes), and concurrent submissions succeed only once.
+- Without `SETUP_TOKEN` the wizard is closed; use the command-line method below.
+
+### Command-Line Initialization
 
 In a controlled terminal environment, set `ADMIN_DEFAULT_USERNAME` and a random `ADMIN_DEFAULT_PASSWORD` of at least 12 characters. Do not put the password in command arguments or logs. The prompt text in the commands stays Chinese, matching the admin interface: `登录名` is the login name and `密码` is the password. Once the service images are ready, run:
 
