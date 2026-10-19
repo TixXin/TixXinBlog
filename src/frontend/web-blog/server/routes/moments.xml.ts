@@ -3,9 +3,10 @@
  * @description 朋友圈 RSS 仅发布真实公开动态，使用运行时站点地址并及时反映撤回；
  *              language 与频道标题后缀跟随站点默认语言（服务端没有 Nuxt i18n 实例，使用本文件的小映射），条目内容不翻译
  */
-import { resolveDefaultLocale, type SupportedLocale } from '../../i18n/localeOptions'
+import type { SupportedLocale } from '../../i18n/localeOptions'
 import {
   escapeXml,
+  feedLocale,
   latestDate,
   publicFeedUrl,
   publicMoments,
@@ -36,9 +37,7 @@ export default defineEventHandler(async (event) => {
   const site = publicSiteUrl(event)
   const [moments, settings] = await Promise.all([publicMoments(event), publicSiteSettings(event)])
   const creator = escapeXml(settings.ownerName || settings.name)
-  const locale = resolveDefaultLocale(
-    (useRuntimeConfig(event).public as { i18n?: { defaultLocale?: unknown } }).i18n?.defaultLocale,
-  )
+  const locale = feedLocale(event)
   const items = moments
     .map((moment) => {
       const oneLine = moment.content.replace(/\s+/g, ' ').trim()

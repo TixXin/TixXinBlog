@@ -1,8 +1,9 @@
 /**
  * @file feed.json.ts
- * @description 文章 JSON Feed 1.1，复用 RSS 的公开数据与缓存，全文不可用时提供纯文本摘要
+ * @description 文章 JSON Feed 1.1，复用 RSS 的公开数据与缓存，全文不可用时提供纯文本摘要；
+ *              language 跟随站点默认语言，条目内容不翻译
  */
-import { publicArticleFeed, publicFeedUrl, sendFeed } from '../utils/publicContent'
+import { feedLocale, publicArticleFeed, publicFeedUrl, sendFeed } from '../utils/publicContent'
 
 export default defineEventHandler(async (event) => {
   const { site, settings, creator, entries, updated } = await publicArticleFeed(event)
@@ -14,7 +15,7 @@ export default defineEventHandler(async (event) => {
       home_page_url: site + '/',
       feed_url: site + '/feed.json',
       description: settings.description,
-      language: 'zh-CN',
+      language: feedLocale(event),
       authors: [{ name: creator }],
       items: entries.map(({ post, id, url, html, published, modified }) => ({
         id,

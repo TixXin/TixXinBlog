@@ -1,8 +1,9 @@
 /**
  * @file atom.xml.ts
- * @description 文章 Atom 1.0 订阅，复用 RSS 的公开数据、全文渲染与条件请求
+ * @description 文章 Atom 1.0 订阅，复用 RSS 的公开数据、全文渲染与条件请求；
+ *              language 跟随站点默认语言，条目内容不翻译
  */
-import { escapeXml, publicArticleFeed, sendFeed } from '../utils/publicContent'
+import { escapeXml, feedLocale, publicArticleFeed, sendFeed } from '../utils/publicContent'
 
 export default defineEventHandler(async (event) => {
   const { site, settings, creator, entries, updated } = await publicArticleFeed(event)
@@ -21,7 +22,7 @@ export default defineEventHandler(async (event) => {
   return sendFeed(
     event,
     `<?xml version="1.0" encoding="UTF-8"?>
-<feed xmlns="http://www.w3.org/2005/Atom" xml:lang="zh-CN">
+<feed xmlns="http://www.w3.org/2005/Atom" xml:lang="${feedLocale(event)}">
 <id>${escapeXml(site + '/')}</id><title>${escapeXml(settings.name)}</title>
 <subtitle>${escapeXml(settings.description)}</subtitle><updated>${updated.toISOString()}</updated>
 <link rel="alternate" type="text/html" href="${escapeXml(site + '/')}" />

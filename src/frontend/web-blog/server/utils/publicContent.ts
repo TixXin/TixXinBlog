@@ -10,6 +10,7 @@ import type { FlashNote } from '~/features/flash/types'
 import type { MomentItem, MomentPage } from '~/features/moment/types'
 import type { SiteSettingsData } from '~/features/site/settings'
 import { articlePath } from '~/utils/articlePath'
+import { resolveDefaultLocale, type SupportedLocale } from '../../i18n/localeOptions'
 
 export async function publicApi<T>(event: H3Event, path: string): Promise<T> {
   const base = String(useRuntimeConfig(event).apiBaseUrl).replace(/\/$/, '')
@@ -238,4 +239,20 @@ export function escapeXml(value: string): string {
 
 export function publicSiteUrl(event: H3Event): string {
   return String(useRuntimeConfig(event).public.siteUrl).replace(/\/$/, '')
+}
+
+/**
+ * 订阅源的 language 跟随站点默认语言（NUXT_PUBLIC_DEFAULT_LOCALE），不读访客 cookie；
+ * 服务端没有 Nuxt i18n 实例，频道名等少量文案由各路由按此语言取本地小映射，条目内容不翻译
+ */
+export function feedLocale(event: H3Event): SupportedLocale {
+  return resolveDefaultLocale(
+    (useRuntimeConfig(event).public as { i18n?: { defaultLocale?: unknown } }).i18n?.defaultLocale,
+  )
+}
+
+/** 闪念频道标题与说明；中文与 zh-CN 字典 common.feed.flashRss 的站名后缀一致，RSS 与 JSON 共用 */
+export const FLASH_FEED_TEXT: Record<SupportedLocale, { title: (site: string) => string; description: string }> = {
+  'zh-CN': { title: (site) => `${site} 闪念`, description: '公开的灵感碎片' },
+  en: { title: (site) => `${site} Flash notes`, description: 'Public fragments of ideas' },
 }

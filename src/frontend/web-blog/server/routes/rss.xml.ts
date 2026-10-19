@@ -1,8 +1,9 @@
 /**
  * @file rss.xml.ts
- * @description 文章 RSS 由当前公开数据库文章生成，撤回内容不再继续出现在订阅中；正文以 content:encoded 输出全文
+ * @description 文章 RSS 由当前公开数据库文章生成，撤回内容不再继续出现在订阅中；正文以 content:encoded 输出全文；
+ *              language 跟随站点默认语言，条目内容不翻译
  */
-import { escapeXml, publicArticleFeed, sendFeed } from '../utils/publicContent'
+import { escapeXml, feedLocale, publicArticleFeed, sendFeed } from '../utils/publicContent'
 
 export default defineEventHandler(async (event) => {
   const { site, settings, creator, entries, updated } = await publicArticleFeed(event)
@@ -25,7 +26,7 @@ export default defineEventHandler(async (event) => {
     `<?xml version="1.0" encoding="UTF-8"?>
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom" xmlns:content="http://purl.org/rss/1.0/modules/content/" xmlns:dc="http://purl.org/dc/elements/1.1/"><channel>
 <title>${escapeXml(settings.name)}</title><link>${escapeXml(site + '/')}</link>
-<description>${escapeXml(settings.description)}</description><language>zh-CN</language>
+<description>${escapeXml(settings.description)}</description><language>${feedLocale(event)}</language>
 <lastBuildDate>${updated.toUTCString()}</lastBuildDate>
 <atom:link href="${escapeXml(site + '/rss.xml')}" rel="self" type="application/rss+xml" />
 ${items}

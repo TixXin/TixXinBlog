@@ -21,7 +21,7 @@ const require = createRequire(import.meta.url)
 const h3 = createRequire(require.resolve('nuxt/package.json'))('h3') as typeof import('h3')
 const runtimeConfig = vi.hoisted(() => ({
   apiBaseUrl: 'https://api.example.test/api/v1',
-  public: { siteUrl: 'https://blog.example.test/' },
+  public: { siteUrl: 'https://blog.example.test/' } as { siteUrl: string; i18n?: { defaultLocale?: string } },
 }))
 mockNuxtImport('useRuntimeConfig', () => () => runtimeConfig)
 
@@ -302,6 +302,37 @@ describe('文章订阅格式', () => {
     posts[0]!.slug = undefined
     const numeric = await (await requestFeed('json')).json()
     expect(numeric.items[0].url).toBe(`${site}/articles/42`)
+  })
+})
+
+describe('文章订阅语言跟随站点默认语言', () => {
+  afterEach(() => {
+    delete runtimeConfig.public.i18n
+  })
+
+  async function feedLanguages() {
+    const rss = parseXml(await (await requestFeed('rss')).text())
+    const atom = parseXml(await (await requestFeed('atom')).text())
+    const json = await (await requestFeed('json')).json()
+    return [
+      rss.querySelector('channel > language')?.textContent,
+      atom.documentElement.getAttribute('xml:lang'),
+      json.language,
+    ]
+  }
+
+  it('未配置或配置无效时三种格式均为中文', async () => {
+    expect(await feedLanguages()).toEqual(['zh-CN', 'zh-CN', 'zh-CN'])
+    runtimeConfig.public.i18n = { defaultLocale: 'fr' }
+    expect(await feedLanguages()).toEqual(['zh-CN', 'zh-CN', 'zh-CN'])
+  })
+
+  it('站点默认英文时三种格式均声明英文，站点资料与文章内容不翻译', async () => {
+    runtimeConfig.public.i18n = { defaultLocale: 'en' }
+    expect(await feedLanguages()).toEqual(['en', 'en', 'en'])
+    const json = await (await requestFeed('json')).json()
+    expect(json.title).toBe(settings.name)
+    expect(json.items[0].title).toBe(posts[0]!.title)
   })
 })
 
