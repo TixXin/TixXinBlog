@@ -91,6 +91,29 @@ describe('公开列表的失败反馈', () => {
     expect(wrapper.get('.moment-list__more').attributes('disabled')).toBeUndefined()
   })
 
+  it('加载更多在请求中保持可聚焦但不重复触发', async () => {
+    const wrapper = await mountSuspended(MomentList, {
+      shallow: true,
+      global,
+      props: {
+        moments: [moment],
+        ownerProfile: { name: '博主', avatar: '' },
+        states: {},
+        pending: true,
+        hasMore: true,
+      },
+    })
+    wrappers.push(wrapper)
+    const more = wrapper.get('.moment-list__more')
+    expect(more.attributes('disabled')).toBeUndefined()
+    expect(more.attributes('aria-disabled')).toBe('true')
+    await more.trigger('click')
+    expect(wrapper.emitted('more')).toBeUndefined()
+    await wrapper.setProps({ pending: false })
+    await more.trigger('click')
+    expect(wrapper.emitted('more')).toHaveLength(1)
+  })
+
   it('评论重试保留输入，忙碌期间不重复触发，恢复后回到原有加载更多按钮', async () => {
     const wrapper = await mountSuspended(MomentCommentSection, {
       shallow: true,

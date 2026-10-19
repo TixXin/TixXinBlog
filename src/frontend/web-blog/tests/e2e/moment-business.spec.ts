@@ -320,6 +320,45 @@ test('分页与筛选共享URL，读取失败保留内容并可重试，迟到�
   await expect(page.locator('.moment-card__content')).toContainText('样本 02')
 })
 
+test('键盘聚焦加载更多按钮不自动翻页，回车只加载下一页并把焦点交给新动态', async ({ page }) => {
+  const pages: string[] = []
+  page.on('request', (request) => {
+    if (request.url().includes('/api/v1/moments?')) pages.push(new URL(request.url()).searchParams.get('page') ?? '')
+  })
+  // 等两帧，交叉观察回调在渲染步骤中派发，保证聚焦后的自动加载判断已经发生。
+  const settleFrames = () =>
+    page.evaluate(
+      () => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve(null)))),
+    )
+  await page.goto('/moments?date=2026-04-08')
+  await expect(page.locator('.moment-list')).toHaveAttribute('aria-busy', 'false')
+  await expect(page.locator('.moment-card')).toHaveCount(15)
+  const firstPage = await page.locator('.moment-card').evaluateAll((items) => items.map((item) => item.id))
+  const more = page.getByRole('button', { name: '加载更多动态', exact: true })
+  await expect(more).toBeEnabled()
+  // 键盘操作后再聚焦，按钮以 focus-visible 状态被滚入视口，与 Tab 到达时一致。
+  await page.keyboard.press('Shift')
+  await more.focus()
+  await expect(more).toBeInViewport()
+  await settleFrames()
+  await expect(more).toBeFocused()
+  expect(page.url()).not.toMatch(/page=2/)
+  await expect(page.locator('.moment-card')).toHaveCount(15)
+  await page.keyboard.press('Enter')
+  await expect(page).toHaveURL(/page=2/)
+  await expect(page.locator('.moment-card')).toHaveCount(30)
+  const ids = await page.locator('.moment-card').evaluateAll((items) => items.map((item) => item.id))
+  expect(ids.slice(0, 15)).toEqual(firstPage)
+  expect(new Set(ids).size).toBe(30)
+  await expect(page.locator(`#${ids[15]}`)).toBeFocused()
+  await settleFrames()
+  await expect(page.locator('.moment-list')).toHaveAttribute('aria-busy', 'false')
+  expect(page.url()).not.toMatch(/page=3/)
+  await expect(page.locator('.moment-card')).toHaveCount(30)
+  expect(pages.filter((value) => value === '2')).toHaveLength(1)
+  expect(pages).not.toContain('3')
+})
+
 test('登录轮换期间快速刷新跳转仍可恢复后台会话', async ({ page }) => {
   test.setTimeout(90000)
   await login(page)

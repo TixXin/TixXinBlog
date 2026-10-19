@@ -29,6 +29,7 @@
       v-for="moment in moments"
       :id="`moment-${moment.id}`"
       :key="moment.id"
+      tabindex="-1"
       :moment="moment"
       :owner-profile="ownerProfile"
       :state="states[moment.id]"
@@ -44,8 +45,9 @@
         :aria-busy="pending"
         type="button"
         class="moment-list__more"
-        :disabled="pending || !!errorMessage || !hydrated"
-        @click="$emit('more')"
+        :disabled="!!errorMessage || !hydrated"
+        :aria-disabled="pending"
+        @click="requestMore"
       >
         {{ pending ? '正在加载…' : '加载更多动态' }}
       </button>
@@ -85,15 +87,40 @@ const emit = defineEmits<{
   like: [value: { id: string; liked: boolean; complete: (success: boolean) => void }]
 }>()
 const sentinelRef = ref<HTMLElement | null>(null),
-  hydrated = ref(false)
+  hydrated = ref(false),
+  // 由按钮发起加载时记下当时最后一条动态，新页到达后把焦点交给其后的第一条
+  focusAfter = ref<string | null>(null)
 onMounted(() => {
   hydrated.value = true
 })
+// 加载中只标记 aria-disabled，不用 disabled，避免键盘焦点随按钮禁用而丢失
+function requestMore() {
+  if (props.pending || props.errorMessage || !props.hasMore) return
+  focusAfter.value = props.moments.at(-1)?.id ?? null
+  emit('more')
+}
+watch(
+  () => [props.pending, props.errorMessage, props.moments] as const,
+  async ([pending, errorMessage, moments]) => {
+    if (pending || focusAfter.value === null) return
+    const index = moments.findIndex((moment) => moment.id === focusAfter.value)
+    const next = index >= 0 ? moments[index + 1] : undefined
+    // 失败、筛选替换列表或尚未追加新页时不抢焦点；失败保留在按钮上以便重试
+    if (errorMessage || index < 0) focusAfter.value = null
+    if (!next) return
+    focusAfter.value = null
+    await nextTick()
+    document.getElementById(`moment-${next.id}`)?.focus()
+  },
+)
 useIntersectionObserver(
   sentinelRef,
   (entries) => {
+    // 键盘 Tab 聚焦按钮会把它滚入视口；此时交给按钮由用户确认，避免聚焦即翻页、回车再翻一页
+    const keyboardFocused = !!sentinelRef.value?.querySelector(':focus-visible')
     if (
       entries.some((entry) => entry.isIntersecting) &&
+      !keyboardFocused &&
       hydrated.value &&
       props.hasMore &&
       !props.pending &&
@@ -125,6 +152,10 @@ useIntersectionObserver(
     font-size: 0.8125rem;
     pointer-events: auto;
   }
+}
+.moment-card:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
 }
 .moment-list__more {
   min-height: 44px;
