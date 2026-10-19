@@ -48,7 +48,7 @@ curl -fsSL https://github.com/TixXin/TixXinBlog/releases/latest/download/install
 | Run Docker's official install script? | Asked only when Docker is not found; the default is no                               |
 | Site domain                           | Such as `blog.example.com`, without scheme or path                                   |
 | Site language                         | `1` for Chinese `zh-CN` (default), `2` for English `en`                              |
-| Install directory                     | `/opt/tixxin-blog` by default                                                        |
+| Install directory                     | `/opt/tixxin-blog` by default; `~/tixxin-blog` for `--local` as a regular user       |
 | Confirm installation                  | Shows the version, architecture, directory, site URL and language; type `y` to go on |
 
 The prompts are currently in Chinese. When the script runs through a pipe, it reads answers from the terminal (`/dev/tty`), so answer as usual. Without an interactive terminal, use a [non-interactive installation](#non-interactive-installation).
@@ -164,7 +164,7 @@ sudo bash install.sh --yes --domain blog.example.com --locale en --dir /opt/tixx
 | `--yes`                 | Do not prompt; use the options and defaults                                                                       |
 | `--domain DOMAIN`       | Site domain                                                                                                       |
 | `--locale zh-CN\|en`    | Default site language, `zh-CN` by default                                                                         |
-| `--dir DIR`             | Install directory, `/opt/tixxin-blog` by default                                                                  |
+| `--dir DIR`             | Install directory, `/opt/tixxin-blog` by default; `~/tixxin-blog` for `--local` as a regular user                 |
 | `--version VERSION`     | Pinned version to install; defaults to the release the script belongs to                                          |
 | `--registry PREFIX`     | Replace the application image prefix; see [Networks in Mainland China](#networks-in-mainland-china)               |
 | `--download-base URL`   | Replace the deployment package source; see [Networks in Mainland China](#networks-in-mainland-china)              |

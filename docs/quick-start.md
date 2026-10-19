@@ -41,13 +41,13 @@ curl -fsSL https://github.com/TixXin/TixXinBlog/releases/latest/download/install
 
 ### 脚本会问什么
 
-| 问题                         | 说明                                                  |
-| ---------------------------- | ----------------------------------------------------- |
-| 是否运行 Docker 官方安装脚本 | 只在未检测到 Docker 时询问，默认不安装                |
-| 站点域名                     | 如 `blog.example.com`，不含协议和路径                 |
-| 站点语言                     | `1` 为中文 `zh-CN`（默认），`2` 为 English `en`       |
-| 安装目录                     | 默认 `/opt/tixxin-blog`                               |
-| 确认开始安装                 | 显示版本、架构、目录、站点地址和语言，输入 `y` 才继续 |
+| 问题                         | 说明                                                          |
+| ---------------------------- | ------------------------------------------------------------- |
+| 是否运行 Docker 官方安装脚本 | 只在未检测到 Docker 时询问，默认不安装                        |
+| 站点域名                     | 如 `blog.example.com`，不含协议和路径                         |
+| 站点语言                     | `1` 为中文 `zh-CN`（默认），`2` 为 English `en`               |
+| 安装目录                     | 默认 `/opt/tixxin-blog`；普通用户本机试用默认 `~/tixxin-blog` |
+| 确认开始安装                 | 显示版本、架构、目录、站点地址和语言，输入 `y` 才继续         |
 
 通过管道运行时，问题从终端（`/dev/tty`）读取，照常回答即可。没有交互终端时请改用[非交互安装](#非交互安装)。
 
@@ -162,7 +162,7 @@ sudo bash install.sh --yes --domain blog.example.com --locale en --dir /opt/tixx
 | `--yes`                 | 不询问，使用参数与默认值                                                          |
 | `--domain 域名`         | 站点域名                                                                          |
 | `--locale zh-CN\|en`    | 站点默认语言，默认 `zh-CN`                                                        |
-| `--dir 目录`            | 安装目录，默认 `/opt/tixxin-blog`                                                 |
+| `--dir 目录`            | 安装目录，默认 `/opt/tixxin-blog`；普通用户使用 `--local` 时默认 `~/tixxin-blog`  |
 | `--version 版本`        | 安装的固定版本，默认为脚本所属的发布版本                                          |
 | `--registry 前缀`       | 替换应用镜像前缀，见[国内网络](#国内网络)                                         |
 | `--download-base 地址`  | 替换部署包下载源，见[国内网络](#国内网络)                                         |
