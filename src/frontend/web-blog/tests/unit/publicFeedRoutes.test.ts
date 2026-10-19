@@ -14,7 +14,7 @@ const require = createRequire(import.meta.url)
 const h3: typeof import('h3') = createRequire(require.resolve('nuxt/package.json'))('h3')
 const runtimeConfig = vi.hoisted(() => ({
   apiBaseUrl: 'https://api.example.test/api/v1/',
-  public: { siteUrl: 'https://blog.example.test/' },
+  public: { siteUrl: 'https://blog.example.test/' } as { siteUrl: string; i18n?: { defaultLocale?: string } },
 }))
 mockNuxtImport('useRuntimeConfig', () => () => runtimeConfig)
 mockNuxtImport(
@@ -433,5 +433,41 @@ describe('朋友圈 RSS 的媒体与安全正文', () => {
     const description = document.querySelector('item > description')!.textContent
     const html = new DOMParser().parseFromString(description, 'text/html')
     expect(html.querySelector('img')?.getAttribute('src')).toBe('https://cdn.example.test/image?width=640&height=480')
+  })
+})
+
+describe('闪念与朋友圈 RSS 的频道语言跟随站点默认语言', () => {
+  afterEach(() => {
+    delete runtimeConfig.public.i18n
+  })
+
+  it('未配置时为中文频道', async () => {
+    const flash = parse(await handlers['flash.xml']!(event('flash.xml')))
+    expect(flash.querySelector('channel > language')?.textContent).toBe('zh-CN')
+    expect(flash.querySelector('channel > title')?.textContent).toBe('山海手记 闪念')
+    expect(flash.querySelector('channel > description')?.textContent).toBe('公开的灵感碎片')
+    const moments = parse(await handlers['moments.xml']!(event('moments.xml')))
+    expect(moments.querySelector('channel > language')?.textContent).toBe('zh-CN')
+    expect(moments.querySelector('channel > title')?.textContent).toBe('山海手记 朋友圈')
+  })
+
+  it('站点默认英文时频道标题与说明为英文，条目内容与站点资料不翻译', async () => {
+    runtimeConfig.public.i18n = { defaultLocale: 'en' }
+    data.set('/flashes?pageSize=30', { items: [flash({ content: '海风里的灵感' })] })
+    const flashFeed = parse(await handlers['flash.xml']!(event('flash.xml')))
+    expect(flashFeed.querySelector('channel > language')?.textContent).toBe('en')
+    expect(flashFeed.querySelector('channel > title')?.textContent).toBe('山海手记 Flash notes')
+    expect(flashFeed.querySelector('channel > description')?.textContent).toBe('Public fragments of ideas')
+    expect(flashFeed.querySelector('item > title')?.textContent).toBe('海风里的灵感')
+    const moments = parse(await handlers['moments.xml']!(event('moments.xml')))
+    expect(moments.querySelector('channel > language')?.textContent).toBe('en')
+    expect(moments.querySelector('channel > title')?.textContent).toBe('山海手记 Moments')
+    expect(moments.querySelector('channel > description')?.textContent).toBe('记录真实的日常')
+  })
+
+  it('无效的默认语言回退中文', async () => {
+    runtimeConfig.public.i18n = { defaultLocale: 'fr' }
+    const flash = parse(await handlers['flash.xml']!(event('flash.xml')))
+    expect(flash.querySelector('channel > language')?.textContent).toBe('zh-CN')
   })
 })

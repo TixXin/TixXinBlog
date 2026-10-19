@@ -1,7 +1,9 @@
 /**
  * @file flash.xml.ts
- * @description 闪念 RSS 仅使用当前公开数据，草稿/归档项过滤且不拼接未转义 CDATA
+ * @description 闪念 RSS 仅使用当前公开数据，草稿/归档项过滤且不拼接未转义 CDATA；
+ *              language 与频道标题、说明跟随站点默认语言（服务端没有 Nuxt i18n 实例，使用本文件的小映射），条目内容不翻译
  */
+import { resolveDefaultLocale, type SupportedLocale } from '../../i18n/localeOptions'
 import {
   escapeXml,
   latestDate,
@@ -10,6 +12,12 @@ import {
   publicSiteUrl,
   sendFeed,
 } from '../utils/publicContent'
+
+/** 频道标题与说明；中文与 zh-CN 字典 common.feed.flashRss 的站名后缀一致 */
+const CHANNEL_TEXT: Record<SupportedLocale, { title: (site: string) => string; description: string }> = {
+  'zh-CN': { title: (site) => `${site} 闪念`, description: '公开的灵感碎片' },
+  en: { title: (site) => `${site} Flash notes`, description: 'Public fragments of ideas' },
+}
 
 /** 标题按字符截断，超出时补省略号 */
 function feedTitle(content: string, max = 60) {
@@ -24,6 +32,10 @@ export default defineEventHandler(async (event) => {
   const site = publicSiteUrl(event)
   const [notes, settings] = await Promise.all([publicFlashes(event), publicSiteSettings(event)])
   const creator = settings.ownerName || settings.name
+  const locale = resolveDefaultLocale(
+    (useRuntimeConfig(event).public as { i18n?: { defaultLocale?: unknown } }).i18n?.defaultLocale,
+  )
+  const channel = CHANNEL_TEXT[locale]
   const entries = notes
     .map((note) => {
       const link = `${site}/flash/${encodeURIComponent(note.id)}`
@@ -41,8 +53,8 @@ export default defineEventHandler(async (event) => {
     event,
     `<?xml version="1.0" encoding="UTF-8"?>
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom" xmlns:dc="http://purl.org/dc/elements/1.1/"><channel>
-<title>${escapeXml(settings.name)} 闪念</title><link>${escapeXml(site + '/flash')}</link>
-<description>公开的灵感碎片</description><language>zh-CN</language>
+<title>${escapeXml(channel.title(settings.name))}</title><link>${escapeXml(site + '/flash')}</link>
+<description>${escapeXml(channel.description)}</description><language>${locale}</language>
 <lastBuildDate>${updated.toUTCString()}</lastBuildDate>
 <atom:link href="${escapeXml(site + '/flash.xml')}" rel="self" type="application/rss+xml" />
 ${entries}

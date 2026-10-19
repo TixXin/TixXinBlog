@@ -1,7 +1,9 @@
 /**
  * @file moments.xml.ts
- * @description 朋友圈 RSS 仅发布真实公开动态，使用运行时站点地址并及时反映撤回
+ * @description 朋友圈 RSS 仅发布真实公开动态，使用运行时站点地址并及时反映撤回；
+ *              language 与频道标题后缀跟随站点默认语言（服务端没有 Nuxt i18n 实例，使用本文件的小映射），条目内容不翻译
  */
+import { resolveDefaultLocale, type SupportedLocale } from '../../i18n/localeOptions'
 import {
   escapeXml,
   latestDate,
@@ -11,6 +13,12 @@ import {
   publicSiteUrl,
   sendFeed,
 } from '../utils/publicContent'
+
+/** 频道标题；中文与 zh-CN 字典 common.feed.momentsRss 的站名后缀一致 */
+const CHANNEL_TITLE: Record<SupportedLocale, (site: string) => string> = {
+  'zh-CN': (site) => `${site} 朋友圈`,
+  en: (site) => `${site} Moments`,
+}
 
 const imageTypes: Record<string, string> = {
   jpg: 'image/jpeg',
@@ -28,6 +36,9 @@ export default defineEventHandler(async (event) => {
   const site = publicSiteUrl(event)
   const [moments, settings] = await Promise.all([publicMoments(event), publicSiteSettings(event)])
   const creator = escapeXml(settings.ownerName || settings.name)
+  const locale = resolveDefaultLocale(
+    (useRuntimeConfig(event).public as { i18n?: { defaultLocale?: unknown } }).i18n?.defaultLocale,
+  )
   const items = moments
     .map((moment) => {
       const oneLine = moment.content.replace(/\s+/g, ' ').trim()
@@ -53,8 +64,8 @@ export default defineEventHandler(async (event) => {
     event,
     `<?xml version="1.0" encoding="UTF-8"?>
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom" xmlns:dc="http://purl.org/dc/elements/1.1/"><channel>
-<title>${escapeXml(settings.name)} 朋友圈</title><link>${escapeXml(site + '/moments')}</link>
-<description>${escapeXml(settings.description)}</description><language>zh-CN</language>
+<title>${escapeXml(CHANNEL_TITLE[locale](settings.name))}</title><link>${escapeXml(site + '/moments')}</link>
+<description>${escapeXml(settings.description)}</description><language>${locale}</language>
 <lastBuildDate>${updated.toUTCString()}</lastBuildDate>
 <atom:link href="${escapeXml(site + '/moments.xml')}" rel="self" type="application/rss+xml" />
 ${items}
