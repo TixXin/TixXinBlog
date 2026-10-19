@@ -23,6 +23,7 @@ export function useMediaLibrary(selectable = false) {
   const auth = useCurrentUser()
   const pageContext = useState<string>('page-content-context', () => '')
   const uploader = useMediaUpload()
+  const t = currentTranslate()
   const { success, info } = useToast()
   const route = useRoute()
   const router = useRouter()
@@ -81,8 +82,7 @@ export function useMediaLibrary(selectable = false) {
   const busy = computed(
     () => working.value || uploading.value || hasDirtyMetadata.value || jobs.value.some((job) => !!job.file),
   )
-  const ownershipMessage =
-    '登录账号或内容库已变化，原文件、替代文本和素材说明已保留。恢复原账号及内容库后重新读取，或重新进入媒体工作区。'
+  const ownershipMessage = () => t('admin-media.mediaMessages.ownership')
   const ownsWorkspace = () =>
     !disposed && owner?.actor === auth.currentUser.value?.id && owner?.context === pageContext.value
   const ownsOperation = (version: number) => ownsWorkspace() && version === ownershipVersion
@@ -112,11 +112,14 @@ export function useMediaLibrary(selectable = false) {
   function allowAction(asset?: MediaAsset) {
     // 嵌入公开页面时，文件选择器与列表请求同时挂载；未就绪不代表身份已经变化。
     if (!ready.value) {
-      if (!error.value) error.value = pending.value ? '媒体库正在读取，请稍候再选择文件。' : '请先读取媒体库后再操作。'
+      if (!error.value)
+        error.value = pending.value
+          ? t('admin-media.mediaMessages.stillLoading')
+          : t('admin-media.mediaMessages.loadFirst')
       return false
     }
     if (!ownsWorkspace() || (asset && !items.value.includes(asset))) {
-      error.value = ownershipMessage
+      error.value = ownershipMessage()
       return false
     }
     return true
@@ -140,19 +143,19 @@ export function useMediaLibrary(selectable = false) {
       clearSelection()
       batchResults.value = []
       batchProgress.value = null
-      error.value = ownershipMessage
+      error.value = ownershipMessage()
       uploader.cancel()
       for (const job of jobs.value) {
         if (job.file && ['queued', 'uploading', 'processing'].includes(job.status)) {
           job.status = 'failed'
-          job.error = ownershipMessage
+          job.error = ownershipMessage()
         }
       }
     },
     { flush: 'sync' },
   )
   function errorText(cause: unknown) {
-    return cause instanceof Error ? cause.message : '操作失败，请重试'
+    return cause instanceof Error ? cause.message : t('admin-media.mediaMessages.operationFailed')
   }
   async function load() {
     if (disposed) return
@@ -160,13 +163,13 @@ export function useMediaLibrary(selectable = false) {
     const actor = auth.currentUser.value?.id
     if (!actor) {
       ready.value = false
-      error.value = '请先登录博主账号，媒体库仅对管理员开放'
+      error.value = t('admin-media.mediaMessages.loginRequired')
       return
     }
     owner ??= { actor, context: pageContext.value }
     if (!ownsWorkspace()) {
       ready.value = false
-      error.value = ownershipMessage
+      error.value = ownershipMessage()
       return
     }
     const version = ++requestVersion
@@ -203,7 +206,7 @@ export function useMediaLibrary(selectable = false) {
         await load()
       }
     } catch {
-      if (version === requestVersion) error.value = '媒体读取失败，请检查登录或重试'
+      if (version === requestVersion) error.value = t('admin-media.mediaMessages.loadFailed')
     } finally {
       if (version === requestVersion) pending.value = false
     }
@@ -225,7 +228,7 @@ export function useMediaLibrary(selectable = false) {
   async function searchMedia() {
     if (working.value || uploading.value || pending.value || !allowAction()) return
     if (hasDirtyMetadata.value) {
-      error.value = '请先保存或取消替代文本和素材说明修改'
+      error.value = t('admin-media.mediaMessages.saveDraftsFirst')
       return
     }
     page.value = 1
@@ -234,7 +237,7 @@ export function useMediaLibrary(selectable = false) {
   async function changePage(value: number) {
     if (working.value || uploading.value || pending.value || !allowAction()) return
     if (hasDirtyMetadata.value) {
-      error.value = '请先保存或取消替代文本和素材说明修改'
+      error.value = t('admin-media.mediaMessages.saveDraftsFirst')
       return
     }
     page.value = value
@@ -256,7 +259,7 @@ export function useMediaLibrary(selectable = false) {
   onBeforeRouteUpdate(() => {
     if (working.value || uploading.value) return false
     if (!hasDirtyMetadata.value) return true
-    if (!window.confirm('替代文本或素材说明尚未保存，确定放弃修改并切换筛选吗？')) return false
+    if (!window.confirm(t('admin-media.mediaMessages.discardDraftsConfirm'))) return false
     for (const [id, value] of Object.entries(savedAlts)) altDrafts[id] = value
     for (const [id, value] of Object.entries(savedDescriptions)) descriptionDrafts[id] = value
     return true
@@ -264,11 +267,11 @@ export function useMediaLibrary(selectable = false) {
   function enqueue(files: File[]) {
     if (!allowAction() || uploading.value || working.value) return
     if (hasDirtyMetadata.value) {
-      error.value = '请先保存或取消替代文本和素材说明修改'
+      error.value = t('admin-media.mediaMessages.saveDraftsFirst')
       return
     }
     if (files.length > 10) {
-      error.value = '每次最多选择 10 张图片'
+      error.value = t('admin-media.mediaMessages.tooManyFiles')
       return
     }
     for (const file of files) {
@@ -280,7 +283,7 @@ export function useMediaLibrary(selectable = false) {
         alt: uploadAlt.value,
         progress: 0,
         status: valid ? 'queued' : 'failed',
-        error: valid ? '' : '请选择不超过 8MB 的 JPEG、PNG 或 WebP',
+        error: valid ? '' : t('admin-media.mediaMessages.invalidFile'),
       })
     }
     void runQueue()
@@ -338,7 +341,6 @@ export function useMediaLibrary(selectable = false) {
     const drafts = field === 'alt' ? altDrafts : descriptionDrafts
     const saved = field === 'alt' ? savedAlts : savedDescriptions
     const submitted = drafts[asset.id] ?? ''
-    const label = field === 'alt' ? '替代文本' : '素材说明'
     working.value = true
     error.value = ''
     try {
@@ -352,9 +354,15 @@ export function useMediaLibrary(selectable = false) {
       if (current) current[field] = value
       saved[asset.id] = value
       if (drafts[asset.id] === submitted) drafts[asset.id] = value
-      success(`${label}已保存`)
+      success(
+        field === 'alt' ? t('admin-media.mediaMessages.altSaved') : t('admin-media.mediaMessages.descriptionSaved'),
+      )
     } catch {
-      if (ownsOperation(operation)) error.value = `${label}保存失败，输入已保留`
+      if (ownsOperation(operation))
+        error.value =
+          field === 'alt'
+            ? t('admin-media.mediaMessages.altSaveFailed')
+            : t('admin-media.mediaMessages.descriptionSaveFailed')
     } finally {
       working.value = false
     }
@@ -380,7 +388,8 @@ export function useMediaLibrary(selectable = false) {
       const result = await api<MediaReferences>(`/admin/media/${id}/references`, { query: { page: currentPage } })
       if (ownsOperation(operation) && version === referenceVersion) references.value = result
     } catch {
-      if (ownsOperation(operation) && version === referenceVersion) referenceError.value = '引用读取失败，请重试'
+      if (ownsOperation(operation) && version === referenceVersion)
+        referenceError.value = t('admin-media.mediaMessages.referencesFailed')
     } finally {
       if (version === referenceVersion) referenceLoading.value = false
     }
@@ -390,7 +399,7 @@ export function useMediaLibrary(selectable = false) {
       id: asset.id,
       name: asset.name,
       status: 'referenced',
-      message: `仍有 ${refs.total} 处引用（含历史修订），未移入回收`,
+      message: t('admin-media.mediaMessages.referencedResult', { total: refs.total }),
       references: refs,
     }
   }
@@ -404,7 +413,12 @@ export function useMediaLibrary(selectable = false) {
       // 预检只用于说明；最终是否可删仍由后端在共享媒体锁内重新检查。
       await api(`/admin/media/${asset.id}`, { method: 'DELETE' })
       if (!ownsOperation(operation)) return
-      return { id: asset.id, name: asset.name, status: 'removed', message: '已移入回收，可恢复' }
+      return {
+        id: asset.id,
+        name: asset.name,
+        status: 'removed',
+        message: t('admin-media.mediaMessages.removedResult'),
+      }
     } catch (cause) {
       if (!ownsOperation(operation)) return
       if (checked) {
@@ -417,12 +431,14 @@ export function useMediaLibrary(selectable = false) {
           // 删除失败后的补查也可能失败；保留失败结果，不推断无引用或自动重试删除。
         }
       }
-      const message = (cause as { data?: { message?: string } } | null)?.data?.message ?? errorText(cause)
+      const message = apiResponseMessage(cause) ?? errorText(cause)
       return {
         id: asset.id,
         name: asset.name,
         status: 'failed',
-        message: checked ? `${message}；请重新读取核对回收状态` : `引用检查失败，未执行删除：${message}`,
+        message: checked
+          ? t('admin-media.mediaMessages.removeFailedRecheck', { message })
+          : t('admin-media.mediaMessages.checkFailed', { message }),
       }
     }
   }
@@ -432,9 +448,7 @@ export function useMediaLibrary(selectable = false) {
     if (!selected.length) return
     const operation = ownershipVersion
     if (
-      !window.confirm(
-        `将所选 ${selected.length} 张图片中未被引用的资源移入回收？被引用的资源会保留并列出引用位置。回收后链接不可访问，文件保留，可恢复。`,
-      ) ||
+      !window.confirm(t('admin-media.mediaMessages.batchConfirm', { count: selected.length })) ||
       !ownsOperation(operation) ||
       !canBatchSelect.value
     )
@@ -454,7 +468,7 @@ export function useMediaLibrary(selectable = false) {
       }
       if (!ownsOperation(operation)) return
       const removed = batchResults.value.filter((result) => result.status === 'removed').length
-      if (removed) success(`已将 ${removed} 张图片移入回收`)
+      if (removed) success(t('admin-media.mediaMessages.batchRemoved', { count: removed }))
       await load()
     } finally {
       working.value = false
@@ -472,18 +486,17 @@ export function useMediaLibrary(selectable = false) {
         closeReferences()
         referenceId.value = asset.id
         references.value = refs
-        error.value = '资源仍被引用，不能移除'
+        error.value = t('admin-media.mediaMessages.stillReferenced')
         return
       }
-      if (!window.confirm('将此图片移入回收？资源链接将不可访问，文件保留，可恢复。')) return
+      if (!window.confirm(t('admin-media.mediaMessages.removeConfirm'))) return
       if (!ownsOperation(operation)) return
       await api(`/admin/media/${asset.id}`, { method: 'DELETE' })
       if (!ownsOperation(operation)) return
-      success('资源已移入回收')
+      success(t('admin-media.mediaMessages.removed'))
       await load()
     } catch (cause) {
-      if (ownsOperation(operation))
-        error.value = (cause as { data?: { message?: string } }).data?.message ?? '移除失败，请重试'
+      if (ownsOperation(operation)) error.value = apiErrorMessage(cause, 'admin-media.mediaMessages.removeFailed')
     } finally {
       working.value = false
     }
@@ -495,10 +508,10 @@ export function useMediaLibrary(selectable = false) {
     try {
       await api(`/admin/media/${asset.id}/restore`, { method: 'POST' })
       if (!ownsOperation(operation)) return
-      success('资源已恢复')
+      success(t('admin-media.mediaMessages.restored'))
       await load()
     } catch {
-      if (ownsOperation(operation)) error.value = '恢复失败，请检查文件存储后重试'
+      if (ownsOperation(operation)) error.value = t('admin-media.mediaMessages.restoreFailed')
     } finally {
       working.value = false
     }
@@ -507,17 +520,10 @@ export function useMediaLibrary(selectable = false) {
     if (!busy.value) return true
     const batch = !!batchProgress.value
     const leave = window.confirm(
-      batch
-        ? '批量回收仍在进行，离开后停止后续操作；已发出的删除请求可能已经生效。请返回媒体库重新读取核对结果。确定离开吗？'
-        : '仍有上传或未保存的替代文本、素材说明，离开会停止等待并放弃未保存输入；已上传资源保留。确定离开吗？',
+      batch ? t('admin-media.mediaMessages.leaveBatchConfirm') : t('admin-media.mediaMessages.leaveDirtyConfirm'),
     )
     // 选择留下时说明页面为何没有跳转，以及当前任务的状态。
-    if (!leave)
-      info(
-        batch
-          ? '已留在媒体库：批量回收继续进行，完成后会显示处理结果。'
-          : '已留在媒体库：上传与未保存的说明均已保留，完成或保存后再离开。',
-      )
+    if (!leave) info(batch ? t('admin-media.mediaMessages.stayBatch') : t('admin-media.mediaMessages.stayDirty'))
     return leave
   })
   function beforeUnload(event: BeforeUnloadEvent) {
@@ -533,12 +539,12 @@ export function useMediaLibrary(selectable = false) {
     const restored = await auth.restore()
     if (disposed) return
     if ((actor && auth.currentUser.value?.id !== actor) || pageContext.value !== context) {
-      error.value = ownershipMessage
+      error.value = ownershipMessage()
       return
     }
     if (restored) await load()
     else if (!selectable) await navigateTo({ path: '/admin/login', query: { next: '/admin/media' } })
-    else error.value = '请先登录博主账号，媒体库仅对管理员开放'
+    else error.value = t('admin-media.mediaMessages.loginRequired')
   })
   onBeforeUnmount(() => {
     window.removeEventListener('beforeunload', beforeUnload)

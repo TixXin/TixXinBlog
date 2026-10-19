@@ -4,14 +4,15 @@
 -->
 <template>
   <section class="admin-media">
-    <h1>媒体资源</h1>
-    <p>上传图片、维护替代文本，查看引用或恢复已移除资源。</p>
+    <h1>{{ $t('admin-media.mediaPage.title') }}</h1>
+    <p>{{ $t('admin-media.mediaPage.intro') }}</p>
     <ClientOnly><AdminMediaWorkspace /></ClientOnly>
   </section>
 </template>
 <script setup lang="ts">
 definePageMeta({ layout: 'admin', key: '/admin/media' })
-useSeoMeta({ title: '媒体资源', robots: 'noindex, nofollow' })
+const { t } = useI18n()
+useSeoMeta({ title: () => t('admin-media.mediaPage.title'), robots: 'noindex, nofollow' })
 </script>
 <style scoped>
 .admin-media {

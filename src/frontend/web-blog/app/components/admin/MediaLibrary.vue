@@ -5,10 +5,11 @@
 <template>
   <section class="media-library">
     <div class="media-library__drop" @dragover.prevent @drop.prevent="dropFiles">
-      <p>支持静态 JPEG、PNG、WebP，单张不超过 8MB；上传后优化为 WebP 并移除元信息。</p>
-      <p>资源链接可公开访问。原文件保留在你的电脑中。</p>
+      <p>{{ $t('admin-media.mediaLibrary.uploadRules') }}</p>
+      <p>{{ $t('admin-media.mediaLibrary.uploadPrivacy') }}</p>
       <label
-        >选择或拖入图片<input
+        >{{ $t('admin-media.mediaLibrary.chooseFiles')
+        }}<input
           type="file"
           accept="image/jpeg,image/png,image/webp"
           multiple
@@ -16,7 +17,8 @@
           @change="chooseFiles"
       /></label>
       <label
-        >新图片默认替代文本<input v-model="uploadAlt" maxlength="300" :disabled="uploading || working || !ready"
+        >{{ $t('admin-media.mediaLibrary.defaultAlt')
+        }}<input v-model="uploadAlt" maxlength="300" :disabled="uploading || working || !ready"
       /></label>
     </div>
     <ul v-if="jobs.length" class="media-library__jobs">
@@ -25,21 +27,21 @@
           >{{ job.name }} ·
           {{
             job.status === 'done'
-              ? '上传完成'
+              ? $t('admin-media.mediaLibrary.job.done')
               : job.status === 'processing'
-                ? '正在校验和处理图片'
+                ? $t('admin-media.mediaLibrary.job.processing')
                 : job.status === 'failed'
-                  ? '上传失败'
+                  ? $t('admin-media.mediaLibrary.job.failed')
                   : job.status === 'queued'
-                    ? '等待上传'
-                    : `上传 ${job.progress}%`
+                    ? $t('admin-media.mediaLibrary.job.queued')
+                    : $t('admin-media.mediaLibrary.job.uploading', { progress: job.progress })
           }}</span
         >
         <progress
           v-if="job.status === 'uploading' || job.status === 'processing'"
           :value="job.progress"
           max="100"
-          :aria-label="`${job.name} 上传进度`"
+          :aria-label="$t('admin-media.mediaLibrary.job.progressLabel', { name: job.name })"
         />
         <span v-if="job.error" role="alert">{{ job.error }}</span
         ><button
@@ -48,7 +50,7 @@
           :disabled="uploading || working || !ready"
           @click="retry(job)"
         >
-          重试上传
+          {{ $t('admin-media.mediaLibrary.job.retry') }}
         </button>
       </li>
     </ul>
@@ -57,44 +59,49 @@
         v-model="search"
         class="media-library__search"
         :disabled="!ready || working"
-        placeholder="搜索文件名、替代文本或素材说明"
-        aria-label="搜索媒体"
+        :placeholder="$t('admin-media.mediaLibrary.searchPlaceholder')"
+        :aria-label="$t('admin-media.mediaLibrary.searchLabel')"
         maxlength="128"
       /><select
         v-if="!selectable"
         v-model="deleted"
         :disabled="!ready || working"
-        aria-label="资源状态"
+        :aria-label="$t('admin-media.mediaLibrary.stateLabel')"
         @change="searchMedia"
       >
-        <option value="false">可用资源</option>
-        <option value="true">回收资源</option></select
+        <option value="false">{{ $t('admin-media.mediaLibrary.stateAvailable') }}</option>
+        <option value="true">{{ $t('admin-media.mediaLibrary.stateDeleted') }}</option></select
       ><select
         v-model="orientation"
         :disabled="!ready || working || hasDirtyMetadata"
-        aria-label="媒体构图"
+        :aria-label="$t('admin-media.mediaLibrary.orientationLabel')"
         @change="searchMedia"
       >
-        <option value="">全部构图</option>
-        <option value="landscape">横向图片</option>
-        <option value="portrait">竖向图片</option>
-        <option value="square">方形图片</option></select
+        <option value="">{{ $t('admin-media.mediaLibrary.orientationAll') }}</option>
+        <option value="landscape">{{ $t('admin-media.mediaLibrary.orientationLandscape') }}</option>
+        <option value="portrait">{{ $t('admin-media.mediaLibrary.orientationPortrait') }}</option>
+        <option value="square">{{ $t('admin-media.mediaLibrary.orientationSquare') }}</option></select
       ><select
         v-model="usage"
         :disabled="!ready || working || hasDirtyMetadata"
-        aria-label="媒体使用状态"
+        :aria-label="$t('admin-media.mediaLibrary.usageLabel')"
         @change="searchMedia"
       >
-        <option value="">全部使用状态</option>
-        <option value="used">已使用（含历史版本）</option>
-        <option value="unused">尚未使用</option></select
-      ><button :aria-busy="pending" type="submit" :disabled="pending || !ready || working">搜索</button>
+        <option value="">{{ $t('admin-media.mediaLibrary.usageAll') }}</option>
+        <option value="used">{{ $t('admin-media.mediaLibrary.usageUsed') }}</option>
+        <option value="unused">{{ $t('admin-media.mediaLibrary.usageUnused') }}</option></select
+      ><button :aria-busy="pending" type="submit" :disabled="pending || !ready || working">
+        {{ $t('admin-media.mediaLibrary.search') }}
+      </button>
     </form>
-    <p>“已使用”包含草稿、归档、评论和历史版本引用；修改素材说明不会改变引用关系。</p>
+    <p>{{ $t('admin-media.mediaLibrary.usageHint') }}</p>
     <p v-if="error" role="alert">
-      {{ error }} <button type="button" :disabled="pending || working" @click="load">重新加载</button>
+      {{ error }}
+      <button type="button" :disabled="pending || working" @click="load">
+        {{ $t('admin-media.mediaLibrary.reload') }}
+      </button>
     </p>
-    <p v-if="pending" role="status">正在读取媒体…</p>
+    <p v-if="pending" role="status">{{ $t('admin-media.mediaLibrary.loading') }}</p>
     <section
       v-if="referenceId"
       class="media-library__references"
@@ -103,17 +110,22 @@
       @keydown.esc.stop.prevent="closeReferences"
     >
       <h3 :id="referenceHeadingId" ref="referenceHeading" tabindex="-1">
-        {{ referenceName }} · 引用位置<span v-if="references">（{{ references.total }}）</span>
+        {{ $t('admin-media.mediaLibrary.references.heading', { name: referenceName })
+        }}<span v-if="references">{{
+          $t('admin-media.mediaLibrary.references.count', { total: references.total })
+        }}</span>
       </h3>
-      <p>包含草稿、归档和历史修订；只有没有引用的资源才能移除。</p>
-      <button type="button" @click="closeReferences">关闭引用</button>
-      <p v-if="referenceLoading" role="status">正在读取引用位置…</p>
+      <p>{{ $t('admin-media.mediaLibrary.references.hint') }}</p>
+      <button type="button" @click="closeReferences">{{ $t('admin-media.mediaLibrary.references.close') }}</button>
+      <p v-if="referenceLoading" role="status">{{ $t('admin-media.mediaLibrary.references.loading') }}</p>
       <p v-else-if="referenceError" role="alert">
         {{ referenceError }}
-        <button type="button" :disabled="!ready || working" @click="refreshReferences()">重新读取引用</button>
+        <button type="button" :disabled="!ready || working" @click="refreshReferences()">
+          {{ $t('admin-media.mediaLibrary.references.retry') }}
+        </button>
       </p>
       <template v-else-if="references">
-        <p v-if="!references.total">该资源当前没有内容或历史版本引用。</p>
+        <p v-if="!references.total">{{ $t('admin-media.mediaLibrary.references.none') }}</p>
         <ul v-else class="media-library__reference-list">
           <li v-for="(item, index) in references.items" :key="index">
             <NuxtLink :to="item.url">{{ item.title }}</NuxtLink> · {{ referenceLabel(item) }}
@@ -125,7 +137,7 @@
             :disabled="!ready || working || references.page <= 1"
             @click="refreshReferences(references.page - 1)"
           >
-            上一页引用
+            {{ $t('admin-media.mediaLibrary.references.previous') }}
           </button>
           <span>{{ references.page }} / {{ Math.max(1, Math.ceil(references.total / references.pageSize)) }}</span>
           <button
@@ -133,14 +145,14 @@
             :disabled="!ready || working || references.page * references.pageSize >= references.total"
             @click="refreshReferences(references.page + 1)"
           >
-            下一页引用
+            {{ $t('admin-media.mediaLibrary.references.next') }}
           </button>
         </div>
       </template>
     </section>
     <div v-if="!selectable && deleted === 'false'" class="media-library__batch">
       <label class="media-library__selection">
-        <CommonTooltip content="仅选择当前页；翻页、筛选或刷新后会清空选择。">
+        <CommonTooltip :content="$t('admin-media.mediaLibrary.batch.selectHint')">
           <input
             type="checkbox"
             :checked="allSelected"
@@ -149,11 +161,13 @@
             @change="toggleAll"
           />
         </CommonTooltip>
-        全选本页
+        {{ $t('admin-media.mediaLibrary.batch.selectAll') }}
       </label>
-      <span role="status">已选择 {{ selectedIds.length }} 项</span>
-      <button type="button" :disabled="!canBatchSelect || !selectedIds.length" @click="clearSelection">清空选择</button>
-      <CommonTooltip content="被当前内容或历史版本引用的媒体会保留，并列出引用位置。">
+      <span role="status">{{ $t('admin-media.mediaLibrary.batch.selected', { count: selectedIds.length }) }}</span>
+      <button type="button" :disabled="!canBatchSelect || !selectedIds.length" @click="clearSelection">
+        {{ $t('admin-media.mediaLibrary.batch.clear') }}
+      </button>
+      <CommonTooltip :content="$t('admin-media.mediaLibrary.batch.removeHint')">
         <button
           type="button"
           :disabled="!canBatchSelect || !selectedIds.length"
@@ -161,23 +175,32 @@
           @click="removeSelected"
         >
           <Icon name="lucide:trash-2" aria-hidden="true" />
-          批量移入回收
+          {{ $t('admin-media.mediaLibrary.batch.remove') }}
         </button>
       </CommonTooltip>
       <!-- 禁用原因常驻显示，读屏通过 aria-describedby 获知按钮不可用的原因 -->
       <p v-if="batchHint" :id="batchHintId" class="media-library__batch-hint">{{ batchHint }}</p>
     </div>
     <p v-if="batchProgress" role="status">
-      正在处理所选资源：{{ batchProgress.completed }} / {{ batchProgress.total }}
+      {{
+        $t('admin-media.mediaLibrary.batch.progress', {
+          completed: batchProgress.completed,
+          total: batchProgress.total,
+        })
+      }}
     </p>
     <!-- 完成后只播报一条汇总，逐项结果不整体实时播报，避免读屏重复朗读整块列表 -->
     <p v-if="batchSummary" role="status" class="media-library__batch-summary">{{ batchSummary }}</p>
-    <section v-if="batchResults.length" class="media-library__results" aria-label="批量回收结果">
-      <h3>批量回收结果</h3>
+    <section
+      v-if="batchResults.length"
+      class="media-library__results"
+      :aria-label="$t('admin-media.mediaLibrary.batch.resultsTitle')"
+    >
+      <h3>{{ $t('admin-media.mediaLibrary.batch.resultsTitle') }}</h3>
       <ul>
         <li v-for="result in batchResults" :key="result.id">
           <p>
-            <strong>{{ result.name }}</strong> · {{ removalStatusLabels[result.status] }}
+            <strong>{{ result.name }}</strong> · {{ $t(removalStatusKeys[result.status]) }}
           </p>
           <p>{{ result.message }}</p>
           <template v-if="result.status === 'referenced'">
@@ -187,13 +210,16 @@
               </li>
             </ul>
             <button type="button" :disabled="!ready || working" @click="openReferences(result.id, $event)">
-              查看全部引用<span v-if="result.references">（{{ result.references.total }}）</span>
+              {{ $t('admin-media.mediaLibrary.references.viewAll')
+              }}<span v-if="result.references">{{
+                $t('admin-media.mediaLibrary.references.count', { total: result.references.total })
+              }}</span>
             </button>
           </template>
         </li>
       </ul>
     </section>
-    <p v-if="!pending && !error && !items.length">暂无媒体资源</p>
+    <p v-if="!pending && !error && !items.length">{{ $t('admin-media.mediaLibrary.empty') }}</p>
     <ul class="media-library__grid">
       <li v-for="asset in items" :key="asset.id" class="media-library__card">
         <label v-if="!selectable && deleted === 'false' && !asset.deleted" class="media-library__selection">
@@ -201,26 +227,38 @@
             type="checkbox"
             :checked="selectedIds.includes(asset.id)"
             :disabled="!canBatchSelect"
-            :aria-label="`选择 ${asset.name}`"
+            :aria-label="$t('admin-media.mediaLibrary.asset.select', { name: asset.name })"
             @change="toggleSelection(asset)"
           />
-          选择此资源
+          {{ $t('admin-media.mediaLibrary.asset.selectLabel') }}
         </label>
         <img v-if="!asset.deleted" :src="asset.url" :alt="asset.alt || asset.name" loading="lazy" />
-        <div v-else class="media-library__removed"><Icon name="lucide:image-off" />已移入回收</div>
+        <div v-else class="media-library__removed">
+          <Icon name="lucide:image-off" />{{ $t('admin-media.mediaLibrary.asset.removed') }}
+        </div>
         <strong class="media-library__asset-name">{{ asset.name }}</strong>
-        <p>{{ asset.width }} × {{ asset.height }} · {{ Math.ceil(asset.byteSize / 1024) }} KB</p>
+        <p>
+          {{
+            $t('admin-media.mediaLibrary.asset.size', {
+              width: asset.width,
+              height: asset.height,
+              size: Math.ceil(asset.byteSize / 1024),
+            })
+          }}
+        </p>
         <label
-          >替代文本<input
+          >{{ $t('admin-media.mediaLibrary.asset.alt')
+          }}<input
             v-model="altDrafts[asset.id]"
-            :aria-label="`${asset.name} 替代文本`"
+            :aria-label="$t('admin-media.mediaLibrary.asset.altLabel', { name: asset.name })"
             maxlength="300"
             :disabled="!ready || asset.deleted || working"
         /></label>
         <label
-          >素材说明<textarea
+          >{{ $t('admin-media.mediaLibrary.asset.description')
+          }}<textarea
             v-model="descriptionDrafts[asset.id]"
-            :aria-label="`${asset.name} 素材说明`"
+            :aria-label="$t('admin-media.mediaLibrary.asset.descriptionLabel', { name: asset.name })"
             maxlength="1000"
             rows="3"
             :disabled="!ready || asset.deleted || working"
@@ -233,7 +271,7 @@
             :disabled="!ready || working || altDrafts[asset.id] === asset.alt"
             @click="saveAlt(asset)"
           >
-            保存替代文本
+            {{ $t('admin-media.mediaLibrary.asset.saveAlt') }}
           </button>
           <button
             v-if="altDrafts[asset.id] !== asset.alt"
@@ -241,7 +279,7 @@
             :disabled="!ready || working"
             @click="altDrafts[asset.id] = asset.alt"
           >
-            取消替代文本修改
+            {{ $t('admin-media.mediaLibrary.asset.cancelAlt') }}
           </button>
           <button
             v-if="!asset.deleted"
@@ -249,7 +287,7 @@
             :disabled="!ready || working || descriptionDrafts[asset.id] === asset.description"
             @click="saveDescription(asset)"
           >
-            保存素材说明
+            {{ $t('admin-media.mediaLibrary.asset.saveDescription') }}
           </button>
           <button
             v-if="descriptionDrafts[asset.id] !== asset.description"
@@ -257,16 +295,16 @@
             :disabled="!ready || working"
             @click="descriptionDrafts[asset.id] = asset.description"
           >
-            取消素材说明修改
+            {{ $t('admin-media.mediaLibrary.asset.cancelDescription') }}
           </button>
           <button type="button" :disabled="!ready || working" @click="openReferences(asset.id, $event)">
-            查看引用
+            {{ $t('admin-media.mediaLibrary.asset.references') }}
           </button>
           <button v-if="asset.deleted" type="button" :disabled="!ready || working" @click="restore(asset)">
-            恢复资源
+            {{ $t('admin-media.mediaLibrary.asset.restore') }}
           </button>
           <button v-else type="button" :disabled="!ready || working || uploading" @click="remove(asset)">
-            移入回收
+            {{ $t('admin-media.mediaLibrary.asset.remove') }}
           </button>
           <button
             v-if="selectable && !asset.deleted"
@@ -274,22 +312,23 @@
             :disabled="!canSelect(asset)"
             @click="select(asset)"
           >
-            使用此图片
+            {{ $t('admin-media.mediaLibrary.asset.use') }}
           </button>
         </div>
       </li>
     </ul>
     <div class="media-library__pagination">
       <button type="button" :disabled="!ready || pending || working || page <= 1" @click="changePage(page - 1)">
-        上一页资源</button
-      ><span class="media-library__page-summary"
-        >{{ page }} / {{ Math.max(1, Math.ceil(total / 20)) }} · 共 {{ total }} 项</span
+        {{ $t('admin-media.mediaLibrary.pagination.previous') }}</button
+      ><span class="media-library__page-summary">{{
+        $t('admin-media.mediaLibrary.pagination.summary', { page, pages: Math.max(1, Math.ceil(total / 20)), total })
+      }}</span
       ><button
         type="button"
         :disabled="!ready || pending || working || page * 20 >= total"
         @click="changePage(page + 1)"
       >
-        下一页资源
+        {{ $t('admin-media.mediaLibrary.pagination.next') }}
       </button>
     </div>
   </section>
@@ -300,6 +339,7 @@ import type { MediaAsset, MediaReferences, MediaRemovalResult } from '~/features
 import type { useMediaLibrary } from '~/composables/useMediaLibrary'
 const props = defineProps<{ selectable: boolean; controller: ReturnType<typeof useMediaLibrary> }>()
 const emit = defineEmits<{ selected: [asset: MediaAsset] }>()
+const { t } = useI18n()
 function select(asset: MediaAsset) {
   if (props.controller.canSelect(asset)) emit('selected', asset)
 }
@@ -355,48 +395,54 @@ const batchSummary = computed(() => {
   if (batchProgress.value || !batchResults.value.length) return ''
   const count = (status: MediaRemovalResult['status']) =>
     batchResults.value.filter((result) => result.status === status).length
-  return `批量回收完成：已回收 ${count('removed')}、保留 ${count('referenced')}、失败 ${count('failed')}`
+  return t('admin-media.mediaLibrary.batch.summary', {
+    removed: count('removed'),
+    referenced: count('referenced'),
+    failed: count('failed'),
+  })
 })
 const batchHintId = `media-batch-hint-${useId()}`
 /** 批量回收不可用时的原因，按优先级给出可操作的说明 */
 const batchHint = computed(() => {
-  if (canBatchSelect.value) return selectedIds.value.length ? '' : '请先勾选本页要回收的资源。'
-  if (!ready.value || pending.value) return '媒体库读取完成后才能批量回收。'
-  if (working.value || uploading.value) return '上传或其他操作进行中，完成后才能批量回收。'
-  if (jobs.value.some((job) => !!job.file)) return '仍有未完成的上传任务，请重试或移除后再批量回收。'
-  if (hasDirtyMetadata.value) return '请先保存替代文本或素材说明的修改，再批量回收。'
-  return '登录账号或内容库已变化，请重新读取媒体库后再批量回收。'
+  if (canBatchSelect.value) return selectedIds.value.length ? '' : t('admin-media.mediaLibrary.batch.hintNoSelection')
+  if (!ready.value || pending.value) return t('admin-media.mediaLibrary.batch.hintLoading')
+  if (working.value || uploading.value) return t('admin-media.mediaLibrary.batch.hintBusy')
+  if (jobs.value.some((job) => !!job.file)) return t('admin-media.mediaLibrary.batch.hintPendingJobs')
+  if (hasDirtyMetadata.value) return t('admin-media.mediaLibrary.batch.hintDirty')
+  return t('admin-media.mediaLibrary.batch.hintOwnership')
 })
 const referenceHeading = ref<HTMLElement | null>(null)
 const referenceHeadingId = `media-references-${useId()}`
 let referenceTrigger: HTMLElement | null = null
-const referenceLabels: Record<MediaReferences['items'][number]['kind'], string> = {
-  post: '当前文章',
-  revision: '文章历史版本',
-  flash: '闪念',
-  site: '站点设置',
-  'site-revision': '站点历史版本',
-  comment: '评论头像',
-  'flash-comment': '闪念评论头像',
-  moment: '朋友圈动态',
-  'moment-comment': '动态评论',
-  guestbook: '留言',
-  gallery: '图库作品',
-  project: '项目封面',
-  link: '友链 Logo',
-  'image-prompt': '图片提示词',
-  subscription: '平台订阅图标',
+const referenceLabelKeys: Record<MediaReferences['items'][number]['kind'], string> = {
+  post: 'admin-media.mediaLibrary.kind.post',
+  revision: 'admin-media.mediaLibrary.kind.revision',
+  flash: 'admin-media.mediaLibrary.kind.flash',
+  site: 'admin-media.mediaLibrary.kind.site',
+  'site-revision': 'admin-media.mediaLibrary.kind.siteRevision',
+  comment: 'admin-media.mediaLibrary.kind.comment',
+  'flash-comment': 'admin-media.mediaLibrary.kind.flashComment',
+  moment: 'admin-media.mediaLibrary.kind.moment',
+  'moment-comment': 'admin-media.mediaLibrary.kind.momentComment',
+  guestbook: 'admin-media.mediaLibrary.kind.guestbook',
+  gallery: 'admin-media.mediaLibrary.kind.gallery',
+  project: 'admin-media.mediaLibrary.kind.project',
+  link: 'admin-media.mediaLibrary.kind.link',
+  'image-prompt': 'admin-media.mediaLibrary.kind.imagePrompt',
+  subscription: 'admin-media.mediaLibrary.kind.subscription',
 }
-const removalStatusLabels: Record<MediaRemovalResult['status'], string> = {
-  removed: '已移入回收',
-  referenced: '因引用而保留',
-  failed: '处理失败',
+const removalStatusKeys: Record<MediaRemovalResult['status'], string> = {
+  removed: 'admin-media.mediaLibrary.removal.removed',
+  referenced: 'admin-media.mediaLibrary.removal.referenced',
+  failed: 'admin-media.mediaLibrary.removal.failed',
 }
 // 只有历史版本引用带版本号；当前内容的引用记录 revision 为 null，不能拼进标签。
 function referenceLabel(item: MediaReferences['items'][number]) {
-  const label = referenceLabels[item.kind]
+  const label = t(referenceLabelKeys[item.kind])
   const versioned = item.kind === 'revision' || item.kind === 'site-revision'
-  return versioned && item.revision != null ? `${label} ${item.revision}` : label
+  return versioned && item.revision != null
+    ? t('admin-media.mediaLibrary.references.versioned', { label, revision: item.revision })
+    : label
 }
 function openReferences(id: string, event: Event) {
   referenceTrigger = event.currentTarget instanceof HTMLElement ? event.currentTarget : null

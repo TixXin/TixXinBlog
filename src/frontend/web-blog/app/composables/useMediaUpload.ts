@@ -7,24 +7,24 @@ import type { MediaAsset } from '~/features/media/types'
 export function useMediaUpload() {
   const auth = useCurrentUser()
   const pageContext = useState<string>('page-content-context', () => '')
+  const t = currentTranslate()
   const active = new Set<XMLHttpRequest>()
   let disposed = false
   let cancellation = 0
-  const ownershipError = () =>
-    Object.assign(new Error('登录账号或内容库已变化，文件仍保留，请核对后重试'), { statusCode: 409 })
+  const ownershipError = () => Object.assign(new Error(t('admin-media.mediaUpload.ownership')), { statusCode: 409 })
   async function upload(file: File, id: string, alt: string, progress: (value: number) => void) {
     const startedActor = auth.currentUser.value?.id
     const context = pageContext.value
     const startedCancellation = cancellation
     const assertActive = () => {
-      if (disposed || startedCancellation !== cancellation) throw new Error('上传已取消，已选择的文件仍保留')
+      if (disposed || startedCancellation !== cancellation) throw new Error(t('admin-media.mediaUpload.cancelled'))
     }
     assertActive()
     const restored = await auth.restore()
     assertActive()
     const actor = auth.currentUser.value?.id
     if ((startedActor && actor !== startedActor) || pageContext.value !== context) throw ownershipError()
-    if (!restored || !actor) throw new Error('请重新登录后重试，已选择的文件仍保留')
+    if (!restored || !actor) throw new Error(t('admin-media.mediaUpload.loginRequired'))
     const assertOwnership = () => {
       assertActive()
       if (auth.currentUser.value?.id !== actor || pageContext.value !== context) throw ownershipError()
@@ -70,14 +70,18 @@ export function useMediaUpload() {
               else
                 reject(
                   Object.assign(
-                    new Error(typeof xhr.response?.message === 'string' ? xhr.response.message : '上传失败，请重试'),
+                    new Error(
+                      typeof xhr.response?.message === 'string'
+                        ? xhr.response.message
+                        : t('admin-media.mediaUpload.failed'),
+                    ),
                     { statusCode: xhr.status },
                   ),
                 )
             })
-          xhr.onerror = () => finish(() => reject(new Error('网络上传失败，文件仍保留，可重试')))
-          xhr.ontimeout = () => finish(() => reject(new Error('上传超时，可使用相同文件重试')))
-          xhr.onabort = () => finish(() => reject(new Error('上传已取消，已选择的文件仍保留')))
+          xhr.onerror = () => finish(() => reject(new Error(t('admin-media.mediaUpload.network'))))
+          xhr.ontimeout = () => finish(() => reject(new Error(t('admin-media.mediaUpload.timeout'))))
+          xhr.onabort = () => finish(() => reject(new Error(t('admin-media.mediaUpload.cancelled'))))
           const form = new FormData()
           form.append('file', file, file.name)
           form.append('uploadId', id)

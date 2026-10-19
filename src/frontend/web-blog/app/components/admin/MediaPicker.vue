@@ -11,8 +11,8 @@
     @close="open = false"
   >
     <header class="media-picker__toolbar">
-      <h2 id="media-picker-title">选择媒体图片</h2>
-      <button type="button" @click="close">关闭媒体选择器</button>
+      <h2 id="media-picker-title">{{ $t('admin-media.mediaPicker.title') }}</h2>
+      <button type="button" @click="close">{{ $t('admin-media.mediaPicker.close') }}</button>
     </header>
     <AdminMediaWorkspace v-if="open" selectable @selected="select" @busy="busy = $event" />
   </dialog>
@@ -23,6 +23,7 @@ const open = defineModel<boolean>('open', { required: true })
 const emit = defineEmits<{ selected: [asset: MediaAsset] }>()
 const dialog = ref<HTMLDialogElement | null>(null)
 const busy = ref(false)
+const { t } = useI18n()
 watch(
   open,
   async (value) => {
@@ -33,13 +34,7 @@ watch(
   { immediate: true },
 )
 function close() {
-  if (
-    busy.value &&
-    !window.confirm(
-      '仍有上传或未保存的替代文本、素材说明，关闭会停止等待并放弃未保存输入；已上传资源保留。确定关闭吗？',
-    )
-  )
-    return
+  if (busy.value && !window.confirm(t('admin-media.mediaPicker.closeConfirm'))) return
   open.value = false
   dialog.value?.close()
 }
