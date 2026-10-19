@@ -6,8 +6,11 @@
 
 ## [未发布]
 
+## [0.3.0] - 2026-10-20
+
 ### 升级说明
 
+- 新增 1 个数据迁移，部署时由正式迁移应用：`SITE_DEFAULT_LOCALE=en` 时把从未编辑过的初始站点资料中的博主名与头像替代文本改为英文（`Blogger`、`Blogger avatar`）；中文站点不改动任何数据，博主编辑过的内容一律保留，可重复执行
 - 新增可选部署变量 `NUXT_PUBLIC_DEFAULT_LOCALE`（`zh-CN` 或 `en`，缺省 `zh-CN`），决定站点默认界面语言；未设置时界面与此前一致
 - 生产编排改用固定子网的项目内部网络 `<RELEASE_PROJECT>_app`（变量 `TIXXIN_NETWORK_SUBNET`，缺省 `172.31.250.0/24`），不再使用 Compose 自动创建的 `_default` 网络；重建后容器地址变化，数据卷、服务名与对外端口不变。子网与宿主机已有网络冲突时改用其他未使用的私网段，详见部署指南「内部网络」
 - **可信代理缺省值变化**：`WEB_TRUSTED_PROXY_CIDRS` 与 `API_TRUSTED_PROXY_CIDRS` 未设置或留空时，由忽略转发头改为信任内部网络子网，限流与留言地区按访客真实地址计算。已有环境文件里留空的这两项升级后自动按新缺省生效；填写了旧 `_default` 网络子网或容器地址的，新容器不在该网段，所有访客会共享代理地址的额度，升级时请清空这两项；填写了 CDN 等其他明确地址的不受影响
@@ -21,14 +24,17 @@
 - 一键安装脚本 `install.sh`（随 Release 发布，从 v0.3.0 起可用）：预检后询问域名与语言，下载并按 `SHA256SUMS` 校验部署包 `tixxin-blog-<版本>.tar.gz`，生成密钥与 `.env`，拉取镜像、迁移、启动并通过 HTTPS 验收，最后打印初始化链接；拒绝覆盖已有站点，不收集信息，失败时保留现场，从不执行 `down -v`。支持非交互安装、`--registry` 与 `--download-base` 替换镜像与部署包来源、`--subnet` 指定内部子网
 - `tixxin` 管理命令：`status`、`logs`、`backup`、`update`、`rollback`、`restart`、`reset-password`；备份复用 worker 原生完整备份并在宿主机另存一份，升级与回退前先完整备份，失败时给出对应的回退命令
 - 浏览器初始化向导 `/setup`：用一次性令牌在页面上创建首个博主账号、设置站点名称与语言；账号创建后向导与接口永久关闭，提交独立限流，后台登录页在需要初始化时给出提示
-- 本机试用：`install.sh --local` 在 `https://localhost:8443` 运行完整站点，Caddy 使用内部证书并导出根证书 `local-ca.crt`，不需要域名
+- 本机试用：`install.sh --local` 在 `https://localhost:8443` 运行完整站点，Caddy 使用内部证书并导出根证书 `local-ca.crt`，不需要域名；普通用户默认装到 `~/tixxin-blog`。暂不支持 Windows，在 Git Bash 等环境下会直接提示退出
 - 5 分钟部署文档（中英文）改为「一条命令 + 浏览器向导」，涵盖本机试用、日常管理、国内网络、非交互安装与常见问题；原手动步骤并入部署指南的「高级：手动发布」
 
 ### 变更
 
 - 浏览器端到端测试按文件加权分为 4 片并行运行，CI 总耗时缩短；运行器支持本机按分片复现
 - 依赖升级：`markdown-it` 15（改用自带类型）、`@nuxt/fonts` 1.0.1、`@vueuse/integrations` 15.0.0、`@types/nodemailer` 8.0.2
-- 部署文档补充依赖镜像拉取、对外端口绑定与项目网络内的可信代理配置
+- 部署文档补充依赖镜像拉取、对外端口绑定与项目网络内的可信代理配置，并记录在 1Panel 等面板反向代理后部署的约束
+- 留言板回复引用条改为悬浮在输入卡片外侧，不再撑高输入区；聊天模式在上方、论坛模式在下方
+- README 首屏加入默认主题 Nexus 的界面截图
+- 只改文档与说明文件的推送不再触发 CI、CodeQL 与 Security；Release 门禁不受影响
 
 ### 修复
 
@@ -37,6 +43,7 @@
 - 导入结果查询进行中离开页面不再弹出离开确认
 - 界面动效预设在水合完成后立即恢复，不再等待空闲回调
 - 开发库样本写入的加锁方式避开与 autovacuum 的偶发冲突
+- 留言板发送成功后不再弹出「留言已发送」提示，消息正文不再悬浮显示时间
 
 ## [0.2.0] - 2026-10-18
 
@@ -164,6 +171,7 @@
 - 无多语言支持，界面与内容均为中文
 - 定位为单博主博客，不计划扩展多租户、访客账号或协作能力
 
-[未发布]: https://github.com/TixXin/TixXinBlog/compare/v0.2.0...HEAD
+[未发布]: https://github.com/TixXin/TixXinBlog/compare/v0.3.0...HEAD
+[0.3.0]: https://github.com/TixXin/TixXinBlog/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/TixXin/TixXinBlog/releases/tag/v0.2.0
 [0.1.0]: https://github.com/TixXin/TixXinBlog/tree/5290289
