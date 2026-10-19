@@ -2,154 +2,258 @@
 
 [中文原文](../quick-start.md) | **English**
 
-For first-time users: with a Linux server that already runs Docker and a domain name, bring up the site over HTTPS using the prebuilt images published by GitHub Release (v0.2.0 in this example). This page covers only the shortest path for a first installation. For the full explanation of each setting, building images yourself, PowerShell commands and local previews, see [Deployment and Version Switching](deployment.md).
+For first-time users: run one install command on a Linux server, then create the owner account in your browser, and you have a site served over HTTPS. The install script uses the prebuilt images and deployment package published with each GitHub Release; you do not need to clone the repository or install Node.js.
+
+One-command installation is available from **v0.3.0**. Earlier versions have no deployment package and can only be deployed with the manual release procedure in [Deployment and Version Switching](deployment.md). The version `0.3.0` below is only an example; check the [Releases page](https://github.com/TixXin/TixXinBlog/releases) for the actual version. If you need to control every environment variable, build images yourself or use PowerShell, also see [Deployment and Version Switching](deployment.md).
 
 ## Prerequisites
 
-- An amd64 or arm64 Linux server with Docker Engine and the Docker Compose v2 plugin (`docker compose`).
-- Node.js 25 (`>=25 <26`), `git` and `openssl` on the server. The release script runs on the host and does not need the project's dependencies installed.
-- The domain's A/AAAA records point at this server, ports 80 and 443 are reachable from the internet, and no other program is using them. Caddy requests a certificate on first start, and the release script finishes by checking the real HTTPS address.
+- An amd64 or arm64 Linux server where you can use root or `sudo`.
+- Docker Engine and the Docker Compose v2 plugin (`docker compose`). Optional: if Docker is not installed, the script offers to run Docker's official install script (`get.docker.com`); you can also install it yourself first by following the [Docker documentation](https://docs.docker.com/engine/install/).
+- `bash`, `curl`, `tar` and `sha256sum` (or `shasum`) on the host; common distributions ship them by default.
+- The domain's A/AAAA records point at this server.
+- Ports 80 and 443 are reachable from the internet and not used by any other program. On a cloud server, also allow both ports in the security group.
 
 The examples use `blog.example.com`; replace it with your own domain.
 
-## 1. Get the Deployment Files
+## Install
 
-Nothing needs to be built, but the release script, `compose.production.yaml` and `deploy/Caddyfile` are all read from a repository checkout, so check out the tag that matches the images. A shallow clone downloads only that version:
-
-```sh
-git clone --depth 1 --branch v0.2.0 https://github.com/TixXin/TixXinBlog.git
-cd TixXinBlog
-```
-
-Run all later commands from this directory. The files actually used are:
-
-| File                            | Purpose                                                               |
-| ------------------------------- | --------------------------------------------------------------------- |
-| `compose.production.yaml`       | Production stack: PostgreSQL, migration, API, frontend, Caddy, worker |
-| `deploy/Caddyfile`              | HTTPS entry point; obtains certificates and proxies to the frontend   |
-| `deploy/production.env.example` | Production environment template                                       |
-| `scripts/release/release.mjs`   | Preflight, first installation, upgrade and rollback script            |
-
-## 2. Fill In the Environment Variables
-
-Copy the template into a private directory outside the repository. The commands never overwrite an existing file:
+The recommended way is to download the script, read it, then run it:
 
 ```sh
-install -d -m 700 ../tixxin-private
-cp -n deploy/production.env.example ../tixxin-private/production.env
-chmod 600 ../tixxin-private/production.env
+curl -fsSL https://github.com/TixXin/TixXinBlog/releases/latest/download/install.sh -o install.sh
+less install.sh
+sudo bash install.sh
 ```
 
-Generate two secrets by running the command once for each, and put the outputs into the matching variables in the table below:
+Each Release also provides `SHA256SUMS`, so you can verify the script before running it:
 
 ```sh
-openssl rand -hex 32
-openssl rand -hex 32
+curl -fsSL https://github.com/TixXin/TixXinBlog/releases/latest/download/SHA256SUMS -o SHA256SUMS
+sha256sum --ignore-missing -c SHA256SUMS
 ```
 
-Then edit `../tixxin-private/production.env`. Only the following entries need to change; keep the template values for everything else:
-
-| Variable                     | Value                                                                                                     |
-| ---------------------------- | --------------------------------------------------------------------------------------------------------- |
-| `RELEASE_VERSION`            | `0.2.0` (the version without the leading `v`)                                                             |
-| `WEB_IMAGE_REPOSITORY`       | `ghcr.io/tixxin/tixxinblog-web`                                                                           |
-| `API_IMAGE_REPOSITORY`       | `ghcr.io/tixxin/tixxinblog-api`                                                                           |
-| `MIGRATION_IMAGE_REPOSITORY` | `ghcr.io/tixxin/tixxinblog-migration`                                                                     |
-| `WORKER_IMAGE_REPOSITORY`    | `ghcr.io/tixxin/tixxinblog-worker`                                                                        |
-| `POSTGRES_PASSWORD`          | Output of the first `openssl rand -hex 32` (must be hexadecimal, at least 32 characters)                  |
-| `JWT_ACCESS_SECRET`          | Output of the second `openssl rand -hex 32` (at least 32 characters)                                      |
-| `SITE_HOST`                  | The domain, such as `blog.example.com`                                                                    |
-| `SITE_URL`                   | The matching HTTPS origin, such as `https://blog.example.com`, with no path or trailing slash             |
-| `HTTPS_BIND_ADDRESS`         | `0.0.0.0` or the server's public interface address; the template default `127.0.0.1` listens locally only |
-
-Notes:
-
-- Keep `RELEASE_PROJECT` as `tixxin-production`. It determines the volume names and must not change after installation.
-- `NUXT_PUBLIC_DEFAULT_LOCALE` sets the site's default interface language. The template uses `zh-CN`; change it to `en` for an English-speaking audience. It only affects interface text and the still-unedited initial site profile, and does not translate posts or other content.
-- When using images from a fork, replace `tixxin/tixxinblog` with your own `<owner>/<repository>` (all lowercase).
-- The environment file holds the database password and signing secret. Never commit it to Git, and keep a safe copy; without it you cannot connect to the existing database.
-
-## 3. Pull the Images and Start
-
-The release script only uses images already on the host (it starts services with `--pull never`), so first pull the four application images plus the PostgreSQL and Caddy dependency images. Set `origin` to your own `SITE_URL`:
+You can also run it in one step through a pipe:
 
 ```sh
-release_env=../tixxin-private/production.env
-release_version=0.2.0
-origin=https://blog.example.com
-for name in web api migration worker; do
-  docker pull "ghcr.io/tixxin/tixxinblog-$name:$release_version"
-done
-docker pull postgres:16-alpine
-docker pull caddy:2-alpine
-node scripts/release/release.mjs --env-file "$release_env" --version "$release_version" --origin "$origin" --initialize
-node scripts/release/release.mjs --env-file "$release_env" --version "$release_version" --origin "$origin" --initialize --apply
+curl -fsSL https://github.com/TixXin/TixXinBlog/releases/latest/download/install.sh | sudo bash
 ```
 
-- The first `release.mjs` run (without `--apply`) is a preflight. It parses the configuration, checks that `SITE_HOST`, `SITE_URL` and `--origin` agree, validates the password and secret formats, confirms the images exist locally, and verifies that this is a fresh project with no containers or volumes. It creates no services or volumes and prints a JSON report.
-- The second run performs the installation: it starts an empty database, runs the one-off `migration` container to apply the formal migrations, starts the API, frontend and Caddy, and finally checks HTTPS, the same-origin API and the version header through `https://<domain>/api/v1/posts?pageSize=1`. `"status": "ready"` in the output means success.
-- Migrations are part of the second command; there is no separate step. No development samples are written, so the new site has no posts.
-- On failure the script keeps the volumes and the current state, and writes its report under `.artifacts/release/`. Work through the FAQ below; do not rerun `--initialize` to bypass the checks. See [Preflight and Initial Installation](deployment.md#preflight-and-initial-installation).
+`latest` points at the newest stable release, and the downloaded script installs the version it belongs to by default. To pin a version, download the script from that tag instead, for example `https://github.com/TixXin/TixXinBlog/releases/download/v0.3.0/install.sh`.
 
-## 4. Create the Owner Account
+### What the Script Asks
 
-Run this in the same terminal. The login name and a password of at least 12 characters are read through hidden input and never appear in command arguments. The prompt text stays Chinese, matching the admin interface: `登录名` is the login name and `密码` is the password.
+| Question                              | Notes                                                                                |
+| ------------------------------------- | ------------------------------------------------------------------------------------ |
+| Run Docker's official install script? | Asked only when Docker is not found; the default is no                               |
+| Site domain                           | Such as `blog.example.com`, without scheme or path                                   |
+| Site language                         | `1` for Chinese `zh-CN` (default), `2` for English `en`                              |
+| Install directory                     | `/opt/tixxin-blog` by default                                                        |
+| Confirm installation                  | Shows the version, architecture, directory, site URL and language; type `y` to go on |
+
+The prompts are currently in Chinese. When the script runs through a pipe, it reads answers from the terminal (`/dev/tty`), so answer as usual. Without an interactive terminal, use a [non-interactive installation](#non-interactive-installation).
+
+### What the Script Does
+
+1. Preflight: CPU architecture, root privileges, required commands, Docker and Compose v2; it checks whether the domain resolves to an address on this host's network interfaces (a warning only, it does not stop the installation).
+2. Refuses to overwrite an existing site: if the install directory is not empty, already has a `.env`, or a Compose project of the same name already has containers or volumes, it exits and suggests `tixxin update` instead.
+3. Checks that ports 80 and 443 are free.
+4. Downloads the deployment package `tixxin-blog-<version>.tar.gz` and `SHA256SUMS`, and extracts the package only after the checksum matches.
+5. Writes the install directory and generates a random database password, signing secret and one-time setup token, stored in `<install directory>/.env` (mode 600).
+6. Creates the management command `/usr/local/bin/tixxin`, pointing at `<install directory>/deploy/tixxin`; if another file already exists there it is left alone and you use the full path.
+7. Pulls the images, starts the database, runs the formal migrations, starts the API, frontend and Caddy, then checks the same-origin API and release header over the real HTTPS address.
+8. Prints the site URL, version, install directory and setup link; the install log is written to `<install directory>/logs/`.
+
+### What the Script Does Not Do
+
+- It collects and reports nothing. Apart from GitHub Releases for the deployment package, the image registry for the images, and `get.docker.com` if you agree to install Docker, it contacts no other service. The domain check compares only against local network interface addresses by default; only when you explicitly pass `--check-public-ip` does it query that address for your public IP, which exposes this host's IP to that service.
+- It never overwrites an existing site, never runs `docker compose down -v` and never deletes volumes. When installation fails, it keeps the install directory, containers and volumes, and prints troubleshooting commands.
+- It writes no development samples, so the new site has no posts; it does not start the worker, and SMTP and automatic backups stay disabled.
+
+Once the site is up, Caddy requests and renews HTTPS certificates from a certificate authority by itself. That is part of running the site, not something the install script does.
+
+## Setup
+
+When installation finishes, it prints a setup link:
+
+```text
+https://blog.example.com/setup?token=…
+```
+
+Open it in a browser and set the username, password (12–128 characters), site name and site language to create the owner account. You are then taken to `/admin/login` to sign in.
+
+- The token can be used successfully only once: after the account is created, the wizard and its endpoint close permanently, opening or submitting the link again fails, and a leaked token is useless.
+- The page removes the token from the address bar as soon as it reads it; submissions are rate limited (5 per address every 10 minutes).
+- If you lose the link, see [Lost setup link](#lost-setup-link).
+
+## Local Trial
+
+Without a server or domain, you can try it on your own computer (Docker Desktop on macOS, Docker Engine on Linux). A local trial does not need root; choose an install directory you can write to:
 
 ```sh
-read -rp '登录名：' ADMIN_DEFAULT_USERNAME && export ADMIN_DEFAULT_USERNAME
-read -rsp '密码：' ADMIN_DEFAULT_PASSWORD && echo && export ADMIN_DEFAULT_PASSWORD
-docker compose --env-file "$release_env" -f compose.production.yaml run --rm --no-deps -e ADMIN_DEFAULT_USERNAME -e ADMIN_DEFAULT_PASSWORD backend node dist/admin-bootstrap.js
-unset ADMIN_DEFAULT_USERNAME ADMIN_DEFAULT_PASSWORD
+curl -fsSL https://github.com/TixXin/TixXinBlog/releases/latest/download/install.sh -o install.sh
+bash install.sh --local --dir "$HOME/tixxin-blog"
 ```
 
-The command only creates an account and refuses to overwrite an existing account with the same name. Then open `https://<domain>/admin/login`, sign in, fill in your details under site settings and start writing. If you forget the password, see [Resetting the Administrator Password](deployment.md#resetting-the-administrator-password).
-
-## 5. Go-Live Checklist
-
-- [ ] **HTTPS works**: the commands below succeed without `-k`, and the response includes `x-tixxin-release: 0.2.0`. The home page and `/admin/login` open in a browser without certificate warnings.
+- The site is fixed to `localhost` at `https://localhost:8443`, and `http://localhost:8080` redirects to HTTPS. Both ports listen only on `127.0.0.1`; if they are taken, choose others with `--http-port` and `--https-port`.
+- The certificate is issued by Caddy's internal CA: no public certificate is requested and no HSTS header is sent. The install script exports the root certificate to `<install directory>/local-ca.crt` and uses it to verify HTTPS in its own checks, rather than skipping certificate verification.
+- Your browser warns that the certificate is not trusted on the first visit. You can accept the warning and continue, or import `local-ca.crt` into your system or browser certificate trust settings first; remove it again when you finish the trial. On macOS:
 
   ```sh
-  curl -I --max-time 15 "$origin/"
-  curl -i --max-time 15 "$origin/api/v1/posts?pageSize=1"
+  sudo security add-trusted-cert -d -r trustRoot -k /Library/Keychains/System.keychain "$HOME/tixxin-blog/local-ca.crt"
   ```
 
-- [ ] **Understand HSTS**: the Caddy template sends `Strict-Transport-Security: max-age=86400` (no subdomains, no preload). Browsers that receive it use only HTTPS for the site for one day and cannot fall back to HTTP if the certificate breaks. Watch automatic certificate renewal first; after one or two stable weeks, lengthen the period in `deploy/Caddyfile` as described in [Optional Worker and Operational Monitoring](deployment.md#optional-worker-and-operational-monitoring).
-- [ ] **`/ready` health check**: the API publishes no host port, and its container health check requests `/ready`. `backend` showing `healthy` means the probe passes; you can also request it inside the container, which prints `200`. `/ready` on the public domain is not the backend probe.
+- When not run as root, `/usr/local/bin/tixxin` is not created; use the full path for the management command, for example `"$HOME/tixxin-blog/deploy/tixxin" status`.
+- To stop the trial, run `docker compose stop` in the install directory; the volumes are kept. Only when you are sure you no longer need the trial data, run `docker compose down -v` in the **trial directory** to delete its containers and volumes. Never do this in a production site directory.
 
-  ```sh
-  docker compose --env-file "$release_env" -f compose.production.yaml ps -a
-  docker compose --env-file "$release_env" -f compose.production.yaml exec backend node -e "fetch('http://127.0.0.1:3000/ready').then((r) => console.log(r.status))"
-  ```
+## Day-to-Day Management
 
-- [ ] **Rate limits count real visitor IPs**: when both `*_TRUSTED_PROXY_CIDRS` are unset or empty, they trust this project's fixed internal network subnet (`TIXXIN_NETWORK_SUBNET`, `172.31.250.0/24` by default), so no subnet lookup is needed. If they still hold a `<RELEASE_PROJECT>_default` subnet looked up for an older version, new containers are outside it and every visitor shares one read quota keyed on Caddy's address (120 public reads per minute); empty both values and recreate the frontend and API. Never use `0.0.0.0/0` or all private ranges; if a CDN sits in front of Caddy, review the topology under [Trusted Proxies](deployment.md#trusted-proxies-read-quotas-and-media-caching) first.
+In a production installation `.env` is readable only by root, so the management command needs `sudo`. Every subcommand supports `--help`; `update`, `rollback` and `reset-password` ask for confirmation, and `--yes` skips it. The command output is in Chinese.
 
-  ```sh
-  docker compose --env-file "$release_env" -f compose.production.yaml up -d --no-deps --no-build --pull never --wait backend frontend
-  ```
+```sh
+sudo tixxin status
+sudo tixxin logs backend --tail 100
+sudo tixxin logs edge -f
+sudo tixxin backup
+sudo tixxin update
+sudo tixxin rollback 0.3.0 --database-compatible
+sudo tixxin restart
+sudo tixxin reset-password
+sudo tixxin help
+```
 
-- [ ] **Backups**: once you have written your first content, download a content package with managed images from `/admin/maintenance` as a minimum backup. Upgrades require a verified full backup (database plus media); scheduled full backups need the worker enabled separately, see [automatic full backups](../operations.md#自动完整备份) and [Backup and Recovery](../backup-and-recovery.md) (both in Chinese). Keep the environment file safe as well. Never use `docker compose down -v` to deal with a fault; it deletes the data volumes.
+| Command                                    | Purpose                                                                                                                                                                                                                                                                                      |
+| ------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `status`                                   | Shows the install directory, project name, current version, site URL and service states, and runs one entry check                                                                                                                                                                            |
+| `logs`                                     | Shows logs, the last 200 lines by default, `-f` to follow; services are `postgres`, `backend`, `frontend`, `edge`, `worker` and `migration`                                                                                                                                                  |
+| `backup`                                   | Creates and verifies a full backup (a consistent database snapshot plus registered media) inside the worker image, exports it to `<install directory>/backups` and keeps the same copy in the volume. Backups contain private drafts and password hashes; move them to a controlled location |
+| `update [version]`                         | Takes a full backup, then downloads and verifies the new package, pulls images, stops writes, migrates, recreates services and checks the entry. Without a version it uses the latest stable release; the current version repairs configuration or recreates containers                      |
+| `rollback <version> --database-compatible` | Application rollback: takes a full backup, then switches to the images and compose files of the given older version without running migrations, keeping volumes. `--database-compatible` states that you have confirmed the version is compatible with the current database                  |
+| `restart`                                  | Restarts the API, frontend and entry point (plus a running worker) and waits for health checks                                                                                                                                                                                               |
+| `reset-password`                           | Reads a new password twice with hidden input (at least 12 characters) and revokes all sessions of that administrator; with several administrators, choose one with `--user <username>`                                                                                                       |
 
-## Upgrades and Rollbacks
+Replace `0.3.0` in the example with the version you actually want to roll back to. When an update or rollback fails, the command keeps everything in place and prints the failed stage, troubleshooting commands and the matching rollback command. An application rollback does not replace data recovery; to return to the data as it was at backup time, see [Backup and Recovery](../backup-and-recovery.md) (in Chinese). No subcommand ever runs `docker compose down -v`.
 
-- Upgrade: take a full backup, pull the four images of the new version, check out the matching tag, then run the release script with `--backup-directory`; see [Releasing to an Existing Site](deployment.md#releasing-to-an-existing-site).
-- Rollback: once you have confirmed the older version is compatible with the current database, use `--action rollback --database-compatible` to switch only the application images without reverting data; see [Application Rollback and Data Recovery](deployment.md#application-rollback-and-data-recovery).
+Scheduled full backups need the worker enabled separately; see [automatic full backups](../operations.md#自动完整备份) (in Chinese).
+
+## Networks in Mainland China
+
+If the server reaches GitHub or GHCR slowly or not at all, you can replace the deployment package and images with sources you prepare yourself:
+
+```sh
+sudo bash install.sh --version 0.3.0 --download-base https://mirror.example.com/tixxin-blog --registry registry.example.com/tixxin/tixxinblog
+```
+
+- `--download-base` replaces the deployment package source and accepts only `https://` or `file://`. The script downloads `tixxin-blog-<version>.tar.gz` and `SHA256SUMS` from `<address>/v<version>/` and verifies SHA256 as usual. Sync those two files from the Release into your source using that layout; you also need to obtain `install.sh` itself from a place you can reach.
+- `--registry` replaces the prefix `ghcr.io/tixxin/tixxinblog` of the four application images, which become `<prefix>-web`, `<prefix>-api`, `<prefix>-migration` and `<prefix>-worker`, still tagged with the version. Sync the four images of that version from GHCR into the registry beforehand.
+- The two dependency images for PostgreSQL and Caddy (`POSTGRES_IMAGE` and `CADDY_IMAGE` in `.env`, `postgres:16-alpine` and `caddy:2-alpine` by default) come from Docker Hub and are not affected by `--registry`. To speed them up, configure a registry mirror of your own choosing for the Docker daemon, or load all six images beforehand and use `--no-pull`.
+- When using `--download-base`, also state the version with `--version`. Both addresses are written to `.env` and reused by `tixxin update`; with a custom download source, updates also need an explicit version, for example `sudo tixxin update 0.3.0`.
+- You must prepare and vet any registry mirror or image sync yourself. This documentation recommends none, and the script has no third-party site built in. The package is always verified against `SHA256SUMS`, but both come from the same source, so the source itself must be trustworthy.
+- Servers in mainland China that serve a website under a domain usually need ICP filing first; otherwise the provider may block traffic on 80/443 and certificates cannot be issued.
+
+## Non-Interactive Installation
+
+`--yes` skips every prompt and uses defaults for anything not given; a production installation must also pass `--domain`:
+
+```sh
+sudo bash install.sh --yes --domain blog.example.com --locale en --dir /opt/tixxin-blog
+```
+
+| Option                  | Description                                                                                                       |
+| ----------------------- | ----------------------------------------------------------------------------------------------------------------- |
+| `--yes`                 | Do not prompt; use the options and defaults                                                                       |
+| `--domain DOMAIN`       | Site domain                                                                                                       |
+| `--locale zh-CN\|en`    | Default site language, `zh-CN` by default                                                                         |
+| `--dir DIR`             | Install directory, `/opt/tixxin-blog` by default                                                                  |
+| `--version VERSION`     | Pinned version to install; defaults to the release the script belongs to                                          |
+| `--registry PREFIX`     | Replace the application image prefix; see [Networks in Mainland China](#networks-in-mainland-china)               |
+| `--download-base URL`   | Replace the deployment package source; see [Networks in Mainland China](#networks-in-mainland-china)              |
+| `--local`               | Local trial mode                                                                                                  |
+| `--http-port PORT`      | Host HTTP port (80 for production, 8080 for a local trial)                                                        |
+| `--https-port PORT`     | Host HTTPS port (8443 for a local trial); must be 443 for production                                              |
+| `--project NAME`        | Compose project name, `tixxin-production` by default; it determines volume names and cannot change after install  |
+| `--subnet CIDR`         | Internal network subnet, `172.31.250.0/24` by default; give each site on the same host its own range              |
+| `--check-public-ip URL` | Also query this https address for the public IP to check DNS; off by default, and it exposes this host's IP to it |
+| `--no-pull`             | Use images already on the host; do not pull                                                                       |
+| `--install-docker`      | Run Docker's official install script without asking when Docker is missing                                        |
+
+In non-interactive mode a missing Docker is not installed automatically; pass `--install-docker` as well. The output of `bash install.sh --help` (in Chinese) is the authoritative usage.
+
+## Security Notes
+
+- **Keep `.env` safe**: `<install directory>/.env` holds the database password, signing secret and setup token. If it is lost, you cannot connect to the existing database or restore the site. Store a copy in a controlled location and never commit it to Git or send it to anyone.
+- **Do not leak the setup link**: until the owner account exists, anyone with the link can create the account first. While you keep the link, do not screenshot, forward or paste it anywhere public; the install log `<install directory>/logs/install-*.log` also records it (readable only by root). The token stops working once the account is created.
+- **Understand HSTS**: the Caddy template sends `Strict-Transport-Security: max-age=86400` (no subdomains, no preload). Browsers that receive it use only HTTPS for the site for one day and cannot fall back to HTTP if the certificate breaks. Watch automatic certificate renewal first; after one or two stable weeks, lengthen the period in `deploy/Caddyfile` as described in [Optional Worker and Operational Monitoring](deployment.md#optional-worker-and-operational-monitoring).
+- Never use `docker compose down -v` to deal with a fault; it deletes the data volumes.
 
 ## FAQ
 
-**The certificate is not issued, or the browser reports a certificate error.** Check that DNS points at this host, `SITE_HOST`/`SITE_URL` match the domain you visit, `HTTPS_BIND_ADDRESS` is not `127.0.0.1` and the firewall allows 80/443, then read the `edge` logs. Do not delete the certificate volume to request again. See [HTTPS certificate errors](../troubleshooting.md#https-证书错误或无法签发) (in Chinese).
+### The Domain Does Not Resolve Yet
+
+If the installer warns that the domain has no DNS records yet, or that it resolves to addresses different from this host's interfaces, the domain does not point at this server yet (the latter can be ignored behind a CDN or proxy). The script only warns, but certificates require the domain to resolve to this host. When the server sits behind NAT with no public address on its interfaces, the script cannot tell; compare against the public IP shown in your cloud provider's console.
+
+After fixing DNS and waiting for it to propagate, Caddy retries issuance automatically; check with `sudo tixxin status`. If installation stopped at the entry check, continue with a same-version update as the installer suggests (replace `0.3.0` with the installed version):
 
 ```sh
-docker compose --env-file "$release_env" -f compose.production.yaml logs --tail=100 edge
+sudo tixxin update 0.3.0
 ```
 
-**The release script reports that images are not ready locally (`镜像未在本机就绪`).** All six images (the four application images plus `postgres:16-alpine` and `caddy:2-alpine`) must be pulled first, and the image repositories in the environment file and `--version` must match the pulled tags. If the GHCR packages are private (for example, your own fork), first run `docker login ghcr.io` with a token that has `read:packages`.
+### A Port Is Already in Use
 
-**Pages or `/api/v1` return 502.** Check the logs and health of `edge`, `frontend` and `backend` in turn. If `backend` is not `healthy`, look for database connection errors first instead of only restarting the frontend. See [SSR pages or the same-origin API return 502](../troubleshooting.md#ssr-页面或同源-api-返回-502) (in Chinese).
+When the installer reports that port 80 or 443 is in use, find the program holding it, stop it and run the installation again:
 
 ```sh
-docker compose --env-file "$release_env" -f compose.production.yaml logs --tail=100 edge frontend backend
+sudo ss -ltnp '( sport = :80 or sport = :443 )'
 ```
 
-**Several visitors keep getting 429.** Usually trusted proxies are not configured, so all visitors share one quota; follow the step in the go-live checklist. See [Requests return 429](../troubleshooting.md#请求返回-429) (in Chinese).
+A production installation must use HTTPS port 443. A local trial can switch ports with `--http-port` and `--https-port`.
 
-**The browser still forces HTTPS or shows an error after the certificate is fixed.** This is how HSTS works: the only fix is a working HTTPS endpoint, and switching to HTTP or removing the header does not clear a policy the browser has stored. See [HSTS forces HTTPS](../troubleshooting.md#hsts-导致浏览器强制-https) (in Chinese).
+### The Certificate Is Not Issued
+
+Check in order: DNS points at this host, the firewall and security group allow 80/443, the server clock is correct, and servers in mainland China have ICP filing. Then read the entry logs:
+
+```sh
+sudo tixxin logs edge --tail 200
+```
+
+Do not delete the certificate volume to request again; repeated failures hit the certificate authority's rate limits. Caddy retries after the fix; see [HTTPS certificate errors](../troubleshooting.md#https-证书错误或无法签发) (in Chinese).
+
+### Internal Subnet Conflict
+
+If startup fails with `Pool overlaps with other one on this address space`, the default internal subnet `172.31.250.0/24` overlaps an existing network on the host. If you know about the conflict before installing, choose an unused private range:
+
+```sh
+sudo bash install.sh --subnet 172.31.251.0/24
+```
+
+If installation has already failed for this reason, the install directory exists and a new installation is refused; switch the subnet with a same-version update instead. A first installation has no data yet and its database cannot start, so skip the pre-update backup:
+
+```sh
+sudo tixxin update 0.3.0 --subnet 172.31.251.0/24 --skip-backup
+```
+
+For a site that was running normally, drop `--skip-backup`. The command recreates this project's network and keeps the volumes. To install another site on the same host, change `--dir`, `--project` and `--subnet` together.
+
+### Forgotten Password
+
+```sh
+sudo tixxin reset-password
+```
+
+Enter the new password twice with hidden input; every signed-in device must sign in again. With several administrators, add `--user <username>`.
+
+### Lost Setup Link
+
+The setup token is stored as `SETUP_TOKEN` in `.env`. As long as no administrator has been created, read the token and open `https://<domain>/setup?token=<token>` again:
+
+```sh
+sudo grep '^SETUP_TOKEN=' /opt/tixxin-blog/.env
+```
+
+Once an account exists the wizard no longer opens; if you forgot the password, use `tixxin reset-password`.
+
+### The Install Directory or Volumes Already Exist
+
+The script never overwrites an existing site. Upgrade an existing site with `sudo tixxin update`; to install another site on the same host, change `--dir` and `--project`.
+
+For other faults (502, 429, migrations, memory), see [Troubleshooting](../troubleshooting.md) (in Chinese).
