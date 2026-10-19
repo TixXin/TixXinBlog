@@ -257,6 +257,8 @@ async function batch(action: 'published' | 'hidden' | 'delete') {
             : 'admin-content.flashComments.batch.hidden',
       ),
       t('admin-content.flashComments.batch.noun'),
+      // 在 await 之后调用，显式传入翻译函数，不依赖当时的组件上下文
+      t,
     )
     // 列表重新读取会清空错误提示，因此在刷新之后再展示跳过项。
     if (result.failedCount) error.value = message

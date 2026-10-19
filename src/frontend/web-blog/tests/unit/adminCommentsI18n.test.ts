@@ -63,11 +63,6 @@ async function mountPage(component: Parameters<typeof mountSuspended>[0], path: 
   return wrapper
 }
 
-/** 批量操作栏属于 3c 的后台通用部件，尚未迁移，检查本页残留中文时排除它 */
-function withoutBatchBar(wrapper: Awaited<ReturnType<typeof mountPage>>) {
-  return wrapper.text().replace(wrapper.find('.admin-batch-bar').text(), '')
-}
-
 function respond(path: string) {
   if (path === '/admin/comments/policy') return { requireApproval: true, revision: 3 }
   if (path === '/admin/comments/articles') return [{ id: 1, title: 'Post A' }]
@@ -155,7 +150,7 @@ describe('后台评论审核与分类标签英文冒烟', () => {
       expect(text).toContain('Pending review')
       expect(text).toContain('View context')
       expect(text).toContain('1 / 1 · 1 total')
-      expect(withoutBatchBar(wrapper)).not.toMatch(/[一-鿿]/)
+      expect(text).not.toMatch(/[一-鿿]/)
     })
   })
 
@@ -166,7 +161,7 @@ describe('后台评论审核与分类标签英文冒烟', () => {
       expect(flash).toContain('Flash comments')
       expect(flash).toContain('Flash published')
       expect(flash).toContain('Approve')
-      expect(withoutBatchBar(flashPage)).not.toMatch(/[一-鿿]/)
+      expect(flash).not.toMatch(/[一-鿿]/)
       const moment = (await mountPage(MomentCommentsPage, '/admin/moment-comments')).text()
       expect(moment).toContain('Moment comments')
       expect(moment).toContain('Moment draft')

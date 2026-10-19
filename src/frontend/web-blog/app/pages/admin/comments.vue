@@ -586,6 +586,8 @@ async function runBatch(action: string) {
         ? t('admin-content.comments.batch.deleted')
         : t('admin-content.comments.batch.setTo', { status: statusLabels.value[action as CommentStatus] }),
       t('admin-content.comments.batch.noun'),
+      // 在 await 之后调用，显式传入翻译函数，不依赖当时的组件上下文
+      t,
     )
     selection.clear()
     if (remove) closeContext()
