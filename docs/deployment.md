@@ -38,6 +38,9 @@ for name in web api migration worker; do
   docker pull "$image_prefix-$name:$release_version"
   docker image inspect --format '{{index .RepoDigests 0}}' "$image_prefix-$name:$release_version"
 done
+# 发布脚本以 --pull never 启动依赖服务，需与环境文件中的 POSTGRES_IMAGE、CADDY_IMAGE 一致并预先拉取
+docker pull postgres:16-alpine
+docker pull caddy:2-alpine
 ```
 
 PowerShell：
@@ -49,6 +52,8 @@ foreach ($name in 'web', 'api', 'migration', 'worker') {
   docker pull "${imagePrefix}-${name}:${releaseVersion}"
   docker image inspect --format '{{index .RepoDigests 0}}' "${imagePrefix}-${name}:${releaseVersion}"
 }
+docker pull postgres:16-alpine
+docker pull caddy:2-alpine
 ```
 
 输出的摘要应与 Release 说明一致。GHCR 包为私有时，先用具有 `read:packages` 权限的令牌执行 `docker login ghcr.io`。需要检查来源证明或 SBOM 时，可执行 `docker buildx imagetools inspect <镜像引用> --format '{{ json .Provenance }}'`（SBOM 使用 `.SBOM`）。
@@ -100,16 +105,16 @@ if (-not (Test-Path ../tixxin-private/production.env)) {
 
 两段命令都不会覆盖已有的环境文件；复制后编辑实际值。
 
-| 配置                                                                                                    | 要求                                                                                   |
-| ------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------- |
-| `RELEASE_PROJECT`                                                                                       | 独立且稳定的 Compose 项目名；首次安装后不随意改变卷归属                                |
-| `RELEASE_VERSION`                                                                                       | 已准备、不可复用的应用版本；预构建镜像填版本号（如 `0.2.0`），自行构建推荐完整 Git SHA |
-| `WEB_IMAGE_REPOSITORY`、`API_IMAGE_REPOSITORY`、`MIGRATION_IMAGE_REPOSITORY`、`WORKER_IMAGE_REPOSITORY` | 对应同一版本的镜像仓库；预构建镜像填 GHCR 地址，不带标签                               |
-| `POSTGRES_IMAGE`、`CADDY_IMAGE`                                                                         | 本机已有且明确固定的依赖镜像                                                           |
-| `POSTGRES_PASSWORD`                                                                                     | 至少 32 位随机十六进制值，避免连接 URL 保留字符问题                                    |
-| `JWT_ACCESS_SECRET`                                                                                     | 至少 32 位随机签名密钥                                                                 |
-| `SITE_HOST`、`SITE_URL`                                                                                 | 对外域名与对应 HTTPS origin                                                            |
-| `HTTPS_BIND_ADDRESS`、`HTTP_PORT`、`HTTPS_PORT`                                                         | 默认仅绑定本机；对外开放需明确配置入口、防火墙和 DNS                                   |
+| 配置                                                                                                    | 要求                                                                                                          |
+| ------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------- |
+| `RELEASE_PROJECT`                                                                                       | 独立且稳定的 Compose 项目名；首次安装后不随意改变卷归属                                                       |
+| `RELEASE_VERSION`                                                                                       | 已准备、不可复用的应用版本；预构建镜像填版本号（如 `0.2.0`），自行构建推荐完整 Git SHA                        |
+| `WEB_IMAGE_REPOSITORY`、`API_IMAGE_REPOSITORY`、`MIGRATION_IMAGE_REPOSITORY`、`WORKER_IMAGE_REPOSITORY` | 对应同一版本的镜像仓库；预构建镜像填 GHCR 地址，不带标签                                                      |
+| `POSTGRES_IMAGE`、`CADDY_IMAGE`                                                                         | 本机已有且明确固定的依赖镜像                                                                                  |
+| `POSTGRES_PASSWORD`                                                                                     | 至少 32 位随机十六进制值，避免连接 URL 保留字符问题                                                           |
+| `JWT_ACCESS_SECRET`                                                                                     | 至少 32 位随机签名密钥                                                                                        |
+| `SITE_HOST`、`SITE_URL`                                                                                 | 对外域名与对应 HTTPS origin                                                                                   |
+| `HTTPS_BIND_ADDRESS`、`HTTP_PORT`、`HTTPS_PORT`                                                         | 默认仅绑定本机，外网访问不到、也无法签发证书；直接对外服务时改为 `0.0.0.0` 或公网网卡地址，并配置防火墙和 DNS |
 
 API 未设置 `NODE_ENV` 时按 `production` 处理：限流生效、刷新 Cookie 带 `Secure`、日志级别缺省 `info`，且 `MEDIA_DIRECTORY` 必须是绝对路径，否则拒绝启动。镜像已设置 `NODE_ENV=production` 与 `MEDIA_DIRECTORY=/app/var/media`。只有显式的 `development`/`test` 才允许通过 `RATE_LIMIT_DISABLED=true` 关闭限流，生产忽略该开关。
 
@@ -117,7 +122,7 @@ API 未设置 `NODE_ENV` 时按 `production` 处理：限流生效、刷新 Cook
 
 ### 可信代理、读取配额与媒体缓存
 
-默认两端都忽略转发地址头。生产按真实网络填写 `WEB_TRUSTED_PROXY_CIDRS`（Nuxt 的直接前置 Caddy 地址）和 `API_TRUSTED_PROXY_CIDRS`（API 的直接前置 Nuxt 地址）；值为逗号分隔的明确 IPv4/IPv6 地址或 CIDR，映射为 `NUXT_TRUSTED_PROXY_CIDRS` 与 `TRUSTED_PROXY_CIDRS`。只填写受控代理地址或隔离代理网络的窄 CIDR，不能用全部私网、`0.0.0.0/0`、布尔开关或任意跳数代替核对。容器重建时地址可能变化，需要固定专用代理网络或同步这些配置。未配置时访客会按代理连接地址共享配额，不能把这一默认状态用于面向多访客的正式验收。
+默认两端都忽略转发地址头。生产按真实网络填写 `WEB_TRUSTED_PROXY_CIDRS`（Nuxt 的直接前置 Caddy 地址）和 `API_TRUSTED_PROXY_CIDRS`（API 的直接前置 Nuxt 地址）；值为逗号分隔的明确 IPv4/IPv6 地址或 CIDR，映射为 `NUXT_TRUSTED_PROXY_CIDRS` 与 `TRUSTED_PROXY_CIDRS`。只填写受控代理地址、隔离代理网络的窄 CIDR，或仅包含本项目容器的 Compose 项目网络子网（`docker network inspect <项目名>_default` 查得），不能用全部私网、`0.0.0.0/0`、布尔开关或任意跳数代替核对。容器重建时地址可能变化，需要固定专用代理网络或同步这些配置。未配置时访客会按代理连接地址共享配额，不能把这一默认状态用于面向多访客的正式验收。
 
 当前 Caddy 模板直接接收访客连接，覆盖 `X-Forwarded-For` 并移除其他客户端地址提示；Nuxt 从连接地址向外逐跳验证代理链，再向 API 发送单一客户端 IP，API 只接受可信 Nuxt 连接的转发地址。若 Caddy 前另有 CDN/负载均衡，先按真实拓扑独立配置并验证最外层信任边界，不能直接透传访客的头。部署后用两个独立访客地址和伪造转发头验证配额隔离。
 
