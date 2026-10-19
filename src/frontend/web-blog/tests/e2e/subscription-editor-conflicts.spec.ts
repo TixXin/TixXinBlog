@@ -256,7 +256,8 @@ test('服务端内容库409在客户端代次尚未改变时也锁定私密视�
       await route.fulfill({
         status: 409,
         contentType: 'application/json',
-        body: JSON.stringify({ code: 409, message: '站点数据上下文已变化，请刷新后重试' }),
+        // 与后端一致：内容代次轮换返回业务码 42（ContentContextChanged），前端按业务码而非文案分流
+        body: JSON.stringify({ code: 42, message: '站点数据上下文已变化，请保留输入并刷新页面后再提交' }),
       })
     else {
       followupReads++
