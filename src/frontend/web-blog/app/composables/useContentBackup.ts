@@ -24,6 +24,8 @@ export function useContentBackup() {
   const route = useRoute()
   const toast = useToast()
   const pending = ref(false)
+  // 只有上传、执行、重新预览和下载这类有副作用的请求需要离开确认；只读的票据查询随时可以离开
+  const guarded = ref(false)
   const error = ref('')
   const mediaIncluded = ref(true)
   const file = shallowRef<File | null>(null)
@@ -101,8 +103,9 @@ export function useContentBackup() {
       throw cause
     }
   }
-  function begin() {
+  function begin(sideEffect = true) {
     pending.value = true
+    guarded.value = sideEffect
     error.value = ''
     return { owner: captureOwner(), version: ++operation }
   }
@@ -120,7 +123,7 @@ export function useContentBackup() {
     if (alive && version === operation) error.value = owns(owner) ? message : ownershipMessage
   }
   function finish(version: number) {
-    if (alive && version === operation) pending.value = false
+    if (alive && version === operation) pending.value = guarded.value = false
   }
   async function exportPackage() {
     if (pending.value) return
@@ -243,7 +246,7 @@ export function useContentBackup() {
   }
   async function read(ticket = job.value?.ticket || requestId.value) {
     if (!ticket || pending.value) return
-    const { owner, version } = begin()
+    const { owner, version } = begin(false)
     try {
       await accept(
         await authenticated(owner, () => api<ContentImportView>(`/admin/backup/imports/${ticket}`), false),
@@ -328,7 +331,7 @@ export function useContentBackup() {
       }
       if (!initialRestore) generation++
       recentVersion++
-      if (!initialRestore) pending.value = false
+      if (!initialRestore) pending.value = guarded.value = false
       job.value = null
       jobOwner = null
       acknowledgement.value = ''
@@ -362,7 +365,7 @@ export function useContentBackup() {
       await read(route.query.import)
   })
   function beforeUnload(event: BeforeUnloadEvent) {
-    if (pending.value) {
+    if (guarded.value) {
       event.preventDefault()
       event.returnValue = ''
     }
@@ -375,7 +378,7 @@ export function useContentBackup() {
     window.removeEventListener('beforeunload', beforeUnload)
   })
   onBeforeRouteLeave(
-    () => !pending.value || window.confirm('请求仍在处理中，离开后可通过导入票据查询结果。确定离开吗？'),
+    () => !guarded.value || window.confirm('请求仍在处理中，离开后可通过导入票据查询结果。确定离开吗？'),
   )
   return {
     pending,
