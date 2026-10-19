@@ -79,6 +79,22 @@ jobs:
       - name: Check Secrets
         run: pnpm check:secrets
 
+      # browser-e2e 按权重表分片，这里确认各片并集正好是全部 spec 且互不重复，防止分片漏跑。
+      - name: Browser E2E Shard Coverage
+        run: |
+          node src/backend/server-main/tests/browser-runner.mjs --list-shards 4 > "$RUNNER_TEMP/e2e-shards.json"
+          node --input-type=module -e '
+            import { readFileSync, readdirSync } from "node:fs"
+            const shards = JSON.parse(readFileSync(process.argv[1], "utf8"))
+            const listed = shards.flatMap((shard) => shard.files)
+            const expected = readdirSync("src/frontend/web-blog/tests/e2e").filter((name) => name.endsWith(".spec.ts")).sort()
+            const actual = [...listed].sort()
+            if (shards.length !== 4) throw new Error(`分片数应为 4，实际 ${shards.length}`)
+            if (new Set(listed).size !== listed.length) throw new Error("分片之间存在重复文件")
+            if (JSON.stringify(actual) !== JSON.stringify(expected)) throw new Error(`分片与 spec 全集不一致：${JSON.stringify({ expected, actual })}`)
+            for (const shard of shards) console.log(`分片 ${shard.shard}：${shard.files.length} 个文件，预计 ${Math.round(shard.weight)} 秒`)
+          ' "$RUNNER_TEMP/e2e-shards.json"
+
       - name: Lint
         run: pnpm lint
 
@@ -91,11 +107,8 @@ jobs:
       - name: Subscription Domain
         run: pnpm test:subscription-domain
 
-      - name: Test
-        run: pnpm --filter web-blog test
-
-      # 覆盖率只收集与上传，不设阈值门禁。
-      - name: Frontend Coverage
+      # 单测只跑带覆盖率的一遍：用例失败照常阻断，覆盖率只收集与上传，不设阈值门禁。
+      - name: Test with Coverage
         run: pnpm --filter web-blog exec vitest run --coverage
 
       - name: Frontend Coverage Report
@@ -119,20 +132,6 @@ jobs:
       - name: Isolated PostgreSQL Startup
         run: pnpm test:dev:postgres
 
-      - name: Install Chromium
-        run: pnpm --filter web-blog exec playwright install --with-deps chromium
-
-      - name: Browser E2E on Isolated Database
-        run: pnpm test:e2e:run
-
-      - name: Browser Failure Artifacts
-        if: failure()
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
-        with:
-          name: browser-e2e-failure
-          path: .playwright-mcp/e2e-results
-          retention-days: 5
-
       - name: Frontend Docker Build
         run: docker build -t tixxin-blog-web:ci .
 
@@ -150,6 +149,90 @@ jobs:
 
       - name: Audit Dependencies
         run: pnpm audit --prod --audit-level=high
+
+  # 全部浏览器 spec 按文件分 4 片并行；每片各自构建，文件仍逐个使用独立进程与隔离库。
+  browser-e2e:
+    name: Browser E2E (${{ matrix.shard }}/4)
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    strategy:
+      # 各片独立报告，一片失败不取消其余分片。
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3, 4]
+    env:
+      DATABASE_URL: postgres://tixxin:tixxin@localhost:5432/tixxin_blog
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: tixxin
+          POSTGRES_PASSWORD: tixxin
+          POSTGRES_DB: tixxin_blog
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U tixxin -d tixxin_blog"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 10
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+
+      - uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4.3.0
+
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: 25
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
+
+      - name: Install Corepack
+        run: npm install --global corepack@0.34.6
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: Build Frontend
+        run: pnpm build
+
+      - name: Build Backend for Browser Tests
+        run: pnpm --filter server-main build
+
+      - name: Resolve Playwright Version
+        id: playwright
+        working-directory: src/frontend/web-blog
+        run: echo "version=$(node -p "require('@playwright/test/package.json').version")" >> "$GITHUB_OUTPUT"
+
+      # 浏览器二进制按系统与 Playwright 版本缓存；系统库不在缓存内，命中时仍需单独安装。
+      - name: Cache Playwright Chromium
+        id: playwright-cache
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-chromium-${{ steps.playwright.outputs.version }}
+
+      - name: Install Chromium
+        if: steps.playwright-cache.outputs.cache-hit != 'true'
+        run: pnpm --filter web-blog exec playwright install --with-deps chromium
+
+      - name: Install Chromium System Dependencies
+        if: steps.playwright-cache.outputs.cache-hit == 'true'
+        run: pnpm --filter web-blog exec playwright install-deps chromium
+
+      - name: Browser E2E on Isolated Database
+        env:
+          E2E_SHARD: ${{ matrix.shard }}/4
+        run: pnpm test:e2e:run
+
+      - name: Browser Failure Artifacts
+        if: failure()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: browser-e2e-failure-${{ matrix.shard }}
+          path: .playwright-mcp/e2e-results
+          retention-days: 5
 
   webkit-smoke:
     name: WebKit Core E2E
@@ -190,8 +273,25 @@ jobs:
 
       - run: pnpm install --frozen-lockfile
 
+      - name: Resolve Playwright Version
+        id: playwright
+        working-directory: src/frontend/web-blog
+        run: echo "version=$(node -p "require('@playwright/test/package.json').version")" >> "$GITHUB_OUTPUT"
+
+      - name: Cache Playwright WebKit
+        id: playwright-cache
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-webkit-${{ steps.playwright.outputs.version }}
+
       - name: Install WebKit
+        if: steps.playwright-cache.outputs.cache-hit != 'true'
         run: pnpm --filter web-blog exec playwright install --with-deps webkit
+
+      - name: Install WebKit System Dependencies
+        if: steps.playwright-cache.outputs.cache-hit == 'true'
+        run: pnpm --filter web-blog exec playwright install-deps webkit
 
       - name: Build Frontend
         run: pnpm build
