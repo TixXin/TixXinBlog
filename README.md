@@ -13,7 +13,21 @@
 
 在线实例：<https://tix.xin>（作者本人的博客，内容与本仓库的演示数据无关）。
 
-> **快速开始**：有一台装了 Docker 的 Linux 服务器和一个域名，按 [5 分钟部署](docs/quick-start.md)用预构建镜像上线；想在本机开发则看下方[本地启动](#本地启动)。
+## 一条命令安装
+
+准备一台 Linux 服务器（amd64 或 arm64），把域名解析到它并开放 80/443 端口，然后执行下面的命令，按提示填写域名。安装完成时会打印一条初始化链接，在浏览器打开即可创建博主账号。一键安装从 v0.3.0 起提供。
+
+```sh
+curl -fsSL https://github.com/TixXin/TixXinBlog/releases/latest/download/install.sh -o install.sh && sudo bash install.sh
+```
+
+没有服务器时，可以用下载好的 `install.sh` 先在本机试用（需要 Docker，不需要 sudo），完成后访问 `https://localhost:8443`：
+
+```sh
+bash install.sh --local --dir "$HOME/tixxin-blog"
+```
+
+前提条件、脚本会做什么、日常管理命令和常见问题见 [5 分钟部署](docs/quick-start.md)；需要精细控制时见[部署指南](docs/deployment.md)的手动发布。想在本机开发则看下方[本地启动](#本地启动)。
 
 ## 可以做什么
 
@@ -125,7 +139,7 @@ corepack pnpm build
 corepack pnpm --filter server-main build
 ```
 
-根目录 `build` 构建前端，后端单独构建；全部根脚本见[脚本说明](docs/scripts.md)。生产编排使用 `compose.production.yaml` 和 `deploy/` 模板；部署前需要设置实际域名、固定镜像版本、密钥和持久化存储，并先执行迁移。推送 `v*` 标签后，Release 工作流会把 web、api、migration、worker 四个多架构镜像推送到 GHCR 并创建 GitHub Release；也可以在目标主机自行构建。两条路径、Linux/PowerShell 命令与本机生产式预览见[部署指南](docs/deployment.md)，数据维护见[备份与恢复](docs/backup-and-recovery.md)。
+根目录 `build` 构建前端，后端单独构建；全部根脚本见[脚本说明](docs/scripts.md)。部署有一键安装（`install.sh` 与 `tixxin` 管理命令）和手动发布（`release.mjs`）两种方式，共用同一套镜像、编排和数据卷。生产编排使用 `compose.production.yaml` 和 `deploy/` 模板；部署前需要设置实际域名、固定镜像版本、密钥和持久化存储，并先执行迁移。推送 `v*` 标签后，Release 工作流会把 web、api、migration、worker 四个多架构镜像推送到 GHCR 并创建 GitHub Release；也可以在目标主机自行构建。两条路径、Linux/PowerShell 命令与本机生产式预览见[部署指南](docs/deployment.md)，数据维护见[备份与恢复](docs/backup-and-recovery.md)。
 
 开发环境、代码职责、测试和 PR 要求见 [CONTRIBUTING.md](CONTRIBUTING.md)。[文档导航](docs/README.md)提供开发、架构、API、内容和主题说明。参与前请阅读[行为准则](CODE_OF_CONDUCT.md)。版本变更记录在 [CHANGELOG.md](CHANGELOG.md)。
 

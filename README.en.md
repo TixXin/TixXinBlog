@@ -13,9 +13,23 @@ A personal blog system for a single author, bundling the public site and its aut
 
 Live instance: <https://tix.xin> (the author's own blog; its content is unrelated to the demo data in this repository).
 
-> **Quick start.** With a Linux server running Docker and a domain name, follow the [five-minute deployment](docs/en/quick-start.md) to go live with the prebuilt images. To develop locally, see [Running locally](#running-locally) below.
+> **Note on language.** The interface is available in Chinese and English; the seeded demo content is written in Chinese. The [documentation index](docs/en/README.md), [quick start](docs/en/quick-start.md), [development guide](docs/en/development.md) and [deployment guide](docs/en/deployment.md) are available in English; the other guides remain in Chinese.
 
-> **Note on language.** The interface and seeded demo content are written in Chinese, and the project has no i18n layer yet. The [documentation index](docs/en/README.md), [quick start](docs/en/quick-start.md), [development guide](docs/en/development.md) and [deployment guide](docs/en/deployment.md) are available in English; the other guides remain in Chinese.
+## One-Command Install
+
+Prepare a Linux server (amd64 or arm64), point your domain at it and open ports 80/443, then run the command below and enter the domain when asked. When installation finishes it prints a setup link; open it in a browser to create the owner account. One-command installation is available from v0.3.0.
+
+```sh
+curl -fsSL https://github.com/TixXin/TixXinBlog/releases/latest/download/install.sh -o install.sh && sudo bash install.sh
+```
+
+Without a server, use the downloaded `install.sh` to try it locally first (Docker required, no sudo), then visit `https://localhost:8443`:
+
+```sh
+bash install.sh --local --dir "$HOME/tixxin-blog"
+```
+
+See the [five-minute deployment](docs/en/quick-start.md) for prerequisites, what the script does, management commands and the FAQ; for fine-grained control, see the manual release in the [deployment guide](docs/en/deployment.md). To develop locally, see [Running locally](#running-locally) below.
 
 ## What it does
 
@@ -127,7 +141,7 @@ corepack pnpm build
 corepack pnpm --filter server-main build
 ```
 
-The root `build` builds the frontend; the backend builds separately. Every root script is described in the [scripts reference](docs/scripts.md). Production orchestration uses `compose.production.yaml` and the templates under `deploy/`. Before deploying, set your real domain, pin image versions, provide secrets and persistent storage, and run migrations first. Pushing a `v*` tag runs the Release workflow, which publishes multi-arch `web`, `api`, `migration` and `worker` images to GHCR and creates a GitHub Release; you can also build the images yourself on the target host. Both paths, Linux and PowerShell commands, and a local production-style preview are covered in the [deployment guide](docs/en/deployment.md). See [backup and recovery](docs/backup-and-recovery.md) (in Chinese) for data recovery procedures.
+The root `build` builds the frontend; the backend builds separately. Every root script is described in the [scripts reference](docs/scripts.md). There are two ways to deploy, the one-command install (`install.sh` with the `tixxin` management command) and the manual release (`release.mjs`); both share the same images, compose files and data volumes. Production orchestration uses `compose.production.yaml` and the templates under `deploy/`. Before deploying, set your real domain, pin image versions, provide secrets and persistent storage, and run migrations first. Pushing a `v*` tag runs the Release workflow, which publishes multi-arch `web`, `api`, `migration` and `worker` images to GHCR and creates a GitHub Release; you can also build the images yourself on the target host. Both paths, Linux and PowerShell commands, and a local production-style preview are covered in the [deployment guide](docs/en/deployment.md). See [backup and recovery](docs/backup-and-recovery.md) (in Chinese) for data recovery procedures.
 
 Development setup, module boundaries, testing and PR expectations are in [CONTRIBUTING.md](CONTRIBUTING.md). The [documentation index](docs/en/README.md) covers development, architecture, API, content and themes, with links to the English guides and the remaining Chinese references. Please read the [Code of Conduct](CODE_OF_CONDUCT.md) before taking part. Release notes live in [CHANGELOG.md](CHANGELOG.md).
 
