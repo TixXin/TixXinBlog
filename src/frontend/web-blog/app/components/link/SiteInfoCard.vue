@@ -1,11 +1,11 @@
 <!-- @file SiteInfoCard.vue @description 真实本站友链资料与复制反馈，数据不可用时禁止复制默认资料 -->
 <template>
-  <section class="card site-info" aria-label="本站友链资料">
-    <h2><Icon name="lucide:clipboard" size="16" />本站友链资料</h2>
+  <section class="card site-info" :aria-label="$t('interaction.siteInfo.title')">
+    <h2><Icon name="lucide:clipboard" size="16" />{{ $t('interaction.siteInfo.title') }}</h2>
     <CommonRequestFeedback
       v-if="pending || error"
       :pending="pending"
-      :title="error || '正在读取本站资料'"
+      :title="error || $t('interaction.siteInfo.loading')"
       compact
       @retry="$emit('retry')"
     />
@@ -22,16 +22,19 @@
         :disabled="!ready || !info || pending || copying || !!error"
         @click="$emit('copy')"
       >
-        <Icon name="lucide:copy" size="14" aria-hidden="true" />{{ copying ? '正在复制…' : '复制本站资料' }}
+        <Icon name="lucide:copy" size="14" aria-hidden="true" />{{
+          copying ? $t('interaction.siteInfo.copying') : $t('interaction.siteInfo.copy')
+        }}
       </button>
       <button type="button" class="site-info__btn" :disabled="!ready || pending" @click="$emit('retry')">
-        <Icon name="lucide:refresh-cw" size="14" aria-hidden="true" />刷新本站资料
+        <Icon name="lucide:refresh-cw" size="14" aria-hidden="true" />{{ $t('interaction.siteInfo.refresh') }}
       </button>
     </div>
     <p v-if="notice" role="status">{{ notice }}</p>
     <p v-if="copyError" role="alert">{{ copyError }}</p>
     <label v-if="copyError && retainedText"
-      >待复制资料<textarea :value="retainedText" readonly rows="6" aria-label="待复制本站资料" />
+      >{{ $t('interaction.siteInfo.retained')
+      }}<textarea :value="retainedText" readonly rows="6" :aria-label="$t('interaction.siteInfo.retainedLabel')" />
     </label>
   </section>
 </template>

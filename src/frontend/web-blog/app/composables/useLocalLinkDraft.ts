@@ -3,6 +3,7 @@ import type { LocalLinkDraft } from '~/features/link/types'
 export function useLocalLinkDraft() {
   const draft = useState<LocalLinkDraft>('local-link-draft', () => ({ name: '', url: '', avatar: '', description: '' }))
   const initialized = useState('local-link-draft-initialized', () => false)
+  const t = currentTranslate()
   const ready = ref(false),
     copying = ref(false),
     error = ref(''),
@@ -15,7 +16,7 @@ export function useLocalLinkDraft() {
       sessionStorage.setItem('blog-local-link-draft', JSON.stringify(draft.value))
       storageError.value = ''
     } catch {
-      storageError.value = '本机恢复副本暂时无法保存，请保留当前输入。'
+      storageError.value = t('interaction.linkForm.storageSaveFailed')
     }
   }
   function change(value: Partial<LocalLinkDraft>) {
@@ -44,12 +45,17 @@ export function useLocalLinkDraft() {
     notice.value = ''
     persist()
     const value = draft.value,
-      text = `站点名称：${value.name.trim()}\n站点地址：${value.url.trim()}\n头像地址：${value.avatar.trim()}\n一句话描述：${value.description.trim()}`
+      text = t('interaction.linkForm.copyText', {
+        name: value.name.trim(),
+        url: value.url.trim(),
+        avatar: value.avatar.trim(),
+        description: value.description.trim(),
+      })
     try {
       await navigator.clipboard.writeText(text)
-      if (alive) notice.value = '友链资料已复制，尚未提交申请'
+      if (alive) notice.value = t('interaction.linkForm.copied')
     } catch {
-      if (alive) error.value = '复制失败，资料已保留。请重试或手动复制各字段。'
+      if (alive) error.value = t('interaction.linkForm.copyFailed')
     } finally {
       if (alive) copying.value = false
     }
@@ -72,7 +78,7 @@ export function useLocalLinkDraft() {
           draft.value = { name: value.name, url: value.url, avatar: value.avatar, description: value.description }
       }
     } catch {
-      storageError.value = '本机恢复副本暂时无法读取。'
+      storageError.value = t('interaction.linkForm.storageReadFailed')
     }
     initialized.value = true
     ready.value = true

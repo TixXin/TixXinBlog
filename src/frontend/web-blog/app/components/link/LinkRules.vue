@@ -7,14 +7,14 @@
 
 <template>
   <section class="card link-rules">
-    <h2 class="link-rules__title"><Icon name="lucide:link" size="16" />友链须知</h2>
+    <h2 class="link-rules__title"><Icon name="lucide:link" size="16" />{{ $t('interaction.linkRules.title') }}</h2>
     <div class="link-rules__list">
       <div v-for="(rule, index) in rules" :key="index" class="link-rules__item">
         <span class="link-rules__badge">{{ index + 1 }}</span>
         <p>{{ rule }}</p>
       </div>
     </div>
-    <p v-if="!rules.length" class="link-rules__empty">暂无额外友链须知。</p>
+    <p v-if="!rules.length" class="link-rules__empty">{{ $t('interaction.linkRules.empty') }}</p>
   </section>
 </template>
 

@@ -11,7 +11,7 @@
     <div class="auth-panel__header">
       <h2 :id="titleId" class="auth-panel__title">{{ viewTitle }}</h2>
       <div class="auth-panel__actions">
-        <button type="button" class="auth-panel__close" aria-label="关闭" @click="close">
+        <button type="button" class="auth-panel__close" :aria-label="$t('interaction.auth.close')" @click="close">
           <Icon name="lucide:x" size="18" />
         </button>
       </div>
@@ -42,13 +42,14 @@ defineProps<{ titleId?: string }>()
 
 const { currentView, close, switchView } = useLoginDrawer()
 
+const { t } = useI18n()
 const viewTitle = computed(() => {
   const titles: Record<AuthView, string> = {
-    login: '登录',
-    register: '参与讨论',
-    forgot: '登录帮助',
+    login: 'interaction.auth.titleLogin',
+    register: 'interaction.auth.titleRegister',
+    forgot: 'interaction.auth.titleForgot',
   }
-  return titles[currentView.value]
+  return t(titles[currentView.value])
 })
 
 /** 视图切换方向 */

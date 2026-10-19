@@ -9,7 +9,14 @@
   <Teleport to="body">
     <Transition name="auth-modal">
       <div v-if="visible" class="auth-modal-overlay" @click.self="close">
-        <div ref="dialogRef" class="auth-modal" role="dialog" aria-modal="true" aria-label="博主登录" tabindex="-1">
+        <div
+          ref="dialogRef"
+          class="auth-modal"
+          role="dialog"
+          aria-modal="true"
+          :aria-label="$t('interaction.auth.modalLabel')"
+          tabindex="-1"
+        >
           <AuthPanel />
         </div>
       </div>

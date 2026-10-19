@@ -4,8 +4,10 @@
 -->
 <template>
   <div class="auth-help">
-    <p>本站尚未开通邮件找回密码。请联系站点维护者恢复博主账号。</p>
-    <button type="button" class="auth-link" @click="$emit('switchView', 'login')">返回登录</button>
+    <p>{{ $t('interaction.auth.forgotText') }}</p>
+    <button type="button" class="auth-link" @click="$emit('switchView', 'login')">
+      {{ $t('interaction.auth.backToLogin') }}
+    </button>
   </div>
 </template>
 <script setup lang="ts">

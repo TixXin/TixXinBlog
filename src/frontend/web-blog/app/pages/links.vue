@@ -2,25 +2,29 @@
 <template>
   <CommonPageFrame class="main-inner" header-key="links"
     ><template #header
-      ><CommonPageHeader title="友情链接" subtitle="互联网上志同道合的伙伴们" icon="lucide:link"
+      ><CommonPageHeader
+        :title="t('interaction.links.title')"
+        :subtitle="t('interaction.links.subtitle')"
+        icon="lucide:link"
         ><template #action
           ><CommonSearchBox
             v-model="keyword"
-            label="搜索友链"
-            placeholder="搜索站点、介绍或地址..." /></template></CommonPageHeader></template
+            :label="t('interaction.links.searchLabel')"
+            :placeholder="t('interaction.links.searchPlaceholder')" /></template></CommonPageHeader></template
     ><template #default
       ><CommonCustomScrollbar class="links-body" viewport-class="links-viewport" :show-back-to-top="false" primary
         ><div class="links-filters">
           <label
-            >推荐筛选<select
+            >{{ t('interaction.links.featuredFilter')
+            }}<select
               :value="query.featured ?? ''"
-              aria-label="筛选推荐友链"
+              :aria-label="t('interaction.links.featuredFilterLabel')"
               :disabled="!ready"
               @change="changeQuery({ featured: ($event.target as HTMLSelectElement).value || undefined })"
             >
-              <option value="">全部友链</option>
-              <option value="true">推荐友链</option>
-              <option value="false">其他友链</option>
+              <option value="">{{ t('interaction.links.filterAll') }}</option>
+              <option value="true">{{ t('interaction.links.filterFeatured') }}</option>
+              <option value="false">{{ t('interaction.links.filterOthers') }}</option>
             </select></label
           ><button
             v-if="query.q || query.featured"
@@ -28,52 +32,55 @@
             :disabled="!ready"
             @click="changeQuery({ q: undefined, featured: undefined })"
           >
-            清除筛选
+            {{ t('interaction.links.clearFilters') }}
           </button>
         </div>
         <CommonRequestFeedback
           v-if="pending || error"
           :pending="pending"
           :compact="links.length > 0"
-          :title="error?.message || '正在读取友链'"
+          :title="error?.message || t('interaction.links.loading')"
           @retry="refresh()"
         />
-        <p v-if="stale" role="status" class="links-result">当前筛选尚未完成，以下保留上一次成功读取的友链。</p>
+        <p v-if="stale" role="status" class="links-result">{{ t('interaction.links.stale') }}</p>
         <p v-else-if="total !== null" role="status" class="links-result">
-          共 {{ total }} 条友链 · 第 {{ query.page }} 页
+          {{ t('interaction.links.summary', { total, page: query.page }, total) }}
         </p>
         <CommonStateBlock
           v-if="!pending && !error && !links.length"
           icon="lucide:link"
-          :title="query.q || query.featured ? '没有找到友链' : '尚无公开友链'"
-          :description="query.q || query.featured ? '试试其他名称、介绍或站点地址。' : '友链上架后会展示在这里。'"
-          :action-label="query.q || query.featured ? '清除筛选' : undefined"
+          :title="query.q || query.featured ? t('interaction.links.notFoundTitle') : t('interaction.links.emptyTitle')"
+          :description="
+            query.q || query.featured ? t('interaction.links.notFoundDesc') : t('interaction.links.emptyDesc')
+          "
+          :action-label="query.q || query.featured ? t('interaction.links.clearFilters') : undefined"
           @action="changeQuery({ q: undefined, featured: undefined })"
         /><LinkGrid v-else :links="links" />
-        <nav v-if="total !== null && (total > 12 || query.page > 1)" class="links-pagination" aria-label="友链分页">
+        <nav
+          v-if="total !== null && (total > 12 || query.page > 1)"
+          class="links-pagination"
+          :aria-label="t('interaction.links.pagination')"
+        >
           <button
             type="button"
             :disabled="!ready || pending || query.page <= 1"
             @click="changeQuery({ page: query.page - 1 })"
           >
-            上一页</button
+            {{ t('interaction.links.prev') }}</button
           ><span>{{ query.page }} / {{ Math.max(1, Math.ceil(total / 12)) }}</span
           ><button
             type="button"
             :disabled="!ready || pending || query.page * 12 >= total"
             @click="changeQuery({ page: query.page + 1 })"
           >
-            下一页
+            {{ t('interaction.links.next') }}
           </button>
         </nav>
         <details class="links-compact-info" :class="`links-compact-info--${sidebarPlacement}`">
           <summary>
-            <Icon
-              name="lucide:chevron-right"
-              size="16"
-              class="links-compact-info__chevron"
-              aria-hidden="true"
-            />友链统计、须知与本站资料
+            <Icon name="lucide:chevron-right" size="16" class="links-compact-info__chevron" aria-hidden="true" />{{
+              t('interaction.links.compactInfo')
+            }}
           </summary>
           <CommonRequestFeedback
             v-if="metadataPending || metadataError"
@@ -135,6 +142,7 @@
   ></CommonPageFrame>
 </template>
 <script setup lang="ts">
+const { t } = useI18n()
 const route = useRoute(),
   router = useRouter(),
   { currentThemeId, activeTheme } = useLayoutTheme()
@@ -159,13 +167,19 @@ const {
   changeQuery,
 } = await useLinks()
 // 失败用稳定标题；具体原因放在说明里，有旧资料时同时说明仍在显示。
-const metadataFeedbackTitle = computed(() => (metadataError.value ? '友链资料暂时不可用' : '正在读取友链信息'))
+const metadataFeedbackTitle = computed(() =>
+  metadataError.value ? t('interaction.links.metadataUnavailable') : t('interaction.links.metadataLoading'),
+)
 const metadataFeedbackDescription = computed(() => {
   if (!metadataError.value) return undefined
   const message = metadataError.value.message
-  return metadata.value ? `仍显示上次成功读取的友链资料。${message}` : message
+  return metadata.value ? t('interaction.links.metadataStale', { message }) : message
 })
-usePageSeo({ title: '友情链接', description: '浏览博主维护的友情链接与站点资料', type: 'website' })
+usePageSeo({
+  title: () => t('interaction.links.title'),
+  description: () => t('interaction.links.seoDescription'),
+  type: 'website',
+})
 const keyword = computed({
   get: () => (!ready.value ? (query.value.q ?? '') : typeof route.query.q === 'string' ? route.query.q : ''),
   set: (q: string) => {

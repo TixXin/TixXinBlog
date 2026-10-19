@@ -1,22 +1,22 @@
 <!-- @file LinkStats.vue @description 公开友链真实统计，推荐与域名数均来自当前记录 -->
 <template>
   <section class="card link-stats">
-    <h2><Icon name="lucide:chart-no-axes-column" size="16" />友链概览</h2>
+    <h2><Icon name="lucide:chart-no-axes-column" size="16" />{{ $t('interaction.linkStats.title') }}</h2>
     <dl>
       <div>
-        <dt>公开友链</dt>
+        <dt>{{ $t('interaction.linkStats.links') }}</dt>
         <dd>{{ stats.links }}</dd>
       </div>
       <div>
-        <dt>推荐</dt>
+        <dt>{{ $t('interaction.linkStats.featured') }}</dt>
         <dd>{{ stats.featured }}</dd>
       </div>
       <div>
-        <dt>不同域名</dt>
+        <dt>{{ $t('interaction.linkStats.domains') }}</dt>
         <dd>{{ stats.domains }}</dd>
       </div>
     </dl>
-    <p>推荐由博主维护，不代表已验证互链。</p>
+    <p>{{ $t('interaction.linkStats.note') }}</p>
   </section>
 </template>
 <script setup lang="ts">

@@ -1,21 +1,23 @@
 <!-- @file LinkForm.vue @description 友链资料仅在本机整理与复制，在线申请明确未开放 -->
 <template>
   <section class="link-form">
-    <h2><Icon name="lucide:clipboard-pen" size="18" />整理友链资料</h2>
-    <p>在线申请尚未开放。你可以在下方整理并复制友链资料；内容只保存在本标签页，不会自动提交给博主。</p>
+    <h2><Icon name="lucide:clipboard-pen" size="18" />{{ $t('interaction.linkForm.title') }}</h2>
+    <p>{{ $t('interaction.linkForm.intro') }}</p>
     <form @submit.prevent="$emit('copy')">
       <fieldset :disabled="!ready">
         <label
-          >站点名称<input
+          >{{ $t('interaction.linkForm.name')
+          }}<input
             :value="value.name"
-            aria-label="整理站点名称"
+            :aria-label="$t('interaction.linkForm.nameLabel')"
             maxlength="80"
             required
             @input="change('name', ($event.target as HTMLInputElement).value)" /></label
         ><label
-          >站点地址<input
+          >{{ $t('interaction.linkForm.url')
+          }}<input
             :value="value.url"
-            aria-label="整理站点地址"
+            :aria-label="$t('interaction.linkForm.urlLabel')"
             type="url"
             pattern="https?://.+"
             maxlength="2048"
@@ -23,28 +25,31 @@
             placeholder="https://example.com"
             @input="change('url', ($event.target as HTMLInputElement).value)" /></label
         ><label
-          >头像地址（可选）<input
+          >{{ $t('interaction.linkForm.avatar')
+          }}<input
             :value="value.avatar"
-            aria-label="整理头像地址"
+            :aria-label="$t('interaction.linkForm.avatarLabel')"
             type="url"
             pattern="https?://.+"
             maxlength="2048"
             placeholder="https://example.com/avatar.png"
             @input="change('avatar', ($event.target as HTMLInputElement).value)" /></label
         ><label
-          >一句话描述<input
+          >{{ $t('interaction.linkForm.description')
+          }}<input
             :value="value.description"
-            aria-label="整理站点描述"
+            :aria-label="$t('interaction.linkForm.descriptionLabel')"
             maxlength="300"
             @input="change('description', ($event.target as HTMLInputElement).value)"
         /></label>
       </fieldset>
       <button type="submit" :disabled="!ready || !valid || copying">
-        {{ copying ? '正在复制…' : '复制友链资料' }}
+        {{ copying ? $t('interaction.linkForm.copying') : $t('interaction.linkForm.copy') }}
       </button>
       <p v-if="error" role="alert">{{ error }}</p>
       <p v-if="storageError" role="alert">
-        {{ storageError }} <button type="button" @click="$emit('persist')">重试保存恢复副本</button>
+        {{ storageError }}
+        <button type="button" @click="$emit('persist')">{{ $t('interaction.linkForm.retryPersist') }}</button>
       </p>
       <p v-if="notice" role="status">{{ notice }}</p>
     </form>

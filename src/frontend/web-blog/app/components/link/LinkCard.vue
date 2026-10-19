@@ -10,7 +10,7 @@
       :height="link.height ?? 64"
       fit="contain"
     />
-    <div v-else class="link-card__placeholder" role="img" aria-label="未设置站点图片">
+    <div v-else class="link-card__placeholder" role="img" :aria-label="$t('interaction.linkCard.noImage')">
       <Icon name="lucide:globe" size="28" />
     </div>
     <h2 class="link-card__name">
@@ -18,8 +18,8 @@
         >{{ link.name }}<Icon name="lucide:external-link" size="13"
       /></a>
     </h2>
-    <span v-if="link.isFeatured" class="link-card__featured">推荐</span>
-    <p class="link-card__desc">{{ link.description || '暂未填写站点介绍' }}</p>
+    <span v-if="link.isFeatured" class="link-card__featured">{{ $t('interaction.linkCard.featured') }}</span>
+    <p class="link-card__desc">{{ link.description || $t('interaction.linkCard.noDescription') }}</p>
     <p class="link-card__domain">{{ link.domain }}</p>
   </article>
 </template>

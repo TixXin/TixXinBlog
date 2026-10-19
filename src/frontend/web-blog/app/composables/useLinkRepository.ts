@@ -10,18 +10,16 @@ import type {
 } from '~/features/link/types'
 export function useLinkRepository() {
   const base = String(useRuntimeConfig().public.apiBaseUrl).replace(/\/$/, ''),
-    admin = useAdminApi()
+    admin = useAdminApi(),
+    // 错误文案在失败时按当前语言生成；4xx 优先显示后端 message
+    t = currentTranslate()
   function failure(value: unknown) {
-    const cause = value as { statusCode?: number; status?: number; data?: { message?: unknown } },
+    const cause = value as { statusCode?: number; status?: number },
       statusCode = cause?.statusCode ?? cause?.status
     const message =
       !statusCode || statusCode >= 500
-        ? '友链服务暂时不可用，请稍后重试'
-        : typeof cause.data?.message === 'string'
-          ? cause.data.message
-          : statusCode === 404
-            ? '友链不存在或尚未上架'
-            : '操作未完成，请核对输入后重试'
+        ? t('interaction.links.serviceUnavailable')
+        : apiErrorMessage(value, statusCode === 404 ? 'interaction.links.notFound' : 'interaction.links.invalid', { t })
     return Object.assign(new Error(message, { cause: value }), { statusCode })
   }
   async function read<T>(path: string, query?: LinkQuery, signal?: AbortSignal): Promise<T> {
@@ -32,7 +30,7 @@ export function useLinkRepository() {
         timeout: 10000,
         retry: 0,
       })
-      if (result.code !== 0) throw new Error('友链请求未完成')
+      if (result.code !== 0) throw new Error(t('interaction.links.requestIncomplete'))
       return result.data
     } catch (cause) {
       throw failure(cause)

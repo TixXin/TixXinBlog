@@ -4,14 +4,15 @@ import type { SiteInfo } from '~/features/link/types'
 export function useLinkSiteInfo() {
   const site = useSiteSettings(),
     app = useNuxtApp(),
-    siteUrl = String(useRuntimeConfig().public.siteUrl)
-  const liveInfo = computed(() => linkSiteInfo(site.settings.value, site.available.value, siteUrl))
+    siteUrl = String(useRuntimeConfig().public.siteUrl),
+    t = currentTranslate()
+  const liveInfo = computed(() => linkSiteInfo(site.settings.value, site.available.value, siteUrl, t))
   const liveError = computed(() =>
     !site.available.value
-      ? site.error.value || '本站资料暂时不可用'
+      ? site.error.value || t('interaction.siteInfo.unavailable')
       : liveInfo.value
         ? ''
-        : '本站地址或头像配置不可用，请核对站点设置',
+        : t('interaction.siteInfo.configInvalid'),
   )
   const snapshot = useState<{ info: SiteInfo[] | null; error: string }>('links-site-info-ssr', () => ({
     info: liveInfo.value,
@@ -42,12 +43,12 @@ export function useLinkSiteInfo() {
     copying.value = true
     copyError.value = ''
     notice.value = ''
-    retainedText.value = siteInfoText(info.value)
+    retainedText.value = siteInfoText(info.value, t)
     try {
       await navigator.clipboard.writeText(retainedText.value)
-      if (alive) notice.value = '本站友链资料已复制'
+      if (alive) notice.value = t('interaction.siteInfo.copied')
     } catch {
-      if (alive) copyError.value = '复制失败，资料已保留，可重试或手动复制。'
+      if (alive) copyError.value = t('interaction.siteInfo.copyFailed')
     } finally {
       if (alive) copying.value = false
     }

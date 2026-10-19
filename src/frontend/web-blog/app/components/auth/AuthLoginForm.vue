@@ -4,9 +4,9 @@
 -->
 <template>
   <form class="auth-login" @submit.prevent="onSubmit">
-    <p class="auth-login__hint">博主管理登录。游客发表评论无需账号。</p>
+    <p class="auth-login__hint">{{ $t('interaction.auth.loginHint') }}</p>
     <div class="auth-field">
-      <label class="auth-field__label" for="login-username">用户名</label>
+      <label class="auth-field__label" for="login-username">{{ $t('interaction.auth.username') }}</label>
       <input
         id="login-username"
         v-model.trim="username"
@@ -20,7 +20,7 @@
       />
     </div>
     <div class="auth-field">
-      <label class="auth-field__label" for="login-password">密码</label>
+      <label class="auth-field__label" for="login-password">{{ $t('interaction.auth.password') }}</label>
       <input
         id="login-password"
         v-model="password"
@@ -37,9 +37,11 @@
     <!-- 凭据错误同时关联到两个输入框，读屏聚焦字段时可听到原因 -->
     <p v-if="errorMessage" id="login-error" role="alert">{{ errorMessage }}</p>
     <button :aria-busy="submitting" type="submit" class="btn-primary auth-submit" :disabled="submitting || !hydrated">
-      {{ submitting ? '登录中…' : '登录' }}
+      {{ submitting ? $t('interaction.auth.submitting') : $t('interaction.auth.submit') }}
     </button>
-    <button type="button" class="auth-link" @click="emit('switchView', 'forgot')">登录帮助</button>
+    <button type="button" class="auth-link" @click="emit('switchView', 'forgot')">
+      {{ $t('interaction.auth.help') }}
+    </button>
   </form>
 </template>
 <script setup lang="ts">
@@ -48,6 +50,7 @@ const emit = defineEmits<{ switchView: [view: AuthView]; authenticated: [] }>()
 const { login } = useCurrentUser()
 const { close } = useLoginDrawer()
 const { success } = useToast()
+const { t } = useI18n()
 const username = ref('')
 const password = ref('')
 const submitting = ref(false)
@@ -63,12 +66,11 @@ async function onSubmit() {
   try {
     await login(username.value, password.value)
     password.value = ''
-    success('登录成功')
+    success(t('interaction.auth.success'))
     close()
     emit('authenticated')
   } catch (cause) {
-    const message = (cause as { data?: { message?: unknown } }).data?.message
-    errorMessage.value = typeof message === 'string' ? message : '暂时无法登录，请稍后重试'
+    errorMessage.value = apiErrorMessage(cause, 'interaction.auth.failed')
   } finally {
     submitting.value = false
   }
