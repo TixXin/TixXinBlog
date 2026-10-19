@@ -2,68 +2,83 @@
 <template>
   <form ref="editorForm" class="link-editor" @submit.prevent="$emit('save', value.status)">
     <header>
-      <h1>{{ id ? '编辑友链' : '新建友链' }}</h1>
-      <AdminBackLink to="/admin/links">返回友链管理</AdminBackLink
-      ><NuxtLink v-if="saved?.status === 'published'" :to="`/links?q=${encodeURIComponent(saved.name)}`"
-        >查看公开友链</NuxtLink
-      >
+      <h1>{{ id ? $t('admin-media.linkEditor.editTitle') : $t('admin-media.linkEditor.createTitle') }}</h1>
+      <AdminBackLink to="/admin/links">{{ $t('admin-media.linkSettings.back') }}</AdminBackLink
+      ><NuxtLink v-if="saved?.status === 'published'" :to="`/links?q=${encodeURIComponent(saved.name)}`">{{
+        $t('admin-media.linkList.viewPublished')
+      }}</NuxtLink>
     </header>
     <p v-if="error" role="alert">
-      {{ error }} <button type="button" :disabled="saving || loading" @click="$emit('reload')">重新读取</button>
+      {{ error }}
+      <button type="button" :disabled="saving || loading" @click="$emit('reload')">
+        {{ $t('admin-media.linkForm.reload') }}
+      </button>
     </p>
     <p v-if="notice" role="status">{{ notice }}</p>
     <p v-if="localError" role="alert">
-      {{ localError }} <button type="button" @click="$emit('persist')">重试保存恢复副本</button>
+      {{ localError }}
+      <button type="button" @click="$emit('persist')">{{ $t('admin-media.linkForm.retryPersist') }}</button>
     </p>
-    <section v-if="recovery" class="link-editor__notice" aria-label="友链恢复副本">
-      <h2>发现本标签页未保存的输入</h2>
+    <section v-if="recovery" class="link-editor__notice" :aria-label="$t('admin-media.linkForm.recoveryLabel')">
+      <h2>{{ $t('admin-media.linkForm.recoveryTitle') }}</h2>
       <AdminLinkRecoveryDetails :value="recovery.form" /><button
         type="button"
         :disabled="saving || !ready"
         @click="$emit('restore')"
       >
-        恢复输入</button
-      ><button type="button" :disabled="saving" @click="$emit('discard')">移除恢复副本</button>
+        {{ $t('admin-media.linkForm.restore') }}</button
+      ><button type="button" :disabled="saving" @click="$emit('discard')">
+        {{ $t('admin-media.linkForm.discard') }}
+      </button>
     </section>
-    <section v-if="previousRecoveries.length" class="link-editor__notice" aria-label="另外保留的友链恢复副本">
-      <h2>另外保留的友链输入</h2>
-      <p>这些副本可能属于其他内容库，不会直接写入当前友链。请核对后手动录入，并重新选择Logo。</p>
+    <section
+      v-if="previousRecoveries.length"
+      class="link-editor__notice"
+      :aria-label="$t('admin-media.linkForm.previousLabel')"
+    >
+      <h2>{{ $t('admin-media.linkForm.previousTitle') }}</h2>
+      <p>{{ $t('admin-media.linkForm.previousBody') }}</p>
       <article v-for="copy in previousRecoveries" :key="copy.key">
-        <p>保存于 {{ copy.value.savedAt }}</p>
+        <p>{{ $t('admin-media.linkForm.savedAt', { time: copy.value.savedAt }) }}</p>
         <AdminLinkRecoveryDetails :value="copy.value.form" />
       </article>
     </section>
-    <section v-if="serverVersion" class="link-editor__notice" aria-label="友链服务器版本">
-      <h2>服务器当前版本 {{ serverVersion.revision }}</h2>
+    <section v-if="serverVersion" class="link-editor__notice" :aria-label="$t('admin-media.linkForm.serverLabel')">
+      <h2>{{ $t('admin-media.linkForm.serverTitle', { revision: serverVersion.revision }) }}</h2>
       <AdminLinkRecoveryDetails :value="serverVersion" /><button
         type="button"
         :disabled="saving"
         @click="$emit('reload')"
       >
-        保留副本并载入服务器版本</button
-      ><button type="button" :disabled="saving || !ready" @click="$emit('merge')">保留输入，按最新版本继续合并</button>
+        {{ $t('admin-media.linkForm.loadServer') }}</button
+      ><button type="button" :disabled="saving || !ready" @click="$emit('merge')">
+        {{ $t('admin-media.linkForm.merge') }}
+      </button>
     </section>
-    <p v-if="loading" role="status">正在读取友链…</p>
+    <p v-if="loading" role="status">{{ $t('admin-media.linkForm.loading') }}</p>
     <fieldset :disabled="!ready || loading">
       <label
-        >站点名称<input
+        >{{ $t('admin-media.linkForm.name')
+        }}<input
           :value="value.name"
-          aria-label="友链站点名称"
+          :aria-label="$t('admin-media.linkForm.nameLabel')"
           required
           maxlength="80"
           @input="change('name', ($event.target as HTMLInputElement).value)" /></label
       ><label
-        >站点介绍<textarea
+        >{{ $t('admin-media.linkForm.description')
+        }}<textarea
           :value="value.description"
-          aria-label="友链站点介绍"
+          :aria-label="$t('admin-media.linkForm.descriptionLabel')"
           rows="4"
           maxlength="300"
           @input="change('description', ($event.target as HTMLTextAreaElement).value)"
         /></label
       ><label
-        >站点地址<input
+        >{{ $t('admin-media.linkForm.url')
+        }}<input
           :value="value.url"
-          aria-label="友链站点地址"
+          :aria-label="$t('admin-media.linkForm.urlLabel')"
           type="url"
           pattern="https?://.+"
           required
@@ -71,23 +86,24 @@
           placeholder="https://example.com"
           @input="change('url', ($event.target as HTMLInputElement).value)"
       /></label>
-      <p>填写完整HTTP或HTTPS地址。同域不同路径可以分别维护；不会自动抓取标题、Logo或检测连通性。</p>
-      <section aria-label="友链Logo">
-        <h2>Logo（可选）</h2>
+      <p>{{ $t('admin-media.linkForm.urlHelp') }}</p>
+      <section :aria-label="$t('admin-media.linkForm.logoSection')">
+        <h2>{{ $t('admin-media.linkForm.logoTitle') }}</h2>
         <div class="link-editor__row">
-          <button type="button" @click="mediaOpen = true">选择或上传Logo</button
+          <button type="button" @click="mediaOpen = true">{{ $t('admin-media.linkForm.pickLogo') }}</button
           ><button
             v-if="value.logoMediaId || value.logoUrl"
             type="button"
             @click="$emit('change', { logoMediaId: null, logoUrl: null })"
           >
-            移除Logo
+            {{ $t('admin-media.linkForm.removeLogo') }}
           </button>
         </div>
         <label
-          >外部Logo地址（仅HTTPS）<input
+          >{{ $t('admin-media.linkForm.logoUrl')
+          }}<input
             :value="value.logoUrl ?? ''"
-            aria-label="外部Logo地址"
+            :aria-label="$t('admin-media.linkForm.logoUrlLabel')"
             type="url"
             pattern="https://.+"
             maxlength="2048"
@@ -99,7 +115,7 @@
           v-if="value.logoMediaId"
           class="link-editor__logo"
           :src="`/api/v1/media/${value.logoMediaId}.webp`"
-          :alt="value.name || '友链Logo'"
+          :alt="value.name || $t('admin-media.linkForm.logoAlt')"
           :width="selectedMedia?.id === value.logoMediaId ? selectedMedia.width : (saved?.width ?? undefined)"
           :height="selectedMedia?.id === value.logoMediaId ? selectedMedia.height : (saved?.height ?? undefined)"
           fit="contain"
@@ -107,25 +123,31 @@
           v-else-if="saved?.logoUrl && saved.logoUrl === value.logoUrl"
           class="link-editor__logo"
           :src="saved.logoUrl"
-          :alt="value.name || '友链Logo'"
+          :alt="value.name || $t('admin-media.linkForm.logoAlt')"
           fit="contain"
         />
-        <p v-else>{{ value.logoUrl ? '保存后会使用该HTTPS图片地址。' : '未设置Logo，前台会显示通用站点图标。' }}</p>
-        <p>媒体与外部地址二选一。更换或删除友链只释放本条记录的引用，其他内容使用的媒体会保留。</p>
+        <p v-else>
+          {{ value.logoUrl ? $t('admin-media.linkForm.logoUrlPending') : $t('admin-media.linkForm.logoNone') }}
+        </p>
+        <p>{{ $t('admin-media.linkForm.logoHelp') }}</p>
       </section>
       <div class="link-editor__row">
         <label
-          >保存状态<select
+          >{{ $t('admin-media.linkForm.status')
+          }}<select
             :value="value.status"
-            aria-label="友链保存状态"
+            :aria-label="$t('admin-media.linkForm.statusLabel')"
             @change="change('status', ($event.target as HTMLSelectElement).value as LinkStatus)"
           >
-            <option v-for="(label, status) in linkStatusLabels" :key="status" :value="status">{{ label }}</option>
+            <option v-for="status in linkStatuses" :key="status" :value="status">
+              {{ linkStatusLabel(status, t) }}
+            </option>
           </select></label
         ><label
-          >排序值（越大越靠前）<input
+          >{{ $t('admin-media.linkForm.sortOrder')
+          }}<input
             :value="value.sortOrder"
-            aria-label="友链排序值"
+            :aria-label="$t('admin-media.linkForm.sortOrderLabel')"
             type="number"
             step="1"
             min="-1000000"
@@ -134,20 +156,23 @@
         ><label class="link-editor__check"
           ><input
             :checked="value.isFeatured"
-            aria-label="推荐友链"
+            :aria-label="$t('admin-media.linkForm.featured')"
             type="checkbox"
             @change="change('isFeatured', ($event.target as HTMLInputElement).checked)"
-          />推荐友链</label
+          />{{ $t('admin-media.linkForm.featured') }}</label
         >
       </div>
-      <p>推荐项排在前面。推荐是博主选择，不代表已验证互链。</p>
+      <p>{{ $t('admin-media.linkForm.featuredHelp') }}</p>
     </fieldset>
     <p v-if="saved">
-      创建于 {{ saved.createdAt }}<template v-if="saved.publishedAt"> · 首次上架于 {{ saved.publishedAt }}</template> ·
-      版本 {{ saved.revision }}
+      {{ $t('admin-media.linkForm.createdAt', { time: saved.createdAt })
+      }}<template v-if="saved.publishedAt">{{
+        $t('admin-media.linkForm.publishedAt', { time: saved.publishedAt })
+      }}</template>
+      {{ $t('admin-media.linkForm.revision', { revision: saved.revision }) }}
     </p>
     <AdminActionBar>
-      <CommonTooltip :content="`保存（${saveShortcut}）`"
+      <CommonTooltip :content="$t('admin-media.gallerySettings.saveTooltip', { shortcut: saveShortcut })"
         ><button
           ref="saveButton"
           :aria-busy="saving"
@@ -155,27 +180,33 @@
           aria-keyshortcuts="Control+S Meta+S"
           :disabled="!ready || loading || saving || !value.name.trim() || !value.url.trim()"
         >
-          {{ saving ? '正在保存…' : '保存友链' }}
+          {{ saving ? $t('admin-media.linkForm.saving') : $t('admin-media.linkForm.save') }}
         </button></CommonTooltip
       ><button
         type="button"
         :disabled="!ready || loading || saving || !value.name.trim() || !value.url.trim()"
         @click="requestSave('draft')"
       >
-        保存草稿</button
+        {{ $t('admin-media.linkForm.saveDraft') }}</button
       ><button
         type="button"
         :disabled="!ready || loading || saving || !value.name.trim() || !value.url.trim()"
         @click="requestSave('published')"
       >
-        上架友链</button
-      ><span>{{ dirty ? '有尚未保存输入' : saved ? '当前输入已保存' : '尚未保存' }}</span>
+        {{ $t('admin-media.linkList.publish') }}</button
+      ><span>{{
+        dirty
+          ? $t('admin-media.linkForm.dirty')
+          : saved
+            ? $t('admin-media.linkForm.clean')
+            : $t('admin-media.linkForm.unsaved')
+      }}</span>
     </AdminActionBar>
     <ClientOnly><AdminMediaPicker v-model:open="mediaOpen" @selected="selectMedia" /></ClientOnly>
   </form>
 </template>
 <script setup lang="ts">
-import { linkStatusLabels } from '~/features/link/types'
+import { linkStatusLabel, linkStatuses } from '~/features/link/types'
 import type { LinkEditable, LinkStatus, ManagedLink } from '~/features/link/types'
 import type { LinkRecovery } from '~/features/link/editor'
 import type { MediaAsset } from '~/features/media/types'
@@ -195,6 +226,7 @@ const props = defineProps<{
   notice: string
   localError: string
 }>()
+const { t } = useI18n()
 const emit = defineEmits<{
   change: [value: Partial<LinkEditable>]
   save: [status: LinkStatus]

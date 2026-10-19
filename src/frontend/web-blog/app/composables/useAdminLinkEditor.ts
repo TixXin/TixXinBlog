@@ -8,7 +8,8 @@ export function useAdminLinkEditor(initialId: number | null) {
   const repo = useLinkRepository(),
     auth = useCurrentUser(),
     router = useRouter(),
-    app = useNuxtApp()
+    app = useNuxtApp(),
+    t = currentTranslate()
   const context = useState<string>('page-content-context', () => '')
   const form = reactive(linkForm()),
     id = ref(initialId),
@@ -52,7 +53,7 @@ export function useAdminLinkEditor(initialId: number | null) {
       sessionStorage.setItem(storageKey(), JSON.stringify(value))
       localError.value = ''
     } catch {
-      localError.value = '恢复副本无法保存，请保留当前输入并重试。'
+      localError.value = t('admin-media.linkEditor.persistFailed')
     }
   }
   function accept(link: ManagedLink) {
@@ -68,23 +69,22 @@ export function useAdminLinkEditor(initialId: number | null) {
     loading.value = true
     error.value = ''
     try {
-      if (!(await auth.restore())) throw new Error('请先登录博主账号，当前输入仍保留。')
+      if (!(await auth.restore())) throw new Error(t('admin-media.linkEditor.loginRequired'))
       const user = auth.currentUser.value!.id
       if (!alive || version !== generation) return
       actor ||= user
       ownedContext ||= context.value
       requestId ||= crypto.randomUUID()
-      if (ownedContext !== context.value)
-        throw new Error('内容库已恢复或切换，请刷新页面后重新核对友链；当前输入已保留。')
+      if (ownedContext !== context.value) throw new Error(t('admin-media.linkEditor.contextChangedOnLoad'))
       // 新库可能已没有同编号记录；先保留只读副本入口，再读取服务器详情。
       try {
         const copies = readEditorRecoveries(sessionStorage, storagePrefix(), ownedContext, parseLinkRecovery)
         recovery.value = copies.current?.value ?? null
         currentRecoveryKey = copies.current?.key ?? storageKey()
         previousRecoveries.value = copies.previous
-        if (copies.migrationIssue) localError.value = '旧恢复副本迁移暂未完成，原副本已保留。'
+        if (copies.migrationIssue) localError.value = t('admin-media.linkEditor.migrationIssue')
       } catch {
-        localError.value = '无法读取本标签页恢复副本。'
+        localError.value = t('admin-media.linkEditor.recoveryUnreadable')
       }
       if (replace || (!dirty.value && !saved.value)) {
         const link = id.value ? await repo.adminDetail(id.value) : null
@@ -94,7 +94,8 @@ export function useAdminLinkEditor(initialId: number | null) {
       if (!owns(user, version)) return
       ready.value = true
     } catch (cause) {
-      if (alive && version === generation) error.value = cause instanceof Error ? cause.message : '友链读取失败'
+      if (alive && version === generation)
+        error.value = cause instanceof Error ? cause.message : t('admin-media.linkEditor.loadFailed')
     } finally {
       if (alive && version === generation) loading.value = false
     }
@@ -115,7 +116,7 @@ export function useAdminLinkEditor(initialId: number | null) {
       JSON.stringify({ ...linkForm(form), status: pendingCreate.value.status }) === JSON.stringify(pendingCreate.value)
     if (!user || user !== actor || ownedContext !== context.value) {
       ready.value = false
-      error.value = '登录或内容上下文已变化，请重新读取后核对。'
+      error.value = t('admin-media.linkEditor.contextChanged')
       return
     }
     saving.value = true
@@ -128,7 +129,7 @@ export function useAdminLinkEditor(initialId: number | null) {
         try {
           const known = await repo.submission(requestId)
           if (!owns(user, version)) return
-          if (known.state === 'deleted') throw new Error('此前提交的友链已删除，不能自动重新创建；当前输入已保留。')
+          if (known.state === 'deleted') throw new Error(t('admin-media.linkEditor.submissionDeleted'))
           link = known.item
         } catch (cause) {
           if ((cause as { statusCode?: number }).statusCode !== 404) throw cause
@@ -149,12 +150,12 @@ export function useAdminLinkEditor(initialId: number | null) {
       serverVersion.value = null
       baseline.value = JSON.stringify(linkForm(link))
       if (JSON.stringify(form) === capture && recoveringMatches) Object.assign(form, linkForm(link))
-      notice.value = dirty.value ? '已核查服务器友链，当前新增输入仍保留，请核对后继续保存。' : '友链已保存。'
+      notice.value = dirty.value ? t('admin-media.linkEditor.verifiedDirty') : t('admin-media.linkEditor.saved')
       if (!dirty.value) {
         try {
           sessionStorage.removeItem(storageKey())
         } catch {
-          localError.value = '友链已保存，但本机恢复副本暂时无法清理。'
+          localError.value = t('admin-media.linkEditor.recoveryNotRemoved')
         }
         recovery.value = null
       } else persistLocal()
@@ -162,7 +163,7 @@ export function useAdminLinkEditor(initialId: number | null) {
       if (wasNew && !dirty.value) redirect = `/admin/links/${link.id}`
     } catch (cause) {
       if (!owns(user, version)) return
-      error.value = cause instanceof Error ? cause.message : '保存失败，当前输入已保留'
+      error.value = cause instanceof Error ? cause.message : t('admin-media.linkEditor.saveFailed')
       const statusCode = (cause as { statusCode?: number }).statusCode
       if (statusCode === 400) pendingCreate.value = null
       if (statusCode === 409 && id.value) {
@@ -173,7 +174,7 @@ export function useAdminLinkEditor(initialId: number | null) {
           /* 保留原错误和输入。 */
         }
       }
-      if (!id.value && pendingCreate.value) error.value += '。保存结果尚未核清，再次保存会先核查原提交。'
+      if (!id.value && pendingCreate.value) error.value += t('admin-media.linkEditor.pendingHint')
       persistLocal()
     } finally {
       if (alive && generation === version) saving.value = false
@@ -181,7 +182,7 @@ export function useAdminLinkEditor(initialId: number | null) {
     if (redirect && owns(user, version)) await router.replace(redirect)
   }
   async function reload() {
-    if (saving.value || (dirty.value && !window.confirm('当前输入会保留为恢复副本，是否读取服务器最新版本？'))) return
+    if (saving.value || (dirty.value && !window.confirm(t('admin-media.linkEditor.reloadConfirm')))) return
     persistLocal()
     await load(true)
   }
@@ -189,7 +190,7 @@ export function useAdminLinkEditor(initialId: number | null) {
     const value = recovery.value
     if (!value || saving.value || !ready.value) return
     if (value.context !== ownedContext || (initialId !== null && value.id !== initialId)) {
-      error.value = '恢复副本属于不同内容库或友链，不能直接提交；请根据副本内容重新编辑。'
+      error.value = t('admin-media.linkEditor.recoveryMismatch')
       return
     }
     Object.assign(form, value.form)
@@ -198,14 +199,14 @@ export function useAdminLinkEditor(initialId: number | null) {
     requestId = value.requestId
     pendingCreate.value = value.pendingCreate
     recovery.value = null
-    notice.value = '已恢复输入，请核对后手动保存。'
+    notice.value = t('admin-media.linkEditor.restored')
   }
   function discardRecovery() {
     try {
       sessionStorage.removeItem(currentRecoveryKey || storageKey())
       recovery.value = null
     } catch {
-      localError.value = '恢复副本暂时无法移除。'
+      localError.value = t('admin-media.linkEditor.discardFailed')
     }
   }
   function mergeConflict() {
@@ -215,7 +216,7 @@ export function useAdminLinkEditor(initialId: number | null) {
     saved.value = latest
     baseline.value = JSON.stringify(linkForm(latest))
     serverVersion.value = null
-    notice.value = '已保留输入并采用服务器最新版本，请核对合并内容后手动保存。'
+    notice.value = t('admin-media.linkEditor.merged')
     error.value = ''
     persistLocal()
   }
@@ -234,7 +235,7 @@ export function useAdminLinkEditor(initialId: number | null) {
     if (saving.value) return false
     if (!dirty.value && !pendingCreate.value) return true
     persistLocal()
-    return window.confirm('有尚未保存或待核查的友链输入，已保留本标签页副本，确定离开吗？')
+    return window.confirm(t('admin-media.linkEditor.leaveConfirm'))
   })
   watch(form, persistLocal, { deep: true })
   watch(
@@ -272,7 +273,7 @@ export function useAdminLinkEditor(initialId: number | null) {
       ready.value = false
       saving.value = false
       loading.value = false
-      error.value = '内容库已恢复或切换，请刷新页面后重新核对；输入已保留。'
+      error.value = t('admin-media.linkEditor.contextSwitched')
     }
   })
   onScopeDispose(() => {

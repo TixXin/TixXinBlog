@@ -26,6 +26,7 @@
 </template>
 <script setup lang="ts">
 definePageMeta({ layout: 'admin', key: (route) => route.path })
-useSeoMeta({ title: '编辑友链', robots: 'noindex, nofollow' })
+const { t } = useI18n()
+useSeoMeta({ title: () => t('admin-media.linkEditor.editTitle'), robots: 'noindex, nofollow' })
 const editor = useAdminLinkEditor(Number(useRoute().params.id))
 </script>

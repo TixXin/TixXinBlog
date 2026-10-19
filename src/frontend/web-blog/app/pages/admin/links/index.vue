@@ -3,128 +3,156 @@
   <section class="admin-links">
     <header>
       <div>
-        <h1>友链管理</h1>
-        <p>推荐优先，排序值越大越靠前；相同排序按编号倒序。</p>
+        <h1>{{ $t('admin-media.linkList.title') }}</h1>
+        <p>{{ $t('admin-media.linkList.intro') }}</p>
       </div>
-      <NuxtLink to="/admin/links/new">新建友链</NuxtLink><NuxtLink to="/admin/links/settings">友链须知设置</NuxtLink
-      ><NuxtLink to="/links">查看友情链接</NuxtLink>
+      <NuxtLink to="/admin/links/new">{{ $t('admin-media.linkEditor.createTitle') }}</NuxtLink
+      ><NuxtLink to="/admin/links/settings">{{ $t('admin-media.linkSettings.title') }}</NuxtLink
+      ><NuxtLink to="/links">{{ $t('admin-media.linkList.viewPublic') }}</NuxtLink>
     </header>
     <ClientOnly
       ><template v-if="isLoggedIn"
         ><div class="admin-links__filters">
           <label
-            >搜索友链<input
+            >{{ $t('admin-media.linkList.search')
+            }}<input
               :value="query.q ?? ''"
-              aria-label="搜索管理友链"
+              :aria-label="$t('admin-media.linkList.searchLabel')"
               maxlength="200"
               @change="filter({ q: ($event.target as HTMLInputElement).value || undefined })" /></label
           ><label
-            >发布状态<select
+            >{{ $t('admin-media.linkList.status')
+            }}<select
               :value="query.status"
-              aria-label="筛选友链发布状态"
+              :aria-label="$t('admin-media.linkList.statusFilter')"
               @change="filter({ status: ($event.target as HTMLSelectElement).value })"
             >
-              <option value="all">全部状态</option>
-              <option v-for="(label, status) in linkStatusLabels" :key="status" :value="status">{{ label }}</option>
+              <option value="all">{{ $t('admin-media.linkList.allStatuses') }}</option>
+              <option v-for="status in linkStatuses" :key="status" :value="status">
+                {{ linkStatusLabel(status, t) }}
+              </option>
             </select></label
           ><label
-            >推荐<select
+            >{{ $t('admin-media.linkList.featured')
+            }}<select
               :value="query.featured ?? ''"
-              aria-label="筛选管理推荐"
+              :aria-label="$t('admin-media.linkList.featuredFilter')"
               @change="filter({ featured: ($event.target as HTMLSelectElement).value || undefined })"
             >
-              <option value="">全部</option>
-              <option value="true">推荐</option>
-              <option value="false">未推荐</option>
+              <option value="">{{ $t('admin-media.linkList.all') }}</option>
+              <option value="true">{{ $t('admin-media.linkList.featured') }}</option>
+              <option value="false">{{ $t('admin-media.linkList.notFeatured') }}</option>
             </select></label
           ><button type="button" @click="filter({ q: undefined, status: undefined, featured: undefined })">
-            清除筛选
+            {{ $t('admin-media.linkList.clearFilters') }}
           </button>
         </div>
         <CommonRequestFeedback
           v-if="pending || error"
           :pending="pending"
           :compact="!!data"
-          :title="error || '正在读取友链'"
+          :title="error || $t('admin-media.linkList.loading')"
           @retry="load"
         />
         <p v-if="notice" role="status">{{ notice }}</p>
-        <p v-if="stale" role="status">当前筛选尚未成功读取，以下保留上一次查询的友链。</p>
-        <p v-if="!pending && !error && data?.total === 0">当前条件下暂无友链。</p>
+        <p v-if="stale" role="status">{{ $t('admin-media.linkList.stale') }}</p>
+        <p v-if="!pending && !error && data?.total === 0">{{ $t('admin-media.linkList.empty') }}</p>
         <ul class="admin-links__list">
           <li v-for="link in data?.items ?? []" :key="link.id">
             <div>
               <h2>{{ link.name }}</h2>
               <p>
-                {{ linkStatusLabels[link.status] }} · {{ link.isFeatured ? '推荐' : '未推荐' }} · 排序
-                {{ link.sortOrder }} · 版本 {{ link.revision }}
+                {{
+                  $t('admin-media.linkList.meta', {
+                    status: linkStatusLabel(link.status, t),
+                    featured: link.isFeatured
+                      ? $t('admin-media.linkList.featured')
+                      : $t('admin-media.linkList.notFeatured'),
+                    sort: link.sortOrder,
+                    revision: link.revision,
+                  })
+                }}
               </p>
               <p>{{ link.description }}</p>
               <p class="admin-links__url">{{ link.url }}</p>
               <div class="admin-links__actions">
-                <NuxtLink :to="`/admin/links/${link.id}`">编辑友链</NuxtLink
-                ><NuxtLink v-if="link.status === 'published'" :to="`/links?q=${encodeURIComponent(link.name)}`"
-                  >查看公开友链</NuxtLink
+                <NuxtLink :to="`/admin/links/${link.id}`">{{ $t('admin-media.linkEditor.editTitle') }}</NuxtLink
+                ><NuxtLink v-if="link.status === 'published'" :to="`/links?q=${encodeURIComponent(link.name)}`">{{
+                  $t('admin-media.linkList.viewPublished')
+                }}</NuxtLink
                 ><button
                   v-if="link.status !== 'published'"
                   type="button"
                   :disabled="pending || busy.includes(link.id)"
                   @click="mutate(link, { status: 'published' })"
                 >
-                  上架友链</button
+                  {{ $t('admin-media.linkList.publish') }}</button
                 ><button
                   v-if="link.status === 'published'"
                   type="button"
                   :disabled="pending || busy.includes(link.id)"
                   @click="mutate(link, { status: 'withdrawn' })"
                 >
-                  下架友链</button
+                  {{ $t('admin-media.linkList.withdraw') }}</button
                 ><button
                   type="button"
                   :disabled="pending || busy.includes(link.id)"
                   @click="mutate(link, { isFeatured: !link.isFeatured })"
                 >
-                  {{ link.isFeatured ? '取消推荐' : '设为推荐' }}</button
+                  {{
+                    link.isFeatured ? $t('admin-media.linkList.unfeature') : $t('admin-media.linkList.feature')
+                  }}</button
                 ><button
                   type="button"
                   :disabled="pending || busy.includes(link.id) || link.sortOrder >= 1000000"
                   @click="mutate(link, { sortOrder: link.sortOrder + 1 })"
                 >
-                  提高排序</button
+                  {{ $t('admin-media.linkList.raiseSort') }}</button
                 ><button
                   type="button"
                   :disabled="pending || busy.includes(link.id) || link.sortOrder <= -1000000"
                   @click="mutate(link, { sortOrder: link.sortOrder - 1 })"
                 >
-                  降低排序</button
+                  {{ $t('admin-media.linkList.lowerSort') }}</button
                 ><button type="button" :disabled="pending || busy.includes(link.id)" @click="mutate(link)">
-                  删除友链
+                  {{ $t('admin-media.linkList.delete') }}
                 </button>
               </div>
             </div>
           </li>
         </ul>
-        <nav v-if="data && (data.total > 12 || query.page > 1)" class="admin-links__actions" aria-label="管理友链分页">
+        <nav
+          v-if="data && (data.total > 12 || query.page > 1)"
+          class="admin-links__actions"
+          :aria-label="$t('admin-media.linkList.pagination')"
+        >
           <button type="button" :disabled="pending || query.page <= 1" @click="filter({ page: query.page - 1 })">
-            上一页</button
-          ><span>{{ query.page }} / {{ Math.max(1, Math.ceil(data.total / 12)) }} · 共 {{ data.total }} 条</span
+            {{ $t('admin-media.linkList.previous') }}</button
+          ><span>{{
+            $t('admin-media.linkList.pageSummary', {
+              page: query.page,
+              pages: Math.max(1, Math.ceil(data.total / 12)),
+              total: data.total,
+            })
+          }}</span
           ><button
             type="button"
             :disabled="pending || query.page * 12 >= data.total"
             @click="filter({ page: query.page + 1 })"
           >
-            下一页
+            {{ $t('admin-media.linkList.next') }}
           </button>
         </nav></template
       >
-      <p v-else-if="!restoringPending">请先登录博主账号。</p></ClientOnly
+      <p v-else-if="!restoringPending">{{ $t('admin-media.linkList.loginRequired') }}</p></ClientOnly
     >
   </section>
 </template>
 <script setup lang="ts">
-import { linkStatusLabels } from '~/features/link/types'
+import { linkStatusLabel, linkStatuses } from '~/features/link/types'
 definePageMeta({ layout: 'admin' })
-useSeoMeta({ title: '友链管理', robots: 'noindex, nofollow' })
+const { t } = useI18n()
+useSeoMeta({ title: () => t('admin-media.linkList.title'), robots: 'noindex, nofollow' })
 const { data, pending, error, notice, busy, query, filter, load, mutate, isLoggedIn, restoringPending, stale } =
   useAdminLinks()
 </script>

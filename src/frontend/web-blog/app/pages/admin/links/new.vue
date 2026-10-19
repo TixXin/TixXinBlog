@@ -26,6 +26,7 @@
 </template>
 <script setup lang="ts">
 definePageMeta({ layout: 'admin' })
-useSeoMeta({ title: '新建友链', robots: 'noindex, nofollow' })
+const { t } = useI18n()
+useSeoMeta({ title: () => t('admin-media.linkEditor.createTitle'), robots: 'noindex, nofollow' })
 const editor = useAdminLinkEditor(null)
 </script>

@@ -1,66 +1,75 @@
 <!-- @file settings.vue @description 友链须知公开配置，维护规则及完整恢复副本 -->
 <template>
   <section class="link-settings">
-    <h1>友链须知设置</h1>
-    <AdminBackLink to="/admin/links">返回友链管理</AdminBackLink>
-    <p>以下须知会公开展示。公开申请、邮件通知和自动探活尚未开放，请按实际情况维护说明。</p>
+    <h1>{{ $t('admin-media.linkSettings.title') }}</h1>
+    <AdminBackLink to="/admin/links">{{ $t('admin-media.linkSettings.back') }}</AdminBackLink>
+    <p>{{ $t('admin-media.linkSettings.intro') }}</p>
     <ClientOnly
       ><CommonRequestFeedback
         v-if="pending || error"
         :pending="pending"
-        :title="error || '正在读取须知'"
+        :title="error || $t('admin-media.linkSettings.loading')"
         :compact="!!draft"
         @retry="load"
       />
       <p v-if="notice" role="status">{{ notice }}</p>
-      <section v-if="recovery" aria-label="须知恢复副本">
-        <h2>发现未保存的须知</h2>
+      <section v-if="recovery" :aria-label="$t('admin-media.linkSettings.recoveryLabel')">
+        <h2>{{ $t('admin-media.linkSettings.recoveryTitle') }}</h2>
         <LinkRules :rules="recovery.rules" /><button type="button" :disabled="pending || !ready" @click="restore">
-          恢复须知输入
+          {{ $t('admin-media.linkSettings.restore') }}
         </button>
       </section>
-      <section v-if="previousRecoveries.length" aria-label="其他内容库的须知副本">
-        <h2>另外保留的须知</h2>
-        <p>这些输入不自动写入当前内容库，请核对后手动录入。</p>
+      <section v-if="previousRecoveries.length" :aria-label="$t('admin-media.linkSettings.previousLabel')">
+        <h2>{{ $t('admin-media.linkSettings.previousTitle') }}</h2>
+        <p>{{ $t('admin-media.linkSettings.previousBody') }}</p>
         <LinkRules v-for="copy in previousRecoveries" :key="copy.key" :rules="copy.value.rules" />
       </section>
       <form v-if="draft" ref="editorForm" @submit.prevent="save">
         <fieldset :disabled="pending || !ready">
-          <legend>友链须知（最多12条）</legend>
+          <legend>{{ $t('admin-media.linkSettings.listLegend') }}</legend>
           <div v-for="(rule, index) in draft.rules" :key="index">
             <label
-              >须知 {{ index + 1
+              >{{ $t('admin-media.linkSettings.ruleAt', { index: index + 1 })
               }}<textarea
                 v-model="draft.rules[index]"
-                :aria-label="`友链须知 ${index + 1}`"
+                :aria-label="$t('admin-media.linkSettings.ruleLabelAt', { index: index + 1 })"
                 rows="3"
                 required
                 maxlength="300"
               /></label
-            ><button type="button" :aria-label="`移除须知 ${index + 1}`" @click="draft.rules.splice(index, 1)">
-              移除须知
+            ><button
+              type="button"
+              :aria-label="$t('admin-media.linkSettings.removeAt', { index: index + 1 })"
+              @click="draft.rules.splice(index, 1)"
+            >
+              {{ $t('admin-media.linkSettings.remove') }}
             </button>
           </div>
-          <button type="button" :disabled="draft.rules.length >= 12" @click="draft.rules.push('')">添加须知</button>
+          <button type="button" :disabled="draft.rules.length >= 12" @click="draft.rules.push('')">
+            {{ $t('admin-media.linkSettings.add') }}
+          </button>
         </fieldset>
         <AdminActionBar
-          ><CommonTooltip :content="`保存（${saveShortcut}）`"
+          ><CommonTooltip :content="$t('admin-media.gallerySettings.saveTooltip', { shortcut: saveShortcut })"
             ><button
               :aria-busy="pending"
               type="submit"
               aria-keyshortcuts="Control+S Meta+S"
               :disabled="pending || !ready || !dirty"
             >
-              保存友链须知
+              {{ $t('admin-media.linkSettings.save') }}
             </button></CommonTooltip
           ></AdminActionBar
         >
-        <p>服务器版本 {{ draft.revision }}{{ dirty ? ' · 有未保存输入' : '' }}</p>
+        <p>
+          {{ $t('admin-media.gallerySettings.revision', { revision: draft.revision })
+          }}{{ dirty ? $t('admin-media.gallerySettings.unsaved') : '' }}
+        </p>
       </form>
-      <section v-if="conflict" aria-label="友链须知版本冲突">
-        <h2>服务器最新须知</h2>
+      <section v-if="conflict" :aria-label="$t('admin-media.linkSettings.conflictLabel')">
+        <h2>{{ $t('admin-media.linkSettings.conflictTitle') }}</h2>
         <LinkRules :rules="conflict.rules" /><button type="button" :disabled="pending" @click="merge">
-          保留输入，按最新版本继续合并
+          {{ $t('admin-media.gallerySettings.merge') }}
         </button>
       </section></ClientOnly
     >
@@ -68,7 +77,8 @@
 </template>
 <script setup lang="ts">
 definePageMeta({ layout: 'admin' })
-useSeoMeta({ title: '友链须知设置', robots: 'noindex, nofollow' })
+const { t } = useI18n()
+useSeoMeta({ title: () => t('admin-media.linkSettings.title'), robots: 'noindex, nofollow' })
 const editorForm = ref<HTMLFormElement | null>(null)
 // Ctrl/⌘+S 复用保存按钮提交；无修改时按钮禁用，快捷键同样不提交。
 const { label: saveShortcut } = useAdminSaveShortcut({ form: editorForm })

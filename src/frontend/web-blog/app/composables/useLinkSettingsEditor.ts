@@ -28,6 +28,7 @@ export function useLinkSettingsEditor() {
   const repo = useLinkRepository(),
     auth = useCurrentUser(),
     app = useNuxtApp(),
+    t = currentTranslate(),
     context = useState<string>('page-content-context', () => '')
   const draft = ref<LinkSettings | null>(null),
     conflict = ref<LinkSettings | null>(null),
@@ -58,7 +59,7 @@ export function useLinkSettingsEditor() {
         }),
       )
     } catch {
-      error.value = '须知恢复副本保存失败，请保留当前输入。'
+      error.value = t('admin-media.linkSettings.persistFailed')
     }
   }
   async function load() {
@@ -68,7 +69,7 @@ export function useLinkSettingsEditor() {
     pending.value = true
     error.value = ''
     try {
-      if (!(await auth.restore())) throw new Error('请先登录博主账号。')
+      if (!(await auth.restore())) throw new Error(t('admin-media.linkSettings.loginRequired'))
       const user = auth.currentUser.value!.id,
         startedContext = context.value
       if (!alive || generation !== version) return
@@ -77,7 +78,7 @@ export function useLinkSettingsEditor() {
       const copies = readEditorRecoveries(sessionStorage, prefix(), ownedContext, parseRulesRecovery)
       recovery.value = copies.current?.value ?? null
       previousRecoveries.value = copies.previous
-      if (copies.migrationIssue) error.value = '旧须知副本迁移暂未完成，原副本已保留。'
+      if (copies.migrationIssue) error.value = t('admin-media.linkSettings.migrationIssue')
       const value = await repo.settings()
       if (!alive || generation !== version || auth.currentUser.value?.id !== user || context.value !== startedContext)
         return
@@ -86,7 +87,8 @@ export function useLinkSettingsEditor() {
       conflict.value = null
       ready.value = true
     } catch (cause) {
-      if (alive && generation === version) error.value = cause instanceof Error ? cause.message : '友链须知读取失败'
+      if (alive && generation === version)
+        error.value = cause instanceof Error ? cause.message : t('admin-media.linkSettings.loadFailed')
     } finally {
       if (alive && generation === version) pending.value = false
     }
@@ -112,13 +114,13 @@ export function useLinkSettingsEditor() {
       try {
         sessionStorage.removeItem(key())
       } catch {
-        error.value = '须知已保存，但本机恢复副本暂时无法清理。'
+        error.value = t('admin-media.linkSettings.recoveryNotRemoved')
       }
-      notice.value = '友链须知已保存。'
+      notice.value = t('admin-media.linkSettings.saved')
       void app.runWithContext(() => refreshNuxtData('links-metadata'))
     } catch (cause) {
       if (!owns()) return
-      error.value = cause instanceof Error ? cause.message : '保存失败，输入已保留'
+      error.value = cause instanceof Error ? cause.message : t('admin-media.linkSettings.saveFailed')
       if ((cause as { statusCode?: number }).statusCode === 409) {
         try {
           const latest = await repo.settings()
@@ -141,7 +143,7 @@ export function useLinkSettingsEditor() {
     if (draft.value && conflict.value && !pending.value) {
       draft.value.revision = conflict.value.revision
       conflict.value = null
-      notice.value = '已保留输入，请核对后按最新版本保存。'
+      notice.value = t('admin-media.linkSettings.merged')
     }
   }
   const unload = (event: BeforeUnloadEvent) => {
@@ -180,7 +182,7 @@ export function useLinkSettingsEditor() {
       generation++
       ready.value = false
       pending.value = false
-      error.value = '内容库已恢复或切换，请重新读取并核对须知，旧输入已保留。'
+      error.value = t('admin-media.linkSettings.contextSwitched')
     }
   })
   onMounted(() => {
@@ -191,7 +193,7 @@ export function useLinkSettingsEditor() {
     if (pending.value) return false
     if (!dirty.value) return true
     persist()
-    return window.confirm('须知尚未保存，已保留本标签页副本，确定离开吗？')
+    return window.confirm(t('admin-media.linkSettings.leaveConfirm'))
   })
   onScopeDispose(() => {
     persist()

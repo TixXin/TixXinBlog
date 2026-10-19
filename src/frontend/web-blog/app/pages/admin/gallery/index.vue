@@ -3,53 +3,58 @@
   <section class="admin-gallery">
     <header>
       <div>
-        <h1>图库管理</h1>
-        <p>维护照片作品，排序值越大越靠前；相同排序按作品编号倒序。</p>
+        <h1>{{ $t('admin-media.galleryList.title') }}</h1>
+        <p>{{ $t('admin-media.galleryList.intro') }}</p>
       </div>
-      <NuxtLink to="/admin/gallery/new">新建照片作品</NuxtLink
-      ><NuxtLink to="/admin/gallery/settings">摄影器材设置</NuxtLink><NuxtLink to="/gallery">查看画廊</NuxtLink>
+      <NuxtLink to="/admin/gallery/new">{{ $t('admin-media.galleryList.create') }}</NuxtLink
+      ><NuxtLink to="/admin/gallery/settings">{{ $t('admin-media.galleryList.gearSettings') }}</NuxtLink
+      ><NuxtLink to="/gallery">{{ $t('admin-media.galleryList.viewPublic') }}</NuxtLink>
     </header>
     <ClientOnly
       ><template v-if="isLoggedIn">
         <div class="admin-gallery__filters">
           <label
-            >搜索作品<input
+            >{{ $t('admin-media.galleryList.search')
+            }}<input
               :value="query.q ?? ''"
-              aria-label="搜索作品"
+              :aria-label="$t('admin-media.galleryList.search')"
               maxlength="200"
               @change="filter({ q: ($event.target as HTMLInputElement).value || undefined })" /></label
           ><label
-            >作品状态<select
+            >{{ $t('admin-media.galleryList.status')
+            }}<select
               :value="query.status"
-              aria-label="筛选作品状态"
+              :aria-label="$t('admin-media.galleryList.statusFilter')"
               @change="filter({ status: ($event.target as HTMLSelectElement).value })"
             >
-              <option value="all">全部状态</option>
-              <option value="draft">草稿</option>
-              <option value="published">已公开</option>
-              <option value="withdrawn">已撤回</option>
+              <option value="all">{{ $t('admin-media.galleryList.allStatuses') }}</option>
+              <option value="draft">{{ $t('admin-media.galleryList.statusLabel.draft') }}</option>
+              <option value="published">{{ $t('admin-media.galleryList.statusLabel.published') }}</option>
+              <option value="withdrawn">{{ $t('admin-media.galleryList.statusLabel.withdrawn') }}</option>
             </select></label
           ><label
-            >分类<input
+            >{{ $t('admin-media.galleryList.category')
+            }}<input
               :value="query.category ?? ''"
-              aria-label="筛选作品分类"
+              :aria-label="$t('admin-media.galleryList.categoryFilter')"
               maxlength="40"
               @change="filter({ category: ($event.target as HTMLInputElement).value || undefined })" /></label
-          ><button type="button" @click="filter({ category: '' })">仅未分类</button
+          ><button type="button" @click="filter({ category: '' })">
+            {{ $t('admin-media.galleryList.uncategorizedOnly') }}</button
           ><button type="button" @click="filter({ q: undefined, category: undefined, status: undefined })">
-            清除筛选
+            {{ $t('admin-media.galleryList.clearFilters') }}
           </button>
         </div>
         <CommonRequestFeedback
           v-if="pending || error"
           :pending="pending"
           :compact="!!data"
-          :title="error || '正在读取图库'"
+          :title="error || $t('admin-media.galleryList.loading')"
           @retry="load"
         />
         <p v-if="notice" role="status">{{ notice }}</p>
-        <p v-if="stale" role="status">当前筛选尚未成功读取，以下保留上一次查询的作品。</p>
-        <p v-if="!pending && !error && data?.total === 0">当前条件下暂无作品。</p>
+        <p v-if="stale" role="status">{{ $t('admin-media.galleryList.stale') }}</p>
+        <p v-if="!pending && !error && data?.total === 0">{{ $t('admin-media.galleryList.empty') }}</p>
         <ul class="admin-gallery__list">
           <li v-for="photo in data?.items ?? []" :key="photo.id">
             <CommonImageFrame
@@ -62,41 +67,49 @@
             <div>
               <h2>{{ photo.title }}</h2>
               <p>
-                {{ labels[photo.status] }} · {{ photo.category || '未分类' }} · 排序 {{ photo.sortOrder }} · 版本
-                {{ photo.revision }}
+                {{
+                  $t('admin-media.galleryList.meta', {
+                    status: $t(`admin-media.galleryList.statusLabel.${photo.status}`),
+                    category: photo.category || $t('admin-media.galleryList.uncategorized'),
+                    sort: photo.sortOrder,
+                    revision: photo.revision,
+                  })
+                }}
               </p>
               <p>{{ photo.description }}</p>
               <div class="admin-gallery__actions">
-                <NuxtLink :to="`/admin/gallery/${photo.id}`">编辑作品</NuxtLink
-                ><NuxtLink v-if="photo.status === 'published'" :to="`/gallery?photo=${photo.id}`">查看公开作品</NuxtLink
+                <NuxtLink :to="`/admin/gallery/${photo.id}`">{{ $t('admin-media.galleryList.edit') }}</NuxtLink
+                ><NuxtLink v-if="photo.status === 'published'" :to="`/gallery?photo=${photo.id}`">{{
+                  $t('admin-media.galleryList.viewPublished')
+                }}</NuxtLink
                 ><button
                   v-if="photo.status !== 'published'"
                   type="button"
                   :disabled="pending || busy.includes(photo.id)"
                   @click="mutate(photo, { status: 'published' })"
                 >
-                  发布作品</button
+                  {{ $t('admin-media.galleryList.publish') }}</button
                 ><button
                   v-if="photo.status === 'published'"
                   type="button"
                   :disabled="pending || busy.includes(photo.id)"
                   @click="mutate(photo, { status: 'withdrawn' })"
                 >
-                  撤回作品</button
+                  {{ $t('admin-media.galleryList.withdraw') }}</button
                 ><button
                   type="button"
                   :disabled="pending || busy.includes(photo.id) || photo.sortOrder >= 1000000"
                   @click="mutate(photo, { sortOrder: photo.sortOrder + 1 })"
                 >
-                  提高排序</button
+                  {{ $t('admin-media.galleryList.raiseSort') }}</button
                 ><button
                   type="button"
                   :disabled="pending || busy.includes(photo.id) || photo.sortOrder <= -1000000"
                   @click="mutate(photo, { sortOrder: photo.sortOrder - 1 })"
                 >
-                  降低排序</button
+                  {{ $t('admin-media.galleryList.lowerSort') }}</button
                 ><button type="button" :disabled="pending || busy.includes(photo.id)" @click="mutate(photo)">
-                  删除作品
+                  {{ $t('admin-media.galleryList.delete') }}
                 </button>
               </div>
             </div>
@@ -105,30 +118,36 @@
         <nav
           v-if="data && (data.total > 12 || query.page > 1)"
           class="admin-gallery__actions"
-          aria-label="管理图库分页"
+          :aria-label="$t('admin-media.galleryList.pagination')"
         >
           <button type="button" :disabled="pending || query.page <= 1" @click="filter({ page: query.page - 1 })">
-            上一页</button
-          ><span>{{ query.page }} / {{ Math.max(1, Math.ceil(data.total / 12)) }} · 共 {{ data.total }} 项</span
+            {{ $t('admin-media.galleryList.previous') }}</button
+          ><span>{{
+            $t('admin-media.galleryList.pageSummary', {
+              page: query.page,
+              pages: Math.max(1, Math.ceil(data.total / 12)),
+              total: data.total,
+            })
+          }}</span
           ><button
             type="button"
             :disabled="pending || query.page * 12 >= data.total"
             @click="filter({ page: query.page + 1 })"
           >
-            下一页
+            {{ $t('admin-media.galleryList.next') }}
           </button>
         </nav>
       </template>
-      <p v-else-if="!restoringPending">请先登录博主账号。</p></ClientOnly
+      <p v-else-if="!restoringPending">{{ $t('admin-media.galleryList.loginRequired') }}</p></ClientOnly
     >
   </section>
 </template>
 <script setup lang="ts">
 definePageMeta({ layout: 'admin' })
-useSeoMeta({ title: '图库管理', robots: 'noindex, nofollow' })
+const { t } = useI18n()
+useSeoMeta({ title: () => t('admin-media.galleryList.title'), robots: 'noindex, nofollow' })
 const { data, pending, error, notice, busy, query, filter, load, mutate, isLoggedIn, restoringPending, stale } =
   useAdminGallery()
-const labels = { draft: '草稿', published: '已公开', withdrawn: '已撤回' }
 </script>
 <style scoped lang="scss">
 .admin-gallery {

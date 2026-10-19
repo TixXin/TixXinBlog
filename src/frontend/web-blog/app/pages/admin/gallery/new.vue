@@ -26,6 +26,7 @@
 </template>
 <script setup lang="ts">
 definePageMeta({ layout: 'admin' })
-useSeoMeta({ title: '新建照片作品', robots: 'noindex, nofollow' })
+const { t } = useI18n()
+useSeoMeta({ title: () => t('admin-media.galleryEditor.createTitle'), robots: 'noindex, nofollow' })
 const editor = useAdminGalleryEditor(null)
 </script>

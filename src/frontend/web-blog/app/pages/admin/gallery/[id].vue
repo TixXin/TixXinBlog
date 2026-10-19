@@ -26,6 +26,7 @@
 </template>
 <script setup lang="ts">
 definePageMeta({ layout: 'admin', key: (route) => route.path })
-useSeoMeta({ title: '编辑照片作品', robots: 'noindex, nofollow' })
+const { t } = useI18n()
+useSeoMeta({ title: () => t('admin-media.galleryEditor.editTitle'), robots: 'noindex, nofollow' })
 const editor = useAdminGalleryEditor(Number(useRoute().params.id))
 </script>

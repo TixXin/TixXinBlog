@@ -2,39 +2,65 @@
 <template>
   <form ref="editorForm" class="gallery-editor" @submit.prevent="$emit('save', value.status)">
     <header>
-      <h1>{{ id ? '编辑照片作品' : '新建照片作品' }}</h1>
-      <AdminBackLink to="/admin/gallery">返回图库管理</AdminBackLink
-      ><NuxtLink v-if="saved?.status === 'published'" :to="`/gallery?photo=${id}`">查看公开作品</NuxtLink>
+      <h1>{{ id ? $t('admin-media.galleryEditor.editTitle') : $t('admin-media.galleryEditor.createTitle') }}</h1>
+      <AdminBackLink to="/admin/gallery">{{ $t('admin-media.galleryForm.back') }}</AdminBackLink
+      ><NuxtLink v-if="saved?.status === 'published'" :to="`/gallery?photo=${id}`">{{
+        $t('admin-media.galleryForm.viewPublished')
+      }}</NuxtLink>
     </header>
     <p v-if="error" role="alert">
-      {{ error }} <button type="button" :disabled="saving || loading" @click="$emit('reload')">重新读取</button>
+      {{ error }}
+      <button type="button" :disabled="saving || loading" @click="$emit('reload')">
+        {{ $t('admin-media.galleryForm.reload') }}
+      </button>
     </p>
     <p v-if="notice" role="status">{{ notice }}</p>
     <p v-if="localError" role="alert">
-      {{ localError }} <button type="button" @click="$emit('persist')">重试保存恢复副本</button>
+      {{ localError }}
+      <button type="button" @click="$emit('persist')">{{ $t('admin-media.galleryForm.retryPersist') }}</button>
     </p>
-    <section v-if="recovery" class="gallery-editor__notice" aria-label="作品恢复副本">
-      <h2>发现本标签页未保存的输入</h2>
+    <section v-if="recovery" class="gallery-editor__notice" :aria-label="$t('admin-media.galleryForm.recoveryLabel')">
+      <h2>{{ $t('admin-media.galleryForm.recoveryTitle') }}</h2>
       <AdminGalleryRecoveryDetails :value="recovery.form" />
-      <button type="button" :disabled="saving || !ready" @click="$emit('restore')">恢复输入</button
-      ><button type="button" :disabled="saving" @click="$emit('discard')">移除恢复副本</button>
+      <button type="button" :disabled="saving || !ready" @click="$emit('restore')">
+        {{ $t('admin-media.galleryForm.restore') }}</button
+      ><button type="button" :disabled="saving" @click="$emit('discard')">
+        {{ $t('admin-media.galleryForm.discard') }}
+      </button>
     </section>
-    <section v-if="previousRecoveries.length" class="gallery-editor__notice" aria-label="另外保留的图库恢复副本">
-      <h2>另外保留的图库输入</h2>
-      <p>这些副本可能属于其他内容库，不会直接写入当前作品。请核对后手动录入，并重新选择当前媒体库中的图片。</p>
+    <section
+      v-if="previousRecoveries.length"
+      class="gallery-editor__notice"
+      :aria-label="$t('admin-media.galleryForm.previousLabel')"
+    >
+      <h2>{{ $t('admin-media.galleryForm.previousTitle') }}</h2>
+      <p>{{ $t('admin-media.galleryForm.previousBody') }}</p>
       <article v-for="copy in previousRecoveries" :key="copy.key">
-        <p>保存于 {{ copy.value.savedAt }}</p>
+        <p>{{ $t('admin-media.galleryForm.savedAt', { time: copy.value.savedAt }) }}</p>
         <AdminGalleryRecoveryDetails :value="copy.value.form" />
       </article>
     </section>
-    <section v-if="serverVersion" class="gallery-editor__notice" aria-label="作品服务器版本">
-      <h2>服务器当前版本 {{ serverVersion.revision }}</h2>
-      <p>{{ serverVersion.title }} · {{ statusLabels[serverVersion.status] }} · 排序 {{ serverVersion.sortOrder }}</p>
-      <p>{{ serverVersion.description }}</p>
-      <p>有序关联：{{ contentRelationSummary(serverVersion.relatedContent) }}</p>
+    <section
+      v-if="serverVersion"
+      class="gallery-editor__notice"
+      :aria-label="$t('admin-media.galleryForm.serverLabel')"
+    >
+      <h2>{{ $t('admin-media.galleryForm.serverTitle', { revision: serverVersion.revision }) }}</h2>
       <p>
-        {{ serverVersion.category || '未分类' }} · {{ serverVersion.takenOn || '拍摄日期未填写' }} ·
-        {{ serverVersion.location || '地点未填写' }} · {{ serverVersion.device || '器材未填写' }}
+        {{ serverVersion.title }} · {{ $t(`admin-media.galleryList.statusLabel.${serverVersion.status}`) }} ·
+        {{ $t('admin-media.galleryForm.sortValue', { sort: serverVersion.sortOrder }) }}
+      </p>
+      <p>{{ serverVersion.description }}</p>
+      <p>
+        {{
+          $t('admin-media.galleryForm.relations', { relations: contentRelationSummary(serverVersion.relatedContent) })
+        }}
+      </p>
+      <p>
+        {{ serverVersion.category || $t('admin-media.galleryList.uncategorized') }} ·
+        {{ serverVersion.takenOn || $t('admin-media.galleryForm.noTakenOn') }} ·
+        {{ serverVersion.location || $t('admin-media.galleryForm.noLocation') }} ·
+        {{ serverVersion.device || $t('admin-media.galleryForm.noDevice') }}
       </p>
       <CommonImageFrame
         class="gallery-editor__preview"
@@ -43,45 +69,52 @@
         :width="serverVersion.width"
         :height="serverVersion.height"
         fit="contain"
-      /><button type="button" :disabled="saving" @click="$emit('reload')">保留副本并载入服务器版本</button
-      ><button type="button" :disabled="saving || !ready" @click="$emit('merge')">保留输入，按最新版本继续合并</button>
+      /><button type="button" :disabled="saving" @click="$emit('reload')">
+        {{ $t('admin-media.galleryForm.loadServer') }}</button
+      ><button type="button" :disabled="saving || !ready" @click="$emit('merge')">
+        {{ $t('admin-media.galleryForm.merge') }}
+      </button>
     </section>
-    <p v-if="loading" role="status">正在读取作品…</p>
+    <p v-if="loading" role="status">{{ $t('admin-media.galleryForm.loading') }}</p>
     <fieldset :disabled="!ready || loading">
       <label
-        >作品标题<input
+        >{{ $t('admin-media.galleryForm.title')
+        }}<input
           :value="value.title"
-          aria-label="作品标题"
+          :aria-label="$t('admin-media.galleryForm.title')"
           required
           maxlength="160"
           @input="change('title', ($event.target as HTMLInputElement).value)"
       /></label>
       <label
-        >作品说明<textarea
+        >{{ $t('admin-media.galleryForm.description')
+        }}<textarea
           :value="value.description"
-          aria-label="作品说明"
+          :aria-label="$t('admin-media.galleryForm.description')"
           maxlength="5000"
           rows="5"
           @input="change('description', ($event.target as HTMLTextAreaElement).value)"
         />
       </label>
       <section>
-        <h2>作品图片</h2>
+        <h2>{{ $t('admin-media.galleryForm.image') }}</h2>
         <label
-          >图片来源<select
+          >{{ $t('admin-media.galleryForm.source')
+          }}<select
             :value="value.source"
-            aria-label="图片来源"
+            :aria-label="$t('admin-media.galleryForm.source')"
             @change="change('source', ($event.target as HTMLSelectElement).value as GalleryEditable['source'])"
           >
-            <option value="media">媒体库图片</option>
-            <option value="external">外部图片 URL</option>
+            <option value="media">{{ $t('admin-media.galleryForm.sourceMedia') }}</option>
+            <option value="external">{{ $t('admin-media.galleryForm.sourceExternal') }}</option>
           </select></label
         >
         <div v-if="value.source === 'external'">
           <label
-            >外部图片地址<input
+            >{{ $t('admin-media.galleryForm.externalUrl')
+            }}<input
               :value="value.externalUrl"
-              aria-label="外部图片地址"
+              :aria-label="$t('admin-media.galleryForm.externalUrl')"
               type="url"
               maxlength="2048"
               :aria-invalid="!!value.externalUrl && !!urlError"
@@ -91,17 +124,16 @@
               @input="change('externalUrl', ($event.target as HTMLInputElement).value)"
           /></label>
           <p id="gallery-url-help">
-            填写完整 HTTP(S) 图片直链，可带查询参数。地址不会被服务器下载或检查；HTTPS 页面中的 HTTP
-            图片可能被浏览器阻止。
+            {{ $t('admin-media.galleryForm.externalHelp') }}
           </p>
           <p v-if="value.externalUrl && urlError" id="gallery-url-error" role="alert">{{ urlError }}</p>
           <template v-else-if="value.externalUrl">
-            <p>地址格式合法，可以保存。预览结果不决定保存结果。</p>
+            <p>{{ $t('admin-media.galleryForm.externalValid') }}</p>
             <CommonImageFrame
               :key="value.externalUrl"
               class="gallery-editor__preview"
               :src="value.externalUrl"
-              :alt="value.title || '外部图片预览'"
+              :alt="value.title || $t('admin-media.galleryForm.externalPreviewAlt')"
               fit="contain"
               loading="eager"
               @state="previewState = $event"
@@ -109,21 +141,21 @@
             <p role="status">
               {{
                 previewState === 'ready'
-                  ? '当前预览加载成功；显示比例来自浏览器实际尺寸，不写入作品资料。'
+                  ? $t('admin-media.galleryForm.previewReady')
                   : previewState === 'error'
-                    ? '当前预览加载失败，可能是地址失效、网络故障、防盗链或浏览器安全限制。可重试，也可以保存此合法地址。'
-                    : '正在加载预览…'
+                    ? $t('admin-media.galleryForm.previewError')
+                    : $t('admin-media.galleryForm.previewLoading')
               }}
             </p>
           </template>
         </div>
         <template v-else>
-          <button type="button" @click="mediaOpen = true">选择或上传图片</button
+          <button type="button" @click="mediaOpen = true">{{ $t('admin-media.galleryForm.pickMedia') }}</button
           ><CommonImageFrame
             v-if="value.mediaId"
             class="gallery-editor__preview"
             :src="`/api/v1/media/${value.mediaId}.webp`"
-            :alt="value.title || '作品图片'"
+            :alt="value.title || $t('admin-media.galleryForm.imageAlt')"
             fit="contain"
             :width="
               selectedMedia?.id === value.mediaId
@@ -141,58 +173,64 @@
             "
           />
           <p>
-            上传文件不会自动公开为图库作品。发布状态控制作品展示；持有媒体文件地址的人仍可能访问文件。替换或删除作品不会删除其他内容使用的文件。
+            {{ $t('admin-media.galleryForm.mediaHelp') }}
           </p>
         </template>
-        <p>切换来源会保留本次未提交输入；保存时仅使用选定来源。</p>
+        <p>{{ $t('admin-media.galleryForm.sourceHelp') }}</p>
       </section>
       <div class="gallery-editor__row">
         <label
-          >分类<input
+          >{{ $t('admin-media.galleryList.category')
+          }}<input
             :value="value.category"
-            aria-label="作品分类"
+            :aria-label="$t('admin-media.galleryForm.categoryLabel')"
             maxlength="40"
-            placeholder="留空表示未分类"
+            :placeholder="$t('admin-media.galleryForm.categoryPlaceholder')"
             @input="change('category', ($event.target as HTMLInputElement).value)" /></label
         ><label
-          >拍摄日期<input
+          >{{ $t('admin-media.galleryForm.takenOn')
+          }}<input
             :value="value.takenOn ?? ''"
-            aria-label="拍摄日期"
+            :aria-label="$t('admin-media.galleryForm.takenOn')"
             type="date"
             @input="change('takenOn', ($event.target as HTMLInputElement).value || null)"
         /></label>
       </div>
-      <p>拍摄日期、地点和器材均可留空，上传时间不会作为拍摄日期。</p>
+      <p>{{ $t('admin-media.galleryForm.metaHelp') }}</p>
       <div class="gallery-editor__row">
         <label
-          >拍摄地点<input
+          >{{ $t('admin-media.galleryForm.location')
+          }}<input
             :value="value.location"
-            aria-label="拍摄地点"
+            :aria-label="$t('admin-media.galleryForm.location')"
             maxlength="160"
             @input="change('location', ($event.target as HTMLInputElement).value)" /></label
         ><label
-          >拍摄器材<input
+          >{{ $t('admin-media.galleryForm.device')
+          }}<input
             :value="value.device"
-            aria-label="拍摄器材"
+            :aria-label="$t('admin-media.galleryForm.device')"
             maxlength="160"
             @input="change('device', ($event.target as HTMLInputElement).value)"
         /></label>
       </div>
       <div class="gallery-editor__row">
         <label
-          >保存状态<select
+          >{{ $t('admin-media.galleryForm.status')
+          }}<select
             :value="value.status"
-            aria-label="作品保存状态"
+            :aria-label="$t('admin-media.galleryForm.statusLabel')"
             @change="change('status', ($event.target as HTMLSelectElement).value as GalleryStatus)"
           >
-            <option value="draft">草稿</option>
-            <option value="published">已公开</option>
-            <option value="withdrawn">已撤回</option>
+            <option value="draft">{{ $t('admin-media.galleryList.statusLabel.draft') }}</option>
+            <option value="published">{{ $t('admin-media.galleryList.statusLabel.published') }}</option>
+            <option value="withdrawn">{{ $t('admin-media.galleryList.statusLabel.withdrawn') }}</option>
           </select></label
         ><label
-          >排序值（越大越靠前）<input
+          >{{ $t('admin-media.galleryForm.sortOrder')
+          }}<input
             :value="value.sortOrder"
-            aria-label="作品排序值"
+            :aria-label="$t('admin-media.galleryForm.sortOrderLabel')"
             type="number"
             min="-1000000"
             max="1000000"
@@ -213,11 +251,14 @@
       />
     </fieldset>
     <p v-if="saved">
-      创建于 {{ saved.createdAt }}<template v-if="saved.publishedAt"> · 首次发布于 {{ saved.publishedAt }}</template> ·
-      版本 {{ saved.revision }}
+      {{ $t('admin-media.galleryForm.createdAt', { time: saved.createdAt })
+      }}<template v-if="saved.publishedAt">{{
+        $t('admin-media.galleryForm.publishedAt', { time: saved.publishedAt })
+      }}</template>
+      {{ $t('admin-media.galleryForm.revision', { revision: saved.revision }) }}
     </p>
     <AdminActionBar>
-      <CommonTooltip :content="`保存（${saveShortcut}）`"
+      <CommonTooltip :content="$t('admin-media.gallerySettings.saveTooltip', { shortcut: saveShortcut })"
         ><button
           ref="saveButton"
           :aria-busy="saving"
@@ -225,21 +266,27 @@
           aria-keyshortcuts="Control+S Meta+S"
           :disabled="!ready || saving || loading || !value.title.trim() || !sourceValid"
         >
-          {{ saving ? '正在保存…' : '保存作品' }}
+          {{ saving ? $t('admin-media.galleryForm.saving') : $t('admin-media.galleryForm.save') }}
         </button></CommonTooltip
       ><button
         type="button"
         :disabled="!ready || saving || loading || !value.title.trim() || !sourceValid"
         @click="requestSave('draft')"
       >
-        保存草稿</button
+        {{ $t('admin-media.galleryForm.saveDraft') }}</button
       ><button
         type="button"
         :disabled="!ready || saving || loading || !value.title.trim() || !sourceValid"
         @click="requestSave('published')"
       >
-        发布作品</button
-      ><span>{{ dirty ? '有尚未保存输入' : saved ? '当前输入已保存' : '尚未保存' }}</span>
+        {{ $t('admin-media.galleryList.publish') }}</button
+      ><span>{{
+        dirty
+          ? $t('admin-media.galleryForm.dirty')
+          : saved
+            ? $t('admin-media.galleryForm.clean')
+            : $t('admin-media.galleryForm.unsaved')
+      }}</span>
     </AdminActionBar>
     <ClientOnly><AdminMediaPicker v-model:open="mediaOpen" @selected="selectMedia" /></ClientOnly>
   </form>
@@ -266,7 +313,8 @@ const props = defineProps<{
   notice: string
   localError: string
 }>()
-const urlError = computed(() => galleryUrlError(props.value.externalUrl))
+const { t } = useI18n()
+const urlError = computed(() => galleryUrlError(props.value.externalUrl, t))
 const sourceValid = computed(() => (props.value.source === 'external' ? !urlError.value : !!props.value.mediaId))
 const previewState = ref('loading')
 const emit = defineEmits<{
@@ -290,8 +338,7 @@ const { label: saveShortcut } = useAdminSaveShortcut({
   submitter: () => saveButton.value,
   dirty: () => props.dirty,
 })
-const mediaOpen = ref(false),
-  statusLabels = { draft: '草稿', published: '已公开', withdrawn: '已撤回' }
+const mediaOpen = ref(false)
 const selectedMedia = ref<MediaAsset | null>(null)
 function change<K extends keyof GalleryEditable>(key: K, value: GalleryEditable[K]) {
   emit('change', { [key]: value })

@@ -6,7 +6,8 @@ export function useAdminLinks() {
     auth = useCurrentUser(),
     route = useRoute(),
     router = useRouter(),
-    app = useNuxtApp()
+    app = useNuxtApp(),
+    t = currentTranslate()
   const context = useState<string>('page-content-context', () => '')
   const data = ref<LinkPage<ManagedLink> | null>(null),
     pending = ref(false),
@@ -33,7 +34,7 @@ export function useAdminLinks() {
     pending.value = true
     error.value = ''
     try {
-      if (!user) throw new Error('请先登录博主账号。')
+      if (!user) throw new Error(t('admin-media.linkList.loginRequired'))
       const result = await repo.adminList(query.value)
       if (
         alive &&
@@ -46,7 +47,8 @@ export function useAdminLinks() {
         acceptedKey.value = requested
       }
     } catch (cause) {
-      if (alive && generation === version) error.value = cause instanceof Error ? cause.message : '友链读取失败'
+      if (alive && generation === version)
+        error.value = cause instanceof Error ? cause.message : t('admin-media.linkList.loadFailed')
     } finally {
       if (alive && generation === version) pending.value = false
     }
@@ -56,7 +58,7 @@ export function useAdminLinks() {
   }
   async function mutate(link: ManagedLink, patch?: Partial<LinkEditable>) {
     if (busy.value.includes(link.id) || pending.value || !auth.currentUser.value) return
-    if (!patch && !window.confirm(`删除友链「${link.name}」？友链不再展示，其他内容的媒体引用会保留。`)) return
+    if (!patch && !window.confirm(t('admin-media.linkList.deleteConfirm', { name: link.name }))) return
     const user = auth.currentUser.value.id,
       currentContext = context.value,
       requested = key.value
@@ -67,13 +69,13 @@ export function useAdminLinks() {
       if (patch) await repo.update(link.id, patch, link.revision)
       else await repo.remove(link.id, link.revision)
       if (!alive || auth.currentUser.value?.id !== user || currentContext !== context.value) return
-      notice.value = patch ? '友链已更新。' : '友链已删除。'
+      notice.value = patch ? t('admin-media.linkList.updated') : t('admin-media.linkList.deleted')
       void app.runWithContext(() => refreshNuxtData(['links-feed', 'links-metadata']))
       if (requested === key.value) await load()
     } catch (cause) {
       if (!alive || auth.currentUser.value?.id !== user || currentContext !== context.value) return
-      error.value = cause instanceof Error ? cause.message : '操作失败，请重新读取后核查结果'
-      if ((cause as { statusCode?: number }).statusCode === 409) error.value += '；请重新读取当前版本后再操作。'
+      error.value = cause instanceof Error ? cause.message : t('admin-media.linkList.mutateFailed')
+      if ((cause as { statusCode?: number }).statusCode === 409) error.value += t('admin-media.linkList.conflictHint')
     } finally {
       if (alive && auth.currentUser.value?.id === user) busy.value = busy.value.filter((id) => id !== link.id)
     }

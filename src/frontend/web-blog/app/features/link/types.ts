@@ -1,6 +1,18 @@
 /** @file types.ts @description 友链公开、管理、规则和本站资料契约，推荐不表示互链验证 */
-export const linkStatusLabels = { draft: '草稿', published: '已上架', withdrawn: '已下架' } as const
-export type LinkStatus = keyof typeof linkStatusLabels
+import type { Translate } from '~/utils/format'
+
+/** 友链发布状态的字典 key；键集合同时用于校验状态取值 */
+export const linkStatusLabelKeys = {
+  draft: 'admin-media.linkStatus.draft',
+  published: 'admin-media.linkStatus.published',
+  withdrawn: 'admin-media.linkStatus.withdrawn',
+} as const
+export type LinkStatus = keyof typeof linkStatusLabelKeys
+export const linkStatuses = Object.keys(linkStatusLabelKeys) as LinkStatus[]
+/** 友链发布状态的界面名称，随当前语言 */
+export function linkStatusLabel(status: LinkStatus, t: Translate): string {
+  return t(linkStatusLabelKeys[status])
+}
 export interface LinkItem {
   id: number
   name: string

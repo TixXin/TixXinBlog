@@ -6,7 +6,8 @@ export function useAdminGallery() {
     auth = useCurrentUser(),
     route = useRoute(),
     router = useRouter(),
-    app = useNuxtApp()
+    app = useNuxtApp(),
+    t = currentTranslate()
   const context = useState<string>('page-content-context', () => '')
   const data = ref<GalleryPage<ManagedPhoto> | null>(null),
     pending = ref(false),
@@ -33,7 +34,7 @@ export function useAdminGallery() {
     pending.value = true
     error.value = ''
     try {
-      if (!user) throw new Error('请先登录博主账号。')
+      if (!user) throw new Error(t('admin-media.galleryList.loginRequired'))
       const result = await repo.adminList(query.value)
       if (
         alive &&
@@ -46,7 +47,8 @@ export function useAdminGallery() {
         acceptedKey.value = requested
       }
     } catch (cause) {
-      if (alive && generation === version) error.value = cause instanceof Error ? cause.message : '图库读取失败'
+      if (alive && generation === version)
+        error.value = cause instanceof Error ? cause.message : t('admin-media.galleryList.loadFailed')
     } finally {
       if (alive && generation === version) pending.value = false
     }
@@ -56,7 +58,7 @@ export function useAdminGallery() {
   }
   async function mutate(photo: ManagedPhoto, patch?: Partial<GalleryEditable>) {
     if (busy.value.includes(photo.id) || pending.value || !auth.currentUser.value) return
-    if (!patch && !window.confirm(`删除作品「${photo.title}」？作品不再展示，其他内容的媒体引用会保留。`)) return
+    if (!patch && !window.confirm(t('admin-media.galleryList.deleteConfirm', { title: photo.title }))) return
     const user = auth.currentUser.value.id,
       currentContext = context.value,
       requested = key.value
@@ -67,13 +69,14 @@ export function useAdminGallery() {
       if (patch) await repo.update(photo.id, patch, photo.revision)
       else await repo.remove(photo.id, photo.revision)
       if (!alive || auth.currentUser.value?.id !== user || currentContext !== context.value) return
-      notice.value = patch ? '作品已更新。' : '作品已删除。'
+      notice.value = patch ? t('admin-media.galleryList.updated') : t('admin-media.galleryList.deleted')
       void app.runWithContext(() => refreshNuxtData(['gallery-feed', 'gallery-metadata']))
       if (requested === key.value) await load()
     } catch (cause) {
       if (!alive || auth.currentUser.value?.id !== user || currentContext !== context.value) return
-      error.value = cause instanceof Error ? cause.message : '操作失败，请重新读取后核查结果'
-      if ((cause as { statusCode?: number }).statusCode === 409) error.value += '；请重新读取当前版本后再操作。'
+      error.value = cause instanceof Error ? cause.message : t('admin-media.galleryList.mutateFailed')
+      if ((cause as { statusCode?: number }).statusCode === 409)
+        error.value += t('admin-media.galleryList.conflictHint')
     } finally {
       if (alive && auth.currentUser.value?.id === user) busy.value = busy.value.filter((id) => id !== photo.id)
     }

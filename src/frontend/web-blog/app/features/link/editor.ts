@@ -1,5 +1,5 @@
 /** @file editor.ts @description 友链编辑白名单与恢复输入校验，未完成 URL 保留给用户继续修改 */
-import { linkStatusLabels } from './types'
+import { linkStatusLabelKeys } from './types'
 import type { LinkEditable, ManagedLink } from './types'
 export function linkForm(link?: Partial<ManagedLink>): LinkEditable {
   return {
@@ -35,7 +35,7 @@ export function validLinkForm(value: unknown): value is LinkEditable {
     v.url.length <= 2048 &&
     (v.logoMediaId === null || (typeof v.logoMediaId === 'string' && /^[a-f0-9-]{36}$/i.test(v.logoMediaId))) &&
     (v.logoUrl === null || (typeof v.logoUrl === 'string' && v.logoUrl.length <= 2048)) &&
-    Object.hasOwn(linkStatusLabels, v.status) &&
+    Object.hasOwn(linkStatusLabelKeys, v.status) &&
     typeof v.isFeatured === 'boolean' &&
     Number.isInteger(v.sortOrder) &&
     Math.abs(v.sortOrder) <= 1000000
