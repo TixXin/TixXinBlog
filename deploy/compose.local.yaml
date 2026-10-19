@@ -1,0 +1,9 @@
+# 本机试用覆盖（install.sh --local）：叠加在 compose.production.yaml 之后，只替换入口 Caddy 配置。
+# 相对路径按项目目录（安装目录）解析；不改动数据库、应用与数据卷定义，正式编排保持不变。
+services:
+  edge:
+    environment:
+      # HTTP 端口跳转到带实际 HTTPS 端口的本机地址。
+      LOCAL_SITE_URL: ${SITE_URL:?请配置本机试用地址}
+    volumes:
+      - ./deploy/Caddyfile.local:/etc/caddy/Caddyfile:ro

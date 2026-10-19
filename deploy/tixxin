@@ -1,0 +1,787 @@
+#!/usr/bin/env bash
+# @file tixxin
+# @description TixXinBlog 一键安装站点的管理命令：状态、日志、完整备份、升级、应用回退、重启与重置管理员密码。
+#   与 scripts/release/release.mjs 共用同一编排、数据卷与发布顺序；宿主机只需要 bash、curl 和 Docker。
+#   任何子命令都不执行 down -v，也不删除数据卷；失败时保留现场并给出排查与回退命令。
+set -euo pipefail
+
+readonly VERSION_PATTERN='^[A-Za-z0-9][A-Za-z0-9_.-]{0,127}$'
+readonly SERVICES='postgres backend frontend edge worker migration'
+readonly LOCAL_CA_PATH='/data/caddy/pki/authorities/local/root.crt'
+
+ASSUME_YES=0
+NO_PULL=0
+LOCK_HELD=0
+STAGE=''
+
+# ---------- 输出 ----------
+
+info() { printf '%s\n' "$*"; }
+warn() { printf '警告：%s\n' "$*" >&2; }
+fail() {
+  printf '错误：%s\n' "$*" >&2
+  exit 1
+}
+
+# ---------- 安装目录与环境文件 ----------
+
+# 沿符号链接找到真实脚本位置；脚本位于 <安装目录>/deploy/tixxin。
+resolve_install_dir() {
+  local path=$0 link
+  while [ -L "$path" ]; do
+    link=$(readlink "$path")
+    case $link in
+      /*) path=$link ;;
+      *) path=$(dirname "$path")/$link ;;
+    esac
+  done
+  (cd "$(dirname "$path")/.." && pwd -P)
+}
+
+TIXXIN_DIR=${TIXXIN_DIR:-$(resolve_install_dir)}
+ENV_FILE=$TIXXIN_DIR/.env
+
+require_install() {
+  [ -f "$ENV_FILE" ] && [ -f "$TIXXIN_DIR/compose.production.yaml" ] ||
+    fail "$TIXXIN_DIR 不是一键安装目录（缺少 .env 或 compose.production.yaml）；可用 TIXXIN_DIR=<安装目录> 指定"
+  command -v docker > /dev/null 2>&1 || fail '未找到 docker 命令'
+}
+
+# 读取 .env 中最后一次出现的键值；值按原样返回，不做 shell 展开。
+env_get() {
+  awk -v key="$1" '
+    index($0, key "=") == 1 { value = substr($0, length(key) + 2); found = 1 }
+    END { if (found) print value }
+  ' "$ENV_FILE"
+}
+
+# 原子改写单个键；不存在时追加到文件末尾，权限保持 600。
+env_set() {
+  local key=$1 value=$2 temp
+  temp=$(umask 077 && mktemp "$TIXXIN_DIR/.env.XXXXXX")
+  awk -v key="$key" -v value="$value" '
+    index($0, key "=") == 1 { if (!done) print key "=" value; done = 1; next }
+    { print }
+    END { if (!done) print key "=" value }
+  ' "$ENV_FILE" > "$temp"
+  chmod 600 "$temp"
+  mv "$temp" "$ENV_FILE"
+}
+
+env_keys() {
+  sed -n 's/^[[:space:]]*\(export[[:space:]]\{1,\}\)\{0,1\}\([A-Za-z_][A-Za-z0-9_]*\)=.*/\2/p' "$ENV_FILE"
+}
+
+compose_file_args() {
+  if [ "$(env_get TIXXIN_MODE)" = 'local' ]; then
+    printf '%s\n' -f "$TIXXIN_DIR/compose.production.yaml" -f "$TIXXIN_DIR/deploy/compose.local.yaml"
+  else
+    printf '%s\n' -f "$TIXXIN_DIR/compose.production.yaml"
+  fi
+}
+
+# 与 release.mjs 一致：只以 .env 为插值来源，清除当前 shell 中同名变量与 COMPOSE_* 覆盖。
+compose() {
+  local files=() line key
+  while IFS= read -r line; do files+=("$line"); done < <(compose_file_args)
+  (
+    while IFS= read -r key; do unset "$key" 2> /dev/null || true; done < <(env_keys)
+    while IFS= read -r key; do unset "$key" 2> /dev/null || true; done < <(env | sed -n 's/^\(COMPOSE_[A-Za-z0-9_]*\)=.*/\1/p')
+    cd "$TIXXIN_DIR"
+    docker compose --project-directory "$TIXXIN_DIR" --env-file "$ENV_FILE" "${files[@]}" \
+      --profile maintenance --profile worker "$@"
+  )
+}
+
+project_name() { env_get RELEASE_PROJECT; }
+current_version() { env_get RELEASE_VERSION; }
+
+image_refs() {
+  local version=$1 key
+  for key in WEB_IMAGE_REPOSITORY API_IMAGE_REPOSITORY MIGRATION_IMAGE_REPOSITORY WORKER_IMAGE_REPOSITORY; do
+    printf '%s:%s\n' "$(env_get "$key")" "$version"
+  done
+  env_get POSTGRES_IMAGE
+  env_get CADDY_IMAGE
+}
+
+# 拉取或核对指定版本的全部镜像（含 worker：备份在 worker 镜像内执行）。
+prepare_images() {
+  local version=$1 image
+  while IFS= read -r image; do
+    [ -n "$image" ] || fail '.env 中镜像配置不完整'
+    if [ "$NO_PULL" = 1 ]; then
+      docker image inspect "$image" > /dev/null 2>&1 || fail "本机缺少镜像 ${image}（已指定 --no-pull）"
+    else
+      info "拉取镜像 $image"
+      docker pull --quiet "$image" > /dev/null || fail "镜像 $image 拉取失败；请检查网络与仓库权限，国内网络可把 .env 中的 *_IMAGE_REPOSITORY 改为可信镜像仓库"
+    fi
+  done < <(image_refs "$version")
+}
+
+# ---------- 交互 ----------
+
+has_tty() { [ -t 0 ] || { [ -r /dev/tty ] && (: < /dev/tty) 2> /dev/null; }; }
+
+confirm() {
+  local answer
+  [ "$ASSUME_YES" = 1 ] && return 0
+  has_tty || fail '当前不是交互终端；确认无误后追加 --yes 执行'
+  printf '%s [y/N] ' "$1" > /dev/tty
+  IFS= read -r answer < /dev/tty || answer=''
+  case $answer in
+    y | Y | yes | YES) return 0 ;;
+    *) fail '已取消，未做任何改动' ;;
+  esac
+}
+
+# ---------- 锁与失败现场 ----------
+
+acquire_lock() {
+  mkdir "$TIXXIN_DIR/.tixxin.lock" 2> /dev/null ||
+    fail "已有 tixxin 操作在进行（$TIXXIN_DIR/.tixxin.lock）；确认没有其他升级或备份进程后再手动删除该目录"
+  LOCK_HELD=1
+  printf '%s\n' "$$" > "$TIXXIN_DIR/.tixxin.lock/pid"
+}
+
+release_lock() {
+  if [ "$LOCK_HELD" = 1 ]; then
+    rm -f "$TIXXIN_DIR/.tixxin.lock/pid"
+    rmdir "$TIXXIN_DIR/.tixxin.lock" 2> /dev/null || true
+    LOCK_HELD=0
+  fi
+}
+
+# shellcheck disable=SC2329 # 只在 EXIT 陷阱的失败提示中调用。
+print_diagnostics() {
+  info ''
+  info '现场已保留（未删除容器、数据卷与备份）。排查命令：'
+  info "  tixxin status"
+  info "  tixxin logs backend"
+  info "  tixxin logs edge"
+  info "  cd $TIXXIN_DIR && docker compose ps -a"
+}
+
+# ---------- 部署包下载与校验 ----------
+
+sha256_of() {
+  if command -v sha256sum > /dev/null 2>&1; then
+    sha256sum "$1" | awk '{print $1}'
+  else
+    shasum -a 256 "$1" | awk '{print $1}'
+  fi
+}
+
+normalize_version() {
+  local version=${1#v}
+  printf '%s' "$version" | grep -Eq "$VERSION_PATTERN" || fail "版本号 $1 不合法"
+  case $version in latest | replace-with-git-sha) fail '必须使用可追溯的固定版本号' ;; esac
+  printf '%s' "$version"
+}
+
+download_base() {
+  local base
+  base=$(env_get TIXXIN_DOWNLOAD_BASE)
+  [ -n "$base" ] || base="https://github.com/$(env_get TIXXIN_REPOSITORY)/releases/download"
+  printf '%s' "${base%/}"
+}
+
+# 默认下载源时按 GitHub latest 跳转解析固定版本；自定义下载源必须显式指定版本。
+resolve_latest_version() {
+  local repository effective
+  [ -z "$(env_get TIXXIN_DOWNLOAD_BASE)" ] || fail '使用自定义下载源时请显式指定版本：tixxin update <版本>'
+  repository=$(env_get TIXXIN_REPOSITORY)
+  effective=$(curl -fsSIL --proto '=https' -o /dev/null -w '%{url_effective}' "https://github.com/$repository/releases/latest") ||
+    fail '无法解析最新版本；请显式指定版本：tixxin update <版本>'
+  normalize_version "${effective##*/}"
+}
+
+# 下载部署包与 SHA256SUMS，校验通过后才解压到 releases/<版本>。
+fetch_package() {
+  local version=$1 base asset work expected actual entry target
+  base=$(download_base)
+  case $base in https://* | file://*) ;; *) fail '下载源只允许 https:// 或 file://' ;; esac
+  asset="tixxin-blog-$version.tar.gz"
+  work=$(mktemp -d "$TIXXIN_DIR/releases/.download.XXXXXX")
+  info "下载部署包 $base/v$version/$asset"
+  curl -fsSL --proto '=https,file' -o "$work/$asset" "$base/v$version/$asset" || {
+    rm -rf "$work"
+    fail '部署包下载失败'
+  }
+  curl -fsSL --proto '=https,file' -o "$work/SHA256SUMS" "$base/v$version/SHA256SUMS" || {
+    rm -rf "$work"
+    fail 'SHA256SUMS 下载失败'
+  }
+  expected=$(awk -v name="$asset" '$2 == name || $2 == "*" name { print $1 }' "$work/SHA256SUMS")
+  actual=$(sha256_of "$work/$asset")
+  if [ -z "$expected" ] || [ "$expected" != "$actual" ]; then
+    rm -rf "$work"
+    fail '部署包 SHA256 校验失败，已丢弃下载内容'
+  fi
+  info '部署包 SHA256 校验通过'
+  # 只接受预期路径的普通文件与目录，拒绝绝对路径、上级路径与链接。
+  while IFS= read -r entry; do
+    case $entry in
+      compose.production.yaml | deploy | deploy/ | deploy/*) ;;
+      *) rm -rf "$work" && fail "部署包包含意外路径：$entry" ;;
+    esac
+    case $entry in */../* | ../* | */..) rm -rf "$work" && fail '部署包包含上级路径' ;; esac
+  done < <(tar -tzf "$work/$asset")
+  if tar -tvzf "$work/$asset" | cut -c1 | grep -qv '^[-d]$'; then
+    rm -rf "$work"
+    fail '部署包包含链接或特殊文件'
+  fi
+  mkdir "$work/package"
+  tar -xzf "$work/$asset" -C "$work/package"
+  for entry in compose.production.yaml deploy/Caddyfile deploy/Caddyfile.local deploy/compose.local.yaml \
+    deploy/production.env.example deploy/tixxin deploy/package.env; do
+    [ -f "$work/package/$entry" ] || {
+      rm -rf "$work"
+      fail "部署包缺少 $entry"
+    }
+  done
+  [ "$(awk -F= '$1 == "TIXXIN_PACKAGE_VERSION" { print $2 }' "$work/package/deploy/package.env")" = "$version" ] || {
+    rm -rf "$work"
+    fail '部署包内的版本与请求版本不一致'
+  }
+  target=$TIXXIN_DIR/releases/$version
+  if [ -d "$target" ]; then
+    mv "$target" "$work/previous"
+  fi
+  mv "$work/package" "$target"
+  rm -rf "$work"
+}
+
+# 把 releases/<版本> 的编排与脚本切换为当前生效文件；逐个以新文件替换，正在运行的脚本不受影响。
+activate_package() {
+  local version=$1 source=$TIXXIN_DIR/releases/$1 entry name
+  [ -d "$source" ] || fail "缺少部署包 releases/$version"
+  for entry in "$source/compose.production.yaml" "$source"/deploy/*; do
+    name=${entry#"$source"/}
+    cp "$entry" "$TIXXIN_DIR/$name.new"
+    mv "$TIXXIN_DIR/$name.new" "$TIXXIN_DIR/$name"
+  done
+  chmod 755 "$TIXXIN_DIR/deploy/tixxin"
+  env_set RELEASE_VERSION "$version"
+}
+
+# 旧安装（或由 release.mjs 维护的站点）没有本版本部署包时，留存当前生效文件作为回退点。
+snapshot_current_package() {
+  local version=$1 target=$TIXXIN_DIR/releases/$1
+  [ -d "$target" ] && return 0
+  mkdir -p "$target/deploy"
+  cp "$TIXXIN_DIR/compose.production.yaml" "$target/"
+  cp "$TIXXIN_DIR"/deploy/* "$target/deploy/"
+  printf 'TIXXIN_PACKAGE_VERSION=%s\n' "$version" > "$target/deploy/package.env.snapshot"
+}
+
+# ---------- 验收 ----------
+
+site_url() { env_get SITE_URL; }
+
+# 本机试用使用 Caddy 内部 CA；导出根证书后以它校验 HTTPS，而不是跳过证书验证。
+export_local_ca() {
+  local deadline=$((SECONDS + 60)) temp
+  temp=$(mktemp "$TIXXIN_DIR/.local-ca.XXXXXX")
+  while [ "$SECONDS" -lt "$deadline" ]; do
+    if compose exec -T edge cat "$LOCAL_CA_PATH" > "$temp" 2> /dev/null && grep -q 'BEGIN CERTIFICATE' "$temp"; then
+      chmod 644 "$temp"
+      mv "$temp" "$TIXXIN_DIR/local-ca.crt"
+      return 0
+    fi
+    sleep 2
+  done
+  rm -f "$temp"
+  return 1
+}
+
+curl_site() {
+  if [ "$(env_get TIXXIN_MODE)" = 'local' ]; then
+    curl --cacert "$TIXXIN_DIR/local-ca.crt" "$@"
+  else
+    curl "$@"
+  fi
+}
+
+# 与 release.mjs 对齐：HTTPS 同源公开 API 返回 200，且入口版本头等于目标版本；不跟随跳转。
+check_entry_once() {
+  local version=$1 headers status release
+  headers=$(curl_site -sS --proto '=https' --max-time 15 -o /dev/null -D - "$(site_url)/api/v1/posts?pageSize=1" 2> /dev/null) || return 1
+  status=$(printf '%s\n' "$headers" | awk 'toupper($1) ~ /^HTTP\// { code = $2 } END { print code }')
+  release=$(printf '%s\n' "$headers" | tr -d '\r' | awk 'tolower($1) == "x-tixxin-release:" { print $2 }' | tail -n 1)
+  [ "$status" = 200 ] && [ "$release" = "$version" ]
+}
+
+# 证书签发与前端预热需要时间，在固定窗口内重试；超时即报告失败，不放宽判定。
+check_entry() {
+  local version=$1 deadline=$((SECONDS + ${TIXXIN_ENTRY_TIMEOUT:-240}))
+  if [ "$(env_get TIXXIN_MODE)" = 'local' ]; then
+    export_local_ca || {
+      warn '未能导出本机试用根证书'
+      return 1
+    }
+  fi
+  while [ "$SECONDS" -lt "$deadline" ]; do
+    check_entry_once "$version" && return 0
+    sleep 3
+  done
+  return 1
+}
+
+# ---------- 发布流程（与 release.mjs 的阶段一致） ----------
+
+worker_running() {
+  compose ps --status running --services 2> /dev/null | grep -qx worker
+}
+
+# ---------- 完整备份 ----------
+
+backup_volume() {
+  docker volume ls -q --filter "label=com.docker.compose.project=$(project_name)" \
+    --filter 'label=com.docker.compose.volume=backups' | head -n 1
+}
+
+# 在 worker 镜像内用原生 PG16 客户端执行现有完整备份流程，写入 backups 卷并校验，再导出到宿主机。
+create_backup() {
+  local name volume worker_image container
+  name="backup-manual-$(date -u +%Y%m%dT%H%M%SZ)"
+  info '确认数据库运行中…'
+  compose up -d --no-build --pull never --wait --wait-timeout 300 postgres
+  worker_image="$(env_get WORKER_IMAGE_REPOSITORY):$(current_version)"
+  docker image inspect "$worker_image" > /dev/null 2>&1 || {
+    if [ "$NO_PULL" = 1 ]; then fail "本机缺少备份所需的 worker 镜像 $worker_image"; fi
+    docker pull --quiet "$worker_image" > /dev/null || fail "备份所需的 worker 镜像 $worker_image 拉取失败"
+  }
+  info "创建完整备份 ${name}（数据库一致快照 + 登记媒体）…"
+  compose run --rm --no-deps --pull never -T worker \
+    node scripts/full-backup.mjs create --mode native --output "/app/var/backups/$name"
+  compose run --rm --no-deps --pull never -T worker \
+    node scripts/full-backup.mjs verify --directory "/app/var/backups/$name"
+  volume=$(backup_volume)
+  [ -n "$volume" ] || fail '未找到本项目的 backups 数据卷'
+  mkdir -p "$TIXXIN_DIR/backups"
+  chmod 700 "$TIXXIN_DIR/backups"
+  container=$(docker create --label "tixxin.backup-export=$(project_name)" \
+    -v "$volume:/app/var/backups:ro" "$worker_image")
+  if ! docker cp "$container:/app/var/backups/$name" "$TIXXIN_DIR/backups/" > /dev/null; then
+    docker rm "$container" > /dev/null
+    fail "备份已在数据卷 $volume 中生成并校验，但导出到宿主机失败"
+  fi
+  docker rm "$container" > /dev/null
+  [ -f "$TIXXIN_DIR/backups/$name/manifest.json" ] || fail '导出的备份缺少 manifest.json'
+  LAST_BACKUP=$TIXXIN_DIR/backups/$name
+  info "完整备份已生成并校验：$LAST_BACKUP"
+  info "（数据卷 $volume 中保留同一份：/app/var/backups/${name}）"
+}
+
+# ---------- 子命令 ----------
+
+usage() {
+  cat << 'EOF'
+用法：tixxin <命令> [参数]
+
+命令：
+  status                 服务健康状态、当前版本与入口验收
+  logs [服务] [-f] [--tail N]
+                         查看日志；服务为 postgres、backend、frontend、edge、worker、migration
+  backup                 在 worker 容器内创建并校验完整备份，导出到 <安装目录>/backups
+  update [版本]          先完整备份，再下载校验新部署包、拉取镜像、迁移、重建服务并验收
+  rollback <版本> --database-compatible
+                         应用回退：切回已验证的旧版本镜像，不执行迁移，保留数据卷
+  restart                重启 API、前端、入口（以及运行中的 worker）
+  reset-password [--user 登录名]
+                         重置管理员密码并撤销全部登录会话
+  help                   显示本帮助
+
+每个命令都支持 --help。update、rollback、reset-password 会二次确认，--yes 跳过确认。
+任何命令都不会执行 docker compose down -v，也不会删除数据卷。
+EOF
+}
+
+cmd_status() {
+  case ${1:-} in -h | --help)
+    info '用法：tixxin status    显示版本、地址、各服务状态，并做一次入口验收'
+    return 0
+    ;;
+  esac
+  local version
+  version=$(current_version)
+  info "安装目录：$TIXXIN_DIR"
+  info "项目名称：$(project_name)"
+  info "当前版本：$version"
+  info "站点地址：$(site_url)"
+  info ''
+  compose ps -a --format 'table {{.Service}}\t{{.Status}}\t{{.Image}}'
+  info ''
+  if [ "$(env_get TIXXIN_MODE)" = 'local' ] && [ ! -f "$TIXXIN_DIR/local-ca.crt" ]; then export_local_ca || true; fi
+  if check_entry_once "$version"; then
+    info "入口验收：通过（HTTPS 同源 API 200，版本头 ${version}）"
+  else
+    info '入口验收：未通过（HTTPS 未就绪、版本头不一致或服务未运行）'
+    return 1
+  fi
+}
+
+cmd_logs() {
+  local follow=0 tail=200 selected=()
+  while [ $# -gt 0 ]; do
+    case $1 in
+      -h | --help)
+        info '用法：tixxin logs [服务...] [-f] [--tail N]（默认最近 200 行）'
+        return 0
+        ;;
+      -f | --follow) follow=1 ;;
+      --tail)
+        [ $# -ge 2 ] || fail '--tail 需要行数'
+        printf '%s' "$2" | grep -Eq '^[0-9]+$' || fail '--tail 需要非负整数'
+        tail=$2
+        shift
+        ;;
+      *)
+        case " $SERVICES " in *" $1 "*) selected+=("$1") ;; *) fail "未知服务 $1" ;; esac
+        ;;
+    esac
+    shift
+  done
+  if [ "$follow" = 1 ]; then
+    compose logs --tail "$tail" -f ${selected[@]+"${selected[@]}"}
+  else
+    compose logs --tail "$tail" ${selected[@]+"${selected[@]}"}
+  fi
+}
+
+cmd_backup() {
+  while [ $# -gt 0 ]; do
+    case $1 in
+      -h | --help)
+        cat << 'EOF'
+用法：tixxin backup
+
+在本站 worker 镜像内运行现有完整备份流程（full-backup.mjs create --mode native）：同一数据库快照导出
+database.dump，逐个复制并校验登记媒体，写出 manifest.json，随后再次校验。备份写入 backups 数据卷，
+并导出到 <安装目录>/backups/<备份名>。备份含私人草稿与密码哈希，请转存到受控位置。
+EOF
+        return 0
+        ;;
+      -y | --yes) ASSUME_YES=1 ;;
+      --no-pull) NO_PULL=1 ;;
+      *) fail "未知参数 $1" ;;
+    esac
+    shift
+  done
+  acquire_lock
+  STAGE='backup'
+  create_backup
+}
+
+# 升级与回退共用的失败提示；使用全局变量，EXIT 陷阱触发时不依赖函数局部作用域。
+OP_ACTION=''
+OP_FROM=''
+OP_TO=''
+OP_ACTIVATED=0
+MIGRATED=0
+LAST_BACKUP=''
+
+# shellcheck disable=SC2329 # 由 EXIT 陷阱调用。
+on_operation_failure() {
+  local code=$1
+  [ "$code" = 0 ] && return 0
+  release_lock
+  {
+    printf '\n%s未完成：失败阶段 %s。\n' "$([ "$OP_ACTION" = rollback ] && echo '回退' || echo '升级')" "${STAGE:-unknown}"
+    print_diagnostics
+    info ''
+    if [ "$OP_ACTIVATED" != 1 ]; then
+      info "当前站点编排与版本未被修改，仍为 ${OP_FROM}。修复问题后可重新执行同一命令。"
+    elif [ "$OP_ACTION" = rollback ]; then
+      info "回退未执行迁移，数据库结构未变。可切回原版本：tixxin rollback $OP_FROM --database-compatible"
+    elif [ "$MIGRATED" = 1 ]; then
+      info "迁移已执行。若确认 $OP_FROM 兼容当前数据库结构与新写入数据，可做应用回退（不执行迁移、保留数据卷）："
+      info "  tixxin rollback $OP_FROM --database-compatible"
+      info '也可以修复问题后重新执行 tixxin update '"$OP_TO"'（迁移幂等）。'
+    else
+      info "迁移尚未执行，数据库仍为 $OP_FROM 的结构，可直接做应用回退："
+      info "  tixxin rollback $OP_FROM --database-compatible"
+    fi
+    if [ "$OP_ACTIVATED" = 1 ]; then
+      info "需要回到备份时刻的数据状态时，按 https://github.com/$(env_get TIXXIN_REPOSITORY)/blob/main/docs/backup-and-recovery.md 在独立目标恢复；应用回退不能代替数据恢复。"
+    fi
+    [ -z "$LAST_BACKUP" ] || info "本次操作前的完整备份：$LAST_BACKUP"
+  } >&2
+}
+
+backup_env_file() {
+  mkdir -p "$TIXXIN_DIR/backups"
+  chmod 700 "$TIXXIN_DIR/backups"
+  cp -p "$ENV_FILE" "$TIXXIN_DIR/backups/env-before-$1-$(date -u +%Y%m%dT%H%M%SZ)"
+}
+
+cmd_update() {
+  local target='' skip_backup=0
+  while [ $# -gt 0 ]; do
+    case $1 in
+      -h | --help)
+        cat << 'EOF'
+用法：tixxin update [版本] [--yes] [--no-pull] [--skip-backup]
+
+步骤：完整备份 → 下载部署包与 SHA256SUMS 并校验 → 拉取镜像 → 停止前端/API 写入 → 执行迁移 →
+重建服务 → HTTPS 同源 API 与版本头验收。未指定版本时使用 GitHub 最新正式版本。
+升级到当前版本同样可执行（迁移幂等），用于修复配置或重建容器。
+  --no-pull       使用本机已有镜像，不拉取
+  --skip-backup   跳过升级前备份（仅用于从未成功的首次安装；需要确认）
+失败时保留现场，并打印对应的应用回退命令。
+EOF
+        return 0
+        ;;
+      -y | --yes) ASSUME_YES=1 ;;
+      --no-pull) NO_PULL=1 ;;
+      --skip-backup) skip_backup=1 ;;
+      -*) fail "未知参数 $1" ;;
+      *)
+        [ -z "$target" ] || fail '只能指定一个版本'
+        target=$(normalize_version "$1")
+        ;;
+    esac
+    shift
+  done
+  OP_ACTION=update
+  OP_FROM=$(current_version)
+  [ -n "$target" ] || target=$(resolve_latest_version)
+  OP_TO=$target
+  info "当前版本 ${OP_FROM}，目标版本 ${target}。"
+  confirm "将先完整备份，再停止前端与 API 写入、执行迁移并重建服务（有短暂维护窗口）。继续？"
+  if [ "$skip_backup" = 1 ]; then
+    warn '已要求跳过升级前备份；若站点已有数据，失败后将无法从本次升级前的备份恢复'
+    confirm '确认跳过备份？'
+  fi
+  acquire_lock
+  trap 'on_operation_failure $?' EXIT
+  if [ "$skip_backup" = 0 ]; then
+    STAGE='backup'
+    create_backup
+  fi
+  STAGE='downloading'
+  snapshot_current_package "$OP_FROM"
+  if [ "$target" = "$OP_FROM" ]; then
+    # 同版本升级先暂存当前部署包，下载失败时可还原。
+    mv "$TIXXIN_DIR/releases/$OP_FROM" "$TIXXIN_DIR/releases/.current-$OP_FROM"
+    if ! (fetch_package "$target"); then
+      mv "$TIXXIN_DIR/releases/.current-$OP_FROM" "$TIXXIN_DIR/releases/$OP_FROM"
+      fail '部署包下载或校验失败'
+    fi
+    rm -rf "$TIXXIN_DIR/releases/.current-$OP_FROM"
+  else
+    fetch_package "$target"
+  fi
+  STAGE='pulling-images'
+  prepare_images "$target"
+  STAGE='activating'
+  backup_env_file "$target"
+  OP_ACTIVATED=1
+  activate_package "$target"
+  deploy_release deploy "$target"
+  trap - EXIT
+  release_lock
+  info ''
+  info "升级完成：$OP_FROM → ${target}，入口验收通过。"
+  [ -z "$LAST_BACKUP" ] || info "升级前完整备份：$LAST_BACKUP"
+}
+
+# action: initial | deploy | rollback；记录迁移是否已执行，供失败提示区分回退语义。
+deploy_release() {
+  local action=$1 version=$2 restart_worker=0
+  STAGE='starting-database'
+  compose up -d --no-build --pull never --wait --wait-timeout 300 postgres
+  if [ "$action" != initial ]; then
+    if worker_running; then
+      [ "$(env_get OPERATIONS_WORKER_ENABLED)" = 'true' ] && restart_worker=1
+      STAGE='stopping-worker'
+      compose stop worker
+    fi
+    STAGE='stopping-application'
+    compose stop frontend backend
+  fi
+  if [ "$action" != rollback ]; then
+    STAGE='migrating'
+    info '执行数据库迁移…'
+    compose run --rm --no-deps --pull never -T migration
+    MIGRATED=1
+  fi
+  STAGE='starting-application'
+  info '启动 API、前端与 HTTPS 入口…'
+  compose up -d --no-build --pull never --wait --wait-timeout 300 backend frontend edge
+  STAGE='checking-entry'
+  info "验收 $(site_url)（HTTPS、同源 API、版本头）…"
+  check_entry "$version" || fail "入口验收未通过：$(site_url)/api/v1/posts 未返回 200 或版本头不是 $version"
+  if [ "$restart_worker" = 1 ]; then
+    STAGE='restarting-worker'
+    compose up -d --no-build --pull never --wait worker
+  fi
+  STAGE='ready'
+}
+
+cmd_rollback() {
+  local target='' compatible=0 skip_backup=0
+  while [ $# -gt 0 ]; do
+    case $1 in
+      -h | --help)
+        cat << 'EOF'
+用法：tixxin rollback <版本> --database-compatible [--yes] [--no-pull] [--skip-backup]
+
+应用回退（与 deployment.md「应用回退」一致）：先完整备份当前状态，再把应用镜像与编排切回指定版本，
+保持数据卷，跳过迁移并验收入口。--database-compatible 表示你已确认该版本兼容当前数据库结构
+与新写入数据；它不是自动兼容验证。需要回到备份时刻的数据时请走数据恢复流程。
+EOF
+        return 0
+        ;;
+      --database-compatible) compatible=1 ;;
+      -y | --yes) ASSUME_YES=1 ;;
+      --no-pull) NO_PULL=1 ;;
+      --skip-backup) skip_backup=1 ;;
+      -*) fail "未知参数 $1" ;;
+      *)
+        [ -z "$target" ] || fail '只能指定一个版本'
+        target=$(normalize_version "$1")
+        ;;
+    esac
+    shift
+  done
+  [ -n "$target" ] || fail '请指定回退目标版本'
+  [ "$compatible" = 1 ] || fail '应用回退必须先确认目标版本兼容当前数据库，再追加 --database-compatible'
+  OP_ACTION=rollback
+  OP_FROM=$(current_version)
+  OP_TO=$target
+  confirm "将从 $OP_FROM 回退应用到 ${target}（不执行迁移，保留数据卷）。继续？"
+  [ "$skip_backup" = 0 ] || confirm '确认跳过回退前备份？'
+  acquire_lock
+  trap 'on_operation_failure $?' EXIT
+  if [ "$skip_backup" = 0 ]; then
+    STAGE='backup'
+    create_backup
+  fi
+  snapshot_current_package "$OP_FROM"
+  if [ ! -d "$TIXXIN_DIR/releases/$target" ]; then
+    STAGE='downloading'
+    fetch_package "$target"
+  fi
+  STAGE='pulling-images'
+  prepare_images "$target"
+  STAGE='activating'
+  backup_env_file "$target"
+  OP_ACTIVATED=1
+  activate_package "$target"
+  deploy_release rollback "$target"
+  trap - EXIT
+  release_lock
+  info "应用回退完成：$OP_FROM → ${target}，入口验收通过。"
+}
+
+cmd_restart() {
+  case ${1:-} in -h | --help)
+    info '用法：tixxin restart    重启 API、前端与入口（运行中的 worker 一并重启），并等待健康检查'
+    return 0
+    ;;
+  esac
+  local services=(backend frontend edge)
+  worker_running && services+=(worker)
+  compose restart "${services[@]}"
+  compose up -d --no-build --pull never --wait --wait-timeout 300 "${services[@]}"
+  info '已重启：'"${services[*]}"
+}
+
+cmd_reset_password() {
+  local user=''
+  while [ $# -gt 0 ]; do
+    case $1 in
+      -h | --help)
+        cat << 'EOF'
+用法：tixxin reset-password [--user 登录名] [--yes]
+
+调用现有 admin-reset-password：在交互终端隐藏输入两次新密码（至少 12 位），以 argon2id 保存，
+并撤销该管理员的全部会话与刷新令牌。存在多个管理员时用 --user 指定账号。
+EOF
+        return 0
+        ;;
+      --user)
+        [ $# -ge 2 ] || fail '--user 需要登录名'
+        user=$2
+        shift
+        ;;
+      -y | --yes) ASSUME_YES=1 ;;
+      *) fail "未知参数 $1" ;;
+    esac
+    shift
+  done
+  has_tty || fail 'reset-password 需要在交互终端中输入新密码'
+  confirm '将重置管理员密码，所有已登录设备需要重新登录。继续？'
+  compose up -d --no-build --pull never --wait --wait-timeout 300 postgres
+  if [ -n "$user" ]; then
+    ADMIN_RESET_USERNAME=$user compose run --rm --no-deps --pull never -e ADMIN_RESET_USERNAME backend \
+      node dist/admin-reset-password.js < /dev/tty
+  else
+    compose run --rm --no-deps --pull never backend node dist/admin-reset-password.js < /dev/tty
+  fi
+}
+
+# shellcheck disable=SC2329 # 由 EXIT 陷阱调用。
+on_first_start_failure() {
+  [ "$1" = 0 ] && return 0
+  release_lock
+  {
+    printf '\n首次启动未完成：失败阶段 %s。\n' "${STAGE:-unknown}"
+    print_diagnostics
+  } >&2
+}
+
+# 供 install.sh 在写好 .env 后调用：拉取镜像 → 启动数据库 → 迁移 → 启动全部服务 → 验收。
+cmd_first_start() {
+  while [ $# -gt 0 ]; do
+    case $1 in
+      --no-pull) NO_PULL=1 ;;
+      *) fail "未知参数 $1" ;;
+    esac
+    shift
+  done
+  local version
+  version=$(current_version)
+  acquire_lock
+  trap 'on_first_start_failure $?' EXIT
+  STAGE='pulling-images'
+  prepare_images "$version"
+  deploy_release initial "$version"
+  trap - EXIT
+  release_lock
+}
+
+main() {
+  local command=${1:-help}
+  [ $# -gt 0 ] && shift
+  case $command in
+    help | -h | --help)
+      usage
+      return 0
+      ;;
+  esac
+  require_install
+  case $command in
+    status) cmd_status "$@" ;;
+    logs) cmd_logs "$@" ;;
+    backup) cmd_backup "$@" ;;
+    update) cmd_update "$@" ;;
+    rollback) cmd_rollback "$@" ;;
+    restart) cmd_restart "$@" ;;
+    reset-password) cmd_reset_password "$@" ;;
+    __first-start) cmd_first_start "$@" ;;
+    *)
+      usage >&2
+      fail "未知命令 $command"
+      ;;
+  esac
+}
+
+# 整个脚本解析完毕后才执行；升级替换本文件不影响正在运行的进程。
+# 默认退出时释放本进程持有的锁；升级与回退会换成带失败提示的陷阱。
+trap 'release_lock' EXIT
+trap 'release_lock; exit 130' INT TERM
+main "$@"
+exit $?

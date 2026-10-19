@@ -1,0 +1,29 @@
+# 本机试用入口（install.sh --local）：Caddy 内部 CA 为 localhost 签发证书，不申请公网证书。
+# 与正式 Caddyfile 的差异只有证书来源、HTTP 跳转和不发送 HSTS；HSTS 按主机名生效，
+# 在 localhost 上发送会让浏览器把本机其他端口的开发服务也强制成 HTTPS。
+{
+  # 容器内无权写入宿主机信任库；根证书由安装脚本导出到安装目录，是否信任由使用者决定。
+  skip_install_trust
+  # HTTP 跳转由下方站点块按实际映射端口生成，避免跳到宿主机上未映射的 443。
+  auto_https disable_redirects
+}
+
+localhost {
+  tls internal
+  encode zstd gzip
+  header {
+    X-TixXin-Release {$RELEASE_VERSION}
+    Permissions-Policy "camera=(), microphone=(), geolocation=(), payment=(), usb=()"
+  }
+  reverse_proxy frontend:3000 {
+    # 与正式入口一致：重建地址，不继承请求中伪造的代理链。
+    header_up X-Forwarded-For {http.request.remote.host}
+    header_up -Forwarded
+    header_up -X-Real-IP
+  }
+}
+
+http:// {
+  # 临时跳转，避免浏览器长期缓存本机端口映射。
+  redir {$LOCAL_SITE_URL}{uri} 302
+}
