@@ -50,13 +50,13 @@
           </div>
           <nav class="search-modal__filters" :aria-label="$t('layout.searchModal.typesLabel')">
             <button
-              v-for="(label, value) in searchTypeLabels"
+              v-for="(labelKey, value) in searchTypeLabelKeys"
               :key="value"
               type="button"
               :aria-pressed="type === value"
               @click="type = value"
             >
-              {{ label }}
+              {{ $t(labelKey) }}
             </button>
           </nav>
           <div v-if="query.trim()" ref="resultListRef" class="search-modal__body">
@@ -180,7 +180,7 @@
 <script setup lang="ts">
 import SearchHighlight from '~/components/common/SearchHighlight.vue'
 import type { SearchResultItem } from '~/composables/useSearch'
-import { searchTypeLabels, SEARCH_PAGE_SIZE } from '~/features/search/types'
+import { searchTypeLabel, searchTypeLabelKeys, SEARCH_PAGE_SIZE } from '~/features/search/types'
 import { searchLocation } from '~/features/search/query'
 
 const visible = defineModel<boolean>('visible', { default: false })
@@ -257,7 +257,7 @@ function close() {
 }
 
 function typeLabel(type: string) {
-  return searchTypeLabels[type as keyof typeof searchTypeLabels] ?? type
+  return searchTypeLabel(type, t)
 }
 
 const router = useRouter()

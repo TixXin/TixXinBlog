@@ -37,18 +37,5 @@ export function searchTypeLabel(type: string, t: Translate): string {
   const key = searchTypeLabelKeys[type as SearchScope]
   return key ? t(key) : type
 }
-/**
- * 中文类型名称，仅为尚未迁移的 common/SearchModal 保留；迁移后改用 searchTypeLabel，届时删除本常量。
- * @deprecated 使用 searchTypeLabel(type, t)
- */
-export const searchTypeLabels: Record<SearchScope, string> = {
-  all: '全部类型',
-  post: '文章',
-  project: '项目',
-  link: '友链',
-  gallery: '图库',
-  flash: '闪念',
-  moment: '朋友圈',
-}
 export const SEARCH_PAGE_SIZE = 10
 export const SEARCH_PREVIEW_SIZE = 3

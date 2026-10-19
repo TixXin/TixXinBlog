@@ -30,7 +30,7 @@ const props = defineProps<{
 }>()
 
 const { t } = useI18n()
-const label = computed(() => codeLanguageLabel(props.language) || t('layout.codeBlock.fallbackLabel'))
+const label = computed(() => codeLanguageLabel(props.language, t) || t('layout.codeBlock.fallbackLabel'))
 
 // 每个代码块独立缓存，避免相同前缀的不同正文共享结果；props 变化时重新高亮。
 const { data: highlightedHtml } = await useAsyncData(
