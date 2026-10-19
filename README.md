@@ -13,6 +13,15 @@
 
 在线实例：<https://tix.xin>（作者本人的博客，内容与本仓库的演示数据无关）。
 
+<p align="center">
+  <img src="docs/assets/screenshots/nexus-home.jpg" alt="默认主题 Nexus 的首页" width="100%">
+</p>
+<p align="center">
+  <img src="docs/assets/screenshots/nexus-article.jpg" alt="文章详情页" width="72%">
+  <img src="docs/assets/screenshots/nexus-mobile.jpg" alt="手机端首页" width="22%">
+</p>
+<p align="center"><sub>默认主题 Nexus，使用仓库自带的演示数据</sub></p>
+
 ## 一条命令安装
 
 准备一台 Linux 服务器（amd64 或 arm64），把域名解析到它并开放 80/443 端口，然后执行下面的命令，按提示填写域名。安装完成时会打印一条初始化链接，在浏览器打开即可创建博主账号。一键安装从 v0.3.0 起提供。
@@ -24,7 +33,7 @@ curl -fsSL https://github.com/TixXin/TixXinBlog/releases/latest/download/install
 没有服务器时，可以用下载好的 `install.sh` 先在本机试用（需要 Docker，不需要 sudo），完成后访问 `https://localhost:8443`：
 
 ```sh
-bash install.sh --local --dir "$HOME/tixxin-blog"
+bash install.sh --local
 ```
 
 前提条件、脚本会做什么、日常管理命令和常见问题见 [5 分钟部署](docs/quick-start.md)；需要精细控制时见[部署指南](docs/deployment.md)的手动发布。想在本机开发则看下方[本地启动](#本地启动)。

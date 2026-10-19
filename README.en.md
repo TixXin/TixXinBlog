@@ -13,6 +13,15 @@ A personal blog system for a single author, bundling the public site and its aut
 
 Live instance: <https://tix.xin> (the author's own blog; its content is unrelated to the demo data in this repository).
 
+<p align="center">
+  <img src="docs/assets/screenshots/nexus-home.jpg" alt="Home page in the default Nexus theme" width="100%">
+</p>
+<p align="center">
+  <img src="docs/assets/screenshots/nexus-article.jpg" alt="Article page" width="72%">
+  <img src="docs/assets/screenshots/nexus-mobile.jpg" alt="Home page on mobile" width="22%">
+</p>
+<p align="center"><sub>Default Nexus theme with the repository's demo data (Chinese interface)</sub></p>
+
 > **Note on language.** The interface is available in Chinese and English; the seeded demo content is written in Chinese. The [documentation index](docs/en/README.md), [quick start](docs/en/quick-start.md), [development guide](docs/en/development.md) and [deployment guide](docs/en/deployment.md) are available in English; the other guides remain in Chinese.
 
 ## One-Command Install
@@ -26,7 +35,7 @@ curl -fsSL https://github.com/TixXin/TixXinBlog/releases/latest/download/install
 Without a server, use the downloaded `install.sh` to try it locally first (Docker required, no sudo), then visit `https://localhost:8443`:
 
 ```sh
-bash install.sh --local --dir "$HOME/tixxin-blog"
+bash install.sh --local
 ```
 
 See the [five-minute deployment](docs/en/quick-start.md) for prerequisites, what the script does, management commands and the FAQ; for fine-grained control, see the manual release in the [deployment guide](docs/en/deployment.md). To develop locally, see [Running locally](#running-locally) below.
