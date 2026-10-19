@@ -139,7 +139,7 @@
             <div v-if="dailyQuote" class="nexus-bar__owner-quote-row">
               <p class="nexus-bar__owner-quote">
                 <Transition name="nexus-quote-swap" mode="out-in">
-                  <span :key="dailyQuote">「{{ dailyQuote }}」</span>
+                  <span :key="dailyQuote">{{ $t('theme.nexus.quote.text', { quote: dailyQuote }) }}</span>
                 </Transition>
               </p>
               <button

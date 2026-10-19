@@ -46,7 +46,8 @@
         "title": "公告"
       },
       "quote": {
-        "refresh": "换一条"
+        "refresh": "换一条",
+        "text": "「{quote}」"
       },
       "footerCard": {
         "links": "站点链接"

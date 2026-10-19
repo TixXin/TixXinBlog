@@ -7,6 +7,7 @@
 
 <template>
   <div class="gallery-filter" role="group" :aria-label="$t('misc.gallery.filter.label')">
+    <!-- 空分类的名称由界面按语言给出，不使用接口返回的中文缺省标签 -->
     <button
       v-for="cat in categories"
       :key="cat.value === undefined ? 'all' : `category:${cat.value}`"
@@ -17,7 +18,8 @@
       :disabled="disabled"
       @click="$emit('update:modelValue', cat.value)"
     >
-      {{ cat.label }}<span v-if="cat.count !== undefined">（{{ cat.count }}）</span>
+      {{ cat.value === '' ? $t('misc.gallery.filter.uncategorized') : cat.label
+      }}<span v-if="cat.count !== undefined">{{ $t('misc.gallery.filter.count', { count: cat.count }) }}</span>
     </button>
   </div>
 </template>

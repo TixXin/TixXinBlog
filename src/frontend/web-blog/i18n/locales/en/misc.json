@@ -49,7 +49,9 @@
       },
       "filter": {
         "label": "Filter photos by category",
-        "all": "All"
+        "all": "All",
+        "uncategorized": "Uncategorized",
+        "count": " ({count})"
       },
       "stats": {
         "title": "Gallery stats",
@@ -361,7 +363,8 @@
         "dirty": "Unsaved changes",
         "saved": "Changes saved",
         "fresh": "Every image is a new beginning",
-        "mediaLeaveConfirm": "Uploads or unsaved media input are still pending. Return to editing anyway? Uploaded files will be kept."
+        "mediaLeaveConfirm": "Uploads or unsaved media input are still pending. Return to editing anyway? Uploaded files will be kept.",
+        "tagJoiner": ", "
       },
       "form": {
         "urlInvalid": "Enter a full HTTP(S) URL without a username or password.",

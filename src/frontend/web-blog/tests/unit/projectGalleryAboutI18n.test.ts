@@ -10,6 +10,7 @@ import { mountSuspended } from '@nuxt/test-utils/runtime'
 import { describe, expect, it } from 'vitest'
 import DonateCard from '../../app/components/about/DonateCard.vue'
 import ProfileContent from '../../app/components/about/ProfileContent.vue'
+import GalleryFilter from '../../app/components/gallery/GalleryFilter.vue'
 import GalleryLightBox from '../../app/components/gallery/LightBox.vue'
 import ProjectCard from '../../app/components/project/ProjectCard.vue'
 import TechStackCard from '../../app/components/project/TechStackCard.vue'
@@ -122,6 +123,25 @@ describe('项目、图库与关于页英文界面', () => {
       })
       expect(profile.text()).toContain('Reading list')
       profile.unmount()
+    })
+  })
+
+  it('图库筛选的未分类名称与计数括号随界面语言，不使用接口返回的中文缺省标签', async () => {
+    const props = {
+      categories: [
+        { label: '全部', value: undefined },
+        { label: '未分类', value: '', count: 2 },
+        { label: '风景', value: '风景', count: 5 },
+      ],
+      modelValue: undefined,
+      disabled: false,
+    }
+    const zh = await mountSuspended(GalleryFilter, { props })
+    expect(zh.findAll('button').map((item) => item.text())).toEqual(['全部', '未分类（2）', '风景（5）'])
+    await inEnglish(async () => {
+      const en = await mountSuspended(GalleryFilter, { props })
+      // 博主维护的分类名称不翻译，只有空分类使用界面文案
+      expect(en.findAll('button').map((item) => item.text())).toEqual(['全部', 'Uncategorized (2)', '风景 (5)'])
     })
   })
 

@@ -597,14 +597,16 @@ const parseTags = (value: string) => [
       .filter(Boolean),
   ),
 ]
-const tagsInput = ref(form.tags.join('，'))
+// 回显标签时按界面语言使用中文逗号或英文逗号，解析时两种都接受
+const tagsInput = ref(form.tags.join(t('misc.prompt.editor.tagJoiner')))
 watch(tagsInput, (value) => {
   form.tags = parseTags(value)
 })
 watch(
   () => form.tags,
   (value) => {
-    if (JSON.stringify(value) !== JSON.stringify(parseTags(tagsInput.value))) tagsInput.value = value.join('，')
+    if (JSON.stringify(value) !== JSON.stringify(parseTags(tagsInput.value)))
+      tagsInput.value = value.join(t('misc.prompt.editor.tagJoiner'))
   },
 )
 function closeMedia() {

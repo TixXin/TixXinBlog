@@ -46,7 +46,8 @@
         "title": "Announcements"
       },
       "quote": {
-        "refresh": "Show another"
+        "refresh": "Show another",
+        "text": "“{quote}”"
       },
       "footerCard": {
         "links": "Site links"

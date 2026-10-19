@@ -49,7 +49,9 @@
       },
       "filter": {
         "label": "照片分类筛选",
-        "all": "全部"
+        "all": "全部",
+        "uncategorized": "未分类",
+        "count": "（{count}）"
       },
       "stats": {
         "title": "画廊统计",
@@ -361,7 +363,8 @@
         "dirty": "有未保存的修改",
         "saved": "修改已保存",
         "fresh": "每一张图，都是一个新起点",
-        "mediaLeaveConfirm": "仍有上传或未保存的媒体输入，确定返回编辑吗？已上传资源会保留。"
+        "mediaLeaveConfirm": "仍有上传或未保存的媒体输入，确定返回编辑吗？已上传资源会保留。",
+        "tagJoiner": "，"
       },
       "form": {
         "urlInvalid": "请填写完整的 HTTP(S) 地址，不含账号或密码。",
