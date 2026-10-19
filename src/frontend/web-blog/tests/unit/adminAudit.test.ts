@@ -22,6 +22,7 @@ mockNuxtImport('useRouter', () => () => ({
   push: mocks.push,
   replace: vi.fn(),
   beforeEach: () => () => undefined,
+  beforeResolve: () => () => undefined,
   afterEach: () => () => undefined,
   onError: () => () => undefined,
 }))
