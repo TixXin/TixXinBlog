@@ -309,3 +309,28 @@ describe('Nexus 底栏收起态', () => {
     expect(expanded.value).toBe(false)
   })
 })
+
+describe('Nexus 底栏英文界面', () => {
+  const i18n = () => useNuxtApp().$i18n
+
+  it('切到英文后导航、进度、头像链接与一言按钮的可访问名称为英文', async () => {
+    await i18n().setLocale('en')
+    try {
+      mocks.scrollProgress.mockReturnValue({
+        scrollProgress: ref(42),
+        scrollResetFn: ref(null),
+        scrollDirection: ref('down'),
+      })
+      const wrapper = await mountShell()
+      expect(wrapper.get('#site-navigation').attributes('aria-label')).toBe('Site navigation')
+      expect(wrapper.get('.nexus-bar__progress').attributes('aria-label')).toBe('Jump to bottom, 42% read')
+      expect(wrapper.get('.nexus-bar__avatar-wrap').attributes('aria-label')).toBe(
+        'Back to home. Current: 山间笔记, status: 在线',
+      )
+      expect(wrapper.get('.nexus-bar__login').attributes('aria-label')).toBe('Sign in')
+      expect(wrapper.find('button[aria-label="Show another"]').exists()).toBe(true)
+    } finally {
+      await i18n().setLocale('zh-CN')
+    }
+  })
+})

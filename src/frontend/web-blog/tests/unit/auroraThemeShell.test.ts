@@ -187,3 +187,19 @@ describe('Aurora 主题外壳', () => {
     expect(footer.text()).toContain('山间来信')
   })
 })
+
+describe('Aurora 主题外壳英文界面', () => {
+  const i18n = () => useNuxtApp().$i18n
+
+  it('切到英文后主导航、登录入口与减少动效下的首页背景按钮为英文', async () => {
+    await i18n().setLocale('en')
+    try {
+      const wrapper = await mountShell('/')
+      expect(wrapper.get('nav#site-navigation').attributes('aria-label')).toBe('Main navigation')
+      expect(wrapper.get('.aurora-topbar__login').attributes('aria-label')).toBe('Sign in')
+      expect(wrapper.get('.aurora-hero__play').text()).toBe('Static background')
+    } finally {
+      await i18n().setLocale('zh-CN')
+    }
+  })
+})

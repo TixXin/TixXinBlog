@@ -19,7 +19,7 @@
           <Icon name="lucide:pen-tool" size="20" />
           <span class="aurora-topbar__title">{{ siteSettings.name }}</span>
         </NuxtLink>
-        <nav id="site-navigation" class="aurora-topbar__nav" aria-label="主导航">
+        <nav id="site-navigation" class="aurora-topbar__nav" :aria-label="$t('theme.shell.mainNav')">
           <NuxtLink
             v-for="item in navItems"
             :key="item.to"
@@ -40,7 +40,7 @@
               class="aurora-scroll-progress"
               :class="{ 'is-clicked': progressClicked }"
               type="button"
-              aria-label="返回顶部"
+              :aria-label="$t('theme.shell.backToTop')"
               @click="onProgressClick"
             >
               <span class="aurora-scroll-progress__text">{{ displayProgress }}%</span>
@@ -49,7 +49,12 @@
           </Transition>
           <BlogThemeSwitcher />
           <BlogAppearanceEntry />
-          <button class="aurora-topbar__login" type="button" aria-label="登录" @click="openLogin('login', true)">
+          <button
+            class="aurora-topbar__login"
+            type="button"
+            :aria-label="$t('theme.shell.login')"
+            @click="openLogin('login', true)"
+          >
             <Icon name="lucide:circle-user" size="18" />
           </button>
         </div>
@@ -90,7 +95,17 @@
         >
           <Icon v-if="rotationEnabled" name="lucide:pause" size="15" />
           <Icon v-else name="lucide:play" size="15" />
-          {{ reducedMotion ? '静态背景' : rotationError ? '重试背景轮播' : rotationEnabled ? '暂停背景' : '播放背景' }}
+          {{
+            $t(
+              reducedMotion
+                ? 'theme.aurora.hero.staticBackground'
+                : rotationError
+                  ? 'theme.aurora.hero.retryRotation'
+                  : rotationEnabled
+                    ? 'theme.aurora.hero.pauseBackground'
+                    : 'theme.aurora.hero.playBackground',
+            )
+          }}
         </button>
       </section>
 

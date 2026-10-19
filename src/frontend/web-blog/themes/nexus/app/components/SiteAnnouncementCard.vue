@@ -6,11 +6,15 @@
 -->
 
 <template>
-  <aside v-if="announcements.length" class="card announcement-card" aria-label="站点公告">
+  <aside
+    v-if="announcements.length"
+    class="card announcement-card"
+    :aria-label="$t('theme.nexus.announcement.ariaLabel')"
+  >
     <!-- 标题 -->
     <div class="announcement-card__header">
       <Icon name="lucide:megaphone" size="14" />
-      <span>公告</span>
+      <span>{{ $t('theme.nexus.announcement.title') }}</span>
     </div>
 
     <!-- 公告列表 -->

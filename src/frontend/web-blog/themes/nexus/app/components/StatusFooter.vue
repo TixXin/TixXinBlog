@@ -63,7 +63,7 @@
           <BlogAppearanceEntry />
         </div>
         <div class="nexus-bar__separator" aria-hidden="true" />
-        <nav id="site-navigation" class="nexus-bar__nav" aria-label="站点导航">
+        <nav id="site-navigation" class="nexus-bar__nav" :aria-label="$t('theme.shell.siteNav')">
           <NuxtLink
             v-for="item in navItems"
             :key="item.to"
@@ -82,7 +82,12 @@
             v-if="showProgress"
             class="nexus-bar__progress"
             type="button"
-            :aria-label="`${scrollDirection === 'down' ? '返回底部' : '返回顶部'}，已读 ${displayProgress}%`"
+            :aria-label="
+              $t(
+                scrollDirection === 'down' ? 'theme.nexus.statusBar.progressDown' : 'theme.nexus.statusBar.progressUp',
+                { progress: displayProgress },
+              )
+            "
             @click="onProgressClick"
           >
             <svg class="nexus-bar__progress-ring" viewBox="0 0 36 36">
@@ -137,7 +142,12 @@
                   <span :key="dailyQuote">「{{ dailyQuote }}」</span>
                 </Transition>
               </p>
-              <button class="nexus-bar__quote-refresh" type="button" aria-label="换一条" @click="refreshQuote">
+              <button
+                class="nexus-bar__quote-refresh"
+                type="button"
+                :aria-label="$t('theme.nexus.quote.refresh')"
+                @click="refreshQuote"
+              >
                 <Icon name="lucide:refresh-cw" size="12" />
               </button>
             </div>
@@ -195,11 +205,11 @@
         <div class="nexus-bar__user-menu-divider" />
         <button type="button" class="nexus-bar__user-menu-item" role="menuitem" @click="onUserMenuProfile">
           <Icon name="lucide:user" size="14" />
-          <span>个人中心</span>
+          <span>{{ $t('theme.nexus.statusBar.profile') }}</span>
         </button>
         <button type="button" class="nexus-bar__user-menu-item" role="menuitem" @click="onUserMenuSettings">
           <Icon name="lucide:settings" size="14" />
-          <span>管理文章</span>
+          <span>{{ $t('theme.nexus.statusBar.managePosts') }}</span>
         </button>
         <div class="nexus-bar__user-menu-divider" />
         <button
@@ -209,7 +219,7 @@
           @click="onUserMenuLogout"
         >
           <Icon name="lucide:log-out" size="14" />
-          <span>退出登录</span>
+          <span>{{ $t('theme.nexus.statusBar.logout') }}</span>
         </button>
       </div>
     </Transition>
@@ -229,6 +239,7 @@ const { ownerPresence, ownerCard, dailyQuote } = useSiteInfo()
 const { isOpen: isLoginOpen, preferModal, toggle: toggleLogin, close: closeLogin } = useLoginDrawer()
 const { isLoggedIn, currentUser, logout } = useCurrentUser()
 const { info } = useToast()
+const { t } = useI18n()
 
 const loginPanelRef = ref<HTMLElement | null>(null)
 const loginTitleId = 'nexus-login-panel-title'
@@ -333,7 +344,7 @@ const avatarFallback = computed(() => {
 
 /** 展开态左列副标题：访客显示「访客」，其它情况用 ownerCard.title */
 const displayTitle = computed(() => {
-  if (currentUser.value?.role === 'visitor') return '访客'
+  if (currentUser.value?.role === 'visitor') return t('theme.nexus.statusBar.visitor')
   return ownerCard.value.title
 })
 
@@ -346,7 +357,7 @@ const effectivePresence = computed(() => {
   if (isLoggedIn.value && currentUser.value) {
     return {
       status: 'online' as const,
-      label: '在线',
+      label: t('theme.nexus.statusBar.presence.online'),
       signature: currentUser.value.signature ?? '',
       since: ownerPresence.value.since,
     }
@@ -357,21 +368,18 @@ const effectivePresence = computed(() => {
 const avatarGlowColor = computed(() => GLOW_COLOR_MAP[effectivePresence.value.status])
 
 // 头像角标只放得下两个字：短标签原样显示，长标签按状态给出完整的两字词，避免截成“未提”这类半截词
-const PRESENCE_SHORT_TEXT: Record<OwnerPresence, string> = {
-  online: '在线',
-  idle: '空闲',
-  busy: '忙碌',
-  offline: '离线',
-}
 const presenceBadgeText = computed(() => {
   const { label, status } = effectivePresence.value
-  return label.length <= 2 ? label : PRESENCE_SHORT_TEXT[status]
+  return label.length <= 2 ? label : t(`theme.nexus.statusBar.presence.${status}`)
 })
 // 可见的角标文字必须是链接可访问名的一部分；完整状态说明跟在后面
 const avatarLinkLabel = computed(() => {
   const { label } = effectivePresence.value
-  const status = label === presenceBadgeText.value ? label : `${presenceBadgeText.value}，${label}`
-  return `返回首页，当前：${displayName.value}，状态：${status}`
+  const status =
+    label === presenceBadgeText.value
+      ? label
+      : t('theme.nexus.statusBar.presenceDetail', { short: presenceBadgeText.value, label })
+  return t('theme.nexus.statusBar.avatarLink', { name: displayName.value, status })
 })
 
 /** 仅博主或未登录态展示个人社交链接（访客没有个人 socials） */
@@ -380,7 +388,9 @@ const showSocials = computed(() => !isLoggedIn.value || currentUser.value?.role 
 /** 账号入口按钮：图标、aria-label、点击行为均按登录态切换 */
 const loginButtonIcon = computed(() => (isLoggedIn.value ? 'lucide:user-round-cog' : 'lucide:circle-user'))
 const loginButtonAriaLabel = computed(() =>
-  isLoggedIn.value ? `用户菜单：${currentUser.value?.nickname ?? ''}` : '登录',
+  isLoggedIn.value
+    ? t('theme.nexus.statusBar.userMenu', { name: currentUser.value?.nickname ?? '' })
+    : t('theme.shell.login'),
 )
 
 /** 头像 URL 切换时（登录/退出）重置失败标志，让 NuxtImg 重新尝试加载 */
@@ -525,9 +535,9 @@ async function onUserMenuLogout() {
   closeUserMenu()
   try {
     await logout()
-    info('已退出登录')
+    info(t('theme.nexus.statusBar.loggedOut'))
   } catch {
-    info('退出失败，请重试')
+    info(t('theme.nexus.statusBar.logoutFailed'))
   }
 }
 

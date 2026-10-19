@@ -11,7 +11,7 @@
     <div class="owner-profile-card__avatar-wrap">
       <img
         :src="photoFailed ? '/avatar.svg' : ownerCard.avatar || '/avatar.svg'"
-        :alt="photoFailed ? '头像暂不可用' : ownerCard.avatarAlt || ownerCard.name"
+        :alt="photoFailed ? $t('theme.nexus.owner.avatarUnavailable') : ownerCard.avatarAlt || ownerCard.name"
         width="72"
         height="72"
         class="owner-profile-card__avatar"
@@ -40,7 +40,7 @@
     <p class="owner-profile-card__title">{{ ownerCard.title }}</p>
 
     <!-- 社交链接 -->
-    <nav class="owner-profile-card__socials" aria-label="社交链接">
+    <nav class="owner-profile-card__socials" :aria-label="$t('theme.nexus.owner.socialLinks')">
       <a
         v-for="social in ownerCard.socials"
         :key="social.label"

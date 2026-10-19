@@ -14,7 +14,7 @@
     <p class="daily-quote-card__text">{{ dailyQuote }}</p>
 
     <!-- 刷新按钮 -->
-    <button class="daily-quote-card__refresh" aria-label="换一条" @click="refresh">
+    <button class="daily-quote-card__refresh" :aria-label="$t('theme.nexus.quote.refresh')" @click="refresh">
       <Icon
         name="lucide:refresh-cw"
         size="12"

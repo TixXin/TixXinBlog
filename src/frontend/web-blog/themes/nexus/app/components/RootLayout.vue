@@ -27,8 +27,8 @@
                 v-if="statsError"
                 compact
                 :pending="statsPending"
-                title="站点统计暂时不可用"
-                :description="siteStats ? '仍显示上次成功读取的站点统计。' : undefined"
+                :title="$t('theme.nexus.stats.unavailableTitle')"
+                :description="siteStats ? $t('theme.nexus.stats.staleDescription') : undefined"
                 @retry="refreshStats()"
               />
               <DailyQuoteCard />

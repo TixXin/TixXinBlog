@@ -17,7 +17,7 @@
 
     <div id="right-sidebar-target" class="dock-sidebar-sink" />
 
-    <nav id="site-navigation" class="dock-bar" aria-label="主导航" @mouseleave="onDockLeave">
+    <nav id="site-navigation" class="dock-bar" :aria-label="$t('theme.shell.mainNav')" @mouseleave="onDockLeave">
       <div class="dock-bar__inner">
         <NuxtLink
           v-for="(item, index) in navItems"
@@ -45,7 +45,7 @@
           v-if="windowScroll > 300"
           class="dock-item dock-item--action"
           type="button"
-          aria-label="返回顶部"
+          :aria-label="$t('theme.shell.backToTop')"
           @click="returnTop"
         >
           <Icon name="lucide:arrow-up" size="18" />

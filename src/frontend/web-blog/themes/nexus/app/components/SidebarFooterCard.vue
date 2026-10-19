@@ -16,7 +16,7 @@
     </p>
 
     <!-- 页脚链接 -->
-    <nav v-if="footerLinks.length" class="sidebar-footer-card__links" aria-label="站点链接">
+    <nav v-if="footerLinks.length" class="sidebar-footer-card__links" :aria-label="$t('theme.nexus.footerCard.links')">
       <template v-for="link in footerLinks" :key="link.href">
         <a
           v-if="link.external"
