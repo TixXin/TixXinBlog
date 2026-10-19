@@ -46,7 +46,7 @@
     </div>
 
     <!-- 运行状态 -->
-    <CommonTooltip :content="apiLatencyTip" placement="top">
+    <CommonTooltip :content="$t('layout.footer.apiLatencyTip')" placement="top">
       <div class="sidebar-footer-card__status" role="status" tabindex="0">
         <span v-if="pingMs !== null" class="sidebar-footer-card__ping">
           <Icon name="lucide:activity" size="12" />

@@ -5,9 +5,6 @@
  * @since 2026-10-17
  */
 
-/** 页脚状态提示，说明延迟与状态文案的来源 */
-export const apiLatencyTip = '延迟取自本页最近一次接口请求，状态仅表示本次资料读取结果，不代表全站运行监控'
-
 export function useApiLatency() {
   const pingMs = ref<number | null>(null)
   const apiBaseUrl = String(useRuntimeConfig().public.apiBaseUrl ?? '')
