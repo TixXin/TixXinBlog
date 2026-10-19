@@ -115,6 +115,7 @@ if (-not (Test-Path ../tixxin-private/production.env)) {
 | `JWT_ACCESS_SECRET`                                                                                     | 至少 32 位随机签名密钥                                                                                                                                                                                                   |
 | `SITE_HOST`、`SITE_URL`                                                                                 | 对外域名与对应 HTTPS origin                                                                                                                                                                                              |
 | `NUXT_PUBLIC_DEFAULT_LOCALE`                                                                            | 站点默认界面语言，`zh-CN`（缺省）或 `en`，其余值按 `zh-CN` 处理；运行时读取，访客可在「界面设置」中切换，选择保存在 `blog-locale` cookie；为 `en` 时，执行迁移会把仍未编辑的初始站点资料改为英文，博主编辑过的内容不改写 |
+| `TIXXIN_NETWORK_SUBNET`                                                                                 | 可选，项目内部网络子网，缺省 `172.31.250.0/24`；与宿主机已有网络冲突时改为其他未使用的私网 `/24`，见[内部网络](#内部网络)                                                                                                |
 | `HTTPS_BIND_ADDRESS`、`HTTP_PORT`、`HTTPS_PORT`                                                         | 默认仅绑定本机，外网访问不到、也无法签发证书；直接对外服务时改为 `0.0.0.0` 或公网网卡地址，并配置防火墙和 DNS                                                                                                            |
 
 API 未设置 `NODE_ENV` 时按 `production` 处理：限流生效、刷新 Cookie 带 `Secure`、日志级别缺省 `info`，且 `MEDIA_DIRECTORY` 必须是绝对路径，否则拒绝启动。镜像已设置 `NODE_ENV=production` 与 `MEDIA_DIRECTORY=/app/var/media`。只有显式的 `development`/`test` 才允许通过 `RATE_LIMIT_DISABLED=true` 关闭限流，生产忽略该开关。
@@ -123,7 +124,22 @@ API 未设置 `NODE_ENV` 时按 `production` 处理：限流生效、刷新 Cook
 
 ### 可信代理、读取配额与媒体缓存
 
-默认两端都忽略转发地址头。生产按真实网络填写 `WEB_TRUSTED_PROXY_CIDRS`（Nuxt 的直接前置 Caddy 地址）和 `API_TRUSTED_PROXY_CIDRS`（API 的直接前置 Nuxt 地址）；值为逗号分隔的明确 IPv4/IPv6 地址或 CIDR，映射为 `NUXT_TRUSTED_PROXY_CIDRS` 与 `TRUSTED_PROXY_CIDRS`。只填写受控代理地址、隔离代理网络的窄 CIDR，或仅包含本项目容器的 Compose 项目网络子网（`docker network inspect <项目名>_default` 查得），不能用全部私网、`0.0.0.0/0`、布尔开关或任意跳数代替核对。容器重建时地址可能变化，需要固定专用代理网络或同步这些配置。未配置时访客会按代理连接地址共享配额，不能把这一默认状态用于面向多访客的正式验收。
+`WEB_TRUSTED_PROXY_CIDRS`（Nuxt 的直接前置 Caddy 地址）和 `API_TRUSTED_PROXY_CIDRS`（API 的直接前置 Nuxt 地址）映射为 `NUXT_TRUSTED_PROXY_CIDRS` 与 `TRUSTED_PROXY_CIDRS`。这两项**未设置或为空**时，缺省信任项目内部网络子网（`TIXXIN_NETWORK_SUBNET`，缺省 `172.31.250.0/24`）：该网络只接入本项目容器，Caddy 与 Nuxt 都在其中，访客真实地址无需再手工查子网。填写了具体地址时原样生效；需要收窄时填写逗号分隔的明确 IPv4/IPv6 地址或 CIDR，不能用全部私网、`0.0.0.0/0`、布尔开关或任意跳数代替核对。内部网络子网包含 Docker 网关地址，宿主机本机进程可直连容器并伪造转发头，宿主机应只运行受控服务。若要像旧版那样忽略转发头，可填写一个不会出现的地址（如 `127.0.0.1/32`），此时访客会按代理连接地址共享配额，不能用于面向多访客的正式验收。
+
+### 内部网络
+
+`compose.production.yaml` 声明项目网络 `app`（Docker 中名为 `<RELEASE_PROJECT>_app`），子网取 `TIXXIN_NETWORK_SUBNET`，缺省 `172.31.250.0/24`，所有服务只接入这一网络。数据库与 API 不发布宿主端口，只有 Caddy 发布 HTTP/HTTPS。
+
+- 子网冲突：启动时报 `Pool overlaps with other one on this address space` 时，用 `docker network inspect $(docker network ls -q) --format '{{.Name}} {{range .IPAM.Config}}{{.Subnet}} {{end}}'` 查看已占用网段，把 `TIXXIN_NETWORK_SUBNET` 改为未使用的私网 `/24`。
+- 子网只在网络创建时生效：已运行的站点修改子网时，先 `docker compose --env-file "$release_env" -f compose.production.yaml stop`，再 `docker network rm <RELEASE_PROJECT>_app`，然后按[已有站点发布](#已有站点发布)重新启动；数据卷不受影响，不要执行 `down -v`。
+
+**从旧版本升级的影响**：旧版本编排使用 Compose 自动创建的 `<RELEASE_PROJECT>_default` 网络。升级到本版本后，发布流程重建的各容器改接 `<RELEASE_PROJECT>_app`，容器地址随之变化，数据卷、服务名与对外端口不变；旧的 `_default` 网络不再使用，确认没有容器接入后可用 `docker network rm <RELEASE_PROJECT>_default` 删除。环境文件中的取值按下表生效：
+
+| 旧环境文件中的写法                             | 升级后                                                                                                                                                         |
+| ---------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `WEB_TRUSTED_PROXY_CIDRS=`（模板旧缺省，空值） | **行为变化**：由忽略转发头改为信任内部网络子网，限流与留言地区按访客真实地址计算；内部网络只有本项目容器，Caddy 会重建 `X-Forwarded-For`，不会接受访客伪造的头 |
+| 填写了旧 `_default` 网络子网或容器地址         | 原样生效，但新容器不在该网段，访客地址会退化为代理地址；升级时清空这两项或改为新子网                                                                           |
+| 填写了独立代理网络、CDN 等其他明确地址         | 原样生效，不受影响                                                                                                                                             |
 
 当前 Caddy 模板直接接收访客连接，覆盖 `X-Forwarded-For` 并移除其他客户端地址提示；Nuxt 从连接地址向外逐跳验证代理链，再向 API 发送单一客户端 IP，API 只接受可信 Nuxt 连接的转发地址。若 Caddy 前另有 CDN/负载均衡，先按真实拓扑独立配置并验证最外层信任边界，不能直接透传访客的头。部署后用两个独立访客地址和伪造转发头验证配额隔离。
 

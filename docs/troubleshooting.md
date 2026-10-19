@@ -91,7 +91,7 @@ docker compose --env-file "$release_env" -f compose.production.yaml logs --tail=
 本地与生产分别排查：
 
 - 本地：统一启动器启动 API 时默认注入 `RATE_LIMIT_DISABLED=true`；直接 `corepack pnpm dev:api` 不注入，仍以实际后端配置为准。需要验证限流时在后端 `.env.local` 显式设置 `RATE_LIMIT_DISABLED=false` 并重启对应 API。此开关仅在 `development` / `test` 有效，生产或未设置 `NODE_ENV` 时不能关闭限流。
-- 生产：多个访客很快耗尽同一额度时，核对 `WEB_TRUSTED_PROXY_CIDRS` 与 `API_TRUSTED_PROXY_CIDRS`，分别对应 Nuxt 前的 Caddy、API 前的 Nuxt。默认不信任转发头，可能按代理连接地址共享额度。按真实拓扑配置精确地址或窄 CIDR，不能填写 `0.0.0.0/0` 或笼统信任全部私网。
+- 生产：多个访客很快耗尽同一额度时，核对 `WEB_TRUSTED_PROXY_CIDRS` 与 `API_TRUSTED_PROXY_CIDRS`，分别对应 Nuxt 前的 Caddy、API 前的 Nuxt。两项未设置或为空时缺省信任项目内部网络子网；仍填着旧版 `_default` 网络子网时新容器不在该网段，会按代理连接地址共享额度。需要时按真实拓扑配置精确地址或窄 CIDR，不能填写 `0.0.0.0/0` 或笼统信任全部私网。
 
 配置代理后，用两个独立访客地址验证配额隔离，同时验证伪造转发头不能改变计数身份；存在 CDN 等额外代理时先核对最外层信任边界。完整契约见[可信代理、读取配额与媒体缓存](deployment.md#可信代理读取配额与媒体缓存)。
 

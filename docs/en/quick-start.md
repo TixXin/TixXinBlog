@@ -121,10 +121,9 @@ The command only creates an account and refuses to overwrite an existing account
   docker compose --env-file "$release_env" -f compose.production.yaml exec backend node -e "fetch('http://127.0.0.1:3000/ready').then((r) => console.log(r.status))"
   ```
 
-- [ ] **Rate limits count real visitor IPs**: both `*_TRUSTED_PROXY_CIDRS` are empty by default, so every visitor shares one read quota keyed on Caddy's address (120 public reads per minute) and multiple visitors soon hit 429. Look up the subnet of this project's Compose network (named `<RELEASE_PROJECT>_default`), put it into both `WEB_TRUSTED_PROXY_CIDRS` and `API_TRUSTED_PROXY_CIDRS` in the environment file, then recreate the frontend and API. Never use `0.0.0.0/0` or all private ranges; if a CDN sits in front of Caddy, review the topology under [Trusted Proxies](deployment.md#trusted-proxies-read-quotas-and-media-caching) first.
+- [ ] **Rate limits count real visitor IPs**: when both `*_TRUSTED_PROXY_CIDRS` are unset or empty, they trust this project's fixed internal network subnet (`TIXXIN_NETWORK_SUBNET`, `172.31.250.0/24` by default), so no subnet lookup is needed. If they still hold a `<RELEASE_PROJECT>_default` subnet looked up for an older version, new containers are outside it and every visitor shares one read quota keyed on Caddy's address (120 public reads per minute); empty both values and recreate the frontend and API. Never use `0.0.0.0/0` or all private ranges; if a CDN sits in front of Caddy, review the topology under [Trusted Proxies](deployment.md#trusted-proxies-read-quotas-and-media-caching) first.
 
   ```sh
-  docker network inspect --format '{{range .IPAM.Config}}{{.Subnet}} {{end}}' tixxin-production_default
   docker compose --env-file "$release_env" -f compose.production.yaml up -d --no-deps --no-build --pull never --wait backend frontend
   ```
 

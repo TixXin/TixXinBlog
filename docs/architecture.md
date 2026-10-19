@@ -111,7 +111,7 @@ sequenceDiagram
     Web--)Cache: afterResponse 异步逐键清空 cache:nitro 前缀
 ```
 
-访客 IP 在 Nitro 由 `NUXT_TRUSTED_PROXY_CIDRS` 校验连接地址与 `X-Forwarded-For` 后登记；SSR 内部调用没有远端地址，沿用这份异步请求上下文，没有登记则保持空串。网关移除原有 `Forwarded`、`X-Real-IP`、`X-Forwarded-For`，只向 API 发送重新计算的单一地址。API 再按 `TRUSTED_PROXY_CIDRS` 信任来自 Nitro 的转发头，限流读取解析后的 `request.ip`。两端信任配置默认均为空，部署时必须填写实际受控代理地址；未配置时会按代理连接地址共享配额。当前 Caddy 模板直接接收访客连接，另加 CDN 或负载均衡时需重新核对信任边界，见[可信代理配置](deployment.md#可信代理读取配额与媒体缓存)。
+访客 IP 在 Nitro 由 `NUXT_TRUSTED_PROXY_CIDRS` 校验连接地址与 `X-Forwarded-For` 后登记；SSR 内部调用没有远端地址，沿用这份异步请求上下文，没有登记则保持空串。网关移除原有 `Forwarded`、`X-Real-IP`、`X-Forwarded-For`，只向 API 发送重新计算的单一地址。API 再按 `TRUSTED_PROXY_CIDRS` 信任来自 Nitro 的转发头，限流读取解析后的 `request.ip`。应用本身的信任配置缺省为空；生产编排在环境文件未设置或为空时为两端填入固定的项目内部网络子网（`TIXXIN_NETWORK_SUBNET`）。当前 Caddy 模板直接接收访客连接，另加 CDN 或负载均衡时需重新核对信任边界，见[可信代理配置](deployment.md#可信代理读取配额与媒体缓存)。
 
 HTML 清理钩子只匹配 `/api/v1/` 下非 `GET/HEAD/OPTIONS` 请求，排除路径以 `/view`、`/like` 结尾及 `/api/v1/auth/` 下的请求；匹配的失败写请求也会触发清理。清理在响应后异步执行，删除当前 Nitro storage 的 `cache:nitro` 前缀键，失败被捕获，不等待清理完成才返回写入结果；这不是数据库事务或跨实例广播。绕过 Nitro 的写入不会触发该钩子。
 

@@ -119,10 +119,9 @@ unset ADMIN_DEFAULT_USERNAME ADMIN_DEFAULT_PASSWORD
   docker compose --env-file "$release_env" -f compose.production.yaml exec backend node -e "fetch('http://127.0.0.1:3000/ready').then((r) => console.log(r.status))"
   ```
 
-- [ ] **访客限流按真实 IP 计数**：两个 `*_TRUSTED_PROXY_CIDRS` 默认为空，此时所有访客按 Caddy 的地址共享一份读取额度（每分钟 120 次公开读取），多人访问时很快出现 429。可以先查出本项目 Compose 网络的子网（网络名为 `<RELEASE_PROJECT>_default`），把它同时填入环境文件的 `WEB_TRUSTED_PROXY_CIDRS` 和 `API_TRUSTED_PROXY_CIDRS`，再重建前端和 API。不要填 `0.0.0.0/0` 或笼统的全部私网；Caddy 前另有 CDN 时先按[可信代理](deployment.md#可信代理读取配额与媒体缓存)核对拓扑。
+- [ ] **访客限流按真实 IP 计数**：两个 `*_TRUSTED_PROXY_CIDRS` 未设置或为空时，缺省信任本项目固定的内部网络子网（`TIXXIN_NETWORK_SUBNET`，缺省 `172.31.250.0/24`），无需手工查子网。若仍填着旧版查得的 `<RELEASE_PROJECT>_default` 子网，新容器不在该网段，所有访客会按 Caddy 的地址共享一份读取额度（每分钟 120 次公开读取），清空这两项后重建前端和 API 即可。不要填 `0.0.0.0/0` 或笼统的全部私网；Caddy 前另有 CDN 时先按[可信代理](deployment.md#可信代理读取配额与媒体缓存)核对拓扑。
 
   ```sh
-  docker network inspect --format '{{range .IPAM.Config}}{{.Subnet}} {{end}}' tixxin-production_default
   docker compose --env-file "$release_env" -f compose.production.yaml up -d --no-deps --no-build --pull never --wait backend frontend
   ```
 
