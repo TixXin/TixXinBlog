@@ -37,9 +37,16 @@ async function contextWithLocale(browser: Browser, baseURL: string, locale?: 'zh
   return context
 }
 
-async function openAppearanceDrawer(page: Page) {
-  await page.getByRole('button', { name: '界面设置', exact: true }).first().click()
-  const dialog = page.getByRole('dialog', { name: '界面设置', exact: true })
+/** 界面设置入口与抽屉的可访问名称随界面语言变化 */
+const APPEARANCE_TITLE = { 'zh-CN': '界面设置', en: 'Display settings' } as const
+
+function appearanceDialog(page: Page, locale: 'zh-CN' | 'en') {
+  return page.getByRole('dialog', { name: APPEARANCE_TITLE[locale], exact: true })
+}
+
+async function openAppearanceDrawer(page: Page, locale: 'zh-CN' | 'en' = 'zh-CN') {
+  await page.getByRole('button', { name: APPEARANCE_TITLE[locale], exact: true }).first().click()
+  const dialog = appearanceDialog(page, locale)
   await expect(dialog).toBeVisible()
   return dialog
 }
@@ -60,8 +67,11 @@ test('切换到英文就地生效，cookie 持久化后刷新仍为英文', asyn
   await group.getByRole('button', { name: 'English' }).click()
 
   await expect(page.locator('html')).toHaveAttribute('lang', 'en')
-  await expect(dialog.getByRole('group', { name: 'Choose interface language' })).toBeVisible()
-  await expect(dialog.getByRole('button', { name: 'English' })).toHaveAttribute('aria-pressed', 'true')
+  // 抽屉保持打开，标题随语言就地切换为英文
+  await expect(dialog).toBeHidden()
+  const english = appearanceDialog(page, 'en')
+  await expect(english.getByRole('group', { name: 'Choose interface language' })).toBeVisible()
+  await expect(english.getByRole('button', { name: 'English' })).toHaveAttribute('aria-pressed', 'true')
   await expect(page.locator('link[href="/flash.xml"]')).toHaveAttribute('title', / Flash Notes RSS$/)
   expect(
     await page.evaluate(() => (window as unknown as { __localeSwitchMarker?: boolean }).__localeSwitchMarker),
@@ -83,10 +93,10 @@ test('切换到英文就地生效，cookie 持久化后刷新仍为英文', asyn
   expect(flashFeedTitle(html)).toMatch(/ Flash Notes RSS$/)
 
   // 切回中文同样即时生效并覆盖 cookie。
-  const reopened = await openAppearanceDrawer(page)
+  const reopened = await openAppearanceDrawer(page, 'en')
   await reopened.getByRole('button', { name: '简体中文' }).click()
   await expect(page.locator('html')).toHaveAttribute('lang', 'zh-CN')
-  await expect(reopened.getByRole('group', { name: '选择界面语言' })).toBeVisible()
+  await expect(appearanceDialog(page, 'zh-CN').getByRole('group', { name: '选择界面语言' })).toBeVisible()
   expect((await context.cookies()).find((item) => item.name === LOCALE_COOKIE)?.value).toBe('zh-CN')
   expect(issues).toEqual([])
   await context.close()
