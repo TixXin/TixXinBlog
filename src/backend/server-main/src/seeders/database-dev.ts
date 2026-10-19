@@ -209,8 +209,10 @@ export async function runDevDatabase(
       await em.execute("set local lock_timeout='5s'")
       if (requiresIdle) {
         const tables = Object.keys(before)
+        // 不用 nowait：大批写入后的 autovacuum 会短暂持锁，等待时会自行让出；仍受上方 5s lock_timeout 限制，
+        // 真有应用连接占用时照样失败，并由前后两次 requireIdle 拒绝写入
         await em.execute(
-          `lock table ${tables.map((name) => `public.${quote(name)}`).join(',')} in access exclusive mode nowait`,
+          `lock table ${tables.map((name) => `public.${quote(name)}`).join(',')} in access exclusive mode`,
         )
         await requireIdle(em, application)
       }
