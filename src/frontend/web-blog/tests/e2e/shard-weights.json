@@ -17,6 +17,7 @@
     "gallery-external.spec.ts": 24,
     "guestbook-business.spec.ts": 67,
     "hydration-history.spec.ts": 26,
+    "i18n.spec.ts": 14,
     "interaction-cursors.spec.ts": 61,
     "link-business.spec.ts": 106,
     "manifest-lifecycle.spec.ts": 16,
