@@ -138,6 +138,7 @@ usePageSeo({
   type: 'website',
   canonical: () => listSeo.value.canonical,
 })
+const { locale } = useI18n()
 useJsonLd('home', () => ({
   '@context': 'https://schema.org',
   '@graph': [
@@ -147,7 +148,7 @@ useJsonLd('home', () => ({
       url: `${siteUrl}/`,
       name: siteSettings.value.name,
       ...(homeDescription.value ? { description: homeDescription.value } : {}),
-      inLanguage: 'zh-CN',
+      inLanguage: locale.value,
       publisher: { '@id': `${siteUrl}/#person` },
       potentialAction: {
         '@type': 'SearchAction',

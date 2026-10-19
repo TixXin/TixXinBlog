@@ -1,0 +1,28 @@
+{
+  "common": {
+    "feed": {
+      "rss": "{site} RSS",
+      "atom": "{site} Atom",
+      "jsonFeed": "{site} JSON Feed",
+      "flashRss": "{site} Flash Notes RSS",
+      "momentsRss": "{site} Moments RSS"
+    },
+    "date": {
+      "publishedToday": "Published today",
+      "publishedYesterday": "Published yesterday",
+      "publishedDaysAgo": "Published {days} days ago",
+      "publishedOn": "Published on {date}",
+      "publishedUnknown": "Publish date unknown",
+      "unknown": "Date unknown"
+    },
+    "locale": {
+      "title": "Language",
+      "groupLabel": "Choose interface language",
+      "switching": "Switching…",
+      "switchFailed": "Couldn't switch. Please try again."
+    },
+    "error": {
+      "requestFailed": "Something went wrong. Please try again later."
+    }
+  }
+}

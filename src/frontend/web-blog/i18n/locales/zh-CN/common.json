@@ -1,0 +1,28 @@
+{
+  "common": {
+    "feed": {
+      "rss": "{site} RSS",
+      "atom": "{site} Atom",
+      "jsonFeed": "{site} JSON Feed",
+      "flashRss": "{site} 闪念 RSS",
+      "momentsRss": "{site} 朋友圈 RSS"
+    },
+    "date": {
+      "publishedToday": "发布于今天",
+      "publishedYesterday": "发布于昨天",
+      "publishedDaysAgo": "发布于{days}天前",
+      "publishedOn": "发布于 {date}",
+      "publishedUnknown": "发布日期未知",
+      "unknown": "日期未知"
+    },
+    "locale": {
+      "title": "界面语言",
+      "groupLabel": "选择界面语言",
+      "switching": "切换中…",
+      "switchFailed": "切换失败，请重试"
+    },
+    "error": {
+      "requestFailed": "操作未完成，请稍后重试"
+    }
+  }
+}

@@ -75,8 +75,10 @@ const errorConfig = computed(() => {
 
 // 错误页不经过 app.vue，站名与标题模板需在此按站点设置重新声明，避免落回构建期兜底站名
 const { settings: siteSettings } = useSiteSettings()
+const { locale } = useI18n()
 useHead({
-  htmlAttrs: { lang: 'zh-CN' },
+  // 错误页没有语言切换入口，每次出错都会重新挂载，取挂载时的界面语言即可。
+  htmlAttrs: { lang: locale.value },
   titleTemplate: (title) => (title ? `${title} - ${siteSettings.value.name}` : siteSettings.value.name),
   title: () => errorConfig.value.title,
 })

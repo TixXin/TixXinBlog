@@ -33,6 +33,7 @@ import { getAppManifest } from '#app/composables/manifest'
 import { hasColorMotion, runColorMotion } from '~/utils/colorMotion'
 import { isPageRequestCancellation } from '~/utils/pageRequestCancellation'
 import { twitterHandle } from '~/utils/absoluteUrl'
+import { OG_LOCALES, isSupportedLocale } from '~~/i18n/localeOptions'
 
 // 根边界在旧布局卸载后仍存在；只消费有所有者标记的取消，真实错误继续交给 Nuxt。
 onErrorCaptured((error) => {
@@ -55,8 +56,9 @@ const siteUrl = useSiteUrl()
 const defaultShareImage = useDefaultShareImage()
 const siteTwitter = computed(() => twitterHandle(siteSettings.value.socials))
 const siteDescription = computed(() => siteSettings.value.seoDescription || siteSettings.value.description || undefined)
+const { locale, t } = useI18n()
 useHead({
-  htmlAttrs: { lang: 'zh-CN' },
+  htmlAttrs: { lang: () => locale.value },
   titleTemplate: (title) =>
     title && title !== siteSettings.value.name ? `${title} - ${siteSettings.value.name}` : siteSettings.value.name,
 })
@@ -67,6 +69,7 @@ useSeoMeta({
   ogTitle: () => siteSettings.value.seoTitle || siteSettings.value.name,
   ogDescription: () => siteDescription.value,
   ogType: 'website',
+  ogLocale: () => (isSupportedLocale(locale.value) ? OG_LOCALES[locale.value] : undefined),
   ogUrl: () => siteUrl + route.path,
   ogImage: () => defaultShareImage.value?.url,
   ogImageAlt: () => defaultShareImage.value?.alt,
@@ -74,34 +77,37 @@ useSeoMeta({
   twitterSite: () => siteTwitter.value,
   twitterCreator: () => siteTwitter.value,
 })
-useHead(() => ({
-  link: [
-    { key: 'canonical', rel: 'canonical', href: siteUrl + route.path },
-    { rel: 'icon', href: '/favicon.ico', sizes: '48x48' },
-    { rel: 'icon', href: '/icon.svg', type: 'image/svg+xml' },
-    { rel: 'apple-touch-icon', href: '/apple-touch-icon.png' },
-    { rel: 'manifest', href: '/site.webmanifest' },
-    { rel: 'alternate', type: 'application/rss+xml', title: `${siteSettings.value.name} RSS`, href: '/rss.xml' },
-    { rel: 'alternate', type: 'application/atom+xml', title: `${siteSettings.value.name} Atom`, href: '/atom.xml' },
-    {
-      rel: 'alternate',
-      type: 'application/feed+json',
-      title: `${siteSettings.value.name} JSON Feed`,
-      href: '/feed.json',
-    },
-    { rel: 'alternate', type: 'application/rss+xml', title: `${siteSettings.value.name} 闪念 RSS`, href: '/flash.xml' },
-    {
-      rel: 'alternate',
-      type: 'application/rss+xml',
-      title: `${siteSettings.value.name} 朋友圈 RSS`,
-      href: '/moments.xml',
-    },
-  ],
-  meta: [
-    { key: 'theme-color-light', name: 'theme-color', media: '(prefers-color-scheme: light)', content: '#ebeff4' },
-    { key: 'theme-color-dark', name: 'theme-color', media: '(prefers-color-scheme: dark)', content: '#23272f' },
-  ],
-}))
+useHead(() => {
+  const site = siteSettings.value.name
+  return {
+    link: [
+      { key: 'canonical', rel: 'canonical', href: siteUrl + route.path },
+      { rel: 'icon', href: '/favicon.ico', sizes: '48x48' },
+      { rel: 'icon', href: '/icon.svg', type: 'image/svg+xml' },
+      { rel: 'apple-touch-icon', href: '/apple-touch-icon.png' },
+      { rel: 'manifest', href: '/site.webmanifest' },
+      { rel: 'alternate', type: 'application/rss+xml', title: t('common.feed.rss', { site }), href: '/rss.xml' },
+      { rel: 'alternate', type: 'application/atom+xml', title: t('common.feed.atom', { site }), href: '/atom.xml' },
+      {
+        rel: 'alternate',
+        type: 'application/feed+json',
+        title: t('common.feed.jsonFeed', { site }),
+        href: '/feed.json',
+      },
+      { rel: 'alternate', type: 'application/rss+xml', title: t('common.feed.flashRss', { site }), href: '/flash.xml' },
+      {
+        rel: 'alternate',
+        type: 'application/rss+xml',
+        title: t('common.feed.momentsRss', { site }),
+        href: '/moments.xml',
+      },
+    ],
+    meta: [
+      { key: 'theme-color-light', name: 'theme-color', media: '(prefers-color-scheme: light)', content: '#ebeff4' },
+      { key: 'theme-color-dark', name: 'theme-color', media: '(prefers-color-scheme: dark)', content: '#23272f' },
+    ],
+  }
+})
 const isSearchOpen = ref(false)
 const searchController = { open: () => (isSearchOpen.value = true) }
 provide('searchModal', searchController)

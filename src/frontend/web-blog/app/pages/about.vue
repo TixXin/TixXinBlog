@@ -35,6 +35,7 @@ usePageSeo({
   type: 'profile',
 })
 const profileImage = useDefaultShareImage()
+const { locale } = useI18n()
 useJsonLd('profile', () => {
   const sameAs = socialProfiles(settings.value.socials)
   return {
@@ -42,7 +43,7 @@ useJsonLd('profile', () => {
     '@type': 'ProfilePage',
     url: `${siteUrl}/about`,
     name: `关于我 - ${settings.value.name}`,
-    inLanguage: 'zh-CN',
+    inLanguage: locale.value,
     mainEntity: {
       '@type': 'Person',
       '@id': `${siteUrl}/#person`,

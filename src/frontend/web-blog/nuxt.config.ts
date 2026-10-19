@@ -10,11 +10,17 @@ import auroraHostConfig from './themes/aurora/theme.config'
 import dockHostConfig from './themes/dock/theme.config'
 import { readFileSync } from 'node:fs'
 import { SSR_CACHED_PAGES } from './server/utils/ssrCacheRoutes'
+import { DICTIONARY_DOMAINS, LOCALE_COOKIE_KEY, resolveDefaultLocale } from './i18n/localeOptions'
 
 const startupGuard = readFileSync(new URL('./public/startup-guard.js', import.meta.url), 'utf8')
 // 站点资料不可用时的中性站名，与 app/features/site/settings.ts 的 defaultSiteSettings.name 保持一致；
 // 运行时以博主在 /admin/site 维护的站名为准（app.vue 与 error.vue 动态覆盖）。
 const fallbackSiteName = 'My Blog'
+// 站点默认语言：部署时由 NUXT_PUBLIC_DEFAULT_LOCALE 指定，只接受 zh-CN 与 en，其余值回退 zh-CN。
+// 构建期取值作为兜底，生产容器启动时由 server/plugins/i18n-default-locale.ts 按运行环境重新解析。
+const defaultLocale = resolveDefaultLocale(process.env.NUXT_PUBLIC_DEFAULT_LOCALE)
+/** 每种语言按域拆成多个字典文件，切换到该语言时一并懒加载 */
+const localeFiles = (locale: string) => DICTIONARY_DOMAINS.map((domain) => `${locale}/${domain}.json`)
 const postPreviewRouteRules = {
   cache: false as const,
   prerender: false,
@@ -56,6 +62,7 @@ export default {
     '@nuxt/image',
     '@nuxtjs/sitemap',
     '@nuxtjs/robots',
+    '@nuxtjs/i18n',
   ],
   app: {
     head: {
@@ -84,6 +91,31 @@ export default {
           innerHTML: '<style>.loading-screen:not(.loading-screen--force){display:none!important}</style>',
         },
       ],
+    },
+  },
+  // 界面国际化：不加 URL 前缀，canonical、sitemap、robots 与页面地址保持不变。
+  // 首屏按站点默认语言或访客的 blog-locale cookie 渲染，不读 Accept-Language 与 navigator.languages，
+  // 避免 SSR 页面缓存（按整串 cookie 分键）把一位访客的浏览器语言串给其他访客。
+  i18n: {
+    strategy: 'no_prefix',
+    defaultLocale,
+    locales: [
+      { code: 'zh-CN', language: 'zh-CN', name: '简体中文', files: localeFiles('zh-CN') },
+      { code: 'en', language: 'en', name: 'English', files: localeFiles('en') },
+    ],
+    // 只认 blog-locale cookie；no_prefix 策略下没有可重定向的前缀路径，redirectOn 不会触发跳转。
+    // 浏览器语言检测由 app/plugins/00.locale-cookie.ts 在首次定语言时整体覆盖为「cookie 或站点默认」。
+    // useCookie 关闭的是模块自动回写：首访不下发 Set-Cookie（否则会进入 SSR 缓存并把访客钉在当时的默认语言），
+    // 只有访客在语言切换处主动选择后才写入 cookie。
+    detectBrowserLanguage: {
+      useCookie: false,
+      cookieKey: LOCALE_COOKIE_KEY,
+      redirectOn: 'root',
+      alwaysRedirect: false,
+    },
+    experimental: {
+      // 关闭服务端按请求头预先检测语言与重定向，首屏语言只由 cookie 与站点默认决定。
+      nitroContextDetection: false,
     },
   },
   icon: {
