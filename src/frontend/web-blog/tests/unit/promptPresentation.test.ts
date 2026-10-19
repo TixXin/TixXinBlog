@@ -175,3 +175,18 @@ it('分享链接输入中的方向键不切换作品，选中文本和修饰键�
   await wrapper.get('.prompt-detail').trigger('keydown', { key: 'ArrowRight', shiftKey: true })
   expect(wrapper.emitted('next')).toBeUndefined()
 })
+it('英文冒烟：详情浮层的标题、复制入口与字符数跟随界面语言', async () => {
+  const i18n = useNuxtApp().$i18n
+  await i18n.setLocale('en')
+  try {
+    const wrapper = await detail()
+    const text = wrapper.text()
+    expect(text).toContain('Model not specified')
+    expect(text).toContain('Copy prompt')
+    expect(text).toContain(`${item.prompt.length} characters`)
+    expect(text).toContain('Negative prompt')
+    expect(text).not.toContain('复制提示词')
+  } finally {
+    await i18n.setLocale('zh-CN')
+  }
+})

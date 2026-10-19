@@ -6,6 +6,8 @@ export function usePromptDrafts(query: ComputedRef<PromptQuery>, enabled: Comput
   const repo = usePromptRepository(),
     auth = useCurrentUser(),
     context = useState<string>('page-content-context', () => '')
+  // 用全局 i18n 实例而非 useI18n：本 composable 也会在插件或测试中脱离组件 setup 调用
+  const { t } = useNuxtApp().$i18n
   const drafts = ref<PromptPage<ManagedPrompt> | null>(null),
     pending = ref(false),
     error = ref('')
@@ -49,7 +51,7 @@ export function usePromptDrafts(query: ComputedRef<PromptQuery>, enabled: Comput
       acceptedKey.value = key
       drafts.value = result
     } catch (cause) {
-      if (owns()) error.value = cause instanceof Error ? cause.message : '草稿读取失败，请重试。'
+      if (owns()) error.value = cause instanceof Error ? cause.message : t('misc.prompt.repository.draftsLoadFailed')
     } finally {
       if (owns()) pending.value = false
     }

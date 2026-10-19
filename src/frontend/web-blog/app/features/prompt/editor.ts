@@ -1,5 +1,6 @@
 /** @file editor.ts @description 提示词编辑白名单、来源互斥及本标签页恢复格式 */
 import type { PromptForm } from './types'
+import { currentTranslate, type Translate } from '~/utils/format'
 export function promptForm(
   value: Partial<Omit<PromptForm, 'externalImageUrl'>> & { externalImageUrl?: string | null } = {},
 ): PromptForm {
@@ -26,7 +27,7 @@ export function promptPayload(value: PromptForm) {
     externalImageUrl: imageSource === 'external' ? body.externalImageUrl.trim() : null,
   }
 }
-export function promptUrlError(value: string) {
+export function promptUrlError(value: string, t: Translate = currentTranslate()) {
   try {
     const input = value.trim()
     if (!/^https?:\/\/[^/]/i.test(input) || /[\\\s]/u.test(input)) throw new Error('invalid')
@@ -35,7 +36,7 @@ export function promptUrlError(value: string) {
   } catch {
     /* 保留用户原始输入，提交前提示格式。 */
   }
-  return '请填写完整的 HTTP(S) 地址，不含账号或密码。'
+  return t('misc.prompt.form.urlInvalid')
 }
 export const promptFieldLimits = {
   title: 160,
@@ -47,37 +48,33 @@ export const promptFieldLimits = {
   externalImageUrl: 2048,
   sourceUrl: 2048,
 } as const
-export function promptFormErrors(form: PromptForm): Partial<Record<keyof PromptForm, string>> {
+export function promptFormErrors(
+  form: PromptForm,
+  t: Translate = currentTranslate(),
+): Partial<Record<keyof PromptForm, string>> {
   const errors: Partial<Record<keyof PromptForm, string>> = {}
-  if (!form.title.trim()) errors.title = '为这份灵感取一个标题。'
-  if (!form.prompt.trim()) errors.prompt = '请填写完整的图片提示词。'
-  if (form.imageSource === 'media' && !form.mediaId) errors.mediaId = '请先选择一张效果图片。'
-  if (form.imageSource === 'external' && promptUrlError(form.externalImageUrl))
-    errors.externalImageUrl = promptUrlError(form.externalImageUrl)
-  if (form.sourceUrl.trim() && promptUrlError(form.sourceUrl))
-    errors.sourceUrl = '来源链接：' + promptUrlError(form.sourceUrl)
+  if (!form.title.trim()) errors.title = t('misc.prompt.form.titleRequired')
+  if (!form.prompt.trim()) errors.prompt = t('misc.prompt.form.promptRequired')
+  if (form.imageSource === 'media' && !form.mediaId) errors.mediaId = t('misc.prompt.form.mediaRequired')
+  if (form.imageSource === 'external' && promptUrlError(form.externalImageUrl, t))
+    errors.externalImageUrl = promptUrlError(form.externalImageUrl, t)
+  if (form.sourceUrl.trim() && promptUrlError(form.sourceUrl, t))
+    errors.sourceUrl = t('misc.prompt.form.sourceInvalid', { message: promptUrlError(form.sourceUrl, t) })
   if (form.tags.length > 12 || form.tags.some((tag) => !tag.trim() || tag.trim().length > 32))
-    errors.tags = '最多填写 12 个标签，每个不超过 32 字。'
-  const labels = {
-    title: '标题',
-    description: '创作笔记',
-    prompt: '完整提示词',
-    negativePrompt: '负面提示词',
-    model: '生成模型',
-    imageAlt: '图片描述',
-    externalImageUrl: '图片地址',
-    sourceUrl: '来源链接',
-  }
+    errors.tags = t('misc.prompt.form.tagsInvalid')
   // HTML maxlength不能约束恢复副本和程序赋值；按服务端UTF-16边界验证，保留全文供用户调整。
   for (const field of Object.keys(promptFieldLimits) as (keyof typeof promptFieldLimits)[]) {
     if (field === 'externalImageUrl' && form.imageSource !== 'external') continue
     if (form[field].trim().length > promptFieldLimits[field])
-      errors[field] = `${labels[field]}最多 ${promptFieldLimits[field]} 字，请精简后保存。`
+      errors[field] = t('misc.prompt.form.tooLong', {
+        label: t(`misc.prompt.form.labels.${field}`),
+        limit: promptFieldLimits[field],
+      })
   }
   return errors
 }
-export function promptFormError(form: PromptForm) {
-  return Object.values(promptFormErrors(form))[0] ?? ''
+export function promptFormError(form: PromptForm, t: Translate = currentTranslate()) {
+  return Object.values(promptFormErrors(form, t))[0] ?? ''
 }
 export interface PromptRecovery {
   version: 1

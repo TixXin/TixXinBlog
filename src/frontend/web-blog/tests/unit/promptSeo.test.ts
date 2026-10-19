@@ -125,3 +125,18 @@ it('无描述时从公开提示词提取完整 Unicode 摘要，外部 HTTP 图�
   expect(seo.value.description.endsWith('…')).toBe(true)
   expect(seo.value.image).toBe('https://images.example/Scene.JPG?x=A&x=B')
 })
+it('英文冒烟：切换界面语言后分享标题与描述随之更新', async () => {
+  const i18n = useNuxtApp().$i18n
+  const { seo, router } = await setup('/prompts?prompt=7')
+  await i18n.setLocale('en')
+  try {
+    expect(seo.value.title).toBe('窗边的光 · Prompt Gallery')
+    await router.push('/prompts')
+    await flushPromises()
+    expect(seo.value.title).toBe('Prompt Gallery · Image prompts')
+    expect(seo.value.description).toContain('find your own inspiration')
+  } finally {
+    await i18n.setLocale('zh-CN')
+  }
+  expect(seo.value.title).toBe('灵感图鉴 · 图片提示词')
+})

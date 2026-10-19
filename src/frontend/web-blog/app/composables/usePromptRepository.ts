@@ -10,9 +10,12 @@ import type {
   PromptRequestError,
 } from '~/features/prompt/types'
 import { promptPayload } from '~/features/prompt/editor'
+import { apiErrorMessage } from '~/utils/apiError'
 export function usePromptRepository() {
   const base = String(useRuntimeConfig().public.apiBaseUrl).replace(/\/$/, ''),
     admin = useAdminApi()
+  // 用全局 i18n 实例而非 useI18n：本 composable 也会在插件或测试中脱离组件 setup 调用
+  const { t } = useNuxtApp().$i18n
   function failure(value: unknown): PromptRequestError {
     const cause = value as { statusCode?: number; status?: number; data?: { message?: unknown }; message?: string }
     const statusCode = cause?.statusCode ?? cause?.status
@@ -23,6 +26,7 @@ export function usePromptRepository() {
           ? cause.message.trim()
           : ''
     // 409 同时用于版本、内容库和创建去重；只有服务端明确的版本提示允许进入合并流程。
+    // 下列比对的是后端协议原文，不随界面语言翻译。
     let conflictKind: PromptConflictKind | undefined
     if (statusCode === 409) {
       conflictKind =
@@ -34,22 +38,21 @@ export function usePromptRepository() {
               ? 'submission'
               : 'unknown'
     }
-    let conflictMessage = sourceMessage || '操作发生冲突，请核对当前状态后重试'
-    if (conflictKind === 'context' && !conflictMessage.includes('刷新'))
-      conflictMessage += '；请保留当前输入，刷新页面后重新打开编辑器。'
-    else if (!/保留.*输入|输入.*保留/.test(conflictMessage)) conflictMessage += '；当前输入已保留。'
+    let conflictMessage = sourceMessage || t('misc.prompt.repository.conflict')
+    if (conflictKind === 'context' && !/刷新|refresh/i.test(conflictMessage))
+      conflictMessage += t('misc.prompt.repository.contextSuffix')
+    else if (!/保留.*输入|输入.*保留|input is kept|keep your (current )?input/i.test(conflictMessage))
+      conflictMessage += t('misc.prompt.repository.keptSuffix')
     const message =
       statusCode === 409
         ? conflictMessage
         : statusCode === 401
-          ? '登录已失效，请重新登录后重试；当前输入已保留。'
+          ? t('misc.prompt.repository.unauthorized')
           : statusCode === 404
-            ? '这份提示词不存在或尚未公开。'
+            ? t('misc.prompt.repository.notFound')
             : !statusCode || statusCode >= 500
-              ? '提示词服务暂时不可用，请稍后重试。'
-              : typeof cause.data?.message === 'string'
-                ? cause.data.message
-                : '操作未完成，请核对输入后重试。'
+              ? t('misc.prompt.repository.unavailable')
+              : apiErrorMessage(value, 'misc.prompt.repository.incomplete', { t })
     return Object.assign(new Error(message, { cause: value }), { statusCode, conflictKind })
   }
   async function read<T>(path: string, query?: PromptQuery, signal?: AbortSignal): Promise<T> {
@@ -60,7 +63,7 @@ export function usePromptRepository() {
         timeout: 10000,
         retry: 0,
       })
-      if (result.code !== 0) throw new Error('请求未完成')
+      if (result.code !== 0) throw new Error(t('misc.prompt.repository.requestIncomplete'))
       return result.data
     } catch (cause) {
       throw failure(cause)

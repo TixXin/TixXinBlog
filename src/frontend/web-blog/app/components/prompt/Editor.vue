@@ -15,13 +15,17 @@
       <section class="prompt-editor__panel">
         <header class="prompt-editor__header">
           <div>
-            <p>灵感图鉴 / {{ editor.id.value ? '编辑' : '新建' }}</p>
-            <h2 id="prompt-editor-title">{{ editor.id.value ? '打磨这份灵感' : '分享一份新灵感' }}</h2>
+            <p>
+              {{ editor.id.value ? $t('misc.prompt.editor.breadcrumbEdit') : $t('misc.prompt.editor.breadcrumbNew') }}
+            </p>
+            <h2 id="prompt-editor-title">
+              {{ editor.id.value ? $t('misc.prompt.editor.titleEdit') : $t('misc.prompt.editor.titleNew') }}
+            </h2>
           </div>
           <button
             type="button"
             class="prompt-editor__close"
-            aria-label="关闭提示词编辑器"
+            :aria-label="$t('misc.prompt.editor.close')"
             :disabled="editor.saving.value"
             @click="close"
           >
@@ -33,17 +37,21 @@
           ref="lockedPanel"
           class="prompt-editor__locked"
           tabindex="-1"
-          aria-label="编辑输入暂时锁定"
+          :aria-label="$t('misc.prompt.editor.lockedLabel')"
         >
           <Icon name="lucide:lock-keyhole" size="24" />
-          <h3>身份或内容库已变化，未保存输入仍保留在此窗口</h3>
-          <p>请恢复原来的博主身份与内容库，再重新读取确认后继续编辑。</p>
-          <p v-if="editor.localError.value" role="alert">{{ editor.localError.value }}请暂时保留此窗口。</p>
-          <button type="button" class="prompt-editor__primary" @click="openLogin('login', true)">重新登录</button>
+          <h3>{{ $t('misc.prompt.editor.lockedTitle') }}</h3>
+          <p>{{ $t('misc.prompt.editor.lockedHint') }}</p>
+          <p v-if="editor.localError.value" role="alert">
+            {{ $t('misc.prompt.editor.lockedKeep', { message: editor.localError.value }) }}
+          </p>
+          <button type="button" class="prompt-editor__primary" @click="openLogin('login', true)">
+            {{ $t('misc.prompt.editor.relogin') }}
+          </button>
         </section>
         <div v-if="mediaOpen" v-show="!editor.ownershipLost.value" class="prompt-editor__library">
           <button type="button" class="prompt-editor__secondary" @click="closeMedia">
-            <Icon name="lucide:arrow-left" size="16" />返回提示词编辑
+            <Icon name="lucide:arrow-left" size="16" />{{ $t('misc.prompt.editor.backToEditor') }}
           </button>
           <!-- 身份失效时移出媒体DOM但保留未上传文件；恢复原身份后由媒体库自行重新核对归属。 -->
           <KeepAlive
@@ -56,7 +64,7 @@
         </div>
         <template v-if="!editor.ownershipLost.value && !mediaOpen">
           <div ref="feedback" class="prompt-editor__feedback" tabindex="-1">
-            <p v-if="editor.loading.value">正在读取提示词…</p>
+            <p v-if="editor.loading.value">{{ $t('misc.prompt.editor.loading') }}</p>
             <p v-if="editor.error.value" role="alert">
               {{ editor.error.value
               }}<button
@@ -65,64 +73,68 @@
                 :disabled="editor.loading.value"
                 @click="editor.load"
               >
-                重新读取
+                {{ $t('misc.prompt.editor.reload') }}
               </button>
             </p>
-            <p v-if="editor.requiresReload.value">请刷新页面后重新确认登录状态和当前内容库；未保存输入仍在当前表单。</p>
+            <p v-if="editor.requiresReload.value">{{ $t('misc.prompt.editor.requiresReload') }}</p>
             <p v-if="editor.notice.value">{{ editor.notice.value }}</p>
             <p v-if="editor.localError.value" role="alert">
-              {{ editor.localError.value }}<button type="button" @click="editor.persist">重试保存副本</button>
+              {{ editor.localError.value
+              }}<button type="button" @click="editor.persist">{{ $t('misc.prompt.editor.retryPersist') }}</button>
             </p>
             <section v-if="editor.recovery.value" class="prompt-editor__recovery">
-              <h3>发现未保存的输入</h3>
-              <p>{{ editor.recovery.value.form.title || '未命名灵感' }} · {{ editor.recovery.value.savedAt }}</p>
+              <h3>{{ $t('misc.prompt.editor.recoveryTitle') }}</h3>
+              <p>
+                {{ editor.recovery.value.form.title || $t('misc.prompt.editor.untitled') }} ·
+                {{ editor.recovery.value.savedAt }}
+              </p>
               <details>
-                <summary>查看恢复内容</summary>
+                <summary>{{ $t('misc.prompt.editor.recoveryView') }}</summary>
                 <dl class="prompt-editor__comparison">
                   <div>
-                    <dt>完整提示词</dt>
+                    <dt>{{ $t('misc.prompt.editor.fieldPrompt') }}</dt>
                     <dd class="prompt-editor__long-text" tabindex="0" dir="auto">
-                      {{ editor.recovery.value.form.prompt || '未填写' }}
+                      {{ editor.recovery.value.form.prompt || $t('misc.prompt.editor.empty') }}
                     </dd>
                   </div>
                   <div>
-                    <dt>创作笔记</dt>
+                    <dt>{{ $t('misc.prompt.editor.fieldDescription') }}</dt>
                     <dd class="prompt-editor__long-text" tabindex="0">
-                      {{ editor.recovery.value.form.description || '未填写' }}
+                      {{ editor.recovery.value.form.description || $t('misc.prompt.editor.empty') }}
                     </dd>
                   </div>
                   <div>
-                    <dt>负面提示词</dt>
+                    <dt>{{ $t('misc.prompt.editor.fieldNegative') }}</dt>
                     <dd class="prompt-editor__long-text" tabindex="0" dir="auto">
-                      {{ editor.recovery.value.form.negativePrompt || '未填写' }}
+                      {{ editor.recovery.value.form.negativePrompt || $t('misc.prompt.editor.empty') }}
                     </dd>
                   </div>
                   <div>
-                    <dt>模型与标签</dt>
+                    <dt>{{ $t('misc.prompt.editor.fieldModelTags') }}</dt>
                     <dd>
-                      {{ editor.recovery.value.form.model || '模型未标注' }} ·
-                      {{ editor.recovery.value.form.tags.join(' / ') || '未设置标签' }}
+                      {{ editor.recovery.value.form.model || $t('misc.prompt.shared.modelUnset') }} ·
+                      {{ editor.recovery.value.form.tags.join(' / ') || $t('misc.prompt.editor.noTags') }}
                     </dd>
                   </div>
                   <div>
-                    <dt>图片来源</dt>
+                    <dt>{{ $t('misc.prompt.editor.fieldImageSource') }}</dt>
                     <dd>
                       {{
                         editor.recovery.value.form.imageSource === 'external'
-                          ? editor.recovery.value.form.externalImageUrl || '外部地址未填写'
+                          ? editor.recovery.value.form.externalImageUrl || $t('misc.prompt.editor.externalUnset')
                           : editor.recovery.value.form.mediaId
-                            ? '已选择媒体库图片'
-                            : '尚未选择图片'
+                            ? $t('misc.prompt.editor.mediaSelected')
+                            : $t('misc.prompt.editor.noImage')
                       }}
                     </dd>
                   </div>
                   <div>
-                    <dt>图片描述</dt>
-                    <dd>{{ editor.recovery.value.form.imageAlt || '未填写' }}</dd>
+                    <dt>{{ $t('misc.prompt.editor.fieldImageAlt') }}</dt>
+                    <dd>{{ editor.recovery.value.form.imageAlt || $t('misc.prompt.editor.empty') }}</dd>
                   </div>
                   <div>
-                    <dt>创作来源</dt>
-                    <dd>{{ editor.recovery.value.form.sourceUrl || '未填写' }}</dd>
+                    <dt>{{ $t('misc.prompt.editor.fieldSource') }}</dt>
+                    <dd>{{ editor.recovery.value.form.sourceUrl || $t('misc.prompt.editor.empty') }}</dd>
                   </div>
                 </dl>
               </details>
@@ -131,45 +143,51 @@
                 :disabled="!editor.ready.value || editor.saving.value"
                 @click="editor.restoreRecovery"
               >
-                恢复输入</button
-              ><button type="button" :disabled="editor.saving.value" @click="editor.discardRecovery">移除副本</button>
+                {{ $t('misc.prompt.editor.restore') }}</button
+              ><button type="button" :disabled="editor.saving.value" @click="editor.discardRecovery">
+                {{ $t('misc.prompt.editor.discard') }}
+              </button>
             </section>
             <section v-if="editor.serverVersion.value" class="prompt-editor__recovery">
-              <h3>服务器已有版本 {{ editor.serverVersion.value.revision }}</h3>
+              <h3>{{ $t('misc.prompt.editor.serverTitle', { revision: editor.serverVersion.value.revision }) }}</h3>
               <details open>
                 <summary>
                   {{ editor.serverVersion.value.title }} ·
-                  {{ editor.serverVersion.value.status === 'published' ? '已公开' : '草稿' }}
+                  {{
+                    editor.serverVersion.value.status === 'published'
+                      ? $t('misc.prompt.editor.statusPublished')
+                      : $t('misc.prompt.shared.draft')
+                  }}
                 </summary>
-                <p>以下是服务器上的最新内容。当前表单仍保留你的输入，请比较后再合并保存。</p>
+                <p>{{ $t('misc.prompt.editor.serverHint') }}</p>
                 <dl class="prompt-editor__comparison">
                   <div>
-                    <dt>完整提示词</dt>
+                    <dt>{{ $t('misc.prompt.editor.fieldPrompt') }}</dt>
                     <dd class="prompt-editor__long-text" tabindex="0" dir="auto">
                       {{ editor.serverVersion.value.prompt }}
                     </dd>
                   </div>
                   <div>
-                    <dt>创作笔记</dt>
+                    <dt>{{ $t('misc.prompt.editor.fieldDescription') }}</dt>
                     <dd class="prompt-editor__long-text" tabindex="0">
-                      {{ editor.serverVersion.value.description || '未填写' }}
+                      {{ editor.serverVersion.value.description || $t('misc.prompt.editor.empty') }}
                     </dd>
                   </div>
                   <div>
-                    <dt>负面提示词</dt>
+                    <dt>{{ $t('misc.prompt.editor.fieldNegative') }}</dt>
                     <dd class="prompt-editor__long-text" tabindex="0" dir="auto">
-                      {{ editor.serverVersion.value.negativePrompt || '未填写' }}
+                      {{ editor.serverVersion.value.negativePrompt || $t('misc.prompt.editor.empty') }}
                     </dd>
                   </div>
                   <div>
-                    <dt>模型与标签</dt>
+                    <dt>{{ $t('misc.prompt.editor.fieldModelTags') }}</dt>
                     <dd>
-                      {{ editor.serverVersion.value.model || '模型未标注' }} ·
-                      {{ editor.serverVersion.value.tags.join(' / ') || '未设置标签' }}
+                      {{ editor.serverVersion.value.model || $t('misc.prompt.shared.modelUnset') }} ·
+                      {{ editor.serverVersion.value.tags.join(' / ') || $t('misc.prompt.editor.noTags') }}
                     </dd>
                   </div>
                   <div>
-                    <dt>效果图片</dt>
+                    <dt>{{ $t('misc.prompt.editor.fieldImage') }}</dt>
                     <dd>
                       <CommonImageFrame
                         class="prompt-editor__comparison-image"
@@ -178,18 +196,22 @@
                         :width="editor.serverVersion.value.width || undefined"
                         :height="editor.serverVersion.value.height || undefined"
                         fit="contain"
-                      /><span>{{ editor.serverVersion.value.mediaId ? '媒体库图片' : '外部图片' }}</span
+                      /><span>{{
+                        editor.serverVersion.value.mediaId
+                          ? $t('misc.prompt.editor.mediaImage')
+                          : $t('misc.prompt.editor.externalImage')
+                      }}</span
                       ><a :href="editor.serverVersion.value.imageUrl" target="_blank" rel="noopener noreferrer"
-                        >打开服务器效果图<Icon name="lucide:external-link" size="13"
+                        >{{ $t('misc.prompt.editor.openServerImage') }}<Icon name="lucide:external-link" size="13"
                       /></a>
                     </dd>
                   </div>
                   <div>
-                    <dt>图片描述</dt>
-                    <dd>{{ editor.serverVersion.value.imageAlt || '未填写' }}</dd>
+                    <dt>{{ $t('misc.prompt.editor.fieldImageAlt') }}</dt>
+                    <dd>{{ editor.serverVersion.value.imageAlt || $t('misc.prompt.editor.empty') }}</dd>
                   </div>
                   <div>
-                    <dt>创作来源</dt>
+                    <dt>{{ $t('misc.prompt.editor.fieldSource') }}</dt>
                     <dd>
                       <a
                         v-if="editor.serverVersion.value.sourceUrl"
@@ -197,13 +219,13 @@
                         target="_blank"
                         rel="noopener noreferrer"
                         >{{ editor.serverVersion.value.sourceUrl }}<Icon name="lucide:external-link" size="13" /></a
-                      ><span v-else>未填写</span>
+                      ><span v-else>{{ $t('misc.prompt.editor.empty') }}</span>
                     </dd>
                   </div>
                 </dl>
               </details>
               <button type="button" :disabled="editor.saving.value" @click="editor.merge">
-                保留当前输入，按最新版本合并
+                {{ $t('misc.prompt.editor.merge') }}
               </button>
             </section>
           </div>
@@ -217,33 +239,33 @@
             <fieldset :disabled="!editor.ready.value || editor.loading.value || editor.saving.value">
               <div class="prompt-editor__columns">
                 <section class="prompt-editor__visual">
-                  <h3>先让画面说话</h3>
-                  <p>放入效果图，让灵感一眼可见。</p>
+                  <h3>{{ $t('misc.prompt.editor.visualTitle') }}</h3>
+                  <p>{{ $t('misc.prompt.editor.visualHint') }}</p>
                   <div class="prompt-editor__preview">
                     <CommonImageFrame
                       v-if="previewUrl"
                       :src="previewUrl"
-                      :alt="form.imageAlt || form.title || '效果图片预览'"
+                      :alt="form.imageAlt || form.title || $t('misc.prompt.editor.previewAlt')"
                       fit="contain"
                       loading="eager"
                     />
                     <div v-else class="prompt-editor__placeholder">
-                      <Icon name="lucide:image-plus" size="30" /><span>为提示词挑选一张效果图</span>
+                      <Icon name="lucide:image-plus" size="30" /><span>{{ $t('misc.prompt.editor.placeholder') }}</span>
                     </div>
                   </div>
-                  <div class="prompt-editor__source" role="group" aria-label="效果图片来源">
+                  <div class="prompt-editor__source" role="group" :aria-label="$t('misc.prompt.editor.sourceLabel')">
                     <button
                       type="button"
                       :aria-pressed="form.imageSource === 'media'"
                       @click="form.imageSource = 'media'"
                     >
-                      媒体库</button
+                      {{ $t('misc.prompt.editor.sourceMedia') }}</button
                     ><button
                       type="button"
                       :aria-pressed="form.imageSource === 'external'"
                       @click="form.imageSource = 'external'"
                     >
-                      图片链接
+                      {{ $t('misc.prompt.editor.sourceExternal') }}
                     </button>
                   </div>
                   <button
@@ -255,7 +277,7 @@
                     @click="mediaOpen = true"
                   >
                     <Icon name="lucide:upload" size="16" />{{
-                      form.mediaId ? '更换或上传图片' : '选择或上传图片'
+                      form.mediaId ? $t('misc.prompt.editor.changeImage') : $t('misc.prompt.editor.chooseImage')
                     }}</button
                   ><small
                     v-if="attempted && fieldErrors.mediaId"
@@ -263,13 +285,14 @@
                     class="prompt-editor__field-error"
                     >{{ fieldErrors.mediaId }}</small
                   ><label v-if="form.imageSource === 'external'"
-                    >外部图片地址<input
+                    >{{ $t('misc.prompt.editor.externalUrl')
+                    }}<input
                       v-model="form.externalImageUrl"
                       v-bind="fieldAttributes('externalImageUrl')"
                       type="url"
                       maxlength="2048"
                       placeholder="https://…"
-                    /><small>使用图片直链；浏览器直接加载，服务器不会抓取。</small
+                    /><small>{{ $t('misc.prompt.editor.externalHint') }}</small
                     ><small
                       v-if="attempted && fieldErrors.externalImageUrl"
                       id="prompt-editor-externalImageUrl-error"
@@ -277,11 +300,12 @@
                       >{{ fieldErrors.externalImageUrl }}</small
                     ></label
                   ><label
-                    >图片描述<input
+                    >{{ $t('misc.prompt.editor.fieldImageAlt')
+                    }}<input
                       v-model="form.imageAlt"
                       v-bind="fieldAttributes('imageAlt')"
                       maxlength="240"
-                      placeholder="为无法看见图片的读者描述画面"
+                      :placeholder="$t('misc.prompt.editor.imageAltPlaceholder')"
                     /><small
                       v-if="attempted && fieldErrors.imageAlt"
                       id="prompt-editor-imageAlt-error"
@@ -292,13 +316,14 @@
                 </section>
                 <section class="prompt-editor__writing">
                   <label
-                    >灵感标题<span class="prompt-editor__required">必填</span
+                    >{{ $t('misc.prompt.editor.titleLabel')
+                    }}<span class="prompt-editor__required">{{ $t('misc.prompt.editor.required') }}</span
                     ><input
                       v-model="form.title"
                       v-bind="fieldAttributes('title')"
                       required
                       maxlength="160"
-                      placeholder="给这幅画面起个名字"
+                      :placeholder="$t('misc.prompt.editor.titlePlaceholder')"
                     /><small id="prompt-editor-title-count" class="prompt-editor__count"
                       >{{ form.title.length }} / {{ promptFieldLimits.title }}</small
                     ><small
@@ -308,12 +333,13 @@
                       >{{ fieldErrors.title }}</small
                     ></label
                   ><label
-                    >一句创作笔记<textarea
+                    >{{ $t('misc.prompt.editor.descriptionLabel')
+                    }}<textarea
                       v-model="form.description"
                       v-bind="fieldAttributes('description')"
                       rows="2"
                       maxlength="2000"
-                      placeholder="构图的巧思、尝试的方向，或这张图的故事"
+                      :placeholder="$t('misc.prompt.editor.descriptionPlaceholder')"
                     /><small
                       v-if="attempted && fieldErrors.description"
                       id="prompt-editor-description-error"
@@ -321,7 +347,8 @@
                       >{{ fieldErrors.description }}</small
                     ></label
                   ><label
-                    >完整提示词<span class="prompt-editor__required">必填</span
+                    >{{ $t('misc.prompt.editor.fieldPrompt')
+                    }}<span class="prompt-editor__required">{{ $t('misc.prompt.editor.required') }}</span
                     ><textarea
                       v-model="form.prompt"
                       v-bind="fieldAttributes('prompt')"
@@ -329,7 +356,7 @@
                       required
                       rows="8"
                       maxlength="30000"
-                      placeholder="描述主体、场景、光线与质感，保留可以直接使用的完整提示词…"
+                      :placeholder="$t('misc.prompt.editor.promptPlaceholder')"
                       dir="auto"
                     /><small id="prompt-editor-prompt-count" class="prompt-editor__count"
                       >{{ form.prompt.length }} / {{ promptFieldLimits.prompt }}</small
@@ -342,12 +369,13 @@
                   </label>
                   <div class="prompt-editor__row">
                     <label
-                      >生成模型<input
+                      >{{ $t('misc.prompt.editor.modelLabel')
+                      }}<input
                         v-model="form.model"
                         v-bind="fieldAttributes('model')"
                         list="prompt-editor-models"
                         maxlength="80"
-                        placeholder="例如 Midjourney"
+                        :placeholder="$t('misc.prompt.editor.modelPlaceholder')"
                       /><datalist id="prompt-editor-models">
                         <option v-for="model in models" :key="model" :value="model" /></datalist
                       ><small
@@ -357,12 +385,15 @@
                         >{{ fieldErrors.model }}</small
                       ></label
                     ><label
-                      >风格标签<input
+                      >{{ $t('misc.prompt.editor.tagsLabel')
+                      }}<input
                         v-model="tagsInput"
                         v-bind="fieldAttributes('tags')"
-                        placeholder="用逗号分隔，如 摄影，静物"
+                        :placeholder="$t('misc.prompt.editor.tagsPlaceholder')"
                         maxlength="395"
-                      /><small id="prompt-editor-tags-count">{{ form.tags.length }} / 12 个标签，每个 32 字以内</small
+                      /><small id="prompt-editor-tags-count">{{
+                        $t('misc.prompt.editor.tagsCount', { count: form.tags.length })
+                      }}</small
                       ><small
                         v-if="attempted && fieldErrors.tags"
                         id="prompt-editor-tags-error"
@@ -372,14 +403,15 @@
                     >
                   </div>
                   <details ref="optionalDetails" class="prompt-editor__optional">
-                    <summary>更多细节：负面提示词与来源</summary>
+                    <summary>{{ $t('misc.prompt.editor.optionalSummary') }}</summary>
                     <label
-                      >负面提示词<textarea
+                      >{{ $t('misc.prompt.editor.fieldNegative')
+                      }}<textarea
                         v-model="form.negativePrompt"
                         v-bind="fieldAttributes('negativePrompt')"
                         rows="3"
                         maxlength="10000"
-                        placeholder="可选，描述希望排除的内容"
+                        :placeholder="$t('misc.prompt.editor.negativePlaceholder')"
                         dir="auto"
                       /><small id="prompt-editor-negativePrompt-count" class="prompt-editor__count"
                         >{{ form.negativePrompt.length }} / {{ promptFieldLimits.negativePrompt }}</small
@@ -390,12 +422,13 @@
                         >{{ fieldErrors.negativePrompt }}</small
                       ></label
                     ><label
-                      >创作来源<input
+                      >{{ $t('misc.prompt.editor.fieldSource')
+                      }}<input
                         v-model="form.sourceUrl"
                         v-bind="fieldAttributes('sourceUrl')"
                         type="url"
                         maxlength="2048"
-                        placeholder="可选，原作品或参考链接"
+                        :placeholder="$t('misc.prompt.editor.sourcePlaceholder')"
                       /><small
                         v-if="attempted && fieldErrors.sourceUrl"
                         id="prompt-editor-sourceUrl-error"
@@ -418,8 +451,8 @@
                     size="13"
                   />{{ footerStatus }}
                 </p>
-                <small v-if="form.status === 'published'">转为草稿后，访客将无法查看这份灵感。</small>
-                <small v-else class="prompt-editor__shortcut-hint">Ctrl / ⌘ + S 保存草稿</small>
+                <small v-if="form.status === 'published'">{{ $t('misc.prompt.editor.unpublishHint') }}</small>
+                <small v-else class="prompt-editor__shortcut-hint">{{ $t('misc.prompt.editor.shortcutHint') }}</small>
               </div>
               <div class="prompt-editor__actions">
                 <button
@@ -430,7 +463,11 @@
                   @click="submit('draft')"
                 >
                   {{
-                    editor.saving.value ? '正在保存…' : form.status === 'published' ? '转为草稿' : '保存草稿'
+                    editor.saving.value
+                      ? $t('misc.prompt.editor.saving')
+                      : form.status === 'published'
+                        ? $t('misc.prompt.editor.toDraft')
+                        : $t('misc.prompt.editor.saveDraft')
                   }}</button
                 ><button
                   type="button"
@@ -440,7 +477,11 @@
                   @click="submit('published')"
                 >
                   <Icon name="lucide:arrow-up-right" size="16" />{{
-                    editor.saving.value ? '正在保存…' : form.status === 'published' ? '保存并更新' : '发布灵感'
+                    editor.saving.value
+                      ? $t('misc.prompt.editor.saving')
+                      : form.status === 'published'
+                        ? $t('misc.prompt.editor.saveUpdate')
+                        : $t('misc.prompt.editor.publish')
                   }}
                 </button>
               </div>
@@ -458,6 +499,7 @@ import type { MediaAsset } from '~/features/media/types'
 const props = defineProps<{ id: number | null; models: string[] }>()
 const emit = defineEmits<{ close: []; saved: [item: ManagedPrompt] }>()
 const { open: openLogin, isOpen: loginOpen, preferModal: preferLoginModal } = useLoginDrawer()
+const { t } = useI18n()
 const editor = usePromptEditor(props.id, (item) => emit('saved', item)),
   form = editor.form
 const dialog = ref<HTMLElement | null>(null),
@@ -469,27 +511,29 @@ const formElement = ref<HTMLFormElement | null>(null),
   mediaButton = ref<HTMLButtonElement | null>(null),
   optionalDetails = ref<HTMLDetailsElement | null>(null)
 const attempted = ref(false),
-  fieldErrors = computed(() => promptFormErrors(form))
+  fieldErrors = computed(() => promptFormErrors(form, t))
 const footerStatus = computed(() => {
-  if (editor.loading.value) return '正在读取提示词…'
-  if (editor.saving.value) return editor.pendingCreate.value ? '正在核查并保存提交…' : '正在保存…'
-  if (editor.serverVersion.value) return '检测到版本冲突，请先核对上方服务器内容。'
+  if (editor.loading.value) return t('misc.prompt.editor.loading')
+  if (editor.saving.value)
+    return t(editor.pendingCreate.value ? 'misc.prompt.editor.checkingSave' : 'misc.prompt.editor.saving')
+  if (editor.serverVersion.value) return t('misc.prompt.editor.conflict')
   if (editor.error.value) return editor.error.value
   if (editor.localError.value) return editor.localError.value
-  if (editor.pendingCreate.value) return '上次提交结果待核查，再次保存会先确认是否成功。'
-  if (editor.dirty.value) return '有未保存的修改'
-  return editor.notice.value || (editor.id.value ? '修改已保存' : '每一张图，都是一个新起点')
+  if (editor.pendingCreate.value) return t('misc.prompt.editor.pendingCreate')
+  if (editor.dirty.value) return t('misc.prompt.editor.dirty')
+  return editor.notice.value || t(editor.id.value ? 'misc.prompt.editor.saved' : 'misc.prompt.editor.fresh')
 })
-const fieldLabels: Partial<Record<keyof PromptForm, string>> = {
-  title: '灵感标题',
-  prompt: '完整提示词',
-  description: '一句创作笔记',
-  negativePrompt: '负面提示词',
-  model: '生成模型',
-  tags: '风格标签',
-  externalImageUrl: '外部图片地址',
-  imageAlt: '图片描述',
-  sourceUrl: '创作来源',
+// 字段无障碍名称与可见标签一致；在调用时取词，切换语言后随之更新
+const fieldLabelKeys: Partial<Record<keyof PromptForm, string>> = {
+  title: 'titleLabel',
+  prompt: 'fieldPrompt',
+  description: 'descriptionLabel',
+  negativePrompt: 'fieldNegative',
+  model: 'modelLabel',
+  tags: 'tagsLabel',
+  externalImageUrl: 'externalUrl',
+  imageAlt: 'fieldImageAlt',
+  sourceUrl: 'fieldSource',
 }
 function fieldAttributes(field: keyof PromptForm) {
   const descriptions = [
@@ -500,7 +544,7 @@ function fieldAttributes(field: keyof PromptForm) {
     .join(' ')
   return {
     'data-prompt-field': field,
-    'aria-label': fieldLabels[field],
+    'aria-label': fieldLabelKeys[field] ? t(`misc.prompt.editor.${fieldLabelKeys[field]}`) : undefined,
     'aria-invalid': (attempted.value && !!fieldErrors.value[field]) || undefined,
     'aria-describedby': descriptions || undefined,
   }
@@ -564,7 +608,7 @@ watch(
   },
 )
 function closeMedia() {
-  if (mediaBusy.value && !window.confirm('仍有上传或未保存的媒体输入，确定返回编辑吗？已上传资源会保留。')) return
+  if (mediaBusy.value && !window.confirm(t('misc.prompt.editor.mediaLeaveConfirm'))) return
   void returnFromMedia()
 }
 function close() {

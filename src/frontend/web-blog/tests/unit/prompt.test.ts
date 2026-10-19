@@ -55,6 +55,19 @@ describe('灵感图鉴输入契约', () => {
       expect(promptUrlError(url)).toBeTruthy()
     expect(promptUrlError('https://example.com/a?token=x')).toBe('')
   })
+  it('英文冒烟：校验提示在调用时按当前界面语言生成', async () => {
+    const i18n = useNuxtApp().$i18n
+    await i18n.setLocale('en')
+    try {
+      expect(promptFormError(promptForm())).toBe('Give this prompt a title.')
+      expect(promptFormErrors(promptForm({ model: 'M'.repeat(81) })).model).toBe(
+        'Model can be at most 80 characters. Please shorten it before saving.',
+      )
+    } finally {
+      await i18n.setLocale('zh-CN')
+    }
+    expect(promptFormError(promptForm())).toBe('为这份灵感取一个标题。')
+  })
   it('恢复的超长输入逐字段报错而不截断，并使用与服务端一致的UTF-16边界', () => {
     const form = promptForm({
       title: '📷'.repeat(81),

@@ -15,6 +15,8 @@ export async function usePromptDetail(ready: Ref<boolean>, draftView: Ref<boolea
     repo = usePromptRepository(),
     auth = useCurrentUser(),
     scope = usePageRequestScope()
+  // 用全局 i18n 实例而非 useI18n：本 composable 也会在插件或测试中脱离组件 setup 调用
+  const { t } = useNuxtApp().$i18n
   const context = useState<string>('page-content-context', () => '')
   const mounted = ref(false)
   const selectedId = computed(() => promptId(route.query.prompt))
@@ -44,7 +46,11 @@ export async function usePromptDetail(ready: Ref<boolean>, draftView: Ref<boolea
       const item = await repo.detail(id, AbortSignal.any([scope.signal, signal, controller.signal]))
       return { key, item, error: '' }
     } catch (cause) {
-      return { key, item: null, error: cause instanceof Error ? cause.message : '提示词读取失败，请重试。' }
+      return {
+        key,
+        item: null,
+        error: cause instanceof Error ? cause.message : t('misc.prompt.repository.detailLoadFailed'),
+      }
     }
   })
   const adminMode = computed(() => privateRoute.value && draftView.value && !!auth.currentUser.value)
@@ -86,7 +92,7 @@ export async function usePromptDetail(ready: Ref<boolean>, draftView: Ref<boolea
         privateResult.value = {
           key,
           item: null,
-          error: cause instanceof Error ? cause.message : '提示词读取失败，请重试。',
+          error: cause instanceof Error ? cause.message : t('misc.prompt.repository.detailLoadFailed'),
         }
     } finally {
       if (alive && current === generation && ownerKey.value === key) privatePending.value = false

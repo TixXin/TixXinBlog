@@ -7,7 +7,7 @@
       class="prompt-detail"
       role="dialog"
       aria-modal="true"
-      :aria-label="item?.title || '图片提示词'"
+      :aria-label="item?.title || $t('misc.prompt.detail.fallbackLabel')"
       tabindex="-1"
       @click.self="$emit('close')"
       @keydown="navigateWithKeyboard"
@@ -16,18 +16,22 @@
         <header class="prompt-detail__toolbar">
           <span
             ><Icon :name="draft ? 'lucide:lock-keyhole' : 'lucide:aperture'" size="15" />{{
-              draft ? '草稿 · 仅博主可见' : '图片与创作提示词'
+              draft ? $t('misc.prompt.detail.draftBadge') : $t('misc.prompt.detail.badge')
             }}</span
           >
-          <nav v-if="navigationCount > 1 && position > 0" class="prompt-detail__navigation" aria-label="浏览本页灵感">
-            <CommonTooltip content="使用左右方向键切换本页作品" placement="bottom"
-              ><span class="prompt-detail__navigation-count"
-                >本页 {{ position }} / {{ navigationCount }}</span
-              ></CommonTooltip
+          <nav
+            v-if="navigationCount > 1 && position > 0"
+            class="prompt-detail__navigation"
+            :aria-label="$t('misc.prompt.detail.navigationLabel')"
+          >
+            <CommonTooltip :content="$t('misc.prompt.detail.navigationHint')" placement="bottom"
+              ><span class="prompt-detail__navigation-count">{{
+                $t('misc.prompt.detail.position', { position, total: navigationCount })
+              }}</span></CommonTooltip
             >
             <button
               type="button"
-              aria-label="上一份灵感"
+              :aria-label="$t('misc.prompt.detail.previous')"
               :aria-disabled="!canPrevious || pending"
               @click="requestMove(-1, $event)"
             >
@@ -35,21 +39,27 @@
             </button>
             <button
               type="button"
-              aria-label="下一份灵感"
+              :aria-label="$t('misc.prompt.detail.next')"
               :aria-disabled="!canNext || pending"
               @click="requestMove(1, $event)"
             >
               <Icon name="lucide:chevron-right" size="18" />
             </button>
           </nav>
-          <button class="prompt-detail__close" type="button" aria-label="关闭提示词详情" @click="$emit('close')">
+          <button
+            class="prompt-detail__close"
+            type="button"
+            :aria-label="$t('misc.prompt.detail.close')"
+            @click="$emit('close')"
+          >
             <Icon name="lucide:x" size="20" />
           </button>
         </header>
         <div v-if="copyMessage" class="prompt-detail__notice">
           <p role="status" class="prompt-detail__copy-status">{{ copyMessage }}</p>
           <label v-if="manualLink" class="prompt-detail__manual-link"
-            >分享链接<input
+            >{{ $t('misc.prompt.detail.shareLink')
+            }}<input
               :value="manualLink"
               readonly
               @focus="($event.target as HTMLInputElement).select()"
@@ -58,7 +68,11 @@
         </div>
         <div class="prompt-detail__content">
           <div v-if="pending || error" class="prompt-detail__feedback">
-            <CommonRequestFeedback :pending="pending" :title="error || '正在读取提示词'" @retry="$emit('retry')" />
+            <CommonRequestFeedback
+              :pending="pending"
+              :title="error || $t('misc.prompt.detail.loading')"
+              @retry="$emit('retry')"
+            />
           </div>
           <template v-else-if="item">
             <div class="prompt-detail__image">
@@ -71,12 +85,13 @@
                 loading="eager"
               />
               <a class="prompt-detail__original" :href="item.imageUrl" target="_blank" rel="noopener noreferrer">
-                <Icon name="lucide:expand" size="14" />查看原图<span class="sr-only">（在新标签页打开）</span>
+                <Icon name="lucide:expand" size="14" />{{ $t('misc.prompt.detail.viewOriginal')
+                }}<span class="sr-only">{{ $t('misc.prompt.detail.newTab') }}</span>
               </a>
             </div>
             <div class="prompt-detail__body">
               <p class="prompt-detail__eyebrow">
-                <span>{{ item.model || '模型未标注' }}</span
+                <span>{{ item.model || $t('misc.prompt.shared.modelUnset') }}</span
                 ><span v-if="item.width && item.height">{{ item.width }} × {{ item.height }}</span>
               </p>
               <h2>{{ item.title }}</h2>
@@ -87,12 +102,12 @@
               <section class="prompt-detail__text">
                 <header>
                   <div>
-                    <h3>图片提示词</h3>
-                    <span class="prompt-detail__length">{{ item.prompt.length.toLocaleString('zh-CN') }} 字符</span>
+                    <h3>{{ $t('misc.prompt.detail.promptHeading') }}</h3>
+                    <span class="prompt-detail__length">{{ characterCount(item.prompt) }}</span>
                   </div>
                   <button type="button" :aria-disabled="copying" @click="copy(item.prompt, 'prompt')">
                     <Icon :name="copied === 'prompt' ? 'lucide:check' : 'lucide:copy'" size="15" />{{
-                      copied === 'prompt' ? '已复制' : '复制提示词'
+                      copied === 'prompt' ? $t('misc.prompt.detail.copied') : $t('misc.prompt.detail.copyPrompt')
                     }}
                   </button>
                 </header>
@@ -101,27 +116,27 @@
               <section v-if="item.negativePrompt" class="prompt-detail__text prompt-detail__text--negative">
                 <header>
                   <div>
-                    <h3>负面提示词</h3>
-                    <span class="prompt-detail__length"
-                      >{{ item.negativePrompt.length.toLocaleString('zh-CN') }} 字符</span
-                    >
+                    <h3>{{ $t('misc.prompt.detail.negativeHeading') }}</h3>
+                    <span class="prompt-detail__length">{{ characterCount(item.negativePrompt) }}</span>
                   </div>
                   <button type="button" :aria-disabled="copying" @click="copy(item.negativePrompt, 'negative')">
                     <Icon :name="copied === 'negative' ? 'lucide:check' : 'lucide:copy'" size="14" />{{
-                      copied === 'negative' ? '已复制' : '复制'
+                      copied === 'negative' ? $t('misc.prompt.detail.copied') : $t('misc.prompt.detail.copy')
                     }}
                   </button>
                 </header>
                 <p dir="auto">{{ item.negativePrompt }}</p>
               </section>
-              <p class="prompt-detail__hint">把文字变成自己的画面。不同模型与参数，可能带来不同惊喜。</p>
+              <p class="prompt-detail__hint">{{ $t('misc.prompt.detail.hint') }}</p>
               <footer>
                 <a v-if="item.sourceUrl" :href="item.sourceUrl" target="_blank" rel="noopener noreferrer"
-                  ><Icon name="lucide:external-link" size="15" />查看来源</a
+                  ><Icon name="lucide:external-link" size="15" />{{ $t('misc.prompt.detail.viewSource') }}</a
                 ><button v-if="!draft" type="button" :aria-disabled="copying" @click="share">
-                  <Icon name="lucide:link" size="15" />{{ copied === 'link' ? '链接已复制' : '分享灵感' }}</button
+                  <Icon name="lucide:link" size="15" />{{
+                    copied === 'link' ? $t('misc.prompt.detail.linkCopied') : $t('misc.prompt.detail.share')
+                  }}</button
                 ><button v-if="editable" type="button" @click="$emit('edit', item.id)">
-                  <Icon name="lucide:pencil" size="15" />编辑
+                  <Icon name="lucide:pencil" size="15" />{{ $t('misc.prompt.detail.edit') }}
                 </button>
               </footer>
             </div>
@@ -149,6 +164,10 @@ const props = withDefaults(
   { position: 0, navigationCount: 0, canPrevious: false, canNext: false },
 )
 const emit = defineEmits<{ close: []; retry: []; edit: [id: number]; previous: []; next: [] }>()
+const { t } = useI18n()
+/** 文本字符数：数字跟随界面语言格式化，英文按单复数变化 */
+const characterCount = (text: string) =>
+  t('misc.prompt.detail.characters', { count: formatNumber(text.length) }, text.length)
 const dialog = ref<HTMLElement | null>(null),
   copied = ref(''),
   copyMessage = ref(''),
@@ -189,7 +208,7 @@ function navigateWithKeyboard(event: KeyboardEvent) {
   if (!direction) return
   event.preventDefault()
   // 正文按钮会在载入时被替换；先转到常驻导航入口，避免下一次方向键落到页面背景。
-  const targetLabel = direction === 'previous' ? '上一份灵感' : '下一份灵感'
+  const targetLabel = t(direction === 'previous' ? 'misc.prompt.detail.previous' : 'misc.prompt.detail.next')
   dialog.value?.querySelector<HTMLButtonElement>(`[aria-label="${targetLabel}"]`)?.focus({ preventScroll: true })
   if (direction === 'previous') emit('previous')
   else emit('next')
@@ -206,7 +225,7 @@ async function copy(text: string, kind: string) {
     await navigator.clipboard.writeText(text)
     if (generation !== copyGeneration || !props.visible) return
     copied.value = kind
-    copyMessage.value = kind === 'link' ? '分享链接已复制。' : '提示词已复制到剪贴板。'
+    copyMessage.value = t(kind === 'link' ? 'misc.prompt.detail.copiedLink' : 'misc.prompt.detail.copiedPrompt')
     clearTimeout(timer)
     timer = setTimeout(() => {
       copied.value = ''
@@ -217,8 +236,8 @@ async function copy(text: string, kind: string) {
     copied.value = ''
     if (kind === 'link') {
       manualLink.value = text
-      copyMessage.value = '无法访问剪贴板，请选中下方链接手动复制。'
-    } else copyMessage.value = '复制失败，可以选中提示词文本手动复制。'
+      copyMessage.value = t('misc.prompt.detail.clipboardDenied')
+    } else copyMessage.value = t('misc.prompt.detail.copyFailed')
   } finally {
     if (generation === copyGeneration) copying.value = false
   }

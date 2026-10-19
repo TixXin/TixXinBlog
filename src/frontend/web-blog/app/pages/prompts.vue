@@ -2,10 +2,13 @@
 <template>
   <CommonPageFrame class="main-inner prompts-page" header-key="prompts">
     <template #header
-      ><CommonPageHeader title="灵感图鉴" subtitle="图像生成提示词与创作记录" icon="lucide:aperture"
+      ><CommonPageHeader
+        :title="$t('misc.prompt.page.title')"
+        :subtitle="$t('misc.prompt.page.subtitle')"
+        icon="lucide:aperture"
         ><template #action
           ><button v-if="isOwner" type="button" class="prompts-add" :disabled="!ready" @click="openEditor(null)">
-            <Icon name="lucide:plus" size="16" /><span>分享灵感</span>
+            <Icon name="lucide:plus" size="16" /><span>{{ $t('misc.prompt.page.share') }}</span>
           </button></template
         ></CommonPageHeader
       ></template
@@ -18,28 +21,37 @@
       :preserved-query-keys="['prompt', 'edit']"
       primary
     >
-      <section class="prompts-intro" aria-label="图片提示词分享">
+      <section class="prompts-intro" :aria-label="$t('misc.prompt.page.introLabel')">
         <div>
           <p class="prompts-kicker">IMAGE PROMPT COLLECTION</p>
-          <p class="prompts-intro__title">从一张图，<span>遇见一种想象。</span></p>
-          <p class="prompts-intro__description">打开喜欢的画面，查看完整提示词，让下一次创作有迹可循。</p>
+          <p class="prompts-intro__title">
+            {{ $t('misc.prompt.page.introTitle') }}<span>{{ $t('misc.prompt.page.introTitleAccent') }}</span>
+          </p>
+          <p class="prompts-intro__description">{{ $t('misc.prompt.page.introDescription') }}</p>
         </div>
-        <div v-if="metadata" class="prompts-intro__index" aria-label="公开提示词数量">
+        <div v-if="metadata" class="prompts-intro__index" :aria-label="$t('misc.prompt.page.countLabel')">
           <strong>{{ String(metadata.stats.prompts).padStart(2, '0') }}</strong
-          ><span class="prompts-intro__label">条提示词</span><Icon name="lucide:move-up-right" size="22" />
+          ><span class="prompts-intro__label">{{ $t('misc.prompt.page.countUnit') }}</span
+          ><Icon name="lucide:move-up-right" size="22" />
         </div>
       </section>
       <div v-if="ready && !isOwner && (managementIntent || authError)" class="prompts-auth" role="status">
         <Icon name="lucide:lock-keyhole" size="18" />
         <div>
-          <strong>{{ restoringPending ? '正在确认登录状态…' : authError || '博主登录后可继续编辑' }}</strong>
-          <p>浏览和复制公开提示词无需登录。</p>
+          <strong>{{
+            restoringPending ? $t('misc.prompt.page.authChecking') : authError || $t('misc.prompt.page.authHint')
+          }}</strong>
+          <p>{{ $t('misc.prompt.page.authPublic') }}</p>
         </div>
-        <button v-if="authError" type="button" :disabled="restoringPending" @click="auth.restore()">重新确认</button>
-        <button type="button" :disabled="restoringPending" @click="login.open('login', true)">博主登录</button>
+        <button v-if="authError" type="button" :disabled="restoringPending" @click="auth.restore()">
+          {{ $t('misc.prompt.page.authRetry') }}
+        </button>
+        <button type="button" :disabled="restoringPending" @click="login.open('login', true)">
+          {{ $t('misc.prompt.page.login') }}
+        </button>
       </div>
       <div class="prompts-toolbar">
-        <div class="prompts-views" aria-label="浏览范围">
+        <div class="prompts-views" :aria-label="$t('misc.prompt.page.viewsLabel')">
           <button
             ref="publicViewButton"
             type="button"
@@ -47,16 +59,17 @@
             :disabled="!ready"
             @click="setView(false)"
           >
-            全部<span v-if="metadata" class="prompts-views__count">{{ metadata.stats.prompts }}</span></button
+            {{ $t('misc.prompt.page.viewAll')
+            }}<span v-if="metadata" class="prompts-views__count">{{ metadata.stats.prompts }}</span></button
           ><button v-if="isOwner" type="button" :aria-pressed="draftView" :disabled="!ready" @click="setView(true)">
-            <Icon name="lucide:file-pen-line" size="14" />我的草稿
+            <Icon name="lucide:file-pen-line" size="14" />{{ $t('misc.prompt.page.viewDrafts') }}
           </button>
         </div>
         <CommonSearchBox
           v-model="keyword"
           :disabled="!ready"
-          placeholder="搜索标题、提示词…"
-          label="搜索图片提示词"
+          :placeholder="$t('misc.prompt.page.searchPlaceholder')"
+          :label="$t('misc.prompt.page.searchLabel')"
           @compositionstart="startComposition"
           @compositionend="endComposition"
           @keydown.enter="submitSearch"
@@ -67,10 +80,10 @@
           ><Icon name="lucide:sliders-horizontal" size="14" /><select
             :value="query.model || ''"
             :disabled="!ready"
-            aria-label="筛选生成模型"
+            :aria-label="$t('misc.prompt.page.modelFilterLabel')"
             @change="changeQuery({ model: ($event.target as HTMLSelectElement).value || undefined })"
           >
-            <option value="">全部模型</option>
+            <option value="">{{ $t('misc.prompt.page.allModels') }}</option>
             <option
               v-if="query.model && !metadata?.models.some((item) => item.label === query.model)"
               :value="query.model"
@@ -82,9 +95,9 @@
             </option>
           </select></label
         >
-        <div class="prompts-tags" aria-label="筛选风格标签">
+        <div class="prompts-tags" :aria-label="$t('misc.prompt.page.tagFilterLabel')">
           <button type="button" :aria-pressed="!query.tag" :disabled="!ready" @click="changeQuery({ tag: undefined })">
-            全部风格</button
+            {{ $t('misc.prompt.page.allTags') }}</button
           ><button
             v-for="tag in visibleTags"
             :key="tag.label"
@@ -101,7 +114,7 @@
             :aria-expanded="allTags"
             @click="allTags = !allTags"
           >
-            {{ allTags ? '收起风格' : '更多风格'
+            {{ allTags ? $t('misc.prompt.page.collapseTags') : $t('misc.prompt.page.moreTags')
             }}<Icon :name="allTags ? 'lucide:chevron-up' : 'lucide:chevron-down'" size="12" />
           </button>
         </div>
@@ -111,45 +124,51 @@
           class="prompts-clear"
           @click="changeQuery({ q: undefined, model: undefined, tag: undefined })"
         >
-          清除筛选
+          {{ $t('misc.prompt.page.clearFilters') }}
         </button>
       </div>
       <p v-if="draftView" class="prompts-result" role="status">
-        <Icon name="lucide:lock-keyhole" size="13" />草稿仅自己可见，发布后才会出现在灵感图鉴。
+        <Icon name="lucide:lock-keyhole" size="13" />{{ $t('misc.prompt.page.draftHint') }}
       </p>
       <CommonRequestFeedback
         v-if="currentPending || pageOutOfRange || currentError"
         :pending="currentPending || pageOutOfRange"
         :compact="items.length > 0"
-        :title="currentError || '正在寻找灵感'"
+        :title="currentError || $t('misc.prompt.page.loading')"
         @retry="retry"
       />
       <CommonRequestFeedback
         v-if="metadataError || metadataRetrying"
         compact
         :pending="metadataPending"
-        title="模型与标签加载失败"
-        description="已加载的提示词仍可浏览，请重试更新筛选项与统计。"
+        :title="$t('misc.prompt.page.metadataFailed')"
+        :description="$t('misc.prompt.page.metadataFailedHint')"
         @retry="retryMetadata"
       />
       <p v-if="draftView ? draftStale : stale" class="prompts-result" role="status">
-        正在显示上次读取的{{ draftView ? '草稿' : '灵感' }}，{{
-          currentError ? '本次读取未完成，可重试更新。' : '正在更新结果。'
+        {{
+          $t(draftView ? 'misc.prompt.page.staleDrafts' : 'misc.prompt.page.stalePrompts', {
+            status: $t(currentError ? 'misc.prompt.page.staleFailed' : 'misc.prompt.page.staleUpdating'),
+          })
         }}
       </p>
-      <div v-if="filtered" class="prompts-selection" role="group" aria-label="当前筛选条件">
+      <div v-if="filtered" class="prompts-selection" role="group" :aria-label="$t('misc.prompt.page.selectionLabel')">
         <span>{{
           currentError
-            ? '筛选暂未完成'
+            ? $t('misc.prompt.page.filterIncomplete')
             : currentPending || (draftView ? draftStale : stale)
-              ? '正在筛选…'
-              : `找到 ${total ?? 0} 份${draftView ? '草稿' : '灵感'}`
+              ? $t('misc.prompt.page.filtering')
+              : $t(
+                  draftView ? 'misc.prompt.page.foundDrafts' : 'misc.prompt.page.foundPrompts',
+                  { count: total ?? 0 },
+                  total ?? 0,
+                )
         }}</span>
         <button
           v-if="query.q"
           type="button"
           :disabled="!ready"
-          :aria-label="`移除关键词筛选：${query.q}`"
+          :aria-label="$t('misc.prompt.page.removeKeyword', { value: query.q })"
           @click="changeQuery({ q: undefined })"
         >
           <Icon name="lucide:search" size="12" /><span>{{ query.q }}</span
@@ -159,7 +178,7 @@
           v-if="query.model"
           type="button"
           :disabled="!ready"
-          :aria-label="`移除模型筛选：${query.model}`"
+          :aria-label="$t('misc.prompt.page.removeModel', { value: query.model })"
           @click="changeQuery({ model: undefined })"
         >
           <span>{{ query.model }}</span
@@ -169,7 +188,7 @@
           v-if="query.tag"
           type="button"
           :disabled="!ready"
-          :aria-label="`移除风格筛选：${query.tag}`"
+          :aria-label="$t('misc.prompt.page.removeTag', { value: query.tag })"
           @click="changeQuery({ tag: undefined })"
         >
           <span>{{ query.tag }}</span
@@ -179,15 +198,23 @@
       <CommonStateBlock
         v-if="!currentPending && !pageOutOfRange && !currentError && !items.length"
         icon="lucide:aperture"
-        :title="filtered ? '还没有这样的灵感' : draftView ? '这里留给下一次灵感' : '灵感正在酝酿'"
+        :title="
+          filtered
+            ? $t('misc.prompt.page.emptyFilteredTitle')
+            : draftView
+              ? $t('misc.prompt.page.emptyDraftTitle')
+              : $t('misc.prompt.page.emptyTitle')
+        "
         :description="
           filtered
-            ? '换个关键词或风格，或许会遇见惊喜。'
+            ? $t('misc.prompt.page.emptyFilteredHint')
             : draftView
-              ? '新建时可以先存为草稿，打磨好再分享。'
-              : '新的图片提示词发布后，会出现在这里。'
+              ? $t('misc.prompt.page.emptyDraftHint')
+              : $t('misc.prompt.page.emptyHint')
         "
-        :action-label="filtered ? '清除筛选' : isOwner ? '分享第一份灵感' : undefined"
+        :action-label="
+          filtered ? $t('misc.prompt.page.clearFilters') : isOwner ? $t('misc.prompt.page.emptyShareFirst') : undefined
+        "
         @action="filtered ? changeQuery({ q: undefined, model: undefined, tag: undefined }) : openEditor(null)"
       />
       <PromptGrid
@@ -200,11 +227,14 @@
         @edit="openEditor"
       />
       <footer v-if="total !== null && !pageOutOfRange && (items.length || query.page > 1)" class="prompts-bottom">
-        <p>{{ total }} 份{{ draftView ? '草稿' : '灵感' }}<span> / </span>最新收录在前</p>
-        <nav v-if="total > 12 || query.page > 1" aria-label="提示词分页">
+        <p>
+          {{ $t(draftView ? 'misc.prompt.page.totalDrafts' : 'misc.prompt.page.totalPrompts', { count: total }, total)
+          }}<span> / </span>{{ $t('misc.prompt.page.newestFirst') }}
+        </p>
+        <nav v-if="total > 12 || query.page > 1" :aria-label="$t('misc.prompt.page.paginationLabel')">
           <button
             type="button"
-            aria-label="上一页提示词"
+            :aria-label="$t('misc.prompt.page.previousPage')"
             :disabled="!ready || currentPending || query.page <= 1"
             @click="changeQuery({ page: query.page - 1 })"
           >
@@ -212,7 +242,7 @@
           ><span>{{ query.page }} / {{ pageCount }}</span
           ><button
             type="button"
-            aria-label="下一页提示词"
+            :aria-label="$t('misc.prompt.page.nextPage')"
             :disabled="!ready || currentPending || query.page * 12 >= total"
             @click="changeQuery({ page: query.page + 1 })"
           >

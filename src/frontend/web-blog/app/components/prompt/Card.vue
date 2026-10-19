@@ -13,20 +13,21 @@
       <button
         type="button"
         class="prompt-card__open"
-        :aria-label="`查看提示词：${item.title}`"
+        :aria-label="$t('misc.prompt.card.open', { title: item.title })"
         :data-focus-key="`prompt-open-${item.id}`"
         :disabled="!ready"
         @click="$emit('open', item.id)"
       >
         <span class="prompt-card__open-label"
-          ><Icon name="lucide:scan-text" size="16" />查看提示词<Icon name="lucide:arrow-up-right" size="15"
+          ><Icon name="lucide:scan-text" size="16" />{{ $t('misc.prompt.card.openLabel')
+          }}<Icon name="lucide:arrow-up-right" size="15"
         /></span>
       </button>
-      <span v-if="status === 'draft'" class="prompt-card__draft">草稿</span>
+      <span v-if="status === 'draft'" class="prompt-card__draft">{{ $t('misc.prompt.shared.draft') }}</span>
     </div>
     <div class="prompt-card__caption">
       <div class="prompt-card__meta">
-        <span>{{ item.model || '模型未标注' }}</span
+        <span>{{ item.model || $t('misc.prompt.shared.modelUnset') }}</span
         ><span v-if="item.tags[0]">{{ item.tags[0] }}</span>
       </div>
       <div class="prompt-card__title-row">
@@ -46,7 +47,7 @@
           v-if="editable"
           class="prompt-card__edit"
           type="button"
-          :aria-label="`编辑提示词：${item.title}`"
+          :aria-label="$t('misc.prompt.card.edit', { title: item.title })"
           :data-focus-key="`prompt-edit-${item.id}`"
           :disabled="!ready"
           @click="$emit('edit', item.id)"

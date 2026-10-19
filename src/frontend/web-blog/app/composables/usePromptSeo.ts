@@ -17,6 +17,8 @@ function excerpt(value: string) {
 export function usePromptSeo(options: PromptSeoOptions) {
   const route = useRoute()
   const site = String(useRuntimeConfig().public.siteUrl).replace(/\/$/, '')
+  // 全局 i18n 实例的 t 读取响应式 locale，切换语言时 computed 随之重算
+  const { t } = useNuxtApp().$i18n
   const seo = computed(() => {
     const privateView =
       route.query.view === 'drafts' ||
@@ -27,19 +29,19 @@ export function usePromptSeo(options: PromptSeoOptions) {
     const item =
       !privateView && options.selectedItem.value?.id === options.selectedId.value ? options.selectedItem.value : null
     const title = privateView
-      ? '提示词管理 · 灵感图鉴'
+      ? t('misc.prompt.seo.manageTitle')
       : item
-        ? `${item.title} · 灵感图鉴`
+        ? t('misc.prompt.seo.itemTitle', { title: item.title })
         : detailRequested
-          ? '图片提示词 · 灵感图鉴'
-          : '灵感图鉴 · 图片提示词'
+          ? t('misc.prompt.seo.detailTitle')
+          : t('misc.prompt.seo.title')
     const description = privateView
-      ? '整理图片提示词与创作草稿。'
+      ? t('misc.prompt.seo.manageDescription')
       : item
         ? excerpt(item.description || item.prompt)
         : detailRequested
-          ? '这份图片提示词不存在或暂时无法读取，请返回灵感图鉴继续浏览。'
-          : '收藏画面的可能，也分享创作的起点。浏览图片效果与完整提示词，找到属于自己的灵感。'
+          ? t('misc.prompt.seo.missingDescription')
+          : t('misc.prompt.seo.description')
     const canonical = absoluteUrl(
       `/prompts${!privateView && options.selectedId.value !== null ? `?prompt=${options.selectedId.value}` : ''}`,
       site,

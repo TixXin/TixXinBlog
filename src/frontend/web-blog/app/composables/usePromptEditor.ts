@@ -6,6 +6,8 @@ import type { ManagedPrompt, PromptForm, PromptRequestError, PromptStatus } from
 export function usePromptEditor(initialId: number | null, onSaved: (item: ManagedPrompt) => void) {
   const repo = usePromptRepository(),
     auth = useCurrentUser()
+  // 用全局 i18n 实例而非 useI18n：提示在产生时按当前语言翻译
+  const { t } = useNuxtApp().$i18n
   const context = useState<string>('page-content-context', () => '')
   const form = reactive(promptForm()),
     id = ref(initialId),
@@ -65,7 +67,7 @@ export function usePromptEditor(initialId: number | null, onSaved: (item: Manage
       localError.value = ''
       return true
     } catch {
-      localError.value = '恢复副本暂时无法保存，请保留当前页面。'
+      localError.value = t('misc.prompt.editorState.persistFailed')
       return false
     }
   }
@@ -76,7 +78,7 @@ export function usePromptEditor(initialId: number | null, onSaved: (item: Manage
     try {
       sessionStorage.removeItem(previousKey)
     } catch {
-      localError.value = '当前作品的输入已保留，但旧新建副本暂时无法清理。'
+      localError.value = t('misc.prompt.editorState.cleanupFailed')
     }
   }
   function accept(item: ManagedPrompt) {
@@ -91,39 +93,40 @@ export function usePromptEditor(initialId: number | null, onSaved: (item: Manage
     loading.value = true
     error.value = ''
     try {
-      if (!(await auth.restore())) throw new Error('请先登录博主账号，当前输入已保留。')
+      if (!(await auth.restore())) throw new Error(t('misc.prompt.editorState.loginRequired'))
       if (!alive || version !== generation) return
       const currentActor = auth.currentUser.value!.id
       if (actor && (actor !== currentActor || ownedContext !== context.value))
-        throw new Error('登录账号或内容库已变化，请重新打开编辑器；当前副本已保留。')
+        throw new Error(t('misc.prompt.editorState.contextChangedReopen'))
       actor = currentActor
       ownedContext = context.value
       requestId ||= crypto.randomUUID()
       try {
         recovery.value = parsePromptRecovery(sessionStorage.getItem(storageKey()))
       } catch {
-        localError.value = '无法读取本标签页恢复副本。'
+        localError.value = t('misc.prompt.editorState.recoveryReadFailed')
       }
       const item = initialId ? await repo.adminDetail(initialId) : null
       if (!owns(version)) return
       if (item && !dirty.value) accept(item)
       ready.value = true
     } catch (cause) {
-      if (alive && version === generation) error.value = cause instanceof Error ? cause.message : '读取失败，请重试。'
+      if (alive && version === generation)
+        error.value = cause instanceof Error ? cause.message : t('misc.prompt.editorState.loadFailed')
     } finally {
       if (alive && version === generation) loading.value = false
     }
   }
   async function save(status: PromptStatus) {
     if (!ready.value || saving.value || loading.value) return
-    const validation = promptFormError(form)
+    const validation = promptFormError(form, t)
     if (validation) {
       error.value = validation
       return
     }
     const version = generation
     if (!owns(version)) {
-      error.value = '登录账号或内容库已变化，当前输入已保留。'
+      error.value = t('misc.prompt.editorState.contextChanged')
       return
     }
     const capture = JSON.stringify(form)
@@ -162,14 +165,14 @@ export function usePromptEditor(initialId: number | null, onSaved: (item: Manage
       recovery.value = null
       moveRecoveryToSavedItem(previousKey)
       notice.value = dirty.value
-        ? '此前提交已保存，后续输入仍保留，请核对后继续保存。'
+        ? t('misc.prompt.editorState.savedWithPending')
         : item.status === 'published'
-          ? '已发布，访客现在可以浏览和复制。'
-          : '草稿已保存，仅博主可见。'
+          ? t('misc.prompt.editorState.published')
+          : t('misc.prompt.editorState.draftSaved')
       onSaved(item)
     } catch (cause) {
       if (!owns(version)) return
-      error.value = cause instanceof Error ? cause.message : '保存失败，当前输入已保留。'
+      error.value = cause instanceof Error ? cause.message : t('misc.prompt.editorState.saveFailed')
       const { statusCode, conflictKind } = cause as PromptRequestError
       if (statusCode === 400) pendingCreate.value = null
       if (statusCode === 409) {
@@ -188,7 +191,7 @@ export function usePromptEditor(initialId: number | null, onSaved: (item: Manage
           }
         }
       }
-      if (!id.value && pendingCreate.value) error.value += ' 再次保存将先核查原提交，避免重复创建。'
+      if (!id.value && pendingCreate.value) error.value += ' ' + t('misc.prompt.editorState.retryWillVerify')
       persist()
     } finally {
       if (alive && generation === version) saving.value = false
@@ -207,7 +210,7 @@ export function usePromptEditor(initialId: number | null, onSaved: (item: Manage
     if (
       dirty.value &&
       JSON.stringify(form) !== JSON.stringify(value.form) &&
-      !window.confirm('恢复副本会替换当前表单中的未保存修改，确定恢复吗？')
+      !window.confirm(t('misc.prompt.editorState.restoreConfirm'))
     )
       return
     const previousKey = storageKey()
@@ -221,8 +224,8 @@ export function usePromptEditor(initialId: number | null, onSaved: (item: Manage
     serverVersion.value = null
     error.value = ''
     notice.value = value.pendingCreate
-      ? '已恢复输入和待核查提交，再次保存会先核查原提交。'
-      : '已恢复输入，请核对后保存。'
+      ? t('misc.prompt.editorState.restoredPending')
+      : t('misc.prompt.editorState.restored')
     moveRecoveryToSavedItem(previousKey)
   }
   function discardRecovery() {
@@ -232,11 +235,13 @@ export function usePromptEditor(initialId: number | null, onSaved: (item: Manage
     // 移除上次副本不能一并丢弃重新打开后写入的当前表单。
     if (!persist()) {
       recovery.value = previous
-      localError.value = '暂时无法移除上次副本，当前表单仍保留在页面中。'
+      localError.value = t('misc.prompt.editorState.discardFailed')
       return
     }
     notice.value =
-      dirty.value || pendingCreate.value ? '已移除上次副本，当前输入仍保留在本标签页。' : '已移除恢复副本。'
+      dirty.value || pendingCreate.value
+        ? t('misc.prompt.editorState.discardedKept')
+        : t('misc.prompt.editorState.discarded')
   }
   function merge() {
     if (!serverVersion.value || saving.value || !ready.value) return
@@ -244,7 +249,7 @@ export function usePromptEditor(initialId: number | null, onSaved: (item: Manage
     baseline.value = JSON.stringify(promptForm(serverVersion.value))
     serverVersion.value = null
     error.value = ''
-    notice.value = '已保留当前输入，请核对与最新版本的差异后手动保存。'
+    notice.value = t('misc.prompt.editorState.merged')
     persist()
   }
   function canClose() {
@@ -252,9 +257,7 @@ export function usePromptEditor(initialId: number | null, onSaved: (item: Manage
     if (!dirty.value && !pendingCreate.value) return true
     const preserved = persist()
     return window.confirm(
-      preserved
-        ? '还有未保存或待核查的输入，已保留本标签页副本，确定关闭吗？'
-        : '还有未保存或待核查的输入，恢复副本未能保存；关闭后可能丢失当前输入。确定关闭吗？',
+      preserved ? t('misc.prompt.editorState.closeConfirm') : t('misc.prompt.editorState.closeConfirmUnsaved'),
     )
   }
   const unload = (event: BeforeUnloadEvent) => {
@@ -286,7 +289,7 @@ export function usePromptEditor(initialId: number | null, onSaved: (item: Manage
       ready.value = false
       saving.value = false
       loading.value = false
-      error.value = '身份或内容库已变化，未保存输入仍保留在此窗口。恢复原身份后请重新读取确认。'
+      error.value = t('misc.prompt.editorState.ownershipLost')
     }
   })
   onScopeDispose(() => {
