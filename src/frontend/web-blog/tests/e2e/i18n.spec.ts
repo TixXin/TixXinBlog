@@ -187,3 +187,32 @@ test('首次访问按站点默认语言渲染，不读浏览器语言', async ({
     await context.close()
   }
 })
+
+test('英文界面下后端错误显示为英文，中文界面与不带语言的请求仍为中文', async ({ browser, baseURL }) => {
+  const context = await contextWithLocale(browser, baseURL!, 'en')
+  const page = await context.newPage()
+  const issues = watchIssues(page)
+  await page.goto('/admin/login')
+  await expect(page.locator('html')).toHaveClass(/app-client-ready/)
+  // 不存在的账号不消耗测试账号的登录失败配额；提示来自后端按 Accept-Language 翻译的 message。
+  await page.getByRole('textbox', { name: 'Username', exact: true }).fill(`missing-${Date.now()}`)
+  await page.getByRole('textbox', { name: 'Password', exact: true }).fill('not-the-password')
+  await page.getByRole('button', { name: 'Sign in', exact: true }).click()
+  await expect(page.getByRole('alert')).toHaveText('Incorrect username or password')
+  await expect(page.getByRole('alert')).not.toContainText('用户名或密码错误')
+
+  // 同源网关：cookie 决定语言，浏览器自带的 Accept-Language 不改变结果；显式语言头优先。
+  const missing = '/api/v1/posts/2147483000'
+  const english = await page.request.get(missing, { headers: { 'accept-language': 'zh-CN' } })
+  expect(english.status()).toBe(404)
+  expect(await english.json()).toMatchObject({ message: 'Post not found' })
+  const explicit = await page.request.get(missing, { headers: { 'x-blog-locale': 'zh-CN' } })
+  expect(await explicit.json()).toMatchObject({ message: '文章不存在' })
+  await context.close()
+
+  const anonymous = await browser.newContext({ baseURL })
+  const chinese = await anonymous.request.get(missing, { headers: { 'accept-language': 'en' } })
+  expect(await chinese.json()).toMatchObject({ message: siteDefaultLocale === 'en' ? 'Post not found' : '文章不存在' })
+  await anonymous.close()
+  expect(issues).toEqual([])
+})
