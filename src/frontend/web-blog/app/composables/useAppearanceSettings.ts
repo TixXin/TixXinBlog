@@ -59,17 +59,23 @@ export function useAppearanceSettings() {
   const initialized = useState('appearance-settings-initialized', () => false)
   const persistenceBound = useState('appearance-settings-persistence-bound', () => false)
 
+  // 可能在 setup 之外调用（快捷键、主题布局），用 Nuxt 应用上的 i18n 而非 useI18n
+  const t = currentTranslate()
   const themeLabel = computed(() => COLOR_MODE_LABELS[currentPreference.value])
   const contentTransitionLabel = computed(
-    () => CONTENT_TRANSITION_OPTIONS.find((option) => option.value === contentTransitionPreset.value)?.label ?? '淡入',
+    () =>
+      CONTENT_TRANSITION_OPTIONS.find((option) => option.value === contentTransitionPreset.value)?.label ??
+      t('layout.appearance.fallbackFade'),
   )
   const sidebarAnimationLabel = computed(
-    () => SIDEBAR_ANIMATION_OPTIONS.find((option) => option.value === sidebarAnimationPreset.value)?.label ?? '淡入',
+    () =>
+      SIDEBAR_ANIMATION_OPTIONS.find((option) => option.value === sidebarAnimationPreset.value)?.label ??
+      t('layout.appearance.fallbackFade'),
   )
   const colorModeTransitionLabel = computed(
     () =>
       COLOR_MODE_TRANSITION_OPTIONS.find((option) => option.value === colorModeTransitionPreset.value)?.label ??
-      '圆形展开',
+      t('layout.appearance.colorModeTransition.circle.label'),
   )
 
   const contentTransitionName = computed(() => {

@@ -1,1 +1,396 @@
-{}
+{
+  "layout": {
+    "nav": {
+      "home": "主页",
+      "archive": "归档",
+      "projects": "项目",
+      "gallery": "画廊",
+      "flash": "闪念",
+      "links": "友链",
+      "guestbook": "留言",
+      "subscriptions": "平台订阅费",
+      "about": "关于",
+      "prompts": "提示词",
+      "tabs": "标签页"
+    },
+    "footer": {
+      "defaultLinks": {
+        "about": "关于本站",
+        "rss": "RSS 订阅",
+        "sitemap": "站点地图"
+      },
+      "defaultQuotes": {
+        "q1": "路漫漫其修远兮，吾将上下而求索。",
+        "q2": "保持热爱，奔赴山海。",
+        "q3": "种一棵树最好的时间是十年前，其次是现在。",
+        "q4": "心之所向，素履以往。",
+        "q5": "不积跬步，无以至千里。"
+      },
+      "statusSynced": "站点资料已同步",
+      "statusUnavailable": "站点资料暂不可用",
+      "linksLabel": "页脚链接",
+      "apiLatencyTip": "延迟取自本页最近一次接口请求，状态仅表示本次资料读取结果，不代表全站运行监控"
+    },
+    "site": {
+      "avatarAlt": "博主头像",
+      "loadFailed": "站点资料暂时无法读取",
+      "staleNotice": "仍显示上次成功读取或默认的站点资料。"
+    },
+    "presence": {
+      "justNow": "刚刚",
+      "minutesAgo": "{count} 分钟前",
+      "hoursAgo": "{count} 小时前",
+      "daysAgo": "{count} 天前",
+      "online": "在线",
+      "idle": "离开",
+      "busy": "忙碌",
+      "unset": "未提供在线状态",
+      "auto": "自动（有状态文案时显示在线）"
+    },
+    "mobileNav": {
+      "label": "移动导航",
+      "more": "更多导航",
+      "allPages": "全部页面",
+      "admin": "管理后台",
+      "login": "博主登录"
+    },
+    "skipLinks": {
+      "main": "跳到主内容",
+      "navigation": "跳到导航"
+    },
+    "error": {
+      "retry": "重试当前页面",
+      "home": "返回首页",
+      "searchLabel": "站内搜索",
+      "searchKeyword": "搜索关键词",
+      "searchPlaceholder": "搜索站内内容...",
+      "searchSubmit": "搜索",
+      "recentFailed": "近期文章暂时无法加载，你仍可搜索站内内容或返回首页。",
+      "recentLoading": "正在加载近期文章…",
+      "recentEmpty": "暂无已发布文章。",
+      "notFoundTitle": "页面未找到",
+      "notFoundDescription": "你访问的页面不存在或已被移除，请检查链接是否正确",
+      "serverTitle": "服务器错误",
+      "serverDescription": "服务器遇到了问题，请稍后再试",
+      "genericTitle": "出错了",
+      "genericDescription": "发生了未知错误"
+    },
+    "themeError": {
+      "readonly": "页面交互暂不可用，已保留只读内容。",
+      "failed": "这部分内容暂时无法加载。",
+      "reload": "刷新重试"
+    },
+    "searchBox": {
+      "comingSoon": "搜索功能即将上线",
+      "placeholder": "搜索..."
+    },
+    "markdownImages": {
+      "openLink": "查看图片链接",
+      "preview": "查看大图"
+    },
+    "requestFeedback": {
+      "loading": "正在加载…",
+      "pending": "加载中…",
+      "retry": "重试"
+    },
+    "related": {
+      "label": "关联阅读",
+      "title": "继续阅读与浏览"
+    },
+    "announcement": {
+      "label": "站点公告"
+    },
+    "contextDrawer": {
+      "close": "关闭{label}"
+    },
+    "codeBlock": {
+      "fallbackLabel": "代码"
+    },
+    "image": {
+      "failed": "图片加载失败",
+      "retrying": "重试中…",
+      "retry": "重试",
+      "fallbackName": "图片",
+      "reloading": "正在重新加载图片：{name}",
+      "failedRetry": "图片加载失败，重试：{name}",
+      "failedWith": "图片加载失败，{action}",
+      "reload": "重新加载图片：{name}",
+      "loading": "图片加载中…",
+      "empty": "暂无图片"
+    },
+    "share": {
+      "label": "分享",
+      "native": "系统分享",
+      "copy": "复制链接",
+      "twitter": "分享到 Twitter",
+      "weibo": "分享到微博",
+      "nativeFailed": "系统分享不可用，请改用复制链接。",
+      "copyFailed": "复制失败，请手动复制浏览器地址。"
+    },
+    "appearance": {
+      "title": "界面设置",
+      "close": "关闭界面设置",
+      "colorModeTitle": "颜色主题",
+      "colorModeTransitionTitle": "主题切换动画",
+      "layoutThemeTitle": "布局主题",
+      "switching": "切换中…",
+      "switchFailed": "切换失败",
+      "layoutThemeOption": "{name} 布局主题",
+      "contentTransitionTitle": "主内容切换",
+      "sidebarAnimationTitle": "右侧栏动画",
+      "otherTitle": "其他",
+      "paginationAutoHide": "分页栏随滚动自动隐藏",
+      "reset": "恢复默认",
+      "engineTip": "由 {'@'}tixxin/nuxt-theme-engine 驱动（MIT License）",
+      "fallbackFade": "淡入",
+      "colorMode": {
+        "light": "浅色",
+        "system": "跟随系统",
+        "dark": "深色"
+      },
+      "contentTransition": {
+        "vertical-slide": {
+          "label": "纵向滑动",
+          "description": "新内容从上方轻移进入，等待期间保留原内容"
+        },
+        "soft-slide": {
+          "label": "轻柔滑动",
+          "description": "位移更小，过渡更柔和"
+        },
+        "fade": {
+          "label": "柔和淡入",
+          "description": "只切换透明度，不做位移"
+        },
+        "none": {
+          "label": "关闭动画",
+          "description": "内容瞬间切换"
+        }
+      },
+      "colorModeTransition": {
+        "fade": {
+          "label": "平滑渐变",
+          "description": "平滑切换全局配色"
+        },
+        "circle": {
+          "label": "圆形展开",
+          "description": "从切换按钮位置展开圆形过渡"
+        },
+        "blur": {
+          "label": "模糊深度",
+          "description": "切换瞬间整页模糊过渡"
+        },
+        "none": {
+          "label": "无动画",
+          "description": "瞬间切换，不做过渡"
+        }
+      },
+      "sidebarAnimation": {
+        "fade-in-up": {
+          "label": "从右侧进入",
+          "description": "新侧栏从右侧轻移进入，等待期间保留原侧栏"
+        },
+        "scale": {
+          "label": "缩放淡入",
+          "description": "右侧栏从微缩状态放大显现"
+        },
+        "fade": {
+          "label": "柔和淡入",
+          "description": "仅做透明度过渡"
+        },
+        "none": {
+          "label": "关闭动画",
+          "description": "右侧栏静态显示"
+        }
+      }
+    },
+    "loadingScreen": {
+      "notStarted": "页面交互暂未启动，你仍可浏览已加载的内容。",
+      "loadingLayout": "正在加载布局…"
+    },
+    "scrollbar": {
+      "backToTop": "返回顶部"
+    },
+    "guestIdentity": {
+      "dialogLabel": "填写评论身份",
+      "title": "填写你的身份",
+      "close": "关闭",
+      "notice": "评论前需要一个身份标识，方便其他读者认识你。身份保存在当前浏览器；发表评论时，昵称和头像会随评论公开展示。",
+      "login": "已有账号？点击登录",
+      "avatarPreview": "头像预览",
+      "nickname": "昵称",
+      "nicknamePlaceholder": "你的昵称",
+      "email": "邮箱",
+      "emailHint": "可选 · QQ 邮箱自动获取头像",
+      "website": "站点",
+      "optional": "可选",
+      "avatarUrl": "头像 URL",
+      "avatarUrlHint": "可选 · 优先级高于邮箱头像",
+      "submit": "确认身份",
+      "hintCustom": "自定义头像",
+      "hintQQ": "QQ 头像",
+      "hintLetter": "首字母头像",
+      "hintEmpty": "填写昵称后生成"
+    },
+    "shortcuts": {
+      "title": "键盘快捷键",
+      "closeLabel": "关闭快捷键帮助",
+      "close": "关闭",
+      "listLabel": "快捷键列表",
+      "themeNote": "主题切换请使用「界面设置」，目前没有独立快捷键。",
+      "ok": "知道了",
+      "groups": {
+        "general": "通用",
+        "searchBookmarks": "搜索与书签",
+        "reading": "文章阅读",
+        "imagesGuestbook": "图片与留言"
+      },
+      "items": {
+        "help": "打开快捷键帮助",
+        "search": "打开站内搜索（输入框内也可用）",
+        "closeDialog": "关闭当前对话框或外观设置",
+        "commandPalette": "书签页：打开命令面板（需在书签设置中启用；关闭时打开站内搜索）",
+        "selectResult": "搜索或命令面板输入框：选择上一个 / 下一个结果",
+        "openResult": "搜索或命令面板输入框：打开结果 / 执行命令",
+        "moveBookmark": "书签页：上移 / 下移当前聚焦的书签或分类（博主登录后）",
+        "scroll": "向下 / 向上滚动",
+        "top": "回到顶部",
+        "adjacent": "上一篇 / 下一篇（仅内置演示文章）",
+        "imageNav": "图片查看器或提示词详情：上一张 / 下一张",
+        "sendMessage": "留言输入框：发送留言"
+      },
+      "descriptionBefore": "在公开页面按",
+      "descriptionAfter": "打开此帮助。输入文字时不会触发问号帮助或文章阅读快捷键。 Mac 使用 Cmd，Windows / Linux 使用 Ctrl。"
+    },
+    "searchModal": {
+      "dialogLabel": "站内搜索",
+      "placeholder": "搜索文章、项目、图库等内容…",
+      "inputLabel": "搜索站内公开内容",
+      "clear": "清空搜索",
+      "close": "关闭搜索",
+      "typesLabel": "搜索内容类型",
+      "searching": "搜索中...",
+      "loadFailed": "搜索加载失败",
+      "groupTotal": "· {count} 项",
+      "unavailable": "此来源暂不可用",
+      "noGroupResults": "当前条件下没有结果",
+      "viewAll": "查看全部{type}",
+      "empty": "没有找到相关内容",
+      "searchingStatus": "正在搜索…",
+      "allHint": "各类型分别展示前 3 项，可选择类型查看全部。",
+      "pageStatus": "第 {page} 页",
+      "pageStatusTotal": "第 {page} 页，共 {total} 项",
+      "keyboardHint": "使用上下方向键选择结果，按 Enter 打开。",
+      "pagination": "搜索结果分页",
+      "prev": "上一页",
+      "next": "下一页",
+      "openFull": "打开完整搜索结果页",
+      "start": "输入关键词开始搜索",
+      "keyNavigate": "导航",
+      "keyOpen": "跳转",
+      "keyClose": "关闭",
+      "selection": "第 {index} 项，共 {total} 项，{title}",
+      "navigationFailed": "页面跳转失败，请重试。"
+    },
+    "sidebar": {
+      "stats": {
+        "title": "站点统计",
+        "uptime": "站点已稳定运行",
+        "days": "{days} 天",
+        "articles": "文章",
+        "views": "浏览",
+        "comments": "评论",
+        "tags": "标签"
+      },
+      "filters": {
+        "unavailable": "标签和分类暂时不可用",
+        "stale": "仍显示上次成功加载的数据。"
+      },
+      "history": {
+        "title": "最近阅读",
+        "clear": "清除阅读历史"
+      },
+      "interaction": {
+        "title": "互动之星",
+        "friends": "{count} 位朋友",
+        "comments": "{count} 条评论",
+        "empty": "暂无互动数据"
+      },
+      "category": {
+        "title": "专栏分类",
+        "filter": "在首页筛选专栏：{name}",
+        "empty": "暂无分类"
+      },
+      "tags": {
+        "title": "探索标签",
+        "count": "{count} 个标签",
+        "groupLabel": "浏览标签或筛选首页文章",
+        "filter": "在首页筛选标签：{name}",
+        "empty": "暂无标签"
+      },
+      "photoWall": {
+        "title": "精选照片",
+        "photo": "照片 {index}",
+        "open": "查看照片 {index} 所属动态"
+      },
+      "author": {
+        "moments": "公开动态",
+        "likes": "点赞",
+        "comments": "公开评论"
+      },
+      "topics": {
+        "title": "热门话题",
+        "all": "全部"
+      },
+      "capsule": {
+        "title": "时间胶囊",
+        "onThisDay": "去年今日",
+        "random": "随机回顾",
+        "reroll": "换一条"
+      },
+      "calendar": {
+        "flashTitle": "发布日历",
+        "momentTitle": "动态日历",
+        "prevMonth": "上一月",
+        "nextMonth": "下一月",
+        "today": "今天",
+        "streak": "连续 {count} 天",
+        "flashDayLabel": "{date}，{count} 条闪念",
+        "momentDayLabel": "{date}，{count} 条动态",
+        "flashMonthCount": "本月 {count} 条 · UTC",
+        "momentMonthCount": "本月 {count} 条动态 · UTC",
+        "flashTooltip": "{date} · {count}条",
+        "momentTooltip": "{date} · {count}条动态",
+        "weekdays": {
+          "mon": "一",
+          "tue": "二",
+          "wed": "三",
+          "thu": "四",
+          "fri": "五",
+          "sat": "六",
+          "sun": "日"
+        }
+      },
+      "heatmap": {
+        "title": "活跃度",
+        "subtitle": "最近 {weeks} 周 · UTC",
+        "gridLabel": "每日公开内容，方向键选择日期",
+        "cellLabel": "{date}，{articles} 篇公开文章，{comments} 条公开评论",
+        "level": "公开内容数量",
+        "inactive": "无活动",
+        "articles": "发布 {count} 篇文章",
+        "comments": "{count} 条评论",
+        "separator": "，",
+        "empty": "无发布内容",
+        "weekdays": {
+          "mon": "周一",
+          "tue": "周二",
+          "wed": "周三",
+          "thu": "周四",
+          "fri": "周五",
+          "sat": "周六",
+          "sun": "周日"
+        }
+      }
+    }
+  }
+}

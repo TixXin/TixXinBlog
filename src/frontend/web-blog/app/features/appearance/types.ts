@@ -4,6 +4,7 @@
  * @author TixXin
  * @since 2026-03-20
  */
+import { currentTranslate } from '~/utils/format'
 
 export const COLOR_MODE_OPTIONS = ['light', 'system', 'dark'] as const
 export type ThemeOption = (typeof COLOR_MODE_OPTIONS)[number]
@@ -29,89 +30,51 @@ export const DEFAULT_CONTENT_TRANSITION_PRESET: ContentTransitionPreset = 'fade'
 export const DEFAULT_SIDEBAR_ANIMATION_PRESET: SidebarAnimationPreset = 'fade'
 export const DEFAULT_COLOR_MODE_TRANSITION_PRESET: ColorModeTransitionPreset = 'circle'
 
+/** 选项名称与说明取值时按当前界面语言翻译，key 为 layout.appearance.<分组>.<值> */
+function appearanceOption<T extends string>(group: string, value: T, icon: string): AppearanceOption<T> {
+  const key = `layout.appearance.${group}.${value}`
+  return {
+    value,
+    icon,
+    get label() {
+      return currentTranslate()(`${key}.label`)
+    },
+    get description() {
+      return currentTranslate()(`${key}.description`)
+    },
+  }
+}
+
+/** 颜色模式名称；取值时按当前界面语言翻译 */
 export const COLOR_MODE_LABELS: Record<ThemeOption, string> = {
-  light: '浅色',
-  system: '跟随系统',
-  dark: '深色',
+  get light() {
+    return currentTranslate()('layout.appearance.colorMode.light')
+  },
+  get system() {
+    return currentTranslate()('layout.appearance.colorMode.system')
+  },
+  get dark() {
+    return currentTranslate()('layout.appearance.colorMode.dark')
+  },
 }
 
 export const CONTENT_TRANSITION_OPTIONS: AppearanceOption<ContentTransitionPreset>[] = [
-  {
-    value: 'vertical-slide',
-    label: '纵向滑动',
-    description: '新内容从上方轻移进入，等待期间保留原内容',
-    icon: 'lucide:arrow-up-down',
-  },
-  {
-    value: 'soft-slide',
-    label: '轻柔滑动',
-    description: '位移更小，过渡更柔和',
-    icon: 'lucide:move-vertical',
-  },
-  {
-    value: 'fade',
-    label: '柔和淡入',
-    description: '只切换透明度，不做位移',
-    icon: 'lucide:sparkles',
-  },
-  {
-    value: 'none',
-    label: '关闭动画',
-    description: '内容瞬间切换',
-    icon: 'lucide:slash',
-  },
+  appearanceOption('contentTransition', 'vertical-slide', 'lucide:arrow-up-down'),
+  appearanceOption('contentTransition', 'soft-slide', 'lucide:move-vertical'),
+  appearanceOption('contentTransition', 'fade', 'lucide:sparkles'),
+  appearanceOption('contentTransition', 'none', 'lucide:slash'),
 ]
 
 export const COLOR_MODE_TRANSITION_OPTIONS: AppearanceOption<ColorModeTransitionPreset>[] = [
-  {
-    value: 'fade',
-    label: '平滑渐变',
-    description: '平滑切换全局配色',
-    icon: 'lucide:sparkles',
-  },
-  {
-    value: 'circle',
-    label: '圆形展开',
-    description: '从切换按钮位置展开圆形过渡',
-    icon: 'lucide:circle',
-  },
-  {
-    value: 'blur',
-    label: '模糊深度',
-    description: '切换瞬间整页模糊过渡',
-    icon: 'lucide:aperture',
-  },
-  {
-    value: 'none',
-    label: '无动画',
-    description: '瞬间切换，不做过渡',
-    icon: 'lucide:slash',
-  },
+  appearanceOption('colorModeTransition', 'fade', 'lucide:sparkles'),
+  appearanceOption('colorModeTransition', 'circle', 'lucide:circle'),
+  appearanceOption('colorModeTransition', 'blur', 'lucide:aperture'),
+  appearanceOption('colorModeTransition', 'none', 'lucide:slash'),
 ]
 
 export const SIDEBAR_ANIMATION_OPTIONS: AppearanceOption<SidebarAnimationPreset>[] = [
-  {
-    value: 'fade-in-up',
-    label: '从右侧进入',
-    description: '新侧栏从右侧轻移进入，等待期间保留原侧栏',
-    icon: 'lucide:panel-right-open',
-  },
-  {
-    value: 'scale',
-    label: '缩放淡入',
-    description: '右侧栏从微缩状态放大显现',
-    icon: 'lucide:maximize-2',
-  },
-  {
-    value: 'fade',
-    label: '柔和淡入',
-    description: '仅做透明度过渡',
-    icon: 'lucide:blend',
-  },
-  {
-    value: 'none',
-    label: '关闭动画',
-    description: '右侧栏静态显示',
-    icon: 'lucide:pause',
-  },
+  appearanceOption('sidebarAnimation', 'fade-in-up', 'lucide:panel-right-open'),
+  appearanceOption('sidebarAnimation', 'scale', 'lucide:maximize-2'),
+  appearanceOption('sidebarAnimation', 'fade', 'lucide:blend'),
+  appearanceOption('sidebarAnimation', 'none', 'lucide:pause'),
 ]

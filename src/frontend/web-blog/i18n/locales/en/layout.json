@@ -1,1 +1,396 @@
-{}
+{
+  "layout": {
+    "nav": {
+      "home": "Home",
+      "archive": "Archive",
+      "projects": "Projects",
+      "gallery": "Gallery",
+      "flash": "Flashes",
+      "links": "Links",
+      "guestbook": "Guestbook",
+      "subscriptions": "Subscriptions",
+      "about": "About",
+      "prompts": "Prompts",
+      "tabs": "Tabs"
+    },
+    "footer": {
+      "defaultLinks": {
+        "about": "About this site",
+        "rss": "RSS feed",
+        "sitemap": "Sitemap"
+      },
+      "defaultQuotes": {
+        "q1": "The road ahead is long; I will keep searching high and low.",
+        "q2": "Stay passionate, and go where the mountains and seas are.",
+        "q3": "The best time to plant a tree was ten years ago. The second best time is now.",
+        "q4": "Follow your heart, and walk plainly toward it.",
+        "q5": "A journey of a thousand miles is made of single steps."
+      },
+      "statusSynced": "Site info synced",
+      "statusUnavailable": "Site info unavailable",
+      "linksLabel": "Footer links",
+      "apiLatencyTip": "Latency comes from this page's most recent API request. The status only reflects that request and is not site-wide monitoring."
+    },
+    "site": {
+      "avatarAlt": "Author avatar",
+      "loadFailed": "Couldn't load site info right now",
+      "staleNotice": "Showing the last loaded or default site info."
+    },
+    "presence": {
+      "justNow": "just now",
+      "minutesAgo": "{count} minute ago | {count} minutes ago",
+      "hoursAgo": "{count} hour ago | {count} hours ago",
+      "daysAgo": "{count} day ago | {count} days ago",
+      "online": "Online",
+      "idle": "Away",
+      "busy": "Busy",
+      "unset": "No status shared",
+      "auto": "Automatic (online when a status is set)"
+    },
+    "mobileNav": {
+      "label": "Mobile navigation",
+      "more": "More pages",
+      "allPages": "All pages",
+      "admin": "Dashboard",
+      "login": "Author sign-in"
+    },
+    "skipLinks": {
+      "main": "Skip to main content",
+      "navigation": "Skip to navigation"
+    },
+    "error": {
+      "retry": "Retry this page",
+      "home": "Back to home",
+      "searchLabel": "Site search",
+      "searchKeyword": "Search keywords",
+      "searchPlaceholder": "Search this site...",
+      "searchSubmit": "Search",
+      "recentFailed": "Recent posts couldn't be loaded. You can still search the site or go back home.",
+      "recentLoading": "Loading recent posts…",
+      "recentEmpty": "No published posts yet.",
+      "notFoundTitle": "Page not found",
+      "notFoundDescription": "The page you're looking for doesn't exist or has been removed. Please check the link.",
+      "serverTitle": "Server error",
+      "serverDescription": "Something went wrong on the server. Please try again later.",
+      "genericTitle": "Something went wrong",
+      "genericDescription": "An unknown error occurred"
+    },
+    "themeError": {
+      "readonly": "Page interactions are unavailable right now; read-only content has been kept.",
+      "failed": "This section couldn't be loaded right now.",
+      "reload": "Reload"
+    },
+    "searchBox": {
+      "comingSoon": "Search is coming soon",
+      "placeholder": "Search..."
+    },
+    "markdownImages": {
+      "openLink": "Open image link",
+      "preview": "View full size"
+    },
+    "requestFeedback": {
+      "loading": "Loading…",
+      "pending": "Loading…",
+      "retry": "Retry"
+    },
+    "related": {
+      "label": "Related reading",
+      "title": "Keep reading and exploring"
+    },
+    "announcement": {
+      "label": "Site announcement"
+    },
+    "contextDrawer": {
+      "close": "Close {label}"
+    },
+    "codeBlock": {
+      "fallbackLabel": "Code"
+    },
+    "image": {
+      "failed": "Image failed to load",
+      "retrying": "Retrying…",
+      "retry": "Retry",
+      "fallbackName": "image",
+      "reloading": "Reloading image: {name}",
+      "failedRetry": "Image failed to load. Retry: {name}",
+      "failedWith": "Image failed to load. {action}",
+      "reload": "Reload image: {name}",
+      "loading": "Loading image…",
+      "empty": "No image"
+    },
+    "share": {
+      "label": "Share",
+      "native": "Share via device",
+      "copy": "Copy link",
+      "twitter": "Share on Twitter",
+      "weibo": "Share on Weibo",
+      "nativeFailed": "Device sharing isn't available. Please copy the link instead.",
+      "copyFailed": "Couldn't copy. Please copy the address from your browser."
+    },
+    "appearance": {
+      "title": "Display settings",
+      "close": "Close display settings",
+      "colorModeTitle": "Color mode",
+      "colorModeTransitionTitle": "Color mode transition",
+      "layoutThemeTitle": "Layout theme",
+      "switching": "Switching…",
+      "switchFailed": "Switch failed",
+      "layoutThemeOption": "{name} layout theme",
+      "contentTransitionTitle": "Content transition",
+      "sidebarAnimationTitle": "Sidebar animation",
+      "otherTitle": "Other",
+      "paginationAutoHide": "Auto-hide pagination bar on scroll",
+      "reset": "Reset to defaults",
+      "engineTip": "Powered by {'@'}tixxin/nuxt-theme-engine (MIT License)",
+      "fallbackFade": "Fade",
+      "colorMode": {
+        "light": "Light",
+        "system": "System",
+        "dark": "Dark"
+      },
+      "contentTransition": {
+        "vertical-slide": {
+          "label": "Vertical slide",
+          "description": "New content slides in from above; the current content stays while loading"
+        },
+        "soft-slide": {
+          "label": "Gentle slide",
+          "description": "Smaller movement for a softer transition"
+        },
+        "fade": {
+          "label": "Soft fade",
+          "description": "Fades opacity only, without movement"
+        },
+        "none": {
+          "label": "No animation",
+          "description": "Content switches instantly"
+        }
+      },
+      "colorModeTransition": {
+        "fade": {
+          "label": "Smooth fade",
+          "description": "Smoothly blends the site colors"
+        },
+        "circle": {
+          "label": "Circular reveal",
+          "description": "Expands a circle from the toggle button"
+        },
+        "blur": {
+          "label": "Depth blur",
+          "description": "Briefly blurs the whole page while switching"
+        },
+        "none": {
+          "label": "No animation",
+          "description": "Switches instantly with no transition"
+        }
+      },
+      "sidebarAnimation": {
+        "fade-in-up": {
+          "label": "Slide in from right",
+          "description": "The new sidebar slides in from the right; the current one stays while loading"
+        },
+        "scale": {
+          "label": "Scale in",
+          "description": "The sidebar grows in from a slightly smaller size"
+        },
+        "fade": {
+          "label": "Soft fade",
+          "description": "Opacity transition only"
+        },
+        "none": {
+          "label": "No animation",
+          "description": "The sidebar appears without animation"
+        }
+      }
+    },
+    "loadingScreen": {
+      "notStarted": "Page interactions haven't started yet. You can still browse the content that has loaded.",
+      "loadingLayout": "Loading layout…"
+    },
+    "scrollbar": {
+      "backToTop": "Back to top"
+    },
+    "guestIdentity": {
+      "dialogLabel": "Set your commenter identity",
+      "title": "Tell us who you are",
+      "close": "Close",
+      "notice": "Before commenting, choose an identity so other readers can recognize you. It's saved in this browser, and your nickname and avatar are shown publicly with your comments.",
+      "login": "Have an account? Sign in",
+      "avatarPreview": "Avatar preview",
+      "nickname": "Nickname",
+      "nicknamePlaceholder": "Your nickname",
+      "email": "Email",
+      "emailHint": "Optional · QQ Mail addresses get their QQ avatar",
+      "website": "Website",
+      "optional": "Optional",
+      "avatarUrl": "Avatar URL",
+      "avatarUrlHint": "Optional · Takes priority over the email avatar",
+      "submit": "Confirm",
+      "hintCustom": "Custom avatar",
+      "hintQQ": "QQ avatar",
+      "hintLetter": "Initial avatar",
+      "hintEmpty": "Generated after you enter a nickname"
+    },
+    "shortcuts": {
+      "title": "Keyboard shortcuts",
+      "closeLabel": "Close keyboard shortcuts",
+      "close": "Close",
+      "listLabel": "Shortcut list",
+      "themeNote": "To switch themes, use Display settings; there's no dedicated shortcut yet.",
+      "ok": "Got it",
+      "groups": {
+        "general": "General",
+        "searchBookmarks": "Search and bookmarks",
+        "reading": "Reading posts",
+        "imagesGuestbook": "Images and guestbook"
+      },
+      "items": {
+        "help": "Open keyboard shortcuts",
+        "search": "Open site search (works inside text fields too)",
+        "closeDialog": "Close the current dialog or display settings",
+        "commandPalette": "Tabs page: open the command palette (enable it in bookmark settings; otherwise opens site search)",
+        "selectResult": "Search or command palette input: select previous / next result",
+        "openResult": "Search or command palette input: open result / run command",
+        "moveBookmark": "Tabs page: move the focused bookmark or category up / down (when signed in as the author)",
+        "scroll": "Scroll down / up",
+        "top": "Back to top",
+        "adjacent": "Previous / next post (built-in demo posts only)",
+        "imageNav": "Image viewer or prompt details: previous / next",
+        "sendMessage": "Guestbook input: send message"
+      },
+      "descriptionBefore": "Press",
+      "descriptionAfter": "on any public page to open this help. The question-mark help and reading shortcuts don't fire while you're typing. Use Cmd on Mac and Ctrl on Windows / Linux."
+    },
+    "searchModal": {
+      "dialogLabel": "Site search",
+      "placeholder": "Search posts, projects, gallery and more…",
+      "inputLabel": "Search public content on this site",
+      "clear": "Clear search",
+      "close": "Close search",
+      "typesLabel": "Content types",
+      "searching": "Searching...",
+      "loadFailed": "Search failed to load",
+      "groupTotal": "· {count} result | · {count} results",
+      "unavailable": "This source is unavailable right now",
+      "noGroupResults": "No results for the current filters",
+      "viewAll": "View all: {type}",
+      "empty": "Nothing found",
+      "searchingStatus": "Searching…",
+      "allHint": "Showing the top 3 results per type. Pick a type to see them all.",
+      "pageStatus": "Page {page}",
+      "pageStatusTotal": "Page {page}, {total} results in total",
+      "keyboardHint": "Use the up and down arrow keys to choose a result, then press Enter to open it.",
+      "pagination": "Search results pages",
+      "prev": "Previous",
+      "next": "Next",
+      "openFull": "Open full search results",
+      "start": "Type a keyword to start searching",
+      "keyNavigate": "navigate",
+      "keyOpen": "open",
+      "keyClose": "close",
+      "selection": "Result {index} of {total}: {title}",
+      "navigationFailed": "Couldn't open the page. Please try again."
+    },
+    "sidebar": {
+      "stats": {
+        "title": "Site stats",
+        "uptime": "Up and running for",
+        "days": "{days} day | {days} days",
+        "articles": "Posts",
+        "views": "Views",
+        "comments": "Comments",
+        "tags": "Tags"
+      },
+      "filters": {
+        "unavailable": "Tags and categories are unavailable right now",
+        "stale": "Showing the last successfully loaded data."
+      },
+      "history": {
+        "title": "Recently read",
+        "clear": "Clear reading history"
+      },
+      "interaction": {
+        "title": "Top commenters",
+        "friends": "{count} friend | {count} friends",
+        "comments": "{count} comment | {count} comments",
+        "empty": "No interactions yet"
+      },
+      "category": {
+        "title": "Categories",
+        "filter": "Filter home by category: {name}",
+        "empty": "No categories yet"
+      },
+      "tags": {
+        "title": "Explore tags",
+        "count": "{count} tag | {count} tags",
+        "groupLabel": "Browse tags or filter posts on the home page",
+        "filter": "Filter home by tag: {name}",
+        "empty": "No tags yet"
+      },
+      "photoWall": {
+        "title": "Featured photos",
+        "photo": "Photo {index}",
+        "open": "View the moment for photo {index}"
+      },
+      "author": {
+        "moments": "Moments",
+        "likes": "Likes",
+        "comments": "Comments"
+      },
+      "topics": {
+        "title": "Trending topics",
+        "all": "All"
+      },
+      "capsule": {
+        "title": "Time capsule",
+        "onThisDay": "On this day",
+        "random": "Random look back",
+        "reroll": "Show another"
+      },
+      "calendar": {
+        "flashTitle": "Posting calendar",
+        "momentTitle": "Moments calendar",
+        "prevMonth": "Previous month",
+        "nextMonth": "Next month",
+        "today": "Today",
+        "streak": "{count}-day streak",
+        "flashDayLabel": "{date}, {count} flash | {date}, {count} flashes",
+        "momentDayLabel": "{date}, {count} moment | {date}, {count} moments",
+        "flashMonthCount": "{count} this month · UTC",
+        "momentMonthCount": "{count} moment this month · UTC | {count} moments this month · UTC",
+        "flashTooltip": "{date} · {count}",
+        "momentTooltip": "{date} · {count} moment | {date} · {count} moments",
+        "weekdays": {
+          "mon": "Mo",
+          "tue": "Tu",
+          "wed": "We",
+          "thu": "Th",
+          "fri": "Fr",
+          "sat": "Sa",
+          "sun": "Su"
+        }
+      },
+      "heatmap": {
+        "title": "Activity",
+        "subtitle": "Last {weeks} weeks · UTC",
+        "gridLabel": "Daily public content; use arrow keys to choose a date",
+        "cellLabel": "{date}: {articles} public posts, {comments} public comments",
+        "level": "Public content",
+        "inactive": "No activity",
+        "articles": "{count} post published | {count} posts published",
+        "comments": "{count} comment | {count} comments",
+        "separator": ", ",
+        "empty": "Nothing published",
+        "weekdays": {
+          "mon": "Mon",
+          "tue": "Tue",
+          "wed": "Wed",
+          "thu": "Thu",
+          "fri": "Fri",
+          "sat": "Sat",
+          "sun": "Sun"
+        }
+      }
+    }
+  }
+}

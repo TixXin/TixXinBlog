@@ -4,6 +4,7 @@
  * @author TixXin
  * @since 2026-10-19
  */
+import { tryUseNuxtApp } from 'nuxt/app'
 import { FALLBACK_LOCALE } from '~~/i18n/localeOptions'
 
 export type DateInput = Date | string | number
@@ -12,17 +13,29 @@ export type DateInput = Date | string | number
 export type Translate = (key: string, params?: Record<string, unknown>) => string
 
 /**
+ * 当前 Nuxt 应用上的 i18n 实例。用最小结构类型描述：服务端 tsconfig 经类型导入加载本文件时
+ * 没有 @nuxtjs/i18n 的 $i18n 声明，显式收窄后两端都能通过类型检查。
+ */
+interface I18nLike {
+  locale?: string | { value?: string }
+  t: (key: string, params?: Record<string, unknown>) => string
+}
+function nuxtI18n(): I18nLike | undefined {
+  return (tryUseNuxtApp() as { $i18n?: I18nLike } | null | undefined)?.$i18n
+}
+
+/**
  * 当前界面语言：在组件、插件、composable 等 Nuxt 上下文中调用时读取 i18n 的实时 locale，
  * 脱离上下文（纯 Node 脚本）时回退到中文。每次调用时读取，不在模块顶层固定语言。
  */
 export function currentLocale(): string {
-  const locale = tryUseNuxtApp()?.$i18n?.locale
+  const locale = nuxtI18n()?.locale
   return (typeof locale === 'string' ? locale : locale?.value) || FALLBACK_LOCALE
 }
 
 /** 当前上下文的翻译函数；脱离 Nuxt 上下文时原样返回 key，便于发现漏传 t 的调用 */
 export function currentTranslate(): Translate {
-  const i18n = tryUseNuxtApp()?.$i18n
+  const i18n = nuxtI18n()
   return i18n ? (key, params) => (params ? i18n.t(key, params) : i18n.t(key)) : (key) => key
 }
 

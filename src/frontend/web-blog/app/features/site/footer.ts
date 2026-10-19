@@ -1,7 +1,9 @@
 /**
  * @file footer.ts
- * @description 页脚链接、版权文案、备案号与每日一言的缺省值和展示转换；Powered by 为框架声明，保持代码内置
+ * @description 页脚链接、版权文案、备案号与每日一言的缺省值和展示转换；Powered by 为框架声明，保持代码内置；
+ *              缺省链接名称与一言属于界面文案，按界面语言翻译
  */
+import { currentTranslate, type Translate } from '~/utils/format'
 import type { FooterLink, PoweredByItem, SiteFooterLinkSetting } from './types'
 
 /** 页脚链接上限，与服务端一致 */
@@ -18,24 +20,30 @@ export const poweredByItems: PoweredByItem[] = [
   { label: 'Vue', href: 'https://vuejs.org' },
 ]
 
-/** 缺省页脚链接，等于此前写死的效果 */
-export function defaultFooterLinks(): SiteFooterLinkSetting[] {
-  return [
-    { label: '关于本站', url: '/about', newTab: false },
-    { label: 'RSS 订阅', url: '/rss.xml', newTab: true },
-    { label: '站点地图', url: '/sitemap.xml', newTab: true },
-  ]
+/** 缺省页脚链接的名称 key 与地址，等于此前写死的效果 */
+const DEFAULT_FOOTER_LINKS = [
+  { labelKey: 'layout.footer.defaultLinks.about', url: '/about', newTab: false },
+  { labelKey: 'layout.footer.defaultLinks.rss', url: '/rss.xml', newTab: true },
+  { labelKey: 'layout.footer.defaultLinks.sitemap', url: '/sitemap.xml', newTab: true },
+] as const
+
+/** 缺省每日一言的 key：公共领域的古语与常用语，不含博主身份 */
+const DEFAULT_QUOTE_KEYS = [
+  'layout.footer.defaultQuotes.q1',
+  'layout.footer.defaultQuotes.q2',
+  'layout.footer.defaultQuotes.q3',
+  'layout.footer.defaultQuotes.q4',
+  'layout.footer.defaultQuotes.q5',
+] as const
+
+/** 缺省页脚链接，名称按当前界面语言（或调用方传入的 t）翻译 */
+export function defaultFooterLinks(t: Translate = currentTranslate()): SiteFooterLinkSetting[] {
+  return DEFAULT_FOOTER_LINKS.map(({ labelKey, url, newTab }) => ({ label: t(labelKey), url, newTab }))
 }
 
-/** 缺省每日一言：公共领域的古语与常用语，不含博主身份 */
-export function defaultQuotes(): string[] {
-  return [
-    '路漫漫其修远兮，吾将上下而求索。',
-    '保持热爱，奔赴山海。',
-    '种一棵树最好的时间是十年前，其次是现在。',
-    '心之所向，素履以往。',
-    '不积跬步，无以至千里。',
-  ]
+/** 缺省每日一言，按当前界面语言（或调用方传入的 t）翻译 */
+export function defaultQuotes(t: Translate = currentTranslate()): string[] {
+  return DEFAULT_QUOTE_KEYS.map((key) => t(key))
 }
 
 /** 站外地址或带扩展名的服务端文件（如 /rss.xml）不能交给 Nuxt 路由 */

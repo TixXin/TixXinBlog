@@ -6,6 +6,7 @@ import type { AboutSettings } from '~/features/about/types'
 import type { SiteNavEntry } from '~/features/nav/types'
 import { defaultNavigation } from '~/features/nav/routes'
 import type { SiteFooterLinkSetting } from './types'
+import { currentTranslate } from '~/utils/format'
 import { defaultFooterLinks, defaultQuotes } from './footer'
 export interface SiteSettingsData {
   about?: AboutSettings
@@ -44,13 +45,17 @@ export interface SiteSettingsData {
   updatedAt: string
 }
 // 站点资料服务不可用时的中性兜底；正式值由博主在 /admin/site 维护，此处不写入任何具体站点的身份信息。
+// 头像替代文本、页脚链接与每日一言的缺省值属于界面文案：用 getter 在取值时按当前界面语言翻译，
+// structuredClone 与展开复制得到的是取值当时的普通数据。
 export const defaultSiteSettings: SiteSettingsData = {
   name: 'My Blog',
   description: '',
   ownerName: '',
   ownerTitle: '',
   avatar: '/avatar.svg',
-  avatarAlt: '博主头像',
+  get avatarAlt() {
+    return currentTranslate()('layout.site.avatarAlt')
+  },
   seoTitle: '',
   seoDescription: '',
   announcement: '',
@@ -61,8 +66,12 @@ export const defaultSiteSettings: SiteSettingsData = {
   launchedAt: '',
   presenceStatus: '',
   navigation: defaultNavigation(),
-  footerLinks: defaultFooterLinks(),
-  quotes: defaultQuotes(),
+  get footerLinks() {
+    return defaultFooterLinks()
+  },
+  get quotes() {
+    return defaultQuotes()
+  },
   icpNumber: '',
   icpUrl: '',
   copyright: '',
@@ -71,12 +80,20 @@ export const defaultSiteSettings: SiteSettingsData = {
 }
 export type PresenceStatusSetting = '' | 'online' | 'idle' | 'busy'
 /** 后台可选的状态类型与公开展示时的默认文案 */
-export const presenceStatusOptions: { value: PresenceStatusSetting; label: string }[] = [
-  { value: '', label: '自动（有状态文案时显示在线）' },
-  { value: 'online', label: '在线' },
-  { value: 'idle', label: '离开' },
-  { value: 'busy', label: '忙碌' },
-]
+export const presenceStatusOptions: { value: PresenceStatusSetting; label: string }[] = (
+  [
+    ['', 'layout.presence.auto'],
+    ['online', 'layout.presence.online'],
+    ['idle', 'layout.presence.idle'],
+    ['busy', 'layout.presence.busy'],
+  ] as const
+).map(([value, key]) => ({
+  value,
+  // 取值时按当前界面语言翻译
+  get label() {
+    return currentTranslate()(key)
+  },
+}))
 export const siteSocialIcons = [
   'lucide:github',
   'lucide:twitter',

@@ -31,7 +31,7 @@ export function useSiteSettings() {
       error.value = ''
     } catch {
       available.value = false
-      error.value = '站点资料暂时无法读取'
+      error.value = nuxtApp.$i18n.t('layout.site.loadFailed')
     } finally {
       pending.value = false
     }
