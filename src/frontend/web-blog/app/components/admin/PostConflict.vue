@@ -21,7 +21,7 @@
         <p>
           {{
             $t('admin-content.postConflict.fieldRelations', {
-              value: contentRelationSummary(item.draft.relatedContent),
+              value: contentRelationSummary(item.draft.relatedContent, $t),
             })
           }}
         </p>

@@ -53,7 +53,9 @@
       <p>{{ serverVersion.description }}</p>
       <p>
         {{
-          $t('admin-media.galleryForm.relations', { relations: contentRelationSummary(serverVersion.relatedContent) })
+          $t('admin-media.galleryForm.relations', {
+            relations: contentRelationSummary(serverVersion.relatedContent, $t),
+          })
         }}
       </p>
       <p>

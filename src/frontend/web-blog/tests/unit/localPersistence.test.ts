@@ -5,6 +5,8 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { recoverLocalBatch, writeLocalBatch, writeLocalJson } from '../../app/utils/localPersistence'
 
+const i18n = () => useNuxtApp().$i18n
+
 beforeEach(() => {
   const data = new Map<string, string>()
   vi.stubGlobal('localStorage', {
@@ -63,5 +65,18 @@ describe('本地持久化', () => {
     recoverLocalBatch()
     expect(localStorage.getItem('tab:categories:test')).toBe('["old"]')
     expect(localStorage.getItem('blog-local-write-backup')).toBeNull()
+  })
+
+  it('错误文案在抛出时按当前界面语言生成', async () => {
+    vi.spyOn(localStorage, 'setItem').mockImplementation(() => {
+      throw new Error('quota')
+    })
+    await i18n().setLocale('en')
+    try {
+      expect(() => writeLocalJson('test', {})).toThrow('nothing was saved')
+    } finally {
+      await i18n().setLocale('zh-CN')
+    }
+    expect(() => writeLocalJson('test', {})).toThrow('尚未保存')
   })
 })

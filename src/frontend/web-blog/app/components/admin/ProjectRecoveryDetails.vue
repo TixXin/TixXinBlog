@@ -38,7 +38,7 @@
       <template v-else>{{ $t('admin-media.projectRecovery.empty') }}</template>
     </dd>
     <dt>{{ $t('admin-media.projectRecovery.relations') }}</dt>
-    <dd>{{ contentRelationSummary(value.relatedContent) }}</dd>
+    <dd>{{ contentRelationSummary(value.relatedContent, $t) }}</dd>
     <dt>{{ $t('admin-media.projectRecovery.cover') }}</dt>
     <dd>
       {{ value.coverMediaId || $t('admin-media.projectRecovery.noCover') }}

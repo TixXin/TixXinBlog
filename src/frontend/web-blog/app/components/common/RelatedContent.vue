@@ -5,7 +5,7 @@
     <ul>
       <li v-for="item in items" :key="item.type + ':' + item.id">
         <NuxtLink :to="item.url"
-          ><span>{{ contentRelationLabels[item.type] }}</span
+          ><span>{{ $t(contentRelationTypeKey(item.type)) }}</span
           >{{ item.title }}</NuxtLink
         >
       </li>
@@ -13,8 +13,7 @@
   </section>
 </template>
 <script setup lang="ts">
-import { contentRelationLabels } from '~/features/content-relation/types'
-import type { RelatedContentItem } from '~/features/content-relation/types'
+import { contentRelationTypeKey, type RelatedContentItem } from '~/features/content-relation/types'
 defineProps<{ items?: RelatedContentItem[] }>()
 </script>
 <style scoped lang="scss">

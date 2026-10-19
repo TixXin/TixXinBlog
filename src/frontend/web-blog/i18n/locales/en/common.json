@@ -23,6 +23,20 @@
     },
     "error": {
       "requestFailed": "Something went wrong. Please try again later."
+    },
+    "contentRelation": {
+      "types": {
+        "post": "Post",
+        "project": "Project",
+        "gallery": "Gallery"
+      },
+      "summaryItem": "{type} #{id}",
+      "unset": "Not set"
+    },
+    "storage": {
+      "writeFailed": "Couldn't save locally: browser storage is unavailable or full, so nothing was saved.",
+      "rollbackFailed": "Couldn't save locally, and automatic recovery didn't finish. Keep your browser data; the original backup is still on this device.",
+      "recoverFailed": "The last local import didn't finish and its backup couldn't be restored. Keep your browser data and try again."
     }
   }
 }

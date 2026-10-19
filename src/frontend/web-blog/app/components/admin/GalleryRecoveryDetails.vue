@@ -26,7 +26,7 @@
     <dt>{{ $t('admin-media.galleryForm.statusSort') }}</dt>
     <dd>{{ $t(`admin-media.galleryList.statusLabel.${value.status}`) }} / {{ value.sortOrder }}</dd>
     <dt>{{ $t('admin-media.galleryForm.relationIds') }}</dt>
-    <dd>{{ contentRelationSummary(value.relatedContent) }}</dd>
+    <dd>{{ contentRelationSummary(value.relatedContent, $t) }}</dd>
     <dt>{{ $t('admin-media.galleryForm.mediaId') }}</dt>
     <dd>
       {{ value.mediaId || $t('admin-media.galleryForm.noMedia') }}

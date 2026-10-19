@@ -60,7 +60,7 @@
       <p>
         {{
           $t('admin-media.projectForm.serverRelations', {
-            relations: contentRelationSummary(serverVersion.relatedContent),
+            relations: contentRelationSummary(serverVersion.relatedContent, $t),
           })
         }}
       </p>

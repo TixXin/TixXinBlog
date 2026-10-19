@@ -1,13 +1,21 @@
 /**
  * @file localPersistence.ts
- * @description 本地写入失败必须显式传播；多键导入先留备份，失败恢复原值
+ * @description 本地写入失败必须显式传播；多键导入先留备份，失败恢复原值；
+ *              错误文案在抛出时按当前界面语言生成（common.storage.*）
  */
+import { currentTranslate } from './format'
+
+/** 抛出时才求值文案，避免模块加载时固定语言 */
+function storageError(key: 'writeFailed' | 'rollbackFailed' | 'recoverFailed') {
+  return new Error(currentTranslate()(`common.storage.${key}`))
+}
+
 export function writeLocalJson(key: string, value: unknown): void {
   if (typeof window === 'undefined') return
   try {
     localStorage.setItem(key, JSON.stringify(value))
   } catch {
-    throw new Error('本地保存失败：浏览器存储不可用或空间不足，内容尚未保存')
+    throw storageError('writeFailed')
   }
 }
 
@@ -29,7 +37,7 @@ export function writeLocalBatch(entries: Array<[string, unknown]>): void {
       }
       localStorage.removeItem(backupKey)
     } catch {
-      throw new Error('本地保存失败，自动恢复未完成；请保留浏览器数据，原始备份仍在本机')
+      throw storageError('rollbackFailed')
     }
     throw error
   }
@@ -61,6 +69,6 @@ export function recoverLocalBatch(): void {
     }
     localStorage.removeItem(key)
   } catch {
-    throw new Error('上次本地导入未完成，备份恢复失败；请保留浏览器数据后重试')
+    throw storageError('recoverFailed')
   }
 }

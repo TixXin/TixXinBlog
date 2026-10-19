@@ -259,7 +259,9 @@
         "sendMessage": "Guestbook input: send message"
       },
       "descriptionBefore": "Press",
-      "descriptionAfter": "on any public page to open this help. The question-mark help and reading shortcuts don't fire while you're typing. Use Cmd on Mac and Ctrl on Windows / Linux."
+      "descriptionAfter": "on any public page to open this help. The question-mark help and reading shortcuts don't fire while you're typing. Use Cmd on Mac and Ctrl on Windows / Linux.",
+      "firstPost": "This is the first post",
+      "lastPost": "This is the last post"
     },
     "searchModal": {
       "dialogLabel": "Site search",

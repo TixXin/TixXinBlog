@@ -11,6 +11,7 @@ export function useKeyboardShortcuts(search?: { open: () => void }) {
   const route = useRoute()
   const { isDrawerOpen, closeDrawer } = useAppearanceSettings()
   const { info } = useToast()
+  const { t } = useI18n()
   const searchModal = search ?? inject<{ open: () => void } | null>('searchModal', null)
 
   const tabPalette = useTabCommandPalette()
@@ -108,7 +109,7 @@ export function useKeyboardShortcuts(search?: { open: () => void }) {
         if (target) {
           navigateTo(`/articles/${target.id}`)
         } else {
-          info(e.key === '[' ? '已经是第一篇了' : '已经是最后一篇了')
+          info(t(e.key === '[' ? 'layout.shortcuts.firstPost' : 'layout.shortcuts.lastPost'))
         }
       }
     }

@@ -2,8 +2,6 @@
 import type { AboutSection, AboutSettings } from './types'
 import type { Translate } from '~/utils/format'
 
-// 中文名称保留给尚未迁移字典的后台页面；公开页使用 aboutSectionLabel 按语言取值
-export const aboutSectionLabels = { experience: '经历', skill: '技能', interest: '兴趣', reading: '书单' }
 export const aboutSectionLabelKeys: Record<AboutSection['kind'], string> = {
   experience: 'misc.about.section.experience',
   skill: 'misc.about.section.skill',

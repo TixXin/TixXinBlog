@@ -259,7 +259,9 @@
         "sendMessage": "留言输入框：发送留言"
       },
       "descriptionBefore": "在公开页面按",
-      "descriptionAfter": "打开此帮助。输入文字时不会触发问号帮助或文章阅读快捷键。 Mac 使用 Cmd，Windows / Linux 使用 Ctrl。"
+      "descriptionAfter": "打开此帮助。输入文字时不会触发问号帮助或文章阅读快捷键。 Mac 使用 Cmd，Windows / Linux 使用 Ctrl。",
+      "firstPost": "已经是第一篇了",
+      "lastPost": "已经是最后一篇了"
     },
     "searchModal": {
       "dialogLabel": "站内搜索",

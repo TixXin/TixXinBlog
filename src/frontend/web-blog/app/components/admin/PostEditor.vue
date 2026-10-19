@@ -294,7 +294,7 @@
         {{ draft.seoNoindex ? $t('admin-content.postEditor.indexingOff') : $t('admin-content.postEditor.indexingOn') }}
       </dd>
       <dt>{{ $t('admin-content.postEditor.checkRelations') }}</dt>
-      <dd>{{ contentRelationSummary(draft.relatedContent) }}</dd>
+      <dd>{{ contentRelationSummary(draft.relatedContent, $t) }}</dd>
       <dt>{{ $t('admin-content.postEditor.checkSummary') }}</dt>
       <dd>{{ draft.seoDescription || draft.summary || suggestedSummary(draft.contentRaw) }}</dd>
     </dl>

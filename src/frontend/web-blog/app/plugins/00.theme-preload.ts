@@ -22,7 +22,8 @@ export default defineNuxtPlugin({
       startupError.value = null
     } catch {
       // 交给可操作的组件错误态和独立启动守卫恢复，不让首屏品牌层无限等待。
-      startupError.value = '当前主题暂时无法加载，请刷新重试。'
+      // 这里只记录失败标记（字典 key）：插件早于 i18n 就绪，文案由 ThemeLoadError 按当前语言渲染。
+      startupError.value = 'layout.themeError.failed'
       if (import.meta.client) {
         // 保留本站已完成净化的SSR正文；交互控件禁用，链接仍可原生导航。
         const content = document.querySelector('main')?.cloneNode(true) as HTMLElement | undefined

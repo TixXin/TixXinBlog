@@ -113,7 +113,9 @@
     "interaction": {
       "viewSyncFailed": "The view count hasn't synced yet. You can retry.",
       "loadFailed": "Likes and views failed to load. Please try again.",
-      "likeFailed": "Like failed. Please retry to sync the state."
+      "likeFailed": "Like failed. Please retry to sync the state.",
+      "likeSaveFailed": "Like not saved: browser storage is unavailable or full. Please try again.",
+      "favoriteSaveFailed": "Bookmark not saved: browser storage is unavailable or full. Please try again."
     },
     "preview": {
       "noticeLabel": "About this draft preview",

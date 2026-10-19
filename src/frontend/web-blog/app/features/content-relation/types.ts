@@ -14,13 +14,7 @@ export interface ManagedContentRelation extends ContentRelation {
   available: boolean
   url?: string
 }
-export const contentRelationLabels = { post: '文章', project: '项目', gallery: '图库' } as const
-export const contentRelationStatuses: Record<string, string> = {
-  published: '已公开',
-  draft: '草稿',
-  archived: '已归档',
-  withdrawn: '已撤回',
-  deleted: '已删除',
-  missing: '目标缺失',
-  unknown: '尚未核查',
+/** 关联类型的界面名称 key（common.contentRelation.types.*），由调用方按当前语言翻译 */
+export function contentRelationTypeKey(type: ContentRelationType) {
+  return `common.contentRelation.types.${type}`
 }

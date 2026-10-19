@@ -23,6 +23,20 @@
     },
     "error": {
       "requestFailed": "操作未完成，请稍后重试"
+    },
+    "contentRelation": {
+      "types": {
+        "post": "文章",
+        "project": "项目",
+        "gallery": "图库"
+      },
+      "summaryItem": "{type} #{id}",
+      "unset": "未设置"
+    },
+    "storage": {
+      "writeFailed": "本地保存失败：浏览器存储不可用或空间不足，内容尚未保存",
+      "rollbackFailed": "本地保存失败，自动恢复未完成；请保留浏览器数据，原始备份仍在本机",
+      "recoverFailed": "上次本地导入未完成，备份恢复失败；请保留浏览器数据后重试"
     }
   }
 }
