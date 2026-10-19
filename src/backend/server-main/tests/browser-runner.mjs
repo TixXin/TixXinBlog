@@ -6,7 +6,7 @@ import { spawn } from 'node:child_process'
 import { setTimeout as delay } from 'node:timers/promises'
 import { fileURLToPath } from 'node:url'
 import { join, resolve, sep } from 'node:path'
-import { readdirSync, existsSync, lstatSync } from 'node:fs'
+import { readdirSync, existsSync, lstatSync, readFileSync } from 'node:fs'
 import { createBrowserTestApp } from './test-app.mjs'
 import { seedMomentBrowserFixture } from './moment-fixture.mjs'
 import { seedGuestbookBrowserFixture } from './guestbook-fixture.mjs'
@@ -18,15 +18,72 @@ import { seedSubscriptionBrowserFixture } from './subscription-fixture.mjs'
 import { getHttpTestPort } from './http-test-port.mjs'
 
 const frontendDirectory = fileURLToPath(new URL('../../../frontend/web-blog/', import.meta.url))
-// 每份完整测试文件使用自己的数据库，避免管理用例新增内容污染固定样本的展示验收。
-if (process.argv.length === 2) {
-  const files = readdirSync(join(frontendDirectory, 'tests/e2e'))
+
+/** 列出全部端到端测试文件，按文件名排序保证各处顺序一致。 */
+function listSpecFiles() {
+  return readdirSync(join(frontendDirectory, 'tests/e2e'))
     .filter((name) => name.endsWith('.spec.ts'))
     .sort()
-  if (files.length > 1) {
+}
+
+/**
+ * 按权重表把测试文件确定性地分成 total 片：权重从大到小依次放入当前合计最小的分片（最长处理时间优先）。
+ * 权重表未收录的新文件取已收录权重的中位数，保证新增文件一定被分配。
+ */
+function planShards(files, total) {
+  const table = JSON.parse(readFileSync(join(frontendDirectory, 'tests/e2e/shard-weights.json'), 'utf8')).seconds
+  const known = Object.values(table)
+    .filter((value) => Number.isFinite(value) && value > 0)
+    .sort((a, b) => a - b)
+  const middle = Math.floor(known.length / 2)
+  const median = known.length === 0 ? 1 : known.length % 2 ? known[middle] : (known[middle - 1] + known[middle]) / 2
+  const weightOf = (file) => (Number.isFinite(table[file]) && table[file] > 0 ? table[file] : median)
+  const shards = Array.from({ length: total }, (_, index) => ({ shard: index + 1, weight: 0, files: [] }))
+  const ordered = [...files].sort((a, b) => weightOf(b) - weightOf(a) || (a < b ? -1 : a > b ? 1 : 0))
+  for (const file of ordered) {
+    // 合计相同时取编号最小的分片，结果只取决于文件清单和权重表。
+    const target = shards.reduce((best, item) => (item.weight < best.weight ? item : best))
+    target.files.push(file)
+    target.weight += weightOf(file)
+  }
+  for (const item of shards) item.files.sort()
+  return shards
+}
+
+/** 解析分片总数或 i/n 形式的分片编号，格式错误直接失败，避免静默跑全量或空跑。 */
+function parseShardCount(value, source) {
+  if (!/^[1-9]\d*$/.test(value ?? '')) throw new Error(`${source} 必须是正整数：${value ?? ''}`)
+  return Number(value)
+}
+
+if (process.argv[2] === '--list-shards') {
+  const total = parseShardCount(process.argv[3], '--list-shards')
+  process.stdout.write(`${JSON.stringify(planShards(listSpecFiles(), total), null, 2)}\n`)
+  process.exit(0)
+}
+
+// 每份完整测试文件使用自己的数据库，避免管理用例新增内容污染固定样本的展示验收。
+if (process.argv.length === 2) {
+  let files = listSpecFiles()
+  let runSuffix = ''
+  const shardSetting = process.env.E2E_SHARD
+  if (shardSetting !== undefined && shardSetting !== '') {
+    const match = /^(\d+)\/(\d+)$/.exec(shardSetting)
+    if (!match) throw new Error(`E2E_SHARD 格式应为 i/n：${shardSetting}`)
+    const total = parseShardCount(match[2], 'E2E_SHARD 分片总数')
+    const index = parseShardCount(match[1], 'E2E_SHARD 分片编号')
+    if (index > total) throw new Error(`E2E_SHARD 分片编号超出总数：${shardSetting}`)
+    const shard = planShards(files, total)[index - 1]
+    files = shard.files
+    runSuffix = `-s${index}of${total}`
+    console.log(`E2E 分片 ${index}/${total}：${files.length} 个文件，预计 ${Math.round(shard.weight)} 秒`)
+    for (const file of files) console.log(`  ${file}`)
+  }
+  // 分片后即使只剩一个文件也走独立进程，产物目录同样带分片号。
+  if (files.length > 1 || runSuffix) {
     const outputRoot = resolve(frontendDirectory, '../../../.playwright-mcp/e2e-results')
     if (existsSync(outputRoot) && lstatSync(outputRoot).isSymbolicLink()) throw new Error('测试输出不能是符号链接')
-    const run = `isolated-${Date.now()}-${process.pid}`
+    const run = `isolated-${Date.now()}-${process.pid}${runSuffix}`
     let code = 0
     for (const file of files) {
       const name = file.replace(/[^a-zA-Z0-9_.-]/g, '_')
