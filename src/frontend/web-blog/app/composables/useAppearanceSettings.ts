@@ -177,9 +177,10 @@ export function useAppearanceSettings() {
   if (import.meta.client && !initialized.value) {
     initialized.value = true
 
-    // 延迟到水合完成后再从 localStorage 恢复设置，
-    // 避免水合期间修改 useState 导致 SSR/客户端状态不一致
-    onNuxtReady(() => {
+    // 水合完成后立即从 localStorage 恢复设置：水合期间修改 useState 会导致 SSR/客户端不一致，
+    // 但不能等到空闲回调，否则页面已可交互时首次翻页仍按默认预设播放
+    const nuxtApp = useNuxtApp()
+    const restore = () => {
       try {
         const stored = localStorage.getItem(STORAGE_KEY)
 
@@ -205,7 +206,9 @@ export function useAppearanceSettings() {
       } catch {
         localStorage.removeItem(STORAGE_KEY)
       }
-    })
+    }
+    if (nuxtApp.isHydrating) nuxtApp.hooks.hookOnce('app:suspense:resolve', restore)
+    else restore()
   }
 
   if (import.meta.client && !persistenceBound.value) {
