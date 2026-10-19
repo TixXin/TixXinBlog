@@ -25,6 +25,8 @@ VERSION=''
 REGISTRY=''
 DOWNLOAD_BASE=''
 PROJECT=''
+SUBNET=''
+PUBLIC_IP_URL=''
 HTTP_PORT=''
 HTTPS_PORT=''
 REPOSITORY=''
@@ -63,6 +65,8 @@ usage() {
   --http-port 端口      宿主机 HTTP 端口（正式默认 80，本机试用默认 8080）
   --https-port 端口     宿主机 HTTPS 端口（正式默认 443，本机试用默认 8443）
   --project 名称        Compose 项目名（默认 ${DEFAULT_PROJECT}，决定数据卷名称，安装后不可更改）
+  --subnet CIDR         Compose 内部网络子网（私有地址段，如 172.31.250.0/24）；同机运行多套站点时各用一段
+  --check-public-ip URL 额外访问该 https 地址获取本机出口 IP 用于核对域名解析（默认关闭；会把本机 IP 暴露给该服务）
   --no-pull             使用本机已有镜像，不拉取（离线或自建镜像）
   --install-docker      未安装 Docker 时直接运行 Docker 官方安装脚本（不再询问）
   -h, --help            显示本帮助
@@ -84,7 +88,7 @@ parse_args() {
       --local) LOCAL_MODE=1 ;;
       --no-pull) NO_PULL=1 ;;
       --install-docker) INSTALL_DOCKER=1 ;;
-      --domain | --locale | --dir | --version | --registry | --download-base | --project | --http-port | --https-port)
+      --domain | --locale | --dir | --version | --registry | --download-base | --project | --http-port | --https-port | --subnet | --check-public-ip)
         need_value "$@"
         case $1 in
           --domain) DOMAIN=$2 ;;
@@ -94,6 +98,8 @@ parse_args() {
           --registry) REGISTRY=$2 ;;
           --download-base) DOWNLOAD_BASE=$2 ;;
           --project) PROJECT=$2 ;;
+          --subnet) SUBNET=$2 ;;
+          --check-public-ip) PUBLIC_IP_URL=$2 ;;
           --http-port) HTTP_PORT=$2 ;;
           --https-port) HTTPS_PORT=$2 ;;
         esac
@@ -228,34 +234,79 @@ validate_domain() {
     fail "域名 $1 不合法（示例：blog.example.com，不含协议与路径）"
 }
 
-resolve_ipv4() {
+# 域名的 A 与 AAAA 解析结果，每行一个地址。
+resolve_addresses() {
   if command -v getent > /dev/null 2>&1; then
-    getent ahostsv4 "$1" 2> /dev/null | awk '{ print $1 }' | sort -u
+    getent ahosts "$1" 2> /dev/null | awk '{ print $1 }' | sort -u
   elif command -v dig > /dev/null 2>&1; then
-    dig +short A "$1" 2> /dev/null | grep -E '^[0-9.]+$' | sort -u
+    { dig +short A "$1"; dig +short AAAA "$1"; } 2> /dev/null | grep -E '^[0-9a-fA-F.:]+$' | sort -u
   elif command -v host > /dev/null 2>&1; then
-    host -t A "$1" 2> /dev/null | awk '/has address/ { print $NF }' | sort -u
+    host "$1" 2> /dev/null | awk '/has (IPv6 )?address/ { print $NF }' | sort -u
   fi
 }
 
-# 只做提示：解析结果与本机公网 IP 不一致时警告，不阻止安装；取不到公网 IP 时跳过。
+# 本机网卡上的全局地址（去掉前缀长度），只读本机信息，不访问任何外部服务。
+local_addresses() {
+  if command -v ip > /dev/null 2>&1; then
+    ip -o addr show scope global 2> /dev/null | awk '{ split($4, a, "/"); print a[1] }'
+  elif command -v hostname > /dev/null 2>&1 && hostname -I > /dev/null 2>&1; then
+    hostname -I | tr ' ' '\n' | grep .
+  elif command -v ifconfig > /dev/null 2>&1; then
+    ifconfig 2> /dev/null | awk '$1 == "inet" || $1 == "inet6" { sub(/%.*/, "", $2); sub(/^addr:/, "", $2); print $2 }'
+  fi | grep -Ev '^(127\.|::1$|fe80:)' | sort -u
+}
+
+# 私网、CGNAT、链路本地与 ULA 地址不能作为公网解析目标。
+is_private_address() {
+  printf '%s' "$1" | grep -Eq '^(10\.|192\.168\.|172\.(1[6-9]|2[0-9]|3[01])\.|100\.(6[4-9]|[7-9][0-9]|1[01][0-9]|12[0-7])\.|169\.254\.|f[cd][0-9a-fA-F]{2}:|fe80:)'
+}
+
+# 只做提示，不阻止安装。默认只与本机网卡地址比对；--check-public-ip 由使用者显式指定检测服务时才访问外部地址。
 check_dns() {
-  local addresses public
-  addresses=$(resolve_ipv4 "$1" || true)
+  local addresses locals address public_local=0 public
+  addresses=$(resolve_addresses "$1" || true)
   if [ -z "$addresses" ]; then
-    warn "域名 $1 当前没有解析到 IPv4 地址；HTTPS 证书需要域名解析到本机后才能签发"
+    warn "域名 $1 当前没有解析记录；HTTPS 证书需要域名解析到本机后才能签发"
     return 0
   fi
-  public=$(curl -4 -fsS --proto '=https' --max-time 5 https://api.ipify.org 2> /dev/null || true)
-  if ! printf '%s' "$public" | grep -Eq '^[0-9]{1,3}(\.[0-9]{1,3}){3}$'; then
-    info "域名 $1 解析到：$(printf '%s' "$addresses" | tr '\n' ' ')（未取得本机公网 IP，跳过比对）"
+  locals=$(local_addresses || true)
+  if [ -n "$PUBLIC_IP_URL" ]; then
+    info "按 --check-public-ip 访问 $PUBLIC_IP_URL 获取本机出口 IP…"
+    public=$(curl -fsS --proto '=https' --max-time 5 "$PUBLIC_IP_URL" 2> /dev/null | tr -d '[:space:]' || true)
+    if printf '%s' "$public" | grep -Eq '^[0-9a-fA-F.:]+$'; then
+      locals=$(printf '%s\n%s\n' "$locals" "$public" | grep . | sort -u)
+    else
+      warn '未能从指定检测服务取得出口 IP，仅与本机网卡地址比对'
+    fi
+  fi
+  if printf '%s\n' "$addresses" | grep -Fxq -f <(printf '%s\n' "$locals" | grep .) 2> /dev/null; then
+    info "域名 $1 已解析到本机地址"
     return 0
   fi
-  if printf '%s\n' "$addresses" | grep -qx "$public"; then
-    info "域名 $1 已解析到本机公网 IP $public"
+  while IFS= read -r address; do
+    [ -n "$address" ] || continue
+    is_private_address "$address" || public_local=1
+  done <<< "$locals"
+  if [ "$public_local" = 1 ]; then
+    warn "域名 $1 解析到 $(printf '%s' "$addresses" | tr '\n' ' ')，与本机网卡地址不一致；若使用 CDN 或代理可忽略，否则证书签发会失败"
   else
-    warn "域名 $1 解析到 $(printf '%s' "$addresses" | tr '\n' ' ')，与本机公网 IP $public 不一致；若使用 CDN 或代理可忽略，否则证书签发会失败"
+    warn "无法确认域名是否指向本机（服务器可能位于 NAT 之后，网卡上没有公网地址）。域名解析到 $(printf '%s' "$addresses" | tr '\n' ' ')，请自行核对"
   fi
+}
+
+# Compose 内部网络（app）子网：写入 .env 的 TIXXIN_NETWORK_SUBNET；未指定时编排缺省 172.31.250.0/24，可信代理缺省随之取该子网。
+validate_subnet() {
+  local address prefix octet
+  address=${1%/*}
+  prefix=${1##*/}
+  [ "$address/$prefix" = "$1" ] || fail "子网 $1 不合法（示例：172.31.250.0/24）"
+  printf '%s' "$address" | grep -Eq '^[0-9]{1,3}(\.[0-9]{1,3}){3}$' || fail "子网 $1 不合法（示例：172.31.250.0/24）"
+  case $prefix in '' | *[!0-9]*) fail "子网 $1 前缀长度不合法" ;; esac
+  [ "$prefix" -ge 8 ] && [ "$prefix" -le 28 ] || fail "子网 $1 前缀长度需在 8 到 28 之间"
+  for octet in $(printf '%s' "$address" | tr '.' ' '); do
+    [ "$octet" -le 255 ] || fail "子网 $1 地址不合法"
+  done
+  is_private_address "$address" || fail "子网 $1 必须是私有地址段"
 }
 
 collect_settings() {
@@ -295,6 +346,8 @@ collect_settings() {
   while [ ! -e "$ancestor" ]; do ancestor=$(dirname "$ancestor"); done
   [ -w "$ancestor" ] || fail "无权写入 ${ancestor}；请使用 sudo 运行，或用 --dir 指定可写目录"
   PROJECT=${PROJECT:-$DEFAULT_PROJECT}
+  [ -z "$SUBNET" ] || validate_subnet "$SUBNET"
+  case $PUBLIC_IP_URL in '' | https://*) ;; *) fail '--check-public-ip 只接受 https:// 地址' ;; esac
   printf '%s' "$PROJECT" | grep -Eq '^[a-z0-9][a-z0-9_-]+$' || fail '项目名只能包含小写字母、数字、下划线与连字符'
   [ "$HTTP_PORT" != "$HTTPS_PORT" ] || fail 'HTTP 与 HTTPS 端口不能相同'
   if [ "$LOCAL_MODE" = 1 ]; then
@@ -445,6 +498,7 @@ write_env() {
     printf 'HTTP_PORT=%s\n' "$HTTP_PORT"
     printf 'HTTPS_PORT=%s\n' "$HTTPS_PORT"
     printf 'NUXT_PUBLIC_DEFAULT_LOCALE=%s\n' "$LOCALE"
+    [ -z "$SUBNET" ] || printf 'TIXXIN_NETWORK_SUBNET=%s\n' "$SUBNET"
     printf 'COMPOSE_FILE=%s\n' "$compose_file"
     printf 'TIXXIN_MODE=%s\n' "$([ "$LOCAL_MODE" = 1 ] && echo local || echo public)"
     printf 'TIXXIN_REPOSITORY=%s\n' "$REPOSITORY"

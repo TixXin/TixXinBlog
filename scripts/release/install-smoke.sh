@@ -86,7 +86,8 @@ bash "$root/scripts/release/package-deploy.sh" --version "$version" --repository
   --image-prefix "$prefix" --output "$work/download/v$version"
 
 install_args=(--local --yes --dir "$site" --version "$version" --download-base "file://$work/download"
-  --no-pull --project "$project" --http-port "$http_port" --https-port "$https_port")
+  --no-pull --project "$project" --http-port "$http_port" --https-port "$https_port"
+  --subnet "${SMOKE_SUBNET:-172.31.247.0/24}")
 
 log '首次安装：install.sh --local --yes'
 bash "$work/download/v$version/install.sh" "${install_args[@]}"
@@ -95,6 +96,8 @@ bash "$work/download/v$version/install.sh" "${install_args[@]}"
 grep -Eq '^POSTGRES_PASSWORD=[0-9a-f]{64}$' "$site/.env" || fail '数据库密码格式不符'
 grep -Eq '^JWT_ACCESS_SECRET=[0-9a-f]{96}$' "$site/.env" || fail '签名密钥格式不符'
 grep -Eq '^SETUP_TOKEN=[0-9a-f]{48}$' "$site/.env" || fail '初始化令牌格式不符'
+grep -qx "TIXXIN_NETWORK_SUBNET=${SMOKE_SUBNET:-172.31.247.0/24}" "$site/.env" || fail '内部子网未写入 .env'
+
 [ "$(curl_site -o /dev/null -w '%{http_code}' "$origin/")" = 200 ] || fail '首页未返回 200'
 [ "$(curl -sS -o /dev/null -w '%{http_code}' "http://localhost:$http_port/")" = 302 ] || fail 'HTTP 未跳转到 HTTPS'
 check_setup_status true
@@ -125,7 +128,9 @@ backup=$(find "$site/backups" -mindepth 1 -maxdepth 1 -type d -name 'backup-manu
 grep -q '"format": "tixxin-full-backup"' "$backup/manifest.json" || fail '备份清单格式不符'
 
 log '同版本 tixxin update（幂等）'
-"$site/deploy/tixxin" update "$version" --yes --no-pull
+next_subnet=${SMOKE_NEXT_SUBNET:-172.31.248.0/24}
+"$site/deploy/tixxin" update "$version" --yes --no-pull --subnet "$next_subnet"
+grep -qx "TIXXIN_NETWORK_SUBNET=$next_subnet" "$site/.env" || fail '升级未写入新的内部子网'
 [ "$(find "$site/backups" -mindepth 1 -maxdepth 1 -type d -name 'backup-manual-*' | wc -l | tr -d ' ')" -ge 2 ] ||
   fail '升级前未生成新备份'
 [ "$(psql_value 'select count(*) from admin_user')" = "$admins_before" ] || fail '升级后管理员数量变化'

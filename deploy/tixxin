@@ -119,6 +119,41 @@ prepare_images() {
   done < <(image_refs "$version")
 }
 
+# ---------- 内部子网 ----------
+
+# Compose 内部网络（app）子网写入 .env 的 TIXXIN_NETWORK_SUBNET；未设置时编排缺省 172.31.250.0/24。
+readonly SUBNET_KEY='TIXXIN_NETWORK_SUBNET'
+NEW_SUBNET=''
+
+validate_subnet() {
+  local address prefix octet
+  address=${1%/*}
+  prefix=${1##*/}
+  [ "$address/$prefix" = "$1" ] || fail "子网 $1 不合法（示例：172.31.250.0/24）"
+  printf '%s' "$address" | grep -Eq '^[0-9]{1,3}(\.[0-9]{1,3}){3}$' || fail "子网 $1 不合法（示例：172.31.250.0/24）"
+  case $prefix in '' | *[!0-9]*) fail "子网 $1 前缀长度不合法" ;; esac
+  [ "$prefix" -ge 8 ] && [ "$prefix" -le 28 ] || fail "子网 $1 前缀长度需在 8 到 28 之间"
+  for octet in $(printf '%s' "$address" | tr '.' ' '); do
+    [ "$octet" -le 255 ] || fail "子网 $1 地址不合法"
+  done
+  printf '%s' "$address" | grep -Eq '^(10\.|192\.168\.|172\.(1[6-9]|2[0-9]|3[01])\.)' || fail "子网 $1 必须是私有地址段"
+}
+
+# 子网变化时写入 .env，停止并移除本项目容器（不带 -v，数据卷不受影响），删除本项目网络，随后按新子网重建。
+apply_subnet() {
+  local network
+  [ -n "$NEW_SUBNET" ] || return 0
+  [ "$NEW_SUBNET" != "$(env_get "$SUBNET_KEY")" ] || return 0
+  STAGE='changing-subnet'
+  info "内部子网改为 ${NEW_SUBNET}，重建本项目网络（数据卷保留）…"
+  env_set "$SUBNET_KEY" "$NEW_SUBNET"
+  # 已停止的容器仍绑定旧网络编号，必须移除后由 up 重新创建。
+  compose rm --stop --force
+  docker network ls -q --filter "label=com.docker.compose.project=$(project_name)" | while read -r network; do
+    docker network rm "$network" > /dev/null
+  done
+}
+
 # ---------- 交互 ----------
 
 has_tty() { [ -t 0 ] || { [ -r /dev/tty ] && (: < /dev/tty) 2> /dev/null; }; }
@@ -385,7 +420,8 @@ usage() {
   logs [服务] [-f] [--tail N]
                          查看日志；服务为 postgres、backend、frontend、edge、worker、migration
   backup                 在 worker 容器内创建并校验完整备份，导出到 <安装目录>/backups
-  update [版本]          先完整备份，再下载校验新部署包、拉取镜像、迁移、重建服务并验收
+  update [版本] [--subnet CIDR]
+                         先完整备份，再下载校验新部署包、拉取镜像、迁移、重建服务并验收
   rollback <版本> --database-compatible
                          应用回退：切回已验证的旧版本镜像，不执行迁移，保留数据卷
   restart                重启 API、前端、入口（以及运行中的 worker）
@@ -522,13 +558,14 @@ cmd_update() {
     case $1 in
       -h | --help)
         cat << 'EOF'
-用法：tixxin update [版本] [--yes] [--no-pull] [--skip-backup]
+用法：tixxin update [版本] [--yes] [--no-pull] [--skip-backup] [--subnet CIDR]
 
 步骤：完整备份 → 下载部署包与 SHA256SUMS 并校验 → 拉取镜像 → 停止前端/API 写入 → 执行迁移 →
 重建服务 → HTTPS 同源 API 与版本头验收。未指定版本时使用 GitHub 最新正式版本。
 升级到当前版本同样可执行（迁移幂等），用于修复配置或重建容器。
   --no-pull       使用本机已有镜像，不拉取
   --skip-backup   跳过升级前备份（仅用于从未成功的首次安装；需要确认）
+  --subnet CIDR   改用新的内部网络子网（私有地址段）；会重建本项目网络，数据卷保留
 失败时保留现场，并打印对应的应用回退命令。
 EOF
         return 0
@@ -536,6 +573,12 @@ EOF
       -y | --yes) ASSUME_YES=1 ;;
       --no-pull) NO_PULL=1 ;;
       --skip-backup) skip_backup=1 ;;
+      --subnet)
+        [ $# -ge 2 ] || fail '--subnet 需要 CIDR'
+        validate_subnet "$2"
+        NEW_SUBNET=$2
+        shift
+        ;;
       -*) fail "未知参数 $1" ;;
       *)
         [ -z "$target" ] || fail '只能指定一个版本'
@@ -579,6 +622,7 @@ EOF
   backup_env_file "$target"
   OP_ACTIVATED=1
   activate_package "$target"
+  apply_subnet
   deploy_release deploy "$target"
   trap - EXIT
   release_lock
@@ -626,7 +670,7 @@ cmd_rollback() {
     case $1 in
       -h | --help)
         cat << 'EOF'
-用法：tixxin rollback <版本> --database-compatible [--yes] [--no-pull] [--skip-backup]
+用法：tixxin rollback <版本> --database-compatible [--yes] [--no-pull] [--skip-backup] [--subnet CIDR]
 
 应用回退（与 deployment.md「应用回退」一致）：先完整备份当前状态，再把应用镜像与编排切回指定版本，
 保持数据卷，跳过迁移并验收入口。--database-compatible 表示你已确认该版本兼容当前数据库结构
@@ -638,6 +682,12 @@ EOF
       -y | --yes) ASSUME_YES=1 ;;
       --no-pull) NO_PULL=1 ;;
       --skip-backup) skip_backup=1 ;;
+      --subnet)
+        [ $# -ge 2 ] || fail '--subnet 需要 CIDR'
+        validate_subnet "$2"
+        NEW_SUBNET=$2
+        shift
+        ;;
       -*) fail "未知参数 $1" ;;
       *)
         [ -z "$target" ] || fail '只能指定一个版本'
@@ -670,6 +720,7 @@ EOF
   backup_env_file "$target"
   OP_ACTIVATED=1
   activate_package "$target"
+  apply_subnet
   deploy_release rollback "$target"
   trap - EXIT
   release_lock
