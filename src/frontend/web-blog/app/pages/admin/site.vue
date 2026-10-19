@@ -4,66 +4,114 @@
 -->
 <template>
   <section class="admin-site">
-    <h1>站点设置</h1>
-    <p>以下资料会公开展示。保存后无需重启，刷新前台即可读取新版本。</p>
-    <p>站点地址：{{ siteUrl }}。地址、监听端口和存储目录由部署环境配置，修改后需要重启对应服务。</p>
-    <p v-if="pending" role="status">正在处理站点设置…</p>
+    <h1>{{ t('admin-system.site.page.title') }}</h1>
+    <p>{{ t('admin-system.site.page.intro') }}</p>
+    <p>{{ t('admin-system.site.page.siteUrl', { url: siteUrl }) }}</p>
+    <p v-if="pending" role="status">{{ t('admin-system.site.page.processing') }}</p>
     <p v-if="error" role="alert">
-      {{ error }} <button v-if="!draft" type="button" :disabled="pending" @click="load">重试读取</button>
+      {{ error }}
+      <button v-if="!draft" type="button" :disabled="pending" @click="load">
+        {{ t('admin-system.site.page.retryLoad') }}
+      </button>
     </p>
     <ClientOnly>
       <template v-if="draft">
         <p v-if="submission" role="status">
-          此前提交结果尚未确认。
-          <button type="button" :disabled="pending || !ready" @click="checkSubmission">核对服务器提交结果</button>
+          {{ t('admin-system.site.page.submissionPending') }}
+          <button type="button" :disabled="pending || !ready" @click="checkSubmission">
+            {{ t('admin-system.site.page.checkSubmission') }}
+          </button>
         </p>
         <p>
-          服务器版本 {{ draft.revision }} · 保存于
-          {{ new Date(draft.updatedAt).toLocaleString('zh-CN', { hour12: false }) }}{{ dirty ? ' · 有未保存输入' : '' }}
+          {{
+            t('admin-system.site.page.revisionInfo', {
+              revision: draft.revision,
+              time: formatDateTime(draft.updatedAt, { hour12: false }),
+            })
+          }}{{ dirty ? t('admin-system.site.page.dirtySuffix') : '' }}
         </p>
         <form ref="editorForm" @submit.prevent="submit">
           <fieldset :disabled="pending || !ready">
-            <legend>站点和博主资料</legend>
-            <label>站点名称<input v-model="draft.name" maxlength="80" required /></label>
-            <label>站点简介<textarea v-model="draft.description" maxlength="300" rows="3" /></label>
-            <label>博主名称<input v-model="draft.ownerName" maxlength="80" required /></label>
-            <label>博主简介<input v-model="draft.ownerTitle" maxlength="200" /></label>
-            <label>头像地址<input v-model="draft.avatar" maxlength="1000" /></label>
-            <button type="button" @click="pickerOpen = true">从媒体库选择头像</button>
-            <label>头像替代文本<input v-model="draft.avatarAlt" maxlength="300" /></label>
+            <legend>{{ t('admin-system.site.page.profileLegend') }}</legend>
             <label
-              >在线状态<input v-model="draft.presenceLabel" maxlength="20" placeholder="如“摆烂中”，留空不展示"
+              >{{ t('admin-system.site.editor.fields.name') }}<input v-model="draft.name" maxlength="80" required
             /></label>
             <label
-              >状态签名<input v-model="draft.presenceSignature" maxlength="60" placeholder="如“今天不想写代码”"
+              >{{ t('admin-system.site.editor.fields.description')
+              }}<textarea v-model="draft.description" maxlength="300" rows="3" />
+            </label>
+            <label
+              >{{ t('admin-system.site.editor.fields.ownerName')
+              }}<input v-model="draft.ownerName" maxlength="80" required
             /></label>
             <label
-              >状态类型<select v-model="draft.presenceStatus">
+              >{{ t('admin-system.site.editor.fields.ownerTitle') }}<input v-model="draft.ownerTitle" maxlength="200"
+            /></label>
+            <label
+              >{{ t('admin-system.site.editor.fields.avatar') }}<input v-model="draft.avatar" maxlength="1000"
+            /></label>
+            <button type="button" @click="pickerOpen = true">{{ t('admin-system.site.page.pickAvatar') }}</button>
+            <label
+              >{{ t('admin-system.site.editor.fields.avatarAlt') }}<input v-model="draft.avatarAlt" maxlength="300"
+            /></label>
+            <label
+              >{{ t('admin-system.site.editor.fields.presenceLabel')
+              }}<input
+                v-model="draft.presenceLabel"
+                maxlength="20"
+                :placeholder="t('admin-system.site.page.presenceLabelPlaceholder')"
+            /></label>
+            <label
+              >{{ t('admin-system.site.editor.fields.presenceSignature')
+              }}<input
+                v-model="draft.presenceSignature"
+                maxlength="60"
+                :placeholder="t('admin-system.site.page.presenceSignaturePlaceholder')"
+            /></label>
+            <label
+              >{{ t('admin-system.site.editor.fields.presenceStatus')
+              }}<select v-model="draft.presenceStatus">
                 <option v-for="option in presenceStatusOptions" :key="option.value" :value="option.value">
                   {{ option.label }}
                 </option>
               </select></label
             >
             <label
-              >站点上线日期<input v-model="draft.launchedAt" type="date" placeholder="留空按最早公开文章推算"
+              >{{ t('admin-system.site.editor.fields.launchedAt')
+              }}<input
+                v-model="draft.launchedAt"
+                type="date"
+                :placeholder="t('admin-system.site.page.launchedAtPlaceholder')"
             /></label>
           </fieldset>
           <fieldset :disabled="pending || !ready">
-            <legend>社交链接（最多 8 个）</legend>
+            <legend>{{ t('admin-system.site.page.socialsLegend', { max: 8 }) }}</legend>
             <div v-for="(link, index) in draft.socials" :key="index" class="admin-site__social">
-              <label>链接名称<input v-model="link.label" maxlength="40" required /></label>
               <label
-                >链接地址<input v-model="link.href" maxlength="1000" placeholder="https:// 或 mailto:" required
+                >{{ t('admin-system.site.page.socialLabel') }}<input v-model="link.label" maxlength="40" required
               /></label>
               <label
-                >链接图标<select v-model="link.icon">
+                >{{ t('admin-system.site.page.socialHref')
+                }}<input
+                  v-model="link.href"
+                  maxlength="1000"
+                  :placeholder="t('admin-system.site.page.socialHrefPlaceholder')"
+                  required
+              /></label>
+              <label
+                >{{ t('admin-system.site.page.socialIcon')
+                }}<select v-model="link.icon">
                   <option v-for="icon in siteSocialIcons" :key="icon" :value="icon">
                     {{ icon.replace('lucide:', '') }}
                   </option>
                 </select></label
               >
-              <button type="button" :aria-label="`移除社交链接 ${index + 1}`" @click="draft.socials.splice(index, 1)">
-                移除
+              <button
+                type="button"
+                :aria-label="t('admin-system.site.page.removeSocial', { index: index + 1 })"
+                @click="draft.socials.splice(index, 1)"
+              >
+                {{ t('admin-system.site.page.remove') }}
               </button>
             </div>
             <button
@@ -71,98 +119,108 @@
               :disabled="draft.socials.length >= 8"
               @click="draft.socials.push({ label: '', href: '', icon: 'lucide:globe' })"
             >
-              添加社交链接
+              {{ t('admin-system.site.page.addSocial') }}
             </button>
           </fieldset>
           <fieldset :disabled="pending || !ready">
-            <legend>公告与默认 SEO</legend>
+            <legend>{{ t('admin-system.site.page.seoLegend') }}</legend>
             <label
-              >站点公告<textarea
+              >{{ t('admin-system.site.editor.fields.announcement')
+              }}<textarea
                 v-model="draft.announcement"
                 maxlength="1000"
                 rows="4"
-                placeholder="留空则不展示公告"
+                :placeholder="t('admin-system.site.page.announcementPlaceholder')"
               />
             </label>
             <label
-              >首页 SEO 标题<input v-model="draft.seoTitle" maxlength="160" placeholder="留空使用站点名称"
+              >{{ t('admin-system.site.editor.fields.seoTitle')
+              }}<input
+                v-model="draft.seoTitle"
+                maxlength="160"
+                :placeholder="t('admin-system.site.page.seoTitlePlaceholder')"
             /></label>
             <label
-              >默认 SEO 描述<textarea
+              >{{ t('admin-system.site.editor.fields.seoDescription')
+              }}<textarea
                 v-model="draft.seoDescription"
                 maxlength="320"
                 rows="3"
-                placeholder="文章自定义 SEO 优先于站点默认值"
+                :placeholder="t('admin-system.site.page.seoDescriptionPlaceholder')"
               />
             </label>
           </fieldset>
           <AdminSiteNavigationFields v-model="draft" :disabled="pending || !ready" />
           <AdminAboutSettingsFields v-if="draft.about" v-model="draft.about" :disabled="pending || !ready" />
-          <AdminSiteSettingsPreview :value="draft" label="保存后的公开资料预览" />
+          <AdminSiteSettingsPreview :value="draft" :label="t('admin-system.site.page.previewLabel')" />
           <AdminActionBar
-            ><CommonTooltip :content="`保存（${saveShortcut}）`"
+            ><CommonTooltip :content="t('admin-system.site.page.saveTooltip', { shortcut: saveShortcut })"
               ><button
                 :aria-busy="pending"
                 type="submit"
                 aria-keyshortcuts="Control+S Meta+S"
                 :disabled="pending || !ready || !dirty || !!submission || !!conflict"
               >
-                {{ pending ? '处理中…' : '保存并生效' }}
+                {{ pending ? t('admin-system.site.page.saving') : t('admin-system.site.page.save') }}
               </button></CommonTooltip
             ></AdminActionBar
           >
         </form>
-        <section v-if="conflict" aria-label="站点配置冲突">
-          <AdminSiteSettingsPreview :value="conflict" label="最新服务器资料" /><button
+        <section v-if="conflict" :aria-label="t('admin-system.site.page.conflictLabel')">
+          <AdminSiteSettingsPreview :value="conflict" :label="t('admin-system.site.page.latestPreview')" /><button
             type="button"
             :disabled="pending || !ready || !!submission"
             @click="mergeConflict"
           >
-            保留输入，按最新版本继续合并
+            {{ t('admin-system.site.page.mergeConflict') }}
           </button>
         </section>
         <p v-if="preserved">
-          此前未保存输入仍保留在本页。<button
-            type="button"
-            :disabled="pending || !ready || !!submission"
-            @click="recoverPreserved"
-          >
-            恢复此前输入
+          {{ t('admin-system.site.page.preserved')
+          }}<button type="button" :disabled="pending || !ready || !!submission" @click="recoverPreserved">
+            {{ t('admin-system.site.page.recoverPreserved') }}
           </button>
         </p>
-        <section class="admin-site__history" aria-label="站点配置历史">
-          <h2>配置历史</h2>
-          <p>历史版本保留头像引用，可比较后载入编辑，或明确恢复为新服务器版本。</p>
+        <section class="admin-site__history" :aria-label="t('admin-system.site.page.historyLabel')">
+          <h2>{{ t('admin-system.site.page.historyTitle') }}</h2>
+          <p>{{ t('admin-system.site.page.historyIntro') }}</p>
           <p v-if="historyError" role="alert">
-            {{ historyError }} <button type="button" :disabled="historyPending" @click="loadHistory()">重试历史</button>
+            {{ historyError }}
+            <button type="button" :disabled="historyPending" @click="loadHistory()">
+              {{ t('admin-system.site.page.retryHistory') }}
+            </button>
           </p>
           <ul>
             <li v-for="item in history" :key="item.revision">
               <button type="button" :disabled="historyPending || pending" @click="inspect(item.revision)">
-                查看版本 {{ item.revision }} · {{ item.reason }} ·
-                {{ new Date(item.createdAt).toLocaleString('zh-CN', { hour12: false }) }}
+                {{
+                  t('admin-system.site.page.viewRevision', {
+                    revision: item.revision,
+                    reason: item.reason,
+                    time: formatDateTime(item.createdAt, { hour12: false }),
+                  })
+                }}
               </button>
             </li>
           </ul>
           <button type="button" :disabled="historyPending || historyPage <= 1" @click="loadHistory(historyPage - 1)">
-            上一页历史</button
+            {{ t('admin-system.site.page.prevHistory') }}</button
           ><span> {{ historyPage }} / {{ Math.max(1, Math.ceil(historyTotal / 20)) }} </span
           ><button
             type="button"
             :disabled="historyPending || historyPage * 20 >= historyTotal"
             @click="loadHistory(historyPage + 1)"
           >
-            下一页历史
+            {{ t('admin-system.site.page.nextHistory') }}
           </button>
           <template v-if="historical"
-            ><AdminSiteSettingsPreview :value="historical" :label="`历史版本 ${historical.revision} 预览`" /><button
-              type="button"
-              :disabled="pending || !ready || !!submission"
-              @click="loadHistorical"
-            >
-              载入历史资料编辑</button
+            ><AdminSiteSettingsPreview
+              :value="historical"
+              :label="t('admin-system.site.page.historicalPreview', { revision: historical.revision })"
+            /><button type="button" :disabled="pending || !ready || !!submission" @click="loadHistorical">
+              {{ t('admin-system.site.page.loadHistorical') }}</button
             ><button type="button" :disabled="pending || !ready || !!submission" @click="restoreHistorical">
-              恢复此版本到服务器
+              {{ t('admin-system.site.page.restoreHistorical') }}
             </button></template
           >
         </section>
@@ -175,8 +233,10 @@
 import { presenceStatusOptions, siteSocialIcons } from '~/features/site/settings'
 import { siteExtrasErrors } from '~/features/site/extras'
 import type { MediaAsset } from '~/features/media/types'
+import { formatDateTime } from '~/utils/format'
 definePageMeta({ layout: 'admin' })
-useSeoMeta({ title: '站点设置', robots: 'noindex, nofollow' })
+const { t } = useI18n()
+useSeoMeta({ title: () => t('admin-system.site.page.title'), robots: 'noindex, nofollow' })
 const siteUrl = useRuntimeConfig().public.siteUrl
 const {
   draft,
@@ -208,9 +268,9 @@ const editorForm = ref<HTMLFormElement | null>(null)
 const { label: saveShortcut } = useAdminSaveShortcut({ form: editorForm, dirty: () => dirty.value })
 /** 导航与页脚有即时校验错误时不提交，焦点移到第一个错误输入框 */
 function submit() {
-  if (draft.value && Object.keys(siteExtrasErrors(draft.value)).length) {
+  if (draft.value && Object.keys(siteExtrasErrors(draft.value, t)).length) {
     editorForm.value?.querySelector<HTMLElement>('[aria-invalid="true"]')?.focus()
-    error.value = '导航与页脚有需要修改的输入，请按提示修正后再保存'
+    error.value = t('admin-system.site.page.extrasInvalid')
     return
   }
   save()

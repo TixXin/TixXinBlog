@@ -5,6 +5,7 @@
 import type { SiteSettingsData } from './settings'
 import { MAX_EXTERNAL_NAV } from '~/features/nav/routes'
 import { MAX_FOOTER_LINKS, MAX_QUOTES, MAX_QUOTE_LENGTH } from './footer'
+import { currentTranslate, type Translate } from '~/utils/format'
 
 export const SITE_EXTRA_LIMITS = {
   navLabel: 20,
@@ -34,8 +35,13 @@ type ExtrasValue = Pick<
   'navigation' | 'footerLinks' | 'quotes' | 'icpNumber' | 'icpUrl' | 'copyright'
 >
 
-/** 返回字段标识到错误文案的映射；字段标识与编辑组件中的输入框一一对应 */
-export function siteExtrasErrors(value: ExtrasValue): Record<string, string> {
+const V = 'admin-system.siteValidation'
+
+/**
+ * 返回字段标识到错误文案的映射；字段标识与编辑组件中的输入框一一对应。
+ * 文案按调用时的界面语言生成，组件可显式传入 t。
+ */
+export function siteExtrasErrors(value: ExtrasValue, t: Translate = currentTranslate()): Record<string, string> {
   const errors: Record<string, string> = {}
   const navUrls = new Set<string>()
   let external = 0
@@ -45,39 +51,39 @@ export function siteExtrasErrors(value: ExtrasValue): Record<string, string> {
     const label = entry.label.trim()
     const url = entry.url.trim()
     if (!label || label.length > SITE_EXTRA_LIMITS.navLabel)
-      errors[`nav-${index}-label`] = `请填写 1–${SITE_EXTRA_LIMITS.navLabel} 个字符的名称`
-    if (!isHttpUrl(url) || url.length > SITE_EXTRA_LIMITS.url)
-      errors[`nav-${index}-url`] = '外链仅支持 http:// 或 https:// 开头的完整地址'
-    else if (navUrls.has(url)) errors[`nav-${index}-url`] = '与其他外链导航地址重复'
+      errors[`nav-${index}-label`] = t(`${V}.labelLength`, { max: SITE_EXTRA_LIMITS.navLabel })
+    if (!isHttpUrl(url) || url.length > SITE_EXTRA_LIMITS.url) errors[`nav-${index}-url`] = t(`${V}.navUrl`)
+    else if (navUrls.has(url)) errors[`nav-${index}-url`] = t(`${V}.navUrlDuplicate`)
     navUrls.add(url)
   })
-  if (external > MAX_EXTERNAL_NAV) errors.navigation = `外链导航最多 ${MAX_EXTERNAL_NAV} 个`
+  if (external > MAX_EXTERNAL_NAV) errors.navigation = t(`${V}.navigationMax`, { max: MAX_EXTERNAL_NAV })
   const footerUrls = new Set<string>()
   value.footerLinks.forEach((link, index) => {
     const label = link.label.trim()
     const url = link.url.trim()
     if (!label || label.length > SITE_EXTRA_LIMITS.footerLabel)
-      errors[`footer-${index}-label`] = `请填写 1–${SITE_EXTRA_LIMITS.footerLabel} 个字符的名称`
+      errors[`footer-${index}-label`] = t(`${V}.labelLength`, { max: SITE_EXTRA_LIMITS.footerLabel })
     if ((!isSitePath(url) && !isHttpUrl(url)) || url.length > SITE_EXTRA_LIMITS.url)
-      errors[`footer-${index}-url`] = '请填写以 / 开头的站内路径，或 http(s) 完整地址'
-    else if (footerUrls.has(url)) errors[`footer-${index}-url`] = '与其他页脚链接地址重复'
+      errors[`footer-${index}-url`] = t(`${V}.footerUrl`)
+    else if (footerUrls.has(url)) errors[`footer-${index}-url`] = t(`${V}.footerUrlDuplicate`)
     footerUrls.add(url)
   })
-  if (value.footerLinks.length > MAX_FOOTER_LINKS) errors.footerLinks = `页脚链接最多 ${MAX_FOOTER_LINKS} 个`
+  if (value.footerLinks.length > MAX_FOOTER_LINKS)
+    errors.footerLinks = t(`${V}.footerLinksMax`, { max: MAX_FOOTER_LINKS })
   const quotes = new Set<string>()
   value.quotes.forEach((quote, index) => {
     const text = quote.trim()
-    if (!text || text.length > MAX_QUOTE_LENGTH) errors[`quote-${index}`] = `请填写 1–${MAX_QUOTE_LENGTH} 个字符`
-    else if (quotes.has(text)) errors[`quote-${index}`] = '与前面的一言重复'
+    if (!text || text.length > MAX_QUOTE_LENGTH)
+      errors[`quote-${index}`] = t(`${V}.quoteLength`, { max: MAX_QUOTE_LENGTH })
+    else if (quotes.has(text)) errors[`quote-${index}`] = t(`${V}.quoteDuplicate`)
     quotes.add(text)
   })
-  if (value.quotes.length > MAX_QUOTES) errors.quotes = `每日一言最多 ${MAX_QUOTES} 条`
+  if (value.quotes.length > MAX_QUOTES) errors.quotes = t(`${V}.quotesMax`, { max: MAX_QUOTES })
   if (value.icpNumber.trim().length > SITE_EXTRA_LIMITS.icpNumber)
-    errors.icpNumber = `备案号最多 ${SITE_EXTRA_LIMITS.icpNumber} 个字符`
+    errors.icpNumber = t(`${V}.icpNumberMax`, { max: SITE_EXTRA_LIMITS.icpNumber })
   const icpUrl = value.icpUrl.trim()
-  if (icpUrl && (!isHttpUrl(icpUrl) || icpUrl.length > SITE_EXTRA_LIMITS.icpUrl))
-    errors.icpUrl = '备案链接仅支持 http(s) 完整地址，留空使用工信部备案查询'
+  if (icpUrl && (!isHttpUrl(icpUrl) || icpUrl.length > SITE_EXTRA_LIMITS.icpUrl)) errors.icpUrl = t(`${V}.icpUrl`)
   if (value.copyright.trim().length > SITE_EXTRA_LIMITS.copyright)
-    errors.copyright = `版权文案最多 ${SITE_EXTRA_LIMITS.copyright} 个字符`
+    errors.copyright = t(`${V}.copyrightMax`, { max: SITE_EXTRA_LIMITS.copyright })
   return errors
 }

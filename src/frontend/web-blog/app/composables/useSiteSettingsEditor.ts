@@ -16,6 +16,8 @@ export function useSiteSettingsEditor() {
   const auth = useCurrentUser()
   const publicSite = useSiteSettings()
   const toast = useToast()
+  const { t } = useI18n()
+  const S = 'admin-system.site.editor'
   const context = useState<string>('page-content-context', () => '')
   const ready = ref(false)
   let actor = '',
@@ -26,35 +28,41 @@ export function useSiteSettingsEditor() {
     alive && generation === version && actor === auth.currentUser.value?.id && ownedContext === context.value
   const recoveryKey = () => `blog-site-settings:${actor}:${ownedContext}`
   const conflictLabels = (paths: string[]) => {
+    const fields = [
+      'name',
+      'description',
+      'ownerName',
+      'ownerTitle',
+      'avatar',
+      'avatarAlt',
+      'seoTitle',
+      'seoDescription',
+      'announcement',
+      'socials',
+      'presenceLabel',
+      'presenceSignature',
+      'launchedAt',
+      'presenceStatus',
+      'navigation',
+      'footerLinks',
+      'quotes',
+      'icpNumber',
+      'icpUrl',
+      'copyright',
+    ]
     const labels: Record<string, string> = {
-      name: '站点名称',
-      description: '站点简介',
-      ownerName: '博主名称',
-      ownerTitle: '博主简介',
-      avatar: '头像地址',
-      avatarAlt: '头像替代文本',
-      seoTitle: '首页 SEO 标题',
-      seoDescription: '默认 SEO 描述',
-      announcement: '站点公告',
-      socials: '社交链接',
-      presenceLabel: '在线状态',
-      presenceSignature: '状态签名',
-      launchedAt: '站点上线日期',
-      presenceStatus: '状态类型',
-      navigation: '导航',
-      footerLinks: '页脚链接',
-      quotes: '每日一言',
-      icpNumber: 'ICP 备案号',
-      icpUrl: '备案链接',
-      copyright: '版权文案',
-      'about.visible': '关于资料显隐',
-      'about.introduction': '详细介绍',
-      'about.sections.order': '关于栏目顺序',
+      ...Object.fromEntries(fields.map((field) => [field, t(`${S}.fields.${field}`)])),
+      'about.visible': t(`${S}.fields.aboutVisible`),
+      'about.introduction': t(`${S}.fields.aboutIntroduction`),
+      'about.sections.order': t(`${S}.fields.aboutOrder`),
       ...Object.fromEntries(
-        Object.entries(aboutSectionLabels).map(([kind, label]) => [`about.${kind}`, `${label}栏目`]),
+        Object.keys(aboutSectionLabels).map((kind) => [
+          `about.${kind}`,
+          t(`${S}.fields.aboutSection`, { section: t(`admin-system.siteAbout.sections.${kind}`) }),
+        ]),
       ),
     }
-    return paths.map((path) => labels[path] ?? '站点资料').join('、')
+    return paths.map((path) => labels[path] ?? t(`${S}.fields.fallback`)).join(t(`${S}.fields.separator`))
   }
   let unreadableRecovery = false
   const draft = ref<SiteSettingsData | null>(null)
@@ -76,7 +84,7 @@ export function useSiteSettingsEditor() {
   function persist() {
     if (!import.meta.client || !actor || !draft.value || !baseline.value) return
     if (unreadableRecovery) {
-      error.value = '原恢复副本格式不完整，已保留；当前新输入无法写入恢复副本，请先保留当前页面。'
+      error.value = t(`${S}.recoveryLocked`)
       return
     }
     try {
@@ -94,7 +102,7 @@ export function useSiteSettingsEditor() {
           } satisfies SiteSettingsRecovery),
         )
     } catch {
-      error.value = '恢复副本无法保存，请保留当前页面。'
+      error.value = t(`${S}.recoverySaveFailed`)
     }
   }
   function readRecovery() {
@@ -104,7 +112,7 @@ export function useSiteSettingsEditor() {
       const value = parseSiteSettingsRecovery(raw)
       if (!value) {
         unreadableRecovery = true
-        error.value = '此前恢复副本格式不完整，未载入；原副本仍保留。'
+        error.value = t(`${S}.recoveryInvalid`)
         return
       }
       // 保留原始基线；用户载入时再展示同字段竞争，不能预先静默覆盖最新配置。
@@ -114,9 +122,9 @@ export function useSiteSettingsEditor() {
       preserved.value = copy?.draft ?? null
       preservedBase.value = copy?.base ?? null
       submission.value = value.submission
-      if (submission.value) error.value = '此前提交结果尚未确认，请先核对服务器结果；当前不会重复提交。'
+      if (submission.value) error.value = t(`${S}.submissionPendingOnLoad`)
     } catch {
-      error.value = '此前恢复副本无法读取，服务器资料仍可正常编辑。'
+      error.value = t(`${S}.recoveryUnreadable`)
     }
   }
   function accept(value: SiteSettingsData) {
@@ -146,7 +154,7 @@ export function useSiteSettingsEditor() {
       readRecovery()
       ready.value = true
     } catch {
-      if (alive && version === generation) error.value = '站点设置读取失败，请重试'
+      if (alive && version === generation) error.value = t(`${S}.loadFailed`)
     } finally {
       if (alive && version === generation) pending.value = false
     }
@@ -165,7 +173,7 @@ export function useSiteSettingsEditor() {
       historyTotal.value = result.total
       historyPage.value = page
     } catch {
-      if (owns(version)) historyError.value = '配置历史读取失败'
+      if (owns(version)) historyError.value = t(`${S}.historyFailed`)
     } finally {
       if (owns(version)) historyPending.value = false
     }
@@ -187,24 +195,21 @@ export function useSiteSettingsEditor() {
       draft.value = mergeSiteSettings(input, current, clone(draft.value!)).merged
       submission.value = null
       persist()
-      toast.success('站点资料已生效')
+      toast.success(t(`${S}.saved`))
       await loadHistory(1)
     } catch (cause) {
       if (!owns(version)) return
-      const message = (cause as { data?: { message?: unknown } }).data?.message
       const status = (cause as { statusCode?: number }).statusCode
       if (status && status >= 400 && status < 500 && status !== 408) submission.value = null
       error.value = submission.value
-        ? '提交结果尚未确认，请先核对服务器结果；当前输入仍保留。'
-        : typeof message === 'string'
-          ? message
-          : '保存失败，当前输入仍保留'
+        ? t(`${S}.submissionUnconfirmed`)
+        : apiErrorMessage(cause, `${S}.saveFailed`, { t })
       if (status === 409) {
         try {
           const latest = await api<SiteSettingsData>('/admin/site')
           if (owns(version)) conflict.value = latest
         } catch {
-          if (owns(version)) error.value += '；最新版本读取失败，请稍后重试'
+          if (owns(version)) error.value += t(`${S}.latestFailedSuffix`)
         }
       }
       persist()
@@ -236,15 +241,15 @@ export function useSiteSettingsEditor() {
         }
         if (!sameSiteValues(current, prior) && !sameSiteValues(current, latest))
           draft.value = mergeSiteSettings(sent, current, clone(draft.value!)).merged
-        error.value = '服务器已包含此次提交的资料，已确认当前版本。'
+        error.value = t(`${S}.submissionConfirmed`)
       } else {
         conflict.value = normalizeSiteSettings(latest)
-        error.value = '服务器资料与提交内容不同，请比较最新资料并明确合并后再保存。'
+        error.value = t(`${S}.submissionDiffers`)
       }
       submission.value = null
       persist()
     } catch {
-      if (owns(version)) error.value = '提交结果仍无法确认，请稍后继续核对；不会自动重试写入。'
+      if (owns(version)) error.value = t(`${S}.submissionStillUnknown`)
     } finally {
       if (owns(version)) pending.value = false
     }
@@ -258,7 +263,7 @@ export function useSiteSettingsEditor() {
       const value = await api<SiteSettingsData>(`/admin/site/revisions/${revision}`)
       if (owns(version)) historical.value = { ...value, about: value.about ?? emptyAbout() }
     } catch {
-      if (owns(version)) historyError.value = '历史配置读取失败'
+      if (owns(version)) historyError.value = t(`${S}.revisionFailed`)
     } finally {
       if (owns(version)) historyPending.value = false
     }
@@ -274,12 +279,7 @@ export function useSiteSettingsEditor() {
   }
   async function restoreHistorical() {
     if (!historical.value || !draft.value || pending.value || submission.value || !owns(generation)) return
-    if (
-      !window.confirm(
-        `立即将站点公开资料恢复到版本 ${historical.value.revision}？这会生成新版本，未保存输入会先保留在当前页面。`,
-      )
-    )
-      return
+    if (!window.confirm(t(`${S}.restoreConfirm`, { revision: historical.value.revision }))) return
     if (dirty.value) {
       preserved.value = clone(draft.value)
       preservedBase.value = JSON.parse(baseline.value) as SiteSettingsData
@@ -302,15 +302,13 @@ export function useSiteSettingsEditor() {
     )
     if (
       result.conflicts.length &&
-      !window.confirm(
-        `以下字段同时被修改：${conflictLabels(result.conflicts)}。继续使用当前输入覆盖这些字段，并保留服务器其他改动？`,
-      )
+      !window.confirm(t(`${S}.mergeConfirm`, { fields: conflictLabels(result.conflicts) }))
     )
       return
     baseline.value = JSON.stringify(conflict.value)
     draft.value = result.merged
     conflict.value = null
-    error.value = '已合并当前改动并保留服务器其他配置，请核对后保存'
+    error.value = t(`${S}.merged`)
     persist()
   }
   function recoverPreserved() {
@@ -328,7 +326,7 @@ export function useSiteSettingsEditor() {
     const result = mergeSiteSettings(clone(preservedBase.value), clone(preserved.value), current)
     if (
       result.conflicts.length &&
-      !window.confirm(`恢复副本与当前资料同时修改了：${conflictLabels(result.conflicts)}。确认采用恢复副本的这些字段？`)
+      !window.confirm(t(`${S}.recoverConfirm`, { fields: conflictLabels(result.conflicts) }))
     )
       return
     draft.value = result.merged
@@ -370,11 +368,11 @@ export function useSiteSettingsEditor() {
       actor = ''
       ownedContext = ''
       unreadableRecovery = false
-      error.value = '账号或内容库已改变，请重新读取站点资料。此前输入按原账号与内容库保留。'
+      error.value = t(`${S}.contextChanged`)
     },
     { flush: 'sync' },
   )
-  onBeforeRouteLeave(() => !pending.value && (!dirty.value || window.confirm('站点资料尚未保存，确定离开吗？')))
+  onBeforeRouteLeave(() => !pending.value && (!dirty.value || window.confirm(t(`${S}.leaveConfirm`))))
   onMounted(async () => {
     window.addEventListener('beforeunload', beforeUnload)
     const restored = await auth.restore()

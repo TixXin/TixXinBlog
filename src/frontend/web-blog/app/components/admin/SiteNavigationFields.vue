@@ -5,12 +5,12 @@
 -->
 <template>
   <fieldset class="site-nav-fields" :disabled="disabled">
-    <legend>导航与页脚</legend>
-    <p :id="ids.hint">隐藏的模块只是不出现在导航中，页面地址仍可访问并被搜索引擎收录；首页始终显示。</p>
+    <legend>{{ t('admin-system.siteNav.legend') }}</legend>
+    <p :id="ids.hint">{{ t('admin-system.siteNav.hint') }}</p>
     <p class="site-nav-fields__live" role="status" aria-live="polite">{{ movement }}</p>
 
     <fieldset>
-      <legend>导航（显隐与顺序）</legend>
+      <legend>{{ t('admin-system.siteNav.navLegend') }}</legend>
       <p v-if="errors.navigation" :id="ids.navigation" role="alert">{{ errors.navigation }}</p>
       <ol class="site-nav-fields__list">
         <li
@@ -28,14 +28,14 @@
                 :aria-describedby="entry.key === 'home' ? ids.hint : undefined"
               />
               <Icon :name="navRouteCatalog[entry.key].icon" aria-hidden="true" />
-              显示「{{ navRouteCatalog[entry.key].label }}」<span class="site-nav-fields__path">{{
-                navRouteCatalog[entry.key].to
-              }}</span>
+              {{ t('admin-system.siteNav.showRoute', { label: navRouteCatalog[entry.key].label })
+              }}<span class="site-nav-fields__path">{{ navRouteCatalog[entry.key].to }}</span>
             </label>
           </template>
           <template v-else>
             <label
-              >外链名称<input
+              >{{ t('admin-system.siteNav.externalLabel')
+              }}<input
                 v-model="entry.label"
                 :maxlength="SITE_EXTRA_LIMITS.navLabel"
                 required
@@ -46,7 +46,8 @@
               {{ errors[`nav-${index}-label`] }}
             </p>
             <label
-              >外链地址<input
+              >{{ t('admin-system.siteNav.externalUrl')
+              }}<input
                 v-model="entry.url"
                 type="url"
                 inputmode="url"
@@ -59,35 +60,39 @@
             <p v-if="errors[`nav-${index}-url`]" :id="errorId(`nav-${index}-url`)" class="site-nav-fields__error">
               {{ errors[`nav-${index}-url`] }}
             </p>
-            <label class="site-nav-fields__toggle"><input v-model="entry.newTab" type="checkbox" />新窗口打开</label>
-            <label class="site-nav-fields__toggle"><input v-model="entry.visible" type="checkbox" />显示此外链</label>
+            <label class="site-nav-fields__toggle"
+              ><input v-model="entry.newTab" type="checkbox" />{{ t('admin-system.siteNav.newTab') }}</label
+            >
+            <label class="site-nav-fields__toggle"
+              ><input v-model="entry.visible" type="checkbox" />{{ t('admin-system.siteNav.showExternal') }}</label
+            >
           </template>
           <div class="site-nav-fields__actions">
             <button
               type="button"
               data-move="up"
               :disabled="index === 0"
-              :aria-label="`上移${navName(entry)}`"
+              :aria-label="t('admin-system.siteNav.moveUpLabel', { name: navName(entry) })"
               @click="move(value.navigation, index, -1, 'nav', navName(entry))"
             >
-              上移
+              {{ t('admin-system.siteNav.moveUp') }}
             </button>
             <button
               type="button"
               data-move="down"
               :disabled="index === value.navigation.length - 1"
-              :aria-label="`下移${navName(entry)}`"
+              :aria-label="t('admin-system.siteNav.moveDownLabel', { name: navName(entry) })"
               @click="move(value.navigation, index, 1, 'nav', navName(entry))"
             >
-              下移
+              {{ t('admin-system.siteNav.moveDown') }}
             </button>
             <button
               v-if="entry.type === 'external'"
               type="button"
-              :aria-label="`移除${navName(entry)}`"
+              :aria-label="t('admin-system.siteNav.removeLabel', { name: navName(entry) })"
               @click="remove(value.navigation, index, navName(entry))"
             >
-              移除
+              {{ t('admin-system.siteNav.remove') }}
             </button>
           </div>
         </li>
@@ -97,14 +102,14 @@
         :disabled="externalCount >= MAX_EXTERNAL_NAV"
         @click="value.navigation.push({ type: 'external', label: '', url: '', newTab: true, visible: true })"
       >
-        添加外链导航（{{ externalCount }}/{{ MAX_EXTERNAL_NAV }}）
+        {{ t('admin-system.siteNav.addExternal', { count: externalCount, max: MAX_EXTERNAL_NAV }) }}
       </button>
     </fieldset>
 
     <fieldset>
-      <legend>页脚链接（最多 {{ MAX_FOOTER_LINKS }} 个）</legend>
+      <legend>{{ t('admin-system.siteNav.footerLegend', { max: MAX_FOOTER_LINKS }) }}</legend>
       <p v-if="errors.footerLinks" role="alert">{{ errors.footerLinks }}</p>
-      <p v-if="!value.footerLinks.length">当前不展示页脚链接。</p>
+      <p v-if="!value.footerLinks.length">{{ t('admin-system.siteNav.footerEmpty') }}</p>
       <ol class="site-nav-fields__list">
         <li
           v-for="(link, index) in value.footerLinks"
@@ -113,7 +118,8 @@
           :data-row="`footer-${index}`"
         >
           <label
-            >链接名称<input
+            >{{ t('admin-system.siteNav.linkLabel')
+            }}<input
               v-model="link.label"
               :maxlength="SITE_EXTRA_LIMITS.footerLabel"
               required
@@ -128,10 +134,11 @@
             {{ errors[`footer-${index}-label`] }}
           </p>
           <label
-            >链接地址<input
+            >{{ t('admin-system.siteNav.linkUrl')
+            }}<input
               v-model="link.url"
               :maxlength="SITE_EXTRA_LIMITS.url"
-              placeholder="/about 或 https://"
+              :placeholder="t('admin-system.siteNav.linkUrlPlaceholder')"
               required
               :aria-invalid="!!errors[`footer-${index}-url`]"
               :aria-describedby="
@@ -143,49 +150,51 @@
           <p v-if="errors[`footer-${index}-url`]" :id="errorId(`footer-${index}-url`)" class="site-nav-fields__error">
             {{ errors[`footer-${index}-url`] }}
           </p>
-          <label class="site-nav-fields__toggle"><input v-model="link.newTab" type="checkbox" />新窗口打开</label>
+          <label class="site-nav-fields__toggle"
+            ><input v-model="link.newTab" type="checkbox" />{{ t('admin-system.siteNav.newTab') }}</label
+          >
           <div class="site-nav-fields__actions">
             <button
               type="button"
               data-move="up"
               :disabled="index === 0"
-              :aria-label="`上移页脚链接${link.label || index + 1}`"
-              @click="move(value.footerLinks, index, -1, 'footer', `页脚链接${link.label || index + 1}`)"
+              :aria-label="t('admin-system.siteNav.moveUpLabel', { name: footerName(link.label, index) })"
+              @click="move(value.footerLinks, index, -1, 'footer', footerName(link.label, index))"
             >
-              上移
+              {{ t('admin-system.siteNav.moveUp') }}
             </button>
             <button
               type="button"
               data-move="down"
               :disabled="index === value.footerLinks.length - 1"
-              :aria-label="`下移页脚链接${link.label || index + 1}`"
-              @click="move(value.footerLinks, index, 1, 'footer', `页脚链接${link.label || index + 1}`)"
+              :aria-label="t('admin-system.siteNav.moveDownLabel', { name: footerName(link.label, index) })"
+              @click="move(value.footerLinks, index, 1, 'footer', footerName(link.label, index))"
             >
-              下移
+              {{ t('admin-system.siteNav.moveDown') }}
             </button>
             <button
               type="button"
-              :aria-label="`移除页脚链接${link.label || index + 1}`"
-              @click="remove(value.footerLinks, index, `页脚链接${link.label || index + 1}`)"
+              :aria-label="t('admin-system.siteNav.removeLabel', { name: footerName(link.label, index) })"
+              @click="remove(value.footerLinks, index, footerName(link.label, index))"
             >
-              移除
+              {{ t('admin-system.siteNav.remove') }}
             </button>
           </div>
         </li>
       </ol>
-      <p :id="ids.footerHint">站内页面填写 / 开头的路径；RSS、站点地图等文件或站外地址按原生链接打开。</p>
+      <p :id="ids.footerHint">{{ t('admin-system.siteNav.footerHint') }}</p>
       <button
         type="button"
         :disabled="value.footerLinks.length >= MAX_FOOTER_LINKS"
         @click="value.footerLinks.push({ label: '', url: '', newTab: false })"
       >
-        添加页脚链接
+        {{ t('admin-system.siteNav.addFooter') }}
       </button>
     </fieldset>
 
     <fieldset>
-      <legend>每日一言（最多 {{ MAX_QUOTES }} 条）</legend>
-      <p>每次打开页面随机展示一条；清空后不展示一言。</p>
+      <legend>{{ t('admin-system.siteNav.quotesLegend', { max: MAX_QUOTES }) }}</legend>
+      <p>{{ t('admin-system.siteNav.quotesHint') }}</p>
       <p v-if="errors.quotes" role="alert">{{ errors.quotes }}</p>
       <ol class="site-nav-fields__list">
         <li
@@ -195,7 +204,8 @@
           :data-row="`quote-${index}`"
         >
           <label
-            >第 {{ index + 1 }} 条<input
+            >{{ t('admin-system.siteNav.quoteItem', { index: index + 1 })
+            }}<input
               v-model="value.quotes[index]"
               :maxlength="MAX_QUOTE_LENGTH"
               required
@@ -210,48 +220,50 @@
               type="button"
               data-move="up"
               :disabled="index === 0"
-              :aria-label="`上移第 ${index + 1} 条一言`"
-              @click="move(value.quotes, index, -1, 'quote', '一言')"
+              :aria-label="t('admin-system.siteNav.moveUpLabel', { name: quoteName(index) })"
+              @click="move(value.quotes, index, -1, 'quote', t('admin-system.siteNav.quote'))"
             >
-              上移
+              {{ t('admin-system.siteNav.moveUp') }}
             </button>
             <button
               type="button"
               data-move="down"
               :disabled="index === value.quotes.length - 1"
-              :aria-label="`下移第 ${index + 1} 条一言`"
-              @click="move(value.quotes, index, 1, 'quote', '一言')"
+              :aria-label="t('admin-system.siteNav.moveDownLabel', { name: quoteName(index) })"
+              @click="move(value.quotes, index, 1, 'quote', t('admin-system.siteNav.quote'))"
             >
-              下移
+              {{ t('admin-system.siteNav.moveDown') }}
             </button>
             <button
               type="button"
-              :aria-label="`移除第 ${index + 1} 条一言`"
-              @click="remove(value.quotes, index, `第 ${index + 1} 条一言`)"
+              :aria-label="t('admin-system.siteNav.removeLabel', { name: quoteName(index) })"
+              @click="remove(value.quotes, index, quoteName(index))"
             >
-              移除
+              {{ t('admin-system.siteNav.remove') }}
             </button>
           </div>
         </li>
       </ol>
       <button type="button" :disabled="value.quotes.length >= MAX_QUOTES" @click="value.quotes.push('')">
-        添加一言
+        {{ t('admin-system.siteNav.addQuote') }}
       </button>
     </fieldset>
 
     <fieldset>
-      <legend>备案与版权</legend>
+      <legend>{{ t('admin-system.siteNav.icpLegend') }}</legend>
       <label
-        >ICP 备案号（选填）<input
+        >{{ t('admin-system.siteNav.icpNumber')
+        }}<input
           v-model="value.icpNumber"
           :maxlength="SITE_EXTRA_LIMITS.icpNumber"
-          placeholder="如：京ICP备00000000号"
+          :placeholder="t('admin-system.siteNav.icpNumberPlaceholder')"
           :aria-invalid="!!errors.icpNumber"
           :aria-describedby="errors.icpNumber ? errorId('icpNumber') : undefined"
       /></label>
       <p v-if="errors.icpNumber" :id="errorId('icpNumber')" class="site-nav-fields__error">{{ errors.icpNumber }}</p>
       <label
-        >备案链接（选填）<input
+        >{{ t('admin-system.siteNav.icpUrl')
+        }}<input
           v-model="value.icpUrl"
           type="url"
           inputmode="url"
@@ -260,10 +272,11 @@
           :aria-invalid="!!errors.icpUrl"
           :aria-describedby="[ids.icpHint, errors.icpUrl ? errorId('icpUrl') : ''].filter(Boolean).join(' ')"
       /></label>
-      <p :id="ids.icpHint">留空时链接到工信部备案查询；未填写备案号时页脚不展示备案信息。</p>
+      <p :id="ids.icpHint">{{ t('admin-system.siteNav.icpHint') }}</p>
       <p v-if="errors.icpUrl" :id="errorId('icpUrl')" class="site-nav-fields__error">{{ errors.icpUrl }}</p>
       <label
-        >版权文案（选填）<input
+        >{{ t('admin-system.siteNav.copyright')
+        }}<input
           v-model="value.copyright"
           :maxlength="SITE_EXTRA_LIMITS.copyright"
           :placeholder="`© {year} ${value.name || '{siteName}'}. All rights reserved.`"
@@ -273,12 +286,17 @@
           "
       /></label>
       <p :id="ids.copyrightHint">
-        留空使用默认格式“{{ formatCopyright('', year, value.name) }}”；可用 {year} 表示当前年份、{siteName}
-        表示站点名称。
+        {{
+          t('admin-system.siteNav.copyrightHint', {
+            format: formatCopyright('', year, value.name),
+            year: '{year}',
+            siteName: '{siteName}',
+          })
+        }}
       </p>
       <p v-if="errors.copyright" :id="errorId('copyright')" class="site-nav-fields__error">{{ errors.copyright }}</p>
       <p>
-        页脚预览：{{ formatCopyright(value.copyright, year, value.name)
+        {{ t('admin-system.siteNav.footerPreview', { text: formatCopyright(value.copyright, year, value.name) })
         }}<template v-if="value.icpNumber.trim()"> · {{ value.icpNumber.trim() }}</template>
       </p>
     </fieldset>
@@ -298,6 +316,7 @@ import {
 } from '~/features/site/footer'
 import { SITE_EXTRA_LIMITS, siteExtrasErrors } from '~/features/site/extras'
 
+const { t } = useI18n()
 const value = defineModel<SiteSettingsData>({ required: true })
 defineProps<{ disabled?: boolean }>()
 
@@ -312,7 +331,7 @@ const ids = {
 const errorId = (field: string) => `${uid}-${field}-error`
 const year = new Date().getFullYear()
 const movement = ref('')
-const errors = computed(() => siteExtrasErrors(value.value))
+const errors = computed(() => siteExtrasErrors(value.value, t))
 const externalCount = computed(() => value.value.navigation.filter((entry) => entry.type === 'external').length)
 
 const keys = new WeakMap<object, number>()
@@ -323,15 +342,19 @@ function itemKey(item: object) {
   return keys.get(raw)!
 }
 function navName(entry: SiteNavEntry) {
-  return entry.type === 'route' ? `导航「${navRouteCatalog[entry.key].label}」` : `外链导航${entry.label || ''}`
+  return entry.type === 'route'
+    ? t('admin-system.siteNav.routeName', { label: navRouteCatalog[entry.key].label })
+    : t('admin-system.siteNav.externalName', { label: entry.label || '' })
 }
+const footerName = (label: string, index: number) => t('admin-system.siteNav.footerName', { label: label || index + 1 })
+const quoteName = (index: number) => t('admin-system.siteNav.quoteName', { index: index + 1 })
 /** 移动后把焦点放回同方向的按钮（到达边界时换到另一方向），并播报新位置 */
 async function move<T>(items: T[], index: number, direction: number, group: string, name: string) {
   const target = index + direction
   if (target < 0 || target >= items.length) return
   const item = items.splice(index, 1)[0]!
   items.splice(target, 0, item)
-  movement.value = `${name}已移至第 ${target + 1} 项`
+  movement.value = t('admin-system.siteNav.moved', { name, position: target + 1 })
   await nextTick()
   const row = document.querySelector<HTMLElement>(`[data-row="${group}-${target}"]`)
   const same = row?.querySelector<HTMLButtonElement>(`[data-move="${direction < 0 ? 'up' : 'down'}"]`)
@@ -340,7 +363,7 @@ async function move<T>(items: T[], index: number, direction: number, group: stri
 }
 function remove<T>(items: T[], index: number, name: string) {
   items.splice(index, 1)
-  movement.value = `已移除${name}`
+  movement.value = t('admin-system.siteNav.removed', { name })
 }
 </script>
 

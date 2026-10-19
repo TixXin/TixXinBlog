@@ -17,72 +17,134 @@
       @error="imageFailed = true"
     />
     <p v-if="imageFailed" role="status">
-      头像读取失败
-      <button type="button" @click="retryAvatar">重试头像</button>
+      {{ t('admin-system.sitePreview.avatarFailed') }}
+      <button type="button" @click="retryAvatar">{{ t('admin-system.sitePreview.retryAvatar') }}</button>
     </p>
     <p>{{ value.ownerName }} · {{ value.ownerTitle }}</p>
-    <p>替代文本：{{ value.avatarAlt || '未填写' }}</p>
+    <p>
+      {{ t('admin-system.sitePreview.avatarAlt', { text: value.avatarAlt || t('admin-system.sitePreview.empty') }) }}
+    </p>
     <ul>
       <li v-for="(social, index) in value.socials" :key="index">
         <Icon :name="social.icon" /> {{ social.label }} · {{ social.href }}
       </li>
     </ul>
-    <p>公告：{{ value.announcement || '不显示公告' }}</p>
     <p>
-      首页 SEO 标题：{{
-        value.seoTitle && value.seoTitle !== value.name ? `${value.seoTitle} - ${value.name}` : value.name
+      {{
+        t('admin-system.sitePreview.announcement', {
+          text: value.announcement || t('admin-system.sitePreview.noAnnouncement'),
+        })
       }}
     </p>
-    <p>SEO 描述：{{ value.seoDescription || value.description }}</p>
+    <p>
+      {{
+        t('admin-system.sitePreview.seoTitle', {
+          text: value.seoTitle && value.seoTitle !== value.name ? `${value.seoTitle} - ${value.name}` : value.name,
+        })
+      }}
+    </p>
+    <p>{{ t('admin-system.sitePreview.seoDescription', { text: value.seoDescription || value.description }) }}</p>
     <details v-if="value.about" class="site-preview__about">
-      <summary>关于页完整资料 · {{ value.about.visible ? '整体公开' : '整体未公开' }}</summary>
-      <p>以下包含隐藏内容，供管理核对；公开页面还会按栏目和条目显隐过滤。</p>
-      <p>详细介绍：{{ value.about.introduction || '未填写' }}</p>
-      <p v-if="!value.about.sections.length">尚未填写关于栏目。</p>
+      <summary>
+        {{
+          t('admin-system.sitePreview.aboutSummary', {
+            state: value.about.visible
+              ? t('admin-system.sitePreview.aboutPublic')
+              : t('admin-system.sitePreview.aboutHidden'),
+          })
+        }}
+      </summary>
+      <p>{{ t('admin-system.sitePreview.aboutHint') }}</p>
+      <p>
+        {{
+          t('admin-system.sitePreview.introduction', {
+            text: value.about.introduction || t('admin-system.sitePreview.empty'),
+          })
+        }}
+      </p>
+      <p v-if="!value.about.sections.length">{{ t('admin-system.sitePreview.noSections') }}</p>
       <section v-for="section in value.about.sections" :key="section.kind">
-        <h4>{{ aboutSectionLabels[section.kind] }} · {{ section.visible ? '栏目公开' : '栏目隐藏' }}</h4>
-        <p v-if="!section.items.length">此栏目尚无条目。</p>
+        <h4>
+          {{ t(`admin-system.siteAbout.sections.${section.kind}`) }} ·
+          {{
+            section.visible ? t('admin-system.sitePreview.sectionPublic') : t('admin-system.sitePreview.sectionHidden')
+          }}
+        </h4>
+        <p v-if="!section.items.length">{{ t('admin-system.sitePreview.noItems') }}</p>
         <ol v-else>
           <li v-for="(item, index) in section.items" :key="index">
-            <strong>{{ item.title || '名称未填写' }}</strong> · {{ item.visible ? '条目公开' : '条目隐藏' }}
-            <p v-if="item.period">时间或阶段：{{ item.period }}</p>
-            <p>说明：{{ item.detail || '未填写' }}</p>
+            <strong>{{ item.title || t('admin-system.sitePreview.untitled') }}</strong> ·
+            {{ item.visible ? t('admin-system.sitePreview.itemPublic') : t('admin-system.sitePreview.itemHidden') }}
+            <p v-if="item.period">{{ t('admin-system.sitePreview.period', { text: item.period }) }}</p>
+            <p>
+              {{ t('admin-system.sitePreview.detail', { text: item.detail || t('admin-system.sitePreview.empty') }) }}
+            </p>
           </li>
         </ol>
       </section>
     </details>
-    <div v-if="value.navigation" class="site-preview__extras" role="group" aria-label="导航与页脚">
-      <p><strong>导航与页脚</strong></p>
+    <div
+      v-if="value.navigation"
+      class="site-preview__extras"
+      role="group"
+      :aria-label="t('admin-system.sitePreview.extras')"
+    >
       <p>
-        导航：{{
-          (value.navigation ?? [])
-            .map((entry) =>
-              entry.type === 'route'
-                ? `${navRouteCatalog[entry.key]?.label ?? entry.key}${entry.visible ? '' : '（隐藏）'}`
-                : `${entry.label}↗${entry.visible ? '' : '（隐藏）'}`,
-            )
-            .join(' · ') || '使用默认导航'
+        <strong>{{ t('admin-system.sitePreview.extras') }}</strong>
+      </p>
+      <p>
+        {{
+          t('admin-system.sitePreview.navigation', { text: navigationText || t('admin-system.sitePreview.defaultNav') })
         }}
       </p>
       <p>
-        页脚链接：{{ (value.footerLinks ?? []).map((link) => `${link.label}（${link.url}）`).join(' · ') || '不展示' }}
+        {{
+          t('admin-system.sitePreview.footerLinks', {
+            text:
+              (value.footerLinks ?? [])
+                .map((link) => t('admin-system.sitePreview.footerLink', { label: link.label, url: link.url }))
+                .join(' · ') || t('admin-system.sitePreview.notShown'),
+          })
+        }}
       </p>
-      <p>每日一言：{{ value.quotes?.length ? `${value.quotes.length} 条` : '不展示' }}</p>
-      <p>版权：{{ formatCopyright(value.copyright, year, value.name) }}</p>
-      <p>备案号：{{ value.icpNumber || '不展示' }}</p>
+      <p>
+        {{
+          t('admin-system.sitePreview.quotes', {
+            text: value.quotes?.length
+              ? t('admin-system.sitePreview.quoteCount', { count: value.quotes.length }, value.quotes.length)
+              : t('admin-system.sitePreview.notShown'),
+          })
+        }}
+      </p>
+      <p>{{ t('admin-system.sitePreview.copyright', { text: formatCopyright(value.copyright, year, value.name) }) }}</p>
+      <p>
+        {{
+          t('admin-system.sitePreview.icpNumber', { text: value.icpNumber || t('admin-system.sitePreview.notShown') })
+        }}
+      </p>
     </div>
   </section>
 </template>
 <script setup lang="ts">
 import type { SiteSettingsData } from '~/features/site/settings'
-import { aboutSectionLabels } from '~/features/about/settings'
 import { navRouteCatalog } from '~/features/nav/routes'
 import { formatCopyright } from '~/features/site/footer'
+const { t } = useI18n()
 const year = new Date().getFullYear()
 const props = defineProps<{
   value: Omit<SiteSettingsData, 'revision' | 'updatedAt' | 'announcementUpdatedAt'>
   label: string
 }>()
+const hiddenSuffix = (visible: boolean) => (visible ? '' : t('admin-system.sitePreview.hiddenSuffix'))
+const navigationText = computed(() =>
+  (props.value.navigation ?? [])
+    .map((entry) =>
+      entry.type === 'route'
+        ? `${navRouteCatalog[entry.key]?.label ?? entry.key}${hiddenSuffix(entry.visible)}`
+        : `${entry.label}↗${hiddenSuffix(entry.visible)}`,
+    )
+    .join(' · '),
+)
 const imageFailed = ref(false)
 const imageAttempt = ref(0)
 function retryAvatar() {

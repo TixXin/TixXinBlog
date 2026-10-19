@@ -1,61 +1,73 @@
 <!-- @file AboutSettingsFields.vue @description 关于页资料表单，复用站点编辑保护，条目排序及显隐由用户维护 -->
 <template>
   <fieldset class="about-fields" :disabled="disabled">
-    <legend>关于页资料</legend>
+    <legend>{{ t('admin-system.siteAbout.legend') }}</legend>
     <p role="status" aria-live="polite">{{ movement }}</p>
-    <p>姓名、简介、头像与联系方式复用上方站点资料。仅填写你确认可公开的内容；空栏目不展示。</p>
-    <label class="about-fields__toggle"><input v-model="value.visible" type="checkbox" />公开以下关于页资料</label>
-    <label>详细介绍<textarea v-model="value.introduction" maxlength="5000" rows="6" /></label>
+    <p>{{ t('admin-system.siteAbout.hint') }}</p>
+    <label class="about-fields__toggle"
+      ><input v-model="value.visible" type="checkbox" />{{ t('admin-system.siteAbout.visible') }}</label
+    >
+    <label
+      >{{ t('admin-system.siteAbout.introduction') }}<textarea v-model="value.introduction" maxlength="5000" rows="6" />
+    </label>
     <fieldset v-for="(section, sectionIndex) in value.sections" :key="section.kind">
-      <legend>{{ aboutSectionLabels[section.kind] }}</legend>
-      <label class="about-fields__toggle"><input v-model="section.visible" type="checkbox" />公开此栏目</label>
+      <legend>{{ sectionName(section.kind) }}</legend>
+      <label class="about-fields__toggle"
+        ><input v-model="section.visible" type="checkbox" />{{ t('admin-system.siteAbout.sectionVisible') }}</label
+      >
       <div class="about-fields__actions">
         <button
           type="button"
           :disabled="sectionIndex === 0"
-          :aria-label="`上移${aboutSectionLabels[section.kind]}栏目`"
+          :aria-label="t('admin-system.siteAbout.moveSectionUpLabel', { section: sectionName(section.kind) })"
           @click="move(value.sections, sectionIndex, -1, $event)"
         >
-          上移栏目
+          {{ t('admin-system.siteAbout.moveSectionUp') }}
         </button>
         <button
           type="button"
           :disabled="sectionIndex === value.sections.length - 1"
-          :aria-label="`下移${aboutSectionLabels[section.kind]}栏目`"
+          :aria-label="t('admin-system.siteAbout.moveSectionDownLabel', { section: sectionName(section.kind) })"
           @click="move(value.sections, sectionIndex, 1, $event)"
         >
-          下移栏目
+          {{ t('admin-system.siteAbout.moveSectionDown') }}
         </button>
       </div>
       <fieldset v-for="(item, index) in section.items" :key="itemKey(item)">
-        <legend>{{ aboutSectionLabels[section.kind] }}条目 {{ index + 1 }}</legend>
-        <label>名称<input v-model="item.title" maxlength="120" /></label>
-        <label>时间或阶段（选填）<input v-model="item.period" maxlength="80" /></label>
-        <label>说明（选填）<textarea v-model="item.detail" maxlength="1000" rows="3" /></label>
-        <label class="about-fields__toggle"><input v-model="item.visible" type="checkbox" />公开此条目</label>
+        <legend>
+          {{ t('admin-system.siteAbout.itemLegend', { section: sectionName(section.kind), index: index + 1 }) }}
+        </legend>
+        <label>{{ t('admin-system.siteAbout.itemTitle') }}<input v-model="item.title" maxlength="120" /></label>
+        <label>{{ t('admin-system.siteAbout.itemPeriod') }}<input v-model="item.period" maxlength="80" /></label>
+        <label
+          >{{ t('admin-system.siteAbout.itemDetail') }}<textarea v-model="item.detail" maxlength="1000" rows="3" />
+        </label>
+        <label class="about-fields__toggle"
+          ><input v-model="item.visible" type="checkbox" />{{ t('admin-system.siteAbout.itemVisible') }}</label
+        >
         <div class="about-fields__actions">
           <button
             type="button"
             :disabled="index === 0"
-            :aria-label="`上移${item.title || '条目 ' + (index + 1)}`"
+            :aria-label="t('admin-system.siteAbout.moveUpLabel', { name: itemName(item.title, index) })"
             @click="move(section.items, index, -1, $event)"
           >
-            上移
+            {{ t('admin-system.siteAbout.moveUp') }}
           </button>
           <button
             type="button"
             :disabled="index === section.items.length - 1"
-            :aria-label="`下移${item.title || '条目 ' + (index + 1)}`"
+            :aria-label="t('admin-system.siteAbout.moveDownLabel', { name: itemName(item.title, index) })"
             @click="move(section.items, index, 1, $event)"
           >
-            下移
+            {{ t('admin-system.siteAbout.moveDown') }}
           </button>
           <button
             type="button"
-            :aria-label="`移除${item.title || '条目 ' + (index + 1)}`"
+            :aria-label="t('admin-system.siteAbout.removeLabel', { name: itemName(item.title, index) })"
             @click="remove(section.items, index, $event)"
           >
-            移除条目
+            {{ t('admin-system.siteAbout.removeItem') }}
           </button>
         </div>
       </fieldset>
@@ -64,7 +76,7 @@
         :disabled="section.items.length >= 30"
         @click="section.items.push({ title: '', detail: '', period: '', visible: false })"
       >
-        添加{{ aboutSectionLabels[section.kind] }}
+        {{ t('admin-system.siteAbout.addItem', { section: sectionName(section.kind) }) }}
       </button>
     </fieldset>
     <div class="about-fields__actions">
@@ -74,12 +86,12 @@
         type="button"
         @click="value.sections.push({ kind, visible: false, items: [] })"
       >
-        添加{{ aboutSectionLabels[kind] }}栏目
+        {{ t('admin-system.siteAbout.addSection', { section: sectionName(kind) }) }}
       </button>
     </div>
-    <section aria-label="关于页公开内容预览">
-      <h2>关于页预览</h2>
-      <p v-if="!value.visible">以下资料尚未公开。</p>
+    <section :aria-label="t('admin-system.siteAbout.previewLabel')">
+      <h2>{{ t('admin-system.siteAbout.previewTitle') }}</h2>
+      <p v-if="!value.visible">{{ t('admin-system.siteAbout.notPublic') }}</p>
       <AboutProfileContent :value="value" />
     </section>
   </fieldset>
@@ -87,7 +99,11 @@
 <script setup lang="ts">
 import type { AboutSettings, AboutSection } from '~/features/about/types'
 import { aboutSectionLabels } from '~/features/about/settings'
+const { t } = useI18n()
 const value = defineModel<AboutSettings>({ required: true })
+const sectionName = (kind: AboutSection['kind']) => t(`admin-system.siteAbout.sections.${kind}`)
+const itemName = (title: string, index: number) =>
+  title || t('admin-system.siteAbout.itemFallback', { index: index + 1 })
 defineProps<{ disabled?: boolean }>()
 const movement = ref('')
 const keys = new WeakMap<object, number>()
@@ -110,7 +126,7 @@ async function move<T>(items: T[], index: number, direction: number, event: Even
   items.splice(target, 0, item)
   await nextTick()
   group?.querySelector<HTMLInputElement>('input')?.focus()
-  movement.value = `已移至第 ${target + 1} 项`
+  movement.value = t('admin-system.siteAbout.moved', { position: target + 1 })
 }
 async function remove<T>(items: T[], index: number, event: Event) {
   const group = (event.currentTarget as HTMLElement).closest('fieldset')?.parentElement
@@ -120,7 +136,7 @@ async function remove<T>(items: T[], index: number, event: Event) {
   const next = rows?.[Math.min(index, items.length - 1)]
   if (next) next.querySelector<HTMLInputElement>('input')?.focus()
   else group?.querySelector<HTMLButtonElement>(':scope > button')?.focus()
-  movement.value = '条目已移除'
+  movement.value = t('admin-system.siteAbout.removed')
 }
 </script>
 <style scoped lang="scss">
