@@ -5,8 +5,10 @@
       v-if="pending || error"
       compact
       :pending="pending"
-      :title="error ? '留言统计暂时不可用' : '正在读取留言统计'"
-      :description="error ? (data ? `仍显示上次成功读取的留言统计。${error}` : error) : undefined"
+      :title="error ? $t('interaction.guestbookOverview.unavailable') : $t('interaction.guestbookOverview.loading')"
+      :description="
+        error ? (data ? $t('interaction.guestbookOverview.staleDescription', { error }) : error) : undefined
+      "
       @retry="$emit('retry')"
     />
     <GuestbookChatStats :stats="stats" />
@@ -18,11 +20,13 @@
 import type { GuestbookMetadata } from '~/features/guestbook/types'
 const props = defineProps<{ data: GuestbookMetadata | null; pending: boolean; error?: string }>()
 defineEmits<{ retry: [] }>()
+const { t } = useI18n()
+const count = (value: number | undefined) => (value === undefined ? '—' : formatNumber(value))
 const stats = computed(() => [
-  { label: '公开留言', value: props.data?.stats.messages.toLocaleString('zh-CN') ?? '—' },
-  { label: '参与者', value: props.data?.stats.members.toLocaleString('zh-CN') ?? '—' },
-  { label: '近30日', value: props.data?.stats.recent.toLocaleString('zh-CN') ?? '—' },
-  { label: '今日 · UTC', value: props.data?.stats.today.toLocaleString('zh-CN') ?? '—' },
+  { label: t('interaction.guestbookOverview.statMessages'), value: count(props.data?.stats.messages) },
+  { label: t('interaction.guestbookOverview.statMembers'), value: count(props.data?.stats.members) },
+  { label: t('interaction.guestbookOverview.statRecent'), value: count(props.data?.stats.recent) },
+  { label: t('interaction.guestbookOverview.statToday'), value: count(props.data?.stats.today) },
 ])
 </script>
 <style scoped lang="scss">

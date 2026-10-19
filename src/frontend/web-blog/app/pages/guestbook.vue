@@ -6,33 +6,41 @@
         <div class="page-title">
           <div class="page-title__icon-wrap" aria-hidden="true"><Icon name="lucide:message-circle" size="18" /></div>
           <div class="page-title__text">
-            <h1 class="page-title__heading">留言板</h1>
+            <h1 class="page-title__heading">{{ t('interaction.guestbook.title') }}</h1>
             <!-- 博主在线状态是信息而非操作，跟在留言数后面，操作区只留搜索 -->
             <p class="page-title__sub guestbook-subline">
-              <span>{{ metadata?.stats.messages.toLocaleString('zh-CN') ?? '—' }} 条公开留言</span>
+              <span>{{ messageCountText }}</span>
               <CommonTooltip :content="ownerPresence.signature || ownerPresence.label">
                 <span class="guestbook-presence" :class="`guestbook-presence--${ownerPresence.status}`" tabindex="0"
-                  ><span class="guestbook-presence__dot" aria-hidden="true" />博主{{
-                    ownerPresence.status === 'offline' ? '离线' : presenceStatusLabels[ownerPresence.status]
-                  }}</span
+                  ><span class="guestbook-presence__dot" aria-hidden="true" />{{ ownerPresenceText }}</span
                 >
               </CommonTooltip>
             </p>
           </div>
         </div>
         <div class="page-actions guestbook-actions">
-          <CommonSearchBox v-model="search" label="搜索留言" placeholder="搜索留言或作者…" />
+          <CommonSearchBox
+            v-model="search"
+            :label="t('interaction.guestbook.searchLabel')"
+            :placeholder="t('interaction.guestbook.searchPlaceholder')"
+          />
           <button v-if="search || selectedDate" type="button" class="guestbook-clear" @click="clearFilters">
-            清除筛选
+            {{ t('interaction.guestbook.clearFilters') }}
           </button>
-          <CommonContextDrawer v-if="!rightVisible" v-model:open="infoOpen" label="留言信息" icon="lucide:info"
+          <CommonContextDrawer
+            v-if="!rightVisible"
+            v-model:open="infoOpen"
+            :label="t('interaction.guestbook.infoDrawer')"
+            icon="lucide:info"
             ><GuestbookOverview
               :data="metadata"
               :pending="metadataPending"
               :error="metadataError?.message"
               @retry="refreshMetadata()"
           /></CommonContextDrawer>
-          <NuxtLink v-if="isLoggedIn" to="/admin/guestbook" class="guestbook-clear">管理</NuxtLink>
+          <NuxtLink v-if="isLoggedIn" to="/admin/guestbook" class="guestbook-clear">{{
+            t('interaction.guestbook.manage')
+          }}</NuxtLink>
         </div>
       </div>
     </template>
@@ -53,8 +61,8 @@
             <CommonRequestFeedback
               :compact="items.length > 0"
               :pending="pending"
-              :title="feedError?.message || '正在加载留言'"
-              :description="items.length ? '仍显示上次成功读取的内容。' : undefined"
+              :title="feedError?.message || t('interaction.guestbook.loading')"
+              :description="items.length ? t('interaction.guestbook.staleDescription') : undefined"
               @retry="refreshFeed()"
             />
           </div>
@@ -72,14 +80,14 @@
             </div>
             <!-- 聊天模式向上翻历史，到头的提示也放在最上方 -->
             <p v-if="isChatMode && historyComplete" class="guestbook-end guestbook-end--top">
-              {{ filterLabel ? '以上是全部匹配的留言' : '已经到最早的留言了' }}
+              {{ filterLabel ? t('interaction.guestbook.endMatchedTop') : t('interaction.guestbook.endEarliest') }}
             </p>
             <div v-if="isChatMode && (hasMore || retryingMore)" ref="topSentinel" class="guestbook-more">
               <CommonRequestFeedback
                 v-if="moreError || retryingMore"
                 compact
                 :pending="pending || morePending || retryingMore || !personalized"
-                title="历史留言加载失败"
+                :title="t('interaction.guestbook.historyFailed')"
                 :description="moreError"
                 @retry="retryHistory()"
               />
@@ -90,7 +98,7 @@
                 :disabled="pending || morePending || !personalized"
                 @click="loadMore()"
               >
-                {{ morePending ? '正在加载历史…' : '加载历史留言' }}
+                {{ morePending ? t('interaction.guestbook.loadingHistory') : t('interaction.guestbook.loadHistory') }}
               </button>
             </div>
             <GuestbookMessageSkeleton v-if="pending && !items.length" />
@@ -115,7 +123,7 @@
                 v-if="moreError || retryingMore"
                 compact
                 :pending="pending || morePending || retryingMore || !personalized"
-                title="历史留言加载失败"
+                :title="t('interaction.guestbook.historyFailed')"
                 :description="moreError"
                 @retry="retryHistory()"
               />
@@ -126,23 +134,27 @@
                 :disabled="pending || morePending || !personalized"
                 @click="loadMore()"
               >
-                {{ morePending ? '正在加载…' : '加载更多留言' }}
+                {{ morePending ? t('interaction.guestbook.loadingMore') : t('interaction.guestbook.loadMore') }}
               </button>
             </div>
-            <p v-if="!isChatMode && historyComplete" class="guestbook-end">已显示当前范围的全部留言</p>
+            <p v-if="!isChatMode && historyComplete" class="guestbook-end">
+              {{ t('interaction.guestbook.endAll') }}
+            </p>
           </CommonCustomScrollbar>
           <!-- 跳转引用时的查找进度与返回入口 -->
           <p v-if="locating" class="guestbook-jump-pill" role="status">
-            <Icon name="lucide:loader-2" size="14" class="guestbook-jump-pill__spin" />正在查找原留言…
+            <Icon name="lucide:loader-2" size="14" class="guestbook-jump-pill__spin" />{{
+              t('interaction.guestbook.locating')
+            }}
           </p>
           <button v-else-if="jumpOrigin !== null" type="button" class="guestbook-jump-pill" @click="backToOrigin">
-            <Icon name="lucide:corner-down-left" size="14" />回到回复处
+            <Icon name="lucide:corner-down-left" size="14" />{{ t('interaction.guestbook.backToOrigin') }}
           </button>
           <button
             v-if="isChatMode && !atBottom"
             type="button"
             class="guestbook-scroll-bottom"
-            aria-label="回到最新留言"
+            :aria-label="t('interaction.guestbook.scrollLatest')"
             @click="scrollLatest(true)"
           >
             <Icon name="lucide:arrow-down" size="18" />
@@ -180,7 +192,6 @@
   </CommonPageFrame>
 </template>
 <script setup lang="ts">
-import { presenceStatusLabels } from '~/composables/useSiteInfo'
 import { useMediaQuery } from '@vueuse/core'
 import { resolveScrollRoot, scrollToRoot } from '~/utils/scrollRoot'
 import { guestbookGroups } from '~/features/guestbook/display'
@@ -191,6 +202,14 @@ const pageScope = usePageRequestScope(),
 const { activeTheme, currentThemeId } = useLayoutTheme()
 const { isLoggedIn } = useCurrentUser()
 const { ownerPresence } = useSiteInfo()
+const { t } = useI18n()
+const presenceKeys = {
+  online: 'interaction.guestbook.ownerOnline',
+  idle: 'interaction.guestbook.ownerIdle',
+  busy: 'interaction.guestbook.ownerBusy',
+  offline: 'interaction.guestbook.ownerOffline',
+} as const
+const ownerPresenceText = computed(() => t(presenceKeys[ownerPresence.value.status]))
 const internalWidth = useMediaQuery('(min-width:1024px)'),
   nexusRight = useMediaQuery('(min-width:1440px)'),
   auroraRight = useMediaQuery('(min-width:1280px)')
@@ -218,9 +237,12 @@ const selectedDate = computed(() => (typeof route.query.date === 'string' ? rout
 const clearFilters = () => router.replace({ path: '/guestbook' })
 /** 当前筛选的可读描述，空状态与历史提示据此区分“没找到”和“没有留言” */
 const filterLabel = computed(() =>
-  [search.value && `关键词「${search.value}」`, selectedDate.value && `日期 ${selectedDate.value}`]
+  [
+    search.value && t('interaction.guestbook.filterKeyword', { keyword: search.value }),
+    selectedDate.value && t('interaction.guestbook.filterDate', { date: selectedDate.value }),
+  ]
     .filter(Boolean)
-    .join('、'),
+    .join(t('interaction.guestbook.filterSeparator')),
 )
 let observer: IntersectionObserver | null = null,
   bottomResize: ResizeObserver | null = null,
@@ -380,7 +402,9 @@ async function jumpToMessage({ target, from }: { target: number; from: number })
     }
   }
   if (!node) {
-    toastInfo(search.value || selectedDate.value ? '原留言不在当前筛选结果中，清除筛选后再试' : '原留言暂不可见')
+    toastInfo(
+      t(search.value || selectedDate.value ? 'interaction.guestbook.jumpFiltered' : 'interaction.guestbook.jumpHidden'),
+    )
     return
   }
   jumpOrigin.value = from
@@ -457,6 +481,10 @@ async function retryHistory() {
   }
 }
 const { data: metadata, pending: metadataPending, error: metadataError, refresh: refreshMetadata } = overview
+const messageCountText = computed(() => {
+  const count = metadata.value?.stats.messages
+  return t('interaction.guestbook.messageCount', { count: count == null ? '—' : formatNumber(count) }, count ?? 2)
+})
 const historyComplete = computed(() => !hasMore.value && items.value.length > 0 && !pending.value && !feedError.value)
 const { settings: siteSettings } = useSiteSettings()
 const groups = computed(() => guestbookGroups(items.value, isChatMode.value, siteSettings.value.avatar))
@@ -509,7 +537,11 @@ onBeforeUnmount(() => {
   bottomResize?.disconnect()
   boundScroll?.removeEventListener('scroll', checkBottom)
 })
-usePageSeo({ title: '留言板', description: '留下你的足迹，交流技术与生活。', type: 'website' })
+usePageSeo({
+  title: () => t('interaction.guestbook.title'),
+  description: () => t('interaction.guestbook.seoDescription'),
+  type: 'website',
+})
 </script>
 <style scoped lang="scss">
 .guestbook-center {

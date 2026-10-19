@@ -7,6 +7,7 @@ export async function useGuestbookFeed(options: {
   afterChange?: () => void | Promise<void>
 }) {
   const repo = useGuestbookRepository(),
+    t = currentTranslate(),
     cache = useGuestbookCache(),
     scope = usePageRequestScope()
   const ids = ref<number[]>([]),
@@ -206,7 +207,7 @@ export async function useGuestbookFeed(options: {
       await lastAcceptance
     } catch (cause) {
       if (version === moreVersion && !scope.signal.aborted)
-        moreError.value = cause instanceof Error ? cause.message : '历史留言加载失败，请重试'
+        moreError.value = cause instanceof Error ? cause.message : t('interaction.guestbookSession.historyFailed')
     } finally {
       if (version === moreVersion) morePending.value = false
     }

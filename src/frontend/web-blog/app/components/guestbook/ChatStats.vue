@@ -9,7 +9,7 @@
   <section ref="containerRef" class="card chat-stats">
     <h2 class="chat-stats__title">
       <Icon name="lucide:bar-chart-2" size="14" />
-      对话统计
+      {{ $t('interaction.guestbookOverview.statsTitle') }}
     </h2>
     <div class="chat-stats__grid">
       <div v-for="(item, index) in stats" :key="item.label" class="chat-stats__cell">
@@ -45,11 +45,6 @@ function finishCountUp() {
 /** 从字符串中提取数字部分（如 "1,234" → 1234） */
 function parseStatValue(val: string): number {
   return parseInt(val.replace(/,/g, ''), 10) || 0
-}
-
-/** 格式化数字为千分位 */
-function formatNumber(n: number): string {
-  return n.toLocaleString('zh-CN')
 }
 
 /** 数字递增动画 */

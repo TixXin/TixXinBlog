@@ -9,12 +9,17 @@
   <div v-if="!dismissed" class="pinned-message">
     <Icon name="lucide:pin" size="14" class="pinned-message__icon" />
     <div class="pinned-message__body">
-      <span class="pinned-message__label">置顶</span>
+      <span class="pinned-message__label">{{ $t('interaction.guestbookOverview.pinned') }}</span>
       <p class="pinned-message__content">
         {{ message.content }}
       </p>
     </div>
-    <button type="button" class="pinned-message__close" aria-label="关闭公告" @click="dismissed = true">
+    <button
+      type="button"
+      class="pinned-message__close"
+      :aria-label="$t('interaction.guestbookOverview.closePinned')"
+      @click="dismissed = true"
+    >
       <Icon name="lucide:x" size="14" />
     </button>
   </div>

@@ -14,23 +14,34 @@
       <p v-if="notice" role="status" class="message-input__notice">{{ notice }}</p>
     </div>
     <p v-if="storageError" role="alert" class="message-input__notice">{{ storageError }}</p>
-    <div v-if="hasRecovery" class="message-input__notice" aria-label="留言输入恢复">
-      发现本标签页未发送的输入。
-      <button type="button" :disabled="submitting" @click="$emit('restore')">恢复输入</button>
-      <button type="button" :disabled="submitting" @click="$emit('discard')">保留当前输入</button>
+    <div v-if="hasRecovery" class="message-input__notice" :aria-label="$t('interaction.guestbookInput.recoveryLabel')">
+      {{ $t('interaction.guestbookInput.recoveryFound') }}
+      <button type="button" :disabled="submitting" @click="$emit('restore')">
+        {{ $t('interaction.guestbookInput.restore') }}
+      </button>
+      <button type="button" :disabled="submitting" @click="$emit('discard')">
+        {{ $t('interaction.guestbookInput.keepCurrent') }}
+      </button>
     </div>
     <p v-if="!ready" class="message-input__notice">
-      {{ expired ? '登录已失效，输入保留。' : '正在确认登录状态…'
-      }}<button v-if="expired" type="button" @click="$emit('login')">重新登录</button>
+      {{ expired ? $t('interaction.guestbookInput.expired') : $t('interaction.guestbookInput.confirmingLogin')
+      }}<button v-if="expired" type="button" @click="$emit('login')">
+        {{ $t('interaction.guestbookInput.relogin') }}
+      </button>
     </p>
     <!-- 回复引用预览 -->
     <Transition name="reply-fade">
       <div v-if="replyTo" class="message-input__reply-bar">
         <Icon name="lucide:reply" size="13" class="message-input__reply-icon" />
-        <span class="message-input__reply-label">回复</span>
+        <span class="message-input__reply-label">{{ $t('interaction.guestbookInput.replyLabel') }}</span>
         <span class="message-input__reply-author">{{ replyTo.author }}</span>
         <span class="message-input__reply-text">{{ replyTo.content }}</span>
-        <button type="button" class="message-input__reply-close" aria-label="取消回复" @click="$emit('cancelReply')">
+        <button
+          type="button"
+          class="message-input__reply-close"
+          :aria-label="$t('interaction.guestbookInput.cancelReply')"
+          @click="$emit('cancelReply')"
+        >
           <Icon name="lucide:x" size="14" />
         </button>
       </div>
@@ -48,8 +59,8 @@
         class="message-input__editor"
         :class="{ 'message-input__editor--resizing': resizing }"
         :style="{ height: editorHeight + 'px' }"
-        placeholder="输入留言内容..."
-        aria-label="留言内容"
+        :placeholder="$t('interaction.guestbookInput.placeholder')"
+        :aria-label="$t('interaction.guestbookInput.contentLabel')"
         :aria-invalid="!!error || undefined"
         :aria-describedby="error ? errorId : undefined"
         :maxlength="500"
@@ -66,13 +77,8 @@
         readonly
       />
       <!-- 右上角展开/收起按钮 -->
-      <CommonTooltip :content="isExpanded ? '收起输入框' : '展开输入框'">
-        <button
-          type="button"
-          class="message-input__expand-toggle"
-          :aria-label="isExpanded ? '收起输入框' : '展开输入框'"
-          @click="toggleExpand"
-        >
+      <CommonTooltip :content="expandLabel">
+        <button type="button" class="message-input__expand-toggle" :aria-label="expandLabel" @click="toggleExpand">
           <Icon :name="isExpanded ? 'lucide:minimize-2' : 'lucide:maximize-2'" size="12" />
         </button>
       </CommonTooltip>
@@ -81,7 +87,7 @@
     <!-- 底部工具栏 -->
     <div class="message-input__footer">
       <span class="message-input__hint"
-        >{{ identityLabel }} <span aria-hidden="true">·</span> Ctrl / ⌘ + Enter 发送</span
+        >{{ identityLabel }} <span aria-hidden="true">·</span> {{ $t('interaction.guestbookInput.sendHint') }}</span
       >
       <small class="message-input__count" :class="{ 'message-input__count--full': draft.length >= 500 }"
         >{{ draft.length }} / 500</small
@@ -94,7 +100,7 @@
         @click="submit"
       >
         <Icon name="lucide:send" size="14" />
-        <span>{{ submitting ? '正在发送…' : '发送留言' }}</span>
+        <span>{{ submitting ? $t('interaction.guestbookInput.sending') : $t('interaction.guestbookInput.send') }}</span>
       </button>
     </div>
   </div>
@@ -149,6 +155,10 @@ const editorHeight = computed(
   () => manualHeight.value ?? Math.max(baseHeight.value, Math.min(contentHeight.value, AUTO_MAX)),
 )
 const isExpanded = computed(() => editorHeight.value > 100)
+const { t } = useI18n()
+const expandLabel = computed(() =>
+  t(isExpanded.value ? 'interaction.guestbookInput.collapse' : 'interaction.guestbookInput.expand'),
+)
 function toggleExpand() {
   if (isExpanded.value) {
     baseHeight.value = MIN_HEIGHT

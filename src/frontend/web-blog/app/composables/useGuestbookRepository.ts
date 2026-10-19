@@ -5,17 +5,19 @@ export function useGuestbookRepository(): GuestbookRepository {
   const base = String(useRuntimeConfig().public.apiBaseUrl).replace(/\/$/, '')
   const admin = useAdminApi()
   const contentContext = useState('page-content-context', () => '')
+  // 错误文案在失败时按当前语言生成；4xx 优先显示后端 message
+  const t = currentTranslate()
   function failure(value: unknown) {
-    const cause = value as { statusCode?: number; status?: number; data?: { message?: unknown } }
+    const cause = value as { statusCode?: number; status?: number }
     const statusCode = cause?.statusCode ?? cause?.status
     const message =
       !statusCode || statusCode >= 500
-        ? '留言服务暂时不可用，请稍后重试'
-        : typeof cause.data?.message === 'string'
-          ? cause.data.message
-          : statusCode === 404
-            ? '留言不存在或暂不可见'
-            : '操作未完成，请核对输入后重试'
+        ? t('interaction.guestbookSession.serviceUnavailable')
+        : apiErrorMessage(
+            value,
+            statusCode === 404 ? 'interaction.guestbookSession.notFound' : 'interaction.guestbookSession.invalid',
+            { t },
+          )
     return Object.assign(new Error(message, { cause: value }), { statusCode })
   }
   async function request<T>(
@@ -39,7 +41,7 @@ export function useGuestbookRepository(): GuestbookRepository {
         retry: 0,
         timeout: 10000,
       })
-      if (response.code !== 0) throw new Error('留言请求未完成')
+      if (response.code !== 0) throw new Error(t('interaction.guestbookSession.requestIncomplete'))
       return response.data
     } catch (error) {
       throw failure(error)

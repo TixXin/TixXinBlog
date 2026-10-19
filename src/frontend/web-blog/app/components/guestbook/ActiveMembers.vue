@@ -9,7 +9,7 @@
   <section class="card active-members">
     <h2 class="active-members__title">
       <Icon name="lucide:users" size="14" />
-      活跃成员
+      {{ $t('interaction.guestbookOverview.membersTitle') }}
     </h2>
     <ul class="active-members__list">
       <li v-for="(m, index) in members" :key="`${m.name}-${index}`" class="active-members__row">
@@ -25,14 +25,16 @@
           <img
             class="active-members__avatar"
             :src="displayAvatar(m.avatar, m.name, m.isOwner)"
-            :alt="`${m.name} 的头像`"
+            :alt="$t('interaction.guestbook.avatarAlt', { name: m.name })"
             width="36"
             height="36"
           />
         </div>
         <div class="active-members__info">
           <span class="active-members__name">{{ m.name }}</span>
-          <span class="active-members__count">{{ m.messageCount }} 条留言</span>
+          <span class="active-members__count">{{
+            $t('interaction.guestbookOverview.memberMessages', { count: m.messageCount }, m.messageCount)
+          }}</span>
         </div>
       </li>
     </ul>

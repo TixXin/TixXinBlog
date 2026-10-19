@@ -1,19 +1,18 @@
 /** @file display.ts @description 留言显示时间与日期分组，统一UTC以保持SSR和跨主题顺序一致 */
 import type { DateGroup, GuestbookRecord, GuestMessage } from './types'
 import { displayAvatar } from '~/utils/visitorAvatar'
+import { formatDateTime } from '~/utils/format'
 /** ownerAvatar 为博主当前头像：单博主站点里博主留言统一用最新头像，不沿用写入时的快照 */
 export function guestbookDisplay(note: GuestbookRecord, ownerAvatar?: string): GuestMessage {
-  const date = new Date(note.createdAt)
-  const time = Number.isFinite(date.getTime())
-    ? new Intl.DateTimeFormat('zh-CN', {
-        timeZone: 'UTC',
-        month: '2-digit',
-        day: '2-digit',
-        hour: '2-digit',
-        minute: '2-digit',
-        hour12: false,
-      }).format(date)
-    : ''
+  // 跟随界面语言；非法时间 formatDateTime 返回空串
+  const time = formatDateTime(note.createdAt, {
+    timeZone: 'UTC',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false,
+  })
   return {
     ...note,
     avatar: note.isOwner && ownerAvatar ? ownerAvatar : displayAvatar(note.avatar, note.author, note.isOwner),

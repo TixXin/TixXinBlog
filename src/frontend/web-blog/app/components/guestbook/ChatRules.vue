@@ -9,7 +9,7 @@
   <section class="card chat-rules">
     <h2 class="chat-rules__title">
       <Icon name="lucide:shield" size="14" />
-      对话守则
+      {{ $t('interaction.guestbookOverview.rulesTitle') }}
     </h2>
     <div class="chat-rules__list">
       <div v-for="rule in rules" :key="rule.id" class="chat-rules__item">

@@ -25,7 +25,7 @@
       <img
         class="message-bubble__avatar"
         :src="message.avatar || '/avatar.svg'"
-        :alt="`${message.author} 的头像`"
+        :alt="$t('interaction.guestbook.avatarAlt', { name: message.author })"
         width="32"
         height="32"
       />
@@ -46,9 +46,9 @@
           <div class="message-bubble__user-card-info">
             <span class="message-bubble__user-card-name">
               {{ message.author }}
-              <span v-if="message.isOwner" class="message-bubble__owner-badge message-bubble__owner-badge--sm"
-                >博主</span
-              >
+              <span v-if="message.isOwner" class="message-bubble__owner-badge message-bubble__owner-badge--sm">{{
+                $t('interaction.guestbook.owner')
+              }}</span>
             </span>
             <span v-if="message.region" class="message-bubble__user-card-region">
               <Icon name="lucide:map-pin" size="11" />
@@ -74,7 +74,7 @@
               ><template v-else>{{ part.text }}</template></template
             ></span
           >
-          <span class="message-bubble__owner-badge">博主</span>
+          <span class="message-bubble__owner-badge">{{ $t('interaction.guestbook.owner') }}</span>
         </template>
         <template v-else>
           <span class="message-bubble__name"
@@ -93,7 +93,12 @@
         type="button"
         class="message-bubble__reply message-bubble__reply--link"
         :class="{ 'message-bubble__reply--end': message.isOwner }"
-        :aria-label="`跳到 ${message.replyTo.author} 的原留言：${message.replyTo.content}`"
+        :aria-label="
+          $t('interaction.guestbookBubble.jumpToReply', {
+            author: message.replyTo.author,
+            content: message.replyTo.content,
+          })
+        "
         @click="$emit('jump', { target: message.replyTo.id, from: message.id })"
       >
         <Icon name="lucide:corner-up-right" size="12" class="message-bubble__reply-icon" />
@@ -101,8 +106,12 @@
         <span class="message-bubble__reply-content">{{ message.replyTo.content }}</span>
       </button>
 
-      <p v-if="message.replyUnavailable" class="message-bubble__reply">所引用的留言暂不可见</p>
-      <p v-if="message.moderationStatus === 'pending'" class="message-bubble__foot">待审核，仅自己可见</p>
+      <p v-if="message.replyUnavailable" class="message-bubble__reply">
+        {{ $t('interaction.guestbookBubble.replyUnavailable') }}
+      </p>
+      <p v-if="message.moderationStatus === 'pending'" class="message-bubble__foot">
+        {{ $t('interaction.guestbookBubble.pendingReview') }}
+      </p>
       <p v-if="reactionError" role="alert" class="message-bubble__foot">{{ reactionError }}</p>
       <!-- 气泡主体 -->
       <div class="message-bubble__body">
@@ -112,7 +121,14 @@
             :class="message.isOwner ? 'message-bubble__content--owner' : 'message-bubble__content--guest'"
             tabindex="0"
             role="group"
-            :aria-label="`${message.author}${message.isOwner ? '（博主）' : ''}，${message.time}`"
+            :aria-label="
+              $t(
+                message.isOwner
+                  ? 'interaction.guestbookBubble.contentLabelOwner'
+                  : 'interaction.guestbookBubble.contentLabel',
+                { author: message.author, time: message.time },
+              )
+            "
             @click="onContentTap"
           >
             <!-- 气泡尾巴只在组首显示，后续消息与同侧正文对齐 -->
@@ -131,28 +147,33 @@
         </CommonTooltip>
         <!-- 操作按钮 -->
         <div class="message-bubble__actions" :class="{ 'message-bubble__actions--left': message.isOwner }">
-          <CommonTooltip content="回复">
+          <CommonTooltip :content="$t('interaction.guestbookBubble.reply')">
             <button
               type="button"
               class="message-bubble__action"
-              :aria-label="`回复${message.author}的留言`"
+              :aria-label="$t('interaction.guestbookBubble.replyTo', { author: message.author })"
               :disabled="message.moderationStatus !== 'published'"
               @click="$emit('reply', message)"
             >
               <Icon name="lucide:reply" size="13" />
             </button>
           </CommonTooltip>
-          <CommonTooltip content="复制">
-            <button type="button" class="message-bubble__action" aria-label="复制留言" @click="copyContent">
+          <CommonTooltip :content="$t('interaction.guestbookBubble.copy')">
+            <button
+              type="button"
+              class="message-bubble__action"
+              :aria-label="$t('interaction.guestbookBubble.copyMessage')"
+              @click="copyContent"
+            >
               <Icon :name="copied ? 'lucide:check' : 'lucide:copy'" size="13" />
             </button>
           </CommonTooltip>
-          <CommonTooltip content="表情" :disabled="showReactionPicker">
+          <CommonTooltip :content="$t('interaction.guestbookBubble.emoji')" :disabled="showReactionPicker">
             <button
               ref="reactionButton"
               type="button"
               class="message-bubble__action"
-              aria-label="添加回应"
+              :aria-label="$t('interaction.guestbookBubble.addReaction')"
               :disabled="!interactive || reacting || message.moderationStatus !== 'published'"
               :aria-expanded="showReactionPicker"
               @click="toggleReactionPicker"
@@ -167,7 +188,7 @@
             v-if="showReactionPicker"
             ref="reactionPicker"
             role="group"
-            aria-label="选择回应"
+            :aria-label="$t('interaction.guestbookBubble.pickReaction')"
             class="message-bubble__reaction-picker"
             :class="{
               'message-bubble__reaction-picker--end': message.isOwner,
@@ -179,7 +200,7 @@
               v-for="option in reactionOptions"
               :key="option.value"
               type="button"
-              :aria-label="option.label"
+              :aria-label="$t(option.labelKey)"
               :disabled="reacting"
               class="message-bubble__reaction-pick"
               @click="addReaction(option.value)"
@@ -206,7 +227,13 @@
             type="button"
             class="message-bubble__reaction"
             :class="{ 'message-bubble__reaction--active': r.reacted }"
-            :aria-label="`${reactionMeta(r.emoji).label}，${r.count} 次回应`"
+            :aria-label="
+              $t(
+                'interaction.guestbookBubble.reactionCount',
+                { label: $t(reactionMeta(r.emoji).labelKey), count: r.count },
+                r.count,
+              )
+            "
             :aria-pressed="r.reacted"
             :disabled="!interactive || reacting || message.moderationStatus !== 'published'"
             @click="toggleReaction(r.emoji)"
@@ -260,20 +287,21 @@ const authorParts = computed(() => splitHighlight(props.message.author, props.hi
 
 const copied = ref(false)
 const { error: showError } = useToast()
+const { t } = useI18n()
 const showReactionPicker = ref(false)
 const showUserCard = ref(false)
 let copyTimer: ReturnType<typeof setTimeout> | null = null
 
 /** 保留示例数据的反应值，界面统一使用Lucide与明确名称。 */
 const reactionOptions = [
-  { value: '👍', icon: 'lucide:thumbs-up', label: '赞' },
-  { value: '❤️', icon: 'lucide:heart', label: '喜欢' },
-  { value: '🎉', icon: 'lucide:party-popper', label: '庆祝' },
-  { value: '🔥', icon: 'lucide:flame', label: '热情' },
-  { value: '😄', icon: 'lucide:smile', label: '开心' },
-  { value: '🙏', icon: 'lucide:hand-heart', label: '感谢' },
-  { value: '📷', icon: 'lucide:camera', label: '摄影' },
-  { value: '💡', icon: 'lucide:lightbulb', label: '灵感' },
+  { value: '👍', icon: 'lucide:thumbs-up', labelKey: 'interaction.reactions.like' },
+  { value: '❤️', icon: 'lucide:heart', labelKey: 'interaction.reactions.love' },
+  { value: '🎉', icon: 'lucide:party-popper', labelKey: 'interaction.reactions.celebrate' },
+  { value: '🔥', icon: 'lucide:flame', labelKey: 'interaction.reactions.fire' },
+  { value: '😄', icon: 'lucide:smile', labelKey: 'interaction.reactions.smile' },
+  { value: '🙏', icon: 'lucide:hand-heart', labelKey: 'interaction.reactions.thanks' },
+  { value: '📷', icon: 'lucide:camera', labelKey: 'interaction.reactions.camera' },
+  { value: '💡', icon: 'lucide:lightbulb', labelKey: 'interaction.reactions.idea' },
 ]
 const reactionButton = ref<HTMLButtonElement | null>(null)
 const reactionPicker = ref<HTMLElement | null>(null)
@@ -335,7 +363,10 @@ watch(showReactionPicker, (open) => {
   document.addEventListener('keydown', onPickerEscape)
 })
 const reactionMeta = (value: string) =>
-  reactionOptions.find((option) => option.value === value) ?? { icon: 'lucide:smile', label: '回应' }
+  reactionOptions.find((option) => option.value === value) ?? {
+    icon: 'lucide:smile',
+    labelKey: 'interaction.reactions.default',
+  }
 function closeReactions() {
   showReactionPicker.value = false
   nextTick(() => reactionButton.value?.focus())
@@ -348,7 +379,7 @@ async function copyContent() {
     await navigator.clipboard.writeText(props.message.content)
     copied.value = true
   } catch {
-    showError('复制失败，请重试或手动选择留言内容')
+    showError(t('interaction.guestbookBubble.copyFailed'))
     return
   }
   if (copyTimer) clearTimeout(copyTimer)

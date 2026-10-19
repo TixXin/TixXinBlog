@@ -8,6 +8,8 @@ export function useGuestbookInteractions(
   draftScope = 'public',
 ) {
   const app = useNuxtApp(),
+    // 不用 useI18n：本 composable 也会脱离组件 setup 调用；提示在产生时按当前语言翻译
+    t = currentTranslate(),
     auth = useCurrentUser(),
     identity = useGuestIdentity(),
     login = useLoginDrawer()
@@ -25,7 +27,9 @@ export function useGuestbookInteractions(
     () => mounted.value && auth.initialized.value && !auth.restoringPending.value && !expired.value,
   )
   const identityLabel = computed(() =>
-    auth.isLoggedIn.value ? '博主' : identity.guestIdentity.value?.nickname || '访客',
+    auth.isLoggedIn.value
+      ? t('interaction.guestbookSession.identityOwner')
+      : identity.guestIdentity.value?.nickname || t('interaction.guestbookSession.identityGuest'),
   )
   function persist() {
     if (!import.meta.client || !state.actor || state.recovery) return
@@ -43,7 +47,7 @@ export function useGuestbookInteractions(
       else sessionStorage.removeItem(key())
       state.storageError = ''
     } catch {
-      state.storageError = '恢复副本暂时无法保存，请保留当前页面输入。'
+      state.storageError = t('interaction.guestbookSession.storageSaveFailed')
     }
   }
   function synchronizeActor() {
@@ -55,7 +59,7 @@ export function useGuestbookInteractions(
       try {
         state.recovery = parseGuestbookRecovery(sessionStorage.getItem(key()))
       } catch {
-        state.storageError = '恢复副本暂时无法读取。'
+        state.storageError = t('interaction.guestbookSession.storageReadFailed')
       }
       persist()
       return
@@ -77,7 +81,7 @@ export function useGuestbookInteractions(
     try {
       state.recovery = parseGuestbookRecovery(sessionStorage.getItem(key()))
     } catch {
-      state.storageError = '恢复副本暂时无法读取。'
+      state.storageError = t('interaction.guestbookSession.storageReadFailed')
     }
   }
   function setDraft(value: string) {
@@ -95,14 +99,16 @@ export function useGuestbookInteractions(
   async function restore() {
     const recovery = state.recovery
     if (!recovery || state.submitting) return
-    if (state.draft.trim() && !window.confirm('载入恢复副本将替换当前未发送输入，确定继续吗？')) return
+    if (state.draft.trim() && !window.confirm(t('interaction.guestbookSession.restoreConfirm'))) return
     const epoch = state.epoch
     state.recovery = null
     state.draft = recovery.content
     state.nonce = recovery.nonce
     state.signature = recovery.signature
     state.revision++
-    state.reply = recovery.replyId ? { id: recovery.replyId, author: '', content: '正在确认引用…' } : null
+    state.reply = recovery.replyId
+      ? { id: recovery.replyId, author: '', content: t('interaction.guestbookSession.replyConfirming') }
+      : null
     persist()
     if (recovery.replyId) {
       try {
@@ -111,7 +117,11 @@ export function useGuestbookInteractions(
           state.reply = { id: record.id, author: record.author, content: record.content }
       } catch {
         if (state.epoch === epoch && state.reply?.id === recovery.replyId)
-          state.reply = { id: recovery.replyId, author: '', content: '引用暂不可见，可取消引用或重试原提交' }
+          state.reply = {
+            id: recovery.replyId,
+            author: '',
+            content: t('interaction.guestbookSession.replyUnavailable'),
+          }
       }
     }
   }
@@ -124,7 +134,7 @@ export function useGuestbookInteractions(
     if (fields) pendingFields = fields
     if (state.submitting || !state.draft.trim()) return
     if (!ready.value) {
-      state.error = '请先确认登录状态，输入已保留。'
+      state.error = t('interaction.guestbookSession.confirmLogin')
       return
     }
     if (!auth.isLoggedIn.value && !identity.hasIdentity.value) {
@@ -160,17 +170,21 @@ export function useGuestbookInteractions(
       }
       state.nonce = ''
       state.signature = ''
-      state.notice = record.moderationStatus === 'pending' ? '留言已保存，审核通过后公开。' : '留言已发送。'
+      state.notice = t(
+        record.moderationStatus === 'pending'
+          ? 'interaction.guestbookSession.savedPending'
+          : 'interaction.guestbookSession.sent',
+      )
       if (alive) {
         try {
           await onSent(record)
         } catch {
-          state.notice += ' 列表暂未更新，可刷新查看。'
+          state.notice += ' ' + t('interaction.guestbookSession.listStale')
         }
       }
     } catch (cause) {
       if (state.epoch === epoch)
-        state.error = cause instanceof Error ? cause.message : '发送未完成，输入已保留；重试相同内容不会重复发送。'
+        state.error = cause instanceof Error ? cause.message : t('interaction.guestbookSession.sendFailed')
     } finally {
       if (state.epoch === epoch) {
         state.submitting = false
@@ -187,7 +201,9 @@ export function useGuestbookInteractions(
       const result = await repo.react(value.id, value.emoji, value.reacted)
       if (generation === cache.generation.value) cache.patch(value.id, { reactions: result.reactions })
     } catch (cause) {
-      if (alive) reactionErrors.value[value.id] = cause instanceof Error ? cause.message : '回应失败，请重试'
+      if (alive)
+        reactionErrors.value[value.id] =
+          cause instanceof Error ? cause.message : t('interaction.guestbookSession.reactFailed')
     } finally {
       reacting.value = reacting.value.filter((id) => id !== value.id)
       if (alive) {
