@@ -14,6 +14,9 @@ on:
       - 'compose.production.yaml'
       - 'deploy/**'
       - 'scripts/release/**'
+      # 接口文档与错误码附录由后端单测核对
+      - 'docs/api.md'
+      - '!src/backend/server-main/README.md'
   pull_request:
     branches: [main]
     paths:
@@ -24,6 +27,9 @@ on:
       - 'compose.production.yaml'
       - 'deploy/**'
       - 'scripts/release/**'
+      # 接口文档与错误码附录由后端单测核对
+      - 'docs/api.md'
+      - '!src/backend/server-main/README.md'
 
 permissions:
   contents: read
