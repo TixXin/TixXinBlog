@@ -4,7 +4,7 @@
     ref="bar"
     class="admin-action-bar"
     :class="{ 'admin-action-bar--top': position === 'top' }"
-    aria-label="表单操作"
+    :aria-label="t('admin-system.layout.jumpToActions')"
     tabindex="-1"
   >
     <slot />
@@ -13,6 +13,7 @@
 <script setup lang="ts">
 import type { Ref } from 'vue'
 withDefaults(defineProps<{ position?: 'top' | 'bottom' }>(), { position: 'bottom' })
+const { t } = useI18n()
 const bar = ref<HTMLElement | null>(null)
 const target = inject<Ref<HTMLElement | null> | null>('admin-action-target', null)
 onMounted(() => {

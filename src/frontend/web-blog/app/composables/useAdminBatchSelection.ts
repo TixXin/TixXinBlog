@@ -3,6 +3,7 @@
  * @description 后台列表多选：默认只保留当前页，可显式启用跨页快照与选择数量上限。
  *   编号可为数字（文章评论、留言）或字符串（闪念评论）。
  */
+import type { Translate } from '~/utils/format'
 import type { Ref } from 'vue'
 
 /** 批量操作栏上的一个动作 */
@@ -125,12 +126,22 @@ export function useAdminBatchSelection<T extends { id: number | string }>(
   }
 }
 
-/** 汇总批量结果文案：跳过的项说明原因，便于刷新后核对 */
-export function describeBatchResult(result: AdminBatchResult, done: string, noun: string) {
-  const parts = result.successCount ? [`${done} ${result.successCount} 条${noun}`] : []
+/**
+ * 汇总批量结果文案：跳过的项说明原因，便于刷新后核对。
+ * done（如「已删除」）与 noun（如「评论」）由调用方传入已翻译文本；t 缺省取当前 Nuxt 上下文的翻译函数，
+ * 在 await 之后调用时请显式传入 useI18n().t。
+ */
+export function describeBatchResult(
+  result: AdminBatchResult,
+  done: string,
+  noun: string,
+  t: Translate = currentTranslate(),
+) {
+  const K = 'admin-system.shared.batch.'
+  const parts = result.successCount ? [t(`${K}done`, { done, count: result.successCount, noun })] : []
   const missing = result.results.filter((item) => item.reason === 'not_found').length
   const conflict = result.results.filter((item) => item.reason === 'conflict').length
-  if (missing) parts.push(`${missing} 条已不存在`)
-  if (conflict) parts.push(`${conflict} 条已被修改，请刷新后重新选择`)
-  return parts.join('；') || `没有${noun}被修改`
+  if (missing) parts.push(t(`${K}missing`, { count: missing }))
+  if (conflict) parts.push(t(`${K}conflict`, { count: conflict }))
+  return parts.join(t(`${K}separator`)) || t(`${K}nothing`, { noun })
 }

@@ -1,9 +1,10 @@
 <!--
   @file BatchBar.vue
-  @description 后台列表批量操作栏：当前页全选（含半选状态）、选中数量的礼貌播报与批量动作按钮，动作由页面处理
+  @description 后台列表批量操作栏：当前页全选（含半选状态）、选中数量的礼貌播报与批量动作按钮，动作由页面处理；
+    noun 与动作名称由调用方传入已翻译文本
 -->
 <template>
-  <div class="admin-batch-bar" role="group" :aria-label="`${noun}批量操作`">
+  <div class="admin-batch-bar" role="group" :aria-label="t('admin-system.shared.batch.label', { noun })">
     <label class="admin-batch-bar__all">
       <input
         ref="allInput"
@@ -11,10 +12,14 @@
         :checked="allSelected"
         :disabled="disabled || !pageCount"
         @change="$emit('toggle-all', ($event.target as HTMLInputElement).checked)"
-      />选择当前页全部{{ noun }}
+      />{{ t('admin-system.shared.batch.selectAll', { noun }) }}
     </label>
     <p class="admin-batch-bar__count" role="status" aria-live="polite" aria-atomic="true">
-      {{ count ? `已选择 ${count} 条${noun}` : `未选择${noun}` }}
+      {{
+        count
+          ? t('admin-system.shared.batch.selected', { count, noun })
+          : t('admin-system.shared.batch.noneSelected', { noun })
+      }}
     </p>
     <div class="admin-batch-bar__actions">
       <button
@@ -28,7 +33,9 @@
       >
         <Icon :name="action.icon" aria-hidden="true" />{{ action.label }}
       </button>
-      <button type="button" :disabled="disabled || !count" @click="$emit('clear')">取消选择</button>
+      <button type="button" :disabled="disabled || !count" @click="$emit('clear')">
+        {{ t('admin-system.shared.batch.clear') }}
+      </button>
     </div>
   </div>
 </template>
@@ -45,6 +52,7 @@ const props = defineProps<{
   busy?: string
 }>()
 defineEmits<{ 'toggle-all': [value: boolean]; action: [key: string]; clear: [] }>()
+const { t } = useI18n()
 const allInput = ref<HTMLInputElement | null>(null)
 // indeterminate 只能通过 DOM 属性设置，原生复选框会向辅助技术报告“部分选中”。
 watchEffect(() => {

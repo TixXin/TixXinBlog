@@ -23,6 +23,10 @@ export function useCurrentUser() {
   const accessToken = useState<string | null>('auth-access-token', () => null)
   const initialized = useState('auth-initialized', () => false)
   const authError = useState('auth-error', () => '')
+  // 最近一次失败是否为登录过期（401）；按种类判断，不比较随界面语言变化的提示文案
+  const authExpired = useState('auth-expired', () => false)
+  // 在调用时的同步阶段取翻译函数，刷新与恢复的失败分支都在 await 之后
+  const t = currentTranslate()
   const restoringPending = useState('auth-restoring', () => false)
   const isLoggedIn = computed(() => currentUser.value !== null && accessToken.value !== null)
 
@@ -43,6 +47,7 @@ export function useCurrentUser() {
       role: 'owner',
     }
     authError.value = ''
+    authExpired.value = false
   }
   async function login(username: string, password: string) {
     const result = await withAuthCookieLock(() =>
@@ -84,7 +89,8 @@ export function useCurrentUser() {
           currentUser.value = null
           accessToken.value = null
         }
-        authError.value = status === 401 ? '登录已过期，请重新登录' : '登录状态暂时无法确认，请重试'
+        authExpired.value = status === 401
+        authError.value = t(status === 401 ? 'admin-system.auth.expired' : 'admin-system.auth.unconfirmed')
         return false
       } finally {
         refreshing = null
@@ -107,14 +113,16 @@ export function useCurrentUser() {
         )
         if (result.data.authenticated) {
           const restored = await refresh()
-          initialized.value = restored || authError.value === '登录已过期，请重新登录'
+          initialized.value = restored || authExpired.value
         } else {
           // 成功确认匿名状态即结束先前的临时读取错误，不把匿名误判为认证失败。
           initialized.value = true
           authError.value = ''
+          authExpired.value = false
         }
       } catch {
-        authError.value = '登录状态暂时无法确认，请重试'
+        authExpired.value = false
+        authError.value = t('admin-system.auth.unconfirmed')
       }
       return isLoggedIn.value
     })()
@@ -136,6 +144,7 @@ export function useCurrentUser() {
       accessToken.value = null
       initialized.value = true
       authError.value = message
+      authExpired.value = false
     } finally {
       loggingOut = false
     }

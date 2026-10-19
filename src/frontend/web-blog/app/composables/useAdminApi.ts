@@ -9,6 +9,8 @@ export function useAdminApi() {
   const auth = useCurrentUser()
   const app = useNuxtApp()
   const pageContext = useState<string>('page-content-context', () => '')
+  // 在 setup 同步阶段取翻译函数；下列错误都在 await 之后抛出
+  const t = currentTranslate()
   return async function adminApi<T>(
     path: string,
     options: {
@@ -18,7 +20,7 @@ export function useAdminApi() {
       timeout?: number
     } = {},
   ): Promise<T> {
-    if (import.meta.server) throw new Error('管理接口需要客户端登录')
+    if (import.meta.server) throw new Error(t('admin-system.auth.clientOnly'))
     const originalActor = auth.currentUser.value?.id
     const originalContext = pageContext.value
     // 发起时冻结正文；身份恢复与令牌刷新不会重新读取编辑器中随后变化的内容。
@@ -28,11 +30,12 @@ export function useAdminApi() {
       body: options.body === undefined ? undefined : JSON.parse(JSON.stringify(options.body)),
     }
     const ownershipError = () =>
-      Object.assign(new Error('登录账号或内容库已变化，请保留输入并重新核对后操作'), { statusCode: 409 })
+      // ownershipChanged 供调用方按种类识别，不依赖随界面语言变化的提示文案
+      Object.assign(new Error(t('admin-system.auth.ownershipChanged')), { statusCode: 409, ownershipChanged: true })
     await auth.restore()
     const actor = auth.currentUser.value?.id
     if ((originalActor && actor !== originalActor) || pageContext.value !== originalContext) throw ownershipError()
-    if (!actor) throw Object.assign(new Error('请先登录博主账号，未保存内容仍保留'), { statusCode: 401 })
+    if (!actor) throw Object.assign(new Error(t('admin-system.auth.loginRequired')), { statusCode: 401 })
     const assertOwnership = () => {
       if (auth.currentUser.value?.id !== actor || pageContext.value !== originalContext) throw ownershipError()
     }
@@ -68,7 +71,7 @@ export function useAdminApi() {
               auth.currentUser.value?.id === actor &&
               pageContext.value === originalContext
             )
-              await auth.clearSession('登录已失效，请重新登录后重试；未保存内容仍保留在页面')
+              await auth.clearSession(t('admin-system.auth.sessionLost'))
             throw retryCause
           }
         }

@@ -42,6 +42,7 @@ export function useSaveShortcutLabel() {
 
 export function useAdminSaveShortcut(options: AdminSaveShortcutOptions) {
   const { info } = useToast()
+  const t = currentTranslate()
   const label = useSaveShortcutLabel()
   function resolveSubmitter() {
     return options.submitter?.() ?? options.form.value?.querySelector<HTMLButtonElement>('button[type="submit"]')
@@ -59,7 +60,7 @@ export function useAdminSaveShortcut(options: AdminSaveShortcutOptions) {
     const submitter = resolveSubmitter()
     if (!submitter || submitter.disabled || submitter.getAttribute('aria-busy') === 'true') return
     if (options.dirty && !options.dirty()) {
-      info('当前没有需要保存的修改')
+      info(t('admin-system.shared.nothingToSave'))
       return
     }
     form.requestSubmit(submitter)

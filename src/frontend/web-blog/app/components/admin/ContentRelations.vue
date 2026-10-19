@@ -1,101 +1,111 @@
 <!-- @file ContentRelations.vue @description 有向关联纯展示表单；选择、排序和移除均由父级接入原编辑保护。 -->
 <template>
-  <section class="content-relations" aria-label="关联内容" :aria-busy="pending || resolving">
-    <h2>关联内容（{{ selected.length }} / 12）</h2>
-    <p>从当前内容指向下列目标，按这里的顺序展示；不会自动反向关联。访客只看到已公开目标。</p>
+  <section class="content-relations" :aria-label="t('admin-system.relations.label')" :aria-busy="pending || resolving">
+    <h2>{{ t('admin-system.relations.title', { count: selected.length, max: 12 }) }}</h2>
+    <p>{{ t('admin-system.relations.intro') }}</p>
     <p v-if="resolveError" role="alert">{{ resolveError }}</p>
-    <p v-if="resolving" aria-live="polite">正在核查已选目标…</p>
+    <p v-if="resolving" aria-live="polite">{{ t('admin-system.relations.resolving') }}</p>
     <ol v-if="selected.length">
       <li v-for="(item, index) in selected" :key="item.type + ':' + item.id">
-        <span
-          >{{ contentRelationLabels[item.type] }} #{{ item.id }} · {{ item.title }} ·
-          {{ contentRelationStatuses[item.status] ?? item.status }}</span
-        >
+        <span>{{ typeLabel(item.type) }} #{{ item.id }} · {{ item.title }} · {{ statusLabel(item.status) }}</span>
         <div class="content-relations__actions">
           <button
             type="button"
             :disabled="disabled || index === 0"
-            :aria-label="`上移关联 ${index + 1}`"
+            :aria-label="t('admin-system.relations.moveUpLabel', { index: index + 1 })"
             @click="$emit('move', index, -1)"
           >
-            上移
+            {{ t('admin-system.relations.moveUp') }}
           </button>
           <button
             type="button"
             :disabled="disabled || index === selected.length - 1"
-            :aria-label="`下移关联 ${index + 1}`"
+            :aria-label="t('admin-system.relations.moveDownLabel', { index: index + 1 })"
             @click="$emit('move', index, 1)"
           >
-            下移
+            {{ t('admin-system.relations.moveDown') }}
           </button>
           <button
             type="button"
             :disabled="disabled"
-            :aria-label="`解除关联 ${index + 1}`"
+            :aria-label="t('admin-system.relations.removeLabel', { index: index + 1 })"
             @click="$emit('remove', index)"
           >
-            解除关联
+            {{ t('admin-system.relations.remove') }}
           </button>
         </div>
       </li>
     </ol>
-    <p v-else>尚未关联其他内容。</p>
+    <p v-else>{{ t('admin-system.relations.empty') }}</p>
     <button v-if="selected.length" type="button" :disabled="disabled || resolving" @click="$emit('resolve')">
-      刷新关联状态
+      {{ t('admin-system.relations.resolve') }}
     </button>
     <div class="content-relations__search">
       <label
-        >目标类型<select
+        >{{ t('admin-system.relations.type')
+        }}<select
           :value="type"
-          aria-label="关联目标类型"
+          :aria-label="t('admin-system.relations.typeLabel')"
           :disabled="disabled"
           @change="$emit('type', ($event.target as HTMLSelectElement).value as ContentRelationType)"
         >
-          <option v-for="(label, key) in contentRelationLabels" :key="key" :value="key">{{ label }}</option>
+          <option v-for="key in relationTypes" :key="key" :value="key">{{ typeLabel(key) }}</option>
         </select></label
       >
       <label
-        >按标题查找<input
+        >{{ t('admin-system.relations.query')
+        }}<input
           :value="q"
-          aria-label="查找关联内容"
+          :aria-label="t('admin-system.relations.queryLabel')"
           maxlength="200"
           :disabled="disabled"
           @input="$emit('query', ($event.target as HTMLInputElement).value)"
           @keydown.enter.prevent="$emit('search')"
       /></label>
-      <button type="button" :disabled="disabled || pending" @click="$emit('search')">查找内容</button>
+      <button type="button" :disabled="disabled || pending" @click="$emit('search')">
+        {{ t('admin-system.relations.search') }}
+      </button>
     </div>
     <p v-if="error" role="alert">
-      {{ error }} <button type="button" :disabled="disabled || pending" @click="$emit('search')">重试查找</button>
+      {{ error }}
+      <button type="button" :disabled="disabled || pending" @click="$emit('search')">
+        {{ t('admin-system.relations.retrySearch') }}
+      </button>
     </p>
-    <p v-if="pending" aria-live="polite">正在查找内容…</p>
+    <p v-if="pending" aria-live="polite">{{ t('admin-system.relations.searching') }}</p>
     <ul v-else-if="candidates.length" class="content-relations__candidates">
       <li v-for="item in candidates" :key="item.type + ':' + item.id">
-        <span>{{ item.title }} · {{ contentRelationStatuses[item.status] ?? item.status }}</span>
+        <span>{{ item.title }} · {{ statusLabel(item.status) }}</span>
         <button
           type="button"
           :disabled="disabled || item.disabled"
-          :aria-label="`关联${contentRelationLabels[item.type]}：${item.title}`"
+          :aria-label="t('admin-system.relations.chooseLabel', { type: typeLabel(item.type), title: item.title })"
           @click="$emit('choose', item)"
         >
-          添加关联
+          {{ t('admin-system.relations.choose') }}
         </button>
       </li>
     </ul>
-    <p v-else-if="!error && total !== null">未找到可选择的内容。</p>
-    <nav v-if="total !== null && total > 12" class="content-relations__actions" aria-label="关联候选分页">
+    <p v-else-if="!error && total !== null">{{ t('admin-system.relations.noCandidates') }}</p>
+    <nav
+      v-if="total !== null && total > 12"
+      class="content-relations__actions"
+      :aria-label="t('admin-system.relations.pagination')"
+    >
       <button type="button" :disabled="disabled || pending || page <= 1" @click="$emit('page', page - 1)">
-        上一页
+        {{ t('admin-system.operations.prev') }}
       </button>
-      <span>{{ page }} / {{ Math.ceil(total / 12) }} · {{ total }} 项</span>
+      <span
+        >{{ page }} / {{ Math.ceil(total / 12) }} ·
+        {{ t('admin-system.relations.total', { count: total }, total) }}</span
+      >
       <button type="button" :disabled="disabled || pending || page * 12 >= total" @click="$emit('page', page + 1)">
-        下一页
+        {{ t('admin-system.operations.next') }}
       </button>
     </nav>
   </section>
 </template>
 <script setup lang="ts">
-import { contentRelationLabels, contentRelationStatuses } from '~/features/content-relation/types'
 import type { ContentRelation, ContentRelationType, ManagedContentRelation } from '~/features/content-relation/types'
 defineProps<{
   selected: ManagedContentRelation[]
@@ -120,6 +130,13 @@ defineEmits<{
   query: [q: string]
   resolve: []
 }>()
+const { t } = useI18n()
+const relationTypes: ContentRelationType[] = ['post', 'project', 'gallery']
+// 有字典名称的关联状态，未知状态原样显示
+const statuses = ['published', 'draft', 'archived', 'withdrawn', 'deleted', 'missing', 'unknown']
+const typeLabel = (type: ContentRelationType) => t(`admin-system.relations.types.${type}`)
+const statusLabel = (status: string) =>
+  statuses.includes(status) ? t(`admin-system.relations.statuses.${status}`) : status
 </script>
 <style scoped lang="scss">
 .content-relations {

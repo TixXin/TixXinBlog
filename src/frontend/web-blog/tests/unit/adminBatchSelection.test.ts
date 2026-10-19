@@ -19,7 +19,8 @@ const mocks = vi.hoisted(() => ({
     restoringPending: Ref<boolean>
     restore: ReturnType<typeof vi.fn>
   },
-  route: {} as { path: string; fullPath: string; query: Record<string, string> },
+  // 测试应用启动时 i18n 插件即读取路由，初值需带 query
+  route: { path: '/', fullPath: '/', query: {} } as { path: string; fullPath: string; query: Record<string, string> },
   repo: { adminList: vi.fn(), adminDetail: vi.fn(), update: vi.fn(), remove: vi.fn() },
   invalidate: vi.fn(),
 }))
@@ -33,6 +34,10 @@ mockNuxtImport('useRouter', () => () => ({
   resolve: () => ({ fullPath: '' }),
   afterEach: () => () => undefined,
   beforeEach: () => () => undefined,
+  // i18n 插件安装时需要的路由钩子与选项
+  beforeResolve: () => () => undefined,
+  onError: () => () => undefined,
+  options: {},
 }))
 mockNuxtImport('useGuestbookRepository', () => () => mocks.repo)
 mockNuxtImport('useGuestbookCache', () => () => ({ invalidate: mocks.invalidate }))

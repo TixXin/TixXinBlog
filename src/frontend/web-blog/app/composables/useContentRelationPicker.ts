@@ -8,6 +8,7 @@ export function useContentRelationPicker(
   enabled: Ref<boolean>,
   change: (value: ContentRelation[]) => void,
 ) {
+  const t = currentTranslate()
   const api = useAdminApi(),
     auth = useCurrentUser(),
     context = useState<string>('page-content-context', () => '')
@@ -46,7 +47,7 @@ export function useContentRelationPicker(
       }
     } catch {
       if (alive && current === version && actor === identity()) {
-        error.value = '关联内容读取失败，请重试'
+        error.value = t('admin-system.relations.loadFailed')
         candidates.value = []
         total.value = null
       }
@@ -75,7 +76,7 @@ export function useContentRelationPicker(
         resolved.value = result
     } catch {
       if (alive && current === resolveVersion && actor === identity()) {
-        resolveError.value = '已选关联状态暂不可用，原有编号和顺序已保留'
+        resolveError.value = t('admin-system.relations.resolveFailed')
         resolved.value = []
       }
     } finally {
@@ -150,7 +151,7 @@ export function useContentRelationPicker(
       (item) =>
         resolved.value.find((target) => key(target) === key(item)) ?? {
           ...item,
-          title: `内容 #${item.id}`,
+          title: t('admin-system.relations.placeholderTitle', { id: item.id }),
           status: 'unknown',
           available: false,
         },

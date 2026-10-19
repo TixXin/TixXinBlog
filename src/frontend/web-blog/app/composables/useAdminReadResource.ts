@@ -1,5 +1,13 @@
 /** @file useAdminReadResource.ts @description 管理只读面板共享请求归属与失败保留，账号/内容代次变化后丢弃旧结果 */
-export function useAdminReadResource<T>(read: () => Promise<T>, message = '读取失败，请重试') {
+/**
+ * @param message 失败提示：已翻译的文本，或在失败时求值的函数（便于跟随当前界面语言）；
+ *   缺省为 admin-system.shared.readFailed
+ */
+export function useAdminReadResource<T>(read: () => Promise<T>, message?: string | (() => string)) {
+  // 在 setup 同步阶段取翻译函数；失败发生在 await 之后，那时不一定还在 Nuxt 上下文里
+  const t = currentTranslate()
+  const failureMessage = () =>
+    typeof message === 'function' ? message() : (message ?? t('admin-system.shared.readFailed'))
   const auth = useCurrentUser(),
     route = useRoute()
   const context = useState<string>('page-content-context', () => '')
@@ -33,7 +41,7 @@ export function useAdminReadResource<T>(read: () => Promise<T>, message = '读�
       const value = await read()
       if (owns()) data.value = value
     } catch {
-      if (owns()) error.value = message
+      if (owns()) error.value = failureMessage()
     } finally {
       if (owns()) pending.value = false
     }
