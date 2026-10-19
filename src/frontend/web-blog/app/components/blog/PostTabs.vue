@@ -10,7 +10,7 @@
     <div class="page-title__icon-wrap" aria-hidden="true">
       <Icon :name="modelValue === 'moments' ? 'lucide:messages-square' : 'lucide:newspaper'" size="18" />
     </div>
-    <nav class="post-tabs__links no-scrollbar" aria-label="内容类型">
+    <nav class="post-tabs__links no-scrollbar" :aria-label="$t('article.tabs.label')">
       <NuxtLink
         v-for="tab in tabs"
         :key="tab.value"
@@ -20,7 +20,7 @@
         :class="{ 'tab-active': modelValue === tab.value }"
         :aria-current="modelValue === tab.value ? 'page' : undefined"
       >
-        {{ tab.label }}
+        {{ tabLabel(tab) }}
       </NuxtLink>
     </nav>
   </div>
@@ -33,6 +33,14 @@ defineProps<{
   modelValue: string
   tabs: PostTab[]
 }>()
+
+const { t } = useI18n()
+// 固定入口（全部文章、朋友圈）按界面语言显示；其他标签沿用传入的名称
+const tabLabelKeys: Record<string, string> = { all: 'article.tabs.all', moments: 'article.tabs.moments' }
+function tabLabel(tab: PostTab) {
+  const key = tabLabelKeys[tab.value]
+  return key ? t(key) : tab.label
+}
 </script>
 
 <style lang="scss" scoped>

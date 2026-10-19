@@ -13,13 +13,13 @@
         <span class="subscribe-card__icon">
           <Icon name="lucide:rss" size="16" aria-hidden="true" />
         </span>
-        订阅更新
+        {{ $t('article.subscribe.title') }}
       </h3>
-      <p class="subscribe-card__desc">使用 RSS 阅读器分别订阅文章、闪念和朋友圈更新，邮件订阅尚未开放。</p>
+      <p class="subscribe-card__desc">{{ $t('article.subscribe.description') }}</p>
       <div class="subscribe-card__feeds">
-        <BlogRssLink href="/rss.xml" label="文章" />
-        <BlogRssLink href="/flash.xml" label="闪念" />
-        <BlogRssLink href="/moments.xml" label="朋友圈" />
+        <BlogRssLink href="/rss.xml" :label="$t('article.rss.posts')" />
+        <BlogRssLink href="/flash.xml" :label="$t('article.rss.flash')" />
+        <BlogRssLink href="/moments.xml" :label="$t('article.rss.moments')" />
       </div>
     </div>
   </section>

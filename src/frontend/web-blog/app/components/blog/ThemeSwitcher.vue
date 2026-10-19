@@ -9,7 +9,7 @@
   <button
     type="button"
     class="theme-switcher"
-    :aria-label="`切换主题（当前：${label}）`"
+    :aria-label="$t('article.themeSwitcher.label', { current: label })"
     @pointerdown="onThemeSwitcherPointerDown"
     @click="onThemeSwitcherClick"
   >

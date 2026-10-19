@@ -10,10 +10,10 @@
     <div class="recent-posts__header">
       <h2 class="recent-posts__title">
         <Icon name="lucide:clock" size="18" class="recent-posts__icon" />
-        近期文章
+        {{ $t('article.recent.title') }}
       </h2>
       <NuxtLink to="/" class="recent-posts__more">
-        全部文章
+        {{ $t('article.tabs.all') }}
         <Icon name="lucide:chevron-right" size="14" />
       </NuxtLink>
     </div>
@@ -25,7 +25,7 @@
           <div class="recent-post-item__meta">
             <span class="meta-item">
               <Icon name="lucide:calendar" size="12" />
-              {{ formatRelativeDate(post.date) }}
+              {{ formatRelativeDate(post.date, $t) }}
             </span>
             <span class="meta-item">
               <Icon name="lucide:folder" size="12" />
@@ -48,7 +48,7 @@
           <NuxtLink
             v-if="!coverFailures[`${post.id}:${post.cover}`]"
             :to="articlePath(post)"
-            :aria-label="`阅读文章：${post.title}`"
+            :aria-label="$t('article.recent.readLabel', { title: post.title })"
             class="recent-post-item__cover-link"
           />
         </div>

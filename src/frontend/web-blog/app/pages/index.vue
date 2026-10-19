@@ -10,9 +10,13 @@
       <div class="main-content__header">
         <BlogPostTabs :tabs="tabs" model-value="all" />
         <div class="page-actions">
-          <CommonSearchBox placeholder="搜索站内文章、标签..." readonly @click="openSearch" />
+          <CommonSearchBox :placeholder="$t('article.home.searchPlaceholder')" readonly @click="openSearch" />
           <!-- 侧栏隐藏时（Dock、窄屏）由同一抽屉提供筛选与订阅，与侧栏内容一一对应，不会与订阅卡同时出现 -->
-          <CommonContextDrawer class="page-context-entry" label="筛选与订阅" icon="lucide:list-filter">
+          <CommonContextDrawer
+            class="page-context-entry"
+            :label="$t('article.home.filterDrawer')"
+            icon="lucide:list-filter"
+          >
             <SidebarPostFilters
               :tags="tags"
               :categories="categories"
@@ -26,15 +30,15 @@
               @retry="refreshMetadata()"
             />
             <button v-if="activeFilterLabel" type="button" class="filter-badge" @click="clearFilters">
-              清除筛选：{{ activeFilterLabel }}
+              {{ $t('article.home.clearFilterWith', { filter: activeFilterLabel }) }}
             </button>
             <BlogSubscribeCard embedded />
           </CommonContextDrawer>
-          <div class="display-mode-toggle" role="group" aria-label="文章列表显示模式">
-            <CommonTooltip content="连续加载">
+          <div class="display-mode-toggle" role="group" :aria-label="$t('article.home.displayMode')">
+            <CommonTooltip :content="$t('article.home.waterfall')">
               <button
                 type="button"
-                aria-label="连续加载"
+                :aria-label="$t('article.home.waterfall')"
                 :aria-pressed="listDisplayMode === 'waterfall'"
                 class="display-mode-toggle__btn"
                 :class="{ 'display-mode-toggle__btn--active': listDisplayMode === 'waterfall' }"
@@ -43,10 +47,10 @@
                 <Icon name="lucide:scroll-text" size="15" />
               </button>
             </CommonTooltip>
-            <CommonTooltip content="分页显示">
+            <CommonTooltip :content="$t('article.home.pagination')">
               <button
                 type="button"
-                aria-label="分页显示"
+                :aria-label="$t('article.home.pagination')"
                 :aria-pressed="listDisplayMode === 'pagination'"
                 class="display-mode-toggle__btn"
                 :class="{ 'display-mode-toggle__btn--active': listDisplayMode === 'pagination' }"
@@ -63,9 +67,14 @@
       <!-- 首页没有可见的页面标题，补一个仅供辅助技术与搜索引擎读取的 h1 -->
       <h1 class="sr-only">{{ siteSettings.name }}</h1>
       <div v-if="activeFilterLabel" class="articles-filter-summary">
-        <span role="status">当前筛选：{{ activeFilterLabel }}</span>
-        <button type="button" class="filter-badge" :aria-label="`清除筛选：${activeFilterLabel}`" @click="clearFilters">
-          <Icon name="lucide:x" size="14" />清除筛选
+        <span role="status">{{ $t('article.home.activeFilter', { filter: activeFilterLabel }) }}</span>
+        <button
+          type="button"
+          class="filter-badge"
+          :aria-label="$t('article.home.clearFilterWith', { filter: activeFilterLabel })"
+          @click="clearFilters"
+        >
+          <Icon name="lucide:x" size="14" />{{ $t('article.home.clearFilter') }}
         </button>
       </div>
       <BlogPostCardList
@@ -73,7 +82,7 @@
         :total="postTotal"
         :current-page="postPage"
         :pending="postsPending"
-        :error-message="postsError ? '文章加载失败，请重试' : ''"
+        :error-message="postsError ? $t('article.list.loadFailed') : ''"
         active-tab="all"
         :display-mode="listDisplayMode"
         :selected-tag="selectedTag"
@@ -114,6 +123,7 @@ const siteUrl = useSiteUrl()
 const homeTitle = computed(() => siteSettings.value.seoTitle || siteSettings.value.name)
 const homeDescription = computed(() => siteSettings.value.seoDescription || siteSettings.value.description)
 const homeImage = useDefaultShareImage()
+const { t, locale } = useI18n()
 // 目录在下方与文章并行读取。标题先注册，目录返回后再把 slug 换成标签名称。
 const postSummary = shallowRef<{ tags: Array<{ label: string; slug: string }> } | null>(null)
 // 分页与筛选页采用「自引用 canonical + 区分标题」：每页内容不同，不统一指向第一页；
@@ -122,9 +132,9 @@ const listSeo = computed(() => {
   const { page, tag, category } = readPostListQuery(route.query)
   const tagLabel = postSummary.value?.tags.find((item) => item.slug === tag)?.label ?? tag
   const label = [
-    category ? `分类 ${category}` : '',
-    tagLabel ? `标签 ${tagLabel}` : '',
-    page > 1 ? `第 ${page} 页` : '',
+    category ? t('article.home.seoCategory', { name: category }) : '',
+    tagLabel ? t('article.home.seoTag', { name: tagLabel }) : '',
+    page > 1 ? t('article.pagination.page', { page }) : '',
   ]
     .filter(Boolean)
     .join(' · ')
@@ -138,7 +148,6 @@ usePageSeo({
   type: 'website',
   canonical: () => listSeo.value.canonical,
 })
-const { locale } = useI18n()
 useJsonLd('home', () => ({
   '@context': 'https://schema.org',
   '@graph': [

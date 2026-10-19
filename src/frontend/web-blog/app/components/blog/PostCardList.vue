@@ -8,13 +8,13 @@
 <template>
   <div class="post-card-list-root">
     <div v-if="posts.length && (pending || errorMessage)" class="post-list-feedback">
-      <p v-if="pending" role="status">正在加载文章…</p>
+      <p v-if="pending" role="status">{{ $t('article.list.loadingEllipsis') }}</p>
       <CommonRequestFeedback
         v-else
         class="post-list-feedback__error"
         compact
         :title="errorMessage"
-        description="仍显示上次成功加载的文章。"
+        :description="$t('article.list.keptPrevious')"
         @retry="$emit('retry')"
       />
     </div>
@@ -30,8 +30,8 @@
       <CommonRequestFeedback
         v-if="!posts.length && (pending || errorMessage)"
         :pending="pending"
-        :title="errorMessage || '正在加载文章'"
-        description="暂时无法获取文章内容，请稍后重试。"
+        :title="errorMessage || $t('article.list.loading')"
+        :description="$t('article.list.loadFailedDescription')"
         @retry="$emit('retry')"
       />
       <!-- 瀑布流模式：TransitionGroup 实现新卡片渐入动画 -->
@@ -65,7 +65,9 @@
         />
       </div>
 
-      <p v-if="!pending && !errorMessage && filteredPosts.length === 0" class="post-list__empty">暂无相关文章</p>
+      <p v-if="!pending && !errorMessage && filteredPosts.length === 0" class="post-list__empty">
+        {{ $t('article.list.empty') }}
+      </p>
 
       <!-- 瀑布流模式：触底懒加载 -->
       <template v-if="displayMode === 'waterfall'">
@@ -74,13 +76,13 @@
         <Transition name="loader-fade">
           <div v-if="hasMore && showSpinner" class="post-list__loader">
             <Icon name="lucide:loader-2" size="20" class="post-list__spinner" />
-            <span class="post-list__loader-text">加载中...</span>
+            <span class="post-list__loader-text">{{ $t('article.list.loadingMore') }}</span>
           </div>
         </Transition>
         <Transition name="loader-fade">
           <div v-if="!hasMore && !pending && !errorMessage && filteredPosts.length > 0" class="post-list__end">
             <span class="post-list__end-line" />
-            <span class="post-list__end-text">已经到底了</span>
+            <span class="post-list__end-text">{{ $t('article.list.end') }}</span>
             <span class="post-list__end-line" />
           </div>
         </Transition>
@@ -91,13 +93,13 @@
     <Transition name="pagination-slide">
       <nav
         v-if="displayMode === 'pagination' && totalPages > 1 && paginationVisible"
-        aria-label="文章分页"
+        :aria-label="$t('article.list.paginationLabel')"
         class="pagination-bar"
         :class="{ 'is-bounced': paginationBounce }"
       >
         <button
           type="button"
-          aria-label="上一页"
+          :aria-label="$t('article.pagination.previous')"
           class="pagination__btn"
           :disabled="currentPage <= 1"
           @click="goToPage(currentPage - 1)"
@@ -121,7 +123,7 @@
 
         <button
           type="button"
-          aria-label="下一页"
+          :aria-label="$t('article.pagination.next')"
           class="pagination__btn"
           :disabled="currentPage >= totalPages"
           @click="goToPage(currentPage + 1)"

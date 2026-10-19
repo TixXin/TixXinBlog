@@ -13,7 +13,7 @@
     :total="total"
     :page="page"
     :pending="pending"
-    :error-message="error ? '文章加载失败，请重试' : ''"
+    :error-message="error ? $t('article.list.loadFailed') : ''"
     @page="changePage($event)"
     @retry="refresh()"
   />

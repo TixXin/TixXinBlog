@@ -2,6 +2,7 @@
 import type { PostArchivePage, PostArchiveQuery } from './types'
 import type { ArchiveYear } from '~/features/article/types'
 import { articlePath } from '~/utils/articlePath'
+import { currentTranslate, formatDate, type Translate } from '~/utils/format'
 
 export function postArchiveQuery(query: Record<string, unknown>): PostArchiveQuery {
   const page = Number(query.page)
@@ -33,22 +34,31 @@ export function postArchiveRouteCorrection<T extends Record<string, unknown>>(
 }
 
 /** 页面和失败保留提示共用时间段名称，避免把上次成功的月份标成当前筛选。 */
-export function postArchivePeriod(query: Pick<PostArchiveQuery, 'year' | 'month'>): string {
-  return query.year ? `${query.year} 年${query.month ? ` ${query.month} 月` : ''}` : '全部年份'
+export function postArchivePeriod(
+  query: Pick<PostArchiveQuery, 'year' | 'month'>,
+  t: Translate = currentTranslate(),
+): string {
+  if (!query.year) return t('article.archive.allYears')
+  if (!query.month) return t('article.archive.year', { year: query.year })
+  // 英文按月份名称显示；中文模板只用数字月份
+  const monthName = formatDate(new Date(Date.UTC(query.year, query.month - 1, 15)), { month: 'long', timeZone: 'UTC' })
+  return t('article.archive.yearMonth', { year: query.year, month: query.month, monthName })
 }
 
-export function postArchiveSeo(query: PostArchiveQuery) {
-  const period = postArchivePeriod(query)
+export function postArchiveSeo(query: PostArchiveQuery, t: Translate = currentTranslate()) {
+  const period = postArchivePeriod(query, t)
   const params = new URLSearchParams()
   if (query.year) params.set('year', String(query.year))
   if (query.year && query.month) params.set('month', String(query.month))
   if (query.page > 1) params.set('page', String(query.page))
   const search = params.toString()
   return {
-    title: `${query.year ? `${period}文章归档` : '归档'}${query.page > 1 ? ` · 第 ${query.page} 页` : ''}`,
+    title:
+      (query.year ? t('article.archive.seoTitlePeriod', { period }) : t('article.archive.seoTitleAll')) +
+      (query.page > 1 ? t('article.pagination.pageSuffix', { page: query.page }) : ''),
     description: query.year
-      ? `按时间线回顾 ${period}发布的文章，浏览技术沉淀与生活随笔`
-      : '按时间线回顾全部文章，浏览历年技术沉淀与生活随笔',
+      ? t('article.archive.seoDescriptionPeriod', { period })
+      : t('article.archive.seoDescriptionAll'),
     canonical: `/archive${search ? `?${search}` : ''}`,
   }
 }

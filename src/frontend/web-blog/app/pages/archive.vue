@@ -14,14 +14,18 @@
             <Icon name="lucide:archive" size="18" />
           </div>
           <div class="page-title__text">
-            <h1 class="page-title__heading">文章归档</h1>
+            <h1 class="page-title__heading">{{ $t('article.archive.title') }}</h1>
             <p class="page-title__sub">
               {{
                 displayed
-                  ? `${postArchivePeriod(displayedQuery ?? query)} · 共 ${displayed.total} 篇文章`
+                  ? $t(
+                      'article.archive.summary',
+                      { period: postArchivePeriod(displayedQuery ?? query, t), count: displayed.total },
+                      displayed.total,
+                    )
                   : archivePending
-                    ? '正在加载归档…'
-                    : '归档暂时不可用'
+                    ? $t('article.archive.loading')
+                    : $t('article.archive.unavailable')
               }}
             </p>
           </div>
@@ -30,30 +34,41 @@
         <!-- 原生年月筛选支持键盘和读屏，窄屏操作区自动换行。 -->
         <div class="page-actions">
           <label class="archive-year-filter">
-            <span class="archive-year-filter__label">年份</span>
-            <select aria-label="归档年份" :value="query.year ?? ''" :disabled="!ready" @change="selectYear">
-              <option value="">全部年份</option>
+            <span class="archive-year-filter__label">{{ $t('article.archive.yearLabel') }}</span>
+            <select
+              :aria-label="$t('article.archive.yearSelect')"
+              :value="query.year ?? ''"
+              :disabled="!ready"
+              @change="selectYear"
+            >
+              <option value="">{{ $t('article.archive.allYears') }}</option>
               <option v-for="year in years" :key="year.year" :value="year.year">
-                {{ year.year }} 年（{{ year.count }} 篇）
+                {{ $t('article.archive.yearOption', { year: year.year, count: year.count }, year.count) }}
               </option>
               <option v-if="query.year && !years.some((item) => item.year === query.year)" :value="query.year">
-                {{ query.year }} 年{{ current ? '（0 篇）' : '' }}
+                {{
+                  current
+                    ? $t('article.archive.yearOption', { year: query.year, count: 0 }, 0)
+                    : $t('article.archive.year', { year: query.year })
+                }}
               </option>
             </select>
           </label>
           <label class="archive-year-filter">
-            <span class="archive-year-filter__label">月份</span>
+            <span class="archive-year-filter__label">{{ $t('article.archive.monthLabel') }}</span>
             <select
-              aria-label="归档月份"
+              :aria-label="$t('article.archive.monthSelect')"
               :value="query.month ?? ''"
               :disabled="!ready || !query.year"
               @change="selectMonth"
             >
-              <option value="">{{ query.year ? '全部月份' : '请先选择年份' }}</option>
-              <option v-for="month in 12" :key="month" :value="month">{{ month }} 月</option>
+              <option value="">
+                {{ query.year ? $t('article.archive.allMonths') : $t('article.archive.selectYearFirst') }}
+              </option>
+              <option v-for="month in 12" :key="month" :value="month">{{ monthLabel(month) }}</option>
             </select>
           </label>
-          <CommonSearchBox placeholder="搜索文章标题、内容..." readonly @click="openSearch" />
+          <CommonSearchBox :placeholder="$t('article.archive.searchPlaceholder')" readonly @click="openSearch" />
         </div>
       </div>
     </template>
@@ -65,27 +80,36 @@
           v-if="archivePending || archiveError"
           :pending="archivePending"
           :compact="!!displayed"
-          title="归档加载失败，请稍后重试"
-          :description="displayed ? '仍保留上次成功加载的归档，可重试当前筛选。' : '暂时无法获取归档内容。'"
+          :title="$t('article.archive.loadFailed')"
+          :description="displayed ? $t('article.archive.keptPrevious') : $t('article.archive.loadFailedDescription')"
           @retry="refreshArchive()"
         />
         <p v-if="stale && displayedQuery" class="archive-stale-notice" role="status">
-          当前显示：{{ postArchivePeriod(displayedQuery) }}，第 {{ displayedQuery.page }} 页（上次成功结果）。
+          {{
+            $t('article.archive.staleNotice', {
+              period: postArchivePeriod(displayedQuery, t),
+              page: displayedQuery.page,
+            })
+          }}
         </p>
         <ArticleArchiveTimeline v-if="archiveYears.length" :years="archiveYears" />
         <CommonStateBlock
           v-else-if="!archivePending && !archiveError"
           icon="lucide:archive"
-          title="暂无文章归档"
-          description="文章发布后会显示在这里。"
+          :title="$t('article.archive.emptyTitle')"
+          :description="$t('article.archive.emptyDescription')"
         />
-        <nav v-if="displayed && displayedPageCount > 1" class="archive-pagination" aria-label="文章归档分页">
+        <nav
+          v-if="displayed && displayedPageCount > 1"
+          class="archive-pagination"
+          :aria-label="$t('article.archive.paginationLabel')"
+        >
           <button
             type="button"
             :disabled="!ready || archivePending || !current || query.page <= 1"
             @click="changeQuery({ page: query.page - 1 })"
           >
-            上一页
+            {{ $t('article.pagination.previous') }}
           </button>
           <span aria-live="polite">{{ displayed.page }} / {{ displayedPageCount }}</span>
           <button
@@ -93,7 +117,7 @@
             :disabled="!ready || archivePending || !current || query.page >= pageCount"
             @click="changeQuery({ page: query.page + 1 })"
           >
-            下一页
+            {{ $t('article.pagination.next') }}
           </button>
         </nav>
       </CommonCustomScrollbar>
@@ -108,8 +132,8 @@
             class="card"
             compact
             :pending="metadataPending"
-            title="归档统计暂时不可用"
-            :description="metadata ? '仍显示上次成功读取的归档统计。' : undefined"
+            :title="$t('article.archive.statsUnavailable')"
+            :description="metadata ? $t('article.archive.statsKept') : undefined"
             @retry="refreshMetadata()"
           />
         </SidebarRightSidebar>
@@ -120,6 +144,13 @@
 
 <script setup lang="ts">
 import { postArchivePeriod, postArchiveSeo } from '~/features/post/archive'
+
+const { t } = useI18n()
+/** 月份下拉：中文「3 月」，英文显示月份名称 */
+function monthLabel(month: number) {
+  const monthName = formatDate(new Date(Date.UTC(2000, month - 1, 15)), { month: 'long', timeZone: 'UTC' })
+  return t('article.archive.monthOption', { month, monthName })
+}
 
 const [summary, archive] = await Promise.all([usePostMetadata(), usePostArchive()])
 const {
@@ -157,7 +188,7 @@ function selectMonth(event: Event) {
   void changeQuery({ month: value ? Number(value) : undefined })
 }
 
-const seo = computed(() => postArchiveSeo(query.value))
+const seo = computed(() => postArchiveSeo(query.value, t))
 usePageSeo({
   title: () => seo.value.title,
   description: () => seo.value.description,

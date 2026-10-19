@@ -33,6 +33,8 @@ export function categoryIcon(name: string) {
 }
 export async function usePostMetadata() {
   const config = useRuntimeConfig()
+  // 用全局 i18n 实例而非 useI18n：本 composable 也会在插件或测试中脱离组件 setup 调用
+  const { t } = useNuxtApp().$i18n
   // 轻量统计复用公开读取缓存；失败保留与写后失效统一由缓存生命周期处理。
   const result = usePublicReadData(
     'post-metadata',
@@ -87,9 +89,9 @@ export async function usePostMetadata() {
     }
   })
   const archiveStats = computed(() => [
-    { label: '文章', value: String(metadata.value?.stats.posts ?? 0) },
-    { label: '分类', value: String(categories.value.length) },
-    { label: '标签', value: String(tags.value.length) },
+    { label: t('article.archiveStats.posts'), value: String(metadata.value?.stats.posts ?? 0) },
+    { label: t('article.archiveStats.categories'), value: String(categories.value.length) },
+    { label: t('article.archiveStats.tags'), value: String(tags.value.length) },
   ])
   const categoryDistribution = computed(() =>
     categories.value.map((item) => ({

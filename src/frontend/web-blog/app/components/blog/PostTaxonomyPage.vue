@@ -4,7 +4,7 @@
     <template #header>
       <CommonPageHeader :title="heading" :subtitle="description" :icon="icon">
         <template #action>
-          <NuxtLink to="/" class="taxonomy-page__home">全部文章</NuxtLink>
+          <NuxtLink to="/" class="taxonomy-page__home">{{ $t('article.tabs.all') }}</NuxtLink>
         </template>
       </CommonPageHeader>
     </template>

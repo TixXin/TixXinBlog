@@ -2,7 +2,11 @@
 <template>
   <CommonPageFrame class="main-inner" header-key="search">
     <template #header>
-      <CommonPageHeader title="站内搜索" subtitle="按内容类型查找文章、作品与日常记录" icon="lucide:search" />
+      <CommonPageHeader
+        :title="$t('article.search.title')"
+        :subtitle="$t('article.search.subtitle')"
+        icon="lucide:search"
+      />
     </template>
     <template #default>
       <CommonCustomScrollbar class="search-page" viewport-class="search-page__viewport" primary>
@@ -11,39 +15,39 @@
             ref="inputRef"
             v-model="keyword"
             type="search"
-            aria-label="搜索站内公开内容"
-            placeholder="输入关键词"
+            :aria-label="$t('article.search.inputLabel')"
+            :placeholder="$t('article.search.placeholder')"
             maxlength="200"
             :aria-describedby="keyboardHintId"
             @keydown="onInputKeydown"
           />
-          <button type="submit">搜索</button>
+          <button type="submit">{{ $t('article.search.submit') }}</button>
         </form>
-        <nav class="search-page__types" aria-label="搜索内容类型">
+        <nav class="search-page__types" :aria-label="$t('article.search.typesLabel')">
           <NuxtLink
-            v-for="(label, scope) in searchTypeLabels"
+            v-for="scope in searchScopes"
             :key="scope"
             :to="searchLocation(activeQuery, scope)"
             :aria-current="activeType === scope ? 'page' : undefined"
-            >{{ label }}</NuxtLink
+            >{{ searchTypeLabel(scope, t) }}</NuxtLink
           >
         </nav>
-        <p class="search-page__scope">文章检索标题、摘要、正文与标签；其他类型检索各自公开的介绍、正文或分类字段。</p>
+        <p class="search-page__scope">{{ $t('article.search.scope') }}</p>
         <p :id="keyboardHintId" class="search-page__keyboard">
-          在搜索框按 ↑↓ 进入结果，继续按方向键切换，按 Enter 打开。
+          {{ $t('article.search.keyboardHint') }}
         </p>
-        <p v-if="!activeQuery.trim()">输入关键词开始搜索。</p>
+        <p v-if="!activeQuery.trim()">{{ $t('article.search.emptyQuery') }}</p>
         <template v-else>
           <CommonRequestFeedback
             v-if="!mounted || isSearching || error"
             :pending="!mounted || isSearching"
             :compact="groups.length > 0"
-            title="搜索加载失败"
+            :title="$t('article.search.loadFailed')"
             :description="error || undefined"
             @retry="refresh"
           />
           <div v-if="mounted && !isSearching" ref="resultListRef" @keydown="onResultKeydown">
-            <p v-if="activeType === 'all'">各类型分别预览前 3 项；选择类型查看该类型的全部结果。</p>
+            <p v-if="activeType === 'all'">{{ $t('article.search.previewHint', { count: SEARCH_PREVIEW_SIZE }) }}</p>
             <section
               v-for="group in groups"
               :key="group.type"
@@ -51,16 +55,18 @@
               :data-search-type="group.type"
             >
               <header>
-                <h2>{{ searchTypeLabels[group.type] }}</h2>
-                <span v-if="group.total !== null">{{ group.total }} 项</span>
+                <h2>{{ searchTypeLabel(group.type, t) }}</h2>
+                <span v-if="group.total !== null">{{
+                  $t('article.search.itemCount', { count: group.total }, group.total)
+                }}</span>
                 <NuxtLink
                   v-if="activeType === 'all' && group.total !== null && group.total > group.items.length"
                   :to="searchLocation(activeQuery, group.type)"
-                  >查看全部{{ searchTypeLabels[group.type] }}</NuxtLink
+                  >{{ $t('article.search.viewAll', { type: searchTypeLabel(group.type, t) }) }}</NuxtLink
                 >
               </header>
-              <p v-if="group.unavailable" role="status">此来源暂不可用，其他类型仍可浏览。</p>
-              <p v-else-if="!group.items.length">当前条件下没有结果。</p>
+              <p v-if="group.unavailable" role="status">{{ $t('article.search.sourceUnavailable') }}</p>
+              <p v-else-if="!group.items.length">{{ $t('article.search.noResults') }}</p>
               <ul v-else>
                 <li v-for="item in group.items" :key="item.id">
                   <a
@@ -74,7 +80,7 @@
                       :text="item.title"
                       :keyword="activeQuery"
                     /><Icon name="lucide:external-link" aria-hidden="true" />
-                    <span class="sr-only">（在新标签页打开）</span>
+                    <span class="sr-only">{{ $t('article.search.newTab') }}</span>
                   </a>
                   <NuxtLink v-else :to="item.url" data-search-result
                     ><Icon :name="item.icon" aria-hidden="true" /><SearchHighlight
@@ -91,16 +97,16 @@
               !isSearching && activeType !== 'all' && total !== null && (total > SEARCH_PAGE_SIZE || activePage > 1)
             "
             class="search-page__pagination"
-            aria-label="搜索结果分页"
+            :aria-label="$t('article.search.paginationLabel')"
           >
-            <NuxtLink v-if="activePage > 1" :to="searchLocation(activeQuery, activeType, activePage - 1)"
-              >上一页</NuxtLink
-            >
-            <span role="status">第 {{ activePage }} 页 · 共 {{ total }} 项</span>
+            <NuxtLink v-if="activePage > 1" :to="searchLocation(activeQuery, activeType, activePage - 1)">{{
+              $t('article.pagination.previous')
+            }}</NuxtLink>
+            <span role="status">{{ $t('article.search.pageStatus', { page: activePage, total }, total) }}</span>
             <NuxtLink
               v-if="activePage * SEARCH_PAGE_SIZE < total"
               :to="searchLocation(activeQuery, activeType, activePage + 1)"
-              >下一页</NuxtLink
+              >{{ $t('article.pagination.next') }}</NuxtLink
             >
           </nav>
         </template>
@@ -111,7 +117,8 @@
 <script setup lang="ts">
 import SearchHighlight from '~/components/common/SearchHighlight.vue'
 import { searchLocation, searchScope, searchPage } from '~/features/search/query'
-import { searchTypeLabels, SEARCH_PAGE_SIZE } from '~/features/search/types'
+import { searchTypeLabel, searchTypeLabelKeys, SEARCH_PAGE_SIZE, SEARCH_PREVIEW_SIZE } from '~/features/search/types'
+import type { SearchScope } from '~/features/search/types'
 // 搜索页没有右侧栏内容，不保留空白的侧栏占位
 definePageMeta({ rightSidebar: false })
 const route = useRoute(),
@@ -125,10 +132,12 @@ const inputRef = ref<HTMLInputElement | null>(null)
 const resultListRef = ref<HTMLElement | null>(null)
 const keyboardHintId = useId()
 const { groups, total, isSearching, error, search, cancel } = useSearch()
+const { t } = useI18n()
+const searchScopes = Object.keys(searchTypeLabelKeys) as SearchScope[]
 usePageSeo({
-  title: '站内搜索',
+  title: () => t('article.search.title'),
   robots: 'noindex, follow',
-  description: '按类型检索本站公开文章、项目、友链、图库、闪念与朋友圈。',
+  description: () => t('article.search.seoDescription'),
 })
 function submit() {
   const location = searchLocation(keyword.value, activeType.value)

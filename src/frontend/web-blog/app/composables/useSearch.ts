@@ -4,13 +4,15 @@
  */
 import { fetchPostPage } from '~/features/post/api'
 import { fetchFlashSearchPage } from '~/features/search/flash'
-import { SEARCH_PAGE_SIZE, SEARCH_PREVIEW_SIZE, searchTypes, searchTypeLabels } from '~/features/search/types'
+import { SEARCH_PAGE_SIZE, SEARCH_PREVIEW_SIZE, searchTypes, searchTypeLabel } from '~/features/search/types'
 import type { SearchGroup, SearchResultItem, SearchScope, SearchSelection, SearchType } from '~/features/search/types'
 import { searchPage, searchScope } from '~/features/search/query'
 export type { SearchResultItem } from '~/features/search/types'
 
 export function useSearch(options: { remember?: boolean } = {}) {
   const config = useRuntimeConfig()
+  // 用全局 i18n 实例而非 useI18n：本 composable 也会在插件或测试中脱离组件 setup 调用
+  const { t } = useNuxtApp().$i18n
   const projects = useProjectRepository(),
     links = useLinkRepository(),
     gallery = useGalleryRepository()
@@ -228,9 +230,12 @@ export function useSearch(options: { remember?: boolean } = {}) {
         total: response.status === 'fulfilled' ? response.value.total : null,
         unavailable: response.status === 'rejected',
       }))
-      const unavailable = groups.value.filter((group) => group.unavailable).map((group) => searchTypeLabels[group.type])
+      const unavailable = groups.value
+        .filter((group) => group.unavailable)
+        .map((group) => searchTypeLabel(group.type, t))
       error.value = unavailable.length
-        ? `${unavailable.join('、')}搜索暂时不可用，请重试。${results.value.length ? '其他来源结果仍可使用。' : ''}`
+        ? t('article.search.unavailable', { types: unavailable.join(t('article.search.listSeparator')) }) +
+          (results.value.length ? t('article.search.othersAvailable') : '')
         : ''
     } finally {
       if (owns()) isSearching.value = false

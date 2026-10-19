@@ -20,14 +20,22 @@ export async function usePostTaxonomyRoute(kind: PostTaxonomyKind) {
   // SEO 同样必须在首次 await 前注册：普通 async 函数里 await 之后既没有 Nuxt 实例也没有组件实例，
   // 此时调用 useRuntimeConfig/useHead 会让 SSR 直接 500，客户端也无法随页面卸载清理 head。
   const page = computed(() => readPostListQuery(route.query).page)
-  const label = kind === 'tag' ? '标签' : '专栏'
+  // 用全局 i18n 实例而非 useI18n：本 composable 也会在插件或测试中脱离组件 setup 调用
+  const { t } = useNuxtApp().$i18n
+  const kindKey = kind === 'tag' ? 'tag' : 'folder'
   const taxonomyRef = shallowRef<NonNullable<ReturnType<typeof resolvePostTaxonomy>> | null>(null)
+  const headingOf = (name: string) => t(`article.taxonomy.${kindKey}Heading`, { name })
   const title = computed(() =>
-    taxonomyRef.value ? `${label}：${taxonomyRef.value.name}${page.value > 1 ? ` · 第 ${page.value} 页` : ''}` : null,
+    taxonomyRef.value
+      ? headingOf(taxonomyRef.value.name) +
+        (page.value > 1 ? t('article.pagination.pageSuffix', { page: page.value }) : '')
+      : null,
   )
   const description = computed(() =>
     taxonomyRef.value
-      ? `浏览${label}「${taxonomyRef.value.name}」下的公开文章${page.value > 1 ? `，第 ${page.value} 页` : ''}。`
+      ? page.value > 1
+        ? t(`article.taxonomy.${kindKey}DescriptionPaged`, { name: taxonomyRef.value.name, page: page.value })
+        : t(`article.taxonomy.${kindKey}Description`, { name: taxonomyRef.value.name })
       : '',
   )
   const canonical = computed(() =>
@@ -37,13 +45,13 @@ export async function usePostTaxonomyRoute(kind: PostTaxonomyKind) {
 
   const { metadata, error: metadataError } = await usePostMetadata()
   if (metadataError.value || !metadata.value)
-    throw createError({ statusCode: 503, statusMessage: '文章目录暂时不可用' })
+    throw createError({ statusCode: 503, statusMessage: t('article.taxonomy.metadataUnavailable') })
   const rawName = route.params[kind === 'tag' ? 'name' : 'slug']
   const name = typeof rawName === 'string' ? rawName : ''
   const taxonomy = resolvePostTaxonomy(kind, name, metadata.value)
-  if (!taxonomy) throw createError({ statusCode: 404, statusMessage: kind === 'tag' ? '标签不存在' : '专栏不存在' })
+  if (!taxonomy) throw createError({ statusCode: 404, statusMessage: t(`article.taxonomy.${kindKey}NotFound`) })
   taxonomyRef.value = taxonomy
-  const heading = `${label}：${taxonomy.name}`
+  const heading = computed(() => headingOf(taxonomy.name))
 
   function changePage(value: number, replace = false) {
     if (leaving || router.currentRoute.value.path !== sourcePath || route.path !== sourcePath) return

@@ -10,7 +10,7 @@
     class="appearance-fab"
     :class="{ 'appearance-fab--open': isDrawerOpen }"
     type="button"
-    aria-label="界面设置"
+    :aria-label="$t('article.appearanceEntry.label')"
     aria-haspopup="dialog"
     data-focus-key="appearance"
     :aria-expanded="isDrawerOpen"

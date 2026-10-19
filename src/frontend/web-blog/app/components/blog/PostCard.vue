@@ -10,7 +10,7 @@
     <div v-if="post.cover" class="post-item__cover-bg">
       <CommonContentImage
         :src="post.cover"
-        :alt="`${post.title} 封面`"
+        :alt="$t('article.postCard.coverAlt', { title: post.title })"
         loading="lazy"
         :priority="priority"
         format="webp"
@@ -25,7 +25,9 @@
     <NuxtLink :to="articlePath(post)" class="post-item__content">
       <div class="post-item__header">
         <div class="post-item__title-wrapper">
-          <span v-if="post.pinned" class="post-item__pin"> <Icon name="lucide:pin" size="12" /> 置顶 </span>
+          <span v-if="post.pinned" class="post-item__pin">
+            <Icon name="lucide:pin" size="12" /> {{ $t('article.postCard.pinned') }}
+          </span>
           <h2 class="post-item__title">
             <span :class="{ 'post-item__title-highlight': !!post.cover }">{{ post.title }}</span>
           </h2>
@@ -46,9 +48,7 @@
           <span class="post-item__meta-item">{{ post.folder }}</span>
           <span class="post-item__dot" />
           <span class="post-item__meta-item"><Icon name="lucide:clock" size="12" /> {{ post.readTime }} min</span>
-          <span class="post-item__meta-item"
-            ><Icon name="lucide:eye" size="12" /> {{ post.views.toLocaleString() }}</span
-          >
+          <span class="post-item__meta-item"><Icon name="lucide:eye" size="12" /> {{ formatNumber(post.views) }}</span>
           <span class="post-item__meta-item"><Icon name="lucide:heart" size="12" /> {{ post.likes }}</span>
           <span class="post-item__meta-item"><Icon name="lucide:message-square" size="12" /> {{ post.comments }}</span>
         </div>
@@ -69,7 +69,8 @@ const props = defineProps<{
 }>()
 
 const coverError = ref(false)
-const formattedDate = computed(() => formatRelativeDate(props.post.date))
+const { t } = useI18n()
+const formattedDate = computed(() => formatRelativeDate(props.post.date, t))
 
 const tagColors = ['emerald', 'rose', 'sky', 'orange', 'blue', 'amber'] as const
 const tagStyles: Record<string, { background: string; color: string; borderColor: string }> = Object.fromEntries(

@@ -6,13 +6,13 @@
 -->
 <template>
   <!-- 订阅文件由 Nitro 直接输出，使用原生链接，避免交给客户端路由 -->
-  <CommonTooltip :content="`订阅${label} RSS`">
+  <CommonTooltip :content="$t('article.rss.subscribe', { label })">
     <a
       :href="href"
       type="application/rss+xml"
       class="rss-link"
       :class="compact ? 'rss-link--compact' : 'btn-primary'"
-      :aria-label="`订阅${label} RSS`"
+      :aria-label="$t('article.rss.subscribe', { label })"
     >
       <Icon name="lucide:rss" size="16" aria-hidden="true" />
       <span>{{ compact ? 'RSS' : `${label} RSS` }}</span>
