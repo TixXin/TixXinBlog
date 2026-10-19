@@ -86,7 +86,7 @@ https://blog.example.com/setup?token=…
 
 ## 本机试用
 
-没有服务器和域名时，可以在自己的电脑上体验（macOS 使用 Docker Desktop，Linux 使用 Docker Engine）。本机试用不需要 root，安装目录请选自己有写权限的位置：
+没有服务器和域名时，可以在自己的电脑上体验（macOS 使用 Docker Desktop，Linux 使用 Docker Engine；暂不支持 Windows，脚本在 Git Bash 等环境下会直接退出）。本机试用不需要 root，普通用户默认装到 `~/tixxin-blog`：
 
 ```sh
 curl -fsSL https://github.com/TixXin/TixXinBlog/releases/latest/download/install.sh -o install.sh

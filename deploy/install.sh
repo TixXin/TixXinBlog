@@ -155,6 +155,10 @@ detect_platform() {
     aarch64 | arm64) ARCH=arm64 ;;
     *) fail "不支持的 CPU 架构 ${arch}（仅支持 amd64 与 arm64）" ;;
   esac
+  case $os in
+    # Git Bash 等环境会改写传给 docker 的路径，/dev/tty 与权限也与 Linux 不同，会在中途失败
+    MINGW* | MSYS* | CYGWIN*) fail '不支持 Windows（Git Bash、MSYS、Cygwin）；请在 Linux 服务器或 macOS 上运行' ;;
+  esac
   if [ "$os" != Linux ]; then
     [ "$LOCAL_MODE" = 1 ] || fail '正式安装仅支持 Linux 服务器；在本机体验请使用 --local'
     warn "当前系统为 ${os}，仅用于本机试用"

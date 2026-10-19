@@ -88,7 +88,7 @@ Open it in a browser and set the username, password (12–128 characters), site 
 
 ## Local Trial
 
-Without a server or domain, you can try it on your own computer (Docker Desktop on macOS, Docker Engine on Linux). A local trial does not need root; choose an install directory you can write to:
+Without a server or domain, you can try it on your own computer (Docker Desktop on macOS, Docker Engine on Linux; Windows is not supported, and the script exits under Git Bash and similar environments). A local trial does not need root; as a regular user it installs to `~/tixxin-blog` by default:
 
 ```sh
 curl -fsSL https://github.com/TixXin/TixXinBlog/releases/latest/download/install.sh -o install.sh
