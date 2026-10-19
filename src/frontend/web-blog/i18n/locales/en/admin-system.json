@@ -612,7 +612,7 @@
       "lastLogin": "Last sign-in: {time}",
       "retry": "Retry",
       "passwordTitle": "Change password",
-      "passwordHint": "Use a new password of 12–128 characters. Once changed, sign-ins on this and every other device are ended and you'll need to sign in again.",
+      "passwordHint": "Use a new password of 6–128 characters. Once changed, sign-ins on this and every other device are ended and you'll need to sign in again.",
       "currentPassword": "Current password",
       "newPassword": "New password",
       "confirmPassword": "Confirm new password",
@@ -831,7 +831,8 @@
       "submit": "Create owner account",
       "submitting": "Creating…",
       "failed": "Setup could not be completed. Please try again later.",
-      "success": "Owner account created. Please sign in."
+      "success": "Owner account created. Please sign in.",
+      "successSignedIn": "Owner account created. You are now signed in."
     }
   }
 }

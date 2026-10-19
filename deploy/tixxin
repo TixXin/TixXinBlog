@@ -748,7 +748,7 @@ cmd_reset_password() {
         cat << 'EOF'
 用法：tixxin reset-password [--user 登录名] [--yes]
 
-调用现有 admin-reset-password：在交互终端隐藏输入两次新密码（至少 12 位），以 argon2id 保存，
+调用现有 admin-reset-password：在交互终端隐藏输入两次新密码（至少 6 位），以 argon2id 保存，
 并撤销该管理员的全部会话与刷新令牌。存在多个管理员时用 --user 指定账号。
 EOF
         return 0

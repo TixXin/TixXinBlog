@@ -21,7 +21,7 @@ test('英文界面：向导文案、密码要求与令牌错误均为英文', as
     await page.getByRole('textbox', { name: 'Username' }).fill('english-owner')
     await page.getByLabel('Password', { exact: true }).fill('english-password-2026')
     await page.getByLabel('Confirm password').fill('english-password-2026')
-    await expect(page.locator('#setup-password-rules li').nth(0)).toContainText('12–128 characters')
+    await expect(page.locator('#setup-password-rules li').nth(0)).toContainText('6–128 characters')
     await page.getByRole('button', { name: 'Create owner account' }).click()
     await expect(page.getByRole('alert')).toHaveText(
       'The setup token is invalid. Check the link printed when installation finished.',
@@ -33,7 +33,10 @@ test('英文界面：向导文案、密码要求与令牌错误均为英文', as
   }
 })
 
-test('向导完整流程：登录页引导、令牌移出地址栏、创建账号并登录，完成后向导不可再用', async ({ page, request }) => {
+test('向导完整流程：首页与登录页引导、令牌移出地址栏、创建账号并自动登录，完成后向导不可再用', async ({
+  page,
+  request,
+}) => {
   expect(process.env.E2E_ISOLATED).toBe('true')
   const token = process.env.E2E_SETUP_TOKEN!
   expect(token).toMatch(/^[a-f0-9]{64}$/)
@@ -42,6 +45,12 @@ test('向导完整流程：登录页引导、令牌移出地址栏、创建账�
 
   // 尚未初始化：状态接口为 true，后台登录页给出前往向导的入口。
   expect((await (await request.get('/api/v1/setup/status')).json()).data).toEqual({ needsSetup: true })
+  // 首页在浏览器端提示尚未初始化，服务端直出的 HTML 不含该提示，不会进入页面缓存。
+  expect(await (await request.get('/')).text()).not.toContain('站点尚未完成初始化')
+  await page.goto('/')
+  const pending = page.getByRole('status').filter({ hasText: '站点尚未完成初始化' })
+  await expect(pending).toBeVisible()
+  await expect(pending.getByRole('link', { name: '博主登录' })).toHaveAttribute('href', '/admin/login')
   await page.goto('/admin/login')
   await expect(page.getByText('站点还没有博主账号。')).toBeVisible()
   await page.getByRole('link', { name: '前往初始化向导' }).click()
@@ -79,19 +88,17 @@ test('向导完整流程：登录页引导、令牌移出地址栏、创建账�
   await page.getByRole('textbox', { name: '站点名称（可选）' }).fill(owner.siteName)
   await page.getByRole('radio', { name: '中文' }).check()
   await page.getByRole('button', { name: '创建博主账号' }).click()
-  await expect(page).toHaveURL(/\/admin\/login\?setup=done$/)
-  await expect(page.getByText('博主账号已创建，请使用刚设置的登录名和密码登录。')).toBeVisible()
-  await expect(page.getByRole('link', { name: '前往初始化向导' })).toHaveCount(0)
-
-  // 新账号可登录后台。
-  await page.getByRole('textbox', { name: '用户名', exact: true }).fill(owner.username)
-  await page.getByRole('textbox', { name: '密码', exact: true }).fill(owner.password)
-  await page.getByRole('button', { name: '登录', exact: true }).click()
+  // 创建成功后用同一凭据自动登录，直接进入后台，不再停在登录页。
   await expect(page).toHaveURL(/\/admin$/)
+  await expect(page.getByText('博主账号已创建，已自动登录后台')).toBeVisible()
 
   // 站点名称已写入，经网关的提交清空了公开页面缓存，首页直接显示新名称。
+  // 等首页读完初始化状态再断言提示不存在，避免在请求返回前误判。
+  const statusRead = page.waitForResponse((response) => response.url().endsWith('/api/v1/setup/status'))
   await page.goto('/')
   await expect(page).toHaveTitle(new RegExp(owner.siteName))
+  expect((await (await statusRead).json()).data).toEqual({ needsSetup: false })
+  await expect(page.getByText('站点尚未完成初始化')).toHaveCount(0)
 
   // 完成后：状态为 false，任何提交都与不存在的路由一样返回 404，向导页不再显示表单。
   expect((await (await request.get('/api/v1/setup/status')).json()).data).toEqual({ needsSetup: false })

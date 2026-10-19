@@ -80,8 +80,9 @@ When installation finishes, it prints a setup link:
 https://blog.example.com/setup?token=…
 ```
 
-Open it in a browser and set the username, password (12–128 characters), site name and site language to create the owner account. You are then taken to `/admin/login` to sign in.
+Open it in a browser and set the username, password (6–128 characters), site name and site language to create the owner account. You are then signed in and taken to the admin panel automatically.
 
+- Opening the home page does not redirect to the setup page: a new site has no posts, and the home page only shows a one-line "not set up yet" notice with a link to the admin sign-in page. Visitors without the token therefore cannot claim the account first; the notice disappears once setup is complete.
 - The token can be used successfully only once: after the account is created, the wizard and its endpoint close permanently, opening or submitting the link again fails, and a leaked token is useless.
 - The page removes the token from the address bar as soon as it reads it; submissions are rate limited (5 per address every 10 minutes).
 - If you lose the link, see [Lost setup link](#lost-setup-link).
@@ -130,7 +131,7 @@ sudo tixxin help
 | `update [version]`                         | Takes a full backup, then downloads and verifies the new package, pulls images, stops writes, migrates, recreates services and checks the entry. Without a version it uses the latest stable release; the current version repairs configuration or recreates containers                      |
 | `rollback <version> --database-compatible` | Application rollback: takes a full backup, then switches to the images and compose files of the given older version without running migrations, keeping volumes. `--database-compatible` states that you have confirmed the version is compatible with the current database                  |
 | `restart`                                  | Restarts the API, frontend and entry point (plus a running worker) and waits for health checks                                                                                                                                                                                               |
-| `reset-password`                           | Reads a new password twice with hidden input (at least 12 characters) and revokes all sessions of that administrator; with several administrators, choose one with `--user <username>`                                                                                                       |
+| `reset-password`                           | Reads a new password twice with hidden input (at least 6 characters) and revokes all sessions of that administrator; with several administrators, choose one with `--user <username>`                                                                                                        |
 
 Replace `0.3.0` in the example with the version you actually want to roll back to. When an update or rollback fails, the command keeps everything in place and prints the failed stage, troubleshooting commands and the matching rollback command. An application rollback does not replace data recovery; to return to the data as it was at backup time, see [Backup and Recovery](../backup-and-recovery.md) (in Chinese). No subcommand ever runs `docker compose down -v`.
 

@@ -77,7 +77,7 @@ Run everything from the repository root. Existing configuration, database volume
    | `DATABASE_URL`             | Points at the PostgreSQL database you intend to use               |
    | `JWT_ACCESS_SECRET`        | A random secret of at least 32 characters                         |
    | `ADMIN_DEFAULT_USERNAME`   | The login name to create for the blog owner                       |
-   | `ADMIN_DEFAULT_PASSWORD`   | A random password of at least 12 characters — not the placeholder |
+   | `ADMIN_DEFAULT_PASSWORD`   | A random password of at least 6 characters — not the placeholder |
    | `NODE_ENV` / `CORS_ORIGIN` | `development` / `http://localhost:3456`                           |
 
    On the frontend keep `NUXT_PUBLIC_API_BASE_URL=/api/v1` and point `NUXT_API_BASE_URL` at your local API (the template uses `http://127.0.0.1:3457/api/v1`). Both mock switches stay `false`. Keep secrets in local configuration or a managed environment — never commit them.

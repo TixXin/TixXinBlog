@@ -5,14 +5,20 @@
  * @since 2026-10-18
  */
 import { MikroORM } from '@mikro-orm/postgresql'
-import { AdminCliError, describeCliFailure, readHiddenLine, resetAdminPassword } from './admin-cli'
+import {
+  ADMIN_PASSWORD_MIN_LENGTH,
+  AdminCliError,
+  describeCliFailure,
+  readHiddenLine,
+  resetAdminPassword,
+} from './admin-cli'
 import { mikroOrmOptions } from './config/mikro-orm.options'
 
 async function readNewPassword(): Promise<string> {
   const fromEnvironment = process.env.ADMIN_RESET_PASSWORD
   if (fromEnvironment) return fromEnvironment
   if (!process.stdin.isTTY) throw new AdminCliError('非交互环境请通过 ADMIN_RESET_PASSWORD 提供新密码')
-  const first = await readHiddenLine('新密码（至少 12 个字符）：')
+  const first = await readHiddenLine(`新密码（至少 ${ADMIN_PASSWORD_MIN_LENGTH} 个字符）：`)
   const second = await readHiddenLine('再次输入新密码：')
   if (first !== second) throw new AdminCliError('两次输入的密码不一致')
   return first

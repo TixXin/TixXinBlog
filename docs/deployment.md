@@ -295,7 +295,7 @@ node scripts/release/release.mjs --env-file $releaseEnv --version $releaseVersio
 
 #### 浏览器初始化向导
 
-环境文件配置了 `SETUP_TOKEN` 时，站点启动后打开 `https://<域名>/setup?token=<令牌>`，在页面上设置登录名、密码（12–128 个字符）、站点名称和站点语言即可创建首个博主账号，随后跳转到 `/admin/login`。页面只在浏览器渲染（服务端响应不回显带令牌的地址），读取令牌后立即从地址栏移除；页面不进入 SSR 缓存、不被索引，也不发送 Referer。
+环境文件配置了 `SETUP_TOKEN` 时，站点启动后打开 `https://<域名>/setup?token=<令牌>`，在页面上设置登录名、密码（6–128 个字符）、站点名称和站点语言即可创建首个博主账号，随后用刚设置的凭据自动登录并进入 `/admin`（自动登录失败时退回 `/admin/login`）。尚未初始化时，首页会在浏览器端显示一行提示并链接到后台登录页，初始化完成后提示消失。页面只在浏览器渲染（服务端响应不回显带令牌的地址），读取令牌后立即从地址栏移除；页面不进入 SSR 缓存、不被索引，也不发送 Referer。
 
 - 只有数据库里没有任何管理员时向导才开放；账号创建后向导与接口永久关闭（`/api/v1/setup` 返回 404），令牌即使泄露也无法再次使用。完成后可从环境文件删除 `SETUP_TOKEN`，下次发布时生效。
 - 后台登录页检测到需要初始化时会显示前往向导的提示。
@@ -305,7 +305,7 @@ node scripts/release/release.mjs --env-file $releaseEnv --version $releaseVersio
 
 #### 命令行初始化
 
-在受控终端环境设置 `ADMIN_DEFAULT_USERNAME` 与至少 12 位随机 `ADMIN_DEFAULT_PASSWORD`，不要把密码写入命令参数或日志。服务镜像就绪后执行：
+在受控终端环境设置 `ADMIN_DEFAULT_USERNAME` 与至少 6 位随机 `ADMIN_DEFAULT_PASSWORD`，不要把密码写入命令参数或日志。服务镜像就绪后执行：
 
 ```sh
 read -rp '登录名：' ADMIN_DEFAULT_USERNAME && export ADMIN_DEFAULT_USERNAME
@@ -327,7 +327,7 @@ Remove-Item Env:ADMIN_DEFAULT_USERNAME, Env:ADMIN_DEFAULT_PASSWORD
 
 ### 重置管理员密码
 
-忘记密码或怀疑凭据泄露时，在服务器本机通过一次性容器执行；该操作没有 HTTP 入口。新密码至少 12 位，可在受控终端设置 `ADMIN_RESET_PASSWORD`，未设置时在交互终端隐藏输入两次。存在多个管理员时用 `ADMIN_RESET_USERNAME` 指定账号。第一条交互输入，第二条从环境变量读取：
+忘记密码或怀疑凭据泄露时，在服务器本机通过一次性容器执行；该操作没有 HTTP 入口。新密码至少 6 位，可在受控终端设置 `ADMIN_RESET_PASSWORD`，未设置时在交互终端隐藏输入两次。存在多个管理员时用 `ADMIN_RESET_USERNAME` 指定账号。第一条交互输入，第二条从环境变量读取：
 
 ```sh
 docker compose --env-file "$release_env" -f compose.production.yaml run --rm --no-deps -it backend node dist/admin-reset-password.js
@@ -464,7 +464,7 @@ HSTS 生效后，访客浏览器在有效期内只用 HTTPS 访问本站，证�
    docker compose --env-file $previewEnv ps -a
    ```
 
-3. 初始化管理员。与[生产初始化](#初始化管理员)相同，密码至少 12 位，只通过环境变量传入：
+3. 初始化管理员。与[生产初始化](#初始化管理员)相同，密码至少 6 位，只通过环境变量传入：
 
    ```sh
    read -rp '登录名：' ADMIN_DEFAULT_USERNAME && export ADMIN_DEFAULT_USERNAME

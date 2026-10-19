@@ -176,7 +176,9 @@
       "waterfall": "连续加载",
       "pagination": "分页显示",
       "seoCategory": "分类 {name}",
-      "seoTag": "标签 {name}"
+      "seoTag": "标签 {name}",
+      "setupPending": "站点尚未完成初始化，博主请打开安装完成时输出的初始化链接创建账号。",
+      "setupPendingLink": "博主登录"
     },
     "pagination": {
       "previous": "上一页",

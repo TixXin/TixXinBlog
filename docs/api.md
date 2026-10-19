@@ -59,7 +59,7 @@
 | `GET /setup/status` | 返回 `{ needsSetup }`：配置了 `SETUP_TOKEN` 且数据库里没有任何管理员时为 `true`，否则 `false` |
 | `POST /setup`       | 凭一次性令牌创建首个管理员，成功返回 HTTP 201 与 `{ username }`                               |
 
-`POST /setup` 请求体：`token`（与 `SETUP_TOKEN` 比较）、`username`（去掉首尾空白后 1–64 个字符）、`password`（12–128 个字符，与 `admin-bootstrap` 及后台改密规则一致，不做 trim）、可选 `siteName`（1–80 个字符，写入站点名称）和可选 `locale`（`zh-CN` 或 `en`，只把仍未编辑的初始博主名称与头像说明改为该语言；界面默认语言仍由部署环境的 `NUXT_PUBLIC_DEFAULT_LOCALE` 决定）。
+`POST /setup` 请求体：`token`（与 `SETUP_TOKEN` 比较）、`username`（去掉首尾空白后 1–64 个字符）、`password`（6–128 个字符，与 `admin-bootstrap` 及后台改密规则一致，不做 trim）、可选 `siteName`（1–80 个字符，写入站点名称）和可选 `locale`（`zh-CN` 或 `en`，只把仍未编辑的初始博主名称与头像说明改为该语言；界面默认语言仍由部署环境的 `NUXT_PUBLIC_DEFAULT_LOCALE` 决定）。
 
 - 未配置令牌或已有任意管理员时，接口对任何请求都返回与不存在路由相同的 404，不先做参数和来源校验，也不提示站点状态。
 - 接口开放时依次校验来源（同认证接口的 Origin 规则，跨站返回 403）、令牌（常量时间比较，不一致返回 403）、请求体（400）和密码规则（400）。错误信息按 `Accept-Language` 返回中文或英文。

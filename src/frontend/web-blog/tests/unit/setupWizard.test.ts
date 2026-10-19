@@ -23,6 +23,8 @@ const mocks = vi.hoisted(() => ({
   submitStatus: 201,
   submitMessage: '',
   bodies: [] as unknown[],
+  loginStatus: 200,
+  logins: [] as unknown[],
 }))
 mockNuxtImport('navigateTo', () => mocks.navigate)
 mockNuxtImport('useToast', () => () => ({ success: mocks.success, error: vi.fn(), info: vi.fn() }))
@@ -45,6 +47,23 @@ registerEndpoint('/api/v1/setup', {
   },
 })
 
+registerEndpoint('/api/v1/auth/login', {
+  method: 'POST',
+  handler: async (event: unknown) => {
+    mocks.logins.push(await h3.readBody(event))
+    const response = (event as { node: { res: { statusCode: number } } }).node.res
+    response.statusCode = mocks.loginStatus
+    return mocks.loginStatus === 200
+      ? {
+          code: 0,
+          message: 'ok',
+          data: { accessToken: 'unit-access', expiresIn: 900, user: { id: '1', username: 'owner' } },
+          traceId: 'unit',
+        }
+      : { code: 60, message: '操作过于频繁，请稍后重试', data: null, traceId: 'unit' }
+  },
+})
+
 const i18n = () => useNuxtApp().$i18n
 
 beforeEach(() => {
@@ -54,6 +73,8 @@ beforeEach(() => {
   mocks.submitStatus = 201
   mocks.submitMessage = ''
   mocks.bodies = []
+  mocks.loginStatus = 200
+  mocks.logins = []
 })
 afterEach(async () => {
   await i18n().setLocale('zh-CN')
@@ -89,10 +110,10 @@ describe('/setup 初始化向导', () => {
     expect(wrapper.find('#setup-password').attributes('aria-describedby')).toContain('setup-password-rules')
     expect(wrapper.find('#setup-token').attributes('autocomplete')).toBe('off')
     const rules = () => wrapper.findAll('#setup-password-rules li').map((item) => item.text())
-    expect(rules()).toEqual(['12–128 个字符未满足', '两次输入一致未满足'])
+    expect(rules()).toEqual(['6–128 个字符未满足', '两次输入一致未满足'])
     await wrapper.find('#setup-password').setValue('correct-horse-battery')
     await wrapper.find('#setup-confirm').setValue('correct-horse-battery')
-    expect(rules()).toEqual(['12–128 个字符已满足', '两次输入一致已满足'])
+    expect(rules()).toEqual(['6–128 个字符已满足', '两次输入一致已满足'])
     expect(wrapper.find('legend').text()).toBe('站点语言')
   })
 
@@ -102,7 +123,7 @@ describe('/setup 初始化向导', () => {
     await wrapper.find('#setup-password').setValue('short')
     await wrapper.find('#setup-confirm').setValue('short')
     await wrapper.find('form').trigger('submit')
-    expect(wrapper.find('[role="alert"]').text()).toBe('密码至少需要 12 个字符')
+    expect(wrapper.find('[role="alert"]').text()).toBe('密码至少需要 6 个字符')
     await wrapper.find('#setup-password').setValue('correct-horse-battery')
     await wrapper.find('#setup-confirm').setValue('correct-horse-other')
     await wrapper.find('form').trigger('submit')
@@ -110,7 +131,7 @@ describe('/setup 初始化向导', () => {
     expect(mocks.bodies).toEqual([])
   })
 
-  it('提交令牌、登录名、密码、站点名称与语言，成功后跳转登录页并提示', async () => {
+  it('提交令牌、登录名、密码、站点名称与语言，成功后用同一凭据自动登录并进入后台', async () => {
     const wrapper = await mountSetup()
     await wrapper.find('#setup-username').setValue('  owner ')
     await wrapper.find('#setup-password').setValue('correct-horse-battery')
@@ -122,6 +143,21 @@ describe('/setup 初始化向导', () => {
     expect(mocks.bodies).toEqual([
       { token: TOKEN, username: 'owner', password: 'correct-horse-battery', locale: 'en', siteName: '夜读札记' },
     ])
+    expect(mocks.logins).toEqual([{ username: 'owner', password: 'correct-horse-battery' }])
+    expect(mocks.success).toHaveBeenCalledWith('博主账号已创建，已自动登录后台')
+    expect(mocks.navigate).toHaveBeenCalledWith('/admin')
+  })
+
+  it('账号已创建但自动登录失败时退回登录页并提示，不重复提交初始化', async () => {
+    mocks.loginStatus = 429
+    const wrapper = await mountSetup()
+    await wrapper.find('#setup-username').setValue('owner')
+    await wrapper.find('#setup-password').setValue('correct-horse-battery')
+    await wrapper.find('#setup-confirm').setValue('correct-horse-battery')
+    await wrapper.find('form').trigger('submit')
+    await vi.waitFor(() => expect(mocks.navigate).toHaveBeenCalled())
+    expect(mocks.bodies).toHaveLength(1)
+    expect(mocks.logins).toHaveLength(1)
     expect(mocks.success).toHaveBeenCalledWith('博主账号已创建，请登录后台')
     expect(mocks.navigate).toHaveBeenCalledWith({ path: '/admin/login', query: { setup: 'done' } })
   })
@@ -155,7 +191,7 @@ describe('/setup 初始化向导', () => {
     expect(wrapper.find('label[for="setup-token"]').text()).toBe('Setup token')
     expect(wrapper.find('label[for="setup-password"]').text()).toBe('Password')
     expect(wrapper.findAll('#setup-password-rules li').map((item) => item.text())).toEqual([
-      '12–128 charactersnot met',
+      '6–128 charactersnot met',
       'Both entries matchnot met',
     ])
     expect(wrapper.find('button[type="submit"]').text()).toBe('Create owner account')

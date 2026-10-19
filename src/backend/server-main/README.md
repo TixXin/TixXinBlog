@@ -18,7 +18,7 @@ HTTP 服务启动不执行迁移、seed、重置或 worker 循环。`/health` �
 
 ## 配置与专业命令
 
-本地配置参考 [.env.example](.env.example)，使用 `.env.local`；已有环境文件不覆盖。基本启动需要有效 `DATABASE_URL` 和至少 32 字符的 `JWT_ACCESS_SECRET`。管理员初始化另外需要用户名及至少 12 字符的密码，同名账号不会被覆盖。
+本地配置参考 [.env.example](.env.example)，使用 `.env.local`；已有环境文件不覆盖。基本启动需要有效 `DATABASE_URL` 和至少 32 字符的 `JWT_ACCESS_SECRET`。管理员初始化另外需要用户名及至少 6 字符的密码，同名账号不会被覆盖。
 
 以下命令从仓库根目录执行：
 

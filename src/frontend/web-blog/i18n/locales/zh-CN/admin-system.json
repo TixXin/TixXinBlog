@@ -612,7 +612,7 @@
       "lastLogin": "最近登录：{time}",
       "retry": "重试",
       "passwordTitle": "修改密码",
-      "passwordHint": "使用 12–128 位的新密码。成功后当前及其他设备的旧登录均失效，需要重新登录。",
+      "passwordHint": "使用 6–128 位的新密码。成功后当前及其他设备的旧登录均失效，需要重新登录。",
       "currentPassword": "当前密码",
       "newPassword": "新密码",
       "confirmPassword": "确认新密码",
@@ -831,7 +831,8 @@
       "submit": "创建博主账号",
       "submitting": "正在创建…",
       "failed": "初始化未完成，请稍后重试",
-      "success": "博主账号已创建，请登录后台"
+      "success": "博主账号已创建，请登录后台",
+      "successSignedIn": "博主账号已创建，已自动登录后台"
     }
   }
 }

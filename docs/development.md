@@ -85,7 +85,7 @@ corepack pnpm dev:terminal:web
 
 ## 管理员与开发样本
 
-在受控终端环境提供 `ADMIN_DEFAULT_USERNAME` 和至少 12 位随机 `ADMIN_DEFAULT_PASSWORD` 后：
+在受控终端环境提供 `ADMIN_DEFAULT_USERNAME` 和至少 6 位随机 `ADMIN_DEFAULT_PASSWORD` 后：
 
 ```sh
 corepack pnpm --filter server-main build

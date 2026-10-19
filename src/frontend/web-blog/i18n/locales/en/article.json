@@ -176,7 +176,9 @@
       "waterfall": "Infinite scroll",
       "pagination": "Paginated",
       "seoCategory": "Category {name}",
-      "seoTag": "Tag {name}"
+      "seoTag": "Tag {name}",
+      "setupPending": "This site has not been set up yet. The owner should open the setup link printed at the end of installation to create an account.",
+      "setupPendingLink": "Owner sign-in"
     },
     "pagination": {
       "previous": "Previous page",

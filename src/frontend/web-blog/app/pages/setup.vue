@@ -137,6 +137,7 @@ useHead({ meta: [{ name: 'referrer', content: 'no-referrer' }] })
 const route = useRoute()
 const router = useRouter()
 const fetchSetupStatus = useSetupStatus()
+const { login } = useCurrentUser()
 const { success } = useToast()
 
 const phase = ref<SetupPhase>('checking')
@@ -208,13 +209,22 @@ async function submit() {
   }
   try {
     await $fetch('/api/v1/setup', { method: 'POST', body, retry: 0, timeout: 15000 })
-    token.value = password.value = confirmation.value = ''
-    success(t('admin-system.setup.success'))
-    await navigateTo({ path: '/admin/login', query: { setup: 'done' } })
   } catch (cause) {
+    submitting.value = false
     // 404 表示站点已完成初始化（含并发提交中另一方先成功），不再显示表单。
     if ((cause as { statusCode?: number } | null)?.statusCode === 404) phase.value = 'closed'
     else error.value = apiErrorMessage(cause, 'admin-system.setup.failed')
+    return
+  }
+  token.value = password.value = confirmation.value = ''
+  // 账号已创建：用刚提交的凭据走常规登录直接进入后台；登录失败（如限流或网络中断）时退回登录页，账号不受影响。
+  try {
+    await login(body.username, body.password)
+    success(t('admin-system.setup.successSignedIn'))
+    await navigateTo('/admin')
+  } catch {
+    success(t('admin-system.setup.success'))
+    await navigateTo({ path: '/admin/login', query: { setup: 'done' } })
   } finally {
     submitting.value = false
   }

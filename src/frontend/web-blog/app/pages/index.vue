@@ -66,6 +66,12 @@
     <template #default>
       <!-- 首页没有可见的页面标题，补一个仅供辅助技术与搜索引擎读取的 h1 -->
       <h1 class="sr-only">{{ siteSettings.name }}</h1>
+      <!-- 只在尚无博主账号时于浏览器端显示，不进入服务端渲染与页面缓存；初始化完成后自动消失 -->
+      <p v-if="setupPending" class="setup-pending" role="status">
+        <Icon name="lucide:wand-sparkles" size="16" aria-hidden="true" />
+        <span>{{ $t('article.home.setupPending') }}</span>
+        <NuxtLink to="/admin/login">{{ $t('article.home.setupPendingLink') }}</NuxtLink>
+      </p>
       <div v-if="activeFilterLabel" class="articles-filter-summary">
         <span role="status">{{ $t('article.home.activeFilter', { filter: activeFilterLabel }) }}</span>
         <button
@@ -251,9 +257,34 @@ function migrateMomentHash() {
   if (route.hash === '#moments') void navigateTo({ path: '/moments', query: route.query }, { replace: true })
 }
 onMounted(migrateMomentHash)
+// 新装站点首页没有任何内容，提示博主用安装时输出的链接完成初始化；读取失败时不显示
+const setupPending = ref(false)
+const fetchSetupStatus = useSetupStatus()
+onMounted(async () => {
+  try {
+    setupPending.value = await fetchSetupStatus()
+  } catch {
+    setupPending.value = false
+  }
+})
 watch(() => route.hash, migrateMomentHash)
 </script>
 <style lang="scss" scoped>
+.setup-pending {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.375rem 0.5rem;
+  align-items: center;
+  margin: 0 0 1rem;
+  padding: 0.75rem 1rem;
+  border: 1px solid var(--border);
+  border-radius: 0.75rem;
+  color: var(--text-muted);
+  font-size: 0.875rem;
+}
+.setup-pending a {
+  color: var(--accent);
+}
 // 窄屏下筛选入口只留图标，文字仅供读屏，让搜索、筛选和显示模式保持同一行
 @media (max-width: #{$breakpoint-sm - 1px}) {
   .page-context-entry :deep(.context-entry__button) {

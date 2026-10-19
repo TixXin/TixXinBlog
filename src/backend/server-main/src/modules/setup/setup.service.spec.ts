@@ -164,8 +164,8 @@ describe('SetupService', () => {
   it('密码规则复用 assertAdminPassword 的长度限制，并给出中英文提示', async () => {
     const short = await failure(service().complete({ ...valid, password: 'short' }))
     expect(short.getStatus()).toBe(400)
-    expect(rendered(short).body?.message).toBe('密码至少需要 12 个字符')
-    expect(rendered(short, 'en').body?.message).toBe('The password must be at least 12 characters')
+    expect(rendered(short).body?.message).toBe('密码至少需要 6 个字符')
+    expect(rendered(short, 'en').body?.message).toBe('The password must be at least 6 characters')
     const long = await failure(service().complete({ ...valid, password: 'x'.repeat(129) }))
     expect(rendered(long, 'en').body?.message).toBe('The password cannot exceed 128 characters')
     const placeholder = await failure(service().complete({ ...valid, password: '<required>' }))

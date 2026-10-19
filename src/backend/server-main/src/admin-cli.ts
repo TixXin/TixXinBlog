@@ -22,13 +22,13 @@ export class AdminCliError extends Error {
 }
 
 /** 管理员密码长度规则，与后台改密 DTO 一致 */
-export const ADMIN_PASSWORD_MIN_LENGTH = 12
+export const ADMIN_PASSWORD_MIN_LENGTH = 6
 export const ADMIN_PASSWORD_MAX_LENGTH = 128
 
 /** 密码规则的判定结果；命令行与浏览器初始化向导各自把它渲染为对应文案 */
 export type AdminPasswordProblem = 'missing' | 'tooShort' | 'tooLong'
 
-/** 判定密码是否合规：拒绝空值与模板占位值，长度 12–128；不做 trim，保持用户实际输入 */
+/** 判定密码是否合规：拒绝空值与模板占位值，长度 6–128；不做 trim，保持用户实际输入 */
 export function adminPasswordProblem(password: string | undefined): AdminPasswordProblem | null {
   if (!password || password === '<required>') return 'missing'
   if (password.length < ADMIN_PASSWORD_MIN_LENGTH) return 'tooShort'
@@ -36,7 +36,7 @@ export function adminPasswordProblem(password: string | undefined): AdminPasswor
   return null
 }
 
-/** 与后台改密一致：12–128 位，拒绝模板占位值。 */
+/** 与后台改密一致：6–128 位，拒绝模板占位值。 */
 export function assertAdminPassword(password: string | undefined, label = '新密码'): string {
   const problem = adminPasswordProblem(password)
   if (problem === 'missing') throw new AdminCliError(`请提供${label}`)

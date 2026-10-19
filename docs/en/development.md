@@ -89,7 +89,7 @@ If several sections return 502 or fail to load at the same time, first check the
 
 ## Administrator and Development Samples
 
-After providing `ADMIN_DEFAULT_USERNAME` and a random `ADMIN_DEFAULT_PASSWORD` of at least 12 characters in a controlled terminal environment:
+After providing `ADMIN_DEFAULT_USERNAME` and a random `ADMIN_DEFAULT_PASSWORD` of at least 6 characters in a controlled terminal environment:
 
 ```sh
 corepack pnpm --filter server-main build

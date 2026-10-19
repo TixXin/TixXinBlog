@@ -33,7 +33,7 @@ try {
   assert.equal(wrong.headers.get('referrer-policy'), 'no-referrer')
   const short = await submit({ ...valid, password: 'short' })
   assert.equal(short.status, 400)
-  assert.equal(short.body.message, '密码至少需要 12 个字符')
+  assert.equal(short.body.message, '密码至少需要 6 个字符')
   // 测试环境的 setup 窗口为 1 秒；等待窗口重置，避免并发验收被前面的请求限流。
   await delay(1100)
 

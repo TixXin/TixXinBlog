@@ -30,11 +30,11 @@ describe('登录 DTO', () => {
 })
 
 describe('改密 DTO', () => {
-  const valid = { currentPassword: '原密码', newPassword: '新'.repeat(12) }
+  const valid = { currentPassword: '原密码', newPassword: '新'.repeat(6) }
 
   it.each([
     ['currentPassword', 1],
-    ['newPassword', 12],
+    ['newPassword', 6],
   ] as const)('%s 校验独立的最小长度和 128 字符上限', (field, min) => {
     expectDtoValid(ChangePasswordDto, { ...valid, [field]: '字'.repeat(min) })
     expectDtoValid(ChangePasswordDto, { ...valid, [field]: '字'.repeat(128) })

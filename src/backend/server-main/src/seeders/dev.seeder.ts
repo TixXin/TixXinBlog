@@ -13,6 +13,7 @@ import { Seeder } from '@mikro-orm/seeder'
 import * as argon2 from 'argon2'
 import { defaultFlashNoteSeeds } from '../../../../frontend/web-blog/app/features/flash/mock'
 import { mockArticleDetail, mockPosts } from '../../../../frontend/web-blog/app/features/post/mock'
+import { ADMIN_PASSWORD_MIN_LENGTH } from '../admin-cli'
 import { AdminUser } from '../entities/admin-user.entity'
 import { FlashNote } from '../entities/flash-note.entity'
 import { Post, PostContentSection } from '../entities/post.entity'
@@ -67,8 +68,8 @@ export class DevSeeder extends Seeder {
       return
     }
     const password = process.env.ADMIN_DEFAULT_PASSWORD
-    if (!password || password === '<required>' || password.length < 12) {
-      throw new Error('新建管理员需要配置至少 12 位的 ADMIN_DEFAULT_PASSWORD')
+    if (!password || password === '<required>' || password.length < ADMIN_PASSWORD_MIN_LENGTH) {
+      throw new Error(`新建管理员需要配置至少 ${ADMIN_PASSWORD_MIN_LENGTH} 位的 ADMIN_DEFAULT_PASSWORD`)
     }
     em.create(AdminUser, {
       username,

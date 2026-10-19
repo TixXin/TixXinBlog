@@ -299,7 +299,7 @@ Execution starts an empty database, runs formal migrations, starts the API/front
 
 #### Browser Setup Wizard
 
-When the environment file sets `SETUP_TOKEN`, open `https://<domain>/setup?token=<token>` once the site is running. Choose a login name, a password (12–128 characters), the site name, and the site language to create the first owner account, then you are taken to `/admin/login`. The page renders only in the browser (no server response echoes the tokenized address) and removes the token from the address bar as soon as it reads it; it is never stored in the SSR cache or indexed, and sends no Referer.
+When the environment file sets `SETUP_TOKEN`, open `https://<domain>/setup?token=<token>` once the site is running. Choose a login name, a password (6–128 characters), the site name, and the site language to create the first owner account. You are then signed in automatically with the new credentials and taken to `/admin` (if automatic sign-in fails, you land on `/admin/login`). Until setup is done, the home page shows a one-line notice in the browser linking to the admin sign-in page; it disappears once setup is complete. The page renders only in the browser (no server response echoes the tokenized address) and removes the token from the address bar as soon as it reads it; it is never stored in the SSR cache or indexed, and sends no Referer.
 
 - The wizard is open only while the database has no administrator. After the account is created, the wizard and its API close permanently (`/api/v1/setup` returns 404), so a leaked token cannot be reused. You can then remove `SETUP_TOKEN` from the environment file; it takes effect on the next release.
 - The admin sign-in page shows a link to the wizard while setup is still needed.
@@ -309,7 +309,7 @@ When the environment file sets `SETUP_TOKEN`, open `https://<domain>/setup?token
 
 #### Command-Line Initialization
 
-In a controlled terminal environment, set `ADMIN_DEFAULT_USERNAME` and a random `ADMIN_DEFAULT_PASSWORD` of at least 12 characters. Do not put the password in command arguments or logs. The prompt text in the commands stays Chinese, matching the admin interface: `登录名` is the login name and `密码` is the password. Once the service images are ready, run:
+In a controlled terminal environment, set `ADMIN_DEFAULT_USERNAME` and a random `ADMIN_DEFAULT_PASSWORD` of at least 6 characters. Do not put the password in command arguments or logs. The prompt text in the commands stays Chinese, matching the admin interface: `登录名` is the login name and `密码` is the password. Once the service images are ready, run:
 
 ```sh
 read -rp '登录名：' ADMIN_DEFAULT_USERNAME && export ADMIN_DEFAULT_USERNAME
@@ -331,7 +331,7 @@ This command only creates an account and refuses to overwrite an existing accoun
 
 ### Resetting the Administrator Password
 
-If you forget the password or suspect credential exposure, run the reset locally on the server using a one-off container. This operation has no HTTP endpoint. The new password must be at least 12 characters. Set `ADMIN_RESET_PASSWORD` in a controlled terminal, or, if unset, enter it twice with hidden input in an interactive terminal. If multiple administrators exist, use `ADMIN_RESET_USERNAME` to select the account. The first command uses interactive input; the second reads environment variables:
+If you forget the password or suspect credential exposure, run the reset locally on the server using a one-off container. This operation has no HTTP endpoint. The new password must be at least 6 characters. Set `ADMIN_RESET_PASSWORD` in a controlled terminal, or, if unset, enter it twice with hidden input in an interactive terminal. If multiple administrators exist, use `ADMIN_RESET_USERNAME` to select the account. The first command uses interactive input; the second reads environment variables:
 
 ```sh
 docker compose --env-file "$release_env" -f compose.production.yaml run --rm --no-deps -it backend node dist/admin-reset-password.js
@@ -468,7 +468,7 @@ Use the root `compose.yaml` for a local production-style preview that does not t
    docker compose --env-file $previewEnv ps -a
    ```
 
-3. Initialize the administrator. As with [production initialization](#initializing-the-administrator), the password must be at least 12 characters and is passed only through environment variables. The prompts are the same Chinese strings, `登录名` (login name) and `密码` (password):
+3. Initialize the administrator. As with [production initialization](#initializing-the-administrator), the password must be at least 6 characters and is passed only through environment variables. The prompts are the same Chinese strings, `登录名` (login name) and `密码` (password):
 
    ```sh
    read -rp '登录名：' ADMIN_DEFAULT_USERNAME && export ADMIN_DEFAULT_USERNAME
