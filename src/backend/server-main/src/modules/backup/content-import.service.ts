@@ -349,7 +349,7 @@ export class ContentImportService {
             const saved = await this.posts.save(
               null,
               { ...(await normalizedPost(em, source.values)), relatedContent: [], slug: plan.slug, status: 'draft' },
-              '从内容包迁入草稿',
+              zh('post.revisionReason.import'),
             )
             const post = await em.findOneOrFail(Post, { id: saved.id })
             post.createdAt = new Date(source.createdAt)

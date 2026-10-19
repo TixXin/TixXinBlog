@@ -96,8 +96,12 @@ export class AdminPostController {
     return this.posts.archive(id, query.revision)
   }
   @Get(':id/revisions')
-  history(@Param('id', ParseIntPipe) id: number, @Query() query: QueryAdminPostsDto) {
-    return this.revisions.list(id, query.page)
+  history(
+    @Param('id', ParseIntPipe) id: number,
+    @Query() query: QueryAdminPostsDto,
+    @RequestLocale() locale: ApiLocale,
+  ) {
+    return this.revisions.list(id, query.page, locale)
   }
   @Post(':id/revisions/:historical/restore')
   restoreRevision(
@@ -108,7 +112,11 @@ export class AdminPostController {
     return this.posts.restoreRevision(id, historical, body.revision)
   }
   @Get(':id/revisions/:revision')
-  historyDetail(@Param('id', ParseIntPipe) id: number, @Param('revision', ParseIntPipe) revision: number) {
-    return this.revisions.detail(id, revision)
+  historyDetail(
+    @Param('id', ParseIntPipe) id: number,
+    @Param('revision', ParseIntPipe) revision: number,
+    @RequestLocale() locale: ApiLocale,
+  ) {
+    return this.revisions.detail(id, revision, locale)
   }
 }

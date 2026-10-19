@@ -218,20 +218,20 @@ export class PostBatchService {
                 return
               }
               await content.populate(post, ['tags'])
-              await this.revisions.record(content, post, '批量操作前')
+              await this.revisions.record(content, post, zh('post.revisionReason.beforeBatch'))
               if (action === 'trash') post.deletedAt = new Date()
               if (action === 'restore') post.deletedAt = undefined
               post.status = action === 'archive' ? 'archived' : 'draft'
               post.revision += 1
               post.updatedAt = new Date()
               const reasons = {
-                withdraw: '批量撤回',
-                archive: '批量归档',
-                trash: '移入回收站',
-                restore: '恢复为草稿',
-                delete: '永久删除',
-              }
-              await this.revisions.record(content, post, reasons[action])
+                withdraw: 'post.revisionReason.batchWithdraw',
+                archive: 'post.revisionReason.batchArchive',
+                trash: 'post.revisionReason.trash',
+                restore: 'post.revisionReason.restoreDraft',
+                delete: 'post.revisionReason.delete',
+              } as const
+              await this.revisions.record(content, post, zh(reasons[action]))
               await content.flush()
             })
             result = { id: item.id, success: true, message: zh('post.batchItemDone') }

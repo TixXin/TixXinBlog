@@ -8,7 +8,10 @@ import { Post } from '../../entities/post.entity'
 import { PostRevision } from '../../entities/post-revision.entity'
 import { legacyMarkdown, postSnapshot } from './post-snapshot'
 import { synchronizeMediaReferences } from '../media/media-references'
-import { msg } from '../../common/i18n'
+import { msg, translateStored, type ApiLocale } from '../../common/i18n'
+
+/** 修订原因以中文存储，只在修订原因前缀下反查，避免与其他域的同名中文混用 */
+const REVISION_REASON_SCOPE = 'post.revisionReason.'
 
 @Injectable()
 export class PostRevisionsService {
@@ -31,7 +34,7 @@ export class PostRevisionsService {
       { post, revision: post.revision },
     )
   }
-  async list(postId: number, page: number) {
+  async list(postId: number, page: number, locale: ApiLocale = 'zh-CN') {
     if (!(await this.em.findOne(Post, { id: postId }, { fields: ['id'] })))
       throw new NotFoundException(msg('post.notFound'))
     const [items, total] = await this.em.findAndCount(
@@ -47,7 +50,7 @@ export class PostRevisionsService {
     return {
       items: items.map((item) => ({
         revision: item.revision,
-        reason: item.reason,
+        reason: translateStored(locale, item.reason, REVISION_REASON_SCOPE),
         createdAt: item.createdAt.toISOString(),
       })),
       total,
@@ -55,12 +58,12 @@ export class PostRevisionsService {
       pageSize: 20,
     }
   }
-  async detail(postId: number, revision: number) {
+  async detail(postId: number, revision: number, locale: ApiLocale = 'zh-CN') {
     const item = await this.em.findOne(PostRevision, { post: postId, revision })
     if (!item) throw new NotFoundException(msg('post.revisionNotFound'))
     return {
       revision: item.revision,
-      reason: item.reason,
+      reason: translateStored(locale, item.reason, REVISION_REASON_SCOPE),
       createdAt: item.createdAt.toISOString(),
       snapshot: {
         ...item.snapshot,

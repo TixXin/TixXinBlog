@@ -25,7 +25,7 @@ import { canonicalTaxonomyLabel } from './taxonomy-aliases'
 import { lockMedia, synchronizeMediaReferences } from '../media/media-references'
 import { validateContentRelations } from '../content-relations/content-relations'
 import type { ContentRelation } from '../../common/types/content-relation'
-import { msg } from '../../common/i18n'
+import { msg, zh } from '../../common/i18n'
 
 @Injectable()
 export class AdminPostService {
@@ -101,7 +101,7 @@ export class AdminPostService {
       if (!post) throw new NotFoundException(msg('post.notFound'))
       this.assertRevision(post, revision)
       await em.populate(post, ['tags'])
-      await this.revisions.record(em, post, '历史版本')
+      await this.revisions.record(em, post, zh('post.revisionReason.previous'))
       if (post.status !== 'archived' && !post.deletedAt)
         throw new BadRequestException(msg('post.restoreOnlyArchivedOrTrashed'))
       post.deletedAt = undefined
@@ -110,7 +110,7 @@ export class AdminPostService {
       post.revision += 1
       post.updatedAt = new Date()
       await em.flush()
-      await this.revisions.record(em, post, '恢复为草稿')
+      await this.revisions.record(em, post, zh('post.revisionReason.restoreDraft'))
       await em.flush()
       return { ok: true }
     })
@@ -139,7 +139,7 @@ export class AdminPostService {
         if (existing.deletedAt) throw new ConflictException(msg('post.trashedRestoreBeforeEdit'))
         await em.populate(existing, ['tags'])
         this.assertRevision(existing, input.revision)
-        await this.revisions.record(em, existing, '历史版本')
+        await this.revisions.record(em, existing, zh('post.revisionReason.previous'))
         post = existing
       } else {
         post = em.create(Post, {
@@ -210,7 +210,13 @@ export class AdminPostService {
         em,
         post,
         reason ??
-          (input.status === 'published' ? '保存公开内容' : input.status === 'draft' ? '保存草稿' : '保存归档内容'),
+          zh(
+            input.status === 'published'
+              ? 'post.revisionReason.savePublished'
+              : input.status === 'draft'
+                ? 'post.revisionReason.saveDraft'
+                : 'post.revisionReason.saveArchived',
+          ),
       )
       await em.flush()
       return this.toEditor(post)
@@ -225,12 +231,12 @@ export class AdminPostService {
       if (post.deletedAt) throw new ConflictException(msg('post.trashedRestoreFirst'))
       this.assertRevision(post, revision)
       await em.populate(post, ['tags'])
-      await this.revisions.record(em, post, '历史版本')
+      await this.revisions.record(em, post, zh('post.revisionReason.previous'))
       post.status = 'archived'
       post.revision += 1
       post.updatedAt = new Date()
       await em.flush()
-      await this.revisions.record(em, post, '归档文章')
+      await this.revisions.record(em, post, zh('post.revisionReason.archive'))
       await em.flush()
       return { ok: true }
     })
@@ -253,7 +259,7 @@ export class AdminPostService {
     return this.save(
       id,
       { ...revision.snapshot, relatedContent, revision: expected, status: 'draft' },
-      `恢复修订 ${historical}`,
+      zh('post.revisionReason.restoreRevision', { revision: historical }),
       relatedContent,
     )
   }

@@ -14,7 +14,7 @@ import { PostRevisionsService } from './post-revisions.service'
 import { TaxonomyAlias } from '../../entities/taxonomy-alias.entity'
 import { registerTaxonomyRename } from './taxonomy-aliases'
 import { lockMedia } from '../media/media-references'
-import { msg } from '../../common/i18n'
+import { msg, zh } from '../../common/i18n'
 
 @Injectable()
 export class AdminTaxonomyService {
@@ -64,11 +64,11 @@ export class AdminTaxonomyService {
                 { lockMode: LockMode.PESSIMISTIC_WRITE, refresh: true },
               )
               await em.populate(post, ['tags'])
-              await this.revisions.record(em, post, '目录更名前')
+              await this.revisions.record(em, post, zh('post.revisionReason.beforeFolderRename'))
               post.folder = input.label
               post.revision += 1
               post.updatedAt = new Date()
-              await this.revisions.record(em, post, '专栏重命名')
+              await this.revisions.record(em, post, zh('post.revisionReason.folderRename'))
             }
           }
           current.label = input.label
@@ -91,7 +91,7 @@ export class AdminTaxonomyService {
                 { lockMode: LockMode.PESSIMISTIC_WRITE, refresh: true },
               )
               await em.populate(post, ['tags'])
-              await this.revisions.record(em, post, '标签修改前')
+              await this.revisions.record(em, post, zh('post.revisionReason.beforeTagChange'))
               affected.push(post)
             }
           }
@@ -101,7 +101,7 @@ export class AdminTaxonomyService {
           for (const post of affected) {
             post.revision += 1
             post.updatedAt = new Date()
-            await this.revisions.record(em, post, '标签修改')
+            await this.revisions.record(em, post, zh('post.revisionReason.tagChange'))
           }
         } else em.create(PostTag, { label: input.label, slug: input.label, color: input.color ?? 'sky', count: 0 })
       }
