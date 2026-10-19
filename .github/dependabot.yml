@@ -16,8 +16,9 @@ updates:
     open-pull-requests-limit: 5
     versioning-strategy: increase
     commit-message:
-      prefix: 'chore(deps)'
-      prefix-development: 'chore(deps-dev)'
+      # include: scope 会自动追加 (deps)/(deps-dev)，前缀只写类型，避免标题出现 chore(deps)(deps)
+      prefix: 'chore'
+      prefix-development: 'chore'
       include: scope
     labels:
       - dependencies
@@ -40,12 +41,17 @@ updates:
     open-pull-requests-limit: 5
     versioning-strategy: increase
     commit-message:
-      prefix: 'chore(deps)'
-      prefix-development: 'chore(deps-dev)'
+      # include: scope 会自动追加 (deps)/(deps-dev)，前缀只写类型，避免标题出现 chore(deps)(deps)
+      prefix: 'chore'
+      prefix-development: 'chore'
       include: scope
     labels:
       - dependencies
       - web-blog
+    ignore:
+      # TypeScript 7 为原生重写，typescript-eslint、vue-tsc 与 Nest 构建尚不支持；生态跟进后移除此项
+      - dependency-name: typescript
+        update-types: ['version-update:semver-major']
     groups:
       前端次版本与补丁:
         patterns:
@@ -65,12 +71,17 @@ updates:
     open-pull-requests-limit: 5
     versioning-strategy: increase
     commit-message:
-      prefix: 'chore(deps)'
-      prefix-development: 'chore(deps-dev)'
+      # include: scope 会自动追加 (deps)/(deps-dev)，前缀只写类型，避免标题出现 chore(deps)(deps)
+      prefix: 'chore'
+      prefix-development: 'chore'
       include: scope
     labels:
       - dependencies
       - server-main
+    ignore:
+      # TypeScript 7 为原生重写，typescript-eslint、vue-tsc 与 Nest 构建尚不支持；生态跟进后移除此项
+      - dependency-name: typescript
+        update-types: ['version-update:semver-major']
     groups:
       后端次版本与补丁:
         patterns:
@@ -89,7 +100,7 @@ updates:
       timezone: Asia/Shanghai
     open-pull-requests-limit: 3
     commit-message:
-      prefix: 'ci(deps)'
+      prefix: 'ci'
       include: scope
     labels:
       - dependencies
