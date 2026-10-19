@@ -113,7 +113,6 @@
       "replyUnavailable": "The quoted message is not visible. Remove the quote or retry the original submission.",
       "confirmLogin": "Please confirm your sign-in status first. Your text is kept.",
       "savedPending": "Message saved. It will appear once approved.",
-      "sent": "Message sent.",
       "listStale": "The list has not refreshed yet; reload to see it.",
       "sendFailed": "Sending did not finish. Your text is kept, and retrying the same text will not post it twice.",
       "reactFailed": "Reaction failed. Please try again.",

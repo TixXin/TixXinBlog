@@ -134,7 +134,8 @@ test('迟到成功不清除新输入，刷新后可恢复未发送内容', async
   await login(page)
   await page.goto('/guestbook')
   const input = page.getByRole('textbox', { name: '留言内容', exact: true })
-  await input.fill('先发送的正文 ' + randomUUID())
+  const sentContent = '先发送的正文 ' + randomUUID()
+  await input.fill(sentContent)
   await page.route('**/api/v1/admin/guestbook', async (route) => {
     if (route.request().method() !== 'POST') return route.continue()
     const response = await route.fetch()
@@ -143,7 +144,7 @@ test('迟到成功不清除新输入，刷新后可恢复未发送内容', async
   })
   await page.getByRole('button', { name: '发送留言', exact: true }).click()
   await input.fill('仍然在编写的下一条留言')
-  await expect(page.locator('.message-input [role="status"]')).toContainText('留言已发送')
+  await expect(page.getByText(sentContent)).toBeVisible()
   await expect(input).toHaveValue('仍然在编写的下一条留言')
   page.once('dialog', (dialog) => dialog.accept())
   await page.reload()

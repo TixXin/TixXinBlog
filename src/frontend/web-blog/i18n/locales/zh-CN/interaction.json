@@ -113,7 +113,6 @@
       "replyUnavailable": "引用暂不可见，可取消引用或重试原提交",
       "confirmLogin": "请先确认登录状态，输入已保留。",
       "savedPending": "留言已保存，审核通过后公开。",
-      "sent": "留言已发送。",
       "listStale": "列表暂未更新，可刷新查看。",
       "sendFailed": "发送未完成，输入已保留；重试相同内容不会重复发送。",
       "reactFailed": "回应失败，请重试",

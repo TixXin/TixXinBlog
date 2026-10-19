@@ -170,18 +170,17 @@ export function useGuestbookInteractions(
       }
       state.nonce = ''
       state.signature = ''
-      state.notice = t(
-        record.moderationStatus === 'pending'
-          ? 'interaction.guestbookSession.savedPending'
-          : 'interaction.guestbookSession.sent',
-      )
+      // 发布成功的留言直接出现在列表中，不再额外提示；仅保留待审核与列表刷新失败的告知。
+      let notice = record.moderationStatus === 'pending' ? t('interaction.guestbookSession.savedPending') : ''
       if (alive) {
         try {
           await onSent(record)
         } catch {
-          state.notice += ' ' + t('interaction.guestbookSession.listStale')
+          const stale = t('interaction.guestbookSession.listStale')
+          notice = notice ? `${notice} ${stale}` : stale
         }
       }
+      state.notice = notice
     } catch (cause) {
       if (state.epoch === epoch)
         state.error = cause instanceof Error ? cause.message : t('interaction.guestbookSession.sendFailed')

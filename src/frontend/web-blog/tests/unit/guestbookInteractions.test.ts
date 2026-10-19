@@ -100,6 +100,15 @@ it('未知发送失败保留输入和同一提交标识，确认后才清空', a
   expect(mocks.create.mock.calls[1]![0]).toEqual(first)
   expect(flow.state.draft).toBe('')
   expect(flow.state.error).toBe('')
+  expect(flow.state.notice).toBe('')
+})
+it('待审核留言保留审核提示，不显示已发送', async () => {
+  const { interactions: flow } = await setup()
+  flow.setDraft('待审核正文')
+  mocks.create.mockResolvedValueOnce({ ...record(), moderationStatus: 'pending' })
+  await flow.submit()
+  expect(flow.state.notice).toContain('审核')
+  expect(flow.state.notice).not.toContain('留言已发送')
 })
 it('发送中不重复写入，迟到成功不清除新输入，列表失败仍保持发送成功', async () => {
   const { interactions: flow } = await setup()
@@ -120,8 +129,8 @@ it('发送中不重复写入，迟到成功不清除新输入，列表失败仍�
   await sending
   expect(flow.state.draft).toBe('下一条仍在编写')
   expect(flow.state.error).toBe('')
-  expect(flow.state.notice).toContain('留言已发送')
-  expect(flow.state.notice).toContain('列表暂未更新')
+  expect(flow.state.notice).toBe('列表暂未更新，可刷新查看。')
+  expect(flow.state.notice).not.toContain('留言已发送')
 })
 it('首次恢复身份期间开始输入，身份确认后仍保留', async () => {
   let finish!: () => void
