@@ -3,6 +3,7 @@
  * @description 真实闪念仓库：公开读取与管理员写入分离，所有者由服务端统一决定
  */
 import { ensureVisitorId } from '~/utils/visitorId'
+import { flashMomentMessage } from './messages'
 import type { FlashNoteRepository } from './repository'
 import type {
   FlashComment,
@@ -34,12 +35,12 @@ function flashRequestError(cause: unknown): Error {
   const statusCode = failure?.statusCode ?? failure?.status
   const message =
     !statusCode || statusCode >= 500
-      ? '闪念服务暂时不可用，请稍后重试'
+      ? flashMomentMessage('flash-moment.request.flashUnavailable')
       : typeof failure?.data?.message === 'string'
         ? failure.data.message
         : statusCode === 401
-          ? '登录已失效，请重新登录后重试'
-          : '闪念操作未完成，请检查输入后重试'
+          ? flashMomentMessage('flash-moment.request.sessionExpired')
+          : flashMomentMessage('flash-moment.request.flashInvalid')
   return Object.assign(new Error(message, { cause }), { statusCode })
 }
 
@@ -84,7 +85,7 @@ export class HttpFlashRepository implements FlashNoteRepository {
   }
   private async all(archived: boolean, query = '', publicOnly = false): Promise<FlashNote[]> {
     const privateView = !publicOnly && this.isAdmin()
-    if (archived && !privateView) throw new Error('归档内容需要博主登录')
+    if (archived && !privateView) throw new Error(flashMomentMessage('flash-moment.request.archiveNeedsLogin'))
     const notes = new Map<string, FlashNote>()
     let page = 1
     let total: number

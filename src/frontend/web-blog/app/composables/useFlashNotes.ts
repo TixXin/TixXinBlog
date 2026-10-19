@@ -24,6 +24,7 @@ import type {
 } from '~/features/flash/types'
 import { summarizeFlashNotes } from '~/features/flash/overview'
 import { appendComment, withoutComment } from '~/features/flash/comments'
+import { flashMomentMessage } from '~/features/flash/messages'
 import { defaultFlashNoteSeeds, FLASH_SEEDS_VERSION } from '~/features/flash/mock'
 import { mockOwnerUser } from '~/features/auth/mock'
 import {
@@ -325,7 +326,7 @@ export function useFlashNotes() {
   }
 
   function assertOwner(owner: string) {
-    if (owner !== ownerKey.value) throw new Error('闪念所属身份或内容库已变化，请重新核对后操作')
+    if (owner !== ownerKey.value) throw new Error(flashMomentMessage('flash-moment.request.ownerChanged'))
   }
   function acceptWrite(owner: string, apply: (current: FlashNote[]) => FlashNote[]) {
     assertOwner(owner)

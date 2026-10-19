@@ -11,14 +11,16 @@
       v-if="loading || errorMessage"
       :pending="loading"
       :compact="notes.length > 0"
-      :title="errorMessage || '正在加载闪念'"
-      :description="notes.length ? '仍显示上次成功加载的闪念，未提交的内容已保留。' : undefined"
+      :title="errorMessage || $t('flash-moment.noteList.loading')"
+      :description="notes.length ? $t('flash-moment.noteList.staleDesc') : undefined"
       @retry="$emit('retry')"
     />
 
     <div v-if="!loading && !errorMessage && notes.length === 0" class="flash-note-list__empty">
       <Icon name="lucide:zap-off" size="24" />
-      <span>{{ emptyMessage || (readOnly ? '博主还没有公开闪念' : '还没有闪念，记下第一个想法吧') }}</span>
+      <span>{{
+        emptyMessage || (readOnly ? $t('flash-moment.noteList.emptyGuest') : $t('flash-moment.noteList.emptyOwner'))
+      }}</span>
     </div>
 
     <div v-if="notes.length" class="flash-note-list__masonry">
@@ -48,8 +50,8 @@
         v-if="showMoreFeedback"
         compact
         :pending="morePending"
-        title="更多闪念加载失败"
-        :description="moreError || '已加载的闪念仍可浏览，请重试继续加载。'"
+        :title="$t('flash-moment.noteList.moreFailed')"
+        :description="moreError || $t('flash-moment.noteList.moreFailedDesc')"
         @retry="retryMore"
       />
       <button
@@ -62,12 +64,12 @@
         @click="requestMore"
       >
         <Icon name="lucide:chevrons-down" size="14" aria-hidden="true" />
-        {{ morePending ? '正在加载…' : '加载更多闪念' }}
+        {{ morePending ? $t('flash-moment.noteList.morePending') : $t('flash-moment.noteList.more') }}
       </button>
     </div>
     <div v-else-if="notes.length && !loading && !errorMessage" ref="endRef" class="flash-note-list__end" tabindex="-1">
       <span class="flash-note-list__end-line" aria-hidden="true" />
-      <span class="flash-note-list__end-text">没有更多了</span>
+      <span class="flash-note-list__end-text">{{ $t('flash-moment.noteList.end') }}</span>
       <span class="flash-note-list__end-line" aria-hidden="true" />
     </div>
   </div>

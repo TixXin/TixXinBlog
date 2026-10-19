@@ -14,7 +14,7 @@
           class="flash-ai-modal"
           role="dialog"
           aria-modal="true"
-          aria-label="闪念演示搜索"
+          :aria-label="$t('flash-moment.aiSearch.dialog')"
           tabindex="-1"
         >
           <div class="flash-ai-modal__header">
@@ -23,13 +23,18 @@
               ref="inputRef"
               v-model="input"
               type="text"
-              aria-label="搜索闪念（演示）"
+              :aria-label="$t('flash-moment.aiSearch.input')"
               class="flash-ai-modal__input"
-              placeholder="问问你的闪念，比如「今年读了什么书」"
+              :placeholder="$t('flash-moment.aiSearch.placeholder')"
               @keydown.escape="close"
               @keydown.enter="submit"
             />
-            <button type="button" class="flash-ai-modal__close" aria-label="关闭闪念搜索" @click="close">
+            <button
+              type="button"
+              class="flash-ai-modal__close"
+              :aria-label="$t('flash-moment.aiSearch.close')"
+              @click="close"
+            >
               <Icon name="lucide:x" size="18" />
             </button>
           </div>
@@ -38,20 +43,20 @@
             <!-- idle 状态：提示词 -->
             <div v-if="aiSearch.status.value === 'idle'" class="flash-ai-modal__hint">
               <Icon name="lucide:wand-2" size="18" />
-              <p>这是演示功能，会整理当前闪念中的相关内容。</p>
-              <p class="flash-ai-modal__hint-sub">输入关键词后回车开始。</p>
+              <p>{{ $t('flash-moment.aiSearch.hint') }}</p>
+              <p class="flash-ai-modal__hint-sub">{{ $t('flash-moment.aiSearch.hintSub') }}</p>
             </div>
 
             <!-- loading -->
             <div v-else-if="aiSearch.status.value === 'loading'" class="flash-ai-modal__loading">
               <Icon name="lucide:loader-2" size="20" class="flash-ai-modal__spinner" />
-              <span>AI 正在翻阅你的闪念...</span>
+              <span>{{ $t('flash-moment.aiSearch.loading') }}</span>
             </div>
 
             <CommonRequestFeedback
               v-else-if="aiSearch.status.value === 'error'"
               compact
-              title="闪念搜索失败"
+              :title="$t('flash-moment.aiSearch.failed')"
               :description="aiSearch.errorMsg.value || undefined"
               @retry="submit()"
             />
@@ -64,7 +69,7 @@
               <div class="flash-ai-modal__answer">{{ aiSearch.result.value.answer }}</div>
 
               <div v-if="citedNotes.length > 0" class="flash-ai-modal__citations">
-                <span class="flash-ai-modal__citations-label">引用的闪念</span>
+                <span class="flash-ai-modal__citations-label">{{ $t('flash-moment.aiSearch.citations') }}</span>
                 <ul class="flash-ai-modal__citation-list">
                   <li v-for="n in citedNotes" :key="n.id">
                     <button class="flash-ai-modal__citation-item" type="button" @click="onCiteClick(n.id)">
@@ -77,7 +82,7 @@
 
               <div class="flash-ai-modal__meta">
                 <Icon name="lucide:timer" size="11" />
-                耗时 {{ aiSearch.result.value.latencyMs }}ms（mock）
+                {{ $t('flash-moment.aiSearch.latency', { ms: aiSearch.result.value.latencyMs }) }}
               </div>
             </div>
           </div>

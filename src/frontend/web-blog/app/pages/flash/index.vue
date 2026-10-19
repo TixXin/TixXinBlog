@@ -14,39 +14,39 @@
             <Icon name="lucide:zap" size="18" />
           </div>
           <div class="page-title__text">
-            <h1 class="page-title__heading">闪念</h1>
+            <h1 class="page-title__heading">{{ $t('flash-moment.flash.title') }}</h1>
             <p class="page-title__sub">
-              {{ isLoggedIn ? '记录稍纵即逝的灵感' : '博主的灵感碎片' }}
+              {{ isLoggedIn ? $t('flash-moment.flash.subOwner') : $t('flash-moment.flash.subGuest') }}
             </p>
           </div>
         </div>
 
         <!-- 右侧操作区：RSS 订阅、归档箱与搜索切换 -->
         <div class="page-actions">
-          <BlogRssLink href="/flash.xml" label="闪念" compact />
+          <BlogRssLink href="/flash.xml" :label="$t('article.rss.flash')" compact />
           <button
             v-if="isLoggedIn"
             type="button"
             class="flash-page__search-toggle"
             :class="{ 'is-active': showArchive }"
-            :aria-label="showArchive ? '返回主列表' : '查看归档箱'"
+            :aria-label="showArchive ? $t('flash-moment.flash.backToMain') : $t('flash-moment.flash.openArchive')"
             @click="toggleArchiveView"
           >
             <Icon :name="showArchive ? 'lucide:archive-restore' : 'lucide:archive'" size="16" />
-            <span>{{ showArchive ? '返回主列表' : '归档箱' }}</span>
+            <span>{{ showArchive ? $t('flash-moment.flash.backToMain') : $t('flash-moment.flash.archive') }}</span>
           </button>
           <button
             ref="searchButtonRef"
             type="button"
             class="flash-page__search-toggle"
             :class="{ 'is-active': searchExpanded }"
-            aria-label="搜索闪念"
+            :aria-label="$t('flash-moment.flash.searchToggle')"
             :aria-expanded="searchExpanded"
             aria-controls="flash-search"
             @click="searchExpanded = !searchExpanded"
           >
             <Icon name="lucide:search" size="16" />
-            <span>搜索</span>
+            <span>{{ $t('flash-moment.flash.search') }}</span>
           </button>
         </div>
 
@@ -57,14 +57,21 @@
             id="flash-search"
             ref="searchInputRef"
             v-model="searchQuery"
-            aria-label="搜索闪念内容或标签"
+            :aria-label="$t('flash-moment.flash.searchInput')"
             type="text"
             class="flash-page__search-input"
-            placeholder="搜索闪念内容或标签..."
+            :placeholder="$t('flash-moment.flash.searchPlaceholder')"
             @keydown.escape="closeSearch"
           />
-          <span v-if="debouncedQuery" class="flash-page__search-count"> {{ resultCount }} 条结果 </span>
-          <button type="button" class="flash-page__filter-clear" aria-label="收起搜索" @click="closeSearch">
+          <span v-if="debouncedQuery" class="flash-page__search-count">
+            {{ $t('flash-moment.flash.resultCount', { count: resultCount }, resultCount) }}
+          </span>
+          <button
+            type="button"
+            class="flash-page__filter-clear"
+            :aria-label="$t('flash-moment.flash.closeSearch')"
+            @click="closeSearch"
+          >
             <Icon name="lucide:x" size="16" />
           </button>
         </div>
@@ -74,7 +81,7 @@
       <CommonCustomScrollbar class="flash-page__body" viewport-class="flash-page__viewport" primary>
         <div class="flash-page__content">
           <!-- 类型 tab：全部 / 灵感 / 待办 / 随记 -->
-          <div class="flash-page__type-tabs" role="group" aria-label="按类型筛选">
+          <div class="flash-page__type-tabs" role="group" :aria-label="$t('flash-moment.flash.typeGroup')">
             <button
               type="button"
               class="flash-page__type-tab"
@@ -82,57 +89,48 @@
               :aria-pressed="typeFilter === null"
               @click="typeFilter = null"
             >
-              全部
+              {{ $t('flash-moment.flash.all') }}
             </button>
             <button
-              v-for="t in typeTabs"
-              :key="t.id"
+              v-for="tab in typeTabs"
+              :key="tab.id"
               type="button"
               class="flash-page__type-tab"
-              :class="{ 'is-active': typeFilter === t.id }"
-              :data-type="t.id"
-              :aria-pressed="typeFilter === t.id"
-              @click="typeFilter = t.id"
+              :class="{ 'is-active': typeFilter === tab.id }"
+              :data-type="tab.id"
+              :aria-pressed="typeFilter === tab.id"
+              @click="typeFilter = tab.id"
             >
-              <Icon :name="t.icon" size="12" />
-              {{ t.label }}
+              <Icon :name="tab.icon" size="12" />
+              {{ tab.label }}
             </button>
           </div>
 
           <button v-if="!isLoggedIn" type="button" class="flash-page__guest-banner" @click="onLogin">
             <Icon name="lucide:eye" size="14" class="flash-page__guest-banner-icon" />
-            <span class="flash-page__guest-banner-text"> 正在浏览博主的公开闪念，管理内容请使用博主账号登录 </span>
+            <span class="flash-page__guest-banner-text"> {{ $t('flash-moment.flash.guestBanner') }} </span>
             <span class="flash-page__guest-banner-cta">
-              立即登录
+              {{ $t('flash-moment.flash.loginNow') }}
               <Icon name="lucide:arrow-right" size="12" />
             </span>
           </button>
           <!-- 标签筛选条 -->
           <div v-if="activeTag || selectedDate || debouncedQuery || typeFilter" class="flash-page__filter-bar">
             <span class="flash-page__filter-label" role="status">
-              当前筛选：{{
-                [
-                  typeTabs.find((t) => t.id === typeFilter)?.label,
-                  activeTag ? '#' + activeTag : '',
-                  selectedDate,
-                  debouncedQuery ? '关键词：' + debouncedQuery : '',
-                ]
-                  .filter(Boolean)
-                  .join(' · ')
-              }}
-              · {{ resultCount }} 条结果
+              {{ $t('flash-moment.flash.filterCurrent', { summary: filterSummary }) }}
+              · {{ $t('flash-moment.flash.resultCount', { count: resultCount }, resultCount) }}
             </span>
             <button type="button" class="flash-page__filter-clear" @click="clearFilters">
               <Icon name="lucide:x" size="12" />
-              清除全部筛选
+              {{ $t('flash-moment.flash.clearFilters') }}
             </button>
           </div>
           <CommonRequestFeedback
             v-if="overviewError || overviewRetrying"
             compact
             :pending="overviewLoading"
-            title="闪念概览加载失败"
-            description="日历、标签与统计暂时无法更新，已加载的闪念仍可浏览。"
+            :title="$t('flash-moment.flash.overviewFailed')"
+            :description="$t('flash-moment.flash.overviewFailedDesc')"
             @retry="retryOverview"
           />
           <FlashNoteList
@@ -164,7 +162,10 @@
       <!-- 底部发布输入框：仅登录者可见，参考留言板底部 MessageInput 的呈现方式 -->
       <div v-if="isLoggedIn" class="flash-page__composer-wrap">
         <div class="flash-page__composer">
-          <p v-if="editingNote">正在编辑闪念 <button type="button" @click="cancelEdit">取消编辑</button></p>
+          <p v-if="editingNote">
+            {{ $t('flash-moment.flash.editing') }}
+            <button type="button" @click="cancelEdit">{{ $t('flash-moment.flash.cancelEdit') }}</button>
+          </p>
           <FlashEditor
             :key="editorVersion"
             ref="editorRef"
@@ -185,9 +186,9 @@
             <button type="button" class="flash-ai-card" @click="onAiClick">
               <Icon name="lucide:sparkles" size="18" class="flash-ai-card__icon" />
               <div class="flash-ai-card__body">
-                <span class="flash-ai-card__title">AI 搜索闪念</span>
+                <span class="flash-ai-card__title">{{ $t('flash-moment.flash.aiTitle') }}</span>
                 <span class="flash-ai-card__desc">{{
-                  isLoggedIn ? '让 AI 帮你回顾过去的想法' : '登录后启用 AI 搜索'
+                  isLoggedIn ? $t('flash-moment.flash.aiDescOwner') : $t('flash-moment.flash.aiDescGuest')
                 }}</span>
               </div>
               <Icon name="lucide:chevron-right" size="14" class="flash-ai-card__arrow" />
@@ -196,12 +197,14 @@
             <!-- 统计卡片 -->
             <div class="flash-stat-card">
               <div class="flash-stat-card__row">
-                <span class="flash-stat-card__label">{{ isLoggedIn ? '闪念总数' : '博主总数' }}</span>
+                <span class="flash-stat-card__label">{{
+                  isLoggedIn ? $t('flash-moment.flash.statTotal') : $t('flash-moment.flash.statOwnerTotal')
+                }}</span>
                 <span class="flash-stat-card__value">{{ totalCount ?? '—' }}</span>
               </div>
               <div class="flash-stat-card__divider" />
               <div class="flash-stat-card__row">
-                <span class="flash-stat-card__label">本月新增</span>
+                <span class="flash-stat-card__label">{{ $t('flash-moment.flash.statMonthly') }}</span>
                 <span class="flash-stat-card__value">{{ aggregatesReady ? monthlyCount : '—' }}</span>
               </div>
             </div>
@@ -226,21 +229,21 @@
             <div v-if="tagCloud.length > 0" class="flash-tag-cloud">
               <div class="flash-tag-cloud__header">
                 <Icon name="lucide:tags" size="14" />
-                <span>标签云</span>
+                <span>{{ $t('flash-moment.flash.tagCloud') }}</span>
               </div>
               <div class="flash-tag-cloud__list">
                 <button
-                  v-for="t in tagCloud"
-                  :key="t.name"
+                  v-for="item in tagCloud"
+                  :key="item.name"
                   type="button"
-                  :aria-pressed="activeTag === t.name"
+                  :aria-pressed="activeTag === item.name"
                   class="flash-tag-cloud__item"
-                  :class="{ 'flash-tag-cloud__item--active': activeTag === t.name }"
-                  :style="{ fontSize: tagFontSize(t.count) }"
-                  @click="onTagFilter(t.name)"
+                  :class="{ 'flash-tag-cloud__item--active': activeTag === item.name }"
+                  :style="{ fontSize: tagFontSize(item.count) }"
+                  @click="onTagFilter(item.name)"
                 >
-                  #{{ t.name }}
-                  <span class="flash-tag-cloud__count">{{ t.count }}</span>
+                  #{{ item.name }}
+                  <span class="flash-tag-cloud__count">{{ item.count }}</span>
                 </button>
               </div>
             </div>
@@ -263,9 +266,11 @@ import { resolveScrollRoot, scrollToRoot } from '~/utils/scrollRoot'
 import type { FlashNote, FlashType, FlashCommentSubmission } from '~/features/flash/types'
 import { commentSubmittedMessage } from '~/features/flash/comments'
 
+const { t } = useI18n()
+
 usePageSeo({
-  title: '闪念',
-  description: '博主随手记下的灵感、待办与生活碎片。',
+  title: () => t('flash-moment.flash.seoTitle'),
+  description: () => t('flash-moment.flash.seoDescription'),
   type: 'website',
 })
 
@@ -341,11 +346,22 @@ function onSelectDate(date: string | null) {
 
 // ---- 类型筛选 ----
 const typeFilter = ref<FlashType | null>(null)
-const typeTabs: { id: FlashType; icon: string; label: string }[] = [
-  { id: 'idea', icon: 'lucide:lightbulb', label: '灵感' },
-  { id: 'todo', icon: 'lucide:check-square', label: '待办' },
-  { id: 'memo', icon: 'lucide:file-text', label: '随记' },
-]
+const typeTabs = computed<{ id: FlashType; icon: string; label: string }[]>(() => [
+  { id: 'idea', icon: 'lucide:lightbulb', label: t('flash-moment.flashType.idea') },
+  { id: 'todo', icon: 'lucide:check-square', label: t('flash-moment.flashType.todo') },
+  { id: 'memo', icon: 'lucide:file-text', label: t('flash-moment.flashType.memo') },
+])
+/** 筛选条摘要：类型 · 标签 · 日期 · 关键词 */
+const filterSummary = computed(() =>
+  [
+    typeTabs.value.find((tab) => tab.id === typeFilter.value)?.label,
+    activeTag.value ? '#' + activeTag.value : '',
+    selectedDate.value,
+    debouncedQuery.value ? t('flash-moment.flash.filterKeyword', { keyword: debouncedQuery.value }) : '',
+  ]
+    .filter(Boolean)
+    .join(' · '),
+)
 
 // ---- 搜索 ----
 const searchExpanded = ref(false)
@@ -491,7 +507,7 @@ const editingNote = ref<FlashNote | null>(null)
 const editorDirty = ref(false)
 const editorRef = ref<{ focus: () => void } | null>(null)
 async function onEdit(note: FlashNote) {
-  if (editorDirty.value && !window.confirm('放弃当前尚未保存的内容并编辑这条闪念？')) return
+  if (editorDirty.value && !window.confirm(t('flash-moment.flash.confirmDiscardForEdit'))) return
   editingNote.value = note
   editorDirty.value = false
   editorVersion.value += 1
@@ -499,7 +515,7 @@ async function onEdit(note: FlashNote) {
   editorRef.value?.focus()
 }
 function cancelEdit() {
-  if (editorDirty.value && !window.confirm('放弃当前尚未保存的修改？')) return
+  if (editorDirty.value && !window.confirm(t('flash-moment.flash.confirmDiscardChanges'))) return
   editingNote.value = null
   editorDirty.value = false
   editorVersion.value += 1
@@ -515,10 +531,10 @@ async function onSubmit(draft: import('~/features/flash/types').FlashNoteDraft) 
       editingNote.value = null
       editorDirty.value = false
       editorVersion.value += 1
-      success(draft.isDraft ? '草稿已保存' : '闪念已发布')
+      success(draft.isDraft ? t('flash-moment.flash.toastDraftSaved') : t('flash-moment.flash.toastPublished'))
     }
   } catch (cause) {
-    showError(cause instanceof Error ? cause.message : '保存失败，内容已保留')
+    showError(cause instanceof Error ? cause.message : t('flash-moment.flash.toastSaveFailed'))
   } finally {
     publishing.value = false
   }
@@ -530,7 +546,7 @@ async function runNoteAction(id: string, action: () => Promise<void>) {
   try {
     await action()
   } catch (cause) {
-    showError(cause instanceof Error ? cause.message : '操作失败，请重试')
+    showError(cause instanceof Error ? cause.message : t('flash-moment.flash.toastActionFailed'))
   } finally {
     pendingIds.value = pendingIds.value.filter((value) => value !== id)
   }
@@ -539,7 +555,7 @@ async function onRemove(id: string) {
   await runNoteAction(id, async () => {
     await remove(id)
     archivedNotes.value = archivedNotes.value.filter((note) => note.id !== id)
-    success('已删除')
+    success(t('flash-moment.flash.toastDeleted'))
   })
 }
 async function onSetPinned(payload: { id: string; pinned: boolean }) {
@@ -547,7 +563,7 @@ async function onSetPinned(payload: { id: string; pinned: boolean }) {
     const changed = await setPinned(payload.id, payload.pinned)
     if (changed) {
       archivedNotes.value = archivedNotes.value.map((note) => (note.id === changed.id ? changed : note))
-      success(payload.pinned ? '已置顶' : '已取消置顶')
+      success(payload.pinned ? t('flash-moment.flash.toastPinned') : t('flash-moment.flash.toastUnpinned'))
     }
   })
 }
@@ -557,7 +573,7 @@ async function onSetArchived(payload: { id: string; archived: boolean }) {
     if (!changed) return
     await refreshArchived()
     if (!payload.archived) await load(true)
-    success(payload.archived ? '已归档' : '已恢复到主列表')
+    success(payload.archived ? t('flash-moment.flash.toastArchived') : t('flash-moment.flash.toastRestored'))
   })
 }
 
@@ -575,8 +591,8 @@ const listPending = computed(() => {
 })
 const emptyMessage = computed(() => {
   if (activeTag.value || selectedDate.value || debouncedQuery.value || typeFilter.value)
-    return '没有匹配的闪念，请调整筛选条件'
-  return showArchive.value ? '归档箱暂无闪念' : undefined
+    return t('flash-moment.flash.emptyNoMatch')
+  return showArchive.value ? t('flash-moment.flash.emptyArchive') : undefined
 })
 
 async function refreshArchived() {
@@ -590,7 +606,8 @@ async function refreshArchived() {
     archivedNotes.value = result
     archiveLoaded.value = true
   } catch (cause) {
-    if (version === archiveVersion) archiveError.value = cause instanceof Error ? cause.message : '归档加载失败，请重试'
+    if (version === archiveVersion)
+      archiveError.value = cause instanceof Error ? cause.message : t('flash-moment.flash.archiveLoadFailed')
   } finally {
     if (version === archiveVersion) archiveLoading.value = false
   }
@@ -621,9 +638,9 @@ async function onToggleLike(id: string) {
   try {
     await toggleLike(id)
     const changed = notes.value.find((note) => note.id === id)
-    success(changed?.liked ? '已点赞' : '已取消点赞')
+    success(changed?.liked ? t('flash-moment.flash.toastLiked') : t('flash-moment.flash.toastUnliked'))
   } catch (cause) {
-    showError(cause instanceof Error ? cause.message : '点赞失败，请重试')
+    showError(cause instanceof Error ? cause.message : t('flash-moment.flash.toastLikeFailed'))
   } finally {
     pendingIds.value = pendingIds.value.filter((value) => value !== id)
   }
@@ -649,10 +666,10 @@ async function onAddComment(payload: FlashCommentSubmission) {
       { website: payload.website, formElapsedMs: payload.formElapsedMs },
     )
     payload.complete?.(!!created)
-    if (created) success(commentSubmittedMessage(created))
+    if (created) success(commentSubmittedMessage(created, t))
   } catch (cause) {
     payload.complete?.(false)
-    showError(cause instanceof Error ? cause.message : '评论失败，内容已保留')
+    showError(cause instanceof Error ? cause.message : t('flash-moment.flash.toastCommentFailed'))
   } finally {
     pendingIds.value = pendingIds.value.filter((value) => value !== payload.noteId)
   }
@@ -690,9 +707,9 @@ function onIdentityConfirm() {
 async function onRemoveComment(payload: { noteId: string; commentId: string }) {
   try {
     await removeComment(payload.noteId, payload.commentId)
-    success('评论已删除')
+    success(t('flash-moment.flash.toastCommentDeleted'))
   } catch (cause) {
-    showError(cause instanceof Error ? cause.message : '删除失败')
+    showError(cause instanceof Error ? cause.message : t('flash-moment.flash.toastDeleteFailed'))
   }
 }
 

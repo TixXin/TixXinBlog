@@ -11,7 +11,7 @@
       <p v-if="validationError" role="alert">{{ validationError }}</p>
       <!-- 顶部条：mood 切换（占位） + 字数；紧凑态隐藏 -->
       <header v-show="expanded" class="fed__header">
-        <div class="fed__moods" role="group" aria-label="闪念类型">
+        <div class="fed__moods" role="group" :aria-label="$t('flash-moment.editor.typeGroup')">
           <button
             v-for="m in moods"
             :key="m.id"
@@ -39,7 +39,7 @@
           :placeholder="placeholder"
           :rows="expanded ? 4 : 1"
           :maxlength="maxLength"
-          aria-label="闪念正文"
+          :aria-label="$t('flash-moment.editor.content')"
           @focus="focused = true"
           @blur="focused = false"
           @keydown="onEditorKeydown"
@@ -47,8 +47,8 @@
         <button
           type="button"
           class="fed__expand-toggle"
-          :aria-label="expanded ? '收起编辑器' : '展开编辑器'"
-          :title="expanded ? '收起编辑器' : '展开编辑器'"
+          :aria-label="expanded ? $t('flash-moment.editor.collapse') : $t('flash-moment.editor.expand')"
+          :title="expanded ? $t('flash-moment.editor.collapse') : $t('flash-moment.editor.expand')"
           @click="toggleExpand"
         >
           <Icon :name="expanded ? 'lucide:minimize-2' : 'lucide:maximize-2'" size="12" />
@@ -57,9 +57,14 @@
 
       <!-- 标签 chips -->
       <div v-if="tags.length > 0 || tagDraft" class="fed__tags">
-        <span v-for="t in tags" :key="t" class="fed__tag">
-          #{{ t }}
-          <button type="button" class="fed__tag-remove" aria-label="移除标签" @click="removeTag(t)">
+        <span v-for="tag in tags" :key="tag" class="fed__tag">
+          #{{ tag }}
+          <button
+            type="button"
+            class="fed__tag-remove"
+            :aria-label="$t('flash-moment.editor.removeTag')"
+            @click="removeTag(tag)"
+          >
             <Icon name="lucide:x" size="10" />
           </button>
         </span>
@@ -71,13 +76,13 @@
         :disabled="submitting || images.length >= 9"
         @click="mediaOpen = true"
       >
-        <Icon name="lucide:images" size="14" />从媒体库选择图片
+        <Icon name="lucide:images" size="14" />{{ $t('flash-moment.editor.pickMedia') }}
       </button>
       <!-- 图片 URL 列表（折叠态，paperclip 触发） -->
       <div v-if="showImageInput" class="fed__images">
         <label class="fed__images-label" :for="imageInputId">
           <Icon name="lucide:image" size="12" />
-          <span>图片 URL（每行一个，最多 9 张）</span>
+          <span>{{ $t('flash-moment.editor.imageUrlsLabel') }}</span>
         </label>
         <textarea
           :id="imageInputId"
@@ -97,40 +102,81 @@
       <!-- 底部工具栏 -->
       <footer class="fed__footer">
         <div class="fed__tools">
-          <button type="button" class="fed__tool" aria-label="加粗" @click="insertWrap('**', '**')">
+          <button
+            type="button"
+            class="fed__tool"
+            :aria-label="$t('flash-moment.editor.bold')"
+            @click="insertWrap('**', '**')"
+          >
             <Icon name="lucide:bold" size="14" />
           </button>
-          <button type="button" class="fed__tool" aria-label="斜体" @click="insertWrap('*', '*')">
+          <button
+            type="button"
+            class="fed__tool"
+            :aria-label="$t('flash-moment.editor.italic')"
+            @click="insertWrap('*', '*')"
+          >
             <Icon name="lucide:italic" size="14" />
           </button>
-          <button type="button" class="fed__tool" aria-label="列表" @click="insertPrefix('- ')">
+          <button
+            type="button"
+            class="fed__tool"
+            :aria-label="$t('flash-moment.editor.list')"
+            @click="insertPrefix('- ')"
+          >
             <Icon name="lucide:list" size="14" />
           </button>
-          <button type="button" class="fed__tool" aria-label="待办" @click="insertPrefix('- [ ] ')">
+          <button
+            type="button"
+            class="fed__tool"
+            :aria-label="$t('flash-moment.editor.todo')"
+            @click="insertPrefix('- [ ] ')"
+          >
             <Icon name="lucide:check-square" size="14" />
           </button>
-          <button type="button" class="fed__tool" aria-label="引用" @click="insertPrefix('> ')">
+          <button
+            type="button"
+            class="fed__tool"
+            :aria-label="$t('flash-moment.editor.quote')"
+            @click="insertPrefix('> ')"
+          >
             <Icon name="lucide:quote" size="14" />
           </button>
-          <button type="button" class="fed__tool" aria-label="代码" @click="insertWrap('`', '`')">
+          <button
+            type="button"
+            class="fed__tool"
+            :aria-label="$t('flash-moment.editor.code')"
+            @click="insertWrap('`', '`')"
+          >
             <Icon name="lucide:code" size="14" />
           </button>
           <span class="fed__tool-divider" aria-hidden="true" />
-          <button type="button" class="fed__tool" aria-label="添加标签" @click="onTagButtonClick">
+          <button
+            type="button"
+            class="fed__tool"
+            :aria-label="$t('flash-moment.editor.addTag')"
+            @click="onTagButtonClick"
+          >
             <Icon name="lucide:hash" size="14" />
           </button>
           <button
             type="button"
             class="fed__tool"
             :class="{ 'fed__tool--active': showImageInput || images.length > 0 }"
-            :aria-label="`图片（已添加 ${images.length}）`"
-            :title="`图片 URL 列表（已添加 ${images.length}/9）`"
+            :aria-label="$t('flash-moment.editor.imagesAria', { count: images.length })"
+            :title="$t('flash-moment.editor.imagesTitle', { count: images.length })"
             @click="onImageButtonClick"
           >
             <Icon name="lucide:paperclip" size="14" />
             <span v-if="images.length > 0" class="fed__tool-count">{{ images.length }}</span>
           </button>
-          <button type="button" class="fed__tool" aria-label="表情（开发中）" title="表情功能开发中" disabled>
+          <button
+            type="button"
+            class="fed__tool"
+            :aria-label="$t('flash-moment.editor.emojiAria')"
+            :title="$t('flash-moment.editor.emojiTitle')"
+            disabled
+          >
             <Icon name="lucide:smile" size="14" />
           </button>
         </div>
@@ -141,9 +187,9 @@
             ref="tagInputRef"
             v-model="tagDraft"
             type="text"
-            aria-label="新标签"
+            :aria-label="$t('flash-moment.editor.newTag')"
             class="fed__tag-input"
-            placeholder="新标签 ↵"
+            :placeholder="$t('flash-moment.editor.newTagPlaceholder')"
             maxlength="20"
             @keydown.enter.prevent="commitTag"
             @keydown.,.prevent="commitTag"
@@ -151,19 +197,19 @@
             @blur="onTagInputBlur"
           />
           <button type="button" class="fed__tool fed__tool--text" :disabled="!canSubmit" @click="submit(true)">
-            保存草稿
+            {{ $t('flash-moment.editor.saveDraft') }}
           </button>
           <button
             type="button"
             class="fed__submit"
             :aria-busy="submitting"
-            aria-label="发布闪念"
+            :aria-label="$t('flash-moment.editor.publishAria')"
             aria-keyshortcuts="Control+Enter Meta+Enter"
             :disabled="!canSubmit"
             @click="submit(false)"
           >
             <Icon name="lucide:send-horizontal" size="13" />
-            <span>发布</span>
+            <span>{{ $t('flash-moment.editor.publish') }}</span>
             <kbd class="fed__kbd" aria-hidden="true">Ctrl/⌘↵</kbd>
           </button>
         </div>
@@ -188,16 +234,17 @@ const emit = defineEmits<{
 
 // MoodId 与 FlashType 一致，避免转换层；后续两者同步演进
 type MoodId = FlashType
-const moods: { id: MoodId; icon: string; label: string }[] = [
-  { id: 'idea', icon: 'lucide:lightbulb', label: '灵感' },
-  { id: 'todo', icon: 'lucide:check-circle', label: '待办' },
-  { id: 'memo', icon: 'lucide:file-text', label: '随记' },
-]
+const { t } = useI18n()
+const moods = computed<{ id: MoodId; icon: string; label: string }[]>(() => [
+  { id: 'idea', icon: 'lucide:lightbulb', label: t('flash-moment.flashType.idea') },
+  { id: 'todo', icon: 'lucide:check-circle', label: t('flash-moment.flashType.todo') },
+  { id: 'memo', icon: 'lucide:file-text', label: t('flash-moment.flashType.memo') },
+])
 
-const placeholderByMood: Record<MoodId, string> = {
-  idea: '此刻闪过的灵感是…',
-  todo: '想要去做的事是…',
-  memo: '随手记下…',
+const placeholderKeyByMood: Record<MoodId, string> = {
+  idea: 'flash-moment.editor.placeholderIdea',
+  todo: 'flash-moment.editor.placeholderTodo',
+  memo: 'flash-moment.editor.placeholderMemo',
 }
 
 const content = ref(props.initial?.content ?? '')
@@ -220,7 +267,7 @@ function onEditorKeydown(event: KeyboardEvent) {
 }
 function selectMedia(asset: MediaAsset) {
   if (images.value.length >= 9 && !images.value.includes(asset.url)) {
-    validationError.value = '最多 9 张图片'
+    validationError.value = t('flash-moment.editor.tooManyImages')
     return
   }
   if (!images.value.includes(asset.url)) images.value.push(asset.url)
@@ -232,7 +279,7 @@ const expanded = ref(false)
 const textareaRef = ref<HTMLTextAreaElement | null>(null)
 const tagInputRef = ref<HTMLInputElement | null>(null)
 
-const placeholder = computed(() => placeholderByMood[mood.value])
+const placeholder = computed(() => t(placeholderKeyByMood[mood.value]))
 const canSubmit = computed(
   () => content.value.trim().length > 0 && content.value.length <= props.maxLength && !props.submitting,
 )
@@ -249,14 +296,14 @@ function toggleExpand() {
 }
 
 function commitTag() {
-  const t = tagDraft.value.trim().replace(/^#/, '')
-  if (!t) return true
-  if (t.length > 64 || (tags.value.length >= 20 && !tags.value.includes(t))) {
-    validationError.value = '最多 20 个标签，每个标签不超过 64 字'
+  const tag = tagDraft.value.trim().replace(/^#/, '')
+  if (!tag) return true
+  if (tag.length > 64 || (tags.value.length >= 20 && !tags.value.includes(tag))) {
+    validationError.value = t('flash-moment.editor.tagLimit')
     return false
   }
-  if (!tags.value.includes(t)) {
-    tags.value.push(t)
+  if (!tags.value.includes(tag)) {
+    tags.value.push(tag)
   }
   tagDraft.value = ''
   validationError.value = ''
@@ -304,7 +351,7 @@ function commitImages() {
       }
     })
   ) {
-    validationError.value = '最多 9 张图片，请填写完整 HTTP(S) 地址，不能包含账号密码'
+    validationError.value = t('flash-moment.editor.invalidImages')
     return false
   }
   images.value = unique
@@ -321,10 +368,11 @@ function insertWrap(left: string, right: string) {
   const before = content.value.slice(0, start)
   const sel = content.value.slice(start, end)
   const after = content.value.slice(end)
-  content.value = `${before}${left}${sel || '文字'}${right}${after}`
+  const filler = sel || t('flash-moment.editor.wrapFiller')
+  content.value = `${before}${left}${filler}${right}${after}`
   void nextTick(() => {
     el.focus()
-    const cursor = before.length + left.length + (sel || '文字').length
+    const cursor = before.length + left.length + filler.length
     el.setSelectionRange(cursor, cursor)
   })
 }

@@ -21,11 +21,11 @@
     <div v-if="note.isPinned || note.isDraft" class="fnc__badges">
       <span v-if="note.isPinned" class="fnc__badge fnc__badge--pin">
         <Icon name="lucide:pin" size="11" />
-        置顶
+        {{ $t('flash-moment.noteCard.pinned') }}
       </span>
       <span v-if="note.isDraft" class="fnc__badge fnc__badge--draft">
         <Icon name="lucide:file-edit" size="11" />
-        草稿
+        {{ $t('flash-moment.noteCard.draft') }}
       </span>
     </div>
 
@@ -36,9 +36,9 @@
     <FlashImageGrid v-if="note.images && note.images.length > 0" :images="note.images" :descriptions="note.imageAlts" />
 
     <div v-if="note.tags.length > 0" class="fnc__tags">
-      <template v-for="t in note.tags" :key="t">
-        <span v-if="interactive === false" class="fnc__tag">#{{ t }}</span>
-        <button v-else type="button" class="fnc__tag" @click="$emit('tag-click', t)">#{{ t }}</button>
+      <template v-for="tag in note.tags" :key="tag">
+        <span v-if="interactive === false" class="fnc__tag">#{{ tag }}</span>
+        <button v-else type="button" class="fnc__tag" @click="$emit('tag-click', tag)">#{{ tag }}</button>
       </template>
     </div>
 
@@ -52,18 +52,20 @@
         v-if="!note.isDraft && !note.isArchived"
         :to="`/flash/${note.id}`"
         class="fnc__time"
-        :aria-label="`查看闪念详情 · ${relativeTime}`"
+        :aria-label="$t('flash-moment.noteCard.viewDetail', { time: relativeTime })"
       >
         <Icon name="lucide:clock-3" size="11" />
         {{ relativeTime }}
       </NuxtLink>
-      <span v-else class="fnc__time">{{ relativeTime }} <span aria-hidden="true">·</span> 未公开</span>
+      <span v-else class="fnc__time"
+        >{{ relativeTime }} <span aria-hidden="true">·</span> {{ $t('flash-moment.noteCard.unpublished') }}</span
+      >
       <div class="fnc__actions">
         <button
           type="button"
           class="fnc__action"
           :class="{ 'fnc__action--active': liked }"
-          :aria-label="liked ? '取消点赞' : '点赞'"
+          :aria-label="liked ? $t('flash-moment.noteCard.unlike') : $t('flash-moment.noteCard.like')"
           :aria-pressed="liked"
           :disabled="busy || interactive === false || note.isDraft || note.isArchived"
           @click="$emit('toggle-like', note.id)"
@@ -75,7 +77,7 @@
           type="button"
           class="fnc__action"
           :class="{ 'fnc__action--active': commentOpen }"
-          aria-label="评论"
+          :aria-label="$t('flash-moment.noteCard.comment')"
           :aria-expanded="commentOpen"
           :disabled="busy || interactive === false || note.isDraft || note.isArchived"
           @click="commentOpen = !commentOpen"
@@ -83,7 +85,7 @@
           <Icon name="lucide:message-circle" size="14" />
           <span v-if="commentCount > 0" class="fnc__action-count">{{ commentCount }}</span>
         </button>
-        <button type="button" class="fnc__action" aria-label="复制" @click="onCopy">
+        <button type="button" class="fnc__action" :aria-label="$t('flash-moment.noteCard.copy')" @click="onCopy">
           <Icon :name="copied ? 'lucide:check' : 'lucide:copy'" size="14" />
         </button>
         <!-- 置顶 / 取消置顶（仅非只读） -->
@@ -91,7 +93,7 @@
           v-if="!readOnly"
           type="button"
           class="fnc__action"
-          aria-label="编辑闪念"
+          :aria-label="$t('flash-moment.noteCard.edit')"
           :disabled="busy"
           @click="$emit('edit')"
         >
@@ -103,7 +105,7 @@
           type="button"
           class="fnc__action"
           :class="{ 'fnc__action--active': note.isPinned }"
-          :aria-label="note.isPinned ? '取消置顶' : '置顶'"
+          :aria-label="note.isPinned ? $t('flash-moment.noteCard.unpin') : $t('flash-moment.noteCard.pin')"
           @click="$emit('set-pinned', { id: note.id, pinned: !note.isPinned })"
         >
           <Icon :name="note.isPinned ? 'lucide:pin-off' : 'lucide:pin'" size="14" />
@@ -114,24 +116,29 @@
           :disabled="busy"
           type="button"
           class="fnc__action"
-          :aria-label="note.isArchived ? '恢复' : '归档'"
+          :aria-label="note.isArchived ? $t('flash-moment.noteCard.restore') : $t('flash-moment.noteCard.archive')"
           @click="$emit('set-archived', { id: note.id, archived: !note.isArchived })"
         >
           <Icon :name="note.isArchived ? 'lucide:archive-restore' : 'lucide:archive'" size="14" />
         </button>
         <!-- 删除：内联确认态，3s 超时自动恢复 -->
         <div v-if="confirmingDelete" class="fnc__confirm-delete">
-          <span class="fnc__confirm-delete-text">永久删除？</span>
+          <span class="fnc__confirm-delete-text">{{ $t('flash-moment.noteCard.confirmDelete') }}</span>
           <button
             type="button"
             class="fnc__confirm-yes"
-            aria-label="确认永久删除闪念"
+            :aria-label="$t('flash-moment.noteCard.confirmDeleteAria')"
             :disabled="busy"
             @click="confirmDelete"
           >
             <Icon name="lucide:check" size="12" />
           </button>
-          <button type="button" class="fnc__confirm-no" aria-label="取消删除" @click="cancelDelete">
+          <button
+            type="button"
+            class="fnc__confirm-no"
+            :aria-label="$t('flash-moment.noteCard.cancelDelete')"
+            @click="cancelDelete"
+          >
             <Icon name="lucide:x" size="12" />
           </button>
         </div>
@@ -139,7 +146,7 @@
           v-else-if="!readOnly"
           type="button"
           class="fnc__action fnc__action--danger"
-          aria-label="删除"
+          :aria-label="$t('flash-moment.noteCard.delete')"
           @click="startDelete"
         >
           <Icon name="lucide:trash-2" size="14" />
@@ -158,9 +165,13 @@
                 <span class="fnc__comment-name">{{ c.authorName }}</span>
                 <span class="fnc__comment-time">{{ formatRelative(c.createdAt) }}</span>
                 <small v-if="c.moderationStatus === 'pending'" class="fnc__comment-status">{{
-                  canDeleteComment(c.authorId) ? '待审核' : '待审核，仅自己可见'
+                  canDeleteComment(c.authorId)
+                    ? $t('flash-moment.noteCard.commentPending')
+                    : $t('flash-moment.noteCard.commentPendingSelf')
                 }}</small>
-                <small v-else-if="c.moderationStatus === 'hidden'" class="fnc__comment-status">已隐藏</small>
+                <small v-else-if="c.moderationStatus === 'hidden'" class="fnc__comment-status">{{
+                  $t('flash-moment.noteCard.commentHidden')
+                }}</small>
               </div>
               <div class="fnc__comment-text">{{ c.content }}</div>
             </div>
@@ -168,7 +179,7 @@
               v-if="canDeleteComment(c.authorId)"
               type="button"
               class="fnc__comment-remove"
-              aria-label="删除评论"
+              :aria-label="$t('flash-moment.noteCard.deleteComment')"
               @click="$emit('remove-comment', { noteId: note.id, commentId: c.id })"
             >
               <Icon name="lucide:x" size="11" />
@@ -183,9 +194,9 @@
             v-model.trim="commentDraft"
             :disabled="!canInteract || commentSending || busy"
             type="text"
-            aria-label="闪念评论内容"
+            :aria-label="$t('flash-moment.noteCard.commentInput')"
             class="fnc__comment-input"
-            placeholder="写下你的想法…"
+            :placeholder="$t('flash-moment.noteCard.commentPlaceholder')"
             maxlength="500"
             @keydown.enter="onCommentEnter"
           />
@@ -194,7 +205,7 @@
             type="submit"
             class="fnc__comment-send"
             :disabled="!canInteract || !commentDraft || commentSending || busy"
-            aria-label="发送评论"
+            :aria-label="$t('flash-moment.noteCard.sendComment')"
           >
             <Icon name="lucide:send-horizontal" size="14" />
           </button>
@@ -238,6 +249,7 @@ const emit = defineEmits<{
 }>()
 
 const { success, error: toastError } = useToast()
+const { t } = useI18n()
 
 const commentOpen = ref(false)
 const commentDraft = ref('')
@@ -265,21 +277,24 @@ onMounted(() => {
   clockReady.value = true
 })
 function calendarDate(iso: string): string {
-  if (clockReady.value) return formatCalendarDate(iso)
+  if (clockReady.value) return formatCalendarDate(iso, t)
   const time = new Date(iso).getTime()
-  return Number.isFinite(time) ? new Date(time).toISOString().slice(0, 10) : '日期未知'
+  return Number.isFinite(time) ? new Date(time).toISOString().slice(0, 10) : t('common.date.unknown')
 }
 
 // 类型元信息：idea/todo 显示，memo 默认态隐藏避免冗余
-const TYPE_META: Record<string, { icon: string; label: string } | undefined> = {
-  idea: { icon: 'lucide:lightbulb', label: '灵感' },
-  todo: { icon: 'lucide:check-square', label: '待办' },
+const TYPE_META: Record<string, { icon: string; labelKey: string } | undefined> = {
+  idea: { icon: 'lucide:lightbulb', labelKey: 'flash-moment.flashType.idea' },
+  todo: { icon: 'lucide:check-square', labelKey: 'flash-moment.flashType.todo' },
 }
-const typeMeta = computed(() => (props.note.type ? TYPE_META[props.note.type] : undefined))
+const typeMeta = computed(() => {
+  const meta = props.note.type ? TYPE_META[props.note.type] : undefined
+  return meta ? { icon: meta.icon, label: t(meta.labelKey) } : undefined
+})
 
 /** 轻量 markdown 渲染 —— 覆盖编辑器工具栏支持的子集 */
 const siteUrl = useSiteUrl()
-const renderedContent = computed(() => renderFlashMarkdown(props.note.content, { siteUrl }))
+const renderedContent = computed(() => renderFlashMarkdown(props.note.content, { siteUrl, t }))
 const contentRef = ref<HTMLElement | null>(null)
 
 function formatRelative(iso: string): string {
@@ -290,12 +305,15 @@ function formatRelative(iso: string): string {
   const minute = 60 * 1000
   const hour = 60 * minute
   const day = 24 * hour
-  if (diff < minute) return '刚刚'
-  if (diff < hour) return `${Math.floor(diff / minute)} 分钟前`
-  if (diff < day) return `${Math.floor(diff / hour)} 小时前`
+  if (diff < minute) return t('flash-moment.noteCard.justNow')
+  if (diff < hour)
+    return t('flash-moment.noteCard.minutesAgo', { count: Math.floor(diff / minute) }, Math.floor(diff / minute))
+  if (diff < day)
+    return t('flash-moment.noteCard.hoursAgo', { count: Math.floor(diff / hour) }, Math.floor(diff / hour))
   // 与文章列表的“昨天”说法保持一致
-  if (diff < 2 * day) return '昨天'
-  if (diff < 7 * day) return `${Math.floor(diff / day)} 天前`
+  if (diff < 2 * day) return t('flash-moment.noteCard.yesterday')
+  if (diff < 7 * day)
+    return t('flash-moment.noteCard.daysAgo', { count: Math.floor(diff / day) }, Math.floor(diff / day))
   return calendarDate(iso)
 }
 
@@ -309,9 +327,9 @@ async function onCopy() {
     copied.value = true
     if (copyTimer) clearTimeout(copyTimer)
     copyTimer = setTimeout(() => (copied.value = false), 1500)
-    success('已复制到剪贴板')
+    success(t('flash-moment.noteCard.copied'))
   } catch {
-    toastError('复制失败')
+    toastError(t('flash-moment.noteCard.copyFailed'))
   }
 }
 

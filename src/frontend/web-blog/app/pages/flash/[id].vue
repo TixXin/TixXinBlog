@@ -10,9 +10,9 @@
     <template #header>
       <div class="main-content__header flash-detail-header">
         <h1 class="sr-only">{{ pageTitle }}</h1>
-        <NuxtLink to="/flash" class="back-btn" aria-label="返回闪念">
+        <NuxtLink to="/flash" class="back-btn" :aria-label="$t('flash-moment.flashDetail.back')">
           <Icon name="lucide:arrow-left" size="16" />
-          <span>返回闪念</span>
+          <span>{{ $t('flash-moment.flashDetail.back') }}</span>
         </NuxtLink>
       </div>
     </template>
@@ -22,19 +22,19 @@
           <CommonRequestFeedback
             v-if="loadError"
             :pending="detailResult.pending.value"
-            title="闪念加载失败"
-            description="暂时无法读取公开闪念，请稍后重试。"
+            :title="$t('flash-moment.flashDetail.loadFailed')"
+            :description="$t('flash-moment.flashDetail.loadFailedDesc')"
             @retry="refreshNotes()"
           />
           <CommonStateBlock
             v-else-if="loadFinished && !note"
             icon="lucide:search-x"
-            title="闪念不存在"
-            description="这条闪念可能已被删除或链接有误"
+            :title="$t('flash-moment.flashDetail.notFound')"
+            :description="$t('flash-moment.flashDetail.notFoundDesc')"
           >
             <NuxtLink to="/flash" class="back-link">
               <Icon name="lucide:arrow-left" size="14" />
-              返回闪念
+              {{ $t('flash-moment.flashDetail.back') }}
             </NuxtLink>
           </CommonStateBlock>
 
@@ -45,14 +45,16 @@
 
             <p class="flash-detail-hint">
               <Icon name="lucide:info" size="12" class="flash-detail-hint__icon" />
-              <span
-                >详情页为只读视图，点赞 / 评论请<NuxtLink to="/flash" class="flash-detail-hint__link"
-                  >回到闪念列表</NuxtLink
-                ></span
-              >
+              <i18n-t keypath="flash-moment.flashDetail.readOnlyHint" tag="span" scope="global">
+                <template #link
+                  ><NuxtLink to="/flash" class="flash-detail-hint__link">{{
+                    $t('flash-moment.flashDetail.readOnlyHintLink')
+                  }}</NuxtLink></template
+                >
+              </i18n-t>
             </p>
 
-            <nav class="flash-detail-nav" aria-label="闪念导航">
+            <nav class="flash-detail-nav" :aria-label="$t('flash-moment.flashDetail.nav')">
               <NuxtLink
                 v-if="prevNote"
                 :to="`/flash/${prevNote.id}`"
@@ -60,7 +62,7 @@
               >
                 <Icon name="lucide:chevron-left" size="18" class="flash-detail-nav__arrow" />
                 <div class="flash-detail-nav__text">
-                  <span class="flash-detail-nav__label">上一条</span>
+                  <span class="flash-detail-nav__label">{{ $t('flash-moment.flashDetail.prev') }}</span>
                   <span class="flash-detail-nav__title">{{ truncate(prevNote.content, 40) }}</span>
                 </div>
               </NuxtLink>
@@ -72,7 +74,7 @@
                 class="flash-detail-nav__item flash-detail-nav__item--next"
               >
                 <div class="flash-detail-nav__text">
-                  <span class="flash-detail-nav__label">下一条</span>
+                  <span class="flash-detail-nav__label">{{ $t('flash-moment.flashDetail.next') }}</span>
                   <span class="flash-detail-nav__title">{{ truncate(nextNote.content, 40) }}</span>
                 </div>
                 <Icon name="lucide:chevron-right" size="18" class="flash-detail-nav__arrow" />
@@ -83,7 +85,7 @@
 
           <div v-else class="flash-detail-loading">
             <Icon name="lucide:loader-2" size="20" class="flash-detail-loading__icon" />
-            <span>加载中...</span>
+            <span>{{ $t('flash-moment.flashDetail.loading') }}</span>
           </div>
         </div>
       </CommonCustomScrollbar>
@@ -98,6 +100,7 @@ import type { FlashNote } from '~/features/flash/types'
 definePageMeta({ rightSidebar: false })
 
 const route = useRoute()
+const { t } = useI18n()
 // 结构化数据里的作者与发布方取自博主维护的站点资料，不在页面内写死
 const { settings: siteSettings } = useSiteSettings()
 
@@ -136,9 +139,19 @@ const nextNote = computed(() => {
 // 本机仓库只能由浏览器确认；真实HTTP模式在SSR阶段区分服务失败与资源缺失。
 if (!localOnly) {
   if (loadError.value)
-    throw createError({ statusCode: 502, statusMessage: 'Bad Gateway', data: { title: '闪念加载失败' }, fatal: true })
+    throw createError({
+      statusCode: 502,
+      statusMessage: 'Bad Gateway',
+      data: { title: t('flash-moment.flashDetail.loadFailed') },
+      fatal: true,
+    })
   if (!note.value)
-    throw createError({ statusCode: 404, statusMessage: 'Not Found', data: { title: '闪念不存在' }, fatal: true })
+    throw createError({
+      statusCode: 404,
+      statusMessage: 'Not Found',
+      data: { title: t('flash-moment.flashDetail.notFound') },
+      fatal: true,
+    })
 }
 
 function truncate(s: string, n: number) {
@@ -148,12 +161,18 @@ function truncate(s: string, n: number) {
 
 // SEO：content 前 120 字摘要，首图（images 若有）作为 ogImage
 const excerpt = computed(() => {
-  if (!note.value) return loadFinished.value && !loadError.value ? '闪念不存在或已被删除' : '查看博主的公开闪念'
+  if (!note.value)
+    return loadFinished.value && !loadError.value
+      ? t('flash-moment.flashDetail.seoNotFound')
+      : t('flash-moment.flashDetail.seoDescription')
   return note.value.content.replace(/\s+/g, ' ').slice(0, 120)
 })
 
 const pageTitle = computed(() => {
-  if (!note.value) return loadFinished.value && !loadError.value ? '闪念不存在' : '闪念详情'
+  if (!note.value)
+    return loadFinished.value && !loadError.value
+      ? t('flash-moment.flashDetail.notFound')
+      : t('flash-moment.flashDetail.seoTitle')
   const first = note.value.content.replace(/\s+/g, ' ').slice(0, 36)
   return `${first}${note.value.content.length > 36 ? '…' : ''}`
 })
@@ -164,7 +183,7 @@ const flashImage = computed(() => absoluteUrl(note.value?.images?.[0], site))
 usePageSeo({
   title: () => pageTitle.value,
   description: () => excerpt.value,
-  shareTitle: () => `${pageTitle.value} - ${siteSettings.value.name} 闪念`,
+  shareTitle: () => t('flash-moment.flashDetail.shareTitle', { title: pageTitle.value, site: siteSettings.value.name }),
   type: 'article',
   canonical: () => flashUrl.value,
   // 无配图时交回全局默认分享图（小卡片）

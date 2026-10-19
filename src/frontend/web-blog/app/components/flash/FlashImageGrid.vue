@@ -9,7 +9,7 @@
   <div v-if="images.length > 0" class="flash-grid" :class="gridClass">
     <div v-for="(img, idx) in images" :key="img + idx" class="flash-grid__cell">
       <CommonImageFrame
-        :alt="descriptions?.[idx] || '闪念配图'"
+        :alt="descriptions?.[idx] || $t('flash-moment.imageGrid.alt')"
         loading="lazy"
         class="flash-grid__img"
         :sizes="imageSizes"
@@ -19,7 +19,7 @@
       <button
         v-if="img && !imageFailures[img + idx]"
         type="button"
-        :aria-label="`预览图片：${descriptions[idx] || idx + 1}`"
+        :aria-label="$t('flash-moment.imageGrid.preview', { name: descriptions[idx] || idx + 1 })"
         class="flash-grid__preview"
         @click="open(idx)"
       />
