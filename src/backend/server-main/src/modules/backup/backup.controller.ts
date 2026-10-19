@@ -21,6 +21,8 @@ import type { Response } from 'express'
 import { randomUUID } from 'node:crypto'
 import { AdminAuthGuard } from '../../common/guards/admin-auth.guard'
 import { CurrentAdmin } from '../../common/decorators/current-admin.decorator'
+import { RequestLocale } from '../../common/decorators/request-locale.decorator'
+import type { ApiLocale } from '../../common/i18n'
 import { ContentExportService } from './content-export.service'
 import { ContentImportService } from './content-import.service'
 import { MAX_PACKAGE_BYTES } from './content-package'
@@ -82,27 +84,34 @@ export class BackupController {
     @UploadedFile() file: { buffer: Buffer; originalname: string } | undefined,
     @Body() body: PreviewContentDto,
     @CurrentAdmin() admin: Admin,
+    @RequestLocale() locale: ApiLocale = 'zh-CN',
   ) {
-    return this.importer.preview(file, body, admin)
+    return this.importer.preview(file, body, admin, locale)
   }
   @Get('imports') recent(@CurrentAdmin() admin: Admin) {
     return this.importer.recent(admin)
   }
-  @Get('imports/:id') get(@Param('id', new ParseUUIDPipe({ version: '4' })) id: string, @CurrentAdmin() admin: Admin) {
-    return this.importer.get(id, admin)
+  @Get('imports/:id') get(
+    @Param('id', new ParseUUIDPipe({ version: '4' })) id: string,
+    @CurrentAdmin() admin: Admin,
+    @RequestLocale() locale: ApiLocale = 'zh-CN',
+  ) {
+    return this.importer.get(id, admin, locale)
   }
   @Post('imports/:id/repreview') repreview(
     @Param('id', new ParseUUIDPipe({ version: '4' })) id: string,
     @CurrentAdmin() admin: Admin,
+    @RequestLocale() locale: ApiLocale = 'zh-CN',
   ) {
-    return this.importer.repreview(id, admin)
+    return this.importer.repreview(id, admin, locale)
   }
   @Post('imports/:id/execute') async execute(
     @Param('id', new ParseUUIDPipe({ version: '4' })) id: string,
     @Body() body: ExecuteContentDto,
     @CurrentAdmin() admin: Admin,
+    @RequestLocale() locale: ApiLocale = 'zh-CN',
   ) {
-    const value = await this.importer.execute(id, body.acknowledgement, body.confirmation, admin)
+    const value = await this.importer.execute(id, body.acknowledgement, body.confirmation, admin, locale)
     return {
       ...value,
       importedPosts: value.result?.posts.length ?? 0,

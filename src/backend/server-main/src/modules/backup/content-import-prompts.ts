@@ -5,6 +5,7 @@ import { ImagePrompt } from '../../entities/image-prompt.entity'
 import { MediaAsset } from '../../entities/media-asset.entity'
 import type { ContentImportPlan, ContentImportResult } from '../../entities/content-import.entity'
 import type { ContentPackage } from './content-package'
+import { msg } from '../../common/i18n'
 import { mediaUrl, synchronizeMediaReferences } from '../media/media-references'
 
 export async function importPrompts(
@@ -15,7 +16,7 @@ export async function importPrompts(
 ) {
   for (const source of payload.prompts ?? []) {
     const target = plan.prompts?.find((prompt) => prompt.sourceId === source.sourceId)
-    if (!target) throw new ConflictException('图片提示词迁入计划缺失，请重新预览')
+    if (!target) throw new ConflictException(msg('backup.promptPlanMissing'))
     if (target.skip) continue
     const { mediaId, ...values } = source.values
     const prompt = em.create(ImagePrompt, {

@@ -58,3 +58,46 @@ describe('AuditService 批量动作展示', () => {
     expect(em.findAndCount).toHaveBeenCalledWith(AuditEntry, { action }, expect.objectContaining({ offset: 0 }))
   })
 })
+
+describe('AuditService 英文展示', () => {
+  it('动作、操作者与持久化的中文字段名按请求语言翻译，数据库记录保持中文', async () => {
+    const entries = [
+      {
+        id: '1',
+        action: 'post.update',
+        actorId: 'a1',
+        resourceType: 'post',
+        state: 'success',
+        summary: { fields: ['标题', '正文', '自定义字段'] },
+        createdAt: new Date('2026-10-18T00:00:00.000Z'),
+      },
+      {
+        id: '2',
+        action: 'legacy.unknown',
+        resourceType: 'admin',
+        state: 'failure',
+        summary: { fields: [] },
+        createdAt: new Date('2026-10-18T00:00:00.000Z'),
+      },
+    ]
+    const em = {
+      findAndCount: jest.fn().mockResolvedValue([entries, entries.length]),
+      count: jest.fn().mockResolvedValue(0),
+    }
+    const controller = new AuditController(new AuditService(em as unknown as EntityManager))
+
+    const english = await controller.list({ page: 1 }, 'en')
+    expect(english.items.map(({ actor, actionLabel, summary }) => [actor, actionLabel, summary.fields])).toEqual([
+      ['Administrator', 'Save post', ['Title', 'Body', '自定义字段']],
+      ['Unauthenticated request', 'Admin action', []],
+    ])
+    expect(entries[0]!.summary.fields).toEqual(['标题', '正文', '自定义字段'])
+    expect(controller.actions('en')['comment.batch.delete']).toBe('Bulk delete comments')
+
+    const chinese = await controller.list({ page: 1 })
+    expect(chinese.items.map(({ actor, actionLabel, summary }) => [actor, actionLabel, summary.fields])).toEqual([
+      ['管理员', '保存文章', ['标题', '正文', '自定义字段']],
+      ['未认证请求', '管理操作', []],
+    ])
+  })
+})

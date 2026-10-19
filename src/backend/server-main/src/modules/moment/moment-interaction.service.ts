@@ -14,6 +14,7 @@ import { momentUrl, publicMoments, submissionHash } from './moment-values'
 import { momentCommentDto } from './moment-read.service'
 import { lockMedia, synchronizeMediaReferences } from '../media/media-references'
 import { recordOwnerEvent } from '../operations/owner-events'
+import { msg } from '../../common/i18n'
 
 @Injectable()
 export class MomentInteractionService {
@@ -21,7 +22,7 @@ export class MomentInteractionService {
   async setLike(id: string, visitor: string, desired: boolean) {
     return this.em.transactional(async (em) => {
       const note = await em.findOne(Moment, { id, ...publicMoments }, { lockMode: LockMode.PESSIMISTIC_WRITE })
-      if (!note) throw new NotFoundException('动态不存在或尚未公开')
+      if (!note) throw new NotFoundException(msg('moment.notFoundOrPrivate'))
       const existing = await em.findOne(MomentLike, { moment: note, visitorIdHash: visitor })
       if (desired && !existing) em.create(MomentLike, { moment: note, visitorIdHash: visitor })
       if (!desired && existing) em.remove(existing)
@@ -35,7 +36,7 @@ export class MomentInteractionService {
     return this.em.transactional(async (em) => {
       await lockMedia(em)
       const note = await em.findOne(Moment, { id, ...publicMoments }, { lockMode: LockMode.PESSIMISTIC_WRITE })
-      if (!note) throw new NotFoundException('动态不存在或尚未公开')
+      if (!note) throw new NotFoundException(msg('moment.notFoundOrPrivate'))
       const identity = adminId ? `admin:${adminId}` : visitor
       const hash = submissionHash(body)
       const existing = await em.findOne(MomentComment, {
@@ -45,7 +46,7 @@ export class MomentInteractionService {
       })
       if (existing) {
         if (existing.deletedAt || existing.requestHash !== hash || (!adminId && existing.status === 'hidden'))
-          throw new ConflictException('此评论提交已处理，请确认原评论')
+          throw new ConflictException(msg('moment.commentSubmissionHandled'))
         return {
           ...momentCommentDto(existing),
           commentCount: await em.count(MomentComment, { moment: note, status: 'published', deletedAt: null }),
@@ -90,11 +91,11 @@ export class MomentInteractionService {
   async moderate(id: string, commentId: string, status: MomentCommentStatus, expectedStatus: MomentCommentStatus) {
     return this.em.transactional(async (em) => {
       const note = await em.findOne(Moment, { id, deletedAt: null }, { lockMode: LockMode.PESSIMISTIC_WRITE })
-      if (!note) throw new NotFoundException('动态不存在')
+      if (!note) throw new NotFoundException(msg('moment.notFound'))
       const comment = await em.findOne(MomentComment, { id: commentId, moment: note, deletedAt: null })
-      if (!comment) throw new NotFoundException('评论不存在')
+      if (!comment) throw new NotFoundException(msg('moment.commentNotFound'))
       if (comment.status !== expectedStatus && comment.status !== status)
-        throw new ConflictException('评论状态已改变，请重新加载后再操作')
+        throw new ConflictException(msg('moment.commentStatusChanged'))
       comment.status = status
       await em.flush()
       return {
@@ -107,9 +108,9 @@ export class MomentInteractionService {
     return this.em.transactional(async (em) => {
       await lockMedia(em)
       const note = await em.findOne(Moment, { id, deletedAt: null }, { lockMode: LockMode.PESSIMISTIC_WRITE })
-      if (!note) throw new NotFoundException('动态不存在')
+      if (!note) throw new NotFoundException(msg('moment.notFound'))
       const comment = await em.findOne(MomentComment, { id: commentId, moment: note })
-      if (!comment) throw new NotFoundException('评论不存在')
+      if (!comment) throw new NotFoundException(msg('moment.commentNotFound'))
       comment.deletedAt ??= new Date()
       await em.nativeDelete(MediaReference, { momentComment: comment })
       await em.flush()

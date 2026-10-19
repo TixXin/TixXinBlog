@@ -19,6 +19,7 @@ import { PostAddress } from '../../entities/post-address.entity'
 import { PostRevision } from '../../entities/post-revision.entity'
 import { QueryPostDto } from './dto/query-post.dto'
 import { resolveContentRelations } from '../content-relations/content-relations'
+import { msg } from '../../common/i18n'
 
 /** 文章不存在（api.md 附录 A：1001 / 404） */
 const POST_NOT_FOUND = 1001
@@ -172,7 +173,7 @@ export class PostService {
       { id, status: 'published', deletedAt: null },
       { populate: ['tags'], fields: ['*', 'tags.label', 'tags.color'] },
     )
-    if (!post) throw new BusinessException(POST_NOT_FOUND, '文章不存在', HttpStatus.NOT_FOUND)
+    if (!post) throw new BusinessException(POST_NOT_FOUND, msg('post.notFound'), HttpStatus.NOT_FOUND)
 
     return this.toArticleDetail(post)
   }
@@ -224,7 +225,7 @@ export class PostService {
         { id, status: 'published', deletedAt: null },
         { lockMode: LockMode.PESSIMISTIC_WRITE },
       )
-      if (!post) throw new BusinessException(POST_NOT_FOUND, '文章不存在', HttpStatus.NOT_FOUND)
+      if (!post) throw new BusinessException(POST_NOT_FOUND, msg('post.notFound'), HttpStatus.NOT_FOUND)
       const existing = await em.findOne(PostLike, { post, visitorIdHash })
       if (existing) {
         em.remove(existing)
@@ -249,7 +250,7 @@ export class PostService {
         { id, status: 'published', deletedAt: null },
         { lockMode: LockMode.PESSIMISTIC_WRITE },
       )
-      if (!post) throw new BusinessException(POST_NOT_FOUND, '文章不存在', HttpStatus.NOT_FOUND)
+      if (!post) throw new BusinessException(POST_NOT_FOUND, msg('post.notFound'), HttpStatus.NOT_FOUND)
       const hourBucket = new Date()
       hourBucket.setMinutes(0, 0, 0)
       // 事务内共用一条连接，逐条查询，不用 Promise.all。
@@ -270,14 +271,14 @@ export class PostService {
       { id, status: 'published', deletedAt: null },
       { fields: ['id', 'likes', 'views'] },
     )
-    if (!post) throw new BusinessException(POST_NOT_FOUND, '文章不存在', HttpStatus.NOT_FOUND)
+    if (!post) throw new BusinessException(POST_NOT_FOUND, msg('post.notFound'), HttpStatus.NOT_FOUND)
     const like = visitorIdHash ? await this.em.findOne(PostLike, { post, visitorIdHash }) : null
     return { liked: !!like, likes: post.likes, views: post.views }
   }
 
   async findBySlug(slug: string): Promise<ArticleDetailDto> {
     const address = await this.em.findOne(PostAddress, { slug, post: { status: 'published', deletedAt: null } })
-    if (!address) throw new BusinessException(POST_NOT_FOUND, '文章不存在', HttpStatus.NOT_FOUND)
+    if (!address) throw new BusinessException(POST_NOT_FOUND, msg('post.notFound'), HttpStatus.NOT_FOUND)
     return this.findDetail(address.post.id)
   }
   private toPostItem(post: PostListSource): PostItemDto {

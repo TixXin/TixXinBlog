@@ -15,7 +15,7 @@ import {
 import { createHash, randomUUID } from 'node:crypto'
 import { ContentImport } from '../../entities/content-import.entity'
 import { importContentRelations } from './content-import-relations'
-import type { ContentImportResult } from '../../entities/content-import.entity'
+import type { ContentImportPlan, ContentImportResult } from '../../entities/content-import.entity'
 import { Post } from '../../entities/post.entity'
 import { Comment } from '../../entities/comment.entity'
 import { FlashNote } from '../../entities/flash-note.entity'
@@ -46,8 +46,35 @@ import { importLinks } from './content-import-links'
 import { importSubscriptions } from './content-import-subscriptions'
 import { importPrompts } from './content-import-prompts'
 import { lockGuestbook } from '../guestbook/guestbook-write.service'
+import { DEFAULT_API_LOCALE, msg, rethrowable, translateStored, zh, type ApiLocale } from '../../common/i18n'
 type Admin = { id: string; sessionVersion: number; sessionId: string }
 type Options = { requestId: string; strategy: 'skip' | 'copy'; includeSettings: boolean }
+type PlanView = Omit<ContentImportPlan, 'basis'>
+const PLAN_ROWS = [
+  'posts',
+  'flashes',
+  'moments',
+  'guestbook',
+  'gallery',
+  'projects',
+  'links',
+  'prompts',
+  'subscriptions',
+] as const
+/** 计划中的原因与错误以中文持久化并参与确认哈希；只在返回副本里按请求语言翻译，不改动实体 */
+function localizedPlan(plan: PlanView, locale: ApiLocale): PlanView {
+  if (locale === DEFAULT_API_LOCALE) return plan
+  const view: PlanView = { ...plan, errors: plan.errors.map((text) => translateStored(locale, text)) }
+  for (const name of PLAN_ROWS) {
+    const rows = plan[name] as { reason: string }[] | undefined
+    if (rows)
+      (view as Record<string, unknown>)[name] = rows.map((row) => ({
+        ...row,
+        reason: translateStored(locale, row.reason),
+      }))
+  }
+  return view
+}
 @Injectable()
 export class ContentImportService {
   constructor(
@@ -59,11 +86,13 @@ export class ContentImportService {
     private readonly sites: SiteSettingsService,
     private readonly comments: CommentModerationService,
   ) {}
-  private dto(job: ContentImport) {
-    const { basis: ignoredBasis, ...plan } = job.plan
+  private dto(job: ContentImport, locale: ApiLocale = DEFAULT_API_LOCALE) {
+    const { basis: ignoredBasis, ...stored } = job.plan
     void ignoredBasis
+    const plan = localizedPlan(stored, locale)
     return {
       ticket: job.id,
+      // 确认哈希始终基于持久化的中文计划，与请求语言无关。
       confirmation: packageHash(job.plan),
       settingsPreview: job.includeSettings ? job.payload?.site : undefined,
       gallerySettingsPreview: job.includeSettings ? job.payload?.gallerySettings : undefined,
@@ -77,19 +106,20 @@ export class ContentImportService {
       completed: !!job.completedAt,
       expired: !job.completedAt && job.expiresAt <= new Date(),
       result: job.result,
-      error: job.lastError,
+      error: job.lastError ? translateStored(locale, job.lastError) : job.lastError,
     }
   }
   private async cleanup() {
+    // last_error 写入 backup.previewExpiredReselect 的中文原文，读取时由 dto() 反查翻译。
     await this.em.execute(
       `with expired as (select id from content_import where expires_at < now() and completed_at is null and payload is not null for update skip locked limit 10) update content_import set payload=null,last_error='预览已过期，请重新选择文件' where id in (select id from expired)`,
     )
   }
-  async get(id: string, admin: Admin) {
+  async get(id: string, admin: Admin, locale: ApiLocale = DEFAULT_API_LOCALE) {
     await this.cleanup()
     const job = await this.em.findOne(ContentImport, { id, actorId: admin.id }, { refresh: true })
-    if (!job) throw new NotFoundException('导入票据不存在')
-    return this.dto(job)
+    if (!job) throw new NotFoundException(msg('backup.importTicketNotFound'))
+    return this.dto(job, locale)
   }
   async recent(admin: Admin) {
     await this.cleanup()
@@ -109,14 +139,19 @@ export class ContentImportService {
       expired: !job.completedAt && job.expiresAt <= new Date(),
     }))
   }
-  async preview(file: { buffer: Buffer; originalname: string } | undefined, input: Options, admin: Admin) {
+  async preview(
+    file: { buffer: Buffer; originalname: string } | undefined,
+    input: Options,
+    admin: Admin,
+    locale: ApiLocale = DEFAULT_API_LOCALE,
+  ) {
     if (
       !file?.buffer?.length ||
       !file.originalname.toLowerCase().endsWith('.json') ||
       /[\\/]/.test(file.originalname) ||
       [...file.originalname].some((char) => char.charCodeAt(0) < 32 || char.charCodeAt(0) === 127)
     )
-      throw new BadRequestException('请选择 JSON 内容包，文件名不能包含路径')
+      throw new BadRequestException(msg('backup.invalidPackageFile'))
     const fileHash = createHash('sha256').update(file.buffer).digest('hex')
     const existing = await this.em.findOne(ContentImport, { id: input.requestId })
     if (existing) {
@@ -126,8 +161,8 @@ export class ContentImportService {
         existing.strategy !== input.strategy ||
         existing.includeSettings !== input.includeSettings
       )
-        throw new ConflictException('上传标识已经使用，请重新选择文件')
-      return this.get(existing.id, admin)
+        throw new ConflictException(msg('backup.uploadIdUsed'))
+      return this.get(existing.id, admin, locale)
     }
     const payload = await parseContentPackage(file.buffer)
     return this.em.transactional(
@@ -141,8 +176,8 @@ export class ContentImportService {
             duplicate.strategy !== input.strategy ||
             duplicate.includeSettings !== input.includeSettings
           )
-            throw new ConflictException('上传标识冲突')
-          return this.dto(duplicate)
+            throw new ConflictException(msg('backup.uploadIdConflict'))
+          return this.dto(duplicate, locale)
         }
         const plan = await makeContentPlan(
           em,
@@ -165,21 +200,21 @@ export class ContentImportService {
           expiresAt: new Date(Date.now() + 15 * 60000),
         })
         await em.flush()
-        return this.dto(job)
+        return this.dto(job, locale)
       },
       { isolationLevel: IsolationLevel.REPEATABLE_READ },
     )
   }
-  async repreview(id: string, admin: Admin) {
+  async repreview(id: string, admin: Admin, locale: ApiLocale = DEFAULT_API_LOCALE) {
     return this.em.transactional(async (em) => {
       const job = await em.findOne(
         ContentImport,
         { id, actorId: admin.id },
         { lockMode: LockMode.PESSIMISTIC_WRITE, refresh: true },
       )
-      if (!job) throw new NotFoundException('导入票据不存在')
-      if (job.completedAt) return this.dto(job)
-      if (!job.payload || job.expiresAt <= new Date()) throw new BadRequestException('内容包已过期，请重新选择文件')
+      if (!job) throw new NotFoundException(msg('backup.importTicketNotFound'))
+      if (job.completedAt) return this.dto(job, locale)
+      if (!job.payload || job.expiresAt <= new Date()) throw new BadRequestException(msg('backup.packageExpired'))
       job.plan = await makeContentPlan(
         em,
         this.exporter,
@@ -194,14 +229,21 @@ export class ContentImportService {
       job.lastError = undefined
       job.startedAt = undefined
       await em.flush()
-      return this.dto(job)
+      return this.dto(job, locale)
     })
   }
-  async execute(id: string, acknowledgement: string, confirmation: string, admin: Admin) {
-    if (acknowledgement !== '导入为新草稿') throw new BadRequestException('请确认以新草稿迁入内容')
+  async execute(
+    id: string,
+    acknowledgement: string,
+    confirmation: string,
+    admin: Admin,
+    locale: ApiLocale = DEFAULT_API_LOCALE,
+  ) {
+    // 确认短语是接口契约，保持中文；前端负责按语言显示。
+    if (acknowledgement !== '导入为新草稿') throw new BadRequestException(msg('backup.confirmDraftImport'))
     const initial = await this.em.findOne(ContentImport, { id, actorId: admin.id })
-    if (!initial) throw new NotFoundException('导入票据不存在')
-    if (initial.completedAt) return this.dto(initial)
+    if (!initial) throw new NotFoundException(msg('backup.importTicketNotFound'))
+    if (initial.completedAt) return this.dto(initial, locale)
     await this.em.nativeUpdate(
       ContentImport,
       { id, actorId: admin.id, completedAt: null },
@@ -218,10 +260,10 @@ export class ContentImportService {
           { id, actorId: admin.id },
           { lockMode: LockMode.PESSIMISTIC_WRITE, refresh: true },
         )
-        if (job.completedAt) return this.dto(job)
-        if (confirmation !== packageHash(job.plan)) throw new ConflictException('预览已更新，请重新读取后确认')
+        if (job.completedAt) return this.dto(job, locale)
+        if (confirmation !== packageHash(job.plan)) throw new ConflictException(msg('backup.previewUpdated'))
         if (!job.payload || job.expiresAt <= new Date() || job.sessionVersion !== admin.sessionVersion)
-          throw new BadRequestException('预览已失效，请重新预览')
+          throw new BadRequestException(msg('backup.previewInvalid'))
         if (
           !(await em.count(AdminSession, {
             id: admin.sessionId,
@@ -230,7 +272,7 @@ export class ContentImportService {
             expiresAt: { $gt: new Date() },
           }))
         )
-          throw new ConflictException('会话已经失效，未开始导入')
+          throw new ConflictException(msg('backup.sessionInvalidNotStarted'))
         const current = await makeContentPlan(
           em,
           this.exporter,
@@ -240,9 +282,12 @@ export class ContentImportService {
           job.includeSettings,
           id,
         )
-        if (!current.ready) throw new ConflictException(current.errors[0] ?? '媒体或引用条件不满足')
+        if (!current.ready)
+          throw new ConflictException(
+            current.errors[0] ? rethrowable(current.errors[0]) : msg('backup.importConditionsUnmet'),
+          )
         if (!job.plan.ready || current.basis !== job.plan.basis)
-          throw new ConflictException('目标内容或配置已变化，请重新预览后确认')
+          throw new ConflictException(msg('backup.targetChanged'))
         const payload = job.payload
         const result: ContentImportResult = {
           posts: [],
@@ -388,7 +433,7 @@ export class ContentImportService {
             if (payload.gallerySettings) {
               const settings = await em.findOneOrFail(GallerySettings, { id: 'default' }, { refresh: true })
               if (settings.revision !== current.gallerySettingsRevision)
-                throw new ConflictException('图库器材配置已变化，请重新预览')
+                throw new ConflictException(msg('backup.gallerySettingsChanged'))
               settings.gear = payload.gallerySettings.gear
               settings.revision += 1
               settings.updatedAt = new Date()
@@ -396,7 +441,7 @@ export class ContentImportService {
             if (payload.linkSettings) {
               const settings = await em.findOneOrFail(LinkSettings, { id: 'default' }, { refresh: true })
               if (settings.revision !== current.linkSettingsRevision)
-                throw new ConflictException('友链规则已变化，请重新预览')
+                throw new ConflictException(msg('backup.linkSettingsChanged'))
               settings.rules = payload.linkSettings.rules
               settings.revision += 1
               settings.updatedAt = new Date()
@@ -408,7 +453,7 @@ export class ContentImportService {
           job.payload = undefined
           job.lastError = undefined
           await em.flush()
-          return this.dto(job)
+          return this.dto(job, locale)
         } catch (error) {
           // 事务仍持有媒体锁，只清理本次新写入的文件，不触碰已有文件。
           for (const key of written.splice(0)) await this.storage.remove(key).catch(() => undefined)
@@ -419,7 +464,7 @@ export class ContentImportService {
       // 提交结果不确定时先核对持久化结果；不能删除可能已经提交并被引用的文件。
       try {
         const job = await this.em.fork().findOne(ContentImport, { id, actorId: admin.id })
-        if (job?.completedAt) return this.dto(job)
+        if (job?.completedAt) return this.dto(job, locale)
         for (const key of written)
           await this.em
             .fork()
@@ -433,15 +478,15 @@ export class ContentImportService {
           { id, completedAt: null },
           {
             startedAt: null,
-            lastError:
-              error instanceof HttpException ? error.message : '导入未完成，数据库变更已回滚，可重新预览后重试',
+            // 异常 message 是字典中文渲染结果，持久化后可在 dto() 中反查翻译。
+            lastError: error instanceof HttpException ? error.message : zh('backup.importRolledBack'),
           },
         )
       } catch {
-        throw new ServiceUnavailableException('导入结果暂时无法确认，请通过票据查询，原文件仍保留')
+        throw new ServiceUnavailableException(msg('backup.importResultUnknown'))
       }
       if (error instanceof HttpException) throw error
-      throw new ServiceUnavailableException('导入未完成，数据库变更已回滚，可重新预览后重试')
+      throw new ServiceUnavailableException(msg('backup.importRolledBack'))
     }
   }
 }

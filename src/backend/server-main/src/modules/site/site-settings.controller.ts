@@ -7,6 +7,8 @@ import type { Response } from 'express'
 import { Type } from 'class-transformer'
 import { IsInt, Min } from 'class-validator'
 import { AdminAuthGuard } from '../../common/guards/admin-auth.guard'
+import { RequestLocale } from '../../common/decorators/request-locale.decorator'
+import type { ApiLocale } from '../../common/i18n'
 import { SiteSettingsService } from './site-settings.service'
 import { ExpectedSiteRevisionDto, SaveSiteSettingsDto } from './site-settings.dto'
 class SiteHistoryQuery {
@@ -30,8 +32,8 @@ export class AdminSiteController {
   @Patch() save(@Body() input: SaveSiteSettingsDto) {
     return this.settings.save(input)
   }
-  @Get('revisions') history(@Query() query: SiteHistoryQuery) {
-    return this.settings.history(query.page)
+  @Get('revisions') history(@Query() query: SiteHistoryQuery, @RequestLocale() locale: ApiLocale) {
+    return this.settings.history(query.page, locale)
   }
   @Get('revisions/:revision') historical(@Param('revision', ParseIntPipe) revision: number) {
     return this.settings.historical(revision)

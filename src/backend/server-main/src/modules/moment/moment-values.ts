@@ -5,6 +5,7 @@ import type { FilterQuery } from '@mikro-orm/core'
 import { raw } from '@mikro-orm/core'
 import { Moment } from '../../entities/moment.entity'
 import type { QueryMomentsDto, SaveMomentDto } from './moment.dto'
+import { msg } from '../../common/i18n'
 
 export const publicMoments = { status: 'published' as const, deletedAt: null }
 export function momentWhere(query: QueryMomentsDto, admin = false): FilterQuery<Moment> {
@@ -37,7 +38,7 @@ export function momentUrl(value: string, allowMedia = false, allowAvatar = false
     if (!['http:', 'https:'].includes(url.protocol) || url.username || url.password) throw new Error('invalid URL')
     return url.toString()
   } catch {
-    throw new BadRequestException('链接只允许完整 HTTP(S) 地址或本站媒体资源')
+    throw new BadRequestException(msg('moment.linkInvalid'))
   }
 }
 export function momentValues(input: SaveMomentDto) {
@@ -55,7 +56,7 @@ export function momentValues(input: SaveMomentDto) {
       favicon: input.linkedLink.favicon ? momentUrl(input.linkedLink.favicon, true) : undefined,
     }
   }
-  if (values.linkedArticleId && values.linkedLink) throw new BadRequestException('站内文章和外链引用只能选择一种')
+  if (values.linkedArticleId && values.linkedLink) throw new BadRequestException(msg('moment.referenceExclusive'))
   return values
 }
 export function submissionHash(value: unknown): string {

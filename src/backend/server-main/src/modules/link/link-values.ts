@@ -2,6 +2,7 @@
 import { BadRequestException } from '@nestjs/common'
 import { managedMediaIds } from '../media/media-references'
 import type { SaveLinkDto } from './link.dto'
+import { msg } from '../../common/i18n'
 export function linkUrl(value: string) {
   const input = value.trim()
   if (
@@ -9,7 +10,7 @@ export function linkUrl(value: string) {
     /[\\\s]/u.test(input) ||
     [...input].some((character) => character.charCodeAt(0) < 32 || character.charCodeAt(0) === 127)
   )
-    throw new BadRequestException('友链需要完整的 HTTP(S) 地址，不能包含空白、控制字符或反斜杠')
+    throw new BadRequestException(msg('link.urlMalformed'))
   let normalized: string
   try {
     const url = new URL(input)
@@ -17,20 +18,19 @@ export function linkUrl(value: string) {
       throw new Error('invalid')
     normalized = url.toString()
   } catch {
-    throw new BadRequestException('友链地址不合法，不能使用占位符或带凭据地址')
+    throw new BadRequestException(msg('link.urlInvalid'))
   }
-  if (normalized.length > 2048) throw new BadRequestException('规范化后的友链地址不能超过2048个字符')
+  if (normalized.length > 2048) throw new BadRequestException(msg('link.urlTooLong'))
   return normalized
 }
 export function linkLogoUrl(value: string) {
   const normalized = linkUrl(value)
-  if (!normalized.startsWith('https:')) throw new BadRequestException('外部头像需要完整的 HTTPS 地址')
-  if (managedMediaIds([normalized]).length)
-    throw new BadRequestException('媒体库图片请通过媒体选择器关联，不能填写为外部头像')
+  if (!normalized.startsWith('https:')) throw new BadRequestException(msg('link.logoRequiresHttps'))
+  if (managedMediaIds([normalized]).length) throw new BadRequestException(msg('link.logoManaged'))
   return normalized
 }
 export function linkId(id: number) {
-  if (!Number.isSafeInteger(id) || id < 1 || id > 2147483647) throw new BadRequestException('友链编号不合法')
+  if (!Number.isSafeInteger(id) || id < 1 || id > 2147483647) throw new BadRequestException(msg('link.idInvalid'))
 }
 export function linkValues(input: SaveLinkDto) {
   const values = Object.fromEntries(
@@ -38,6 +38,6 @@ export function linkValues(input: SaveLinkDto) {
   ) as Omit<SaveLinkDto, 'requestId' | 'revision'>
   if (input.url !== undefined) values.url = linkUrl(input.url)
   if (input.logoUrl !== undefined) values.logoUrl = input.logoUrl === null ? null : linkLogoUrl(input.logoUrl)
-  if (values.logoMediaId && values.logoUrl) throw new BadRequestException('媒体库图片和外部头像只能选择一种')
+  if (values.logoMediaId && values.logoUrl) throw new BadRequestException(msg('link.logoExclusive'))
   return values
 }

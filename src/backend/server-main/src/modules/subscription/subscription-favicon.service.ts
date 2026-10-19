@@ -1,5 +1,6 @@
 /** @file subscription-favicon.service.ts @description 管理员触发的固定供应商图标代理，公开读取只使用可再生缓存 */
 import { Injectable, NotFoundException } from '@nestjs/common'
+import { msg } from '../../common/i18n'
 import { ConfigService } from '@nestjs/config'
 import { createHash, randomUUID } from 'node:crypto'
 import { lookup } from 'node:dns/promises'
@@ -146,11 +147,12 @@ export class SubscriptionFaviconService {
     this.root = resolve(media || './var/media', '.subscription-favicons')
   }
   async read(key: string) {
-    if (!/^[a-f0-9]{64}\.webp$/.test(key)) throw new NotFoundException('图标缓存不存在')
+    if (!/^[a-f0-9]{64}\.webp$/.test(key)) throw new NotFoundException(msg('subscription.faviconCacheNotFound'))
     try {
       return await readFile(resolve(this.root, key))
     } catch (error) {
-      if ((error as NodeJS.ErrnoException).code === 'ENOENT') throw new NotFoundException('图标缓存不存在')
+      if ((error as NodeJS.ErrnoException).code === 'ENOENT')
+        throw new NotFoundException(msg('subscription.faviconCacheNotFound'))
       throw error
     }
   }

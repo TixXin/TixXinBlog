@@ -1,5 +1,6 @@
 /** @file prompts-values.ts @description 提示词规范化与查询条件，外部图片只校验地址且不主动抓取 */
 import { BadRequestException } from '@nestjs/common'
+import { msg } from '../../common/i18n'
 import { raw } from '@mikro-orm/core'
 import type { FilterQuery } from '@mikro-orm/core'
 import type { ImagePrompt } from '../../entities/image-prompt.entity'
@@ -7,7 +8,7 @@ import { galleryExternalUrl } from '../gallery/gallery-values'
 import type { AdminPromptQuery, PromptQuery, SavePromptDto } from './prompts.dto'
 
 export function promptId(id: number) {
-  if (!Number.isSafeInteger(id) || id < 1 || id > 2147483647) throw new BadRequestException('提示词编号不合法')
+  if (!Number.isSafeInteger(id) || id < 1 || id > 2147483647) throw new BadRequestException(msg('prompt.idInvalid'))
 }
 
 export function promptSourceUrl(value: string) {
@@ -18,7 +19,7 @@ export function promptSourceUrl(value: string) {
     /[\\\s]/u.test(input) ||
     [...input].some((character) => character.charCodeAt(0) < 32 || character.charCodeAt(0) === 127)
   )
-    throw new BadRequestException('来源需要完整的 HTTP(S) 地址，不能包含空白、控制字符或反斜杠')
+    throw new BadRequestException(msg('prompt.sourceUrlMalformed'))
   try {
     const url = new URL(input)
     if (!['http:', 'https:'].includes(url.protocol) || !url.hostname || url.username || url.password)
@@ -26,7 +27,7 @@ export function promptSourceUrl(value: string) {
     if (url.href.length > 2048) throw new Error('too long')
     return url.href
   } catch {
-    throw new BadRequestException('来源地址不合法，不能使用带凭据地址或超过 2048 个字符')
+    throw new BadRequestException(msg('prompt.sourceUrlInvalid'))
   }
 }
 
@@ -36,13 +37,13 @@ export function promptValues(input: SavePromptDto) {
   ) as Omit<SavePromptDto, 'requestId' | 'revision'>
   for (const key of ['title', 'description', 'prompt', 'negativePrompt', 'model', 'imageAlt'] as const)
     if (values[key] !== undefined) values[key] = values[key]!.trim()
-  if (values.title === '' || values.prompt === '') throw new BadRequestException('标题和提示词不能为空')
+  if (values.title === '' || values.prompt === '') throw new BadRequestException(msg('prompt.titleAndPromptRequired'))
   if (input.tags) {
     const seen = new Set<string>()
     values.tags = input.tags
       .map((tag) => tag.trim())
       .filter((tag) => {
-        if (!tag) throw new BadRequestException('标签不能为空')
+        if (!tag) throw new BadRequestException(msg('prompt.tagEmpty'))
         const key = tag.toLowerCase()
         if (seen.has(key)) return false
         seen.add(key)

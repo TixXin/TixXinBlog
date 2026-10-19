@@ -23,6 +23,8 @@ import { CurrentAdmin } from '../../common/decorators/current-admin.decorator'
 import { PostBatchService } from './post-batch.service'
 import { ExecutePostBatchDto, PreviewPostBatchDto } from './dto/batch-post.dto'
 import { PostPreviewService } from './post-preview.service'
+import { RequestLocale } from '../../common/decorators/request-locale.decorator'
+import type { ApiLocale } from '../../common/i18n'
 
 @Controller('admin/posts')
 @UseGuards(AdminAuthGuard)
@@ -45,8 +47,9 @@ export class AdminPostController {
   previewBatch(
     @Body() body: PreviewPostBatchDto,
     @CurrentAdmin() admin: { id: string; sessionVersion: number; sessionId: string },
+    @RequestLocale() locale: ApiLocale,
   ) {
-    return this.batch.preview(body, admin)
+    return this.batch.preview(body, admin, locale)
   }
   @Get('batch')
   recentBatches(@CurrentAdmin() admin: { id: string; sessionVersion: number; sessionId: string }) {
@@ -56,15 +59,17 @@ export class AdminPostController {
   executeBatch(
     @Body() body: ExecutePostBatchDto,
     @CurrentAdmin() admin: { id: string; sessionVersion: number; sessionId: string },
+    @RequestLocale() locale: ApiLocale,
   ) {
-    return this.batch.execute(body.ticket, body.acknowledgement, admin)
+    return this.batch.execute(body.ticket, body.acknowledgement, admin, locale)
   }
   @Get('batch/:ticket')
   batchResult(
     @Param('ticket', new ParseUUIDPipe({ version: '4' })) ticket: string,
     @CurrentAdmin() admin: { id: string; sessionVersion: number; sessionId: string },
+    @RequestLocale() locale: ApiLocale,
   ) {
-    return this.batch.get(ticket, admin)
+    return this.batch.get(ticket, admin, locale)
   }
   @Post(':id/restore')
   restore(@Param('id', ParseIntPipe) id: number, @Query() query: ExpectedPostRevisionDto) {

@@ -25,6 +25,7 @@ import { canonicalTaxonomyLabel } from './taxonomy-aliases'
 import { lockMedia, synchronizeMediaReferences } from '../media/media-references'
 import { validateContentRelations } from '../content-relations/content-relations'
 import type { ContentRelation } from '../../common/types/content-relation'
+import { msg } from '../../common/i18n'
 
 @Injectable()
 export class AdminPostService {
@@ -83,7 +84,7 @@ export class AdminPostService {
 
   async detail(id: number) {
     const post = await this.em.findOne(Post, { id }, { populate: ['tags'] })
-    if (!post) throw new NotFoundException('文章不存在')
+    if (!post) throw new NotFoundException(msg('post.notFound'))
     return this.toEditor(post)
   }
 
@@ -97,11 +98,12 @@ export class AdminPostService {
     return this.em.transactional(async (em) => {
       await lockMedia(em)
       const post = await em.findOne(Post, { id }, { lockMode: LockMode.PESSIMISTIC_WRITE })
-      if (!post) throw new NotFoundException('文章不存在')
+      if (!post) throw new NotFoundException(msg('post.notFound'))
       this.assertRevision(post, revision)
       await em.populate(post, ['tags'])
       await this.revisions.record(em, post, '历史版本')
-      if (post.status !== 'archived' && !post.deletedAt) throw new BadRequestException('只能恢复已归档或回收的文章')
+      if (post.status !== 'archived' && !post.deletedAt)
+        throw new BadRequestException(msg('post.restoreOnlyArchivedOrTrashed'))
       post.deletedAt = undefined
       // 恢复为草稿，避免归档内容未经复核重新公开。
       post.status = 'draft'
@@ -116,9 +118,10 @@ export class AdminPostService {
 
   async save(id: number | null, input: SavePostDto, reason?: string, historicalRelations: ContentRelation[] = []) {
     if (input.cover && !/^https?:\/\//i.test(input.cover) && !/^\/(?!\/)/.test(input.cover)) {
-      throw new BadRequestException('封面只允许 HTTP(S) 或站内路径')
+      throw new BadRequestException(msg('post.coverUrlInvalid'))
     }
-    if (input.status === 'published' && !input.contentRaw.trim()) throw new BadRequestException('发布文章必须填写正文')
+    if (input.status === 'published' && !input.contentRaw.trim())
+      throw new BadRequestException(msg('post.publishContentRequired'))
     return this.em.transactional(async (em) => {
       const now = new Date()
       await lockTaxonomy(em)
@@ -132,8 +135,8 @@ export class AdminPostService {
       let post: Post
       if (id !== null) {
         const existing = await em.findOne(Post, { id }, { lockMode: LockMode.PESSIMISTIC_WRITE })
-        if (!existing) throw new NotFoundException('文章不存在')
-        if (existing.deletedAt) throw new ConflictException('文章已在回收站，请先恢复再编辑')
+        if (!existing) throw new NotFoundException(msg('post.notFound'))
+        if (existing.deletedAt) throw new ConflictException(msg('post.trashedRestoreBeforeEdit'))
         await em.populate(existing, ['tags'])
         this.assertRevision(existing, input.revision)
         await this.revisions.record(em, existing, '历史版本')
@@ -158,7 +161,7 @@ export class AdminPostService {
       if (post.status !== 'published' && input.status === 'published') post.publishedAt = now
       const slug = input.slug ?? post.slug ?? ''
       const address = slug ? await em.findOne(PostAddress, { slug }) : null
-      if (address && address.post.id !== post.id) throw new ConflictException('该文章地址已被其他文章使用或保留')
+      if (address && address.post.id !== post.id) throw new ConflictException(msg('post.slugTaken'))
       if (input.relatedContent !== undefined)
         post.relatedContent = await validateContentRelations(
           em,
@@ -218,8 +221,8 @@ export class AdminPostService {
     return this.em.transactional(async (em) => {
       await lockMedia(em)
       const post = await em.findOne(Post, { id }, { lockMode: LockMode.PESSIMISTIC_WRITE })
-      if (!post) throw new NotFoundException('文章不存在')
-      if (post.deletedAt) throw new ConflictException('文章已在回收站，请先恢复')
+      if (!post) throw new NotFoundException(msg('post.notFound'))
+      if (post.deletedAt) throw new ConflictException(msg('post.trashedRestoreFirst'))
       this.assertRevision(post, revision)
       await em.populate(post, ['tags'])
       await this.revisions.record(em, post, '历史版本')
@@ -256,9 +259,7 @@ export class AdminPostService {
   }
 
   private assertRevision(post: Post, expected: number | undefined) {
-    if (expected === undefined)
-      throw new HttpException('保存需要内容版本，请重新读取文章后合并修改', HttpStatus.PRECONDITION_REQUIRED)
-    if (post.revision !== expected)
-      throw new ConflictException('文章或关联目录已更新，已拒绝覆盖；请比较服务器版本并合并修改')
+    if (expected === undefined) throw new HttpException(msg('post.revisionRequired'), HttpStatus.PRECONDITION_REQUIRED)
+    if (post.revision !== expected) throw new ConflictException(msg('post.revisionConflict'))
   }
 }

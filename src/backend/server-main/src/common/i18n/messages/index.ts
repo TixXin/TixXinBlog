@@ -19,6 +19,7 @@ import { subscriptionMessages } from './subscription.messages'
 import { mediaMessages } from './media.messages'
 import { siteMessages } from './site.messages'
 import { backupMessages } from './backup.messages'
+import { packageMessages } from './package.messages'
 import { operationsMessages } from './operations.messages'
 import { auditMessages } from './audit.messages'
 
@@ -39,6 +40,7 @@ export const MESSAGE_TABLES = {
   media: mediaMessages,
   site: siteMessages,
   backup: backupMessages,
+  package: packageMessages,
   operations: operationsMessages,
   audit: auditMessages,
 } as const
@@ -59,6 +61,7 @@ export const MESSAGES = {
   ...mediaMessages,
   ...siteMessages,
   ...backupMessages,
+  ...packageMessages,
   ...operationsMessages,
   ...auditMessages,
 }

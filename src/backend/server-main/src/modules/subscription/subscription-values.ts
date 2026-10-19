@@ -1,10 +1,12 @@
 /** @file subscription-values.ts @description 订阅链接、业务日期及编辑值的严格边界 */
 import { BadRequestException } from '@nestjs/common'
+import { msg } from '../../common/i18n'
 import { isIP } from 'node:net'
 import { isDate } from '@tixxin/subscription-domain'
 import type { SaveSubscriptionDto } from './subscription.dto'
 export function subscriptionId(id: number) {
-  if (!Number.isSafeInteger(id) || id < 1 || id > 2147483647) throw new BadRequestException('订阅编号不合法')
+  if (!Number.isSafeInteger(id) || id < 1 || id > 2147483647)
+    throw new BadRequestException(msg('subscription.idInvalid'))
 }
 export function subscriptionUrl(input: string): string {
   if (
@@ -13,7 +15,7 @@ export function subscriptionUrl(input: string): string {
     /[\\\s]/u.test(input) ||
     [...input].some((character) => character.charCodeAt(0) < 32 || character.charCodeAt(0) === 127)
   )
-    throw new BadRequestException('官网地址不能包含空白、控制字符或反斜杠')
+    throw new BadRequestException(msg('subscription.urlMalformed'))
   try {
     const url = new URL(input)
     if (!['https:', 'http:'].includes(url.protocol) || url.username || url.password || url.port || !url.hostname)
@@ -21,7 +23,7 @@ export function subscriptionUrl(input: string): string {
     if (url.href.length > 2048) throw new Error('invalid')
     return url.href
   } catch {
-    throw new BadRequestException('官网需要标准 HTTP(S) 地址，不能带凭据或非标准端口')
+    throw new BadRequestException(msg('subscription.urlInvalid'))
   }
 }
 export function faviconDomain(input: string): string {
@@ -35,15 +37,15 @@ export function faviconDomain(input: string): string {
     /(?:^|\.)(?:localhost|local|internal|invalid|test|example|onion)$/.test(domain) ||
     /^\d+(?:\.\d+)*$/.test(domain)
   )
-    throw new BadRequestException('自动图标需要公开网站域名')
+    throw new BadRequestException(msg('subscription.faviconDomainInvalid'))
   return domain
 }
 export function validateSubscriptionDates(value: { startDate?: string | null; nextBillingDate?: string | null }) {
   for (const date of [value.startDate, value.nextBillingDate])
     if (date !== undefined && date !== null && !isDate(date))
-      throw new BadRequestException('请输入真实的 YYYY-MM-DD 日期')
+      throw new BadRequestException(msg('subscription.dateInvalid'))
   if (value.startDate && value.nextBillingDate && value.nextBillingDate < value.startDate)
-    throw new BadRequestException('下次扣费日期不能早于订阅开始日期')
+    throw new BadRequestException(msg('subscription.nextBillingBeforeStart'))
 }
 export function subscriptionValues(input: SaveSubscriptionDto) {
   const values = Object.fromEntries(

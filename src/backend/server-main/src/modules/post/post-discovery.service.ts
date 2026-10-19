@@ -8,6 +8,7 @@ import { Post } from '../../entities/post.entity'
 import { visibleCommentSql } from '../comment/comment-visibility'
 import type { QueryPostArchiveDto } from './dto/query-post-archive.dto'
 import type { PostNavigationScope } from './dto/query-post-navigation.dto'
+import { msg } from '../../common/i18n'
 
 interface ArchiveRow {
   slug?: string
@@ -143,7 +144,7 @@ export class PostDiscoveryService {
       { id, status: 'published', deletedAt: null },
       { fields: ['id', 'publishedAt', 'folder'] },
     )
-    if (!current) throw new NotFoundException('文章不存在')
+    if (!current) throw new NotFoundException(msg('post.notFound'))
     if (scope !== 'auto') return this.adjacent(current, scope)
     // auto：有专栏且专栏内至少一侧有文章时用同专栏结果，否则一次请求内回退全站，并标明是否回退。
     if (current.folder?.trim()) {
@@ -200,7 +201,7 @@ export class PostDiscoveryService {
       { id, status: 'published', deletedAt: null },
       { fields: ['id', 'folder'] },
     )
-    if (!current) throw new NotFoundException('文章不存在')
+    if (!current) throw new NotFoundException(msg('post.notFound'))
     // 共同标签每个 3 分，同专栏加 2 分；按发布年龄平滑衰减，180 天后分数减半。
     // 有共同标签的文章优先，不足 4 篇时才按最新顺序补入同专栏文章，不用全站无关内容凑数。
     // 在同一条查询内完成两层排序与截断，避免先取最新候选漏掉高相关旧文或重复补齐。

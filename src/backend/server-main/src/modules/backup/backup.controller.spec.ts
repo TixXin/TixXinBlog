@@ -172,7 +172,7 @@ describe('内容包控制器委托与响应边界', () => {
       importer.preview.mockResolvedValue(result)
       const body = await validate('preview', { requestId, includeSettings: 'false' })
       await expect(controller.preview(file, body, admin)).resolves.toBe(result)
-      expect(importer.preview).toHaveBeenCalledWith(file, body, admin)
+      expect(importer.preview).toHaveBeenCalledWith(file, body, admin, 'zh-CN')
     },
   )
 
@@ -185,8 +185,8 @@ describe('内容包控制器委托与响应边界', () => {
     await expect(controller.get(requestId, admin)).resolves.toEqual({ id: requestId })
     await expect(controller.repreview(requestId, admin)).resolves.toEqual({ id: requestId, confirmation })
     expect(importer.recent).toHaveBeenCalledWith(admin)
-    expect(importer.get).toHaveBeenCalledWith(requestId, admin)
-    expect(importer.repreview).toHaveBeenCalledWith(requestId, admin)
+    expect(importer.get).toHaveBeenCalledWith(requestId, admin, 'zh-CN')
+    expect(importer.repreview).toHaveBeenCalledWith(requestId, admin, 'zh-CN')
   })
 
   it.each([
@@ -226,6 +226,6 @@ describe('内容包控制器委托与响应边界', () => {
       importedComments: comments,
       importedMedia: media,
     })
-    expect(importer.execute).toHaveBeenCalledWith(requestId, '导入为新草稿', confirmation, admin)
+    expect(importer.execute).toHaveBeenCalledWith(requestId, '导入为新草稿', confirmation, admin, 'zh-CN')
   })
 })

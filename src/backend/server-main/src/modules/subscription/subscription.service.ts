@@ -1,5 +1,6 @@
 /** @file subscription.service.ts @description 订阅真实读取、事务编辑、乐观版本与媒体引用保护 */
 import { BadRequestException, ConflictException, Injectable, NotFoundException } from '@nestjs/common'
+import { msg } from '../../common/i18n'
 import { EntityManager } from '@mikro-orm/postgresql'
 import { LockMode } from '@mikro-orm/core'
 import type { FilterQuery, QueryOrderMap } from '@mikro-orm/core'
@@ -108,12 +109,12 @@ export class SubscriptionService {
     const item = await this.em.findOne(Subscription, admin ? { id, deletedAt: null } : { id, ...publicSubscriptions }, {
       populate: ['iconMedia'],
     })
-    if (!item) throw new NotFoundException('订阅不存在或尚未公开')
+    if (!item) throw new NotFoundException(msg('subscription.notFoundOrUnpublished'))
     return this.serialize(item, admin)
   }
   async submission(requestId: string) {
     const item = await this.em.findOne(Subscription, { requestId }, { populate: ['iconMedia'] })
-    if (!item) throw new NotFoundException('尚未找到此提交，请使用原提交标识重试')
+    if (!item) throw new NotFoundException(msg('subscription.submissionNotFound'))
     return item.deletedAt ? { state: 'deleted', id: item.id } : { state: 'saved', item: this.serialize(item, true) }
   }
   async save(id: number | null, input: SaveSubscriptionDto) {
@@ -127,9 +128,9 @@ export class SubscriptionService {
         !input.billingCycle ||
         input.revision !== undefined)
     )
-      throw new BadRequestException('创建需要名称、金额、币种、周期及唯一提交标识，不能携带编辑版本')
+      throw new BadRequestException(msg('subscription.createRequiresFields'))
     if (id !== null && (input.revision === undefined || input.requestId !== undefined))
-      throw new BadRequestException('编辑需要当前版本，不能携带创建标识')
+      throw new BadRequestException(msg('subscription.editRequiresRevision'))
     const values = subscriptionValues(input)
     const hash = submissionHash({ ...values, priceChangeReason: input.priceChangeReason?.trim() || '' })
     const savedId = await this.em.transactional(async (em) => {
@@ -138,14 +139,15 @@ export class SubscriptionService {
       if (id === null) {
         const prior = await em.findOne(Subscription, { requestId: input.requestId })
         if (prior) {
-          if (prior.deletedAt || prior.requestHash !== hash) throw new ConflictException('此提交已处理，请核查原订阅')
+          if (prior.deletedAt || prior.requestHash !== hash)
+            throw new ConflictException(msg('subscription.submissionConflict'))
           return prior.id
         }
       }
       const { iconMediaId, ...fields } = values
       const media = iconMediaId ? await em.findOne(MediaAsset, { id: iconMediaId, deletedAt: null }) : null
       if (iconMediaId && (!media || !media.mimeType.startsWith('image/') || media.width < 1 || media.height < 1))
-        throw new BadRequestException('请选择有效的媒体库图标')
+        throw new BadRequestException(msg('subscription.iconMediaInvalid'))
       const item =
         id === null
           ? em.create(Subscription, {
@@ -157,9 +159,9 @@ export class SubscriptionService {
               requestHash: hash,
             })
           : await em.findOne(Subscription, { id, deletedAt: null }, { lockMode: LockMode.PESSIMISTIC_WRITE })
-      if (!item) throw new NotFoundException('订阅不存在或已删除')
+      if (!item) throw new NotFoundException(msg('subscription.notFoundOrDeleted'))
       if (id !== null && item.revision !== input.revision)
-        throw new ConflictException('订阅已被修改，请保留输入并重新读取')
+        throw new ConflictException(msg('subscription.revisionConflict'))
       validateSubscriptionDates({ ...item, ...fields })
       // 先计算历史再修改受管实体；时钟回拨或历史冲突不能留下部分内存变更。
       let history: Subscription['priceHistory']
@@ -174,8 +176,7 @@ export class SubscriptionService {
           },
         )
       } catch (error) {
-        if (error instanceof RangeError)
-          throw new ConflictException('价格历史与当前时间或价格不一致，请保留输入，核对服务器时钟与历史后重试')
+        if (error instanceof RangeError) throw new ConflictException(msg('subscription.priceHistoryConflict'))
         throw error
       }
       Object.assign(item, fields)
@@ -212,13 +213,13 @@ export class SubscriptionService {
     return this.em.transactional(async (em) => {
       await lockMedia(em)
       const item = await em.findOne(Subscription, { id }, { lockMode: LockMode.PESSIMISTIC_WRITE })
-      if (!item) throw new NotFoundException('订阅不存在')
+      if (!item) throw new NotFoundException(msg('subscription.notFound'))
       if (item.deletedAt) {
         if (revision !== item.revision && revision !== item.revision - 1)
-          throw new ConflictException('订阅已变化，请重新读取')
+          throw new ConflictException(msg('subscription.changed'))
         return { ok: true }
       }
-      if (item.revision !== revision) throw new ConflictException('订阅已变化，请重新读取后确认删除')
+      if (item.revision !== revision) throw new ConflictException(msg('subscription.changedBeforeDelete'))
       item.deletedAt = new Date()
       item.revision++
       await em.nativeDelete(MediaReference, { subscription: item })
@@ -228,7 +229,7 @@ export class SubscriptionService {
   }
   async sort(input: SubscriptionSortDto) {
     const ids = input.items.map((item) => item.id)
-    if (new Set(ids).size !== ids.length) throw new BadRequestException('排序条目不能重复')
+    if (new Set(ids).size !== ids.length) throw new BadRequestException(msg('subscription.sortDuplicate'))
     return this.em.transactional(async (em) => {
       await lockMedia(em)
       const items = await em.find(
@@ -236,11 +237,11 @@ export class SubscriptionService {
         { id: { $in: ids }, deletedAt: null },
         { lockMode: LockMode.PESSIMISTIC_WRITE, orderBy: { id: 'ASC' } },
       )
-      if (items.length !== ids.length) throw new NotFoundException('部分订阅不存在或已删除')
+      if (items.length !== ids.length) throw new NotFoundException(msg('subscription.someNotFound'))
       const revisions = new Map(input.items.map((item) => [item.id, item]))
       for (const item of items) {
         const next = revisions.get(item.id)!
-        if (item.revision !== next.revision) throw new ConflictException('订阅已被修改，请重新读取后排序')
+        if (item.revision !== next.revision) throw new ConflictException(msg('subscription.changedBeforeSort'))
       }
       for (const item of items) {
         item.sortOrder = revisions.get(item.id)!.sortOrder

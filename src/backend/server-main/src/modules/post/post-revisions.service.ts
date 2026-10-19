@@ -8,6 +8,7 @@ import { Post } from '../../entities/post.entity'
 import { PostRevision } from '../../entities/post-revision.entity'
 import { legacyMarkdown, postSnapshot } from './post-snapshot'
 import { synchronizeMediaReferences } from '../media/media-references'
+import { msg } from '../../common/i18n'
 
 @Injectable()
 export class PostRevisionsService {
@@ -31,7 +32,8 @@ export class PostRevisionsService {
     )
   }
   async list(postId: number, page: number) {
-    if (!(await this.em.findOne(Post, { id: postId }, { fields: ['id'] }))) throw new NotFoundException('文章不存在')
+    if (!(await this.em.findOne(Post, { id: postId }, { fields: ['id'] })))
+      throw new NotFoundException(msg('post.notFound'))
     const [items, total] = await this.em.findAndCount(
       PostRevision,
       { post: postId },
@@ -55,7 +57,7 @@ export class PostRevisionsService {
   }
   async detail(postId: number, revision: number) {
     const item = await this.em.findOne(PostRevision, { post: postId, revision })
-    if (!item) throw new NotFoundException('修订不存在')
+    if (!item) throw new NotFoundException(msg('post.revisionNotFound'))
     return {
       revision: item.revision,
       reason: item.reason,

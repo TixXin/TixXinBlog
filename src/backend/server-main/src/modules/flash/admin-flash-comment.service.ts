@@ -14,6 +14,7 @@ import { lockMedia } from '../media/media-references'
 import { FlashService } from './flash.service'
 import type { FlashCommentDto } from './flash.service'
 import type { QueryAdminFlashCommentsDto } from './dto/moderate-flash-comment.dto'
+import { msg } from '../../common/i18n'
 
 /** 单条结果：not_found 表示评论或所属闪念已不存在，conflict 表示状态已被其他操作改变 */
 export interface FlashCommentBatchItemResult {
@@ -89,10 +90,10 @@ export class AdminFlashCommentService {
     return this.em.transactional(async (em) => {
       const rows = await this.lockRows(em, [commentId])
       const comment = rows.get(commentId)
-      if (!comment || comment.flashNote.id !== flashId) throw new NotFoundException('评论不存在')
+      if (!comment || comment.flashNote.id !== flashId) throw new NotFoundException(msg('comment.notFound'))
       // 已是目标状态视为成功，便于重试；其余状态变化要求重新加载后再操作。
       if (comment.status !== expectedStatus && comment.status !== status)
-        throw new ConflictException('评论状态已改变，请重新加载后再操作')
+        throw new ConflictException(msg('flash.commentStatusChanged'))
       comment.status = status
       await em.flush()
       await em.populate(comment, ['flashNote'])

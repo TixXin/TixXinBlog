@@ -12,6 +12,7 @@ import type {
 } from '@tixxin/subscription-domain'
 import { SaveSubscriptionDto } from '../subscription/subscription.dto'
 import { faviconDomain, subscriptionValues } from '../subscription/subscription-values'
+import { msg } from '../../common/i18n'
 
 export interface PackageSubscription {
   sourceId: number
@@ -55,7 +56,7 @@ const valueKeys = [
   'sortOrder',
 ]
 function fail(path: string): never {
-  throw new BadRequestException(`内容包字段不合法：${path}`)
+  throw new BadRequestException(msg('package.invalidField', { path }))
 }
 function strictRecord(value: unknown, keys: string[], path: string): Record<string, unknown> {
   if (!value || typeof value !== 'object' || Array.isArray(value)) return fail(path)
@@ -86,7 +87,7 @@ export function parsePackageSubscriptions(input: unknown): PackageSubscription[]
       Number(row.sourceId) > 2147483647 ||
       seen.has(Number(row.sourceId))
     )
-      fail(`${path}.重复或非法编号`)
+      throw new BadRequestException(msg('package.subscriptionIdInvalid', { path }))
     seen.add(Number(row.sourceId))
     if (typeof row.deleted !== 'boolean') fail(`${path}.deleted`)
     const raw = strictRecord(row.values, valueKeys, `${path}.values`)
@@ -103,7 +104,7 @@ export function parsePackageSubscriptions(input: unknown): PackageSubscription[]
       )
         fail(`${path}.faviconDomain`)
     } catch {
-      return fail(`${path}.价格历史或图标域名`)
+      throw new BadRequestException(msg('package.subscriptionHistoryInvalid', { path }))
     }
     return {
       sourceId: Number(row.sourceId),

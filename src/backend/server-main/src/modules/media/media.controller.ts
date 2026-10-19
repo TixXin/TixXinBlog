@@ -2,6 +2,7 @@
  * @file media.controller.ts
  * @description 管理员媒体上传与资源维护；公开接口只返回规范化后的图片字节，可用 `?w=` 取白名单宽度的变体。
  */
+import { msg } from '../../common/i18n'
 import {
   Body,
   Controller,
@@ -26,7 +27,7 @@ import { IsBoolean, IsIn, IsInt, IsOptional, IsString, IsUUID, Max, MaxLength, M
 import type { Request, Response } from 'express'
 import { AdminAuthGuard } from '../../common/guards/admin-auth.guard'
 import { MediaService } from './media.service'
-import { MAX_IMAGE_BYTES, MEDIA_VARIANT_WIDTHS, isMediaVariantWidth } from './media-image'
+import { MAX_IMAGE_BYTES, isMediaVariantWidth } from './media-image'
 import type { MediaVariantWidth, UploadedImage } from './media-image'
 
 export class QueryMediaDto {
@@ -87,13 +88,12 @@ export class PublicMediaController {
   @Get(':file')
   async read(@Param('file') file: string, @Query('w') w: unknown, @Req() request: Request, @Res() response: Response) {
     if (!/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}\.webp$/i.test(file))
-      throw new NotFoundException('媒体不存在')
+      throw new NotFoundException(msg('media.notFound'))
     // 只接受白名单宽度，任意宽度会让外部请求无限制地生成缓存文件。
     let width: MediaVariantWidth | undefined
     if (w !== undefined) {
       const value = typeof w === 'string' && /^[1-9][0-9]{2,3}$/.test(w) ? Number(w) : Number.NaN
-      if (!isMediaVariantWidth(value))
-        throw new BadRequestException(`图片宽度只支持 ${MEDIA_VARIANT_WIDTHS.join('、')}`)
+      if (!isMediaVariantWidth(value)) throw new BadRequestException(msg('media.widthUnsupported'))
       width = value
     }
     const result = await this.media.read(file.slice(0, -5).toLowerCase(), {

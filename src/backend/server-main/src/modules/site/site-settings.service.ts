@@ -3,6 +3,7 @@
  * @description 站点资料保存与恢复产生新版本，媒体引用覆盖当前值及历史配置。
  */
 import { EntityManager } from '@mikro-orm/postgresql'
+import { msg, translateStored, zh, type ApiLocale } from '../../common/i18n'
 import { LockMode } from '@mikro-orm/core'
 import { BadRequestException, ConflictException, Injectable, NotFoundException } from '@nestjs/common'
 import { SiteSettings, SiteSettingsRevision } from '../../entities/site-settings.entity'
@@ -32,7 +33,7 @@ export function validateSiteExtras(input: Parameters<typeof normalizeSiteExtrasI
   try {
     return normalizeSiteExtrasInput(input)
   } catch (error) {
-    if (error instanceof SiteExtrasError) throw new BadRequestException(error.message)
+    if (error instanceof SiteExtrasError) throw new BadRequestException(error.localized)
     throw error
   }
 }
@@ -63,20 +64,20 @@ export class SiteSettingsService {
       }
     }
     if (input.avatar && !/^\/(?!\/)[^\\\s]*$/.test(input.avatar) && !http(input.avatar))
-      throw new BadRequestException('头像需要 HTTP(S) 地址或站内图片路径')
+      throw new BadRequestException(msg('site.avatarUrlInvalid'))
     for (const link of input.socials) {
       if (!http(link.href) && !/^mailto:[^\s?@]+@[^\s?@]+\.[^\s?@]+$/.test(link.href))
-        throw new BadRequestException('社交链接仅支持 HTTP(S) 或 mailto 邮箱')
+        throw new BadRequestException(msg('site.socialLinkInvalid'))
     }
   }
-  async save(input: SaveSiteSettingsDto, reason = '更新站点资料') {
+  async save(input: SaveSiteSettingsDto, reason = zh('site.reasonUpdate')) {
     this.validateUrls(input)
     const extras = validateSiteExtras(input)
     if (
       input.about &&
       new Set(input.about.sections.map((section) => section.kind)).size !== input.about.sections.length
     )
-      throw new BadRequestException('关于页栏目不能重复')
+      throw new BadRequestException(msg('site.aboutSectionDuplicate'))
     return this.em.transactional(async (em) => {
       await lockMedia(em)
       const settings = await em.findOneOrFail(
@@ -84,8 +85,7 @@ export class SiteSettingsService {
         { id: 'default' },
         { lockMode: LockMode.PESSIMISTIC_WRITE, refresh: true },
       )
-      if (settings.revision !== input.revision)
-        throw new ConflictException('站点资料已更新，请读取最新版本并比较；当前输入未保存')
+      if (settings.revision !== input.revision) throw new ConflictException(msg('site.revisionConflict'))
       const current = withSiteExtrasDefaults(settings.values)
       const values = {
         about: input.about ?? settings.values.about ?? emptyAbout(),
@@ -134,7 +134,7 @@ export class SiteSettingsService {
       return { ...settings.values, revision: settings.revision, updatedAt: now.toISOString() }
     })
   }
-  async history(page: number) {
+  async history(page: number, locale: ApiLocale = 'zh-CN') {
     const [items, total] = await this.em.findAndCount(
       SiteSettingsRevision,
       {},
@@ -148,7 +148,7 @@ export class SiteSettingsService {
     return {
       items: items.map((item) => ({
         revision: item.revision,
-        reason: item.reason,
+        reason: translateStored(locale, item.reason),
         createdAt: item.createdAt.toISOString(),
       })),
       total,
@@ -158,7 +158,7 @@ export class SiteSettingsService {
   }
   async historical(revision: number) {
     const history = await this.em.findOne(SiteSettingsRevision, { revision })
-    if (!history) throw new NotFoundException('站点历史版本不存在')
+    if (!history) throw new NotFoundException(msg('site.historyNotFound'))
     return {
       ...withPresenceDefaults(history.values),
       about: history.values.about ?? emptyAbout(),
@@ -168,6 +168,6 @@ export class SiteSettingsService {
   }
   async restore(historical: number, current: number) {
     const previous = await this.historical(historical)
-    return this.save({ ...previous, revision: current }, `恢复站点版本 ${historical}`)
+    return this.save({ ...previous, revision: current }, zh('site.reasonRestore', { revision: historical }))
   }
 }

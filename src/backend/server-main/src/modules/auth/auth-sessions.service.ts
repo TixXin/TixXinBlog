@@ -3,6 +3,7 @@
  * @description 管理员自己的活跃会话与撤销；所有写操作按管理员→会话的固定顺序加锁。
  */
 import { EntityManager } from '@mikro-orm/postgresql'
+import { msg, translateStored, type ApiLocale } from '../../common/i18n'
 import { LockMode } from '@mikro-orm/core'
 import { Injectable, NotFoundException, UnauthorizedException } from '@nestjs/common'
 import { AdminUser } from '../../entities/admin-user.entity'
@@ -10,6 +11,13 @@ import { AdminSession } from '../../entities/admin-session.entity'
 import { RefreshToken } from '../../entities/refresh-token.entity'
 import { REFRESH_TOKEN_TTL_MS } from './auth.constants'
 import { sessionDeviceLabel } from './session-device'
+/** 设备名按「系统 · 客户端」逐段翻译；已识别的系统与浏览器名不在字典中，原样保留 */
+export function localizeDeviceLabel(label: string, locale: ApiLocale = 'zh-CN') {
+  return label
+    .split(' · ')
+    .map((part) => translateStored(locale, part))
+    .join(' · ')
+}
 @Injectable()
 export class AuthSessionsService {
   constructor(private readonly em: EntityManager) {}
@@ -54,7 +62,7 @@ export class AuthSessionsService {
         expiresAt: { $gt: new Date() },
       }))
     )
-      throw new UnauthorizedException('当前会话已失效')
+      throw new UnauthorizedException(msg('auth.currentSessionInvalid'))
   }
   async revoke(userId: string, sessionId: string, caller?: string) {
     return this.em.transactional(async (em) => {
@@ -65,7 +73,7 @@ export class AuthSessionsService {
         { id: sessionId, adminUser: userId },
         { lockMode: LockMode.PESSIMISTIC_WRITE, refresh: true },
       )
-      if (!session) throw new NotFoundException('会话不存在')
+      if (!session) throw new NotFoundException(msg('auth.sessionNotFound'))
       const revoked = session.revokedAt ? 0 : 1
       session.revokedAt ??= new Date()
       await em.nativeUpdate(RefreshToken, { session, revokedAt: null }, { revokedAt: session.revokedAt })

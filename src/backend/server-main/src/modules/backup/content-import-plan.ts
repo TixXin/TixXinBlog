@@ -30,6 +30,7 @@ import type { ContentExportService } from './content-export.service'
 import { guestbookImportPlan } from './content-guestbook-plan'
 import { createRelationHasher, makeRelationMapping } from './content-relation-plan'
 import type { ContentRelationType } from '../../common/types/content-relation'
+import { zh } from '../../common/i18n'
 function postContentHash(values: PackagePost['values']) {
   return packageHash({
     title: values.title.trim(),
@@ -186,20 +187,23 @@ export async function makeContentPlan(
     try {
       values = await normalizedPost(em, source.values)
     } catch {
-      errors.push(`文章 ${source.sourceId} 的历史目录名无法映射，请先调整目录`)
+      errors.push(zh('backup.planPostFolderUnmapped', { sourceId: source.sourceId }))
     }
     const hash = incomingHash('post', source.sourceId, values)
     sourcePostHashes.set(source.sourceId, hash)
     const duplicate = existingPosts.has(hash)
     const skip = strategy === 'skip' && duplicate
     let slug = source.values.slug ?? ''
-    let reason = skip ? '跳过相同内容及其评论' : duplicate ? '创建新的草稿副本，现有内容保留' : '创建新草稿'
+    let reason = zh(
+      skip ? 'backup.planSkipSameWithComments' : duplicate ? 'backup.planPostCopy' : 'backup.planPostCreate',
+    )
     if (!skip && slug && occupiedSlugs.has(slug)) {
       slug = `${slug.slice(0, 90).replace(/-+$/, '')}-import-${ticket.slice(0, 8)}-${source.sourceId}`
-      reason += '；原地址占用，使用新的地址标识'
+      // 组合原因整句登记，持久化中文与迁移前逐字一致，读取时也能整句反查翻译。
+      reason = zh(duplicate ? 'backup.planPostCopyNewSlug' : 'backup.planPostCreateNewSlug')
     }
     if (!skip) {
-      if (slug && occupiedSlugs.has(slug)) errors.push(`文章 ${source.sourceId} 的导入地址仍有冲突`)
+      if (slug && occupiedSlugs.has(slug)) errors.push(zh('backup.planPostSlugConflict', { sourceId: source.sourceId }))
       if (slug) occupiedSlugs.add(slug)
       existingPosts.add(hash)
       comments += source.comments.length
@@ -227,7 +231,7 @@ export async function makeContentPlan(
       sourceId: source.sourceId,
       title: source.values.content?.slice(0, 100) ?? '',
       skip,
-      reason: skip ? '跳过相同内容及其评论' : '创建新的闪念草稿',
+      reason: zh(skip ? 'backup.planSkipSameWithComments' : 'backup.planFlashCreate'),
     }
   })
   const momentPlans = (input.moments ?? []).map((source) => {
@@ -254,14 +258,14 @@ export async function makeContentPlan(
         postPlans.find((post) => post.sourceId === source.values.linkedArticleId)?.skip &&
         !linkedArticleId
       )
-        errors.push(`动态 ${source.sourceId} 的引用文章已删除，请选择创建副本或先恢复文章`)
+        errors.push(zh('backup.planMomentPostDeleted', { sourceId: source.sourceId }))
     }
     return {
       sourceId: source.sourceId,
       title: source.values.content?.slice(0, 100) ?? '',
       skip,
       linkedArticleId,
-      reason: skip ? '跳过相同内容及其评论' : '创建新的朋友圈草稿；保留未删除评论的审核状态；点赞和访客身份不迁入',
+      reason: zh(skip ? 'backup.planSkipSameWithComments' : 'backup.planMomentCreate'),
     }
   })
   const guestbookPlans = guestbookImportPlan(current.guestbook, input.guestbook ?? [], strategy)
@@ -284,11 +288,13 @@ export async function makeContentPlan(
       sourceId: source.sourceId,
       title: source.values.title,
       skip,
-      reason: source.deleted
-        ? '跳过已删除作品，保留删除状态'
-        : skip
-          ? '跳过相同图库作品'
-          : '创建新的图库草稿，保留拍摄信息及媒体关联',
+      reason: zh(
+        source.deleted
+          ? 'backup.planGallerySkipDeleted'
+          : skip
+            ? 'backup.planGallerySkipSame'
+            : 'backup.planGalleryCreate',
+      ),
     }
   })
   const existingProjects = new Set(
@@ -305,11 +311,13 @@ export async function makeContentPlan(
       sourceId: source.sourceId,
       title: source.values.title,
       skip,
-      reason: source.deleted
-        ? '跳过已删除项目，保留删除状态'
-        : skip
-          ? '跳过相同项目内容'
-          : '创建新的项目草稿，保留项目进展、标签、链接与封面关联',
+      reason: zh(
+        source.deleted
+          ? 'backup.planProjectSkipDeleted'
+          : skip
+            ? 'backup.planProjectSkipSame'
+            : 'backup.planProjectCreate',
+      ),
     }
   })
   const occupiedLinks = new Set(current.links.filter((link) => !link.deleted).map((link) => link.values.url))
@@ -324,13 +332,15 @@ export async function makeContentPlan(
       sourceId: source.sourceId,
       title: source.values.name,
       skip,
-      reason: source.deleted
-        ? '跳过已删除友链，不自动恢复'
-        : skip
-          ? '跳过已有相同规范地址的友链，现有内容保持不变'
-          : duplicate
-            ? '相同地址另建非公开草稿副本，保留原路径与参数；不能自动上架'
-            : '创建新的友链草稿，保留推荐与排序；不会自动上架',
+      reason: zh(
+        source.deleted
+          ? 'backup.planLinkSkipDeleted'
+          : skip
+            ? 'backup.planLinkSkipSame'
+            : duplicate
+              ? 'backup.planLinkCopy'
+              : 'backup.planLinkCreate',
+      ),
     }
   })
   const existingPrompts = new Set((current.prompts ?? []).map((prompt) => promptContentHash(prompt.values)))
@@ -345,7 +355,7 @@ export async function makeContentPlan(
       sourceId: source.sourceId,
       title: source.values.title,
       skip,
-      reason: skip ? '跳过相同图片提示词' : '创建新的提示词草稿，保留提示词、模型、标签和图片来源',
+      reason: zh(skip ? 'backup.planPromptSkipSame' : 'backup.planPromptCreate'),
     }
   })
   const existingSubscriptions = new Set(
@@ -362,11 +372,13 @@ export async function makeContentPlan(
       sourceId: source.sourceId,
       title: source.values.name,
       skip,
-      reason: source.deleted
-        ? '跳过已删除订阅，不自动恢复'
-        : skip
-          ? '跳过相同订阅及完整价格历史，已有记录保持不变'
-          : '创建新的订阅草稿，保留币种、周期、业务状态、价格历史和受管图标',
+      reason: zh(
+        source.deleted
+          ? 'backup.planSubscriptionSkipDeleted'
+          : skip
+            ? 'backup.planSubscriptionSkipSame'
+            : 'backup.planSubscriptionCreate',
+      ),
     }
   })
   if (includeSettings) requiredValues.push(input.site.avatar)
@@ -374,9 +386,9 @@ export async function makeContentPlan(
   const incoming = new Map(input.media.map((item) => [item.id, item]))
   const present = new Map(current.media.map((item) => [item.id, item]))
   for (const id of required) {
-    if (!incoming.has(id) && !present.has(id)) errors.push(`内容引用未登记的媒体 ${id}`)
+    if (!incoming.has(id) && !present.has(id)) errors.push(zh('backup.planMediaUnregistered', { id }))
     if (present.get(id)?.deleted || (!present.has(id) && incoming.get(id)?.deleted))
-      errors.push(`引用媒体 ${id} 处于回收状态，请先恢复资源`)
+      errors.push(zh('backup.planMediaRecycled', { id }))
   }
   const media: ContentImportPlan['media'] = []
   for (const id of new Set([...incoming.keys(), ...required])) {
@@ -384,7 +396,7 @@ export async function makeContentPlan(
       existing = present.get(id)
     if (!source && !existing) continue
     if (source && existing && source.sha256 !== existing.sha256) {
-      errors.push(`媒体 ${id} 与现有文件标识冲突，不能覆盖`)
+      errors.push(zh('backup.planMediaIdConflict', { id }))
       continue
     }
     let file: Buffer | null = null
@@ -392,11 +404,11 @@ export async function makeContentPlan(
       try {
         file = await storage.readIfExists(`${id}.webp`)
       } catch {
-        errors.push(`媒体 ${id} 当前无法读取`)
+        errors.push(zh('backup.planMediaUnreadable', { id }))
       }
       if (file && createHash('sha256').update(file).digest('hex') !== (existing?.sha256 ?? source?.sha256))
-        errors.push(`媒体 ${id} 文件完整性不符，需要维护恢复`)
-      if (!file && !source?.base64) errors.push(`缺少媒体 ${id} 的文件，请使用包含图片的内容包或先完成媒体恢复`)
+        errors.push(zh('backup.planMediaIntegrity', { id }))
+      if (!file && !source?.base64) errors.push(zh('backup.planMediaFileMissing', { id }))
     }
     const skip = !existing && !source?.base64 && !required.has(id)
     media.push({ id, create: !existing && !skip, writeFile: !file && !!source?.base64, skip })
@@ -405,14 +417,14 @@ export async function makeContentPlan(
     try {
       await canonicalTaxonomyLabel(em, 'folders', label)
     } catch {
-      errors.push(`专栏历史名称 ${label} 无法映射`)
+      errors.push(zh('backup.planFolderUnmapped', { label }))
     }
   }
   for (const tag of input.tags) {
     try {
       await canonicalTaxonomyLabel(em, 'tags', tag.label)
     } catch {
-      errors.push(`标签历史名称 ${tag.label} 无法映射`)
+      errors.push(zh('backup.planTagUnmapped', { label: tag.label }))
     }
   }
   const relations = makeRelationMapping(

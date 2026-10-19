@@ -6,6 +6,7 @@ import { EntityManager } from '@mikro-orm/postgresql'
 import { IsolationLevel } from '@mikro-orm/core'
 import { Injectable, PayloadTooLargeException, ServiceUnavailableException } from '@nestjs/common'
 import { createHash } from 'node:crypto'
+import { msg } from '../../common/i18n'
 import { Post } from '../../entities/post.entity'
 import { Comment } from '../../entities/comment.entity'
 import { FlashNote } from '../../entities/flash-note.entity'
@@ -72,7 +73,7 @@ export class ContentExportService {
         counts.media > 300 ||
         Number(counts.bytes) > MAX_PACKAGE_BYTES
       )
-        throw new PayloadTooLargeException('内容规模超过浏览器包限制，请使用完整维护备份')
+        throw new PayloadTooLargeException(msg('backup.exportTooLarge'))
       const posts = await em.find(Post, {}, { populate: ['tags'], orderBy: { id: 'asc' } })
       const comments = await em.find(Comment, {}, { orderBy: { id: 'asc' } })
       const flashes = await em.find(FlashNote, { userId: SITE_OWNER_ID }, { orderBy: { id: 'asc' } })
@@ -105,9 +106,9 @@ export class ContentExportService {
         comments.length + flashComments.length + momentComments.length > 10000 ||
         assets.length > 300
       )
-        throw new PayloadTooLargeException('内容规模超过浏览器包限制，请使用完整维护备份')
+        throw new PayloadTooLargeException(msg('backup.exportTooLarge'))
       if (mediaIncluded && assets.reduce((sum, asset) => sum + asset.width * asset.height, 0) > 100000000)
-        throw new PayloadTooLargeException('图片总量过大，可导出媒体清单或使用完整维护备份')
+        throw new PayloadTooLargeException(msg('backup.exportMediaTooLarge'))
       const folders = await em.find(PostFolder, {}, { orderBy: { label: 'asc' } })
       const tags = await em.find(PostTag, {}, { orderBy: { label: 'asc' } })
       const site = await em.findOneOrFail(SiteSettings, { id: 'default' })
@@ -346,20 +347,19 @@ export class ContentExportService {
         result.omittedRelations += original.length - row.values.relatedContent.length
       }
       let size = Buffer.byteLength(JSON.stringify(result))
-      if (size > MAX_PACKAGE_BYTES) throw new PayloadTooLargeException('内容包超过 50MB，请使用完整维护备份')
+      if (size > MAX_PACKAGE_BYTES) throw new PayloadTooLargeException(msg('backup.packageOver50mb'))
       if (mediaIncluded)
         for (const asset of result.media) {
           size += Math.ceil(asset.byteSize / 3) * 4 + 16
-          if (size > MAX_PACKAGE_BYTES)
-            throw new PayloadTooLargeException('包含图片后的内容包超过 50MB，可导出媒体清单或使用完整维护备份')
+          if (size > MAX_PACKAGE_BYTES) throw new PayloadTooLargeException(msg('backup.packageWithMediaOver50mb'))
           let bytes: Buffer
           try {
             bytes = await this.storage.get(`${asset.id}.webp`)
           } catch {
-            throw new ServiceUnavailableException(`媒体 ${asset.id} 文件不可读，无法生成完整内容包`)
+            throw new ServiceUnavailableException(msg('backup.exportMediaUnreadable', { id: asset.id }))
           }
           if (bytes.length !== asset.byteSize || createHash('sha256').update(bytes).digest('hex') !== asset.sha256)
-            throw new ServiceUnavailableException(`媒体 ${asset.id} 完整性校验失败`)
+            throw new ServiceUnavailableException(msg('backup.exportMediaIntegrity', { id: asset.id }))
           asset.base64 = bytes.toString('base64')
         }
       return result

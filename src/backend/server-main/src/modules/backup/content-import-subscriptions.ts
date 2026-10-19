@@ -5,6 +5,7 @@ import { Subscription } from '../../entities/subscription.entity'
 import { MediaAsset } from '../../entities/media-asset.entity'
 import type { ContentImportPlan, ContentImportResult } from '../../entities/content-import.entity'
 import type { ContentPackage } from './content-package'
+import { msg } from '../../common/i18n'
 import { mediaUrl, synchronizeMediaReferences } from '../media/media-references'
 
 export async function importSubscriptions(
@@ -15,7 +16,7 @@ export async function importSubscriptions(
 ) {
   for (const source of payload.subscriptions ?? []) {
     const target = plan.subscriptions?.find((item) => item.sourceId === source.sourceId)
-    if (!target) throw new ConflictException('平台订阅迁入计划缺失，请重新预览')
+    if (!target) throw new ConflictException(msg('backup.subscriptionPlanMissing'))
     if (target.skip) continue
     const { iconMediaId, ...values } = source.values
     const subscription = em.create(Subscription, {

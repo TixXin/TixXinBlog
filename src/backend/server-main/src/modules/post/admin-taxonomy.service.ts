@@ -14,6 +14,7 @@ import { PostRevisionsService } from './post-revisions.service'
 import { TaxonomyAlias } from '../../entities/taxonomy-alias.entity'
 import { registerTaxonomyRename } from './taxonomy-aliases'
 import { lockMedia } from '../media/media-references'
+import { msg } from '../../common/i18n'
 
 @Injectable()
 export class AdminTaxonomyService {
@@ -23,7 +24,7 @@ export class AdminTaxonomyService {
   ) {}
 
   private kind(value: string): 'folders' | 'tags' {
-    if (value !== 'folders' && value !== 'tags') throw new BadRequestException('不支持的分类目录')
+    if (value !== 'folders' && value !== 'tags') throw new BadRequestException(msg('post.taxonomyUnsupported'))
     return value
   }
 
@@ -46,12 +47,12 @@ export class AdminTaxonomyService {
       await lockTaxonomy(em)
       await lockMedia(em)
       if (await em.findOne(TaxonomyAlias, { kind, alias: input.label }))
-        throw new ConflictException('该名称是已更名的历史目录名，请使用当前名称或另取名称')
+        throw new ConflictException(msg('post.taxonomyNameIsAlias'))
       if (kind === 'folders') {
         const current = id === null ? null : await em.findOne(PostFolder, { id })
-        if (id !== null && !current) throw new NotFoundException('专栏不存在')
+        if (id !== null && !current) throw new NotFoundException(msg('post.folderNotFound'))
         const duplicate = await em.findOne(PostFolder, { label: input.label })
-        if (duplicate && duplicate.id !== id) throw new ConflictException('已存在同名专栏')
+        if (duplicate && duplicate.id !== id) throw new ConflictException(msg('post.folderDuplicate'))
         if (current) {
           if (current.label !== input.label) {
             await registerTaxonomyRename(em, kind, current.label, input.label)
@@ -74,9 +75,9 @@ export class AdminTaxonomyService {
         } else em.create(PostFolder, { label: input.label })
       } else {
         const current = id === null ? null : await em.findOne(PostTag, { id })
-        if (id !== null && !current) throw new NotFoundException('标签不存在')
+        if (id !== null && !current) throw new NotFoundException(msg('post.tagNotFound'))
         const duplicate = await em.findOne(PostTag, { $or: [{ label: input.label }, { slug: input.label }] })
-        if (duplicate && duplicate.id !== id) throw new ConflictException('已存在同名标签')
+        if (duplicate && duplicate.id !== id) throw new ConflictException(msg('post.tagDuplicate'))
         if (current) {
           if (current.label !== input.label) await registerTaxonomyRename(em, kind, current.label, input.label)
           const changed = current.label !== input.label || (input.color !== undefined && current.color !== input.color)
@@ -115,15 +116,15 @@ export class AdminTaxonomyService {
       await lockTaxonomy(em)
       if (kind === 'folders') {
         const folder = await em.findOne(PostFolder, { id })
-        if (!folder) throw new NotFoundException('专栏不存在')
+        if (!folder) throw new NotFoundException(msg('post.folderNotFound'))
         const total = await em.count(Post, { folder: folder.label })
-        if (total) throw new ConflictException(`专栏仍被 ${total} 篇文章引用（含草稿和归档），请先调整文章归属`)
+        if (total) throw new ConflictException(msg('post.folderInUse', { total }))
         em.remove(folder)
       } else {
         const tag = await em.findOne(PostTag, { id })
-        if (!tag) throw new NotFoundException('标签不存在')
+        if (!tag) throw new NotFoundException(msg('post.tagNotFound'))
         const total = await em.count(Post, { tags: tag.id })
-        if (total) throw new ConflictException(`标签仍被 ${total} 篇文章引用（含草稿和归档），请先移除文章标签`)
+        if (total) throw new ConflictException(msg('post.tagInUse', { total }))
         em.remove(tag)
       }
       await em.flush()

@@ -11,6 +11,7 @@ import { SITE_OWNER_ID } from '../../common/constants/site'
 import { FlashService } from './flash.service'
 import type { SaveFlashDto } from './admin-flash.controller'
 import { lockMedia, synchronizeMediaReferences } from '../media/media-references'
+import { msg } from '../../common/i18n'
 
 @Injectable()
 export class AdminFlashService {
@@ -45,11 +46,11 @@ export class AdminFlashService {
   }
   async detail(id: string) {
     const note = await this.em.findOne(FlashNote, { id, userId: SITE_OWNER_ID }, { populate: ['comments'] })
-    if (!note) throw new NotFoundException('闪念不存在')
+    if (!note) throw new NotFoundException(msg('flash.notFound'))
     return (await this.publicFlashes.serialize([note], '', true))[0]!
   }
   async save(id: string | null, input: SaveFlashDto) {
-    if (!id && !input.content) throw new BadRequestException('闪念内容不能为空')
+    if (!id && !input.content) throw new BadRequestException(msg('flash.contentRequired'))
     return this.em.transactional(async (em) => {
       await lockMedia(em)
       const note = id
@@ -67,7 +68,7 @@ export class AdminFlashService {
             createdAt: new Date(),
             updatedAt: new Date(),
           })
-      if (!note) throw new NotFoundException('闪念不存在')
+      if (!note) throw new NotFoundException(msg('flash.notFound'))
       Object.assign(note, Object.fromEntries(Object.entries(input).filter(([, value]) => value !== undefined)))
       if (input.images) {
         note.images = input.images.map((value) => value.trim())
@@ -77,7 +78,7 @@ export class AdminFlashService {
             const url = new URL(value)
             if (!['http:', 'https:'].includes(url.protocol) || url.username || url.password) throw new Error('url')
           } catch {
-            throw new BadRequestException('图片只允许媒体资源链接或完整 HTTP(S) 地址')
+            throw new BadRequestException(msg('flash.imageUrlInvalid'))
           }
         }
       }
@@ -95,13 +96,13 @@ export class AdminFlashService {
     return this.em.transactional(async (em) => {
       await lockMedia(em)
       const count = await em.nativeDelete(FlashNote, { id, userId: SITE_OWNER_ID })
-      if (!count) throw new NotFoundException('闪念不存在')
+      if (!count) throw new NotFoundException(msg('flash.notFound'))
       return { ok: true }
     })
   }
   async removeComment(id: string, commentId: string) {
     const count = await this.em.nativeDelete(FlashComment, { id: commentId, flashNote: { id, userId: SITE_OWNER_ID } })
-    if (!count) throw new NotFoundException('评论不存在')
+    if (!count) throw new NotFoundException(msg('comment.notFound'))
     return { ok: true }
   }
 }

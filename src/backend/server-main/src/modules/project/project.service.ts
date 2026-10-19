@@ -11,6 +11,7 @@ import { submissionHash } from '../moment/moment-values'
 import { projectId, projectValues } from './project-values'
 import type { AdminProjectQuery, ProjectQuery, SaveProjectDto } from './project.dto'
 import { resolveContentRelations, validateContentRelations } from '../content-relations/content-relations'
+import { msg } from '../../common/i18n'
 const publicProjects = { status: 'published', deletedAt: null } as const
 const links = {
   source: { label: '源代码', icon: 'lucide:github' },
@@ -83,7 +84,7 @@ export class ProjectService {
     const item = await this.em.findOne(Project, admin ? { id, deletedAt: null } : { id, ...publicProjects }, {
       populate: ['coverMedia'],
     })
-    if (!item) throw new NotFoundException('项目不存在或尚未公开')
+    if (!item) throw new NotFoundException(msg('project.notFoundOrPrivate'))
     return {
       ...this.serialize(item, admin),
       relatedContent: admin ? item.relatedContent : await resolveContentRelations(this.em, item.relatedContent),
@@ -91,7 +92,7 @@ export class ProjectService {
   }
   async submission(requestId: string) {
     const item = await this.em.findOne(Project, { requestId }, { populate: ['coverMedia'] })
-    if (!item) throw new NotFoundException('尚未找到此提交，请使用原提交标识重试')
+    if (!item) throw new NotFoundException(msg('project.submissionNotFound'))
     return item.deletedAt ? { state: 'deleted', id: item.id } : { state: 'saved', item: this.serialize(item, true) }
   }
   async metadata() {
@@ -115,9 +116,9 @@ export class ProjectService {
   async save(id: number | null, input: SaveProjectDto) {
     if (id !== null) projectId(id)
     if (id === null && (!input.title || !input.requestId || input.revision !== undefined))
-      throw new BadRequestException('创建项目需要标题和唯一提交标识，不能携带编辑版本')
+      throw new BadRequestException(msg('project.createRequiresFields'))
     if (id !== null && (input.revision === undefined || input.requestId !== undefined))
-      throw new BadRequestException('编辑项目需要当前版本，不能携带创建标识')
+      throw new BadRequestException(msg('project.editRequiresRevision'))
     const values = projectValues(input),
       hash = submissionHash(
         Object.fromEntries(
@@ -131,21 +132,21 @@ export class ProjectService {
       if (id === null) {
         const prior = await em.findOne(Project, { requestId: input.requestId })
         if (prior) {
-          if (prior.deletedAt || prior.requestHash !== hash) throw new ConflictException('此提交已处理，请核查原项目')
+          if (prior.deletedAt || prior.requestHash !== hash)
+            throw new ConflictException(msg('project.submissionHandled'))
           return prior.id
         }
       }
       const { coverMediaId, ...fields } = values
       const media = coverMediaId ? await em.findOne(MediaAsset, { id: coverMediaId, deletedAt: null }) : null
       if (coverMediaId && (!media || !media.mimeType.startsWith('image/') || media.width < 1 || media.height < 1))
-        throw new BadRequestException('请选择有效的媒体库封面')
+        throw new BadRequestException(msg('project.coverInvalid'))
       const item =
         id !== null
           ? await em.findOne(Project, { id, deletedAt: null }, { lockMode: LockMode.PESSIMISTIC_WRITE })
           : em.create(Project, { title: input.title!, requestId: input.requestId, requestHash: hash })
-      if (!item) throw new NotFoundException('项目不存在或已删除')
-      if (id !== null && item.revision !== input.revision)
-        throw new ConflictException('项目已被修改，请保留输入并重新读取')
+      if (!item) throw new NotFoundException(msg('project.notFoundOrDeleted'))
+      if (id !== null && item.revision !== input.revision) throw new ConflictException(msg('project.modifiedKeepInput'))
       if (fields.relatedContent !== undefined)
         fields.relatedContent = await validateContentRelations(
           em,
@@ -175,9 +176,9 @@ export class ProjectService {
     return this.em.transactional(async (em) => {
       await lockMedia(em)
       const item = await em.findOne(Project, { id }, { lockMode: LockMode.PESSIMISTIC_WRITE })
-      if (!item) throw new NotFoundException('项目不存在')
+      if (!item) throw new NotFoundException(msg('project.notFound'))
       if (item.deletedAt) return { ok: true }
-      if (item.revision !== revision) throw new ConflictException('项目已变化，请重新读取后确认删除')
+      if (item.revision !== revision) throw new ConflictException(msg('project.changedBeforeDelete'))
       item.deletedAt = new Date()
       item.revision++
       await em.nativeDelete(MediaReference, { project: item })

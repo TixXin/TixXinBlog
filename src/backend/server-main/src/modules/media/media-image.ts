@@ -3,6 +3,7 @@
  * @description 校验真实图片格式并重新编码，丢弃尾随内容和原始元信息；按白名单宽度生成可再生的 WebP 变体。
  */
 import { BadRequestException } from '@nestjs/common'
+import { msg } from '../../common/i18n'
 import sharp from 'sharp'
 
 export const MAX_IMAGE_BYTES = 8 * 1024 * 1024
@@ -27,9 +28,9 @@ export interface UploadedImage {
 }
 export async function normalizeImage(file?: UploadedImage) {
   if (!file?.buffer?.length || file.buffer.length > MAX_IMAGE_BYTES)
-    throw new BadRequestException('请选择不超过 8MB 的图片')
+    throw new BadRequestException(msg('media.tooLarge'))
   let name = file.originalname
-  if (typeof name !== 'string') throw new BadRequestException('文件名不合法')
+  if (typeof name !== 'string') throw new BadRequestException(msg('media.fileNameInvalid'))
   if ([...name].every((value) => value.charCodeAt(0) <= 255)) {
     const decoded = Buffer.from(name, 'latin1').toString('utf8')
     if (!decoded.includes('\uFFFD')) name = decoded
@@ -41,7 +42,7 @@ export async function normalizeImage(file?: UploadedImage) {
     /[\\/\u202a-\u202e\u2066-\u2069]/.test(name) ||
     !/\.(?:jpe?g|png|webp)$/i.test(name)
   )
-    throw new BadRequestException('文件名不合法，仅支持 JPEG、PNG 和 WebP')
+    throw new BadRequestException(msg('media.fileTypeUnsupported'))
   const bytes = file.buffer
   const format = bytes.subarray(0, 8).equals(Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]))
     ? 'png'
@@ -50,7 +51,7 @@ export async function normalizeImage(file?: UploadedImage) {
       : bytes.toString('ascii', 0, 4) === 'RIFF' && bytes.toString('ascii', 8, 12) === 'WEBP'
         ? 'webp'
         : null
-  if (!format) throw new BadRequestException('文件内容不是受支持的图片')
+  if (!format) throw new BadRequestException(msg('media.contentUnsupported'))
   try {
     const image = sharp(bytes, { limitInputPixels: MAX_INPUT_PIXELS, failOn: 'warning' })
     const metadata = await image.metadata()
@@ -64,7 +65,7 @@ export async function normalizeImage(file?: UploadedImage) {
       .toBuffer({ resolveWithObject: true })
     return { name, buffer: result.data, width: result.info.width, height: result.info.height }
   } catch {
-    throw new BadRequestException('图片解码失败、尺寸过大或包含不支持的多帧内容')
+    throw new BadRequestException(msg('media.decodeFailed'))
   }
 }
 

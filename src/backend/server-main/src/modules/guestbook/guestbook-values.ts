@@ -4,6 +4,7 @@ import type { FilterQuery } from '@mikro-orm/core'
 import type { GuestbookMessage } from '../../entities/guestbook-message.entity'
 import type { GuestbookFilters } from './guestbook.dto'
 import { submissionHash } from '../moment/moment-values'
+import { msg } from '../../common/i18n'
 export const PUBLIC_GUESTBOOK = { status: 'published' as const, deletedAt: null }
 /** 留言独立公开；只将尚无公开博主直接回复的游客根留言计入待回复。 */
 export function unansweredGuestbookSql(alias = 'g'): string {
@@ -18,7 +19,7 @@ export const GUESTBOOK_RULES = [
   { id: 3, text: '请勿发布个人隐私、广告或与讨论无关的内容。' },
 ]
 export function guestbookId(id: number) {
-  if (!Number.isSafeInteger(id) || id < 1 || id > 2147483647) throw new BadRequestException('留言编号不合法')
+  if (!Number.isSafeInteger(id) || id < 1 || id > 2147483647) throw new BadRequestException(msg('guestbook.idInvalid'))
   return id
 }
 export function visibleGuestbook(visitor: string): FilterQuery<GuestbookMessage> {
@@ -65,6 +66,6 @@ export function decodeGuestbookCursor(value: string, query: GuestbookFilters): F
       throw new Error('cursor')
     return { $or: [{ createdAt: { $lt: date } }, { createdAt: date, id: { $lt: parsed.id } }] }
   } catch {
-    throw new BadRequestException('留言游标无效或筛选已变化，请重新加载')
+    throw new BadRequestException(msg('guestbook.cursorInvalid'))
   }
 }

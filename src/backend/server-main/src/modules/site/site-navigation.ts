@@ -5,6 +5,7 @@
  * 缺省值等于此前前端写死的效果，升级后站点外观不变。
  */
 import { IsBoolean, IsIn, IsString, MaxLength, MinLength, ValidateIf } from 'class-validator'
+import { msg, type LocalizedMessage } from '../../common/i18n'
 
 /** 内置路由模块清单；导航只控制展示与顺序，路由本身始终可访问 */
 export const SITE_NAV_KEYS = [
@@ -118,42 +119,50 @@ export function isSitePath(value: string) {
   return /^\/(?!\/)[^\s\\]*$/.test(value)
 }
 
-export class SiteExtrasError extends Error {}
+/** 校验失败；localized 保留字典 key，转抛为 HTTP 异常时按请求语言翻译 */
+export class SiteExtrasError extends Error {
+  readonly localized: LocalizedMessage | string
+  constructor(message: LocalizedMessage | string) {
+    super(typeof message === 'string' ? message : message.message)
+    this.localized = message
+  }
+}
 
 /**
  * 校验并规范化调用方提供的新字段；未提供的字段保持 undefined，由调用方决定沿用当前值。
  * 只保留每种条目允许的键，内置模块缺失时按显示追加到末尾，首页不能隐藏。
  */
 export function normalizeSiteExtrasInput(input: Partial<Record<keyof SiteExtrasValues, unknown>>) {
-  const fail = (message: string): never => {
+  const fail = (message: LocalizedMessage): never => {
     throw new SiteExtrasError(message)
   }
   const result: Partial<SiteExtrasValues> = {}
   if (input.navigation !== undefined) {
-    if (!Array.isArray(input.navigation)) fail('导航配置格式不正确')
+    if (!Array.isArray(input.navigation)) fail(msg('site.navFormatInvalid'))
     const items = input.navigation as Record<string, unknown>[]
     const keys = new Set<string>()
     const urls = new Set<string>()
     const navigation: SiteNavItem[] = []
     for (const item of items) {
-      if (!item || typeof item !== 'object') fail('导航配置格式不正确')
-      if (typeof item.visible !== 'boolean') fail('导航显隐需为布尔值')
+      if (!item || typeof item !== 'object') fail(msg('site.navFormatInvalid'))
+      if (typeof item.visible !== 'boolean') fail(msg('site.navVisibleBoolean'))
       if (item.type === 'route') {
-        if (['label', 'url', 'newTab'].some((key) => item[key] !== undefined)) fail('内置导航项不能自定义名称或地址')
+        if (['label', 'url', 'newTab'].some((key) => item[key] !== undefined)) fail(msg('site.navRouteCustomized'))
         const key = String(item.key)
-        if (!(SITE_NAV_KEYS as readonly string[]).includes(key)) fail('导航包含未知模块')
-        if (keys.has(key)) fail('导航模块重复')
+        if (!(SITE_NAV_KEYS as readonly string[]).includes(key)) fail(msg('site.navUnknownModule'))
+        if (keys.has(key)) fail(msg('site.navModuleDuplicate'))
         keys.add(key)
-        if (key === 'home' && !item.visible) fail('首页导航不能隐藏')
+        if (key === 'home' && !item.visible) fail(msg('site.navHomeHidden'))
         navigation.push({ type: 'route', key: key as SiteNavKey, visible: item.visible as boolean })
       } else if (item.type === 'external') {
-        if (item.key !== undefined) fail('外链导航项不能指定模块')
+        if (item.key !== undefined) fail(msg('site.navExternalKey'))
         const label = typeof item.label === 'string' ? item.label.trim() : ''
         const url = typeof item.url === 'string' ? item.url.trim() : ''
-        if (!label || label.length > SITE_LIMITS.navLabel) fail(`外链导航名称需为 1–${SITE_LIMITS.navLabel} 个字符`)
-        if (url.length > SITE_LIMITS.url || !isHttpUrl(url)) fail('外链导航仅支持 http(s) 地址')
-        if (typeof item.newTab !== 'boolean') fail('外链导航需说明是否新窗口打开')
-        if (urls.has(url)) fail('外链导航地址重复')
+        if (!label || label.length > SITE_LIMITS.navLabel)
+          fail(msg('site.navExternalLabelLength', { max: SITE_LIMITS.navLabel }))
+        if (url.length > SITE_LIMITS.url || !isHttpUrl(url)) fail(msg('site.navExternalUrlInvalid'))
+        if (typeof item.newTab !== 'boolean') fail(msg('site.navExternalNewTab'))
+        if (urls.has(url)) fail(msg('site.navExternalUrlDuplicate'))
         urls.add(url)
         navigation.push({
           type: 'external',
@@ -162,37 +171,37 @@ export function normalizeSiteExtrasInput(input: Partial<Record<keyof SiteExtrasV
           newTab: item.newTab as boolean,
           visible: item.visible as boolean,
         })
-      } else fail('导航条目类型不正确')
+      } else fail(msg('site.navItemTypeInvalid'))
     }
-    if (urls.size > SITE_LIMITS.externalNav) fail(`外链导航最多 ${SITE_LIMITS.externalNav} 个`)
+    if (urls.size > SITE_LIMITS.externalNav) fail(msg('site.navExternalTooMany', { max: SITE_LIMITS.externalNav }))
     for (const key of SITE_NAV_KEYS) if (!keys.has(key)) navigation.push({ type: 'route', key, visible: true })
     result.navigation = navigation
   }
   if (input.footerLinks !== undefined) {
-    if (!Array.isArray(input.footerLinks)) fail('页脚链接格式不正确')
+    if (!Array.isArray(input.footerLinks)) fail(msg('site.footerFormatInvalid'))
     const links = input.footerLinks as Record<string, unknown>[]
-    if (links.length > SITE_LIMITS.footerLinks) fail(`页脚链接最多 ${SITE_LIMITS.footerLinks} 个`)
+    if (links.length > SITE_LIMITS.footerLinks) fail(msg('site.footerTooMany', { max: SITE_LIMITS.footerLinks }))
     const seen = new Set<string>()
     result.footerLinks = links.map((link) => {
-      if (!link || typeof link !== 'object') return fail('页脚链接格式不正确')
+      if (!link || typeof link !== 'object') return fail(msg('site.footerFormatInvalid'))
       const label = typeof link.label === 'string' ? link.label.trim() : ''
       const url = typeof link.url === 'string' ? link.url.trim() : ''
-      if (!label || label.length > SITE_LIMITS.footerLabel) fail(`页脚链接名称需为 1–${SITE_LIMITS.footerLabel} 个字符`)
-      if (url.length > SITE_LIMITS.url || (!isSitePath(url) && !isHttpUrl(url)))
-        fail('页脚链接仅支持站内路径或 http(s) 地址')
-      if (typeof link.newTab !== 'boolean') fail('页脚链接需说明是否新窗口打开')
-      if (seen.has(url)) fail('页脚链接地址重复')
+      if (!label || label.length > SITE_LIMITS.footerLabel)
+        fail(msg('site.footerLabelLength', { max: SITE_LIMITS.footerLabel }))
+      if (url.length > SITE_LIMITS.url || (!isSitePath(url) && !isHttpUrl(url))) fail(msg('site.footerUrlInvalid'))
+      if (typeof link.newTab !== 'boolean') fail(msg('site.footerNewTab'))
+      if (seen.has(url)) fail(msg('site.footerUrlDuplicate'))
       seen.add(url)
       return { label, url, newTab: link.newTab as boolean }
     })
   }
   if (input.quotes !== undefined) {
-    if (!Array.isArray(input.quotes)) fail('每日一言格式不正确')
+    if (!Array.isArray(input.quotes)) fail(msg('site.quotesFormatInvalid'))
     const quotes = (input.quotes as unknown[]).map((quote) => (typeof quote === 'string' ? quote.trim() : ''))
-    if (quotes.length > SITE_LIMITS.quotes) fail(`每日一言最多 ${SITE_LIMITS.quotes} 条`)
+    if (quotes.length > SITE_LIMITS.quotes) fail(msg('site.quotesTooMany', { max: SITE_LIMITS.quotes }))
     if (quotes.some((quote) => !quote || quote.length > SITE_LIMITS.quote))
-      fail(`每日一言每条需为 1–${SITE_LIMITS.quote} 个字符`)
-    if (new Set(quotes).size !== quotes.length) fail('每日一言不能重复')
+      fail(msg('site.quoteLength', { max: SITE_LIMITS.quote }))
+    if (new Set(quotes).size !== quotes.length) fail(msg('site.quotesDuplicate'))
     result.quotes = quotes
   }
   for (const [key, max] of [
@@ -203,10 +212,10 @@ export function normalizeSiteExtrasInput(input: Partial<Record<keyof SiteExtrasV
     const value = input[key]
     if (value === undefined) continue
     if (typeof value !== 'string' || value.trim().length > max || /[\r\n]/.test(value))
-      fail('备案号、备案链接或版权文案格式不正确')
+      fail(msg('site.filingFormatInvalid'))
     result[key] = (value as string).trim()
   }
-  if (result.icpUrl && !isHttpUrl(result.icpUrl)) fail('备案链接仅支持 http(s) 地址')
+  if (result.icpUrl && !isHttpUrl(result.icpUrl)) fail(msg('site.filingUrlInvalid'))
   return result
 }
 

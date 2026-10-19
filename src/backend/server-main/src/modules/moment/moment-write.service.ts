@@ -11,6 +11,7 @@ import type { SaveMomentDto } from './moment.dto'
 import { MomentReadService } from './moment-read.service'
 import { momentValues, submissionHash } from './moment-values'
 import { lockMedia, synchronizeMediaReferences } from '../media/media-references'
+import { msg } from '../../common/i18n'
 
 @Injectable()
 export class MomentWriteService {
@@ -20,9 +21,10 @@ export class MomentWriteService {
   ) {}
 
   async save(id: string | null, input: SaveMomentDto) {
-    if (!id && (!input.content?.trim() || !input.requestId)) throw new BadRequestException('发布需要正文和唯一提交标识')
-    if (id && input.revision === undefined) throw new BadRequestException('请先读取动态后再编辑')
-    if (id && input.requestId !== undefined) throw new BadRequestException('编辑不接受发布提交标识')
+    if (!id && (!input.content?.trim() || !input.requestId))
+      throw new BadRequestException(msg('moment.publishRequiresContent'))
+    if (id && input.revision === undefined) throw new BadRequestException(msg('moment.editRequiresRevision'))
+    if (id && input.requestId !== undefined) throw new BadRequestException(msg('moment.editRejectsRequestId'))
     const values = momentValues(input)
     const hash = submissionHash(values)
     const savedId = await this.em.transactional(async (em) => {
@@ -31,16 +33,15 @@ export class MomentWriteService {
         const existing = await em.findOne(Moment, { requestId: input.requestId })
         if (existing) {
           if (existing.deletedAt || existing.requestHash !== hash)
-            throw new ConflictException('提交标识已处理，请重新读取动态')
+            throw new ConflictException(msg('moment.submissionHandled'))
           return existing.id
         }
       }
       const note = id
         ? await em.findOne(Moment, { id, deletedAt: null }, { lockMode: LockMode.PESSIMISTIC_WRITE })
         : em.create(Moment, { content: input.content!, requestId: input.requestId, requestHash: hash })
-      if (!note) throw new NotFoundException('动态不存在或已删除')
-      if (id && note.revision !== input.revision)
-        throw new ConflictException('动态已被更新，请保留输入并重新读取后再保存')
+      if (!note) throw new NotFoundException(msg('moment.notFoundOrDeleted'))
+      if (id && note.revision !== input.revision) throw new ConflictException(msg('moment.updatedKeepInput'))
       const { linkedArticleId, ...fields } = values
       if (linkedArticleId !== undefined) {
         // 已建立的引用允许随文章撤回保留，公开序列化仍隐藏其信息；新增引用必须指向公开文章。
@@ -50,7 +51,7 @@ export class MomentWriteService {
           : linkedArticleId
             ? await em.findOne(Post, { id: linkedArticleId, deletedAt: null, status: 'published' })
             : null
-        if (linkedArticleId && !post) throw new BadRequestException('只能引用已公开的站内文章')
+        if (linkedArticleId && !post) throw new BadRequestException(msg('moment.postNotPublic'))
         note.linkedArticle = post
         if (post) note.linkedLink = null
       }
@@ -75,9 +76,9 @@ export class MomentWriteService {
     return this.em.transactional(async (em) => {
       await lockMedia(em)
       const note = await em.findOne(Moment, { id }, { lockMode: LockMode.PESSIMISTIC_WRITE })
-      if (!note) throw new NotFoundException('动态不存在')
+      if (!note) throw new NotFoundException(msg('moment.notFound'))
       if (note.deletedAt) return { ok: true }
-      if (note.revision !== revision) throw new ConflictException('动态已被更新，请刷新后确认删除')
+      if (note.revision !== revision) throw new ConflictException(msg('moment.updatedBeforeDelete'))
       note.deletedAt = new Date()
       note.revision += 1
       note.likes = 0

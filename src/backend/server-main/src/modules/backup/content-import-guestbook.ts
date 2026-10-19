@@ -5,6 +5,7 @@ import { ConflictException } from '@nestjs/common'
 import { GuestbookMessage } from '../../entities/guestbook-message.entity'
 import type { ContentImportPlan, ContentImportResult } from '../../entities/content-import.entity'
 import type { ContentPackage } from './content-package'
+import { msg } from '../../common/i18n'
 import { synchronizeMediaReferences } from '../media/media-references'
 
 export async function importGuestbook(
@@ -18,7 +19,7 @@ export async function importGuestbook(
   const plans = new Map((plan.guestbook ?? []).map((item) => [item.sourceId, item]))
   for (const source of payload.guestbook ?? []) {
     const target = plans.get(source.sourceId)
-    if (!target) throw new ConflictException('留言导入计划缺失，请重新预览')
+    if (!target) throw new ConflictException(msg('backup.guestbookPlanMissing'))
     if (target.skip) {
       if (target.targetId !== undefined) map.set(source.sourceId, target.targetId)
       continue
@@ -46,7 +47,7 @@ export async function importGuestbook(
   for (const target of plans.values()) {
     if (target.duplicateOf !== undefined) {
       const id = map.get(target.duplicateOf)
-      if (!id) throw new ConflictException('相同留言未能映射，迁入已回滚')
+      if (!id) throw new ConflictException(msg('backup.guestbookDuplicateUnmapped'))
       map.set(target.sourceId, id)
     }
   }
@@ -55,7 +56,7 @@ export async function importGuestbook(
     if (!note) continue
     if (source.replyToId !== null) {
       const parent = map.get(source.replyToId)
-      if (!parent) throw new ConflictException('留言引用未能映射，迁入已回滚')
+      if (!parent) throw new ConflictException(msg('backup.guestbookParentUnmapped'))
       note.replyTo = em.getReference(GuestbookMessage, parent)
     }
     if (!note.deletedAt)

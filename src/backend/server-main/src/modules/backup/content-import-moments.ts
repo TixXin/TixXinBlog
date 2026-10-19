@@ -7,6 +7,7 @@ import { MomentComment } from '../../entities/moment-comment.entity'
 import { Post } from '../../entities/post.entity'
 import type { ContentImportPlan, ContentImportResult } from '../../entities/content-import.entity'
 import type { ContentPackage } from './content-package'
+import { msg } from '../../common/i18n'
 import { synchronizeMediaReferences } from '../media/media-references'
 
 export async function importMoments(
@@ -22,7 +23,7 @@ export async function importMoments(
     const postId = sourcePostId
       ? (result.posts.find((post) => post.sourceId === sourcePostId)?.id ?? target.linkedArticleId)
       : null
-    if (sourcePostId && !postId) throw new ConflictException('动态引用文章未能映射，迁入已回滚')
+    if (sourcePostId && !postId) throw new ConflictException(msg('backup.momentPostUnmapped'))
     const note = em.create(Moment, {
       ...values,
       content: values.content!,

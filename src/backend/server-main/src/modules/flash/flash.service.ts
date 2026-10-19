@@ -29,6 +29,7 @@ const FLASH_NOT_FOUND = 3001
 
 /** 单博主场景默认归属(requirements.md:无多租户) */
 import { SITE_OWNER_ID } from '../../common/constants/site'
+import { msg } from '../../common/i18n'
 
 const DEFAULT_AVATAR = '/avatar.svg'
 const DAY_MS = 86_400_000
@@ -135,8 +136,8 @@ export class FlashService {
 
   /** 公开条件:仅站点所有者的已发布、未归档闪念,叠加标签(精确)、类型与 UTC 日期范围 */
   private publicWhere(query: QueryFlashDto): FilterQuery<FlashNote> {
-    if (query.archived) throw new BadRequestException('归档内容请使用管理员接口读取')
-    if (query.userId && query.userId !== SITE_OWNER_ID) throw new BadRequestException('此接口只提供本站公开闪念')
+    if (query.archived) throw new BadRequestException(msg('flash.archivedAdminOnly'))
+    if (query.userId && query.userId !== SITE_OWNER_ID) throw new BadRequestException(msg('flash.ownerOnly'))
     const where: FilterQuery<FlashNote> = { userId: SITE_OWNER_ID, isDraft: false, isArchived: false }
     if (query.tag) where.tags = { $contains: [query.tag] }
     if (query.type) where.type = query.type
@@ -175,7 +176,7 @@ export class FlashService {
       { id, userId: SITE_OWNER_ID, isDraft: false, isArchived: false },
       { populate: ['comments'] },
     )
-    if (!note) throw new BusinessException(FLASH_NOT_FOUND, '闪念不存在', HttpStatus.NOT_FOUND)
+    if (!note) throw new BusinessException(FLASH_NOT_FOUND, msg('flash.notFound'), HttpStatus.NOT_FOUND)
     return (await this.serialize([note], visitor))[0]!
   }
 
@@ -272,7 +273,7 @@ export class FlashService {
         { id, userId: SITE_OWNER_ID, isDraft: false, isArchived: false },
         { lockMode: LockMode.PESSIMISTIC_WRITE },
       )
-      if (!note) throw new BusinessException(FLASH_NOT_FOUND, '闪念不存在', HttpStatus.NOT_FOUND)
+      if (!note) throw new BusinessException(FLASH_NOT_FOUND, msg('flash.notFound'), HttpStatus.NOT_FOUND)
       const existing = await em.findOne(FlashLike, { flashNote: note, visitorIdHash })
       if (existing) {
         em.remove(existing)
@@ -294,7 +295,7 @@ export class FlashService {
         { id, userId: SITE_OWNER_ID, isDraft: false, isArchived: false },
         { lockMode: LockMode.PESSIMISTIC_WRITE },
       )
-      if (!note) throw new BusinessException(FLASH_NOT_FOUND, '闪念不存在', HttpStatus.NOT_FOUND)
+      if (!note) throw new BusinessException(FLASH_NOT_FOUND, msg('flash.notFound'), HttpStatus.NOT_FOUND)
       // 与文章、朋友圈评论共用站点评论策略;每次读取最新值,避免博主刚开启先审后发时仍直接公开。
       const policy = await em.findOne(CommentPolicy, { id: 'default' }, { refresh: true })
       const comment = em.create(FlashComment, {

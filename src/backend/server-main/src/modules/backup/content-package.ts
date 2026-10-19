@@ -36,6 +36,7 @@ import { parsePackageSubscriptions } from './content-package-subscriptions'
 import type { PackageSubscription } from './content-package-subscriptions'
 export type { PackageSubscription } from './content-package-subscriptions'
 import type { ContentRelation } from '../../common/types/content-relation'
+import { msg, type MessageKey } from '../../common/i18n'
 export const MAX_PACKAGE_BYTES = 50 * 1024 * 1024
 export interface PackageComment {
   sourceId: number
@@ -213,8 +214,12 @@ export function packageHash(value: unknown): string {
     )
     .digest('hex')
 }
-function fail(path: string): never {
-  throw new BadRequestException(`内容包字段不合法：${path}`)
+/** 中文字段名各自登记为字典条目，只有英文字段路径作为 {path} 参数 */
+type PackageFieldKey = Extract<MessageKey, `package.field${string}`>
+function fail(path: string | PackageFieldKey): never {
+  throw new BadRequestException(
+    path.startsWith('package.field') ? msg(path as PackageFieldKey) : msg('package.invalidField', { path }),
+  )
 }
 function text(value: unknown, path: string, max: number, min = 0): string {
   if (typeof value !== 'string' || value.length < min || value.length > max || (min > 0 && !value.trim()))
@@ -260,25 +265,24 @@ function dto<T extends object>(type: new () => T, value: unknown, path: string):
   return result
 }
 export async function parseContentPackage(buffer: Buffer): Promise<ContentPackage> {
-  if (!buffer.length || buffer.length > MAX_PACKAGE_BYTES)
-    throw new PayloadTooLargeException('内容包不能超过 50MB；较大站点请使用完整维护备份')
+  if (!buffer.length || buffer.length > MAX_PACKAGE_BYTES) throw new PayloadTooLargeException(msg('package.tooLarge'))
   let input: unknown
   try {
     input = JSON.parse(new TextDecoder('utf-8', { fatal: true }).decode(buffer))
   } catch {
-    throw new BadRequestException('请选择有效的 UTF-8 JSON 内容包')
+    throw new BadRequestException(msg('package.invalidJson'))
   }
   let nodes = 0
   const checkKeys = (value: unknown, depth = 0) => {
-    if (++nodes > 1000000 || depth > 32) fail('数据层级或数量')
+    if (++nodes > 1000000 || depth > 32) fail('package.fieldNestingOrCount')
     if (value && typeof value === 'object')
       for (const [key, child] of Object.entries(value)) {
-        if (['__proto__', 'constructor', 'prototype'].includes(key)) fail('不支持的字段')
+        if (['__proto__', 'constructor', 'prototype'].includes(key)) fail('package.fieldUnsupportedKey')
         checkKeys(child, depth + 1)
       }
   }
   checkKeys(input)
-  const source = record(input, '根对象', [
+  const source = record(input, 'package.fieldRoot', [
     'format',
     'version',
     'exportedAt',
@@ -306,35 +310,36 @@ export async function parseContentPackage(buffer: Buffer): Promise<ContentPackag
     ![1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13].includes(Number(source.version)) ||
     typeof source.version !== 'number'
   )
-    throw new BadRequestException('不支持的内容包格式或版本')
-  if (Number(source.version) < 9 && source.omittedRelations !== undefined) fail('旧版本不支持关联省略计数')
+    throw new BadRequestException(msg('package.unsupportedVersion'))
+  if (Number(source.version) < 9 && source.omittedRelations !== undefined) fail('package.fieldLegacyOmittedRelations')
   const omittedRelations = Number(source.version) >= 9 ? (source.omittedRelations as number) : 0
-  if (!Number.isSafeInteger(omittedRelations) || omittedRelations < 0 || omittedRelations > 72000) fail('关联省略计数')
+  if (!Number.isSafeInteger(omittedRelations) || omittedRelations < 0 || omittedRelations > 72000)
+    fail('package.fieldOmittedRelations')
   const relations = (value: unknown, path: string, type: ContentRelation['type'], id: number): ContentRelation[] => {
     if (Number(source.version) < 9) {
-      if (value !== undefined) fail('旧版本不支持结构化关联')
+      if (value !== undefined) fail('package.fieldLegacyRelations')
       return []
     }
     const seen = new Set<string>()
     return array(value, path, 12).map((item) => {
       const row = record(item, path, ['type', 'id'])
-      if (!['post', 'project', 'gallery'].includes(String(row.type))) fail('关联类型')
+      if (!['post', 'project', 'gallery'].includes(String(row.type))) fail('package.fieldRelationType')
       const targetId = number(row.id, path + '.id')
       const key = `${row.type}:${targetId}`
-      if (seen.has(key) || (row.type === type && targetId === id)) fail('重复或自身关联')
+      if (seen.has(key) || (row.type === type && targetId === id)) fail('package.fieldRelationDuplicateOrSelf')
       seen.add(key)
       return { type: row.type as ContentRelation['type'], id: targetId }
     })
   }
-  if (source.version === 1 && source.moments !== undefined) fail('v1 不支持朋友圈字段')
-  if (Number(source.version) < 3 && source.guestbook !== undefined) fail('v1/v2 不支持留言字段')
+  if (source.version === 1 && source.moments !== undefined) fail('package.fieldV1Moments')
+  if (Number(source.version) < 3 && source.guestbook !== undefined) fail('package.fieldV2Guestbook')
   if (Number(source.version) < 4 && (source.gallery !== undefined || source.gallerySettings !== undefined))
-    fail('v1/v2/v3 不支持图库字段或器材配置')
-  if (Number(source.version) < 5 && source.projects !== undefined) fail('v1/v2/v3/v4 不支持项目字段')
+    fail('package.fieldV3Gallery')
+  if (Number(source.version) < 5 && source.projects !== undefined) fail('package.fieldV4Projects')
   if (Number(source.version) < 6 && (source.links !== undefined || source.linkSettings !== undefined))
-    fail('v1/v2/v3/v4/v5 不支持友链或规则配置')
-  if (Number(source.version) < 10 && source.prompts !== undefined) fail('v1–v9 不支持图片提示词')
-  if (Number(source.version) < 11 && source.subscriptions !== undefined) fail('v1–v10 不支持平台订阅费')
+    fail('package.fieldV5Links')
+  if (Number(source.version) < 10 && source.prompts !== undefined) fail('package.fieldV9Prompts')
+  if (Number(source.version) < 11 && source.subscriptions !== undefined) fail('package.fieldV10Subscriptions')
   const subscriptions = parsePackageSubscriptions(Number(source.version) >= 11 ? source.subscriptions : [])
   const mediaIncluded = boolean(source.mediaIncluded, 'mediaIncluded')
   let commentsTotal = 0
@@ -365,28 +370,29 @@ export async function parseContentPackage(buffer: Buffer): Promise<ContentPackag
         'status',
         'createdAt',
       ])
-      const avatar = text(row.avatar, '评论头像', 2048)
-      if (!packageImageUrl(avatar) || !COMMENT_STATUSES.includes(row.status as CommentStatus)) fail('评论状态或头像')
+      const avatar = text(row.avatar, 'package.fieldCommentAvatar', 2048)
+      if (!packageImageUrl(avatar) || !COMMENT_STATUSES.includes(row.status as CommentStatus))
+        fail('package.fieldCommentStatusOrAvatar')
       return {
-        sourceId: number(row.sourceId, '评论编号'),
-        parentId: row.parentId === null ? null : number(row.parentId, '父评论编号'),
-        author: text(row.author, '评论作者', 80, 1),
+        sourceId: number(row.sourceId, 'package.fieldCommentId'),
+        parentId: row.parentId === null ? null : number(row.parentId, 'package.fieldCommentParentId'),
+        author: text(row.author, 'package.fieldCommentAuthor', 80, 1),
         avatar,
-        content: text(row.content, '评论内容', 1000, 1),
-        isOwner: boolean(row.isOwner, '博主标记'),
+        content: text(row.content, 'package.fieldCommentContent', 1000, 1),
+        isOwner: boolean(row.isOwner, 'package.fieldCommentIsOwner'),
         status: row.status as CommentStatus,
-        createdAt: date(row.createdAt, '评论时间'),
+        createdAt: date(row.createdAt, 'package.fieldCommentCreatedAt'),
       }
     })
     commentsTotal += comments.length
     const map = new Map(comments.map((comment) => [comment.sourceId, comment]))
-    if (map.size !== comments.length) fail('重复评论编号')
+    if (map.size !== comments.length) fail('package.fieldCommentIdDuplicate')
     for (const comment of comments) {
       let cursor = comment
       let depth = 0
       while (cursor.parentId !== null) {
         const parent = map.get(cursor.parentId)
-        if (!parent || ++depth > 2) fail('评论层级或跨文章引用')
+        if (!parent || ++depth > 2) fail('package.fieldCommentNesting')
         cursor = parent
       }
     }
@@ -399,41 +405,42 @@ export async function parseContentPackage(buffer: Buffer): Promise<ContentPackag
       comments,
     }
   })
-  if (new Set(posts.map((post) => post.sourceId)).size !== posts.length) fail('重复文章编号')
+  if (new Set(posts.map((post) => post.sourceId)).size !== posts.length) fail('package.fieldPostIdDuplicate')
   const flashes = array(source.flashes, 'flashes', 2000).map((value, index): PackageFlash => {
     const row = record(value, `flashes[${index}]`, ['sourceId', 'createdAt', 'values', 'comments'])
-    const values = dto(SaveFlashDto, row.values, '闪念字段')
+    const values = dto(SaveFlashDto, row.values, 'package.fieldFlashValues')
     if (
       !values.content?.trim() ||
       (values.images ?? []).some((url) => !packageImageUrl(url)) ||
       (values.tags ?? []).some((tag) => !tag.trim())
     )
-      fail('闪念内容、标签或图片')
+      fail('package.fieldFlashContent')
     // v13 才引入闪念评论审核状态：旧包按未知字段拒绝夹带，读取时一律视为已发布。
     const withStatus = Number(source.version) >= 13
-    const comments = array(row.comments, '闪念评论', 10000).map((value) => {
-      const comment = record(value, '闪念评论', [
+    const comments = array(row.comments, 'package.fieldFlashComment', 10000).map((value) => {
+      const comment = record(value, 'package.fieldFlashComment', [
         'author',
         'avatar',
         'content',
         'createdAt',
         ...(withStatus ? ['status'] : []),
       ])
-      const avatar = text(comment.avatar, '闪念评论头像', 2048)
-      if (!packageImageUrl(avatar)) fail('闪念评论头像')
-      if (withStatus && !FLASH_COMMENT_STATUSES.includes(comment.status as FlashCommentStatus)) fail('闪念评论状态')
+      const avatar = text(comment.avatar, 'package.fieldFlashCommentAvatar', 2048)
+      if (!packageImageUrl(avatar)) fail('package.fieldFlashCommentAvatar')
+      if (withStatus && !FLASH_COMMENT_STATUSES.includes(comment.status as FlashCommentStatus))
+        fail('package.fieldFlashCommentStatus')
       return {
-        author: text(comment.author, '闪念评论作者', 80, 1),
+        author: text(comment.author, 'package.fieldFlashCommentAuthor', 80, 1),
         avatar,
-        content: text(comment.content, '闪念评论内容', 1000, 1),
+        content: text(comment.content, 'package.fieldFlashCommentContent', 1000, 1),
         status: withStatus ? (comment.status as FlashCommentStatus) : 'published',
-        createdAt: date(comment.createdAt, '闪念评论时间'),
+        createdAt: date(comment.createdAt, 'package.fieldFlashCommentCreatedAt'),
       }
     })
     commentsTotal += comments.length
     return {
-      sourceId: text(row.sourceId, '闪念编号', 120, 1),
-      createdAt: date(row.createdAt, '闪念时间'),
+      sourceId: text(row.sourceId, 'package.fieldFlashId', 120, 1),
+      createdAt: date(row.createdAt, 'package.fieldFlashCreatedAt'),
       values,
       comments,
     }
@@ -447,10 +454,10 @@ export async function parseContentPackage(buffer: Buffer): Promise<ContentPackag
         fail(`${path}.values`)
       const values = momentValues(rawValues)
       if (values.linkedArticleId && !posts.some((post) => post.sourceId === values.linkedArticleId))
-        fail('动态引用的文章不在内容包中')
+        fail('package.fieldMomentArticleMissing')
       const comments = array(row.comments, `${path}.comments`, 10000).map(
         (value): PackageMoment['comments'][number] => {
-          const comment = record(value, '动态评论', [
+          const comment = record(value, 'package.fieldMomentComment', [
             'sourceId',
             'author',
             'avatar',
@@ -460,32 +467,34 @@ export async function parseContentPackage(buffer: Buffer): Promise<ContentPackag
             'deleted',
             'createdAt',
           ])
-          if (!MOMENT_COMMENT_STATUSES.includes(comment.status as MomentCommentStatus)) fail('动态评论状态')
+          if (!MOMENT_COMMENT_STATUSES.includes(comment.status as MomentCommentStatus))
+            fail('package.fieldMomentCommentStatus')
           return {
-            sourceId: text(comment.sourceId, '动态评论编号', 120, 1),
-            author: text(comment.author, '动态评论作者', 80, 1),
-            avatar: momentUrl(text(comment.avatar, '动态评论头像', 2048), true, true),
-            content: text(comment.content, '动态评论内容', 1000, 1),
-            isOwner: boolean(comment.isOwner, '动态博主标记'),
+            sourceId: text(comment.sourceId, 'package.fieldMomentCommentId', 120, 1),
+            author: text(comment.author, 'package.fieldMomentCommentAuthor', 80, 1),
+            avatar: momentUrl(text(comment.avatar, 'package.fieldMomentCommentAvatar', 2048), true, true),
+            content: text(comment.content, 'package.fieldMomentCommentContent', 1000, 1),
+            isOwner: boolean(comment.isOwner, 'package.fieldMomentCommentIsOwner'),
             status: comment.status as MomentCommentStatus,
-            deleted: boolean(comment.deleted, '动态评论删除标记'),
-            createdAt: date(comment.createdAt, '动态评论时间'),
+            deleted: boolean(comment.deleted, 'package.fieldMomentCommentDeleted'),
+            createdAt: date(comment.createdAt, 'package.fieldMomentCommentCreatedAt'),
           }
         },
       )
-      if (new Set(comments.map((comment) => comment.sourceId)).size !== comments.length) fail('重复动态评论编号')
+      if (new Set(comments.map((comment) => comment.sourceId)).size !== comments.length)
+        fail('package.fieldMomentCommentIdDuplicate')
       commentsTotal += comments.length
       return {
-        sourceId: text(row.sourceId, '动态编号', 120, 1),
-        createdAt: date(row.createdAt, '动态创建时间'),
-        publishedAt: row.publishedAt === null ? null : date(row.publishedAt, '动态发布时间'),
-        deleted: boolean(row.deleted, '动态删除标记'),
+        sourceId: text(row.sourceId, 'package.fieldMomentId', 120, 1),
+        createdAt: date(row.createdAt, 'package.fieldMomentCreatedAt'),
+        publishedAt: row.publishedAt === null ? null : date(row.publishedAt, 'package.fieldMomentPublishedAt'),
+        deleted: boolean(row.deleted, 'package.fieldMomentDeleted'),
         values,
         comments,
       }
     },
   )
-  if (new Set(moments.map((note) => note.sourceId)).size !== moments.length) fail('重复动态编号')
+  if (new Set(moments.map((note) => note.sourceId)).size !== moments.length) fail('package.fieldMomentIdDuplicate')
   const guestbook = array(Number(source.version) >= 3 ? source.guestbook : [], 'guestbook', 2000).map(
     (value, index): PackageGuestbook => {
       const path = `guestbook[${index}]`
@@ -585,19 +594,19 @@ export async function parseContentPackage(buffer: Buffer): Promise<ContentPackag
       }
     },
   )
-  if (new Set(gallery.map((photo) => photo.sourceId)).size !== gallery.length) fail('重复图库作品编号')
+  if (new Set(gallery.map((photo) => photo.sourceId)).size !== gallery.length) fail('package.fieldGalleryIdDuplicate')
   let gallerySettings: ContentPackage['gallerySettings'] = null
   if (Number(source.version) >= 4) {
     const settings = record(source.gallerySettings, 'gallerySettings', ['gear'])
     gallerySettings = {
       gear: array(settings.gear, 'gallerySettings.gear', 12).map((value) => {
-        const row = record(value, '图库器材', ['icon', 'name', 'description'])
+        const row = record(value, 'package.fieldGalleryGear', ['icon', 'name', 'description'])
         if (typeof row.icon !== 'string' || !['lucide:camera', 'lucide:circle', 'lucide:smartphone'].includes(row.icon))
-          fail('图库器材图标')
+          fail('package.fieldGalleryGearIcon')
         return {
           icon: row.icon as 'lucide:camera' | 'lucide:circle' | 'lucide:smartphone',
-          name: text(row.name, '图库器材名称', 80, 1).trim(),
-          description: text(row.description, '图库器材介绍', 300).trim(),
+          name: text(row.name, 'package.fieldGalleryGearName', 80, 1).trim(),
+          description: text(row.description, 'package.fieldGalleryGearDescription', 300).trim(),
         }
       }),
     }
@@ -691,7 +700,8 @@ export async function parseContentPackage(buffer: Buffer): Promise<ContentPackag
       }
     },
   )
-  if (new Set(projects.map((project) => project.sourceId)).size !== projects.length) fail('重复项目编号')
+  if (new Set(projects.map((project) => project.sourceId)).size !== projects.length)
+    fail('package.fieldProjectIdDuplicate')
   const links = array(Number(source.version) >= 6 ? source.links : [], 'links', 2000).map(
     (value, index): PackageLink => {
       const path = `links[${index}]`
@@ -708,7 +718,8 @@ export async function parseContentPackage(buffer: Buffer): Promise<ContentPackag
       ])
       const logoMediaId = values.logoMediaId === null ? null : text(values.logoMediaId, `${path}.logoMediaId`, 36, 1)
       if (logoMediaId !== null && !isUUID(logoMediaId, '4')) fail(`${path}.logoMediaId`)
-      if (logoMediaId !== null && values.logoUrl !== null) fail(`${path}.图片来源互斥`)
+      if (logoMediaId !== null && values.logoUrl !== null)
+        throw new BadRequestException(msg('package.imageSourceConflict', { path }))
       if (typeof values.status !== 'string' || !['draft', 'published', 'withdrawn'].includes(values.status))
         fail(`${path}.status`)
       if (
@@ -735,7 +746,7 @@ export async function parseContentPackage(buffer: Buffer): Promise<ContentPackag
       }
     },
   )
-  if (new Set(links.map((link) => link.sourceId)).size !== links.length) fail('重复友链编号')
+  if (new Set(links.map((link) => link.sourceId)).size !== links.length) fail('package.fieldLinkIdDuplicate')
   const prompts = array(Number(source.version) >= 10 ? source.prompts : [], 'prompts', 3000).map(
     (value, index): PackageImagePrompt => {
       const path = `prompts[${index}]`
@@ -756,7 +767,8 @@ export async function parseContentPackage(buffer: Buffer): Promise<ContentPackag
       const raw = record(row.values, `${path}.values`, keys)
       if (keys.some((key) => raw[key] === undefined)) fail(`${path}.values`)
       const values = promptValues(dto(SavePromptDto, raw, `${path}.values`)) as PackageImagePrompt['values']
-      if (Boolean(values.mediaId) === Boolean(values.externalImageUrl)) fail(`${path}.图片来源互斥`)
+      if (Boolean(values.mediaId) === Boolean(values.externalImageUrl))
+        throw new BadRequestException(msg('package.imageSourceConflict', { path }))
       values.mediaId = values.mediaId?.toLowerCase() ?? null
       return {
         sourceId: number(row.sourceId, `${path}.sourceId`),
@@ -766,35 +778,39 @@ export async function parseContentPackage(buffer: Buffer): Promise<ContentPackag
       }
     },
   )
-  if (new Set(prompts.map((prompt) => prompt.sourceId)).size !== prompts.length) fail('重复图片提示词编号')
+  if (new Set(prompts.map((prompt) => prompt.sourceId)).size !== prompts.length) fail('package.fieldPromptIdDuplicate')
   let linkSettings: ContentPackage['linkSettings'] = null
   if (Number(source.version) >= 6) {
     const settings = record(source.linkSettings, 'linkSettings', ['rules'])
     linkSettings = {
-      rules: array(settings.rules, 'linkSettings.rules', 12).map((value) => text(value, '友链规则', 300, 1).trim()),
+      rules: array(settings.rules, 'linkSettings.rules', 12).map((value) =>
+        text(value, 'package.fieldLinkRule', 300, 1).trim(),
+      ),
     }
   }
   const guestbookById = new Map(guestbook.map((message) => [message.sourceId, message]))
-  if (guestbookById.size !== guestbook.length) fail('重复留言编号')
+  if (guestbookById.size !== guestbook.length) fail('package.fieldGuestbookIdDuplicate')
   const checked = new Set<number>()
   for (const message of guestbook) {
     const path = new Set<number>()
     let id: number | null = message.sourceId
     while (id !== null && !checked.has(id)) {
       const current = guestbookById.get(id)
-      if (!current || path.has(id)) fail('留言引用缺失或循环')
+      if (!current || path.has(id)) fail('package.fieldGuestbookReplyLoop')
       path.add(id)
       id = current.replyToId
     }
     for (const id of path) checked.add(id)
   }
   if (commentsTotal > 10000 || new Set(flashes.map((flash) => flash.sourceId)).size !== flashes.length)
-    fail('评论总量或重复闪念编号')
-  const folders = array(source.folders, 'folders', 1000).map((value) => text(value, '专栏名称', 64, 1).trim())
+    fail('package.fieldCommentsTotalOrFlashIdDuplicate')
+  const folders = array(source.folders, 'folders', 1000).map((value) =>
+    text(value, 'package.fieldFolderName', 64, 1).trim(),
+  )
   const tags = array(source.tags, 'tags', 3000).map((value) => {
-    const tag = record(value, '标签', ['label', 'color'])
-    if (!POST_TAG_COLORS.includes(tag.color as PostTagColor)) fail('标签颜色')
-    return { label: text(tag.label, '标签名称', 64, 1).trim(), color: tag.color as PostTagColor }
+    const tag = record(value, 'package.fieldTag', ['label', 'color'])
+    if (!POST_TAG_COLORS.includes(tag.color as PostTagColor)) fail('package.fieldTagColor')
+    return { label: text(tag.label, 'package.fieldTagLabel', 64, 1).trim(), color: tag.color as PostTagColor }
   })
   if (
     folders.some((value) => !value) ||
@@ -802,7 +818,7 @@ export async function parseContentPackage(buffer: Buffer): Promise<ContentPackag
     new Set(folders).size !== folders.length ||
     new Set(tags.map((tag) => tag.label)).size !== tags.length
   )
-    fail('目录名称重复或空白')
+    fail('package.fieldFolderOrTagDuplicate')
   const siteData = dto(
     SaveSiteSettingsDto,
     {
@@ -825,18 +841,18 @@ export async function parseContentPackage(buffer: Buffer): Promise<ContentPackag
       ]),
       revision: 0,
     },
-    '站点资料',
+    'package.fieldSite',
   )
   const { revision: ignoredRevision, ...site } = siteData
   try {
     Object.assign(site, normalizeSiteExtrasInput(site))
   } catch (error) {
-    if (error instanceof SiteExtrasError) fail('站点导航与页脚')
+    if (error instanceof SiteExtrasError) fail('package.fieldSiteNavigation')
     throw error
   }
   if (site.about && new Set(site.about.sections.map((section) => section.kind)).size !== site.about.sections.length)
-    fail('关于页栏目重复')
-  if (ignoredRevision !== 0 || !packageImageUrl(site.avatar)) fail('站点头像')
+    fail('package.fieldAboutSectionDuplicate')
+  if (ignoredRevision !== 0 || !packageImageUrl(site.avatar)) fail('package.fieldSiteAvatar')
   for (const social of site.socials) {
     let valid = /^mailto:[^\s?@]+@[^\s?@]+\.[^\s?@]+$/.test(social.href)
     try {
@@ -845,12 +861,12 @@ export async function parseContentPackage(buffer: Buffer): Promise<ContentPackag
     } catch {
       /* 后续统一拒绝非法链接。 */
     }
-    if (!valid) fail('社交链接')
+    if (!valid) fail('package.fieldSiteSocial')
   }
   const media: PackageMedia[] = []
   let decodedPixels = 0
   for (const value of array(source.media, 'media', 300)) {
-    const item = record(value, '媒体', [
+    const item = record(value, 'package.fieldMedia', [
       'id',
       ...(Number(source.version) >= 9 ? ['description'] : []),
       'name',
@@ -863,12 +879,12 @@ export async function parseContentPackage(buffer: Buffer): Promise<ContentPackag
       'deleted',
       'base64',
     ])
-    const id = text(item.id, '媒体编号', 36)
-    const name = text(item.name, '媒体名称', 240, 1)
-    const sha256 = text(item.sha256, '媒体摘要', 64)
-    const byteSize = number(item.byteSize, '媒体大小')
-    const width = number(item.width, '图片宽度'),
-      height = number(item.height, '图片高度')
+    const id = text(item.id, 'package.fieldMediaId', 36)
+    const name = text(item.name, 'package.fieldMediaName', 240, 1)
+    const sha256 = text(item.sha256, 'package.fieldMediaSha256', 64)
+    const byteSize = number(item.byteSize, 'package.fieldMediaByteSize')
+    const width = number(item.width, 'package.fieldMediaWidth'),
+      height = number(item.height, 'package.fieldMediaHeight')
     if (
       !isUUID(id, '4') ||
       !/^[0-9a-f]{64}$/.test(sha256) ||
@@ -879,13 +895,14 @@ export async function parseContentPackage(buffer: Buffer): Promise<ContentPackag
       width > 4096 ||
       height > 4096
     )
-      fail('媒体标识、名称、大小或尺寸')
-    const base64 = item.base64 === undefined ? undefined : text(item.base64, '媒体字节', MAX_PACKAGE_BYTES)
-    if (mediaIncluded !== (base64 !== undefined)) fail('媒体包含标记与字节不一致')
+      fail('package.fieldMediaAttributes')
+    const base64 =
+      item.base64 === undefined ? undefined : text(item.base64, 'package.fieldMediaBase64', MAX_PACKAGE_BYTES)
+    if (mediaIncluded !== (base64 !== undefined)) fail('package.fieldMediaIncludedMismatch')
     if (base64 !== undefined) {
       decodedPixels += width * height
-      if (decodedPixels > 100000000) throw new PayloadTooLargeException('图片总量过大，请使用完整维护备份')
-      if (base64.length % 4 || !/^[a-zA-Z0-9+/]*={0,2}$/.test(base64)) fail('媒体编码')
+      if (decodedPixels > 100000000) throw new PayloadTooLargeException(msg('package.pixelsTooLarge'))
+      if (base64.length % 4 || !/^[a-zA-Z0-9+/]*={0,2}$/.test(base64)) fail('package.fieldMediaEncoding')
       const bytes = Buffer.from(base64, 'base64')
       if (
         bytes.length !== byteSize ||
@@ -895,7 +912,7 @@ export async function parseContentPackage(buffer: Buffer): Promise<ContentPackag
         bytes.toString('ascii', 8, 12) !== 'WEBP' ||
         bytes.readUInt32LE(4) + 8 !== bytes.length
       )
-        fail('媒体完整性或真实格式')
+        fail('package.fieldMediaIntegrity')
       try {
         const image = sharp(bytes, { limitInputPixels: 4096 * 4096, failOn: 'warning' })
         const info = await image.metadata()
@@ -908,27 +925,27 @@ export async function parseContentPackage(buffer: Buffer): Promise<ContentPackag
           info.xmp ||
           info.iptc
         )
-          fail('媒体元信息')
+          fail('package.fieldMediaMetadata')
         await image.timeout({ seconds: 8 }).stats()
       } catch {
-        fail('媒体解码')
+        fail('package.fieldMediaDecode')
       }
     }
     media.push({
       id: id.toLowerCase(),
-      description: Number(source.version) >= 9 ? text(item.description, '媒体说明', 1000) : '',
+      description: Number(source.version) >= 9 ? text(item.description, 'package.fieldMediaDescription', 1000) : '',
       name,
-      alt: text(item.alt, '图片说明', 300),
+      alt: text(item.alt, 'package.fieldMediaAlt', 300),
       sha256,
       byteSize,
       width,
       height,
-      createdAt: date(item.createdAt, '媒体时间'),
-      deleted: boolean(item.deleted, '媒体回收状态'),
+      createdAt: date(item.createdAt, 'package.fieldMediaCreatedAt'),
+      deleted: boolean(item.deleted, 'package.fieldMediaDeleted'),
       ...(base64 === undefined ? {} : { base64 }),
     })
   }
-  if (new Set(media.map((item) => item.id)).size !== media.length) fail('重复媒体编号')
+  if (new Set(media.map((item) => item.id)).size !== media.length) fail('package.fieldMediaIdDuplicate')
   const targets = new Set([
     ...posts.map((row) => `post:${row.sourceId}`),
     ...projects.map((row) => `project:${row.sourceId}`),
@@ -936,12 +953,12 @@ export async function parseContentPackage(buffer: Buffer): Promise<ContentPackag
   ])
   for (const row of [...posts, ...projects, ...gallery])
     for (const relation of row.values.relatedContent ?? [])
-      if (!targets.has(`${relation.type}:${relation.id}`)) fail('关联目标不在内容包内，不能把来源编号当作目标站点编号')
+      if (!targets.has(`${relation.type}:${relation.id}`)) fail('package.fieldRelationTargetMissing')
   return {
     format: 'tixxin-content',
     version: 13,
     omittedRelations,
-    exportedAt: date(source.exportedAt, '导出时间'),
+    exportedAt: date(source.exportedAt, 'package.fieldExportedAt'),
     mediaIncluded,
     posts,
     flashes,
@@ -957,7 +974,7 @@ export async function parseContentPackage(buffer: Buffer): Promise<ContentPackag
     folders,
     tags,
     site,
-    requireCommentApproval: boolean(source.requireCommentApproval, '评论审核策略'),
+    requireCommentApproval: boolean(source.requireCommentApproval, 'package.fieldRequireCommentApproval'),
     media,
   }
 }

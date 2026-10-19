@@ -4,6 +4,7 @@ import { EntityManager } from '@mikro-orm/postgresql'
 import type { FilterQuery } from '@mikro-orm/core'
 import { OwnerNotification } from '../../entities/owner-notification.entity'
 import { resolveNotificationTargets } from './notification-targets'
+import { msg } from '../../common/i18n'
 
 @Injectable()
 export class NotificationService {
@@ -13,7 +14,7 @@ export class NotificationService {
   }
   async detail(id: string) {
     const item = await this.em.findOne(OwnerNotification, { id }, { refresh: true })
-    if (!item) throw new NotFoundException('通知不存在或记录已移除')
+    if (!item) throw new NotFoundException(msg('operations.notificationNotFoundOrRemoved'))
     const targets = await resolveNotificationTargets(this.em, [item])
     return {
       id: item.id,
@@ -53,7 +54,7 @@ export class NotificationService {
       'update owner_notification set read_at=coalesce(read_at,now()) where id=? returning id,read_at as "readAt"',
       [id],
     )
-    if (!rows.length) throw new NotFoundException('通知不存在')
+    if (!rows.length) throw new NotFoundException(msg('operations.notificationNotFound'))
     return rows[0]
   }
   /** 单条 SQL 原子标记全部未读；返回本次实际标记的数量，以及之后新到达的未读数 */

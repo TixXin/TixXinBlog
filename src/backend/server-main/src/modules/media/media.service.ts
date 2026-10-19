@@ -4,6 +4,7 @@
  * 公开读取可按白名单宽度返回 WebP 变体，变体首次请求时生成并缓存到磁盘，同一变体并发只生成一次。
  */
 import { EntityManager } from '@mikro-orm/postgresql'
+import { msg } from '../../common/i18n'
 import { raw } from '@mikro-orm/core'
 import type { FilterQuery } from '@mikro-orm/core'
 import {
@@ -60,14 +61,13 @@ export class MediaService {
         await lockMedia(em)
         const existing = await em.findOne(MediaAsset, { id })
         if (existing) {
-          if (existing.sha256 !== sha256 || existing.deletedAt)
-            throw new ConflictException('上传标识已使用，请重新选择文件')
+          if (existing.sha256 !== sha256 || existing.deletedAt) throw new ConflictException(msg('media.uploadIdUsed'))
           return this.dto(existing)
         }
         const previous = await this.storage.readIfExists(key)
         if (previous) {
           if (createHash('sha256').update(previous).digest('hex') !== sha256)
-            throw new ConflictException('资源标识对应的文件不同，请重新选择文件')
+            throw new ConflictException(msg('media.resourceIdMismatch'))
         } else {
           await this.storage.put(key, image.buffer)
           written = true
@@ -97,7 +97,7 @@ export class MediaService {
           })
           .catch(() => undefined)
       if (error instanceof HttpException) throw error
-      throw new ServiceUnavailableException('媒体保存失败，请稍后重试')
+      throw new ServiceUnavailableException(msg('media.saveFailed'))
     }
   }
   async list(query: {
@@ -139,7 +139,7 @@ export class MediaService {
     return { items: items.map((item) => this.dto(item)), total, page: query.page, pageSize: query.pageSize }
   }
   async references(id: string, page: number) {
-    if (!(await this.em.findOne(MediaAsset, { id }))) throw new NotFoundException('媒体不存在')
+    if (!(await this.em.findOne(MediaAsset, { id }))) throw new NotFoundException(msg('media.notFound'))
     const [items, total] = await this.em.findAndCount(
       MediaReference,
       { asset: id },
@@ -209,7 +209,7 @@ export class MediaService {
   }
   async update(id: string, fields: { alt?: string; description?: string }) {
     const asset = await this.em.findOne(MediaAsset, { id, deletedAt: null })
-    if (!asset) throw new NotFoundException('媒体不存在或已移除')
+    if (!asset) throw new NotFoundException(msg('media.notFoundOrRemoved'))
     if (fields.alt !== undefined) asset.alt = fields.alt
     if (fields.description !== undefined) asset.description = fields.description
     await this.em.flush()
@@ -219,9 +219,9 @@ export class MediaService {
     return this.em.transactional(async (em) => {
       await lockMedia(em)
       const asset = await em.findOne(MediaAsset, { id })
-      if (!asset) throw new NotFoundException('媒体不存在')
+      if (!asset) throw new NotFoundException(msg('media.notFound'))
       const count = await em.count(MediaReference, { asset: id })
-      if (count) throw new ConflictException(`媒体仍有 ${count} 处引用（含历史修订），不能移除`)
+      if (count) throw new ConflictException(msg('media.stillReferenced', { count }))
       asset.deletedAt = new Date()
       await em.flush()
       // 回收后公开读取即返回 404，变体同步清理；恢复时按需重新生成。
@@ -233,11 +233,11 @@ export class MediaService {
     return this.em.transactional(async (em) => {
       await lockMedia(em)
       const asset = await em.findOne(MediaAsset, { id })
-      if (!asset) throw new NotFoundException('媒体不存在')
+      if (!asset) throw new NotFoundException(msg('media.notFound'))
       try {
         await this.storage.get(asset.storageKey)
       } catch {
-        throw new ServiceUnavailableException('文件暂不可用，不能恢复')
+        throw new ServiceUnavailableException(msg('media.fileUnavailableForRestore'))
       }
       asset.deletedAt = undefined
       await em.flush()
@@ -246,7 +246,7 @@ export class MediaService {
   }
   async read(id: string, options: { ifNoneMatch?: string; head?: boolean; width?: MediaVariantWidth } = {}) {
     const asset = await this.em.findOne(MediaAsset, { id, deletedAt: null })
-    if (!asset) throw new NotFoundException('媒体不存在或已移除')
+    if (!asset) throw new NotFoundException(msg('media.notFoundOrRemoved'))
     try {
       await this.storage.assertReadable(asset.storageKey)
       // 请求宽度不小于原图宽度时直接返回原图，避免为同一字节生成多份缓存。
@@ -265,7 +265,7 @@ export class MediaService {
       const content = await this.variant(asset, width)
       return { etag, byteSize: content.length, notModified, content: options.head ? undefined : content }
     } catch {
-      throw new ServiceUnavailableException('媒体文件暂不可用')
+      throw new ServiceUnavailableException(msg('media.fileUnavailable'))
     }
   }
   private variant(asset: MediaAsset, width: MediaVariantWidth) {

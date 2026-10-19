@@ -3,6 +3,7 @@
  * @description 媒体与内容写入共用锁，删除检查包含文章历史快照和全部私有状态。
  */
 import type { EntityManager } from '@mikro-orm/postgresql'
+import { msg } from '../../common/i18n'
 import { ConflictException } from '@nestjs/common'
 import { MediaAsset } from '../../entities/media-asset.entity'
 import { MediaReference } from '../../entities/media-reference.entity'
@@ -62,7 +63,7 @@ export async function synchronizeMediaReferences(
 ) {
   const ids = managedMediaIds(values)
   if (ids.length && (await em.count(MediaAsset, { id: { $in: ids }, deletedAt: null })) !== ids.length)
-    throw new ConflictException('内容引用的媒体已移除或不存在，请重新选择图片')
+    throw new ConflictException(msg('media.referenceMissing'))
   await em.nativeDelete(MediaReference, { sourceKey })
   for (const id of ids) em.create(MediaReference, { asset: em.getReference(MediaAsset, id), sourceKey, kind, ...owner })
 }

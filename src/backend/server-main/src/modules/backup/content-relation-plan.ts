@@ -2,6 +2,7 @@
 import type { ContentPackage } from './content-package'
 import { packageHash } from './content-package'
 import type { ContentRelation, ContentRelationType } from '../../common/types/content-relation'
+import { zh } from '../../common/i18n'
 export type RelationMapping = Record<
   string,
   { type: ContentRelationType; existingId?: number; copySourceId?: number } | null
@@ -60,7 +61,7 @@ export function makeRelationMapping(
         const target = mapping[key(relation.type, relation.id)]
         if (!target) omitted++
         else if (own && JSON.stringify(own) === JSON.stringify(target))
-          errors.push(`关联内容 ${type}:${row.sourceId} 去重后会指向自身，请选择复制策略`)
+          errors.push(zh('backup.planRelationSelf', { type, sourceId: row.sourceId }))
       }
     }
   return { mapping, omitted, errors }

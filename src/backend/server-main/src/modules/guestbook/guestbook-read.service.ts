@@ -16,6 +16,7 @@ import {
   GUESTBOOK_RULES,
   unansweredGuestbookSql,
 } from './guestbook-values'
+import { msg } from '../../common/i18n'
 
 @Injectable()
 export class GuestbookReadService {
@@ -26,7 +27,7 @@ export class GuestbookReadService {
       { $and: [{ id: guestbookId(id) }, admin ? { deletedAt: null } : visibleGuestbook(visitor)] },
       { populate: ['replyTo'], refresh: true },
     )
-    if (!note) throw new NotFoundException('留言不存在或暂不可见')
+    if (!note) throw new NotFoundException(msg('guestbook.notFoundOrHidden'))
     return note
   }
   async detail(id: number, visitor = '', admin = false) {

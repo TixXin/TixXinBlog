@@ -7,6 +7,7 @@ import { ConflictException } from '@nestjs/common'
 import { TaxonomyAlias } from '../../entities/taxonomy-alias.entity'
 import { PostFolder } from '../../entities/post-folder.entity'
 import { PostTag } from '../../entities/post-tag.entity'
+import { msg } from '../../common/i18n'
 
 export async function registerTaxonomyRename(
   em: EntityManager,
@@ -28,6 +29,6 @@ export async function canonicalTaxonomyLabel(
     kind === 'folders'
       ? await em.count(PostFolder, { label: entry.target })
       : await em.count(PostTag, { label: entry.target })
-  if (!exists) throw new ConflictException('旧目录名称的目标已删除，请重新选择专栏或标签')
+  if (!exists) throw new ConflictException(msg('post.taxonomyAliasTargetDeleted'))
   return entry.target
 }

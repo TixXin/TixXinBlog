@@ -16,6 +16,7 @@ import { recordOwnerEvent } from '../operations/owner-events'
 import { guestbookId, PUBLIC_GUESTBOOK } from './guestbook-values'
 import { clientRegion, DEFAULT_CLIENT_REGION_HEADER, parseBrowser } from '../../common/utils/client-context'
 import type { CreateGuestbookDto, GuestbookBodyDto, UpdateGuestbookDto, SetGuestbookReactionDto } from './guestbook.dto'
+import { msg } from '../../common/i18n'
 
 export async function lockGuestbook(em: EntityManager) {
   await em.execute('select pg_advisory_xact_lock(742920)')
@@ -51,13 +52,13 @@ export class GuestbookWriteService {
       const existing = await em.findOne(GuestbookMessage, { visitorIdHash: identity, requestId: body.requestId })
       if (existing) {
         if (existing.deletedAt || existing.requestHash !== hash || (!adminId && existing.status === 'hidden'))
-          throw new ConflictException('此留言提交已处理，请确认原留言')
+          throw new ConflictException(msg('guestbook.submissionHandled'))
         return existing.id
       }
       const parent = body.replyToId
         ? await em.findOne(GuestbookMessage, { id: guestbookId(body.replyToId), ...PUBLIC_GUESTBOOK })
         : null
-      if (body.replyToId && !parent) throw new NotFoundException('引用的留言不存在或尚未公开，请保留正文并重新选择回复')
+      if (body.replyToId && !parent) throw new NotFoundException(msg('guestbook.replyTargetMissing'))
       const site = adminId ? await em.findOneOrFail(SiteSettings, { id: 'default' }) : null
       const policy = await em.findOneOrFail(CommentPolicy, { id: 'default' }, { refresh: true })
       const avatar = site ? site.values.avatar : momentUrl((body as CreateGuestbookDto).avatar ?? '', true, true)
@@ -86,14 +87,14 @@ export class GuestbookWriteService {
   async update(id: number, body: UpdateGuestbookDto) {
     guestbookId(id)
     if (body.status === undefined && body.isPinned === undefined)
-      throw new BadRequestException('请选择需要修改的审核或置顶状态')
+      throw new BadRequestException(msg('guestbook.stateChangeRequired'))
     await this.em.transactional(async (em) => {
       await lockGuestbook(em)
       const note = await em.findOne(GuestbookMessage, { id, deletedAt: null }, { lockMode: LockMode.PESSIMISTIC_WRITE })
-      if (!note) throw new NotFoundException('留言不存在或已删除')
-      if (note.revision !== body.revision) throw new ConflictException('留言状态已变化，请重新读取后再操作')
+      if (!note) throw new NotFoundException(msg('guestbook.notFoundOrDeleted'))
+      if (note.revision !== body.revision) throw new ConflictException(msg('guestbook.statusChanged'))
       const status = body.status ?? note.status
-      if (body.isPinned && status !== 'published') throw new BadRequestException('只能置顶已公开留言')
+      if (body.isPinned && status !== 'published') throw new BadRequestException(msg('guestbook.pinRequiresPublished'))
       const pinned = status === 'published' && (body.isPinned ?? note.isPinned)
       if (pinned) {
         // 先释放唯一索引，再写入新的置顶项；其他窗口的旧版本会收到冲突。
@@ -115,9 +116,9 @@ export class GuestbookWriteService {
       await lockMedia(em)
       await lockGuestbook(em)
       const note = await em.findOne(GuestbookMessage, { id }, { lockMode: LockMode.PESSIMISTIC_WRITE })
-      if (!note) throw new NotFoundException('留言不存在')
+      if (!note) throw new NotFoundException(msg('guestbook.notFound'))
       if (note.deletedAt) return { ok: true }
-      if (note.revision !== revision) throw new ConflictException('留言已变化，请重新读取后确认删除')
+      if (note.revision !== revision) throw new ConflictException(msg('guestbook.changedBeforeDelete'))
       note.deletedAt = new Date()
       note.isPinned = false
       note.revision++
@@ -136,7 +137,7 @@ export class GuestbookWriteService {
         { id, ...PUBLIC_GUESTBOOK },
         { lockMode: LockMode.PESSIMISTIC_WRITE },
       )
-      if (!note) throw new NotFoundException('留言不存在或尚未公开')
+      if (!note) throw new NotFoundException(msg('guestbook.notFoundOrPrivate'))
       const existing = await em.findOne(GuestbookReaction, { message: note, visitorIdHash: visitor, emoji: body.emoji })
       if (body.reacted && !existing)
         em.create(GuestbookReaction, { message: note, visitorIdHash: visitor, emoji: body.emoji })

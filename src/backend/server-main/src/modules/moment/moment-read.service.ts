@@ -11,6 +11,7 @@ import type { Post } from '../../entities/post.entity'
 import type { QueryAdminMomentsDto, QueryMomentsDto, MomentPageQuery, QueryAdminMomentCommentsDto } from './moment.dto'
 import { momentWhere, publicMoments } from './moment-values'
 import { managedMediaIds } from '../media/media-references'
+import { msg } from '../../common/i18n'
 
 interface CommentRow {
   id: string
@@ -83,7 +84,7 @@ export class MomentReadService {
       { id, ...(admin ? { deletedAt: null } : publicMoments) },
       { populate: ['linkedArticle'], fields: [...LINKED_ARTICLE_FIELDS], refresh: true },
     )
-    if (!note) throw new NotFoundException('动态不存在或尚未公开')
+    if (!note) throw new NotFoundException(msg('moment.notFoundOrPrivate'))
     return note
   }
   async detail(id: string, visitor = '', admin = false) {
@@ -91,7 +92,7 @@ export class MomentReadService {
   }
   async submission(requestId: string) {
     const note = await this.em.findOne(Moment, { requestId, deletedAt: null })
-    if (!note) throw new NotFoundException('尚未找到这次提交保存的动态')
+    if (!note) throw new NotFoundException(msg('moment.submissionNotFound'))
     return this.detail(note.id, '', true)
   }
   async navigation(id: string) {
@@ -157,7 +158,7 @@ export class MomentReadService {
   async commentLocation(id: string, commentId: string) {
     await this.require(id, true)
     const target = await this.em.findOne(MomentComment, { id: commentId, moment: id, deletedAt: null })
-    if (!target) throw new NotFoundException('评论不存在、已删除或不属于这条动态')
+    if (!target) throw new NotFoundException(msg('moment.commentTargetInvalid'))
     const preceding = await this.em.count(MomentComment, {
       moment: id,
       deletedAt: null,

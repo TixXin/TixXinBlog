@@ -8,7 +8,8 @@ import { Injectable, Logger, ServiceUnavailableException } from '@nestjs/common'
 import type { OnModuleDestroy } from '@nestjs/common'
 import { AuditEntry } from '../../entities/audit-entry.entity'
 import type { AuditState, AuditSummary } from '../../entities/audit-entry.entity'
-import { auditActions } from './audit-description'
+import { auditActionLabel, auditFieldLabel } from './audit-description'
+import { msg, translate, type ApiLocale } from '../../common/i18n'
 export interface AuditActor {
   id: string
   name?: string
@@ -36,8 +37,7 @@ export class AuditService implements OnModuleDestroy {
     actor?: AuditActor,
     traceId?: string,
   ) {
-    if (this.stopping || this.retries.size >= 1000)
-      throw new ServiceUnavailableException('审计补全暂时积压，管理操作尚未执行，请稍后重试')
+    if (this.stopping || this.retries.size >= 1000) throw new ServiceUnavailableException(msg('audit.backlog'))
     try {
       const em = this.em.fork()
       const entry = em.create(AuditEntry, {
@@ -52,7 +52,7 @@ export class AuditService implements OnModuleDestroy {
       await em.flush()
       return entry.id
     } catch {
-      throw new ServiceUnavailableException('审计存储不可用，管理操作尚未执行，请稍后重试')
+      throw new ServiceUnavailableException(msg('audit.storageUnavailable'))
     }
   }
   complete(id: string, value: AuditCompletion): Promise<boolean> {
@@ -107,7 +107,10 @@ export class AuditService implements OnModuleDestroy {
     await Promise.allSettled([...this.pending])
     await this.flushRetries()
   }
-  async list(query: { page: number; action?: string; state?: AuditState; from?: string; to?: string }) {
+  async list(
+    query: { page: number; action?: string; state?: AuditState; from?: string; to?: string },
+    locale: ApiLocale = 'zh-CN',
+  ) {
     const where: FilterQuery<AuditEntry> = {}
     if (query.action) where.action = query.action
     if (query.state) where.state = query.state
@@ -124,15 +127,18 @@ export class AuditService implements OnModuleDestroy {
     return {
       items: items.map((item) => ({
         id: item.id,
-        actor: item.actorName || (item.actorId ? '管理员' : '未认证请求'),
+        actor: item.actorName || translate(locale, item.actorId ? 'audit.actor.admin' : 'audit.actor.anonymous'),
         actorId: item.actorId,
         action: item.action,
-        actionLabel: auditActions[item.action] ?? '管理操作',
+        actionLabel: auditActionLabel(item.action, locale),
         resourceType: item.resourceType,
         resourceId: item.resourceId,
         state: item.state,
         statusCode: item.statusCode,
-        summary: item.summary,
+        // 字段名按中文持久化，读取时翻译；数据库中的历史记录保持原样。
+        summary: Array.isArray(item.summary?.fields)
+          ? { ...item.summary, fields: item.summary.fields.map((label) => auditFieldLabel(label, locale)) }
+          : item.summary,
         createdAt: item.createdAt.toISOString(),
         finishedAt: item.finishedAt?.toISOString(),
         traceId: item.traceId,

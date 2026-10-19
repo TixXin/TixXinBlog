@@ -3,6 +3,7 @@ import { ConflictException } from '@nestjs/common'
 import type { ContentImportPlan } from '../../entities/content-import.entity'
 import { packageHash } from './content-package'
 import type { PackageGuestbook } from './content-package'
+import { msg, zh } from '../../common/i18n'
 
 function guestbookHashes(messages: PackageGuestbook[]) {
   const byId = new Map(messages.map((message) => [message.sourceId, message]))
@@ -13,7 +14,7 @@ function guestbookHashes(messages: PackageGuestbook[]) {
     let id: number | null = message.sourceId
     while (id !== null && !hashes.has(id)) {
       const row = byId.get(id)
-      if (!row || seen.has(id)) throw new ConflictException('留言引用不完整，不能生成导入预览')
+      if (!row || seen.has(id)) throw new ConflictException(msg('backup.guestbookRefIncomplete'))
       seen.add(id)
       path.push(row)
       id = row.replyToId
@@ -54,13 +55,15 @@ export function guestbookImportPlan(
       title: source.content.slice(0, 100),
       skip,
       ...(skip && targetId !== undefined ? { targetId } : skip ? { duplicateOf } : {}),
-      reason: skip
-        ? '跳过相同留言及引用语义，保留目标审核状态'
-        : source.deleted
-          ? '保留已删除记录以重建回复引用，不公开、不恢复媒体引用'
-          : source.status === 'hidden'
-            ? '迁入为隐藏留言，保留回复关系'
-            : '迁入为待审留言，保留回复关系；不迁入置顶、访客凭据和回应',
+      reason: zh(
+        skip
+          ? 'backup.planGuestbookSkipSame'
+          : source.deleted
+            ? 'backup.planGuestbookKeepDeleted'
+            : source.status === 'hidden'
+              ? 'backup.planGuestbookHidden'
+              : 'backup.planGuestbookPending',
+      ),
     }
   })
 }

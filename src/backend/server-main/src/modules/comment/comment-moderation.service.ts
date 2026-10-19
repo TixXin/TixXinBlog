@@ -12,6 +12,7 @@ import { CommentPolicy } from '../../entities/comment-policy.entity'
 import { Post } from '../../entities/post.entity'
 import { visibleCommentWhere } from './comment-visibility'
 import { lockMedia } from '../media/media-references'
+import { msg } from '../../common/i18n'
 interface ScopeRow {
   id: number
   parentId: number | null
@@ -39,7 +40,7 @@ export class CommentModerationService {
         { id: 'default' },
         { lockMode: LockMode.PESSIMISTIC_WRITE, refresh: true },
       )
-      if (policy.revision !== input.revision) throw new ConflictException('审核策略已更新，请重新加载后比较')
+      if (policy.revision !== input.revision) throw new ConflictException(msg('comment.policyUpdated'))
       policy.requireApproval = input.requireApproval
       policy.revision += 1
       policy.updatedAt = new Date()
@@ -49,7 +50,7 @@ export class CommentModerationService {
   }
   async scope(em: EntityManager, id: number) {
     const target = await em.findOne(Comment, { id }, { populate: ['post'], refresh: true })
-    if (!target) throw new NotFoundException('评论不存在')
+    if (!target) throw new NotFoundException(msg('comment.notFound'))
     const rows = await em.execute<ScopeRow[]>(
       `with recursive tree as (
       select id,parent_id,revision,status from comment where id=? union all
@@ -57,7 +58,7 @@ export class CommentModerationService {
     ) select id,parent_id as "parentId",revision,status from tree order by id`,
       [id],
     )
-    if (!rows.length) throw new NotFoundException('评论不存在')
+    if (!rows.length) throw new NotFoundException(msg('comment.notFound'))
     const ancestors: ScopeRow[] = []
     let parentId = target.parent?.id
     while (parentId && ancestors.length < 3) {
@@ -106,7 +107,7 @@ export class CommentModerationService {
   async change(id: number, input: { status: CommentStatus; revision: number; expectedFingerprint: string }) {
     return this.em.transactional(async (em) => {
       const target = await em.findOne(Comment, { id })
-      if (!target) throw new NotFoundException('评论不存在')
+      if (!target) throw new NotFoundException(msg('comment.notFound'))
       const post = await em.findOneOrFail(
         Post,
         { id: target.post.id },
@@ -114,7 +115,7 @@ export class CommentModerationService {
       )
       const scope = await this.scope(em, id)
       if (scope.fingerprint !== input.expectedFingerprint || scope.target.revision !== input.revision)
-        throw new ConflictException('评论状态或回复范围已变化，请重新查看影响后确认')
+        throw new ConflictException(msg('comment.moderationScopeChanged'))
       scope.target.status = input.status
       scope.target.revision += 1
       scope.target.moderatedAt = new Date()

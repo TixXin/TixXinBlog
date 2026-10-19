@@ -6,6 +6,7 @@
  */
 
 import { createHash, randomBytes } from 'node:crypto'
+import { msg } from '../../common/i18n'
 import { LockMode } from '@mikro-orm/core'
 import { EntityManager } from '@mikro-orm/postgresql'
 import { BadRequestException, HttpStatus, Injectable, Logger } from '@nestjs/common'
@@ -65,7 +66,7 @@ export class AuthService {
     const hashToVerify = user?.passwordHash ?? (await dummyPasswordHash)
     const valid = await argon2.verify(hashToVerify, password).catch(() => false)
     if (!user || !valid) {
-      throw new BusinessException(ErrorCode.Unauthorized, '用户名或密码错误', HttpStatus.UNAUTHORIZED)
+      throw new BusinessException(ErrorCode.Unauthorized, msg('auth.invalidCredentials'), HttpStatus.UNAUTHORIZED)
     }
 
     const verifiedHash = user.passwordHash
@@ -76,7 +77,7 @@ export class AuthService {
         { lockMode: LockMode.PESSIMISTIC_WRITE, refresh: true },
       )
       if (!current || current.passwordHash !== verifiedHash)
-        throw new BusinessException(ErrorCode.Unauthorized, '账号凭据已变化，请重新登录', HttpStatus.UNAUTHORIZED)
+        throw new BusinessException(ErrorCode.Unauthorized, msg('auth.credentialsChanged'), HttpStatus.UNAUTHORIZED)
       current.lastLoginAt = new Date()
       const session = this.sessions.create(em, current, userAgent)
       const refreshTokenPlain = await this.issueRefreshToken(current, session, em)
@@ -93,13 +94,15 @@ export class AuthService {
     const result = await this.em.transactional(async (em): Promise<LoginResult | RefreshReuse> => {
       // 与改密保持同一锁顺序：先管理员，再刷新记录，避免漏撤销或锁顺序死锁。
       const candidate = await em.findOne(RefreshToken, { tokenHash: sha256(refreshTokenPlain) })
-      if (!candidate) throw new BusinessException(ErrorCode.RefreshTokenExpired, '登录已失效', HttpStatus.UNAUTHORIZED)
+      if (!candidate)
+        throw new BusinessException(ErrorCode.RefreshTokenExpired, msg('auth.loginExpired'), HttpStatus.UNAUTHORIZED)
       const user = await em.findOne(
         AdminUser,
         { id: candidate.adminUser.id },
         { lockMode: LockMode.PESSIMISTIC_WRITE, refresh: true },
       )
-      if (!user) throw new BusinessException(ErrorCode.Unauthorized, '账号不存在', HttpStatus.UNAUTHORIZED)
+      if (!user)
+        throw new BusinessException(ErrorCode.Unauthorized, msg('auth.accountNotFound'), HttpStatus.UNAUTHORIZED)
       const record = await em.findOne(
         RefreshToken,
         { tokenHash: sha256(refreshTokenPlain) },
@@ -113,7 +116,7 @@ export class AuthService {
       if (!record || record.revokedAt || record.expiresAt <= now) {
         throw new BusinessException(
           ErrorCode.RefreshTokenExpired,
-          'Refresh token 失效,请重新登录',
+          msg('auth.refreshTokenInvalid'),
           HttpStatus.UNAUTHORIZED,
         )
       }
@@ -127,7 +130,7 @@ export class AuthService {
         if (!existing || existing.revokedAt || existing.expiresAt <= now)
           throw new BusinessException(
             ErrorCode.RefreshTokenExpired,
-            '会话已撤销或过期，请重新登录',
+            msg('auth.sessionRevokedOrExpired'),
             HttpStatus.UNAUTHORIZED,
           )
         session = existing
@@ -146,7 +149,11 @@ export class AuthService {
     })
     if ('reuse' in result) {
       await this.auditRefreshReuse(result.reuse, traceId)
-      throw new BusinessException(ErrorCode.RefreshTokenExpired, '登录已失效，请重新登录', HttpStatus.UNAUTHORIZED)
+      throw new BusinessException(
+        ErrorCode.RefreshTokenExpired,
+        msg('auth.loginExpiredRelogin'),
+        HttpStatus.UNAUTHORIZED,
+      )
     }
     return result
   }
@@ -259,7 +266,7 @@ export class AuthService {
 
   async getMe(userId: string): Promise<{ id: string; username: string; lastLoginAt?: string }> {
     const user = await this.em.findOne(AdminUser, { id: userId })
-    if (!user) throw new BusinessException(ErrorCode.Unauthorized, '账号不存在', HttpStatus.UNAUTHORIZED)
+    if (!user) throw new BusinessException(ErrorCode.Unauthorized, msg('auth.accountNotFound'), HttpStatus.UNAUTHORIZED)
     return { id: user.id, username: user.username, lastLoginAt: user.lastLoginAt?.toISOString() }
   }
 
@@ -267,10 +274,10 @@ export class AuthService {
     return this.em.transactional(async (em) => {
       const user = await em.findOne(AdminUser, { id: userId }, { lockMode: LockMode.PESSIMISTIC_WRITE, refresh: true })
       if (!user || user.sessionVersion !== version)
-        throw new BusinessException(ErrorCode.Unauthorized, '登录已失效，请重新登录', HttpStatus.UNAUTHORIZED)
+        throw new BusinessException(ErrorCode.Unauthorized, msg('auth.loginExpiredRelogin'), HttpStatus.UNAUTHORIZED)
       if (!(await argon2.verify(user.passwordHash, currentPassword).catch(() => false)))
-        throw new BadRequestException('当前密码不正确')
-      if (currentPassword === newPassword) throw new BadRequestException('新密码不能与当前密码相同')
+        throw new BadRequestException(msg('auth.currentPasswordIncorrect'))
+      if (currentPassword === newPassword) throw new BadRequestException(msg('auth.newPasswordSame'))
       user.passwordHash = await argon2.hash(newPassword, {
         type: argon2.argon2id,
         memoryCost: 65536,

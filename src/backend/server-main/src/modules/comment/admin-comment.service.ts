@@ -13,6 +13,7 @@ import { CommentService } from './comment.service'
 import type { CommentStatus } from '../../entities/comment.entity'
 import { CommentModerationService } from './comment-moderation.service'
 import { unansweredCommentSql, visibleCommentWhere } from './comment-visibility'
+import { msg } from '../../common/i18n'
 
 /** 批量操作的单条结果：not_found 表示评论已不存在，conflict 表示提交版本与当前版本不一致 */
 interface CommentBatchItemResult {
@@ -44,7 +45,7 @@ export class AdminCommentService {
     to?: string
   }) {
     const where: FilterQuery<Comment> = {}
-    if (query.from && query.to && query.from > query.to) throw new BadRequestException('开始日期不能晚于结束日期')
+    if (query.from && query.to && query.from > query.to) throw new BadRequestException(msg('comment.dateRangeInvalid'))
     if (query.postId) where.post = query.postId
     if (query.search) where.content = { $ilike: `%${query.search}%` }
     if (query.status) where.status = query.status
@@ -126,7 +127,7 @@ export class AdminCommentService {
       { id },
       { populate: ['post'], fields: ['*', 'post.id', 'post.title', 'post.status'] },
     )
-    if (!target) throw new NotFoundException('评论不存在')
+    if (!target) throw new NotFoundException(msg('comment.notFound'))
     const ancestors: Comment[] = []
     let cursor = target
     while (cursor.parent && ancestors.length < 3) {
@@ -178,17 +179,16 @@ export class AdminCommentService {
 
   async remove(id: number, expectedTotal: number | undefined, expectedFingerprint: string) {
     const target = await this.em.findOne(Comment, { id })
-    if (!target) throw new NotFoundException('评论不存在')
+    if (!target) throw new NotFoundException(msg('comment.notFound'))
     return this.em.transactional(async (em) => {
       const post = await em.findOne(Post, { id: target.post.id }, { lockMode: LockMode.PESSIMISTIC_WRITE })
-      if (!post) throw new NotFoundException('文章不存在')
+      if (!post) throw new NotFoundException(msg('post.notFound'))
       const scope = await this.moderation.scope(em, id)
-      if (scope.fingerprint !== expectedFingerprint)
-        throw new ConflictException('评论或回复范围已变化，请重新查看后确认')
+      if (scope.fingerprint !== expectedFingerprint) throw new ConflictException(msg('comment.scopeChanged'))
       const deleteTotal = await this.subtreeCount(em, id)
-      if (!deleteTotal) throw new NotFoundException('评论不存在')
+      if (!deleteTotal) throw new NotFoundException(msg('comment.notFound'))
       if (expectedTotal !== undefined && expectedTotal !== deleteTotal) {
-        throw new ConflictException('回复数量已变化，请重新查看删除范围后确认')
+        throw new ConflictException(msg('comment.replyCountChanged'))
       }
       await em.nativeDelete(Comment, { id })
       post.commentCount = await em.count(Comment, { post, ...visibleCommentWhere() })
@@ -277,9 +277,9 @@ export class AdminCommentService {
   }
   async reply(id: number, raw: string, admin: { id: string; username: string }) {
     const target = await this.em.findOne(Comment, { id })
-    if (!target) throw new NotFoundException('评论不存在')
+    if (!target) throw new NotFoundException(msg('comment.notFound'))
     const content = raw.trim()
-    if (!content) throw new BadRequestException('回复不能为空')
+    if (!content) throw new BadRequestException(msg('comment.replyEmpty'))
     return this.comments.create(
       target.post.id,
       { content, author: admin.username, parentId: id },

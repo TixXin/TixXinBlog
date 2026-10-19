@@ -23,13 +23,15 @@ import {
 import type { Request, Response } from 'express'
 import { CurrentAdmin } from '../../common/decorators/current-admin.decorator'
 import { AdminAuthGuard } from '../../common/guards/admin-auth.guard'
+import { RequestLocale } from '../../common/decorators/request-locale.decorator'
+import type { ApiLocale } from '../../common/i18n'
 import { getRefreshCookieOptions, REFRESH_COOKIE_NAME } from './auth.constants'
 import { AuthService, LoginResult } from './auth.service'
 import { LoginDto } from './dto/login.dto'
 import { ChangePasswordDto } from './dto/change-password.dto'
 import { getTraceId } from '../../common/utils/trace-id'
 import { AuthOriginGuard } from '../../common/guards/auth-origin.guard'
-import { AuthSessionsService } from './auth-sessions.service'
+import { AuthSessionsService, localizeDeviceLabel } from './auth-sessions.service'
 import type { AuditRequest } from '../audit/audit-request'
 import { Type } from 'class-transformer'
 import { IsInt, Max, Min } from 'class-validator'
@@ -58,8 +60,17 @@ export class AuthController {
 
   @Get('sessions')
   @UseGuards(AdminAuthGuard)
-  sessionsList(@CurrentAdmin() admin: { id: string; sessionId: string }, @Query() query: QuerySessionsDto) {
-    return this.sessions.list(admin.id, admin.sessionId, query.page)
+  async sessionsList(
+    @CurrentAdmin() admin: { id: string; sessionId: string },
+    @Query() query: QuerySessionsDto,
+    @RequestLocale() locale?: ApiLocale,
+  ) {
+    // 设备名以中文持久化，按请求语言翻译其中的「未知系统」「未知客户端」片段。
+    const result = await this.sessions.list(admin.id, admin.sessionId, query.page)
+    return {
+      ...result,
+      items: result.items.map((item) => ({ ...item, device: localizeDeviceLabel(item.device, locale) })),
+    }
   }
   @Delete('sessions/:id')
   @UseGuards(AdminAuthGuard)

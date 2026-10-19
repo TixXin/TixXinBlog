@@ -1,5 +1,6 @@
 /** @file prompts.service.ts @description 真实提示词查询与事务保存，保留幂等提交、并发编辑及媒体引用保护 */
 import { BadRequestException, ConflictException, Injectable, NotFoundException } from '@nestjs/common'
+import { msg } from '../../common/i18n'
 import { EntityManager } from '@mikro-orm/postgresql'
 import { LockMode } from '@mikro-orm/core'
 import { ImagePrompt } from '../../entities/image-prompt.entity'
@@ -62,13 +63,13 @@ export class PromptsService {
     const item = await this.em.findOne(ImagePrompt, admin ? { id } : { id, status: 'published' }, {
       populate: ['media'],
     })
-    if (!item) throw new NotFoundException('提示词不存在或尚未公开')
+    if (!item) throw new NotFoundException(msg('prompt.notFoundOrUnpublished'))
     return this.serialize(item, admin)
   }
 
   async submission(requestId: string) {
     const item = await this.em.findOne(ImagePrompt, { requestId }, { populate: ['media'] })
-    if (!item) throw new NotFoundException('尚未找到此提交，请使用原提交标识重试')
+    if (!item) throw new NotFoundException(msg('prompt.submissionNotFound'))
     return { state: 'saved', item: this.serialize(item, true) }
   }
 
@@ -93,9 +94,9 @@ export class PromptsService {
   async save(id: number | null, input: SavePromptDto) {
     if (id !== null) promptId(id)
     if (id === null && (!input.title || !input.prompt || !input.requestId || input.revision !== undefined))
-      throw new BadRequestException('创建需要标题、提示词和唯一提交标识，不能携带编辑版本')
+      throw new BadRequestException(msg('prompt.createRequiresFields'))
     if (id !== null && (input.revision === undefined || input.requestId !== undefined))
-      throw new BadRequestException('编辑需要当前版本，不能携带创建标识')
+      throw new BadRequestException(msg('prompt.editRequiresRevision'))
     const values = promptValues(input)
     const hash = submissionHash(values)
     const savedId = await this.em.transactional(async (em) => {
@@ -103,14 +104,14 @@ export class PromptsService {
       if (id === null) {
         const prior = await em.findOne(ImagePrompt, { requestId: input.requestId })
         if (prior) {
-          if (prior.requestHash !== hash) throw new ConflictException('此提交已处理，请核查原提示词')
+          if (prior.requestHash !== hash) throw new ConflictException(msg('prompt.submissionConflict'))
           return prior.id
         }
       }
       const { mediaId, ...fields } = values
       const media = mediaId ? await em.findOne(MediaAsset, { id: mediaId, deletedAt: null }) : null
       if (mediaId && (!media || !media.mimeType.startsWith('image/') || media.width < 1 || media.height < 1))
-        throw new BadRequestException('请选择有效的媒体库图片')
+        throw new BadRequestException(msg('prompt.mediaInvalid'))
       const item =
         id !== null
           ? await em.findOne(ImagePrompt, { id }, { lockMode: LockMode.PESSIMISTIC_WRITE })
@@ -120,13 +121,12 @@ export class PromptsService {
               requestId: input.requestId,
               requestHash: hash,
             })
-      if (!item) throw new NotFoundException('提示词不存在')
-      if (id !== null && item.revision !== input.revision)
-        throw new ConflictException('提示词已被修改，请保留输入并重新读取')
+      if (!item) throw new NotFoundException(msg('prompt.notFound'))
+      if (id !== null && item.revision !== input.revision) throw new ConflictException(msg('prompt.revisionConflict'))
       Object.assign(item, fields)
       if (mediaId !== undefined) item.media = media
       if (Boolean(item.media) === Boolean(item.externalImageUrl))
-        throw new BadRequestException('必须恰好选择一种图片来源；切换时请明确清空另一来源')
+        throw new BadRequestException(msg('prompt.imageSourceExclusive'))
       if (item.status === 'published' && !item.publishedAt) item.publishedAt = new Date()
       if (id !== null) item.revision++
       await em.flush()

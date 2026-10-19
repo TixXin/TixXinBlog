@@ -2,6 +2,9 @@
  * @file session-device.ts
  * @description 仅保存粗略系统/浏览器类别，不持久化完整 User-Agent 或 IP。
  */
+import { zh } from '../../common/i18n'
+
+/** 设备名以中文持久化；未知片段取自字典，便于列表接口按请求语言翻译 */
 export function sessionDeviceLabel(agent = ''): string {
   const ua = agent.slice(0, 1024)
   const system = /Windows/i.test(ua)
@@ -14,7 +17,7 @@ export function sessionDeviceLabel(agent = ''): string {
           ? 'macOS'
           : /Linux/i.test(ua)
             ? 'Linux'
-            : '未知系统'
+            : zh('auth.unknownSystem')
   const browser = /Edg\//i.test(ua)
     ? 'Edge'
     : /Firefox\//i.test(ua)
@@ -23,6 +26,6 @@ export function sessionDeviceLabel(agent = ''): string {
         ? 'Chrome'
         : /Safari\//i.test(ua)
           ? 'Safari'
-          : '未知客户端'
+          : zh('auth.unknownClient')
   return `${system} · ${browser}`
 }

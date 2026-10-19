@@ -16,6 +16,7 @@ import { PostBatchOperation } from '../../entities/post-batch-operation.entity'
 import type { PostBatchImpact, PostBatchPlanItem } from '../../entities/post-batch-operation.entity'
 import { AdminUser } from '../../entities/admin-user.entity'
 import { AdminSession } from '../../entities/admin-session.entity'
+import { msg, rethrowable, translateStored, zh, type ApiLocale } from '../../common/i18n'
 
 type Admin = { id: string; username?: string; sessionVersion: number; sessionId: string }
 type Impact = PostBatchImpact
@@ -27,11 +28,12 @@ export class PostBatchService {
     private readonly revisions: PostRevisionsService,
   ) {}
   private reason(post: Post, action: PostBatchAction): string {
-    if (action === 'delete') return post.deletedAt ? '' : '永久删除仅适用于回收站文章'
-    if (action === 'restore') return post.deletedAt || post.status === 'archived' ? '' : '只能恢复回收或归档文章'
-    if (post.deletedAt) return '文章已在回收站，请先恢复'
-    if (action === 'withdraw' && post.status !== 'published') return '仅已发布文章可撤回'
-    if (action === 'archive' && post.status === 'archived') return '文章已经归档'
+    if (action === 'delete') return post.deletedAt ? '' : zh('post.batchDeleteOnlyTrashed')
+    if (action === 'restore')
+      return post.deletedAt || post.status === 'archived' ? '' : zh('post.batchRestoreOnlyTrashedOrArchived')
+    if (post.deletedAt) return zh('post.trashedRestoreFirst')
+    if (action === 'withdraw' && post.status !== 'published') return zh('post.batchWithdrawOnlyPublished')
+    if (action === 'archive' && post.status === 'archived') return zh('post.batchAlreadyArchived')
     return ''
   }
   private async impact(em: EntityManager, post: Post): Promise<Impact> {
@@ -79,23 +81,29 @@ export class PostBatchService {
       )
       .digest('hex')
   }
-  private result(operation: PostBatchOperation) {
+  // 计划原因与执行结果以中文写入 JSON 列，返回前按请求语言反查字典翻译；字典外文本原样返回。
+  private result(operation: PostBatchOperation, locale: ApiLocale) {
     return {
-      preview: this.previewResult(operation),
+      preview: this.previewResult(operation, locale),
       ticket: operation.id,
       action: operation.action,
-      results: operation.results,
+      results: operation.results.map((item) => ({ ...item, message: translateStored(locale, item.message) })),
       successCount: operation.results.filter((item) => item.success).length,
       failedCount: operation.results.filter((item) => !item.success).length,
       pendingCount: operation.plan.length - operation.results.length,
       completed: !!operation.finishedAt,
     }
   }
-  private previewResult(operation: PostBatchOperation) {
+  private previewResult(operation: PostBatchOperation, locale: ApiLocale) {
     return {
       ticket: operation.id,
       action: operation.action,
-      items: operation.plan.map(({ fingerprint: _fingerprint, ...item }) => item),
+      items: operation.plan.map(({ fingerprint: _fingerprint, ...item }) => ({
+        ...item,
+        // 只有文章已不存在的条目（status 为空）才使用占位标题，避免误译与字典文案同名的真实标题。
+        title: item.status ? item.title : translateStored(locale, item.title),
+        reason: translateStored(locale, item.reason),
+      })),
       allowedCount: operation.plan.filter((item) => item.allowed).length,
       expiresIn: Math.max(0, Math.floor((operation.expiresAt.getTime() - Date.now()) / 1000)),
     }
@@ -114,7 +122,7 @@ export class PostBatchService {
       completed: !!item.finishedAt,
     }))
   }
-  async preview(input: PreviewPostBatchDto, admin: Admin) {
+  async preview(input: PreviewPostBatchDto, admin: Admin, locale: ApiLocale = 'zh-CN') {
     const plan: PostBatchPlanItem[] = []
     for (const selected of input.items) {
       const post = await this.em.findOne(Post, { id: selected.id }, { refresh: true })
@@ -122,13 +130,13 @@ export class PostBatchService {
         ? await this.impact(this.em, post)
         : { comments: 0, commentLikes: 0, revisions: 0, addresses: 0, mediaReferences: 0, likes: 0, views: 0 }
       const reason = !post
-        ? '文章不存在'
+        ? zh('post.notFound')
         : post.revision !== selected.revision
-          ? '列表版本已过期，请刷新后重新选择'
+          ? zh('post.batchListStale')
           : this.reason(post, input.action)
       plan.push({
         id: selected.id,
-        title: post?.title ?? '已不存在的文章',
+        title: post?.title ?? zh('post.batchMissingTitle'),
         revision: selected.revision,
         status: post?.status ?? '',
         deleted: !!post?.deletedAt,
@@ -148,22 +156,23 @@ export class PostBatchService {
       expiresAt: new Date(Date.now() + 300000),
     })
     await this.em.flush()
-    return this.previewResult(operation)
+    return this.previewResult(operation, locale)
   }
-  async get(ticket: string, admin: Admin) {
+  async get(ticket: string, admin: Admin, locale: ApiLocale = 'zh-CN') {
     const operation = await this.em.findOne(PostBatchOperation, { id: ticket, actorId: admin.id }, { refresh: true })
-    if (!operation) throw new NotFoundException('批量操作不存在')
-    return this.result(operation)
+    if (!operation) throw new NotFoundException(msg('post.batchNotFound'))
+    return this.result(operation, locale)
   }
-  async execute(ticket: string, acknowledgement: string | undefined, admin: Admin) {
+  async execute(ticket: string, acknowledgement: string | undefined, admin: Admin, locale: ApiLocale = 'zh-CN') {
     const initial = await this.em.findOne(PostBatchOperation, { id: ticket, actorId: admin.id }, { refresh: true })
-    if (!initial) throw new NotFoundException('批量操作不存在')
-    if (initial.finishedAt) return this.result(initial)
+    if (!initial) throw new NotFoundException(msg('post.batchNotFound'))
+    if (initial.finishedAt) return this.result(initial, locale)
     if (initial.expiresAt <= new Date() || initial.sessionVersion !== admin.sessionVersion)
-      throw new BadRequestException('预览已失效，请查看现有结果并重新预览未处理条目')
+      throw new BadRequestException(msg('post.batchPreviewExpired'))
     const action = initial.action as PostBatchAction
-    if (!POST_BATCH_ACTIONS.includes(action)) throw new BadRequestException('无效批量操作')
-    if (action === 'delete' && acknowledgement !== '永久删除') throw new BadRequestException('永久删除需要输入确认文字')
+    if (!POST_BATCH_ACTIONS.includes(action)) throw new BadRequestException(msg('post.batchActionInvalid'))
+    if (action === 'delete' && acknowledgement !== '永久删除')
+      throw new BadRequestException(msg('post.batchDeleteConfirmRequired'))
     for (const item of initial.plan) {
       await this.em.transactional(async (em) => {
         const operation = await em.findOneOrFail(
@@ -177,7 +186,7 @@ export class PostBatchService {
           try {
             const user = await em.findOne(AdminUser, { id: admin.id }, { refresh: true })
             if (!user || user.sessionVersion !== admin.sessionVersion)
-              throw new ConflictException('登录已失效，未执行此条目')
+              throw new ConflictException(msg('post.batchSignedOut'))
             if (
               !(await em.count(AdminSession, {
                 id: admin.sessionId,
@@ -186,7 +195,7 @@ export class PostBatchService {
                 expiresAt: { $gt: new Date() },
               }))
             )
-              throw new ConflictException('会话已撤销或过期，未执行此条目')
+              throw new ConflictException(msg('post.batchSessionRevoked'))
             await em.transactional(async (content) => {
               await lockTaxonomy(content)
               await lockMedia(content)
@@ -195,15 +204,15 @@ export class PostBatchService {
                 { id: item.id },
                 { lockMode: LockMode.PESSIMISTIC_WRITE, refresh: true },
               )
-              if (!post) throw new NotFoundException('文章已不存在')
+              if (!post) throw new NotFoundException(msg('post.batchPostGone'))
               const impact = await this.impact(content, post)
               if (
                 post.revision !== item.revision ||
                 (await this.fingerprint(content, post, action, impact)) !== item.fingerprint
               )
-                throw new ConflictException('预览后内容或影响范围发生变化，请重新预览')
+                throw new ConflictException(msg('post.batchPreviewStale'))
               const reason = this.reason(post, action)
-              if (reason) throw new ConflictException(reason)
+              if (reason) throw new ConflictException(rethrowable(reason))
               if (action === 'delete') {
                 await content.nativeDelete(Post, { id: post.id })
                 return
@@ -225,9 +234,9 @@ export class PostBatchService {
               await this.revisions.record(content, post, reasons[action])
               await content.flush()
             })
-            result = { id: item.id, success: true, message: '已完成' }
+            result = { id: item.id, success: true, message: zh('post.batchItemDone') }
           } catch (error) {
-            result.message = error instanceof HttpException ? error.message : '处理失败，该条目已回滚，请重试'
+            result.message = error instanceof HttpException ? error.message : zh('post.batchItemFailed')
           }
         }
         operation.startedAt ??= new Date()
@@ -236,6 +245,6 @@ export class PostBatchService {
         await em.flush()
       })
     }
-    return this.get(ticket, admin)
+    return this.get(ticket, admin, locale)
   }
 }

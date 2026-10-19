@@ -16,10 +16,11 @@ import {
   resolveContentRelations,
   validateContentRelations,
 } from '../content-relations/content-relations'
+import { msg } from '../../common/i18n'
 
 const publicPhotos = { deletedAt: null, status: 'published' } as const
 function galleryId(id: number) {
-  if (!Number.isSafeInteger(id) || id < 1 || id > 2147483647) throw new BadRequestException('作品编号不合法')
+  if (!Number.isSafeInteger(id) || id < 1 || id > 2147483647) throw new BadRequestException(msg('gallery.idInvalid'))
 }
 @Injectable()
 export class GalleryService {
@@ -84,7 +85,7 @@ export class GalleryService {
     const item = await this.em.findOne(GalleryPhoto, admin ? { id, deletedAt: null } : { id, ...publicPhotos }, {
       populate: ['media'],
     })
-    if (!item) throw new NotFoundException('作品不存在或尚未公开')
+    if (!item) throw new NotFoundException(msg('gallery.notFoundOrPrivate'))
     return {
       ...this.serialize(item, admin),
       relatedContent: admin ? item.relatedContent : await resolveContentRelations(this.em, item.relatedContent),
@@ -92,13 +93,13 @@ export class GalleryService {
   }
   async submission(requestId: string) {
     const item = await this.em.findOne(GalleryPhoto, { requestId }, { populate: ['media'] })
-    if (!item) throw new NotFoundException('尚未找到此提交，请使用原提交标识重试')
+    if (!item) throw new NotFoundException(msg('gallery.submissionNotFound'))
     return item.deletedAt ? { state: 'deleted', id: item.id } : { state: 'saved', item: this.serialize(item, true) }
   }
   async navigation(id: number, query: GalleryQuery) {
     galleryId(id)
     if (!(await this.em.count(GalleryPhoto, { id, ...publicPhotos })))
-      throw new NotFoundException('作品不存在或尚未公开')
+      throw new NotFoundException(msg('gallery.notFoundOrPrivate'))
     const clauses = ["status='published'", 'deleted_at is null']
     const parameters: (string | number)[] = []
     if (query.category !== undefined) {
@@ -153,7 +154,7 @@ export class GalleryService {
         { id: 'default' },
         { lockMode: LockMode.PESSIMISTIC_WRITE },
       )
-      if (settings.revision !== input.revision) throw new ConflictException('器材配置已变化，请保留输入并重新读取')
+      if (settings.revision !== input.revision) throw new ConflictException(msg('gallery.gearChanged'))
       settings.gear = input.gear
       settings.revision++
       settings.updatedAt = new Date()
@@ -163,10 +164,10 @@ export class GalleryService {
   }
   async save(id: number | null, input: SaveGalleryDto) {
     if (id !== null) galleryId(id)
-    if (id === null && input.revision !== undefined) throw new BadRequestException('创建作品不能携带编辑版本')
-    if (!id && (!input.title || !input.requestId)) throw new BadRequestException('创建作品需要标题、图片来源和提交标识')
+    if (id === null && input.revision !== undefined) throw new BadRequestException(msg('gallery.createRejectsRevision'))
+    if (!id && (!input.title || !input.requestId)) throw new BadRequestException(msg('gallery.createRequiresFields'))
     if (id && (input.revision === undefined || input.requestId !== undefined))
-      throw new BadRequestException('编辑需要当前版本，不能携带创建标识')
+      throw new BadRequestException(msg('gallery.editRequiresRevision'))
     const { requestId, mediaId } = input
     if (input.externalUrl !== undefined && input.externalUrl !== null) galleryExternalUrl(input.externalUrl)
     // 装饰器 DTO 含未提交的 undefined 属性；局部更新只能应用明确提供的字段。
@@ -191,18 +192,19 @@ export class GalleryService {
       if (!id) {
         const prior = await em.findOne(GalleryPhoto, { requestId })
         if (prior) {
-          if (prior.deletedAt || prior.requestHash !== hash) throw new ConflictException('此提交已处理，请核查原作品')
+          if (prior.deletedAt || prior.requestHash !== hash)
+            throw new ConflictException(msg('gallery.submissionHandled'))
           return prior.id
         }
       }
       const media = mediaId ? await em.findOne(MediaAsset, { id: mediaId, deletedAt: null }) : undefined
       if (mediaId && (!media || !media.mimeType.startsWith('image/') || media.width < 1 || media.height < 1))
-        throw new BadRequestException('请选择有效的媒体库图片')
+        throw new BadRequestException(msg('gallery.mediaInvalid'))
       const photo = id
         ? await em.findOne(GalleryPhoto, { id, deletedAt: null }, { lockMode: LockMode.PESSIMISTIC_WRITE })
         : em.create(GalleryPhoto, { title: input.title!, media: media!, requestId, requestHash: hash })
-      if (!photo) throw new NotFoundException('作品不存在或已删除')
-      if (id && photo.revision !== input.revision) throw new ConflictException('作品已被修改，请保留输入并重新读取')
+      if (!photo) throw new NotFoundException(msg('gallery.notFoundOrDeleted'))
+      if (id && photo.revision !== input.revision) throw new ConflictException(msg('gallery.modifiedKeepInput'))
       if (values.relatedContent !== undefined)
         values.relatedContent = await validateContentRelations(
           em,
@@ -213,7 +215,7 @@ export class GalleryService {
       Object.assign(photo, values)
       if (mediaId !== undefined) photo.media = media ?? null
       if (Boolean(photo.media) === Boolean(photo.externalUrl))
-        throw new BadRequestException('每件作品必须恰好选择一种图片来源；切换时请明确清空另一来源')
+        throw new BadRequestException(msg('gallery.sourceExclusive'))
       if (photo.status === 'published' && !photo.publishedAt) photo.publishedAt = new Date()
       if (id) photo.revision++
       await em.flush()
@@ -236,9 +238,9 @@ export class GalleryService {
     return this.em.transactional(async (em) => {
       await lockMedia(em)
       const photo = await em.findOne(GalleryPhoto, { id }, { lockMode: LockMode.PESSIMISTIC_WRITE })
-      if (!photo) throw new NotFoundException('作品不存在')
+      if (!photo) throw new NotFoundException(msg('gallery.notFound'))
       if (photo.deletedAt) return { ok: true }
-      if (photo.revision !== revision) throw new ConflictException('作品已变化，请重新读取后确认删除')
+      if (photo.revision !== revision) throw new ConflictException(msg('gallery.changedBeforeDelete'))
       photo.deletedAt = new Date()
       photo.revision++
       await em.nativeDelete(MediaReference, { galleryPhoto: photo })

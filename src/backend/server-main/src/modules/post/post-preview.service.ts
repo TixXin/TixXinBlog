@@ -8,6 +8,7 @@ import { ContentContext } from '../../entities/content-context.entity'
 import { Post } from '../../entities/post.entity'
 import { getAccessSecret } from '../auth/auth.constants'
 import { ArticleDetailDto, PostService } from './post.service'
+import { msg } from '../../common/i18n'
 
 const PREVIEW_TTL_SECONDS = 7 * 24 * 60 * 60
 const PREVIEW_KEY_PURPOSE = 'tixxinblog:post-preview:v1'
@@ -110,6 +111,6 @@ export class PostPreviewService {
   }
 
   private unavailable() {
-    return new NotFoundException('预览链接无效或已过期')
+    return new NotFoundException(msg('post.previewUnavailable'))
   }
 }

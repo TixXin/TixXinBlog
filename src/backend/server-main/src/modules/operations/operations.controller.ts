@@ -17,6 +17,7 @@ import { IsIn, IsInt, Min } from 'class-validator'
 import { statfs } from 'node:fs/promises'
 import { resolve } from 'node:path'
 import { AdminAuthGuard } from '../../common/guards/admin-auth.guard'
+import { msg } from '../../common/i18n'
 import { operationConfigStatus, readOperationConfig } from './operation-config'
 class TaskQuery {
   @Type(() => Number) @IsInt() @Min(1) page = 1
@@ -58,7 +59,7 @@ export class OperationsController {
   constructor(private readonly em: EntityManager) {}
   @Get('tasks/:id') async task(@Param('id', new ParseUUIDPipe({ version: '4' })) id: string) {
     const [task] = await this.em.execute('select * from background_task where id=?', [id])
-    if (!task) throw new NotFoundException('任务不存在或记录已清理')
+    if (!task) throw new NotFoundException(msg('operations.taskNotFound'))
     return safeTask(task)
   }
   @Get() async status(@Query() query: TaskQuery) {
@@ -117,15 +118,15 @@ export class OperationsController {
         : body.expectedState === 'restored'
           ? '明确重新投递恢复前任务'
           : '重试失败任务'
-    if (body.acknowledgement !== expected) throw new ConflictException('请核对任务实际结果后明确选择重试')
+    if (body.acknowledgement !== expected) throw new ConflictException(msg('operations.retryNotAcknowledged'))
     return this.em.transactional(async (em) => {
       const [control] = await em.execute("select * from operation_control where id='default' for update")
-      if (!control) throw new ConflictException('运行配置不可用，请核对迁移')
+      if (!control) throw new ConflictException(msg('operations.configUnavailable'))
       const [task] = await em.execute('select * from background_task where id=? for update', [id])
       if (!task || task.state !== body.expectedState || task.attempts !== body.expectedAttempts)
-        throw new ConflictException('任务状态已变化，请刷新后核对')
+        throw new ConflictException(msg('operations.taskStateChanged'))
       if ((task.kind === 'mail' && control.external_paused) || (task.kind === 'backup' && control.backup_paused))
-        throw new ConflictException('通道当前暂停，请先按运行说明显式启用')
+        throw new ConflictException(msg('operations.channelPaused'))
       const result = await em.execute(
         `update background_task set state='queued',generation=?,max_attempts=attempts+3,available_at=now(),finished_at=null,error_code=null,lease_token=null,lease_until=null where id=? returning id,state`,
         [control.generation, id],

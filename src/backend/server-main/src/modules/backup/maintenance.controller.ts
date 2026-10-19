@@ -9,6 +9,8 @@ import { AdminAuthGuard } from '../../common/guards/admin-auth.guard'
 import { MediaStorage } from '../media/media-storage'
 import { MediaAsset } from '../../entities/media-asset.entity'
 import { ContentContext } from '../../entities/content-context.entity'
+import { RequestLocale } from '../../common/decorators/request-locale.decorator'
+import { translate, type ApiLocale } from '../../common/i18n'
 @Controller('admin/maintenance')
 @UseGuards(AdminAuthGuard)
 export class MaintenanceController {
@@ -43,7 +45,7 @@ export class MaintenanceController {
     }
   }
   @Post('media-check')
-  async mediaCheck() {
+  async mediaCheck(@RequestLocale() locale: ApiLocale = 'zh-CN') {
     const assets = await this.em.find(
       MediaAsset,
       {},
@@ -53,11 +55,24 @@ export class MaintenanceController {
     for (const asset of assets) {
       try {
         const bytes = await this.storage.readIfExists(asset.storageKey)
-        if (!bytes) problems.push({ id: asset.id, deleted: !!asset.deletedAt, reason: '文件缺失' })
+        if (!bytes)
+          problems.push({
+            id: asset.id,
+            deleted: !!asset.deletedAt,
+            reason: translate(locale, 'backup.mediaFileMissing'),
+          })
         else if (bytes.length !== asset.byteSize || createHash('sha256').update(bytes).digest('hex') !== asset.sha256)
-          problems.push({ id: asset.id, deleted: !!asset.deletedAt, reason: '完整性不符' })
+          problems.push({
+            id: asset.id,
+            deleted: !!asset.deletedAt,
+            reason: translate(locale, 'backup.mediaIntegrityMismatch'),
+          })
       } catch {
-        problems.push({ id: asset.id, deleted: !!asset.deletedAt, reason: '文件不可读' })
+        problems.push({
+          id: asset.id,
+          deleted: !!asset.deletedAt,
+          reason: translate(locale, 'backup.mediaFileUnreadable'),
+        })
       }
     }
     return { checkedAt: new Date().toISOString(), checked: assets.length, problems }

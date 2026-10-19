@@ -22,6 +22,7 @@ import { CommentPolicy } from '../../entities/comment-policy.entity'
 import { visibleCommentWhere } from './comment-visibility'
 import { lockMedia, synchronizeMediaReferences } from '../media/media-references'
 import { momentUrl } from '../moment/moment-values'
+import { msg } from '../../common/i18n'
 
 /** 域错误码(api.md 附录 A) */
 const POST_NOT_FOUND = 1001
@@ -38,7 +39,7 @@ export class CommentService {
     // 存在性与可见性检查只需状态列，避免读取整篇正文。
     const post = await this.em.findOne(Post, { id: postId }, { fields: ['id', 'status', 'deletedAt'] })
     if (!post || post.status !== 'published' || post.deletedAt)
-      throw new BusinessException(POST_NOT_FOUND, '文章不存在', HttpStatus.NOT_FOUND)
+      throw new BusinessException(POST_NOT_FOUND, msg('post.notFound'), HttpStatus.NOT_FOUND)
 
     const comments = await this.em.find(
       Comment,
@@ -76,10 +77,10 @@ export class CommentService {
       await lockMedia(em)
       const post = await em.findOne(Post, { id: postId }, { lockMode: LockMode.PESSIMISTIC_WRITE })
       if (!post || post.status === 'draft' || post.deletedAt) {
-        throw new BusinessException(POST_NOT_FOUND, '文章不存在', HttpStatus.NOT_FOUND)
+        throw new BusinessException(POST_NOT_FOUND, msg('post.notFound'), HttpStatus.NOT_FOUND)
       }
       if (post.status === 'archived') {
-        throw new BusinessException(POST_ARCHIVED, '文章已归档,无法评论', HttpStatus.UNPROCESSABLE_ENTITY)
+        throw new BusinessException(POST_ARCHIVED, msg('comment.postArchived'), HttpStatus.UNPROCESSABLE_ENTITY)
       }
 
       const digest = (value: unknown) => createHash('sha256').update(JSON.stringify(value)).digest('hex')
@@ -93,7 +94,7 @@ export class CommentService {
             !previous.comment ||
             ['hidden', 'spam'].includes(previous.comment.status)
           )
-            throw new ConflictException('此评论提交已处理或移除，请核对原结果')
+            throw new ConflictException(msg('comment.submissionHandled'))
           const saved = previous.comment
           return {
             moderationStatus: saved.status as 'pending' | 'published',
@@ -114,10 +115,10 @@ export class CommentService {
       if (dto.parentId) {
         parent = (await em.findOne(Comment, { id: dto.parentId, post, ...visibleCommentWhere() })) ?? undefined
         if (!parent) {
-          throw new BusinessException(ErrorCode.NotFound, '父评论不存在', HttpStatus.NOT_FOUND)
+          throw new BusinessException(ErrorCode.NotFound, msg('comment.parentNotFound'), HttpStatus.NOT_FOUND)
         }
         if (parent.depth >= COMMENT_MAX_DEPTH) {
-          throw new BusinessException(COMMENT_DEPTH_EXCEEDED, '评论层级超限(最深 3 层)', HttpStatus.CONFLICT)
+          throw new BusinessException(COMMENT_DEPTH_EXCEEDED, msg('comment.depthExceeded'), HttpStatus.CONFLICT)
         }
       }
 
@@ -167,18 +168,18 @@ export class CommentService {
     // 锁定评论行，避免不同访客并发点赞时覆盖计数；取消点赞同样处于事务内。
     return this.em.transactional(async (em) => {
       const target = await em.findOne(Comment, { id: commentId })
-      if (!target) throw new BusinessException(ErrorCode.NotFound, '评论不存在', HttpStatus.NOT_FOUND)
+      if (!target) throw new BusinessException(ErrorCode.NotFound, msg('comment.notFound'), HttpStatus.NOT_FOUND)
       // 与回收和评论管理采用相同的文章→评论锁顺序，未公开内容不能通过点赞接口泄露计数。
       const post = await em.findOne(
         Post,
         { id: target.post.id, status: 'published', deletedAt: null },
         { lockMode: LockMode.PESSIMISTIC_WRITE },
       )
-      if (!post) throw new BusinessException(ErrorCode.NotFound, '评论不存在', HttpStatus.NOT_FOUND)
+      if (!post) throw new BusinessException(ErrorCode.NotFound, msg('comment.notFound'), HttpStatus.NOT_FOUND)
       const visible = await em.count(Comment, { id: commentId, ...visibleCommentWhere() })
-      if (!visible) throw new BusinessException(ErrorCode.NotFound, '评论不存在', HttpStatus.NOT_FOUND)
+      if (!visible) throw new BusinessException(ErrorCode.NotFound, msg('comment.notFound'), HttpStatus.NOT_FOUND)
       const comment = await em.findOne(Comment, { id: commentId }, { lockMode: LockMode.PESSIMISTIC_WRITE })
-      if (!comment) throw new BusinessException(ErrorCode.NotFound, '评论不存在', HttpStatus.NOT_FOUND)
+      if (!comment) throw new BusinessException(ErrorCode.NotFound, msg('comment.notFound'), HttpStatus.NOT_FOUND)
       const existing = await em.findOne(CommentLike, { comment, visitorIdHash })
       if (existing) {
         em.remove(existing)
