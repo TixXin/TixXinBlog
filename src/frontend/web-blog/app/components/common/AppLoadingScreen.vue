@@ -23,10 +23,10 @@
         </div>
       </div>
       <p v-if="!forceVisible" class="loading-screen__recovery" role="alert">
-        页面交互暂未启动，你仍可浏览已加载的内容。
-        <a :href="route.fullPath">刷新重试</a>
+        {{ $t('layout.loadingScreen.notStarted') }}
+        <a :href="route.fullPath">{{ $t('layout.themeError.reload') }}</a>
       </p>
-      <p v-else class="loading-screen__theme-status" role="status">正在加载布局…</p>
+      <p v-else class="loading-screen__theme-status" role="status">{{ $t('layout.loadingScreen.loadingLayout') }}</p>
     </div>
   </Transition>
 </template>

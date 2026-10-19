@@ -3,7 +3,7 @@
   @description 三套主题共用的真实站点公告，内容由布局传入。
 -->
 <template>
-  <aside v-if="content" class="site-announcement" aria-label="站点公告">
+  <aside v-if="content" class="site-announcement" :aria-label="$t('layout.announcement.label')">
     <Icon name="lucide:megaphone" />
     <p>{{ content }}</p>
     <time v-if="date" :datetime="date">{{ date.slice(0, 10) }}</time>

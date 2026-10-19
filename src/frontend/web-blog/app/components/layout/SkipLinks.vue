@@ -8,8 +8,10 @@
 
 <template>
   <div class="skip-links">
-    <a class="skip-links__link" href="#main-content" @click.prevent="toMain">跳到主内容</a>
-    <a class="skip-links__link" href="#site-navigation" @click.prevent="toNavigation">跳到导航</a>
+    <a class="skip-links__link" href="#main-content" @click.prevent="toMain">{{ $t('layout.skipLinks.main') }}</a>
+    <a class="skip-links__link" href="#site-navigation" @click.prevent="toNavigation">{{
+      $t('layout.skipLinks.navigation')
+    }}</a>
   </div>
 </template>
 

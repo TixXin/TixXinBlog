@@ -8,8 +8,8 @@
     class="card"
     compact
     :pending="pending"
-    title="标签和分类暂时不可用"
-    :description="available ? '仍显示上次成功加载的数据。' : undefined"
+    :title="$t('layout.sidebar.filters.unavailable')"
+    :description="available ? $t('layout.sidebar.filters.stale') : undefined"
     @retry="$emit('retry')"
   />
   <template v-if="available">

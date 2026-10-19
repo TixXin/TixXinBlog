@@ -19,7 +19,7 @@
         compact
         :pending="sitePending"
         :title="siteError"
-        description="仍显示上次成功读取或默认的站点资料。"
+        :description="$t('layout.site.staleNotice')"
         @retry="refreshSite()"
       />
       <NuxtPage :transition="false" />

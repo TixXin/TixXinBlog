@@ -14,13 +14,18 @@
           class="guest-id-modal"
           role="dialog"
           aria-modal="true"
-          aria-label="填写评论身份"
+          :aria-label="$t('layout.guestIdentity.dialogLabel')"
           tabindex="-1"
         >
           <header class="guest-id-modal__header">
             <Icon name="lucide:user-round-pen" size="16" class="guest-id-modal__icon" />
-            <h3 class="guest-id-modal__title">填写你的身份</h3>
-            <button type="button" class="guest-id-modal__close" aria-label="关闭" @click="$emit('cancel')">
+            <h3 class="guest-id-modal__title">{{ $t('layout.guestIdentity.title') }}</h3>
+            <button
+              type="button"
+              class="guest-id-modal__close"
+              :aria-label="$t('layout.guestIdentity.close')"
+              @click="$emit('cancel')"
+            >
               <Icon name="lucide:x" size="16" />
             </button>
           </header>
@@ -29,11 +34,11 @@
             <!-- 说明文案 + 登录入口 -->
             <div class="guest-id-notice">
               <p class="guest-id-notice__text">
-                评论前需要一个身份标识，方便其他读者认识你。身份保存在当前浏览器；发表评论时，昵称和头像会随评论公开展示。
+                {{ $t('layout.guestIdentity.notice') }}
               </p>
               <button type="button" class="guest-id-notice__login" @click="onSwitchToLogin">
                 <Icon name="lucide:log-in" size="12" />
-                已有账号？点击登录
+                {{ $t('layout.guestIdentity.login') }}
               </button>
             </div>
 
@@ -43,7 +48,7 @@
                 v-if="avatarPreviewUrl"
                 :src="avatarPreviewUrl"
                 class="guest-id-avatar-preview__img"
-                alt="头像预览"
+                :alt="$t('layout.guestIdentity.avatarPreview')"
                 @error="avatarLoadError = true"
               />
               <span v-else class="guest-id-avatar-preview__letter" :style="{ background: avatarColor }">
@@ -57,7 +62,7 @@
               <!-- 昵称（必填） -->
               <div class="guest-id-field">
                 <label class="guest-id-field__label" for="gid-nickname">
-                  昵称 <span class="guest-id-field__required">*</span>
+                  {{ $t('layout.guestIdentity.nickname') }} <span class="guest-id-field__required">*</span>
                 </label>
                 <div class="guest-id-field__input-wrap">
                   <Icon name="lucide:user" size="14" class="guest-id-field__icon" />
@@ -66,7 +71,7 @@
                     v-model.trim="form.nickname"
                     type="text"
                     class="guest-id-field__input"
-                    placeholder="你的昵称"
+                    :placeholder="$t('layout.guestIdentity.nicknamePlaceholder')"
                     maxlength="20"
                     required
                   />
@@ -76,8 +81,8 @@
               <!-- 邮箱（可选） -->
               <div class="guest-id-field">
                 <label class="guest-id-field__label" for="gid-email">
-                  邮箱
-                  <span class="guest-id-field__optional">可选 · QQ 邮箱自动获取头像</span>
+                  {{ $t('layout.guestIdentity.email') }}
+                  <span class="guest-id-field__optional">{{ $t('layout.guestIdentity.emailHint') }}</span>
                 </label>
                 <div class="guest-id-field__input-wrap">
                   <Icon name="lucide:mail" size="14" class="guest-id-field__icon" />
@@ -94,8 +99,8 @@
               <!-- 站点（可选） -->
               <div class="guest-id-field">
                 <label class="guest-id-field__label" for="gid-website">
-                  站点
-                  <span class="guest-id-field__optional">可选</span>
+                  {{ $t('layout.guestIdentity.website') }}
+                  <span class="guest-id-field__optional">{{ $t('layout.guestIdentity.optional') }}</span>
                 </label>
                 <div class="guest-id-field__input-wrap">
                   <Icon name="lucide:globe" size="14" class="guest-id-field__icon" />
@@ -112,8 +117,8 @@
               <!-- 头像 URL（可选） -->
               <div class="guest-id-field">
                 <label class="guest-id-field__label" for="gid-avatar">
-                  头像 URL
-                  <span class="guest-id-field__optional">可选 · 优先级高于邮箱头像</span>
+                  {{ $t('layout.guestIdentity.avatarUrl') }}
+                  <span class="guest-id-field__optional">{{ $t('layout.guestIdentity.avatarUrlHint') }}</span>
                 </label>
                 <div class="guest-id-field__input-wrap">
                   <Icon name="lucide:image" size="14" class="guest-id-field__icon" />
@@ -129,7 +134,7 @@
 
               <button type="submit" class="guest-id-submit" :disabled="!form.nickname">
                 <Icon name="lucide:check" size="14" />
-                <span>确认身份</span>
+                <span>{{ $t('layout.guestIdentity.submit') }}</span>
               </button>
             </form>
           </div>
@@ -145,6 +150,7 @@ import type { GuestIdentity } from '~/composables/useGuestIdentity'
 
 // QQ 头像能力开关，关闭时预览与提示都不再走腾讯头像服务
 const qqAvatarEnabled = useQQAvatarEnabled()
+const { t } = useI18n()
 
 const emit = defineEmits<{
   confirm: [identity: GuestIdentity]
@@ -200,10 +206,10 @@ const avatarPreviewUrl = computed(() => {
 })
 
 const avatarHint = computed(() => {
-  if (form.avatarUrl) return '自定义头像'
-  if (qqAvatarEnabled && form.email && isQQEmail(form.email)) return 'QQ 头像'
-  if (form.nickname) return '首字母头像'
-  return '填写昵称后生成'
+  if (form.avatarUrl) return t('layout.guestIdentity.hintCustom')
+  if (qqAvatarEnabled && form.email && isQQEmail(form.email)) return t('layout.guestIdentity.hintQQ')
+  if (form.nickname) return t('layout.guestIdentity.hintLetter')
+  return t('layout.guestIdentity.hintEmpty')
 })
 
 // 弹窗打开时回填已有身份

@@ -13,18 +13,18 @@
       type="button"
       class="search-box__input is-readonly"
       :disabled="disabled || !hydrated"
-      :aria-label="label || placeholder"
+      :aria-label="label || placeholderText"
       aria-haspopup="dialog"
       data-focus-key="site-search"
       @click="$emit('click')"
     >
-      {{ disabled ? '搜索功能即将上线' : placeholder }}
+      {{ disabled ? $t('layout.searchBox.comingSoon') : placeholderText }}
     </button>
     <input
       v-else
       type="text"
-      :aria-label="label || placeholder"
-      :placeholder="disabled ? '搜索功能即将上线' : placeholder"
+      :aria-label="label || placeholderText"
+      :placeholder="disabled ? $t('layout.searchBox.comingSoon') : placeholderText"
       :value="modelValue"
       :disabled="disabled || !hydrated"
       class="search-box__input"
@@ -40,7 +40,7 @@ const hydrated = ref(false)
 onMounted(() => {
   hydrated.value = true
 })
-withDefaults(
+const props = withDefaults(
   defineProps<{
     modelValue?: string
     placeholder?: string
@@ -50,12 +50,16 @@ withDefaults(
   }>(),
   {
     modelValue: '',
-    placeholder: '搜索...',
+    placeholder: undefined,
     label: '',
     disabled: false,
     readonly: false,
   },
 )
+
+const { t } = useI18n()
+/** 未传占位文案时使用跟随界面语言的缺省值 */
+const placeholderText = computed(() => props.placeholder ?? t('layout.searchBox.placeholder'))
 
 defineEmits<{
   'update:modelValue': [value: string]

@@ -1,7 +1,7 @@
 <!-- @file RelatedContent.vue @description 博主维护的有序阅读入口，数据源只提供当前公开目标。 -->
 <template>
-  <section v-if="items?.length" class="related-content" aria-label="关联阅读">
-    <h2>继续阅读与浏览</h2>
+  <section v-if="items?.length" class="related-content" :aria-label="$t('layout.related.label')">
+    <h2>{{ $t('layout.related.title') }}</h2>
     <ul>
       <li v-for="item in items" :key="item.type + ':' + item.id">
         <NuxtLink :to="item.url"

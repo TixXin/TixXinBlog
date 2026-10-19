@@ -9,15 +9,17 @@
   <section class="card stats-card">
     <div class="stats-card__title-row">
       <Icon name="lucide:bar-chart-2" size="16" />
-      <span>站点统计</span>
+      <span>{{ $t('layout.sidebar.stats.title') }}</span>
     </div>
 
     <div class="stats-card__uptime">
       <div class="stats-card__uptime-left">
         <span class="stats-card__ping-dot" />
         <div class="stats-card__uptime-text">
-          <span class="stats-card__uptime-label">站点已稳定运行</span>
-          <span class="stats-card__uptime-days">{{ stats.siteAgeDays.toLocaleString() }} 天</span>
+          <span class="stats-card__uptime-label">{{ $t('layout.sidebar.stats.uptime') }}</span>
+          <span class="stats-card__uptime-days">{{
+            $t('layout.sidebar.stats.days', { days: formatNumber(stats.siteAgeDays) }, stats.siteAgeDays)
+          }}</span>
         </div>
       </div>
       <Icon name="lucide:shield-check" size="20" class="stats-card__uptime-icon" />
@@ -41,11 +43,12 @@ const props = defineProps<{
   stats: SiteStats
 }>()
 
+const { t } = useI18n()
 const statItems = computed(() => [
-  { label: '文章', value: props.stats.articles },
-  { label: '浏览', value: props.stats.views },
-  { label: '评论', value: props.stats.comments },
-  { label: '标签', value: props.stats.tags },
+  { label: t('layout.sidebar.stats.articles'), value: props.stats.articles },
+  { label: t('layout.sidebar.stats.views'), value: props.stats.views },
+  { label: t('layout.sidebar.stats.comments'), value: props.stats.comments },
+  { label: t('layout.sidebar.stats.tags'), value: props.stats.tags },
 ])
 </script>
 

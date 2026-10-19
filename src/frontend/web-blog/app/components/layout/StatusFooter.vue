@@ -17,7 +17,7 @@
           }}</a></template
         ></span
       >
-      <nav v-if="footerLinks.length" class="footer__links" aria-label="页脚链接">
+      <nav v-if="footerLinks.length" class="footer__links" :aria-label="$t('layout.footer.linksLabel')">
         <template v-for="link in footerLinks" :key="link.href">
           <a
             v-if="link.external"
@@ -39,7 +39,7 @@
         </template>
       </div>
       <div class="footer__divider" aria-hidden="true" />
-      <CommonTooltip :content="apiLatencyTip" placement="top">
+      <CommonTooltip :content="$t('layout.footer.apiLatencyTip')" placement="top">
         <div class="footer__status" role="status" tabindex="0">
           <span v-if="pingMs !== null" class="footer__ping"
             ><Icon name="lucide:activity" size="12" /> API {{ pingMs }} ms</span

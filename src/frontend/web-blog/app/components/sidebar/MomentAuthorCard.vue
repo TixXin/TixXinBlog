@@ -25,17 +25,17 @@
     <div class="moment-author-card__stats">
       <div class="moment-author-card__stat">
         <span class="moment-author-card__stat-value">{{ stats.totalMoments ?? '—' }}</span>
-        <span class="moment-author-card__stat-label">公开动态</span>
+        <span class="moment-author-card__stat-label">{{ $t('layout.sidebar.author.moments') }}</span>
       </div>
       <div class="moment-author-card__stat-divider" />
       <div class="moment-author-card__stat">
         <span class="moment-author-card__stat-value">{{ stats.totalLikes ?? '—' }}</span>
-        <span class="moment-author-card__stat-label">点赞</span>
+        <span class="moment-author-card__stat-label">{{ $t('layout.sidebar.author.likes') }}</span>
       </div>
       <div class="moment-author-card__stat-divider" />
       <div class="moment-author-card__stat">
         <span class="moment-author-card__stat-value">{{ stats.totalComments ?? '—' }}</span>
-        <span class="moment-author-card__stat-label">公开评论</span>
+        <span class="moment-author-card__stat-label">{{ $t('layout.sidebar.author.comments') }}</span>
       </div>
     </div>
 

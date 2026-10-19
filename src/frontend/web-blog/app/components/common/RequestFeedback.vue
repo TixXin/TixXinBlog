@@ -7,13 +7,13 @@
     <div class="request-feedback__message" :role="pending ? 'status' : 'alert'">
       <Icon :name="pending ? 'lucide:loader-circle' : 'lucide:cloud-off'" size="24" aria-hidden="true" />
       <div>
-        <p class="request-feedback__title">{{ pending ? '正在加载…' : title }}</p>
+        <p class="request-feedback__title">{{ pending ? $t('layout.requestFeedback.loading') : title }}</p>
         <p v-if="description && !pending" class="request-feedback__description">{{ description }}</p>
       </div>
     </div>
     <button :aria-busy="pending" type="button" :aria-disabled="pending" @click="!pending && $emit('retry')">
       <Icon name="lucide:refresh-cw" size="14" aria-hidden="true" />
-      {{ pending ? '加载中…' : '重试' }}
+      {{ pending ? $t('layout.requestFeedback.pending') : $t('layout.requestFeedback.retry') }}
     </button>
   </div>
 </template>

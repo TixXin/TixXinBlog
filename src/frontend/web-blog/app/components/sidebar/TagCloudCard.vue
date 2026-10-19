@@ -8,10 +8,10 @@
 <template>
   <section class="card tag-cloud-card">
     <div class="tag-cloud-card__header">
-      <h2 class="tag-cloud-card__title"><Icon name="lucide:hash" size="16" /> 探索标签</h2>
-      <span class="tag-cloud-card__count text-xs">{{ tags.length }} 个标签</span>
+      <h2 class="tag-cloud-card__title"><Icon name="lucide:hash" size="16" /> {{ $t('layout.sidebar.tags.title') }}</h2>
+      <span class="tag-cloud-card__count text-xs">{{ $t('layout.sidebar.tags.count', { count: tags.length }) }}</span>
     </div>
-    <div class="tag-cloud-card__tags" role="group" aria-label="浏览标签或筛选首页文章">
+    <div class="tag-cloud-card__tags" role="group" :aria-label="$t('layout.sidebar.tags.groupLabel')">
       <div
         v-for="tag in tags"
         :key="tag.name"
@@ -23,11 +23,11 @@
           {{ tag.name }}
           <span class="tag-cloud-card__tag-count">{{ tag.count }}</span>
         </NuxtLink>
-        <CommonTooltip :content="`在首页筛选标签：${tag.name}`">
+        <CommonTooltip :content="$t('layout.sidebar.tags.filter', { name: tag.name })">
           <button
             type="button"
             class="tag-cloud-card__filter"
-            :aria-label="`在首页筛选标签：${tag.name}`"
+            :aria-label="$t('layout.sidebar.tags.filter', { name: tag.name })"
             :aria-pressed="activeTag === tag.name"
             @click="$emit('select', tag.name)"
           >
@@ -36,7 +36,7 @@
         </CommonTooltip>
       </div>
     </div>
-    <p v-if="!tags.length" class="tag-cloud-card__empty">暂无标签</p>
+    <p v-if="!tags.length" class="tag-cloud-card__empty">{{ $t('layout.sidebar.tags.empty') }}</p>
   </section>
 </template>
 

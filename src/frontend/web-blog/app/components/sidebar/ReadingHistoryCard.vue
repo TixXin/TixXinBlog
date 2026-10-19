@@ -8,8 +8,15 @@
 <template>
   <section v-if="history.length" class="card reading-history-card">
     <div class="reading-history-card__header">
-      <h2 class="reading-history-card__title"><Icon name="lucide:history" size="16" /> 最近阅读</h2>
-      <button type="button" class="reading-history-card__clear" aria-label="清除阅读历史" @click="clearHistory">
+      <h2 class="reading-history-card__title">
+        <Icon name="lucide:history" size="16" /> {{ $t('layout.sidebar.history.title') }}
+      </h2>
+      <button
+        type="button"
+        class="reading-history-card__clear"
+        :aria-label="$t('layout.sidebar.history.clear')"
+        @click="clearHistory"
+      >
         <Icon name="lucide:trash-2" size="12" />
       </button>
     </div>

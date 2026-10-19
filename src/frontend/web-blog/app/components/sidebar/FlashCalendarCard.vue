@@ -10,10 +10,15 @@
     <div class="flash-calendar-card__header">
       <h2 class="flash-calendar-card__title">
         <Icon name="lucide:calendar-days" size="16" />
-        发布日历
+        {{ $t('layout.sidebar.calendar.flashTitle') }}
       </h2>
       <div class="flash-calendar-card__nav">
-        <button type="button" class="flash-calendar-card__nav-btn" aria-label="上一月" @click="prevMonth">
+        <button
+          type="button"
+          class="flash-calendar-card__nav-btn"
+          :aria-label="$t('layout.sidebar.calendar.prevMonth')"
+          @click="prevMonth"
+        >
           <Icon name="lucide:chevron-left" size="14" />
         </button>
         <span class="flash-calendar-card__month">{{ monthLabel }}</span>
@@ -21,7 +26,7 @@
           type="button"
           class="flash-calendar-card__nav-btn"
           :disabled="isCurrentMonth"
-          aria-label="下一月"
+          :aria-label="$t('layout.sidebar.calendar.nextMonth')"
           @click="nextMonth"
         >
           <Icon name="lucide:chevron-right" size="14" />
@@ -30,7 +35,7 @@
     </div>
 
     <div class="flash-calendar-card__weekdays">
-      <span v-for="wd in weekdays" :key="wd" class="flash-calendar-card__wd">{{ wd }}</span>
+      <span v-for="(wd, index) in weekdays" :key="index" class="flash-calendar-card__wd">{{ wd }}</span>
     </div>
 
     <div class="flash-calendar-card__grid">
@@ -40,7 +45,11 @@
         type="button"
         :disabled="!day?.hasNote"
         :aria-hidden="!day || undefined"
-        :aria-label="day ? `${dayLabel(day.dateStr)}，${day.noteCount} 条闪念` : undefined"
+        :aria-label="
+          day
+            ? $t('layout.sidebar.calendar.flashDayLabel', { date: dayLabel(day.dateStr), count: day.noteCount })
+            : undefined
+        "
         :aria-pressed="day?.dateStr === selectedDate"
         class="flash-calendar-card__day"
         :class="{
@@ -63,17 +72,17 @@
     <div class="flash-calendar-card__footer">
       <button v-if="!isCurrentMonth" type="button" class="flash-calendar-card__today-btn" @click="goToday">
         <Icon name="lucide:calendar-check" size="12" />
-        今天
+        {{ $t('layout.sidebar.calendar.today') }}
       </button>
 
       <div class="flash-calendar-card__footer-right">
         <span v-if="streak > 0" class="flash-calendar-card__streak">
           <Icon name="lucide:flame" size="12" class="flash-calendar-card__streak-icon" />
-          连续 {{ streak }} 天
+          {{ $t('layout.sidebar.calendar.streak', { count: streak }) }}
         </span>
         <span class="flash-calendar-card__legend">
           <span class="flash-calendar-card__legend-dot" />
-          本月 {{ monthNoteCount }} 条 · UTC
+          {{ $t('layout.sidebar.calendar.flashMonthCount', { count: monthNoteCount }) }}
         </span>
       </div>
     </div>
@@ -91,12 +100,16 @@ const emit = defineEmits<{
   'select-date': [date: string | null]
 }>()
 
-const weekdays = ['一', '二', '三', '四', '五', '六', '日']
+const { t } = useI18n()
+// 星期表头从周一开始
+const weekdays = computed(() =>
+  ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'].map((day) => t(`layout.sidebar.calendar.weekdays.${day}`)),
+)
 
 /** 日期按钮的读屏名称；日数不补零，保证可见的日数是可访问名的一部分 */
 function dayLabel(dateStr: string) {
-  const [year, month, day] = dateStr.split('-').map(Number)
-  return `${year}年${month}月${day}日`
+  const [year = 0, month = 1, day = 1] = dateStr.split('-').map(Number)
+  return formatDate(Date.UTC(year, month - 1, day), { timeZone: 'UTC', year: 'numeric', month: 'long', day: 'numeric' })
 }
 
 // 闪念日期按 createdAt 的 UTC 日期分组，日历的“今天”、月份与星期也统一用 UTC，与动态日历一致
@@ -116,7 +129,9 @@ watch(
   { immediate: true },
 )
 
-const monthLabel = computed(() => `${viewYear.value}年${viewMonth.value + 1}月`)
+const monthLabel = computed(() =>
+  formatDate(Date.UTC(viewYear.value, viewMonth.value, 1), { timeZone: 'UTC', year: 'numeric', month: 'short' }),
+)
 
 const isCurrentMonth = computed(() => {
   const now = new Date()
@@ -221,9 +236,13 @@ const streak = computed(() => {
   return count
 })
 
+/** 当前视图月份中某天的月日文字，如「10月19日」 */
+function monthDay(num: number) {
+  return formatDate(Date.UTC(viewYear.value, viewMonth.value, num), { timeZone: 'UTC', month: 'short', day: 'numeric' })
+}
+
 function dayTooltip(day: CalendarDay): string {
-  const m = viewMonth.value + 1
-  return `${m}月${day.num}日 · ${day.noteCount}条`
+  return t('layout.sidebar.calendar.flashTooltip', { date: monthDay(day.num), count: day.noteCount })
 }
 
 function onDayClick(day: CalendarDay) {

@@ -9,7 +9,14 @@
   <Teleport to="body">
     <Transition name="search-modal" @after-leave="focusDestination">
       <div v-if="visible" class="search-modal-overlay" @click.self="close">
-        <div ref="dialogRef" class="search-modal" role="dialog" aria-modal="true" aria-label="站内搜索" tabindex="-1">
+        <div
+          ref="dialogRef"
+          class="search-modal"
+          role="dialog"
+          aria-modal="true"
+          :aria-label="$t('layout.searchModal.dialogLabel')"
+          tabindex="-1"
+        >
           <div class="search-modal__header">
             <Icon name="lucide:search" size="16" class="search-modal__icon" />
             <input
@@ -17,20 +24,31 @@
               v-model="query"
               type="text"
               class="search-modal__input"
-              placeholder="搜索文章、项目、图库等内容…"
-              aria-label="搜索站内公开内容"
+              :placeholder="$t('layout.searchModal.placeholder')"
+              :aria-label="$t('layout.searchModal.inputLabel')"
               :aria-describedby="keyboardHintId"
               maxlength="200"
               @keydown="onResultKeydown"
             />
-            <button v-if="query" type="button" class="search-modal__close" aria-label="清空搜索" @click="query = ''">
+            <button
+              v-if="query"
+              type="button"
+              class="search-modal__close"
+              :aria-label="$t('layout.searchModal.clear')"
+              @click="query = ''"
+            >
               <Icon name="lucide:delete" size="16" />
             </button>
-            <button type="button" class="search-modal__close" aria-label="关闭搜索" @click="close">
+            <button
+              type="button"
+              class="search-modal__close"
+              :aria-label="$t('layout.searchModal.close')"
+              @click="close"
+            >
               <Icon name="lucide:x" size="18" />
             </button>
           </div>
-          <nav class="search-modal__filters" aria-label="搜索内容类型">
+          <nav class="search-modal__filters" :aria-label="$t('layout.searchModal.typesLabel')">
             <button
               v-for="(label, value) in searchTypeLabels"
               :key="value"
@@ -44,12 +62,12 @@
           <div v-if="query.trim()" ref="resultListRef" class="search-modal__body">
             <div v-if="isSearching" class="search-modal__loading">
               <Icon name="lucide:loader-2" size="16" class="search-modal__spinner" />
-              搜索中...
+              {{ $t('layout.searchModal.searching') }}
             </div>
             <CommonRequestFeedback
               v-else-if="error"
               compact
-              title="搜索加载失败"
+              :title="$t('layout.searchModal.loadFailed')"
               :description="error"
               @retry="search(query)"
             />
@@ -61,10 +79,15 @@
                 :data-search-type="group.type"
               >
                 <h2>
-                  {{ typeLabel(group.type) }} <span v-if="group.total !== null">· {{ group.total }} 项</span>
+                  {{ typeLabel(group.type) }}
+                  <span v-if="group.total !== null">{{
+                    $t('layout.searchModal.groupTotal', { count: group.total })
+                  }}</span>
                 </h2>
-                <p v-if="group.unavailable" class="search-modal__status">此来源暂不可用</p>
-                <p v-else-if="!group.items.length" class="search-modal__status">当前条件下没有结果</p>
+                <p v-if="group.unavailable" class="search-modal__status">{{ $t('layout.searchModal.unavailable') }}</p>
+                <p v-else-if="!group.items.length" class="search-modal__status">
+                  {{ $t('layout.searchModal.noGroupResults') }}
+                </p>
                 <ul v-else class="search-modal__list">
                   <li v-for="item in group.items" :key="`${item.type}:${item.id}`">
                     <a
@@ -97,35 +120,39 @@
                   class="search-modal__more"
                   @click="type = group.type"
                 >
-                  查看全部{{ typeLabel(group.type) }}
+                  {{ $t('layout.searchModal.viewAll', { type: typeLabel(group.type) }) }}
                 </button>
               </section>
             </template>
             <div v-if="!isSearching && !error && !results.length" class="search-modal__empty">
               <Icon name="lucide:search-x" size="20" />
-              <span>没有找到相关内容</span>
+              <span>{{ $t('layout.searchModal.empty') }}</span>
             </div>
           </div>
           <p v-if="query.trim()" class="search-modal__status" role="status">
             {{
               isSearching
-                ? '正在搜索…'
+                ? $t('layout.searchModal.searchingStatus')
                 : type === 'all'
-                  ? '各类型分别展示前 3 项，可选择类型查看全部。'
-                  : `第 ${page} 页${total === null ? '' : `，共 ${total} 项`}`
+                  ? $t('layout.searchModal.allHint')
+                  : total === null
+                    ? $t('layout.searchModal.pageStatus', { page })
+                    : $t('layout.searchModal.pageStatusTotal', { page, total })
             }}
           </p>
-          <p :id="keyboardHintId" class="sr-only">使用上下方向键选择结果，按 Enter 打开。</p>
+          <p :id="keyboardHintId" class="sr-only">{{ $t('layout.searchModal.keyboardHint') }}</p>
           <p class="sr-only" role="status" aria-live="polite" aria-atomic="true">{{ selectionAnnouncement }}</p>
           <nav
             v-if="query.trim() && type !== 'all' && total !== null && (total > SEARCH_PAGE_SIZE || page > 1)"
             class="search-modal__filters"
-            aria-label="搜索结果分页"
+            :aria-label="$t('layout.searchModal.pagination')"
           >
-            <button type="button" :disabled="isSearching || page <= 1" @click="page--">上一页</button>
+            <button type="button" :disabled="isSearching || page <= 1" @click="page--">
+              {{ $t('layout.searchModal.prev') }}
+            </button>
             <span>{{ page }} / {{ Math.max(1, Math.ceil(total / SEARCH_PAGE_SIZE)) }}</span>
             <button type="button" :disabled="isSearching || page * SEARCH_PAGE_SIZE >= total" @click="page++">
-              下一页
+              {{ $t('layout.searchModal.next') }}
             </button>
           </nav>
           <a
@@ -133,13 +160,15 @@
             :href="resultsPageUrl"
             class="search-modal__more"
             @click="onResultClick($event, { type: 'post', url: resultsPageUrl })"
-            >打开完整搜索结果页</a
+            >{{ $t('layout.searchModal.openFull') }}</a
           >
 
           <div v-if="!query.trim()" class="search-modal__hint">
-            <span>输入关键词开始搜索</span>
+            <span>{{ $t('layout.searchModal.start') }}</span>
             <div class="search-modal__hint-keys">
-              <kbd>&uarr;&darr;</kbd> 导航 <kbd>Enter</kbd> 跳转 <kbd>ESC</kbd> 关闭
+              <kbd>&uarr;&darr;</kbd> {{ $t('layout.searchModal.keyNavigate') }} <kbd>Enter</kbd>
+              {{ $t('layout.searchModal.keyOpen') }} <kbd>ESC</kbd>
+              {{ $t('layout.searchModal.keyClose') }}
             </div>
           </div>
         </div>
@@ -155,6 +184,7 @@ import { searchTypeLabels, SEARCH_PAGE_SIZE } from '~/features/search/types'
 import { searchLocation } from '~/features/search/query'
 
 const visible = defineModel<boolean>('visible', { default: false })
+const { t } = useI18n()
 
 const inputRef = ref<HTMLInputElement | null>(null)
 const dialogRef = ref<HTMLElement | null>(null)
@@ -166,7 +196,13 @@ const { query, type, page, groups, results, total, isSearching, error, search, c
 const navigableResults = computed(() => (query.value.trim() && !isSearching.value ? results.value : []))
 const selectionAnnouncement = computed(() => {
   const item = navigableResults.value[selectedIndex.value]
-  return item ? `第 ${selectedIndex.value + 1} 项，共 ${navigableResults.value.length} 项，${item.title}` : ''
+  return item
+    ? t('layout.searchModal.selection', {
+        index: selectedIndex.value + 1,
+        total: navigableResults.value.length,
+        title: item.title,
+      })
+    : ''
 })
 watch([total, isSearching], () => {
   if (isSearching.value || total.value === null || type.value === 'all') return
@@ -290,7 +326,7 @@ async function navigateTo(item: Pick<SearchResultItem, 'type' | 'url'>) {
       }
     } catch {
       destination = null
-      notifyNavigationError('页面跳转失败，请重试。')
+      notifyNavigationError(t('layout.searchModal.navigationFailed'))
       document.querySelector<HTMLElement>('[data-focus-key="site-search"]')?.focus({ preventScroll: true })
     }
   }

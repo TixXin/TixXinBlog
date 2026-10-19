@@ -20,19 +20,19 @@
           class="appearance-drawer card"
           role="dialog"
           aria-modal="true"
-          aria-label="界面设置"
+          :aria-label="t('layout.appearance.title')"
           tabindex="-1"
         >
           <header class="appearance-drawer__heading">
-            <h2>界面设置</h2>
-            <button type="button" aria-label="关闭界面设置" @click="closeDrawer">
+            <h2>{{ t('layout.appearance.title') }}</h2>
+            <button type="button" :aria-label="t('layout.appearance.close')" @click="closeDrawer">
               <Icon name="lucide:x" size="18" />
             </button>
           </header>
           <div class="appearance-drawer__body">
             <section v-if="isCapabilitySupported('colorMode')" class="appearance-section appearance-section--first">
               <div class="appearance-section__head">
-                <h3 class="appearance-section__title">颜色主题</h3>
+                <h3 class="appearance-section__title">{{ t('layout.appearance.colorModeTitle') }}</h3>
                 <span class="appearance-section__value">{{ themeLabel }}</span>
               </div>
               <div class="appearance-option-grid appearance-option-grid--theme">
@@ -54,7 +54,7 @@
 
             <section v-if="isCapabilitySupported('colorMode')" class="appearance-section">
               <div class="appearance-section__head">
-                <h3 class="appearance-section__title">主题切换动画</h3>
+                <h3 class="appearance-section__title">{{ t('layout.appearance.colorModeTransitionTitle') }}</h3>
                 <span class="appearance-section__value">{{ colorModeTransitionLabel }}</span>
               </div>
               <div class="appearance-option-grid appearance-option-grid--anim">
@@ -77,7 +77,7 @@
             <section class="appearance-section">
               <div class="appearance-section__head">
                 <h3 class="appearance-section__title">
-                  布局主题
+                  {{ t('layout.appearance.layoutThemeTitle') }}
                   <a
                     ref="engineBadgeRef"
                     href="https://github.com/TixXin/nuxt-theme-engine"
@@ -92,11 +92,13 @@
                 </h3>
                 <span class="appearance-section__value">
                   {{ layoutThemeLabel }}
-                  <span v-if="switchingState === 'loading'" class="appearance-section__status">切换中…</span>
+                  <span v-if="switchingState === 'loading'" class="appearance-section__status">{{
+                    t('layout.appearance.switching')
+                  }}</span>
                   <span
                     v-else-if="switchingState === 'error'"
                     class="appearance-section__status appearance-section__status--error"
-                    >切换失败</span
+                    >{{ t('layout.appearance.switchFailed') }}</span
                   >
                 </span>
               </div>
@@ -111,7 +113,7 @@
                     'appearance-option--disabled': switchingState === 'loading' && currentThemeId !== theme.id,
                   }"
                   :disabled="switchingState === 'loading'"
-                  :aria-label="`${theme.name} 布局主题`"
+                  :aria-label="t('layout.appearance.layoutThemeOption', { name: theme.name })"
                   :aria-pressed="currentThemeId === theme.id"
                   :title="preloadErrors[theme.id] || theme.description"
                   @click="onLayoutThemeClick(theme.id)"
@@ -131,7 +133,7 @@
 
             <section v-if="isCapabilitySupported('contentTransition')" class="appearance-section">
               <div class="appearance-section__head">
-                <h3 class="appearance-section__title">主内容切换</h3>
+                <h3 class="appearance-section__title">{{ t('layout.appearance.contentTransitionTitle') }}</h3>
                 <span class="appearance-section__value">{{ contentTransitionLabel }}</span>
               </div>
               <div class="appearance-option-grid appearance-option-grid--anim">
@@ -152,7 +154,7 @@
 
             <section v-if="isCapabilitySupported('sidebarAnimation')" class="appearance-section">
               <div class="appearance-section__head">
-                <h3 class="appearance-section__title">右侧栏动画</h3>
+                <h3 class="appearance-section__title">{{ t('layout.appearance.sidebarAnimationTitle') }}</h3>
                 <span class="appearance-section__value">{{ sidebarAnimationLabel }}</span>
               </div>
               <div class="appearance-option-grid appearance-option-grid--anim">
@@ -184,10 +186,10 @@
 
           <section class="appearance-section">
             <div class="appearance-section__head">
-              <h3 class="appearance-section__title">其他</h3>
+              <h3 class="appearance-section__title">{{ t('layout.appearance.otherTitle') }}</h3>
             </div>
             <label class="appearance-toggle">
-              <span class="appearance-toggle__label">分页栏随滚动自动隐藏</span>
+              <span class="appearance-toggle__label">{{ t('layout.appearance.paginationAutoHide') }}</span>
               <button
                 type="button"
                 class="appearance-toggle__switch"
@@ -202,7 +204,9 @@
           </section>
 
           <footer class="appearance-drawer__footer">
-            <button type="button" class="appearance-drawer__reset" @click="resetAppearanceSettings">恢复默认</button>
+            <button type="button" class="appearance-drawer__reset" @click="resetAppearanceSettings">
+              {{ t('layout.appearance.reset') }}
+            </button>
           </footer>
         </aside>
       </Transition>
@@ -211,7 +215,7 @@
     <Teleport to="body">
       <Transition name="tooltip">
         <div v-if="engineTipVisible" class="engine-tip-floating" :style="engineTipStyle">
-          由 @tixxin/nuxt-theme-engine 驱动（MIT License）
+          {{ t('layout.appearance.engineTip') }}
         </div>
       </Transition>
     </Teleport>

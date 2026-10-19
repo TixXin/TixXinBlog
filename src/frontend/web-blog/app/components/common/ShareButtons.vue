@@ -7,17 +7,23 @@
 
 <template>
   <div class="share-buttons">
-    <span class="share-buttons__label">分享</span>
-    <button v-if="canNativeShare" type="button" class="share-buttons__btn" aria-label="系统分享" @click="shareNative">
+    <span class="share-buttons__label">{{ $t('layout.share.label') }}</span>
+    <button
+      v-if="canNativeShare"
+      type="button"
+      class="share-buttons__btn"
+      :aria-label="$t('layout.share.native')"
+      @click="shareNative"
+    >
       <Icon name="lucide:share-2" size="14" />
     </button>
-    <button type="button" class="share-buttons__btn" aria-label="复制链接" @click="copyLink">
+    <button type="button" class="share-buttons__btn" :aria-label="$t('layout.share.copy')" @click="copyLink">
       <Icon :name="copied ? 'lucide:check' : 'lucide:link'" size="14" />
     </button>
-    <button type="button" class="share-buttons__btn" aria-label="分享到 Twitter" @click="shareTwitter">
+    <button type="button" class="share-buttons__btn" :aria-label="$t('layout.share.twitter')" @click="shareTwitter">
       <Icon name="lucide:twitter" size="14" />
     </button>
-    <button type="button" class="share-buttons__btn" aria-label="分享到微博" @click="shareWeibo">
+    <button type="button" class="share-buttons__btn" :aria-label="$t('layout.share.weibo')" @click="shareWeibo">
       <Icon name="lucide:globe" size="14" />
     </button>
   </div>
@@ -29,6 +35,7 @@ const props = defineProps<{
   url?: string
 }>()
 
+const { t } = useI18n()
 const copied = ref(false)
 const { warning: notifyCopyFailure } = useToast()
 let copyTimer: ReturnType<typeof setTimeout> | undefined
@@ -57,7 +64,7 @@ async function shareNative() {
     await navigator.share({ title: props.title, url: shareUrl() })
   } catch (error) {
     // 用户取消分享属于正常结果，不提示
-    if ((error as DOMException)?.name !== 'AbortError' && alive) notifyCopyFailure('系统分享不可用，请改用复制链接。')
+    if ((error as DOMException)?.name !== 'AbortError' && alive) notifyCopyFailure(t('layout.share.nativeFailed'))
   }
 }
 
@@ -69,7 +76,7 @@ async function copyLink() {
     if (copyTimer) clearTimeout(copyTimer)
     copyTimer = setTimeout(() => (copied.value = false), 2000)
   } catch {
-    if (alive) notifyCopyFailure('复制失败，请手动复制浏览器地址。')
+    if (alive) notifyCopyFailure(t('layout.share.copyFailed'))
   }
 }
 

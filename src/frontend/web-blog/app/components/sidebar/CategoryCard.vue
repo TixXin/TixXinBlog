@@ -8,7 +8,9 @@
 <template>
   <section class="card category-card">
     <div class="category-card__header">
-      <h2 class="category-card__title"><Icon name="lucide:folder-open" size="16" /> 专栏分类</h2>
+      <h2 class="category-card__title">
+        <Icon name="lucide:folder-open" size="16" /> {{ $t('layout.sidebar.category.title') }}
+      </h2>
     </div>
     <ul class="category-card__list">
       <li v-for="cat in categories" :key="cat.name" class="category-card__row">
@@ -28,11 +30,11 @@
             <Icon name="lucide:chevron-right" size="14" class="category-card__arrow" />
           </div>
         </NuxtLink>
-        <CommonTooltip :content="`在首页筛选专栏：${cat.name}`">
+        <CommonTooltip :content="$t('layout.sidebar.category.filter', { name: cat.name })">
           <button
             type="button"
             class="category-card__filter"
-            :aria-label="`在首页筛选专栏：${cat.name}`"
+            :aria-label="$t('layout.sidebar.category.filter', { name: cat.name })"
             :aria-pressed="activeCategory === cat.name"
             @click="$emit('select', cat.name)"
           >
@@ -41,7 +43,7 @@
         </CommonTooltip>
       </li>
     </ul>
-    <p v-if="!categories.length" class="text-sm text-soft">暂无分类</p>
+    <p v-if="!categories.length" class="text-sm text-soft">{{ $t('layout.sidebar.category.empty') }}</p>
   </section>
 </template>
 

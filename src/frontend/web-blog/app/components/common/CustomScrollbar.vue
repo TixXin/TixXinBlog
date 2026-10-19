@@ -43,12 +43,12 @@
     <!-- 滚动进度 / 返回顶部按钮 -->
     <Transition name="back-to-top">
       <div v-if="showBackToTop && showBackToTopBtn" class="custom-scrollbar__back-to-top">
-        <CommonTooltip content="返回顶部" placement="left">
+        <CommonTooltip :content="$t('layout.scrollbar.backToTop')" placement="left">
           <button
             type="button"
             class="custom-scrollbar__back-to-top-btn"
             :class="{ 'is-clicked': progressClicked }"
-            aria-label="返回顶部"
+            :aria-label="$t('layout.scrollbar.backToTop')"
             @click="onProgressClick"
           >
             <span class="custom-scrollbar__progress-text">{{ displayProgress }}%</span>

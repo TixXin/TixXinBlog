@@ -13,13 +13,14 @@
       v-else-if="item.link && !item.failed"
       v-bind="item.link"
       class="markdown-image__action"
-      :aria-label="item.attrs.alt || '查看图片链接'"
+      :aria-label="item.attrs.alt || $t('layout.markdownImages.openLink')"
     />
   </Teleport>
 </template>
 
 <script setup lang="ts">
 const props = defineProps<{ root: HTMLElement | null; html: string }>()
+const { t } = useI18n()
 interface MarkdownImage {
   key: string
   target: HTMLElement
@@ -87,7 +88,7 @@ function collectImages() {
       failed: false,
     }
     if (preview) {
-      item.preview = preview.getAttribute('aria-label') || '查看大图'
+      item.preview = preview.getAttribute('aria-label') || t('layout.markdownImages.preview')
       preview.replaceWith(target)
     } else if (link) {
       // 只从已经净化的原始链接复制导航属性，不引入原始 Markdown HTML。

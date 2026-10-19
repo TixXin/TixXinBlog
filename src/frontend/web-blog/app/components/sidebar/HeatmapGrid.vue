@@ -8,24 +8,24 @@
 <template>
   <div class="heatmap">
     <div class="heatmap__header">
-      <span class="heatmap__title">活跃度</span>
-      <span class="heatmap__subtitle">最近 15 周 · UTC</span>
+      <span class="heatmap__title">{{ $t('layout.sidebar.heatmap.title') }}</span>
+      <span class="heatmap__subtitle">{{ $t('layout.sidebar.heatmap.subtitle', { weeks: 15 }) }}</span>
     </div>
     <div class="heatmap__body">
       <div class="heatmap__week-labels">
-        <span>一</span>
+        <span>{{ $t('layout.sidebar.calendar.weekdays.mon') }}</span>
         <span />
-        <span>三</span>
+        <span>{{ $t('layout.sidebar.calendar.weekdays.wed') }}</span>
         <span />
-        <span>五</span>
+        <span>{{ $t('layout.sidebar.calendar.weekdays.fri') }}</span>
         <span />
-        <span>日</span>
+        <span>{{ $t('layout.sidebar.calendar.weekdays.sun') }}</span>
       </div>
       <div
         ref="gridRef"
         class="heatmap__grid"
         role="group"
-        aria-label="每日公开内容，方向键选择日期"
+        :aria-label="$t('layout.sidebar.heatmap.gridLabel')"
         @mouseover="onCellEnter"
         @mouseout="onCellLeave"
         @focusin="onCellEnter"
@@ -38,7 +38,13 @@
           class="heatmap__cell"
           :data-idx="i"
           :tabindex="i === focusedIndex ? 0 : -1"
-          :aria-label="`${cell.date}，${cell.articles} 篇公开文章，${cell.comments} 条公开评论`"
+          :aria-label="
+            $t('layout.sidebar.heatmap.cellLabel', {
+              date: cell.date,
+              articles: cell.articles,
+              comments: cell.comments,
+            })
+          "
           :style="{ background: heatmapColor(cell.level) }"
           @keydown="moveCell($event, i)"
         />
@@ -57,11 +63,11 @@
           <template v-if="activeCell.level > 0">
             <div class="heatmap-tooltip__level">
               <span class="heatmap-tooltip__dot" :style="{ background: heatmapLightColor(activeCell.level) }" />
-              公开内容数量
+              {{ $t('layout.sidebar.heatmap.level') }}
             </div>
             <div class="heatmap-tooltip__detail">{{ cellDetail(activeCell) }}</div>
           </template>
-          <div v-else class="heatmap-tooltip__inactive">无活动</div>
+          <div v-else class="heatmap-tooltip__inactive">{{ $t('layout.sidebar.heatmap.inactive') }}</div>
         </template>
         <div class="heatmap-tooltip__arrow" />
       </div>
@@ -78,7 +84,8 @@ interface HeatmapCell {
   comments: number
 }
 
-const weekdayNames = ['周一', '周二', '周三', '周四', '周五', '周六', '周日']
+const { t } = useI18n()
+const weekdayKeys = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun']
 const lightColors = ['#ebedf0', '#9be9a8', '#40c463', '#30a14e', '#216e39']
 
 const gridRef = ref<HTMLElement | null>(null)
@@ -106,7 +113,9 @@ const cells = computed<HeatmapCell[]>(() =>
     const total = item.articles + item.comments
     return {
       ...item,
-      weekday: weekdayNames[(new Date(`${item.date}T00:00:00Z`).getUTCDay() + 6) % 7]!,
+      weekday: t(
+        `layout.sidebar.heatmap.weekdays.${weekdayKeys[(new Date(`${item.date}T00:00:00Z`).getUTCDay() + 6) % 7]}`,
+      ),
       level: total === 0 ? 0 : total <= 2 ? 1 : total <= 5 ? 2 : total <= 10 ? 3 : 4,
     }
   }),
@@ -144,9 +153,9 @@ function heatmapLightColor(level: number) {
 
 function cellDetail(cell: HeatmapCell) {
   const parts: string[] = []
-  if (cell.articles > 0) parts.push(`发布 ${cell.articles} 篇文章`)
-  if (cell.comments > 0) parts.push(`${cell.comments} 条评论`)
-  return parts.length > 0 ? parts.join('，') : '无发布内容'
+  if (cell.articles > 0) parts.push(t('layout.sidebar.heatmap.articles', { count: cell.articles }))
+  if (cell.comments > 0) parts.push(t('layout.sidebar.heatmap.comments', { count: cell.comments }))
+  return parts.length > 0 ? parts.join(t('layout.sidebar.heatmap.separator')) : t('layout.sidebar.heatmap.empty')
 }
 
 function onCellEnter(e: Event) {

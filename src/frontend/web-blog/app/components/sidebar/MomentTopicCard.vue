@@ -10,7 +10,7 @@
     <div class="moment-topic-card__header">
       <h2 class="moment-topic-card__title">
         <Icon name="lucide:hash" size="16" />
-        热门话题
+        {{ $t('layout.sidebar.topics.title') }}
       </h2>
       <button
         type="button"
@@ -19,7 +19,7 @@
         :aria-pressed="!activeTopic"
         @click="emit('select', null)"
       >
-        全部
+        {{ $t('layout.sidebar.topics.all') }}
       </button>
     </div>
 

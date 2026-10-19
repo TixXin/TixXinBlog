@@ -29,7 +29,7 @@
           >
             <header class="context-drawer__header">
               <h2>{{ label }}</h2>
-              <button type="button" :aria-label="`关闭${label}`" @click="open = false">
+              <button type="button" :aria-label="$t('layout.contextDrawer.close', { label })" @click="open = false">
                 <Icon name="lucide:x" size="20" />
               </button>
             </header>

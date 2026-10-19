@@ -6,7 +6,7 @@
 -->
 
 <template>
-  <nav v-if="currentThemeId !== 'dock'" class="mobile-nav" aria-label="移动导航">
+  <nav v-if="currentThemeId !== 'dock'" class="mobile-nav" :aria-label="$t('layout.mobileNav.label')">
     <ul class="mobile-nav__list">
       <li v-for="item in primaryItems" :key="item.label">
         <NuxtLink
@@ -21,8 +21,13 @@
         </NuxtLink>
       </li>
       <li>
-        <CommonContextDrawer v-slot="{ close }" class="mobile-nav__more" label="更多导航" icon="lucide:menu">
-          <nav class="mobile-menu" aria-label="全部页面">
+        <CommonContextDrawer
+          v-slot="{ close }"
+          class="mobile-nav__more"
+          :label="$t('layout.mobileNav.more')"
+          icon="lucide:menu"
+        >
+          <nav class="mobile-menu" :aria-label="$t('layout.mobileNav.allPages')">
             <NuxtLink
               v-for="item in navItems"
               :key="item.to"
@@ -37,8 +42,10 @@
           <div class="mobile-menu__settings">
             <BlogThemeSwitcher />
             <BlogAppearanceEntry />
-            <NuxtLink v-if="isLoggedIn" to="/admin" @click="close">管理后台</NuxtLink>
-            <button v-else type="button" @click="loginFromMenu(close)">博主登录</button>
+            <NuxtLink v-if="isLoggedIn" to="/admin" @click="close">{{ $t('layout.mobileNav.admin') }}</NuxtLink>
+            <button v-else type="button" @click="loginFromMenu(close)">
+              {{ $t('layout.mobileNav.login') }}
+            </button>
           </div>
         </CommonContextDrawer>
       </li>

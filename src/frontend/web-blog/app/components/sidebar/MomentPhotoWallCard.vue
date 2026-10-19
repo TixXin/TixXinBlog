@@ -10,7 +10,7 @@
     <div class="moment-photo-wall__header">
       <h2 class="moment-photo-wall__title">
         <Icon name="lucide:image" size="16" />
-        精选照片
+        {{ $t('layout.sidebar.photoWall.title') }}
       </h2>
       <span class="moment-photo-wall__count">{{ images.length }}</span>
     </div>
@@ -25,7 +25,7 @@
       >
         <CommonContentImage
           :src="img.src"
-          :alt="`照片 ${index + 1}`"
+          :alt="$t('layout.sidebar.photoWall.photo', { index: index + 1 })"
           class="moment-photo-wall__img"
           format="webp"
           loading="lazy"
@@ -38,7 +38,7 @@
           type="button"
           class="moment-photo-wall__open"
           :class="{ 'is-failed': imageFailures[img.src + index] }"
-          :aria-label="`查看照片 ${index + 1} 所属动态`"
+          :aria-label="$t('layout.sidebar.photoWall.open', { index: index + 1 })"
           @click="emit('select-moment', img.momentId)"
         >
           <span v-if="!imageFailures[img.src + index]" class="moment-photo-wall__overlay" aria-hidden="true">

@@ -10,9 +10,11 @@
     <header class="moment-interaction-card__header">
       <h2 class="moment-interaction-card__title">
         <Icon name="lucide:sparkles" size="14" class="moment-interaction-card__title-icon" />
-        互动之星
+        {{ $t('layout.sidebar.interaction.title') }}
       </h2>
-      <span class="moment-interaction-card__count">{{ totalUsers }} 位朋友</span>
+      <span class="moment-interaction-card__count">{{
+        $t('layout.sidebar.interaction.friends', { count: totalUsers })
+      }}</span>
     </header>
 
     <ul v-if="users.length" class="moment-interaction-card__list">
@@ -33,13 +35,13 @@
           <span class="moment-interaction-card__name">{{ user.name }}</span>
           <span class="moment-interaction-card__meta">
             <Icon name="lucide:message-circle" size="11" />
-            {{ user.commentCount }} 条评论
+            {{ $t('layout.sidebar.interaction.comments', { count: user.commentCount }) }}
           </span>
         </div>
       </li>
     </ul>
 
-    <p v-else class="moment-interaction-card__empty">暂无互动数据</p>
+    <p v-else class="moment-interaction-card__empty">{{ $t('layout.sidebar.interaction.empty') }}</p>
   </section>
 </template>
 

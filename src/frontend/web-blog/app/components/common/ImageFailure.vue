@@ -15,8 +15,8 @@
       @keydown="stopActivation"
     >
       <Icon class="image-failure__icon" name="lucide:image-off" size="22" aria-hidden="true" />
-      <span role="status">图片加载失败</span>
-      <span class="image-failure__action">{{ retrying ? '重试中…' : '重试' }}</span>
+      <span role="status">{{ $t('layout.image.failed') }}</span>
+      <span class="image-failure__action">{{ retrying ? $t('layout.image.retrying') : $t('layout.image.retry') }}</span>
     </button>
     <CommonTooltip v-else :content="tooltipLabel">
       <button
@@ -40,13 +40,15 @@ const props = withDefaults(defineProps<{ alt: string; retrying?: boolean; compac
   retryLabel: undefined,
 })
 const emit = defineEmits<{ retry: [] }>()
-const buttonLabel = computed(() =>
-  props.retrying
-    ? `正在重新加载图片：${props.alt || '图片'}`
-    : props.retryLabel || `图片加载失败，重试：${props.alt || '图片'}`,
-)
+const { t } = useI18n()
+const buttonLabel = computed(() => {
+  const name = props.alt || t('layout.image.fallbackName')
+  return props.retrying
+    ? t('layout.image.reloading', { name })
+    : props.retryLabel || t('layout.image.failedRetry', { name })
+})
 const tooltipLabel = computed(() =>
-  props.retryLabel && !props.retrying ? `图片加载失败，${buttonLabel.value}` : buttonLabel.value,
+  props.retryLabel && !props.retrying ? t('layout.image.failedWith', { action: buttonLabel.value }) : buttonLabel.value,
 )
 function retry() {
   if (!props.retrying) emit('retry')

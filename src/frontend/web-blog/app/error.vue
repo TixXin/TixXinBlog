@@ -14,26 +14,35 @@
         :level="1"
         :description="errorConfig.description"
         :status-code="errorStatus"
-        :action-label="errorStatus >= 500 ? '重试当前页面' : '返回首页'"
+        :action-label="errorStatus >= 500 ? $t('layout.error.retry') : $t('layout.error.home')"
         @action="handlePrimary"
       >
         <button v-if="errorStatus >= 500" type="button" class="error-page__secondary" @click="handleHome">
-          返回首页
+          {{ $t('layout.error.home') }}
         </button>
       </CommonStateBlock>
       <div v-if="errorStatus === 404" class="error-page__discovery">
-        <form class="error-page__search" role="search" aria-label="站内搜索" @submit.prevent="handleSearch">
-          <CommonSearchBox v-model="keyword" label="搜索关键词" placeholder="搜索站内内容..." />
-          <button type="submit" class="error-page__search-submit">搜索</button>
+        <form
+          class="error-page__search"
+          role="search"
+          :aria-label="$t('layout.error.searchLabel')"
+          @submit.prevent="handleSearch"
+        >
+          <CommonSearchBox
+            v-model="keyword"
+            :label="$t('layout.error.searchKeyword')"
+            :placeholder="$t('layout.error.searchPlaceholder')"
+          />
+          <button type="submit" class="error-page__search-submit">{{ $t('layout.error.searchSubmit') }}</button>
         </form>
         <p v-if="recentError" class="error-page__notice" role="status">
-          近期文章暂时无法加载，你仍可搜索站内内容或返回首页。
+          {{ $t('layout.error.recentFailed') }}
         </p>
         <p v-else-if="recentStatus === 'idle' || recentPending" class="error-page__notice" role="status">
-          正在加载近期文章…
+          {{ $t('layout.error.recentLoading') }}
         </p>
         <BlogRecentPosts v-else-if="recentPosts.length" :posts="recentPosts" />
-        <p v-else class="error-page__notice" role="status">暂无已发布文章。</p>
+        <p v-else class="error-page__notice" role="status">{{ $t('layout.error.recentEmpty') }}</p>
       </div>
     </div>
   </main>
@@ -45,6 +54,7 @@ import { fetchPostPage } from '~/features/post/api'
 import { searchLocation } from '~/features/search/query'
 
 const props = defineProps<{ error: NuxtError }>()
+const { t, locale } = useI18n()
 const errorStatus = computed(() => props.error.statusCode ?? 500)
 const errorConfig = computed(() => {
   const code = props.error?.statusCode ?? 500
@@ -53,29 +63,28 @@ const errorConfig = computed(() => {
   if (code === 404) {
     return {
       icon: 'lucide:search-x',
-      title: data?.title || '页面未找到',
-      description: '你访问的页面不存在或已被移除，请检查链接是否正确',
+      title: data?.title || t('layout.error.notFoundTitle'),
+      description: t('layout.error.notFoundDescription'),
     }
   }
 
   if (code >= 500) {
     return {
       icon: 'lucide:server-crash',
-      title: data?.title || '服务器错误',
-      description: '服务器遇到了问题，请稍后再试',
+      title: data?.title || t('layout.error.serverTitle'),
+      description: t('layout.error.serverDescription'),
     }
   }
 
   return {
     icon: 'lucide:alert-triangle',
-    title: '出错了',
-    description: props.error?.message || '发生了未知错误',
+    title: t('layout.error.genericTitle'),
+    description: props.error?.message || t('layout.error.genericDescription'),
   }
 })
 
 // 错误页不经过 app.vue，站名与标题模板需在此按站点设置重新声明，避免落回构建期兜底站名
 const { settings: siteSettings } = useSiteSettings()
-const { locale } = useI18n()
 useHead({
   // 错误页没有语言切换入口，每次出错都会重新挂载，取挂载时的界面语言即可。
   htmlAttrs: { lang: locale.value },

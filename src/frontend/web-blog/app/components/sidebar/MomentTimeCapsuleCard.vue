@@ -10,7 +10,7 @@
     <div class="moment-capsule-card__header">
       <h2 class="moment-capsule-card__title">
         <Icon name="lucide:hourglass" size="16" />
-        时间胶囊
+        {{ $t('layout.sidebar.capsule.title') }}
       </h2>
     </div>
 
@@ -18,7 +18,7 @@
     <div v-if="throwback" class="moment-capsule-card__block">
       <div class="moment-capsule-card__label">
         <Icon name="lucide:calendar-clock" size="12" />
-        <span>去年今日</span>
+        <span>{{ $t('layout.sidebar.capsule.onThisDay') }}</span>
       </div>
       <NuxtLink :to="`/moments/${throwback.id}`" class="moment-capsule-card__item">
         <p class="moment-capsule-card__excerpt">{{ truncate(throwback.content, 60) }}</p>
@@ -30,8 +30,13 @@
     <div v-if="randomMoment" class="moment-capsule-card__block">
       <div class="moment-capsule-card__label">
         <Icon name="lucide:shuffle" size="12" />
-        <span>随机回顾</span>
-        <button type="button" class="moment-capsule-card__refresh" aria-label="换一条" @click.stop.prevent="rollRandom">
+        <span>{{ $t('layout.sidebar.capsule.random') }}</span>
+        <button
+          type="button"
+          class="moment-capsule-card__refresh"
+          :aria-label="$t('layout.sidebar.capsule.reroll')"
+          @click.stop.prevent="rollRandom"
+        >
           <Icon name="lucide:refresh-cw" size="11" />
         </button>
       </div>

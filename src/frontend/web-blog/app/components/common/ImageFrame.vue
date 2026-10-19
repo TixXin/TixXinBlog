@@ -34,15 +34,17 @@
     <CommonImageFailure
       v-if="failureVisible"
       :alt="alt"
-      :retry-label="`重新加载图片：${alt}`"
+      :retry-label="$t('layout.image.reload', { name: alt })"
       :compact="compact"
       :retrying="state === 'loading'"
       @retry="retryImage"
     />
-    <span v-else-if="state === 'loading'" class="image-frame__status" aria-hidden="true">图片加载中…</span>
+    <span v-else-if="state === 'loading'" class="image-frame__status" aria-hidden="true">{{
+      $t('layout.image.loading')
+    }}</span>
     <div v-else-if="state === 'empty'" class="image-frame__status">
       <Icon name="lucide:image-off" size="22" aria-hidden="true" />
-      <span>暂无图片</span>
+      <span>{{ $t('layout.image.empty') }}</span>
     </div>
   </div>
 </template>

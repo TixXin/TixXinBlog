@@ -7,8 +7,8 @@
 <template>
   <section class="theme-error-recovery">
     <section class="theme-component-error" role="alert">
-      <p>{{ snapshot ? '页面交互暂不可用，已保留只读内容。' : '这部分内容暂时无法加载。' }}</p>
-      <a :href="route.fullPath" class="btn-primary">刷新重试</a>
+      <p>{{ snapshot ? $t('layout.themeError.readonly') : $t('layout.themeError.failed') }}</p>
+      <a :href="route.fullPath" class="btn-primary">{{ $t('layout.themeError.reload') }}</a>
     </section>
     <!-- eslint-disable-next-line vue/no-v-html -- 仅恢复本应用已净化的SSR输出，捕获时禁用交互控件，不接受外部HTML输入 -->
     <div v-if="snapshot" class="theme-static-content" v-html="snapshot" />
