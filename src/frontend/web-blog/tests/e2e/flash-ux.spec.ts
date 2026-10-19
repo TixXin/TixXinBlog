@@ -114,7 +114,8 @@ test('缺失动态与闪念返回404，页面语言和恢复动作正确', async
     await page.goto(path!)
     await expect(page.getByRole('heading', { name: title, exact: true })).toBeVisible()
     await expect(page.locator('html')).toHaveAttribute('lang', 'zh-CN')
-    await page.getByRole('button', { name: '返回首页', exact: true }).click()
+    // 返回首页改为链接（渐进增强）：水合前点击也能原生跳转，因此按 link 角色定位
+    await page.getByRole('link', { name: '返回首页', exact: true }).click()
     await expect(page).toHaveURL(/\/$/)
   }
 })

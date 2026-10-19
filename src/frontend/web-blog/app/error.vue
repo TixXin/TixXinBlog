@@ -15,11 +15,13 @@
         :description="errorConfig.description"
         :status-code="errorStatus"
         :action-label="errorStatus >= 500 ? $t('layout.error.retry') : $t('layout.error.home')"
+        :action-href="errorStatus >= 500 ? undefined : '/'"
         @action="handlePrimary"
       >
-        <button v-if="errorStatus >= 500" type="button" class="error-page__secondary" @click="handleHome">
+        <!-- 返回首页是链接：水合前或脚本失效时原生跳转，水合后清除错误再导航 -->
+        <a v-if="errorStatus >= 500" href="/" class="error-page__secondary" @click="onHomeLinkClick">
           {{ $t('layout.error.home') }}
-        </button>
+        </a>
       </CommonStateBlock>
       <div v-if="errorStatus === 404" class="error-page__discovery">
         <form
@@ -128,6 +130,12 @@ function handleSearch() {
 }
 
 const handleHome = () => clearError({ redirect: '/' })
+/** 普通左键点击走 clearError；带修饰键时保留浏览器默认行为 */
+function onHomeLinkClick(event: MouseEvent) {
+  if (event.button !== 0 || event.ctrlKey || event.metaKey || event.shiftKey || event.altKey) return
+  event.preventDefault()
+  void handleHome()
+}
 function handlePrimary() {
   if (errorStatus.value >= 500) window.location.reload()
   else void handleHome()
@@ -136,7 +144,10 @@ function handlePrimary() {
 
 <style lang="scss" scoped>
 .error-page__secondary {
+  display: inline-flex;
+  align-items: center;
   min-height: 44px;
+  text-decoration: none;
   color: var(--accent-text);
   padding: 0.5rem 0.75rem;
 }

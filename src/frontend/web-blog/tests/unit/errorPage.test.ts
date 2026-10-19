@@ -72,6 +72,9 @@ describe('404 内容发现', () => {
     expect(wrapper.get('[role="search"]').attributes('aria-label')).toBe('站内搜索')
     expect(wrapper.get('input').attributes('aria-label')).toBe('搜索关键词')
     expect(wrapper.get('[role="status"]').text()).toBe('正在加载近期文章…')
+    // 返回首页是链接，水合前点击也能原生跳转
+    expect(wrapper.get('.state-block__action').element.tagName).toBe('A')
+    expect(wrapper.get('.state-block__action').attributes('href')).toBe('/')
     await wrapper.get('.state-block__action').trigger('click')
     expect(mocks.clearError).toHaveBeenCalledWith({ redirect: '/' })
     expect(fetchPostPage).toHaveBeenCalledExactlyOnceWith(
@@ -164,7 +167,10 @@ describe('404 内容发现', () => {
     expect(wrapper.find('.recent-posts').exists()).toBe(false)
     expect(wrapper.get('h1').text()).toBe(statusCode >= 500 ? '服务器错误' : '出错了')
     expect(wrapper.get('.state-block__action').text()).toBe(statusCode >= 500 ? '重试当前页面' : '返回首页')
+    // 重试是按钮；返回首页（主操作或次要操作）是指向首页的链接
+    expect(wrapper.get('.state-block__action').element.tagName).toBe(statusCode >= 500 ? 'BUTTON' : 'A')
     if (statusCode >= 500) {
+      expect(wrapper.get('.error-page__secondary').attributes('href')).toBe('/')
       await wrapper.get('.error-page__secondary').trigger('click')
       expect(mocks.clearError).toHaveBeenCalledWith({ redirect: '/' })
     }

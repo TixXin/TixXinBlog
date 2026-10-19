@@ -13,7 +13,12 @@
     <component :is="`h${level}`" class="state-block__title">{{ title }}</component>
     <p v-if="description" class="state-block__desc">{{ description }}</p>
     <span v-if="statusCode" class="state-block__code">{{ statusCode }}</span>
-    <button v-if="actionLabel" type="button" class="state-block__action" @click="$emit('action')">
+    <!-- 传入 actionHref 时渲染为链接：水合前或脚本失效时按原生链接跳转，水合后仍交给 action 事件处理 -->
+    <a v-if="actionLabel && actionHref" :href="actionHref" class="state-block__action" @click="onLinkClick">
+      <Icon name="lucide:arrow-left" size="14" />
+      {{ actionLabel }}
+    </a>
+    <button v-else-if="actionLabel" type="button" class="state-block__action" @click="$emit('action')">
       <Icon name="lucide:arrow-left" size="14" />
       {{ actionLabel }}
     </button>
@@ -29,15 +34,24 @@ withDefaults(
     description?: string
     statusCode?: number | string
     actionLabel?: string
+    /** 操作的目标地址；提供时操作渲染为链接，实现渐进增强 */
+    actionHref?: string
     /** 标题级别：页面内区块用默认 2；整页错误/空态且页面没有其他标题时传 1 */
     level?: 1 | 2 | 3
   }>(),
-  { description: undefined, statusCode: undefined, actionLabel: undefined, level: 2 },
+  { description: undefined, statusCode: undefined, actionLabel: undefined, actionHref: undefined, level: 2 },
 )
 
-defineEmits<{
+const emit = defineEmits<{
   action: []
 }>()
+
+/** 普通左键点击交给 action 处理；带修饰键或非主键点击保留浏览器默认行为（如新标签页打开） */
+function onLinkClick(event: MouseEvent) {
+  if (event.button !== 0 || event.ctrlKey || event.metaKey || event.shiftKey || event.altKey) return
+  event.preventDefault()
+  emit('action')
+}
 </script>
 
 <style lang="scss" scoped>
@@ -108,6 +122,8 @@ defineEmits<{
   @media (prefers-reduced-motion: reduce) {
     transition: none;
   }
+
+  text-decoration: none;
 
   &:hover {
     background: var(--accent-soft);
