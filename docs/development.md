@@ -210,12 +210,21 @@ corepack pnpm test:e2e:run accessibility.spec.ts
 
 自动扫描只覆盖当前桌面页面状态，不能代替键盘操作、焦点恢复、读屏、窄屏、弹层和正常动效的验收；参见[主题验证](themes.md#验证)与 [Playwright 可访问性测试说明](https://playwright.dev/docs/accessibility-testing)。
 
-[CI](../.github/workflows/ci.yml) 的 `lint-and-build` 按默认 [Playwright 配置](../src/frontend/web-blog/playwright.config.ts) 跑 Chromium 全量。该配置没有 `projects`，`browserName` 默认为 `chromium`，`workers` 为 1，命令行 `--browser=webkit` 会覆盖这次运行的浏览器。WebKit 核心冒烟与全量回归并行，范围是 `blog.spec.ts` 与 `hydration-history.spec.ts` 两个完整文件：前者覆盖分页、发布撤回、评论、三主题移动端和后台闭环，后者覆盖水合与原生历史。每个文件单独调用隔离运行器，避免写入互相影响。`performance-admin.spec.ts` 固定断言 Chromium，留在全量 job。`playwright.motion.config.ts` 的多浏览器项目只用于单独的动效验收，默认 CI 配置仍是 `playwright.config.ts`。准备好当前源码的两端生产构建、PostgreSQL 和 WebKit 后，可复现相同范围：
+[CI](../.github/workflows/ci.yml) 的 `browser-e2e` 矩阵任务按默认 [Playwright 配置](../src/frontend/web-blog/playwright.config.ts) 跑 Chromium 全量，分 4 片并行。该配置没有 `projects`，`browserName` 默认为 `chromium`，`workers` 为 1，命令行 `--browser=webkit` 会覆盖这次运行的浏览器。WebKit 核心冒烟与全量回归并行，范围是 `blog.spec.ts` 与 `hydration-history.spec.ts` 两个完整文件：前者覆盖分页、发布撤回、评论、三主题移动端和后台闭环，后者覆盖水合与原生历史。每个文件单独调用隔离运行器，避免写入互相影响。`performance-admin.spec.ts` 固定断言 Chromium，留在全量分片中。`playwright.motion.config.ts` 的多浏览器项目只用于单独的动效验收，默认 CI 配置仍是 `playwright.config.ts`。准备好当前源码的两端生产构建、PostgreSQL 和 WebKit 后，可复现相同范围：
 
 ```sh
 corepack pnpm test:e2e:run blog.spec.ts --browser=webkit
 corepack pnpm test:e2e:run hydration-history.spec.ts --browser=webkit
 ```
+
+全量分片由运行器按文件完成，每个文件仍各用独立进程和隔离库，不使用 Playwright 自带的 `--shard`，后者会把同一文件拆到不同分片。运行器读取 [`shard-weights.json`](../src/frontend/web-blog/tests/e2e/shard-weights.json) 中各 spec 的 CI 实测秒数，按“最长处理时间优先”贪心算法确定性分配；未收录的新文件取中位数权重，不会漏跑。`lint-and-build` 用 `--list-shards 4` 校验 4 片并集等于全部 spec 且互不重复。各片独立报告，失败产物以 `browser-e2e-failure-<片号>` 上传，本机目录名带 `-s<片号>of<总数>` 后缀。准备好两端生产构建后，可在本机复现某一片或查看分片清单：
+
+```sh
+E2E_SHARD=2/4 corepack pnpm test:e2e:run
+node src/backend/server-main/tests/browser-runner.mjs --list-shards 4
+```
+
+不设置 `E2E_SHARD` 时运行器照旧跑全量。新增文件或某文件耗时明显变化后，用最近一次全量通过的 CI 日志更新权重表：每个文件的权重取上一文件结束到该文件 `N passed (时长)` 行之间的墙钟秒数，包含建库、迁移、写样本和启动预览；同时更新 `source` 字段，并确认各片预计耗时接近。调整分片数时同步修改 `browser-e2e` 的 matrix、`E2E_SHARD` 总数和覆盖校验中的片数。
 
 需要评估文章列表投影时，可在后端构建后运行 `corepack pnpm --filter server-main exec tsx tests/post-list-performance.ts --compare`。它比较完整业务响应、分页和公开过滤，而非只比较耗时。浏览器性能与服务方法耗时分别记录；明确样本、预热、缓存、硬件及并发条件，不把本机采样直接当作线上收益。
 
