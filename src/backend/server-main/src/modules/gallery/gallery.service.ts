@@ -16,7 +16,7 @@ import {
   resolveContentRelations,
   validateContentRelations,
 } from '../content-relations/content-relations'
-import { msg } from '../../common/i18n'
+import { msg, translate, type ApiLocale } from '../../common/i18n'
 
 const publicPhotos = { deletedAt: null, status: 'published' } as const
 function galleryId(id: number) {
@@ -128,7 +128,7 @@ export class GalleryService {
       nextPage: position?.nextId ? Math.ceil((position.position + 1) / query.pageSize) : null,
     }
   }
-  async metadata() {
+  async metadata(locale: ApiLocale = 'zh-CN') {
     const categories = await this.em.execute<{ value: string; count: number }[]>(
       "select category as value,count(*)::int as count from gallery_photo where deleted_at is null and status='published' group by category order by category",
     )
@@ -137,7 +137,10 @@ export class GalleryService {
     )
     const settings = await this.settings()
     return {
-      categories: categories.map((item) => ({ ...item, label: item.value || '未分类' })),
+      categories: categories.map((item) => ({
+        ...item,
+        label: item.value || translate(locale, 'gallery.uncategorized'),
+      })),
       stats,
       gear: settings.gear,
     }

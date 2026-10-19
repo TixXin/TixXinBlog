@@ -9,6 +9,7 @@ import { defineMessages } from './types'
 
 export const galleryMessages = defineMessages({
   'gallery.idInvalid': { zh: '作品编号不合法', en: 'Invalid photo ID' },
+  'gallery.uncategorized': { zh: '未分类', en: 'Uncategorized' },
   'gallery.notFound': { zh: '作品不存在', en: 'Photo not found' },
   'gallery.notFoundOrPrivate': { zh: '作品不存在或尚未公开', en: 'Photo not found or not yet published' },
   'gallery.notFoundOrDeleted': { zh: '作品不存在或已删除', en: 'Photo not found or has been deleted' },

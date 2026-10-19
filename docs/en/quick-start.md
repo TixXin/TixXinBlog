@@ -65,7 +65,7 @@ Then edit `../tixxin-private/production.env`. Only the following entries need to
 Notes:
 
 - Keep `RELEASE_PROJECT` as `tixxin-production`. It determines the volume names and must not change after installation.
-- `NUXT_PUBLIC_DEFAULT_LOCALE` sets the site's default interface language. The template uses `zh-CN`; change it to `en` for an English-speaking audience. It only affects interface text and does not translate posts or other content.
+- `NUXT_PUBLIC_DEFAULT_LOCALE` sets the site's default interface language. The template uses `zh-CN`; change it to `en` for an English-speaking audience. It only affects interface text and the still-unedited initial site profile, and does not translate posts or other content.
 - When using images from a fork, replace `tixxin/tixxinblog` with your own `<owner>/<repository>` (all lowercase).
 - The environment file holds the database password and signing secret. Never commit it to Git, and keep a safe copy; without it you cannot connect to the existing database.
 

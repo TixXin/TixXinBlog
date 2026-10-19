@@ -63,7 +63,7 @@ openssl rand -hex 32
 注意：
 
 - `RELEASE_PROJECT` 保持 `tixxin-production` 即可。它决定数据卷的名字，安装后不要再改。
-- 站点默认界面语言由 `NUXT_PUBLIC_DEFAULT_LOCALE` 决定，模板为 `zh-CN`，面向英文读者可改为 `en`；只影响界面文案，不翻译文章等内容。
+- 站点默认界面语言由 `NUXT_PUBLIC_DEFAULT_LOCALE` 决定，模板为 `zh-CN`，面向英文读者可改为 `en`；只影响界面文案与尚未编辑的初始站点资料，不翻译文章等内容。
 - 使用 fork 的镜像时，把 `tixxin/tixxinblog` 换成自己的 `<所有者>/<仓库名>`（全小写）。
 - 环境文件包含数据库密码和签名密钥，不要提交到 Git，另外妥善保存一份；丢失后无法连接已有数据库。
 

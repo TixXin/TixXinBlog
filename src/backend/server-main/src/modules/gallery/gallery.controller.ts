@@ -14,6 +14,8 @@ import {
 } from '@nestjs/common'
 import { AdminAuthGuard } from '../../common/guards/admin-auth.guard'
 import { GalleryService } from './gallery.service'
+import type { ApiLocale } from '../../common/i18n'
+import { RequestLocale } from '../../common/decorators/request-locale.decorator'
 import {
   AdminGalleryQuery,
   GalleryQuery,
@@ -28,8 +30,8 @@ export class GalleryController {
   @Get() list(@Query() query: GalleryQuery) {
     return this.gallery.list(query)
   }
-  @Get('metadata') metadata() {
-    return this.gallery.metadata()
+  @Get('metadata') metadata(@RequestLocale() locale: ApiLocale = 'zh-CN') {
+    return this.gallery.metadata(locale)
   }
   @Get(':id/navigation') navigation(@Param('id', ParseIntPipe) id: number, @Query() query: GalleryQuery) {
     return this.gallery.navigation(id, query)

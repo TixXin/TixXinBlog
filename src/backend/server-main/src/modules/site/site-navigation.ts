@@ -5,7 +5,7 @@
  * 缺省值等于此前前端写死的效果，升级后站点外观不变。
  */
 import { IsBoolean, IsIn, IsString, MaxLength, MinLength, ValidateIf } from 'class-validator'
-import { msg, type LocalizedMessage } from '../../common/i18n'
+import { msg, siteDefaultLocale, type ApiLocale, type LocalizedMessage } from '../../common/i18n'
 
 /** 内置路由模块清单；导航只控制展示与顺序，路由本身始终可访问 */
 export const SITE_NAV_KEYS = [
@@ -63,8 +63,30 @@ export const SITE_LIMITS = {
   copyright: 200,
 } as const
 
-/** 缺省值与此前前端 mock 的效果一致；每日一言是公共领域的古语，不含博主身份 */
-export function defaultSiteExtras(): SiteExtrasValues {
+/**
+ * 缺省值与此前前端 mock 的效果一致；每日一言是公共领域的古语或谚语，不含博主身份。
+ * 博主保存前按部署的站点默认语言返回，保存后以博主内容为准，不随访客界面语言变化。
+ */
+export function defaultSiteExtras(locale: ApiLocale = siteDefaultLocale()): SiteExtrasValues {
+  if (locale === 'en')
+    return {
+      navigation: SITE_NAV_KEYS.map((key) => ({ type: 'route', key, visible: true })),
+      footerLinks: [
+        { label: 'About', url: '/about', newTab: false },
+        { label: 'RSS', url: '/rss.xml', newTab: true },
+        { label: 'Sitemap', url: '/sitemap.xml', newTab: true },
+      ],
+      quotes: [
+        'A journey of a thousand miles begins with a single step.',
+        'Stay curious, keep exploring.',
+        'The best time to plant a tree was twenty years ago. The second best time is now.',
+        'Well begun is half done.',
+        'Little by little, one travels far.',
+      ],
+      icpNumber: '',
+      icpUrl: '',
+      copyright: '',
+    }
   return {
     navigation: SITE_NAV_KEYS.map((key) => ({ type: 'route', key, visible: true })),
     footerLinks: [

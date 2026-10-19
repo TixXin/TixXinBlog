@@ -4,6 +4,7 @@
  * @author TixXin
  * @since 2026-10-19
  */
+export { siteDefaultLocale } from './site-locale'
 export { API_LOCALES, DEFAULT_API_LOCALE, requestLocale, resolveApiLocale, type ApiLocale } from './locale'
 export {
   isLocalizedMessage,
