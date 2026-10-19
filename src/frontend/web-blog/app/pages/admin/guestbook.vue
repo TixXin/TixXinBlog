@@ -2,35 +2,42 @@
 <template>
   <section class="admin-guestbook">
     <header>
-      <h1>留言管理</h1>
-      <NuxtLink to="/guestbook">查看公开留言板</NuxtLink>
+      <h1>{{ $t('admin-media.guestbook.title') }}</h1>
+      <NuxtLink to="/guestbook">{{ $t('admin-media.guestbook.viewPublic') }}</NuxtLink>
     </header>
     <ClientOnly>
       <template v-if="isLoggedIn">
         <form class="admin-guestbook__filters" @submit.prevent="apply">
-          <input v-model="q" aria-label="搜索管理留言" placeholder="搜索正文或作者" maxlength="200" />
-          <select v-model="status" aria-label="留言审核状态">
-            <option value="all">全部状态</option>
-            <option value="published">已公开</option>
-            <option value="pending">待审核</option>
-            <option value="hidden">已隐藏</option>
+          <input
+            v-model="q"
+            :aria-label="$t('admin-media.guestbook.searchLabel')"
+            :placeholder="$t('admin-media.guestbook.searchPlaceholder')"
+            maxlength="200"
+          />
+          <select v-model="status" :aria-label="$t('admin-media.guestbook.statusLabel')">
+            <option value="all">{{ $t('admin-media.guestbook.allStatus') }}</option>
+            <option value="published">{{ $t('admin-media.guestbook.status.published') }}</option>
+            <option value="pending">{{ $t('admin-media.guestbook.status.pending') }}</option>
+            <option value="hidden">{{ $t('admin-media.guestbook.status.hidden') }}</option>
           </select>
-          <label><input v-model="unanswered" type="checkbox" />仅待博主回复</label>
-          <label>日期 · UTC<input v-model="date" type="date" aria-label="留言日期" /></label
-          ><button type="submit">筛选</button>
+          <label><input v-model="unanswered" type="checkbox" />{{ $t('admin-media.guestbook.unanswered') }}</label>
+          <label
+            >{{ $t('admin-media.guestbook.date')
+            }}<input v-model="date" type="date" :aria-label="$t('admin-media.guestbook.dateLabel')" /></label
+          ><button type="submit">{{ $t('admin-media.guestbook.filter') }}</button>
         </form>
-        <p v-if="unanswered">仅显示已公开、未删除且尚无公开博主直接回复的游客根留言；隐藏或删除回复后重新计入。</p>
+        <p v-if="unanswered">{{ $t('admin-media.guestbook.unansweredHint') }}</p>
         <CommonRequestFeedback
           v-if="pending || error"
           :compact="items.length > 0"
           :pending="pending"
-          :title="error || '正在读取留言'"
+          :title="error || $t('admin-media.guestbook.loading')"
           @retry="load"
         />
-        <p v-if="!pending && !error && !items.length">当前条件下暂无留言。</p>
+        <p v-if="!pending && !error && !items.length">{{ $t('admin-media.guestbook.empty') }}</p>
         <AdminBatchBar
           v-if="items.length"
-          noun="留言"
+          :noun="$t('admin-media.guestbook.batchNoun')"
           :count="selection.count.value"
           :page-count="items.length"
           :all-selected="selection.allSelected.value"
@@ -54,23 +61,29 @@
                 type="checkbox"
                 :checked="selection.isSelected(note.id)"
                 :disabled="pending || busy.includes(note.id)"
-                :aria-label="`选择 ${note.author} 的留言：${note.content.slice(0, 40)}`"
+                :aria-label="
+                  $t('admin-media.guestbook.selectLabel', { author: note.author, content: note.content.slice(0, 40) })
+                "
                 @change="selection.toggle(note.id, ($event.target as HTMLInputElement).checked)"
             /></label>
             <p>
               <strong>{{ note.author }}</strong
-              >{{ note.isOwner ? ' · 博主' : '' }} · {{ labels[note.moderationStatus]
-              }}{{ note.isPinned ? ' · 置顶' : '' }} · {{ note.createdAt.slice(0, 16).replace('T', ' ') }} UTC
+              >{{ note.isOwner ? $t('admin-media.guestbook.ownerSuffix') : '' }} ·
+              {{ $t(`admin-media.guestbook.status.${note.moderationStatus}`)
+              }}{{ note.isPinned ? $t('admin-media.guestbook.pinnedSuffix') : '' }} ·
+              {{ $t('admin-media.guestbook.utcTime', { time: note.createdAt.slice(0, 16).replace('T', ' ') }) }}
               <span v-if="note.browser || note.region" class="admin-guestbook__client"
                 >· {{ [note.browser, note.region].filter(Boolean).join(' · ') }}</span
               >
             </p>
             <p class="admin-guestbook__content">{{ note.content }}</p>
-            <p v-if="note.replyTo">引用 {{ note.replyTo.author }}：{{ note.replyTo.content }}</p>
+            <p v-if="note.replyTo">
+              {{ $t('admin-media.guestbook.quote', { author: note.replyTo.author, content: note.replyTo.content }) }}
+            </p>
             <div class="admin-guestbook__actions">
-              <button type="button" @click="show(note.id)">查看留言</button>
+              <button type="button" @click="show(note.id)">{{ $t('admin-media.guestbook.view') }}</button>
               <button type="button" :disabled="note.moderationStatus !== 'published'" @click="reply(note)">
-                回复留言
+                {{ $t('admin-media.guestbook.reply') }}
               </button>
               <button
                 v-if="note.moderationStatus !== 'published'"
@@ -78,7 +91,7 @@
                 :disabled="pending || busy.includes(note.id)"
                 @click="change(note, { status: 'published' })"
               >
-                公开留言
+                {{ $t('admin-media.guestbook.publish') }}
               </button>
               <button
                 v-if="note.moderationStatus !== 'hidden'"
@@ -86,26 +99,31 @@
                 :disabled="pending || busy.includes(note.id)"
                 @click="change(note, { status: 'hidden' })"
               >
-                隐藏留言
+                {{ $t('admin-media.guestbook.hide') }}
               </button>
               <button
                 type="button"
                 :disabled="pending || busy.includes(note.id) || note.moderationStatus !== 'published'"
                 @click="change(note, { isPinned: !note.isPinned })"
               >
-                {{ note.isPinned ? '取消置顶' : '置顶留言' }}
+                {{ note.isPinned ? $t('admin-media.guestbook.unpin') : $t('admin-media.guestbook.pin') }}
               </button>
               <button type="button" :disabled="pending || busy.includes(note.id)" @click="change(note, {}, true)">
-                删除留言
+                {{ $t('admin-media.guestbook.remove') }}
               </button>
             </div>
           </li>
         </ul>
-        <nav v-if="total > 20" class="admin-guestbook__actions admin-guestbook__pagination" aria-label="管理留言分页">
-          <button type="button" :disabled="pending || page <= 1" @click="setPage(page - 1)">上一页留言</button
-          ><span>{{ page }} / {{ Math.ceil(total / 20) }}，共 {{ total }} 条</span
+        <nav
+          v-if="total > 20"
+          class="admin-guestbook__actions admin-guestbook__pagination"
+          :aria-label="$t('admin-media.guestbook.pagination')"
+        >
+          <button type="button" :disabled="pending || page <= 1" @click="setPage(page - 1)">
+            {{ $t('admin-media.guestbook.prev') }}</button
+          ><span>{{ $t('admin-media.guestbook.pageInfo', { page, pages: Math.ceil(total / 20), total }, total) }}</span
           ><button type="button" :disabled="pending || page * 20 >= total" @click="setPage(page + 1)">
-            下一页留言
+            {{ $t('admin-media.guestbook.next') }}
           </button>
         </nav>
         <section
@@ -113,27 +131,40 @@
           ref="detailPanel"
           tabindex="-1"
           class="admin-guestbook__detail"
-          aria-label="留言详情"
+          :aria-label="$t('admin-media.guestbook.detail')"
         >
-          <h2>留言详情</h2>
-          <button type="button" @click="closeDetail">关闭详情</button>
+          <h2>{{ $t('admin-media.guestbook.detail') }}</h2>
+          <button type="button" @click="closeDetail">{{ $t('admin-media.guestbook.closeDetail') }}</button>
           <CommonRequestFeedback
             v-if="detailPending || detailError"
             compact
             :pending="detailPending"
-            :title="detailError || '正在读取留言'"
+            :title="detailError || $t('admin-media.guestbook.loading')"
             @retry="retryDetail"
           />
           <template v-if="selected"
-            ><p>{{ selected.author }} · {{ labels[selected.moderationStatus] }} · 版本 {{ selected.revision }}</p>
+            ><p>
+              {{
+                $t('admin-media.guestbook.detailMeta', {
+                  author: selected.author,
+                  status: $t(`admin-media.guestbook.status.${selected.moderationStatus}`),
+                  revision: selected.revision,
+                })
+              }}
+            </p>
             <p class="admin-guestbook__content">{{ selected.content }}</p>
             <blockquote v-if="selected.replyTo">
-              {{ selected.replyTo.author }}：{{ selected.replyTo.content }}
+              {{
+                $t('admin-media.guestbook.quoteBody', {
+                  author: selected.replyTo.author,
+                  content: selected.replyTo.content,
+                })
+              }}
             </blockquote></template
           >
         </section>
-        <section ref="composer" aria-label="博主留言输入">
-          <h2>发布或回复留言</h2>
+        <section ref="composer" :aria-label="$t('admin-media.guestbook.composerLabel')">
+          <h2>{{ $t('admin-media.guestbook.composerTitle') }}</h2>
           <GuestbookMessageInput
             v-bind="composerProps"
             @update:draft="interactions.setDraft"
@@ -145,7 +176,7 @@
           />
         </section>
       </template>
-      <p v-else-if="!restoring">请先登录博主账号。</p>
+      <p v-else-if="!restoring">{{ $t('admin-media.guestbook.loginRequired') }}</p>
     </ClientOnly>
   </section>
 </template>
@@ -154,7 +185,8 @@ import type { ManagedGuestbookRecord } from '~/features/guestbook/types'
 import { guestbookDisplay } from '~/features/guestbook/display'
 import type { AdminBatchAction } from '~/composables/useAdminBatchSelection'
 definePageMeta({ layout: 'admin' })
-useSeoMeta({ title: '留言管理', robots: 'noindex, nofollow' })
+const { t } = useI18n()
+useSeoMeta({ title: () => t('admin-media.guestbook.title'), robots: 'noindex, nofollow' })
 const {
   isLoggedIn,
   restoring,
@@ -182,15 +214,14 @@ const {
   batch,
   retryDetail,
 } = useAdminGuestbook()
-const batchActions: AdminBatchAction[] = [
-  { key: 'published', label: '批量公开', icon: 'lucide:check' },
-  { key: 'hidden', label: '批量隐藏', icon: 'lucide:eye-off' },
-  { key: 'delete', label: '批量删除', icon: 'lucide:trash-2', danger: true },
-]
+const batchActions = computed<AdminBatchAction[]>(() => [
+  { key: 'published', label: t('admin-media.guestbook.batchPublish'), icon: 'lucide:check' },
+  { key: 'hidden', label: t('admin-media.guestbook.batchHide'), icon: 'lucide:eye-off' },
+  { key: 'delete', label: t('admin-media.guestbook.batchRemove'), icon: 'lucide:trash-2', danger: true },
+])
 const interactions = useGuestbookInteractions(async () => {
   await load()
 }, 'admin')
-const labels = { published: '已公开', pending: '待审核', hidden: '已隐藏' }
 const composer = ref<HTMLElement | null>(null),
   detailPanel = ref<HTMLElement | null>(null)
 let detailTrigger: HTMLElement | null = null
@@ -204,7 +235,7 @@ const composerProps = computed(() => ({
   notice: interactions.state.notice,
   storageError: interactions.state.storageError,
   hasRecovery: !!interactions.state.recovery,
-  identityLabel: '博主',
+  identityLabel: t('admin-media.guestbook.owner'),
 }))
 async function show(id: number) {
   detailTrigger = document.activeElement instanceof HTMLElement ? document.activeElement : null
@@ -230,7 +261,7 @@ onBeforeRouteLeave(() => {
   if (interactions.state.submitting) return false
   if (interactions.state.draft.trim()) {
     interactions.persist()
-    return window.confirm('未发送的输入已保留为本标签页恢复副本，确定离开吗？')
+    return window.confirm(t('admin-media.guestbook.leaveConfirm'))
   }
   return true
 })

@@ -2,43 +2,80 @@
 <template>
   <form ref="editorForm" class="project-editor" @submit.prevent="$emit('save', value.status)">
     <header>
-      <h1>{{ id ? '编辑项目' : '新建项目' }}</h1>
-      <AdminBackLink to="/admin/projects">返回项目管理</AdminBackLink
-      ><NuxtLink v-if="saved?.status === 'published'" :to="`/projects?project=${saved.id}`">查看公开项目</NuxtLink>
+      <h1>{{ id ? $t('admin-media.projectForm.editTitle') : $t('admin-media.projectForm.createTitle') }}</h1>
+      <AdminBackLink to="/admin/projects">{{ $t('admin-media.projectForm.back') }}</AdminBackLink
+      ><NuxtLink v-if="saved?.status === 'published'" :to="`/projects?project=${saved.id}`">{{
+        $t('admin-media.projectForm.viewPublic')
+      }}</NuxtLink>
     </header>
     <p v-if="error" role="alert">
-      {{ error }} <button type="button" :disabled="saving || loading" @click="$emit('reload')">重新读取</button>
+      {{ error }}
+      <button type="button" :disabled="saving || loading" @click="$emit('reload')">
+        {{ $t('admin-media.projectForm.reload') }}
+      </button>
     </p>
     <p v-if="notice" role="status">{{ notice }}</p>
     <p v-if="localError" role="alert">
-      {{ localError }} <button type="button" @click="$emit('persist')">重试保存恢复副本</button>
+      {{ localError }}
+      <button type="button" @click="$emit('persist')">{{ $t('admin-media.projectForm.retryLocal') }}</button>
     </p>
-    <section v-if="recovery" class="project-editor__notice" aria-label="项目恢复副本">
-      <h2>发现本标签页未保存的输入</h2>
+    <section v-if="recovery" class="project-editor__notice" :aria-label="$t('admin-media.projectForm.recoveryLabel')">
+      <h2>{{ $t('admin-media.projectForm.recoveryTitle') }}</h2>
       <AdminProjectRecoveryDetails :value="recovery.form" />
-      <button type="button" :disabled="saving || !ready" @click="$emit('restore')">恢复输入</button
-      ><button type="button" :disabled="saving" @click="$emit('discard')">移除恢复副本</button>
+      <button type="button" :disabled="saving || !ready" @click="$emit('restore')">
+        {{ $t('admin-media.projectForm.restore') }}</button
+      ><button type="button" :disabled="saving" @click="$emit('discard')">
+        {{ $t('admin-media.projectForm.discardRecovery') }}
+      </button>
     </section>
-    <section v-if="previousRecoveries.length" class="project-editor__notice" aria-label="另外保留的项目恢复副本">
-      <h2>另外保留的项目输入</h2>
-      <p>这些副本可能属于其他内容库，不会直接写入当前项目。请核对后手动录入，并重新选择当前媒体库中的封面。</p>
+    <section
+      v-if="previousRecoveries.length"
+      class="project-editor__notice"
+      :aria-label="$t('admin-media.projectForm.previousLabel')"
+    >
+      <h2>{{ $t('admin-media.projectForm.previousTitle') }}</h2>
+      <p>{{ $t('admin-media.projectForm.previousBody') }}</p>
       <article v-for="copy in previousRecoveries" :key="copy.key">
-        <p>保存于 {{ copy.value.savedAt }}</p>
+        <p>{{ $t('admin-media.projectForm.savedAt', { time: copy.value.savedAt }) }}</p>
         <AdminProjectRecoveryDetails :value="copy.value.form" />
       </article>
     </section>
-    <section v-if="serverVersion" class="project-editor__notice" aria-label="项目服务器版本">
-      <h2>服务器当前版本 {{ serverVersion.revision }}</h2>
+    <section
+      v-if="serverVersion"
+      class="project-editor__notice"
+      :aria-label="$t('admin-media.projectForm.serverLabel')"
+    >
+      <h2>{{ $t('admin-media.projectForm.serverTitle', { revision: serverVersion.revision }) }}</h2>
       <p>
-        {{ serverVersion.title }} · {{ projectStatusLabels[serverVersion.status] }} ·
-        {{ projectProgressLabels[serverVersion.progress] }} · 排序 {{ serverVersion.sortOrder }}
+        {{
+          $t('admin-media.projectForm.serverMeta', {
+            title: serverVersion.title,
+            status: projectStatusLabel(serverVersion.status, t),
+            progress: projectProgressLabel(serverVersion.progress, t),
+            sort: serverVersion.sortOrder,
+          })
+        }}
       </p>
       <p>{{ serverVersion.description }}</p>
-      <p>有序关联：{{ contentRelationSummary(serverVersion.relatedContent) }}</p>
-      <p>技术：{{ serverVersion.tags.map((tag) => tag.label).join('、') || '未填写' }}</p>
+      <p>
+        {{
+          $t('admin-media.projectForm.serverRelations', {
+            relations: contentRelationSummary(serverVersion.relatedContent),
+          })
+        }}
+      </p>
+      <p>
+        {{
+          $t('admin-media.projectForm.serverTags', {
+            tags:
+              serverVersion.tags.map((tag) => tag.label).join($t('admin-media.projectForm.tagSeparator')) ||
+              $t('admin-media.projectForm.notFilled'),
+          })
+        }}
+      </p>
       <ul>
         <li v-for="link in serverVersion.links" :key="link.kind">
-          {{ projectLinkLabels[link.kind] }}：{{ link.href }}
+          {{ $t('admin-media.projectForm.serverLink', { kind: projectLinkLabel(link.kind, t), href: link.href }) }}
         </li>
       </ul>
       <CommonImageFrame
@@ -50,38 +87,44 @@
         :height="serverVersion.height ?? undefined"
         fit="contain"
       />
-      <p v-else>未设置封面</p>
-      <button type="button" :disabled="saving" @click="$emit('reload')">保留副本并载入服务器版本</button
-      ><button type="button" :disabled="saving || !ready" @click="$emit('merge')">保留输入，按最新版本继续合并</button>
+      <p v-else>{{ $t('admin-media.projectForm.noCover') }}</p>
+      <button type="button" :disabled="saving" @click="$emit('reload')">
+        {{ $t('admin-media.projectForm.loadServer') }}</button
+      ><button type="button" :disabled="saving || !ready" @click="$emit('merge')">
+        {{ $t('admin-media.projectForm.merge') }}
+      </button>
     </section>
-    <p v-if="loading" role="status">正在读取项目…</p>
+    <p v-if="loading" role="status">{{ $t('admin-media.projectForm.loading') }}</p>
     <fieldset :disabled="!ready || loading">
       <label
-        >项目标题<input
+        >{{ $t('admin-media.projectForm.title')
+        }}<input
           :value="value.title"
-          aria-label="项目标题"
+          :aria-label="$t('admin-media.projectForm.title')"
           required
           maxlength="160"
           @input="change('title', ($event.target as HTMLInputElement).value)"
       /></label>
       <label
-        >项目介绍<textarea
+        >{{ $t('admin-media.projectForm.description')
+        }}<textarea
           :value="value.description"
-          aria-label="项目介绍"
+          :aria-label="$t('admin-media.projectForm.description')"
           rows="6"
           maxlength="5000"
           @input="change('description', ($event.target as HTMLTextAreaElement).value)"
         />
       </label>
-      <section aria-label="项目封面">
-        <h2>项目封面</h2>
-        <button type="button" @click="mediaOpen = true">选择或上传封面</button
-        ><button v-if="value.coverMediaId" type="button" @click="change('coverMediaId', null)">移除封面</button
+      <section :aria-label="$t('admin-media.projectForm.cover')">
+        <h2>{{ $t('admin-media.projectForm.cover') }}</h2>
+        <button type="button" @click="mediaOpen = true">{{ $t('admin-media.projectForm.chooseCover') }}</button
+        ><button v-if="value.coverMediaId" type="button" @click="change('coverMediaId', null)">
+          {{ $t('admin-media.projectForm.removeCover') }}</button
         ><CommonImageFrame
           v-if="value.coverMediaId"
           class="project-editor__preview"
           :src="`/api/v1/media/${value.coverMediaId}.webp`"
-          :alt="value.title || '项目封面'"
+          :alt="value.title || $t('admin-media.projectForm.cover')"
           :width="
             selectedMedia?.id === value.coverMediaId
               ? selectedMedia.width
@@ -98,32 +141,37 @@
           "
           fit="contain"
         />
-        <p v-else>未设置封面，公开项目会显示简洁占位。</p>
-        <p>上传文件不会自动公开项目；持有文件地址的人仍可访问媒体。移除封面或删除项目会保留其他内容的媒体引用。</p>
+        <p v-else>{{ $t('admin-media.projectForm.noCoverHint') }}</p>
+        <p>{{ $t('admin-media.projectForm.mediaHint') }}</p>
       </section>
       <div class="project-editor__row">
         <label
-          >项目进展<select
+          >{{ $t('admin-media.projectForm.progress')
+          }}<select
             :value="value.progress"
-            aria-label="项目进展"
+            :aria-label="$t('admin-media.projectForm.progress')"
             @change="change('progress', ($event.target as HTMLSelectElement).value as ProjectProgress)"
           >
-            <option v-for="(label, progress) in projectProgressLabels" :key="progress" :value="progress">
-              {{ label }}
+            <option v-for="progress in projectProgresses" :key="progress" :value="progress">
+              {{ projectProgressLabel(progress, t) }}
             </option>
           </select></label
         ><label
-          >保存状态<select
+          >{{ $t('admin-media.projectForm.status')
+          }}<select
             :value="value.status"
-            aria-label="项目保存状态"
+            :aria-label="$t('admin-media.projectForm.statusLabel')"
             @change="change('status', ($event.target as HTMLSelectElement).value as ProjectPublicationStatus)"
           >
-            <option v-for="(label, status) in projectStatusLabels" :key="status" :value="status">{{ label }}</option>
+            <option v-for="status in projectStatuses" :key="status" :value="status">
+              {{ projectStatusLabel(status, t) }}
+            </option>
           </select></label
         ><label
-          >排序值（越大越靠前）<input
+          >{{ $t('admin-media.projectForm.sortOrder')
+          }}<input
             :value="value.sortOrder"
-            aria-label="项目排序值"
+            :aria-label="$t('admin-media.projectForm.sortOrderLabel')"
             type="number"
             min="-1000000"
             max="1000000"
@@ -131,7 +179,7 @@
             @input="change('sortOrder', Number(($event.target as HTMLInputElement).value))"
         /></label>
       </div>
-      <p>进展描述项目本身。已归档的项目仍可公开；开发中的项目也可保留为草稿。</p>
+      <p>{{ $t('admin-media.projectForm.progressHint') }}</p>
       <AdminContentRelations
         v-bind="relations.props.value"
         @choose="relations.choose"
@@ -143,27 +191,31 @@
         @query="relations.setQuery"
         @resolve="relations.resolve"
       />
-      <section aria-label="项目技术标签">
-        <h2>技术标签（{{ value.tags.length }} / 20）</h2>
+      <section :aria-label="$t('admin-media.projectForm.tagsLabel')">
+        <h2>{{ $t('admin-media.projectForm.tagsTitle', { count: value.tags.length, max: 20 }) }}</h2>
         <div v-for="(tag, index) in value.tags" :key="index" class="project-editor__row">
           <label
-            >技术名称<input
+            >{{ $t('admin-media.projectForm.tagName')
+            }}<input
               :value="tag.label"
-              :aria-label="`技术名称 ${index + 1}`"
+              :aria-label="$t('admin-media.projectForm.tagNameLabel', { index: index + 1 })"
               maxlength="40"
               required
               @input="changeTag(index, { label: ($event.target as HTMLInputElement).value })" /></label
           ><label
-            >标签颜色<select
+            >{{ $t('admin-media.projectForm.tagColor')
+            }}<select
               :value="tag.color"
-              :aria-label="`技术颜色 ${index + 1}`"
+              :aria-label="$t('admin-media.projectForm.tagColorLabel', { index: index + 1 })"
               @change="changeTag(index, { color: ($event.target as HTMLSelectElement).value as ProjectTag['color'] })"
             >
-              <option v-for="color in projectTagColors" :key="color" :value="color">{{ colorLabels[color] }}</option>
+              <option v-for="color in projectTagColors" :key="color" :value="color">
+                {{ $t(`admin-media.projectForm.color.${color}`) }}
+              </option>
             </select></label
           ><button
             type="button"
-            :aria-label="`移除技术 ${index + 1}`"
+            :aria-label="$t('admin-media.projectForm.removeTagLabel', { index: index + 1 })"
             @click="
               change(
                 'tags',
@@ -171,7 +223,7 @@
               )
             "
           >
-            移除技术
+            {{ $t('admin-media.projectForm.removeTag') }}
           </button>
         </div>
         <button
@@ -179,32 +231,34 @@
           :disabled="value.tags.length >= 20"
           @click="change('tags', [...value.tags, { label: '', color: 'blue' }])"
         >
-          添加技术标签
+          {{ $t('admin-media.projectForm.addTag') }}
         </button>
-        <p>同一项目的重复技术忽略大小写合并；公开技术分布按实际使用这些标签的项目统计。</p>
+        <p>{{ $t('admin-media.projectForm.tagsHint') }}</p>
       </section>
-      <section aria-label="项目链接">
-        <h2>项目链接（{{ value.links.length }} / 4）</h2>
+      <section :aria-label="$t('admin-media.projectForm.linksLabel')">
+        <h2>{{ $t('admin-media.projectForm.linksTitle', { count: value.links.length, max: 4 }) }}</h2>
         <div v-for="(link, index) in value.links" :key="index" class="project-editor__row">
           <label
-            >链接用途<select
+            >{{ $t('admin-media.projectForm.linkKind')
+            }}<select
               :value="link.kind"
-              :aria-label="`链接用途 ${index + 1}`"
+              :aria-label="$t('admin-media.projectForm.linkKindLabel', { index: index + 1 })"
               @change="changeLink(index, { kind: ($event.target as HTMLSelectElement).value as ProjectLinkKind })"
             >
               <option
-                v-for="(label, kind) in projectLinkLabels"
+                v-for="kind in projectLinkKinds"
                 :key="kind"
                 :value="kind"
                 :disabled="value.links.some((other, i) => i !== index && other.kind === kind)"
               >
-                {{ label }}
+                {{ projectLinkLabel(kind, t) }}
               </option>
             </select></label
           ><label
-            >链接地址<input
+            >{{ $t('admin-media.projectForm.linkHref')
+            }}<input
               :value="link.href"
-              :aria-label="`链接地址 ${index + 1}`"
+              :aria-label="$t('admin-media.projectForm.linkHrefLabel', { index: index + 1 })"
               type="url"
               pattern="https?://.+"
               required
@@ -213,7 +267,7 @@
               @input="changeLink(index, { href: ($event.target as HTMLInputElement).value })" /></label
           ><button
             type="button"
-            :aria-label="`移除链接 ${index + 1}`"
+            :aria-label="$t('admin-media.projectForm.removeLinkLabel', { index: index + 1 })"
             @click="
               change(
                 'links',
@@ -221,19 +275,24 @@
               )
             "
           >
-            移除链接
+            {{ $t('admin-media.projectForm.removeLink') }}
           </button>
         </div>
-        <button type="button" :disabled="value.links.length >= 4" @click="addLink">添加项目链接</button>
-        <p v-if="!value.links.length">尚未提供公开链接，可在准备好地址后添加。</p>
+        <button type="button" :disabled="value.links.length >= 4" @click="addLink">
+          {{ $t('admin-media.projectForm.addLink') }}
+        </button>
+        <p v-if="!value.links.length">{{ $t('admin-media.projectForm.noLinks') }}</p>
       </section>
     </fieldset>
     <p v-if="saved">
-      创建于 {{ saved.createdAt }}<template v-if="saved.publishedAt"> · 首次发布于 {{ saved.publishedAt }}</template> ·
-      版本 {{ saved.revision }}
+      {{ $t('admin-media.projectForm.createdAt', { time: saved.createdAt })
+      }}<template v-if="saved.publishedAt">{{
+        $t('admin-media.projectForm.publishedAt', { time: saved.publishedAt })
+      }}</template
+      >{{ $t('admin-media.projectForm.revision', { revision: saved.revision }) }}
     </p>
     <AdminActionBar>
-      <CommonTooltip :content="`保存（${saveShortcut}）`"
+      <CommonTooltip :content="$t('admin-media.projectForm.saveTooltip', { shortcut: saveShortcut })"
         ><button
           ref="saveButton"
           :aria-busy="saving"
@@ -241,31 +300,40 @@
           aria-keyshortcuts="Control+S Meta+S"
           :disabled="!ready || loading || saving || !value.title.trim()"
         >
-          {{ saving ? '正在保存…' : '保存项目' }}
+          {{ saving ? $t('admin-media.projectForm.saving') : $t('admin-media.projectForm.save') }}
         </button></CommonTooltip
       ><button
         type="button"
         :disabled="!ready || loading || saving || !value.title.trim()"
         @click="requestSave('draft')"
       >
-        保存草稿</button
+        {{ $t('admin-media.projectForm.saveDraft') }}</button
       ><button
         type="button"
         :disabled="!ready || loading || saving || !value.title.trim()"
         @click="requestSave('published')"
       >
-        发布项目</button
-      ><span>{{ dirty ? '有尚未保存输入' : saved ? '当前输入已保存' : '尚未保存' }}</span>
+        {{ $t('admin-media.projectForm.publish') }}</button
+      ><span>{{
+        dirty
+          ? $t('admin-media.projectForm.dirty')
+          : saved
+            ? $t('admin-media.projectForm.clean')
+            : $t('admin-media.projectForm.unsaved')
+      }}</span>
     </AdminActionBar>
     <ClientOnly><AdminMediaPicker v-model:open="mediaOpen" @selected="selectMedia" /></ClientOnly>
   </form>
 </template>
 <script setup lang="ts">
 import {
-  projectProgressLabels,
+  projectLinkLabel,
+  projectLinkLabels,
+  projectProgresses,
+  projectProgressLabel,
+  projectStatusLabel,
   projectStatusLabels,
   projectTagColors,
-  projectLinkLabels,
 } from '~/features/project/types'
 import type {
   ManagedProject,
@@ -314,7 +382,9 @@ const { label: saveShortcut } = useAdminSaveShortcut({
 })
 const mediaOpen = ref(false),
   selectedMedia = ref<MediaAsset | null>(null)
-const colorLabels = { emerald: '翠绿', blue: '蓝色', amber: '琥珀', sky: '天蓝', rose: '玫红', slate: '灰色' }
+const { t } = useI18n()
+const projectStatuses = Object.keys(projectStatusLabels) as ProjectPublicationStatus[],
+  projectLinkKinds = Object.keys(projectLinkLabels) as ProjectLinkKind[]
 function requestSave(status: ProjectPublicationStatus) {
   if (editorForm.value?.reportValidity()) emit('save', status)
 }
@@ -340,9 +410,7 @@ function changeLink(index: number, patch: Partial<ProjectLinkInput>) {
   )
 }
 function addLink() {
-  const kind = (Object.keys(projectLinkLabels) as ProjectLinkKind[]).find(
-    (kind) => !props.value.links.some((link) => link.kind === kind),
-  )
+  const kind = projectLinkKinds.find((kind) => !props.value.links.some((link) => link.kind === kind))
   if (kind) change('links', [...props.value.links, { kind, href: '' }])
 }
 function selectMedia(asset: MediaAsset) {

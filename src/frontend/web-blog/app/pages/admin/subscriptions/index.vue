@@ -3,22 +3,24 @@
   <section class="subscription-ui subscription-stack">
     <header class="subscription-row">
       <div>
-        <h1>订阅管理</h1>
-        <p>订阅状态与发布状态分别维护。排序值越大越靠前。</p>
+        <h1>{{ $t('admin-media.subscriptionList.title') }}</h1>
+        <p>{{ $t('admin-media.subscriptionList.intro') }}</p>
       </div>
-      <NuxtLink to="/admin/subscriptions/new">新建订阅</NuxtLink><NuxtLink to="/subscriptions">查看平台订阅费</NuxtLink>
+      <NuxtLink to="/admin/subscriptions/new">{{ $t('admin-media.subscriptionList.create') }}</NuxtLink
+      ><NuxtLink to="/subscriptions">{{ $t('admin-media.subscriptionList.viewPublic') }}</NuxtLink>
     </header>
     <ClientOnly>
       <SubscriptionFilters :query="admin.query.value" @change="admin.filter" />
       <div class="subscription-row">
         <label
-          >发布状态<select
+          >{{ $t('admin-media.subscriptionList.status')
+          }}<select
             :value="admin.query.value.status"
-            aria-label="筛选订阅发布状态"
+            :aria-label="$t('admin-media.subscriptionList.statusLabel')"
             @change="admin.filter({ status: ($event.target as HTMLSelectElement).value })"
           >
-            <option value="all">全部发布状态</option>
-            <option v-for="(label, value) in publicationLabels" :key="value" :value="value">{{ label }}</option>
+            <option value="all">{{ $t('admin-media.subscriptionList.allStatus') }}</option>
+            <option v-for="value in publications" :key="value" :value="value">{{ publicationLabel(value, t) }}</option>
           </select></label
         ><button
           type="button"
@@ -33,58 +35,71 @@
             })
           "
         >
-          清除筛选
+          {{ $t('admin-media.subscriptionList.clearFilters') }}
         </button>
       </div>
       <CommonRequestFeedback
         v-if="admin.pending.value || admin.error.value"
         :pending="admin.pending.value"
-        :title="admin.error.value || '正在读取订阅'"
+        :title="admin.error.value || $t('admin-media.subscriptionList.loading')"
         @retry="admin.load"
       />
       <p v-if="admin.notice.value" role="status">{{ admin.notice.value }}</p>
-      <p v-if="admin.data.value?.total === 0 && !admin.pending.value">当前条件下暂无订阅。</p>
-      <p v-if="admin.data.value" class="subscription-note">共 {{ admin.data.value.total }} 条匹配订阅</p>
+      <p v-if="admin.data.value?.total === 0 && !admin.pending.value">
+        {{ $t('admin-media.subscriptionList.empty') }}
+      </p>
+      <p v-if="admin.data.value" class="subscription-note">
+        {{ $t('admin-media.subscriptionList.total', { total: admin.data.value.total }, admin.data.value.total) }}
+      </p>
       <ul class="subscription-admin-list">
         <li v-for="item in admin.data.value?.items ?? []" :key="item.id" class="subscription-panel">
           <header class="subscription-row">
             <h2>{{ item.name }}</h2>
-            <strong>{{ formatAmount(item.amount, item.currency) }} / {{ cycleLabels[item.billingCycle] }}</strong>
+            <strong>{{ formatAmount(item.amount, item.currency) }} / {{ cycleLabel(item.billingCycle, t) }}</strong>
           </header>
           <p>
-            {{ publicationLabels[item.status] }} · {{ stateLabels[item.subscriptionStatus] }} ·
-            {{ categoryLabels[item.category] }} · 排序 {{ item.sortOrder }} · 版本 {{ item.revision }}
+            {{
+              $t('admin-media.subscriptionList.meta', {
+                publication: publicationLabel(item.status, t),
+                state: stateLabel(item.subscriptionStatus, t),
+                category: categoryLabel(item.category, t),
+                sort: item.sortOrder,
+                revision: item.revision,
+              })
+            }}
           </p>
-          <p>{{ item.description || '暂无描述' }}</p>
+          <p>{{ item.description || $t('admin-media.subscriptionList.noDescription') }}</p>
           <div class="subscription-row">
-            <NuxtLink :to="`/admin/subscriptions/${item.id}`">编辑订阅</NuxtLink
+            <NuxtLink :to="`/admin/subscriptions/${item.id}`">{{ $t('admin-media.subscriptionList.edit') }}</NuxtLink
             ><button
               v-if="item.status !== 'published'"
               type="button"
               :disabled="busy(item.id)"
               @click="admin.mutate(item, { status: 'published' })"
             >
-              发布订阅</button
+              {{ $t('admin-media.subscriptionList.publish') }}</button
             ><button
               v-else
               type="button"
               :disabled="busy(item.id)"
               @click="admin.mutate(item, { status: 'withdrawn' })"
             >
-              撤回订阅</button
+              {{ $t('admin-media.subscriptionList.withdraw') }}</button
             ><button
               type="button"
               :disabled="busy(item.id) || item.sortOrder >= 1000000"
               @click="admin.mutate(item, { sortOrder: item.sortOrder + 1 }, true)"
             >
-              提高排序</button
+              {{ $t('admin-media.subscriptionList.raise') }}</button
             ><button
               type="button"
               :disabled="busy(item.id) || item.sortOrder <= -1000000"
               @click="admin.mutate(item, { sortOrder: item.sortOrder - 1 }, true)"
             >
-              降低排序</button
-            ><button type="button" :disabled="busy(item.id)" @click="admin.mutate(item)">删除订阅</button>
+              {{ $t('admin-media.subscriptionList.lower') }}</button
+            ><button type="button" :disabled="busy(item.id)" @click="admin.mutate(item)">
+              {{ $t('admin-media.subscriptionList.remove') }}
+            </button>
           </div>
           <SubscriptionHistory :history="item.priceHistory" />
         </li>
@@ -92,14 +107,14 @@
       <nav
         v-if="admin.data.value && (admin.data.value.total > admin.query.value.pageSize || admin.query.value.page > 1)"
         class="subscription-row"
-        aria-label="管理订阅分页"
+        :aria-label="$t('admin-media.subscriptionList.pagination')"
       >
         <button
           type="button"
           :disabled="admin.pending.value || admin.query.value.page <= 1"
           @click="admin.filter({ page: admin.query.value.page - 1 })"
         >
-          上一页</button
+          {{ $t('admin-media.subscriptionList.prev') }}</button
         ><span
           >{{ admin.query.value.page }} /
           {{ Math.max(1, Math.ceil(admin.data.value.total / admin.query.value.pageSize)) }}</span
@@ -110,7 +125,7 @@
           "
           @click="admin.filter({ page: admin.query.value.page + 1 })"
         >
-          下一页
+          {{ $t('admin-media.subscriptionList.next') }}
         </button>
       </nav>
     </ClientOnly>
@@ -118,9 +133,12 @@
 </template>
 <script setup lang="ts">
 import { formatAmount } from '@tixxin/subscription-domain'
-import { categoryLabels, cycleLabels, stateLabels, publicationLabels } from '~/features/subscription/types'
+import { categoryLabel, cycleLabel, publicationLabel, stateLabel } from '~/features/subscription/labels'
+import { publicationLabels, type SubscriptionPublication } from '~/features/subscription/types'
 definePageMeta({ layout: 'admin' })
-useSeoMeta({ title: '订阅管理', robots: 'noindex, nofollow' })
+const { t } = useI18n()
+const publications = Object.keys(publicationLabels) as SubscriptionPublication[]
+useSeoMeta({ title: () => t('admin-media.subscriptionList.title'), robots: 'noindex, nofollow' })
 const admin = useAdminSubscriptions()
 const busy = (id: number) => admin.pending.value || admin.busy.value.includes(id)
 </script>

@@ -4,6 +4,7 @@
 </template>
 <script setup lang="ts">
 definePageMeta({ layout: 'admin', key: (route) => route.path })
-useSeoMeta({ title: '编辑订阅', robots: 'noindex, nofollow' })
+const { t } = useI18n()
+useSeoMeta({ title: () => t('admin-media.subscriptionList.editTitle'), robots: 'noindex, nofollow' })
 const route = useRoute()
 </script>

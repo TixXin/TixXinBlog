@@ -6,7 +6,9 @@ export function useAdminProjects() {
     auth = useCurrentUser(),
     route = useRoute(),
     router = useRouter(),
-    app = useNuxtApp()
+    app = useNuxtApp(),
+    // 在 setup 内取翻译函数：失败处理发生在 await 之后仍可使用
+    { t } = useI18n()
   const context = useState<string>('page-content-context', () => '')
   const data = ref<ProjectPage<ManagedProject> | null>(null),
     pending = ref(false),
@@ -33,7 +35,7 @@ export function useAdminProjects() {
     pending.value = true
     error.value = ''
     try {
-      if (!user) throw new Error('请先登录博主账号。')
+      if (!user) throw new Error(t('admin-media.projectList.loginRequired'))
       const result = await repo.adminList(query.value)
       if (
         alive &&
@@ -46,7 +48,8 @@ export function useAdminProjects() {
         acceptedKey.value = requested
       }
     } catch (cause) {
-      if (alive && generation === version) error.value = cause instanceof Error ? cause.message : '项目读取失败'
+      if (alive && generation === version)
+        error.value = cause instanceof Error ? cause.message : t('admin-media.projectList.loadFailed')
     } finally {
       if (alive && generation === version) pending.value = false
     }
@@ -56,7 +59,7 @@ export function useAdminProjects() {
   }
   async function mutate(project: ManagedProject, patch?: Partial<ProjectEditable>) {
     if (busy.value.includes(project.id) || pending.value || !auth.currentUser.value) return
-    if (!patch && !window.confirm(`删除项目「${project.title}」？项目不再展示，其他内容的媒体引用会保留。`)) return
+    if (!patch && !window.confirm(t('admin-media.projectList.removeConfirm', { title: project.title }))) return
     const user = auth.currentUser.value.id,
       currentContext = context.value,
       requested = key.value
@@ -67,13 +70,14 @@ export function useAdminProjects() {
       if (patch) await repo.update(project.id, patch, project.revision)
       else await repo.remove(project.id, project.revision)
       if (!alive || auth.currentUser.value?.id !== user || currentContext !== context.value) return
-      notice.value = patch ? '项目已更新。' : '项目已删除。'
+      notice.value = patch ? t('admin-media.projectList.updated') : t('admin-media.projectList.removed')
       void app.runWithContext(() => refreshNuxtData(['projects-feed', 'projects-metadata']))
       if (requested === key.value) await load()
     } catch (cause) {
       if (!alive || auth.currentUser.value?.id !== user || currentContext !== context.value) return
-      error.value = cause instanceof Error ? cause.message : '操作失败，请重新读取后核查结果'
-      if ((cause as { statusCode?: number }).statusCode === 409) error.value += '；请重新读取当前版本后再操作。'
+      error.value = cause instanceof Error ? cause.message : t('admin-media.projectList.mutateFailed')
+      if ((cause as { statusCode?: number }).statusCode === 409)
+        error.value += t('admin-media.projectList.conflictSuffix')
     } finally {
       if (alive && auth.currentUser.value?.id === user) busy.value = busy.value.filter((id) => id !== project.id)
     }

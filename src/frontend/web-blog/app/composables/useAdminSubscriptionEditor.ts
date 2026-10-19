@@ -9,11 +9,14 @@ import { subscriptionForm, subscriptionBody, parseSubscriptionRecovery } from '~
 import type { SubscriptionRecovery } from '~/features/subscription/editor'
 import { editorRecoveryKey, readEditorRecoveries } from '~/utils/editorRecoveryStorage'
 import type { EditorRecoveryCopy } from '~/utils/editorRecoveryStorage'
+import { subscriptionErrorMessage } from '~/features/subscription/labels'
 export function useAdminSubscriptionEditor(initialId: number | null, options: { inline?: boolean } = {}) {
   const repo = useSubscriptionRepository(),
     auth = useCurrentUser(),
     router = useRouter(),
-    app = useNuxtApp()
+    app = useNuxtApp(),
+    // 在 setup 内取翻译函数：失败处理发生在 await 之后仍可使用
+    { t } = useI18n()
   const context = useState<string>('page-content-context', () => '')
   const form = reactive(subscriptionForm()),
     id = ref(initialId),
@@ -79,7 +82,7 @@ export function useAdminSubscriptionEditor(initialId: number | null, options: { 
       localError.value = ''
       return true
     } catch {
-      localError.value = '恢复副本无法保存，请保留当前输入并重试。'
+      localError.value = t('admin-media.subscriptionEditor.localSaveFailed')
       return false
     }
   }
@@ -97,23 +100,22 @@ export function useAdminSubscriptionEditor(initialId: number | null, options: { 
     loading.value = true
     error.value = ''
     try {
-      if (!(await auth.restore())) throw new Error('请先登录博主账号，当前输入仍保留。')
+      if (!(await auth.restore())) throw new Error(t('admin-media.subscriptionEditor.loginRequired'))
       const user = auth.currentUser.value!.id
       if (!alive || version !== generation) return
       actor ||= user
       ownedContext ||= context.value
       requestId ||= crypto.randomUUID()
-      if (ownedContext !== context.value)
-        throw new Error('内容库已恢复或切换，请刷新页面后重新核对订阅；当前输入已保留。')
+      if (ownedContext !== context.value) throw new Error(t('admin-media.subscriptionEditor.contextChangedLoad'))
       // 新库可能已没有同编号记录；先保留只读副本入口，再读取服务器详情。
       try {
         const copies = readEditorRecoveries(sessionStorage, storagePrefix(), ownedContext, parseSubscriptionRecovery)
         recovery.value = copies.current?.value ?? null
         currentRecoveryKey = copies.current?.key ?? storageKey()
         previousRecoveries.value = copies.previous
-        if (copies.migrationIssue) localError.value = '旧恢复副本迁移暂未完成，原副本已保留。'
+        if (copies.migrationIssue) localError.value = t('admin-media.subscriptionEditor.migrationPending')
       } catch {
-        localError.value = '无法读取本标签页恢复副本。'
+        localError.value = t('admin-media.subscriptionEditor.recoveryReadFailed')
       }
       if (replace || (!dirty.value && !saved.value)) {
         const subscription = id.value ? await repo.adminDetail(id.value) : null
@@ -123,7 +125,8 @@ export function useAdminSubscriptionEditor(initialId: number | null, options: { 
       if (!owns(user, version)) return
       ready.value = true
     } catch (cause) {
-      if (alive && version === generation) error.value = cause instanceof Error ? cause.message : '订阅读取失败'
+      if (alive && version === generation)
+        error.value = subscriptionErrorMessage(cause, t) ?? t('admin-media.subscriptionEditor.loadFailed')
     } finally {
       if (alive && version === generation) loading.value = false
     }
@@ -145,7 +148,7 @@ export function useAdminSubscriptionEditor(initialId: number | null, options: { 
         JSON.stringify(subscriptionForm(pendingCreate.value))
     if (!auth.isLoggedIn.value || !user || user !== actor || ownedContext !== context.value) {
       ready.value = false
-      error.value = '登录或内容上下文已变化，请重新读取后核对。'
+      error.value = t('admin-media.subscriptionEditor.contextChanged')
       return
     }
     saving.value = true
@@ -159,7 +162,7 @@ export function useAdminSubscriptionEditor(initialId: number | null, options: { 
         try {
           const known = await repo.submission(requestId)
           if (!owns(user, version)) return
-          if (known.state === 'deleted') throw new Error('此前提交的订阅已删除，不能自动重新创建；当前输入已保留。')
+          if (known.state === 'deleted') throw new Error(t('admin-media.subscriptionEditor.submissionDeleted'))
           subscription = known.item
         } catch (cause) {
           if ((cause as { statusCode?: number }).statusCode !== 404) throw cause
@@ -180,20 +183,22 @@ export function useAdminSubscriptionEditor(initialId: number | null, options: { 
       serverVersion.value = null
       baseline.value = JSON.stringify(subscriptionForm(subscription))
       if (JSON.stringify(form) === capture && recoveringMatches) Object.assign(form, subscriptionForm(subscription))
-      notice.value = dirty.value ? '已核查服务器订阅，当前新增输入仍保留，请核对后继续保存。' : '订阅已保存。'
+      notice.value = dirty.value
+        ? t('admin-media.subscriptionEditor.savedWithChanges')
+        : t('admin-media.subscriptionEditor.saved')
       if (!dirty.value) {
         try {
           sessionStorage.removeItem(storageKey())
           recovery.value = null
         } catch {
-          localError.value = '订阅已保存，旧恢复副本暂时无法移除。'
+          localError.value = t('admin-media.subscriptionEditor.savedDiscardFailed')
         }
       } else persistLocal()
       void app.runWithContext(() => refreshNuxtData(['subscriptions-feed']))
       if (wasNew && !dirty.value && !options.inline) redirect = `/admin/subscriptions/${subscription.id}`
     } catch (cause) {
       if (!owns(user, version)) return
-      error.value = cause instanceof Error ? cause.message : '保存失败，当前输入已保留'
+      error.value = subscriptionErrorMessage(cause, t) ?? t('admin-media.subscriptionEditor.saveFailed')
       const { statusCode, conflictKind } = cause as { statusCode?: number; conflictKind?: string }
       if (statusCode === 400) pendingCreate.value = null
       if (statusCode === 409) serverVersion.value = null
@@ -209,7 +214,7 @@ export function useAdminSubscriptionEditor(initialId: number | null, options: { 
           /* 保留原错误和输入。 */
         }
       }
-      if (!id.value && pendingCreate.value) error.value += '。保存结果尚未核清，再次保存会先核查原提交。'
+      if (!id.value && pendingCreate.value) error.value += t('admin-media.subscriptionEditor.pendingCreateSuffix')
       persistLocal()
     } finally {
       if (alive && generation === version) saving.value = false
@@ -223,8 +228,8 @@ export function useAdminSubscriptionEditor(initialId: number | null, options: { 
       (dirty.value || pendingCreate.value) &&
       !window.confirm(
         preserved
-          ? '当前输入已保留为恢复副本，是否读取服务器最新版本？'
-          : '恢复副本未能保存，读取服务器版本会覆盖当前输入并可能丢失。确定继续吗？',
+          ? t('admin-media.subscriptionEditor.reloadConfirm')
+          : t('admin-media.subscriptionEditor.reloadConfirmUnsaved'),
       )
     )
       return
@@ -234,13 +239,13 @@ export function useAdminSubscriptionEditor(initialId: number | null, options: { 
     const value = recovery.value
     if (!value || saving.value || loading.value || !ready.value || ownershipLost.value) return
     if (value.context !== ownedContext || (initialId !== null && value.id !== initialId)) {
-      error.value = '恢复副本属于不同内容库或订阅，不能直接提交；请根据副本内容重新编辑。'
+      error.value = t('admin-media.subscriptionEditor.recoveryMismatch')
       return
     }
     if (
       dirty.value &&
       JSON.stringify(form) !== JSON.stringify(value.form) &&
-      !window.confirm('恢复副本会替换当前表单中未保存的修改，确定恢复吗？')
+      !window.confirm(t('admin-media.subscriptionEditor.restoreConfirm'))
     )
       return
     Object.assign(form, value.form)
@@ -250,7 +255,7 @@ export function useAdminSubscriptionEditor(initialId: number | null, options: { 
     pendingCreate.value = value.pendingCreate
     recovery.value = null
     serverVersion.value = null
-    notice.value = '已恢复输入，请核对后手动保存。'
+    notice.value = t('admin-media.subscriptionEditor.restored')
     persistLocal()
   }
   function discardRecovery() {
@@ -260,18 +265,20 @@ export function useAdminSubscriptionEditor(initialId: number | null, options: { 
     // 当前键可能已被 watch 更新为新的表单，不得删除新输入；先重存当前内容。
     if (!persistLocal()) {
       recovery.value = previous
-      localError.value = '暂时无法移除旧副本，当前输入仍保留在本标签页。'
+      localError.value = t('admin-media.subscriptionEditor.discardFailed')
       return
     }
     if (currentRecoveryKey && currentRecoveryKey !== storageKey()) {
       try {
         sessionStorage.removeItem(currentRecoveryKey)
       } catch {
-        localError.value = '当前输入已保留，但旧恢复副本暂时无法移除。'
+        localError.value = t('admin-media.subscriptionEditor.discardFailedKept')
       }
     }
     notice.value =
-      dirty.value || pendingCreate.value ? '已移除旧恢复副本，当前输入仍保留在本标签页。' : '已移除恢复副本。'
+      dirty.value || pendingCreate.value
+        ? t('admin-media.subscriptionEditor.discardedKept')
+        : t('admin-media.subscriptionEditor.discarded')
   }
   function mergeConflict() {
     const latest = serverVersion.value
@@ -281,7 +288,7 @@ export function useAdminSubscriptionEditor(initialId: number | null, options: { 
     saved.value = latest
     baseline.value = JSON.stringify(subscriptionForm(latest))
     serverVersion.value = null
-    notice.value = '已保留输入并采用服务器最新版本，请核对合并内容后手动保存。'
+    notice.value = t('admin-media.subscriptionEditor.merged')
     error.value = ''
     persistLocal()
   }
@@ -302,8 +309,8 @@ export function useAdminSubscriptionEditor(initialId: number | null, options: { 
     const preserved = persistLocal()
     return window.confirm(
       preserved
-        ? '有尚未保存或待核查的订阅输入，已保留本标签页副本，确定离开吗？'
-        : '有尚未保存或待核查的订阅输入，恢复副本未能保存；离开后可能丢失。确定离开吗？',
+        ? t('admin-media.subscriptionEditor.leaveConfirm')
+        : t('admin-media.subscriptionEditor.leaveConfirmUnsaved'),
     )
   }
   onBeforeRouteLeave(canLeave)
@@ -324,7 +331,7 @@ export function useAdminSubscriptionEditor(initialId: number | null, options: { 
         ready.value = false
         saving.value = false
         loading.value = false
-        error.value = '身份或内容库已变化，输入已按原归属保留，请重新核对后继续。'
+        error.value = t('admin-media.subscriptionEditor.ownershipChanged')
       }
       if (!next || !authenticated) return
       if (actor && next !== actor) {

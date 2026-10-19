@@ -8,7 +8,9 @@ export function useAdminProjectEditor(initialId: number | null) {
   const repo = useProjectRepository(),
     auth = useCurrentUser(),
     router = useRouter(),
-    app = useNuxtApp()
+    app = useNuxtApp(),
+    // 在 setup 内取翻译函数：失败处理发生在 await 之后仍可使用
+    { t } = useI18n()
   const context = useState<string>('page-content-context', () => '')
   const form = reactive(projectForm()),
     id = ref(initialId),
@@ -52,7 +54,7 @@ export function useAdminProjectEditor(initialId: number | null) {
       sessionStorage.setItem(storageKey(), JSON.stringify(value))
       localError.value = ''
     } catch {
-      localError.value = '恢复副本无法保存，请保留当前输入并重试。'
+      localError.value = t('admin-media.projectEditor.localSaveFailed')
     }
   }
   function accept(project: ManagedProject) {
@@ -68,23 +70,22 @@ export function useAdminProjectEditor(initialId: number | null) {
     loading.value = true
     error.value = ''
     try {
-      if (!(await auth.restore())) throw new Error('请先登录博主账号，当前输入仍保留。')
+      if (!(await auth.restore())) throw new Error(t('admin-media.projectEditor.loginRequired'))
       const user = auth.currentUser.value!.id
       if (!alive || version !== generation) return
       actor ||= user
       ownedContext ||= context.value
       requestId ||= crypto.randomUUID()
-      if (ownedContext !== context.value)
-        throw new Error('内容库已恢复或切换，请刷新页面后重新核对项目；当前输入已保留。')
+      if (ownedContext !== context.value) throw new Error(t('admin-media.projectEditor.contextChangedLoad'))
       // 新库可能已没有同编号记录；先保留只读副本入口，再读取服务器详情。
       try {
         const copies = readEditorRecoveries(sessionStorage, storagePrefix(), ownedContext, parseProjectRecovery)
         recovery.value = copies.current?.value ?? null
         currentRecoveryKey = copies.current?.key ?? storageKey()
         previousRecoveries.value = copies.previous
-        if (copies.migrationIssue) localError.value = '旧恢复副本迁移暂未完成，原副本已保留。'
+        if (copies.migrationIssue) localError.value = t('admin-media.projectEditor.migrationPending')
       } catch {
-        localError.value = '无法读取本标签页恢复副本。'
+        localError.value = t('admin-media.projectEditor.recoveryReadFailed')
       }
       if (replace || (!dirty.value && !saved.value)) {
         const project = id.value ? await repo.adminDetail(id.value) : null
@@ -94,7 +95,8 @@ export function useAdminProjectEditor(initialId: number | null) {
       if (!owns(user, version)) return
       ready.value = true
     } catch (cause) {
-      if (alive && version === generation) error.value = cause instanceof Error ? cause.message : '项目读取失败'
+      if (alive && version === generation)
+        error.value = cause instanceof Error ? cause.message : t('admin-media.projectEditor.loadFailed')
     } finally {
       if (alive && version === generation) loading.value = false
     }
@@ -116,7 +118,7 @@ export function useAdminProjectEditor(initialId: number | null) {
         JSON.stringify(pendingCreate.value)
     if (!user || user !== actor || ownedContext !== context.value) {
       ready.value = false
-      error.value = '登录或内容上下文已变化，请重新读取后核对。'
+      error.value = t('admin-media.projectEditor.contextChanged')
       return
     }
     saving.value = true
@@ -129,7 +131,7 @@ export function useAdminProjectEditor(initialId: number | null) {
         try {
           const known = await repo.submission(requestId)
           if (!owns(user, version)) return
-          if (known.state === 'deleted') throw new Error('此前提交的项目已删除，不能自动重新创建；当前输入已保留。')
+          if (known.state === 'deleted') throw new Error(t('admin-media.projectEditor.submissionDeleted'))
           project = known.item
         } catch (cause) {
           if ((cause as { statusCode?: number }).statusCode !== 404) throw cause
@@ -150,7 +152,9 @@ export function useAdminProjectEditor(initialId: number | null) {
       serverVersion.value = null
       baseline.value = JSON.stringify(projectForm(project))
       if (JSON.stringify(form) === capture && recoveringMatches) Object.assign(form, projectForm(project))
-      notice.value = dirty.value ? '已核查服务器项目，当前新增输入仍保留，请核对后继续保存。' : '项目已保存。'
+      notice.value = dirty.value
+        ? t('admin-media.projectEditor.savedWithChanges')
+        : t('admin-media.projectEditor.saved')
       if (!dirty.value) {
         sessionStorage.removeItem(storageKey())
         recovery.value = null
@@ -159,7 +163,7 @@ export function useAdminProjectEditor(initialId: number | null) {
       if (wasNew && !dirty.value) redirect = `/admin/projects/${project.id}`
     } catch (cause) {
       if (!owns(user, version)) return
-      error.value = cause instanceof Error ? cause.message : '保存失败，当前输入已保留'
+      error.value = cause instanceof Error ? cause.message : t('admin-media.projectEditor.saveFailed')
       const statusCode = (cause as { statusCode?: number }).statusCode
       if (statusCode === 400) pendingCreate.value = null
       if (statusCode === 409 && id.value) {
@@ -170,7 +174,7 @@ export function useAdminProjectEditor(initialId: number | null) {
           /* 保留原错误和输入。 */
         }
       }
-      if (!id.value && pendingCreate.value) error.value += '。保存结果尚未核清，再次保存会先核查原提交。'
+      if (!id.value && pendingCreate.value) error.value += t('admin-media.projectEditor.pendingCreateSuffix')
       persistLocal()
     } finally {
       if (alive && generation === version) saving.value = false
@@ -178,7 +182,7 @@ export function useAdminProjectEditor(initialId: number | null) {
     if (redirect && owns(user, version)) await router.replace(redirect)
   }
   async function reload() {
-    if (saving.value || (dirty.value && !window.confirm('当前输入会保留为恢复副本，是否读取服务器最新版本？'))) return
+    if (saving.value || (dirty.value && !window.confirm(t('admin-media.projectEditor.reloadConfirm')))) return
     persistLocal()
     await load(true)
   }
@@ -186,7 +190,7 @@ export function useAdminProjectEditor(initialId: number | null) {
     const value = recovery.value
     if (!value || saving.value || !ready.value) return
     if (value.context !== ownedContext || (initialId !== null && value.id !== initialId)) {
-      error.value = '恢复副本属于不同内容库或项目，不能直接提交；请根据副本内容重新编辑。'
+      error.value = t('admin-media.projectEditor.recoveryMismatch')
       return
     }
     Object.assign(form, value.form)
@@ -195,14 +199,14 @@ export function useAdminProjectEditor(initialId: number | null) {
     requestId = value.requestId
     pendingCreate.value = value.pendingCreate
     recovery.value = null
-    notice.value = '已恢复输入，请核对后手动保存。'
+    notice.value = t('admin-media.projectEditor.restored')
   }
   function discardRecovery() {
     try {
       sessionStorage.removeItem(currentRecoveryKey || storageKey())
       recovery.value = null
     } catch {
-      localError.value = '恢复副本暂时无法移除。'
+      localError.value = t('admin-media.projectEditor.discardFailed')
     }
   }
   function mergeConflict() {
@@ -212,7 +216,7 @@ export function useAdminProjectEditor(initialId: number | null) {
     saved.value = latest
     baseline.value = JSON.stringify(projectForm(latest))
     serverVersion.value = null
-    notice.value = '已保留输入并采用服务器最新版本，请核对合并内容后手动保存。'
+    notice.value = t('admin-media.projectEditor.merged')
     error.value = ''
     persistLocal()
   }
@@ -231,7 +235,7 @@ export function useAdminProjectEditor(initialId: number | null) {
     if (saving.value) return false
     if (!dirty.value && !pendingCreate.value) return true
     persistLocal()
-    return window.confirm('有尚未保存或待核查的项目输入，已保留本标签页副本，确定离开吗？')
+    return window.confirm(t('admin-media.projectEditor.leaveConfirm'))
   })
   watch(form, persistLocal, { deep: true })
   watch(
@@ -269,7 +273,7 @@ export function useAdminProjectEditor(initialId: number | null) {
       ready.value = false
       saving.value = false
       loading.value = false
-      error.value = '内容库已恢复或切换，请刷新页面后重新核对；输入已保留。'
+      error.value = t('admin-media.projectEditor.contextRestored')
     }
   })
   onScopeDispose(() => {

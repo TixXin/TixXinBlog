@@ -1,11 +1,14 @@
 /** @file useAdminSubscriptions.ts @description 复用管理读取归属，订阅列表按版本更新、排序和软删除 */
 import { subscriptionQuery } from '~/features/subscription/query'
 import type { ManagedSubscription, SubscriptionEditable } from '~/features/subscription/types'
+import { subscriptionErrorMessage } from '~/features/subscription/labels'
 export function useAdminSubscriptions() {
   const repo = useSubscriptionRepository(),
     route = useRoute(),
     router = useRouter(),
-    app = useNuxtApp()
+    app = useNuxtApp(),
+    // 在 setup 内取翻译函数：失败处理发生在 await 之后仍可使用
+    { t } = useI18n()
   const query = computed(() => ({
     ...subscriptionQuery(route.query),
     status: ['draft', 'published', 'withdrawn'].includes(String(route.query.status))
@@ -19,7 +22,7 @@ export function useAdminSubscriptions() {
       result = await repo.adminList(query.value)
     acceptedKey.value = requested
     return { key: requested, ...result }
-  }, '订阅服务暂时不可用，请重试')
+  }, t('admin-media.subscriptionList.unavailable'))
   const error = ref(''),
     notice = ref(''),
     busy = ref<number[]>([])
@@ -30,7 +33,7 @@ export function useAdminSubscriptions() {
   const data = computed(() => (resource.data.value?.key === key.value ? resource.data.value : null))
   async function mutate(item: ManagedSubscription, patch?: Partial<SubscriptionEditable>, sort = false) {
     if (busy.value.includes(item.id) || resource.pending.value) return
-    if (!patch && !window.confirm(`删除订阅「${item.name}」？记录将从公开页面移除。`)) return
+    if (!patch && !window.confirm(t('admin-media.subscriptionList.removeConfirm', { name: item.name }))) return
     const owns = resource.captureOwnership()
     busy.value = [...busy.value, item.id]
     error.value = ''
@@ -41,14 +44,16 @@ export function useAdminSubscriptions() {
       else if (patch) await repo.update(item.id, patch, item.revision)
       else await repo.remove(item.id, item.revision)
       if (!owns()) return
-      notice.value = patch ? '订阅已更新。' : '订阅已删除。'
+      notice.value = patch ? t('admin-media.subscriptionList.updated') : t('admin-media.subscriptionList.removed')
       void app.runWithContext(() => refreshNuxtData('subscriptions-feed'))
       await resource.refresh()
     } catch (cause) {
       if (owns())
         error.value =
-          (cause instanceof Error ? cause.message : '操作失败') +
-          ((cause as { statusCode?: number }).statusCode === 409 ? '；请重新读取当前版本后再操作。' : '')
+          (subscriptionErrorMessage(cause, t) ?? t('admin-media.subscriptionList.mutateFailed')) +
+          ((cause as { statusCode?: number }).statusCode === 409
+            ? t('admin-media.subscriptionList.conflictSuffix')
+            : '')
     } finally {
       busy.value = busy.value.filter((id) => id !== item.id)
     }

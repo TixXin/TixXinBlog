@@ -3,63 +3,70 @@
   <section class="admin-projects">
     <header>
       <div>
-        <h1>项目管理</h1>
-        <p>维护个人项目和作品。排序值越大越靠前，相同排序按项目编号倒序。</p>
+        <h1>{{ $t('admin-media.projectList.title') }}</h1>
+        <p>{{ $t('admin-media.projectList.intro') }}</p>
       </div>
-      <NuxtLink to="/admin/projects/new">新建项目</NuxtLink><NuxtLink to="/projects">查看项目展示</NuxtLink>
+      <NuxtLink to="/admin/projects/new">{{ $t('admin-media.projectList.create') }}</NuxtLink
+      ><NuxtLink to="/projects">{{ $t('admin-media.projectList.viewPublic') }}</NuxtLink>
     </header>
     <ClientOnly
       ><template v-if="isLoggedIn"
         ><div class="admin-projects__filters">
           <label
-            >搜索项目<input
+            >{{ $t('admin-media.projectList.search')
+            }}<input
               :value="query.q ?? ''"
-              aria-label="搜索管理项目"
+              :aria-label="$t('admin-media.projectList.searchLabel')"
               maxlength="200"
               @change="filter({ q: ($event.target as HTMLInputElement).value || undefined })" /></label
           ><label
-            >发布状态<select
+            >{{ $t('admin-media.projectList.status')
+            }}<select
               :value="query.status"
-              aria-label="筛选项目发布状态"
+              :aria-label="$t('admin-media.projectList.statusLabel')"
               @change="filter({ status: ($event.target as HTMLSelectElement).value })"
             >
-              <option value="all">全部发布状态</option>
-              <option v-for="(label, status) in projectStatusLabels" :key="status" :value="status">{{ label }}</option>
-            </select></label
-          ><label
-            >项目进展<select
-              :value="query.progress ?? ''"
-              aria-label="筛选管理项目进展"
-              @change="filter({ progress: ($event.target as HTMLSelectElement).value || undefined })"
-            >
-              <option value="">全部进展</option>
-              <option v-for="(label, progress) in projectProgressLabels" :key="progress" :value="progress">
-                {{ label }}
+              <option value="all">{{ $t('admin-media.projectList.allStatus') }}</option>
+              <option v-for="status in projectStatuses" :key="status" :value="status">
+                {{ projectStatusLabel(status, t) }}
               </option>
             </select></label
           ><label
-            >技术标签<input
+            >{{ $t('admin-media.projectList.progress')
+            }}<select
+              :value="query.progress ?? ''"
+              :aria-label="$t('admin-media.projectList.progressLabel')"
+              @change="filter({ progress: ($event.target as HTMLSelectElement).value || undefined })"
+            >
+              <option value="">{{ $t('admin-media.projectList.allProgress') }}</option>
+              <option v-for="progress in projectProgresses" :key="progress" :value="progress">
+                {{ projectProgressLabel(progress, t) }}
+              </option>
+            </select></label
+          ><label
+            >{{ $t('admin-media.projectList.tag')
+            }}<input
               :value="query.tag ?? ''"
-              aria-label="筛选管理项目技术"
+              :aria-label="$t('admin-media.projectList.tagLabel')"
               maxlength="40"
               @change="filter({ tag: ($event.target as HTMLInputElement).value || undefined })" /></label
           ><button
             type="button"
             @click="filter({ q: undefined, status: undefined, progress: undefined, tag: undefined })"
           >
-            清除筛选
+            {{ $t('admin-media.projectList.clearFilters') }}
           </button>
         </div>
         <CommonRequestFeedback
           v-if="pending || error"
           :pending="pending"
           :compact="!!data"
-          :title="error || '正在读取项目'"
+          :title="error || $t('admin-media.projectList.loading')"
           @retry="load"
         />
         <p v-if="notice" role="status">{{ notice }}</p>
-        <p v-if="stale" role="status">当前筛选尚未成功读取，以下保留上一次查询的项目。</p>
-        <p v-if="!pending && !error && data?.total === 0">当前条件下暂无项目。</p>
+        <p v-if="stale" role="status">{{ $t('admin-media.projectList.stale') }}</p>
+        <p v-if="!pending && !error && data?.total === 0">{{ $t('admin-media.projectList.empty') }}</p>
         <ul class="admin-projects__list">
           <li v-for="project in data?.items ?? []" :key="project.id">
             <CommonImageFrame
@@ -70,49 +77,62 @@
               :height="project.height ?? undefined"
               fit="contain"
             />
-            <div v-else class="admin-projects__no-cover"><Icon name="lucide:panels-top-left" />未设置封面</div>
+            <div v-else class="admin-projects__no-cover">
+              <Icon name="lucide:panels-top-left" />{{ $t('admin-media.projectList.noCover') }}
+            </div>
             <div>
               <h2>{{ project.title }}</h2>
               <p>
-                {{ projectStatusLabels[project.status] }} · {{ projectProgressLabels[project.progress] }} · 排序
-                {{ project.sortOrder }} · 版本 {{ project.revision }}
+                {{
+                  $t('admin-media.projectList.meta', {
+                    status: projectStatusLabel(project.status, t),
+                    progress: projectProgressLabel(project.progress, t),
+                    sort: project.sortOrder,
+                    revision: project.revision,
+                  })
+                }}
               </p>
               <p>{{ project.description }}</p>
-              <p>{{ project.tags.map((tag) => tag.label).join('、') || '尚未填写技术标签' }}</p>
+              <p>
+                {{
+                  project.tags.map((tag) => tag.label).join($t('admin-media.projectList.tagSeparator')) ||
+                  $t('admin-media.projectList.noTags')
+                }}
+              </p>
               <div class="admin-projects__actions">
-                <NuxtLink :to="`/admin/projects/${project.id}`">编辑项目</NuxtLink
+                <NuxtLink :to="`/admin/projects/${project.id}`">{{ $t('admin-media.projectList.edit') }}</NuxtLink
                 ><NuxtLink
                   v-if="project.status === 'published'"
                   :to="`/projects?q=${encodeURIComponent(project.title)}`"
-                  >查看公开项目</NuxtLink
+                  >{{ $t('admin-media.projectList.viewProject') }}</NuxtLink
                 ><button
                   v-if="project.status !== 'published'"
                   type="button"
                   :disabled="pending || busy.includes(project.id)"
                   @click="mutate(project, { status: 'published' })"
                 >
-                  发布项目</button
+                  {{ $t('admin-media.projectList.publish') }}</button
                 ><button
                   v-if="project.status === 'published'"
                   type="button"
                   :disabled="pending || busy.includes(project.id)"
                   @click="mutate(project, { status: 'withdrawn' })"
                 >
-                  撤回项目</button
+                  {{ $t('admin-media.projectList.withdraw') }}</button
                 ><button
                   type="button"
                   :disabled="pending || busy.includes(project.id) || project.sortOrder >= 1000000"
                   @click="mutate(project, { sortOrder: project.sortOrder + 1 })"
                 >
-                  提高排序</button
+                  {{ $t('admin-media.projectList.raise') }}</button
                 ><button
                   type="button"
                   :disabled="pending || busy.includes(project.id) || project.sortOrder <= -1000000"
                   @click="mutate(project, { sortOrder: project.sortOrder - 1 })"
                 >
-                  降低排序</button
+                  {{ $t('admin-media.projectList.lower') }}</button
                 ><button type="button" :disabled="pending || busy.includes(project.id)" @click="mutate(project)">
-                  删除项目
+                  {{ $t('admin-media.projectList.remove') }}
                 </button>
               </div>
             </div>
@@ -121,28 +141,42 @@
         <nav
           v-if="data && (data.total > 12 || query.page > 1)"
           class="admin-projects__actions"
-          aria-label="管理项目分页"
+          :aria-label="$t('admin-media.projectList.pagination')"
         >
           <button type="button" :disabled="pending || query.page <= 1" @click="filter({ page: query.page - 1 })">
-            上一页</button
-          ><span>{{ query.page }} / {{ Math.max(1, Math.ceil(data.total / 12)) }} · 共 {{ data.total }} 项</span
+            {{ $t('admin-media.projectList.prev') }}</button
+          ><span>{{
+            $t('admin-media.projectList.pageInfo', {
+              page: query.page,
+              pages: Math.max(1, Math.ceil(data.total / 12)),
+              total: data.total,
+            })
+          }}</span
           ><button
             type="button"
             :disabled="pending || query.page * 12 >= data.total"
             @click="filter({ page: query.page + 1 })"
           >
-            下一页
+            {{ $t('admin-media.projectList.next') }}
           </button>
         </nav>
       </template>
-      <p v-else-if="!restoringPending">请先登录博主账号。</p></ClientOnly
+      <p v-else-if="!restoringPending">{{ $t('admin-media.projectList.loginRequired') }}</p></ClientOnly
     >
   </section>
 </template>
 <script setup lang="ts">
-import { projectProgressLabels, projectStatusLabels } from '~/features/project/types'
+import {
+  projectProgresses,
+  projectProgressLabel,
+  projectStatusLabel,
+  projectStatusLabels,
+  type ProjectPublicationStatus,
+} from '~/features/project/types'
 definePageMeta({ layout: 'admin' })
-useSeoMeta({ title: '项目管理', robots: 'noindex, nofollow' })
+const { t } = useI18n()
+const projectStatuses = Object.keys(projectStatusLabels) as ProjectPublicationStatus[]
+useSeoMeta({ title: () => t('admin-media.projectList.title'), robots: 'noindex, nofollow' })
 const { data, pending, error, notice, busy, query, filter, load, mutate, isLoggedIn, restoringPending, stale } =
   useAdminProjects()
 </script>

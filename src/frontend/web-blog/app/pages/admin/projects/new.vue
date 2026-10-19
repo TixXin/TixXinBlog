@@ -26,6 +26,7 @@
 </template>
 <script setup lang="ts">
 definePageMeta({ layout: 'admin' })
-useSeoMeta({ title: '新建项目', robots: 'noindex, nofollow' })
+const { t } = useI18n()
+useSeoMeta({ title: () => t('admin-media.projectList.createTitle'), robots: 'noindex, nofollow' })
 const editor = useAdminProjectEditor(null)
 </script>

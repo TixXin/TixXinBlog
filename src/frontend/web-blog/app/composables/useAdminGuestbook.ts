@@ -2,6 +2,7 @@
 import type { ManagedGuestbookRecord } from '~/features/guestbook/types'
 import { describeBatchResult } from '~/composables/useAdminBatchSelection'
 import type { AdminBatchResult } from '~/composables/useAdminBatchSelection'
+import { apiErrorMessage } from '~/utils/apiError'
 export function useAdminGuestbook() {
   const route = useRoute(),
     router = useRouter(),
@@ -10,7 +11,9 @@ export function useAdminGuestbook() {
     repo = useGuestbookRepository(),
     cache = useGuestbookCache(),
     adminApi = useAdminApi(),
-    toast = useToast()
+    toast = useToast(),
+    // 在 setup 内取翻译函数：失败处理发生在 await 之后仍可使用
+    { t } = useI18n()
   const read = (name: string) => (typeof route.query[name] === 'string' ? (route.query[name] as string) : '')
   const q = ref(read('q')),
     status = ref(read('status') || 'all'),
@@ -40,7 +43,7 @@ export function useAdminGuestbook() {
     pending.value = true
     error.value = ''
     try {
-      if (!(await auth.restore())) throw new Error('请先登录博主账号。')
+      if (!(await auth.restore())) throw new Error(t('admin-media.guestbook.loginRequired'))
       const identity = auth.currentUser.value?.id
       const value = await repo.adminList({
         page: page.value,
@@ -55,7 +58,8 @@ export function useAdminGuestbook() {
       total.value = value.total
       if (page.value > Math.max(1, Math.ceil(value.total / 20))) await setPage(Math.max(1, Math.ceil(value.total / 20)))
     } catch (cause) {
-      if (alive && current === version) error.value = cause instanceof Error ? cause.message : '留言读取失败'
+      if (alive && current === version)
+        error.value = cause instanceof Error ? cause.message : t('admin-media.guestbook.loadFailed')
     } finally {
       if (alive && current === version) pending.value = false
     }
@@ -71,7 +75,7 @@ export function useAdminGuestbook() {
       if (alive && current === detailVersion && identity === auth.currentUser.value?.id) selected.value = item
     } catch (cause) {
       if (alive && current === detailVersion)
-        detailError.value = cause instanceof Error ? cause.message : '留言读取失败'
+        detailError.value = cause instanceof Error ? cause.message : t('admin-media.guestbook.loadFailed')
     } finally {
       if (alive && current === detailVersion) detailPending.value = false
     }
@@ -107,7 +111,7 @@ export function useAdminGuestbook() {
     remove = false,
   ) {
     if (busy.value.includes(note.id) || !auth.isLoggedIn.value) return
-    if (remove && !window.confirm('删除这条留言？公开回复会保留，但不再展示这条留言的引用正文。')) return
+    if (remove && !window.confirm(t('admin-media.guestbook.removeConfirm'))) return
     const identity = auth.currentUser.value?.id
     busy.value.push(note.id)
     error.value = ''
@@ -124,7 +128,7 @@ export function useAdminGuestbook() {
       await load()
     } catch (cause) {
       if (alive && identity === auth.currentUser.value?.id) {
-        const message = cause instanceof Error ? cause.message : '操作失败，请重试'
+        const message = cause instanceof Error ? cause.message : t('admin-media.guestbook.mutateFailed')
         if ((cause as { statusCode?: number }).statusCode === 409) await load()
         error.value = message
       }
@@ -137,7 +141,7 @@ export function useAdminGuestbook() {
     const notes = selection.selectedItems.value
     if (!notes.length || batchBusy.value || busy.value.length || !auth.isLoggedIn.value) return
     const remove = action === 'delete'
-    if (remove && !window.confirm(`删除选中的 ${notes.length} 条留言？公开回复会保留，但不再展示这些留言的引用正文。`))
+    if (remove && !window.confirm(t('admin-media.guestbook.batchRemoveConfirm', { count: notes.length }, notes.length)))
       return
     const identity = auth.currentUser.value?.id
     const ids = notes.map((note) => note.id)
@@ -163,16 +167,15 @@ export function useAdminGuestbook() {
       await load()
       const message = describeBatchResult(
         result,
-        remove ? '已删除' : action === 'published' ? '已公开' : '已隐藏',
-        '留言',
+        t(`admin-media.guestbook.batchDone.${action}`),
+        t('admin-media.guestbook.batchNoun'),
       )
       // 列表重新读取会清空错误提示，因此在刷新之后再展示跳过项。
       if (result.failedCount) error.value = message
       else toast.success(message)
     } catch (cause) {
       if (alive && identity === auth.currentUser.value?.id) {
-        const detail = (cause as { data?: { message?: unknown } }).data?.message
-        error.value = typeof detail === 'string' ? detail : '批量操作失败，未确认是否生效，请刷新列表核对'
+        error.value = apiErrorMessage(cause, 'admin-media.guestbook.batchFailed', { t })
       }
     } finally {
       batchBusy.value = ''

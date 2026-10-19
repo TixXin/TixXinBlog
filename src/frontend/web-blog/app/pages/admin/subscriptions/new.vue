@@ -4,5 +4,6 @@
 </template>
 <script setup lang="ts">
 definePageMeta({ layout: 'admin' })
-useSeoMeta({ title: '新建订阅', robots: 'noindex, nofollow' })
+const { t } = useI18n()
+useSeoMeta({ title: () => t('admin-media.subscriptionList.createTitle'), robots: 'noindex, nofollow' })
 </script>
