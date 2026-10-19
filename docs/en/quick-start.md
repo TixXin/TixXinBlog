@@ -206,7 +206,7 @@ When the installer reports that port 80 or 443 is in use, find the program holdi
 sudo ss -ltnp '( sport = :80 or sport = :443 )'
 ```
 
-A production installation must use HTTPS port 443. A local trial can switch ports with `--http-port` and `--https-port`.
+A production installation must use HTTPS port 443. A local trial can switch ports with `--http-port` and `--https-port`. If the port is held by the OpenResty/Nginx of a panel such as 1Panel or BT Panel, do not just stop it; see [Servers with an existing panel or reverse proxy](deployment.md#servers-with-an-existing-panel-or-reverse-proxy-such-as-1panel).
 
 ### The Certificate Is Not Issued
 

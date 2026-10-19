@@ -22,6 +22,19 @@ Both use the same images (web, api, migration, worker), the same `compose.produc
 
 The sections below on environment variables, trusted proxies, the internal network, site URL, analytics, administrator initialization and operational monitoring also apply to one-command installs: the environment file is `<install directory>/.env`, and running `sudo docker compose …` in the install directory uses the same compose files (`.env` already sets `COMPOSE_FILE`).
 
+### Servers with an existing panel or reverse proxy (such as 1Panel)
+
+Both methods use the bundled Caddy on ports 80/443. When the OpenResty/Nginx of a panel such as 1Panel or BT Panel already holds these ports, the one-command install exits at the port check; the project does not currently provide a panel app package. If you put the site behind the panel's reverse proxy yourself, or build a panel app package later, observe these constraints (based on the 1Panel v2.3.2 source and local simulation):
+
+- **Source address and trusted proxies**: 1Panel's OpenResty runs on the host network and reaches the frontend container through `127.0.0.1:<port>`, so the container sees the gateway of the Compose project network as the source. Set the frontend and API trusted proxies to the project subnet (`TIXXIN_NETWORK_SUBNET`). Do not also attach the frontend to a shared network such as `1panel-network`: with several networks, port mapping uses the gateway of the network whose name sorts first, and the trusted proxies no longer match.
+- **Bind the port to localhost only**: map the frontend port as `127.0.0.1:<port>:3000`. If it is opened externally, Docker's userland proxy makes direct external requests appear to come from the gateway as well, and visitors can forge `X-Forwarded-For` to bypass per-IP rate limits.
+- **HTTPS with the protocol header is required**: the API always issues Secure cookies in production, and the frontend same-origin write check reads `X-Forwarded-Proto`. If the proxy does not forward this header or serves plain HTTP, submissions return 403 (cross-site writes not allowed).
+- **Panels only run `docker compose up`**: an app package cannot run migrations separately, so migrations must be part of startup. This departs from the project's rule that startup never migrates implicitly, and a backup before every upgrade is mandatory. 1Panel v2 writes the install form's restart policy (default `always`) to a random service, so a one-off migration service cannot rely on `service_completed_successfully`; otherwise about one in four installs waits forever.
+- **Do not use panel-generated random values as secrets**: the `random` default of 1Panel form fields has only about 33 bits of entropy and is not hexadecimal, which does not meet the requirements of `POSTGRES_PASSWORD` and `JWT_ACCESS_SECRET`. Generate them in the install script with `openssl rand -hex` and store them with mode 600.
+- **The parameter file may be rewritten**: 1Panel v1 rewrites `.env` from the recorded form parameters during upgrades, dropping extra keys such as the subnet; v2 keeps them.
+
+These conclusions have not yet been fully verified with install, upgrade, and uninstall on 1Panel running on real Linux.
+
 ## Advanced: Manual Release (release.mjs)
 
 This section is for users who need fine-grained control. For a first deployment, start with [Five-Minute Deployment](quick-start.md).

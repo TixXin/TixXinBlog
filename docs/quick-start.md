@@ -204,7 +204,7 @@ sudo tixxin update 0.3.0
 sudo ss -ltnp '( sport = :80 or sport = :443 )'
 ```
 
-正式安装的 HTTPS 端口必须是 443。本机试用可用 `--http-port`、`--https-port` 换端口。
+正式安装的 HTTPS 端口必须是 443。本机试用可用 `--http-port`、`--https-port` 换端口。占用者是 1Panel、宝塔等面板的 OpenResty/Nginx 时不要直接停止它，见[服务器已有面板或反向代理](deployment.md#服务器已有面板或反向代理如-1panel)。
 
 ### 证书申请失败
 
