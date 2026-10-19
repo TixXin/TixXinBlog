@@ -115,36 +115,34 @@
       <p v-if="reactionError" role="alert" class="message-bubble__foot">{{ reactionError }}</p>
       <!-- 气泡主体 -->
       <div class="message-bubble__body">
-        <CommonTooltip :content="message.time">
-          <div
-            class="message-bubble__content"
-            :class="message.isOwner ? 'message-bubble__content--owner' : 'message-bubble__content--guest'"
-            tabindex="0"
-            role="group"
-            :aria-label="
-              $t(
-                message.isOwner
-                  ? 'interaction.guestbookBubble.contentLabelOwner'
-                  : 'interaction.guestbookBubble.contentLabel',
-                { author: message.author, time: message.time },
-              )
-            "
-            @click="onContentTap"
+        <div
+          class="message-bubble__content"
+          :class="message.isOwner ? 'message-bubble__content--owner' : 'message-bubble__content--guest'"
+          tabindex="0"
+          role="group"
+          :aria-label="
+            $t(
+              message.isOwner
+                ? 'interaction.guestbookBubble.contentLabelOwner'
+                : 'interaction.guestbookBubble.contentLabel',
+              { author: message.author, time: message.time },
+            )
+          "
+          @click="onContentTap"
+        >
+          <!-- 气泡尾巴只在组首显示，后续消息与同侧正文对齐 -->
+          <span
+            class="message-bubble__tail"
+            :class="message.isOwner ? 'message-bubble__tail--owner' : 'message-bubble__tail--guest'"
+          />
+          <!-- 换行保留只作用在正文上，模板缩进产生的空白不再变成首行缩进 -->
+          <span class="message-bubble__text"
+            ><template v-for="(part, index) in contentParts" :key="index"
+              ><mark v-if="part.match" class="message-bubble__mark">{{ part.text }}</mark
+              ><template v-else>{{ part.text }}</template></template
+            ></span
           >
-            <!-- 气泡尾巴只在组首显示，后续消息与同侧正文对齐 -->
-            <span
-              class="message-bubble__tail"
-              :class="message.isOwner ? 'message-bubble__tail--owner' : 'message-bubble__tail--guest'"
-            />
-            <!-- 换行保留只作用在正文上，模板缩进产生的空白不再变成首行缩进 -->
-            <span class="message-bubble__text"
-              ><template v-for="(part, index) in contentParts" :key="index"
-                ><mark v-if="part.match" class="message-bubble__mark">{{ part.text }}</mark
-                ><template v-else>{{ part.text }}</template></template
-              ></span
-            >
-          </div>
-        </CommonTooltip>
+        </div>
         <!-- 操作按钮 -->
         <div class="message-bubble__actions" :class="{ 'message-bubble__actions--left': message.isOwner }">
           <CommonTooltip :content="$t('interaction.guestbookBubble.reply')">

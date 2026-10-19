@@ -266,35 +266,19 @@ describe('分组后的逐条交互', () => {
     expect(bubbleById(wrapper, 3).get('.message-bubble__reaction').attributes('disabled')).toBeDefined()
   })
 
-  it.each(['悬停', '键盘聚焦'])('组首、组中与组尾均可通过%s查看各自时间，并用 Escape 关闭', async (mode) => {
-    const items = [1, 2, 3].map((id) => message(id))
-    const wrapper = await setup(items)
-    // DOM 环境不执行真实布局，提供屏幕内边界以验证 Tooltip 的定位前置条件。
-    for (const content of wrapper.findAll('.message-bubble__content')) {
-      vi.spyOn(content.element, 'getBoundingClientRect').mockReturnValue(new DOMRect(100, 100, 200, 40))
-      const nativeMatches = content.element.matches.bind(content.element)
-      vi.spyOn(content.element, 'matches').mockImplementation((selector) =>
-        selector === ':focus-visible' ? true : nativeMatches(selector),
-      )
-    }
+  it.each(['悬停', '键盘聚焦'])('%s消息正文不再弹出时间提示，时间仍保留在无障碍标签中', async (mode) => {
+    const wrapper = await setup([message(1)])
+    const content = bubbleById(wrapper, 1).get('.message-bubble__content')
+    const trigger = content.element.parentElement!
+    if (mode === '悬停') trigger.dispatchEvent(new MouseEvent('mouseenter'))
+    else (content.element as HTMLElement).focus()
     vi.useFakeTimers()
-    for (const item of items) {
-      const content = bubbleById(wrapper, item.id).get('.message-bubble__content')
-      const trigger = content.element.parentElement!
-      if (mode === '悬停') trigger.dispatchEvent(new MouseEvent('mouseenter'))
-      else (content.element as HTMLElement).focus()
-      await vi.advanceTimersByTimeAsync(220)
-      await nextTick()
-      const tooltip = document.body.querySelector('[role="tooltip"]')
-      expect(tooltip?.textContent).toBe(item.time)
-      expect(content.attributes('aria-describedby')).toBe(tooltip?.id)
-      window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }))
-      await nextTick()
-      expect(document.body.querySelector('[role="tooltip"]')).toBeNull()
-      expect(content.attributes('aria-describedby')).toBeUndefined()
-      if (mode === '悬停') trigger.dispatchEvent(new MouseEvent('mouseleave'))
-      else (content.element as HTMLElement).blur()
-      await vi.advanceTimersByTimeAsync(150)
-    }
+    await vi.advanceTimersByTimeAsync(220)
+    await nextTick()
+    expect(document.body.querySelector('[role="tooltip"]')).toBeNull()
+    expect(content.attributes('aria-describedby')).toBeUndefined()
+    expect(content.attributes('aria-label')).toContain('2026年10月18日 18:01')
+    if (mode === '悬停') trigger.dispatchEvent(new MouseEvent('mouseleave'))
+    else (content.element as HTMLElement).blur()
   })
 })
