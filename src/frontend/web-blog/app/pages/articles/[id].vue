@@ -156,6 +156,7 @@
 <script setup lang="ts">
 import { useMediaQuery } from '@vueuse/core'
 import { absoluteUrl } from '~/utils/absoluteUrl'
+import { formatNumber } from '~/utils/format'
 const route = useRoute()
 const { currentThemeId, switchingState } = useLayoutTheme()
 const nexusSidebarVisible = useMediaQuery('(min-width: 1440px)')
@@ -253,7 +254,7 @@ onMounted(() => {
 })
 
 function formatCount(n: number) {
-  return n.toLocaleString('zh-CN')
+  return formatNumber(n)
 }
 
 usePageSeo({
@@ -279,6 +280,7 @@ useHead({
 
 const articleImage = computed(() => absoluteUrl(article.value.cover, publicSite))
 const authorName = computed(() => siteSettings.value.ownerName || siteSettings.value.name)
+const { locale } = useI18n()
 useJsonLd('article', () => ({
   '@context': 'https://schema.org',
   '@type': 'BlogPosting',
@@ -291,7 +293,7 @@ useJsonLd('article', () => ({
   ...(article.value.updatedAt ? { dateModified: article.value.updatedAt } : {}),
   ...(articleTags.value.length ? { keywords: articleTags.value.join(',') } : {}),
   ...(article.value.category ? { articleSection: article.value.category } : {}),
-  inLanguage: 'zh-CN',
+  inLanguage: locale.value,
   author: { '@type': 'Person', name: authorName.value, url: publicSite + '/about' },
   publisher: { '@type': 'Person', name: authorName.value, url: publicSite + '/' },
 }))
