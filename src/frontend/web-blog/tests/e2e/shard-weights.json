@@ -39,6 +39,7 @@
     "reading-ux.spec.ts": 22,
     "release-seo.spec.ts": 12,
     "service-recovery.spec.ts": 32,
+    "setup-wizard.spec.ts": 12,
     "site-editor-protection.spec.ts": 18,
     "subscription-business.spec.ts": 100,
     "subscription-editor-conflicts.spec.ts": 23,

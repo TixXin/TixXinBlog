@@ -291,6 +291,8 @@ node src/backend/server-main/tests/browser-runner.mjs --list-shards 4
 
 不设置 `E2E_SHARD` 时运行器照旧跑全量。新增文件或某文件耗时明显变化后，用最近一次全量通过的 CI 日志更新权重表：每个文件的权重取上一文件结束到该文件 `N passed (时长)` 行之间的墙钟秒数，包含建库、迁移、写样本和启动预览；同时更新 `source` 字段，并确认各片预计耗时接近。调整分片数时同步修改 `browser-e2e` 的 matrix、`E2E_SHARD` 总数和覆盖校验中的片数。
 
+`setup-wizard.spec.ts` 需要「不预置管理员、配置随机 `SETUP_TOKEN`」的隔离库：运行器按文件运行时自动为它设置 `E2E_SETUP_WIZARD=true`（其余文件清除该开关，缺省模式不变），也只写入文章样本、不写其他领域样本；直接点名运行该文件时同样自动进入此模式，不能与其他文件在同一进程混跑。后端集成验收 `tests/setup-integration.mjs` 复用同一模式，在真实数据库上核对并发提交只成功一次。
+
 需要评估文章列表投影时，可在后端构建后运行 `corepack pnpm --filter server-main exec tsx tests/post-list-performance.ts --compare`。它比较完整业务响应、分页和公开过滤，而非只比较耗时。浏览器性能与服务方法耗时分别记录；明确样本、预热、缓存、硬件及并发条件，不把本机采样直接当作线上收益。
 
 公开栏目导航验收使用 `node src/backend/server-main/tests/navigation-performance.mjs --samples=28 --devtools-ab`，运行前完成前后端生产构建。脚本建立独立数据库和媒体目录，使用至少 2,000 篇公开文章及每页 12 张真实受管图片，分别采样三主题生产导航和独立开发进程的 DevTools 开关对照；报告包含点击到页面就绪、长任务、DOM 峰值、请求与传输量，以及本次资源清理结果。默认只对功能与资源边界作断言，毫秒目标需在同硬件、同样本、相同预热条件下核验；不能把有失败响应的快速轮测当成成功性能结果。
