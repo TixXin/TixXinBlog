@@ -333,13 +333,13 @@ corepack pnpm --filter server-main run backup:restore --directory &lt;{{ t('admi
             }}
           </p>
           <label class="maintenance__field"
-            >{{ t('admin-system.maintenance.job.acknowledge', { phrase: IMPORT_ACKNOWLEDGEMENT })
+            >{{ t('admin-system.maintenance.job.acknowledge', { phrase: t(IMPORT_ACKNOWLEDGEMENT_PHRASE_KEY) })
             }}<input v-model="acknowledgement" :disabled="pending" autocomplete="off"
           /></label>
           <div class="maintenance__actions">
             <button
               type="button"
-              :disabled="pending || !job.plan.ready || acknowledgement !== IMPORT_ACKNOWLEDGEMENT"
+              :disabled="pending || !job.plan.ready || !importAcknowledgement(acknowledgement, t)"
               @click="execute"
             >
               {{ t('admin-system.maintenance.job.execute') }}
@@ -381,7 +381,7 @@ corepack pnpm --filter server-main run backup:restore --directory &lt;{{ t('admi
   </section>
 </template>
 <script setup lang="ts">
-import { IMPORT_ACKNOWLEDGEMENT } from '~/features/backup/types'
+import { IMPORT_ACKNOWLEDGEMENT_PHRASE_KEY, importAcknowledgement } from '~/features/backup/types'
 import { formatDateTime } from '~/utils/format'
 
 definePageMeta({ layout: 'admin', key: '/admin/maintenance' })

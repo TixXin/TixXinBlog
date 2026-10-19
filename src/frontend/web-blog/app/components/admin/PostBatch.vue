@@ -84,7 +84,7 @@
         }}{{ result.completed ? $t('admin-content.postBatch.resultDone') : '' }}
       </p>
       <label v-if="preview.action === 'delete' && !result?.completed"
-        >{{ $t('admin-content.postBatch.acknowledge', { phrase: POST_DELETE_ACKNOWLEDGEMENT })
+        >{{ $t('admin-content.postBatch.acknowledge', { phrase: $t(POST_DELETE_PHRASE_KEY) })
         }}<input v-model="acknowledgement" :disabled="pending" autocomplete="off"
       /></label>
       <footer>
@@ -96,7 +96,7 @@
             pending ||
             !preview.allowedCount ||
             preview.expiresIn <= 0 ||
-            (preview.action === 'delete' && acknowledgement !== POST_DELETE_ACKNOWLEDGEMENT)
+            (preview.action === 'delete' && !postDeleteAcknowledgement(acknowledgement, $t))
           "
           @click="$emit('execute')"
         >
@@ -122,7 +122,12 @@
   </dialog>
 </template>
 <script setup lang="ts">
-import { POST_BATCH_LIMIT, POST_DELETE_ACKNOWLEDGEMENT, postBatchLabelKey } from '~/features/post/batchTypes'
+import {
+  POST_BATCH_LIMIT,
+  POST_DELETE_PHRASE_KEY,
+  postBatchLabelKey,
+  postDeleteAcknowledgement,
+} from '~/features/post/batchTypes'
 import type { PostBatchPreview, PostBatchResult } from '~/features/post/batchTypes'
 import { getModalFocusOrigin } from '~/utils/modalFocusOrigin'
 const props = withDefaults(

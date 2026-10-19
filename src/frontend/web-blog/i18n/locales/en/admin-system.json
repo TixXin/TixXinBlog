@@ -161,6 +161,7 @@
         "checkLinks": "Review link drafts",
         "expiresAt": "Preview expires: {time}. Target changes are revalidated on execution and database changes are committed together; if the result can't be confirmed, check the same ticket.",
         "acknowledge": "Type “{phrase}” to confirm",
+        "acknowledgementPhrase": "import as new drafts",
         "execute": "Confirm and import previewed content",
         "repreview": "Regenerate the preview for this ticket",
         "readResult": "Check import result"

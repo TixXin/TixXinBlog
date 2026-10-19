@@ -3,7 +3,7 @@
  * @description 内容包下载与幂等导入绑定发起账号、内容库和提交快照；身份变化后保留原文件与票据。
  */
 import { invalidatePublicReads } from '~/utils/invalidatePublicReads'
-import { IMPORT_ACKNOWLEDGEMENT, type ContentImportView } from '~/features/backup/types'
+import { importAcknowledgement, type ContentImportView } from '~/features/backup/types'
 import { apiErrorMessage } from '~/utils/apiError'
 interface BackupOwner {
   actor?: string
@@ -36,6 +36,8 @@ export function useContentBackup() {
   const requestId = ref('')
   const job = ref<ContentImportView | null>(null)
   const acknowledgement = ref('')
+  // 在 setup 同步阶段取翻译函数；确认短语按调用时的界面语言求值
+  const translate = currentTranslate()
   const recent = ref<{ ticket: string; createdAt: string; completed: boolean; expired: boolean }[]>([])
   const recentError = ref('')
   const selections = new Map<string, BackupSelection>()
@@ -287,10 +289,12 @@ export function useContentBackup() {
     }
   }
   async function execute() {
-    if (!job.value || pending.value || !jobOwner || acknowledgement.value !== IMPORT_ACKNOWLEDGEMENT) return
+    // 用户输入当前界面语言的短语，提交时换回后端认可的原值。
+    const confirmed = importAcknowledgement(acknowledgement.value, translate)
+    if (!job.value || pending.value || !jobOwner || !confirmed) return
     const ticket = job.value.ticket,
       expected = jobOwner
-    const body = { acknowledgement: acknowledgement.value, confirmation: job.value.confirmation }
+    const body = { acknowledgement: confirmed, confirmation: job.value.confirmation }
     const { owner, version } = begin()
     try {
       assertOwner(expected)

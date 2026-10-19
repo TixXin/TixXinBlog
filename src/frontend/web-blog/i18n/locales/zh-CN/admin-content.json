@@ -266,6 +266,7 @@
       "result": "成功 {success} 篇，失败 {failed} 篇，待处理 {pending} 篇。",
       "resultDone": "本批处理已结束。",
       "acknowledge": "输入“{phrase}”确认",
+      "deletePhrase": "永久删除",
       "continue": "继续执行未处理条目",
       "execute": "确认执行",
       "query": "查询执行结果",

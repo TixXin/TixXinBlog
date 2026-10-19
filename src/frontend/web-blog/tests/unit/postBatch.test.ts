@@ -248,3 +248,31 @@ it('历史票据读取失败清除旧结果，最近列表失败保留已确认�
   expect(batch.recentError.value).toBe('')
   expect(batch.error.value).toBe('该票据已过期')
 })
+
+it('永久删除要求输入当前界面语言的短语，提交时换回后端认可的原值', async () => {
+  const i18n = useNuxtApp().$i18n
+  const deletion = (): PostBatchPreview => ({ ...preview(), action: 'delete' })
+  mocks.api.mockImplementation(async (path: string) => {
+    if (path === '/admin/posts/batch/preview') return deletion()
+    if (path === '/admin/posts/batch') return recent
+    return result({ action: 'delete', preview: deletion() })
+  })
+  await i18n.setLocale('en')
+  try {
+    const batch = await setup()
+    await batch.review('delete', selection)
+    const executes = () => mocks.api.mock.calls.filter(([path]) => path === '/admin/posts/batch/execute')
+    // 英文界面下输入中文原值或大小写不符都不执行，必须亲手输入当前语言的短语。
+    for (const typed of ['永久删除', 'Delete Permanently', '']) {
+      batch.acknowledgement.value = typed
+      await batch.execute()
+    }
+    expect(executes()).toHaveLength(0)
+    batch.acknowledgement.value = 'delete permanently'
+    await batch.execute()
+    expect(executes()).toHaveLength(1)
+    expect(executes()[0]![1]).toMatchObject({ body: { ticket: preview().ticket, acknowledgement: '永久删除' } })
+  } finally {
+    await i18n.setLocale('zh-CN')
+  }
+})

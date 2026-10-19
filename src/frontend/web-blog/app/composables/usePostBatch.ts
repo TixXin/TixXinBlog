@@ -3,7 +3,7 @@
  * @description 分批预览和执行分离；失败保留凭证，允许查询结果及幂等续办。
  */
 import { invalidatePublicReads } from '~/utils/invalidatePublicReads'
-import { POST_BATCH_LIMIT, POST_DELETE_ACKNOWLEDGEMENT, POST_SELECTION_LIMIT } from '~/features/post/batchTypes'
+import { POST_BATCH_LIMIT, POST_SELECTION_LIMIT, postDeleteAcknowledgement } from '~/features/post/batchTypes'
 import type { PostBatchAction, PostBatchPreview, PostBatchResult, PostSelection } from '~/features/post/batchTypes'
 
 export function usePostBatch(onChanged: (result: PostBatchResult) => Promise<void>) {
@@ -193,9 +193,12 @@ export function usePostBatch(onChanged: (result: PostBatchResult) => Promise<voi
       result.value?.completed ||
       !preview.value.allowedCount ||
       preview.value.expiresIn <= 0 ||
-      (preview.value.action === 'delete' && acknowledgement.value !== POST_DELETE_ACKNOWLEDGEMENT)
+      (preview.value.action === 'delete' && !postDeleteAcknowledgement(acknowledgement.value, t))
     )
       return
+    // 永久删除时用户输入当前语言短语，提交时换回后端认可的原值；其他动作沿用原输入。
+    const submitted =
+      preview.value.action === 'delete' ? postDeleteAcknowledgement(acknowledgement.value, t) : acknowledgement.value
     const version = ++generation
     pending.value = true
     attempted.value = true
@@ -204,7 +207,7 @@ export function usePostBatch(onChanged: (result: PostBatchResult) => Promise<voi
       await receive(
         await api<PostBatchResult>('/admin/posts/batch/execute', {
           method: 'POST',
-          body: { ticket: preview.value.ticket, acknowledgement: acknowledgement.value },
+          body: { ticket: preview.value.ticket, acknowledgement: submitted },
           timeout: 60000,
         }),
         version,

@@ -45,5 +45,11 @@ export const postBatchActions: readonly PostBatchAction[] = ['withdraw', 'archiv
 export function postBatchLabelKey(action: PostBatchAction) {
   return `admin-content.postBatch.actions.${action}`
 }
-/** 永久删除的确认文字：后端逐字校验，属于接口约定，不随界面语言变化 */
+/** 永久删除时提交的确认原值：后端逐字校验，属于接口约定，不随界面语言变化 */
 export const POST_DELETE_ACKNOWLEDGEMENT = '永久删除'
+/** 界面要求用户亲手输入的当前语言短语（中文界面与 POST_DELETE_ACKNOWLEDGEMENT 相同） */
+export const POST_DELETE_PHRASE_KEY = 'admin-content.postBatch.deletePhrase'
+/** 输入与当前语言短语完全一致时返回后端认可的原值，否则返回 null，不执行永久删除 */
+export function postDeleteAcknowledgement(input: string, t: (key: string) => string): string | null {
+  return input === t(POST_DELETE_PHRASE_KEY) ? POST_DELETE_ACKNOWLEDGEMENT : null
+}

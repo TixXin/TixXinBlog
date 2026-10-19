@@ -161,6 +161,7 @@
         "checkLinks": "检查友链草稿",
         "expiresAt": "预览到期：{time}。执行时重新校验目标变化，数据库变更统一提交；未能确认结果时请查询同一票据。",
         "acknowledge": "输入“{phrase}”确认",
+        "acknowledgementPhrase": "导入为新草稿",
         "execute": "确认导入预览内容",
         "repreview": "重新生成此票据的预览",
         "readResult": "查询导入结果"

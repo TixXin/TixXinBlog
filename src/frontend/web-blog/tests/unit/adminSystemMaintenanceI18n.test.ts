@@ -104,7 +104,7 @@ it('默认中文的诊断、预览与记录逐字保持原文', async () => {
   expect(wrapper.find('section[aria-label="内容导入预览"]').exists()).toBe(true)
 })
 
-it('切到英文后维护页关键文案变为英文，确认短语仍按接口协议展示', async () => {
+it('切到英文后维护页关键文案变为英文，确认短语按界面语言展示', async () => {
   await i18n().setLocale('en')
   try {
     const wrapper = await mountSuspended(MaintenancePage)
@@ -118,7 +118,7 @@ it('切到英文后维护页关键文案变为英文，确认短语仍按接口�
     expect(text).toContain('Ticket ticket-1 · Skip identical content · Keeps current site settings')
     expect(text).toContain('旅途随笔 · 新建草稿 · slug travel-notes')
     expect(text).toContain(`Preview expires: ${new Date(expiresAt).toLocaleString('en', { hour12: false })}.`)
-    expect(text).toContain('Type “导入为新草稿” to confirm')
+    expect(text).toContain('Type “import as new drafts” to confirm')
     expect(text).toContain('Generate import preview')
     expect(text).toContain('Recent imports')
     expect(wrapper.find('section[aria-label="Content import preview"]').exists()).toBe(true)

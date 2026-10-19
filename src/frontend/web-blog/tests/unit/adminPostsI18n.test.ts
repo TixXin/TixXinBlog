@@ -159,14 +159,14 @@ describe('后台文章域英文冒烟', () => {
     })
   })
 
-  it('批量确认面板按数量使用英文单复数，确认文字仍是后端要求的原文', async () => {
+  it('批量确认面板按数量使用英文单复数，确认文字按界面语言显示', async () => {
     await inEnglish(async () => {
       const wrapper = await mountBatch()
       expect(wrapper.text()).toContain('Action: Delete permanently. Selected: 1; can be processed: 1.')
       expect(wrapper.text()).toContain(
         '1 comment · 3 revisions · 1 URL · 2 media references · 5 post likes · 0 comment likes · 30 view records',
       )
-      expect(wrapper.text()).toContain('Type “永久删除” (delete permanently) to confirm')
+      expect(wrapper.text()).toContain('Type “delete permanently” to confirm')
     })
   })
 
