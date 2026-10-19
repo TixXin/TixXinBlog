@@ -1,9 +1,9 @@
 <!-- @file moment-comments.vue @description 跨动态审核评论，复用现有审核冲突保护和删除接口。 -->
 <template>
   <section class="moment-comments">
-    <h1>朋友圈评论</h1>
-    <p>按评论状态处理互动，已删除的评论或动态不在列表中。</p>
-    <nav class="moment-comments__actions" aria-label="朋友圈评论筛选">
+    <h1>{{ t('admin-content.momentComments.title') }}</h1>
+    <p>{{ t('admin-content.momentComments.intro') }}</p>
+    <nav class="moment-comments__actions" :aria-label="t('admin-content.momentComments.filters')">
       <NuxtLink
         v-for="(label, value) in labels"
         :key="value"
@@ -11,25 +11,25 @@
         :aria-current="status === value ? 'page' : undefined"
         >{{ label }}</NuxtLink
       >
-      <NuxtLink to="/admin/moments">管理动态</NuxtLink>
+      <NuxtLink to="/admin/moments">{{ t('admin-content.momentComments.manageMoments') }}</NuxtLink>
     </nav>
     <CommonRequestFeedback
       v-if="pending || error"
       :pending="pending"
       :compact="!!data"
-      :title="error || '正在读取评论'"
+      :title="error || t('admin-content.momentComments.loading')"
       @retry="load"
     />
-    <p v-if="stale && data" role="status">以下保留上次读取的评论，请重试后操作。</p>
+    <p v-if="stale && data" role="status">{{ t('admin-content.momentComments.stale') }}</p>
     <p v-if="notice" role="status">{{ notice }}</p>
     <template v-if="data">
-      <p v-if="!pending && !error && !data.items.length">当前条件下暂无评论。</p>
+      <p v-if="!pending && !error && !data.items.length">{{ t('admin-content.momentComments.empty') }}</p>
       <ul class="moment-comments__list">
         <li v-for="item in data.items" :key="item.id">
           <p>
             <strong>{{ item.author }}</strong
-            >{{ item.isOwner ? ' · 博主' : '' }} · {{ labels[item.moderationStatus] }} ·
-            {{ item.time.slice(0, 16).replace('T', ' ') }} UTC
+            >{{ item.isOwner ? ` · ${t('admin-content.momentComments.owner')}` : '' }} ·
+            {{ labels[item.moderationStatus] }} · {{ item.time.slice(0, 16).replace('T', ' ') }} UTC
           </p>
           <p>{{ item.content }}</p>
           <blockquote>
@@ -43,7 +43,7 @@
               :disabled="pending || stale || busy"
               @click="change(item, 'published')"
             >
-              通过审核
+              {{ t('admin-content.momentComments.approve') }}
             </button>
             <button
               v-if="item.moderationStatus !== 'hidden'"
@@ -51,17 +51,31 @@
               :disabled="pending || stale || busy"
               @click="change(item, 'hidden')"
             >
-              隐藏评论
+              {{ t('admin-content.momentComments.hide') }}
             </button>
-            <button type="button" :disabled="pending || stale || busy" @click="change(item, 'delete')">删除评论</button>
+            <button type="button" :disabled="pending || stale || busy" @click="change(item, 'delete')">
+              {{ t('admin-content.momentComments.remove') }}
+            </button>
           </div>
         </li>
       </ul>
-      <nav v-if="data.total > 20 || page > 1" class="moment-comments__actions" aria-label="朋友圈评论分页">
-        <button type="button" :disabled="pending || busy || page <= 1" @click="setPage(page - 1)">上一页</button>
-        <span>{{ page }} / {{ Math.max(1, Math.ceil(data.total / 20)) }} · 共 {{ data.total }} 条</span>
+      <nav
+        v-if="data.total > 20 || page > 1"
+        class="moment-comments__actions"
+        :aria-label="t('admin-content.momentComments.pagination')"
+      >
+        <button type="button" :disabled="pending || busy || page <= 1" @click="setPage(page - 1)">
+          {{ t('admin-content.momentComments.previous') }}
+        </button>
+        <span>{{
+          t('admin-content.momentComments.pageSummary', {
+            page,
+            pages: Math.max(1, Math.ceil(data.total / 20)),
+            total: data.total,
+          })
+        }}</span>
         <button type="button" :disabled="pending || busy || page * 20 >= data.total" @click="setPage(page + 1)">
-          下一页
+          {{ t('admin-content.momentComments.next') }}
         </button>
       </nav>
     </template>
@@ -70,15 +84,25 @@
 <script setup lang="ts">
 import type { ManagedMomentComment } from '~/features/moment/types'
 definePageMeta({ layout: 'admin' })
-useSeoMeta({ title: '朋友圈评论', robots: 'noindex, nofollow' })
+const { t } = useI18n()
+useSeoMeta({ title: () => t('admin-content.momentComments.title'), robots: 'noindex, nofollow' })
 const route = useRoute(),
   router = useRouter(),
   api = useAdminApi(),
   auth = useCurrentUser()
-const labels = { all: '全部评论', pending: '待审核', published: '已公开', hidden: '已隐藏' }
-const momentLabels = { published: '动态已公开', draft: '动态草稿', archived: '动态已归档' }
+const STATUSES = ['all', 'pending', 'published', 'hidden'] as const
+const labels = computed(() =>
+  Object.fromEntries(STATUSES.map((value) => [value, t(`admin-content.momentComments.status.${value}`)])),
+)
+const momentLabels = computed(() => ({
+  published: t('admin-content.momentComments.momentStatus.published'),
+  draft: t('admin-content.momentComments.momentStatus.draft'),
+  archived: t('admin-content.momentComments.momentStatus.archived'),
+}))
 const status = computed(() =>
-  typeof route.query.status === 'string' && Object.hasOwn(labels, route.query.status) ? route.query.status : 'all',
+  typeof route.query.status === 'string' && (STATUSES as readonly string[]).includes(route.query.status)
+    ? route.query.status
+    : 'all',
 )
 const page = computed(() => {
   const value = Number(route.query.page)
@@ -108,7 +132,7 @@ async function load() {
     loadedPath.value = path
     if (page.value > Math.max(1, Math.ceil(result.total / 20))) await setPage(Math.max(1, Math.ceil(result.total / 20)))
   } catch {
-    if (alive && current === version) error.value = '评论读取失败，请重试'
+    if (alive && current === version) error.value = t('admin-content.momentComments.loadFailed')
   } finally {
     if (alive && current === version) pending.value = false
   }
@@ -121,7 +145,7 @@ function setPage(value: number) {
 }
 async function change(item: ManagedMomentComment, action: 'published' | 'hidden' | 'delete') {
   if (busy.value || pending.value || stale.value) return
-  if (action === 'delete' && !window.confirm('删除这条朋友圈评论？删除后不再公开显示。')) return
+  if (action === 'delete' && !window.confirm(t('admin-content.momentComments.deleteConfirm'))) return
   busy.value = true
   error.value = ''
   notice.value = ''
@@ -133,13 +157,15 @@ async function change(item: ManagedMomentComment, action: 'published' | 'hidden'
       ...(action === 'delete' ? {} : { body: { status: action, expectedStatus: item.moderationStatus } }),
     })
     if (!alive || actor !== auth.currentUser.value?.id) return
-    if (path === route.fullPath) notice.value = action === 'delete' ? '评论已删除' : '评论状态已更新'
+    if (path === route.fullPath)
+      notice.value = t(
+        action === 'delete' ? 'admin-content.momentComments.deleted' : 'admin-content.momentComments.updated',
+      )
     await load()
   } catch (cause) {
     if (alive && actor === auth.currentUser.value?.id) {
       await load()
-      const message = (cause as { data?: { message?: unknown } }).data?.message
-      error.value = typeof message === 'string' ? message : '操作未能确认，请核对最新状态后重试'
+      error.value = apiErrorMessage(cause, 'admin-content.momentComments.changeFailed')
     }
   } finally {
     if (alive) busy.value = false

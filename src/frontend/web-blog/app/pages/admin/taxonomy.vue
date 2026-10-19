@@ -4,51 +4,75 @@
 -->
 <template>
   <section class="taxonomy">
-    <h1>分类与标签</h1>
-    <p class="taxonomy__intro">技术 / 生活是固定内容类型；专栏组织文章栏目，标签可跨专栏使用。</p>
+    <h1>{{ t('admin-content.taxonomy.title') }}</h1>
+    <p class="taxonomy__intro">{{ t('admin-content.taxonomy.intro') }}</p>
     <ClientOnly>
-      <p v-if="pending" role="status">正在加载目录…</p>
+      <p v-if="pending" role="status">{{ t('admin-content.taxonomy.loading') }}</p>
       <p v-if="error" role="alert">
-        {{ error }} <button type="button" :disabled="working || pending" @click="load">重新加载</button>
+        {{ error }}
+        <button type="button" :disabled="working || pending" @click="load">
+          {{ t('admin-content.taxonomy.reload') }}
+        </button>
       </p>
       <div v-if="data" class="taxonomy__types">
-        <span>技术 · {{ categoryCount('tech') }} 篇</span><span>生活 · {{ categoryCount('life') }} 篇</span>
+        <span>{{ t('admin-content.taxonomy.techCount', { count: categoryCount('tech') }) }}</span
+        ><span>{{ t('admin-content.taxonomy.lifeCount', { count: categoryCount('life') }) }}</span>
       </div>
       <form ref="editorForm" class="taxonomy__editor" @submit.prevent="save">
-        <h2>{{ editingId === null ? '新增目录项' : '修改目录项' }}</h2>
+        <h2>
+          {{ t(editingId === null ? 'admin-content.taxonomy.editor.create' : 'admin-content.taxonomy.editor.edit') }}
+        </h2>
         <fieldset :disabled="working || pending || !ready">
           <label
-            >目录类型<select v-model="kind" :disabled="editingId !== null">
-              <option value="folders">专栏</option>
-              <option value="tags">标签</option>
+            >{{ t('admin-content.taxonomy.editor.kind')
+            }}<select v-model="kind" :disabled="editingId !== null">
+              <option value="folders">{{ t('admin-content.taxonomy.folders') }}</option>
+              <option value="tags">{{ t('admin-content.taxonomy.tags') }}</option>
             </select></label
           >
-          <label>名称<input v-model="label" required maxlength="64" /></label>
+          <label>{{ t('admin-content.taxonomy.editor.name') }}<input v-model="label" required maxlength="64" /></label>
           <label v-if="kind === 'tags'"
-            >标签颜色<select v-model="color">
+            >{{ t('admin-content.taxonomy.editor.color')
+            }}<select v-model="color">
               <option v-for="option in colors" :key="option.value" :value="option.value">{{ option.label }}</option>
             </select></label
           >
           <button :aria-busy="saving" type="submit" :disabled="!label.trim()">
-            {{ working ? '保存中…' : editingId === null ? '新增' : '保存修改' }}
+            {{
+              t(
+                working
+                  ? 'admin-content.taxonomy.editor.saving'
+                  : editingId === null
+                    ? 'admin-content.taxonomy.editor.add'
+                    : 'admin-content.taxonomy.editor.saveEdit',
+              )
+            }}
           </button>
-          <button v-if="editingId !== null || label" type="button" @click="resetEditor">取消编辑</button>
+          <button v-if="editingId !== null || label" type="button" @click="resetEditor">
+            {{ t('admin-content.taxonomy.editor.cancel') }}
+          </button>
         </fieldset>
-        <p v-if="editingId !== null">重命名将同步关联文章；不会删除文章或改变发布状态。</p>
+        <p v-if="editingId !== null">{{ t('admin-content.taxonomy.editor.renameHint') }}</p>
       </form>
       <template v-if="data">
         <section v-for="group in groups" :key="group.kind" class="taxonomy__group" :aria-label="group.title">
-          <h2>{{ group.title }}（{{ group.items.length }}）</h2>
-          <p>引用总数包含草稿和归档；有引用的目录项不能删除。</p>
-          <p v-if="!group.items.length">暂无{{ group.title }}</p>
-          <div v-else class="taxonomy__table" role="region" :aria-label="`${group.title}列表，可横向滚动`" tabindex="0">
+          <h2>{{ t('admin-content.taxonomy.group.heading', { title: group.title, count: group.items.length }) }}</h2>
+          <p>{{ t('admin-content.taxonomy.group.hint') }}</p>
+          <p v-if="!group.items.length">{{ group.empty }}</p>
+          <div
+            v-else
+            class="taxonomy__table"
+            role="region"
+            :aria-label="t('admin-content.taxonomy.group.table', { title: group.title })"
+            tabindex="0"
+          >
             <table>
               <thead>
                 <tr>
-                  <th>名称</th>
-                  <th>全部引用</th>
-                  <th>公开文章</th>
-                  <th>操作</th>
+                  <th>{{ t('admin-content.taxonomy.columns.name') }}</th>
+                  <th>{{ t('admin-content.taxonomy.columns.total') }}</th>
+                  <th>{{ t('admin-content.taxonomy.columns.published') }}</th>
+                  <th>{{ t('admin-content.taxonomy.columns.actions') }}</th>
                 </tr>
               </thead>
               <tbody>
@@ -62,16 +86,20 @@
                         path: '/admin/posts',
                         query: group.kind === 'folders' ? { folder: item.label } : { tag: item.label },
                       }"
-                      >查看文章</NuxtLink
+                      >{{ t('admin-content.taxonomy.viewPosts') }}</NuxtLink
                     >
-                    <button type="button" :disabled="working" @click="edit(group.kind, item)">修改</button>
+                    <button type="button" :disabled="working" @click="edit(group.kind, item)">
+                      {{ t('admin-content.taxonomy.edit') }}
+                    </button>
                     <button
                       type="button"
                       :disabled="working || item.total > 0"
-                      :title="item.total ? '请先调整关联文章' : '删除未引用的目录项'"
+                      :title="
+                        t(item.total ? 'admin-content.taxonomy.deleteBlocked' : 'admin-content.taxonomy.deleteHint')
+                      "
                       @click="remove(group.kind, item)"
                     >
-                      删除
+                      {{ t('admin-content.taxonomy.delete') }}
                     </button>
                   </td>
                 </tr>
@@ -85,7 +113,8 @@
 </template>
 <script setup lang="ts">
 definePageMeta({ layout: 'admin' })
-useSeoMeta({ title: '分类与标签', robots: 'noindex, nofollow' })
+const { t } = useI18n()
+useSeoMeta({ title: () => t('admin-content.taxonomy.title'), robots: 'noindex, nofollow' })
 type Kind = 'folders' | 'tags'
 interface Item {
   id: number
@@ -116,19 +145,27 @@ const baseline = ref('')
 const editorForm = ref<HTMLFormElement | null>(null)
 const snapshot = computed(() => JSON.stringify([kind.value, label.value, color.value]))
 const dirty = computed(() => (editingId.value !== null || !!label.value.trim()) && snapshot.value !== baseline.value)
-const colors = [
-  { value: 'sky', label: '天蓝' },
-  { value: 'blue', label: '蓝色' },
-  { value: 'emerald', label: '翠绿' },
-  { value: 'rose', label: '玫红' },
-  { value: 'orange', label: '橙色' },
-  { value: 'amber', label: '琥珀' },
-]
+const colors = computed(() =>
+  ['sky', 'blue', 'emerald', 'rose', 'orange', 'amber'].map((value) => ({
+    value,
+    label: t(`admin-content.taxonomy.colors.${value}`),
+  })),
+)
 const groups = computed(() =>
   data.value
     ? [
-        { kind: 'folders' as const, title: '专栏', items: data.value.folders },
-        { kind: 'tags' as const, title: '标签', items: data.value.tags },
+        {
+          kind: 'folders' as const,
+          title: t('admin-content.taxonomy.folders'),
+          empty: t('admin-content.taxonomy.group.emptyFolders'),
+          items: data.value.folders,
+        },
+        {
+          kind: 'tags' as const,
+          title: t('admin-content.taxonomy.tags'),
+          empty: t('admin-content.taxonomy.group.emptyTags'),
+          items: data.value.tags,
+        },
       ]
     : [],
 )
@@ -136,7 +173,7 @@ function categoryCount(value: string) {
   return data.value?.categories.find((item) => item.category === value)?.total ?? 0
 }
 function allowDiscard() {
-  return !dirty.value || window.confirm('目录项有未保存修改，确定放弃吗？')
+  return !dirty.value || window.confirm(t('admin-content.taxonomy.discardConfirm'))
 }
 function resetEditor() {
   if (!allowDiscard()) return
@@ -162,14 +199,13 @@ async function load() {
     data.value = await api<Taxonomy>('/admin/taxonomy')
     ready.value = true
   } catch {
-    error.value = '目录加载失败，请检查登录后重试'
+    error.value = t('admin-content.taxonomy.loadFailed')
   } finally {
     pending.value = false
   }
 }
-function report(cause: unknown, fallback: string) {
-  const message = (cause as { data?: { message?: unknown } }).data?.message
-  error.value = typeof message === 'string' ? message : fallback
+function report(cause: unknown, fallbackKey: string) {
+  error.value = apiErrorMessage(cause, fallbackKey)
 }
 async function save() {
   if (working.value || pending.value) return
@@ -184,10 +220,10 @@ async function save() {
     baseline.value = snapshot.value
     resetEditor()
     clearNuxtData((key) => key.startsWith('post-') || key.startsWith('article-'))
-    success('目录已保存，关联文章已同步')
+    success(t('admin-content.taxonomy.saved'))
     await load()
   } catch (cause) {
-    report(cause, '保存失败，输入已保留')
+    report(cause, 'admin-content.taxonomy.saveFailed')
   } finally {
     working.value = false
     saving.value = false
@@ -197,7 +233,11 @@ async function remove(type: Kind, item: Item) {
   if (
     working.value ||
     item.total ||
-    !window.confirm(`删除未被引用的${type === 'folders' ? '专栏' : '标签'}“${item.label}”？`)
+    !window.confirm(
+      t(type === 'folders' ? 'admin-content.taxonomy.deleteFolderConfirm' : 'admin-content.taxonomy.deleteTagConfirm', {
+        label: item.label,
+      }),
+    )
   )
     return
   working.value = true
@@ -209,10 +249,10 @@ async function remove(type: Kind, item: Item) {
       resetEditor()
     }
     clearNuxtData((key) => key.startsWith('post-') || key.startsWith('article-'))
-    success('目录项已删除')
+    success(t('admin-content.taxonomy.deleted'))
     await load()
   } catch (cause) {
-    report(cause, '删除失败，请重新检查引用')
+    report(cause, 'admin-content.taxonomy.deleteFailed')
   } finally {
     working.value = false
   }

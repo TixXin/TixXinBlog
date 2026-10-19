@@ -1,9 +1,9 @@
 <!-- @file flash-comments.vue @description 跨闪念审核评论：按状态筛选、单条通过/隐藏/删除与当前页批量操作，以提交时状态做冲突保护 -->
 <template>
   <section class="flash-comments">
-    <h1>闪念评论</h1>
-    <p>按审核状态处理闪念评论；开启“先审后发”后访客评论先进入待审核，仅提交者本机可见。</p>
-    <nav class="flash-comments__actions" aria-label="闪念评论筛选">
+    <h1>{{ t('admin-content.flashComments.title') }}</h1>
+    <p>{{ t('admin-content.flashComments.intro') }}</p>
+    <nav class="flash-comments__actions" :aria-label="t('admin-content.flashComments.filters')">
       <NuxtLink
         v-for="(label, value) in labels"
         :key="value"
@@ -11,26 +11,27 @@
         :aria-current="status === value && !commentId ? 'page' : undefined"
         >{{ label }}</NuxtLink
       >
-      <NuxtLink to="/admin/flashes">管理闪念</NuxtLink>
-      <NuxtLink to="/admin/comments">评论审核策略</NuxtLink>
+      <NuxtLink to="/admin/flashes">{{ t('admin-content.flashComments.manageFlashes') }}</NuxtLink>
+      <NuxtLink to="/admin/comments">{{ t('admin-content.flashComments.policyLink') }}</NuxtLink>
     </nav>
     <p v-if="commentId" role="status">
-      正在查看通知指向的单条评论。<NuxtLink to="/admin/flash-comments">查看全部评论</NuxtLink>
+      {{ t('admin-content.flashComments.singleNotice')
+      }}<NuxtLink to="/admin/flash-comments">{{ t('admin-content.flashComments.viewAll') }}</NuxtLink>
     </p>
     <CommonRequestFeedback
       v-if="pending || error"
       :pending="pending"
       :compact="!!data"
-      :title="error || '正在读取评论'"
+      :title="error || t('admin-content.flashComments.loading')"
       @retry="load"
     />
-    <p v-if="stale && data" role="status">以下保留上次读取的评论，请重试后操作。</p>
+    <p v-if="stale && data" role="status">{{ t('admin-content.flashComments.stale') }}</p>
     <p v-if="notice" role="status">{{ notice }}</p>
     <template v-if="data">
-      <p v-if="!pending && !error && !data.items.length">当前条件下暂无评论。</p>
+      <p v-if="!pending && !error && !data.items.length">{{ t('admin-content.flashComments.empty') }}</p>
       <AdminBatchBar
         v-if="data.items.length"
-        noun="闪念评论"
+        :noun="t('admin-content.flashComments.batch.noun')"
         :count="selection.count.value"
         :page-count="data.items.length"
         :all-selected="selection.allSelected.value"
@@ -54,7 +55,9 @@
               type="checkbox"
               :checked="selection.isSelected(item.id)"
               :disabled="pending || stale || busy"
-              :aria-label="`选择 ${item.authorName} 的闪念评论：${item.content.slice(0, 40)}`"
+              :aria-label="
+                t('admin-content.flashComments.select', { author: item.authorName, excerpt: item.content.slice(0, 40) })
+              "
               @change="selection.toggle(item.id, ($event.target as HTMLInputElement).checked)"
           /></label>
           <p>
@@ -75,7 +78,7 @@
               :disabled="pending || stale || busy"
               @click="change(item, 'published')"
             >
-              通过审核
+              {{ t('admin-content.flashComments.approve') }}
             </button>
             <button
               v-if="item.moderationStatus !== 'hidden'"
@@ -83,17 +86,31 @@
               :disabled="pending || stale || busy"
               @click="change(item, 'hidden')"
             >
-              隐藏评论
+              {{ t('admin-content.flashComments.hide') }}
             </button>
-            <button type="button" :disabled="pending || stale || busy" @click="change(item, 'delete')">删除评论</button>
+            <button type="button" :disabled="pending || stale || busy" @click="change(item, 'delete')">
+              {{ t('admin-content.flashComments.remove') }}
+            </button>
           </div>
         </li>
       </ul>
-      <nav v-if="data.total > PAGE_SIZE || page > 1" class="flash-comments__actions" aria-label="闪念评论分页">
-        <button type="button" :disabled="pending || busy || page <= 1" @click="setPage(page - 1)">上一页</button>
-        <span>{{ page }} / {{ Math.max(1, Math.ceil(data.total / PAGE_SIZE)) }} · 共 {{ data.total }} 条</span>
+      <nav
+        v-if="data.total > PAGE_SIZE || page > 1"
+        class="flash-comments__actions"
+        :aria-label="t('admin-content.flashComments.pagination')"
+      >
+        <button type="button" :disabled="pending || busy || page <= 1" @click="setPage(page - 1)">
+          {{ t('admin-content.flashComments.previous') }}
+        </button>
+        <span>{{
+          t('admin-content.flashComments.pageSummary', {
+            page,
+            pages: Math.max(1, Math.ceil(data.total / PAGE_SIZE)),
+            total: data.total,
+          })
+        }}</span>
         <button type="button" :disabled="pending || busy || page * PAGE_SIZE >= data.total" @click="setPage(page + 1)">
-          下一页
+          {{ t('admin-content.flashComments.next') }}
         </button>
       </nav>
     </template>
@@ -103,22 +120,32 @@
 import type { ManagedFlashComment } from '~/features/flash/types'
 import type { AdminBatchAction, AdminBatchResult } from '~/composables/useAdminBatchSelection'
 definePageMeta({ layout: 'admin' })
-useSeoMeta({ title: '闪念评论', robots: 'noindex, nofollow' })
+const { t } = useI18n()
+useSeoMeta({ title: () => t('admin-content.flashComments.title'), robots: 'noindex, nofollow' })
 const PAGE_SIZE = 20
 const route = useRoute(),
   router = useRouter(),
   api = useAdminApi(),
   auth = useCurrentUser(),
   toast = useToast()
-const labels = { all: '全部评论', pending: '待审核', published: '已公开', hidden: '已隐藏' }
-const flashLabels = { published: '闪念已发布', draft: '闪念草稿', archived: '闪念已归档' }
-const batchActions: AdminBatchAction[] = [
-  { key: 'published', label: '批量通过', icon: 'lucide:check' },
-  { key: 'hidden', label: '批量隐藏', icon: 'lucide:eye-off' },
-  { key: 'delete', label: '批量删除', icon: 'lucide:trash-2', danger: true },
-]
+const STATUSES = ['all', 'pending', 'published', 'hidden'] as const
+const labels = computed(() =>
+  Object.fromEntries(STATUSES.map((value) => [value, t(`admin-content.flashComments.status.${value}`)])),
+)
+const flashLabels = computed(() => ({
+  published: t('admin-content.flashComments.flashStatus.published'),
+  draft: t('admin-content.flashComments.flashStatus.draft'),
+  archived: t('admin-content.flashComments.flashStatus.archived'),
+}))
+const batchActions = computed<AdminBatchAction[]>(() => [
+  { key: 'published', label: t('admin-content.flashComments.batch.approve'), icon: 'lucide:check' },
+  { key: 'hidden', label: t('admin-content.flashComments.batch.hide'), icon: 'lucide:eye-off' },
+  { key: 'delete', label: t('admin-content.flashComments.batch.delete'), icon: 'lucide:trash-2', danger: true },
+])
 const status = computed(() =>
-  typeof route.query.status === 'string' && Object.hasOwn(labels, route.query.status) ? route.query.status : 'all',
+  typeof route.query.status === 'string' && (STATUSES as readonly string[]).includes(route.query.status)
+    ? route.query.status
+    : 'all',
 )
 const commentId = computed(() =>
   typeof route.query.commentId === 'string' && /^[\w-]{1,64}$/.test(route.query.commentId) ? route.query.commentId : '',
@@ -160,7 +187,7 @@ async function load() {
     const last = Math.max(1, Math.ceil(result.total / PAGE_SIZE))
     if (page.value > last) await setPage(last)
   } catch {
-    if (alive && current === version) error.value = '评论读取失败，请重试'
+    if (alive && current === version) error.value = t('admin-content.flashComments.loadFailed')
   } finally {
     if (alive && current === version) pending.value = false
   }
@@ -171,13 +198,9 @@ function setPage(value: number) {
     query: { ...route.query, page: value > 1 ? String(value) : undefined },
   })
 }
-function failure(cause: unknown, fallback: string) {
-  const message = (cause as { data?: { message?: unknown } }).data?.message
-  return typeof message === 'string' ? message : fallback
-}
 async function change(item: ManagedFlashComment, action: 'published' | 'hidden' | 'delete') {
   if (busy.value || pending.value || stale.value) return
-  if (action === 'delete' && !window.confirm('删除这条闪念评论？删除后无法恢复。')) return
+  if (action === 'delete' && !window.confirm(t('admin-content.flashComments.deleteConfirm'))) return
   busy.value = true
   error.value = ''
   notice.value = ''
@@ -189,12 +212,15 @@ async function change(item: ManagedFlashComment, action: 'published' | 'hidden' 
       ...(action === 'delete' ? {} : { body: { status: action, expectedStatus: item.moderationStatus } }),
     })
     if (!alive || actor !== auth.currentUser.value?.id) return
-    if (path === route.fullPath) notice.value = action === 'delete' ? '评论已删除' : '评论状态已更新'
+    if (path === route.fullPath)
+      notice.value = t(
+        action === 'delete' ? 'admin-content.flashComments.deleted' : 'admin-content.flashComments.updated',
+      )
     await load()
   } catch (cause) {
     if (alive && actor === auth.currentUser.value?.id) {
       await load()
-      error.value = failure(cause, '操作未能确认，请核对最新状态后重试')
+      error.value = apiErrorMessage(cause, 'admin-content.flashComments.changeFailed')
     }
   } finally {
     if (alive) busy.value = false
@@ -205,7 +231,8 @@ async function batch(action: 'published' | 'hidden' | 'delete') {
   const selected = selection.selectedItems.value
   if (!selected.length || busy.value || pending.value || stale.value) return
   const remove = action === 'delete'
-  if (remove && !window.confirm(`删除选中的 ${selected.length} 条闪念评论？删除后无法恢复。`)) return
+  if (remove && !window.confirm(t('admin-content.flashComments.batch.deleteConfirm', { count: selected.length })))
+    return
   busy.value = true
   batchBusy.value = action
   error.value = ''
@@ -222,8 +249,14 @@ async function batch(action: 'published' | 'hidden' | 'delete') {
     await load()
     const message = describeBatchResult(
       result,
-      remove ? '已删除' : action === 'published' ? '已通过' : '已隐藏',
-      '闪念评论',
+      t(
+        remove
+          ? 'admin-content.flashComments.batch.deleted'
+          : action === 'published'
+            ? 'admin-content.flashComments.batch.approved'
+            : 'admin-content.flashComments.batch.hidden',
+      ),
+      t('admin-content.flashComments.batch.noun'),
     )
     // 列表重新读取会清空错误提示，因此在刷新之后再展示跳过项。
     if (result.failedCount) error.value = message
@@ -231,7 +264,7 @@ async function batch(action: 'published' | 'hidden' | 'delete') {
   } catch (cause) {
     if (alive && actor === auth.currentUser.value?.id) {
       await load()
-      error.value = failure(cause, '批量操作失败，未确认是否生效，请刷新列表核对')
+      error.value = apiErrorMessage(cause, 'admin-content.flashComments.batch.failed')
     }
   } finally {
     if (alive) {

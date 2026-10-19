@@ -4,127 +4,183 @@
 -->
 <template>
   <section class="admin-comments">
-    <h1>评论管理</h1>
+    <h1>{{ t('admin-content.comments.title') }}</h1>
     <ClientOnly>
-      <section class="admin-comments__policy" aria-label="评论审核设置">
-        <h2>审核设置</h2>
-        <p>现有评论保持原状态。新游客评论可直接公开，或先由博主审核；博主回复通过真实管理接口公开。</p>
+      <section class="admin-comments__policy" :aria-label="t('admin-content.comments.policy.label')">
+        <h2>{{ t('admin-content.comments.policy.heading') }}</h2>
+        <p>{{ t('admin-content.comments.policy.intro') }}</p>
         <label
-          ><input
-            v-model="requireApproval"
-            type="checkbox"
-            :disabled="!policy || policyPending"
-          />新游客评论需要审核后公开</label
+          ><input v-model="requireApproval" type="checkbox" :disabled="!policy || policyPending" />{{
+            t('admin-content.comments.policy.requireApproval')
+          }}</label
         >
         <button
           type="button"
           :disabled="!policy || policyPending || requireApproval === policy.requireApproval"
           @click="savePolicy"
         >
-          保存审核设置
+          {{ t('admin-content.comments.policy.save') }}
         </button>
         <p v-if="policy" role="status">
-          服务器当前：{{ policy.requireApproval ? '先审核后公开' : '直接公开' }} · 版本 {{ policy.revision }}
+          {{
+            t('admin-content.comments.policy.current', {
+              mode: t(
+                policy.requireApproval
+                  ? 'admin-content.comments.policy.modeApproval'
+                  : 'admin-content.comments.policy.modeDirect',
+              ),
+              revision: policy.revision,
+            })
+          }}
         </p>
         <p v-if="policyError" role="alert">
-          {{ policyError }} <button type="button" :disabled="policyPending" @click="loadPolicy">重新读取设置</button>
+          {{ policyError }}
+          <button type="button" :disabled="policyPending" @click="loadPolicy">
+            {{ t('admin-content.comments.policy.reload') }}
+          </button>
         </p>
-        <p>通知渠道尚未接入，不会向评论者发送邮件或消息。</p>
+        <p>{{ t('admin-content.comments.policy.noNotification') }}</p>
       </section>
       <form class="admin-comments__filters" @submit.prevent="resetPage">
-        <select v-model="postId" aria-label="按文章筛选评论" :disabled="working" @change="resetPage">
-          <option value="">全部文章</option>
+        <select
+          v-model="postId"
+          :aria-label="t('admin-content.comments.filters.post')"
+          :disabled="working"
+          @change="resetPage"
+        >
+          <option value="">{{ t('admin-content.comments.filters.allPosts') }}</option>
           <option v-for="article in articles" :key="article.id" :value="String(article.id)">{{ article.title }}</option>
         </select>
         <label
-          ><input v-model="unanswered" type="checkbox" :disabled="working" @change="resetPage" />仅待回复根评论</label
+          ><input v-model="unanswered" type="checkbox" :disabled="working" @change="resetPage" />{{
+            t('admin-content.comments.filters.unanswered')
+          }}</label
         >
-        <select v-model="status" aria-label="评论状态" :disabled="working" @change="resetPage">
-          <option value="">全部状态</option>
+        <select
+          v-model="status"
+          :aria-label="t('admin-content.comments.filters.status')"
+          :disabled="working"
+          @change="resetPage"
+        >
+          <option value="">{{ t('admin-content.comments.filters.allStatus') }}</option>
           <option v-for="(label, value) in statusLabels" :key="value" :value="value">{{ label }}</option>
         </select>
-        <label>开始日期（UTC）<input v-model="from" type="date" :disabled="working" @change="resetPage" /></label>
-        <label>结束日期（UTC）<input v-model="to" type="date" :disabled="working" @change="resetPage" /></label>
-        <input v-model="search" aria-label="搜索评论" placeholder="搜索评论内容" /><button
-          :aria-busy="pending"
-          type="submit"
-          :disabled="pending"
-        >
-          搜索
+        <label
+          >{{ t('admin-content.comments.filters.from')
+          }}<input v-model="from" type="date" :disabled="working" @change="resetPage"
+        /></label>
+        <label
+          >{{ t('admin-content.comments.filters.to')
+          }}<input v-model="to" type="date" :disabled="working" @change="resetPage"
+        /></label>
+        <input
+          v-model="search"
+          :aria-label="t('admin-content.comments.filters.search')"
+          :placeholder="t('admin-content.comments.filters.searchPlaceholder')"
+        /><button :aria-busy="pending" type="submit" :disabled="pending">
+          {{ t('admin-content.comments.filters.submit') }}
         </button>
       </form>
       <p v-if="error" role="alert">
-        {{ error }} <button type="button" :disabled="pending || working" @click="load">重新加载</button>
+        {{ error }}
+        <button type="button" :disabled="pending || working" @click="load">
+          {{ t('admin-content.comments.reload') }}
+        </button>
       </p>
       <p v-if="articleError" role="alert">
-        文章筛选选项加载失败 <button type="button" @click="loadArticles">重试选项</button>
+        {{ t('admin-content.comments.articlesFailed') }}
+        <button type="button" @click="loadArticles">{{ t('admin-content.comments.retryArticles') }}</button>
       </p>
-      <p v-if="pending" role="status">正在处理…</p>
+      <p v-if="pending" role="status">{{ t('admin-content.comments.processing') }}</p>
       <form v-if="replyTarget" class="admin-comments__reply" @submit.prevent="sendReply">
         <label
-          >回复 {{ replyTarget.author
+          >{{ t('admin-content.comments.reply.label', { author: replyTarget.author })
           }}<textarea
             ref="replyInput"
             v-model="replyText"
-            aria-label="博主回复内容"
+            :aria-label="t('admin-content.comments.reply.input')"
             maxlength="1000"
             rows="3"
             required
             :disabled="working"
           />
         </label>
-        <p>回复文章：{{ replyTarget.postTitle }}</p>
+        <p>{{ t('admin-content.comments.reply.post', { title: replyTarget.postTitle }) }}</p>
         <blockquote>{{ replyTarget.content }}</blockquote>
         <button :aria-busy="replySubmitting" type="submit" :disabled="working || !replyText.trim()">
-          发表博主回复
+          {{ t('admin-content.comments.reply.submit') }}
         </button>
-        <button type="button" :disabled="working" @click="cancelReply">取消回复</button>
+        <button type="button" :disabled="working" @click="cancelReply">
+          {{ t('admin-content.comments.reply.cancel') }}
+        </button>
       </form>
       <section
         v-if="context || contextPending || contextError"
         ref="contextPanel"
         tabindex="-1"
         class="admin-comments__context"
-        aria-label="评论上下文"
+        :aria-label="t('admin-content.comments.context.title')"
       >
-        <h2>评论上下文</h2>
-        <button type="button" @click="closeContext">关闭上下文</button>
-        <p v-if="contextPending" role="status">正在读取上下文…</p>
+        <h2>{{ t('admin-content.comments.context.title') }}</h2>
+        <button type="button" @click="closeContext">{{ t('admin-content.comments.context.close') }}</button>
+        <p v-if="contextPending" role="status">{{ t('admin-content.comments.context.pending') }}</p>
         <p v-if="contextError" role="alert">{{ contextError }}</p>
         <template v-if="context">
-          <p>{{ context.post.title }} · 删除当前评论将影响 {{ context.deleteTotal }} 条评论（含所有层级回复）</p>
           <p>
-            当前公开 {{ context.visibleTotal }} 条；通过当前评论后预计公开
-            {{ context.approvedVisibleTotal }}
-            条。上级未通过、文章未公开时不会展示，单独隐藏或标记垃圾的回复继续保留原状态。
+            {{
+              t('admin-content.comments.context.deleteImpact', {
+                title: context.post.title,
+                count: context.deleteTotal,
+              })
+            }}
+          </p>
+          <p>
+            {{
+              t('admin-content.comments.context.visibility', {
+                visible: context.visibleTotal,
+                approved: context.approvedVisibleTotal,
+              })
+            }}
           </p>
           <ol>
             <li v-for="ancestor in context.ancestors" :key="ancestor.id">
               <strong>{{ ancestor.author }} · {{ statusLabels[ancestor.status] }}</strong>
               <p>{{ ancestor.content }}</p>
-              <button type="button" @click="showContext(ancestor.id)">查看此上级评论</button>
+              <button type="button" @click="showContext(ancestor.id)">
+                {{ t('admin-content.comments.context.viewAncestor') }}
+              </button>
             </li>
           </ol>
           <blockquote>
-            <strong>当前评论 · {{ context.target.author }} · {{ statusLabels[context.target.status] }}</strong>
+            <strong>{{
+              t('admin-content.comments.context.current', {
+                author: context.target.author,
+                status: statusLabels[context.target.status],
+              })
+            }}</strong>
             <p>{{ context.target.content }}</p>
           </blockquote>
-          <h3>直接回复（{{ context.total }} 条）</h3>
-          <p v-if="!context.total">暂无直接回复</p>
+          <h3>{{ t('admin-content.comments.context.directReplies', { count: context.total }) }}</h3>
+          <p v-if="!context.total">{{ t('admin-content.comments.context.noReplies') }}</p>
           <ul>
             <li v-for="reply in context.replies" :key="reply.id">
-              <strong>{{ reply.author }}{{ reply.isOwner ? ' · 博主' : '' }} · {{ statusLabels[reply.status] }}</strong>
+              <strong
+                >{{ reply.author }}{{ reply.isOwner ? ` · ${t('admin-content.comments.owner')}` : '' }} ·
+                {{ statusLabels[reply.status] }}</strong
+              >
               <p>{{ reply.content }}</p>
-              <button type="button" @click="showContext(reply.id)">查看此回复上下文</button>
+              <button type="button" @click="showContext(reply.id)">
+                {{ t('admin-content.comments.context.viewReply') }}
+              </button>
             </li>
           </ul>
-          <nav class="admin-comments__pagination" aria-label="上下文回复分页">
+          <nav class="admin-comments__pagination" :aria-label="t('admin-content.comments.context.pagination')">
             <button
               type="button"
               :disabled="contextPending || context.page <= 1"
               @click="showContext(context.target.id, context.page - 1)"
             >
-              上一页回复
+              {{ t('admin-content.comments.context.previous') }}
             </button>
             <span>{{ context.page }} / {{ Math.max(1, Math.ceil(context.total / 20)) }}</span>
             <button
@@ -132,14 +188,14 @@
               :disabled="contextPending || context.page * 20 >= context.total"
               @click="showContext(context.target.id, context.page + 1)"
             >
-              下一页回复
+              {{ t('admin-content.comments.context.next') }}
             </button>
           </nav>
         </template>
       </section>
       <AdminBatchBar
         v-if="items.length"
-        noun="评论"
+        :noun="t('admin-content.comments.batch.noun')"
         :count="selection.count.value"
         :page-count="items.length"
         :all-selected="selection.allSelected.value"
@@ -158,7 +214,12 @@
               type="checkbox"
               :checked="selection.isSelected(comment.id)"
               :disabled="pending || working"
-              :aria-label="`选择 ${comment.author} 的评论：${comment.content.slice(0, 40)}`"
+              :aria-label="
+                t('admin-content.comments.item.select', {
+                  author: comment.author,
+                  excerpt: comment.content.slice(0, 40),
+                })
+              "
               @change="selection.toggle(comment.id, ($event.target as HTMLInputElement).checked)"
           /></label>
           <NuxtLink
@@ -166,33 +227,40 @@
             >{{ comment.postTitle }}</NuxtLink
           >
           <p>
-            <strong>{{ comment.author }}</strong> {{ comment.isOwner ? '· 博主' : '' }} ·
+            <strong>{{ comment.author }}</strong>
+            {{ comment.isOwner ? `· ${t('admin-content.comments.owner')}` : '' }} ·
             {{ comment.createdAt.slice(0, 10) }}
           </p>
           <p>{{ comment.content }}</p>
           <p>
             {{ statusLabels[comment.status] }} ·
-            {{ comment.visible ? '当前公开可见' : '当前不公开（自身、上级评论或文章状态限制）' }}
+            {{
+              comment.visible ? t('admin-content.comments.item.visible') : t('admin-content.comments.item.invisible')
+            }}
           </p>
-          <p v-if="comment.postStatus !== 'published'">文章未公开，当前不能新增回复。</p>
+          <p v-if="comment.postStatus !== 'published'">{{ t('admin-content.comments.item.postUnpublished') }}</p>
           <div class="admin-comments__actions">
-            <button type="button" :disabled="working" @click="showContext(comment.id)">查看上下文</button>
+            <button type="button" :disabled="working" @click="showContext(comment.id)">
+              {{ t('admin-content.comments.item.viewContext') }}
+            </button>
             <button
               v-if="comment.depth < 2 && comment.visible"
               type="button"
               :disabled="working"
               @click="startReply(comment)"
             >
-              回复
+              {{ t('admin-content.comments.item.reply') }}
             </button>
-            <button type="button" :disabled="pending || working" @click="remove(comment)">删除评论及回复</button>
+            <button type="button" :disabled="pending || working" @click="remove(comment)">
+              {{ t('admin-content.comments.item.remove') }}
+            </button>
             <button
               v-if="comment.status !== 'published'"
               type="button"
               :disabled="pending || working"
               @click="moderate(comment, 'published')"
             >
-              通过或恢复公开
+              {{ t('admin-content.comments.item.publish') }}
             </button>
             <button
               v-if="comment.status === 'published'"
@@ -200,7 +268,7 @@
               :disabled="pending || working"
               @click="moderate(comment, 'hidden')"
             >
-              隐藏评论
+              {{ t('admin-content.comments.item.hide') }}
             </button>
             <button
               v-if="comment.status !== 'spam'"
@@ -208,16 +276,22 @@
               :disabled="pending || working"
               @click="moderate(comment, 'spam')"
             >
-              标记垃圾
+              {{ t('admin-content.comments.item.spam') }}
             </button>
           </div>
         </li>
       </ul>
-      <p v-if="!pending && !error && !items.length">暂无评论</p>
-      <nav class="admin-comments__pagination" aria-label="评论分页">
-        <button type="button" :disabled="pending || page <= 1" @click="previousPage">上一页</button>
-        <span>{{ page }} / {{ Math.max(1, Math.ceil(total / 20)) }} · {{ total }} 条</span>
-        <button type="button" :disabled="pending || page * 20 >= total" @click="nextPage">下一页</button>
+      <p v-if="!pending && !error && !items.length">{{ t('admin-content.comments.empty') }}</p>
+      <nav class="admin-comments__pagination" :aria-label="t('admin-content.comments.pagination')">
+        <button type="button" :disabled="pending || page <= 1" @click="previousPage">
+          {{ t('admin-content.comments.previous') }}
+        </button>
+        <span>{{
+          t('admin-content.comments.pageSummary', { page, pages: Math.max(1, Math.ceil(total / 20)), total })
+        }}</span>
+        <button type="button" :disabled="pending || page * 20 >= total" @click="nextPage">
+          {{ t('admin-content.comments.next') }}
+        </button>
       </nav>
     </ClientOnly>
   </section>
@@ -226,7 +300,8 @@
 import { describeBatchResult } from '~/composables/useAdminBatchSelection'
 import type { AdminBatchAction, AdminBatchResult } from '~/composables/useAdminBatchSelection'
 definePageMeta({ layout: 'admin' })
-useSeoMeta({ title: '评论管理', robots: 'noindex, nofollow' })
+const { t } = useI18n()
+useSeoMeta({ title: () => t('admin-content.comments.title'), robots: 'noindex, nofollow' })
 interface CommentText {
   status: CommentStatus
   revision: number
@@ -259,12 +334,14 @@ interface CommentContext {
 }
 const api = useAdminApi()
 type CommentStatus = 'published' | 'pending' | 'hidden' | 'spam'
-const statusLabels: Record<CommentStatus, string> = {
-  published: '已通过',
-  pending: '待审核',
-  hidden: '已隐藏',
-  spam: '垃圾评论',
-}
+const COMMENT_STATUSES: CommentStatus[] = ['published', 'pending', 'hidden', 'spam']
+const statusLabels = computed(
+  () =>
+    Object.fromEntries(COMMENT_STATUSES.map((value) => [value, t(`admin-content.comments.status.${value}`)])) as Record<
+      CommentStatus,
+      string
+    >,
+)
 const status = ref('')
 const from = ref('')
 const to = ref('')
@@ -281,7 +358,7 @@ async function loadPolicy() {
     policy.value = latest
     requireApproval.value = latest.requireApproval
   } catch {
-    policyError.value = '审核设置读取失败'
+    policyError.value = t('admin-content.comments.policy.loadFailed')
   } finally {
     policyPending.value = false
   }
@@ -295,10 +372,9 @@ async function savePolicy() {
       method: 'PATCH',
       body: { requireApproval: requireApproval.value, revision: policy.value.revision },
     })
-    success('审核设置已生效，现有评论保持原状态')
+    success(t('admin-content.comments.policy.saved'))
   } catch (cause) {
-    const message = (cause as { data?: { message?: unknown } }).data?.message
-    policyError.value = typeof message === 'string' ? message : '保存失败，当前选择保留'
+    policyError.value = apiErrorMessage(cause, 'admin-content.comments.policy.saveFailed')
   } finally {
     policyPending.value = false
   }
@@ -331,15 +407,15 @@ let listVersion = 0
 let contextVersion = 0
 const selection = useAdminBatchSelection(items)
 const batchBusy = ref('')
-const batchActions: AdminBatchAction[] = [
-  { key: 'published', label: '批量通过', icon: 'lucide:check' },
-  { key: 'hidden', label: '批量隐藏', icon: 'lucide:eye-off' },
-  { key: 'spam', label: '标记垃圾', icon: 'lucide:shield-alert' },
-  { key: 'delete', label: '批量删除', icon: 'lucide:trash-2', danger: true },
-]
+const batchActions = computed<AdminBatchAction[]>(() => [
+  { key: 'published', label: t('admin-content.comments.batch.approve'), icon: 'lucide:check' },
+  { key: 'hidden', label: t('admin-content.comments.batch.hide'), icon: 'lucide:eye-off' },
+  { key: 'spam', label: t('admin-content.comments.batch.spam'), icon: 'lucide:shield-alert' },
+  { key: 'delete', label: t('admin-content.comments.batch.delete'), icon: 'lucide:trash-2', danger: true },
+])
 const replyDirty = computed(() => !!replyTarget.value && !!replyText.value.trim())
 function allowDiscard() {
-  return !replyDirty.value || window.confirm('有尚未发送的博主回复，确定放弃吗？')
+  return !replyDirty.value || window.confirm(t('admin-content.comments.reply.discardConfirm'))
 }
 function cancelReply() {
   if (allowDiscard()) {
@@ -358,7 +434,7 @@ function syncQuery() {
   search.value = text('search')
   postId.value = /^[1-9]\d*$/.test(text('postId')) ? text('postId') : ''
   unanswered.value = text('unanswered') === 'true'
-  status.value = Object.hasOwn(statusLabels, text('status')) ? text('status') : ''
+  status.value = COMMENT_STATUSES.includes(text('status') as CommentStatus) ? text('status') : ''
   from.value = text('from')
   to.value = text('to')
   const value = Number(text('page'))
@@ -418,7 +494,7 @@ async function load() {
   } catch {
     if (version === listVersion) {
       items.value = []
-      error.value = '评论列表加载失败，请检查登录后重试'
+      error.value = t('admin-content.comments.listFailed')
     }
   } finally {
     if (version === listVersion) pending.value = false
@@ -437,7 +513,7 @@ async function showContext(id: number, currentPage = 1) {
       contextPanel.value?.focus()
     }
   } catch {
-    if (version === contextVersion) contextError.value = '上下文加载失败，请重新选择评论；评论也可能已被删除'
+    if (version === contextVersion) contextError.value = t('admin-content.comments.context.loadFailed')
   } finally {
     if (version === contextVersion) contextPending.value = false
   }
@@ -451,7 +527,7 @@ function closeContext() {
 async function remove(comment: Row) {
   if (working.value || pending.value) return
   if (replyDirty.value) {
-    error.value = '请先发送或明确取消当前回复，再删除评论'
+    error.value = t('admin-content.comments.remove.replyDirty')
     return
   }
   working.value = true
@@ -460,7 +536,7 @@ async function remove(comment: Row) {
     const preview = await api<CommentContext>(`/admin/comments/${comment.id}/context`)
     if (
       !window.confirm(
-        `将永久删除“${comment.author}”的评论及其所有层级回复，共 ${preview.deleteTotal} 条，无法恢复。确定删除吗？`,
+        t('admin-content.comments.remove.confirm', { author: comment.author, count: preview.deleteTotal }),
       )
     )
       return
@@ -471,11 +547,10 @@ async function remove(comment: Row) {
     closeContext()
     replyTarget.value = null
     clearNuxtData((key) => key.startsWith('article-') || key.startsWith('post-'))
-    success(`已删除 ${result.deleted} 条评论`)
+    success(t('admin-content.comments.remove.done', { count: result.deleted }))
     await Promise.all([loadArticles(), load()])
   } catch (cause) {
-    const message = (cause as { data?: { message?: unknown } }).data?.message
-    error.value = typeof message === 'string' ? message : '删除失败，请重新查看影响范围后重试'
+    error.value = apiErrorMessage(cause, 'admin-content.comments.remove.failed')
   } finally {
     working.value = false
   }
@@ -486,12 +561,11 @@ async function runBatch(action: string) {
   const selected = selection.selectedItems.value
   if (!selected.length) return
   if (replyDirty.value) {
-    error.value = '请先发送或明确取消当前回复，再批量处理评论'
+    error.value = t('admin-content.comments.batch.replyDirty')
     return
   }
   const remove = action === 'delete'
-  if (remove && !window.confirm(`将永久删除选中的 ${selected.length} 条评论及其所有层级回复，无法恢复。确定删除吗？`))
-    return
+  if (remove && !window.confirm(t('admin-content.comments.batch.deleteConfirm', { count: selected.length }))) return
   working.value = true
   batchBusy.value = action
   error.value = ''
@@ -508,8 +582,10 @@ async function runBatch(action: string) {
         })
     const message = describeBatchResult(
       result,
-      remove ? '已删除' : `已设为${statusLabels[action as CommentStatus]}`,
-      '评论',
+      remove
+        ? t('admin-content.comments.batch.deleted')
+        : t('admin-content.comments.batch.setTo', { status: statusLabels.value[action as CommentStatus] }),
+      t('admin-content.comments.batch.noun'),
     )
     selection.clear()
     if (remove) closeContext()
@@ -518,10 +594,14 @@ async function runBatch(action: string) {
     if (!remove && context.value) await showContext(context.value.target.id, context.value.page)
     // 列表重新读取会清空错误提示，因此在刷新之后再展示跳过项。
     if (result.failedCount) error.value = message
-    else success(remove ? `${message}（含回复共 ${result.deleted ?? 0} 条）` : message)
+    else
+      success(
+        remove
+          ? t('admin-content.comments.batch.deletedWithReplies', { message, count: result.deleted ?? 0 })
+          : message,
+      )
   } catch (cause) {
-    const message = (cause as { data?: { message?: unknown } }).data?.message
-    error.value = typeof message === 'string' ? message : '批量操作失败，未确认是否生效，请刷新列表核对'
+    error.value = apiErrorMessage(cause, 'admin-content.comments.batch.failed')
   } finally {
     working.value = false
     batchBusy.value = ''
@@ -538,12 +618,11 @@ async function sendReply() {
     replyTarget.value = null
     replyText.value = ''
     clearNuxtData((key) => key.startsWith('article-') || key.startsWith('post-'))
-    success('博主回复已发表')
+    success(t('admin-content.comments.reply.sent'))
     await load()
     if (context.value) await showContext(context.value.target.id, context.value.page)
   } catch (cause) {
-    const message = (cause as { data?: { message?: unknown } }).data?.message
-    error.value = typeof message === 'string' ? message : '回复失败，内容已保留'
+    error.value = apiErrorMessage(cause, 'admin-content.comments.reply.failed')
   } finally {
     working.value = false
     replySubmitting.value = false
@@ -552,7 +631,7 @@ async function sendReply() {
 async function moderate(comment: Row, target: CommentStatus) {
   if (working.value || pending.value) return
   if (replyDirty.value) {
-    error.value = '请先发送或明确取消当前回复，再修改评论状态'
+    error.value = t('admin-content.comments.moderate.replyDirty')
     return
   }
   working.value = true
@@ -562,7 +641,13 @@ async function moderate(comment: Row, target: CommentStatus) {
     const after = target === 'published' ? preview.approvedVisibleTotal : 0
     if (
       !window.confirm(
-        `将“${comment.author}”的评论设为${statusLabels[target]}？本条及回复共 ${preview.deleteTotal} 条，公开可见数量从 ${preview.visibleTotal} 变为 ${after} 条。回复自身的审核状态保留；没有评论会被删除。`,
+        t('admin-content.comments.moderate.confirm', {
+          author: comment.author,
+          status: statusLabels.value[target],
+          count: preview.deleteTotal,
+          visible: preview.visibleTotal,
+          after,
+        }),
       )
     )
       return
@@ -570,13 +655,12 @@ async function moderate(comment: Row, target: CommentStatus) {
       method: 'POST',
       body: { status: target, revision: preview.target.revision, expectedFingerprint: preview.deleteFingerprint },
     })
-    success('评论状态已更新')
+    success(t('admin-content.comments.moderate.done'))
     clearNuxtData((key) => key.startsWith('article-') || key.startsWith('post-'))
     await load()
     if (context.value) await showContext(context.value.target.id, context.value.page)
   } catch (cause) {
-    const message = (cause as { data?: { message?: unknown } }).data?.message
-    error.value = typeof message === 'string' ? message : '修改失败，请重新查看影响范围后重试'
+    error.value = apiErrorMessage(cause, 'admin-content.comments.moderate.failed')
   } finally {
     working.value = false
   }
@@ -594,7 +678,7 @@ onBeforeRouteLeave(
     allowDiscard() &&
     (!policy.value ||
       requireApproval.value === policy.value.requireApproval ||
-      window.confirm('审核设置尚未保存，确定离开吗？')),
+      window.confirm(t('admin-content.comments.policy.leaveConfirm'))),
 )
 watch(
   () => route.query,
