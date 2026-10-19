@@ -7,7 +7,8 @@ import { useKeyboardShortcuts } from '../../app/composables/useKeyboardShortcuts
 import KeyboardShortcutsHelp from '../../app/components/common/KeyboardShortcutsHelp.vue'
 
 const mocks = vi.hoisted(() => ({
-  route: { path: '/', name: 'index', params: {} as Record<string, string> },
+  // query 供 i18n 插件在测试应用启动时读取路由，缺失会导致界面语言未安装
+  route: { path: '/', name: 'index', params: {} as Record<string, string>, query: {} },
   drawer: { value: false },
   settings: { value: { commandPaletteEnabled: true } },
   closeDrawer: vi.fn(),
@@ -33,7 +34,7 @@ const wrappers: { unmount(): void }[] = []
 const ownedElements: HTMLElement[] = []
 beforeEach(() => {
   vi.clearAllMocks()
-  mocks.route = reactive({ path: '/', name: 'index', params: {} })
+  mocks.route = reactive({ path: '/', name: 'index', params: {}, query: {} })
   mocks.drawer = ref(false)
   mocks.settings = ref({ commandPaletteEnabled: true })
   // DOM 单测没有布局；只补尺寸可见性，保留真实模态焦点、背景隔离和事件监听逻辑。

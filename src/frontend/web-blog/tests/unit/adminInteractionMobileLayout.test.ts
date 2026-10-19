@@ -20,7 +20,8 @@ const mocks = vi.hoisted(() => ({
     authError: Ref<string>
     restore: ReturnType<typeof vi.fn>
   },
-  route: {} as { path: string; fullPath: string; query: Record<string, string> },
+  // 初始 query 供 i18n 插件在测试应用启动时读取路由，缺失会导致界面语言未安装
+  route: { query: {} } as { path: string; fullPath: string; query: Record<string, string> },
 }))
 mockNuxtImport('useAdminApi', () => () => mocks.api)
 mockNuxtImport('useCurrentUser', () => () => mocks.auth)
