@@ -18,6 +18,19 @@
 
 下文的环境变量、可信代理、内部网络、站点地址、访问统计、初始化管理员和运行观察说明同样适用于一键安装的站点：环境文件即 `<安装目录>/.env`，在安装目录中执行 `sudo docker compose …` 即可使用同一编排（`.env` 已写入 `COMPOSE_FILE`）。
 
+### 1Panel 面板
+
+已在用 [1Panel](https://github.com/1Panel-dev/1Panel) 管理服务器时，可以把仓库中的 [`deploy/1panel/tixxin-blog/`](../deploy/1panel/tixxin-blog/README.md) 作为本地应用安装：整个目录上传到 `/opt/1panel/resource/apps/local/`，在「应用商店」点击「同步本地应用」（v1 为「更新应用列表」），安装表单只填写站点域名、站点语言和本机 HTTP 端口。
+
+应用包使用同一套镜像，但编排与上面两种方式不同：
+
+- 不包含 Caddy，域名与证书交给 1Panel「网站」（OpenResty）：创建反向代理到 `http://127.0.0.1:<HTTP 端口>` 并启用 HTTPS，保留默认的 `X-Forwarded-For` 与 `X-Forwarded-Proto` 请求头。
+- 密钥由安装脚本生成在应用目录 `data/secrets/`，初始化链接打印在安装日志末尾；内部子网由脚本挑选未占用的 `/24` 并记录在 `data/network.env`，前端与 API 的可信代理均为该子网。
+- 数据库、媒体和密钥都以相对目录挂载在应用目录 `data/` 下，由 1Panel 应用备份整体打包；不包含 worker。
+- 每次启动或升级都会自动执行正式迁移，这是与 `docker compose up` 不隐式迁移原则不同的取舍：升级时务必勾选「升级前备份应用」，失败时由 1Panel 用该备份回滚。
+
+安装、HTTPS、初始化与升级的完整步骤见[应用包说明](../deploy/1panel/tixxin-blog/README.md)。
+
 ## 高级：手动发布（release.mjs）
 
 本节面向需要精细控制的用户。首次部署建议先看[5 分钟部署](quick-start.md)。

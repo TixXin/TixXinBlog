@@ -22,6 +22,19 @@ Both use the same images (web, api, migration, worker), the same `compose.produc
 
 The sections below on environment variables, trusted proxies, the internal network, site URL, analytics, administrator initialization and operational monitoring also apply to one-command installs: the environment file is `<install directory>/.env`, and running `sudo docker compose …` in the install directory uses the same compose files (`.env` already sets `COMPOSE_FILE`).
 
+### 1Panel
+
+If you already manage the server with [1Panel](https://github.com/1Panel-dev/1Panel), install [`deploy/1panel/tixxin-blog/`](../../deploy/1panel/tixxin-blog/README_en.md) from the repository as a local app: upload the whole directory to `/opt/1panel/resource/apps/local/`, click "Sync Local App" in the App Store ("Sync" on v1), and fill in only the site domain, site language and local HTTP port.
+
+The package uses the same images but a different compose file from the two methods above:
+
+- There is no Caddy; 1Panel Websites (OpenResty) handles the domain and certificate. Create a reverse proxy to `http://127.0.0.1:<HTTP port>`, enable HTTPS and keep the default `X-Forwarded-For` and `X-Forwarded-Proto` headers.
+- The install script generates the secrets in `data/secrets/` inside the app directory and prints the setup link at the end of the install log. It also picks a free `/24` for the internal network and records it in `data/network.env`; the frontend and API trust proxies in that subnet.
+- The database, media and secrets are mounted from relative directories under `data/` in the app directory, so a 1Panel app backup captures them together. The worker is not included.
+- Formal migrations run automatically on every start and upgrade, a deliberate departure from the rule that `docker compose up` never migrates implicitly. Always tick "Backup application before upgrade" so 1Panel can roll back from that backup if the upgrade fails.
+
+See the [package README](../../deploy/1panel/tixxin-blog/README_en.md) for the full installation, HTTPS, setup and upgrade steps.
+
 ## Advanced: Manual Release (release.mjs)
 
 This section is for users who need fine-grained control. For a first deployment, start with [Five-Minute Deployment](quick-start.md).
