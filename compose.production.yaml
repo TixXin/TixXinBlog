@@ -104,6 +104,8 @@ services:
       NUXT_PUBLIC_SITE_URL: ${SITE_URL:?请配置 HTTPS 站点地址}
       NUXT_PUBLIC_USE_MOCK_REPO: 'false'
       NUXT_PUBLIC_POST_USE_MOCK_REPO: 'false'
+      # 站点默认界面语言（zh-CN 或 en）；运行时读取，无效值回退 zh-CN。
+      NUXT_PUBLIC_DEFAULT_LOCALE: ${NUXT_PUBLIC_DEFAULT_LOCALE:-zh-CN}
       # 访问统计默认关闭；运行时读取，无需重新构建镜像。
       NUXT_PUBLIC_ANALYTICS_PROVIDER: ${ANALYTICS_PROVIDER:-}
       NUXT_PUBLIC_ANALYTICS_SITE_ID: ${ANALYTICS_SITE_ID:-}

@@ -105,16 +105,17 @@ if (-not (Test-Path ../tixxin-private/production.env)) {
 
 两段命令都不会覆盖已有的环境文件；复制后编辑实际值。
 
-| 配置                                                                                                    | 要求                                                                                                          |
-| ------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------- |
-| `RELEASE_PROJECT`                                                                                       | 独立且稳定的 Compose 项目名；首次安装后不随意改变卷归属                                                       |
-| `RELEASE_VERSION`                                                                                       | 已准备、不可复用的应用版本；预构建镜像填版本号（如 `0.2.0`），自行构建推荐完整 Git SHA                        |
-| `WEB_IMAGE_REPOSITORY`、`API_IMAGE_REPOSITORY`、`MIGRATION_IMAGE_REPOSITORY`、`WORKER_IMAGE_REPOSITORY` | 对应同一版本的镜像仓库；预构建镜像填 GHCR 地址，不带标签                                                      |
-| `POSTGRES_IMAGE`、`CADDY_IMAGE`                                                                         | 本机已有且明确固定的依赖镜像                                                                                  |
-| `POSTGRES_PASSWORD`                                                                                     | 至少 32 位随机十六进制值，避免连接 URL 保留字符问题                                                           |
-| `JWT_ACCESS_SECRET`                                                                                     | 至少 32 位随机签名密钥                                                                                        |
-| `SITE_HOST`、`SITE_URL`                                                                                 | 对外域名与对应 HTTPS origin                                                                                   |
-| `HTTPS_BIND_ADDRESS`、`HTTP_PORT`、`HTTPS_PORT`                                                         | 默认仅绑定本机，外网访问不到、也无法签发证书；直接对外服务时改为 `0.0.0.0` 或公网网卡地址，并配置防火墙和 DNS |
+| 配置                                                                                                    | 要求                                                                                                                                     |
+| ------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
+| `RELEASE_PROJECT`                                                                                       | 独立且稳定的 Compose 项目名；首次安装后不随意改变卷归属                                                                                  |
+| `RELEASE_VERSION`                                                                                       | 已准备、不可复用的应用版本；预构建镜像填版本号（如 `0.2.0`），自行构建推荐完整 Git SHA                                                   |
+| `WEB_IMAGE_REPOSITORY`、`API_IMAGE_REPOSITORY`、`MIGRATION_IMAGE_REPOSITORY`、`WORKER_IMAGE_REPOSITORY` | 对应同一版本的镜像仓库；预构建镜像填 GHCR 地址，不带标签                                                                                 |
+| `POSTGRES_IMAGE`、`CADDY_IMAGE`                                                                         | 本机已有且明确固定的依赖镜像                                                                                                             |
+| `POSTGRES_PASSWORD`                                                                                     | 至少 32 位随机十六进制值，避免连接 URL 保留字符问题                                                                                      |
+| `JWT_ACCESS_SECRET`                                                                                     | 至少 32 位随机签名密钥                                                                                                                   |
+| `SITE_HOST`、`SITE_URL`                                                                                 | 对外域名与对应 HTTPS origin                                                                                                              |
+| `NUXT_PUBLIC_DEFAULT_LOCALE`                                                                            | 站点默认界面语言，`zh-CN`（缺省）或 `en`，其余值按 `zh-CN` 处理；运行时读取，访客可在「界面设置」中切换，选择保存在 `blog-locale` cookie |
+| `HTTPS_BIND_ADDRESS`、`HTTP_PORT`、`HTTPS_PORT`                                                         | 默认仅绑定本机，外网访问不到、也无法签发证书；直接对外服务时改为 `0.0.0.0` 或公网网卡地址，并配置防火墙和 DNS                            |
 
 API 未设置 `NODE_ENV` 时按 `production` 处理：限流生效、刷新 Cookie 带 `Secure`、日志级别缺省 `info`，且 `MEDIA_DIRECTORY` 必须是绝对路径，否则拒绝启动。镜像已设置 `NODE_ENV=production` 与 `MEDIA_DIRECTORY=/app/var/media`。只有显式的 `development`/`test` 才允许通过 `RATE_LIMIT_DISABLED=true` 关闭限流，生产忽略该开关。
 
