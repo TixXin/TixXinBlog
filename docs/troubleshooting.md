@@ -34,6 +34,34 @@ docker compose --env-file "$release_env" -f compose.production.yaml logs --tail=
 
 迁移、恢复、修改配置和重启需分别按对应操作指南核对目标、备份及授权。不要用清库、删卷或切换 Mock 处理服务故障。
 
+一键安装的站点没有仓库检出，环境文件是 `<安装目录>/.env`（默认 `/opt/tixxin-blog/.env`，仅 root 可读）。下文的 Compose 命令把 `release_env` 设为该文件，并在安装目录中用 `sudo` 执行；更常用的是 `tixxin` 管理命令：
+
+```sh
+sudo tixxin status
+sudo tixxin logs edge frontend backend --tail 100
+```
+
+## 一键安装与 tixxin 命令
+
+安装脚本与 `tixxin` 失败时都会保留安装目录、容器与数据卷，并打印失败阶段和排查命令；安装日志位于 `<安装目录>/logs/install-*.log`。先读输出中的「错误：」行，再按下面的条目处理。域名、端口、证书、子网、忘记密码和初始化链接丢失等常见情况见[5 分钟部署的常见问题](quick-start.md#常见问题)。
+
+| 提示或症状                                           | 处理                                                                                                                                                                                 |
+| ---------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| 「需要 root 权限」                                   | 正式安装用 `sudo bash install.sh`；只想在本机体验时用 `--local`                                                                                                                      |
+| 「当前不是交互终端」                                 | 在无终端的环境中改用 `--yes` 并通过参数给出域名等信息，见[非交互安装](quick-start.md#非交互安装)                                                                                     |
+| 「未检测到 Docker」或「缺少 Docker Compose v2」      | 按 Docker 文档安装 Docker Engine 与 Compose 插件，或追加 `--install-docker`                                                                                                          |
+| 域名解析警告、证书无法签发、入口验收未通过           | 见[域名没有解析好](quick-start.md#域名没有解析好)与[证书申请失败](quick-start.md#证书申请失败)，再按下文[HTTPS 证书错误或无法签发](#https-证书错误或无法签发)排查                    |
+| 「端口 80/443 已被占用」                             | 见[端口被占用](quick-start.md#端口被占用)                                                                                                                                            |
+| `Pool overlaps with other one on this address space` | 见[内部子网冲突](quick-start.md#内部子网冲突)                                                                                                                                        |
+| 「安装脚本不会覆盖已有站点」                         | 已有站点用 `sudo tixxin update`；另装一套换用 `--dir`、`--project`，见[提示安装目录或数据卷已存在](quick-start.md#提示安装目录或数据卷已存在)                                        |
+| 安装中途失败，再次安装被拒绝                         | 修复原因后按输出提示执行 `sudo tixxin update <版本>` 继续；首次迁移即失败、还没有数据时可追加 `--skip-backup`                                                                        |
+| 「部署包 SHA256 校验失败」                           | 不要绕过校验；核对下载源是否可信、文件是否完整，重新下载                                                                                                                             |
+| 部署包或镜像下载、拉取失败                           | 检查网络与镜像仓库权限；国内网络见[国内网络](quick-start.md#国内网络)                                                                                                                |
+| 「已有 tixxin 操作在进行」                           | 先确认没有其他升级、回退或备份进程仍在运行，再按提示手动删除 `<安装目录>/.tixxin.lock` 目录；不要在操作进行中删除                                                                    |
+| `tixxin update` 或 `rollback` 未完成                 | 按输出的失败阶段排查；输出会说明站点是否已被修改，并给出对应的 `tixxin rollback <版本> --database-compatible` 命令。应用回退不能代替数据恢复，见[备份与恢复](backup-and-recovery.md) |
+| 忘记博主密码                                         | `sudo tixxin reset-password`，见[忘记密码](quick-start.md#忘记密码)                                                                                                                  |
+| 初始化链接丢失                                       | 见[初始化链接丢失](quick-start.md#初始化链接丢失)                                                                                                                                    |
+
 ## 端口占用或访问了错误的实例
 
 症状包括 `EADDRINUSE`、启动器提示“端口被占用，但无法确认服务归属”，或前端启动后地址与预期不一致。

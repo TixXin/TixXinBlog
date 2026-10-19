@@ -84,6 +84,16 @@ docker 模式核对 loopback 数据库与容器映射。native 模式使用 Post
 
 `worker-owner.json` 保存 owner、任务与创建时间。保留策略只处理名称、归属标记、任务编号、期限和真实路径全部匹配的目录；遇到符号链接、未知目录或其他 owner 时保留。人工历史备份、无标记目录和其他存储根不被自动清理。远端保留策略由远端操作者另外维护。
 
+### 一键安装站点的 `tixxin backup`
+
+一键安装的站点用 `sudo tixxin backup` 做一次手动完整备份，`tixxin update` 与 `tixxin rollback` 在切换前也先执行同一流程。它复用 worker 的原生备份，不另起一套格式：
+
+1. 确认数据库运行中，用本站当前版本的 worker 镜像启动一次性容器，执行 `full-backup.mjs create --mode native`，生成与上文相同的[完整快照](backup-and-recovery.md#创建完整备份)（数据库一致快照与登记媒体），写入 `backups` 数据卷的 `/app/var/backups/backup-manual-<UTC 时间>`。
+2. 再以 `full-backup.mjs verify` 校验同一目录。
+3. 把校验通过的目录复制到宿主机 `<安装目录>/backups/<备份名>`（目录权限 700），数据卷中保留同一份。
+
+这是一次性手动执行：不需要启用 worker 服务，也不登记持久任务，不受 `BACKUP_SCHEDULE_ENABLED`、运行控制暂停、保留策略和传输配置影响。目录没有 `worker-owner.json` 归属标记，保留策略不会清理它，两处副本都由操作者自行转存和清理。备份含私人草稿与密码哈希，应转存到受控位置；需要定时备份与异地传输时，仍按本节配置 worker。恢复步骤见[校验与独立恢复](backup-and-recovery.md#校验与独立恢复)。
+
 ## 备份接收器
 
 `src/backend/server-main/scripts/backup-transfer.mjs` 提供流式接收器，不依赖外部存储服务。配置专用 `BACKUP_RECEIVER_DIRECTORY`、固定 `BACKUP_RECEIVER_OWNER_ID` 与随机 `BACKUP_RECEIVER_TOKEN`；监听主机默认 `127.0.0.1`，端口默认 8091。
