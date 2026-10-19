@@ -98,12 +98,21 @@ jobs:
       - name: Lint
         run: pnpm lint
 
-      # 安装脚本与 tixxin 管理命令；托管机通常已预装 shellcheck，缺失时从 Ubuntu 软件源安装。
+      # 安装脚本与 tixxin 管理命令；固定官方 v0.11.0 并校验，托管机自带的 0.9.0 会把陷阱函数误报为不可达。
       - name: Shell Lint
+        env:
+          SHELLCHECK_VERSION: v0.11.0
+          SHELLCHECK_SHA256: 8c3be12b05d5c177a04c29e3c78ce89ac86f1595681cab149b65b97c4e227198
         run: |
-          command -v shellcheck > /dev/null || { sudo apt-get update && sudo apt-get install -y shellcheck; }
-          shellcheck --version
-          pnpm lint:shell
+          archive="$RUNNER_TEMP/shellcheck.tar.xz"
+          curl -fsSL -o "$archive" "https://github.com/koalaman/shellcheck/releases/download/$SHELLCHECK_VERSION/shellcheck-$SHELLCHECK_VERSION.linux.x86_64.tar.xz"
+          echo "$SHELLCHECK_SHA256  $archive" | sha256sum -c -
+          tar -xJf "$archive" -C "$RUNNER_TEMP"
+          echo "$RUNNER_TEMP/shellcheck-$SHELLCHECK_VERSION" >> "$GITHUB_PATH"
+          "$RUNNER_TEMP/shellcheck-$SHELLCHECK_VERSION/shellcheck" --version
+
+      - name: Run Shell Lint
+        run: pnpm lint:shell
 
       - name: Type Check
         run: pnpm --filter web-blog exec nuxt typecheck
