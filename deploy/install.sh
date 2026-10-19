@@ -605,14 +605,8 @@ print_summary() {
   elif [ "$status" = 200 ]; then
     info '站点已有管理员，无需初始化；后台登录：'"$SITE_URL/admin/login"
   else
-    # 当前版本尚未提供浏览器初始化向导时，沿用命令行初始化方式。
-    info ''
-    info '当前版本未提供浏览器初始化向导，请在服务器上创建博主账号：'
-    info "  cd $INSTALL_DIR"
-    info "  read -rp '登录名：' ADMIN_DEFAULT_USERNAME && export ADMIN_DEFAULT_USERNAME"
-    info "  read -rsp '密码：' ADMIN_DEFAULT_PASSWORD && echo && export ADMIN_DEFAULT_PASSWORD"
-    info '  docker compose run --rm --no-deps -e ADMIN_DEFAULT_USERNAME -e ADMIN_DEFAULT_PASSWORD backend node dist/admin-bootstrap.js'
-    info '  unset ADMIN_DEFAULT_USERNAME ADMIN_DEFAULT_PASSWORD'
+    warn "暂未读取到初始化状态（HTTP ${status:-无响应}）；稍后用 $LINK_HINT status 确认站点就绪后再打开初始化链接"
+    info "  $SITE_URL/setup?token=$token"
   fi
   if [ "$LOCAL_MODE" = 1 ]; then
     info ''

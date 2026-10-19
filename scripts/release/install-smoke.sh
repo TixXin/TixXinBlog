@@ -56,7 +56,7 @@ psql_value() {
   (cd "$site" && docker compose exec -T postgres psql -U tixxin -d tixxin_blog -tAc "$1") | tr -d '[:space:]'
 }
 
-# 阶段 1 合入前接口不存在（404）时只做站点就绪检查；存在时校验 needsSetup。
+# 初始化向导状态必须可读，且 needsSetup 与预期一致；404 或其他状态直接判为失败。
 check_setup_status() {
   local expected=$1 response status body
   response=$(curl_site -w '\n%{http_code}' "$origin/api/v1/setup/status")
@@ -67,7 +67,6 @@ check_setup_status() {
       printf '%s' "$body" | grep -q "\"needsSetup\":$expected" || fail "setup/status 应返回 needsSetup=${expected}：$body"
       log "setup/status needsSetup=$expected"
       ;;
-    404) log 'setup/status 尚不存在（阶段 1 未合入），仅校验站点就绪' ;;
     *) fail "setup/status 返回 $status" ;;
   esac
 }
@@ -90,7 +89,7 @@ install_args=(--local --yes --dir "$site" --version "$version" --download-base "
   --subnet "${SMOKE_SUBNET:-172.31.247.0/24}")
 
 log '首次安装：install.sh --local --yes'
-bash "$work/download/v$version/install.sh" "${install_args[@]}"
+bash "$work/download/v$version/install.sh" "${install_args[@]}" | tee "$work/install.log"
 
 [ "$(stat -c %a "$site/.env" 2> /dev/null || stat -f %Lp "$site/.env")" = 600 ] || fail '.env 权限不是 600'
 grep -Eq '^POSTGRES_PASSWORD=[0-9a-f]{64}$' "$site/.env" || fail '数据库密码格式不符'
@@ -108,11 +107,24 @@ if bash "$work/download/v$version/install.sh" "${install_args[@]}" > "$work/rein
 fi
 grep -q 'tixxin update' "$work/reinstall.log" || fail '拒绝覆盖时未提示 tixxin update'
 
-log '创建管理员作为持久数据标记'
+log '用打印出的令牌走浏览器初始化向导接口'
+setup_token=$(sed -n 's/^SETUP_TOKEN=//p' "$site/.env")
+grep -Fq "$origin/setup?token=$setup_token" "$work/install.log" || fail '安装输出未包含初始化链接'
 smoke_password=$(openssl rand -hex 16)
-(cd "$site" && ADMIN_DEFAULT_USERNAME=smoke-owner ADMIN_DEFAULT_PASSWORD=$smoke_password docker compose run --rm --no-deps -T \
-  -e ADMIN_DEFAULT_USERNAME -e ADMIN_DEFAULT_PASSWORD backend node dist/admin-bootstrap.js)
+setup_body=$(printf '{"token":"%s","username":"smoke-owner","password":"%s","siteName":"Smoke Blog","locale":"zh-CN"}' \
+  "$setup_token" "$smoke_password")
+setup_status=$(curl_site -o "$work/setup.json" -w '%{http_code}' -X POST -H 'Content-Type: application/json' \
+  -H "Origin: $origin" --data "$setup_body" "$origin/api/v1/setup")
+[ "$setup_status" = 201 ] || fail "初始化向导提交返回 ${setup_status}：$(cat "$work/setup.json")"
 check_setup_status false
+reuse_status=$(curl_site -o /dev/null -w '%{http_code}' -X POST -H 'Content-Type: application/json' \
+  -H "Origin: $origin" --data "$setup_body" "$origin/api/v1/setup")
+[ "$reuse_status" = 404 ] || fail "初始化完成后再次提交应返回 404，实际 $reuse_status"
+login_status=$(curl_site -o "$work/login.json" -w '%{http_code}' -X POST -H 'Content-Type: application/json' \
+  -H "Origin: $origin" --data "$(printf '{"username":"smoke-owner","password":"%s"}' "$smoke_password")" \
+  "$origin/api/v1/auth/login")
+[ "$login_status" = 200 ] || fail "新账号登录返回 ${login_status}：$(cat "$work/login.json")"
+log '向导初始化与新账号登录通过'
 admins_before=$(psql_value 'select count(*) from admin_user')
 migrations_before=$(psql_value 'select count(*) from mikro_orm_migrations')
 volume_before=$(docker volume inspect --format '{{.CreatedAt}}' "${project}_database")
