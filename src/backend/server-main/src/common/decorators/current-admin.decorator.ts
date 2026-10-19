@@ -9,11 +9,12 @@ import { createParamDecorator, ExecutionContext, HttpStatus } from '@nestjs/comm
 import { ErrorCode } from '../constants/error-codes'
 import { BusinessException } from '../exceptions/business.exception'
 import type { AuthedRequest } from '../guards/admin-auth.guard'
+import { msg } from '../i18n'
 
 export const CurrentAdmin = createParamDecorator((_data: unknown, ctx: ExecutionContext) => {
   const request = ctx.switchToHttp().getRequest<AuthedRequest>()
   if (!request.adminUser) {
-    throw new BusinessException(ErrorCode.Unauthorized, '未鉴权', HttpStatus.UNAUTHORIZED)
+    throw new BusinessException(ErrorCode.Unauthorized, msg('common.unauthorized'), HttpStatus.UNAUTHORIZED)
   }
   return request.adminUser
 })

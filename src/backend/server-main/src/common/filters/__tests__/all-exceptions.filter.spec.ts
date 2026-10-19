@@ -2,11 +2,14 @@
  * @file all-exceptions.filter.spec.ts
  * @description 异常过滤器回归：未知异常和 5xx 记录堆栈与 traceId，客户端不泄露内部细节
  */
-import { BadRequestException, Logger, ServiceUnavailableException } from '@nestjs/common'
+import { BadRequestException, ConflictException, HttpStatus, Logger, ServiceUnavailableException } from '@nestjs/common'
 import type { ArgumentsHost } from '@nestjs/common'
+import { ErrorCode } from '../../constants/error-codes'
+import { BusinessException } from '../../exceptions/business.exception'
+import { msg } from '../../i18n'
 import { AllExceptionsFilter } from '../all-exceptions.filter'
 
-function invoke(exception: unknown) {
+function invoke(exception: unknown, headers: Record<string, string> = {}) {
   const sent: { status?: number; body?: Record<string, unknown> } = {}
   const response = {
     status(code: number) {
@@ -17,7 +20,7 @@ function invoke(exception: unknown) {
       sent.body = body
     },
   }
-  const request = { method: 'POST', path: '/api/v1/posts', headers: { 'x-trace-id': 'trace-filter-1' } }
+  const request = { method: 'POST', path: '/api/v1/posts', headers: { 'x-trace-id': 'trace-filter-1', ...headers } }
   const host = {
     switchToHttp: () => ({ getResponse: () => response, getRequest: () => request }),
   } as unknown as ArgumentsHost
@@ -64,5 +67,47 @@ describe('AllExceptionsFilter', () => {
     expect(sent.status).toBe(400)
     expect(sent.body?.message).toBe('标题不能为空')
     expect(error).toHaveBeenCalledTimes(1)
+  })
+
+  describe('按 Accept-Language 返回文案', () => {
+    const en = { 'accept-language': 'en' }
+
+    it('不带语言头时字典文案返回中文，en 返回英文', () => {
+      const exception = () => new ServiceUnavailableException(msg('common.databaseNotReady'))
+      expect(invoke(exception()).body?.message).toBe('数据库尚未就绪')
+      expect(invoke(exception(), en).body?.message).toBe('The database is not ready yet')
+      expect(invoke(exception(), { 'accept-language': 'fr' }).body?.message).toBe('数据库尚未就绪')
+    })
+
+    it('BusinessException 保留业务码并翻译', () => {
+      const exception = new BusinessException(
+        ErrorCode.Unauthorized,
+        msg('common.sessionExpired'),
+        HttpStatus.UNAUTHORIZED,
+      )
+      expect(exception.message).toBe('会话已失效，请重新登录')
+      expect(invoke(exception, en)).toMatchObject({
+        status: 401,
+        body: { code: ErrorCode.Unauthorized, message: 'Your session has expired. Please sign in again.' },
+      })
+    })
+
+    it('冲突文案使用字典登记的稳定业务码', () => {
+      const sent = invoke(new ConflictException(msg('common.contentContextChangedEdit')), en)
+      expect(sent.status).toBe(409)
+      expect(sent.body?.code).toBe(ErrorCode.ContentContextChanged)
+      expect(sent.body?.message).toBe(
+        'The site data context has changed. Keep your input and refresh the page before editing.',
+      )
+      expect(invoke(new ConflictException('其他冲突')).body?.code).toBe(ErrorCode.Conflict)
+    })
+
+    it('未带 key 但与字典中文一致的字符串也按语言翻译，未知异常返回英文通用文案', () => {
+      expect(invoke(new BadRequestException(['提交未完成，请稍后重试']), en).body?.message).toBe(
+        'Your submission could not be completed. Please try again later.',
+      )
+      expect(invoke(new BadRequestException('字典外的说明'), en).body?.message).toBe('字典外的说明')
+      expect(invoke(new Error('boom'), en).body?.message).toBe('Internal server error')
+    })
   })
 })

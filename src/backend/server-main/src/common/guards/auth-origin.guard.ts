@@ -5,6 +5,7 @@
 import { CanActivate, ExecutionContext, ForbiddenException, Injectable } from '@nestjs/common'
 import { ConfigService } from '@nestjs/config'
 import type { Request } from 'express'
+import { msg } from '../i18n'
 
 @Injectable()
 export class AuthOriginGuard implements CanActivate {
@@ -22,6 +23,6 @@ export class AuthOriginGuard implements CanActivate {
     } catch {
       /* 非法来源同样拒绝。 */
     }
-    throw new ForbiddenException('不允许跨站认证操作')
+    throw new ForbiddenException(msg('common.crossSiteAuth'))
   }
 }

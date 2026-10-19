@@ -29,6 +29,22 @@ export enum ErrorCode {
   NotFound = 30,
   /** 状态冲突 */
   Conflict = 40,
+  /** 记录版本或状态已变化，需重新读取后合并 */
+  RevisionConflict = 41,
+  /** 站点数据上下文已变化（内容代次轮换） */
+  ContentContextChanged = 42,
+  /** 站点数据已恢复，需要重新读取内容上下文 */
+  ContentContextRestored = 43,
+  /** 提交标识已处理或与原提交不一致 */
+  SubmissionConflict = 44,
+  /** 预览、导入计划或影响范围已变化，需要重新预览 */
+  PreviewStale = 45,
+  /** 执行期间登录会话已失效，操作未执行 */
+  SessionChanged = 46,
+  /** 资源仍被引用，不能删除或移除 */
+  ResourceInUse = 47,
+  /** 名称、地址等唯一值已被占用 */
+  DuplicateResource = 48,
   /** 命中敏感词 */
   SensitiveWord = 50,
   /** 业务规则拒绝 */

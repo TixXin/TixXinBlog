@@ -3,6 +3,7 @@ import { BadRequestException } from '@nestjs/common'
 import type { EntityManager } from '@mikro-orm/postgresql'
 import { CONTENT_RELATION_TYPES } from '../../common/types/content-relation'
 import type { ContentRelation, ContentRelationType } from '../../common/types/content-relation'
+import { msg } from '../../common/i18n'
 
 const relationTables = { post: 'post', project: 'project', gallery: 'gallery_photo' } as const
 interface TargetRow {
@@ -13,7 +14,7 @@ interface TargetRow {
   slug?: string
 }
 export function normalizeContentRelations(value: unknown, source?: ContentRelation): ContentRelation[] {
-  if (!Array.isArray(value) || value.length > 12) throw new BadRequestException('关联内容最多选择12项')
+  if (!Array.isArray(value) || value.length > 12) throw new BadRequestException(msg('common.relationsTooMany'))
   const seen = new Set<string>()
   return value
     .map((item: unknown) => {
@@ -25,9 +26,9 @@ export function normalizeContentRelations(value: unknown, source?: ContentRelati
         relation.id < 1 ||
         relation.id > 2147483647
       )
-        throw new BadRequestException('关联内容类型或编号不合法')
+        throw new BadRequestException(msg('common.relationInvalid'))
       if (source && source.type === relation.type && source.id === relation.id)
-        throw new BadRequestException('内容不能关联自身')
+        throw new BadRequestException(msg('common.relationSelf'))
       return { type: relation.type, id: relation.id }
     })
     .filter((relation) => {
@@ -86,7 +87,7 @@ export async function validateContentRelations(
   const existing = new Set(previous.map((item) => `${item.type}:${item.id}`))
   const targets = await resolveContentRelations(em, next, true)
   if (targets.some((item) => !item.available && !existing.has(`${item.type}:${item.id}`)))
-    throw new BadRequestException('新关联目标不存在或已删除，请重新选择；原有失效关联可以保留或解除')
+    throw new BadRequestException(msg('common.relationTargetMissing'))
   return next
 }
 export async function searchContentRelations(em: EntityManager, type: ContentRelationType, q = '', page = 1) {

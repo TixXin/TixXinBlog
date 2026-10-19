@@ -7,6 +7,7 @@ import { ConfigService } from '@nestjs/config'
 import type { Request, Response } from 'express'
 import { isIP } from 'node:net'
 import { isClientErrorPath } from '../utils/client-error-report'
+import { msg } from '../i18n'
 
 /** 有界固定窗口计数器，可通过时钟注入验证过期和突发请求。 */
 export class RateLimitStore {
@@ -138,6 +139,6 @@ export class RateLimitGuard implements CanActivate {
 
   private reject(context: ExecutionContext, retryAfter: number): never {
     context.switchToHttp().getResponse<Response>().setHeader('Retry-After', String(retryAfter))
-    throw new HttpException('操作过于频繁，请稍后重试', HttpStatus.TOO_MANY_REQUESTS)
+    throw new HttpException(msg('common.rateLimited'), HttpStatus.TOO_MANY_REQUESTS)
   }
 }

@@ -1,6 +1,6 @@
 /**
  * @file all-exceptions.filter.ts
- * @description 全局异常过滤器：所有错误统一包装为 { code, message, data: null, traceId }，服务端异常记录堆栈
+ * @description 全局异常过滤器：所有错误统一包装为 { code, message, data: null, traceId }，message 按请求语言翻译，服务端异常记录堆栈
  * @author TixXin
  * @since 2026-07-20
  */
@@ -10,6 +10,7 @@ import type { Request, Response } from 'express'
 import { redactRequestUrl } from '../../config/logging'
 import { ErrorCode, HTTP_STATUS_TO_ERROR_CODE } from '../constants/error-codes'
 import { BusinessException } from '../exceptions/business.exception'
+import { isLocalizedMessage, messageCode, requestLocale, translate, translateStored } from '../i18n'
 import { getTraceId } from '../utils/trace-id'
 
 @Catch()
@@ -22,26 +23,39 @@ export class AllExceptionsFilter implements ExceptionFilter {
     const request = ctx.getRequest<Request>()
     const traceId = getTraceId(request)
 
+    const locale = requestLocale(request)
     let status: number = HttpStatus.INTERNAL_SERVER_ERROR
     let code: number = ErrorCode.ServerError
-    let message = '服务端异常'
+    let message = translate(locale, 'common.serverError')
 
-    if (exception instanceof BusinessException) {
+    if (exception instanceof HttpException) {
       status = exception.getStatus()
-      code = exception.code
-      message = exception.message
-    } else if (exception instanceof HttpException) {
-      status = exception.getStatus()
-      code = HTTP_STATUS_TO_ERROR_CODE[status] ?? ErrorCode.ServerError
-      // ValidationPipe 的 400 响应把明细放在 response.message 数组里，取首条最有信息量
       const body = exception.getResponse()
-      if (typeof body === 'string') {
-        message = body
-      } else if (typeof body === 'object' && body !== null && 'message' in body) {
-        const raw = (body as { message: string | string[] }).message
-        message = Array.isArray(raw) ? (raw[0] ?? exception.message) : raw
+      if (isLocalizedMessage(body)) {
+        // 业务文案携带 key：按请求语言渲染，并使用字典为该类冲突登记的稳定业务码。
+        message = translate(locale, body.messageKey, body.messageParams)
+        code =
+          exception instanceof BusinessException
+            ? exception.code
+            : (messageCode(body.messageKey) ?? HTTP_STATUS_TO_ERROR_CODE[status] ?? ErrorCode.ServerError)
       } else {
-        message = exception.message
+        code =
+          exception instanceof BusinessException
+            ? exception.code
+            : (HTTP_STATUS_TO_ERROR_CODE[status] ?? ErrorCode.ServerError)
+        // ValidationPipe 的 400 响应把明细放在 response.message 数组里，取首条最有信息量
+        if (exception instanceof BusinessException) {
+          message = exception.message
+        } else if (typeof body === 'string') {
+          message = body
+        } else if (typeof body === 'object' && body !== null && 'message' in body) {
+          const raw = (body as { message: string | string[] }).message
+          message = Array.isArray(raw) ? (raw[0] ?? exception.message) : raw
+        } else {
+          message = exception.message
+        }
+        // 未携带 key 的字符串（DTO 自定义校验、共享领域包等）若与字典中文一致，同样按请求语言显示。
+        message = translateStored(locale, message)
       }
     }
 

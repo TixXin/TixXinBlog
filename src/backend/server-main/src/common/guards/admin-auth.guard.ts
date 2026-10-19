@@ -23,6 +23,7 @@ import { EntityManager } from '@mikro-orm/postgresql'
 import { AdminSession } from '../../entities/admin-session.entity'
 import { isUUID } from 'class-validator'
 import { ContentContext } from '../../entities/content-context.entity'
+import { msg } from '../i18n'
 
 export interface AuthedRequest extends Request {
   adminUser?: { id: string; username: string; sessionVersion: number; sessionId: string }
@@ -39,7 +40,7 @@ export class AdminAuthGuard implements CanActivate {
     const request = context.switchToHttp().getRequest<AuthedRequest>()
     const header = request.headers.authorization
     if (!header?.startsWith('Bearer ')) {
-      throw new BusinessException(ErrorCode.Unauthorized, '未鉴权:缺少 Bearer token', HttpStatus.UNAUTHORIZED)
+      throw new BusinessException(ErrorCode.Unauthorized, msg('common.bearerMissing'), HttpStatus.UNAUTHORIZED)
     }
 
     let payload: AccessTokenPayload
@@ -57,7 +58,7 @@ export class AdminAuthGuard implements CanActivate {
       const expired = error instanceof Error && error.name === 'TokenExpiredError'
       throw new BusinessException(
         expired ? ErrorCode.AccessTokenExpired : ErrorCode.Unauthorized,
-        expired ? 'Access token 已过期' : 'Access token 非法',
+        msg(expired ? 'common.accessTokenExpired' : 'common.accessTokenInvalid'),
         HttpStatus.UNAUTHORIZED,
       )
     }
@@ -69,10 +70,10 @@ export class AdminAuthGuard implements CanActivate {
         { populate: ['adminUser'], refresh: true },
       )
     } catch {
-      throw new ServiceUnavailableException('登录状态暂时无法校验，请稍后重试')
+      throw new ServiceUnavailableException(msg('common.sessionCheckUnavailable'))
     }
     if (!session || session.adminUser.sessionVersion !== payload.version)
-      throw new BusinessException(ErrorCode.Unauthorized, '会话已失效，请重新登录', HttpStatus.UNAUTHORIZED)
+      throw new BusinessException(ErrorCode.Unauthorized, msg('common.sessionExpired'), HttpStatus.UNAUTHORIZED)
     const admin = session.adminUser
     request.adminUser = {
       id: admin.id,
@@ -84,9 +85,9 @@ export class AdminAuthGuard implements CanActivate {
       const content = await this.em.findOneOrFail(ContentContext, { id: 'default' }, { refresh: true })
       const supplied = request.headers['x-content-context']
       if (content.requireContext && !supplied)
-        throw new HttpException('站点数据已恢复，请保留输入并刷新页面后重新读取', HttpStatus.PRECONDITION_REQUIRED)
+        throw new HttpException(msg('common.contentRestored'), HttpStatus.PRECONDITION_REQUIRED)
       if (supplied && supplied !== content.generation)
-        throw new ConflictException('站点数据上下文已变化，请保留输入并刷新页面后再编辑')
+        throw new ConflictException(msg('common.contentContextChangedEdit'))
     }
     return true
   }

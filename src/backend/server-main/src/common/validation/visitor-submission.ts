@@ -1,6 +1,7 @@
 /** @file visitor-submission.ts @description 访客表单的蜜罐与最短填写时间校验，不向业务或持久层传递防垃圾字段。 */
 import { BadRequestException } from '@nestjs/common'
 import { ValidateBy } from 'class-validator'
+import { msg, zh } from '../i18n'
 
 export interface VisitorSubmissionFields {
   website?: string
@@ -10,7 +11,7 @@ export interface VisitorSubmissionFields {
   formRenderedAt?: number
 }
 
-const rejectionMessage = '提交未完成，请稍后重试'
+const rejectionMessage = zh('common.submissionRejected')
 /** 最短填写时间 */
 export const MIN_FORM_ELAPSED_MS = 1000
 /** 合理上限：表单开着超过 30 天视为异常值，前端上报前同样截断到该值 */
@@ -46,7 +47,7 @@ export function validateVisitorSubmission<T extends VisitorSubmissionFields>(
     !validField('formElapsedMs', formElapsedMs) ||
     !validField('formRenderedAt', formRenderedAt)
   ) {
-    throw new BadRequestException(rejectionMessage)
+    throw new BadRequestException(msg('common.submissionRejected'))
   }
   return submission
 }

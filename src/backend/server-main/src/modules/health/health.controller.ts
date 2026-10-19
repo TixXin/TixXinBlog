@@ -10,6 +10,7 @@ import { EntityManager } from '@mikro-orm/postgresql'
 import type { Request } from 'express'
 import { devIdentity } from './dev-identity'
 import { ReadinessState } from './readiness-state'
+import { msg } from '../../common/i18n'
 
 interface HealthStatus {
   status: 'ok'
@@ -44,12 +45,12 @@ export class HealthController {
   /** 检测当前业务必需的 PostgreSQL，连接失败或进程正在关闭时对编排器返回 503。 */
   @Get('ready')
   async ready(): Promise<HealthStatus> {
-    if (this.readiness.isShuttingDown) throw new ServiceUnavailableException('服务正在关闭')
+    if (this.readiness.isShuttingDown) throw new ServiceUnavailableException(msg('common.shuttingDown'))
     try {
       await this.em.getConnection().execute('select 1')
       return this.health()
     } catch {
-      throw new ServiceUnavailableException('数据库尚未就绪')
+      throw new ServiceUnavailableException(msg('common.databaseNotReady'))
     }
   }
 }
