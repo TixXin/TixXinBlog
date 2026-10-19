@@ -11,6 +11,7 @@ import { PostRevisionsService } from '../../../modules/post/post-revisions.servi
 import { MediaService } from '../../../modules/media/media.service'
 import type { MediaStorage } from '../../../modules/media/media-storage'
 import { resolveContentRelations } from '../../../modules/content-relations/content-relations'
+import { GUESTBOOK_RULES, guestbookRules } from '../../../modules/guestbook/guestbook-values'
 
 const REVISION_SCOPE = 'post.revisionReason.'
 
@@ -81,5 +82,19 @@ describe('兜底标题', () => {
     expect(zhItem).toMatchObject({ title: '内容 #41', status: 'missing', available: false })
     const [enItem] = await resolveContentRelations(em as unknown as EntityManager, related, true, 'en')
     expect(enItem).toMatchObject({ title: 'Content #41' })
+  })
+})
+
+describe('留言规则', () => {
+  it('缺省中文不变，英文请求返回英文规则', () => {
+    expect(GUESTBOOK_RULES).toEqual([
+      { id: 1, text: '欢迎分享技术经验、阅读感受和生活见闻。' },
+      { id: 2, text: '请友善交流，尊重不同意见。' },
+      { id: 3, text: '请勿发布个人隐私、广告或与讨论无关的内容。' },
+    ])
+    const english = guestbookRules('en')
+    expect(english.map((rule) => rule.id)).toEqual([1, 2, 3])
+    expect(english[1]!.text).toBe('Be kind and respect different opinions.')
+    expect(english.every((rule) => !/[一-龥]/.test(rule.text))).toBe(true)
   })
 })

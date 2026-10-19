@@ -4,7 +4,7 @@ import type { FilterQuery } from '@mikro-orm/core'
 import type { GuestbookMessage } from '../../entities/guestbook-message.entity'
 import type { GuestbookFilters } from './guestbook.dto'
 import { submissionHash } from '../moment/moment-values'
-import { msg } from '../../common/i18n'
+import { DEFAULT_API_LOCALE, msg, translate, type ApiLocale } from '../../common/i18n'
 export const PUBLIC_GUESTBOOK = { status: 'published' as const, deletedAt: null }
 /** 留言独立公开；只将尚无公开博主直接回复的游客根留言计入待回复。 */
 export function unansweredGuestbookSql(alias = 'g'): string {
@@ -13,11 +13,13 @@ export function unansweredGuestbookSql(alias = 'g'): string {
     and ${alias}.reply_to_id is null and not exists(select 1 from guestbook_message r
     where r.reply_to_id=${alias}.id and r.is_owner and r.status='published' and r.deleted_at is null)`
 }
-export const GUESTBOOK_RULES = [
-  { id: 1, text: '欢迎分享技术经验、阅读感受和生活见闻。' },
-  { id: 2, text: '请友善交流，尊重不同意见。' },
-  { id: 3, text: '请勿发布个人隐私、广告或与讨论无关的内容。' },
-]
+const GUESTBOOK_RULE_KEYS = ['guestbook.rule.share', 'guestbook.rule.respect', 'guestbook.rule.noSpam'] as const
+/** 静态交流规则，按请求语言给出 */
+export function guestbookRules(locale: ApiLocale = DEFAULT_API_LOCALE) {
+  return GUESTBOOK_RULE_KEYS.map((key, index) => ({ id: index + 1, text: translate(locale, key) }))
+}
+/** 中文规则，与未带 Accept-Language 的接口返回一致 */
+export const GUESTBOOK_RULES = guestbookRules()
 export function guestbookId(id: number) {
   if (!Number.isSafeInteger(id) || id < 1 || id > 2147483647) throw new BadRequestException(msg('guestbook.idInvalid'))
   return id

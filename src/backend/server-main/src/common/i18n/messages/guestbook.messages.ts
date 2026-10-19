@@ -8,6 +8,16 @@ import { ErrorCode } from '../../constants/error-codes'
 import { defineMessages } from './types'
 
 export const guestbookMessages = defineMessages({
+  // 留言板侧栏的静态交流规则，按请求语言返回
+  'guestbook.rule.share': {
+    zh: '欢迎分享技术经验、阅读感受和生活见闻。',
+    en: 'Feel free to share technical experience, reading notes, and stories from everyday life.',
+  },
+  'guestbook.rule.respect': { zh: '请友善交流，尊重不同意见。', en: 'Be kind and respect different opinions.' },
+  'guestbook.rule.noSpam': {
+    zh: '请勿发布个人隐私、广告或与讨论无关的内容。',
+    en: 'Do not post personal information, advertising, or off-topic content.',
+  },
   'guestbook.notFound': { zh: '留言不存在', en: 'Message not found' },
   'guestbook.notFoundOrHidden': { zh: '留言不存在或暂不可见', en: 'Message not found or currently not visible' },
   'guestbook.notFoundOrPrivate': { zh: '留言不存在或尚未公开', en: 'Message not found or not yet published' },

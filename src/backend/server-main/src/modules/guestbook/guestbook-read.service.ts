@@ -13,10 +13,10 @@ import {
   encodeGuestbookCursor,
   decodeGuestbookCursor,
   guestbookId,
-  GUESTBOOK_RULES,
+  guestbookRules,
   unansweredGuestbookSql,
 } from './guestbook-values'
-import { msg } from '../../common/i18n'
+import { DEFAULT_API_LOCALE, msg, type ApiLocale } from '../../common/i18n'
 
 @Injectable()
 export class GuestbookReadService {
@@ -123,7 +123,7 @@ export class GuestbookReadService {
       }
     })
   }
-  async metadata(visitor = '') {
+  async metadata(visitor = '', locale: ApiLocale = DEFAULT_API_LOCALE) {
     const [stats] = await this.em.execute<{ messages: number; members: number; recent: number; today: number }[]>(
       `select count(*)::int as messages,count(distinct case when is_owner then '__owner__' else visitor_id_hash end)::int as members,count(*) filter(where created_at>=now()-interval '30 days')::int as recent,count(*) filter(where (created_at at time zone 'UTC')::date=(now() at time zone 'UTC')::date)::int as today from guestbook_message where status='published' and deleted_at is null`,
     )
@@ -150,7 +150,7 @@ export class GuestbookReadService {
         messageCount: row.count,
         isOwner: row.is_owner,
       })),
-      rules: GUESTBOOK_RULES,
+      rules: guestbookRules(locale),
     }
   }
 }

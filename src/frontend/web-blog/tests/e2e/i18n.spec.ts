@@ -1,4 +1,4 @@
-/** @file i18n.spec.ts @description 界面语言：切换就地生效并由 cookie 持久化，SSR 缓存不串语言，站点默认语言来自部署变量 */
+/** @file i18n.spec.ts @description 界面语言：切换就地生效并由 cookie 持久化，SSR 缓存不串语言，站点默认语言来自部署变量，后端错误与展示文字随界面语言 */
 import { expect, test } from '@playwright/test'
 import type { APIRequestContext, Browser, BrowserContext, Page } from '@playwright/test'
 
@@ -215,4 +215,33 @@ test('英文界面下后端错误显示为英文，中文界面与不带语言�
   expect(await chinese.json()).toMatchObject({ message: siteDefaultLocale === 'en' ? 'Post not found' : '文章不存在' })
   await anonymous.close()
   expect(issues).toEqual([])
+})
+
+test('后端给页面展示的静态文字按界面语言返回：留言板交流规则', async ({ browser, baseURL }) => {
+  const metadata = '/api/v1/guestbook/metadata'
+  const english = await contextWithLocale(browser, baseURL!, 'en')
+  try {
+    const page = await english.newPage()
+    const issues = watchIssues(page)
+    const response = await page.request.get(metadata)
+    expect(response.status()).toBe(200)
+    const rules = ((await response.json()).data.rules as { id: number; text: string }[]).map((rule) => rule.text)
+    expect(rules).toContain('Be kind and respect different opinions.')
+    expect(rules.join('')).not.toMatch(/[一-龥]/)
+    await page.goto('/guestbook')
+    await expect(page.locator('html')).toHaveClass(/app-client-ready/)
+    await expect(page.getByText('Be kind and respect different opinions.', { exact: true })).toBeVisible()
+    await expect(page.getByText('请友善交流，尊重不同意见。', { exact: true })).toHaveCount(0)
+    expect(issues).toEqual([])
+  } finally {
+    await english.close()
+  }
+  // 中文界面与不带语言的请求仍为中文规则。
+  const chinese = await contextWithLocale(browser, baseURL!, 'zh-CN')
+  try {
+    const rules = (await (await chinese.request.get(metadata)).json()).data.rules as { text: string }[]
+    expect(rules.map((rule) => rule.text)).toContain('请友善交流，尊重不同意见。')
+  } finally {
+    await chinese.close()
+  }
 })

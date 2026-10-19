@@ -7,6 +7,8 @@ import { validateVisitorSubmission } from '../../common/validation/visitor-submi
 import { CreateGuestbookDto, QueryGuestbookDto, SetGuestbookReactionDto } from './guestbook.dto'
 import { GuestbookReadService } from './guestbook-read.service'
 import { GuestbookWriteService } from './guestbook-write.service'
+import { RequestLocale } from '../../common/decorators/request-locale.decorator'
+import type { ApiLocale } from '../../common/i18n'
 @Controller('guestbook')
 export class GuestbookController {
   constructor(
@@ -16,8 +18,8 @@ export class GuestbookController {
   @Get() list(@Query() query: QueryGuestbookDto, @VisitorIdHash({ optional: true }) visitor: string) {
     return this.read.list(query, visitor)
   }
-  @Get('metadata') metadata(@VisitorIdHash({ optional: true }) visitor: string) {
-    return this.read.metadata(visitor)
+  @Get('metadata') metadata(@VisitorIdHash({ optional: true }) visitor: string, @RequestLocale() locale: ApiLocale) {
+    return this.read.metadata(visitor, locale)
   }
   @Get(':id') detail(@Param('id', ParseIntPipe) id: number, @VisitorIdHash({ optional: true }) visitor: string) {
     return this.read.detail(id, visitor)
