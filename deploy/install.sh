@@ -35,6 +35,16 @@ DIR_CREATED=0
 LOG_FILE=''
 
 info() { printf '%s\n' "$*"; }
+
+# 经 sudo 安装时 .env 归 root（600），之后的管理命令同样需要 sudo
+admin_prefix() {
+  if [ "$(id -u)" = 0 ] && [ -n "${SUDO_USER:-}" ] && [ "$SUDO_USER" != root ]; then printf 'sudo '; fi
+}
+
+# 本机试用以普通用户运行时默认装到家目录，/opt 通常不可写
+default_dir() {
+  if [ "$LOCAL_MODE" = 1 ] && [ "$(id -u)" != 0 ] && [ -n "${HOME:-}" ]; then printf '%s' "$HOME/tixxin-blog"; else printf '%s' "$DEFAULT_DIR"; fi
+}
 step() { printf '\n==> %s\n' "$*"; }
 warn() { printf '警告：%s\n' "$*" >&2; }
 fail() {
@@ -57,7 +67,7 @@ usage() {
   --yes                 非交互：不询问，使用参数与默认值（正式安装须同时给出 --domain）
   --domain 域名         站点域名，例如 blog.example.com
   --locale zh-CN|en     站点默认语言（默认 zh-CN）
-  --dir 目录            安装目录（默认 ${DEFAULT_DIR}）
+  --dir 目录            安装目录（默认 ${DEFAULT_DIR}；普通用户 --local 时默认 ~/tixxin-blog）
   --version 版本        安装的固定版本（默认：本脚本所属的发布版本）
   --registry 前缀       替换镜像前缀 ghcr.io/<所有者>/<仓库>，例如 registry.example.com/tixxin/tixxinblog
   --download-base 地址  替换部署包下载源（https:// 或 file://），文件位于 <地址>/v<版本>/
@@ -338,7 +348,7 @@ collect_settings() {
   fi
   case $LOCALE in zh-CN | en) ;; *) fail '--locale 只能为 zh-CN 或 en' ;; esac
   if [ -z "$INSTALL_DIR" ]; then
-    if [ "$ASSUME_YES" = 1 ]; then INSTALL_DIR=$DEFAULT_DIR; else INSTALL_DIR=$(ask '安装目录' "$DEFAULT_DIR"); fi
+    if [ "$ASSUME_YES" = 1 ]; then INSTALL_DIR=$(default_dir); else INSTALL_DIR=$(ask '安装目录' "$(default_dir)"); fi
   fi
   case $INSTALL_DIR in /*) ;; *) INSTALL_DIR=$(pwd -P)/$INSTALL_DIR ;; esac
   INSTALL_DIR=${INSTALL_DIR%/}
@@ -569,16 +579,18 @@ on_exit() {
   [ -z "$WORK_DIR" ] || rm -rf "$WORK_DIR"
   [ "$code" = 0 ] && return 0
   [ "$DIR_CREATED" = 1 ] || return 0
+  local sudo_hint
+  sudo_hint=$(admin_prefix)
   {
     info ''
     info '安装未完成。已保留安装目录、容器与数据卷，未删除任何数据。'
     [ -z "$LOG_FILE" ] || info "安装日志：$LOG_FILE"
     info '排查命令：'
-    info "  $INSTALL_DIR/deploy/tixxin status"
-    info "  $INSTALL_DIR/deploy/tixxin logs backend"
-    info "  $INSTALL_DIR/deploy/tixxin logs edge"
-    info "  cd $INSTALL_DIR && docker compose ps -a"
-    info '修复后可执行 tixxin update '"$VERSION"' 继续（会先完整备份；首次迁移即失败时可追加 --skip-backup）。'
+    info "  ${sudo_hint}$INSTALL_DIR/deploy/tixxin status"
+    info "  ${sudo_hint}$INSTALL_DIR/deploy/tixxin logs backend"
+    info "  ${sudo_hint}$INSTALL_DIR/deploy/tixxin logs edge"
+    info "  cd $INSTALL_DIR && ${sudo_hint}docker compose ps -a"
+    info '修复后可执行 '"${sudo_hint}"'tixxin update '"$VERSION"' 继续（会先完整备份；首次迁移即失败时可追加 --skip-backup）。'
   } >&2
 }
 
@@ -605,7 +617,7 @@ print_summary() {
   elif [ "$status" = 200 ]; then
     info '站点已有管理员，无需初始化；后台登录：'"$SITE_URL/admin/login"
   else
-    warn "暂未读取到初始化状态（HTTP ${status:-无响应}）；稍后用 $LINK_HINT status 确认站点就绪后再打开初始化链接"
+    warn "暂未读取到初始化状态（HTTP ${status:-无响应}）；稍后用 $(admin_prefix)$LINK_HINT status 确认站点就绪后再打开初始化链接"
     info "  $SITE_URL/setup?token=$token"
   fi
   if [ "$LOCAL_MODE" = 1 ]; then
@@ -615,7 +627,7 @@ print_summary() {
   fi
   info ''
   info "请备份 $INSTALL_DIR/.env：其中的数据库密码与签名密钥丢失后无法恢复站点。"
-  info "日常管理：$LINK_HINT status | backup | update | logs | help"
+  info "日常管理：$(admin_prefix)$LINK_HINT status | backup | update | logs | help"
 }
 
 main() {
