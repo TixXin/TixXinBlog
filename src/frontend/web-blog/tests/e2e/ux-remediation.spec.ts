@@ -428,12 +428,7 @@ for (const fromLastPage of [false, true]) {
       await page.getByRole('button', { name: String(pageCount), exact: true }).click()
       await expect(cards).toHaveCount(total - (pageCount - 1) * 15)
     }
-    await page.getByRole('button', { name: '连续加载', exact: true }).click()
-    await expect(page.getByRole('button', { name: '连续加载', exact: true })).toHaveAttribute('aria-pressed', 'true')
-    // 切到连续模式会换用另一套列表容器重建卡片；等新卡片（带 data-index）就位后再取节点，避免拿到被替换的旧卡片
-    await expect(page.locator('.post-list > [data-index]')).toHaveCount(15)
-    await expect(cards).toHaveCount(15)
-    const first = await cards.evaluateAll((nodes) => nodes.map((node) => node.getAttribute('href')))
+    // 故障注入须在切换前就位：切到连续模式后列表可能立即预取第 2 页，晚装拦截会漏掉这次请求
     let failed = false
     await page.route('**/api/v1/posts?**', async (route) => {
       if (!failed && new URL(route.request().url()).searchParams.get('page') === '2') {
@@ -441,6 +436,12 @@ for (const fromLastPage of [false, true]) {
         await route.abort()
       } else await route.continue()
     })
+    await page.getByRole('button', { name: '连续加载', exact: true }).click()
+    await expect(page.getByRole('button', { name: '连续加载', exact: true })).toHaveAttribute('aria-pressed', 'true')
+    // 切到连续模式会换用另一套列表容器重建卡片；等新卡片（带 data-index）就位后再取节点，避免拿到被替换的旧卡片
+    await expect(page.locator('.post-list > [data-index]')).toHaveCount(15)
+    await expect(cards).toHaveCount(15)
+    const first = await cards.evaluateAll((nodes) => nodes.map((node) => node.getAttribute('href')))
     await cards.last().scrollIntoViewIfNeeded()
     await expect(page.getByRole('alert').filter({ hasText: '文章加载失败' })).toBeVisible()
     expect(await cards.evaluateAll((nodes) => nodes.map((node) => node.getAttribute('href')))).toEqual(first)
