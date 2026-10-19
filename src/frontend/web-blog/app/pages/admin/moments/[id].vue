@@ -32,5 +32,10 @@
 <script setup lang="ts">
 definePageMeta({ layout: 'admin' })
 const editor = useAdminMomentEditor(String(useRoute().params.id))
-useSeoMeta({ title: () => (editor.id.value ? '编辑动态' : '发布动态'), robots: 'noindex, nofollow' })
+const { t } = useI18n()
+useSeoMeta({
+  title: () =>
+    editor.id.value ? t('admin-content.momentEditor.editTitle') : t('admin-content.momentEditor.createTitle'),
+  robots: 'noindex, nofollow',
+})
 </script>

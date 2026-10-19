@@ -8,6 +8,7 @@ export function useAdminFlashes() {
   const api = useAdminApi()
   const auth = useCurrentUser()
   const { success } = useToast()
+  const { t } = useI18n()
   const route = useRoute()
   const router = useRouter()
   const read = (key: string) => (typeof route.query[key] === 'string' ? (route.query[key] as string) : '')
@@ -38,18 +39,14 @@ export function useAdminFlashes() {
     commentTargetId.value &&
     commentNote.value &&
     !commentNote.value.comments.some((item) => item.id === commentTargetId.value)
-      ? '目标评论不存在或已删除。'
+      ? t('admin-content.flashes.commentMissing')
       : '',
   )
   const contentContext = useState<string>('page-content-context', () => '')
   let commentsVersion = 0
   let version = 0
-  function message(cause: unknown, fallback: string) {
-    const value = (cause as { data?: { message?: unknown } }).data?.message
-    return typeof value === 'string' ? value : fallback
-  }
   function canDiscard() {
-    return !dirty.value || window.confirm('闪念有尚未保存的内容，确定放弃吗？')
+    return !dirty.value || window.confirm(t('admin-content.flashes.discardConfirm'))
   }
   async function load() {
     const current = ++version
@@ -73,7 +70,7 @@ export function useAdminFlashes() {
     } catch (cause) {
       if (current === version) {
         items.value = []
-        error.value = message(cause, '闪念列表加载失败，请重试')
+        error.value = apiErrorMessage(cause, 'admin-content.flashes.loadFailed')
       }
     } finally {
       if (current === version) pending.value = false
@@ -108,7 +105,7 @@ export function useAdminFlashes() {
       dirty.value = false
       editorOpen.value = true
     } catch (cause) {
-      error.value = message(cause, '闪念读取失败，原编辑内容已保留')
+      error.value = apiErrorMessage(cause, 'admin-content.flashes.readFailed')
     } finally {
       working.value = false
     }
@@ -140,10 +137,10 @@ export function useAdminFlashes() {
       dirty.value = false
       editorOpen.value = false
       editing.value = null
-      success(input.isDraft ? '闪念草稿已保存' : '闪念已发布')
+      success(input.isDraft ? t('admin-content.flashes.draftSaved') : t('admin-content.flashes.published'))
       await load()
     } catch (cause) {
-      editorError.value = message(cause, '保存失败，输入已保留，请重试')
+      editorError.value = apiErrorMessage(cause, 'admin-content.flashes.saveFailed')
     } finally {
       working.value = false
     }
@@ -151,23 +148,11 @@ export function useAdminFlashes() {
   async function update(note: FlashNote, action: 'pin' | 'archive' | 'restore' | 'withdraw' | 'publish') {
     if (working.value || pending.value) return
     if (dirty.value) {
-      error.value = '请先保存或取消当前编辑，再操作列表状态'
+      error.value = t('admin-content.flashes.finishEditingFirst')
       return
     }
-    const labels = {
-      pin: note.isPinned ? '取消置顶' : '置顶',
-      archive: '归档',
-      restore: '恢复为草稿',
-      withdraw: '撤回为草稿',
-      publish: '发布',
-    }
-    if (
-      action !== 'pin' &&
-      !window.confirm(
-        `确定${labels[action]}这条闪念？${action === 'restore' || action === 'withdraw' ? '草稿不会公开。' : ''}`,
-      )
-    )
-      return
+    const done = action === 'pin' ? (note.isPinned ? 'unpin' : 'pin') : action
+    if (action !== 'pin' && !window.confirm(t(`admin-content.flashes.confirm.${action}`))) return
     working.value = true
     error.value = ''
     const body =
@@ -184,10 +169,10 @@ export function useAdminFlashes() {
         editorOpen.value = false
         editing.value = null
       }
-      success(`已${labels[action]}`)
+      success(t(`admin-content.flashes.done.${done}`))
       await load()
     } catch (cause) {
-      error.value = message(cause, '操作失败，请重试')
+      error.value = apiErrorMessage(cause, 'admin-content.flashes.operationFailed')
     } finally {
       working.value = false
     }
@@ -212,23 +197,23 @@ export function useAdminFlashes() {
       const result = await api<FlashNote>(`/admin/flashes/${encodeURIComponent(note.id)}`)
       if (owns()) commentNote.value = result
     } catch (cause) {
-      if (owns()) error.value = message(cause, '闪念或评论读取失败，内容可能已删除，请重试')
+      if (owns()) error.value = apiErrorMessage(cause, 'admin-content.flashes.commentsLoadFailed')
     } finally {
       working.value = false
     }
   }
   async function removeComment(id: string) {
     const note = commentNote.value
-    if (!note || working.value || !window.confirm('永久删除这条闪念评论？无法恢复，闪念正文保留。')) return
+    if (!note || working.value || !window.confirm(t('admin-content.flashes.removeCommentConfirm'))) return
     working.value = true
     error.value = ''
     try {
       await api(`/admin/flashes/${note.id}/comments/${id}`, { method: 'DELETE' })
       commentNote.value = await api<FlashNote>(`/admin/flashes/${note.id}`)
-      success('评论已删除')
+      success(t('admin-content.flashes.commentRemoved'))
       await load()
     } catch (cause) {
-      error.value = message(cause, '评论删除或刷新失败，请重新查看评论')
+      error.value = apiErrorMessage(cause, 'admin-content.flashes.commentRemoveFailed')
     } finally {
       working.value = false
     }

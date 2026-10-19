@@ -6,33 +6,45 @@
   <section class="admin-flashes">
     <header>
       <div>
-        <h1>闪念管理</h1>
-        <p>记录灵感，管理草稿与公开内容。</p>
+        <h1>{{ $t('admin-content.flashes.title') }}</h1>
+        <p>{{ $t('admin-content.flashes.intro') }}</p>
       </div>
       <button type="button" :disabled="working || !editorReady" @click="openEditor()">
-        <Icon name="lucide:plus" />新建闪念
+        <Icon name="lucide:plus" />{{ $t('admin-content.flashes.create') }}
       </button>
     </header>
     <ClientOnly>
       <form class="admin-flashes__filters" @submit.prevent="resetPage">
-        <input v-model="search" aria-label="搜索闪念" placeholder="搜索闪念内容" maxlength="128" /><select
-          v-model="status"
-          aria-label="闪念状态"
-          @change="resetPage"
-        >
-          <option value="all">全部状态</option>
-          <option value="published">已发布</option>
-          <option value="draft">草稿</option>
-          <option value="archived">已归档</option></select
-        ><button :aria-busy="pending" type="submit" :disabled="pending">搜索</button>
+        <input
+          v-model="search"
+          :aria-label="$t('admin-content.flashes.searchLabel')"
+          :placeholder="$t('admin-content.flashes.searchPlaceholder')"
+          maxlength="128"
+        /><select v-model="status" :aria-label="$t('admin-content.flashes.statusLabel')" @change="resetPage">
+          <option value="all">{{ $t('admin-content.flashes.statusAll') }}</option>
+          <option value="published">{{ $t('admin-content.flashes.status.published') }}</option>
+          <option value="draft">{{ $t('admin-content.flashes.status.draft') }}</option>
+          <option value="archived">{{ $t('admin-content.flashes.status.archived') }}</option></select
+        ><button :aria-busy="pending" type="submit" :disabled="pending">
+          {{ $t('admin-content.flashes.search') }}
+        </button>
       </form>
       <p v-if="error" role="alert">
-        {{ error }} <button type="button" :disabled="pending || working" @click="retryRead">重新加载</button>
+        {{ error }}
+        <button type="button" :disabled="pending || working" @click="retryRead">
+          {{ $t('admin-content.flashes.retry') }}
+        </button>
       </p>
-      <p v-if="pending" role="status">正在加载闪念…</p>
-      <section v-if="editorOpen" ref="editorPanel" tabindex="-1" class="admin-flashes__panel" aria-label="闪念编辑">
-        <h2>{{ editing ? '编辑闪念' : '新建闪念' }}</h2>
-        <p v-if="editing?.isArchived">保存草稿或发布后将移出归档。</p>
+      <p v-if="pending" role="status">{{ $t('admin-content.flashes.loading') }}</p>
+      <section
+        v-if="editorOpen"
+        ref="editorPanel"
+        tabindex="-1"
+        class="admin-flashes__panel"
+        :aria-label="$t('admin-content.flashes.editorLabel')"
+      >
+        <h2>{{ editing ? $t('admin-content.flashes.editTitle') : $t('admin-content.flashes.create') }}</h2>
+        <p v-if="editing?.isArchived">{{ $t('admin-content.flashes.archivedHint') }}</p>
         <p v-if="editorError" role="alert">{{ editorError }}</p>
         <FlashEditor
           :key="editorKey"
@@ -42,20 +54,24 @@
           @submit="save"
           @dirty="dirty = $event"
         />
-        <button type="button" :disabled="working" @click="closeEditor">取消编辑</button>
+        <button type="button" :disabled="working" @click="closeEditor">
+          {{ $t('admin-content.flashes.cancelEdit') }}
+        </button>
       </section>
       <section
         v-if="commentNote"
         ref="commentsPanel"
         tabindex="-1"
         class="admin-flashes__panel"
-        aria-label="闪念评论管理"
+        :aria-label="$t('admin-content.flashes.commentsLabel')"
       >
-        <h2>闪念评论（{{ commentNote.comments.length }}）</h2>
+        <h2>{{ $t('admin-content.flashes.commentsTitle', { count: commentNote.comments.length }) }}</h2>
         <p class="admin-flashes__content">{{ commentNote.content }}</p>
-        <button type="button" :disabled="working" @click="commentNote = null">关闭评论</button>
-        <NuxtLink to="/admin/flash-comments">审核闪念评论</NuxtLink>
-        <p v-if="!commentNote.comments.length">暂无评论</p>
+        <button type="button" :disabled="working" @click="commentNote = null">
+          {{ $t('admin-content.flashes.closeComments') }}
+        </button>
+        <NuxtLink to="/admin/flash-comments">{{ $t('admin-content.flashes.moderateComments') }}</NuxtLink>
+        <p v-if="!commentNote.comments.length">{{ $t('admin-content.flashes.noComments') }}</p>
         <p v-if="commentTargetMessage" role="status">{{ commentTargetMessage }}</p>
         <ul>
           <li
@@ -66,27 +82,37 @@
             :tabindex="commentTargetId === comment.id ? -1 : undefined"
           >
             <strong>{{ comment.authorName }}</strong
-            ><time>{{ formatDate(comment.createdAt) }}</time>
-            <span> · {{ commentLabels[comment.moderationStatus ?? 'published'] }}</span>
+            ><time>{{ formatTime(comment.createdAt) }}</time>
+            <span> · {{ $t(`admin-content.flashes.commentStatus.${comment.moderationStatus ?? 'published'}`) }}</span>
             <p>{{ comment.content }}</p>
-            <button type="button" :disabled="working" @click="removeComment(comment.id)">删除评论</button>
+            <button type="button" :disabled="working" @click="removeComment(comment.id)">
+              {{ $t('admin-content.flashes.removeComment') }}
+            </button>
           </li>
         </ul>
       </section>
-      <p v-if="!pending && !error && !items.length">当前条件下暂无闪念</p>
+      <p v-if="!pending && !error && !items.length">{{ $t('admin-content.flashes.empty') }}</p>
       <ul class="admin-flashes__list">
         <li v-for="note in items" :key="note.id">
           <div class="admin-flashes__meta">
-            <span>{{ note.isArchived ? '已归档' : note.isDraft ? '草稿' : '已发布' }}</span
-            ><span v-if="note.isPinned"><Icon name="lucide:pin" />已置顶</span
-            ><time>{{ formatDate(note.updatedAt) }}</time>
+            <span>{{
+              note.isArchived
+                ? $t('admin-content.flashes.status.archived')
+                : note.isDraft
+                  ? $t('admin-content.flashes.status.draft')
+                  : $t('admin-content.flashes.status.published')
+            }}</span
+            ><span v-if="note.isPinned"><Icon name="lucide:pin" />{{ $t('admin-content.flashes.pinned') }}</span
+            ><time>{{ formatTime(note.updatedAt) }}</time>
           </div>
           <p class="admin-flashes__content">{{ note.content }}</p>
           <p class="admin-flashes__tags">{{ note.tags.map((tag) => `#${tag}`).join(' ') }}</p>
           <div class="admin-flashes__actions">
-            <button type="button" :disabled="working || !editorReady" @click="openEditor(note)">编辑</button>
+            <button type="button" :disabled="working || !editorReady" @click="openEditor(note)">
+              {{ $t('admin-content.flashes.edit') }}
+            </button>
             <button type="button" :disabled="working || pending" @click="update(note, 'pin')">
-              {{ note.isPinned ? '取消置顶' : '置顶' }}
+              {{ note.isPinned ? $t('admin-content.flashes.unpin') : $t('admin-content.flashes.pin') }}
             </button>
             <button
               v-if="note.isArchived"
@@ -94,7 +120,7 @@
               :disabled="working || pending"
               @click="update(note, 'restore')"
             >
-              恢复为草稿
+              {{ $t('admin-content.flashes.restore') }}
             </button>
             <template v-else
               ><button
@@ -102,29 +128,37 @@
                 :disabled="working || pending"
                 @click="update(note, note.isDraft ? 'publish' : 'withdraw')"
               >
-                {{ note.isDraft ? '发布' : '撤回为草稿' }}</button
+                {{ note.isDraft ? $t('admin-content.flashes.publish') : $t('admin-content.flashes.withdraw') }}</button
               ><button type="button" :disabled="working || pending" @click="update(note, 'archive')">
-                归档
+                {{ $t('admin-content.flashes.archive') }}
               </button></template
             >
             <button type="button" :disabled="working" @click="showComments(note)">
-              管理评论（{{ note.comments.length }}）
+              {{ $t('admin-content.flashes.manageComments', { count: note.comments.length }) }}
             </button>
-            <NuxtLink v-if="!note.isDraft && !note.isArchived" :to="`/flash/${note.id}`">查看公开内容</NuxtLink>
+            <NuxtLink v-if="!note.isDraft && !note.isArchived" :to="`/flash/${note.id}`">{{
+              $t('admin-content.flashes.viewPublic')
+            }}</NuxtLink>
           </div>
         </li>
       </ul>
       <footer>
-        <button type="button" :disabled="pending || page <= 1" @click="changePage(page - 1)">上一页</button
-        ><span>{{ page }} / {{ Math.max(1, Math.ceil(total / 20)) }} · 共 {{ total }} 条</span
-        ><button type="button" :disabled="pending || page * 20 >= total" @click="changePage(page + 1)">下一页</button>
+        <button type="button" :disabled="pending || page <= 1" @click="changePage(page - 1)">
+          {{ $t('admin-content.flashes.prevPage') }}</button
+        ><span>{{
+          $t('admin-content.flashes.pageStatus', { page, pages: Math.max(1, Math.ceil(total / 20)), total })
+        }}</span
+        ><button type="button" :disabled="pending || page * 20 >= total" @click="changePage(page + 1)">
+          {{ $t('admin-content.flashes.nextPage') }}
+        </button>
       </footer>
     </ClientOnly>
   </section>
 </template>
 <script setup lang="ts">
 definePageMeta({ layout: 'admin' })
-useSeoMeta({ title: '闪念管理', robots: 'noindex, nofollow' })
+const { t } = useI18n()
+useSeoMeta({ title: () => t('admin-content.flashes.title'), robots: 'noindex, nofollow' })
 const {
   status,
   search,
@@ -168,9 +202,8 @@ watch(commentNote, async () => {
   target?.focus({ preventScroll: true })
   target?.scrollIntoView({ block: 'center', behavior: 'instant' })
 })
-const commentLabels = { published: '已公开', pending: '待审核', hidden: '已隐藏' }
-function formatDate(value: string) {
-  return new Date(value).toLocaleString('zh-CN', { hour12: false })
+function formatTime(value: string) {
+  return formatDateTime(value, { hour12: false })
 }
 </script>
 <style scoped lang="scss">

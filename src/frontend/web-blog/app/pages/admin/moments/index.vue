@@ -3,57 +3,73 @@
   <section class="admin-moments">
     <header>
       <div>
-        <h1>朋友圈管理</h1>
-        <p>管理公开动态、草稿、归档及互动。</p>
+        <h1>{{ $t('admin-content.moments.title') }}</h1>
+        <p>{{ $t('admin-content.moments.intro') }}</p>
       </div>
-      <NuxtLink to="/admin/moments/new">发布新动态</NuxtLink>
+      <NuxtLink to="/admin/moments/new">{{ $t('admin-content.moments.create') }}</NuxtLink>
     </header>
     <ClientOnly>
       <template v-if="isLoggedIn">
         <form class="admin-moments__filters" @submit.prevent="applyFilters">
-          <input v-model="search" aria-label="搜索动态" maxlength="200" placeholder="搜索内容或地点" />
-          <input v-model="topic" aria-label="筛选动态话题" maxlength="40" placeholder="话题" />
-          <label>发布日期（UTC）<input v-model="date" type="date" aria-label="筛选动态日期" /></label>
-          <select v-model="status" aria-label="筛选动态状态">
-            <option value="all">全部状态</option>
-            <option value="published">已发布</option>
-            <option value="draft">草稿</option>
-            <option value="archived">已归档</option>
+          <input
+            v-model="search"
+            :aria-label="$t('admin-content.moments.searchLabel')"
+            maxlength="200"
+            :placeholder="$t('admin-content.moments.searchPlaceholder')"
+          />
+          <input
+            v-model="topic"
+            :aria-label="$t('admin-content.moments.topicLabel')"
+            maxlength="40"
+            :placeholder="$t('admin-content.moments.topicPlaceholder')"
+          />
+          <label
+            >{{ $t('admin-content.moments.dateLabel')
+            }}<input v-model="date" type="date" :aria-label="$t('admin-content.moments.dateFilterLabel')"
+          /></label>
+          <select v-model="status" :aria-label="$t('admin-content.moments.statusFilterLabel')">
+            <option value="all">{{ $t('admin-content.moments.statusAll') }}</option>
+            <option value="published">{{ $t('admin-content.moments.status.published') }}</option>
+            <option value="draft">{{ $t('admin-content.moments.status.draft') }}</option>
+            <option value="archived">{{ $t('admin-content.moments.status.archived') }}</option>
           </select>
-          <button type="submit">筛选</button>
+          <button type="submit">{{ $t('admin-content.moments.filter') }}</button>
         </form>
         <CommonRequestFeedback
           v-if="pending || error"
           :pending="pending"
           :compact="items.length > 0"
-          :title="error || '正在加载动态'"
+          :title="error || $t('admin-content.moments.loading')"
           @retry="load"
         />
-        <p v-if="!pending && !error && !items.length">当前条件下暂无动态。</p>
+        <p v-if="!pending && !error && !items.length">{{ $t('admin-content.moments.empty') }}</p>
         <CommonRequestFeedback
           v-if="commentsLinkPending || commentsLinkError"
           compact
           :pending="commentsLinkPending"
-          :title="commentsLinkError || '正在定位动态评论'"
+          :title="commentsLinkError || $t('admin-content.moments.locatingComments')"
           @retry="openLinkedComments"
         />
         <ul class="admin-moments__list">
           <li v-for="note in items" :key="note.id">
             <p>
-              {{ statusLabels[note.status] }} <span v-if="note.isPinned">· 已置顶</span> ·
+              {{ $t(`admin-content.moments.status.${note.status}`) }}
+              <span v-if="note.isPinned">· {{ $t('admin-content.moments.pinned') }}</span> ·
               {{ note.updatedAt.slice(0, 10) }}
             </p>
             <p class="admin-moments__content">{{ note.content }}</p>
             <p>{{ note.topics?.map((topicName) => '#' + topicName).join(' ') }}</p>
             <div class="admin-moments__actions">
-              <NuxtLink :to="`/admin/moments/${note.id}`">编辑动态</NuxtLink>
-              <NuxtLink v-if="note.status === 'published'" :to="`/moments/${note.id}`">查看公开动态</NuxtLink>
+              <NuxtLink :to="`/admin/moments/${note.id}`">{{ $t('admin-content.moments.edit') }}</NuxtLink>
+              <NuxtLink v-if="note.status === 'published'" :to="`/moments/${note.id}`">{{
+                $t('admin-content.moments.viewPublic')
+              }}</NuxtLink>
               <button
                 type="button"
                 :disabled="busyIds.includes(note.id) || pending"
                 @click="update(note, { isPinned: !note.isPinned })"
               >
-                {{ note.isPinned ? '取消置顶' : '置顶' }}
+                {{ note.isPinned ? $t('admin-content.moments.unpin') : $t('admin-content.moments.pin') }}
               </button>
               <button
                 v-if="note.status !== 'published'"
@@ -61,7 +77,7 @@
                 :disabled="busyIds.includes(note.id) || pending"
                 @click="update(note, { status: 'published' })"
               >
-                发布
+                {{ $t('admin-content.moments.publish') }}
               </button>
               <button
                 v-if="note.status !== 'draft'"
@@ -69,7 +85,7 @@
                 :disabled="busyIds.includes(note.id) || pending"
                 @click="update(note, { status: 'draft' })"
               >
-                转为草稿
+                {{ $t('admin-content.moments.toDraft') }}
               </button>
               <button
                 v-if="note.status !== 'archived'"
@@ -77,41 +93,53 @@
                 :disabled="busyIds.includes(note.id) || pending"
                 @click="update(note, { status: 'archived' })"
               >
-                归档
+                {{ $t('admin-content.moments.archive') }}
               </button>
               <button type="button" :disabled="busyIds.includes(note.id)" @click="showComments(note, $event)">
-                管理评论
+                {{ $t('admin-content.moments.manageComments') }}
               </button>
               <button type="button" :disabled="busyIds.includes(note.id) || pending" @click="remove(note)">
-                删除动态
+                {{ $t('admin-content.moments.remove') }}
               </button>
             </div>
           </li>
         </ul>
-        <nav v-if="total > 15" class="admin-moments__actions" aria-label="管理动态分页">
-          <button type="button" :disabled="page <= 1 || pending" @click="setPage(page - 1)">上一页</button>
-          <span>{{ page }} / {{ Math.max(1, Math.ceil(total / 15)) }}，共 {{ total }} 条</span>
-          <button type="button" :disabled="page * 15 >= total || pending" @click="setPage(page + 1)">下一页</button>
+        <nav v-if="total > 15" class="admin-moments__actions" :aria-label="$t('admin-content.moments.pagination')">
+          <button type="button" :disabled="page <= 1 || pending" @click="setPage(page - 1)">
+            {{ $t('admin-content.moments.prevPage') }}
+          </button>
+          <span>{{
+            $t('admin-content.moments.pageStatus', { page, pages: Math.max(1, Math.ceil(total / 15)), total })
+          }}</span>
+          <button type="button" :disabled="page * 15 >= total || pending" @click="setPage(page + 1)">
+            {{ $t('admin-content.moments.nextPage') }}
+          </button>
         </nav>
         <section
           v-if="commentNote"
           ref="commentsPanel"
           tabindex="-1"
           class="admin-moments__comments"
-          aria-label="动态评论管理"
+          :aria-label="$t('admin-content.moments.commentsPanel')"
         >
-          <h2>动态评论</h2>
+          <h2>{{ $t('admin-content.moments.commentsTitle') }}</h2>
           <p>{{ commentNote.content.slice(0, 160) }}</p>
-          <button type="button" @click="hideComments">关闭评论管理</button>
-          <p>访客评论遵循<NuxtLink to="/admin/comments">站点评论审核策略</NuxtLink>。</p>
+          <button type="button" @click="hideComments">{{ $t('admin-content.moments.closeComments') }}</button>
+          <i18n-t keypath="admin-content.moments.commentPolicy" tag="p" scope="global">
+            <template #policy>
+              <NuxtLink to="/admin/comments">{{ $t('admin-content.moments.commentPolicyLink') }}</NuxtLink>
+            </template>
+          </i18n-t>
           <CommonRequestFeedback
             v-if="commentsPending || commentsError"
             compact
             :pending="commentsPending"
-            :title="commentsError || '正在加载评论'"
+            :title="commentsError || $t('admin-content.moments.loadingComments')"
             @retry="openComments(commentNote, commentPage)"
           />
-          <p v-if="!commentsPending && !commentsError && !commentItems.length">暂无评论。</p>
+          <p v-if="!commentsPending && !commentsError && !commentItems.length">
+            {{ $t('admin-content.moments.noComments') }}
+          </p>
           <ul>
             <li
               v-for="comment in commentItems"
@@ -120,8 +148,10 @@
               :data-comment-target="commentTargetId === comment.id"
               :tabindex="commentTargetId === comment.id ? -1 : undefined"
             >
-              <strong>{{ comment.author }}{{ comment.isOwner ? '（博主）' : '' }}</strong
-              ><span> · {{ commentLabels[comment.moderationStatus ?? 'published'] }}</span>
+              <strong>{{ comment.author }}{{ comment.isOwner ? $t('admin-content.moments.ownerSuffix') : '' }}</strong
+              ><span>
+                · {{ $t(`admin-content.moments.commentStatus.${comment.moderationStatus ?? 'published'}`) }}</span
+              >
               <p>{{ comment.content }}</p>
               <div class="admin-moments__actions">
                 <button
@@ -130,7 +160,7 @@
                   :disabled="busyIds.includes(commentNote.id)"
                   @click="moderate(comment, 'published')"
                 >
-                  公开评论
+                  {{ $t('admin-content.moments.publishComment') }}
                 </button>
                 <button
                   v-if="comment.moderationStatus !== 'hidden'"
@@ -138,21 +168,25 @@
                   :disabled="busyIds.includes(commentNote.id)"
                   @click="moderate(comment, 'hidden')"
                 >
-                  隐藏评论
+                  {{ $t('admin-content.moments.hideComment') }}
                 </button>
                 <button type="button" :disabled="busyIds.includes(commentNote.id)" @click="removeComment(comment)">
-                  删除评论
+                  {{ $t('admin-content.moments.removeComment') }}
                 </button>
               </div>
             </li>
           </ul>
-          <nav v-if="commentTotal > 15" class="admin-moments__actions" aria-label="动态评论分页">
+          <nav
+            v-if="commentTotal > 15"
+            class="admin-moments__actions"
+            :aria-label="$t('admin-content.moments.commentPagination')"
+          >
             <button
               type="button"
               :disabled="commentPage <= 1 || commentsPending"
               @click="openComments(commentNote, commentPage - 1)"
             >
-              上一页评论
+              {{ $t('admin-content.moments.prevCommentPage') }}
             </button>
             <span>{{ commentPage }} / {{ Math.ceil(commentTotal / 15) }}</span>
             <button
@@ -160,30 +194,34 @@
               :disabled="commentPage * 15 >= commentTotal || commentsPending"
               @click="openComments(commentNote, commentPage + 1)"
             >
-              下一页评论
+              {{ $t('admin-content.moments.nextCommentPage') }}
             </button>
           </nav>
           <form v-if="commentNote.status === 'published'" @submit.prevent="reply">
-            <label>博主回复<textarea v-model="replyDraft" aria-label="动态博主回复" maxlength="1000" /></label>
+            <label
+              >{{ $t('admin-content.moments.replyLabel')
+              }}<textarea v-model="replyDraft" :aria-label="$t('admin-content.moments.replyAria')" maxlength="1000" />
+            </label>
             <button
               :aria-busy="replyPending"
               type="submit"
               :disabled="!replyDraft.trim() || busyIds.includes(commentNote.id)"
             >
-              发送博主回复
+              {{ $t('admin-content.moments.sendReply') }}
             </button>
           </form>
-          <p v-else>动态公开后可以回复评论。</p>
+          <p v-else>{{ $t('admin-content.moments.replyAfterPublish') }}</p>
         </section>
       </template>
-      <p v-else-if="!restoringPending">请先登录博主账号。</p>
+      <p v-else-if="!restoringPending">{{ $t('admin-content.moments.loginRequired') }}</p>
     </ClientOnly>
   </section>
 </template>
 <script setup lang="ts">
 import type { ManagedMoment } from '~/features/moment/types'
 definePageMeta({ layout: 'admin' })
-useSeoMeta({ title: '朋友圈管理', robots: 'noindex, nofollow' })
+const { t } = useI18n()
+useSeoMeta({ title: () => t('admin-content.moments.title'), robots: 'noindex, nofollow' })
 const {
   restoringPending,
   isLoggedIn,
@@ -221,8 +259,6 @@ const {
   replyPending,
   reply,
 } = useAdminMoments()
-const statusLabels = { draft: '草稿', published: '已发布', archived: '已归档' }
-const commentLabels = { published: '已公开', pending: '待审核', hidden: '已隐藏' }
 const commentsPanel = ref<HTMLElement | null>(null)
 watch(commentsFocusVersion, async () => {
   await nextTick()

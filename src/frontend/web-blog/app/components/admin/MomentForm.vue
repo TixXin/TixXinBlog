@@ -2,47 +2,68 @@
 <template>
   <form ref="editorForm" class="moment-editor" @submit.prevent="$emit('save', value.status)">
     <header class="moment-editor__heading">
-      <h1>{{ id ? '编辑动态' : '发布动态' }}</h1>
-      <AdminBackLink to="/admin/moments">返回动态管理</AdminBackLink>
-      <NuxtLink v-if="id && saved?.status === 'published'" :to="`/moments/${id}`">查看公开动态</NuxtLink>
+      <h1>{{ id ? $t('admin-content.momentForm.editTitle') : $t('admin-content.momentForm.createTitle') }}</h1>
+      <AdminBackLink to="/admin/moments">{{ $t('admin-content.momentForm.back') }}</AdminBackLink>
+      <NuxtLink v-if="id && saved?.status === 'published'" :to="`/moments/${id}`">{{
+        $t('admin-content.momentForm.viewPublic')
+      }}</NuxtLink>
     </header>
     <p v-if="error" role="alert">
-      {{ error }} <button type="button" :disabled="saving || loading" @click="$emit('reload')">重新读取</button>
+      {{ error }}
+      <button type="button" :disabled="saving || loading" @click="$emit('reload')">
+        {{ $t('admin-content.momentForm.reload') }}
+      </button>
     </p>
     <p v-if="notice" role="status">{{ notice }}</p>
     <p v-if="localError" role="alert">
-      {{ localError }} <button type="button" @click="$emit('persist')">重试保存恢复副本</button>
+      {{ localError }}
+      <button type="button" @click="$emit('persist')">{{ $t('admin-content.momentForm.retryPersist') }}</button>
     </p>
-    <section v-if="recovery" class="moment-editor__recovery" aria-label="动态恢复副本">
-      <h2>发现本标签页未保存的输入</h2>
+    <section v-if="recovery" class="moment-editor__recovery" :aria-label="$t('admin-content.momentForm.recoveryLabel')">
+      <h2>{{ $t('admin-content.momentForm.recoveryTitle') }}</h2>
       <p>{{ recovery.form.content.slice(0, 160) }}</p>
-      <button type="button" :disabled="saving" @click="$emit('restore')">恢复输入</button>
-      <button type="button" :disabled="saving" @click="$emit('discard')">移除恢复副本</button>
+      <button type="button" :disabled="saving" @click="$emit('restore')">
+        {{ $t('admin-content.momentForm.restore') }}
+      </button>
+      <button type="button" :disabled="saving" @click="$emit('discard')">
+        {{ $t('admin-content.momentForm.discard') }}
+      </button>
     </section>
-    <section v-if="serverVersion" class="moment-editor__recovery" aria-label="动态服务器版本">
-      <h2>服务器当前版本 {{ serverVersion.revision }}</h2>
-      <p>{{ statusText[serverVersion.status] }} · {{ serverVersion.topics?.join('、') }}</p>
+    <section
+      v-if="serverVersion"
+      class="moment-editor__recovery"
+      :aria-label="$t('admin-content.momentForm.serverLabel')"
+    >
+      <h2>{{ $t('admin-content.momentForm.serverTitle', { revision: serverVersion.revision }) }}</h2>
+      <p>
+        {{ $t(`admin-content.momentForm.status.${serverVersion.status}`) }} ·
+        {{ serverVersion.topics?.join($t('admin-content.momentForm.listSeparator')) }}
+      </p>
       <blockquote>{{ serverVersion.content }}</blockquote>
-      <button type="button" :disabled="saving" @click="$emit('reload')">保留副本并载入服务器版本</button>
+      <button type="button" :disabled="saving" @click="$emit('reload')">
+        {{ $t('admin-content.momentForm.loadServer') }}
+      </button>
     </section>
-    <p v-if="loading" role="status">正在读取动态…</p>
+    <p v-if="loading" role="status">{{ $t('admin-content.momentForm.loading') }}</p>
     <fieldset :disabled="!ready || loading">
       <label
-        >动态正文<textarea
+        >{{ $t('admin-content.momentForm.content')
+        }}<textarea
           :value="value.content"
-          aria-label="动态正文"
+          :aria-label="$t('admin-content.momentForm.content')"
           rows="8"
           maxlength="10000"
           required
-          placeholder="记录此刻的想法，支持 Markdown"
+          :placeholder="$t('admin-content.momentForm.contentPlaceholder')"
           @input="change('content', ($event.target as HTMLTextAreaElement).value)"
         />
       </label>
       <small>{{ value.content.length }} / 10000</small>
       <label
-        >话题（逗号分隔，最多10个）<input
-          :value="value.topics.join('，')"
-          aria-label="动态话题"
+        >{{ $t('admin-content.momentForm.topics')
+        }}<input
+          :value="value.topics.join($t('admin-content.momentForm.topicJoiner'))"
+          :aria-label="$t('admin-content.momentForm.topicsAria')"
           @change="
             change(
               'topics',
@@ -53,15 +74,17 @@
             )
           "
       /></label>
-      <section class="moment-editor__media" aria-label="动态配图">
-        <h2>配图（{{ value.images.length }} / 9）</h2>
-        <button type="button" :disabled="value.images.length >= 9" @click="mediaOpen = true">选择或上传图片</button>
+      <section class="moment-editor__media" :aria-label="$t('admin-content.momentForm.imagesLabel')">
+        <h2>{{ $t('admin-content.momentForm.imagesTitle', { count: value.images.length, max: 9 }) }}</h2>
+        <button type="button" :disabled="value.images.length >= 9" @click="mediaOpen = true">
+          {{ $t('admin-content.momentForm.pickImage') }}
+        </button>
         <div class="moment-editor__images">
           <figure v-for="(url, index) in value.images" :key="url">
-            <img :src="url" :alt="`动态配图 ${index + 1}`" />
+            <img :src="url" :alt="$t('admin-content.momentForm.imageAlt', { index: index + 1 })" />
             <button
               type="button"
-              :aria-label="`移除配图 ${index + 1}`"
+              :aria-label="$t('admin-content.momentForm.removeImageAria', { index: index + 1 })"
               @click="
                 change(
                   'images',
@@ -69,58 +92,64 @@
                 )
               "
             >
-              移除此配图
+              {{ $t('admin-content.momentForm.removeImage') }}
             </button>
           </figure>
         </div>
       </section>
       <div class="moment-editor__row">
         <label
-          >地点<input
+          >{{ $t('admin-content.momentForm.location')
+          }}<input
             :value="value.location"
             maxlength="160"
             @input="change('location', ($event.target as HTMLInputElement).value)"
         /></label>
         <label
-          >设备<input
+          >{{ $t('admin-content.momentForm.device')
+          }}<input
             :value="value.device"
             maxlength="80"
             @input="change('device', ($event.target as HTMLInputElement).value)"
         /></label>
         <label
-          >心情<input
+          >{{ $t('admin-content.momentForm.mood')
+          }}<input
             :value="value.mood"
             maxlength="80"
             @input="change('mood', ($event.target as HTMLInputElement).value)"
         /></label>
       </div>
       <label
-        >引用内容<select
+        >{{ $t('admin-content.momentForm.linkType')
+        }}<select
           :value="value.linkedLink ? 'link' : value.linkedArticleId ? 'article' : linkMode"
-          aria-label="动态引用类型"
+          :aria-label="$t('admin-content.momentForm.linkTypeAria')"
           @change="setLinkMode(($event.target as HTMLSelectElement).value)"
         >
-          <option value="none">不引用</option>
-          <option value="article">站内文章</option>
-          <option value="link">外部链接</option>
+          <option value="none">{{ $t('admin-content.momentForm.linkNone') }}</option>
+          <option value="article">{{ $t('admin-content.momentForm.linkArticle') }}</option>
+          <option value="link">{{ $t('admin-content.momentForm.linkExternal') }}</option>
         </select></label
       >
       <section v-if="linkMode === 'article' || value.linkedArticleId">
         <label
-          >搜索公开文章<input
+          >{{ $t('admin-content.momentForm.articleSearch')
+          }}<input
             v-model="articleSearch"
             type="search"
-            aria-label="搜索引用文章"
+            :aria-label="$t('admin-content.momentForm.articleSearchAria')"
             maxlength="200"
-            placeholder="输入文章标题"
+            :placeholder="$t('admin-content.momentForm.articleSearchPlaceholder')"
             @input="$emit('search-articles', articleSearch)"
         /></label>
-        <p v-if="articlesPending" role="status">正在搜索文章…</p>
+        <p v-if="articlesPending" role="status">{{ $t('admin-content.momentForm.articleSearching') }}</p>
         <p v-if="articlesError" role="alert">{{ articlesError }}</p>
         <label
-          >引用文章<select
+          >{{ $t('admin-content.momentForm.article')
+          }}<select
             :value="value.linkedArticleId ?? ''"
-            aria-label="引用文章"
+            :aria-label="$t('admin-content.momentForm.article')"
             @change="
               change(
                 'linkedArticleId',
@@ -128,47 +157,53 @@
               )
             "
           >
-            <option value="">请选择已公开文章</option>
+            <option value="">{{ $t('admin-content.momentForm.articlePlaceholder') }}</option>
             <option v-for="post in articleChoices" :key="post.id" :value="post.id">{{ post.title }}</option>
           </select></label
         >
       </section>
       <div v-if="value.linkedLink" class="moment-editor__row">
         <label
-          >链接地址<input
+          >{{ $t('admin-content.momentForm.linkUrl')
+          }}<input
             :value="value.linkedLink.url"
             type="url"
             maxlength="2048"
-            aria-label="引用链接地址"
+            :aria-label="$t('admin-content.momentForm.linkUrlAria')"
             @input="changeLink({ url: ($event.target as HTMLInputElement).value })"
         /></label>
         <label
-          >链接标题<input
+          >{{ $t('admin-content.momentForm.linkTitle')
+          }}<input
             :value="value.linkedLink.title"
             maxlength="160"
-            aria-label="引用链接标题"
+            :aria-label="$t('admin-content.momentForm.linkTitleAria')"
             @input="changeLink({ title: ($event.target as HTMLInputElement).value })"
         /></label>
         <label
-          >链接描述<input
+          >{{ $t('admin-content.momentForm.linkDescription')
+          }}<input
             :value="value.linkedLink.description"
             maxlength="500"
             @input="changeLink({ description: ($event.target as HTMLInputElement).value })"
         /></label>
         <label
-          >站点名称<input
+          >{{ $t('admin-content.momentForm.linkSiteName')
+          }}<input
             :value="value.linkedLink.siteName"
             maxlength="80"
             @input="changeLink({ siteName: ($event.target as HTMLInputElement).value })"
         /></label>
         <label
-          >卡片图片链接（可选）<input
+          >{{ $t('admin-content.momentForm.linkImage')
+          }}<input
             :value="value.linkedLink.image"
             maxlength="2048"
             @input="changeLink({ image: ($event.target as HTMLInputElement).value })"
         /></label>
         <label
-          >站点图标链接（可选）<input
+          >{{ $t('admin-content.momentForm.linkFavicon')
+          }}<input
             :value="value.linkedLink.favicon"
             maxlength="2048"
             @input="changeLink({ favicon: ($event.target as HTMLInputElement).value })"
@@ -176,14 +211,15 @@
       </div>
       <div class="moment-editor__row">
         <label
-          >保存状态<select
+          >{{ $t('admin-content.momentForm.saveStatus')
+          }}<select
             :value="value.status"
-            aria-label="动态保存状态"
+            :aria-label="$t('admin-content.momentForm.saveStatusAria')"
             @change="change('status', ($event.target as HTMLSelectElement).value as MomentStatus)"
           >
-            <option value="draft">草稿</option>
-            <option value="published">已发布</option>
-            <option value="archived">已归档</option>
+            <option value="draft">{{ $t('admin-content.momentForm.status.draft') }}</option>
+            <option value="published">{{ $t('admin-content.momentForm.status.published') }}</option>
+            <option value="archived">{{ $t('admin-content.momentForm.status.archived') }}</option>
           </select></label
         >
         <label class="moment-editor__check"
@@ -191,12 +227,12 @@
             :checked="value.isPinned"
             type="checkbox"
             @change="change('isPinned', ($event.target as HTMLInputElement).checked)"
-          />置顶动态</label
+          />{{ $t('admin-content.momentForm.pinned') }}</label
         >
       </div>
     </fieldset>
     <AdminActionBar class="moment-editor__actions">
-      <CommonTooltip :content="`保存（${saveShortcut}）`"
+      <CommonTooltip :content="$t('admin-content.momentForm.saveTooltip', { shortcut: saveShortcut })"
         ><button
           ref="saveButton"
           :aria-busy="saving"
@@ -204,7 +240,7 @@
           aria-keyshortcuts="Control+S Meta+S"
           :disabled="!ready || loading || saving || !value.content.trim()"
         >
-          {{ saving ? '正在保存…' : '保存动态' }}
+          {{ saving ? $t('admin-content.momentForm.saving') : $t('admin-content.momentForm.save') }}
         </button></CommonTooltip
       >
       <button
@@ -212,16 +248,22 @@
         :disabled="!ready || loading || saving || !value.content.trim()"
         @click="requestSave('draft')"
       >
-        保存草稿
+        {{ $t('admin-content.momentForm.saveDraft') }}
       </button>
       <button
         type="button"
         :disabled="!ready || loading || saving || !value.content.trim()"
         @click="requestSave('published')"
       >
-        发布动态
+        {{ $t('admin-content.momentForm.publish') }}
       </button>
-      <span>{{ dirty ? '有尚未保存的输入' : saved ? '当前输入已保存' : '尚未保存' }}</span>
+      <span>{{
+        dirty
+          ? $t('admin-content.momentForm.stateDirty')
+          : saved
+            ? $t('admin-content.momentForm.stateSaved')
+            : $t('admin-content.momentForm.stateUnsaved')
+      }}</span>
     </AdminActionBar>
     <ClientOnly><AdminMediaPicker v-model:open="mediaOpen" @selected="selectMedia" /></ClientOnly>
   </form>
@@ -267,7 +309,6 @@ const { label: saveShortcut } = useAdminSaveShortcut({
 const mediaOpen = ref(false),
   linkMode = ref('none'),
   articleSearch = ref('')
-const statusText = { draft: '草稿', published: '已发布', archived: '已归档' }
 function requestSave(status: MomentStatus) {
   if (editorForm.value?.reportValidity()) emit('save', status)
 }

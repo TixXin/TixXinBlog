@@ -10,6 +10,7 @@ export function useAdminMomentEditor(initialId: string | null) {
   const repo = useMomentRepository(),
     store = useMomentStore(),
     auth = useCurrentUser()
+  const { t } = useI18n()
   const apiBase = String(useRuntimeConfig().public.apiBaseUrl)
   const articleChoices = ref<{ id: number; title: string }[]>([]),
     articlesPending = ref(false),
@@ -39,7 +40,7 @@ export function useAdminMomentEditor(initialId: string | null) {
       )
       articleChoices.value = [...retained, ...result.items.map((item) => ({ id: item.id, title: item.title }))]
     } catch {
-      if (alive && current === articleVersion) articlesError.value = '文章搜索暂时不可用，请重试。'
+      if (alive && current === articleVersion) articlesError.value = t('admin-content.momentEditor.articleSearchFailed')
     } finally {
       if (alive && current === articleVersion) articlesPending.value = false
     }
@@ -77,7 +78,7 @@ export function useAdminMomentEditor(initialId: string | null) {
       sessionStorage.setItem(key(), JSON.stringify(value))
       localError.value = ''
     } catch {
-      localError.value = '本标签页恢复副本暂时无法保存，请保留当前输入。'
+      localError.value = t('admin-content.momentEditor.recoverySaveFailed')
     }
   }
   function accept(note: ManagedMoment) {
@@ -88,7 +89,7 @@ export function useAdminMomentEditor(initialId: string | null) {
     baseline.value = JSON.stringify(form)
     if (note.linkedArticleId)
       articleChoices.value = [
-        { id: note.linkedArticleId, title: note.linkedArticle?.title ?? '此前引用的文章（当前未公开）' },
+        { id: note.linkedArticleId, title: note.linkedArticle?.title ?? t('admin-content.momentEditor.hiddenArticle') },
       ]
   }
   async function load() {
@@ -96,7 +97,7 @@ export function useAdminMomentEditor(initialId: string | null) {
     loading.value = true
     error.value = ''
     try {
-      if (!(await auth.restore())) throw new Error('请先使用博主账号登录，当前输入会保留。')
+      if (!(await auth.restore())) throw new Error(t('admin-content.momentEditor.loginFirst'))
       const user = auth.currentUser.value!.id
       if (actor && actor !== user) {
         persistLocal()
@@ -112,10 +113,11 @@ export function useAdminMomentEditor(initialId: string | null) {
       try {
         recovery.value = parseMomentRecovery(sessionStorage.getItem(key()))
       } catch {
-        localError.value = '无法读取本标签页恢复副本。'
+        localError.value = t('admin-content.momentEditor.recoveryReadFailed')
       }
     } catch (cause) {
-      if (current === version && alive) error.value = cause instanceof Error ? cause.message : '动态读取失败，请重试'
+      if (current === version && alive)
+        error.value = cause instanceof Error ? cause.message : t('admin-content.momentEditor.loadFailed')
     } finally {
       if (current === version && alive) loading.value = false
     }
@@ -146,20 +148,25 @@ export function useAdminMomentEditor(initialId: string | null) {
       const value = momentForm(note)
       baseline.value = JSON.stringify(value)
       if (JSON.stringify(form) === capture) Object.assign(form, value)
-      notice.value = status === 'published' ? '动态已发布。' : status === 'archived' ? '动态已归档。' : '草稿已保存。'
+      notice.value =
+        status === 'published'
+          ? t('admin-content.momentEditor.published')
+          : status === 'archived'
+            ? t('admin-content.momentEditor.archived')
+            : t('admin-content.momentEditor.draftSaved')
       store.forget(note.id)
       void app.runWithContext(() => refreshNuxtData('moment-overview'))
       try {
         if (!dirty.value) sessionStorage.removeItem(key())
         else persistLocal()
       } catch {
-        localError.value = '保存成功，但本机恢复副本未能清理。'
+        localError.value = t('admin-content.momentEditor.recoveryCleanupFailed')
       }
       recovery.value = null
       if (wasNew && !dirty.value) redirect = `/admin/moments/${encodeURIComponent(note.id)}`
     } catch (cause) {
       if (!alive || auth.currentUser.value?.id !== user) return
-      error.value = cause instanceof Error ? cause.message : '保存失败，输入已保留'
+      error.value = cause instanceof Error ? cause.message : t('admin-content.momentEditor.saveFailed')
       if ((cause as { statusCode?: number }).statusCode === 409) {
         try {
           const latest = id.value ? await repo.adminDetail(id.value) : await repo.submission(requestId)
@@ -169,7 +176,7 @@ export function useAdminMomentEditor(initialId: string | null) {
             id.value = latest.id
             revision.value = latest.revision
             saved.value = latest
-            error.value = '已找到上次保存的动态，当前输入已保留。请核对服务器版本，再保存为同一条动态。'
+            error.value = t('admin-content.momentEditor.submissionFound')
           }
         } catch {
           /* 原错误及本机输入保留，待连接恢复后再次读取。 */
@@ -182,8 +189,7 @@ export function useAdminMomentEditor(initialId: string | null) {
     if (redirect) await router.replace(redirect)
   }
   async function reload() {
-    if (saving.value || (dirty.value && !window.confirm('当前输入将保留为本标签页恢复副本，是否载入服务器最新版本？')))
-      return
+    if (saving.value || (dirty.value && !window.confirm(t('admin-content.momentEditor.reloadConfirm')))) return
     persistLocal()
     await load()
   }
@@ -195,14 +201,14 @@ export function useAdminMomentEditor(initialId: string | null) {
     revision.value = value.revision
     requestId = value.requestId
     recovery.value = null
-    notice.value = '已载入本机输入，请核对后手动保存。'
+    notice.value = t('admin-content.momentEditor.recoveryRestored')
   }
   function discardRecovery() {
     try {
       sessionStorage.removeItem(key())
       recovery.value = null
     } catch {
-      localError.value = '暂时无法移除恢复副本。'
+      localError.value = t('admin-content.momentEditor.recoveryDiscardFailed')
     }
   }
   const unload = (event: BeforeUnloadEvent) => {
@@ -219,7 +225,7 @@ export function useAdminMomentEditor(initialId: string | null) {
     if (saving.value) return false
     if (dirty.value) {
       persistLocal()
-      return window.confirm('有尚未保存的动态输入，已保留本标签页恢复副本，确定离开吗？')
+      return window.confirm(t('admin-content.momentEditor.leaveConfirm'))
     }
     return true
   })

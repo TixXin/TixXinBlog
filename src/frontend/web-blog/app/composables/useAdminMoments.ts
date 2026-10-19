@@ -10,6 +10,7 @@ export function useAdminMoments() {
     repo = useMomentRepository(),
     store = useMomentStore(),
     toast = useToast()
+  const { t } = useI18n()
   const read = (key: string) => {
     const value = route.query[key]
     return String(Array.isArray(value) ? (value[0] ?? '') : (value ?? ''))
@@ -49,7 +50,7 @@ export function useAdminMoments() {
     pending.value = true
     error.value = ''
     try {
-      if (!(await auth.restore())) throw new Error('请先使用博主账号登录。')
+      if (!(await auth.restore())) throw new Error(t('admin-content.moments.loginFirst'))
       const actor = auth.currentUser.value?.id
       const data = await repo.adminList({
         page: page.value,
@@ -65,7 +66,8 @@ export function useAdminMoments() {
       const last = Math.max(1, Math.ceil(data.total / 15))
       if (page.value > last) await setPage(last)
     } catch (cause) {
-      if (alive && current === version) error.value = cause instanceof Error ? cause.message : '动态读取失败，请重试'
+      if (alive && current === version)
+        error.value = cause instanceof Error ? cause.message : t('admin-content.moments.loadFailed')
     } finally {
       if (alive && current === version) pending.value = false
     }
@@ -96,7 +98,7 @@ export function useAdminMoments() {
       await operation()
     } catch (cause) {
       if (alive && actor === auth.currentUser.value?.id)
-        toast.error(cause instanceof Error ? cause.message : '操作失败，请重试')
+        toast.error(cause instanceof Error ? cause.message : t('admin-content.moments.operationFailed'))
     } finally {
       busyIds.value = busyIds.value.filter((id) => id !== note.id)
     }
@@ -110,14 +112,14 @@ export function useAdminMoments() {
       void app.runWithContext(() => refreshNuxtData(['moment-overview', 'moment-feed', `moment-detail:${note.id}`]))
       if (alive && actor === auth.currentUser.value?.id) {
         if (commentNote.value?.id === note.id) commentNote.value = result
-        toast.success('动态状态已更新')
+        toast.success(t('admin-content.moments.statusUpdated'))
         await load()
       }
     })
   }
   async function remove(note: ManagedMoment) {
     const actor = auth.currentUser.value?.id
-    if (busyIds.value.includes(note.id) || !window.confirm('确定删除这条动态及其互动记录吗？')) return
+    if (busyIds.value.includes(note.id) || !window.confirm(t('admin-content.moments.removeConfirm'))) return
     await perform(note, async () => {
       await repo.remove(note.id, note.revision)
       store.forget(note.id)
@@ -125,14 +127,14 @@ export function useAdminMoments() {
       void app.runWithContext(() => refreshNuxtData(['moment-overview', 'moment-feed', `moment-detail:${note.id}`]))
       if (alive && actor === auth.currentUser.value?.id) {
         if (commentNote.value?.id === note.id) commentNote.value = null
-        toast.success('动态已删除')
+        toast.success(t('admin-content.moments.removed'))
         await load()
       }
     })
   }
   async function openComments(note: ManagedMoment, targetPage = 1) {
     if (commentNote.value?.id !== note.id) {
-      if (replyDraft.value.trim() && !window.confirm('放弃当前尚未发送的回复？')) return
+      if (replyDraft.value.trim() && !window.confirm(t('admin-content.moments.discardReplyConfirm'))) return
       commentItems.value = []
       replyDraft.value = ''
       replyRequest.value = ''
@@ -173,14 +175,14 @@ export function useAdminMoments() {
         contentContext.value === requestedContext &&
         auth.currentUser.value?.id === actor
       )
-        commentsError.value = cause instanceof Error ? cause.message : '评论读取失败，请重试'
+        commentsError.value = cause instanceof Error ? cause.message : t('admin-content.moments.commentsLoadFailed')
     } finally {
       if (alive && current === commentsVersion) commentsPending.value = false
     }
   }
   function closeComments() {
     if (commentNote.value && busyIds.value.includes(commentNote.value.id)) return false
-    if (replyDraft.value.trim() && !window.confirm('放弃当前尚未发送的回复？')) return false
+    if (replyDraft.value.trim() && !window.confirm(t('admin-content.moments.discardReplyConfirm'))) return false
     commentsVersion++
     commentNote.value = null
     replyDraft.value = ''
@@ -216,16 +218,17 @@ export function useAdminMoments() {
       await openComments(note, location.page)
       if (!owns()) return
       if (commentNote.value?.id !== sourceId) {
-        commentsLinkError.value = '当前回复已保留，请先处理未发送的回复，再重新定位。'
+        commentsLinkError.value = t('admin-content.moments.replyKept')
         return
       }
       commentTargetId.value = targetId
       if (targetId && !commentsError.value && !commentItems.value.some((item) => item.id === targetId))
-        commentsLinkError.value = '目标评论的位置已变化或评论已删除，请重新定位。'
+        commentsLinkError.value = t('admin-content.moments.commentMoved')
       commentsFocusVersion.value++
     } catch (cause) {
       if (owns())
-        commentsLinkError.value = cause instanceof Error ? cause.message : '评论不存在或读取失败，请重新定位。'
+        commentsLinkError.value =
+          cause instanceof Error ? cause.message : t('admin-content.moments.commentLocateFailed')
     } finally {
       if (alive && current === commentsLinkVersion) commentsLinkPending.value = false
     }
@@ -251,7 +254,8 @@ export function useAdminMoments() {
   async function removeComment(comment: MomentCommentItem) {
     const actor = auth.currentUser.value?.id
     const note = commentNote.value
-    if (!note || busyIds.value.includes(note.id) || !window.confirm('确定删除这条评论吗？')) return
+    if (!note || busyIds.value.includes(note.id) || !window.confirm(t('admin-content.moments.removeCommentConfirm')))
+      return
     await perform(note, async () => {
       const result = await repo.removeComment(note.id, comment.id)
       invalidateComments(note.id, result.commentCount)
@@ -281,7 +285,7 @@ export function useAdminMoments() {
           replyBody.value = ''
           await openComments(note, Math.max(1, Math.ceil((commentTotal.value + 1) / 15)))
           await load()
-          toast.success('回复已发送')
+          toast.success(t('admin-content.moments.replySent'))
         }
       } finally {
         replyPending.value = false
@@ -342,7 +346,7 @@ export function useAdminMoments() {
       if (next) lastActor = next
     },
   )
-  onBeforeRouteLeave(() => !replyDraft.value.trim() || window.confirm('有尚未发送的动态回复，确定离开吗？'))
+  onBeforeRouteLeave(() => !replyDraft.value.trim() || window.confirm(t('admin-content.moments.leaveConfirm')))
   onScopeDispose(() => {
     if (import.meta.client) window.removeEventListener('beforeunload', protectReply)
     alive = false
