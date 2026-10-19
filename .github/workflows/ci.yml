@@ -301,10 +301,16 @@ jobs:
 
       # 核心发布、评论、三主题与管理闭环；保留整个文件的断言和代表数据。
       - name: WebKit Blog Core on Isolated Database
+        # 记录浏览器进程输出：偶发的 WebKit internal error 疑为网络进程崩溃，失败时据此确认
+        env:
+          DEBUG: pw:browser
         run: pnpm test:e2e:run blog.spec.ts --browser=webkit
 
       # 单独运行以重新建库，避免前一个文件的写入污染水合与历史导航验收。
       - name: WebKit Hydration and History on Isolated Database
+        # 记录浏览器进程输出：偶发的 WebKit internal error 疑为网络进程崩溃，失败时据此确认
+        env:
+          DEBUG: pw:browser
         run: pnpm test:e2e:run hydration-history.spec.ts --browser=webkit
 
       - name: WebKit Failure Artifacts
