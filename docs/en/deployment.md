@@ -40,6 +40,9 @@ for name in web api migration worker; do
   docker pull "$image_prefix-$name:$release_version"
   docker image inspect --format '{{index .RepoDigests 0}}' "$image_prefix-$name:$release_version"
 done
+# 发布脚本以 --pull never 启动依赖服务，需与环境文件中的 POSTGRES_IMAGE、CADDY_IMAGE 一致并预先拉取
+docker pull postgres:16-alpine
+docker pull caddy:2-alpine
 ```
 
 PowerShell:
@@ -51,6 +54,8 @@ foreach ($name in 'web', 'api', 'migration', 'worker') {
   docker pull "${imagePrefix}-${name}:${releaseVersion}"
   docker image inspect --format '{{index .RepoDigests 0}}' "${imagePrefix}-${name}:${releaseVersion}"
 }
+docker pull postgres:16-alpine
+docker pull caddy:2-alpine
 ```
 
 The output digests should match the release notes. For private GHCR packages, first run `docker login ghcr.io` with a token that has `read:packages` permission. To inspect provenance or the SBOM, run `docker buildx imagetools inspect <image-reference> --format '{{ json .Provenance }}'` (use `.SBOM` for the SBOM).
@@ -102,16 +107,16 @@ if (-not (Test-Path ../tixxin-private/production.env)) {
 
 Neither command sequence overwrites an existing environment file. Edit the actual values after copying.
 
-| Setting                                                                                                 | Requirement                                                                                                                                                   |
-| ------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `RELEASE_PROJECT`                                                                                       | A distinct, stable Compose project name; do not casually change volume ownership after the initial installation                                               |
-| `RELEASE_VERSION`                                                                                       | A prepared, immutable application version; use the version number (such as `0.2.0`) for prebuilt images, or preferably the full Git SHA for self-built images |
-| `WEB_IMAGE_REPOSITORY`, `API_IMAGE_REPOSITORY`, `MIGRATION_IMAGE_REPOSITORY`, `WORKER_IMAGE_REPOSITORY` | Image repositories for the same version; use untagged GHCR repository addresses for prebuilt images                                                           |
-| `POSTGRES_IMAGE`, `CADDY_IMAGE`                                                                         | Explicitly pinned dependency images already present locally                                                                                                   |
-| `POSTGRES_PASSWORD`                                                                                     | A random hexadecimal value of at least 32 characters, avoiding reserved characters in connection URLs                                                         |
-| `JWT_ACCESS_SECRET`                                                                                     | A random signing key of at least 32 characters                                                                                                                |
-| `SITE_HOST`, `SITE_URL`                                                                                 | The public domain and its corresponding HTTPS origin                                                                                                          |
-| `HTTPS_BIND_ADDRESS`, `HTTP_PORT`, `HTTPS_PORT`                                                         | Bound to the local host only by default; public access requires explicit entry-point, firewall, and DNS configuration                                         |
+| Setting                                                                                                 | Requirement                                                                                                                                                                                                     |
+| ------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `RELEASE_PROJECT`                                                                                       | A distinct, stable Compose project name; do not casually change volume ownership after the initial installation                                                                                                 |
+| `RELEASE_VERSION`                                                                                       | A prepared, immutable application version; use the version number (such as `0.2.0`) for prebuilt images, or preferably the full Git SHA for self-built images                                                   |
+| `WEB_IMAGE_REPOSITORY`, `API_IMAGE_REPOSITORY`, `MIGRATION_IMAGE_REPOSITORY`, `WORKER_IMAGE_REPOSITORY` | Image repositories for the same version; use untagged GHCR repository addresses for prebuilt images                                                                                                             |
+| `POSTGRES_IMAGE`, `CADDY_IMAGE`                                                                         | Explicitly pinned dependency images already present locally                                                                                                                                                     |
+| `POSTGRES_PASSWORD`                                                                                     | A random hexadecimal value of at least 32 characters, avoiding reserved characters in connection URLs                                                                                                           |
+| `JWT_ACCESS_SECRET`                                                                                     | A random signing key of at least 32 characters                                                                                                                                                                  |
+| `SITE_HOST`, `SITE_URL`                                                                                 | The public domain and its corresponding HTTPS origin                                                                                                                                                            |
+| `HTTPS_BIND_ADDRESS`, `HTTP_PORT`, `HTTPS_PORT`                                                         | Bound to the local host only by default, so the site is unreachable and cannot obtain certificates; for direct public serving set `0.0.0.0` or the public interface address, and configure the firewall and DNS |
 
 If `NODE_ENV` is unset, the API treats it as `production`: rate limits apply, refresh cookies use `Secure`, the default log level is `info`, and `MEDIA_DIRECTORY` must be an absolute path or startup is rejected. The images already set `NODE_ENV=production` and `MEDIA_DIRECTORY=/app/var/media`. Only explicit `development`/`test` environments allow rate limiting to be disabled with `RATE_LIMIT_DISABLED=true`; production ignores that switch.
 
@@ -119,7 +124,7 @@ The database does not publish a host port, and the API is accessed through the f
 
 ### Trusted Proxies, Read Quotas, and Media Caching
 
-Both ends ignore forwarded address headers by default. In production, set `WEB_TRUSTED_PROXY_CIDRS` (the Caddy addresses directly in front of Nuxt) and `API_TRUSTED_PROXY_CIDRS` (the Nuxt addresses directly in front of the API) according to the actual network. Values are explicit, comma-separated IPv4/IPv6 addresses or CIDRs, mapped to `NUXT_TRUSTED_PROXY_CIDRS` and `TRUSTED_PROXY_CIDRS`. Include only controlled proxy addresses or narrow CIDRs for isolated proxy networks. Do not substitute all private networks, `0.0.0.0/0`, a boolean switch, or an arbitrary hop count for verification. Addresses may change when containers are recreated, so use a dedicated stable proxy network or update these settings accordingly. Without this configuration, visitors share quotas based on the proxy connection address; this default state is not suitable for production acceptance checks involving multiple visitors.
+Both ends ignore forwarded address headers by default. In production, set `WEB_TRUSTED_PROXY_CIDRS` (the Caddy addresses directly in front of Nuxt) and `API_TRUSTED_PROXY_CIDRS` (the Nuxt addresses directly in front of the API) according to the actual network. Values are explicit, comma-separated IPv4/IPv6 addresses or CIDRs, mapped to `NUXT_TRUSTED_PROXY_CIDRS` and `TRUSTED_PROXY_CIDRS`. Include only controlled proxy addresses, narrow CIDRs for isolated proxy networks, or the subnet of this project's own Compose network that contains only this project's containers (from `docker network inspect <project>_default`). Do not substitute all private networks, `0.0.0.0/0`, a boolean switch, or an arbitrary hop count for verification. Addresses may change when containers are recreated, so use a dedicated stable proxy network or update these settings accordingly. Without this configuration, visitors share quotas based on the proxy connection address; this default state is not suitable for production acceptance checks involving multiple visitors.
 
 The current Caddy template receives visitor connections directly, overwrites `X-Forwarded-For`, and removes other client-address hints. Nuxt verifies the proxy chain hop by hop outward from the connection address, then sends a single client IP to the API. The API only accepts forwarded addresses from trusted Nuxt connections. If a CDN or load balancer sits in front of Caddy, independently configure and validate the outermost trust boundary according to the actual topology first; do not pass through visitor-supplied headers directly. After deployment, verify quota isolation using two independent visitor addresses and forged forwarding headers.
 
