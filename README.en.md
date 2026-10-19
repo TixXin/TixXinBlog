@@ -23,6 +23,7 @@ Live instance: <https://tix.xin> (the author's own blog; its content is unrelate
 - **Content surfaces** — flash notes, moments, guestbook, gallery, image prompts, subscription expenses, projects and links; posts, projects and gallery items can hold ordered relations to one another.
 - **Authoring and operations** — section-level navigation in long posts, media descriptions with reference lookup, a draft workspace, in-app notifications and optional email delivery.
 - **Appearance and upkeep** — three layout themes (Nexus, Aurora, Dock), site and about-page editing, content-package import and full backup/restore.
+- **Multilingual interface** — Chinese and English UI; set the site's default language with `NUXT_PUBLIC_DEFAULT_LOCALE` at deploy time, and visitors can switch in the appearance settings with their choice remembered. Posts and other author content are not translated.
 
 Posts and the other business domains are persisted through the real API. Bookmarks still live in the browser's LocalStorage; public link applications and visitor email subscriptions are not available yet. Email, scheduled backups and the long-running worker each need to be configured and enabled separately. See [content management](docs/content.md) and [operations](docs/operations.md) (both in Chinese).
 

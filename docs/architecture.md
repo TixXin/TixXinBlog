@@ -115,6 +115,8 @@ sequenceDiagram
 
 HTML 清理钩子只匹配 `/api/v1/` 下非 `GET/HEAD/OPTIONS` 请求，排除路径以 `/view`、`/like` 结尾及 `/api/v1/auth/` 下的请求；匹配的失败写请求也会触发清理。清理在响应后异步执行，删除当前 Nitro storage 的 `cache:nitro` 前缀键，失败被捕获，不等待清理完成才返回写入结果；这不是数据库事务或跨实例广播。绕过 Nitro 的写入不会触发该钩子。
 
+界面语言不进入 URL：中英文页面共用同一地址、canonical 与 sitemap。首屏语言取有效的 `blog-locale` cookie，否则用站点默认语言 `NUXT_PUBLIC_DEFAULT_LOCALE`，不读 `Accept-Language`，避免同一缓存键因请求头不同而混入另一种语言。HTML 缓存键本就包含 cookie 请求头，因此主动选过语言的访客各自命中对应语言的副本；首访不写 cookie，未选择语言的访客共用站点默认语言的副本，站长修改默认语言并重启前端服务后，这部分访客直接看到新的默认语言。订阅源与站点地图不读访客 cookie，语言声明只跟随站点默认语言。
+
 代码核对入口：[路由缓存规则](../src/frontend/web-blog/nuxt.config.ts)、[请求身份中间件](../src/frontend/web-blog/server/middleware/00.request-identity.ts)、[身份上下文](../src/frontend/web-blog/server/utils/requestIdentity.ts)、[同源网关](../src/frontend/web-blog/server/api/v1/[...path].ts)、[后端代理信任](../src/backend/server-main/src/bootstrap.ts)、[限流守卫](../src/backend/server-main/src/common/guards/rate-limit.guard.ts)、[清理判定与实现](../src/frontend/web-blog/server/utils/ssrCache.ts)、[响应后钩子](../src/frontend/web-blog/server/plugins/ssr-cache-purge.ts)、[浏览器验证插件](../src/frontend/web-blog/server/plugins/ssr-cache-browser.ts)、[缓存页面清单](../src/frontend/web-blog/server/utils/ssrCacheRoutes.ts)、[降级状态插件](../src/frontend/web-blog/app/plugins/ssr-render-status.server.ts)。
 
 ## 后端分层

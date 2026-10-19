@@ -150,6 +150,71 @@ corepack pnpm preview
 
 开发环境默认不可索引；正式与预发布环境的运行时索引设置见[部署指南](deployment.md)。
 
+## 界面文案与多语言
+
+界面提供 `zh-CN`（默认）与 `en` 两种语言，基于 `@nuxtjs/i18n` 的 `no_prefix` 策略，地址不带语言前缀。语言常量、cookie 名与字典域清单集中在 `src/frontend/web-blog/i18n/localeOptions.ts`；站点默认语言由部署变量 `NUXT_PUBLIC_DEFAULT_LOCALE` 决定，见[部署指南](deployment.md)。首屏语言取有效的 `blog-locale` cookie，否则用站点默认语言，不读取 `Accept-Language`；只有访客在界面设置中主动切换时才写 cookie。
+
+### 字典与 key
+
+字典位于 `src/frontend/web-blog/i18n/locales/<locale>/<域>.json`，每种语言一组同名文件，切换语言时整包懒加载：
+
+| 域              | 范围                                             |
+| --------------- | ------------------------------------------------ |
+| `common`        | 跨域通用文案：订阅源、日期、语言切换、通用错误   |
+| `layout`        | 外壳、导航、页脚、侧栏与共享组件                 |
+| `theme`         | 三套主题与主题切换                               |
+| `article`       | 文章、归档、标签专栏与搜索                       |
+| `flash-moment`  | 闪念与朋友圈                                     |
+| `interaction`   | 留言、友链与登录面板                             |
+| `misc`          | 书签、提示词、订阅费、项目、图库与关于页         |
+| `admin-content` | 后台文章、分类、评论、闪念与朋友圈               |
+| `admin-media`   | 后台媒体库、图库、友链、项目、订阅费与留言       |
+| `admin-system`  | 后台工作台、站点设置、账号、审计、维护与通用组件 |
+
+- 每个文件只有一个顶层键且与域名相同，例如 `{ "admin-content": { … } }`。
+- key 形如 `<域>.<页面或组件>.<语义>`，小驼峰，例如 `article.detail.relatedTitle`。
+- 插值使用具名参数 `{name}`，不拼接字符串。英文复数用管道写法 `"one comment | {count} comments"`，中文写一种形式，调用 `t(key, { count }, count)`；需要和数量组合的名词，传入按数量取形式的函数，不要把复数名词直接拼在数字后面。
+- 文案中的 `@ { } |` 等 vue-i18n 特殊字符要转义，例如邮箱写成 `{'@'}`。
+- **新增或修改界面文案必须同时更新 zh-CN 与 en 字典**。`tests/unit/i18nDictionaries.test.ts` 会校验两种语言的 key 集合完全一致、叶子为非空字符串且都能被 vue-i18n 编译，漏写任一语言都会失败。英文按自然表达书写，不逐字硬译。
+
+### 代码中的用法
+
+- 模板用 `$t('…')`，脚本用 `const { t, locale } = useI18n()`；`useHead` 中随语言变化的值用 getter。
+- 非组件的 ts 模块接收 `t` 参数（`Translate` 类型，见 `app/utils/format.ts`）或返回 key 交给调用方翻译，不在模块顶层求值文案。确实无法传参时，在调用或抛出错误的那一刻使用 `currentTranslate()` / `currentLocale()`。
+- 日期、数字与相对时间统一用 `app/utils/format.ts` 的 `formatDateTime`、`formatDate`、`formatNumber`、`formatRelative`，不要直接写 `toLocaleString('zh-CN', …)`。
+- 接口错误统一用 `app/utils/apiError.ts` 的 `apiErrorMessage(cause, fallbackKey)`：优先显示后端 message，否则显示字典兜底文案。
+- 服务端订阅路由没有 Nuxt i18n 实例：语言用 `server/utils/publicContent.ts` 的 `feedLocale(event)` 取站点默认语言，少量频道文案在路由内按语言映射。
+- 不翻译的内容：博主编辑的站点设置、文章、朋友圈等业务数据，`features/*/mock.ts` 演示样本，`components/dev` 调试面板，以及搜索用的 `toLocaleLowerCase('zh-CN')`。站点设置留空时显示的缺省值属于界面文案，走字典。
+
+### 测试中切换语言
+
+Vitest 的 `tests/setup/i18n.ts` 为测试应用注入 zh-CN，`mountSuspended` 与直接 `mount` 的组件都能使用 `$t`，用例里不要再 `app.use(createI18n())`。现有中文断言无需改动；英文断言在用例内切换，并在结束时切回：
+
+```ts
+const i18n = () => useNuxtApp().$i18n // 在用例内取，收集阶段测试应用尚未就绪
+
+it('英文冒烟', async () => {
+  await i18n().setLocale('en')
+  try {
+    const wrapper = await mountSuspended(MyComponent)
+    expect(wrapper.text()).toContain('Related posts')
+  } finally {
+    await i18n().setLocale('zh-CN')
+  }
+})
+```
+
+需要读取字典原文时使用 `import.meta.glob('…/*.json', { query: '?raw', import: 'default', eager: true })`，直接 import JSON 会被 i18n 插件预编译成消息函数。浏览器用例可用 `context.addCookies([{ name: 'blog-locale', value: 'en', url: baseURL }])` 进入英文界面；验证站点默认英文时运行 `NUXT_PUBLIC_DEFAULT_LOCALE=en corepack pnpm test:e2e:run i18n.spec.ts`，运行器会把变量透传给隔离的生产预览。
+
+### 常见坑
+
+- 字典设置了 `fallbackLocale: 'zh-CN'`，英文漏词时显示中文而不是裸 key；英文冒烟断言应检查目标区域不含汉字。
+- 单测里 `mockNuxtImport('useRoute', …)` 返回的对象缺 `query`，或 `useRouter` 桩缺 `beforeResolve`、`onError`、`options` 时，i18n 插件不会安装，组件调用 `$t` 会直接失败；补齐这些字段即可，不要削弱断言。
+- 在 `await` 之后生成文案时，组件上下文可能已经不在，应把 `useI18n().t` 显式传给工具函数。
+- `enforce: 'pre'` 的插件早于 i18n 就绪，只能记录 key 或状态，文案交给组件渲染。
+- 服务端 `i18n:beforeLocaleSwitch` 钩子已不在 Nuxt 上下文内，不能直接调用 `useCookie` / `useState`；`no_prefix` 下模块的 `initialSetup` 始终为 true，不要用它判断首次访问。
+- 业务逻辑不要比较翻译后的文案（例如按错误提示判断冲突类型），应使用错误码、状态码或显式标志。
+
 ## 交互光标
 
 全站光标由 `_interaction.scss` 按原生控件和交互角色提供基础规则。禁用控件使用 `not-allowed`；只有实际执行请求的操作按钮设置 `aria-busy`，使用 `progress`，不把忙碌容器的状态扩散到子控件。只读文本仍可选择复制。

@@ -13,6 +13,8 @@
 
 新增内容模块时，按[完整接入流程](docs/adding-a-module.md)核对实体与迁移、接口与审计、内容包与完整恢复、前端与三主题、代表样本和测试入口。
 
+新增或修改界面文案时，必须同时更新 `src/frontend/web-blog/i18n/locales/` 下 zh-CN 与 en 两份字典：新增 key 只写一种语言会被字典一致性单测拦截，修改已有文案也要同步核对另一种语言；博主内容和演示样本不进字典，约定见[开发指南](docs/development.md#界面文案与多语言)。
+
 代码文件需有文件头，注释使用中文，换行使用 LF。格式采用单引号、无分号、120 列和尾随逗号，由 Prettier 统一处理。图标使用 Lucide，例如 `<Icon name="lucide:file-text" />`。框架和主题约定见[开发指南](docs/development.md)与[主题指南](docs/themes.md)。
 
 ## 开发数据与配置

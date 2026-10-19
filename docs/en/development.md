@@ -154,6 +154,71 @@ The project's `build` / `generate` commands explicitly select `--envName product
 
 Development environments are not indexable by default. See the [deployment guide](deployment.md) for runtime indexing settings in production and staging environments.
 
+## Interface Text and Languages
+
+The interface ships in `zh-CN` (default) and `en`, using the `no_prefix` strategy of `@nuxtjs/i18n`, so URLs carry no language prefix. Locale constants, the cookie name and the list of dictionary domains live in `src/frontend/web-blog/i18n/localeOptions.ts`. The site's default language comes from the `NUXT_PUBLIC_DEFAULT_LOCALE` deployment variable; see the [deployment guide](deployment.md). The first render uses a valid `blog-locale` cookie, otherwise the site default, and never reads `Accept-Language`. The cookie is written only when a visitor switches languages in the appearance settings.
+
+### Dictionaries and Keys
+
+Dictionaries live in `src/frontend/web-blog/i18n/locales/<locale>/<domain>.json`, one set of identically named files per language, lazy-loaded as a whole when the language changes:
+
+| Domain          | Scope                                                                          |
+| --------------- | ------------------------------------------------------------------------------ |
+| `common`        | Shared text: feeds, dates, language switching, generic errors                  |
+| `layout`        | Shell, navigation, footer, sidebar and shared components                       |
+| `theme`         | The three themes and theme switching                                           |
+| `article`       | Posts, archive, tags and folders, search                                       |
+| `flash-moment`  | Flash notes and moments                                                        |
+| `interaction`   | Guestbook, links and the sign-in panel                                         |
+| `misc`          | Tabs, prompts, subscriptions, projects, gallery and about page                 |
+| `admin-content` | Admin posts, taxonomy, comments, flash notes and moments                       |
+| `admin-media`   | Admin media library, gallery, links, projects, subscriptions, guestbook        |
+| `admin-system`  | Admin workspace, site settings, account, audit, maintenance, shared components |
+
+- Each file has exactly one top-level key, equal to the domain name, e.g. `{ "admin-content": { … } }`.
+- Keys follow `<domain>.<page or component>.<meaning>` in camelCase, e.g. `article.detail.relatedTitle`.
+- Use named interpolation `{name}` instead of string concatenation. Write English plurals with pipes, `"one comment | {count} comments"`, give Chinese a single form, and call `t(key, { count }, count)`. When a noun is combined with a count, pass a function that picks the form for that count instead of appending a plural noun to a number.
+- Escape vue-i18n special characters such as `@ { } |` in messages, e.g. write an email address as `{'@'}`.
+- **Every new or changed interface string must be added to both the zh-CN and en dictionaries.** `tests/unit/i18nDictionaries.test.ts` checks that both languages have exactly the same key set, that every leaf is a non-empty string, and that every message compiles in vue-i18n; missing either language fails the test. Write natural English rather than a word-for-word translation.
+
+### Using Text in Code
+
+- Use `$t('…')` in templates and `const { t, locale } = useI18n()` in scripts; use getters for language-dependent values in `useHead`.
+- Non-component TS modules either accept a `t` parameter (the `Translate` type in `app/utils/format.ts`) or return keys for the caller to translate; never evaluate text at module top level. When passing `t` is genuinely impossible, call `currentTranslate()` / `currentLocale()` at the moment the text is produced or the error is thrown.
+- Format dates, numbers and relative times with `formatDateTime`, `formatDate`, `formatNumber` and `formatRelative` from `app/utils/format.ts` instead of `toLocaleString('zh-CN', …)`.
+- Show API errors with `apiErrorMessage(cause, fallbackKey)` from `app/utils/apiError.ts`: it prefers the backend message and otherwise falls back to the dictionary text.
+- Server feed routes have no Nuxt i18n instance: get the site default language with `feedLocale(event)` from `server/utils/publicContent.ts` and map the few channel strings per language inside the route.
+- Not translated: author-edited data such as site settings, posts and moments; demo samples in `features/*/mock.ts`; the `components/dev` debug panel; and `toLocaleLowerCase('zh-CN')` used for search. Defaults shown when a site setting is left empty are interface text and go through the dictionaries.
+
+### Switching Languages in Tests
+
+`tests/setup/i18n.ts` injects zh-CN into the Vitest app, so both `mountSuspended` and directly `mount`ed components can use `$t`; do not call `app.use(createI18n())` in test cases. Existing Chinese assertions need no change. For English assertions, switch inside the test and switch back at the end:
+
+```ts
+const i18n = () => useNuxtApp().$i18n // read inside the test; the app isn't ready at collection time
+
+it('English smoke', async () => {
+  await i18n().setLocale('en')
+  try {
+    const wrapper = await mountSuspended(MyComponent)
+    expect(wrapper.text()).toContain('Related posts')
+  } finally {
+    await i18n().setLocale('zh-CN')
+  }
+})
+```
+
+To read raw dictionary text, use `import.meta.glob('…/*.json', { query: '?raw', import: 'default', eager: true })`; importing JSON directly yields messages precompiled by the i18n plugin. Browser tests can enter the English interface with `context.addCookies([{ name: 'blog-locale', value: 'en', url: baseURL }])`. To verify an English site default, run `NUXT_PUBLIC_DEFAULT_LOCALE=en corepack pnpm test:e2e:run i18n.spec.ts`; the runner forwards the variable to the isolated production preview.
+
+### Common Pitfalls
+
+- The dictionaries use `fallbackLocale: 'zh-CN'`, so a missing English string shows Chinese rather than a raw key; English smoke assertions should check that the target area contains no Han characters.
+- If a unit test's `mockNuxtImport('useRoute', …)` returns an object without `query`, or a `useRouter` stub lacks `beforeResolve`, `onError` or `options`, the i18n plugin is not installed and `$t` fails. Add those fields instead of weakening assertions.
+- When text is produced after an `await`, the component context may be gone; pass `useI18n().t` to the helper explicitly.
+- Plugins with `enforce: 'pre'` run before i18n is ready; store a key or state and let a component render the text.
+- The server-side `i18n:beforeLocaleSwitch` hook runs outside the Nuxt context, so `useCookie` / `useState` cannot be called there; under `no_prefix` the module's `initialSetup` is always true, so do not use it to detect a first visit.
+- Business logic must not compare translated text (for example to classify a conflict from an error message); use error codes, status codes or explicit flags.
+
 ## Interaction Cursors
 
 Site-wide cursor rules are provided by `_interaction.scss` based on native controls and interaction roles. Disabled controls use `not-allowed`. Only action buttons that are actually executing requests set `aria-busy` and use `progress`; do not propagate a busy container's state to child controls. Read-only text remains selectable and copyable.
