@@ -5,6 +5,7 @@
  *              文章 Markdown 与回退渲染的 CodeBlock 共用同一个实例，避免打入 Shiki 全量语言包
  */
 import type { HighlighterCore, LanguageRegistration } from 'shiki/core'
+import { markdownLabel, type MarkdownTranslate } from '~/utils/markdownLabels'
 
 type LanguageModule = { default: LanguageRegistration[] }
 
@@ -91,7 +92,6 @@ const displayNames: Record<string, string> = {
   nginx: 'Nginx',
   xml: 'XML',
   wgsl: 'WGSL',
-  text: '文本',
 }
 
 const plainLanguages = new Set(['', 'text', 'txt', 'plain', 'plaintext'])
@@ -104,9 +104,10 @@ export function resolveCodeLanguage(language?: string | null): string | null {
   return name in languageLoaders ? name : null
 }
 
-/** 代码块标签文本 */
-export function codeLanguageLabel(language?: string | null): string {
+/** 代码块标签文本；纯文本标签随界面语言变化，需传入翻译函数，缺省为中文 */
+export function codeLanguageLabel(language?: string | null, t?: MarkdownTranslate): string {
   const resolved = resolveCodeLanguage(language)
+  if (resolved === 'text') return markdownLabel(t, 'article.markdown.plainText')
   return resolved ? displayNames[resolved]! : (language ?? '').trim().slice(0, 24)
 }
 

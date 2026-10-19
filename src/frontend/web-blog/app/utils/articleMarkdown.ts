@@ -11,6 +11,7 @@ import DOMPurify from 'isomorphic-dompurify'
 import type { TocItem } from '~/features/post/types'
 import { codeLanguageLabel, resolveCodeLanguage, type CodeHighlighter } from '~/utils/highlightCode'
 import { managedImageSrcset } from '~/utils/managedImage'
+import { markdownLabel } from '~/utils/markdownLabels'
 import { markdownLinks, type MarkdownLinkEnvironment, type MarkdownLinkOptions } from '~/utils/markdownLinks'
 
 interface RenderEnvironment extends MarkdownLinkEnvironment {
@@ -80,7 +81,8 @@ parser.renderer.rules.fence = (tokens, index, _options, env) => {
   const resolved = resolveCodeLanguage(language)
   const highlighted = resolved ? environment.highlighter?.highlight(code, resolved) : null
   const body = highlighted ?? `<pre class="article-code__plain" tabindex="0"><code>${escapeHtml(code)}</code></pre>`
-  const label = codeLanguageLabel(language) || '代码'
+  const t = environment.markdownLinks?.t
+  const label = codeLanguageLabel(language, t) || markdownLabel(t, 'article.markdown.code')
   return (
     `<div class="article-code" data-language="${escapeHtml(resolved ?? 'text')}">` +
     `<div class="article-code__header"><span class="article-code__lang">${escapeHtml(label)}</span>` +
@@ -113,7 +115,10 @@ parser.renderer.rules.image = (tokens, index, options, environment, renderer) =>
   const image = defaultImage(tokens, index, options, environment, renderer)
   if (insideLink(tokens, index)) return image
   const alt = normalize(renderer.renderInlineAsText(token.children ?? [], options, environment))
-  const label = alt ? `查看大图：${alt}` : '查看大图'
+  const t = renderEnvironment(environment).markdownLinks?.t
+  const label = alt
+    ? markdownLabel(t, 'article.markdown.viewImageWithAlt', { alt })
+    : markdownLabel(t, 'article.markdown.viewImage')
   return `<button type="button" class="article-image" data-article-image aria-label="${escapeHtml(label)}">${image}</button>`
 }
 

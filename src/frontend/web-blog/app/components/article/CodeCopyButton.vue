@@ -4,24 +4,27 @@
                文章 Markdown 代码块与回退渲染的 CodeBlock 共用
 -->
 <template>
-  <CommonTooltip :content="copied ? '已复制' : '复制代码'" placement="top">
+  <CommonTooltip :content="copied ? $t('article.codeCopy.copied') : $t('article.codeCopy.copy')" placement="top">
     <button
       type="button"
       class="code-copy"
       :class="{ 'is-copied': copied }"
-      :aria-label="copied ? '已复制代码' : '复制代码'"
+      :aria-label="copied ? $t('article.codeCopy.copiedLabel') : $t('article.codeCopy.copy')"
       @click="copy"
     >
       <Icon :name="copied ? 'lucide:check' : 'lucide:copy'" size="15" aria-hidden="true" />
-      <span class="code-copy__text" aria-hidden="true">{{ copied ? '已复制' : '复制' }}</span>
+      <span class="code-copy__text" aria-hidden="true">{{
+        copied ? $t('article.codeCopy.copied') : $t('article.codeCopy.short')
+      }}</span>
     </button>
   </CommonTooltip>
-  <span class="sr-only" role="status">{{ copied ? '代码已复制到剪贴板' : '' }}</span>
+  <span class="sr-only" role="status">{{ copied ? $t('article.codeCopy.announced') : '' }}</span>
 </template>
 
 <script setup lang="ts">
 const props = defineProps<{ code: string }>()
 
+const { t } = useI18n()
 const copied = ref(false)
 const { warning: notifyCopyFailure } = useToast()
 let copyTimer: ReturnType<typeof setTimeout> | undefined
@@ -41,7 +44,7 @@ async function copy() {
       copied.value = false
     }, 2000)
   } catch {
-    if (alive) notifyCopyFailure('复制失败，请手动选择代码复制。')
+    if (alive) notifyCopyFailure(t('article.codeCopy.failed'))
   }
 }
 </script>

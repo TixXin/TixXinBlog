@@ -1,1 +1,263 @@
-{}
+{
+  "article": {
+    "markdown": {
+      "code": "Code",
+      "plainText": "Text",
+      "viewImage": "View full image",
+      "viewImageWithAlt": "View full image: {alt}",
+      "newWindow": "(opens in a new window)"
+    },
+    "readTime": {
+      "minutes": "{minutes} min"
+    },
+    "codeCopy": {
+      "copy": "Copy code",
+      "copied": "Copied",
+      "copiedLabel": "Code copied",
+      "short": "Copy",
+      "announced": "Code copied to clipboard",
+      "failed": "Copy failed. Please select the code and copy it manually."
+    },
+    "headingAnchor": {
+      "copy": "Copy link to heading",
+      "copied": "Heading link copied",
+      "label": "{action}: {heading}",
+      "toast": "Heading link copied",
+      "failed": "Copy failed. Check your browser's clipboard permission and try again."
+    },
+    "stickyHeader": {
+      "back": "Back"
+    },
+    "readingResume": {
+      "progress": "Last read: {percent}%",
+      "estimate": "About {time} to read",
+      "tooltip": "Jump to where you left off in this post",
+      "action": "Continue reading"
+    },
+    "archiveStats": {
+      "title": "Archive overview",
+      "distribution": "By category",
+      "posts": "Posts",
+      "categories": "Categories",
+      "tags": "Tags"
+    },
+    "archiveTimeline": {
+      "yearCount": "{count} post this year | {count} posts this year"
+    },
+    "lightbox": {
+      "close": "Close image",
+      "noAlt": "No description provided",
+      "nav": "Switch images",
+      "previous": "Previous",
+      "next": "Next",
+      "dialog": "Post image",
+      "dialogPosition": "Post image {index} of {total}"
+    },
+    "nav": {
+      "label": "Adjacent posts",
+      "folderLabel": "Adjacent posts in {folder}",
+      "sameFolder": "Same series · {folder}",
+      "errorTitle": "Some post details failed to load",
+      "errorDescription": "Retry loading adjacent posts and recommendations.",
+      "previous": "Previous",
+      "next": "Next"
+    },
+    "related": {
+      "title": "Related posts"
+    },
+    "toc": {
+      "title": "Contents"
+    },
+    "comment": {
+      "sectionLabel": "Post comments",
+      "title": "Comments",
+      "loading": "Loading comments…",
+      "refresh": "Refresh comments",
+      "replyingTo": "Replying to {author}",
+      "cancelReply": "Cancel reply",
+      "replyContent": "Reply",
+      "commentContent": "Comment",
+      "placeholder": "Write a comment...",
+      "submitting": "Posting…",
+      "submitReply": "Post reply",
+      "submit": "Post comment",
+      "loadFailedTitle": "Comments failed to load",
+      "empty": "No comments yet. Be the first to write one.",
+      "ownerBadge": "Author",
+      "likeLabel": "Like {author}'s comment",
+      "unlikeLabel": "Unlike {author}'s comment",
+      "processing": "Working…",
+      "replyLabel": "Reply to {author}'s comment",
+      "reply": "Reply",
+      "maxDepth": "Maximum reply depth reached",
+      "loadFailed": "Comments failed to load. Please try again.",
+      "lengthInvalid": "Comments must be 1–1000 characters long.",
+      "pendingNotice": "Comment submitted. It will appear once the author approves it.",
+      "publishedNotice": "Comment posted",
+      "pendingSyncFailed": "Comment submitted and awaiting review, but the list failed to refresh. Please reload it.",
+      "publishedSyncFailed": "Comment posted, but the list failed to refresh. Please reload it.",
+      "submitFailed": "Comment failed to send and your draft was kept. If the connection dropped, refresh the comments first to check whether it was posted.",
+      "likeFailed": "Like failed. Refresh the comments to check the current state, then try again.",
+      "mockAdded": "Demo comment added"
+    },
+    "detail": {
+      "demoNote": "Demo post: the body is a generic layout sample and does not reflect the title.",
+      "likeLabel": "Like this post ({count} like) | Like this post ({count} likes)",
+      "favorite": "Bookmark",
+      "favorited": "Bookmarked",
+      "breadcrumbHome": "Home",
+      "notFound": "Post not found",
+      "loadFailed": "The post failed to load. Please try again later.",
+      "defaultExcerpt": "Read posts on this site"
+    },
+    "interaction": {
+      "viewSyncFailed": "The view count hasn't synced yet. You can retry.",
+      "loadFailed": "Likes and views failed to load. Please try again.",
+      "likeFailed": "Like failed. Please retry to sync the state."
+    },
+    "preview": {
+      "noticeLabel": "About this draft preview",
+      "badge": "Preview — not yet published",
+      "noticeSaved": "This shows the latest saved draft. The link keeps working after edits until it expires, 7 days after it was created.",
+      "noticePrivacy": "Views aren't counted and comments are off. Anyone with the link can read it, so share with care.",
+      "invalidLink": "This preview link is invalid or has expired. Ask the author for a new one.",
+      "unavailable": "The draft preview is temporarily unavailable. Please try again later.",
+      "coverFailed": "Cover failed to load",
+      "seoTitle": "Draft preview",
+      "seoDescription": "Read an unpublished draft through a time-limited share link."
+    },
+    "search": {
+      "title": "Search",
+      "subtitle": "Find posts, projects and everyday notes by content type",
+      "inputLabel": "Search public content on this site",
+      "placeholder": "Enter keywords",
+      "submit": "Search",
+      "typesLabel": "Content types",
+      "scope": "Posts are matched on title, summary, body and tags; other types on their public descriptions, text or categories.",
+      "keyboardHint": "Press ↑↓ in the search box to move into the results, keep using the arrow keys to switch, and press Enter to open.",
+      "emptyQuery": "Enter a keyword to start searching.",
+      "loadFailed": "Search failed to load",
+      "previewHint": "Showing the first {count} results of each type. Pick a type to see all of its results.",
+      "itemCount": "{count} result | {count} results",
+      "viewAll": "View all {type}",
+      "sourceUnavailable": "This source is temporarily unavailable; other types can still be browsed.",
+      "noResults": "No results match these filters.",
+      "newTab": "(opens in a new tab)",
+      "paginationLabel": "Search results pagination",
+      "pageStatus": "Page {page} · {total} result | Page {page} · {total} results",
+      "seoDescription": "Search this site's public posts, projects, links, gallery, flash notes and moments by type.",
+      "unavailable": "Search for {types} is temporarily unavailable. Please try again.",
+      "othersAvailable": " Results from other sources are still available.",
+      "listSeparator": ", ",
+      "types": {
+        "all": "All types",
+        "post": "Posts",
+        "project": "Projects",
+        "link": "Links",
+        "gallery": "Gallery",
+        "flash": "Flash notes",
+        "moment": "Moments"
+      }
+    },
+    "tabs": {
+      "label": "Content types",
+      "all": "All posts",
+      "moments": "Moments"
+    },
+    "home": {
+      "searchPlaceholder": "Search posts and tags...",
+      "filterDrawer": "Filter & subscribe",
+      "clearFilter": "Clear filter",
+      "clearFilterWith": "Clear filter: {filter}",
+      "activeFilter": "Filtered by: {filter}",
+      "displayMode": "Post list display mode",
+      "waterfall": "Infinite scroll",
+      "pagination": "Paginated",
+      "seoCategory": "Category {name}",
+      "seoTag": "Tag {name}"
+    },
+    "pagination": {
+      "previous": "Previous page",
+      "next": "Next page",
+      "page": "Page {page}",
+      "pageSuffix": " · Page {page}"
+    },
+    "list": {
+      "loadFailed": "Posts failed to load. Please try again.",
+      "loadingEllipsis": "Loading posts…",
+      "loading": "Loading posts",
+      "keptPrevious": "Showing the posts from the last successful load.",
+      "loadFailedDescription": "Posts are temporarily unavailable. Please try again later.",
+      "empty": "No matching posts",
+      "loadingMore": "Loading...",
+      "end": "You've reached the end",
+      "paginationLabel": "Post pagination"
+    },
+    "taxonomy": {
+      "tagHeading": "Tag: {name}",
+      "folderHeading": "Series: {name}",
+      "tagDescription": "Browse public posts tagged “{name}”.",
+      "tagDescriptionPaged": "Browse public posts tagged “{name}”, page {page}.",
+      "folderDescription": "Browse public posts in the “{name}” series.",
+      "folderDescriptionPaged": "Browse public posts in the “{name}” series, page {page}.",
+      "tagNotFound": "Tag not found",
+      "folderNotFound": "Series not found",
+      "metadataUnavailable": "The post directory is temporarily unavailable"
+    },
+    "archive": {
+      "title": "Archive",
+      "summary": "{period} · {count} post | {period} · {count} posts",
+      "loading": "Loading archive…",
+      "unavailable": "Archive temporarily unavailable",
+      "yearLabel": "Year",
+      "yearSelect": "Archive year",
+      "allYears": "All years",
+      "year": "{year}",
+      "yearMonth": "{monthName} {year}",
+      "yearOption": "{year} ({count} post) | {year} ({count} posts)",
+      "monthLabel": "Month",
+      "monthSelect": "Archive month",
+      "allMonths": "All months",
+      "selectYearFirst": "Select a year first",
+      "monthOption": "{monthName}",
+      "searchPlaceholder": "Search post titles and content...",
+      "loadFailed": "The archive failed to load. Please try again later.",
+      "keptPrevious": "Showing the last archive that loaded; you can retry the current filter.",
+      "loadFailedDescription": "The archive is temporarily unavailable.",
+      "staleNotice": "Currently showing: {period}, page {page} (last successful result).",
+      "emptyTitle": "No archived posts yet",
+      "emptyDescription": "Posts will appear here once they are published.",
+      "paginationLabel": "Archive pagination",
+      "statsUnavailable": "Archive stats temporarily unavailable",
+      "statsKept": "Showing the archive stats from the last successful load.",
+      "seoTitlePeriod": "Posts from {period}",
+      "seoTitleAll": "Archive",
+      "seoDescriptionPeriod": "A timeline of posts published in {period}, from technical notes to everyday essays",
+      "seoDescriptionAll": "A timeline of every post, from technical notes to everyday essays over the years"
+    },
+    "postCard": {
+      "coverAlt": "Cover for {title}",
+      "pinned": "Pinned"
+    },
+    "recent": {
+      "title": "Recent posts",
+      "readLabel": "Read post: {title}"
+    },
+    "rss": {
+      "subscribe": "Subscribe to {label} RSS",
+      "posts": "Posts",
+      "flash": "Flash notes",
+      "moments": "Moments"
+    },
+    "subscribe": {
+      "title": "Subscribe",
+      "description": "Follow posts, flash notes and moments separately in your RSS reader. Email subscriptions are not available yet."
+    },
+    "themeSwitcher": {
+      "label": "Switch color mode (current: {current})"
+    },
+    "appearanceEntry": {
+      "label": "Display settings"
+    }
+  }
+}

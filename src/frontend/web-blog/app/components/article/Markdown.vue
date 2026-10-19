@@ -52,9 +52,12 @@ watch(languages, (names, previous) => {
   if (import.meta.client && names.length && names.join() !== previous?.join()) void ensureHighlighter(names)
 })
 
-const html = computed(() =>
-  renderArticleMarkdown(props.content, props.title, { highlighter: highlighter.value, siteUrl }),
-)
+// 渲染出的代码块标签、查看大图与新窗口提示跟随界面语言；服务端与水合使用同一 cookie 语言，HTML 保持一致
+const { t, locale } = useI18n()
+const html = computed(() => {
+  void locale.value
+  return renderArticleMarkdown(props.content, props.title, { highlighter: highlighter.value, siteUrl, t })
+})
 
 // 复制按钮：客户端复用静态挂载位，SSR 不读取浏览器地址或输出交互组件
 const rootRef = ref<HTMLElement | null>(null)

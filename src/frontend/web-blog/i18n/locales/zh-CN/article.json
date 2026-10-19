@@ -1,1 +1,263 @@
-{}
+{
+  "article": {
+    "markdown": {
+      "code": "代码",
+      "plainText": "文本",
+      "viewImage": "查看大图",
+      "viewImageWithAlt": "查看大图：{alt}",
+      "newWindow": "（在新窗口打开）"
+    },
+    "readTime": {
+      "minutes": "{minutes} 分钟"
+    },
+    "codeCopy": {
+      "copy": "复制代码",
+      "copied": "已复制",
+      "copiedLabel": "已复制代码",
+      "short": "复制",
+      "announced": "代码已复制到剪贴板",
+      "failed": "复制失败，请手动选择代码复制。"
+    },
+    "headingAnchor": {
+      "copy": "复制标题链接",
+      "copied": "已复制标题链接",
+      "label": "{action}：{heading}",
+      "toast": "标题链接已复制",
+      "failed": "复制失败，请检查浏览器剪贴板权限后重试。"
+    },
+    "stickyHeader": {
+      "back": "返回上一页"
+    },
+    "readingResume": {
+      "progress": "上次读到 {percent}%",
+      "estimate": "预计阅读 {time}",
+      "tooltip": "跳转到这篇文章上次的阅读位置",
+      "action": "继续上次阅读"
+    },
+    "archiveStats": {
+      "title": "归档概览",
+      "distribution": "分类分布",
+      "posts": "文章",
+      "categories": "分类",
+      "tags": "标签"
+    },
+    "archiveTimeline": {
+      "yearCount": "全年共 {count} 篇"
+    },
+    "lightbox": {
+      "close": "关闭大图",
+      "noAlt": "图片未提供说明",
+      "nav": "切换正文图片",
+      "previous": "上一张",
+      "next": "下一张",
+      "dialog": "正文图片",
+      "dialogPosition": "正文图片 {index} / {total}"
+    },
+    "nav": {
+      "label": "相邻文章",
+      "folderLabel": "{folder}专栏的相邻文章",
+      "sameFolder": "同专栏 · {folder}",
+      "errorTitle": "部分文章信息加载失败",
+      "errorDescription": "请重试加载相邻文章和相关推荐。",
+      "previous": "上一篇",
+      "next": "下一篇"
+    },
+    "related": {
+      "title": "相关文章"
+    },
+    "toc": {
+      "title": "文章目录"
+    },
+    "comment": {
+      "sectionLabel": "文章评论",
+      "title": "评论",
+      "loading": "正在加载评论…",
+      "refresh": "刷新评论",
+      "replyingTo": "回复 {author}",
+      "cancelReply": "取消回复",
+      "replyContent": "回复内容",
+      "commentContent": "评论内容",
+      "placeholder": "写下你的评论...",
+      "submitting": "正在发表…",
+      "submitReply": "发表回复",
+      "submit": "发布评论",
+      "loadFailedTitle": "评论加载失败",
+      "empty": "暂无评论，来写下第一条吧。",
+      "ownerBadge": "作者",
+      "likeLabel": "点赞 {author}的评论",
+      "unlikeLabel": "取消点赞 {author}的评论",
+      "processing": "处理中…",
+      "replyLabel": "回复 {author}的评论",
+      "reply": "回复",
+      "maxDepth": "已到最深回复层级",
+      "loadFailed": "评论加载失败，请重试",
+      "lengthInvalid": "评论需要 1–1000 个字符",
+      "pendingNotice": "评论已提交，等待博主审核，通过后公开显示",
+      "publishedNotice": "评论发布成功",
+      "pendingSyncFailed": "评论已提交，等待审核；列表同步失败，请重试加载",
+      "publishedSyncFailed": "评论已发表，列表同步失败，请重试加载",
+      "submitFailed": "评论发送失败，草稿已保留；若连接中断，请先刷新评论确认是否已发表",
+      "likeFailed": "点赞操作失败，请刷新评论确认状态后重试",
+      "mockAdded": "演示评论已添加"
+    },
+    "detail": {
+      "demoNote": "演示文章：正文为通用排版示例，不代表标题对应的正式内容。",
+      "likeLabel": "点赞文章，{count} 个赞",
+      "favorite": "收藏",
+      "favorited": "已收藏",
+      "breadcrumbHome": "首页",
+      "notFound": "文章不存在",
+      "loadFailed": "文章加载失败，请稍后重试",
+      "defaultExcerpt": "阅读本站的文章"
+    },
+    "interaction": {
+      "viewSyncFailed": "浏览计数暂未同步，可以重试",
+      "loadFailed": "文章互动状态加载失败，请重试",
+      "likeFailed": "点赞操作失败，请重试同步状态"
+    },
+    "preview": {
+      "noticeLabel": "草稿预览说明",
+      "badge": "预览，尚未发布",
+      "noticeSaved": "这里展示最新已保存的草稿。文章修改后，原链接仍有效直到过期；链接有效期为生成后 7 天。",
+      "noticePrivacy": "本页不计浏览，也不开放评论。持有链接的人均可阅读，请谨慎转发。",
+      "invalidLink": "预览链接无效或已过期，请向博主获取新的链接。",
+      "unavailable": "暂时无法读取草稿预览，请稍后重试。",
+      "coverFailed": "封面加载失败",
+      "seoTitle": "草稿预览",
+      "seoDescription": "通过限时分享链接阅读尚未发布的草稿。"
+    },
+    "search": {
+      "title": "站内搜索",
+      "subtitle": "按内容类型查找文章、作品与日常记录",
+      "inputLabel": "搜索站内公开内容",
+      "placeholder": "输入关键词",
+      "submit": "搜索",
+      "typesLabel": "搜索内容类型",
+      "scope": "文章检索标题、摘要、正文与标签；其他类型检索各自公开的介绍、正文或分类字段。",
+      "keyboardHint": "在搜索框按 ↑↓ 进入结果，继续按方向键切换，按 Enter 打开。",
+      "emptyQuery": "输入关键词开始搜索。",
+      "loadFailed": "搜索加载失败",
+      "previewHint": "各类型分别预览前 {count} 项；选择类型查看该类型的全部结果。",
+      "itemCount": "{count} 项",
+      "viewAll": "查看全部{type}",
+      "sourceUnavailable": "此来源暂不可用，其他类型仍可浏览。",
+      "noResults": "当前条件下没有结果。",
+      "newTab": "（在新标签页打开）",
+      "paginationLabel": "搜索结果分页",
+      "pageStatus": "第 {page} 页 · 共 {total} 项",
+      "seoDescription": "按类型检索本站公开文章、项目、友链、图库、闪念与朋友圈。",
+      "unavailable": "{types}搜索暂时不可用，请重试。",
+      "othersAvailable": "其他来源结果仍可使用。",
+      "listSeparator": "、",
+      "types": {
+        "all": "全部类型",
+        "post": "文章",
+        "project": "项目",
+        "link": "友链",
+        "gallery": "图库",
+        "flash": "闪念",
+        "moment": "朋友圈"
+      }
+    },
+    "tabs": {
+      "label": "内容类型",
+      "all": "全部文章",
+      "moments": "朋友圈"
+    },
+    "home": {
+      "searchPlaceholder": "搜索站内文章、标签...",
+      "filterDrawer": "筛选与订阅",
+      "clearFilter": "清除筛选",
+      "clearFilterWith": "清除筛选：{filter}",
+      "activeFilter": "当前筛选：{filter}",
+      "displayMode": "文章列表显示模式",
+      "waterfall": "连续加载",
+      "pagination": "分页显示",
+      "seoCategory": "分类 {name}",
+      "seoTag": "标签 {name}"
+    },
+    "pagination": {
+      "previous": "上一页",
+      "next": "下一页",
+      "page": "第 {page} 页",
+      "pageSuffix": " · 第 {page} 页"
+    },
+    "list": {
+      "loadFailed": "文章加载失败，请重试",
+      "loadingEllipsis": "正在加载文章…",
+      "loading": "正在加载文章",
+      "keptPrevious": "仍显示上次成功加载的文章。",
+      "loadFailedDescription": "暂时无法获取文章内容，请稍后重试。",
+      "empty": "暂无相关文章",
+      "loadingMore": "加载中...",
+      "end": "已经到底了",
+      "paginationLabel": "文章分页"
+    },
+    "taxonomy": {
+      "tagHeading": "标签：{name}",
+      "folderHeading": "专栏：{name}",
+      "tagDescription": "浏览标签「{name}」下的公开文章。",
+      "tagDescriptionPaged": "浏览标签「{name}」下的公开文章，第 {page} 页。",
+      "folderDescription": "浏览专栏「{name}」下的公开文章。",
+      "folderDescriptionPaged": "浏览专栏「{name}」下的公开文章，第 {page} 页。",
+      "tagNotFound": "标签不存在",
+      "folderNotFound": "专栏不存在",
+      "metadataUnavailable": "文章目录暂时不可用"
+    },
+    "archive": {
+      "title": "文章归档",
+      "summary": "{period} · 共 {count} 篇文章",
+      "loading": "正在加载归档…",
+      "unavailable": "归档暂时不可用",
+      "yearLabel": "年份",
+      "yearSelect": "归档年份",
+      "allYears": "全部年份",
+      "year": "{year} 年",
+      "yearMonth": "{year} 年 {month} 月",
+      "yearOption": "{year} 年（{count} 篇）",
+      "monthLabel": "月份",
+      "monthSelect": "归档月份",
+      "allMonths": "全部月份",
+      "selectYearFirst": "请先选择年份",
+      "monthOption": "{month} 月",
+      "searchPlaceholder": "搜索文章标题、内容...",
+      "loadFailed": "归档加载失败，请稍后重试",
+      "keptPrevious": "仍保留上次成功加载的归档，可重试当前筛选。",
+      "loadFailedDescription": "暂时无法获取归档内容。",
+      "staleNotice": "当前显示：{period}，第 {page} 页（上次成功结果）。",
+      "emptyTitle": "暂无文章归档",
+      "emptyDescription": "文章发布后会显示在这里。",
+      "paginationLabel": "文章归档分页",
+      "statsUnavailable": "归档统计暂时不可用",
+      "statsKept": "仍显示上次成功读取的归档统计。",
+      "seoTitlePeriod": "{period}文章归档",
+      "seoTitleAll": "归档",
+      "seoDescriptionPeriod": "按时间线回顾 {period}发布的文章，浏览技术沉淀与生活随笔",
+      "seoDescriptionAll": "按时间线回顾全部文章，浏览历年技术沉淀与生活随笔"
+    },
+    "postCard": {
+      "coverAlt": "{title} 封面",
+      "pinned": "置顶"
+    },
+    "recent": {
+      "title": "近期文章",
+      "readLabel": "阅读文章：{title}"
+    },
+    "rss": {
+      "subscribe": "订阅{label} RSS",
+      "posts": "文章",
+      "flash": "闪念",
+      "moments": "朋友圈"
+    },
+    "subscribe": {
+      "title": "订阅更新",
+      "description": "使用 RSS 阅读器分别订阅文章、闪念和朋友圈更新，邮件订阅尚未开放。"
+    },
+    "themeSwitcher": {
+      "label": "切换主题（当前：{current}）"
+    },
+    "appearanceEntry": {
+      "label": "界面设置"
+    }
+  }
+}

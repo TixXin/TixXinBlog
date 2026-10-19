@@ -3,12 +3,15 @@
  * @description Markdown 共用外链规则：区分博主与访客内容，保留站内导航，并追加新窗口图标与读屏说明
  */
 import type { Env, MarkdownIt, Token } from 'markdown-it'
+import { markdownLabel, type MarkdownTranslate } from '~/utils/markdownLabels'
 
 export interface MarkdownLinkOptions {
   /** 公开站点地址；由宿主传入，保证 SSR 与客户端使用同一个同源判定 */
   siteUrl?: string
   /** 评论和访客内容启用 nofollow ugc，博主正文默认不启用 */
   ugc?: boolean
+  /** 读屏提示的翻译函数；宿主组件传入当前界面语言的 t，SSR 与水合同语言得到同一份 HTML；缺省为中文 */
+  t?: MarkdownTranslate
 }
 
 /** 继承 markdown-it 的 Env，使渲染环境可直接传给 render/parse，规则内再按本接口读取 */
@@ -17,9 +20,13 @@ export interface MarkdownLinkEnvironment extends Env {
 }
 
 // v-html 不编译 Vue 组件；app.vue 的常驻 Icon 注册同一个 Lucide CSS 图标，首屏无需逐条挂载。
-const newWindowHint =
-  '<span class="markdown-link__icon iconify i-lucide:external-link" aria-hidden="true"></span>' +
-  '<span class="sr-only">（在新窗口打开）</span>'
+// 读屏提示随界面语言变化，每次渲染时求值，不在模块顶层固定语言。
+function newWindowHint(escape: (text: string) => string, t?: MarkdownTranslate) {
+  return (
+    '<span class="markdown-link__icon iconify i-lucide:external-link" aria-hidden="true"></span>' +
+    `<span class="sr-only">${escape(markdownLabel(t, 'article.markdown.newWindow'))}</span>`
+  )
+}
 
 /** 相对路径、锚点和 mailto 等协议保留原行为；协议相对地址也按 HTTP(S) 外链检查 */
 function isExternalLink(href: string, siteUrl?: string): boolean {
@@ -51,7 +58,8 @@ function attrText(token: Token, name: string): string {
 /** 规则在 linkify 和任务清单之后运行，选项仅取本次 render 的环境，不保存在共享解析器上 */
 export function markdownLinks(md: MarkdownIt) {
   md.core.ruler.push('markdown-links', (state) => {
-    const { siteUrl, ugc = false } = (state.env as MarkdownLinkEnvironment).markdownLinks ?? {}
+    const { siteUrl, ugc = false, t } = (state.env as MarkdownLinkEnvironment).markdownLinks ?? {}
+    let hintHtml: string | undefined
     for (const block of state.tokens) {
       if (block.type !== 'inline' || !block.children) continue
       const children: typeof block.children = []
@@ -70,7 +78,7 @@ export function markdownLinks(md: MarkdownIt) {
           newWindows.push(newWindow)
         } else if (token.type === 'link_close' && newWindows.pop()) {
           const hint = new state.Token('html_inline', '', 0)
-          hint.content = newWindowHint
+          hint.content = hintHtml ??= newWindowHint(md.utils.escapeHtml, t)
           children.push(hint)
         }
         children.push(token)

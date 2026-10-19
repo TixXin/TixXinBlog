@@ -18,7 +18,13 @@
       @keydown.left.prevent="go(-1)"
       @keydown.right.prevent="go(1)"
     >
-      <button ref="closeRef" type="button" class="article-lightbox__close" aria-label="关闭大图" @click="emit('close')">
+      <button
+        ref="closeRef"
+        type="button"
+        class="article-lightbox__close"
+        :aria-label="$t('article.lightbox.close')"
+        @click="emit('close')"
+      >
         <Icon name="lucide:x" size="22" aria-hidden="true" />
       </button>
       <figure class="article-lightbox__figure" @click.self="emit('close')">
@@ -33,16 +39,24 @@
         />
         <figcaption :id="captionId" class="article-lightbox__caption" aria-live="polite">
           <span v-if="image.alt">{{ image.alt }}</span>
-          <span v-else class="article-lightbox__muted">图片未提供说明</span>
+          <span v-else class="article-lightbox__muted">{{ $t('article.lightbox.noAlt') }}</span>
           <span v-if="images.length > 1" class="article-lightbox__count">{{ index + 1 }} / {{ images.length }}</span>
         </figcaption>
       </figure>
-      <nav v-if="images.length > 1" class="article-lightbox__nav" aria-label="切换正文图片">
-        <button type="button" :disabled="index <= 0" aria-label="上一张" @click="go(-1)">
-          <Icon name="lucide:chevron-left" size="20" aria-hidden="true" /><span>上一张</span>
+      <nav v-if="images.length > 1" class="article-lightbox__nav" :aria-label="$t('article.lightbox.nav')">
+        <button type="button" :disabled="index <= 0" :aria-label="$t('article.lightbox.previous')" @click="go(-1)">
+          <Icon name="lucide:chevron-left" size="20" aria-hidden="true" /><span>{{
+            $t('article.lightbox.previous')
+          }}</span>
         </button>
-        <button type="button" :disabled="index >= images.length - 1" aria-label="下一张" @click="go(1)">
-          <span>下一张</span><Icon name="lucide:chevron-right" size="20" aria-hidden="true" />
+        <button
+          type="button"
+          :disabled="index >= images.length - 1"
+          :aria-label="$t('article.lightbox.next')"
+          @click="go(1)"
+        >
+          <span>{{ $t('article.lightbox.next') }}</span
+          ><Icon name="lucide:chevron-right" size="20" aria-hidden="true" />
         </button>
       </nav>
     </div>
@@ -60,8 +74,11 @@ const emit = defineEmits<{ close: []; 'update:index': [value: number] }>()
 
 const image = computed(() => props.images[props.index] ?? null)
 const captionId = useId()
+const { t } = useI18n()
 const dialogLabel = computed(() =>
-  props.images.length > 1 ? `正文图片 ${props.index + 1} / ${props.images.length}` : '正文图片',
+  props.images.length > 1
+    ? t('article.lightbox.dialogPosition', { index: props.index + 1, total: props.images.length })
+    : t('article.lightbox.dialog'),
 )
 
 function go(step: number) {

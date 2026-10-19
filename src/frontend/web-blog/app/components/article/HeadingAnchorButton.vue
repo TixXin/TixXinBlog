@@ -3,12 +3,12 @@
   @description 正文标题锚点复制：原生按钮支持键盘操作，复用 Tooltip 与可播报 Toast，卸载时清理异步状态
 -->
 <template>
-  <CommonTooltip :content="copied ? '已复制标题链接' : '复制标题链接'" placement="top">
+  <CommonTooltip :content="actionLabel" placement="top">
     <button
       type="button"
       class="heading-anchor"
       :class="{ 'is-copied': copied }"
-      :aria-label="`${copied ? '已复制标题链接' : '复制标题链接'}：${headingText || headingId}`"
+      :aria-label="$t('article.headingAnchor.label', { action: actionLabel, heading: headingText || headingId })"
       :aria-busy="copying || undefined"
       @click="copy"
     >
@@ -20,7 +20,9 @@
 <script setup lang="ts">
 const props = defineProps<{ headingId: string; headingText: string }>()
 
+const { t } = useI18n()
 const copied = ref(false)
+const actionLabel = computed(() => (copied.value ? t('article.headingAnchor.copied') : t('article.headingAnchor.copy')))
 const copying = ref(false)
 const { success: notifyCopied, warning: notifyCopyFailure } = useToast()
 let copyTimer: ReturnType<typeof setTimeout> | undefined
@@ -42,12 +44,12 @@ async function copy() {
     await navigator.clipboard.writeText(url.href)
     if (!alive) return
     copied.value = true
-    notifyCopied('标题链接已复制')
+    notifyCopied(t('article.headingAnchor.toast'))
     copyTimer = setTimeout(() => {
       copied.value = false
     }, 2000)
   } catch {
-    if (alive) notifyCopyFailure('复制失败，请检查浏览器剪贴板权限后重试。')
+    if (alive) notifyCopyFailure(t('article.headingAnchor.failed'))
   } finally {
     if (alive) copying.value = false
   }
