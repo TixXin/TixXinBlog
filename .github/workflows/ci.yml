@@ -98,6 +98,13 @@ jobs:
       - name: Lint
         run: pnpm lint
 
+      # 安装脚本与 tixxin 管理命令；托管机通常已预装 shellcheck，缺失时从 Ubuntu 软件源安装。
+      - name: Shell Lint
+        run: |
+          command -v shellcheck > /dev/null || { sudo apt-get update && sudo apt-get install -y shellcheck; }
+          shellcheck --version
+          pnpm lint:shell
+
       - name: Type Check
         run: pnpm --filter web-blog exec nuxt typecheck
 
@@ -146,6 +153,19 @@ jobs:
           API_IMAGE: tixxin-blog-api:ci
           MIGRATION_IMAGE: tixxin-blog-migration:ci
         run: node scripts/container-smoke.mjs
+
+      # 与 API 共用构建阶段缓存；一键安装的备份在 worker 镜像内执行。
+      - name: Worker Docker Build
+        run: docker build -f src/backend/server-main/Dockerfile --target worker -t tixxin-blog-worker:ci .
+
+      # 用本次镜像与本地部署包运行 install.sh --local --yes，再验收备份、同版本升级、失败升级、跨版本升级与回退。
+      - name: Install Script Smoke
+        env:
+          SMOKE_WEB_IMAGE: tixxin-blog-web:ci
+          SMOKE_API_IMAGE: tixxin-blog-api:ci
+          SMOKE_MIGRATION_IMAGE: tixxin-blog-migration:ci
+          SMOKE_WORKER_IMAGE: tixxin-blog-worker:ci
+        run: bash scripts/release/install-smoke.sh
 
       - name: Audit Dependencies
         run: pnpm audit --prod --audit-level=high
