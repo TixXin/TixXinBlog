@@ -151,9 +151,13 @@ describe('预览页面', () => {
     expect(comments).not.toHaveBeenCalled()
     expect(history).not.toHaveBeenCalled()
     expect(wrapper.find('textarea').exists()).toBe(false)
+    // 标题与描述以 getter 注册，随界面语言更新；中文界面取值保持原文
     expect(seo).toHaveBeenCalledWith(
-      expect.objectContaining({ title: '草稿预览', robots: 'noindex, nofollow, noarchive' }),
+      expect.objectContaining({ title: expect.any(Function), robots: 'noindex, nofollow, noarchive' }),
     )
+    const seoOptions = seo.mock.calls.at(-1)![0] as { title: () => string; description: () => string }
+    expect(seoOptions.title()).toBe('草稿预览')
+    expect(seoOptions.description()).toBe('通过限时分享链接阅读尚未发布的草稿。')
     expect(head).toHaveBeenCalledWith({ meta: [{ name: 'referrer', content: 'no-referrer' }] })
     expect(fetchPostPreview).toHaveBeenCalledWith(expect.any(String), 'shared-token', expect.any(AbortSignal))
   })

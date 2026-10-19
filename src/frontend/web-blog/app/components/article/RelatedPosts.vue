@@ -9,7 +9,7 @@
   <section class="related card">
     <h2 class="related__title">
       <Icon name="lucide:bookmark" size="16" />
-      相关文章
+      {{ $t('article.related.title') }}
     </h2>
     <ul class="related__list">
       <li v-for="post in posts" :key="post.id" class="related__item">

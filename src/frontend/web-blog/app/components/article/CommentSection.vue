@@ -4,12 +4,12 @@
 -->
 
 <template>
-  <section class="comment-section" aria-label="文章评论">
+  <section class="comment-section" :aria-label="$t('article.comment.sectionLabel')">
     <!-- 标题行保留常规刷新；读取失败时由下方统一反馈提供唯一重试入口 -->
     <div class="comment-section__head">
       <h2 class="comment-section__title">
         <Icon name="lucide:message-circle" size="20" />
-        评论 <span class="comment-section__count">({{ total }})</span>
+        {{ $t('article.comment.title') }} <span class="comment-section__count">({{ total }})</span>
       </h2>
       <button
         v-if="!loadError"
@@ -21,7 +21,7 @@
         @click="$emit('retry')"
       >
         <Icon name="lucide:refresh-cw" size="14" :class="{ 'is-spinning': loading }" aria-hidden="true" />
-        {{ loading ? '正在加载评论…' : '刷新评论' }}
+        {{ loading ? $t('article.comment.loading') : $t('article.comment.refresh') }}
       </button>
     </div>
     <div class="comment-section__composer">
@@ -31,11 +31,13 @@
       <form class="comment-section__form" @submit.prevent="$emit('submit', visitorForm.fields())">
         <CommonSubmissionTrap v-model="website" />
         <div v-if="replyTarget" class="comment-section__reply-target" role="status">
-          回复 {{ replyTarget.author }}
-          <button type="button" :disabled="submitting" @click="$emit('cancel-reply')">取消回复</button>
+          {{ $t('article.comment.replyingTo', { author: replyTarget.author }) }}
+          <button type="button" :disabled="submitting" @click="$emit('cancel-reply')">
+            {{ $t('article.comment.cancelReply') }}
+          </button>
         </div>
         <label for="article-comment-draft" class="comment-section__label">{{
-          replyTarget ? '回复内容' : '评论内容'
+          replyTarget ? $t('article.comment.replyContent') : $t('article.comment.commentContent')
         }}</label>
         <textarea
           id="article-comment-draft"
@@ -44,7 +46,7 @@
           class="comment-section__textarea"
           rows="3"
           maxlength="1000"
-          placeholder="写下你的评论..."
+          :placeholder="$t('article.comment.placeholder')"
           :disabled="submitting || !hydrated"
           :aria-invalid="!!submitError || undefined"
           :aria-describedby="submitError ? 'article-comment-limit article-comment-error' : 'article-comment-limit'"
@@ -57,7 +59,13 @@
             :disabled="!canSubmit || !hydrated"
             :aria-busy="submitting"
           >
-            {{ submitting ? '正在发表…' : replyTarget ? '发表回复' : '发布评论' }}
+            {{
+              submitting
+                ? $t('article.comment.submitting')
+                : replyTarget
+                  ? $t('article.comment.submitReply')
+                  : $t('article.comment.submit')
+            }}
           </button>
         </div>
         <p v-if="submitError" id="article-comment-error" role="alert" class="comment-section__error">
@@ -72,14 +80,16 @@
     <CommonRequestFeedback
       v-if="loadError"
       ref="loadFeedback"
-      title="评论加载失败"
+      :title="$t('article.comment.loadFailedTitle')"
       :description="loadError"
       :pending="busy"
       compact
       @retry="$emit('retry')"
     />
     <p v-if="likeError" role="alert" class="comment-section__error">{{ likeError }}</p>
-    <p v-if="!loading && !loadError && !comments.length" class="comment-section__empty">暂无评论，来写下第一条吧。</p>
+    <p v-if="!loading && !loadError && !comments.length" class="comment-section__empty">
+      {{ $t('article.comment.empty') }}
+    </p>
     <ul class="comment-section__list" :aria-busy="loading">
       <li v-for="item in comments" :key="item.id" class="comment-section__thread">
         <ArticleCommentBubble

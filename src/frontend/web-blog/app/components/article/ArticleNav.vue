@@ -6,13 +6,13 @@
 -->
 
 <template>
-  <nav class="article-nav" :aria-label="folder ? `${folder}专栏的相邻文章` : '相邻文章'">
-    <p v-if="folder" class="article-nav__folder">同专栏 · {{ folder }}</p>
+  <nav class="article-nav" :aria-label="folder ? $t('article.nav.folderLabel', { folder }) : $t('article.nav.label')">
+    <p v-if="folder" class="article-nav__folder">{{ $t('article.nav.sameFolder', { folder }) }}</p>
     <CommonRequestFeedback
       v-if="error"
       class="article-nav__error"
-      title="部分文章信息加载失败"
-      description="请重试加载相邻文章和相关推荐。"
+      :title="$t('article.nav.errorTitle')"
+      :description="$t('article.nav.errorDescription')"
       :pending="pending"
       compact
       @retry="$emit('retry')"
@@ -20,13 +20,13 @@
     <NuxtLink v-if="prev" :to="articlePath(prev)" class="article-nav__card article-nav__card--prev">
       <Icon name="lucide:chevron-left" size="20" class="article-nav__icon" aria-hidden="true" />
       <div class="article-nav__text">
-        <p class="article-nav__label">上一篇</p>
+        <p class="article-nav__label">{{ $t('article.nav.previous') }}</p>
         <p class="article-nav__title">{{ prev.title }}</p>
       </div>
     </NuxtLink>
     <NuxtLink v-if="next" :to="articlePath(next)" class="article-nav__card article-nav__card--next">
       <div class="article-nav__text">
-        <p class="article-nav__label">下一篇</p>
+        <p class="article-nav__label">{{ $t('article.nav.next') }}</p>
         <p class="article-nav__title">{{ next.title }}</p>
       </div>
       <Icon name="lucide:chevron-right" size="20" class="article-nav__icon" aria-hidden="true" />

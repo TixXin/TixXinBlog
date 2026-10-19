@@ -7,7 +7,9 @@
 
 <template>
   <section class="card archive-stats">
-    <h2 class="archive-stats__title"><Icon name="lucide:bar-chart-2" size="14" /> 归档概览</h2>
+    <h2 class="archive-stats__title">
+      <Icon name="lucide:bar-chart-2" size="14" /> {{ $t('article.archiveStats.title') }}
+    </h2>
     <ul class="archive-stats__list">
       <li v-for="row in stats" :key="row.label" class="archive-stats__row">
         <span class="archive-stats__label">{{ row.label }}</span>
@@ -17,7 +19,7 @@
 
     <div class="archive-stats__divider" />
 
-    <h3 class="archive-stats__section-title">分类分布</h3>
+    <h3 class="archive-stats__section-title">{{ $t('article.archiveStats.distribution') }}</h3>
     <div class="archive-stats__distribution">
       <div v-for="item in distribution" :key="item.name" class="archive-stats__dist-item">
         <div class="archive-stats__dist-meta">

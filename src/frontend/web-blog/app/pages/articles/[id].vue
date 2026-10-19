@@ -31,7 +31,7 @@
           @resume="resumeReading"
         />
         <p v-if="isMockArticle" class="article-page__demo-note">
-          演示文章：正文为通用排版示例，不代表标题对应的正式内容。
+          {{ $t('article.detail.demoNote') }}
         </p>
         <div v-if="article.cover" class="article-page__cover-wrap">
           <CommonContentImage
@@ -56,7 +56,7 @@
             :class="{ 'is-liked': articleLiked }"
             :disabled="interactionPending || !interactionLoaded"
             :aria-pressed="articleLiked"
-            :aria-label="`点赞文章，${articleLikes} 个赞`"
+            :aria-label="$t('article.detail.likeLabel', { count: articleLikes }, articleLikes)"
             @click="toggleArticleLike"
           >
             <Icon :name="'lucide:heart'" size="14" />
@@ -70,7 +70,7 @@
             @click="toggleFavorite(article.id)"
           >
             <Icon :name="isFavorited(article.id) ? 'lucide:bookmark-check' : 'lucide:bookmark'" size="14" />
-            {{ isFavorited(article.id) ? '已收藏' : '收藏' }}
+            {{ isFavorited(article.id) ? $t('article.detail.favorited') : $t('article.detail.favorite') }}
           </button>
           <span class="article-page__stat">
             <Icon name="lucide:message-circle" size="14" />
@@ -135,7 +135,7 @@
           v-if="tocItems.length && needsCompactToc"
           v-slot="{ close }"
           class="article-toc-entry"
-          label="文章目录"
+          :label="$t('article.toc.title')"
           icon="lucide:list"
         >
           <ArticleTableOfContents :items="tocItems" :active-id="activeId" :progress="progress" @navigate="close" />
@@ -280,7 +280,7 @@ useHead({
 
 const articleImage = computed(() => absoluteUrl(article.value.cover, publicSite))
 const authorName = computed(() => siteSettings.value.ownerName || siteSettings.value.name)
-const { locale } = useI18n()
+const { t, locale } = useI18n()
 useJsonLd('article', () => ({
   '@context': 'https://schema.org',
   '@type': 'BlogPosting',
@@ -301,7 +301,7 @@ useJsonLd('breadcrumb', () => ({
   '@context': 'https://schema.org',
   '@type': 'BreadcrumbList',
   itemListElement: [
-    { '@type': 'ListItem', position: 1, name: '首页', item: publicSite + '/' },
+    { '@type': 'ListItem', position: 1, name: t('article.detail.breadcrumbHome'), item: publicSite + '/' },
     ...(article.value.category
       ? [
           {

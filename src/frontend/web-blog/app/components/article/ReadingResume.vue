@@ -5,16 +5,16 @@
 <template>
   <div class="reading-resume">
     <p :id="statusId" class="reading-resume__status" role="status">
-      <span>上次读到 {{ Math.round(progress) }}%</span>
+      <span>{{ $t('article.readingResume.progress', { percent: Math.round(progress) }) }}</span>
       <span class="reading-resume__time">
         <Icon name="lucide:clock" size="14" aria-hidden="true" />
-        预计阅读 {{ readTime }}
+        {{ $t('article.readingResume.estimate', { time: formatReadTime(readTime, $t) }) }}
       </span>
     </p>
-    <CommonTooltip content="跳转到这篇文章上次的阅读位置" placement="bottom">
+    <CommonTooltip :content="$t('article.readingResume.tooltip')" placement="bottom">
       <button type="button" class="reading-resume__button" :aria-describedby="statusId" @click="emit('resume')">
         <Icon name="lucide:book-open" size="16" aria-hidden="true" />
-        继续上次阅读
+        {{ $t('article.readingResume.action') }}
       </button>
     </CommonTooltip>
   </div>

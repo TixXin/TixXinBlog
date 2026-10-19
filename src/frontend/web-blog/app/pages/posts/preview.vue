@@ -2,15 +2,15 @@
 <template>
   <div class="main-inner">
     <CommonCustomScrollbar class="post-preview" viewport-class="post-preview__viewport" primary>
-      <aside class="post-preview__notice" aria-label="草稿预览说明">
-        <strong><Icon name="lucide:file-clock" aria-hidden="true" />预览，尚未发布</strong>
-        <p>这里展示最新已保存的草稿。文章修改后，原链接仍有效直到过期；链接有效期为生成后 7 天。</p>
-        <p>本页不计浏览，也不开放评论。持有链接的人均可阅读，请谨慎转发。</p>
+      <aside class="post-preview__notice" :aria-label="$t('article.preview.noticeLabel')">
+        <strong><Icon name="lucide:file-clock" aria-hidden="true" />{{ $t('article.preview.badge') }}</strong>
+        <p>{{ $t('article.preview.noticeSaved') }}</p>
+        <p>{{ $t('article.preview.noticePrivacy') }}</p>
       </aside>
       <CommonRequestFeedback
         v-if="pending || error || !article"
         :pending="pending"
-        :title="error?.message || '预览链接无效或已过期，请向博主获取新的链接。'"
+        :title="error?.message || $t('article.preview.invalidLink')"
         @retry="refresh"
       />
       <template v-else>
@@ -35,7 +35,7 @@
               @error="coverError = true"
             />
             <p v-else class="post-preview__cover-error" role="status">
-              <Icon name="lucide:image-off" aria-hidden="true" />封面加载失败
+              <Icon name="lucide:image-off" aria-hidden="true" />{{ $t('article.preview.coverFailed') }}
             </p>
           </div>
           <div class="article-reading-content">
@@ -52,10 +52,11 @@
 definePageMeta({ rightSidebar: false })
 const route = useRoute()
 const coverError = ref(false)
+const { t } = useI18n()
 // 标题与社交摘要保持通用，草稿标题、正文和签名凭据不进入分享元数据。
 usePageSeo({
-  title: '草稿预览',
-  description: '通过限时分享链接阅读尚未发布的草稿。',
+  title: () => t('article.preview.seoTitle'),
+  description: () => t('article.preview.seoDescription'),
   robots: 'noindex, nofollow, noarchive',
 })
 useHead({ meta: [{ name: 'referrer', content: 'no-referrer' }] })

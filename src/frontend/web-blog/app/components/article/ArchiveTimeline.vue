@@ -13,8 +13,10 @@
           <span class="archive-timeline__badge-text">{{ y.shortYear }}</span>
         </div>
         <div class="archive-timeline__head-text">
-          <h3 class="archive-timeline__title">{{ y.year }} 年</h3>
-          <p class="archive-timeline__count">全年共 {{ y.count }} 篇</p>
+          <h3 class="archive-timeline__title">{{ $t('article.archive.year', { year: y.year }) }}</h3>
+          <p class="archive-timeline__count">
+            {{ $t('article.archiveTimeline.yearCount', { count: y.count }, y.count) }}
+          </p>
         </div>
       </div>
 

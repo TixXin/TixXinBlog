@@ -4,6 +4,8 @@
  */
 import { computed, ref } from 'vue'
 import type { VisitorSubmissionFields } from '~/features/visitor/types'
+import { apiErrorMessage } from '~/utils/apiError'
+import { currentTranslate, type Translate } from '~/utils/format'
 import type { CommentItem } from './types'
 
 export interface CommentDraft extends VisitorSubmissionFields {
@@ -25,9 +27,9 @@ export interface CommentTransport {
   like(id: number): Promise<{ liked: boolean; likes: number }>
 }
 
-export function commentError(error: unknown, fallback: string): string {
-  const response = error as { data?: { message?: unknown } }
-  return typeof response?.data?.message === 'string' ? response.data.message : fallback
+/** 优先显示后端返回的可读 message，否则显示兜底文案的当前语言版本 */
+export function commentError(error: unknown, fallbackKey: string, t?: Translate): string {
+  return apiErrorMessage(error, fallbackKey, { t })
 }
 
 export function findComment(items: CommentItem[], id: number): CommentItem | undefined {
@@ -38,7 +40,16 @@ export function findComment(items: CommentItem[], id: number): CommentItem | und
   }
 }
 
-export function createCommentController(transport: CommentTransport, initial: CommentList, initialError = '') {
+/**
+ * @param t 翻译函数；缺省时在每次产生提示时读取当前界面语言，控制器跨页面复用也不会固定创建时的语言
+ */
+export function createCommentController(
+  transport: CommentTransport,
+  initial: CommentList,
+  initialError = '',
+  t?: Translate,
+) {
+  const translate: Translate = (key, params) => (t ?? currentTranslate())(key, params)
   const comments = ref<CommentItem[]>(initial.items)
   const total = ref(initial.total)
   const draft = ref('')
@@ -63,7 +74,7 @@ export function createCommentController(transport: CommentTransport, initial: Co
       loadError.value = ''
       likeError.value = ''
     } catch (error) {
-      loadError.value = commentError(error, '评论加载失败，请重试')
+      loadError.value = commentError(error, 'article.comment.loadFailed', translate)
     } finally {
       loading.value = false
     }
@@ -86,7 +97,7 @@ export function createCommentController(transport: CommentTransport, initial: Co
     if (busy.value) return false
     const content = draft.value.trim()
     if (!content || content.length > 1000) {
-      submitError.value = '评论需要 1–1000 个字符'
+      submitError.value = translate('article.comment.lengthInvalid')
       return false
     }
     const target = replyTarget.value
@@ -106,7 +117,9 @@ export function createCommentController(transport: CommentTransport, initial: Co
         total.value += 1
       }
       submitNotice.value =
-        created.moderationStatus === 'pending' ? '评论已提交，等待博主审核，通过后公开显示' : '评论发布成功'
+        created.moderationStatus === 'pending'
+          ? translate('article.comment.pendingNotice')
+          : translate('article.comment.publishedNotice')
       draft.value = ''
       replyTarget.value = null
       // 写入成功与随后读取失败分开呈现，避免用户因刷新失败再次提交同一条评论。
@@ -118,12 +131,12 @@ export function createCommentController(transport: CommentTransport, initial: Co
       } catch {
         loadError.value =
           created.moderationStatus === 'pending'
-            ? '评论已提交，等待审核；列表同步失败，请重试加载'
-            : '评论已发表，列表同步失败，请重试加载'
+            ? translate('article.comment.pendingSyncFailed')
+            : translate('article.comment.publishedSyncFailed')
       }
       return true
     } catch (error) {
-      submitError.value = commentError(error, '评论发送失败，草稿已保留；若连接中断，请先刷新评论确认是否已发表')
+      submitError.value = commentError(error, 'article.comment.submitFailed', translate)
       return false
     } finally {
       submitting.value = false
@@ -139,7 +152,7 @@ export function createCommentController(transport: CommentTransport, initial: Co
       const comment = findComment(comments.value, id)
       if (comment) Object.assign(comment, result)
     } catch (error) {
-      likeError.value = commentError(error, '点赞操作失败，请刷新评论确认状态后重试')
+      likeError.value = commentError(error, 'article.comment.likeFailed', translate)
     } finally {
       pendingLikes.value = pendingLikes.value.filter((pending) => pending !== id)
     }

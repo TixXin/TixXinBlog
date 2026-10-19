@@ -9,6 +9,8 @@ import type { PostSummary } from '~/features/post/types'
 export function useArticleInteraction(id: string, initial: { likes: number; views: number }) {
   const app = useNuxtApp()
   const config = useRuntimeConfig()
+  // 用全局 i18n 实例而非 useI18n：本 composable 也会在插件或测试中脱离组件 setup 调用
+  const { t } = useNuxtApp().$i18n
   const useMock = config.public.postUseMockRepo !== false
   const likes = ref(initial.likes)
   const views = ref(initial.views)
@@ -41,10 +43,10 @@ export function useArticleInteraction(id: string, initial: { likes: number; view
       views.value = result.views
       liked.value = result.liked
       loaded.value = true
-      error.value = viewSyncFailed ? '浏览计数暂未同步，可以重试' : ''
+      error.value = viewSyncFailed ? t('article.interaction.viewSyncFailed') : ''
       if ('counted' in result && result.counted) bumpSiteViews()
     } catch {
-      error.value = '文章互动状态加载失败，请重试'
+      error.value = t('article.interaction.loadFailed')
     } finally {
       pending.value = false
     }
@@ -65,7 +67,7 @@ export function useArticleInteraction(id: string, initial: { likes: number; view
         invalidatePublicReads(app, ['posts', 'post-summary'])
       }
     } catch {
-      error.value = '点赞操作失败，请重试同步状态'
+      error.value = t('article.interaction.likeFailed')
     } finally {
       pending.value = false
     }

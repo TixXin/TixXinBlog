@@ -10,11 +10,11 @@
     <div class="toc__header">
       <h2 class="toc__title">
         <Icon name="lucide:list" size="16" />
-        文章目录
+        {{ $t('article.toc.title') }}
       </h2>
       <span v-if="progress !== undefined" class="toc__progress">{{ Math.round(progress) }}%</span>
     </div>
-    <nav class="toc__nav" aria-label="文章目录">
+    <nav class="toc__nav" :aria-label="$t('article.toc.title')">
       <a
         v-for="item in items"
         :key="item.id"

@@ -19,7 +19,7 @@
     <div class="comment-bubble__body">
       <div class="comment-bubble__meta">
         <span class="comment-bubble__author">{{ comment.author }}</span>
-        <span v-if="comment.isOwner" class="comment-bubble__badge">作者</span>
+        <span v-if="comment.isOwner" class="comment-bubble__badge">{{ $t('article.comment.ownerBadge') }}</span>
         <span class="comment-bubble__time">{{ comment.time }}</span>
       </div>
       <p class="comment-bubble__content">{{ comment.content }}</p>
@@ -28,27 +28,31 @@
           type="button"
           class="comment-bubble__tool"
           :aria-pressed="!!comment.liked"
-          :aria-label="`${comment.liked ? '取消点赞' : '点赞'} ${comment.author}的评论`"
+          :aria-label="
+            comment.liked
+              ? $t('article.comment.unlikeLabel', { author: comment.author })
+              : $t('article.comment.likeLabel', { author: comment.author })
+          "
           :disabled="busy"
           :aria-busy="pendingLikes.includes(comment.id)"
           @click="$emit('like', comment.id)"
         >
           <Icon name="lucide:thumbs-up" size="14" />
-          {{ pendingLikes.includes(comment.id) ? '处理中…' : comment.likes }}
+          {{ pendingLikes.includes(comment.id) ? $t('article.comment.processing') : comment.likes }}
         </button>
         <button
           v-if="depth < 2"
           type="button"
           class="comment-bubble__tool"
-          :aria-label="`回复 ${comment.author}的评论`"
+          :aria-label="$t('article.comment.replyLabel', { author: comment.author })"
           :disabled="busy"
           @click="$emit('reply', comment)"
         >
           <Icon name="lucide:message-square" size="14" />
-          回复
+          {{ $t('article.comment.reply') }}
         </button>
       </div>
-      <span v-if="depth >= 2" class="comment-bubble__time">已到最深回复层级</span>
+      <span v-if="depth >= 2" class="comment-bubble__time">{{ $t('article.comment.maxDepth') }}</span>
       <ul v-if="comment.replies?.length" class="comment-bubble__replies">
         <li v-for="reply in comment.replies" :key="reply.id">
           <CommentBubble

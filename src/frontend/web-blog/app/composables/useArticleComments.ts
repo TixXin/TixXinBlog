@@ -19,6 +19,8 @@ export async function useArticleComments(id: string) {
   const base = config.public.apiBaseUrl as string
   const { guestIdentity, resolveAvatar } = useGuestIdentity()
   const toast = useToast()
+  // 用全局 i18n 实例而非 useI18n：本 composable 也会在插件或测试中脱离组件 setup 调用
+  const { t } = useNuxtApp().$i18n
   const identityVisible = ref(false)
   const sessionKey = JSON.stringify([String(id), useMock, base])
   let controller = getCommentSession(nuxtApp, sessionKey)
@@ -82,7 +84,7 @@ export async function useArticleComments(id: string) {
       createCommentController(
         transport,
         result.data.value ?? { items: [], total: 0 },
-        result.error.value ? '评论加载失败，请重试' : '',
+        result.error.value ? t('article.comment.loadFailed') : '',
       ),
     )
   }
@@ -101,7 +103,7 @@ export async function useArticleComments(id: string) {
     if (
       await state.submit({ author: guestIdentity.value.nickname, avatar: resolveAvatar() || undefined }, pendingFields)
     ) {
-      toast.success(useMock ? '演示评论已添加' : state.submitNotice.value)
+      toast.success(useMock ? t('article.comment.mockAdded') : state.submitNotice.value)
       // 列表离开文章后重新取数，避免首页沿用发表前的缓存计数。
       if (!useMock) {
         invalidatePublicReads(nuxtApp, ['posts', 'post-summary'])

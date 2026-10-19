@@ -10,7 +10,7 @@
     <div class="article-sticky-header__inner">
       <button type="button" class="article-sticky-header__back" @click="handleBack">
         <Icon name="lucide:arrow-left" size="12" />
-        <span>返回上一页</span>
+        <span>{{ $t('article.stickyHeader.back') }}</span>
       </button>
       <h1 class="article-sticky-header__title">{{ title }}</h1>
       <div class="article-sticky-header__meta">
@@ -24,7 +24,7 @@
         </span>
         <span class="article-sticky-header__meta-item">
           <Icon name="lucide:clock" size="12" />
-          {{ readTime }}
+          {{ formatReadTime(readTime, $t) }}
         </span>
       </div>
     </div>

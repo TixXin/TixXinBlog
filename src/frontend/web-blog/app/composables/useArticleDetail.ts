@@ -35,6 +35,8 @@ export async function useArticleDetail(id: string, options: { reuseLoaded?: bool
   const requestScope = usePageRequestScope()
   const nuxtApp = useNuxtApp()
   const config = useRuntimeConfig()
+  // 用全局 i18n 实例而非 useI18n：本 composable 也会在插件或测试中脱离组件 setup 调用
+  const { t } = useNuxtApp().$i18n
   const base = config.public.apiBaseUrl
   const useMock = config.public.postUseMockRepo !== false
   const cached = loadedArticles.get(nuxtApp)
@@ -57,7 +59,12 @@ export async function useArticleDetail(id: string, options: { reuseLoaded?: bool
     tocItems = ref(cached.tocItems)
   } else if (useMock) {
     if (!mockPosts.some((post) => String(post.id) === id))
-      throw createError({ statusCode: 404, statusMessage: 'Not Found', data: { title: '文章不存在' }, fatal: true })
+      throw createError({
+        statusCode: 404,
+        statusMessage: 'Not Found',
+        data: { title: t('article.detail.notFound') },
+        fatal: true,
+      })
     article = computed<ArticleDetail>(() => {
       const post = mockPosts.find((p) => p.id.toString() === id)
       if (post) {
@@ -127,7 +134,7 @@ export async function useArticleDetail(id: string, options: { reuseLoaded?: bool
       const status = (detailResult.error.value as { statusCode?: number } | null)?.statusCode === 404 ? 404 : 503
       throw createError({
         statusCode: status,
-        statusMessage: status === 404 ? '文章不存在' : '文章加载失败，请稍后重试',
+        statusMessage: status === 404 ? t('article.detail.notFound') : t('article.detail.loadFailed'),
         fatal: true,
       })
     }
@@ -166,7 +173,7 @@ export async function useArticleDetail(id: string, options: { reuseLoaded?: bool
     if (article.value.summary) return article.value.summary
     if (article.value.excerpt) return article.value.excerpt
     const firstParagraph = article.value.content?.find((s: { type: string }) => s.type === 'paragraph')
-    return firstParagraph?.text?.slice(0, 160) ?? '阅读本站的文章'
+    return firstParagraph?.text?.slice(0, 160) ?? t('article.detail.defaultExcerpt')
   })
 
   if (!useMock)
