@@ -126,6 +126,60 @@ describe('主题元信息', () => {
   })
 })
 
+describe('主题名称跟随界面语言', () => {
+  const i18n = () => useNuxtApp().$i18n
+
+  it('theme.json 写字典 key 时按当前语言翻译，切换语言后重新计算，字面文案原样保留', async () => {
+    mocks.definitions.value = [
+      { name: 'nexus', label: 'theme.themes.nexus.label', description: 'theme.themes.nexus.description' },
+      { name: 'aurora', label: 'theme.themes.aurora.label', description: 'theme.themes.aurora.description' },
+      { name: 'dock', label: '第三方浮岛', description: 'theme.missing.description' },
+    ]
+    const state = setup()
+    expect(state.activeTheme.value).toMatchObject({
+      name: 'Nexus 三栏',
+      description: '经典三栏 App-Shell：左侧导航 + 中间内容 + 右侧侧边栏',
+    })
+    expect(state.availableThemes.value.find((theme) => theme.id === 'dock')).toMatchObject({
+      name: '第三方浮岛',
+      description: 'theme.missing.description',
+    })
+    await i18n().setLocale('en')
+    try {
+      expect(state.availableThemes.value.map((theme) => theme.name)).toEqual([
+        'Nexus three-column',
+        'Aurora two-column',
+        '第三方浮岛',
+      ])
+      expect(state.activeTheme.value.description).toBe(
+        'Classic three-column app shell: navigation on the left, content in the middle, sidebar on the right',
+      )
+    } finally {
+      await i18n().setLocale('zh-CN')
+    }
+    expect(state.activeTheme.value.name).toBe('Nexus 三栏')
+  })
+
+  it('英文界面下切换失败与预热失败提示为英文', async () => {
+    await i18n().setLocale('en')
+    try {
+      mocks.preload.mockRejectedValue(new Error('资源不可用'))
+      const state = setup()
+      await state.setLayoutTheme('dock')
+      expect(mocks.error).toHaveBeenCalledExactlyOnceWith(
+        "Couldn't load the theme, so the current layout was kept. Refresh to try again once you're back online.",
+      )
+      state.preloadTheme('aurora')
+      await flushPromises()
+      expect(state.preloadErrors.value).toEqual({
+        aurora: "Theme resources aren't ready yet. If switching fails, refresh and try again.",
+      })
+    } finally {
+      await i18n().setLocale('zh-CN')
+    }
+  })
+})
+
 describe('主题切换与回退', () => {
   it.each([
     ['nexus', 'aurora'],

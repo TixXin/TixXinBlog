@@ -22,6 +22,18 @@ import auroraDefinition from '../../themes/aurora/theme.json'
 import dockDefinition from '../../themes/dock/theme.json'
 
 const hostConfigs = { nexus: nexusConfig, aurora: auroraConfig, dock: dockConfig }
+// 读取字典原文：直接 import JSON 会被 i18n 插件预编译成消息函数
+const themeDictionaries = import.meta.glob<string>('../../i18n/locales/*/theme.json', {
+  query: '?raw',
+  import: 'default',
+  eager: true,
+})
+
+function lookup(dictionary: unknown, key: string): unknown {
+  return key
+    .split('.')
+    .reduce<unknown>((node, part) => (node as Record<string, unknown> | undefined)?.[part], dictionary)
+}
 const themeDefinitions = [nexusDefinition, auroraDefinition, dockDefinition]
 
 describe('三主题真实能力与注册契约', () => {
@@ -48,6 +60,21 @@ describe('三主题真实能力与注册契约', () => {
       expect(themeEngineThemes).toContainEqual(expect.objectContaining(definition))
       expect(definition.label.trim()).not.toBe('')
       expect(definition.description.trim()).not.toBe('')
+    }
+  })
+
+  it('主题名称与介绍写 theme 域字典 key，中英字典均有非空文案', () => {
+    const dictionaries = Object.entries(themeDictionaries).map(([path, raw]) => [path, JSON.parse(raw)] as const)
+    expect(dictionaries.map(([path]) => path.split('/').at(-2)).sort()).toEqual(['en', 'zh-CN'])
+    for (const definition of themeDefinitions) {
+      expect(definition.label).toBe(`theme.themes.${definition.name}.label`)
+      expect(definition.description).toBe(`theme.themes.${definition.name}.description`)
+      for (const [, dictionary] of dictionaries) {
+        for (const key of [definition.label, definition.description]) {
+          const text = lookup(dictionary, key)
+          expect(typeof text === 'string' && text.trim()).toBeTruthy()
+        }
+      }
     }
   })
 

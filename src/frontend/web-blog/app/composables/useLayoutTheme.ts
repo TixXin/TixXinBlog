@@ -23,13 +23,19 @@ export function useLayoutTheme() {
   const preloadErrors = useState<Record<string, string>>('layout-theme-preload-errors', () => ({}))
   const { startThemeSwitchLoading, endThemeSwitchLoading } = useAppLoading()
   const { error: notifyThemeError } = useToast()
+  const i18n = useNuxtApp().$i18n
+
+  /** theme.json 的 label/description 写 theme 域字典 key；第三方主题写字面文案时原样展示 */
+  function localizeThemeText(value: string | undefined): string | undefined {
+    return value && i18n.te(value) ? i18n.t(value) : value
+  }
 
   const currentThemeId = computed(() => ensureKnownThemeId(currentTheme.value))
 
   /**
    * 合并引擎发现的主题定义与宿主侧配置，生成统一的 LayoutThemeMeta。
    * 优先使用引擎提供的 label/description/meta，
-   * 引擎未提供时回退到 theme.config.ts 中的值。
+   * 引擎未提供时回退到 theme.config.ts 中的值；名称与介绍是字典 key 时按当前界面语言翻译。
    */
   function buildThemeMeta(id: string): LayoutThemeMeta {
     const hostConfig = themeHostConfigs[id]
@@ -38,8 +44,8 @@ export function useLayoutTheme() {
 
     return {
       id,
-      name: engineDef?.label ?? id,
-      description: engineDef?.description ?? '',
+      name: localizeThemeText(engineDef?.label) ?? id,
+      description: localizeThemeText(engineDef?.description) ?? '',
       version: (engineDef?.meta?.version as string) ?? hostConfig?.version ?? '0.0.0',
       icon: (engineDef?.meta?.icon as string) ?? hostConfig?.icon ?? 'lucide:layout',
       capabilities: hostConfig?.capabilities ?? { leftSidebar: false, rightSidebar: false },
@@ -80,7 +86,7 @@ export function useLayoutTheme() {
       if (switchVersion.value !== version) return
       if (currentThemeId.value !== previousTheme) await setTheme(previousTheme)
       switchingState.value = 'error'
-      notifyThemeError('主题加载失败，当前布局已保留。恢复网络后请刷新重试。')
+      notifyThemeError(i18n.t('theme.switch.loadFailed'))
     } finally {
       if (switchVersion.value === version) endThemeSwitchLoading()
     }
@@ -92,7 +98,7 @@ export function useLayoutTheme() {
         preloadErrors.value = Object.fromEntries(Object.entries(preloadErrors.value).filter(([key]) => key !== id))
       },
       () => {
-        preloadErrors.value[id] = '主题资源未就绪，切换失败时请刷新重试。'
+        preloadErrors.value[id] = i18n.t('theme.switch.preloadFailed')
       },
     )
   }

@@ -1,1 +1,75 @@
-{}
+{
+  "theme": {
+    "themes": {
+      "nexus": {
+        "label": "Nexus three-column",
+        "description": "Classic three-column app shell: navigation on the left, content in the middle, sidebar on the right"
+      },
+      "aurora": {
+        "label": "Aurora two-column",
+        "description": "Large hero banner, a dynamic frosted-glass top bar and two-column content"
+      },
+      "dock": {
+        "label": "Dock floating bar",
+        "description": "Floating dock navigation at the bottom with a centered single-column layout"
+      }
+    },
+    "switch": {
+      "loadFailed": "Couldn't load the theme, so the current layout was kept. Refresh to try again once you're back online.",
+      "preloadFailed": "Theme resources aren't ready yet. If switching fails, refresh and try again."
+    },
+    "shell": {
+      "mainNav": "Main navigation",
+      "siteNav": "Site navigation",
+      "backToTop": "Back to top",
+      "login": "Sign in"
+    },
+    "aurora": {
+      "hero": {
+        "staticBackground": "Static background",
+        "retryRotation": "Retry slideshow",
+        "pauseBackground": "Pause background",
+        "playBackground": "Play background"
+      }
+    },
+    "nexus": {
+      "stats": {
+        "unavailableTitle": "Site stats are temporarily unavailable",
+        "staleDescription": "Showing the last site stats that loaded successfully."
+      },
+      "owner": {
+        "avatarUnavailable": "Avatar unavailable",
+        "socialLinks": "Social links"
+      },
+      "announcement": {
+        "ariaLabel": "Site announcements",
+        "title": "Announcements"
+      },
+      "quote": {
+        "refresh": "Show another"
+      },
+      "footerCard": {
+        "links": "Site links"
+      },
+      "statusBar": {
+        "progressDown": "Jump to bottom, {progress}% read",
+        "progressUp": "Back to top, {progress}% read",
+        "visitor": "Visitor",
+        "presence": {
+          "online": "Online",
+          "idle": "Idle",
+          "busy": "Busy",
+          "offline": "Offline"
+        },
+        "presenceDetail": "{short}, {label}",
+        "avatarLink": "Back to home. Current: {name}, status: {status}",
+        "userMenu": "User menu: {name}",
+        "profile": "Profile",
+        "managePosts": "Manage posts",
+        "logout": "Sign out",
+        "loggedOut": "Signed out",
+        "logoutFailed": "Couldn't sign out. Please try again."
+      }
+    }
+  }
+}

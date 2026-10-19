@@ -1,1 +1,75 @@
-{}
+{
+  "theme": {
+    "themes": {
+      "nexus": {
+        "label": "Nexus 三栏",
+        "description": "经典三栏 App-Shell：左侧导航 + 中间内容 + 右侧侧边栏"
+      },
+      "aurora": {
+        "label": "Aurora 双栏",
+        "description": "大型 Hero 视觉区域 + 动态毛玻璃顶栏 + 双栏内容"
+      },
+      "dock": {
+        "label": "Dock 浮岛",
+        "description": "底部浮岛式导航 + 居中单栏内容"
+      }
+    },
+    "switch": {
+      "loadFailed": "主题加载失败，当前布局已保留。恢复网络后请刷新重试。",
+      "preloadFailed": "主题资源未就绪，切换失败时请刷新重试。"
+    },
+    "shell": {
+      "mainNav": "主导航",
+      "siteNav": "站点导航",
+      "backToTop": "返回顶部",
+      "login": "登录"
+    },
+    "aurora": {
+      "hero": {
+        "staticBackground": "静态背景",
+        "retryRotation": "重试背景轮播",
+        "pauseBackground": "暂停背景",
+        "playBackground": "播放背景"
+      }
+    },
+    "nexus": {
+      "stats": {
+        "unavailableTitle": "站点统计暂时不可用",
+        "staleDescription": "仍显示上次成功读取的站点统计。"
+      },
+      "owner": {
+        "avatarUnavailable": "头像暂不可用",
+        "socialLinks": "社交链接"
+      },
+      "announcement": {
+        "ariaLabel": "站点公告",
+        "title": "公告"
+      },
+      "quote": {
+        "refresh": "换一条"
+      },
+      "footerCard": {
+        "links": "站点链接"
+      },
+      "statusBar": {
+        "progressDown": "返回底部，已读 {progress}%",
+        "progressUp": "返回顶部，已读 {progress}%",
+        "visitor": "访客",
+        "presence": {
+          "online": "在线",
+          "idle": "空闲",
+          "busy": "忙碌",
+          "offline": "离线"
+        },
+        "presenceDetail": "{short}，{label}",
+        "avatarLink": "返回首页，当前：{name}，状态：{status}",
+        "userMenu": "用户菜单：{name}",
+        "profile": "个人中心",
+        "managePosts": "管理文章",
+        "logout": "退出登录",
+        "loggedOut": "已退出登录",
+        "logoutFailed": "退出失败，请重试"
+      }
+    }
+  }
+}

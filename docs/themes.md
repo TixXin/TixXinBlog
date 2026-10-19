@@ -31,13 +31,13 @@ app/features/appearance/themeRegistry.ts
 
 ## 元数据与宿主能力
 
-`theme.json` 由引擎扫描，定义唯一主题名称、显示名称、介绍及 `meta.version/meta.icon`：
+`theme.json` 由引擎扫描，定义唯一主题名称、显示名称、介绍及 `meta.version/meta.icon`。显示名称和介绍写 `theme` 域字典 key（`theme.themes.<name>.label/description`），中英文案放在 `i18n/locales/<locale>/theme.json`；`useLayoutTheme()` 在展示时按当前界面语言翻译，字典里查不到的值按字面显示。引擎构建期只序列化 key 字符串，SSR 与客户端用同一份字典解析：
 
 ```json
 {
   "name": "magazine",
-  "label": "杂志",
-  "description": "宽幅图文布局",
+  "label": "theme.themes.magazine.label",
+  "description": "theme.themes.magazine.description",
   "meta": {
     "version": "1.0.0",
     "icon": "lucide:newspaper"
@@ -64,7 +64,7 @@ export default {
 
 ## 添加主题
 
-1. 在 `themes/<唯一名称>/` 创建 `theme.json`、`theme.config.ts` 和契约组件。
+1. 在 `themes/<唯一名称>/` 创建 `theme.json`、`theme.config.ts` 和契约组件。主题名称、介绍及组件内的界面文案写入 `theme` 域中英字典。
 2. 在 [nuxt.config.ts](../src/frontend/web-blog/nuxt.config.ts) 导入宿主配置，并加入 `app:templates` 钩子生成的 `themeHostConfigs` 对象，保持所需展示顺序。
 3. `themeRegistry.ts` 从 `#build/theme-host.config.mjs` 读取纯元数据，不直接导入主题 SFC 或所有主题运行资源。
 4. 使用引擎发现的组件与 `useLayoutTheme()` 切换，更新必要的契约和类型，重新 prepare/build 验证。
