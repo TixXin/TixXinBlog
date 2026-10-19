@@ -56,7 +56,12 @@
             @discard="interactions.discardRecovery"
             @login="interactions.openLogin"
         /></template>
-        <div ref="messagesWrap" class="guestbook-center__messages-wrap" tabindex="-1">
+        <div
+          ref="messagesWrap"
+          class="guestbook-center__messages-wrap"
+          :class="{ 'guestbook-center__messages-wrap--reply-pad': !isChatMode && interactions.state.reply }"
+          tabindex="-1"
+        >
           <div v-if="pending || feedError" class="guestbook-feedback">
             <CommonRequestFeedback
               :compact="items.length > 0"
@@ -502,6 +507,7 @@ const composerProps = computed(() => ({
   storageError: interactions.state.storageError,
   hasRecovery: !!interactions.state.recovery,
   identityLabel: interactions.identityLabel.value,
+  replyPlacement: (isChatMode.value ? 'above' : 'below') as 'above' | 'below',
 }))
 onSent = async (record) => {
   await Promise.all([feed.settled(), refreshMetadata()])
@@ -557,6 +563,10 @@ usePageSeo({
   min-height: 0;
   display: flex;
   flex-direction: column;
+}
+// 论坛模式引用条向下悬浮，留出同等空隙，避免盖住置顶和首条留言
+.guestbook-center__messages-wrap--reply-pad {
+  padding-top: 2.5rem;
 }
 .guestbook-center__messages {
   flex: 1;
@@ -709,6 +719,7 @@ button.guestbook-jump-pill {
   position: absolute;
   bottom: 1rem;
   right: 1rem;
+  z-index: 6;
   width: 44px;
   height: 44px;
   border-radius: 50%;

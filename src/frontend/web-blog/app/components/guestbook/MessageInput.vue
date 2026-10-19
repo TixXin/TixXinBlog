@@ -1,35 +1,13 @@
 <!--
   @file MessageInput.vue
-  @description 留言输入区：访客身份栏、回复引用预览、textarea 自适应高度、发送按钮
+  @description 留言输入区：访客身份栏、悬浮回复引用、textarea 自适应高度、发送按钮
   @author TixXin
   @since 2026-03-20
 -->
 
 <template>
-  <div class="card message-input">
-    <CommonSubmissionTrap v-model="website" />
-    <p v-if="error" :id="errorId" role="alert" class="message-input__notice">{{ error }}</p>
-    <!-- 播报区常驻，只切换内部提示，保证读屏能播报新插入的状态 -->
-    <div aria-live="polite">
-      <p v-if="notice" role="status" class="message-input__notice">{{ notice }}</p>
-    </div>
-    <p v-if="storageError" role="alert" class="message-input__notice">{{ storageError }}</p>
-    <div v-if="hasRecovery" class="message-input__notice" :aria-label="$t('interaction.guestbookInput.recoveryLabel')">
-      {{ $t('interaction.guestbookInput.recoveryFound') }}
-      <button type="button" :disabled="submitting" @click="$emit('restore')">
-        {{ $t('interaction.guestbookInput.restore') }}
-      </button>
-      <button type="button" :disabled="submitting" @click="$emit('discard')">
-        {{ $t('interaction.guestbookInput.keepCurrent') }}
-      </button>
-    </div>
-    <p v-if="!ready" class="message-input__notice">
-      {{ expired ? $t('interaction.guestbookInput.expired') : $t('interaction.guestbookInput.confirmingLogin')
-      }}<button v-if="expired" type="button" @click="$emit('login')">
-        {{ $t('interaction.guestbookInput.relogin') }}
-      </button>
-    </p>
-    <!-- 回复引用预览 -->
+  <div class="message-input" :class="{ 'message-input--reply-below': replyPlacement === 'below' }">
+    <!-- 引用条脱离文档流，贴在输入卡片外侧，避免撑高后挤压消息列表 -->
     <Transition name="reply-fade">
       <div v-if="replyTo" class="message-input__reply-bar">
         <Icon name="lucide:reply" size="13" class="message-input__reply-icon" />
@@ -46,62 +24,91 @@
         </button>
       </div>
     </Transition>
-
-    <!-- 拖拽调整高度的手柄（输入区顶部边框） -->
-    <div class="message-input__resize-handle" @pointerdown="onResizePointerDown" />
-
-    <!-- 输入区域 -->
-    <div class="message-input__editor-wrap">
-      <textarea
-        ref="textareaRef"
-        :value="draft"
-        :disabled="!hydrated"
-        class="message-input__editor"
-        :class="{ 'message-input__editor--resizing': resizing }"
-        :style="{ height: editorHeight + 'px' }"
-        :placeholder="$t('interaction.guestbookInput.placeholder')"
-        :aria-label="$t('interaction.guestbookInput.contentLabel')"
-        :aria-invalid="!!error || undefined"
-        :aria-describedby="error ? errorId : undefined"
-        :maxlength="500"
-        @input="$emit('update:draft', ($event.target as HTMLTextAreaElement).value)"
-        @keydown="onEditorKeydown"
-      />
-      <!-- 同宽同样式的隐藏副本，只用来量出正文自然高度，真实输入框的高度才能平滑过渡 -->
-      <textarea
-        ref="mirrorRef"
-        :value="draft"
-        class="message-input__editor message-input__editor--mirror"
-        aria-hidden="true"
-        tabindex="-1"
-        readonly
-      />
-      <!-- 右上角展开/收起按钮 -->
-      <CommonTooltip :content="expandLabel">
-        <button type="button" class="message-input__expand-toggle" :aria-label="expandLabel" @click="toggleExpand">
-          <Icon :name="isExpanded ? 'lucide:minimize-2' : 'lucide:maximize-2'" size="12" />
+    <div class="card message-input__panel">
+      <CommonSubmissionTrap v-model="website" />
+      <p v-if="error" :id="errorId" role="alert" class="message-input__notice">{{ error }}</p>
+      <!-- 播报区常驻，只切换内部提示，保证读屏能播报新插入的状态 -->
+      <div aria-live="polite">
+        <p v-if="notice" role="status" class="message-input__notice">{{ notice }}</p>
+      </div>
+      <p v-if="storageError" role="alert" class="message-input__notice">{{ storageError }}</p>
+      <div
+        v-if="hasRecovery"
+        class="message-input__notice"
+        :aria-label="$t('interaction.guestbookInput.recoveryLabel')"
+      >
+        {{ $t('interaction.guestbookInput.recoveryFound') }}
+        <button type="button" :disabled="submitting" @click="$emit('restore')">
+          {{ $t('interaction.guestbookInput.restore') }}
         </button>
-      </CommonTooltip>
-    </div>
+        <button type="button" :disabled="submitting" @click="$emit('discard')">
+          {{ $t('interaction.guestbookInput.keepCurrent') }}
+        </button>
+      </div>
+      <p v-if="!ready" class="message-input__notice">
+        {{ expired ? $t('interaction.guestbookInput.expired') : $t('interaction.guestbookInput.confirmingLogin')
+        }}<button v-if="expired" type="button" @click="$emit('login')">
+          {{ $t('interaction.guestbookInput.relogin') }}
+        </button>
+      </p>
+      <!-- 拖拽调整高度的手柄（输入区顶部边框） -->
+      <div class="message-input__resize-handle" @pointerdown="onResizePointerDown" />
 
-    <!-- 底部工具栏 -->
-    <div class="message-input__footer">
-      <span class="message-input__hint"
-        >{{ identityLabel }} <span aria-hidden="true">·</span> {{ $t('interaction.guestbookInput.sendHint') }}</span
-      >
-      <small class="message-input__count" :class="{ 'message-input__count--full': draft.length >= 500 }"
-        >{{ draft.length }} / 500</small
-      >
-      <button
-        type="button"
-        class="message-input__send"
-        :aria-busy="submitting"
-        :disabled="!draft.trim() || submitting || !ready"
-        @click="submit"
-      >
-        <Icon name="lucide:send" size="14" />
-        <span>{{ submitting ? $t('interaction.guestbookInput.sending') : $t('interaction.guestbookInput.send') }}</span>
-      </button>
+      <!-- 输入区域 -->
+      <div class="message-input__editor-wrap">
+        <textarea
+          ref="textareaRef"
+          :value="draft"
+          :disabled="!hydrated"
+          class="message-input__editor"
+          :class="{ 'message-input__editor--resizing': resizing }"
+          :style="{ height: editorHeight + 'px' }"
+          :placeholder="$t('interaction.guestbookInput.placeholder')"
+          :aria-label="$t('interaction.guestbookInput.contentLabel')"
+          :aria-invalid="!!error || undefined"
+          :aria-describedby="error ? errorId : undefined"
+          :maxlength="500"
+          @input="$emit('update:draft', ($event.target as HTMLTextAreaElement).value)"
+          @keydown="onEditorKeydown"
+        />
+        <!-- 同宽同样式的隐藏副本，只用来量出正文自然高度，真实输入框的高度才能平滑过渡 -->
+        <textarea
+          ref="mirrorRef"
+          :value="draft"
+          class="message-input__editor message-input__editor--mirror"
+          aria-hidden="true"
+          tabindex="-1"
+          readonly
+        />
+        <!-- 右上角展开/收起按钮 -->
+        <CommonTooltip :content="expandLabel">
+          <button type="button" class="message-input__expand-toggle" :aria-label="expandLabel" @click="toggleExpand">
+            <Icon :name="isExpanded ? 'lucide:minimize-2' : 'lucide:maximize-2'" size="12" />
+          </button>
+        </CommonTooltip>
+      </div>
+
+      <!-- 底部工具栏 -->
+      <div class="message-input__footer">
+        <span class="message-input__hint"
+          >{{ identityLabel }} <span aria-hidden="true">·</span> {{ $t('interaction.guestbookInput.sendHint') }}</span
+        >
+        <small class="message-input__count" :class="{ 'message-input__count--full': draft.length >= 500 }"
+          >{{ draft.length }} / 500</small
+        >
+        <button
+          type="button"
+          class="message-input__send"
+          :aria-busy="submitting"
+          :disabled="!draft.trim() || submitting || !ready"
+          @click="submit"
+        >
+          <Icon name="lucide:send" size="14" />
+          <span>{{
+            submitting ? $t('interaction.guestbookInput.sending') : $t('interaction.guestbookInput.send')
+          }}</span>
+        </button>
+      </div>
     </div>
   </div>
 </template>
@@ -120,6 +127,8 @@ const props = defineProps<{
   storageError?: string
   identityLabel: string
   hasRecovery?: boolean
+  /** 聊天模式贴在输入框上方；论坛模式输入框在列表之上，改为向下悬浮以免被页面裁切 */
+  replyPlacement?: 'above' | 'below'
 }>()
 const emit = defineEmits<{
   'update:draft': [value: string]
@@ -244,8 +253,11 @@ onBeforeUnmount(() => {
   padding: 0.5rem 0.75rem 0;
 }
 .message-input {
+  position: relative;
   flex-shrink: 0;
   margin: 0.375rem 0.5rem 0.5rem;
+}
+.message-input__panel {
   // 与外层卡片同心：外圆角减去 0.5rem 外边距，四角一致
   border-radius: calc(#{$radius-card} - 0.5rem);
   border: 1px solid var(--border-soft);
@@ -291,15 +303,26 @@ onBeforeUnmount(() => {
   }
 }
 
-/* ---- 回复引用预览 ---- */
+/* ---- 回复引用：悬浮在输入卡片外，不占列表高度 ---- */
 .message-input__reply-bar {
+  position: absolute;
+  z-index: 3;
+  left: 0;
+  right: 0;
+  bottom: calc(100% + 0.375rem);
   display: flex;
   align-items: center;
   gap: 0.375rem;
-  padding: 0.5rem 1rem;
-  background: color-mix(in srgb, var(--accent, #5b7cfa) 5%, var(--surface-1));
-  border-bottom: 1px solid var(--border-soft);
-  overflow: hidden;
+  padding: 0.4375rem 0.75rem;
+  border: 1px solid var(--border-soft);
+  border-radius: calc(#{$radius-card} - 0.5rem);
+  background: color-mix(in srgb, var(--accent, #5b7cfa) 8%, var(--surface-1));
+  box-shadow: var(--shadow-card);
+  backdrop-filter: blur(10px);
+}
+.message-input--reply-below .message-input__reply-bar {
+  top: calc(100% + 0.375rem);
+  bottom: auto;
 }
 
 .message-input__reply-icon {
@@ -354,19 +377,11 @@ onBeforeUnmount(() => {
   }
 }
 
-.reply-fade-enter-active {
-  transition:
-    opacity 0.2s ease,
-    max-height 0.2s ease;
-  @media (prefers-reduced-motion: reduce) {
-    transition: none;
-  }
-}
-
+.reply-fade-enter-active,
 .reply-fade-leave-active {
   transition:
-    opacity 0.15s ease,
-    max-height 0.15s ease;
+    opacity 0.18s ease,
+    transform 0.18s ease;
   @media (prefers-reduced-motion: reduce) {
     transition: none;
   }
@@ -375,6 +390,11 @@ onBeforeUnmount(() => {
 .reply-fade-enter-from,
 .reply-fade-leave-to {
   opacity: 0;
+  transform: translateY(0.375rem);
+}
+.message-input--reply-below .reply-fade-enter-from,
+.message-input--reply-below .reply-fade-leave-to {
+  transform: translateY(-0.375rem);
 }
 
 /* ---- 输入区 ---- */
