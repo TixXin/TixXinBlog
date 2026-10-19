@@ -8,6 +8,9 @@ import 'reflect-metadata'
 import type { EntityManager } from '@mikro-orm/postgresql'
 import { storedMessage, translateStored, zh } from '..'
 import { PostRevisionsService } from '../../../modules/post/post-revisions.service'
+import { MediaService } from '../../../modules/media/media.service'
+import type { MediaStorage } from '../../../modules/media/media-storage'
+import { resolveContentRelations } from '../../../modules/content-relations/content-relations'
 
 const REVISION_SCOPE = 'post.revisionReason.'
 
@@ -56,5 +59,27 @@ describe('修订历史接口', () => {
       '博主手写的原因',
     ])
     expect((await service.detail(7, 3, 'en')).reason).toBe('Restored revision 1')
+  })
+})
+
+describe('兜底标题', () => {
+  it('媒体引用中站点资料的兜底标题按语言返回', async () => {
+    const em = {
+      findOne: jest.fn().mockResolvedValue({ id: 'asset' }),
+      findAndCount: jest.fn().mockResolvedValue([[{ kind: 'site', revision: 2 }], 1]),
+    }
+    const service = new MediaService(em as unknown as EntityManager, {} as MediaStorage)
+    const zhItem = (await service.references('asset', 1)).items[0]
+    expect(zhItem).toMatchObject({ title: '站点头像', url: '/admin/site' })
+    expect((await service.references('asset', 1, 'en')).items[0]).toMatchObject({ title: 'Site avatar' })
+  })
+
+  it('关联目标缺失时的兜底标题按语言返回', async () => {
+    const em = { execute: jest.fn().mockResolvedValue([]) }
+    const related = [{ type: 'post' as const, id: 41 }]
+    const [zhItem] = await resolveContentRelations(em as unknown as EntityManager, related, true)
+    expect(zhItem).toMatchObject({ title: '内容 #41', status: 'missing', available: false })
+    const [enItem] = await resolveContentRelations(em as unknown as EntityManager, related, true, 'en')
+    expect(enItem).toMatchObject({ title: 'Content #41' })
   })
 })

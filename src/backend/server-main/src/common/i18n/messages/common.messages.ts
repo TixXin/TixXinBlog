@@ -48,6 +48,8 @@ export const commonMessages = defineMessages({
     en: 'You can select up to 12 related items',
   },
   'common.relationInvalid': { zh: '关联内容类型或编号不合法', en: 'Invalid related content type or ID' },
+  // 关联目标缺失时的兜底标题
+  'common.relationFallbackTitle': { zh: '内容 #{id}', en: 'Content #{id}' },
   'common.relationSelf': { zh: '内容不能关联自身', en: 'Content cannot be related to itself' },
   'common.relationTargetMissing': {
     zh: '新关联目标不存在或已删除，请重新选择；原有失效关联可以保留或解除',

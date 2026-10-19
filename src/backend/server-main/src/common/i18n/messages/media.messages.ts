@@ -8,6 +8,8 @@ import { ErrorCode } from '../../constants/error-codes'
 import { defineMessages } from './types'
 
 export const mediaMessages = defineMessages({
+  // 引用列表的兜底标题：站点资料（头像）引用没有可展示的内容标题
+  'media.referenceSiteAvatar': { zh: '站点头像', en: 'Site avatar' },
   'media.tooLarge': { zh: '请选择不超过 8MB 的图片', en: 'Please choose an image no larger than 8 MB' },
   'media.fileNameInvalid': { zh: '文件名不合法', en: 'Invalid file name' },
   'media.fileTypeUnsupported': {

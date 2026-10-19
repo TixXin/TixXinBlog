@@ -3,7 +3,7 @@ import { BadRequestException } from '@nestjs/common'
 import type { EntityManager } from '@mikro-orm/postgresql'
 import { CONTENT_RELATION_TYPES } from '../../common/types/content-relation'
 import type { ContentRelation, ContentRelationType } from '../../common/types/content-relation'
-import { msg } from '../../common/i18n'
+import { DEFAULT_API_LOCALE, msg, translate, type ApiLocale } from '../../common/i18n'
 
 const relationTables = { post: 'post', project: 'project', gallery: 'gallery_photo' } as const
 interface TargetRow {
@@ -38,7 +38,12 @@ export function normalizeContentRelations(value: unknown, source?: ContentRelati
       return true
     })
 }
-export async function resolveContentRelations(em: EntityManager, related: ContentRelation[], admin = false) {
+export async function resolveContentRelations(
+  em: EntityManager,
+  related: ContentRelation[],
+  admin = false,
+  locale: ApiLocale = DEFAULT_API_LOCALE,
+) {
   if (!related.length) return []
   const rows = new Map<string, TargetRow>()
   const queries: string[] = [],
@@ -70,7 +75,7 @@ export async function resolveContentRelations(em: EntityManager, related: Conten
     return [
       {
         ...relation,
-        title: target?.title ?? `内容 #${relation.id}`,
+        title: target?.title ?? translate(locale, 'common.relationFallbackTitle', { id: relation.id }),
         url,
         ...(admin ? { status: !target ? 'missing' : target.deleted_at ? 'deleted' : target.status, available } : {}),
       },

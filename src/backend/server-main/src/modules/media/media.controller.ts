@@ -2,7 +2,8 @@
  * @file media.controller.ts
  * @description 管理员媒体上传与资源维护；公开接口只返回规范化后的图片字节，可用 `?w=` 取白名单宽度的变体。
  */
-import { msg } from '../../common/i18n'
+import { msg, type ApiLocale } from '../../common/i18n'
+import { RequestLocale } from '../../common/decorators/request-locale.decorator'
 import {
   Body,
   Controller,
@@ -69,8 +70,9 @@ export class AdminMediaController {
   @Get(':id/references') references(
     @Param('id', new ParseUUIDPipe({ version: '4' })) id: string,
     @Query() query: QueryMediaDto,
+    @RequestLocale() locale: ApiLocale,
   ) {
-    return this.media.references(id, query.page)
+    return this.media.references(id, query.page, locale)
   }
   @Patch(':id') update(@Param('id', new ParseUUIDPipe({ version: '4' })) id: string, @Body() body: UpdateMediaDto) {
     return this.media.update(id, body)

@@ -4,7 +4,7 @@
  * 公开读取可按白名单宽度返回 WebP 变体，变体首次请求时生成并缓存到磁盘，同一变体并发只生成一次。
  */
 import { EntityManager } from '@mikro-orm/postgresql'
-import { msg } from '../../common/i18n'
+import { msg, translate, type ApiLocale } from '../../common/i18n'
 import { raw } from '@mikro-orm/core'
 import type { FilterQuery } from '@mikro-orm/core'
 import {
@@ -138,7 +138,7 @@ export class MediaService {
     )
     return { items: items.map((item) => this.dto(item)), total, page: query.page, pageSize: query.pageSize }
   }
-  async references(id: string, page: number) {
+  async references(id: string, page: number, locale: ApiLocale = 'zh-CN') {
     if (!(await this.em.findOne(MediaAsset, { id }))) throw new NotFoundException(msg('media.notFound'))
     const [items, total] = await this.em.findAndCount(
       MediaReference,
@@ -177,7 +177,7 @@ export class MediaService {
           item.subscription?.name ??
           item.friendLink?.name ??
           item.imagePrompt?.title ??
-          '站点头像',
+          translate(locale, 'media.referenceSiteAvatar'),
         url:
           item.momentComment && item.moment
             ? `/admin/moments?comments=${encodeURIComponent(item.moment.id)}&commentId=${encodeURIComponent(item.momentComment.id)}`

@@ -4,6 +4,8 @@ import { EntityManager } from '@mikro-orm/postgresql'
 import { AdminAuthGuard } from '../../common/guards/admin-auth.guard'
 import { QueryContentRelationsDto, ResolveContentRelationsDto } from './content-relations.dto'
 import { normalizeContentRelations, resolveContentRelations, searchContentRelations } from './content-relations'
+import { RequestLocale } from '../../common/decorators/request-locale.decorator'
+import type { ApiLocale } from '../../common/i18n'
 @Controller('admin/content-relations')
 @UseGuards(AdminAuthGuard)
 export class AdminContentRelationsController {
@@ -11,7 +13,7 @@ export class AdminContentRelationsController {
   @Get() list(@Query() query: QueryContentRelationsDto) {
     return searchContentRelations(this.em, query.type, query.q, query.page)
   }
-  @Post('resolve') resolve(@Body() input: ResolveContentRelationsDto) {
-    return resolveContentRelations(this.em, normalizeContentRelations(input.relatedContent), true)
+  @Post('resolve') resolve(@Body() input: ResolveContentRelationsDto, @RequestLocale() locale: ApiLocale) {
+    return resolveContentRelations(this.em, normalizeContentRelations(input.relatedContent), true, locale)
   }
 }
