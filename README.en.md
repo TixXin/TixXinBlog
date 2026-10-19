@@ -13,7 +13,9 @@ A personal blog system for a single author, bundling the public site and its aut
 
 Live instance: <https://tix.xin> (the author's own blog; its content is unrelated to the demo data in this repository).
 
-> **Note on language.** The interface and seeded demo content are written in Chinese, and the project has no i18n layer yet. The [documentation index](docs/en/README.md), [development guide](docs/en/development.md) and [deployment guide](docs/en/deployment.md) are available in English; the other guides remain in Chinese.
+> **Quick start.** With a Linux server running Docker and a domain name, follow the [five-minute deployment](docs/en/quick-start.md) to go live with the prebuilt images. To develop locally, see [Running locally](#running-locally) below.
+
+> **Note on language.** The interface and seeded demo content are written in Chinese, and the project has no i18n layer yet. The [documentation index](docs/en/README.md), [quick start](docs/en/quick-start.md), [development guide](docs/en/development.md) and [deployment guide](docs/en/deployment.md) are available in English; the other guides remain in Chinese.
 
 ## What it does
 
