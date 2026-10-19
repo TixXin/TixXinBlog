@@ -425,7 +425,7 @@ export class ContentImportService {
           await importPrompts(em, payload, current, result)
           await importSubscriptions(em, payload, current, result)
           if (job.includeSettings) {
-            await this.sites.save({ ...payload.site, revision: current.siteRevision }, '从内容包迁入站点资料')
+            await this.sites.save({ ...payload.site, revision: current.siteRevision }, zh('site.reasonImport'))
             await this.comments.savePolicy({
               requireApproval: payload.requireCommentApproval,
               revision: current.policyRevision,

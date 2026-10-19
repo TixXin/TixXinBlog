@@ -9,7 +9,7 @@ import type { OnModuleDestroy } from '@nestjs/common'
 import { AuditEntry } from '../../entities/audit-entry.entity'
 import type { AuditState, AuditSummary } from '../../entities/audit-entry.entity'
 import { auditActionLabel, auditFieldLabel } from './audit-description'
-import { msg, translate, type ApiLocale } from '../../common/i18n'
+import { msg, translate, translateStored, type ApiLocale } from '../../common/i18n'
 export interface AuditActor {
   id: string
   name?: string
@@ -127,7 +127,9 @@ export class AuditService implements OnModuleDestroy {
     return {
       items: items.map((item) => ({
         id: item.id,
-        actor: item.actorName || translate(locale, item.actorId ? 'audit.actor.admin' : 'audit.actor.anonymous'),
+        actor: item.actorName
+          ? translateStored(locale, item.actorName, 'audit.actor.')
+          : translate(locale, item.actorId ? 'audit.actor.admin' : 'audit.actor.anonymous'),
         actorId: item.actorId,
         action: item.action,
         actionLabel: auditActionLabel(item.action, locale),

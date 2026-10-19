@@ -29,6 +29,7 @@ export const siteMessages = defineMessages({
   'site.reasonUpdate': { zh: '更新站点资料', en: 'Updated site settings' },
   'site.reasonRestore': { zh: '恢复站点版本 {revision}', en: 'Restored site revision {revision}' },
   'site.reasonInitial': { zh: '初始站点资料', en: 'Initial site settings' },
+  'site.reasonImport': { zh: '从内容包迁入站点资料', en: 'Imported site settings from a content package' },
   'site.reasonSafeInitial': {
     zh: '收起未经确认的初始个人资料',
     en: 'Hid unconfirmed initial profile details',

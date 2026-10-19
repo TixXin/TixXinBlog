@@ -14,6 +14,7 @@ import { AdminSession } from './entities/admin-session.entity'
 import { AdminUser } from './entities/admin-user.entity'
 import { AuditEntry } from './entities/audit-entry.entity'
 import { RefreshToken } from './entities/refresh-token.entity'
+import { zh } from './common/i18n'
 
 /** 命令自身判定的业务错误（配置缺失、账号状态、密码不合规），可原样输出给操作者。 */
 export class AdminCliError extends Error {
@@ -103,7 +104,7 @@ export async function resetAdminPassword(
       action: 'auth.password-reset',
       resourceType: 'account',
       resourceId: user.id,
-      actorName: '服务器命令行',
+      actorName: zh('audit.actor.cli'),
       state: 'success',
       summary: { fields: ['password'], counts: { revokedSessions, revokedTokens } },
       createdAt: now,

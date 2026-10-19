@@ -12,6 +12,7 @@ import { MediaService } from '../../../modules/media/media.service'
 import type { MediaStorage } from '../../../modules/media/media-storage'
 import { resolveContentRelations } from '../../../modules/content-relations/content-relations'
 import { GUESTBOOK_RULES, guestbookRules } from '../../../modules/guestbook/guestbook-values'
+import { AuditService } from '../../../modules/audit/audit.service'
 
 const REVISION_SCOPE = 'post.revisionReason.'
 
@@ -96,5 +97,40 @@ describe('留言规则', () => {
     expect(english.map((rule) => rule.id)).toEqual([1, 2, 3])
     expect(english[1]!.text).toBe('Be kind and respect different opinions.')
     expect(english.every((rule) => !/[一-龥]/.test(rule.text))).toBe(true)
+  })
+})
+
+describe('审计操作者与站点导入原因', () => {
+  it('命令行与缺省管理员名称按语言显示，真实用户名不变', async () => {
+    const entry = (actorName: string | undefined, actorId?: string) => ({
+      id: actorName ?? 'none',
+      actorName,
+      actorId,
+      action: 'auth.password-reset',
+      resourceType: 'account',
+      state: 'success',
+      createdAt: new Date('2026-10-19T08:00:00Z'),
+    })
+    const items = [entry(zh('audit.actor.cli')), entry('管理员', 'u1'), entry('tixxin', 'u1')]
+    const em = {
+      findAndCount: jest.fn().mockResolvedValue([items, items.length]),
+      count: jest.fn().mockResolvedValue(0),
+    }
+    const service = new AuditService(em as unknown as EntityManager)
+    expect((await service.list({ page: 1 })).items.map((item) => item.actor)).toEqual([
+      '服务器命令行',
+      '管理员',
+      'tixxin',
+    ])
+    expect((await service.list({ page: 1 }, 'en')).items.map((item) => item.actor)).toEqual([
+      'Server command line',
+      'Administrator',
+      'tixxin',
+    ])
+  })
+
+  it('站点资料从内容包迁入的修订原因可翻译', () => {
+    expect(zh('site.reasonImport')).toBe('从内容包迁入站点资料')
+    expect(translateStored('en', '从内容包迁入站点资料')).toBe('Imported site settings from a content package')
   })
 })

@@ -148,7 +148,7 @@ export class PostBatchService {
     }
     const operation = this.em.create(PostBatchOperation, {
       actorId: admin.id,
-      actorName: admin.username ?? '管理员',
+      actorName: admin.username ?? zh('audit.actor.admin'),
       sessionVersion: admin.sessionVersion,
       action: input.action,
       plan,

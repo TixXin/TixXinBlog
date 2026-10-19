@@ -140,7 +140,9 @@ export const auditMessages = defineMessages({
   'audit.field.logoUrl': { zh: '友链外部头像', en: 'Friend link external avatar' },
   'audit.field.isFeatured': { zh: '推荐状态', en: 'Featured state' },
   'audit.field.rules': { zh: '友链规则', en: 'Friend link rules' },
+  // 操作者名称：admin 与 cli 也会以中文写入 actor_name，列表在 audit.actor. 前缀下反查
   'audit.actor.admin': { zh: '管理员', en: 'Administrator' },
+  'audit.actor.cli': { zh: '服务器命令行', en: 'Server command line' },
   'audit.actor.anonymous': { zh: '未认证请求', en: 'Unauthenticated request' },
   'audit.dateRangeInvalid': { zh: '开始日期不能晚于结束日期', en: 'The start date cannot be later than the end date' },
   'audit.backlog': {
