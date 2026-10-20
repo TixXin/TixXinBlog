@@ -20,7 +20,10 @@
 <p align="center">
   <img src="docs/assets/screenshots/nexus-home.jpg" alt="Home page in the default Nexus theme, light at top left and dark at bottom right" width="100%">
 </p>
-<p align="center"><sub>Default Nexus theme, light at top left and dark at bottom right, with the repository's demo data (Chinese interface; English is built in). The live site is the author's own blog and unrelated to the demo data.</sub></p>
+<p align="center">
+  <img src="docs/assets/screenshots/nexus-moments.jpg" alt="Moments page, light at top left and dark at bottom right" width="100%">
+</p>
+<p align="center"><sub>Home and moments pages in the default Nexus theme on a 2560×1440 screen, light at top left and dark at bottom right, with the repository's demo data (Chinese interface; English is built in). The live site is the author's own blog and unrelated to the demo data.</sub></p>
 
 ## Features
 

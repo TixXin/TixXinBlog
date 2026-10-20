@@ -20,7 +20,10 @@
 <p align="center">
   <img src="docs/assets/screenshots/nexus-home.jpg" alt="默认主题 Nexus 的首页，左上为浅色、右下为深色" width="100%">
 </p>
-<p align="center"><sub>默认主题 Nexus：左上浅色、右下深色，使用仓库自带的演示数据。在线示例是作者本人的博客，内容与演示数据无关。</sub></p>
+<p align="center">
+  <img src="docs/assets/screenshots/nexus-moments.jpg" alt="朋友圈页面，左上为浅色、右下为深色" width="100%">
+</p>
+<p align="center"><sub>默认主题 Nexus 在 2560×1440 屏幕下的首页与朋友圈：左上浅色、右下深色，使用仓库自带的演示数据。在线示例是作者本人的博客，内容与演示数据无关。</sub></p>
 
 ## 特性
 
