@@ -28,6 +28,32 @@ export const setupMessages = defineMessages({
     zh: '站点已完成初始化，请直接登录后台',
     en: 'This site has already been set up. Sign in to the dashboard instead.',
   },
+  'setup.launchedAtInvalid': { zh: '建站日期需为 YYYY-MM-DD', en: 'The launch date must be YYYY-MM-DD' },
+  'setup.emailInvalid': { zh: '请填写有效的邮箱地址', en: 'Enter a valid email address' },
+  'setup.avatarTooLarge': {
+    zh: '头像图片过大，请换一张较小的图片',
+    en: 'The avatar image is too large. Choose a smaller image.',
+  },
+  'setup.avatarInvalid': {
+    zh: '头像图片无法读取，请换一张图片',
+    en: 'The avatar image cannot be read. Choose another image.',
+  },
+  'setup.avatarUrlInvalid': {
+    zh: '头像地址需为 http(s) 图片链接',
+    en: 'The avatar address must be an http(s) image link',
+  },
+  'setup.avatarEmailRequired': {
+    zh: '使用 Cravatar 头像需要先填写联系邮箱',
+    en: 'Enter a contact email to use a Cravatar avatar',
+  },
+  'setup.socialUrlInvalid': {
+    zh: '社交链接需为 http(s) 地址',
+    en: 'Social links must be http(s) addresses',
+  },
+  // 头像登记为站内媒体时的图片说明，以中文持久化
+  'setup.avatarAlt': { zh: '博主头像', en: 'Owner avatar' },
+  // 审计中的字段名以中文持久化；建站日期在通用审计字段表中没有对应项
+  'setup.fieldLaunchedAt': { zh: '建站日期', en: 'Launch date' },
   // 站点资料修订原因：以中文持久化，历史列表按请求语言反查翻译
   'setup.reasonSiteProfile': { zh: '初始化向导设置站点资料', en: 'Site settings from the setup wizard' },
 })

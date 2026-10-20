@@ -1,6 +1,7 @@
 /**
  * @file setup.service.spec.ts
- * @description 浏览器初始化向导回归：令牌开关、常量时间比较、已有管理员关闭、并发只成功一次、成功后关闭与中英文错误
+ * @description 浏览器初始化向导回归：令牌开关、常量时间比较、已有管理员关闭、并发只成功一次、成功后关闭与中英文错误，
+ *              以及博主资料、头像（站内图片、外部地址、Cravatar）、社交链接与搜索引擎收录的写入
  * @author TixXin
  * @since 2026-10-19
  */
@@ -9,12 +10,15 @@ import { HttpException } from '@nestjs/common'
 import { ConfigService } from '@nestjs/config'
 import type { EntityManager } from '@mikro-orm/postgresql'
 import * as argon2 from 'argon2'
+import sharp from 'sharp'
 import { AllExceptionsFilter } from '../../common/filters/all-exceptions.filter'
 import { AdminUser } from '../../entities/admin-user.entity'
 import { AuditEntry } from '../../entities/audit-entry.entity'
+import { MediaAsset } from '../../entities/media-asset.entity'
+import type { MediaStorage } from '../media/media-storage'
 import { SiteSettings, SiteSettingsRevision } from '../../entities/site-settings.entity'
 import { SAFE_INITIAL_SITE_VALUES } from '../site/initial-profile'
-import { SETUP_CLOSED_MESSAGE, SetupService, setupProfilePatch, setupTokenMatches } from './setup.service'
+import { SETUP_CLOSED_MESSAGE, SetupService, cravatarUrl, setupProfilePatch, setupTokenMatches } from './setup.service'
 
 const TOKEN = 'f'.repeat(64)
 const valid = { token: TOKEN, username: 'owner', password: 'correct-horse-battery' }
@@ -41,7 +45,9 @@ function createDatabase(initialAdmins = 0) {
           }
           return []
         }),
-        count: jest.fn(async () => committed.admins),
+        count: jest.fn(async (entity: unknown) =>
+          entity === MediaAsset ? created.filter((item) => item.entity === MediaAsset).length : committed.admins,
+        ),
         findOne: jest.fn(async (entity: unknown) => (entity === SiteSettings ? settings : null)),
         find: jest.fn(async () => []),
         create: jest.fn((entity: unknown, data: Record<string, unknown>) => {
@@ -67,8 +73,29 @@ function createDatabase(initialAdmins = 0) {
   return { em: root as unknown as EntityManager, root, committed, settings, created, executed }
 }
 
-function service(database = createDatabase(), env: Record<string, string> = { SETUP_TOKEN: TOKEN }) {
-  return new SetupService(database.em, new ConfigService(env))
+function createStorage() {
+  const files = new Map<string, Buffer>()
+  return {
+    files,
+    put: jest.fn(async (key: string, content: Buffer) => void files.set(key, content)),
+    remove: jest.fn(async (key: string) => void files.delete(key)),
+  }
+}
+
+function service(
+  database = createDatabase(),
+  env: Record<string, string> = { SETUP_TOKEN: TOKEN },
+  storage = createStorage(),
+) {
+  return new SetupService(database.em, new ConfigService(env), storage as unknown as MediaStorage)
+}
+
+/** 生成一张真实的 PNG 头像 data URL，走与上传相同的解码与转码 */
+async function avatarDataUrl() {
+  const png = await sharp({ create: { width: 64, height: 64, channels: 3, background: '#6366f1' } })
+    .png()
+    .toBuffer()
+  return `data:image/png;base64,${png.toString('base64')}`
 }
 
 /** 经全局异常过滤器渲染，得到客户端实际收到的状态与 message */
@@ -241,6 +268,107 @@ describe('SetupService', () => {
     )
     expect(database.committed.admins).toBe(1)
     expect(database.created.filter((item) => item.entity === AuditEntry)).toHaveLength(1)
+  })
+})
+
+describe('SetupService 博主资料与头像', () => {
+  it('写入博主名、头衔、简介、建站日期、联系邮箱与社交链接、搜索引擎收录与 Cravatar 头像', async () => {
+    const database = createDatabase(0)
+    await service(database).complete({
+      ...valid,
+      locale: 'zh-CN',
+      ownerName: '  小林 ',
+      ownerTitle: '前端开发',
+      description: '记录写代码与读书',
+      launchedAt: '2026-10-20',
+      email: 'Owner@Example.com',
+      avatarSource: 'cravatar',
+      socials: [{ label: 'GitHub', href: 'https://github.com/owner', icon: 'lucide:github' }],
+      searchIndexing: false,
+    })
+    expect(database.settings.values).toMatchObject({
+      ownerName: '小林',
+      ownerTitle: '前端开发',
+      description: '记录写代码与读书',
+      launchedAt: '2026-10-20',
+      avatar: cravatarUrl('owner@example.com'),
+      searchIndexing: false,
+      socials: [
+        { label: '邮箱', href: 'mailto:Owner@Example.com', icon: 'lucide:mail' },
+        { label: 'GitHub', href: 'https://github.com/owner', icon: 'lucide:github' },
+      ],
+    })
+    expect(cravatarUrl(' Owner@Example.com ')).toMatch(
+      /^https:\/\/cn\.cravatar\.com\/avatar\/[0-9a-f]{32}\?s=512&d=identicon$/,
+    )
+    const audit = database.created.find((item) => item.entity === AuditEntry)!.data
+    expect(audit.summary).toEqual({
+      fields: expect.arrayContaining(['博主名称', '博主简介', '站点简介', '建站日期', '头像', '社交链接']),
+    })
+    expect(database.created.some((item) => item.entity === MediaAsset)).toBe(false)
+  })
+
+  it('图片头像转为 WebP 写入媒体存储并登记，站点头像指向站内媒体地址', async () => {
+    const database = createDatabase(0)
+    const storage = createStorage()
+    await service(database, undefined, storage).complete({
+      ...valid,
+      avatarSource: 'image',
+      avatarImage: await avatarDataUrl(),
+    })
+    const asset = database.created.find((item) => item.entity === MediaAsset)!.data
+    expect(asset).toMatchObject({ mimeType: 'image/webp', width: 64, height: 64, alt: '博主头像' })
+    expect(storage.files.get(asset.storageKey as string)?.toString('ascii', 8, 12)).toBe('WEBP')
+    expect(database.settings.values.avatar).toBe(`/api/v1/media/${asset.id as string}.webp`)
+  })
+
+  it('外部头像只接受 https；Cravatar 需要邮箱；图片无法解码与非 http(s) 社交链接都返回 400', async () => {
+    const attempts = [
+      { avatarSource: 'url', avatarUrl: 'http://example.com/a.png' },
+      { avatarSource: 'url', avatarUrl: 'https://user:pass@example.com/a.png' },
+      { avatarSource: 'cravatar' },
+      { avatarSource: 'image', avatarImage: 'data:image/png;base64,AAAA' },
+      { avatarSource: 'image', avatarImage: 'data:image/svg+xml;base64,PHN2Zy8+' },
+      { socials: [{ label: 'x', href: 'javascript:alert(1)', icon: 'lucide:link' }] },
+      { socials: [{ label: 'x', href: 'https://example.com', icon: 'lucide:mail' }] },
+      { email: 'not-an-email' },
+      { launchedAt: '2026/10/20' },
+    ]
+    for (const extra of attempts) {
+      const database = createDatabase(0)
+      const error = await failure(service(database).complete({ ...valid, ...extra }))
+      expect([extra, error.getStatus()]).toEqual([extra, 400])
+      expect(database.committed.admins).toBe(0)
+    }
+    const database = createDatabase(0)
+    await service(database).complete({ ...valid, avatarSource: 'url', avatarUrl: 'https://example.com/a.png' })
+    expect(database.settings.values.avatar).toBe('https://example.com/a.png')
+  })
+
+  it('事务未提交时删除已写入的头像文件', async () => {
+    const database = createDatabase(0)
+    const storage = createStorage()
+    const subject = service(database, undefined, storage)
+    // 拿到表锁后发现已有管理员：模拟另一方先完成初始化
+    database.root.transactional.mockImplementationOnce(async (run: (tx: unknown) => Promise<unknown>) => {
+      const tx = {
+        execute: jest.fn(async () => []),
+        count: jest.fn(async () => 0),
+        create: jest.fn((_entity: unknown, data: Record<string, unknown>) => data),
+        findOne: jest.fn(async () => {
+          throw new Error('数据库连接中断')
+        }),
+        find: jest.fn(async () => []),
+        flush: jest.fn(),
+      }
+      return run(tx)
+    })
+    await expect(
+      subject.complete({ ...valid, avatarSource: 'image', avatarImage: await avatarDataUrl() }),
+    ).rejects.toThrow('数据库连接中断')
+    expect(storage.put).toHaveBeenCalledTimes(1)
+    expect(storage.remove).toHaveBeenCalledWith(storage.put.mock.calls[0]![0])
+    expect(storage.files.size).toBe(0)
   })
 })
 

@@ -1,11 +1,11 @@
 /**
  * @file setup.service.ts
  * @description 浏览器初始化向导：仅在配置了 SETUP_TOKEN 且没有任何管理员时可用，
- *              创建首个管理员、按需更新站点资料并写审计；完成后接口永久表现为不存在
+ *              创建首个管理员、按需更新站点与博主资料（含头像登记为站内媒体）并写审计；完成后接口永久表现为不存在
  * @author TixXin
  * @since 2026-10-19
  */
-import { createHash, timingSafeEqual } from 'node:crypto'
+import { createHash, randomUUID, timingSafeEqual } from 'node:crypto'
 import { plainToInstance } from 'class-transformer'
 import { validateSync } from 'class-validator'
 import { LockMode, UniqueConstraintViolationException } from '@mikro-orm/core'
@@ -29,9 +29,12 @@ import { isAllowedAuthOrigin } from '../../common/guards/auth-origin.guard'
 import { msg, zh } from '../../common/i18n'
 import { AdminUser } from '../../entities/admin-user.entity'
 import { AuditEntry } from '../../entities/audit-entry.entity'
+import { MediaAsset } from '../../entities/media-asset.entity'
 import { SiteSettings, SiteSettingsRevision } from '../../entities/site-settings.entity'
 import type { SiteSettingsValues } from '../../entities/site-settings.entity'
-import { lockMedia, synchronizeMediaReferences } from '../media/media-references'
+import { normalizeImage } from '../media/media-image'
+import { lockMedia, mediaUrl, synchronizeMediaReferences } from '../media/media-references'
+import { MediaStorage } from '../media/media-storage'
 import { SAFE_INITIAL_SITE_VALUES, SAFE_INITIAL_SITE_VALUES_EN, initialSiteProfile } from '../site/initial-profile'
 import { SetupDto } from './setup.dto'
 
@@ -45,22 +48,90 @@ export function setupTokenMatches(candidate: unknown, expected: string): boolean
   return timingSafeEqual(digest(candidate), digest(expected))
 }
 
+/** 外部地址只接受不带账号信息的 https：站点 CSP 的 img-src 只放行 https */
+export function isSafeHttpsUrl(value: string): boolean {
+  try {
+    const url = new URL(value)
+    return url.protocol === 'https:' && !url.username && !url.password
+  } catch {
+    return false
+  }
+}
+
+/** 社交链接与后台站点资料一致：http(s) 且不带账号信息 */
+function isSafeHttpUrl(value: string): boolean {
+  try {
+    const url = new URL(value)
+    return ['https:', 'http:'].includes(url.protocol) && !url.username && !url.password
+  } catch {
+    return false
+  }
+}
+
+/** Cravatar 按小写邮箱的 MD5 取头像，没有注册时显示 identicon；浏览器直接加载，服务器不抓取 */
+export function cravatarUrl(email: string): string {
+  const hash = createHash('md5').update(email.trim().toLowerCase(), 'utf8').digest('hex')
+  return `https://cn.cravatar.com/avatar/${hash}?s=512&d=identicon`
+}
+
+/** 解析客户端裁切好的头像 data URL；格式与内容由 normalizeImage 再次核对 */
+export function decodeAvatarImage(value: string | undefined) {
+  const match = /^data:image\/(png|jpeg|webp);base64,([A-Za-z0-9+/]+={0,2})$/.exec(value ?? '')
+  if (!match) throw new BadRequestException(msg('setup.avatarInvalid'))
+  const extension = match[1] === 'jpeg' ? 'jpg' : match[1]!
+  const buffer = Buffer.from(match[2]!, 'base64')
+  return { buffer, originalname: `avatar.${extension}`, mimetype: `image/${match[1]}`, size: buffer.length }
+}
+
 /** 仍为初始值的博主资料字段：中英两份中性初始值都算未编辑，可按所选语言改写 */
 const LOCALIZABLE_FIELDS = ['ownerName', 'avatarAlt'] as const
 
 /** 计算初始化向导要写入的站点资料差异；没有差异时返回空对象 */
 export function setupProfilePatch(
   values: SiteSettingsValues,
-  input: Pick<SetupDto, 'siteName' | 'locale'>,
+  input: Partial<
+    Pick<
+      SetupDto,
+      | 'siteName'
+      | 'locale'
+      | 'description'
+      | 'launchedAt'
+      | 'ownerName'
+      | 'ownerTitle'
+      | 'email'
+      | 'socials'
+      | 'searchIndexing'
+    >
+  >,
+  avatar?: string,
 ): Partial<SiteSettingsValues> {
-  const patch: Partial<SiteSettingsValues> = {}
-  if (input.siteName && input.siteName !== values.name) patch.name = input.siteName
+  const next: Partial<SiteSettingsValues> = {}
+  if (input.siteName) next.name = input.siteName
   if (input.locale) {
     const target = initialSiteProfile(input.locale).values
     for (const field of LOCALIZABLE_FIELDS) {
       const untouched = [SAFE_INITIAL_SITE_VALUES[field], SAFE_INITIAL_SITE_VALUES_EN[field]].includes(values[field])
-      if (untouched && values[field] !== target[field]) patch[field] = target[field]
+      if (untouched) next[field] = target[field]
     }
+  }
+  // 明确填写的资料覆盖按语言改写的初始值；空串视为未填写，保留当前值
+  if (input.ownerName) next.ownerName = input.ownerName
+  if (input.ownerTitle) next.ownerTitle = input.ownerTitle
+  if (input.description) next.description = input.description
+  if (input.launchedAt) next.launchedAt = input.launchedAt
+  if (avatar) next.avatar = avatar
+  const socials = [
+    ...(input.email
+      ? [{ label: input.locale === 'en' ? 'Email' : '邮箱', href: `mailto:${input.email}`, icon: 'lucide:mail' }]
+      : []),
+    ...(input.socials ?? []),
+  ]
+  if (socials.length) next.socials = socials
+  if (typeof input.searchIndexing === 'boolean') next.searchIndexing = input.searchIndexing
+  // 只保留与当前值不同的字段，审计与修订只记录真正的变化
+  const patch: Partial<SiteSettingsValues> = {}
+  for (const [field, value] of Object.entries(next) as [keyof SiteSettingsValues, unknown][]) {
+    if (JSON.stringify(values[field]) !== JSON.stringify(value)) Object.assign(patch, { [field]: value })
   }
   return patch
 }
@@ -70,6 +141,7 @@ export class SetupService {
   constructor(
     private readonly em: EntityManager,
     private readonly config: ConfigService,
+    private readonly storage: MediaStorage,
   ) {}
 
   private token(): string {
@@ -119,8 +191,28 @@ export class SetupService {
       throw new BadRequestException(msg('setup.passwordTooShort', { min: ADMIN_PASSWORD_MIN_LENGTH }))
     if (problem === 'tooLong')
       throw new BadRequestException(msg('setup.passwordTooLong', { max: ADMIN_PASSWORD_MAX_LENGTH }))
+    for (const link of input.socials ?? [])
+      if (!isSafeHttpUrl(link.href)) throw new BadRequestException(msg('setup.socialUrlInvalid'))
+    // 头像：外部地址与 Cravatar 只保存地址；图片在事务外解码与转码，事务内登记为站内媒体
+    let avatar: string | undefined
+    let avatarImage: Awaited<ReturnType<typeof normalizeImage>> | undefined
+    if (input.avatarSource === 'url') {
+      if (!input.avatarUrl || !isSafeHttpsUrl(input.avatarUrl))
+        throw new BadRequestException(msg('setup.avatarUrlInvalid'))
+      avatar = input.avatarUrl
+    } else if (input.avatarSource === 'cravatar') {
+      if (!input.email) throw new BadRequestException(msg('setup.avatarEmailRequired'))
+      avatar = cravatarUrl(input.email)
+    } else if (input.avatarSource === 'image') {
+      try {
+        avatarImage = await normalizeImage(decodeAvatarImage(input.avatarImage))
+      } catch {
+        throw new BadRequestException(msg('setup.avatarInvalid'))
+      }
+    }
     // 慢哈希放在事务外，缩短持表锁的时间。
     const passwordHash = await hashAdminPassword(input.password)
+    let avatarKey: string | undefined
     try {
       return await this.em.transactional(async (tx) => {
         // 表级 SHARE ROW EXCLUSIVE 与自身及任何 INSERT 互斥：并发的向导提交与命令行初始化都在此排队，
@@ -128,7 +220,27 @@ export class SetupService {
         await tx.execute('lock table admin_user in share row exclusive mode')
         if (await this.hasAdmin(tx)) throw new ConflictException(msg('setup.alreadyCompleted'))
         const user = createAdminAccount(tx, { username, passwordHash })
-        const fields = await this.applyProfile(tx, input)
+        if (avatarImage) {
+          await lockMedia(tx)
+          const id = randomUUID()
+          avatarKey = `${id}.webp`
+          await this.storage.put(avatarKey, avatarImage.buffer)
+          tx.create(MediaAsset, {
+            id,
+            originalName: avatarImage.name,
+            storageKey: avatarKey,
+            mimeType: 'image/webp',
+            byteSize: avatarImage.buffer.length,
+            width: avatarImage.width,
+            height: avatarImage.height,
+            sha256: createHash('sha256').update(avatarImage.buffer).digest('hex'),
+            alt: zh('setup.avatarAlt'),
+          })
+          // 先写入媒体记录，随后登记头像引用时按数据库中的媒体核对存在性
+          await tx.flush()
+          avatar = mediaUrl(id)
+        }
+        const fields = await this.applyProfile(tx, input, avatar)
         const now = new Date()
         tx.create(AuditEntry, {
           action: 'setup.complete',
@@ -146,6 +258,8 @@ export class SetupService {
         return { username }
       })
     } catch (error) {
+      // 事务未提交时删除已写入的头像文件，不留下没有登记的媒体
+      if (avatarKey) await this.storage.remove(avatarKey).catch(() => undefined)
       if (error instanceof UniqueConstraintViolationException)
         throw new ConflictException(msg('setup.alreadyCompleted'))
       throw error
@@ -153,8 +267,7 @@ export class SetupService {
   }
 
   /** 站点名称与仍未编辑的初始博主资料：有变化时生成新修订，返回审计字段名（中文持久化） */
-  private async applyProfile(tx: EntityManager, input: SetupDto): Promise<string[]> {
-    if (!input.siteName && !input.locale) return []
+  private async applyProfile(tx: EntityManager, input: SetupDto, avatar?: string): Promise<string[]> {
     await lockMedia(tx)
     const settings = await tx.findOne(
       SiteSettings,
@@ -162,7 +275,7 @@ export class SetupService {
       { lockMode: LockMode.PESSIMISTIC_WRITE, refresh: true },
     )
     if (!settings) return []
-    const patch = setupProfilePatch(settings.values, input)
+    const patch = setupProfilePatch(settings.values, input, avatar)
     const changed = Object.keys(patch) as (keyof SiteSettingsValues)[]
     if (!changed.length) return []
     const now = new Date()
@@ -186,8 +299,13 @@ export class SetupService {
     )
     const labels: Partial<Record<keyof SiteSettingsValues, string>> = {
       name: zh('audit.field.name'),
+      description: zh('audit.field.description'),
       ownerName: zh('audit.field.ownerName'),
+      ownerTitle: zh('audit.field.ownerTitle'),
+      avatar: zh('audit.field.avatar'),
       avatarAlt: zh('audit.field.avatarAlt'),
+      socials: zh('audit.field.socials'),
+      launchedAt: zh('setup.fieldLaunchedAt'),
     }
     return changed.map((field) => labels[field] ?? field)
   }

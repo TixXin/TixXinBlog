@@ -7,7 +7,14 @@ import { expect, test } from '@playwright/test'
 
 test.skip(process.env.E2E_SETUP_WIZARD !== 'true', '需要 browser-runner 的初始化向导隔离模式')
 
-const owner = { username: 'wizard-owner', password: 'wizard-password-2026', siteName: '夜读札记' }
+const owner = {
+  username: 'wizard-owner',
+  password: 'wizard-password-2026',
+  siteName: '夜读札记',
+  title: '写字的人',
+  email: 'owner@example.com',
+  github: 'https://github.com/wizard-owner',
+}
 
 // 按声明顺序运行：英文用例在初始化完成之前，验证英文文案与后端错误随界面语言返回。
 test('英文界面：向导文案、密码要求与令牌错误均为英文', async ({ browser, baseURL }) => {
@@ -22,7 +29,10 @@ test('英文界面：向导文案、密码要求与令牌错误均为英文', as
     await page.getByLabel('Password', { exact: true }).fill('english-password-2026')
     await page.getByLabel('Confirm password').fill('english-password-2026')
     await expect(page.locator('#setup-password-rules li').nth(0)).toContainText('6–128 characters')
+    await page.getByRole('button', { name: 'Next' }).click()
+    await expect(page.getByRole('heading', { level: 1, name: 'Your profile' })).toBeVisible()
     await page.getByRole('button', { name: 'Create owner account' }).click()
+    // 令牌在最终提交时才校验：被拒后回到第一步。
     await expect(page.getByRole('alert')).toHaveText(
       'The setup token is invalid. Check the link printed when installation finished.',
     )
@@ -45,6 +55,14 @@ test('向导完整流程：首页与登录页引导、令牌移出地址栏、�
   expect(token).toMatch(/^[a-f0-9]{64}$/)
   const issues: string[] = []
   page.on('pageerror', (error) => issues.push(error.message))
+
+  // 默认允许收录：robots 只屏蔽向导等私有路径，sitemap 不收录 /setup。
+  const indexableRobots = await (await request.get('/robots.txt')).text()
+  expect(indexableRobots).toMatch(/^Disallow: \/setup$/m)
+  expect(indexableRobots).not.toMatch(/^Disallow: \/$/m)
+  const indexableSitemap = await request.get('/sitemap.xml')
+  expect(indexableSitemap.ok()).toBe(true)
+  expect(await indexableSitemap.text()).not.toContain('/setup')
 
   // 尚未初始化：状态接口为 true，后台登录页给出前往向导的入口。
   expect((await (await request.get('/api/v1/setup/status')).json()).data).toEqual({ needsSetup: true })
@@ -85,19 +103,46 @@ test('向导完整流程：首页与登录页引导、令牌移出地址栏、�
   const rules = page.locator('#setup-password-rules li')
   await expect(rules.nth(0)).toContainText('已满足')
   await expect(rules.nth(1)).toContainText('未满足')
-  await page.getByRole('button', { name: '创建博主账号' }).click()
+  await page.getByRole('button', { name: '下一步' }).click()
   await expect(page.getByRole('alert')).toHaveText('两次输入的密码不一致')
 
   await page.getByLabel('确认密码').fill(owner.password)
   await expect(rules.nth(1)).toContainText('已满足')
-  await page.getByRole('textbox', { name: '站点名称（可选）' }).fill(owner.siteName)
   await page.getByRole('radio', { name: '中文' }).check()
+  await page.getByRole('button', { name: '下一步' }).click()
+
+  // 第二步：博主资料。博主名沿用登录名，默认字母头像在浏览器绘制后随提交登记为站内媒体。
+  await expect(page.getByRole('heading', { level: 1, name: '完善博主资料' })).toBeVisible()
+  await expect(page.getByText(`与登录名「${owner.username}」相同`)).toBeVisible()
+  await page.getByRole('textbox', { name: '博主头衔（可选）' }).fill(owner.title)
+  await page.getByRole('textbox', { name: '联系邮箱（可选）' }).fill(owner.email)
+  await page.getByRole('textbox', { name: '站点名称（可选）' }).fill(owner.siteName)
+  await page.getByRole('button', { name: '添加链接' }).click()
+  await page.getByRole('textbox', { name: '第 1 个链接的地址' }).fill(owner.github)
+  // 关闭搜索引擎收录：提交经网关后立即生效，不等开关缓存过期。
+  await page.getByRole('switch', { name: /允许搜索引擎收录本站/ }).uncheck()
   await page.getByRole('button', { name: '创建博主账号' }).click()
   // 创建成功后用同一凭据自动登录，直接进入后台，不再停在登录页。
   await expect(page).toHaveURL(/\/admin$/)
   await expect(page.getByText('博主账号已创建，已自动登录后台')).toBeVisible()
   // 向导写入的站点名称在后台立即生效，不沿用创建前读到的旧资料。
   await expect(page.getByText(owner.siteName).first()).toBeVisible()
+  // 公开站点资料包含博主名、头衔、字母头像（站内 WebP 媒体）、联系邮箱与社交链接。
+  const site = (await (await request.get('/api/v1/site')).json()).data
+  expect(site).toMatchObject({
+    name: owner.siteName,
+    ownerName: owner.username,
+    ownerTitle: owner.title,
+    searchIndexing: false,
+  })
+  expect(site.avatar).toMatch(/^\/api\/v1\/media\/[0-9a-f-]{36}\.webp$/)
+  expect(site.socials).toEqual([
+    { label: '邮箱', href: `mailto:${owner.email}`, icon: 'lucide:mail' },
+    { label: 'GitHub', href: owner.github, icon: 'lucide:github' },
+  ])
+  const avatar = await request.get(site.avatar)
+  expect(avatar.status()).toBe(200)
+  expect(avatar.headers()['content-type']).toBe('image/webp')
 
   // 站点名称已写入，经网关的提交清空了公开页面缓存，首页直接显示新名称。
   // 等首页读完初始化状态再断言提示不存在，避免在请求返回前误判。
@@ -129,11 +174,15 @@ test('向导完整流程：首页与登录页引导、令牌移出地址栏、�
   expect((await (await previewStatus).json()).data).toEqual({ needsSetup: false })
   await expect(page.getByText('站点尚未完成初始化')).toHaveCount(0)
 
-  // 不进入搜索引擎：robots 屏蔽，sitemap 不收录。
+  // 向导关闭了收录：robots.txt 禁止抓取全站，公开页面带 noindex 响应头与 meta，站点地图清空。
   const robots = await (await request.get('/robots.txt')).text()
-  expect(robots).toMatch(/^Disallow: \/setup$/m)
+  expect(robots).toMatch(/^Disallow: \/$/m)
+  expect(robots).not.toMatch(/^Sitemap:/m)
+  const home = await request.get('/')
+  expect(home.headers()['x-robots-tag']).toContain('noindex')
+  expect(await home.text()).toMatch(/<meta name="robots" content="noindex/)
   const sitemap = await request.get('/sitemap.xml')
   expect(sitemap.ok()).toBe(true)
-  expect(await sitemap.text()).not.toContain('/setup')
+  expect(await sitemap.text()).not.toContain('<loc>')
   expect(issues).toEqual([])
 })

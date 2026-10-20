@@ -80,7 +80,7 @@ When installation finishes, it prints a setup link:
 https://blog.example.com/setup?token=…
 ```
 
-Open it in a browser and set the username, password (6–128 characters), site name and site language to create the owner account. You are then signed in and taken to the admin panel automatically.
+Open it in a browser and finish two steps. First set the username, password (6–128 characters) and site language. Then optionally fill in your profile: avatar (an initial, an uploaded image, a Cravatar from your email, or an https image address), display name (the username by default) and title, contact email, site name and description, launch date, social links, and whether search engines may index the site. You can skip this step and change everything later under Site settings. You are then signed in and taken to the admin panel automatically.
 
 - Opening the home page does not redirect to the setup page: a new site has no posts, and the home page shows a full-screen translucent "Not set up yet" watermark that does not block browsing or clicks. Visitors without the token therefore cannot claim the account first; the notice disappears once setup is complete.
 - The token can be used successfully only once: after the account is created, the wizard and its endpoint close permanently, opening or submitting the link again fails, and a leaked token is useless.

@@ -10,6 +10,7 @@ import { flushPromises } from '@vue/test-utils'
 import { mockNuxtImport, mountSuspended, registerEndpoint } from '@nuxt/test-utils/runtime'
 import SetupPage from '../../app/pages/setup.vue'
 import LoginPage from '../../app/pages/admin/login.vue'
+import { localDate } from '../../app/features/setup/profile'
 
 const require = createRequire(import.meta.url)
 const h3 = createRequire(require.resolve('nuxt/package.json'))('h3') as {
@@ -100,6 +101,21 @@ async function mountSetup(route = `/setup?token=${TOKEN}&from=install`) {
   return wrapper
 }
 
+type Wrapper = Awaited<ReturnType<typeof mountSetup>>
+
+/** 第一步：填写登录名与两次密码 */
+async function fillAccount(wrapper: Wrapper, username = 'owner', password = 'correct-horse-battery') {
+  await wrapper.find('#setup-username').setValue(username)
+  await wrapper.find('#setup-password').setValue(password)
+  await wrapper.find('#setup-confirm').setValue(password)
+}
+
+/** 第一步提交（下一步），等第二步「博主资料」出现 */
+async function toProfile(wrapper: Wrapper) {
+  await wrapper.find('form').trigger('submit')
+  await vi.waitFor(() => expect(wrapper.find('#setup-owner-title').exists()).toBe(true))
+}
+
 describe('/setup 初始化向导', () => {
   it('从地址读取令牌后不显示令牌字段，随后用 replace 去掉 token，保留其他查询参数', async () => {
     const wrapper = await mountSetup()
@@ -134,15 +150,13 @@ describe('/setup 初始化向导', () => {
 
   it('表单字段有可访问名称与说明，密码要求随输入实时更新', async () => {
     const wrapper = await mountSetup()
-    for (const id of ['setup-username', 'setup-password', 'setup-confirm', 'setup-site-name']) {
+    for (const id of ['setup-username', 'setup-password', 'setup-confirm']) {
       const input = wrapper.find(`#${id}`)
       expect(input.exists()).toBe(true)
       expect(wrapper.find(`label[for="${id}"]`).exists()).toBe(true)
     }
     expect(wrapper.find('#setup-password').attributes('autocomplete')).toBe('new-password')
     expect(wrapper.find('#setup-password').attributes('aria-describedby')).toContain('setup-password-rules')
-    expect(wrapper.find('#setup-site-name').attributes('placeholder')).toBe('My Blog')
-    expect(wrapper.text()).toContain('留空则沿用「My Blog」')
     const rules = () => wrapper.findAll('#setup-password-rules li').map((item) => item.text())
     expect(rules()).toEqual(['6–128 个字符未满足', '两次输入一致未满足'])
     await wrapper.find('#setup-password').setValue('correct-horse-battery')
@@ -175,19 +189,41 @@ describe('/setup 初始化向导', () => {
     expect(mocks.bodies).toEqual([])
   })
 
-  it('提交令牌、登录名、密码、站点名称与语言，成功后用同一凭据自动登录并进入后台', async () => {
+  it('两步提交账号、语言与博主资料，成功后用同一凭据自动登录并进入后台', async () => {
     const wrapper = await mountSetup()
-    await wrapper.find('#setup-username').setValue('  owner ')
-    await wrapper.find('#setup-password').setValue('correct-horse-battery')
-    await wrapper.find('#setup-confirm').setValue('correct-horse-battery')
-    await wrapper.find('#setup-site-name').setValue('夜读札记')
+    await fillAccount(wrapper, '  owner ')
     await wrapper.find('input[type="radio"][value="en"]').setValue(true)
     // 选择英文会异步切换界面语言，等字典切换完成再提交，提示文案才确定为英文
     await vi.waitFor(() => expect(wrapper.find('h1').text()).toBe('Welcome to TixXinBlog'))
+    expect(mocks.bodies).toEqual([])
+    await toProfile(wrapper)
+    expect(wrapper.find('h1').text()).toBe('Your profile')
+    expect(wrapper.text()).toContain('Same as username “owner”')
+    await wrapper.find('#setup-owner-title').setValue('写字的人')
+    await wrapper.find('#setup-email').setValue('owner@example.com')
+    await wrapper.find('input[name="setup-avatar-mode"][value="cravatar"]').setValue(true)
+    await wrapper.find('#setup-site-name').setValue('夜读札记')
+    await wrapper.find('#setup-description').setValue('读书与写代码')
+    await wrapper.find('.profile-step__add').trigger('click')
+    await wrapper.find('#setup-social-0').setValue('https://github.com/owner')
     await wrapper.find('form').trigger('submit')
     await vi.waitFor(() => expect(mocks.navigate).toHaveBeenCalled())
     expect(mocks.bodies).toEqual([
-      { token: TOKEN, username: 'owner', password: 'correct-horse-battery', locale: 'en', siteName: '夜读札记' },
+      {
+        token: TOKEN,
+        username: 'owner',
+        password: 'correct-horse-battery',
+        locale: 'en',
+        ownerName: 'owner',
+        ownerTitle: '写字的人',
+        email: 'owner@example.com',
+        siteName: '夜读札记',
+        description: '读书与写代码',
+        launchedAt: localDate(),
+        searchIndexing: true,
+        avatarSource: 'cravatar',
+        socials: [{ label: 'GitHub', href: 'https://github.com/owner', icon: 'lucide:github' }],
+      },
     ])
     expect(mocks.logins).toEqual([{ username: 'owner', password: 'correct-horse-battery' }])
     expect(mocks.success).toHaveBeenCalledWith('Owner account created. You are now signed in.')
@@ -197,24 +233,25 @@ describe('/setup 初始化向导', () => {
   it('账号已创建但自动登录失败时退回登录页并提示，不重复提交初始化', async () => {
     mocks.loginStatus = 429
     const wrapper = await mountSetup()
-    await wrapper.find('#setup-username').setValue('owner')
-    await wrapper.find('#setup-password').setValue('correct-horse-battery')
-    await wrapper.find('#setup-confirm').setValue('correct-horse-battery')
-    await wrapper.find('form').trigger('submit')
+    await fillAccount(wrapper)
+    await toProfile(wrapper)
+    // 跳过第二步：只提交账号与站点语言
+    await wrapper.find('.setup__skip').trigger('click')
     await vi.waitFor(() => expect(mocks.navigate).toHaveBeenCalled())
-    expect(mocks.bodies).toHaveLength(1)
+    expect(mocks.bodies).toEqual([
+      { token: TOKEN, username: 'owner', password: 'correct-horse-battery', locale: 'zh-CN' },
+    ])
     expect(mocks.logins).toHaveLength(1)
     expect(mocks.success).toHaveBeenCalledWith('博主账号已创建，请登录后台')
     expect(mocks.navigate).toHaveBeenCalledWith({ path: '/admin/login', query: { setup: 'done' } })
   })
 
-  it('后端拒绝令牌（403）时展开令牌输入框，在框下显示接口文案并保留输入', async () => {
+  it('后端拒绝令牌（403）时回到第一步展开令牌输入框，在框下显示接口文案并保留输入', async () => {
     mocks.submitStatus = 403
     mocks.submitMessage = '初始化令牌无效，请核对安装完成时输出的链接'
     const wrapper = await mountSetup()
-    await wrapper.find('#setup-username').setValue('owner')
-    await wrapper.find('#setup-password').setValue('correct-horse-battery')
-    await wrapper.find('#setup-confirm').setValue('correct-horse-battery')
+    await fillAccount(wrapper)
+    await toProfile(wrapper)
     await wrapper.find('form').trigger('submit')
     await vi.waitFor(() => expect(wrapper.find('[role="alert"]').exists()).toBe(true))
     expect(wrapper.find('#setup-token-error').text()).toBe(mocks.submitMessage)
@@ -225,13 +262,12 @@ describe('/setup 初始化向导', () => {
     expect(mocks.navigate).not.toHaveBeenCalled()
   })
 
-  it('其他接口错误显示在提交按钮上方，令牌字段保持隐藏', async () => {
+  it('其他接口错误显示在第二步的提交按钮上方，令牌字段保持隐藏', async () => {
     mocks.submitStatus = 400
     mocks.submitMessage = '登录名不符合要求'
     const wrapper = await mountSetup()
-    await wrapper.find('#setup-username').setValue('owner')
-    await wrapper.find('#setup-password').setValue('correct-horse-battery')
-    await wrapper.find('#setup-confirm').setValue('correct-horse-battery')
+    await fillAccount(wrapper)
+    await toProfile(wrapper)
     await wrapper.find('form').trigger('submit')
     await vi.waitFor(() => expect(wrapper.find('#setup-error').exists()).toBe(true))
     expect(wrapper.find('#setup-error').text()).toBe(mocks.submitMessage)
@@ -243,7 +279,7 @@ describe('/setup 初始化向导', () => {
     expect(wrapper.find('h1').text()).toBe('欢迎使用 TixXinBlog')
     await wrapper.find('input[type="radio"][value="en"]').setValue(true)
     await vi.waitFor(() => expect(wrapper.find('h1').text()).toBe('Welcome to TixXinBlog'))
-    expect(wrapper.find('button[type="submit"]').text()).toBe('Create owner account')
+    expect(wrapper.find('button[type="submit"]').text()).toBe('Next')
     await wrapper.find('input[type="radio"][value="zh-CN"]').setValue(true)
     await vi.waitFor(() => expect(wrapper.find('h1').text()).toBe('欢迎使用 TixXinBlog'))
   })
@@ -260,17 +296,65 @@ describe('/setup 初始化向导', () => {
     await i18n().setLocale('en')
     const wrapper = await mountSetup()
     expect(wrapper.find('h1').text()).toBe('Welcome to TixXinBlog')
-    expect(wrapper.find('#setup-site-name-help').text()).toBe(
-      'Leave empty to keep “My Blog”. You can change it later in the dashboard.',
-    )
     expect(wrapper.find('label[for="setup-password"]').text()).toBe('Password')
     expect(wrapper.findAll('#setup-password-rules li').map((item) => item.text())).toEqual([
       '6–128 charactersnot met',
       'Both entries matchnot met',
     ])
-    expect(wrapper.find('button[type="submit"]').text()).toBe('Create owner account')
+    expect(wrapper.find('button[type="submit"]').text()).toBe('Next')
     // 语言选项用各自的自称（中文 / English），其余文案不含中文。
     expect(wrapper.text().replace('中文', '')).not.toMatch(/[一-鿿]/)
+    await fillAccount(wrapper)
+    await toProfile(wrapper)
+    expect(wrapper.find('#setup-site-name-help').text()).toBe(
+      'Leave empty to keep “My Blog”. You can change it later in the dashboard.',
+    )
+    expect(wrapper.find('.setup__back').text()).toBe('Back')
+    expect(wrapper.find('.setup__skip').text()).toBe('Skip and create')
+    expect(wrapper.find('button[type="submit"]').text()).toBe('Create owner account')
+    expect(wrapper.text()).not.toMatch(/[一-鿿]/)
+  })
+
+  it('第二步校验：外部头像只接受 https、邮箱头像需要邮箱、社交链接需 http(s)，错误定位到字段且不发请求', async () => {
+    const wrapper = await mountSetup()
+    await fillAccount(wrapper)
+    await toProfile(wrapper)
+    expect(wrapper.find('#setup-site-name').attributes('placeholder')).toBe('My Blog')
+    expect(wrapper.text()).toContain('留空则沿用「My Blog」')
+    await wrapper.find('input[name="setup-avatar-mode"][value="url"]').setValue(true)
+    await wrapper.find('#setup-avatar-url').setValue('http://example.com/a.png')
+    await wrapper.find('form').trigger('submit')
+    await flushPromises()
+    expect(wrapper.find('#setup-avatar-error').text()).toBe('请填写 https 开头的图片地址')
+    expect(wrapper.find('#setup-avatar-url').attributes('aria-invalid')).toBe('true')
+    await wrapper.find('input[name="setup-avatar-mode"][value="cravatar"]').setValue(true)
+    await wrapper.find('form').trigger('submit')
+    await flushPromises()
+    expect(wrapper.find('#setup-email-error').text()).toBe('使用邮箱头像需要先填写联系邮箱')
+    await vi.waitFor(() => expect(document.activeElement?.id).toBe('setup-email'))
+    await wrapper.find('#setup-email').setValue('owner@example.com')
+    await wrapper.find('.profile-step__add').trigger('click')
+    await wrapper.find('#setup-social-0').setValue('javascript:alert(1)')
+    await wrapper.find('form').trigger('submit')
+    await flushPromises()
+    expect(wrapper.find('#setup-social-0-error').text()).toBe('链接需为 http(s) 地址')
+    expect(mocks.bodies).toEqual([])
+  })
+
+  it('取消「与登录名相同」后博主名必填；上一步保留已填写的账号', async () => {
+    const wrapper = await mountSetup()
+    await fillAccount(wrapper)
+    await toProfile(wrapper)
+    await wrapper.find('.profile-step__check input').setValue(false)
+    await wrapper.find('form').trigger('submit')
+    await flushPromises()
+    expect(wrapper.find('#setup-owner-name-error').text()).toBe('请填写博主名')
+    await wrapper.find('.setup__back').trigger('click')
+    await flushPromises()
+    expect((wrapper.find('#setup-username').element as HTMLInputElement).value).toBe('owner')
+    expect(document.activeElement?.id).toBe('setup-title')
+    await toProfile(wrapper)
+    expect((wrapper.find('.profile-step__check input').element as HTMLInputElement).checked).toBe(false)
   })
 })
 
@@ -293,9 +377,8 @@ describe('/setup 开发预览', () => {
     const wrapper = await mountSetup('/setup?preview=form')
     expect(wrapper.find('[role="note"]').exists()).toBe(false)
     expect(wrapper.find('#setup-token').exists()).toBe(false)
-    await wrapper.find('#setup-username').setValue('owner')
-    await wrapper.find('#setup-password').setValue('abc123')
-    await wrapper.find('#setup-confirm').setValue('abc123')
+    await fillAccount(wrapper, 'owner', 'abc123')
+    await toProfile(wrapper)
     await wrapper.find('form').trigger('submit')
     await flushPromises()
     expect(mocks.success).toHaveBeenCalledWith('预览模式：表单校验通过，未创建账号')
@@ -306,9 +389,8 @@ describe('/setup 开发预览', () => {
 
   it('&preview-submit=fail 模拟接口拒绝令牌：展开令牌输入框并在框下提示', async () => {
     const wrapper = await mountSetup('/setup?preview=form&preview-submit=fail')
-    await wrapper.find('#setup-username').setValue('owner')
-    await wrapper.find('#setup-password').setValue('abc123')
-    await wrapper.find('#setup-confirm').setValue('abc123')
+    await fillAccount(wrapper, 'owner', 'abc123')
+    await toProfile(wrapper)
     await wrapper.find('form').trigger('submit')
     await flushPromises()
     expect(wrapper.find('#setup-token-error').text()).toBe(
