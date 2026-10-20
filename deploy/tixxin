@@ -68,6 +68,21 @@ env_set() {
   mv "$temp" "$ENV_FILE"
 }
 
+# 迁移明细写入安装目录 logs/，屏幕只打印摘要；失败时打印日志末尾，非零退出交给各命令的失败处理。
+run_migration() {
+  local log count
+  mkdir -p "$TIXXIN_DIR/logs"
+  log="$TIXXIN_DIR/logs/migration-$(date -u +%Y%m%dT%H%M%SZ).log"
+  (umask 077 && : > "$log")
+  if ! compose run --rm --no-deps --pull never -T migration > "$log" 2>&1; then
+    warn "数据库迁移失败，日志末尾如下（完整日志：${log}）："
+    tail -n 40 "$log" >&2
+    return 1
+  fi
+  count=$(sed -n 's/.*executed \([0-9][0-9]*\) migration(s).*/\1/p' "$log" | tail -n 1)
+  info "数据库迁移完成：执行 ${count:-0} 项（明细见 ${log}）"
+}
+
 env_keys() {
   sed -n 's/^[[:space:]]*\(export[[:space:]]\{1,\}\)\{0,1\}\([A-Za-z_][A-Za-z0-9_]*\)=.*/\2/p' "$ENV_FILE"
 }
@@ -648,7 +663,7 @@ deploy_release() {
   if [ "$action" != rollback ]; then
     STAGE='migrating'
     info '执行数据库迁移…'
-    compose run --rm --no-deps --pull never -T migration
+    run_migration
     MIGRATED=1
   fi
   STAGE='starting-application'

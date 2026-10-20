@@ -37,12 +37,16 @@
     "start": "corepack pnpm --filter web-blog start",
     "lint": "corepack pnpm --filter web-blog exec eslint .",
     "lint:fix": "corepack pnpm --filter web-blog exec eslint . --fix",
-    "lint:shell": "shellcheck deploy/install.sh deploy/tixxin scripts/release/package-deploy.sh scripts/release/install-smoke.sh",
+    "lint:shell": "shellcheck deploy/install.sh deploy/tixxin scripts/release/package-deploy.sh scripts/release/install-smoke.sh scripts/release/local-trial.sh",
     "format": "prettier --write \"src/**/*.{vue,ts,js,scss,json,md}\"",
     "prepare": "husky",
     "check:secrets": "node scripts/check-secrets.mjs",
     "test:e2e": "corepack pnpm --filter server-main build && corepack pnpm --filter web-blog build && node src/backend/server-main/tests/browser-runner.mjs",
     "test:e2e:run": "node src/backend/server-main/tests/browser-runner.mjs",
+    "trial": "bash scripts/release/local-trial.sh install",
+    "trial:update": "bash scripts/release/local-trial.sh update",
+    "trial:status": "bash scripts/release/local-trial.sh status",
+    "trial:down": "bash scripts/release/local-trial.sh down",
     "test:subscription-domain": "corepack pnpm --filter @tixxin/subscription-domain test"
   },
   "engines": {

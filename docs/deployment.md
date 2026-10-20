@@ -98,7 +98,7 @@ cd TixXinBlog
 
 #### 使用预构建镜像
 
-推送 `v*` 标签后，[Release 工作流](../.github/workflows/release.yml)先校验标签与根 `package.json` 版本一致、标签提交已合入 main、CHANGELOG 有对应段落，再通过 `workflow_call` 并行调用同一标签提交上的完整 [CI](../.github/workflows/ci.yml) 和 [Backend CI](../.github/workflows/backend-ci.yml)。静态检查、单元测试、Chromium 全量与 WebKit 核心浏览器回归、迁移回放、隔离集成、备份恢复、容器验证和依赖审计全部成功后，才进入发布镜像构建；不以先前 main 上的 CI 结果替代本次门禁。Chromium 全量按文件分 4 片并行执行，门禁范围不变，任一分片失败都会阻止发布。
+发版前可用 `corepack pnpm trial` 在本机用当前代码走一遍一键安装与升级，见[本地构建试装](development.md#本地构建试装)。推送 `v*` 标签后，[Release 工作流](../.github/workflows/release.yml)先校验标签与根 `package.json` 版本一致、标签提交已合入 main、CHANGELOG 有对应段落，再通过 `workflow_call` 并行调用同一标签提交上的完整 [CI](../.github/workflows/ci.yml) 和 [Backend CI](../.github/workflows/backend-ci.yml)。静态检查、单元测试、Chromium 全量与 WebKit 核心浏览器回归、迁移回放、隔离集成、备份恢复、容器验证和依赖审计全部成功后，才进入发布镜像构建；不以先前 main 上的 CI 结果替代本次门禁。Chromium 全量按文件分 4 片并行执行，门禁范围不变，任一分片失败都会阻止发布。
 
 平时推送到 main 或提交 PR 时，CI、CodeQL 与 Security 按路径过滤：只改 `docs/`、根目录 Markdown、许可证、Issue/PR 模板与 README 时不触发；`docs/api.md` 由后端单测核对，改动它会触发 Backend CI。路径过滤不影响定时扫描，也不影响 Release 通过 `workflow_call` 调用的完整门禁。
 

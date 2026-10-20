@@ -221,6 +221,24 @@ it('英文冒烟', async () => {
 
 组件需要图片放大、拖拽或调整尺寸等专用光标时，使用 `cursor: var(--interaction-cursor, zoom-in)` 等原生值作为后备。共享变量优先表达禁用和忙碌状态，避免组件选择器覆盖全站规则。不要仅凭 `tabindex`、悬停效果或父容器的 `aria-busy` 判断控件可操作性。
 
+## 本地构建试装
+
+体验一键安装、升级、备份这类部署流程本身时，不必先发布 Release：`trial` 用当前代码在本机构建镜像和部署包，交给同一个 `install.sh` 与 `tixxin` 安装，只把下载源换成仓库 `.artifacts/local-trial/download/`。新页面、功能和界面改动照旧用 `dev:all`，不需要走安装流程。
+
+```sh
+corepack pnpm trial                          # 构建当前代码并交互安装（问站点语言与确认）
+corepack pnpm trial:update                   # 改代码后重新构建，用 tixxin update 升级（先备份、迁移、验收）
+corepack pnpm trial:status                   # 站点状态与开发版本对应的提交
+corepack pnpm trial:down                     # 清理试装
+corepack pnpm trial --from-release 0.3.0     # 改装官方 0.3.0，之后 trial:update 体验从正式版升级到当前代码
+```
+
+- 站点在 `https://localhost:9443`（HTTP 9080 跳转），目录 `~/tixxin-blog-dev`（`TIXXIN_TRIAL_DIR` 可覆盖），项目 `tixxin-dev`，内部子网 `172.31.246.0/24`。与官方试用（`~/tixxin-blog`、8443、项目 `tixxin-production`）和开发数据库互不影响，可以同时存在。
+- 开发版本形如 `0.3.0-dev.<提交号>.<UTC 时间>`，工作区有未提交改动时带 `.dirty`；每次构建都是新版本，`trial:update` 因此总会走一次真实升级。
+- 镜像在本机打成 `ghcr.io/tixxin/tixxinblog-*:<开发版本>`，只在本机存在、不推送；这样从官方版本升级时 `.env` 中的镜像仓库无需改动，与用户日后升级的路径一致。四个镜像串行构建，首次约 10–15 分钟，之后使用 Docker 缓存。
+- `--yes` 对安装与升级使用默认回答；默认不加，安装时的提问与用户看到的一致。初始化链接、管理命令和日志位置以安装输出为准，管理命令为 `~/tixxin-blog-dev/deploy/tixxin`。
+- `trial:down` 先核对目录中 `.env` 的 `TIXXIN_MODE=local` 与 `RELEASE_PROJECT=tixxin-dev`，不符时拒绝；随后只删除该项目的容器、数据卷、网络、试装目录、本机下载目录和 `*-dev.*` 镜像标签。
+
 ## 验证入口
 
 Node 25 默认暴露服务端 Web Storage；前端单测入口关闭该 API，让 Nuxt 测试环境使用模拟浏览器的存储实现，避免原生空对象覆盖浏览器接口。

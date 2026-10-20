@@ -88,11 +88,13 @@
 | `format`        | `prettier --write "src/**/*.{vue,ts,js,scss,json,md}"` |
 | `prepare`       | `husky`                                                |
 | `check:secrets` | `node scripts/check-secrets.mjs`                       |
+| `lint:shell`    | `shellcheck` 检查安装、管理、打包、冒烟与试装脚本      |
 
 - `lint`：检查前端子项目的 ESLint 规则，不修复文件；不包含后端 lint、类型检查或单元测试。
 - `lint:fix`：自动修复前端 ESLint 可修复的问题并改写文件，完成后检查 Git 差异。
 - `format`：按仓库 Prettier 配置改写 `src/` 下匹配的前后端及共享源码，不覆盖根配置、`docs/`、`scripts/` 或 `.mjs` 文件。
 - `prepare`：初始化 Husky Git hooks，通常由依赖安装的生命周期自动执行。提交钩子运行 lint-staged，对暂存的前端脚本执行 ESLint 修复，对 `src/` 下匹配文件执行 Prettier。它与前端 `postinstall` 执行的 `nuxt prepare` 不同。
+- `lint:shell`：用 shellcheck 检查 `deploy/install.sh`、`deploy/tixxin` 与 `scripts/release/` 下的打包、安装冒烟和本地试装脚本；需要本机安装 shellcheck，CI 固定使用 v0.11.0。
 - `check:secrets`：扫描 Git 已跟踪及未被忽略的未跟踪文件，查找已知 Context7/GitHub 凭据格式和私钥头；命中时只报告文件和行号并返回非零状态。规则有限，不保证发现所有敏感信息，超过 5 MiB 的文件会跳过。
 
 ## 业务与浏览器测试
@@ -109,13 +111,25 @@
 
 `test:subscription-domain` 运行 `src/shared/subscription-domain/` 中共享订阅领域逻辑的测试，不代替后端订阅接口、持久化或浏览器流程测试。
 
+## 部署流程试装
+
+| 命令           | 实际执行                                      |
+| -------------- | --------------------------------------------- |
+| `trial`        | `bash scripts/release/local-trial.sh install` |
+| `trial:update` | `bash scripts/release/local-trial.sh update`  |
+| `trial:status` | `bash scripts/release/local-trial.sh status`  |
+| `trial:down`   | `bash scripts/release/local-trial.sh down`    |
+
+用当前代码在本机构建四个镜像与部署包，交给同一个 `install.sh` 与 `tixxin` 安装和升级，只把下载源换成仓库 `.artifacts/local-trial/download/`，用于发版前体验安装、升级、备份等部署流程本身；新页面与功能仍用 `dev:all` 开发。试装站点固定在 `~/tixxin-blog-dev`（`TIXXIN_TRIAL_DIR` 可覆盖）、项目 `tixxin-dev`、`https://localhost:9443`，不影响官方试用与开发数据库。`--yes` 使用默认回答，`trial --from-release <版本>` 改装官方版本以体验升级到当前代码；`trial:down` 只清理该项目与 `*-dev.*` 镜像标签。用法与约定见[本地开发与测试](development.md#本地构建试装)。
+
 ## 常用组合
 
-| 场景               | 命令                                                           |
-| ------------------ | -------------------------------------------------------------- |
-| 日常完整开发       | 先 `corepack pnpm dev:check`，再按需 `corepack pnpm dev:all`   |
-| macOS 分窗看日志   | 自检后 `corepack pnpm dev:terminal`，完成后再次自检            |
-| 查看数据库状态     | `corepack pnpm db:dev status`                                  |
-| 预览前端生产构建   | `corepack pnpm build`，然后 `corepack pnpm preview`            |
-| 前端单元测试       | `corepack pnpm --filter web-blog test`                         |
-| 后端检查与单元测试 | `corepack pnpm --filter server-main lint`、`typecheck`、`test` |
+| 场景               | 命令                                                              |
+| ------------------ | ----------------------------------------------------------------- |
+| 日常完整开发       | 先 `corepack pnpm dev:check`，再按需 `corepack pnpm dev:all`      |
+| macOS 分窗看日志   | 自检后 `corepack pnpm dev:terminal`，完成后再次自检               |
+| 查看数据库状态     | `corepack pnpm db:dev status`                                     |
+| 预览前端生产构建   | `corepack pnpm build`，然后 `corepack pnpm preview`               |
+| 发版前试装部署流程 | `corepack pnpm trial`，改代码后 `trial:update`，结束 `trial:down` |
+| 前端单元测试       | `corepack pnpm --filter web-blog test`                            |
+| 后端检查与单元测试 | `corepack pnpm --filter server-main lint`、`typecheck`、`test`    |
