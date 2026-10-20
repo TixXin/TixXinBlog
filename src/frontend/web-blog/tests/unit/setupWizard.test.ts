@@ -114,6 +114,8 @@ async function fillAccount(wrapper: Wrapper, username = 'owner', password = 'cor
 async function toProfile(wrapper: Wrapper) {
   await wrapper.find('form').trigger('submit')
   await vi.waitFor(() => expect(wrapper.find('#setup-owner-title').exists()).toBe(true))
+  // 切换动画期间操作栏按钮不可点，等动画结束再继续
+  await vi.waitFor(() => expect(wrapper.find('.setup.is-switching').exists()).toBe(false))
 }
 
 describe('/setup 初始化向导', () => {
@@ -309,7 +311,8 @@ describe('/setup 初始化向导', () => {
     await toProfile(wrapper)
     expect(wrapper.find('#setup-site-name').attributes('placeholder')).toBe('My Blog')
     expect(wrapper.find('.setup__back').text()).toBe('Back')
-    expect(wrapper.find('.setup__skip').text()).toBe('Skip and create')
+    // 窄屏只显示短文案，可访问名称始终为完整文案
+    expect(wrapper.find('.setup__skip').attributes('aria-label')).toBe('Skip and create')
     expect(wrapper.find('button[type="submit"]').text()).toBe('Create owner account')
     expect(wrapper.text()).not.toMatch(/[一-鿿]/)
   })
@@ -357,8 +360,10 @@ describe('/setup 初始化向导', () => {
     await toProfile(wrapper)
     await wrapper.find('#setup-owner-name').setValue('小林')
     await wrapper.find('.setup__back').trigger('click')
-    // 切换步骤带动画，等第一步重新出现且焦点落到标题
-    await vi.waitFor(() => expect(document.activeElement?.id).toBe('setup-title'))
+    // 切换步骤带动画：等第一步重新出现、动画结束，焦点落到标题
+    await vi.waitFor(() => expect(wrapper.find('#setup-username').exists()).toBe(true))
+    await vi.waitFor(() => expect(wrapper.find('.setup.is-switching').exists()).toBe(false))
+    expect(document.activeElement?.id).toBe('setup-title')
     expect((wrapper.find('#setup-username').element as HTMLInputElement).value).toBe('owner')
     await toProfile(wrapper)
     expect((wrapper.find('#setup-owner-name').element as HTMLInputElement).value).toBe('小林')

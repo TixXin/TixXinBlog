@@ -850,6 +850,7 @@
         "next": "Next",
         "back": "Back",
         "skip": "Skip and create",
+        "skipShort": "Skip",
         "sectionOwner": "About you",
         "avatarLabel": "Avatar",
         "avatarLetter": "Initial",

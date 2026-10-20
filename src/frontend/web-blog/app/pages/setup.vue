@@ -54,7 +54,7 @@
         </button>
       </div>
       <form v-else class="setup__form" novalidate @submit.prevent="onSubmit">
-        <fieldset :disabled="submitting || switching">
+        <fieldset :disabled="busy">
           <!-- 步骤内容整体参与切换动画：先向切换方向淡出，卡片缩放到新尺寸后从另一侧滑入 -->
           <div ref="stage" class="setup__stage">
             <template v-if="step === 1">
@@ -214,27 +214,42 @@
             <p v-if="error" id="setup-error" class="setup__error" role="alert">
               <Icon name="lucide:circle-alert" aria-hidden="true" /><span>{{ error }}</span>
             </p>
-            <!-- 操作栏吸附在视口底部：内容较长时也始终能看到提交按钮 -->
-            <div class="setup__actions">
-              <button v-if="step === 1" type="submit" class="btn-primary setup__submit">
-                {{ t('admin-system.setup.profile.next') }}<Icon name="lucide:arrow-right" aria-hidden="true" />
-              </button>
-              <template v-else>
-                <button type="button" class="setup__back" @click="goTo(1)">
-                  <Icon name="lucide:arrow-left" aria-hidden="true" />{{ t('admin-system.setup.profile.back') }}
-                </button>
-                <button type="button" class="setup__skip" @click="submit(false)">
-                  {{ t('admin-system.setup.profile.skip') }}
-                </button>
-                <button type="submit" class="btn-primary setup__submit" :aria-busy="submitting">
-                  <Icon v-if="submitting" name="lucide:loader-circle" class="setup__spin" aria-hidden="true" />
-                  {{ submitting ? t('admin-system.setup.submitting') : t('admin-system.setup.submit') }}
-                  <Icon v-if="!submitting" name="lucide:check" aria-hidden="true" />
-                </button>
-              </template>
-            </div>
           </div>
         </fieldset>
+        <!-- 操作栏在 fieldset 之外、固定在卡片底部：切换步骤时随卡片底边平滑移动，不参与内容的淡出滑入；
+             同时吸附在视口底部，内容较长时也始终能看到提交按钮。按钮组按步骤重新挂载并淡入。
+             不在 fieldset 内，禁用状态需逐个声明 -->
+        <div class="setup__actions">
+          <div :key="step" class="setup__actions-row">
+            <button v-if="step === 1" type="submit" class="btn-primary setup__submit" :disabled="busy">
+              {{ t('admin-system.setup.profile.next') }}<Icon name="lucide:arrow-right" aria-hidden="true" />
+            </button>
+            <template v-else>
+              <button type="button" class="setup__back" :disabled="busy" @click="goTo(1)">
+                <Icon name="lucide:arrow-left" aria-hidden="true" /><span class="setup__back-text">{{
+                  t('admin-system.setup.profile.back')
+                }}</span>
+              </button>
+              <button
+                type="button"
+                class="setup__skip"
+                :disabled="busy"
+                :aria-label="t('admin-system.setup.profile.skip')"
+                @click="submit(false)"
+              >
+                <span class="setup__skip-full" aria-hidden="true">{{ t('admin-system.setup.profile.skip') }}</span
+                ><span class="setup__skip-short" aria-hidden="true">{{
+                  t('admin-system.setup.profile.skipShort')
+                }}</span>
+              </button>
+              <button type="submit" class="btn-primary setup__submit" :disabled="busy" :aria-busy="submitting">
+                <Icon v-if="submitting" name="lucide:loader-circle" class="setup__spin" aria-hidden="true" />
+                {{ submitting ? t('admin-system.setup.submitting') : t('admin-system.setup.submit') }}
+                <Icon v-if="!submitting" name="lucide:check" class="setup__submit-icon" aria-hidden="true" />
+              </button>
+            </template>
+          </div>
+        </div>
       </form>
     </section>
   </div>
@@ -354,6 +369,8 @@ const card = ref<HTMLElement | null>(null)
 const headText = ref<HTMLElement | null>(null)
 const stage = ref<HTMLElement | null>(null)
 const switching = ref(false)
+/** 提交中或切换步骤动画中：表单与操作栏都不可操作 */
+const busy = computed(() => submitting.value || switching.value)
 const SWITCH_EASING = 'cubic-bezier(0.22, 1, 0.36, 1)'
 
 /** 等待动画结束；动画被取消或环境不触发 finished 时按时长兜底，避免卡住流程 */
@@ -627,6 +644,9 @@ onBeforeUnmount(() => {
   min-height: calc(100dvh - 3rem);
 }
 .setup {
+  // 纵向弹性：切换步骤的尺寸动画中只有内容层被压缩裁切，标题与操作栏保持原样
+  display: flex;
+  flex-direction: column;
   width: 100%;
   max-width: 460px;
   min-width: 0;
@@ -648,9 +668,21 @@ onBeforeUnmount(() => {
 .setup--wide {
   max-width: 880px;
 }
-// 尺寸动画期间裁掉尚未缩放到位的内容
-.setup.is-switching {
-  overflow: hidden;
+// 尺寸动画期间只裁切 fieldset 内容（clip 不形成滚动容器，不影响操作栏的视口吸底）。
+// fieldset 只作为弹性子项收缩：Chrome 中 fieldset 作弹性容器时子项不会按 min-height: 0 收缩
+.setup.is-switching .setup__form > fieldset {
+  overflow: clip;
+}
+.setup__head,
+.setup__actions {
+  flex-shrink: 0;
+}
+.setup__form {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  gap: 1.25rem;
+  min-height: 0;
 }
 .setup__head {
   margin-bottom: 1rem;
@@ -708,7 +740,9 @@ onBeforeUnmount(() => {
 }
 .setup__form > fieldset {
   display: flex;
+  flex: 1 1 auto;
   flex-direction: column;
+  min-height: 0;
   gap: 1.25rem;
   margin: 0;
   padding: 0;
@@ -963,24 +997,37 @@ onBeforeUnmount(() => {
   position: sticky;
   bottom: 0;
   z-index: 1;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.5rem;
-  align-items: center;
   // 向两侧延伸到卡片内边距，吸底时以卡片底色遮住下方滚动的内容
   margin: 0 -2rem -1.75rem;
   padding: 1rem 2rem 1.75rem;
   border-radius: 0 0 $radius-lg $radius-lg;
   background: linear-gradient(to bottom, transparent, var(--surface-1) 1rem);
+}
+.setup__actions-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+  animation: setup-actions-in 0.24s ease-out;
+  @media (prefers-reduced-motion: reduce) {
+    animation: none;
+  }
 
   .setup__submit {
     flex: 1 1 10rem;
     width: auto;
   }
 }
+@keyframes setup-actions-in {
+  from {
+    opacity: 0;
+  }
+}
 .setup__back,
 .setup__skip {
   display: inline-flex;
+  flex-shrink: 0;
+  white-space: nowrap;
   gap: 0.375rem;
   align-items: center;
   min-height: 2.75rem;
@@ -996,6 +1043,9 @@ onBeforeUnmount(() => {
     border-color: var(--border-hover);
     color: var(--text-main);
   }
+}
+.setup__skip-short {
+  display: none;
 }
 .setup__skip {
   padding: 0 0.5rem;
@@ -1017,6 +1067,36 @@ onBeforeUnmount(() => {
   .setup__actions {
     margin: 0 -1.25rem -1.5rem;
     padding: 1rem 1.25rem 1.5rem;
+  }
+  // 窄屏「上一步」只留图标（文字仅供读屏），三个按钮保持一行，两步操作栏高度一致、切换时不跳动
+  .setup__back {
+    justify-content: center;
+    width: 2.75rem;
+    padding: 0;
+  }
+  .setup__back-text {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+  .setup__actions-row .setup__submit {
+    flex-basis: auto;
+    white-space: nowrap;
+  }
+  .setup__skip-full {
+    display: none;
+  }
+  .setup__skip-short {
+    display: inline;
+  }
+}
+// 极窄屏（如 320px）省去主按钮末尾的对勾，三个按钮仍保持一行
+@media (max-width: 360px) {
+  .setup__submit-icon {
+    display: none;
   }
 }
 </style>
