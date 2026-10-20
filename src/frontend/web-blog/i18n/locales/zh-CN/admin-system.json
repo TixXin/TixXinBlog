@@ -875,7 +875,6 @@
         "descriptionLabel": "站点简介（可选）",
         "descriptionPlaceholder": "一句话介绍你的博客",
         "launchedAtLabel": "建站日期",
-        "launchedAtHelp": "首页「站点已稳定运行」的天数从这一天算起。",
         "socialsLabel": "社交链接（可选）",
         "socialUrl": "{name} 地址",
         "indexingLabel": "允许搜索引擎收录本站",

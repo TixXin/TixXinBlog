@@ -875,7 +875,6 @@
         "descriptionLabel": "Site description (optional)",
         "descriptionPlaceholder": "Describe your blog in one sentence",
         "launchedAtLabel": "Launch date",
-        "launchedAtHelp": "The “running for N days” counter on the home page starts from this date.",
         "socialsLabel": "Social links (optional)",
         "socialUrl": "{name} address",
         "indexingLabel": "Allow search engines to index this site",

@@ -15,6 +15,18 @@
       "publishedUnknown": "Publish date unknown",
       "unknown": "Date unknown"
     },
+    "datePicker": {
+      "choose": "Choose a date",
+      "dialog": "Choose a date",
+      "switchView": "Switch month and year view",
+      "previousMonth": "Previous month",
+      "nextMonth": "Next month",
+      "previousYear": "Previous year",
+      "nextYear": "Next year",
+      "previousYears": "Previous 12 years",
+      "nextYears": "Next 12 years",
+      "today": "Today"
+    },
     "locale": {
       "title": "Language",
       "groupLabel": "Choose interface language",

@@ -112,26 +112,24 @@
       </div>
       <div class="setup-field">
         <label for="setup-launched-at">{{ t('admin-system.setup.profile.launchedAtLabel') }}</label>
-        <input
+        <!-- 自定义日期面板替代样式无法定制的原生日期弹窗；建站日期不晚于今天 -->
+        <CommonDatePicker
           id="setup-launched-at"
           v-model="draft.launchedAt"
-          class="input-field setup-input"
-          type="date"
-          :title="t('admin-system.setup.profile.launchedAtHelp')"
-          :aria-invalid="invalid('launchedAt')"
-          :aria-describedby="errorFor('launchedAt') ? 'setup-launched-at-error' : undefined"
+          :max="today"
+          :invalid="invalid('launchedAt')"
+          :describedby="errorFor('launchedAt') ? 'setup-launched-at-error' : undefined"
         />
         <p v-if="errorFor('launchedAt')" id="setup-launched-at-error" class="setup-field__error" role="alert">
           <Icon name="lucide:circle-alert" aria-hidden="true" /><span>{{ fieldError!.message }}</span>
         </p>
       </div>
+      <!-- 标题与开关同一行，说明在下方占满整行 -->
       <label class="profile-step__switch">
-        <span class="profile-step__switch-text">
-          <span>{{ t('admin-system.setup.profile.indexingLabel') }}</span>
-          <span id="setup-indexing-help" class="setup-field__help">{{
-            t('admin-system.setup.profile.indexingHelp')
-          }}</span>
-        </span>
+        <span class="profile-step__switch-title">{{ t('admin-system.setup.profile.indexingLabel') }}</span>
+        <span id="setup-indexing-help" class="setup-field__help profile-step__switch-help">{{
+          t('admin-system.setup.profile.indexingHelp')
+        }}</span>
         <input
           id="setup-indexing"
           v-model="draft.searchIndexing"
@@ -180,7 +178,7 @@
 
 <script setup lang="ts">
 import type { SupportedLocale } from '~~/i18n/localeOptions'
-import { SOCIAL_PLACEHOLDERS, socialLabel } from '~/features/setup/profile'
+import { SOCIAL_PLACEHOLDERS, localDate, socialLabel } from '~/features/setup/profile'
 import type { SetupProfileField } from '~/features/setup/profile'
 import type { SetupProfileDraft } from '~/features/setup/types'
 
@@ -197,6 +195,7 @@ const emit = defineEmits<{ avatarFailed: [] }>()
 const { t } = useI18n()
 
 const emailRequired = computed(() => draft.value.avatarMode === 'cravatar')
+const today = localDate()
 
 function errorFor(field: SetupProfileField) {
   return props.fieldError?.field === field
@@ -258,10 +257,13 @@ function invalid(field: SetupProfileField) {
 }
 // 开关：原生复选框套 role="switch"，保留键盘与读屏操作
 .profile-step__switch {
-  display: flex;
-  gap: 1rem;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-areas:
+    'title toggle'
+    'help help';
+  gap: 0.375rem 1rem;
   align-items: center;
-  justify-content: space-between;
   padding: 0.75rem 1rem;
   border: 1px solid var(--border);
   border-radius: $radius-md;
@@ -270,7 +272,7 @@ function invalid(field: SetupProfileField) {
 
   input {
     position: relative;
-    flex-shrink: 0;
+    grid-area: toggle;
     width: 2.5rem;
     height: 1.5rem;
     margin: 0;
@@ -310,12 +312,13 @@ function invalid(field: SetupProfileField) {
     }
   }
 }
-.profile-step__switch-text {
-  display: flex;
-  flex-direction: column;
-  gap: 0.125rem;
+.profile-step__switch-title {
+  grid-area: title;
   font-size: 0.875rem;
   font-weight: 500;
+}
+.profile-step__switch-help {
+  grid-area: help;
 }
 // 卡片展开到足够宽时：上方博主资料与站点设置左右并列（两列高度相当），社交链接占整行
 @container setup (min-width: 760px) {
