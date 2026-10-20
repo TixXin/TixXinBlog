@@ -239,10 +239,11 @@ onBeforeUnmount(() => document.removeEventListener('pointerdown', onPointerDown)
     opacity: 0.6;
   }
 }
-// 输入框默认按 size=20 计入最小内容宽度，窄列（并排字段）会被撑出横向滚动；改为由弹性布局分配宽度
+// 百分比宽度让输入框的最小内容宽度按 0 计（窄列并排字段不被撑出横向滚动），
+// 首选宽度仍取默认宽度（筛选栏等按内容定宽的位置不会缩成只剩按钮）
 .date-picker__input {
-  flex: 1 1 0;
-  width: 0;
+  flex: 1 1 auto;
+  width: 100%;
   min-width: 0;
   padding: 0.5rem 0;
   border: 0;

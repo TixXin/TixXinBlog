@@ -122,6 +122,16 @@ for (const width of [320, 390, 760, 761]) {
   })
 }
 
+test('日期筛选在按内容定宽的工具栏中保持默认宽度，可直接输入日期', async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 900 })
+  await page.goto('/admin/comments')
+  const start = page.getByRole('combobox', { name: /开始日期/ })
+  await expect(start).toBeVisible()
+  // 输入框只在窄列中收缩；工具栏里不能缩成只剩日历按钮
+  expect((await start.boundingBox())!.width).toBeGreaterThan(120)
+  await noOverflow(page)
+})
+
 test('图库列表保留筛选页码和返回位置，编辑页所属模块清晰', async ({ page }) => {
   await page.goto('/admin/gallery?page=2&status=published')
   await expect(page.getByRole('link', { name: '编辑作品', exact: true }).first()).toBeVisible()
