@@ -91,6 +91,8 @@ test('向导完整流程：首页与登录页引导、令牌移出地址栏、�
   // 创建成功后用同一凭据自动登录，直接进入后台，不再停在登录页。
   await expect(page).toHaveURL(/\/admin$/)
   await expect(page.getByText('博主账号已创建，已自动登录后台')).toBeVisible()
+  // 向导写入的站点名称在后台立即生效，不沿用创建前读到的旧资料。
+  await expect(page.getByText(owner.siteName).first()).toBeVisible()
 
   // 站点名称已写入，经网关的提交清空了公开页面缓存，首页直接显示新名称。
   // 等首页读完初始化状态再断言提示不存在，避免在请求返回前误判。

@@ -138,6 +138,7 @@ const route = useRoute()
 const router = useRouter()
 const fetchSetupStatus = useSetupStatus()
 const { login } = useCurrentUser()
+const siteSettings = useSiteSettings()
 const { success } = useToast()
 
 const phase = ref<SetupPhase>('checking')
@@ -217,6 +218,8 @@ async function submit() {
     return
   }
   token.value = password.value = confirmation.value = ''
+  // 向导可能改写了站点名称；浏览器里已有的站点资料是创建前读取的，先重读，后台与页面标题才显示新名称。
+  await Promise.resolve(siteSettings.refresh()).catch(() => {})
   // 账号已创建：用刚提交的凭据走常规登录直接进入后台；登录失败（如限流或网络中断）时退回登录页，账号不受影响。
   try {
     await login(body.username, body.password)
