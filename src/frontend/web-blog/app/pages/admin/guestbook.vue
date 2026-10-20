@@ -1,7 +1,7 @@
 <!-- @file guestbook.vue @description 博主留言管理：筛选、回复、审核、置顶和删除（含当前页批量公开、隐藏与删除），复用真实发送与输入恢复 -->
 <template>
   <section class="admin-guestbook">
-    <header>
+    <header class="admin-page-header">
       <h1>{{ $t('admin-media.guestbook.title') }}</h1>
       <NuxtLink to="/guestbook">{{ $t('admin-media.guestbook.viewPublic') }}</NuxtLink>
     </header>

@@ -4,7 +4,11 @@
 -->
 <template>
   <section class="account">
-    <h1>{{ t('admin-system.account.title') }}</h1>
+    <header class="admin-page-header">
+      <div>
+        <h1>{{ t('admin-system.account.title') }}</h1>
+      </div>
+    </header>
     <ClientOnly>
       <p v-if="profile">
         {{ t('admin-system.account.currentAccount') }}<strong>{{ profile.username }}</strong>
@@ -128,11 +132,6 @@ onBeforeUnmount(() => {
   max-width: 680px;
   overflow-wrap: anywhere;
 }
-h1 {
-  font-size: 1.6rem;
-  font-weight: 700;
-  margin-bottom: 1rem;
-}
 h2 {
   font-size: 1.2rem;
   font-weight: 600;
@@ -160,21 +159,7 @@ label {
   min-width: 0;
   gap: 0.5rem;
 }
-input,
-button {
-  padding: 0.75rem;
-  border: 1px solid var(--border);
-  border-radius: 0.5rem;
-  color: var(--text-main);
-  background: var(--surface-1);
-  min-width: 0;
-  max-width: 100%;
-}
-button {
-  cursor: var(--interaction-cursor, pointer);
-  white-space: normal;
-  overflow-wrap: anywhere;
-}
+
 fieldset:disabled {
   opacity: 0.6;
 }

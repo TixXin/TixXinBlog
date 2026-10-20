@@ -38,10 +38,25 @@
       "site": "Site settings",
       "account": "Account security",
       "audit": "Audit log",
-      "maintenance": "Backup & maintenance"
+      "maintenance": "Backup & maintenance",
+      "groups": {
+        "workspace": "Workspace",
+        "content": "Content",
+        "interaction": "Interaction",
+        "site": "Site",
+        "system": "System"
+      },
+      "tabs": {
+        "overview": "Overview",
+        "notifications": "Inbox",
+        "posts": "Posts",
+        "comments": "Comments"
+      },
+      "more": "More",
+      "tabsLabel": "Quick navigation"
     },
     "layout": {
-      "brand": "{name} Admin",
+      "brandSuffix": "Admin",
       "backToBlog": "Back to blog",
       "breadcrumb": "Breadcrumb",
       "breadcrumbRoot": "Admin",
@@ -396,6 +411,26 @@
         "gallery": "New gallery item",
         "project": "New project",
         "link": "New link"
+      },
+      "metrics": {
+        "content": "Total content",
+        "contentHint": "{count} added in the last 30 days",
+        "interactions": "Interactions, 30 days",
+        "interactionsHint": "Comments and guestbook messages by received date",
+        "views": "Total views",
+        "viewsHint": "Reads of published posts",
+        "pending": "Pending",
+        "pendingHint": "interactions awaiting review or reply",
+        "pendingDone": "All caught up",
+        "trendUnavailable": "Trend unavailable"
+      },
+      "trendSummary": "{label}: {total} in the last 30 days, peak {peak} on {date}",
+      "trendEmpty": "{label}: nothing in the last 30 days",
+      "greeting": {
+        "morning": "Good morning, {name}",
+        "noon": "Good afternoon, {name}",
+        "afternoon": "Good afternoon, {name}",
+        "evening": "Good evening, {name}"
       }
     },
     "siteNav": {

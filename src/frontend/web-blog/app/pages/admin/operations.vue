@@ -1,8 +1,12 @@
 <!-- @file operations.vue @description 管理运行状态、备份校验与投递结果，保留失败和不确定状态 -->
 <template>
   <section class="operations">
-    <h1>{{ t('admin-system.operations.title') }}</h1>
-    <p>{{ t('admin-system.operations.intro') }}</p>
+    <header class="admin-page-header">
+      <div>
+        <h1>{{ t('admin-system.operations.title') }}</h1>
+        <p>{{ t('admin-system.operations.intro') }}</p>
+      </div>
+    </header>
     <nav class="operations__toolbar" :aria-label="t('admin-system.operations.toolbar')">
       <NuxtLink to="/admin/notifications">{{ t('admin-system.nav.notifications') }}</NuxtLink
       ><NuxtLink to="/admin/maintenance">{{ t('admin-system.nav.maintenance') }}</NuxtLink
@@ -206,9 +210,6 @@ async function retryTask(task: OperationTask) {
   min-width: 0;
   overflow-wrap: anywhere;
 }
-h1 {
-  font-size: 1.5rem;
-}
 h2 {
   font-size: 1.15rem;
   margin-block: 1rem;
@@ -235,14 +236,7 @@ p {
   max-width: 100%;
   min-height: 44px;
 }
-a {
+a:not(.admin-btn) {
   color: var(--accent);
-}
-button {
-  padding: 0.6rem;
-  border: 1px solid var(--border);
-  border-radius: 0.5rem;
-  color: var(--text-main);
-  background: var(--surface-2);
 }
 </style>

@@ -4,44 +4,19 @@
 -->
 <template>
   <section class="admin-comments">
-    <h1>{{ t('admin-content.comments.title') }}</h1>
+    <header class="admin-page-header">
+      <h1>{{ t('admin-content.comments.title') }}</h1>
+    </header>
     <ClientOnly>
-      <section class="admin-comments__policy" :aria-label="t('admin-content.comments.policy.label')">
-        <h2>{{ t('admin-content.comments.policy.heading') }}</h2>
-        <p>{{ t('admin-content.comments.policy.intro') }}</p>
-        <label
-          ><input v-model="requireApproval" type="checkbox" :disabled="!policy || policyPending" />{{
-            t('admin-content.comments.policy.requireApproval')
-          }}</label
-        >
-        <button
-          type="button"
-          :disabled="!policy || policyPending || requireApproval === policy.requireApproval"
-          @click="savePolicy"
-        >
-          {{ t('admin-content.comments.policy.save') }}
-        </button>
-        <p v-if="policy" role="status">
-          {{
-            t('admin-content.comments.policy.current', {
-              mode: t(
-                policy.requireApproval
-                  ? 'admin-content.comments.policy.modeApproval'
-                  : 'admin-content.comments.policy.modeDirect',
-              ),
-              revision: policy.revision,
-            })
-          }}
-        </p>
-        <p v-if="policyError" role="alert">
-          {{ policyError }}
-          <button type="button" :disabled="policyPending" @click="loadPolicy">
-            {{ t('admin-content.comments.policy.reload') }}
-          </button>
-        </p>
-        <p>{{ t('admin-content.comments.policy.noNotification') }}</p>
-      </section>
-      <form class="admin-comments__filters" @submit.prevent="resetPage">
+      <AdminCommentPolicy
+        v-model:require-approval="requireApproval"
+        :policy="policy"
+        :pending="policyPending"
+        :error="policyError"
+        @save="savePolicy"
+        @reload="loadPolicy"
+      />
+      <form class="admin-card admin-toolbar admin-comments__filters" @submit.prevent="resetPage">
         <select
           v-model="postId"
           :aria-label="t('admin-content.comments.filters.post')"
@@ -251,7 +226,12 @@
             >
               {{ t('admin-content.comments.item.reply') }}
             </button>
-            <button type="button" :disabled="pending || working" @click="remove(comment)">
+            <button
+              type="button"
+              class="admin-btn admin-btn--sm admin-btn--danger"
+              :disabled="pending || working"
+              @click="remove(comment)"
+            >
               {{ t('admin-content.comments.item.remove') }}
             </button>
             <button
@@ -299,6 +279,7 @@
 <script setup lang="ts">
 import { describeBatchResult } from '~/composables/useAdminBatchSelection'
 import type { AdminBatchAction, AdminBatchResult } from '~/composables/useAdminBatchSelection'
+import { useCommentPolicy } from '~/features/article/useCommentPolicy'
 definePageMeta({ layout: 'admin' })
 const { t } = useI18n()
 useSeoMeta({ title: () => t('admin-content.comments.title'), robots: 'noindex, nofollow' })
@@ -345,40 +326,15 @@ const statusLabels = computed(
 const status = ref('')
 const from = ref('')
 const to = ref('')
-const policy = ref<{ requireApproval: boolean; revision: number } | null>(null)
-const requireApproval = ref(false)
-const policyPending = ref(false)
-const policyError = ref('')
-async function loadPolicy() {
-  if (policyPending.value) return
-  policyPending.value = true
-  policyError.value = ''
-  try {
-    const latest = await api<{ requireApproval: boolean; revision: number }>('/admin/comments/policy')
-    policy.value = latest
-    requireApproval.value = latest.requireApproval
-  } catch {
-    policyError.value = t('admin-content.comments.policy.loadFailed')
-  } finally {
-    policyPending.value = false
-  }
-}
-async function savePolicy() {
-  if (!policy.value || policyPending.value) return
-  policyPending.value = true
-  policyError.value = ''
-  try {
-    policy.value = await api('/admin/comments/policy', {
-      method: 'PATCH',
-      body: { requireApproval: requireApproval.value, revision: policy.value.revision },
-    })
-    success(t('admin-content.comments.policy.saved'))
-  } catch (cause) {
-    policyError.value = apiErrorMessage(cause, 'admin-content.comments.policy.saveFailed')
-  } finally {
-    policyPending.value = false
-  }
-}
+const {
+  policy,
+  requireApproval,
+  pending: policyPending,
+  error: policyError,
+  dirty: policyDirty,
+  load: loadPolicy,
+  save: savePolicy,
+} = useCommentPolicy()
 const { restore } = useCurrentUser()
 const { success } = useToast()
 const route = useRoute()
@@ -668,7 +624,7 @@ async function moderate(comment: Row, target: CommentStatus) {
   }
 }
 function beforeUnload(event: BeforeUnloadEvent) {
-  if (replyDirty.value || (policy.value && requireApproval.value !== policy.value.requireApproval)) {
+  if (replyDirty.value || policyDirty.value) {
     event.preventDefault()
     event.returnValue = ''
   }
@@ -678,9 +634,7 @@ onBeforeRouteLeave(
     !working.value &&
     !policyPending.value &&
     allowDiscard() &&
-    (!policy.value ||
-      requireApproval.value === policy.value.requireApproval ||
-      window.confirm(t('admin-content.comments.policy.leaveConfirm'))),
+    (!policyDirty.value || window.confirm(t('admin-content.comments.policy.leaveConfirm'))),
 )
 watch(
   () => route.query,
@@ -707,19 +661,26 @@ onBeforeUnmount(() => {
 </script>
 <style scoped>
 .admin-comments {
+  display: flex;
+  flex-direction: column;
+  gap: 0.875rem;
   min-width: 0;
   overflow-wrap: anywhere;
 }
-.admin-comments__filters,
 .admin-comments__actions,
 .admin-comments__pagination {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 0.5rem;
+  gap: 0.375rem;
+}
+.admin-comments__pagination {
+  justify-content: center;
+  color: var(--text-muted);
+  font-size: 0.875rem;
 }
 .admin-comments__filters {
-  margin-block: 1rem;
+  padding: 0.75rem;
 }
 .admin-comments__filters > label {
   display: flex;
@@ -727,29 +688,46 @@ onBeforeUnmount(() => {
   align-items: center;
   gap: 0.5rem;
   min-width: 0;
+  color: var(--text-muted);
+  font-size: 0.875rem;
 }
-.admin-comments h1 {
-  font-size: 1.5rem;
-  margin-bottom: 1rem;
+.admin-comments__filters > select,
+.admin-comments__filters > input:not([type='checkbox']) {
+  flex: 1 1 12rem;
 }
 .admin-comments ul {
-  list-style: none;
+  margin: 0;
   padding: 0;
+  list-style: none;
+}
+.admin-comments__list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.625rem;
 }
 .admin-comments li,
 .admin-comments__context,
-.admin-comments__policy,
 .admin-comments__reply {
   min-width: 0;
-  border: 1px solid var(--border);
-  border-radius: 0.75rem;
-  padding: 1rem;
-  margin-block: 1rem;
+  padding: 1rem 1.125rem;
+  border: 1px solid var(--admin-card-border);
+  border-radius: var(--admin-radius-card);
+  background: var(--admin-card-bg);
+  box-shadow: var(--admin-card-shadow);
   overflow-wrap: anywhere;
+}
+.admin-comments__context li {
+  box-shadow: none;
+}
+.admin-comments li p {
+  margin: 0.25rem 0;
+  color: var(--text-muted);
+  font-size: 0.875rem;
 }
 .admin-comments__list li {
   position: relative;
   padding-left: 3rem;
+  transition: border-color 0.15s ease;
 }
 .admin-comments__list li.is-selected {
   border-color: var(--accent);
@@ -765,48 +743,27 @@ onBeforeUnmount(() => {
   min-height: 44px;
 }
 .admin-comments .admin-comments__select input {
-  width: 1.1rem;
-  height: 1.1rem;
   margin: 0;
-  padding: 0;
 }
-.admin-comments a {
-  color: var(--accent);
+.admin-comments__list li > a {
+  color: var(--text-soft);
+  font-size: 0.75rem;
+  text-decoration: none;
 }
-.admin-comments input,
-.admin-comments select,
-.admin-comments button,
-.admin-comments textarea {
-  border: 1px solid var(--border);
-  background: var(--surface-2);
-  color: var(--text-main);
-  border-radius: 0.4rem;
-  padding: 0.5rem;
-  margin: 0.25rem;
-  min-width: 0;
-  max-width: calc(100% - 0.5rem);
-  box-sizing: border-box;
+.admin-comments__list li > a:hover {
+  color: var(--accent-text);
+}
+.admin-comments__actions {
+  margin-top: 0.625rem;
 }
 .admin-comments textarea {
-  width: 100%;
   display: block;
+  width: 100%;
 }
-.admin-comments__filters > select,
-.admin-comments__filters > input:not([type='checkbox']) {
-  flex: 1 1 12rem;
-}
-.admin-comments__filters input,
-.admin-comments__filters select,
-.admin-comments__filters button,
-.admin-comments__actions button,
-.admin-comments__pagination button {
-  margin: 0;
-  max-width: 100%;
-}
-.admin-comments__filters input:not([type='checkbox']),
-.admin-comments__filters select,
-.admin-comments button {
-  min-height: 44px;
+@media (prefers-reduced-motion: reduce) {
+  .admin-comments__list li {
+    transition: none;
+  }
 }
 @media (max-width: 640px) {
   .admin-comments__filters > label,

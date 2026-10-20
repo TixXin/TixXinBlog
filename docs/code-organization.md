@@ -57,6 +57,8 @@
 
 **样式**：组件私有样式留在 SFC 中；多个组件共享的表单外观抽成通用组件或 `app/assets/styles/` 下的 SCSS partial，由使用方引入，不靠父组件 `:deep` 覆盖子组件。
 
+**后台界面**：后台内容区（`.admin-ui`）的原生按钮、输入框、下拉、复选框与文件选择由 `app/assets/styles/_admin.scss` 统一外观，页面不再为它们重写边框、背景、圆角与内边距。页面结构使用其中的工具类：`admin-page-header`（标题、说明与页面主操作）、`admin-card`（卡片）、`admin-toolbar`（筛选与操作行）、`admin-table`（数据表）、`admin-badge` 加 `is-success` / `is-warning` / `is-danger` / `is-info`（状态徽章，文字始终说明状态）、`admin-switch`（复选框的开关外观）；按钮语义用 `admin-btn--primary`（每个区域最多一个）、`--danger`（删除等不可逆操作）、`--ghost`、`--sm`。颜色只取全站主题变量，随明暗模式与强调色切换。
+
 **开发专用代码**（预览、示例数据、调试面板）放在独立模块，只在 `import.meta.dev` 分支中调用，确保生产构建剔除。
 
 ## 后端拆分方法

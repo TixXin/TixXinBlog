@@ -97,11 +97,4 @@ p {
 a {
   color: var(--accent);
 }
-button {
-  padding: 0.6rem;
-  border: 1px solid var(--border);
-  color: var(--text-main);
-  background: var(--surface-2);
-  border-radius: 0.5rem;
-}
 </style>

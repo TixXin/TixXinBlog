@@ -1,0 +1,424 @@
+/**
+ * @file _admin.scss
+ * @description 后台设计基础：卡片仪表盘风格的尺寸与层次变量，及后台内容区（.admin-ui）原生控件的统一外观。
+ *              作用域与条件放在 :where() 里，原生控件规则的优先级只剩元素本身（0,0,1），与 _base.scss 的
+ *              全局重置持平并因后加载而生效，页面与组件带作用域的类样式（至少 0,2,0）总能覆盖；
+ *              自带完整外观的公共组件（$self-styled）内部不受影响；颜色全部取自全站主题变量，
+ *              随明暗模式与强调色切换。初始化向导有独立表单样式，不在此范围
+ * @author TixXin
+ * @since 2026-10-20
+ */
+
+@use 'tokens' as *;
+
+// 自带完整外观的公共组件：其内部控件不套用后台统一外观
+$self-styled: ':is(.date-picker, .date-picker-panel, .auth-login, .auth-panel, .context-entry, .search-box, .image-failure, .markdown-image) *';
+$scope: ':where(.admin-ui)';
+$own: ':where(:not(#{$self-styled}))';
+$button: '#{$scope} button#{$own}';
+$text-input: '#{$scope} input#{$own}:where(:not([type]), [type="text"], [type="search"], [type="email"], [type="url"], [type="number"], [type="password"], [type="tel"], [type="datetime-local"], [type="time"])';
+$select: '#{$scope} select#{$own}';
+$textarea: '#{$scope} textarea#{$own}';
+$check: '#{$scope} input#{$own}:where([type="checkbox"], [type="radio"])';
+$file: '#{$scope} input#{$own}:where([type="file"])';
+
+.admin-shell {
+  --admin-radius-card: #{$radius-lg};
+  --admin-radius-control: 0.625rem;
+  --admin-control-height: 2.5rem;
+  --admin-gap: 1rem;
+  --admin-card-bg: var(--surface-1);
+  --admin-card-border: var(--border-soft);
+  --admin-card-shadow: 0 1px 2px rgba(15, 23, 42, 0.04), 0 4px 16px rgba(15, 23, 42, 0.06);
+  --admin-control-bg: var(--surface-2);
+  --admin-control-border: var(--border);
+  --admin-button-bg: var(--surface-1);
+  --admin-check-border: var(--border-hover);
+}
+// 触屏设备保持 44px 触控尺寸
+@media (pointer: coarse) {
+  .admin-shell {
+    --admin-control-height: 2.75rem;
+  }
+}
+.dark .admin-shell {
+  --admin-control-border: rgba(148, 163, 184, 0.2);
+  --admin-button-bg: var(--surface-3);
+  --admin-check-border: rgba(148, 163, 184, 0.5);
+  --admin-card-shadow: 0 1px 2px rgba(0, 0, 0, 0.2), 0 8px 24px rgba(0, 0, 0, 0.18);
+}
+
+// ---------- 按钮 ----------
+// 默认为次要按钮；.admin-btn--primary（及 submit 按钮）主操作、--danger 危险操作、--ghost 弱化操作
+#{$button},
+#{$scope} .admin-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.375rem;
+  min-height: var(--admin-control-height);
+  max-width: 100%;
+  min-width: 0;
+  padding: 0.5rem 0.875rem;
+  border: 1px solid var(--admin-control-border);
+  border-radius: var(--admin-radius-control);
+  background: var(--admin-button-bg);
+  color: var(--text-main);
+  font: inherit;
+  font-size: 0.875rem;
+  font-weight: 500;
+  line-height: 1.3;
+  text-decoration: none;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  box-shadow: 0 1px 1px rgba(15, 23, 42, 0.04);
+  transition:
+    background-color 0.15s ease,
+    border-color 0.15s ease,
+    color 0.15s ease,
+    box-shadow 0.15s ease;
+
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
+  &:where(:hover:not(:disabled)) {
+    border-color: var(--border-hover);
+    background: var(--surface-2);
+  }
+  &:where(:focus-visible) {
+    outline: 2px solid var(--focus-ring);
+    outline-offset: 2px;
+  }
+  &:where(:disabled) {
+    opacity: 0.55;
+    box-shadow: none;
+  }
+}
+#{$scope} button[type='submit']#{$own},
+#{$scope} .admin-btn--primary {
+  border-color: transparent;
+  background: var(--accent-action);
+  color: #fff;
+
+  &:where(:hover:not(:disabled)) {
+    border-color: transparent;
+    background: var(--accent);
+  }
+}
+#{$scope} .admin-btn--danger {
+  border-color: color-mix(in srgb, var(--danger) 35%, transparent);
+  color: var(--danger-text);
+
+  &:where(:hover:not(:disabled)) {
+    border-color: var(--danger);
+    background: color-mix(in srgb, var(--danger) 10%, transparent);
+  }
+}
+#{$scope} .admin-btn--ghost {
+  border-color: transparent;
+  background: transparent;
+  box-shadow: none;
+  color: var(--text-muted);
+}
+
+// ---------- 文本输入、下拉与多行文本 ----------
+#{$text-input},
+#{$select},
+#{$textarea} {
+  box-sizing: border-box;
+  min-height: var(--admin-control-height);
+  max-width: 100%;
+  min-width: 0;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--admin-control-border);
+  border-radius: var(--admin-radius-control);
+  background-color: var(--admin-control-bg);
+  color: var(--text-main);
+  font: inherit;
+  font-size: 0.875rem;
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease;
+
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
+  &::placeholder {
+    color: var(--text-soft);
+  }
+  &:where(:hover:not(:disabled):not(:focus)) {
+    border-color: var(--border-hover);
+  }
+  &:where(:focus) {
+    border-color: var(--accent);
+    outline: none;
+    box-shadow: 0 0 0 3px var(--accent-soft);
+  }
+}
+#{$textarea} {
+  line-height: 1.6;
+  resize: vertical;
+}
+// 下拉统一使用 chevron 形状的箭头，颜色随弱化文字
+#{$select}:where(:not([multiple])) {
+  appearance: none;
+  padding-right: 2.25rem;
+  background-image:
+    linear-gradient(45deg, transparent 50%, var(--text-soft) 50%),
+    linear-gradient(135deg, var(--text-soft) 50%, transparent 50%);
+  background-position:
+    calc(100% - 1.05rem) 50%,
+    calc(100% - 0.75rem) 50%;
+  background-size:
+    0.3rem 0.3rem,
+    0.3rem 0.3rem;
+  background-repeat: no-repeat;
+}
+
+// ---------- 复选框与单选 ----------
+#{$check} {
+  appearance: none;
+  display: inline-grid;
+  place-content: center;
+  flex-shrink: 0;
+  width: 1.125rem;
+  height: 1.125rem;
+  margin: 0 0.5rem 0 0;
+  vertical-align: -0.2em;
+  border: 1.5px solid var(--admin-check-border);
+  border-radius: 0.3rem;
+  background: var(--surface-1);
+  transition:
+    background-color 0.15s ease,
+    border-color 0.15s ease;
+
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
+  &::before {
+    content: '';
+    width: 0.625rem;
+    height: 0.625rem;
+    transform: scale(0);
+    background: #fff;
+    clip-path: polygon(14% 44%, 0 65%, 50% 100%, 100% 16%, 80% 0%, 43% 62%);
+    transition: transform 0.12s ease;
+
+    @media (prefers-reduced-motion: reduce) {
+      transition: none;
+    }
+  }
+  &:where([type='radio']) {
+    border-radius: 50%;
+  }
+  &:where([type='radio'])::before {
+    width: 0.5rem;
+    height: 0.5rem;
+    border-radius: 50%;
+    clip-path: none;
+  }
+  &:where(:checked, :indeterminate) {
+    border-color: var(--accent-action);
+    background: var(--accent-action);
+  }
+  &:where(:checked)::before {
+    transform: scale(1);
+  }
+  &:where(:indeterminate)::before {
+    height: 0.125rem;
+    clip-path: none;
+    transform: scale(1);
+  }
+  &:where(:focus-visible) {
+    outline: 2px solid var(--focus-ring);
+    outline-offset: 2px;
+  }
+  &:where(:disabled) {
+    opacity: 0.5;
+  }
+}
+
+// ---------- 文件选择 ----------
+#{$file} {
+  // 文件框的最小内容宽度含选择按钮，窄屏网格中不能按它撑开
+  min-width: 0;
+  max-width: 100%;
+  color: var(--text-muted);
+  font: inherit;
+  font-size: 0.875rem;
+
+  &::file-selector-button {
+    margin-right: 0.75rem;
+    min-height: var(--admin-control-height);
+    padding: 0.5rem 0.875rem;
+    border: 1px solid var(--admin-control-border);
+    border-radius: var(--admin-radius-control);
+    background: var(--admin-button-bg);
+    color: var(--text-main);
+    font: inherit;
+    font-weight: 500;
+  }
+  &:where(:hover:not(:disabled))::file-selector-button {
+    border-color: var(--border-hover);
+    background: var(--surface-2);
+  }
+}
+
+// ---------- 卡片 ----------
+#{$scope} .admin-card {
+  min-width: 0;
+  padding: 1.25rem;
+  border: 1px solid var(--admin-card-border);
+  border-radius: var(--admin-radius-card);
+  background: var(--admin-card-bg);
+  box-shadow: var(--admin-card-shadow);
+
+  > h2 {
+    margin: 0 0 0.875rem;
+    font-size: 1rem;
+    font-weight: 600;
+  }
+  > p {
+    margin: 0.5rem 0;
+    color: var(--text-muted);
+    font-size: 0.875rem;
+  }
+}
+
+// ---------- 页头、工具栏、徽章与数据表 ----------
+// 页头：标题与说明在左，页面主操作在右
+#{$scope} .admin-page-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 0.75rem 1rem;
+  margin-bottom: 1.25rem;
+
+  h1 {
+    margin: 0;
+    font-size: 1.625rem;
+    font-weight: 700;
+  }
+  p {
+    margin: 0.25rem 0 0;
+    color: var(--text-muted);
+    font-size: 0.875rem;
+  }
+}
+#{$scope} .admin-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+}
+// 状态徽章：颜色只作辅助，文字始终说明状态
+#{$scope} .admin-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.0625rem 0.5rem;
+  border-radius: 999px;
+  background: var(--surface-3);
+  color: var(--text-muted);
+  font-size: 0.75rem;
+  font-weight: 500;
+  line-height: 1.5;
+  white-space: nowrap;
+
+  &.is-success {
+    background: color-mix(in srgb, var(--success-text) 14%, transparent);
+    color: var(--success-text);
+  }
+  &.is-warning {
+    background: color-mix(in srgb, var(--warning-text) 14%, transparent);
+    color: var(--warning-text);
+  }
+  &.is-danger {
+    background: color-mix(in srgb, var(--danger) 14%, transparent);
+    color: var(--danger-text);
+  }
+  &.is-info {
+    background: var(--accent-soft);
+    color: var(--accent-text);
+  }
+}
+#{$scope} .admin-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.875rem;
+
+  th {
+    padding: 0.625rem 0.75rem;
+    border-bottom: 1px solid var(--border-soft);
+    color: var(--text-soft);
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-align: left;
+    white-space: nowrap;
+  }
+  td {
+    padding: 0.75rem;
+    border-bottom: 1px solid var(--border-soft);
+    vertical-align: middle;
+  }
+  tbody tr {
+    transition: background-color 0.15s ease;
+
+    @media (prefers-reduced-motion: reduce) {
+      transition: none;
+    }
+    &:hover {
+      background: var(--surface-2);
+    }
+    &:last-child td {
+      border-bottom: 0;
+    }
+  }
+}
+// 小号按钮：表格行内与卡片内的次要操作
+#{$scope} .admin-btn--sm {
+  min-height: 2rem;
+  padding: 0.25rem 0.625rem;
+  font-size: 0.8125rem;
+}
+
+// ---------- 开关 ----------
+// 原生复选框加 .admin-switch：语义与键盘行为不变，外观为滑动开关
+#{$scope} input.admin-switch[type='checkbox'] {
+  width: 2.25rem;
+  height: 1.25rem;
+  padding: 0;
+  border: 0;
+  border-radius: 999px;
+  background: var(--surface-3);
+  box-shadow: inset 0 0 0 1px var(--admin-check-border);
+  place-content: center start;
+  transition: background-color 0.15s ease;
+
+  &::before {
+    width: 0.875rem;
+    height: 0.875rem;
+    margin-left: 0.1875rem;
+    border-radius: 50%;
+    background: #fff;
+    box-shadow: 0 1px 2px rgba(15, 23, 42, 0.3);
+    clip-path: none;
+    transform: none;
+    transition: transform 0.15s ease;
+  }
+  &:checked {
+    background: var(--accent-action);
+    box-shadow: none;
+  }
+  &:checked::before {
+    transform: translateX(1rem);
+  }
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+
+    &::before {
+      transition: none;
+    }
+  }
+}

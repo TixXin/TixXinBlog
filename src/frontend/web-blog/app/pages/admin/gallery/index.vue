@@ -1,18 +1,26 @@
 <!-- @file index.vue @description 图库管理入口，公开状态与媒体文件保留范围清晰分离 -->
 <template>
   <section class="admin-gallery">
-    <header>
+    <header class="admin-page-header">
       <div>
         <h1>{{ $t('admin-media.galleryList.title') }}</h1>
         <p>{{ $t('admin-media.galleryList.intro') }}</p>
       </div>
-      <NuxtLink to="/admin/gallery/new">{{ $t('admin-media.galleryList.create') }}</NuxtLink
-      ><NuxtLink to="/admin/gallery/settings">{{ $t('admin-media.galleryList.gearSettings') }}</NuxtLink
-      ><NuxtLink to="/gallery">{{ $t('admin-media.galleryList.viewPublic') }}</NuxtLink>
+      <div class="admin-toolbar">
+        <NuxtLink class="admin-btn admin-btn--primary" to="/admin/gallery/new">{{
+          $t('admin-media.galleryList.create')
+        }}</NuxtLink
+        ><NuxtLink class="admin-btn admin-btn--ghost" to="/admin/gallery/settings">{{
+          $t('admin-media.galleryList.gearSettings')
+        }}</NuxtLink
+        ><NuxtLink class="admin-btn admin-btn--ghost" to="/gallery">{{
+          $t('admin-media.galleryList.viewPublic')
+        }}</NuxtLink>
+      </div>
     </header>
     <ClientOnly
       ><template v-if="isLoggedIn">
-        <div class="admin-gallery__filters">
+        <div class="admin-card admin-toolbar admin-gallery__filters">
           <label
             >{{ $t('admin-media.galleryList.search')
             }}<input
@@ -108,7 +116,12 @@
                   @click="mutate(photo, { sortOrder: photo.sortOrder - 1 })"
                 >
                   {{ $t('admin-media.galleryList.lowerSort') }}</button
-                ><button type="button" :disabled="pending || busy.includes(photo.id)" @click="mutate(photo)">
+                ><button
+                  class="admin-btn admin-btn--danger"
+                  type="button"
+                  :disabled="pending || busy.includes(photo.id)"
+                  @click="mutate(photo)"
+                >
                   {{ $t('admin-media.galleryList.delete') }}
                 </button>
               </div>
@@ -150,26 +163,21 @@ const { data, pending, error, notice, busy, query, filter, load, mutate, isLogge
   useAdminGallery()
 </script>
 <style scoped lang="scss">
+.admin-gallery__filters {
+  align-items: flex-end;
+  padding: 0.75rem;
+}
 .admin-gallery {
   display: grid;
   min-width: 0;
   gap: 1rem;
   overflow-wrap: anywhere;
 }
-header,
-.admin-gallery__filters,
 .admin-gallery__actions {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   gap: 0.75rem;
-}
-header > div {
-  margin-right: auto;
-}
-h1 {
-  font-size: 1.5rem;
-  font-weight: 700;
 }
 h2 {
   font-size: 1rem;
@@ -179,7 +187,7 @@ p {
   color: var(--text-muted);
   margin-block: 0.5rem;
 }
-a {
+a:not(.admin-btn) {
   color: var(--accent);
 }
 label {
@@ -187,21 +195,7 @@ label {
   gap: 0.3rem;
   min-width: 0;
 }
-input,
-select,
-button {
-  min-width: 0;
-  max-width: 100%;
-  min-height: 44px;
-  padding: 0.5rem 0.7rem;
-  border: 1px solid var(--border);
-  border-radius: 0.5rem;
-  background: var(--surface-2);
-  color: var(--text-main);
-}
-button:disabled {
-  opacity: 0.5;
-}
+
 .admin-gallery__list {
   display: grid;
   gap: 1rem;
@@ -213,8 +207,10 @@ button:disabled {
   grid-template-columns: 160px minmax(0, 1fr);
   gap: 1rem;
   padding: 1rem;
-  border: 1px solid var(--border);
-  border-radius: 0.75rem;
+  border: 1px solid var(--admin-card-border);
+  border-radius: var(--admin-radius-card);
+  background: var(--admin-card-bg);
+  box-shadow: var(--admin-card-shadow);
 }
 .admin-gallery__list p {
   white-space: pre-wrap;

@@ -74,11 +74,4 @@ p {
   margin-block: 0.5rem;
   color: var(--text-muted);
 }
-button {
-  padding: 0.6rem;
-  border: 1px solid var(--border);
-  border-radius: 0.5rem;
-  color: var(--text-main);
-  background: var(--surface-2);
-}
 </style>

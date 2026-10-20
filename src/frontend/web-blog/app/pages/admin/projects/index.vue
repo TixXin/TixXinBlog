@@ -1,17 +1,23 @@
 <!-- @file index.vue @description 项目管理列表，项目进展与内容发布状态分别筛选和维护 -->
 <template>
   <section class="admin-projects">
-    <header>
+    <header class="admin-page-header">
       <div>
         <h1>{{ $t('admin-media.projectList.title') }}</h1>
         <p>{{ $t('admin-media.projectList.intro') }}</p>
       </div>
-      <NuxtLink to="/admin/projects/new">{{ $t('admin-media.projectList.create') }}</NuxtLink
-      ><NuxtLink to="/projects">{{ $t('admin-media.projectList.viewPublic') }}</NuxtLink>
+      <div class="admin-toolbar">
+        <NuxtLink class="admin-btn admin-btn--primary" to="/admin/projects/new">{{
+          $t('admin-media.projectList.create')
+        }}</NuxtLink
+        ><NuxtLink class="admin-btn admin-btn--ghost" to="/projects">{{
+          $t('admin-media.projectList.viewPublic')
+        }}</NuxtLink>
+      </div>
     </header>
     <ClientOnly
       ><template v-if="isLoggedIn"
-        ><div class="admin-projects__filters">
+        ><div class="admin-card admin-toolbar admin-projects__filters">
           <label
             >{{ $t('admin-media.projectList.search')
             }}<input
@@ -131,7 +137,12 @@
                   @click="mutate(project, { sortOrder: project.sortOrder - 1 })"
                 >
                   {{ $t('admin-media.projectList.lower') }}</button
-                ><button type="button" :disabled="pending || busy.includes(project.id)" @click="mutate(project)">
+                ><button
+                  class="admin-btn admin-btn--danger"
+                  type="button"
+                  :disabled="pending || busy.includes(project.id)"
+                  @click="mutate(project)"
+                >
                   {{ $t('admin-media.projectList.remove') }}
                 </button>
               </div>
@@ -181,26 +192,21 @@ const { data, pending, error, notice, busy, query, filter, load, mutate, isLogge
   useAdminProjects()
 </script>
 <style scoped lang="scss">
+.admin-projects__filters {
+  align-items: flex-end;
+  padding: 0.75rem;
+}
 .admin-projects {
   display: grid;
   min-width: 0;
   gap: 1rem;
   overflow-wrap: anywhere;
 }
-header,
-.admin-projects__filters,
 .admin-projects__actions {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   gap: 0.75rem;
-}
-header > div {
-  margin-right: auto;
-}
-h1 {
-  font-size: 1.5rem;
-  font-weight: 700;
 }
 h2 {
   font-size: 1rem;
@@ -210,7 +216,7 @@ p {
   color: var(--text-muted);
   margin-block: 0.5rem;
 }
-a {
+a:not(.admin-btn) {
   color: var(--accent);
 }
 label {
@@ -218,21 +224,7 @@ label {
   gap: 0.3rem;
   min-width: 0;
 }
-input,
-select,
-button {
-  min-width: 0;
-  max-width: 100%;
-  min-height: 44px;
-  padding: 0.5rem 0.7rem;
-  border: 1px solid var(--border);
-  border-radius: 0.5rem;
-  background: var(--surface-2);
-  color: var(--text-main);
-}
-button:disabled {
-  opacity: 0.5;
-}
+
 .admin-projects__list {
   display: grid;
   gap: 1rem;
@@ -244,8 +236,10 @@ button:disabled {
   grid-template-columns: 160px minmax(0, 1fr);
   gap: 1rem;
   padding: 1rem;
-  border: 1px solid var(--border);
-  border-radius: 0.75rem;
+  border: 1px solid var(--admin-card-border);
+  border-radius: var(--admin-radius-card);
+  background: var(--admin-card-bg);
+  box-shadow: var(--admin-card-shadow);
 }
 .admin-projects__list p {
   white-space: pre-wrap;

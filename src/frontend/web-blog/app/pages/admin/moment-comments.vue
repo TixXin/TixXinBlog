@@ -1,8 +1,12 @@
 <!-- @file moment-comments.vue @description 跨动态审核评论，复用现有审核冲突保护和删除接口。 -->
 <template>
   <section class="moment-comments">
-    <h1>{{ t('admin-content.momentComments.title') }}</h1>
-    <p>{{ t('admin-content.momentComments.intro') }}</p>
+    <header class="admin-page-header">
+      <div>
+        <h1>{{ t('admin-content.momentComments.title') }}</h1>
+        <p>{{ t('admin-content.momentComments.intro') }}</p>
+      </div>
+    </header>
     <nav class="moment-comments__actions" :aria-label="t('admin-content.momentComments.filters')">
       <NuxtLink
         v-for="(label, value) in labels"
@@ -198,10 +202,6 @@ onBeforeUnmount(() => {
   min-width: 0;
   overflow-wrap: anywhere;
 }
-h1 {
-  font-size: 1.75rem;
-  font-weight: 700;
-}
 p,
 blockquote {
   margin: 0.75rem 0;
@@ -222,7 +222,7 @@ li {
   border: 1px solid var(--border);
   border-radius: 0.75rem;
 }
-a {
+a:not(.admin-btn) {
   color: var(--accent);
   overflow-wrap: anywhere;
 }

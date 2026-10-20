@@ -231,17 +231,7 @@ label {
   gap: 0.5rem;
   margin-block: 1rem;
 }
-button,
-input {
-  padding: 0.65rem;
-  background: var(--surface-2);
-  color: var(--text-main);
-  border: 1px solid var(--border);
-  border-radius: 0.5rem;
-}
-button:disabled {
-  opacity: 0.5;
-}
+
 footer {
   margin-top: 1rem;
 }

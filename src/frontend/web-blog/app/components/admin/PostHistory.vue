@@ -127,11 +127,6 @@ li {
   margin: 0.75rem 0;
 }
 button {
-  padding: 0.5rem 0.75rem;
-  border: 1px solid var(--border);
-  border-radius: 0.5rem;
-  color: var(--text-main);
-  background: var(--surface-1);
   margin: 0.3rem;
 }
 </style>

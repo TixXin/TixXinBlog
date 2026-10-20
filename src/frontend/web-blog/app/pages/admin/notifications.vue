@@ -1,8 +1,12 @@
 <!-- @file notifications.vue @description 博主站内通知，已读与业务状态分别展示，状态来源于实时业务查询；支持全部标记已读并同步导航未读徽章 -->
 <template>
   <section class="notifications">
-    <h1 ref="heading" tabindex="-1">{{ t('admin-system.notifications.title') }}</h1>
-    <p>{{ t('admin-system.notifications.intro') }}</p>
+    <header class="admin-page-header">
+      <div>
+        <h1 ref="heading" tabindex="-1">{{ t('admin-system.notifications.title') }}</h1>
+        <p>{{ t('admin-system.notifications.intro') }}</p>
+      </div>
+    </header>
     <nav class="notifications__filters" :aria-label="t('admin-system.notifications.filters')">
       <NuxtLink :to="{ query: { filter: 'all' } }">{{ t('admin-system.notifications.filterAll') }}</NuxtLink
       ><NuxtLink :to="{ query: { filter: 'unread' } }">{{ t('admin-system.notifications.filterUnread') }}</NuxtLink
@@ -228,9 +232,6 @@ async function markRead(id: string) {
   min-width: 0;
   overflow-wrap: anywhere;
 }
-h1 {
-  font-size: 1.5rem;
-}
 h2 {
   font-size: 1rem;
   font-weight: 600;
@@ -261,7 +262,7 @@ li,
   border-radius: 0.75rem;
   margin-block: 1rem;
 }
-a {
+a:not(.admin-btn) {
   min-width: 0;
   max-width: 100%;
   color: var(--accent);
@@ -269,20 +270,7 @@ a {
 .notifications__status {
   margin-block: 0;
 }
-button {
-  min-width: 0;
-  min-height: 44px;
-  max-width: 100%;
-  box-sizing: border-box;
-  display: inline-flex;
-  align-items: center;
-  gap: 0.35rem;
-  padding: 0.6rem;
-  border: 1px solid var(--border);
-  border-radius: 0.5rem;
-  color: var(--text-main);
-  background: var(--surface-2);
-}
+
 .notifications__filters a,
 .notifications__pagination a {
   display: inline-flex;

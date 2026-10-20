@@ -4,9 +4,13 @@
 -->
 <template>
   <section class="admin-site">
-    <h1>{{ t('admin-system.site.page.title') }}</h1>
-    <p>{{ t('admin-system.site.page.intro') }}</p>
-    <p>{{ t('admin-system.site.page.siteUrl', { url: siteUrl }) }}</p>
+    <header class="admin-page-header">
+      <div>
+        <h1>{{ t('admin-system.site.page.title') }}</h1>
+        <p>{{ t('admin-system.site.page.intro') }}</p>
+        <p>{{ t('admin-system.site.page.siteUrl', { url: siteUrl }) }}</p>
+      </div>
+    </header>
     <p v-if="pending" role="status">{{ t('admin-system.site.page.processing') }}</p>
     <p v-if="error" role="alert">
       {{ error }}
@@ -31,7 +35,7 @@
           }}{{ dirty ? t('admin-system.site.page.dirtySuffix') : '' }}
         </p>
         <form ref="editorForm" @submit.prevent="submit">
-          <fieldset :disabled="pending || !ready">
+          <fieldset class="admin-site__grid" :disabled="pending || !ready">
             <legend>{{ t('admin-system.site.page.profileLegend') }}</legend>
             <label
               >{{ t('admin-system.site.editor.fields.name') }}<input v-model="draft.name" maxlength="80" required
@@ -50,7 +54,9 @@
             <label
               >{{ t('admin-system.site.editor.fields.avatar') }}<input v-model="draft.avatar" maxlength="1000"
             /></label>
-            <button type="button" @click="pickerOpen = true">{{ t('admin-system.site.page.pickAvatar') }}</button>
+            <button type="button" class="admin-site__pick" @click="pickerOpen = true">
+              <Icon name="lucide:image" aria-hidden="true" />{{ t('admin-system.site.page.pickAvatar') }}
+            </button>
             <label
               >{{ t('admin-system.site.editor.fields.avatarAlt') }}<input v-model="draft.avatarAlt" maxlength="300"
             /></label>
@@ -84,44 +90,7 @@
                 clearable
             /></label>
           </fieldset>
-          <fieldset :disabled="pending || !ready">
-            <legend>{{ t('admin-system.site.page.socialsLegend', { max: 8 }) }}</legend>
-            <div v-for="(link, index) in draft.socials" :key="index" class="admin-site__social">
-              <label
-                >{{ t('admin-system.site.page.socialLabel') }}<input v-model="link.label" maxlength="40" required
-              /></label>
-              <label
-                >{{ t('admin-system.site.page.socialHref')
-                }}<input
-                  v-model="link.href"
-                  maxlength="1000"
-                  :placeholder="t('admin-system.site.page.socialHrefPlaceholder')"
-                  required
-              /></label>
-              <label
-                >{{ t('admin-system.site.page.socialIcon')
-                }}<select v-model="link.icon">
-                  <option v-for="icon in siteSocialIcons" :key="icon" :value="icon">
-                    {{ icon.replace('lucide:', '') }}
-                  </option>
-                </select></label
-              >
-              <button
-                type="button"
-                :aria-label="t('admin-system.site.page.removeSocial', { index: index + 1 })"
-                @click="draft.socials.splice(index, 1)"
-              >
-                {{ t('admin-system.site.page.remove') }}
-              </button>
-            </div>
-            <button
-              type="button"
-              :disabled="draft.socials.length >= 8"
-              @click="draft.socials.push({ label: '', href: '', icon: 'lucide:globe' })"
-            >
-              {{ t('admin-system.site.page.addSocial') }}
-            </button>
-          </fieldset>
+          <AdminSiteSocialFields v-model="draft.socials" :disabled="pending || !ready" />
           <fieldset :disabled="pending || !ready">
             <legend>{{ t('admin-system.site.page.seoLegend') }}</legend>
             <label
@@ -150,11 +119,16 @@
               />
             </label>
             <label class="admin-site__check"
-              ><input v-model="draft.searchIndexing" type="checkbox" aria-describedby="admin-site-indexing-hint" />{{
-                t('admin-system.site.page.searchIndexing')
-              }}</label
+              ><input
+                v-model="draft.searchIndexing"
+                class="admin-switch"
+                type="checkbox"
+                aria-describedby="admin-site-indexing-hint"
+              />{{ t('admin-system.site.page.searchIndexing') }}</label
             >
-            <p id="admin-site-indexing-hint">{{ t('admin-system.site.page.searchIndexingHint') }}</p>
+            <p id="admin-site-indexing-hint" class="admin-site__hint">
+              {{ t('admin-system.site.page.searchIndexingHint') }}
+            </p>
           </fieldset>
           <AdminSiteNavigationFields v-model="draft" :disabled="pending || !ready" />
           <AdminAboutSettingsFields v-if="draft.about" v-model="draft.about" :disabled="pending || !ready" />
@@ -236,7 +210,7 @@
   </section>
 </template>
 <script setup lang="ts">
-import { presenceStatusOptions, siteSocialIcons } from '~/features/site/settings'
+import { presenceStatusOptions } from '~/features/site/settings'
 import { siteExtrasErrors } from '~/features/site/extras'
 import type { MediaAsset } from '~/features/media/types'
 import { formatDateTime } from '~/utils/format'
@@ -290,64 +264,85 @@ function selectAvatar(asset: MediaAsset) {
 </script>
 <style scoped lang="scss">
 .admin-site {
+  min-width: 0;
   overflow-wrap: anywhere;
 }
-h1 {
-  font-size: 1.6rem;
-}
 h2 {
-  font-size: 1.2rem;
+  margin: 0 0 0.5rem;
+  font-size: 1rem;
+  font-weight: 600;
 }
 p {
-  margin-block: 0.75rem;
+  margin-block: 0.5rem;
   color: var(--text-muted);
+  font-size: 0.875rem;
 }
+// 每组设置是一张卡片；legend 浮动后留在卡片内作为标题
 fieldset {
-  border: 1px solid var(--border);
-  border-radius: 0.75rem;
-  padding: 1rem;
-  margin-block: 1rem;
   min-width: 0;
+  margin: 0 0 var(--admin-gap);
+  padding: 1.25rem 1.25rem 0.5rem;
+  border: 1px solid var(--admin-card-border);
+  border-radius: var(--admin-radius-card);
+  background: var(--admin-card-bg);
+  box-shadow: var(--admin-card-shadow);
 }
 legend {
-  padding-inline: 0.5rem;
+  float: left;
+  width: 100%;
+  margin: 0 0 1rem;
+  padding: 0;
+  font-size: 1rem;
+  font-weight: 600;
+}
+legend + * {
+  clear: both;
 }
 label {
   display: grid;
-  gap: 0.5rem;
-  margin-block: 0.75rem;
+  gap: 0.375rem;
+  margin: 0 0 1rem;
+  color: var(--text-muted);
+  font-size: 0.875rem;
+  font-weight: 500;
 }
-input,
-textarea,
-select,
-button {
-  background: var(--surface-2);
-  color: var(--text-main);
-  border: 1px solid var(--border);
-  border-radius: 0.5rem;
-  padding: 0.65rem;
-  max-width: 100%;
+// 资料区两列，多行文本与标题占满整行
+.admin-site__grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  column-gap: 1rem;
+
+  > legend,
+  > label:has(textarea) {
+    grid-column: 1 / -1;
+  }
 }
-button {
-  margin: 0.4rem 0.5rem 0.4rem 0;
-}
-button:disabled {
-  opacity: 0.5;
+.admin-site__pick {
+  align-self: end;
+  justify-self: start;
+  margin-bottom: 1rem;
 }
 .admin-site__check {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: 0.625rem;
+  margin-bottom: 0.25rem;
+  color: var(--text-main);
 }
-.admin-site__social {
-  padding: 0.75rem;
-  border-bottom: 1px solid var(--border);
+.admin-site__hint {
+  margin: 0 0 1rem;
+  font-size: 0.8125rem;
 }
 .admin-site__history {
-  margin-block: 2rem;
+  margin-block: 1.5rem;
 }
 ul {
   padding: 0;
   list-style: none;
+}
+@media (max-width: 760px) {
+  .admin-site__grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
 }
 </style>

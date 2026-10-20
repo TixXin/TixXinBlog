@@ -214,11 +214,4 @@ li {
   gap: 0.6rem;
   padding: 0.65rem 0;
 }
-button {
-  color: var(--text-main);
-  background: var(--surface-1);
-  border: 1px solid var(--border);
-  border-radius: 0.5rem;
-  padding: 0.5rem 0.7rem;
-}
 </style>

@@ -38,10 +38,25 @@
       "site": "站点设置",
       "account": "账号安全",
       "audit": "操作审计",
-      "maintenance": "备份与维护"
+      "maintenance": "备份与维护",
+      "groups": {
+        "workspace": "工作台",
+        "content": "内容",
+        "interaction": "互动",
+        "site": "站点",
+        "system": "系统"
+      },
+      "tabs": {
+        "overview": "概览",
+        "notifications": "通知",
+        "posts": "文章",
+        "comments": "评论"
+      },
+      "more": "更多",
+      "tabsLabel": "快捷导航"
     },
     "layout": {
-      "brand": "{name} 管理",
+      "brandSuffix": "管理后台",
       "backToBlog": "返回博客",
       "breadcrumb": "面包屑",
       "breadcrumbRoot": "后台",
@@ -396,6 +411,26 @@
         "gallery": "新建图库",
         "project": "新建项目",
         "link": "新建友链"
+      },
+      "metrics": {
+        "content": "内容总数",
+        "contentHint": "近 30 天新增 {count} 项",
+        "interactions": "近 30 天互动",
+        "interactionsHint": "评论与留言，按收到日期统计",
+        "views": "累计浏览",
+        "viewsHint": "已发布文章的阅读次数",
+        "pending": "待处理",
+        "pendingHint": "条互动等待审核或回复",
+        "pendingDone": "全部处理完毕",
+        "trendUnavailable": "趋势暂不可用"
+      },
+      "trendSummary": "{label}：近 30 天共 {total}，单日最高 {peak}（{date}）",
+      "trendEmpty": "{label}：近 30 天没有记录",
+      "greeting": {
+        "morning": "早上好，{name}",
+        "noon": "中午好，{name}",
+        "afternoon": "下午好，{name}",
+        "evening": "晚上好，{name}"
       }
     },
     "siteNav": {

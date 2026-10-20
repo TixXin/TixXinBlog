@@ -73,15 +73,4 @@ h2 {
   font-size: 1.25rem;
   font-weight: 600;
 }
-button {
-  min-width: 0;
-  max-width: 100%;
-  min-height: 44px;
-  white-space: normal;
-  padding: 0.6rem;
-  border: 1px solid var(--border);
-  border-radius: 0.5rem;
-  color: var(--text-main);
-  background: var(--surface-2);
-}
 </style>

@@ -1,30 +1,12 @@
 <!--
   @file admin.vue
-  @description 博主管理布局，提供明确的内容管理导航和真实退出操作
+  @description 博主管理布局：桌面为分组侧栏 + 顶栏 + 独立滚动的内容区，移动端为顶栏 + 内容区 + 底部标签栏；
+               提供面包屑、表单操作跳转、明暗切换与真实退出操作
 -->
 <template>
   <div class="admin-shell" :class="{ 'admin-shell--login': isLogin, 'admin-shell--setup': isSetup }">
-    <aside v-if="!isLogin" class="admin-sidebar">
-      <NuxtLink class="admin-brand" to="/admin"
-        ><Icon name="lucide:notebook-pen" />{{ t('admin-system.layout.brand', { name: siteName }) }}</NuxtLink
-      >
-      <AdminNavigation />
-      <NuxtLink class="admin-back" to="/"
-        ><Icon name="lucide:arrow-up-right" />{{ t('admin-system.layout.backToBlog') }}</NuxtLink
-      >
-    </aside>
+    <AdminShellSidebar v-if="!isLogin" />
     <header class="admin-header" :class="{ 'admin-header--bare': isSetup }">
-      <CommonContextDrawer
-        v-if="!isLogin"
-        v-model:open="drawerOpen"
-        class="admin-mobile-navigation"
-        :label="t('admin-system.nav.label')"
-      >
-        <AdminNavigation />
-        <NuxtLink class="admin-back" to="/"
-          >{{ t('admin-system.layout.backToBlog') }}<Icon name="lucide:arrow-up-right"
-        /></NuxtLink>
-      </CommonContextDrawer>
       <nav v-if="!isSetup" :aria-label="t('admin-system.layout.breadcrumb')">
         <NuxtLink :to="isLogin ? '/' : '/admin'">{{
           isLogin ? t('admin-system.layout.backToBlog') : t('admin-system.layout.breadcrumbRoot')
@@ -35,15 +17,23 @@
         {{ t('admin-system.layout.jumpToActions') }}<Icon name="lucide:arrow-down-to-line" />
       </button>
       <ClientOnly
-        ><button type="button" :aria-label="t('admin-system.layout.toggleColor')" @click="toggleColor">
+        ><button
+          type="button"
+          class="admin-header__icon"
+          :aria-label="t('admin-system.layout.toggleColor')"
+          @click="toggleColor"
+        >
           <Icon :name="colorMode.value === 'dark' ? 'lucide:sun' : 'lucide:moon'" /></button
-        ><button v-if="isLoggedIn" type="button" :disabled="leaving" @click="leave">
-          {{ t('admin-system.layout.logout') }}
+        ><button v-if="isLoggedIn" type="button" class="admin-header__logout" :disabled="leaving" @click="leave">
+          <Icon name="lucide:log-out" /><span class="admin-header__logout-label">{{
+            t('admin-system.layout.logout')
+          }}</span>
         </button></ClientOnly
       >
     </header>
     <main ref="main" class="admin-main" :aria-label="t('admin-system.layout.main')" tabindex="-1">
-      <div class="admin-content">
+      <!-- admin-ui：后台统一控件外观的作用域（_admin.scss），初始化向导使用自己的表单样式 -->
+      <div class="admin-content" :class="{ 'admin-ui': !isSetup }">
         <ClientOnly
           ><p v-if="restoringPending" role="status">{{ t('admin-system.layout.restoring') }}</p></ClientOnly
         >
@@ -65,13 +55,12 @@
         <NuxtPage />
       </div>
     </main>
+    <AdminShellTabBar v-if="!isLogin" v-model:open="drawerOpen" />
   </div>
 </template>
 <script setup lang="ts">
 import { adminNavigation as navigation, adminModule } from '~/features/admin/navigation'
 const { t } = useI18n()
-// 后台品牌沿用博主维护的站点名，不在布局里写死
-const { siteName } = useSiteInfo()
 const main = ref<HTMLElement | null>(null)
 useAdminWorkspace(main)
 const actionTarget = ref<HTMLElement | null>(null)
@@ -141,22 +130,23 @@ async function leave() {
 <style scoped lang="scss">
 .admin-shell {
   display: grid;
-  grid-template-columns: 220px minmax(0, 1fr);
+  grid-template-columns: 15rem minmax(0, 1fr);
   grid-template-rows: auto minmax(0, 1fr);
   height: 100dvh;
   overflow: hidden;
-  background: var(--surface-1);
+  background: var(--bg);
   color: var(--text-main);
 }
 .admin-header {
   z-index: 10;
   display: flex;
-  flex-wrap: wrap;
   align-items: center;
-  gap: 1.5rem;
-  padding: 1rem 1.5rem;
-  background: var(--surface-2);
-  border-bottom: 1px solid var(--border);
+  gap: 0.5rem;
+  min-height: 3.75rem;
+  padding: 0.625rem 1.5rem;
+  border-bottom: 1px solid var(--border-soft);
+  background: color-mix(in srgb, var(--bg) 85%, transparent);
+  backdrop-filter: blur(8px);
 }
 .admin-header--bare {
   position: absolute;
@@ -165,23 +155,56 @@ async function leave() {
   justify-content: flex-end;
   background: transparent;
   border-bottom-color: transparent;
+  backdrop-filter: none;
 }
 .admin-header nav {
   display: flex;
-  flex-wrap: wrap;
-  gap: 1rem;
   flex: 1;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
   min-width: 0;
-}
-.admin-header a {
-  color: var(--accent);
+  color: var(--text-soft);
+  font-size: 0.875rem;
+
+  a {
+    color: var(--text-soft);
+    text-decoration: none;
+
+    &:hover {
+      color: var(--text-main);
+    }
+  }
+  span:last-child {
+    color: var(--text-main);
+    font-weight: 600;
+  }
 }
 .admin-header button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.375rem;
+  min-height: 2.25rem;
+  padding: 0.375rem 0.75rem;
+  border: 1px solid transparent;
+  border-radius: 0.625rem;
   background: transparent;
-  color: var(--text-main);
-  border: 1px solid var(--border);
-  padding: 0.4rem 0.75rem;
-  border-radius: 0.5rem;
+  color: var(--text-muted);
+  font-size: 0.875rem;
+
+  &:hover:not(:disabled) {
+    background: var(--surface-3);
+    color: var(--text-main);
+  }
+  &:focus-visible {
+    outline: 2px solid var(--focus-ring);
+    outline-offset: 2px;
+  }
+}
+.admin-header .admin-header__icon {
+  width: 2.25rem;
+  padding: 0;
 }
 .admin-main {
   min-width: 0;
@@ -196,62 +219,15 @@ async function leave() {
   width: 100%;
   max-width: 1200px;
   margin: 0 auto;
-  padding: 1.5rem;
-}
-.admin-mobile-navigation {
-  display: none;
-}
-.admin-header button {
-  min-height: 44px;
-}
-.admin-jump-actions {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.4rem;
+  padding: 1.75rem 1.5rem 3rem;
 }
 .admin-session {
-  border: 1px solid var(--border);
-  padding: 1rem;
-  border-radius: 0.75rem;
   max-width: 440px;
   margin-bottom: 1rem;
-}
-.admin-sidebar {
-  grid-row: 1 / -1;
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-  min-height: 0;
-  overflow: hidden;
-  padding: 1.5rem 1rem;
-  border-right: 1px solid var(--border);
-  background: var(--surface-2);
-}
-.admin-brand {
-  display: flex;
-  align-items: center;
-  gap: 0.6rem;
-  font-size: 1.1rem;
-  font-weight: 700;
-  color: var(--text-main);
-}
-.admin-sidebar :deep(.admin-navigation) {
-  flex: 1;
-}
-.admin-brand,
-.admin-back {
-  flex-shrink: 0;
-}
-.admin-back {
-  display: flex;
-  align-items: center;
-  gap: 0.65rem;
-  min-height: 44px;
-  padding: 0.75rem;
-  color: var(--text-muted);
-}
-.admin-back {
-  margin-top: auto;
+  padding: 1rem;
+  border: 1px solid var(--border);
+  border-radius: 0.75rem;
+  background: var(--surface-1);
 }
 .admin-shell--login {
   grid-template-columns: minmax(0, 1fr);
@@ -262,29 +238,37 @@ async function leave() {
   grid-template-rows: minmax(0, 1fr);
   background: transparent;
 }
+@media (pointer: coarse) {
+  .admin-header button {
+    min-height: 44px;
+  }
+  .admin-header .admin-header__icon {
+    width: 44px;
+  }
+}
 @media (max-width: 760px) {
-  .admin-shell {
+  .admin-shell:not(.admin-shell--login) {
     grid-template-columns: minmax(0, 1fr);
-  }
-  .admin-sidebar {
-    display: none;
-  }
-  .admin-mobile-navigation {
-    display: block;
+    grid-template-rows: auto minmax(0, 1fr) auto;
   }
   .admin-header {
-    gap: 0.5rem;
-    padding: 0.5rem;
+    gap: 0.25rem;
+    padding: 0.5rem 0.75rem;
   }
   .admin-header nav {
-    gap: 0.4rem;
-    min-width: 0;
-    flex-basis: 100%;
-    order: 2;
-    padding: 0.25rem;
+    gap: 0.375rem;
+  }
+  // 窄屏退出按钮只留图标，名称保留给读屏
+  .admin-header__logout-label {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
   }
   .admin-content {
-    padding: 1rem;
+    padding: 1rem 1rem 2rem;
   }
   .admin-main {
     scroll-padding-block: 1rem;

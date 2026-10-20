@@ -1,7 +1,7 @@
 <!-- @file index.vue @description 朋友圈管理页面，包含状态筛选、版本化操作与评论审核 -->
 <template>
   <section class="admin-moments">
-    <header>
+    <header class="admin-page-header">
       <div>
         <h1>{{ $t('admin-content.moments.title') }}</h1>
         <p>{{ $t('admin-content.moments.intro') }}</p>
@@ -306,10 +306,6 @@ header,
 header {
   justify-content: space-between;
 }
-h1 {
-  font-size: 1.5rem;
-  font-weight: 700;
-}
 h2 {
   font-size: 1.1rem;
   font-weight: 600;
@@ -328,14 +324,7 @@ header > a {
   min-height: 44px;
   max-width: 100%;
 }
-button:disabled {
-  opacity: 0.5;
-}
-input,
-textarea,
-select {
-  min-width: 0;
-}
+
 textarea {
   display: block;
   width: 100%;

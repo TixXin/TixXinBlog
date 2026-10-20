@@ -4,8 +4,12 @@
 -->
 <template>
   <section class="taxonomy">
-    <h1>{{ t('admin-content.taxonomy.title') }}</h1>
-    <p class="taxonomy__intro">{{ t('admin-content.taxonomy.intro') }}</p>
+    <header class="admin-page-header">
+      <div>
+        <h1>{{ t('admin-content.taxonomy.title') }}</h1>
+        <p class="taxonomy__intro">{{ t('admin-content.taxonomy.intro') }}</p>
+      </div>
+    </header>
     <ClientOnly>
       <p v-if="pending" role="status">{{ t('admin-content.taxonomy.loading') }}</p>
       <p v-if="error" role="alert">
@@ -277,10 +281,6 @@ onBeforeUnmount(() => window.removeEventListener('beforeunload', beforeUnload))
   min-width: 0;
   overflow-wrap: anywhere;
 }
-h1 {
-  font-size: 1.6rem;
-  font-weight: 700;
-}
 h2 {
   font-size: 1.1rem;
   font-weight: 600;
@@ -322,24 +322,11 @@ label {
   min-width: 0;
   gap: 0.4rem;
 }
-input,
-select,
-button {
-  min-width: 0;
-  max-width: 100%;
-  background: var(--surface-1);
-  color: var(--text-main);
-  border: 1px solid var(--border);
-  border-radius: 0.5rem;
-  padding: 0.55rem 0.75rem;
-}
-button:disabled {
-  opacity: 0.45;
-}
+
 td button {
   margin-left: 0.6rem;
 }
-a {
+a:not(.admin-btn) {
   color: var(--accent);
 }
 .taxonomy__table {

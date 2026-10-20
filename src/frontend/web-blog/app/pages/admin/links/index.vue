@@ -1,18 +1,24 @@
 <!-- @file index.vue @description 友链管理入口，发布、推荐、排序与删除均使用服务端版本校验 -->
 <template>
   <section class="admin-links">
-    <header>
+    <header class="admin-page-header">
       <div>
         <h1>{{ $t('admin-media.linkList.title') }}</h1>
         <p>{{ $t('admin-media.linkList.intro') }}</p>
       </div>
-      <NuxtLink to="/admin/links/new">{{ $t('admin-media.linkEditor.createTitle') }}</NuxtLink
-      ><NuxtLink to="/admin/links/settings">{{ $t('admin-media.linkSettings.title') }}</NuxtLink
-      ><NuxtLink to="/links">{{ $t('admin-media.linkList.viewPublic') }}</NuxtLink>
+      <div class="admin-toolbar">
+        <NuxtLink class="admin-btn admin-btn--primary" to="/admin/links/new">{{
+          $t('admin-media.linkEditor.createTitle')
+        }}</NuxtLink
+        ><NuxtLink class="admin-btn admin-btn--ghost" to="/admin/links/settings">{{
+          $t('admin-media.linkSettings.title')
+        }}</NuxtLink
+        ><NuxtLink class="admin-btn admin-btn--ghost" to="/links">{{ $t('admin-media.linkList.viewPublic') }}</NuxtLink>
+      </div>
     </header>
     <ClientOnly
       ><template v-if="isLoggedIn"
-        ><div class="admin-links__filters">
+        ><div class="admin-card admin-toolbar admin-links__filters">
           <label
             >{{ $t('admin-media.linkList.search')
             }}<input
@@ -114,7 +120,12 @@
                   @click="mutate(link, { sortOrder: link.sortOrder - 1 })"
                 >
                   {{ $t('admin-media.linkList.lowerSort') }}</button
-                ><button type="button" :disabled="pending || busy.includes(link.id)" @click="mutate(link)">
+                ><button
+                  class="admin-btn admin-btn--danger"
+                  type="button"
+                  :disabled="pending || busy.includes(link.id)"
+                  @click="mutate(link)"
+                >
                   {{ $t('admin-media.linkList.delete') }}
                 </button>
               </div>
@@ -157,26 +168,21 @@ const { data, pending, error, notice, busy, query, filter, load, mutate, isLogge
   useAdminLinks()
 </script>
 <style scoped lang="scss">
+.admin-links__filters {
+  align-items: flex-end;
+  padding: 0.75rem;
+}
 .admin-links {
   display: grid;
   min-width: 0;
   gap: 1rem;
   overflow-wrap: anywhere;
 }
-header,
-.admin-links__filters,
 .admin-links__actions {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   gap: 0.75rem;
-}
-header > div {
-  margin-right: auto;
-}
-h1 {
-  font-size: 1.5rem;
-  font-weight: 700;
 }
 h2 {
   font-size: 1rem;
@@ -186,7 +192,7 @@ p {
   color: var(--text-muted);
   margin-block: 0.5rem;
 }
-a {
+a:not(.admin-btn) {
   color: var(--accent);
 }
 label {
@@ -194,21 +200,7 @@ label {
   gap: 0.3rem;
   min-width: 0;
 }
-input,
-select,
-button {
-  min-width: 0;
-  max-width: 100%;
-  min-height: 44px;
-  padding: 0.5rem 0.7rem;
-  border: 1px solid var(--border);
-  border-radius: 0.5rem;
-  color: var(--text-main);
-  background: var(--surface-2);
-}
-button:disabled {
-  opacity: 0.5;
-}
+
 .admin-links__list {
   display: grid;
   gap: 1rem;
@@ -217,8 +209,10 @@ button:disabled {
 }
 .admin-links__list li {
   min-width: 0;
-  border: 1px solid var(--border);
-  border-radius: 0.75rem;
+  border: 1px solid var(--admin-card-border);
+  border-radius: var(--admin-radius-card);
+  background: var(--admin-card-bg);
+  box-shadow: var(--admin-card-shadow);
   padding: 1rem;
 }
 .admin-links__url {

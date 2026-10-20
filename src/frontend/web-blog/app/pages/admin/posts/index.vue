@@ -4,13 +4,18 @@
 -->
 <template>
   <section class="admin-posts">
-    <h1>{{ $t('admin-content.postList.title') }}</h1>
+    <header class="admin-page-header">
+      <h1>{{ $t('admin-content.postList.title') }}</h1>
+      <NuxtLink class="admin-btn admin-btn--primary" to="/admin/posts/new"
+        ><Icon name="lucide:plus" aria-hidden="true" />{{ $t('admin-content.postList.newPost') }}</NuxtLink
+      >
+    </header>
     <ClientOnly>
-      <div v-if="isLoggedIn">
-        <form class="admin-posts__filters" @submit.prevent="resetPage">
-          <NuxtLink to="/admin/posts/new">{{ $t('admin-content.postList.newPost') }}</NuxtLink>
+      <div v-if="isLoggedIn" class="admin-posts__body">
+        <form class="admin-card admin-toolbar admin-posts__filters" @submit.prevent="resetPage">
           <input
             v-model="search"
+            class="admin-posts__search"
             :placeholder="$t('admin-content.postList.searchPlaceholder')"
             :aria-label="$t('admin-content.postList.searchPlaceholder')"
           />
@@ -54,7 +59,7 @@
           <button :aria-busy="pending" type="submit" :disabled="pending">
             {{ $t('admin-content.postList.search') }}
           </button>
-          <button type="button" :disabled="pending" @click="clearFilters">
+          <button type="button" class="admin-btn admin-btn--ghost" :disabled="pending" @click="clearFilters">
             {{ $t('admin-content.postList.clearFilters') }}
           </button>
         </form>
@@ -66,7 +71,11 @@
           {{ error }} <button type="button" @click="load">{{ $t('admin-content.postList.retry') }}</button>
         </p>
         <p v-if="pending" role="status">{{ $t('admin-content.postList.loading') }}</p>
-        <div class="admin-posts__batch" role="group" :aria-label="$t('admin-content.postList.batchGroup')">
+        <div
+          class="admin-toolbar admin-posts__batch"
+          role="group"
+          :aria-label="$t('admin-content.postList.batchGroup')"
+        >
           <label
             ><input
               ref="pageToggle"
@@ -118,12 +127,12 @@
         </p>
         <p v-if="selectionError" role="alert">{{ selectionError }}</p>
         <div
-          class="admin-posts__table"
+          class="admin-card admin-posts__table"
           role="region"
           :aria-label="$t('admin-content.postList.tableRegion')"
           tabindex="0"
         >
-          <table>
+          <table class="admin-table">
             <thead>
               <tr>
                 <th>{{ $t('admin-content.postList.colTitle') }}</th>
@@ -148,7 +157,9 @@
                   }}
                 </td>
                 <td :data-label="$t('admin-content.postList.colStatus')">
-                  {{ $t(`admin-content.postStatus.${post.deleted ? 'trash' : post.status}`) }}
+                  <span class="admin-badge" :class="statusTone(post)">{{
+                    $t(`admin-content.postStatus.${post.deleted ? 'trash' : post.status}`)
+                  }}</span>
                 </td>
                 <td :data-label="$t('admin-content.postList.colTaxonomy')">
                   {{ $t(`admin-content.postCategory.${post.category === 'tech' ? 'tech' : 'life'}`) }} / {{ post.folder
@@ -158,18 +169,25 @@
                   {{ formatDateTime(post.updatedAt, { hour12: false }) }}
                 </td>
                 <td :data-label="$t('admin-content.postList.colActions')">
-                  <NuxtLink v-if="!post.deleted" :to="`/admin/posts/${post.id}`">{{
+                  <NuxtLink v-if="!post.deleted" class="admin-btn admin-btn--sm" :to="`/admin/posts/${post.id}`">{{
                     $t('admin-content.postList.edit')
                   }}</NuxtLink
                   ><button
                     v-if="post.status !== 'archived' && !post.deleted"
                     type="button"
+                    class="admin-btn admin-btn--sm admin-btn--ghost"
                     :disabled="navigationDisabled"
                     @click="archive(post)"
                   >
                     {{ $t('admin-content.postList.archive') }}
                   </button>
-                  <button v-else type="button" :disabled="navigationDisabled" @click="restorePost(post)">
+                  <button
+                    v-else
+                    type="button"
+                    class="admin-btn admin-btn--sm admin-btn--ghost"
+                    :disabled="navigationDisabled"
+                    @click="restorePost(post)"
+                  >
                     {{ $t('admin-content.postList.restore') }}
                   </button>
                 </td>
@@ -178,45 +196,13 @@
           </table>
         </div>
         <p v-if="!pending && !error && !items.length">{{ $t('admin-content.postList.empty') }}</p>
-        <nav class="admin-posts__pagination" :aria-label="$t('admin-content.postList.pagination')">
-          <button type="button" :disabled="navigationDisabled || page <= 1" @click="goToPage(page - 1)">
-            {{ $t('admin-content.postList.prevPage') }}
-          </button>
-          <template v-for="(entry, index) in pageEntries" :key="index">
-            <span v-if="entry === 'ellipsis'" aria-hidden="true">…</span>
-            <button
-              v-else
-              type="button"
-              :aria-label="$t('admin-content.postList.pageLabel', { page: entry })"
-              :aria-current="entry === page ? 'page' : undefined"
-              :disabled="navigationDisabled"
-              @click="goToPage(entry)"
-            >
-              {{ entry }}
-            </button>
-          </template>
-          <button type="button" :disabled="navigationDisabled || page >= totalPages" @click="goToPage(page + 1)">
-            {{ $t('admin-content.postList.nextPage') }}
-          </button>
-          <span role="status" aria-live="polite">{{
-            $t('admin-content.postList.pageStatus', { page, totalPages, total })
-          }}</span>
-          <form class="admin-posts__jump" @submit.prevent="jumpToPage">
-            <label for="admin-posts-page">{{ $t('admin-content.postList.jumpLabel') }}</label>
-            <input
-              id="admin-posts-page"
-              v-model="jumpPage"
-              type="number"
-              inputmode="numeric"
-              min="1"
-              :max="totalPages"
-              step="1"
-              required
-              :disabled="navigationDisabled"
-            />
-            <button type="submit" :disabled="navigationDisabled">{{ $t('admin-content.postList.jump') }}</button>
-          </form>
-        </nav>
+        <AdminPostListPagination
+          :page="page"
+          :total-pages="totalPages"
+          :total="total"
+          :disabled="navigationDisabled"
+          @go="goToPage"
+        />
         <AdminPostBatch
           v-model:open="batch.open.value"
           v-model:acknowledgement="batch.acknowledgement.value"
@@ -281,6 +267,11 @@ const api = useAdminApi()
 const route = useRoute()
 const router = useRouter()
 const items = ref<Row[]>([])
+// 状态徽章的辅助色：已发布绿、草稿橙、回收站红，归档保持中性
+function statusTone(post: Row) {
+  if (post.deleted) return 'is-danger'
+  return post.status === 'published' ? 'is-success' : post.status === 'draft' ? 'is-warning' : ''
+}
 const total = ref(0)
 const page = ref(1)
 const pageSize = 20
@@ -288,21 +279,8 @@ const pageSize = 20
 const filterPageSize = 100
 /** 全选过程中检测到筛选结果变化：提示文案可直接展示，与读取失败区分 */
 class FilterChangedError extends Error {}
-const jumpPage = ref<number | string>(1)
 const pageToggle = ref<HTMLInputElement | null>(null)
 const totalPages = computed(() => Math.max(1, Math.ceil(total.value / pageSize)))
-const pageEntries = computed(() => {
-  const pages = new Set([1, totalPages.value])
-  for (let value = Math.max(1, page.value - 2); value <= Math.min(totalPages.value, page.value + 2); value++)
-    pages.add(value)
-  const entries: (number | 'ellipsis')[] = []
-  for (const value of [...pages].sort((a, b) => a - b)) {
-    const previous = entries.at(-1)
-    if (typeof previous === 'number' && value - previous > 1) entries.push('ellipsis')
-    entries.push(value)
-  }
-  return entries
-})
 const search = ref('')
 const status = ref('')
 const category = ref('')
@@ -435,7 +413,6 @@ function syncQuery() {
   order.value = nextOrder
   const value = Number(text('page'))
   page.value = Number.isSafeInteger(value) && value > 0 ? value : 1
-  jumpPage.value = page.value
   filterKey = nextKey
   appliedQuery = { ...criteria, sort: nextSort, order: nextOrder }
 }
@@ -479,9 +456,6 @@ function pageQuery(value: number) {
   for (const [key, value] of Object.entries(appliedQuery)) if (value) query[key] = value
   if (value > 1) query.page = String(value)
   return query
-}
-function jumpToPage() {
-  goToPage(Number(jumpPage.value))
 }
 function clearFilters() {
   search.value = status.value = category.value = folder.value = tag.value = ''
@@ -596,93 +570,70 @@ onBeforeUnmount(() => {
   min-width: 0;
   overflow-wrap: anywhere;
 }
-.admin-posts h1 {
-  font-size: 1.6rem;
-  margin-bottom: 1rem;
-}
-.admin-posts__filters,
-.admin-posts__batch,
-.admin-posts__pagination {
+.admin-posts__body {
   display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 0.75rem;
-  margin-block: 1rem;
+  flex-direction: column;
+  gap: 0.875rem;
 }
-.admin-posts__jump {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 0.5rem;
+.admin-posts__filters {
+  padding: 0.75rem;
 }
-.admin-posts__jump input {
-  width: 5rem;
+.admin-posts__search {
+  flex: 1 1 14rem;
 }
-.admin-posts__help {
+.admin-posts__batch {
+  padding: 0 0.25rem;
   color: var(--text-muted);
   font-size: 0.875rem;
+
+  label {
+    display: inline-flex;
+    align-items: center;
+  }
 }
-.admin-posts button[aria-current='page'] {
-  border-color: var(--accent);
-  font-weight: 700;
-  text-decoration: underline;
-  text-underline-offset: 0.2em;
-}
-.admin-posts :is(button, input, select):focus-visible {
-  outline: 2px solid var(--accent);
-  outline-offset: 3px;
-}
-.admin-posts button:disabled {
-  opacity: 0.5;
-}
-.admin-posts a {
-  color: var(--accent);
-  margin-right: 0.75rem;
-}
-.admin-posts button,
-.admin-posts input,
-.admin-posts select {
-  min-width: 0;
-  max-width: 100%;
-  background: var(--surface-2);
-  color: var(--text-main);
-  border: 1px solid var(--border);
-  border-radius: 0.4rem;
-  padding: 0.5rem;
-}
-.admin-posts button {
-  white-space: normal;
-  overflow-wrap: anywhere;
+.admin-posts__help {
+  margin: -0.5rem 0 0;
+  padding: 0 0.25rem;
+  color: var(--text-soft);
+  font-size: 0.75rem;
 }
 .admin-posts small {
   display: block;
-  color: var(--text-muted);
-  margin-top: 0.4rem;
+  margin-top: 0.25rem;
+  color: var(--text-soft);
+  font-size: 0.75rem;
 }
 .admin-posts__table {
   min-width: 0;
   max-width: 100%;
   overflow-x: auto;
-}
-.admin-posts__table:focus-visible {
-  outline: 2px solid var(--accent);
-  outline-offset: 3px;
-}
-.admin-posts table {
-  border-collapse: collapse;
-  width: 100%;
-}
-.admin-posts td,
-.admin-posts th {
-  padding: 0.8rem;
-  border-bottom: 1px solid var(--border);
-  text-align: left;
+  padding: 0.25rem 0.5rem;
+
+  &:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 3px;
+  }
+  td:first-child {
+    font-weight: 500;
+  }
+  td:last-child {
+    white-space: nowrap;
+  }
+  td:last-child > * + * {
+    margin-left: 0.375rem;
+  }
 }
 @media (max-width: 700px) {
   .admin-posts__filters > *,
   .admin-posts__batch select,
   .admin-posts__batch button {
     width: 100%;
+  }
+  .admin-posts__table {
+    padding: 0;
+    border: 0;
+    background: none;
+    box-shadow: none;
   }
   .admin-posts table,
   .admin-posts tbody,
@@ -694,23 +645,22 @@ onBeforeUnmount(() => {
     display: none;
   }
   .admin-posts tr {
-    margin: 1rem 0;
-    padding: 1rem;
-    border: 1px solid var(--border);
-    border-radius: 0.85rem;
-    background: var(--surface-2);
+    margin: 0 0 0.75rem;
+    padding: 0.875rem 1rem;
+    border: 1px solid var(--admin-card-border);
+    border-radius: var(--admin-radius-card);
+    background: var(--admin-card-bg);
   }
   .admin-posts td {
+    padding: 0.375rem 0;
     border: 0;
-    padding: 0.45rem 0;
-    overflow-wrap: anywhere;
   }
   .admin-posts td::before {
     content: attr(data-label);
     display: block;
+    margin-bottom: 0.125rem;
+    color: var(--text-soft);
     font-size: 0.75rem;
-    color: var(--text-muted);
-    margin-bottom: 0.25rem;
   }
   .admin-posts td:first-child {
     font-weight: 600;

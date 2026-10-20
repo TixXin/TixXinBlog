@@ -4,7 +4,9 @@
 -->
 <template>
   <section class="maintenance">
-    <h1>{{ t('admin-system.maintenance.title') }}</h1>
+    <header class="admin-page-header">
+      <h1>{{ t('admin-system.maintenance.title') }}</h1>
+    </header>
     <ClientOnly>
       <section :aria-label="t('admin-system.maintenance.diagnostics.title')">
         <h2>{{ t('admin-system.maintenance.diagnostics.title') }}</h2>
@@ -413,93 +415,91 @@ function chooseFile(event: Event) {
 }
 </script>
 <style scoped>
-pre {
-  white-space: pre-wrap;
-  overflow-wrap: anywhere;
-  padding: 0.75rem;
-  background: var(--surface-2);
-  border-radius: 0.5rem;
-  font-size: 0.8rem;
-}
 .maintenance {
+  display: flex;
+  flex-direction: column;
+  gap: var(--admin-gap);
   min-width: 0;
+  overflow-wrap: anywhere;
+}
+/* 顶层区块为卡片，作业详情内的子区块为浅底次级卡片 */
+.maintenance > section {
+  min-width: 0;
+  padding: 1.25rem;
+  border: 1px solid var(--admin-card-border);
+  border-radius: var(--admin-radius-card);
+  background: var(--admin-card-bg);
+  box-shadow: var(--admin-card-shadow);
+}
+.maintenance section section {
+  margin-block: 0.75rem;
+  padding: 0.875rem 1rem;
+  border: 1px solid var(--border-soft);
+  border-radius: 0.75rem;
+  background: var(--surface-2);
+}
+h2 {
+  margin: 0 0 0.75rem;
+  font-size: 1rem;
+  font-weight: 600;
+}
+p {
+  margin-block: 0.5rem;
+  color: var(--text-muted);
+  font-size: 0.875rem;
+}
+pre {
+  padding: 0.75rem;
+  border-radius: 0.5rem;
+  background: var(--surface-2);
+  font-size: 0.8rem;
+  white-space: pre-wrap;
   overflow-wrap: anywhere;
 }
 .maintenance__actions {
   display: flex;
   flex-wrap: wrap;
   gap: 0.5rem;
-  margin-block: 0.5rem;
-}
-.maintenance__actions button {
-  margin: 0;
+  margin-block: 0.75rem;
 }
 .maintenance__field {
   display: grid;
-  gap: 0.5rem;
+  gap: 0.375rem;
   min-width: 0;
+  color: var(--text-muted);
+  font-size: 0.875rem;
+  font-weight: 500;
 }
 .maintenance__field input,
 .maintenance__field select {
   width: 100%;
-  min-width: 0;
-}
-h1 {
-  font-size: 1.6rem;
-}
-h2 {
-  font-size: 1.2rem;
-  margin-bottom: 0.75rem;
-}
-section {
-  padding: 1rem;
-  margin-block: 1rem;
-  border: 1px solid var(--border);
-  border-radius: 0.75rem;
 }
 label {
   display: block;
-  margin-block: 0.8rem;
-}
-p {
-  margin-block: 0.65rem;
-  color: var(--text-muted);
-}
-input,
-select,
-button {
-  max-width: 100%;
-  padding: 0.6rem;
-  background: var(--surface-2);
-  color: var(--text-main);
-  border: 1px solid var(--border);
-  border-radius: 0.4rem;
+  margin-block: 0.75rem;
 }
 button {
-  margin: 0.4rem 0.5rem 0.4rem 0;
-  min-width: 0;
-  white-space: normal;
-  overflow-wrap: anywhere;
+  margin: 0.25rem 0.5rem 0.25rem 0;
 }
-button:disabled {
-  opacity: 0.5;
+.maintenance__actions button {
+  margin: 0;
 }
 a {
-  color: var(--accent);
+  color: var(--accent-text);
 }
 ul {
   padding-left: 1.2rem;
 }
 details {
-  margin-block: 1rem;
+  margin-block: 0.75rem;
 }
 summary {
+  color: var(--text-muted);
   cursor: var(--interaction-cursor, pointer);
 }
 @media (max-width: 760px) {
-  .maintenance,
   .maintenance > section {
-    padding: 0.75rem;
+    padding: 1rem;
   }
 }
 </style>

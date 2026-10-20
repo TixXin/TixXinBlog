@@ -395,34 +395,16 @@ label {
 .gallery-editor__row > label {
   flex: 1 1 180px;
 }
-input,
-textarea,
-select,
-button {
-  color: var(--text-main);
-  background: var(--surface-2);
-  border: 1px solid var(--border);
-  border-radius: 0.5rem;
-  padding: 0.65rem;
-  max-width: 100%;
-}
+
 input,
 textarea,
 select {
   width: 100%;
-  min-width: 0;
 }
 textarea {
   resize: vertical;
 }
-button {
-  min-height: 44px;
-  cursor: var(--interaction-cursor, pointer);
-}
-button:disabled {
-  opacity: 0.5;
-  cursor: var(--interaction-cursor, not-allowed);
-}
+
 p {
   color: var(--text-muted);
   line-height: 1.7;

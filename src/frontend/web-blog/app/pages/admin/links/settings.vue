@@ -1,7 +1,11 @@
 <!-- @file settings.vue @description 友链须知公开配置，维护规则及完整恢复副本 -->
 <template>
   <section class="link-settings">
-    <h1>{{ $t('admin-media.linkSettings.title') }}</h1>
+    <header class="admin-page-header">
+      <div>
+        <h1>{{ $t('admin-media.linkSettings.title') }}</h1>
+      </div>
+    </header>
     <AdminBackLink to="/admin/links">{{ $t('admin-media.linkSettings.back') }}</AdminBackLink>
     <p>{{ $t('admin-media.linkSettings.intro') }}</p>
     <ClientOnly
@@ -105,11 +109,7 @@ const {
   gap: 1rem;
   overflow-wrap: anywhere;
 }
-h1 {
-  font-size: 1.5rem;
-  font-weight: 700;
-}
-a {
+a:not(.admin-btn) {
   color: var(--accent);
 }
 p {
@@ -127,21 +127,8 @@ label {
   gap: 0.5rem;
   margin-block: 0.5rem;
 }
-textarea,
-button {
-  max-width: 100%;
-  min-width: 0;
-  min-height: 44px;
-  color: var(--text-main);
-  background: var(--surface-2);
-  padding: 0.5rem 0.75rem;
-  border: 1px solid var(--border);
-  border-radius: 0.5rem;
-}
+
 textarea {
   width: 100%;
-}
-button:disabled {
-  opacity: 0.5;
 }
 </style>

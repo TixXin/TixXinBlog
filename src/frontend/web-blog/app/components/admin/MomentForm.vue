@@ -366,34 +366,16 @@ label {
 .moment-editor__row > label {
   flex: 1 1 180px;
 }
-input,
-textarea,
-select,
-button {
-  color: var(--text-main);
-  background: var(--surface-2);
-  border: 1px solid var(--border);
-  border-radius: 0.5rem;
-  padding: 0.65rem;
-  max-width: 100%;
-}
+
 input,
 textarea,
 select {
   width: 100%;
-  min-width: 0;
 }
 textarea {
   resize: vertical;
 }
-button {
-  min-height: 44px;
-  cursor: var(--interaction-cursor, pointer);
-}
-button:disabled {
-  cursor: var(--interaction-cursor, not-allowed);
-  opacity: 0.55;
-}
+
 .moment-editor__check {
   display: flex;
   align-items: center;

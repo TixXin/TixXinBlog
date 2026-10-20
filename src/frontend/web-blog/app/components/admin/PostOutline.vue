@@ -60,37 +60,11 @@ label {
   gap: 0.4rem;
   color: var(--text-muted);
 }
-select,
-button {
-  min-height: 44px;
-  border: 1px solid var(--border);
-  border-radius: 0.5rem;
-  padding: 0.6rem;
-  font: inherit;
-  color: var(--text-main);
-  background: var(--surface-2);
-}
-select:focus-visible,
-button:focus-visible {
-  outline: 2px solid var(--accent);
-  outline-offset: 2px;
-}
-select:disabled,
-button:disabled {
-  opacity: 0.5;
-}
+
 select {
   width: 100%;
-  min-width: 0;
-  max-width: 100%;
 }
-button {
-  display: inline-flex;
-  gap: 0.4rem;
-  align-items: center;
-  color: white;
-  background: var(--accent);
-}
+
 p {
   flex-basis: 100%;
   margin: 0;

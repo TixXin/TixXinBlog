@@ -177,19 +177,9 @@ h3 {
 }
 textarea {
   width: 100%;
-  color: var(--text-main);
-  background: var(--surface-1);
-  padding: 0.75rem;
-  border: 1px solid var(--border);
-  border-radius: 0.5rem;
 }
 button {
-  padding: 0.65rem;
   margin: 0.5rem 0.5rem 0.5rem 0;
-  border: 1px solid var(--border);
-  border-radius: 0.5rem;
-  color: var(--text-main);
-  background: var(--surface-1);
 }
 @media (max-width: 700px) {
   .post-conflict__columns {

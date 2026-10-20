@@ -490,28 +490,12 @@ p {
   color: var(--text-muted);
   margin: 0.5rem 0;
 }
-input,
-textarea,
-select,
-button {
-  padding: 0.55rem;
-  color: var(--text-main);
-  background: var(--surface-1);
-  border: 1px solid var(--border);
-  border-radius: 0.5rem;
-  min-width: 0;
-  max-width: 100%;
-}
+
 textarea {
   width: 100%;
   resize: vertical;
 }
-button:disabled {
-  opacity: 0.5;
-}
-input[type='file'] {
-  max-width: 100%;
-}
+
 ul {
   list-style: none;
   padding: 0;

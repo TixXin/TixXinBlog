@@ -4,7 +4,7 @@
 -->
 <template>
   <section class="admin-flashes">
-    <header>
+    <header class="admin-page-header">
       <div>
         <h1>{{ $t('admin-content.flashes.title') }}</h1>
         <p>{{ $t('admin-content.flashes.intro') }}</p>
@@ -215,10 +215,6 @@ function formatTime(value: string) {
   outline: 2px solid var(--accent);
   outline-offset: 3px;
 }
-h1 {
-  font-size: 1.6rem;
-  font-weight: 700;
-}
 h2 {
   font-size: 1.15rem;
   margin-bottom: 1rem;
@@ -242,26 +238,7 @@ time,
 .admin-flashes__tags {
   color: var(--text-muted);
 }
-button,
-input,
-select {
-  min-width: 0;
-  max-width: 100%;
-  color: var(--text-main);
-  background: var(--surface-2);
-  border: 1px solid var(--border);
-  border-radius: 0.5rem;
-  padding: 0.6rem 0.8rem;
-}
-button {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.4rem;
-  cursor: var(--interaction-cursor, pointer);
-}
-button:disabled {
-  opacity: 0.5;
-}
+
 .admin-flashes__panel,
 .admin-flashes__list > li {
   border: 1px solid var(--border);
@@ -293,7 +270,7 @@ time {
 .admin-flashes__actions {
   margin-top: 1rem;
 }
-a {
+a:not(.admin-btn) {
   color: var(--accent);
 }
 @media (max-width: 600px) {

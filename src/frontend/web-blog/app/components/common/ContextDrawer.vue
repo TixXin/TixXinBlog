@@ -14,7 +14,7 @@
       @click="openFromButton"
     >
       <Icon :name="icon" size="18" />
-      <span>{{ label }}</span>
+      <span>{{ triggerLabel ?? label }}</span>
     </button>
     <Teleport to="body">
       <Transition name="context-drawer">
@@ -49,7 +49,15 @@
   </div>
 </template>
 <script setup lang="ts">
-withDefaults(defineProps<{ label: string; icon?: string }>(), { icon: 'lucide:menu' })
+withDefaults(
+  defineProps<{
+    label: string
+    icon?: string
+    /** 入口按钮的文字，默认与抽屉标题相同（如底部标签栏的「更多」打开「管理导航」） */
+    triggerLabel?: string
+  }>(),
+  { icon: 'lucide:menu', triggerLabel: undefined },
+)
 const open = defineModel<boolean>('open', { default: false })
 const dialog = ref<HTMLElement | null>(null)
 function openFromButton(event: MouseEvent) {

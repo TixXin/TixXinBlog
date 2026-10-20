@@ -4,8 +4,12 @@
 -->
 <template>
   <section class="admin-audit">
-    <h1>{{ t('admin-system.audit.title') }}</h1>
-    <p>{{ t('admin-system.audit.intro') }}</p>
+    <header class="admin-page-header">
+      <div>
+        <h1>{{ t('admin-system.audit.title') }}</h1>
+        <p>{{ t('admin-system.audit.intro') }}</p>
+      </div>
+    </header>
     <ClientOnly>
       <form class="admin-audit__filters" @submit.prevent="navigate(1)">
         <label
@@ -93,9 +97,6 @@ const {
   align-items: center;
   gap: 0.75rem;
 }
-h1 {
-  font-size: 1.6rem;
-}
 p {
   margin-block: 0.75rem;
   color: var(--text-muted);
@@ -112,22 +113,7 @@ label {
   min-width: 0;
   gap: 0.5rem;
 }
-button,
-select,
-input {
-  background: var(--surface-2);
-  color: var(--text-main);
-  border: 1px solid var(--border);
-  border-radius: 0.5rem;
-  padding: 0.6rem;
-  max-width: 100%;
-  min-width: 0;
-  min-height: 44px;
-  box-sizing: border-box;
-}
-button:disabled {
-  opacity: 0.5;
-}
+
 @media (max-width: 640px) {
   .admin-audit__filters > label {
     flex: 1 1 100%;

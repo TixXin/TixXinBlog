@@ -1,7 +1,11 @@
 <!-- @file settings.vue @description 图库器材资料维护，不由作品统计或上传文件推测设备 -->
 <template>
   <section class="gallery-settings">
-    <h1>{{ $t('admin-media.gallerySettings.title') }}</h1>
+    <header class="admin-page-header">
+      <div>
+        <h1>{{ $t('admin-media.gallerySettings.title') }}</h1>
+      </div>
+    </header>
     <AdminBackLink to="/admin/gallery">{{ $t('admin-media.gallerySettings.back') }}</AdminBackLink>
     <p>{{ $t('admin-media.gallerySettings.intro') }}</p>
     <ClientOnly
@@ -122,11 +126,7 @@ const {
   gap: 1rem;
   overflow-wrap: anywhere;
 }
-h1 {
-  font-size: 1.5rem;
-  font-weight: 700;
-}
-a {
+a:not(.admin-btn) {
   color: var(--accent);
 }
 p {
@@ -144,22 +144,7 @@ label {
   gap: 0.5rem;
   margin-block: 0.5rem;
 }
-input,
-textarea,
-select,
-button {
-  max-width: 100%;
-  min-width: 0;
-  min-height: 44px;
-  color: var(--text-main);
-  background: var(--surface-2);
-  padding: 0.5rem 0.75rem;
-  border: 1px solid var(--border);
-  border-radius: 0.5rem;
-}
-button:disabled {
-  opacity: 0.5;
-}
+
 .gallery-settings__item {
   border-bottom: 1px solid var(--border);
   padding-bottom: 1rem;

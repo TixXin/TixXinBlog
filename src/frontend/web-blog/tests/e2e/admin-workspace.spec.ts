@@ -90,7 +90,7 @@ for (const width of [320, 390, 760, 761]) {
     await page.goto('/admin/gallery/new')
     await expect(page.getByLabel('作品标题', { exact: true })).toBeEnabled()
     if (width <= 760) {
-      const open = page.getByRole('button', { name: '管理导航', exact: true })
+      const open = page.getByRole('button', { name: '更多', exact: true })
       await open.click()
       const drawer = page.getByRole('dialog', { name: '管理导航', exact: true })
       await expect(drawer).toBeVisible()
@@ -115,7 +115,7 @@ for (const width of [320, 390, 760, 761]) {
       await expect(page.getByRole('button', { name: '保存并生效', exact: true })).toBeInViewport()
     } else {
       await expect(page.locator('.admin-sidebar')).toBeVisible()
-      await expect(page.getByRole('button', { name: '管理导航', exact: true })).not.toBeVisible()
+      await expect(page.getByRole('button', { name: '更多', exact: true })).not.toBeVisible()
     }
     await noOverflow(page)
     await captureMotion(page, testInfo, `admin-${width}.png`)

@@ -1,8 +1,12 @@
 <!-- @file flash-comments.vue @description 跨闪念审核评论：按状态筛选、单条通过/隐藏/删除与当前页批量操作，以提交时状态做冲突保护 -->
 <template>
   <section class="flash-comments">
-    <h1>{{ t('admin-content.flashComments.title') }}</h1>
-    <p>{{ t('admin-content.flashComments.intro') }}</p>
+    <header class="admin-page-header">
+      <div>
+        <h1>{{ t('admin-content.flashComments.title') }}</h1>
+        <p>{{ t('admin-content.flashComments.intro') }}</p>
+      </div>
+    </header>
     <nav class="flash-comments__actions" :aria-label="t('admin-content.flashComments.filters')">
       <NuxtLink
         v-for="(label, value) in labels"
@@ -301,10 +305,6 @@ onBeforeUnmount(() => {
 .flash-comments {
   min-width: 0;
 }
-h1 {
-  font-size: 1.75rem;
-  font-weight: 700;
-}
 p,
 blockquote {
   margin: 0.75rem 0;
@@ -342,7 +342,7 @@ li.is-selected {
   width: 1.1rem;
   height: 1.1rem;
 }
-a {
+a:not(.admin-btn) {
   color: var(--accent);
   overflow-wrap: anywhere;
 }

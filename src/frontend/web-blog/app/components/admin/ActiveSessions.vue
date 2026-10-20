@@ -106,18 +106,6 @@ li {
   border-radius: 0.75rem;
 }
 button {
-  max-width: 100%;
-  min-width: 0;
-  white-space: normal;
-  overflow-wrap: anywhere;
-  background: var(--surface-2);
-  color: var(--text-main);
-  border: 1px solid var(--border);
-  border-radius: 0.5rem;
-  padding: 0.65rem;
   margin: 0.25rem;
-}
-button:disabled {
-  opacity: 0.5;
 }
 </style>

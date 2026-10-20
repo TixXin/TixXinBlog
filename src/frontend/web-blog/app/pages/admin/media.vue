@@ -4,8 +4,12 @@
 -->
 <template>
   <section class="admin-media">
-    <h1>{{ $t('admin-media.mediaPage.title') }}</h1>
-    <p>{{ $t('admin-media.mediaPage.intro') }}</p>
+    <header class="admin-page-header">
+      <div>
+        <h1>{{ $t('admin-media.mediaPage.title') }}</h1>
+        <p>{{ $t('admin-media.mediaPage.intro') }}</p>
+      </div>
+    </header>
     <ClientOnly><AdminMediaWorkspace /></ClientOnly>
   </section>
 </template>
@@ -18,10 +22,6 @@ useSeoMeta({ title: () => t('admin-media.mediaPage.title'), robots: 'noindex, no
 .admin-media {
   min-width: 0;
   max-width: 100%;
-}
-h1 {
-  font-size: 1.6rem;
-  font-weight: 700;
 }
 p {
   color: var(--text-muted);

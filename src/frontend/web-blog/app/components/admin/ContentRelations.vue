@@ -176,20 +176,7 @@ label {
   min-width: 0;
   max-width: 100%;
 }
-input,
-select,
-button {
-  min-height: 44px;
-  max-width: 100%;
-  padding: 0.45rem 0.65rem;
-  border: 1px solid var(--border);
-  border-radius: 0.4rem;
-  background: var(--surface-2);
-  color: var(--text-main);
-}
-input {
-  min-width: 0;
-}
+
 .content-relations__candidates {
   max-height: 22rem;
   overflow: auto;

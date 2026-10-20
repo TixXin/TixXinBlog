@@ -159,17 +159,7 @@ label {
   gap: 0.5rem;
   margin-block: 0.75rem;
 }
-input,
-textarea,
-button {
-  min-width: 0;
-  max-width: 100%;
-  background: var(--surface-2);
-  color: var(--text-main);
-  border: 1px solid var(--border);
-  border-radius: 0.5rem;
-  padding: 0.65rem;
-}
+
 .about-fields__toggle {
   display: flex;
   align-items: center;
@@ -179,8 +169,5 @@ button {
   flex-wrap: wrap;
   gap: 0.5rem;
   margin-block: 0.75rem;
-}
-button:disabled {
-  opacity: 0.5;
 }
 </style>

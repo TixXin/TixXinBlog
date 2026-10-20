@@ -460,18 +460,7 @@ label {
 .project-editor__row {
   margin-block: 0.65rem;
 }
-input,
-textarea,
-select,
-button {
-  max-width: 100%;
-  min-width: 0;
-  color: var(--text-main);
-  background: var(--surface-2);
-  border: 1px solid var(--border);
-  border-radius: 0.5rem;
-  padding: 0.65rem;
-}
+
 input,
 textarea,
 select {
@@ -480,14 +469,7 @@ select {
 textarea {
   resize: vertical;
 }
-button {
-  min-height: 44px;
-  cursor: var(--interaction-cursor, pointer);
-}
-button:disabled {
-  opacity: 0.5;
-  cursor: var(--interaction-cursor, not-allowed);
-}
+
 p {
   color: var(--text-muted);
   line-height: 1.7;
