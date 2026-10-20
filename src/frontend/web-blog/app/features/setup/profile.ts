@@ -76,6 +76,8 @@ export type SetupProfileProblem =
   | 'avatarUrlInvalid'
   | 'launchedAtInvalid'
   | 'socialUrlInvalid'
+  /** 本地上传的图片无法读取或压缩后仍过大（由头像选择器上报，不经 validateProfile） */
+  | 'avatarUnreadable'
 
 /** 返回第一处问题；全部通过时为 null */
 export function validateProfile(
