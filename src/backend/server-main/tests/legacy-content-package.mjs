@@ -1,5 +1,11 @@
-/** @file legacy-content-package.mjs @description 维护回归显式构造v13之前的真实字段集，不放宽生产解析器 */
+/** @file legacy-content-package.mjs @description 维护回归显式构造v14之前的真实字段集，不放宽生产解析器 */
+export function stripV14Fields(value) {
+  // v14 才引入的搜索引擎收录开关：旧包必须显式移除，解析器按允许收录读取。
+  if (value.site) delete value.site.searchIndexing
+  return value
+}
 export function stripV13Fields(value) {
+  stripV14Fields(value)
   // v13 才引入的闪念评论审核状态：旧包必须显式移除，解析器按已发布读取。
   for (const flash of value.flashes ?? []) for (const comment of flash.comments ?? []) delete comment.status
   return value

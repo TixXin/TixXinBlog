@@ -255,6 +255,7 @@ const fields: Readonly<Record<string, MessageKey>> = {
   avatarAlt: 'audit.field.avatarAlt',
   announcement: 'audit.field.announcement',
   socials: 'audit.field.socials',
+  searchIndexing: 'audit.field.searchIndexing',
   alt: 'audit.field.alt',
   label: 'audit.field.label',
   color: 'audit.field.color',

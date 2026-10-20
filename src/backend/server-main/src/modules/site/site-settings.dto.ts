@@ -6,6 +6,7 @@ import { Transform, Type } from 'class-transformer'
 import {
   ArrayMaxSize,
   IsArray,
+  IsBoolean,
   IsIn,
   IsInt,
   IsObject,
@@ -80,6 +81,10 @@ export class SaveSiteSettingsDto extends ExpectedSiteRevisionDto {
   @ValidateIf((_object, value) => value !== undefined)
   @IsIn(['', 'online', 'idle', 'busy'])
   presenceStatus?: '' | 'online' | 'idle' | 'busy'
+  // 是否允许搜索引擎收录：缺省时沿用当前值，从未设置过的站点按允许处理
+  @ValidateIf((_object, value) => value !== undefined)
+  @IsBoolean()
+  searchIndexing?: boolean
   // 导航、页脚、每日一言、备案与版权同为后加字段：缺省时沿用当前值；跨字段规则见 site-navigation.ts
   @ValidateIf((_object, value) => value !== undefined)
   @IsArray()

@@ -237,7 +237,7 @@ API 未设置 `NODE_ENV` 时按 `production` 处理：限流生效、刷新 Cook
 
 前端生产构建通过项目 `build` 命令选择 `production-build` 配置层，隔离 `.nuxt-production/` 并显式保持 `site.env: production`。配置层名称不能被当成站点的预发布环境。运行时 `NUXT_PUBLIC_SITE_URL` 必须是实际公开 origin，不能依赖构建期缺省域名。
 
-正式站点应检查首页 canonical、robots、RSS/JSON 订阅和 sitemap 使用同一运行时地址。公开首页不能带 noindex 或整站 `Disallow: /`，管理地址继续禁止索引，并从 sitemap 排除。
+正式站点应检查首页 canonical、robots、RSS/JSON 订阅和 sitemap 使用同一运行时地址。公开首页不能带 noindex 或整站 `Disallow: /`，管理地址继续禁止索引，并从 sitemap 排除。例外是博主在后台站点设置中关闭了「允许搜索引擎收录本站」：此时全站页面输出 `noindex, nofollow`（meta 与 `X-Robots-Tag`），`robots.txt` 为整站 `Disallow: /`，sitemap 为空；该开关在经本站代理保存后立即生效，其余途径的写入最多 60 秒内生效。
 
 预发布可设置运行时 `NUXT_SITE_ENV=staging` 或 `NUXT_SITE_INDEXABLE=false`。这些设置优先于构建缺省；不要全局强制 indexable 使预发布内容可索引。使用同一产物分别检查正式与预发布配置。
 

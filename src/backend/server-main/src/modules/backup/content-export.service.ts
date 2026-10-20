@@ -140,13 +140,13 @@ export class ContentExportService {
         })
         byFlash.set(comment.flashNote.id, group)
       }
-      // 导出前补齐后加字段，v12 起总是携带完整的导航、页脚与备案配置；v13 另带闪念评论审核状态。
+      // 导出前补齐后加字段，v12 起总是携带完整的导航、页脚与备案配置；v13 另带闪念评论审核状态；v14 另带搜索引擎收录开关。
       const { announcementUpdatedAt, ...siteValues } = withPresenceDefaults(site.values)
       // 公告时间随完整数据库备份保留；内容迁入会按新配置保存时刻生成。
       void announcementUpdatedAt
       const result: ContentPackage = {
         format: 'tixxin-content',
-        version: 13,
+        version: 14,
         omittedRelations: 0,
         exportedAt: new Date().toISOString(),
         mediaIncluded,

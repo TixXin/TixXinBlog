@@ -141,7 +141,7 @@ async function source(packagePath: string) {
     assert(!bytes.toString().includes('private-unselected-folder-marker'))
     assert(!bytes.toString().includes('private-unselected-subscription-marker'))
     assert(!bytes.toString().includes('private-subscription-notes-marker'))
-    assert.equal(bundle.version, 13)
+    assert.equal(bundle.version, 14)
     assert.deepEqual(bundle.subscriptions, [], '候选文章包不夹带订阅记录')
     assert.deepEqual(bundle.folders, ['博客建设'])
     assert.deepEqual(bundle.tags.map((tag) => tag.label).sort(), ['TixXinBlog', '工程实践'].sort())

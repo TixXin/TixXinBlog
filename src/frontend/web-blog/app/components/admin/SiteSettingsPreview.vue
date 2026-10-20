@@ -44,6 +44,13 @@
       }}
     </p>
     <p>{{ t('admin-system.sitePreview.seoDescription', { text: value.seoDescription || value.description }) }}</p>
+    <p>
+      {{
+        value.searchIndexing === false
+          ? t('admin-system.sitePreview.indexingOff')
+          : t('admin-system.sitePreview.indexingOn')
+      }}
+    </p>
     <details v-if="value.about" class="site-preview__about">
       <summary>
         {{

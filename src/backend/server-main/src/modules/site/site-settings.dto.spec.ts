@@ -35,7 +35,12 @@ describe('站点写入 DTO', () => {
       presenceSignature: '持续记录',
       presenceStatus: 'online',
       launchedAt: '2026-10-18',
+      searchIndexing: false,
     })
+  })
+
+  it.each(['false', 0, 1, null, 'true'])('收录开关只接受布尔值：%j', (value) => {
+    expectDtoInvalid(SaveSiteSettingsDto, { ...site, searchIndexing: value }, 'searchIndexing', 'isBoolean')
   })
 
   it.each([

@@ -157,7 +157,7 @@ try {
   assert(exported.headers.get('content-disposition').includes('attachment'))
   assert.equal(exported.body.format, 'tixxin-content')
   const bundle = exported.body
-  assert.equal(bundle.version, 13)
+  assert.equal(bundle.version, 14)
   assert.deepEqual(bundle.site.about, about, '管理员内容包保留隐藏资料供迁入恢复')
   assert.deepEqual(bundle.projects, [])
   assert.deepEqual(bundle.links, [])
@@ -206,7 +206,12 @@ try {
   assert.equal(
     (
       await preview(
-        JSON.parse(JSON.stringify(bundle).replace('"version":13', '"version":13,"__proto__":{"polluted":true}')),
+        JSON.parse(
+          JSON.stringify(bundle).replace(
+            `"version":${bundle.version}`,
+            `"version":${bundle.version},"__proto__":{"polluted":true}`,
+          ),
+        ),
       )
     ).status,
     400,

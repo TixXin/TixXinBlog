@@ -110,7 +110,7 @@ export interface PackageGuestbook {
 }
 export interface ContentPackage {
   format: 'tixxin-content'
-  version: 13
+  version: 14
   omittedRelations: number
   exportedAt: string
   mediaIncluded: boolean
@@ -307,7 +307,7 @@ export async function parseContentPackage(buffer: Buffer): Promise<ContentPackag
   ])
   if (
     source.format !== 'tixxin-content' ||
-    ![1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13].includes(Number(source.version)) ||
+    ![1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14].includes(Number(source.version)) ||
     typeof source.version !== 'number'
   )
     throw new BadRequestException(msg('package.unsupportedVersion'))
@@ -838,12 +838,16 @@ export async function parseContentPackage(buffer: Buffer): Promise<ContentPackag
         ...(Number(source.version) >= 11 ? ['presenceLabel', 'presenceSignature', 'presenceStatus', 'launchedAt'] : []),
         // v12 起可选携带导航、页脚链接、每日一言、备案号与版权文案；v1–v11 出现即按未知字段拒绝。
         ...(Number(source.version) >= 12 ? SITE_EXTRA_KEYS : []),
+        // v14 起可选携带搜索引擎收录开关；v1–v13 出现即按未知字段拒绝。
+        ...(Number(source.version) >= 14 ? ['searchIndexing'] : []),
       ]),
       revision: 0,
     },
     'package.fieldSite',
   )
   const { revision: ignoredRevision, ...site } = siteData
+  // 不带收录开关的包来自尚无此设置的站点，那时站点一直允许收录；按 true 补齐，迁入后与来源站点行为一致。
+  site.searchIndexing ??= true
   try {
     Object.assign(site, normalizeSiteExtrasInput(site))
   } catch (error) {
@@ -956,7 +960,7 @@ export async function parseContentPackage(buffer: Buffer): Promise<ContentPackag
       if (!targets.has(`${relation.type}:${relation.id}`)) fail('package.fieldRelationTargetMissing')
   return {
     format: 'tixxin-content',
-    version: 13,
+    version: 14,
     omittedRelations,
     exportedAt: date(source.exportedAt, 'package.fieldExportedAt'),
     mediaIncluded,

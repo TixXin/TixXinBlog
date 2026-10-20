@@ -2,7 +2,7 @@
  * @file audit-description.spec.ts
  * @description 审计动作映射与摘要白名单：不把正文、密码或任意路径写入审计
  */
-import { auditActions, auditDescriptor, auditResult } from './audit-description'
+import { auditActions, auditDescriptor, auditFieldLabel, auditResult } from './audit-description'
 
 const uuid = '3f2504e0-4f89-41d3-9a0c-0305e82c3301'
 
@@ -123,6 +123,12 @@ describe('auditResult', () => {
     expect(result.summary.targetState).toBe('draft')
     expect(result.resourceId).toBe(uuid)
     expect(JSON.stringify(result.summary)).not.toContain('secret')
+  })
+
+  it('站点收录开关记为字段名并可按语言翻译，不记录取值', () => {
+    const result = auditResult({ seoTitle: '标题', searchIndexing: false, revision: 2 }, { revision: 3 })
+    expect(result.summary.fields).toEqual(['SEO 标题', '搜索引擎收录'])
+    expect(auditFieldLabel('搜索引擎收录', 'en')).toBe('Search engine indexing')
   })
 
   it('计数、审核策略与部分失败状态可表达', () => {

@@ -41,6 +41,8 @@ export interface SiteSettingsData {
   icpUrl: string
   /** 自定义版权文案，空串使用默认格式 */
   copyright: string
+  /** 是否允许搜索引擎收录本站；关闭时公开页面输出 noindex，robots.txt 禁止抓取全站 */
+  searchIndexing: boolean
   revision: number
   updatedAt: string
 }
@@ -75,8 +77,13 @@ export const defaultSiteSettings: SiteSettingsData = {
   icpNumber: '',
   icpUrl: '',
   copyright: '',
+  searchIndexing: true,
   revision: 0,
   updatedAt: '',
+}
+/** 站点级 robots 指令：关闭收录时全站 noindex；允许时不写，保留 robots 模块与页面自身的指令 */
+export function siteRobotsDirective(settings: Pick<SiteSettingsData, 'searchIndexing'>): string | undefined {
+  return settings.searchIndexing === false ? 'noindex, nofollow' : undefined
 }
 export type PresenceStatusSetting = '' | 'online' | 'idle' | 'busy'
 /** 后台可选的状态类型与公开展示时的默认文案 */

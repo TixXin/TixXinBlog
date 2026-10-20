@@ -105,3 +105,29 @@ describe('站点资料导航与页脚字段', () => {
     expect(value.quotes).toHaveLength(5)
   })
 })
+
+describe('站点搜索引擎收录开关', () => {
+  it('旧记录与旧历史缺失开关时按允许收录读取', async () => {
+    const { service } = setup({ ...base })
+    expect((await service.get(true)).searchIndexing).toBe(true)
+    expect((await service.get()).searchIndexing).toBe(true)
+    expect((await service.historical(1)).searchIndexing).toBe(true)
+  })
+
+  it('提交关闭后写入当前值与历史，旧客户端不提交时沿用当前值', async () => {
+    const { service, settings, created } = setup({ ...base })
+    const closed = await service.save(input({ searchIndexing: false }))
+    expect(closed.searchIndexing).toBe(false)
+    expect(created[0]?.data.values.searchIndexing).toBe(false)
+    settings.revision = 2
+    const kept = await service.save(input({ name: '新名称' }))
+    expect(kept.searchIndexing).toBe(false)
+    expect(settings.values.searchIndexing).toBe(false)
+  })
+
+  it('从未设置过的站点保存时补齐为允许收录', async () => {
+    const { service, settings } = setup({ ...base })
+    await service.save(input())
+    expect(settings.values.searchIndexing).toBe(true)
+  })
+})

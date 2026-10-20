@@ -17,7 +17,7 @@ const timestamp = '2026-10-01T12:00:00.000Z'
 const mediaId = 'bb2a48c1-d233-4c45-9c1e-a21e9a56fd20'
 const bundle = (): ContentPackage => ({
   format: 'tixxin-content',
-  version: 13,
+  version: 14,
   omittedRelations: 0,
   exportedAt: timestamp,
   mediaIncluded: false,
@@ -127,11 +127,13 @@ const project = (sourceId = 1): PackageProject => ({
   },
 })
 const parse = (value: unknown) => parseContentPackage(Buffer.from(JSON.stringify(value)))
+/** 不带收录开关的包解析后按允许收录补齐 */
+const indexed = (input: ContentPackage) => ({ ...input, site: { ...input.site, searchIndexing: true } })
 
 describe('内容包输入与限额', () => {
   it('读取空包并将合法时区日期统一为 UTC', async () => {
     const input = bundle()
-    expect(await parse({ ...input, exportedAt: '2026-10-01T20:00:00+08:00' })).toEqual(input)
+    expect(await parse({ ...input, exportedAt: '2026-10-01T20:00:00+08:00' })).toEqual(indexed(input))
   })
 
   it.each([Buffer.from('{'), Buffer.from([0xc3, 0x28])])('拒绝非法 JSON 或 UTF-8：%j', async (bytes) => {
@@ -152,15 +154,20 @@ describe('内容包输入与限额', () => {
   it('仍接受上一导出版本 v11 的内容包，解析结果升级为当前版本', async () => {
     // v11 不含 v12 新增的站点导航与页脚字段，其余结构一致；缺失字段由读取时补默认值。
     const input = bundle()
-    expect(await parse({ ...input, version: 11 })).toEqual(input)
+    expect(await parse({ ...input, version: 11 })).toEqual(indexed(input))
   })
 
   it('仍接受上一导出版本 v12 的内容包，解析结果升级为当前版本', async () => {
     const input = bundle()
-    expect(await parse({ ...input, version: 12 })).toEqual(input)
+    expect(await parse({ ...input, version: 12 })).toEqual(indexed(input))
   })
 
-  it.each([0, 14, -1, 12.5, '13', null])('拒绝不支持或错误类型的版本：%j', async (version) => {
+  it('仍接受上一导出版本 v13 的内容包，缺失的收录开关按允许收录读取', async () => {
+    const input = bundle()
+    expect(await parse({ ...input, version: 13 })).toEqual(indexed(input))
+  })
+
+  it.each([0, 15, -1, 12.5, '14', null])('拒绝不支持或错误类型的版本：%j', async (version) => {
     await expect(parse({ ...bundle(), version })).rejects.toThrow('不支持的内容包格式或版本')
   })
 

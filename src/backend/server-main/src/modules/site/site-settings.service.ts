@@ -26,6 +26,8 @@ export function withPresenceDefaults(values: SiteSettingsValues) {
     presenceSignature: values.presenceSignature ?? '',
     launchedAt: values.launchedAt ?? '',
     presenceStatus: values.presenceStatus ?? '',
+    // 旧记录与旧内容包没有收录开关，等同于此前一直允许搜索引擎收录
+    searchIndexing: values.searchIndexing ?? true,
   })
 }
 /** 校验导航、页脚、每日一言与备案字段；内容包解析与后台保存共用同一规则 */
@@ -104,6 +106,7 @@ export class SiteSettingsService {
         presenceSignature: input.presenceSignature ?? settings.values.presenceSignature ?? '',
         launchedAt: input.launchedAt ?? settings.values.launchedAt ?? '',
         presenceStatus: input.presenceStatus ?? settings.values.presenceStatus ?? '',
+        searchIndexing: input.searchIndexing ?? settings.values.searchIndexing ?? true,
         navigation: extras.navigation ?? current.navigation,
         footerLinks: extras.footerLinks ?? current.footerLinks,
         quotes: extras.quotes ?? current.quotes,

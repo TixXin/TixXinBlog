@@ -149,6 +149,12 @@
                 :placeholder="t('admin-system.site.page.seoDescriptionPlaceholder')"
               />
             </label>
+            <label class="admin-site__check"
+              ><input v-model="draft.searchIndexing" type="checkbox" aria-describedby="admin-site-indexing-hint" />{{
+                t('admin-system.site.page.searchIndexing')
+              }}</label
+            >
+            <p id="admin-site-indexing-hint">{{ t('admin-system.site.page.searchIndexingHint') }}</p>
           </fieldset>
           <AdminSiteNavigationFields v-model="draft" :disabled="pending || !ready" />
           <AdminAboutSettingsFields v-if="draft.about" v-model="draft.about" :disabled="pending || !ready" />
@@ -327,6 +333,11 @@ button {
 }
 button:disabled {
   opacity: 0.5;
+}
+.admin-site__check {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
 }
 .admin-site__social {
   padding: 0.75rem;

@@ -78,7 +78,7 @@ const parse = (input: unknown) => parseContentPackage(Buffer.from(JSON.stringify
 describe('平台订阅内容包 v11', () => {
   it('保存价格事实和管理备注，开始日期不会伪造更早的历史价格', async () => {
     const parsed = await parse(bundle())
-    expect(parsed.version).toBe(13)
+    expect(parsed.version).toBe(14)
     expect(parsed.subscriptions).toEqual([subscription()])
     expect(parsed.subscriptions[0]?.values.priceHistory[0]?.effectiveAt).toBe('2026-10-01T10:00:00.000Z')
   })

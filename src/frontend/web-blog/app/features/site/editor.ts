@@ -15,8 +15,16 @@ const comparable = (value: unknown): unknown => {
   return value
 }
 const equal = (left: unknown, right: unknown) => JSON.stringify(comparable(left)) === JSON.stringify(comparable(right))
-/** 导航、页脚、每日一言、备案与版权为后加字段：旧恢复副本或旧接口可能缺失，规范化时按缺省值补齐 */
-const LATER_KEYS = ['navigation', 'footerLinks', 'quotes', 'icpNumber', 'icpUrl', 'copyright'] as const
+/** 导航、页脚、每日一言、备案、版权与收录开关为后加字段：旧恢复副本或旧接口可能缺失，规范化时按缺省值补齐 */
+const LATER_KEYS = [
+  'navigation',
+  'footerLinks',
+  'quotes',
+  'icpNumber',
+  'icpUrl',
+  'copyright',
+  'searchIndexing',
+] as const
 export const normalizeSiteSettings = (value: SiteSettingsData): SiteSettingsData => {
   // 设置只含 JSON 数据；Vue 响应式代理不能直接 structuredClone。
   const copy = JSON.parse(JSON.stringify(value)) as SiteSettingsData
@@ -137,8 +145,12 @@ function isSettings(value: unknown): value is SiteSettingsData {
   if (Object.keys(item).some((key) => !Object.hasOwn(defaultSiteSettings, key) && key !== 'about')) return false
   for (const key of Object.keys(defaultSiteSettings) as (keyof SiteSettingsData)[]) {
     if (['socials', 'revision', 'navigation', 'footerLinks', 'quotes'].includes(key)) continue
-    // 后加的字符串字段在旧恢复副本中可以缺失
+    // 后加的字段在旧恢复副本中可以缺失
     if (item[key] === undefined && (LATER_KEYS as readonly string[]).includes(key)) continue
+    if (key === 'searchIndexing') {
+      if (typeof item[key] !== 'boolean') return false
+      continue
+    }
     if (typeof item[key] !== 'string' || (item[key] as string).length > 10000) return false
   }
   if (!isLaterLists(item)) return false

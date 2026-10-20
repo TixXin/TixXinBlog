@@ -72,3 +72,33 @@ describe('站点资料三方合并', () => {
     ).toBeNull()
   })
 })
+
+describe('搜索引擎收录开关', () => {
+  it('旧恢复副本缺少开关时按允许收录补齐，非布尔值拒绝载入', () => {
+    const { searchIndexing: _searchIndexing, ...legacy } = structuredClone(defaultSiteSettings)
+    const parsed = parseSiteSettingsRecovery(JSON.stringify({ draft: legacy, baseline: legacy }))
+    expect(parsed?.draft.searchIndexing).toBe(true)
+    expect(parsed?.baseline.searchIndexing).toBe(true)
+    const off = { ...structuredClone(defaultSiteSettings), searchIndexing: false }
+    expect(parseSiteSettingsRecovery(JSON.stringify({ draft: off, baseline: off }))?.draft.searchIndexing).toBe(false)
+    const invalid = { ...structuredClone(defaultSiteSettings), searchIndexing: 'false' }
+    expect(parseSiteSettingsRecovery(JSON.stringify({ draft: invalid, baseline: off }))).toBeNull()
+  })
+  it('三方合并时与其他字段一样独立保留并报告竞争', () => {
+    const base = structuredClone(defaultSiteSettings)
+    const kept = mergeSiteSettings(
+      base,
+      { ...base, searchIndexing: false },
+      { ...base, seoTitle: '新标题', revision: 2 },
+    )
+    expect(kept.conflicts).toEqual([])
+    expect(kept.merged).toMatchObject({ searchIndexing: false, seoTitle: '新标题' })
+    const raced = mergeSiteSettings(
+      { ...base, searchIndexing: false },
+      { ...base, searchIndexing: true },
+      { ...base, searchIndexing: false, revision: 2 },
+    )
+    expect(raced.merged.searchIndexing).toBe(true)
+    expect(raced.conflicts).toEqual([])
+  })
+})

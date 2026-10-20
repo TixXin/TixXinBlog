@@ -27,6 +27,8 @@ export interface SiteSettingsValues extends Partial<SiteExtrasValues> {
   launchedAt?: string
   /** 在线状态类型：空串表示有状态文案时按“在线”展示；idle 为离开，busy 为忙碌 */
   presenceStatus?: '' | 'online' | 'idle' | 'busy'
+  /** 是否允许搜索引擎收录本站；后加字段，旧记录缺失时按 true（允许）读取 */
+  searchIndexing?: boolean
 }
 @Entity({ tableName: 'site_settings' })
 export class SiteSettings {

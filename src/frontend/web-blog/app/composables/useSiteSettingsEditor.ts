@@ -37,6 +37,7 @@ export function useSiteSettingsEditor() {
       'avatarAlt',
       'seoTitle',
       'seoDescription',
+      'searchIndexing',
       'announcement',
       'socials',
       'presenceLabel',

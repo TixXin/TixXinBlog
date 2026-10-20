@@ -34,6 +34,7 @@ import { getAppManifest } from '#app/composables/manifest'
 import { hasColorMotion, runColorMotion } from '~/utils/colorMotion'
 import { isPageRequestCancellation } from '~/utils/pageRequestCancellation'
 import { twitterHandle } from '~/utils/absoluteUrl'
+import { siteRobotsDirective } from '~/features/site/settings'
 import { OG_LOCALES, isSupportedLocale } from '~~/i18n/localeOptions'
 
 // 根边界在旧布局卸载后仍存在；只消费有所有者标记的取消，真实错误继续交给 Nuxt。
@@ -77,6 +78,9 @@ useSeoMeta({
   twitterCard: 'summary',
   twitterSite: () => siteTwitter.value,
   twitterCreator: () => siteTwitter.value,
+  // 博主关闭搜索引擎收录时全站 noindex；页面自己声明的 robots（后台、预览、搜索页等）后注册，仍以页面为准且同为 noindex。
+  // 服务端 robots 模块另按同一开关输出 robots.txt、X-Robots-Tag 与站点地图（server/plugins/site-indexing.ts）。
+  robots: () => siteRobotsDirective(siteSettings.value),
 })
 useHead(() => {
   const site = siteSettings.value.name

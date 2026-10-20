@@ -36,6 +36,8 @@ const publicValues = {
   icpNumber: '沪ICP备2026001234号',
   icpUrl: 'https://beian.miit.gov.cn/',
   copyright: '© {year} {siteName}',
+  // 收录开关需要公开，前端据此输出 robots noindex 与 robots.txt 规则
+  searchIndexing: false,
 }
 // 博主隐藏的外链不得出现在公开响应中。
 const hiddenExternal: SiteNavItem = {
@@ -107,7 +109,7 @@ describe('GET /site 公开响应白名单', () => {
     expect(JSON.stringify(settings)).toBe(before)
   })
 
-  it.each(['隐藏', '旧记录缺省'] as const)('%s的关于资料不得包含正文，历史可选字段补空串', async (scenario) => {
+  it.each(['隐藏', '旧记录缺省'] as const)('%s的关于资料不得包含正文，历史可选字段补缺省值', async (scenario) => {
     const { settings, service } = fixture()
     if (scenario === '隐藏') settings.values.about!.visible = false
     else delete settings.values.about
@@ -115,6 +117,7 @@ describe('GET /site 公开响应白名单', () => {
     delete settings.values.presenceSignature
     delete settings.values.presenceStatus
     delete settings.values.launchedAt
+    delete settings.values.searchIndexing
     expect(JSON.parse(JSON.stringify(await service.get(true)))).toStrictEqual({
       ...publicValues,
       about: { visible: false, introduction: '', sections: [] },
@@ -122,6 +125,7 @@ describe('GET /site 公开响应白名单', () => {
       presenceSignature: '',
       presenceStatus: '',
       launchedAt: '',
+      searchIndexing: true,
       updatedAt: '2026-10-02T00:00:00.000Z',
     })
   })

@@ -16,7 +16,7 @@ import { parseContentPackage } from '../../../modules/backup/content-package'
 
 const bundle = () => ({
   format: 'tixxin-content',
-  version: 13,
+  version: 14,
   omittedRelations: 0,
   exportedAt: '2026-10-01T12:00:00.000Z',
   mediaIncluded: false,

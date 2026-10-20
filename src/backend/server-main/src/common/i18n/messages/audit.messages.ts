@@ -99,6 +99,7 @@ export const auditMessages = defineMessages({
   'audit.field.avatarAlt': { zh: '头像说明', en: 'Avatar description' },
   'audit.field.announcement': { zh: '公告', en: 'Announcement' },
   'audit.field.socials': { zh: '社交链接', en: 'Social links' },
+  'audit.field.searchIndexing': { zh: '搜索引擎收录', en: 'Search engine indexing' },
   'audit.field.alt': { zh: '图片说明', en: 'Image description' },
   'audit.field.label': { zh: '名称', en: 'Name' },
   'audit.field.color': { zh: '颜色', en: 'Color' },

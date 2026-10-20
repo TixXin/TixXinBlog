@@ -241,7 +241,7 @@ The `media` volume is mounted at `/app/var/media` in the API. The worker mounts 
 
 The frontend production build uses the project's `build` command to select the `production-build` configuration layer, isolate `.nuxt-production/`, and explicitly retain `site.env: production`. The layer name must not be interpreted as a staging environment for the site. At runtime, `NUXT_PUBLIC_SITE_URL` must be the actual public origin; do not rely on the build-time default domain.
 
-For a production site, verify that the homepage canonical URL, robots, RSS/JSON feeds, and sitemap all use the same runtime address. The public homepage must not carry noindex or a site-wide `Disallow: /`. Admin URLs remain blocked from indexing and excluded from the sitemap.
+For a production site, verify that the homepage canonical URL, robots, RSS/JSON feeds, and sitemap all use the same runtime address. The public homepage must not carry noindex or a site-wide `Disallow: /`. Admin URLs remain blocked from indexing and excluded from the sitemap. The exception is when the owner turns off "Allow search engines to index this site" in the admin site settings: every page then carries `noindex, nofollow` (meta tag and `X-Robots-Tag`), `robots.txt` becomes a site-wide `Disallow: /`, and the sitemap is empty. Saving through this site's proxy applies it immediately; writes that bypass it take effect within 60 seconds.
 
 For staging, set the runtime variable `NUXT_SITE_ENV=staging` or `NUXT_SITE_INDEXABLE=false`. These settings override build defaults. Do not force indexability globally and make staging content indexable. Check production and staging configurations separately using the same artifact.
 
