@@ -5,18 +5,22 @@
 -->
 <template>
   <div class="setup-page">
-    <section class="setup" aria-labelledby="setup-title">
+    <section class="setup" aria-labelledby="setup-title" :aria-busy="phase === 'checking'">
       <header class="setup__head">
-        <span class="setup__mark" aria-hidden="true"><Icon name="lucide:wand-sparkles" /></span>
-        <h1 id="setup-title">{{ t('admin-system.setup.title') }}</h1>
+        <img class="setup__mark" src="/icon.svg" alt="" width="44" height="44" />
+        <h1 id="setup-title">{{ t('admin-system.setup.welcome') }}</h1>
         <p class="setup__intro">{{ t('admin-system.setup.intro') }}</p>
       </header>
       <p v-if="previewPhase" class="setup__preview" role="note">{{ t('admin-system.setup.previewBanner') }}</p>
-      <p v-if="phase === 'checking'" class="setup__status" role="status">
-        <Icon name="lucide:loader-circle" class="setup__spin" aria-hidden="true" />{{
-          t('admin-system.setup.checking')
-        }}
-      </p>
+      <!-- 确认状态期间先占出表单轮廓，避免加载完成后卡片高度突变 -->
+      <div v-if="phase === 'checking'" class="setup-skeleton" role="status">
+        <span class="sr-only">{{ t('admin-system.setup.checking') }}</span>
+        <div v-for="index in 4" :key="index" class="setup-skeleton__field" aria-hidden="true">
+          <span class="setup-skeleton__label" />
+          <span class="setup-skeleton__input" />
+        </div>
+        <span class="setup-skeleton__button" aria-hidden="true" />
+      </div>
       <div v-else-if="phase === 'closed'" class="setup__notice" role="status">
         <p>{{ t('admin-system.setup.unavailable') }}</p>
         <NuxtLink to="/admin/login" class="btn-primary setup__action"
@@ -31,17 +35,12 @@
       </div>
       <form v-else class="setup__form" novalidate @submit.prevent="submit">
         <fieldset :disabled="submitting">
-          <!-- 令牌通常随安装链接带入：只显示读取状态，需要时再展开输入框 -->
-          <div v-if="tokenFromLink && !tokenEditing" class="setup-token">
-            <Icon name="lucide:shield-check" class="setup-token__icon" aria-hidden="true" />
-            <p id="setup-token-help">{{ t('admin-system.setup.tokenFromLink') }}</p>
-            <button type="button" class="setup-link" @click="editToken">{{ t('admin-system.setup.tokenEdit') }}</button>
-          </div>
-          <div v-show="!tokenFromLink || tokenEditing" class="setup-field">
+          <!-- 令牌随安装链接带入时不显示；链接未带或被接口拒绝时才要求手动填写 -->
+          <div v-if="showToken" class="setup-field">
             <label for="setup-token">{{ t('admin-system.setup.tokenLabel') }}</label>
             <input
               id="setup-token"
-              ref="tokenInput"
+              :ref="(el) => bindInput('token', el)"
               v-model.trim="token"
               class="input-field setup-input"
               type="text"
@@ -50,11 +49,13 @@
               spellcheck="false"
               maxlength="512"
               required
-              aria-describedby="setup-token-help"
+              :aria-invalid="invalid('token')"
+              :aria-describedby="describedBy('token', 'setup-token-help')"
             />
-            <p v-if="!tokenFromLink || tokenEditing" id="setup-token-help" class="setup-field__help">
-              {{ t('admin-system.setup.tokenHelp') }}
+            <p v-if="fieldError?.field === 'token'" id="setup-token-error" class="setup-field__error" role="alert">
+              <Icon name="lucide:circle-alert" aria-hidden="true" /><span>{{ fieldError.message }}</span>
             </p>
+            <p id="setup-token-help" class="setup-field__help">{{ t('admin-system.setup.tokenHelp') }}</p>
           </div>
 
           <fieldset class="setup-group">
@@ -63,6 +64,7 @@
               <label for="setup-username">{{ t('admin-system.setup.usernameLabel') }}</label>
               <input
                 id="setup-username"
+                :ref="(el) => bindInput('username', el)"
                 v-model.trim="username"
                 class="input-field setup-input"
                 autocomplete="username"
@@ -70,8 +72,17 @@
                 spellcheck="false"
                 maxlength="64"
                 required
-                aria-describedby="setup-username-help"
+                :aria-invalid="invalid('username')"
+                :aria-describedby="describedBy('username', 'setup-username-help')"
               />
+              <p
+                v-if="fieldError?.field === 'username'"
+                id="setup-username-error"
+                class="setup-field__error"
+                role="alert"
+              >
+                <Icon name="lucide:circle-alert" aria-hidden="true" /><span>{{ fieldError.message }}</span>
+              </p>
               <p id="setup-username-help" class="setup-field__help">{{ t('admin-system.setup.usernameHelp') }}</p>
             </div>
             <div class="setup-field">
@@ -79,6 +90,7 @@
               <div class="setup-password">
                 <input
                   id="setup-password"
+                  :ref="(el) => bindInput('password', el)"
                   v-model="password"
                   class="input-field setup-input"
                   :type="passwordVisible ? 'text' : 'password'"
@@ -86,7 +98,8 @@
                   :minlength="SETUP_PASSWORD_MIN_LENGTH"
                   :maxlength="SETUP_PASSWORD_MAX_LENGTH"
                   required
-                  aria-describedby="setup-password-rules setup-password-tip"
+                  :aria-invalid="invalid('password')"
+                  :aria-describedby="describedBy('password', 'setup-password-rules setup-password-tip')"
                 />
                 <button
                   type="button"
@@ -101,19 +114,37 @@
                   <Icon :name="passwordVisible ? 'lucide:eye-off' : 'lucide:eye'" aria-hidden="true" />
                 </button>
               </div>
+              <p
+                v-if="fieldError?.field === 'password'"
+                id="setup-password-error"
+                class="setup-field__error"
+                role="alert"
+              >
+                <Icon name="lucide:circle-alert" aria-hidden="true" /><span>{{ fieldError.message }}</span>
+              </p>
             </div>
             <div class="setup-field">
               <label for="setup-confirm">{{ t('admin-system.setup.confirmLabel') }}</label>
               <input
                 id="setup-confirm"
+                :ref="(el) => bindInput('confirm', el)"
                 v-model="confirmation"
                 class="input-field setup-input"
                 :type="passwordVisible ? 'text' : 'password'"
                 autocomplete="new-password"
                 :maxlength="SETUP_PASSWORD_MAX_LENGTH"
                 required
-                aria-describedby="setup-password-rules"
+                :aria-invalid="invalid('confirm')"
+                :aria-describedby="describedBy('confirm', 'setup-password-rules')"
               />
+              <p
+                v-if="fieldError?.field === 'confirm'"
+                id="setup-confirm-error"
+                class="setup-field__error"
+                role="alert"
+              >
+                <Icon name="lucide:circle-alert" aria-hidden="true" /><span>{{ fieldError.message }}</span>
+              </p>
             </div>
             <div class="setup-rules">
               <p id="setup-password-rules-title" class="sr-only">{{ t('admin-system.setup.passwordRules') }}</p>
@@ -139,10 +170,12 @@
                 v-model.trim="siteName"
                 class="input-field setup-input"
                 maxlength="80"
-                :placeholder="t('admin-system.setup.siteNamePlaceholder')"
+                :placeholder="currentSiteName"
                 aria-describedby="setup-site-name-help"
               />
-              <p id="setup-site-name-help" class="setup-field__help">{{ t('admin-system.setup.siteNameHelp') }}</p>
+              <p id="setup-site-name-help" class="setup-field__help">
+                {{ t('admin-system.setup.siteNameHelp', { name: currentSiteName }) }}
+              </p>
             </div>
             <fieldset class="setup-locale" aria-describedby="setup-locale-help">
               <legend>{{ t('admin-system.setup.localeLabel') }}</legend>
@@ -171,9 +204,13 @@
   </div>
 </template>
 <script setup lang="ts">
+import type { ComponentPublicInstance } from 'vue'
 import type { SupportedLocale } from '~~/i18n/localeOptions'
 import type { SetupPhase, SetupRequest } from '~/features/setup/types'
 import { SETUP_PASSWORD_MAX_LENGTH, SETUP_PASSWORD_MIN_LENGTH, setupPasswordChecks } from '~/features/setup/password'
+
+/** 前端校验与接口拒绝能定位到的字段 */
+type SetupField = 'token' | 'username' | 'password' | 'confirm'
 
 definePageMeta({ layout: 'admin' })
 const { t, locale } = useI18n()
@@ -195,6 +232,7 @@ const { success } = useToast()
 const phase = ref<SetupPhase>('checking')
 const token = ref('')
 const tokenFromLink = ref(false)
+const tokenRejected = ref(false)
 const username = ref('')
 const password = ref('')
 const confirmation = ref('')
@@ -202,20 +240,17 @@ const siteName = ref('')
 const siteLocale = ref<SupportedLocale>(locale.value === 'en' ? 'en' : 'zh-CN')
 const submitting = ref(false)
 const error = ref('')
-const tokenEditing = ref(false)
-const tokenInput = ref<HTMLInputElement | null>(null)
+const fieldError = ref<{ field: SetupField; message: string } | null>(null)
 const passwordVisible = ref(false)
+const inputs: Partial<Record<SetupField, HTMLInputElement>> = {}
+
+const showToken = computed(() => !tokenFromLink.value || tokenRejected.value)
+// 站点名称留空时后端沿用当前名称，占位与说明直接显示它，避免把示例误当默认值
+const currentSiteName = computed(() => siteSettings.settings.value.name)
 const localeOptions = computed<{ value: SupportedLocale; label: string }[]>(() => [
   { value: 'zh-CN', label: t('admin-system.setup.localeZh') },
   { value: 'en', label: t('admin-system.setup.localeEn') },
 ])
-
-/** 链接带入的令牌无效或需要替换时，展开输入框并聚焦 */
-async function editToken() {
-  tokenEditing.value = true
-  await nextTick()
-  tokenInput.value?.focus()
-}
 
 const rules = computed(() => {
   const checks = setupPasswordChecks(password.value, confirmation.value)
@@ -227,6 +262,24 @@ const rules = computed(() => {
     },
     { key: 'match', met: checks.match, label: t('admin-system.setup.ruleMatch') },
   ]
+})
+
+function bindInput(field: SetupField, el: Element | ComponentPublicInstance | null) {
+  inputs[field] = el instanceof HTMLInputElement ? el : undefined
+}
+function invalid(field: SetupField) {
+  return fieldError.value?.field === field ? 'true' : undefined
+}
+function describedBy(field: SetupField, base: string) {
+  return fieldError.value?.field === field ? `setup-${field}-error ${base}` : base
+}
+async function focusField(field: SetupField) {
+  await nextTick()
+  inputs[field]?.focus()
+}
+// 修改出错字段后清除它的提示，避免旧错误停留在已更正的输入框下
+watch([token, username, password, confirmation], () => {
+  fieldError.value = null
 })
 
 /** 读取地址中的令牌后用 replace 去掉，不留在地址栏和浏览历史里；其余查询参数保留 */
@@ -258,25 +311,46 @@ async function check() {
   }
 }
 
-function validate(): string {
-  if (!token.value) return t('admin-system.setup.tokenMissing')
-  if (!username.value) return t('admin-system.setup.usernameHelp')
+// 表单出现后聚焦第一个待填字段：令牌已带入时直接从登录名开始
+watch(phase, (value) => {
+  if (value === 'open') void focusField(showToken.value ? 'token' : 'username')
+})
+
+function validate(): { field: SetupField; message: string } | null {
+  if (!token.value) return { field: 'token', message: t('admin-system.setup.tokenMissing') }
+  if (!username.value) return { field: 'username', message: t('admin-system.setup.usernameHelp') }
   if (password.value.length < SETUP_PASSWORD_MIN_LENGTH)
-    return t('admin-system.setup.tooShort', { min: SETUP_PASSWORD_MIN_LENGTH })
+    return { field: 'password', message: t('admin-system.setup.tooShort', { min: SETUP_PASSWORD_MIN_LENGTH }) }
   if (password.value.length > SETUP_PASSWORD_MAX_LENGTH)
-    return t('admin-system.setup.tooLong', { max: SETUP_PASSWORD_MAX_LENGTH })
-  if (password.value !== confirmation.value) return t('admin-system.setup.mismatch')
-  return ''
+    return { field: 'password', message: t('admin-system.setup.tooLong', { max: SETUP_PASSWORD_MAX_LENGTH }) }
+  if (password.value !== confirmation.value) return { field: 'confirm', message: t('admin-system.setup.mismatch') }
+  return null
+}
+
+/** 接口拒绝令牌（403）：展开令牌输入框并在框下提示，焦点移过去 */
+async function rejectToken(message: string) {
+  tokenRejected.value = true
+  await nextTick()
+  fieldError.value = { field: 'token', message }
+  await focusField('token')
+  // 选中旧令牌，粘贴即可整体替换
+  inputs.token?.select()
 }
 
 async function submit() {
   if (submitting.value) return
-  error.value = validate()
-  if (!token.value) tokenEditing.value = true
-  if (error.value) return
+  error.value = ''
+  const problem = validate()
+  if (problem) {
+    if (problem.field === 'token') tokenRejected.value = true
+    await nextTick()
+    fieldError.value = problem
+    await focusField(problem.field)
+    return
+  }
   if (previewPhase.value) {
-    // 预览只检验前端校验与提示样式；&preview-submit=fail 模拟接口拒绝时的错误展示
-    if (route.query['preview-submit'] === 'fail') error.value = t('admin-system.setup.previewFailed')
+    // 预览只检验前端校验与提示样式；&preview-submit=fail 模拟接口拒绝令牌时的展示
+    if (route.query['preview-submit'] === 'fail') await rejectToken(t('admin-system.setup.previewFailed'))
     else success(t('admin-system.setup.previewSubmitted'))
     return
   }
@@ -292,8 +366,10 @@ async function submit() {
     await $fetch('/api/v1/setup', { method: 'POST', body, retry: 0, timeout: 15000 })
   } catch (cause) {
     submitting.value = false
-    // 404 表示站点已完成初始化（含并发提交中另一方先成功），不再显示表单。
-    if ((cause as { statusCode?: number } | null)?.statusCode === 404) phase.value = 'closed'
+    const status = (cause as { statusCode?: number } | null)?.statusCode
+    // 404 表示站点已完成初始化（含并发提交中另一方先成功），不再显示表单；403 为令牌不对。
+    if (status === 404) phase.value = 'closed'
+    else if (status === 403) await rejectToken(apiErrorMessage(cause, 'admin-system.setup.failed'))
     else error.value = apiErrorMessage(cause, 'admin-system.setup.failed')
     return
   }
@@ -321,6 +397,7 @@ onMounted(async () => {
 if (import.meta.dev) {
   watch(previewPhase, () => {
     error.value = ''
+    fieldError.value = null
     void check()
   })
 }
@@ -351,16 +428,11 @@ onBeforeUnmount(() => {
   margin-bottom: 1.5rem;
 }
 .setup__mark {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
+  display: block;
   width: 2.75rem;
   height: 2.75rem;
   margin-bottom: 1rem;
   border-radius: $radius-md;
-  background: var(--accent-soft);
-  color: var(--accent);
-  font-size: 1.25rem;
 }
 .setup h1 {
   margin: 0 0 0.375rem;
@@ -381,13 +453,6 @@ onBeforeUnmount(() => {
   border-radius: $radius-sm;
   color: var(--text-muted);
   font-size: 0.8125rem;
-}
-.setup__status {
-  display: flex;
-  gap: 0.5rem;
-  align-items: center;
-  margin: 0;
-  color: var(--text-muted);
 }
 .setup__spin {
   animation: setup-spin 0.9s linear infinite;
@@ -423,35 +488,61 @@ onBeforeUnmount(() => {
   border: 0;
   min-width: 0;
 }
-.setup-token {
+.setup-field__error {
   display: flex;
-  gap: 0.625rem;
-  align-items: center;
-  padding: 0.625rem 0.75rem;
-  border: 1px solid var(--stat-green-border);
-  border-radius: $radius-md;
-  background: var(--stat-green-bg);
-  font-size: 0.8125rem;
-}
-.setup-token p {
-  flex: 1;
+  gap: 0.375rem;
+  align-items: flex-start;
   margin: 0;
-}
-.setup-token__icon {
-  flex-shrink: 0;
-  color: var(--success-text);
-  font-size: 1rem;
-}
-.setup-link {
-  flex-shrink: 0;
-  padding: 0;
-  border: 0;
-  background: none;
-  color: var(--accent);
+  color: var(--danger-text);
   font-size: 0.8125rem;
-  text-decoration: underline;
-  text-underline-offset: 3px;
-  cursor: pointer;
+}
+.setup-field__error svg {
+  flex-shrink: 0;
+  margin-top: 0.1875rem;
+}
+.setup-input[aria-invalid='true'] {
+  border-color: var(--danger);
+  &:focus {
+    box-shadow: 0 0 0 4px color-mix(in srgb, var(--danger) 18%, transparent);
+  }
+}
+.setup-skeleton {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+.setup-skeleton__field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+.setup-skeleton__label,
+.setup-skeleton__input,
+.setup-skeleton__button {
+  display: block;
+  border-radius: $radius-sm;
+  background: var(--surface-3);
+  animation: setup-pulse 1.4s ease-in-out infinite;
+  @media (prefers-reduced-motion: reduce) {
+    animation: none;
+  }
+}
+.setup-skeleton__label {
+  width: 5rem;
+  height: 0.875rem;
+}
+.setup-skeleton__input,
+.setup-skeleton__button {
+  height: 2.75rem;
+  border-radius: $radius-md;
+}
+.setup-skeleton__button {
+  margin-top: 0.5rem;
+}
+@keyframes setup-pulse {
+  50% {
+    opacity: 0.5;
+  }
 }
 .setup-group {
   display: flex;
@@ -462,6 +553,10 @@ onBeforeUnmount(() => {
   border: 0;
   border-top: 1px solid var(--border-soft);
   min-width: 0;
+}
+.setup-group:first-child {
+  padding-top: 0;
+  border-top: 0;
 }
 .setup-group__title {
   float: left;

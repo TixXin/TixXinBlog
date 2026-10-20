@@ -3,7 +3,7 @@
   @description 博主管理布局，提供明确的内容管理导航和真实退出操作
 -->
 <template>
-  <div class="admin-shell" :class="{ 'admin-shell--login': isLogin }">
+  <div class="admin-shell" :class="{ 'admin-shell--login': isLogin, 'admin-shell--setup': isSetup }">
     <aside v-if="!isLogin" class="admin-sidebar">
       <NuxtLink class="admin-brand" to="/admin"
         ><Icon name="lucide:notebook-pen" />{{ t('admin-system.layout.brand', { name: siteName }) }}</NuxtLink
@@ -252,6 +252,10 @@ async function leave() {
 }
 .admin-shell--login {
   grid-template-columns: minmax(0, 1fr);
+}
+// 初始化向导透出站点背景与点阵，让卡片与背景分出层次
+.admin-shell--setup {
+  background: transparent;
 }
 @media (max-width: 760px) {
   .admin-shell {

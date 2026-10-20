@@ -16,7 +16,7 @@ test('英文界面：向导文案、密码要求与令牌错误均为英文', as
   const page = await context.newPage()
   try {
     await page.goto(`/setup?token=${'0'.repeat(64)}`)
-    await expect(page.getByRole('heading', { level: 1, name: 'Set up site' })).toBeVisible()
+    await expect(page.getByRole('heading', { level: 1, name: 'Welcome to TixXinBlog' })).toBeVisible()
     await expect(page).toHaveURL(/\/setup$/)
     await page.getByRole('textbox', { name: 'Username' }).fill('english-owner')
     await page.getByLabel('Password', { exact: true }).fill('english-password-2026')
@@ -26,6 +26,9 @@ test('英文界面：向导文案、密码要求与令牌错误均为英文', as
     await expect(page.getByRole('alert')).toHaveText(
       'The setup token is invalid. Check the link printed when installation finished.',
     )
+    // 令牌被拒后展开令牌输入框并聚焦，便于手动更正。
+    await expect(page.getByRole('textbox', { name: 'Setup token' })).toBeFocused()
+    await expect(page.getByRole('textbox', { name: 'Setup token' })).toHaveAttribute('aria-invalid', 'true')
     // 令牌错误不创建账号，向导仍开放。
     expect((await (await page.request.get('/api/v1/setup/status')).json()).data).toEqual({ needsSetup: true })
   } finally {
@@ -55,7 +58,7 @@ test('向导完整流程：首页与登录页引导、令牌移出地址栏、�
   await expect(page.getByText('站点还没有博主账号。')).toBeVisible()
   await page.getByRole('link', { name: '前往初始化向导' }).click()
   await expect(page).toHaveURL(/\/setup$/)
-  await expect(page.getByRole('heading', { level: 1, name: '初始化站点' })).toBeVisible()
+  await expect(page.getByRole('heading', { level: 1, name: '欢迎使用 TixXinBlog' })).toBeVisible()
 
   // 服务端直出的 HTML 不回显地址里的令牌（规范地址、分享元数据与水合数据都不含查询串）。
   const html = await (await request.get(`/setup?token=${token}`)).text()
@@ -70,10 +73,9 @@ test('向导完整流程：首页与登录页引导、令牌移出地址栏、�
   await expect(page.locator('meta[name="robots"]').first()).toHaveAttribute('content', /noindex/)
   await expect(page).toHaveURL(/\/setup$/)
   expect(page.url()).not.toContain(token)
-  // 令牌随链接带入时只显示读取状态，输入框收起但仍携带令牌提交。
-  await expect(page.getByText('已从链接读取令牌，并已从地址栏移除。')).toBeVisible()
-  await expect(page.getByRole('textbox', { name: '初始化令牌' })).toBeHidden()
-  await expect(page.locator('#setup-token')).toHaveValue(token)
+  // 令牌随链接带入时不显示令牌字段，焦点直接落在登录名。
+  await expect(page.getByRole('textbox', { name: '初始化令牌' })).toHaveCount(0)
+  await expect(page.getByRole('textbox', { name: '登录名' })).toBeFocused()
 
   // 密码要求实时提示，前端先拦截不一致的确认密码。
   await page.getByRole('textbox', { name: '登录名' }).fill(owner.username)
