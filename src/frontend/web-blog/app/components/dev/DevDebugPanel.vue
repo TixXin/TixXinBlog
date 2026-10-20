@@ -1,6 +1,6 @@
 <!--
   @file DevDebugPanel.vue
-  @description Dev 全局调试面板：左上角可拖拽 FAB + 侧抽屉，分 4 个 tab 展示视口/路由+主题/登录态/环境
+  @description Dev 全局调试面板：左上角可拖拽 FAB + 侧抽屉，分 5 个 tab 展示视口/路由+主题/登录态/界面预览/环境
   @author TixXin
   @since 2026-04-11
 
@@ -44,7 +44,7 @@
       >
         <header
           class="dev-debug-drawer__head"
-          :class="{ 'is-draggable': position === 'center' }"
+          :class="{ 'is-draggable': position === 'center', 'is-narrow': position === 'left' || position === 'right' }"
           @pointerdown="onHeaderPointerDown"
         >
           <Icon name="lucide:wrench" size="14" />
@@ -279,6 +279,55 @@
             </div>
           </section>
 
+          <!-- 预览 tab：依赖站点状态的界面（见 useDevPreview），只改前端显示 -->
+          <section v-else-if="activeTab === 'preview'" class="dev-debug-section">
+            <div class="dev-debug-row">
+              <span class="dev-debug-row__label">当前预览</span>
+              <span class="dev-debug-row__value">
+                <span class="dev-debug-chip" :class="activePreview ? 'dev-debug-chip--warn' : 'dev-debug-chip--muted'">
+                  {{ activePreview || '无' }}
+                </span>
+              </span>
+            </div>
+            <p class="dev-debug-note">只改变前端显示：提交照常校验，但不请求接口、不创建账号。</p>
+            <div v-for="group in previewGroups" :key="group.label" class="dev-debug-group">
+              <p class="dev-debug-group__title">{{ group.label }}</p>
+              <div class="dev-debug-actions dev-debug-actions--column">
+                <button
+                  v-for="item in group.items"
+                  :key="item.label"
+                  type="button"
+                  class="dev-debug-btn"
+                  :class="{ 'is-active': isPreviewActive(item) }"
+                  @click="openPreview(item)"
+                >
+                  <Icon :name="item.icon" size="13" />
+                  <span>{{ item.label }}</span>
+                </button>
+              </div>
+            </div>
+            <div class="dev-debug-actions">
+              <button type="button" class="dev-debug-btn" :disabled="!activePreview" @click="exitPreview">
+                <Icon name="lucide:eye-off" size="13" />
+                <span>退出预览</span>
+              </button>
+            </div>
+
+            <div class="dev-debug-divider" />
+
+            <p class="dev-debug-note">真实走完初始化（空库、自动登录）时，在终端启动初始化沙盒：</p>
+            <div class="dev-debug-row">
+              <span class="dev-debug-row__label">沙盒</span>
+              <span
+                class="dev-debug-row__value dev-debug-row__value--mono dev-debug-row__value--clickable"
+                @click="copyText('corepack pnpm dev:setup')"
+              >
+                corepack pnpm dev:setup
+                <Icon name="lucide:copy" size="11" />
+              </span>
+            </div>
+          </section>
+
           <!-- 环境 tab -->
           <section v-else-if="activeTab === 'env'" class="dev-debug-section">
             <div class="dev-debug-row">
@@ -290,6 +339,22 @@
             <div class="dev-debug-row">
               <span class="dev-debug-row__label">render</span>
               <span class="dev-debug-row__value dev-debug-row__value--mono">{{ renderMode }}</span>
+            </div>
+            <div class="dev-debug-row">
+              <span class="dev-debug-row__label">界面语言</span>
+              <span class="dev-debug-row__value dev-debug-row__value--mono">{{ locale }}</span>
+            </div>
+            <div class="dev-debug-row">
+              <span class="dev-debug-row__label">数据源</span>
+              <span class="dev-debug-row__value">
+                <span class="dev-debug-chip" :class="usesMock ? 'dev-debug-chip--warn' : 'dev-debug-chip--ok'">
+                  {{ usesMock ? '含 Mock' : '真实 API' }}
+                </span>
+              </span>
+            </div>
+            <div class="dev-debug-row">
+              <span class="dev-debug-row__label">API</span>
+              <span class="dev-debug-row__value dev-debug-row__value--mono">{{ apiBaseUrl }}</span>
             </div>
             <div class="dev-debug-row">
               <span class="dev-debug-row__label">Nuxt</span>
@@ -357,6 +422,7 @@ const tabs: { id: DevDebugTab; label: string; icon: string }[] = [
   { id: 'viewport', label: '视口', icon: 'lucide:monitor' },
   { id: 'route', label: '路由', icon: 'lucide:route' },
   { id: 'auth', label: '账号', icon: 'lucide:user-round' },
+  { id: 'preview', label: '预览', icon: 'lucide:eye' },
   { id: 'env', label: '环境', icon: 'lucide:server' },
 ]
 
@@ -636,7 +702,59 @@ async function onLogout() {
   }
 }
 
+// ---- 预览 tab 数据：地址参数与 useDevPreview 约定一致 ----
+interface PreviewEntry {
+  label: string
+  icon: string
+  path: string
+  query: Record<string, string>
+}
+const PREVIEW_KEYS = ['preview', 'preview-submit']
+const previewGroups: { label: string; items: PreviewEntry[] }[] = [
+  {
+    label: '初始化页 /setup',
+    items: [
+      { label: '表单', icon: 'lucide:file-pen', path: '/setup', query: { preview: 'form' } },
+      {
+        label: '表单（模拟提交失败）',
+        icon: 'lucide:file-x',
+        path: '/setup',
+        query: { preview: 'form', 'preview-submit': 'fail' },
+      },
+      { label: '已完成初始化', icon: 'lucide:circle-check', path: '/setup', query: { preview: 'closed' } },
+      { label: '状态读取失败', icon: 'lucide:circle-alert', path: '/setup', query: { preview: 'error' } },
+    ],
+  },
+  {
+    label: '未初始化引导',
+    items: [
+      { label: '首页提示', icon: 'lucide:house', path: '/', query: { preview: 'setup-pending' } },
+      { label: '登录页引导', icon: 'lucide:log-in', path: '/admin/login', query: { preview: 'setup-pending' } },
+    ],
+  },
+]
+const activePreview = computed(() =>
+  PREVIEW_KEYS.map((key) => route.query[key])
+    .filter((value): value is string => typeof value === 'string' && value !== '')
+    .join(' · '),
+)
+function isPreviewActive(item: PreviewEntry) {
+  return route.path === item.path && PREVIEW_KEYS.every((key) => (route.query[key] ?? undefined) === item.query[key])
+}
+async function openPreview(item: PreviewEntry) {
+  const rest = Object.fromEntries(Object.entries(route.query).filter(([key]) => !PREVIEW_KEYS.includes(key)))
+  await navigateTo({ path: item.path, query: item.path === route.path ? { ...rest, ...item.query } : item.query })
+}
+async function exitPreview() {
+  const rest = Object.fromEntries(Object.entries(route.query).filter(([key]) => !PREVIEW_KEYS.includes(key)))
+  await navigateTo({ path: route.path, query: rest, hash: route.hash })
+}
+
 // ---- 环境 tab 数据 ----
+const { locale } = useI18n()
+const publicConfig = runtimeConfig.public as { apiBaseUrl?: string; useMockRepo?: boolean; postUseMockRepo?: boolean }
+const apiBaseUrl = publicConfig.apiBaseUrl ?? '—'
+const usesMock = publicConfig.useMockRepo === true || publicConfig.postUseMockRepo === true
 const renderMode = ref<'client' | 'server'>('server')
 const userAgent = ref('—')
 const nuxtVersion = (runtimeConfig.public as { nuxtVersion?: string }).nuxtVersion ?? '—'
@@ -831,6 +949,17 @@ onBeforeUnmount(() => {
   flex-shrink: 0;
   user-select: none;
 
+  // 左右停靠时抽屉只有约 320px：标题独占一行，缩放、停靠与关闭按钮换到第二行，避免标题被挤成多行
+  &.is-narrow {
+    flex-wrap: wrap;
+    row-gap: 0.5rem;
+
+    // 扣掉前置图标（14px）与间距，让图标与标题同在第一行
+    .dev-debug-drawer__title {
+      flex-basis: calc(100% - 14px - 0.5rem);
+    }
+  }
+
   &.is-draggable {
     cursor: var(--interaction-cursor, grab);
 
@@ -952,6 +1081,7 @@ onBeforeUnmount(() => {
 .dev-debug-drawer__title {
   flex: 1;
   margin: 0;
+  white-space: nowrap;
   font-size: 0.875rem;
   font-weight: 700;
   letter-spacing: 0.04em;
@@ -982,10 +1112,27 @@ onBeforeUnmount(() => {
   }
 }
 
+/* ==================== 预览 tab ==================== */
+.dev-debug-note {
+  margin: 0.25rem 0 0.75rem;
+  color: var(--text-muted);
+  font-size: 0.75rem;
+  line-height: 1.5;
+}
+.dev-debug-group {
+  margin-bottom: 0.75rem;
+}
+.dev-debug-group__title {
+  margin: 0 0 0.375rem;
+  color: var(--text-muted);
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
 /* ==================== Tabs ==================== */
 .dev-debug-drawer__tabs {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(5, minmax(0, 1fr));
   border-bottom: 1px solid var(--border-soft);
   background: var(--surface-1);
 }

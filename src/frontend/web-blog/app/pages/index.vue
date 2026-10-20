@@ -261,14 +261,17 @@ onMounted(migrateMomentHash)
 const setupPending = ref(false)
 const fetchSetupStatus = useSetupStatus()
 const preview = useDevPreview()
-onMounted(async () => {
+async function readSetupPending() {
   try {
     // 开发模式下 ?preview=setup-pending 直接显示提示，便于调整样式；生产构建中不生效
     setupPending.value = preview('setup-pending') || (await fetchSetupStatus())
   } catch {
     setupPending.value = false
   }
-})
+}
+onMounted(readSetupPending)
+// 调试面板在同一页面切换或退出预览时只改地址参数，需要重新判定
+if (import.meta.dev) watch(() => preview('setup-pending'), readSetupPending)
 watch(() => route.hash, migrateMomentHash)
 </script>
 <style lang="scss" scoped>

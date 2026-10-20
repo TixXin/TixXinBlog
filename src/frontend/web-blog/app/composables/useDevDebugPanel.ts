@@ -5,7 +5,7 @@
  * @since 2026-04-11
  */
 
-export type DevDebugTab = 'viewport' | 'route' | 'auth' | 'env'
+export type DevDebugTab = 'viewport' | 'route' | 'auth' | 'preview' | 'env'
 
 /** 抽屉停靠位置：四边贴边停靠或居中浮窗（居中态可拖拽缩放） */
 export type DevDebugDockPosition = 'left' | 'right' | 'top' | 'bottom' | 'center'
@@ -28,7 +28,7 @@ const TAB_KEY = 'dev-debug:active-tab'
 const POSITION_KEY = 'dev-debug:position'
 const CENTER_RECT_KEY = 'dev-debug:center-rect'
 const FONT_SCALE_KEY = 'dev-debug:font-scale'
-const VALID_TABS: DevDebugTab[] = ['viewport', 'route', 'auth', 'env']
+const VALID_TABS: DevDebugTab[] = ['viewport', 'route', 'auth', 'preview', 'env']
 const VALID_POSITIONS: DevDebugDockPosition[] = ['left', 'right', 'top', 'bottom', 'center']
 
 /** 居中浮窗最小尺寸，避免被拖到不可用 */
@@ -112,10 +112,7 @@ export function useDevDebugPanel() {
   const position = useState<DevDebugDockPosition>('dev-debug:position', () =>
     readStorage<DevDebugDockPosition>(
       POSITION_KEY,
-      (raw) =>
-        VALID_POSITIONS.includes(raw as DevDebugDockPosition)
-          ? (raw as DevDebugDockPosition)
-          : null,
+      (raw) => (VALID_POSITIONS.includes(raw as DevDebugDockPosition) ? (raw as DevDebugDockPosition) : null),
       'left',
     ),
   )
@@ -179,14 +176,8 @@ export function useDevDebugPanel() {
     const h = Math.max(CENTER_MIN.h, Math.min(rect.h, window.innerHeight - 16))
     const maxX = Math.max(8, window.innerWidth - w - 8)
     const maxY = Math.max(8, window.innerHeight - h - 8)
-    const x =
-      rect.x < 0
-        ? Math.round((window.innerWidth - w) / 2)
-        : Math.min(Math.max(8, rect.x), maxX)
-    const y =
-      rect.y < 0
-        ? Math.round((window.innerHeight - h) / 2)
-        : Math.min(Math.max(8, rect.y), maxY)
+    const x = rect.x < 0 ? Math.round((window.innerWidth - w) / 2) : Math.min(Math.max(8, rect.x), maxX)
+    const y = rect.y < 0 ? Math.round((window.innerHeight - h) / 2) : Math.min(Math.max(8, rect.y), maxY)
     return { x, y, w, h }
   }
 
@@ -208,12 +199,7 @@ export function useDevDebugPanel() {
     // 居中模式下保持视觉中心不变：CSS zoom 同时缩放 top/left 与 width/height，
     // 直接换 zoom 会让面板视觉位置向右下漂移。按 ratio = prev/next 反向补偿 logical x/y，
     // 使「视觉中心 = (x + w/2) * zoom」在新旧 zoom 下相等
-    if (
-      v !== prev &&
-      position.value === 'center' &&
-      centerRect.value.x >= 0 &&
-      centerRect.value.y >= 0
-    ) {
+    if (v !== prev && position.value === 'center' && centerRect.value.x >= 0 && centerRect.value.y >= 0) {
       const r = centerRect.value
       const cx = r.x + r.w / 2
       const cy = r.y + r.h / 2

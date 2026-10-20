@@ -27,14 +27,17 @@ const showHelp = ref(false)
 const needsSetup = ref(false)
 const fetchSetupStatus = useSetupStatus()
 const preview = useDevPreview()
-onMounted(async () => {
+async function readNeedsSetup() {
   try {
     // 开发模式下 ?preview=setup-pending 直接显示引导；生产构建中不生效
     needsSetup.value = preview('setup-pending') || (await fetchSetupStatus())
   } catch {
     needsSetup.value = false
   }
-})
+}
+onMounted(readNeedsSetup)
+// 调试面板在同一页面切换或退出预览时只改地址参数，需要重新判定
+if (import.meta.dev) watch(() => preview('setup-pending'), readNeedsSetup)
 async function entered() {
   const next =
     typeof route.query.next === 'string' && (route.query.next === '/admin' || route.query.next.startsWith('/admin/'))

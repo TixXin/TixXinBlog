@@ -254,6 +254,13 @@ onMounted(async () => {
   await takeTokenFromUrl()
   await check()
 })
+// 调试面板在同一页面切换或退出预览时只改地址参数，需要重新判定状态
+if (import.meta.dev) {
+  watch(previewPhase, () => {
+    error.value = ''
+    void check()
+  })
+}
 onBeforeUnmount(() => {
   token.value = password.value = confirmation.value = ''
 })
