@@ -9,7 +9,15 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { flushPromises } from '@vue/test-utils'
 import { mountSuspended } from '@nuxt/test-utils/runtime'
 import DatePicker from '../../app/components/common/DatePicker.vue'
-import { addDays, addMonths, monthGrid, parseIsoDate, toIsoDate, weekdayColumn } from '../../app/utils/calendarGrid'
+import {
+  addDays,
+  addMonths,
+  monthGrid,
+  parseIsoDate,
+  parseTypedDate,
+  toIsoDate,
+  weekdayColumn,
+} from '../../app/utils/calendarGrid'
 
 describe('calendarGrid', () => {
   it('解析 YYYY-MM-DD，拒绝格式错误与不存在的日期', () => {
@@ -17,6 +25,12 @@ describe('calendarGrid', () => {
     for (const value of ['', '2026/10/20', '2026-02-30', '2026-13-01', '20261020'])
       expect(parseIsoDate(value)).toBeNull()
     expect(toIsoDate({ year: 987, month: 0, day: 5 })).toBe('0987-01-05')
+  })
+
+  it('手动输入接受常见分隔符与紧凑写法', () => {
+    for (const value of ['2019-03-15', '2019/3/15', '2019.03.15', ' 2019 3 15 ', '20190315'])
+      expect(parseTypedDate(value)).toEqual({ year: 2019, month: 2, day: 15 })
+    for (const value of ['', '2019-3', '19-03-15', '2019-02-30', '2019/13/01']) expect(parseTypedDate(value)).toBeNull()
   })
 
   it('月历固定 42 格，按周起始日对齐，并标出本月以外的日期', () => {
@@ -58,10 +72,10 @@ async function mountPicker(props: Record<string, unknown>) {
 }
 
 describe('CommonDatePicker', () => {
-  it('打开后聚焦选中日期，方向键与 PageUp 移动光标，Enter（点击）选中并关闭', async () => {
+  it('日历按钮打开后聚焦选中日期，方向键与 PageUp 移动光标，点击选中并关闭', async () => {
     const wrapper = await mountPicker({ modelValue: '2026-10-20', id: 'launch' })
-    expect(wrapper.find('#launch').text()).toBe('2026年10月20日')
-    await wrapper.find('#launch').trigger('click')
+    expect((wrapper.find('#launch').element as HTMLInputElement).value).toBe('2026年10月20日')
+    await wrapper.find('.date-picker__toggle').trigger('click')
     await flushPromises()
     expect(document.activeElement?.getAttribute('data-iso')).toBe('2026-10-20')
     const key = async (key: string, shiftKey = false) => {
@@ -82,7 +96,7 @@ describe('CommonDatePicker', () => {
 
   it('点标题依次进入月份与年份视图，选年选月后回到日视图', async () => {
     const wrapper = await mountPicker({ modelValue: '2026-10-20' })
-    await wrapper.find('.date-picker__trigger').trigger('click')
+    await wrapper.find('.date-picker__toggle').trigger('click')
     await flushPromises()
     await wrapper.find('.date-picker__title').trigger('click')
     expect(wrapper.find('.date-picker__title').text()).toBe('2026年')
@@ -101,10 +115,10 @@ describe('CommonDatePicker', () => {
   it('面板默认与输入框起始边对齐，右侧放不下时与右缘对齐，窄屏时贴视口边缘', async () => {
     const width = vi.spyOn(window, 'innerWidth', 'get')
     const wrapper = await mountPicker({ modelValue: '2026-10-20' })
-    const trigger = wrapper.find('.date-picker__trigger')
+    const trigger = wrapper.find('.date-picker__toggle')
     const open = async (left: number, triggerWidth: number, viewport: number) => {
       width.mockReturnValue(viewport)
-      vi.spyOn(trigger.element, 'getBoundingClientRect').mockReturnValue({
+      vi.spyOn(wrapper.find('.date-picker').element, 'getBoundingClientRect').mockReturnValue({
         left,
         right: left + triggerWidth,
         width: triggerWidth,
@@ -118,7 +132,7 @@ describe('CommonDatePicker', () => {
       await trigger.trigger('click')
       await flushPromises()
       // 上一次关闭的面板可能仍在离场过渡中，取最新打开的那个
-      const style = (wrapper.findAll('.date-picker__panel').at(-1)!.element as HTMLElement).style.left
+      const style = (wrapper.findAll('.date-picker__popover').at(-1)!.element as HTMLElement).style.left
       await trigger.trigger('click')
       await flushPromises()
       return style
@@ -132,9 +146,9 @@ describe('CommonDatePicker', () => {
     width.mockRestore()
   })
 
-  it('超出范围的日期与「今天」不可选；Esc 关闭并把焦点还给触发按钮', async () => {
+  it('超出范围的日期与「今天」不可选；Esc 关闭并把焦点还给输入框', async () => {
     const wrapper = await mountPicker({ modelValue: '2020-01-10', min: '2020-01-05', max: '2020-01-20' })
-    await wrapper.find('.date-picker__trigger').trigger('click')
+    await wrapper.find('.date-picker__toggle').trigger('click')
     await flushPromises()
     expect(wrapper.find('[data-iso="2020-01-04"]').attributes('disabled')).toBeDefined()
     expect(wrapper.find('[data-iso="2020-01-21"]').attributes('disabled')).toBeDefined()
@@ -143,16 +157,65 @@ describe('CommonDatePicker', () => {
     await wrapper.find('[role="dialog"]').trigger('keydown', { key: 'Escape' })
     await flushPromises()
     expect(wrapper.find('[role="dialog"]').exists()).toBe(false)
-    expect(document.activeElement?.classList.contains('date-picker__trigger')).toBe(true)
+    expect(document.activeElement?.classList.contains('date-picker__input')).toBe(true)
     expect(wrapper.emitted('update:modelValue')).toBeUndefined()
   })
 
   it('clearable 时可清空并同时发出 change', async () => {
     const wrapper = await mountPicker({ modelValue: '2026-10-20', clearable: true })
-    await wrapper.find('.date-picker__trigger').trigger('click')
+    await wrapper.find('.date-picker__toggle').trigger('click')
     await flushPromises()
     await wrapper.find('.date-picker__clear').trigger('click')
     expect(wrapper.emitted('update:modelValue')).toEqual([['']])
     expect(wrapper.emitted('change')).toEqual([['']])
+  })
+
+  it('点输入框打开面板且焦点留在输入框，输入合法日期时面板跟随，↓ 把焦点交给面板', async () => {
+    const wrapper = await mountPicker({ modelValue: '2026-10-20' })
+    const input = wrapper.find('.date-picker__input')
+    await input.trigger('focus')
+    await input.trigger('click')
+    await flushPromises()
+    expect((input.element as HTMLInputElement).value).toBe('2026-10-20')
+    expect(wrapper.find('[role="dialog"]').exists()).toBe(true)
+    await input.setValue('2019/3/15')
+    await flushPromises()
+    expect(wrapper.find('.date-picker__title').text()).toBe('2019年3月')
+    await input.trigger('keydown', { key: 'ArrowDown' })
+    await flushPromises()
+    expect(document.activeElement?.getAttribute('data-iso')).toBe('2019-03-15')
+  })
+
+  it('手动输入：回车或失焦确认并写入 ISO 日期；回车不提交外层表单', async () => {
+    const wrapper = await mountPicker({ modelValue: '2026-10-20' })
+    const input = wrapper.find('.date-picker__input')
+    await input.trigger('focus')
+    await input.setValue('20190315')
+    const enter = new KeyboardEvent('keydown', { key: 'Enter', cancelable: true })
+    input.element.dispatchEvent(enter)
+    expect(enter.defaultPrevented).toBe(true)
+    expect(wrapper.emitted('update:modelValue')).toEqual([['2019-03-15']])
+    await input.setValue('2020.1.2')
+    await input.trigger('blur')
+    expect(wrapper.emitted('update:modelValue')?.at(-1)).toEqual(['2020-01-02'])
+    expect(wrapper.emitted('change')).toHaveLength(2)
+  })
+
+  it('不存在或超出范围的输入恢复原值并标为无效；可清空时清空输入即清除', async () => {
+    const wrapper = await mountPicker({ modelValue: '2020-01-10', max: '2020-01-20', clearable: true })
+    const input = wrapper.find('.date-picker__input')
+    for (const value of ['2020-02-30', '2020-01-25', 'abc']) {
+      await input.trigger('focus')
+      await input.setValue(value)
+      await input.trigger('blur')
+      expect(input.attributes('aria-invalid')).toBe('true')
+      expect((input.element as HTMLInputElement).value).toBe('2020年1月10日')
+    }
+    expect(wrapper.emitted('update:modelValue')).toBeUndefined()
+    await input.trigger('focus')
+    await input.setValue('')
+    await input.trigger('blur')
+    expect(wrapper.emitted('update:modelValue')).toEqual([['']])
+    expect(input.attributes('aria-invalid')).toBeUndefined()
   })
 })

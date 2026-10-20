@@ -34,6 +34,18 @@ export function parseIsoDate(value: string): CalendarDate | null {
   return { year, month, day }
 }
 
+/**
+ * 解析手动输入的日期：接受 2019-03-15、2019/3/15、2019.3.15、2019 3 15 与 20190315，
+ * 两侧空白忽略；日期不存在时返回 null
+ */
+export function parseTypedDate(value: string): CalendarDate | null {
+  const text = value.trim()
+  const compact = /^(\d{4})(\d{2})(\d{2})$/.exec(text)
+  const parts = compact ?? /^(\d{4})[-/.\s]+(\d{1,2})[-/.\s]+(\d{1,2})$/.exec(text)
+  if (!parts) return null
+  return parseIsoDate(`${parts[1]}-${parts[2]!.padStart(2, '0')}-${parts[3]!.padStart(2, '0')}`)
+}
+
 export function todayDate(now = new Date()): CalendarDate {
   return { year: now.getFullYear(), month: now.getMonth(), day: now.getDate() }
 }

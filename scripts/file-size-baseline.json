@@ -23,7 +23,6 @@
     "src/frontend/web-blog/app/components/blog/PostCardList.vue": 522,
     "src/frontend/web-blog/app/components/common/AppearanceDrawer.vue": 660,
     "src/frontend/web-blog/app/components/common/CustomScrollbar.vue": 640,
-    "src/frontend/web-blog/app/components/common/DatePicker.vue": 516,
     "src/frontend/web-blog/app/components/common/GuestIdentityModal.vue": 511,
     "src/frontend/web-blog/app/components/common/SearchModal.vue": 667,
     "src/frontend/web-blog/app/components/common/Tooltip.vue": 411,

@@ -12,7 +12,7 @@ import type { Locator, Page } from '@playwright/test'
 export async function pickDate(page: Page, trigger: Locator, iso: string) {
   const [year, month] = iso.split('-').map(Number) as [number, number]
   await trigger.click()
-  const panel = page.locator('.date-picker__panel')
+  const panel = page.locator('.date-picker-panel')
   await expect(panel).toBeVisible()
   const title = panel.locator('.date-picker__title')
   // 日 → 月 → 年视图

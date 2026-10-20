@@ -16,6 +16,7 @@
       "unknown": "日期未知"
     },
     "datePicker": {
+      "open": "打开日历",
       "choose": "选择日期",
       "dialog": "选择日期",
       "switchView": "切换年月视图",

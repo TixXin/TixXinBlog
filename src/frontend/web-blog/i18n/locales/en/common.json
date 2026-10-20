@@ -16,6 +16,7 @@
       "unknown": "Date unknown"
     },
     "datePicker": {
+      "open": "Open calendar",
       "choose": "Choose a date",
       "dialog": "Choose a date",
       "switchView": "Switch month and year view",

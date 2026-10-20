@@ -156,7 +156,7 @@ it('文章评论将筛选、卡片操作和两处分页放入独立换行容器�
   const wrapper = await render(CommentsPage, '/admin/comments', { commentId: '1' })
   const filters = wrapper.get('form.admin-comments__filters')
   expect(filters.findAll('select')).toHaveLength(2)
-  expect(filters.findAll('.date-picker__trigger')).toHaveLength(2)
+  expect(filters.findAll('.date-picker__input')).toHaveLength(2)
   expect(filters.get('[aria-label="按文章筛选评论"]').text()).toContain(longText)
   const row = wrapper.get('.admin-comments__list > li')
   expect(row.text()).toContain(longText)
@@ -183,7 +183,7 @@ it('朋友圈评论保留完整卡片引用和可换行筛选、操作、分页'
 
 it('留言管理保留移动筛选、卡片操作及独立分页类名，长正文与引用均可读取', async () => {
   const wrapper = await render(GuestbookPage, '/admin/guestbook')
-  expect(wrapper.get('.admin-guestbook__filters .date-picker__trigger').attributes('aria-label')).toBe('留言日期')
+  expect(wrapper.get('.admin-guestbook__filters .date-picker__input').attributes('aria-label')).toBe('留言日期')
   const row = wrapper.get('.admin-guestbook__list > li')
   expect(row.get('.admin-guestbook__content').text()).toBe(longText)
   expect(row.text()).toContain(`引用 博主：${longText}`)
