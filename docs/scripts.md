@@ -88,7 +88,8 @@
 
 | 命令            | 实际执行                                               |
 | --------------- | ------------------------------------------------------ |
-| `lint`          | `corepack pnpm --filter web-blog exec eslint .`        |
+| `lint`          | 前端 ESLint，随后运行 `lint:size`                      |
+| `lint:size`     | `node scripts/check-file-size.mjs`                     |
 | `lint:fix`      | `corepack pnpm --filter web-blog exec eslint . --fix`  |
 | `format`        | `prettier --write "src/**/*.{vue,ts,js,scss,json,md}"` |
 | `prepare`       | `husky`                                                |
@@ -96,7 +97,8 @@
 | `check:local`   | `bash scripts/check-local.sh`                          |
 | `lint:shell`    | `shellcheck` 检查安装、管理、打包、冒烟与试装脚本      |
 
-- `lint`：检查前端子项目的 ESLint 规则，不修复文件；不包含后端 lint、类型检查或单元测试。
+- `lint`：检查前端子项目的 ESLint 规则，不修复文件，随后执行 `lint:size`；不包含后端 lint、类型检查或单元测试。
+- `lint:size`：检查前后端源码文件体量，新文件不得超过上限，存量超限文件只许变短；拆分后加 `--update` 收紧基线。上限与例外见[代码组织与模块化](code-organization.md#文件体量上限)。
 - `lint:fix`：自动修复前端 ESLint 可修复的问题并改写文件，完成后检查 Git 差异。
 - `format`：按仓库 Prettier 配置改写 `src/` 下匹配的前后端及共享源码，不覆盖根配置、`docs/`、`scripts/` 或 `.mjs` 文件。
 - `prepare`：初始化 Husky Git hooks，通常由依赖安装的生命周期自动执行。提交钩子运行 lint-staged，对暂存的前端脚本执行 ESLint 修复，对 `src/` 下匹配文件执行 Prettier。它与前端 `postinstall` 执行的 `nuxt prepare` 不同。

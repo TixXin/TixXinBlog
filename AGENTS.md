@@ -42,6 +42,7 @@ corepack pnpm --filter server-main build
 
 ## 代码与数据规范
 
+- 模块化开发：按领域放置，页面只组装，流程放组合函数，可命名的区块拆成子组件，纯逻辑放领域模块；不在一个文件里堆积多项职责。`.vue` 页面 ≤300 行、组件 ≤400 行，`.ts` ≤300 行，由 `corepack pnpm lint` 中的体量检查强制，存量超限文件只许变短。规则见[代码组织与模块化](docs/code-organization.md)。
 - 代码文件保留文件头，注释使用中文；统一LF、单引号、无分号和Prettier配置。
 - 图标只使用 Lucide：`<Icon name="lucide:xxx" />`，不用emoji充当UI图标。
 - 单页使用 `xxx.vue`，有子页面时才用 `xxx/index.vue`。
