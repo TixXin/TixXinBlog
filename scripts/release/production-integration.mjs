@@ -280,7 +280,18 @@ async function freezeSource() {
       (path) =>
         !path
           .split('/')
-          .some((part) => ['node_modules', 'dist', '.dev-dist', '.output', '.nuxt', '.nuxt-production'].includes(part)),
+          .some((part) =>
+            [
+              'node_modules',
+              'dist',
+              '.dev-dist',
+              '.setup-sandbox-dist',
+              '.output',
+              '.nuxt',
+              '.nuxt-production',
+              '.nuxt-setup-sandbox',
+            ].includes(part),
+          ),
     )
     .filter((path) => !/^\.env(?:\.|$)/.test(basename(path)) || basename(path) === '.env.example')
   const hash = createHash('sha256')

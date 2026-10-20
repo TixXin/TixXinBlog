@@ -22,9 +22,11 @@ const skip = new Set([
   'node_modules',
   '.nuxt',
   '.nuxt-production',
+  '.nuxt-setup-sandbox',
   '.output',
   'dist',
   '.dev-dist',
+  '.setup-sandbox-dist',
   '.cache',
   'coverage',
 ])

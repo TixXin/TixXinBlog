@@ -238,7 +238,25 @@ The `/setup` form, the home page "not set up yet" notice and the setup prompt on
 | `/?preview=setup-pending`                 | The home page notice                                                  |
 | `/admin/login?preview=setup-pending`      | The sign-in page setup prompt                                         |
 
-Previews change only what the frontend shows: submitting still runs the frontend validation but sends no request, creates no account and does not sign in. To go through the real flow, use the [Local Build Trial](#local-build-trial). The parameters work only in development mode and unit tests; in production builds the check is always false, and an end-to-end test verifies that adding them on a live site neither reopens the form nor shows the notice.
+Previews change only what the frontend shows: submitting still runs the frontend validation but sends no request, creates no account and does not sign in. To go through the real flow, use the [Setup Sandbox](#setup-sandbox); to try the install flow itself, use the [Local Build Trial](#local-build-trial). The parameters work only in development mode and unit tests; in production builds the check is always false, and an end-to-end test verifies that adding them on a live site neither reopens the form nor shows the notice.
+
+## Setup Sandbox
+
+To go through the real flow (home page notice, form, submit, automatic sign-in, admin), use the setup sandbox. It uses a fixed, separate empty database `tixxin_blog_setup_sandbox` on the development PostgreSQL instance and starts its own API (3467) and hot-reloading frontend (3466), so it can run alongside `dev:all`:
+
+```sh
+corepack pnpm dev:setup         # create the database (or reuse it), run the regular migrations, start the sandbox and print the setup link
+corepack pnpm dev:setup:reset   # drop and recreate it empty to try again
+corepack pnpm dev:setup:down    # drop the sandbox database
+```
+
+- When ready, the terminal prints `http://localhost:3466/setup?token=<token>` and the home page address. The token is random on every start and reaches the sandbox API only through the child process environment; no environment file is written. The JWT signing secret is also random per start, so a restart signs you out.
+- An existing sandbox database is reused and brought up to date with pending migrations; no samples are written, and the command says whether it is already set up. Once set up, the setup page shows the completed state; to start over, press Ctrl+C and run `reset`.
+- Connection settings come from the backend development `DATABASE_URL` with only the database name replaced, and only a local PostgreSQL is accepted. Create and drop run from the `postgres` maintenance database, never connect to the development database, and only ever target the exact fixed name. Dropping is refused while the sandbox database has other connections (sandbox services, database clients); nothing is forcibly disconnected.
+- If a sandbox port is in use, the command exits with an error and neither reuses nor stops the process holding it; `reset` and `down` also refuse while the sandbox ports are in use. Change ports with `--web-port=<port>` / `--api-port=<port>` (use the same values for all three commands); `--logs` mirrors redacted logs in the current terminal.
+- The frontend forwards through the same-origin Nuxt gateway `/api/v1` to the sandbox API (`CORS_ORIGIN` is the sandbox frontend origin). In development mode the sign-in cookie is not Secure, so automatic sign-in works on `http://localhost`. Like the unified launcher, the sandbox API defaults to `RATE_LIMIT_DISABLED=true`, so the setup endpoint is not rate-limited and can be submitted repeatedly; an explicit `RATE_LIMIT_DISABLED=false` in the backend `.env.local` keeps rate limiting.
+- Background jobs, email notifications and scheduled backups are off. Media goes to `.artifacts/setup-sandbox/media/` (cleared by `reset` / `down`). The frontend uses its own build directory `.nuxt-setup-sandbox/` and the backend compiles to `.setup-sandbox-dist/`, leaving the everyday `.nuxt/` and `.dev-dist/` untouched. Session logs and `session.json` are in `.artifacts/setup-sandbox/sessions/`.
+- Ctrl+C stops only the two services started by this run; the sandbox database is kept.
 
 ## Local Build Trial
 

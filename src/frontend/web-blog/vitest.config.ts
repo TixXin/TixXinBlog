@@ -29,6 +29,7 @@ export default defineVitestConfig({
         '**/node_modules/**',
         '**/.nuxt/**',
         '**/.nuxt-production/**',
+        '**/.nuxt-setup-sandbox/**',
         '**/.output/**',
         '**/dist/**',
         '**/coverage/**',

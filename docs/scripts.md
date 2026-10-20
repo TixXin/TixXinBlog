@@ -17,6 +17,9 @@
 | `dev:terminal`     | `node scripts/dev/terminal.mjs`                |
 | `dev:terminal:api` | `node scripts/dev/terminal.mjs --service=api`  |
 | `dev:terminal:web` | `node scripts/dev/terminal.mjs --service=web`  |
+| `dev:setup`        | `node scripts/dev/setup-sandbox.mjs start`     |
+| `dev:setup:reset`  | `node scripts/dev/setup-sandbox.mjs reset`     |
+| `dev:setup:down`   | `node scripts/dev/setup-sandbox.mjs down`      |
 
 `dev` 与别名 `dev:blog` 直接启动 Nuxt 前端开发服务并热更新，默认监听 `http://127.0.0.1:3456`；端口不可用时 Nuxt 可能改用其他端口，以终端打印的 Local 地址为准。它不启动后端、不检查数据库，也不复用已运行的前端，启动前可先运行 `dev:check` 避免重复启动。“只启动前端”不代表只能使用 Mock：浏览器仍请求同源 `/api/v1`，由 Nuxt 转发到 `NUXT_API_BASE_URL`，因此已运行的后端中的数据照常显示。
 
@@ -32,6 +35,8 @@
 
 `dev:terminal` 仅用于 macOS，为后端和前端分别打开独立 Terminal.app 窗口并显示日志：先处理后端，就绪后再处理前端，已就绪的本项目服务直接复用。`--help` 查看帮助，`--dry-run` 只显示启动命令而不开窗或写日志。启动前后都运行 `dev:check`；Ctrl+C 只停止对应窗口创建的服务。窗口启动日志在 `.artifacts/dev-terminal/`，服务会话日志在 `.artifacts/dev/`。新终端读取自己的环境和项目配置，不转发调用方临时设置的业务环境变量。`dev:terminal:api`、`dev:terminal:web` 只为单个服务开窗，其余行为相同；单独开前端前需准备好后端和数据库。
 
+`dev:setup` 在当前终端托管初始化沙盒：在日常 PostgreSQL 实例上创建或复用固定空库 `tixxin_blog_setup_sandbox` 并执行正式迁移，不写样本；以随机 `SETUP_TOKEN` 启动沙盒 API（3467）和指向它的热更新前端（3466），就绪后打印初始化链接与首页地址。端口被占用时报错退出，不复用也不结束占用进程；可选 `--web-port=`、`--api-port=` 与 `--logs`。Ctrl+C 只结束本次启动的两个服务，沙盒库保留。`dev:setup:reset` 删除并重建为空库，`dev:setup:down` 删除沙盒库；两者都只作用于该固定库名，沙盒端口仍有服务或沙盒库还有其他连接时拒绝。沙盒变量只通过子进程环境传入，不改写环境文件；限流、Cookie 与目录隔离见[初始化沙盒](development.md#初始化沙盒)。
+
 ## 启动器与框架补丁测试
 
 | 命令                   | 实际执行                                                   |
@@ -41,7 +46,7 @@
 | `test:dev:postgres`    | `node scripts/dev/postgres-integration.mjs`                |
 | `test:nuxt-patches`    | `node --test scripts/nuxt/*.test.mjs`                      |
 
-- `test:dev`：开发配置、进程托管、服务复用、终端命令生成及数据库菜单测试。部分用例会创建短时进程并监听本机临时端口，不等同于真实数据库集成测试。
+- `test:dev`：开发配置、进程托管、服务复用、终端命令生成、初始化沙盒参数与库名校验及数据库菜单测试。部分用例会创建短时进程并监听本机临时端口，不等同于真实数据库集成测试。
 - `test:dev:integration`：用真实 Nuxt、NestJS 和隔离数据库验证冷启动、就绪、复用及退出清理。需要可用 PostgreSQL 和创建临时数据库的权限，会启动临时服务并产生运行产物。
 - `test:dev:postgres`：验证 PostgreSQL Compose 启动、容器归属及连接配置不匹配时的拒绝行为。需要 Docker 和 Docker Compose，只使用本次测试的临时容器和数据卷。
 - `test:nuxt-patches`：固定版本 Nuxt 路由启动补丁的回归测试，覆盖原生历史、查询参数、hash 及 SSR/SSG 行为。需先安装依赖并应用 pnpm 补丁；不是完整浏览器回归。

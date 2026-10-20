@@ -234,7 +234,25 @@ it('英文冒烟', async () => {
 | `/?preview=setup-pending`                 | 首页未初始化提示                             |
 | `/admin/login?preview=setup-pending`      | 登录页初始化引导                             |
 
-预览只改变前端显示：表单提交照常执行前端校验，但不请求接口、不创建账号，也不会自动登录；需要真实走完整流程时用[本地构建试装](#本地构建试装)。参数只在开发模式与单元测试中生效，生产构建中判定恒为 false，端到端用例会核对线上带参数访问不会重新打开表单或显示提示。
+预览只改变前端显示：表单提交照常执行前端校验，但不请求接口、不创建账号，也不会自动登录；需要真实走完整流程时用[初始化沙盒](#初始化沙盒)，体验安装流程本身时用[本地构建试装](#本地构建试装)。参数只在开发模式与单元测试中生效，生产构建中判定恒为 false，端到端用例会核对线上带参数访问不会重新打开表单或显示提示。
+
+## 初始化沙盒
+
+需要真实走完「首页提示 → 填表 → 提交 → 自动登录 → 进入后台」时，用初始化沙盒。它在日常 PostgreSQL 实例上使用固定的独立空库 `tixxin_blog_setup_sandbox`，另起一组 API（3467）与热更新前端（3466），可以和 `dev:all` 同时运行：
+
+```sh
+corepack pnpm dev:setup         # 建库（已存在则复用）、执行正式迁移并启动沙盒，打印初始化链接
+corepack pnpm dev:setup:reset   # 删除并重建为空库，以便重新体验
+corepack pnpm dev:setup:down    # 删除沙盒库
+```
+
+- 就绪后终端打印 `http://localhost:3466/setup?token=<令牌>` 与首页地址。令牌每次启动随机生成，只通过子进程环境传给沙盒 API，不写入任何环境文件；JWT 签名密钥同样每次随机，重启后需重新登录。
+- 启动时沙盒库已存在则复用并补齐待执行迁移，不写任何样本，并提示当前是否已初始化；已初始化时初始化页显示已完成，需要重来先 Ctrl+C 再 `reset`。
+- 连接参数从后端开发配置的 `DATABASE_URL` 推出，只替换库名；只接受本机 PostgreSQL。建库与删库从维护库 `postgres` 发起，不连接日常开发库，且只作用于名称完全等于固定库名的库。删除前沙盒库还有其他连接（沙盒服务、数据库客户端等）时拒绝，不强制断开。
+- 沙盒端口被占用时报错退出，不复用也不结束占用进程；`reset` / `down` 在沙盒端口仍有服务时同样拒绝。端口可用 `--web-port=<端口>` / `--api-port=<端口>` 调整（三条命令需一致），`--logs` 在当前终端同步显示脱敏日志。
+- 前端经 Nuxt 同源网关 `/api/v1` 转发到沙盒 API（`CORS_ORIGIN` 为沙盒前端源），开发模式下登录 Cookie 不带 Secure，`http://localhost` 下可自动登录。沙盒 API 与统一启动器一致默认注入 `RATE_LIMIT_DISABLED=true`，初始化接口不限流以便反复提交；后端 `.env.local` 显式写 `RATE_LIMIT_DISABLED=false` 时保留限流。
+- 沙盒关闭后台任务、邮件通知与周期备份，媒体写入 `.artifacts/setup-sandbox/media/`（`reset` / `down` 一并清理）。前端使用独立构建目录 `.nuxt-setup-sandbox/`，后端编译到 `.setup-sandbox-dist/`，不改写日常开发的 `.nuxt/` 与 `.dev-dist/`。会话日志与 `session.json` 位于 `.artifacts/setup-sandbox/sessions/`。
+- Ctrl+C 只结束本次启动的两个服务，沙盒库保留。
 
 ## 本地构建试装
 

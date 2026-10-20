@@ -4,9 +4,11 @@ node_modules
 .output
 **/.nuxt
 **/.nuxt-production
+**/.nuxt-setup-sandbox
 **/.output
 **/dist
 **/.dev-dist
+**/.setup-sandbox-dist
 **/*.tsbuildinfo
 **/coverage
 .git

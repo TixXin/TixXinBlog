@@ -54,6 +54,12 @@ export default {
       // 站点模块默认把 envName 当作发布环境；构建目录名称不应导致正式站点被禁止索引。
       site: { env: 'production' },
     },
+    // 初始化沙盒（dev:setup）与日常 dev:all 可同时运行，各用独立构建与 Vite 依赖缓存目录，互不改写。
+    'setup-sandbox': {
+      buildDir: '.nuxt-setup-sandbox',
+      vite: { cacheDir: 'node_modules/.cache/vite-setup-sandbox' },
+      site: { env: 'development' },
+    },
   },
   compatibilityDate: '2025-07-15',
   devtools: { enabled: process.env.NUXT_DEVTOOLS_ENABLED === 'true' },

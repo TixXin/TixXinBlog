@@ -4,9 +4,11 @@ node_modules/
 # 构建产物
 .nuxt/
 .nuxt-production/
+.nuxt-setup-sandbox/
 .output/
 dist/
 .dev-dist/
+.setup-sandbox-dist/
 *.tsbuildinfo
 
 # 环境变量
