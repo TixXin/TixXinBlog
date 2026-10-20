@@ -44,7 +44,7 @@ usage() {
   status
         显示试装站点状态与当前开发版本。
   down [--yes]
-        删除试装站点的容器、数据卷、目录、本机下载目录与本脚本打的开发镜像标签。
+        一键删除试装站点与全部数据：容器、数据卷、网络、目录、本机下载目录与本脚本打的开发镜像标签。
 
 约定：目录 ${TRIAL_DIR}，项目 ${PROJECT}，https://localhost:${HTTPS_PORT}（HTTP ${HTTP_PORT}），
       内部子网 ${SUBNET}；与官方试用（~/tixxin-blog、8443）互不干扰。
@@ -144,16 +144,31 @@ cmd_install() {
     if command -v sha256sum > /dev/null 2>&1; then actual=$(sha256sum "$release_dir/install.sh" | awk '{ print $1 }'); else actual=$(shasum -a 256 "$release_dir/install.sh" | awk '{ print $1 }'); fi
     [ -n "$expected" ] && [ "$expected" = "$actual" ] || fail 'install.sh 与 SHA256SUMS 不一致'
     step "安装官方 v${FROM_RELEASE} 到 ${TRIAL_DIR}"
-    bash "$release_dir/install.sh" "${args[@]}" --version "$FROM_RELEASE"
+    bash "$release_dir/install.sh" "${args[@]}" --version "$FROM_RELEASE" || install_failed
     info ''
     info "已安装官方 v${FROM_RELEASE}。改完代码后运行 corepack pnpm trial:update 升级到当前代码。"
+    trial_hints
     return 0
   fi
   version=$(dev_version)
   build_images "$version"
   package "$version"
   step "安装开发版本 ${version} 到 ${TRIAL_DIR}"
-  bash "$DOWNLOAD/v$version/install.sh" "${args[@]}" --version "$version" --download-base "file://$DOWNLOAD" --no-pull
+  bash "$DOWNLOAD/v$version/install.sh" "${args[@]}" --version "$version" --download-base "file://$DOWNLOAD" --no-pull || install_failed
+  trial_hints
+}
+
+# install.sh 只提示 tixxin 子命令；试装站点另有 trial 系列命令，尤其要让人知道如何一键删除。
+trial_hints() {
+  info ''
+  info '试装管理：corepack pnpm trial:update（升级到当前代码）| trial:status | trial:down（删除试装站点与全部数据）'
+}
+
+install_failed() {
+  local code=$?
+  info '' >&2
+  info '[trial] 安装未完成；确认不需要保留现场后，可用 corepack pnpm trial:down 删除试装站点与全部数据后重装。' >&2
+  exit "$code"
 }
 
 cmd_update() {
