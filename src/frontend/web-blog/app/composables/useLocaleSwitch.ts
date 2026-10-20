@@ -23,17 +23,28 @@ export function useLocaleSwitch() {
   const switching = ref(false)
   const options = SUPPORTED_LOCALES.map((code) => ({ code, name: LOCALE_NATIVE_NAMES[code] }))
 
+  // 切换按点击顺序串行执行：字典加载中再选回原语言时，等前一次完成后再切回，界面与最后一次选择一致
+  let queue: Promise<void> = Promise.resolve()
+  let pending = 0
+
   /** 切换到指定语言并记住选择；同一语言或不受支持的值直接忽略 */
-  async function switchLocale(code: string) {
-    if (!isSupportedLocale(code) || code === locale.value) return
+  function switchLocale(code: string): Promise<void> {
+    if (!isSupportedLocale(code)) return Promise.resolve()
+    pending += 1
     switching.value = true
-    try {
+    const run = queue.then(async () => {
+      if (code === locale.value) return
       await setLocale(code)
       // 字典加载并切换完成后才记住选择，失败时下次访问仍按原语言渲染。
       cookie.value = code
-    } finally {
-      switching.value = false
-    }
+    })
+    queue = run
+      .catch(() => {})
+      .finally(() => {
+        pending -= 1
+        if (!pending) switching.value = false
+      })
+    return run
   }
 
   return { locale, options, switching, switchLocale }

@@ -4,7 +4,7 @@
  * @author TixXin
  * @since 2026-10-19
  */
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createRequire } from 'node:module'
 import { flushPromises } from '@vue/test-utils'
 import { mockNuxtImport, mountSuspended, registerEndpoint } from '@nuxt/test-utils/runtime'
@@ -66,6 +66,11 @@ registerEndpoint('/api/v1/auth/login', {
 })
 
 const i18n = () => useNuxtApp().$i18n
+
+// 英文字典按需加载，冷启动的 CI 上首次加载可能超过 waitFor 的默认时长；预先加载后切换只剩同步渲染
+beforeAll(async () => {
+  await i18n().loadLocaleMessages('en')
+})
 
 beforeEach(() => {
   mocks.navigate.mockReset()
@@ -231,6 +236,17 @@ describe('/setup 初始化向导', () => {
     expect(mocks.logins).toEqual([{ username: 'owner', password: 'correct-horse-battery' }])
     expect(mocks.success).toHaveBeenCalledWith('Owner account created. You are now signed in.')
     expect(mocks.navigate).toHaveBeenCalledWith('/admin')
+  })
+
+  it('英文切换尚未完成时选回中文，界面最终停在最后一次选择', async () => {
+    const wrapper = await mountSetup()
+    await wrapper.find('input[type="radio"][value="en"]').setValue(true)
+    await wrapper.find('input[type="radio"][value="zh-CN"]').setValue(true)
+    await vi.waitFor(() => expect(i18n().locale.value).toBe('zh-CN'))
+    await flushPromises()
+    await new Promise((resolve) => setTimeout(resolve, 50))
+    expect(i18n().locale.value).toBe('zh-CN')
+    expect(wrapper.find('h1').text()).toBe('欢迎使用 TixXinBlog')
   })
 
   it('账号已创建但自动登录失败时退回登录页并提示，不重复提交初始化', async () => {
