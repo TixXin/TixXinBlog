@@ -206,6 +206,9 @@ function invalid(field: SetupProfileField) {
 </script>
 
 <style scoped lang="scss">
+@use '~/assets/styles/setup-form' as form;
+@include form.styles;
+
 .profile-step {
   display: flex;
   flex-direction: column;

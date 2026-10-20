@@ -71,5 +71,8 @@ export interface SetupProfileDraft {
   searchIndexing: boolean
 }
 
+/** 第一步前端校验与接口拒绝能定位到的字段 */
+export type SetupAccountField = 'token' | 'username' | 'password' | 'confirm'
+
 /** 向导页状态：确认中、可填写、已关闭（已初始化或未开启）、状态读取失败 */
 export type SetupPhase = 'checking' | 'open' | 'closed' | 'error'

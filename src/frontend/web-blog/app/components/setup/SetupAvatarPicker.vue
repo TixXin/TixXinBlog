@@ -156,6 +156,9 @@ async function choose(event: Event) {
 </script>
 
 <style scoped lang="scss">
+@use '~/assets/styles/setup-form' as form;
+@include form.styles;
+
 .avatar-picker {
   margin: 0;
   padding: 0;

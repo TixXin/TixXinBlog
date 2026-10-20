@@ -1,0 +1,84 @@
+/**
+ * @file _setup-form.scss
+ * @description 初始化向导的共享表单外观：字段、说明、错误提示、输入框与分组标题。
+ *              由向导各组件在 scoped 样式中 @include，生成的规则带各自的作用域，不再由父组件 :deep 下发
+ * @author TixXin
+ * @since 2026-10-20
+ */
+@use 'tokens' as *;
+
+@mixin styles {
+  .setup-field {
+    display: flex;
+    flex-direction: column;
+    gap: 0.375rem;
+  }
+  .setup-field > label {
+    font-size: 0.875rem;
+    font-weight: 500;
+  }
+  .setup-field__help {
+    margin: 0;
+    color: var(--text-muted);
+    font-size: 0.8125rem;
+    line-height: 1.55;
+  }
+  .setup-field__error {
+    display: flex;
+    gap: 0.375rem;
+    align-items: flex-start;
+    margin: 0;
+    color: var(--danger-text);
+    font-size: 0.8125rem;
+
+    svg {
+      flex-shrink: 0;
+      margin-top: 0.1875rem;
+    }
+  }
+  // 向导内统一矩形圆角与 44px 触控高度，和按钮保持一致
+  .setup-input {
+    min-height: 2.75rem;
+    border-color: var(--border);
+    border-radius: $radius-md;
+    padding: 0.5rem 0.875rem;
+
+    &[aria-invalid='true'] {
+      border-color: var(--danger);
+
+      &:focus {
+        box-shadow: 0 0 0 4px color-mix(in srgb, var(--danger) 18%, transparent);
+      }
+    }
+  }
+  .setup-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.875rem;
+    margin: 0;
+    padding: 1.25rem 0 0;
+    border: 0;
+    border-top: 1px solid var(--border-soft);
+    min-width: 0;
+
+    &:first-child {
+      padding-top: 0;
+      border-top: 0;
+    }
+  }
+  .setup-group__title {
+    float: left;
+    width: 100%;
+    margin: 0;
+    padding: 0;
+    color: var(--text-soft);
+    font-size: 0.75rem;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+
+    + * {
+      clear: both;
+    }
+  }
+}
