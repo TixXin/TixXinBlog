@@ -7,9 +7,16 @@ export interface OverviewContent {
   status: 'draft' | 'published' | 'archived' | 'withdrawn'
   updatedAt: string
 }
+/** 近 30 天按日（UTC）的新建内容与收到的互动 */
+export interface OverviewTrendDay {
+  date: string
+  content: number
+  interactions: number
+}
 export interface AdminOverview {
   counts: Record<string, number> | null
   recentContent: OverviewContent[] | null
-  unavailable: ('counts' | 'recentContent')[]
+  trends: OverviewTrendDay[] | null
+  unavailable: ('counts' | 'recentContent' | 'trends')[]
   generatedAt: string
 }
