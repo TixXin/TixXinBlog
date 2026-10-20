@@ -66,6 +66,7 @@ export function terminalAppleScript(command, service, bounds) {
   // 服务结束后窗口保留错误输出；下次启动前只关闭同一服务且已无运行进程的旧窗口，避免窗口堆积。
   // 先取窗口 id 再逐个关闭：按序号遍历时关闭会使后续序号前移而漏关。
   // do script 不指定已有标签，确保不向用户正在使用的 shell 或进程输入命令。
+  // 新窗口不一定在最前（全屏空间、其他应用在前台），按新标签反查所在窗口，不用 front window。
   return `tell application "Terminal"
   repeat with staleId in (get id of every window)
     try
@@ -77,8 +78,9 @@ export function terminalAppleScript(command, service, bounds) {
   activate
   set devTab to do script ${appleQuote(command)}
   set custom title of devTab to ${title}
-  set bounds of front window to {${bounds.join(', ')}}
-  return id of front window
+  set devWindow to first window whose tabs contains devTab
+  set bounds of devWindow to {${bounds.join(', ')}}
+  return id of devWindow
 end tell`
 }
 

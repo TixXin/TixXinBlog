@@ -26,7 +26,10 @@ test('生成 AppleScript 时转义命令中的双引号及反斜杠', () => {
     '  set devTab to do script "printf \\"%s\\" \\"C:\\\\博客\\\\目录\\""',
   )
   assert(script.includes('set custom title of devTab to "TixXinBlog | 前端网站"'))
-  assert(script.includes('set bounds of front window to {-1920, 32, -960, 592}'))
+  // 新窗口按新标签反查，不依赖 front window：Terminal 不在前台或处于全屏空间时 front window 可能不是新窗口
+  assert(script.includes('set devWindow to first window whose tabs contains devTab'))
+  assert(script.includes('set bounds of devWindow to {-1920, 32, -960, 592}'))
+  assert(!script.includes('front window'))
   assert(!script.includes('后端 API'))
 })
 
