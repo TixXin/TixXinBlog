@@ -93,8 +93,6 @@ async function onSubmit() {
 }
 </script>
 <style scoped lang="scss">
-@use 'tokens' as *;
-
 .auth-login {
   display: flex;
   flex-direction: column;

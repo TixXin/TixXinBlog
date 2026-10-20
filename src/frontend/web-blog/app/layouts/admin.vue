@@ -139,8 +139,6 @@ async function leave() {
 }
 </script>
 <style scoped lang="scss">
-@use 'tokens' as *;
-
 .admin-shell {
   display: grid;
   grid-template-columns: 15rem minmax(0, 1fr);
