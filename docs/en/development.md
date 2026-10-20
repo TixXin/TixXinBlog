@@ -240,6 +240,8 @@ The `/setup` form, the home page "not set up yet" notice and the setup prompt on
 
 Previews change only what the frontend shows: submitting still runs the frontend validation but sends no request, creates no account and does not sign in. To go through the real flow, use the [Setup Sandbox](#setup-sandbox); to try the install flow itself, use the [Local Build Trial](#local-build-trial). The parameters work only in development mode and unit tests; in production builds the check is always false, and an end-to-end test verifies that adding them on a live site neither reopens the form nor shows the notice.
 
+Instead of typing the addresses, open the **Preview** tab of the DEV debug panel (top left): it switches among the six states with one click, shows the current preview with an **Exit preview** button, applies changes on the same page immediately, and lists the setup sandbox command at the bottom.
+
 ## Setup Sandbox
 
 To go through the real flow (home page notice, form, submit, automatic sign-in, admin), use the setup sandbox. It uses a fixed, separate empty database `tixxin_blog_setup_sandbox` on the development PostgreSQL instance and starts its own API (3467) and hot-reloading frontend (3466), so it can run alongside `dev:all`:

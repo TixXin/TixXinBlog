@@ -192,7 +192,11 @@ try {
   // 非交互调用（管道）时与 dev.mjs 一致：输入结束或收到 stop 即停止本次服务。
   if (options.action === 'start' && !process.stdin.isTTY) {
     process.stdin.resume()
-    process.stdin.once('end', () => void stop())
+    process.stdin.once('end', () => {
+      // 输入在就绪前结束时不说明原因，看起来像是无故退出
+      report('标准输入已结束（非交互运行），停止初始化沙盒；在终端中直接运行，或经管道保持输入打开')
+      void stop()
+    })
     process.stdin.on('data', (value) => {
       if (String(value).trim() === 'stop') void stop()
     })
