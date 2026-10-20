@@ -1,9 +1,22 @@
-/** @file admin-overview.controller.ts @description 服务端汇总六域创作与真实互动待办；分区失败不伪装为零。 */
+/**
+ * @file admin-overview.controller.ts
+ * @description 服务端汇总六域创作、真实互动待办与近 30 天按日趋势（UTC 日期，新建内容与收到的互动）；
+ *              分区失败不伪装为零
+ */
 import { EntityManager } from '@mikro-orm/postgresql'
 import { Controller, Get, UseGuards } from '@nestjs/common'
 import { AdminAuthGuard } from '../../common/guards/admin-auth.guard'
 import { unansweredCommentSql, visibleCommentSql } from '../comment/comment-visibility'
 import { unansweredGuestbookSql } from '../guestbook/guestbook-values'
+
+interface TrendDay {
+  date: string
+  content: number
+  interactions: number
+}
+
+/** 趋势覆盖的天数（含今天） */
+const TREND_DAYS = 30
 
 interface RecentContent {
   domain: string
@@ -21,7 +34,7 @@ export class AdminOverviewController {
   @Get()
   async overview() {
     const connection = this.em.getConnection()
-    const [counts, recent] = await Promise.allSettled([
+    const [counts, recent, trends] = await Promise.allSettled([
       connection.execute<Record<string, number>[]>(`
         select
           (select count(*)::int from post where deleted_at is null) as "posts",
@@ -29,6 +42,7 @@ export class AdminOverviewController {
           (select count(*)::int from post where status='published' and deleted_at is null) as "published",
           (select count(*)::int from post where status='draft' and deleted_at is null) as "drafts",
           (select count(*)::int from post where status='archived' and deleted_at is null) as "archived",
+          (select coalesce(sum(views),0)::int from post where status='published' and deleted_at is null) as "views",
           (select count(*)::int from comment) as "comments",
           (select count(*)::int from comment where status='pending') as "pendingComments",
           (select count(*)::int from comment where status='spam') as "spamComments",
@@ -69,6 +83,33 @@ export class AdminOverviewController {
             from friend_link where deleted_at is null order by updated_at desc,id desc limit 12)
         ) recent order by "updatedAt" desc,domain,id desc limit 12
       `),
+      // 每日新建内容（六域）与收到的互动（四类评论与留言），已删除的不计
+      connection.execute<TrendDay[]>(`
+        with days as (
+          select generate_series((now() at time zone 'UTC')::date - ${TREND_DAYS - 1}, (now() at time zone 'UTC')::date, interval '1 day')::date as day
+        ),
+        since as (select ((now() at time zone 'UTC')::date - ${TREND_DAYS - 1})::timestamp at time zone 'UTC' as at),
+        content as (
+          select (created_at at time zone 'UTC')::date as day, count(*)::int as total from (
+            select created_at from post where deleted_at is null
+            union all select created_at from flash_note
+            union all select created_at from moment where deleted_at is null
+            union all select created_at from gallery_photo where deleted_at is null
+            union all select created_at from project where deleted_at is null
+            union all select created_at from friend_link where deleted_at is null
+          ) items where created_at >= (select at from since) group by 1
+        ),
+        interactions as (
+          select (created_at at time zone 'UTC')::date as day, count(*)::int as total from (
+            select created_at from comment
+            union all select created_at from moment_comment where deleted_at is null
+            union all select created_at from flash_comment
+            union all select created_at from guestbook_message where deleted_at is null
+          ) items where created_at >= (select at from since) group by 1
+        )
+        select to_char(d.day,'YYYY-MM-DD') as date, coalesce(c.total,0)::int as content, coalesce(i.total,0)::int as interactions
+        from days d left join content c using(day) left join interactions i using(day) order by d.day
+      `),
     ])
     return {
       counts: counts.status === 'fulfilled' ? counts.value[0] : null,
@@ -76,9 +117,11 @@ export class AdminOverviewController {
         recent.status === 'fulfilled'
           ? recent.value.map((item) => ({ ...item, updatedAt: new Date(item.updatedAt).toISOString() }))
           : null,
+      trends: trends.status === 'fulfilled' ? trends.value : null,
       unavailable: [
         ...(counts.status === 'rejected' ? ['counts'] : []),
         ...(recent.status === 'rejected' ? ['recentContent'] : []),
+        ...(trends.status === 'rejected' ? ['trends'] : []),
       ],
       generatedAt: new Date().toISOString(),
     }

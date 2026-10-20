@@ -298,7 +298,7 @@
 | `GET /admin/media/:id/references`、`GET /media/:file`                                | 管理引用明细与公开 WebP 字节；`file` 必须为 UUID v4 加 `.webp`，可选查询参数 `w` 仅接受 320、640、960、1280，其他值返回 400 |
 | `GET /admin/content-relations`                                                       | 管理端选择有向关联目标，最终关系随来源内容版本保存                                                                          |
 | `POST /admin/content-relations/resolve`                                              | 只读解析指定关联目标，返回其当前可见状态                                                                                    |
-| `GET /admin/overview`                                                                | 服务端真实草稿、互动待办与最近编辑聚合                                                                                      |
+| `GET /admin/overview`                                                                | 服务端真实草稿、互动待办、最近编辑与近 30 天按日趋势聚合；分区失败列入 `unavailable`                                        |
 | `GET /admin/notifications`、`GET /admin/notifications/summary`                       | 通知分页与未读统计；详情实时解析业务状态                                                                                    |
 | `GET /admin/notifications/:id`                                                       | 读取单条通知及实时业务状态                                                                                                  |
 | `POST /admin/notifications/:id/read`                                                 | 仅改变已读，不完成审核或回复                                                                                                |
