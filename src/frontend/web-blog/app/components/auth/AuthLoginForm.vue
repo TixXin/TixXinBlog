@@ -4,7 +4,7 @@
 -->
 <template>
   <form class="auth-login" @submit.prevent="onSubmit">
-    <p class="auth-login__hint">{{ $t('interaction.auth.loginHint') }}</p>
+    <p v-if="!hideHint" class="auth-login__hint">{{ $t('interaction.auth.loginHint') }}</p>
     <div class="auth-field">
       <label class="auth-field__label" for="login-username">{{ $t('interaction.auth.username') }}</label>
       <input
@@ -47,6 +47,8 @@
 <script setup lang="ts">
 import type { AuthView } from '~/features/auth/types'
 const emit = defineEmits<{ switchView: [view: AuthView]; authenticated: [] }>()
+const props = defineProps<{ hideHint?: boolean }>()
+const { hideHint } = toRefs(props)
 const { login } = useCurrentUser()
 const { close } = useLoginDrawer()
 const { success } = useToast()

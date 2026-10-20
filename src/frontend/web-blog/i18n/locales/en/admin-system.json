@@ -780,6 +780,7 @@
       "traceId": " · request ID {id}"
     },
     "login": {
+      "hint": "Owner sign-in. Visitors don't need an account to leave comments.",
       "changed": "Password changed. Sign in again with your new password.",
       "help": "Use the author account provided by the site maintainer. Contact the maintainer if you need to recover your password.",
       "setupNeeded": "This site has no owner account yet. Finish setup first using the link printed when installation finished.",
