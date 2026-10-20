@@ -242,6 +242,20 @@ async function addSocial() {
   flex-direction: column;
   gap: 1.25rem;
 }
+// 卡片展开到足够宽时左右两列：左侧博主资料，右侧站点设置，整体高度与第一步接近
+@container setup (min-width: 760px) {
+  .profile-step {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 2.5rem;
+    align-items: start;
+  }
+  // 比页面下发的 .setup :deep(.setup-group) 多一个元素选择器，确保两列时去掉分隔线
+  .profile-step > fieldset.setup-group {
+    padding-top: 0;
+    border-top: 0;
+  }
+}
 .setup-field__label {
   font-size: 0.875rem;
   font-weight: 500;

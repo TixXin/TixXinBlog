@@ -350,9 +350,9 @@ describe('/setup 初始化向导', () => {
     await flushPromises()
     expect(wrapper.find('#setup-owner-name-error').text()).toBe('请填写博主名')
     await wrapper.find('.setup__back').trigger('click')
-    await flushPromises()
+    // 切换步骤带动画，等第一步重新出现且焦点落到标题
+    await vi.waitFor(() => expect(document.activeElement?.id).toBe('setup-title'))
     expect((wrapper.find('#setup-username').element as HTMLInputElement).value).toBe('owner')
-    expect(document.activeElement?.id).toBe('setup-title')
     await toProfile(wrapper)
     expect((wrapper.find('.profile-step__check input').element as HTMLInputElement).checked).toBe(false)
   })
@@ -392,7 +392,7 @@ describe('/setup 开发预览', () => {
     await fillAccount(wrapper, 'owner', 'abc123')
     await toProfile(wrapper)
     await wrapper.find('form').trigger('submit')
-    await flushPromises()
+    await vi.waitFor(() => expect(wrapper.find('#setup-token-error').exists()).toBe(true))
     expect(wrapper.find('#setup-token-error').text()).toBe(
       '（预览）模拟接口拒绝：初始化令牌无效，请核对安装完成时输出的链接',
     )

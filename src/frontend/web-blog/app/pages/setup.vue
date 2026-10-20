@@ -6,7 +6,13 @@
 -->
 <template>
   <div class="setup-page">
-    <section class="setup" aria-labelledby="setup-title" :aria-busy="phase === 'checking'">
+    <section
+      ref="card"
+      class="setup"
+      :class="{ 'setup--wide': step === 2, 'is-switching': switching }"
+      aria-labelledby="setup-title"
+      :aria-busy="phase === 'checking'"
+    >
       <header class="setup__head">
         <img class="setup__mark" src="/icon.svg" alt="" width="44" height="44" />
         <p v-if="phase === 'open'" class="setup__step">
@@ -15,12 +21,14 @@
           /></span>
           {{ t('admin-system.setup.profile.stepOf', { step, total: 2 }) }}
         </p>
-        <h1 id="setup-title" ref="heading" tabindex="-1">
-          {{ step === 1 ? t('admin-system.setup.welcome') : t('admin-system.setup.profile.title') }}
-        </h1>
-        <p class="setup__intro">
-          {{ step === 1 ? t('admin-system.setup.intro') : t('admin-system.setup.profile.intro') }}
-        </p>
+        <div ref="headText">
+          <h1 id="setup-title" ref="heading" tabindex="-1">
+            {{ step === 1 ? t('admin-system.setup.welcome') : t('admin-system.setup.profile.title') }}
+          </h1>
+          <p class="setup__intro">
+            {{ step === 1 ? t('admin-system.setup.intro') : t('admin-system.setup.profile.intro') }}
+          </p>
+        </div>
       </header>
       <!-- 确认状态期间先占出表单轮廓，避免加载完成后卡片高度突变 -->
       <div v-if="phase === 'checking'" class="setup-skeleton" role="status">
@@ -44,179 +52,182 @@
         </button>
       </div>
       <form v-else class="setup__form" novalidate @submit.prevent="onSubmit">
-        <fieldset :disabled="submitting">
-          <template v-if="step === 1">
-            <!-- 令牌随安装链接带入时不显示；链接未带或被接口拒绝时才要求手动填写 -->
-            <div v-if="showToken" class="setup-field">
-              <label for="setup-token">{{ t('admin-system.setup.tokenLabel') }}</label>
-              <input
-                id="setup-token"
-                :ref="(el) => bindInput('token', el)"
-                v-model.trim="token"
-                class="input-field setup-input"
-                type="text"
-                autocomplete="off"
-                autocapitalize="off"
-                spellcheck="false"
-                maxlength="512"
-                required
-                :aria-invalid="invalid('token')"
-                :aria-describedby="describedBy('token', 'setup-token-help')"
-              />
-              <p v-if="fieldError?.field === 'token'" id="setup-token-error" class="setup-field__error" role="alert">
-                <Icon name="lucide:circle-alert" aria-hidden="true" /><span>{{ fieldError.message }}</span>
-              </p>
-              <p id="setup-token-help" class="setup-field__help">{{ t('admin-system.setup.tokenHelp') }}</p>
-            </div>
-
-            <fieldset class="setup-group">
-              <legend class="setup-group__title">{{ t('admin-system.setup.sectionAccount') }}</legend>
-              <div class="setup-field">
-                <label for="setup-username">{{ t('admin-system.setup.usernameLabel') }}</label>
+        <fieldset :disabled="submitting || switching">
+          <!-- 步骤内容整体参与切换动画：先向切换方向淡出，卡片缩放到新尺寸后从另一侧滑入 -->
+          <div ref="stage" class="setup__stage">
+            <template v-if="step === 1">
+              <!-- 令牌随安装链接带入时不显示；链接未带或被接口拒绝时才要求手动填写 -->
+              <div v-if="showToken" class="setup-field">
+                <label for="setup-token">{{ t('admin-system.setup.tokenLabel') }}</label>
                 <input
-                  id="setup-username"
-                  :ref="(el) => bindInput('username', el)"
-                  v-model.trim="username"
+                  id="setup-token"
+                  :ref="(el) => bindInput('token', el)"
+                  v-model.trim="token"
                   class="input-field setup-input"
-                  autocomplete="username"
+                  type="text"
+                  autocomplete="off"
                   autocapitalize="off"
                   spellcheck="false"
-                  maxlength="64"
+                  maxlength="512"
                   required
-                  :aria-invalid="invalid('username')"
-                  :aria-describedby="describedBy('username', 'setup-username-help')"
+                  :aria-invalid="invalid('token')"
+                  :aria-describedby="describedBy('token', 'setup-token-help')"
                 />
-                <p
-                  v-if="fieldError?.field === 'username'"
-                  id="setup-username-error"
-                  class="setup-field__error"
-                  role="alert"
-                >
+                <p v-if="fieldError?.field === 'token'" id="setup-token-error" class="setup-field__error" role="alert">
                   <Icon name="lucide:circle-alert" aria-hidden="true" /><span>{{ fieldError.message }}</span>
                 </p>
-                <p id="setup-username-help" class="setup-field__help">{{ t('admin-system.setup.usernameHelp') }}</p>
+                <p id="setup-token-help" class="setup-field__help">{{ t('admin-system.setup.tokenHelp') }}</p>
               </div>
-              <div class="setup-field">
-                <label for="setup-password">{{ t('admin-system.setup.passwordLabel') }}</label>
-                <div class="setup-password">
+
+              <fieldset class="setup-group">
+                <legend class="setup-group__title">{{ t('admin-system.setup.sectionAccount') }}</legend>
+                <div class="setup-field">
+                  <label for="setup-username">{{ t('admin-system.setup.usernameLabel') }}</label>
                   <input
-                    id="setup-password"
-                    :ref="(el) => bindInput('password', el)"
-                    v-model="password"
+                    id="setup-username"
+                    :ref="(el) => bindInput('username', el)"
+                    v-model.trim="username"
+                    class="input-field setup-input"
+                    autocomplete="username"
+                    autocapitalize="off"
+                    spellcheck="false"
+                    maxlength="64"
+                    required
+                    :aria-invalid="invalid('username')"
+                    :aria-describedby="describedBy('username', 'setup-username-help')"
+                  />
+                  <p
+                    v-if="fieldError?.field === 'username'"
+                    id="setup-username-error"
+                    class="setup-field__error"
+                    role="alert"
+                  >
+                    <Icon name="lucide:circle-alert" aria-hidden="true" /><span>{{ fieldError.message }}</span>
+                  </p>
+                  <p id="setup-username-help" class="setup-field__help">{{ t('admin-system.setup.usernameHelp') }}</p>
+                </div>
+                <div class="setup-field">
+                  <label for="setup-password">{{ t('admin-system.setup.passwordLabel') }}</label>
+                  <div class="setup-password">
+                    <input
+                      id="setup-password"
+                      :ref="(el) => bindInput('password', el)"
+                      v-model="password"
+                      class="input-field setup-input"
+                      :type="passwordVisible ? 'text' : 'password'"
+                      autocomplete="new-password"
+                      :minlength="SETUP_PASSWORD_MIN_LENGTH"
+                      :maxlength="SETUP_PASSWORD_MAX_LENGTH"
+                      required
+                      :aria-invalid="invalid('password')"
+                      :aria-describedby="describedBy('password', 'setup-password-rules setup-password-tip')"
+                    />
+                    <button
+                      type="button"
+                      class="setup-password__toggle"
+                      :aria-label="
+                        passwordVisible ? t('admin-system.setup.hidePassword') : t('admin-system.setup.showPassword')
+                      "
+                      :aria-pressed="passwordVisible"
+                      aria-controls="setup-password setup-confirm"
+                      @click="passwordVisible = !passwordVisible"
+                    >
+                      <Icon :name="passwordVisible ? 'lucide:eye-off' : 'lucide:eye'" aria-hidden="true" />
+                    </button>
+                  </div>
+                  <p
+                    v-if="fieldError?.field === 'password'"
+                    id="setup-password-error"
+                    class="setup-field__error"
+                    role="alert"
+                  >
+                    <Icon name="lucide:circle-alert" aria-hidden="true" /><span>{{ fieldError.message }}</span>
+                  </p>
+                </div>
+                <div class="setup-field">
+                  <label for="setup-confirm">{{ t('admin-system.setup.confirmLabel') }}</label>
+                  <input
+                    id="setup-confirm"
+                    :ref="(el) => bindInput('confirm', el)"
+                    v-model="confirmation"
                     class="input-field setup-input"
                     :type="passwordVisible ? 'text' : 'password'"
                     autocomplete="new-password"
-                    :minlength="SETUP_PASSWORD_MIN_LENGTH"
                     :maxlength="SETUP_PASSWORD_MAX_LENGTH"
                     required
-                    :aria-invalid="invalid('password')"
-                    :aria-describedby="describedBy('password', 'setup-password-rules setup-password-tip')"
+                    :aria-invalid="invalid('confirm')"
+                    :aria-describedby="describedBy('confirm', 'setup-password-rules')"
                   />
-                  <button
-                    type="button"
-                    class="setup-password__toggle"
-                    :aria-label="
-                      passwordVisible ? t('admin-system.setup.hidePassword') : t('admin-system.setup.showPassword')
-                    "
-                    :aria-pressed="passwordVisible"
-                    aria-controls="setup-password setup-confirm"
-                    @click="passwordVisible = !passwordVisible"
+                  <p
+                    v-if="fieldError?.field === 'confirm'"
+                    id="setup-confirm-error"
+                    class="setup-field__error"
+                    role="alert"
                   >
-                    <Icon :name="passwordVisible ? 'lucide:eye-off' : 'lucide:eye'" aria-hidden="true" />
-                  </button>
+                    <Icon name="lucide:circle-alert" aria-hidden="true" /><span>{{ fieldError.message }}</span>
+                  </p>
                 </div>
-                <p
-                  v-if="fieldError?.field === 'password'"
-                  id="setup-password-error"
-                  class="setup-field__error"
-                  role="alert"
-                >
-                  <Icon name="lucide:circle-alert" aria-hidden="true" /><span>{{ fieldError.message }}</span>
-                </p>
-              </div>
-              <div class="setup-field">
-                <label for="setup-confirm">{{ t('admin-system.setup.confirmLabel') }}</label>
-                <input
-                  id="setup-confirm"
-                  :ref="(el) => bindInput('confirm', el)"
-                  v-model="confirmation"
-                  class="input-field setup-input"
-                  :type="passwordVisible ? 'text' : 'password'"
-                  autocomplete="new-password"
-                  :maxlength="SETUP_PASSWORD_MAX_LENGTH"
-                  required
-                  :aria-invalid="invalid('confirm')"
-                  :aria-describedby="describedBy('confirm', 'setup-password-rules')"
-                />
-                <p
-                  v-if="fieldError?.field === 'confirm'"
-                  id="setup-confirm-error"
-                  class="setup-field__error"
-                  role="alert"
-                >
-                  <Icon name="lucide:circle-alert" aria-hidden="true" /><span>{{ fieldError.message }}</span>
-                </p>
-              </div>
-              <div class="setup-rules">
-                <p id="setup-password-rules-title" class="sr-only">{{ t('admin-system.setup.passwordRules') }}</p>
-                <ul id="setup-password-rules" aria-labelledby="setup-password-rules-title">
-                  <li v-for="rule in rules" :key="rule.key" :class="{ 'setup-rules__met': rule.met }">
-                    <Icon :name="rule.met ? 'lucide:circle-check' : 'lucide:circle-dashed'" aria-hidden="true" />
-                    <span>{{ rule.label }}</span>
-                    <span class="sr-only">{{
-                      rule.met ? t('admin-system.setup.ruleMet') : t('admin-system.setup.ruleUnmet')
-                    }}</span>
-                  </li>
-                </ul>
-                <p id="setup-password-tip" class="setup-field__help">{{ t('admin-system.setup.passwordTip') }}</p>
-              </div>
-            </fieldset>
-
-            <fieldset class="setup-group">
-              <legend class="setup-group__title">{{ t('admin-system.setup.sectionSite') }}</legend>
-              <fieldset class="setup-locale" aria-describedby="setup-locale-help">
-                <legend>{{ t('admin-system.setup.localeLabel') }}</legend>
-                <div class="setup-locale__options">
-                  <label v-for="option in localeOptions" :key="option.value" class="setup-locale__option"
-                    ><input v-model="siteLocale" type="radio" name="setup-locale" :value="option.value" /><span>{{
-                      option.label
-                    }}</span></label
-                  >
+                <div class="setup-rules">
+                  <p id="setup-password-rules-title" class="sr-only">{{ t('admin-system.setup.passwordRules') }}</p>
+                  <ul id="setup-password-rules" aria-labelledby="setup-password-rules-title">
+                    <li v-for="rule in rules" :key="rule.key" :class="{ 'setup-rules__met': rule.met }">
+                      <Icon :name="rule.met ? 'lucide:circle-check' : 'lucide:circle-dashed'" aria-hidden="true" />
+                      <span>{{ rule.label }}</span>
+                      <span class="sr-only">{{
+                        rule.met ? t('admin-system.setup.ruleMet') : t('admin-system.setup.ruleUnmet')
+                      }}</span>
+                    </li>
+                  </ul>
+                  <p id="setup-password-tip" class="setup-field__help">{{ t('admin-system.setup.passwordTip') }}</p>
                 </div>
-                <p id="setup-locale-help" class="setup-field__help">{{ t('admin-system.setup.localeHelp') }}</p>
               </fieldset>
-            </fieldset>
-          </template>
 
-          <SetupProfileStep
-            v-else
-            v-model="profile"
-            :username="username"
-            :current-site-name="currentSiteName"
-            :letter-avatar="letterAvatar"
-            :label-locale="siteLocale"
-            :field-error="profileError"
-            @avatar-failed="profileFailed('avatar', 'avatarUnreadable')"
-          />
+              <fieldset class="setup-group">
+                <legend class="setup-group__title">{{ t('admin-system.setup.sectionSite') }}</legend>
+                <fieldset class="setup-locale" aria-describedby="setup-locale-help">
+                  <legend>{{ t('admin-system.setup.localeLabel') }}</legend>
+                  <div class="setup-locale__options">
+                    <label v-for="option in localeOptions" :key="option.value" class="setup-locale__option"
+                      ><input v-model="siteLocale" type="radio" name="setup-locale" :value="option.value" /><span>{{
+                        option.label
+                      }}</span></label
+                    >
+                  </div>
+                  <p id="setup-locale-help" class="setup-field__help">{{ t('admin-system.setup.localeHelp') }}</p>
+                </fieldset>
+              </fieldset>
+            </template>
 
-          <p v-if="error" id="setup-error" class="setup__error" role="alert">
-            <Icon name="lucide:circle-alert" aria-hidden="true" /><span>{{ error }}</span>
-          </p>
-          <button v-if="step === 1" type="submit" class="btn-primary setup__submit">
-            {{ t('admin-system.setup.profile.next') }}<Icon name="lucide:arrow-right" aria-hidden="true" />
-          </button>
-          <div v-else class="setup__actions">
-            <button type="button" class="setup__back" @click="goTo(1)">
-              <Icon name="lucide:arrow-left" aria-hidden="true" />{{ t('admin-system.setup.profile.back') }}
+            <SetupProfileStep
+              v-else
+              v-model="profile"
+              :username="username"
+              :current-site-name="currentSiteName"
+              :letter-avatar="letterAvatar"
+              :label-locale="siteLocale"
+              :field-error="profileError"
+              @avatar-failed="profileFailed('avatar', 'avatarUnreadable')"
+            />
+
+            <p v-if="error" id="setup-error" class="setup__error" role="alert">
+              <Icon name="lucide:circle-alert" aria-hidden="true" /><span>{{ error }}</span>
+            </p>
+            <button v-if="step === 1" type="submit" class="btn-primary setup__submit">
+              {{ t('admin-system.setup.profile.next') }}<Icon name="lucide:arrow-right" aria-hidden="true" />
             </button>
-            <button type="button" class="setup__skip" @click="submit(false)">
-              {{ t('admin-system.setup.profile.skip') }}
-            </button>
-            <button type="submit" class="btn-primary setup__submit" :aria-busy="submitting">
-              <Icon v-if="submitting" name="lucide:loader-circle" class="setup__spin" aria-hidden="true" />
-              {{ submitting ? t('admin-system.setup.submitting') : t('admin-system.setup.submit') }}
-              <Icon v-if="!submitting" name="lucide:check" aria-hidden="true" />
-            </button>
+            <div v-else class="setup__actions">
+              <button type="button" class="setup__back" @click="goTo(1)">
+                <Icon name="lucide:arrow-left" aria-hidden="true" />{{ t('admin-system.setup.profile.back') }}
+              </button>
+              <button type="button" class="setup__skip" @click="submit(false)">
+                {{ t('admin-system.setup.profile.skip') }}
+              </button>
+              <button type="submit" class="btn-primary setup__submit" :aria-busy="submitting">
+                <Icon v-if="submitting" name="lucide:loader-circle" class="setup__spin" aria-hidden="true" />
+                {{ submitting ? t('admin-system.setup.submitting') : t('admin-system.setup.submit') }}
+                <Icon v-if="!submitting" name="lucide:check" aria-hidden="true" />
+              </button>
+            </div>
           </div>
         </fieldset>
       </form>
@@ -333,12 +344,89 @@ watch(
   { deep: true },
 )
 
+const card = ref<HTMLElement | null>(null)
+const headText = ref<HTMLElement | null>(null)
+const stage = ref<HTMLElement | null>(null)
+const switching = ref(false)
+const SWITCH_EASING = 'cubic-bezier(0.22, 1, 0.36, 1)'
+
+/** 等待动画结束；动画被取消或环境不触发 finished 时按时长兜底，避免卡住流程 */
+function settle(animations: Animation[], timeout: number) {
+  return Promise.race([
+    Promise.allSettled(animations.map((animation) => animation.finished)),
+    new Promise((resolve) => window.setTimeout(resolve, timeout)),
+  ])
+}
+
+/**
+ * 切换步骤：内容向前进方向淡出 → 卡片从旧尺寸平滑缩放到新尺寸（第二步横向展开）→ 新内容从另一侧滑入。
+ * 系统要求减少动态效果或不支持 Web Animations 时直接切换
+ */
+async function switchStep(target: 1 | 2) {
+  if (step.value === target) return
+  const element = card.value
+  const reduce = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
+  if (!element || reduce || typeof element.animate !== 'function') {
+    step.value = target
+    await nextTick()
+    return
+  }
+  const direction = target > step.value ? 1 : -1
+  const parts = () => [headText.value, stage.value].filter((part): part is HTMLElement => !!part)
+  switching.value = true
+  try {
+    const leaving = parts().map((part) =>
+      part.animate(
+        [
+          { opacity: 1, transform: 'translateX(0)' },
+          { opacity: 0, transform: `translateX(${-24 * direction}px)` },
+        ],
+        { duration: 160, easing: 'ease-in', fill: 'forwards' },
+      ),
+    )
+    await settle(leaving, 260)
+    const first = element.getBoundingClientRect()
+    step.value = target
+    await nextTick()
+    const last = element.getBoundingClientRect()
+    leaving.forEach((animation) => animation.cancel())
+    // 内容按最终宽度排好并锁定，卡片缩放时只是逐步露出，中途不会因宽度变化重排（如单列跳成两列）
+    const locked = parts()
+    locked.forEach((part) => (part.style.width = `${part.getBoundingClientRect().width}px`))
+    const resize = element.animate(
+      [
+        { maxWidth: `${first.width}px`, height: `${first.height}px` },
+        { maxWidth: `${last.width}px`, height: `${last.height}px` },
+      ],
+      { duration: 420, easing: SWITCH_EASING },
+    )
+    const entering = parts().map((part) =>
+      part.animate(
+        [
+          { opacity: 0, transform: `translateX(${24 * direction}px)` },
+          { opacity: 1, transform: 'translateX(0)' },
+        ],
+        { duration: 380, delay: 140, easing: SWITCH_EASING, fill: 'backwards' },
+      ),
+    )
+    await settle([resize, ...entering], 700)
+    locked.forEach((part) => (part.style.width = ''))
+  } finally {
+    switching.value = false
+  }
+}
+
 /** 切换步骤后把焦点交给标题，读屏会播报新步骤；回到第一步时由调用方再聚焦具体字段 */
 async function goTo(target: 1 | 2) {
-  step.value = target
   error.value = ''
-  await nextTick()
-  heading.value?.focus()
+  await switchStep(target)
+  heading.value?.focus({ preventScroll: true })
+  // 窄屏单列时第一步较长，切换后若卡片顶部已滚出视口，回到顶部让新标题可见
+  if (card.value && card.value.getBoundingClientRect().top < 0)
+    card.value.scrollIntoView({
+      block: 'start',
+      behavior: window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth',
+    })
 }
 
 async function profileFailed(field: SetupProfileField, problem: SetupProfileProblem) {
@@ -398,8 +486,7 @@ function validate(): { field: SetupField; message: string } | null {
 /** 接口拒绝令牌（403）：回到第一步展开令牌输入框并在框下提示，焦点移过去 */
 async function rejectToken(message: string) {
   tokenRejected.value = true
-  step.value = 1
-  await nextTick()
+  await switchStep(1)
   fieldError.value = { field: 'token', message }
   await focusField('token')
   // 选中旧令牌，粘贴即可整体替换
@@ -419,8 +506,7 @@ async function checkAccount(): Promise<boolean> {
   const problem = validate()
   if (!problem) return true
   if (problem.field === 'token') tokenRejected.value = true
-  step.value = 1
-  await nextTick()
+  await switchStep(1)
   fieldError.value = problem
   await focusField(problem.field)
   return false
@@ -519,6 +605,17 @@ onBeforeUnmount(() => {
   background: var(--surface-1);
   box-shadow: var(--shadow-card);
   overflow-wrap: anywhere;
+}
+// 第二步按内容宽度切换为两列（见 SetupProfileStep 的容器查询）；切换动画期间该宽度被锁定为最终值
+.setup__stage {
+  container: setup / inline-size;
+}
+.setup--wide {
+  max-width: 880px;
+}
+// 尺寸动画期间裁掉尚未缩放到位的内容
+.setup.is-switching {
+  overflow: hidden;
 }
 .setup__head {
   margin-bottom: 1.25rem;
