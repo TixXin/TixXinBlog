@@ -334,6 +334,10 @@ describe('/setup 初始化向导', () => {
     expect(wrapper.find('#setup-avatar-error').text()).toBe('请填写 https 开头的图片地址')
     expect(wrapper.find('#setup-avatar-url').attributes('aria-invalid')).toBe('true')
     await wrapper.find('input[name="setup-avatar-mode"][value="cravatar"]').setValue(true)
+    // 选择邮箱头像后联系邮箱变为必填，头像操作区提示先填写邮箱
+    expect(wrapper.find('label[for="setup-email"]').text()).toBe('联系邮箱（必填）')
+    expect(wrapper.find('#setup-email').attributes('aria-required')).toBe('true')
+    expect(wrapper.find('.avatar-picker__status').text()).toBe('请先在下方填写联系邮箱')
     await wrapper.find('form').trigger('submit')
     await flushPromises()
     expect(wrapper.find('#setup-email-error').text()).toBe('使用邮箱头像需要先填写联系邮箱')

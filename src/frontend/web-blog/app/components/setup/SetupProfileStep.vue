@@ -14,6 +14,7 @@
         :upload="draft.avatarUpload"
         :url="draft.avatarUrl"
         :email="draft.email"
+        :name="draft.ownerName.trim() || username"
         :invalid="invalid('avatar') || invalid('avatarUrl')"
         :error-id="errorFor('avatar') || errorFor('avatarUrl') ? 'setup-avatar-error' : undefined"
         @update:mode="draft.avatarMode = $event"
@@ -58,7 +59,12 @@
       </div>
 
       <div class="setup-field">
-        <label for="setup-email">{{ t('admin-system.setup.profile.emailLabel') }}</label>
+        <!-- 选择邮箱头像时联系邮箱为必填 -->
+        <label for="setup-email">{{
+          emailRequired
+            ? t('admin-system.setup.profile.emailLabelRequired')
+            : t('admin-system.setup.profile.emailLabel')
+        }}</label>
         <input
           id="setup-email"
           v-model="draft.email"
@@ -68,6 +74,8 @@
           autocomplete="email"
           maxlength="254"
           placeholder="name@example.com"
+          :required="emailRequired"
+          :aria-required="emailRequired"
           :aria-invalid="invalid('email')"
           :aria-describedby="errorFor('email') ? 'setup-email-error setup-email-help' : 'setup-email-help'"
         />
@@ -97,7 +105,7 @@
           id="setup-description"
           v-model="draft.description"
           class="input-field setup-input profile-step__textarea"
-          rows="2"
+          rows="3"
           maxlength="300"
           :placeholder="t('admin-system.setup.profile.descriptionPlaceholder')"
         />
@@ -188,6 +196,8 @@ const props = defineProps<{
 const emit = defineEmits<{ avatarFailed: [] }>()
 const { t } = useI18n()
 
+const emailRequired = computed(() => draft.value.avatarMode === 'cravatar')
+
 function errorFor(field: SetupProfileField) {
   return props.fieldError?.field === field
 }
@@ -210,8 +220,9 @@ function invalid(field: SetupProfileField) {
   align-items: start;
 }
 .profile-step__textarea {
-  min-height: 4.25rem;
-  resize: vertical;
+  // 固定约 3 行且不可拖拽：卡片高度保持不变，并与左列底部对齐
+  height: 5.125rem;
+  resize: none;
 }
 .profile-step__social-grid {
   display: grid;
