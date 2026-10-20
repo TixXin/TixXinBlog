@@ -837,7 +837,6 @@
       "failed": "Setup could not be completed. Please try again later.",
       "success": "Owner account created. Please sign in.",
       "successSignedIn": "Owner account created. You are now signed in.",
-      "previewBanner": "Development preview: the page state comes from the address, and submitting does not create an account.",
       "previewSubmitted": "Preview mode: the form passed validation; no account was created",
       "previewFailed": "(Preview) Simulated rejection: the setup token is invalid. Check the link printed when installation finished."
     }

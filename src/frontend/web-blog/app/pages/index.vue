@@ -66,12 +66,16 @@
     <template #default>
       <!-- 首页没有可见的页面标题，补一个仅供辅助技术与搜索引擎读取的 h1 -->
       <h1 class="sr-only">{{ siteSettings.name }}</h1>
-      <!-- 只在尚无博主账号时于浏览器端显示，不进入服务端渲染与页面缓存；初始化完成后自动消失 -->
-      <p v-if="setupPending" class="setup-pending" role="status">
-        <Icon name="lucide:wand-sparkles" size="16" aria-hidden="true" />
-        <span>{{ $t('article.home.setupPending') }}</span>
-        <NuxtLink to="/admin/login">{{ $t('article.home.setupPendingLink') }}</NuxtLink>
-      </p>
+      <!-- 只在尚无博主账号时于浏览器端显示，不进入服务端渲染与页面缓存；初始化完成后自动消失。
+           全屏半透明水印不拦截点击，也不挤占内容位置 -->
+      <Teleport v-if="setupPending" to="body">
+        <div class="setup-watermark" role="status">
+          <div class="setup-watermark__inner">
+            <p class="setup-watermark__title">{{ $t('article.home.setupWatermark') }}</p>
+            <p class="setup-watermark__text">{{ $t('article.home.setupPending') }}</p>
+          </div>
+        </div>
+      </Teleport>
       <div v-if="activeFilterLabel" class="articles-filter-summary">
         <span role="status">{{ $t('article.home.activeFilter', { filter: activeFilterLabel }) }}</span>
         <button
@@ -275,20 +279,37 @@ if (import.meta.dev) watch(() => preview('setup-pending'), readSetupPending)
 watch(() => route.hash, migrateMomentHash)
 </script>
 <style lang="scss" scoped>
-.setup-pending {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.375rem 0.5rem;
-  align-items: center;
-  margin: 0 0 1rem;
-  padding: 0.75rem 1rem;
-  border: 1px solid var(--border);
-  border-radius: 0.75rem;
-  color: var(--text-muted);
-  font-size: 0.875rem;
+.setup-watermark {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  pointer-events: none;
+  user-select: none;
 }
-.setup-pending a {
-  color: var(--accent);
+.setup-watermark__inner {
+  max-width: min(90vw, 56rem);
+  text-align: center;
+  transform: rotate(-16deg);
+}
+.setup-watermark__title {
+  margin: 0;
+  color: var(--text-main);
+  font-size: clamp(3rem, 11vw, 9rem);
+  font-weight: 800;
+  line-height: 1.1;
+  letter-spacing: 0.04em;
+  opacity: 0.06;
+}
+.setup-watermark__text {
+  margin: 0.75rem auto 0;
+  max-width: 32rem;
+  color: var(--text-main);
+  font-size: clamp(0.875rem, 1.6vw, 1.125rem);
+  font-weight: 600;
+  opacity: 0.13;
 }
 // 窄屏下筛选入口只留图标，文字仅供读屏，让搜索、筛选和显示模式保持同一行
 @media (max-width: #{$breakpoint-sm - 1px}) {

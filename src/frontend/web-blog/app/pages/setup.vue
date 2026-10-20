@@ -11,7 +11,6 @@
         <h1 id="setup-title">{{ t('admin-system.setup.welcome') }}</h1>
         <p class="setup__intro">{{ t('admin-system.setup.intro') }}</p>
       </header>
-      <p v-if="previewPhase" class="setup__preview" role="note">{{ t('admin-system.setup.previewBanner') }}</p>
       <!-- 确认状态期间先占出表单轮廓，避免加载完成后卡片高度突变 -->
       <div v-if="phase === 'checking'" class="setup-skeleton" role="status">
         <span class="sr-only">{{ t('admin-system.setup.checking') }}</span>
@@ -452,14 +451,6 @@ onBeforeUnmount(() => {
   color: var(--text-muted);
   font-size: 0.8125rem;
   line-height: 1.55;
-}
-.setup__preview {
-  margin: 0 0 1.25rem;
-  padding: 0.5rem 0.75rem;
-  border: 1px dashed var(--border);
-  border-radius: $radius-sm;
-  color: var(--text-muted);
-  font-size: 0.8125rem;
 }
 .setup__spin {
   animation: setup-spin 0.9s linear infinite;

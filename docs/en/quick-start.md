@@ -82,7 +82,7 @@ https://blog.example.com/setup?token=…
 
 Open it in a browser and set the username, password (6–128 characters), site name and site language to create the owner account. You are then signed in and taken to the admin panel automatically.
 
-- Opening the home page does not redirect to the setup page: a new site has no posts, and the home page only shows a one-line "not set up yet" notice with a link to the admin sign-in page. Visitors without the token therefore cannot claim the account first; the notice disappears once setup is complete.
+- Opening the home page does not redirect to the setup page: a new site has no posts, and the home page shows a full-screen translucent "Not set up yet" watermark that does not block browsing or clicks. Visitors without the token therefore cannot claim the account first; the notice disappears once setup is complete.
 - The token can be used successfully only once: after the account is created, the wizard and its endpoint close permanently, opening or submitting the link again fails, and a leaked token is useless.
 - The page removes the token from the address bar as soon as it reads it; submissions are rate limited (5 per address every 10 minutes).
 - If you lose the link, see [Lost setup link](#lost-setup-link).

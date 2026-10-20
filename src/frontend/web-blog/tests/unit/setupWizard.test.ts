@@ -182,13 +182,15 @@ describe('/setup 初始化向导', () => {
     await wrapper.find('#setup-confirm').setValue('correct-horse-battery')
     await wrapper.find('#setup-site-name').setValue('夜读札记')
     await wrapper.find('input[type="radio"][value="en"]').setValue(true)
+    // 选择英文会异步切换界面语言，等字典切换完成再提交，提示文案才确定为英文
+    await vi.waitFor(() => expect(wrapper.find('h1').text()).toBe('Welcome to TixXinBlog'))
     await wrapper.find('form').trigger('submit')
     await vi.waitFor(() => expect(mocks.navigate).toHaveBeenCalled())
     expect(mocks.bodies).toEqual([
       { token: TOKEN, username: 'owner', password: 'correct-horse-battery', locale: 'en', siteName: '夜读札记' },
     ])
     expect(mocks.logins).toEqual([{ username: 'owner', password: 'correct-horse-battery' }])
-    expect(mocks.success).toHaveBeenCalledWith('博主账号已创建，已自动登录后台')
+    expect(mocks.success).toHaveBeenCalledWith('Owner account created. You are now signed in.')
     expect(mocks.navigate).toHaveBeenCalledWith('/admin')
   })
 
@@ -286,10 +288,10 @@ describe('后台登录页引导', () => {
 })
 
 describe('/setup 开发预览', () => {
-  it('?preview=form 在已初始化站点也显示表单与预览横幅，提交只做前端校验、不请求接口', async () => {
+  it('?preview=form 在已初始化站点也显示表单（预览提示由全局角标负责，页面内不插横幅），提交只做前端校验、不请求接口', async () => {
     mocks.needsSetup = false
     const wrapper = await mountSetup('/setup?preview=form')
-    expect(wrapper.find('[role="note"]').text()).toBe('开发预览：页面状态由地址参数决定，提交不会创建账号。')
+    expect(wrapper.find('[role="note"]').exists()).toBe(false)
     expect(wrapper.find('#setup-token').exists()).toBe(false)
     await wrapper.find('#setup-username').setValue('owner')
     await wrapper.find('#setup-password').setValue('abc123')

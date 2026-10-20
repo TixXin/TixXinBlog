@@ -229,16 +229,16 @@ When a component needs a specialized cursor for image zooming, dragging, or resi
 
 The `/setup` form, the home page "not set up yet" notice and the setup prompt on the admin sign-in page appear only when `SETUP_TOKEN` is configured and no administrator exists, so the development database usually never shows them. When working on these screens under `dev:all`, force a state with an address parameter; saving hot-reloads as usual:
 
-| Address                                   | Shows                                                                 |
-| ----------------------------------------- | --------------------------------------------------------------------- |
-| `/setup?preview=form`                     | The setup form with a "development preview" banner and a sample token |
-| `/setup?preview=form&preview-submit=fail` | The same, showing the API rejection error on submit                   |
-| `/setup?preview=closed`                   | "This site has already been set up"                                   |
-| `/setup?preview=error`                    | The status error with a retry button                                  |
-| `/?preview=setup-pending`                 | The home page notice                                                  |
-| `/admin/login?preview=setup-pending`      | The sign-in page setup prompt                                         |
+| Address                                   | Shows                                                          |
+| ----------------------------------------- | -------------------------------------------------------------- |
+| `/setup?preview=form`                     | The setup form, with the token treated as coming from the link |
+| `/setup?preview=form&preview-submit=fail` | The same, simulating a rejected token on submit                |
+| `/setup?preview=closed`                   | "This site has already been set up"                            |
+| `/setup?preview=error`                    | The status error with a retry button                           |
+| `/?preview=setup-pending`                 | The full-screen home page watermark                            |
+| `/admin/login?preview=setup-pending`      | The sign-in page setup prompt                                  |
 
-Previews change only what the frontend shows: submitting still runs the frontend validation but sends no request, creates no account and does not sign in. To go through the real flow, use the [Setup Sandbox](#setup-sandbox); to try the install flow itself, use the [Local Build Trial](#local-build-trial). The parameters work only in development mode and unit tests; in production builds the check is always false, and an end-to-end test verifies that adding them on a live site neither reopens the form nor shows the notice.
+While a `preview` parameter is present, a small "预览: name" badge appears in the bottom right corner; click × to exit. No notice is inserted into the page itself. Previews change only what the frontend shows: submitting still runs the frontend validation but sends no request, creates no account and does not sign in. To go through the real flow, use the [Setup Sandbox](#setup-sandbox); to try the install flow itself, use the [Local Build Trial](#local-build-trial). The parameters work only in development mode and unit tests; in production builds the check is always false, and an end-to-end test verifies that adding them on a live site neither reopens the form nor shows the notice.
 
 Instead of typing the addresses, open the **Preview** tab of the DEV debug panel (top left): it switches among the six states with one click, shows the current preview with an **Exit preview** button, applies changes on the same page immediately, and lists the setup sandbox command at the bottom.
 

@@ -51,9 +51,10 @@ test('向导完整流程：首页与登录页引导、令牌移出地址栏、�
   // 首页在浏览器端提示尚未初始化，服务端直出的 HTML 不含该提示，不会进入页面缓存。
   expect(await (await request.get('/')).text()).not.toContain('站点尚未完成初始化')
   await page.goto('/')
+  // 提示以全屏半透明水印呈现，不拦截页面点击。
   const pending = page.getByRole('status').filter({ hasText: '站点尚未完成初始化' })
   await expect(pending).toBeVisible()
-  await expect(pending.getByRole('link', { name: '博主登录' })).toHaveAttribute('href', '/admin/login')
+  await expect(pending).toHaveCSS('pointer-events', 'none')
   await page.goto('/admin/login')
   await expect(page.getByText('站点还没有博主账号。')).toBeVisible()
   await page.getByRole('link', { name: '前往初始化向导' }).click()
