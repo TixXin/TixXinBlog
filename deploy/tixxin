@@ -431,7 +431,7 @@ usage() {
 用法：tixxin <命令> [参数]
 
 命令：
-  status                 服务健康状态、当前版本与入口验收
+  status                 服务健康状态、当前版本、入口验收与新版本提示
   logs [服务] [-f] [--tail N]
                          查看日志；服务为 postgres、backend、frontend、edge、worker、migration
   backup                 在 worker 容器内创建并校验完整备份，导出到 <安装目录>/backups
@@ -450,12 +450,71 @@ usage() {
 EOF
 }
 
-cmd_status() {
-  case ${1:-} in -h | --help)
-    info '用法：tixxin status    显示版本、地址、各服务状态，并做一次入口验收'
+# 只读查询 GitHub 最新正式版本，解析方式与 update 相同；不上报任何信息，网络不可用、超时或使用自定义下载源时返回非零。
+latest_release_quiet() {
+  local repository effective tag
+  [ -z "$(env_get TIXXIN_DOWNLOAD_BASE)" ] || return 1
+  repository=$(env_get TIXXIN_REPOSITORY)
+  [ -n "$repository" ] || return 1
+  effective=$(curl -fsSIL --proto '=https' --max-time 5 -o /dev/null -w '%{url_effective}' \
+    "https://github.com/$repository/releases/latest" 2> /dev/null) || return 1
+  tag=${effective##*/}
+  case $tag in v[0-9]*) printf '%s' "${tag#v}" ;; *) return 1 ;; esac
+}
+
+# 按 主.次.修订 逐段数字比较，$1 低于 $2 时返回 0
+version_lower() {
+  awk -v a="$1" -v b="$2" 'BEGIN {
+    split(a, x, "."); split(b, y, ".")
+    for (i = 1; i <= 3; i++) { if (x[i] + 0 < y[i] + 0) exit 0; if (x[i] + 0 > y[i] + 0) exit 1 }
+    exit 1
+  }'
+}
+
+# status 末尾的新版本提示：只提示，不自动升级；TIXXIN_NO_UPDATE_CHECK=1 或 --no-update-check 关闭。
+report_update() {
+  local current=$1 latest prefix=''
+  [ -z "${SUDO_USER:-}" ] || prefix='sudo '
+  if [ -n "$(env_get TIXXIN_DOWNLOAD_BASE)" ]; then
+    info "版本检查：使用自定义下载源，不查询 GitHub；有新版本时用 ${prefix}tixxin update <版本> 升级"
     return 0
-    ;;
+  fi
+  if ! latest=$(latest_release_quiet); then
+    info '版本检查：暂时无法查询最新版本（网络不可用或 GitHub 无响应），已跳过'
+    return 0
+  fi
+  case $current in
+    *[!0-9.]*)
+      info "版本检查：当前为非正式版本 ${current}，最新正式版本为 ${latest}"
+      return 0
+      ;;
   esac
+  if version_lower "$current" "$latest"; then
+    info "有新版本可用：${latest}（当前 ${current}）。升级会先自动完整备份：${prefix}tixxin update"
+    info "更新内容：https://github.com/$(env_get TIXXIN_REPOSITORY)/releases/tag/v${latest}"
+  elif version_lower "$latest" "$current"; then
+    info "版本检查：当前版本 ${current} 高于最新正式版本 ${latest}"
+  else
+    info "版本检查：已是最新正式版本（${latest}）"
+  fi
+}
+
+cmd_status() {
+  local check_update=1
+  while [ $# -gt 0 ]; do
+    case $1 in
+      -h | --help)
+        info '用法：tixxin status [--no-update-check]'
+        info '  显示版本、地址、各服务状态，做一次入口验收，并向 GitHub 查询是否有新的正式版本（只读，不上报信息）。'
+        info '  --no-update-check 或环境变量 TIXXIN_NO_UPDATE_CHECK=1 跳过版本查询。'
+        return 0
+        ;;
+      --no-update-check) check_update=0 ;;
+      *) fail "未知参数 $1" ;;
+    esac
+    shift
+  done
+  [ "${TIXXIN_NO_UPDATE_CHECK:-}" != 1 ] || check_update=0
   local version
   version=$(current_version)
   info "安装目录：$TIXXIN_DIR"
@@ -466,6 +525,7 @@ cmd_status() {
   compose ps -a --format 'table {{.Service}}\t{{.Status}}\t{{.Image}}'
   info ''
   if [ "$(env_get TIXXIN_MODE)" = 'local' ] && [ ! -f "$TIXXIN_DIR/local-ca.crt" ]; then export_local_ca || true; fi
+  [ "$check_update" = 0 ] || report_update "$version"
   if check_entry_once "$version"; then
     info "入口验收：通过（HTTPS 同源 API 200，版本头 ${version}）"
   else
