@@ -78,10 +78,10 @@
             >
             <label
               >{{ t('admin-system.site.editor.fields.launchedAt')
-              }}<input
+              }}<CommonDatePicker
                 v-model="draft.launchedAt"
-                type="date"
                 :placeholder="t('admin-system.site.page.launchedAtPlaceholder')"
+                clearable
             /></label>
           </fieldset>
           <fieldset :disabled="pending || !ready">

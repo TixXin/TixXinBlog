@@ -153,7 +153,10 @@ it('朋友圈保留日期筛选及完整长话题，卡片操作和分页沿用�
   const wrapper = await mountSuspended(MomentsPage, { route: '/admin/moments' })
   wrappers.push(wrapper)
   await flushPromises()
-  expect(wrapper.get('.admin-moments__filters label input').attributes('type')).toBe('date')
+  // 日期筛选使用日期选择器，触发按钮保留可读名称
+  expect(wrapper.get('.admin-moments__filters label .date-picker__trigger').attributes('aria-label')).toBe(
+    '筛选动态日期',
+  )
   expect(wrapper.get('.admin-moments__list .admin-moments__content').text()).toBe(longText)
   expect(wrapper.get('.admin-moments__list li').text()).toContain(`#${longText}`)
   expect(wrapper.get('.admin-moments__list .admin-moments__actions').text()).toContain('管理评论')

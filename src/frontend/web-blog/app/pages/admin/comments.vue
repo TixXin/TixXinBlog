@@ -67,11 +67,11 @@
         </select>
         <label
           >{{ t('admin-content.comments.filters.from')
-          }}<input v-model="from" type="date" :disabled="working" @change="resetPage"
+          }}<CommonDatePicker v-model="from" :max="to || undefined" :disabled="working" clearable @change="resetPage"
         /></label>
         <label
           >{{ t('admin-content.comments.filters.to')
-          }}<input v-model="to" type="date" :disabled="working" @change="resetPage"
+          }}<CommonDatePicker v-model="to" :min="from || undefined" :disabled="working" clearable @change="resetPage"
         /></label>
         <input
           v-model="search"
@@ -815,7 +815,7 @@ onBeforeUnmount(() => {
     flex: 1 1 100%;
     width: 100%;
   }
-  .admin-comments__filters input[type='date'] {
+  .admin-comments__filters .date-picker {
     flex: 1 1 100%;
     width: 100%;
   }

@@ -25,7 +25,7 @@
           />
           <label
             >{{ $t('admin-content.moments.dateLabel')
-            }}<input v-model="date" type="date" :aria-label="$t('admin-content.moments.dateFilterLabel')"
+            }}<CommonDatePicker v-model="date" :aria-label="$t('admin-content.moments.dateFilterLabel')" clearable
           /></label>
           <select v-model="status" :aria-label="$t('admin-content.moments.statusFilterLabel')">
             <option value="all">{{ $t('admin-content.moments.statusAll') }}</option>

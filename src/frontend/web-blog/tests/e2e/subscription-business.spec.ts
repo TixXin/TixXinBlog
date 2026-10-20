@@ -4,6 +4,7 @@ import type { Page, APIRequestContext } from '@playwright/test'
 import { randomUUID } from 'node:crypto'
 import { setTimeout as delay } from 'node:timers/promises'
 import { captureMotion, prepareMotionCapture } from './motionScreenshot'
+import { pickDate } from './datePicker'
 
 test.beforeEach(({ page, browserName }) => {
   expect(process.env.E2E_ISOLATED).toBe('true')
@@ -478,8 +479,8 @@ test('金额上限和长名称在窄屏及动态缩放下保留精确预算与�
   await page.setViewportSize({ width: 320, height: 960 })
   await page.goto('/subscriptions')
   await localForm(page, name, '21474836.47', 'USD')
-  await page.getByLabel('开始日期', { exact: true }).fill('2024-01-28')
-  await page.getByLabel('下次扣费日期', { exact: true }).fill(`${new Date().toISOString().slice(0, 7)}-28`)
+  await pickDate(page, page.getByLabel('开始日期', { exact: true }), '2024-01-28')
+  await pickDate(page, page.getByLabel('下次扣费日期', { exact: true }), `${new Date().toISOString().slice(0, 7)}-28`)
   await page.getByRole('button', { name: '保存到当前浏览器', exact: true }).click()
   const card = page.getByRole('article', { name, exact: true })
   const stats = page.getByRole('region', { name: '订阅费用统计' })

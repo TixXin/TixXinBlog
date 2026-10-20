@@ -191,11 +191,11 @@
             @input="change('category', ($event.target as HTMLInputElement).value)" /></label
         ><label
           >{{ $t('admin-media.galleryForm.takenOn')
-          }}<input
-            :value="value.takenOn ?? ''"
+          }}<CommonDatePicker
+            :model-value="value.takenOn ?? ''"
             :aria-label="$t('admin-media.galleryForm.takenOn')"
-            type="date"
-            @input="change('takenOn', ($event.target as HTMLInputElement).value || null)"
+            clearable
+            @update:model-value="change('takenOn', $event || null)"
         /></label>
       </div>
       <p>{{ $t('admin-media.galleryForm.metaHelp') }}</p>

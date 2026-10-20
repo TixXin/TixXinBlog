@@ -98,20 +98,20 @@
       >
       <label
         >{{ $t('misc.subscription.fields.startDate')
-        }}<input
-          :value="value.startDate ?? ''"
-          type="date"
+        }}<CommonDatePicker
+          :model-value="value.startDate ?? ''"
           :aria-label="$t('misc.subscription.fields.startDate')"
-          @input="change('startDate', input($event) || null)"
+          clearable
+          @update:model-value="change('startDate', $event || null)"
       /></label>
       <label
         >{{ $t('misc.subscription.fields.nextBillingDate')
-        }}<input
-          :value="value.nextBillingDate ?? ''"
-          type="date"
+        }}<CommonDatePicker
+          :model-value="value.nextBillingDate ?? ''"
           :min="value.startDate ?? undefined"
           :aria-label="$t('misc.subscription.fields.nextBillingDate')"
-          @input="change('nextBillingDate', input($event) || null)"
+          clearable
+          @update:model-value="change('nextBillingDate', $event || null)"
       /></label>
     </div>
     <p class="subscription-note">{{ $t('misc.subscription.fields.dateNote') }}</p>

@@ -24,8 +24,11 @@
             </option>
           </select></label
         >
-        <label>{{ t('admin-system.audit.from') }}<input v-model="from" type="date" /></label
-        ><label>{{ t('admin-system.audit.to') }}<input v-model="to" type="date" /></label>
+        <label
+          >{{ t('admin-system.audit.from') }}<CommonDatePicker v-model="from" :max="to || undefined" clearable /></label
+        ><label
+          >{{ t('admin-system.audit.to') }}<CommonDatePicker v-model="to" :min="from || undefined" clearable
+        /></label>
         <button :aria-busy="pending" type="submit" :disabled="pending">{{ t('admin-system.audit.submit') }}</button
         ><button type="button" :disabled="pending" @click="clear">{{ t('admin-system.audit.clear') }}</button
         ><button type="button" :disabled="pending" @click="load">{{ t('admin-system.audit.refresh') }}</button>

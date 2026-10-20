@@ -5,7 +5,7 @@
  * @author TixXin
  * @since 2026-10-20
  */
-import { afterEach, describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { flushPromises } from '@vue/test-utils'
 import { mountSuspended } from '@nuxt/test-utils/runtime'
 import DatePicker from '../../app/components/common/DatePicker.vue'
@@ -98,6 +98,40 @@ describe('CommonDatePicker', () => {
     expect(wrapper.find('[data-iso="2019-03-15"]').exists()).toBe(true)
   })
 
+  it('面板默认与输入框起始边对齐，右侧放不下时与右缘对齐，窄屏时贴视口边缘', async () => {
+    const width = vi.spyOn(window, 'innerWidth', 'get')
+    const wrapper = await mountPicker({ modelValue: '2026-10-20' })
+    const trigger = wrapper.find('.date-picker__trigger')
+    const open = async (left: number, triggerWidth: number, viewport: number) => {
+      width.mockReturnValue(viewport)
+      vi.spyOn(trigger.element, 'getBoundingClientRect').mockReturnValue({
+        left,
+        right: left + triggerWidth,
+        width: triggerWidth,
+        top: 100,
+        bottom: 144,
+        height: 44,
+        x: left,
+        y: 100,
+        toJSON: () => ({}),
+      })
+      await trigger.trigger('click')
+      await flushPromises()
+      // 上一次关闭的面板可能仍在离场过渡中，取最新打开的那个
+      const style = (wrapper.findAll('.date-picker__panel').at(-1)!.element as HTMLElement).style.left
+      await trigger.trigger('click')
+      await flushPromises()
+      return style
+    }
+    // 空间充足：起始边对齐
+    expect(await open(100, 400, 1440)).toBe('0px')
+    // 靠右：输入框 1200–1400px，左对齐会超出 1432px 的安全线，改为右缘对齐（200 - 296）
+    expect(await open(1200, 200, 1440)).toBe('-96px')
+    // 320 宽窄屏、输入框 100–300px：右对齐会越过左侧 8px 安全线，改为贴左边缘（8 - 100），面板落在 8–304px
+    expect(await open(100, 200, 320)).toBe('-92px')
+    width.mockRestore()
+  })
+
   it('超出范围的日期与「今天」不可选；Esc 关闭并把焦点还给触发按钮', async () => {
     const wrapper = await mountPicker({ modelValue: '2020-01-10', min: '2020-01-05', max: '2020-01-20' })
     await wrapper.find('.date-picker__trigger').trigger('click')
@@ -111,5 +145,14 @@ describe('CommonDatePicker', () => {
     expect(wrapper.find('[role="dialog"]').exists()).toBe(false)
     expect(document.activeElement?.classList.contains('date-picker__trigger')).toBe(true)
     expect(wrapper.emitted('update:modelValue')).toBeUndefined()
+  })
+
+  it('clearable 时可清空并同时发出 change', async () => {
+    const wrapper = await mountPicker({ modelValue: '2026-10-20', clearable: true })
+    await wrapper.find('.date-picker__trigger').trigger('click')
+    await flushPromises()
+    await wrapper.find('.date-picker__clear').trigger('click')
+    expect(wrapper.emitted('update:modelValue')).toEqual([['']])
+    expect(wrapper.emitted('change')).toEqual([['']])
   })
 })

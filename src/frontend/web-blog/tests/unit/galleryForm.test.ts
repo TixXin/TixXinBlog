@@ -3,6 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent, h, ref } from 'vue'
 import { mockNuxtImport, mountSuspended } from '@nuxt/test-utils/runtime'
 import GalleryForm from '../../app/components/admin/GalleryForm.vue'
+import DatePicker from '../../app/components/common/DatePicker.vue'
 import { galleryForm } from '../../app/features/gallery/editor'
 import type { GalleryEditable, ManagedPhoto } from '../../app/features/gallery/types'
 import type { MediaAsset } from '../../app/features/media/types'
@@ -158,8 +159,6 @@ describe('图库表单输入与提交', () => {
       ['作品说明', '保留完整说明\n第二行', { description: '保留完整说明\n第二行' }],
       ['外部图片地址', 'https://images.example.com/new.webp', { externalUrl: 'https://images.example.com/new.webp' }],
       ['作品分类', '街头', { category: '街头' }],
-      ['拍摄日期', '2026-10-12', { takenOn: '2026-10-12' }],
-      ['拍摄日期', '', { takenOn: null }],
       ['拍摄地点', '老城', { location: '老城' }],
       ['拍摄器材', '定焦镜头', { device: '定焦镜头' }],
       ['作品保存状态', 'withdrawn', { status: 'withdrawn' }],
@@ -170,7 +169,14 @@ describe('图库表单输入与提交', () => {
       await wrapper.get(`[aria-label="${label}"]`).setValue(value)
       expect(wrapper.emitted('change')?.at(-1)).toEqual([patch])
     }
-    expect(wrapper.emitted('change')).toHaveLength(fields.length)
+    // 拍摄日期使用日期选择器：选中日期发出 YYYY-MM-DD，清空发出 null
+    const picker = wrapper.findComponent(DatePicker)
+    expect(picker.find('[aria-label="拍摄日期"]').exists()).toBe(true)
+    picker.vm.$emit('update:modelValue', '2026-10-12')
+    expect(wrapper.emitted('change')?.at(-1)).toEqual([{ takenOn: '2026-10-12' }])
+    picker.vm.$emit('update:modelValue', '')
+    expect(wrapper.emitted('change')?.at(-1)).toEqual([{ takenOn: null }])
+    expect(wrapper.emitted('change')).toHaveLength(fields.length + 2)
     expect(wrapper.props('value')).toEqual(original)
     expect(wrapper.emitted('save')).toBeUndefined()
   })

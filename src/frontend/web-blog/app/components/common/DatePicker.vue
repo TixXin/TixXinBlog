@@ -3,7 +3,8 @@
   @description 通用日期选择器：替代样式无法定制的原生日期弹窗。触发框与输入框外观一致，面板含日 / 月 / 年三级视图、
                「今天」快捷与可选的日期范围；月历固定 6 行，面板尺寸不随月份变化。
                键盘：方向键逐日、PageUp/PageDown 切月（Shift 切年）、Home/End 到本周首尾、Enter 选中、Esc 关闭。
-               v-model 为本地日期 YYYY-MM-DD
+               面板默认与输入框起始边对齐（整个输入框都是触发区域），右侧或下方空间不足时换到右对齐或向上弹出。
+               v-model 为本地日期 YYYY-MM-DD，clearable 时可清空为空串
 -->
 <template>
   <div ref="root" class="date-picker">
@@ -17,6 +18,8 @@
       :aria-expanded="open"
       :aria-invalid="invalid"
       :aria-describedby="describedby"
+      :aria-label="ariaLabel"
+      :disabled="disabled"
       @click="toggle"
     >
       <span>{{ selected ? formatLong(selected) : placeholder || t('common.datePicker.choose') }}</span>
@@ -29,9 +32,11 @@
         ref="panel"
         class="date-picker__panel"
         :class="{ 'is-above': above }"
+        :style="{ left: `${offset}px` }"
         role="dialog"
         :aria-label="t('common.datePicker.dialog')"
         @keydown.esc.stop.prevent="close(true)"
+        @click.prevent
       >
         <div class="date-picker__header">
           <button type="button" class="date-picker__nav" :aria-label="previousLabel" @click="shift(-1)">
@@ -111,7 +116,11 @@
           </button>
         </div>
 
+        <!-- 面板挂在可能包着 <label> 的位置：@click.prevent 阻止点击空白处被转发给触发按钮 -->
         <div class="date-picker__footer">
+          <button v-if="clearable && modelValue" type="button" class="date-picker__clear" @click="clear">
+            {{ t('common.datePicker.clear') }}
+          </button>
           <button type="button" class="date-picker__today" :disabled="outOfRange(todayIso)" @click="pick(today)">
             {{ t('common.datePicker.today') }}
           </button>
@@ -134,8 +143,13 @@ const props = defineProps<{
   placeholder?: string
   invalid?: 'true'
   describedby?: string
+  /** 没有可见标签包裹时的可访问名称 */
+  ariaLabel?: string
+  disabled?: boolean
+  /** 允许清空（筛选条件与可选字段） */
+  clearable?: boolean
 }>()
-const emit = defineEmits<{ 'update:modelValue': [value: string] }>()
+const emit = defineEmits<{ 'update:modelValue': [value: string]; change: [value: string] }>()
 const { t, locale } = useI18n()
 
 const root = ref<HTMLElement | null>(null)
@@ -143,6 +157,8 @@ const trigger = ref<HTMLButtonElement | null>(null)
 const panel = ref<HTMLElement | null>(null)
 const open = ref(false)
 const above = ref(false)
+/** 面板相对输入框起始边的水平偏移（px） */
+const offset = ref(0)
 const view = ref<'days' | 'months' | 'years'>('days')
 const today = todayDate()
 const todayIso = toIsoDate(today)
@@ -188,12 +204,21 @@ function outOfRange(iso: string) {
   return (!!props.min && iso < props.min) || (!!props.max && iso > props.max)
 }
 
-/** 面板约 22rem 高：下方空间不足且上方足够时向上弹出 */
+/**
+ * 面板约 18.5rem × 22rem。纵向：下方空间不足且上方足够时向上弹出。
+ * 横向：默认与输入框起始边对齐；右侧放不下时改为与输入框右缘对齐；仍放不下（窄屏）时贴视口边缘留出安全间距
+ */
+const PANEL = { width: 296, height: 360, margin: 8 }
 function place() {
   const rect = trigger.value?.getBoundingClientRect()
   if (!rect) return
-  const needed = 360
-  above.value = window.innerHeight - rect.bottom < needed && rect.top > needed
+  above.value = window.innerHeight - rect.bottom < PANEL.height && rect.top > PANEL.height
+  const limit = window.innerWidth - PANEL.margin
+  let left = 0
+  if (rect.left + PANEL.width > limit) left = rect.width - PANEL.width
+  if (rect.left + left < PANEL.margin) left = PANEL.margin - rect.left
+  if (rect.left + left + PANEL.width > limit) left = Math.max(PANEL.margin - rect.left, limit - PANEL.width - rect.left)
+  offset.value = Math.round(left)
 }
 async function focusCursor() {
   await nextTick()
@@ -214,11 +239,17 @@ function toggle() {
   if (open.value) close()
   else void openPanel()
 }
+function commit(value: string) {
+  emit('update:modelValue', value)
+  emit('change', value)
+  close(true)
+}
 function pick(date: CalendarDate) {
   const iso = toIsoDate(date)
-  if (outOfRange(iso)) return
-  emit('update:modelValue', iso)
-  close(true)
+  if (!outOfRange(iso)) commit(iso)
+}
+function clear() {
+  commit('')
 }
 
 function shift(direction: 1 | -1) {
@@ -296,6 +327,10 @@ onBeforeUnmount(() => document.removeEventListener('pointerdown', onPointerDown)
   &[aria-invalid='true'] {
     border-color: var(--danger);
   }
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
 }
 .date-picker__panel {
   position: absolute;
@@ -326,6 +361,7 @@ onBeforeUnmount(() => document.removeEventListener('pointerdown', onPointerDown)
 .date-picker__title,
 .date-picker__day,
 .date-picker__cell,
+.date-picker__clear,
 .date-picker__today {
   border: 0;
   background: none;
@@ -439,12 +475,13 @@ onBeforeUnmount(() => document.removeEventListener('pointerdown', onPointerDown)
 }
 .date-picker__footer {
   display: flex;
-  justify-content: flex-end;
+  justify-content: space-between;
   margin-top: 0.5rem;
   padding-top: 0.5rem;
   border-top: 1px solid var(--border-soft);
 }
 .date-picker__today {
+  margin-left: auto;
   padding: 0.375rem 0.75rem;
   border-radius: $radius-sm;
   color: var(--accent);
@@ -455,6 +492,12 @@ onBeforeUnmount(() => document.removeEventListener('pointerdown', onPointerDown)
     opacity: 0.4;
     cursor: not-allowed;
   }
+}
+.date-picker__clear {
+  padding: 0.375rem 0.75rem;
+  border-radius: $radius-sm;
+  color: var(--text-muted);
+  font-size: 0.8125rem;
 }
 .date-picker-pop-enter-active,
 .date-picker-pop-leave-active {

@@ -23,7 +23,7 @@
           <label><input v-model="unanswered" type="checkbox" />{{ $t('admin-media.guestbook.unanswered') }}</label>
           <label
             >{{ $t('admin-media.guestbook.date')
-            }}<input v-model="date" type="date" :aria-label="$t('admin-media.guestbook.dateLabel')" /></label
+            }}<CommonDatePicker v-model="date" :aria-label="$t('admin-media.guestbook.dateLabel')" clearable /></label
           ><button type="submit">{{ $t('admin-media.guestbook.filter') }}</button>
         </form>
         <p v-if="unanswered">{{ $t('admin-media.guestbook.unansweredHint') }}</p>
@@ -354,7 +354,7 @@ onBeforeRouteLeave(() => {
     flex: 1 1 100%;
     width: 100%;
   }
-  .admin-guestbook__filters input[type='date'] {
+  .admin-guestbook__filters .date-picker {
     flex: 1 1 100%;
     width: 100%;
   }
