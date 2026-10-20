@@ -1,7 +1,7 @@
 <!--
   @file SetupProfileStep.vue
-  @description 初始化向导第二步「博主资料」：头像、博主名与头衔、联系邮箱、站点名称与简介、建站日期、社交链接、
-               搜索引擎收录；通过 v-model 编辑草稿，校验与提交由页面负责
+  @description 初始化向导第二步「博主资料」：左列博主资料（头像、博主名与头衔、联系邮箱、社交链接），
+               右列站点设置（名称、简介、建站日期、搜索引擎收录）；通过 v-model 编辑草稿，校验与提交由页面负责
 -->
 <template>
   <div class="profile-step">
@@ -32,37 +32,33 @@
         </template>
       </SetupAvatarPicker>
 
-      <div class="setup-field">
-        <span class="setup-field__label">{{ t('admin-system.setup.profile.ownerNameLabel') }}</span>
-        <label class="profile-step__check">
-          <input v-model="draft.ownerSameAsUsername" type="checkbox" />
-          <span>{{ t('admin-system.setup.profile.ownerSame', { name: username }) }}</span>
-        </label>
-        <template v-if="!draft.ownerSameAsUsername">
+      <div class="profile-step__pair">
+        <div class="setup-field">
+          <label for="setup-owner-name">{{ t('admin-system.setup.profile.ownerNameLabel') }}</label>
           <input
             id="setup-owner-name"
             v-model="draft.ownerName"
             class="input-field setup-input"
             maxlength="80"
-            :aria-label="t('admin-system.setup.profile.ownerNameLabel')"
-            :aria-invalid="invalid('ownerName')"
-            :aria-describedby="errorFor('ownerName') ? 'setup-owner-name-error' : undefined"
+            :placeholder="username"
+            aria-describedby="setup-owner-name-help"
           />
-          <p v-if="errorFor('ownerName')" id="setup-owner-name-error" class="setup-field__error" role="alert">
-            <Icon name="lucide:circle-alert" aria-hidden="true" /><span>{{ fieldError!.message }}</span>
+          <p id="setup-owner-name-help" class="setup-field__help">
+            {{ t('admin-system.setup.profile.ownerNameHelp') }}
           </p>
-        </template>
+        </div>
+        <div class="setup-field">
+          <label for="setup-owner-title">{{ t('admin-system.setup.profile.ownerTitleLabel') }}</label>
+          <input
+            id="setup-owner-title"
+            v-model="draft.ownerTitle"
+            class="input-field setup-input"
+            maxlength="200"
+            :placeholder="t('admin-system.setup.profile.ownerTitlePlaceholder')"
+          />
+        </div>
       </div>
-      <div class="setup-field">
-        <label for="setup-owner-title">{{ t('admin-system.setup.profile.ownerTitleLabel') }}</label>
-        <input
-          id="setup-owner-title"
-          v-model="draft.ownerTitle"
-          class="input-field setup-input"
-          maxlength="200"
-          :placeholder="t('admin-system.setup.profile.ownerTitlePlaceholder')"
-        />
-      </div>
+
       <div class="setup-field">
         <label for="setup-email">{{ t('admin-system.setup.profile.emailLabel') }}</label>
         <input
@@ -73,6 +69,7 @@
           inputmode="email"
           autocomplete="email"
           maxlength="254"
+          placeholder="name@example.com"
           :aria-invalid="invalid('email')"
           :aria-describedby="errorFor('email') ? 'setup-email-error setup-email-help' : 'setup-email-help'"
         />
@@ -81,6 +78,61 @@
         </p>
         <p id="setup-email-help" class="setup-field__help">{{ t('admin-system.setup.profile.emailHelp') }}</p>
       </div>
+
+      <fieldset class="profile-step__socials">
+        <legend>{{ t('admin-system.setup.profile.socialsLabel') }}</legend>
+        <div v-for="(link, index) in draft.socials" :key="link.icon" class="profile-step__social">
+          <div class="profile-step__social-row">
+            <span class="profile-step__social-icon" :title="socialLabel(link.icon, labelLocale)">
+              <Icon :name="link.icon" aria-hidden="true" />
+            </span>
+            <input
+              :id="`setup-social-${index}`"
+              v-model="link.href"
+              class="input-field setup-input"
+              type="url"
+              inputmode="url"
+              maxlength="1000"
+              :placeholder="SOCIAL_PLACEHOLDERS[link.icon]"
+              :aria-label="t('admin-system.setup.profile.socialUrl', { name: socialLabel(link.icon, labelLocale) })"
+              :aria-invalid="invalid(`social-${index}`)"
+              :aria-describedby="errorFor(`social-${index}`) ? `setup-social-${index}-error` : undefined"
+            />
+            <button
+              type="button"
+              class="profile-step__remove"
+              :aria-label="t('admin-system.setup.profile.socialRemove', { name: socialLabel(link.icon, labelLocale) })"
+              @click="draft.socials.splice(index, 1)"
+            >
+              <Icon name="lucide:x" aria-hidden="true" />
+            </button>
+          </div>
+          <p
+            v-if="errorFor(`social-${index}`)"
+            :id="`setup-social-${index}-error`"
+            class="setup-field__error"
+            role="alert"
+          >
+            <Icon name="lucide:circle-alert" aria-hidden="true" /><span>{{ fieldError!.message }}</span>
+          </p>
+        </div>
+        <!-- 每个平台只能添加一次：点平台即新增一行并聚焦，已添加的平台不再出现 -->
+        <div v-if="available.length" class="profile-step__platforms">
+          <button
+            v-for="icon in available"
+            :key="icon"
+            type="button"
+            class="profile-step__platform"
+            :aria-label="t('admin-system.setup.profile.socialAdd', { name: socialLabel(icon, labelLocale) })"
+            @click="addSocial(icon)"
+          >
+            <Icon name="lucide:plus" class="profile-step__plus" aria-hidden="true" /><Icon
+              :name="icon"
+              aria-hidden="true"
+            /><span>{{ socialLabel(icon, labelLocale) }}</span>
+          </button>
+        </div>
+      </fieldset>
     </fieldset>
 
     <fieldset class="setup-group">
@@ -105,7 +157,7 @@
           id="setup-description"
           v-model="draft.description"
           class="input-field setup-input profile-step__textarea"
-          rows="2"
+          rows="3"
           maxlength="300"
           :placeholder="t('admin-system.setup.profile.descriptionPlaceholder')"
         />
@@ -130,57 +182,6 @@
         </p>
       </div>
 
-      <fieldset class="profile-step__socials">
-        <legend>{{ t('admin-system.setup.profile.socialsLabel') }}</legend>
-        <div v-for="(link, index) in draft.socials" :key="index" class="profile-step__social">
-          <select
-            v-model="link.icon"
-            class="input-field setup-input profile-step__select"
-            :aria-label="t('admin-system.setup.profile.socialType', { index: index + 1 })"
-          >
-            <option v-for="icon in SETUP_SOCIAL_ICONS" :key="icon" :value="icon">
-              {{ socialLabel(icon, labelLocale) }}
-            </option>
-          </select>
-          <input
-            :id="`setup-social-${index}`"
-            v-model="link.href"
-            class="input-field setup-input"
-            type="url"
-            inputmode="url"
-            maxlength="1000"
-            placeholder="https://"
-            :aria-label="t('admin-system.setup.profile.socialUrl', { index: index + 1 })"
-            :aria-invalid="invalid(`social-${index}`)"
-            :aria-describedby="errorFor(`social-${index}`) ? `setup-social-${index}-error` : undefined"
-          />
-          <button
-            type="button"
-            class="profile-step__remove"
-            :aria-label="t('admin-system.setup.profile.socialRemove', { index: index + 1 })"
-            @click="draft.socials.splice(index, 1)"
-          >
-            <Icon name="lucide:x" aria-hidden="true" />
-          </button>
-          <p
-            v-if="errorFor(`social-${index}`)"
-            :id="`setup-social-${index}-error`"
-            class="setup-field__error profile-step__social-error"
-            role="alert"
-          >
-            <Icon name="lucide:circle-alert" aria-hidden="true" /><span>{{ fieldError!.message }}</span>
-          </p>
-        </div>
-        <button
-          type="button"
-          class="profile-step__add"
-          :disabled="draft.socials.length >= SETUP_SOCIAL_LIMIT"
-          @click="addSocial"
-        >
-          <Icon name="lucide:plus" aria-hidden="true" />{{ t('admin-system.setup.profile.socialAdd') }}
-        </button>
-      </fieldset>
-
       <label class="profile-step__switch">
         <span class="profile-step__switch-text">
           <span>{{ t('admin-system.setup.profile.indexingLabel') }}</span>
@@ -202,10 +203,10 @@
 
 <script setup lang="ts">
 import type { SupportedLocale } from '~~/i18n/localeOptions'
-import { socialLabel } from '~/features/setup/profile'
+import { SOCIAL_PLACEHOLDERS, socialLabel } from '~/features/setup/profile'
 import type { SetupProfileField } from '~/features/setup/profile'
 import { SETUP_SOCIAL_ICONS, SETUP_SOCIAL_LIMIT } from '~/features/setup/types'
-import type { SetupProfileDraft } from '~/features/setup/types'
+import type { SetupProfileDraft, SetupSocialIcon } from '~/features/setup/types'
 
 const draft = defineModel<SetupProfileDraft>({ required: true })
 const props = defineProps<{
@@ -226,10 +227,14 @@ function invalid(field: SetupProfileField) {
   return errorFor(field) ? ('true' as const) : undefined
 }
 
-/** 依次推荐尚未使用的平台，默认先 GitHub */
-async function addSocial() {
+/** 尚未添加的平台；达到上限后不再提供 */
+const available = computed(() => {
+  if (draft.value.socials.length >= SETUP_SOCIAL_LIMIT) return []
   const used = new Set(draft.value.socials.map((link) => link.icon))
-  const icon = SETUP_SOCIAL_ICONS.find((value) => !used.has(value)) ?? 'lucide:link'
+  return SETUP_SOCIAL_ICONS.filter((icon) => !used.has(icon))
+})
+
+async function addSocial(icon: SetupSocialIcon) {
   draft.value.socials.push({ icon, href: '' })
   await nextTick()
   document.getElementById(`setup-social-${draft.value.socials.length - 1}`)?.focus()
@@ -242,7 +247,7 @@ async function addSocial() {
   flex-direction: column;
   gap: 1.25rem;
 }
-// 卡片展开到足够宽时左右两列：左侧博主资料，右侧站点设置，整体高度与第一步接近
+// 卡片展开到足够宽时左右两列：左侧博主资料（随社交链接增长），右侧站点设置（高度固定）
 @container setup (min-width: 760px) {
   .profile-step {
     display: grid;
@@ -256,26 +261,15 @@ async function addSocial() {
     border-top: 0;
   }
 }
-.setup-field__label {
-  font-size: 0.875rem;
-  font-weight: 500;
-}
-.profile-step__check {
-  display: inline-flex;
-  gap: 0.5rem;
-  align-items: center;
-  color: var(--text-muted);
-  font-size: 0.875rem;
-  cursor: pointer;
-
-  input {
-    width: 1rem;
-    height: 1rem;
-    accent-color: var(--text-main);
-  }
+// 博主名与头衔并排，节省纵向空间；容器较窄时上下排列
+.profile-step__pair {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr));
+  gap: 1rem;
+  align-items: start;
 }
 .profile-step__textarea {
-  min-height: 4.5rem;
+  min-height: 5.25rem;
   resize: vertical;
 }
 .profile-step__socials {
@@ -295,52 +289,77 @@ async function addSocial() {
   }
 }
 .profile-step__social {
-  display: grid;
-  grid-template-columns: 8rem minmax(0, 1fr) 2.75rem;
+  display: flex;
+  flex-direction: column;
   gap: 0.375rem;
+}
+.profile-step__social-row {
+  position: relative;
+  display: flex;
+  gap: 0.25rem;
   align-items: center;
+
+  // 多一个元素选择器，盖过页面下发的 .setup-input 内边距，给左侧平台图标留位
+  input.setup-input {
+    flex: 1;
+    min-width: 0;
+    padding-left: 2.5rem;
+  }
 }
-.profile-step__social-error {
-  grid-column: 1 / -1;
-}
-.profile-step__select {
-  padding-right: 0.5rem;
-}
-.profile-step__remove,
-.profile-step__add {
+// 平台图标嵌在输入框左侧
+.profile-step__social-icon {
+  position: absolute;
+  left: 0.875rem;
   display: inline-flex;
-  gap: 0.375rem;
-  align-items: center;
-  justify-content: center;
-  min-height: 2.75rem;
-  border-radius: $radius-md;
   color: var(--text-muted);
-  cursor: pointer;
+  font-size: 1rem;
+  pointer-events: none;
 }
 .profile-step__remove {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 2.75rem;
+  height: 2.75rem;
   border: 0;
+  border-radius: $radius-md;
   background: none;
+  color: var(--text-soft);
+  cursor: pointer;
 
   &:hover {
     background: var(--hover);
     color: var(--text-main);
   }
 }
-.profile-step__add {
-  align-self: flex-start;
-  padding: 0 0.875rem;
+.profile-step__platforms {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.375rem;
+}
+.profile-step__platform {
+  display: inline-flex;
+  gap: 0.3rem;
+  align-items: center;
+  min-height: 2.25rem;
+  padding: 0 0.75rem 0 0.5rem;
   border: 1px dashed var(--border);
+  border-radius: $radius-full;
   background: none;
-  font-size: 0.875rem;
+  color: var(--text-muted);
+  font-size: 0.8125rem;
+  cursor: pointer;
 
-  &:hover:not(:disabled) {
+  &:hover {
+    border-style: solid;
     border-color: var(--border-hover);
     color: var(--text-main);
   }
-  &:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-  }
+}
+.profile-step__plus {
+  font-size: 0.75rem;
+  opacity: 0.7;
 }
 // 开关：原生复选框套 role="switch"，保留键盘与读屏操作
 .profile-step__switch {
@@ -348,9 +367,10 @@ async function addSocial() {
   gap: 1rem;
   align-items: center;
   justify-content: space-between;
-  padding: 0.75rem 0.875rem;
+  padding: 0.875rem 1rem;
   border: 1px solid var(--border);
   border-radius: $radius-md;
+  background: var(--surface-2);
   cursor: pointer;
 
   input {
@@ -398,16 +418,8 @@ async function addSocial() {
 .profile-step__switch-text {
   display: flex;
   flex-direction: column;
-  gap: 0.125rem;
+  gap: 0.25rem;
   font-size: 0.875rem;
   font-weight: 500;
-}
-@media (max-width: 420px) {
-  .profile-step__social {
-    grid-template-columns: minmax(0, 1fr) 2.75rem;
-  }
-  .profile-step__select {
-    grid-column: 1 / -1;
-  }
 }
 </style>

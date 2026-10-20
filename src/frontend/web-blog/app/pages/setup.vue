@@ -212,21 +212,24 @@
             <p v-if="error" id="setup-error" class="setup__error" role="alert">
               <Icon name="lucide:circle-alert" aria-hidden="true" /><span>{{ error }}</span>
             </p>
-            <button v-if="step === 1" type="submit" class="btn-primary setup__submit">
-              {{ t('admin-system.setup.profile.next') }}<Icon name="lucide:arrow-right" aria-hidden="true" />
-            </button>
-            <div v-else class="setup__actions">
-              <button type="button" class="setup__back" @click="goTo(1)">
-                <Icon name="lucide:arrow-left" aria-hidden="true" />{{ t('admin-system.setup.profile.back') }}
+            <!-- 操作栏吸附在视口底部：内容较长时也始终能看到提交按钮 -->
+            <div class="setup__actions">
+              <button v-if="step === 1" type="submit" class="btn-primary setup__submit">
+                {{ t('admin-system.setup.profile.next') }}<Icon name="lucide:arrow-right" aria-hidden="true" />
               </button>
-              <button type="button" class="setup__skip" @click="submit(false)">
-                {{ t('admin-system.setup.profile.skip') }}
-              </button>
-              <button type="submit" class="btn-primary setup__submit" :aria-busy="submitting">
-                <Icon v-if="submitting" name="lucide:loader-circle" class="setup__spin" aria-hidden="true" />
-                {{ submitting ? t('admin-system.setup.submitting') : t('admin-system.setup.submit') }}
-                <Icon v-if="!submitting" name="lucide:check" aria-hidden="true" />
-              </button>
+              <template v-else>
+                <button type="button" class="setup__back" @click="goTo(1)">
+                  <Icon name="lucide:arrow-left" aria-hidden="true" />{{ t('admin-system.setup.profile.back') }}
+                </button>
+                <button type="button" class="setup__skip" @click="submit(false)">
+                  {{ t('admin-system.setup.profile.skip') }}
+                </button>
+                <button type="submit" class="btn-primary setup__submit" :aria-busy="submitting">
+                  <Icon v-if="submitting" name="lucide:loader-circle" class="setup__spin" aria-hidden="true" />
+                  {{ submitting ? t('admin-system.setup.submitting') : t('admin-system.setup.submit') }}
+                  <Icon v-if="!submitting" name="lucide:check" aria-hidden="true" />
+                </button>
+              </template>
             </div>
           </div>
         </fieldset>
@@ -285,7 +288,7 @@ const profileError = ref<{ field: SetupProfileField; message: string } | null>(n
 // 字母头像按博主名（沿用登录名时取登录名）绘制；画布不可用时不提交头像
 const letterAvatar = computed(() => {
   if (step.value !== 2 || profile.value.avatarMode !== 'letter') return ''
-  const name = profile.value.ownerSameAsUsername ? username.value : profile.value.ownerName || username.value
+  const name = profile.value.ownerName.trim() || username.value
   try {
     return drawLetterAvatar(name)
   } catch {
@@ -609,6 +612,9 @@ onBeforeUnmount(() => {
 // 第二步按内容宽度切换为两列（见 SetupProfileStep 的容器查询）；切换动画期间该宽度被锁定为最终值
 .setup__stage {
   container: setup / inline-size;
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
 }
 .setup--wide {
   max-width: 880px;
@@ -918,10 +924,18 @@ onBeforeUnmount(() => {
 }
 // 第二步底部：上一步与跳过为次要操作，主按钮占据剩余宽度
 .setup__actions {
+  position: sticky;
+  bottom: 0;
+  z-index: 1;
   display: flex;
   flex-wrap: wrap;
   gap: 0.5rem;
   align-items: center;
+  // 向两侧延伸到卡片内边距，吸底时以卡片底色遮住下方滚动的内容
+  margin: 0 -2rem -1.75rem;
+  padding: 1rem 2rem 1.75rem;
+  border-radius: 0 0 $radius-lg $radius-lg;
+  background: linear-gradient(to bottom, transparent, var(--surface-1) 1rem);
 
   .setup__submit {
     flex: 1 1 10rem;
@@ -963,6 +977,10 @@ onBeforeUnmount(() => {
 @media (max-width: 520px) {
   .setup {
     padding: 1.5rem 1.25rem;
+  }
+  .setup__actions {
+    margin: 0 -1.25rem -1.5rem;
+    padding: 1rem 1.25rem 1.5rem;
   }
 }
 </style>

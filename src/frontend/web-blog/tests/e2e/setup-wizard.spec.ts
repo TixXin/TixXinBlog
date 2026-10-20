@@ -113,12 +113,12 @@ test('向导完整流程：首页与登录页引导、令牌移出地址栏、�
 
   // 第二步：博主资料。博主名沿用登录名，默认字母头像在浏览器绘制后随提交登记为站内媒体。
   await expect(page.getByRole('heading', { level: 1, name: '完善博主资料' })).toBeVisible()
-  await expect(page.getByText(`与登录名「${owner.username}」相同`)).toBeVisible()
+  await expect(page.getByRole('textbox', { name: '博主名' })).toHaveAttribute('placeholder', owner.username)
   await page.getByRole('textbox', { name: '博主头衔（可选）' }).fill(owner.title)
   await page.getByRole('textbox', { name: '联系邮箱（可选）' }).fill(owner.email)
   await page.getByRole('textbox', { name: '站点名称（可选）' }).fill(owner.siteName)
-  await page.getByRole('button', { name: '添加链接' }).click()
-  await page.getByRole('textbox', { name: '第 1 个链接的地址' }).fill(owner.github)
+  await page.getByRole('button', { name: '添加 GitHub' }).click()
+  await page.getByRole('textbox', { name: 'GitHub 地址' }).fill(owner.github)
   // 关闭搜索引擎收录：提交经网关后立即生效，不等开关缓存过期。
   await page.getByRole('switch', { name: /允许搜索引擎收录本站/ }).uncheck()
   await page.getByRole('button', { name: '创建博主账号' }).click()

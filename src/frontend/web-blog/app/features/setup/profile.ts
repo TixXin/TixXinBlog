@@ -23,6 +23,17 @@ export function socialLabel(icon: SetupSocialIcon, locale: SupportedLocale): str
   return SOCIAL_LABELS[icon][locale]
 }
 
+/** 输入框占位示例：给出各平台的地址形态，省略号处填写自己的账号 */
+export const SOCIAL_PLACEHOLDERS: Record<SetupSocialIcon, string> = {
+  'lucide:github': 'https://github.com/…',
+  'lucide:twitter': 'https://x.com/…',
+  'lucide:globe': 'https://…',
+  'lucide:link': 'https://…',
+  'lucide:rss': 'https://…/rss.xml',
+  'lucide:youtube': 'https://youtube.com/@…',
+  'lucide:linkedin': 'https://linkedin.com/in/…',
+}
+
 /** 本地日期 YYYY-MM-DD，作为建站日期默认值 */
 export function localDate(date = new Date()): string {
   const pad = (value: number) => String(value).padStart(2, '0')
@@ -31,7 +42,6 @@ export function localDate(date = new Date()): string {
 
 export function createProfileDraft(today = localDate()): SetupProfileDraft {
   return {
-    ownerSameAsUsername: true,
     ownerName: '',
     ownerTitle: '',
     email: '',
@@ -58,9 +68,8 @@ function isUrl(value: string, protocols: string[]): boolean {
 }
 
 /** 第二步可定位的字段，社交链接按序号区分 */
-export type SetupProfileField = 'ownerName' | 'email' | 'avatar' | 'avatarUrl' | 'launchedAt' | `social-${number}`
+export type SetupProfileField = 'email' | 'avatar' | 'avatarUrl' | 'launchedAt' | `social-${number}`
 export type SetupProfileProblem =
-  | 'ownerNameMissing'
   | 'emailInvalid'
   | 'avatarUploadMissing'
   | 'avatarEmailRequired'
@@ -72,7 +81,6 @@ export type SetupProfileProblem =
 export function validateProfile(
   draft: SetupProfileDraft,
 ): { field: SetupProfileField; problem: SetupProfileProblem } | null {
-  if (!draft.ownerSameAsUsername && !draft.ownerName.trim()) return { field: 'ownerName', problem: 'ownerNameMissing' }
   const email = draft.email.trim()
   if (email && !EMAIL.test(email)) return { field: 'email', problem: 'emailInvalid' }
   if (draft.avatarMode === 'upload' && !draft.avatarUpload) return { field: 'avatar', problem: 'avatarUploadMissing' }
@@ -97,7 +105,7 @@ export function profileRequest(
   const text = (value: string) => value.trim() || undefined
   const email = text(draft.email)
   const request: Partial<SetupRequest> = {
-    ownerName: draft.ownerSameAsUsername ? context.username : text(draft.ownerName),
+    ownerName: text(draft.ownerName) ?? context.username,
     ownerTitle: text(draft.ownerTitle),
     email,
     siteName: text(draft.siteName),

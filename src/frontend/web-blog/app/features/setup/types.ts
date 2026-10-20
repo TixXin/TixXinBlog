@@ -56,8 +56,7 @@ export type SetupAvatarMode = 'letter' | 'upload' | 'cravatar' | 'url'
 
 /** 第二步「博主资料」的表单草稿；跳过时一项都不提交 */
 export interface SetupProfileDraft {
-  /** 博主名沿用登录名 */
-  ownerSameAsUsername: boolean
+  /** 留空时使用登录名 */
   ownerName: string
   ownerTitle: string
   email: string

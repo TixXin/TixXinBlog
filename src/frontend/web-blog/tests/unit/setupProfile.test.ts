@@ -40,9 +40,9 @@ describe('字母头像', () => {
 })
 
 describe('validateProfile', () => {
-  it('默认草稿通过：博主名沿用登录名、字母头像、建站日期为今天、允许收录', () => {
+  it('默认草稿通过：博主名留空（沿用登录名）、字母头像、建站日期为今天、允许收录', () => {
     const draft = createProfileDraft('2026-10-20')
-    expect(draft).toMatchObject({ ownerSameAsUsername: true, avatarMode: 'letter', launchedAt: '2026-10-20' })
+    expect(draft).toMatchObject({ ownerName: '', avatarMode: 'letter', launchedAt: '2026-10-20' })
     expect(draft.searchIndexing).toBe(true)
     expect(validateProfile(draft)).toBeNull()
     expect(localDate(new Date(2026, 0, 5))).toBe('2026-01-05')
@@ -50,10 +50,8 @@ describe('validateProfile', () => {
 
   it('逐项定位问题字段', () => {
     const base = createProfileDraft('2026-10-20')
-    expect(validateProfile({ ...base, ownerSameAsUsername: false, ownerName: ' ' })).toEqual({
-      field: 'ownerName',
-      problem: 'ownerNameMissing',
-    })
+    // 博主名留空不是错误：提交时使用登录名
+    expect(validateProfile({ ...base, ownerName: ' ' })).toBeNull()
     expect(validateProfile({ ...base, email: 'nope' })).toEqual({ field: 'email', problem: 'emailInvalid' })
     expect(validateProfile({ ...base, avatarMode: 'upload' })).toEqual({
       field: 'avatar',
@@ -116,7 +114,6 @@ describe('profileRequest', () => {
   it('各头像来源与自定义博主名、关闭收录', () => {
     const base = {
       ...createProfileDraft('2026-10-20'),
-      ownerSameAsUsername: false,
       ownerName: ' 小林 ',
       searchIndexing: false,
     }
