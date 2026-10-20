@@ -7,9 +7,9 @@
 set -euo pipefail
 
 # 不影响应用代码、浏览器回归、类型检查与构建的路径（部署与开发脚本、钩子、其他工作流、说明文件）
-readonly NON_APP='^(deploy/|scripts/release/|scripts/dev/|scripts/db/|scripts/ci/|scripts/check-[^/]+\.sh$|\.husky/|\.github/(dependabot\.yml|CODEOWNERS|PULL_REQUEST_TEMPLATE\.md|ISSUE_TEMPLATE/|workflows/(commit-policy|security|codeql|lighthouse|release|backend-ci)\.yml$)|\.gitattributes$|\.gitignore$|\.dockerignore$|Dockerfile$|compose[^/]*\.ya?ml$|docs/|[^/]+\.md$|LICENSE)'
+readonly NON_APP='^(deploy/|scripts/release/|scripts/dev/|scripts/db/|scripts/ci/|scripts/docs/|scripts/check-[^/]+\.sh$|\.husky/|\.github/(dependabot\.yml|CODEOWNERS|PULL_REQUEST_TEMPLATE\.md|ISSUE_TEMPLATE/|workflows/(commit-policy|security|codeql|lighthouse|release|backend-ci)\.yml$)|\.gitattributes$|\.gitignore$|\.dockerignore$|Dockerfile$|compose[^/]*\.ya?ml$|docs/|[^/]+\.md$|LICENSE)'
 # 同时不影响镜像构建、容器冒烟与安装冒烟的路径（NON_APP 去掉部署脚本、Dockerfile 与编排）
-readonly NON_IMAGE='^(scripts/dev/|scripts/db/|scripts/ci/|scripts/check-[^/]+\.sh$|\.husky/|\.github/(dependabot\.yml|CODEOWNERS|PULL_REQUEST_TEMPLATE\.md|ISSUE_TEMPLATE/|workflows/(commit-policy|security|codeql|lighthouse|release|backend-ci)\.yml$)|\.gitattributes$|\.gitignore$|docs/|[^/]+\.md$|LICENSE)'
+readonly NON_IMAGE='^(scripts/dev/|scripts/db/|scripts/ci/|scripts/docs/|scripts/check-[^/]+\.sh$|\.husky/|\.github/(dependabot\.yml|CODEOWNERS|PULL_REQUEST_TEMPLATE\.md|ISSUE_TEMPLATE/|workflows/(commit-policy|security|codeql|lighthouse|release|backend-ci)\.yml$)|\.gitattributes$|\.gitignore$|docs/|[^/]+\.md$|LICENSE)'
 
 full() {
   printf 'app=true\nimages=true\n'
