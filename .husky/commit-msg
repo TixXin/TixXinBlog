@@ -5,7 +5,7 @@
 
 # 剥离 AI 署名行（LC_ALL=C 按字节匹配，避免中文与 emoji 触发 illegal byte sequence）
 stripped="$1.aistrip.$$"
-LC_ALL=C grep -vE '^[[:space:]]*(Co-[Aa]uthored-[Bb]y:[[:space:]]*(Claude|Happy)([[:space:]]|<|$)|Co-[Aa]uthored-[Bb]y:.*(noreply@anthropic\.com|yesreply@happy\.engineering)|Claude-Session:|(.{0,8}[[:space:]])?Generated with \[?Claude Code\]?|via \[?Happy\]?([[:space:]]*\(|$)|🤖)' "$1" > "$stripped" || true
+LC_ALL=C grep -viE '^[[:space:]]*(Co-authored-by:[[:space:]]*(Claude|Happy|Cursor|cursoragent|Cursor Agent|Copilot|GitHub Copilot|Codex|OpenAI|ChatGPT|Gemini|Grok|Windsurf|Devin|Aider)([[:space:]]|<|$)|Co-authored-by:.*(noreply@anthropic\.com|yesreply@happy\.engineering|@cursor\.(com|sh)|copilot@github\.com|@openai\.com)|Claude-Session:|(.{0,8}[[:space:]])?Generated with \[?(Claude Code|Cursor)\]?|via \[?Happy\]?([[:space:]]*\(|$)|🤖)' "$1" > "$stripped" || true
 
 # 去掉结尾多余空行后写回
 LC_ALL=C awk '{lines[NR]=$0} END{last=0; for(i=1;i<=NR;i++) if(lines[i] ~ /[^[:space:]]/) last=i; for(i=1;i<=last;i++) print lines[i]}' "$stripped" > "$stripped.2" || cp "$stripped" "$stripped.2"

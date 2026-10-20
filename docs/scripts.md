@@ -99,7 +99,7 @@
 - `lint:fix`：自动修复前端 ESLint 可修复的问题并改写文件，完成后检查 Git 差异。
 - `format`：按仓库 Prettier 配置改写 `src/` 下匹配的前后端及共享源码，不覆盖根配置、`docs/`、`scripts/` 或 `.mjs` 文件。
 - `prepare`：初始化 Husky Git hooks，通常由依赖安装的生命周期自动执行。提交钩子运行 lint-staged，对暂存的前端脚本执行 ESLint 修复，对 `src/` 下匹配文件执行 Prettier。它与前端 `postinstall` 执行的 `nuxt prepare` 不同。
-- `lint:shell`：用 shellcheck 检查 `deploy/install.sh`、`deploy/tixxin` 与 `scripts/release/` 下的打包、安装冒烟和本地试装脚本；需要本机安装 shellcheck，CI 固定使用 v0.11.0。
+- `lint:shell`：用 shellcheck 检查 `deploy/install.sh`、`deploy/tixxin` 与 `scripts/release/` 下的打包、安装冒烟和本地试装脚本，以及提交署名检查 `scripts/check-ai-attribution.sh`；需要本机安装 shellcheck，CI 固定使用 v0.11.0。
 - `check:secrets`：扫描 Git 已跟踪及未被忽略的未跟踪文件，查找已知 Context7/GitHub 凭据格式和私钥头；命中时只报告文件和行号并返回非零状态。规则有限，不保证发现所有敏感信息，超过 5 MiB 的文件会跳过。
 
 ## 业务与浏览器测试

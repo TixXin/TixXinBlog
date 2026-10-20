@@ -1,0 +1,45 @@
+# 提交信息规范：推送与 PR 中的提交不得带 AI 署名 trailer，拦截绕过本机 commit-msg 钩子的提交。
+# 不设路径过滤：只改文档的推送同样要检查提交信息。
+name: Commit Policy
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: commit-policy-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  ai-attribution:
+    name: AI Attribution
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          fetch-depth: 0
+
+      # 推送检查本次新增的提交；新建分支或强制推送时 before 不在历史中，退回检查最近 50 个提交。
+      # PR 检查基准分支之后的全部提交。
+      - name: Check commit messages
+        env:
+          EVENT: ${{ github.event_name }}
+          BEFORE: ${{ github.event.before }}
+          AFTER: ${{ github.sha }}
+          BASE: ${{ github.event.pull_request.base.sha }}
+          HEAD: ${{ github.event.pull_request.head.sha }}
+        run: |
+          if [ "$EVENT" = pull_request ]; then
+            range="$BASE..$HEAD"
+          elif git cat-file -e "$BEFORE^{commit}" 2> /dev/null; then
+            range="$BEFORE..$AFTER"
+          else
+            range="$AFTER~50..$AFTER"
+          fi
+          bash scripts/check-ai-attribution.sh "$range"
