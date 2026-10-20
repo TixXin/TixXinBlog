@@ -31,6 +31,8 @@ test('新建文章按 Ctrl/⌘+S 保存草稿，无改动时再次按键不重�
   await body.press(`${modifier}+s`)
   expect((await saved).status()).toBe(201)
   await expect(page).toHaveURL(/\/admin\/posts\/\d+$/)
+  // 跳转后编辑页重新挂载，等服务器版本加载完成、快捷键处理器就绪后再按键
+  await expect(page.getByRole('region', { name: '文章保存状态', exact: true })).toContainText('版本 1')
   let writes = 0
   page.on('request', (request) => {
     if (/\/api\/v1\/admin\/posts\/\d+$/.test(request.url()) && request.method() === 'PATCH') writes++
