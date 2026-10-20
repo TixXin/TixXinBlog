@@ -261,20 +261,20 @@ describe('内容包 v14 搜索引擎收录开关门禁', () => {
     await expect(parse(input)).rejects.toThrow('内容包字段不合法')
   })
 
-  it.each(versions)('v%i 不带收录开关仍可导入，按允许收录读取', async (version) => {
+  it.each(versions)('v%i 不带收录开关仍可导入，字段保持缺省以沿用目标站现值', async (version) => {
     const parsed = await parse(legacy(version))
     expect(parsed.version).toBe(14)
-    expect(parsed.site.searchIndexing).toBe(true)
+    expect(parsed.site.searchIndexing).toBeUndefined()
   })
 
   it('v14 保留博主关闭的收录开关', async () => {
     expect((await parse(base())).site.searchIndexing).toBe(false)
   })
 
-  it('v14 缺省收录开关时按允许收录读取', async () => {
+  it('v14 缺省收录开关时字段保持缺省，迁入设置沿用目标站现值', async () => {
     const input = base()
     delete (input.site as Record<string, unknown>).searchIndexing
-    expect((await parse(input)).site.searchIndexing).toBe(true)
+    expect((await parse(input)).site.searchIndexing).toBeUndefined()
   })
 
   it.each(['false', 0, null, 'no'])('v14 拒绝非布尔的收录开关：%j', async (value) => {

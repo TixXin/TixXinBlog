@@ -127,8 +127,8 @@ const project = (sourceId = 1): PackageProject => ({
   },
 })
 const parse = (value: unknown) => parseContentPackage(Buffer.from(JSON.stringify(value)))
-/** 不带收录开关的包解析后按允许收录补齐 */
-const indexed = (input: ContentPackage) => ({ ...input, site: { ...input.site, searchIndexing: true } })
+// 不带收录开关的包解析后字段保持缺省（undefined），迁入设置时由站点资料保存沿用目标站现值
+const indexed = (input: ContentPackage) => ({ ...input, site: { ...input.site, searchIndexing: undefined } })
 
 describe('内容包输入与限额', () => {
   it('读取空包并将合法时区日期统一为 UTC', async () => {
@@ -162,7 +162,7 @@ describe('内容包输入与限额', () => {
     expect(await parse({ ...input, version: 12 })).toEqual(indexed(input))
   })
 
-  it('仍接受上一导出版本 v13 的内容包，缺失的收录开关按允许收录读取', async () => {
+  it('仍接受上一导出版本 v13 的内容包，缺失的收录开关保持缺省', async () => {
     const input = bundle()
     expect(await parse({ ...input, version: 13 })).toEqual(indexed(input))
   })

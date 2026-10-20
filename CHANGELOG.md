@@ -16,7 +16,7 @@
 ### 新增
 
 - `tixxin status` 提示是否有新的正式版本：只读查询 GitHub 最新版本号并给出升级命令与更新说明链接，不自动升级；使用自定义下载源时不查询，`--no-update-check` 或 `TIXXIN_NO_UPDATE_CHECK=1` 可关闭
-- 站点设置新增「允许搜索引擎收录本站」开关（默认开启）；关闭后公开页面输出 `noindex, nofollow` 的 robots meta 与 `X-Robots-Tag`，`robots.txt` 禁止抓取全站，站点地图清空。内容包导出升级为 v14 携带该开关，接受 v1–v13，旧包按允许收录读取
+- 站点设置新增「允许搜索引擎收录本站」开关（默认开启）；关闭后公开页面输出 `noindex, nofollow` 的 robots meta 与 `X-Robots-Tag`，`robots.txt` 禁止抓取全站，站点地图清空。内容包导出升级为 v14 携带该开关，接受 v1–v13；旧包不带该开关，迁入设置时沿用目标站现值
 - 开发命令 `dev:setup`、`dev:setup:reset`、`dev:setup:down`：在独立空库 `tixxin_blog_setup_sandbox` 上启动沙盒 API 与热更新前端，真实走完初始化、自动登录与进入后台，可与 `dev:all` 同时运行，不影响日常开发库
 - 站点尚未初始化时，首页在浏览器端显示一行提示并链接到后台登录页，初始化完成后消失
 - 开发命令 `trial`、`trial:update`、`trial:status`、`trial:down`：用当前代码在本机构建镜像与部署包，经同一个 `install.sh` 与 `tixxin` 体验安装和升级，不需要发布 Release

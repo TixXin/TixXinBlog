@@ -846,8 +846,8 @@ export async function parseContentPackage(buffer: Buffer): Promise<ContentPackag
     'package.fieldSite',
   )
   const { revision: ignoredRevision, ...site } = siteData
-  // 不带收录开关的包来自尚无此设置的站点，那时站点一直允许收录；按 true 补齐，迁入后与来源站点行为一致。
-  site.searchIndexing ??= true
+  // 不带收录开关的包（v1–v13 或缺省的 v14）保持字段缺省：选择迁入设置时由站点资料保存沿用目标站现值，
+  // 不会把博主已关闭的收录重新打开。
   try {
     Object.assign(site, normalizeSiteExtrasInput(site))
   } catch (error) {

@@ -282,6 +282,13 @@ try {
   legacyV7.version = 7
   stripV9Fields(legacyV7)
   delete legacyV7.site.about
+  // 目标站已关闭搜索引擎收录：旧包不带该开关，迁入设置后应沿用目标站现值，不被重新打开
+  const {
+    updatedAt: _closedUpdatedAt,
+    announcementUpdatedAt: _closedAnnouncementUpdatedAt,
+    ...closedInput
+  } = await ok('/admin/site')
+  await ok('/admin/site', 'PATCH', { ...closedInput, searchIndexing: false })
   const oldSitePlan = await preview(legacyV7, 'skip', true)
   assert.equal(oldSitePlan.status, 201)
   const oldSiteResult = await ok(`/admin/backup/imports/${oldSitePlan.body.data.ticket}/execute`, 'POST', {
@@ -290,6 +297,7 @@ try {
   })
   assert(oldSiteResult.completed)
   assert.deepEqual((await ok('/admin/site')).about, about, '旧内容包未提供关于页时保留目标资料')
+  assert.equal((await ok('/admin/site')).searchIndexing, false, '旧内容包未提供收录开关时沿用目标站现值')
   assert.equal(
     (await preview({ ...legacyV7, site: { ...legacyV7.site, about } })).status,
     400,
