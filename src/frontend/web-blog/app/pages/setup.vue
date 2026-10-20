@@ -412,18 +412,20 @@ onBeforeUnmount(() => {
 })
 </script>
 <style scoped lang="scss">
+// 安全居中：内容区高度放得下时上下居中，放不下时从顶部开始自然滚动，不会被裁切。
+// 布局在 /setup 上不占顶栏高度，内容区即整屏，减去 admin-content 上下各 1.5rem 内边距。
 .setup-page {
   display: flex;
-  justify-content: center;
-  align-items: flex-start;
-  min-height: 100%;
-  padding: clamp(1rem, 6vh, 4rem) 0 3rem;
+  flex-direction: column;
+  align-items: center;
+  min-height: calc(100dvh - 3rem);
 }
 .setup {
   width: 100%;
   max-width: 460px;
   min-width: 0;
-  padding: 2rem;
+  margin-block: auto;
+  padding: 1.75rem 2rem;
   border: 1px solid var(--border);
   border-radius: $radius-lg;
   background: var(--surface-1);
@@ -431,13 +433,13 @@ onBeforeUnmount(() => {
   overflow-wrap: anywhere;
 }
 .setup__head {
-  margin-bottom: 1.5rem;
+  margin-bottom: 1.25rem;
 }
 .setup__mark {
   display: block;
   width: 2.75rem;
   height: 2.75rem;
-  margin-bottom: 1rem;
+  margin-bottom: 0.875rem;
   border-radius: $radius-md;
 }
 .setup h1 {
@@ -480,7 +482,7 @@ onBeforeUnmount(() => {
 .setup__form > fieldset {
   display: flex;
   flex-direction: column;
-  gap: 1.5rem;
+  gap: 1.25rem;
   margin: 0;
   padding: 0;
   border: 0;
@@ -545,9 +547,9 @@ onBeforeUnmount(() => {
 .setup-group {
   display: flex;
   flex-direction: column;
-  gap: 1rem;
+  gap: 0.875rem;
   margin: 0;
-  padding: 1.5rem 0 0;
+  padding: 1.25rem 0 0;
   border: 0;
   border-top: 1px solid var(--border-soft);
   min-width: 0;
@@ -702,10 +704,14 @@ onBeforeUnmount(() => {
 .setup__submit {
   width: 100%;
 }
-@media (max-width: 520px) {
+@media (max-width: 760px) {
+  // 窄屏 admin-content 内边距为 1rem，并给右上角浮动的主题按钮留出位置
   .setup-page {
-    padding-top: 0;
+    min-height: calc(100dvh - 2rem);
+    padding-top: 3rem;
   }
+}
+@media (max-width: 520px) {
   .setup {
     padding: 1.5rem 1.25rem;
   }

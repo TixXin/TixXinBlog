@@ -242,6 +242,8 @@ While a `preview` parameter is present, a small "预览: name" badge appears in 
 
 Instead of typing the addresses, open the **Preview** tab of the DEV debug panel (top left): it switches among the six states with one click, shows the current preview with an **Exit preview** button, applies changes on the same page immediately, and lists the setup sandbox command at the bottom.
 
+To check other screen sizes, use the resolution presets on the **Viewport** tab (phone, tablet, laptop, desktop, or a custom width and height). A page cannot resize its own window, so clicking a preset opens the current page in a separate preview window with that viewport size; clicking another size resizes the same window. Allow pop-ups for the site the first time.
+
 ## Setup Sandbox
 
 To go through the real flow (home page notice, form, submit, automatic sign-in, admin), use the setup sandbox. It uses a fixed, separate empty database `tixxin_blog_setup_sandbox` on the development PostgreSQL instance and starts its own API (3467) and hot-reloading frontend (3466), so it can run alongside `dev:all`:

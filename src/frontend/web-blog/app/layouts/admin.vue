@@ -159,6 +159,9 @@ async function leave() {
   border-bottom: 1px solid var(--border);
 }
 .admin-header--bare {
+  position: absolute;
+  top: 0;
+  right: 0;
   justify-content: flex-end;
   background: transparent;
   border-bottom-color: transparent;
@@ -255,6 +258,8 @@ async function leave() {
 }
 // 初始化向导透出站点背景与点阵，让卡片与背景分出层次
 .admin-shell--setup {
+  position: relative;
+  grid-template-rows: minmax(0, 1fr);
   background: transparent;
 }
 @media (max-width: 760px) {

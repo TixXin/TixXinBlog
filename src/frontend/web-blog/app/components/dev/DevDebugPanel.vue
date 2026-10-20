@@ -154,6 +154,41 @@
               <span class="dev-debug-row__label">滚动位置</span>
               <span class="dev-debug-row__value dev-debug-row__value--mono"> {{ scrollY }}px </span>
             </div>
+
+            <div class="dev-debug-divider" />
+
+            <p class="dev-debug-note">
+              网页无法改变当前窗口尺寸：点预设会按该视口尺寸打开当前页面的预览窗口，再点其他尺寸直接调整同一窗口；在预览窗口里点则调整自身。超出屏幕的尺寸会被浏览器截到屏幕大小。
+            </p>
+            <div class="dev-debug-viewports">
+              <button
+                v-for="preset in viewportPresets"
+                :key="preset.label"
+                type="button"
+                class="dev-debug-btn"
+                :class="{ 'is-active': viewport.w === preset.w && viewport.h === preset.h }"
+                @click="openViewport(preset.w, preset.h)"
+              >
+                <Icon :name="preset.icon" size="13" />
+                <span>{{ preset.label }}</span>
+                <span class="dev-debug-viewports__size">{{ preset.w }}×{{ preset.h }}</span>
+              </button>
+            </div>
+            <form class="dev-debug-viewport-custom" @submit.prevent="openViewport(customViewport.w, customViewport.h)">
+              <label>
+                <span class="sr-only">宽度</span>
+                <input v-model.number="customViewport.w" type="number" min="240" max="3840" required />
+              </label>
+              <span aria-hidden="true">×</span>
+              <label>
+                <span class="sr-only">高度</span>
+                <input v-model.number="customViewport.h" type="number" min="240" max="2160" required />
+              </label>
+              <button type="submit" class="dev-debug-btn">
+                <Icon name="lucide:app-window" size="13" />
+                <span>打开</span>
+              </button>
+            </form>
           </section>
 
           <!-- 路由 + 主题 tab -->
@@ -648,6 +683,48 @@ watch(scrollY, (y, prev) => {
 })
 const fabHidden = computed(() => fabScrollHidden.value && !isOpen.value && !isDragging.value)
 
+// ---- 视口预设：按内容区尺寸打开（或调整）同名预览窗口 ----
+// 浏览器不允许脚本改变用户自己打开的窗口尺寸，但脚本用 window.open 打开的弹出窗口可以 resizeTo。
+const VIEWPORT_WINDOW = 'tixxin-dev-viewport'
+const viewportPresets = [
+  { label: '小屏手机', w: 375, h: 667, icon: 'lucide:smartphone' },
+  { label: '手机', w: 393, h: 852, icon: 'lucide:smartphone' },
+  { label: '平板竖屏', w: 768, h: 1024, icon: 'lucide:tablet' },
+  { label: '平板横屏', w: 1024, h: 768, icon: 'lucide:tablet' },
+  { label: '笔记本', w: 1366, h: 768, icon: 'lucide:laptop' },
+  { label: '桌面', w: 1440, h: 900, icon: 'lucide:monitor' },
+  { label: '全高清', w: 1920, h: 1080, icon: 'lucide:monitor' },
+] as const
+const customViewport = ref({ w: 1280, h: 800 })
+
+/** resizeTo 设置的是窗口外框，加上边框与工具栏的差值，使内容区恰好为目标尺寸 */
+function fitViewport(target: Window, w: number, h: number) {
+  target.resizeTo(w + target.outerWidth - target.innerWidth, h + target.outerHeight - target.innerHeight)
+}
+
+function openViewport(w: number, h: number) {
+  if (!Number.isFinite(w) || !Number.isFinite(h) || w < 240 || h < 240) return
+  // 已在预览窗口内：直接调整自身
+  if (window.name === VIEWPORT_WINDOW) {
+    fitViewport(window, w, h)
+    return
+  }
+  const target = window.open(window.location.href, VIEWPORT_WINDOW, `popup,width=${w},height=${h}`)
+  if (!target) {
+    info('预览窗口被浏览器拦截，请允许本站弹出窗口后重试')
+    return
+  }
+  target.focus()
+  // 同名窗口已存在时浏览器只导航、不改尺寸；稍后按内容区尺寸校正一次
+  window.setTimeout(() => {
+    try {
+      if (!target.closed && (target.innerWidth !== w || target.innerHeight !== h)) fitViewport(target, w, h)
+    } catch {
+      // 窗口仍在导航或已被关闭时跳过
+    }
+  }, 600)
+}
+
 const breakpoint = computed(() => {
   const w = viewport.value.w
   if (w >= 1280) return 'xl'
@@ -1127,6 +1204,41 @@ onBeforeUnmount(() => {
   color: var(--text-muted);
   font-size: 0.75rem;
   font-weight: 600;
+}
+
+/* ==================== 视口预设 ==================== */
+.dev-debug-viewports {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(9.5rem, 1fr));
+  gap: 0.375rem;
+}
+.dev-debug-viewports .dev-debug-btn {
+  justify-content: flex-start;
+}
+.dev-debug-viewports__size {
+  margin-left: auto;
+  color: var(--text-muted);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-weight: 500;
+}
+.dev-debug-viewport-custom {
+  display: flex;
+  gap: 0.375rem;
+  align-items: center;
+  margin-top: 0.5rem;
+  color: var(--text-muted);
+  font-size: 0.75rem;
+
+  input {
+    width: 5rem;
+    padding: 0.3rem 0.5rem;
+    border: 1px solid var(--border);
+    border-radius: $radius-sm;
+    background: var(--surface-2);
+    color: var(--text-main);
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 0.75rem;
+  }
 }
 
 /* ==================== Tabs ==================== */
