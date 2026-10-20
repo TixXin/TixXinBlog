@@ -41,9 +41,13 @@ async function choose(page: Page, type: string, title: string) {
 }
 async function settlePublicOwner(page: Page) {
   // 通过真实管理入口确认公开页认证已恢复，避免在 SSR 文字刚出现时硬重载截断 refresh。
-  await page.getByRole('button', { name: '更多导航', exact: true }).click()
+  // 跳转后立即点击可能早于水合，点击被丢弃、菜单不打开；未打开时重新点击，总时限与原断言相同。
+  const button = page.getByRole('button', { name: '更多导航', exact: true })
   const menu = page.getByRole('dialog', { name: '更多导航', exact: true })
-  await expect(menu.getByRole('link', { name: '管理后台', exact: true })).toBeVisible()
+  await expect(async () => {
+    if (!(await menu.isVisible())) await button.click()
+    await expect(menu.getByRole('link', { name: '管理后台', exact: true })).toBeVisible({ timeout: 1000 })
+  }).toPass({ timeout: 10_000 })
   await page.keyboard.press('Escape')
   await expect(menu).toBeHidden()
 }
