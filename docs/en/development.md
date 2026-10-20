@@ -225,6 +225,21 @@ Site-wide cursor rules are provided by `_interaction.scss` based on native contr
 
 When a component needs a specialized cursor for image zooming, dragging, or resizing, use a native fallback such as `cursor: var(--interaction-cursor, zoom-in)`. Shared variables take precedence when expressing disabled and busy states, preventing component selectors from overriding site-wide rules. Do not infer whether a control is actionable solely from `tabindex`, hover effects, or `aria-busy` on a parent container.
 
+## Setup Screen Preview
+
+The `/setup` form, the home page "not set up yet" notice and the setup prompt on the admin sign-in page appear only when `SETUP_TOKEN` is configured and no administrator exists, so the development database usually never shows them. When working on these screens under `dev:all`, force a state with an address parameter; saving hot-reloads as usual:
+
+| Address                                   | Shows                                                                 |
+| ----------------------------------------- | --------------------------------------------------------------------- |
+| `/setup?preview=form`                     | The setup form with a "development preview" banner and a sample token |
+| `/setup?preview=form&preview-submit=fail` | The same, showing the API rejection error on submit                   |
+| `/setup?preview=closed`                   | "This site has already been set up"                                   |
+| `/setup?preview=error`                    | The status error with a retry button                                  |
+| `/?preview=setup-pending`                 | The home page notice                                                  |
+| `/admin/login?preview=setup-pending`      | The sign-in page setup prompt                                         |
+
+Previews change only what the frontend shows: submitting still runs the frontend validation but sends no request, creates no account and does not sign in. To go through the real flow, use the [Local Build Trial](#local-build-trial). The parameters work only in development mode and unit tests; in production builds the check is always false, and an end-to-end test verifies that adding them on a live site neither reopens the form nor shows the notice.
+
 ## Local Build Trial
 
 To try the deployment flow itself (one-command install, upgrade, backup) you do not need to publish a Release first: `trial` builds images and a deploy bundle from the current code on your machine and hands them to the same `install.sh` and `tixxin`, only switching the download source to the repository's `.artifacts/local-trial/download/`. New pages, features and UI changes still use `dev:all` and do not need the install flow.

@@ -26,9 +26,11 @@ const showHelp = ref(false)
 // 站点尚无管理员且开启了浏览器初始化时引导到 /setup；读取失败不影响登录。
 const needsSetup = ref(false)
 const fetchSetupStatus = useSetupStatus()
+const preview = useDevPreview()
 onMounted(async () => {
   try {
-    needsSetup.value = await fetchSetupStatus()
+    // 开发模式下 ?preview=setup-pending 直接显示引导；生产构建中不生效
+    needsSetup.value = preview('setup-pending') || (await fetchSetupStatus())
   } catch {
     needsSetup.value = false
   }

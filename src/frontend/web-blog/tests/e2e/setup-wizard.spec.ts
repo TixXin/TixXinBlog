@@ -114,6 +114,16 @@ test('向导完整流程：首页与登录页引导、令牌移出地址栏、�
   await expect(page.getByRole('button', { name: '创建博主账号' })).toHaveCount(0)
   expect(page.url()).not.toContain(token)
 
+  // 开发预览参数只在开发模式生效：生产构建中既不能重新打开表单，也不能让首页显示未初始化提示。
+  await page.goto('/setup?preview=form')
+  await expect(page.getByText('此站点已完成初始化')).toBeVisible()
+  await expect(page.getByRole('button', { name: '创建博主账号' })).toHaveCount(0)
+  await expect(page.getByRole('note')).toHaveCount(0)
+  const previewStatus = page.waitForResponse((response) => response.url().endsWith('/api/v1/setup/status'))
+  await page.goto('/?preview=setup-pending')
+  expect((await (await previewStatus).json()).data).toEqual({ needsSetup: false })
+  await expect(page.getByText('站点尚未完成初始化')).toHaveCount(0)
+
   // 不进入搜索引擎：robots 屏蔽，sitemap 不收录。
   const robots = await (await request.get('/robots.txt')).text()
   expect(robots).toMatch(/^Disallow: \/setup$/m)

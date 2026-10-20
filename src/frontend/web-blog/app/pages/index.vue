@@ -260,9 +260,11 @@ onMounted(migrateMomentHash)
 // 新装站点首页没有任何内容，提示博主用安装时输出的链接完成初始化；读取失败时不显示
 const setupPending = ref(false)
 const fetchSetupStatus = useSetupStatus()
+const preview = useDevPreview()
 onMounted(async () => {
   try {
-    setupPending.value = await fetchSetupStatus()
+    // 开发模式下 ?preview=setup-pending 直接显示提示，便于调整样式；生产构建中不生效
+    setupPending.value = preview('setup-pending') || (await fetchSetupStatus())
   } catch {
     setupPending.value = false
   }

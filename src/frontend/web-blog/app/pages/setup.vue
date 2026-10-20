@@ -7,6 +7,7 @@
   <section class="setup" aria-labelledby="setup-title">
     <h1 id="setup-title">{{ t('admin-system.setup.title') }}</h1>
     <p class="setup__intro">{{ t('admin-system.setup.intro') }}</p>
+    <p v-if="previewPhase" class="setup__preview" role="note">{{ t('admin-system.setup.previewBanner') }}</p>
     <p v-if="phase === 'checking'" role="status">{{ t('admin-system.setup.checking') }}</p>
     <div v-else-if="phase === 'closed'" class="setup__notice" role="status">
       <p>{{ t('admin-system.setup.unavailable') }}</p>
@@ -137,6 +138,11 @@ useHead({ meta: [{ name: 'referrer', content: 'no-referrer' }] })
 const route = useRoute()
 const router = useRouter()
 const fetchSetupStatus = useSetupStatus()
+// 开发预览：?preview=form|closed|error 强制显示对应状态，提交不请求接口；生产构建中恒为 null
+const preview = useDevPreview()
+const previewPhase = computed<SetupPhase | null>(() =>
+  preview('form') ? 'open' : preview('closed') ? 'closed' : preview('error') ? 'error' : null,
+)
 const { login } = useCurrentUser()
 const siteSettings = useSiteSettings()
 const { success } = useToast()
@@ -177,6 +183,11 @@ async function takeTokenFromUrl() {
 }
 
 async function check() {
+  if (previewPhase.value) {
+    phase.value = previewPhase.value
+    if (!token.value) token.value = 'a'.repeat(48)
+    return
+  }
   phase.value = 'checking'
   try {
     phase.value = (await fetchSetupStatus()) ? 'open' : 'closed'
@@ -200,6 +211,12 @@ async function submit() {
   if (submitting.value) return
   error.value = validate()
   if (error.value) return
+  if (previewPhase.value) {
+    // 预览只检验前端校验与提示样式；&preview-submit=fail 模拟接口拒绝时的错误展示
+    if (route.query['preview-submit'] === 'fail') error.value = t('admin-system.setup.previewFailed')
+    else success(t('admin-system.setup.previewSubmitted'))
+    return
+  }
   submitting.value = true
   const body: SetupRequest = {
     token: token.value,
@@ -258,6 +275,14 @@ onBeforeUnmount(() => {
 .setup__intro,
 .setup-field__help {
   margin: 0;
+  color: var(--text-muted);
+  font-size: 0.8125rem;
+}
+.setup__preview {
+  margin: 0 0 1.25rem;
+  padding: 0.5rem 0.75rem;
+  border: 1px dashed var(--border);
+  border-radius: 0.5rem;
   color: var(--text-muted);
   font-size: 0.8125rem;
 }

@@ -212,3 +212,42 @@ describe('后台登录页引导', () => {
     expect(done.find('a[href="/setup"]').exists()).toBe(false)
   })
 })
+
+describe('/setup 开发预览', () => {
+  it('?preview=form 在已初始化站点也显示表单与预览横幅，提交只做前端校验、不请求接口', async () => {
+    mocks.needsSetup = false
+    const wrapper = await mountSetup('/setup?preview=form')
+    expect(wrapper.find('[role="note"]').text()).toBe('开发预览：页面状态由地址参数决定，提交不会创建账号。')
+    expect((wrapper.find('#setup-token').element as HTMLInputElement).value).toBe('a'.repeat(48))
+    await wrapper.find('#setup-username').setValue('owner')
+    await wrapper.find('#setup-password').setValue('abc123')
+    await wrapper.find('#setup-confirm').setValue('abc123')
+    await wrapper.find('form').trigger('submit')
+    await flushPromises()
+    expect(mocks.success).toHaveBeenCalledWith('预览模式：表单校验通过，未创建账号')
+    expect(mocks.bodies).toEqual([])
+    expect(mocks.logins).toEqual([])
+    expect(mocks.navigate).not.toHaveBeenCalled()
+  })
+
+  it('&preview-submit=fail 模拟接口拒绝的错误展示', async () => {
+    const wrapper = await mountSetup('/setup?preview=form&preview-submit=fail')
+    await wrapper.find('#setup-username').setValue('owner')
+    await wrapper.find('#setup-password').setValue('abc123')
+    await wrapper.find('#setup-confirm').setValue('abc123')
+    await wrapper.find('form').trigger('submit')
+    await flushPromises()
+    expect(wrapper.find('#setup-error').text()).toBe('（预览）模拟接口拒绝：初始化令牌无效，请核对安装完成时输出的链接')
+    expect(mocks.bodies).toEqual([])
+  })
+
+  it.each([
+    ['closed', '此站点已完成初始化'],
+    ['error', '无法确认'],
+  ])('?preview=%s 强制显示对应状态', async (name, text) => {
+    mocks.needsSetup = true
+    const wrapper = await mountSuspended(SetupPage, { route: `/setup?preview=${name}` })
+    await vi.waitFor(() => expect(wrapper.text()).toContain(text))
+    expect(wrapper.find('form').exists()).toBe(false)
+  })
+})
