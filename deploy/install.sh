@@ -628,6 +628,7 @@ print_summary() {
     info ''
     info "本机试用使用 Caddy 内部证书，浏览器首次访问会提示证书不受信任，确认继续即可；"
     info "也可把根证书 $INSTALL_DIR/local-ca.crt 加入本机信任后再访问。"
+    info "结束试用时运行 $(admin_prefix)$LINK_HINT uninstall，删除容器、数据卷与安装目录。"
   fi
   info ''
   info "请备份 $INSTALL_DIR/.env：其中的数据库密码与签名密钥丢失后无法恢复站点。"

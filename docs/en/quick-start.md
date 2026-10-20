@@ -105,11 +105,11 @@ bash install.sh --local --dir "$HOME/tixxin-blog"
   ```
 
 - When not run as root, `/usr/local/bin/tixxin` is not created; use the full path for the management command, for example `"$HOME/tixxin-blog/deploy/tixxin" status`.
-- To stop the trial, run `docker compose stop` in the install directory; the volumes are kept. Only when you are sure you no longer need the trial data, run `docker compose down -v` in the **trial directory** to delete its containers and volumes. Never do this in a production site directory.
+- To pause the trial, run `docker compose stop` in the install directory; the volumes are kept. Only when you are sure you no longer need the trial data, run `"$HOME/tixxin-blog/deploy/tixxin" uninstall` to delete the containers, volumes, network and the whole install directory (including any backups in it); you confirm by typing the project name. The command only works on a local trial site and refuses to run on a production site.
 
 ## Day-to-Day Management
 
-In a production installation `.env` is readable only by root, so the management command needs `sudo`. Every subcommand supports `--help`; `update`, `rollback` and `reset-password` ask for confirmation, and `--yes` skips it. The command output is in Chinese.
+In a production installation `.env` is readable only by root, so the management command needs `sudo`. Every subcommand supports `--help`; `update`, `rollback`, `reset-password` and `uninstall` ask for confirmation, and `--yes` skips it. The command output is in Chinese.
 
 ```sh
 sudo tixxin status
@@ -132,8 +132,9 @@ sudo tixxin help
 | `rollback <version> --database-compatible` | Application rollback: takes a full backup, then switches to the images and compose files of the given older version without running migrations, keeping volumes. `--database-compatible` states that you have confirmed the version is compatible with the current database                  |
 | `restart`                                  | Restarts the API, frontend and entry point (plus a running worker) and waits for health checks                                                                                                                                                                                               |
 | `reset-password`                           | Reads a new password twice with hidden input (at least 6 characters) and revokes all sessions of that administrator; with several administrators, choose one with `--user <username>`                                                                                                        |
+| `uninstall`                                | Local trial only: deletes the containers, volumes, network and install directory (including backups) after you type the project name; refused on a production site                                                                                                                           |
 
-Replace `0.3.0` in the example with the version you actually want to roll back to. When an update or rollback fails, the command keeps everything in place and prints the failed stage, troubleshooting commands and the matching rollback command. An application rollback does not replace data recovery; to return to the data as it was at backup time, see [Backup and Recovery](../backup-and-recovery.md) (in Chinese). No subcommand ever runs `docker compose down -v`.
+Replace `0.3.0` in the example with the version you actually want to roll back to. When an update or rollback fails, the command keeps everything in place and prints the failed stage, troubleshooting commands and the matching rollback command. An application rollback does not replace data recovery; to return to the data as it was at backup time, see [Backup and Recovery](../backup-and-recovery.md) (in Chinese). Apart from `uninstall` on a local trial, no subcommand ever runs `docker compose down -v`.
 
 Scheduled full backups need the worker enabled separately; see [automatic full backups](../operations.md#自动完整备份) (in Chinese).
 

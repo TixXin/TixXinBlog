@@ -103,11 +103,11 @@ bash install.sh --local --dir "$HOME/tixxin-blog"
   ```
 
 - 不以 root 运行时不会创建 `/usr/local/bin/tixxin`，管理命令使用完整路径，例如 `"$HOME/tixxin-blog/deploy/tixxin" status`。
-- 停止试用时在安装目录执行 `docker compose stop`，数据卷保留。确认不再需要试用数据时，才在**试用目录**执行 `docker compose down -v` 删除它的容器与数据卷；不要在正式站点目录这样做。
+- 暂停试用时在安装目录执行 `docker compose stop`，数据卷保留。确认不再需要试用数据时，执行 `"$HOME/tixxin-blog/deploy/tixxin" uninstall` 删除容器、数据卷、网络与整个安装目录（含其中的备份），需输入项目名确认。该命令只对本机试用站点生效，正式站点会拒绝执行。
 
 ## 日常管理
 
-正式安装的 `.env` 只有 root 可读，管理命令需要 `sudo`。每个子命令都支持 `--help`；`update`、`rollback`、`reset-password` 会二次确认，追加 `--yes` 跳过确认。
+正式安装的 `.env` 只有 root 可读，管理命令需要 `sudo`。每个子命令都支持 `--help`；`update`、`rollback`、`reset-password`、`uninstall` 会二次确认，追加 `--yes` 跳过确认。
 
 ```sh
 sudo tixxin status
@@ -130,8 +130,9 @@ sudo tixxin help
 | `rollback <版本> --database-compatible` | 应用回退：先完整备份，再切回指定旧版本的镜像与编排，不执行迁移，保留数据卷；`--database-compatible` 表示你已确认该版本兼容当前数据库                        |
 | `restart`                               | 重启 API、前端、入口（以及运行中的 worker），并等待健康检查                                                                                                 |
 | `reset-password`                        | 在终端隐藏输入两次新密码（至少 6 位），撤销该管理员的全部登录会话；存在多个管理员时用 `--user <登录名>` 指定                                                |
+| `uninstall`                             | 仅限本机试用：删除容器、数据卷、网络与安装目录（含备份），输入项目名确认；正式站点拒绝执行                                                                  |
 
-示例中的 `0.3.0` 请换成实际要回退到的版本。升级或回退失败时，命令保留现场，并打印失败阶段、排查命令和对应的回退命令。应用回退不能代替数据恢复，需要回到备份时刻的数据时见[备份与恢复](backup-and-recovery.md)。任何子命令都不会执行 `docker compose down -v`。
+示例中的 `0.3.0` 请换成实际要回退到的版本。升级或回退失败时，命令保留现场，并打印失败阶段、排查命令和对应的回退命令。应用回退不能代替数据恢复，需要回到备份时刻的数据时见[备份与恢复](backup-and-recovery.md)。除本机试用的 `uninstall` 外，任何子命令都不会执行 `docker compose down -v`。
 
 定时完整备份需要单独启用 worker，见[自动完整备份](operations.md#自动完整备份)。
 

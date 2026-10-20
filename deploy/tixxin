@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 # @file tixxin
-# @description TixXinBlog 一键安装站点的管理命令：状态、日志、完整备份、升级、应用回退、重启与重置管理员密码。
-#   与 scripts/release/release.mjs 共用同一编排、数据卷与发布顺序；宿主机只需要 bash、curl 和 Docker。
-#   任何子命令都不执行 down -v，也不删除数据卷；失败时保留现场并给出排查与回退命令。
+# @description TixXinBlog 一键安装站点的管理命令：状态、日志、完整备份、升级、应用回退、重启、重置管理员密码，
+#   以及仅限本机试用的卸载。与 scripts/release/release.mjs 共用同一编排、数据卷与发布顺序；宿主机只需要 bash、curl 和 Docker。
+#   除本机试用的 uninstall 外，任何子命令都不执行 down -v，也不删除数据卷；失败时保留现场并给出排查与回退命令。
 set -euo pipefail
 
 readonly VERSION_PATTERN='^[A-Za-z0-9][A-Za-z0-9_.-]{0,127}$'
@@ -442,10 +442,11 @@ usage() {
   restart                重启 API、前端、入口（以及运行中的 worker）
   reset-password [--user 登录名]
                          重置管理员密码并撤销全部登录会话
+  uninstall              仅限本机试用：删除容器、数据卷、网络与安装目录（含其中的备份）
   help                   显示本帮助
 
-每个命令都支持 --help。update、rollback、reset-password 会二次确认，--yes 跳过确认。
-任何命令都不会执行 docker compose down -v，也不会删除数据卷。
+每个命令都支持 --help。update、rollback、reset-password、uninstall 会二次确认，--yes 跳过确认。
+除本机试用的 uninstall 外，任何命令都不会执行 docker compose down -v，也不会删除数据卷。
 EOF
 }
 
@@ -789,6 +790,54 @@ EOF
   fi
 }
 
+# 仅限本机试用（TIXXIN_MODE=local）：正式站点不提供一键删除数据，避免误删生产数据。
+cmd_uninstall() {
+  while [ $# -gt 0 ]; do
+    case $1 in
+      -h | --help)
+        cat << 'EOF'
+用法：tixxin uninstall [--yes]
+
+仅限本机试用（安装时用了 --local）：停止并删除本项目的容器、数据卷与网络，删除安装目录
+（含 .env、logs 与 backups 中的备份），以及指向本安装的 /usr/local/bin/tixxin。镜像保留，
+可用 docker image prune 另行清理。正式站点不支持此命令。删除后无法恢复，需要保留的备份请先转存。
+EOF
+        return 0
+        ;;
+      -y | --yes) ASSUME_YES=1 ;;
+      *) fail "未知参数 $1" ;;
+    esac
+    shift
+  done
+  [ "$(env_get TIXXIN_MODE)" = 'local' ] ||
+    fail 'uninstall 仅用于本机试用站点（TIXXIN_MODE=local）；正式站点不提供一键删除，确需下线请先完整备份并按部署指南手动处理'
+  local project link=/usr/local/bin/tixxin answer
+  project=$(project_name)
+  [ -n "$project" ] || fail '.env 缺少 RELEASE_PROJECT，无法确定要删除的项目'
+  case $TIXXIN_DIR in / | "$HOME" | "$HOME/") fail "安装目录 $TIXXIN_DIR 异常，拒绝删除" ;; esac
+  info "将永久删除本机试用站点：安装目录 ${TIXXIN_DIR}，项目 ${project} 的容器、数据卷与网络。"
+  [ ! -d "$TIXXIN_DIR/backups" ] || info "安装目录中的备份（${TIXXIN_DIR}/backups）也会一并删除。"
+  # 删除数据不可恢复：交互时要求输入项目名，而不是简单的 y。
+  if [ "$ASSUME_YES" != 1 ]; then
+    has_tty || fail '当前不是交互终端；确认无误后追加 --yes 执行'
+    printf '输入项目名 %s 确认删除：' "$project" > /dev/tty
+    IFS= read -r answer < /dev/tty || answer=''
+    [ "$answer" = "$project" ] || fail '已取消，未做任何改动'
+  fi
+  acquire_lock
+  info '停止并删除容器、数据卷与网络'
+  compose down -v --remove-orphans
+  if [ -L "$link" ] && [ "$(readlink "$link")" = "$TIXXIN_DIR/deploy/tixxin" ]; then
+    rm -f "$link" || warn "无法删除 ${link}，请手动删除"
+  fi
+  # 锁目录位于安装目录内，随目录一起删除；脚本已整体解析，删除自身不影响后续执行。
+  LOCK_HELD=0
+  cd /
+  rm -rf "$TIXXIN_DIR"
+  info "本机试用站点已删除：${TIXXIN_DIR}"
+  info '如曾把 local-ca.crt 加入系统信任，请在钥匙串或证书设置中移除对应的 Caddy 根证书。'
+}
+
 # shellcheck disable=SC2329 # 由 EXIT 陷阱调用。
 on_first_start_failure() {
   [ "$1" = 0 ] && return 0
@@ -837,6 +886,7 @@ main() {
     rollback) cmd_rollback "$@" ;;
     restart) cmd_restart "$@" ;;
     reset-password) cmd_reset_password "$@" ;;
+    uninstall) cmd_uninstall "$@" ;;
     __first-start) cmd_first_start "$@" ;;
     *)
       usage >&2
