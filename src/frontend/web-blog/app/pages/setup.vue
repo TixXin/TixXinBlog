@@ -228,6 +228,7 @@ const previewPhase = computed<SetupPhase | null>(() =>
 const { login } = useCurrentUser()
 const siteSettings = useSiteSettings()
 const { success } = useToast()
+const { switchLocale } = useLocaleSwitch()
 
 const phase = ref<SetupPhase>('checking')
 const token = ref('')
@@ -277,6 +278,12 @@ async function focusField(field: SetupField) {
   await nextTick()
   inputs[field]?.focus()
 }
+// 选择站点语言时同步切换本页界面语言（与访客语言切换共用 cookie），已显示的错误按旧语言生成，一并清除
+watch(siteLocale, (code) => {
+  error.value = ''
+  fieldError.value = null
+  void switchLocale(code)
+})
 // 修改出错字段后清除它的提示，避免旧错误停留在已更正的输入框下
 watch([token, username, password, confirmation], () => {
   fieldError.value = null

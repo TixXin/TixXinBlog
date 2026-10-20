@@ -825,7 +825,7 @@
       "siteNameLabel": "Site name (optional)",
       "siteNameHelp": "Leave empty to keep “{name}”. You can change it later in the dashboard.",
       "localeLabel": "Site language",
-      "localeHelp": "Used for the initial owner profile. Visitors can still switch the interface language.",
+      "localeHelp": "Used for the initial owner profile and switches this page’s language. Visitors can still choose their own language.",
       "localeZh": "中文",
       "localeEn": "English",
       "mismatch": "The passwords do not match",

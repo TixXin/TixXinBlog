@@ -236,6 +236,16 @@ describe('/setup 初始化向导', () => {
     expect(wrapper.find('#setup-token').exists()).toBe(false)
   })
 
+  it('选择站点语言时同步切换本页界面语言', async () => {
+    const wrapper = await mountSetup()
+    expect(wrapper.find('h1').text()).toBe('欢迎使用 TixXinBlog')
+    await wrapper.find('input[type="radio"][value="en"]').setValue(true)
+    await vi.waitFor(() => expect(wrapper.find('h1').text()).toBe('Welcome to TixXinBlog'))
+    expect(wrapper.find('button[type="submit"]').text()).toBe('Create owner account')
+    await wrapper.find('input[type="radio"][value="zh-CN"]').setValue(true)
+    await vi.waitFor(() => expect(wrapper.find('h1').text()).toBe('欢迎使用 TixXinBlog'))
+  })
+
   it('站点已初始化时不显示表单，引导前往登录', async () => {
     mocks.needsSetup = false
     const wrapper = await mountSuspended(SetupPage, { route: '/setup' })

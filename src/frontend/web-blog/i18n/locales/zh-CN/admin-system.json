@@ -825,7 +825,7 @@
       "siteNameLabel": "站点名称（可选）",
       "siteNameHelp": "留空则沿用「{name}」，之后可在后台修改。",
       "localeLabel": "站点语言",
-      "localeHelp": "用于生成初始博主资料，访客仍可自行切换界面语言。",
+      "localeHelp": "用于初始博主资料，并同时切换本页界面语言；访客仍可自行选择语言。",
       "localeZh": "中文",
       "localeEn": "English",
       "mismatch": "两次输入的密码不一致",
