@@ -33,6 +33,7 @@ corepack pnpm --filter server-main build
 - 先核对 Git 改动、运行服务、数据库目标与实际代码；保护用户已有修改、账号、环境配置和数据。
 - `dev` 只启动前端，真实接口开发使用 `dev:all`；启动不隐式迁移、seed 或 reset。
 - macOS 上由代理启动长期开发服务时，先运行 `dev:check`；已就绪则复用，否则通过 `corepack pnpm dev:terminal` 为前后端分别打开独立 Terminal.app 窗口（单独启动用 `dev:terminal:api` / `dev:terminal:web`）。Ctrl+C 仅停止对应窗口的服务。启动后再次自检，不把窗口打开当成服务就绪。可选本机技能位于 `.agents/skills/tixxinblog-dev-session/SKILL.md`，缺失时仍按本条和开发指南操作。
+- 改动安装、升级或部署脚本时，用 `corepack pnpm trial` 以当前代码在本机走一遍一键安装与升级（项目 `tixxin-dev`，与官方试用隔离），结束后 `trial:down` 清理。
 - 使用项目 `build/generate` 命令保留开发与生产中间目录隔离，运行方式见 [开发指南](docs/development.md)。
 - 多页出现502时检查后端 `/ready` 与同源API，恢复真实链路，不切换Mock掩盖故障。
 - 按改动范围验证。纯文档修改检查链接、格式和引用；业务修改运行相应单测、接口及浏览器回归。已有无关检查通过后，不反复全量重跑。

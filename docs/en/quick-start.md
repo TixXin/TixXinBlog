@@ -62,7 +62,7 @@ The prompts are currently in Chinese. When the script runs through a pipe, it re
 5. Writes the install directory and generates a random database password, signing secret and one-time setup token, stored in `<install directory>/.env` (mode 600).
 6. Creates the management command `/usr/local/bin/tixxin`, pointing at `<install directory>/deploy/tixxin`; if another file already exists there it is left alone and you use the full path.
 7. Pulls the images, starts the database, runs the formal migrations, starts the API, frontend and Caddy, then checks the same-origin API and release header over the real HTTPS address.
-8. Prints the site URL, version, install directory and setup link; the install log is written to `<install directory>/logs/`.
+8. Prints the site URL, version, install directory and setup link; the install log is written to `<install directory>/logs/`. The terminal shows only a one-line database migration summary ("N run"); details are in `logs/migration-*.log`.
 
 ### What the Script Does Not Do
 

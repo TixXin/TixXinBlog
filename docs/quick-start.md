@@ -60,7 +60,7 @@ curl -fsSL https://github.com/TixXin/TixXinBlog/releases/latest/download/install
 5. 写入安装目录，随机生成数据库密码、签名密钥和一次性初始化令牌，保存到 `<安装目录>/.env`（权限 600）。
 6. 创建管理命令 `/usr/local/bin/tixxin`，指向 `<安装目录>/deploy/tixxin`；该位置已有其他文件时不覆盖，改用完整路径。
 7. 拉取镜像、启动数据库、执行正式迁移、启动 API、前端与 Caddy，再通过真实 HTTPS 地址验收同源 API 与版本头。
-8. 打印站点地址、版本、安装目录和初始化链接；安装日志写入 `<安装目录>/logs/`。
+8. 打印站点地址、版本、安装目录和初始化链接；安装日志写入 `<安装目录>/logs/`。数据库迁移在终端只显示「执行 N 项」的摘要，明细在 `logs/migration-*.log`。
 
 ### 脚本不会做什么
 

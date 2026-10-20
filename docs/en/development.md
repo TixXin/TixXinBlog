@@ -225,6 +225,24 @@ Site-wide cursor rules are provided by `_interaction.scss` based on native contr
 
 When a component needs a specialized cursor for image zooming, dragging, or resizing, use a native fallback such as `cursor: var(--interaction-cursor, zoom-in)`. Shared variables take precedence when expressing disabled and busy states, preventing component selectors from overriding site-wide rules. Do not infer whether a control is actionable solely from `tabindex`, hover effects, or `aria-busy` on a parent container.
 
+## Local Build Trial
+
+To try the deployment flow itself (one-command install, upgrade, backup) you do not need to publish a Release first: `trial` builds images and a deploy bundle from the current code on your machine and hands them to the same `install.sh` and `tixxin`, only switching the download source to the repository's `.artifacts/local-trial/download/`. New pages, features and UI changes still use `dev:all` and do not need the install flow.
+
+```sh
+corepack pnpm trial                          # Build the current code and install interactively (asks for site language and confirmation)
+corepack pnpm trial:update                   # Rebuild after changes and upgrade with tixxin update (backup, migrate, verify)
+corepack pnpm trial:status                   # Site status and the commit behind the development version
+corepack pnpm trial:down                     # Clean up the trial
+corepack pnpm trial --from-release 0.3.0     # Install official 0.3.0 instead, then trial:update to try upgrading to the current code
+```
+
+- The site runs at `https://localhost:9443` (HTTP 9080 redirects), in `~/tixxin-blog-dev` (override with `TIXXIN_TRIAL_DIR`), as project `tixxin-dev` with internal subnet `172.31.246.0/24`. It does not affect the official local trial (`~/tixxin-blog`, 8443, project `tixxin-production`) or the development database, and both can run at the same time.
+- Development versions look like `0.3.0-dev.<commit>.<UTC time>` and end with `.dirty` when the working tree has uncommitted changes. Every build is a new version, so `trial:update` always performs a real upgrade.
+- Images are tagged locally as `ghcr.io/tixxin/tixxinblog-*:<development version>` and never pushed, so upgrading from an official version needs no change to the image repositories in `.env`, matching the path users take later. The four images build one after another; the first build takes about 10–15 minutes, later ones use the Docker cache.
+- `--yes` accepts the default answers for install and upgrade; without it the install prompts are the same ones users see. Take the setup link, management command and log locations from the install output; the management command is `~/tixxin-blog-dev/deploy/tixxin`.
+- `trial:down` first checks that the directory's `.env` has `TIXXIN_MODE=local` and `RELEASE_PROJECT=tixxin-dev` and refuses otherwise. It then removes only that project's containers, volumes and network, the trial directory, the local download directory and the `*-dev.*` image tags.
+
 ## Validation
 
 Node 25 exposes server-side Web Storage by default. The frontend unit test entry point disables this API so that the Nuxt test environment uses the simulated browser's storage implementation, preventing a native empty object from overriding browser interfaces.
