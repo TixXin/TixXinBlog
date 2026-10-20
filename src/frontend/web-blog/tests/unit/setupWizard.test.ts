@@ -204,7 +204,8 @@ describe('/setup 初始化向导', () => {
     await wrapper.find('input[name="setup-avatar-mode"][value="cravatar"]').setValue(true)
     await wrapper.find('#setup-site-name').setValue('夜读札记')
     await wrapper.find('#setup-description').setValue('读书与写代码')
-    await wrapper.find('.profile-step__platform[aria-label="Add GitHub"]').trigger('click')
+    // 社交平台固定列出，第一个为 GitHub；其余留空不提交
+    expect(wrapper.find('#setup-social-0').attributes('aria-label')).toBe('GitHub address')
     await wrapper.find('#setup-social-0').setValue('https://github.com/owner')
     await wrapper.find('form').trigger('submit')
     await vi.waitFor(() => expect(mocks.navigate).toHaveBeenCalled())
@@ -306,9 +307,7 @@ describe('/setup 初始化向导', () => {
     expect(wrapper.text().replace('中文', '')).not.toMatch(/[一-鿿]/)
     await fillAccount(wrapper)
     await toProfile(wrapper)
-    expect(wrapper.find('#setup-site-name-help').text()).toBe(
-      'Leave empty to keep “My Blog”. You can change it later in the dashboard.',
-    )
+    expect(wrapper.find('#setup-site-name').attributes('placeholder')).toBe('My Blog')
     expect(wrapper.find('.setup__back').text()).toBe('Back')
     expect(wrapper.find('.setup__skip').text()).toBe('Skip and create')
     expect(wrapper.find('button[type="submit"]').text()).toBe('Create owner account')
@@ -319,8 +318,15 @@ describe('/setup 初始化向导', () => {
     const wrapper = await mountSetup()
     await fillAccount(wrapper)
     await toProfile(wrapper)
-    expect(wrapper.find('#setup-site-name').attributes('placeholder')).toBe('My Blog')
-    expect(wrapper.text()).toContain('留空则沿用「My Blog」')
+    // 社交平台固定全部列出，填写不改变表单结构
+    expect(wrapper.findAll('.profile-step__social input').map((input) => input.attributes('aria-label'))).toEqual([
+      'GitHub 地址',
+      'X 地址',
+      '个人网站 地址',
+      'RSS 地址',
+      'YouTube 地址',
+      'LinkedIn 地址',
+    ])
     await wrapper.find('input[name="setup-avatar-mode"][value="url"]').setValue(true)
     await wrapper.find('#setup-avatar-url').setValue('http://example.com/a.png')
     await wrapper.find('form').trigger('submit')
@@ -333,14 +339,11 @@ describe('/setup 初始化向导', () => {
     expect(wrapper.find('#setup-email-error').text()).toBe('使用邮箱头像需要先填写联系邮箱')
     await vi.waitFor(() => expect(document.activeElement?.id).toBe('setup-email'))
     await wrapper.find('#setup-email').setValue('owner@example.com')
-    await wrapper.find('.profile-step__platform[aria-label="添加 个人网站"]').trigger('click')
-    // 已添加的平台不再出现在可选平台里
-    expect(wrapper.find('.profile-step__platform[aria-label="添加 个人网站"]').exists()).toBe(false)
-    expect(wrapper.find('#setup-social-0').attributes('aria-label')).toBe('个人网站 地址')
-    await wrapper.find('#setup-social-0').setValue('javascript:alert(1)')
+    await wrapper.find('#setup-social-2').setValue('javascript:alert(1)')
     await wrapper.find('form').trigger('submit')
     await flushPromises()
-    expect(wrapper.find('#setup-social-0-error').text()).toBe('链接需为 http(s) 地址')
+    expect(wrapper.find('#setup-social-2-error').text()).toBe('链接需为 http(s) 地址')
+    expect(wrapper.find('#setup-social-2').attributes('aria-invalid')).toBe('true')
     expect(mocks.bodies).toEqual([])
   })
 

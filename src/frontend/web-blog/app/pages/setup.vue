@@ -14,13 +14,15 @@
       :aria-busy="phase === 'checking'"
     >
       <header class="setup__head">
-        <img class="setup__mark" src="/icon.svg" alt="" width="44" height="44" />
-        <p v-if="phase === 'open'" class="setup__step">
-          <span class="setup__dots" aria-hidden="true"
-            ><span v-for="index in 2" :key="index" :class="{ 'is-active': index <= step }"
-          /></span>
-          {{ t('admin-system.setup.profile.stepOf', { step, total: 2 }) }}
-        </p>
+        <div class="setup__brand">
+          <img class="setup__mark" src="/icon.svg" alt="" width="44" height="44" />
+          <p v-if="phase === 'open'" class="setup__step">
+            <span class="setup__dots" aria-hidden="true"
+              ><span v-for="index in 2" :key="index" :class="{ 'is-active': index <= step }"
+            /></span>
+            {{ t('admin-system.setup.profile.stepOf', { step, total: 2 }) }}
+          </p>
+        </div>
         <div ref="headText">
           <h1 id="setup-title" ref="heading" tabindex="-1">
             {{ step === 1 ? t('admin-system.setup.welcome') : t('admin-system.setup.profile.title') }}
@@ -614,7 +616,7 @@ onBeforeUnmount(() => {
   container: setup / inline-size;
   display: flex;
   flex-direction: column;
-  gap: 1.25rem;
+  gap: 1rem;
 }
 .setup--wide {
   max-width: 880px;
@@ -624,13 +626,20 @@ onBeforeUnmount(() => {
   overflow: hidden;
 }
 .setup__head {
-  margin-bottom: 1.25rem;
+  margin-bottom: 1rem;
+}
+// Logo 与步骤进度同行，压缩标题区高度
+.setup__brand {
+  display: flex;
+  gap: 0.875rem;
+  align-items: center;
+  margin-bottom: 0.75rem;
 }
 .setup__mark {
   display: block;
+  flex-shrink: 0;
   width: 2.75rem;
   height: 2.75rem;
-  margin-bottom: 0.875rem;
   border-radius: $radius-md;
 }
 .setup h1 {
@@ -900,7 +909,7 @@ onBeforeUnmount(() => {
   display: flex;
   gap: 0.5rem;
   align-items: center;
-  margin: 0 0 0.5rem;
+  margin: 0;
   color: var(--text-soft);
   font-size: 0.75rem;
   font-weight: 600;

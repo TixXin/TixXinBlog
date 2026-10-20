@@ -12,19 +12,19 @@ export interface SetupStatus {
   needsSetup: boolean
 }
 
-/** 向导可选的社交图标，与服务端 SETUP_SOCIAL_ICONS 一致；邮件由联系邮箱单独生成 */
+/**
+ * 向导固定列出的社交平台，是服务端 SETUP_SOCIAL_ICONS 的子集：通用「链接」与「个人网站」重复，
+ * 留到后台站点资料再添加；邮件由联系邮箱单独生成
+ */
 export const SETUP_SOCIAL_ICONS = [
   'lucide:github',
   'lucide:twitter',
   'lucide:globe',
-  'lucide:link',
   'lucide:rss',
   'lucide:youtube',
   'lucide:linkedin',
 ] as const
 export type SetupSocialIcon = (typeof SETUP_SOCIAL_ICONS)[number]
-/** 站点资料最多 8 条社交链接，留 1 条给联系邮箱 */
-export const SETUP_SOCIAL_LIMIT = 7
 
 export interface SetupSocialLink {
   label: string

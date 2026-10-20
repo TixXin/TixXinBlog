@@ -75,7 +75,7 @@ describe('validateProfile', () => {
         ...base,
         socials: [
           { icon: 'lucide:github', href: 'https://github.com/a' },
-          { icon: 'lucide:link', href: 'ftp://a.com' },
+          { icon: 'lucide:rss', href: 'ftp://a.com' },
         ],
       }),
     ).toEqual({ field: 'social-1', problem: 'socialUrlInvalid' })

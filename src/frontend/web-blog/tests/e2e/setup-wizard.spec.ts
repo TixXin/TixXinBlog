@@ -117,7 +117,6 @@ test('向导完整流程：首页与登录页引导、令牌移出地址栏、�
   await page.getByRole('textbox', { name: '博主头衔（可选）' }).fill(owner.title)
   await page.getByRole('textbox', { name: '联系邮箱（可选）' }).fill(owner.email)
   await page.getByRole('textbox', { name: '站点名称（可选）' }).fill(owner.siteName)
-  await page.getByRole('button', { name: '添加 GitHub' }).click()
   await page.getByRole('textbox', { name: 'GitHub 地址' }).fill(owner.github)
   // 关闭搜索引擎收录：提交经网关后立即生效，不等开关缓存过期。
   await page.getByRole('switch', { name: /允许搜索引擎收录本站/ }).uncheck()

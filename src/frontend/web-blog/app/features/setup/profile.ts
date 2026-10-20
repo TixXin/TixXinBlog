@@ -6,6 +6,7 @@
  * @since 2026-10-20
  */
 import type { SupportedLocale } from '~~/i18n/localeOptions'
+import { SETUP_SOCIAL_ICONS } from './types'
 import type { SetupProfileDraft, SetupRequest, SetupSocialIcon } from './types'
 
 /** 社交链接显示名写入站点资料（业务数据），按所选站点语言给出 */
@@ -13,7 +14,6 @@ const SOCIAL_LABELS: Record<SetupSocialIcon, Record<SupportedLocale, string>> = 
   'lucide:github': { 'zh-CN': 'GitHub', en: 'GitHub' },
   'lucide:twitter': { 'zh-CN': 'X', en: 'X' },
   'lucide:globe': { 'zh-CN': '个人网站', en: 'Website' },
-  'lucide:link': { 'zh-CN': '链接', en: 'Link' },
   'lucide:rss': { 'zh-CN': 'RSS', en: 'RSS' },
   'lucide:youtube': { 'zh-CN': 'YouTube', en: 'YouTube' },
   'lucide:linkedin': { 'zh-CN': 'LinkedIn', en: 'LinkedIn' },
@@ -28,7 +28,6 @@ export const SOCIAL_PLACEHOLDERS: Record<SetupSocialIcon, string> = {
   'lucide:github': 'https://github.com/…',
   'lucide:twitter': 'https://x.com/…',
   'lucide:globe': 'https://…',
-  'lucide:link': 'https://…',
   'lucide:rss': 'https://…/rss.xml',
   'lucide:youtube': 'https://youtube.com/@…',
   'lucide:linkedin': 'https://linkedin.com/in/…',
@@ -51,7 +50,8 @@ export function createProfileDraft(today = localDate()): SetupProfileDraft {
     siteName: '',
     description: '',
     launchedAt: today,
-    socials: [],
+    // 固定列出全部平台，表单高度不随增删变化；留空的平台不提交
+    socials: SETUP_SOCIAL_ICONS.map((icon) => ({ icon, href: '' })),
     searchIndexing: true,
   }
 }
