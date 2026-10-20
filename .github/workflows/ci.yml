@@ -2,8 +2,12 @@
 name: CI
 
 on:
-  # Release 在标签提交上调用，不受下方路径过滤影响。
+  # Release 在标签提交上调用，不受下方路径过滤影响，且始终全量运行（不按改动跳过任务）。
   workflow_call:
+    inputs:
+      full:
+        type: boolean
+        default: true
   push:
     branches: [main]
     paths-ignore:
@@ -36,6 +40,36 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  # 按改动文件决定跳过哪些重任务：只有全部改动属于明确无关的类别才跳过，未知路径一律全量（见 scripts/ci/detect-changes.sh）。
+  changes:
+    name: Detect Changes
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      app: ${{ steps.detect.outputs.app }}
+      images: ${{ steps.detect.outputs.images }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - id: detect
+        env:
+          FULL: ${{ inputs.full }}
+          EVENT: ${{ github.event_name }}
+          BEFORE: ${{ github.event.before }}
+          AFTER: ${{ github.sha }}
+          BASE: ${{ github.event.pull_request.base.sha }}
+          HEAD: ${{ github.event.pull_request.head.sha }}
+        run: |
+          # 新建分支或强制推送时 before 不在历史中，无法确定改动范围，按全量处理
+          if [ "$FULL" = true ]; then range=--full
+          elif [ "$EVENT" = pull_request ]; then range="$BASE...$HEAD"
+          elif git cat-file -e "$BEFORE^{commit}" 2> /dev/null; then range="$BEFORE..$AFTER"
+          else range=--full
+          fi
+          bash scripts/ci/detect-changes.sh "$range" | tee -a "$GITHUB_OUTPUT"
+
   development-runner:
     strategy:
       matrix:
@@ -53,6 +87,7 @@ jobs:
         run: node --test scripts/dev/*.test.mjs
 
   lint-and-build:
+    needs: changes
     runs-on: ubuntu-latest
     env:
       DATABASE_URL: postgres://tixxin:tixxin@localhost:5432/tixxin_blog
@@ -129,20 +164,24 @@ jobs:
         run: pnpm lint:shell
 
       - name: Type Check
+        if: needs.changes.outputs.app == 'true'
         run: pnpm --filter web-blog exec nuxt typecheck
 
       - name: Nuxt Startup Patch Regression
+        if: needs.changes.outputs.app == 'true'
         run: pnpm test:nuxt-patches
 
       - name: Subscription Domain
+        if: needs.changes.outputs.app == 'true'
         run: pnpm test:subscription-domain
 
       # 单测只跑带覆盖率的一遍：用例失败照常阻断，覆盖率只收集与上传，不设阈值门禁。
       - name: Test with Coverage
+        if: needs.changes.outputs.app == 'true'
         run: pnpm --filter web-blog exec vitest run --coverage
 
       - name: Frontend Coverage Report
-        if: always()
+        if: always() && needs.changes.outputs.app == 'true'
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: frontend-coverage
@@ -151,9 +190,11 @@ jobs:
           retention-days: 7
 
       - name: Build
+        if: needs.changes.outputs.app == 'true'
         run: pnpm build
 
       - name: Build Backend for Browser Tests
+        if: needs.changes.outputs.app == 'true'
         run: pnpm --filter server-main build
 
       - name: Isolated Development Startup
@@ -163,14 +204,17 @@ jobs:
         run: pnpm test:dev:postgres
 
       - name: Frontend Docker Build
+        if: needs.changes.outputs.images == 'true'
         run: docker build -t tixxin-blog-web:ci .
 
       - name: Backend and Migration Docker Build
+        if: needs.changes.outputs.images == 'true'
         run: |
           docker build -f src/backend/server-main/Dockerfile -t tixxin-blog-api:ci .
           docker build -f src/backend/server-main/Dockerfile --target migration -t tixxin-blog-migration:ci .
 
       - name: Production Container Smoke
+        if: needs.changes.outputs.images == 'true'
         env:
           WEB_IMAGE: tixxin-blog-web:ci
           API_IMAGE: tixxin-blog-api:ci
@@ -179,10 +223,12 @@ jobs:
 
       # 与 API 共用构建阶段缓存；一键安装的备份在 worker 镜像内执行。
       - name: Worker Docker Build
+        if: needs.changes.outputs.images == 'true'
         run: docker build -f src/backend/server-main/Dockerfile --target worker -t tixxin-blog-worker:ci .
 
       # 用本次镜像与本地部署包运行 install.sh --local --yes，再验收备份、同版本升级、失败升级、跨版本升级与回退。
       - name: Install Script Smoke
+        if: needs.changes.outputs.images == 'true'
         env:
           SMOKE_WEB_IMAGE: tixxin-blog-web:ci
           SMOKE_API_IMAGE: tixxin-blog-api:ci
@@ -196,6 +242,8 @@ jobs:
   # 全部浏览器 spec 按文件分 4 片并行；每片各自构建，文件仍逐个使用独立进程与隔离库。
   browser-e2e:
     name: Browser E2E (${{ matrix.shard }}/4)
+    needs: changes
+    if: needs.changes.outputs.app == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 45
     strategy:
@@ -279,6 +327,8 @@ jobs:
 
   webkit-smoke:
     name: WebKit Core E2E
+    needs: changes
+    if: needs.changes.outputs.app == 'true'
     runs-on: ubuntu-latest
     # 含依赖安装、WebKit 系统库、两端生产构建，以及两个完整 spec。上限只约束本 job。
     timeout-minutes: 60

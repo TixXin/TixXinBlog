@@ -93,6 +93,7 @@
 | `format`        | `prettier --write "src/**/*.{vue,ts,js,scss,json,md}"` |
 | `prepare`       | `husky`                                                |
 | `check:secrets` | `node scripts/check-secrets.mjs`                       |
+| `check:local`   | `bash scripts/check-local.sh`                          |
 | `lint:shell`    | `shellcheck` 检查安装、管理、打包、冒烟与试装脚本      |
 
 - `lint`：检查前端子项目的 ESLint 规则，不修复文件；不包含后端 lint、类型检查或单元测试。
@@ -100,6 +101,7 @@
 - `format`：按仓库 Prettier 配置改写 `src/` 下匹配的前后端及共享源码，不覆盖根配置、`docs/`、`scripts/` 或 `.mjs` 文件。
 - `prepare`：初始化 Husky Git hooks，通常由依赖安装的生命周期自动执行。提交钩子运行 lint-staged，对暂存的前端脚本执行 ESLint 修复，对 `src/` 下匹配文件执行 Prettier。它与前端 `postinstall` 执行的 `nuxt prepare` 不同。
 - `lint:shell`：用 shellcheck 检查 `deploy/install.sh`、`deploy/tixxin` 与 `scripts/release/` 下的打包、安装冒烟和本地试装脚本，以及提交署名检查 `scripts/check-ai-attribution.sh`；需要本机安装 shellcheck，CI 固定使用 v0.11.0。
+- `check:local`：推送前按相对 `origin/main` 的改动（含未提交与未跟踪文件）自动挑选并运行与 CI 对应的本地检查；`--e2e` 额外运行改动涉及的浏览器 spec（先构建两端，改了应用代码但没改 spec 时跑全量），`--all` 不按改动挑选。有失败项时返回非零。挑选规则与 CI 共用 `scripts/ci/detect-changes.sh` 的分类思路。
 - `check:secrets`：扫描 Git 已跟踪及未被忽略的未跟踪文件，查找已知 Context7/GitHub 凭据格式和私钥头；命中时只报告文件和行号并返回非零状态。规则有限，不保证发现所有敏感信息，超过 5 MiB 的文件会跳过。
 
 ## 业务与浏览器测试
