@@ -245,6 +245,7 @@ import type { SupportedLocale } from '~~/i18n/localeOptions'
 import type { SetupPhase, SetupRequest } from '~/features/setup/types'
 import { drawLetterAvatar } from '~/features/setup/avatar'
 import { createProfileDraft, profileRequest, validateProfile } from '~/features/setup/profile'
+import { DEV_SETUP_ACCOUNT, devAccountSample, devProfileSample, isProfileUntouched } from '~/features/setup/devSample'
 import type { SetupProfileField, SetupProfileProblem } from '~/features/setup/profile'
 import { SETUP_PASSWORD_MAX_LENGTH, SETUP_PASSWORD_MIN_LENGTH, setupPasswordChecks } from '~/features/setup/password'
 
@@ -266,7 +267,7 @@ const previewPhase = computed<SetupPhase | null>(() =>
 )
 const { login } = useCurrentUser()
 const siteSettings = useSiteSettings()
-const { success } = useToast()
+const { success, info } = useToast()
 const { switchLocale } = useLocaleSwitch()
 
 const phase = ref<SetupPhase>('checking')
@@ -499,7 +500,33 @@ async function rejectToken(message: string) {
 }
 
 /** 第一步校验账号字段后进入第二步；第二步提交全部资料 */
+/**
+ * 开发模式：留空直接点「下一步」填入示例账号，第二步仍为默认值时点「创建博主账号」填入示例资料。
+ * 只填空白或默认值，不覆盖手动输入；生产构建中 import.meta.dev 为 false，整段被剔除
+ */
+function fillDevAccount() {
+  const sample = devAccountSample({
+    username: username.value,
+    password: password.value,
+    confirmation: confirmation.value,
+  })
+  if (!sample) return
+  username.value = sample.username
+  password.value = sample.password
+  confirmation.value = sample.confirmation
+  info(`开发模式：已填入示例账号 ${DEV_SETUP_ACCOUNT.username} / ${DEV_SETUP_ACCOUNT.password}`)
+}
+function fillDevProfile() {
+  if (!isProfileUntouched(profile.value)) return
+  profile.value = devProfileSample(profile.value, siteLocale.value)
+  info('开发模式：已填入示例博主资料')
+}
+
 async function onSubmit() {
+  if (import.meta.dev) {
+    if (step.value === 1) fillDevAccount()
+    else fillDevProfile()
+  }
   if (step.value === 1) {
     if (await checkAccount()) await goTo(2)
     return
