@@ -223,7 +223,9 @@
       "failed": "暂时无法登录，请稍后重试",
       "forgotText": "本站尚未开通邮件找回密码。请联系站点维护者恢复博主账号。",
       "registerText": "本站仅开放博主管理登录。发表评论无需注册，直接填写游客身份即可。",
-      "backToLogin": "返回登录"
+      "backToLogin": "返回登录",
+      "showPassword": "显示密码",
+      "hidePassword": "隐藏密码"
     }
   }
 }

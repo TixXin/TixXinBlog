@@ -223,7 +223,9 @@
       "failed": "Unable to sign in right now. Please try again later.",
       "forgotText": "Password reset by email is not available on this site. Contact the site maintainer to recover the author account.",
       "registerText": "Only the author can sign in here. You do not need an account to comment; just fill in a guest name.",
-      "backToLogin": "Back to sign-in"
+      "backToLogin": "Back to sign-in",
+      "showPassword": "Show password",
+      "hidePassword": "Hide password"
     }
   }
 }

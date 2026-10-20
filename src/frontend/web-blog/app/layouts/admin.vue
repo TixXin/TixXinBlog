@@ -21,7 +21,8 @@
           type="button"
           class="admin-header__icon"
           :aria-label="t('admin-system.layout.toggleColor')"
-          @click="toggleColor"
+          @pointerdown="onToggleColorPointerDown"
+          @click="onToggleColorClick"
         >
           <Icon :name="colorMode.value === 'dark' ? 'lucide:sun' : 'lucide:moon'" /></button
         ><button v-if="isLoggedIn" type="button" class="admin-header__logout" :disabled="leaving" @click="leave">
@@ -92,6 +93,7 @@ watch(
     drawerOpen.value = false
   },
 )
+const { setTheme } = useTheme()
 const colorMode = useColorMode()
 const leaving = ref(false)
 // 登录页与初始化向导都不需要后台导航
@@ -111,8 +113,17 @@ const pageTitle = computed(() =>
           ? t('admin-system.layout.titleEditPost')
           : t(activeItem.value?.labelKey ?? 'admin-system.layout.titleFallback'),
 )
-function toggleColor() {
-  colorMode.preference = colorMode.value === 'dark' ? 'light' : 'dark'
+let suppressToggleClickUntil = 0
+function onToggleColorPointerDown(e: PointerEvent) {
+  if (e.button !== 0) return
+  suppressToggleClickUntil = Date.now() + 400
+  const next = colorMode.value === 'dark' ? 'light' : 'dark'
+  setTheme(next, e)
+}
+function onToggleColorClick(e: MouseEvent) {
+  if (Date.now() < suppressToggleClickUntil) return
+  const next = colorMode.value === 'dark' ? 'light' : 'dark'
+  setTheme(next, e)
 }
 async function leave() {
   if (leaving.value) return
@@ -128,6 +139,8 @@ async function leave() {
 }
 </script>
 <style scoped lang="scss">
+@use 'tokens' as *;
+
 .admin-shell {
   display: grid;
   grid-template-columns: 15rem minmax(0, 1fr);
@@ -136,17 +149,19 @@ async function leave() {
   overflow: hidden;
   background: var(--bg);
   color: var(--text-main);
+  transition: $transition-colors;
 }
 .admin-header {
   z-index: 10;
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  min-height: 3.75rem;
-  padding: 0.625rem 1.5rem;
+  min-height: 3.25rem;
+  padding: 0.5rem 1.5rem;
   border-bottom: 1px solid var(--border-soft);
-  background: color-mix(in srgb, var(--bg) 85%, transparent);
-  backdrop-filter: blur(8px);
+  background: color-mix(in srgb, var(--surface-1) 88%, transparent);
+  backdrop-filter: blur(12px);
+  transition: $transition-colors;
 }
 .admin-header--bare {
   position: absolute;
@@ -165,15 +180,20 @@ async function leave() {
   gap: 0.5rem;
   min-width: 0;
   color: var(--text-soft);
-  font-size: 0.875rem;
+  font-size: 0.8125rem;
 
   a {
     color: var(--text-soft);
     text-decoration: none;
+    transition: color 0.15s ease;
 
     &:hover {
       color: var(--text-main);
     }
+  }
+  span[aria-hidden='true'] {
+    color: var(--border-hover);
+    font-size: 0.75rem;
   }
   span:last-child {
     color: var(--text-main);
@@ -185,16 +205,22 @@ async function leave() {
   align-items: center;
   justify-content: center;
   gap: 0.375rem;
-  min-height: 2.25rem;
-  padding: 0.375rem 0.75rem;
+  min-height: 2rem;
+  padding: 0.25rem 0.625rem;
   border: 1px solid transparent;
-  border-radius: 0.625rem;
+  border-radius: 0.5rem;
   background: transparent;
   color: var(--text-muted);
-  font-size: 0.875rem;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  transition:
+    background-color 0.15s ease,
+    color 0.15s ease,
+    border-color 0.15s ease;
 
   &:hover:not(:disabled) {
-    background: var(--surface-3);
+    background: var(--surface-2);
+    border-color: var(--border-soft);
     color: var(--text-main);
   }
   &:focus-visible {
@@ -203,8 +229,13 @@ async function leave() {
   }
 }
 .admin-header .admin-header__icon {
-  width: 2.25rem;
+  width: 2rem;
   padding: 0;
+}
+.admin-header .admin-header__logout:hover:not(:disabled) {
+  color: var(--danger-text);
+  background: color-mix(in srgb, var(--danger) 10%, transparent);
+  border-color: color-mix(in srgb, var(--danger) 25%, transparent);
 }
 .admin-main {
   min-width: 0;
@@ -229,14 +260,23 @@ async function leave() {
   border-radius: 0.75rem;
   background: var(--surface-1);
 }
-.admin-shell--login {
-  grid-template-columns: minmax(0, 1fr);
-}
-// 初始化向导透出站点背景与点阵，让卡片与背景分出层次
+// 初始化向导与登录页透出站点背景与点阵，让卡片与背景分出层次
+.admin-shell--login,
 .admin-shell--setup {
   position: relative;
-  grid-template-rows: minmax(0, 1fr);
   background: transparent;
+}
+.admin-shell--login {
+  grid-template-columns: minmax(0, 1fr);
+
+  .admin-header {
+    background: transparent;
+    border-bottom-color: transparent;
+    backdrop-filter: none;
+  }
+}
+.admin-shell--setup {
+  grid-template-rows: minmax(0, 1fr);
 }
 @media (pointer: coarse) {
   .admin-header button {

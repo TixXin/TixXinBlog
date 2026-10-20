@@ -84,6 +84,12 @@ async function entered() {
   background: var(--surface-1);
   box-shadow: var(--shadow-card);
   overflow-wrap: anywhere;
+  transition:
+    $transition-colors,
+    box-shadow 0.3s ease;
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
 }
 
 .login__head {
@@ -110,6 +116,7 @@ async function entered() {
   margin: 0;
   font-size: 1.375rem;
   font-weight: 700;
+  transition: color 0.3s ease;
 }
 
 .login__notice {
@@ -120,6 +127,7 @@ async function entered() {
   padding: 0.625rem 0.75rem;
   border-radius: $radius-md;
   font-size: 0.8125rem;
+  transition: $transition-colors;
 
   svg {
     flex-shrink: 0;
@@ -138,6 +146,7 @@ async function entered() {
   border: 1px solid var(--border);
   border-radius: $radius-md;
   font-size: 0.8125rem;
+  transition: $transition-colors;
 
   p {
     margin: 0 0 0.5rem;
@@ -166,6 +175,7 @@ async function entered() {
   color: var(--text-muted);
   font-size: 0.8125rem;
   line-height: 1.55;
+  transition: $transition-colors;
 }
 
 @media (max-width: 520px) {
