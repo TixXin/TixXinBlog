@@ -99,6 +99,28 @@ describe('/setup 初始化向导', () => {
     expect(route.fullPath).not.toContain(TOKEN)
   })
 
+  it('链接带入令牌时只显示读取状态，点「手动填写」才展开令牌输入框', async () => {
+    const wrapper = await mountSetup()
+    const field = () => wrapper.find('#setup-token').element.parentElement as HTMLElement
+    expect(field().style.display).toBe('none')
+    await wrapper.find('.setup-token button').trigger('click')
+    expect(field().style.display).toBe('')
+    expect(wrapper.find('.setup-token').exists()).toBe(false)
+    expect(wrapper.text()).toContain('安装完成时输出的链接已包含令牌')
+  })
+
+  it('没有令牌时直接显示输入框；显示密码按钮同时切换两个密码框', async () => {
+    const wrapper = await mountSetup('/setup')
+    expect(wrapper.find('.setup-token').exists()).toBe(false)
+    expect((wrapper.find('#setup-token').element.parentElement as HTMLElement).style.display).toBe('')
+    const toggle = wrapper.find('.setup-password__toggle')
+    expect(toggle.attributes('aria-label')).toBe('显示密码')
+    await toggle.trigger('click')
+    expect(toggle.attributes('aria-pressed')).toBe('true')
+    expect(wrapper.find('#setup-password').attributes('type')).toBe('text')
+    expect(wrapper.find('#setup-confirm').attributes('type')).toBe('text')
+  })
+
   it('表单字段有可访问名称与说明，密码要求随输入实时更新', async () => {
     const wrapper = await mountSetup()
     for (const id of ['setup-token', 'setup-username', 'setup-password', 'setup-confirm', 'setup-site-name']) {
@@ -114,7 +136,7 @@ describe('/setup 初始化向导', () => {
     await wrapper.find('#setup-password').setValue('correct-horse-battery')
     await wrapper.find('#setup-confirm').setValue('correct-horse-battery')
     expect(rules()).toEqual(['6–128 个字符已满足', '两次输入一致已满足'])
-    expect(wrapper.find('legend').text()).toBe('站点语言')
+    expect(wrapper.findAll('legend').map((item) => item.text())).toEqual(['博主账号', '站点设置', '站点语言'])
   })
 
   it('前端先拦截密码不一致与过短，不发请求', async () => {

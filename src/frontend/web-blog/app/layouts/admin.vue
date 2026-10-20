@@ -13,7 +13,7 @@
         ><Icon name="lucide:arrow-up-right" />{{ t('admin-system.layout.backToBlog') }}</NuxtLink
       >
     </aside>
-    <header class="admin-header">
+    <header class="admin-header" :class="{ 'admin-header--bare': isSetup }">
       <CommonContextDrawer
         v-if="!isLogin"
         v-model:open="drawerOpen"
@@ -25,7 +25,7 @@
           >{{ t('admin-system.layout.backToBlog') }}<Icon name="lucide:arrow-up-right"
         /></NuxtLink>
       </CommonContextDrawer>
-      <nav :aria-label="t('admin-system.layout.breadcrumb')">
+      <nav v-if="!isSetup" :aria-label="t('admin-system.layout.breadcrumb')">
         <NuxtLink :to="isLogin ? '/' : '/admin'">{{
           isLogin ? t('admin-system.layout.backToBlog') : t('admin-system.layout.breadcrumbRoot')
         }}</NuxtLink
@@ -107,6 +107,8 @@ const colorMode = useColorMode()
 const leaving = ref(false)
 // 登录页与初始化向导都不需要后台导航
 const isLogin = computed(() => route.path === '/admin/login' || route.path === '/setup')
+// 初始化向导是安装后的第一个页面：不显示面包屑，顶栏只留主题切换
+const isSetup = computed(() => route.path === '/setup')
 const activePath = computed(() => adminModule(route.path)?.path)
 const activeItem = computed(() => navigation.find((item) => item.path === activePath.value))
 const pageTitle = computed(() =>
@@ -155,6 +157,11 @@ async function leave() {
   padding: 1rem 1.5rem;
   background: var(--surface-2);
   border-bottom: 1px solid var(--border);
+}
+.admin-header--bare {
+  justify-content: flex-end;
+  background: transparent;
+  border-bottom-color: transparent;
 }
 .admin-header nav {
   display: flex;

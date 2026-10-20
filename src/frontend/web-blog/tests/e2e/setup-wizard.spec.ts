@@ -68,10 +68,12 @@ test('向导完整流程：首页与登录页引导、令牌移出地址栏、�
   expect(headers['x-robots-tag']).toContain('noindex')
   expect(headers['referrer-policy']).toBe('no-referrer')
   await expect(page.locator('meta[name="robots"]').first()).toHaveAttribute('content', /noindex/)
-  await expect(page.getByRole('textbox', { name: '初始化令牌' })).toHaveValue(token)
   await expect(page).toHaveURL(/\/setup$/)
   expect(page.url()).not.toContain(token)
+  // 令牌随链接带入时只显示读取状态，输入框收起但仍携带令牌提交。
   await expect(page.getByText('已从链接读取令牌，并已从地址栏移除。')).toBeVisible()
+  await expect(page.getByRole('textbox', { name: '初始化令牌' })).toBeHidden()
+  await expect(page.locator('#setup-token')).toHaveValue(token)
 
   // 密码要求实时提示，前端先拦截不一致的确认密码。
   await page.getByRole('textbox', { name: '登录名' }).fill(owner.username)
