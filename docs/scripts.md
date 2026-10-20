@@ -131,6 +131,14 @@
 
 用当前代码在本机构建四个镜像与部署包，交给同一个 `install.sh` 与 `tixxin` 安装和升级，只把下载源换成仓库 `.artifacts/local-trial/download/`，用于发版前体验安装、升级、备份等部署流程本身；新页面与功能仍用 `dev:all` 开发。试装站点固定在 `~/tixxin-blog-dev`（`TIXXIN_TRIAL_DIR` 可覆盖）、项目 `tixxin-dev`、`https://localhost:9443`，不影响官方试用与开发数据库。`--yes` 使用默认回答，`trial --from-release <版本>` 改装官方版本以体验升级到当前代码；`trial:down` 只清理该项目与 `*-dev.*` 镜像标签。用法与约定见[本地开发与测试](development.md#本地构建试装)。
 
+## 文档截图
+
+| 命令               | 实际执行                                   |
+| ------------------ | ------------------------------------------ |
+| `docs:screenshots` | `node scripts/docs/readme-screenshots.mjs` |
+
+重新生成 README 截图：首页、朋友圈、文章页在 2560×1440 视口（像素密度 1）下、手机端在 390×844（3 倍）下，分别截浅色与深色，合成为左上浅色、右下深色的对角线分割图，写入 `docs/assets/screenshots/nexus-*.jpg`。默认在 `.artifacts/readme-screenshots/` 下用当前 HEAD 的独立工作树构建生产前端，不受工作区未提交改动和开发调试按钮影响，复用 `dev:all` 后端的演示数据，因此运行前需要后端就绪；全程约 3 分钟，结束后删除工作树与中间文件。`--base-url` 直接截已在运行的站点并跳过构建，`--api` 指定演示数据所在的 API，`--out` 改写输出目录（试跑或对比时用），`--keep` 保留中间文件。脚本只生成图片、不改动 Git，检查无误后再提交。
+
 ## 常用组合
 
 | 场景               | 命令                                                              |

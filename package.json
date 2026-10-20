@@ -46,6 +46,7 @@
     "prepare": "husky",
     "check:secrets": "node scripts/check-secrets.mjs",
     "check:local": "bash scripts/check-local.sh",
+    "docs:screenshots": "node scripts/docs/readme-screenshots.mjs",
     "test:e2e": "corepack pnpm --filter server-main build && corepack pnpm --filter web-blog build && node src/backend/server-main/tests/browser-runner.mjs",
     "test:e2e:run": "node src/backend/server-main/tests/browser-runner.mjs",
     "trial": "bash scripts/release/local-trial.sh install",

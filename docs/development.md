@@ -260,6 +260,10 @@ corepack pnpm dev:setup:down    # 删除沙盒库
 - 沙盒关闭后台任务、邮件通知与周期备份，媒体写入 `.artifacts/setup-sandbox/media/`（`reset` / `down` 一并清理）。前端使用独立构建目录 `.nuxt-setup-sandbox/`，后端编译到 `.setup-sandbox-dist/`，不改写日常开发的 `.nuxt/` 与 `.dev-dist/`。会话日志与 `session.json` 位于 `.artifacts/setup-sandbox/sessions/`。
 - Ctrl+C 只结束本次启动的两个服务，沙盒库保留。
 
+## README 截图
+
+README 首屏与「更多截图」使用 `docs/assets/screenshots/` 下的对角线分割图（左上浅色、右下深色）。界面有明显变化后，在 `dev:all` 后端与演示数据就绪时运行 `corepack pnpm docs:screenshots` 重新生成：脚本用当前 HEAD 单独构建生产前端，按真实 2K 视口截图，并等可见区域的图片加载完成。用法与参数见[根脚本说明](scripts.md#文档截图)；生成后对比新旧图片，只在界面确有变化时提交，避免浏览数等数字变动带来无意义的二进制改动。
+
 ## 本地构建试装
 
 体验一键安装、升级、备份这类部署流程本身时，不必先发布 Release：`trial` 用当前代码在本机构建镜像和部署包，交给同一个 `install.sh` 与 `tixxin` 安装，只把下载源换成仓库 `.artifacts/local-trial/download/`。新页面、功能和界面改动照旧用 `dev:all`，不需要走安装流程。

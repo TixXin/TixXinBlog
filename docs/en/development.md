@@ -264,6 +264,10 @@ corepack pnpm dev:setup:down    # drop the sandbox database
 - Background jobs, email notifications and scheduled backups are off. Media goes to `.artifacts/setup-sandbox/media/` (cleared by `reset` / `down`). The frontend uses its own build directory `.nuxt-setup-sandbox/` and the backend compiles to `.setup-sandbox-dist/`, leaving the everyday `.nuxt/` and `.dev-dist/` untouched. Session logs and `session.json` are in `.artifacts/setup-sandbox/sessions/`.
 - Ctrl+C stops only the two services started by this run; the sandbox database is kept.
 
+## README Screenshots
+
+The README hero and "More screenshots" use the diagonal light/dark split images in `docs/assets/screenshots/` (light at top left, dark at bottom right). After visible UI changes, run `corepack pnpm docs:screenshots` while the `dev:all` backend and demo data are ready. The script builds the production frontend from the current HEAD in a separate worktree, captures at a real 2K viewport, and waits for visible images to load. `--base-url` captures an already running site without building, `--api` sets the API that serves the demo data, `--out` writes elsewhere for trial runs, and `--keep` keeps the intermediate files. Compare the new images with the old ones and commit only when the UI really changed, so changing view counts do not produce pointless binary diffs.
+
 ## Local Build Trial
 
 To try the deployment flow itself (one-command install, upgrade, backup) you do not need to publish a Release first: `trial` builds images and a deploy bundle from the current code on your machine and hands them to the same `install.sh` and `tixxin`, only switching the download source to the repository's `.artifacts/local-trial/download/`. New pages, features and UI changes still use `dev:all` and do not need the install flow.
