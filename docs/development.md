@@ -330,6 +330,8 @@ corepack pnpm test:e2e:run accessibility.spec.ts
 
 自动扫描只覆盖当前桌面页面状态，不能代替键盘操作、焦点恢复、读屏、窄屏、弹层和正常动效的验收；参见[主题验证](themes.md#验证)与 [Playwright 可访问性测试说明](https://playwright.dev/docs/accessibility-testing)。
 
+CI 先由 `changes` 任务按改动文件决定跳过哪些重任务（[`scripts/ci/detect-changes.sh`](../scripts/ci/detect-changes.sh)）：只有全部改动都属于部署脚本、开发与数据库脚本、提交钩子、其他工作流和说明文件这类明确无关的路径时，才跳过浏览器回归、类型检查、单测与构建；部署脚本、`Dockerfile` 与编排之外的改动还会跳过镜像构建、容器冒烟与安装冒烟。未列入的路径一律全量，新建分支或强制推送无法确定范围时也全量；Release 通过 `workflow_call` 调用时始终全量。推送前用 `corepack pnpm check:local` 在本地先跑对应检查，见[根脚本说明](scripts.md)。
+
 [CI](../.github/workflows/ci.yml) 的 `browser-e2e` 矩阵任务按默认 [Playwright 配置](../src/frontend/web-blog/playwright.config.ts) 跑 Chromium 全量，分 4 片并行。该配置没有 `projects`，`browserName` 默认为 `chromium`，`workers` 为 1，命令行 `--browser=webkit` 会覆盖这次运行的浏览器。WebKit 核心冒烟与全量回归并行，范围是 `blog.spec.ts` 与 `hydration-history.spec.ts` 两个完整文件：前者覆盖分页、发布撤回、评论、三主题移动端和后台闭环，后者覆盖水合与原生历史。每个文件单独调用隔离运行器，避免写入互相影响。`performance-admin.spec.ts` 固定断言 Chromium，留在全量分片中。`playwright.motion.config.ts` 的多浏览器项目只用于单独的动效验收，默认 CI 配置仍是 `playwright.config.ts`。准备好当前源码的两端生产构建、PostgreSQL 和 WebKit 后，可复现相同范围：
 
 ```sh
