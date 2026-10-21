@@ -730,7 +730,10 @@ onBeforeUnmount(() => {
   transition: border-color 0.15s ease;
 }
 .admin-comments__list li.is-selected {
-  border-color: var(--accent);
+  border-color: var(--accent-action);
+  box-shadow:
+    0 0 0 1px var(--accent-action),
+    var(--admin-card-shadow);
 }
 .admin-comments .admin-comments__select {
   position: absolute;
@@ -768,10 +771,7 @@ onBeforeUnmount(() => {
 @media (max-width: 640px) {
   .admin-comments__filters > label,
   .admin-comments__filters > select,
-  .admin-comments__filters > input:not([type='checkbox']) {
-    flex: 1 1 100%;
-    width: 100%;
-  }
+  .admin-comments__filters > input:not([type='checkbox']),
   .admin-comments__filters .date-picker {
     flex: 1 1 100%;
     width: 100%;

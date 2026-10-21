@@ -71,7 +71,7 @@ watch(auth.isLoggedIn, (value) => {
 .admin-navigation {
   display: flex;
   flex-direction: column;
-  gap: 1.125rem;
+  gap: 1rem;
   min-height: 0;
   overflow-y: auto;
   overscroll-behavior: contain;
@@ -85,49 +85,73 @@ watch(auth.isLoggedIn, (value) => {
   }
   &__heading {
     margin: 0 0 0.25rem;
-    padding: 0 0.75rem;
+    padding: 0 0.625rem;
     color: var(--text-soft);
     font-size: 0.75rem;
     font-weight: 600;
-    letter-spacing: 0.04em;
   }
   a {
     position: relative;
     display: flex;
     flex-shrink: 0;
     align-items: center;
-    gap: 0.625rem;
-    min-height: 2.5rem;
-    padding: 0.5rem 0.75rem;
-    border-radius: 0.625rem;
+    gap: 0.5rem;
+    min-height: 2.25rem;
+    padding: 0.375rem 0.625rem;
+    border-radius: 0.5rem;
     color: var(--text-muted);
     font-size: 0.875rem;
+    font-weight: 500;
     text-decoration: none;
     transition:
       background-color 0.15s ease,
-      color 0.15s ease;
+      color 0.15s ease,
+      box-shadow 0.15s ease;
 
     @media (prefers-reduced-motion: reduce) {
       transition: none;
+
+      :deep(.iconify),
+      :deep(svg) {
+        transition: none;
+      }
     }
     :deep(.iconify),
     :deep(svg) {
       flex-shrink: 0;
-      font-size: 1.05rem;
+      font-size: 1rem;
       color: var(--text-soft);
+      transition: color 0.15s ease;
     }
     &:hover {
-      background: var(--surface-3);
+      background: var(--surface-2);
       color: var(--text-main);
-    }
-    &[aria-current='page'] {
-      background: var(--accent-soft);
-      color: var(--accent-text);
-      font-weight: 600;
 
       :deep(.iconify),
       :deep(svg) {
-        color: var(--accent-text);
+        color: var(--text-main);
+      }
+    }
+    &[aria-current='page'] {
+      background: var(--surface-2);
+      color: var(--text-main);
+      font-weight: 600;
+      box-shadow: inset 0 0 0 1px var(--border-soft);
+
+      &::before {
+        content: '';
+        position: absolute;
+        left: 0;
+        top: 0.375rem;
+        bottom: 0.375rem;
+        width: 3px;
+        border-radius: 0 2px 2px 0;
+        background: var(--accent-action);
+      }
+
+      :deep(.iconify),
+      :deep(svg) {
+        color: var(--accent-action);
       }
     }
     &:focus-visible {
@@ -137,15 +161,16 @@ watch(auth.isLoggedIn, (value) => {
   }
   &__badge {
     margin-left: auto;
-    min-width: 1.375rem;
-    padding: 0.05rem 0.4rem;
+    min-width: 1.25rem;
+    padding: 0.0625rem 0.375rem;
     border-radius: 999px;
     background: var(--accent-action);
     color: #fff;
     font-size: 0.6875rem;
     font-weight: 600;
-    line-height: 1.5;
+    line-height: 1.4;
     text-align: center;
+    box-shadow: 0 1px 2px rgba(15, 23, 42, 0.12);
   }
 }
 @media (pointer: coarse) {

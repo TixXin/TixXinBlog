@@ -17,6 +17,7 @@
         v-for="domain in overviewDomains"
         :key="domain.domain"
         :to="domain.domain === 'flash' ? '/admin/flashes?create=true' : domain.path + '/new'"
+        :class="{ 'overview__quick-primary': domain.domain === 'post' }"
       >
         <Icon :name="domain.icon" />{{ t(`admin-system.overview.create.${domain.domain}`) }}
       </NuxtLink>
@@ -79,48 +80,121 @@ function formatTime(value: string) {
 .overview__header {
   display: flex;
   flex-wrap: wrap;
-  align-items: flex-start;
+  align-items: center;
   justify-content: space-between;
   gap: 0.75rem;
 
+  > div {
+    flex: 1 1 auto;
+    min-width: 0;
+  }
   h1 {
     margin: 0;
-    font-size: 1.625rem;
+    font-size: 1.375rem;
     font-weight: 700;
+    letter-spacing: -0.02em;
   }
   p {
     margin: 0.25rem 0 0;
     color: var(--text-muted);
+    font-size: 0.8125rem;
+  }
+  button {
+    margin-left: auto;
+    margin-right: 0;
+    flex-shrink: 0;
+    padding-right: 0;
+  }
+}
+.overview__header button {
+  :deep(.iconify),
+  :deep(svg) {
+    @media (prefers-reduced-motion: no-preference) {
+      transition: transform 0.4s ease;
+    }
+  }
+  &:hover:not(:disabled) {
+    :deep(.iconify),
+    :deep(svg) {
+      @media (prefers-reduced-motion: no-preference) {
+        transform: rotate(180deg);
+      }
+    }
   }
 }
 .overview__quick {
   display: flex;
   flex-wrap: wrap;
+  align-items: center;
   gap: 0.5rem;
 
   a {
     display: inline-flex;
     align-items: center;
     gap: 0.375rem;
-    min-height: 2.25rem;
-    padding: 0.375rem 0.875rem;
+    min-height: 2rem;
+    padding: 0.25rem 0.75rem;
     border: 1px solid var(--admin-card-border);
-    border-radius: 999px;
+    border-radius: 0.5rem;
     background: var(--admin-card-bg);
     color: var(--text-main);
-    font-size: 0.8125rem;
+    font-size: 0.875rem;
+    font-weight: 500;
     text-decoration: none;
-    transition: border-color 0.15s ease;
+    box-shadow: 0 1px 2px rgba(15, 23, 42, 0.03);
+    transition:
+      border-color 0.15s ease,
+      background-color 0.15s ease,
+      transform 0.15s ease;
 
     @media (prefers-reduced-motion: reduce) {
       transition: none;
+      transform: none;
+
+      :deep(.iconify),
+      :deep(svg) {
+        transition: none;
+      }
     }
-    &:hover {
-      border-color: var(--accent);
+    &:focus-visible {
+      outline: 2px solid var(--focus-ring);
+      outline-offset: 2px;
     }
     :deep(.iconify),
     :deep(svg) {
-      color: var(--accent-text);
+      color: var(--text-soft);
+      font-size: 0.9375rem;
+      transition: color 0.15s ease;
+    }
+    &:hover {
+      border-color: var(--border-hover);
+      background: var(--surface-2);
+
+      :deep(.iconify),
+      :deep(svg) {
+        color: var(--text-main);
+      }
+    }
+  }
+  .overview__quick-primary {
+    border-color: transparent;
+    background: var(--accent-action);
+    color: #fff;
+    font-weight: 600;
+    box-shadow: 0 1px 3px rgba(15, 23, 42, 0.15);
+
+    :deep(.iconify),
+    :deep(svg) {
+      color: #fff;
+    }
+    &:hover {
+      background: var(--accent);
+      border-color: transparent;
+
+      :deep(.iconify),
+      :deep(svg) {
+        color: #fff;
+      }
     }
   }
 }

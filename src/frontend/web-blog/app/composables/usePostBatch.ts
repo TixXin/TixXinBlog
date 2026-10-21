@@ -4,7 +4,13 @@
  */
 import { invalidatePublicReads } from '~/utils/invalidatePublicReads'
 import { POST_BATCH_LIMIT, POST_SELECTION_LIMIT, postDeleteAcknowledgement } from '~/features/post/batchTypes'
-import type { PostBatchAction, PostBatchPreview, PostBatchResult, PostSelection } from '~/features/post/batchTypes'
+import type {
+  PostBatchAction,
+  PostBatchPreview,
+  PostBatchResult,
+  PostBatchTaskSummary,
+  PostSelection,
+} from '~/features/post/batchTypes'
 
 export function usePostBatch(onChanged: (result: PostBatchResult) => Promise<void>) {
   const app = useNuxtApp()
@@ -37,9 +43,7 @@ export function usePostBatch(onChanged: (result: PostBatchResult) => Promise<voi
       batches.value.length > 0 &&
       (!preview.value || (hasNext.value && (!!result.value?.completed || preview.value.allowedCount === 0))),
   )
-  const recent = ref<
-    { ticket: string; action: PostBatchAction; createdAt: string; count: number; completed: boolean }[]
-  >([])
+  const recent = ref<PostBatchTaskSummary[]>([])
   const recentError = ref('')
   let generation = 0,
     recentGeneration = 0,

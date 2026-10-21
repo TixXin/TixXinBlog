@@ -30,10 +30,10 @@ const { siteName, ownerCard } = useSiteInfo()
   grid-row: 1 / -1;
   display: flex;
   flex-direction: column;
-  gap: 1.25rem;
+  gap: 1rem;
   min-height: 0;
   overflow: hidden;
-  padding: 1.25rem 0.75rem 1rem;
+  padding: 1rem 0.75rem 0.875rem;
   border-right: 1px solid var(--border-soft);
   background: var(--surface-1);
 
@@ -46,22 +46,35 @@ const { siteName, ownerCard } = useSiteInfo()
   flex-shrink: 0;
   align-items: center;
   gap: 0.75rem;
-  padding: 0.25rem 0.5rem;
-  border-radius: 0.75rem;
+  padding: 0.5rem 0.625rem;
+  border: 1px solid transparent;
+  border-radius: 0.625rem;
   color: var(--text-main);
   text-decoration: none;
+  transition:
+    background-color 0.15s ease,
+    border-color 0.15s ease;
 
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
+  &:hover {
+    background: var(--surface-2);
+    border-color: var(--border-soft);
+  }
   &:focus-visible {
-    outline: 2px solid var(--accent);
+    outline: 2px solid var(--focus-ring);
     outline-offset: 2px;
   }
   &__avatar {
     flex-shrink: 0;
     width: 2.25rem;
     height: 2.25rem;
-    border-radius: 0.75rem;
+    border-radius: 0.5rem;
     object-fit: cover;
-    box-shadow: 0 0 0 1px var(--border-soft);
+    box-shadow:
+      0 0 0 1px var(--border-soft),
+      0 1px 2px rgba(15, 23, 42, 0.06);
 
     &--icon {
       display: grid;
@@ -74,17 +87,20 @@ const { siteName, ownerCard } = useSiteInfo()
     display: flex;
     flex-direction: column;
     min-width: 0;
-    line-height: 1.3;
+    line-height: 1.25;
 
     strong {
       overflow: hidden;
-      font-size: 0.9375rem;
+      font-size: 0.875rem;
+      font-weight: 600;
+      letter-spacing: -0.01em;
       text-overflow: ellipsis;
       white-space: nowrap;
     }
     small {
       color: var(--text-soft);
       font-size: 0.75rem;
+      font-weight: 500;
     }
   }
 }
@@ -92,17 +108,32 @@ const { siteName, ownerCard } = useSiteInfo()
   display: flex;
   flex-shrink: 0;
   align-items: center;
-  gap: 0.625rem;
-  min-height: 2.5rem;
-  padding: 0.5rem 0.75rem;
-  border-top: 1px solid var(--border-soft);
-  border-radius: 0;
+  gap: 0.5rem;
+  min-height: 2.25rem;
+  padding: 0.375rem 0.625rem;
+  border: 1px solid var(--border-soft);
+  border-radius: 0.5rem;
+  background: var(--surface-2);
   color: var(--text-muted);
   font-size: 0.875rem;
+  font-weight: 500;
   text-decoration: none;
+  transition:
+    background-color 0.15s ease,
+    color 0.15s ease,
+    border-color 0.15s ease;
 
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
   &:hover {
+    background: var(--surface-3);
     color: var(--text-main);
+    border-color: var(--border-hover);
+  }
+  &:focus-visible {
+    outline: 2px solid var(--focus-ring);
+    outline-offset: 2px;
   }
 }
 @media (max-width: 760px) {

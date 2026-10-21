@@ -7,11 +7,7 @@
         <p>{{ t('admin-system.notifications.intro') }}</p>
       </div>
     </header>
-    <nav class="notifications__filters" :aria-label="t('admin-system.notifications.filters')">
-      <NuxtLink :to="{ query: { filter: 'all' } }">{{ t('admin-system.notifications.filterAll') }}</NuxtLink
-      ><NuxtLink :to="{ query: { filter: 'unread' } }">{{ t('admin-system.notifications.filterUnread') }}</NuxtLink
-      ><NuxtLink to="/admin/operations">{{ t('admin-system.notifications.operationsLink') }}</NuxtLink>
-    </nav>
+    <AdminNotificationToolbar :filter="filter" />
     <CommonRequestFeedback
       v-if="pending || error"
       :pending="pending"
@@ -33,27 +29,13 @@
         @retry="refreshFocused"
       />
       <p v-if="focusedError && focused">{{ t('admin-system.notifications.focusedStale') }}</p>
-      <section
+      <AdminNotificationDetail
         v-if="focused"
         ref="focusedPanel"
-        class="notifications__focused"
-        :aria-label="t('admin-system.notifications.focused')"
-        :data-focused-notification-id="focused.id"
-        tabindex="-1"
-      >
-        <h2>
-          {{ t('admin-system.notifications.focused') }} · {{ t(`admin-system.notifications.kinds.${focused.kind}`)
-          }}<span v-if="!focused.readAt"> · {{ t('admin-system.notifications.unread') }}</span>
-        </h2>
-        <p>{{ t(`admin-system.notifications.states.${focused.state}`) }} · {{ formatDateTime(focused.createdAt) }}</p>
-        <div class="notifications__actions">
-          <NuxtLink v-if="focused.url" :to="focused.url">{{ t('admin-system.notifications.viewContent') }}</NuxtLink
-          ><span v-else>{{ t('admin-system.notifications.contentGone') }}</span>
-          <button v-if="!focused.readAt" type="button" :disabled="!!working" @click="markRead(focused.id)">
-            {{ t('admin-system.notifications.markRead') }}
-          </button>
-        </div>
-      </section>
+        :notification="focused"
+        :disabled="!!working"
+        @read="markRead"
+      />
     </template>
     <template v-if="data">
       <div class="notifications__summary">
@@ -73,27 +55,20 @@
       <p class="notifications__status" role="status">{{ statusMessage }}</p>
       <p v-if="!data.items.length">{{ t('admin-system.notifications.empty') }}</p>
       <ol ref="list" class="notifications__list">
-        <li v-for="item in data.items" :key="item.id" :data-notification-id="item.id" tabindex="-1">
-          <h2>
-            {{ t(`admin-system.notifications.kinds.${item.kind}`)
-            }}<span v-if="!item.readAt"> · {{ t('admin-system.notifications.unread') }}</span>
-          </h2>
-          <p>{{ t(`admin-system.notifications.states.${item.state}`) }} · {{ formatDateTime(item.createdAt) }}</p>
-          <div class="notifications__actions">
-            <NuxtLink v-if="item.url" :to="item.url">{{ t('admin-system.notifications.viewContent') }}</NuxtLink
-            ><span v-else>{{ t('admin-system.notifications.contentGone') }}</span>
-            <button v-if="!item.readAt" type="button" :disabled="!!working" @click="markRead(item.id)">
-              {{ t('admin-system.notifications.markRead') }}
-            </button>
-          </div>
-        </li>
+        <AdminNotificationItem
+          v-for="item in data.items"
+          :key="item.id"
+          :item="item"
+          :disabled="!!working"
+          @read="markRead"
+        />
       </ol>
       <nav class="notifications__pagination" :aria-label="t('admin-system.notifications.pagination')">
         <NuxtLink v-if="page > 1" :to="{ query: { filter, page: page - 1 } }">{{
           t('admin-system.operations.prev')
-        }}</NuxtLink
-        ><span>{{ page }} / {{ Math.max(1, Math.ceil(data.total / 20)) }}</span
-        ><NuxtLink v-if="page * 20 < data.total" :to="{ query: { filter, page: page + 1 } }">{{
+        }}</NuxtLink>
+        <span>{{ page }} / {{ Math.max(1, Math.ceil(data.total / 20)) }}</span>
+        <NuxtLink v-if="page * 20 < data.total" :to="{ query: { filter, page: page + 1 } }">{{
           t('admin-system.operations.next')
         }}</NuxtLink>
       </nav>
@@ -107,7 +82,8 @@ const { t } = useI18n()
 useSeoMeta({ title: () => t('admin-system.notifications.title'), robots: 'noindex, nofollow' })
 const route = useRoute(),
   api = useAdminApi(),
-  auth = useCurrentUser()
+  auth = useCurrentUser(),
+  { success } = useToast()
 const contentContext = useState<string>('page-content-context', () => '')
 const page = computed(() => Math.max(1, Number.isSafeInteger(Number(route.query.page)) ? Number(route.query.page) : 1))
 const filter = computed(() => (route.query.filter === 'unread' ? 'unread' : 'all'))
@@ -134,18 +110,16 @@ const {
 const working = ref(''),
   actionError = ref(''),
   statusMessage = ref('')
-const { success } = useToast()
 const unreadBadge = useAdminNotificationUnread()
-// 列表响应自带服务器未读数，直接同步导航徽章。
-watch(
-  () => data.value?.unread,
-  (value) => {
-    if (typeof value === 'number') unreadBadge.set(value)
-  },
-)
 const list = ref<HTMLOListElement | null>(null),
   heading = ref<HTMLHeadingElement | null>(null),
-  focusedPanel = ref<HTMLElement | null>(null)
+  focusedPanel = ref<{ focus(): void } | null>(null)
+watch(
+  () => data.value?.unread,
+  (v) => {
+    if (typeof v === 'number') unreadBadge.set(v)
+  },
+)
 watch(
   () => route.fullPath,
   () => {
@@ -166,10 +140,7 @@ watch(
 watch(focused, async (value) => {
   const owns = captureOwnership()
   await nextTick()
-  if (value && focused.value === value && owns()) {
-    focusedPanel.value?.focus()
-    focusedPanel.value?.scrollIntoView({ block: 'nearest' })
-  }
+  if (value && focused.value === value && owns()) focusedPanel.value?.focus()
 })
 async function refreshAll() {
   await Promise.all([refresh(), refreshFocused()])
@@ -182,16 +153,16 @@ async function markAllRead() {
   actionError.value = ''
   statusMessage.value = ''
   try {
-    const result = await api<{ updated: number; unread: number }>('/admin/notifications/read-all', {
+    const res = await api<{ updated: number; unread: number }>('/admin/notifications/read-all', {
       method: 'POST',
       body: {},
     })
     if (!owns()) return
-    unreadBadge.set(result.unread)
-    statusMessage.value = result.updated
-      ? t('admin-system.notifications.markedAll', { count: result.updated }, result.updated)
+    unreadBadge.set(res.unread)
+    statusMessage.value = res.updated
+      ? t('admin-system.notifications.markedAll', { count: res.updated }, res.updated)
       : t('admin-system.notifications.nothingToMark')
-    if (result.updated) success(statusMessage.value)
+    if (res.updated) success(statusMessage.value)
     await refreshAll()
     await nextTick()
     if (owns()) heading.value?.focus()
@@ -214,7 +185,9 @@ async function markRead(id: string) {
       await nextTick()
       if (owns())
         (
-          (focused.value?.id === id ? focusedPanel.value : null) ??
+          (focused.value?.id === id && focusedPanel.value
+            ? (focusedPanel.value as unknown as { panel: HTMLElement }).panel
+            : null) ??
           list.value?.querySelector<HTMLElement>(`[data-notification-id="${id}"]`) ??
           (list.value?.children[Math.max(0, previousIndex)] as HTMLElement | undefined) ??
           heading.value
@@ -232,59 +205,43 @@ async function markRead(id: string) {
   min-width: 0;
   overflow-wrap: anywhere;
 }
-h2 {
-  font-size: 1rem;
-  font-weight: 600;
-}
 p {
+  margin-block: 0.375rem;
   color: var(--text-muted);
-  margin-block: 0.75rem;
+  font-size: 0.875rem;
 }
 .notifications__summary,
-.notifications__filters,
-.notifications__pagination,
-.notifications__actions {
+.notifications__pagination {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 1rem;
+  gap: 0.75rem;
+}
+.notifications__summary {
+  margin-block: 0.75rem;
+}
+.notifications__pagination {
   margin-block: 1rem;
+  font-size: 0.875rem;
 }
 ol {
+  display: flex;
+  flex-direction: column;
+  gap: 0.625rem;
   padding: 0;
   list-style: none;
 }
-li,
-.notifications__focused {
-  min-width: 0;
-  padding: 1rem;
-  border: 1px solid var(--border);
-  border-radius: 0.75rem;
-  margin-block: 1rem;
-}
-a:not(.admin-btn) {
-  min-width: 0;
-  max-width: 100%;
-  color: var(--accent);
-}
 .notifications__status {
   margin-block: 0;
-}
-
-.notifications__filters a,
-.notifications__pagination a {
-  display: inline-flex;
-  align-items: center;
-  min-height: 44px;
 }
 @media (max-width: 640px) {
   .notifications__summary {
     align-items: flex-start;
     gap: 0.5rem;
-  }
-  .notifications__summary > p,
-  .notifications__actions > span {
-    flex: 1 1 100%;
+
+    > p {
+      flex: 1 1 100%;
+    }
   }
 }
 </style>

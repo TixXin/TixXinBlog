@@ -6,7 +6,12 @@
 <template>
   <div class="overview-metrics">
     <article v-for="metric in metrics" :key="metric.key" class="admin-card overview-metric">
-      <p class="overview-metric__label"><Icon :name="metric.icon" aria-hidden="true" />{{ metric.label }}</p>
+      <div class="overview-metric__top">
+        <p class="overview-metric__label">{{ metric.label }}</p>
+        <span class="overview-metric__icon-badge" :class="`is-${metric.key}`">
+          <Icon :name="metric.icon" aria-hidden="true" />
+        </span>
+      </div>
       <p class="overview-metric__value">{{ metric.value ?? '—' }}</p>
       <p class="overview-metric__hint">{{ metric.hint }}</p>
       <AdminTrendBars v-if="metric.trend" class="overview-metric__trend" :days="metric.trend" :label="metric.label" />
@@ -87,22 +92,56 @@ const metrics = computed(() => {
   display: flex;
   flex-direction: column;
   min-width: 0;
+  padding: 1.125rem;
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease,
+    transform 0.15s ease;
 
-  &__label {
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+    transform: none;
+  }
+  &:hover {
+    border-color: var(--border-hover);
+    box-shadow: 0 4px 12px rgba(15, 23, 42, 0.05);
+  }
+  &__top {
     display: flex;
-    margin: 0;
     align-items: center;
-    gap: 0.375rem;
+    justify-content: space-between;
+    gap: 0.5rem;
+  }
+  &__label {
+    margin: 0;
     color: var(--text-muted);
-    font-size: 0.8125rem;
+    font-size: 0.875rem;
     font-weight: 500;
   }
+  &__icon-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.875rem;
+    height: 1.875rem;
+    border-radius: 0.375rem;
+    font-size: 0.9375rem;
+    background: color-mix(in srgb, var(--accent) 10%, transparent);
+    color: var(--accent-text);
+
+    &.is-pending {
+      background: color-mix(in srgb, var(--warning-text) 12%, transparent);
+      color: var(--warning-text);
+    }
+  }
   &__value {
-    margin: 0.5rem 0 0;
+    margin: 0.625rem 0 0;
     color: var(--text-main);
-    font-size: 1.75rem;
-    font-weight: 600;
+    font-size: 1.625rem;
+    font-weight: 700;
     line-height: 1.2;
+    letter-spacing: -0.02em;
+    font-variant-numeric: tabular-nums;
   }
   &__hint {
     margin: 0.25rem 0 0;

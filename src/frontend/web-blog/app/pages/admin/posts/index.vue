@@ -127,7 +127,7 @@
         </p>
         <p v-if="selectionError" role="alert">{{ selectionError }}</p>
         <div
-          class="admin-card admin-posts__table"
+          class="admin-card admin-card--table admin-posts__table"
           role="region"
           :aria-label="$t('admin-content.postList.tableRegion')"
           tabindex="0"
@@ -171,8 +171,8 @@
                 <td :data-label="$t('admin-content.postList.colActions')">
                   <NuxtLink v-if="!post.deleted" class="admin-btn admin-btn--sm" :to="`/admin/posts/${post.id}`">{{
                     $t('admin-content.postList.edit')
-                  }}</NuxtLink
-                  ><button
+                  }}</NuxtLink>
+                  <button
                     v-if="post.status !== 'archived' && !post.deleted"
                     type="button"
                     class="admin-btn admin-btn--sm admin-btn--ghost"
@@ -219,31 +219,13 @@
           @query="batch.queryResult"
           @next="batch.nextBatch"
         />
-        <section class="admin-posts__history" :aria-label="$t('admin-content.postList.recentTitle')">
-          <h2>{{ $t('admin-content.postList.recentTitle') }}</h2>
-          <p>{{ $t('admin-content.postList.recentHint') }}</p>
-          <p v-if="batch.recentError.value" role="alert">
-            {{ batch.recentError.value }}
-            <button type="button" @click="batch.loadRecent">{{ $t('admin-content.postList.retryRecent') }}</button>
-          </p>
-          <p v-else-if="!batch.recent.value.length">{{ $t('admin-content.postList.recentEmpty') }}</p>
-          <ul>
-            <li v-for="item in batch.recent.value" :key="item.ticket">
-              <button type="button" :disabled="batch.pending.value" @click="batch.inspect(item.ticket)">
-                {{
-                  $t('admin-content.postList.recentItem', {
-                    action: $t(postBatchLabelKey(item.action)),
-                    count: item.count,
-                    time: formatDateTime(item.createdAt, { hour12: false }),
-                    state: item.completed
-                      ? $t('admin-content.postList.recentCompleted')
-                      : $t('admin-content.postList.recentPending'),
-                  })
-                }}
-              </button>
-            </li>
-          </ul>
-        </section>
+        <AdminPostBatchHistory
+          :items="batch.recent.value"
+          :error="batch.recentError.value"
+          :pending="batch.pending.value"
+          @inspect="batch.inspect"
+          @retry="batch.loadRecent"
+        />
       </div>
       <i18n-t v-else keypath="admin-content.postList.loginPrompt" tag="p" scope="global">
         <template #link>
@@ -281,30 +263,30 @@ const filterPageSize = 100
 class FilterChangedError extends Error {}
 const pageToggle = ref<HTMLInputElement | null>(null)
 const totalPages = computed(() => Math.max(1, Math.ceil(total.value / pageSize)))
-const search = ref('')
-const status = ref('')
-const category = ref('')
-const folder = ref('')
-const tag = ref('')
-const sort = ref('updatedAt')
-const order = ref('desc')
+const search = ref(''),
+  status = ref(''),
+  category = ref(''),
+  folder = ref('')
+const tag = ref(''),
+  sort = ref('updatedAt'),
+  order = ref('desc')
 const filters = ref<{ folders: string[]; tags: string[] }>({ folders: [], tags: [] })
-const filterError = ref(false)
-const pending = ref(false)
-const working = ref(false)
-const ready = ref(false)
-const error = ref('')
+const filterError = ref(false),
+  pending = ref(false),
+  working = ref(false),
+  ready = ref(false),
+  error = ref('')
 const selection = useAdminBatchSelection(items, { preserveAcrossPages: true, limit: POST_SELECTION_LIMIT })
 const { count: selectedCount, allSelected, partiallySelected } = selection
 // indeterminate 只能写 DOM 属性，辅助技术才会读到“部分选中”。
 watchEffect(() => {
   if (pageToggle.value) pageToggle.value.indeterminate = partiallySelected.value
 })
-const selectingAll = ref(false)
-const selectionError = ref('')
-let selectionVersion = 0
-let appliedQuery: Record<string, string | undefined> = {}
-let filterKey = ''
+const selectingAll = ref(false),
+  selectionError = ref('')
+let selectionVersion = 0,
+  appliedQuery: Record<string, string | undefined> = {},
+  filterKey = ''
 const batchAction = ref<PostBatchAction>('archive')
 const batch = usePostBatch(async (result) => {
   const revisions = new Map(result.preview.items.map(({ id, revision }) => [id, revision]))
@@ -582,17 +564,25 @@ onBeforeUnmount(() => {
   flex: 1 1 14rem;
 }
 .admin-posts__batch {
-  padding: 0 0.25rem;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--border-soft);
+  border-radius: 0.5rem;
+  background: var(--surface-2);
   color: var(--text-muted);
   font-size: 0.875rem;
 
   label {
     display: inline-flex;
     align-items: center;
+    font-weight: 500;
   }
 }
 .admin-posts__help {
-  margin: -0.5rem 0 0;
+  margin: -0.25rem 0 0;
   padding: 0 0.25rem;
   color: var(--text-soft);
   font-size: 0.75rem;
@@ -607,14 +597,22 @@ onBeforeUnmount(() => {
   min-width: 0;
   max-width: 100%;
   overflow-x: auto;
-  padding: 0.25rem 0.5rem;
 
   &:focus-visible {
     outline: 2px solid var(--accent);
-    outline-offset: 3px;
+    outline-offset: -2px;
   }
   td:first-child {
     font-weight: 500;
+
+    input[type='checkbox'] {
+      margin-right: 0.5rem;
+    }
+    :deep(.iconify) {
+      margin-right: 0.25rem;
+      color: var(--warning-text);
+      vertical-align: text-bottom;
+    }
   }
   td:last-child {
     white-space: nowrap;

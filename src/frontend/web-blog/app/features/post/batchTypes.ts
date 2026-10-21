@@ -40,6 +40,19 @@ export interface PostBatchResult {
   pendingCount: number
   completed: boolean
 }
+/** 最近批量任务记录摘要 */
+export interface PostBatchTaskSummary {
+  /** 任务凭证 */
+  ticket: string
+  /** 批量操作类型 */
+  action: PostBatchAction
+  /** 创建时间（ISO 8601 字符串） */
+  createdAt: string
+  /** 操作涉及的文章总数 */
+  count: number
+  /** 是否已执行完成 */
+  completed: boolean
+}
 /** 批量操作名称的字典 key，由调用方按当前界面语言翻译 */
 export const postBatchActions: readonly PostBatchAction[] = ['withdraw', 'archive', 'trash', 'restore', 'delete']
 export function postBatchLabelKey(action: PostBatchAction) {

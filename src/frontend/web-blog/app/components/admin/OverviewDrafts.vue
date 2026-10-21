@@ -53,12 +53,24 @@ const { t } = useI18n()
   article {
     display: flex;
     flex-direction: column;
-    gap: 0.5rem;
+    gap: 0.375rem;
     min-width: 0;
-    padding: 0.875rem 1rem;
+    padding: 0.75rem 0.875rem;
     border: 1px solid var(--admin-card-border);
-    border-radius: 0.75rem;
+    border-radius: 0.5rem;
     background: var(--surface-2);
+    transition:
+      border-color 0.15s ease,
+      background-color 0.15s ease,
+      box-shadow 0.15s ease;
+
+    @media (prefers-reduced-motion: reduce) {
+      transition: none;
+    }
+    &:hover {
+      border-color: var(--border-hover);
+      box-shadow: 0 2px 6px rgba(15, 23, 42, 0.04);
+    }
   }
   a {
     display: flex;
@@ -67,20 +79,39 @@ const { t } = useI18n()
     gap: 0.375rem;
     color: var(--text-main);
     font-size: 0.875rem;
+    font-weight: 500;
     text-decoration: none;
+    transition: color 0.15s ease;
 
+    @media (prefers-reduced-motion: reduce) {
+      transition: none;
+    }
+    &:focus-visible {
+      outline: 2px solid var(--focus-ring);
+      outline-offset: 2px;
+    }
+    :deep(.iconify),
+    :deep(svg) {
+      color: var(--text-soft);
+    }
     &:hover {
-      color: var(--accent-text);
+      color: var(--accent-action);
+
+      :deep(.iconify),
+      :deep(svg) {
+        color: var(--accent-action);
+      }
     }
   }
   a + a {
     color: var(--text-soft);
-    font-size: 0.8125rem;
+    font-size: 0.75rem;
   }
   strong {
     color: var(--text-main);
-    font-size: 1.25rem;
+    font-size: 1.125rem;
     font-weight: 600;
+    font-variant-numeric: tabular-nums;
   }
 }
 .overview__drafts-footer {
@@ -94,6 +125,7 @@ const { t } = useI18n()
   p {
     flex: 1 1 20rem;
     margin: 0;
+    color: var(--text-soft);
     font-size: 0.75rem;
   }
   a {
@@ -101,7 +133,20 @@ const { t } = useI18n()
     align-items: center;
     gap: 0.25rem;
     color: var(--text-muted);
-    font-size: 0.8125rem;
+    font-size: 0.75rem;
+    text-decoration: none;
+    transition: color 0.15s ease;
+
+    @media (prefers-reduced-motion: reduce) {
+      transition: none;
+    }
+    &:hover {
+      color: var(--danger-text);
+    }
+    &:focus-visible {
+      outline: 2px solid var(--focus-ring);
+      outline-offset: 2px;
+    }
   }
 }
 @media (max-width: 760px) {

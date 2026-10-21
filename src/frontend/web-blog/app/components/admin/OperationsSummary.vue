@@ -80,21 +80,42 @@ const { data, pending, error, refresh } = useAdminReadResource(async () => {
 </script>
 <style scoped lang="scss">
 .operations-summary {
-  border: 1px solid var(--border);
-  border-radius: 1rem;
-  padding: 1.25rem;
-  margin-top: 1.5rem;
+  border: 1px solid var(--admin-card-border);
+  border-radius: var(--admin-radius-card);
+  background: var(--admin-card-bg);
+  box-shadow: var(--admin-card-shadow);
+  padding: 1.125rem 1.25rem;
   overflow-wrap: anywhere;
+  transition: border-color 0.15s ease;
+
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
 }
 h2 {
-  font-size: 1.125rem;
+  margin: 0 0 0.75rem;
+  font-size: 0.9375rem;
   font-weight: 600;
+  letter-spacing: -0.01em;
 }
 p {
-  margin-block: 0.75rem;
+  margin-block: 0.5rem;
   color: var(--text-muted);
+  font-size: 0.875rem;
+  line-height: 1.5;
 }
 a {
-  color: var(--accent);
+  color: var(--accent-action);
+  font-size: 0.875rem;
+  font-weight: 500;
+  text-decoration: none;
+
+  &:hover {
+    text-decoration: underline;
+  }
+  &:focus-visible {
+    outline: 2px solid var(--focus-ring);
+    outline-offset: 2px;
+  }
 }
 </style>
