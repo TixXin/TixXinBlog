@@ -7,19 +7,19 @@
 
 import { Test } from '@nestjs/testing'
 import { HealthController } from '../health.controller'
-import { EntityManager } from '@mikro-orm/postgresql'
+import { HealthService } from '../health.service'
 import { ReadinessState } from '../readiness-state'
 
 describe('HealthController', () => {
   let controller: HealthController
   let readiness: ReadinessState
-  const execute = jest.fn()
+  const checkDatabase = jest.fn()
 
   beforeEach(async () => {
-    execute.mockReset().mockResolvedValue([{ '?column?': 1 }])
+    checkDatabase.mockReset().mockResolvedValue(undefined)
     const moduleRef = await Test.createTestingModule({
       controllers: [HealthController],
-      providers: [ReadinessState, { provide: EntityManager, useValue: { getConnection: () => ({ execute }) } }],
+      providers: [ReadinessState, { provide: HealthService, useValue: { checkDatabase } }],
     }).compile()
 
     controller = moduleRef.get(HealthController)
@@ -35,11 +35,11 @@ describe('HealthController', () => {
 
   it('ready 查询数据库后返回 ok', async () => {
     expect((await controller.ready()).status).toBe('ok')
-    expect(execute).toHaveBeenCalledWith('select 1')
+    expect(checkDatabase).toHaveBeenCalled()
   })
 
   it('数据库不可用时返回 503', async () => {
-    execute.mockRejectedValue(new Error('offline'))
+    checkDatabase.mockRejectedValue(new Error('offline'))
     await expect(controller.ready()).rejects.toMatchObject({ status: 503 })
   })
 
@@ -47,7 +47,7 @@ describe('HealthController', () => {
     readiness.watchSignals(['SIGUSR2'])
     process.emit('SIGUSR2', 'SIGUSR2')
     await expect(controller.ready()).rejects.toMatchObject({ status: 503 })
-    expect(execute).not.toHaveBeenCalled()
+    expect(checkDatabase).not.toHaveBeenCalled()
     expect(controller.health().status).toBe('ok')
   })
 

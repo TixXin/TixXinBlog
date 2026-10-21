@@ -1,13 +1,15 @@
-/** @file health.controller.spec.ts @description 开发归属探针的环境、来源与信息边界 */
-import { NotFoundException } from '@nestjs/common'
+/** @file health.controller.spec.ts @description 开发归属探针、健康存活与就绪检查的委托与异常边界 */
+import { NotFoundException, ServiceUnavailableException } from '@nestjs/common'
 import type { Request } from 'express'
-import type { EntityManager } from '@mikro-orm/postgresql'
 import { HealthController } from './health.controller'
+import { HealthService } from './health.service'
 import { ReadinessState } from './readiness-state'
 
 describe('开发服务归属探针', () => {
   const original = { ...process.env }
-  const controller = new HealthController({} as EntityManager, new ReadinessState())
+  const healthService = { checkDatabase: jest.fn() } as unknown as HealthService
+  const readiness = new ReadinessState()
+  const controller = new HealthController(healthService, readiness)
   const request = (address: string) => ({ socket: { remoteAddress: address } }) as Request
   afterEach(() => {
     process.env = { ...original }
@@ -30,5 +32,43 @@ describe('开发服务归属探针', () => {
     expect(value.database).toMatch(/^[a-f0-9]{64}$/)
     expect(JSON.stringify(value)).not.toMatch(/secret-password|tester|sample/)
     expect(JSON.stringify(value)).not.toContain(process.cwd())
+  })
+})
+
+describe('存活与就绪探针', () => {
+  it('存活探针返回 ok 与正常运行秒数', () => {
+    const healthService = { checkDatabase: jest.fn() } as unknown as HealthService
+    const readiness = new ReadinessState()
+    const controller = new HealthController(healthService, readiness)
+    const result = controller.health()
+    expect(result.status).toBe('ok')
+    expect(typeof result.uptimeSeconds).toBe('number')
+    expect(typeof result.timestamp).toBe('string')
+  })
+
+  it('正在关闭时就绪探针返回 503 且不请求数据库', async () => {
+    const checkDatabase = jest.fn()
+    const readiness = new ReadinessState()
+    readiness.markShuttingDown()
+    const controller = new HealthController({ checkDatabase } as unknown as HealthService, readiness)
+    await expect(controller.ready()).rejects.toThrow(ServiceUnavailableException)
+    expect(checkDatabase).not.toHaveBeenCalled()
+  })
+
+  it('数据库就绪时返回健康状态', async () => {
+    const checkDatabase = jest.fn().mockResolvedValue(undefined)
+    const readiness = new ReadinessState()
+    const controller = new HealthController({ checkDatabase } as unknown as HealthService, readiness)
+    const result = await controller.ready()
+    expect(result.status).toBe('ok')
+    expect(checkDatabase).toHaveBeenCalled()
+  })
+
+  it('数据库检查失败时返回 503', async () => {
+    const checkDatabase = jest.fn().mockRejectedValue(new Error('db down'))
+    const readiness = new ReadinessState()
+    const controller = new HealthController({ checkDatabase } as unknown as HealthService, readiness)
+    await expect(controller.ready()).rejects.toThrow(ServiceUnavailableException)
+    expect(checkDatabase).toHaveBeenCalled()
   })
 })

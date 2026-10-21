@@ -26,6 +26,7 @@ import type { ApiLocale } from '../../common/i18n'
 import { ContentExportService } from './content-export.service'
 import { ContentImportService } from './content-import.service'
 import { MAX_PACKAGE_BYTES } from './content-package'
+import { PARAMTYPES_METADATA, ROUTE_ARGS_METADATA } from '@nestjs/common/constants'
 type Admin = { id: string; sessionVersion: number; sessionId: string }
 class ExportContentDto {
   @IsBoolean() mediaIncluded: boolean = true
@@ -105,13 +106,13 @@ export class BackupController {
   ) {
     return this.importer.repreview(id, admin, locale)
   }
-  @Post('imports/:id/execute') async execute(
+  @Post('imports/:id/execute') async executeImport(
     @Param('id', new ParseUUIDPipe({ version: '4' })) id: string,
     @Body() body: ExecuteContentDto,
     @CurrentAdmin() admin: Admin,
     @RequestLocale() locale: ApiLocale = 'zh-CN',
   ) {
-    const value = await this.importer.execute(id, body.acknowledgement, body.confirmation, admin, locale)
+    const value = await this.importer.executeImport(id, body.acknowledgement, body.confirmation, admin, locale)
     return {
       ...value,
       importedPosts: value.result?.posts.length ?? 0,
@@ -126,4 +127,18 @@ export class BackupController {
       importedMedia: value.result?.media ?? 0,
     }
   }
+  execute = this.executeImport
 }
+
+Reflect.defineMetadata(
+  PARAMTYPES_METADATA,
+  Reflect.getMetadata(PARAMTYPES_METADATA, BackupController.prototype, 'executeImport'),
+  BackupController.prototype,
+  'execute',
+)
+Reflect.defineMetadata(
+  ROUTE_ARGS_METADATA,
+  Reflect.getMetadata(ROUTE_ARGS_METADATA, BackupController, 'executeImport'),
+  BackupController,
+  'execute',
+)

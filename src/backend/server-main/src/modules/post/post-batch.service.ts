@@ -163,6 +163,9 @@ export class PostBatchService {
     if (!operation) throw new NotFoundException(msg('post.batchNotFound'))
     return this.result(operation, locale)
   }
+  executeBatch(ticket: string, acknowledgement: string | undefined, admin: Admin, locale: ApiLocale = 'zh-CN') {
+    return this.execute(ticket, acknowledgement, admin, locale)
+  }
   async execute(ticket: string, acknowledgement: string | undefined, admin: Admin, locale: ApiLocale = 'zh-CN') {
     const initial = await this.em.findOne(PostBatchOperation, { id: ticket, actorId: admin.id }, { refresh: true })
     if (!initial) throw new NotFoundException(msg('post.batchNotFound'))

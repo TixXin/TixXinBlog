@@ -164,6 +164,16 @@ export class ContentImportService {
     })
   }
 
+  executeImport(
+    id: string,
+    acknowledgement: string,
+    confirmation: string,
+    admin: Admin,
+    locale: ApiLocale = DEFAULT_API_LOCALE,
+  ) {
+    return this.execute(id, acknowledgement, confirmation, admin, locale)
+  }
+
   async execute(
     id: string,
     acknowledgement: string,

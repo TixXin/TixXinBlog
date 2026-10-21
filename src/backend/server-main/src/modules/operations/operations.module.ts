@@ -3,5 +3,9 @@ import { Module } from '@nestjs/common'
 import { NotificationController } from './notification.controller'
 import { NotificationService } from './notification.service'
 import { OperationsController } from './operations.controller'
-@Module({ controllers: [NotificationController, OperationsController], providers: [NotificationService] })
+import { OperationsService } from './operations.service'
+@Module({
+  controllers: [NotificationController, OperationsController],
+  providers: [NotificationService, OperationsService],
+})
 export class OperationsModule {}

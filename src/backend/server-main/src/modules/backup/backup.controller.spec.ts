@@ -29,6 +29,7 @@ function setup() {
     get: jest.fn(),
     repreview: jest.fn(),
     execute: jest.fn(),
+    executeImport: jest.fn(),
   }
   const controller = new BackupController(
     exporter as unknown as ContentExportService,
@@ -211,6 +212,7 @@ describe('内容包控制器委托与响应边界', () => {
     const { controller, importer } = setup()
     const value = { id: requestId, state: result ? 'completed' : 'previewed', result }
     importer.execute.mockResolvedValue(value)
+    importer.executeImport.mockResolvedValue(value)
     await expect(
       controller.execute(requestId, { acknowledgement: '导入为新草稿', confirmation }, admin),
     ).resolves.toEqual({
@@ -226,6 +228,6 @@ describe('内容包控制器委托与响应边界', () => {
       importedComments: comments,
       importedMedia: media,
     })
-    expect(importer.execute).toHaveBeenCalledWith(requestId, '导入为新草稿', confirmation, admin, 'zh-CN')
+    expect(importer.executeImport).toHaveBeenCalledWith(requestId, '导入为新草稿', confirmation, admin, 'zh-CN')
   })
 })

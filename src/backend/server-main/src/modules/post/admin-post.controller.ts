@@ -61,7 +61,7 @@ export class AdminPostController {
     @CurrentAdmin() admin: { id: string; sessionVersion: number; sessionId: string },
     @RequestLocale() locale: ApiLocale,
   ) {
-    return this.batch.execute(body.ticket, body.acknowledgement, admin, locale)
+    return this.batch.executeBatch(body.ticket, body.acknowledgement, admin, locale)
   }
   @Get('batch/:ticket')
   batchResult(

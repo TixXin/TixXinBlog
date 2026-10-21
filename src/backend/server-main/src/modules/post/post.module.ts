@@ -17,6 +17,7 @@ import { AdminPostService } from './admin-post.service'
 import { AdminPostController } from './admin-post.controller'
 import { PostDiscoveryService } from './post-discovery.service'
 import { AdminOverviewController } from './admin-overview.controller'
+import { AdminOverviewService } from './admin-overview.service'
 import { AdminTaxonomyController } from './admin-taxonomy.controller'
 import { AdminTaxonomyService } from './admin-taxonomy.service'
 import { PostRevisionsService } from './post-revisions.service'
@@ -30,6 +31,7 @@ import { PostPreviewService } from './post-preview.service'
     PostService,
     AdminPostService,
     PostDiscoveryService,
+    AdminOverviewService,
     AdminTaxonomyService,
     PostRevisionsService,
     PostBatchService,

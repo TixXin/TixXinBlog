@@ -11,7 +11,9 @@ import { ErrorCode } from '../../constants/error-codes'
 import { AllExceptionsFilter } from '../../filters/all-exceptions.filter'
 import { translate, translateStored, zh, type LocalizedMessage } from '..'
 import { OperationsController } from '../../../modules/operations/operations.controller'
+import { OperationsService } from '../../../modules/operations/operations.service'
 import { MaintenanceController } from '../../../modules/backup/maintenance.controller'
+import { MaintenanceService } from '../../../modules/backup/maintenance.service'
 import { guestbookImportPlan } from '../../../modules/backup/content-guestbook-plan'
 import { ContentImportService } from '../../../modules/backup/content-import.service'
 import { packageHash } from '../../../modules/backup/content-package'
@@ -63,7 +65,7 @@ describe('运维入口英文文案', () => {
       execute: jest.fn(() => (task ? [task] : [])),
       transactional: jest.fn((work: (em: unknown) => unknown) => work(transaction)),
     }
-    return new OperationsController(em as unknown as EntityManager)
+    return new OperationsController(new OperationsService(em as unknown as EntityManager))
   }
 
   it('任务不存在：默认中文，en 返回英文', async () => {
@@ -116,9 +118,7 @@ describe('内容包导入英文文案', () => {
     const em = { find: jest.fn(async () => [{ id: 'gone', storageKey: 'gone.webp', deletedAt: null }]) }
     const storage = { readIfExists: jest.fn(async () => null) }
     const maintenance = new MaintenanceController(
-      em as unknown as EntityManager,
-      {} as never,
-      storage as unknown as MediaStorage,
+      new MaintenanceService(em as unknown as EntityManager, {} as never, storage as unknown as MediaStorage),
     )
     await expect(maintenance.mediaCheck()).resolves.toMatchObject({ problems: [{ reason: '文件缺失' }] })
     await expect(maintenance.mediaCheck('en')).resolves.toMatchObject({ problems: [{ reason: 'File missing' }] })

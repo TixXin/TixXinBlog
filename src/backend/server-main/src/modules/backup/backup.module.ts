@@ -12,9 +12,10 @@ import { BackupController } from './backup.controller'
 import { ContentExportService } from './content-export.service'
 import { ContentImportService } from './content-import.service'
 import { MaintenanceController } from './maintenance.controller'
+import { MaintenanceService } from './maintenance.service'
 @Module({
   imports: [PostModule, FlashModule, SiteModule, CommentModule, MediaModule],
   controllers: [BackupController, MaintenanceController],
-  providers: [ContentExportService, ContentImportService],
+  providers: [ContentExportService, ContentImportService, MaintenanceService],
 })
 export class BackupModule {}

@@ -6,10 +6,10 @@
  */
 
 import { Controller, Get, NotFoundException, Req, ServiceUnavailableException } from '@nestjs/common'
-import { EntityManager } from '@mikro-orm/postgresql'
 import type { Request } from 'express'
 import { devIdentity } from './dev-identity'
 import { ReadinessState } from './readiness-state'
+import { HealthService } from './health.service'
 import { msg } from '../../common/i18n'
 
 interface HealthStatus {
@@ -21,7 +21,7 @@ interface HealthStatus {
 @Controller()
 export class HealthController {
   constructor(
-    private readonly em: EntityManager,
+    private readonly healthService: HealthService,
     private readonly readiness: ReadinessState,
   ) {}
   @Get('dev/identity')
@@ -47,7 +47,7 @@ export class HealthController {
   async ready(): Promise<HealthStatus> {
     if (this.readiness.isShuttingDown) throw new ServiceUnavailableException(msg('common.shuttingDown'))
     try {
-      await this.em.getConnection().execute('select 1')
+      await this.healthService.checkDatabase()
       return this.health()
     } catch {
       throw new ServiceUnavailableException(msg('common.databaseNotReady'))
