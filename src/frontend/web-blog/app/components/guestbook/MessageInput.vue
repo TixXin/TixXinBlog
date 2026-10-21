@@ -8,22 +8,11 @@
 <template>
   <div class="message-input" :class="{ 'message-input--reply-below': replyPlacement === 'below' }">
     <!-- 引用条脱离文档流，贴在输入卡片外侧，避免撑高后挤压消息列表 -->
-    <Transition name="reply-fade">
-      <div v-if="replyTo" class="message-input__reply-bar">
-        <Icon name="lucide:reply" size="13" class="message-input__reply-icon" />
-        <span class="message-input__reply-label">{{ $t('interaction.guestbookInput.replyLabel') }}</span>
-        <span class="message-input__reply-author">{{ replyTo.author }}</span>
-        <span class="message-input__reply-text">{{ replyTo.content }}</span>
-        <button
-          type="button"
-          class="message-input__reply-close"
-          :aria-label="$t('interaction.guestbookInput.cancelReply')"
-          @click="$emit('cancelReply')"
-        >
-          <Icon name="lucide:x" size="14" />
-        </button>
-      </div>
-    </Transition>
+    <GuestbookMessageInputReplyBar
+      :reply-to="replyTo"
+      :placement="replyPlacement"
+      @cancel-reply="$emit('cancelReply')"
+    />
     <div class="card message-input__panel">
       <CommonSubmissionTrap v-model="website" />
       <p v-if="error" :id="errorId" role="alert" class="message-input__notice">{{ error }}</p>
@@ -89,26 +78,13 @@
       </div>
 
       <!-- 底部工具栏 -->
-      <div class="message-input__footer">
-        <span class="message-input__hint"
-          >{{ identityLabel }} <span aria-hidden="true">·</span> {{ $t('interaction.guestbookInput.sendHint') }}</span
-        >
-        <small class="message-input__count" :class="{ 'message-input__count--full': draft.length >= 500 }"
-          >{{ draft.length }} / 500</small
-        >
-        <button
-          type="button"
-          class="message-input__send"
-          :aria-busy="submitting"
-          :disabled="!draft.trim() || submitting || !ready"
-          @click="submit"
-        >
-          <Icon name="lucide:send" size="14" />
-          <span>{{
-            submitting ? $t('interaction.guestbookInput.sending') : $t('interaction.guestbookInput.send')
-          }}</span>
-        </button>
-      </div>
+      <GuestbookMessageInputFooter
+        :identity-label="identityLabel"
+        :draft-length="draft.length"
+        :submitting="submitting"
+        :disabled="!draft.trim() || submitting || !ready"
+        @submit="submit"
+      />
     </div>
   </div>
 </template>
@@ -116,6 +92,8 @@
 <script setup lang="ts">
 import type { VisitorSubmissionFields } from '~/features/visitor/types'
 import type { ReplyRef } from '~/features/guestbook/types'
+import { useMessageInputResize } from '~/features/guestbook/useMessageInputResize'
+
 const props = defineProps<{
   draft: string
   replyTo?: ReplyRef | null
@@ -130,6 +108,7 @@ const props = defineProps<{
   /** 聊天模式贴在输入框上方；论坛模式输入框在列表之上，改为向下悬浮以免被页面裁切 */
   replyPlacement?: 'above' | 'below'
 }>()
+
 const emit = defineEmits<{
   'update:draft': [value: string]
   send: [fields: VisitorSubmissionFields]
@@ -138,111 +117,43 @@ const emit = defineEmits<{
   discard: []
   login: []
 }>()
+
 const visitorForm = useVisitorSubmissionForm({ submitting: () => props.submitting, error: () => props.error })
 const { website } = visitorForm
 // 错误提示与输入框通过 aria-describedby 关联
 const errorId = useId()
-const textareaRef = ref<HTMLTextAreaElement | null>(null),
-  hydrated = ref(false)
+const textareaRef = ref<HTMLTextAreaElement | null>(null)
+const mirrorRef = ref<HTMLTextAreaElement | null>(null)
+const hydrated = ref(false)
+
 // SSR 阶段尚无输入事件监听，挂载后立即开放编辑，不等待登录恢复。
 onMounted(() => {
   hydrated.value = true
 })
-/**
- * 高度规则：默认随正文在 baseHeight 与 AUTO_MAX 之间自动伸缩；
- * 拖拽或收起属于明确选择，进入手动高度，清空正文（如发送后）再回到自动
- */
-const MIN_HEIGHT = 72,
-  EXPANDED_HEIGHT = 240,
-  AUTO_MAX = 200
-const baseHeight = ref(MIN_HEIGHT),
-  manualHeight = ref<number | null>(null),
-  contentHeight = ref(0),
-  resizing = ref(false),
-  mirrorRef = ref<HTMLTextAreaElement | null>(null)
-const editorHeight = computed(
-  () => manualHeight.value ?? Math.max(baseHeight.value, Math.min(contentHeight.value, AUTO_MAX)),
-)
-const isExpanded = computed(() => editorHeight.value > 100)
-const { t } = useI18n()
-const expandLabel = computed(() =>
-  t(isExpanded.value ? 'interaction.guestbookInput.collapse' : 'interaction.guestbookInput.expand'),
-)
-function toggleExpand() {
-  if (isExpanded.value) {
-    baseHeight.value = MIN_HEIGHT
-    manualHeight.value = MIN_HEIGHT
-  } else {
-    baseHeight.value = EXPANDED_HEIGHT
-    manualHeight.value = null
-  }
-}
-/** 副本高度为 0 时 scrollHeight 即正文加内边距的自然高度 */
-function measureContent() {
-  const mirror = mirrorRef.value
-  if (!mirror) return
-  mirror.value = props.draft
-  contentHeight.value = Math.ceil(mirror.scrollHeight)
-}
-watch(
-  () => props.draft,
-  (draft) => {
-    if (!draft) manualHeight.value = null
-    nextTick(measureContent)
-  },
-)
-let widthObserver: ResizeObserver | null = null,
-  lastWidth = 0
-onMounted(() => {
-  measureContent()
-  // 宽度变化会改变折行，需要重新量；只看宽度，避免高度过渡本身反复触发
-  widthObserver = new ResizeObserver(([entry]) => {
-    const width = Math.round(entry?.contentRect.width ?? 0)
-    if (width === lastWidth) return
-    lastWidth = width
-    measureContent()
-  })
-  if (textareaRef.value) widthObserver.observe(textareaRef.value)
+
+const { editorHeight, resizing, isExpanded, expandLabel, toggleExpand, onResizePointerDown } = useMessageInputResize({
+  draft: () => props.draft,
+  textareaRef,
+  mirrorRef,
 })
-let resizeStartY = 0,
-  resizeStartHeight = 0
-function onResizePointerDown(event: PointerEvent) {
-  if (event.button !== 0) return
-  event.preventDefault()
-  ;(event.currentTarget as HTMLElement).setPointerCapture?.(event.pointerId)
-  resizeStartY = event.clientY
-  resizeStartHeight = editorHeight.value
-  resizing.value = true
-  window.addEventListener('pointermove', onResizePointerMove)
-  window.addEventListener('pointerup', onResizePointerUp, { once: true })
-}
-function onResizePointerMove(event: PointerEvent) {
-  manualHeight.value = Math.max(44, Math.min(320, resizeStartHeight + resizeStartY - event.clientY))
-}
-function onResizePointerUp() {
-  window.removeEventListener('pointermove', onResizePointerMove)
-  resizing.value = false
-}
+
 function submit() {
   if (props.ready && !props.submitting && props.draft.trim()) emit('send', visitorForm.fields())
 }
+
 function onEditorKeydown(event: KeyboardEvent) {
   if (!event.isComposing && event.key === 'Enter' && (event.ctrlKey || event.metaKey)) {
     event.preventDefault()
     submit()
   }
 }
+
 watch(
   () => props.replyTo,
   (value) => {
     if (value) nextTick(() => textareaRef.value?.focus())
   },
 )
-onBeforeUnmount(() => {
-  widthObserver?.disconnect()
-  window.removeEventListener('pointermove', onResizePointerMove)
-  window.removeEventListener('pointerup', onResizePointerUp)
-})
 </script>
 
 <style lang="scss" scoped>
@@ -252,11 +163,13 @@ onBeforeUnmount(() => {
   line-height: 1.6;
   padding: 0.5rem 0.75rem 0;
 }
+
 .message-input {
   position: relative;
   flex-shrink: 0;
   margin: 0.375rem 0.5rem 0.5rem;
 }
+
 .message-input__panel {
   // 与外层卡片同心：外圆角减去 0.5rem 外边距，四角一致
   border-radius: calc(#{$radius-card} - 0.5rem);
@@ -301,100 +214,6 @@ onBeforeUnmount(() => {
   &:hover::after {
     background: var(--text-faint);
   }
-}
-
-/* ---- 回复引用：悬浮在输入卡片外，不占列表高度 ---- */
-.message-input__reply-bar {
-  position: absolute;
-  z-index: 3;
-  left: 0;
-  right: 0;
-  bottom: calc(100% + 0.375rem);
-  display: flex;
-  align-items: center;
-  gap: 0.375rem;
-  padding: 0.4375rem 0.75rem;
-  border: 1px solid var(--border-soft);
-  border-radius: calc(#{$radius-card} - 0.5rem);
-  background: color-mix(in srgb, var(--accent, #5b7cfa) 8%, var(--surface-1));
-  box-shadow: var(--shadow-card);
-  backdrop-filter: blur(10px);
-}
-.message-input--reply-below .message-input__reply-bar {
-  top: calc(100% + 0.375rem);
-  bottom: auto;
-}
-
-.message-input__reply-icon {
-  flex-shrink: 0;
-  color: var(--accent, #5b7cfa);
-}
-
-.message-input__reply-label {
-  flex-shrink: 0;
-  font-size: 0.6875rem;
-  font-weight: 600;
-  color: var(--accent, #5b7cfa);
-}
-
-.message-input__reply-author {
-  flex-shrink: 0;
-  font-size: 0.6875rem;
-  font-weight: 600;
-  color: var(--text-soft);
-}
-
-.message-input__reply-text {
-  flex: 1;
-  min-width: 0;
-  font-size: 0.6875rem;
-  color: var(--text-faint);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.message-input__reply-close {
-  flex-shrink: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 1.25rem;
-  height: 1.25rem;
-  border: none;
-  border-radius: $radius-sm;
-  background: transparent;
-  color: var(--text-faint);
-  cursor: var(--interaction-cursor, pointer);
-  transition: $transition-fast;
-  @media (prefers-reduced-motion: reduce) {
-    transition: none;
-  }
-
-  &:hover {
-    background: var(--surface-2);
-    color: var(--text-soft);
-  }
-}
-
-.reply-fade-enter-active,
-.reply-fade-leave-active {
-  transition:
-    opacity 0.18s ease,
-    transform 0.18s ease;
-  @media (prefers-reduced-motion: reduce) {
-    transition: none;
-  }
-}
-
-.reply-fade-enter-from,
-.reply-fade-leave-to {
-  opacity: 0;
-  transform: translateY(0.375rem);
-}
-.message-input--reply-below .reply-fade-enter-from,
-.message-input--reply-below .reply-fade-leave-to {
-  transform: translateY(-0.375rem);
 }
 
 /* ---- 输入区 ---- */
@@ -476,104 +295,6 @@ onBeforeUnmount(() => {
   &:hover {
     color: var(--text-soft);
     background: var(--surface-2);
-  }
-}
-
-.message-input__send {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.375rem;
-  padding: 0.375rem 0.875rem;
-  border: none;
-  border-radius: $radius-sm;
-  color: #fff;
-  background: var(--accent, #5b7cfa);
-  font-size: 0.75rem;
-  font-weight: 600;
-  cursor: var(--interaction-cursor, pointer);
-  transition:
-    opacity 0.2s,
-    transform 0.15s;
-  @media (prefers-reduced-motion: reduce) {
-    transition: none;
-  }
-
-  &:hover:not(:disabled) {
-    opacity: 0.9;
-  }
-
-  &:active:not(:disabled) {
-    transform: scale(0.97);
-  }
-
-  &:disabled {
-    opacity: 0.4;
-    cursor: var(--interaction-cursor, not-allowed);
-  }
-}
-
-/* ---- 底部工具栏 ---- */
-.message-input__footer {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  padding: 0.125rem 0.5rem 0.5rem 0.75rem;
-}
-
-.message-input__hint {
-  flex: 1;
-  min-width: 0;
-  overflow: hidden;
-  font-size: 0.6875rem;
-  color: var(--text-faint);
-  white-space: nowrap;
-  text-overflow: ellipsis;
-
-  // 触屏通常没有快捷键，窄屏只保留字数与发送
-  @media (max-width: #{$breakpoint-sm - 1px}) {
-    visibility: hidden;
-  }
-}
-
-.message-input__count {
-  flex-shrink: 0;
-  font-size: 0.6875rem;
-  color: var(--text-soft);
-  font-variant-numeric: tabular-nums;
-
-  &--full {
-    color: var(--danger);
-  }
-}
-
-.message-input__toolbar {
-  display: flex;
-  align-items: center;
-  gap: 0.125rem;
-}
-
-.message-input__tool {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 28px;
-  height: 26px;
-  padding: 0;
-  border: none;
-  border-radius: $radius-sm;
-  background: transparent;
-  color: var(--text-faint);
-  cursor: var(--interaction-cursor, default);
-  transition:
-    background 0.15s,
-    color 0.15s;
-  @media (prefers-reduced-motion: reduce) {
-    transition: none;
-  }
-
-  &:hover {
-    background: var(--surface-2);
-    color: var(--text-soft);
   }
 }
 </style>
