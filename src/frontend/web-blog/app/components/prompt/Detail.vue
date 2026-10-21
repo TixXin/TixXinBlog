@@ -13,48 +13,17 @@
       @keydown="navigateWithKeyboard"
     >
       <div class="prompt-detail__panel">
-        <header class="prompt-detail__toolbar">
-          <span
-            ><Icon :name="draft ? 'lucide:lock-keyhole' : 'lucide:aperture'" size="15" />{{
-              draft ? $t('misc.prompt.detail.draftBadge') : $t('misc.prompt.detail.badge')
-            }}</span
-          >
-          <nav
-            v-if="navigationCount > 1 && position > 0"
-            class="prompt-detail__navigation"
-            :aria-label="$t('misc.prompt.detail.navigationLabel')"
-          >
-            <CommonTooltip :content="$t('misc.prompt.detail.navigationHint')" placement="bottom"
-              ><span class="prompt-detail__navigation-count">{{
-                $t('misc.prompt.detail.position', { position, total: navigationCount })
-              }}</span></CommonTooltip
-            >
-            <button
-              type="button"
-              :aria-label="$t('misc.prompt.detail.previous')"
-              :aria-disabled="!canPrevious || pending"
-              @click="requestMove(-1, $event)"
-            >
-              <Icon name="lucide:chevron-left" size="18" />
-            </button>
-            <button
-              type="button"
-              :aria-label="$t('misc.prompt.detail.next')"
-              :aria-disabled="!canNext || pending"
-              @click="requestMove(1, $event)"
-            >
-              <Icon name="lucide:chevron-right" size="18" />
-            </button>
-          </nav>
-          <button
-            class="prompt-detail__close"
-            type="button"
-            :aria-label="$t('misc.prompt.detail.close')"
-            @click="$emit('close')"
-          >
-            <Icon name="lucide:x" size="20" />
-          </button>
-        </header>
+        <PromptDetailToolbar
+          :draft="draft"
+          :navigation-count="navigationCount"
+          :position="position"
+          :can-previous="canPrevious"
+          :can-next="canNext"
+          :pending="pending"
+          @previous="$emit('previous')"
+          @next="$emit('next')"
+          @close="$emit('close')"
+        />
         <div v-if="copyMessage" class="prompt-detail__notice">
           <p role="status" class="prompt-detail__copy-status">{{ copyMessage }}</p>
           <label v-if="manualLink" class="prompt-detail__manual-link"
@@ -89,57 +58,16 @@
                 }}<span class="sr-only">{{ $t('misc.prompt.detail.newTab') }}</span>
               </a>
             </div>
-            <div class="prompt-detail__body">
-              <p class="prompt-detail__eyebrow">
-                <span>{{ item.model || $t('misc.prompt.shared.modelUnset') }}</span
-                ><span v-if="item.width && item.height">{{ item.width }} × {{ item.height }}</span>
-              </p>
-              <h2>{{ item.title }}</h2>
-              <p v-if="item.description" class="prompt-detail__description">{{ item.description }}</p>
-              <div v-if="item.tags.length" class="prompt-detail__tags">
-                <span v-for="tag in item.tags" :key="tag">{{ tag }}</span>
-              </div>
-              <section class="prompt-detail__text">
-                <header>
-                  <div>
-                    <h3>{{ $t('misc.prompt.detail.promptHeading') }}</h3>
-                    <span class="prompt-detail__length">{{ characterCount(item.prompt) }}</span>
-                  </div>
-                  <button type="button" :aria-disabled="copying" @click="copy(item.prompt, 'prompt')">
-                    <Icon :name="copied === 'prompt' ? 'lucide:check' : 'lucide:copy'" size="15" />{{
-                      copied === 'prompt' ? $t('misc.prompt.detail.copied') : $t('misc.prompt.detail.copyPrompt')
-                    }}
-                  </button>
-                </header>
-                <p dir="auto">{{ item.prompt }}</p>
-              </section>
-              <section v-if="item.negativePrompt" class="prompt-detail__text prompt-detail__text--negative">
-                <header>
-                  <div>
-                    <h3>{{ $t('misc.prompt.detail.negativeHeading') }}</h3>
-                    <span class="prompt-detail__length">{{ characterCount(item.negativePrompt) }}</span>
-                  </div>
-                  <button type="button" :aria-disabled="copying" @click="copy(item.negativePrompt, 'negative')">
-                    <Icon :name="copied === 'negative' ? 'lucide:check' : 'lucide:copy'" size="14" />{{
-                      copied === 'negative' ? $t('misc.prompt.detail.copied') : $t('misc.prompt.detail.copy')
-                    }}
-                  </button>
-                </header>
-                <p dir="auto">{{ item.negativePrompt }}</p>
-              </section>
-              <p class="prompt-detail__hint">{{ $t('misc.prompt.detail.hint') }}</p>
-              <footer>
-                <a v-if="item.sourceUrl" :href="item.sourceUrl" target="_blank" rel="noopener noreferrer"
-                  ><Icon name="lucide:external-link" size="15" />{{ $t('misc.prompt.detail.viewSource') }}</a
-                ><button v-if="!draft" type="button" :aria-disabled="copying" @click="share">
-                  <Icon name="lucide:link" size="15" />{{
-                    copied === 'link' ? $t('misc.prompt.detail.linkCopied') : $t('misc.prompt.detail.share')
-                  }}</button
-                ><button v-if="editable" type="button" @click="$emit('edit', item.id)">
-                  <Icon name="lucide:pencil" size="15" />{{ $t('misc.prompt.detail.edit') }}
-                </button>
-              </footer>
-            </div>
+            <PromptDetailBody
+              :item="item"
+              :editable="editable"
+              :draft="draft"
+              :copied="copied"
+              :copying="copying"
+              @copy="copy"
+              @share="share"
+              @edit="$emit('edit', $event)"
+            />
           </template>
         </div>
       </div>
@@ -148,6 +76,7 @@
 </template>
 <script setup lang="ts">
 import type { ImagePrompt } from '~/features/prompt/types'
+
 const props = withDefaults(
   defineProps<{
     visible: boolean
@@ -165,9 +94,6 @@ const props = withDefaults(
 )
 const emit = defineEmits<{ close: []; retry: []; edit: [id: number]; previous: []; next: [] }>()
 const { t } = useI18n()
-/** 文本字符数：数字跟随界面语言格式化，英文按单复数变化 */
-const characterCount = (text: string) =>
-  t('misc.prompt.detail.characters', { count: formatNumber(text.length) }, text.length)
 const dialog = ref<HTMLElement | null>(null),
   copied = ref(''),
   copyMessage = ref(''),
@@ -179,13 +105,6 @@ useModalFocus(() => props.visible, dialog, {
   close: () => emit('close'),
   initialFocus: () => dialog.value?.querySelector<HTMLButtonElement>('.prompt-detail__close') ?? null,
 })
-function requestMove(direction: -1 | 1, event: MouseEvent) {
-  if (props.pending || !props.visible || (direction < 0 ? !props.canPrevious : !props.canNext)) return
-  // WebKit鼠标点击按钮不总是赋予焦点；明确保留入口，随后可继续使用方向键。
-  if (event.currentTarget instanceof HTMLElement) event.currentTarget.focus({ preventScroll: true })
-  if (direction < 0) emit('previous')
-  else emit('next')
-}
 function navigateWithKeyboard(event: KeyboardEvent) {
   if (
     props.pending ||
@@ -282,21 +201,6 @@ onBeforeUnmount(() => {
   background: var(--surface-1);
   box-shadow: 0 20px 80px #0003;
 }
-.prompt-detail__toolbar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  flex-shrink: 0;
-  padding: 0.6rem 0.9rem 0.6rem 1.4rem;
-  border-bottom: 1px solid var(--border);
-}
-.prompt-detail__toolbar > span {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  color: var(--text-muted);
-  font-size: 0.75rem;
-}
 .prompt-detail__content {
   display: grid;
   grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr);
@@ -304,65 +208,10 @@ onBeforeUnmount(() => {
   overscroll-behavior: contain;
   min-height: 0;
 }
-.prompt-detail__navigation {
-  display: flex;
-  align-items: center;
-  gap: 0.35rem;
-  margin-left: auto;
-  margin-right: 0.75rem;
-}
-.prompt-detail__navigation-count {
-  margin-right: 0.45rem;
-  color: var(--text-soft);
-  font-size: 0.7rem;
-  font-variant-numeric: tabular-nums;
-  white-space: nowrap;
-}
-.prompt-detail__navigation button {
-  display: grid;
-  place-items: center;
-  width: 40px;
-  height: 40px;
-  border: 1px solid var(--border);
-  border-radius: 0.5rem;
-  color: var(--text-main);
-}
-.prompt-detail__navigation button:not([aria-disabled='true']):hover {
-  background: var(--accent-soft);
-  color: var(--accent-text);
-}
-@media (max-width: 480px) {
-  .prompt-detail__toolbar > span {
-    font-size: 0.68rem;
-  }
-  .prompt-detail__navigation {
-    gap: 0.2rem;
-    margin-right: 0.35rem;
-  }
-  .prompt-detail__navigation-count {
-    font-size: 0.65rem;
-    margin-right: 0.25rem;
-  }
-  .prompt-detail__navigation button {
-    width: 36px;
-  }
-}
-.prompt-detail__close {
-  width: 40px;
-  height: 40px;
-  display: grid;
-  place-items: center;
-  z-index: 3;
-  border: 1px solid var(--border);
-  border-radius: 50%;
-  background: var(--surface-1);
-  color: var(--text-main);
-}
 .prompt-detail__image {
   min-height: min(320px, 60dvh);
   position: sticky;
   top: 0;
-  // 与浮层可视区域等高（面板上限减去工具栏），避免左侧图片区下方露出空白
   height: calc(min(90dvh, 960px) - 1.2rem - 41px);
   padding: 1.5rem;
   display: flex;
@@ -391,33 +240,6 @@ onBeforeUnmount(() => {
   color: var(--accent-text);
   border-color: var(--accent);
 }
-.prompt-detail__body {
-  min-width: 0;
-  padding: 1.5rem 2rem 2rem;
-  overflow-wrap: anywhere;
-  color: var(--text-main);
-}
-.prompt-detail__eyebrow {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  color: var(--text-soft);
-  font-size: 0.75rem;
-  flex-wrap: wrap;
-  justify-content: space-between;
-  font-variant-numeric: tabular-nums;
-}
-.prompt-detail__length {
-  color: var(--text-soft);
-  font-size: 0.65rem;
-  font-variant-numeric: tabular-nums;
-}
-.prompt-detail__text header > div {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: baseline;
-  gap: 0.4rem 0.65rem;
-}
 .prompt-detail__manual-link {
   display: grid;
   gap: 0.4rem;
@@ -435,98 +257,9 @@ onBeforeUnmount(() => {
   border-radius: 0.5rem;
   color: var(--text-main);
 }
-button:disabled,
-button[aria-disabled='true'] {
-  opacity: 0.5;
-  cursor: default;
-}
-.prompt-detail__close:hover,
-.prompt-detail__text button:not([aria-disabled='true']):hover {
-  background: var(--accent-soft);
-  border-color: var(--accent);
-}
-
-h2 {
-  font-size: 1.6rem;
-  line-height: 1.5;
-  font-weight: 600;
-  margin: 0.8rem 0;
-}
-.prompt-detail__description {
-  color: var(--text-soft);
-  font-size: 0.875rem;
-  line-height: 1.9;
-}
-.prompt-detail__tags {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.5rem;
-  margin-top: 1rem;
-}
-.prompt-detail__tags span {
-  font-size: 0.7rem;
-  padding: 0.3rem 0.6rem;
-  color: var(--text-muted);
-  background: var(--surface-2);
-  border-radius: 0.35rem;
-}
-.prompt-detail__text {
-  margin-top: 1.75rem;
-  padding-top: 1.25rem;
-  border-top: 1px solid var(--border);
-}
-.prompt-detail__text header {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  justify-content: space-between;
-}
-h3 {
-  font-size: 0.8125rem;
-  font-weight: 600;
-}
-.prompt-detail__text p {
-  white-space: pre-wrap;
-  overflow-wrap: anywhere;
-  line-height: 1.95;
-  font-size: 0.8125rem;
-  margin-top: 0.75rem;
-  user-select: text;
-}
-.prompt-detail__text--negative p {
-  color: var(--text-soft);
-}
 button,
 a {
   cursor: var(--interaction-cursor, pointer);
-}
-.prompt-detail__text button,
-footer button,
-footer a {
-  min-height: 40px;
-  display: inline-flex;
-  align-items: center;
-  gap: 0.4rem;
-  font-size: 0.75rem;
-  color: var(--accent-text);
-}
-.prompt-detail__text button {
-  border: 1px solid var(--border);
-  padding: 0.35rem 0.75rem;
-  border-radius: 0.5rem;
-}
-.prompt-detail__hint {
-  color: var(--text-soft);
-  font-size: 0.7rem;
-  line-height: 1.8;
-  margin: 1.5rem 0 1rem;
-}
-footer {
-  display: flex;
-  gap: 1.25rem;
-  flex-wrap: wrap;
-  border-top: 1px solid var(--border);
-  padding-top: 0.75rem;
 }
 .prompt-detail__copy-status {
   font-size: 0.75rem;
@@ -559,12 +292,6 @@ footer {
     height: 38dvh;
     min-height: min(180px, 30dvh);
     padding: 1rem;
-  }
-  .prompt-detail__body {
-    padding: 1.5rem;
-  }
-  h2 {
-    font-size: 1.3rem;
   }
 }
 </style>

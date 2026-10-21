@@ -21,180 +21,46 @@
       :preserved-query-keys="['prompt', 'edit']"
       primary
     >
-      <section class="prompts-intro" :aria-label="$t('misc.prompt.page.introLabel')">
-        <div>
-          <p class="prompts-kicker">IMAGE PROMPT COLLECTION</p>
-          <p class="prompts-intro__title">
-            {{ $t('misc.prompt.page.introTitle') }}<span>{{ $t('misc.prompt.page.introTitleAccent') }}</span>
-          </p>
-          <p class="prompts-intro__description">{{ $t('misc.prompt.page.introDescription') }}</p>
-        </div>
-        <div v-if="metadata" class="prompts-intro__index" :aria-label="$t('misc.prompt.page.countLabel')">
-          <strong>{{ String(metadata.stats.prompts).padStart(2, '0') }}</strong
-          ><span class="prompts-intro__label">{{ $t('misc.prompt.page.countUnit') }}</span
-          ><Icon name="lucide:move-up-right" size="22" />
-        </div>
-      </section>
-      <div v-if="ready && !isOwner && (managementIntent || authError)" class="prompts-auth" role="status">
-        <Icon name="lucide:lock-keyhole" size="18" />
-        <div>
-          <strong>{{
-            restoringPending ? $t('misc.prompt.page.authChecking') : authError || $t('misc.prompt.page.authHint')
-          }}</strong>
-          <p>{{ $t('misc.prompt.page.authPublic') }}</p>
-        </div>
-        <button v-if="authError" type="button" :disabled="restoringPending" @click="auth.restore()">
-          {{ $t('misc.prompt.page.authRetry') }}
-        </button>
-        <button type="button" :disabled="restoringPending" @click="login.open('login', true)">
-          {{ $t('misc.prompt.page.login') }}
-        </button>
-      </div>
-      <div class="prompts-toolbar">
-        <div class="prompts-views" :aria-label="$t('misc.prompt.page.viewsLabel')">
-          <button
-            ref="publicViewButton"
-            type="button"
-            :aria-pressed="!draftView"
-            :disabled="!ready"
-            @click="setView(false)"
-          >
-            {{ $t('misc.prompt.page.viewAll')
-            }}<span v-if="metadata" class="prompts-views__count">{{ metadata.stats.prompts }}</span></button
-          ><button v-if="isOwner" type="button" :aria-pressed="draftView" :disabled="!ready" @click="setView(true)">
-            <Icon name="lucide:file-pen-line" size="14" />{{ $t('misc.prompt.page.viewDrafts') }}
-          </button>
-        </div>
-        <CommonSearchBox
-          v-model="keyword"
-          :disabled="!ready"
-          :placeholder="$t('misc.prompt.page.searchPlaceholder')"
-          :label="$t('misc.prompt.page.searchLabel')"
-          @compositionstart="startComposition"
-          @compositionend="endComposition"
-          @keydown.enter="submitSearch"
-        />
-      </div>
-      <div class="prompts-filters">
-        <label
-          ><Icon name="lucide:sliders-horizontal" size="14" /><select
-            :value="query.model || ''"
-            :disabled="!ready"
-            :aria-label="$t('misc.prompt.page.modelFilterLabel')"
-            @change="changeQuery({ model: ($event.target as HTMLSelectElement).value || undefined })"
-          >
-            <option value="">{{ $t('misc.prompt.page.allModels') }}</option>
-            <option
-              v-if="query.model && !metadata?.models.some((item) => item.label === query.model)"
-              :value="query.model"
-            >
-              {{ query.model }}
-            </option>
-            <option v-for="model in metadata?.models || []" :key="model.label" :value="model.label">
-              {{ model.label }} · {{ model.count }}
-            </option>
-          </select></label
-        >
-        <div class="prompts-tags" :aria-label="$t('misc.prompt.page.tagFilterLabel')">
-          <button type="button" :aria-pressed="!query.tag" :disabled="!ready" @click="changeQuery({ tag: undefined })">
-            {{ $t('misc.prompt.page.allTags') }}</button
-          ><button
-            v-for="tag in visibleTags"
-            :key="tag.label"
-            type="button"
-            :aria-pressed="query.tag === tag.label"
-            :disabled="!ready"
-            @click="changeQuery({ tag: query.tag === tag.label ? undefined : tag.label })"
-          >
-            {{ tag.label }}
-          </button>
-          <button
-            v-if="(metadata?.tags.length || 0) > 7"
-            type="button"
-            :aria-expanded="allTags"
-            @click="allTags = !allTags"
-          >
-            {{ allTags ? $t('misc.prompt.page.collapseTags') : $t('misc.prompt.page.moreTags')
-            }}<Icon :name="allTags ? 'lucide:chevron-up' : 'lucide:chevron-down'" size="12" />
-          </button>
-        </div>
-        <button
-          v-if="filtered"
-          type="button"
-          class="prompts-clear"
-          @click="changeQuery({ q: undefined, model: undefined, tag: undefined })"
-        >
-          {{ $t('misc.prompt.page.clearFilters') }}
-        </button>
-      </div>
-      <p v-if="draftView" class="prompts-result" role="status">
-        <Icon name="lucide:lock-keyhole" size="13" />{{ $t('misc.prompt.page.draftHint') }}
-      </p>
-      <CommonRequestFeedback
-        v-if="currentPending || pageOutOfRange || currentError"
-        :pending="currentPending || pageOutOfRange"
-        :compact="items.length > 0"
-        :title="currentError || $t('misc.prompt.page.loading')"
+      <PromptIntro :metadata="metadata" />
+      <PromptAuthBanner
+        v-if="ready && !isOwner && (managementIntent || authError)"
+        :auth-error="authError"
+        :restoring-pending="restoringPending"
+        @restore="auth.restore()"
+        @login="login.open('login', true)"
+      />
+      <PromptToolbar
+        v-model:keyword="keyword"
+        :ready="ready"
+        :draft-view="draftView"
+        :is-owner="isOwner"
+        :metadata="metadata"
+        :query="query"
+        :filtered="filtered"
+        :current-error="currentError"
+        :current-pending="currentPending"
+        :current-stale="currentStale"
+        :total="total"
+        @change-query="changeQuery"
+        @set-view="setView"
+        @submit-search="submitSearch"
+        @start-composition="startComposition"
+        @end-composition="endComposition"
+      />
+      <PromptFeedState
+        :draft-view="draftView"
+        :current-pending="currentPending"
+        :page-out-of-range="pageOutOfRange"
+        :current-error="currentError"
+        :has-items="items.length > 0"
+        :metadata-error="metadataError"
+        :metadata-retrying="metadataRetrying"
+        :metadata-pending="metadataPending"
+        :draft-stale="draftStale"
+        :stale="stale"
         @retry="retry"
+        @retry-metadata="retryMetadata"
       />
-      <CommonRequestFeedback
-        v-if="metadataError || metadataRetrying"
-        compact
-        :pending="metadataPending"
-        :title="$t('misc.prompt.page.metadataFailed')"
-        :description="$t('misc.prompt.page.metadataFailedHint')"
-        @retry="retryMetadata"
-      />
-      <p v-if="draftView ? draftStale : stale" class="prompts-result" role="status">
-        {{
-          $t(draftView ? 'misc.prompt.page.staleDrafts' : 'misc.prompt.page.stalePrompts', {
-            status: $t(currentError ? 'misc.prompt.page.staleFailed' : 'misc.prompt.page.staleUpdating'),
-          })
-        }}
-      </p>
-      <div v-if="filtered" class="prompts-selection" role="group" :aria-label="$t('misc.prompt.page.selectionLabel')">
-        <span>{{
-          currentError
-            ? $t('misc.prompt.page.filterIncomplete')
-            : currentPending || (draftView ? draftStale : stale)
-              ? $t('misc.prompt.page.filtering')
-              : $t(
-                  draftView ? 'misc.prompt.page.foundDrafts' : 'misc.prompt.page.foundPrompts',
-                  { count: total ?? 0 },
-                  total ?? 0,
-                )
-        }}</span>
-        <button
-          v-if="query.q"
-          type="button"
-          :disabled="!ready"
-          :aria-label="$t('misc.prompt.page.removeKeyword', { value: query.q })"
-          @click="changeQuery({ q: undefined })"
-        >
-          <Icon name="lucide:search" size="12" /><span>{{ query.q }}</span
-          ><Icon name="lucide:x" size="12" />
-        </button>
-        <button
-          v-if="query.model"
-          type="button"
-          :disabled="!ready"
-          :aria-label="$t('misc.prompt.page.removeModel', { value: query.model })"
-          @click="changeQuery({ model: undefined })"
-        >
-          <span>{{ query.model }}</span
-          ><Icon name="lucide:x" size="12" />
-        </button>
-        <button
-          v-if="query.tag"
-          type="button"
-          :disabled="!ready"
-          :aria-label="$t('misc.prompt.page.removeTag', { value: query.tag })"
-          @click="changeQuery({ tag: undefined })"
-        >
-          <span>{{ query.tag }}</span
-          ><Icon name="lucide:x" size="12" />
-        </button>
-      </div>
       <CommonStateBlock
         v-if="!currentPending && !pageOutOfRange && !currentError && !items.length"
         icon="lucide:aperture"
@@ -226,30 +92,17 @@
         @open="openDetail"
         @edit="openEditor"
       />
-      <footer v-if="total !== null && !pageOutOfRange && (items.length || query.page > 1)" class="prompts-bottom">
-        <p>
-          {{ $t(draftView ? 'misc.prompt.page.totalDrafts' : 'misc.prompt.page.totalPrompts', { count: total }, total)
-          }}<span> / </span>{{ $t('misc.prompt.page.newestFirst') }}
-        </p>
-        <nav v-if="total > 12 || query.page > 1" :aria-label="$t('misc.prompt.page.paginationLabel')">
-          <button
-            type="button"
-            :aria-label="$t('misc.prompt.page.previousPage')"
-            :disabled="!ready || currentPending || query.page <= 1"
-            @click="changeQuery({ page: query.page - 1 })"
-          >
-            <Icon name="lucide:arrow-left" size="16" /></button
-          ><span>{{ query.page }} / {{ pageCount }}</span
-          ><button
-            type="button"
-            :aria-label="$t('misc.prompt.page.nextPage')"
-            :disabled="!ready || currentPending || query.page * 12 >= total"
-            @click="changeQuery({ page: query.page + 1 })"
-          >
-            <Icon name="lucide:arrow-right" size="16" />
-          </button>
-        </nav>
-      </footer>
+      <PromptPagination
+        :total="total"
+        :page-out-of-range="pageOutOfRange"
+        :has-items="items.length > 0"
+        :page="query.page"
+        :page-count="pageCount"
+        :draft-view="draftView"
+        :ready="ready"
+        :current-pending="currentPending"
+        @change-page="changeQuery({ page: $event })"
+      />
     </CommonCustomScrollbar>
     <template #overlays
       ><ClientOnly
@@ -279,11 +132,13 @@
   </CommonPageFrame>
 </template>
 <script setup lang="ts">
-import type { ManagedPrompt } from '~/features/prompt/types'
 import { promptId } from '~/features/prompt/query'
 import { usePromptSearch } from '~/composables/usePromptSearch'
 import { usePromptDetail } from '~/composables/usePromptDetail'
 import { usePromptSeo } from '~/composables/usePromptSeo'
+import { usePromptEditorSession } from '~/features/prompt/usePromptEditorSession'
+import { usePromptDetailInteraction } from '~/features/prompt/usePromptDetailInteraction'
+
 definePageMeta({ rightSidebar: false })
 const route = useRoute(),
   router = useRouter(),
@@ -327,8 +182,6 @@ const {
   stale: draftStale,
   refresh: loadDrafts,
 } = usePromptDrafts(query, draftView)
-const publicViewButton = ref<HTMLButtonElement | null>(null)
-let editorTrigger: HTMLElement | null = null
 const items = computed(() => (draftView.value ? (drafts.value?.items ?? []) : prompts.value))
 const total = computed(() => (draftView.value ? (drafts.value?.total ?? null) : publicTotal.value))
 const currentPending = computed(() => (draftView.value ? draftPending.value : pending.value))
@@ -347,85 +200,34 @@ const { selectedId, selectedItem, selectedDraft, detailPending, detailError, rea
   ready,
   draftView,
 )
-const editorOpen = ref(false),
-  editorId = ref<number | null>(null),
-  editorSession = ref(0)
-let activeEditToken: string | null = null
-const navigationIndex = computed(() =>
-  !currentPending.value && !currentStale.value && !currentError.value
-    ? items.value.findIndex((item) => item.id === selectedId.value)
-    : -1,
-)
+const { editorOpen, editorId, editorSession, openEditor, closeEditor, saved } = usePromptEditorSession({
+  isOwner,
+  ready,
+  editToken,
+  draftView,
+  selectedId,
+  refresh,
+  refreshMetadata,
+  loadDrafts,
+  readDetail,
+})
+const { navigationIndex, openDetail, moveDetail, closeDetail } = usePromptDetailInteraction({
+  selectedId,
+  detailPending,
+  items,
+  currentPending,
+  currentStale,
+  currentError,
+  editorOpen,
+})
 const { keyword, submit: submitSearch, startComposition, endComposition, replacePreservingInput } = usePromptSearch()
 const filtered = computed(() => !!query.value.q || !!query.value.model || !!query.value.tag)
-const allTags = ref(false)
-const visibleTags = computed(() => {
-  const tags = allTags.value ? [...(metadata.value?.tags ?? [])] : (metadata.value?.tags ?? []).slice(0, 7)
-  if (query.value.tag && !tags.some((tag) => tag.label === query.value.tag))
-    tags.push({ label: query.value.tag, count: 0 })
-  return tags
-})
 usePromptSeo({ selectedId, selectedItem, selectedDraft, editorOpen, prompts })
 function setView(draft: boolean) {
   void router.push({
     path: '/prompts',
     query: { ...route.query, view: draft ? 'drafts' : undefined, page: undefined, prompt: undefined },
   })
-}
-function openDetail(id: number) {
-  void router.push({ path: '/prompts', query: { ...route.query, prompt: String(id) } })
-}
-function moveDetail(direction: -1 | 1) {
-  if (detailPending.value || navigationIndex.value < 0) return
-  const next = items.value[navigationIndex.value + direction]
-  if (next) void router.replace({ path: '/prompts', query: { ...route.query, prompt: String(next.id) } })
-}
-async function closeDetail() {
-  const previousId = selectedId.value
-  await router.replace({ path: '/prompts', query: { ...route.query, prompt: undefined } })
-  await nextTick()
-  if (selectedId.value !== null || editorOpen.value) return
-  const card = document.querySelector<HTMLElement>(`[data-focus-key="prompt-open-${previousId}"]`)
-  if (card) card.focus({ preventScroll: true })
-  else publicViewButton.value?.focus()
-}
-function openEditor(id: number | null) {
-  if (!isOwner.value) return
-  editorTrigger = document.activeElement instanceof HTMLElement ? document.activeElement : null
-  void router.push({ path: '/prompts', query: { ...route.query, edit: id === null ? 'new' : String(id) } })
-}
-async function restoreEditorFocus() {
-  await nextTick()
-  if (editorOpen.value || selectedId.value !== null) return
-  const active = document.activeElement
-  if (
-    active instanceof HTMLElement &&
-    active !== document.body &&
-    active !== document.documentElement &&
-    active.isConnected &&
-    !active.closest('.prompt-editor, [inert]')
-  )
-    return
-  if (editorTrigger?.isConnected && !editorTrigger.closest('[inert]')) editorTrigger.focus({ preventScroll: true })
-  else publicViewButton.value?.focus()
-}
-async function closeEditor() {
-  // 导航守卫是未保存确认的唯一入口；被取消时URL和编辑器都保持原样。
-  await router.replace({ path: '/prompts', query: { ...route.query, edit: undefined } })
-}
-async function saved(item: ManagedPrompt) {
-  // 状态改变时转到对应列表；关闭编辑器后仍可核对该作品，草稿不会误走公开详情。
-  const nextView = item.status === 'draft' ? 'drafts' : undefined
-  const switchView = draftView.value !== (item.status === 'draft')
-  // 保存后的new→id是同一编辑会话，不重建组件，后续输入归属已确认作品。
-  editorId.value = item.id
-  if (switchView || route.query.edit !== String(item.id))
-    await router.replace({
-      path: '/prompts',
-      query: { ...route.query, edit: String(item.id), view: nextView, page: switchView ? undefined : route.query.page },
-    })
-  await Promise.all([refresh(), refreshMetadata(), !switchView && draftView.value ? loadDrafts() : Promise.resolve()])
-  if (!switchView && selectedId.value === item.id) await readDetail()
 }
 function retry() {
   if (draftView.value) void loadDrafts()
@@ -435,35 +237,10 @@ watch(
   [pageOutOfRange, ready, pageCount],
   () => {
     if (!ready.value || !pageOutOfRange.value) return
-    // 只依据当前查询的成功结果修正页码；失败或旧列表不能把用户带到其它页。
     void replacePreservingInput({
       path: '/prompts',
       query: { ...route.query, page: pageCount.value === 1 ? undefined : String(pageCount.value) },
     })
-  },
-  { immediate: true },
-)
-watch(
-  [isOwner, editToken, ready],
-  () => {
-    const token = editToken.value
-    const sameSession =
-      token && (activeEditToken === token || (activeEditToken === 'new' && token === String(editorId.value)))
-    if (editorOpen.value && sameSession) {
-      activeEditToken = token
-      return
-    }
-    if (!isOwner.value || !ready.value || !token) {
-      const wasOpen = editorOpen.value
-      editorOpen.value = false
-      activeEditToken = null
-      if (wasOpen) void restoreEditorFocus()
-      return
-    }
-    activeEditToken = token
-    editorId.value = token === 'new' ? null : Number(token)
-    editorSession.value++
-    editorOpen.value = true
   },
   { immediate: true },
 )
@@ -488,338 +265,30 @@ onMounted(() => void auth.restore())
   font-size: 0.75rem;
   color: var(--text-main);
   background: var(--surface-2);
-}
-.prompts-intro {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 2rem;
-  padding: 0.2rem 0 1.35rem;
-  border-bottom: 1px solid var(--border);
-}
-.prompts-kicker {
-  font-size: 0.6rem;
-  letter-spacing: 0.18em;
-  color: var(--text-soft);
-  font-weight: 500;
-}
-.prompts-intro__title {
-  font-size: clamp(1.4rem, 2.7vw, 2.25rem);
-  font-weight: 500;
-  letter-spacing: -0.035em;
-  line-height: 1.5;
-  margin: 0.6rem 0;
-  color: var(--text-main);
-}
-.prompts-intro__title span {
-  color: var(--text-soft);
-}
-.prompts-intro__description {
-  color: var(--text-soft);
-  font-size: 0.78rem;
-  line-height: 1.8;
-}
-.prompts-intro__index {
-  display: grid;
-  grid-template-columns: 1fr auto;
-  column-gap: 1rem;
-  min-width: 120px;
-  color: var(--text-soft);
-}
-.prompts-intro__index strong {
-  font-variant-numeric: tabular-nums;
-  font-size: 2.8rem;
-  line-height: 1.2;
-  font-weight: 300;
-  letter-spacing: -0.05em;
-  color: var(--text-main);
-}
-.prompts-intro__label {
-  grid-column: 1 / -1;
-  grid-row: 2;
-  font-size: 0.6rem;
-  padding-top: 0.4rem;
-}
-.prompts-intro__index > :last-child {
-  align-self: center;
-  grid-column: 2;
-  grid-row: 1;
-}
-.prompts-auth {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 0.8rem;
-  margin-top: 1rem;
-  padding: 0.9rem 1rem;
-  border: 1px solid var(--border);
-  border-radius: 0.75rem;
-  color: var(--text-muted);
-  background: var(--surface-2);
-}
-.prompts-auth > div {
-  flex: 1;
-  min-width: 160px;
-}
-.prompts-auth strong {
-  font-size: 0.8rem;
-  font-weight: 500;
-}
-.prompts-auth p {
-  font-size: 0.72rem;
-  margin-top: 0.25rem;
-  color: var(--text-soft);
-}
-.prompts-auth button {
-  min-height: 40px;
-  color: var(--accent-text);
-  font-size: 0.75rem;
-}
-.prompts-toolbar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  flex-wrap: wrap;
-  gap: 1rem;
-  margin: 1rem 0 0.65rem;
-}
-.prompts-views {
-  display: flex;
-  gap: 1.25rem;
-}
-.prompts-views button {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.4rem;
-  min-height: 42px;
-  color: var(--text-soft);
-  font-size: 0.8rem;
-  border-bottom: 2px solid transparent;
-}
-.prompts-views button[aria-pressed='true'] {
-  color: var(--text-main);
-  border-color: var(--accent);
-}
-.prompts-views__count {
-  font-size: 0.6rem;
-  color: var(--text-soft);
-  padding: 0.1rem 0.4rem;
-  border-radius: 0.3rem;
-  background: var(--surface-2);
-}
-.prompts-filters {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 0.75rem 1rem;
-  margin-bottom: 1.5rem;
-}
-.prompts-filters label {
-  display: flex;
-  align-items: center;
-  gap: 0.45rem;
-  color: var(--text-soft);
-}
-.prompts-filters select {
-  max-width: 170px;
-  min-height: 38px;
-  background: transparent;
-  border: 0;
-  color: var(--text-muted);
-  font-size: 0.72rem;
-}
-.prompts-tags {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 0.35rem;
-}
-.prompts-tags button {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.2rem;
-  min-height: 34px;
-  font-size: 0.72rem;
-  padding: 0.35rem 0.7rem;
-  border-radius: 2rem;
-  border: 1px solid transparent;
-  color: var(--text-soft);
-}
-.prompts-tags button[aria-pressed='true'] {
-  color: var(--text-main);
-  background: var(--surface-2);
-  border-color: var(--border);
-}
-.prompts-clear {
-  color: var(--accent-text);
-  font-size: 0.7rem;
-  min-height: 38px;
-  margin-left: auto;
-}
-.prompts-result {
-  display: flex;
-  align-items: center;
-  gap: 0.4rem;
-  font-size: 0.75rem;
-  color: var(--text-soft);
-  margin-bottom: 1rem;
-}
-.prompts-result button {
-  color: var(--accent-text);
-}
-.prompts-selection {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 0.5rem;
-  margin: -0.25rem 0 1.25rem;
-  color: var(--text-muted);
-  font-size: 0.75rem;
-}
-.prompts-selection > span {
-  margin-right: 0.25rem;
-  font-variant-numeric: tabular-nums;
-}
-.prompts-selection button {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.4rem;
-  max-width: 100%;
-  min-height: 36px;
-  padding: 0.3rem 0.6rem;
-  border: 1px solid var(--border);
-  border-radius: 0.5rem;
-  background: var(--surface-2);
-  color: var(--text-main);
-}
-.prompts-selection button span {
-  overflow: hidden;
-  white-space: nowrap;
-  text-overflow: ellipsis;
-}
-.prompts-selection button:hover {
-  border-color: var(--accent);
-}
-.prompts-tags button,
-.prompts-add,
-.prompts-bottom nav button {
   transition:
     background-color 0.16s,
     border-color 0.16s,
     color 0.16s;
 }
-.prompts-tags button:hover,
-.prompts-add:hover,
-.prompts-bottom nav button:not(:disabled):hover {
+.prompts-add:hover {
   background: var(--accent-soft);
   color: var(--accent-text);
-}
-@media (prefers-reduced-motion: reduce) {
-  .prompts-tags button,
-  .prompts-add,
-  .prompts-bottom nav button {
-    transition: none;
-  }
-}
-.prompts-bottom {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 1rem;
-  justify-content: space-between;
-  align-items: center;
-  padding: 1.2rem 0 0.5rem;
-  border-top: 1px solid var(--border);
-}
-.prompts-bottom p {
-  font-size: 0.67rem;
-  color: var(--text-soft);
-}
-.prompts-bottom p span {
-  margin-inline: 0.5rem;
-}
-.prompts-bottom nav {
-  display: flex;
-  gap: 0.75rem;
-  align-items: center;
-  font-size: 0.72rem;
-  color: var(--text-soft);
-}
-.prompts-bottom nav button {
-  width: 40px;
-  height: 40px;
-  display: grid;
-  place-items: center;
-  border: 1px solid var(--border);
-  border-radius: 50%;
-  color: var(--text-main);
 }
 button:disabled {
   opacity: 0.45;
   cursor: default;
 }
-@media (max-width: 1050px) {
-  .prompts-intro__index {
-    min-width: auto;
+@media (prefers-reduced-motion: reduce) {
+  .prompts-add {
+    transition: none;
   }
 }
 @media (max-width: 640px) {
   :deep(.prompts-viewport) {
     padding: 1rem;
   }
-  .prompts-intro {
-    padding-bottom: 0.9rem;
-    gap: 1rem;
-  }
-  .prompts-intro__title {
-    font-size: 1.3rem;
-  }
-  .prompts-intro__title span {
-    display: block;
-  }
-  .prompts-intro__description {
-    max-width: 240px;
-    font-size: 0.72rem;
-  }
-  .prompts-intro__index strong {
-    font-size: 2.2rem;
-  }
-  .prompts-intro__label {
-    width: 80px;
-    font-size: 0.55rem;
-  }
-  .prompts-intro__index > :last-child {
-    display: none;
-  }
-  .prompts-kicker {
-    font-size: 0.5rem;
-  }
-  .prompts-toolbar {
-    gap: 0.75rem;
-  }
-  .prompts-toolbar :deep(.search-box) {
-    width: 100%;
-    max-width: none;
-  }
   .prompts-add {
     padding-inline: 0.65rem;
-  }
-  .prompts-filters {
-    gap: 0.4rem;
-    margin-bottom: 1rem;
-  }
-  .prompts-tags {
-    flex: 1 1 100%;
-    flex-wrap: nowrap;
-    overflow-x: auto;
-    scrollbar-width: thin;
-    padding-block: 0.15rem;
-  }
-  .prompts-tags button {
-    flex-shrink: 0;
-    min-height: 40px;
-  }
-  .prompts-bottom p {
-    line-height: 1.8;
   }
 }
 </style>

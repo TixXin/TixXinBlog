@@ -1,8 +1,10 @@
 /** @file usePromptEditor.ts @description 页内提示词编辑：幂等核查、版本冲突、账号隔离和标签页输入恢复 */
 import { promptId } from '~/features/prompt/query'
-import { parsePromptRecovery, promptForm, promptFormError } from '~/features/prompt/editor'
+import { promptForm, promptFormError } from '~/features/prompt/editor'
+import { usePromptPersistence } from '~/features/prompt/usePromptPersistence'
 import type { PromptRecovery } from '~/features/prompt/editor'
 import type { ManagedPrompt, PromptForm, PromptRequestError, PromptStatus } from '~/features/prompt/types'
+
 export function usePromptEditor(initialId: number | null, onSaved: (item: ManagedPrompt) => void) {
   const repo = usePromptRepository(),
     auth = useCurrentUser()
@@ -24,69 +26,55 @@ export function usePromptEditor(initialId: number | null, onSaved: (item: Manage
   const baseline = ref(JSON.stringify(form)),
     dirty = computed(() => JSON.stringify(form) !== baseline.value)
   const pendingCreate = ref<PromptForm | null>(null)
-  let storageId = initialId
+  const storageId = ref(initialId)
   let actor = '',
     ownedContext = '',
     requestId = '',
     alive = true,
     generation = 0
+
+  const persistence = usePromptPersistence({
+    initialId,
+    form,
+    id,
+    storageId,
+    revision,
+    pendingCreate,
+    recovery,
+    serverVersion,
+    localError,
+    notice,
+    error,
+    ready,
+    saving,
+    dirty,
+    getMeta: () => ({ actor, ownedContext, requestId }),
+    setRequestId: (val) => {
+      requestId = val
+    },
+    t,
+  })
+
   const ownershipLost = computed(() => {
     const currentActor = auth.currentUser.value?.id,
       currentContext = context.value,
       authenticated = auth.isLoggedIn.value
     return !!actor && (!authenticated || currentActor !== actor || currentContext !== ownedContext)
   })
-  const storageKey = () => `blog-prompt-editor:${actor}:${ownedContext}:${storageId ?? 'new'}`
   const owns = (version: number) =>
     alive &&
     version === generation &&
     auth.isLoggedIn.value &&
     auth.currentUser.value?.id === actor &&
     context.value === ownedContext
-  function persist() {
-    if (!import.meta.client || !actor) return !dirty.value && !pendingCreate.value
-    try {
-      if (!dirty.value && !pendingCreate.value) {
-        // 撤回本次修改后移除过期副本；尚未处理的上次输入仍保留供显式恢复。
-        if (recovery.value) sessionStorage.setItem(storageKey(), JSON.stringify(recovery.value))
-        else sessionStorage.removeItem(storageKey())
-        localError.value = ''
-        return true
-      }
-      const value: PromptRecovery = {
-        version: 1,
-        context: ownedContext,
-        id: id.value,
-        revision: revision.value,
-        requestId,
-        form: promptForm(form),
-        pendingCreate: pendingCreate.value,
-        savedAt: new Date().toISOString(),
-      }
-      sessionStorage.setItem(storageKey(), JSON.stringify(value))
-      localError.value = ''
-      return true
-    } catch {
-      localError.value = t('misc.prompt.editorState.persistFailed')
-      return false
-    }
-  }
-  function moveRecoveryToSavedItem(previousKey: string) {
-    // 新建后继续编辑的输入归属真实作品；新键持久化成功之前保留原副本。
-    const persisted = persist()
-    if (!persisted || previousKey === storageKey()) return
-    try {
-      sessionStorage.removeItem(previousKey)
-    } catch {
-      localError.value = t('misc.prompt.editorState.cleanupFailed')
-    }
-  }
+
   function accept(item: ManagedPrompt) {
     id.value = item.id
     revision.value = item.revision
     Object.assign(form, promptForm(item))
     baseline.value = JSON.stringify(form)
   }
+
   async function load() {
     if (requiresReload.value) return
     const version = ++generation
@@ -101,11 +89,7 @@ export function usePromptEditor(initialId: number | null, onSaved: (item: Manage
       actor = currentActor
       ownedContext = context.value
       requestId ||= crypto.randomUUID()
-      try {
-        recovery.value = parsePromptRecovery(sessionStorage.getItem(storageKey()))
-      } catch {
-        localError.value = t('misc.prompt.editorState.recoveryReadFailed')
-      }
+      persistence.readRecovery()
       const item = initialId ? await repo.adminDetail(initialId) : null
       if (!owns(version)) return
       if (item && !dirty.value) accept(item)
@@ -117,6 +101,7 @@ export function usePromptEditor(initialId: number | null, onSaved: (item: Manage
       if (alive && version === generation) loading.value = false
     }
   }
+
   async function save(status: PromptStatus) {
     if (!ready.value || saving.value || loading.value) return
     const validation = promptFormError(form, t)
@@ -147,15 +132,15 @@ export function usePromptEditor(initialId: number | null, onSaved: (item: Manage
       if (!item) {
         if (!id.value) {
           pendingCreate.value = body
-          persist()
+          persistence.persist()
         }
         item = await repo.save(body, requestId, id.value ?? undefined, revision.value ?? undefined)
       }
       if (!owns(version)) return
       const originalMatches = JSON.stringify({ ...promptForm(form), status: body.status }) === JSON.stringify(body)
-      const previousKey = storageKey()
+      const previousKey = persistence.storageKey()
       id.value = item.id
-      storageId = item.id
+      storageId.value = item.id
       revision.value = item.revision
       baseline.value = JSON.stringify(promptForm(item))
       // 网络核查期间或保存期间新增的文字始终留在编辑器，不被较早请求覆盖。
@@ -163,7 +148,7 @@ export function usePromptEditor(initialId: number | null, onSaved: (item: Manage
       pendingCreate.value = null
       serverVersion.value = null
       recovery.value = null
-      moveRecoveryToSavedItem(previousKey)
+      persistence.moveRecoveryToSavedItem(previousKey)
       notice.value = dirty.value
         ? t('misc.prompt.editorState.savedWithPending')
         : item.status === 'published'
@@ -192,57 +177,12 @@ export function usePromptEditor(initialId: number | null, onSaved: (item: Manage
         }
       }
       if (!id.value && pendingCreate.value) error.value += ' ' + t('misc.prompt.editorState.retryWillVerify')
-      persist()
+      persistence.persist()
     } finally {
       if (alive && generation === version) saving.value = false
     }
   }
-  function restoreRecovery() {
-    const value = recovery.value
-    if (
-      !value ||
-      !ready.value ||
-      saving.value ||
-      value.context !== ownedContext ||
-      (initialId !== null && value.id !== initialId)
-    )
-      return
-    if (
-      dirty.value &&
-      JSON.stringify(form) !== JSON.stringify(value.form) &&
-      !window.confirm(t('misc.prompt.editorState.restoreConfirm'))
-    )
-      return
-    const previousKey = storageKey()
-    Object.assign(form, promptForm(value.form))
-    id.value = value.id
-    storageId = value.id
-    revision.value = value.revision
-    requestId = value.requestId
-    pendingCreate.value = value.pendingCreate
-    recovery.value = null
-    serverVersion.value = null
-    error.value = ''
-    notice.value = value.pendingCreate
-      ? t('misc.prompt.editorState.restoredPending')
-      : t('misc.prompt.editorState.restored')
-    moveRecoveryToSavedItem(previousKey)
-  }
-  function discardRecovery() {
-    if (saving.value || !recovery.value) return
-    const previous = recovery.value
-    recovery.value = null
-    // 移除上次副本不能一并丢弃重新打开后写入的当前表单。
-    if (!persist()) {
-      recovery.value = previous
-      localError.value = t('misc.prompt.editorState.discardFailed')
-      return
-    }
-    notice.value =
-      dirty.value || pendingCreate.value
-        ? t('misc.prompt.editorState.discardedKept')
-        : t('misc.prompt.editorState.discarded')
-  }
+
   function merge() {
     if (!serverVersion.value || saving.value || !ready.value) return
     revision.value = serverVersion.value.revision
@@ -250,23 +190,26 @@ export function usePromptEditor(initialId: number | null, onSaved: (item: Manage
     serverVersion.value = null
     error.value = ''
     notice.value = t('misc.prompt.editorState.merged')
-    persist()
+    persistence.persist()
   }
+
   function canClose() {
     if (saving.value) return false
     if (!dirty.value && !pendingCreate.value) return true
-    const preserved = persist()
+    const preserved = persistence.persist()
     return window.confirm(
       preserved ? t('misc.prompt.editorState.closeConfirm') : t('misc.prompt.editorState.closeConfirmUnsaved'),
     )
   }
+
   const unload = (event: BeforeUnloadEvent) => {
     if (dirty.value || saving.value || pendingCreate.value) {
-      persist()
+      persistence.persist()
       event.preventDefault()
       event.returnValue = ''
     }
   }
+
   onMounted(() => {
     void load()
     window.addEventListener('beforeunload', unload)
@@ -281,10 +224,10 @@ export function usePromptEditor(initialId: number | null, onSaved: (item: Manage
     if (previous === 'new' && id.value !== null && next === String(id.value)) return true
     return canClose()
   })
-  watch(form, persist, { deep: true })
+  watch(form, persistence.persist, { deep: true })
   watch([() => auth.currentUser.value?.id, () => auth.isLoggedIn.value, context], () => {
     if (actor && (!auth.isLoggedIn.value || auth.currentUser.value?.id !== actor || context.value !== ownedContext)) {
-      persist()
+      persistence.persist()
       generation++
       ready.value = false
       saving.value = false
@@ -293,11 +236,12 @@ export function usePromptEditor(initialId: number | null, onSaved: (item: Manage
     }
   })
   onScopeDispose(() => {
-    persist()
+    persistence.persist()
     alive = false
     generation++
     if (import.meta.client) window.removeEventListener('beforeunload', unload)
   })
+
   return {
     form,
     id,
@@ -315,10 +259,10 @@ export function usePromptEditor(initialId: number | null, onSaved: (item: Manage
     pendingCreate,
     load,
     save,
-    restoreRecovery,
-    discardRecovery,
+    restoreRecovery: persistence.restoreRecovery,
+    discardRecovery: persistence.discardRecovery,
     merge,
-    persist,
+    persist: persistence.persist,
     canClose,
   }
 }
