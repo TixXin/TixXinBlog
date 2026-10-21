@@ -2,307 +2,46 @@
 import type { ProjectEditable, ProjectPublicationStatus, ManagedProject } from '~/features/project/types'
 import { projectForm, parseProjectRecovery } from '~/features/project/editor'
 import type { ProjectRecovery } from '~/features/project/editor'
-import { editorRecoveryKey, readEditorRecoveries } from '~/utils/editorRecoveryStorage'
-import type { EditorRecoveryCopy } from '~/utils/editorRecoveryStorage'
+import { useAdminRecordEditor } from './useAdminRecordEditor'
+
 export function useAdminProjectEditor(initialId: number | null) {
-  const repo = useProjectRepository(),
-    auth = useCurrentUser(),
-    router = useRouter(),
-    app = useNuxtApp(),
-    // 在 setup 内取翻译函数：失败处理发生在 await 之后仍可使用
-    { t } = useI18n()
-  const context = useState<string>('page-content-context', () => '')
-  const form = reactive(projectForm()),
-    id = ref(initialId),
-    revision = ref<number | null>(null)
-  const saved = ref<ManagedProject | null>(null),
-    serverVersion = ref<ManagedProject | null>(null),
-    recovery = ref<ProjectRecovery | null>(null)
-  const previousRecoveries = ref<EditorRecoveryCopy<ProjectRecovery>[]>([])
-  let currentRecoveryKey = ''
-  const ready = ref(false),
-    loading = ref(false),
-    saving = ref(false),
-    error = ref(''),
-    notice = ref(''),
-    localError = ref('')
-  const baseline = ref(JSON.stringify(form)),
-    dirty = computed(() => JSON.stringify(form) !== baseline.value)
-  const pendingCreate = ref<ProjectEditable | null>(null)
-  let actor = '',
-    requestId = '',
-    ownedContext = '',
-    generation = 0,
-    alive = true
-  const storagePrefix = () => `blog-project-editor:${actor}:${initialId ?? 'new'}`
-  const storageKey = () => editorRecoveryKey(storagePrefix(), ownedContext)
-  const owns = (user: string | undefined, version: number) =>
-    alive && generation === version && auth.currentUser.value?.id === user && ownedContext === context.value
-  function persistLocal() {
-    if (!import.meta.client || !actor || (!dirty.value && !pendingCreate.value)) return
-    try {
-      const value: ProjectRecovery = {
-        version: 1,
-        context: ownedContext,
-        id: id.value,
-        revision: revision.value,
-        requestId,
-        form: projectForm(form),
-        pendingCreate: pendingCreate.value,
-        savedAt: new Date().toISOString(),
-      }
-      sessionStorage.setItem(storageKey(), JSON.stringify(value))
-      localError.value = ''
-    } catch {
-      localError.value = t('admin-media.projectEditor.localSaveFailed')
-    }
-  }
-  function accept(project: ManagedProject) {
-    saved.value = project
-    id.value = project.id
-    revision.value = project.revision
-    Object.assign(form, projectForm(project))
-    baseline.value = JSON.stringify(form)
-    serverVersion.value = null
-  }
-  async function load(replace = false) {
-    const version = ++generation
-    loading.value = true
-    error.value = ''
-    try {
-      if (!(await auth.restore())) throw new Error(t('admin-media.projectEditor.loginRequired'))
-      const user = auth.currentUser.value!.id
-      if (!alive || version !== generation) return
-      actor ||= user
-      ownedContext ||= context.value
-      requestId ||= crypto.randomUUID()
-      if (ownedContext !== context.value) throw new Error(t('admin-media.projectEditor.contextChangedLoad'))
-      // 新库可能已没有同编号记录；先保留只读副本入口，再读取服务器详情。
-      try {
-        const copies = readEditorRecoveries(sessionStorage, storagePrefix(), ownedContext, parseProjectRecovery)
-        recovery.value = copies.current?.value ?? null
-        currentRecoveryKey = copies.current?.key ?? storageKey()
-        previousRecoveries.value = copies.previous
-        if (copies.migrationIssue) localError.value = t('admin-media.projectEditor.migrationPending')
-      } catch {
-        localError.value = t('admin-media.projectEditor.recoveryReadFailed')
-      }
-      if (replace || (!dirty.value && !saved.value)) {
-        const project = id.value ? await repo.adminDetail(id.value) : null
-        if (!owns(user, version)) return
-        if (project) accept(project)
-      }
-      if (!owns(user, version)) return
-      ready.value = true
-    } catch (cause) {
-      if (alive && version === generation)
-        error.value = cause instanceof Error ? cause.message : t('admin-media.projectEditor.loadFailed')
-    } finally {
-      if (alive && version === generation) loading.value = false
-    }
-  }
-  function change(value: Partial<ProjectEditable>) {
-    if (!ready.value) return
-    Object.assign(form, value)
-    error.value = ''
-    notice.value = ''
-  }
-  async function save(status: ProjectPublicationStatus) {
-    if (!ready.value || saving.value || loading.value || !form.title.trim()) return
-    const user = auth.currentUser.value?.id,
-      version = generation,
-      capture = JSON.stringify(form)
-    const recoveringMatches =
-      !pendingCreate.value ||
-      JSON.stringify({ ...projectForm(form), status: pendingCreate.value.status }) ===
-        JSON.stringify(pendingCreate.value)
-    if (!user || user !== actor || ownedContext !== context.value) {
-      ready.value = false
-      error.value = t('admin-media.projectEditor.contextChanged')
-      return
-    }
-    saving.value = true
-    error.value = ''
-    notice.value = ''
-    let redirect: string | undefined
-    try {
-      let project: ManagedProject | null = null
-      if (!id.value && pendingCreate.value) {
-        try {
-          const known = await repo.submission(requestId)
-          if (!owns(user, version)) return
-          if (known.state === 'deleted') throw new Error(t('admin-media.projectEditor.submissionDeleted'))
-          project = known.item
-        } catch (cause) {
-          if ((cause as { statusCode?: number }).statusCode !== 404) throw cause
-        }
-      }
-      if (!project) {
-        const body = !id.value && pendingCreate.value ? pendingCreate.value : { ...projectForm(form), status }
-        if (!id.value) pendingCreate.value = body
-        persistLocal()
-        project = await repo.save(body, requestId, id.value ?? undefined, revision.value ?? undefined)
-      }
-      if (!owns(user, version)) return
-      const wasNew = id.value === null
-      saved.value = project
-      id.value = project.id
-      revision.value = project.revision
-      pendingCreate.value = null
-      serverVersion.value = null
-      baseline.value = JSON.stringify(projectForm(project))
-      if (JSON.stringify(form) === capture && recoveringMatches) Object.assign(form, projectForm(project))
-      notice.value = dirty.value
-        ? t('admin-media.projectEditor.savedWithChanges')
-        : t('admin-media.projectEditor.saved')
-      if (!dirty.value) {
-        sessionStorage.removeItem(storageKey())
-        recovery.value = null
-      } else persistLocal()
-      void app.runWithContext(() => refreshNuxtData(['projects-feed', 'projects-metadata']))
-      if (wasNew && !dirty.value) redirect = `/admin/projects/${project.id}`
-    } catch (cause) {
-      if (!owns(user, version)) return
-      error.value = cause instanceof Error ? cause.message : t('admin-media.projectEditor.saveFailed')
-      const statusCode = (cause as { statusCode?: number }).statusCode
-      if (statusCode === 400) pendingCreate.value = null
-      if (statusCode === 409 && id.value) {
-        try {
-          const latest = await repo.adminDetail(id.value)
-          if (owns(user, version)) serverVersion.value = latest
-        } catch {
-          /* 保留原错误和输入。 */
-        }
-      }
-      if (!id.value && pendingCreate.value) error.value += t('admin-media.projectEditor.pendingCreateSuffix')
-      persistLocal()
-    } finally {
-      if (alive && generation === version) saving.value = false
-    }
-    if (redirect && owns(user, version)) await router.replace(redirect)
-  }
-  async function reload() {
-    if (saving.value || (dirty.value && !window.confirm(t('admin-media.projectEditor.reloadConfirm')))) return
-    persistLocal()
-    await load(true)
-  }
-  function restoreRecovery() {
-    const value = recovery.value
-    if (!value || saving.value || !ready.value) return
-    if (value.context !== ownedContext || (initialId !== null && value.id !== initialId)) {
-      error.value = t('admin-media.projectEditor.recoveryMismatch')
-      return
-    }
-    Object.assign(form, value.form)
-    id.value = value.id
-    revision.value = value.revision
-    requestId = value.requestId
-    pendingCreate.value = value.pendingCreate
-    recovery.value = null
-    notice.value = t('admin-media.projectEditor.restored')
-  }
-  function discardRecovery() {
-    try {
-      sessionStorage.removeItem(currentRecoveryKey || storageKey())
-      recovery.value = null
-    } catch {
-      localError.value = t('admin-media.projectEditor.discardFailed')
-    }
-  }
-  function mergeConflict() {
-    const latest = serverVersion.value
-    if (!latest || saving.value || !ready.value || latest.id !== id.value) return
-    revision.value = latest.revision
-    saved.value = latest
-    baseline.value = JSON.stringify(projectForm(latest))
-    serverVersion.value = null
-    notice.value = t('admin-media.projectEditor.merged')
-    error.value = ''
-    persistLocal()
-  }
-  const unload = (event: BeforeUnloadEvent) => {
-    if (dirty.value || saving.value || pendingCreate.value) {
-      persistLocal()
-      event.preventDefault()
-      event.returnValue = ''
-    }
-  }
-  onMounted(() => {
-    void load()
-    window.addEventListener('beforeunload', unload)
-  })
-  onBeforeRouteLeave(() => {
-    if (saving.value) return false
-    if (!dirty.value && !pendingCreate.value) return true
-    persistLocal()
-    return window.confirm(t('admin-media.projectEditor.leaveConfirm'))
-  })
-  watch(form, persistLocal, { deep: true })
-  watch(
-    () => auth.currentUser.value?.id,
-    (next) => {
-      if (actor && next !== actor) {
-        persistLocal()
-        generation++
-        ready.value = false
-        saving.value = false
-        loading.value = false
-        if (next) {
-          actor = next
-          requestId = ''
-          ownedContext = context.value
-          id.value = initialId
-          revision.value = null
-          saved.value = null
-          serverVersion.value = null
-          recovery.value = null
-          previousRecoveries.value = []
-          currentRecoveryKey = ''
-          pendingCreate.value = null
-          Object.assign(form, projectForm())
-          baseline.value = JSON.stringify(form)
-          void load()
-        }
-      } else if (next && !ready.value && !loading.value) void load()
+  const repo = useProjectRepository()
+  return useAdminRecordEditor<ProjectEditable, ManagedProject, ProjectPublicationStatus, ProjectRecovery>({
+    initialId,
+    storagePrefix: 'blog-project-editor',
+    recoveryVersion: 1,
+    parseRecovery: parseProjectRecovery,
+    createDefaultForm: () => projectForm(),
+    entityToForm: (entity) => projectForm(entity),
+    cloneForm: (form) => projectForm(form),
+    canSave: (form) => Boolean(form.title.trim()),
+    repo: {
+      adminDetail: (id) => repo.adminDetail(id),
+      submission: (requestId) => repo.submission(requestId),
+      save: (body, requestId, id, revision) => repo.save(body, requestId, id, revision),
     },
-  )
-  watch(context, () => {
-    if (actor && context.value !== ownedContext) {
-      persistLocal()
-      generation++
-      ready.value = false
-      saving.value = false
-      loading.value = false
-      error.value = t('admin-media.projectEditor.contextRestored')
-    }
+    refreshKeys: ['projects-feed', 'projects-metadata'],
+    redirectPath: (project) => `/admin/projects/${project.id}`,
+    messages: {
+      loginRequired: 'admin-media.projectEditor.loginRequired',
+      contextChangedOnLoad: 'admin-media.projectEditor.contextChangedLoad',
+      migrationIssue: 'admin-media.projectEditor.migrationPending',
+      recoveryUnreadable: 'admin-media.projectEditor.recoveryReadFailed',
+      loadFailed: 'admin-media.projectEditor.loadFailed',
+      persistFailed: 'admin-media.projectEditor.localSaveFailed',
+      contextChanged: 'admin-media.projectEditor.contextChanged',
+      submissionDeleted: 'admin-media.projectEditor.submissionDeleted',
+      saved: 'admin-media.projectEditor.saved',
+      savedDirty: 'admin-media.projectEditor.savedWithChanges',
+      saveFailed: 'admin-media.projectEditor.saveFailed',
+      pendingHint: 'admin-media.projectEditor.pendingCreateSuffix',
+      reloadConfirm: 'admin-media.projectEditor.reloadConfirm',
+      recoveryMismatch: 'admin-media.projectEditor.recoveryMismatch',
+      restored: 'admin-media.projectEditor.restored',
+      discardFailed: 'admin-media.projectEditor.discardFailed',
+      merged: 'admin-media.projectEditor.merged',
+      leaveConfirm: 'admin-media.projectEditor.leaveConfirm',
+      contextSwitched: 'admin-media.projectEditor.contextRestored',
+    },
   })
-  onScopeDispose(() => {
-    persistLocal()
-    alive = false
-    generation++
-    if (import.meta.client) window.removeEventListener('beforeunload', unload)
-  })
-  return {
-    form,
-    id,
-    saved,
-    serverVersion,
-    recovery,
-    previousRecoveries,
-    ready,
-    loading,
-    saving,
-    error,
-    notice,
-    localError,
-    dirty,
-    pendingCreate,
-    change,
-    save,
-    reload,
-    restoreRecovery,
-    discardRecovery,
-    persistLocal,
-    mergeConflict,
-  }
 }
