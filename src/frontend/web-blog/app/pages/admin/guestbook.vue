@@ -1,4 +1,9 @@
-<!-- @file guestbook.vue @description 博主留言管理：筛选、回复、审核、置顶和删除（含当前页批量公开、隐藏与删除），复用真实发送与输入恢复 -->
+<!--
+  @file guestbook.vue
+  @description 博主留言管理：筛选、回复、审核、置顶和删除（含当前页批量公开、隐藏与删除），复用真实发送与输入恢复
+  @author TixXin
+  @since 2026-10-21
+-->
 <template>
   <section class="admin-guestbook">
     <header class="admin-page-header">
@@ -50,82 +55,33 @@
           @clear="selection.clear"
         />
         <ul class="admin-guestbook__list">
-          <li
+          <AdminGuestbookItem
             v-for="note in items"
             :key="note.id"
-            :data-admin-guestbook-id="note.id"
-            :class="{ 'is-selected': selection.isSelected(note.id) }"
-          >
-            <label class="admin-guestbook__select"
-              ><input
-                type="checkbox"
-                :checked="selection.isSelected(note.id)"
-                :disabled="pending || busy.includes(note.id)"
-                :aria-label="
-                  $t('admin-media.guestbook.selectLabel', { author: note.author, content: note.content.slice(0, 40) })
-                "
-                @change="selection.toggle(note.id, ($event.target as HTMLInputElement).checked)"
-            /></label>
-            <p>
-              <strong>{{ note.author }}</strong
-              >{{ note.isOwner ? $t('admin-media.guestbook.ownerSuffix') : '' }} ·
-              {{ $t(`admin-media.guestbook.status.${note.moderationStatus}`)
-              }}{{ note.isPinned ? $t('admin-media.guestbook.pinnedSuffix') : '' }} ·
-              {{ $t('admin-media.guestbook.utcTime', { time: note.createdAt.slice(0, 16).replace('T', ' ') }) }}
-              <span v-if="note.browser || note.region" class="admin-guestbook__client"
-                >· {{ [note.browser, note.region].filter(Boolean).join(' · ') }}</span
-              >
-            </p>
-            <p class="admin-guestbook__content">{{ note.content }}</p>
-            <p v-if="note.replyTo">
-              {{ $t('admin-media.guestbook.quote', { author: note.replyTo.author, content: note.replyTo.content }) }}
-            </p>
-            <div class="admin-guestbook__actions">
-              <button type="button" @click="show(note.id)">{{ $t('admin-media.guestbook.view') }}</button>
-              <button type="button" :disabled="note.moderationStatus !== 'published'" @click="reply(note)">
-                {{ $t('admin-media.guestbook.reply') }}
-              </button>
-              <button
-                v-if="note.moderationStatus !== 'published'"
-                type="button"
-                :disabled="pending || busy.includes(note.id)"
-                @click="change(note, { status: 'published' })"
-              >
-                {{ $t('admin-media.guestbook.publish') }}
-              </button>
-              <button
-                v-if="note.moderationStatus !== 'hidden'"
-                type="button"
-                :disabled="pending || busy.includes(note.id)"
-                @click="change(note, { status: 'hidden' })"
-              >
-                {{ $t('admin-media.guestbook.hide') }}
-              </button>
-              <button
-                type="button"
-                :disabled="pending || busy.includes(note.id) || note.moderationStatus !== 'published'"
-                @click="change(note, { isPinned: !note.isPinned })"
-              >
-                {{ note.isPinned ? $t('admin-media.guestbook.unpin') : $t('admin-media.guestbook.pin') }}
-              </button>
-              <button type="button" :disabled="pending || busy.includes(note.id)" @click="change(note, {}, true)">
-                {{ $t('admin-media.guestbook.remove') }}
-              </button>
-            </div>
-          </li>
+            :note="note"
+            :selected="selection.isSelected(note.id)"
+            :disabled="pending || busy.includes(note.id)"
+            @toggle-select="selection.toggle(note.id, $event)"
+            @view="show"
+            @reply="reply"
+            @change="change"
+            @remove="(n) => change(n, {}, true)"
+          />
         </ul>
-        <nav
+        <AdminModerationPagination
           v-if="total > 20"
           class="admin-guestbook__actions admin-guestbook__pagination"
           :aria-label="$t('admin-media.guestbook.pagination')"
-        >
-          <button type="button" :disabled="pending || page <= 1" @click="setPage(page - 1)">
-            {{ $t('admin-media.guestbook.prev') }}</button
-          ><span>{{ $t('admin-media.guestbook.pageInfo', { page, pages: Math.ceil(total / 20), total }, total) }}</span
-          ><button type="button" :disabled="pending || page * 20 >= total" @click="setPage(page + 1)">
-            {{ $t('admin-media.guestbook.next') }}
-          </button>
-        </nav>
+          :page="page"
+          :total="total"
+          :page-size="20"
+          :disabled="pending"
+          :prev-label="$t('admin-media.guestbook.prev')"
+          :next-label="$t('admin-media.guestbook.next')"
+          :summary="$t('admin-media.guestbook.pageInfo', { page, pages: Math.ceil(total / 20), total }, total)"
+          @prev="setPage(page - 1)"
+          @next="setPage(page + 1)"
+        />
         <section
           v-if="selected || detailPending || detailError"
           ref="detailPanel"
@@ -299,35 +255,11 @@ onBeforeRouteLeave(() => {
   display: grid;
   gap: 1rem;
 }
-.admin-guestbook__list > li,
 .admin-guestbook__detail {
   padding: 1rem;
   border: 1px solid var(--border);
   border-radius: 0.75rem;
   min-width: 0;
-}
-.admin-guestbook__list > li {
-  position: relative;
-  padding-left: 3rem;
-}
-.admin-guestbook__list > li.is-selected {
-  border-color: var(--accent);
-}
-.admin-guestbook .admin-guestbook__select {
-  position: absolute;
-  top: 0.75rem;
-  left: 0.5rem;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-width: 44px;
-  min-height: 44px;
-}
-.admin-guestbook .admin-guestbook__select input {
-  width: 1.1rem;
-  height: 1.1rem;
-  min-height: 0;
-  padding: 0;
 }
 .admin-guestbook__content {
   white-space: pre-wrap;

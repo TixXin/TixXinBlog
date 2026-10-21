@@ -1,4 +1,9 @@
-<!-- @file moment-comments.vue @description 跨动态审核评论，复用现有审核冲突保护和删除接口。 -->
+<!--
+  @file moment-comments.vue
+  @description 跨动态审核评论，复用现有审核冲突保护和删除接口
+  @author TixXin
+  @since 2026-10-21
+-->
 <template>
   <section class="moment-comments">
     <header class="admin-page-header">
@@ -29,18 +34,25 @@
     <template v-if="data">
       <p v-if="!pending && !error && !data.items.length">{{ t('admin-content.momentComments.empty') }}</p>
       <ul class="moment-comments__list">
-        <li v-for="item in data.items" :key="item.id">
-          <p>
-            <strong>{{ item.author }}</strong
-            >{{ item.isOwner ? ` · ${t('admin-content.momentComments.owner')}` : '' }} ·
-            {{ labels[item.moderationStatus] }} · {{ item.time.slice(0, 16).replace('T', ' ') }} UTC
-          </p>
-          <p>{{ item.content }}</p>
-          <blockquote>
-            <NuxtLink :to="'/admin/moments/' + encodeURIComponent(item.momentId)">{{ item.momentContent }}</NuxtLink> ·
-            {{ momentLabels[item.momentStatus] }}
-          </blockquote>
-          <div class="moment-comments__actions">
+        <AdminModerationItem v-for="item in data.items" :key="item.id" actions-class="moment-comments__actions">
+          <template #meta>
+            <p>
+              <strong>{{ item.author }}</strong
+              >{{ item.isOwner ? ` · ${t('admin-content.momentComments.owner')}` : '' }} ·
+              {{ labels[item.moderationStatus] }} · {{ item.time.slice(0, 16).replace('T', ' ') }} UTC
+            </p>
+          </template>
+          <template #content>
+            <p>{{ item.content }}</p>
+          </template>
+          <template #extra>
+            <blockquote>
+              <NuxtLink :to="'/admin/moments/' + encodeURIComponent(item.momentId)">{{ item.momentContent }}</NuxtLink>
+              ·
+              {{ momentLabels[item.momentStatus] }}
+            </blockquote>
+          </template>
+          <template #actions>
             <button
               v-if="item.moderationStatus !== 'published'"
               type="button"
@@ -60,28 +72,29 @@
             <button type="button" :disabled="pending || stale || busy" @click="change(item, 'delete')">
               {{ t('admin-content.momentComments.remove') }}
             </button>
-          </div>
-        </li>
+          </template>
+        </AdminModerationItem>
       </ul>
-      <nav
+      <AdminModerationPagination
         v-if="data.total > 20 || page > 1"
         class="moment-comments__actions"
         :aria-label="t('admin-content.momentComments.pagination')"
-      >
-        <button type="button" :disabled="pending || busy || page <= 1" @click="setPage(page - 1)">
-          {{ t('admin-content.momentComments.previous') }}
-        </button>
-        <span>{{
+        :page="page"
+        :total="data.total"
+        :page-size="20"
+        :disabled="pending || busy"
+        :prev-label="t('admin-content.momentComments.previous')"
+        :next-label="t('admin-content.momentComments.next')"
+        :summary="
           t('admin-content.momentComments.pageSummary', {
             page,
             pages: Math.max(1, Math.ceil(data.total / 20)),
             total: data.total,
           })
-        }}</span>
-        <button type="button" :disabled="pending || busy || page * 20 >= data.total" @click="setPage(page + 1)">
-          {{ t('admin-content.momentComments.next') }}
-        </button>
-      </nav>
+        "
+        @prev="setPage(page - 1)"
+        @next="setPage(page + 1)"
+      />
     </template>
   </section>
 </template>
@@ -141,12 +154,11 @@ async function load() {
     if (alive && current === version) pending.value = false
   }
 }
-function setPage(value: number) {
-  return router.replace({
+const setPage = (value: number) =>
+  router.replace({
     path: '/admin/moment-comments',
     query: { ...route.query, page: value > 1 ? String(value) : undefined },
   })
-}
 async function change(item: ManagedMomentComment, action: 'published' | 'hidden' | 'delete') {
   if (busy.value || pending.value || stale.value) return
   if (action === 'delete' && !window.confirm(t('admin-content.momentComments.deleteConfirm'))) return
@@ -226,12 +238,15 @@ a:not(.admin-btn) {
   color: var(--accent);
   overflow-wrap: anywhere;
 }
+:deep(.moment-comments__actions),
 .moment-comments__actions {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   gap: 0.6rem;
 }
+:deep(.moment-comments__actions a),
+:deep(.moment-comments__actions button),
 .moment-comments__actions a,
 button {
   min-width: 0;

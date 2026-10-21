@@ -1,4 +1,9 @@
-<!-- @file flash-comments.vue @description 跨闪念审核评论：按状态筛选、单条通过/隐藏/删除与当前页批量操作，以提交时状态做冲突保护 -->
+<!--
+  @file flash-comments.vue
+  @description 跨闪念审核评论：按状态筛选、单条通过/隐藏/删除与当前页批量操作，以提交时状态做冲突保护
+  @author TixXin
+  @since 2026-10-21
+-->
 <template>
   <section class="flash-comments">
     <header class="admin-page-header">
@@ -48,75 +53,38 @@
         @clear="selection.clear"
       />
       <ul>
-        <li
+        <AdminFlashCommentItem
           v-for="item in data.items"
           :key="item.id"
-          :data-flash-comment-id="item.id"
-          :class="{ 'is-selected': selection.isSelected(item.id) }"
-        >
-          <label class="flash-comments__select"
-            ><input
-              type="checkbox"
-              :checked="selection.isSelected(item.id)"
-              :disabled="pending || stale || busy"
-              :aria-label="
-                t('admin-content.flashComments.select', { author: item.authorName, excerpt: item.content.slice(0, 40) })
-              "
-              @change="selection.toggle(item.id, ($event.target as HTMLInputElement).checked)"
-          /></label>
-          <p>
-            <strong>{{ item.authorName }}</strong> · {{ labels[item.moderationStatus] }} ·
-            {{ item.createdAt.slice(0, 16).replace('T', ' ') }} UTC
-          </p>
-          <p>{{ item.content }}</p>
-          <blockquote>
-            <NuxtLink :to="{ path: '/admin/flashes', query: { comments: item.flashId, commentId: item.id } }">{{
-              item.flashContent
-            }}</NuxtLink>
-            · {{ flashLabels[item.flashStatus] }}
-          </blockquote>
-          <div class="flash-comments__actions">
-            <button
-              v-if="item.moderationStatus !== 'published'"
-              type="button"
-              :disabled="pending || stale || busy"
-              @click="change(item, 'published')"
-            >
-              {{ t('admin-content.flashComments.approve') }}
-            </button>
-            <button
-              v-if="item.moderationStatus !== 'hidden'"
-              type="button"
-              :disabled="pending || stale || busy"
-              @click="change(item, 'hidden')"
-            >
-              {{ t('admin-content.flashComments.hide') }}
-            </button>
-            <button type="button" :disabled="pending || stale || busy" @click="change(item, 'delete')">
-              {{ t('admin-content.flashComments.remove') }}
-            </button>
-          </div>
-        </li>
+          :item="item"
+          :selected="selection.isSelected(item.id)"
+          :disabled="pending || stale || busy"
+          :labels="labels"
+          :flash-labels="flashLabels"
+          @toggle-select="selection.toggle(item.id, $event)"
+          @change="change"
+        />
       </ul>
-      <nav
+      <AdminModerationPagination
         v-if="data.total > PAGE_SIZE || page > 1"
         class="flash-comments__actions"
         :aria-label="t('admin-content.flashComments.pagination')"
-      >
-        <button type="button" :disabled="pending || busy || page <= 1" @click="setPage(page - 1)">
-          {{ t('admin-content.flashComments.previous') }}
-        </button>
-        <span>{{
+        :page="page"
+        :total="data.total"
+        :page-size="PAGE_SIZE"
+        :disabled="pending || busy"
+        :prev-label="t('admin-content.flashComments.previous')"
+        :next-label="t('admin-content.flashComments.next')"
+        :summary="
           t('admin-content.flashComments.pageSummary', {
             page,
             pages: Math.max(1, Math.ceil(data.total / PAGE_SIZE)),
             total: data.total,
           })
-        }}</span>
-        <button type="button" :disabled="pending || busy || page * PAGE_SIZE >= data.total" @click="setPage(page + 1)">
-          {{ t('admin-content.flashComments.next') }}
-        </button>
-      </nav>
+        "
+        @prev="setPage(page - 1)"
+        @next="setPage(page + 1)"
+      />
     </template>
   </section>
 </template>
@@ -196,12 +164,11 @@ async function load() {
     if (alive && current === version) pending.value = false
   }
 }
-function setPage(value: number) {
-  return router.replace({
+const setPage = (value: number) =>
+  router.replace({
     path: '/admin/flash-comments',
     query: { ...route.query, page: value > 1 ? String(value) : undefined },
   })
-}
 async function change(item: ManagedFlashComment, action: 'published' | 'hidden' | 'delete') {
   if (busy.value || pending.value || stale.value) return
   if (action === 'delete' && !window.confirm(t('admin-content.flashComments.deleteConfirm'))) return
@@ -230,7 +197,6 @@ async function change(item: ManagedFlashComment, action: 'published' | 'hidden' 
     if (alive) busy.value = false
   }
 }
-/** 批量通过、隐藏或删除当前页选中的评论；以选中时看到的状态校验，跳过已变化或已删除的项并提示刷新核对 */
 async function batch(action: 'published' | 'hidden' | 'delete') {
   const selected = selection.selectedItems.value
   if (!selected.length || busy.value || pending.value || stale.value) return
@@ -261,10 +227,8 @@ async function batch(action: 'published' | 'hidden' | 'delete') {
             : 'admin-content.flashComments.batch.hidden',
       ),
       (count: number) => t('admin-content.flashComments.batch.noun', count),
-      // 在 await 之后调用，显式传入翻译函数，不依赖当时的组件上下文
       t,
     )
-    // 列表重新读取会清空错误提示，因此在刷新之后再展示跳过项。
     if (result.failedCount) error.value = message
     else toast.success(message)
   } catch (cause) {
@@ -281,9 +245,7 @@ async function batch(action: 'published' | 'hidden' | 'delete') {
 }
 watch(
   () => route.fullPath,
-  () => {
-    if (route.path === '/admin/flash-comments' && auth.isLoggedIn.value) void load()
-  },
+  () => route.path === '/admin/flash-comments' && auth.isLoggedIn.value && void load(),
 )
 watch(
   () => auth.currentUser.value?.id,
@@ -305,46 +267,9 @@ onBeforeUnmount(() => {
 .flash-comments {
   min-width: 0;
 }
-p,
-blockquote {
-  margin: 0.75rem 0;
-  white-space: pre-wrap;
-  overflow-wrap: anywhere;
-}
-blockquote {
-  color: var(--text-muted);
-}
 ul {
   list-style: none;
   padding: 0;
-}
-li {
-  position: relative;
-  padding: 1rem 1rem 1rem 3rem;
-  margin: 1rem 0;
-  border: 1px solid var(--border);
-  border-radius: 0.75rem;
-}
-li.is-selected {
-  border-color: var(--accent);
-}
-.flash-comments__select {
-  position: absolute;
-  top: 0.75rem;
-  left: 0.5rem;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-width: 44px;
-  min-height: 44px;
-}
-.flash-comments__select input {
-  width: 1.1rem;
-  height: 1.1rem;
-}
-a:not(.admin-btn) {
-  color: var(--accent);
-  overflow-wrap: anywhere;
 }
 .flash-comments__actions {
   display: flex;
