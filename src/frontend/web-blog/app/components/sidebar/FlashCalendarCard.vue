@@ -90,6 +90,15 @@
 </template>
 
 <script setup lang="ts">
+import {
+  type CalendarDay,
+  buildNoteDateMap,
+  buildCalendarDays,
+  calculateMonthNoteCount,
+  calculateFlashStreak,
+} from '~/features/flash/calendar'
+import { useFlashCalendarNav } from '~/features/flash/useFlashCalendarNav'
+
 const props = defineProps<{
   /** 有闪念的 UTC 日期与条数（来自闪念概览），可覆盖任意历史月份 */
   dates: { date: string; count: number }[]
@@ -112,129 +121,19 @@ function dayLabel(dateStr: string) {
   return formatDate(Date.UTC(year, month - 1, day), { timeZone: 'UTC', year: 'numeric', month: 'long', day: 'numeric' })
 }
 
-// 闪念日期按 createdAt 的 UTC 日期分组，日历的“今天”、月份与星期也统一用 UTC，与动态日历一致
-const viewYear = ref(new Date().getUTCFullYear())
-const viewMonth = ref(new Date().getUTCMonth())
-
-// 与动态日历一致：切换侧栏或抽屉后，从共享筛选恢复已选日期所在月份。
-watch(
-  () => props.selectedDate,
-  (value) => {
-    if (!value) return
-    const date = new Date(`${value}T12:00:00Z`)
-    if (Number.isNaN(date.getTime()) || date.toISOString().slice(0, 10) !== value) return
-    viewYear.value = date.getUTCFullYear()
-    viewMonth.value = date.getUTCMonth()
-  },
-  { immediate: true },
+const { viewYear, viewMonth, monthLabel, isCurrentMonth, prevMonth, nextMonth, goToday } = useFlashCalendarNav(
+  toRef(props, 'selectedDate'),
 )
 
-const monthLabel = computed(() =>
-  formatDate(Date.UTC(viewYear.value, viewMonth.value, 1), { timeZone: 'UTC', year: 'numeric', month: 'short' }),
+const noteDateMap = computed(() => buildNoteDateMap(props.dates))
+
+const calendarDays = computed<(CalendarDay | null)[]>(() =>
+  buildCalendarDays(viewYear.value, viewMonth.value, noteDateMap.value),
 )
 
-const isCurrentMonth = computed(() => {
-  const now = new Date()
-  return viewYear.value === now.getUTCFullYear() && viewMonth.value === now.getUTCMonth()
-})
+const monthNoteCount = computed(() => calculateMonthNoteCount(props.dates, viewYear.value, viewMonth.value))
 
-function prevMonth() {
-  if (viewMonth.value === 0) {
-    viewMonth.value = 11
-    viewYear.value--
-  } else {
-    viewMonth.value--
-  }
-}
-
-function nextMonth() {
-  if (isCurrentMonth.value) return
-  if (viewMonth.value === 11) {
-    viewMonth.value = 0
-    viewYear.value++
-  } else {
-    viewMonth.value++
-  }
-}
-
-function goToday() {
-  const now = new Date()
-  viewYear.value = now.getUTCFullYear()
-  viewMonth.value = now.getUTCMonth()
-}
-
-interface CalendarDay {
-  num: number
-  dateStr: string
-  isToday: boolean
-  hasNote: boolean
-  isFuture: boolean
-  noteCount: number
-}
-
-const noteDateMap = computed(() => {
-  const map = new Map<string, number>()
-  props.dates.forEach(({ date, count }) => {
-    const key = date.slice(0, 10)
-    map.set(key, (map.get(key) || 0) + count)
-  })
-  return map
-})
-
-const calendarDays = computed<(CalendarDay | null)[]>(() => {
-  const y = viewYear.value
-  const m = viewMonth.value
-  const firstDay = new Date(Date.UTC(y, m, 1))
-  const daysInMonth = new Date(Date.UTC(y, m + 1, 0)).getUTCDate()
-
-  const startOffset = (firstDay.getUTCDay() + 6) % 7
-  const todayStr = new Date().toISOString().slice(0, 10)
-
-  const result: (CalendarDay | null)[] = []
-  for (let i = 0; i < startOffset; i++) result.push(null)
-
-  for (let d = 1; d <= daysInMonth; d++) {
-    const dateStr = `${y}-${String(m + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`
-    const isFuture = dateStr > todayStr
-    const noteCount = noteDateMap.value.get(dateStr) || 0
-    result.push({
-      num: d,
-      dateStr,
-      isToday: dateStr === todayStr,
-      hasNote: noteCount > 0,
-      isFuture,
-      noteCount,
-    })
-  }
-
-  return result
-})
-
-const monthNoteCount = computed(() => {
-  const prefix = `${viewYear.value}-${String(viewMonth.value + 1).padStart(2, '0')}`
-  return props.dates.reduce((sum, { date, count }) => (date.startsWith(prefix) ? sum + count : sum), 0)
-})
-
-const streak = computed(() => {
-  const sortedDates = [...noteDateMap.value.keys()].sort().reverse()
-  if (sortedDates.length === 0) return 0
-  // 全程 UTC：本地 setHours 与 toISOString 混用会在东八区等时区错位一天
-  const today = new Date()
-  today.setUTCHours(0, 0, 0, 0)
-
-  let count = 0
-  const startDate = new Date(`${sortedDates[0]!}T00:00:00Z`)
-  const diffDays = Math.floor((today.getTime() - startDate.getTime()) / 86400000)
-  if (diffDays > 1) return 0
-
-  const dateSet = new Set(sortedDates)
-  const checkDate = new Date(startDate)
-  while (dateSet.has(checkDate.toISOString().slice(0, 10))) {
-    count++
-    checkDate.setUTCDate(checkDate.getUTCDate() - 1)
-  }
-  return count
-})
+const streak = computed(() => calculateFlashStreak(noteDateMap.value))
 
 /** 当前视图月份中某天的月日文字，如「10月19日」 */
 function monthDay(num: number) {
