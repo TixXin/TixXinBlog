@@ -41,7 +41,11 @@
 </template>
 
 <script setup lang="ts">
-type Placement = 'top' | 'bottom' | 'left' | 'right'
+import {
+  type TooltipPlacement as Placement,
+  detectTooltipPlacement,
+  computeTooltipCoordinates,
+} from '~/utils/tooltipPosition'
 
 const props = withDefaults(
   defineProps<{
@@ -208,29 +212,6 @@ watch(
   { flush: 'post' },
 )
 
-function detectPlacement(triggerRect: DOMRect): Placement {
-  if (props.placement) return props.placement
-
-  const { innerWidth: vw, innerHeight: vh } = window
-  const spaceTop = triggerRect.top
-  const spaceBottom = vh - triggerRect.bottom
-  const spaceLeft = triggerRect.left
-  const spaceRight = vw - triggerRect.right
-
-  const minRequired = 40
-
-  if (spaceTop >= minRequired) return 'top'
-  if (spaceBottom >= minRequired) return 'bottom'
-  if (spaceRight >= minRequired) return 'right'
-  if (spaceLeft >= minRequired) return 'left'
-
-  const max = Math.max(spaceTop, spaceBottom, spaceLeft, spaceRight)
-  if (max === spaceTop) return 'top'
-  if (max === spaceBottom) return 'bottom'
-  if (max === spaceRight) return 'right'
-  return 'left'
-}
-
 function updatePosition() {
   const trigger = getTriggerElement()
   const floating = floatingRef.value
@@ -247,39 +228,17 @@ function updatePosition() {
     return
   }
   const floatingRect = floating.getBoundingClientRect()
-  const placement = detectPlacement(triggerRect)
+  const placement = detectTooltipPlacement(triggerRect, props.placement)
   resolvedPlacement.value = placement
 
-  let top = 0
-  let left = 0
-
-  const cx = triggerRect.left + triggerRect.width / 2
-  const cy = triggerRect.top + triggerRect.height / 2
-
-  switch (placement) {
-    case 'top':
-      top = triggerRect.top - floatingRect.height - props.offset
-      left = cx - floatingRect.width / 2
-      break
-    case 'bottom':
-      top = triggerRect.bottom + props.offset
-      left = cx - floatingRect.width / 2
-      break
-    case 'left':
-      top = cy - floatingRect.height / 2
-      left = triggerRect.left - floatingRect.width - props.offset
-      break
-    case 'right':
-      top = cy - floatingRect.height / 2
-      left = triggerRect.right + props.offset
-      break
-  }
-
-  const vw = window.innerWidth
-  const vh = window.innerHeight
-  const margin = 6
-  left = Math.max(margin, Math.min(left, vw - floatingRect.width - margin))
-  top = Math.max(margin, Math.min(top, vh - floatingRect.height - margin))
+  const { top, left } = computeTooltipCoordinates({
+    triggerRect,
+    floatingRect,
+    placement,
+    offset: props.offset,
+    vw: window.innerWidth,
+    vh: window.innerHeight,
+  })
 
   floatingStyle.value = {
     top: `${top}px`,

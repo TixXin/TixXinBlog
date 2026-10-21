@@ -1,9 +1,4 @@
-<!--
-  @file SearchModal.vue
-  @description 全局搜索弹窗 (Cmd+K)，六域公开检索、分组预览与单类型分页
-  @author TixXin
-  @since 2026-04-06
--->
+<!-- @file SearchModal.vue @description 全局搜索弹窗 (Cmd+K)，六域公开检索、分组预览与单类型分页 -->
 
 <template>
   <Teleport to="body">
@@ -72,57 +67,19 @@
               @retry="search(query)"
             />
             <template v-if="!isSearching">
-              <section
+              <CommonSearchModalGroup
                 v-for="group in groups"
                 :key="group.type"
-                class="search-modal__group"
-                :data-search-type="group.type"
-              >
-                <h2>
-                  {{ typeLabel(group.type) }}
-                  <span v-if="group.total !== null">{{
-                    $t('layout.searchModal.groupTotal', { count: group.total })
-                  }}</span>
-                </h2>
-                <p v-if="group.unavailable" class="search-modal__status">{{ $t('layout.searchModal.unavailable') }}</p>
-                <p v-else-if="!group.items.length" class="search-modal__status">
-                  {{ $t('layout.searchModal.noGroupResults') }}
-                </p>
-                <ul v-else class="search-modal__list">
-                  <li v-for="item in group.items" :key="`${item.type}:${item.id}`">
-                    <a
-                      :href="item.url"
-                      class="search-modal__item"
-                      :class="{ 'search-modal__item--active': selectedIndex === results.indexOf(item) }"
-                      :data-result-selected="selectedIndex === results.indexOf(item)"
-                      :data-result-index="results.indexOf(item)"
-                      @click="onResultClick($event, item)"
-                      @mouseenter="selectedIndex = results.indexOf(item)"
-                      @focus="selectedIndex = results.indexOf(item)"
-                      @keydown="onResultKeydown"
-                    >
-                      <Icon :name="item.icon" size="16" class="search-modal__item-icon" />
-                      <div class="search-modal__item-content">
-                        <span class="search-modal__item-title">
-                          <SearchHighlight :text="item.title" :keyword="query" />
-                        </span>
-                        <span class="search-modal__item-desc line-clamp-1">
-                          <SearchHighlight :text="item.description" :keyword="query" />
-                        </span>
-                      </div>
-                      <span class="search-modal__item-type">{{ typeLabel(item.type) }}</span>
-                    </a>
-                  </li>
-                </ul>
-                <button
-                  v-if="type === 'all' && group.total !== null && group.total > group.items.length"
-                  type="button"
-                  class="search-modal__more"
-                  @click="type = group.type"
-                >
-                  {{ $t('layout.searchModal.viewAll', { type: typeLabel(group.type) }) }}
-                </button>
-              </section>
+                :group="group"
+                :query="query"
+                :active-type="type"
+                :results="results"
+                :selected-index="selectedIndex"
+                @select-type="type = $event"
+                @click-result="onResultClick"
+                @hover-result="selectedIndex = $event"
+                @keydown="onResultKeydown"
+              />
             </template>
             <div v-if="!isSearching && !error && !results.length" class="search-modal__empty">
               <Icon name="lucide:search-x" size="20" />
@@ -163,14 +120,7 @@
             >{{ $t('layout.searchModal.openFull') }}</a
           >
 
-          <div v-if="!query.trim()" class="search-modal__hint">
-            <span>{{ $t('layout.searchModal.start') }}</span>
-            <div class="search-modal__hint-keys">
-              <kbd>&uarr;&darr;</kbd> {{ $t('layout.searchModal.keyNavigate') }} <kbd>Enter</kbd>
-              {{ $t('layout.searchModal.keyOpen') }} <kbd>ESC</kbd>
-              {{ $t('layout.searchModal.keyClose') }}
-            </div>
-          </div>
+          <CommonSearchModalHint v-if="!query.trim()" />
         </div>
       </div>
     </Transition>
@@ -178,13 +128,12 @@
 </template>
 
 <script setup lang="ts">
-import SearchHighlight from '~/components/common/SearchHighlight.vue'
-import type { SearchResultItem } from '~/composables/useSearch'
-import { searchTypeLabel, searchTypeLabelKeys, SEARCH_PAGE_SIZE } from '~/features/search/types'
+import { searchTypeLabelKeys, SEARCH_PAGE_SIZE } from '~/features/search/types'
 import { searchLocation } from '~/features/search/query'
+import { useSearchModalNavigation } from '~/features/search/useSearchModalNavigation'
+import { useSearchModalKeyboard } from '~/features/search/useSearchModalKeyboard'
 
 const visible = defineModel<boolean>('visible', { default: false })
-const { t } = useI18n()
 
 const inputRef = ref<HTMLInputElement | null>(null)
 const dialogRef = ref<HTMLElement | null>(null)
@@ -194,42 +143,39 @@ const keyboardHintId = useId()
 
 const { query, type, page, groups, results, total, isSearching, error, search, cancel } = useSearch({ remember: true })
 const navigableResults = computed(() => (query.value.trim() && !isSearching.value ? results.value : []))
-const selectionAnnouncement = computed(() => {
-  const item = navigableResults.value[selectedIndex.value]
-  return item
-    ? t('layout.searchModal.selection', {
-        index: selectedIndex.value + 1,
-        total: navigableResults.value.length,
-        title: item.title,
-      })
-    : ''
+
+function close() {
+  visible.value = false
+}
+
+const { restoreTrigger, focusDestination, resetNavigationState, navigateTo, onResultClick } = useSearchModalNavigation({
+  visible,
+  close,
 })
+
+const { selectionAnnouncement, resetSelection, onResultKeydown } = useSearchModalKeyboard({
+  navigableResults,
+  selectedIndex,
+  resultListRef,
+  inputRef,
+  navigateTo,
+})
+
 watch([total, isSearching], () => {
   if (isSearching.value || total.value === null || type.value === 'all') return
   const lastPage = Math.max(1, Math.ceil(total.value / SEARCH_PAGE_SIZE))
   if (page.value > lastPage) page.value = lastPage
 })
-let restoreTrigger = true
-let destination: string | null = null
-let waitForPageTransition = false
-const { contentTransitionDuration } = useAppearanceSettings()
-const activePageTransition = useState<false | { duration: number }>('page-transition-current', () => false)
-const pageMotionCompleted = useState('page-motion-completed', () => 0)
-watch(pageMotionCompleted, () => {
-  waitForPageTransition = false
-  focusDestination()
-})
+
 useModalFocus(visible, dialogRef, {
   close,
   initialFocus: () => inputRef.value,
-  restoreFocus: () => restoreTrigger,
+  restoreFocus: restoreTrigger,
 })
 
 watch(visible, (v) => {
   if (v) {
-    restoreTrigger = true
-    destination = null
-    waitForPageTransition = false
+    resetNavigationState()
     selectedIndex.value = -1
     void search(query.value)
     nextTick(() => inputRef.value?.focus())
@@ -252,99 +198,8 @@ watch([query, type, page], ([q, scope, currentPage], [oldQuery, oldType], onClea
   onCleanup(() => clearTimeout(timer))
 })
 
-function close() {
-  visible.value = false
-}
-
-function typeLabel(type: string) {
-  return searchTypeLabel(type, t)
-}
-
 const router = useRouter()
 const resultsPageUrl = computed(() => router.resolve(searchLocation(query.value, type.value, page.value)).href)
-const currentRoute = useRoute()
-const app = useNuxtApp()
-const { error: notifyNavigationError } = useToast()
-
-function focusDestination() {
-  if (!destination || waitForPageTransition || visible.value || currentRoute.path !== destination) return
-  if (document.querySelector('[role="dialog"]')) return
-  destination = null
-  void nextTick(() => {
-    if (visible.value || document.querySelector('[role="dialog"]')) return
-    const target =
-      document.querySelector<HTMLElement>('main h1, main h2') ?? document.querySelector<HTMLElement>('main')
-    if (!target) return
-    const previousTabindex = target.getAttribute('tabindex')
-    target.setAttribute('tabindex', '-1')
-    target.focus({ preventScroll: true })
-    target.addEventListener(
-      'blur',
-      () => {
-        if (previousTabindex === null) target.removeAttribute('tabindex')
-        else target.setAttribute('tabindex', previousTabindex)
-      },
-      { once: true },
-    )
-  })
-}
-const removePageFinish = app.hook('page:finish', focusDestination)
-const removeTransitionFinish = app.hook('page:transition:finish', () => {
-  waitForPageTransition = false
-  focusDestination()
-})
-onBeforeUnmount(removePageFinish)
-onBeforeUnmount(removeTransitionFinish)
-watch(
-  () => (activePageTransition.value ? activePageTransition.value.duration : 0),
-  (duration) => {
-    if (duration === 0) {
-      waitForPageTransition = false
-      void nextTick(focusDestination)
-    }
-  },
-)
-
-async function navigateTo(item: Pick<SearchResultItem, 'type' | 'url'>) {
-  restoreTrigger = item.type === 'link'
-  const targetRoute = router.resolve(item.url)
-  const samePage = router.currentRoute.value.fullPath === targetRoute.fullPath
-  destination = item.type === 'link' ? null : targetRoute.path
-  waitForPageTransition =
-    item.type !== 'link' && router.currentRoute.value.path !== targetRoute.path && contentTransitionDuration.value > 0
-  close()
-  if (item.type === 'link') {
-    window.open(item.url, '_blank', 'noopener,noreferrer')
-  } else {
-    try {
-      const failure = await router.push(item.url)
-      if (failure && !samePage) {
-        destination = null
-        document.querySelector<HTMLElement>('[data-focus-key="site-search"]')?.focus({ preventScroll: true })
-      } else if (samePage) {
-        focusDestination()
-      }
-    } catch {
-      destination = null
-      notifyNavigationError(t('layout.searchModal.navigationFailed'))
-      document.querySelector<HTMLElement>('[data-focus-key="site-search"]')?.focus({ preventScroll: true })
-    }
-  }
-}
-
-function onResultClick(event: MouseEvent, item: Pick<SearchResultItem, 'type' | 'url'>) {
-  if (event.button !== 0 || event.ctrlKey || event.metaKey || event.shiftKey || event.altKey) return
-  event.preventDefault()
-  navigateTo(item)
-}
-
-function resetSelection() {
-  selectedIndex.value = -1
-  // 结果刷新会移除原链接；将焦点交回输入框，避免落到弹窗外。
-  if (resultListRef.value?.contains(document.activeElement)) {
-    void nextTick(() => inputRef.value?.focus({ preventScroll: true }))
-  }
-}
 
 watch([results, isSearching], resetSelection)
 watch(selectedIndex, () =>
@@ -354,35 +209,6 @@ watch(selectedIndex, () =>
       ?.scrollIntoView({ block: 'nearest' })
   }),
 )
-
-function onResultKeydown(event: KeyboardEvent) {
-  // 输入法候选项和带修饰键的浏览器快捷键不属于结果导航。
-  if (event.isComposing || event.keyCode === 229 || event.ctrlKey || event.metaKey || event.altKey || event.shiftKey)
-    return
-  if (!['ArrowDown', 'ArrowUp', 'Enter'].includes(event.key) || !navigableResults.value.length) return
-  const target = event.currentTarget
-  const fromLink = target instanceof HTMLAnchorElement
-  const currentIndex = fromLink ? Number(target.dataset.resultIndex) : selectedIndex.value
-  // 关闭弹窗会改变焦点；先取消 Enter 的默认激活，避免重新点击搜索入口。
-  event.preventDefault()
-  if (event.key === 'Enter') {
-    const item = navigableResults.value[Math.max(0, currentIndex)]
-    if (item) void navigateTo(item)
-    return
-  }
-  selectedIndex.value =
-    currentIndex < 0
-      ? event.key === 'ArrowDown'
-        ? 0
-        : navigableResults.value.length - 1
-      : Math.max(0, Math.min(navigableResults.value.length - 1, currentIndex + (event.key === 'ArrowDown' ? 1 : -1)))
-  // 输入框保留编辑焦点并播报选择；从链接导航时同步原生焦点。
-  if (fromLink) {
-    resultListRef.value
-      ?.querySelector<HTMLElement>(`[data-result-index="${selectedIndex.value}"]`)
-      ?.focus({ preventScroll: true })
-  }
-}
 </script>
 
 <style lang="scss" scoped>
@@ -407,11 +233,6 @@ function onResultKeydown(event: KeyboardEvent) {
     opacity: 0.5;
   }
 }
-.search-modal__group h2 {
-  padding: 0.65rem 1rem 0.2rem;
-  font-size: 0.85rem;
-  font-weight: 600;
-}
 .search-modal__more {
   display: block;
   padding: 0.65rem 1rem;
@@ -435,9 +256,6 @@ function onResultKeydown(event: KeyboardEvent) {
   padding: 0.5rem 1rem;
   color: var(--text-soft);
   font-size: 0.8125rem;
-}
-.search-modal__item {
-  text-decoration: none;
 }
 .search-modal-overlay {
   position: fixed;
@@ -510,11 +328,6 @@ function onResultKeydown(event: KeyboardEvent) {
   .search-modal-overlay {
     padding-top: 1rem;
   }
-  .search-modal__hint {
-    align-items: flex-start;
-    flex-direction: column;
-    gap: 0.5rem;
-  }
 }
 
 .search-modal__loading {
@@ -539,62 +352,6 @@ function onResultKeydown(event: KeyboardEvent) {
   }
 }
 
-.search-modal__list {
-  list-style: none;
-  margin: 0;
-  padding: 0.5rem;
-}
-
-.search-modal__item {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  padding: 0.625rem 0.75rem;
-  border-radius: $radius-md;
-  cursor: var(--interaction-cursor, pointer);
-  transition: background 0.15s;
-  @media (prefers-reduced-motion: reduce) {
-    transition: none;
-  }
-
-  &--active {
-    background: var(--surface-2);
-  }
-}
-
-.search-modal__item-icon {
-  color: var(--text-soft);
-  flex-shrink: 0;
-}
-
-.search-modal__item-content {
-  flex: 1;
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 0.125rem;
-}
-
-.search-modal__item-title {
-  font-size: 0.875rem;
-  font-weight: 500;
-  color: var(--text-main);
-}
-
-.search-modal__item-desc {
-  font-size: 0.75rem;
-  color: var(--text-soft);
-}
-
-.search-modal__item-type {
-  font-size: 0.6875rem;
-  color: var(--text-faint);
-  background: var(--surface-3);
-  padding: 0.125rem 0.5rem;
-  border-radius: $radius-sm;
-  flex-shrink: 0;
-}
-
 .search-modal__empty {
   display: flex;
   flex-direction: column;
@@ -603,32 +360,6 @@ function onResultKeydown(event: KeyboardEvent) {
   padding: 2rem;
   color: var(--text-soft);
   font-size: 0.875rem;
-}
-
-.search-modal__hint {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0.875rem 1rem;
-  color: var(--text-soft);
-  font-size: 0.8125rem;
-}
-
-.search-modal__hint-keys {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  font-size: 0.75rem;
-  color: var(--text-faint);
-
-  kbd {
-    font-size: 0.625rem;
-    padding: 0.15rem 0.35rem;
-    border-radius: 3px;
-    border: 1px solid var(--border);
-    background: var(--surface-2);
-    font-family: inherit;
-  }
 }
 
 /* 弹窗进出动效 */

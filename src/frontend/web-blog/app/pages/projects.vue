@@ -1,48 +1,28 @@
 <!-- @file projects.vue @description 真实项目列表与技术分布，进展、标签、搜索和分页共享 URL -->
 <template>
   <CommonPageFrame class="main-inner" header-key="projects">
-    <template #header
-      ><CommonPageHeader
+    <template #header>
+      <CommonPageHeader
         :title="$t('misc.project.page.title')"
         :subtitle="$t('misc.project.page.subtitle')"
         icon="lucide:layers"
-        ><template #action
-          ><CommonSearchBox
+      >
+        <template #action>
+          <CommonSearchBox
             v-model="keyword"
             :label="$t('misc.project.page.searchLabel')"
-            :placeholder="$t('misc.project.page.searchPlaceholder')" /></template></CommonPageHeader
-    ></template>
-    <template #default
-      ><CommonCustomScrollbar
-        class="projects-body"
-        viewport-class="projects-viewport"
-        :show-back-to-top="false"
-        primary
-      >
-        <section
-          v-if="focus.target.value"
-          ref="focusedProject"
-          class="projects-focus"
-          tabindex="-1"
-          :aria-label="$t('misc.project.focus.label')"
-        >
-          <header>
-            <h2>{{ $t('misc.project.focus.title') }}</h2>
-            <button type="button" @click="focus.close">{{ $t('misc.project.focus.close') }}</button>
-          </header>
-          <CommonRequestFeedback
-            v-if="focus.pending.value || focus.error.value"
-            :pending="focus.pending.value"
-            :title="focus.error.value || $t('misc.project.focus.loading')"
-            @retry="focus.load"
+            :placeholder="$t('misc.project.page.searchPlaceholder')"
           />
-          <ProjectCard v-if="focus.item.value" :project="focus.item.value" :interactive="ready" @tag="filterTag" />
-          <CommonRelatedContent :items="focus.item.value?.relatedContent" />
-        </section>
+        </template>
+      </CommonPageHeader>
+    </template>
+    <template #default>
+      <CommonCustomScrollbar class="projects-body" viewport-class="projects-viewport" :show-back-to-top="false" primary>
+        <ProjectFocusSection v-if="focus.target.value" :focus="focus" :interactive="ready" @tag="filterTag" />
         <div class="projects-filters">
-          <label
-            >{{ $t('misc.project.filter.progress')
-            }}<select
+          <label>
+            {{ $t('misc.project.filter.progress') }}
+            <select
               :value="query.progress ?? ''"
               :aria-label="$t('misc.project.filter.progressLabel')"
               :disabled="!ready"
@@ -52,10 +32,11 @@
               <option v-for="value in projectProgresses" :key="value" :value="value">
                 {{ projectProgressLabel(value, t) }}
               </option>
-            </select></label
-          ><label
-            >{{ $t('misc.project.filter.tag')
-            }}<select
+            </select>
+          </label>
+          <label>
+            {{ $t('misc.project.filter.tag') }}
+            <select
               :value="query.tag?.toLocaleLowerCase('zh-CN') ?? ''"
               :aria-label="$t('misc.project.filter.tagLabel')"
               :disabled="!ready"
@@ -72,8 +53,9 @@
               >
                 {{ $t('misc.project.filter.tagOption', { label: tag.label, count: tag.count }) }}
               </option>
-            </select></label
-          ><button v-if="filtered" type="button" :disabled="!ready" @click="clearFilters">
+            </select>
+          </label>
+          <button v-if="filtered" type="button" :disabled="!ready" @click="clearFilters">
             {{ $t('misc.project.page.clearFilters') }}
           </button>
         </div>
@@ -109,9 +91,10 @@
             :disabled="!ready || pending || query.page <= 1"
             @click="changeQuery({ page: query.page - 1 })"
           >
-            {{ $t('misc.shared.prevPage') }}</button
-          ><span>{{ query.page }} / {{ Math.max(1, Math.ceil(total / 12)) }}</span
-          ><button
+            {{ $t('misc.shared.prevPage') }}
+          </button>
+          <span>{{ query.page }} / {{ Math.max(1, Math.ceil(total / 12)) }}</span>
+          <button
             type="button"
             :disabled="!ready || pending || query.page * 12 >= total"
             @click="changeQuery({ page: query.page + 1 })"
@@ -121,50 +104,39 @@
         </nav>
         <details class="projects-compact-info" :class="`projects-compact-info--${sidebarPlacement}`">
           <summary>{{ $t('misc.project.page.compactInfo') }}</summary>
-          <CommonRequestFeedback
-            v-if="metadataPending || metadataError"
+          <ProjectSidebarContent
+            :metadata="metadata"
             :pending="metadataPending"
-            :compact="!!metadata"
-            :title="metadataFeedbackTitle"
-            :description="metadataFeedbackDescription"
-            @retry="refreshMetadata()"
-          /><ProjectStats v-if="metadata" :stats="stats" /><ProjectTechStackCard
-            v-if="metadata"
-            :stack="metadata.tags"
+            :error="metadataError"
             :interactive="ready"
+            @retry-metadata="refreshMetadata()"
             @tag="filterTag"
           />
-        </details> </CommonCustomScrollbar
-    ></template>
-    <template #overlays
-      ><ClientOnly
-        ><Teleport v-if="activeTheme.capabilities.rightSidebar" to="#right-sidebar-target"
-          ><SidebarRightSidebar
-            ><CommonRequestFeedback
-              v-if="metadataPending || metadataError"
+        </details>
+      </CommonCustomScrollbar>
+    </template>
+    <template #overlays>
+      <ClientOnly>
+        <Teleport v-if="activeTheme.capabilities.rightSidebar" to="#right-sidebar-target">
+          <SidebarRightSidebar>
+            <ProjectSidebarContent
+              :metadata="metadata"
               :pending="metadataPending"
-              :compact="!!metadata"
-              :title="metadataFeedbackTitle"
-              :description="metadataFeedbackDescription"
-              @retry="refreshMetadata()" /><ProjectStats v-if="metadata" :stats="stats" /><ProjectTechStackCard
-              v-if="metadata"
-              :stack="metadata.tags"
+              :error="metadataError"
               :interactive="ready"
-              @tag="filterTag" /></SidebarRightSidebar></Teleport></ClientOnly
-    ></template>
+              @retry-metadata="refreshMetadata()"
+              @tag="filterTag"
+            />
+          </SidebarRightSidebar>
+        </Teleport>
+      </ClientOnly>
+    </template>
   </CommonPageFrame>
 </template>
 <script setup lang="ts">
 import { projectProgressLabel, projectProgresses } from '~/features/project/types'
 const { t } = useI18n()
 const focus = useProjectFocus()
-const focusedProject = ref<HTMLElement | null>(null)
-watch([focus.item, focus.error], async () => {
-  if (!focus.target.value || focus.pending.value) return
-  await nextTick()
-  focusedProject.value?.focus({ preventScroll: true })
-  focusedProject.value?.scrollIntoView({ block: 'start' })
-})
 const route = useRoute(),
   router = useRouter(),
   { currentThemeId, activeTheme } = useLayoutTheme()
@@ -186,15 +158,6 @@ const {
   refreshMetadata,
   changeQuery,
 } = await useProjects()
-// 失败用稳定标题；具体原因放在说明里，有旧统计时同时说明仍在显示。
-const metadataFeedbackTitle = computed(() =>
-  metadataError.value ? t('misc.project.metadata.unavailable') : t('misc.project.metadata.loading'),
-)
-const metadataFeedbackDescription = computed(() => {
-  if (!metadataError.value) return undefined
-  const message = metadataError.value.message
-  return metadata.value ? t('misc.project.metadata.staleDescription', { message }) : message
-})
 const shareProject = computed(() => projects.value.find((project) => project.cover))
 usePageSeo({
   title: () => t('misc.project.page.title'),
@@ -215,17 +178,6 @@ const knownTag = computed(() =>
     (tag) => tag.label.toLocaleLowerCase('zh-CN') === query.value.tag?.toLocaleLowerCase('zh-CN'),
   ),
 )
-const stats = computed(() =>
-  metadata.value
-    ? [
-        { label: t('misc.project.stats.projects'), value: String(metadata.value.stats.projects) },
-        { label: t('misc.project.stats.active'), value: String(metadata.value.stats.active) },
-        { label: t('misc.project.stats.dev'), value: String(metadata.value.stats.dev) },
-        { label: t('misc.project.stats.archived'), value: String(metadata.value.stats.archived) },
-        { label: t('misc.project.stats.tags'), value: String(metadata.value.stats.tags) },
-      ]
-    : [],
-)
 function filterTag(tag: string) {
   void changeQuery({ tag })
 }
@@ -237,29 +189,6 @@ function clearFilters() {
 }
 </script>
 <style scoped lang="scss">
-.projects-focus {
-  margin-bottom: 1.5rem;
-  min-width: 0;
-}
-.projects-focus header {
-  display: flex;
-  gap: 0.75rem;
-  align-items: center;
-  justify-content: space-between;
-  flex-wrap: wrap;
-  margin-bottom: 0.75rem;
-}
-.projects-focus h2 {
-  font-size: 1.1rem;
-  font-weight: 600;
-}
-.projects-focus button {
-  min-height: 44px;
-  padding: 0.5rem 0.75rem;
-  border: 1px solid var(--border);
-  border-radius: 0.5rem;
-  color: var(--text-main);
-}
 .projects-body {
   flex: 1;
   padding: 0;

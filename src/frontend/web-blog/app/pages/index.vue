@@ -34,48 +34,14 @@
             </button>
             <BlogSubscribeCard embedded />
           </CommonContextDrawer>
-          <div class="display-mode-toggle" role="group" :aria-label="$t('article.home.displayMode')">
-            <CommonTooltip :content="$t('article.home.waterfall')">
-              <button
-                type="button"
-                :aria-label="$t('article.home.waterfall')"
-                :aria-pressed="listDisplayMode === 'waterfall'"
-                class="display-mode-toggle__btn"
-                :class="{ 'display-mode-toggle__btn--active': listDisplayMode === 'waterfall' }"
-                @click="listDisplayMode = 'waterfall'"
-              >
-                <Icon name="lucide:scroll-text" size="15" />
-              </button>
-            </CommonTooltip>
-            <CommonTooltip :content="$t('article.home.pagination')">
-              <button
-                type="button"
-                :aria-label="$t('article.home.pagination')"
-                :aria-pressed="listDisplayMode === 'pagination'"
-                class="display-mode-toggle__btn"
-                :class="{ 'display-mode-toggle__btn--active': listDisplayMode === 'pagination' }"
-                @click="listDisplayMode = 'pagination'"
-              >
-                <Icon name="lucide:book-open" size="15" />
-              </button>
-            </CommonTooltip>
-          </div>
+          <BlogPostDisplayModeToggle v-model="listDisplayMode" />
         </div>
       </div>
     </template>
     <template #default>
       <!-- 首页没有可见的页面标题，补一个仅供辅助技术与搜索引擎读取的 h1 -->
       <h1 class="sr-only">{{ siteSettings.name }}</h1>
-      <!-- 只在尚无博主账号时于浏览器端显示，不进入服务端渲染与页面缓存；初始化完成后自动消失。
-           全屏半透明水印不拦截点击，也不挤占内容位置 -->
-      <Teleport v-if="setupPending" to="body">
-        <div class="setup-watermark" role="status">
-          <div class="setup-watermark__inner">
-            <p class="setup-watermark__title">{{ $t('article.home.setupWatermark') }}</p>
-            <p class="setup-watermark__text">{{ $t('article.home.setupPending') }}</p>
-          </div>
-        </div>
-      </Teleport>
+      <BlogSetupWatermark />
       <div v-if="activeFilterLabel" class="articles-filter-summary">
         <span role="status">{{ $t('article.home.activeFilter', { filter: activeFilterLabel }) }}</span>
         <button
@@ -124,70 +90,14 @@
 </template>
 <script setup lang="ts">
 import { mockPostTabs } from '~/features/post/mock'
-import { isCanonicalPageParam, readPostListQuery, writePostListQuery } from '~/features/post/listQuery'
-import { socialProfiles } from '~/utils/absoluteUrl'
+import { isCanonicalPageParam } from '~/features/post/listQuery'
+import { useHomeSeo } from '~/features/post/useHomeSeo'
 
-const { settings: siteSettings } = useSiteSettings()
 const route = useRoute()
-const siteUrl = useSiteUrl()
-const homeTitle = computed(() => siteSettings.value.seoTitle || siteSettings.value.name)
-const homeDescription = computed(() => siteSettings.value.seoDescription || siteSettings.value.description)
-const homeImage = useDefaultShareImage()
-const { t, locale } = useI18n()
 // 目录在下方与文章并行读取。标题先注册，目录返回后再把 slug 换成标签名称。
 const postSummary = shallowRef<{ tags: Array<{ label: string; slug: string }> } | null>(null)
-// 分页与筛选页采用「自引用 canonical + 区分标题」：每页内容不同，不统一指向第一页；
-// canonical 只保留 category/tag/page 三个规范参数，去掉显示模式与跟踪参数。
-const listSeo = computed(() => {
-  const { page, tag, category } = readPostListQuery(route.query)
-  const tagLabel = postSummary.value?.tags.find((item) => item.slug === tag)?.label ?? tag
-  const label = [
-    category ? t('article.home.seoCategory', { name: category }) : '',
-    tagLabel ? t('article.home.seoTag', { name: tagLabel }) : '',
-    page > 1 ? t('article.pagination.page', { page }) : '',
-  ]
-    .filter(Boolean)
-    .join(' · ')
-  const search = new URLSearchParams(writePostListQuery({ page, tag, category, mode: 'pagination' })).toString()
-  return { label, canonical: `/${search ? `?${search}` : ''}` }
-})
-usePageSeo({
-  title: () => listSeo.value.label || homeTitle.value,
-  shareTitle: () => (listSeo.value.label ? `${listSeo.value.label} - ${siteSettings.value.name}` : homeTitle.value),
-  description: () => homeDescription.value,
-  type: 'website',
-  canonical: () => listSeo.value.canonical,
-})
-useJsonLd('home', () => ({
-  '@context': 'https://schema.org',
-  '@graph': [
-    {
-      '@type': 'WebSite',
-      '@id': `${siteUrl}/#website`,
-      url: `${siteUrl}/`,
-      name: siteSettings.value.name,
-      ...(homeDescription.value ? { description: homeDescription.value } : {}),
-      inLanguage: locale.value,
-      publisher: { '@id': `${siteUrl}/#person` },
-      potentialAction: {
-        '@type': 'SearchAction',
-        target: { '@type': 'EntryPoint', urlTemplate: `${siteUrl}/search?q={search_term_string}` },
-        'query-input': 'required name=search_term_string',
-      },
-    },
-    {
-      '@type': 'Person',
-      '@id': `${siteUrl}/#person`,
-      name: siteSettings.value.ownerName || siteSettings.value.name,
-      url: `${siteUrl}/about`,
-      ...(siteSettings.value.ownerTitle ? { jobTitle: siteSettings.value.ownerTitle } : {}),
-      ...(homeImage.value ? { image: homeImage.value.url } : {}),
-      ...(socialProfiles(siteSettings.value.socials).length
-        ? { sameAs: socialProfiles(siteSettings.value.socials) }
-        : {}),
-    },
-  ],
-}))
+const { siteSettings } = useHomeSeo({ postSummary })
+
 const tabs = mockPostTabs
 const {
   page: postPage,
@@ -261,56 +171,9 @@ function migrateMomentHash() {
   if (route.hash === '#moments') void navigateTo({ path: '/moments', query: route.query }, { replace: true })
 }
 onMounted(migrateMomentHash)
-// 新装站点首页没有任何内容，提示博主用安装时输出的链接完成初始化；读取失败时不显示
-const setupPending = ref(false)
-const fetchSetupStatus = useSetupStatus()
-const preview = useDevPreview()
-async function readSetupPending() {
-  try {
-    // 开发模式下 ?preview=setup-pending 直接显示提示，便于调整样式；生产构建中不生效
-    setupPending.value = preview('setup-pending') || (await fetchSetupStatus())
-  } catch {
-    setupPending.value = false
-  }
-}
-onMounted(readSetupPending)
-// 调试面板在同一页面切换或退出预览时只改地址参数，需要重新判定
-if (import.meta.dev) watch(() => preview('setup-pending'), readSetupPending)
 watch(() => route.hash, migrateMomentHash)
 </script>
 <style lang="scss" scoped>
-.setup-watermark {
-  position: fixed;
-  inset: 0;
-  z-index: 40;
-  display: grid;
-  place-items: center;
-  overflow: hidden;
-  pointer-events: none;
-  user-select: none;
-}
-.setup-watermark__inner {
-  max-width: min(90vw, 56rem);
-  text-align: center;
-  transform: rotate(-16deg);
-}
-.setup-watermark__title {
-  margin: 0;
-  color: var(--text-main);
-  font-size: clamp(3rem, 11vw, 9rem);
-  font-weight: 800;
-  line-height: 1.1;
-  letter-spacing: 0.04em;
-  opacity: 0.06;
-}
-.setup-watermark__text {
-  margin: 0.75rem auto 0;
-  max-width: 32rem;
-  color: var(--text-main);
-  font-size: clamp(0.875rem, 1.6vw, 1.125rem);
-  font-weight: 600;
-  opacity: 0.13;
-}
 // 窄屏下筛选入口只留图标，文字仅供读屏，让搜索、筛选和显示模式保持同一行
 @media (max-width: #{$breakpoint-sm - 1px}) {
   .page-context-entry :deep(.context-entry__button) {
@@ -329,34 +192,6 @@ watch(() => route.hash, migrateMomentHash)
   .page-actions .search-box {
     flex-basis: 6rem;
     min-width: 6rem;
-  }
-}
-.display-mode-toggle {
-  display: flex;
-  border: 1px solid var(--border);
-  border-radius: $radius-md;
-  overflow: hidden;
-  flex-shrink: 0;
-}
-.display-mode-toggle__btn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 44px;
-  height: 44px;
-  color: var(--text-soft);
-  background: transparent;
-  cursor: var(--interaction-cursor, pointer);
-  &:hover {
-    color: var(--text-main);
-    background: var(--surface-2);
-  }
-  &--active {
-    color: var(--text-main);
-    background: var(--surface-3);
-  }
-  & + & {
-    border-left: 1px solid var(--border);
   }
 }
 .articles-filter-summary {

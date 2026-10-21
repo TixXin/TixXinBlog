@@ -1,22 +1,27 @@
 <!-- @file links.vue @description 真实友链、推荐筛选与本站资料，URL和SSR首帧保持一致 -->
 <template>
-  <CommonPageFrame class="main-inner" header-key="links"
-    ><template #header
-      ><CommonPageHeader
+  <CommonPageFrame class="main-inner" header-key="links">
+    <template #header>
+      <CommonPageHeader
         :title="t('interaction.links.title')"
         :subtitle="t('interaction.links.subtitle')"
         icon="lucide:link"
-        ><template #action
-          ><CommonSearchBox
+      >
+        <template #action>
+          <CommonSearchBox
             v-model="keyword"
             :label="t('interaction.links.searchLabel')"
-            :placeholder="t('interaction.links.searchPlaceholder')" /></template></CommonPageHeader></template
-    ><template #default
-      ><CommonCustomScrollbar class="links-body" viewport-class="links-viewport" :show-back-to-top="false" primary
-        ><div class="links-filters">
-          <label
-            >{{ t('interaction.links.featuredFilter')
-            }}<select
+            :placeholder="t('interaction.links.searchPlaceholder')"
+          />
+        </template>
+      </CommonPageHeader>
+    </template>
+    <template #default>
+      <CommonCustomScrollbar class="links-body" viewport-class="links-viewport" :show-back-to-top="false" primary>
+        <div class="links-filters">
+          <label>
+            {{ t('interaction.links.featuredFilter') }}
+            <select
               :value="query.featured ?? ''"
               :aria-label="t('interaction.links.featuredFilterLabel')"
               :disabled="!ready"
@@ -25,8 +30,9 @@
               <option value="">{{ t('interaction.links.filterAll') }}</option>
               <option value="true">{{ t('interaction.links.filterFeatured') }}</option>
               <option value="false">{{ t('interaction.links.filterOthers') }}</option>
-            </select></label
-          ><button
+            </select>
+          </label>
+          <button
             v-if="query.q || query.featured"
             type="button"
             :disabled="!ready"
@@ -55,7 +61,8 @@
           "
           :action-label="query.q || query.featured ? t('interaction.links.clearFilters') : undefined"
           @action="changeQuery({ q: undefined, featured: undefined })"
-        /><LinkGrid v-else :links="links" />
+        />
+        <LinkGrid v-else :links="links" />
         <nav
           v-if="total !== null && (total > 12 || query.page > 1)"
           class="links-pagination"
@@ -66,9 +73,10 @@
             :disabled="!ready || pending || query.page <= 1"
             @click="changeQuery({ page: query.page - 1 })"
           >
-            {{ t('interaction.links.prev') }}</button
-          ><span>{{ query.page }} / {{ Math.max(1, Math.ceil(total / 12)) }}</span
-          ><button
+            {{ t('interaction.links.prev') }}
+          </button>
+          <span>{{ query.page }} / {{ Math.max(1, Math.ceil(total / 12)) }}</span>
+          <button
             type="button"
             :disabled="!ready || pending || query.page * 12 >= total"
             @click="changeQuery({ page: query.page + 1 })"
@@ -78,31 +86,15 @@
         </nav>
         <details class="links-compact-info" :class="`links-compact-info--${sidebarPlacement}`">
           <summary>
-            <Icon name="lucide:chevron-right" size="16" class="links-compact-info__chevron" aria-hidden="true" />{{
-              t('interaction.links.compactInfo')
-            }}
+            <Icon name="lucide:chevron-right" size="16" class="links-compact-info__chevron" aria-hidden="true" />
+            {{ t('interaction.links.compactInfo') }}
           </summary>
-          <CommonRequestFeedback
-            v-if="metadataPending || metadataError"
+          <LinkSidebarContent
+            :metadata="metadata"
             :pending="metadataPending"
-            :compact="!!metadata"
-            :title="metadataFeedbackTitle"
-            :description="metadataFeedbackDescription"
-            @retry="refreshMetadata()"
-          /><LinkStats v-if="metadata" :stats="metadata.stats" /><LinkRules
-            v-if="metadata"
-            :rules="metadata.rules"
-          /><LinkSiteInfoCard
-            :info="site.info.value"
-            :ready="site.ready.value"
-            :pending="site.pending.value"
-            :error="site.error.value"
-            :copying="site.copying.value"
-            :copy-error="site.copyError.value"
-            :notice="site.notice.value"
-            :retained-text="site.retainedText.value"
-            @retry="site.refresh"
-            @copy="site.copy"
+            :error="metadataError"
+            :site="site"
+            @retry-metadata="refreshMetadata()"
           />
         </details>
         <LinkForm
@@ -116,30 +108,23 @@
           @change="local.change"
           @copy="local.copy"
           @persist="local.persist"
-        /> </CommonCustomScrollbar></template
-    ><template #overlays
-      ><Teleport v-if="activeTheme.capabilities.rightSidebar" to="#right-sidebar-target"
-        ><SidebarRightSidebar
-          ><CommonRequestFeedback
-            v-if="metadataPending || metadataError"
+        />
+      </CommonCustomScrollbar>
+    </template>
+    <template #overlays>
+      <Teleport v-if="activeTheme.capabilities.rightSidebar" to="#right-sidebar-target">
+        <SidebarRightSidebar>
+          <LinkSidebarContent
+            :metadata="metadata"
             :pending="metadataPending"
-            :compact="!!metadata"
-            :title="metadataFeedbackTitle"
-            :description="metadataFeedbackDescription"
-            @retry="refreshMetadata()" /><LinkStats v-if="metadata" :stats="metadata.stats" /><LinkRules
-            v-if="metadata"
-            :rules="metadata.rules" /><LinkSiteInfoCard
-            :info="site.info.value"
-            :ready="site.ready.value"
-            :pending="site.pending.value"
-            :error="site.error.value"
-            :copying="site.copying.value"
-            :copy-error="site.copyError.value"
-            :notice="site.notice.value"
-            :retained-text="site.retainedText.value"
-            @retry="site.refresh"
-            @copy="site.copy" /></SidebarRightSidebar></Teleport></template
-  ></CommonPageFrame>
+            :error="metadataError"
+            :site="site"
+            @retry-metadata="refreshMetadata()"
+          />
+        </SidebarRightSidebar>
+      </Teleport>
+    </template>
+  </CommonPageFrame>
 </template>
 <script setup lang="ts">
 const { t } = useI18n()
@@ -166,15 +151,6 @@ const {
   refreshMetadata,
   changeQuery,
 } = await useLinks()
-// 失败用稳定标题；具体原因放在说明里，有旧资料时同时说明仍在显示。
-const metadataFeedbackTitle = computed(() =>
-  metadataError.value ? t('interaction.links.metadataUnavailable') : t('interaction.links.metadataLoading'),
-)
-const metadataFeedbackDescription = computed(() => {
-  if (!metadataError.value) return undefined
-  const message = metadataError.value.message
-  return metadata.value ? t('interaction.links.metadataStale', { message }) : message
-})
 usePageSeo({
   title: () => t('interaction.links.title'),
   description: () => t('interaction.links.seoDescription'),

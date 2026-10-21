@@ -119,6 +119,8 @@ import SearchHighlight from '~/components/common/SearchHighlight.vue'
 import { searchLocation, searchScope, searchPage } from '~/features/search/query'
 import { searchTypeLabel, searchTypeLabelKeys, SEARCH_PAGE_SIZE, SEARCH_PREVIEW_SIZE } from '~/features/search/types'
 import type { SearchScope } from '~/features/search/types'
+import { useSearchPageKeyboard } from '~/features/search/useSearchPageKeyboard'
+
 // 搜索页没有右侧栏内容，不保留空白的侧栏占位
 definePageMeta({ rightSidebar: false })
 const route = useRoute(),
@@ -139,62 +141,31 @@ usePageSeo({
   robots: 'noindex, follow',
   description: () => t('article.search.seoDescription'),
 })
+
+const { onInputKeydown, onResultKeydown, restoreFocusToInput } = useSearchPageKeyboard({
+  inputRef,
+  resultListRef,
+  keyword,
+  activeQuery,
+  isSearching,
+})
+
 function submit() {
   const location = searchLocation(keyword.value, activeType.value)
   if (router.resolve(location).fullPath === route.fullPath) void refresh()
   else void router.push(location)
 }
 
-function resultLinks() {
-  return Array.from(resultListRef.value?.querySelectorAll<HTMLAnchorElement>('a[data-search-result]') ?? [])
-}
-
-function isResultArrow(event: KeyboardEvent) {
-  return (
-    !event.isComposing &&
-    event.keyCode !== 229 &&
-    !event.altKey &&
-    !event.ctrlKey &&
-    !event.metaKey &&
-    !event.shiftKey &&
-    (event.key === 'ArrowDown' || event.key === 'ArrowUp')
-  )
-}
-
-function focusResult(link: HTMLAnchorElement | undefined) {
-  if (!link) return
-  link.focus({ preventScroll: true })
-  // 键盘定位不播放滚动动画，也不依赖主题的动效设置。
-  link.scrollIntoView({ block: 'nearest', behavior: 'instant' })
-}
-
-function onInputKeydown(event: KeyboardEvent) {
-  if (!isResultArrow(event) || isSearching.value || keyword.value.trim() !== activeQuery.value.trim()) return
-  const links = resultLinks()
-  if (!links.length) return
-  event.preventDefault()
-  focusResult(event.key === 'ArrowDown' ? links[0] : links.at(-1))
-}
-
-function onResultKeydown(event: KeyboardEvent) {
-  if (!isResultArrow(event) || isSearching.value) return
-  const target = event.target instanceof Element ? event.target.closest('a[data-search-result]') : null
-  const links = resultLinks()
-  const index = links.findIndex((link) => link === target)
-  if (index < 0) return
-  event.preventDefault()
-  focusResult(links[(index + (event.key === 'ArrowDown' ? 1 : -1) + links.length) % links.length])
-}
-
 async function refresh() {
   const path = route.fullPath
   // 刷新移除当前结果前归还焦点，避免键盘用户落到页面之外。
-  if (resultListRef.value?.contains(document.activeElement)) inputRef.value?.focus({ preventScroll: true })
+  restoreFocusToInput()
   await search(activeQuery.value, activeType.value, activePage.value)
   if (route.fullPath !== path || error.value || total.value === null || activeType.value === 'all') return
   const lastPage = Math.max(1, Math.ceil(total.value / SEARCH_PAGE_SIZE))
   if (activePage.value > lastPage) await router.replace(searchLocation(activeQuery.value, activeType.value, lastPage))
 }
+
 watch(
   () => route.fullPath,
   () => {
@@ -206,6 +177,7 @@ watch(
     if (mounted.value) void refresh()
   },
 )
+
 onMounted(() => {
   mounted.value = true
   void refresh()

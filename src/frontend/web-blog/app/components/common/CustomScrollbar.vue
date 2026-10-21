@@ -24,44 +24,32 @@
       </div>
     </Teleport>
 
-    <Transition name="scrollbar-fade">
-      <div
-        v-show="showTrack && thumbVisible && needsScrollbar"
-        ref="trackRef"
-        class="custom-scrollbar__track"
-        @mousedown.prevent="onTrackMouseDown"
-      >
-        <div
-          class="custom-scrollbar__thumb"
-          :class="{ 'is-dragging': isDragging }"
-          :style="thumbStyle"
-          @mousedown.prevent.stop="onThumbMouseDown"
-        />
-      </div>
-    </Transition>
+    <CommonScrollbarTrack
+      ref="trackComponentRef"
+      :visible="showTrack && thumbVisible && needsScrollbar"
+      :thumb-height="thumbHeight"
+      :thumb-top="thumbTop"
+      :viewport="viewportRef"
+      @drag-change="isDragging = $event"
+      @reveal="reveal"
+      @schedule-hide="scheduleHide"
+      @scroll="onTrackScroll"
+    />
 
     <!-- 滚动进度 / 返回顶部按钮 -->
-    <Transition name="back-to-top">
-      <div v-if="showBackToTop && showBackToTopBtn" class="custom-scrollbar__back-to-top">
-        <CommonTooltip :content="$t('layout.scrollbar.backToTop')" placement="left">
-          <button
-            type="button"
-            class="custom-scrollbar__back-to-top-btn"
-            :class="{ 'is-clicked': progressClicked }"
-            :aria-label="$t('layout.scrollbar.backToTop')"
-            @click="onProgressClick"
-          >
-            <span class="custom-scrollbar__progress-text">{{ displayProgress }}%</span>
-            <Icon name="lucide:arrow-up" size="16" class="custom-scrollbar__progress-icon" />
-          </button>
-        </CommonTooltip>
-      </div>
-    </Transition>
+    <CommonScrollbarBackToTop
+      :visible="showBackToTop && showBackToTopBtn"
+      :progress="scrollProgress"
+      :clicked="progressClicked"
+      @click="onProgressClick"
+    />
   </div>
 </template>
 
 <script setup lang="ts">
 import { resolveScrollRoot, scrollToRoot } from '~/utils/scrollRoot'
+import { computeScrollbarFadeMask } from '~/utils/scrollbarMask'
+
 const props = withDefaults(
   defineProps<{
     /** 应用到滚动视口的额外 class */
@@ -118,7 +106,7 @@ usePageScrollRestoration(
   () => props.primary,
   () => props.preservedQueryKeys,
 )
-const trackRef = ref<HTMLElement | null>(null)
+const trackComponentRef = ref<{ track: HTMLElement | null } | null>(null)
 
 const needsScrollbar = ref(false)
 const thumbVisible = ref(false)
@@ -132,11 +120,16 @@ const atTop = ref(true)
 const atBottom = ref(false)
 
 const progressClicked = ref(false)
-const displayProgress = computed(() => Math.round(scrollProgress.value))
 
 function onProgressClick() {
   scrollToTop(true)
   progressClicked.value = true
+}
+
+function onTrackScroll(top: number) {
+  if (viewportRef.value) {
+    viewportRef.value.scrollTop = top
+  }
 }
 
 let hideTimer: ReturnType<typeof setTimeout> | null = null
@@ -144,6 +137,7 @@ let resizeObserver: ResizeObserver | null = null
 let mutationObserver: MutationObserver | null = null
 let metricsFrame = 0
 let cancelOwnScroll: (() => void) | undefined
+
 function scheduleMetrics() {
   if (metricsFrame) return
   metricsFrame = requestAnimationFrame(() => {
@@ -151,11 +145,6 @@ function scheduleMetrics() {
     updateMetrics()
   })
 }
-
-const thumbStyle = computed(() => ({
-  height: `${thumbHeight.value}px`,
-  transform: `translateY(${thumbTop.value}px)`,
-}))
 
 const progressBarStyle = computed(() => ({
   transform: `scaleX(${scrollProgress.value / 100})`,
@@ -175,7 +164,7 @@ function updateMetrics() {
   if (!needsScrollbar.value) return
 
   // track 被 v-show 隐藏时 clientHeight 为 0，退回视口高度减去 track 上下边距
-  const rawTrackHeight = trackRef.value?.clientHeight ?? 0
+  const rawTrackHeight = trackComponentRef.value?.track?.clientHeight ?? 0
   const trackHeight = rawTrackHeight > 0 ? rawTrackHeight : clientHeight - 8
   const ratio = clientHeight / scrollHeight
   thumbHeight.value = Math.max(ratio * trackHeight, 32)
@@ -185,37 +174,14 @@ function updateMetrics() {
   thumbTop.value = scrollRange > 0 ? (scrollTop / scrollRange) * thumbRange : 0
 }
 
-/**
- * 渐变遮罩样式：仅在 fadeMask 启用且该方向尚未到边界时淡出对应一端。
- * 不需要遮罩时返回空对象，让浏览器完全跳过 mask 合成。
- */
-const viewportStyle = computed(() => {
-  if (!props.fadeMask) return {}
-  const topActive = (props.fadeMask === 'top' || props.fadeMask === 'both') && !atTop.value
-  const botActive = (props.fadeMask === 'bottom' || props.fadeMask === 'both') && !atBottom.value
-  if (!topActive && !botActive) return {}
-
-  const inset = props.fadeMaskInset
-  const hasInset = inset && inset !== '0'
-  const stops: string[] = []
-  if (topActive) {
-    // hasInset 时前 inset 段整体透明（padding 区），从 inset 处开始 2.5rem 渐变到实心
-    stops.push('transparent 0%')
-    if (hasInset) stops.push(`transparent ${inset}`)
-    stops.push(hasInset ? `black calc(${inset} + 2.5rem)` : 'black 2.5rem')
-  } else {
-    stops.push('black 0%')
-  }
-  if (botActive) {
-    stops.push(hasInset ? `black calc(100% - ${inset} - 2.5rem)` : 'black calc(100% - 2.5rem)')
-    if (hasInset) stops.push(`transparent calc(100% - ${inset})`)
-    stops.push('transparent 100%')
-  } else {
-    stops.push('black 100%')
-  }
-  const gradient = `linear-gradient(to bottom, ${stops.join(', ')})`
-  return { maskImage: gradient, WebkitMaskImage: gradient }
-})
+const viewportStyle = computed(() =>
+  computeScrollbarFadeMask({
+    fadeMask: props.fadeMask,
+    fadeMaskInset: props.fadeMaskInset,
+    atTop: atTop.value,
+    atBottom: atBottom.value,
+  }),
+)
 
 function onScroll() {
   scheduleMetrics()
@@ -261,51 +227,6 @@ function onMouseEnter() {
 
 function onMouseLeave() {
   if (!isDragging.value) scheduleHide()
-}
-
-// ---- Thumb 拖拽 ----
-let dragStartY = 0
-let dragStartScrollTop = 0
-let originalUserSelect = ''
-
-function onThumbMouseDown(e: MouseEvent) {
-  isDragging.value = true
-  dragStartY = e.clientY
-  dragStartScrollTop = viewportRef.value?.scrollTop ?? 0
-  document.addEventListener('mousemove', onDragMove)
-  document.addEventListener('mouseup', onDragEnd)
-  originalUserSelect = document.body.style.userSelect
-  document.body.style.userSelect = 'none'
-  reveal()
-}
-
-function onDragMove(e: MouseEvent) {
-  if (!isDragging.value || !viewportRef.value || !trackRef.value) return
-  const { scrollHeight, clientHeight } = viewportRef.value
-  const trackHeight = trackRef.value.clientHeight
-  const scrollRange = scrollHeight - clientHeight
-  const thumbRange = trackHeight - thumbHeight.value
-  const deltaY = e.clientY - dragStartY
-  const deltaScroll = thumbRange > 0 ? (deltaY / thumbRange) * scrollRange : 0
-  viewportRef.value.scrollTop = dragStartScrollTop + deltaScroll
-}
-
-function onDragEnd() {
-  isDragging.value = false
-  document.removeEventListener('mousemove', onDragMove)
-  document.removeEventListener('mouseup', onDragEnd)
-  document.body.style.userSelect = originalUserSelect
-  scheduleHide()
-}
-
-// ---- Track 点击跳转 ----
-function onTrackMouseDown(e: MouseEvent) {
-  if (!viewportRef.value || !trackRef.value) return
-  const trackRect = trackRef.value.getBoundingClientRect()
-  const clickY = e.clientY - trackRect.top
-  const clickRatio = clickY / trackRect.height
-  const { scrollHeight, clientHeight } = viewportRef.value
-  cancelOwnScroll = scrollToRoot(viewportRef.value, clickRatio * (scrollHeight - clientHeight))
 }
 
 function scrollToTop(smooth = true) {
@@ -374,7 +295,6 @@ function releasePrimaryBinding() {
 
 onBeforeUnmount(() => {
   cancelOwnScroll?.()
-  if (isDragging.value) document.body.style.userSelect = originalUserSelect
 })
 
 onUnmounted(() => {
@@ -382,8 +302,6 @@ onUnmounted(() => {
   if (hideTimer) clearTimeout(hideTimer)
   resizeObserver?.disconnect()
   mutationObserver?.disconnect()
-  document.removeEventListener('mousemove', onDragMove)
-  document.removeEventListener('mouseup', onDragEnd)
 
   // 仅清掉本实例登记的状态。out-in 过渡里新页面先挂载，旧页面卸载时不得覆盖新登记。
   releasePrimaryBinding()
@@ -431,210 +349,5 @@ onUnmounted(() => {
   @media (prefers-reduced-motion: reduce) {
     transition: none;
   }
-}
-
-.custom-scrollbar__back-to-top {
-  position: absolute;
-  bottom: 20px;
-  right: 20px;
-  z-index: 20;
-
-  @media (max-width: #{$breakpoint-sm - 0.02}) {
-    bottom: 16px;
-    right: 16px;
-  }
-}
-
-.custom-scrollbar__back-to-top-btn {
-  position: relative;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-width: 2.75rem;
-  height: 2.25rem;
-  padding: 0.25rem 0.625rem;
-  border-radius: $radius-full;
-  border: 1px solid var(--border);
-  background: var(--surface-1-alpha);
-  backdrop-filter: blur(12px);
-  color: var(--text-soft);
-  font-size: 0.75rem;
-  font-weight: 600;
-  font-variant-numeric: tabular-nums;
-  white-space: nowrap;
-  cursor: var(--interaction-cursor, pointer);
-  transition:
-    background-color 0.2s ease,
-    border-color 0.2s ease,
-    color 0.2s ease,
-    box-shadow 0.2s ease,
-    transform 0.15s ease;
-  @media (prefers-reduced-motion: reduce) {
-    transition: none;
-  }
-
-  &:hover {
-    color: var(--accent-text);
-    background: var(--surface-2);
-    border-color: var(--border-hover);
-    box-shadow: var(--shadow-card);
-
-    .custom-scrollbar__progress-text {
-      opacity: 0;
-      transform: scale(0.6);
-    }
-
-    .custom-scrollbar__progress-icon {
-      opacity: 1;
-      transform: translateY(0);
-      animation: scrollbar-progress-bounce 0.6s ease infinite;
-      @media (prefers-reduced-motion: reduce) {
-        animation: none;
-      }
-    }
-  }
-
-  &:active {
-    transform: scale(0.95);
-  }
-
-  // 点击回顶后 hover 不再切换图标
-  &.is-clicked:hover {
-    .custom-scrollbar__progress-text {
-      opacity: 1;
-      transform: none;
-    }
-
-    .custom-scrollbar__progress-icon {
-      opacity: 0;
-      transform: translateY(4px);
-      animation: none;
-    }
-  }
-
-  @media (max-width: #{$breakpoint-sm - 0.02}) {
-    min-width: 2.5rem;
-    height: 2rem;
-    font-size: 0.6875rem;
-  }
-}
-
-.custom-scrollbar__progress-text {
-  transition:
-    opacity 0.2s ease,
-    transform 0.2s ease;
-  @media (prefers-reduced-motion: reduce) {
-    transition: none;
-  }
-}
-
-.custom-scrollbar__progress-icon {
-  position: absolute;
-  opacity: 0;
-  transform: translateY(4px);
-  transition:
-    opacity 0.2s ease,
-    transform 0.2s ease;
-  @media (prefers-reduced-motion: reduce) {
-    transition: none;
-  }
-}
-
-@keyframes scrollbar-progress-bounce {
-  0%,
-  100% {
-    transform: translateY(0);
-  }
-  40% {
-    transform: translateY(-3px);
-  }
-  60% {
-    transform: translateY(1px);
-  }
-}
-
-.back-to-top-enter-active {
-  transition:
-    opacity 0.25s ease-out,
-    transform 0.25s ease-out;
-  @media (prefers-reduced-motion: reduce) {
-    transition: none;
-  }
-}
-
-.back-to-top-leave-active {
-  transition:
-    opacity 0.2s ease-in,
-    transform 0.2s ease-in;
-  @media (prefers-reduced-motion: reduce) {
-    transition: none;
-  }
-}
-
-.back-to-top-enter-from,
-.back-to-top-leave-to {
-  opacity: 0;
-  transform: scale(0.8) translateY(8px);
-}
-
-.custom-scrollbar__track {
-  position: absolute;
-  right: 4px;
-  top: var(--scrollbar-track-inset, 4px);
-  bottom: var(--scrollbar-track-inset, 4px);
-  width: 6px;
-  border-radius: 3px;
-  z-index: 20;
-  transition:
-    width 0.2s ease,
-    background-color 0.2s ease;
-  @media (prefers-reduced-motion: reduce) {
-    transition: none;
-  }
-
-  &:hover {
-    width: 10px;
-    background-color: color-mix(in srgb, var(--text-soft) 8%, transparent);
-
-    .custom-scrollbar__thumb {
-      opacity: 0.5;
-    }
-  }
-}
-
-.custom-scrollbar__thumb {
-  position: absolute;
-  left: 0;
-  width: 100%;
-  border-radius: inherit;
-  background-color: var(--text-soft);
-  opacity: 0.3;
-  transition: opacity 0.15s ease;
-  @media (prefers-reduced-motion: reduce) {
-    transition: none;
-  }
-  cursor: var(--interaction-cursor, grab);
-
-  &:hover {
-    opacity: 0.55;
-  }
-
-  &.is-dragging {
-    cursor: var(--interaction-cursor, grabbing);
-    opacity: 0.65;
-  }
-}
-
-.scrollbar-fade-enter-active,
-.scrollbar-fade-leave-active {
-  transition: opacity 0.3s ease;
-  @media (prefers-reduced-motion: reduce) {
-    transition: none;
-  }
-}
-
-.scrollbar-fade-enter-from,
-.scrollbar-fade-leave-to {
-  opacity: 0;
 }
 </style>

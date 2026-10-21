@@ -45,41 +45,19 @@
             sizes="(min-width: 640px) 80vw, 100vw"
           />
         </div>
-        <div class="article-page__stats">
-          <span class="article-page__stat">
-            <Icon name="lucide:eye" size="14" />
-            {{ formatCount(articleViews) }}
-          </span>
-          <button
-            type="button"
-            class="article-page__stat article-page__stat--btn"
-            :class="{ 'is-liked': articleLiked }"
-            :disabled="interactionPending || !interactionLoaded"
-            :aria-pressed="articleLiked"
-            :aria-label="$t('article.detail.likeLabel', { count: articleLikes }, articleLikes)"
-            @click="toggleArticleLike"
-          >
-            <Icon :name="'lucide:heart'" size="14" />
-            {{ articleLikes }}
-          </button>
-          <button
-            type="button"
-            class="article-page__stat article-page__stat--btn"
-            :class="{ 'is-favorited': isFavorited(article.id) }"
-            :aria-pressed="isFavorited(article.id)"
-            @click="toggleFavorite(article.id)"
-          >
-            <Icon :name="isFavorited(article.id) ? 'lucide:bookmark-check' : 'lucide:bookmark'" size="14" />
-            {{ isFavorited(article.id) ? $t('article.detail.favorited') : $t('article.detail.favorite') }}
-          </button>
-          <span class="article-page__stat">
-            <Icon name="lucide:message-circle" size="14" />
-            {{ total }}
-          </span>
-          <ClientOnly>
-            <CommonShareButtons :title="article.title" :url="canonicalUrl" class="article-page__share" />
-          </ClientOnly>
-        </div>
+        <ArticleStatsBar
+          :views="articleViews"
+          :likes="articleLikes"
+          :liked="articleLiked"
+          :interaction-pending="interactionPending"
+          :interaction-loaded="interactionLoaded"
+          :favorited="isFavorited(article.id)"
+          :total-comments="total"
+          :article-title="article.title"
+          :canonical-url="canonicalUrl"
+          @toggle-like="toggleArticleLike"
+          @toggle-favorite="toggleFavorite(article.id)"
+        />
         <CommonRequestFeedback
           v-if="interactionError"
           :title="interactionError"
@@ -155,8 +133,8 @@
 
 <script setup lang="ts">
 import { useMediaQuery } from '@vueuse/core'
-import { absoluteUrl } from '~/utils/absoluteUrl'
-import { formatNumber } from '~/utils/format'
+import { useArticleDetailSeo } from '~/features/article/useArticleDetailSeo'
+
 const route = useRoute()
 const { currentThemeId, switchingState } = useLayoutTheme()
 const nexusSidebarVisible = useMediaQuery('(min-width: 1440px)')
@@ -196,7 +174,15 @@ requestScope.assertActive()
 const publicSite = useSiteUrl()
 const { settings: siteSettings } = useSiteSettings()
 const canonicalUrl = computed(() => `${publicSite}${articlePath(article.value)}`)
-const seoDescription = computed(() => article.value.seoDescription || articleExcerpt.value)
+
+useArticleDetailSeo({
+  article,
+  articleExcerpt,
+  canonicalUrl,
+  publicSite,
+  siteSettings,
+})
+
 const {
   comments,
   total,
@@ -252,74 +238,6 @@ onMounted(() => {
     date: article.value.date,
   })
 })
-
-function formatCount(n: number) {
-  return formatNumber(n)
-}
-
-usePageSeo({
-  title: () => article.value.seoTitle || article.value.title,
-  description: () => seoDescription.value,
-  type: 'article',
-  canonical: () => canonicalUrl.value,
-  image: () => article.value.cover,
-  imageAlt: () => article.value.coverAlt || article.value.title,
-  // 可索引时不写 robots，保留模块默认的 max-image-preview 等指令
-  robots: () => (article.value.seoNoindex ? 'noindex, follow' : undefined),
-})
-const articleTags = computed(() => (article.value.tags ?? []).map((tag) => tag.label))
-useSeoMeta({
-  articlePublishedTime: () => article.value.date || undefined,
-  articleModifiedTime: () => article.value.updatedAt || undefined,
-  articleSection: () => article.value.category || undefined,
-  articleTag: () => (articleTags.value.length ? articleTags.value : undefined),
-})
-useHead({
-  meta: () => (articleTags.value.length ? [{ name: 'keywords', content: articleTags.value.join(',') }] : []),
-})
-
-const articleImage = computed(() => absoluteUrl(article.value.cover, publicSite))
-const authorName = computed(() => siteSettings.value.ownerName || siteSettings.value.name)
-const { t, locale } = useI18n()
-useJsonLd('article', () => ({
-  '@context': 'https://schema.org',
-  '@type': 'BlogPosting',
-  headline: article.value.seoTitle || article.value.title,
-  description: seoDescription.value,
-  url: canonicalUrl.value,
-  mainEntityOfPage: { '@type': 'WebPage', '@id': canonicalUrl.value },
-  ...(articleImage.value ? { image: [articleImage.value] } : {}),
-  datePublished: article.value.date,
-  ...(article.value.updatedAt ? { dateModified: article.value.updatedAt } : {}),
-  ...(articleTags.value.length ? { keywords: articleTags.value.join(',') } : {}),
-  ...(article.value.category ? { articleSection: article.value.category } : {}),
-  inLanguage: locale.value,
-  author: { '@type': 'Person', name: authorName.value, url: publicSite + '/about' },
-  publisher: { '@type': 'Person', name: authorName.value, url: publicSite + '/' },
-}))
-useJsonLd('breadcrumb', () => ({
-  '@context': 'https://schema.org',
-  '@type': 'BreadcrumbList',
-  itemListElement: [
-    { '@type': 'ListItem', position: 1, name: t('article.detail.breadcrumbHome'), item: publicSite + '/' },
-    ...(article.value.category
-      ? [
-          {
-            '@type': 'ListItem',
-            position: 2,
-            name: article.value.category,
-            item: `${publicSite}/?category=${encodeURIComponent(article.value.category)}`,
-          },
-        ]
-      : []),
-    {
-      '@type': 'ListItem',
-      position: article.value.category ? 3 : 2,
-      name: article.value.title,
-      item: canonicalUrl.value,
-    },
-  ],
-}))
 </script>
 
 <style lang="scss" scoped>
@@ -368,53 +286,5 @@ useJsonLd('breadcrumb', () => ({
   width: 100%;
   height: 100%;
   object-fit: cover;
-}
-
-/* 统计项统一内边距，整行左移同等距离，让首项图标与正文左缘对齐、各项间距一致 */
-.article-page__stats {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 0.5rem;
-  margin: 0 0 1.5rem -0.5rem;
-  font-size: 0.8125rem;
-  color: var(--text-soft);
-}
-
-.article-page__stat {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.375rem;
-  padding: 0.25rem 0.5rem;
-
-  &--btn {
-    border: none;
-    background: none;
-    cursor: var(--interaction-cursor, pointer);
-    border-radius: $radius-sm;
-    transition: $transition-fast;
-    @media (prefers-reduced-motion: reduce) {
-      transition: none;
-    }
-    font-size: inherit;
-    color: inherit;
-
-    &:hover {
-      background: var(--surface-2);
-      color: var(--text-main);
-    }
-
-    &.is-liked {
-      color: #ef4444;
-    }
-
-    &.is-favorited {
-      color: var(--accent-text);
-    }
-  }
-}
-
-.article-page__share {
-  margin-left: auto;
 }
 </style>
