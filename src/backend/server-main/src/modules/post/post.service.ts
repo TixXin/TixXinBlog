@@ -8,11 +8,11 @@
  * 不能代表内容修改时间，直接用于 dateModified 与站点地图 lastmod 会造成无意义的频繁变更。
  */
 
-import { FilterQuery, Loaded, LockMode } from '@mikro-orm/core'
+import { Loaded, LockMode } from '@mikro-orm/core'
 import { EntityManager } from '@mikro-orm/postgresql'
 import { HttpStatus, Injectable } from '@nestjs/common'
 import { BusinessException } from '../../common/exceptions/business.exception'
-import { Post, PostContentSection } from '../../entities/post.entity'
+import { Post } from '../../entities/post.entity'
 import { PostLike } from '../../entities/post-like.entity'
 import { PostView } from '../../entities/post-view.entity'
 import { PostAddress } from '../../entities/post-address.entity'
@@ -20,117 +20,27 @@ import { PostRevision } from '../../entities/post-revision.entity'
 import { QueryPostDto } from './dto/query-post.dto'
 import { resolveContentRelations } from '../content-relations/content-relations'
 import { msg } from '../../common/i18n'
+import {
+  ArticleDetailDto,
+  POST_NOT_FOUND,
+  PostItemDto,
+  PostListResult,
+  PostViewResult,
+  SORT_FIELD_MAP,
+  buildPostWhere,
+  contentUpdatedAt,
+  toPostItemDto,
+} from './post-query'
 
-/** 文章不存在（api.md 附录 A：1001 / 404） */
-const POST_NOT_FOUND = 1001
-
-/** 列表项，字段对齐前端 features/post/types.ts 的 PostItem */
-export interface PostItemDto {
-  slug?: string
-  id: number
-  title: string
-  summary: string
-  cover?: string
-  tags: Array<{ label: string; color: string }>
-  category: string
-  readTime: number
-  likes: number
-  views: number
-  comments: number
-  date: string
-  folder: string
-  pinned: boolean
-}
-
-/** 详情，字段对齐前端 ArticleDetail（含 toc 扩展） */
-export interface ArticleDetailDto {
-  /** 内容最后修订时间（ISO UTC），不受浏览、点赞与评论计数影响 */
-  updatedAt: string
-  tags: PostItemDto['tags']
-  /** 仅在摘要为空时提供，取首个正文段落前 160 字，供描述与分享兜底 */
-  excerpt?: string
-  relatedContent?: Awaited<ReturnType<typeof resolveContentRelations>>
-  slug?: string
-  summary?: string
-  coverAlt?: string
-  seoTitle?: string
-  seoDescription?: string
-  seoNoindex?: boolean
-  id: string
-  title: string
-  cover: string
-  date: string
-  category: string
-  readTime: string
-  views: number
-  likes: number
-  comments: number
-  /** 结构化正文仅在没有 Markdown 原文的旧文章上返回，避免同一正文传输两遍 */
-  content?: PostContentSection[]
-  contentRaw?: string
-  toc: Array<{ id: string; text: string; level: number }>
-}
-
-export interface PostListResult {
-  items: PostItemDto[]
-  total: number
-  page: number
-  pageSize: number
-}
-
-/** 浏览计数结果：counted 表示本次是否计入（同一访客每小时只计一次） */
-export interface PostViewResult {
-  views: number
-  likes: number
-  liked: boolean
-  counted: boolean
-}
-
-/** 内容修订时间早于发布时间（如预约或回填发布日期）时按发布时间计，缺修订记录的旧数据同样回退。 */
-export function contentUpdatedAt(publishedAt: Date, revisedAt?: Date | null): Date {
-  return revisedAt && revisedAt > publishedAt ? revisedAt : publishedAt
-}
-
-const SORT_FIELD_MAP = { date: 'publishedAt', views: 'views', likes: 'likes' } as const
-type PostListSource = Pick<
-  Post,
-  | 'id'
-  | 'slug'
-  | 'title'
-  | 'summary'
-  | 'cover'
-  | 'category'
-  | 'readTimeMinutes'
-  | 'likes'
-  | 'views'
-  | 'commentCount'
-  | 'publishedAt'
-  | 'folder'
-  | 'pinned'
-> & { tags: { getItems(): PostItemDto['tags'] } }
+export type { PostItemDto, ArticleDetailDto, PostListResult, PostViewResult }
+export { contentUpdatedAt }
 
 @Injectable()
 export class PostService {
   constructor(private readonly em: EntityManager) {}
 
   async findMany(query: QueryPostDto): Promise<PostListResult> {
-    const where: FilterQuery<Post> = { status: 'published', deletedAt: null }
-    if (query.category && query.category !== 'all') where.category = query.category
-    if (query.pinned !== undefined) where.pinned = query.pinned
-    if (query.folder) where.folder = query.folder
-    if (query.tag) where.tags = { slug: query.tag }
-    if (query.search) {
-      // 与其他公开内容域保持字面检索，保留正文和标签搜索。
-      const kw = '%' + query.search.replace(/[\\%_]/g, (char) => '\\' + char) + '%'
-      where.$or = [
-        { title: { $ilike: kw } },
-        { summary: { $ilike: kw } },
-        { contentRaw: { $ilike: kw } },
-        { tags: { label: { $ilike: kw } } },
-      ]
-    }
-
-    const [posts, total] = await this.em.findAndCount(Post, where, {
+    const [posts, total] = await this.em.findAndCount(Post, buildPostWhere(query), {
       // 列表仅读取投影使用的字段；正文仍参与 WHERE 检索，避免多标签联表重复取回长正文。
       fields: [
         'id',
@@ -160,7 +70,7 @@ export class PostService {
     })
 
     return {
-      items: posts.map((p) => this.toPostItem(p)),
+      items: posts.map(toPostItemDto),
       total,
       page: query.page,
       pageSize: query.pageSize,
@@ -229,7 +139,7 @@ export class PostService {
       const existing = await em.findOne(PostLike, { post, visitorIdHash })
       if (existing) {
         em.remove(existing)
-        post.likes = Math.max(0, post.likes - 1)
+        post.likes = Math.max(0, noteLikes(post.likes - 1))
       } else {
         em.create(PostLike, { post, visitorIdHash, createdAt: new Date() })
         post.likes += 1
@@ -281,22 +191,8 @@ export class PostService {
     if (!address) throw new BusinessException(POST_NOT_FOUND, msg('post.notFound'), HttpStatus.NOT_FOUND)
     return this.findDetail(address.post.id)
   }
-  private toPostItem(post: PostListSource): PostItemDto {
-    return {
-      id: post.id,
-      slug: post.slug,
-      title: post.title,
-      summary: post.summary,
-      cover: post.cover ?? undefined,
-      tags: post.tags.getItems().map((t) => ({ label: t.label, color: t.color })),
-      category: post.category,
-      readTime: post.readTimeMinutes,
-      likes: post.likes,
-      views: post.views,
-      comments: post.commentCount,
-      date: post.publishedAt.toISOString(),
-      folder: post.folder,
-      pinned: post.pinned,
-    }
-  }
+}
+
+function noteLikes(value: number): number {
+  return Math.max(0, value)
 }

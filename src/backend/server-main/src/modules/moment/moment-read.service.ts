@@ -7,51 +7,20 @@ import { Moment } from '../../entities/moment.entity'
 import { MomentLike } from '../../entities/moment-like.entity'
 import { MomentComment } from '../../entities/moment-comment.entity'
 import { MediaAsset } from '../../entities/media-asset.entity'
-import type { Post } from '../../entities/post.entity'
 import type { QueryAdminMomentsDto, QueryMomentsDto, MomentPageQuery, QueryAdminMomentCommentsDto } from './moment.dto'
 import { momentWhere, publicMoments } from './moment-values'
 import { managedMediaIds } from '../media/media-references'
 import { msg } from '../../common/i18n'
+import {
+  CommentRow,
+  LINKED_ARTICLE_FIELDS,
+  MomentProjection,
+  RECOLLECTION_FIELDS,
+  formatMomentItem,
+  momentCommentDto,
+} from './moment-query'
 
-interface CommentRow {
-  id: string
-  moment_id: string
-  author: string
-  avatar: string
-  content: string
-  created_at: Date
-  is_owner: boolean
-  status: string
-}
-// 公开投影只用到引用文章的卡片字段与可见性；限定列避免连带读取 Markdown 原文和 JSONB 正文。
-const LINKED_ARTICLE_FIELDS = [
-  '*',
-  'linkedArticle.id',
-  'linkedArticle.slug',
-  'linkedArticle.title',
-  'linkedArticle.summary',
-  'linkedArticle.cover',
-  'linkedArticle.status',
-  'linkedArticle.deletedAt',
-] as const
-/** 序列化所需的动态投影：引用文章只保证加载卡片字段 */
-type MomentProjection = Omit<Moment, 'linkedArticle'> & {
-  linkedArticle?: Pick<Post, 'id' | 'slug' | 'title' | 'summary' | 'cover' | 'status' | 'deletedAt'> | null
-}
-// 回顾卡片只展示截断正文与日期。
-const RECOLLECTION_FIELDS = ['id', 'content', 'publishedAt', 'createdAt'] as const
-
-export function momentCommentDto(comment: MomentComment) {
-  return {
-    id: comment.id,
-    author: comment.author,
-    avatar: comment.avatar,
-    content: comment.content,
-    time: comment.createdAt.toISOString(),
-    isOwner: comment.isOwner,
-    moderationStatus: comment.status,
-  }
-}
+export { momentCommentDto }
 
 @Injectable()
 export class MomentReadService {
@@ -78,6 +47,7 @@ export class MomentReadService {
     })
     return { items: await this.serialize(items, visitor, admin), total, page: query.page, pageSize: query.pageSize }
   }
+
   async require(id: string, admin = false) {
     const note = await this.em.findOne(
       Moment,
@@ -87,14 +57,17 @@ export class MomentReadService {
     if (!note) throw new NotFoundException(msg('moment.notFoundOrPrivate'))
     return note
   }
+
   async detail(id: string, visitor = '', admin = false) {
     return (await this.serialize([await this.require(id, admin)], visitor, admin))[0]!
   }
+
   async submission(requestId: string) {
     const note = await this.em.findOne(Moment, { requestId, deletedAt: null })
     if (!note) throw new NotFoundException(msg('moment.submissionNotFound'))
     return this.detail(note.id, '', true)
   }
+
   async navigation(id: string) {
     const current = await this.require(id)
     const date = current.publishedAt ?? current.createdAt
@@ -117,6 +90,7 @@ export class MomentReadService {
     const [prev, next] = await Promise.all([nearest('asc'), nearest('desc')])
     return { prev, next }
   }
+
   async adminComments(query: QueryAdminMomentCommentsDto) {
     const [items, total] = await this.em.findAndCount(
       MomentComment,
@@ -144,6 +118,7 @@ export class MomentReadService {
       pageSize: query.pageSize,
     }
   }
+
   async comments(id: string, query: MomentPageQuery, visitor = '', admin = false) {
     await this.require(id, admin)
     const where: FilterQuery<MomentComment> = { moment: id, deletedAt: null }
@@ -155,6 +130,7 @@ export class MomentReadService {
     })
     return { items: items.map(momentCommentDto), total, page: query.page, pageSize: query.pageSize }
   }
+
   async commentLocation(id: string, commentId: string) {
     await this.require(id, true)
     const target = await this.em.findOne(MomentComment, { id: commentId, moment: id, deletedAt: null })
@@ -167,6 +143,7 @@ export class MomentReadService {
     // 与管理评论面板每页 15 条、时间和编号升序的顺序保持一致。
     return { commentId, page: Math.floor(preceding / 15) + 1, pageSize: 15 }
   }
+
   async overview() {
     const connection = this.em.getConnection()
     const today = new Date()
@@ -225,6 +202,7 @@ export class MomentReadService {
       })),
     }
   }
+
   async serialize(items: MomentProjection[], visitor: string, admin: boolean) {
     if (!items.length) return []
     const ids = items.map((item) => item.id)
@@ -248,57 +226,6 @@ export class MomentReadService {
     const mediaIds = managedMediaIds(items.map((item) => item.images))
     const media = mediaIds.length ? await this.em.find(MediaAsset, { id: { $in: mediaIds } }) : []
     const alts = new Map(media.map((asset) => [asset.id, asset.alt]))
-    return items.map((note) => {
-      const linked = note.linkedArticle
-      return {
-        id: note.id,
-        content: note.content,
-        images: note.images,
-        imageAlts: note.images.map((url) => alts.get(managedMediaIds([url])[0] ?? '') ?? ''),
-        date: (note.publishedAt ?? note.createdAt).toISOString(),
-        location: note.location,
-        device: note.device,
-        mood: note.mood,
-        topics: note.topics,
-        likes: note.likes,
-        isLiked: liked.has(note.id),
-        isPinned: note.isPinned,
-        commentCount: counts.find((count) => count.moment_id === note.id)?.count ?? 0,
-        comments: comments
-          .filter((comment) => comment.moment_id === note.id)
-          .sort(
-            (a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime() || a.id.localeCompare(b.id),
-          )
-          .map((comment) => ({
-            id: comment.id,
-            author: comment.author,
-            avatar: comment.avatar,
-            content: comment.content,
-            time: new Date(comment.created_at).toISOString(),
-            isOwner: comment.is_owner,
-            moderationStatus: comment.status,
-          })),
-        linkedArticle:
-          linked && linked.status === 'published' && !linked.deletedAt
-            ? {
-                id: String(linked.id),
-                title: linked.title,
-                summary: linked.summary,
-                cover: linked.cover,
-                url: `/articles/${linked.slug || linked.id}`,
-              }
-            : null,
-        linkedLink: note.linkedLink,
-        ...(admin
-          ? {
-              status: note.status,
-              revision: note.revision,
-              linkedArticleId: linked?.id ?? null,
-              createdAt: note.createdAt.toISOString(),
-              updatedAt: note.updatedAt.toISOString(),
-            }
-          : {}),
-      }
-    })
+    return items.map((note) => formatMomentItem(note, comments, counts, liked, alts, admin))
   }
 }

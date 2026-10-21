@@ -5,13 +5,11 @@
  * @since 2026-07-20
  */
 
-import { createHash, randomBytes } from 'node:crypto'
 import { msg } from '../../common/i18n'
 import { LockMode } from '@mikro-orm/core'
 import { EntityManager } from '@mikro-orm/postgresql'
 import { BadRequestException, HttpStatus, Injectable, Logger } from '@nestjs/common'
 import { JwtService } from '@nestjs/jwt'
-import * as argon2 from 'argon2'
 import { ErrorCode } from '../../common/constants/error-codes'
 import { BusinessException } from '../../common/exceptions/business.exception'
 import { AdminUser } from '../../entities/admin-user.entity'
@@ -19,35 +17,21 @@ import { RefreshToken } from '../../entities/refresh-token.entity'
 import { AdminSession } from '../../entities/admin-session.entity'
 import { AuthSessionsService } from './auth-sessions.service'
 import { isUUID } from 'class-validator'
-import { ACCESS_TOKEN_TTL_SECONDS, REFRESH_TOKEN_TTL_MS } from './auth.constants'
+import { REFRESH_TOKEN_TTL_MS } from './auth.constants'
 import { AuditService } from '../audit/audit.service'
+import {
+  AccessTokenPayload,
+  LoginResult,
+  RefreshReuse,
+  buildLoginResult,
+  dummyPasswordHash,
+  generateRefreshTokenPlain,
+  hashUserPassword,
+  sha256,
+  verifyUserPassword,
+} from './auth-tokens'
 
-export interface AccessTokenPayload {
-  sub: string
-  username: string
-  version: number
-  sid: string
-}
-
-/** 已轮换的刷新令牌被再次使用时的处置结果，用于事务提交后写审计。 */
-interface RefreshReuse {
-  reuse: { userId: string; username: string; sessionId?: string; revokedTokens: number }
-}
-
-export interface LoginResult {
-  accessToken: string
-  expiresIn: number
-  user: { id: string; username: string }
-  /** refresh token 明文,仅用于 Set-Cookie,不进响应体 */
-  refreshTokenPlain: string
-}
-
-function sha256(input: string): string {
-  return createHash('sha256').update(input).digest('hex')
-}
-
-// 进程内只计算一次，未知账号登录不再额外执行高成本哈希。
-const dummyPasswordHash = argon2.hash('non-account-timing-placeholder')
+export type { AccessTokenPayload, LoginResult }
 
 @Injectable()
 export class AuthService {
@@ -64,7 +48,7 @@ export class AuthService {
     const user = await this.em.findOne(AdminUser, { username })
     // 用户不存在时也走一次哈希校验,避免时序差异泄露用户名是否存在
     const hashToVerify = user?.passwordHash ?? (await dummyPasswordHash)
-    const valid = await argon2.verify(hashToVerify, password).catch(() => false)
+    const valid = await verifyUserPassword(hashToVerify, password)
     if (!user || !valid) {
       throw new BusinessException(ErrorCode.Unauthorized, msg('auth.invalidCredentials'), HttpStatus.UNAUTHORIZED)
     }
@@ -82,7 +66,7 @@ export class AuthService {
       const session = this.sessions.create(em, current, userAgent)
       const refreshTokenPlain = await this.issueRefreshToken(current, session, em)
       await em.flush()
-      return this.buildLoginResult(current, refreshTokenPlain, session.id)
+      return buildLoginResult(this.jwtService, current, refreshTokenPlain, session.id)
     })
   }
 
@@ -145,7 +129,7 @@ export class AuthService {
       record.revokedAt = now
       const nextPlain = await this.issueRefreshToken(user, session, em)
       await em.flush()
-      return this.buildLoginResult(user, nextPlain, session.id)
+      return buildLoginResult(this.jwtService, user, nextPlain, session.id)
     })
     if ('reuse' in result) {
       await this.auditRefreshReuse(result.reuse, traceId)
@@ -275,15 +259,10 @@ export class AuthService {
       const user = await em.findOne(AdminUser, { id: userId }, { lockMode: LockMode.PESSIMISTIC_WRITE, refresh: true })
       if (!user || user.sessionVersion !== version)
         throw new BusinessException(ErrorCode.Unauthorized, msg('auth.loginExpiredRelogin'), HttpStatus.UNAUTHORIZED)
-      if (!(await argon2.verify(user.passwordHash, currentPassword).catch(() => false)))
+      if (!(await verifyUserPassword(user.passwordHash, currentPassword)))
         throw new BadRequestException(msg('auth.currentPasswordIncorrect'))
       if (currentPassword === newPassword) throw new BadRequestException(msg('auth.newPasswordSame'))
-      user.passwordHash = await argon2.hash(newPassword, {
-        type: argon2.argon2id,
-        memoryCost: 65536,
-        timeCost: 3,
-        parallelism: 4,
-      })
+      user.passwordHash = await hashUserPassword(newPassword)
       user.sessionVersion += 1
       await em.nativeUpdate(AdminSession, { adminUser: user, revokedAt: null }, { revokedAt: new Date() })
       await em.nativeUpdate(RefreshToken, { adminUser: user, revokedAt: null }, { revokedAt: new Date() })
@@ -303,7 +282,7 @@ export class AuthService {
   }
 
   private async issueRefreshToken(user: AdminUser, session: AdminSession, em = this.em): Promise<string> {
-    const plain = randomBytes(48).toString('base64url')
+    const plain = generateRefreshTokenPlain()
     em.create(RefreshToken, {
       adminUser: user,
       tokenHash: sha256(plain),
@@ -312,20 +291,5 @@ export class AuthService {
       createdAt: new Date(),
     })
     return plain
-  }
-
-  private buildLoginResult(user: AdminUser, refreshTokenPlain: string, sessionId: string): LoginResult {
-    const payload: AccessTokenPayload = {
-      sub: user.id,
-      username: user.username,
-      version: user.sessionVersion,
-      sid: sessionId,
-    }
-    return {
-      accessToken: this.jwtService.sign(payload),
-      expiresIn: ACCESS_TOKEN_TTL_SECONDS,
-      user: { id: user.id, username: user.username },
-      refreshTokenPlain,
-    }
   }
 }

@@ -4,9 +4,7 @@
  * 公开读取可按白名单宽度返回 WebP 变体，变体首次请求时生成并缓存到磁盘，同一变体并发只生成一次。
  */
 import { EntityManager } from '@mikro-orm/postgresql'
-import { msg, translate, type ApiLocale } from '../../common/i18n'
-import { raw } from '@mikro-orm/core'
-import type { FilterQuery } from '@mikro-orm/core'
+import { msg, type ApiLocale } from '../../common/i18n'
 import {
   ConflictException,
   HttpException,
@@ -15,13 +13,13 @@ import {
   ServiceUnavailableException,
 } from '@nestjs/common'
 import { createHash, randomUUID } from 'node:crypto'
-import { isUUID } from 'class-validator'
 import { MediaAsset } from '../../entities/media-asset.entity'
 import { MediaReference } from '../../entities/media-reference.entity'
 import { MediaStorage, mediaVariantName } from './media-storage'
 import { normalizeImage, resizeImageVariant } from './media-image'
 import type { MediaVariantWidth, UploadedImage } from './media-image'
-import { lockMedia, mediaUrl } from './media-references'
+import { lockMedia } from './media-references'
+import { buildMediaFilter, formatMediaReference, toMediaDto } from './media-query'
 
 // 同时生成变体的上限：变体只在首次请求时生成，限制并发避免公开请求集中占满 CPU。
 const VARIANT_CONCURRENCY = 2
@@ -31,25 +29,12 @@ export class MediaService {
   private readonly pendingVariants = new Map<string, Promise<Buffer>>()
   private activeVariants = 0
   private readonly variantQueue: (() => void)[] = []
+
   constructor(
     private readonly em: EntityManager,
     private readonly storage: MediaStorage,
   ) {}
-  private dto(asset: MediaAsset) {
-    return {
-      id: asset.id,
-      name: asset.originalName,
-      url: mediaUrl(asset.id),
-      alt: asset.alt,
-      description: asset.description,
-      width: asset.width,
-      height: asset.height,
-      byteSize: asset.byteSize,
-      mimeType: asset.mimeType,
-      createdAt: asset.createdAt.toISOString(),
-      deleted: !!asset.deletedAt,
-    }
-  }
+
   async upload(file: UploadedImage | undefined, alt: string, uploadId?: string) {
     const image = await normalizeImage(file)
     const id = uploadId?.toLowerCase() ?? randomUUID()
@@ -62,7 +47,7 @@ export class MediaService {
         const existing = await em.findOne(MediaAsset, { id })
         if (existing) {
           if (existing.sha256 !== sha256 || existing.deletedAt) throw new ConflictException(msg('media.uploadIdUsed'))
-          return this.dto(existing)
+          return toMediaDto(existing)
         }
         const previous = await this.storage.readIfExists(key)
         if (previous) {
@@ -84,7 +69,7 @@ export class MediaService {
           alt,
         })
         await em.flush()
-        return this.dto(asset)
+        return toMediaDto(asset)
       })
     } catch (error) {
       if (written)
@@ -100,6 +85,7 @@ export class MediaService {
       throw new ServiceUnavailableException(msg('media.saveFailed'))
     }
   }
+
   async list(query: {
     page: number
     pageSize: number
@@ -108,36 +94,14 @@ export class MediaService {
     orientation?: 'landscape' | 'portrait' | 'square'
     usage?: 'used' | 'unused'
   }) {
-    const conditions: FilterQuery<MediaAsset>[] = [{ deletedAt: query.deleted ? { $ne: null } : null }]
-    if (query.search) {
-      const pattern = `%${query.search.replace(/[\\%_]/g, '\\$&')}%`
-      conditions.push({
-        $or: [
-          { originalName: { $ilike: pattern } },
-          { alt: { $ilike: pattern } },
-          { description: { $ilike: pattern } },
-          ...(isUUID(query.search) ? [{ id: query.search }] : []),
-        ],
-      })
-    }
-    if (query.orientation) {
-      const operator = { landscape: '>', portrait: '<', square: '=' }[query.orientation]
-      conditions.push({ [raw((alias) => `(${alias}.width ${operator} ${alias}.height)`)]: true })
-    }
-    if (query.usage) {
-      // 历史版本、草稿和所有业务引用共同决定是否使用，不能只统计当前公开内容。
-      conditions.push({
-        [raw((alias) => `(exists (select 1 from media_reference r where r.asset_id = ${alias}.id))`)]:
-          query.usage === 'used',
-      })
-    }
-    const [items, total] = await this.em.findAndCount(
-      MediaAsset,
-      { $and: conditions },
-      { orderBy: { createdAt: 'desc', id: 'desc' }, limit: query.pageSize, offset: (query.page - 1) * query.pageSize },
-    )
-    return { items: items.map((item) => this.dto(item)), total, page: query.page, pageSize: query.pageSize }
+    const [items, total] = await this.em.findAndCount(MediaAsset, buildMediaFilter(query), {
+      orderBy: { createdAt: 'desc', id: 'desc' },
+      limit: query.pageSize,
+      offset: (query.page - 1) * query.pageSize,
+    })
+    return { items: items.map((item) => toMediaDto(item)), total, page: query.page, pageSize: query.pageSize }
   }
+
   async references(id: string, page: number, locale: ApiLocale = 'zh-CN') {
     if (!(await this.em.findOne(MediaAsset, { id }))) throw new NotFoundException(msg('media.notFound'))
     const [items, total] = await this.em.findAndCount(
@@ -164,57 +128,19 @@ export class MediaService {
       total,
       page,
       pageSize: 20,
-      items: items.map((item) => ({
-        kind: item.kind,
-        revision: item.revision,
-        title:
-          item.post?.title ??
-          item.flashNote?.content.slice(0, 100) ??
-          item.moment?.content.slice(0, 100) ??
-          item.guestbookMessage?.content.slice(0, 100) ??
-          item.galleryPhoto?.title ??
-          item.project?.title ??
-          item.subscription?.name ??
-          item.friendLink?.name ??
-          item.imagePrompt?.title ??
-          translate(locale, 'media.referenceSiteAvatar'),
-        url:
-          item.momentComment && item.moment
-            ? `/admin/moments?comments=${encodeURIComponent(item.moment.id)}&commentId=${encodeURIComponent(item.momentComment.id)}`
-            : item.flashComment && item.flashNote
-              ? `/admin/flashes?comments=${encodeURIComponent(item.flashNote.id)}&commentId=${encodeURIComponent(item.flashComment.id)}`
-              : item.comment
-                ? `/admin/comments?commentId=${item.comment.id}`
-                : item.post
-                  ? `/admin/posts/${item.post.id}`
-                  : item.flashNote
-                    ? `/admin/flashes?edit=${encodeURIComponent(item.flashNote.id)}`
-                    : item.moment
-                      ? `/admin/moments/${encodeURIComponent(item.moment.id)}`
-                      : item.guestbookMessage
-                        ? `/admin/guestbook?focus=${item.guestbookMessage.id}`
-                        : item.galleryPhoto
-                          ? `/admin/gallery/${item.galleryPhoto.id}`
-                          : item.project
-                            ? `/admin/projects/${item.project.id}`
-                            : item.subscription
-                              ? `/admin/subscriptions/${item.subscription.id}`
-                              : item.friendLink
-                                ? `/admin/links/${item.friendLink.id}`
-                                : item.imagePrompt
-                                  ? `/prompts?edit=${item.imagePrompt.id}`
-                                  : '/admin/site',
-      })),
+      items: items.map((item) => formatMediaReference(item, locale)),
     }
   }
+
   async update(id: string, fields: { alt?: string; description?: string }) {
     const asset = await this.em.findOne(MediaAsset, { id, deletedAt: null })
     if (!asset) throw new NotFoundException(msg('media.notFoundOrRemoved'))
     if (fields.alt !== undefined) asset.alt = fields.alt
     if (fields.description !== undefined) asset.description = fields.description
     await this.em.flush()
-    return this.dto(asset)
+    return toMediaDto(asset)
   }
+
   async remove(id: string) {
     return this.em.transactional(async (em) => {
       await lockMedia(em)
@@ -229,6 +155,7 @@ export class MediaService {
       return { ok: true }
     })
   }
+
   async restore(id: string) {
     return this.em.transactional(async (em) => {
       await lockMedia(em)
@@ -241,9 +168,10 @@ export class MediaService {
       }
       asset.deletedAt = undefined
       await em.flush()
-      return this.dto(asset)
+      return toMediaDto(asset)
     })
   }
+
   async read(id: string, options: { ifNoneMatch?: string; head?: boolean; width?: MediaVariantWidth } = {}) {
     const asset = await this.em.findOne(MediaAsset, { id, deletedAt: null })
     if (!asset) throw new NotFoundException(msg('media.notFoundOrRemoved'))
@@ -268,6 +196,7 @@ export class MediaService {
       throw new ServiceUnavailableException(msg('media.fileUnavailable'))
     }
   }
+
   private variant(asset: MediaAsset, width: MediaVariantWidth) {
     const name = mediaVariantName(asset.id, width, asset.sha256)
     const pending = this.pendingVariants.get(name)
@@ -276,6 +205,7 @@ export class MediaService {
     this.pendingVariants.set(name, operation)
     return operation
   }
+
   private async loadVariant(key: string, name: string, width: MediaVariantWidth) {
     const cached = await this.storage.readVariant(name)
     if (cached) return cached
@@ -289,6 +219,7 @@ export class MediaService {
       this.releaseVariantSlot()
     }
   }
+
   private acquireVariantSlot() {
     if (this.activeVariants < VARIANT_CONCURRENCY) {
       this.activeVariants++
@@ -296,6 +227,7 @@ export class MediaService {
     }
     return new Promise<void>((resolve) => this.variantQueue.push(resolve))
   }
+
   private releaseVariantSlot() {
     const next = this.variantQueue.shift()
     if (next) next()

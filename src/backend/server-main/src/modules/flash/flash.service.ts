@@ -6,16 +6,15 @@
  * @since 2026-07-20
  */
 
-import { FilterQuery, LockMode, raw } from '@mikro-orm/core'
+import { FilterQuery, LockMode } from '@mikro-orm/core'
 import { EntityManager } from '@mikro-orm/postgresql'
-import { BadRequestException, HttpStatus, Injectable } from '@nestjs/common'
+import { HttpStatus, Injectable } from '@nestjs/common'
 import { ConfigService } from '@nestjs/config'
 import { BusinessException } from '../../common/exceptions/business.exception'
 import { FlashComment } from '../../entities/flash-comment.entity'
-import type { FlashCommentStatus } from '../../entities/flash-comment.entity'
 import { CommentPolicy } from '../../entities/comment-policy.entity'
 import { FlashLike } from '../../entities/flash-like.entity'
-import { FlashNote, FlashType } from '../../entities/flash-note.entity'
+import { FlashNote } from '../../entities/flash-note.entity'
 import { CreateFlashCommentDto } from './dto/create-flash-comment.dto'
 import { QueryFlashDto, SearchFlashDto } from './dto/query-flash.dto'
 import { MediaAsset } from '../../entities/media-asset.entity'
@@ -23,104 +22,25 @@ import { lockMedia, managedMediaIds, synchronizeMediaReferences } from '../media
 import { publicAuthorId } from '../../common/utils/public-author-id'
 import { momentUrl } from '../moment/moment-values'
 import { recordOwnerEvent } from '../operations/owner-events'
-
-/** 域错误码(api.md 附录 A):3001 闪念不存在 */
-const FLASH_NOT_FOUND = 3001
-
-/** 单博主场景默认归属(requirements.md:无多租户) */
 import { SITE_OWNER_ID } from '../../common/constants/site'
 import { msg } from '../../common/i18n'
+import {
+  DEFAULT_AVATAR,
+  FLASH_NOT_FOUND,
+  PUBLIC_ORDER,
+  PUBLIC_SQL,
+  RECOLLECTION_EXCERPT,
+  RECOLLECTION_LIMIT,
+  RecollectionRow,
+  buildFlashPublicWhere,
+  buildFlashSearchWhere,
+  formatFlashRecollection,
+  visibleToVisitor,
+} from './flash-query'
+import type { FlashCommentDto, FlashListResult, FlashNoteDto, FlashOverview } from './flash-query'
 
-const DEFAULT_AVATAR = '/avatar.svg'
-const DAY_MS = 86_400_000
-/** 时间胶囊摘录长度与随机候选数:前端卡片只展示 60 字,留出余量 */
-const RECOLLECTION_EXCERPT = 300
-const RECOLLECTION_LIMIT = 12
-/** 公开闪念的原生 SQL 条件,参数为站点所有者编号 */
-const PUBLIC_SQL = 'user_id = ? and is_draft = false and is_archived = false'
-
-/** 列表与搜索共用的排序:置顶前置,再按创建时间与编号倒序保证分页稳定 */
-const PUBLIC_ORDER = [{ isPinned: 'desc' }, { createdAt: 'desc' }, { id: 'desc' }] as const
-
-/** UTC 日起点 */
-function utcDay(value: string): Date {
-  return new Date(value + 'T00:00:00.000Z')
-}
-
-interface RecollectionRow {
-  id: string
-  content: string
-  created_at: Date | string
-}
-
-/** 响应形状对齐前端 features/flash/types.ts 的 FlashNote */
-export interface FlashNoteDto {
-  id: string
-  userId: string
-  content: string
-  tags: string[]
-  images: string[]
-  imageAlts: string[]
-  type: FlashType
-  createdAt: string
-  updatedAt: string
-  likes: number
-  liked: boolean
-  /** 已发布评论数;不含待审与隐藏评论,也不含访客本人可见的待审评论 */
-  commentCount: number
-  comments: FlashCommentDto[]
-  isPinned: boolean
-  isArchived: boolean
-  isDraft: boolean
-}
-
-/** 闪念评论响应;moderationStatus 与朋友圈评论同名同取值 */
-export interface FlashCommentDto {
-  id: string
-  authorId: string
-  authorName: string
-  authorAvatar: string
-  content: string
-  createdAt: string
-  moderationStatus: FlashCommentStatus
-}
-
-/** 公开读取的评论可见性:已发布评论,以及当前访客本人提交的待审评论(仅其本机可见) */
-export function visibleToVisitor(comment: Pick<FlashComment, 'status' | 'authorId'>, visitor: string): boolean {
-  return comment.status === 'published' || (comment.status === 'pending' && !!visitor && comment.authorId === visitor)
-}
-
-/** 时间胶囊条目:只带摘录与时间,不返回完整正文与互动 */
-interface FlashRecollection {
-  id: string
-  content: string
-  createdAt: string
-}
-
-/** 公开概览:侧栏日历、统计、标签云与时间胶囊共用一次聚合读取 */
-export interface FlashOverview {
-  /** 公开闪念总数 */
-  total: number
-  /** 当前 UTC 自然月新增数 */
-  monthCount: number
-  /** 有闪念的 UTC 日期与条数,日期倒序;日历可翻任意历史月份并计算连续天数 */
-  dates: Array<{ date: string; count: number }>
-  /** 标签出现次数,次数倒序、同次数按名称 */
-  tags: Array<{ name: string; count: number }>
-  /** 往年今日(UTC 月日相同、年份更早)最近的一条 */
-  onThisDay: FlashRecollection | null
-  /** 随机回顾候选,最多 RECOLLECTION_LIMIT 条 */
-  recollections: FlashRecollection[]
-  /** 当前访客已点赞的公开闪念编号;未携带访客头时为空 */
-  likedIds: string[]
-}
-
-export interface FlashListResult {
-  items: FlashNoteDto[]
-  total: number
-  page: number
-  pageSize: number
-}
+export type { FlashCommentDto, FlashListResult, FlashNoteDto, FlashOverview }
+export { visibleToVisitor }
 
 @Injectable()
 export class FlashService {
@@ -132,27 +52,6 @@ export class FlashService {
   /** 公开响应不返回原始访客哈希，避免与留言成员等其他模块的访客标识关联。 */
   private authorId(visitorIdHash: string): string {
     return publicAuthorId(this.config.getOrThrow<string>('JWT_ACCESS_SECRET'), 'flash-comment', visitorIdHash)
-  }
-
-  /** 公开条件:仅站点所有者的已发布、未归档闪念,叠加标签(精确)、类型与 UTC 日期范围 */
-  private publicWhere(query: QueryFlashDto): FilterQuery<FlashNote> {
-    if (query.archived) throw new BadRequestException(msg('flash.archivedAdminOnly'))
-    if (query.userId && query.userId !== SITE_OWNER_ID) throw new BadRequestException(msg('flash.ownerOnly'))
-    const where: FilterQuery<FlashNote> = { userId: SITE_OWNER_ID, isDraft: false, isArchived: false }
-    if (query.tag) where.tags = { $contains: [query.tag] }
-    if (query.type) where.type = query.type
-    // date 与 from/to 可同时出现,取交集;均按 UTC 日边界,与前端日历一致
-    const starts = [query.date, query.from].filter((day): day is string => !!day).map((day) => utcDay(day).getTime())
-    const ends = [query.date, query.to]
-      .filter((day): day is string => !!day)
-      .map((day) => utcDay(day).getTime() + DAY_MS)
-    if (starts.length || ends.length) {
-      where.createdAt = {
-        ...(starts.length ? { $gte: new Date(Math.max(...starts)) } : {}),
-        ...(ends.length ? { $lt: new Date(Math.min(...ends)) } : {}),
-      }
-    }
-    return where
   }
 
   private async page(where: FilterQuery<FlashNote>, query: QueryFlashDto, visitor: string): Promise<FlashListResult> {
@@ -167,7 +66,7 @@ export class FlashService {
 
   /** 列表:草稿不对外;置顶前置 + createdAt 倒序(对齐前端 LocalFlashRepository.list) */
   async findMany(query: QueryFlashDto, visitor = ''): Promise<FlashListResult> {
-    return this.page(this.publicWhere(query), query, visitor)
+    return this.page(buildFlashPublicWhere(query), query, visitor)
   }
 
   async findOne(id: string, visitor = ''): Promise<FlashNoteDto> {
@@ -185,19 +84,7 @@ export class FlashService {
    * 排序与列表一致(置顶前置),相同创建时间按编号稳定分页。
    */
   async search(query: SearchFlashDto, visitor = ''): Promise<FlashListResult> {
-    const kw = '%' + query.q.replace(/[\\%_]/g, (char) => '\\' + char) + '%'
-    const matched: FilterQuery<FlashNote> = {
-      $or: [
-        { content: { $ilike: kw } },
-        {
-          [raw(
-            (alias) => `exists(select 1 from jsonb_array_elements_text(${alias}.tags) as tag where tag ilike ?)`,
-            [kw],
-          )]: true,
-        },
-      ],
-    }
-    return this.page({ $and: [this.publicWhere(query), matched] }, query, visitor)
+    return this.page(buildFlashSearchWhere(query), query, visitor)
   }
 
   /**
@@ -250,18 +137,13 @@ export class FlashService {
           )
         : Promise.resolve([]),
     ])
-    const recollection = (row: RecollectionRow): FlashRecollection => ({
-      id: row.id,
-      content: row.content,
-      createdAt: new Date(row.created_at).toISOString(),
-    })
     return {
       total: stats?.total ?? 0,
       monthCount: stats?.monthCount ?? 0,
       dates,
       tags,
-      onThisDay: onThisDay ? recollection(onThisDay) : null,
-      recollections: recollections.map(recollection),
+      onThisDay: onThisDay ? formatFlashRecollection(onThisDay) : null,
+      recollections: recollections.map(formatFlashRecollection),
       likedIds: likes.map((like) => like.id),
     }
   }
