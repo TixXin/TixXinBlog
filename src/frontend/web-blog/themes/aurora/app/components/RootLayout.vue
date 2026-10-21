@@ -7,59 +7,14 @@
 
 <template>
   <div class="page-root theme-aurora">
-    <header
-      class="aurora-topbar"
-      :class="{
-        'aurora-topbar--scrolled': isScrolled,
-        'aurora-topbar--transparent': isHeroVisible,
-      }"
-    >
-      <div class="aurora-topbar__inner">
-        <NuxtLink to="/" class="aurora-topbar__brand">
-          <Icon name="lucide:pen-tool" size="20" />
-          <span class="aurora-topbar__title">{{ siteSettings.name }}</span>
-        </NuxtLink>
-        <nav id="site-navigation" class="aurora-topbar__nav" :aria-label="$t('theme.shell.mainNav')">
-          <NuxtLink
-            v-for="item in navItems"
-            :key="item.to"
-            :to="item.to"
-            :target="item.newTab ? '_blank' : undefined"
-            class="aurora-topbar__link"
-            :class="{ active: isActive(item.to) }"
-            :aria-current="isActive(item.to) ? 'page' : undefined"
-          >
-            <Icon :name="item.icon" size="16" />
-            <span>{{ item.label }}</span>
-          </NuxtLink>
-        </nav>
-        <div class="aurora-topbar__actions">
-          <Transition name="progress-fade">
-            <button
-              v-if="showProgress"
-              class="aurora-scroll-progress"
-              :class="{ 'is-clicked': progressClicked }"
-              type="button"
-              :aria-label="$t('theme.shell.backToTop')"
-              @click="onProgressClick"
-            >
-              <span class="aurora-scroll-progress__text">{{ displayProgress }}%</span>
-              <Icon name="lucide:arrow-up" size="14" class="aurora-scroll-progress__icon" />
-            </button>
-          </Transition>
-          <BlogThemeSwitcher />
-          <BlogAppearanceEntry />
-          <button
-            class="aurora-topbar__login"
-            type="button"
-            :aria-label="$t('theme.shell.login')"
-            @click="openLogin('login', true)"
-          >
-            <Icon name="lucide:circle-user" size="18" />
-          </button>
-        </div>
-      </div>
-    </header>
+    <RootLayoutTopbar
+      :is-scrolled="isScrolled"
+      :is-hero-visible="isHeroVisible"
+      :show-progress="showProgress"
+      :progress-clicked="progressClicked"
+      :display-progress="displayProgress"
+      @progress-click="onProgressClick"
+    />
 
     <CommonCustomScrollbar
       ref="scrollbarRef"
@@ -67,47 +22,7 @@
       class="aurora-scroll-area"
       viewport-class="aurora-scroll-viewport"
     >
-      <section v-if="isHomePage" ref="heroRef" class="aurora-hero" @wheel="onHeroWheel">
-        <div class="aurora-hero__bg-container">
-          <Transition name="hero-fade">
-            <div
-              :key="currentHeroImage"
-              class="aurora-hero__bg"
-              :style="{
-                ...heroParallaxStyle,
-                backgroundImage: `url(${currentHeroImage})`,
-              }"
-            />
-          </Transition>
-          <div class="aurora-hero__overlay" />
-        </div>
-        <div class="aurora-hero__inner">
-          <!-- 站点名是品牌展示，不占用页面唯一 h1（首页 h1 由页面自身提供） -->
-          <p class="aurora-hero__title">{{ siteSettings.name }}</p>
-          <p class="aurora-hero__subtitle">{{ siteSettings.description }}</p>
-        </div>
-        <button
-          class="aurora-hero__play"
-          type="button"
-          :disabled="reducedMotion"
-          :aria-pressed="rotationEnabled"
-          @click="rotationEnabled = !rotationEnabled"
-        >
-          <Icon v-if="rotationEnabled" name="lucide:pause" size="15" />
-          <Icon v-else name="lucide:play" size="15" />
-          {{
-            $t(
-              reducedMotion
-                ? 'theme.aurora.hero.staticBackground'
-                : rotationError
-                  ? 'theme.aurora.hero.retryRotation'
-                  : rotationEnabled
-                    ? 'theme.aurora.hero.pauseBackground'
-                    : 'theme.aurora.hero.playBackground',
-            )
-          }}
-        </button>
-      </section>
+      <RootLayoutHero :scroll-y="scrollY" :viewport="scrollbarRef?.viewport ?? null" />
 
       <div class="aurora-body">
         <main id="main-content" class="aurora-main" tabindex="-1">
@@ -136,31 +51,15 @@
 </template>
 
 <script setup lang="ts">
-import { useDocumentVisibility } from '@vueuse/core'
-import { resolveScrollRoot, scrollToRoot } from '~/utils/scrollRoot'
+import { resolveScrollRoot } from '~/utils/scrollRoot'
+import RootLayoutTopbar from './RootLayoutTopbar.vue'
+import RootLayoutHero from './RootLayoutHero.vue'
 
-const { reducedMotion } = useMotionPreference()
-const documentVisibility = useDocumentVisibility()
-const heroRef = ref<HTMLElement | null>(null)
-const heroOnscreen = ref(true)
-const rotationEnabled = ref(false)
-const rotationError = ref(false)
-let heroObserver: IntersectionObserver | undefined
 const { settings: siteSettings } = useSiteSettings()
 const route = useRoute()
-const { navItems } = useNavItems()
-
-function isActive(to: string) {
-  const path = route.path.replace(/\/$/, '') || '/'
-  if (path === to) return true
-  if (to === '/' && path === '/moments') return true
-  return false
-}
+const { sidebarAnimationClass } = useAppearanceSettings()
 
 const isHomePage = computed(() => route.path === '/' || route.path === '/moments')
-
-const { sidebarAnimationClass } = useAppearanceSettings()
-const { open: openLogin } = useLoginDrawer()
 
 const scrollbarRef = ref<{
   viewport: HTMLElement | null
@@ -172,104 +71,9 @@ const scrollProgress = ref(0)
 const scrollY = ref(0)
 
 const isHeroVisible = computed(() => isHomePage.value && scrollY.value < 100)
-
-// --- 动态背景图 ---
-const heroImages = [
-  'https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?auto=format&fit=crop&q=80&w=2670',
-  'https://images.unsplash.com/photo-1501785888041-af3ef285b470?auto=format&fit=crop&q=80&w=2670',
-  'https://images.unsplash.com/photo-1434725039720-abb26ce89892?auto=format&fit=crop&q=80&w=2670',
-  'https://images.unsplash.com/photo-1470770841072-f978cf4d019e?auto=format&fit=crop&q=80&w=2670',
-]
-const currentImageIndex = ref(0)
-const currentHeroImage = computed(() => heroImages[currentImageIndex.value])
-
-let imageTimer: ReturnType<typeof setInterval> | null = null
-let pendingImage: HTMLImageElement | null = null
-let rotationVersion = 0
-function stopImageRotation() {
-  rotationVersion++
-  if (imageTimer) clearInterval(imageTimer)
-  imageTimer = null
-  if (pendingImage) {
-    pendingImage.onload = null
-    pendingImage.onerror = null
-    pendingImage.src = ''
-    pendingImage = null
-  }
-}
-function startImageRotation() {
-  if (matchMedia('(prefers-reduced-motion: reduce)').matches) return
-  rotationError.value = false
-  const version = rotationVersion
-  imageTimer = setInterval(() => {
-    if (pendingImage) return
-    const index = (currentImageIndex.value + 1) % heroImages.length
-    const image = new Image()
-    pendingImage = image
-    image.onload = () => {
-      if (rotationVersion !== version) return
-      currentImageIndex.value = index
-      pendingImage = null
-    }
-    image.onerror = () => {
-      if (rotationVersion !== version) return
-      pendingImage = null
-      rotationEnabled.value = false
-      rotationError.value = true
-    }
-    image.src = heroImages[index]!
-  }, 8000)
-}
-watch([rotationEnabled, reducedMotion, documentVisibility, heroOnscreen, isHomePage], () => {
-  stopImageRotation()
-  if (
-    rotationEnabled.value &&
-    !reducedMotion.value &&
-    documentVisibility.value === 'visible' &&
-    heroOnscreen.value &&
-    isHomePage.value
-  )
-    startImageRotation()
-})
-watch(reducedMotion, (reduced) => {
-  if (reduced) rotationEnabled.value = false
-})
-
-function observeHero() {
-  heroObserver?.disconnect()
-  if (!heroRef.value) return
-  heroObserver = new IntersectionObserver(
-    ([entry]) => {
-      heroOnscreen.value = !!entry?.isIntersecting
-    },
-    { root: resolveScrollRoot(heroRef.value.parentElement) },
-  )
-  heroObserver.observe(heroRef.value)
-}
-watch([heroRef, () => scrollbarRef.value?.viewport], observeHero, { flush: 'post' })
-
-// --- 智能滚动跳转 ---
-function onHeroWheel(e: WheelEvent) {
-  if (reducedMotion.value) return
-  if (e.deltaY > 0 && scrollY.value < 10) {
-    // 向下滚动且在顶部时，跳过 Hero
-    const viewport = scrollbarRef.value?.viewport
-    if (viewport) {
-      const heroEl = viewport.querySelector('.aurora-hero') as HTMLElement
-      if (heroEl) {
-        scrollToRoot(resolveScrollRoot(viewport), heroEl.offsetHeight)
-        e.preventDefault()
-      }
-    }
-  }
-}
-
-const heroParallaxStyle = computed(() => ({
-  transform: `translateY(${reducedMotion.value || !heroOnscreen.value ? 0 : Math.min(scrollY.value, 500) * 0.15}px)`,
-}))
-
 const showProgress = computed(() => scrollProgress.value > 0)
 const displayProgress = computed(() => Math.round(scrollProgress.value))
+const progressClicked = ref(false)
 
 let scrollFrame = 0
 function onViewportScroll() {
@@ -279,6 +83,7 @@ function onViewportScroll() {
     updateViewportScroll()
   })
 }
+
 function updateViewportScroll() {
   const viewport = scrollbarRef.value?.viewport
   if (!viewport) return
@@ -291,8 +96,6 @@ function updateViewportScroll() {
     : document.documentElement.scrollHeight - window.innerHeight
   scrollProgress.value = range > 0 ? (currentScrollTop / range) * 100 : 0
 }
-
-const progressClicked = ref(false)
 
 function scrollToTop() {
   scrollbarRef.value?.scrollToTop(true)
@@ -308,7 +111,6 @@ watch(showProgress, (val: boolean) => {
 })
 
 onMounted(() => {
-  window.addEventListener('resize', observeHero)
   window.addEventListener('scroll', onViewportScroll, { passive: true })
   nextTick(() => {
     const viewport = scrollbarRef.value?.viewport
@@ -320,10 +122,7 @@ onMounted(() => {
 })
 
 onBeforeUnmount(() => {
-  stopImageRotation()
-  heroObserver?.disconnect()
   cancelAnimationFrame(scrollFrame)
-  window.removeEventListener('resize', observeHero)
   window.removeEventListener('scroll', onViewportScroll)
   const viewport = scrollbarRef.value?.viewport
   viewport?.removeEventListener('scroll', onViewportScroll)
@@ -347,398 +146,6 @@ onBeforeUnmount(() => {
 :global(.dark) .theme-aurora {
   --aurora-gradient-start: #1a1a2e;
   --aurora-gradient-end: #16213e;
-}
-
-// --- 顶栏 ---
-
-.aurora-topbar {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  z-index: 40;
-  width: 100%;
-  max-width: 100%;
-  margin-left: auto;
-  margin-right: auto;
-  background: var(--aurora-topbar-bg-scrolled);
-  backdrop-filter: blur(var(--aurora-blur-strength));
-  border-bottom: 1px solid var(--border-soft);
-  transition:
-    width 0.4s cubic-bezier(0.25, 0.1, 0.25, 1),
-    max-width 0.4s cubic-bezier(0.25, 0.1, 0.25, 1),
-    border-radius 0.4s cubic-bezier(0.25, 0.1, 0.25, 1),
-    box-shadow 0.4s cubic-bezier(0.25, 0.1, 0.25, 1),
-    background-color 0.4s ease,
-    border-color 0.4s ease;
-  @media (prefers-reduced-motion: reduce) {
-    transition: none;
-  }
-
-  &--transparent {
-    background: var(--aurora-topbar-bg-scrolled);
-    backdrop-filter: blur(var(--aurora-blur-strength));
-    border-bottom-color: transparent;
-  }
-
-  &--scrolled {
-    width: calc(100% - 4rem);
-    max-width: calc(#{$container-max-width} - 4rem);
-    border-bottom-left-radius: $radius-card;
-    border-bottom-right-radius: $radius-card;
-    border-bottom-color: transparent;
-    box-shadow: 0 4px 24px -4px rgba(0, 0, 0, 0.12);
-    background: var(--aurora-topbar-bg-scrolled);
-    backdrop-filter: blur(var(--aurora-blur-strength));
-  }
-}
-
-.aurora-topbar__inner {
-  max-width: $container-max-width;
-  margin: 0 auto;
-  display: flex;
-  align-items: center;
-  gap: 1.5rem;
-  padding: 0 2rem;
-  height: 3.5rem;
-}
-
-.aurora-topbar__brand {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  color: var(--text-main);
-  font-weight: 700;
-  font-size: 1rem;
-  flex-shrink: 0;
-  transition: $transition-fast;
-  @media (prefers-reduced-motion: reduce) {
-    transition: none;
-  }
-
-  &:hover {
-    color: var(--accent-text);
-  }
-}
-
-.aurora-topbar__title {
-  @media (max-width: #{$breakpoint-sm - 0.02}) {
-    display: none;
-  }
-}
-
-.aurora-topbar__nav {
-  display: none;
-  align-items: center;
-  justify-content: flex-start;
-  gap: 0.25rem;
-  flex: 1;
-  min-width: 0;
-  overflow-x: auto;
-
-  @media (min-width: $breakpoint-md) {
-    display: flex;
-  }
-}
-
-.aurora-topbar__link {
-  display: flex;
-  flex-shrink: 0;
-  align-items: center;
-  gap: 0.375rem;
-  padding: 0.375rem 0.75rem;
-  border-radius: $radius-sm;
-  font-size: 0.875rem;
-  font-weight: 500;
-  color: var(--text-soft);
-  white-space: nowrap;
-  transition: $transition-fast;
-  @media (prefers-reduced-motion: reduce) {
-    transition: none;
-  }
-
-  // 余量足够时靠右；窄屏溢出时auto间距归零，首页/归档仍可滚动到达。
-  &:first-child {
-    margin-left: auto;
-  }
-
-  &:hover {
-    color: var(--text-main);
-    background: var(--surface-2);
-  }
-
-  &.active {
-    color: var(--accent-text);
-    background: var(--accent-soft);
-  }
-}
-
-.aurora-topbar__actions {
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  gap: 0.5rem;
-  flex-shrink: 0;
-
-  @media (min-width: $breakpoint-xl) {
-    width: $sidebar-right-width;
-  }
-}
-
-// --- 登录按钮 ---
-.aurora-topbar__login {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 2rem;
-  height: 2rem;
-  border-radius: $radius-full;
-  border: 1px solid var(--border-soft);
-  background: transparent;
-  color: var(--text-soft);
-  cursor: var(--interaction-cursor, pointer);
-  transition: $transition-fast;
-  @media (prefers-reduced-motion: reduce) {
-    transition: none;
-  }
-
-  &:hover {
-    color: var(--accent-text);
-    background: var(--surface-2);
-    border-color: var(--accent-alpha-20, rgba(99, 102, 241, 0.15));
-  }
-
-  &:active {
-    transform: scale(0.92);
-  }
-}
-
-// --- Hero ---
-
-.aurora-hero {
-  position: relative;
-  height: var(--aurora-hero-height);
-  overflow: hidden;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: #000; // 容器设为黑色防止切换时闪白
-
-  @media (max-width: #{$breakpoint-md - 0.02}) {
-    height: calc(var(--aurora-hero-height) / 2);
-  }
-}
-
-.aurora-hero__bg-container {
-  position: absolute;
-  inset: 0;
-  overflow: hidden;
-  background: #000;
-}
-
-.aurora-hero__bg {
-  position: absolute;
-  inset: -20%;
-  background-size: cover;
-  background-position: center;
-  background-repeat: no-repeat;
-  // 确保切换时的背景能完全覆盖
-  z-index: 1;
-}
-
-.aurora-hero__overlay {
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(135deg, rgba(26, 26, 46, 0.4), rgba(22, 33, 62, 0.6));
-  z-index: 2; // 必须高于背景图
-}
-
-.hero-fade-enter-active {
-  transition: opacity 0.8s ease-in-out;
-  @media (prefers-reduced-motion: reduce) {
-    transition: none;
-  }
-  z-index: 2; // 新进入的图在上方
-}
-
-.hero-fade-leave-active {
-  transition: opacity 0.8s ease-in-out;
-  @media (prefers-reduced-motion: reduce) {
-    transition: none;
-  }
-  z-index: 1;
-}
-
-.hero-fade-enter-from,
-.hero-fade-leave-to {
-  opacity: 0;
-}
-
-.aurora-hero__inner {
-  position: relative;
-  z-index: 1;
-  text-align: center;
-  color: #fff;
-}
-
-.aurora-hero__play {
-  position: absolute;
-  right: 1rem;
-  bottom: 1rem;
-  z-index: 3;
-  display: inline-flex;
-  gap: 0.375rem;
-  align-items: center;
-  min-height: 44px;
-  padding: 0.5rem 0.75rem;
-  background: rgb(0 0 0 / 55%);
-  color: #fff;
-  border: 1px solid rgb(255 255 255 / 30%);
-  border-radius: $radius-full;
-  font-size: 0.75rem;
-}
-
-.aurora-hero__title {
-  font-size: 3rem;
-  font-weight: 800;
-  letter-spacing: -0.02em;
-  margin: 0 0 0.75rem;
-  text-shadow: 0 2px 16px rgba(0, 0, 0, 0.2);
-
-  @media (max-width: #{$breakpoint-md - 0.02}) {
-    font-size: 1.75rem;
-  }
-}
-
-.aurora-hero__subtitle {
-  font-size: 1.125rem;
-  font-weight: 400;
-  opacity: 0.85;
-  margin: 0;
-
-  @media (max-width: #{$breakpoint-md - 0.02}) {
-    font-size: 0.875rem;
-  }
-}
-
-// --- 阅读进度按钮 ---
-
-.aurora-scroll-progress {
-  position: relative;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 0.75rem;
-  font-weight: 600;
-  font-variant-numeric: tabular-nums;
-  color: var(--text-soft);
-  cursor: var(--interaction-cursor, pointer);
-  padding: 0.25rem 0.5rem;
-  min-width: 2.75rem;
-  border-radius: $radius-sm;
-  border: none;
-  background: transparent;
-  transition:
-    color 0.2s ease,
-    background 0.2s ease;
-  @media (prefers-reduced-motion: reduce) {
-    transition: none;
-  }
-  white-space: nowrap;
-
-  &:hover {
-    color: var(--accent-text);
-    background: var(--surface-2);
-
-    .aurora-scroll-progress__text {
-      opacity: 0;
-      transform: scale(0.6);
-    }
-
-    .aurora-scroll-progress__icon {
-      opacity: 1;
-      transform: translateY(0);
-      animation: aurora-progress-bounce 0.6s ease infinite;
-      @media (prefers-reduced-motion: reduce) {
-        animation: none;
-      }
-    }
-  }
-
-  &:active {
-    transform: scale(0.95);
-  }
-
-  &.is-clicked:hover {
-    .aurora-scroll-progress__text {
-      opacity: 1;
-      transform: none;
-    }
-
-    .aurora-scroll-progress__icon {
-      opacity: 0;
-      transform: translateY(4px);
-      animation: none;
-    }
-  }
-}
-
-.aurora-scroll-progress__text {
-  transition:
-    opacity 0.2s ease,
-    transform 0.2s ease;
-  @media (prefers-reduced-motion: reduce) {
-    transition: none;
-  }
-}
-
-.aurora-scroll-progress__icon {
-  position: absolute;
-  opacity: 0;
-  transform: translateY(4px);
-  transition:
-    opacity 0.2s ease,
-    transform 0.2s ease;
-  @media (prefers-reduced-motion: reduce) {
-    transition: none;
-  }
-}
-
-@keyframes aurora-progress-bounce {
-  0%,
-  100% {
-    transform: translateY(0);
-  }
-  40% {
-    transform: translateY(-3px);
-  }
-  60% {
-    transform: translateY(1px);
-  }
-}
-
-.progress-fade-enter-active {
-  transition:
-    opacity 0.25s ease-out,
-    transform 0.25s ease-out;
-  @media (prefers-reduced-motion: reduce) {
-    transition: none;
-  }
-}
-
-.progress-fade-leave-active {
-  transition:
-    opacity 0.2s ease-in,
-    transform 0.2s ease-in;
-  @media (prefers-reduced-motion: reduce) {
-    transition: none;
-  }
-}
-
-.progress-fade-enter-from,
-.progress-fade-leave-to {
-  opacity: 0;
-  transform: translateX(8px);
 }
 
 // --- 内容区 ---

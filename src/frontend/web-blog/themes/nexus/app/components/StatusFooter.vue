@@ -14,32 +14,7 @@
     @mouseleave="onBarLeave"
   >
     <!-- 头像：半悬浮，hover 触发展开 + 在线状态微标签（登录态下切换为当前用户） -->
-    <NuxtLink
-      ref="avatarRef"
-      to="/"
-      class="nexus-bar__avatar-wrap"
-      :style="{ '--avatar-glow-color': avatarGlowColor }"
-      :aria-label="avatarLinkLabel"
-      @mouseenter="onAvatarEnter"
-    >
-      <img
-        v-if="!avatarError"
-        :key="displayAvatarUrl"
-        :src="displayAvatarUrl"
-        :alt="displayName"
-        :width="80"
-        :height="80"
-        class="nexus-bar__avatar-img"
-        loading="eager"
-        fetchpriority="high"
-        @error="onAvatarError"
-      />
-      <span v-else class="nexus-bar__avatar-fallback">{{ avatarFallback }}</span>
-      <span class="nexus-bar__presence-badge" :class="`nexus-bar__presence-badge--${effectivePresence.status}`">
-        <span class="nexus-bar__presence-badge-dot" />
-        <span class="nexus-bar__presence-badge-text">{{ presenceBadgeText }}</span>
-      </span>
-    </NuxtLink>
+    <StatusFooterAvatar ref="avatarCompRef" @avatar-enter="onAvatarEnter" />
 
     <!-- 账号入口按钮：未登录 → 打开登录面板；已登录 → 打开用户菜单 popover -->
     <button
@@ -57,335 +32,49 @@
     <!-- 内容切换区域 -->
     <div class="nexus-bar__body">
       <!-- 收起态：操作图标 + 导航 + 进度；键盘焦点进入时收起展开态，避免聚焦到透明元素 -->
-      <div class="nexus-bar__row-nav" @focusin="onNavFocusIn">
-        <div class="nexus-bar__actions">
-          <BlogThemeSwitcher />
-          <BlogAppearanceEntry />
-        </div>
-        <div class="nexus-bar__separator" aria-hidden="true" />
-        <nav id="site-navigation" class="nexus-bar__nav" :aria-label="$t('theme.shell.siteNav')">
-          <NuxtLink
-            v-for="item in navItems"
-            :key="item.to"
-            :to="item.to"
-            :target="item.newTab ? '_blank' : undefined"
-            class="nexus-bar__link"
-            :class="{ 'is-active': isActive(item.to) }"
-            :aria-current="isActive(item.to) ? 'page' : undefined"
-          >
-            <Icon :name="item.icon" size="16" />
-            <span>{{ item.label }}</span>
-          </NuxtLink>
-        </nav>
-        <Transition name="nexus-progress-fade">
-          <button
-            v-if="showProgress"
-            class="nexus-bar__progress"
-            type="button"
-            :aria-label="
-              $t(
-                scrollDirection === 'down' ? 'theme.nexus.statusBar.progressDown' : 'theme.nexus.statusBar.progressUp',
-                { progress: displayProgress },
-              )
-            "
-            @click="onProgressClick"
-          >
-            <svg class="nexus-bar__progress-ring" viewBox="0 0 36 36">
-              <circle class="nexus-bar__progress-ring-bg" cx="18" cy="18" r="16" />
-              <circle
-                class="nexus-bar__progress-ring-fill"
-                cx="18"
-                cy="18"
-                r="16"
-                :style="{ strokeDashoffset: progressRingOffset }"
-              />
-            </svg>
-            <span class="nexus-bar__progress-center">
-              <span class="nexus-bar__progress-text">{{ displayProgress }}</span>
-              <Icon
-                :name="scrollDirection === 'down' ? 'lucide:arrow-down' : 'lucide:arrow-up'"
-                size="12"
-                class="nexus-bar__progress-icon"
-              />
-            </span>
-          </button>
-        </Transition>
-      </div>
+      <StatusFooterNavRow @focusin="onNavFocusIn" />
 
       <!-- 展开态：横向布局 — 左侧身份信息 | 右侧一言+社交；收起时透明且 inert，不进入 Tab 顺序与读屏 -->
-      <div class="nexus-bar__row-owner" :inert="!isExpanded">
-        <div class="nexus-bar__owner-card">
-          <!-- 左列：名字、头衔、在线状态（登录态下切换为当前用户身份） -->
-          <div class="nexus-bar__owner-left">
-            <div class="nexus-bar__owner-header">
-              <span class="nexus-bar__owner-name">{{ displayName }}</span>
-              <span class="nexus-bar__owner-title">{{ displayTitle }}</span>
-            </div>
-            <div class="nexus-bar__owner-status-line">
-              <span
-                class="nexus-bar__owner-status-dot"
-                :class="`nexus-bar__owner-status-dot--${effectivePresence.status}`"
-              />
-              <span class="nexus-bar__owner-status-label">{{ effectivePresence.label }}</span>
-              <span v-if="effectivePresence.signature" class="nexus-bar__owner-status-sig">
-                <span aria-hidden="true">· </span>{{ effectivePresence.signature }}
-              </span>
-            </div>
-          </div>
-          <!-- 分隔线 -->
-          <div class="nexus-bar__owner-divider" aria-hidden="true" />
-          <!-- 右列：一言 + 社交链接 -->
-          <div class="nexus-bar__owner-right">
-            <div v-if="dailyQuote" class="nexus-bar__owner-quote-row">
-              <p class="nexus-bar__owner-quote">
-                <Transition name="nexus-quote-swap" mode="out-in">
-                  <span :key="dailyQuote">{{ $t('theme.nexus.quote.text', { quote: dailyQuote }) }}</span>
-                </Transition>
-              </p>
-              <button
-                class="nexus-bar__quote-refresh"
-                type="button"
-                :aria-label="$t('theme.nexus.quote.refresh')"
-                @click="refreshQuote"
-              >
-                <Icon name="lucide:refresh-cw" size="12" />
-              </button>
-            </div>
-            <div v-if="showSocials" class="nexus-bar__owner-socials">
-              <a
-                v-for="social in ownerCard.socials"
-                :key="social.href"
-                :href="social.href"
-                target="_blank"
-                rel="noopener noreferrer"
-                class="nexus-bar__social-link"
-              >
-                <Icon :name="social.icon" size="14" />
-                <span>{{ social.label }}</span>
-              </a>
-            </div>
-          </div>
-        </div>
-      </div>
+      <StatusFooterOwnerRow :is-expanded="isExpanded" />
     </div>
 
     <!-- 底部栏内嵌登录面板：仅在非 modal 模式下显示（modal 模式由 app.vue 的 AuthModal 接管） -->
-    <Transition name="nexus-login-panel" @after-leave="clearLoginShape">
-      <div
-        v-if="isLoginOpen && !preferModal"
-        ref="loginPanelRef"
-        class="nexus-bar__login-panel"
-        :class="{ 'is-shape-ready': loginShape }"
-        role="dialog"
-        aria-modal="true"
-        :aria-labelledby="loginTitleId"
-        tabindex="-1"
-      >
-        <svg
-          v-if="loginShape"
-          class="nexus-bar__login-surface"
-          :viewBox="`0 0 ${loginShape.width} ${loginShape.height}`"
-          preserveAspectRatio="none"
-          aria-hidden="true"
-          focusable="false"
-        >
-          <path :d="loginShape.path" />
-        </svg>
-        <div class="nexus-bar__login-content"><AuthPanel :title-id="loginTitleId" /></div>
-      </div>
-    </Transition>
+    <StatusFooterLoginPanel
+      ref="loginPanelCompRef"
+      :is-open="isLoginOpen"
+      :prefer-modal="preferModal"
+      :bar-el="barRef"
+      :avatar-el="avatarWrapEl"
+      @close="closeLogin"
+    />
 
     <!-- 用户菜单 popover（底部栏上方悬浮，已登录时可展开） -->
-    <Transition name="nexus-user-menu">
-      <div v-if="isUserMenuOpen && isLoggedIn" ref="userMenuRef" class="nexus-bar__user-menu" role="menu">
-        <div class="nexus-bar__user-menu-header">
-          <div class="nexus-bar__user-menu-name">{{ currentUser?.nickname }}</div>
-          <div class="nexus-bar__user-menu-email">{{ currentUser?.email }}</div>
-        </div>
-        <div class="nexus-bar__user-menu-divider" />
-        <button type="button" class="nexus-bar__user-menu-item" role="menuitem" @click="onUserMenuProfile">
-          <Icon name="lucide:user" size="14" />
-          <span>{{ $t('theme.nexus.statusBar.profile') }}</span>
-        </button>
-        <button type="button" class="nexus-bar__user-menu-item" role="menuitem" @click="onUserMenuSettings">
-          <Icon name="lucide:settings" size="14" />
-          <span>{{ $t('theme.nexus.statusBar.managePosts') }}</span>
-        </button>
-        <div class="nexus-bar__user-menu-divider" />
-        <button
-          type="button"
-          class="nexus-bar__user-menu-item nexus-bar__user-menu-item--danger"
-          role="menuitem"
-          @click="onUserMenuLogout"
-        >
-          <Icon name="lucide:log-out" size="14" />
-          <span>{{ $t('theme.nexus.statusBar.logout') }}</span>
-        </button>
-      </div>
-    </Transition>
+    <StatusFooterUserMenu ref="userMenuCompRef" :is-open="isUserMenuOpen" @close="closeUserMenu" />
   </div>
 </template>
 
 <script setup lang="ts">
-import type { OwnerPresence } from '~/features/site/types'
-import type { ComponentPublicInstance } from 'vue'
-import { createLoginPanelShape } from '~/utils/loginPanelShape'
+import StatusFooterAvatar from './StatusFooterAvatar.vue'
+import StatusFooterNavRow from './StatusFooterNavRow.vue'
+import StatusFooterOwnerRow from './StatusFooterOwnerRow.vue'
+import StatusFooterLoginPanel from './StatusFooterLoginPanel.vue'
+import StatusFooterUserMenu from './StatusFooterUserMenu.vue'
 
-const route = useRoute()
-const router = useRouter()
-const { navItems } = useNavItems()
-const { scrollProgress, scrollResetFn, scrollDirection } = useScrollProgress()
-const { ownerPresence, ownerCard, dailyQuote } = useSiteInfo()
 const { isOpen: isLoginOpen, preferModal, toggle: toggleLogin, close: closeLogin } = useLoginDrawer()
-const { isLoggedIn, currentUser, logout } = useCurrentUser()
-const { info } = useToast()
+const { isLoggedIn, currentUser } = useCurrentUser()
 const { t } = useI18n()
 
-const loginPanelRef = ref<HTMLElement | null>(null)
-const loginTitleId = 'nexus-login-panel-title'
-// 内嵌登录面板按模态对话框管理：打开聚焦首个输入框、Tab 约束在面板内、Esc 关闭并归还焦点
-useModalFocus(
-  computed(() => isLoginOpen.value && !preferModal.value),
-  loginPanelRef,
-  { close: () => closeLogin(), initialFocus: () => loginPanelRef.value?.querySelector('input') ?? null },
-)
 const barRef = ref<HTMLElement | null>(null)
-const avatarRef = ref<ComponentPublicInstance | null>(null)
-const loginShape = shallowRef<ReturnType<typeof createLoginPanelShape>>(null)
-let shapeObserver: ResizeObserver | undefined
-let shapeFrame = 0
-
-function measureLoginShape() {
-  const panel = loginPanelRef.value
-  const avatar = avatarRef.value?.$el as HTMLElement | undefined
-  const bar = barRef.value
-  if (!panel || !avatar || !bar) return
-  const panelBox = panel.getBoundingClientRect()
-  const avatarBox = avatar.getBoundingClientRect()
-  const drawerGap = Math.max(0, bar.getBoundingClientRect().top - panelBox.bottom)
-  loginShape.value = createLoginPanelShape({
-    width: panelBox.width,
-    height: panelBox.height,
-    avatarX: avatarBox.left + avatarBox.width / 2 - panelBox.left,
-    avatarY: avatarBox.top + avatarBox.height / 2 - panelBox.top,
-    // 3px 外框与页面背景对比明显，视觉上属于头像本体，需按含外框的尺寸避让，
-    // 否则凹弧间隙会比卡片与底栏的间距窄一圈外框。
-    // 未缩放尺寸保证悬停时凹弧不抖动；半像素补偿凹口描边向内占用的空间。
-    avatarRadius: avatar.offsetWidth / 2,
-    gap: drawerGap + 0.5,
-    cornerRadius: parseFloat(getComputedStyle(bar).borderTopLeftRadius),
-  })
-}
-
-function scheduleLoginShape() {
-  if (shapeFrame) return
-  shapeFrame = requestAnimationFrame(() => {
-    shapeFrame = 0
-    measureLoginShape()
-  })
-}
-
-function stopLoginShape() {
-  shapeObserver?.disconnect()
-  shapeObserver = undefined
-  if (shapeFrame) cancelAnimationFrame(shapeFrame)
-  shapeFrame = 0
-  window.removeEventListener('resize', scheduleLoginShape)
-}
-
-function clearLoginShape() {
-  if (!isLoginOpen.value || preferModal.value) loginShape.value = null
-}
-
-watch(
-  [loginPanelRef, isLoginOpen, preferModal],
-  ([panel, open, modal]) => {
-    stopLoginShape()
-    // 离场动画保留最后一帧轮廓，但停止观察，防止关窗后更新。
-    if (!panel || !open || modal) return
-    loginShape.value = null
-    measureLoginShape()
-    shapeObserver = new ResizeObserver(scheduleLoginShape)
-    for (const element of [panel, barRef.value, avatarRef.value?.$el]) {
-      if (element instanceof HTMLElement) shapeObserver.observe(element)
-    }
-    window.addEventListener('resize', scheduleLoginShape)
-  },
-  { flush: 'post' },
-)
+const avatarCompRef = ref<InstanceType<typeof StatusFooterAvatar> | null>(null)
+const loginPanelCompRef = ref<InstanceType<typeof StatusFooterLoginPanel> | null>(null)
+const userMenuCompRef = ref<InstanceType<typeof StatusFooterUserMenu> | null>(null)
 const userMenuButtonRef = ref<HTMLElement | null>(null)
-const userMenuRef = ref<HTMLElement | null>(null)
 const isUserMenuOpen = ref(false)
 
-// 头像呼吸光晕颜色映射
-const GLOW_COLOR_MAP: Record<OwnerPresence, string> = {
-  online: 'var(--accent-alpha-20, rgba(99, 102, 241, 0.2))',
-  idle: 'rgba(234, 179, 8, 0.15)',
-  busy: 'rgba(239, 68, 68, 0.15)',
-  offline: 'transparent',
-}
+const avatarWrapEl = computed<HTMLElement | null>(
+  () => (avatarCompRef.value?.avatarWrapRef?.$el as HTMLElement | undefined) ?? null,
+)
 
-// 默认博主头像（未登录时使用）
-const defaultAvatarUrl = computed(() => ownerCard.value.avatar || '/avatar.svg')
-
-const avatarError = ref(false)
-
-/** 当前应展示的头像 URL：登录后用 currentUser.avatar，否则回落到博主默认头像 */
-const displayAvatarUrl = computed(() => currentUser.value?.avatar || defaultAvatarUrl.value)
-
-/** 当前应展示的名字：登录后用 currentUser.nickname，否则用 ownerCard.name */
-const displayName = computed(() => currentUser.value?.nickname || ownerCard.value.name)
-
-/** 头像加载失败时的占位首字母 */
-const avatarFallback = computed(() => {
-  const name = displayName.value || 'TX'
-  return name.slice(0, 2).toUpperCase()
-})
-
-/** 展开态左列副标题：访客显示「访客」，其它情况用 ownerCard.title */
-const displayTitle = computed(() => {
-  if (currentUser.value?.role === 'visitor') return t('theme.nexus.statusBar.visitor')
-  return ownerCard.value.title
-})
-
-/**
- * 当前应展示的在线状态：
- * - 已登录 → 强制 online，签名取自 currentUser.signature
- * - 未登录 → 沿用 useSiteInfo().ownerPresence（mock 状态机）
- */
-const effectivePresence = computed(() => {
-  if (isLoggedIn.value && currentUser.value) {
-    return {
-      status: 'online' as const,
-      label: t('theme.nexus.statusBar.presence.online'),
-      signature: currentUser.value.signature ?? '',
-      since: ownerPresence.value.since,
-    }
-  }
-  return ownerPresence.value
-})
-
-const avatarGlowColor = computed(() => GLOW_COLOR_MAP[effectivePresence.value.status])
-
-// 头像角标只放得下两个字：短标签原样显示，长标签按状态给出完整的两字词，避免截成“未提”这类半截词
-const presenceBadgeText = computed(() => {
-  const { label, status } = effectivePresence.value
-  return label.length <= 2 ? label : t(`theme.nexus.statusBar.presence.${status}`)
-})
-// 可见的角标文字必须是链接可访问名的一部分；完整状态说明跟在后面
-const avatarLinkLabel = computed(() => {
-  const { label } = effectivePresence.value
-  const status =
-    label === presenceBadgeText.value
-      ? label
-      : t('theme.nexus.statusBar.presenceDetail', { short: presenceBadgeText.value, label })
-  return t('theme.nexus.statusBar.avatarLink', { name: displayName.value, status })
-})
-
-/** 仅博主或未登录态展示个人社交链接（访客没有个人 socials） */
-const showSocials = computed(() => !isLoggedIn.value || currentUser.value?.role === 'owner')
-
-/** 账号入口按钮：图标、aria-label、点击行为均按登录态切换 */
 const loginButtonIcon = computed(() => (isLoggedIn.value ? 'lucide:user-round-cog' : 'lucide:circle-user'))
 const loginButtonAriaLabel = computed(() =>
   isLoggedIn.value
@@ -393,60 +82,21 @@ const loginButtonAriaLabel = computed(() =>
     : t('theme.shell.login'),
 )
 
-/** 头像 URL 切换时（登录/退出）重置失败标志，让 NuxtImg 重新尝试加载 */
-watch(displayAvatarUrl, () => {
-  avatarError.value = false
-})
-
-const showProgress = computed(() => scrollProgress.value > 1)
-const displayProgress = computed(() => Math.round(scrollProgress.value))
-
-// 环形进度条 dashoffset 计算（与 SVG circle r=16 保持一致）
-const RING_CIRCUMFERENCE = 2 * Math.PI * 16
-const progressRingOffset = computed(() => RING_CIRCUMFERENCE * (1 - scrollProgress.value / 100))
-
-function onAvatarError() {
-  avatarError.value = true
-}
-
-function isActive(to: string) {
-  const path = route.path.replace(/\/$/, '') || '/'
-  const target = to.replace(/\/$/, '') || '/'
-  return path === target || (target !== '/' && path.startsWith(target + '/'))
-}
-
-function onProgressClick() {
-  scrollResetFn.value?.()
-}
-
-/** 刷新每日一言（避免与当前相同） */
-function refreshQuote() {
-  const quotes = ownerCard.value.quotes
-  if (quotes.length <= 1) return
-  let next: string = ''
-  do {
-    next = quotes[Math.floor(Math.random() * quotes.length)] || ''
-  } while (next === dailyQuote.value)
-  dailyQuote.value = next
-}
-
 // ---- 展开/收起逻辑 ----
 const { isFooterExpanded } = useFooterExpand()
 const isExpanded = isFooterExpanded
 
-/** 收起态导航获得焦点时立即收起展开态，保证获焦元素可见 */
+let expandTimer: ReturnType<typeof setTimeout> | null = null
+let collapseTimer: ReturnType<typeof setTimeout> | null = null
+
 function onNavFocusIn() {
-  // 尚未展开时也要取消悬停计时，避免稍后隐藏已获焦的导航。
   if (expandTimer) {
     clearTimeout(expandTimer)
     expandTimer = null
   }
   isExpanded.value = false
 }
-let expandTimer: ReturnType<typeof setTimeout> | null = null
-let collapseTimer: ReturnType<typeof setTimeout> | null = null
 
-/** hover 头像触发展开（登录面板打开时不触发展开，避免干扰登录操作） */
 function onAvatarEnter() {
   if (isLoginOpen.value) return
   if (collapseTimer) {
@@ -461,7 +111,6 @@ function onAvatarEnter() {
   }
 }
 
-/** 鼠标在整个底部栏内时保持展开 */
 function onBarEnter() {
   if (collapseTimer) {
     clearTimeout(collapseTimer)
@@ -469,7 +118,6 @@ function onBarEnter() {
   }
 }
 
-/** 鼠标离开底部栏时延迟收起 */
 function onBarLeave() {
   if (expandTimer) {
     clearTimeout(expandTimer)
@@ -481,9 +129,7 @@ function onBarLeave() {
   }, 150)
 }
 
-// ---- 登录面板逻辑 ----
 function onLoginClick() {
-  // 打开登录面板时自动收起底部栏，避免视觉遮挡
   if (!isLoginOpen.value && isExpanded.value) {
     if (expandTimer) {
       clearTimeout(expandTimer)
@@ -494,7 +140,6 @@ function onLoginClick() {
   toggleLogin()
 }
 
-/** 账号入口按钮点击：登录态打开 popover，未登录打开登录面板 */
 function onLoginButtonClick() {
   if (isLoggedIn.value) {
     toggleUserMenu()
@@ -503,9 +148,7 @@ function onLoginButtonClick() {
   }
 }
 
-// ---- 用户菜单逻辑 ----
 function toggleUserMenu() {
-  // 打开菜单时收起展开态，避免与博主信息卡视觉重叠
   if (!isUserMenuOpen.value && isExpanded.value) {
     if (expandTimer) {
       clearTimeout(expandTimer)
@@ -520,41 +163,18 @@ function closeUserMenu() {
   isUserMenuOpen.value = false
 }
 
-function onUserMenuProfile() {
-  closeUserMenu()
-  // 占位：暂未实现独立的个人中心页，先跳到关于页
-  router.push('/about')
-}
-
-async function onUserMenuSettings() {
-  closeUserMenu()
-  await navigateTo('/admin/posts')
-}
-
-async function onUserMenuLogout() {
-  closeUserMenu()
-  try {
-    await logout()
-    info(t('theme.nexus.statusBar.loggedOut'))
-  } catch {
-    info(t('theme.nexus.statusBar.logoutFailed'))
-  }
-}
-
-/** 点击外部关闭登录面板 / 用户菜单 */
 function onClickOutside(e: MouseEvent) {
   const target = e.target as HTMLElement
 
-  // 关闭底部栏内嵌登录面板（AuthModal 模式由其自身管理）
   if (isLoginOpen.value && !preferModal.value) {
-    const panel = loginPanelRef.value
+    const panel = loginPanelCompRef.value?.panelEl
     if (!panel?.contains(target) && !target.closest('.nexus-bar__login')) {
       closeLogin()
     }
   }
 
   if (isUserMenuOpen.value) {
-    const menu = userMenuRef.value
+    const menu = userMenuCompRef.value?.menuEl
     const button = userMenuButtonRef.value
     if (!menu?.contains(target) && !button?.contains(target)) {
       closeUserMenu()
@@ -562,7 +182,6 @@ function onClickOutside(e: MouseEvent) {
   }
 }
 
-/** ESC 关闭登录面板 / 用户菜单 */
 function onEscKey(e: KeyboardEvent) {
   if (e.key !== 'Escape') return
   if (isLoginOpen.value) closeLogin()
@@ -573,10 +192,6 @@ onMounted(() => {
   document.addEventListener('keydown', onEscKey)
 })
 
-/**
- * 仅在面板/菜单打开时挂载 click-outside 监听器，
- * 延后到 nextTick 注册 — 避免"打开的那次点击"自身冒泡触发立即关闭。
- */
 let outsideHandlerAttached = false
 function attachOutsideHandler() {
   if (outsideHandlerAttached) return
@@ -591,9 +206,6 @@ function detachOutsideHandler() {
 
 watch([isLoginOpen, isUserMenuOpen], ([loginOpen, menuOpen]) => {
   if (loginOpen || menuOpen) {
-    // 必须用 setTimeout（macrotask），不能用 nextTick（microtask）——
-    // Vue 3 的 nextTick 基于 Promise.resolve()，微任务会在当前点击事件冒泡完成前执行，
-    // 导致 onClickOutside 在同一次点击中被触发。setTimeout 保证在下一轮事件循环才注册。
     setTimeout(() => attachOutsideHandler(), 0)
   } else {
     detachOutsideHandler()
@@ -601,7 +213,6 @@ watch([isLoginOpen, isUserMenuOpen], ([loginOpen, menuOpen]) => {
 })
 
 onBeforeUnmount(() => {
-  stopLoginShape()
   if (expandTimer) clearTimeout(expandTimer)
   if (collapseTimer) clearTimeout(collapseTimer)
   detachOutsideHandler()
@@ -614,16 +225,11 @@ $bar-height: 72px;
 $bar-expanded: 112px;
 
 .nexus-bar {
-  // 操作区随头像一起右移，保持设置按钮到导航分隔线的原有间距。
   --bar-pivot-left: calc(#{$sidebar-left-width} + #{$grid-gap} + var(--bar-avatar-offset));
-  // 头像右移，为凹弧左侧留出完整圆角及水平底边；账号入口同步保持间距。
   --bar-avatar-offset: 1.5rem;
   --bar-avatar-pad: calc(7.75rem + var(--bar-avatar-offset));
-  // 统一的元素间距：头像-登录-月亮-设置-分隔线-导航 全部使用 1.5rem
   --bar-divider-gap: 1.5rem;
-  // 三个左侧按钮的统一尺寸
   --bar-action-size: 2.25rem;
-  // nexus-bar 自身 flex gap，与其它间距保持一致
   --bar-flex-gap: 1.5rem;
 
   position: relative;
@@ -632,7 +238,7 @@ $bar-expanded: 112px;
   gap: var(--bar-flex-gap);
   height: $bar-height;
   padding: 0 1.25rem;
-  padding-left: var(--bar-avatar-pad); // 给头像留空间（含间距）
+  padding-left: var(--bar-avatar-pad);
   background: var(--surface-1-alpha-90);
   backdrop-filter: blur(18px);
   border: 1px solid var(--border);
@@ -642,7 +248,6 @@ $bar-expanded: 112px;
     0 4px 24px rgba(0, 0, 0, 0.06);
   overflow: visible;
 
-  // 收起动画（快速响应）
   transition:
     height 0.18s cubic-bezier(0.4, 0, 0.6, 1),
     transform 0.18s cubic-bezier(0.4, 0, 0.6, 1),
@@ -657,7 +262,6 @@ $bar-expanded: 112px;
     transform: translateY(#{$bar-height - $bar-expanded});
     z-index: 20;
 
-    // 展开动画（柔和减速）
     transition:
       height 0.3s cubic-bezier(0.22, 0.68, 0.35, 1),
       transform 0.3s cubic-bezier(0.22, 0.68, 0.35, 1),
@@ -673,171 +277,6 @@ $bar-expanded: 112px;
   }
 }
 
-// ---- 头像（半悬浮，展开时位置不变） ----
-.nexus-bar__avatar-wrap {
-  position: absolute;
-  left: calc(1.25rem + var(--bar-avatar-offset));
-  bottom: 16px;
-  width: 80px;
-  height: 80px;
-  border-radius: 50%;
-  border: 3px solid var(--surface-1);
-  box-shadow:
-    0 2px 16px rgba(0, 0, 0, 0.12),
-    0 0 0 0 var(--accent-alpha-0);
-  z-index: 22;
-  cursor: var(--interaction-cursor, pointer);
-  transition:
-    transform 0.3s cubic-bezier(0.22, 0.68, 0.35, 1),
-    box-shadow 0.3s ease,
-    border-color 0.3s ease;
-  @media (prefers-reduced-motion: reduce) {
-    transition: none;
-  }
-
-  &:hover {
-    border-color: var(--accent);
-    box-shadow:
-      0 4px 20px rgba(0, 0, 0, 0.15),
-      0 0 0 3px var(--accent-alpha-20, rgba(99, 102, 241, 0.15));
-    transform: scale(1.05);
-    transition:
-      transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1),
-      box-shadow 0.3s ease,
-      border-color 0.3s ease;
-    @media (prefers-reduced-motion: reduce) {
-      transition: none;
-    }
-  }
-
-  &:active {
-    transform: scale(1.02);
-  }
-
-  &:focus-visible {
-    outline: none;
-    border-color: var(--accent);
-    box-shadow: 0 0 0 3px var(--accent-alpha-20, rgba(99, 102, 241, 0.2));
-  }
-}
-
-.nexus-bar__avatar-img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  border-radius: 50%;
-  transition: filter 0.3s ease;
-  @media (prefers-reduced-motion: reduce) {
-    transition: none;
-  }
-
-  .nexus-bar__avatar-wrap:hover & {
-    filter: brightness(1.05);
-  }
-}
-
-.nexus-bar__avatar-fallback {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 100%;
-  height: 100%;
-  border-radius: 50%;
-  background: var(--surface-2);
-  color: var(--accent-text);
-  font-size: 0.6875rem;
-  font-weight: 800;
-  letter-spacing: 0.08em;
-}
-
-// ---- 头像呼吸光晕 ----
-.nexus-bar__avatar-wrap::after {
-  content: '';
-  position: absolute;
-  inset: -4px;
-  border-radius: 50%;
-  opacity: 0;
-  pointer-events: none;
-  transition: opacity 0.6s ease;
-  @media (prefers-reduced-motion: reduce) {
-    transition: none;
-  }
-}
-
-.nexus-bar:not(.is-expanded) .nexus-bar__avatar-wrap::after {
-  opacity: 1;
-  animation: nexus-avatar-glow 3s ease-in-out infinite;
-  @media (prefers-reduced-motion: reduce) {
-    animation: none;
-  }
-}
-
-@keyframes nexus-avatar-glow {
-  0%,
-  100% {
-    box-shadow: 0 0 0 0 var(--avatar-glow-color, transparent);
-  }
-  50% {
-    box-shadow: 0 0 12px 2px var(--avatar-glow-color, transparent);
-  }
-}
-
-// ---- 在线状态微标签 ----
-.nexus-bar__presence-badge {
-  position: absolute;
-  right: -8px;
-  bottom: -2px;
-  display: flex;
-  align-items: center;
-  gap: 3px;
-  padding: 1px 6px 1px 4px;
-  border-radius: $radius-full;
-  background: var(--surface-1);
-  border: 1.5px solid var(--border-soft);
-  font-size: 0.5625rem;
-  font-weight: 600;
-  color: var(--text-soft);
-  white-space: nowrap;
-  z-index: 2;
-  pointer-events: none;
-  transition:
-    opacity 0.2s ease,
-    transform 0.2s ease;
-  @media (prefers-reduced-motion: reduce) {
-    transition: none;
-  }
-
-  .nexus-bar.is-expanded & {
-    opacity: 0;
-    transform: scale(0.8);
-  }
-}
-
-.nexus-bar__presence-badge-dot {
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  flex-shrink: 0;
-}
-
-.nexus-bar__presence-badge--online .nexus-bar__presence-badge-dot {
-  background: var(--presence-online);
-}
-.nexus-bar__presence-badge--idle .nexus-bar__presence-badge-dot {
-  background: var(--presence-idle);
-}
-.nexus-bar__presence-badge--busy .nexus-bar__presence-badge-dot {
-  background: var(--presence-busy);
-}
-.nexus-bar__presence-badge--offline .nexus-bar__presence-badge-dot {
-  background: var(--presence-offline);
-}
-
-.nexus-bar__presence-badge-text {
-  line-height: 1;
-}
-
-// ---- 内容切换区域 ----
 .nexus-bar__body {
   position: relative;
   flex: 1;
@@ -845,511 +284,6 @@ $bar-expanded: 112px;
   height: 100%;
 }
 
-// 收起态导航行
-.nexus-bar__row-nav {
-  position: absolute;
-  inset: 0;
-  display: flex;
-  align-items: center;
-  gap: var(--bar-divider-gap); // 分隔线两侧使用对称间距
-  transition: opacity 0.12s ease;
-  @media (prefers-reduced-motion: reduce) {
-    transition: none;
-  }
-
-  .nexus-bar.is-expanded & {
-    opacity: 0;
-    pointer-events: none;
-  }
-}
-
-// 展开态：博主信息
-.nexus-bar__row-owner {
-  position: absolute;
-  inset: 0;
-  display: flex;
-  align-items: center;
-  opacity: 0;
-  pointer-events: none;
-  transition: opacity 0.15s ease 0.04s;
-  @media (prefers-reduced-motion: reduce) {
-    transition: none;
-  }
-
-  .nexus-bar.is-expanded & {
-    opacity: 1;
-    pointer-events: auto;
-  }
-}
-
-// ---- 操作图标 ----
-.nexus-bar__actions {
-  display: flex;
-  align-items: center;
-  gap: var(--bar-divider-gap); // 月亮-设置间距与其它一致
-  flex-shrink: 0;
-  // 容器宽度恰好包住两个按钮 + gap，分隔线由 nexus-bar 的 flex/row-nav 多个 gap 共同推到主内容区左边
-  width: calc(
-    var(--bar-pivot-left) - var(--bar-avatar-pad) - var(--bar-action-size) - var(--bar-flex-gap) - var(
-        --bar-divider-gap
-      )
-  );
-
-  // 仅作用于底部栏内的两个按钮，放大按钮与图标尺寸
-  :deep(.theme-switcher),
-  :deep(button.appearance-fab) {
-    width: 2.25rem;
-    height: 2.25rem;
-  }
-
-  :deep(svg) {
-    width: 1.25rem;
-    height: 1.25rem;
-  }
-}
-
-// ---- 分隔线 ----
-.nexus-bar__separator {
-  width: 1px;
-  height: 1.5rem;
-  flex-shrink: 0;
-  background: var(--border-soft);
-  opacity: 0.8;
-}
-
-// ---- 导航链接 ----
-.nexus-bar__nav {
-  display: flex;
-  align-items: center;
-  gap: 0.25rem;
-  flex: 1;
-  min-width: 0;
-  overflow-x: auto;
-  scrollbar-width: none;
-
-  &::-webkit-scrollbar {
-    display: none;
-  }
-}
-
-.nexus-bar__link {
-  position: relative;
-  display: flex;
-  align-items: center;
-  gap: 0.375rem;
-  padding: 0.4rem 0.75rem;
-  border-radius: $radius-sm;
-  font-size: 0.8125rem;
-  font-weight: 500;
-  color: var(--text-soft);
-  white-space: nowrap;
-  transition:
-    color 0.2s ease,
-    background 0.2s ease,
-    transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
-  @media (prefers-reduced-motion: reduce) {
-    transition: none;
-  }
-
-  &:hover {
-    color: var(--text-main);
-    background: var(--surface-2);
-    transform: translateY(-1px);
-  }
-
-  &:active {
-    transform: translateY(0);
-  }
-
-  &.is-active {
-    color: var(--accent-text);
-    background: var(--accent-alpha-5, rgba(99, 102, 241, 0.05));
-    font-weight: 600;
-
-    &::after {
-      content: '';
-      position: absolute;
-      bottom: 0.1875rem;
-      left: 50%;
-      transform: translateX(-50%);
-      width: 1.25rem;
-      height: 2px;
-      border-radius: 1px;
-      background: var(--accent);
-      opacity: 0.9;
-    }
-  }
-}
-
-// ---- 环形滚动进度按钮 ----
-.nexus-bar__progress {
-  position: relative;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-  margin-left: auto;
-  width: 2.25rem;
-  height: 2.25rem;
-  border-radius: 50%;
-  border: none;
-  background: var(--surface-2);
-  cursor: var(--interaction-cursor, pointer);
-  transition:
-    background 0.2s ease,
-    transform 0.15s ease;
-  @media (prefers-reduced-motion: reduce) {
-    transition: none;
-  }
-
-  &:hover {
-    background: var(--surface-3);
-
-    .nexus-bar__progress-text {
-      opacity: 0;
-      transform: scale(0.6);
-    }
-
-    .nexus-bar__progress-icon {
-      opacity: 1;
-      transform: translateY(0);
-      animation: nexus-bar-bounce 0.6s ease infinite;
-      @media (prefers-reduced-motion: reduce) {
-        animation: none;
-      }
-    }
-  }
-
-  &:active {
-    transform: scale(0.9);
-  }
-}
-
-.nexus-bar__progress-ring {
-  position: absolute;
-  inset: 0;
-  transform: rotate(-90deg);
-}
-
-.nexus-bar__progress-ring-bg {
-  fill: none;
-  stroke: var(--border-soft);
-  stroke-width: 2;
-}
-
-.nexus-bar__progress-ring-fill {
-  fill: none;
-  stroke: var(--accent);
-  stroke-width: 2;
-  stroke-linecap: round;
-  stroke-dasharray: 100.53; // 2 * PI * 16
-  transition: stroke-dashoffset 0.3s cubic-bezier(0.22, 0.68, 0.35, 1);
-  @media (prefers-reduced-motion: reduce) {
-    transition: none;
-  }
-}
-
-.nexus-bar__progress-center {
-  position: relative;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.nexus-bar__progress-text {
-  font-size: 0.625rem;
-  font-weight: 700;
-  font-variant-numeric: tabular-nums;
-  color: var(--text-soft);
-  transition:
-    opacity 0.2s ease,
-    transform 0.2s ease;
-  @media (prefers-reduced-motion: reduce) {
-    transition: none;
-  }
-}
-
-.nexus-bar__progress-icon {
-  position: absolute;
-  opacity: 0;
-  color: var(--accent-text);
-  transform: translateY(3px);
-  transition:
-    opacity 0.2s ease,
-    transform 0.2s ease;
-  @media (prefers-reduced-motion: reduce) {
-    transition: none;
-  }
-}
-
-@keyframes nexus-bar-bounce {
-  0%,
-  100% {
-    transform: translateY(0);
-  }
-  40% {
-    transform: translateY(-3px);
-  }
-  60% {
-    transform: translateY(1px);
-  }
-}
-
-.nexus-progress-fade-enter-active {
-  transition:
-    opacity 0.25s ease-out,
-    transform 0.25s ease-out;
-  @media (prefers-reduced-motion: reduce) {
-    transition: none;
-  }
-}
-
-.nexus-progress-fade-leave-active {
-  transition:
-    opacity 0.2s ease-in,
-    transform 0.2s ease-in;
-  @media (prefers-reduced-motion: reduce) {
-    transition: none;
-  }
-}
-
-.nexus-progress-fade-enter-from,
-.nexus-progress-fade-leave-to {
-  opacity: 0;
-  transform: translateY(8px) scale(0.85);
-}
-
-// ---- 博主信息卡片（横向布局） ----
-.nexus-bar__owner-card {
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-  width: 100%;
-}
-
-// 展开态子元素交错入场动画
-.nexus-bar__owner-card > * {
-  opacity: 0;
-  transform: translateX(-8px);
-  transition:
-    opacity 0.18s ease,
-    transform 0.18s ease;
-  @media (prefers-reduced-motion: reduce) {
-    transition: none;
-  }
-}
-
-.nexus-bar.is-expanded .nexus-bar__owner-card > :nth-child(1) {
-  opacity: 1;
-  transform: translateX(0);
-  transition-delay: 0.06s;
-}
-
-.nexus-bar.is-expanded .nexus-bar__owner-card > :nth-child(2) {
-  opacity: 1;
-  transform: translateX(0);
-  transition-delay: 0.1s;
-}
-
-.nexus-bar.is-expanded .nexus-bar__owner-card > :nth-child(3) {
-  opacity: 1;
-  transform: translateX(0);
-  transition-delay: 0.14s;
-}
-
-// 左列：身份 + 状态
-.nexus-bar__owner-left {
-  display: flex;
-  flex-direction: column;
-  gap: 0.25rem;
-  flex-shrink: 0;
-}
-
-// 中间分隔线
-.nexus-bar__owner-divider {
-  width: 1px;
-  height: 2rem;
-  flex-shrink: 0;
-  background: var(--border-soft);
-  opacity: 0.6;
-}
-
-// 右列：一言 + 社交
-.nexus-bar__owner-right {
-  display: flex;
-  flex-direction: column;
-  gap: 0.25rem;
-  flex: 1;
-  min-width: 0;
-}
-
-.nexus-bar__owner-header {
-  display: flex;
-  align-items: baseline;
-  gap: 0.625rem;
-}
-
-.nexus-bar__owner-name {
-  font-size: 1rem;
-  font-weight: 700;
-  color: var(--text-main);
-  letter-spacing: 0.02em;
-}
-
-.nexus-bar__owner-title {
-  font-size: 0.75rem;
-  color: var(--text-soft);
-}
-
-// 在线状态行
-.nexus-bar__owner-status-line {
-  display: flex;
-  align-items: center;
-  gap: 0.375rem;
-  font-size: 0.6875rem;
-  color: var(--text-soft);
-}
-
-.nexus-bar__owner-status-dot {
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  flex-shrink: 0;
-
-  &--online {
-    background: var(--presence-online);
-  }
-  &--idle {
-    background: var(--presence-idle);
-  }
-  &--busy {
-    background: var(--presence-busy);
-  }
-  &--offline {
-    background: var(--presence-offline);
-  }
-}
-
-.nexus-bar__owner-status-label {
-  font-weight: 600;
-}
-
-.nexus-bar__owner-status-sig {
-  color: var(--text-muted);
-  font-style: italic;
-}
-
-// 一言行（含刷新按钮）
-.nexus-bar__owner-quote-row {
-  display: flex;
-  align-items: center;
-  gap: 0.375rem;
-}
-
-.nexus-bar__owner-quote {
-  font-size: 0.75rem;
-  color: var(--text-muted);
-  font-style: italic;
-  margin: 0;
-}
-
-.nexus-bar__quote-refresh {
-  position: relative;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 1.25rem;
-  height: 1.25rem;
-  flex-shrink: 0;
-  border-radius: $radius-full;
-  border: none;
-  background: transparent;
-  color: var(--text-muted);
-  cursor: var(--interaction-cursor, pointer);
-  opacity: 0;
-  transition:
-    opacity 0.2s ease,
-    color 0.2s ease,
-    transform 0.3s ease;
-  @media (prefers-reduced-motion: reduce) {
-    transition: none;
-  }
-
-  .nexus-bar__owner-quote-row:hover & {
-    opacity: 1;
-  }
-
-  // 键盘聚焦时与悬停一样显示，并给出可见焦点环
-  &:focus-visible {
-    opacity: 1;
-    color: var(--accent-text);
-    outline: 2px solid var(--focus-ring);
-    outline-offset: 1px;
-    border-radius: $radius-full;
-  }
-
-  // 视觉 20px 不变，伪元素把点击区扩到 28px
-  &::before {
-    content: '';
-    position: absolute;
-    inset: -4px;
-    border-radius: $radius-full;
-  }
-
-  &:hover {
-    color: var(--accent-text);
-  }
-
-  &:active {
-    transform: rotate(180deg);
-  }
-}
-
-// 一言切换动画
-.nexus-quote-swap-enter-active,
-.nexus-quote-swap-leave-active {
-  transition:
-    opacity 0.2s ease,
-    transform 0.2s ease;
-  @media (prefers-reduced-motion: reduce) {
-    transition: none;
-  }
-}
-
-.nexus-quote-swap-enter-from {
-  opacity: 0;
-  transform: translateY(4px);
-}
-
-.nexus-quote-swap-leave-to {
-  opacity: 0;
-  transform: translateY(-4px);
-}
-
-.nexus-bar__owner-socials {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  margin-top: 0.125rem;
-}
-
-.nexus-bar__social-link {
-  display: flex;
-  align-items: center;
-  gap: 0.25rem;
-  font-size: 0.6875rem;
-  color: var(--text-soft);
-  transition: color 0.2s ease;
-  @media (prefers-reduced-motion: reduce) {
-    transition: none;
-  }
-
-  &:hover {
-    color: var(--accent-text);
-  }
-}
-
-// ---- 登录按钮（与左侧两个图标视觉风格一致：无边框、圆角小） ----
 .nexus-bar__login {
   display: flex;
   align-items: center;
@@ -1370,7 +304,6 @@ $bar-expanded: 112px;
     transition: none;
   }
 
-  // 自定 hover 动效：图标轻微上抬 + 颜色高亮
   &:hover {
     color: var(--accent-text);
     background: var(--surface-2);
@@ -1381,224 +314,14 @@ $bar-expanded: 112px;
     transform: translateY(0) scale(0.92);
   }
 
-  // 面板/popover 打开时保持高亮
   &.is-open {
     color: var(--accent-text);
     background: var(--surface-2);
   }
 
-  // 图标尺寸与其它两个按钮一致（20px）
   :deep(svg) {
     width: 1.25rem;
     height: 1.25rem;
-  }
-}
-
-// ---- 用户菜单 popover ----
-.nexus-bar__user-menu {
-  position: absolute;
-  bottom: calc(100% + 0.5rem);
-  // 与账号入口按钮（.nexus-bar__login）水平对齐
-  left: var(--bar-avatar-pad);
-  z-index: 21;
-  min-width: 200px;
-  padding: 0.5rem;
-  background: var(--surface-1);
-  border: 1px solid var(--border);
-  border-radius: $radius-card;
-  box-shadow: var(--shadow-card);
-  display: flex;
-  flex-direction: column;
-  gap: 0.125rem;
-}
-
-.nexus-bar__user-menu-header {
-  padding: 0.5rem 0.625rem 0.625rem;
-}
-
-.nexus-bar__user-menu-name {
-  font-size: 0.875rem;
-  font-weight: 700;
-  color: var(--text-main);
-  line-height: 1.2;
-}
-
-.nexus-bar__user-menu-email {
-  margin-top: 0.25rem;
-  font-size: 0.6875rem;
-  color: var(--text-soft);
-  line-height: 1.2;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.nexus-bar__user-menu-divider {
-  height: 1px;
-  background: var(--border-soft);
-  margin: 0.25rem 0;
-}
-
-.nexus-bar__user-menu-item {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  width: 100%;
-  padding: 0.5rem 0.625rem;
-  border: none;
-  background: transparent;
-  color: var(--text-main);
-  font-size: 0.8125rem;
-  text-align: left;
-  border-radius: $radius-sm;
-  cursor: var(--interaction-cursor, pointer);
-  transition:
-    background 0.18s ease,
-    color 0.18s ease,
-    transform 0.18s ease;
-  @media (prefers-reduced-motion: reduce) {
-    transition: none;
-  }
-
-  &:hover {
-    background: var(--surface-2);
-    transform: translateX(2px);
-  }
-
-  &--danger {
-    color: var(--danger, #ef4444);
-
-    &:hover {
-      background: rgba(239, 68, 68, 0.08);
-      color: var(--danger, #ef4444);
-    }
-  }
-}
-
-/* 用户菜单进出动画 */
-.nexus-user-menu-enter-active {
-  transition:
-    opacity 0.18s ease-out,
-    transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
-  @media (prefers-reduced-motion: reduce) {
-    transition: none;
-  }
-}
-
-.nexus-user-menu-leave-active {
-  transition:
-    opacity 0.14s ease-in,
-    transform 0.14s ease-in;
-  @media (prefers-reduced-motion: reduce) {
-    transition: none;
-  }
-}
-
-.nexus-user-menu-enter-from {
-  opacity: 0;
-  transform: translateY(6px) scale(0.96);
-}
-
-.nexus-user-menu-leave-to {
-  opacity: 0;
-  transform: translateY(6px) scale(0.96);
-}
-
-// ---- 登录面板（底部栏上方悬浮） ----
-.nexus-bar__login-panel {
-  position: absolute;
-  bottom: calc(100% + 0.5rem);
-  left: 0;
-  right: 0;
-  z-index: 21;
-  // 补回原边框占用的空间，保持表单位置与卡片高度不变。
-  padding: calc(1.75rem + 1px) calc(1.5rem + 1px);
-  visibility: hidden;
-  pointer-events: none;
-
-  &.is-shape-ready {
-    visibility: visible;
-  }
-}
-
-.nexus-bar__login-surface {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  overflow: visible;
-  pointer-events: none;
-  filter: drop-shadow(0 1px 1.5px rgba(0, 0, 0, 0.06)) drop-shadow(0 4px 6px rgba(0, 0, 0, 0.08));
-
-  :global(.dark) & {
-    filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.3)) drop-shadow(0 8px 16px rgba(0, 0, 0, 0.2));
-  }
-
-  path {
-    fill: var(--surface-1);
-    stroke: var(--border);
-    stroke-width: 1px;
-    // 只让真实卡片表面接收点击，凹口保持透明且能点到后方。
-    pointer-events: visiblePainted;
-  }
-}
-
-.nexus-bar__login-content {
-  position: relative;
-  pointer-events: none;
-
-  :deep(.auth-panel) {
-    pointer-events: auto;
-  }
-}
-
-/* 登录面板进出动画 */
-.nexus-login-panel-enter-active {
-  transition: opacity 0.2s ease-out;
-  .nexus-bar__login-content {
-    transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
-  }
-  @media (prefers-reduced-motion: reduce) {
-    transition: none;
-    .nexus-bar__login-content {
-      transition: none;
-    }
-  }
-}
-
-.nexus-login-panel-leave-active {
-  transition: opacity 0.15s ease-in;
-  .nexus-bar__login-content {
-    transition: transform 0.15s ease-in;
-  }
-  @media (prefers-reduced-motion: reduce) {
-    transition: none;
-    .nexus-bar__login-content {
-      transition: none;
-    }
-  }
-}
-
-.nexus-login-panel-enter-from {
-  opacity: 0;
-  .nexus-bar__login-content {
-    transform: translateY(8px);
-  }
-}
-
-.nexus-login-panel-leave-to {
-  opacity: 0;
-  .nexus-bar__login-content {
-    transform: translateY(8px);
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .nexus-login-panel-enter-from,
-  .nexus-login-panel-leave-to {
-    .nexus-bar__login-content {
-      transform: none;
-    }
   }
 }
 </style>
