@@ -112,7 +112,8 @@
       </CommonCustomScrollbar>
     </template>
     <template #overlays>
-      <Teleport v-if="activeTheme.capabilities.rightSidebar" to="#right-sidebar-target">
+      <!-- 右栏能力判断收敛到组件内部，页面只保留 sidebarPlacement 这类展示逻辑 -->
+      <CommonThemeSidebarPortal>
         <SidebarRightSidebar>
           <LinkSidebarContent
             :metadata="metadata"
@@ -122,7 +123,7 @@
             @retry-metadata="refreshMetadata()"
           />
         </SidebarRightSidebar>
-      </Teleport>
+      </CommonThemeSidebarPortal>
     </template>
   </CommonPageFrame>
 </template>

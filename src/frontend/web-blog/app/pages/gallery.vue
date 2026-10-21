@@ -97,8 +97,9 @@
         @next="move(1)"
         @retry="readSelection"
       />
-      <Teleport v-if="activeTheme.capabilities.rightSidebar" to="#right-sidebar-target"
-        ><SidebarRightSidebar>
+      <!-- 右栏能力判断收敛到组件内部，页面只保留 sidebarPlacement 这类展示逻辑 -->
+      <CommonThemeSidebarPortal>
+        <SidebarRightSidebar>
           <CommonRequestFeedback
             v-if="metadataPending || metadataError"
             :pending="metadataPending"
@@ -107,11 +108,10 @@
             :description="metadataFeedbackDescription"
             @retry="refreshMetadata()"
           />
-          <GalleryStats v-if="metadata" :stats="stats" /><GalleryGearCard
-            v-if="metadata"
-            :gear="metadata.gear"
-          /> </SidebarRightSidebar
-      ></Teleport>
+          <GalleryStats v-if="metadata" :stats="stats" />
+          <GalleryGearCard v-if="metadata" :gear="metadata.gear" />
+        </SidebarRightSidebar>
+      </CommonThemeSidebarPortal>
     </template>
   </CommonPageFrame>
 </template>

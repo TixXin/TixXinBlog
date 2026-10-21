@@ -120,30 +120,27 @@
         </CommonContextDrawer>
       </Teleport>
     </ClientOnly>
-    <Teleport to="#right-sidebar-target">
+    <!-- 右栏内容交给能力位门控组件：窄屏不显示、dock 未声明右栏时都不渲染 -->
+    <CommonThemeSidebarPortal>
       <SidebarRightSidebar>
         <ArticleTableOfContents :items="tocItems" :active-id="activeId" :progress="progress" />
         <ArticleRelatedPosts :posts="relatedPosts" />
         <SidebarReadingHistoryCard />
         <AboutDonateCard />
       </SidebarRightSidebar>
-    </Teleport>
+    </CommonThemeSidebarPortal>
   </div>
 </template>
 
 <script setup lang="ts">
-import { useMediaQuery } from '@vueuse/core'
 import { useArticleDetailSeo } from '~/features/article/useArticleDetailSeo'
 
 const route = useRoute()
-const { currentThemeId, switchingState } = useLayoutTheme()
-const nexusSidebarVisible = useMediaQuery('(min-width: 1440px)')
-const auroraSidebarVisible = useMediaQuery('(min-width: 1280px)')
-const needsCompactToc = computed(
-  () =>
-    currentThemeId.value === 'dock' ||
-    (currentThemeId.value === 'nexus' ? !nexusSidebarVisible.value : !auroraSidebarVisible.value),
-)
+const { switchingState } = useLayoutTheme()
+// 右栏可见性改由能力位 + 主题自报断点决定，替代原先按 nexus/aurora/dock 主题 id 硬编码断点。
+// 该值只在 ClientOnly 的紧凑目录入口里使用，不会影响 SSR 输出结构。
+const { rightSidebarVisible } = useThemeSidebarVisibility()
+const needsCompactToc = computed(() => !rightSidebarVisible.value)
 const isMockArticle = useRuntimeConfig().public.postUseMockRepo !== false
 const scrollbarRef = ref<{ viewport: HTMLElement | null } | null>(null)
 const readingContent = ref<HTMLElement | null>(null)

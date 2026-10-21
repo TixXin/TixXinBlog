@@ -12,8 +12,9 @@
     @cancel="$emit('cancelIdentity')"
     @login="$emit('login')"
   />
+  <!-- ClientOnly 包裹关系保持原样；右栏概览由能力位门控组件决定是否挂载 -->
   <ClientOnly>
-    <Teleport to="#right-sidebar-target">
+    <CommonThemeSidebarPortal>
       <SidebarRightSidebar>
         <GuestbookOverview
           :data="metadata"
@@ -22,7 +23,7 @@
           @retry="$emit('retryMetadata')"
         />
       </SidebarRightSidebar>
-    </Teleport>
+    </CommonThemeSidebarPortal>
   </ClientOnly>
 </template>
 

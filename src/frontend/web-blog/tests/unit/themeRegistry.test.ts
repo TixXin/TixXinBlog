@@ -1,7 +1,7 @@
 /** @vitest-environment node */
 /**
  * @file themeRegistry.test.ts
- * @description 三主题注册契约：真实宿主能力、引擎生成元信息与非法主题标识回退
+ * @description 四主题契约（RootLayout/ThemeAccessory/StatusFooter/PostCard）、宿主能力位与引擎生成元信息
  */
 import { describe, expect, it } from 'vitest'
 import { themeEngineOptions, themeEngineThemeNames, themeEngineThemes } from '#build/theme-engine.options.mjs'
@@ -41,15 +41,47 @@ describe('三主题真实能力与注册契约', () => {
     expect(Object.keys(themeHostConfigs)).toEqual(['nexus', 'aurora', 'dock'])
     expect(themeHostConfigs).toEqual(hostConfigs)
     expect(DEFAULT_LAYOUT_THEME_ID).toBe('nexus')
-    expect(themeEngineOptions.defaultTheme).toBe(DEFAULT_LAYOUT_THEME_ID)
+    // 引擎构建期常量必须与宿主运行时同源，否则 cookieKey 漂移会让 SSR 首屏选错主题
+    expect(themeEngineOptions.defaultTheme).toBe('nexus')
+    expect(themeEngineOptions.cookieKey).toBe('blog-layout-theme')
   })
 
   it.each([
-    ['nexus', true, true, ['colorMode', 'contentTransition', 'sidebarAnimation']],
-    ['aurora', false, true, ['colorMode', 'contentTransition', 'sidebarAnimation']],
-    ['dock', false, false, ['colorMode', 'contentTransition']],
-  ] as const)('%s 只声明自身支持的侧栏和定制能力', (id, leftSidebar, rightSidebar, customizer) => {
-    expect(hostConfigs[id].capabilities).toEqual({ leftSidebar, rightSidebar, customizer })
+    [
+      'nexus',
+      {
+        rightSidebar: true,
+        rightSidebarBreakpoint: 1440,
+        mobileNav: true,
+        guestbookChat: true,
+        momentInfoPlacement: 'left',
+      },
+      ['colorMode', 'contentTransition', 'sidebarAnimation'],
+    ],
+    [
+      'aurora',
+      {
+        rightSidebar: true,
+        rightSidebarBreakpoint: 1280,
+        mobileNav: true,
+        guestbookChat: false,
+        momentInfoPlacement: 'right',
+      },
+      ['colorMode', 'contentTransition', 'sidebarAnimation'],
+    ],
+    [
+      'dock',
+      {
+        rightSidebar: false,
+        mobileNav: false,
+        guestbookChat: false,
+      },
+      ['colorMode', 'contentTransition'],
+    ],
+  ] as const)('%s 只用能力位声明侧栏断点、移动导航、留言聊天态与朋友圈资料归属', (id, capabilities, customizer) => {
+    // 能力位替代宿主里按主题 id 写死的分支，新增主题只需补齐这张表
+    expect(hostConfigs[id].capabilities).toMatchObject(capabilities)
+    expect(hostConfigs[id].capabilities.customizer).toEqual(customizer)
     expect(new Set(hostConfigs[id].capabilities.customizer).size).toBe(customizer.length)
   })
 
@@ -79,32 +111,42 @@ describe('三主题真实能力与注册契约', () => {
   })
 
   it.each([
-    ['nexus', nexusDefinition, nexusConfig],
-    ['aurora', auroraDefinition, auroraConfig],
-    ['dock', dockDefinition, dockConfig],
-  ] as const)('%s 的宿主回退版本和 Lucide 图标与主题元信息一致', (id, definition, config) => {
-    expect(definition.name).toBe(id)
-    expect(config.version).toBe(definition.meta.version)
-    expect(config.version).toMatch(/^\d+\.\d+\.\d+$/)
-    expect(config.icon).toBe(definition.meta.icon)
-    expect(config.icon).toMatch(/^lucide:[a-z0-9-]+$/)
+    ['nexus', nexusDefinition],
+    ['aurora', auroraDefinition],
+    ['dock', dockDefinition],
+  ] as const)('%s 的版本与图标只来自 theme.json，theme.config 不再重复维护', (id, definition) => {
+    const engineTheme = (themeEngineThemes as Array<{ name: string; meta?: Record<string, unknown> }>).find(
+      (theme) => theme.name === id,
+    )
+    expect(engineTheme?.meta).toMatchObject(definition.meta)
+    expect(definition.meta.version).toMatch(/^\d+\.\d+\.\d+$/)
+    expect(definition.meta.icon).toMatch(/^lucide:[a-z0-9-]+$/)
+    // 宿主配置只剩 capabilities；再写一份 version/icon 会重新制造双事实源
+    expect(hostConfigs[id]).not.toHaveProperty('version')
+    expect(hostConfigs[id]).not.toHaveProperty('icon')
   })
 
-  it('生成的组件注册使用宿主逻辑契约并覆盖各主题所需的组件', () => {
+  it('契约收缩为 4 个逻辑组件，SidebarNav 不再出现', () => {
     expect(themeEngineContracts.importId).toBe('#theme-contracts')
-    expect(themeContractNames).toEqual(['RootLayout', 'ThemeAccessory', 'StatusFooter', 'SidebarNav', 'PostCard'])
+    expect(themeContractNames).toEqual(['RootLayout', 'ThemeAccessory', 'StatusFooter', 'PostCard'])
+    expect(themeContractNames).not.toContain('SidebarNav')
+  })
+
+  it('生成的组件注册保证 RootLayout 必有，PostCard/StatusFooter 可由宿主默认壳层承接', () => {
     for (const id of Object.keys(hostConfigs)) {
       const registry = themeComponentRegistry[id]
-      expect(Object.keys(registry)).toEqual(
-        expect.arrayContaining(['RootLayout', 'ThemeAccessory', 'StatusFooter', 'PostCard']),
-      )
-      for (const logicalName of ['RootLayout', 'ThemeAccessory', 'StatusFooter', 'PostCard']) {
-        expect(registry[logicalName]).toMatchObject({ sourceTheme: id })
-        expect(registry[logicalName].alias).toEqual(expect.stringContaining(logicalName))
+      // RootLayout 是唯一必选契约：所有主题必须提供自己的布局壳
+      expect(registry.RootLayout).toMatchObject({ sourceTheme: id })
+      expect(registry.RootLayout.alias).toEqual(expect.stringContaining('RootLayout'))
+      // 其余契约允许主题缺省：PostCard/StatusFooter 退回宿主默认壳层，ThemeAccessory 合法不渲染
+      for (const optionalContract of ['ThemeAccessory', 'StatusFooter', 'PostCard'] as const) {
+        const entry = registry[optionalContract]
+        if (!entry) continue
+        expect(entry).toMatchObject({ sourceTheme: id })
+        expect(entry.alias).toEqual(expect.stringContaining(optionalContract))
       }
-      if (themeHostConfigs[id]?.capabilities.leftSidebar) {
-        expect(registry).toHaveProperty('SidebarNav')
-      }
+      // 僵尸契约已从宿主删除，主题侧不得再暴露同名组件
+      expect(registry).not.toHaveProperty('SidebarNav')
     }
   })
 })

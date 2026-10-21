@@ -68,7 +68,8 @@
       />
     </template>
     <template #overlays>
-      <Teleport to="#right-sidebar-target">
+      <!-- 右栏内容交给能力位门控组件：dock 未声明右栏时自然不渲染，无需在页面里判断主题 id -->
+      <CommonThemeSidebarPortal>
         <SidebarRightSidebar>
           <SidebarPostFilters
             :tags="tags"
@@ -84,7 +85,7 @@
           />
           <BlogSubscribeCard />
         </SidebarRightSidebar>
-      </Teleport>
+      </CommonThemeSidebarPortal>
     </template>
   </CommonPageFrame>
 </template>

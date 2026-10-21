@@ -89,7 +89,8 @@ afterEach(() => wrappers.splice(0).forEach((wrapper) => wrapper.unmount()))
 
 async function setup(chat = false) {
   mocks.theme.mockReturnValue({
-    activeTheme: ref({ capabilities: { leftSidebar: chat, rightSidebar: false } }),
+    // 聊天态改由能力位 guestbookChat 决定
+    activeTheme: ref({ capabilities: { rightSidebar: false, guestbookChat: chat } }),
     currentThemeId: ref(chat ? 'nexus' : 'dock'),
   })
   const wrapper = await mountSuspended(GuestbookPage, {

@@ -18,7 +18,11 @@ const mocks = vi.hoisted(() => ({
   },
   openLogin: vi.fn(),
 }))
-mockNuxtImport('useLayoutTheme', () => () => ({ currentThemeId: mocks.currentThemeId }))
+// 移动导航改为读能力位：mock 的主题元信息声明 mobileNav=true，覆盖 nexus/aurora 共享导航的回归场景
+mockNuxtImport('useLayoutTheme', () => () => ({
+  currentThemeId: mocks.currentThemeId,
+  activeTheme: ref({ capabilities: { mobileNav: true } }),
+}))
 mockNuxtImport('useCurrentUser', () => () => ({
   isLoggedIn: ref(false),
   restore: vi.fn().mockResolvedValue(undefined),

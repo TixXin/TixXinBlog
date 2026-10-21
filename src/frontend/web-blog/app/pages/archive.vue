@@ -124,7 +124,8 @@
       <!-- 右侧栏：归档统计 + 分类分布 -->
     </template>
     <template #overlays>
-      <Teleport to="#right-sidebar-target">
+      <!-- 右栏内容由能力位门控：仅声明 rightSidebar 的主题才挂载，页面不再关心主题 id -->
+      <CommonThemeSidebarPortal>
         <SidebarRightSidebar>
           <ArticleArchiveStats v-if="metadata" :stats="archiveStats" :distribution="categoryDistribution" />
           <CommonRequestFeedback
@@ -137,7 +138,7 @@
             @retry="refreshMetadata()"
           />
         </SidebarRightSidebar>
-      </Teleport>
+      </CommonThemeSidebarPortal>
     </template>
   </CommonPageFrame>
 </template>

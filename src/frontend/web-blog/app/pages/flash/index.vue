@@ -91,7 +91,8 @@
     </template>
 
     <template #overlays>
-      <Teleport to="#right-sidebar-target">
+      <!-- 右栏内容交给能力位门控组件：主题未声明 rightSidebar 时自然不渲染 -->
+      <CommonThemeSidebarPortal>
         <SidebarRightSidebar>
           <FlashPageSidebar
             :is-logged-in="isLoggedIn"
@@ -107,7 +108,7 @@
             @tag-filter="filter.onTagFilter"
           />
         </SidebarRightSidebar>
-      </Teleport>
+      </CommonThemeSidebarPortal>
       <FlashAISearchModal v-model:visible="aiModalVisible" :notes="flash.notes.value" @cite-click="onCiteClick" />
       <CommonGuestIdentityModal
         :visible="interactions.identityModalVisible.value"

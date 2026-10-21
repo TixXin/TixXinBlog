@@ -101,7 +101,8 @@
         @cancel="interactions.cancelIdentity"
         @login="interactions.switchToLogin"
       />
-      <Teleport to="#right-sidebar-target">
+      <!-- 右栏内容交给能力位门控组件；资料归属仍由 momentInfoPlacement 派生的 rightInfo 决定 -->
+      <CommonThemeSidebarPortal>
         <SidebarRightSidebar>
           <CommonRequestFeedback
             v-if="overviewError"
@@ -123,7 +124,7 @@
           />
           <SidebarMomentTopicCard :topics="momentTopics" :active-topic="null" @select="onTopicSelect" />
         </SidebarRightSidebar>
-      </Teleport>
+      </CommonThemeSidebarPortal>
     </template>
   </CommonPageFrame>
 </template>

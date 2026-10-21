@@ -12,12 +12,13 @@
       <AboutProfileContent :value="settings.about" />
       <AboutContactCards v-if="contacts.length" :contacts="contacts" />
     </CommonCustomScrollbar>
+    <!-- ClientOnly 包裹关系保持原样；右栏是否挂载由能力位门控组件决定 -->
     <ClientOnly>
-      <Teleport to="#right-sidebar-target">
+      <CommonThemeSidebarPortal>
         <SidebarRightSidebar>
           <AboutDonateCard />
         </SidebarRightSidebar>
-      </Teleport>
+      </CommonThemeSidebarPortal>
     </ClientOnly>
   </div>
 </template>

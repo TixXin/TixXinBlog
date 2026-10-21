@@ -6,7 +6,7 @@
 -->
 
 <template>
-  <nav v-if="currentThemeId !== 'dock'" class="mobile-nav" :aria-label="$t('layout.mobileNav.label')">
+  <nav v-if="showMobileNav" class="mobile-nav" :aria-label="$t('layout.mobileNav.label')">
     <ul class="mobile-nav__list">
       <li v-for="item in primaryItems" :key="item.label">
         <NuxtLink
@@ -56,7 +56,10 @@
 <script setup lang="ts">
 const route = useRoute()
 const { navItems } = useNavItems()
-const { currentThemeId } = useLayoutTheme()
+const { activeTheme } = useLayoutTheme()
+// 能力位替代主题 id 判断：主题自带移动导航（如 dock 的浮岛）时显式声明 mobileNav=false；
+// 未声明时保留宿主共享移动导航，新增主题不必为了拿到导航而改宿主代码。
+const showMobileNav = computed(() => activeTheme.value.capabilities.mobileNav !== false)
 const { isLoggedIn } = useCurrentUser()
 const { open: openLogin } = useLoginDrawer()
 function loginFromMenu(close: () => void) {
