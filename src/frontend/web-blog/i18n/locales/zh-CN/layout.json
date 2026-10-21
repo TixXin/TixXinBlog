@@ -78,6 +78,7 @@
     "themeError": {
       "readonly": "页面交互暂不可用，已保留只读内容。",
       "failed": "这部分内容暂时无法加载。",
+      "retry": "重试加载",
       "reload": "刷新重试"
     },
     "searchBox": {

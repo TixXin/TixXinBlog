@@ -8,9 +8,75 @@
 import nexusHostConfig from './themes/nexus/theme.config'
 import auroraHostConfig from './themes/aurora/theme.config'
 import dockHostConfig from './themes/dock/theme.config'
-import { readFileSync } from 'node:fs'
+import { readFileSync, readdirSync } from 'node:fs'
 import { SSR_CACHED_PAGES } from './server/utils/ssrCacheRoutes'
 import { DICTIONARY_DOMAINS, LOCALE_COOKIE_KEY, resolveDefaultLocale } from './i18n/localeOptions'
+
+/** 各主题宿主能力，展示顺序即外观抽屉顺序；与 themes 目录下的 theme.json 集合必须一一对应 */
+const themeHostConfigs = {
+  nexus: nexusHostConfig,
+  aurora: auroraHostConfig,
+  dock: dockHostConfig,
+}
+/** 布局主题运行时约定：默认主题与 cookie 键同时被主题引擎与宿主运行时读取 */
+const layoutThemeRuntimeConfig = {
+  defaultTheme: 'nexus',
+  cookieKey: 'blog-layout-theme',
+} as const
+
+/**
+ * 构建期单一事实源校验：引擎只按目录里的 theme.json 发现主题，宿主登记漏一项就会出现
+ * 「引擎能激活、宿主不认识」的脑裂。与其在运行期静默回退，不如构建直接失败。
+ */
+function assertThemeRegistryConsistency() {
+  const themesDir = new URL('./themes/', import.meta.url)
+  const discovered = readdirSync(themesDir, { withFileTypes: true })
+    .filter((entry) => entry.isDirectory())
+    .map((entry) => entry.name)
+    .filter((name) => {
+      try {
+        readFileSync(new URL(`./themes/${name}/theme.json`, import.meta.url), 'utf8')
+        return true
+      } catch {
+        return false
+      }
+    })
+    .map(
+      (name) =>
+        JSON.parse(readFileSync(new URL(`./themes/${name}/theme.json`, import.meta.url), 'utf8')).name as string,
+    )
+    .sort()
+  const hosted = Object.keys(themeHostConfigs).sort()
+  if (discovered.length !== hosted.length || discovered.some((name, index) => name !== hosted[index])) {
+    throw new Error(
+      `[theme] themes/*/theme.json 与 nuxt.config.ts 的 themeHostConfigs 不一致：` +
+        `引擎发现 ${JSON.stringify(discovered)}，宿主登记 ${JSON.stringify(hosted)}。` +
+        `新增/删除主题时必须同时登记 skill 能力并更新文档。`,
+    )
+  }
+  if (!hosted.includes(layoutThemeRuntimeConfig.defaultTheme)) {
+    throw new Error(`[theme] 默认主题 ${layoutThemeRuntimeConfig.defaultTheme} 未在 themeHostConfigs 中登记`)
+  }
+}
+assertThemeRegistryConsistency()
+
+/**
+ * 主题运行时卫生模块：引擎 0.0.4 的 theme-sync.client 插件会在客户端重新初始化主题状态并读 localStorage，
+ * 覆盖水合 payload（会话 cookie 丢失时主题错位的根因）。宿主运行时已接管 cookie/持久化/跨标签同步，
+ * 并由 app.vue 同构输出 <html data-theme>，因此这里在模块安装后把引擎运行时插件摘掉，只保留构建期能力。
+ */
+interface ThemeRuntimeNuxtContext {
+  hook: (name: 'modules:done', fn: () => void) => void
+  options: { plugins: Array<string | { src?: string }> }
+}
+function themeRuntimeHygieneModule(_inlineOptions: unknown, nuxt: ThemeRuntimeNuxtContext) {
+  nuxt.hook('modules:done', () => {
+    nuxt.options.plugins = nuxt.options.plugins.filter((plugin) => {
+      const source = typeof plugin === 'string' ? plugin : (plugin?.src ?? '')
+      return !source.includes('@tixxin/nuxt-theme-engine')
+    })
+  })
+}
 
 const startupGuard = readFileSync(new URL('./public/startup-guard.js', import.meta.url), 'utf8')
 // 站点资料不可用时的中性站名，与 app/features/site/settings.ts 的 defaultSiteSettings.name 保持一致；
@@ -75,6 +141,8 @@ export default {
     '@nuxtjs/color-mode',
     '@nuxt/icon',
     '@tixxin/nuxt-theme-engine',
+    // 必须在引擎模块之后安装：modules:done 阶段摘掉引擎客户端运行时插件
+    themeRuntimeHygieneModule,
     '@nuxt/eslint',
     '@nuxt/fonts',
     '@nuxt/image',
@@ -168,8 +236,8 @@ export default {
   },
   themeEngine: {
     themesDir: './themes',
-    defaultTheme: 'nexus',
-    cookieKey: 'blog-layout-theme',
+    defaultTheme: layoutThemeRuntimeConfig.defaultTheme,
+    cookieKey: layoutThemeRuntimeConfig.cookieKey,
     lazyLoadThemes: true,
     contractsEntry: '#theme-contracts',
     contractsImportId: '#theme-contracts',
@@ -308,21 +376,12 @@ export default {
       app.templates.push({
         filename: 'theme-host.config.mjs',
         write: true,
-        getContents: () =>
-          `export const themeHostConfigs = ${JSON.stringify({
-            nexus: nexusHostConfig,
-            aurora: auroraHostConfig,
-            dock: dockHostConfig,
-          })}`,
+        getContents: () => `export const themeHostConfigs = ${JSON.stringify(themeHostConfigs)}`,
       })
     },
-    // 引擎在dev下强制注册全部主题别名，会把可选SFC样式纳入入口依赖。
-    // 本项目统一通过ThemeComponent的动态注册表加载，不使用这些全局别名。
-    'components:extend': (components: Array<{ filePath: string }>) => {
-      for (let index = components.length - 1; index >= 0; index--) {
-        if (components[index]?.filePath.replaceAll('\\', '/').includes('/themes/')) components.splice(index, 1)
-      }
-    },
+    // 引擎 0.0.4 的 theme-sync.client 已由 themeRuntimeHygieneModule 在 modules:done 摘除；
+    // dev 下引擎仍会注册全部主题别名，但宿主统一走 ThemeComponent 动态注册表，不使用引擎全局别名，
+    // 因此这里不再用 components:extend 删除（该钩子入参只是 app 扫描组件，删不到模块别名）。
     // 主题引擎当前版本无条件注册调试页，必须在页面解析完成后移出生产路由。
     'pages:resolved': (pages: Array<{ path: string }>) => {
       if (process.env.NODE_ENV !== 'production') return

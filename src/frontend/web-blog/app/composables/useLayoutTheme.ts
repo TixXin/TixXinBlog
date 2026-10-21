@@ -1,6 +1,6 @@
 /**
  * @file useLayoutTheme.ts
- * @description 对接主题引擎并合并宿主侧配置，提供主题元信息、切换状态与预热能力
+ * @description 布局主题门面：合并引擎主题元信息与宿主能力，管理预热、切换事务（可回滚/可重试）与失败反馈
  * @author TixXin
  * @since 2026-04-03
  */
@@ -8,15 +8,20 @@
 import {
   DEFAULT_LAYOUT_THEME_ID,
   ensureKnownThemeId,
-  themeHostConfigs,
+  findEngineThemeDefinition,
+  getThemeCapabilities,
+  layoutThemeIds,
   type LayoutThemeMeta,
+  registeredThemeIds,
 } from '~/features/appearance/themeRegistry'
+import { useThemeRuntime } from '~/composables/useThemeRuntime'
 import { preloadLayoutTheme } from '~/utils/themeRuntime'
+import { captureThemeSwitchSnapshot, restoreThemeSwitchSnapshot } from '~/utils/themeSwitchScroll'
 
 export type ThemeSwitchState = 'idle' | 'loading' | 'error'
 
 export function useLayoutTheme() {
-  const { currentTheme, availableThemes: engineThemeIds, setTheme, themeDefinitions } = useThemeEngine()
+  const { currentTheme, availableThemes: runtimeThemeIds, setTheme } = useThemeRuntime()
 
   const switchingState = useState<ThemeSwitchState>('layout-theme-switch-state', () => 'idle')
   const switchVersion = useState('layout-theme-switch-version', () => 0)
@@ -26,29 +31,29 @@ export function useLayoutTheme() {
   const i18n = useNuxtApp().$i18n
 
   /** theme.json 的 label/description 写 theme 域字典 key；第三方主题写字面文案时原样展示 */
-  function localizeThemeText(value: string | undefined): string | undefined {
-    return value && i18n.te(value) ? i18n.t(value) : value
+  function localizeThemeText(value: string | null | undefined): string | undefined {
+    return value && i18n.te(value) ? i18n.t(value) : (value ?? undefined)
   }
 
   const currentThemeId = computed(() => ensureKnownThemeId(currentTheme.value))
 
   /**
-   * 合并引擎发现的主题定义与宿主侧配置，生成统一的 LayoutThemeMeta。
-   * 优先使用引擎提供的 label/description/meta，
-   * 引擎未提供时回退到 theme.config.ts 中的值；名称与介绍是字典 key 时按当前界面语言翻译。
+   * 合并引擎发现的主题定义与宿主能力，生成统一的 LayoutThemeMeta。
+   * 名称/介绍/版本/图标只来自 theme.json（单一事实源）；缺失时使用中性兜底并在开发期告警。
    */
   function buildThemeMeta(id: string): LayoutThemeMeta {
-    const hostConfig = themeHostConfigs[id]
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const engineDef = (themeDefinitions as any)?.value?.find((d: any) => d.name === id)
-
+    const definition = findEngineThemeDefinition(id)
+    if (!definition && import.meta.dev) {
+      // eslint-disable-next-line no-console -- 开发期诊断：主题元信息缺失属于必须提示的配置错误
+      console.warn(`[theme] 引擎未发现主题 "${id}" 的 theme.json 定义，外观面板使用中性兜底元信息`)
+    }
     return {
       id,
-      name: localizeThemeText(engineDef?.label) ?? id,
-      description: localizeThemeText(engineDef?.description) ?? '',
-      version: (engineDef?.meta?.version as string) ?? hostConfig?.version ?? '0.0.0',
-      icon: (engineDef?.meta?.icon as string) ?? hostConfig?.icon ?? 'lucide:layout',
-      capabilities: hostConfig?.capabilities ?? { leftSidebar: false, rightSidebar: false },
+      name: localizeThemeText(definition?.label) ?? id,
+      description: localizeThemeText(definition?.description) ?? '',
+      version: typeof definition?.meta?.version === 'string' ? definition.meta.version : '0.0.0',
+      icon: typeof definition?.meta?.icon === 'string' ? definition.meta.icon : 'lucide:layout',
+      capabilities: getThemeCapabilities(id),
     }
   }
 
@@ -59,48 +64,62 @@ export function useLayoutTheme() {
    * 仅包含引擎已注册（可激活）的主题。
    */
   const availableThemes = computed<LayoutThemeMeta[]>(() => {
-    const engineIds = new Set(engineThemeIds.value)
-    return Object.keys(themeHostConfigs)
-      .filter((id) => engineIds.has(id))
-      .map((id) => buildThemeMeta(id))
+    const runtimeIds = new Set(runtimeThemeIds.value)
+    return layoutThemeIds.filter((id) => runtimeIds.has(id) && registeredThemeIds.includes(id)).map(buildThemeMeta)
   })
 
-  async function setLayoutTheme(id: string) {
+  /**
+   * 切换布局主题：先预热目标主题全部组件，再提交当前主题。
+   * 返回 Promise<boolean> 供抽屉等待结果（成功后才关闭，失败保留并提示重试）。
+   * 失败会回滚上一主题；迟到请求用版本号丢弃，不会覆盖更新的选择。
+   */
+  async function setLayoutTheme(id: string): Promise<boolean> {
     const themeId = ensureKnownThemeId(id)
     const version = ++switchVersion.value
     if (themeId === currentThemeId.value) {
       switchingState.value = 'idle'
       endThemeSwitchLoading()
-      return
+      return true
     }
     switchingState.value = 'loading'
     const previousTheme = currentThemeId.value
+    const snapshot = import.meta.client ? captureThemeSwitchSnapshot() : null
     startThemeSwitchLoading()
     try {
       await preloadLayoutTheme(themeId)
-      if (switchVersion.value !== version) return
-      if ((await setTheme(themeId)) === false) throw new Error('主题不可用')
+      if (switchVersion.value !== version) return false
+      if (!setTheme(themeId)) throw new Error('主题不可用')
       await nextTick()
-      if (switchVersion.value === version) switchingState.value = 'idle'
+      if (switchVersion.value !== version) return false
+      if (snapshot) restoreThemeSwitchSnapshot(snapshot)
+      switchingState.value = 'idle'
+      return true
     } catch {
-      if (switchVersion.value !== version) return
-      if (currentThemeId.value !== previousTheme) await setTheme(previousTheme)
+      if (switchVersion.value !== version) return false
+      if (currentThemeId.value !== previousTheme) setTheme(previousTheme)
       switchingState.value = 'error'
       notifyThemeError(i18n.t('theme.switch.loadFailed'))
+      return false
     } finally {
       if (switchVersion.value === version) endThemeSwitchLoading()
     }
   }
 
   function preloadTheme(id: string) {
-    void preloadLayoutTheme(ensureKnownThemeId(id)).then(
+    const themeId = ensureKnownThemeId(id)
+    void preloadLayoutTheme(themeId).then(
       () => {
-        preloadErrors.value = Object.fromEntries(Object.entries(preloadErrors.value).filter(([key]) => key !== id))
+        preloadErrors.value = Object.fromEntries(Object.entries(preloadErrors.value).filter(([key]) => key !== themeId))
       },
       () => {
-        preloadErrors.value[id] = i18n.t('theme.switch.preloadFailed')
+        preloadErrors.value[themeId] = i18n.t('theme.switch.preloadFailed')
       },
     )
+  }
+
+  /** 抽屉打开/选择新主题前清掉上一次的失败态，避免过期错误常驻 */
+  function resetSwitchState() {
+    if (switchingState.value === 'error') switchingState.value = 'idle'
   }
 
   function disableCurrentTheme() {
@@ -115,6 +134,7 @@ export function useLayoutTheme() {
     preloadErrors,
     setLayoutTheme,
     preloadTheme,
+    resetSwitchState,
     disableCurrentTheme,
   }
 }

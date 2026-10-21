@@ -7,7 +7,7 @@
 
 <template>
   <Transition name="loading-screen">
-    <div v-if="visible" class="loading-screen" :class="{ 'loading-screen--force': forceVisible }">
+    <div v-if="shown" class="loading-screen" :class="{ 'loading-screen--force': forceVisible }">
       <div class="loading-screen__content" aria-hidden="true">
         <!-- 品牌名：Tix 用主文字色，Xin 用强调色 -->
         <p class="loading-screen__brand">
@@ -32,7 +32,7 @@
 </template>
 
 <script setup lang="ts">
-defineProps<{
+const props = defineProps<{
   visible: boolean
   // 强制显示：绕过 html.visited CSS 屏蔽，用于主题切换等首屏之外的场景
   forceVisible?: boolean
@@ -41,6 +41,40 @@ defineProps<{
 // 首屏品牌层不阻断：SSR 正文已在下方，品牌层由纯 CSS 定时淡出，
 // 内容就绪（app:suspense:resolve）时再由 visible=false 触发退场并移出 DOM
 const route = useRoute()
+
+/**
+ * 主题切换的顶部胶囊只在超过 160ms 仍未完成时出现，避免缓存命中时闪一下。
+ * 首屏品牌层（非 force）不加延迟，保持原有淡出节奏。
+ */
+const FORCE_VISIBLE_DELAY_MS = 160
+const shown = ref(false)
+let showTimer: ReturnType<typeof setTimeout> | undefined
+
+function clearShowTimer() {
+  if (showTimer) clearTimeout(showTimer)
+  showTimer = undefined
+}
+
+watch(
+  () => [props.visible, props.forceVisible] as const,
+  ([visible, forceVisible]) => {
+    clearShowTimer()
+    if (!visible) {
+      shown.value = false
+      return
+    }
+    if (!forceVisible) {
+      shown.value = true
+      return
+    }
+    showTimer = setTimeout(() => {
+      shown.value = true
+    }, FORCE_VISIBLE_DELAY_MS)
+  },
+  { immediate: true },
+)
+
+onBeforeUnmount(clearShowTimer)
 </script>
 
 <style lang="scss" scoped>

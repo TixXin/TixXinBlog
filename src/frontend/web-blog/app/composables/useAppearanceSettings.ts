@@ -177,7 +177,8 @@ export function useAppearanceSettings() {
     sidebarAnimationPreset.value = DEFAULT_SIDEBAR_ANIMATION_PRESET
     colorModeTransitionPreset.value = DEFAULT_COLOR_MODE_TRANSITION_PRESET
     paginationAutoHide.value = false
-    setLayoutTheme(DEFAULT_LAYOUT_THEME_ID)
+    // 重置是用户主动操作，切换结果由 useLayoutTheme 的 Toast/错误态反馈；这里不阻塞重置动作
+    void setLayoutTheme(DEFAULT_LAYOUT_THEME_ID)
   }
 
   if (import.meta.client && !initialized.value) {

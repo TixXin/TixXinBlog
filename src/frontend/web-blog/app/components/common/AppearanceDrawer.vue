@@ -137,18 +137,31 @@ const {
   resetAppearanceSettings,
 } = useAppearanceSettings()
 
-const { currentThemeId, activeTheme, availableThemes, switchingState, setLayoutTheme, preloadTheme, preloadErrors } =
-  useLayoutTheme()
+const {
+  currentThemeId,
+  activeTheme,
+  availableThemes,
+  switchingState,
+  setLayoutTheme,
+  preloadTheme,
+  preloadErrors,
+  resetSwitchState,
+} = useLayoutTheme()
 const dialogRef = ref<HTMLElement | null>(null)
 const backdropRef = ref<HTMLElement | null>(null)
 useModalFocus(isDrawerOpen, dialogRef, { close: closeDrawer, extra: () => [backdropRef.value] })
 
 const layoutThemeLabel = computed(() => activeTheme.value.name)
 
-function onLayoutThemeClick(id: string) {
-  setLayoutTheme(id)
-  // 成功触发切换后立即关闭界面设置弹窗，让用户直接看到新布局
-  closeDrawer()
+// 打开抽屉时清掉上一次切换失败的错误态，避免过期提示常驻
+watch(isDrawerOpen, (open) => {
+  if (open) resetSwitchState()
+})
+
+async function onLayoutThemeClick(id: string) {
+  const switched = await setLayoutTheme(id)
+  // 成功后才关闭抽屉：让用户看到切换过程；失败保留面板与错误提示，可直接重试
+  if (switched) closeDrawer()
 }
 
 function onKeydown(event: KeyboardEvent) {

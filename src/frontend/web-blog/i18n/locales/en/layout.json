@@ -78,6 +78,7 @@
     "themeError": {
       "readonly": "Page interactions are unavailable right now; read-only content has been kept.",
       "failed": "This section couldn't be loaded right now.",
+      "retry": "Try again",
       "reload": "Reload"
     },
     "searchBox": {

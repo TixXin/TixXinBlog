@@ -4,13 +4,14 @@
  * @author TixXin
  * @since 2026-04-10
  */
+import { useThemeRuntime } from '~/composables/useThemeRuntime'
 import { preloadLayoutTheme } from '~/utils/themeRuntime'
 
 export default defineNuxtPlugin({
   name: 'theme-preload',
   enforce: 'pre',
   async setup(nuxtApp) {
-    const { currentTheme } = useThemeEngine()
+    const { currentTheme } = useThemeRuntime()
     const startupError = useState<string | null>('theme-startup-error', () => null)
     const startupContent = useState<string | null>('theme-startup-content', () => null)
     // 首屏进度的真实里程碑：主题组件逐个就绪推进到 60，挂载前 75，Suspense 解析由 app.vue 拉满
@@ -23,6 +24,7 @@ export default defineNuxtPlugin({
     } catch {
       // 交给可操作的组件错误态和独立启动守卫恢复，不让首屏品牌层无限等待。
       // 这里只记录失败标记（字典 key）：插件早于 i18n 就绪，文案由 ThemeLoadError 按当前语言渲染。
+      // 超时/失败不是终态：缓存版本变化会触发 ThemeComponent 自动恢复，错误态也提供“重试加载”。
       startupError.value = 'layout.themeError.failed'
       if (import.meta.client) {
         // 保留本站已完成净化的SSR正文；交互控件禁用，链接仍可原生导航。

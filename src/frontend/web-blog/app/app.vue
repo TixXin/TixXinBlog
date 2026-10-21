@@ -59,8 +59,13 @@ const defaultShareImage = useDefaultShareImage()
 const siteTwitter = computed(() => twitterHandle(siteSettings.value.socials))
 const siteDescription = computed(() => siteSettings.value.seoDescription || siteSettings.value.description || undefined)
 const { locale, t } = useI18n()
+// 主题标记随 SSR 同构输出：首屏 CSS 若按 [data-theme] 作用域即可用，客户端也不再依赖引擎插件
+const { currentTheme } = useThemeRuntime()
 useHead({
-  htmlAttrs: { lang: () => locale.value },
+  htmlAttrs: {
+    lang: () => locale.value,
+    'data-theme': () => currentTheme.value,
+  },
   titleTemplate: (title) =>
     title && title !== siteSettings.value.name ? `${title} - ${siteSettings.value.name}` : siteSettings.value.name,
 })
