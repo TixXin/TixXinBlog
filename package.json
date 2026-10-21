@@ -77,7 +77,12 @@
       "fast-uri": "^3.1.8",
       "serialize-javascript@7": "^7.1.2",
       "dompurify": "^3.4.16",
-      "brace-expansion@5": "^5.0.12"
+      "brace-expansion@5": "^5.0.12",
+      "brace-expansion@1": "^1.1.21",
+      "handlebars": "^4.7.10",
+      "vite@8": "~8.2.4",
+      "launch-editor": "^2.14.2",
+      "@modelcontextprotocol/server@2": "~2.3.0"
     },
     "patchedDependencies": {
       "nuxt@4.5.2": "patches/nuxt@4.5.2.patch",
