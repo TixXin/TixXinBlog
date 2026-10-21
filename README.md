@@ -81,7 +81,7 @@ sudo tixxin update    # 先完整备份，再升级到最新正式版本
 
 ## 本地开发
 
-需要 Node.js 25（`>=25 <26`）、pnpm 9.15.0（经 Corepack 调用）、PostgreSQL 16 和 Docker。
+需要 Node.js 26（`>=26 <27`）、pnpm 9.15.0（经 Corepack 调用）、PostgreSQL 16 和 Docker。
 
 ```sh
 git clone https://github.com/TixXin/TixXinBlog.git && cd TixXinBlog

@@ -1,6 +1,6 @@
 # 根脚本说明
 
-根目录 `package.json` 中全部 `scripts` 的用途与边界。命令均在仓库根目录执行，使用 Node.js >=25 <26 和 pnpm 9.15.0，统一写法为 `corepack pnpm <命令名> [参数]`；首次安装依赖使用 `corepack pnpm install --frozen-lockfile`。修改根脚本时同步更新本页。环境配置与完整开发流程见[本地开发与测试](development.md)，提交约定见[贡献指南](../CONTRIBUTING.md)。
+根目录 `package.json` 中全部 `scripts` 的用途与边界。命令均在仓库根目录执行，使用 Node.js >=26 <27 和 pnpm 9.15.0，统一写法为 `corepack pnpm <命令名> [参数]`；首次安装依赖使用 `corepack pnpm install --frozen-lockfile`。修改根脚本时同步更新本页。环境配置与完整开发流程见[本地开发与测试](development.md)，提交约定见[贡献指南](../CONTRIBUTING.md)。
 
 `--filter web-blog`、`--filter server-main` 形式的命令直接调用子项目脚本，不属于根脚本，例如 `corepack pnpm --filter server-main test`。
 

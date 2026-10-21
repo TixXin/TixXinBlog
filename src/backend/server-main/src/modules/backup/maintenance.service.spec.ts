@@ -39,7 +39,7 @@ describe('MaintenanceService 维护诊断', () => {
       storage: { readable: true, writable: true, cleaned: true },
       mediaRecords: 12,
       contentContextRequired: true,
-      runtime: { node: process.version, nodeSupported: Number(process.versions.node.split('.')[0]) === 25 },
+      runtime: { node: process.version, nodeSupported: Number(process.versions.node.split('.')[0]) === 26 },
     })
     expect(em.findOneOrFail).toHaveBeenCalledWith(ContentContext, { id: 'default' })
     expect(em.count).toHaveBeenCalledWith(MediaAsset, {})

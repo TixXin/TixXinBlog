@@ -1,6 +1,6 @@
 # 本地开发与测试
 
-使用 Node.js **>=25 <26**、固定 **pnpm 9.15.0** 和 PostgreSQL 16。以下命令从仓库根目录执行，推荐通过 `corepack pnpm` 使用锁定版本。
+使用 Node.js **>=26 <27**、固定 **pnpm 9.15.0** 和 PostgreSQL 16。以下命令从仓库根目录执行，推荐通过 `corepack pnpm` 使用锁定版本。
 
 ## 安装与配置
 
@@ -284,7 +284,7 @@ corepack pnpm trial --from-release 0.3.0     # 改装官方 0.3.0，之后 trial
 
 ## 验证入口
 
-Node 25 默认暴露服务端 Web Storage；前端单测入口关闭该 API，让 Nuxt 测试环境使用模拟浏览器的存储实现，避免原生空对象覆盖浏览器接口。
+Node 26 的实验性 Web Storage 仍默认开启：`sessionStorage` 为原生空对象，`localStorage` 在未提供 `--localstorage-file` 时不可用。前端单测入口关闭该 API，让 Nuxt 测试环境使用模拟浏览器的存储实现，避免原生对象覆盖浏览器接口。
 
 ```sh
 corepack pnpm check:secrets

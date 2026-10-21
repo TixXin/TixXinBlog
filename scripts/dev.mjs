@@ -36,7 +36,7 @@ try {
   config = readConfig()
   const version = await run(...config.pnpm, { cwd: config.root })
   if (version !== '9.15.0') throw new Error('pnpm 版本必须为 9.15.0')
-  report('配置：Node 25 / pnpm 9.15.0；环境变量校验通过')
+  report('配置：Node 26 / pnpm 9.15.0；环境变量校验通过')
   let database = await checkDatabase(config)
   if (!database.connected && (mode === 'all' || mode === 'api') && !controller.signal.aborted) {
     report('PostgreSQL：尝试按已有 Compose 配置启动')

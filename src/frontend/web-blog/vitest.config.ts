@@ -13,7 +13,7 @@ export default defineVitestConfig({
     environment: 'nuxt',
     // 全局注入 i18n（zh-CN）；用例需要英文时显式 await useNuxtApp().$i18n.setLocale('en') 并在结束时切回。
     setupFiles: ['./tests/setup/i18n.ts'],
-    // Node 25 的原生存储不能覆盖模拟浏览器的 localStorage；对子进程显式关闭。
+    // Node 26 的实验性 Web Storage 仍默认提供原生 sessionStorage，会覆盖模拟浏览器的存储实现；对子进程显式关闭。
     execArgv: ['--no-experimental-webstorage'],
     globals: true,
     // 覆盖率只收集与展示，不设阈值门禁，避免首次引入即让 CI 变红。

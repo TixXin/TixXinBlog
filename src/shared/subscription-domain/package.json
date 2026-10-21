@@ -13,6 +13,6 @@
     "test": "node --test test/*.test.cjs"
   },
   "engines": {
-    "node": ">=25 <26"
+    "node": ">=26 <27"
   }
 }

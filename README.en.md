@@ -81,7 +81,7 @@ Prerequisites, restricted networks, unattended installs and the FAQ are in the [
 
 ## Local development
 
-You need Node.js 25 (`>=25 <26`), pnpm 9.15.0 (through Corepack), PostgreSQL 16 and Docker.
+You need Node.js 26 (`>=26 <27`), pnpm 9.15.0 (through Corepack), PostgreSQL 16 and Docker.
 
 ```sh
 git clone https://github.com/TixXin/TixXinBlog.git && cd TixXinBlog

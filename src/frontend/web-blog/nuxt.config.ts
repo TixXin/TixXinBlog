@@ -336,8 +336,8 @@ export default {
       : {}),
   },
   nitro: {
-    // 服务端与项目 Node 25 运行基线一致，保留金额精确聚合所需的 BigInt。
-    esbuild: { options: { target: 'node25' } },
+    // 服务端与项目 Node 26 运行基线一致，保留金额精确聚合所需的 BigInt。
+    esbuild: { options: { target: 'node26' } },
     compressPublicAssets: true,
     routeRules: {
       '/**': {

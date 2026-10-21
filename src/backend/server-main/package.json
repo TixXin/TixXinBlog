@@ -36,7 +36,7 @@
     "test:subscriptions": "corepack pnpm build && node tests/subscription-integration.mjs && node tests/subscription-backup-integration.mjs && tsx tests/subscription-fixtures-integration.ts"
   },
   "engines": {
-    "node": ">=25 <26"
+    "node": ">=26 <27"
   },
   "jest": {
     "preset": "ts-jest",

@@ -18,7 +18,7 @@ Releasing, rolling back the application, and restoring data are separate procedu
 Both use the same images (web, api, migration, worker), the same `compose.production.yaml` and the same data volumes, and follow the same release order: stop writes, run formal migrations, start services, then check the same-origin API and release header over HTTPS. Upgrading an existing site requires a verified full backup either way. Only the entry point differs:
 
 - The one-command install uses `install.sh` to download and verify the Release deployment package, writes the environment file to `<install directory>/.env` (`/opt/tixxin-blog` by default), and leaves day-to-day status, logs, full backups, upgrades, application rollbacks, restarts and password resets to the `tixxin` command. The host only needs bash, curl and Docker.
-- The manual release reads the compose files and release scripts from a repository checkout, so the host also needs Node 25 and Git, and the operator runs and checks each step explicitly.
+- The manual release reads the compose files and release scripts from a repository checkout, so the host also needs Node 26 and Git, and the operator runs and checks each step explicitly.
 
 The sections below on environment variables, trusted proxies, the internal network, site URL, analytics, administrator initialization and operational monitoring also apply to one-command installs: the environment file is `<install directory>/.env`, and running `sudo docker compose …` in the install directory uses the same compose files (`.env` already sets `COMPOSE_FILE`).
 
@@ -98,7 +98,7 @@ The application consists of four images. They must be built from the same commit
 
 The release script only checks images already present on the target host and starts them with `--pull never`; it does not build, push, or pull images. Choose either of the following approaches and prepare all four images on the target host before running the preflight check. PostgreSQL 16 and Caddy 2 should also be pinned to verified full tags or digests.
 
-The target host also needs Docker Compose, Node 25, and a repository checkout matching the application version: the release scripts, `compose.production.yaml`, and `deploy/Caddyfile` are all read from that checkout.
+The target host also needs Docker Compose, Node 26, and a repository checkout matching the application version: the release scripts, `compose.production.yaml`, and `deploy/Caddyfile` are all read from that checkout.
 
 #### Using Prebuilt Images
 

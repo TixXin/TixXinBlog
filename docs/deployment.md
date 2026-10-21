@@ -14,7 +14,7 @@
 两者共用同一套镜像（web、api、migration、worker）、同一份 `compose.production.yaml` 编排和同一组数据卷，发布顺序也一致：停止写入、执行正式迁移、启动服务，再通过 HTTPS 同源 API 与版本头验收；已有站点升级前都要求一份已校验的完整备份。区别只在操作入口：
 
 - 一键安装由 `install.sh` 下载并校验 Release 部署包，环境文件写在 `<安装目录>/.env`（默认 `/opt/tixxin-blog`），日常由 `tixxin` 命令完成状态、日志、完整备份、升级、应用回退、重启和重置密码，宿主机只需要 bash、curl 和 Docker。
-- 手动发布从仓库检出读取编排与发布脚本，宿主机还需要 Node 25 和 Git，每一步由操作者显式执行并核对。
+- 手动发布从仓库检出读取编排与发布脚本，宿主机还需要 Node 26 和 Git，每一步由操作者显式执行并核对。
 
 下文的环境变量、可信代理、内部网络、站点地址、访问统计、初始化管理员和运行观察说明同样适用于一键安装的站点：环境文件即 `<安装目录>/.env`，在安装目录中执行 `sudo docker compose …` 即可使用同一编排（`.env` 已写入 `COMPOSE_FILE`）。
 
@@ -94,7 +94,7 @@ cd TixXinBlog
 
 发布脚本只检查目标主机上已有的镜像，以 `--pull never` 启动，不构建、推送或拉取镜像。下面两条路径任选其一，在执行预检前把四个镜像准备到目标主机。PostgreSQL 16 与 Caddy 2 也应固定经过核验的完整 tag 或 digest。
 
-目标主机还需要 Docker Compose、Node 25，以及与应用版本对应的仓库检出：发布脚本、`compose.production.yaml` 和 `deploy/Caddyfile` 都从检出中读取。
+目标主机还需要 Docker Compose、Node 26，以及与应用版本对应的仓库检出：发布脚本、`compose.production.yaml` 和 `deploy/Caddyfile` 都从检出中读取。
 
 #### 使用预构建镜像
 

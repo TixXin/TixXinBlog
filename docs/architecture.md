@@ -1,6 +1,6 @@
 # 架构与代码入口
 
-TixXinBlog 面向单博主创作与维护。Nuxt 4 / Vue 3 提供公开网站和内置 `/admin`，NestJS 11 / MikroORM 6 / PostgreSQL 16 提供持久化业务。运行基线为 Node 25 与 pnpm 9.15.0。
+TixXinBlog 面向单博主创作与维护。Nuxt 4 / Vue 3 提供公开网站和内置 `/admin`，NestJS 11 / MikroORM 6 / PostgreSQL 16 提供持久化业务。运行基线为 Node 26 与 pnpm 9.15.0。
 
 ## 工作区与职责
 

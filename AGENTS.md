@@ -15,7 +15,7 @@
 
 ## 开发与验证
 
-使用 Node >=25 <26、pnpm 9.15.0，推荐通过 `corepack pnpm` 调用固定版本。
+使用 Node >=26 <27、pnpm 9.15.0，推荐通过 `corepack pnpm` 调用固定版本。
 
 ```sh
 corepack pnpm install --frozen-lockfile

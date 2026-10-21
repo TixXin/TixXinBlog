@@ -1,6 +1,6 @@
 # 常见问题与故障排查
 
-本文覆盖本地开发与生产部署的常见故障。命令从仓库根目录执行，使用 Node.js >=25 <26、pnpm 9.15.0；Shell 示例适用于 macOS/Linux，系统观察命令需安装相应工具。首次配置见[开发指南](development.md)，生产操作见[部署指南](deployment.md)，项目命令定义见[根脚本说明](scripts.md)。
+本文覆盖本地开发与生产部署的常见故障。命令从仓库根目录执行，使用 Node.js >=26 <27、pnpm 9.15.0；Shell 示例适用于 macOS/Linux，系统观察命令需安装相应工具。首次配置见[开发指南](development.md)，生产操作见[部署指南](deployment.md)，项目命令定义见[根脚本说明](scripts.md)。
 
 ## 先保留现场并确认环境
 

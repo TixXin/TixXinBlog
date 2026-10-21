@@ -82,8 +82,8 @@ body:
     id: node
     attributes:
       label: Node.js 版本
-      description: '`node -v`；项目要求 `>=25 <26`'
-      placeholder: v25.0.0
+      description: '`node -v`；项目要求 `>=26 <27`'
+      placeholder: v26.0.0
     validations:
       required: true
 

@@ -45,7 +45,10 @@ export function pnpmCommand(env = process.env) {
   return [process.execPath, [entry, '--version']]
 }
 export function readConfig(root = workspace, inherited = process.env) {
-  if (Number(process.versions.node.split('.')[0]) !== 25) throw new Error('开发链路要求 Node 25')
+  if (Number(process.versions.node.split('.')[0]) !== 26)
+    throw new Error(
+      `开发链路要求 Node 26（当前 ${process.version}）。项目已于 2026-10 从 Node 25 升级到 26，原因见 CHANGELOG「升级说明」；请安装 Node 26 并重新执行 corepack enable`,
+    )
   const manifest = JSON.parse(readFileSync(join(root, 'package.json'), 'utf8'))
   if (manifest.name !== 'tixxinblog' || manifest.packageManager !== 'pnpm@9.15.0')
     throw new Error('项目目录或 pnpm 固定版本不匹配')

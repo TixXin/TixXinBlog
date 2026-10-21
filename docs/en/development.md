@@ -4,7 +4,7 @@
 
 References without an English translation link to the Chinese guides.
 
-Use Node.js **>=25 <26**, the pinned **pnpm 9.15.0**, and PostgreSQL 16. Run the following commands from the repository root. Using `corepack pnpm` is recommended to use the pinned version.
+Use Node.js **>=26 <27**, the pinned **pnpm 9.15.0**, and PostgreSQL 16. Run the following commands from the repository root. Using `corepack pnpm` is recommended to use the pinned version.
 
 ## Installation and Configuration
 
@@ -288,7 +288,7 @@ corepack pnpm trial --from-release 0.3.0     # Install official 0.3.0 instead, t
 
 ## Validation
 
-Node 25 exposes server-side Web Storage by default. The frontend unit test entry point disables this API so that the Nuxt test environment uses the simulated browser's storage implementation, preventing a native empty object from overriding browser interfaces.
+Node 26 still exposes experimental server-side Web Storage by default: `sessionStorage` is a native empty object and `localStorage` is unavailable unless `--localstorage-file` is provided. The frontend unit test entry point disables this API so that the Nuxt test environment uses the simulated browser's storage implementation, preventing native objects from overriding browser interfaces.
 
 ```sh
 corepack pnpm check:secrets

@@ -6,6 +6,14 @@
 
 ## [未发布]
 
+### 升级说明
+
+- 运行基线由 Node 25 升级到 Node 26（`>=26 <27`）。Node 25 是奇数版本，官方维护已于 2026-06-01 结束，最后一个版本为 v25.9.0（2026-03-31）；2026-10-21 的安全更新只提供 v22.23.4、v24.22.1 与 v26.12.1，没有 25.x。其中 CVE-2026-111497（Brotli 解压器越界写入，可导致远程代码执行）、CVE-2026-105482（`dns.resolve` 遇到含 NUL 字符的名称会截断）、CVE-2026-105483 与 CVE-2026-106069（TLS 主机名校验可被绕过）为高危漏洞，在 Node 25 上无法修复，公告见 [Node.js 2026 年 10 月安全更新](https://nodejs.org/zh-cn/blog/vulnerability/october-2026-security-releases)，维护计划见 [Node.js Release Schedule](https://github.com/nodejs/Release#release-schedule)。项目此前的本机开发、CI、发布流程与两个 Dockerfile 构建的生产镜像（`node:25-alpine`）都运行在 Node 25 上，因此全部受影响
+- 选择 Node 26 而不是 24：Node 26 于 2026-10-28 转为 LTS，维护到 2029-04-30，维护期最长；项目原本就跟随较新的 Node 版本，从 25 前进到 26 的改动也最小
+- **已安装站点**：通过 `tixxin update` 升级时会换用新镜像，宿主机不需要安装 Node；一键安装与日常管理的宿主机依赖始终是 bash、curl、tar 与 Docker，见[部署指南](docs/deployment.md)
+- **手动发布的宿主机**：使用[部署指南](docs/deployment.md#高级手动发布releasemjs)中的手动发布方式时，发布脚本由宿主机 Node 执行，需要先把 Node 升级到 26 再发布
+- **开发机**：安装 Node 26 → 执行 `corepack enable`（Node 25 起不再自带 Corepack，按[开发指南](docs/development.md)的步骤单独安装 `corepack@0.34.6`）→ `corepack pnpm install --frozen-lockfile` → `corepack pnpm dev:check`
+
 ### 变更
 
 - 浏览器初始化向导创建账号后用同一凭据自动登录并进入后台，不再停在登录页；自动登录失败时退回登录页
@@ -23,6 +31,10 @@
 - 开发命令 `dev:setup`、`dev:setup:reset`、`dev:setup:down`：在独立空库 `tixxin_blog_setup_sandbox` 上启动沙盒 API 与热更新前端，真实走完初始化、自动登录与进入后台，可与 `dev:all` 同时运行，不影响日常开发库
 - 站点尚未初始化时，首页在浏览器端显示一行提示并链接到后台登录页，初始化完成后消失
 - 开发命令 `trial`、`trial:update`、`trial:status`、`trial:down`：用当前代码在本机构建镜像与部署包，经同一个 `install.sh` 与 `tixxin` 体验安装和升级，不需要发布 Release
+
+### 安全
+
+- 运行基线升级到 Node 26，纳入 2026-10-21 安全更新中的全部高危漏洞修复（Brotli 解压器越界写入、`dns.resolve` 名称截断、TLS 主机名校验绕过），并获得同一批次的 3 个中危、3 个低危修复及 OpenSSL、undici、c-ares 与 CA 证书包更新；Node 25 已于 2026-06-01 停止维护，无法获得这些修复
 
 ## [0.3.0] - 2026-10-20
 

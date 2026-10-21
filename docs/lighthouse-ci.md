@@ -2,7 +2,7 @@
 
 在 GitHub Actions 中选择 **Lighthouse CI → Run workflow** 手动运行；工作流需先合入默认分支才会显示手动入口。配置位于 [`.lighthouserc.cjs`](../.lighthouserc.cjs)，流程位于 [`lighthouse.yml`](../.github/workflows/lighthouse.yml)。它不自动随 push 或 PR 执行，也不部署产物。
 
-CI 使用 Node 25、pnpm 9.15.0 和项目 `corepack pnpm build` 生成生产产物，直接运行 `.output/server/index.mjs`。前端与只读夹具仅监听 runner 的 `127.0.0.1:4173/4174`，不需要后端、数据库或 secrets。Lighthouse 通过 `npx --yes --package=@lhci/cli@0.15.1` 调用，不修改项目依赖或锁文件；浏览器复用现有 Playwright 锁定的 Chromium。
+CI 使用 Node 26、pnpm 9.15.0 和项目 `corepack pnpm build` 生成生产产物，直接运行 `.output/server/index.mjs`。前端与只读夹具仅监听 runner 的 `127.0.0.1:4173/4174`，不需要后端、数据库或 secrets。Lighthouse 通过 `npx --yes --package=@lhci/cli@0.15.1` 调用，不修改项目依赖或锁文件；浏览器复用现有 Playwright 锁定的 Chromium。
 
 采集默认 Nexus 主题的首页 `/`、文章详情 `/articles/1`、闪念列表 `/flash`。文章与闪念显式开启现有演示仓储；[CI 辅助脚本](../scripts/lighthouse/ci.mjs)仅提供站点资料和匿名会话两个只读接口，未知接口与写入请求返回错误。采集前用独立浏览器上下文检查 HTTP 200、站点资料、客户端就绪和实际内容，避免把错误页、空白页或资料降级页当成性能样本。此检查不更改 Lighthouse 的存储状态、动画或资源加载。
 
