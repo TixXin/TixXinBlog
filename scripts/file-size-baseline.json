@@ -1,14 +1,6 @@
 {
   "description": "存量超限文件的行数上限：只许调低，不许调高或新增条目。拆分后运行 node scripts/check-file-size.mjs --update 收紧；规则见 docs/code-organization.md",
   "files": {
-    "src/backend/server-main/src/common/i18n/messages/package.messages.ts": 337,
-    "src/backend/server-main/src/modules/audit/audit-description.ts": 388,
-    "src/backend/server-main/src/modules/auth/auth.service.ts": 331,
-    "src/backend/server-main/src/modules/flash/flash.service.ts": 382,
-    "src/backend/server-main/src/modules/media/media.service.ts": 304,
-    "src/backend/server-main/src/modules/moment/moment-read.service.ts": 304,
-    "src/backend/server-main/src/modules/post/post.service.ts": 302,
-    "src/backend/server-main/src/modules/setup/setup.service.ts": 312,
     "src/frontend/web-blog/app/components/admin/GalleryForm.vue": 427,
     "src/frontend/web-blog/app/components/admin/MediaLibrary.vue": 623,
     "src/frontend/web-blog/app/components/admin/MomentForm.vue": 415,
@@ -37,7 +29,6 @@
     "src/frontend/web-blog/app/components/tab/TabIconPicker.vue": 501,
     "src/frontend/web-blog/app/components/tab/TabImportDialog.vue": 455,
     "src/frontend/web-blog/app/components/tab/TabSearchBar.vue": 468,
-    "src/frontend/web-blog/app/components/tab/TabSettingsDrawer.vue": 1682,
     "src/frontend/web-blog/app/components/tab/TabSidebarFloating.vue": 565,
     "src/frontend/web-blog/app/composables/useAdminMoments.ts": 394,
     "src/frontend/web-blog/app/composables/useAdminSubscriptionEditor.ts": 389,
@@ -65,7 +56,6 @@
     "src/frontend/web-blog/app/pages/prompts.vue": 825,
     "src/frontend/web-blog/app/pages/search.vue": 308,
     "src/frontend/web-blog/app/pages/subscriptions.vue": 659,
-    "src/frontend/web-blog/app/pages/tabs.vue": 828,
     "src/frontend/web-blog/themes/aurora/app/components/RootLayout.vue": 845,
     "src/frontend/web-blog/themes/nexus/app/components/StatusFooter.vue": 1604
   }
