@@ -98,9 +98,17 @@
 </template>
 
 <script setup lang="ts">
-import { useMomentCalendar, type MomentCalendarProps } from '~/features/moment/useMomentCalendar'
+import { useMomentCalendar } from '~/features/moment/useMomentCalendar'
 
-const props = withDefaults(defineProps<MomentCalendarProps>(), {
+// 属性类型须在组件内声明：编译器在 Docker 构建中无法经 ~/ 别名解析外部文件里的 defineProps 类型
+interface Props {
+  momentDates?: string[]
+  dateCounts?: Record<string, number>
+  available?: boolean
+  selectedDate?: string | null
+}
+
+const props = withDefaults(defineProps<Props>(), {
   momentDates: () => [],
   available: true,
   dateCounts: undefined,
