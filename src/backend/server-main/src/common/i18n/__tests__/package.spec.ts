@@ -7,7 +7,7 @@
 import 'reflect-metadata'
 import { BadRequestException, HttpException, Logger, PayloadTooLargeException } from '@nestjs/common'
 import type { ArgumentsHost } from '@nestjs/common'
-import { readFileSync } from 'node:fs'
+import { readFileSync, readdirSync } from 'node:fs'
 import { join } from 'node:path'
 import { MESSAGES } from '../messages'
 import { AllExceptionsFilter } from '../../filters/all-exceptions.filter'
@@ -143,9 +143,14 @@ describe('内容包校验的英文异常', () => {
 
   it('源码引用的 package.field* 条目全部登记在字典中', () => {
     const root = join(__dirname, '../../../modules/backup')
-    const keys = ['content-package.ts', 'content-package-subscriptions.ts'].flatMap((file) => [
-      ...readFileSync(join(root, file), 'utf8').matchAll(/'(package\.field\w+)'/g),
-    ])
+    const files = readdirSync(root).filter(
+      (file) =>
+        file.endsWith('.ts') &&
+        !file.endsWith('.spec.ts') &&
+        !file.endsWith('.types.ts') &&
+        !file.includes('__tests__'),
+    )
+    const keys = files.flatMap((file) => [...readFileSync(join(root, file), 'utf8').matchAll(/'(package\.field\w+)'/g)])
     expect(keys.length).toBeGreaterThan(90)
     for (const [, key] of keys) expect([key, Object.hasOwn(MESSAGES, key!)]).toEqual([key, true])
   })

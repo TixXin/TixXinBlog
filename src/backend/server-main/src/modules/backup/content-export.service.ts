@@ -4,8 +4,7 @@
  */
 import { EntityManager } from '@mikro-orm/postgresql'
 import { IsolationLevel } from '@mikro-orm/core'
-import { Injectable, PayloadTooLargeException, ServiceUnavailableException } from '@nestjs/common'
-import { createHash } from 'node:crypto'
+import { Injectable, PayloadTooLargeException } from '@nestjs/common'
 import { msg } from '../../common/i18n'
 import { Post } from '../../entities/post.entity'
 import { Comment } from '../../entities/comment.entity'
@@ -25,19 +24,21 @@ import { PostFolder } from '../../entities/post-folder.entity'
 import { PostTag } from '../../entities/post-tag.entity'
 import { MediaAsset } from '../../entities/media-asset.entity'
 import { SiteSettings } from '../../entities/site-settings.entity'
-import { withPresenceDefaults } from '../site/site-settings.service'
 import { CommentPolicy } from '../../entities/comment-policy.entity'
 import { MediaStorage } from '../media/media-storage'
-import { postSnapshot } from '../post/post-snapshot'
 import { SITE_OWNER_ID } from '../../common/constants/site'
 import { MAX_PACKAGE_BYTES } from './content-package'
-import type { ContentPackage, PackageComment } from './content-package'
+import type { ContentPackage } from './content-package'
+import { buildExportPackage } from './content-export-transform'
+import { packExportMedia } from './content-export-media'
+
 @Injectable()
 export class ContentExportService {
   constructor(
     private readonly em: EntityManager,
     private readonly storage: MediaStorage,
   ) {}
+
   async snapshot(mediaIncluded: boolean, manager?: EntityManager): Promise<ContentPackage> {
     const capture = async (em: EntityManager): Promise<ContentPackage> => {
       const [counts] = await em.execute<
@@ -74,6 +75,7 @@ export class ContentExportService {
         Number(counts.bytes) > MAX_PACKAGE_BYTES
       )
         throw new PayloadTooLargeException(msg('backup.exportTooLarge'))
+
       const posts = await em.find(Post, {}, { populate: ['tags'], orderBy: { id: 'asc' } })
       const comments = await em.find(Comment, {}, { orderBy: { id: 'asc' } })
       const flashes = await em.find(FlashNote, { userId: SITE_OWNER_ID }, { orderBy: { id: 'asc' } })
@@ -93,6 +95,7 @@ export class ContentExportService {
       const linkSettings = await em.findOneOrFail(LinkSettings, { id: 'default' })
       const gallerySettings = await em.findOneOrFail(GallerySettings, { id: 'default' })
       const momentComments = await em.find(MomentComment, {}, { orderBy: { createdAt: 'asc', id: 'asc' } })
+
       if (
         posts.length > 1000 ||
         flashes.length > 2000 ||
@@ -107,263 +110,49 @@ export class ContentExportService {
         assets.length > 300
       )
         throw new PayloadTooLargeException(msg('backup.exportTooLarge'))
+
       if (mediaIncluded && assets.reduce((sum, asset) => sum + asset.width * asset.height, 0) > 100000000)
         throw new PayloadTooLargeException(msg('backup.exportMediaTooLarge'))
+
       const folders = await em.find(PostFolder, {}, { orderBy: { label: 'asc' } })
       const tags = await em.find(PostTag, {}, { orderBy: { label: 'asc' } })
       const site = await em.findOneOrFail(SiteSettings, { id: 'default' })
       const policy = await em.findOneOrFail(CommentPolicy, { id: 'default' })
-      const byPost = new Map<number, PackageComment[]>()
-      for (const comment of comments) {
-        const group = byPost.get(comment.post.id) ?? []
-        group.push({
-          sourceId: comment.id,
-          parentId: comment.parent?.id ?? null,
-          author: comment.authorSnapshot.name,
-          avatar: comment.authorSnapshot.avatar,
-          content: comment.content,
-          isOwner: comment.isOwner,
-          status: comment.status,
-          createdAt: comment.createdAt.toISOString(),
-        })
-        byPost.set(comment.post.id, group)
-      }
-      const byFlash = new Map<string, ContentPackage['flashes'][number]['comments']>()
-      for (const comment of flashComments) {
-        const group = byFlash.get(comment.flashNote.id) ?? []
-        group.push({
-          author: comment.authorName,
-          avatar: comment.authorAvatar,
-          content: comment.content,
-          status: comment.status,
-          createdAt: comment.createdAt.toISOString(),
-        })
-        byFlash.set(comment.flashNote.id, group)
-      }
-      // 导出前补齐后加字段，v12 起总是携带完整的导航、页脚与备案配置；v13 另带闪念评论审核状态；v14 另带搜索引擎收录开关。
-      const { announcementUpdatedAt, ...siteValues } = withPresenceDefaults(site.values)
-      // 公告时间随完整数据库备份保留；内容迁入会按新配置保存时刻生成。
-      void announcementUpdatedAt
-      const result: ContentPackage = {
-        format: 'tixxin-content',
-        version: 14,
-        omittedRelations: 0,
-        exportedAt: new Date().toISOString(),
+
+      const result = buildExportPackage(
+        {
+          posts,
+          comments,
+          flashes,
+          flashComments,
+          assets,
+          moments,
+          guestbook,
+          gallery,
+          projects,
+          links,
+          prompts,
+          subscriptions,
+          linkSettings,
+          gallerySettings,
+          momentComments,
+          folders,
+          tags,
+          site,
+          policy,
+        },
         mediaIncluded,
-        posts: posts.map((post) => {
-          const values = postSnapshot(post)
-          delete values.contentSections
-          return {
-            sourceId: post.id,
-            createdAt: post.createdAt.toISOString(),
-            publishedAt: post.publishedAt.toISOString(),
-            deleted: !!post.deletedAt,
-            values,
-            comments: byPost.get(post.id) ?? [],
-          }
-        }),
-        flashes: flashes.map((note) => ({
-          sourceId: note.id,
-          createdAt: note.createdAt.toISOString(),
-          values: {
-            content: note.content,
-            tags: note.tags,
-            images: note.images,
-            type: note.type,
-            isPinned: note.isPinned,
-            isDraft: note.isDraft,
-            isArchived: note.isArchived,
-          },
-          comments: byFlash.get(note.id) ?? [],
-        })),
-        moments: moments.map((note) => ({
-          sourceId: note.id,
-          createdAt: note.createdAt.toISOString(),
-          publishedAt: note.publishedAt?.toISOString() ?? null,
-          deleted: !!note.deletedAt,
-          values: {
-            content: note.content,
-            topics: note.topics,
-            images: note.images,
-            location: note.location ?? null,
-            device: note.device ?? null,
-            mood: note.mood ?? null,
-            linkedArticleId: note.linkedArticle?.id ?? null,
-            linkedLink: note.linkedLink ?? null,
-            status: note.status,
-            isPinned: note.isPinned,
-          },
-          comments: momentComments
-            .filter((comment) => comment.moment.id === note.id)
-            .map((comment) => ({
-              sourceId: comment.id,
-              author: comment.author,
-              avatar: comment.avatar,
-              content: comment.content,
-              isOwner: comment.isOwner,
-              status: comment.status,
-              deleted: !!comment.deletedAt,
-              createdAt: comment.createdAt.toISOString(),
-            })),
-        })),
-        guestbook: guestbook.map((message) => ({
-          sourceId: message.id,
-          createdAt: message.createdAt.toISOString(),
-          deleted: !!message.deletedAt,
-          author: message.author,
-          avatar: message.avatar,
-          content: message.content,
-          isOwner: message.isOwner,
-          status: message.status,
-          isPinned: message.isPinned,
-          replyToId: message.replyTo?.id ?? null,
-          ...(message.browser ? { browser: message.browser } : {}),
-          ...(message.region ? { region: message.region } : {}),
-        })),
-        gallery: gallery.map((photo) => ({
-          sourceId: photo.id,
-          createdAt: photo.createdAt.toISOString(),
-          publishedAt: photo.publishedAt?.toISOString() ?? null,
-          deleted: !!photo.deletedAt,
-          values: {
-            mediaId: photo.media?.id ?? null,
-            relatedContent: photo.relatedContent ?? [],
-            externalUrl: photo.externalUrl ?? null,
-            title: photo.title,
-            description: photo.description,
-            category: photo.category,
-            takenOn: photo.takenOn ?? null,
-            location: photo.location,
-            device: photo.device,
-            status: photo.status,
-            sortOrder: photo.sortOrder,
-          },
-        })),
-        gallerySettings: { gear: gallerySettings.gear },
-        projects: projects.map((project) => ({
-          sourceId: project.id,
-          createdAt: project.createdAt.toISOString(),
-          publishedAt: project.publishedAt?.toISOString() ?? null,
-          deleted: !!project.deletedAt,
-          values: {
-            title: project.title,
-            relatedContent: project.relatedContent ?? [],
-            description: project.description,
-            coverMediaId: project.coverMedia?.id ?? null,
-            tags: project.tags,
-            links: project.links,
-            progress: project.progress,
-            status: project.status,
-            sortOrder: project.sortOrder,
-          },
-        })),
-        links: links.map((link) => ({
-          sourceId: link.id,
-          createdAt: link.createdAt.toISOString(),
-          publishedAt: link.publishedAt?.toISOString() ?? null,
-          deleted: !!link.deletedAt,
-          values: {
-            name: link.name,
-            description: link.description,
-            url: link.url,
-            logoMediaId: link.logoMedia?.id ?? null,
-            logoUrl: link.logoUrl ?? null,
-            status: link.status,
-            isFeatured: link.isFeatured,
-            sortOrder: link.sortOrder,
-          },
-        })),
-        prompts: prompts.map((prompt) => ({
-          sourceId: prompt.id,
-          createdAt: prompt.createdAt.toISOString(),
-          publishedAt: prompt.publishedAt?.toISOString() ?? null,
-          values: {
-            title: prompt.title,
-            description: prompt.description,
-            prompt: prompt.prompt,
-            negativePrompt: prompt.negativePrompt,
-            model: prompt.model,
-            tags: prompt.tags,
-            mediaId: prompt.media?.id ?? null,
-            externalImageUrl: prompt.externalImageUrl ?? null,
-            imageAlt: prompt.imageAlt,
-            sourceUrl: prompt.sourceUrl,
-            status: prompt.status,
-          },
-        })),
-        subscriptions: subscriptions.map((subscription) => ({
-          sourceId: subscription.id,
-          createdAt: subscription.createdAt.toISOString(),
-          publishedAt: subscription.publishedAt?.toISOString() ?? null,
-          deleted: !!subscription.deletedAt,
-          values: {
-            name: subscription.name,
-            description: subscription.description,
-            url: subscription.url ?? null,
-            platform: subscription.platform ?? null,
-            category: subscription.category,
-            currency: subscription.currency,
-            amount: subscription.amount,
-            billingCycle: subscription.billingCycle,
-            startDate: subscription.startDate ?? null,
-            nextBillingDate: subscription.nextBillingDate ?? null,
-            subscriptionStatus: subscription.subscriptionStatus,
-            notes: subscription.notes,
-            iconMediaId: subscription.iconMedia?.id ?? null,
-            // favicon 是可再生缓存，仅保存官网域名，不把缓存冒充正式媒体。
-            faviconDomain: subscription.faviconDomain ?? null,
-            priceHistory: subscription.priceHistory,
-            status: subscription.status,
-            sortOrder: subscription.sortOrder,
-          },
-        })),
-        linkSettings: { rules: linkSettings.rules },
-        folders: folders.map((folder) => folder.label),
-        tags: tags.map((tag) => ({ label: tag.label, color: tag.color })),
-        site: siteValues,
-        requireCommentApproval: policy.requireApproval,
-        media: assets.map((asset) => ({
-          id: asset.id,
-          name: asset.originalName,
-          alt: asset.alt,
-          description: asset.description,
-          sha256: asset.sha256,
-          byteSize: asset.byteSize,
-          width: asset.width,
-          height: asset.height,
-          createdAt: asset.createdAt.toISOString(),
-          deleted: !!asset.deletedAt,
-        })),
-      }
-      // 迁入只保留可映射的内容关系；已删除/缺失目标不猜测编号，完整备份仍保留原关系。
-      const targets = new Set([
-        ...result.posts.filter((row) => !row.deleted).map((row) => `post:${row.sourceId}`),
-        ...result.projects.filter((row) => !row.deleted).map((row) => `project:${row.sourceId}`),
-        ...result.gallery.filter((row) => !row.deleted).map((row) => `gallery:${row.sourceId}`),
-      ])
-      for (const row of [...result.posts, ...result.projects, ...result.gallery]) {
-        const original = row.values.relatedContent ?? []
-        row.values.relatedContent = original.filter((relation) => targets.has(`${relation.type}:${relation.id}`))
-        result.omittedRelations += original.length - row.values.relatedContent.length
-      }
-      let size = Buffer.byteLength(JSON.stringify(result))
+      )
+
+      const size = Buffer.byteLength(JSON.stringify(result))
       if (size > MAX_PACKAGE_BYTES) throw new PayloadTooLargeException(msg('backup.packageOver50mb'))
-      if (mediaIncluded)
-        for (const asset of result.media) {
-          size += Math.ceil(asset.byteSize / 3) * 4 + 16
-          if (size > MAX_PACKAGE_BYTES) throw new PayloadTooLargeException(msg('backup.packageWithMediaOver50mb'))
-          let bytes: Buffer
-          try {
-            bytes = await this.storage.get(`${asset.id}.webp`)
-          } catch {
-            throw new ServiceUnavailableException(msg('backup.exportMediaUnreadable', { id: asset.id }))
-          }
-          if (bytes.length !== asset.byteSize || createHash('sha256').update(bytes).digest('hex') !== asset.sha256)
-            throw new ServiceUnavailableException(msg('backup.exportMediaIntegrity', { id: asset.id }))
-          asset.base64 = bytes.toString('base64')
-        }
+
+      if (mediaIncluded) {
+        await packExportMedia(this.storage, result.media, size)
+      }
       return result
     }
+
     return manager
       ? capture(manager)
       : this.em.transactional(capture, { isolationLevel: IsolationLevel.REPEATABLE_READ })
