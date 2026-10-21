@@ -7,10 +7,13 @@ import type { Ref } from 'vue'
 import { mount } from '@vue/test-utils'
 import { createMemoryHistory, createRouter } from 'vue-router'
 import AuroraRootLayout from '../../themes/aurora/app/components/RootLayout.vue'
-import AuroraStatusFooter from '../../themes/aurora/app/components/StatusFooter.vue'
+import DefaultStatusFooter from '../../app/components/theme/DefaultStatusFooter.vue'
 import SkipLinks from '../../app/components/layout/SkipLinks.vue'
 import MobileNav from '../../app/components/layout/MobileNav.vue'
 import ContextDrawer from '../../app/components/common/ContextDrawer.vue'
+
+// 主题组件清单：用于确认与宿主重复的桥接组件已删除，缺失组件由宿主默认壳层承接。
+const themeComponents = import.meta.glob('../../themes/aurora/app/components/*.vue')
 
 const mocks = vi.hoisted(() => ({
   currentThemeId: {} as Ref<string>,
@@ -21,7 +24,11 @@ const mocks = vi.hoisted(() => ({
   },
   openLogin: vi.fn(),
 }))
-mockNuxtImport('useLayoutTheme', () => () => ({ currentThemeId: mocks.currentThemeId }))
+mockNuxtImport('useLayoutTheme', () => () => ({
+  currentThemeId: mocks.currentThemeId,
+  // 宿主 MobileNav 按能力位决定是否渲染共享移动导航，能力位来自 activeTheme
+  activeTheme: ref({ name: 'aurora', capabilities: { mobileNav: true } }),
+}))
 mockNuxtImport('useCurrentUser', () => () => ({
   isLoggedIn: ref(false),
   restore: vi.fn().mockResolvedValue(undefined),
@@ -45,7 +52,8 @@ const PassThrough = defineComponent({
 const ThemeComponent = defineComponent({
   props: { name: { type: String, required: true } },
   setup(props) {
-    return () => (props.name === 'StatusFooter' ? h(AuroraStatusFooter) : null)
+    // 与宿主 ThemeComponent 一致：主题缺 StatusFooter 时由宿主默认壳层承接
+    return () => (props.name === 'StatusFooter' ? h(DefaultStatusFooter) : null)
   },
 })
 const Shell = defineComponent({
@@ -68,10 +76,14 @@ const wrappers: { unmount(): void }[] = []
 const hosts: HTMLElement[] = []
 let desktopNavigationHidden = false
 
-beforeAll(() => {
+beforeAll(async () => {
   // 初始化失败会让后续组件回归失真，不能只依赖测试断言通过。
   const error = useNuxtApp().payload.error
   if (error) throw error
+  // Nuxt i18n 首次切换语言会懒加载整包词典（冷启动可达十余秒）；在 hook 超时内预热，
+  // 避免后续英文用例撞上默认 5s 测试超时（仓库 layoutTheme 测试同样显式放宽过超时）。
+  await useNuxtApp().$i18n.setLocale('en')
+  await useNuxtApp().$i18n.setLocale('zh-CN')
 })
 
 beforeEach(() => {
@@ -173,7 +185,7 @@ describe('Aurora 主题外壳', () => {
     }
   })
 
-  it('底栏桥接共享内容，保持单一页脚地标和可读的链接及状态', async () => {
+  it('主题缺失 StatusFooter 时由宿主默认壳层承接，保持单一页脚地标和可读的链接及状态', async () => {
     const wrapper = await mountShell()
     expect(wrapper.findAll('footer')).toHaveLength(1)
     const footer = wrapper.get('footer')
@@ -185,6 +197,14 @@ describe('Aurora 主题外壳', () => {
     expect(footer.get('[role="status"]').attributes('tabindex')).toBe('0')
     expect(footer.get('[role="status"]').text()).toContain('站点资料已同步')
     expect(footer.text()).toContain('山间来信')
+  })
+
+  it('主题不再保留与宿主重复的桥接组件，缺失挂件由契约合法跳过', () => {
+    const componentNames = Object.keys(themeComponents).map((path) => path.split('/').pop())
+    expect(componentNames).toContain('RootLayout.vue')
+    expect(componentNames).not.toContain('PostCard.vue')
+    expect(componentNames).not.toContain('StatusFooter.vue')
+    expect(componentNames).not.toContain('ThemeAccessory.vue')
   })
 })
 

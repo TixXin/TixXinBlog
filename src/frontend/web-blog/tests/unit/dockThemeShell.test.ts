@@ -6,9 +6,12 @@ import { mount } from '@vue/test-utils'
 import { createMemoryHistory, createRouter } from 'vue-router'
 import { mockNuxtImport } from '@nuxt/test-utils/runtime'
 import RootLayout from '../../themes/dock/app/components/RootLayout.vue'
-import StatusFooter from '../../themes/dock/app/components/StatusFooter.vue'
+import DefaultStatusFooter from '../../app/components/theme/DefaultStatusFooter.vue'
 import SkipLinks from '../../app/components/layout/SkipLinks.vue'
 import MobileNav from '../../app/components/layout/MobileNav.vue'
+
+// 主题组件清单：用于确认与宿主重复的桥接组件已删除，缺失组件由宿主默认壳层承接。
+const themeComponents = import.meta.glob('../../themes/dock/app/components/*.vue')
 
 const state = vi.hoisted(() => ({ reducedMotion: false, route: { path: '/', query: {} } }))
 
@@ -32,7 +35,11 @@ mockNuxtImport('useSiteInfo', () => () => ({
 }))
 mockNuxtImport('useApiLatency', () => () => ({ pingMs: ref(null) }))
 mockNuxtImport('useMotionPreference', () => () => ({ reducedMotion: ref(state.reducedMotion) }))
-mockNuxtImport('useLayoutTheme', () => () => ({ currentThemeId: ref('dock') }))
+mockNuxtImport('useLayoutTheme', () => () => ({
+  currentThemeId: ref('dock'),
+  // dock 自带浮岛导航，能力位关闭宿主共享移动导航
+  activeTheme: ref({ name: 'dock', capabilities: { mobileNav: false } }),
+}))
 mockNuxtImport('useCurrentUser', () => () => ({
   isLoggedIn: ref(false),
   restore: vi.fn().mockResolvedValue(undefined),
@@ -45,7 +52,8 @@ const hosts: HTMLElement[] = []
 const ThemeComponent = defineComponent({
   props: { name: { type: String, required: true } },
   setup(props) {
-    return () => (props.name === 'StatusFooter' ? h(StatusFooter) : null)
+    // 与宿主 ThemeComponent 一致：主题缺 StatusFooter 时由宿主默认壳层承接
+    return () => (props.name === 'StatusFooter' ? h(DefaultStatusFooter) : null)
   },
 })
 
@@ -103,13 +111,14 @@ async function mountShell(route = '/') {
 }
 
 describe('Dock 主题外壳', () => {
-  it('宿主跳转链接指向唯一且可编程聚焦的主内容，保留页面插槽与侧栏挂载点', async () => {
+  it('宿主跳转链接指向唯一且可编程聚焦的主内容，保留页面插槽', async () => {
     const wrapper = await mountShell()
     expect(wrapper.findAll('main#main-content')).toHaveLength(1)
     const main = wrapper.get<HTMLElement>('main#main-content')
     expect(main.attributes('tabindex')).toBe('-1')
     expect(main.get('h1').text()).toBe('来自海边的一封信')
-    expect(wrapper.findAll('#right-sidebar-target')).toHaveLength(1)
+    // dock 声明 rightSidebar=false，宿主 CommonThemeSidebarPortal 不投递内容，布局不再保留隐藏 sink
+    expect(wrapper.find('#right-sidebar-target').exists()).toBe(false)
 
     const skip = wrapper.get<HTMLAnchorElement>('a[href="#main-content"]')
     expect(skip.text()).toBe('跳到主内容')
@@ -172,9 +181,9 @@ describe('Dock 主题外壳', () => {
     })
   })
 
-  it('主题页脚桥接真实共享内容，只保留一个 footer 地标与可聚焦状态', async () => {
+  it('主题缺失 StatusFooter 时由宿主默认壳层承接，只保留一个 footer 地标与可聚焦状态', async () => {
     const wrapper = await mountShell()
-    expect(wrapper.findComponent(StatusFooter).exists()).toBe(true)
+    expect(wrapper.find('footer').exists()).toBe(true)
     expect(wrapper.findAll('footer')).toHaveLength(1)
     const footer = wrapper.get('footer')
     expect(footer.get('.footer__copyright').text()).toContain('岛上来信')
@@ -205,5 +214,13 @@ describe('Dock 主题外壳', () => {
     expect(home.attributes('aria-current')).toBe('page')
     await nav.trigger('mouseleave')
     expect(home.element.style.getPropertyValue('--dock-scale')).toBe('')
+  })
+
+  it('主题不再保留与宿主重复的桥接组件，缺失挂件由契约合法跳过', () => {
+    const componentNames = Object.keys(themeComponents).map((path) => path.split('/').pop())
+    expect(componentNames).toContain('RootLayout.vue')
+    expect(componentNames).not.toContain('PostCard.vue')
+    expect(componentNames).not.toContain('StatusFooter.vue')
+    expect(componentNames).not.toContain('ThemeAccessory.vue')
   })
 })

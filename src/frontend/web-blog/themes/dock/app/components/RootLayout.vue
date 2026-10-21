@@ -15,8 +15,6 @@
       </div>
     </main>
 
-    <div id="right-sidebar-target" class="dock-sidebar-sink" />
-
     <nav id="site-navigation" class="dock-bar" :aria-label="$t('theme.shell.mainNav')" @mouseleave="onDockLeave">
       <div class="dock-bar__inner">
         <NuxtLink
@@ -137,10 +135,6 @@ function getDockItemStyle(index: number): Record<string, string> {
   --dock-icon-scale-hover: 1.3;
   --dock-icon-scale-neighbor: 1.15;
   --dock-border: 1px solid var(--border-soft);
-}
-
-.dock-sidebar-sink {
-  display: none;
 }
 
 .dock-body {
@@ -285,6 +279,21 @@ function getDockItemStyle(index: number): Record<string, string> {
     @media (min-width: $breakpoint-md) {
       display: grid;
     }
+  }
+}
+
+/* ---- 低高度视口：收紧浮岛偏移与上下留白，避免遮挡正文 ---- */
+@media (max-height: 600px) {
+  .theme-dock {
+    --dock-bottom-offset: 0.75rem;
+  }
+
+  .dock-body {
+    padding-top: 1.25rem;
+  }
+
+  .dock-footer {
+    padding-bottom: calc(4.5rem + env(safe-area-inset-bottom));
   }
 }
 </style>

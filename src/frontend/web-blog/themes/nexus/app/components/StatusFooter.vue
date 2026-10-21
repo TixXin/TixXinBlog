@@ -48,8 +48,8 @@
       @close="closeLogin"
     />
 
-    <!-- 用户菜单 popover（底部栏上方悬浮，已登录时可展开） -->
-    <StatusFooterUserMenu ref="userMenuCompRef" :is-open="isUserMenuOpen" @close="closeUserMenu" />
+    <!-- 用户菜单 popover（底部栏上方悬浮，已登录时可展开）；关闭时把焦点归还触发按钮 -->
+    <StatusFooterUserMenu ref="userMenuCompRef" :is-open="isUserMenuOpen" @close="closeUserMenu(true)" />
   </div>
 </template>
 
@@ -159,8 +159,14 @@ function toggleUserMenu() {
   isUserMenuOpen.value = !isUserMenuOpen.value
 }
 
-function closeUserMenu() {
+/**
+ * 关闭用户菜单。restoreFocus 仅在 Escape 或菜单项动作时开启：
+ * 外部点击不抢焦点，避免把焦点从用户刚点击的目标上移走。
+ */
+function closeUserMenu(restoreFocus = false) {
+  if (!isUserMenuOpen.value) return
   isUserMenuOpen.value = false
+  if (restoreFocus) userMenuButtonRef.value?.focus({ preventScroll: true })
 }
 
 function onClickOutside(e: MouseEvent) {
@@ -185,7 +191,8 @@ function onClickOutside(e: MouseEvent) {
 function onEscKey(e: KeyboardEvent) {
   if (e.key !== 'Escape') return
   if (isLoginOpen.value) closeLogin()
-  if (isUserMenuOpen.value) closeUserMenu()
+  // 键盘关闭用户菜单时焦点归还触发按钮，避免焦点跌回文档根导致 Tab 顺序中断
+  if (isUserMenuOpen.value) closeUserMenu(true)
 }
 
 onMounted(() => {
@@ -193,6 +200,8 @@ onMounted(() => {
 })
 
 let outsideHandlerAttached = false
+// 延迟挂载的外部点击监听计时器：卸载或状态快速切换时必须取消，避免泄漏监听
+let outsideAttachTimer: ReturnType<typeof setTimeout> | null = null
 function attachOutsideHandler() {
   if (outsideHandlerAttached) return
   document.addEventListener('click', onClickOutside)
@@ -203,10 +212,21 @@ function detachOutsideHandler() {
   document.removeEventListener('click', onClickOutside)
   outsideHandlerAttached = false
 }
+function scheduleOutsideHandler() {
+  if (outsideAttachTimer) clearTimeout(outsideAttachTimer)
+  outsideAttachTimer = setTimeout(() => {
+    outsideAttachTimer = null
+    attachOutsideHandler()
+  }, 0)
+}
 
 watch([isLoginOpen, isUserMenuOpen], ([loginOpen, menuOpen]) => {
+  if (outsideAttachTimer) {
+    clearTimeout(outsideAttachTimer)
+    outsideAttachTimer = null
+  }
   if (loginOpen || menuOpen) {
-    setTimeout(() => attachOutsideHandler(), 0)
+    scheduleOutsideHandler()
   } else {
     detachOutsideHandler()
   }
@@ -215,6 +235,7 @@ watch([isLoginOpen, isUserMenuOpen], ([loginOpen, menuOpen]) => {
 onBeforeUnmount(() => {
   if (expandTimer) clearTimeout(expandTimer)
   if (collapseTimer) clearTimeout(collapseTimer)
+  if (outsideAttachTimer) clearTimeout(outsideAttachTimer)
   detachOutsideHandler()
   document.removeEventListener('keydown', onEscKey)
 })
@@ -274,6 +295,14 @@ $bar-expanded: 112px;
 
   @media (max-width: #{$breakpoint-lg - 0.02}) {
     display: none;
+  }
+
+  // 低高度视口：压缩展开态高度与上移量，避免底栏占用过多纵向空间
+  @media (max-height: 600px) {
+    &.is-expanded {
+      height: 96px;
+      transform: translateY(#{$bar-height - 96px});
+    }
   }
 }
 

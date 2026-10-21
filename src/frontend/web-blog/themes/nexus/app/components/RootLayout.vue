@@ -131,13 +131,6 @@ function onDateSelect(date: string | null) {
 .page-columns--without-sidebar {
   grid-template-columns: minmax(0, 1fr);
 }
-.theme-nexus {
-  --theme-bg-surface: var(--surface-1);
-  --theme-bg-surface-elevated: var(--surface-2);
-  --theme-bg-surface-sunken: var(--surface-3);
-  --theme-border-default: var(--border);
-  --theme-border-subtle: var(--border-soft);
-}
 
 /* ---- 全屏页（fullbleed）模式：隐藏左右两栏，main-content 占满 ---- */
 /* 使用方在 page setup 中调用 defineFullbleedPage() 即可激活 */
@@ -302,5 +295,12 @@ function onDateSelect(date: string | null) {
 .sidebar-slide-left-leave-to {
   opacity: 0;
   transform: translateX(-12px);
+}
+
+/* ---- 低高度视口：收紧侧栏卡片间距，把纵向空间优先留给正文与底栏 ---- */
+@media (max-height: 600px) {
+  .aside-left__group {
+    gap: 1rem;
+  }
 }
 </style>

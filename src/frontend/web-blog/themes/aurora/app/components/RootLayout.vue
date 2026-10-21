@@ -249,4 +249,21 @@ onBeforeUnmount(() => {
   opacity: 0;
   transform: translateX(calc(100% + 20px));
 }
+
+/* ---- 低高度视口：压缩 Hero 与顶栏，把可视高度优先留给正文 ---- */
+@media (max-height: 600px) {
+  .theme-aurora {
+    --aurora-hero-height: 26vh;
+  }
+
+  :deep(.aurora-topbar__inner) {
+    height: 3rem;
+    padding: 0 1.25rem;
+  }
+
+  .aurora-body {
+    padding-top: 1rem;
+    min-height: 0;
+  }
+}
 </style>
