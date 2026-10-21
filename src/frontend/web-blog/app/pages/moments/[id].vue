@@ -89,33 +89,7 @@
               :title="$t('flash-moment.momentDetail.navUnavailable')"
               @retry="refreshNavigation()"
             />
-            <nav class="moment-detail-nav" :aria-label="$t('flash-moment.momentDetail.nav')">
-              <NuxtLink
-                v-if="prevMoment"
-                :to="{ path: `/moments/${prevMoment.id}`, query: filterQuery }"
-                class="moment-detail-nav__item moment-detail-nav__item--prev"
-              >
-                <Icon name="lucide:chevron-left" size="18" class="moment-detail-nav__arrow" />
-                <div class="moment-detail-nav__text">
-                  <span class="moment-detail-nav__label">{{ $t('flash-moment.momentDetail.prev') }}</span>
-                  <span class="moment-detail-nav__title">{{ truncate(prevMoment.content, 40) }}</span>
-                </div>
-              </NuxtLink>
-              <span v-else class="moment-detail-nav__placeholder" />
-
-              <NuxtLink
-                v-if="nextMoment"
-                :to="{ path: `/moments/${nextMoment.id}`, query: filterQuery }"
-                class="moment-detail-nav__item moment-detail-nav__item--next"
-              >
-                <div class="moment-detail-nav__text">
-                  <span class="moment-detail-nav__label">{{ $t('flash-moment.momentDetail.next') }}</span>
-                  <span class="moment-detail-nav__title">{{ truncate(nextMoment.content, 40) }}</span>
-                </div>
-                <Icon name="lucide:chevron-right" size="18" class="moment-detail-nav__arrow" />
-              </NuxtLink>
-              <span v-else class="moment-detail-nav__placeholder" />
-            </nav>
+            <MomentDetailNav :prev-moment="prevMoment" :next-moment="nextMoment" :filter-query="filterQuery" />
           </template>
         </div>
       </CommonCustomScrollbar>
@@ -155,10 +129,10 @@
 </template>
 
 <script setup lang="ts">
-import { absoluteUrl } from '~/utils/absoluteUrl'
+import { useMomentDetailSeo } from '~/features/moment/useMomentDetailSeo'
+
 const pageScope = usePageRequestScope()
 const route = useRoute()
-const { t } = useI18n()
 const id = computed(() => String(route.params.id ?? ''))
 const { selectedDate, selectedTopic, filterQuery } = useMomentFilters()
 const interactions = useMomentInteractions()
@@ -196,51 +170,12 @@ watch(
 )
 const prevMoment = computed(() => navigation.value?.prev ?? null)
 const nextMoment = computed(() => navigation.value?.next ?? null)
-function truncate(value: string, max: number) {
-  return value.length > max ? value.slice(0, max) + '…' : value
-}
 function onTopicSelect(value: string | null) {
   selectedTopic.value = value
 }
-const excerpt = computed(
-  () => moment.value?.content.replace(/\s+/g, ' ').slice(0, 120) ?? t('flash-moment.momentDetail.notFound'),
-)
-const pageTitle = computed(() => truncate(excerpt.value, 36))
-const site = useSiteUrl()
-const momentUrl = computed(() => `${site}/moments/${encodeURIComponent(id.value)}`)
-const momentImages = computed(() =>
-  (moment.value?.images ?? []).map((image) => absoluteUrl(image, site)).filter((image) => image !== undefined),
-)
-usePageSeo({
-  title: () => pageTitle.value,
-  description: () => excerpt.value,
-  shareTitle: () => t('flash-moment.momentDetail.shareTitle', { title: pageTitle.value, name: ownerCard.value.name }),
-  type: 'article',
-  canonical: () => momentUrl.value,
-  // 无配图时交回全局默认分享图（小卡片）
-  image: () => momentImages.value[0],
-  imageAlt: () => moment.value?.imageAlts?.[0] || pageTitle.value,
-})
-useSeoMeta({
-  articlePublishedTime: () => moment.value?.date,
-  articleTag: () => (moment.value?.topics?.length ? moment.value.topics : undefined),
-})
-useJsonLd('moment', () =>
-  moment.value
-    ? {
-        '@context': 'https://schema.org',
-        '@type': 'SocialMediaPosting',
-        headline: pageTitle.value,
-        articleBody: moment.value.content,
-        url: momentUrl.value,
-        mainEntityOfPage: momentUrl.value,
-        datePublished: moment.value.date,
-        ...(momentImages.value.length ? { image: momentImages.value } : {}),
-        ...(moment.value.topics?.length ? { keywords: moment.value.topics.join(', ') } : {}),
-        author: { '@type': 'Person', name: ownerCard.value.name, url: site + '/about' },
-      }
-    : null,
-)
+
+const ownerName = computed(() => ownerCard.value.name)
+const { pageTitle } = useMomentDetailSeo({ id, moment, ownerName })
 </script>
 
 <style lang="scss" scoped>
@@ -306,71 +241,6 @@ useJsonLd('moment', () =>
   border-radius: $radius-md;
   padding: 0.5rem 1.25rem;
   margin-bottom: 1.5rem;
-}
-
-// 上一条 / 下一条导航
-.moment-detail-nav {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 0.75rem;
-}
-
-.moment-detail-nav__item {
-  display: flex;
-  align-items: center;
-  gap: 0.625rem;
-  padding: 0.875rem 1rem;
-  background: var(--surface-2);
-  border: 1px solid var(--border-soft);
-  border-radius: $radius-md;
-  color: inherit;
-  text-decoration: none;
-  transition: $transition-normal;
-  @media (prefers-reduced-motion: reduce) {
-    transition: none;
-  }
-  min-width: 0;
-
-  &:hover {
-    background: var(--surface-3);
-    border-color: var(--border);
-    transform: translateY(-1px);
-  }
-
-  &--next {
-    justify-content: flex-end;
-    text-align: right;
-  }
-}
-
-.moment-detail-nav__placeholder {
-  visibility: hidden;
-}
-
-.moment-detail-nav__arrow {
-  flex-shrink: 0;
-  color: var(--text-soft);
-}
-
-.moment-detail-nav__text {
-  display: flex;
-  flex-direction: column;
-  gap: 0.125rem;
-  min-width: 0;
-  flex: 1;
-}
-
-.moment-detail-nav__label {
-  font-size: 0.75rem;
-  color: var(--text-faint);
-}
-
-.moment-detail-nav__title {
-  font-size: 0.875rem;
-  color: var(--text-main);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
 
 .back-link {

@@ -1,6 +1,7 @@
 /** @file useAdminMoments.ts @description 朋友圈后台分页、发布状态和评论管理；迟到响应不覆盖当前查询 */
-import type { ManagedMoment, MomentCommentItem, MomentEditable } from '~/features/moment/types'
+import type { ManagedMoment, MomentEditable } from '~/features/moment/types'
 import { invalidateMomentComments } from '~/features/moment/session'
+import { useAdminMomentComments } from '~/features/moment/useAdminMomentComments'
 
 export function useAdminMoments() {
   const route = useRoute(),
@@ -25,26 +26,12 @@ export function useAdminMoments() {
     pending = ref(false),
     error = ref('')
   const busyIds = ref<string[]>([])
-  const commentNote = ref<ManagedMoment | null>(null),
-    commentItems = ref<MomentCommentItem[]>([])
-  const commentTotal = ref(0),
-    commentPage = ref(1),
-    commentsPending = ref(false),
-    commentsError = ref('')
-  const commentTargetId = ref(''),
-    commentsLinkError = ref(''),
-    commentsLinkPending = ref(false),
-    commentsFocusVersion = ref(0)
   const contentContext = useState<string>('page-content-context', () => '')
-  let commentsLinkVersion = 0
-  const replyPending = ref(false)
-  const replyDraft = ref(''),
-    replyRequest = ref(''),
-    replyBody = ref('')
+
   let alive = true,
-    version = 0,
-    commentsVersion = 0
+    version = 0
   let lastActor = auth.currentUser.value?.id
+
   async function load() {
     const current = ++version
     pending.value = true
@@ -72,6 +59,7 @@ export function useAdminMoments() {
       if (alive && current === version) pending.value = false
     }
   }
+
   async function applyFilters() {
     const query = Object.fromEntries(
       Object.entries({
@@ -84,12 +72,14 @@ export function useAdminMoments() {
     if (JSON.stringify(query) === JSON.stringify(route.query)) await load()
     else await router.replace({ path: '/admin/moments', query })
   }
+
   function setPage(value: number) {
     return router.replace({
       path: '/admin/moments',
       query: { ...route.query, page: value > 1 ? String(value) : undefined },
     })
   }
+
   async function perform(note: ManagedMoment, operation: () => Promise<void>) {
     if (busyIds.value.includes(note.id) || !auth.isLoggedIn.value) return
     busyIds.value.push(note.id)
@@ -103,6 +93,15 @@ export function useAdminMoments() {
       busyIds.value = busyIds.value.filter((id) => id !== note.id)
     }
   }
+
+  const comments = useAdminMomentComments({
+    busyIds,
+    contentContext,
+    load,
+    perform,
+    read,
+  })
+
   async function update(note: ManagedMoment, patch: Partial<MomentEditable>) {
     const actor = auth.currentUser.value?.id
     await perform(note, async () => {
@@ -111,12 +110,13 @@ export function useAdminMoments() {
       else store.invalidate()
       void app.runWithContext(() => refreshNuxtData(['moment-overview', 'moment-feed', `moment-detail:${note.id}`]))
       if (alive && actor === auth.currentUser.value?.id) {
-        if (commentNote.value?.id === note.id) commentNote.value = result
+        if (comments.commentNote.value?.id === note.id) comments.commentNote.value = result
         toast.success(t('admin-content.moments.statusUpdated'))
         await load()
       }
     })
   }
+
   async function remove(note: ManagedMoment) {
     const actor = auth.currentUser.value?.id
     if (busyIds.value.includes(note.id) || !window.confirm(t('admin-content.moments.removeConfirm'))) return
@@ -126,187 +126,30 @@ export function useAdminMoments() {
       invalidateMomentComments(app, note.id)
       void app.runWithContext(() => refreshNuxtData(['moment-overview', 'moment-feed', `moment-detail:${note.id}`]))
       if (alive && actor === auth.currentUser.value?.id) {
-        if (commentNote.value?.id === note.id) commentNote.value = null
+        if (comments.commentNote.value?.id === note.id) comments.commentNote.value = null
         toast.success(t('admin-content.moments.removed'))
         await load()
       }
     })
   }
-  async function openComments(note: ManagedMoment, targetPage = 1) {
-    if (commentNote.value?.id !== note.id) {
-      if (replyDraft.value.trim() && !window.confirm(t('admin-content.moments.discardReplyConfirm'))) return
-      commentItems.value = []
-      replyDraft.value = ''
-      replyRequest.value = ''
-      replyBody.value = ''
-    }
-    const current = ++commentsVersion
-    const requestedPath = route.fullPath,
-      requestedContext = contentContext.value
-    commentNote.value = note
-    commentTargetId.value = ''
-    commentsLinkError.value = ''
-    commentsPending.value = true
-    commentsError.value = ''
-    const actor = auth.currentUser.value?.id
-    try {
-      const data = await repo.adminComments(note.id, targetPage)
-      if (
-        !alive ||
-        current !== commentsVersion ||
-        auth.currentUser.value?.id !== actor ||
-        route.fullPath !== requestedPath ||
-        contentContext.value !== requestedContext
-      )
-        return
-      const last = Math.max(1, Math.ceil(data.total / 15))
-      if (targetPage > last) {
-        await openComments(note, last)
-        return
-      }
-      commentItems.value = data.items
-      commentTotal.value = data.total
-      commentPage.value = data.page
-    } catch (cause) {
-      if (
-        alive &&
-        current === commentsVersion &&
-        route.fullPath === requestedPath &&
-        contentContext.value === requestedContext &&
-        auth.currentUser.value?.id === actor
-      )
-        commentsError.value = cause instanceof Error ? cause.message : t('admin-content.moments.commentsLoadFailed')
-    } finally {
-      if (alive && current === commentsVersion) commentsPending.value = false
-    }
-  }
-  function closeComments() {
-    if (commentNote.value && busyIds.value.includes(commentNote.value.id)) return false
-    if (replyDraft.value.trim() && !window.confirm(t('admin-content.moments.discardReplyConfirm'))) return false
-    commentsVersion++
-    commentNote.value = null
-    replyDraft.value = ''
-    commentsPending.value = false
-    return true
-  }
-  async function openLinkedComments() {
-    if (!alive || route.path !== '/admin/moments') return
-    const sourceId = read('comments'),
-      targetId = read('commentId')
-    const current = ++commentsLinkVersion,
-      actor = auth.currentUser.value?.id,
-      context = contentContext.value,
-      path = route.fullPath
-    const owns = () =>
-      alive &&
-      current === commentsLinkVersion &&
-      actor === auth.currentUser.value?.id &&
-      context === contentContext.value &&
-      path === route.fullPath
-    commentsLinkError.value = ''
-    commentTargetId.value = ''
-    if (!sourceId) {
-      commentsLinkPending.value = false
-      return
-    }
-    commentsLinkPending.value = true
-    try {
-      const note = await repo.adminDetail(sourceId)
-      if (!owns()) return
-      const location = targetId ? await repo.adminCommentLocation(sourceId, targetId) : { page: 1 }
-      if (!owns()) return
-      await openComments(note, location.page)
-      if (!owns()) return
-      if (commentNote.value?.id !== sourceId) {
-        commentsLinkError.value = t('admin-content.moments.replyKept')
-        return
-      }
-      commentTargetId.value = targetId
-      if (targetId && !commentsError.value && !commentItems.value.some((item) => item.id === targetId))
-        commentsLinkError.value = t('admin-content.moments.commentMoved')
-      commentsFocusVersion.value++
-    } catch (cause) {
-      if (owns())
-        commentsLinkError.value =
-          cause instanceof Error ? cause.message : t('admin-content.moments.commentLocateFailed')
-    } finally {
-      if (alive && current === commentsLinkVersion) commentsLinkPending.value = false
-    }
-  }
-  function invalidateComments(id: string, count: number) {
-    invalidateMomentComments(app, id)
-    store.patch(id, { comments: [], commentCount: count })
-    void app.runWithContext(() => refreshNuxtData(['moment-overview', 'moment-feed', `moment-detail:${id}`]))
-  }
-  async function moderate(comment: MomentCommentItem, next: 'published' | 'pending' | 'hidden') {
-    const actor = auth.currentUser.value?.id
-    const note = commentNote.value
-    if (!note) return
-    await perform(note, async () => {
-      const result = await repo.moderate(note.id, comment.id, next, comment.moderationStatus ?? 'published')
-      invalidateComments(note.id, result.commentCount)
-      if (alive && actor === auth.currentUser.value?.id) {
-        await openComments(note, commentPage.value)
-        await load()
-      }
-    })
-  }
-  async function removeComment(comment: MomentCommentItem) {
-    const actor = auth.currentUser.value?.id
-    const note = commentNote.value
-    if (!note || busyIds.value.includes(note.id) || !window.confirm(t('admin-content.moments.removeCommentConfirm')))
-      return
-    await perform(note, async () => {
-      const result = await repo.removeComment(note.id, comment.id)
-      invalidateComments(note.id, result.commentCount)
-      if (alive && actor === auth.currentUser.value?.id) {
-        await openComments(note, 1)
-        await load()
-      }
-    })
-  }
-  async function reply() {
-    const actor = auth.currentUser.value?.id
-    const note = commentNote.value,
-      content = replyDraft.value.trim()
-    if (!note || !content) return
-    if (replyBody.value !== content) {
-      replyBody.value = content
-      replyRequest.value = crypto.randomUUID()
-    }
-    await perform(note, async () => {
-      replyPending.value = true
-      try {
-        const result = await repo.comment(note.id, { requestId: replyRequest.value, content }, true)
-        invalidateComments(note.id, result.commentCount)
-        if (alive && actor === auth.currentUser.value?.id) {
-          if (replyDraft.value.trim() === content) replyDraft.value = ''
-          replyRequest.value = ''
-          replyBody.value = ''
-          await openComments(note, Math.max(1, Math.ceil((commentTotal.value + 1) / 15)))
-          await load()
-          toast.success(t('admin-content.moments.replySent'))
-        }
-      } finally {
-        replyPending.value = false
-      }
-    })
-  }
+
   const protectReply = (event: BeforeUnloadEvent) => {
-    if (replyDraft.value.trim()) {
+    if (comments.replyDraft.value.trim()) {
       event.preventDefault()
       event.returnValue = ''
     }
   }
+
   onMounted(async () => {
     window.addEventListener('beforeunload', protectReply)
     const edit = read('edit')
     if (edit) void router.replace('/admin/moments/' + encodeURIComponent(edit))
     else {
       await load()
-      await openLinkedComments()
+      await comments.openLinkedComments()
     }
   })
+
   watch(
     () => route.fullPath,
     async () => {
@@ -316,44 +159,39 @@ export function useAdminMoments() {
       topic.value = read('topic')
       date.value = read('date')
       await load()
-      await openLinkedComments()
+      await comments.openLinkedComments()
     },
   )
+
   watch(auth.isLoggedIn, (loggedIn) => {
     if (loggedIn) {
       void load()
-      if (commentNote.value) void openComments(commentNote.value, commentPage.value)
+      if (comments.commentNote.value) void comments.openComments(comments.commentNote.value, comments.commentPage.value)
     }
   })
+
   watch(
     () => auth.currentUser.value?.id,
     (next) => {
       if (next && lastActor && next !== lastActor) {
         items.value = []
-        commentNote.value = null
-        commentItems.value = []
-        replyDraft.value = ''
-        replyBody.value = ''
-        replyRequest.value = ''
+        comments.resetActor()
         version++
-        commentsVersion++
-        commentsLinkVersion++
-        commentsLinkPending.value = false
-        commentTargetId.value = ''
-        commentsPending.value = false
         void load()
       }
       if (next) lastActor = next
     },
   )
-  onBeforeRouteLeave(() => !replyDraft.value.trim() || window.confirm(t('admin-content.moments.leaveConfirm')))
+
+  onBeforeRouteLeave(() => !comments.replyDraft.value.trim() || window.confirm(t('admin-content.moments.leaveConfirm')))
+
   onScopeDispose(() => {
     if (import.meta.client) window.removeEventListener('beforeunload', protectReply)
     alive = false
     version++
-    commentsVersion++
-    commentsLinkVersion++
+    comments.cancelPending()
   })
+
   return {
     restoringPending: auth.restoringPending,
     isLoggedIn: auth.isLoggedIn,
@@ -372,23 +210,23 @@ export function useAdminMoments() {
     setPage,
     update,
     remove,
-    commentNote,
-    commentItems,
-    commentTotal,
-    commentPage,
-    commentsPending,
-    commentsError,
-    commentTargetId,
-    commentsLinkError,
-    commentsLinkPending,
-    commentsFocusVersion,
-    openLinkedComments,
-    openComments,
-    closeComments,
-    moderate,
-    removeComment,
-    replyDraft,
-    replyPending,
-    reply,
+    commentNote: comments.commentNote,
+    commentItems: comments.commentItems,
+    commentTotal: comments.commentTotal,
+    commentPage: comments.commentPage,
+    commentsPending: comments.commentsPending,
+    commentsError: comments.commentsError,
+    commentTargetId: comments.commentTargetId,
+    commentsLinkError: comments.commentsLinkError,
+    commentsLinkPending: comments.commentsLinkPending,
+    commentsFocusVersion: comments.commentsFocusVersion,
+    openLinkedComments: comments.openLinkedComments,
+    openComments: comments.openComments,
+    closeComments: comments.closeComments,
+    moderate: comments.moderate,
+    removeComment: comments.removeComment,
+    replyDraft: comments.replyDraft,
+    replyPending: comments.replyPending,
+    reply: comments.reply,
   }
 }

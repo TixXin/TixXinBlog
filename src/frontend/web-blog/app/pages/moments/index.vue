@@ -63,15 +63,12 @@
       </div>
     </template>
     <template #default>
-      <!-- 头部 Tab 栏 + 搜索 -->
-      <div v-if="searchKeyword || selectedTopic || selectedDate" class="moments-filter-summary">
-        <span role="status" class="moments-filter-summary__label">{{
-          $t('flash-moment.moments.filterCurrent', { summary: filterSummary })
-        }}</span>
-        <button type="button" class="filter-clear filter-clear--chip" @click="clearFilters">
-          <Icon name="lucide:x" size="12" aria-hidden="true" />{{ $t('flash-moment.moments.clearFilters') }}
-        </button>
-      </div>
+      <!-- 头部 Tab 栏 + 搜索筛选摘要 -->
+      <MomentFilterSummary
+        :visible="!!(searchKeyword || selectedTopic || selectedDate)"
+        :filter-summary="filterSummary"
+        @clear="clearFilters"
+      />
       <CommonCustomScrollbar class="moments-body" viewport-class="moments-viewport" primary>
         <div class="moments-content">
           <MomentList
@@ -131,6 +128,7 @@
 
 <script setup lang="ts">
 import { mockPostTabs } from '~/features/post/mock'
+
 const pageScope = usePageRequestScope()
 const { searchKeyword, selectedTopic, selectedDate, page, setPage, filterQuery, clearFilters } = useMomentFilters()
 const interactions = useMomentInteractions()
@@ -204,61 +202,12 @@ usePageSeo({
 </script>
 
 <style lang="scss" scoped>
-.moments-filter-summary {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.5rem;
-  // 与下方列表内容的左右留白对齐
-  padding: 0.75rem 1rem 0;
-  font-size: 0.8125rem;
-  color: var(--text-soft);
-
-  @media (min-width: $breakpoint-md) {
-    padding: 1rem 2rem 0;
-  }
-}
-.moments-filter-summary__label {
-  min-width: 0;
-  overflow-wrap: anywhere;
-}
 .filter-clear {
   min-height: 44px;
   padding: 0.5rem;
   color: var(--accent-text);
 }
-// 筛选条里的清除按钮：做成小胶囊，避免看起来像普通文字
-.filter-clear--chip {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.25rem;
-  min-height: 32px;
-  padding: 0.25rem 0.75rem;
-  border: 1px solid var(--border-soft);
-  border-radius: $radius-full;
-  background: var(--surface-2);
-  font-size: 0.75rem;
-  cursor: var(--interaction-cursor, pointer);
-  transition: $transition-colors;
-  @media (prefers-reduced-motion: reduce) {
-    transition: none;
-  }
 
-  &:hover {
-    border-color: var(--accent);
-    background: var(--accent-soft);
-  }
-
-  &:focus-visible {
-    outline: 2px solid var(--accent);
-    outline-offset: 2px;
-  }
-
-  @media (pointer: coarse) {
-    min-height: 44px;
-  }
-}
 .moments-page {
   display: flex;
   flex-direction: column;
