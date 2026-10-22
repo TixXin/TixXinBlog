@@ -1,5 +1,6 @@
 # 依赖目录
 node_modules/
+.pnpm-store/
 
 # 构建产物
 .nuxt/
