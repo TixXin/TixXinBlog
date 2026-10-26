@@ -1,0 +1,43 @@
+/**
+ * @file _admin-taxonomy.scss
+ * @description 专栏与标签管理页各区块共享的外观声明：卡片、小标题、说明文字与表格单元格。
+ *              由分类管理页及其子组件在 scoped 样式中按原选择器 @include，不由父组件 :deep 下发
+ * @author TixXin
+ * @since 2026-10-27
+ */
+
+/** 编辑器与分组的卡片容器 */
+@mixin card {
+  min-width: 0;
+  max-width: 100%;
+  padding: 1.25rem;
+  border: 1px solid var(--border);
+  background: var(--surface-2);
+  border-radius: 1rem;
+  margin: 1rem 0;
+}
+
+/** 窄屏下卡片收紧内边距 */
+@mixin card-narrow {
+  padding: 1rem;
+}
+
+@mixin heading {
+  font-size: 1.1rem;
+  font-weight: 600;
+  margin-bottom: 1rem;
+}
+
+/** 页面简介、分组与编辑器说明 */
+@mixin hint {
+  color: var(--text-muted);
+  margin: 0.75rem 0;
+}
+
+/** 表头与单元格不换行，由表格容器横向滚动 */
+@mixin cell {
+  text-align: left;
+  padding: 0.8rem;
+  border-bottom: 1px solid var(--border);
+  white-space: nowrap;
+}

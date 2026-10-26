@@ -1,0 +1,54 @@
+/**
+ * @file _search-page.scss
+ * @description 搜索页及其结果分组、条目与分页共享的外观声明：工具条、控件、次要文字与链接。
+ *              由搜索页及其子组件在 scoped 样式中按原选择器 @include，生成的规则带各自的作用域，不由父组件 :deep 下发
+ * @author TixXin
+ * @since 2026-10-27
+ */
+
+/** 表单、类型导航、分页与分组标题共用的换行工具条 */
+@mixin bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+/** 输入框、按钮、类型与分页链接的控件外观 */
+@mixin control {
+  min-height: 44px;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: 0.5rem;
+  color: var(--text-main);
+  background: var(--surface-2);
+}
+
+/** 类型与分页链接按控件居中排布 */
+@mixin control-link {
+  display: inline-flex;
+  align-items: center;
+}
+
+/** 当前路由对应的链接 */
+@mixin current {
+  border-color: var(--accent);
+  color: var(--accent-text);
+}
+
+/** 说明、空状态与计数等次要文字 */
+@mixin muted {
+  color: var(--text-muted);
+  margin: 0.75rem 0;
+}
+
+@mixin link {
+  /* 文字使用 accent-text：暗色模式下 accent 压在卡片面上对比度不足 4.5:1 */
+  color: var(--accent-text);
+  overflow-wrap: anywhere;
+}
+
+@mixin wrap {
+  overflow-wrap: anywhere;
+}

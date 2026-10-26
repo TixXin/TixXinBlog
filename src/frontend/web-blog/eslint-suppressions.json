@@ -802,19 +802,9 @@
       "count": 1
     }
   },
-  "app/pages/admin/taxonomy.vue": {
-    "vue/max-template-depth": {
-      "count": 11
-    }
-  },
   "app/pages/flash/[id].vue": {
     "vue/max-template-depth": {
       "count": 1
-    }
-  },
-  "app/pages/search.vue": {
-    "vue/max-template-depth": {
-      "count": 10
     }
   },
   "app/plugins/image-motion.client.ts": {

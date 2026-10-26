@@ -48,74 +48,29 @@
           />
           <div v-if="mounted && !isSearching" ref="resultListRef" @keydown="onResultKeydown">
             <p v-if="activeType === 'all'">{{ $t('article.search.previewHint', { count: SEARCH_PREVIEW_SIZE }) }}</p>
-            <section
+            <SearchPageResultGroup
               v-for="group in groups"
               :key="group.type"
-              class="search-page__group"
-              :data-search-type="group.type"
-            >
-              <header>
-                <h2>{{ searchTypeLabel(group.type, t) }}</h2>
-                <span v-if="group.total !== null">{{
-                  $t('article.search.itemCount', { count: group.total }, group.total)
-                }}</span>
-                <NuxtLink
-                  v-if="activeType === 'all' && group.total !== null && group.total > group.items.length"
-                  :to="searchLocation(activeQuery, group.type)"
-                  >{{ $t('article.search.viewAll', { type: searchTypeLabel(group.type, t) }) }}</NuxtLink
-                >
-              </header>
-              <p v-if="group.unavailable" role="status">{{ $t('article.search.sourceUnavailable') }}</p>
-              <p v-else-if="!group.items.length">{{ $t('article.search.noResults') }}</p>
-              <ul v-else>
-                <li v-for="item in group.items" :key="item.id">
-                  <a
-                    v-if="item.type === 'link'"
-                    :href="item.url"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    data-search-result
-                  >
-                    <Icon :name="item.icon" aria-hidden="true" /><SearchHighlight
-                      :text="item.title"
-                      :keyword="activeQuery"
-                    /><Icon name="lucide:external-link" aria-hidden="true" />
-                    <span class="sr-only">{{ $t('article.search.newTab') }}</span>
-                  </a>
-                  <NuxtLink v-else :to="item.url" data-search-result
-                    ><Icon :name="item.icon" aria-hidden="true" /><SearchHighlight
-                      :text="item.title"
-                      :keyword="activeQuery"
-                  /></NuxtLink>
-                  <p><SearchHighlight :text="item.description" :keyword="activeQuery" /></p>
-                </li>
-              </ul>
-            </section>
+              :group="group"
+              :active-type="activeType"
+              :keyword="activeQuery"
+            />
           </div>
-          <nav
+          <SearchPagePagination
             v-if="
               !isSearching && activeType !== 'all' && total !== null && (total > SEARCH_PAGE_SIZE || activePage > 1)
             "
-            class="search-page__pagination"
-            :aria-label="$t('article.search.paginationLabel')"
-          >
-            <NuxtLink v-if="activePage > 1" :to="searchLocation(activeQuery, activeType, activePage - 1)">{{
-              $t('article.pagination.previous')
-            }}</NuxtLink>
-            <span role="status">{{ $t('article.search.pageStatus', { page: activePage, total }, total) }}</span>
-            <NuxtLink
-              v-if="activePage * SEARCH_PAGE_SIZE < total"
-              :to="searchLocation(activeQuery, activeType, activePage + 1)"
-              >{{ $t('article.pagination.next') }}</NuxtLink
-            >
-          </nav>
+            :keyword="activeQuery"
+            :type="activeType"
+            :page="activePage"
+            :total="total"
+          />
         </template>
       </CommonCustomScrollbar>
     </template>
   </CommonPageFrame>
 </template>
 <script setup lang="ts">
-import SearchHighlight from '~/components/common/SearchHighlight.vue'
 import { searchLocation, searchScope, searchPage } from '~/features/search/query'
 import { searchTypeLabel, searchTypeLabelKeys, SEARCH_PAGE_SIZE, SEARCH_PREVIEW_SIZE } from '~/features/search/types'
 import type { SearchScope } from '~/features/search/types'
@@ -184,6 +139,8 @@ onMounted(() => {
 })
 </script>
 <style scoped lang="scss">
+@use '~/assets/styles/search-page' as search;
+
 .search-page {
   flex: 1;
   min-height: 0;
@@ -192,14 +149,8 @@ onMounted(() => {
   padding: 1.5rem 2rem 2rem;
 }
 .search-page__form,
-.search-page__types,
-.search-page__pagination,
-.search-page__group header {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 0.75rem;
-  margin-bottom: 1rem;
+.search-page__types {
+  @include search.bar;
 }
 .search-page__form input {
   flex: 1;
@@ -207,70 +158,24 @@ onMounted(() => {
 }
 .search-page__form input,
 button,
-.search-page__types a,
-.search-page__pagination a {
-  min-height: 44px;
-  padding: 0.5rem 0.75rem;
-  border: 1px solid var(--border);
-  border-radius: 0.5rem;
-  color: var(--text-main);
-  background: var(--surface-2);
+.search-page__types a {
+  @include search.control;
 }
-.search-page__types a,
-.search-page__pagination a {
-  display: inline-flex;
-  align-items: center;
+.search-page__types a {
+  @include search.control-link;
 }
 [aria-current='page'] {
-  border-color: var(--accent);
-  color: var(--accent-text);
+  @include search.current;
 }
 .search-page__scope,
-p,
-header span {
-  color: var(--text-muted);
-  margin: 0.75rem 0;
-}
-.search-page__group {
-  margin: 1.5rem 0;
-  padding: 1rem;
-  border: 1px solid var(--border);
-  border-radius: 0.75rem;
-  min-width: 0;
-}
-h2 {
-  font-size: 1.1rem;
-  font-weight: 600;
-}
-ul {
-  list-style: none;
-  padding: 0;
-}
-li {
-  padding: 0.75rem 0;
-  border-top: 1px solid var(--border);
-}
-li a {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.4rem;
-  max-width: 100%;
-}
-li a:focus-visible {
-  outline: 2px solid var(--accent);
-  outline-offset: 4px;
-  border-radius: 0.25rem;
-}
-.search-highlight {
-  min-width: 0;
+p {
+  @include search.muted;
 }
 a {
-  /* 文字使用 accent-text：暗色模式下 accent 压在卡片面上对比度不足 4.5:1 */
-  color: var(--accent-text);
-  overflow-wrap: anywhere;
+  @include search.link;
 }
 p {
-  overflow-wrap: anywhere;
+  @include search.wrap;
 }
 @media (max-width: 480px) {
   :deep(.search-page__viewport) {
