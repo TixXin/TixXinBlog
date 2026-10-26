@@ -65,6 +65,8 @@ export const auditMessages = defineMessages({
   'audit.action.linkUpdate': { zh: '编辑推荐上下架或排序友链', en: 'Edit, feature, publish or reorder friend links' },
   'audit.action.linkDelete': { zh: '删除友链', en: 'Delete friend link' },
   'audit.action.linkSettings': { zh: '修改友链规则', en: 'Change friend link rules' },
+  'audit.action.linkApplicationApprove': { zh: '通过友链申请', en: 'Approve friend link application' },
+  'audit.action.linkApplicationReject': { zh: '拒绝友链申请', en: 'Reject friend link application' },
   'audit.action.taxonomyWrite': { zh: '管理分类标签', en: 'Manage categories and tags' },
   'audit.action.siteSave': { zh: '保存站点资料', en: 'Save site profile' },
   'audit.action.siteRestore': { zh: '恢复站点资料', en: 'Restore site profile' },

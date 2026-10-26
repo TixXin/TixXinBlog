@@ -27,6 +27,19 @@ describe('auditDescriptor', () => {
     })
   })
 
+  it('友链申请的通过与拒绝映射到独立动作，申请编号作为资源标识', () => {
+    expect(auditDescriptor(`/api/v1/admin/links/applications/${uuid}/approve`, 'POST')).toEqual({
+      action: 'link.application.approve',
+      resourceType: 'link-application',
+      resourceId: uuid,
+    })
+    expect(auditDescriptor(`/api/v1/admin/links/applications/${uuid}/reject`, 'POST')).toMatchObject({
+      action: 'link.application.reject',
+    })
+    expect(auditActions['link.application.approve']).toBeDefined()
+    expect(auditDescriptor('/api/v1/admin/links/settings', 'PATCH')).toMatchObject({ action: 'link.settings' })
+  })
+
   it('文章创建、保存、归档、修订与批量操作可区分', () => {
     expect(auditDescriptor('/api/v1/admin/posts', 'POST')).toMatchObject({
       action: 'post.create',

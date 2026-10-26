@@ -32,4 +32,6 @@ export const socialAuditActionKeys: Readonly<Record<string, MessageKey>> = {
   'link.update': 'audit.action.linkUpdate',
   'link.delete': 'audit.action.linkDelete',
   'link.settings': 'audit.action.linkSettings',
+  'link.application.approve': 'audit.action.linkApplicationApprove',
+  'link.application.reject': 'audit.action.linkApplicationReject',
 }

@@ -1,4 +1,4 @@
-/** @file link.controller.ts @description 友链公开读取和博主管理；无公开申请、探活或抓取路由 */
+/** @file link.controller.ts @description 友链公开读取和博主管理；公开申请见 link-application.controller，无探活或抓取路由 */
 import {
   Body,
   Controller,

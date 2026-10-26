@@ -112,13 +112,14 @@ describe('友链公开 GET 字段白名单', () => {
     )
   })
 
-  it('统计和规则不携带设置版本，统计查询只读取公开未删除友链', async () => {
+  it('统计、规则与申请开关不携带设置版本，统计查询只读取公开未删除友链', async () => {
     const { em, service } = fixture()
     em.execute.mockResolvedValue([{ links: 3, featured: 1, domains: 2 }])
     em.findOneOrFail.mockResolvedValue(
       Object.assign(new LinkSettings(), {
         id: 'default',
         rules: ['保持独立创作', '请使用有效的网站地址'],
+        applicationsEnabled: true,
         revision: 32,
         updatedAt: publishedAt,
       }),
@@ -126,6 +127,7 @@ describe('友链公开 GET 字段白名单', () => {
     expect(JSON.parse(JSON.stringify(await service.metadata()))).toStrictEqual({
       stats: { links: 3, featured: 1, domains: 2 },
       rules: ['保持独立创作', '请使用有效的网站地址'],
+      applicationsEnabled: true,
     })
     expect(em.findOneOrFail).toHaveBeenCalledWith(LinkSettings, { id: 'default' })
     expect(em.execute).toHaveBeenCalledTimes(1)

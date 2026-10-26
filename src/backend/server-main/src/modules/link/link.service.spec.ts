@@ -239,6 +239,7 @@ describe('友链公开读取与推荐', () => {
     await expect(service.metadata()).resolves.toEqual({
       stats: { links: 8, featured: 3, domains: 5 },
       rules: settings.rules,
+      applicationsEnabled: false,
     })
     const sql = em.execute.mock.calls[0]?.[0] as string
     expect(sql).toMatch(/count\(\*\)::int as links/)
@@ -507,9 +508,19 @@ describe('友链规则与删除版本保护', () => {
     const { service, settings } = fixture()
     await expect(service.settings()).resolves.toEqual({
       rules: settings.rules,
+      applicationsEnabled: false,
       revision: 2,
       updatedAt: createdAt.toISOString(),
     })
+  })
+
+  it('申请开关随规则保存；未携带开关时保留现值', async () => {
+    const { service, settings } = fixture()
+    await service.saveSettings({ revision: 2, rules: settings.rules, applicationsEnabled: true })
+    expect(settings.applicationsEnabled).toBe(true)
+    await service.saveSettings({ revision: 3, rules: settings.rules })
+    expect(settings.applicationsEnabled).toBe(true)
+    expect(settings.revision).toBe(4)
   })
 
   it('规则保存锁定当前版本，成功后增加版本并重新读取', async () => {

@@ -78,4 +78,24 @@ export const linkMessages = defineMessages({
     zh: '媒体库图片和外部头像只能选择一种',
     en: 'Choose either a media library image or an external avatar, not both',
   },
+  'link.applicationsClosed': {
+    zh: '本站暂未开放友链申请',
+    en: 'This site is not accepting friend link applications right now',
+  },
+  'link.applicationPending': {
+    zh: '该地址已有一条待审核的申请，请耐心等待博主处理',
+    en: 'An application for this URL is already awaiting review. Please wait for the blogger to handle it.',
+    code: ErrorCode.Conflict,
+  },
+  'link.applicationListed': {
+    zh: '该地址已在友链列表中，无需重复申请',
+    en: 'This URL is already in the friend link list. There is no need to apply again.',
+    code: ErrorCode.Conflict,
+  },
+  'link.applicationNotFound': { zh: '友链申请不存在', en: 'Friend link application not found' },
+  'link.applicationHandled': {
+    zh: '该申请已处理，请刷新后查看当前状态',
+    en: 'This application has already been handled. Refresh to see its current state.',
+    code: ErrorCode.Conflict,
+  },
 })

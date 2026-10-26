@@ -70,7 +70,7 @@ async function mail(em: EntityManager, config: OperationConfig, task: TaskRow) {
   )
   if (
     !notification ||
-    (!['guestbook', 'comment', 'moment-comment', 'flash-comment'].includes(notification.kind) &&
+    (!['guestbook', 'comment', 'moment-comment', 'flash-comment', 'link-application'].includes(notification.kind) &&
       !(notification.kind === 'task' && notification.reason === 'backup_failed'))
   )
     throw Object.assign(new Error('通知不存在'), { code: 'EENVELOPE' })
@@ -82,6 +82,7 @@ async function mail(em: EntityManager, config: OperationConfig, task: TaskRow) {
     comment: '收到新的文章评论',
     'moment-comment': '收到新的动态评论',
     'flash-comment': '收到新的闪念评论',
+    'link-application': '收到新的友链申请',
     task: '备份任务执行异常',
   }
   const transport = nodemailer.createTransport({

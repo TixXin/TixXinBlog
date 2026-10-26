@@ -226,17 +226,20 @@
 
 三个领域的公开列表默认每页 12、最大 48，非公开/删除记录不返回管理状态、版本、提交标识或存储键。
 
-| 方法与路径                                                         | 作用                                     |
-| ------------------------------------------------------------------ | ---------------------------------------- |
-| `GET /gallery`、`GET /gallery/metadata`、`GET /gallery/:id`        | 公开图库列表、聚合与详情                 |
-| `GET/POST /admin/gallery`、`GET/PATCH/DELETE /admin/gallery/:id`   | 管理图库列表、幂等创建、版本化编辑与删除 |
-| `GET /admin/gallery/submissions/:requestId`                        | 核查图库创建结果                         |
-| `GET /projects`、`GET /projects/metadata`、`GET /projects/:id`     | 公开项目列表、聚合与详情                 |
-| `GET/POST /admin/projects`、`GET/PATCH/DELETE /admin/projects/:id` | 管理项目列表、幂等创建、版本化编辑与删除 |
-| `GET /admin/projects/submissions/:requestId`                       | 核查项目创建结果                         |
-| `GET /links`、`GET /links/metadata`、`GET /links/:id`              | 公开友链列表、聚合与详情                 |
-| `GET/POST /admin/links`、`GET/PATCH/DELETE /admin/links/:id`       | 管理友链列表、幂等创建、版本化编辑与删除 |
-| `GET /admin/links/submissions/:requestId`                          | 核查友链创建结果                         |
+| 方法与路径                                                                                | 作用                                     |
+| ----------------------------------------------------------------------------------------- | ---------------------------------------- |
+| `GET /gallery`、`GET /gallery/metadata`、`GET /gallery/:id`                               | 公开图库列表、聚合与详情                 |
+| `GET/POST /admin/gallery`、`GET/PATCH/DELETE /admin/gallery/:id`                          | 管理图库列表、幂等创建、版本化编辑与删除 |
+| `GET /admin/gallery/submissions/:requestId`                                               | 核查图库创建结果                         |
+| `GET /projects`、`GET /projects/metadata`、`GET /projects/:id`                            | 公开项目列表、聚合与详情                 |
+| `GET/POST /admin/projects`、`GET/PATCH/DELETE /admin/projects/:id`                        | 管理项目列表、幂等创建、版本化编辑与删除 |
+| `GET /admin/projects/submissions/:requestId`                                              | 核查项目创建结果                         |
+| `GET /links`、`GET /links/metadata`、`GET /links/:id`                                     | 公开友链列表、聚合与详情                 |
+| `GET/POST /admin/links`、`GET/PATCH/DELETE /admin/links/:id`                              | 管理友链列表、幂等创建、版本化编辑与删除 |
+| `GET /admin/links/submissions/:requestId`                                                 | 核查友链创建结果                         |
+| `GET /links/applications/status`、`POST /links/applications`                              | 公开申请开关与访客提交友链申请           |
+| `GET /admin/links/applications`、`GET /admin/links/applications/:id`                      | 管理申请列表（含待审总数）与详情         |
+| `POST /admin/links/applications/:id/approve`、`POST /admin/links/applications/:id/reject` | 通过（建立友链草稿）与拒绝申请           |
 
 | 领域 | 查询与约束                                                                                |
 | ---- | ----------------------------------------------------------------------------------------- |
@@ -248,7 +251,9 @@
 
 项目发布状态为 `draft/published/withdrawn`，进展为 `active/dev/archived`，两者独立。技术标签最多 20 项，按名称去空白、小写去重并保留首项写法/颜色；链接最多 4 种 `source/demo/docs/download`，同用途不能重复。技术覆盖率来自使用该标签的公开项目比例，可重叠，不是语言占比。没有外部 Star/Fork 自动同步。
 
-友链普通创建/改址检查全部未删除记录的规范 URL，同址冲突返回 400；内容包允许明确复制同址草稿，但同一 URL 最多有一条公开记录。URL 规范协议、主机与默认端口，保留路径大小写、尾斜杠、查询参数顺序/重复值和片段。Logo 可为空，受管媒体与外部 HTTPS 来源互斥。`GET/PATCH /admin/links/settings` 保存最多 12 条独立规则，每条最多 300 字符。
+友链普通创建/改址检查全部未删除记录的规范 URL，同址冲突返回 400；内容包允许明确复制同址草稿，但同一 URL 最多有一条公开记录。URL 规范协议、主机与默认端口，保留路径大小写、尾斜杠、查询参数顺序/重复值和片段。Logo 可为空，受管媒体与外部 HTTPS 来源互斥。`GET/PATCH /admin/links/settings` 保存最多 12 条独立规则，每条最多 300 字符，并可选携带 `applicationsEnabled` 开关（缺省保留现值）。
+
+友链申请默认关闭，开关状态同时出现在 `GET /links/metadata` 与 `GET /links/applications/status`。开启后访客提交名称、地址、简介、选填联系方式与附言，经蜜罐与填写时长校验后返回 `{ requestId }`；关闭时返回 404。地址规范化规则与友链一致；已有公开同址友链或同址待审申请时返回 409，被拒绝的地址可以重新申请。申请写入博主站内通知（启用邮件时同时投递给博主），服务器不向申请人发送任何消息，联系方式只在后台展示。列表 `status` 可取 `pending/approved/rejected/handled/all`。通过时在同一事务里建立以申请编号为 `requestId` 的友链草稿，重复通过返回原草稿；同址友链已存在时返回 400 并保持待审。拒绝不记录理由，已通过的申请不能再拒绝。申请属于审核流程数据，不进入内容包。
 
 以上外部地址均拒绝凭据、控制字符、空白、反斜杠和危险协议；服务端只校验和保存，不抓取站点或图片。文本长度遵循 DTO 与浏览器 maxlength 的 UTF-16 计数，超限拒绝，不截断后悄悄保存。源码见[gallery](../src/backend/server-main/src/modules/gallery/)、[project](../src/backend/server-main/src/modules/project/)、[link](../src/backend/server-main/src/modules/link/)。
 

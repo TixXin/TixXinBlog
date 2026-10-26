@@ -36,6 +36,7 @@ import { Project } from '../entities/project.entity'
 import { Subscription } from '../entities/subscription.entity'
 import { ImagePrompt } from '../entities/image-prompt.entity'
 import { FriendLink } from '../entities/friend-link.entity'
+import { FriendLinkApplication } from '../entities/friend-link-application.entity'
 import { LinkSettings } from '../entities/link-settings.entity'
 import { Post } from '../entities/post.entity'
 import { PostFolder } from '../entities/post-folder.entity'
@@ -100,6 +101,7 @@ const ORM_ENTITIES = [
   Subscription,
   ImagePrompt,
   FriendLink,
+  FriendLinkApplication,
   LinkSettings,
 ] as const
 

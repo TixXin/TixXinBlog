@@ -66,7 +66,29 @@ describe('通知目标解析', () => {
     )
   })
 
-  it.each(['comment', 'guestbook', 'moment-comment', 'flash-comment', 'task'] as const)(
+  it('友链申请待审时带待审筛选定位，已处理时只定位到申请', async () => {
+    const em = {
+      execute: jest.fn().mockResolvedValue([
+        { id: 'app-1', state: 'pending_review' },
+        { id: 'app-2', state: 'handled' },
+      ]),
+    }
+
+    const result = await resolveNotificationTargets(em as unknown as EntityManager, [
+      { id: 'pending-note', kind: 'link-application', sourceId: 'app-1' },
+      { id: 'handled-note', kind: 'link-application', sourceId: 'app-2' },
+    ])
+
+    expect(em.execute).toHaveBeenCalledWith(expect.stringContaining('from friend_link_application'), ['app-1', 'app-2'])
+    expect(result).toEqual(
+      new Map([
+        ['pending-note', { state: 'pending_review', url: '/admin/links/applications?status=pending&focus=app-1' }],
+        ['handled-note', { state: 'handled', url: '/admin/links/applications?focus=app-2' }],
+      ]),
+    )
+  })
+
+  it.each(['comment', 'guestbook', 'moment-comment', 'flash-comment', 'link-application', 'task'] as const)(
     '%s 的业务记录缺失时保留通知并隐藏链接',
     async (kind) => {
       const em = { execute: jest.fn().mockResolvedValue([]) }

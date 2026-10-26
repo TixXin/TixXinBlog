@@ -15,7 +15,7 @@ export interface NotificationTarget {
 
 export async function resolveNotificationTargets(em: EntityManager, notifications: NotificationSource[]) {
   const result = new Map<string, NotificationTarget>()
-  for (const kind of ['comment', 'guestbook', 'moment-comment', 'flash-comment', 'task'] as const) {
+  for (const kind of ['comment', 'guestbook', 'moment-comment', 'flash-comment', 'link-application', 'task'] as const) {
     const selected = notifications.filter((item) => item.kind === kind)
     if (!selected.length) continue
     const ids = [...new Set(selected.map((item) => item.sourceId))]
@@ -29,7 +29,9 @@ export async function resolveNotificationTargets(em: EntityManager, notification
             ? `select c.id::text as id,c.moment_id as parent,case when c.deleted_at is not null or m.deleted_at is not null or c.status='hidden' then 'unavailable' when c.status='pending' then 'pending_review' when m.status<>'published' then 'unavailable' else 'available' end as state from moment_comment c join moment m on m.id=c.moment_id where c.id::text in (${parameters})`
             : kind === 'flash-comment'
               ? `select c.id::text as id,case when n.id is null or c.status='hidden' then 'unavailable' when c.status='pending' then 'pending_review' when n.is_draft or n.is_archived then 'unavailable' else 'available' end as state from flash_comment c left join flash_note n on n.id=c.flash_note_id where c.id::text in (${parameters})`
-              : `select id::text,case when state='succeeded' then 'handled' when state in ('failed','uncertain','restored') then 'failed' else 'available' end as state from background_task where id::text in (${parameters})`
+              : kind === 'link-application'
+                ? `select id::text,case when status='pending' then 'pending_review' else 'handled' end as state from friend_link_application where id::text in (${parameters})`
+                : `select id::text,case when state='succeeded' then 'handled' when state in ('failed','uncertain','restored') then 'failed' else 'available' end as state from background_task where id::text in (${parameters})`
     const rows = await em.execute<{ id: string; state: NotificationTarget['state']; parent?: string }[]>(query, ids)
     const byId = new Map(rows.map((row) => [row.id, row]))
     for (const item of selected) {
@@ -46,7 +48,9 @@ export async function resolveNotificationTargets(em: EntityManager, notification
                 ? `/admin/moments?comments=${row!.parent}&commentId=${item.sourceId}`
                 : kind === 'flash-comment'
                   ? `/admin/flash-comments?${state === 'pending_review' ? 'status=pending&' : ''}commentId=${item.sourceId}`
-                  : `/admin/operations?task=${item.sourceId}`
+                  : kind === 'link-application'
+                    ? `/admin/links/applications?${state === 'pending_review' ? 'status=pending&' : ''}focus=${item.sourceId}`
+                    : `/admin/operations?task=${item.sourceId}`
       result.set(item.id, { state, url })
     }
   }

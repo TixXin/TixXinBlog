@@ -89,6 +89,10 @@ export function auditDescriptor(path: string, method: string) {
             : method === 'POST'
               ? 'moment.create'
               : 'moment.update'
+    } else if (resourceType === 'links' && parts[2] === 'applications') {
+      resourceType = 'link-application'
+      resourceId = identifier(parts[3])
+      action = parts[4] === 'reject' ? 'link.application.reject' : 'link.application.approve'
     } else if (resourceType === 'links') {
       resourceType = 'link'
       action =

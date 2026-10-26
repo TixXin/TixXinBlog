@@ -86,11 +86,16 @@ export class LinkService {
         from friend_link where status='published' and deleted_at is null`,
     )
     const settings = await this.em.findOneOrFail(LinkSettings, { id: 'default' })
-    return { stats, rules: settings.rules }
+    return { stats, rules: settings.rules, applicationsEnabled: settings.applicationsEnabled }
   }
   async settings() {
     const settings = await this.em.findOneOrFail(LinkSettings, { id: 'default' })
-    return { rules: settings.rules, revision: settings.revision, updatedAt: settings.updatedAt.toISOString() }
+    return {
+      rules: settings.rules,
+      applicationsEnabled: settings.applicationsEnabled,
+      revision: settings.revision,
+      updatedAt: settings.updatedAt.toISOString(),
+    }
   }
   async saveSettings(input: SaveLinkSettingsDto) {
     await this.em.transactional(async (em) => {
@@ -98,6 +103,8 @@ export class LinkService {
       const settings = await em.findOneOrFail(LinkSettings, { id: 'default' }, { lockMode: LockMode.PESSIMISTIC_WRITE })
       if (settings.revision !== input.revision) throw new ConflictException(msg('link.rulesChanged'))
       settings.rules = input.rules
+      // 旧客户端不携带开关时保留现值，避免保存规则时意外改变申请状态。
+      if (input.applicationsEnabled !== undefined) settings.applicationsEnabled = input.applicationsEnabled
       settings.revision++
       settings.updatedAt = new Date()
       await em.flush()
