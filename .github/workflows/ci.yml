@@ -296,13 +296,13 @@ jobs:
         working-directory: src/frontend/web-blog
         run: echo "version=$(node -p "require('@playwright/test/package.json').version")" >> "$GITHUB_OUTPUT"
 
-      # 浏览器二进制按系统与 Playwright 版本缓存；系统库不在缓存内，命中时仍需单独安装。
+      # 浏览器二进制按系统镜像（ImageOS）与 Playwright 版本缓存，镜像升级后不复用旧系统的构建；系统库不在缓存内，命中时仍需单独安装。
       - name: Cache Playwright Chromium
         id: playwright-cache
         uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
         with:
           path: ~/.cache/ms-playwright
-          key: playwright-${{ runner.os }}-chromium-${{ steps.playwright.outputs.version }}
+          key: playwright-${{ runner.os }}-${{ env.ImageOS }}-chromium-${{ steps.playwright.outputs.version }}
 
       - name: Install Chromium
         if: steps.playwright-cache.outputs.cache-hit != 'true'
@@ -376,7 +376,7 @@ jobs:
         uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
         with:
           path: ~/.cache/ms-playwright
-          key: playwright-${{ runner.os }}-webkit-${{ steps.playwright.outputs.version }}
+          key: playwright-${{ runner.os }}-${{ env.ImageOS }}-webkit-${{ steps.playwright.outputs.version }}
 
       - name: Install WebKit
         if: steps.playwright-cache.outputs.cache-hit != 'true'
