@@ -225,17 +225,6 @@
       "count": 1
     }
   },
-  "app/composables/useFlashNotes.ts": {
-    "complexity": {
-      "count": 1
-    },
-    "max-depth": {
-      "count": 4
-    },
-    "max-lines-per-function": {
-      "count": 2
-    }
-  },
   "app/composables/useGallery.ts": {
     "complexity": {
       "count": 1
