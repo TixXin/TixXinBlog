@@ -13,7 +13,6 @@
     "src/frontend/web-blog/app/components/tab/TabSidebarFloating.vue": 565,
     "src/frontend/web-blog/app/composables/useContentBackup.ts": 407,
     "src/frontend/web-blog/app/composables/usePostEditor.ts": 347,
-    "src/frontend/web-blog/app/composables/useSiteSettingsEditor.ts": 417,
     "src/frontend/web-blog/app/composables/useTabBookmarks.ts": 305,
     "src/frontend/web-blog/app/pages/admin/maintenance.vue": 505,
     "src/frontend/web-blog/app/pages/admin/moments/index.vue": 374,
