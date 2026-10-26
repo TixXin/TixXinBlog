@@ -55,7 +55,7 @@
     "@types/node": "^25.9.8",
     "@types/sortablejs": "^1.15.9",
     "@vitest/coverage-v8": "^4.1.11",
-    "@vue/test-utils": "^2.5.0",
+    "@vue/test-utils": "^2.5.1",
     "eslint": "^10.10.0",
     "eslint-config-prettier": "^10.1.8",
     "happy-dom": "^20.14.0",
