@@ -878,17 +878,6 @@
       "count": 1
     }
   },
-  "app/pages/admin/posts/index.vue": {
-    "complexity": {
-      "count": 1
-    },
-    "max-depth": {
-      "count": 1
-    },
-    "vue/max-template-depth": {
-      "count": 7
-    }
-  },
   "app/pages/admin/taxonomy.vue": {
     "vue/max-template-depth": {
       "count": 11

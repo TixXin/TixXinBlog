@@ -19,7 +19,6 @@
     "src/frontend/web-blog/app/composables/useTabBookmarks.ts": 305,
     "src/frontend/web-blog/app/pages/admin/maintenance.vue": 505,
     "src/frontend/web-blog/app/pages/admin/moments/index.vue": 374,
-    "src/frontend/web-blog/app/pages/admin/posts/index.vue": 667,
     "src/frontend/web-blog/app/pages/admin/site.vue": 348,
     "src/frontend/web-blog/app/pages/admin/taxonomy.vue": 361
   }
