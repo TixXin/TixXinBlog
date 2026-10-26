@@ -30,7 +30,22 @@
 - 不受约束：测试（`*.spec.ts`、`*.test.ts`、`__tests__/`）、迁移、`seeders/` 样本、`mock.ts` 演示数据、类型声明。
 - `corepack pnpm lint`（及单独的 `lint:size`）运行 [scripts/check-file-size.mjs](../scripts/check-file-size.mjs)：新文件和曾经达标的文件不得超限；存量超限文件登记在 [scripts/file-size-baseline.json](../scripts/file-size-baseline.json)，只许变短。拆分后运行 `node scripts/check-file-size.mjs --update` 收紧基线，该命令只会删除条目或调低行数。
 - 修改基线中的文件时，优先顺带拆出本次触及的部分，不在超限文件里继续堆功能。
-- 单个函数建议不超过 60 行、嵌套不超过 3 层；超过时拆成具名的小函数。
+
+函数与模板的体量、通用组件的依赖边界由前后端各自的 ESLint 配置（`src/frontend/web-blog/eslint.config.mjs`、`src/backend/server-main/eslint.config.mjs`）执行，豁免范围与上面的文件体量检查相同：
+
+| 规则                     | 上限                                   | 范围                    |
+| ------------------------ | -------------------------------------- | ----------------------- |
+| `max-lines-per-function` | 60 行（含空行与注释）                  | 前后端                  |
+| `max-depth`              | 嵌套 3 层                              | 前后端                  |
+| `complexity`             | 圈复杂度 15                            | 前后端                  |
+| `max-params`             | 4 个参数，更多时改传对象               | 前后端                  |
+| `vue/max-template-depth` | 模板嵌套 8 层                          | 前端 `.vue`             |
+| `no-restricted-imports`  | 不导入 `~/features/**`                 | `app/components/common` |
+| `no-restricted-syntax`   | 不调用 `$fetch`、`useFetch` 等请求接口 | `app/components/common` |
+
+- 超过时拆成具名的小函数或子组件，不用 `eslint-disable` 注释绕过。
+- 存量违规冻结在各包根目录的 `eslint-suppressions.json`（按文件、规则记录条数），`lint` 读取它，只报告新增违规。清单只许减少条目，不许新增或调高条数；不对新违规运行 `--suppress-all` 或 `--suppress-rule`。
+- 拆分消除违规后，lint 会以「suppressions left that do not occur anymore」失败，在对应包目录运行 `corepack pnpm exec eslint . --prune-suppressions`（后端为 `eslint src mikro-orm.config.ts --prune-suppressions`）收紧清单并一起提交。该文件由 ESLint 生成，已列入 `.prettierignore`。
 
 ## 前端拆分方法
 

@@ -1,0 +1,384 @@
+{
+  "src/common/filters/all-exceptions.filter.ts": {
+    "complexity": {
+      "count": 1
+    }
+  },
+  "src/common/guards/admin-auth.guard.ts": {
+    "complexity": {
+      "count": 1
+    }
+  },
+  "src/common/guards/rate-limit.guard.ts": {
+    "complexity": {
+      "count": 1
+    }
+  },
+  "src/config/logging.ts": {
+    "max-lines-per-function": {
+      "count": 1
+    }
+  },
+  "src/modules/audit/audit-descriptor.ts": {
+    "complexity": {
+      "count": 1
+    },
+    "max-lines-per-function": {
+      "count": 1
+    }
+  },
+  "src/modules/audit/audit-gate.guard.ts": {
+    "complexity": {
+      "count": 1
+    }
+  },
+  "src/modules/audit/audit-result.ts": {
+    "complexity": {
+      "count": 1
+    },
+    "max-lines-per-function": {
+      "count": 1
+    }
+  },
+  "src/modules/auth/auth.service.ts": {
+    "complexity": {
+      "count": 1
+    },
+    "max-lines-per-function": {
+      "count": 1
+    }
+  },
+  "src/modules/backup/backup.controller.ts": {
+    "complexity": {
+      "count": 1
+    }
+  },
+  "src/modules/backup/content-export-transform.ts": {
+    "max-lines-per-function": {
+      "count": 1
+    }
+  },
+  "src/modules/backup/content-export.service.ts": {
+    "complexity": {
+      "count": 1
+    },
+    "max-lines-per-function": {
+      "count": 2
+    }
+  },
+  "src/modules/backup/content-import-flashes.ts": {
+    "max-params": {
+      "count": 1
+    }
+  },
+  "src/modules/backup/content-import-guestbook.ts": {
+    "complexity": {
+      "count": 1
+    }
+  },
+  "src/modules/backup/content-import-item-plans.ts": {
+    "max-params": {
+      "count": 2
+    }
+  },
+  "src/modules/backup/content-import-media-plan.ts": {
+    "complexity": {
+      "count": 1
+    },
+    "max-params": {
+      "count": 1
+    }
+  },
+  "src/modules/backup/content-import-media.ts": {
+    "max-params": {
+      "count": 1
+    }
+  },
+  "src/modules/backup/content-import-plan.ts": {
+    "complexity": {
+      "count": 1
+    },
+    "max-lines-per-function": {
+      "count": 1
+    },
+    "max-params": {
+      "count": 1
+    }
+  },
+  "src/modules/backup/content-import-posts.ts": {
+    "max-params": {
+      "count": 1
+    }
+  },
+  "src/modules/backup/content-import-settings.ts": {
+    "max-params": {
+      "count": 1
+    }
+  },
+  "src/modules/backup/content-import-social-plans.ts": {
+    "max-params": {
+      "count": 2
+    }
+  },
+  "src/modules/backup/content-import.service.ts": {
+    "max-lines-per-function": {
+      "count": 2
+    },
+    "max-params": {
+      "count": 3
+    }
+  },
+  "src/modules/backup/content-package-showcase.ts": {
+    "complexity": {
+      "count": 1
+    },
+    "max-lines-per-function": {
+      "count": 4
+    }
+  },
+  "src/modules/backup/content-package-site-media.ts": {
+    "complexity": {
+      "count": 2
+    },
+    "max-depth": {
+      "count": 1
+    },
+    "max-lines-per-function": {
+      "count": 1
+    }
+  },
+  "src/modules/backup/content-package-social.ts": {
+    "max-lines-per-function": {
+      "count": 2
+    }
+  },
+  "src/modules/backup/content-package-version-gate.ts": {
+    "complexity": {
+      "count": 1
+    },
+    "max-params": {
+      "count": 1
+    }
+  },
+  "src/modules/backup/content-package.ts": {
+    "max-lines-per-function": {
+      "count": 1
+    }
+  },
+  "src/modules/backup/content-relation-plan.ts": {
+    "complexity": {
+      "count": 1
+    },
+    "max-depth": {
+      "count": 1
+    },
+    "max-params": {
+      "count": 2
+    }
+  },
+  "src/modules/comment/admin-comment.service.ts": {
+    "max-lines-per-function": {
+      "count": 1
+    }
+  },
+  "src/modules/comment/comment-moderation.service.ts": {
+    "complexity": {
+      "count": 1
+    }
+  },
+  "src/modules/comment/comment.service.ts": {
+    "complexity": {
+      "count": 1
+    },
+    "max-lines-per-function": {
+      "count": 2
+    }
+  },
+  "src/modules/flash/admin-flash.service.ts": {
+    "max-depth": {
+      "count": 1
+    }
+  },
+  "src/modules/flash/flash.service.ts": {
+    "max-params": {
+      "count": 1
+    }
+  },
+  "src/modules/gallery/gallery.service.ts": {
+    "complexity": {
+      "count": 2
+    },
+    "max-lines-per-function": {
+      "count": 1
+    }
+  },
+  "src/modules/guestbook/guestbook-write.service.ts": {
+    "complexity": {
+      "count": 1
+    }
+  },
+  "src/modules/link/link.service.ts": {
+    "complexity": {
+      "count": 1
+    },
+    "max-lines-per-function": {
+      "count": 2
+    }
+  },
+  "src/modules/media/media-image.ts": {
+    "complexity": {
+      "count": 1
+    }
+  },
+  "src/modules/media/media-query.ts": {
+    "complexity": {
+      "count": 1
+    }
+  },
+  "src/modules/media/media-references.ts": {
+    "max-params": {
+      "count": 1
+    }
+  },
+  "src/modules/moment/moment-interaction.service.ts": {
+    "complexity": {
+      "count": 1
+    }
+  },
+  "src/modules/moment/moment-query.ts": {
+    "max-params": {
+      "count": 1
+    }
+  },
+  "src/modules/moment/moment-write.service.ts": {
+    "complexity": {
+      "count": 1
+    }
+  },
+  "src/modules/operations/notification-targets.ts": {
+    "complexity": {
+      "count": 1
+    }
+  },
+  "src/modules/operations/operation-config.ts": {
+    "complexity": {
+      "count": 1
+    },
+    "max-lines-per-function": {
+      "count": 1
+    },
+    "max-params": {
+      "count": 1
+    }
+  },
+  "src/modules/operations/owner-events.ts": {
+    "max-params": {
+      "count": 1
+    }
+  },
+  "src/modules/operations/task-runner.ts": {
+    "complexity": {
+      "count": 2
+    },
+    "max-lines-per-function": {
+      "count": 2
+    }
+  },
+  "src/modules/operations/worker-backup.ts": {
+    "complexity": {
+      "count": 1
+    },
+    "max-lines-per-function": {
+      "count": 1
+    }
+  },
+  "src/modules/post/admin-overview.service.ts": {
+    "max-lines-per-function": {
+      "count": 1
+    }
+  },
+  "src/modules/post/admin-post.service.ts": {
+    "complexity": {
+      "count": 1
+    },
+    "max-lines-per-function": {
+      "count": 2
+    }
+  },
+  "src/modules/post/admin-taxonomy.service.ts": {
+    "complexity": {
+      "count": 1
+    },
+    "max-depth": {
+      "count": 2
+    },
+    "max-lines-per-function": {
+      "count": 2
+    }
+  },
+  "src/modules/post/post-batch.service.ts": {
+    "max-lines-per-function": {
+      "count": 2
+    }
+  },
+  "src/modules/post/post-preview.service.ts": {
+    "complexity": {
+      "count": 1
+    }
+  },
+  "src/modules/project/project.service.ts": {
+    "complexity": {
+      "count": 1
+    }
+  },
+  "src/modules/prompts/prompts.service.ts": {
+    "complexity": {
+      "count": 1
+    }
+  },
+  "src/modules/setup/setup-helpers.ts": {
+    "complexity": {
+      "count": 1
+    }
+  },
+  "src/modules/setup/setup.service.ts": {
+    "complexity": {
+      "count": 1
+    },
+    "max-lines-per-function": {
+      "count": 1
+    }
+  },
+  "src/modules/site/site-navigation.ts": {
+    "complexity": {
+      "count": 1
+    },
+    "max-depth": {
+      "count": 9
+    },
+    "max-lines-per-function": {
+      "count": 1
+    }
+  },
+  "src/modules/site/site-settings.service.ts": {
+    "complexity": {
+      "count": 1
+    },
+    "max-lines-per-function": {
+      "count": 1
+    }
+  },
+  "src/modules/subscription/subscription-favicon.service.ts": {
+    "complexity": {
+      "count": 1
+    }
+  },
+  "src/modules/subscription/subscription.service.ts": {
+    "complexity": {
+      "count": 1
+    },
+    "max-lines-per-function": {
+      "count": 2
+    }
+  }
+}

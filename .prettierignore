@@ -1,0 +1,3 @@
+# ESLint 生成与收紧（--suppress-all / --prune-suppressions）的存量违规清单，格式由 ESLint 决定
+src/frontend/web-blog/eslint-suppressions.json
+src/backend/server-main/eslint-suppressions.json

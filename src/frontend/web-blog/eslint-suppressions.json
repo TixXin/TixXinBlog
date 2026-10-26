@@ -1,0 +1,974 @@
+{
+  "app/components/ThemeComponent.vue": {
+    "max-lines-per-function": {
+      "count": 1
+    }
+  },
+  "app/components/admin/SiteNavigationFields.vue": {
+    "max-params": {
+      "count": 1
+    }
+  },
+  "app/components/common/AppearanceDrawer.vue": {
+    "vue/max-template-depth": {
+      "count": 1
+    }
+  },
+  "app/components/common/KeyboardShortcutsHelp.vue": {
+    "vue/max-template-depth": {
+      "count": 1
+    }
+  },
+  "app/components/common/RelatedContent.vue": {
+    "no-restricted-imports": {
+      "count": 1
+    }
+  },
+  "app/components/common/SearchModal.vue": {
+    "no-restricted-imports": {
+      "count": 4
+    }
+  },
+  "app/components/common/appearance/AppearanceAnimationSection.vue": {
+    "no-restricted-imports": {
+      "count": 2
+    }
+  },
+  "app/components/common/appearance/AppearanceColorModeSection.vue": {
+    "no-restricted-imports": {
+      "count": 1
+    }
+  },
+  "app/components/common/appearance/AppearanceThemeSection.vue": {
+    "no-restricted-imports": {
+      "count": 1
+    }
+  },
+  "app/components/common/search/SearchModalGroup.vue": {
+    "no-restricted-imports": {
+      "count": 2
+    }
+  },
+  "app/components/flash/FlashAISearchModal.vue": {
+    "vue/max-template-depth": {
+      "count": 4
+    }
+  },
+  "app/components/prompt/Detail.vue": {
+    "complexity": {
+      "count": 1
+    }
+  },
+  "app/components/subscription/CardDetailDialog.vue": {
+    "vue/max-template-depth": {
+      "count": 3
+    }
+  },
+  "app/components/subscription/Chart.client.vue": {
+    "max-lines-per-function": {
+      "count": 1
+    }
+  },
+  "app/components/tab/TabCommandPalette.vue": {
+    "complexity": {
+      "count": 1
+    },
+    "vue/max-template-depth": {
+      "count": 6
+    }
+  },
+  "app/components/tab/TabImportDialog.vue": {
+    "vue/max-template-depth": {
+      "count": 2
+    }
+  },
+  "app/composables/useAdminApi.ts": {
+    "complexity": {
+      "count": 1
+    },
+    "max-depth": {
+      "count": 2
+    },
+    "max-lines-per-function": {
+      "count": 2
+    }
+  },
+  "app/composables/useAdminBatchSelection.ts": {
+    "max-lines-per-function": {
+      "count": 1
+    }
+  },
+  "app/composables/useAdminFlashes.ts": {
+    "max-lines-per-function": {
+      "count": 1
+    }
+  },
+  "app/composables/useAdminGallery.ts": {
+    "complexity": {
+      "count": 2
+    },
+    "max-lines-per-function": {
+      "count": 1
+    }
+  },
+  "app/composables/useAdminGuestbook.ts": {
+    "complexity": {
+      "count": 3
+    },
+    "max-lines-per-function": {
+      "count": 1
+    }
+  },
+  "app/composables/useAdminLinks.ts": {
+    "complexity": {
+      "count": 2
+    },
+    "max-lines-per-function": {
+      "count": 1
+    }
+  },
+  "app/composables/useAdminMarkdownImageUpload.ts": {
+    "max-lines-per-function": {
+      "count": 1
+    }
+  },
+  "app/composables/useAdminMomentEditor.ts": {
+    "complexity": {
+      "count": 2
+    },
+    "max-depth": {
+      "count": 2
+    },
+    "max-lines-per-function": {
+      "count": 2
+    }
+  },
+  "app/composables/useAdminMoments.ts": {
+    "complexity": {
+      "count": 1
+    },
+    "max-lines-per-function": {
+      "count": 1
+    }
+  },
+  "app/composables/useAdminProjects.ts": {
+    "complexity": {
+      "count": 2
+    },
+    "max-lines-per-function": {
+      "count": 1
+    }
+  },
+  "app/composables/useAdminReadResource.ts": {
+    "max-lines-per-function": {
+      "count": 1
+    }
+  },
+  "app/composables/useAdminRecordEditor.ts": {
+    "complexity": {
+      "count": 2
+    },
+    "max-depth": {
+      "count": 4
+    },
+    "max-lines-per-function": {
+      "count": 2
+    }
+  },
+  "app/composables/useAdminRecordEditor.types.ts": {
+    "max-params": {
+      "count": 2
+    }
+  },
+  "app/composables/useAdminSessions.ts": {
+    "max-lines-per-function": {
+      "count": 1
+    }
+  },
+  "app/composables/useAdminSubscriptionEditor.ts": {
+    "complexity": {
+      "count": 2
+    },
+    "max-lines-per-function": {
+      "count": 1
+    }
+  },
+  "app/composables/useAdminSubscriptions.ts": {
+    "complexity": {
+      "count": 1
+    },
+    "max-lines-per-function": {
+      "count": 1
+    }
+  },
+  "app/composables/useAppearanceSettings.ts": {
+    "max-lines-per-function": {
+      "count": 1
+    }
+  },
+  "app/composables/useArticleComments.ts": {
+    "max-lines-per-function": {
+      "count": 1
+    }
+  },
+  "app/composables/useArticleDetail.ts": {
+    "complexity": {
+      "count": 1
+    },
+    "max-lines-per-function": {
+      "count": 1
+    }
+  },
+  "app/composables/useArticleInteraction.ts": {
+    "max-lines-per-function": {
+      "count": 1
+    }
+  },
+  "app/composables/useAuditLogs.ts": {
+    "max-lines-per-function": {
+      "count": 1
+    }
+  },
+  "app/composables/useContentBackup.ts": {
+    "complexity": {
+      "count": 1
+    },
+    "max-lines-per-function": {
+      "count": 1
+    }
+  },
+  "app/composables/useContentRelationPicker.ts": {
+    "max-lines-per-function": {
+      "count": 1
+    }
+  },
+  "app/composables/useCurrentUser.ts": {
+    "max-lines-per-function": {
+      "count": 1
+    }
+  },
+  "app/composables/useDevDebugPanel.ts": {
+    "max-lines-per-function": {
+      "count": 1
+    }
+  },
+  "app/composables/useFlashNotes.ts": {
+    "complexity": {
+      "count": 1
+    },
+    "max-depth": {
+      "count": 4
+    },
+    "max-lines-per-function": {
+      "count": 2
+    }
+  },
+  "app/composables/useGallery.ts": {
+    "complexity": {
+      "count": 1
+    },
+    "max-lines-per-function": {
+      "count": 1
+    }
+  },
+  "app/composables/useGalleryRepository.ts": {
+    "max-lines-per-function": {
+      "count": 1
+    }
+  },
+  "app/composables/useGallerySettingsEditor.ts": {
+    "complexity": {
+      "count": 1
+    },
+    "max-depth": {
+      "count": 2
+    },
+    "max-lines-per-function": {
+      "count": 1
+    }
+  },
+  "app/composables/useGuestbookFeed.ts": {
+    "complexity": {
+      "count": 1
+    },
+    "max-lines-per-function": {
+      "count": 2
+    }
+  },
+  "app/composables/useGuestbookInteractions.ts": {
+    "complexity": {
+      "count": 1
+    },
+    "max-lines-per-function": {
+      "count": 2
+    }
+  },
+  "app/composables/useGuestbookRepository.ts": {
+    "max-lines-per-function": {
+      "count": 1
+    }
+  },
+  "app/composables/useImageState.ts": {
+    "max-lines-per-function": {
+      "count": 1
+    }
+  },
+  "app/composables/useKeyboardShortcuts.ts": {
+    "complexity": {
+      "count": 1
+    },
+    "max-lines-per-function": {
+      "count": 2
+    }
+  },
+  "app/composables/useLayoutTheme.ts": {
+    "max-lines-per-function": {
+      "count": 1
+    }
+  },
+  "app/composables/useLikes.ts": {
+    "max-lines-per-function": {
+      "count": 1
+    }
+  },
+  "app/composables/useLinkSettingsEditor.ts": {
+    "complexity": {
+      "count": 2
+    },
+    "max-depth": {
+      "count": 1
+    },
+    "max-lines-per-function": {
+      "count": 1
+    }
+  },
+  "app/composables/useLinkSiteInfo.ts": {
+    "max-lines-per-function": {
+      "count": 1
+    }
+  },
+  "app/composables/useLinks.ts": {
+    "max-lines-per-function": {
+      "count": 1
+    }
+  },
+  "app/composables/useLocalLinkDraft.ts": {
+    "max-lines-per-function": {
+      "count": 1
+    }
+  },
+  "app/composables/useLocalSubscriptions.ts": {
+    "complexity": {
+      "count": 1
+    },
+    "max-lines-per-function": {
+      "count": 1
+    }
+  },
+  "app/composables/useMediaLibrary.ts": {
+    "complexity": {
+      "count": 1
+    },
+    "max-depth": {
+      "count": 5
+    },
+    "max-lines-per-function": {
+      "count": 1
+    }
+  },
+  "app/composables/useMediaUpload.ts": {
+    "max-lines-per-function": {
+      "count": 3
+    }
+  },
+  "app/composables/useModalFocus.ts": {
+    "max-lines-per-function": {
+      "count": 2
+    }
+  },
+  "app/composables/useMomentFeed.ts": {
+    "complexity": {
+      "count": 1
+    },
+    "max-lines-per-function": {
+      "count": 1
+    }
+  },
+  "app/composables/useMomentFilters.ts": {
+    "max-lines-per-function": {
+      "count": 1
+    }
+  },
+  "app/composables/useMomentInteractions.ts": {
+    "complexity": {
+      "count": 1
+    },
+    "max-lines-per-function": {
+      "count": 1
+    }
+  },
+  "app/composables/useMomentOverview.ts": {
+    "max-lines-per-function": {
+      "count": 1
+    }
+  },
+  "app/composables/useMomentRepository.ts": {
+    "max-lines-per-function": {
+      "count": 1
+    }
+  },
+  "app/composables/usePageMotion.ts": {
+    "max-lines-per-function": {
+      "count": 2
+    }
+  },
+  "app/composables/usePageScrollRestoration.ts": {
+    "max-lines-per-function": {
+      "count": 2
+    }
+  },
+  "app/composables/usePostArchive.ts": {
+    "max-lines-per-function": {
+      "count": 1
+    }
+  },
+  "app/composables/usePostBatch.ts": {
+    "max-lines-per-function": {
+      "count": 1
+    }
+  },
+  "app/composables/usePostEditor.ts": {
+    "max-depth": {
+      "count": 2
+    },
+    "max-lines-per-function": {
+      "count": 1
+    }
+  },
+  "app/composables/usePostList.ts": {
+    "complexity": {
+      "count": 1
+    },
+    "max-lines-per-function": {
+      "count": 1
+    }
+  },
+  "app/composables/usePostListPagination.ts": {
+    "max-lines-per-function": {
+      "count": 1
+    }
+  },
+  "app/composables/usePostListRoute.ts": {
+    "max-lines-per-function": {
+      "count": 1
+    }
+  },
+  "app/composables/usePostMetadata.ts": {
+    "max-lines-per-function": {
+      "count": 1
+    }
+  },
+  "app/composables/usePostPreviewLink.ts": {
+    "max-lines-per-function": {
+      "count": 1
+    }
+  },
+  "app/composables/usePostRecovery.ts": {
+    "max-lines-per-function": {
+      "count": 1
+    }
+  },
+  "app/composables/usePostTaxonomyRoute.ts": {
+    "max-lines-per-function": {
+      "count": 1
+    }
+  },
+  "app/composables/useProjects.ts": {
+    "max-lines-per-function": {
+      "count": 1
+    }
+  },
+  "app/composables/usePromptDetail.ts": {
+    "complexity": {
+      "count": 1
+    },
+    "max-lines-per-function": {
+      "count": 1
+    }
+  },
+  "app/composables/usePromptDrafts.ts": {
+    "max-lines-per-function": {
+      "count": 1
+    }
+  },
+  "app/composables/usePromptEditor.ts": {
+    "complexity": {
+      "count": 2
+    },
+    "max-depth": {
+      "count": 3
+    },
+    "max-lines-per-function": {
+      "count": 2
+    }
+  },
+  "app/composables/usePromptRepository.ts": {
+    "complexity": {
+      "count": 1
+    },
+    "max-lines-per-function": {
+      "count": 1
+    }
+  },
+  "app/composables/usePromptSearch.ts": {
+    "max-lines-per-function": {
+      "count": 1
+    }
+  },
+  "app/composables/usePromptSeo.ts": {
+    "complexity": {
+      "count": 1
+    },
+    "max-lines-per-function": {
+      "count": 1
+    }
+  },
+  "app/composables/usePrompts.ts": {
+    "max-lines-per-function": {
+      "count": 1
+    }
+  },
+  "app/composables/usePublicReadData.ts": {
+    "complexity": {
+      "count": 1
+    },
+    "max-lines-per-function": {
+      "count": 1
+    }
+  },
+  "app/composables/useReadingProgress.ts": {
+    "max-lines-per-function": {
+      "count": 1
+    }
+  },
+  "app/composables/useSearch.ts": {
+    "max-lines-per-function": {
+      "count": 2
+    },
+    "max-params": {
+      "count": 2
+    }
+  },
+  "app/composables/useSiteInfo.ts": {
+    "max-lines-per-function": {
+      "count": 1
+    }
+  },
+  "app/composables/useSiteSettingsEditor.ts": {
+    "complexity": {
+      "count": 1
+    },
+    "max-depth": {
+      "count": 2
+    },
+    "max-lines-per-function": {
+      "count": 1
+    }
+  },
+  "app/composables/useSubscriptionRepository.ts": {
+    "max-lines-per-function": {
+      "count": 1
+    }
+  },
+  "app/composables/useSubscriptions.ts": {
+    "max-lines-per-function": {
+      "count": 1
+    }
+  },
+  "app/composables/useTabBookmarks.ts": {
+    "complexity": {
+      "count": 1
+    },
+    "max-depth": {
+      "count": 3
+    },
+    "max-lines-per-function": {
+      "count": 1
+    }
+  },
+  "app/composables/useTheme.ts": {
+    "max-lines-per-function": {
+      "count": 1
+    }
+  },
+  "app/composables/useThemeRuntime.ts": {
+    "max-depth": {
+      "count": 2
+    },
+    "max-lines-per-function": {
+      "count": 1
+    }
+  },
+  "app/features/article/commentModeration.ts": {
+    "max-params": {
+      "count": 1
+    }
+  },
+  "app/features/article/useAdminComments.ts": {
+    "complexity": {
+      "count": 1
+    },
+    "max-lines-per-function": {
+      "count": 1
+    }
+  },
+  "app/features/article/useArticleDetailSeo.ts": {
+    "max-lines-per-function": {
+      "count": 1
+    }
+  },
+  "app/features/audit/types.ts": {
+    "complexity": {
+      "count": 1
+    }
+  },
+  "app/features/client-error/reporter.ts": {
+    "max-lines-per-function": {
+      "count": 1
+    }
+  },
+  "app/features/dev/useDevDrawerDrag.ts": {
+    "max-lines-per-function": {
+      "count": 1
+    }
+  },
+  "app/features/flash/useFlashActions.ts": {
+    "max-lines-per-function": {
+      "count": 1
+    }
+  },
+  "app/features/flash/useFlashArchiveState.ts": {
+    "max-lines-per-function": {
+      "count": 1
+    }
+  },
+  "app/features/flash/useFlashCalendarNav.ts": {
+    "max-lines-per-function": {
+      "count": 1
+    }
+  },
+  "app/features/flash/useFlashCardInteractions.ts": {
+    "max-lines-per-function": {
+      "count": 1
+    }
+  },
+  "app/features/flash/useFlashDetail.ts": {
+    "max-lines-per-function": {
+      "count": 1
+    }
+  },
+  "app/features/flash/useFlashEditorForm.ts": {
+    "max-lines-per-function": {
+      "count": 1
+    }
+  },
+  "app/features/flash/useFlashFilterState.ts": {
+    "max-lines-per-function": {
+      "count": 1
+    }
+  },
+  "app/features/flash/useFlashOverviewState.ts": {
+    "max-lines-per-function": {
+      "count": 1
+    }
+  },
+  "app/features/gallery/editor.ts": {
+    "complexity": {
+      "count": 3
+    }
+  },
+  "app/features/guestbook/display.ts": {
+    "max-params": {
+      "count": 1
+    }
+  },
+  "app/features/guestbook/useGuestbookJump.ts": {
+    "max-depth": {
+      "count": 2
+    },
+    "max-lines-per-function": {
+      "count": 1
+    }
+  },
+  "app/features/guestbook/useGuestbookScroll.ts": {
+    "complexity": {
+      "count": 1
+    },
+    "max-lines-per-function": {
+      "count": 1
+    }
+  },
+  "app/features/guestbook/useMessageInputResize.ts": {
+    "max-lines-per-function": {
+      "count": 1
+    }
+  },
+  "app/features/link/editor.ts": {
+    "complexity": {
+      "count": 3
+    }
+  },
+  "app/features/moment/editor.ts": {
+    "complexity": {
+      "count": 2
+    },
+    "max-lines-per-function": {
+      "count": 1
+    }
+  },
+  "app/features/moment/useAdminMomentComments.ts": {
+    "complexity": {
+      "count": 2
+    },
+    "max-lines-per-function": {
+      "count": 1
+    }
+  },
+  "app/features/moment/useMomentCalendar.ts": {
+    "max-lines-per-function": {
+      "count": 1
+    }
+  },
+  "app/features/post/commentController.ts": {
+    "max-lines-per-function": {
+      "count": 1
+    }
+  },
+  "app/features/post/useHomeSeo.ts": {
+    "max-lines-per-function": {
+      "count": 1
+    }
+  },
+  "app/features/project/editor.ts": {
+    "complexity": {
+      "count": 3
+    }
+  },
+  "app/features/prompt/editor.ts": {
+    "complexity": {
+      "count": 2
+    }
+  },
+  "app/features/prompt/usePromptDataFeed.ts": {
+    "max-params": {
+      "count": 1
+    }
+  },
+  "app/features/prompt/usePromptEditorSession.ts": {
+    "max-lines-per-function": {
+      "count": 1
+    }
+  },
+  "app/features/prompt/usePromptPersistence.ts": {
+    "max-lines-per-function": {
+      "count": 1
+    }
+  },
+  "app/features/search/flash.ts": {
+    "max-params": {
+      "count": 1
+    }
+  },
+  "app/features/search/useSearchModalKeyboard.ts": {
+    "complexity": {
+      "count": 1
+    },
+    "max-lines-per-function": {
+      "count": 1
+    }
+  },
+  "app/features/search/useSearchModalNavigation.ts": {
+    "max-lines-per-function": {
+      "count": 1
+    }
+  },
+  "app/features/search/useSearchPageKeyboard.ts": {
+    "max-lines-per-function": {
+      "count": 1
+    }
+  },
+  "app/features/setup/useSetupWizard.ts": {
+    "max-lines-per-function": {
+      "count": 1
+    }
+  },
+  "app/features/site/editor.ts": {
+    "complexity": {
+      "count": 1
+    },
+    "max-lines-per-function": {
+      "count": 1
+    }
+  },
+  "app/features/subscription/editor.ts": {
+    "complexity": {
+      "count": 3
+    }
+  },
+  "app/features/subscription/local.ts": {
+    "complexity": {
+      "count": 2
+    },
+    "max-lines-per-function": {
+      "count": 1
+    }
+  },
+  "app/features/subscription/useSubscriptionEditorRecovery.ts": {
+    "max-lines-per-function": {
+      "count": 1
+    }
+  },
+  "app/features/subscription/useSubscriptionsPage.ts": {
+    "max-lines-per-function": {
+      "count": 1
+    }
+  },
+  "app/features/tab/export.ts": {
+    "complexity": {
+      "count": 1
+    }
+  },
+  "app/features/tab/import-netscape.ts": {
+    "complexity": {
+      "count": 1
+    }
+  },
+  "app/features/tab/useTabBookmarkOperations.ts": {
+    "max-lines-per-function": {
+      "count": 1
+    }
+  },
+  "app/features/tab/useTabContextMenu.ts": {
+    "max-lines-per-function": {
+      "count": 2
+    }
+  },
+  "app/features/tab/useTabPaletteActions.ts": {
+    "max-lines-per-function": {
+      "count": 1
+    }
+  },
+  "app/features/tab/useTabWallpaperSettings.ts": {
+    "max-lines-per-function": {
+      "count": 1
+    }
+  },
+  "app/pages/admin/flash-comments.vue": {
+    "complexity": {
+      "count": 2
+    }
+  },
+  "app/pages/admin/moment-comments.vue": {
+    "complexity": {
+      "count": 1
+    }
+  },
+  "app/pages/admin/notifications.vue": {
+    "complexity": {
+      "count": 1
+    }
+  },
+  "app/pages/admin/posts/index.vue": {
+    "complexity": {
+      "count": 1
+    },
+    "max-depth": {
+      "count": 1
+    },
+    "vue/max-template-depth": {
+      "count": 7
+    }
+  },
+  "app/pages/admin/taxonomy.vue": {
+    "vue/max-template-depth": {
+      "count": 11
+    }
+  },
+  "app/pages/flash/[id].vue": {
+    "vue/max-template-depth": {
+      "count": 1
+    }
+  },
+  "app/pages/search.vue": {
+    "vue/max-template-depth": {
+      "count": 10
+    }
+  },
+  "app/plugins/image-motion.client.ts": {
+    "max-lines-per-function": {
+      "count": 1
+    }
+  },
+  "app/utils/articleMarkdown.ts": {
+    "max-params": {
+      "count": 3
+    }
+  },
+  "app/utils/colorMotion.ts": {
+    "max-lines-per-function": {
+      "count": 1
+    }
+  },
+  "app/utils/localPersistence.ts": {
+    "max-depth": {
+      "count": 1
+    }
+  },
+  "app/utils/loginPanelShape.ts": {
+    "complexity": {
+      "count": 1
+    },
+    "max-lines-per-function": {
+      "count": 1
+    }
+  },
+  "app/utils/markdownLinks.ts": {
+    "complexity": {
+      "count": 1
+    },
+    "max-depth": {
+      "count": 3
+    }
+  },
+  "app/utils/postPublishing.ts": {
+    "complexity": {
+      "count": 1
+    }
+  },
+  "app/utils/postRecovery.ts": {
+    "complexity": {
+      "count": 1
+    }
+  },
+  "app/utils/publicReadCache.ts": {
+    "complexity": {
+      "count": 1
+    },
+    "max-lines-per-function": {
+      "count": 1
+    },
+    "max-params": {
+      "count": 1
+    }
+  },
+  "app/utils/scrollbarMask.ts": {
+    "complexity": {
+      "count": 1
+    }
+  },
+  "themes/nexus/app/components/RootLayout.vue": {
+    "vue/max-template-depth": {
+      "count": 1
+    }
+  }
+}
