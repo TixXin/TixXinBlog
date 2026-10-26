@@ -13,33 +13,28 @@ import { LinkSettings } from '../../entities/link-settings.entity'
 import type { ContentImportPlan } from '../../entities/content-import.entity'
 import type { ContentPackage, PackageGalleryPhoto, PackagePost, PackageProject } from './content-package'
 import { canonicalTaxonomyLabel } from '../post/taxonomy-aliases'
-import type { MediaStorage } from '../media/media-storage'
-import type { ContentExportService } from './content-export.service'
-import { guestbookImportPlan } from './content-guestbook-plan'
 import { createRelationHasher, makeRelationMapping } from './content-relation-plan'
 import type { ContentRelationType } from '../../common/types/content-relation'
 import { zh } from '../../common/i18n'
 import {
   calculateImportBasis,
-  flashContentHash,
   galleryContentHash,
-  momentContentHash,
   postContentHash,
   projectContentHash,
   promptContentHash,
   subscriptionContentHash,
 } from './content-import-hashes'
 import { makeMediaImportPlan } from './content-import-media-plan'
-import { buildFlashPlans, buildMomentPlans, buildPostPlans } from './content-import-social-plans'
 import {
-  buildGalleryPlans,
-  buildLinkPlans,
-  buildProjectPlans,
-  buildPromptPlans,
-  buildSubscriptionPlans,
-} from './content-import-item-plans'
+  buildShowcaseRowPlans,
+  buildSocialRowPlans,
+  type ContentPlanParams,
+  type PlanContext,
+} from './content-import-plan-rows'
+import { assembleContentPlan } from './content-import-plan-summary'
 
 export { promptContentHash, subscriptionContentHash }
+export type { ContentPlanParams }
 
 export async function normalizedPost(em: EntityManager, values: PackagePost['values']) {
   return {
@@ -51,15 +46,29 @@ export async function normalizedPost(em: EntityManager, values: PackagePost['val
   }
 }
 
-export async function makeContentPlan(
-  em: EntityManager,
-  exporter: ContentExportService,
-  storage: MediaStorage,
-  input: ContentPackage,
-  strategy: 'skip' | 'copy',
-  includeSettings: boolean,
-  ticket: string,
-): Promise<ContentImportPlan> {
+export async function makeContentPlan(params: ContentPlanParams): Promise<ContentImportPlan> {
+  const { em, storage, input, includeSettings } = params
+  const context = await loadPlanContext(params)
+  const errors: string[] = []
+  const requiredValues: unknown[] = []
+  const rowInput = { params, context, errors, requiredValues }
+  const social = await buildSocialRowPlans(rowInput)
+  const showcase = buildShowcaseRowPlans(rowInput)
+  const media = await makeMediaImportPlan(input, context.current, requiredValues, storage, includeSettings, errors)
+  await checkTaxonomyLabels(em, input, errors)
+  const relations = makeRelationMapping(
+    context.current,
+    input,
+    { post: social.posts.postPlans, project: showcase.projects, gallery: showcase.gallery },
+    context.currentHash,
+    (type, id) => (type === 'post' ? social.sourcePostHashes.get(id)! : context.incomingHash(type, id)),
+  )
+  errors.push(...relations.errors)
+  return assembleContentPlan({ context, social, showcase, media, relations, errors, includeSettings })
+}
+
+/** 预览绑定的当前快照、地址、目录别名、设置修订与内容上下文。 */
+async function loadPlanContext({ em, exporter, input, includeSettings }: ContentPlanParams): Promise<PlanContext> {
   const current = await exporter.snapshot(false, em)
   const hashBase = (type: ContentRelationType, values: unknown) =>
     type === 'post'
@@ -90,90 +99,11 @@ export async function makeContentPlan(
     gallerySettings,
     linkSettings,
   })
-  const existingPosts = new Set(current.posts.map((post) => currentHash('post', post.sourceId)))
-  const existingFlashes = new Set(current.flashes.map((flash) => flashContentHash(flash.values)))
-  const currentPostHashes = new Map(current.posts.map((post) => [post.sourceId, currentHash('post', post.sourceId)]))
-  const sourcePostHashes = new Map<number, string>()
-  const existingMoments = new Set(
-    current.moments
-      .filter((note) => !note.deleted)
-      .map((note) =>
-        momentContentHash(
-          note.values,
-          note.values.linkedArticleId ? (currentPostHashes.get(note.values.linkedArticleId) ?? null) : null,
-        ),
-      ),
-  )
-  const occupiedSlugs = new Set(addresses.map((address) => address.slug))
-  const errors: string[] = []
-  const requiredValues: unknown[] = []
+  return { current, currentHash, incomingHash, addresses, site, policy, gallerySettings, linkSettings, basis }
+}
 
-  const { postPlans, comments: postComments } = await buildPostPlans(
-    em,
-    input.posts,
-    incomingHash,
-    existingPosts,
-    occupiedSlugs,
-    strategy,
-    ticket,
-    errors,
-    requiredValues,
-    sourcePostHashes,
-  )
-
-  const { flashPlans, comments: flashComments } = buildFlashPlans(
-    input.flashes,
-    strategy,
-    existingFlashes,
-    requiredValues,
-  )
-
-  const { momentPlans, comments: momentComments } = buildMomentPlans(
-    input.moments ?? [],
-    strategy,
-    existingMoments,
-    sourcePostHashes,
-    currentPostHashes,
-    current.posts,
-    postPlans,
-    requiredValues,
-    errors,
-  )
-
-  const guestbookPlans = guestbookImportPlan(current.guestbook, input.guestbook ?? [], strategy)
-  const guestbookById = new Map((input.guestbook ?? []).map((message) => [message.sourceId, message]))
-  for (const plan of guestbookPlans) {
-    const source = guestbookById.get(plan.sourceId)!
-    if (!plan.skip && !source.deleted) requiredValues.push(source.avatar)
-  }
-
-  const existingGallery = new Set(
-    current.gallery.filter((photo) => !photo.deleted).map((photo) => currentHash('gallery', photo.sourceId)),
-  )
-  const galleryPlans = buildGalleryPlans(input.gallery ?? [], strategy, existingGallery, incomingHash, requiredValues)
-
-  const existingProjects = new Set(
-    current.projects.filter((project) => !project.deleted).map((project) => currentHash('project', project.sourceId)),
-  )
-  const projectPlans = buildProjectPlans(input.projects ?? [], strategy, existingProjects, incomingHash, requiredValues)
-
-  const occupiedLinks = new Set(current.links.filter((link) => !link.deleted).map((link) => link.values.url))
-  const linkPlans = buildLinkPlans(input.links ?? [], strategy, occupiedLinks, requiredValues)
-
-  const existingPrompts = new Set((current.prompts ?? []).map((prompt) => promptContentHash(prompt.values)))
-  const promptPlans = buildPromptPlans(input.prompts ?? [], strategy, existingPrompts, requiredValues)
-
-  const existingSubscriptions = new Set(
-    (current.subscriptions ?? []).map((subscription) => subscriptionContentHash(subscription.values)),
-  )
-  const subscriptionPlans = buildSubscriptionPlans(
-    input.subscriptions ?? [],
-    strategy,
-    existingSubscriptions,
-    requiredValues,
-  )
-
-  const media = await makeMediaImportPlan(input, current, requiredValues, storage, includeSettings, errors)
+/** 包内专栏与标签须能映射到现有目录；逐个顺序核对，错误按原文登记。 */
+async function checkTaxonomyLabels(em: EntityManager, input: ContentPackage, errors: string[]) {
   for (const label of input.folders) {
     try {
       await canonicalTaxonomyLabel(em, 'folders', label)
@@ -187,59 +117,5 @@ export async function makeContentPlan(
     } catch {
       errors.push(zh('backup.planTagUnmapped', { label: tag.label }))
     }
-  }
-  const relations = makeRelationMapping(
-    current,
-    input,
-    { post: postPlans, project: projectPlans, gallery: galleryPlans },
-    currentHash,
-    (type, id) => (type === 'post' ? sourcePostHashes.get(id)! : incomingHash(type, id)),
-  )
-  errors.push(...relations.errors)
-  return {
-    basis,
-    relationMapping: relations.mapping,
-    omittedRelations: relations.omitted,
-    ready: errors.length === 0,
-    errors: [...new Set(errors)],
-    posts: postPlans,
-    flashes: flashPlans,
-    moments: momentPlans,
-    guestbook: guestbookPlans,
-    gallery: galleryPlans,
-    projects: projectPlans,
-    links: linkPlans,
-    prompts: promptPlans,
-    subscriptions: subscriptionPlans,
-    media,
-    counts: {
-      posts: postPlans.filter((item) => !item.skip).length,
-      flashes: flashPlans.filter((item) => !item.skip).length,
-      moments: momentPlans.filter((item) => !item.skip).length,
-      guestbook: guestbookPlans.filter((item) => !item.skip).length,
-      gallery: galleryPlans.filter((item) => !item.skip).length,
-      projects: projectPlans.filter((item) => !item.skip).length,
-      links: linkPlans.filter((item) => !item.skip).length,
-      prompts: promptPlans.filter((item) => !item.skip).length,
-      subscriptions: subscriptionPlans.filter((item) => !item.skip).length,
-      comments: postComments + flashComments + momentComments,
-      skipped:
-        postPlans.filter((item) => item.skip).length +
-        flashPlans.filter((item) => item.skip).length +
-        momentPlans.filter((item) => item.skip).length +
-        guestbookPlans.filter((item) => item.skip).length +
-        galleryPlans.filter((item) => item.skip).length +
-        projectPlans.filter((item) => item.skip).length +
-        linkPlans.filter((item) => item.skip).length +
-        promptPlans.filter((item) => item.skip).length +
-        subscriptionPlans.filter((item) => item.skip).length,
-      media: media.filter((item) => item.create).length,
-      files: media.filter((item) => item.writeFile).length,
-      settings: includeSettings,
-    },
-    siteRevision: site.revision,
-    policyRevision: policy.revision,
-    gallerySettingsRevision: gallerySettings.revision,
-    linkSettingsRevision: linkSettings.revision,
   }
 }

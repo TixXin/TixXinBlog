@@ -6,7 +6,7 @@ import { EntityManager } from '@mikro-orm/postgresql'
 import { IsolationLevel, LockMode } from '@mikro-orm/core'
 import { BadRequestException, ConflictException, Injectable, NotFoundException } from '@nestjs/common'
 import { createHash } from 'node:crypto'
-import { ContentImport } from '../../entities/content-import.entity'
+import { ContentImport, type ContentImportPlan } from '../../entities/content-import.entity'
 import { AdminSession } from '../../entities/admin-session.entity'
 import { MediaStorage } from '../media/media-storage'
 import { lockMedia } from '../media/media-references'
@@ -25,6 +25,14 @@ import { applyImportPayload, assertUploadFileValid, handleImportFailure } from '
 
 type Admin = { id: string; sessionVersion: number; sessionId: string }
 type Options = { requestId: string; strategy: 'skip' | 'copy'; includeSettings: boolean }
+type ExecuteInput = { id: string; acknowledgement: string; confirmation: string; admin: Admin; locale?: ApiLocale }
+type ApplyInput = {
+  em: EntityManager
+  job: ContentImport
+  current: ContentImportPlan
+  written: string[]
+  locale: ApiLocale
+}
 
 @Injectable()
 export class ContentImportService {
@@ -109,15 +117,15 @@ export class ContentImportService {
             throw new ConflictException(msg('backup.uploadIdConflict'))
           return this.dto(duplicate, locale)
         }
-        const plan = await makeContentPlan(
+        const plan = await makeContentPlan({
           em,
-          this.exporter,
-          this.storage,
-          payload,
-          input.strategy,
-          input.includeSettings,
-          input.requestId,
-        )
+          exporter: this.exporter,
+          storage: this.storage,
+          input: payload,
+          strategy: input.strategy,
+          includeSettings: input.includeSettings,
+          ticket: input.requestId,
+        })
         const job = em.create(ContentImport, {
           id: input.requestId,
           actorId: admin.id,
@@ -146,15 +154,15 @@ export class ContentImportService {
       if (!job) throw new NotFoundException(msg('backup.importTicketNotFound'))
       if (job.completedAt) return this.dto(job, locale)
       if (!job.payload || job.expiresAt <= new Date()) throw new BadRequestException(msg('backup.packageExpired'))
-      job.plan = await makeContentPlan(
+      job.plan = await makeContentPlan({
         em,
-        this.exporter,
-        this.storage,
-        job.payload,
-        job.strategy,
-        job.includeSettings,
-        id,
-      )
+        exporter: this.exporter,
+        storage: this.storage,
+        input: job.payload,
+        strategy: job.strategy,
+        includeSettings: job.includeSettings,
+        ticket: id,
+      })
       job.expiresAt = new Date(Date.now() + 15 * 60000)
       job.sessionVersion = admin.sessionVersion
       job.lastError = undefined
@@ -171,16 +179,11 @@ export class ContentImportService {
     admin: Admin,
     locale: ApiLocale = DEFAULT_API_LOCALE,
   ) {
-    return this.execute(id, acknowledgement, confirmation, admin, locale)
+    return this.execute({ id, acknowledgement, confirmation, admin, locale })
   }
 
-  async execute(
-    id: string,
-    acknowledgement: string,
-    confirmation: string,
-    admin: Admin,
-    locale: ApiLocale = DEFAULT_API_LOCALE,
-  ) {
+  async execute(input: ExecuteInput) {
+    const { id, acknowledgement, admin, locale = DEFAULT_API_LOCALE } = input
     // 确认短语是接口契约，保持中文；前端负责按语言显示。
     if (acknowledgement !== '导入为新草稿') throw new BadRequestException(msg('backup.confirmDraftImport'))
     const initial = await this.em.findOne(ContentImport, { id, actorId: admin.id })
@@ -193,67 +196,7 @@ export class ContentImportService {
     )
     const written: string[] = []
     try {
-      return await this.em.transactional(async (em) => {
-        await lockTaxonomy(em)
-        await lockMedia(em)
-        await lockGuestbook(em)
-        const job = await em.findOneOrFail(
-          ContentImport,
-          { id, actorId: admin.id },
-          { lockMode: LockMode.PESSIMISTIC_WRITE, refresh: true },
-        )
-        if (job.completedAt) return this.dto(job, locale)
-        if (confirmation !== packageHash(job.plan)) throw new ConflictException(msg('backup.previewUpdated'))
-        if (!job.payload || job.expiresAt <= new Date() || job.sessionVersion !== admin.sessionVersion)
-          throw new BadRequestException(msg('backup.previewInvalid'))
-        if (
-          !(await em.count(AdminSession, {
-            id: admin.sessionId,
-            adminUser: admin.id,
-            revokedAt: null,
-            expiresAt: { $gt: new Date() },
-          }))
-        )
-          throw new ConflictException(msg('backup.sessionInvalidNotStarted'))
-        const current = await makeContentPlan(
-          em,
-          this.exporter,
-          this.storage,
-          job.payload,
-          job.strategy,
-          job.includeSettings,
-          id,
-        )
-        if (!current.ready)
-          throw new ConflictException(
-            current.errors[0] ? rethrowable(current.errors[0]) : msg('backup.importConditionsUnmet'),
-          )
-        if (!job.plan.ready || current.basis !== job.plan.basis)
-          throw new ConflictException(msg('backup.targetChanged'))
-        try {
-          job.result = await applyImportPayload({
-            em,
-            storage: this.storage,
-            posts: this.posts,
-            flashes: this.flashes,
-            sites: this.sites,
-            comments: this.comments,
-            current,
-            payload: job.payload,
-            written,
-            includeSettings: job.includeSettings,
-          })
-          job.completedAt = new Date()
-          job.payload = undefined
-          job.lastError = undefined
-          await em.flush()
-          return this.dto(job, locale)
-        } catch (error) {
-          // 事务仍持有媒体锁，只清理本次新写入的文件，不触碰已有文件。
-          for (const key of written.splice(0)) await this.storage.remove(key).catch(() => undefined)
-          throw error
-        }
-      })
+      return await this.em.transactional((em) => this.runImport(em, { ...input, locale }, written))
     } catch (error) {
       // 提交结果不确定时先核对持久化结果；不能删除可能已经提交并被引用的文件。
       return handleImportFailure({
@@ -265,6 +208,74 @@ export class ContentImportService {
         error,
         locale,
       })
+    }
+  }
+
+  /** 在迁入事务内加锁、重新核对票据与计划，再写入新草稿。 */
+  private async runImport(em: EntityManager, input: Required<ExecuteInput>, written: string[]) {
+    const { id, confirmation, admin, locale } = input
+    await lockTaxonomy(em)
+    await lockMedia(em)
+    await lockGuestbook(em)
+    const job = await em.findOneOrFail(
+      ContentImport,
+      { id, actorId: admin.id },
+      { lockMode: LockMode.PESSIMISTIC_WRITE, refresh: true },
+    )
+    if (job.completedAt) return this.dto(job, locale)
+    if (confirmation !== packageHash(job.plan)) throw new ConflictException(msg('backup.previewUpdated'))
+    if (!job.payload || job.expiresAt <= new Date() || job.sessionVersion !== admin.sessionVersion)
+      throw new BadRequestException(msg('backup.previewInvalid'))
+    if (
+      !(await em.count(AdminSession, {
+        id: admin.sessionId,
+        adminUser: admin.id,
+        revokedAt: null,
+        expiresAt: { $gt: new Date() },
+      }))
+    )
+      throw new ConflictException(msg('backup.sessionInvalidNotStarted'))
+    const current = await makeContentPlan({
+      em,
+      exporter: this.exporter,
+      storage: this.storage,
+      input: job.payload,
+      strategy: job.strategy,
+      includeSettings: job.includeSettings,
+      ticket: id,
+    })
+    if (!current.ready)
+      throw new ConflictException(
+        current.errors[0] ? rethrowable(current.errors[0]) : msg('backup.importConditionsUnmet'),
+      )
+    if (!job.plan.ready || current.basis !== job.plan.basis) throw new ConflictException(msg('backup.targetChanged'))
+    return this.applyImport({ em, job, current, written, locale })
+  }
+
+  private async applyImport(params: ApplyInput) {
+    const { em, job, current, written, locale } = params
+    try {
+      job.result = await applyImportPayload({
+        em,
+        storage: this.storage,
+        posts: this.posts,
+        flashes: this.flashes,
+        sites: this.sites,
+        comments: this.comments,
+        current,
+        payload: job.payload!,
+        written,
+        includeSettings: job.includeSettings,
+      })
+      job.completedAt = new Date()
+      job.payload = undefined
+      job.lastError = undefined
+      await em.flush()
+      return this.dto(job, locale)
+    } catch (error) {
+      // 事务仍持有媒体锁，只清理本次新写入的文件，不触碰已有文件。
+      for (const key of written.splice(0)) await this.storage.remove(key).catch(() => undefined)
+      throw error
     }
   }
 }

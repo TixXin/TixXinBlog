@@ -58,14 +58,6 @@
       "count": 1
     }
   },
-  "src/modules/backup/content-export.service.ts": {
-    "complexity": {
-      "count": 1
-    },
-    "max-lines-per-function": {
-      "count": 2
-    }
-  },
   "src/modules/backup/content-import-flashes.ts": {
     "max-params": {
       "count": 1
@@ -94,17 +86,6 @@
       "count": 1
     }
   },
-  "src/modules/backup/content-import-plan.ts": {
-    "complexity": {
-      "count": 1
-    },
-    "max-lines-per-function": {
-      "count": 1
-    },
-    "max-params": {
-      "count": 1
-    }
-  },
   "src/modules/backup/content-import-posts.ts": {
     "max-params": {
       "count": 1
@@ -121,11 +102,8 @@
     }
   },
   "src/modules/backup/content-import.service.ts": {
-    "max-lines-per-function": {
-      "count": 2
-    },
     "max-params": {
-      "count": 3
+      "count": 2
     }
   },
   "src/modules/backup/content-package-showcase.ts": {

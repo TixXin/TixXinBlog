@@ -1,0 +1,2527 @@
+// Jest Snapshot v1, https://jestjs.io/docs/snapshot-testing
+
+exports[`内容包导出特征 v14 导出的字节与读取顺序保持不变 1`] = `"{"format":"tixxin-content","version":14,"omittedRelations":2,"exportedAt":"2026-10-01T00:00:00.000Z","mediaIncluded":false,"posts":[{"sourceId":1,"createdAt":"2026-09-01T08:30:00.000Z","publishedAt":"2026-09-02T08:30:00.000Z","deleted":false,"values":{"relatedContent":[{"type":"project","id":1},{"type":"gallery","id":1}],"slug":"mountain-walk","coverAlt":"山脊","seoTitle":"","seoDescription":"","seoNoindex":false,"title":"山间散步","summary":"沿着山脊走到天黑","cover":"/api/v1/media/a1111111-1111-4111-8111-111111111111.webp","folder":"随笔日记","category":"life","contentRaw":"![山脊](/api/v1/media/a1111111-1111-4111-8111-111111111111.webp)\\n\\n傍晚的风很大。","readTimeMinutes":3,"status":"published","pinned":true,"tags":["徒步"]},"comments":[{"sourceId":11,"parentId":null,"author":"晨曦","avatar":"/api/v1/media/a1111111-1111-4111-8111-111111111111.webp","content":"风景真好","isOwner":false,"status":"published","createdAt":"2026-09-05T08:30:00.000Z"},{"sourceId":12,"parentId":11,"author":"tixxin","avatar":"/avatar.svg","content":"谢谢","isOwner":true,"status":"pending","createdAt":"2026-09-06T08:30:00.000Z"}]},{"sourceId":2,"createdAt":"2026-09-03T08:30:00.000Z","publishedAt":"2026-09-03T08:30:00.000Z","deleted":false,"values":{"relatedContent":[],"slug":"","coverAlt":"","seoTitle":"","seoDescription":"","seoNoindex":true,"title":"旧版正文草稿","summary":"","cover":"","folder":"前端开发","category":"tech","contentRaw":"## 小标题\\n\\n\`\`\`ts\\nconst a = 1\\n\`\`\`\\n\\n- 一\\n- 二","readTimeMinutes":1,"status":"draft","pinned":false,"tags":["技术分享","徒步"]},"comments":[]},{"sourceId":3,"createdAt":"2026-09-04T08:30:00.000Z","publishedAt":"2026-09-04T08:30:00.000Z","deleted":true,"values":{"relatedContent":[{"type":"post","id":1}],"slug":"recycled-post","coverAlt":"","seoTitle":"","seoDescription":"","seoNoindex":false,"title":"已回收文章","summary":"","cover":"","folder":"随笔日记","category":"life","contentRaw":"已移入回收站","readTimeMinutes":1,"status":"published","pinned":false,"tags":[]},"comments":[{"sourceId":13,"parentId":null,"author":"路人","avatar":"","content":"回收文章下的评论","isOwner":false,"status":"hidden","createdAt":"2026-09-06T08:30:00.000Z"}]}],"flashes":[{"sourceId":"f1111111-1111-4111-8111-111111111111","createdAt":"2026-09-02T08:30:00.000Z","values":{"content":"今天看到云海","tags":["生活"],"images":["/api/v1/media/a1111111-1111-4111-8111-111111111111.webp"],"type":"idea","isPinned":true,"isDraft":false,"isArchived":false},"comments":[{"author":"晨曦","avatar":"/avatar.svg","content":"好看","status":"published","createdAt":"2026-09-04T08:30:00.000Z"},{"author":"访客","avatar":"","content":"待审核","status":"pending","createdAt":"2026-09-05T08:30:00.000Z"}]},{"sourceId":"f2222222-2222-4222-8222-222222222222","createdAt":"2026-09-03T08:30:00.000Z","values":{"content":"待整理的想法","tags":[],"images":[],"type":"todo","isPinned":false,"isDraft":true,"isArchived":true},"comments":[]}],"moments":[{"sourceId":"b1111111-1111-4111-8111-111111111111","createdAt":"2026-09-04T08:30:00.000Z","publishedAt":"2026-09-04T08:30:00.000Z","deleted":false,"values":{"content":"读完了一本书","topics":["阅读"],"images":["/api/v1/media/a1111111-1111-4111-8111-111111111111.webp"],"location":"深圳","device":null,"mood":"平静","linkedArticleId":1,"linkedLink":null,"status":"published","isPinned":false},"comments":[{"sourceId":"c1111111-1111-4111-8111-111111111111","author":"驴友","avatar":"/avatar.svg","content":"同读过","isOwner":false,"status":"published","deleted":false,"createdAt":"2026-09-06T08:30:00.000Z"},{"sourceId":"c2222222-2222-4222-8222-222222222222","author":"路人","avatar":"","content":"已删除评论","isOwner":false,"status":"hidden","deleted":true,"createdAt":"2026-09-07T08:30:00.000Z"}]},{"sourceId":"b2222222-2222-4222-8222-222222222222","createdAt":"2026-09-05T08:30:00.000Z","publishedAt":null,"deleted":true,"values":{"content":"已删除的动态","topics":[],"images":[],"location":null,"device":"iPhone","mood":null,"linkedArticleId":null,"linkedLink":{"url":"https://example.org/","title":"示例"},"status":"draft","isPinned":false},"comments":[]}],"guestbook":[{"sourceId":21,"createdAt":"2026-09-01T08:30:00.000Z","deleted":false,"author":"老朋友","avatar":"/api/v1/media/a1111111-1111-4111-8111-111111111111.webp","content":"来踩踩","isOwner":false,"status":"published","isPinned":true,"replyToId":null,"browser":"Edge 155","region":"广东"},{"sourceId":22,"createdAt":"2026-09-02T08:30:00.000Z","deleted":false,"author":"tixxin","avatar":"/avatar.svg","content":"欢迎","isOwner":true,"status":"published","isPinned":false,"replyToId":21},{"sourceId":23,"createdAt":"2026-09-03T08:30:00.000Z","deleted":true,"author":"广告","avatar":"","content":"已回收留言","isOwner":false,"status":"hidden","isPinned":false,"replyToId":null}],"gallery":[{"sourceId":1,"createdAt":"2026-09-01T08:30:00.000Z","publishedAt":"2026-09-01T08:30:00.000Z","deleted":false,"values":{"mediaId":"a1111111-1111-4111-8111-111111111111","relatedContent":[{"type":"post","id":1}],"externalUrl":null,"title":"山脊","description":"傍晚","category":"风景","takenOn":"2026-08-30","location":"梧桐山","device":"Sony A7M4","status":"published","sortOrder":2}},{"sourceId":2,"createdAt":"2026-09-02T08:30:00.000Z","publishedAt":null,"deleted":true,"values":{"mediaId":null,"relatedContent":[],"externalUrl":"https://images.example.org/a.jpg","title":"外链照片","description":"","category":"城市","takenOn":null,"location":"","device":"","status":"draft","sortOrder":0}}],"gallerySettings":{"gear":[{"icon":"lucide:camera","name":"Sony A7M4","description":"主力机身"}]},"projects":[{"sourceId":1,"createdAt":"2026-09-01T08:30:00.000Z","publishedAt":"2026-09-01T08:30:00.000Z","deleted":false,"values":{"title":"博客工作台","relatedContent":[{"type":"post","id":1}],"description":"内容组织工具","coverMediaId":"a1111111-1111-4111-8111-111111111111","tags":[{"color":"emerald","label":"Vue"}],"links":[{"href":"https://example.org/repo","kind":"source"}],"progress":"active","status":"published","sortOrder":1}},{"sourceId":2,"createdAt":"2026-09-02T08:30:00.000Z","publishedAt":null,"deleted":true,"values":{"title":"废弃项目","relatedContent":[],"description":"","coverMediaId":null,"tags":[],"links":[],"progress":"archived","status":"draft","sortOrder":0}}],"links":[{"sourceId":1,"createdAt":"2026-09-01T08:30:00.000Z","publishedAt":"2026-09-01T08:30:00.000Z","deleted":false,"values":{"name":"山友博客","description":"记录徒步","url":"https://friend.example.org/","logoMediaId":"a1111111-1111-4111-8111-111111111111","logoUrl":null,"status":"published","isFeatured":true,"sortOrder":1}},{"sourceId":2,"createdAt":"2026-09-02T08:30:00.000Z","publishedAt":null,"deleted":true,"values":{"name":"失联站点","description":"","url":"https://gone.example.org/","logoMediaId":null,"logoUrl":"https://gone.example.org/logo.png","status":"draft","isFeatured":false,"sortOrder":0}}],"linkSettings":{"rules":["内容健康"]},"prompts":[{"sourceId":1,"createdAt":"2026-09-01T08:30:00.000Z","publishedAt":"2026-09-02T08:30:00.000Z","values":{"title":"雾中山色","description":"摄影参考","prompt":"misty mountains at dusk","negativePrompt":"text","model":"sdxl","tags":["风景"],"mediaId":"a1111111-1111-4111-8111-111111111111","externalImageUrl":null,"imageAlt":"雾中山","sourceUrl":"","status":"published"}},{"sourceId":2,"createdAt":"2026-09-03T08:30:00.000Z","publishedAt":null,"values":{"title":"草稿提示词","description":"","prompt":"city night","negativePrompt":"","model":"","tags":[],"mediaId":null,"externalImageUrl":"https://images.example.org/p.jpg","imageAlt":"","sourceUrl":"https://example.org/source","status":"draft"}}],"subscriptions":[{"sourceId":1,"createdAt":"2026-09-01T08:30:00.000Z","publishedAt":"2026-09-01T08:30:00.000Z","deleted":false,"values":{"name":"工作用云盘","description":"保存设计文件","url":"https://example.org/","platform":null,"category":"cloud","currency":"USD","amount":2000,"billingCycle":"monthly","startDate":"2020-01-31","nextBillingDate":"2026-10-31","subscriptionStatus":"active","notes":"家庭方案","iconMediaId":"a1111111-1111-4111-8111-111111111111","faviconDomain":null,"priceHistory":[{"id":"6459bac0-801f-44cd-91ae-5729bef9a110","effectiveAt":"2026-09-01T10:00:00.000Z","recordedAt":"2026-09-01T10:00:00.000Z","amount":2000,"currency":"USD","billingCycle":"monthly"}],"status":"published","sortOrder":10}},{"sourceId":2,"createdAt":"2026-09-02T08:30:00.000Z","publishedAt":null,"deleted":true,"values":{"name":"已退订音乐","description":"","url":null,"platform":"apple","category":"entertainment","currency":"CNY","amount":1100,"billingCycle":"monthly","startDate":null,"nextBillingDate":null,"subscriptionStatus":"cancelled","notes":"","iconMediaId":null,"faviconDomain":null,"priceHistory":[{"id":"6459bac0-801f-44cd-91ae-5729bef9a111","effectiveAt":"2026-09-01T10:00:00.000Z","recordedAt":"2026-09-01T10:00:00.000Z","amount":1100,"currency":"CNY","billingCycle":"monthly"}],"status":"draft","sortOrder":0}}],"folders":["前端开发","随笔日记"],"tags":[{"label":"徒步","color":"emerald"},{"label":"技术分享","color":"sky"}],"site":{"name":"山间札记","description":"记录山野与代码","ownerName":"林间","ownerTitle":"前端开发","avatar":"/api/v1/media/a1111111-1111-4111-8111-111111111111.webp","avatarAlt":"头像","seoTitle":"","seoDescription":"","announcement":"新文章上线","socials":[{"href":"https://github.com/example","icon":"lucide:github","label":"GitHub"}],"presenceLabel":"","presenceSignature":"","launchedAt":"","presenceStatus":"","searchIndexing":true,"navigation":[{"type":"route","key":"home","visible":true},{"type":"route","key":"archive","visible":true},{"type":"route","key":"projects","visible":true},{"type":"route","key":"gallery","visible":true},{"type":"route","key":"flash","visible":true},{"type":"route","key":"links","visible":true},{"type":"route","key":"guestbook","visible":true},{"type":"route","key":"subscriptions","visible":true},{"type":"route","key":"about","visible":true},{"type":"route","key":"prompts","visible":true},{"type":"route","key":"tabs","visible":true}],"footerLinks":[{"label":"关于本站","url":"/about","newTab":false},{"label":"RSS 订阅","url":"/rss.xml","newTab":true},{"label":"站点地图","url":"/sitemap.xml","newTab":true}],"quotes":["路漫漫其修远兮，吾将上下而求索。","保持热爱，奔赴山海。","种一棵树最好的时间是十年前，其次是现在。","心之所向，素履以往。","不积跬步，无以至千里。"],"icpNumber":"","icpUrl":"","copyright":""},"requireCommentApproval":true,"media":[{"id":"a1111111-1111-4111-8111-111111111111","name":"ridge.webp","alt":"山脊","description":"傍晚山脊","sha256":"b9dfefebf762732659d0e74c937a1dd63f48a084f8e4a3dea9375bcf83079218","byteSize":41,"width":1600,"height":900,"createdAt":"2026-09-01T08:30:00.000Z","deleted":false},{"id":"a2222222-2222-4222-8222-222222222222","name":"unused.webp","alt":"","description":"","sha256":"1f376a99a756c0d14f2962f8b9aa86ff6c43a53a3fd0e1a98c185967414cd9ee","byteSize":41,"width":20,"height":20,"createdAt":"2026-09-02T08:30:00.000Z","deleted":true}]}"`;
+
+exports[`内容包导出特征 v14 导出的字节与读取顺序保持不变 2`] = `
+[
+  "transactional:{"isolationLevel":"repeatable read"}",
+  "execute:select (select count(*)::int from post) ",
+  "find:Post",
+  "find:Comment",
+  "find:FlashNote",
+  "find:FlashComment",
+  "find:MediaAsset",
+  "find:Moment",
+  "find:GuestbookMessage",
+  "find:GalleryPhoto",
+  "find:Project",
+  "find:FriendLink",
+  "find:ImagePrompt",
+  "find:Subscription",
+  "findOneOrFail:LinkSettings",
+  "findOneOrFail:GallerySettings",
+  "find:MomentComment",
+  "find:PostFolder",
+  "find:PostTag",
+  "findOneOrFail:SiteSettings",
+  "findOneOrFail:CommentPolicy",
+]
+`;
+
+exports[`内容包迁入服务特征 写入失败时清理本次文件并交给失败处理 1`] = `
+[
+  "nativeUpdate:{"id":"c0c0c0c0-0000-4000-8000-000000000000","actorId":"admin-1","completedAt":null}:{"startedAt":"2026-10-01T00:00:00.000Z","lastError":null}",
+  "transactional:null",
+  "execute:select pg_advisory_xact_lock(742911)",
+  "execute:select pg_advisory_xact_lock(742912)",
+  "execute:select pg_advisory_xact_lock(742920)",
+  "count:AdminSession",
+  "execute:select (select count(*)::int from post) ",
+  "find:Post",
+  "find:Comment",
+  "find:FlashNote",
+  "find:FlashComment",
+  "find:MediaAsset",
+  "find:Moment",
+  "find:GuestbookMessage",
+  "find:GalleryPhoto",
+  "find:Project",
+  "find:FriendLink",
+  "find:ImagePrompt",
+  "find:Subscription",
+  "find:MomentComment",
+  "find:PostFolder",
+  "find:PostTag",
+  "find:PostAddress",
+  "find:TaxonomyAlias",
+]
+`;
+
+exports[`内容包迁入服务特征 执行失败：会话已撤销 1`] = `
+[
+  "nativeUpdate:{"id":"c0c0c0c0-0000-4000-8000-000000000000","actorId":"admin-1","completedAt":null}:{"startedAt":"2026-10-01T00:00:00.000Z","lastError":null}",
+  "transactional:null",
+  "execute:select pg_advisory_xact_lock(742911)",
+  "execute:select pg_advisory_xact_lock(742912)",
+  "execute:select pg_advisory_xact_lock(742920)",
+  "handleImportFailure:c0c0c0c0-0000-4000-8000-000000000000:admin-1::zh-CN",
+]
+`;
+
+exports[`内容包迁入服务特征 执行失败：会话版本变化 1`] = `
+[
+  "nativeUpdate:{"id":"c0c0c0c0-0000-4000-8000-000000000000","actorId":"admin-1","completedAt":null}:{"startedAt":"2026-10-01T00:00:00.000Z","lastError":null}",
+  "transactional:null",
+  "execute:select pg_advisory_xact_lock(742911)",
+  "execute:select pg_advisory_xact_lock(742912)",
+  "execute:select pg_advisory_xact_lock(742920)",
+  "handleImportFailure:c0c0c0c0-0000-4000-8000-000000000000:admin-1::zh-CN",
+]
+`;
+
+exports[`内容包迁入服务特征 执行失败：当前计划未就绪 1`] = `
+[
+  "nativeUpdate:{"id":"c0c0c0c0-0000-4000-8000-000000000000","actorId":"admin-1","completedAt":null}:{"startedAt":"2026-10-01T00:00:00.000Z","lastError":null}",
+  "transactional:null",
+  "execute:select pg_advisory_xact_lock(742911)",
+  "execute:select pg_advisory_xact_lock(742912)",
+  "execute:select pg_advisory_xact_lock(742920)",
+  "execute:select (select count(*)::int from post) ",
+  "find:Post",
+  "find:Comment",
+  "find:FlashNote",
+  "find:FlashComment",
+  "find:MediaAsset",
+  "find:Moment",
+  "find:GuestbookMessage",
+  "find:GalleryPhoto",
+  "find:Project",
+  "find:FriendLink",
+  "find:ImagePrompt",
+  "find:Subscription",
+  "find:MomentComment",
+  "find:PostFolder",
+  "find:PostTag",
+  "find:PostAddress",
+  "find:TaxonomyAlias",
+  "handleImportFailure:c0c0c0c0-0000-4000-8000-000000000000:admin-1::zh-CN",
+]
+`;
+
+exports[`内容包迁入服务特征 执行失败：目标内容变化 1`] = `
+[
+  "nativeUpdate:{"id":"c0c0c0c0-0000-4000-8000-000000000000","actorId":"admin-1","completedAt":null}:{"startedAt":"2026-10-01T00:00:00.000Z","lastError":null}",
+  "transactional:null",
+  "execute:select pg_advisory_xact_lock(742911)",
+  "execute:select pg_advisory_xact_lock(742912)",
+  "execute:select pg_advisory_xact_lock(742920)",
+  "execute:select (select count(*)::int from post) ",
+  "find:Post",
+  "find:Comment",
+  "find:FlashNote",
+  "find:FlashComment",
+  "find:MediaAsset",
+  "find:Moment",
+  "find:GuestbookMessage",
+  "find:GalleryPhoto",
+  "find:Project",
+  "find:FriendLink",
+  "find:ImagePrompt",
+  "find:Subscription",
+  "find:MomentComment",
+  "find:PostFolder",
+  "find:PostTag",
+  "find:PostAddress",
+  "find:TaxonomyAlias",
+  "handleImportFailure:c0c0c0c0-0000-4000-8000-000000000000:admin-1::zh-CN",
+]
+`;
+
+exports[`内容包迁入服务特征 执行失败：确认哈希过期 1`] = `
+[
+  "nativeUpdate:{"id":"c0c0c0c0-0000-4000-8000-000000000000","actorId":"admin-1","completedAt":null}:{"startedAt":"2026-10-01T00:00:00.000Z","lastError":null}",
+  "transactional:null",
+  "execute:select pg_advisory_xact_lock(742911)",
+  "execute:select pg_advisory_xact_lock(742912)",
+  "execute:select pg_advisory_xact_lock(742920)",
+  "handleImportFailure:c0c0c0c0-0000-4000-8000-000000000000:admin-1::zh-CN",
+]
+`;
+
+exports[`内容包迁入服务特征 执行失败：确认短语错误 1`] = `[]`;
+
+exports[`内容包迁入服务特征 执行失败：票据不存在 1`] = `[]`;
+
+exports[`内容包迁入服务特征 执行迁入的检查顺序、写入参数与结果 1`] = `
+{
+  "completed": true,
+  "confirmation": "32528620b7334de23ac7a44faa8b4d5ed131aad7aaf0741f07d67e1ac6c77ac0",
+  "createdAt": "2026-10-01T00:00:00.000Z",
+  "error": undefined,
+  "expired": false,
+  "expiresAt": "2026-10-01T00:15:00.000Z",
+  "gallerySettingsPreview": undefined,
+  "includeSettings": true,
+  "linkSettingsPreview": undefined,
+  "plan": {
+    "counts": {
+      "comments": 6,
+      "files": 0,
+      "flashes": 2,
+      "gallery": 1,
+      "guestbook": 3,
+      "links": 1,
+      "media": 0,
+      "moments": 2,
+      "posts": 3,
+      "projects": 1,
+      "prompts": 2,
+      "settings": true,
+      "skipped": 4,
+      "subscriptions": 1,
+    },
+    "errors": [],
+    "flashes": [
+      {
+        "reason": "创建新的闪念草稿",
+        "skip": false,
+        "sourceId": "f1111111-1111-4111-8111-111111111111",
+        "title": "今天看到云海",
+      },
+      {
+        "reason": "创建新的闪念草稿",
+        "skip": false,
+        "sourceId": "f2222222-2222-4222-8222-222222222222",
+        "title": "待整理的想法",
+      },
+    ],
+    "gallery": [
+      {
+        "reason": "创建新的图库草稿，保留拍摄信息及媒体关联",
+        "skip": false,
+        "sourceId": 1,
+        "title": "山脊",
+      },
+      {
+        "reason": "跳过已删除作品，保留删除状态",
+        "skip": true,
+        "sourceId": 2,
+        "title": "外链照片",
+      },
+    ],
+    "gallerySettingsRevision": 5,
+    "guestbook": [
+      {
+        "reason": "迁入为待审留言，保留回复关系；不迁入置顶、访客凭据和回应",
+        "skip": false,
+        "sourceId": 21,
+        "title": "来踩踩",
+      },
+      {
+        "reason": "迁入为待审留言，保留回复关系；不迁入置顶、访客凭据和回应",
+        "skip": false,
+        "sourceId": 22,
+        "title": "欢迎",
+      },
+      {
+        "reason": "保留已删除记录以重建回复引用，不公开、不恢复媒体引用",
+        "skip": false,
+        "sourceId": 23,
+        "title": "已回收留言",
+      },
+    ],
+    "linkSettingsRevision": 4,
+    "links": [
+      {
+        "reason": "相同地址另建非公开草稿副本，保留原路径与参数；不能自动上架",
+        "skip": false,
+        "sourceId": 1,
+        "title": "山友博客",
+      },
+      {
+        "reason": "跳过已删除友链，不自动恢复",
+        "skip": true,
+        "sourceId": 2,
+        "title": "失联站点",
+      },
+    ],
+    "media": [
+      {
+        "create": false,
+        "id": "a1111111-1111-4111-8111-111111111111",
+        "skip": false,
+        "writeFile": false,
+      },
+      {
+        "create": false,
+        "id": "a2222222-2222-4222-8222-222222222222",
+        "skip": false,
+        "writeFile": false,
+      },
+    ],
+    "moments": [
+      {
+        "linkedArticleId": 1,
+        "reason": "创建新的朋友圈草稿；保留未删除评论的审核状态；点赞和访客身份不迁入",
+        "skip": false,
+        "sourceId": "b1111111-1111-4111-8111-111111111111",
+        "title": "读完了一本书",
+      },
+      {
+        "linkedArticleId": null,
+        "reason": "创建新的朋友圈草稿；保留未删除评论的审核状态；点赞和访客身份不迁入",
+        "skip": false,
+        "sourceId": "b2222222-2222-4222-8222-222222222222",
+        "title": "已删除的动态",
+      },
+    ],
+    "omittedRelations": 2,
+    "policyRevision": 2,
+    "posts": [
+      {
+        "reason": "创建新的草稿副本，现有内容保留；原地址占用，使用新的地址标识",
+        "skip": false,
+        "slug": "mountain-walk-import-c0c0c0c0-1",
+        "sourceId": 1,
+        "title": "山间散步",
+      },
+      {
+        "reason": "创建新的草稿副本，现有内容保留",
+        "skip": false,
+        "slug": "",
+        "sourceId": 2,
+        "title": "旧版正文草稿",
+      },
+      {
+        "reason": "创建新的草稿副本，现有内容保留",
+        "skip": false,
+        "slug": "recycled-post",
+        "sourceId": 3,
+        "title": "已回收文章",
+      },
+    ],
+    "projects": [
+      {
+        "reason": "创建新的项目草稿，保留项目进展、标签、链接与封面关联",
+        "skip": false,
+        "sourceId": 1,
+        "title": "博客工作台",
+      },
+      {
+        "reason": "跳过已删除项目，保留删除状态",
+        "skip": true,
+        "sourceId": 2,
+        "title": "废弃项目",
+      },
+    ],
+    "prompts": [
+      {
+        "reason": "创建新的提示词草稿，保留提示词、模型、标签和图片来源",
+        "skip": false,
+        "sourceId": 1,
+        "title": "雾中山色",
+      },
+      {
+        "reason": "创建新的提示词草稿，保留提示词、模型、标签和图片来源",
+        "skip": false,
+        "sourceId": 2,
+        "title": "草稿提示词",
+      },
+    ],
+    "ready": true,
+    "relationMapping": {
+      "gallery:1": {
+        "copySourceId": 1,
+        "type": "gallery",
+      },
+      "gallery:2": null,
+      "post:1": {
+        "copySourceId": 1,
+        "type": "post",
+      },
+      "post:2": {
+        "copySourceId": 2,
+        "type": "post",
+      },
+      "post:3": null,
+      "project:1": {
+        "copySourceId": 1,
+        "type": "project",
+      },
+      "project:2": null,
+    },
+    "siteRevision": 3,
+    "subscriptions": [
+      {
+        "reason": "创建新的订阅草稿，保留币种、周期、业务状态、价格历史和受管图标",
+        "skip": false,
+        "sourceId": 1,
+        "title": "工作用云盘",
+      },
+      {
+        "reason": "跳过已删除订阅，不自动恢复",
+        "skip": true,
+        "sourceId": 2,
+        "title": "已退订音乐",
+      },
+    ],
+  },
+  "result": {
+    "comments": 2,
+    "flashes": [],
+    "media": 0,
+    "posts": [
+      {
+        "id": 99,
+        "sourceId": 1,
+      },
+    ],
+  },
+  "settingsPreview": undefined,
+  "started": false,
+  "strategy": "copy",
+  "ticket": "c0c0c0c0-0000-4000-8000-000000000000",
+}
+`;
+
+exports[`内容包迁入服务特征 执行迁入的检查顺序、写入参数与结果 2`] = `
+[
+  "nativeUpdate:{"id":"c0c0c0c0-0000-4000-8000-000000000000","actorId":"admin-1","completedAt":null}:{"startedAt":"2026-10-01T00:00:00.000Z","lastError":null}",
+  "transactional:null",
+  "execute:select pg_advisory_xact_lock(742911)",
+  "execute:select pg_advisory_xact_lock(742912)",
+  "execute:select pg_advisory_xact_lock(742920)",
+  "execute:select (select count(*)::int from post) ",
+  "find:Post",
+  "find:Comment",
+  "find:FlashNote",
+  "find:FlashComment",
+  "find:MediaAsset",
+  "find:Moment",
+  "find:GuestbookMessage",
+  "find:GalleryPhoto",
+  "find:Project",
+  "find:FriendLink",
+  "find:ImagePrompt",
+  "find:Subscription",
+  "find:MomentComment",
+  "find:PostFolder",
+  "find:PostTag",
+  "find:PostAddress",
+  "find:TaxonomyAlias",
+  "flush",
+]
+`;
+
+exports[`内容包迁入服务特征 读取、最近票据与重新预览 1`] = `
+{
+  "completed": false,
+  "confirmation": "1b11f927264a002810d42d6f1730b4095c1579b8d21aeb2c2154bcdf39f9f655",
+  "createdAt": "2026-10-01T00:00:00.000Z",
+  "error": undefined,
+  "expired": false,
+  "expiresAt": "2026-10-01T00:15:00.000Z",
+  "gallerySettingsPreview": undefined,
+  "includeSettings": false,
+  "linkSettingsPreview": undefined,
+  "plan": {
+    "counts": {
+      "comments": 0,
+      "files": 0,
+      "flashes": 0,
+      "gallery": 0,
+      "guestbook": 0,
+      "links": 0,
+      "media": 0,
+      "moments": 1,
+      "posts": 0,
+      "projects": 0,
+      "prompts": 0,
+      "settings": false,
+      "skipped": 19,
+      "subscriptions": 0,
+    },
+    "errors": [],
+    "flashes": [
+      {
+        "reason": "跳过相同内容及其评论",
+        "skip": true,
+        "sourceId": "f1111111-1111-4111-8111-111111111111",
+        "title": "今天看到云海",
+      },
+      {
+        "reason": "跳过相同内容及其评论",
+        "skip": true,
+        "sourceId": "f2222222-2222-4222-8222-222222222222",
+        "title": "待整理的想法",
+      },
+    ],
+    "gallery": [
+      {
+        "reason": "跳过相同图库作品",
+        "skip": true,
+        "sourceId": 1,
+        "title": "山脊",
+      },
+      {
+        "reason": "跳过已删除作品，保留删除状态",
+        "skip": true,
+        "sourceId": 2,
+        "title": "外链照片",
+      },
+    ],
+    "gallerySettingsRevision": 5,
+    "guestbook": [
+      {
+        "reason": "跳过相同留言及引用语义，保留目标审核状态",
+        "skip": true,
+        "sourceId": 21,
+        "targetId": 21,
+        "title": "来踩踩",
+      },
+      {
+        "reason": "跳过相同留言及引用语义，保留目标审核状态",
+        "skip": true,
+        "sourceId": 22,
+        "targetId": 22,
+        "title": "欢迎",
+      },
+      {
+        "reason": "跳过相同留言及引用语义，保留目标审核状态",
+        "skip": true,
+        "sourceId": 23,
+        "targetId": 23,
+        "title": "已回收留言",
+      },
+    ],
+    "linkSettingsRevision": 4,
+    "links": [
+      {
+        "reason": "跳过已有相同规范地址的友链，现有内容保持不变",
+        "skip": true,
+        "sourceId": 1,
+        "title": "山友博客",
+      },
+      {
+        "reason": "跳过已删除友链，不自动恢复",
+        "skip": true,
+        "sourceId": 2,
+        "title": "失联站点",
+      },
+    ],
+    "media": [
+      {
+        "create": false,
+        "id": "a1111111-1111-4111-8111-111111111111",
+        "skip": false,
+        "writeFile": false,
+      },
+      {
+        "create": false,
+        "id": "a2222222-2222-4222-8222-222222222222",
+        "skip": false,
+        "writeFile": false,
+      },
+    ],
+    "moments": [
+      {
+        "linkedArticleId": 1,
+        "reason": "跳过相同内容及其评论",
+        "skip": true,
+        "sourceId": "b1111111-1111-4111-8111-111111111111",
+        "title": "读完了一本书",
+      },
+      {
+        "linkedArticleId": null,
+        "reason": "创建新的朋友圈草稿；保留未删除评论的审核状态；点赞和访客身份不迁入",
+        "skip": false,
+        "sourceId": "b2222222-2222-4222-8222-222222222222",
+        "title": "已删除的动态",
+      },
+    ],
+    "omittedRelations": 2,
+    "policyRevision": 2,
+    "posts": [
+      {
+        "reason": "跳过相同内容及其评论",
+        "skip": true,
+        "slug": "mountain-walk",
+        "sourceId": 1,
+        "title": "山间散步",
+      },
+      {
+        "reason": "跳过相同内容及其评论",
+        "skip": true,
+        "slug": "",
+        "sourceId": 2,
+        "title": "旧版正文草稿",
+      },
+      {
+        "reason": "跳过相同内容及其评论",
+        "skip": true,
+        "slug": "recycled-post",
+        "sourceId": 3,
+        "title": "已回收文章",
+      },
+    ],
+    "projects": [
+      {
+        "reason": "跳过相同项目内容",
+        "skip": true,
+        "sourceId": 1,
+        "title": "博客工作台",
+      },
+      {
+        "reason": "跳过已删除项目，保留删除状态",
+        "skip": true,
+        "sourceId": 2,
+        "title": "废弃项目",
+      },
+    ],
+    "prompts": [
+      {
+        "reason": "跳过相同图片提示词",
+        "skip": true,
+        "sourceId": 1,
+        "title": "雾中山色",
+      },
+      {
+        "reason": "跳过相同图片提示词",
+        "skip": true,
+        "sourceId": 2,
+        "title": "草稿提示词",
+      },
+    ],
+    "ready": true,
+    "relationMapping": {
+      "gallery:1": {
+        "existingId": 1,
+        "type": "gallery",
+      },
+      "gallery:2": null,
+      "post:1": {
+        "existingId": 1,
+        "type": "post",
+      },
+      "post:2": {
+        "existingId": 2,
+        "type": "post",
+      },
+      "post:3": null,
+      "project:1": {
+        "existingId": 1,
+        "type": "project",
+      },
+      "project:2": null,
+    },
+    "siteRevision": 3,
+    "subscriptions": [
+      {
+        "reason": "跳过相同订阅及完整价格历史，已有记录保持不变",
+        "skip": true,
+        "sourceId": 1,
+        "title": "工作用云盘",
+      },
+      {
+        "reason": "跳过已删除订阅，不自动恢复",
+        "skip": true,
+        "sourceId": 2,
+        "title": "已退订音乐",
+      },
+    ],
+  },
+  "result": undefined,
+  "settingsPreview": undefined,
+  "started": false,
+  "strategy": "skip",
+  "ticket": "c0c0c0c0-0000-4000-8000-000000000000",
+}
+`;
+
+exports[`内容包迁入服务特征 读取、最近票据与重新预览 2`] = `
+[
+  {
+    "completed": false,
+    "createdAt": "2026-10-01T00:00:00.000Z",
+    "expired": true,
+    "ticket": "c0c0c0c0-0000-4000-8000-000000000000",
+  },
+  {
+    "completed": true,
+    "createdAt": "2026-10-01T00:00:00.000Z",
+    "expired": false,
+    "ticket": "done",
+  },
+]
+`;
+
+exports[`内容包迁入服务特征 读取、最近票据与重新预览 3`] = `
+{
+  "completed": false,
+  "confirmation": "1b11f927264a002810d42d6f1730b4095c1579b8d21aeb2c2154bcdf39f9f655",
+  "createdAt": "2026-10-01T00:00:00.000Z",
+  "error": undefined,
+  "expired": false,
+  "expiresAt": "2026-10-01T00:15:00.000Z",
+  "gallerySettingsPreview": undefined,
+  "includeSettings": false,
+  "linkSettingsPreview": undefined,
+  "plan": {
+    "counts": {
+      "comments": 0,
+      "files": 0,
+      "flashes": 0,
+      "gallery": 0,
+      "guestbook": 0,
+      "links": 0,
+      "media": 0,
+      "moments": 1,
+      "posts": 0,
+      "projects": 0,
+      "prompts": 0,
+      "settings": false,
+      "skipped": 19,
+      "subscriptions": 0,
+    },
+    "errors": [],
+    "flashes": [
+      {
+        "reason": "跳过相同内容及其评论",
+        "skip": true,
+        "sourceId": "f1111111-1111-4111-8111-111111111111",
+        "title": "今天看到云海",
+      },
+      {
+        "reason": "跳过相同内容及其评论",
+        "skip": true,
+        "sourceId": "f2222222-2222-4222-8222-222222222222",
+        "title": "待整理的想法",
+      },
+    ],
+    "gallery": [
+      {
+        "reason": "跳过相同图库作品",
+        "skip": true,
+        "sourceId": 1,
+        "title": "山脊",
+      },
+      {
+        "reason": "跳过已删除作品，保留删除状态",
+        "skip": true,
+        "sourceId": 2,
+        "title": "外链照片",
+      },
+    ],
+    "gallerySettingsRevision": 5,
+    "guestbook": [
+      {
+        "reason": "跳过相同留言及引用语义，保留目标审核状态",
+        "skip": true,
+        "sourceId": 21,
+        "targetId": 21,
+        "title": "来踩踩",
+      },
+      {
+        "reason": "跳过相同留言及引用语义，保留目标审核状态",
+        "skip": true,
+        "sourceId": 22,
+        "targetId": 22,
+        "title": "欢迎",
+      },
+      {
+        "reason": "跳过相同留言及引用语义，保留目标审核状态",
+        "skip": true,
+        "sourceId": 23,
+        "targetId": 23,
+        "title": "已回收留言",
+      },
+    ],
+    "linkSettingsRevision": 4,
+    "links": [
+      {
+        "reason": "跳过已有相同规范地址的友链，现有内容保持不变",
+        "skip": true,
+        "sourceId": 1,
+        "title": "山友博客",
+      },
+      {
+        "reason": "跳过已删除友链，不自动恢复",
+        "skip": true,
+        "sourceId": 2,
+        "title": "失联站点",
+      },
+    ],
+    "media": [
+      {
+        "create": false,
+        "id": "a1111111-1111-4111-8111-111111111111",
+        "skip": false,
+        "writeFile": false,
+      },
+      {
+        "create": false,
+        "id": "a2222222-2222-4222-8222-222222222222",
+        "skip": false,
+        "writeFile": false,
+      },
+    ],
+    "moments": [
+      {
+        "linkedArticleId": 1,
+        "reason": "跳过相同内容及其评论",
+        "skip": true,
+        "sourceId": "b1111111-1111-4111-8111-111111111111",
+        "title": "读完了一本书",
+      },
+      {
+        "linkedArticleId": null,
+        "reason": "创建新的朋友圈草稿；保留未删除评论的审核状态；点赞和访客身份不迁入",
+        "skip": false,
+        "sourceId": "b2222222-2222-4222-8222-222222222222",
+        "title": "已删除的动态",
+      },
+    ],
+    "omittedRelations": 2,
+    "policyRevision": 2,
+    "posts": [
+      {
+        "reason": "跳过相同内容及其评论",
+        "skip": true,
+        "slug": "mountain-walk",
+        "sourceId": 1,
+        "title": "山间散步",
+      },
+      {
+        "reason": "跳过相同内容及其评论",
+        "skip": true,
+        "slug": "",
+        "sourceId": 2,
+        "title": "旧版正文草稿",
+      },
+      {
+        "reason": "跳过相同内容及其评论",
+        "skip": true,
+        "slug": "recycled-post",
+        "sourceId": 3,
+        "title": "已回收文章",
+      },
+    ],
+    "projects": [
+      {
+        "reason": "跳过相同项目内容",
+        "skip": true,
+        "sourceId": 1,
+        "title": "博客工作台",
+      },
+      {
+        "reason": "跳过已删除项目，保留删除状态",
+        "skip": true,
+        "sourceId": 2,
+        "title": "废弃项目",
+      },
+    ],
+    "prompts": [
+      {
+        "reason": "跳过相同图片提示词",
+        "skip": true,
+        "sourceId": 1,
+        "title": "雾中山色",
+      },
+      {
+        "reason": "跳过相同图片提示词",
+        "skip": true,
+        "sourceId": 2,
+        "title": "草稿提示词",
+      },
+    ],
+    "ready": true,
+    "relationMapping": {
+      "gallery:1": {
+        "existingId": 1,
+        "type": "gallery",
+      },
+      "gallery:2": null,
+      "post:1": {
+        "existingId": 1,
+        "type": "post",
+      },
+      "post:2": {
+        "existingId": 2,
+        "type": "post",
+      },
+      "post:3": null,
+      "project:1": {
+        "existingId": 1,
+        "type": "project",
+      },
+      "project:2": null,
+    },
+    "siteRevision": 3,
+    "subscriptions": [
+      {
+        "reason": "跳过相同订阅及完整价格历史，已有记录保持不变",
+        "skip": true,
+        "sourceId": 1,
+        "title": "工作用云盘",
+      },
+      {
+        "reason": "跳过已删除订阅，不自动恢复",
+        "skip": true,
+        "sourceId": 2,
+        "title": "已退订音乐",
+      },
+    ],
+  },
+  "result": undefined,
+  "settingsPreview": undefined,
+  "started": false,
+  "strategy": "skip",
+  "ticket": "c0c0c0c0-0000-4000-8000-000000000000",
+}
+`;
+
+exports[`内容包迁入服务特征 读取、最近票据与重新预览 4`] = `
+[
+  "execute:with expired as (select id from content_",
+  "execute:with expired as (select id from content_",
+  "transactional:null",
+  "execute:select (select count(*)::int from post) ",
+  "findOneOrFail:LinkSettings",
+  "findOneOrFail:GallerySettings",
+  "findOneOrFail:SiteSettings",
+  "findOneOrFail:CommentPolicy",
+  "findOneOrFail:SiteSettings",
+  "findOneOrFail:CommentPolicy",
+  "findOneOrFail:ContentContext",
+  "findOneOrFail:GallerySettings",
+  "findOneOrFail:LinkSettings",
+  "flush",
+]
+`;
+
+exports[`内容包迁入服务特征 预览创建票据并按原样返回计划视图 1`] = `
+{
+  "completed": false,
+  "confirmation": "32528620b7334de23ac7a44faa8b4d5ed131aad7aaf0741f07d67e1ac6c77ac0",
+  "createdAt": "2026-10-01T00:00:00.000Z",
+  "error": undefined,
+  "expired": false,
+  "expiresAt": "2026-10-01T00:15:00.000Z",
+  "gallerySettingsPreview": {
+    "gear": [
+      {
+        "description": "主力机身",
+        "icon": "lucide:camera",
+        "name": "Sony A7M4",
+      },
+    ],
+  },
+  "includeSettings": true,
+  "linkSettingsPreview": {
+    "rules": [
+      "内容健康",
+    ],
+  },
+  "plan": {
+    "counts": {
+      "comments": 6,
+      "files": 0,
+      "flashes": 2,
+      "gallery": 1,
+      "guestbook": 3,
+      "links": 1,
+      "media": 0,
+      "moments": 2,
+      "posts": 3,
+      "projects": 1,
+      "prompts": 2,
+      "settings": true,
+      "skipped": 4,
+      "subscriptions": 1,
+    },
+    "errors": [],
+    "flashes": [
+      {
+        "reason": "创建新的闪念草稿",
+        "skip": false,
+        "sourceId": "f1111111-1111-4111-8111-111111111111",
+        "title": "今天看到云海",
+      },
+      {
+        "reason": "创建新的闪念草稿",
+        "skip": false,
+        "sourceId": "f2222222-2222-4222-8222-222222222222",
+        "title": "待整理的想法",
+      },
+    ],
+    "gallery": [
+      {
+        "reason": "创建新的图库草稿，保留拍摄信息及媒体关联",
+        "skip": false,
+        "sourceId": 1,
+        "title": "山脊",
+      },
+      {
+        "reason": "跳过已删除作品，保留删除状态",
+        "skip": true,
+        "sourceId": 2,
+        "title": "外链照片",
+      },
+    ],
+    "gallerySettingsRevision": 5,
+    "guestbook": [
+      {
+        "reason": "迁入为待审留言，保留回复关系；不迁入置顶、访客凭据和回应",
+        "skip": false,
+        "sourceId": 21,
+        "title": "来踩踩",
+      },
+      {
+        "reason": "迁入为待审留言，保留回复关系；不迁入置顶、访客凭据和回应",
+        "skip": false,
+        "sourceId": 22,
+        "title": "欢迎",
+      },
+      {
+        "reason": "保留已删除记录以重建回复引用，不公开、不恢复媒体引用",
+        "skip": false,
+        "sourceId": 23,
+        "title": "已回收留言",
+      },
+    ],
+    "linkSettingsRevision": 4,
+    "links": [
+      {
+        "reason": "相同地址另建非公开草稿副本，保留原路径与参数；不能自动上架",
+        "skip": false,
+        "sourceId": 1,
+        "title": "山友博客",
+      },
+      {
+        "reason": "跳过已删除友链，不自动恢复",
+        "skip": true,
+        "sourceId": 2,
+        "title": "失联站点",
+      },
+    ],
+    "media": [
+      {
+        "create": false,
+        "id": "a1111111-1111-4111-8111-111111111111",
+        "skip": false,
+        "writeFile": false,
+      },
+      {
+        "create": false,
+        "id": "a2222222-2222-4222-8222-222222222222",
+        "skip": false,
+        "writeFile": false,
+      },
+    ],
+    "moments": [
+      {
+        "linkedArticleId": 1,
+        "reason": "创建新的朋友圈草稿；保留未删除评论的审核状态；点赞和访客身份不迁入",
+        "skip": false,
+        "sourceId": "b1111111-1111-4111-8111-111111111111",
+        "title": "读完了一本书",
+      },
+      {
+        "linkedArticleId": null,
+        "reason": "创建新的朋友圈草稿；保留未删除评论的审核状态；点赞和访客身份不迁入",
+        "skip": false,
+        "sourceId": "b2222222-2222-4222-8222-222222222222",
+        "title": "已删除的动态",
+      },
+    ],
+    "omittedRelations": 2,
+    "policyRevision": 2,
+    "posts": [
+      {
+        "reason": "创建新的草稿副本，现有内容保留；原地址占用，使用新的地址标识",
+        "skip": false,
+        "slug": "mountain-walk-import-c0c0c0c0-1",
+        "sourceId": 1,
+        "title": "山间散步",
+      },
+      {
+        "reason": "创建新的草稿副本，现有内容保留",
+        "skip": false,
+        "slug": "",
+        "sourceId": 2,
+        "title": "旧版正文草稿",
+      },
+      {
+        "reason": "创建新的草稿副本，现有内容保留",
+        "skip": false,
+        "slug": "recycled-post",
+        "sourceId": 3,
+        "title": "已回收文章",
+      },
+    ],
+    "projects": [
+      {
+        "reason": "创建新的项目草稿，保留项目进展、标签、链接与封面关联",
+        "skip": false,
+        "sourceId": 1,
+        "title": "博客工作台",
+      },
+      {
+        "reason": "跳过已删除项目，保留删除状态",
+        "skip": true,
+        "sourceId": 2,
+        "title": "废弃项目",
+      },
+    ],
+    "prompts": [
+      {
+        "reason": "创建新的提示词草稿，保留提示词、模型、标签和图片来源",
+        "skip": false,
+        "sourceId": 1,
+        "title": "雾中山色",
+      },
+      {
+        "reason": "创建新的提示词草稿，保留提示词、模型、标签和图片来源",
+        "skip": false,
+        "sourceId": 2,
+        "title": "草稿提示词",
+      },
+    ],
+    "ready": true,
+    "relationMapping": {
+      "gallery:1": {
+        "copySourceId": 1,
+        "type": "gallery",
+      },
+      "gallery:2": null,
+      "post:1": {
+        "copySourceId": 1,
+        "type": "post",
+      },
+      "post:2": {
+        "copySourceId": 2,
+        "type": "post",
+      },
+      "post:3": null,
+      "project:1": {
+        "copySourceId": 1,
+        "type": "project",
+      },
+      "project:2": null,
+    },
+    "siteRevision": 3,
+    "subscriptions": [
+      {
+        "reason": "创建新的订阅草稿，保留币种、周期、业务状态、价格历史和受管图标",
+        "skip": false,
+        "sourceId": 1,
+        "title": "工作用云盘",
+      },
+      {
+        "reason": "跳过已删除订阅，不自动恢复",
+        "skip": true,
+        "sourceId": 2,
+        "title": "已退订音乐",
+      },
+    ],
+  },
+  "result": undefined,
+  "settingsPreview": {
+    "about": undefined,
+    "announcement": "新文章上线",
+    "avatar": "/api/v1/media/a1111111-1111-4111-8111-111111111111.webp",
+    "avatarAlt": "头像",
+    "copyright": "",
+    "description": "记录山野与代码",
+    "footerLinks": [
+      {
+        "label": "关于本站",
+        "newTab": false,
+        "url": "/about",
+      },
+      {
+        "label": "RSS 订阅",
+        "newTab": true,
+        "url": "/rss.xml",
+      },
+      {
+        "label": "站点地图",
+        "newTab": true,
+        "url": "/sitemap.xml",
+      },
+    ],
+    "icpNumber": "",
+    "icpUrl": "",
+    "launchedAt": "",
+    "name": "山间札记",
+    "navigation": [
+      {
+        "key": "home",
+        "type": "route",
+        "visible": true,
+      },
+      {
+        "key": "archive",
+        "type": "route",
+        "visible": true,
+      },
+      {
+        "key": "projects",
+        "type": "route",
+        "visible": true,
+      },
+      {
+        "key": "gallery",
+        "type": "route",
+        "visible": true,
+      },
+      {
+        "key": "flash",
+        "type": "route",
+        "visible": true,
+      },
+      {
+        "key": "links",
+        "type": "route",
+        "visible": true,
+      },
+      {
+        "key": "guestbook",
+        "type": "route",
+        "visible": true,
+      },
+      {
+        "key": "subscriptions",
+        "type": "route",
+        "visible": true,
+      },
+      {
+        "key": "about",
+        "type": "route",
+        "visible": true,
+      },
+      {
+        "key": "prompts",
+        "type": "route",
+        "visible": true,
+      },
+      {
+        "key": "tabs",
+        "type": "route",
+        "visible": true,
+      },
+    ],
+    "ownerName": "林间",
+    "ownerTitle": "前端开发",
+    "presenceLabel": "",
+    "presenceSignature": "",
+    "presenceStatus": "",
+    "quotes": [
+      "路漫漫其修远兮，吾将上下而求索。",
+      "保持热爱，奔赴山海。",
+      "种一棵树最好的时间是十年前，其次是现在。",
+      "心之所向，素履以往。",
+      "不积跬步，无以至千里。",
+    ],
+    "searchIndexing": true,
+    "seoDescription": "",
+    "seoTitle": "",
+    "socials": [
+      SiteSocialDto {
+        "href": "https://github.com/example",
+        "icon": "lucide:github",
+        "label": "GitHub",
+      },
+    ],
+  },
+  "started": false,
+  "strategy": "copy",
+  "ticket": "c0c0c0c0-0000-4000-8000-000000000000",
+}
+`;
+
+exports[`内容包迁入服务特征 预览创建票据并按原样返回计划视图 2`] = `
+[
+  "findOne:ContentImport",
+  "transactional:{"isolationLevel":"repeatable read"}",
+  "execute:select pg_advisory_xact_lock(742915)",
+  "findOne:ContentImport",
+  "execute:select (select count(*)::int from post) ",
+  "find:Post",
+  "find:Comment",
+  "find:FlashNote",
+  "find:FlashComment",
+  "find:MediaAsset",
+  "find:Moment",
+  "find:GuestbookMessage",
+  "find:GalleryPhoto",
+  "find:Project",
+  "find:FriendLink",
+  "find:ImagePrompt",
+  "find:Subscription",
+  "findOneOrFail:LinkSettings",
+  "findOneOrFail:GallerySettings",
+  "find:MomentComment",
+  "find:PostFolder",
+  "find:PostTag",
+  "findOneOrFail:SiteSettings",
+  "findOneOrFail:CommentPolicy",
+  "find:PostAddress",
+  "find:TaxonomyAlias",
+  "findOneOrFail:SiteSettings",
+  "findOneOrFail:CommentPolicy",
+  "findOneOrFail:ContentContext",
+  "findOneOrFail:GallerySettings",
+  "findOneOrFail:LinkSettings",
+  "findOne:TaxonomyAlias",
+  "findOne:TaxonomyAlias",
+  "findOne:TaxonomyAlias",
+  "findOne:TaxonomyAlias",
+  "findOne:TaxonomyAlias",
+  "findOne:TaxonomyAlias",
+  "findOne:TaxonomyAlias",
+  "findOne:TaxonomyAlias",
+  "findOne:TaxonomyAlias",
+  "findOne:TaxonomyAlias",
+  "flush",
+]
+`;
+
+exports[`内容包迁入计划特征 v13 复制并包含设置 1`] = `
+{
+  "basis": "4afd8ca11a8259a8793fbba590a415754c0dbb30136b6d42f8d70a084e4df722",
+  "counts": {
+    "comments": 6,
+    "files": 0,
+    "flashes": 2,
+    "gallery": 1,
+    "guestbook": 3,
+    "links": 1,
+    "media": 0,
+    "moments": 2,
+    "posts": 3,
+    "projects": 1,
+    "prompts": 2,
+    "settings": true,
+    "skipped": 4,
+    "subscriptions": 1,
+  },
+  "errors": [],
+  "flashes": [
+    {
+      "reason": "创建新的闪念草稿",
+      "skip": false,
+      "sourceId": "f1111111-1111-4111-8111-111111111111",
+      "title": "今天看到云海",
+    },
+    {
+      "reason": "创建新的闪念草稿",
+      "skip": false,
+      "sourceId": "f2222222-2222-4222-8222-222222222222",
+      "title": "待整理的想法",
+    },
+  ],
+  "gallery": [
+    {
+      "reason": "创建新的图库草稿，保留拍摄信息及媒体关联",
+      "skip": false,
+      "sourceId": 1,
+      "title": "山脊",
+    },
+    {
+      "reason": "跳过已删除作品，保留删除状态",
+      "skip": true,
+      "sourceId": 2,
+      "title": "外链照片",
+    },
+  ],
+  "gallerySettingsRevision": 5,
+  "guestbook": [
+    {
+      "reason": "迁入为待审留言，保留回复关系；不迁入置顶、访客凭据和回应",
+      "skip": false,
+      "sourceId": 21,
+      "title": "来踩踩",
+    },
+    {
+      "reason": "迁入为待审留言，保留回复关系；不迁入置顶、访客凭据和回应",
+      "skip": false,
+      "sourceId": 22,
+      "title": "欢迎",
+    },
+    {
+      "reason": "保留已删除记录以重建回复引用，不公开、不恢复媒体引用",
+      "skip": false,
+      "sourceId": 23,
+      "title": "已回收留言",
+    },
+  ],
+  "linkSettingsRevision": 4,
+  "links": [
+    {
+      "reason": "相同地址另建非公开草稿副本，保留原路径与参数；不能自动上架",
+      "skip": false,
+      "sourceId": 1,
+      "title": "山友博客",
+    },
+    {
+      "reason": "跳过已删除友链，不自动恢复",
+      "skip": true,
+      "sourceId": 2,
+      "title": "失联站点",
+    },
+  ],
+  "media": [
+    {
+      "create": false,
+      "id": "a1111111-1111-4111-8111-111111111111",
+      "skip": false,
+      "writeFile": false,
+    },
+    {
+      "create": false,
+      "id": "a2222222-2222-4222-8222-222222222222",
+      "skip": false,
+      "writeFile": false,
+    },
+  ],
+  "moments": [
+    {
+      "linkedArticleId": 1,
+      "reason": "创建新的朋友圈草稿；保留未删除评论的审核状态；点赞和访客身份不迁入",
+      "skip": false,
+      "sourceId": "b1111111-1111-4111-8111-111111111111",
+      "title": "读完了一本书",
+    },
+    {
+      "linkedArticleId": null,
+      "reason": "创建新的朋友圈草稿；保留未删除评论的审核状态；点赞和访客身份不迁入",
+      "skip": false,
+      "sourceId": "b2222222-2222-4222-8222-222222222222",
+      "title": "已删除的动态",
+    },
+  ],
+  "omittedRelations": 2,
+  "policyRevision": 2,
+  "posts": [
+    {
+      "reason": "创建新的草稿副本，现有内容保留；原地址占用，使用新的地址标识",
+      "skip": false,
+      "slug": "mountain-walk-import-d1d2d3d4-1",
+      "sourceId": 1,
+      "title": "山间散步",
+    },
+    {
+      "reason": "创建新的草稿副本，现有内容保留",
+      "skip": false,
+      "slug": "",
+      "sourceId": 2,
+      "title": "旧版正文草稿",
+    },
+    {
+      "reason": "创建新的草稿副本，现有内容保留",
+      "skip": false,
+      "slug": "recycled-post",
+      "sourceId": 3,
+      "title": "已回收文章",
+    },
+  ],
+  "projects": [
+    {
+      "reason": "创建新的项目草稿，保留项目进展、标签、链接与封面关联",
+      "skip": false,
+      "sourceId": 1,
+      "title": "博客工作台",
+    },
+    {
+      "reason": "跳过已删除项目，保留删除状态",
+      "skip": true,
+      "sourceId": 2,
+      "title": "废弃项目",
+    },
+  ],
+  "prompts": [
+    {
+      "reason": "创建新的提示词草稿，保留提示词、模型、标签和图片来源",
+      "skip": false,
+      "sourceId": 1,
+      "title": "雾中山色",
+    },
+    {
+      "reason": "创建新的提示词草稿，保留提示词、模型、标签和图片来源",
+      "skip": false,
+      "sourceId": 2,
+      "title": "草稿提示词",
+    },
+  ],
+  "ready": true,
+  "relationMapping": {
+    "gallery:1": {
+      "copySourceId": 1,
+      "type": "gallery",
+    },
+    "gallery:2": null,
+    "post:1": {
+      "copySourceId": 1,
+      "type": "post",
+    },
+    "post:2": {
+      "copySourceId": 2,
+      "type": "post",
+    },
+    "post:3": null,
+    "project:1": {
+      "copySourceId": 1,
+      "type": "project",
+    },
+    "project:2": null,
+  },
+  "siteRevision": 3,
+  "subscriptions": [
+    {
+      "reason": "创建新的订阅草稿，保留币种、周期、业务状态、价格历史和受管图标",
+      "skip": false,
+      "sourceId": 1,
+      "title": "工作用云盘",
+    },
+    {
+      "reason": "跳过已删除订阅，不自动恢复",
+      "skip": true,
+      "sourceId": 2,
+      "title": "已退订音乐",
+    },
+  ],
+}
+`;
+
+exports[`内容包迁入计划特征 v13 复制并包含设置 2`] = `"c255a4658bf69098922e9428d189b58c21728864840aedcb8cb25407912bf71b"`;
+
+exports[`内容包迁入计划特征 v13 复制并包含设置 3`] = `
+[
+  "execute:select (select count(*)::int from post) ",
+  "find:Post",
+  "find:Comment",
+  "find:FlashNote",
+  "find:FlashComment",
+  "find:MediaAsset",
+  "find:Moment",
+  "find:GuestbookMessage",
+  "find:GalleryPhoto",
+  "find:Project",
+  "find:FriendLink",
+  "find:ImagePrompt",
+  "find:Subscription",
+  "findOneOrFail:LinkSettings",
+  "findOneOrFail:GallerySettings",
+  "find:MomentComment",
+  "find:PostFolder",
+  "find:PostTag",
+  "findOneOrFail:SiteSettings",
+  "findOneOrFail:CommentPolicy",
+  "find:PostAddress",
+  "find:TaxonomyAlias",
+  "findOneOrFail:SiteSettings",
+  "findOneOrFail:CommentPolicy",
+  "findOneOrFail:ContentContext",
+  "findOneOrFail:GallerySettings",
+  "findOneOrFail:LinkSettings",
+  "findOne:TaxonomyAlias",
+  "findOne:TaxonomyAlias",
+  "findOne:TaxonomyAlias",
+  "findOne:TaxonomyAlias",
+  "findOne:TaxonomyAlias",
+  "findOne:TaxonomyAlias",
+  "findOne:TaxonomyAlias",
+  "findOne:TaxonomyAlias",
+  "findOne:TaxonomyAlias",
+  "findOne:TaxonomyAlias",
+]
+`;
+
+exports[`内容包迁入计划特征 v13 跳过且不含设置 1`] = `
+{
+  "basis": "45bf0e542979720d60f89469cf622f31373af4dbf31a5991b8ecaad0d093674c",
+  "counts": {
+    "comments": 0,
+    "files": 0,
+    "flashes": 0,
+    "gallery": 0,
+    "guestbook": 0,
+    "links": 0,
+    "media": 0,
+    "moments": 1,
+    "posts": 0,
+    "projects": 0,
+    "prompts": 0,
+    "settings": false,
+    "skipped": 19,
+    "subscriptions": 0,
+  },
+  "errors": [],
+  "flashes": [
+    {
+      "reason": "跳过相同内容及其评论",
+      "skip": true,
+      "sourceId": "f1111111-1111-4111-8111-111111111111",
+      "title": "今天看到云海",
+    },
+    {
+      "reason": "跳过相同内容及其评论",
+      "skip": true,
+      "sourceId": "f2222222-2222-4222-8222-222222222222",
+      "title": "待整理的想法",
+    },
+  ],
+  "gallery": [
+    {
+      "reason": "跳过相同图库作品",
+      "skip": true,
+      "sourceId": 1,
+      "title": "山脊",
+    },
+    {
+      "reason": "跳过已删除作品，保留删除状态",
+      "skip": true,
+      "sourceId": 2,
+      "title": "外链照片",
+    },
+  ],
+  "gallerySettingsRevision": 5,
+  "guestbook": [
+    {
+      "reason": "跳过相同留言及引用语义，保留目标审核状态",
+      "skip": true,
+      "sourceId": 21,
+      "targetId": 21,
+      "title": "来踩踩",
+    },
+    {
+      "reason": "跳过相同留言及引用语义，保留目标审核状态",
+      "skip": true,
+      "sourceId": 22,
+      "targetId": 22,
+      "title": "欢迎",
+    },
+    {
+      "reason": "跳过相同留言及引用语义，保留目标审核状态",
+      "skip": true,
+      "sourceId": 23,
+      "targetId": 23,
+      "title": "已回收留言",
+    },
+  ],
+  "linkSettingsRevision": 4,
+  "links": [
+    {
+      "reason": "跳过已有相同规范地址的友链，现有内容保持不变",
+      "skip": true,
+      "sourceId": 1,
+      "title": "山友博客",
+    },
+    {
+      "reason": "跳过已删除友链，不自动恢复",
+      "skip": true,
+      "sourceId": 2,
+      "title": "失联站点",
+    },
+  ],
+  "media": [
+    {
+      "create": false,
+      "id": "a1111111-1111-4111-8111-111111111111",
+      "skip": false,
+      "writeFile": false,
+    },
+    {
+      "create": false,
+      "id": "a2222222-2222-4222-8222-222222222222",
+      "skip": false,
+      "writeFile": false,
+    },
+  ],
+  "moments": [
+    {
+      "linkedArticleId": 1,
+      "reason": "跳过相同内容及其评论",
+      "skip": true,
+      "sourceId": "b1111111-1111-4111-8111-111111111111",
+      "title": "读完了一本书",
+    },
+    {
+      "linkedArticleId": null,
+      "reason": "创建新的朋友圈草稿；保留未删除评论的审核状态；点赞和访客身份不迁入",
+      "skip": false,
+      "sourceId": "b2222222-2222-4222-8222-222222222222",
+      "title": "已删除的动态",
+    },
+  ],
+  "omittedRelations": 2,
+  "policyRevision": 2,
+  "posts": [
+    {
+      "reason": "跳过相同内容及其评论",
+      "skip": true,
+      "slug": "mountain-walk",
+      "sourceId": 1,
+      "title": "山间散步",
+    },
+    {
+      "reason": "跳过相同内容及其评论",
+      "skip": true,
+      "slug": "",
+      "sourceId": 2,
+      "title": "旧版正文草稿",
+    },
+    {
+      "reason": "跳过相同内容及其评论",
+      "skip": true,
+      "slug": "recycled-post",
+      "sourceId": 3,
+      "title": "已回收文章",
+    },
+  ],
+  "projects": [
+    {
+      "reason": "跳过相同项目内容",
+      "skip": true,
+      "sourceId": 1,
+      "title": "博客工作台",
+    },
+    {
+      "reason": "跳过已删除项目，保留删除状态",
+      "skip": true,
+      "sourceId": 2,
+      "title": "废弃项目",
+    },
+  ],
+  "prompts": [
+    {
+      "reason": "跳过相同图片提示词",
+      "skip": true,
+      "sourceId": 1,
+      "title": "雾中山色",
+    },
+    {
+      "reason": "跳过相同图片提示词",
+      "skip": true,
+      "sourceId": 2,
+      "title": "草稿提示词",
+    },
+  ],
+  "ready": true,
+  "relationMapping": {
+    "gallery:1": {
+      "existingId": 1,
+      "type": "gallery",
+    },
+    "gallery:2": null,
+    "post:1": {
+      "existingId": 1,
+      "type": "post",
+    },
+    "post:2": {
+      "existingId": 2,
+      "type": "post",
+    },
+    "post:3": null,
+    "project:1": {
+      "existingId": 1,
+      "type": "project",
+    },
+    "project:2": null,
+  },
+  "siteRevision": 3,
+  "subscriptions": [
+    {
+      "reason": "跳过相同订阅及完整价格历史，已有记录保持不变",
+      "skip": true,
+      "sourceId": 1,
+      "title": "工作用云盘",
+    },
+    {
+      "reason": "跳过已删除订阅，不自动恢复",
+      "skip": true,
+      "sourceId": 2,
+      "title": "已退订音乐",
+    },
+  ],
+}
+`;
+
+exports[`内容包迁入计划特征 v13 跳过且不含设置 2`] = `"1b11f927264a002810d42d6f1730b4095c1579b8d21aeb2c2154bcdf39f9f655"`;
+
+exports[`内容包迁入计划特征 v13 跳过且不含设置 3`] = `
+[
+  "execute:select (select count(*)::int from post) ",
+  "find:Post",
+  "find:Comment",
+  "find:FlashNote",
+  "find:FlashComment",
+  "find:MediaAsset",
+  "find:Moment",
+  "find:GuestbookMessage",
+  "find:GalleryPhoto",
+  "find:Project",
+  "find:FriendLink",
+  "find:ImagePrompt",
+  "find:Subscription",
+  "findOneOrFail:LinkSettings",
+  "findOneOrFail:GallerySettings",
+  "find:MomentComment",
+  "find:PostFolder",
+  "find:PostTag",
+  "findOneOrFail:SiteSettings",
+  "findOneOrFail:CommentPolicy",
+  "find:PostAddress",
+  "find:TaxonomyAlias",
+  "findOneOrFail:SiteSettings",
+  "findOneOrFail:CommentPolicy",
+  "findOneOrFail:ContentContext",
+  "findOneOrFail:GallerySettings",
+  "findOneOrFail:LinkSettings",
+  "findOne:TaxonomyAlias",
+  "findOne:TaxonomyAlias",
+  "findOne:TaxonomyAlias",
+  "findOne:TaxonomyAlias",
+  "findOne:TaxonomyAlias",
+  "findOne:TaxonomyAlias",
+  "findOne:TaxonomyAlias",
+  "findOne:TaxonomyAlias",
+  "findOne:TaxonomyAlias",
+  "findOne:TaxonomyAlias",
+]
+`;
+
+exports[`内容包迁入计划特征 v14 复制并包含设置 1`] = `
+{
+  "basis": "4afd8ca11a8259a8793fbba590a415754c0dbb30136b6d42f8d70a084e4df722",
+  "counts": {
+    "comments": 6,
+    "files": 0,
+    "flashes": 2,
+    "gallery": 1,
+    "guestbook": 3,
+    "links": 1,
+    "media": 0,
+    "moments": 2,
+    "posts": 3,
+    "projects": 1,
+    "prompts": 2,
+    "settings": true,
+    "skipped": 4,
+    "subscriptions": 1,
+  },
+  "errors": [],
+  "flashes": [
+    {
+      "reason": "创建新的闪念草稿",
+      "skip": false,
+      "sourceId": "f1111111-1111-4111-8111-111111111111",
+      "title": "今天看到云海",
+    },
+    {
+      "reason": "创建新的闪念草稿",
+      "skip": false,
+      "sourceId": "f2222222-2222-4222-8222-222222222222",
+      "title": "待整理的想法",
+    },
+  ],
+  "gallery": [
+    {
+      "reason": "创建新的图库草稿，保留拍摄信息及媒体关联",
+      "skip": false,
+      "sourceId": 1,
+      "title": "山脊",
+    },
+    {
+      "reason": "跳过已删除作品，保留删除状态",
+      "skip": true,
+      "sourceId": 2,
+      "title": "外链照片",
+    },
+  ],
+  "gallerySettingsRevision": 5,
+  "guestbook": [
+    {
+      "reason": "迁入为待审留言，保留回复关系；不迁入置顶、访客凭据和回应",
+      "skip": false,
+      "sourceId": 21,
+      "title": "来踩踩",
+    },
+    {
+      "reason": "迁入为待审留言，保留回复关系；不迁入置顶、访客凭据和回应",
+      "skip": false,
+      "sourceId": 22,
+      "title": "欢迎",
+    },
+    {
+      "reason": "保留已删除记录以重建回复引用，不公开、不恢复媒体引用",
+      "skip": false,
+      "sourceId": 23,
+      "title": "已回收留言",
+    },
+  ],
+  "linkSettingsRevision": 4,
+  "links": [
+    {
+      "reason": "相同地址另建非公开草稿副本，保留原路径与参数；不能自动上架",
+      "skip": false,
+      "sourceId": 1,
+      "title": "山友博客",
+    },
+    {
+      "reason": "跳过已删除友链，不自动恢复",
+      "skip": true,
+      "sourceId": 2,
+      "title": "失联站点",
+    },
+  ],
+  "media": [
+    {
+      "create": false,
+      "id": "a1111111-1111-4111-8111-111111111111",
+      "skip": false,
+      "writeFile": false,
+    },
+    {
+      "create": false,
+      "id": "a2222222-2222-4222-8222-222222222222",
+      "skip": false,
+      "writeFile": false,
+    },
+  ],
+  "moments": [
+    {
+      "linkedArticleId": 1,
+      "reason": "创建新的朋友圈草稿；保留未删除评论的审核状态；点赞和访客身份不迁入",
+      "skip": false,
+      "sourceId": "b1111111-1111-4111-8111-111111111111",
+      "title": "读完了一本书",
+    },
+    {
+      "linkedArticleId": null,
+      "reason": "创建新的朋友圈草稿；保留未删除评论的审核状态；点赞和访客身份不迁入",
+      "skip": false,
+      "sourceId": "b2222222-2222-4222-8222-222222222222",
+      "title": "已删除的动态",
+    },
+  ],
+  "omittedRelations": 2,
+  "policyRevision": 2,
+  "posts": [
+    {
+      "reason": "创建新的草稿副本，现有内容保留；原地址占用，使用新的地址标识",
+      "skip": false,
+      "slug": "mountain-walk-import-d1d2d3d4-1",
+      "sourceId": 1,
+      "title": "山间散步",
+    },
+    {
+      "reason": "创建新的草稿副本，现有内容保留",
+      "skip": false,
+      "slug": "",
+      "sourceId": 2,
+      "title": "旧版正文草稿",
+    },
+    {
+      "reason": "创建新的草稿副本，现有内容保留",
+      "skip": false,
+      "slug": "recycled-post",
+      "sourceId": 3,
+      "title": "已回收文章",
+    },
+  ],
+  "projects": [
+    {
+      "reason": "创建新的项目草稿，保留项目进展、标签、链接与封面关联",
+      "skip": false,
+      "sourceId": 1,
+      "title": "博客工作台",
+    },
+    {
+      "reason": "跳过已删除项目，保留删除状态",
+      "skip": true,
+      "sourceId": 2,
+      "title": "废弃项目",
+    },
+  ],
+  "prompts": [
+    {
+      "reason": "创建新的提示词草稿，保留提示词、模型、标签和图片来源",
+      "skip": false,
+      "sourceId": 1,
+      "title": "雾中山色",
+    },
+    {
+      "reason": "创建新的提示词草稿，保留提示词、模型、标签和图片来源",
+      "skip": false,
+      "sourceId": 2,
+      "title": "草稿提示词",
+    },
+  ],
+  "ready": true,
+  "relationMapping": {
+    "gallery:1": {
+      "copySourceId": 1,
+      "type": "gallery",
+    },
+    "gallery:2": null,
+    "post:1": {
+      "copySourceId": 1,
+      "type": "post",
+    },
+    "post:2": {
+      "copySourceId": 2,
+      "type": "post",
+    },
+    "post:3": null,
+    "project:1": {
+      "copySourceId": 1,
+      "type": "project",
+    },
+    "project:2": null,
+  },
+  "siteRevision": 3,
+  "subscriptions": [
+    {
+      "reason": "创建新的订阅草稿，保留币种、周期、业务状态、价格历史和受管图标",
+      "skip": false,
+      "sourceId": 1,
+      "title": "工作用云盘",
+    },
+    {
+      "reason": "跳过已删除订阅，不自动恢复",
+      "skip": true,
+      "sourceId": 2,
+      "title": "已退订音乐",
+    },
+  ],
+}
+`;
+
+exports[`内容包迁入计划特征 v14 复制并包含设置 2`] = `"c255a4658bf69098922e9428d189b58c21728864840aedcb8cb25407912bf71b"`;
+
+exports[`内容包迁入计划特征 v14 复制并包含设置 3`] = `
+[
+  "execute:select (select count(*)::int from post) ",
+  "find:Post",
+  "find:Comment",
+  "find:FlashNote",
+  "find:FlashComment",
+  "find:MediaAsset",
+  "find:Moment",
+  "find:GuestbookMessage",
+  "find:GalleryPhoto",
+  "find:Project",
+  "find:FriendLink",
+  "find:ImagePrompt",
+  "find:Subscription",
+  "findOneOrFail:LinkSettings",
+  "findOneOrFail:GallerySettings",
+  "find:MomentComment",
+  "find:PostFolder",
+  "find:PostTag",
+  "findOneOrFail:SiteSettings",
+  "findOneOrFail:CommentPolicy",
+  "find:PostAddress",
+  "find:TaxonomyAlias",
+  "findOneOrFail:SiteSettings",
+  "findOneOrFail:CommentPolicy",
+  "findOneOrFail:ContentContext",
+  "findOneOrFail:GallerySettings",
+  "findOneOrFail:LinkSettings",
+  "findOne:TaxonomyAlias",
+  "findOne:TaxonomyAlias",
+  "findOne:TaxonomyAlias",
+  "findOne:TaxonomyAlias",
+  "findOne:TaxonomyAlias",
+  "findOne:TaxonomyAlias",
+  "findOne:TaxonomyAlias",
+  "findOne:TaxonomyAlias",
+  "findOne:TaxonomyAlias",
+  "findOne:TaxonomyAlias",
+]
+`;
+
+exports[`内容包迁入计划特征 v14 跳过相同内容 1`] = `
+{
+  "basis": "45bf0e542979720d60f89469cf622f31373af4dbf31a5991b8ecaad0d093674c",
+  "counts": {
+    "comments": 0,
+    "files": 0,
+    "flashes": 0,
+    "gallery": 0,
+    "guestbook": 0,
+    "links": 0,
+    "media": 0,
+    "moments": 1,
+    "posts": 0,
+    "projects": 0,
+    "prompts": 0,
+    "settings": false,
+    "skipped": 19,
+    "subscriptions": 0,
+  },
+  "errors": [],
+  "flashes": [
+    {
+      "reason": "跳过相同内容及其评论",
+      "skip": true,
+      "sourceId": "f1111111-1111-4111-8111-111111111111",
+      "title": "今天看到云海",
+    },
+    {
+      "reason": "跳过相同内容及其评论",
+      "skip": true,
+      "sourceId": "f2222222-2222-4222-8222-222222222222",
+      "title": "待整理的想法",
+    },
+  ],
+  "gallery": [
+    {
+      "reason": "跳过相同图库作品",
+      "skip": true,
+      "sourceId": 1,
+      "title": "山脊",
+    },
+    {
+      "reason": "跳过已删除作品，保留删除状态",
+      "skip": true,
+      "sourceId": 2,
+      "title": "外链照片",
+    },
+  ],
+  "gallerySettingsRevision": 5,
+  "guestbook": [
+    {
+      "reason": "跳过相同留言及引用语义，保留目标审核状态",
+      "skip": true,
+      "sourceId": 21,
+      "targetId": 21,
+      "title": "来踩踩",
+    },
+    {
+      "reason": "跳过相同留言及引用语义，保留目标审核状态",
+      "skip": true,
+      "sourceId": 22,
+      "targetId": 22,
+      "title": "欢迎",
+    },
+    {
+      "reason": "跳过相同留言及引用语义，保留目标审核状态",
+      "skip": true,
+      "sourceId": 23,
+      "targetId": 23,
+      "title": "已回收留言",
+    },
+  ],
+  "linkSettingsRevision": 4,
+  "links": [
+    {
+      "reason": "跳过已有相同规范地址的友链，现有内容保持不变",
+      "skip": true,
+      "sourceId": 1,
+      "title": "山友博客",
+    },
+    {
+      "reason": "跳过已删除友链，不自动恢复",
+      "skip": true,
+      "sourceId": 2,
+      "title": "失联站点",
+    },
+  ],
+  "media": [
+    {
+      "create": false,
+      "id": "a1111111-1111-4111-8111-111111111111",
+      "skip": false,
+      "writeFile": false,
+    },
+    {
+      "create": false,
+      "id": "a2222222-2222-4222-8222-222222222222",
+      "skip": false,
+      "writeFile": false,
+    },
+  ],
+  "moments": [
+    {
+      "linkedArticleId": 1,
+      "reason": "跳过相同内容及其评论",
+      "skip": true,
+      "sourceId": "b1111111-1111-4111-8111-111111111111",
+      "title": "读完了一本书",
+    },
+    {
+      "linkedArticleId": null,
+      "reason": "创建新的朋友圈草稿；保留未删除评论的审核状态；点赞和访客身份不迁入",
+      "skip": false,
+      "sourceId": "b2222222-2222-4222-8222-222222222222",
+      "title": "已删除的动态",
+    },
+  ],
+  "omittedRelations": 2,
+  "policyRevision": 2,
+  "posts": [
+    {
+      "reason": "跳过相同内容及其评论",
+      "skip": true,
+      "slug": "mountain-walk",
+      "sourceId": 1,
+      "title": "山间散步",
+    },
+    {
+      "reason": "跳过相同内容及其评论",
+      "skip": true,
+      "slug": "",
+      "sourceId": 2,
+      "title": "旧版正文草稿",
+    },
+    {
+      "reason": "跳过相同内容及其评论",
+      "skip": true,
+      "slug": "recycled-post",
+      "sourceId": 3,
+      "title": "已回收文章",
+    },
+  ],
+  "projects": [
+    {
+      "reason": "跳过相同项目内容",
+      "skip": true,
+      "sourceId": 1,
+      "title": "博客工作台",
+    },
+    {
+      "reason": "跳过已删除项目，保留删除状态",
+      "skip": true,
+      "sourceId": 2,
+      "title": "废弃项目",
+    },
+  ],
+  "prompts": [
+    {
+      "reason": "跳过相同图片提示词",
+      "skip": true,
+      "sourceId": 1,
+      "title": "雾中山色",
+    },
+    {
+      "reason": "跳过相同图片提示词",
+      "skip": true,
+      "sourceId": 2,
+      "title": "草稿提示词",
+    },
+  ],
+  "ready": true,
+  "relationMapping": {
+    "gallery:1": {
+      "existingId": 1,
+      "type": "gallery",
+    },
+    "gallery:2": null,
+    "post:1": {
+      "existingId": 1,
+      "type": "post",
+    },
+    "post:2": {
+      "existingId": 2,
+      "type": "post",
+    },
+    "post:3": null,
+    "project:1": {
+      "existingId": 1,
+      "type": "project",
+    },
+    "project:2": null,
+  },
+  "siteRevision": 3,
+  "subscriptions": [
+    {
+      "reason": "跳过相同订阅及完整价格历史，已有记录保持不变",
+      "skip": true,
+      "sourceId": 1,
+      "title": "工作用云盘",
+    },
+    {
+      "reason": "跳过已删除订阅，不自动恢复",
+      "skip": true,
+      "sourceId": 2,
+      "title": "已退订音乐",
+    },
+  ],
+}
+`;
+
+exports[`内容包迁入计划特征 v14 跳过相同内容 2`] = `"1b11f927264a002810d42d6f1730b4095c1579b8d21aeb2c2154bcdf39f9f655"`;
+
+exports[`内容包迁入计划特征 v14 跳过相同内容 3`] = `
+[
+  "execute:select (select count(*)::int from post) ",
+  "find:Post",
+  "find:Comment",
+  "find:FlashNote",
+  "find:FlashComment",
+  "find:MediaAsset",
+  "find:Moment",
+  "find:GuestbookMessage",
+  "find:GalleryPhoto",
+  "find:Project",
+  "find:FriendLink",
+  "find:ImagePrompt",
+  "find:Subscription",
+  "findOneOrFail:LinkSettings",
+  "findOneOrFail:GallerySettings",
+  "find:MomentComment",
+  "find:PostFolder",
+  "find:PostTag",
+  "findOneOrFail:SiteSettings",
+  "findOneOrFail:CommentPolicy",
+  "find:PostAddress",
+  "find:TaxonomyAlias",
+  "findOneOrFail:SiteSettings",
+  "findOneOrFail:CommentPolicy",
+  "findOneOrFail:ContentContext",
+  "findOneOrFail:GallerySettings",
+  "findOneOrFail:LinkSettings",
+  "findOne:TaxonomyAlias",
+  "findOne:TaxonomyAlias",
+  "findOne:TaxonomyAlias",
+  "findOne:TaxonomyAlias",
+  "findOne:TaxonomyAlias",
+  "findOne:TaxonomyAlias",
+  "findOne:TaxonomyAlias",
+  "findOne:TaxonomyAlias",
+  "findOne:TaxonomyAlias",
+  "findOne:TaxonomyAlias",
+]
+`;
+
+exports[`内容包迁入计划特征 新内容、地址冲突与缺失媒体进入计划错误 1`] = `
+{
+  "basis": "45bf0e542979720d60f89469cf622f31373af4dbf31a5991b8ecaad0d093674c",
+  "counts": {
+    "comments": 6,
+    "files": 0,
+    "flashes": 1,
+    "gallery": 1,
+    "guestbook": 0,
+    "links": 0,
+    "media": 0,
+    "moments": 2,
+    "posts": 3,
+    "projects": 1,
+    "prompts": 0,
+    "settings": false,
+    "skipped": 14,
+    "subscriptions": 0,
+  },
+  "errors": [
+    "内容引用未登记的媒体 a9999999-9999-4999-8999-999999999999",
+  ],
+  "flashes": [
+    {
+      "reason": "跳过相同内容及其评论",
+      "skip": true,
+      "sourceId": "f1111111-1111-4111-8111-111111111111",
+      "title": "今天看到云海",
+    },
+    {
+      "reason": "跳过相同内容及其评论",
+      "skip": true,
+      "sourceId": "f2222222-2222-4222-8222-222222222222",
+      "title": "待整理的想法",
+    },
+    {
+      "reason": "创建新的闪念草稿",
+      "skip": false,
+      "sourceId": "f9999999-9999-4999-8999-999999999999",
+      "title": "新闪念",
+    },
+  ],
+  "gallery": [
+    {
+      "reason": "创建新的图库草稿，保留拍摄信息及媒体关联",
+      "skip": false,
+      "sourceId": 1,
+      "title": "山脊",
+    },
+    {
+      "reason": "跳过已删除作品，保留删除状态",
+      "skip": true,
+      "sourceId": 2,
+      "title": "外链照片",
+    },
+  ],
+  "gallerySettingsRevision": 5,
+  "guestbook": [
+    {
+      "reason": "跳过相同留言及引用语义，保留目标审核状态",
+      "skip": true,
+      "sourceId": 21,
+      "targetId": 21,
+      "title": "来踩踩",
+    },
+    {
+      "reason": "跳过相同留言及引用语义，保留目标审核状态",
+      "skip": true,
+      "sourceId": 22,
+      "targetId": 22,
+      "title": "欢迎",
+    },
+    {
+      "reason": "跳过相同留言及引用语义，保留目标审核状态",
+      "skip": true,
+      "sourceId": 23,
+      "targetId": 23,
+      "title": "已回收留言",
+    },
+  ],
+  "linkSettingsRevision": 4,
+  "links": [
+    {
+      "reason": "跳过已有相同规范地址的友链，现有内容保持不变",
+      "skip": true,
+      "sourceId": 1,
+      "title": "山友博客",
+    },
+    {
+      "reason": "跳过已删除友链，不自动恢复",
+      "skip": true,
+      "sourceId": 2,
+      "title": "失联站点",
+    },
+  ],
+  "media": [
+    {
+      "create": false,
+      "id": "a1111111-1111-4111-8111-111111111111",
+      "skip": false,
+      "writeFile": false,
+    },
+    {
+      "create": false,
+      "id": "a2222222-2222-4222-8222-222222222222",
+      "skip": false,
+      "writeFile": false,
+    },
+  ],
+  "moments": [
+    {
+      "linkedArticleId": null,
+      "reason": "创建新的朋友圈草稿；保留未删除评论的审核状态；点赞和访客身份不迁入",
+      "skip": false,
+      "sourceId": "b1111111-1111-4111-8111-111111111111",
+      "title": "读完了一本书",
+    },
+    {
+      "linkedArticleId": null,
+      "reason": "创建新的朋友圈草稿；保留未删除评论的审核状态；点赞和访客身份不迁入",
+      "skip": false,
+      "sourceId": "b2222222-2222-4222-8222-222222222222",
+      "title": "已删除的动态",
+    },
+  ],
+  "omittedRelations": 2,
+  "policyRevision": 2,
+  "posts": [
+    {
+      "reason": "创建新草稿；原地址占用，使用新的地址标识",
+      "skip": false,
+      "slug": "mountain-walk-import-e1e2e3e4-1",
+      "sourceId": 1,
+      "title": "改写后的山间散步",
+    },
+    {
+      "reason": "跳过相同内容及其评论",
+      "skip": true,
+      "slug": "",
+      "sourceId": 2,
+      "title": "旧版正文草稿",
+    },
+    {
+      "reason": "创建新草稿",
+      "skip": false,
+      "slug": "recycled-post",
+      "sourceId": 3,
+      "title": "已回收文章",
+    },
+    {
+      "reason": "创建新草稿",
+      "skip": false,
+      "slug": "",
+      "sourceId": 9,
+      "title": "引用缺失媒体",
+    },
+  ],
+  "projects": [
+    {
+      "reason": "创建新的项目草稿，保留项目进展、标签、链接与封面关联",
+      "skip": false,
+      "sourceId": 1,
+      "title": "博客工作台",
+    },
+    {
+      "reason": "跳过已删除项目，保留删除状态",
+      "skip": true,
+      "sourceId": 2,
+      "title": "废弃项目",
+    },
+  ],
+  "prompts": [
+    {
+      "reason": "跳过相同图片提示词",
+      "skip": true,
+      "sourceId": 1,
+      "title": "雾中山色",
+    },
+    {
+      "reason": "跳过相同图片提示词",
+      "skip": true,
+      "sourceId": 2,
+      "title": "草稿提示词",
+    },
+  ],
+  "ready": false,
+  "relationMapping": {
+    "gallery:1": {
+      "copySourceId": 1,
+      "type": "gallery",
+    },
+    "gallery:2": null,
+    "post:1": {
+      "copySourceId": 1,
+      "type": "post",
+    },
+    "post:2": {
+      "existingId": 2,
+      "type": "post",
+    },
+    "post:3": null,
+    "post:9": {
+      "copySourceId": 9,
+      "type": "post",
+    },
+    "project:1": {
+      "copySourceId": 1,
+      "type": "project",
+    },
+    "project:2": null,
+  },
+  "siteRevision": 3,
+  "subscriptions": [
+    {
+      "reason": "跳过相同订阅及完整价格历史，已有记录保持不变",
+      "skip": true,
+      "sourceId": 1,
+      "title": "工作用云盘",
+    },
+    {
+      "reason": "跳过已删除订阅，不自动恢复",
+      "skip": true,
+      "sourceId": 2,
+      "title": "已退订音乐",
+    },
+  ],
+}
+`;
