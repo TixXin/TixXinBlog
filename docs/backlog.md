@@ -20,6 +20,7 @@
 - 构建快照是真实的公开数据，作为显式部署形态，不违背 API 失败不回退 Mock 的约定。快照导出或构建失败时整次发布失败，不生成空列表或零统计的页面。
 - 部署目标：域名已备案时用 EdgeOne 覆盖国内；未备案时用 Cloudflare Workers 静态资源。同一份构建产物可以同时部署到两边，再按 DNS 线路分流。
 - 写作工具：VS Code 或 Obsidian 即可；需要网页编辑时，优先选 Sveltia CMS、Decap CMS 这类不绑定框架的 Git CMS。
+- 主题与语言（2026-10-27 维护者选定）：静态版在构建时由站长选定一个布局主题和一种界面语言，隐藏主题与语言切换入口，访客不能切换。不采用客户端按 cookie 切换（布局重排导致首屏闪烁和水合不一致）和用路径区分语言或主题（改变 URL 约定）。以后需要访客切换时，再用边缘函数按 cookie 返回预生成的对应版本，网址不变，与本方案兼容。
 
 ### 不采用的方案
 
@@ -31,16 +32,15 @@
 ### 现有代码的改造点
 
 - 公开读取：已集中在基于 [usePublicReadData](../src/frontend/web-blog/app/composables/usePublicReadData.ts) 的组合函数，闪念、朋友圈和留言另有仓储接口，注入见 [repositories.ts](../src/frontend/web-blog/app/plugins/repositories.ts)。需要统一为可替换的数据源，分别对接 HTTP 和构建快照。
-- 客户端切页：[nuxt.config.ts](../src/frontend/web-blog/nuxt.config.ts) 为避免预取压垮后端，关闭了 `experimental.payloadExtraction`。本机验证中打开它之后，文章详情（普通 `useAsyncData`）切页可直接读取预渲染 payload；但 `usePublicReadData` 的 `getCachedData` 只在 SSR 与首次水合时读取 payload，客户端切到归档等列表页仍会请求 `/api/v1`。静态形态需要让它在切页时也读取 payload 或快照。
+- 客户端切页：[nuxt.config.ts](../src/frontend/web-blog/nuxt.config.ts) 为避免预取压垮后端，关闭了 `experimental.payloadExtraction`。本机验证中打开它之后，文章详情（普通 `useAsyncData`）切页可直接读取预渲染 payload；但 `usePublicReadData` 的 `getCachedData` 只在 SSR 与首次水合时读取 payload，客户端切到归档等列表页仍会请求 `/api/v1`。验证分支 `codex/static-spike` 给它增加了“客户端非水合首读时使用 `static.data`”的分支，归档切页后不再请求接口，相关 20 个单测文件通过；服务器部署关闭 payload 提取时 `static.data` 为空，行为不变。正式实现还需处理带查询参数的列表，payload 只对应预渲染时的默认查询。
 - 查询参数：分页 `page`、`/gallery?photo=`、`/projects?project=`、订阅页 `currency` 和搜索页 `q/type/page`。静态托管同一路径只有一份 HTML，需要改为在客户端从快照中筛选和分页。
 - 主题与语言：SSR 按 `blog-layout-theme`、`blog-locale` cookie 输出不同 HTML，SSR 缓存也按 cookie 分键。本机验证结果：主题运行时（[useThemeRuntime.ts](../src/frontend/web-blog/app/composables/useThemeRuntime.ts)）只在服务端读 cookie、水合时信任 payload，静态站每次整页加载都回到默认主题，访客选择无法保留；语言 cookie 会在水合后切换，产生水合不一致警告，并先显示一帧默认语言。
 - 地址稳定：闪念和朋友圈详情使用数据库编号（`/flash/[id]`、`/moments/[id]`），文章支持数字编号和[自定义地址](../src/backend/server-main/src/entities/post-address.entity.ts)（含历史地址）。内容包迁入会重新分配编号，因此仓库格式必须携带稳定地址，否则切换部署形态会断链、丢失收录。历史地址在 EdgeOne 上受 `edgeone.json` 最多 100 条重定向的限制，超出时改为生成跳转页。
-- 构建期产物：媒体目前经 `/api/v1/media/<UUID>.webp` 网关读取并按需生成宽度变体，需要改为导出时生成并改写地址，图库较大时放到 R2、COS 或 EdgeOne Blob。搜索改为构建期索引，配合已依赖的 fuse.js。sitemap 在预渲染时已能从 API 生成完整地址；RSS、Atom、JSON Feed 不在爬取范围内，需显式加入预渲染。CSP 等安全头从 Nitro `routeRules` 转写到 `_headers` 或 `edgeone.json`。动态图标若未打进客户端包（验证中 `lucide:code-xml`、`lucide:layout-template` 构建时超时），静态站没有 `/api/_nuxt_icon` 可回退，需要列入 `icon.clientBundle.icons`。
+- 构建期产物：媒体目前经 `/api/v1/media/<UUID>.webp` 网关读取并按需生成宽度变体。验证中把产物引用的媒体按原路径导出到 `api/v1/media/`，地址无需改写即可显示；但 `?w=` 宽度变体在静态托管上被忽略、返回原图，正式实现需导出变体并改写为独立文件名。图库较大时放到 R2、COS 或 EdgeOne Blob。在同一构建目录上重复执行 `nuxt generate` 曾产出入口脚本缺失的页面，正式流程要求每次干净构建。搜索改为构建期索引，配合已依赖的 fuse.js。sitemap 在预渲染时已能从 API 生成完整地址；RSS、Atom、JSON Feed 不在爬取范围内，需显式加入预渲染。CSP 等安全头从 Nitro `routeRules` 转写到 `_headers` 或 `edgeone.json`。动态图标若未打进客户端包（验证中 `lucide:code-xml`、`lucide:layout-template` 构建时超时），静态站没有 `/api/_nuxt_icon` 可回退，需要列入 `icon.clientBundle.icons`。
 - 访客互动：文章、闪念与朋友圈的评论，以及留言、点赞和浏览量，在静态形态下关闭，或改接 Twikoo、Waline、Artalk。这些服务没有现有的审核策略、站内通知和内容关联语义，降级范围需要写入正式文档。本机验证中文章页会请求 `posts/<id>/interaction`、`posts/<id>/view`、`auth/session`、`setup/status`，失败后显示“点赞与浏览加载失败”错误卡片，静态形态需要按部署形态直接隐藏这些入口，而不是展示错误。
 
 ### 待定问题
 
-- 主题和语言的首屏策略：固定一个主题和语言，或者为每种组合预渲染一份并用路径区分（会改变 URL 约定），或者改为客户端读取 cookie 并接受首屏闪烁。
 - 仓库格式如何表达稳定地址与编号，迁入时如何保留。
 - 访客互动直接关闭，还是接 Twikoo（Cloudflare Workers 与 D1）等现成服务。
 - 媒体随站点部署，还是放在对象存储。
@@ -48,7 +48,7 @@
 
 ### 第一步与验收
 
-用本机开发库导出公开快照，以 `nuxt generate` 构建首页、文章详情和归档，部署到 EdgeOne 预览域名。本机部分已于 2026-10-27 完成，结论已并入上面的改造点；EdgeOne 预览部署未做。本机三页构建共 904 个文件、11MB，其中 `_nuxt` 占 855 个、9.8MB，每个页面另有 HTML 与 payload 及其 br/gz 副本共 6 个文件；按 sitemap 的 192 个地址估算全站约 2000 个文件，在 EdgeOne 单项目 2 万个文件的限制内。验收标准：
+用本机开发库导出公开快照，以 `nuxt generate` 构建首页、文章详情和归档，部署到 EdgeOne 预览域名。本机部分已于 2026-10-27 完成，结论已并入上面的改造点；EdgeOne 预览部署未做。第二轮在验证分支上修复切页读取与媒体导出后，切页只剩互动、登录状态和初始化状态接口失败。本机三页构建共 904 个文件、11MB，其中 `_nuxt` 占 855 个、9.8MB，每个页面另有 HTML 与 payload 及其 br/gz 副本共 6 个文件；按 sitemap 的 192 个地址估算全站约 2000 个文件，在 EdgeOne 单项目 2 万个文件的限制内。验收标准：
 
 - 主题与语言的首屏表现可以接受。
 - 媒体地址全部可访问。
