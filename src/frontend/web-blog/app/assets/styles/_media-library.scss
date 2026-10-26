@@ -1,0 +1,75 @@
+/**
+ * @file _media-library.scss
+ * @description 媒体库各区块共享的外观：字段与段落、列表、焦点与链接、面板、操作行、勾选与引用列表。
+ *              由媒体库及其子组件在 scoped 样式中 @include，生成的规则带各自的作用域，不再由父组件 :deep 下发
+ * @author TixXin
+ * @since 2026-10-27
+ */
+
+/** 区块内的原生字段、段落、列表、链接与键盘焦点 */
+@mixin base {
+  label {
+    display: grid;
+    min-width: 0;
+    gap: 0.4rem;
+    margin: 0.7rem 0;
+  }
+  p {
+    color: var(--text-muted);
+    margin: 0.5rem 0;
+  }
+  ul {
+    list-style: none;
+    padding: 0;
+  }
+  :is(input, textarea, select, button, a):focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 3px;
+  }
+  a {
+    color: var(--accent);
+  }
+}
+
+/** 资源卡片、引用面板与批量结果的面板外观 */
+@mixin panel {
+  min-width: 0;
+  border: 1px solid var(--border);
+  padding: 1rem;
+  border-radius: 0.8rem;
+  background: var(--surface-2);
+  overflow-wrap: anywhere;
+}
+
+/** 筛选、操作、批量栏与分页的横向操作行 */
+@mixin row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+  margin: 0.8rem 0;
+}
+
+/** 批量栏与资源卡片上的勾选控件 */
+@mixin selection {
+  .media-library__selection {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+  .media-library__selection input {
+    width: 1.1rem;
+    height: 1.1rem;
+    flex: none;
+    accent-color: var(--accent);
+  }
+}
+
+/** 引用面板与批量结果中的引用条目列表 */
+@mixin reference-list {
+  .media-library__reference-list {
+    display: grid;
+    gap: 0.5rem;
+    margin: 0.75rem 0;
+  }
+}

@@ -365,17 +365,6 @@
       "count": 1
     }
   },
-  "app/composables/useMediaLibrary.ts": {
-    "complexity": {
-      "count": 1
-    },
-    "max-depth": {
-      "count": 5
-    },
-    "max-lines-per-function": {
-      "count": 1
-    }
-  },
   "app/composables/useMediaUpload.ts": {
     "max-lines-per-function": {
       "count": 3
