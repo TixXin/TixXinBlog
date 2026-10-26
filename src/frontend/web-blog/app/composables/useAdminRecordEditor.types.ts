@@ -67,15 +67,11 @@ export interface AdminRecordEditorOptions<
   messages: AdminRecordEditorMessages
 }
 
-export function createRecordRecovery<TForm>(
-  version: number,
-  context: string,
-  id: number | null,
-  revision: number | null,
-  requestId: string,
-  form: TForm,
-  pendingCreate: TForm | null,
-): AdminRecordRecovery<TForm> {
+/** 写入本标签页恢复副本的字段 */
+export type RecordRecoveryInput<TForm> = Omit<AdminRecordRecovery<TForm>, 'savedAt'>
+
+export function createRecordRecovery<TForm>(input: RecordRecoveryInput<TForm>): AdminRecordRecovery<TForm> {
+  const { version, context, id, revision, requestId, form, pendingCreate } = input
   return { version, context, id, revision, requestId, form, pendingCreate, savedAt: new Date().toISOString() }
 }
 
@@ -96,12 +92,17 @@ export function removeRecoverySafe(key: string): boolean {
   }
 }
 
+/** 读取恢复副本的位置与解析方式 */
+export interface RecoveryReadInput<TRecovery> {
+  storage: Storage | undefined
+  prefix: string
+  context: string
+  parse: (raw: string | null) => TRecovery | null
+  fallbackKey: string
+}
+
 export function readRecoveriesSafe<TRecovery extends { context: string; savedAt: string }>(
-  storage: Storage | undefined,
-  prefix: string,
-  context: string,
-  parse: (raw: string | null) => TRecovery | null,
-  fallbackKey: string,
+  input: RecoveryReadInput<TRecovery>,
 ): {
   recovery: TRecovery | null
   key: string
@@ -109,6 +110,7 @@ export function readRecoveriesSafe<TRecovery extends { context: string; savedAt:
   migrationIssue: boolean
   failed: boolean
 } {
+  const { storage, prefix, context, parse, fallbackKey } = input
   if (!storage) return { recovery: null, key: fallbackKey, previous: [], migrationIssue: false, failed: false }
   try {
     const copies = readEditorRecoveries<TRecovery>(storage, prefix, context, parse)

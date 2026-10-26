@@ -132,17 +132,6 @@
       "count": 1
     }
   },
-  "app/composables/useAdminMomentEditor.ts": {
-    "complexity": {
-      "count": 2
-    },
-    "max-depth": {
-      "count": 2
-    },
-    "max-lines-per-function": {
-      "count": 2
-    }
-  },
   "app/composables/useAdminMoments.ts": {
     "complexity": {
       "count": 1
@@ -162,22 +151,6 @@
   "app/composables/useAdminReadResource.ts": {
     "max-lines-per-function": {
       "count": 1
-    }
-  },
-  "app/composables/useAdminRecordEditor.ts": {
-    "complexity": {
-      "count": 2
-    },
-    "max-depth": {
-      "count": 4
-    },
-    "max-lines-per-function": {
-      "count": 2
-    }
-  },
-  "app/composables/useAdminRecordEditor.types.ts": {
-    "max-params": {
-      "count": 2
     }
   },
   "app/composables/useAdminSessions.ts": {
@@ -490,17 +463,6 @@
       "count": 1
     }
   },
-  "app/composables/usePromptEditor.ts": {
-    "complexity": {
-      "count": 2
-    },
-    "max-depth": {
-      "count": 3
-    },
-    "max-lines-per-function": {
-      "count": 2
-    }
-  },
   "app/composables/usePromptRepository.ts": {
     "complexity": {
       "count": 1
@@ -750,11 +712,6 @@
   },
   "app/features/prompt/usePromptDataFeed.ts": {
     "max-params": {
-      "count": 1
-    }
-  },
-  "app/features/prompt/usePromptEditorSession.ts": {
-    "max-lines-per-function": {
       "count": 1
     }
   },
