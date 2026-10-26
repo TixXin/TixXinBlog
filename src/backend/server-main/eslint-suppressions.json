@@ -349,17 +349,6 @@
       "count": 1
     }
   },
-  "src/modules/site/site-navigation.ts": {
-    "complexity": {
-      "count": 1
-    },
-    "max-depth": {
-      "count": 9
-    },
-    "max-lines-per-function": {
-      "count": 1
-    }
-  },
   "src/modules/site/site-settings.service.ts": {
     "complexity": {
       "count": 1

@@ -3,7 +3,10 @@ import 'reflect-metadata'
 import { plainToInstance } from 'class-transformer'
 import { validateSync } from 'class-validator'
 import { SaveSiteSettingsDto } from './site-settings.dto'
+import { msg } from '../../common/i18n'
+import type { MessageKey, MessageParams } from '../../common/i18n'
 import {
+  SITE_LIMITS,
   SITE_NAV_KEYS,
   defaultSiteExtras,
   normalizeSiteExtrasInput,
@@ -168,6 +171,54 @@ describe('站点导航与页脚语义校验', () => {
     })
     reject({ icpUrl: 'beian.miit.gov.cn' }, '备案链接仅支持 http(s) 地址')
     reject({ copyright: 'a\nb' }, '备案号、备案链接或版权文案格式不正确')
+  })
+})
+
+describe('站点导航与页脚格式错误', () => {
+  const rejectKey = (input: Parameters<typeof normalizeSiteExtrasInput>[0], key: MessageKey, params?: MessageParams) =>
+    expect(() => normalizeSiteExtrasInput(input)).toThrow(new SiteExtrasError(msg(key, params)))
+  const external = { type: 'external', label: '旧站', url: 'https://old.example', newTab: false, visible: true }
+
+  it('导航条目的格式、显示开关、类型与各自允许的键', () => {
+    rejectKey({ navigation: 'home' }, 'site.navFormatInvalid')
+    rejectKey({ navigation: [null] }, 'site.navFormatInvalid')
+    rejectKey({ navigation: [{ type: 'route', key: 'home' }] }, 'site.navVisibleBoolean')
+    rejectKey({ navigation: [{ type: 'link', visible: true }] }, 'site.navItemTypeInvalid')
+    rejectKey(
+      { navigation: [{ type: 'route', key: 'about', label: '关于', visible: true }] },
+      'site.navRouteCustomized',
+    )
+    rejectKey({ navigation: [{ type: 'route', key: 'admin', visible: true }] }, 'site.navUnknownModule')
+    rejectKey({ navigation: [{ ...external, key: 'about' }] }, 'site.navExternalKey')
+    rejectKey({ navigation: [{ ...external, label: '  ' }] }, 'site.navExternalLabelLength', {
+      max: SITE_LIMITS.navLabel,
+    })
+    rejectKey({ navigation: [{ ...external, newTab: 'yes' }] }, 'site.navExternalNewTab')
+  })
+
+  it('同一条目有多处问题时按固定顺序报告第一处', () => {
+    rejectKey({ navigation: [{ type: 'route', key: 'admin', label: 'x' }] }, 'site.navVisibleBoolean')
+    rejectKey({ navigation: [{ type: 'route', key: 'admin', label: 'x', visible: true }] }, 'site.navRouteCustomized')
+    rejectKey({ navigation: [{ ...external, key: 'about', url: 'ftp://a' }] }, 'site.navExternalKey')
+    rejectKey({ navigation: [{ ...external, url: 'ftp://a', newTab: 'yes' }] }, 'site.navExternalUrlInvalid')
+    rejectKey({ footerLinks: [{ label: '', url: 'about', newTab: 'no' }] }, 'site.footerLabelLength', {
+      max: SITE_LIMITS.footerLabel,
+    })
+  })
+
+  it('页脚、一言与备案字段的格式与数量', () => {
+    rejectKey({ footerLinks: {} }, 'site.footerFormatInvalid')
+    rejectKey({ footerLinks: ['/about'] }, 'site.footerFormatInvalid')
+    const footer = { label: '关于', url: '/about', newTab: false }
+    const many = Array.from({ length: SITE_LIMITS.footerLinks + 1 }, (_, index) => ({ ...footer, url: `/p${index}` }))
+    rejectKey({ footerLinks: many }, 'site.footerTooMany', { max: SITE_LIMITS.footerLinks })
+    rejectKey({ footerLinks: [{ ...footer, newTab: 1 }] }, 'site.footerNewTab')
+    rejectKey({ quotes: '一句' }, 'site.quotesFormatInvalid')
+    const quotes = Array.from({ length: SITE_LIMITS.quotes + 1 }, (_, index) => `第${index}句`)
+    rejectKey({ quotes }, 'site.quotesTooMany', { max: SITE_LIMITS.quotes })
+    rejectKey({ quotes: [3] }, 'site.quoteLength', { max: SITE_LIMITS.quote })
+    rejectKey({ icpNumber: 12 }, 'site.filingFormatInvalid')
+    rejectKey({ copyright: 'x'.repeat(SITE_LIMITS.copyright + 1) }, 'site.filingFormatInvalid')
   })
 })
 

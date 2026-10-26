@@ -150,93 +150,121 @@ export class SiteExtrasError extends Error {
   }
 }
 
+function fail(message: LocalizedMessage): never {
+  throw new SiteExtrasError(message)
+}
+const trimmedText = (value: unknown) => (typeof value === 'string' ? value.trim() : '')
+
+/** 内置模块：只允许 key 与显示开关，模块不可重复，首页不能隐藏 */
+function normalizeRouteNavItem(item: Record<string, unknown>, keys: Set<string>): SiteNavRouteItem {
+  if (['label', 'url', 'newTab'].some((key) => item[key] !== undefined)) fail(msg('site.navRouteCustomized'))
+  const key = String(item.key)
+  if (!(SITE_NAV_KEYS as readonly string[]).includes(key)) fail(msg('site.navUnknownModule'))
+  if (keys.has(key)) fail(msg('site.navModuleDuplicate'))
+  keys.add(key)
+  if (key === 'home' && !item.visible) fail(msg('site.navHomeHidden'))
+  return { type: 'route', key: key as SiteNavKey, visible: item.visible as boolean }
+}
+
+/** 外链：不带 key，名称与 http(s) 地址必填且地址不重复 */
+function normalizeExternalNavItem(item: Record<string, unknown>, urls: Set<string>): SiteNavExternalItem {
+  if (item.key !== undefined) fail(msg('site.navExternalKey'))
+  const label = trimmedText(item.label)
+  const url = trimmedText(item.url)
+  if (!label || label.length > SITE_LIMITS.navLabel)
+    fail(msg('site.navExternalLabelLength', { max: SITE_LIMITS.navLabel }))
+  if (url.length > SITE_LIMITS.url || !isHttpUrl(url)) fail(msg('site.navExternalUrlInvalid'))
+  if (typeof item.newTab !== 'boolean') fail(msg('site.navExternalNewTab'))
+  if (urls.has(url)) fail(msg('site.navExternalUrlDuplicate'))
+  urls.add(url)
+  return { type: 'external', label, url, newTab: item.newTab, visible: item.visible as boolean }
+}
+
+function normalizeNavItem(item: unknown, keys: Set<string>, urls: Set<string>): SiteNavItem {
+  if (!item || typeof item !== 'object') fail(msg('site.navFormatInvalid'))
+  const entry = item as Record<string, unknown>
+  if (typeof entry.visible !== 'boolean') fail(msg('site.navVisibleBoolean'))
+  if (entry.type === 'route') return normalizeRouteNavItem(entry, keys)
+  if (entry.type === 'external') return normalizeExternalNavItem(entry, urls)
+  return fail(msg('site.navItemTypeInvalid'))
+}
+
+/** 导航：外链数量受限，缺失的内置模块按显示追加到末尾 */
+function normalizeNavigation(value: unknown): SiteNavItem[] {
+  if (!Array.isArray(value)) fail(msg('site.navFormatInvalid'))
+  const keys = new Set<string>()
+  const urls = new Set<string>()
+  const navigation: SiteNavItem[] = []
+  for (const item of value as unknown[]) navigation.push(normalizeNavItem(item, keys, urls))
+  if (urls.size > SITE_LIMITS.externalNav) fail(msg('site.navExternalTooMany', { max: SITE_LIMITS.externalNav }))
+  for (const key of SITE_NAV_KEYS) if (!keys.has(key)) navigation.push({ type: 'route', key, visible: true })
+  return navigation
+}
+
+function normalizeFooterLink(link: unknown, seen: Set<string>): SiteFooterLink {
+  if (!link || typeof link !== 'object') return fail(msg('site.footerFormatInvalid'))
+  const entry = link as Record<string, unknown>
+  const label = trimmedText(entry.label)
+  const url = trimmedText(entry.url)
+  if (!label || label.length > SITE_LIMITS.footerLabel)
+    fail(msg('site.footerLabelLength', { max: SITE_LIMITS.footerLabel }))
+  if (url.length > SITE_LIMITS.url || (!isSitePath(url) && !isHttpUrl(url))) fail(msg('site.footerUrlInvalid'))
+  if (typeof entry.newTab !== 'boolean') fail(msg('site.footerNewTab'))
+  if (seen.has(url)) fail(msg('site.footerUrlDuplicate'))
+  seen.add(url)
+  return { label, url, newTab: entry.newTab }
+}
+
+/** 页脚链接：站内路径或 http(s) 地址，数量受限且地址不重复 */
+function normalizeFooterLinks(value: unknown): SiteFooterLink[] {
+  if (!Array.isArray(value)) fail(msg('site.footerFormatInvalid'))
+  const links = value as unknown[]
+  if (links.length > SITE_LIMITS.footerLinks) fail(msg('site.footerTooMany', { max: SITE_LIMITS.footerLinks }))
+  const seen = new Set<string>()
+  return links.map((link) => normalizeFooterLink(link, seen))
+}
+
+/** 每日一言：去掉首尾空白后非空、限长、不重复 */
+function normalizeQuotes(value: unknown): string[] {
+  if (!Array.isArray(value)) fail(msg('site.quotesFormatInvalid'))
+  const quotes = (value as unknown[]).map(trimmedText)
+  if (quotes.length > SITE_LIMITS.quotes) fail(msg('site.quotesTooMany', { max: SITE_LIMITS.quotes }))
+  if (quotes.some((quote) => !quote || quote.length > SITE_LIMITS.quote))
+    fail(msg('site.quoteLength', { max: SITE_LIMITS.quote }))
+  if (new Set(quotes).size !== quotes.length) fail(msg('site.quotesDuplicate'))
+  return quotes
+}
+
+const FILING_FIELDS = [
+  ['icpNumber', SITE_LIMITS.icpNumber],
+  ['icpUrl', SITE_LIMITS.icpUrl],
+  ['copyright', SITE_LIMITS.copyright],
+] as const
+
+/** 备案号、备案链接与版权文案：单行、限长，去掉首尾空白 */
+function normalizeFilingFields(
+  input: Partial<Record<keyof SiteExtrasValues, unknown>>,
+  result: Partial<SiteExtrasValues>,
+) {
+  for (const [key, max] of FILING_FIELDS) {
+    const value = input[key]
+    if (value === undefined) continue
+    if (typeof value !== 'string' || value.trim().length > max || /[\r\n]/.test(value))
+      fail(msg('site.filingFormatInvalid'))
+    result[key] = value.trim()
+  }
+}
+
 /**
  * 校验并规范化调用方提供的新字段；未提供的字段保持 undefined，由调用方决定沿用当前值。
  * 只保留每种条目允许的键，内置模块缺失时按显示追加到末尾，首页不能隐藏。
  */
 export function normalizeSiteExtrasInput(input: Partial<Record<keyof SiteExtrasValues, unknown>>) {
-  const fail = (message: LocalizedMessage): never => {
-    throw new SiteExtrasError(message)
-  }
   const result: Partial<SiteExtrasValues> = {}
-  if (input.navigation !== undefined) {
-    if (!Array.isArray(input.navigation)) fail(msg('site.navFormatInvalid'))
-    const items = input.navigation as Record<string, unknown>[]
-    const keys = new Set<string>()
-    const urls = new Set<string>()
-    const navigation: SiteNavItem[] = []
-    for (const item of items) {
-      if (!item || typeof item !== 'object') fail(msg('site.navFormatInvalid'))
-      if (typeof item.visible !== 'boolean') fail(msg('site.navVisibleBoolean'))
-      if (item.type === 'route') {
-        if (['label', 'url', 'newTab'].some((key) => item[key] !== undefined)) fail(msg('site.navRouteCustomized'))
-        const key = String(item.key)
-        if (!(SITE_NAV_KEYS as readonly string[]).includes(key)) fail(msg('site.navUnknownModule'))
-        if (keys.has(key)) fail(msg('site.navModuleDuplicate'))
-        keys.add(key)
-        if (key === 'home' && !item.visible) fail(msg('site.navHomeHidden'))
-        navigation.push({ type: 'route', key: key as SiteNavKey, visible: item.visible as boolean })
-      } else if (item.type === 'external') {
-        if (item.key !== undefined) fail(msg('site.navExternalKey'))
-        const label = typeof item.label === 'string' ? item.label.trim() : ''
-        const url = typeof item.url === 'string' ? item.url.trim() : ''
-        if (!label || label.length > SITE_LIMITS.navLabel)
-          fail(msg('site.navExternalLabelLength', { max: SITE_LIMITS.navLabel }))
-        if (url.length > SITE_LIMITS.url || !isHttpUrl(url)) fail(msg('site.navExternalUrlInvalid'))
-        if (typeof item.newTab !== 'boolean') fail(msg('site.navExternalNewTab'))
-        if (urls.has(url)) fail(msg('site.navExternalUrlDuplicate'))
-        urls.add(url)
-        navigation.push({
-          type: 'external',
-          label,
-          url,
-          newTab: item.newTab as boolean,
-          visible: item.visible as boolean,
-        })
-      } else fail(msg('site.navItemTypeInvalid'))
-    }
-    if (urls.size > SITE_LIMITS.externalNav) fail(msg('site.navExternalTooMany', { max: SITE_LIMITS.externalNav }))
-    for (const key of SITE_NAV_KEYS) if (!keys.has(key)) navigation.push({ type: 'route', key, visible: true })
-    result.navigation = navigation
-  }
-  if (input.footerLinks !== undefined) {
-    if (!Array.isArray(input.footerLinks)) fail(msg('site.footerFormatInvalid'))
-    const links = input.footerLinks as Record<string, unknown>[]
-    if (links.length > SITE_LIMITS.footerLinks) fail(msg('site.footerTooMany', { max: SITE_LIMITS.footerLinks }))
-    const seen = new Set<string>()
-    result.footerLinks = links.map((link) => {
-      if (!link || typeof link !== 'object') return fail(msg('site.footerFormatInvalid'))
-      const label = typeof link.label === 'string' ? link.label.trim() : ''
-      const url = typeof link.url === 'string' ? link.url.trim() : ''
-      if (!label || label.length > SITE_LIMITS.footerLabel)
-        fail(msg('site.footerLabelLength', { max: SITE_LIMITS.footerLabel }))
-      if (url.length > SITE_LIMITS.url || (!isSitePath(url) && !isHttpUrl(url))) fail(msg('site.footerUrlInvalid'))
-      if (typeof link.newTab !== 'boolean') fail(msg('site.footerNewTab'))
-      if (seen.has(url)) fail(msg('site.footerUrlDuplicate'))
-      seen.add(url)
-      return { label, url, newTab: link.newTab as boolean }
-    })
-  }
-  if (input.quotes !== undefined) {
-    if (!Array.isArray(input.quotes)) fail(msg('site.quotesFormatInvalid'))
-    const quotes = (input.quotes as unknown[]).map((quote) => (typeof quote === 'string' ? quote.trim() : ''))
-    if (quotes.length > SITE_LIMITS.quotes) fail(msg('site.quotesTooMany', { max: SITE_LIMITS.quotes }))
-    if (quotes.some((quote) => !quote || quote.length > SITE_LIMITS.quote))
-      fail(msg('site.quoteLength', { max: SITE_LIMITS.quote }))
-    if (new Set(quotes).size !== quotes.length) fail(msg('site.quotesDuplicate'))
-    result.quotes = quotes
-  }
-  for (const [key, max] of [
-    ['icpNumber', SITE_LIMITS.icpNumber],
-    ['icpUrl', SITE_LIMITS.icpUrl],
-    ['copyright', SITE_LIMITS.copyright],
-  ] as const) {
-    const value = input[key]
-    if (value === undefined) continue
-    if (typeof value !== 'string' || value.trim().length > max || /[\r\n]/.test(value))
-      fail(msg('site.filingFormatInvalid'))
-    result[key] = (value as string).trim()
-  }
+  if (input.navigation !== undefined) result.navigation = normalizeNavigation(input.navigation)
+  if (input.footerLinks !== undefined) result.footerLinks = normalizeFooterLinks(input.footerLinks)
+  if (input.quotes !== undefined) result.quotes = normalizeQuotes(input.quotes)
+  normalizeFilingFields(input, result)
   if (result.icpUrl && !isHttpUrl(result.icpUrl)) fail(msg('site.filingUrlInvalid'))
   return result
 }
