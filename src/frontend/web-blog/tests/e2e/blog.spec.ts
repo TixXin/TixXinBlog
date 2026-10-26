@@ -187,7 +187,10 @@ test('三套主题在 390px 下可评论，Dock 导航保持可访问名称', as
   await page.setViewportSize({ width: 390, height: 844 })
   await page.goto('/articles/2')
   for (const [index, label] of ['Aurora 双栏 布局主题', 'Dock 浮岛 布局主题', 'Nexus 三栏 布局主题'].entries()) {
-    await page.getByRole('button', { name: '界面设置', exact: true }).click()
+    // nexus 窄屏的界面设置收在底栏“更多导航”里
+    const entry = page.getByRole('button', { name: '界面设置', exact: true })
+    if (!(await entry.isVisible())) await page.getByRole('button', { name: '更多导航', exact: true }).click()
+    await entry.click()
     await page.getByRole('button', { name: label, exact: true }).click()
     const input = page.getByRole('textbox', { name: '评论内容', exact: true })
     await input.click()

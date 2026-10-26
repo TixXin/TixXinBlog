@@ -85,7 +85,9 @@ for (const theme of ['nexus', 'aurora', 'dock']) {
       const feedback = page.locator('.flash-note-list .request-feedback')
       await expect(feedback).toContainText('闪念服务暂时不可用')
       await expect(page.locator('.flash-note-list__empty')).toHaveCount(0)
-      await expect(page.locator('.flash-stat-card__value').first()).toHaveText('—')
+      // 统计卡随右栏渲染；dock 未声明 rightSidebar，不渲染统计卡，也就不会显示误导性的 0
+      if (theme === 'dock') await expect(page.locator('.flash-stat-card__value')).toHaveCount(0)
+      else await expect(page.locator('.flash-stat-card__value').first()).toHaveText('—')
       await expect(page.locator('.flash-page')).not.toContainText('/api/v1/')
       for (const width of [320, 390, 1440]) {
         await page.setViewportSize({ width, height: 1000 })

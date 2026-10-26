@@ -1,4 +1,4 @@
-/** @file layoutMobileNav.test.ts @description Nexus 与 Aurora 共享移动导航的当前页面、抽屉开合及键盘焦点回归。 */
+/** @file layoutMobileNav.test.ts @description Nexus 与 Aurora 共享移动导航的当前页面、抽屉开合、切换布局收起及键盘焦点回归。 */
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import { useNuxtApp } from '#app'
 import { mockNuxtImport } from '@nuxt/test-utils/runtime'
@@ -170,5 +170,18 @@ describe.each(['nexus', 'aurora'])('%s 共享移动导航', (theme) => {
     expect(document.querySelector('[role="dialog"]')).toBeNull()
     expect(trigger.attributes('aria-expanded')).toBe('false')
     expect(document.activeElement).toBe(trigger.element)
+  })
+
+  it('在菜单内的界面设置切换布局后收起菜单，直接露出新布局', async () => {
+    const { wrapper } = await mountMobile(theme)
+    const trigger = wrapper.get<HTMLButtonElement>('.context-entry__button')
+    await trigger.trigger('click')
+    await nextTick()
+    expect(document.querySelector('[role="dialog"]')).not.toBeNull()
+
+    mocks.currentThemeId.value = theme === 'nexus' ? 'aurora' : 'nexus'
+    await flushPromises()
+    expect(document.querySelector('[role="dialog"]')).toBeNull()
+    expect(trigger.attributes('aria-expanded')).toBe('false')
   })
 })

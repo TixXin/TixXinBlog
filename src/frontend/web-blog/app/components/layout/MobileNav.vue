@@ -23,6 +23,7 @@
       <li>
         <CommonContextDrawer
           v-slot="{ close }"
+          v-model:open="moreOpen"
           class="mobile-nav__more"
           :label="$t('layout.mobileNav.more')"
           icon="lucide:menu"
@@ -56,10 +57,15 @@
 <script setup lang="ts">
 const route = useRoute()
 const { navItems } = useNavItems()
-const { activeTheme } = useLayoutTheme()
+const { activeTheme, currentThemeId } = useLayoutTheme()
 // 能力位替代主题 id 判断：主题自带移动导航（如 dock 的浮岛）时显式声明 mobileNav=false；
 // 未声明时保留宿主共享移动导航，新增主题不必为了拿到导航而改宿主代码。
 const showMobileNav = computed(() => activeTheme.value.capabilities.mobileNav !== false)
+// 从菜单里的界面设置切换布局后收起菜单，与界面设置弹窗一致，让用户直接看到新布局
+const moreOpen = ref(false)
+watch(currentThemeId, () => {
+  moreOpen.value = false
+})
 const { isLoggedIn } = useCurrentUser()
 const { open: openLogin } = useLoginDrawer()
 function loginFromMenu(close: () => void) {

@@ -405,7 +405,10 @@ for (const theme of ['nexus', 'aurora', 'dock']) {
       const input = page.getByRole('textbox', { name: '动态评论内容', exact: true })
       await input.fill('切换主题仍需保留的评论输入')
       const nextTheme = theme === 'nexus' ? 'aurora' : 'nexus'
-      await page.getByRole('button', { name: '界面设置', exact: true }).click()
+      // nexus 窄屏的界面设置收在底栏“更多导航”里
+      const entry = page.getByRole('button', { name: '界面设置', exact: true })
+      if (!(await entry.isVisible())) await page.getByRole('button', { name: '更多导航', exact: true }).click()
+      await entry.click()
       await page
         .getByRole('dialog', { name: '界面设置', exact: true })
         .getByRole('button', { name: new RegExp(`^${nextTheme} .*布局主题$`, 'i') })
