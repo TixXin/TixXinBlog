@@ -81,7 +81,14 @@
 </template>
 
 <script setup lang="ts">
-import Fuse from 'fuse.js'
+import {
+  buildLocalHits,
+  createLocalHitFuse,
+  searchEngineLabel,
+  searchLocalHits,
+  searchTarget,
+  type LocalHit,
+} from '~/features/tab/searchBar'
 
 const { t } = useI18n()
 const { settings } = useTabSettings()
@@ -94,102 +101,17 @@ const focusedIdx = ref(-1)
 const inputRef = ref<HTMLInputElement | null>(null)
 const hitRefs = ref<HTMLButtonElement[]>([])
 
-interface LocalHit {
-  id: string
-  title: string
-  sub?: string
-  icon?: string
-  typeLabel: string
-  source: 'bookmark' | 'category'
-  payload: { url?: string; id?: string }
-}
-
-const allHits = computed<LocalHit[]>(() => {
-  const bmList: LocalHit[] = bookmarks.value.map((b) => ({
-    id: `bm-${b.id}`,
-    title: b.name,
-    sub: b.url,
-    icon: b.icon,
-    typeLabel: t('misc.tab.common.bookmark'),
-    source: 'bookmark',
-    payload: { url: b.url },
-  }))
-  const catList: LocalHit[] = categories.value.map((c) => ({
-    id: `cat-${c.id}`,
-    title: c.name,
-    sub: t('misc.tab.common.category'),
-    icon: c.icon,
-    typeLabel: t('misc.tab.common.category'),
-    source: 'category',
-    payload: { id: c.id },
-  }))
-  return [...bmList, ...catList]
-})
-
-const fuse = computed(
-  () =>
-    new Fuse(allHits.value, {
-      keys: ['title', 'sub'],
-      threshold: 0.4,
-      ignoreLocation: true,
-    }),
-)
-
-const localHits = computed<LocalHit[]>(() => {
-  const q = query.value.trim()
-  if (!q) return []
-  return fuse.value
-    .search(q)
-    .slice(0, 5)
-    .map((r) => r.item)
-})
+const allHits = computed(() => buildLocalHits(bookmarks.value, categories.value, t))
+const fuse = computed(() => createLocalHitFuse(allHits.value))
+const localHits = computed(() => searchLocalHits(fuse.value, query.value))
 
 const showDropdown = computed(() => focused.value && localHits.value.length > 0)
 
-const engineLabel = computed(() => {
-  switch (settings.value.searchEngine) {
-    case 'bing':
-      return 'Bing'
-    case 'duckduckgo':
-      return 'DuckDuckGo'
-    case 'baidu':
-      return t('misc.tab.search.engine.baidu')
-    case 'custom':
-      return t('misc.tab.search.engine.custom')
-    case 'google':
-    default:
-      return 'Google'
-  }
-})
-
-function buildSearchUrl(q: string): string {
-  const s = settings.value
-  switch (s.searchEngine) {
-    case 'bing':
-      return `https://www.bing.com/search?q=${encodeURIComponent(q)}`
-    case 'duckduckgo':
-      return `https://duckduckgo.com/?q=${encodeURIComponent(q)}`
-    case 'baidu':
-      return `https://www.baidu.com/s?wd=${encodeURIComponent(q)}`
-    case 'custom':
-      if (s.searchEngineCustomUrl.includes('%s')) {
-        return s.searchEngineCustomUrl.replace('%s', encodeURIComponent(q))
-      }
-      return `${s.searchEngineCustomUrl}${encodeURIComponent(q)}`
-    case 'google':
-    default:
-      return `https://www.google.com/search?q=${encodeURIComponent(q)}`
-  }
-}
+const engineLabel = computed(() => searchEngineLabel(settings.value.searchEngine, t))
 
 function onSubmit() {
-  const q = query.value.trim()
-  if (!q) return
-  if (/^https?:\/\//i.test(q)) {
-    window.open(q, '_blank', 'noopener')
-    return
-  }
-  window.open(buildSearchUrl(q), '_blank', 'noopener')
+  const target = searchTarget(settings.value, query.value)
+  if (target) window.open(target, '_blank', 'noopener')
 }
 
 let blurTimer: ReturnType<typeof setTimeout> | undefined

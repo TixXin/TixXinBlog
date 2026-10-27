@@ -69,11 +69,6 @@
       "count": 1
     }
   },
-  "app/components/tab/TabImportDialog.vue": {
-    "vue/max-template-depth": {
-      "count": 2
-    }
-  },
   "app/composables/useAdminApi.ts": {
     "complexity": {
       "count": 1

@@ -54,18 +54,7 @@
             </div>
           </div>
 
-          <div v-if="payload" class="tid-mode">
-            <span class="tid-mode__label">{{ $t('misc.tab.import.mode') }}</span>
-            <div class="tid-mode__options">
-              <label v-for="opt in modeOptions" :key="opt" class="tid-mode__opt">
-                <input v-model="mode" type="radio" :value="opt" />
-                <div>
-                  <div class="tid-mode__opt-title">{{ $t(`misc.tab.import.modes.${opt}.label`) }}</div>
-                  <div class="tid-mode__opt-desc">{{ $t(`misc.tab.import.modes.${opt}.desc`) }}</div>
-                </div>
-              </label>
-            </div>
-          </div>
+          <TabImportModeOptions v-if="payload" v-model="mode" />
         </div>
 
         <footer class="tid-footer">
@@ -83,8 +72,8 @@
 <script setup lang="ts">
 import { MAX_IMPORT_BYTES } from '~/features/tab/validation'
 import type { ImportMode, ImportPayload } from '~/features/tab/types'
-import { parseImportJson } from '~/features/tab/export'
-import { parseNetscapeBookmarks } from '~/features/tab/import-netscape'
+import { importPayloadFromFile } from '~/features/tab/importFile'
+import TabImportModeOptions from './TabImportModeOptions.vue'
 
 const visible = defineModel<boolean>('visible', { default: false })
 const dialogRef = ref<HTMLElement | null>(null)
@@ -100,9 +89,6 @@ const error = ref('')
 const importing = ref(false)
 
 const { t } = useI18n()
-
-/** 导入策略；名称与说明见字典 misc.tab.import.modes.* */
-const modeOptions: ImportMode[] = ['merge', 'append', 'replace']
 
 watch(visible, (v) => {
   if (!v) {
@@ -125,25 +111,7 @@ async function onFile(e: Event) {
   try {
     if (file.size > MAX_IMPORT_BYTES) throw new Error(t('misc.tab.validation.fileTooLarge', { size: '5 MB' }))
     const raw = await file.text()
-    if (file.name.toLowerCase().endsWith('.json')) {
-      const exp = parseImportJson(raw)
-      payload.value = {
-        categories: exp.categories.map((c) => ({ name: c.name, icon: c.icon, color: c.color })),
-        bookmarks: exp.bookmarks.map((b) => {
-          const cat = exp.categories.find((c) => c.id === b.categoryId)
-          return {
-            categoryName: cat?.name ?? t('misc.tab.netscape.importedGroup'),
-            name: b.name,
-            url: b.url,
-            icon: b.icon,
-            color: b.color,
-            description: b.description,
-          }
-        }),
-      }
-    } else {
-      payload.value = parseNetscapeBookmarks(raw)
-    }
+    payload.value = importPayloadFromFile(file.name, raw, t)
   } catch (err) {
     error.value = err instanceof Error ? err.message : t('misc.tab.import.parseFailed')
   } finally {
@@ -178,278 +146,7 @@ async function onConfirm() {
 </script>
 
 <style lang="scss" scoped>
-.tid-backdrop {
-  position: fixed;
-  inset: 0;
-  z-index: 299;
-  background: rgba(0, 0, 0, 0.4);
-  backdrop-filter: blur(2px);
-}
+@use '~/assets/styles/tab-import-dialog' as importDialog;
 
-.tid-dialog {
-  position: fixed;
-  top: 50%;
-  left: 50%;
-  z-index: 300;
-  transform: translate(-50%, -50%);
-  width: min(480px, 92vw);
-  max-height: 85vh;
-  display: flex;
-  flex-direction: column;
-  background: var(--surface-1);
-  border: 1px solid var(--border-soft);
-  border-radius: $radius-card;
-  box-shadow: 0 24px 48px rgba(0, 0, 0, 0.28);
-}
-
-.tid-enter-active,
-.tid-leave-active {
-  transition:
-    opacity 0.18s ease,
-    transform 0.18s ease;
-  @media (prefers-reduced-motion: reduce) {
-    transition: none;
-  }
-}
-
-.tid-enter-from,
-.tid-leave-to {
-  opacity: 0;
-  transform: translate(-50%, calc(-50% - 8px));
-}
-
-.tid-header {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  padding: 0.875rem 1.125rem;
-  border-bottom: 1px solid var(--border-soft);
-
-  h2 {
-    flex: 1;
-    margin: 0;
-    font-size: 0.9375rem;
-    font-weight: 700;
-    color: var(--text-main);
-  }
-}
-
-.tid-close {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 1.75rem;
-  height: 1.75rem;
-  border: none;
-  background: transparent;
-  border-radius: $radius-full;
-  color: var(--text-soft);
-  cursor: var(--interaction-cursor, pointer);
-
-  &:hover {
-    background: var(--surface-2);
-    color: var(--text-main);
-  }
-}
-
-.tid-body {
-  padding: 1rem 1.125rem;
-  overflow-y: auto;
-  display: flex;
-  flex-direction: column;
-  gap: 0.875rem;
-}
-
-.tid-dropzone {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 0.5rem;
-  padding: 1.5rem 1rem;
-  border: 2px dashed var(--border);
-  border-radius: $radius-md;
-  background: var(--surface-2);
-  color: var(--text-soft);
-  cursor: var(--interaction-cursor, pointer);
-  text-align: center;
-  transition: $transition-fast;
-  @media (prefers-reduced-motion: reduce) {
-    transition: none;
-  }
-
-  &:hover {
-    border-color: var(--accent);
-    color: var(--accent-text);
-    background: var(--accent-soft);
-  }
-
-  input[type='file'] {
-    display: none;
-  }
-
-  strong {
-    color: var(--accent-text);
-  }
-
-  small {
-    display: block;
-    margin-top: 0.25rem;
-    font-size: 0.625rem;
-    color: var(--text-faint);
-  }
-}
-
-.tid-dropzone__hint {
-  font-size: 0.8125rem;
-  font-weight: 500;
-}
-
-.tid-error {
-  display: flex;
-  align-items: center;
-  gap: 0.375rem;
-  margin: 0;
-  padding: 0.5rem 0.75rem;
-  border-radius: $radius-sm;
-  background: rgba(239, 68, 68, 0.08);
-  color: #ef4444;
-  font-size: 0.75rem;
-}
-
-.tid-preview {
-  display: flex;
-  gap: 0.75rem;
-}
-
-.tid-preview__stat {
-  flex: 1;
-  padding: 0.625rem 0.75rem;
-  border: 1px solid var(--border-soft);
-  border-radius: $radius-sm;
-  background: var(--surface-2);
-  text-align: center;
-}
-
-.tid-preview__num {
-  display: block;
-  font-size: 1.25rem;
-  font-weight: 700;
-  color: var(--accent-text);
-  font-variant-numeric: tabular-nums;
-}
-
-.tid-preview__label {
-  display: block;
-  font-size: 0.6875rem;
-  color: var(--text-soft);
-  margin-top: 0.125rem;
-}
-
-.tid-mode__label {
-  display: block;
-  margin-bottom: 0.5rem;
-  font-size: 0.75rem;
-  font-weight: 600;
-  color: var(--text-main);
-}
-
-.tid-mode__options {
-  display: flex;
-  flex-direction: column;
-  gap: 0.375rem;
-}
-
-.tid-mode__opt {
-  display: flex;
-  align-items: flex-start;
-  gap: 0.5rem;
-  padding: 0.5rem 0.75rem;
-  border: 1px solid var(--border-soft);
-  border-radius: $radius-sm;
-  cursor: var(--interaction-cursor, pointer);
-  transition: $transition-fast;
-  @media (prefers-reduced-motion: reduce) {
-    transition: none;
-  }
-
-  &:hover {
-    border-color: var(--accent);
-    background: var(--accent-soft);
-  }
-
-  input {
-    margin-top: 0.1875rem;
-  }
-}
-
-.tid-mode__opt-title {
-  font-size: 0.75rem;
-  font-weight: 600;
-  color: var(--text-main);
-}
-
-.tid-mode__opt-desc {
-  margin-top: 0.125rem;
-  font-size: 0.6875rem;
-  color: var(--text-soft);
-}
-
-.tid-footer {
-  display: flex;
-  justify-content: flex-end;
-  gap: 0.5rem;
-  padding: 0.75rem 1.125rem;
-  border-top: 1px solid var(--border-soft);
-}
-
-.tid-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.375rem;
-  padding: 0.4375rem 0.875rem;
-  border: 1px solid var(--border);
-  border-radius: $radius-sm;
-  background: var(--surface-1);
-  color: var(--text-main);
-  font-size: 0.75rem;
-  font-weight: 500;
-  cursor: var(--interaction-cursor, pointer);
-  transition: $transition-fast;
-  @media (prefers-reduced-motion: reduce) {
-    transition: none;
-  }
-
-  &:hover {
-    background: var(--surface-2);
-  }
-
-  &--primary {
-    background: var(--accent-action);
-    border-color: var(--accent);
-    color: #fff;
-
-    &:hover {
-      opacity: 0.88;
-    }
-
-    &:disabled {
-      opacity: 0.4;
-      cursor: var(--interaction-cursor, not-allowed);
-    }
-  }
-}
-
-.tid-spin {
-  animation: tid-spin 1.2s linear infinite;
-  @media (prefers-reduced-motion: reduce) {
-    animation: none;
-  }
-}
-
-@keyframes tid-spin {
-  to {
-    transform: rotate(360deg);
-  }
-}
+@include importDialog.dialog;
 </style>

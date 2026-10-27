@@ -1,0 +1,122 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`各搜索引擎的提示与跳转地址，网址直接打开，空白不提交 1`] = `
+[
+  "<div class="tab-search">
+  <form class="tab-search__form">
+    <div class="tab-search__inner"><span class="iconify i-lucide:search tab-search__icon" aria-hidden="true" style="font-size: 18px;"></span><input type="text" class="tab-search__input" aria-label="搜索书签或网页" placeholder="搜索任何东西，或输入网址…" autocomplete="off" spellcheck="false">
+      <!--v-if--><button type="submit" class="tab-search__submit" disabled="" aria-label="搜索"><span class="iconify i-lucide:arrow-right" aria-hidden="true" style="font-size: 16px;"></span></button>
+    </div>
+    <div class="tab-search__hint"><span>按 Enter 在 Google 中搜索</span>
+      <!--v-if-->
+      <!--v-if-->
+    </div>
+  </form><!-- 本地搜索下拉 -->
+  <transition-stub name="tab-search-dropdown" appear="false" persisted="false" css="true">
+    <!--v-if-->
+  </transition-stub>
+</div>",
+  "按 Enter 在 Google 中搜索",
+  "按 Enter 在 Bing 中搜索",
+  "按 Enter 在 DuckDuckGo 中搜索",
+  "按 Enter 在 百度 中搜索",
+  "按 Enter 在 自定义搜索 中搜索",
+  "按 Enter 在 自定义搜索 中搜索",
+  [
+    [
+      "https://www.google.com/search?q=vue%203%20%26%20nuxt",
+      "_blank",
+      "noopener",
+    ],
+    [
+      "https://www.bing.com/search?q=vue%203%20%26%20nuxt",
+      "_blank",
+      "noopener",
+    ],
+    [
+      "https://duckduckgo.com/?q=vue%203%20%26%20nuxt",
+      "_blank",
+      "noopener",
+    ],
+    [
+      "https://www.baidu.com/s?wd=vue%203%20%26%20nuxt",
+      "_blank",
+      "noopener",
+    ],
+    [
+      "https://search.example/?q=vue%203%20%26%20nuxt&lang=zh",
+      "_blank",
+      "noopener",
+    ],
+    [
+      "https://search.example/find/vue%203%20%26%20nuxt",
+      "_blank",
+      "noopener",
+    ],
+    [
+      "HTTPS://Example.com/a b",
+      "_blank",
+      "noopener",
+    ],
+  ],
+  "",
+]
+`;
+
+exports[`打开命中项：书签新窗口打开、分类切换，随后清空并收起；清除按钮清空 1`] = `
+{
+  "afterBookmark": [
+    "",
+    false,
+  ],
+  "cleared": "",
+  "opened": [
+    [
+      "https://vitest.dev/",
+      "_blank",
+      "noopener",
+    ],
+  ],
+  "selected": [
+    [
+      "dev",
+    ],
+  ],
+}
+`;
+
+exports[`本地命中下拉：最多 5 项、聚焦才显示，方向键循环，Esc 清空，失焦 180ms 后收起 1`] = `
+[
+  false,
+  "<div class="tab-search">
+  <form class="tab-search__form">
+    <div class="tab-search__inner"><span class="iconify i-lucide:search tab-search__icon" aria-hidden="true" style="font-size: 18px;"></span><input type="text" class="tab-search__input" aria-label="搜索书签或网页" placeholder="搜索任何东西，或输入网址…" autocomplete="off" spellcheck="false"><button type="button" class="tab-search__clear" aria-label="清空"><span class="iconify i-lucide:x" aria-hidden="true" style="font-size: 14px;"></span></button><button type="submit" class="tab-search__submit" aria-label="搜索"><span class="iconify i-lucide:arrow-right" aria-hidden="true" style="font-size: 16px;"></span></button></div>
+    <div class="tab-search__hint"><span>按 Enter 在 Google 中搜索</span><span class="tab-search__hint-sep" aria-hidden="true">·</span><span>↓ 选择本地结果</span></div>
+  </form><!-- 本地搜索下拉 -->
+  <transition-stub name="tab-search-dropdown" appear="false" persisted="false" css="true">
+    <div class="tab-search__dropdown"><button type="button" class="tab-search__hit"><span class="tab-search__hit-icon"><span class="iconify i-lucide:book" aria-hidden="true" style="font-size: 14px;"></span></span>
+        <div class="tab-search__hit-text">
+          <div class="tab-search__hit-title">Vue 文档</div>
+          <div class="tab-search__hit-sub">https://vuejs.org/</div>
+        </div><span class="tab-search__hit-type">书签</span>
+      </button><button type="button" class="tab-search__hit"><span class="tab-search__hit-icon"><span class="iconify i-lucide:folder" aria-hidden="true" style="font-size: 14px;"></span></span>
+        <div class="tab-search__hit-text">
+          <div class="tab-search__hit-title">Vue 开发</div>
+          <div class="tab-search__hit-sub">分类</div>
+        </div><span class="tab-search__hit-type">分类</span>
+      </button></div>
+  </transition-stub>
+</div>",
+  true,
+  "Vue 文档https://vuejs.org/书签",
+  true,
+  true,
+  "Vue 开发分类分类",
+  true,
+  true,
+  false,
+  false,
+  "",
+  false,
+]
+`;

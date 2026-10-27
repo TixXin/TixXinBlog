@@ -1,0 +1,80 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`书签导入对话框结构 > 未选文件、JSON 预览与解析失败三种状态的结构 1`] = `
+[
+  "<teleport-stub to="body">
+  <div class="tid-backdrop"></div>
+  <transition-stub name="tid" appear="false" persisted="false" css="true">
+    <div class="tid-dialog" role="dialog" aria-modal="true" aria-label="导入书签" tabindex="-1">
+      <header class="tid-header"><span class="iconify i-lucide:download" aria-hidden="true" style="font-size: 16px;"></span>
+        <h2>导入书签</h2><button type="button" class="tid-close" aria-label="关闭"><span class="iconify i-lucide:x" aria-hidden="true" style="font-size: 16px;"></span></button>
+      </header>
+      <div class="tid-body"><label class="tid-dropzone"><input type="file" accept=".json,.html,.htm"><span class="iconify i-lucide:upload-cloud" aria-hidden="true" style="font-size: 28px;"></span><span class="tid-dropzone__hint"><strong>选择文件</strong><small>支持 JSON 导出文件或浏览器书签 HTML</small></span></label>
+        <!--v-if-->
+        <!--v-if-->
+        <!--v-if-->
+      </div>
+      <footer class="tid-footer"><button type="button" class="tid-btn">取消</button><button type="button" class="tid-btn tid-btn--primary" disabled="">
+          <!--v-if--> 确认导入
+        </button></footer>
+    </div>
+  </transition-stub>
+</teleport-stub>",
+  "<teleport-stub to="body">
+  <div class="tid-backdrop"></div>
+  <transition-stub name="tid" appear="false" persisted="false" css="true">
+    <div class="tid-dialog" role="dialog" aria-modal="true" aria-label="导入书签" tabindex="-1">
+      <header class="tid-header"><span class="iconify i-lucide:download" aria-hidden="true" style="font-size: 16px;"></span>
+        <h2>导入书签</h2><button type="button" class="tid-close" aria-label="关闭"><span class="iconify i-lucide:x" aria-hidden="true" style="font-size: 16px;"></span></button>
+      </header>
+      <div class="tid-body"><label class="tid-dropzone"><input type="file" accept=".json,.html,.htm"><span class="iconify i-lucide:upload-cloud" aria-hidden="true" style="font-size: 28px;"></span><span class="tid-dropzone__hint"><strong>选择文件</strong><small>支持 JSON 导出文件或浏览器书签 HTML</small></span></label>
+        <!--v-if-->
+        <div class="tid-preview">
+          <div class="tid-preview__stat"><span class="tid-preview__num">1</span><span class="tid-preview__label">个分类</span></div>
+          <div class="tid-preview__stat"><span class="tid-preview__num">1</span><span class="tid-preview__label">个书签</span></div>
+        </div>
+        <div class="tid-mode"><span class="tid-mode__label">导入策略</span>
+          <div class="tid-mode__options"><label class="tid-mode__opt"><input type="radio" value="merge">
+              <div>
+                <div class="tid-mode__opt-title">合并（推荐）</div>
+                <div class="tid-mode__opt-desc">同名分类跳过，相同 URL 的书签跳过</div>
+              </div>
+            </label><label class="tid-mode__opt"><input type="radio" value="append">
+              <div>
+                <div class="tid-mode__opt-title">追加</div>
+                <div class="tid-mode__opt-desc">全部新增，允许同名重复</div>
+              </div>
+            </label><label class="tid-mode__opt"><input type="radio" value="replace">
+              <div>
+                <div class="tid-mode__opt-title">覆盖</div>
+                <div class="tid-mode__opt-desc">先清空当前数据，再导入新数据</div>
+              </div>
+            </label></div>
+        </div>
+      </div>
+      <footer class="tid-footer"><button type="button" class="tid-btn">取消</button><button type="button" class="tid-btn tid-btn--primary">
+          <!--v-if--> 确认导入
+        </button></footer>
+    </div>
+  </transition-stub>
+</teleport-stub>",
+  "<teleport-stub to="body">
+  <div class="tid-backdrop"></div>
+  <transition-stub name="tid" appear="false" persisted="false" css="true">
+    <div class="tid-dialog" role="dialog" aria-modal="true" aria-label="导入书签" tabindex="-1">
+      <header class="tid-header"><span class="iconify i-lucide:download" aria-hidden="true" style="font-size: 16px;"></span>
+        <h2>导入书签</h2><button type="button" class="tid-close" aria-label="关闭"><span class="iconify i-lucide:x" aria-hidden="true" style="font-size: 16px;"></span></button>
+      </header>
+      <div class="tid-body"><label class="tid-dropzone"><input type="file" accept=".json,.html,.htm"><span class="iconify i-lucide:upload-cloud" aria-hidden="true" style="font-size: 28px;"></span><span class="tid-dropzone__hint"><strong>选择文件</strong><small>支持 JSON 导出文件或浏览器书签 HTML</small></span></label>
+        <p class="tid-error"><span class="iconify i-lucide:alert-circle" aria-hidden="true" style="font-size: 12px;"></span> 缺少 categories 或 bookmarks 字段</p>
+        <!--v-if-->
+        <!--v-if-->
+      </div>
+      <footer class="tid-footer"><button type="button" class="tid-btn">取消</button><button type="button" class="tid-btn tid-btn--primary" disabled="">
+          <!--v-if--> 确认导入
+        </button></footer>
+    </div>
+  </transition-stub>
+</teleport-stub>",
+]
+`;

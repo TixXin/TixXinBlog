@@ -258,3 +258,19 @@ describe('书签导入对话框', () => {
     }
   })
 })
+
+describe('书签导入对话框结构', () => {
+  /** 去掉 scoped 样式标记，只比较结构、属性与文字 */
+  const markup = (html: string) => html.replace(/ data-v-[a-f0-9]+(="")?/g, '')
+
+  it('未选文件、JSON 预览与解析失败三种状态的结构', async () => {
+    const wrapper = await setup()
+    const trace = [markup(wrapper.html())]
+    await chooseFile(wrapper)
+    await wrapper.get('input[value="replace"]').setValue()
+    trace.push(markup(wrapper.html()))
+    await chooseFile(wrapper, new File(['{"version":9}'], 'broken.json'))
+    trace.push(markup(wrapper.html()))
+    expect(trace).toMatchSnapshot()
+  })
+})
