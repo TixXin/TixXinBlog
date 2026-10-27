@@ -4,7 +4,7 @@
 #   改动范围 = 相对 origin/main 的已提交改动 + 工作区未提交改动 + 未跟踪文件。
 #   用法：corepack pnpm check:local [--e2e] [--all]
 #     --e2e  额外运行改动涉及的浏览器 spec（会先构建前后端，较慢）；改动了应用代码但没有改 spec 时运行全量
-#     --all  不按改动挑选，运行全部本地检查
+#     --all  不按改动挑选，运行全部本地检查（含全部后端 HTTP 集成测试，需要本机 PostgreSQL）
 set -euo pipefail
 
 root=$(cd "$(dirname "$0")/.." && pwd -P)
@@ -66,6 +66,24 @@ if changed '^(src/backend/|src/shared/|pnpm-lock\.yaml$|docs/api\.md$)'; then
   step '后端 lint' corepack pnpm --filter server-main lint
   step '后端类型检查' corepack pnpm --filter server-main typecheck
   step '后端单元测试' corepack pnpm --filter server-main test
+fi
+# HTTP 集成测试在开发库所在的 PostgreSQL 上各自建临时库，不碰日常数据；按改动的模块挑选，--all 时全量。
+all_flag=''
+[ "$run_all" = 1 ] && all_flag=--all
+# shellcheck disable=SC2086
+integration=$(printf '%s\n' "$files" | node scripts/ci/integration-tests.mjs $all_flag)
+if printf '%s\n' "$integration" | grep -q '^[^#]'; then
+  printf '%s\n' "$integration" | sed -n 's/^# /提示：/p'
+  built_before=${#failed[@]}
+  step '后端构建（集成测试使用）' corepack pnpm --filter server-main build
+  if [ "${#failed[@]}" = "$built_before" ]; then
+    for test in $(printf '%s\n' "$integration" | grep '^[^#]'); do
+      step "后端集成：${test}" node "src/backend/server-main/tests/${test}"
+    done
+  fi
+fi
+if changed '^scripts/ci/'; then
+  step '检查脚本单测' node --test scripts/ci/*.test.mjs
 fi
 if changed '^(deploy/|scripts/release/|scripts/ci/|scripts/check-[^/]+\.sh$|\.husky/)'; then
   if command -v shellcheck > /dev/null 2>&1; then

@@ -39,14 +39,14 @@
 
 ## 启动器与框架补丁测试
 
-| 命令                   | 实际执行                                                   |
-| ---------------------- | ---------------------------------------------------------- |
-| `test:dev`             | `node --test scripts/dev/*.test.mjs scripts/db/*.test.mjs` |
-| `test:dev:integration` | `node scripts/dev/integration.mjs`                         |
-| `test:dev:postgres`    | `node scripts/dev/postgres-integration.mjs`                |
-| `test:nuxt-patches`    | `node --test scripts/nuxt/*.test.mjs`                      |
+| 命令                   | 实际执行                                                                         |
+| ---------------------- | -------------------------------------------------------------------------------- |
+| `test:dev`             | `node --test scripts/dev/*.test.mjs scripts/db/*.test.mjs scripts/ci/*.test.mjs` |
+| `test:dev:integration` | `node scripts/dev/integration.mjs`                                               |
+| `test:dev:postgres`    | `node scripts/dev/postgres-integration.mjs`                                      |
+| `test:nuxt-patches`    | `node --test scripts/nuxt/*.test.mjs`                                            |
 
-- `test:dev`：开发配置、进程托管、服务复用、终端命令生成、初始化沙盒参数与库名校验及数据库菜单测试。部分用例会创建短时进程并监听本机临时端口，不等同于真实数据库集成测试。
+- `test:dev`：开发配置、进程托管、服务复用、终端命令生成、初始化沙盒参数与库名校验、数据库菜单及 `check:local` 集成测试挑选规则的测试。部分用例会创建短时进程并监听本机临时端口，不等同于真实数据库集成测试。
 - `test:dev:integration`：用真实 Nuxt、NestJS 和隔离数据库验证冷启动、就绪、复用及退出清理。需要可用 PostgreSQL 和创建临时数据库的权限，会启动临时服务并产生运行产物。
 - `test:dev:postgres`：验证 PostgreSQL Compose 启动、容器归属及连接配置不匹配时的拒绝行为。需要 Docker 和 Docker Compose，只使用本次测试的临时容器和数据卷。
 - `test:nuxt-patches`：固定版本 Nuxt 路由启动补丁的回归测试，覆盖原生历史、查询参数、hash 及 SSR/SSG 行为。需先安装依赖并应用 pnpm 补丁；不是完整浏览器回归。
@@ -103,7 +103,7 @@
 - `format`：按仓库 Prettier 配置改写 `src/` 下匹配的前后端及共享源码，不覆盖根配置、`docs/`、`scripts/` 或 `.mjs` 文件。
 - `prepare`：初始化 Husky Git hooks，通常由依赖安装的生命周期自动执行。提交钩子运行 lint-staged，对暂存的前端脚本执行 ESLint 修复，对 `src/` 下匹配文件执行 Prettier。它与前端 `postinstall` 执行的 `nuxt prepare` 不同。
 - `lint:shell`：用 shellcheck 检查 `deploy/install.sh`、`deploy/tixxin` 与 `scripts/release/` 下的打包、安装冒烟和本地试装脚本，以及提交署名检查 `scripts/check-ai-attribution.sh`；需要本机安装 shellcheck，CI 固定使用 v0.11.0。
-- `check:local`：推送前按相对 `origin/main` 的改动（含未提交与未跟踪文件）自动挑选并运行与 CI 对应的本地检查；`--e2e` 额外运行改动涉及的浏览器 spec（先构建两端，改了应用代码但没改 spec 时跑全量），`--all` 不按改动挑选。有失败项时返回非零。挑选规则与 CI 共用 `scripts/ci/detect-changes.sh` 的分类思路。
+- `check:local`：推送前按相对 `origin/main` 的改动（含未提交与未跟踪文件）自动挑选并运行与 CI 对应的本地检查；`--e2e` 额外运行改动涉及的浏览器 spec（先构建两端，改了应用代码但没改 spec 时跑全量），`--all` 不按改动挑选。后端改动还会构建 server-main 并运行对应的 HTTP 集成测试：`modules/<模块>/` 选中名称以该模块开头的测试，`operations`、`post`、`backup` 另有映射，改动测试文件本身只跑该测试；公共代码、实体、迁移或测试辅助文件只跑通用的 `integration.mjs` 并提示用 `--all` 跑全量。测试清单取自 server-main 的 `test:integration`，规则见 [`scripts/ci/integration-tests.mjs`](../scripts/ci/integration-tests.mjs)；这些测试在开发库所在的 PostgreSQL 上各自建临时库，需要本机数据库可用。有失败项时返回非零。挑选规则与 CI 共用 `scripts/ci/detect-changes.sh` 的分类思路。
 - `check:secrets`：扫描 Git 已跟踪及未被忽略的未跟踪文件，查找已知 Context7/GitHub 凭据格式和私钥头；命中时只报告文件和行号并返回非零状态。规则有限，不保证发现所有敏感信息，超过 5 MiB 的文件会跳过。
 
 ## 业务与浏览器测试
