@@ -1,0 +1,242 @@
+/**
+ * @file _tab-icon-picker.scss
+ * @description 标签页图标选择器及其上传面板共享的外观声明。各组件在 scoped 样式中整体 @include，
+ *              选择器与声明顺序保持拆分前的选择器样式，不由父组件 :deep 下发
+ * @author TixXin
+ * @since 2026-10-27
+ */
+@use 'tokens' as *;
+
+@mixin picker {
+  /* ---- Tab 栏 ---- */
+  .icon-picker__tabs {
+    display: flex;
+    gap: 0.125rem;
+    margin-bottom: 0.5rem;
+    padding: 0.125rem;
+    background: var(--surface-2);
+    border-radius: $radius-sm;
+  }
+
+  .icon-picker__tab {
+    flex: 1;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.25rem;
+    padding: 0.3125rem 0.375rem;
+    border: none;
+    border-radius: $radius-sm;
+    background: transparent;
+    color: var(--text-soft);
+    font-size: 0.6875rem;
+    font-weight: 500;
+    cursor: var(--interaction-cursor, pointer);
+    transition: $transition-fast;
+    @media (prefers-reduced-motion: reduce) {
+      transition: none;
+    }
+
+    &:hover {
+      color: var(--text-main);
+    }
+
+    &--active {
+      background: var(--surface-1);
+      color: var(--accent-text);
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+    }
+  }
+
+  .icon-picker__pane {
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* ---- 搜索框 ---- */
+  .icon-picker__search {
+    display: flex;
+    align-items: center;
+    gap: 0.375rem;
+    padding: 0.375rem 0.5rem;
+    margin-bottom: 0.5rem;
+    border: 1px solid var(--border-soft);
+    border-radius: $radius-sm;
+    background: var(--surface-2);
+
+    &:focus-within {
+      border-color: var(--accent);
+    }
+  }
+
+  .icon-picker__search-icon {
+    color: var(--text-faint);
+    flex-shrink: 0;
+  }
+
+  .icon-picker__search-input {
+    flex: 1;
+    border: none;
+    outline: none;
+    background: transparent;
+    font-size: 0.75rem;
+    color: var(--text-main);
+
+    &::placeholder {
+      color: var(--text-faint);
+    }
+  }
+
+  /* ---- 网格 ---- */
+  .icon-picker__grid {
+    display: grid;
+    grid-template-columns: repeat(8, 1fr);
+    gap: 0.25rem;
+    max-height: 160px;
+    overflow-y: auto;
+  }
+
+  .icon-picker__grid--emoji {
+    grid-template-columns: repeat(8, 1fr);
+  }
+
+  .icon-picker__item {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    aspect-ratio: 1;
+    border: none;
+    border-radius: $radius-sm;
+    background: transparent;
+    color: var(--text-soft);
+    cursor: var(--interaction-cursor, pointer);
+    transition:
+      background 0.15s,
+      color 0.15s;
+    @media (prefers-reduced-motion: reduce) {
+      transition: none;
+    }
+
+    &:hover {
+      background: var(--surface-2);
+      color: var(--text-main);
+    }
+
+    &--active {
+      background: var(--accent-soft);
+      color: var(--accent-text);
+    }
+
+    &--emoji {
+      font-size: 1.125rem;
+      line-height: 1;
+    }
+  }
+
+  .icon-picker__empty {
+    text-align: center;
+    padding: 1rem;
+    font-size: 0.75rem;
+    color: var(--text-faint);
+  }
+
+  /* ---- 上传 ---- */
+  .icon-picker__upload {
+    gap: 0.5rem;
+  }
+
+  .icon-picker__upload-dropzone {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    padding: 1.5rem 1rem;
+    border: 2px dashed var(--border);
+    border-radius: $radius-md;
+    background: var(--surface-2);
+    color: var(--text-soft);
+    cursor: var(--interaction-cursor, pointer);
+    text-align: center;
+    transition: $transition-fast;
+    @media (prefers-reduced-motion: reduce) {
+      transition: none;
+    }
+
+    &:hover {
+      border-color: var(--accent);
+      color: var(--accent-text);
+      background: var(--accent-soft);
+    }
+
+    strong {
+      color: var(--accent-text);
+    }
+
+    small {
+      display: block;
+      margin-top: 0.25rem;
+      font-size: 0.625rem;
+      color: var(--text-faint);
+      font-weight: 400;
+    }
+  }
+
+  .icon-picker__upload-input {
+    display: none;
+  }
+
+  .icon-picker__upload-hint {
+    font-size: 0.75rem;
+    font-weight: 500;
+  }
+
+  .icon-picker__upload-error {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    margin: 0;
+    padding: 0.375rem 0.5rem;
+    background: rgba(239, 68, 68, 0.08);
+    color: #ef4444;
+    border-radius: $radius-sm;
+    font-size: 0.6875rem;
+  }
+
+  .icon-picker__upload-preview {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+    padding: 0.5rem 0.75rem;
+    background: var(--surface-2);
+    border-radius: $radius-sm;
+
+    img {
+      width: 32px;
+      height: 32px;
+      border-radius: $radius-sm;
+      object-fit: contain;
+      background: var(--surface-1);
+    }
+  }
+
+  .icon-picker__upload-clear {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    padding: 0.25rem 0.5rem;
+    border: none;
+    border-radius: $radius-sm;
+    background: transparent;
+    color: var(--text-soft);
+    font-size: 0.6875rem;
+    cursor: var(--interaction-cursor, pointer);
+
+    &:hover {
+      color: #ef4444;
+      background: rgba(239, 68, 68, 0.08);
+    }
+  }
+}

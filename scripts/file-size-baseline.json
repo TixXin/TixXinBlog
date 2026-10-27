@@ -4,7 +4,6 @@
     "src/frontend/web-blog/app/components/admin/MomentForm.vue": 415,
     "src/frontend/web-blog/app/components/admin/ProjectForm.vue": 492,
     "src/frontend/web-blog/app/components/admin/SiteNavigationFields.vue": 413,
-    "src/frontend/web-blog/app/components/tab/TabIconPicker.vue": 501,
     "src/frontend/web-blog/app/components/tab/TabImportDialog.vue": 455,
     "src/frontend/web-blog/app/components/tab/TabSearchBar.vue": 468,
     "src/frontend/web-blog/app/composables/useTabBookmarks.ts": 305,

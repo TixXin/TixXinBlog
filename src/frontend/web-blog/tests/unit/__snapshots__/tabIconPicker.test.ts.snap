@@ -1,0 +1,81 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`Lucide 按关键词、名称与翻译名搜索，Emoji 按关键词与字符搜索，点击取值 1`] = `
+[
+  [
+    "AI",
+    "机器人",
+  ],
+  [
+    "学习",
+    "书签",
+  ],
+  [
+    "收藏",
+  ],
+  [],
+  "没有匹配的图标",
+  [
+    [
+      "lucide:heart",
+    ],
+    [
+      "🏠",
+    ],
+  ],
+  "喜欢",
+  [
+    "猫 cat 喵",
+  ],
+  [
+    "火 热门 fire",
+  ],
+  [],
+  "没有匹配的 emoji",
+  [
+    "🏠",
+  ],
+]
+`;
+
+exports[`三个标签页的结构与初始标签页 1`] = `
+[
+  "<div class="icon-picker">
+  <!-- Tab 切换 -->
+  <div class="icon-picker__tabs" role="tablist"><button type="button" role="tab" aria-selected="true" class="icon-picker__tab icon-picker__tab--active"><span class="iconify i-lucide:shapes" aria-hidden="true" style="font-size: 12px;"></span><span>Lucide</span></button><button type="button" role="tab" aria-selected="false" class="icon-picker__tab"><span class="iconify i-lucide:smile" aria-hidden="true" style="font-size: 12px;"></span><span>Emoji</span></button><button type="button" role="tab" aria-selected="false" class="icon-picker__tab"><span class="iconify i-lucide:upload" aria-hidden="true" style="font-size: 12px;"></span><span>上传</span></button></div><!-- Lucide -->
+  <div class="icon-picker__pane">
+    <div class="icon-picker__search"><span class="iconify i-lucide:search icon-picker__search-icon" aria-hidden="true" style="font-size: 12px;"></span><input type="text" class="icon-picker__search-input" placeholder="搜索图标..."></div>
+    <div class="icon-picker__grid"><button type="button" class="icon-picker__item" title="主页"><span class="iconify i-lucide:home" aria-hidden="true" style="font-size: 16px;"></span></button><button type="button" class="icon-picker__item icon-picker__item--active" title="收藏"><span class="iconify i-lucide:star" aria-hidden="true" style="font-size: 16px;"></span></button><button type="button" class="icon-picker__item" title="喜欢"><span class="iconify i-lucide:heart" aria-hidden="true" style="font-size: 16px;"></span></button><button type="button" class="icon-picker__item" title="AI"><span class="iconify i-lucide:sparkles" aria-hidden="true" style="font-size: 16px;"></span></button><button type="button" class="icon-picker__item" title="机器人"><span class="iconify i-lucide:bot" aria-hidden="true" style="font-size: 16px;"></span></button><button type="button" class="icon-picker__item" title="终端"><span class="iconify i-lucide:terminal" aria-hidden="true" style="font-size: 16px;"></span></button><button type="button" class="icon-picker__item" title="代码"><span class="iconify i-lucide:code" aria-hidden="true" style="font-size: 16px;"></span></button><button type="button" class="icon-picker__item" title="调色板"><span class="iconify i-lucide:palette" aria-hidden="true" style="font-size: 16px;"></span></button><button type="button" class="icon-picker__item" title="产品"><span class="iconify i-lucide:box" aria-hidden="true" style="font-size: 16px;"></span></button><button type="button" class="icon-picker__item" title="服务器"><span class="iconify i-lucide:server" aria-hidden="true" style="font-size: 16px;"></span></button><button type="button" class="icon-picker__item" title="摸鱼"><span class="iconify i-lucide:fish" aria-hidden="true" style="font-size: 16px;"></span></button><button type="button" class="icon-picker__item" title="文件夹"><span class="iconify i-lucide:folder" aria-hidden="true" style="font-size: 16px;"></span></button><button type="button" class="icon-picker__item" title="学习"><span class="iconify i-lucide:book-open" aria-hidden="true" style="font-size: 16px;"></span></button><button type="button" class="icon-picker__item" title="灵感"><span class="iconify i-lucide:lightbulb" aria-hidden="true" style="font-size: 16px;"></span></button><button type="button" class="icon-picker__item" title="工具"><span class="iconify i-lucide:wrench" aria-hidden="true" style="font-size: 16px;"></span></button><button type="button" class="icon-picker__item" title="网站"><span class="iconify i-lucide:globe" aria-hidden="true" style="font-size: 16px;"></span></button><button type="button" class="icon-picker__item" title="音乐"><span class="iconify i-lucide:music" aria-hidden="true" style="font-size: 16px;"></span></button><button type="button" class="icon-picker__item" title="游戏"><span class="iconify i-lucide:gamepad-2" aria-hidden="true" style="font-size: 16px;"></span></button><button type="button" class="icon-picker__item" title="摄影"><span class="iconify i-lucide:camera" aria-hidden="true" style="font-size: 16px;"></span></button><button type="button" class="icon-picker__item" title="购物"><span class="iconify i-lucide:shopping-bag" aria-hidden="true" style="font-size: 16px;"></span></button><button type="button" class="icon-picker__item" title="新闻"><span class="iconify i-lucide:newspaper" aria-hidden="true" style="font-size: 16px;"></span></button><button type="button" class="icon-picker__item" title="火箭"><span class="iconify i-lucide:rocket" aria-hidden="true" style="font-size: 16px;"></span></button><button type="button" class="icon-picker__item" title="闪电"><span class="iconify i-lucide:zap" aria-hidden="true" style="font-size: 16px;"></span></button><button type="button" class="icon-picker__item" title="书签"><span class="iconify i-lucide:bookmark" aria-hidden="true" style="font-size: 16px;"></span></button><button type="button" class="icon-picker__item" title="导航"><span class="iconify i-lucide:compass" aria-hidden="true" style="font-size: 16px;"></span></button><button type="button" class="icon-picker__item" title="硬件"><span class="iconify i-lucide:cpu" aria-hidden="true" style="font-size: 16px;"></span></button><button type="button" class="icon-picker__item" title="数据库"><span class="iconify i-lucide:database" aria-hidden="true" style="font-size: 16px;"></span></button><button type="button" class="icon-picker__item" title="安全"><span class="iconify i-lucide:shield" aria-hidden="true" style="font-size: 16px;"></span></button><button type="button" class="icon-picker__item" title="云"><span class="iconify i-lucide:cloud" aria-hidden="true" style="font-size: 16px;"></span></button><button type="button" class="icon-picker__item" title="下载"><span class="iconify i-lucide:download" aria-hidden="true" style="font-size: 16px;"></span></button><button type="button" class="icon-picker__item" title="图片"><span class="iconify i-lucide:image" aria-hidden="true" style="font-size: 16px;"></span></button><button type="button" class="icon-picker__item" title="视频"><span class="iconify i-lucide:video" aria-hidden="true" style="font-size: 16px;"></span></button><button type="button" class="icon-picker__item" title="钢笔"><span class="iconify i-lucide:pen-tool" aria-hidden="true" style="font-size: 16px;"></span></button><button type="button" class="icon-picker__item" title="网格"><span class="iconify i-lucide:layout-grid" aria-hidden="true" style="font-size: 16px;"></span></button><button type="button" class="icon-picker__item" title="社交"><span class="iconify i-lucide:users" aria-hidden="true" style="font-size: 16px;"></span></button><button type="button" class="icon-picker__item" title="成就"><span class="iconify i-lucide:trophy" aria-hidden="true" style="font-size: 16px;"></span></button><button type="button" class="icon-picker__item" title="咖啡"><span class="iconify i-lucide:coffee" aria-hidden="true" style="font-size: 16px;"></span></button><button type="button" class="icon-picker__item" title="教育"><span class="iconify i-lucide:graduation-cap" aria-hidden="true" style="font-size: 16px;"></span></button><button type="button" class="icon-picker__item" title="工作"><span class="iconify i-lucide:briefcase" aria-hidden="true" style="font-size: 16px;"></span></button><button type="button" class="icon-picker__item" title="位置"><span class="iconify i-lucide:map-pin" aria-hidden="true" style="font-size: 16px;"></span></button></div>
+    <!--v-if-->
+  </div>
+</div>",
+  "<div class="icon-picker">
+  <!-- Tab 切换 -->
+  <div class="icon-picker__tabs" role="tablist"><button type="button" role="tab" aria-selected="false" class="icon-picker__tab"><span class="iconify i-lucide:shapes" aria-hidden="true" style="font-size: 12px;"></span><span>Lucide</span></button><button type="button" role="tab" aria-selected="true" class="icon-picker__tab icon-picker__tab--active"><span class="iconify i-lucide:smile" aria-hidden="true" style="font-size: 12px;"></span><span>Emoji</span></button><button type="button" role="tab" aria-selected="false" class="icon-picker__tab"><span class="iconify i-lucide:upload" aria-hidden="true" style="font-size: 12px;"></span><span>上传</span></button></div><!-- Lucide -->
+  <!-- Emoji -->
+  <div class="icon-picker__pane">
+    <div class="icon-picker__search"><span class="iconify i-lucide:search icon-picker__search-icon" aria-hidden="true" style="font-size: 12px;"></span><input type="text" class="icon-picker__search-input" placeholder="搜索 emoji..."></div>
+    <div class="icon-picker__grid icon-picker__grid--emoji"><button type="button" class="icon-picker__item icon-picker__item--emoji" title="家 主页 home house">🏠</button><button type="button" class="icon-picker__item icon-picker__item--emoji" title="星 收藏 star">⭐</button><button type="button" class="icon-picker__item icon-picker__item--emoji" title="心 喜欢 heart">❤️</button><button type="button" class="icon-picker__item icon-picker__item--emoji icon-picker__item--active" title="火 热门 fire">🔥</button><button type="button" class="icon-picker__item icon-picker__item--emoji" title="闪光 sparkles ai">✨</button><button type="button" class="icon-picker__item icon-picker__item--emoji" title="机器人 ai bot">🤖</button><button type="button" class="icon-picker__item icon-picker__item--emoji" title="电脑 代码 code">💻</button><button type="button" class="icon-picker__item icon-picker__item--emoji" title="程序员 developer">🧑‍💻</button><button type="button" class="icon-picker__item icon-picker__item--emoji" title="调色 设计 art">🎨</button><button type="button" class="icon-picker__item icon-picker__item--emoji" title="盒子 产品 box">📦</button><button type="button" class="icon-picker__item icon-picker__item--emoji" title="游戏 gamepad">🎮</button><button type="button" class="icon-picker__item icon-picker__item--emoji" title="音乐 music">🎵</button><button type="button" class="icon-picker__item icon-picker__item--emoji" title="书 学习 book">📚</button><button type="button" class="icon-picker__item icon-picker__item--emoji" title="灵感 idea lightbulb">💡</button><button type="button" class="icon-picker__item icon-picker__item--emoji" title="工具 wrench tool">🔧</button><button type="button" class="icon-picker__item icon-picker__item--emoji" title="地球 全球 网站 globe">🌐</button><button type="button" class="icon-picker__item icon-picker__item--emoji" title="火箭 rocket 发射">🚀</button><button type="button" class="icon-picker__item icon-picker__item--emoji" title="闪电 快速 zap">⚡</button><button type="button" class="icon-picker__item icon-picker__item--emoji" title="图钉 置顶 pin">📌</button><button type="button" class="icon-picker__item icon-picker__item--emoji" title="书签 bookmark">🔖</button><button type="button" class="icon-picker__item icon-picker__item--emoji" title="指南针 compass">🧭</button><button type="button" class="icon-picker__item icon-picker__item--emoji" title="相机 摄影 camera">📷</button><button type="button" class="icon-picker__item icon-picker__item--emoji" title="购物车 cart shopping">🛒</button><button type="button" class="icon-picker__item icon-picker__item--emoji" title="新闻 newspaper">📰</button><button type="button" class="icon-picker__item icon-picker__item--emoji" title="咖啡 coffee 休息">☕</button><button type="button" class="icon-picker__item icon-picker__item--emoji" title="毕业 教育 graduation">🎓</button><button type="button" class="icon-picker__item icon-picker__item--emoji" title="工作 briefcase 办公">💼</button><button type="button" class="icon-picker__item icon-picker__item--emoji" title="彩虹 rainbow">🌈</button><button type="button" class="icon-picker__item icon-picker__item--emoji" title="爆米花 娱乐 popcorn">🍿</button><button type="button" class="icon-picker__item icon-picker__item--emoji" title="大脑 思考 brain">🧠</button><button type="button" class="icon-picker__item icon-picker__item--emoji" title="猫 cat 喵">🐱</button><button type="button" class="icon-picker__item icon-picker__item--emoji" title="狗 dog 汪">🐶</button><button type="button" class="icon-picker__item icon-picker__item--emoji" title="花 sakura blossom">🌸</button><button type="button" class="icon-picker__item icon-picker__item--emoji" title="四叶草 幸运 clover">🍀</button><button type="button" class="icon-picker__item icon-picker__item--emoji" title="地图 map">🗺️</button><button type="button" class="icon-picker__item icon-picker__item--emoji" title="日历 calendar 日期">📅</button><button type="button" class="icon-picker__item icon-picker__item--emoji" title="目标 target">🎯</button><button type="button" class="icon-picker__item icon-picker__item--emoji" title="锁 安全 security">🔒</button><button type="button" class="icon-picker__item icon-picker__item--emoji" title="铃铛 通知 bell">🔔</button><button type="button" class="icon-picker__item icon-picker__item--emoji" title="对话 聊天 chat">💬</button><button type="button" class="icon-picker__item icon-picker__item--emoji" title="用户 社交 users">👥</button><button type="button" class="icon-picker__item icon-picker__item--emoji" title="工具箱 tools">🛠️</button><button type="button" class="icon-picker__item icon-picker__item--emoji" title="图表 chart 数据">📊</button><button type="button" class="icon-picker__item icon-picker__item--emoji" title="笔记 memo note">📝</button><button type="button" class="icon-picker__item icon-picker__item--emoji" title="电影 video 视频">🎬</button><button type="button" class="icon-picker__item icon-picker__item--emoji" title="耳机 音乐 headphones">🎧</button><button type="button" class="icon-picker__item icon-picker__item--emoji" title="翻开书 阅读 open book">📖</button><button type="button" class="icon-picker__item icon-picker__item--emoji" title="拼图 puzzle">🧩</button><button type="button" class="icon-picker__item icon-picker__item--emoji" title="礼物 gift">🎁</button><button type="button" class="icon-picker__item icon-picker__item--emoji" title="钱 money 薪水">💰</button></div>
+    <!--v-if-->
+  </div>
+</div>",
+  "<div class="icon-picker">
+  <!-- Tab 切换 -->
+  <div class="icon-picker__tabs" role="tablist"><button type="button" role="tab" aria-selected="false" class="icon-picker__tab"><span class="iconify i-lucide:shapes" aria-hidden="true" style="font-size: 12px;"></span><span>Lucide</span></button><button type="button" role="tab" aria-selected="false" class="icon-picker__tab"><span class="iconify i-lucide:smile" aria-hidden="true" style="font-size: 12px;"></span><span>Emoji</span></button><button type="button" role="tab" aria-selected="true" class="icon-picker__tab icon-picker__tab--active"><span class="iconify i-lucide:upload" aria-hidden="true" style="font-size: 12px;"></span><span>上传</span></button></div><!-- Lucide -->
+  <!-- 上传 -->
+  <div class="icon-picker__pane icon-picker__upload"><label class="icon-picker__upload-dropzone"><input type="file" accept="image/*" class="icon-picker__upload-input"><span class="iconify i-lucide:upload" aria-hidden="true" style="font-size: 24px;"></span><span class="icon-picker__upload-hint"><strong>点击上传</strong>或拖拽图片 <small>建议 64×64 PNG / SVG，单图 &lt; 32KB</small></span></label>
+    <!--v-if-->
+    <div class="icon-picker__upload-preview"><img src="data:image/png;base64,AAAA" alt="预览"><button type="button" class="icon-picker__upload-clear"><span class="iconify i-lucide:x" aria-hidden="true" style="font-size: 11px;"></span> 清除</button></div>
+  </div>
+</div>",
+]
+`;
+
+exports[`上传：超过 32KB 提示大小，读取成功写入 dataURL 并可清除 1`] = `
+{
+  "errorAfterSuccess": false,
+  "preview": true,
+  "tooLarge": "图片过大（40KB）。请压缩至 32KB 以内。",
+  "value": "data:image/png;base64,iVBORw==",
+}
+`;
