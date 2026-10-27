@@ -1,0 +1,240 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`外链字段的结构与补全 1`] = `
+[
+  "<fieldset><label>动态正文<textarea aria-label="动态正文" rows="8" maxlength="10000" required="" placeholder="记录此刻的想法，支持 Markdown" value="晚风吹过河岸"></textarea></label><small>6 / 10000</small><label>话题（逗号分隔，最多10个）<input aria-label="动态话题" value=""></label>
+  <section class="moment-editor__media" aria-label="动态配图">
+    <h2>配图（0 / 9）</h2><button type="button">选择或上传图片</button>
+    <div class="moment-editor__images"></div>
+  </section>
+  <div class="moment-editor__row"><label>地点<input maxlength="160" value=""></label><label>设备<input maxlength="80" value=""></label><label>心情<input maxlength="80" value=""></label></div><label>引用内容<select aria-label="动态引用类型" value="link">
+      <option value="none">不引用</option>
+      <option value="article">站内文章</option>
+      <option value="link">外部链接</option>
+    </select></label>
+  <!--v-if-->
+  <div class="moment-editor__row"><label>链接地址<input type="url" maxlength="2048" aria-label="引用链接地址" value="https://example.com/"></label><label>链接标题<input maxlength="160" aria-label="引用链接标题" value="示例"></label><label>链接描述<input maxlength="500"></label><label>站点名称<input maxlength="80" value="例站"></label><label>卡片图片链接（可选）<input maxlength="2048"></label><label>站点图标链接（可选）<input maxlength="2048"></label></div>
+  <div class="moment-editor__row"><label>保存状态<select aria-label="动态保存状态" value="draft">
+        <option value="draft">草稿</option>
+        <option value="published">已发布</option>
+        <option value="archived">已归档</option>
+      </select></label><label class="moment-editor__check"><input type="checkbox">置顶动态</label></div>
+</fieldset>",
+  [
+    [
+      {
+        "linkedLink": {
+          "siteName": "例站",
+          "title": "示例",
+          "url": "https://example.com/a",
+        },
+      },
+    ],
+  ],
+]
+`;
+
+exports[`已发布动态带恢复副本、服务器版本、配图、文章引用与提示时的结构 1`] = `
+"<form class="moment-editor">
+  <header class="moment-editor__heading">
+    <h1>编辑动态</h1><a class="back" to="/admin/moments">返回动态管理</a><a href="/moments/moment-42">查看公开动态</a>
+  </header>
+  <p role="alert">版本冲突 <button type="button">重新读取</button></p>
+  <p role="status">已保留当前输入</p>
+  <p role="alert">恢复副本写入失败 <button type="button">重试保存恢复副本</button></p>
+  <section class="moment-editor__recovery" aria-label="动态恢复副本">
+    <h2>发现本标签页未保存的输入</h2>
+    <p>本机副本本机副本本机副本本机副本本机副本本机副本本机副本本机副本本机副本本机副本本机副本本机副本本机副本本机副本本机副本本机副本本机副本本机副本本机副本本机副本本机副本本机副本本机副本本机副本本机副本本机副本本机副本本机副本本机副本本机副本本机副本本机副本本机副本本机副本本机副本本机副本本机副本本机副本本机副本本机副本</p><button type="button">恢复输入</button><button type="button">移除恢复副本</button>
+  </section>
+  <section class="moment-editor__recovery" aria-label="动态服务器版本">
+    <h2>服务器当前版本 7</h2>
+    <p>已归档 · 摄影、散步</p>
+    <blockquote>服务器上的另一段记录
+      第二行</blockquote><button type="button">保留副本并载入服务器版本</button>
+  </section>
+  <!--v-if-->
+  <fieldset><label>动态正文<textarea aria-label="动态正文" rows="8" maxlength="10000" required="" placeholder="记录此刻的想法，支持 Markdown" value="晚风吹过河岸"></textarea></label><small>6 / 10000</small><label>话题（逗号分隔，最多10个）<input aria-label="动态话题" value="夜跑，城市"></label>
+    <section class="moment-editor__media" aria-label="动态配图">
+      <h2>配图（2 / 9）</h2><button type="button">选择或上传图片</button>
+      <div class="moment-editor__images">
+        <figure><img src="/a.webp" alt="动态配图 1"><button type="button" aria-label="移除配图 1">移除此配图</button></figure>
+        <figure><img src="/b.webp" alt="动态配图 2"><button type="button" aria-label="移除配图 2">移除此配图</button></figure>
+      </div>
+    </section>
+    <div class="moment-editor__row"><label>地点<input maxlength="160" value="江边"></label><label>设备<input maxlength="80" value="X100V"></label><label>心情<input maxlength="80" value="平静"></label></div><label>引用内容<select aria-label="动态引用类型" value="article">
+        <option value="none">不引用</option>
+        <option value="article">站内文章</option>
+        <option value="link">外部链接</option>
+      </select></label>
+    <section><label>搜索公开文章<input type="search" aria-label="搜索引用文章" maxlength="200" placeholder="输入文章标题"></label>
+      <p role="status">正在搜索文章…</p>
+      <p role="alert">文章搜索失败</p><label>引用文章<select aria-label="引用文章" value="12">
+          <option value="">请选择已公开文章</option>
+          <option value="12">城市夜跑笔记</option>
+          <option value="13">江边散步</option>
+        </select></label>
+    </section>
+    <!--v-if-->
+    <div class="moment-editor__row"><label>保存状态<select aria-label="动态保存状态" value="published">
+          <option value="draft">草稿</option>
+          <option value="published">已发布</option>
+          <option value="archived">已归档</option>
+        </select></label><label class="moment-editor__check"><input checked="" type="checkbox">置顶动态</label></div>
+  </fieldset>
+  <div class="moment-editor__actions">
+    <div content="保存（Ctrl+S）"><button aria-busy="false" type="submit" aria-keyshortcuts="Control+S Meta+S">保存动态</button></div><button type="button">保存草稿</button><button type="button">发布动态</button><span>有尚未保存的输入</span>
+  </div>
+  <div>
+    <div data-open="false"></div>
+  </div>
+</form>"
+`;
+
+exports[`父组件不回写时，引用类型与文章搜索词保留在表单本地 1`] = `
+[
+  "article",
+  "<fieldset><label>动态正文<textarea aria-label="动态正文" rows="8" maxlength="10000" required="" placeholder="记录此刻的想法，支持 Markdown" value="晚风吹过河岸"></textarea></label><small>6 / 10000</small><label>话题（逗号分隔，最多10个）<input aria-label="动态话题" value=""></label>
+  <section class="moment-editor__media" aria-label="动态配图">
+    <h2>配图（0 / 9）</h2><button type="button">选择或上传图片</button>
+    <div class="moment-editor__images"></div>
+  </section>
+  <div class="moment-editor__row"><label>地点<input maxlength="160" value=""></label><label>设备<input maxlength="80" value=""></label><label>心情<input maxlength="80" value=""></label></div><label>引用内容<select aria-label="动态引用类型" value="article">
+      <option value="none">不引用</option>
+      <option value="article">站内文章</option>
+      <option value="link">外部链接</option>
+    </select></label>
+  <section><label>搜索公开文章<input type="search" aria-label="搜索引用文章" maxlength="200" placeholder="输入文章标题"></label>
+    <!--v-if-->
+    <!--v-if--><label>引用文章<select aria-label="引用文章" value="">
+        <option value="">请选择已公开文章</option>
+      </select></label>
+  </section>
+  <!--v-if-->
+  <div class="moment-editor__row"><label>保存状态<select aria-label="动态保存状态" value="draft">
+        <option value="draft">草稿</option>
+        <option value="published">已发布</option>
+        <option value="archived">已归档</option>
+      </select></label><label class="moment-editor__check"><input type="checkbox">置顶动态</label></div>
+</fieldset>",
+  [
+    [
+      "",
+    ],
+    [
+      "夜跑",
+    ],
+  ],
+  "夜跑",
+  false,
+  "link",
+  [
+    [
+      {
+        "linkedArticleId": null,
+        "linkedLink": null,
+      },
+    ],
+    [
+      {
+        "linkedArticleId": null,
+        "linkedLink": {
+          "title": "",
+          "url": "",
+        },
+      },
+    ],
+    [
+      {
+        "linkedArticleId": null,
+        "linkedLink": null,
+      },
+    ],
+  ],
+  [
+    [
+      "",
+    ],
+    [
+      "夜跑",
+    ],
+  ],
+  "true",
+]
+`;
+
+exports[`空表单与载入中的结构 1`] = `
+[
+  "<form class="moment-editor">
+  <header class="moment-editor__heading">
+    <h1>发布动态</h1><a class="back" to="/admin/moments">返回动态管理</a>
+    <!--v-if-->
+  </header>
+  <!--v-if-->
+  <!--v-if-->
+  <!--v-if-->
+  <!--v-if-->
+  <!--v-if-->
+  <!--v-if-->
+  <fieldset><label>动态正文<textarea aria-label="动态正文" rows="8" maxlength="10000" required="" placeholder="记录此刻的想法，支持 Markdown" value=""></textarea></label><small>0 / 10000</small><label>话题（逗号分隔，最多10个）<input aria-label="动态话题" value=""></label>
+    <section class="moment-editor__media" aria-label="动态配图">
+      <h2>配图（0 / 9）</h2><button type="button">选择或上传图片</button>
+      <div class="moment-editor__images"></div>
+    </section>
+    <div class="moment-editor__row"><label>地点<input maxlength="160" value=""></label><label>设备<input maxlength="80" value=""></label><label>心情<input maxlength="80" value=""></label></div><label>引用内容<select aria-label="动态引用类型" value="none">
+        <option value="none">不引用</option>
+        <option value="article">站内文章</option>
+        <option value="link">外部链接</option>
+      </select></label>
+    <!--v-if-->
+    <!--v-if-->
+    <div class="moment-editor__row"><label>保存状态<select aria-label="动态保存状态" value="draft">
+          <option value="draft">草稿</option>
+          <option value="published">已发布</option>
+          <option value="archived">已归档</option>
+        </select></label><label class="moment-editor__check"><input type="checkbox">置顶动态</label></div>
+  </fieldset>
+  <div class="moment-editor__actions">
+    <div content="保存（Ctrl+S）"><button aria-busy="false" type="submit" aria-keyshortcuts="Control+S Meta+S" disabled="">保存动态</button></div><button type="button" disabled="">保存草稿</button><button type="button" disabled="">发布动态</button><span>有尚未保存的输入</span>
+  </div>
+  <div>
+    <div data-open="false"></div>
+  </div>
+</form>",
+  "<form class="moment-editor">
+  <header class="moment-editor__heading">
+    <h1>发布动态</h1><a class="back" to="/admin/moments">返回动态管理</a>
+    <!--v-if-->
+  </header>
+  <!--v-if-->
+  <!--v-if-->
+  <!--v-if-->
+  <!--v-if-->
+  <!--v-if-->
+  <p role="status">正在读取动态…</p>
+  <fieldset disabled=""><label>动态正文<textarea aria-label="动态正文" rows="8" maxlength="10000" required="" placeholder="记录此刻的想法，支持 Markdown" value="晚风吹过河岸"></textarea></label><small>6 / 10000</small><label>话题（逗号分隔，最多10个）<input aria-label="动态话题" value=""></label>
+    <section class="moment-editor__media" aria-label="动态配图">
+      <h2>配图（0 / 9）</h2><button type="button">选择或上传图片</button>
+      <div class="moment-editor__images"></div>
+    </section>
+    <div class="moment-editor__row"><label>地点<input maxlength="160" value=""></label><label>设备<input maxlength="80" value=""></label><label>心情<input maxlength="80" value=""></label></div><label>引用内容<select aria-label="动态引用类型" value="none">
+        <option value="none">不引用</option>
+        <option value="article">站内文章</option>
+        <option value="link">外部链接</option>
+      </select></label>
+    <!--v-if-->
+    <!--v-if-->
+    <div class="moment-editor__row"><label>保存状态<select aria-label="动态保存状态" value="draft">
+          <option value="draft">草稿</option>
+          <option value="published">已发布</option>
+          <option value="archived">已归档</option>
+        </select></label><label class="moment-editor__check"><input type="checkbox">置顶动态</label></div>
+  </fieldset>
+  <div class="moment-editor__actions">
+    <div content="保存（Ctrl+S）"><button aria-busy="true" type="submit" aria-keyshortcuts="Control+S Meta+S" disabled="">正在保存…</button></div><button type="button" disabled="">保存草稿</button><button type="button" disabled="">发布动态</button><span>尚未保存</span>
+  </div>
+  <div>
+    <div data-open="false"></div>
+  </div>
+</form>",
+]
+`;

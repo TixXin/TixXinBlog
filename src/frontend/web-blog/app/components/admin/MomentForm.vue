@@ -19,31 +19,14 @@
       {{ localError }}
       <button type="button" @click="$emit('persist')">{{ $t('admin-content.momentForm.retryPersist') }}</button>
     </p>
-    <section v-if="recovery" class="moment-editor__recovery" :aria-label="$t('admin-content.momentForm.recoveryLabel')">
-      <h2>{{ $t('admin-content.momentForm.recoveryTitle') }}</h2>
-      <p>{{ recovery.form.content.slice(0, 160) }}</p>
-      <button type="button" :disabled="saving" @click="$emit('restore')">
-        {{ $t('admin-content.momentForm.restore') }}
-      </button>
-      <button type="button" :disabled="saving" @click="$emit('discard')">
-        {{ $t('admin-content.momentForm.discard') }}
-      </button>
-    </section>
-    <section
-      v-if="serverVersion"
-      class="moment-editor__recovery"
-      :aria-label="$t('admin-content.momentForm.serverLabel')"
-    >
-      <h2>{{ $t('admin-content.momentForm.serverTitle', { revision: serverVersion.revision }) }}</h2>
-      <p>
-        {{ $t(`admin-content.momentForm.status.${serverVersion.status}`) }} ·
-        {{ serverVersion.topics?.join($t('admin-content.momentForm.listSeparator')) }}
-      </p>
-      <blockquote>{{ serverVersion.content }}</blockquote>
-      <button type="button" :disabled="saving" @click="$emit('reload')">
-        {{ $t('admin-content.momentForm.loadServer') }}
-      </button>
-    </section>
+    <AdminMomentFormNotices
+      :recovery="recovery"
+      :server-version="serverVersion"
+      :saving="saving"
+      @restore="$emit('restore')"
+      @discard="$emit('discard')"
+      @reload="$emit('reload')"
+    />
     <p v-if="loading" role="status">{{ $t('admin-content.momentForm.loading') }}</p>
     <fieldset :disabled="!ready || loading">
       <label
@@ -74,29 +57,7 @@
             )
           "
       /></label>
-      <section class="moment-editor__media" :aria-label="$t('admin-content.momentForm.imagesLabel')">
-        <h2>{{ $t('admin-content.momentForm.imagesTitle', { count: value.images.length, max: 9 }) }}</h2>
-        <button type="button" :disabled="value.images.length >= 9" @click="mediaOpen = true">
-          {{ $t('admin-content.momentForm.pickImage') }}
-        </button>
-        <div class="moment-editor__images">
-          <figure v-for="(url, index) in value.images" :key="url">
-            <img :src="url" :alt="$t('admin-content.momentForm.imageAlt', { index: index + 1 })" />
-            <button
-              type="button"
-              :aria-label="$t('admin-content.momentForm.removeImageAria', { index: index + 1 })"
-              @click="
-                change(
-                  'images',
-                  value.images.filter((_, i) => i !== index),
-                )
-              "
-            >
-              {{ $t('admin-content.momentForm.removeImage') }}
-            </button>
-          </figure>
-        </div>
-      </section>
+      <AdminMomentFormImages :images="value.images" @choose="mediaOpen = true" @change="change('images', $event)" />
       <div class="moment-editor__row">
         <label
           >{{ $t('admin-content.momentForm.location')
@@ -120,95 +81,14 @@
             @input="change('mood', ($event.target as HTMLInputElement).value)"
         /></label>
       </div>
-      <label
-        >{{ $t('admin-content.momentForm.linkType')
-        }}<select
-          :value="value.linkedLink ? 'link' : value.linkedArticleId ? 'article' : linkMode"
-          :aria-label="$t('admin-content.momentForm.linkTypeAria')"
-          @change="setLinkMode(($event.target as HTMLSelectElement).value)"
-        >
-          <option value="none">{{ $t('admin-content.momentForm.linkNone') }}</option>
-          <option value="article">{{ $t('admin-content.momentForm.linkArticle') }}</option>
-          <option value="link">{{ $t('admin-content.momentForm.linkExternal') }}</option>
-        </select></label
-      >
-      <section v-if="linkMode === 'article' || value.linkedArticleId">
-        <label
-          >{{ $t('admin-content.momentForm.articleSearch')
-          }}<input
-            v-model="articleSearch"
-            type="search"
-            :aria-label="$t('admin-content.momentForm.articleSearchAria')"
-            maxlength="200"
-            :placeholder="$t('admin-content.momentForm.articleSearchPlaceholder')"
-            @input="$emit('search-articles', articleSearch)"
-        /></label>
-        <p v-if="articlesPending" role="status">{{ $t('admin-content.momentForm.articleSearching') }}</p>
-        <p v-if="articlesError" role="alert">{{ articlesError }}</p>
-        <label
-          >{{ $t('admin-content.momentForm.article')
-          }}<select
-            :value="value.linkedArticleId ?? ''"
-            :aria-label="$t('admin-content.momentForm.article')"
-            @change="
-              change(
-                'linkedArticleId',
-                ($event.target as HTMLSelectElement).value ? Number(($event.target as HTMLSelectElement).value) : null,
-              )
-            "
-          >
-            <option value="">{{ $t('admin-content.momentForm.articlePlaceholder') }}</option>
-            <option v-for="post in articleChoices" :key="post.id" :value="post.id">{{ post.title }}</option>
-          </select></label
-        >
-      </section>
-      <div v-if="value.linkedLink" class="moment-editor__row">
-        <label
-          >{{ $t('admin-content.momentForm.linkUrl')
-          }}<input
-            :value="value.linkedLink.url"
-            type="url"
-            maxlength="2048"
-            :aria-label="$t('admin-content.momentForm.linkUrlAria')"
-            @input="changeLink({ url: ($event.target as HTMLInputElement).value })"
-        /></label>
-        <label
-          >{{ $t('admin-content.momentForm.linkTitle')
-          }}<input
-            :value="value.linkedLink.title"
-            maxlength="160"
-            :aria-label="$t('admin-content.momentForm.linkTitleAria')"
-            @input="changeLink({ title: ($event.target as HTMLInputElement).value })"
-        /></label>
-        <label
-          >{{ $t('admin-content.momentForm.linkDescription')
-          }}<input
-            :value="value.linkedLink.description"
-            maxlength="500"
-            @input="changeLink({ description: ($event.target as HTMLInputElement).value })"
-        /></label>
-        <label
-          >{{ $t('admin-content.momentForm.linkSiteName')
-          }}<input
-            :value="value.linkedLink.siteName"
-            maxlength="80"
-            @input="changeLink({ siteName: ($event.target as HTMLInputElement).value })"
-        /></label>
-        <label
-          >{{ $t('admin-content.momentForm.linkImage')
-          }}<input
-            :value="value.linkedLink.image"
-            maxlength="2048"
-            @input="changeLink({ image: ($event.target as HTMLInputElement).value })"
-        /></label>
-        <label
-          >{{ $t('admin-content.momentForm.linkFavicon')
-          }}<input
-            :value="value.linkedLink.favicon"
-            maxlength="2048"
-            @input="changeLink({ favicon: ($event.target as HTMLInputElement).value })"
-        /></label>
-      </div>
+      <AdminMomentFormLinkFields
+        :value="value"
+        :article-choices="articleChoices"
+        :articles-pending="articlesPending"
+        :articles-error="articlesError"
+        @change="$emit('change', $event)"
+        @search-articles="$emit('search-articles', $event)"
+      />
       <div class="moment-editor__row">
         <label
           >{{ $t('admin-content.momentForm.saveStatus')
@@ -269,7 +149,7 @@
   </form>
 </template>
 <script setup lang="ts">
-import type { ManagedMoment, MomentEditable, MomentLinkedLink, MomentStatus } from '~/features/moment/types'
+import type { ManagedMoment, MomentEditable, MomentStatus } from '~/features/moment/types'
 import type { MomentRecovery } from '~/features/moment/editor'
 import type { MediaAsset } from '~/features/media/types'
 const props = defineProps<{
@@ -306,22 +186,12 @@ const { label: saveShortcut } = useAdminSaveShortcut({
   submitter: () => saveButton.value,
   dirty: () => props.dirty,
 })
-const mediaOpen = ref(false),
-  linkMode = ref('none'),
-  articleSearch = ref('')
+const mediaOpen = ref(false)
 function requestSave(status: MomentStatus) {
   if (editorForm.value?.reportValidity()) emit('save', status)
 }
 function change<K extends keyof MomentEditable>(key: K, value: MomentEditable[K]) {
   emit('change', { [key]: value })
-}
-function changeLink(value: Partial<MomentLinkedLink>) {
-  change('linkedLink', { url: '', title: '', ...props.value.linkedLink, ...value })
-}
-function setLinkMode(value: string) {
-  linkMode.value = value
-  emit('change', { linkedArticleId: null, linkedLink: value === 'link' ? { url: '', title: '' } : null })
-  if (value === 'article') emit('search-articles', '')
 }
 function selectMedia(asset: MediaAsset) {
   if (props.value.images.length < 9 && !props.value.images.includes(asset.url))
@@ -329,87 +199,7 @@ function selectMedia(asset: MediaAsset) {
 }
 </script>
 <style scoped lang="scss">
-.moment-editor {
-  max-width: 1050px;
-  display: grid;
-  gap: 1rem;
-}
-.moment-editor__heading,
-.moment-editor__actions,
-.moment-editor__row {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 0.75rem;
-}
-h1 {
-  font-size: 1.5rem;
-  font-weight: 700;
-  margin-right: auto;
-}
-h2 {
-  font-size: 1rem;
-  font-weight: 600;
-}
-fieldset {
-  border: 0;
-  display: grid;
-  min-width: 0;
-  gap: 1rem;
-  padding: 0;
-}
-label {
-  display: grid;
-  gap: 0.4rem;
-  min-width: 0;
-}
-.moment-editor__row > label {
-  flex: 1 1 180px;
-}
+@use '~/assets/styles/moment-editor' as moment;
 
-input,
-textarea,
-select {
-  width: 100%;
-}
-textarea {
-  resize: vertical;
-}
-
-.moment-editor__check {
-  display: flex;
-  align-items: center;
-}
-.moment-editor__check input {
-  width: auto;
-}
-.moment-editor__recovery {
-  padding: 1rem;
-  border: 1px solid var(--accent);
-  border-radius: 0.5rem;
-}
-.moment-editor__recovery p,
-blockquote {
-  white-space: pre-wrap;
-  overflow-wrap: anywhere;
-}
-.moment-editor__images {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
-  gap: 0.75rem;
-  margin-top: 0.75rem;
-}
-figure {
-  margin: 0;
-  min-width: 0;
-}
-figure img {
-  width: 100%;
-  aspect-ratio: 1;
-  object-fit: cover;
-  border-radius: 0.5rem;
-}
-.moment-editor__actions {
-  padding: 1rem 0;
-}
+@include moment.form;
 </style>
