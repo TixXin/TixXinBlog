@@ -1,0 +1,318 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`外链来源：非法地址、合法地址预览与加载状态 1`] = `
+"<form class="gallery-editor">
+  <header>
+    <h1>新建照片作品</h1>
+    <div to="/admin/gallery">返回图库管理</div>
+    <!--v-if-->
+  </header>
+  <!--v-if-->
+  <!--v-if-->
+  <!--v-if-->
+  <!--v-if-->
+  <!--v-if-->
+  <!--v-if-->
+  <!--v-if-->
+  <fieldset><label>作品标题<input aria-label="作品标题" required="" maxlength="160" value="雨后的街角"></label><label>作品说明<textarea aria-label="作品说明" maxlength="5000" rows="5" value=""></textarea></label>
+    <section>
+      <h2>作品图片</h2><label>图片来源<select aria-label="图片来源" value="external">
+          <option value="media">媒体库图片</option>
+          <option value="external">外部图片 URL</option>
+        </select></label>
+      <div><label>外部图片地址<input aria-label="外部图片地址" type="url" maxlength="2048" aria-invalid="true" aria-describedby="gallery-url-help gallery-url-error" value="ftp://example.com/a.webp"></label>
+        <p id="gallery-url-help">填写完整 HTTP(S) 图片直链，可带查询参数。地址不会被服务器下载或检查；HTTPS 页面中的 HTTP 图片可能被浏览器阻止。</p>
+        <p id="gallery-url-error" role="alert">请使用完整的 HTTP(S) 地址，不含空白、控制字符或反斜杠</p>
+      </div>
+      <p>切换来源会保留本次未提交输入；保存时仅使用选定来源。</p>
+    </section>
+    <div class="gallery-editor__row"><label>分类<input aria-label="作品分类" maxlength="40" placeholder="留空表示未分类" value=""></label><label>拍摄日期<div class="date-picker">
+          <div class="input-field date-picker__field"><input class="date-picker__input" type="text" inputmode="numeric" autocomplete="off" spellcheck="false" role="combobox" aria-haspopup="dialog" aria-expanded="false" aria-label="拍摄日期" placeholder="选择日期" value=""><button type="button" class="date-picker__toggle" aria-label="打开日历"><span class="iconify i-lucide:calendar-days" aria-hidden="true"></span></button></div>
+          <transition-stub name="date-picker-pop" appear="false" persisted="false" css="true">
+            <!--v-if-->
+          </transition-stub>
+        </div></label></div>
+    <p>拍摄日期、地点和器材均可留空，上传时间不会作为拍摄日期。</p>
+    <div class="gallery-editor__row"><label>拍摄地点<input aria-label="拍摄地点" maxlength="160" value=""></label><label>拍摄器材<input aria-label="拍摄器材" maxlength="160" value=""></label></div>
+    <div class="gallery-editor__row"><label>保存状态<select aria-label="作品保存状态" value="draft">
+          <option value="draft">草稿</option>
+          <option value="published">已公开</option>
+          <option value="withdrawn">已撤回</option>
+        </select></label><label>排序值（越大越靠前）<input aria-label="作品排序值" type="number" min="-1000000" max="1000000" step="1" value="0"></label></div>
+    <div class="relations" selected="" candidates="" type="post" q="" page="1" pending="false" resolving="false" error="" resolveerror="" disabled="false" total="0"></div>
+  </fieldset>
+  <!--v-if-->
+  <div>
+    <div content="保存（Ctrl+S）"><button aria-busy="false" type="submit" aria-keyshortcuts="Control+S Meta+S" disabled="">保存作品</button></div><button type="button" disabled="">保存草稿</button><button type="button" disabled="">发布作品</button><span>尚未保存</span>
+  </div>
+  <div>
+    <div data-open="false"></div>
+  </div>
+</form>"
+`;
+
+exports[`外链来源：非法地址、合法地址预览与加载状态 2`] = `
+"<form class="gallery-editor">
+  <header>
+    <h1>新建照片作品</h1>
+    <div to="/admin/gallery">返回图库管理</div>
+    <!--v-if-->
+  </header>
+  <!--v-if-->
+  <!--v-if-->
+  <!--v-if-->
+  <!--v-if-->
+  <!--v-if-->
+  <!--v-if-->
+  <!--v-if-->
+  <fieldset><label>作品标题<input aria-label="作品标题" required="" maxlength="160" value="雨后的街角"></label><label>作品说明<textarea aria-label="作品说明" maxlength="5000" rows="5" value=""></textarea></label>
+    <section>
+      <h2>作品图片</h2><label>图片来源<select aria-label="图片来源" value="external">
+          <option value="media">媒体库图片</option>
+          <option value="external">外部图片 URL</option>
+        </select></label>
+      <div><label>外部图片地址<input aria-label="外部图片地址" type="url" maxlength="2048" aria-invalid="false" aria-describedby="gallery-url-help" value="https://images.example.com/a.webp"></label>
+        <p id="gallery-url-help">填写完整 HTTP(S) 图片直链，可带查询参数。地址不会被服务器下载或检查；HTTPS 页面中的 HTTP 图片可能被浏览器阻止。</p>
+        <p>地址格式合法，可以保存。预览结果不决定保存结果。</p><img src="https://images.example.com/a.webp" alt="雨后的街角" class="gallery-editor__preview">
+        <p role="status">正在加载预览…</p>
+      </div>
+      <p>切换来源会保留本次未提交输入；保存时仅使用选定来源。</p>
+    </section>
+    <div class="gallery-editor__row"><label>分类<input aria-label="作品分类" maxlength="40" placeholder="留空表示未分类" value=""></label><label>拍摄日期<div class="date-picker">
+          <div class="input-field date-picker__field"><input class="date-picker__input" type="text" inputmode="numeric" autocomplete="off" spellcheck="false" role="combobox" aria-haspopup="dialog" aria-expanded="false" aria-label="拍摄日期" placeholder="选择日期" value=""><button type="button" class="date-picker__toggle" aria-label="打开日历"><span class="iconify i-lucide:calendar-days" aria-hidden="true"></span></button></div>
+          <transition-stub name="date-picker-pop" appear="false" persisted="false" css="true">
+            <!--v-if-->
+          </transition-stub>
+        </div></label></div>
+    <p>拍摄日期、地点和器材均可留空，上传时间不会作为拍摄日期。</p>
+    <div class="gallery-editor__row"><label>拍摄地点<input aria-label="拍摄地点" maxlength="160" value=""></label><label>拍摄器材<input aria-label="拍摄器材" maxlength="160" value=""></label></div>
+    <div class="gallery-editor__row"><label>保存状态<select aria-label="作品保存状态" value="draft">
+          <option value="draft">草稿</option>
+          <option value="published">已公开</option>
+          <option value="withdrawn">已撤回</option>
+        </select></label><label>排序值（越大越靠前）<input aria-label="作品排序值" type="number" min="-1000000" max="1000000" step="1" value="0"></label></div>
+    <div class="relations" selected="" candidates="" type="post" q="" page="1" pending="false" resolving="false" error="" resolveerror="" disabled="false" total="0"></div>
+  </fieldset>
+  <!--v-if-->
+  <div>
+    <div content="保存（Ctrl+S）"><button aria-busy="false" type="submit" aria-keyshortcuts="Control+S Meta+S">保存作品</button></div><button type="button">保存草稿</button><button type="button">发布作品</button><span>尚未保存</span>
+  </div>
+  <div>
+    <div data-open="false"></div>
+  </div>
+</form>"
+`;
+
+exports[`外链来源：非法地址、合法地址预览与加载状态 3`] = `
+"<form class="gallery-editor">
+  <header>
+    <h1>新建照片作品</h1>
+    <div to="/admin/gallery">返回图库管理</div>
+    <!--v-if-->
+  </header>
+  <!--v-if-->
+  <!--v-if-->
+  <!--v-if-->
+  <!--v-if-->
+  <!--v-if-->
+  <!--v-if-->
+  <!--v-if-->
+  <fieldset><label>作品标题<input aria-label="作品标题" required="" maxlength="160" value="雨后的街角"></label><label>作品说明<textarea aria-label="作品说明" maxlength="5000" rows="5" value=""></textarea></label>
+    <section>
+      <h2>作品图片</h2><label>图片来源<select aria-label="图片来源" value="external">
+          <option value="media">媒体库图片</option>
+          <option value="external">外部图片 URL</option>
+        </select></label>
+      <div><label>外部图片地址<input aria-label="外部图片地址" type="url" maxlength="2048" aria-invalid="false" aria-describedby="gallery-url-help" value="https://images.example.com/a.webp"></label>
+        <p id="gallery-url-help">填写完整 HTTP(S) 图片直链，可带查询参数。地址不会被服务器下载或检查；HTTPS 页面中的 HTTP 图片可能被浏览器阻止。</p>
+        <p>地址格式合法，可以保存。预览结果不决定保存结果。</p><img src="https://images.example.com/a.webp" alt="雨后的街角" class="gallery-editor__preview">
+        <p role="status">当前预览加载成功；显示比例来自浏览器实际尺寸，不写入作品资料。</p>
+      </div>
+      <p>切换来源会保留本次未提交输入；保存时仅使用选定来源。</p>
+    </section>
+    <div class="gallery-editor__row"><label>分类<input aria-label="作品分类" maxlength="40" placeholder="留空表示未分类" value=""></label><label>拍摄日期<div class="date-picker">
+          <div class="input-field date-picker__field"><input class="date-picker__input" type="text" inputmode="numeric" autocomplete="off" spellcheck="false" role="combobox" aria-haspopup="dialog" aria-expanded="false" aria-label="拍摄日期" placeholder="选择日期" value=""><button type="button" class="date-picker__toggle" aria-label="打开日历"><span class="iconify i-lucide:calendar-days" aria-hidden="true"></span></button></div>
+          <transition-stub name="date-picker-pop" appear="false" persisted="false" css="true">
+            <!--v-if-->
+          </transition-stub>
+        </div></label></div>
+    <p>拍摄日期、地点和器材均可留空，上传时间不会作为拍摄日期。</p>
+    <div class="gallery-editor__row"><label>拍摄地点<input aria-label="拍摄地点" maxlength="160" value=""></label><label>拍摄器材<input aria-label="拍摄器材" maxlength="160" value=""></label></div>
+    <div class="gallery-editor__row"><label>保存状态<select aria-label="作品保存状态" value="draft">
+          <option value="draft">草稿</option>
+          <option value="published">已公开</option>
+          <option value="withdrawn">已撤回</option>
+        </select></label><label>排序值（越大越靠前）<input aria-label="作品排序值" type="number" min="-1000000" max="1000000" step="1" value="0"></label></div>
+    <div class="relations" selected="" candidates="" type="post" q="" page="1" pending="false" resolving="false" error="" resolveerror="" disabled="false" total="0"></div>
+  </fieldset>
+  <!--v-if-->
+  <div>
+    <div content="保存（Ctrl+S）"><button aria-busy="false" type="submit" aria-keyshortcuts="Control+S Meta+S">保存作品</button></div><button type="button">保存草稿</button><button type="button">发布作品</button><span>尚未保存</span>
+  </div>
+  <div>
+    <div data-open="false"></div>
+  </div>
+</form>"
+`;
+
+exports[`新建：媒体来源未选图，未保存 1`] = `
+"<form class="gallery-editor">
+  <header>
+    <h1>新建照片作品</h1>
+    <div to="/admin/gallery">返回图库管理</div>
+    <!--v-if-->
+  </header>
+  <!--v-if-->
+  <!--v-if-->
+  <!--v-if-->
+  <!--v-if-->
+  <!--v-if-->
+  <!--v-if-->
+  <!--v-if-->
+  <fieldset><label>作品标题<input aria-label="作品标题" required="" maxlength="160" value="雨后的街角"></label><label>作品说明<textarea aria-label="作品说明" maxlength="5000" rows="5" value=""></textarea></label>
+    <section>
+      <h2>作品图片</h2><label>图片来源<select aria-label="图片来源" value="media">
+          <option value="media">媒体库图片</option>
+          <option value="external">外部图片 URL</option>
+        </select></label><button type="button">选择或上传图片</button>
+      <!--v-if-->
+      <p>上传文件不会自动公开为图库作品。发布状态控制作品展示；持有媒体文件地址的人仍可能访问文件。替换或删除作品不会删除其他内容使用的文件。</p>
+      <p>切换来源会保留本次未提交输入；保存时仅使用选定来源。</p>
+    </section>
+    <div class="gallery-editor__row"><label>分类<input aria-label="作品分类" maxlength="40" placeholder="留空表示未分类" value=""></label><label>拍摄日期<div class="date-picker">
+          <div class="input-field date-picker__field"><input class="date-picker__input" type="text" inputmode="numeric" autocomplete="off" spellcheck="false" role="combobox" aria-haspopup="dialog" aria-expanded="false" aria-label="拍摄日期" placeholder="选择日期" value=""><button type="button" class="date-picker__toggle" aria-label="打开日历"><span class="iconify i-lucide:calendar-days" aria-hidden="true"></span></button></div>
+          <transition-stub name="date-picker-pop" appear="false" persisted="false" css="true">
+            <!--v-if-->
+          </transition-stub>
+        </div></label></div>
+    <p>拍摄日期、地点和器材均可留空，上传时间不会作为拍摄日期。</p>
+    <div class="gallery-editor__row"><label>拍摄地点<input aria-label="拍摄地点" maxlength="160" value=""></label><label>拍摄器材<input aria-label="拍摄器材" maxlength="160" value=""></label></div>
+    <div class="gallery-editor__row"><label>保存状态<select aria-label="作品保存状态" value="draft">
+          <option value="draft">草稿</option>
+          <option value="published">已公开</option>
+          <option value="withdrawn">已撤回</option>
+        </select></label><label>排序值（越大越靠前）<input aria-label="作品排序值" type="number" min="-1000000" max="1000000" step="1" value="0"></label></div>
+    <div class="relations" selected="" candidates="" type="post" q="" page="1" pending="false" resolving="false" error="" resolveerror="" disabled="false" total="0"></div>
+  </fieldset>
+  <!--v-if-->
+  <div>
+    <div content="保存（Ctrl+S）"><button aria-busy="false" type="submit" aria-keyshortcuts="Control+S Meta+S" disabled="">保存作品</button></div><button type="button" disabled="">保存草稿</button><button type="button" disabled="">发布作品</button><span>尚未保存</span>
+  </div>
+  <div>
+    <div data-open="false"></div>
+  </div>
+</form>"
+`;
+
+exports[`编辑：恢复副本、旧副本、服务器版本、提示与已保存信息 1`] = `
+"<form class="gallery-editor">
+  <header>
+    <h1>编辑照片作品</h1>
+    <div to="/admin/gallery">返回图库管理</div><a href="/gallery?photo=36">查看公开作品</a>
+  </header>
+  <p role="alert">保存失败 <button type="button">重新读取</button></p>
+  <p role="status">已保存</p>
+  <p role="alert">本机保存失败 <button type="button">重试保存恢复副本</button></p>
+  <section class="gallery-editor__notice" aria-label="作品恢复副本">
+    <h2>发现本标签页未保存的输入</h2>
+    <dl class="recovery-details">
+      <dt>图片来源</dt>
+      <dd>媒体库图片</dd>
+      <dt>保留的外部图片地址</dt>
+      <dd>未填写</dd>
+      <dt>作品标题</dt>
+      <dd>本机副本</dd>
+      <dt>作品说明</dt>
+      <dd>未填写</dd>
+      <dt>分类</dt>
+      <dd>未分类</dd>
+      <dt>拍摄日期</dt>
+      <dd>未填写</dd>
+      <dt>拍摄地点</dt>
+      <dd>未填写</dd>
+      <dt>拍摄器材</dt>
+      <dd>未填写</dd>
+      <dt>发布状态 / 排序值</dt>
+      <dd>草稿 / 0</dd>
+      <dt>原有序关联编号</dt>
+      <dd>未设置</dd>
+      <dt>原图片编号</dt>
+      <dd>12345678-1234-4123-a123-123456789abc <p>跨内容库的副本不会重新绑定旧图片，请从当前媒体库核对并选择。</p>
+      </dd>
+    </dl><button type="button">恢复输入</button><button type="button">移除恢复副本</button>
+  </section>
+  <section class="gallery-editor__notice" aria-label="另外保留的图库恢复副本">
+    <h2>另外保留的图库输入</h2>
+    <p>这些副本可能属于其他内容库，不会直接写入当前作品。请核对后手动录入，并重新选择当前媒体库中的图片。</p>
+    <article>
+      <p>保存于 2026-10-20 08:00</p>
+      <dl class="recovery-details">
+        <dt>图片来源</dt>
+        <dd>媒体库图片</dd>
+        <dt>保留的外部图片地址</dt>
+        <dd>未填写</dd>
+        <dt>作品标题</dt>
+        <dd>更早的副本</dd>
+        <dt>作品说明</dt>
+        <dd>未填写</dd>
+        <dt>分类</dt>
+        <dd>未分类</dd>
+        <dt>拍摄日期</dt>
+        <dd>未填写</dd>
+        <dt>拍摄地点</dt>
+        <dd>未填写</dd>
+        <dt>拍摄器材</dt>
+        <dd>未填写</dd>
+        <dt>发布状态 / 排序值</dt>
+        <dd>草稿 / 0</dd>
+        <dt>原有序关联编号</dt>
+        <dd>未设置</dd>
+        <dt>原图片编号</dt>
+        <dd>12345678-1234-4123-a123-123456789abc <p>跨内容库的副本不会重新绑定旧图片，请从当前媒体库核对并选择。</p>
+        </dd>
+      </dl>
+    </article>
+  </section>
+  <section class="gallery-editor__notice" aria-label="作品服务器版本">
+    <h2>服务器当前版本 3</h2>
+    <p>暮色新版 · 已公开 · 排序 3</p>
+    <p>第一行
+      第二行</p>
+    <p>有序关联：未设置</p>
+    <p>未分类 · 拍摄日期未填写 · 地点未填写 · 器材未填写</p><img src="/mountain.webp" alt="暮色新版" width="1600" height="900" class="gallery-editor__preview"><button type="button">保留副本并载入服务器版本</button><button type="button">保留输入，按最新版本继续合并</button>
+  </section>
+  <!--v-if-->
+  <fieldset><label>作品标题<input aria-label="作品标题" required="" maxlength="160" value="山间暮色"></label><label>作品说明<textarea aria-label="作品说明" maxlength="5000" rows="5" value="第一行
+第二行"></textarea></label>
+    <section>
+      <h2>作品图片</h2><label>图片来源<select aria-label="图片来源" value="media">
+          <option value="media">媒体库图片</option>
+          <option value="external">外部图片 URL</option>
+        </select></label><button type="button">选择或上传图片</button><img src="/api/v1/media/12345678-1234-4123-a123-123456789abc.webp" alt="山间暮色" width="1600" height="900" class="gallery-editor__preview">
+      <p>上传文件不会自动公开为图库作品。发布状态控制作品展示；持有媒体文件地址的人仍可能访问文件。替换或删除作品不会删除其他内容使用的文件。</p>
+      <p>切换来源会保留本次未提交输入；保存时仅使用选定来源。</p>
+    </section>
+    <div class="gallery-editor__row"><label>分类<input aria-label="作品分类" maxlength="40" placeholder="留空表示未分类" value="风景"></label><label>拍摄日期<div class="date-picker">
+          <div class="input-field date-picker__field"><input class="date-picker__input" type="text" inputmode="numeric" autocomplete="off" spellcheck="false" role="combobox" aria-haspopup="dialog" aria-expanded="false" aria-label="拍摄日期" placeholder="选择日期" value="2026年10月1日"><button type="button" class="date-picker__toggle" aria-label="打开日历"><span class="iconify i-lucide:calendar-days" aria-hidden="true"></span></button></div>
+          <transition-stub name="date-picker-pop" appear="false" persisted="false" css="true">
+            <!--v-if-->
+          </transition-stub>
+        </div></label></div>
+    <p>拍摄日期、地点和器材均可留空，上传时间不会作为拍摄日期。</p>
+    <div class="gallery-editor__row"><label>拍摄地点<input aria-label="拍摄地点" maxlength="160" value="黄山"></label><label>拍摄器材<input aria-label="拍摄器材" maxlength="160" value="X100V"></label></div>
+    <div class="gallery-editor__row"><label>保存状态<select aria-label="作品保存状态" value="published">
+          <option value="draft">草稿</option>
+          <option value="published">已公开</option>
+          <option value="withdrawn">已撤回</option>
+        </select></label><label>排序值（越大越靠前）<input aria-label="作品排序值" type="number" min="-1000000" max="1000000" step="1" value="3"></label></div>
+    <div class="relations" selected="" candidates="" type="post" q="" page="1" pending="false" resolving="false" error="" resolveerror="" disabled="false" total="0"></div>
+  </fieldset>
+  <p>创建于 2026-10-10 · 首次发布于 2026-10-12 · 版本 2</p>
+  <div>
+    <div content="保存（Ctrl+S）"><button aria-busy="false" type="submit" aria-keyshortcuts="Control+S Meta+S">保存作品</button></div><button type="button">保存草稿</button><button type="button">发布作品</button><span>有尚未保存输入</span>
+  </div>
+  <div>
+    <div data-open="false"></div>
+  </div>
+</form>"
+`;

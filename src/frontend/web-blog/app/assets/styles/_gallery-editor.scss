@@ -1,0 +1,77 @@
+/**
+ * @file _gallery-editor.scss
+ * @description 图库作品编辑表单及其提示、图片区块共享的外观声明。各组件在 scoped 样式中整体 @include，
+ *              选择器与声明顺序保持拆分前的表单样式，不由父组件 :deep 下发
+ * @author TixXin
+ * @since 2026-10-27
+ */
+
+@mixin form {
+  .gallery-editor {
+    display: grid;
+    gap: 1rem;
+    max-width: 1000px;
+    overflow-wrap: anywhere;
+  }
+  header,
+  footer,
+  .gallery-editor__row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    align-items: center;
+  }
+  h1 {
+    font-size: 1.5rem;
+    font-weight: 700;
+    margin-right: auto;
+  }
+  h2 {
+    font-size: 1rem;
+    font-weight: 600;
+  }
+  fieldset {
+    display: grid;
+    gap: 1rem;
+    padding: 0;
+    border: 0;
+    min-width: 0;
+  }
+  label {
+    display: grid;
+    gap: 0.4rem;
+    min-width: 0;
+  }
+  .gallery-editor__row > label {
+    flex: 1 1 180px;
+  }
+
+  input,
+  textarea,
+  select {
+    width: 100%;
+  }
+  textarea {
+    resize: vertical;
+  }
+
+  p {
+    color: var(--text-muted);
+    line-height: 1.7;
+  }
+  a {
+    color: var(--accent);
+  }
+  .gallery-editor__notice {
+    padding: 1rem;
+    border: 1px solid var(--accent);
+    border-radius: 0.5rem;
+  }
+  .gallery-editor__notice p {
+    white-space: pre-wrap;
+  }
+  .gallery-editor__preview {
+    max-width: 360px;
+    margin-block: 0.75rem;
+  }
+}
