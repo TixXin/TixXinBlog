@@ -1,0 +1,52 @@
+/**
+ * @file _site-nav-fields.scss
+ * @description 站点设置“导航与页脚”编辑区及其各列表、行操作共享的外观声明。各组件在 scoped 样式中整体 @include，
+ *              选择器与声明顺序保持拆分前的样式，不由父组件 :deep 下发
+ * @author TixXin
+ * @since 2026-10-27
+ */
+
+@mixin fields {
+  .site-nav-fields__list {
+    display: grid;
+    gap: 0.5rem;
+    padding: 0;
+    margin: 0;
+    list-style: none;
+  }
+
+  .site-nav-fields__row {
+    padding: 0.5rem 0.75rem;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .site-nav-fields__toggle {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .site-nav-fields__path {
+    color: var(--text-muted);
+    font-size: 0.85em;
+  }
+
+  .site-nav-fields__actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.25rem;
+  }
+
+  .site-nav-fields__error {
+    color: var(--danger-text);
+  }
+
+  .site-nav-fields__live {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+}

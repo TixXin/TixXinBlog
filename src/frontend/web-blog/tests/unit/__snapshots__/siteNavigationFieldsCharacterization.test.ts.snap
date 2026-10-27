@@ -1,0 +1,436 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`超限与错误状态的完整结构 1`] = `
+"<fieldset class="site-nav-fields">
+  <legend>导航与页脚</legend>
+  <p id="<uid>-hint">隐藏的模块只是不出现在导航中，页面地址仍可访问并被搜索引擎收录；首页始终显示。</p>
+  <p class="site-nav-fields__live" role="status" aria-live="polite"></p>
+  <fieldset>
+    <legend>导航（显隐与顺序）</legend>
+    <p id="<uid>-navigation" role="alert">外链导航最多 4 个</p>
+    <ol class="site-nav-fields__list">
+      <li class="site-nav-fields__row" data-row="nav-0"><label class="site-nav-fields__toggle"><input type="checkbox" disabled="" aria-describedby="<uid>-hint"><span class="iconify i-lucide:home" aria-hidden="true"></span> 显示「主页」<span class="site-nav-fields__path">/</span></label>
+        <div class="site-nav-fields__actions"><button type="button" data-move="up" disabled="" aria-label="上移导航「主页」">上移</button><button type="button" data-move="down" aria-label="下移导航「主页」">下移</button>
+          <!--v-if-->
+        </div>
+      </li>
+      <li class="site-nav-fields__row" data-row="nav-1"><label class="site-nav-fields__toggle"><input type="checkbox"><span class="iconify i-lucide:archive" aria-hidden="true"></span> 显示「归档」<span class="site-nav-fields__path">/archive</span></label>
+        <div class="site-nav-fields__actions"><button type="button" data-move="up" aria-label="上移导航「归档」">上移</button><button type="button" data-move="down" aria-label="下移导航「归档」">下移</button>
+          <!--v-if-->
+        </div>
+      </li>
+      <li class="site-nav-fields__row" data-row="nav-2"><label class="site-nav-fields__toggle"><input type="checkbox"><span class="iconify i-lucide:layers" aria-hidden="true"></span> 显示「项目」<span class="site-nav-fields__path">/projects</span></label>
+        <div class="site-nav-fields__actions"><button type="button" data-move="up" aria-label="上移导航「项目」">上移</button><button type="button" data-move="down" aria-label="下移导航「项目」">下移</button>
+          <!--v-if-->
+        </div>
+      </li>
+      <li class="site-nav-fields__row" data-row="nav-3"><label>外链名称<input maxlength="20" required="" aria-invalid="true" aria-describedby="<uid>-nav-3-label-error"></label>
+        <p id="<uid>-nav-3-label-error" class="site-nav-fields__error">请填写 1–20 个字符的名称</p><label>外链地址<input type="url" inputmode="url" maxlength="1000" placeholder="https://" required="" aria-invalid="true" aria-describedby="<uid>-nav-3-url-error"></label>
+        <p id="<uid>-nav-3-url-error" class="site-nav-fields__error">外链仅支持 http:// 或 https:// 开头的完整地址</p><label class="site-nav-fields__toggle"><input type="checkbox">新窗口打开</label><label class="site-nav-fields__toggle"><input type="checkbox">显示此外链</label>
+        <div class="site-nav-fields__actions"><button type="button" data-move="up" aria-label="上移外链导航">上移</button><button type="button" data-move="down" aria-label="下移外链导航">下移</button><button type="button" aria-label="移除外链导航">移除</button></div>
+      </li>
+      <li class="site-nav-fields__row" data-row="nav-4"><label>外链名称<input maxlength="20" required="" aria-invalid="false"></label>
+        <!--v-if--><label>外链地址<input type="url" inputmode="url" maxlength="1000" placeholder="https://" required="" aria-invalid="false"></label>
+        <!--v-if--><label class="site-nav-fields__toggle"><input type="checkbox">新窗口打开</label><label class="site-nav-fields__toggle"><input type="checkbox">显示此外链</label>
+        <div class="site-nav-fields__actions"><button type="button" data-move="up" aria-label="上移外链导航外链1">上移</button><button type="button" data-move="down" aria-label="下移外链导航外链1">下移</button><button type="button" aria-label="移除外链导航外链1">移除</button></div>
+      </li>
+      <li class="site-nav-fields__row" data-row="nav-5"><label>外链名称<input maxlength="20" required="" aria-invalid="false"></label>
+        <!--v-if--><label>外链地址<input type="url" inputmode="url" maxlength="1000" placeholder="https://" required="" aria-invalid="true" aria-describedby="<uid>-nav-5-url-error"></label>
+        <p id="<uid>-nav-5-url-error" class="site-nav-fields__error">与其他外链导航地址重复</p><label class="site-nav-fields__toggle"><input type="checkbox">新窗口打开</label><label class="site-nav-fields__toggle"><input type="checkbox">显示此外链</label>
+        <div class="site-nav-fields__actions"><button type="button" data-move="up" aria-label="上移外链导航外链2">上移</button><button type="button" data-move="down" aria-label="下移外链导航外链2">下移</button><button type="button" aria-label="移除外链导航外链2">移除</button></div>
+      </li>
+      <li class="site-nav-fields__row" data-row="nav-6"><label>外链名称<input maxlength="20" required="" aria-invalid="false"></label>
+        <!--v-if--><label>外链地址<input type="url" inputmode="url" maxlength="1000" placeholder="https://" required="" aria-invalid="false"></label>
+        <!--v-if--><label class="site-nav-fields__toggle"><input type="checkbox">新窗口打开</label><label class="site-nav-fields__toggle"><input type="checkbox">显示此外链</label>
+        <div class="site-nav-fields__actions"><button type="button" data-move="up" aria-label="上移外链导航外链3">上移</button><button type="button" data-move="down" aria-label="下移外链导航外链3">下移</button><button type="button" aria-label="移除外链导航外链3">移除</button></div>
+      </li>
+      <li class="site-nav-fields__row" data-row="nav-7"><label>外链名称<input maxlength="20" required="" aria-invalid="false"></label>
+        <!--v-if--><label>外链地址<input type="url" inputmode="url" maxlength="1000" placeholder="https://" required="" aria-invalid="false"></label>
+        <!--v-if--><label class="site-nav-fields__toggle"><input type="checkbox">新窗口打开</label><label class="site-nav-fields__toggle"><input type="checkbox">显示此外链</label>
+        <div class="site-nav-fields__actions"><button type="button" data-move="up" aria-label="上移外链导航外链4">上移</button><button type="button" data-move="down" disabled="" aria-label="下移外链导航外链4">下移</button><button type="button" aria-label="移除外链导航外链4">移除</button></div>
+      </li>
+    </ol><button type="button" disabled="">添加外链导航（5/4）</button>
+  </fieldset>
+  <fieldset>
+    <legend>页脚链接（最多 8 个）</legend>
+    <p role="alert">页脚链接最多 8 个</p>
+    <!--v-if-->
+    <ol class="site-nav-fields__list">
+      <li class="site-nav-fields__row" data-row="footer-0"><label>链接名称<input maxlength="30" required="" aria-invalid="false"></label>
+        <!--v-if--><label>链接地址<input maxlength="1000" placeholder="/about 或 https://" required="" aria-invalid="false" aria-describedby="<uid>-footer-hint"></label>
+        <!--v-if--><label class="site-nav-fields__toggle"><input type="checkbox">新窗口打开</label>
+        <div class="site-nav-fields__actions"><button type="button" data-move="up" disabled="" aria-label="上移页脚链接链接0">上移</button><button type="button" data-move="down" aria-label="下移页脚链接链接0">下移</button><button type="button" aria-label="移除页脚链接链接0">移除</button></div>
+      </li>
+      <li class="site-nav-fields__row" data-row="footer-1"><label>链接名称<input maxlength="30" required="" aria-invalid="true" aria-describedby="<uid>-footer-1-label-error"></label>
+        <p id="<uid>-footer-1-label-error" class="site-nav-fields__error">请填写 1–30 个字符的名称</p><label>链接地址<input maxlength="1000" placeholder="/about 或 https://" required="" aria-invalid="false" aria-describedby="<uid>-footer-hint"></label>
+        <!--v-if--><label class="site-nav-fields__toggle"><input type="checkbox">新窗口打开</label>
+        <div class="site-nav-fields__actions"><button type="button" data-move="up" aria-label="上移页脚链接2">上移</button><button type="button" data-move="down" aria-label="下移页脚链接2">下移</button><button type="button" aria-label="移除页脚链接2">移除</button></div>
+      </li>
+      <li class="site-nav-fields__row" data-row="footer-2"><label>链接名称<input maxlength="30" required="" aria-invalid="false"></label>
+        <!--v-if--><label>链接地址<input maxlength="1000" placeholder="/about 或 https://" required="" aria-invalid="true" aria-describedby="<uid>-footer-hint <uid>-footer-2-url-error"></label>
+        <p id="<uid>-footer-2-url-error" class="site-nav-fields__error">请填写以 / 开头的站内路径，或 http(s) 完整地址</p><label class="site-nav-fields__toggle"><input type="checkbox">新窗口打开</label>
+        <div class="site-nav-fields__actions"><button type="button" data-move="up" aria-label="上移页脚链接链接2">上移</button><button type="button" data-move="down" aria-label="下移页脚链接链接2">下移</button><button type="button" aria-label="移除页脚链接链接2">移除</button></div>
+      </li>
+      <li class="site-nav-fields__row" data-row="footer-3"><label>链接名称<input maxlength="30" required="" aria-invalid="false"></label>
+        <!--v-if--><label>链接地址<input maxlength="1000" placeholder="/about 或 https://" required="" aria-invalid="false" aria-describedby="<uid>-footer-hint"></label>
+        <!--v-if--><label class="site-nav-fields__toggle"><input type="checkbox">新窗口打开</label>
+        <div class="site-nav-fields__actions"><button type="button" data-move="up" aria-label="上移页脚链接链接3">上移</button><button type="button" data-move="down" aria-label="下移页脚链接链接3">下移</button><button type="button" aria-label="移除页脚链接链接3">移除</button></div>
+      </li>
+      <li class="site-nav-fields__row" data-row="footer-4"><label>链接名称<input maxlength="30" required="" aria-invalid="false"></label>
+        <!--v-if--><label>链接地址<input maxlength="1000" placeholder="/about 或 https://" required="" aria-invalid="false" aria-describedby="<uid>-footer-hint"></label>
+        <!--v-if--><label class="site-nav-fields__toggle"><input type="checkbox">新窗口打开</label>
+        <div class="site-nav-fields__actions"><button type="button" data-move="up" aria-label="上移页脚链接链接4">上移</button><button type="button" data-move="down" aria-label="下移页脚链接链接4">下移</button><button type="button" aria-label="移除页脚链接链接4">移除</button></div>
+      </li>
+      <li class="site-nav-fields__row" data-row="footer-5"><label>链接名称<input maxlength="30" required="" aria-invalid="false"></label>
+        <!--v-if--><label>链接地址<input maxlength="1000" placeholder="/about 或 https://" required="" aria-invalid="false" aria-describedby="<uid>-footer-hint"></label>
+        <!--v-if--><label class="site-nav-fields__toggle"><input type="checkbox">新窗口打开</label>
+        <div class="site-nav-fields__actions"><button type="button" data-move="up" aria-label="上移页脚链接链接5">上移</button><button type="button" data-move="down" aria-label="下移页脚链接链接5">下移</button><button type="button" aria-label="移除页脚链接链接5">移除</button></div>
+      </li>
+      <li class="site-nav-fields__row" data-row="footer-6"><label>链接名称<input maxlength="30" required="" aria-invalid="false"></label>
+        <!--v-if--><label>链接地址<input maxlength="1000" placeholder="/about 或 https://" required="" aria-invalid="false" aria-describedby="<uid>-footer-hint"></label>
+        <!--v-if--><label class="site-nav-fields__toggle"><input type="checkbox">新窗口打开</label>
+        <div class="site-nav-fields__actions"><button type="button" data-move="up" aria-label="上移页脚链接链接6">上移</button><button type="button" data-move="down" aria-label="下移页脚链接链接6">下移</button><button type="button" aria-label="移除页脚链接链接6">移除</button></div>
+      </li>
+      <li class="site-nav-fields__row" data-row="footer-7"><label>链接名称<input maxlength="30" required="" aria-invalid="false"></label>
+        <!--v-if--><label>链接地址<input maxlength="1000" placeholder="/about 或 https://" required="" aria-invalid="false" aria-describedby="<uid>-footer-hint"></label>
+        <!--v-if--><label class="site-nav-fields__toggle"><input type="checkbox">新窗口打开</label>
+        <div class="site-nav-fields__actions"><button type="button" data-move="up" aria-label="上移页脚链接链接7">上移</button><button type="button" data-move="down" aria-label="下移页脚链接链接7">下移</button><button type="button" aria-label="移除页脚链接链接7">移除</button></div>
+      </li>
+      <li class="site-nav-fields__row" data-row="footer-8"><label>链接名称<input maxlength="30" required="" aria-invalid="false"></label>
+        <!--v-if--><label>链接地址<input maxlength="1000" placeholder="/about 或 https://" required="" aria-invalid="false" aria-describedby="<uid>-footer-hint"></label>
+        <!--v-if--><label class="site-nav-fields__toggle"><input type="checkbox">新窗口打开</label>
+        <div class="site-nav-fields__actions"><button type="button" data-move="up" aria-label="上移页脚链接链接8">上移</button><button type="button" data-move="down" aria-label="下移页脚链接链接8">下移</button><button type="button" aria-label="移除页脚链接链接8">移除</button></div>
+      </li>
+      <li class="site-nav-fields__row" data-row="footer-9"><label>链接名称<input maxlength="30" required="" aria-invalid="false"></label>
+        <!--v-if--><label>链接地址<input maxlength="1000" placeholder="/about 或 https://" required="" aria-invalid="true" aria-describedby="<uid>-footer-hint <uid>-footer-9-url-error"></label>
+        <p id="<uid>-footer-9-url-error" class="site-nav-fields__error">与其他页脚链接地址重复</p><label class="site-nav-fields__toggle"><input type="checkbox">新窗口打开</label>
+        <div class="site-nav-fields__actions"><button type="button" data-move="up" aria-label="上移页脚链接重复">上移</button><button type="button" data-move="down" disabled="" aria-label="下移页脚链接重复">下移</button><button type="button" aria-label="移除页脚链接重复">移除</button></div>
+      </li>
+    </ol>
+    <p id="<uid>-footer-hint">站内页面填写 / 开头的路径；RSS、站点地图等文件或站外地址按原生链接打开。</p><button type="button" disabled="">添加页脚链接</button>
+  </fieldset>
+  <fieldset>
+    <legend>每日一言（最多 30 条）</legend>
+    <p>每次打开页面随机展示一条；清空后不展示一言。</p>
+    <p role="alert">每日一言最多 30 条</p>
+    <ol class="site-nav-fields__list">
+      <li class="site-nav-fields__row" data-row="quote-0"><label>第 1 条<input maxlength="120" required="" aria-invalid="false"></label>
+        <!--v-if-->
+        <div class="site-nav-fields__actions"><button type="button" data-move="up" disabled="" aria-label="上移第 1 条一言">上移</button><button type="button" data-move="down" aria-label="下移第 1 条一言">下移</button><button type="button" aria-label="移除第 1 条一言">移除</button></div>
+      </li>
+      <li class="site-nav-fields__row" data-row="quote-1"><label>第 2 条<input maxlength="120" required="" aria-invalid="false"></label>
+        <!--v-if-->
+        <div class="site-nav-fields__actions"><button type="button" data-move="up" aria-label="上移第 2 条一言">上移</button><button type="button" data-move="down" aria-label="下移第 2 条一言">下移</button><button type="button" aria-label="移除第 2 条一言">移除</button></div>
+      </li>
+      <li class="site-nav-fields__row" data-row="quote-2"><label>第 3 条<input maxlength="120" required="" aria-invalid="false"></label>
+        <!--v-if-->
+        <div class="site-nav-fields__actions"><button type="button" data-move="up" aria-label="上移第 3 条一言">上移</button><button type="button" data-move="down" aria-label="下移第 3 条一言">下移</button><button type="button" aria-label="移除第 3 条一言">移除</button></div>
+      </li>
+      <li class="site-nav-fields__row" data-row="quote-3"><label>第 4 条<input maxlength="120" required="" aria-invalid="false"></label>
+        <!--v-if-->
+        <div class="site-nav-fields__actions"><button type="button" data-move="up" aria-label="上移第 4 条一言">上移</button><button type="button" data-move="down" aria-label="下移第 4 条一言">下移</button><button type="button" aria-label="移除第 4 条一言">移除</button></div>
+      </li>
+      <li class="site-nav-fields__row" data-row="quote-4"><label>第 5 条<input maxlength="120" required="" aria-invalid="false"></label>
+        <!--v-if-->
+        <div class="site-nav-fields__actions"><button type="button" data-move="up" aria-label="上移第 5 条一言">上移</button><button type="button" data-move="down" aria-label="下移第 5 条一言">下移</button><button type="button" aria-label="移除第 5 条一言">移除</button></div>
+      </li>
+      <li class="site-nav-fields__row" data-row="quote-5"><label>第 6 条<input maxlength="120" required="" aria-invalid="false"></label>
+        <!--v-if-->
+        <div class="site-nav-fields__actions"><button type="button" data-move="up" aria-label="上移第 6 条一言">上移</button><button type="button" data-move="down" aria-label="下移第 6 条一言">下移</button><button type="button" aria-label="移除第 6 条一言">移除</button></div>
+      </li>
+      <li class="site-nav-fields__row" data-row="quote-6"><label>第 7 条<input maxlength="120" required="" aria-invalid="false"></label>
+        <!--v-if-->
+        <div class="site-nav-fields__actions"><button type="button" data-move="up" aria-label="上移第 7 条一言">上移</button><button type="button" data-move="down" aria-label="下移第 7 条一言">下移</button><button type="button" aria-label="移除第 7 条一言">移除</button></div>
+      </li>
+      <li class="site-nav-fields__row" data-row="quote-7"><label>第 8 条<input maxlength="120" required="" aria-invalid="false"></label>
+        <!--v-if-->
+        <div class="site-nav-fields__actions"><button type="button" data-move="up" aria-label="上移第 8 条一言">上移</button><button type="button" data-move="down" aria-label="下移第 8 条一言">下移</button><button type="button" aria-label="移除第 8 条一言">移除</button></div>
+      </li>
+      <li class="site-nav-fields__row" data-row="quote-8"><label>第 9 条<input maxlength="120" required="" aria-invalid="false"></label>
+        <!--v-if-->
+        <div class="site-nav-fields__actions"><button type="button" data-move="up" aria-label="上移第 9 条一言">上移</button><button type="button" data-move="down" aria-label="下移第 9 条一言">下移</button><button type="button" aria-label="移除第 9 条一言">移除</button></div>
+      </li>
+      <li class="site-nav-fields__row" data-row="quote-9"><label>第 10 条<input maxlength="120" required="" aria-invalid="false"></label>
+        <!--v-if-->
+        <div class="site-nav-fields__actions"><button type="button" data-move="up" aria-label="上移第 10 条一言">上移</button><button type="button" data-move="down" aria-label="下移第 10 条一言">下移</button><button type="button" aria-label="移除第 10 条一言">移除</button></div>
+      </li>
+      <li class="site-nav-fields__row" data-row="quote-10"><label>第 11 条<input maxlength="120" required="" aria-invalid="false"></label>
+        <!--v-if-->
+        <div class="site-nav-fields__actions"><button type="button" data-move="up" aria-label="上移第 11 条一言">上移</button><button type="button" data-move="down" aria-label="下移第 11 条一言">下移</button><button type="button" aria-label="移除第 11 条一言">移除</button></div>
+      </li>
+      <li class="site-nav-fields__row" data-row="quote-11"><label>第 12 条<input maxlength="120" required="" aria-invalid="false"></label>
+        <!--v-if-->
+        <div class="site-nav-fields__actions"><button type="button" data-move="up" aria-label="上移第 12 条一言">上移</button><button type="button" data-move="down" aria-label="下移第 12 条一言">下移</button><button type="button" aria-label="移除第 12 条一言">移除</button></div>
+      </li>
+      <li class="site-nav-fields__row" data-row="quote-12"><label>第 13 条<input maxlength="120" required="" aria-invalid="false"></label>
+        <!--v-if-->
+        <div class="site-nav-fields__actions"><button type="button" data-move="up" aria-label="上移第 13 条一言">上移</button><button type="button" data-move="down" aria-label="下移第 13 条一言">下移</button><button type="button" aria-label="移除第 13 条一言">移除</button></div>
+      </li>
+      <li class="site-nav-fields__row" data-row="quote-13"><label>第 14 条<input maxlength="120" required="" aria-invalid="false"></label>
+        <!--v-if-->
+        <div class="site-nav-fields__actions"><button type="button" data-move="up" aria-label="上移第 14 条一言">上移</button><button type="button" data-move="down" aria-label="下移第 14 条一言">下移</button><button type="button" aria-label="移除第 14 条一言">移除</button></div>
+      </li>
+      <li class="site-nav-fields__row" data-row="quote-14"><label>第 15 条<input maxlength="120" required="" aria-invalid="false"></label>
+        <!--v-if-->
+        <div class="site-nav-fields__actions"><button type="button" data-move="up" aria-label="上移第 15 条一言">上移</button><button type="button" data-move="down" aria-label="下移第 15 条一言">下移</button><button type="button" aria-label="移除第 15 条一言">移除</button></div>
+      </li>
+      <li class="site-nav-fields__row" data-row="quote-15"><label>第 16 条<input maxlength="120" required="" aria-invalid="false"></label>
+        <!--v-if-->
+        <div class="site-nav-fields__actions"><button type="button" data-move="up" aria-label="上移第 16 条一言">上移</button><button type="button" data-move="down" aria-label="下移第 16 条一言">下移</button><button type="button" aria-label="移除第 16 条一言">移除</button></div>
+      </li>
+      <li class="site-nav-fields__row" data-row="quote-16"><label>第 17 条<input maxlength="120" required="" aria-invalid="false"></label>
+        <!--v-if-->
+        <div class="site-nav-fields__actions"><button type="button" data-move="up" aria-label="上移第 17 条一言">上移</button><button type="button" data-move="down" aria-label="下移第 17 条一言">下移</button><button type="button" aria-label="移除第 17 条一言">移除</button></div>
+      </li>
+      <li class="site-nav-fields__row" data-row="quote-17"><label>第 18 条<input maxlength="120" required="" aria-invalid="false"></label>
+        <!--v-if-->
+        <div class="site-nav-fields__actions"><button type="button" data-move="up" aria-label="上移第 18 条一言">上移</button><button type="button" data-move="down" aria-label="下移第 18 条一言">下移</button><button type="button" aria-label="移除第 18 条一言">移除</button></div>
+      </li>
+      <li class="site-nav-fields__row" data-row="quote-18"><label>第 19 条<input maxlength="120" required="" aria-invalid="false"></label>
+        <!--v-if-->
+        <div class="site-nav-fields__actions"><button type="button" data-move="up" aria-label="上移第 19 条一言">上移</button><button type="button" data-move="down" aria-label="下移第 19 条一言">下移</button><button type="button" aria-label="移除第 19 条一言">移除</button></div>
+      </li>
+      <li class="site-nav-fields__row" data-row="quote-19"><label>第 20 条<input maxlength="120" required="" aria-invalid="false"></label>
+        <!--v-if-->
+        <div class="site-nav-fields__actions"><button type="button" data-move="up" aria-label="上移第 20 条一言">上移</button><button type="button" data-move="down" aria-label="下移第 20 条一言">下移</button><button type="button" aria-label="移除第 20 条一言">移除</button></div>
+      </li>
+      <li class="site-nav-fields__row" data-row="quote-20"><label>第 21 条<input maxlength="120" required="" aria-invalid="false"></label>
+        <!--v-if-->
+        <div class="site-nav-fields__actions"><button type="button" data-move="up" aria-label="上移第 21 条一言">上移</button><button type="button" data-move="down" aria-label="下移第 21 条一言">下移</button><button type="button" aria-label="移除第 21 条一言">移除</button></div>
+      </li>
+      <li class="site-nav-fields__row" data-row="quote-21"><label>第 22 条<input maxlength="120" required="" aria-invalid="false"></label>
+        <!--v-if-->
+        <div class="site-nav-fields__actions"><button type="button" data-move="up" aria-label="上移第 22 条一言">上移</button><button type="button" data-move="down" aria-label="下移第 22 条一言">下移</button><button type="button" aria-label="移除第 22 条一言">移除</button></div>
+      </li>
+      <li class="site-nav-fields__row" data-row="quote-22"><label>第 23 条<input maxlength="120" required="" aria-invalid="false"></label>
+        <!--v-if-->
+        <div class="site-nav-fields__actions"><button type="button" data-move="up" aria-label="上移第 23 条一言">上移</button><button type="button" data-move="down" aria-label="下移第 23 条一言">下移</button><button type="button" aria-label="移除第 23 条一言">移除</button></div>
+      </li>
+      <li class="site-nav-fields__row" data-row="quote-23"><label>第 24 条<input maxlength="120" required="" aria-invalid="false"></label>
+        <!--v-if-->
+        <div class="site-nav-fields__actions"><button type="button" data-move="up" aria-label="上移第 24 条一言">上移</button><button type="button" data-move="down" aria-label="下移第 24 条一言">下移</button><button type="button" aria-label="移除第 24 条一言">移除</button></div>
+      </li>
+      <li class="site-nav-fields__row" data-row="quote-24"><label>第 25 条<input maxlength="120" required="" aria-invalid="false"></label>
+        <!--v-if-->
+        <div class="site-nav-fields__actions"><button type="button" data-move="up" aria-label="上移第 25 条一言">上移</button><button type="button" data-move="down" aria-label="下移第 25 条一言">下移</button><button type="button" aria-label="移除第 25 条一言">移除</button></div>
+      </li>
+      <li class="site-nav-fields__row" data-row="quote-25"><label>第 26 条<input maxlength="120" required="" aria-invalid="false"></label>
+        <!--v-if-->
+        <div class="site-nav-fields__actions"><button type="button" data-move="up" aria-label="上移第 26 条一言">上移</button><button type="button" data-move="down" aria-label="下移第 26 条一言">下移</button><button type="button" aria-label="移除第 26 条一言">移除</button></div>
+      </li>
+      <li class="site-nav-fields__row" data-row="quote-26"><label>第 27 条<input maxlength="120" required="" aria-invalid="false"></label>
+        <!--v-if-->
+        <div class="site-nav-fields__actions"><button type="button" data-move="up" aria-label="上移第 27 条一言">上移</button><button type="button" data-move="down" aria-label="下移第 27 条一言">下移</button><button type="button" aria-label="移除第 27 条一言">移除</button></div>
+      </li>
+      <li class="site-nav-fields__row" data-row="quote-27"><label>第 28 条<input maxlength="120" required="" aria-invalid="false"></label>
+        <!--v-if-->
+        <div class="site-nav-fields__actions"><button type="button" data-move="up" aria-label="上移第 28 条一言">上移</button><button type="button" data-move="down" aria-label="下移第 28 条一言">下移</button><button type="button" aria-label="移除第 28 条一言">移除</button></div>
+      </li>
+      <li class="site-nav-fields__row" data-row="quote-28"><label>第 29 条<input maxlength="120" required="" aria-invalid="false"></label>
+        <!--v-if-->
+        <div class="site-nav-fields__actions"><button type="button" data-move="up" aria-label="上移第 29 条一言">上移</button><button type="button" data-move="down" aria-label="下移第 29 条一言">下移</button><button type="button" aria-label="移除第 29 条一言">移除</button></div>
+      </li>
+      <li class="site-nav-fields__row" data-row="quote-29"><label>第 30 条<input maxlength="120" required="" aria-invalid="false"></label>
+        <!--v-if-->
+        <div class="site-nav-fields__actions"><button type="button" data-move="up" aria-label="上移第 30 条一言">上移</button><button type="button" data-move="down" aria-label="下移第 30 条一言">下移</button><button type="button" aria-label="移除第 30 条一言">移除</button></div>
+      </li>
+      <li class="site-nav-fields__row" data-row="quote-30"><label>第 31 条<input maxlength="120" required="" aria-invalid="true" aria-describedby="<uid>-quote-30-error"></label>
+        <p id="<uid>-quote-30-error" class="site-nav-fields__error">与前面的一言重复</p>
+        <div class="site-nav-fields__actions"><button type="button" data-move="up" aria-label="上移第 31 条一言">上移</button><button type="button" data-move="down" aria-label="下移第 31 条一言">下移</button><button type="button" aria-label="移除第 31 条一言">移除</button></div>
+      </li>
+      <li class="site-nav-fields__row" data-row="quote-31"><label>第 32 条<input maxlength="120" required="" aria-invalid="true" aria-describedby="<uid>-quote-31-error"></label>
+        <p id="<uid>-quote-31-error" class="site-nav-fields__error">请填写 1–120 个字符</p>
+        <div class="site-nav-fields__actions"><button type="button" data-move="up" aria-label="上移第 32 条一言">上移</button><button type="button" data-move="down" disabled="" aria-label="下移第 32 条一言">下移</button><button type="button" aria-label="移除第 32 条一言">移除</button></div>
+      </li>
+    </ol><button type="button" disabled="">添加一言</button>
+  </fieldset>
+  <fieldset>
+    <legend>备案与版权</legend><label>ICP 备案号（选填）<input maxlength="40" placeholder="如：京ICP备00000000号" aria-invalid="true" aria-describedby="<uid>-icpNumber-error"></label>
+    <p id="<uid>-icpNumber-error" class="site-nav-fields__error">备案号最多 40 个字符</p><label>备案链接（选填）<input type="url" inputmode="url" maxlength="300" placeholder="https://beian.miit.gov.cn/" aria-invalid="true" aria-describedby="<uid>-icp-hint <uid>-icpUrl-error"></label>
+    <p id="<uid>-icp-hint">留空时链接到工信部备案查询；未填写备案号时页脚不展示备案信息。</p>
+    <p id="<uid>-icpUrl-error" class="site-nav-fields__error">备案链接仅支持 http(s) 完整地址，留空使用工信部备案查询</p><label>版权文案（选填）<input maxlength="200" placeholder="© {year} 林间. All rights reserved." aria-invalid="true" aria-describedby="<uid>-copyright-hint <uid>-copyright-error"></label>
+    <p id="<uid>-copyright-hint">留空使用默认格式“© <year> 林间. All rights reserved.”；可用 {year} 表示当前年份、{siteName} 表示站点名称。</p>
+    <p id="<uid>-copyright-error" class="site-nav-fields__error">版权文案最多 200 个字符</p>
+    <p>页脚预览：©©©©©©©©©©©©©©©©©©©©©©©©©©©©©©©©©©©©©©©©©©©©©©©©©©©©©©©©©©©©©©©©©©©©©©©©©©©©©©©©©©©©©©©©©©©©©©©©©©©©©©©©©©©©©©©©©©©©©©©©©©©©©©©©©©©©©©©©©©©©©©©©©©©©©©©©©©©©©©©©©©©©©©©©©©©©©©©©©©©©©©©©©©©©©©©©©©©©©©©©© · 京京京京京京京京京京京京京京京京京京京京京京京京京京京京京京京京京京京京京京京京京</p>
+  </fieldset>
+</fieldset>"
+`;
+
+exports[`页脚链接与一言的移动、移除：播报、焦点与边界 1`] = `
+[
+  [
+    "下移页脚链接关于本站",
+    "页脚链接关于本站已移至第 2 项",
+    "下移页脚链接关于本站",
+  ],
+  [
+    "下移页脚链接关于本站",
+    "页脚链接关于本站已移至第 3 项",
+    "上移页脚链接关于本站",
+  ],
+  [
+    "上移第 3 条一言",
+    "一言已移至第 2 项",
+    "上移第 2 条一言",
+  ],
+  [
+    "上移第 1 条一言",
+    "一言已移至第 2 项",
+    "上移第 2 条一言",
+  ],
+  [
+    "移除第 2 条一言",
+    "已移除第 2 条一言",
+    null,
+  ],
+  [
+    "移除页脚链接站点地图",
+    "已移除页脚链接站点地图",
+    null,
+  ],
+  [
+    "RSS 订阅",
+    "关于本站",
+  ],
+  [
+    "甲",
+    "乙",
+    "",
+  ],
+  {
+    "label": "",
+    "newTab": false,
+    "url": "",
+  },
+  3,
+  3,
+]
+`;
+
+exports[`默认数据与正常备案、版权的预览 1`] = `
+"<fieldset class="site-nav-fields">
+  <legend>导航与页脚</legend>
+  <p id="<uid>-hint">隐藏的模块只是不出现在导航中，页面地址仍可访问并被搜索引擎收录；首页始终显示。</p>
+  <p class="site-nav-fields__live" role="status" aria-live="polite"></p>
+  <fieldset>
+    <legend>导航（显隐与顺序）</legend>
+    <!--v-if-->
+    <ol class="site-nav-fields__list">
+      <li class="site-nav-fields__row" data-row="nav-0"><label class="site-nav-fields__toggle"><input type="checkbox" disabled="" aria-describedby="<uid>-hint"><span class="iconify i-lucide:home" aria-hidden="true"></span> 显示「主页」<span class="site-nav-fields__path">/</span></label>
+        <div class="site-nav-fields__actions"><button type="button" data-move="up" disabled="" aria-label="上移导航「主页」">上移</button><button type="button" data-move="down" aria-label="下移导航「主页」">下移</button>
+          <!--v-if-->
+        </div>
+      </li>
+      <li class="site-nav-fields__row" data-row="nav-1"><label class="site-nav-fields__toggle"><input type="checkbox"><span class="iconify i-lucide:archive" aria-hidden="true"></span> 显示「归档」<span class="site-nav-fields__path">/archive</span></label>
+        <div class="site-nav-fields__actions"><button type="button" data-move="up" aria-label="上移导航「归档」">上移</button><button type="button" data-move="down" aria-label="下移导航「归档」">下移</button>
+          <!--v-if-->
+        </div>
+      </li>
+      <li class="site-nav-fields__row" data-row="nav-2"><label class="site-nav-fields__toggle"><input type="checkbox"><span class="iconify i-lucide:layers" aria-hidden="true"></span> 显示「项目」<span class="site-nav-fields__path">/projects</span></label>
+        <div class="site-nav-fields__actions"><button type="button" data-move="up" aria-label="上移导航「项目」">上移</button><button type="button" data-move="down" aria-label="下移导航「项目」">下移</button>
+          <!--v-if-->
+        </div>
+      </li>
+      <li class="site-nav-fields__row" data-row="nav-3"><label class="site-nav-fields__toggle"><input type="checkbox"><span class="iconify i-lucide:image" aria-hidden="true"></span> 显示「画廊」<span class="site-nav-fields__path">/gallery</span></label>
+        <div class="site-nav-fields__actions"><button type="button" data-move="up" aria-label="上移导航「画廊」">上移</button><button type="button" data-move="down" aria-label="下移导航「画廊」">下移</button>
+          <!--v-if-->
+        </div>
+      </li>
+      <li class="site-nav-fields__row" data-row="nav-4"><label class="site-nav-fields__toggle"><input type="checkbox"><span class="iconify i-lucide:zap" aria-hidden="true"></span> 显示「闪念」<span class="site-nav-fields__path">/flash</span></label>
+        <div class="site-nav-fields__actions"><button type="button" data-move="up" aria-label="上移导航「闪念」">上移</button><button type="button" data-move="down" aria-label="下移导航「闪念」">下移</button>
+          <!--v-if-->
+        </div>
+      </li>
+      <li class="site-nav-fields__row" data-row="nav-5"><label class="site-nav-fields__toggle"><input type="checkbox"><span class="iconify i-lucide:link" aria-hidden="true"></span> 显示「友链」<span class="site-nav-fields__path">/links</span></label>
+        <div class="site-nav-fields__actions"><button type="button" data-move="up" aria-label="上移导航「友链」">上移</button><button type="button" data-move="down" aria-label="下移导航「友链」">下移</button>
+          <!--v-if-->
+        </div>
+      </li>
+      <li class="site-nav-fields__row" data-row="nav-6"><label class="site-nav-fields__toggle"><input type="checkbox"><span class="iconify i-lucide:message-circle" aria-hidden="true"></span> 显示「留言」<span class="site-nav-fields__path">/guestbook</span></label>
+        <div class="site-nav-fields__actions"><button type="button" data-move="up" aria-label="上移导航「留言」">上移</button><button type="button" data-move="down" aria-label="下移导航「留言」">下移</button>
+          <!--v-if-->
+        </div>
+      </li>
+      <li class="site-nav-fields__row" data-row="nav-7"><label class="site-nav-fields__toggle"><input type="checkbox"><span class="iconify i-lucide:credit-card" aria-hidden="true"></span> 显示「平台订阅费」<span class="site-nav-fields__path">/subscriptions</span></label>
+        <div class="site-nav-fields__actions"><button type="button" data-move="up" aria-label="上移导航「平台订阅费」">上移</button><button type="button" data-move="down" aria-label="下移导航「平台订阅费」">下移</button>
+          <!--v-if-->
+        </div>
+      </li>
+      <li class="site-nav-fields__row" data-row="nav-8"><label class="site-nav-fields__toggle"><input type="checkbox"><span class="iconify i-lucide:user" aria-hidden="true"></span> 显示「关于」<span class="site-nav-fields__path">/about</span></label>
+        <div class="site-nav-fields__actions"><button type="button" data-move="up" aria-label="上移导航「关于」">上移</button><button type="button" data-move="down" aria-label="下移导航「关于」">下移</button>
+          <!--v-if-->
+        </div>
+      </li>
+      <li class="site-nav-fields__row" data-row="nav-9"><label class="site-nav-fields__toggle"><input type="checkbox"><span class="iconify i-lucide:aperture" aria-hidden="true"></span> 显示「提示词」<span class="site-nav-fields__path">/prompts</span></label>
+        <div class="site-nav-fields__actions"><button type="button" data-move="up" aria-label="上移导航「提示词」">上移</button><button type="button" data-move="down" aria-label="下移导航「提示词」">下移</button>
+          <!--v-if-->
+        </div>
+      </li>
+      <li class="site-nav-fields__row" data-row="nav-10"><label class="site-nav-fields__toggle"><input type="checkbox"><span class="iconify i-lucide:layout-grid" aria-hidden="true"></span> 显示「标签页」<span class="site-nav-fields__path">/tabs</span></label>
+        <div class="site-nav-fields__actions"><button type="button" data-move="up" aria-label="上移导航「标签页」">上移</button><button type="button" data-move="down" disabled="" aria-label="下移导航「标签页」">下移</button>
+          <!--v-if-->
+        </div>
+      </li>
+    </ol><button type="button">添加外链导航（0/4）</button>
+  </fieldset>
+  <fieldset>
+    <legend>页脚链接（最多 8 个）</legend>
+    <!--v-if-->
+    <!--v-if-->
+    <ol class="site-nav-fields__list">
+      <li class="site-nav-fields__row" data-row="footer-0"><label>链接名称<input maxlength="30" required="" aria-invalid="false"></label>
+        <!--v-if--><label>链接地址<input maxlength="1000" placeholder="/about 或 https://" required="" aria-invalid="false" aria-describedby="<uid>-footer-hint"></label>
+        <!--v-if--><label class="site-nav-fields__toggle"><input type="checkbox">新窗口打开</label>
+        <div class="site-nav-fields__actions"><button type="button" data-move="up" disabled="" aria-label="上移页脚链接关于本站">上移</button><button type="button" data-move="down" aria-label="下移页脚链接关于本站">下移</button><button type="button" aria-label="移除页脚链接关于本站">移除</button></div>
+      </li>
+      <li class="site-nav-fields__row" data-row="footer-1"><label>链接名称<input maxlength="30" required="" aria-invalid="false"></label>
+        <!--v-if--><label>链接地址<input maxlength="1000" placeholder="/about 或 https://" required="" aria-invalid="false" aria-describedby="<uid>-footer-hint"></label>
+        <!--v-if--><label class="site-nav-fields__toggle"><input type="checkbox">新窗口打开</label>
+        <div class="site-nav-fields__actions"><button type="button" data-move="up" aria-label="上移页脚链接RSS 订阅">上移</button><button type="button" data-move="down" aria-label="下移页脚链接RSS 订阅">下移</button><button type="button" aria-label="移除页脚链接RSS 订阅">移除</button></div>
+      </li>
+      <li class="site-nav-fields__row" data-row="footer-2"><label>链接名称<input maxlength="30" required="" aria-invalid="false"></label>
+        <!--v-if--><label>链接地址<input maxlength="1000" placeholder="/about 或 https://" required="" aria-invalid="false" aria-describedby="<uid>-footer-hint"></label>
+        <!--v-if--><label class="site-nav-fields__toggle"><input type="checkbox">新窗口打开</label>
+        <div class="site-nav-fields__actions"><button type="button" data-move="up" aria-label="上移页脚链接站点地图">上移</button><button type="button" data-move="down" disabled="" aria-label="下移页脚链接站点地图">下移</button><button type="button" aria-label="移除页脚链接站点地图">移除</button></div>
+      </li>
+    </ol>
+    <p id="<uid>-footer-hint">站内页面填写 / 开头的路径；RSS、站点地图等文件或站外地址按原生链接打开。</p><button type="button">添加页脚链接</button>
+  </fieldset>
+  <fieldset>
+    <legend>每日一言（最多 30 条）</legend>
+    <p>每次打开页面随机展示一条；清空后不展示一言。</p>
+    <!--v-if-->
+    <ol class="site-nav-fields__list">
+      <li class="site-nav-fields__row" data-row="quote-0"><label>第 1 条<input maxlength="120" required="" aria-invalid="false"></label>
+        <!--v-if-->
+        <div class="site-nav-fields__actions"><button type="button" data-move="up" disabled="" aria-label="上移第 1 条一言">上移</button><button type="button" data-move="down" aria-label="下移第 1 条一言">下移</button><button type="button" aria-label="移除第 1 条一言">移除</button></div>
+      </li>
+      <li class="site-nav-fields__row" data-row="quote-1"><label>第 2 条<input maxlength="120" required="" aria-invalid="false"></label>
+        <!--v-if-->
+        <div class="site-nav-fields__actions"><button type="button" data-move="up" aria-label="上移第 2 条一言">上移</button><button type="button" data-move="down" aria-label="下移第 2 条一言">下移</button><button type="button" aria-label="移除第 2 条一言">移除</button></div>
+      </li>
+      <li class="site-nav-fields__row" data-row="quote-2"><label>第 3 条<input maxlength="120" required="" aria-invalid="false"></label>
+        <!--v-if-->
+        <div class="site-nav-fields__actions"><button type="button" data-move="up" aria-label="上移第 3 条一言">上移</button><button type="button" data-move="down" aria-label="下移第 3 条一言">下移</button><button type="button" aria-label="移除第 3 条一言">移除</button></div>
+      </li>
+      <li class="site-nav-fields__row" data-row="quote-3"><label>第 4 条<input maxlength="120" required="" aria-invalid="false"></label>
+        <!--v-if-->
+        <div class="site-nav-fields__actions"><button type="button" data-move="up" aria-label="上移第 4 条一言">上移</button><button type="button" data-move="down" aria-label="下移第 4 条一言">下移</button><button type="button" aria-label="移除第 4 条一言">移除</button></div>
+      </li>
+      <li class="site-nav-fields__row" data-row="quote-4"><label>第 5 条<input maxlength="120" required="" aria-invalid="false"></label>
+        <!--v-if-->
+        <div class="site-nav-fields__actions"><button type="button" data-move="up" aria-label="上移第 5 条一言">上移</button><button type="button" data-move="down" disabled="" aria-label="下移第 5 条一言">下移</button><button type="button" aria-label="移除第 5 条一言">移除</button></div>
+      </li>
+    </ol><button type="button">添加一言</button>
+  </fieldset>
+  <fieldset>
+    <legend>备案与版权</legend><label>ICP 备案号（选填）<input maxlength="40" placeholder="如：京ICP备00000000号" aria-invalid="false"></label>
+    <!--v-if--><label>备案链接（选填）<input type="url" inputmode="url" maxlength="300" placeholder="https://beian.miit.gov.cn/" aria-invalid="false" aria-describedby="<uid>-icp-hint"></label>
+    <p id="<uid>-icp-hint">留空时链接到工信部备案查询；未填写备案号时页脚不展示备案信息。</p>
+    <!--v-if--><label>版权文案（选填）<input maxlength="200" placeholder="© {year} {siteName}. All rights reserved." aria-invalid="false" aria-describedby="<uid>-copyright-hint"></label>
+    <p id="<uid>-copyright-hint">留空使用默认格式“© <year> . All rights reserved.”；可用 {year} 表示当前年份、{siteName} 表示站点名称。</p>
+    <!--v-if-->
+    <p>页脚预览：© <year> 林间 · 京ICP备00000000号</p>
+  </fieldset>
+</fieldset>"
+`;

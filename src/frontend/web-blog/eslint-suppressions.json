@@ -4,11 +4,6 @@
       "count": 1
     }
   },
-  "app/components/admin/SiteNavigationFields.vue": {
-    "max-params": {
-      "count": 1
-    }
-  },
   "app/components/common/AppearanceDrawer.vue": {
     "vue/max-template-depth": {
       "count": 1
