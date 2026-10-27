@@ -1,0 +1,97 @@
+/**
+ * @file _admin-maintenance.scss
+ * @description 备份与维护页及其区块组件共享的外观声明。各组件在 scoped 样式中整体 @include，
+ *              选择器与声明顺序保持拆分前的页面样式，不由父组件 :deep 下发
+ * @author TixXin
+ * @since 2026-10-27
+ */
+
+@mixin page {
+  .maintenance {
+    display: flex;
+    flex-direction: column;
+    gap: var(--admin-gap);
+    min-width: 0;
+    overflow-wrap: anywhere;
+  }
+  /* 顶层区块为卡片，作业详情内的子区块为浅底次级卡片 */
+  .maintenance > section {
+    min-width: 0;
+    padding: 1.25rem;
+    border: 1px solid var(--admin-card-border);
+    border-radius: var(--admin-radius-card);
+    background: var(--admin-card-bg);
+    box-shadow: var(--admin-card-shadow);
+  }
+  .maintenance section section {
+    margin-block: 0.75rem;
+    padding: 0.875rem 1rem;
+    border: 1px solid var(--border-soft);
+    border-radius: 0.75rem;
+    background: var(--surface-2);
+  }
+  h2 {
+    margin: 0 0 0.75rem;
+    font-size: 1rem;
+    font-weight: 600;
+  }
+  p {
+    margin-block: 0.5rem;
+    color: var(--text-muted);
+    font-size: 0.875rem;
+  }
+  pre {
+    padding: 0.75rem;
+    border-radius: 0.5rem;
+    background: var(--surface-2);
+    font-size: 0.8rem;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+  }
+  .maintenance__actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-block: 0.75rem;
+  }
+  .maintenance__field {
+    display: grid;
+    gap: 0.375rem;
+    min-width: 0;
+    color: var(--text-muted);
+    font-size: 0.875rem;
+    font-weight: 500;
+  }
+  .maintenance__field input,
+  .maintenance__field select {
+    width: 100%;
+  }
+  label {
+    display: block;
+    margin-block: 0.75rem;
+  }
+  button {
+    margin: 0.25rem 0.5rem 0.25rem 0;
+  }
+  .maintenance__actions button {
+    margin: 0;
+  }
+  a {
+    color: var(--accent-text);
+  }
+  ul {
+    padding-left: 1.2rem;
+  }
+  details {
+    margin-block: 0.75rem;
+  }
+  summary {
+    color: var(--text-muted);
+    cursor: var(--interaction-cursor, pointer);
+  }
+  @media (max-width: 760px) {
+    .maintenance > section {
+      padding: 1rem;
+    }
+  }
+}

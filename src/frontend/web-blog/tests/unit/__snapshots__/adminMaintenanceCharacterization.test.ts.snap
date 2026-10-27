@@ -1,0 +1,337 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`导入结果：数量、关联、检查入口与票据读取 1`] = `
+"<section class="maintenance">
+  <header class="admin-page-header">
+    <h1>备份与维护</h1>
+  </header>
+  <section aria-label="运行诊断">
+    <h2>运行诊断</h2>
+    <p>读取真实服务、迁移和存储状态。存储探测不代表全部媒体文件完整，文件完整性可单独核验。</p>
+    <div class="maintenance__actions"><button type="button">刷新运行诊断</button><button type="button">核验现有媒体文件</button></div>
+    <!--v-if-->
+    <!--v-if-->
+    <!--v-if-->
+    <!--v-if-->
+  </section>
+  <section aria-label="完整备份与恢复">
+    <h2>完整备份与恢复</h2>
+    <p>完整备份保存数据库、历史修订、账号记录和全部受管媒体，生成一致快照及校验清单。恢复命令新建无外部网络的容器，不覆盖当前站点。</p>
+    <p>在项目终端生成完整备份：</p><pre><code>corepack pnpm --filter server-main run backup:full</code></pre>
+    <p>校验与隔离恢复使用生成的备份目录：</p><pre><code>corepack pnpm --filter server-main run backup:verify --directory &lt;备份目录&gt;
+corepack pnpm --filter server-main run backup:restore --directory &lt;备份目录&gt;</code></pre>
+    <p>恢复后会撤销备份中的登录授权，并要求旧页面刷新后再修改数据。连接配置保存在恢复目录，应用连接不会自动切换。完整步骤见项目文档 docs/backup-and-recovery.md。</p>
+  </section>
+  <section aria-label="导出内容包">
+    <h2>导出内容包</h2>
+    <p>用于迁入文章、闪念、朋友圈、图库、项目、友链、图片提示词、评论、留言、目录和当前站点资料。文章、图库作品、项目、友链和提示词迁入为草稿；留言迁入为待审，隐藏和删除状态保留。</p>
+    <p>内容包不包含账号、登录凭据、访客控制标识、点赞、回应、历史修订和互动去重记录；完整数据库与媒体恢复使用维护流程。</p><label><input type="checkbox">包含受管媒体图片文件</label>
+    <p>文件内包含受管图片字节；外链图片仍使用原地址。</p><button type="button">下载内容包</button>
+  </section>
+  <section aria-label="选择内容包">
+    <h2>迁入内容</h2>
+    <p>支持本项目生成的 v1–v14 JSON 内容包，最多 50MB。v14保留搜索引擎收录开关，v13保留闪念评论审核状态，v12保留导航、页脚链接、每日一言与备案信息，v11保留平台订阅费与价格历史，v10保留图片提示词，v9保留内容关联和媒体说明。 外部图片地址不会下载到媒体库。先校验内容包和受管图片引用，再确认导入。</p>
+    <p>留言迁入后不会自动公开或置顶。已删除留言保留为不可见的引用记录，审核前请核对内容与作者。</p><label class="maintenance__field">选择内容包<input type="file" accept="application/json,.json"></label>
+    <!--v-if--><label class="maintenance__field">重复内容策略<select>
+        <option value="skip">跳过相同内容；友链按规范地址跳过</option>
+        <option value="copy">为全部内容创建新草稿副本</option>
+      </select></label><label><input type="checkbox">同时迁入站点资料、器材介绍、友链须知和评论审核设置</label>
+    <p>相同内容判定不比较发布状态和互动数。目录遵循本站历史名称规则。新副本重新累计浏览和点赞，正文中的链接保留原文，发布前请核对。</p>
+    <p>友链的跳过策略按规范站点地址判断；复制策略即使地址相同也会建立新草稿，保留推荐与排序。路径大小写、末尾斜杠、参数顺序和片段不会被擅自改写；同地址草稿上架前需核对现有公开记录。</p>
+    <div class="maintenance__actions"><button type="button" disabled="">生成导入预览</button>
+      <!--v-if-->
+    </div>
+  </section>
+  <!--v-if-->
+  <!--v-if-->
+  <section aria-label="内容导入预览">
+    <h2>导入结果</h2>
+    <p>票据 ticket-done · 跳过相同内容 · 保留当前站点设置</p>
+    <p>计划新建 1 篇文章草稿、1 条闪念草稿、1 条朋友圈草稿，迁入 6 条评论；跳过 2 项相同内容。</p>
+    <p>迁入 1 条留言及其回复关系，按预览保留为待审、隐藏或已删除状态。</p>
+    <p>迁入 1 件图库作品，分类、拍摄信息、排序和媒体关系保留，作品保持非公开。</p>
+    <p>迁入 1 个项目，保留项目进展、技术标签、排序和封面关系，全部保存为草稿。</p>
+    <p>迁入 0 条友链草稿，保留推荐、排序和Logo关系，不自动上架；同一规范地址只允许一条公开记录。</p>
+    <p>迁入 1 条图片提示词，保留模型、标签和图片来源，全部保存为草稿。</p>
+    <p>迁入 1 条平台订阅记录，保留币种、价格历史与受管图标，全部保存为草稿。</p>
+    <p>新增 4 个媒体记录，写入或修复 3 个图片文件。</p>
+    <p>结构化内容关联会按目标编号映射；跳过的现有内容及媒体说明保持原值，迁入的新内容仍是草稿。</p>
+    <!--v-if-->
+    <!--v-if-->
+    <!--v-if-->
+    <ul></ul>
+    <details>
+      <summary>查看文章、闪念、朋友圈、图库、项目、友链与留言清单</summary>
+      <ul>
+        <li>春日 · 新建草稿 · 地址标识 spring</li>
+        <li>夏夜 · 跳过相同内容</li>
+        <li>随手记 · 新建闪念草稿</li>
+        <li>晚霞 · 新建朋友圈草稿</li>
+        <li>你好 · 作为待审核留言迁入</li>
+        <li>海边 · 新建图库草稿</li>
+        <li>工具箱 · 新建项目草稿</li>
+        <li>云服务：新建草稿</li>
+        <li>图片提示词 · 晨雾山谷：新建草稿</li>
+        <li>友站 · 跳过相同地址</li>
+      </ul>
+    </details>
+    <!--v-if-->
+    <!--v-if-->
+    <!--v-if-->
+    <p role="status">已创建 2 篇文章草稿、1 条闪念草稿、1 条朋友圈草稿，迁入 6 条评论。</p>
+    <p>已迁入 1 条非公开留言，回复关系已重建。</p>
+    <p>已迁入 1 件图库草稿，检查图片及拍摄信息后再发布。</p>
+    <p>已迁入 1 个项目草稿，检查项目进展、技术标签及有效链接后再发布。</p>
+    <p>已迁入 1 条图片提示词草稿，可到提示词页面核对后发布。</p>
+    <p>已迁入 1 条平台订阅草稿，请核对价格历史、日期和图标后再发布。</p>
+    <p>已迁入 1 条友链草稿，请核对地址和Logo后再上架。</p>
+    <p>已映射 4 条内容关联，省略 1 条失效关联。</p>
+    <ul>
+      <li><a href="/admin/posts/41">检查新文章草稿 #41</a>（来源 #1）</li>
+      <li><a href="/admin/posts/42">检查新文章草稿 #42</a>（来源 #3）</li>
+    </ul><a href="/admin/flashes?status=draft">检查闪念草稿</a><a href="/admin/moments?status=draft">检查朋友圈草稿</a><a href="/admin/guestbook">检查迁入留言</a><a href="/admin/gallery?status=draft">检查图库草稿</a><a href="/admin/projects?status=draft">检查项目草稿</a><a href="/admin/subscriptions?status=draft">检查订阅草稿</a><a href="/prompts?view=manage">检查提示词草稿</a><a href="/admin/links?status=draft">检查友链草稿</a>
+    <!--v-if--><button type="button">查询导入结果</button>
+  </section>
+  <section aria-label="最近导入记录">
+    <h2>最近导入记录</h2>
+    <p>暂无导入记录</p>
+    <ul></ul>
+  </section>
+</section>"
+`;
+
+exports[`导入预览：计划明细、设置预览、确认输入与操作接线 1`] = `
+"<section class="maintenance">
+  <header class="admin-page-header">
+    <h1>备份与维护</h1>
+  </header>
+  <section aria-label="运行诊断">
+    <h2>运行诊断</h2>
+    <p>读取真实服务、迁移和存储状态。存储探测不代表全部媒体文件完整，文件完整性可单独核验。</p>
+    <div class="maintenance__actions"><button type="button">刷新运行诊断</button><button type="button">核验现有媒体文件</button></div>
+    <!--v-if-->
+    <!--v-if-->
+    <!--v-if-->
+    <!--v-if-->
+  </section>
+  <section aria-label="完整备份与恢复">
+    <h2>完整备份与恢复</h2>
+    <p>完整备份保存数据库、历史修订、账号记录和全部受管媒体，生成一致快照及校验清单。恢复命令新建无外部网络的容器，不覆盖当前站点。</p>
+    <p>在项目终端生成完整备份：</p><pre><code>corepack pnpm --filter server-main run backup:full</code></pre>
+    <p>校验与隔离恢复使用生成的备份目录：</p><pre><code>corepack pnpm --filter server-main run backup:verify --directory &lt;备份目录&gt;
+corepack pnpm --filter server-main run backup:restore --directory &lt;备份目录&gt;</code></pre>
+    <p>恢复后会撤销备份中的登录授权，并要求旧页面刷新后再修改数据。连接配置保存在恢复目录，应用连接不会自动切换。完整步骤见项目文档 docs/backup-and-recovery.md。</p>
+  </section>
+  <section aria-label="导出内容包">
+    <h2>导出内容包</h2>
+    <p>用于迁入文章、闪念、朋友圈、图库、项目、友链、图片提示词、评论、留言、目录和当前站点资料。文章、图库作品、项目、友链和提示词迁入为草稿；留言迁入为待审，隐藏和删除状态保留。</p>
+    <p>内容包不包含账号、登录凭据、访客控制标识、点赞、回应、历史修订和互动去重记录；完整数据库与媒体恢复使用维护流程。</p><label><input type="checkbox">包含受管媒体图片文件</label>
+    <p>文件内包含受管图片字节；外链图片仍使用原地址。</p><button type="button">下载内容包</button>
+  </section>
+  <section aria-label="选择内容包">
+    <h2>迁入内容</h2>
+    <p>支持本项目生成的 v1–v14 JSON 内容包，最多 50MB。v14保留搜索引擎收录开关，v13保留闪念评论审核状态，v12保留导航、页脚链接、每日一言与备案信息，v11保留平台订阅费与价格历史，v10保留图片提示词，v9保留内容关联和媒体说明。 外部图片地址不会下载到媒体库。先校验内容包和受管图片引用，再确认导入。</p>
+    <p>留言迁入后不会自动公开或置顶。已删除留言保留为不可见的引用记录，审核前请核对内容与作者。</p><label class="maintenance__field">选择内容包<input type="file" accept="application/json,.json"></label>
+    <!--v-if--><label class="maintenance__field">重复内容策略<select>
+        <option value="skip">跳过相同内容；友链按规范地址跳过</option>
+        <option value="copy">为全部内容创建新草稿副本</option>
+      </select></label><label><input type="checkbox">同时迁入站点资料、器材介绍、友链须知和评论审核设置</label>
+    <p>相同内容判定不比较发布状态和互动数。目录遵循本站历史名称规则。新副本重新累计浏览和点赞，正文中的链接保留原文，发布前请核对。</p>
+    <p>友链的跳过策略按规范站点地址判断；复制策略即使地址相同也会建立新草稿，保留推荐与排序。路径大小写、末尾斜杠、参数顺序和片段不会被擅自改写；同地址草稿上架前需核对现有公开记录。</p>
+    <div class="maintenance__actions"><button type="button" disabled="">生成导入预览</button><button type="button">查询本次上传票据</button></div>
+  </section>
+  <!--v-if-->
+  <!--v-if-->
+  <section aria-label="内容导入预览">
+    <h2>导入预览</h2>
+    <p>票据 ticket-preview · 创建全部新副本 · 包含站点资料与审核设置</p>
+    <p>计划新建 1 篇文章草稿、1 条闪念草稿、1 条朋友圈草稿，迁入 6 条评论；跳过 2 项相同内容。</p>
+    <p>迁入 1 条留言及其回复关系，按预览保留为待审、隐藏或已删除状态。</p>
+    <p>迁入 1 件图库作品，分类、拍摄信息、排序和媒体关系保留，作品保持非公开。</p>
+    <p>迁入 1 个项目，保留项目进展、技术标签、排序和封面关系，全部保存为草稿。</p>
+    <p>迁入 0 条友链草稿，保留推荐、排序和Logo关系，不自动上架；同一规范地址只允许一条公开记录。</p>
+    <p>迁入 1 条图片提示词，保留模型、标签和图片来源，全部保存为草稿。</p>
+    <p>迁入 1 条平台订阅记录，保留币种、价格历史与受管图标，全部保存为草稿。</p>
+    <p>新增 4 个媒体记录，写入或修复 3 个图片文件。</p>
+    <p>结构化内容关联会按目标编号映射；跳过的现有内容及媒体说明保持原值，迁入的新内容仍是草稿。</p>
+    <p role="status">3 条关联因目标已删除、缺失或无法映射而省略；不会按来源编号误连当前站点内容。完整备份仍保留原始关系。</p>
+    <p role="alert">目标内容或配置已变化，请重新预览后确认</p>
+    <!--v-if-->
+    <ul>
+      <li>缺少媒体 m1 的文件</li>
+      <li>关联内容 post:7 去重后会指向自身</li>
+    </ul>
+    <details>
+      <summary>查看文章、闪念、朋友圈、图库、项目、友链与留言清单</summary>
+      <ul>
+        <li>春日 · 新建草稿 · 地址标识 spring</li>
+        <li>夏夜 · 跳过相同内容</li>
+        <li>随手记 · 新建闪念草稿</li>
+        <li>晚霞 · 新建朋友圈草稿</li>
+        <li>你好 · 作为待审核留言迁入</li>
+        <li>海边 · 新建图库草稿</li>
+        <li>工具箱 · 新建项目草稿</li>
+        <li>云服务：新建草稿</li>
+        <li>图片提示词 · 晨雾山谷：新建草稿</li>
+        <li>友站 · 跳过相同地址</li>
+      </ul>
+    </details>
+    <!--v-if-->
+    <section aria-label="将写入的器材资料">
+      <h3>将写入的器材资料</h3>
+      <section class="card gear-card">
+        <h2 class="gear-card__title"><span class="iconify i-lucide:aperture" aria-hidden="true" style="font-size: 16px;"></span><span>摄影器材</span></h2>
+        <ul class="gear-card__list">
+          <li class="gear-card__item">
+            <div class="gear-card__icon-wrap"><span class="iconify i-lucide:camera" aria-hidden="true" style="font-size: 16px;"></span></div>
+            <div class="gear-card__text">
+              <p class="gear-card__name">X100V</p>
+              <p class="gear-card__desc">日常</p>
+            </div>
+          </li>
+        </ul>
+        <!--v-if-->
+      </section>
+    </section>
+    <section aria-label="将写入的友链须知">
+      <section class="card link-rules">
+        <h2 class="link-rules__title"><span class="iconify i-lucide:link" aria-hidden="true" style="font-size: 16px;"></span>友链须知</h2>
+        <div class="link-rules__list">
+          <div class="link-rules__item"><span class="link-rules__badge">1</span>
+            <p>互换前请先添加本站</p>
+          </div>
+          <div class="link-rules__item"><span class="link-rules__badge">2</span>
+            <p>站点需可正常访问</p>
+          </div>
+        </div>
+        <!--v-if-->
+      </section>
+    </section>
+    <!--v-if-->
+    <p>预览到期：2026/10/19 16:30:00。执行时重新校验目标变化，数据库变更统一提交；未能确认结果时请查询同一票据。</p><label class="maintenance__field">输入“导入为新草稿”确认<input autocomplete="off"></label>
+    <div class="maintenance__actions"><button type="button">确认导入预览内容</button><button type="button">重新生成此票据的预览</button></div><button type="button">查询导入结果</button>
+  </section>
+  <section aria-label="最近导入记录">
+    <h2>最近导入记录</h2>
+    <!--v-if-->
+    <ul>
+      <li><button type="button">2026/10/19 16:30:00 · 预览或执行中</button></li>
+      <li><button type="button">2026/10/19 16:30:00 · 已过期</button></li>
+      <li><button type="button">2026/10/19 16:30:00 · 已完成</button></li>
+    </ul>
+  </section>
+</section>"
+`;
+
+exports[`空闲状态：诊断待加载、无票据、最近记录为空 1`] = `
+"<section class="maintenance">
+  <header class="admin-page-header">
+    <h1>备份与维护</h1>
+  </header>
+  <section aria-label="运行诊断">
+    <h2>运行诊断</h2>
+    <p>读取真实服务、迁移和存储状态。存储探测不代表全部媒体文件完整，文件完整性可单独核验。</p>
+    <div class="maintenance__actions"><button type="button">刷新运行诊断</button><button type="button">核验现有媒体文件</button></div>
+    <!--v-if-->
+    <!--v-if-->
+    <!--v-if-->
+    <!--v-if-->
+  </section>
+  <section aria-label="完整备份与恢复">
+    <h2>完整备份与恢复</h2>
+    <p>完整备份保存数据库、历史修订、账号记录和全部受管媒体，生成一致快照及校验清单。恢复命令新建无外部网络的容器，不覆盖当前站点。</p>
+    <p>在项目终端生成完整备份：</p><pre><code>corepack pnpm --filter server-main run backup:full</code></pre>
+    <p>校验与隔离恢复使用生成的备份目录：</p><pre><code>corepack pnpm --filter server-main run backup:verify --directory &lt;备份目录&gt;
+corepack pnpm --filter server-main run backup:restore --directory &lt;备份目录&gt;</code></pre>
+    <p>恢复后会撤销备份中的登录授权，并要求旧页面刷新后再修改数据。连接配置保存在恢复目录，应用连接不会自动切换。完整步骤见项目文档 docs/backup-and-recovery.md。</p>
+  </section>
+  <section aria-label="导出内容包">
+    <h2>导出内容包</h2>
+    <p>用于迁入文章、闪念、朋友圈、图库、项目、友链、图片提示词、评论、留言、目录和当前站点资料。文章、图库作品、项目、友链和提示词迁入为草稿；留言迁入为待审，隐藏和删除状态保留。</p>
+    <p>内容包不包含账号、登录凭据、访客控制标识、点赞、回应、历史修订和互动去重记录；完整数据库与媒体恢复使用维护流程。</p><label><input type="checkbox">包含受管媒体图片文件</label>
+    <p>文件内包含受管图片字节；外链图片仍使用原地址。</p><button type="button">下载内容包</button>
+  </section>
+  <section aria-label="选择内容包">
+    <h2>迁入内容</h2>
+    <p>支持本项目生成的 v1–v14 JSON 内容包，最多 50MB。v14保留搜索引擎收录开关，v13保留闪念评论审核状态，v12保留导航、页脚链接、每日一言与备案信息，v11保留平台订阅费与价格历史，v10保留图片提示词，v9保留内容关联和媒体说明。 外部图片地址不会下载到媒体库。先校验内容包和受管图片引用，再确认导入。</p>
+    <p>留言迁入后不会自动公开或置顶。已删除留言保留为不可见的引用记录，审核前请核对内容与作者。</p><label class="maintenance__field">选择内容包<input type="file" accept="application/json,.json"></label>
+    <!--v-if--><label class="maintenance__field">重复内容策略<select>
+        <option value="skip">跳过相同内容；友链按规范地址跳过</option>
+        <option value="copy">为全部内容创建新草稿副本</option>
+      </select></label><label><input type="checkbox">同时迁入站点资料、器材介绍、友链须知和评论审核设置</label>
+    <p>相同内容判定不比较发布状态和互动数。目录遵循本站历史名称规则。新副本重新累计浏览和点赞，正文中的链接保留原文，发布前请核对。</p>
+    <p>友链的跳过策略按规范站点地址判断；复制策略即使地址相同也会建立新草稿，保留推荐与排序。路径大小写、末尾斜杠、参数顺序和片段不会被擅自改写；同地址草稿上架前需核对现有公开记录。</p>
+    <div class="maintenance__actions"><button type="button" disabled="">生成导入预览</button>
+      <!--v-if-->
+    </div>
+  </section>
+  <!--v-if-->
+  <!--v-if-->
+  <!--v-if-->
+  <section aria-label="最近导入记录">
+    <h2>最近导入记录</h2>
+    <p>暂无导入记录</p>
+    <ul></ul>
+  </section>
+</section>"
+`;
+
+exports[`诊断结果、媒体问题、已选文件与处理中提示 1`] = `
+"<section class="maintenance">
+  <header class="admin-page-header">
+    <h1>备份与维护</h1>
+  </header>
+  <section aria-label="运行诊断">
+    <h2>运行诊断</h2>
+    <p>读取真实服务、迁移和存储状态。存储探测不代表全部媒体文件完整，文件完整性可单独核验。</p>
+    <div class="maintenance__actions"><button type="button" disabled="">刷新运行诊断</button><button type="button" disabled="">核验现有媒体文件</button></div>
+    <p role="status">正在检查…</p>
+    <p role="alert">诊断失败</p>
+    <ul>
+      <li>数据库连接：不可用</li>
+      <li>待应用迁移 0 个 · 结构与代码不一致</li>
+      <li>媒体存储：探测存在问题 · 3 个登记资源</li>
+      <li>运行环境 development · Node v26.1.0</li>
+    </ul>
+    <p role="status">已核验 2 个媒体文件，发现 2 项问题。</p>
+    <ul>
+      <li><a href="/admin/media?search=gone&amp;deleted=false">gone</a> · 文件缺失</li>
+      <li><a href="/admin/media?search=old&amp;deleted=true">old</a> · 哈希不一致</li>
+    </ul>
+  </section>
+  <section aria-label="完整备份与恢复">
+    <h2>完整备份与恢复</h2>
+    <p>完整备份保存数据库、历史修订、账号记录和全部受管媒体，生成一致快照及校验清单。恢复命令新建无外部网络的容器，不覆盖当前站点。</p>
+    <p>在项目终端生成完整备份：</p><pre><code>corepack pnpm --filter server-main run backup:full</code></pre>
+    <p>校验与隔离恢复使用生成的备份目录：</p><pre><code>corepack pnpm --filter server-main run backup:verify --directory &lt;备份目录&gt;
+corepack pnpm --filter server-main run backup:restore --directory &lt;备份目录&gt;</code></pre>
+    <p>恢复后会撤销备份中的登录授权，并要求旧页面刷新后再修改数据。连接配置保存在恢复目录，应用连接不会自动切换。完整步骤见项目文档 docs/backup-and-recovery.md。</p>
+  </section>
+  <section aria-label="导出内容包">
+    <h2>导出内容包</h2>
+    <p>用于迁入文章、闪念、朋友圈、图库、项目、友链、图片提示词、评论、留言、目录和当前站点资料。文章、图库作品、项目、友链和提示词迁入为草稿；留言迁入为待审，隐藏和删除状态保留。</p>
+    <p>内容包不包含账号、登录凭据、访客控制标识、点赞、回应、历史修订和互动去重记录；完整数据库与媒体恢复使用维护流程。</p><label><input type="checkbox" disabled="">包含受管媒体图片文件</label>
+    <p>仅包含媒体清单；迁入时需已有可用资源或另行恢复图片文件。</p><button type="button" disabled="">下载内容包</button>
+  </section>
+  <section aria-label="选择内容包">
+    <h2>迁入内容</h2>
+    <p>支持本项目生成的 v1–v14 JSON 内容包，最多 50MB。v14保留搜索引擎收录开关，v13保留闪念评论审核状态，v12保留导航、页脚链接、每日一言与备案信息，v11保留平台订阅费与价格历史，v10保留图片提示词，v9保留内容关联和媒体说明。 外部图片地址不会下载到媒体库。先校验内容包和受管图片引用，再确认导入。</p>
+    <p>留言迁入后不会自动公开或置顶。已删除留言保留为不可见的引用记录，审核前请核对内容与作者。</p><label class="maintenance__field">选择内容包<input type="file" accept="application/json,.json" disabled=""></label>
+    <p>已选 blog.json · 2.0KB</p><label class="maintenance__field">重复内容策略<select disabled="">
+        <option value="skip">跳过相同内容；友链按规范地址跳过</option>
+        <option value="copy">为全部内容创建新草稿副本</option>
+      </select></label><label><input type="checkbox" disabled="">同时迁入站点资料、器材介绍、友链须知和评论审核设置</label>
+    <p>相同内容判定不比较发布状态和互动数。目录遵循本站历史名称规则。新副本重新累计浏览和点赞，正文中的链接保留原文，发布前请核对。</p>
+    <p>友链的跳过策略按规范站点地址判断；复制策略即使地址相同也会建立新草稿，保留推荐与排序。路径大小写、末尾斜杠、参数顺序和片段不会被擅自改写；同地址草稿上架前需核对现有公开记录。</p>
+    <div class="maintenance__actions"><button type="button" disabled="">生成导入预览</button><button type="button" disabled="">查询本次上传票据</button></div>
+  </section>
+  <p role="status">正在处理，请等待服务器结果…</p>
+  <p role="alert">上传失败</p>
+  <!--v-if-->
+  <section aria-label="最近导入记录">
+    <h2>最近导入记录</h2>
+    <p role="alert">最近记录读取失败 <button type="button">重试记录</button></p>
+    <ul></ul>
+  </section>
+</section>"
+`;
