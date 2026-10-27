@@ -5,7 +5,7 @@ import type { Ref } from 'vue'
 import { flushPromises } from '@vue/test-utils'
 import { mockNuxtImport, mountSuspended } from '@nuxt/test-utils/runtime'
 import TabCommandPalette from '../../app/components/tab/TabCommandPalette.vue'
-import type { CommandAction } from '../../app/components/tab/TabCommandPalette.vue'
+import type { CommandAction } from '../../app/features/tab/paletteItems'
 import type { Bookmark, BookmarkCategory } from '../../app/features/tab/types'
 
 const mocks = vi.hoisted(() => ({

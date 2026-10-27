@@ -1,0 +1,138 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`动作顺序与文案，切换视图和拖拽开关读取最新设置 1`] = `
+[
+  [
+    {
+      "icon": "lucide:plus",
+      "id": "add-bookmark",
+      "shortcut": "N",
+      "subtitle": "打开书签编辑对话框",
+      "title": "新建书签",
+    },
+    {
+      "icon": "lucide:folder-plus",
+      "id": "add-category",
+      "shortcut": undefined,
+      "subtitle": undefined,
+      "title": "新建分类",
+    },
+    {
+      "icon": "lucide:layout-grid",
+      "id": "view-grid",
+      "shortcut": undefined,
+      "subtitle": "当前视图",
+      "title": "切换视图：网格",
+    },
+    {
+      "icon": "lucide:grid-2x2",
+      "id": "view-compact",
+      "shortcut": undefined,
+      "subtitle": "",
+      "title": "切换视图：紧凑",
+    },
+    {
+      "icon": "lucide:list",
+      "id": "view-list",
+      "shortcut": undefined,
+      "subtitle": "",
+      "title": "切换视图：列表",
+    },
+    {
+      "icon": "lucide:square-stack",
+      "id": "view-cards",
+      "shortcut": undefined,
+      "subtitle": "",
+      "title": "切换视图：卡片",
+    },
+    {
+      "icon": "lucide:settings",
+      "id": "open-settings",
+      "shortcut": undefined,
+      "subtitle": undefined,
+      "title": "打开设置",
+    },
+    {
+      "icon": "lucide:move",
+      "id": "toggle-drag",
+      "shortcut": undefined,
+      "subtitle": undefined,
+      "title": "关闭拖拽排序",
+    },
+    {
+      "icon": "lucide:upload",
+      "id": "import",
+      "shortcut": undefined,
+      "subtitle": "JSON 或浏览器 HTML",
+      "title": "导入书签",
+    },
+  ],
+  "list",
+  true,
+  [
+    {
+      "icon": "lucide:plus",
+      "id": "add-bookmark",
+      "shortcut": "N",
+      "subtitle": "打开书签编辑对话框",
+      "title": "新建书签",
+    },
+    {
+      "icon": "lucide:folder-plus",
+      "id": "add-category",
+      "shortcut": undefined,
+      "subtitle": undefined,
+      "title": "新建分类",
+    },
+    {
+      "icon": "lucide:layout-grid",
+      "id": "view-grid",
+      "shortcut": undefined,
+      "subtitle": "",
+      "title": "切换视图：网格",
+    },
+    {
+      "icon": "lucide:grid-2x2",
+      "id": "view-compact",
+      "shortcut": undefined,
+      "subtitle": "",
+      "title": "切换视图：紧凑",
+    },
+    {
+      "icon": "lucide:list",
+      "id": "view-list",
+      "shortcut": undefined,
+      "subtitle": "当前视图",
+      "title": "切换视图：列表",
+    },
+    {
+      "icon": "lucide:square-stack",
+      "id": "view-cards",
+      "shortcut": undefined,
+      "subtitle": "",
+      "title": "切换视图：卡片",
+    },
+    {
+      "icon": "lucide:settings",
+      "id": "open-settings",
+      "shortcut": undefined,
+      "subtitle": undefined,
+      "title": "打开设置",
+    },
+    {
+      "icon": "lucide:move",
+      "id": "toggle-drag",
+      "shortcut": undefined,
+      "subtitle": undefined,
+      "title": "关闭拖拽排序",
+    },
+    {
+      "icon": "lucide:upload",
+      "id": "import",
+      "shortcut": undefined,
+      "subtitle": "JSON 或浏览器 HTML",
+      "title": "导入书签",
+    },
+  ],
+]
+`;

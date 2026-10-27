@@ -1,0 +1,107 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`书签命令面板结构 > 关键词高亮与无结果 1`] = `
+"<teleport-stub to="body">
+  <transition-stub name="tab-palette" appear="false" persisted="false" css="true">
+    <div class="tab-palette">
+      <div class="tab-palette__panel" role="dialog" aria-modal="true" aria-label="书签命令面板" tabindex="-1">
+        <div class="tab-palette__search"><span class="iconify i-lucide:search tab-palette__icon" aria-hidden="true" style="font-size: 16px;"></span><input type="text" aria-label="搜索书签、分类和命令" class="tab-palette__input" placeholder="搜索书签 / 分类 / 动作，↑↓ 选择，Enter 执行，Esc 关闭" autocomplete="off" spellcheck="false"><button type="button" class="tab-palette__close" aria-label="关闭命令面板"><span class="iconify i-lucide:x" aria-hidden="true" style="font-size: 18px;"></span></button></div>
+        <div class="tab-palette__list">
+          <div class="tab-palette__section">动作</div><button type="button" class="tab-palette__item tab-palette__item--focus" data-id="act-open" aria-current="true"><span class="tab-palette__item-icon"><span class="iconify i-lucide:search" aria-hidden="true" style="font-size: 14px;"></span></span>
+            <div class="tab-palette__item-text">
+              <div class="tab-palette__item-title"><span class="search-highlight">打开 <mark class="search-highlight__match">Vue</mark> &lt;img src=x onerror=alert(1)&gt;</span></div>
+              <div class="tab-palette__item-sub"><span class="search-highlight"><mark class="search-highlight__match">Vue</mark> &lt;svg onload=alert(1)&gt; 命令</span></div>
+            </div>
+            <!--v-if-->
+          </button>
+          <div class="tab-palette__section">书签</div><button type="button" class="tab-palette__item" data-id="bm-vue"><span class="tab-palette__item-icon"><span class="iconify i-lucide:bookmark" aria-hidden="true" style="font-size: 14px;"></span></span>
+            <div class="tab-palette__item-text">
+              <div class="tab-palette__item-title"><span class="search-highlight"><mark class="search-highlight__match">Vue</mark></span></div>
+              <div class="tab-palette__item-sub"><span class="search-highlight">https://<mark class="search-highlight__match">vue</mark>.example/</span></div>
+            </div>
+            <!--v-if-->
+          </button>
+          <div class="tab-palette__section">分类</div><button type="button" class="tab-palette__item" data-id="cat-learning"><span class="tab-palette__item-icon"><span class="iconify i-lucide:folder" aria-hidden="true" style="font-size: 14px;"></span></span>
+            <div class="tab-palette__item-text">
+              <div class="tab-palette__item-title"><span class="search-highlight"><mark class="search-highlight__match">Vue</mark> 学习</span></div>
+              <div class="tab-palette__item-sub"><span class="search-highlight">分类</span></div>
+            </div>
+            <!--v-if-->
+          </button>
+        </div>
+        <p class="sr-only" role="status" aria-live="polite" aria-atomic="true">已选择第 1 项，共 3 项：打开 Vue &lt;img src=x onerror=alert(1)&gt;</p>
+        <div class="tab-palette__footer"><span><kbd>↑</kbd><kbd>↓</kbd> 导航</span><span><kbd>Enter</kbd> 执行</span><span><kbd>Esc</kbd> 关闭</span></div>
+      </div>
+    </div>
+  </transition-stub>
+</teleport-stub>"
+`;
+
+exports[`书签命令面板结构 > 关键词高亮与无结果 2`] = `
+"<teleport-stub to="body">
+  <transition-stub name="tab-palette" appear="false" persisted="false" css="true">
+    <div class="tab-palette">
+      <div class="tab-palette__panel" role="dialog" aria-modal="true" aria-label="书签命令面板" tabindex="-1">
+        <div class="tab-palette__search"><span class="iconify i-lucide:search tab-palette__icon" aria-hidden="true" style="font-size: 16px;"></span><input type="text" aria-label="搜索书签、分类和命令" class="tab-palette__input" placeholder="搜索书签 / 分类 / 动作，↑↓ 选择，Enter 执行，Esc 关闭" autocomplete="off" spellcheck="false"><button type="button" class="tab-palette__close" aria-label="关闭命令面板"><span class="iconify i-lucide:x" aria-hidden="true" style="font-size: 18px;"></span></button></div>
+        <div class="tab-palette__empty"><span class="iconify i-lucide:search-x" aria-hidden="true" style="font-size: 20px;"></span><span>无匹配结果</span></div>
+        <p class="sr-only" role="status" aria-live="polite" aria-atomic="true">无匹配结果</p>
+        <div class="tab-palette__footer"><span><kbd>↑</kbd><kbd>↓</kbd> 导航</span><span><kbd>Enter</kbd> 执行</span><span><kbd>Esc</kbd> 关闭</span></div>
+      </div>
+    </div>
+  </transition-stub>
+</teleport-stub>"
+`;
+
+exports[`书签命令面板结构 > 空查询：动作、书签、分类三组与读屏状态 1`] = `
+"<teleport-stub to="body">
+  <transition-stub name="tab-palette" appear="false" persisted="false" css="true">
+    <div class="tab-palette">
+      <div class="tab-palette__panel" role="dialog" aria-modal="true" aria-label="书签命令面板" tabindex="-1">
+        <div class="tab-palette__search"><span class="iconify i-lucide:search tab-palette__icon" aria-hidden="true" style="font-size: 16px;"></span><input type="text" aria-label="搜索书签、分类和命令" class="tab-palette__input" placeholder="搜索书签 / 分类 / 动作，↑↓ 选择，Enter 执行，Esc 关闭" autocomplete="off" spellcheck="false"><button type="button" class="tab-palette__close" aria-label="关闭命令面板"><span class="iconify i-lucide:x" aria-hidden="true" style="font-size: 18px;"></span></button></div>
+        <div class="tab-palette__list">
+          <div class="tab-palette__section">动作</div><button type="button" class="tab-palette__item tab-palette__item--focus" aria-current="true" data-id="act-settings"><span class="tab-palette__item-icon"><span class="iconify i-lucide:settings" aria-hidden="true" style="font-size: 14px;"></span></span>
+            <div class="tab-palette__item-text">
+              <div class="tab-palette__item-title"><span class="search-highlight">打开设置</span></div>
+              <!--v-if-->
+            </div><kbd class="tab-palette__kbd">⌘,</kbd>
+          </button><button type="button" class="tab-palette__item" data-id="act-open"><span class="tab-palette__item-icon"><span class="iconify i-lucide:search" aria-hidden="true" style="font-size: 14px;"></span></span>
+            <div class="tab-palette__item-text">
+              <div class="tab-palette__item-title"><span class="search-highlight">打开 Vue &lt;img src=x onerror=alert(1)&gt;</span></div>
+              <div class="tab-palette__item-sub"><span class="search-highlight">Vue &lt;svg onload=alert(1)&gt; 命令</span></div>
+            </div>
+            <!--v-if-->
+          </button>
+          <div class="tab-palette__section">书签</div><button type="button" class="tab-palette__item" data-id="bm-vue"><span class="tab-palette__item-icon"><span class="iconify i-lucide:bookmark" aria-hidden="true" style="font-size: 14px;"></span></span>
+            <div class="tab-palette__item-text">
+              <div class="tab-palette__item-title"><span class="search-highlight">Vue</span></div>
+              <div class="tab-palette__item-sub"><span class="search-highlight">https://vue.example/</span></div>
+            </div>
+            <!--v-if-->
+          </button><button type="button" class="tab-palette__item" data-id="bm-emoji"><span class="tab-palette__item-icon"><span class="iconify i-lucide:bookmark" aria-hidden="true" style="font-size: 14px;"></span></span>
+            <div class="tab-palette__item-text">
+              <div class="tab-palette__item-title"><span class="search-highlight">表情站</span></div>
+              <div class="tab-palette__item-sub"><span class="search-highlight">https://emoji.example/</span></div>
+            </div>
+            <!--v-if-->
+          </button>
+          <div class="tab-palette__section">分类</div><button type="button" class="tab-palette__item" data-id="cat-learning"><span class="tab-palette__item-icon"><span class="iconify i-lucide:folder" aria-hidden="true" style="font-size: 14px;"></span></span>
+            <div class="tab-palette__item-text">
+              <div class="tab-palette__item-title"><span class="search-highlight">Vue 学习</span></div>
+              <div class="tab-palette__item-sub"><span class="search-highlight">分类</span></div>
+            </div>
+            <!--v-if-->
+          </button><button type="button" class="tab-palette__item" data-id="cat-misc"><span class="tab-palette__item-icon"><span class="iconify i-lucide:folder" aria-hidden="true" style="font-size: 14px;"></span></span>
+            <div class="tab-palette__item-text">
+              <div class="tab-palette__item-title"><span class="search-highlight">杂项</span></div>
+              <div class="tab-palette__item-sub"><span class="search-highlight">分类</span></div>
+            </div>
+            <!--v-if-->
+          </button>
+        </div>
+        <p class="sr-only" role="status" aria-live="polite" aria-atomic="true">已选择第 1 项，共 6 项：打开设置</p>
+        <div class="tab-palette__footer"><span><kbd>↑</kbd><kbd>↓</kbd> 导航</span><span><kbd>Enter</kbd> 执行</span><span><kbd>Esc</kbd> 关闭</span></div>
+      </div>
+    </div>
+  </transition-stub>
+</teleport-stub>"
+`;

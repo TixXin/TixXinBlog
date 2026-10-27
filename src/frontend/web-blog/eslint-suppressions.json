@@ -72,9 +72,6 @@
   "app/components/tab/TabCommandPalette.vue": {
     "complexity": {
       "count": 1
-    },
-    "vue/max-template-depth": {
-      "count": 6
     }
   },
   "app/components/tab/TabImportDialog.vue": {
@@ -759,11 +756,6 @@
   "app/features/tab/useTabContextMenu.ts": {
     "max-lines-per-function": {
       "count": 2
-    }
-  },
-  "app/features/tab/useTabPaletteActions.ts": {
-    "max-lines-per-function": {
-      "count": 1
     }
   },
   "app/features/tab/useTabWallpaperSettings.ts": {

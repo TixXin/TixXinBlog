@@ -5,6 +5,13 @@
   @since 2026-04-15
 -->
 
+<!--
+  @file TabCommandPalette.vue
+  @description 标签页 Cmd/Ctrl+K 命令面板：模糊搜索书签/分类/动作，键盘方向键导航
+  @author TixXin
+  @since 2026-04-15
+-->
+
 <template>
   <Teleport to="body">
     <Transition name="tab-palette">
@@ -43,32 +50,15 @@
           <div v-else ref="listRef" class="tab-palette__list">
             <template v-for="section in sectionList" :key="section.id">
               <div class="tab-palette__section">{{ section.label }}</div>
-              <button
+              <TabCommandPaletteItem
                 v-for="item in section.items"
                 :key="`${section.id}-${item.id}`"
-                type="button"
-                class="tab-palette__item"
-                :class="{ 'tab-palette__item--focus': focusedId === item.id }"
-                :aria-current="focusedId === item.id ? 'true' : undefined"
-                :data-id="item.id"
-                @mouseenter="focusedId = item.id"
-                @focus="focusedId = item.id"
-                @click="runItem(item)"
-              >
-                <span class="tab-palette__item-icon">
-                  <Icon v-if="item.icon.startsWith('lucide:')" :name="item.icon" size="14" />
-                  <span v-else>{{ item.icon }}</span>
-                </span>
-                <div class="tab-palette__item-text">
-                  <div class="tab-palette__item-title">
-                    <SearchHighlight :text="item.title" :keyword="query" />
-                  </div>
-                  <div v-if="item.subtitle" class="tab-palette__item-sub">
-                    <SearchHighlight :text="item.subtitle" :keyword="query" />
-                  </div>
-                </div>
-                <kbd v-if="item.shortcut" class="tab-palette__kbd">{{ item.shortcut }}</kbd>
-              </button>
+                :item="item"
+                :query="query"
+                :focused="focusedId === item.id"
+                @hover="focusedId = item.id"
+                @run="runItem(item)"
+              />
             </template>
           </div>
 
@@ -85,18 +75,17 @@
 </template>
 
 <script setup lang="ts">
-import Fuse from 'fuse.js'
-import SearchHighlight from '~/components/common/SearchHighlight.vue'
-
-export interface CommandAction {
-  id: string
-  title: string
-  subtitle?: string
-  icon: string
-  shortcut?: string
-  section: 'actions'
-  run: () => void | Promise<void>
-}
+import TabCommandPaletteItem from './TabCommandPaletteItem.vue'
+import {
+  buildPaletteItems,
+  createPaletteFuse,
+  filterPaletteItems,
+  groupPaletteSections,
+  paletteKeyAction,
+  paletteSelectionStatus,
+  type CommandAction,
+  type PaletteItem,
+} from '~/features/tab/paletteItems'
 
 const props = defineProps<{ actions: CommandAction[] }>()
 const { t } = useI18n()
@@ -113,96 +102,12 @@ const dialogRef = ref<HTMLElement | null>(null)
 useModalFocus(open, dialogRef, { close, initialFocus: () => inputRef.value })
 const listRef = ref<HTMLElement | null>(null)
 
-interface PaletteItem {
-  id: string
-  title: string
-  subtitle?: string
-  icon: string
-  shortcut?: string
-  source: 'bookmark' | 'category' | 'action'
-  payload: unknown
-}
-
-interface PaletteSection {
-  id: string
-  label: string
-  items: PaletteItem[]
-}
-
-/** 把书签/分类/动作合并为统一 item */
-const allItems = computed<PaletteItem[]>(() => {
-  const bmItems: PaletteItem[] = bookmarks.value.map((b) => ({
-    id: `bm-${b.id}`,
-    title: b.name,
-    subtitle: b.url,
-    icon: b.icon?.startsWith('lucide:') ? b.icon : 'lucide:bookmark',
-    source: 'bookmark',
-    payload: b,
-  }))
-  const catItems: PaletteItem[] = categories.value.map((c) => ({
-    id: `cat-${c.id}`,
-    title: c.name,
-    subtitle: t('misc.tab.common.category'),
-    icon: c.icon || 'lucide:folder',
-    source: 'category',
-    payload: c,
-  }))
-  const actItems: PaletteItem[] = props.actions.map((a) => ({
-    id: `act-${a.id}`,
-    title: a.title,
-    subtitle: a.subtitle,
-    icon: a.icon,
-    shortcut: a.shortcut,
-    source: 'action',
-    payload: a,
-  }))
-  return [...actItems, ...bmItems, ...catItems]
-})
-
-const fuse = computed(
-  () =>
-    new Fuse(allItems.value, {
-      keys: ['title', 'subtitle'],
-      threshold: 0.4,
-      ignoreLocation: true,
-    }),
-)
-
-const filteredItems = computed<PaletteItem[]>(() => {
-  const q = query.value.trim()
-  if (!q) return allItems.value.slice(0, 30)
-  return fuse.value
-    .search(q)
-    .slice(0, 30)
-    .map((r) => r.item)
-})
-
-/** 分段组织结果 */
-const sectionList = computed<PaletteSection[]>(() => {
-  const actions: PaletteItem[] = []
-  const bmList: PaletteItem[] = []
-  const catList: PaletteItem[] = []
-  for (const it of filteredItems.value) {
-    if (it.source === 'action') actions.push(it)
-    else if (it.source === 'bookmark') bmList.push(it)
-    else catList.push(it)
-  }
-  const sections: PaletteSection[] = []
-  if (actions.length > 0) sections.push({ id: 'actions', label: t('misc.tab.palette.sectionActions'), items: actions })
-  if (bmList.length > 0) sections.push({ id: 'bookmarks', label: t('misc.tab.common.bookmark'), items: bmList })
-  if (catList.length > 0) sections.push({ id: 'categories', label: t('misc.tab.common.category'), items: catList })
-  return sections
-})
-
+const allItems = computed(() => buildPaletteItems(bookmarks.value, categories.value, props.actions, t))
+const fuse = computed(() => createPaletteFuse(allItems.value))
+const filteredItems = computed(() => filterPaletteItems(allItems.value, fuse.value, query.value))
+const sectionList = computed(() => groupPaletteSections(filteredItems.value, t))
 const flattenedItems = computed<PaletteItem[]>(() => sectionList.value.flatMap((s) => s.items))
-const selectionStatus = computed(() => {
-  const items = flattenedItems.value
-  const index = items.findIndex((item) => item.id === focusedId.value)
-  const item = items[index]
-  return item
-    ? t('misc.tab.palette.selectionStatus', { index: index + 1, total: items.length, title: item.title })
-    : t('misc.tab.palette.empty')
-})
+const selectionStatus = computed(() => paletteSelectionStatus(flattenedItems.value, focusedId.value, t))
 
 // 打开时清空查询。输入框在面板渲染后才挂上 ref，等引用出现再聚焦。
 watch(
@@ -243,25 +148,21 @@ function onKeydown(e: KeyboardEvent) {
     return
   }
   const currentId = focusedButton?.dataset.id ?? focusedId.value
-  const idx = items.findIndex((i) => i.id === currentId)
-  if (e.key === 'ArrowDown') {
-    e.preventDefault()
-    const next = items[(idx + 1) % items.length]
-    if (next) focusedId.value = next.id
-    scrollToFocused(!!focusedButton)
-  } else if (e.key === 'ArrowUp') {
-    e.preventDefault()
-    const prev = items[idx < 0 ? items.length - 1 : (idx - 1 + items.length) % items.length]
-    if (prev) focusedId.value = prev.id
-    scrollToFocused(!!focusedButton)
-  } else if (e.key === 'Enter') {
-    e.preventDefault()
-    const current = items[idx]
-    if (current) runItem(current)
-  } else if (e.key === 'Escape') {
-    e.preventDefault()
-    close()
+  const action = paletteKeyAction(
+    e.key,
+    items.findIndex((i) => i.id === currentId),
+    items.length,
+  )
+  if (!action) return
+  e.preventDefault()
+  if (action.kind === 'close') return close()
+  const item = items[action.index]
+  if (action.kind === 'run') {
+    if (item) runItem(item)
+    return
   }
+  if (item) focusedId.value = item.id
+  scrollToFocused(!!focusedButton)
 }
 
 function scrollToFocused(moveFocus: boolean) {
@@ -290,204 +191,7 @@ async function runItem(item: PaletteItem) {
 </script>
 
 <style lang="scss" scoped>
-.tab-palette__close {
-  width: 44px;
-  height: 44px;
-  flex-shrink: 0;
-  color: var(--text-main);
-}
-.tab-palette {
-  position: fixed;
-  inset: 0;
-  z-index: 300;
-  display: flex;
-  align-items: flex-start;
-  justify-content: center;
-  padding-top: 12vh;
-  background: rgba(0, 0, 0, 0.4);
-  backdrop-filter: blur(2px);
-}
+@use '~/assets/styles/tab-palette' as palette;
 
-.tab-palette-enter-active,
-.tab-palette-leave-active {
-  transition: opacity 0.18s ease;
-  @media (prefers-reduced-motion: reduce) {
-    transition: none;
-  }
-
-  .tab-palette__panel {
-    transition:
-      transform 0.18s ease,
-      opacity 0.18s ease;
-    @media (prefers-reduced-motion: reduce) {
-      transition: none;
-    }
-  }
-}
-
-.tab-palette-enter-from,
-.tab-palette-leave-to {
-  opacity: 0;
-
-  .tab-palette__panel {
-    transform: translateY(-8px);
-    opacity: 0;
-  }
-}
-
-.tab-palette__panel {
-  width: min(640px, 92vw);
-  max-height: 70vh;
-  display: flex;
-  flex-direction: column;
-  background: var(--surface-1);
-  border: 1px solid var(--border-soft);
-  border-radius: $radius-card;
-  box-shadow: 0 24px 48px rgba(0, 0, 0, 0.24);
-  overflow: hidden;
-}
-
-.tab-palette__search {
-  display: flex;
-  align-items: center;
-  gap: 0.625rem;
-  padding: 0.875rem 1rem;
-  border-bottom: 1px solid var(--border-soft);
-}
-
-.tab-palette__icon {
-  color: var(--text-soft);
-}
-
-.tab-palette__input {
-  flex: 1;
-  border: none;
-  outline: none;
-  background: transparent;
-  font-size: 0.9375rem;
-  color: var(--text-main);
-
-  &::placeholder {
-    color: var(--text-faint);
-  }
-}
-
-.tab-palette__kbd,
-.tab-palette__footer kbd {
-  padding: 0.0625rem 0.375rem;
-  border: 1px solid var(--border);
-  border-radius: $radius-sm;
-  background: var(--surface-2);
-  color: var(--text-soft);
-  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-  font-size: 0.625rem;
-  font-weight: 500;
-}
-
-.tab-palette__list {
-  flex: 1;
-  overflow-y: auto;
-  padding: 0.25rem 0;
-}
-
-.tab-palette__empty {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 0.375rem;
-  padding: 2rem;
-  color: var(--text-faint);
-  font-size: 0.8125rem;
-}
-
-.tab-palette__section {
-  padding: 0.5rem 1rem 0.25rem;
-  font-size: 0.625rem;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: var(--text-faint);
-}
-
-.tab-palette__item {
-  display: flex;
-  align-items: center;
-  gap: 0.625rem;
-  width: 100%;
-  padding: 0.5rem 1rem;
-  border: none;
-  background: transparent;
-  color: var(--text-main);
-  text-align: left;
-  cursor: var(--interaction-cursor, pointer);
-  transition: background 0.15s;
-  @media (prefers-reduced-motion: reduce) {
-    transition: none;
-  }
-
-  &--focus {
-    background: var(--accent-soft);
-    color: var(--accent-text);
-
-    .tab-palette__item-sub {
-      color: var(--accent-text);
-      opacity: 0.75;
-    }
-  }
-}
-
-.tab-palette__item-icon {
-  flex-shrink: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 24px;
-  height: 24px;
-  border-radius: $radius-sm;
-  background: var(--surface-2);
-  color: var(--text-soft);
-  font-size: 0.875rem;
-}
-
-.tab-palette__item--focus .tab-palette__item-icon {
-  background: var(--accent-action);
-  color: #fff;
-}
-
-.tab-palette__item-text {
-  flex: 1;
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-}
-
-.tab-palette__item-title {
-  font-size: 0.8125rem;
-  font-weight: 500;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.tab-palette__item-sub {
-  font-size: 0.6875rem;
-  color: var(--text-faint);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.tab-palette__footer {
-  display: flex;
-  gap: 0.75rem;
-  padding: 0.5rem 1rem;
-  border-top: 1px solid var(--border-soft);
-  background: var(--surface-2);
-  font-size: 0.625rem;
-  color: var(--text-soft);
-
-  kbd {
-    margin-right: 0.25rem;
-  }
-}
+@include palette.palette;
 </style>
