@@ -1,0 +1,24 @@
+diff --git a/dist/runtime/utils/renderer/app.mjs b/dist/runtime/utils/renderer/app.mjs
+index 71e408ba149231b8c16c3d24ed598680c910f426..0bf09d408d5080567fa807dd5ea176ee12c328e3 100644
+--- a/dist/runtime/utils/renderer/app.mjs
++++ b/dist/runtime/utils/renderer/app.mjs
+@@ -1,5 +1,5 @@
+ import { sharedPrerenderCache } from "../cache.mjs";
+-import { encodePath } from "ufo";
++import { decodePath, encodePath } from "ufo";
+ import { useRuntimeConfig } from "nitropack/runtime";
+ import { NUXT_NO_SSR, NUXT_SHARED_DATA } from "#internal/nuxt/nitro-config.mjs";
+ import { createHead } from "@unhead/vue/server";
+@@ -12,8 +12,10 @@ const PRERENDER_NO_SSR_ROUTES = /* @__PURE__ */ new Set([
+ ]);
+ function encodeEventPath(path) {
+ 	const queryIndex = path.indexOf("?");
+-	if (queryIndex === -1) return encodePath(path);
+-	return encodePath(path.slice(0, queryIndex)) + path.slice(queryIndex);
++	// h3 1.x 的 event.path 已是百分号编码，先解码再编码，避免 vue-router 拿到二次编码的参数
++	const pathname = queryIndex === -1 ? path : path.slice(0, queryIndex);
++	const encoded = encodePath(decodePath(pathname));
++	return queryIndex === -1 ? encoded : encoded + path.slice(queryIndex);
+ }
+ function createSSRContext(event) {
+ 	const url = encodeEventPath(event.path);

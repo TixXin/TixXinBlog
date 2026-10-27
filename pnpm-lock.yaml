@@ -32,6 +32,9 @@ patchedDependencies:
   '@nuxt/devtools@3.4.2':
     hash: gcilernnu6kloikcriamwix3za
     path: patches/@nuxt__devtools@3.4.2.patch
+  '@nuxt/nitro-server@4.5.2':
+    hash: zhzarzpffmi4t327vs57dgb6li
+    path: patches/@nuxt__nitro-server@4.5.2.patch
   '@vue/runtime-core@3.5.42':
     hash: ddgyyazj6i53zw2foerc7fih34
     path: patches/@vue__runtime-core@3.5.42.patch
@@ -10460,7 +10463,7 @@ snapshots:
       - magic-string
       - unplugin
 
-  '@nuxt/nitro-server@4.5.2(55b2d6mse3zcnthia33bavm5a4)':
+  '@nuxt/nitro-server@4.5.2(patch_hash=zhzarzpffmi4t327vs57dgb6li)(55b2d6mse3zcnthia33bavm5a4)':
     dependencies:
       '@nuxt/devalue': 2.0.2
       '@nuxt/kit': 4.5.2(magic-string@1.2.3)(magicast@0.5.4)(oxc-parser@0.141.0)(rolldown@1.2.7)(unplugin@3.3.0(esbuild@0.28.2)(rolldown@1.2.7)(rollup@4.63.1)(vite@8.2.4(@types/node@25.9.8)(esbuild@0.28.2)(jiti@2.7.0)(sass@1.104.0)(terser@5.51.2)(tsx@4.23.13)(yaml@2.9.0))(webpack@5.106.2(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.28)))
@@ -15193,7 +15196,7 @@ snapshots:
       '@nuxt/cli': 3.37.0(@nuxt/schema@4.5.2)(@parcel/watcher@2.6.0)(cac@7.0.0)(commander@14.0.3)(magicast@0.5.4)
       '@nuxt/devtools': 3.4.2(patch_hash=gcilernnu6kloikcriamwix3za)(@nuxt/schema@4.5.2)(confbox@0.2.4)(db0@0.3.4)(dotenv@17.4.2)(giget@3.3.1)(ioredis@5.11.1)(jiti@2.7.0)(magic-string@1.2.3)(mlly@1.8.2)(oxc-parser@0.141.0)(rolldown@1.2.7)(unplugin@3.3.0(esbuild@0.28.2)(rolldown@1.2.7)(rollup@4.63.1)(vite@8.2.4(@types/node@25.9.8)(esbuild@0.28.2)(jiti@2.7.0)(sass@1.104.0)(terser@5.51.2)(tsx@4.23.13)(yaml@2.9.0))(webpack@5.106.2(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.28)))(vite@8.2.4(@types/node@25.9.8)(esbuild@0.28.2)(jiti@2.7.0)(sass@1.104.0)(terser@5.51.2)(tsx@4.23.13)(yaml@2.9.0))(vue@3.5.42(typescript@6.0.3))
       '@nuxt/kit': 4.5.2(magic-string@1.2.3)(magicast@0.5.4)(oxc-parser@0.141.0)(rolldown@1.2.7)(unplugin@3.3.0(esbuild@0.28.2)(rolldown@1.2.7)(rollup@4.63.1)(vite@8.2.4(@types/node@25.9.8)(esbuild@0.28.2)(jiti@2.7.0)(sass@1.104.0)(terser@5.51.2)(tsx@4.23.13)(yaml@2.9.0))(webpack@5.106.2(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.28)))
-      '@nuxt/nitro-server': 4.5.2(55b2d6mse3zcnthia33bavm5a4)
+      '@nuxt/nitro-server': 4.5.2(patch_hash=zhzarzpffmi4t327vs57dgb6li)(55b2d6mse3zcnthia33bavm5a4)
       '@nuxt/schema': 4.5.2
       '@nuxt/telemetry': 2.9.1(@nuxt/kit@4.5.2(magic-string@1.2.3)(magicast@0.5.4)(oxc-parser@0.141.0)(rolldown@1.2.7)(unplugin@3.3.0(esbuild@0.28.2)(rolldown@1.2.7)(rollup@4.63.1)(vite@8.2.4(@types/node@25.9.8)(esbuild@0.28.2)(jiti@2.7.0)(sass@1.104.0)(terser@5.51.2)(tsx@4.23.13)(yaml@2.9.0))(webpack@5.106.2(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.28))))
       '@nuxt/vite-builder': 4.5.2(awi5a6tnzjftzgkbysr5hdvbpi)

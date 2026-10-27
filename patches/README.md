@@ -46,3 +46,9 @@ Vue 补丁同样使用 `corepack pnpm patch @vue/runtime-core@3.5.42 --edit-dir 
 `@nuxt__devtools@3.4.2.patch` 只改 `dist/chunks/module-main.mjs` 的一行导入：`import Git from 'simple-git'` 改为 `import { simpleGit as Git } from 'simple-git'`。根清单为修复安全公告把 `simple-git` 覆盖到 4.x，4.x 只提供具名导出 `simpleGit`，原默认导入在加载 DevTools 模块时直接抛出 `SyntaxError`。
 
 日常开发与 CI 主机因 `nuxt.config.ts` 默认关闭 DevTools 不受影响，但前端 Docker 安装层只复制清单、在没有项目配置时执行 `nuxt prepare`，会按默认值加载 DevTools 并使镜像构建失败；本地设置 `NUXT_DEVTOOLS_ENABLED=true` 时同样会失败。补丁不改变 DevTools 行为，升级 DevTools 到原生兼容 simple-git 4 的版本后应删除。
+
+## Nuxt SSR 地址的二次编码
+
+`@nuxt__nitro-server@4.5.2.patch` 只改 `dist/runtime/utils/renderer/app.mjs` 的 `encodeEventPath`。原实现对 `event.path` 直接调用 ufo 的 `encodePath`，而 h3 1.x 的 `event.path` 已是百分号编码，`%E7` 会被再编码成 `%25E7`。服务端 vue-router 只解码一次，`route.params` 因此仍是 `%E7%94%9F…`：中文标签与专栏直接打开返回 404，朋友圈话题标题显示编码串，站内跳转不受影响。上游讨论见 [nuxt/nuxt#26071](https://github.com/nuxt/nuxt/issues/26071)。
+
+补丁先用 ufo 的 `decodePath` 解码路径部分再编码，查询串保持原样；`decodePath` 不还原编码斜杠，字面量 `%25` 仍编码为 `%25`。`scripts/nuxt/ssr-event-path.test.mjs` 执行实际安装的函数覆盖这些情况。维护命令为 `corepack pnpm patch @nuxt/nitro-server@4.5.2 --edit-dir .artifacts/nitro-server-patch` 与 `patch-commit`；升级 Nuxt 时若上游已不再二次编码，应删除此补丁。
