@@ -1,0 +1,192 @@
+/**
+ * @file _post-editor.scss
+ * @description 文章编辑器及其封面、搜索设置、阅读统计与发布检查区块共享的外观声明。各组件在 scoped 样式中整体 @include，
+ *              选择器与声明顺序保持拆分前的编辑器样式，不由父组件 :deep 下发
+ * @author TixXin
+ * @since 2026-10-27
+ */
+
+@mixin editor {
+  .post-editor {
+    display: grid;
+    gap: 1rem;
+  }
+  .post-editor__cover-preview img {
+    max-width: 100%;
+    max-height: 240px;
+    object-fit: contain;
+    border-radius: 0.75rem;
+  }
+  .post-editor__seo {
+    display: grid;
+    gap: 0.8rem;
+    padding: 1rem;
+    border: 1px solid var(--border);
+    border-radius: 0.75rem;
+  }
+  .post-editor__search-preview {
+    padding: 1rem;
+    border: 1px solid var(--border);
+    border-radius: 0.5rem;
+    overflow-wrap: anywhere;
+  }
+  .post-editor__search-preview strong {
+    color: var(--accent);
+  }
+  .post-editor__search-preview p {
+    margin: 0.4rem 0;
+    color: var(--text-muted);
+  }
+  .post-editor__publish {
+    /* 全局重置清掉了原生 dialog 的 margin:auto，需补回才能在视口居中 */
+    margin: auto;
+    max-width: min(640px, calc(100vw - 2rem));
+    max-height: 85dvh;
+    overflow: auto;
+    border: 1px solid var(--border);
+    border-radius: 1rem;
+    padding: 1.5rem;
+    color: var(--text-main);
+    background: var(--surface-1);
+  }
+  .post-editor__publish::backdrop {
+    background: rgba(0, 0, 0, 0.6);
+  }
+  .post-editor__publish h2 {
+    font-size: 1.3rem;
+    font-weight: 700;
+  }
+  .post-editor__publish p {
+    margin: 0.75rem 0;
+  }
+  .post-editor__publish dd {
+    margin: 0.25rem 0 1rem;
+    overflow-wrap: anywhere;
+    color: var(--text-muted);
+  }
+  .post-editor__publish button {
+    padding: 0.7rem;
+    margin: 0.5rem 0.5rem 0 0;
+    border: 1px solid var(--border);
+    border-radius: 0.5rem;
+    color: var(--text-main);
+    background: var(--surface-2);
+  }
+  .post-editor__alt-warnings {
+    padding: 1rem;
+    border: 1px solid var(--border);
+    border-radius: 0.5rem;
+    background: var(--surface-2);
+  }
+  .post-editor__alt-warnings h3 {
+    font-weight: 700;
+  }
+  .post-editor__alt-warnings ul {
+    padding-inline-start: 1.25rem;
+    list-style: disc;
+  }
+  .post-editor__alt-warnings li + li {
+    margin-top: 0.5rem;
+  }
+  .post-editor__tag-options {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.4rem;
+  }
+  .post-editor__tag-options button {
+    border: 1px solid var(--border);
+    border-radius: 0.5rem;
+    padding: 0.35rem 0.6rem;
+    color: var(--text-main);
+    background: var(--surface-2);
+  }
+  .post-editor__tag-options button:disabled {
+    opacity: 0.45;
+  }
+  .post-editor label {
+    display: grid;
+    gap: 0.4rem;
+    color: var(--text-muted);
+  }
+  .post-editor input,
+  .post-editor textarea,
+  .post-editor select {
+    min-width: 0;
+    width: 100%;
+    border: 1px solid var(--border);
+    border-radius: 0.5rem;
+    padding: 0.6rem;
+    background: var(--surface-2);
+    color: var(--text-main);
+  }
+  .post-editor__actions {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+  }
+  .post-editor__actions a {
+    color: var(--accent);
+  }
+  .post-editor button {
+    border: 1px solid var(--border);
+    border-radius: 0.5rem;
+    padding: 0.55rem 0.85rem;
+    background: var(--accent);
+    color: white;
+    cursor: var(--interaction-cursor, pointer);
+  }
+  .post-editor button:disabled {
+    opacity: 0.5;
+  }
+  .post-editor__hint {
+    margin: 0;
+    color: var(--text-muted);
+    font-size: 0.875rem;
+  }
+  .post-editor__reading {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem 1rem;
+  }
+  .post-editor__reading p {
+    margin: 0;
+  }
+  .post-editor__reading .post-editor__hint {
+    flex-basis: 100%;
+  }
+  .post-editor__fields {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 1rem;
+  }
+  .post-editor__body {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    // 长文预览不能把正文输入框拉伸为整篇文章高度，否则章节选区没有独立滚动空间。
+    align-items: start;
+    gap: 1.5rem;
+  }
+  .post-editor__body > * {
+    min-width: 0;
+  }
+  .post-editor__preview {
+    border: 1px solid var(--border);
+    border-radius: 0.75rem;
+    padding: 1rem;
+  }
+  .post-editor .post-editor__check {
+    display: flex;
+    align-items: center;
+  }
+  .post-editor__check input {
+    width: auto;
+  }
+  @media (max-width: 800px) {
+    .post-editor__body {
+      grid-template-columns: 1fr;
+    }
+  }
+}

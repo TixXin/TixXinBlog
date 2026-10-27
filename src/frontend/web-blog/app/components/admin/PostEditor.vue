@@ -100,35 +100,14 @@
           :disabled="pending"
       /></label>
     </div>
-    <div class="post-editor__reading">
-      <p :id="readingStatsId" data-post-reading-stats>
-        {{
-          $t('admin-content.postEditor.readingStats', {
-            total: formatNumber(readingStats.wordCount),
-            chinese: formatNumber(readingStats.chineseCharacters),
-            words: formatNumber(readingStats.words),
-            minutes: readingStats.minutes,
-          })
-        }}
-      </p>
-      <CommonTooltip :content="$t('admin-content.postEditor.readingTooltip')">
-        <button
-          type="button"
-          data-post-apply-reading-time
-          :aria-describedby="`${readingStatsId} ${readingHintId}`"
-          :disabled="pending || !readingStats.wordCount"
-          @click="applyReadingTime"
-        >
-          {{ $t('admin-content.postEditor.applyReadingTime') }}
-        </button>
-      </CommonTooltip>
-      <p :id="readingHintId" class="post-editor__hint">
-        {{ $t('admin-content.postEditor.readingHint') }}
-      </p>
-      <p class="post-editor__hint" role="status" :aria-label="$t('admin-content.postEditor.readingStatusLabel')">
-        {{ readingTimeStatus }}
-      </p>
-    </div>
+    <AdminPostEditorReading
+      :reading-stats="readingStats"
+      :reading-stats-id="readingStatsId"
+      :reading-hint-id="readingHintId"
+      :status="readingTimeStatus"
+      :pending="pending"
+      @apply="applyReadingTime"
+    />
     <div
       v-if="options.tags.length"
       class="post-editor__tag-options"
@@ -145,86 +124,18 @@
         {{ tag }}
       </button>
     </div>
-    <label
-      >{{ $t('admin-content.postEditor.cover')
-      }}<input
-        v-model="draft.cover"
-        maxlength="2048"
-        :disabled="pending"
-        :placeholder="$t('admin-content.postEditor.coverPlaceholder')"
-    /></label>
-    <label
-      >{{ $t('admin-content.postEditor.coverAlt')
-      }}<input
-        v-model="draft.coverAlt"
-        maxlength="300"
-        :disabled="pending"
-        :placeholder="$t('admin-content.postEditor.coverAltPlaceholder')"
-    /></label>
-    <button type="button" :disabled="pending" @click="openMedia('cover')">
-      {{ $t('admin-content.postEditor.pickCover') }}
-    </button>
-    <div v-if="draft.cover" class="post-editor__cover-preview">
-      <img
-        v-if="!coverFailed"
-        :src="draft.cover"
-        :alt="draft.coverAlt || $t('admin-content.postEditor.coverPreviewAlt')"
-        @error="coverFailed = true"
-      />
-      <p v-else role="status">
-        {{ $t('admin-content.postEditor.coverFailed')
-        }}<button type="button" @click="coverFailed = false">{{ $t('admin-content.postEditor.retryCover') }}</button>
-      </p>
-    </div>
-    <section class="post-editor__seo" :aria-label="$t('admin-content.postEditor.seoSection')">
-      <h2>{{ $t('admin-content.postEditor.seoSection') }}</h2>
-      <label
-        >{{ $t('admin-content.postEditor.slug')
-        }}<input
-          v-model="draft.slug"
-          maxlength="120"
-          pattern="[a-z][a-z0-9]*(-[a-z0-9]+)*"
-          :disabled="pending"
-          :placeholder="$t('admin-content.postEditor.slugPlaceholder')"
-          @blur="normalizeSlug"
-      /></label>
-      <p>{{ $t('admin-content.postEditor.slugHint') }}</p>
-      <label
-        >{{ $t('admin-content.postEditor.seoTitle')
-        }}<input
-          v-model="draft.seoTitle"
-          maxlength="160"
-          :disabled="pending"
-          :placeholder="$t('admin-content.postEditor.seoTitlePlaceholder')"
-      /></label>
-      <label
-        >{{ $t('admin-content.postEditor.seoDescription')
-        }}<textarea
-          v-model="draft.seoDescription"
-          maxlength="320"
-          rows="3"
-          :disabled="pending"
-          :placeholder="$t('admin-content.postEditor.seoDescriptionPlaceholder')"
-        />
-      </label>
-      <label class="post-editor__check"
-        ><input v-model="draft.seoNoindex" type="checkbox" :disabled="pending" />{{
-          $t('admin-content.postEditor.noindex')
-        }}</label
-      >
-      <div class="post-editor__search-preview" :aria-label="$t('admin-content.postEditor.searchPreview')">
-        <strong>{{ draft.seoTitle || draft.title || $t('admin-content.postEditor.titlePlaceholder') }}</strong>
-        <p>{{ addressPreview }}</p>
-        <p>
-          {{
-            draft.seoDescription ||
-            draft.summary ||
-            suggestedSummary(draft.contentRaw) ||
-            $t('admin-content.postEditor.descriptionPlaceholder')
-          }}
-        </p>
-      </div>
-    </section>
+    <AdminPostEditorCover
+      v-model="draft"
+      v-model:cover-failed="coverFailed"
+      :pending="pending"
+      @pick="openMedia('cover')"
+    />
+    <AdminPostEditorSeo
+      v-model="draft"
+      :pending="pending"
+      :address-preview="addressPreview"
+      @normalize-slug="normalizeSlug"
+    />
     <label class="post-editor__check"
       ><input v-model="draft.pinned" type="checkbox" :disabled="pending" />{{
         $t('admin-content.postEditor.pinned')
@@ -263,66 +174,21 @@
       </section>
     </div>
   </form>
-  <dialog
+  <AdminPostPublishDialog
     ref="publishDialog"
-    class="post-editor__publish"
-    aria-labelledby="publish-check-title"
-    :aria-describedby="hasMissingAlt ? 'publish-alt-description' : undefined"
+    :draft="draft"
+    :pending="pending"
+    :address-preview="addressPreview"
+    :selected-tags="selectedTags"
+    :cover-failed="coverFailed"
     @close="$emit('reviewing', false)"
-  >
-    <!-- 打开时焦点落在标题：内容超出高度时默认聚焦底部按钮会把标题和摘要滚出视口 -->
-    <h2 id="publish-check-title" tabindex="-1" autofocus>{{ $t('admin-content.postEditor.publishCheck') }}</h2>
-    <p>
-      {{
-        draft.status === 'published'
-          ? $t('admin-content.postEditor.publishUpdate')
-          : $t('admin-content.postEditor.publishNew')
-      }}
-    </p>
-    <dl>
-      <dt>{{ $t('admin-content.postEditor.checkTitle') }}</dt>
-      <dd>{{ draft.title }}</dd>
-      <dt>{{ $t('admin-content.postEditor.checkAddress') }}</dt>
-      <dd>{{ addressPreview }}</dd>
-      <dt>{{ $t('admin-content.postEditor.checkTaxonomy') }}</dt>
-      <dd>
-        {{ draft.folder }} ·
-        {{ selectedTags.join($t('admin-content.postEditor.tagSeparator')) || $t('admin-content.postEditor.noTags') }}
-      </dd>
-      <dt>{{ $t('admin-content.postEditor.checkIndexing') }}</dt>
-      <dd>
-        {{ draft.seoNoindex ? $t('admin-content.postEditor.indexingOff') : $t('admin-content.postEditor.indexingOn') }}
-      </dd>
-      <dt>{{ $t('admin-content.postEditor.checkRelations') }}</dt>
-      <dd>{{ contentRelationSummary(draft.relatedContent, $t) }}</dd>
-      <dt>{{ $t('admin-content.postEditor.checkSummary') }}</dt>
-      <dd>{{ draft.seoDescription || draft.summary || suggestedSummary(draft.contentRaw) }}</dd>
-    </dl>
-    <p v-if="!draft.cover">{{ $t('admin-content.postEditor.noCover') }}</p>
-    <p v-if="coverFailed">{{ $t('admin-content.postEditor.coverCheckFailed') }}</p>
-    <section v-if="hasMissingAlt" class="post-editor__alt-warnings" aria-labelledby="publish-alt-title">
-      <h3 id="publish-alt-title">{{ $t('admin-content.postEditor.altWarning') }}</h3>
-      <p id="publish-alt-description">{{ $t('admin-content.postEditor.altDescription') }}</p>
-      <ul>
-        <li v-if="missingCoverAlt">{{ $t('admin-content.postEditor.altCover') }}</li>
-        <li v-for="image in missingImageAlts" :key="image.imageNumber">
-          {{ $t('admin-content.postEditor.altImage', { image: image.imageNumber, line: image.line }) }}
-        </li>
-      </ul>
-    </section>
-    <p>{{ $t('admin-content.postEditor.slugCheckHint') }}</p>
-    <button type="button" :disabled="pending" @click="publishDialog?.close()">
-      {{ $t('admin-content.postEditor.backToEdit') }}</button
-    ><button type="button" :disabled="pending" @click="confirmPublish">
-      {{ hasMissingAlt ? $t('admin-content.postEditor.publishAnyway') : $t('admin-content.postEditor.confirmPublish') }}
-    </button>
-  </dialog>
+    @confirm="$emit('save', 'published')"
+  />
   <AdminMediaPicker v-model:open="mediaOpen" @selected="selectMedia" />
 </template>
 <script setup lang="ts">
 import type { AdminPostDraft } from '~/features/post/adminTypes'
-import { contentRelationSummary } from '~/features/content-relation/editor'
-import { missingImageAltPositions, postReadingStats, suggestedSummary } from '~/utils/postPublishing'
+import { postReadingStats, suggestedSummary } from '~/utils/postPublishing'
 import { parsePostMarkdown } from '~/utils/postMarkdown'
 import type { MediaAsset } from '~/features/media/types'
 import PostOutline from './PostOutline.vue'
@@ -405,10 +271,7 @@ function selectMedia(asset: MediaAsset) {
   const alt = (asset.alt || asset.name).replace(/[[\]\\]/g, '\\$&').replace(/\r?\n/g, ' ')
   draft.value.contentRaw = `${text.slice(0, start)}\n![${alt}](${asset.url})\n${text.slice(end)}`
 }
-const publishDialog = ref<HTMLDialogElement | null>(null)
-const missingImageAlts = computed(() => missingImageAltPositions(draft.value.contentRaw))
-const missingCoverAlt = computed(() => Boolean(draft.value.cover.trim() && !draft.value.coverAlt?.trim()))
-const hasMissingAlt = computed(() => missingCoverAlt.value || missingImageAlts.value.length > 0)
+const publishDialog = ref<{ showModal: () => void } | null>(null)
 const coverFailed = ref(false)
 watch(
   () => draft.value.cover,
@@ -443,193 +306,9 @@ function requestSave(status: AdminPostDraft['status']) {
     publishDialog.value?.showModal()
   } else emit('save', status)
 }
-function confirmPublish() {
-  if (props.pending || !publishDialog.value?.open) return
-  publishDialog.value.close()
-  emit('save', 'published')
-}
 </script>
 <style scoped lang="scss">
-.post-editor {
-  display: grid;
-  gap: 1rem;
-}
-.post-editor__cover-preview img {
-  max-width: 100%;
-  max-height: 240px;
-  object-fit: contain;
-  border-radius: 0.75rem;
-}
-.post-editor__seo {
-  display: grid;
-  gap: 0.8rem;
-  padding: 1rem;
-  border: 1px solid var(--border);
-  border-radius: 0.75rem;
-}
-.post-editor__search-preview {
-  padding: 1rem;
-  border: 1px solid var(--border);
-  border-radius: 0.5rem;
-  overflow-wrap: anywhere;
-}
-.post-editor__search-preview strong {
-  color: var(--accent);
-}
-.post-editor__search-preview p {
-  margin: 0.4rem 0;
-  color: var(--text-muted);
-}
-.post-editor__publish {
-  /* 全局重置清掉了原生 dialog 的 margin:auto，需补回才能在视口居中 */
-  margin: auto;
-  max-width: min(640px, calc(100vw - 2rem));
-  max-height: 85dvh;
-  overflow: auto;
-  border: 1px solid var(--border);
-  border-radius: 1rem;
-  padding: 1.5rem;
-  color: var(--text-main);
-  background: var(--surface-1);
-}
-.post-editor__publish::backdrop {
-  background: rgba(0, 0, 0, 0.6);
-}
-.post-editor__publish h2 {
-  font-size: 1.3rem;
-  font-weight: 700;
-}
-.post-editor__publish p {
-  margin: 0.75rem 0;
-}
-.post-editor__publish dd {
-  margin: 0.25rem 0 1rem;
-  overflow-wrap: anywhere;
-  color: var(--text-muted);
-}
-.post-editor__publish button {
-  padding: 0.7rem;
-  margin: 0.5rem 0.5rem 0 0;
-  border: 1px solid var(--border);
-  border-radius: 0.5rem;
-  color: var(--text-main);
-  background: var(--surface-2);
-}
-.post-editor__alt-warnings {
-  padding: 1rem;
-  border: 1px solid var(--border);
-  border-radius: 0.5rem;
-  background: var(--surface-2);
-}
-.post-editor__alt-warnings h3 {
-  font-weight: 700;
-}
-.post-editor__alt-warnings ul {
-  padding-inline-start: 1.25rem;
-  list-style: disc;
-}
-.post-editor__alt-warnings li + li {
-  margin-top: 0.5rem;
-}
-.post-editor__tag-options {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 0.4rem;
-}
-.post-editor__tag-options button {
-  border: 1px solid var(--border);
-  border-radius: 0.5rem;
-  padding: 0.35rem 0.6rem;
-  color: var(--text-main);
-  background: var(--surface-2);
-}
-.post-editor__tag-options button:disabled {
-  opacity: 0.45;
-}
-.post-editor label {
-  display: grid;
-  gap: 0.4rem;
-  color: var(--text-muted);
-}
-.post-editor input,
-.post-editor textarea,
-.post-editor select {
-  min-width: 0;
-  width: 100%;
-  border: 1px solid var(--border);
-  border-radius: 0.5rem;
-  padding: 0.6rem;
-  background: var(--surface-2);
-  color: var(--text-main);
-}
-.post-editor__actions {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  flex-wrap: wrap;
-}
-.post-editor__actions a {
-  color: var(--accent);
-}
-.post-editor button {
-  border: 1px solid var(--border);
-  border-radius: 0.5rem;
-  padding: 0.55rem 0.85rem;
-  background: var(--accent);
-  color: white;
-  cursor: var(--interaction-cursor, pointer);
-}
-.post-editor button:disabled {
-  opacity: 0.5;
-}
-.post-editor__hint {
-  margin: 0;
-  color: var(--text-muted);
-  font-size: 0.875rem;
-}
-.post-editor__reading {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 0.5rem 1rem;
-}
-.post-editor__reading p {
-  margin: 0;
-}
-.post-editor__reading .post-editor__hint {
-  flex-basis: 100%;
-}
-.post-editor__fields {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-  gap: 1rem;
-}
-.post-editor__body {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  // 长文预览不能把正文输入框拉伸为整篇文章高度，否则章节选区没有独立滚动空间。
-  align-items: start;
-  gap: 1.5rem;
-}
-.post-editor__body > * {
-  min-width: 0;
-}
-.post-editor__preview {
-  border: 1px solid var(--border);
-  border-radius: 0.75rem;
-  padding: 1rem;
-}
-.post-editor .post-editor__check {
-  display: flex;
-  align-items: center;
-}
-.post-editor__check input {
-  width: auto;
-}
-@media (max-width: 800px) {
-  .post-editor__body {
-    grid-template-columns: 1fr;
-  }
-}
+@use '~/assets/styles/post-editor' as post;
+
+@include post.editor;
 </style>

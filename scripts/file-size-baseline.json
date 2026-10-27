@@ -2,7 +2,6 @@
   "description": "存量超限文件的行数上限：只许调低，不许调高或新增条目。拆分后运行 node scripts/check-file-size.mjs --update 收紧；规则见 docs/code-organization.md",
   "files": {
     "src/frontend/web-blog/app/components/admin/MomentForm.vue": 415,
-    "src/frontend/web-blog/app/components/admin/PostEditor.vue": 635,
     "src/frontend/web-blog/app/components/admin/ProjectForm.vue": 492,
     "src/frontend/web-blog/app/components/admin/SiteNavigationFields.vue": 413,
     "src/frontend/web-blog/app/components/tab/TabCommandPalette.vue": 493,
@@ -10,7 +9,6 @@
     "src/frontend/web-blog/app/components/tab/TabImportDialog.vue": 455,
     "src/frontend/web-blog/app/components/tab/TabSearchBar.vue": 468,
     "src/frontend/web-blog/app/components/tab/TabSidebarFloating.vue": 565,
-    "src/frontend/web-blog/app/composables/usePostEditor.ts": 347,
     "src/frontend/web-blog/app/composables/useTabBookmarks.ts": 305,
     "src/frontend/web-blog/app/pages/admin/moments/index.vue": 374
   }

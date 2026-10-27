@@ -380,14 +380,6 @@
       "count": 1
     }
   },
-  "app/composables/usePostEditor.ts": {
-    "max-depth": {
-      "count": 2
-    },
-    "max-lines-per-function": {
-      "count": 1
-    }
-  },
   "app/composables/usePostList.ts": {
     "complexity": {
       "count": 1

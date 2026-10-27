@@ -1,0 +1,850 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`保存：提交体去掉服务器字段并拆分标签，成功后基线更新；新建文章保存后跳到编辑地址 1`] = `
+[
+  [
+    [
+      "/admin/posts/7",
+      {
+        "body": {
+          "category": "life",
+          "contentRaw": "# 出发
+
+正文",
+          "cover": "/cover.webp",
+          "coverAlt": "山路",
+          "folder": "生活",
+          "pinned": false,
+          "readTimeMinutes": 4,
+          "relatedContent": [
+            {
+              "id": 2,
+              "type": "gallery",
+            },
+          ],
+          "revision": 3,
+          "seoDescription": "",
+          "seoNoindex": false,
+          "seoTitle": "",
+          "slug": "travel",
+          "status": "published",
+          "summary": "山间",
+          "tags": [
+            "旅行",
+            "摄影",
+            "读书",
+          ],
+          "title": "旅行记录（修订）",
+        },
+        "method": "PATCH",
+      },
+    ],
+  ],
+  {
+    "autoSavePaused": false,
+    "automaticSaving": false,
+    "conflict": null,
+    "dirty": false,
+    "draft": {
+      "category": "life",
+      "contentRaw": "# 出发
+
+正文",
+      "cover": "/cover.webp",
+      "coverAlt": "山路",
+      "folder": "生活",
+      "id": 7,
+      "pinned": false,
+      "readTimeMinutes": 4,
+      "relatedContent": [
+        {
+          "id": 2,
+          "type": "gallery",
+        },
+      ],
+      "revision": 4,
+      "savedAt": "2026-10-20T08:00:00Z",
+      "seoDescription": "",
+      "seoNoindex": false,
+      "seoTitle": "",
+      "slug": "travel",
+      "status": "published",
+      "summary": "山间",
+      "tags": [
+        "旅行",
+        "摄影",
+        "读书",
+      ],
+      "title": "旅行记录（修订）",
+    },
+    "error": "",
+    "options": {
+      "folders": [
+        "生活",
+      ],
+      "tags": [
+        "旅行",
+      ],
+    },
+    "pending": false,
+    "preservedLocal": null,
+    "ready": true,
+    "tags": "旅行, 摄影, 读书",
+  },
+  [
+    [
+      "文章已发布",
+    ],
+    [
+      "草稿已保存",
+    ],
+  ],
+  [
+    [
+      "/admin/posts/filters",
+    ],
+    [
+      "/admin/posts",
+      {
+        "body": {
+          "category": "life",
+          "contentRaw": "正文",
+          "cover": "",
+          "folder": "随笔日记",
+          "pinned": false,
+          "readTimeMinutes": 5,
+          "relatedContent": [],
+          "status": "draft",
+          "summary": "",
+          "tags": [],
+          "title": "新文章",
+        },
+        "method": "POST",
+      },
+    ],
+  ],
+  [
+    [
+      "/admin/posts/9",
+      {
+        "replace": true,
+      },
+    ],
+  ],
+  {
+    "autoSavePaused": false,
+    "automaticSaving": false,
+    "conflict": null,
+    "dirty": false,
+    "draft": {
+      "category": "life",
+      "contentRaw": "正文",
+      "cover": "/cover.webp",
+      "coverAlt": "山路",
+      "folder": "生活",
+      "id": 9,
+      "pinned": false,
+      "readTimeMinutes": 4,
+      "relatedContent": [
+        {
+          "id": 2,
+          "type": "gallery",
+        },
+      ],
+      "revision": 3,
+      "savedAt": "2026-10-20T08:00:00Z",
+      "seoDescription": "",
+      "seoNoindex": false,
+      "seoTitle": "",
+      "slug": "travel",
+      "status": "draft",
+      "summary": "山间",
+      "tags": [
+        "旅行",
+        "摄影",
+      ],
+      "title": "新文章",
+    },
+    "error": "",
+    "options": {
+      "folders": [
+        "生活",
+      ],
+      "tags": [
+        "旅行",
+      ],
+    },
+    "pending": false,
+    "preservedLocal": null,
+    "ready": true,
+    "tags": "旅行, 摄影",
+  },
+]
+`;
+
+exports[`历史版本：载入为编辑内容；恢复需确认，成功更新基线，409 读取最新版本 1`] = `
+[
+  {
+    "autoSavePaused": true,
+    "automaticSaving": false,
+    "conflict": null,
+    "dirty": true,
+    "draft": {
+      "category": "life",
+      "contentRaw": "# 出发
+
+正文",
+      "cover": "/cover.webp",
+      "coverAlt": "山路",
+      "folder": "生活",
+      "id": 7,
+      "pinned": false,
+      "readTimeMinutes": 4,
+      "relatedContent": [],
+      "revision": 3,
+      "savedAt": "2026-10-20T08:00:00Z",
+      "seoDescription": "",
+      "seoNoindex": false,
+      "seoTitle": "",
+      "slug": "travel",
+      "status": "draft",
+      "summary": "山间",
+      "tags": [
+        "旧标签",
+      ],
+      "title": "历史标题",
+    },
+    "error": "历史修订已载入，尚未写入服务器；请合并检查后手动保存",
+    "options": {
+      "folders": [
+        "生活",
+      ],
+      "tags": [
+        "旅行",
+      ],
+    },
+    "pending": false,
+    "preservedLocal": null,
+    "ready": true,
+    "tags": "旧标签",
+  },
+  2,
+  [
+    "/admin/posts/7/revisions/2/restore",
+    {
+      "body": {
+        "revision": 3,
+      },
+      "method": "POST",
+    },
+  ],
+  {
+    "autoSavePaused": false,
+    "automaticSaving": false,
+    "conflict": null,
+    "dirty": false,
+    "draft": {
+      "category": "life",
+      "contentRaw": "# 出发
+
+正文",
+      "cover": "/cover.webp",
+      "coverAlt": "山路",
+      "folder": "生活",
+      "id": 7,
+      "pinned": false,
+      "readTimeMinutes": 4,
+      "relatedContent": [
+        {
+          "id": 2,
+          "type": "gallery",
+        },
+      ],
+      "revision": 6,
+      "savedAt": "2026-10-20T08:00:00Z",
+      "seoDescription": "",
+      "seoNoindex": false,
+      "seoTitle": "",
+      "slug": "travel",
+      "status": "draft",
+      "summary": "山间",
+      "tags": [
+        "旅行",
+        "摄影",
+      ],
+      "title": "恢复的标题",
+    },
+    "error": "",
+    "options": {
+      "folders": [
+        "生活",
+      ],
+      "tags": [
+        "旅行",
+      ],
+    },
+    "pending": false,
+    "preservedLocal": null,
+    "ready": true,
+    "tags": "旅行, 摄影",
+  },
+  {
+    "autoSavePaused": true,
+    "automaticSaving": false,
+    "conflict": 8,
+    "dirty": false,
+    "draft": {
+      "category": "life",
+      "contentRaw": "# 出发
+
+正文",
+      "cover": "/cover.webp",
+      "coverAlt": "山路",
+      "folder": "生活",
+      "id": 7,
+      "pinned": false,
+      "readTimeMinutes": 4,
+      "relatedContent": [
+        {
+          "id": 2,
+          "type": "gallery",
+        },
+      ],
+      "revision": 6,
+      "savedAt": "2026-10-20T08:00:00Z",
+      "seoDescription": "",
+      "seoNoindex": false,
+      "seoTitle": "",
+      "slug": "travel",
+      "status": "draft",
+      "summary": "山间",
+      "tags": [
+        "旅行",
+        "摄影",
+      ],
+      "title": "恢复的标题",
+    },
+    "error": "版本已变化",
+    "options": {
+      "folders": [
+        "生活",
+      ],
+      "tags": [
+        "旅行",
+      ],
+    },
+    "pending": false,
+    "preservedLocal": null,
+    "ready": true,
+    "tags": "旅行, 摄影",
+  },
+]
+`;
+
+exports[`版本冲突：读取最新版本；保留本地、采用服务器版本并找回、读取最新失败 1`] = `
+[
+  {
+    "autoSavePaused": true,
+    "automaticSaving": false,
+    "conflict": 5,
+    "dirty": true,
+    "draft": {
+      "category": "life",
+      "contentRaw": "# 出发
+
+正文",
+      "cover": "/cover.webp",
+      "coverAlt": "山路",
+      "folder": "生活",
+      "id": 7,
+      "pinned": false,
+      "readTimeMinutes": 4,
+      "relatedContent": [
+        {
+          "id": 2,
+          "type": "gallery",
+        },
+      ],
+      "revision": 3,
+      "savedAt": "2026-10-20T08:00:00Z",
+      "seoDescription": "",
+      "seoNoindex": false,
+      "seoTitle": "",
+      "slug": "travel",
+      "status": "draft",
+      "summary": "山间",
+      "tags": [
+        "旅行",
+        "摄影",
+      ],
+      "title": "本地修改",
+    },
+    "error": "版本已变化",
+    "options": {
+      "folders": [
+        "生活",
+      ],
+      "tags": [
+        "旅行",
+      ],
+    },
+    "pending": false,
+    "preservedLocal": null,
+    "ready": true,
+    "tags": "旅行, 摄影",
+  },
+  {
+    "autoSavePaused": true,
+    "automaticSaving": false,
+    "conflict": null,
+    "dirty": true,
+    "draft": {
+      "category": "life",
+      "contentRaw": "# 出发
+
+正文",
+      "cover": "/cover.webp",
+      "coverAlt": "山路",
+      "folder": "生活",
+      "id": 7,
+      "pinned": false,
+      "readTimeMinutes": 4,
+      "relatedContent": [
+        {
+          "id": 2,
+          "type": "gallery",
+        },
+      ],
+      "revision": 5,
+      "savedAt": "2026-10-20T08:00:00Z",
+      "seoDescription": "",
+      "seoNoindex": false,
+      "seoTitle": "",
+      "slug": "travel",
+      "status": "draft",
+      "summary": "山间",
+      "tags": [
+        "旅行",
+        "摄影",
+      ],
+      "title": "本地修改",
+    },
+    "error": "已保留当前输入，请合并需要的服务器修改后再次保存；服务器原内容仍在修订历史中",
+    "options": {
+      "folders": [
+        "生活",
+      ],
+      "tags": [
+        "旅行",
+      ],
+    },
+    "pending": false,
+    "preservedLocal": null,
+    "ready": true,
+    "tags": "旅行, 摄影",
+  },
+  {
+    "autoSavePaused": true,
+    "automaticSaving": false,
+    "conflict": null,
+    "dirty": false,
+    "draft": {
+      "category": "life",
+      "contentRaw": "# 出发
+
+正文",
+      "cover": "/cover.webp",
+      "coverAlt": "山路",
+      "folder": "生活",
+      "id": 7,
+      "pinned": false,
+      "readTimeMinutes": 4,
+      "relatedContent": [
+        {
+          "id": 2,
+          "type": "gallery",
+        },
+      ],
+      "revision": 6,
+      "savedAt": "2026-10-20T08:00:00Z",
+      "seoDescription": "",
+      "seoNoindex": false,
+      "seoTitle": "",
+      "slug": "travel",
+      "status": "draft",
+      "summary": "山间",
+      "tags": [
+        "旅行",
+        "摄影",
+      ],
+      "title": "服务器版本 6",
+    },
+    "error": "",
+    "options": {
+      "folders": [
+        "生活",
+      ],
+      "tags": [
+        "旅行",
+      ],
+    },
+    "pending": false,
+    "preservedLocal": "再次修改",
+    "ready": true,
+    "tags": "旅行, 摄影",
+  },
+  {
+    "autoSavePaused": true,
+    "automaticSaving": false,
+    "conflict": null,
+    "dirty": true,
+    "draft": {
+      "category": "life",
+      "contentRaw": "# 出发
+
+正文",
+      "cover": "/cover.webp",
+      "coverAlt": "山路",
+      "folder": "生活",
+      "id": 7,
+      "pinned": false,
+      "readTimeMinutes": 4,
+      "relatedContent": [
+        {
+          "id": 2,
+          "type": "gallery",
+        },
+      ],
+      "revision": 6,
+      "savedAt": "2026-10-20T08:00:00Z",
+      "seoDescription": "",
+      "seoNoindex": false,
+      "seoTitle": "",
+      "slug": "travel",
+      "status": "draft",
+      "summary": "山间",
+      "tags": [
+        "旅行",
+        "摄影",
+      ],
+      "title": "再次修改",
+    },
+    "error": "",
+    "options": {
+      "folders": [
+        "生活",
+      ],
+      "tags": [
+        "旅行",
+      ],
+    },
+    "pending": false,
+    "preservedLocal": null,
+    "ready": true,
+    "tags": "旅行, 摄影",
+  },
+  {
+    "autoSavePaused": true,
+    "automaticSaving": false,
+    "conflict": null,
+    "dirty": true,
+    "draft": {
+      "category": "life",
+      "contentRaw": "# 出发
+
+正文",
+      "cover": "/cover.webp",
+      "coverAlt": "山路",
+      "folder": "生活",
+      "id": 7,
+      "pinned": false,
+      "readTimeMinutes": 4,
+      "relatedContent": [
+        {
+          "id": 2,
+          "type": "gallery",
+        },
+      ],
+      "revision": 6,
+      "savedAt": "2026-10-20T08:00:00Z",
+      "seoDescription": "",
+      "seoNoindex": false,
+      "seoTitle": "",
+      "slug": "travel",
+      "status": "draft",
+      "summary": "山间",
+      "tags": [
+        "旅行",
+        "摄影",
+      ],
+      "title": "再次修改",
+    },
+    "error": "版本已变化；服务器版本读取失败，可稍后再次保存重试，本地输入仍保留",
+    "options": {
+      "folders": [
+        "生活",
+      ],
+      "tags": [
+        "旅行",
+      ],
+    },
+    "pending": false,
+    "preservedLocal": null,
+    "ready": true,
+    "tags": "旅行, 摄影",
+  },
+]
+`;
+
+exports[`自动保存：本机副本 400ms、草稿 15s 写服务器；发布状态或审阅发布时不写服务器；离开与卸载保护 1`] = `
+[
+  1,
+  true,
+  [
+    [
+      "/admin/posts/7",
+      {
+        "body": {
+          "category": "life",
+          "contentRaw": "# 出发
+
+正文",
+          "cover": "/cover.webp",
+          "coverAlt": "山路",
+          "folder": "生活",
+          "pinned": false,
+          "readTimeMinutes": 4,
+          "relatedContent": [
+            {
+              "id": 2,
+              "type": "gallery",
+            },
+          ],
+          "revision": 3,
+          "seoDescription": "",
+          "seoNoindex": false,
+          "seoTitle": "",
+          "slug": "travel",
+          "status": "draft",
+          "summary": "山间",
+          "tags": [
+            "旅行",
+            "摄影",
+          ],
+          "title": "自动保存的标题",
+        },
+        "method": "PATCH",
+      },
+    ],
+  ],
+  {
+    "autoSavePaused": false,
+    "automaticSaving": false,
+    "conflict": null,
+    "dirty": false,
+    "draft": {
+      "category": "life",
+      "contentRaw": "# 出发
+
+正文",
+      "cover": "/cover.webp",
+      "coverAlt": "山路",
+      "folder": "生活",
+      "id": 7,
+      "pinned": false,
+      "readTimeMinutes": 4,
+      "relatedContent": [
+        {
+          "id": 2,
+          "type": "gallery",
+        },
+      ],
+      "revision": 3,
+      "savedAt": "2026-10-20T08:00:00Z",
+      "seoDescription": "",
+      "seoNoindex": false,
+      "seoTitle": "",
+      "slug": "travel",
+      "status": "draft",
+      "summary": "山间",
+      "tags": [
+        "旅行",
+        "摄影",
+      ],
+      "title": "旅行记录",
+    },
+    "error": "",
+    "options": {
+      "folders": [
+        "生活",
+      ],
+      "tags": [
+        "旅行",
+      ],
+    },
+    "pending": false,
+    "preservedLocal": null,
+    "ready": true,
+    "tags": "旅行, 摄影",
+  },
+  3,
+  true,
+  false,
+]
+`;
+
+exports[`读取文章与筛选项；筛选项失败与回收站文章各自提示 1`] = `
+[
+  {
+    "autoSavePaused": false,
+    "automaticSaving": false,
+    "conflict": null,
+    "dirty": false,
+    "draft": {
+      "category": "life",
+      "contentRaw": "# 出发
+
+正文",
+      "cover": "/cover.webp",
+      "coverAlt": "山路",
+      "folder": "生活",
+      "id": 7,
+      "pinned": false,
+      "readTimeMinutes": 4,
+      "relatedContent": [
+        {
+          "id": 2,
+          "type": "gallery",
+        },
+      ],
+      "revision": 3,
+      "savedAt": "2026-10-20T08:00:00Z",
+      "seoDescription": "",
+      "seoNoindex": false,
+      "seoTitle": "",
+      "slug": "travel",
+      "status": "draft",
+      "summary": "山间",
+      "tags": [
+        "旅行",
+        "摄影",
+      ],
+      "title": "旅行记录",
+    },
+    "error": "",
+    "options": {
+      "folders": [
+        "生活",
+      ],
+      "tags": [
+        "旅行",
+      ],
+    },
+    "pending": false,
+    "preservedLocal": null,
+    "ready": true,
+    "tags": "旅行, 摄影",
+  },
+  [
+    [
+      "/admin/posts/7",
+    ],
+    [
+      "/admin/posts/filters",
+    ],
+  ],
+  {
+    "autoSavePaused": false,
+    "automaticSaving": false,
+    "conflict": null,
+    "dirty": false,
+    "draft": {
+      "category": "life",
+      "contentRaw": "# 出发
+
+正文",
+      "cover": "/cover.webp",
+      "coverAlt": "山路",
+      "folder": "生活",
+      "id": 7,
+      "pinned": false,
+      "readTimeMinutes": 4,
+      "relatedContent": [
+        {
+          "id": 2,
+          "type": "gallery",
+        },
+      ],
+      "revision": 3,
+      "savedAt": "2026-10-20T08:00:00Z",
+      "seoDescription": "",
+      "seoNoindex": false,
+      "seoTitle": "",
+      "slug": "travel",
+      "status": "draft",
+      "summary": "山间",
+      "tags": [
+        "旅行",
+        "摄影",
+      ],
+      "title": "旅行记录",
+    },
+    "error": "目录选项加载失败，仍可手动填写专栏与标签",
+    "options": {
+      "folders": [],
+      "tags": [],
+    },
+    "pending": false,
+    "preservedLocal": null,
+    "ready": true,
+    "tags": "旅行, 摄影",
+  },
+  {
+    "autoSavePaused": false,
+    "automaticSaving": false,
+    "conflict": null,
+    "dirty": false,
+    "draft": {
+      "category": "life",
+      "contentRaw": "# 出发
+
+正文",
+      "cover": "/cover.webp",
+      "coverAlt": "山路",
+      "deletedAt": "2026-10-21T00:00:00Z",
+      "folder": "生活",
+      "id": 7,
+      "pinned": false,
+      "readTimeMinutes": 4,
+      "relatedContent": [
+        {
+          "id": 2,
+          "type": "gallery",
+        },
+      ],
+      "revision": 3,
+      "savedAt": "2026-10-20T08:00:00Z",
+      "seoDescription": "",
+      "seoNoindex": false,
+      "seoTitle": "",
+      "slug": "travel",
+      "status": "draft",
+      "summary": "山间",
+      "tags": [
+        "旅行",
+        "摄影",
+      ],
+      "title": "旅行记录",
+    },
+    "error": "文章已在回收站，请先在文章管理中恢复为草稿",
+    "options": {
+      "folders": [],
+      "tags": [],
+    },
+    "pending": false,
+    "preservedLocal": null,
+    "ready": false,
+    "tags": "",
+  },
+]
+`;
