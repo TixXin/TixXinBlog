@@ -116,7 +116,7 @@ function refreshQuote() {
     transition: none;
   }
 
-  :global(.nexus-bar.is-expanded) & {
+  .nexus-bar.is-expanded & {
     opacity: 1;
     pointer-events: auto;
   }
@@ -140,19 +140,19 @@ function refreshQuote() {
   }
 }
 
-:global(.nexus-bar.is-expanded) .nexus-bar__owner-card > :nth-child(1) {
+.nexus-bar.is-expanded .nexus-bar__owner-card > :nth-child(1) {
   opacity: 1;
   transform: translateX(0);
   transition-delay: 0.06s;
 }
 
-:global(.nexus-bar.is-expanded) .nexus-bar__owner-card > :nth-child(2) {
+.nexus-bar.is-expanded .nexus-bar__owner-card > :nth-child(2) {
   opacity: 1;
   transform: translateX(0);
   transition-delay: 0.1s;
 }
 
-:global(.nexus-bar.is-expanded) .nexus-bar__owner-card > :nth-child(3) {
+.nexus-bar.is-expanded .nexus-bar__owner-card > :nth-child(3) {
   opacity: 1;
   transform: translateX(0);
   transition-delay: 0.14s;

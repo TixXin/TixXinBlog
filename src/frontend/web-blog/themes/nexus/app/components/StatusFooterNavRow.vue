@@ -100,7 +100,7 @@ function onProgressClick() {
     transition: none;
   }
 
-  :global(.nexus-bar.is-expanded) & {
+  .nexus-bar.is-expanded & {
     opacity: 0;
     pointer-events: none;
   }

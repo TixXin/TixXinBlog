@@ -198,7 +198,7 @@ defineExpose({
   }
 }
 
-:global(.nexus-bar:not(.is-expanded)) .nexus-bar__avatar-wrap::after {
+.nexus-bar:not(.is-expanded) .nexus-bar__avatar-wrap::after {
   opacity: 1;
   animation: nexus-avatar-glow 3s ease-in-out infinite;
   @media (prefers-reduced-motion: reduce) {
@@ -241,7 +241,7 @@ defineExpose({
     transition: none;
   }
 
-  :global(.nexus-bar.is-expanded) & {
+  .nexus-bar.is-expanded & {
     opacity: 0;
     transform: scale(0.8);
   }
