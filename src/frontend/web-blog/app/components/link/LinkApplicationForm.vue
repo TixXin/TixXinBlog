@@ -16,7 +16,7 @@
     </div>
     <form v-else @submit.prevent="submit">
       <CommonSubmissionTrap v-model="website" />
-      <fieldset :disabled="submitting">
+      <fieldset :disabled="!hydrated || submitting">
         <label
           >{{ $t('interaction.linkApplication.name')
           }}<input
@@ -70,6 +70,11 @@
 import { linkApplicationLimits } from '~/features/link/application'
 const headingId = useId()
 const { draft, website, submitting, error, requestId, valid, change, submit, again } = useLinkApplicationForm()
+// 水合前输入只落在服务端渲染的 DOM 上，水合时会被空草稿覆盖；在此之前禁用输入，无 JavaScript 时同样不可提交。
+const hydrated = ref(false)
+onMounted(() => {
+  hydrated.value = true
+})
 </script>
 <style scoped lang="scss">
 .link-application {
