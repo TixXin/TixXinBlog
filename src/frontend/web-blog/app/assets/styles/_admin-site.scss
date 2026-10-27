@@ -1,0 +1,92 @@
+/**
+ * @file _admin-site.scss
+ * @description 站点设置页及其资料、搜索与历史区块共享的外观声明。各组件在 scoped 样式中整体 @include，
+ *              选择器与声明顺序保持拆分前的页面样式，不由父组件 :deep 下发
+ * @author TixXin
+ * @since 2026-10-27
+ */
+
+@mixin page {
+  .admin-site {
+    min-width: 0;
+    overflow-wrap: anywhere;
+  }
+  h2 {
+    margin: 0 0 0.5rem;
+    font-size: 1rem;
+    font-weight: 600;
+  }
+  p {
+    margin-block: 0.5rem;
+    color: var(--text-muted);
+    font-size: 0.875rem;
+  }
+  // 每组设置是一张卡片；legend 浮动后留在卡片内作为标题
+  fieldset {
+    min-width: 0;
+    margin: 0 0 var(--admin-gap);
+    padding: 1.25rem 1.25rem 0.5rem;
+    border: 1px solid var(--admin-card-border);
+    border-radius: var(--admin-radius-card);
+    background: var(--admin-card-bg);
+    box-shadow: var(--admin-card-shadow);
+  }
+  legend {
+    float: left;
+    width: 100%;
+    margin: 0 0 1rem;
+    padding: 0;
+    font-size: 1rem;
+    font-weight: 600;
+  }
+  legend + * {
+    clear: both;
+  }
+  label {
+    display: grid;
+    gap: 0.375rem;
+    margin: 0 0 1rem;
+    color: var(--text-muted);
+    font-size: 0.875rem;
+    font-weight: 500;
+  }
+  // 资料区两列，多行文本与标题占满整行
+  .admin-site__grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    column-gap: 1rem;
+
+    > legend,
+    > label:has(textarea) {
+      grid-column: 1 / -1;
+    }
+  }
+  .admin-site__pick {
+    align-self: end;
+    justify-self: start;
+    margin-bottom: 1rem;
+  }
+  .admin-site__check {
+    display: flex;
+    align-items: center;
+    gap: 0.625rem;
+    margin-bottom: 0.25rem;
+    color: var(--text-main);
+  }
+  .admin-site__hint {
+    margin: 0 0 1rem;
+    font-size: 0.8125rem;
+  }
+  .admin-site__history {
+    margin-block: 1.5rem;
+  }
+  ul {
+    padding: 0;
+    list-style: none;
+  }
+  @media (max-width: 760px) {
+    .admin-site__grid {
+      grid-template-columns: minmax(0, 1fr);
+    }
+  }
+}

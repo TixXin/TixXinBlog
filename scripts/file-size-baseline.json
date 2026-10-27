@@ -13,7 +13,6 @@
     "src/frontend/web-blog/app/components/tab/TabSidebarFloating.vue": 565,
     "src/frontend/web-blog/app/composables/usePostEditor.ts": 347,
     "src/frontend/web-blog/app/composables/useTabBookmarks.ts": 305,
-    "src/frontend/web-blog/app/pages/admin/moments/index.vue": 374,
-    "src/frontend/web-blog/app/pages/admin/site.vue": 348
+    "src/frontend/web-blog/app/pages/admin/moments/index.vue": 374
   }
 }
