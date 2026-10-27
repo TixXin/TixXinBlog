@@ -1,0 +1,268 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`封面尺寸依次取所选媒体、已保存项目，换成其他媒体后不带尺寸 1`] = `
+[
+  [
+    "/api/v1/media/12345678-1234-4123-a123-123456789abc.webp",
+    "1200",
+    "800",
+  ],
+  "true",
+  [
+    "/api/v1/media/12345678-1234-4123-a123-123456789abd.webp",
+    "640",
+    "480",
+  ],
+  [
+    "/api/v1/media/12345678-1234-4123-a123-123456789abc.webp",
+    "300",
+    "200",
+  ],
+  [
+    "/api/v1/media/12345678-1234-4123-a123-123456789abd.webp",
+    undefined,
+    undefined,
+  ],
+  [
+    [
+      {
+        "coverMediaId": "12345678-1234-4123-a123-123456789abd",
+      },
+    ],
+    [
+      {
+        "coverMediaId": "12345678-1234-4123-a123-123456789abc",
+      },
+    ],
+    [
+      {
+        "coverMediaId": null,
+      },
+    ],
+  ],
+]
+`;
+
+exports[`已保存项目带恢复副本、旧副本、服务器版本、提示与错误时的结构 1`] = `
+"<form class="project-editor">
+  <header>
+    <h1>编辑项目</h1><a class="back" to="/admin/projects">返回项目管理</a><a href="/projects?project=9">查看公开项目</a>
+  </header>
+  <p role="alert">项目已变化 <button type="button">重新读取</button></p>
+  <p role="status">已保留当前输入</p>
+  <p role="alert">恢复副本写入失败 <button type="button">重试保存恢复副本</button></p>
+  <section class="project-editor__notice" aria-label="项目恢复副本">
+    <h2>发现本标签页未保存的输入</h2>
+    <dl class="recovery">本地副本</dl><button type="button">恢复输入</button><button type="button">移除恢复副本</button>
+  </section>
+  <section class="project-editor__notice" aria-label="另外保留的项目恢复副本">
+    <h2>另外保留的项目输入</h2>
+    <p>这些副本可能属于其他内容库，不会直接写入当前项目。请核对后手动录入，并重新选择当前媒体库中的封面。</p>
+    <article>
+      <p>保存于 2026-10-20 08:00</p>
+      <dl class="recovery">更早的副本</dl>
+    </article>
+    <article>
+      <p>保存于 2026-10-18 09:30</p>
+      <dl class="recovery">最早的副本</dl>
+    </article>
+  </section>
+  <section class="project-editor__notice" aria-label="项目服务器版本">
+    <h2>服务器当前版本 4</h2>
+    <p>服务器项目 · 草稿 · 维护中 · 排序 5</p>
+    <p>整理作品与笔记</p>
+    <p>有序关联：文章 #3</p>
+    <p>技术：未填写</p>
+    <ul></ul>
+    <p>未设置封面</p><button type="button">保留副本并载入服务器版本</button><button type="button">保留输入，按最新版本继续合并</button>
+  </section>
+  <!--v-if-->
+  <fieldset><label>项目标题<input aria-label="项目标题" required="" maxlength="160" value="创作工作台"></label><label>项目介绍<textarea aria-label="项目介绍" rows="6" maxlength="5000" value="整理作品与笔记"></textarea></label>
+    <section aria-label="项目封面">
+      <h2>项目封面</h2><button type="button">选择或上传封面</button><button type="button">移除封面</button><img src="/api/v1/media/12345678-1234-4123-a123-123456789abc.webp" alt="创作工作台" width="1200" height="800" class="project-editor__preview">
+      <p>上传文件不会自动公开项目；持有文件地址的人仍可访问媒体。移除封面或删除项目会保留其他内容的媒体引用。</p>
+    </section>
+    <div class="project-editor__row"><label>项目进展<select aria-label="项目进展" value="active">
+          <option value="active">维护中</option>
+          <option value="dev">开发中</option>
+          <option value="archived">已归档</option>
+        </select></label><label>保存状态<select aria-label="项目保存状态" value="published">
+          <option value="draft">草稿</option>
+          <option value="published">已公开</option>
+          <option value="withdrawn">已撤回</option>
+        </select></label><label>排序值（越大越靠前）<input aria-label="项目排序值" type="number" min="-1000000" max="1000000" step="1" value="5"></label></div>
+    <p>进展描述项目本身。已归档的项目仍可公开；开发中的项目也可保留为草稿。</p>
+    <div class="relations" selected="[object Object]" candidates="" type="post" q="" page="1" pending="false" resolving="false" error="" resolveerror="" disabled="false" total="0"></div>
+    <section aria-label="项目技术标签">
+      <h2>技术标签（2 / 20）</h2>
+      <div class="project-editor__row"><label>技术名称<input aria-label="技术名称 1" maxlength="40" required="" value="Vue"></label><label>标签颜色<select aria-label="技术颜色 1" value="emerald">
+            <option value="emerald">翠绿</option>
+            <option value="blue">蓝色</option>
+            <option value="amber">琥珀</option>
+            <option value="sky">天蓝</option>
+            <option value="rose">玫红</option>
+            <option value="slate">灰色</option>
+          </select></label><button type="button" aria-label="移除技术 1">移除技术</button></div>
+      <div class="project-editor__row"><label>技术名称<input aria-label="技术名称 2" maxlength="40" required="" value="Nuxt"></label><label>标签颜色<select aria-label="技术颜色 2" value="blue">
+            <option value="emerald">翠绿</option>
+            <option value="blue">蓝色</option>
+            <option value="amber">琥珀</option>
+            <option value="sky">天蓝</option>
+            <option value="rose">玫红</option>
+            <option value="slate">灰色</option>
+          </select></label><button type="button" aria-label="移除技术 2">移除技术</button></div><button type="button">添加技术标签</button>
+      <p>同一项目的重复技术忽略大小写合并；公开技术分布按实际使用这些标签的项目统计。</p>
+    </section>
+    <section aria-label="项目链接">
+      <h2>项目链接（2 / 4）</h2>
+      <div class="project-editor__row"><label>链接用途<select aria-label="链接用途 1" value="source">
+            <option value="source">源代码</option>
+            <option value="demo">在线预览</option>
+            <option disabled="" value="docs">文档</option>
+            <option value="download">下载</option>
+          </select></label><label>链接地址<input aria-label="链接地址 1" type="url" pattern="https?://.+" required="" maxlength="2048" placeholder="https://" value="https://example.com/source"></label><button type="button" aria-label="移除链接 1">移除链接</button></div>
+      <div class="project-editor__row"><label>链接用途<select aria-label="链接用途 2" value="docs">
+            <option disabled="" value="source">源代码</option>
+            <option value="demo">在线预览</option>
+            <option value="docs">文档</option>
+            <option value="download">下载</option>
+          </select></label><label>链接地址<input aria-label="链接地址 2" type="url" pattern="https?://.+" required="" maxlength="2048" placeholder="https://" value="https://example.com/docs"></label><button type="button" aria-label="移除链接 2">移除链接</button></div><button type="button">添加项目链接</button>
+      <!--v-if-->
+    </section>
+  </fieldset>
+  <p>创建于 2026-10-01 · 首次发布于 2026-10-12 · 版本 3</p>
+  <div class="bar"><span content="保存（Ctrl+S）"><button aria-busy="false" type="submit" aria-keyshortcuts="Control+S Meta+S">保存项目</button></span><button type="button">保存草稿</button><button type="button">发布项目</button><span>有尚未保存输入</span></div>
+  <div>
+    <div data-open="false"></div>
+  </div>
+</form>"
+`;
+
+exports[`技术上限 20、链接上限 4 与用途占用 1`] = `
+{
+  "disabled": [
+    [
+      "添加技术标签",
+      true,
+    ],
+    [
+      "添加项目链接",
+      true,
+    ],
+  ],
+  "noLinks": false,
+  "occupied": [
+    [
+      "source",
+      true,
+    ],
+    [
+      "demo",
+      false,
+    ],
+    [
+      "docs",
+      true,
+    ],
+    [
+      "download",
+      true,
+    ],
+  ],
+}
+`;
+
+exports[`新建空表单与载入中的结构 1`] = `
+[
+  "<form class="project-editor">
+  <header>
+    <h1>新建项目</h1><a class="back" to="/admin/projects">返回项目管理</a>
+    <!--v-if-->
+  </header>
+  <!--v-if-->
+  <!--v-if-->
+  <!--v-if-->
+  <!--v-if-->
+  <!--v-if-->
+  <!--v-if-->
+  <!--v-if-->
+  <fieldset><label>项目标题<input aria-label="项目标题" required="" maxlength="160" value=""></label><label>项目介绍<textarea aria-label="项目介绍" rows="6" maxlength="5000" value=""></textarea></label>
+    <section aria-label="项目封面">
+      <h2>项目封面</h2><button type="button">选择或上传封面</button>
+      <!--v-if-->
+      <p>未设置封面，公开项目会显示简洁占位。</p>
+      <p>上传文件不会自动公开项目；持有文件地址的人仍可访问媒体。移除封面或删除项目会保留其他内容的媒体引用。</p>
+    </section>
+    <div class="project-editor__row"><label>项目进展<select aria-label="项目进展" value="dev">
+          <option value="active">维护中</option>
+          <option value="dev">开发中</option>
+          <option value="archived">已归档</option>
+        </select></label><label>保存状态<select aria-label="项目保存状态" value="draft">
+          <option value="draft">草稿</option>
+          <option value="published">已公开</option>
+          <option value="withdrawn">已撤回</option>
+        </select></label><label>排序值（越大越靠前）<input aria-label="项目排序值" type="number" min="-1000000" max="1000000" step="1" value="0"></label></div>
+    <p>进展描述项目本身。已归档的项目仍可公开；开发中的项目也可保留为草稿。</p>
+    <div class="relations" selected="" candidates="" type="post" q="" page="1" pending="false" resolving="false" error="" resolveerror="" disabled="false" total="0"></div>
+    <section aria-label="项目技术标签">
+      <h2>技术标签（0 / 20）</h2><button type="button">添加技术标签</button>
+      <p>同一项目的重复技术忽略大小写合并；公开技术分布按实际使用这些标签的项目统计。</p>
+    </section>
+    <section aria-label="项目链接">
+      <h2>项目链接（0 / 4）</h2><button type="button">添加项目链接</button>
+      <p>尚未提供公开链接，可在准备好地址后添加。</p>
+    </section>
+  </fieldset>
+  <!--v-if-->
+  <div class="bar"><span content="保存（Ctrl+S）"><button aria-busy="false" type="submit" aria-keyshortcuts="Control+S Meta+S" disabled="">保存项目</button></span><button type="button" disabled="">保存草稿</button><button type="button" disabled="">发布项目</button><span>有尚未保存输入</span></div>
+  <div>
+    <div data-open="false"></div>
+  </div>
+</form>",
+  "<form class="project-editor">
+  <header>
+    <h1>新建项目</h1><a class="back" to="/admin/projects">返回项目管理</a>
+    <!--v-if-->
+  </header>
+  <!--v-if-->
+  <!--v-if-->
+  <!--v-if-->
+  <!--v-if-->
+  <!--v-if-->
+  <!--v-if-->
+  <p role="status">正在读取项目…</p>
+  <fieldset disabled=""><label>项目标题<input aria-label="项目标题" required="" maxlength="160" value="创作工作台"></label><label>项目介绍<textarea aria-label="项目介绍" rows="6" maxlength="5000" value=""></textarea></label>
+    <section aria-label="项目封面">
+      <h2>项目封面</h2><button type="button">选择或上传封面</button>
+      <!--v-if-->
+      <p>未设置封面，公开项目会显示简洁占位。</p>
+      <p>上传文件不会自动公开项目；持有文件地址的人仍可访问媒体。移除封面或删除项目会保留其他内容的媒体引用。</p>
+    </section>
+    <div class="project-editor__row"><label>项目进展<select aria-label="项目进展" value="dev">
+          <option value="active">维护中</option>
+          <option value="dev">开发中</option>
+          <option value="archived">已归档</option>
+        </select></label><label>保存状态<select aria-label="项目保存状态" value="draft">
+          <option value="draft">草稿</option>
+          <option value="published">已公开</option>
+          <option value="withdrawn">已撤回</option>
+        </select></label><label>排序值（越大越靠前）<input aria-label="项目排序值" type="number" min="-1000000" max="1000000" step="1" value="0"></label></div>
+    <p>进展描述项目本身。已归档的项目仍可公开；开发中的项目也可保留为草稿。</p>
+    <div class="relations" selected="" candidates="" type="post" q="" page="1" pending="false" resolving="false" error="" resolveerror="" disabled="true"></div>
+    <section aria-label="项目技术标签">
+      <h2>技术标签（0 / 20）</h2><button type="button">添加技术标签</button>
+      <p>同一项目的重复技术忽略大小写合并；公开技术分布按实际使用这些标签的项目统计。</p>
+    </section>
+    <section aria-label="项目链接">
+      <h2>项目链接（0 / 4）</h2><button type="button">添加项目链接</button>
+      <p>尚未提供公开链接，可在准备好地址后添加。</p>
+    </section>
+  </fieldset>
+  <!--v-if-->
+  <div class="bar"><span content="保存（Ctrl+S）"><button aria-busy="true" type="submit" aria-keyshortcuts="Control+S Meta+S" disabled="">正在保存…</button></span><button type="button" disabled="">保存草稿</button><button type="button" disabled="">发布项目</button><span>尚未保存</span></div>
+  <div>
+    <div data-open="false"></div>
+  </div>
+</form>",
+]
+`;

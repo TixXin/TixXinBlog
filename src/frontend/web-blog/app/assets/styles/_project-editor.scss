@@ -1,0 +1,80 @@
+/**
+ * @file _project-editor.scss
+ * @description 项目编辑表单及其提示、封面、技术与链接区块共享的外观声明。各组件在 scoped 样式中整体 @include，
+ *              选择器与声明顺序保持拆分前的表单样式，不由父组件 :deep 下发
+ * @author TixXin
+ * @since 2026-10-27
+ */
+
+@mixin form {
+  .project-editor {
+    display: grid;
+    gap: 1rem;
+    max-width: 1000px;
+    overflow-wrap: anywhere;
+  }
+  header,
+  footer,
+  .project-editor__row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.75rem;
+  }
+  h1 {
+    font-size: 1.5rem;
+    font-weight: 700;
+    margin-right: auto;
+  }
+  h2 {
+    font-size: 1rem;
+    font-weight: 600;
+  }
+  fieldset {
+    border: 0;
+    padding: 0;
+    display: grid;
+    gap: 1rem;
+    min-width: 0;
+  }
+  label {
+    display: grid;
+    gap: 0.4rem;
+    min-width: 0;
+  }
+  .project-editor__row > label {
+    flex: 1 1 180px;
+  }
+  .project-editor__row {
+    margin-block: 0.65rem;
+  }
+
+  input,
+  textarea,
+  select {
+    width: 100%;
+  }
+  textarea {
+    resize: vertical;
+  }
+
+  p {
+    color: var(--text-muted);
+    line-height: 1.7;
+  }
+  a {
+    color: var(--accent);
+  }
+  .project-editor__notice {
+    padding: 1rem;
+    border: 1px solid var(--accent);
+    border-radius: 0.5rem;
+  }
+  .project-editor__notice p {
+    white-space: pre-wrap;
+  }
+  .project-editor__preview {
+    max-width: 360px;
+    margin-block: 0.75rem;
+  }
+}
