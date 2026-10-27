@@ -635,6 +635,7 @@
         "guestbook": "Guestbook",
         "moment-comment": "Moment comment",
         "flash-comment": "Flash comment",
+        "link-application": "Link application",
         "task": "Task problem"
       },
       "states": {

@@ -1,4 +1,4 @@
-/** @file useLinkRepository.ts @description 真实友链仓储，不抓取站点信息，不在错误时回退演示记录 */
+/** @file useLinkRepository.ts @description 真实友链仓储，不抓取站点信息，不在错误时回退演示记录；申请接口见 useLinkApplicationRepository */
 import type {
   LinkEditable,
   LinkItem,
@@ -8,20 +8,12 @@ import type {
   LinkSettings,
   ManagedLink,
 } from '~/features/link/types'
+import { linkRequestFailure } from '~/features/link/requestFailure'
 export function useLinkRepository() {
   const base = String(useRuntimeConfig().public.apiBaseUrl).replace(/\/$/, ''),
     admin = useAdminApi(),
     // 错误文案在失败时按当前语言生成；4xx 优先显示后端 message
     t = currentTranslate()
-  function failure(value: unknown) {
-    const cause = value as { statusCode?: number; status?: number },
-      statusCode = cause?.statusCode ?? cause?.status
-    const message =
-      !statusCode || statusCode >= 500
-        ? t('interaction.links.serviceUnavailable')
-        : apiErrorMessage(value, statusCode === 404 ? 'interaction.links.notFound' : 'interaction.links.invalid', { t })
-    return Object.assign(new Error(message, { cause: value }), { statusCode })
-  }
   async function read<T>(path: string, query?: LinkQuery, signal?: AbortSignal): Promise<T> {
     try {
       const result = await $fetch<{ code: number; data: T }>(base + path, {
@@ -33,14 +25,14 @@ export function useLinkRepository() {
       if (result.code !== 0) throw new Error(t('interaction.links.requestIncomplete'))
       return result.data
     } catch (cause) {
-      throw failure(cause)
+      throw linkRequestFailure(cause, t)
     }
   }
   async function manage<T>(path: string, options?: Parameters<typeof admin>[1]): Promise<T> {
     try {
       return await admin<T>(path, options)
     } catch (cause) {
-      throw failure(cause)
+      throw linkRequestFailure(cause, t)
     }
   }
   return {
@@ -63,7 +55,8 @@ export function useLinkRepository() {
     remove: (id: number, revision: number) =>
       manage<{ ok: boolean }>(`/admin/links/${id}`, { method: 'DELETE', query: { revision } }),
     settings: () => manage<LinkSettings>('/admin/links/settings'),
-    saveSettings: (body: Pick<LinkSettings, 'rules' | 'revision'>) =>
+    // 不携带申请开关时服务端保留现值
+    saveSettings: (body: Pick<LinkSettings, 'rules' | 'revision'> & { applicationsEnabled?: boolean }) =>
       manage<LinkSettings>('/admin/links/settings', { method: 'PATCH', body }),
   }
 }

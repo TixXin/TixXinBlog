@@ -1,4 +1,4 @@
-<!-- @file LinkForm.vue @description 友链资料仅在本机整理与复制，在线申请明确未开放 -->
+<!-- @file LinkForm.vue @description 博主未开放申请时，友链资料仅在本机整理与复制，不提交给博主 -->
 <template>
   <section class="link-form">
     <h2><Icon name="lucide:clipboard-pen" size="18" />{{ $t('interaction.linkForm.title') }}</h2>

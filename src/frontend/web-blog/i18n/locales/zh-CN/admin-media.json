@@ -280,10 +280,53 @@
       "mutateFailed": "操作失败，请重新读取后核查结果",
       "conflictHint": "；请重新读取当前版本后再操作。"
     },
+    "linkApplications": {
+      "title": "友链申请",
+      "intro": "审核访客提交的友链申请。通过后会建立一条友链草稿，补充头像并发布后才会公开展示。",
+      "enabled": "公开申请已开启，访客可以在友链页提交申请。",
+      "disabled": "公开申请已关闭，友链页只提供本机整理资料。",
+      "open": "开启公开申请",
+      "close": "关闭公开申请",
+      "opened": "已开启公开申请。",
+      "closed": "已关闭公开申请，已有申请仍可在此处理。",
+      "toggleFailed": "开关未保存，请刷新后重试",
+      "filterLabel": "申请状态筛选",
+      "filters": {
+        "pending": "待审核",
+        "handled": "已处理",
+        "all": "全部"
+      },
+      "pendingTotal": "待审核 {count} 条",
+      "loading": "正在读取友链申请",
+      "loadFailed": "友链申请读取失败",
+      "empty": {
+        "pending": "没有待审核的申请。",
+        "handled": "还没有处理过的申请。",
+        "all": "还没有收到友链申请。"
+      },
+      "pagination": "友链申请分页",
+      "status": {
+        "pending": "待审核",
+        "approved": "已通过",
+        "rejected": "已拒绝"
+      },
+      "contact": "联系方式",
+      "message": "附言",
+      "submittedAt": "提交时间",
+      "handledAt": "处理时间",
+      "approve": "通过并建立草稿",
+      "reject": "拒绝",
+      "approveConfirm": "通过「{name}」的申请并建立友链草稿？",
+      "rejectConfirm": "拒绝「{name}」的申请？申请人不会收到通知。",
+      "approved": "已通过「{name}」，友链草稿已建立。",
+      "rejected": "已拒绝「{name}」的申请。",
+      "decideFailed": "操作未完成，请刷新后核对申请状态",
+      "editDraft": "编辑友链草稿 #{id}"
+    },
     "linkSettings": {
       "title": "友链须知设置",
       "back": "返回友链管理",
-      "intro": "以下须知会公开展示。公开申请、邮件通知和自动探活尚未开放，请按实际情况维护说明。",
+      "intro": "以下须知会公开展示，开放友链申请后访客提交前也会看到。公开申请的开关在「友链申请」页；服务器不会自动探活或抓取对方站点。",
       "loading": "正在读取须知",
       "recoveryLabel": "须知恢复副本",
       "recoveryTitle": "发现未保存的须知",

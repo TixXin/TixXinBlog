@@ -158,6 +158,23 @@
       "featured": "Featured",
       "noDescription": "No description yet"
     },
+    "linkApplication": {
+      "title": "Apply for a link exchange",
+      "intro": "The author is accepting link applications. Submissions are reviewed in the admin area and listed by the author after approval; the server never visits or fetches the URL you enter.",
+      "name": "Site name",
+      "url": "Site URL",
+      "description": "One-line description (optional)",
+      "contact": "Contact (optional)",
+      "contactPlaceholder": "Email or another way to reach you",
+      "message": "Message to the author (optional)",
+      "submit": "Submit application",
+      "submitting": "Submitting…",
+      "submitted": "Application submitted and awaiting review.",
+      "requestId": "Application ID: ",
+      "again": "Submit another site",
+      "privacy": "Only the author can see your contact details. This site does not send review notifications; the author may reach out using the contact you provided.",
+      "failed": "The application was not submitted. Your input is kept; please try again later."
+    },
     "linkForm": {
       "title": "Prepare your link details",
       "intro": "Online applications are not open yet. You can prepare and copy your link details below; they stay in this tab and are never sent to the author automatically.",

@@ -55,11 +55,35 @@ export interface LinkPage<T = LinkItem> {
 export interface LinkMetadata {
   stats: { links: number; featured: number; domains: number }
   rules: string[]
+  /** 博主是否开放公开友链申请 */
+  applicationsEnabled: boolean
 }
 export interface LinkSettings {
   rules: string[]
+  applicationsEnabled: boolean
   revision: number
   updatedAt: string
+}
+/** 访客提交的申请字段；联系方式只给博主查看 */
+export interface LinkApplicationInput {
+  name: string
+  url: string
+  description: string
+  contact: string
+  message: string
+}
+export type LinkApplicationStatus = 'pending' | 'approved' | 'rejected'
+export interface LinkApplication extends Omit<LinkApplicationInput, 'contact'> {
+  id: string
+  domain: string
+  contact: string | null
+  status: LinkApplicationStatus
+  handledAt: string | null
+  createdLinkId: number | null
+  createdAt: string
+}
+export interface LinkApplicationPage extends LinkPage<LinkApplication> {
+  pendingTotal: number
 }
 export interface SiteInfo {
   label: string

@@ -1,4 +1,4 @@
-/** @file useLinkSettingsEditor.ts @description 友链须知维护与分内容库草稿保护，不承诺未实施的申请审核流程 */
+/** @file useLinkSettingsEditor.ts @description 友链须知维护与分内容库草稿保护；申请开关由审核页单独保存，这里不改动 */
 import type { LinkSettings } from '~/features/link/types'
 import { editorRecoveryKey, readEditorRecoveries } from '~/utils/editorRecoveryStorage'
 interface RulesRecovery {

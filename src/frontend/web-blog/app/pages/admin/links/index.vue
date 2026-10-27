@@ -10,6 +10,9 @@
         <NuxtLink class="admin-btn admin-btn--primary" to="/admin/links/new">{{
           $t('admin-media.linkEditor.createTitle')
         }}</NuxtLink
+        ><NuxtLink class="admin-btn admin-btn--ghost" to="/admin/links/applications">{{
+          $t('admin-media.linkApplications.title')
+        }}</NuxtLink
         ><NuxtLink class="admin-btn admin-btn--ghost" to="/admin/links/settings">{{
           $t('admin-media.linkSettings.title')
         }}</NuxtLink

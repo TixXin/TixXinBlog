@@ -280,10 +280,53 @@
       "mutateFailed": "The action failed. Reload and check the result",
       "conflictHint": "; reload the current version and try again."
     },
+    "linkApplications": {
+      "title": "Link applications",
+      "intro": "Review link applications from visitors. Approving creates a draft link; it becomes public only after you add an avatar if needed and publish it.",
+      "enabled": "Public applications are open. Visitors can apply from the links page.",
+      "disabled": "Public applications are closed. The links page only offers the local details helper.",
+      "open": "Open applications",
+      "close": "Close applications",
+      "opened": "Public applications are now open.",
+      "closed": "Public applications are now closed. Existing applications can still be handled here.",
+      "toggleFailed": "The setting was not saved. Refresh and try again.",
+      "filterLabel": "Filter by application status",
+      "filters": {
+        "pending": "Pending",
+        "handled": "Handled",
+        "all": "All"
+      },
+      "pendingTotal": "{count} pending",
+      "loading": "Loading link applications",
+      "loadFailed": "Could not load link applications",
+      "empty": {
+        "pending": "No applications are awaiting review.",
+        "handled": "No applications have been handled yet.",
+        "all": "No link applications yet."
+      },
+      "pagination": "Link application pages",
+      "status": {
+        "pending": "Pending",
+        "approved": "Approved",
+        "rejected": "Rejected"
+      },
+      "contact": "Contact",
+      "message": "Message",
+      "submittedAt": "Submitted",
+      "handledAt": "Handled",
+      "approve": "Approve and create draft",
+      "reject": "Reject",
+      "approveConfirm": "Approve the application from \"{name}\" and create a draft link?",
+      "rejectConfirm": "Reject the application from \"{name}\"? The applicant will not be notified.",
+      "approved": "Approved \"{name}\". A draft link has been created.",
+      "rejected": "Rejected the application from \"{name}\".",
+      "decideFailed": "The action did not complete. Refresh and check the application status.",
+      "editDraft": "Edit draft link #{id}"
+    },
     "linkSettings": {
       "title": "Link guidelines",
       "back": "Back to links",
-      "intro": "These guidelines are shown publicly. Public applications, email notifications and automatic link checks are not available yet, so keep the wording accurate.",
+      "intro": "These guidelines are public, and visitors also see them before applying when applications are open. Toggle public applications on the Link applications page; the server never checks or fetches other sites automatically.",
       "loading": "Loading guidelines",
       "recoveryLabel": "Guidelines recovery copy",
       "recoveryTitle": "Found unsaved guidelines",
