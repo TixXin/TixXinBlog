@@ -111,6 +111,7 @@ export async function removeDevelopmentData(
         'prompt',
         'project',
         'subscription',
+        'link-application',
         'link',
         'moment',
         'flash',

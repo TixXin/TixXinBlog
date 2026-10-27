@@ -310,6 +310,7 @@ export async function runDevDatabase(
           await em.execute('delete from image_prompt')
           await em.execute('delete from gallery_photo')
           await em.execute('delete from project')
+          await em.execute('delete from friend_link_application')
           await em.execute('delete from friend_link')
           await em.execute('delete from guestbook_message')
           await em.execute('delete from flash_note')

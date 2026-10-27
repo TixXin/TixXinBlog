@@ -9,6 +9,11 @@ import { seedGalleryFixtures, GALLERY_DATASET, GALLERY_FIXTURE_COUNT } from './g
 import { seedProjectFixtures, PROJECT_DATASET, PROJECT_FIXTURE_COUNT } from './project-fixtures'
 import { seedSubscriptionFixtures, SUBSCRIPTION_DATASET, SUBSCRIPTION_FIXTURE_COUNT } from './subscription-fixtures'
 import { seedLinkFixtures, LINK_DATASET, LINK_FIXTURE_COUNT } from './link-fixtures'
+import {
+  seedLinkApplicationFixtures,
+  LINK_APPLICATION_DATASET,
+  LINK_APPLICATION_FIXTURE_COUNT,
+} from './link-application-fixtures'
 import { seedPromptFixtures, PROMPT_DATASET, PROMPT_FIXTURE_COUNT } from './prompt-fixtures'
 import {
   seedGalleryExternalFixtures,
@@ -74,6 +79,12 @@ export const DEVELOPMENT_DATASETS = [
     seed: seedProjectFixtures,
   },
   { id: LINK_DATASET, count: LINK_FIXTURE_COUNT, scope: '友链、发布推荐、排序与可选标志', seed: seedLinkFixtures },
+  {
+    id: LINK_APPLICATION_DATASET,
+    count: LINK_APPLICATION_FIXTURE_COUNT,
+    scope: '友链申请的待审、已通过（含生成的友链草稿）与已拒绝；不改动申请开关',
+    seed: seedLinkApplicationFixtures,
+  },
   {
     id: GALLERY_EXTERNAL_DATASET,
     count: GALLERY_EXTERNAL_PHOTOS.length,

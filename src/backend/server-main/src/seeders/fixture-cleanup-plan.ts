@@ -81,6 +81,7 @@ export async function fixtureCleanupPlan(em: EntityManager, dataset: string) {
     'moment-comment': 'moment_comment',
     task: 'background_task',
     notification: 'owner_notification',
+    'link-application': 'friend_link_application',
   }
   let changed = true
   while (changed) {

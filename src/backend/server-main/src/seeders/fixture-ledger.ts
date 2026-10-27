@@ -21,6 +21,7 @@ export const FIXTURE_TABLES = {
   project: 'project',
   subscription: 'subscription',
   link: 'friend_link',
+  'link-application': 'friend_link_application',
   notification: 'owner_notification',
   task: 'background_task',
 } as const

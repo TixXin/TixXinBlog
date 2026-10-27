@@ -154,6 +154,7 @@
 | 当前文件                                                                                                                        | 核对与改动位置                                                                                                  |
 | ------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------- |
 | `src/backend/server-main/src/seeders/link-fixtures.ts`                                                                          | `link-v1` 的稳定场景，通过现有服务建立真实内容；覆盖分页、草稿/撤回、推荐、排序、长文案、无图与两种 Logo 来源。 |
+| `src/backend/server-main/src/seeders/link-application-fixtures.ts`                                                              | `link-application-v1` 的待审、已通过与已拒绝申请，通过时经审核服务建立友链草稿并一并登记归属；不改动申请开关。  |
 | `src/backend/server-main/src/seeders/development-datasets.ts`                                                                   | 登记数据集、说明、数量和 seed 函数。                                                                            |
 | `src/backend/server-main/src/seeders/development-data-catalog.ts`                                                               | 登记公开/后台路径、实际数据源、代表场景、最低覆盖及媒体核验。                                                   |
 | `src/backend/server-main/src/seeders/fixture-ledger.ts`                                                                         | `FIXTURE_TABLES` 和稳定 dataset/kind/scenario 归属，保留已有编辑与删除记忆。                                    |
