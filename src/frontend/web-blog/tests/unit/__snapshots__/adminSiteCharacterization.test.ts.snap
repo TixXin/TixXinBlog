@@ -12,7 +12,7 @@ exports[`冲突、待核对提交、保留副本与历史预览 1`] = `
   <!--v-if-->
   <!--v-if-->
   <p role="status">此前提交结果尚未确认。 <button type="button">核对服务器提交结果</button></p>
-  <p>服务器版本 7 · 保存于 2026/10/19 16:30:00 · 有未保存输入</p>
+  <p>服务器版本 7 · 保存于 <time> · 有未保存输入</p>
   <form>
     <fieldset class="admin-site__grid">
       <legend>站点和博主资料</legend><label>站点名称<input maxlength="80" required=""></label><label>站点简介<textarea maxlength="300" rows="3"></textarea></label><label>博主名称<input maxlength="80" required=""></label><label>博主简介<input maxlength="200"></label><label>头像地址<input maxlength="1000"></label><button type="button" class="admin-site__pick"><span class="iconify i-lucide:image" aria-hidden="true"></span>从媒体库选择头像</button><label>头像替代文本<input maxlength="300"></label><label>在线状态<input maxlength="20" placeholder="如“摆烂中”，留空不展示"></label><label>状态签名<input maxlength="60" placeholder="如“今天不想写代码”"></label><label>状态类型<select>
@@ -219,8 +219,8 @@ exports[`冲突、待核对提交、保留副本与历史预览 1`] = `
     <p>历史版本保留头像引用，可比较后载入编辑，或明确恢复为新服务器版本。</p>
     <p role="alert">历史读取失败 <button type="button">重试历史</button></p>
     <ul>
-      <li><button type="button">查看版本 6 · 修改公告 · 2026/10/19 16:30:00</button></li>
-      <li><button type="button">查看版本 5 · 更换头像 · 2026/10/19 16:30:00</button></li>
+      <li><button type="button">查看版本 6 · 修改公告 · <time></button></li>
+      <li><button type="button">查看版本 5 · 更换头像 · <time></button></li>
     </ul><button type="button">上一页历史</button><span>2 / 3</span><button type="button">下一页历史</button>
     <section class="site-preview" aria-label="历史版本 5 预览">
       <h2>历史版本 5 预览</h2>
@@ -266,7 +266,7 @@ exports[`编辑状态：资料、社交、搜索、导航、关于与预览 1`] 
   <!--v-if-->
   <!--v-if-->
   <!--v-if-->
-  <p>服务器版本 7 · 保存于 2026/10/19 16:30:00 · 有未保存输入</p>
+  <p>服务器版本 7 · 保存于 <time> · 有未保存输入</p>
   <form>
     <fieldset class="admin-site__grid">
       <legend>站点和博主资料</legend><label>站点名称<input maxlength="80" required=""></label><label>站点简介<textarea maxlength="300" rows="3"></textarea></label><label>博主名称<input maxlength="80" required=""></label><label>博主简介<input maxlength="200"></label><label>头像地址<input maxlength="1000"></label><button type="button" class="admin-site__pick"><span class="iconify i-lucide:image" aria-hidden="true"></span>从媒体库选择头像</button><label>头像替代文本<input maxlength="300"></label><label>在线状态<input maxlength="20" placeholder="如“摆烂中”，留空不展示"></label><label>状态签名<input maxlength="60" placeholder="如“今天不想写代码”"></label><label>状态类型<select>

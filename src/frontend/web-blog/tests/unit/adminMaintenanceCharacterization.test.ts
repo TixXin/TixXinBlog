@@ -2,6 +2,7 @@
 import { afterEach, beforeEach, expect, it, vi } from 'vitest'
 import { ref } from 'vue'
 import { mockNuxtImport, mountSuspended } from '@nuxt/test-utils/runtime'
+import { formatDateTime } from '../../app/utils/format'
 import MaintenancePage from '../../app/pages/admin/maintenance.vue'
 import type { ContentImportView } from '../../app/features/backup/types'
 
@@ -128,8 +129,9 @@ function diagnostics(overrides: Record<string, unknown> = {}) {
   }
 }
 
-/** 去掉 scoped 样式标记，只比较结构、属性与文字 */
-const markup = (html: string) => html.replace(/ data-v-[a-f0-9]+(="")?/g, '')
+/** 去掉 scoped 样式标记；时间按运行环境时区显示，换成占位符，只比较结构、属性与文字 */
+const markup = (html: string) =>
+  html.replace(/ data-v-[a-f0-9]+(="")?/g, '').replaceAll(formatDateTime(at, { hour12: false }), '<time>')
 
 const wrappers: { unmount(): void }[] = []
 beforeEach(() => {

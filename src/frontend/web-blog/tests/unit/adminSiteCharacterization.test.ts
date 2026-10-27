@@ -3,6 +3,7 @@ import { afterEach, beforeEach, expect, it, vi } from 'vitest'
 import { computed, ref } from 'vue'
 import { flushPromises } from '@vue/test-utils'
 import { mockNuxtImport, mountSuspended } from '@nuxt/test-utils/runtime'
+import { formatDateTime } from '../../app/utils/format'
 import SitePage from '../../app/pages/admin/site.vue'
 import { defaultSiteSettings, type SiteSettingsData } from '../../app/features/site/settings'
 
@@ -59,9 +60,12 @@ function editor(overrides: Record<string, unknown> = {}) {
   }
 }
 
-/** 去掉 scoped 样式标记与随机生成的标识，只比较结构、属性与文字 */
+/** 去掉 scoped 样式标记与随机生成的标识；时间按运行环境时区显示，换成占位符，只比较结构、属性与文字 */
 const markup = (html: string) =>
-  html.replace(/ data-v-[a-f0-9]+(="")?/g, '').replace(/(id|for|aria-[a-z]+)="(v|el|reka|radix)-[^"]*"/g, '$1="<id>"')
+  html
+    .replace(/ data-v-[a-f0-9]+(="")?/g, '')
+    .replace(/(id|for|aria-[a-z]+)="(v|el|reka|radix)-[^"]*"/g, '$1="<id>"')
+    .replaceAll(formatDateTime(at, { hour12: false }), '<time>')
 
 const wrappers: { unmount(): void }[] = []
 beforeEach(() => {

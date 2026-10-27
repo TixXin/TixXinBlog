@@ -208,16 +208,16 @@ corepack pnpm --filter server-main run backup:restore --directory &lt;备份目�
       </section>
     </section>
     <!--v-if-->
-    <p>预览到期：2026/10/19 16:30:00。执行时重新校验目标变化，数据库变更统一提交；未能确认结果时请查询同一票据。</p><label class="maintenance__field">输入“导入为新草稿”确认<input autocomplete="off"></label>
+    <p>预览到期：<time>。执行时重新校验目标变化，数据库变更统一提交；未能确认结果时请查询同一票据。</p><label class="maintenance__field">输入“导入为新草稿”确认<input autocomplete="off"></label>
     <div class="maintenance__actions"><button type="button">确认导入预览内容</button><button type="button">重新生成此票据的预览</button></div><button type="button">查询导入结果</button>
   </section>
   <section aria-label="最近导入记录">
     <h2>最近导入记录</h2>
     <!--v-if-->
     <ul>
-      <li><button type="button">2026/10/19 16:30:00 · 预览或执行中</button></li>
-      <li><button type="button">2026/10/19 16:30:00 · 已过期</button></li>
-      <li><button type="button">2026/10/19 16:30:00 · 已完成</button></li>
+      <li><button type="button"><time> · 预览或执行中</button></li>
+      <li><button type="button"><time> · 已过期</button></li>
+      <li><button type="button"><time> · 已完成</button></li>
     </ul>
   </section>
 </section>"
