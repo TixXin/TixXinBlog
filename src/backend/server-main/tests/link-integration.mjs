@@ -57,7 +57,11 @@ try {
   ])
     assert.equal((await request(path, method, body)).status, 401)
   assert.equal((await ok('/links')).total, 0)
-  assert.deepEqual(await ok('/links/metadata'), { stats: { links: 0, featured: 0, domains: 0 }, rules: [] })
+  assert.deepEqual(await ok('/links/metadata'), {
+    stats: { links: 0, featured: 0, domains: 0 },
+    rules: [],
+    applicationsEnabled: false,
+  })
   const body = {
     name: '100% 前端阅读',
     url: 'HTTPS://EXAMPLE.COM:443/Docs/Guide?tag=A&tag=B#Intro',
