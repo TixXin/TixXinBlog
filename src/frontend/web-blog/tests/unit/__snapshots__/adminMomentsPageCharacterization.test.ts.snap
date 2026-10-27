@@ -1,0 +1,343 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`列表、分页与评论面板（已发布与未发布）的结构，以及载入、错误与未登录 1`] = `
+[
+  "<section class="admin-moments">
+  <header class="admin-page-header">
+    <div>
+      <h1>朋友圈管理</h1>
+      <p>管理公开动态、草稿、归档及互动。</p>
+    </div><a href="/admin/moments/new">发布新动态</a>
+  </header>
+  <div>
+    <form class="admin-moments__filters"><input aria-label="搜索动态" maxlength="200" placeholder="搜索内容或地点"><input aria-label="筛选动态话题" maxlength="40" placeholder="话题"><label>发布日期（UTC）<input class="date" aria-label="筛选动态日期" clearable="" value=""></label><select aria-label="筛选动态状态">
+        <option value="all">全部状态</option>
+        <option value="published">已发布</option>
+        <option value="draft">草稿</option>
+        <option value="archived">已归档</option>
+      </select><button type="submit">筛选</button></form>
+    <!--v-if-->
+    <!--v-if-->
+    <!--v-if-->
+    <ul class="admin-moments__list">
+      <li>
+        <p>已发布 <span>· 已置顶</span> · 2026-10-11</p>
+        <p class="admin-moments__content">动态 a
+          第二行</p>
+        <p>#散步 #夜跑</p>
+        <div class="admin-moments__actions"><a href="/admin/moments/a">编辑动态</a><a href="/moments/a">查看公开动态</a><button type="button">取消置顶</button>
+          <!--v-if--><button type="button">转为草稿</button><button type="button">归档</button><button type="button">管理评论</button><button type="button">删除动态</button>
+        </div>
+      </li>
+      <li>
+        <p>草稿
+          <!--v-if--> · 2026-10-11
+        </p>
+        <p class="admin-moments__content">动态 b
+          第二行</p>
+        <p></p>
+        <div class="admin-moments__actions"><a href="/admin/moments/b">编辑动态</a>
+          <!--v-if--><button type="button">置顶</button><button type="button">发布</button>
+          <!--v-if--><button type="button">归档</button><button type="button">管理评论</button><button type="button">删除动态</button>
+        </div>
+      </li>
+      <li>
+        <p>已归档
+          <!--v-if--> · 2026-10-11
+        </p>
+        <p class="admin-moments__content">动态 c
+          第二行</p>
+        <p>#散步 #夜跑</p>
+        <div class="admin-moments__actions"><a href="/admin/moments/c">编辑动态</a>
+          <!--v-if--><button type="button" disabled="">置顶</button><button type="button" disabled="">发布</button><button type="button" disabled="">转为草稿</button>
+          <!--v-if--><button type="button" disabled="">管理评论</button><button type="button" disabled="">删除动态</button>
+        </div>
+      </li>
+    </ul>
+    <nav class="admin-moments__actions" aria-label="管理动态分页"><button type="button">上一页</button><span>2 / 3，共 40 条</span><button type="button">下一页</button></nav>
+    <!--v-if-->
+  </div>
+</section>",
+  "<section tabindex="-1" class="admin-moments__comments" aria-label="动态评论管理">
+  <h2>动态评论</h2>
+  <p>动态 a
+    第二行</p><button type="button">关闭评论管理</button>
+  <p>访客评论遵循<a href="/admin/comments">站点评论审核策略</a>。</p>
+  <!--v-if-->
+  <!--v-if-->
+  <ul>
+    <li data-comment-id="1" data-comment-target="false"><strong>访客1（博主）</strong><span> · 已公开</span>
+      <p>评论 1
+        换行</p>
+      <div class="admin-moments__actions">
+        <!--v-if--><button type="button">隐藏评论</button><button type="button">删除评论</button>
+      </div>
+    </li>
+    <li data-comment-id="2" data-comment-target="false"><strong>访客2</strong><span> · 已隐藏</span>
+      <p>评论 2
+        换行</p>
+      <div class="admin-moments__actions"><button type="button">公开评论</button>
+        <!--v-if--><button type="button">删除评论</button>
+      </div>
+    </li>
+    <li data-comment-id="3" data-comment-target="true" tabindex="-1"><strong>访客3</strong><span> · 待审核</span>
+      <p>评论 3
+        换行</p>
+      <div class="admin-moments__actions"><button type="button">公开评论</button><button type="button">隐藏评论</button><button type="button">删除评论</button></div>
+    </li>
+    <li data-comment-id="4" data-comment-target="false"><strong>访客4</strong><span> · 已公开</span>
+      <p>评论 4
+        换行</p>
+      <div class="admin-moments__actions"><button type="button">公开评论</button><button type="button">隐藏评论</button><button type="button">删除评论</button></div>
+    </li>
+  </ul>
+  <nav class="admin-moments__actions" aria-label="动态评论分页"><button type="button" disabled="">上一页评论</button><span>1 / 2</span><button type="button">下一页评论</button></nav>
+  <form><label>博主回复<textarea aria-label="动态博主回复" maxlength="1000"></textarea></label><button aria-busy="false" type="submit" disabled="">发送博主回复</button></form>
+</section>",
+  "<section tabindex="-1" class="admin-moments__comments" aria-label="动态评论管理">
+  <h2>动态评论</h2>
+  <p>动态 b
+    第二行</p><button type="button">关闭评论管理</button>
+  <p>访客评论遵循<a href="/admin/comments">站点评论审核策略</a>。</p>
+  <p class="feedback">正在加载评论</p>
+  <!--v-if-->
+  <ul>
+    <li data-comment-id="1" data-comment-target="false"><strong>访客1（博主）</strong><span> · 已公开</span>
+      <p>评论 1
+        换行</p>
+      <div class="admin-moments__actions">
+        <!--v-if--><button type="button">隐藏评论</button><button type="button">删除评论</button>
+      </div>
+    </li>
+    <li data-comment-id="2" data-comment-target="false"><strong>访客2</strong><span> · 已隐藏</span>
+      <p>评论 2
+        换行</p>
+      <div class="admin-moments__actions"><button type="button">公开评论</button>
+        <!--v-if--><button type="button">删除评论</button>
+      </div>
+    </li>
+    <li data-comment-id="3" data-comment-target="true" tabindex="-1"><strong>访客3</strong><span> · 待审核</span>
+      <p>评论 3
+        换行</p>
+      <div class="admin-moments__actions"><button type="button">公开评论</button><button type="button">隐藏评论</button><button type="button">删除评论</button></div>
+    </li>
+    <li data-comment-id="4" data-comment-target="false"><strong>访客4</strong><span> · 已公开</span>
+      <p>评论 4
+        换行</p>
+      <div class="admin-moments__actions"><button type="button">公开评论</button><button type="button">隐藏评论</button><button type="button">删除评论</button></div>
+    </li>
+  </ul>
+  <!--v-if-->
+  <p>动态公开后可以回复评论。</p>
+</section>",
+  "<section class="admin-moments">
+  <header class="admin-page-header">
+    <div>
+      <h1>朋友圈管理</h1>
+      <p>管理公开动态、草稿、归档及互动。</p>
+    </div><a href="/admin/moments/new">发布新动态</a>
+  </header>
+  <div>
+    <form class="admin-moments__filters"><input aria-label="搜索动态" maxlength="200" placeholder="搜索内容或地点"><input aria-label="筛选动态话题" maxlength="40" placeholder="话题"><label>发布日期（UTC）<input class="date" aria-label="筛选动态日期" clearable="" value=""></label><select aria-label="筛选动态状态">
+        <option value="all">全部状态</option>
+        <option value="published">已发布</option>
+        <option value="draft">草稿</option>
+        <option value="archived">已归档</option>
+      </select><button type="submit">筛选</button></form>
+    <p class="feedback">读取失败</p>
+    <!--v-if-->
+    <p class="feedback">定位失败</p>
+    <ul class="admin-moments__list"></ul>
+    <!--v-if-->
+    <!--v-if-->
+  </div>
+</section>",
+  "<section class="admin-moments">
+  <header class="admin-page-header">
+    <div>
+      <h1>朋友圈管理</h1>
+      <p>管理公开动态、草稿、归档及互动。</p>
+    </div><a href="/admin/moments/new">发布新动态</a>
+  </header>
+  <div>
+    <form class="admin-moments__filters"><input aria-label="搜索动态" maxlength="200" placeholder="搜索内容或地点"><input aria-label="筛选动态话题" maxlength="40" placeholder="话题"><label>发布日期（UTC）<input class="date" aria-label="筛选动态日期" clearable="" value=""></label><select aria-label="筛选动态状态">
+        <option value="all">全部状态</option>
+        <option value="published">已发布</option>
+        <option value="draft">草稿</option>
+        <option value="archived">已归档</option>
+      </select><button type="submit">筛选</button></form>
+    <!--v-if-->
+    <p>当前条件下暂无动态。</p>
+    <p class="feedback">定位失败</p>
+    <ul class="admin-moments__list"></ul>
+    <!--v-if-->
+    <!--v-if-->
+  </div>
+</section>",
+  "<section class="admin-moments">
+  <header class="admin-page-header">
+    <div>
+      <h1>朋友圈管理</h1>
+      <p>管理公开动态、草稿、归档及互动。</p>
+    </div><a href="/admin/moments/new">发布新动态</a>
+  </header>
+  <div>
+    <p>请先登录博主账号。</p>
+  </div>
+</section>",
+]
+`;
+
+exports[`打开评论面板时焦点移到面板，关闭后回到触发按钮；定位版本变化时聚焦目标评论 1`] = `
+[
+  "admin-moments__comments",
+  "3",
+  true,
+  1,
+]
+`;
+
+exports[`筛选、卡片操作、分页与评论操作的调用参数 1`] = `
+{
+  "applyFilters": [
+    [
+      "<Event:submit>",
+    ],
+  ],
+  "disabled": [
+    [
+      false,
+      false,
+      false,
+      false,
+      false,
+    ],
+    [
+      false,
+      false,
+      false,
+      false,
+      false,
+    ],
+    [
+      true,
+      true,
+      true,
+      true,
+      true,
+    ],
+  ],
+  "moderate": [
+    [
+      "1",
+      "hidden",
+    ],
+    [
+      "2",
+      "published",
+    ],
+    [
+      "3",
+      "published",
+    ],
+    [
+      "3",
+      "hidden",
+    ],
+    [
+      "4",
+      "published",
+    ],
+    [
+      "4",
+      "hidden",
+    ],
+  ],
+  "openComments": [
+    [
+      "a",
+    ],
+    [
+      "b",
+    ],
+    [
+      "a",
+      2,
+    ],
+  ],
+  "remove": [
+    [
+      "a",
+    ],
+    [
+      "b",
+    ],
+  ],
+  "removeComment": [
+    [
+      "1",
+    ],
+    [
+      "2",
+    ],
+    [
+      "3",
+    ],
+    [
+      "4",
+    ],
+  ],
+  "reply": [
+    [
+      "<Event:submit>",
+    ],
+  ],
+  "search": "河",
+  "setPage": [
+    [
+      1,
+    ],
+    [
+      3,
+    ],
+  ],
+  "update": [
+    [
+      "a",
+      {
+        "isPinned": false,
+      },
+    ],
+    [
+      "a",
+      {
+        "status": "draft",
+      },
+    ],
+    [
+      "a",
+      {
+        "status": "archived",
+      },
+    ],
+    [
+      "b",
+      {
+        "isPinned": true,
+      },
+    ],
+    [
+      "b",
+      {
+        "status": "published",
+      },
+    ],
+    [
+      "b",
+      {
+        "status": "archived",
+      },
+    ],
+  ],
+}
+`;

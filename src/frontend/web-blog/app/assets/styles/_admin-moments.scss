@@ -1,0 +1,96 @@
+/**
+ * @file _admin-moments.scss
+ * @description 朋友圈管理页及其筛选、动态卡片与评论条目共享的外观声明。各组件在 scoped 样式中整体 @include，
+ *              选择器与声明顺序保持拆分前的页面样式，不由父组件 :deep 下发
+ * @author TixXin
+ * @since 2026-10-27
+ */
+
+@mixin page {
+  [data-comment-target='true'] {
+    outline: 2px solid var(--accent);
+    outline-offset: 3px;
+  }
+  .admin-moments {
+    display: grid;
+    min-width: 0;
+    gap: 1rem;
+    overflow-wrap: anywhere;
+  }
+  header,
+  .admin-moments__actions,
+  .admin-moments__filters {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.65rem;
+    align-items: center;
+  }
+  header {
+    justify-content: space-between;
+  }
+  h2 {
+    font-size: 1.1rem;
+    font-weight: 600;
+  }
+  button,
+  input,
+  select,
+  textarea,
+  .admin-moments__actions a,
+  header > a {
+    padding: 0.6rem;
+    border: 1px solid var(--border);
+    border-radius: 0.5rem;
+    color: var(--text-main);
+    background: var(--surface-2);
+    min-height: 44px;
+    max-width: 100%;
+  }
+
+  textarea {
+    display: block;
+    width: 100%;
+    min-height: 5rem;
+  }
+  .admin-moments__filters input {
+    max-width: 240px;
+  }
+  .admin-moments__filters label {
+    display: grid;
+    min-width: 0;
+    gap: 0.35rem;
+  }
+  ul {
+    list-style: none;
+    padding: 0;
+    display: grid;
+    gap: 1rem;
+  }
+  li,
+  .admin-moments__comments {
+    border: 1px solid var(--border);
+    border-radius: 0.75rem;
+    padding: 1rem;
+    background: var(--surface-1);
+  }
+  .admin-moments__content {
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+    max-height: 12rem;
+    overflow: auto;
+    margin: 0.6rem 0;
+  }
+  .admin-moments__comments p {
+    overflow-wrap: anywhere;
+    white-space: pre-wrap;
+  }
+  @media (max-width: 600px) {
+    .admin-moments__filters > input,
+    .admin-moments__filters > select,
+    .admin-moments__filters label,
+    .admin-moments__filters label input {
+      width: 100%;
+      max-width: 100%;
+    }
+  }
+}
