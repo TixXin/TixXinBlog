@@ -69,11 +69,6 @@
       "count": 1
     }
   },
-  "app/components/tab/TabCommandPalette.vue": {
-    "complexity": {
-      "count": 1
-    }
-  },
   "app/components/tab/TabImportDialog.vue": {
     "vue/max-template-depth": {
       "count": 2

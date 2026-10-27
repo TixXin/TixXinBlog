@@ -85,6 +85,7 @@ import {
   paletteSelectionStatus,
   type CommandAction,
   type PaletteItem,
+  type PaletteKeyAction,
 } from '~/features/tab/paletteItems'
 
 const props = defineProps<{ actions: CommandAction[] }>()
@@ -136,18 +137,24 @@ watch(
   { immediate: true },
 )
 
-function onKeydown(e: KeyboardEvent) {
-  if (e.isComposing || e.keyCode === 229) return
+/** 输入框与结果按钮接管方向键和 Enter；关闭按钮保留原生 Enter 行为，Esc 在面板内任意位置生效 */
+function keyOwner(e: KeyboardEvent) {
+  if (e.isComposing || e.keyCode === 229) return null
   const target = e.target instanceof HTMLElement ? e.target : null
   const focusedButton = target?.closest<HTMLButtonElement>('.tab-palette__item')
-  // 关闭按钮保留原生 Enter 行为；输入框和结果按钮共同支持方向键导航。
-  if (e.key !== 'Escape' && target !== inputRef.value && !focusedButton) return
+  if (e.key !== 'Escape' && target !== inputRef.value && !focusedButton) return null
+  return { focusedButton }
+}
+
+function onKeydown(e: KeyboardEvent) {
+  const owner = keyOwner(e)
+  if (!owner) return
   const items = flattenedItems.value
   if (items.length === 0) {
     if (e.key === 'Escape') close()
     return
   }
-  const currentId = focusedButton?.dataset.id ?? focusedId.value
+  const currentId = owner.focusedButton?.dataset.id ?? focusedId.value
   const action = paletteKeyAction(
     e.key,
     items.findIndex((i) => i.id === currentId),
@@ -155,6 +162,10 @@ function onKeydown(e: KeyboardEvent) {
   )
   if (!action) return
   e.preventDefault()
+  applyKeyAction(action, items, !!owner.focusedButton)
+}
+
+function applyKeyAction(action: PaletteKeyAction, items: PaletteItem[], moveFocus: boolean) {
   if (action.kind === 'close') return close()
   const item = items[action.index]
   if (action.kind === 'run') {
@@ -162,7 +173,7 @@ function onKeydown(e: KeyboardEvent) {
     return
   }
   if (item) focusedId.value = item.id
-  scrollToFocused(!!focusedButton)
+  scrollToFocused(moveFocus)
 }
 
 function scrollToFocused(moveFocus: boolean) {
