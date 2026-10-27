@@ -485,17 +485,6 @@
       "count": 1
     }
   },
-  "app/composables/useTabBookmarks.ts": {
-    "complexity": {
-      "count": 1
-    },
-    "max-depth": {
-      "count": 3
-    },
-    "max-lines-per-function": {
-      "count": 1
-    }
-  },
   "app/composables/useTheme.ts": {
     "max-lines-per-function": {
       "count": 1
@@ -735,11 +724,6 @@
   },
   "app/features/tab/import-netscape.ts": {
     "complexity": {
-      "count": 1
-    }
-  },
-  "app/features/tab/useTabBookmarkOperations.ts": {
-    "max-lines-per-function": {
       "count": 1
     }
   },

@@ -1,0 +1,153 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`操作流程与转发 1`] = `
+[
+  [
+    "addBookmarkVisible",
+    "addCategoryVisible",
+    "settingsOpen",
+    "importOpen",
+    "onAddBookmarkClick",
+    "onAddCategoryClick",
+    "onSubmitBookmark",
+    "onUpdateBookmarkFromDialog",
+    "onRemoveBookmark",
+    "onSubmitCategory",
+    "onRemoveCategory",
+    "onReorder",
+    "onReorderCategories",
+    "onReadOnlyBlocked",
+    "onDonate",
+    "onBookmarkDropped",
+  ],
+  [
+    false,
+    false,
+    false,
+    false,
+  ],
+  [
+    false,
+    false,
+    false,
+    false,
+  ],
+  [
+    true,
+    true,
+    false,
+    false,
+  ],
+  [
+    true,
+    true,
+    false,
+    false,
+  ],
+  [
+    false,
+    true,
+    false,
+    false,
+  ],
+  [
+    false,
+    true,
+    false,
+    false,
+  ],
+  [
+    [
+      "网络中断",
+    ],
+    [
+      "保存失败，输入已保留",
+    ],
+  ],
+  [
+    [
+      "login",
+      "login",
+    ],
+    [
+      "login",
+      "login",
+    ],
+    [
+      "addBookmark",
+      {
+        "categoryId": "c1",
+        "name": "N",
+        "url": "https://n.example/",
+      },
+    ],
+    [
+      "addBookmark",
+      {
+        "categoryId": "c1",
+        "name": "N",
+        "url": "https://n.example/",
+      },
+    ],
+    [
+      "updateBookmark",
+      "b1",
+      {
+        "name": "X",
+      },
+    ],
+    [
+      "updateBookmark",
+      "b1",
+      {
+        "name": "Y",
+      },
+    ],
+    [
+      "removeBookmark",
+      "b1",
+    ],
+    [
+      "addCategory",
+      {
+        "name": "新分类",
+      },
+    ],
+    [
+      "removeCategory",
+      "c2",
+    ],
+    [
+      "reorderBookmarks",
+      [
+        {
+          "categoryId": "c1",
+          "id": "b1",
+          "sortOrder": 100,
+        },
+      ],
+    ],
+    [
+      "reorderCategories",
+      [
+        {
+          "id": "c1",
+          "sortOrder": 100,
+        },
+      ],
+    ],
+    [
+      "updateBookmark",
+      "b1",
+      {
+        "categoryId": "c2",
+      },
+    ],
+  ],
+  [
+    [
+      "浏览模式下无法修改，请先登录",
+    ],
+  ],
+]
+`;
