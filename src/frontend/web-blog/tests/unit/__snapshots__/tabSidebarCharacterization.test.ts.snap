@@ -1,0 +1,162 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`展开、折叠、只读与外观设置 1`] = `
+[
+  "<aside class="tab-side" style="border-radius: 12px; backdrop-filter: blur(14px) saturate(140%);">
+  <!-- 折叠/展开切换 --><button type="button" class="tab-side__toggle" aria-label="折叠/展开"><span class="iconify i-lucide:chevron-left" aria-hidden="true" style="font-size: 14px;"></span></button><!-- 用户头像 + 名称 -->
+  <div class="tab-side__header">
+    <div class="tab-side__avatar"><img src="/avatar.webp" alt="林间"></div>
+    <div class="tab-side__user">
+      <div class="tab-side__name">林间</div>
+      <div class="tab-side__sub">4 个书签</div>
+    </div>
+  </div>
+  <div class="tab-side__divider"></div><!-- 分类列表（不再提供「全部」按钮，默认选中首个分类；支持拖拽排序） -->
+  <nav class="tab-side__nav"><button type="button" data-category-id="category-1" data-focus-key="category:category-1" aria-label="开发文档，3 个书签" aria-pressed="true" class="tab-side__cat tab-side__cat--active"><span class="iconify i-lucide:folder tab-side__cat-icon" aria-hidden="true" style="font-size: 15px;"></span><span class="tab-side__cat-name">开发文档</span><!-- 名称与数量之间保留空白文本，否则可见文字连成“AI10”，与可访问名对不上；弹性布局中不占位 --> <span class="tab-side__cat-count">3</span></button><button type="button" data-category-id="category-2" data-focus-key="category:category-2" aria-label="阅读清单，1 个书签" aria-pressed="false" class="tab-side__cat"><span class="iconify i-lucide:folder tab-side__cat-icon" aria-hidden="true" style="font-size: 15px;"></span><span class="tab-side__cat-name">阅读清单</span><!-- 名称与数量之间保留空白文本，否则可见文字连成“AI10”，与可访问名对不上；弹性布局中不占位 --> <span class="tab-side__cat-count">1</span></button><button type="button" data-category-id="category-3" data-focus-key="category:category-3" aria-label="设计参考，0 个书签" aria-pressed="false" class="tab-side__cat">
+      <!--v-if--><span class="tab-side__cat-name">设计参考</span><!-- 名称与数量之间保留空白文本，否则可见文字连成“AI10”，与可访问名对不上；弹性布局中不占位 --> <span class="tab-side__cat-count">0</span>
+    </button></nav><!-- 新建分类 -->
+  <div class="tab-side__divider"></div><button type="button" class="tab-side__action"><span class="iconify i-lucide:folder-plus" aria-hidden="true" style="font-size: 14px;"></span><span>新建分类</span></button><!-- 底部弹性空间 + 功能按钮 -->
+  <div class="tab-side__spacer"></div>
+  <div class="tab-side__bottom"><button type="button" class="tab-side__bottom-btn"><span class="iconify i-lucide:settings" aria-hidden="true" style="font-size: 15px;"></span><span>设置</span></button><button type="button" class="tab-side__bottom-btn"><span class="iconify i-lucide:heart" aria-hidden="true" style="font-size: 15px;"></span><span>打赏</span></button></div>
+</aside>",
+  "<aside class="tab-side tab-side--collapsed" style="border-radius: 12px; backdrop-filter: blur(14px) saturate(140%);">
+  <!-- 折叠/展开切换 --><button type="button" class="tab-side__toggle" aria-label="折叠/展开"><span class="iconify i-lucide:chevron-right" aria-hidden="true" style="font-size: 14px;"></span></button><!-- 用户头像 + 名称 -->
+  <div class="tab-side__header">
+    <div class="tab-side__avatar"><img src="/avatar.webp" alt="林间"></div>
+    <!--v-if-->
+  </div>
+  <div class="tab-side__divider"></div><!-- 分类列表（不再提供「全部」按钮，默认选中首个分类；支持拖拽排序） -->
+  <nav class="tab-side__nav"><button type="button" data-category-id="category-1" data-focus-key="category:category-1" aria-label="开发文档，3 个书签" aria-pressed="true" class="tab-side__cat tab-side__cat--active" title="开发文档"><span class="iconify i-lucide:folder tab-side__cat-icon" aria-hidden="true" style="font-size: 15px;"></span>
+      <!--v-if-->
+      <!-- 名称与数量之间保留空白文本，否则可见文字连成“AI10”，与可访问名对不上；弹性布局中不占位 -->
+      <!--v-if-->
+      <!--v-if-->
+    </button><button type="button" data-category-id="category-2" data-focus-key="category:category-2" aria-label="阅读清单，1 个书签" aria-pressed="false" class="tab-side__cat" title="阅读清单"><span class="iconify i-lucide:folder tab-side__cat-icon" aria-hidden="true" style="font-size: 15px;"></span>
+      <!--v-if-->
+      <!-- 名称与数量之间保留空白文本，否则可见文字连成“AI10”，与可访问名对不上；弹性布局中不占位 -->
+      <!--v-if-->
+      <!--v-if-->
+    </button><button type="button" data-category-id="category-3" data-focus-key="category:category-3" aria-label="设计参考，0 个书签" aria-pressed="false" class="tab-side__cat" title="设计参考">
+      <!--v-if-->
+      <!--v-if-->
+      <!-- 名称与数量之间保留空白文本，否则可见文字连成“AI10”，与可访问名对不上；弹性布局中不占位 -->
+      <!--v-if-->
+      <!--v-if-->
+    </button></nav><!-- 新建分类 -->
+  <div class="tab-side__divider"></div>
+  <div class="tooltip" content="新建分类" placement="right"><button type="button" aria-label="新建分类" class="tab-side__action tab-side__action--icon"><span class="iconify i-lucide:folder-plus" aria-hidden="true" style="font-size: 15px;"></span></button></div><!-- 底部弹性空间 + 功能按钮 -->
+  <div class="tab-side__spacer"></div>
+  <div class="tab-side__bottom">
+    <div class="tooltip" content="设置" placement="right"><button type="button" class="tab-side__bottom-btn"><span class="iconify i-lucide:settings" aria-hidden="true" style="font-size: 15px;"></span></button></div>
+    <div class="tooltip" content="打赏" placement="right"><button type="button" class="tab-side__bottom-btn"><span class="iconify i-lucide:heart" aria-hidden="true" style="font-size: 15px;"></span></button></div>
+  </div>
+</aside>",
+  "<aside class="tab-side" style="border-radius: 4px; backdrop-filter: none;">
+  <!-- 折叠/展开切换 --><button type="button" class="tab-side__toggle" aria-label="折叠/展开"><span class="iconify i-lucide:chevron-left" aria-hidden="true" style="font-size: 14px;"></span></button><!-- 用户头像 + 名称 -->
+  <div class="tab-side__header">
+    <div class="tab-side__avatar"><span class="iconify i-lucide:user" aria-hidden="true" style="font-size: 18px;"></span></div>
+    <div class="tab-side__user">
+      <div class="tab-side__name">未登录</div>
+      <div class="tab-side__sub">4 个书签</div>
+    </div>
+  </div>
+  <div class="tab-side__divider"></div><!-- 分类列表（不再提供「全部」按钮，默认选中首个分类；支持拖拽排序） -->
+  <nav class="tab-side__nav"><button type="button" data-category-id="category-1" data-focus-key="category:category-1" aria-label="开发文档，3 个书签" aria-pressed="true" class="tab-side__cat tab-side__cat--active"><span class="iconify i-lucide:folder tab-side__cat-icon" aria-hidden="true" style="font-size: 15px;"></span><span class="tab-side__cat-name">开发文档</span><!-- 名称与数量之间保留空白文本，否则可见文字连成“AI10”，与可访问名对不上；弹性布局中不占位 -->
+      <!--v-if-->
+      <!--v-if-->
+    </button><button type="button" data-category-id="category-2" data-focus-key="category:category-2" aria-label="阅读清单，1 个书签" aria-pressed="false" class="tab-side__cat"><span class="iconify i-lucide:folder tab-side__cat-icon" aria-hidden="true" style="font-size: 15px;"></span><span class="tab-side__cat-name">阅读清单</span><!-- 名称与数量之间保留空白文本，否则可见文字连成“AI10”，与可访问名对不上；弹性布局中不占位 -->
+      <!--v-if-->
+      <!--v-if-->
+    </button><button type="button" data-category-id="category-3" data-focus-key="category:category-3" aria-label="设计参考，0 个书签" aria-pressed="false" class="tab-side__cat">
+      <!--v-if--><span class="tab-side__cat-name">设计参考</span><!-- 名称与数量之间保留空白文本，否则可见文字连成“AI10”，与可访问名对不上；弹性布局中不占位 -->
+      <!--v-if-->
+      <!--v-if-->
+    </button></nav><!-- 新建分类 -->
+  <!--v-if-->
+  <!-- 底部弹性空间 + 功能按钮 -->
+  <div class="tab-side__spacer"></div>
+  <div class="tab-side__bottom"><button type="button" class="tab-side__bottom-btn"><span class="iconify i-lucide:settings" aria-hidden="true" style="font-size: 15px;"></span><span>设置</span></button><button type="button" class="tab-side__bottom-btn"><span class="iconify i-lucide:heart" aria-hidden="true" style="font-size: 15px;"></span><span>打赏</span></button></div>
+</aside>",
+]
+`;
+
+exports[`指针排序：参数、开关随只读与拖拽设置、减少动效，结束后按新顺序发出排序 1`] = `
+[
+  {
+    "animation": 150,
+    "chosenClass": "tab-side__cat--chosen",
+    "draggable": ".tab-side__cat",
+    "forceFallback": false,
+    "ghostClass": "tab-side__cat--ghost",
+  },
+  1,
+  0,
+  1,
+  [
+    [
+      "animation",
+      150,
+    ],
+    [
+      "animation",
+      0,
+    ],
+    [
+      "animation",
+      0,
+    ],
+  ],
+  [
+    [
+      [
+        {
+          "id": "category-3",
+          "sortOrder": 100,
+        },
+        {
+          "id": "category-1",
+          "sortOrder": 200,
+        },
+        {
+          "id": "category-2",
+          "sortOrder": 300,
+        },
+      ],
+    ],
+  ],
+  [
+    "category-1",
+    "category-2",
+    "category-3",
+  ],
+  2,
+]
+`;
+
+exports[`选择、折叠切换、右键、新建分类、设置与赞助的事件 1`] = `
+{
+  "addCategory": 2,
+  "collapsed": [
+    [
+      true,
+    ],
+  ],
+  "contextmenu": [
+    [
+      {
+        "categoryId": "category-3",
+        "x": 12,
+        "y": 34,
+      },
+    ],
+  ],
+  "expandedButtons": 3,
+  "openDonate": 2,
+  "openSettings": 2,
+  "select": [
+    [
+      "category-2",
+    ],
+  ],
+}
+`;

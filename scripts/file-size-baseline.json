@@ -7,7 +7,6 @@
     "src/frontend/web-blog/app/components/tab/TabIconPicker.vue": 501,
     "src/frontend/web-blog/app/components/tab/TabImportDialog.vue": 455,
     "src/frontend/web-blog/app/components/tab/TabSearchBar.vue": 468,
-    "src/frontend/web-blog/app/components/tab/TabSidebarFloating.vue": 565,
     "src/frontend/web-blog/app/composables/useTabBookmarks.ts": 305,
     "src/frontend/web-blog/app/pages/admin/moments/index.vue": 374
   }
