@@ -20,7 +20,8 @@ const STRUCTURE_EXEMPT = [
 ]
 
 export default withNuxt(
-  { ignores: ['.nuxt-production/**', '.nuxt-setup-sandbox/**'] },
+  // 构建产物目录：静态发布产物含大量生成的 JS，不能进入配置文件扫描。
+  { ignores: ['.nuxt-production/**', '.nuxt-setup-sandbox/**', '.nuxt-static/**', '.output-static/**'] },
   {
     rules: {
       'no-console': 'warn',

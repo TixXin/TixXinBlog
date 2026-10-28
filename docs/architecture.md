@@ -36,6 +36,8 @@ flowchart LR
     Migration["一次性 migration<br/>profile: maintenance"] -.-> DB
 ```
 
+除此之外还有可选的[静态发布](static-publish.md)形态：构建时从这套编排的后端读取公开数据，产物是纯静态文件，部署到 EdgeOne 或 Cloudflare，访问侧不需要这些服务。同一份前端与主题、同一套内容格式，构建时固定一个布局主题和一种界面语言，访客互动在静态形态下关闭。
+
 只有 `edge` 发布宿主 HTTP/HTTPS 端口，默认绑定 `127.0.0.1`；前端、API 与数据库端口仅在容器网络内使用。[Caddy 配置](../deploy/Caddyfile)将全部路径转给 Nitro，受管媒体同样经过 `/api/v1/media/<UUID>.webp` 网关后由 API 读取媒体卷，Caddy 与前端不挂载该卷。证书与 Caddy 运行配置分别保存在 `certificates:/data` 和 `caddy-config:/config`。
 
 worker 通过数据库领取持久任务，与 API 共享 PostgreSQL 和媒体卷；备份卷仅挂载给 worker。持续循环需启用 `worker` profile 与 `OPERATIONS_WORKER_ENABLED=true`，邮件、自动备份还各自受环境开关、通道配置和数据库暂停状态约束，默认关闭。HTTP 启动不执行迁移、seed 或任务循环。执行入口见 [operations.mjs](../src/backend/server-main/scripts/operations.mjs) 与 [task-runner.ts](../src/backend/server-main/src/modules/operations/task-runner.ts)，部署条件见[部署指南](deployment.md#可选-worker-与运行观察)。
@@ -148,7 +150,7 @@ HTTP 启动不执行迁移、seed 或任务循环。生产后端 Dockerfile 提�
 | 书签                                       | 当前浏览器 LocalStorage，尚无 API 或云同步                   |
 | 运营                                       | 真实待办聚合、站内通知、持久任务和可选 SMTP/备份通道         |
 
-访客注册、多用户协作、访客邮件订阅、外部仓库指标自动同步和完整流量分析不属于当前开放能力。页面预留与静态配置不代表服务已经实现。公开友链申请是例外的可选能力：默认关闭，开启后只保存访客提交的文本并进入后台审核，通过时建立友链草稿；服务器不访问申请地址，也不向申请人发送消息。
+访客注册、多用户协作、访客邮件订阅、外部仓库指标自动同步和完整流量分析不属于当前开放能力。静态发布形态下不提供访客互动与后台入口，也不支持 Git 仓库作为内容事实源。页面预留与静态配置不代表服务已经实现。公开友链申请是例外的可选能力：默认关闭，开启后只保存访客提交的文本并进入后台审核，通过时建立友链草稿；服务器不访问申请地址，也不向申请人发送消息。
 
 平台订阅费公开页以单币种查看预算和清单，未指定有效 `currency` 时使用 USD；币种选择写入 URL，分类、状态与搜索同时约束统计和分页列表。管理后台仍可查看全部币种。本机订阅独立保留筛选，新增表单使用当前币种，成功保存后切到记录实际币种。完整详情、价格历史和续费预测按需展开，日期提醒不会执行扣款或发送通知。
 
