@@ -97,8 +97,8 @@ if changed '^(deploy/|scripts/release/|scripts/ci/|scripts/check-[^/]+\.sh$|\.hu
     printf '\n! 跳过 Shell 检查：本机没有 shellcheck，也没有可用的 Docker；CI 会照常检查\n'
   fi
 fi
-if changed '^(scripts/dev/|scripts/db/)'; then
-  step '开发启动器单测' corepack pnpm test:dev
+if changed '^(scripts/dev/|scripts/db/|scripts/static/)'; then
+  step '开发启动器与静态发布脚本单测' corepack pnpm test:dev
 fi
 
 if [ "$run_e2e" = 1 ]; then
