@@ -9,6 +9,7 @@ import nexusHostConfig from './themes/nexus/theme.config'
 import auroraHostConfig from './themes/aurora/theme.config'
 import dockHostConfig from './themes/dock/theme.config'
 import { readFileSync, readdirSync } from 'node:fs'
+import { securityHeaders } from './securityHeaders'
 import { SSR_CACHED_PAGES } from './server/utils/ssrCacheRoutes'
 import { DICTIONARY_DOMAINS, LOCALE_COOKIE_KEY, resolveDefaultLocale } from './i18n/localeOptions'
 
@@ -19,10 +20,11 @@ const themeHostConfigs = {
   dock: dockHostConfig,
 }
 /** 布局主题运行时约定：默认主题与 cookie 键同时被主题引擎与宿主运行时读取 */
+// 静态发布在构建时固定布局主题（scripts/static/build.mjs 传入 STATIC_LAYOUT_THEME）；其余构建始终为 nexus。
 const layoutThemeRuntimeConfig = {
-  defaultTheme: 'nexus',
+  defaultTheme: process.env.STATIC_LAYOUT_THEME || 'nexus',
   cookieKey: 'blog-layout-theme',
-} as const
+}
 
 /**
  * 构建期单一事实源校验：引擎只按目录里的 theme.json 发现主题，宿主登记漏一项就会出现
@@ -133,6 +135,14 @@ export default {
       site: { env: 'production' },
       experimental: { payloadExtraction: true },
       runtimeConfig: { public: { staticSite: true } },
+      // 静态站没有 /api/_nuxt_icon 可回退：映射表（.ts）里的图标与构建脚本从数据中收集的图标都打进客户端包。
+      icon: {
+        clientBundle: {
+          scan: { globInclude: ['**/*.{vue,jsx,tsx,md,mdc,mdx,yml,yaml}', 'app/**/*.ts', 'themes/**/*.ts'] },
+          icons: (process.env.STATIC_ICONS ?? '').split(',').filter(Boolean),
+          sizeLimitKb: 512,
+        },
+      },
       nitro: {
         preset: 'static',
         output: { dir: process.env.STATIC_OUTPUT_DIR || '.output-static' },
@@ -141,6 +151,10 @@ export default {
           routes: process.env.STATIC_ROUTES_FILE
             ? (JSON.parse(readFileSync(process.env.STATIC_ROUTES_FILE, 'utf8')).routes as string[])
             : ['/'],
+          // 后台、初始化与草稿预览依赖后端，不进入静态产物，访问时由平台返回 404。
+          ignore: ['/admin', '/setup', '/posts/preview'],
+          // 文章页的 Markdown 与代码高亮渲染较重，并发过高时详情请求会超时；构建失败不产出缺页站点。
+          concurrency: 4,
           failOnError: true,
         },
       },
@@ -361,29 +375,7 @@ export default {
     esbuild: { options: { target: 'node26' } },
     compressPublicAssets: true,
     routeRules: {
-      '/**': {
-        headers: {
-          'Content-Security-Policy': [
-            "default-src 'self'",
-            "script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval'",
-            "style-src 'self' 'unsafe-inline'",
-            "img-src 'self' data: https:",
-            "font-src 'self' data:",
-            // useMockRepo=false 时浏览器需直连后端 API，把 API origin 加入 connect-src 白名单
-            "connect-src 'self'",
-            "frame-ancestors 'none'",
-            // 站点不使用插件、内嵌框架与跨站表单；统计脚本来源由 server/plugins/csp-analytics.ts 在运行时追加
-            "object-src 'none'",
-            // 开发模式的错误详情浮层通过 data: iframe 展示堆栈，仅开发放行；生产仍禁止内嵌框架
-            process.env.NODE_ENV === 'production' ? "frame-src 'none'" : "frame-src 'self' data:",
-            "base-uri 'self'",
-            "form-action 'self'",
-          ].join('; '),
-          'X-Content-Type-Options': 'nosniff',
-          'X-Frame-Options': 'DENY',
-          'Referrer-Policy': 'strict-origin-when-cross-origin',
-        },
-      },
+      '/**': { headers: securityHeaders(process.env.NODE_ENV === 'production') },
     },
   },
   css: ['~/assets/styles/main.scss'],

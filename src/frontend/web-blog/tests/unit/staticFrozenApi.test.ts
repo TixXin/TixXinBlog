@@ -8,7 +8,7 @@ import {
   frozenApiKey,
   hasTextQuery,
 } from '../../app/features/static/frozenApi'
-import { createStaticFetch, type BaseFetch, type StaticFetchOptions } from '../../app/features/static/staticFetch'
+import { createStaticFetchGuard, type TextQueryFallback } from '../../app/features/static/staticFetch'
 import { filterFrozenList, textQueryFallback } from '../../app/features/static/textQuery'
 import { enableStaticImageVariants, managedImageSrcset, managedImageUrl } from '../../app/utils/managedImage'
 
@@ -54,51 +54,73 @@ describe('冻结接口键', () => {
   })
 })
 
-function fakeFetch() {
-  const calls: { request: string; options?: StaticFetchOptions; raw?: boolean }[] = []
-  const base = vi.fn(async (request: string, options?: StaticFetchOptions) => {
-    calls.push({ request, options })
-    return { code: 0, data: request }
-  }) as unknown as BaseFetch
-  base.raw = vi.fn(async (request: string, options?: StaticFetchOptions) => {
-    calls.push({ request, options, raw: true })
-    return { request }
-  })
-  base.create = vi.fn(() => base)
-  return { base, calls }
+function fakeFetch(respond?: (request: string) => Response) {
+  const calls: { request: string; init?: RequestInit }[] = []
+  const native = (async (request: RequestInfo | URL, init?: RequestInit) => {
+    const url = String(request instanceof Request ? request.url : request)
+    calls.push({ request: url, init })
+    return respond?.(url) ?? new Response(JSON.stringify({ code: 0, data: null }), { status: 200 })
+  }) as typeof fetch
+  return { native, calls }
 }
+const json = (data: unknown) => ({ code: 0, data })
 
-describe('静态取数包装', () => {
-  const setup = (fallback = vi.fn()) => {
-    const { base, calls } = fakeFetch()
-    const fetch = createStaticFetch(base, { apiBase: '/api/v1', origin: 'https://blog.example', fallback })
-    return { fetch, calls, fallback }
+describe('静态取数守卫', () => {
+  const setup = (options: { respond?: (request: string) => Response; fallback?: TextQueryFallback } = {}) => {
+    const { native, calls } = fakeFetch(options.respond)
+    const fallback = options.fallback ?? vi.fn(async () => new Response('{}', { status: 404 }))
+    const guard = createStaticFetchGuard(native, {
+      apiBase: '/api/v1',
+      origin: 'https://blog.example',
+      fallback,
+    })
+    return { guard, calls, fallback }
   }
 
-  it('公开 GET 改读冻结文件，去掉查询并附带原始键', async () => {
-    const { fetch, calls } = setup()
-    await fetch('/api/v1/posts', { query: { page: 2, pageSize: 15 }, timeout: 10000 })
+  it('公开 GET 改读冻结文件，查询串规范化后作为原始键', async () => {
+    const { guard, calls } = setup()
+    await guard('/api/v1/posts?pageSize=15&page=2')
     expect(calls[0]!.request).toBe(frozenApiFile('/posts?page=2&pageSize=15'))
-    expect(calls[0]!.options).toMatchObject({ method: 'GET', query: undefined, timeout: 10000 })
-    expect(new Headers(calls[0]!.options!.headers).get(FROZEN_SOURCE_HEADER)).toBe('/posts?page=2&pageSize=15')
-    await fetch.raw('/api/v1/site')
-    expect(calls[1]).toMatchObject({ request: frozenApiFile('/site'), raw: true })
+    expect(new Headers(calls[0]!.init!.headers).get(FROZEN_SOURCE_HEADER)).toBe('/posts?page=2&pageSize=15')
+    await guard('https://blog.example/api/v1/links/metadata')
+    expect(calls[1]!.request).toBe(frozenApiFile('/links/metadata'))
   })
 
-  it('非接口地址原样请求，写入请求直接拒绝且不发出', async () => {
-    const { fetch, calls } = setup()
-    await fetch('/_nuxt/builds/latest.json')
-    expect(calls[0]!.request).toBe('/_nuxt/builds/latest.json')
-    await expect(fetch('/api/v1/guestbook', { method: 'POST', body: {} })).rejects.toMatchObject({ statusCode: 405 })
-    expect(calls).toHaveLength(1)
+  it('非接口地址与二进制接口原样请求，写入请求直接拒绝且不发出', async () => {
+    const { guard, calls } = setup()
+    await guard('/_nuxt/app.js')
+    await guard('/api/v1/media/8b7c145a-50b1-4b98-9867-87de592527ab-w640.webp')
+    expect(calls.map((call) => call.request)).toEqual([
+      '/_nuxt/app.js',
+      '/api/v1/media/8b7c145a-50b1-4b98-9867-87de592527ab-w640.webp',
+    ])
+    await expect(guard('/api/v1/guestbook', { method: 'POST' })).rejects.toMatchObject({ statusCode: 405 })
+    expect(calls).toHaveLength(2)
   })
 
-  it('自由文本查询交给回退，并能读取冻结文件', async () => {
-    const fallback = vi.fn(async (_key: string, load: (file: string) => Promise<unknown>) => load('/_api/all.json'))
-    const { fetch, calls } = setup(fallback)
-    await fetch('/api/v1/links', { query: { q: 'vue', page: 1 } })
+  it('自由文本查询直接交给回退', async () => {
+    const fallback = vi.fn(async () => new Response(JSON.stringify(json({ total: 0 })), { status: 200 }))
+    const { guard, calls } = setup({ fallback })
+    const response = await guard('/api/v1/links?q=vue&page=1')
     expect(fallback.mock.calls[0]![0]).toBe('/links?page=1&q=vue')
-    expect(calls[0]!.request).toBe('/_api/all.json')
+    expect(calls).toHaveLength(0)
+    expect(await response.json()).toEqual(json({ total: 0 }))
+  })
+
+  it('精确文件缺失时在全量上计算，全量也没有时保留原来的 404', async () => {
+    const ok = (data: unknown) => new Response(JSON.stringify(json(data)), { status: 200 })
+    // 精确文件缺失（404），列表全量存在
+    const { guard } = setup({
+      respond: (request: string) =>
+        request === frozenApiFile('/links#all')
+          ? ok({ items: [{ id: 1 }, { id: 2 }] })
+          : new Response('', { status: 404 }),
+      fallback: textQueryFallback,
+    })
+    const response = await guard('/api/v1/links?page=2&pageSize=1')
+    expect(response.status).toBe(200)
+    expect((await response.json()).data).toMatchObject({ items: [{ id: 2 }], total: 2 })
+    expect((await guard('/api/v1/gallery?page=3')).status).toBe(404)
   })
 })
 
@@ -128,15 +150,16 @@ describe('自由文本查询回退', () => {
   })
 
   it('读取列表全量后返回接口信封；缺少全量数据时给出 404', async () => {
-    const load = vi.fn(async () => ({ code: 0, data: { items } }))
-    await expect(textQueryFallback('/flashes/search?q=nest', load)).resolves.toMatchObject({
-      code: 0,
-      data: { total: 1 },
-    })
-    expect(load).toHaveBeenCalledWith(frozenApiFile(frozenAllKey('/flashes')))
-    await expect(textQueryFallback('/links?q=x', vi.fn().mockRejectedValue(new Error('404')))).rejects.toMatchObject({
-      statusCode: 404,
-    })
+    const load = vi.fn(async () => new Response(JSON.stringify({ code: 0, data: { items } })))
+    const response = await textQueryFallback('/flashes/search?q=nest', load)
+    expect(await response.json()).toMatchObject({ code: 0, data: { total: 1 } })
+    expect(load).toHaveBeenCalledWith(frozenAllKey('/flashes'))
+    await expect(
+      textQueryFallback(
+        '/links?q=x',
+        vi.fn(async () => new Response('{}', { status: 404 })),
+      ),
+    ).rejects.toMatchObject({ statusCode: 404 })
   })
 })
 

@@ -1,12 +1,12 @@
-/** @file textQuery.ts @description 静态站自由文本查询：在构建时导出的列表全量上做不区分大小写的子串匹配，再按请求分页；字段范围以公开列表投影为准 */
-import { TEXT_QUERY_PARAMS, frozenAllKey, frozenApiFile } from './frozenApi'
-import { staticFetchError } from './staticFetch'
+/** @file textQuery.ts @description 静态站列表回退：自由文本查询或构建时未枚举到的筛选与分页组合，在导出的列表全量上做不区分大小写的子串匹配与同名字段筛选，再按请求分页；字段范围以公开列表投影为准 */
+import { TEXT_QUERY_PARAMS, frozenAllKey } from './frozenApi'
+import { staticFetchError, type LoadFrozen } from './staticFetch'
 
 /** 查询接口与其全量来源不同名时的映射，例如闪念搜索取自闪念列表 */
 const sourcePaths: Record<string, string> = { '/flashes/search': '/flashes' }
 /** 查询参数名与列表条目字段名不一致时的映射；未列出的参数按同名字段比较 */
 const fieldAliases: Record<string, string> = { featured: 'isFeatured', tag: 'tags', folder: 'folder' }
-const paging = new Set(['page', 'pageSize', 'limit', 'cursor'])
+const paging = new Set(['page', 'pageSize', 'limit', 'cursor', 'before'])
 /** 只影响排序或展示的参数，不参与过滤 */
 const ignored = new Set(['pinnedFirst', 'sort', 'order', 'mode', 'includeArchive', 'scope'])
 
@@ -52,15 +52,15 @@ export function filterFrozenList(key: string, items: Item[]) {
   }
 }
 
-export async function textQueryFallback(key: string, load: (file: string) => Promise<unknown>) {
+export async function textQueryFallback(key: string, load: LoadFrozen) {
   const path = key.split('?', 2)[0]!
   const source = sourcePaths[path] ?? path
-  let envelope: { code?: number; data?: { items?: Item[] } }
-  try {
-    envelope = (await load(frozenApiFile(frozenAllKey(source)))) as typeof envelope
-  } catch {
-    throw staticFetchError(404, '静态站点没有该列表的搜索数据')
-  }
+  const response = await load(frozenAllKey(source))
+  if (!response.ok) throw staticFetchError(404, '静态站点没有该列表的搜索数据')
+  const envelope = (await response.json()) as { data?: { items?: Item[] } }
   if (!Array.isArray(envelope?.data?.items)) throw staticFetchError(404, '静态站点没有该列表的搜索数据')
-  return { code: 0, message: 'ok', data: filterFrozenList(key, envelope.data.items) }
+  return new Response(JSON.stringify({ code: 0, message: 'ok', data: filterFrozenList(key, envelope.data.items) }), {
+    status: 200,
+    headers: { 'content-type': 'application/json' },
+  })
 }

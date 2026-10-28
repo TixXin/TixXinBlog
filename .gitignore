@@ -6,6 +6,8 @@ node_modules/
 .nuxt/
 .nuxt-production/
 .nuxt-setup-sandbox/
+.nuxt-static/
+.output-static/
 .output/
 dist/
 .dev-dist/
