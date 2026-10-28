@@ -97,13 +97,13 @@ const formattedDate = computed(() => formatRelativeDate(props.post.date, t))
   }
 
   @media (min-width: $breakpoint-sm) {
-    padding: var(--nx-post-pad, 1rem 1.25rem);
+    padding: var(--nx-post-pad-y, 1rem) 1.25rem;
     gap: 1rem;
   }
 
   // 紧凑档（sm–xl）：窄视口下卡片内边距略收，给标题/摘要更多横向空间
   @media (min-width: $breakpoint-sm) and (max-width: #{$breakpoint-xl - 1px}) {
-    padding: var(--nx-post-pad, 0.85rem 1rem);
+    padding: var(--nx-post-pad-y, 0.85rem) 1rem;
     gap: 0.75rem;
   }
 }

@@ -37,6 +37,49 @@
     --nx-stack-gap: 1rem;
     --nx-bar-expanded: 96px;
   }
+
+  // 高度紧凑档（≤900px）：笔记本常见视口，收紧纵向留白、页头与底栏，把高度还给正文。
+  // 各值不大于宽度紧凑档，保证两档叠加时只会更紧；头像凸出量（头像+底距-底栏高）等于外层间距，不压到上方卡片
+  @media (min-width: $breakpoint-lg) and (max-height: 900px) {
+    --nx-shell-pad-y: 0.5rem;
+    --nx-shell-gap: 0.75rem;
+    --nx-grid-gap: 1rem;
+    --nx-stack-gap: 1rem;
+    --nx-card-radius: 1.25rem;
+    --nx-card-pad-scale: 0.8;
+    --nx-header-pad-top: 0.875rem;
+    --nx-header-pad-bottom: 1rem;
+    --nx-tab-pad-y: 0.625rem;
+    --nx-post-pad-y: 0.8125rem;
+    --nx-bar-h: 60px;
+    --nx-bar-expanded: 104px;
+    --nx-bar-avatar: 60px;
+    --nx-bar-avatar-bottom: 12px;
+    --nx-bar-link-pad: 0.375rem 0.625rem;
+  }
+
+  // 高度极紧凑档（≤780px）：1366×768、1280×720 等，再收一档留白与文章卡片行高
+  @media (min-width: $breakpoint-lg) and (max-height: 780px) {
+    --nx-shell-pad-y: 0.375rem;
+    --nx-shell-gap: 0.625rem;
+    --nx-stack-gap: 0.875rem;
+    --nx-card-pad-scale: 0.7;
+    --nx-header-pad-top: 0.625rem;
+    --nx-header-pad-bottom: 0.75rem;
+    --nx-tab-pad-y: 0.5rem;
+    --nx-post-pad-y: 0.75rem;
+    --nx-summary-lh: 1.45;
+    --nx-bar-h: 56px;
+    --nx-bar-expanded: 96px;
+    --nx-bar-avatar: 56px;
+    --nx-bar-avatar-bottom: 10px;
+  }
+
+  // 触屏设备：底栏按钮与导航项保持不小于 40px 的点击区域
+  @media (min-width: $breakpoint-lg) and (pointer: coarse) {
+    --nx-bar-action: 2.5rem;
+    --nx-hit-min: 40px;
+  }
 }
 
 // 圆角与滚动条轨道内缩统一读取卡片圆角变量；:where 保持与原规则同级权重，组件自定圆角仍优先
