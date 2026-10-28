@@ -270,21 +270,19 @@ onBeforeUnmount(() => {
 
   transition:
     height 0.18s cubic-bezier(0.4, 0, 0.6, 1),
-    transform 0.18s cubic-bezier(0.4, 0, 0.6, 1),
     background 0.25s ease,
     box-shadow 0.25s ease;
   @media (prefers-reduced-motion: reduce) {
     transition: none;
   }
 
+  // 底栏位于底部对齐的网格行内，增高时自然向上展开，无需再用 transform 上移
   &.is-expanded {
     height: var(--nx-bar-expanded);
-    transform: translateY(calc(var(--nx-bar-h) - var(--nx-bar-expanded)));
     z-index: 20;
 
     transition:
       height 0.3s cubic-bezier(0.22, 0.68, 0.35, 1),
-      transform 0.3s cubic-bezier(0.22, 0.68, 0.35, 1),
       background 0.3s ease,
       box-shadow 0.3s ease;
     @media (prefers-reduced-motion: reduce) {
