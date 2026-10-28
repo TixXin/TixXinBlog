@@ -300,16 +300,17 @@ corepack pnpm --filter server-main test:integration
 
 按改动选择相关检查；数据库、迁移和写入恢复不能仅靠前端单测验证。
 
-| 范围                       | 命令                                                                            |
-| -------------------------- | ------------------------------------------------------------------------------- |
-| 启动生命周期               | `corepack pnpm test:dev`                                                        |
-| Nuxt/Nest 隔离冷启动与复用 | `corepack pnpm test:dev:integration`                                            |
-| PostgreSQL 启动归属        | `corepack pnpm test:dev:postgres`                                               |
-| 固定版本 Nuxt 补丁         | `corepack pnpm test:nuxt-patches`                                               |
-| 订阅业务与内容迁入         | 后端 `test:subscriptions`，共用计算 `corepack pnpm test:subscription-domain`    |
-| 数据库工具与样本归属       | 后端 `test:database-dev`、`test:development-data`                               |
-| 备份与运行任务             | 后端 `test:backup-integrity`、`test:backup-restore`、`test:operations`          |
-| 浏览器                     | `corepack pnpm test:e2e`，或已有两端生产构建后执行 `corepack pnpm test:e2e:run` |
+| 范围                       | 命令                                                                                                  |
+| -------------------------- | ----------------------------------------------------------------------------------------------------- |
+| 启动生命周期               | `corepack pnpm test:dev`                                                                              |
+| Nuxt/Nest 隔离冷启动与复用 | `corepack pnpm test:dev:integration`                                                                  |
+| PostgreSQL 启动归属        | `corepack pnpm test:dev:postgres`                                                                     |
+| 静态发布构建与托管配置     | `corepack pnpm test:dev`；需要完整链路时 `corepack pnpm static:build` 见[静态发布](static-publish.md) |
+| 固定版本 Nuxt 补丁         | `corepack pnpm test:nuxt-patches`                                                                     |
+| 订阅业务与内容迁入         | 后端 `test:subscriptions`，共用计算 `corepack pnpm test:subscription-domain`                          |
+| 数据库工具与样本归属       | 后端 `test:database-dev`、`test:development-data`                                                     |
+| 备份与运行任务             | 后端 `test:backup-integrity`、`test:backup-restore`、`test:operations`                                |
+| 浏览器                     | `corepack pnpm test:e2e`，或已有两端生产构建后执行 `corepack pnpm test:e2e:run`                       |
 
 浏览器运行器需要可创建临时数据库的 PostgreSQL 用户，可按 spec 和浏览器选择范围：
 

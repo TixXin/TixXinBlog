@@ -12,6 +12,7 @@
 - 类型位于 `features/<domain>/types.ts`；页面组织业务，展示组件通过 props 和事件交互。三主题遵循本地主题契约。
 - 内容包当前导出 v14、接受 v1–v13；正式持久字段和关系的变更必须同步迁移、历史保护、内容包兼容和完整恢复。
 - 图库受管媒体与外链互斥，服务器不主动抓取用户提交的外部图片地址。
+- 静态发布（`corepack pnpm static:build`）是第二种部署形态：构建时从真实后端导出公开数据，静态站没有后端，访客互动与登录入口按部署形态隐藏。改动公开页面取数、互动入口或安全头时必须同步核对静态形态，规则见 [静态发布](docs/static-publish.md)。
 
 ## 开发与验证
 
@@ -28,6 +29,7 @@ corepack pnpm --filter server-main typecheck
 corepack pnpm --filter server-main test
 corepack pnpm build
 corepack pnpm --filter server-main build
+corepack pnpm static:build --site-url https://<域名>   # 静态发布，需要运行中的后端
 ```
 
 - 先核对 Git 改动、运行服务、数据库目标与实际代码；保护用户已有修改、账号、环境配置和数据。
