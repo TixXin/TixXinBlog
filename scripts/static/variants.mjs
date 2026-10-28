@@ -66,5 +66,18 @@ export async function staticVariants(read) {
   for (const topic of moments.topics ?? []) urls.add(query('/moments', { topic: topic.name }))
   for (const day of new Set(guestbook.map((message) => String(message.createdAt ?? '').slice(0, 10))))
     if (/^\d{4}-\d{2}-\d{2}$/.test(day)) urls.add(query('/guestbook', { date: day }))
+  // 自由文本查询与未枚举的分页组合走列表全量回退，校验爬取要覆盖到这几条路径。
+  for (const url of [
+    '/search?q=Vue',
+    '/search?q=%E9%83%A8%E7%BD%B2&type=post',
+    '/links?q=vue',
+    '/projects?q=Type',
+    '/prompts?q=%E5%85%89',
+    '/gallery?q=%E5%B1%B1',
+    '/moments?q=%E4%BB%8A%E5%A4%A9',
+    '/guestbook?q=%E6%AC%A2%E8%BF%8E',
+    '/links?page=99',
+  ])
+    urls.add(url)
   return [...urls]
 }
