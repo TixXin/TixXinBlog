@@ -92,6 +92,19 @@ export function usePublicReadData<T>(
           retained.value = { key: key(), value }
           return value
         }
+        // 静态发布：客户端切到预渲染页面时，Nuxt 已把该页 _payload.json 载入 static.data；
+        // 服务器部署关闭 payload 提取，static.data 始终为空，行为不变。
+        if (
+          cause === 'initial' &&
+          import.meta.client &&
+          !context.isHydrating &&
+          context.static.data[nuxtKey] !== undefined
+        ) {
+          const value = context.static.data[nuxtKey] as T
+          remember(value, key(), cache.generation(options.domain))
+          retained.value = { key: key(), value }
+          return value
+        }
         if (cause !== 'initial' && cause !== 'watch') return undefined
         const hit = readCached()
         if (hit) {

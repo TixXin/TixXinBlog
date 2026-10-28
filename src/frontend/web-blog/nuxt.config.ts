@@ -126,6 +126,25 @@ export default {
       vite: { cacheDir: 'node_modules/.cache/vite-setup-sandbox' },
       site: { env: 'development' },
     },
+    // 静态发布（docs/static-publish.md）：由 scripts/static/build.mjs 调用，预渲染公开页面并读取冻结接口，
+    // 使用独立构建与输出目录，不改写服务器部署的产物。
+    'static-publish': {
+      buildDir: '.nuxt-static',
+      site: { env: 'production' },
+      experimental: { payloadExtraction: true },
+      runtimeConfig: { public: { staticSite: true } },
+      nitro: {
+        preset: 'static',
+        output: { dir: process.env.STATIC_OUTPUT_DIR || '.output-static' },
+        prerender: {
+          crawlLinks: false,
+          routes: process.env.STATIC_ROUTES_FILE
+            ? (JSON.parse(readFileSync(process.env.STATIC_ROUTES_FILE, 'utf8')).routes as string[])
+            : ['/'],
+          failOnError: true,
+        },
+      },
+    },
   },
   compatibilityDate: '2025-07-15',
   devtools: { enabled: process.env.NUXT_DEVTOOLS_ENABLED === 'true' },
@@ -269,6 +288,8 @@ export default {
       // QQ 邮箱访客自动取 QQ 头像，依赖腾讯的公开头像服务；
       // 面向中国大陆以外部署时可设 NUXT_PUBLIC_QQ_AVATAR_ENABLED=false 关闭，改用首字母文字头像。
       qqAvatarEnabled: process.env.NUXT_PUBLIC_QQ_AVATAR_ENABLED !== 'false',
+      // 静态发布形态：没有后端与访客身份，公开读取改读冻结接口，互动与外观切换入口隐藏。
+      staticSite: false,
     },
   },
   // sitemap 与 robots 的构建期站点标识；地址由部署环境经 NUXT_PUBLIC_SITE_URL 注入。
