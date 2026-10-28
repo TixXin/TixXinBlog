@@ -119,8 +119,8 @@ function onProgressClick() {
 
   :deep(.theme-switcher),
   :deep(button.appearance-fab) {
-    width: 2.25rem;
-    height: 2.25rem;
+    width: var(--bar-action-size);
+    height: var(--bar-action-size);
   }
 
   :deep(svg) {
@@ -157,6 +157,7 @@ function onProgressClick() {
   align-items: center;
   gap: 0.375rem;
   padding: 0.4rem 0.75rem;
+  min-height: var(--nx-hit-min, 0);
   border-radius: $radius-sm;
   font-size: 0.8125rem;
   font-weight: 500;
@@ -207,8 +208,8 @@ function onProgressClick() {
   justify-content: center;
   flex-shrink: 0;
   margin-left: auto;
-  width: 2.25rem;
-  height: 2.25rem;
+  width: var(--bar-action-size);
+  height: var(--bar-action-size);
   border-radius: 50%;
   border: none;
   background: var(--surface-2);

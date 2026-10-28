@@ -1,0 +1,52 @@
+/**
+ * @file _nexus-density.scss
+ * @description Nexus 主题信息密度变量：集中定义外层间距、卡片、页头、文章卡片与底栏尺寸，按宽度与视口高度分档
+ * @author TixXin
+ * @since 2026-10-28
+ */
+
+@use 'tokens' as *;
+
+// 默认值与改造前写死的数值一致；组件以 var(--nx-*, 原值) 读取，Nexus 以外的主题走回退值。
+// 页头、Tab、文章卡片等跨主题共享的变量不在此设默认值，未设置时由组件回退到各自原有的宽度分档值。
+.theme-nexus {
+  --nx-shell-pad-y: 1rem;
+  --nx-shell-pad-x: 2rem;
+  --nx-shell-gap: #{$grid-gap};
+  --nx-grid-gap: #{$grid-gap};
+  --nx-stack-gap: #{$grid-gap};
+  --nx-card-radius: #{$radius-card};
+  // 侧栏卡片纵向内边距倍率：保留各卡片自身的比例，只整体收放
+  --nx-card-pad-scale: 1;
+  --nx-bar-h: 72px;
+  --nx-bar-expanded: 112px;
+  --nx-bar-avatar: 80px;
+  --nx-bar-avatar-bottom: 16px;
+  --nx-bar-action: 2.25rem;
+
+  // 宽度紧凑档（lg–xl）：三栏互相挤压，收小外层留白与栏间距
+  @media (min-width: $breakpoint-lg) and (max-width: #{$breakpoint-xl - 1px}) {
+    --nx-shell-pad-y: 0.625rem;
+    --nx-shell-pad-x: 1.25rem;
+    --nx-shell-gap: 1rem;
+    --nx-grid-gap: 1rem;
+  }
+
+  // 低高度视口（含平板）：侧栏卡片间距收紧，底栏展开态压低
+  @media (max-height: 600px) {
+    --nx-stack-gap: 1rem;
+    --nx-bar-expanded: 96px;
+  }
+}
+
+// 圆角与滚动条轨道内缩统一读取卡片圆角变量；:where 保持与原规则同级权重，组件自定圆角仍优先
+:where(.theme-nexus) .card,
+:where(.theme-nexus) .main-content {
+  border-radius: var(--nx-card-radius);
+}
+
+:where(.theme-nexus) .main-content,
+:where(.theme-nexus) .aside-left,
+:where(.theme-nexus) .aside-right {
+  --scrollbar-track-inset: var(--nx-card-radius);
+}

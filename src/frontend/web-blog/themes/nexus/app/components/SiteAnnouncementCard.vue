@@ -36,7 +36,7 @@ const { announcements } = useSiteInfo()
 
 <style lang="scss" scoped>
 .announcement-card {
-  padding: 1rem 1.25rem;
+  padding: calc(1rem * var(--nx-card-pad-scale, 1)) 1.25rem;
 }
 
 .announcement-card__header {

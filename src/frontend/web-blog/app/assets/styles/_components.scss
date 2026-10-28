@@ -71,7 +71,7 @@
 // Tab underline
 .tab-btn {
   position: relative;
-  padding: 1rem 0;
+  padding: var(--nx-tab-pad-y, 1rem) 0;
   font-weight: 500;
   color: var(--text-muted);
   transition: $transition-fast;

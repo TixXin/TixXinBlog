@@ -54,11 +54,11 @@ const statItems = computed(() => [
 
 <style lang="scss" scoped>
 .stats-card {
-  padding: 1.25rem;
+  padding: calc(1.25rem * var(--nx-card-pad-scale, 1)) 1.25rem;
 
   // 紧凑档（md–xl）：左栏只有 240px 宽度时，卡片 padding 收窄给内容让空间
   @media (min-width: $breakpoint-md) and (max-width: #{$breakpoint-xl - 1px}) {
-    padding: 1rem 0.9rem;
+    padding: calc(1rem * var(--nx-card-pad-scale, 1)) 0.9rem;
   }
 }
 

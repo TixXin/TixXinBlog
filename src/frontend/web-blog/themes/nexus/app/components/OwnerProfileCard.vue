@@ -69,7 +69,7 @@ watch(
 
 <style lang="scss" scoped>
 .owner-profile-card {
-  padding: 1.5rem 1.25rem 1.25rem;
+  padding: calc(1.5rem * var(--nx-card-pad-scale, 1)) 1.25rem calc(1.25rem * var(--nx-card-pad-scale, 1));
   display: flex;
   flex-direction: column;
   align-items: center;

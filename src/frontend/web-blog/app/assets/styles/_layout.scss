@@ -19,7 +19,7 @@
 
   @media (min-width: $breakpoint-md) {
     // 上下收紧一半，左右保留 2rem 呼吸区
-    padding: 1rem 2rem;
+    padding: var(--nx-shell-pad-y) var(--nx-shell-pad-x);
   }
 
   @media (min-width: $breakpoint-lg) {
@@ -27,13 +27,8 @@
     overflow: clip;
     display: flex;
     flex-direction: column;
-    gap: $grid-gap;
-  }
-
-  // 紧凑档：lg–xl 区间减小三栏间距，避免三栏互相挤压
-  @media (min-width: $breakpoint-lg) and (max-width: #{$breakpoint-xl - 1px}) {
-    padding: 0.625rem 1.25rem;
-    gap: 1rem;
+    // 外层留白与底栏间距随密度档位变化，取值见 _nexus-density.scss
+    gap: var(--nx-shell-gap);
   }
 }
 
@@ -44,7 +39,7 @@
   margin: 0 auto;
   display: grid;
   grid-template-columns: 1fr;
-  gap: $grid-gap;
+  gap: var(--nx-grid-gap, #{$grid-gap});
   align-items: start;
   padding-bottom: 5rem;
 
@@ -63,7 +58,6 @@
   // 紧凑档：lg–xl 区间左栏使用紧凑宽度
   @media (min-width: $breakpoint-lg) and (max-width: #{$breakpoint-xl - 1px}) {
     grid-template-columns: #{$sidebar-left-width-compact} 1fr;
-    gap: 1rem;
   }
 
   // xl+ 恢复原 280px 左栏
@@ -76,7 +70,7 @@
 .page-columns {
   display: flex;
   flex-direction: column;
-  gap: $grid-gap;
+  gap: var(--nx-grid-gap, #{$grid-gap});
   min-width: 0;
   height: 100%;
 
@@ -85,14 +79,12 @@
     grid-template-columns: 1fr #{$sidebar-right-width};
     // 锁死 grid row，防止 aside-right 内的卡片内容把 row 撑得比父容器还高
     grid-template-rows: minmax(0, 1fr);
-    gap: $grid-gap;
     min-height: 0;
   }
 
-  // 紧凑档：lg–xl 区间右栏使用紧凑宽度与更小间距
+  // 紧凑档：lg–xl 区间右栏使用紧凑宽度
   @media (min-width: $breakpoint-lg) and (max-width: #{$breakpoint-xl - 1px}) {
     grid-template-columns: 1fr #{$sidebar-right-width-compact};
-    gap: 1rem;
   }
 }
 
@@ -107,7 +99,7 @@
 .aside-left {
   display: none;
   flex-direction: column;
-  gap: $grid-gap;
+  gap: var(--nx-stack-gap, #{$grid-gap});
   // 与 .main-content 一致：滚动条 track 上下各 inset 一个卡片圆角距离，避免贴到首/末卡片圆角
   --scrollbar-track-inset: #{$radius-card};
 
@@ -136,7 +128,7 @@
 .aside-left__viewport {
   display: flex;
   flex-direction: column;
-  gap: $grid-gap;
+  gap: var(--nx-stack-gap, #{$grid-gap});
 
   @media (min-width: $breakpoint-lg) {
     // padding + 负 margin 对称技巧：content-box 宽度 = 父容器 content-box 宽度（卡片宽度不变），
@@ -173,7 +165,7 @@
 }
 
 .main-content__header {
-  padding: 1.5rem 2rem 0;
+  padding: var(--nx-header-pad-top, 1.5rem) 2rem 0;
   border-bottom: 1px solid var(--border-soft);
   display: flex;
   flex-direction: column;
@@ -189,7 +181,7 @@
 
   // 紧凑档：lg–xl 减小左右 padding，让头部内容有更多呼吸空间
   @media (min-width: $breakpoint-lg) and (max-width: #{$breakpoint-xl - 1px}) {
-    padding: 1.25rem 1.25rem 0;
+    padding: var(--nx-header-pad-top, 1.25rem) 1.25rem 0;
     gap: 0.75rem;
   }
 
@@ -197,10 +189,10 @@
   // 标签页型页头保持 0，让选中下划线压在分隔线上
   &:has(> .page-title),
   &:has(> .page-header__info) {
-    padding-bottom: 1.25rem;
+    padding-bottom: var(--nx-header-pad-bottom, 1.25rem);
 
     @media (min-width: $breakpoint-lg) and (max-width: #{$breakpoint-xl - 1px}) {
-      padding-bottom: 1rem;
+      padding-bottom: var(--nx-header-pad-bottom, 1rem);
     }
 
     // 手机端操作区自带的底部留白交给页头统一处理，避免与页头留白叠加

@@ -265,7 +265,7 @@ function onDateSelect(date: string | null) {
 .aside-left__group {
   display: flex;
   flex-direction: column;
-  gap: $grid-gap;
+  gap: var(--nx-stack-gap);
 }
 
 /* ---- 左侧栏切换动画：slide-left ---- */
@@ -295,12 +295,5 @@ function onDateSelect(date: string | null) {
 .sidebar-slide-left-leave-to {
   opacity: 0;
   transform: translateX(-12px);
-}
-
-/* ---- 低高度视口：收紧侧栏卡片间距，把纵向空间优先留给正文与底栏 ---- */
-@media (max-height: 600px) {
-  .aside-left__group {
-    gap: 1rem;
-  }
 }
 </style>

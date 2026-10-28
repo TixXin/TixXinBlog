@@ -66,7 +66,7 @@ const { pingMs } = useApiLatency()
 
 <style lang="scss" scoped>
 .sidebar-footer-card {
-  padding: 1rem 1.25rem;
+  padding: calc(1rem * var(--nx-card-pad-scale, 1)) 1.25rem;
   display: none;
 
   @media (min-width: $breakpoint-lg) {

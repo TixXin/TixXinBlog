@@ -242,28 +242,27 @@ onBeforeUnmount(() => {
 </script>
 
 <style lang="scss" scoped>
-$bar-height: 72px;
-$bar-expanded: 112px;
-
+// 底栏高度、展开高度、头像与按钮尺寸由 _nexus-density.scss 按视口分档提供
 .nexus-bar {
-  --bar-pivot-left: calc(#{$sidebar-left-width} + #{$grid-gap} + var(--bar-avatar-offset));
+  --bar-pivot-left: calc(#{$sidebar-left-width} + var(--nx-grid-gap) + var(--bar-avatar-offset));
   --bar-avatar-offset: 1.5rem;
-  --bar-avatar-pad: calc(7.75rem + var(--bar-avatar-offset));
+  // 头像左距 + 头像宽 + 1.5rem 留白；默认 80px 头像时等于原先的 7.75rem
+  --bar-avatar-pad: calc(2.75rem + var(--nx-bar-avatar) + var(--bar-avatar-offset));
   --bar-divider-gap: 1.5rem;
-  --bar-action-size: 2.25rem;
+  --bar-action-size: var(--nx-bar-action);
   --bar-flex-gap: 1.5rem;
 
   position: relative;
   display: flex;
   align-items: center;
   gap: var(--bar-flex-gap);
-  height: $bar-height;
+  height: var(--nx-bar-h);
   padding: 0 1.25rem;
   padding-left: var(--bar-avatar-pad);
   background: var(--surface-1-alpha-90);
   backdrop-filter: blur(18px);
   border: 1px solid var(--border);
-  border-radius: $radius-card;
+  border-radius: var(--nx-card-radius);
   box-shadow:
     0 -1px 0 0 var(--border-soft) inset,
     0 4px 24px rgba(0, 0, 0, 0.06);
@@ -279,8 +278,8 @@ $bar-expanded: 112px;
   }
 
   &.is-expanded {
-    height: $bar-expanded;
-    transform: translateY(#{$bar-height - $bar-expanded});
+    height: var(--nx-bar-expanded);
+    transform: translateY(calc(var(--nx-bar-h) - var(--nx-bar-expanded)));
     z-index: 20;
 
     transition:
@@ -295,14 +294,6 @@ $bar-expanded: 112px;
 
   @media (max-width: #{$breakpoint-lg - 0.02}) {
     display: none;
-  }
-
-  // 低高度视口：压缩展开态高度与上移量，避免底栏占用过多纵向空间
-  @media (max-height: 600px) {
-    &.is-expanded {
-      height: 96px;
-      transform: translateY(#{$bar-height - 96px});
-    }
   }
 }
 

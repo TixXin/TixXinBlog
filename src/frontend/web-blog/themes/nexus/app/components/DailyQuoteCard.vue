@@ -44,7 +44,7 @@ function refresh() {
 
 <style lang="scss" scoped>
 .daily-quote-card {
-  padding: 1rem 1.25rem;
+  padding: calc(1rem * var(--nx-card-pad-scale, 1)) 1.25rem;
   position: relative;
   border-left: 2px solid var(--accent);
 }

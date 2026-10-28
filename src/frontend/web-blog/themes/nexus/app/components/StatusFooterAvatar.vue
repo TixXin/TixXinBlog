@@ -111,9 +111,9 @@ defineExpose({
 .nexus-bar__avatar-wrap {
   position: absolute;
   left: calc(1.25rem + var(--bar-avatar-offset));
-  bottom: 16px;
-  width: 80px;
-  height: 80px;
+  bottom: var(--nx-bar-avatar-bottom);
+  width: var(--nx-bar-avatar);
+  height: var(--nx-bar-avatar);
   border-radius: 50%;
   border: 3px solid var(--surface-1);
   box-shadow:
