@@ -1,5 +1,5 @@
 /** @file staticFrozenApi.test.ts @description 静态发布冻结接口：键规范化、文件映射、取数改写与写入拒绝、自由文本查询回退 */
-import { describe, expect, it, vi } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import {
   FROZEN_SOURCE_HEADER,
   apiRelativePath,
@@ -10,6 +10,7 @@ import {
 } from '../../app/features/static/frozenApi'
 import { createStaticFetch, type BaseFetch, type StaticFetchOptions } from '../../app/features/static/staticFetch'
 import { filterFrozenList, textQueryFallback } from '../../app/features/static/textQuery'
+import { enableStaticImageVariants, managedImageSrcset, managedImageUrl } from '../../app/utils/managedImage'
 
 describe('冻结接口键', () => {
   it('合并地址与选项中的查询，去掉空值后排序，与参数书写顺序无关', () => {
@@ -136,5 +137,22 @@ describe('自由文本查询回退', () => {
     await expect(textQueryFallback('/links?q=x', vi.fn().mockRejectedValue(new Error('404')))).rejects.toMatchObject({
       statusCode: 404,
     })
+  })
+})
+
+describe('受管图片变体地址', () => {
+  const src = '/api/v1/media/8b7c145a-50b1-4b98-9867-87de592527ab.webp'
+  afterEach(() => enableStaticImageVariants(false))
+
+  it('服务器部署使用宽度参数，静态发布改用独立文件名', () => {
+    expect(managedImageUrl(src, 640)).toBe(`${src}?w=640`)
+    enableStaticImageVariants(true)
+    expect(managedImageUrl(src, 640)).toBe('/api/v1/media/8b7c145a-50b1-4b98-9867-87de592527ab-w640.webp')
+    expect(managedImageSrcset(src, 700)).toBe(
+      '/api/v1/media/8b7c145a-50b1-4b98-9867-87de592527ab-w320.webp 320w, ' +
+        '/api/v1/media/8b7c145a-50b1-4b98-9867-87de592527ab-w640.webp 640w, ' +
+        `${src} 700w`,
+    )
+    expect(managedImageUrl('https://cdn.example/a.webp', 640)).toBe('https://cdn.example/a.webp')
   })
 })
