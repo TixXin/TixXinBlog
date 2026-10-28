@@ -26,6 +26,7 @@
     >
     <div class="fnc__actions">
       <button
+        v-if="!staticSite"
         type="button"
         class="fnc__action"
         :class="{ 'fnc__action--active': liked }"
@@ -38,6 +39,7 @@
         <span v-if="note.likes > 0" class="fnc__action-count">{{ note.likes }}</span>
       </button>
       <button
+        v-if="!staticSite"
         type="button"
         class="fnc__action"
         :class="{ 'fnc__action--active': commentOpen }"
@@ -121,6 +123,8 @@
 
 <script setup lang="ts">
 import type { FlashNote } from '~/features/flash/types'
+// 静态发布没有访客互动，点赞与评论按钮不渲染
+const staticSite = useStaticSite()
 
 const props = defineProps<{
   note: FlashNote

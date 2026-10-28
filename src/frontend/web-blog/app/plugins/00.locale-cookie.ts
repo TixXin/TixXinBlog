@@ -16,12 +16,14 @@ export default defineNuxtPlugin({
     let settled = false
     // 在插件同步阶段取 cookie：钩子经异步链调用，服务端届时已不在 Nuxt 上下文内。
     const cookie = useCookie<string | null>(LOCALE_COOKIE_KEY, { readonly: true })
+    // 静态发布在构建时固定界面语言，访客残留的语言 cookie 不再生效，避免水合后切换语言。
+    const staticSite = useRuntimeConfig().public.staticSite === true
     nuxtApp.hook('i18n:beforeLocaleSwitch', (data) => {
       if (settled || !data.initialSetup) return
       settled = true
       // 模块的初始检测会依次参考 Accept-Language 与 navigator.languages；这里统一改为
       // 「cookie 中的有效语言，否则站点默认语言」，保证 SSR 缓存与水合不随浏览器语言变化。
-      data.newLocale = isSupportedLocale(cookie.value) ? cookie.value : nuxtApp.$i18n.defaultLocale
+      data.newLocale = !staticSite && isSupportedLocale(cookie.value) ? cookie.value : nuxtApp.$i18n.defaultLocale
     })
   },
 })

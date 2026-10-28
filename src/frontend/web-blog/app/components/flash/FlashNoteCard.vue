@@ -61,6 +61,7 @@
 
     <!-- 评论区 -->
     <FlashNoteCardComments
+      v-if="!staticSite"
       :note-id="note.id"
       :open="commentOpen"
       :comments="note.comments"
@@ -81,6 +82,7 @@ import type { FlashNote, FlashCommentSubmission } from '~/features/flash/types'
 import { renderFlashMarkdown } from '~/utils/flashMarkdown'
 import { publishedCommentCount } from '~/features/flash/comments'
 import { FLASH_TYPE_META, formatFlashRelative } from '~/features/flash/date'
+const staticSite = useStaticSite()
 
 const props = withDefaults(
   defineProps<{

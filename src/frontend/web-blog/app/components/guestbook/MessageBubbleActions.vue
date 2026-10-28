@@ -8,7 +8,7 @@
 <template>
   <!-- 操作按钮 -->
   <div class="message-bubble__actions" :class="{ 'message-bubble__actions--left': message.isOwner }">
-    <CommonTooltip :content="$t('interaction.guestbookBubble.reply')">
+    <CommonTooltip v-if="!staticSite" :content="$t('interaction.guestbookBubble.reply')">
       <button
         type="button"
         class="message-bubble__action"
@@ -29,7 +29,7 @@
         <Icon :name="copied ? 'lucide:check' : 'lucide:copy'" size="13" />
       </button>
     </CommonTooltip>
-    <CommonTooltip :content="$t('interaction.guestbookBubble.emoji')" :disabled="pickerOpen">
+    <CommonTooltip v-if="!staticSite" :content="$t('interaction.guestbookBubble.emoji')" :disabled="pickerOpen">
       <button
         ref="reactionButton"
         type="button"
@@ -75,6 +75,7 @@
 <script setup lang="ts">
 import type { GuestMessage } from '~/features/guestbook/types'
 import { REACTION_OPTIONS } from '~/features/guestbook/reactions'
+const staticSite = useStaticSite()
 
 const props = defineProps<{
   message: GuestMessage

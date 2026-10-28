@@ -8,6 +8,8 @@ export default defineNuxtPlugin({
   name: 'client-errors',
   enforce: 'pre',
   setup(app) {
+    // 静态发布没有上报接口，浏览器错误只留在访客本机。
+    if (useRuntimeConfig().public.staticSite) return
     const reporter = createClientErrorReporter({
       development: import.meta.dev,
       getUrl: () => window.location.href,

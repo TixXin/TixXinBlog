@@ -55,6 +55,7 @@
           :total-comments="total"
           :article-title="article.title"
           :canonical-url="canonicalUrl"
+          :interactive="!staticSite"
           @toggle-like="toggleArticleLike"
           @toggle-favorite="toggleFavorite(article.id)"
         />
@@ -80,6 +81,7 @@
           @retry="retryDiscovery"
         />
         <ArticleCommentSection
+          v-if="!staticSite"
           v-model="draft"
           :comments="comments"
           :total="total"
@@ -142,6 +144,7 @@ const { switchingState } = useLayoutTheme()
 const { rightSidebarVisible } = useThemeSidebarVisibility()
 const needsCompactToc = computed(() => !rightSidebarVisible.value)
 const isMockArticle = useRuntimeConfig().public.postUseMockRepo !== false
+const staticSite = useStaticSite()
 const scrollbarRef = ref<{ viewport: HTMLElement | null } | null>(null)
 const readingContent = ref<HTMLElement | null>(null)
 const scrollRoot = computed(() => scrollbarRef.value?.viewport ?? null)

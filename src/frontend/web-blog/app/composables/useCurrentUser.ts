@@ -19,6 +19,8 @@ let restoring: Promise<boolean> | null = null
 
 export function useCurrentUser() {
   const nuxtApp = useNuxtApp()
+  // 静态发布没有认证接口，访客始终匿名。
+  const staticSite = useStaticSite()
   const currentUser = useState<CurrentUser | null>('current-user', () => null)
   const accessToken = useState<string | null>('auth-access-token', () => null)
   const initialized = useState('auth-initialized', () => false)
@@ -100,6 +102,10 @@ export function useCurrentUser() {
   }
   async function restore() {
     if (import.meta.server || initialized.value) return isLoggedIn.value
+    if (staticSite) {
+      initialized.value = true
+      return false
+    }
     if (restoring) return restoring
     restoringPending.value = true
     restoring = (async () => {

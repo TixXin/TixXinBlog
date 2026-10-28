@@ -73,7 +73,7 @@
       <!-- 评论区 -->
       <Transition name="comment-slide">
         <MomentCommentSection
-          v-if="showComments"
+          v-if="showComments && !staticSite"
           :comments="state?.comments ?? moment.comments ?? []"
           :draft="state?.draft ?? ''"
           :submitting="state?.submitting"
@@ -95,6 +95,7 @@
 import type { MomentCommentSubmission, MomentItem, MomentUserProfile } from '~/features/moment/types'
 import type { MomentInteractionState } from '~/features/moment/session'
 import { renderMomentMarkdown } from '~/composables/useMomentMarkdown'
+const staticSite = useStaticSite()
 
 const props = defineProps<{
   moment: MomentItem

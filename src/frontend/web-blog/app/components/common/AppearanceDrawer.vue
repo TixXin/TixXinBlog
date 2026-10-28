@@ -42,7 +42,9 @@
               @update-transition="setColorModeTransitionPreset"
             />
 
+            <!-- 静态发布在构建时固定布局主题与界面语言，访客不能切换 -->
             <CommonAppearanceThemeSection
+              v-if="!staticSite"
               :current-theme-id="currentThemeId"
               :layout-theme-label="layoutThemeLabel"
               :available-themes="availableThemes"
@@ -64,7 +66,7 @@
               @update-sidebar-animation="setSidebarAnimationPreset"
             />
 
-            <section class="appearance-section" data-testid="appearance-locale">
+            <section v-if="!staticSite" class="appearance-section" data-testid="appearance-locale">
               <div class="appearance-section__head">
                 <h3 class="appearance-section__title">
                   <Icon name="lucide:languages" size="14" class="appearance-section__icon" aria-hidden="true" />
@@ -109,6 +111,7 @@
 import CommonAppearanceColorModeSection from '~/components/common/appearance/AppearanceColorModeSection.vue'
 import CommonAppearanceThemeSection from '~/components/common/appearance/AppearanceThemeSection.vue'
 import CommonAppearanceAnimationSection from '~/components/common/appearance/AppearanceAnimationSection.vue'
+const staticSite = useStaticSite()
 
 const { t } = useI18n()
 

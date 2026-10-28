@@ -1,11 +1,12 @@
 <!-- @file ArticleStatsBar.vue @description 文章详情页阅读量、点赞、收藏、评论计数与分享按钮组 -->
 <template>
   <div class="article-page__stats">
-    <span class="article-page__stat">
+    <span v-if="interactive" class="article-page__stat">
       <Icon name="lucide:eye" size="14" />
       {{ formatCount(views) }}
     </span>
     <button
+      v-if="interactive"
       type="button"
       class="article-page__stat article-page__stat--btn"
       :class="{ 'is-liked': liked }"
@@ -27,7 +28,7 @@
       <Icon :name="favorited ? 'lucide:bookmark-check' : 'lucide:bookmark'" size="14" />
       {{ favorited ? $t('article.detail.favorited') : $t('article.detail.favorite') }}
     </button>
-    <span class="article-page__stat">
+    <span v-if="interactive" class="article-page__stat">
       <Icon name="lucide:message-circle" size="14" />
       {{ totalComments }}
     </span>
@@ -40,17 +41,22 @@
 <script setup lang="ts">
 import { formatNumber } from '~/utils/format'
 
-defineProps<{
-  views: number
-  likes: number
-  liked: boolean
-  interactionPending: boolean
-  interactionLoaded: boolean
-  favorited: boolean
-  totalComments: number
-  articleTitle: string
-  canonicalUrl: string
-}>()
+withDefaults(
+  defineProps<{
+    views: number
+    likes: number
+    liked: boolean
+    interactionPending: boolean
+    interactionLoaded: boolean
+    favorited: boolean
+    totalComments: number
+    articleTitle: string
+    canonicalUrl: string
+    /** 静态发布没有浏览、点赞与评论数据，只保留本机收藏与分享 */
+    interactive?: boolean
+  }>(),
+  { interactive: true },
+)
 
 const emit = defineEmits<{
   (e: 'toggleLike' | 'toggleFavorite'): void

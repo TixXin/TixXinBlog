@@ -16,6 +16,8 @@ export async function useArticleComments(id: string) {
   const nuxtApp = useNuxtApp()
   const config = useRuntimeConfig()
   const useMock = config.public.postUseMockRepo !== false
+  // 静态发布第一版隐藏评论，不读取也不提交。
+  const staticSite = useStaticSite()
   const base = config.public.apiBaseUrl as string
   const { guestIdentity, resolveAvatar } = useGuestIdentity()
   const toast = useToast()
@@ -67,7 +69,7 @@ export async function useArticleComments(id: string) {
 
   // SSR 读取不带设备身份，水合后需按设备恢复点赞与自己的待审评论；客户端导航时首次读取已携带身份，无需再读。
   // 本设备从未生成过访客 id 时不可能有个人记录，也跳过整树重读。
-  const personalizeAfterHydration = !useMock && nuxtApp.isHydrating === true && hasStoredVisitorId()
+  const personalizeAfterHydration = !useMock && !staticSite && nuxtApp.isHydrating === true && hasStoredVisitorId()
   // 生命周期钩子必须在首个 await 之前注册，避免异步 composable 丢失组件实例。
   onMounted(() => {
     if (personalizeAfterHydration) void controller!.reload()
@@ -75,7 +77,11 @@ export async function useArticleComments(id: string) {
   if (!controller) {
     // 只取消当前视图的初始读取；共享控制器的提交、重试和草稿继续由应用会话持有。
     const result = await useAsyncData(`article-${id}-comments`, (_app, { signal }) =>
-      useMock ? transport.load() : fetchComments(base, id, AbortSignal.any([signal, initialRequest.signal])),
+      staticSite
+        ? Promise.resolve({ items: [], total: 0 })
+        : useMock
+          ? transport.load()
+          : fetchComments(base, id, AbortSignal.any([signal, initialRequest.signal])),
     )
     initialRequest.assertActive()
     controller = rememberCommentSession(

@@ -25,7 +25,7 @@
       </span>
     </div>
 
-    <div class="moment-card__actions">
+    <div v-if="!staticSite" class="moment-card__actions">
       <!-- 评论按钮 -->
       <button
         type="button"
@@ -63,6 +63,8 @@
 </template>
 
 <script setup lang="ts">
+// 静态发布没有访客互动，点赞与评论入口整体不渲染
+const staticSite = useStaticSite()
 const props = defineProps<{
   momentId: string
   formattedDate: string

@@ -12,6 +12,8 @@ export function useArticleInteraction(id: string, initial: { likes: number; view
   // 用全局 i18n 实例而非 useI18n：本 composable 也会在插件或测试中脱离组件 setup 调用
   const { t } = useNuxtApp().$i18n
   const useMock = config.public.postUseMockRepo !== false
+  // 静态发布没有浏览计数与点赞接口，不发请求，统计栏也不展示这些数字。
+  const staticSite = useStaticSite()
   const likes = ref(initial.likes)
   const views = ref(initial.views)
   const liked = ref(false)
@@ -30,7 +32,7 @@ export function useArticleInteraction(id: string, initial: { likes: number; view
   }
 
   async function load() {
-    if (useMock || pending.value) return
+    if (useMock || staticSite || pending.value) return
     pending.value = true
     let viewSyncFailed = false
     try {

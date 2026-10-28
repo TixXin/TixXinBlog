@@ -97,7 +97,7 @@
             @retry-metadata="refreshMetadata()"
           />
         </details>
-        <LinkApplicationForm v-if="metadata?.applicationsEnabled" />
+        <LinkApplicationForm v-if="metadata?.applicationsEnabled && !useStaticSite()" />
         <LinkForm
           v-else
           :value="local.draft.value"
