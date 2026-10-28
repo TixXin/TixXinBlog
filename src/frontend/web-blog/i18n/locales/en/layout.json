@@ -328,7 +328,9 @@
         "count": "{count} tag | {count} tags",
         "groupLabel": "Browse tags or filter posts on the home page",
         "filter": "Filter home by tag: {name}",
-        "empty": "No tags yet"
+        "empty": "No tags yet",
+        "expand": "Show more ({count})",
+        "collapse": "Show less"
       },
       "photoWall": {
         "title": "Featured photos",

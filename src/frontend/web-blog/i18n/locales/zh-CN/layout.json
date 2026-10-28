@@ -328,7 +328,9 @@
         "count": "{count} 个标签",
         "groupLabel": "浏览标签或筛选首页文章",
         "filter": "在首页筛选标签：{name}",
-        "empty": "暂无标签"
+        "empty": "暂无标签",
+        "expand": "展开更多 ({count})",
+        "collapse": "收起"
       },
       "photoWall": {
         "title": "精选照片",

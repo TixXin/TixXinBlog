@@ -13,7 +13,7 @@
     </div>
     <div class="tag-cloud-card__tags" role="group" :aria-label="$t('layout.sidebar.tags.groupLabel')">
       <div
-        v-for="tag in tags"
+        v-for="tag in displayedTags"
         :key="tag.name"
         class="tag-cloud-card__tag"
         :class="{ 'is-active': activeTag === tag.name }"
@@ -36,26 +36,66 @@
         </CommonTooltip>
       </div>
     </div>
+    <div v-if="hasMore" class="tag-cloud-card__footer">
+      <button
+        type="button"
+        class="tag-cloud-card__toggle"
+        :aria-expanded="isExpanded"
+        @click="isExpanded = !isExpanded"
+      >
+        <span>{{
+          isExpanded ? $t('layout.sidebar.tags.collapse') : $t('layout.sidebar.tags.expand', { count: remainingCount })
+        }}</span>
+        <Icon :name="isExpanded ? 'lucide:chevron-up' : 'lucide:chevron-down'" size="14" aria-hidden="true" />
+      </button>
+    </div>
     <p v-if="!tags.length" class="tag-cloud-card__empty">{{ $t('layout.sidebar.tags.empty') }}</p>
   </section>
 </template>
 
 <script setup lang="ts">
+import { computed, ref, watch } from 'vue'
 import type { TagItem } from '~/features/stats/types'
 import { postTagPath } from '~/features/post/taxonomy'
 
-withDefaults(
+const props = withDefaults(
   defineProps<{
     tags: TagItem[]
     /** 当前选中的标签名 */
     activeTag?: string | null
+    /** 默认折叠展示的标签上限 */
+    limit?: number
   }>(),
-  { activeTag: null },
+  { activeTag: null, limit: 14 },
 )
 
 defineEmits<{
   select: [tagName: string]
 }>()
+
+const isExpanded = ref(false)
+
+const hasMore = computed(() => props.tags.length > props.limit)
+
+// 当当前激活的 activeTag 处于折叠部分时，自动展开
+watch(
+  () => props.activeTag,
+  (tag) => {
+    if (!tag) return
+    const activeIndex = props.tags.findIndex((item) => item.name === tag)
+    if (activeIndex >= props.limit) {
+      isExpanded.value = true
+    }
+  },
+  { immediate: true },
+)
+
+const displayedTags = computed(() => {
+  if (isExpanded.value || !hasMore.value) return props.tags
+  return props.tags.slice(0, props.limit)
+})
+
+const remainingCount = computed(() => Math.max(0, props.tags.length - props.limit))
 </script>
 
 <style lang="scss" scoped>
@@ -169,6 +209,42 @@ defineEmits<{
   color: var(--text-soft);
   font-size: 0.75rem;
   font-weight: 500;
+}
+
+.tag-cloud-card__footer {
+  display: flex;
+  justify-content: center;
+  margin-top: 0.75rem;
+}
+
+.tag-cloud-card__toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.25rem;
+  padding: 0.3125rem 0.75rem;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--text-muted);
+  background: var(--surface-1);
+  border: 1px solid var(--border);
+  cursor: var(--interaction-cursor, pointer);
+  transition: $transition-fast;
+
+  @media (pointer: coarse) {
+    min-height: 38px;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
+
+  &:hover {
+    color: var(--accent-text);
+    background: var(--accent-soft);
+    border-color: var(--border-hover);
+  }
 }
 
 .tag-cloud-card__empty {

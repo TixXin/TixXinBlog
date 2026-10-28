@@ -94,6 +94,51 @@ describe('标签云卡片', () => {
     expect(buttons.every((button) => button.attributes('aria-pressed') === 'false')).toBe(true)
     expect(items.some((item) => item.classes().includes('is-active'))).toBe(false)
   })
+
+  it('超过限制数量时默认折叠并提供展开与收起切换', async () => {
+    const manyTags = Array.from({ length: 16 }, (_, i) => ({
+      name: `标签${i + 1}`,
+      count: 16 - i,
+      color: '#42b883',
+    }))
+    const wrapper = keep(mount(TagCloudCard, { ...mountOptions(), props: { tags: manyTags, limit: 14 } }))
+
+    expect(wrapper.findAll('.tag-cloud-card__tag')).toHaveLength(14)
+    const toggle = wrapper.find('.tag-cloud-card__toggle')
+    expect(toggle.exists()).toBe(true)
+    expect(toggle.attributes('aria-expanded')).toBe('false')
+    expect(toggle.text()).toContain('展开更多 (2)')
+
+    await toggle.trigger('click')
+    expect(wrapper.findAll('.tag-cloud-card__tag')).toHaveLength(16)
+    expect(toggle.attributes('aria-expanded')).toBe('true')
+    expect(toggle.text()).toContain('收起')
+
+    await toggle.trigger('click')
+    expect(wrapper.findAll('.tag-cloud-card__tag')).toHaveLength(14)
+    expect(toggle.attributes('aria-expanded')).toBe('false')
+  })
+
+  it('激活的标签处于折叠区时自动展开保持可见', () => {
+    const manyTags = Array.from({ length: 16 }, (_, i) => ({
+      name: `标签${i + 1}`,
+      count: 16 - i,
+      color: '#42b883',
+    }))
+    const wrapper = keep(
+      mount(TagCloudCard, {
+        ...mountOptions(),
+        props: { tags: manyTags, limit: 14, activeTag: '标签15' },
+      }),
+    )
+
+    expect(wrapper.findAll('.tag-cloud-card__tag')).toHaveLength(16)
+    const toggle = wrapper.find('.tag-cloud-card__toggle')
+    expect(toggle.exists()).toBe(true)
+    expect(toggle.attributes('aria-expanded')).toBe('true')
+    const activeItem = wrapper.findAll('.tag-cloud-card__tag').find((el) => el.text().includes('标签15'))
+    expect(activeItem?.classes()).toContain('is-active')
+  })
 })
 
 describe('分类卡片', () => {
