@@ -50,7 +50,7 @@
   "devDependencies": {
     "@axe-core/playwright": "^4.14.0",
     "@iconify-json/lucide": "^1.2.129",
-    "@nuxt/test-utils": "^4.2.0",
+    "@nuxt/test-utils": "^4.3.4",
     "@playwright/test": "^1.63.0",
     "@types/node": "^25.9.8",
     "@types/sortablejs": "^1.15.9",
