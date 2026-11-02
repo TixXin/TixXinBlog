@@ -77,8 +77,9 @@ if printf '%s\n' "$integration" | grep -q '^[^#]'; then
   built_before=${#failed[@]}
   step '后端构建（集成测试使用）' corepack pnpm --filter server-main build
   if [ "${#failed[@]}" = "$built_before" ]; then
+    # 与 CI 和 test:integration 一样在后端目录运行：测试从当前目录的 .env.local 读取 DATABASE_URL。
     for test in $(printf '%s\n' "$integration" | grep '^[^#]'); do
-      step "后端集成：${test}" node "src/backend/server-main/tests/${test}"
+      step "后端集成：${test}" corepack pnpm --filter server-main exec node "tests/${test}"
     done
   fi
 fi
