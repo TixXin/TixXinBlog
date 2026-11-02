@@ -6,6 +6,8 @@
 
 ## [未发布]
 
+## [0.4.0] - 2026-11-02
+
 ### 升级说明
 
 - 运行基线由 Node 25 升级到 Node 26（`>=26 <27`）。Node 25 是奇数版本，官方维护已于 2026-06-01 结束，最后一个版本为 v25.9.0（2026-03-31）；2026-10-21 的安全更新只提供 v22.23.4、v24.22.1 与 v26.12.1，没有 25.x。其中 CVE-2026-111497（Brotli 解压器越界写入，可导致远程代码执行）、CVE-2026-105482（`dns.resolve` 遇到含 NUL 字符的名称会截断）、CVE-2026-105483 与 CVE-2026-106069（TLS 主机名校验可被绕过）为高危漏洞，在 Node 25 上无法修复，公告见 [Node.js 2026 年 10 月安全更新](https://nodejs.org/zh-cn/blog/vulnerability/october-2026-security-releases)，维护计划见 [Node.js Release Schedule](https://github.com/nodejs/Release#release-schedule)。项目此前的本机开发、CI、发布流程与两个 Dockerfile 构建的生产镜像（`node:25-alpine`）都运行在 Node 25 上，因此全部受影响
@@ -13,6 +15,7 @@
 - **已安装站点**：通过 `tixxin update` 升级时会换用新镜像，宿主机不需要安装 Node；一键安装与日常管理的宿主机依赖始终是 bash、curl、tar 与 Docker，见[部署指南](docs/deployment.md)
 - **手动发布的宿主机**：使用[部署指南](docs/deployment.md#高级手动发布releasemjs)中的手动发布方式时，发布脚本由宿主机 Node 执行，需要先把 Node 升级到 26 再发布
 - **开发机**：安装 Node 26 → 执行 `corepack enable`（Node 25 起不再自带 Corepack，按[开发指南](docs/development.md)的步骤单独安装 `corepack@0.34.6`）→ `corepack pnpm install --frozen-lockfile` → `corepack pnpm dev:check`
+- 新增 1 个数据迁移，部署时由正式迁移应用：新建友链申请表 `friend_link_application`，并为友链设置新增公开申请开关 `applications_enabled`（默认关闭）；只新增表与列，不改动已有数据
 
 ### 变更
 
@@ -22,7 +25,19 @@
 - 后台界面改版：侧栏按工作台、内容、互动、站点、系统分组并显示站点头像，移动端改为底部标签栏（概览、通知、文章、评论与「更多」）；按钮、输入框、下拉、复选框与文件选择统一外观，页面统一页头、卡片、工具栏、状态徽章与数据表，删除等不可逆操作以危险样式区分
 - 管理概览改为仪表盘：内容总数、近 30 天互动、累计浏览与待处理四张统计卡片，内容与互动附近 30 天按日趋势；后台概览接口新增 `trends` 分区（UTC 日期的新建内容与收到的互动）与累计浏览数，分区失败时标记不可用而不显示 0
 - 语言切换按选择顺序依次执行，字典加载中改选其他语言时界面最终停在最后一次选择
-- 安装与升级时数据库迁移明细写入安装目录 `logs/migration-*.log`，终端只显示「执行 N 项」的摘要；失败时打印日志末尾
+- 安装与升级时数据库迁移明细写入安装目录 `logs/migration-*.log`，终端只显示「执行 N 项」的摘要；失败时打印日志末尾。从 0.3.0 升级的这一次仍由旧版 `tixxin` 执行，终端照旧显示迁移明细，之后的升级才按新方式输出
+- 初始化向导不再显示随链接带入的令牌，链接未带或令牌被拒时才出现输入框；校验与接口错误显示在对应字段下并聚焦该字段，确认站点状态期间显示表单骨架
+- 后台登录页改为与初始化向导一致的卡片式布局，密码已修改、初始化完成与需要初始化等状态改用带图标的提示块
+- 后台日期字段统一改用站点日期选择器，包括审计、评论、留言与朋友圈的日期筛选，图库拍摄日期，订阅开始与下次扣费日期，以及站点上线日期；可直接输入 `2019-03-15`、`2019/3/15`、`20190315` 等写法，面板按可用空间对齐，不再溢出视口
+- 侧栏标签云超过 14 个标签时折叠，可展开查看其余标签；当前筛选的标签位于折叠区时自动展开
+- 三套主题补充低高度视口适配；Nexus 在 1440×900、1536×864 与 1366×768、1280×720 两档视口收紧留白、卡片与底栏，正文可视高度增加约 60–76px，1920×1080 及以上不变
+- Nexus 移动端去掉重复的外观浮动入口，界面设置与明暗切换统一放在底栏「更多导航」中
+- 依赖升级：`@nuxt/test-utils` 4.3.4、`@vue/test-utils` 2.5.1、`@playwright/test` 1.64.1、`vue-tsc` 3.3.14；NestJS 12 只发布 ESM，暂缓大版本升级
+- CI 按改动跳过无关的重任务，例如只改部署脚本时不跑浏览器回归；无法确定改动范围时全量运行，Release 始终全量
+- CI 新增提交署名检查，带 AI 工具署名的提交无法合入；提交钩子识别 Cursor 等工具的署名并自动剥离
+- 源码体量门禁：`.vue` 页面 ≤300 行、组件 ≤400 行、`.ts` ≤300 行，存量超限文件已全部拆分；ESLint 另外限制函数体量、嵌套深度与通用组件依赖边界，存量问题记入豁免清单，均由 `corepack pnpm lint` 强制
+- 点名多个 spec 运行浏览器回归时，运行器按文件分别建立隔离库，与全量运行和 CI 一致，前一个文件写入的文章不再改变后一个文件的分页断言
+- README 重写首页结构，换上真实 2K 视口的浅色与深色截图
 
 ### 新增
 
@@ -33,12 +48,26 @@
 - `tixxin status` 提示是否有新的正式版本：只读查询 GitHub 最新版本号并给出升级命令与更新说明链接，不自动升级；使用自定义下载源时不查询，`--no-update-check` 或 `TIXXIN_NO_UPDATE_CHECK=1` 可关闭
 - 站点设置新增「允许搜索引擎收录本站」开关（默认开启）；关闭后公开页面输出 `noindex, nofollow` 的 robots meta 与 `X-Robots-Tag`，`robots.txt` 禁止抓取全站，站点地图清空。内容包导出升级为 v14 携带该开关，接受 v1–v13；旧包不带该开关，迁入设置时沿用目标站现值
 - 开发命令 `dev:setup`、`dev:setup:reset`、`dev:setup:down`：在独立空库 `tixxin_blog_setup_sandbox` 上启动沙盒 API 与热更新前端，真实走完初始化、自动登录与进入后台，可与 `dev:all` 同时运行，不影响日常开发库
-- 站点尚未初始化时，首页在浏览器端显示一行提示并链接到后台登录页，初始化完成后消失
+- 站点尚未初始化时，首页在浏览器端显示全屏半透明水印提示，不拦截点击、不挤占内容，初始化完成后消失
 - 开发命令 `trial`、`trial:update`、`trial:status`、`trial:down`：用当前代码在本机构建镜像与部署包，经同一个 `install.sh` 与 `tixxin` 体验安装和升级，不需要发布 Release
+- `tixxin uninstall`（仅本机试用）：输入项目名确认后删除容器、数据卷、网络、安装目录和指向本安装的 `/usr/local/bin/tixxin`，镜像保留；正式站点直接拒绝
+- 根命令 `check:local`：按相对 `origin/main` 的改动挑选本地检查，包括前后端 lint、类型检查与单测，涉及模块的后端 HTTP 集成测试，静态发布脚本单测，以及 Shell、敏感信息与提交署名检查；加 `--e2e` 时运行涉及的浏览器用例
+- 根命令 `docs:screenshots`：一条命令重新生成 README 截图
+- 开发模式下可用地址参数预览初始化向导的各种状态，右下角角标提示当前预览；调试面板新增界面预览页、环境信息与视口尺寸预设；向导留空提交时自动填入示例数据
+
+### 修复
+
+- 中文标签与专栏通过刷新、外链或搜索引擎直接打开时返回 404，朋友圈话题标题显示为编码串：`@nuxt/nitro-server` 4.5.2 会把已编码的路径再编码一次，现以固定版本补丁先解码再编码路径部分，查询串不变；站内跳转原本不受影响
+- 初始化向导选择站点语言时同步切换向导界面语言，并清除按旧语言生成的错误提示
+- 初始化完成后重新读取站点资料，后台立即显示新站点名称
+- Nexus 底栏用户菜单按 Escape 或点选菜单项关闭后，焦点回到触发按钮
+- Nexus 开启减少动效时，底栏展开不再额外上移 40–44px，底边保持原位
+- 运维文档更正：`tixxin backup` 会在运行工作台登记手动备份记录
 
 ### 安全
 
 - 运行基线升级到 Node 26，纳入 2026-10-21 安全更新中的全部高危漏洞修复（Brotli 解压器越界写入、`dns.resolve` 名称截断、TLS 主机名校验绕过），并获得同一批次的 3 个中危、3 个低危修复及 OpenSSL、undici、c-ares 与 CA 证书包更新；Node 25 已于 2026-06-01 停止维护，无法获得这些修复
+- 有安全公告的依赖升到修复版：`node-forge` 的 5 个高危（含 PKCS#12 MAC 伪造与 X.509 basicConstraints 校验绕过），`body-parser`、`multer`、`undici` 7/8 与 `zod` 的拒绝服务（高危），`seroval` 的 3 个高危（含反序列化时调用攻击者指定的可调用对象），`qs` 的中危，以及 `nodemailer`、`fast-uri`、`serialize-javascript` 的中低危项；间接依赖通过 pnpm overrides 覆盖。开发工具链中的 `brace-expansion`、`handlebars`、`vite`、`launch-editor` 与 `@modelcontextprotocol/server` 一并升级
 
 ## [0.3.0] - 2026-10-20
 
@@ -205,7 +234,8 @@
 - 无多语言支持，界面与内容均为中文
 - 定位为单博主博客，不计划扩展多租户、访客账号或协作能力
 
-[未发布]: https://github.com/TixXin/TixXinBlog/compare/v0.3.0...HEAD
+[未发布]: https://github.com/TixXin/TixXinBlog/compare/v0.4.0...HEAD
+[0.4.0]: https://github.com/TixXin/TixXinBlog/compare/v0.3.0...v0.4.0
 [0.3.0]: https://github.com/TixXin/TixXinBlog/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/TixXin/TixXinBlog/releases/tag/v0.2.0
 [0.1.0]: https://github.com/TixXin/TixXinBlog/tree/5290289
