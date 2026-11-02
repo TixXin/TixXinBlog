@@ -50,12 +50,12 @@
   "devDependencies": {
     "@axe-core/playwright": "^4.14.0",
     "@iconify-json/lucide": "^1.2.129",
-    "@nuxt/test-utils": "^4.2.0",
-    "@playwright/test": "^1.63.0",
+    "@nuxt/test-utils": "^4.3.4",
+    "@playwright/test": "^1.64.1",
     "@types/node": "^25.9.8",
     "@types/sortablejs": "^1.15.9",
     "@vitest/coverage-v8": "^4.1.11",
-    "@vue/test-utils": "^2.5.0",
+    "@vue/test-utils": "^2.5.1",
     "eslint": "^10.10.0",
     "eslint-config-prettier": "^10.1.8",
     "happy-dom": "^20.14.0",
@@ -63,7 +63,7 @@
     "sass": "^1.104.0",
     "typescript": "^6.0.3",
     "vitest": "^4.1.11",
-    "vue-tsc": "^3.3.11"
+    "vue-tsc": "^3.3.14"
   },
   "engines": {
     "node": ">=26 <27"
