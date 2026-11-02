@@ -149,10 +149,17 @@ for (const layout of ['nexus', 'aurora', 'dock']) {
       )
       await page.getByRole('link', { name, exact: true }).filter({ visible: true }).first().click()
       await expect(page).toHaveURL(new RegExp(`${path}$`))
-      await ready(page, '[data-page-frame]')
-      expect(
-        await page.locator('[data-page-body]').evaluate((el) => el.getBoundingClientRect().height),
-      ).toBeGreaterThan(150)
+      // 地址先于新页挂载变化，此时页面上仍可能是上一页的页框。等新栏目的页框出现后只量它自己的正文，
+      // 并等布局撑开，避免量到上一页或正被替换、已脱离文档的正文（高度为 0）。
+      const frameSelector = `[data-page-frame][data-page-header-key="${path.slice(1)}"]`
+      await ready(page, frameSelector)
+      await expect
+        .poll(() =>
+          page
+            .locator(`${frameSelector} > [data-page-body-frame] > [data-page-body]`)
+            .evaluate((el) => el.getBoundingClientRect().height),
+        )
+        .toBeGreaterThan(150)
       const frames = await samples
       expect(frames.some((frame) => frame.overlap || frame.headerMoved || frame.cloneHeader)).toBe(false)
       const motion = await records(page)
