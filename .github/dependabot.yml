@@ -82,6 +82,10 @@ updates:
       # TypeScript 7 为原生重写，typescript-eslint、vue-tsc 与 Nest 构建尚不支持；生态跟进后移除此项
       - dependency-name: typescript
         update-types: ['version-update:semver-major']
+      # NestJS 12 的 core、common、testing 与 platform-express 只发布 ESM，后端 Jest 按 CommonJS 加载时报
+      # createRequireEsmError；各包须同步升大版本，连同测试运行器整体迁移后移除此项
+      - dependency-name: '@nestjs/*'
+        update-types: ['version-update:semver-major']
     groups:
       后端次版本与补丁:
         patterns:
