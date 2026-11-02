@@ -355,7 +355,9 @@ node src/backend/server-main/tests/browser-runner.mjs --list-shards 4
 
 不设置 `E2E_SHARD` 时运行器照旧跑全量。新增文件或某文件耗时明显变化后，用最近一次全量通过的 CI 日志更新权重表：每个文件的权重取上一文件结束到该文件 `N passed (时长)` 行之间的墙钟秒数，包含建库、迁移、写样本和启动预览；同时更新 `source` 字段，并确认各片预计耗时接近。调整分片数时同步修改 `browser-e2e` 的 matrix、`E2E_SHARD` 总数和覆盖校验中的片数。
 
-`setup-wizard.spec.ts` 需要「不预置管理员、配置随机 `SETUP_TOKEN`」的隔离库：运行器按文件运行时自动为它设置 `E2E_SETUP_WIZARD=true`（其余文件清除该开关，缺省模式不变），也只写入文章样本、不写其他领域样本；直接点名运行该文件时同样自动进入此模式，不能与其他文件在同一进程混跑。后端集成验收 `tests/setup-integration.mjs` 复用同一模式，在真实数据库上核对并发提交只成功一次。
+点名多个文件时，运行器同样按文件分别启动进程和隔离库，与全量和 CI 一致。这适用于 `check:local --e2e` 挑出的改动 spec，也适用于手动执行 `test:e2e:run a.spec.ts b.spec.ts`。这样，前一个文件新增、发布或置顶的文章不会改变后一个文件的分页与固定样本断言。`a.spec.ts:30` 这类定位参数归入对应文件，`--browser`、`--grep` 等其余参数原样传给每个文件。带 `--grep`（`-g`）或 `--grep-invert` 过滤时，没有匹配用例的文件不算失败。产物按文件写入 `.playwright-mcp/e2e-results/isolated-*`，因此这时不能再指定 `--output`。结束时运行器列出未通过的文件。只点名一个文件时仍在当前进程运行。
+
+`setup-wizard.spec.ts` 需要「不预置管理员、配置随机 `SETUP_TOKEN`」的隔离库：运行器按文件运行时自动为它设置 `E2E_SETUP_WIZARD=true`（其余文件清除该开关，缺省模式不变），也只写入文章样本、不写其他领域样本；单独点名运行该文件时同样自动进入此模式，与其他文件一起点名时按文件分进程，各自使用对应模式。后端集成验收 `tests/setup-integration.mjs` 复用同一模式，在真实数据库上核对并发提交只成功一次。
 
 需要评估文章列表投影时，可在后端构建后运行 `corepack pnpm --filter server-main exec tsx tests/post-list-performance.ts --compare`。它比较完整业务响应、分页和公开过滤，而非只比较耗时。浏览器性能与服务方法耗时分别记录；明确样本、预热、缓存、硬件及并发条件，不把本机采样直接当作线上收益。
 

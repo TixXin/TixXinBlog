@@ -76,7 +76,68 @@ if (process.argv[2] === '--list-shards') {
   process.exit(0)
 }
 
+/**
+ * 逐个文件启动独立进程，各用自己的隔离库、后端与预览；有文件失败时返回其退出码并列出失败文件，全部通过返回 0。
+ * entries 的 args 是传给该文件进程的测试定位与 Playwright 参数。
+ */
+async function runEachFileIsolated(entries, runSuffix) {
+  const outputRoot = resolve(frontendDirectory, '../../../.playwright-mcp/e2e-results')
+  if (existsSync(outputRoot) && lstatSync(outputRoot).isSymbolicLink()) throw new Error('测试输出不能是符号链接')
+  const run = `isolated-${Date.now()}-${process.pid}${runSuffix}`
+  let code = 0
+  const failed = []
+  for (const { file, args } of entries) {
+    const name = file.replace(/[^a-zA-Z0-9_.-]/g, '_')
+    const output = resolve(outputRoot, run, name)
+    if (!output.startsWith(outputRoot + sep)) throw new Error('测试输出目录越界')
+    const child = spawn(
+      process.execPath,
+      [fileURLToPath(import.meta.url), '--isolated-spec', ...args, '--output', output],
+      { windowsHide: true, stdio: 'inherit', env: specEnvironment(file) },
+    )
+    const result = await new Promise((resolve, reject) => {
+      child.once('error', reject)
+      child.once('exit', resolve)
+    })
+    if (result !== 0) {
+      code = Number(result ?? 1)
+      failed.push(file)
+    }
+  }
+  if (failed.length) console.error(`未通过的测试文件（${failed.length}/${entries.length}）：${failed.join(' ')}`)
+  return code
+}
+
+/**
+ * 把命令行点名的测试按文件归组：`a.spec.ts`、`a.spec.ts:30` 归入同一文件，其余参数原样转给每个文件。
+ * 点名的文件不足两个时返回 null，沿用当前进程运行。
+ */
+function groupNamedSpecs(args) {
+  const groups = new Map()
+  const shared = []
+  for (const value of args) {
+    const match = /^(.+\.spec\.ts)(?::\d+){0,2}$/.exec(value)
+    if (!match) {
+      shared.push(value)
+      continue
+    }
+    const file = match[1].split(/[\\/]/).pop()
+    groups.set(file, [...(groups.get(file) ?? []), value])
+  }
+  if (groups.size < 2) return null
+  if (shared.some((value) => value === '--output' || value.startsWith('--output=')))
+    throw new Error('点名多个测试文件时按文件写入各自的产物目录，不能再指定 --output')
+  // 按用例名过滤时条件分别作用于每个文件，没有匹配用例的文件不算失败；不带过滤时仍要求每个文件都有用例。
+  if (shared.some((value) => /^(-g|-G|--grep|--grep-invert)(=|$)/.test(value))) shared.push('--pass-with-no-tests')
+  return [...groups].map(([file, located]) => ({ file, args: [...located, ...shared] }))
+}
+
 // 每份完整测试文件使用自己的数据库，避免管理用例新增内容污染固定样本的展示验收。
+// 点名多个文件时同样按文件分库，check:local --e2e 与手动挑选的组合和 CI 的隔离方式一致。
+if (process.argv.length > 2 && process.argv[2] !== '--isolated-spec') {
+  const entries = groupNamedSpecs(process.argv.slice(2))
+  if (entries) process.exit(await runEachFileIsolated(entries, ''))
+}
 if (process.argv.length === 2) {
   let files = listSpecFiles()
   let runSuffix = ''
@@ -94,28 +155,13 @@ if (process.argv.length === 2) {
     for (const file of files) console.log(`  ${file}`)
   }
   // 分片后即使只剩一个文件也走独立进程，产物目录同样带分片号。
-  if (files.length > 1 || runSuffix) {
-    const outputRoot = resolve(frontendDirectory, '../../../.playwright-mcp/e2e-results')
-    if (existsSync(outputRoot) && lstatSync(outputRoot).isSymbolicLink()) throw new Error('测试输出不能是符号链接')
-    const run = `isolated-${Date.now()}-${process.pid}${runSuffix}`
-    let code = 0
-    for (const file of files) {
-      const name = file.replace(/[^a-zA-Z0-9_.-]/g, '_')
-      const output = resolve(outputRoot, run, name)
-      if (!output.startsWith(outputRoot + sep)) throw new Error('测试输出目录越界')
-      const child = spawn(
-        process.execPath,
-        [fileURLToPath(import.meta.url), '--isolated-spec', file, '--output', output],
-        { windowsHide: true, stdio: 'inherit', env: specEnvironment(file) },
-      )
-      const result = await new Promise((resolve, reject) => {
-        child.once('error', reject)
-        child.once('exit', resolve)
-      })
-      if (result !== 0) code = Number(result ?? 1)
-    }
-    process.exit(code)
-  }
+  if (files.length > 1 || runSuffix)
+    process.exit(
+      await runEachFileIsolated(
+        files.map((file) => ({ file, args: [file] })),
+        runSuffix,
+      ),
+    )
 }
 if (process.argv[2] === '--isolated-spec') process.argv.splice(2, 1)
 // 本进程运行的测试文件决定隔离模式：向导文件与需要预置管理员的文件不能在同一个库里混跑。

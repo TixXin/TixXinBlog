@@ -117,7 +117,7 @@
 | `test:e2e:run`             | `node src/backend/server-main/tests/browser-runner.mjs`                                                                                      |
 | `test:subscription-domain` | `corepack pnpm --filter @tixxin/subscription-domain test`                                                                                    |
 
-`test:e2e` 依次构建后端和前端，再由浏览器运行器启动隔离环境执行 Playwright 回归，例如 `corepack pnpm test:e2e sustainable-admin.spec.ts --browser=all`。需要 PostgreSQL、创建临时数据库的权限和对应的 Playwright 浏览器；测试写入隔离数据、启动临时前后端，运行器只清理本次拥有的资源。
+`test:e2e` 依次构建后端和前端，再由浏览器运行器启动隔离环境执行 Playwright 回归，例如 `corepack pnpm test:e2e sustainable-admin.spec.ts --browser=all`；点名多个 spec 时每个文件各用一套隔离环境，与全量运行一致。需要 PostgreSQL、创建临时数据库的权限和对应的 Playwright 浏览器；测试写入隔离数据、启动临时前后端，运行器只清理本次拥有的资源。
 
 `test:e2e:run` 省略两端构建，参数和隔离要求相同；必须已有与当前源码一致的两端生产构建，不能把旧构建的结果当成最新源码的验证。
 
