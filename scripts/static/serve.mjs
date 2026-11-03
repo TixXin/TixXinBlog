@@ -1,7 +1,7 @@
 /**
  * @file serve.mjs
  * @description 静态发布产物的本机服务器：按静态托管的规则返回文件，未知地址返回 404.html；
- *   录制模式下冻结接口文件或受管媒体缺失时回源真实接口并写入产物，供构建脚本的浏览器爬取使用。
+ *   录制模式下冻结接口文件、受管媒体或分享卡片缺失时回源真实接口并写入产物，供构建脚本的浏览器爬取使用。
  *   用法：node scripts/static/serve.mjs --root <产物目录> [--port 4310] [--record <接口基址> --locale zh-CN]
  */
 import { createServer } from 'node:http'
@@ -14,6 +14,9 @@ import { listPagePath } from './routes.mjs'
 const FROZEN_SOURCE_HEADER = 'x-static-source'
 const MEDIA = /^\/api\/v1\/media\/([0-9a-f-]{36})(?:-w(\d+))?\.webp$/i
 const FAVICON = /^\/api\/v1\/subscriptions\/favicons\/[a-f0-9]{64}\.webp$/
+/** 分享卡片：与后端 og.controller.ts 的地址白名单一致 */
+export const OG_CARD =
+  /^\/api\/v1\/og\/(?:nexus|aurora|dock)\/(?:zh-CN|en)\/(?:site|post\/[1-9]\d{0,9}|(?:flash|moment)\/[A-Za-z0-9_-]{1,64})\.png$/
 const types = {
   '.html': 'text/html; charset=utf-8',
   '.json': 'application/json; charset=utf-8',
@@ -59,7 +62,8 @@ export function createRecorder(root, api, locale) {
     const name = pathname.slice('/_api/'.length)
     if (manifest[name] && manifest[name] !== key) throw new Error(`冻结接口文件名冲突：${manifest[name]} 与 ${key}`)
     const allKey = key.endsWith('#all') ? key.slice(0, -4) : null
-    const body = allKey ? await readAll(allKey) : await readJson(key)
+    const corpusKey = key.endsWith('#corpus') ? key.slice(0, -7) : null
+    const body = corpusKey ? await readCorpus(corpusKey) : allKey ? await readAll(allKey) : await readJson(key)
     if (!body) return false
     manifest[name] = key
     save(join(root, pathname), JSON.stringify(body))
@@ -95,6 +99,24 @@ export function createRecorder(root, api, locale) {
     delete data.nextCursor
     return { ...first, data }
   }
+  /** 文章正文索引：按列表全量逐篇读取公开详情的原始 Markdown（并发 4），旧文章没有原文时记为空串；任一篇失败即放弃 */
+  async function readCorpus(path) {
+    const list = await readAll(path)
+    if (!list) return null
+    const items = list.data.items.map((item) => ({ id: item.id, contentRaw: '' }))
+    let next = 0,
+      failed = false
+    const worker = async () => {
+      while (!failed && next < items.length) {
+        const item = items[next++]
+        const detail = await readJson(`${path}/${encodeURIComponent(item.id)}`)
+        if (!detail) failed = true
+        else item.contentRaw = typeof detail.data?.contentRaw === 'string' ? detail.data.contentRaw : ''
+      }
+    }
+    await Promise.all(Array.from({ length: 4 }, worker))
+    return failed ? null : { code: 0, message: 'ok', data: { items, total: items.length } }
+  }
   async function media(pathname) {
     const match = pathname.match(MEDIA)
     const source = match
@@ -119,7 +141,7 @@ export function startServer({ root, port = 4310, record, locale = 'zh-CN', onMis
         const recorded =
           url.pathname.startsWith('/_api/') && typeof key === 'string'
             ? await recorder.frozen(url.pathname, key)
-            : MEDIA.test(url.pathname) || FAVICON.test(url.pathname)
+            : MEDIA.test(url.pathname) || FAVICON.test(url.pathname) || OG_CARD.test(url.pathname)
               ? await recorder.media(url.pathname)
               : false
         if (recorded) file = resolveFile(root, url.pathname)

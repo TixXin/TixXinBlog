@@ -1,7 +1,7 @@
 /**
  * @file build.mjs
  * @description 静态发布构建（docs/static-publish.md）：从运行中的真实后端读取公开数据，预渲染全部公开页面，
- *   用浏览器录制页面取数所需的冻结接口与媒体，写入托管平台配置，再以不回源的方式完整校验一遍。
+ *   用浏览器录制页面取数所需的冻结接口与媒体（含文章正文索引与分享卡片），写入托管平台配置，再以不回源的方式完整校验一遍。
  *   任何读取、预渲染或校验失败都让整次构建失败，不产出缺页或空列表的站点。
  *   用法：corepack pnpm static:build --site-url https://blog.example.com [--api http://127.0.0.1:3457/api/v1]
  *        [--locale zh-CN] [--theme nexus] [--out <输出目录，构建时会被清空>]
@@ -11,7 +11,11 @@ import { existsSync, mkdirSync, mkdtempSync, renameSync, rmSync, writeFileSync }
 import { tmpdir } from 'node:os'
 import { join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { frozenAllKey, frozenApiFile } from '../../src/frontend/web-blog/app/features/static/frozenApi.ts'
+import {
+  frozenAllKey,
+  frozenApiFile,
+  frozenCorpusKey,
+} from '../../src/frontend/web-blog/app/features/static/frozenApi.ts'
 import { securityHeaders } from '../../src/frontend/web-blog/securityHeaders.ts'
 import { crawl } from './crawl.mjs'
 import { mediaReferences, outputReport, pruneOutput, writeHostingFiles } from './finalize.mjs'
@@ -87,10 +91,12 @@ async function record(publicDir, config, pages) {
     step('录制列表全量（文本查询与未枚举组合的回退来源）')
     for (const source of LIST_SOURCES)
       await fetchThrough(base, frozenApiFile(frozenAllKey(source)), frozenAllKey(source))
+    step('录制文章正文索引（静态站正文搜索）')
+    await fetchThrough(base, frozenApiFile(frozenCorpusKey('/posts')), frozenCorpusKey('/posts'))
     step(`浏览器录制页面取数（${pages.length} 个地址）`)
     await crawl(base, pages, { onProgress: progress('录制') })
     const media = mediaReferences(publicDir)
-    step(`导出受管媒体与订阅图标（${media.length} 个文件）`)
+    step(`导出受管媒体、订阅图标与分享卡片（${media.length} 个文件）`)
     // 订阅图标是从平台抓取的缓存，上游失效时服务器部署同样返回 404，页面会改用 Lucide 图标；受管媒体缺失仍然失败。
     const upstreamMissing = []
     for (const path of media) {

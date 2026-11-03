@@ -8,7 +8,7 @@ import { test } from 'node:test'
 import { mediaReferences, pruneOutput, writeHostingFiles } from './finalize.mjs'
 import { listPagePath, readAll, staticRoutes } from './routes.mjs'
 import { resolveFile, startServer } from './serve.mjs'
-import { frozenApiFile } from '../../src/frontend/web-blog/app/features/static/frozenApi.ts'
+import { frozenApiFile, frozenCorpusKey } from '../../src/frontend/web-blog/app/features/static/frozenApi.ts'
 
 const temp = () => mkdtempSync(join(tmpdir(), 'static-publish-'))
 const uuid = '8b7c145a-50b1-4b98-9867-87de592527ab'
@@ -85,6 +85,23 @@ test('媒体扫描为每张受管图片列出原图与全部宽度变体，产�
   assert.ok(!existsSync(join(root, '200.html')) && !existsSync(join(root, 'index.html.br')))
 })
 
+test('媒体扫描收集页面引用的分享卡片，去掉版本参数并去重', () => {
+  const root = temp()
+  const card = '/api/v1/og/nexus/zh-CN/post/12.png'
+  writeFileSync(
+    join(root, 'index.html'),
+    `<meta property="og:image" content="https://blog.example.com${card}?v=abc"><meta name="twitter:image" content="https://blog.example.com${card}?v=abc">`,
+  )
+  writeFileSync(
+    join(root, 'about.html'),
+    '<meta property="og:image" content="https://blog.example.com/api/v1/og/nexus/zh-CN/site.png?v=1">',
+  )
+  assert.deepEqual(mediaReferences(root).sort(), [
+    '/api/v1/og/nexus/zh-CN/post/12.png',
+    '/api/v1/og/nexus/zh-CN/site.png',
+  ])
+})
+
 test('平台配置写入同一组安全头与重定向', () => {
   const root = temp()
   writeHostingFiles(root, { 'X-Frame-Options': 'DENY', 'Content-Security-Policy': "default-src 'self'" })
@@ -137,4 +154,50 @@ test('录制模式回源冻结接口与媒体，顺游标补全后续页，校�
   const missing = await fetch(`http://127.0.0.1:${plain.address().port}/_api/none.json`)
   assert.equal(missing.status, 404)
   assert.equal(await missing.text(), 'not found')
+})
+
+test('录制模式汇总文章正文索引并导出分享卡片；任一篇详情失败或卡片地址不在白名单时不写入', async (t) => {
+  const details = { 1: { id: '1', contentRaw: '# 第一篇\n正文' }, 2: { id: '2', content: [] } }
+  let failDetail = false
+  const upstream = createServer((request, response) => {
+    const url = new URL(request.url, 'http://x')
+    if (url.pathname.startsWith('/api/v1/og/')) return response.end(`png ${url.pathname}`)
+    response.setHeader('content-type', 'application/json')
+    const detail = url.pathname.match(/^\/api\/v1\/posts\/(\d+)$/)?.[1]
+    if (detail) {
+      if (failDetail && detail === '2') return response.writeHead(500).end('{}')
+      return response.end(JSON.stringify({ code: 0, data: details[detail] }))
+    }
+    response.end(JSON.stringify({ code: 0, data: { items: [{ id: 1 }, { id: 2 }], total: 2 } }))
+  })
+  await new Promise((done) => upstream.listen(0, '127.0.0.1', done))
+  t.after(() => upstream.close())
+  const root = temp()
+  const api = `http://127.0.0.1:${upstream.address().port}/api/v1`
+  const recorder = await startServer({ root, port: 0, record: api, locale: 'zh-CN' })
+  t.after(() => recorder.close())
+  const base = `http://127.0.0.1:${recorder.address().port}`
+  const key = frozenCorpusKey('/posts')
+  const corpus = await fetch(base + frozenApiFile(key), { headers: { 'x-static-source': key } })
+  assert.equal(corpus.status, 200)
+  assert.deepEqual((await corpus.json()).data.items, [
+    { id: 1, contentRaw: '# 第一篇\n正文' },
+    { id: 2, contentRaw: '' },
+  ])
+
+  const card = '/api/v1/og/aurora/en/flash/abc_1-2.png'
+  assert.equal((await fetch(base + card + '?v=9')).status, 200)
+  assert.equal(readFileSync(join(root, card), 'utf8'), `png ${card}`)
+  assert.equal((await fetch(base + '/api/v1/og/retro/en/site.png')).status, 404)
+  assert.ok(!existsSync(join(root, 'api/v1/og/retro')))
+
+  failDetail = true
+  const failedRoot = temp()
+  const failing = await startServer({ root: failedRoot, port: 0, record: api, locale: 'zh-CN' })
+  t.after(() => failing.close())
+  const failed = await fetch(`http://127.0.0.1:${failing.address().port}${frozenApiFile(key)}`, {
+    headers: { 'x-static-source': key },
+  })
+  assert.equal(failed.status, 404)
+  assert.ok(!existsSync(join(failedRoot, frozenApiFile(key))))
 })

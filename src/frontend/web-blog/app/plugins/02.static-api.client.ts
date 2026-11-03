@@ -4,7 +4,7 @@
  *              服务器部署不安装，行为不变。预渲染阶段的服务端请求仍经网关访问真实接口。
  */
 import { createStaticFetchGuard } from '~/features/static/staticFetch'
-import { textQueryFallback } from '~/features/static/textQuery'
+import { staticQueryFallback } from '~/features/static/queryFallback'
 
 export default defineNuxtPlugin({
   name: 'static-api',
@@ -18,7 +18,7 @@ export default defineNuxtPlugin({
     globalThis.fetch = createStaticFetchGuard(nativeFetch, {
       apiBase: String(config.public.apiBaseUrl),
       origin: window.location.origin,
-      fallback: textQueryFallback,
+      fallback: staticQueryFallback,
     })
   },
 })

@@ -10,6 +10,8 @@ import { join, relative } from 'node:path'
 export const MEDIA_WIDTHS = [320, 640, 960, 1280]
 const MEDIA = /\/api\/v1\/media\/([0-9a-f-]{36})(?:-w\d+)?\.webp/gi
 const FAVICON = /\/api\/v1\/subscriptions\/favicons\/[a-f0-9]{64}\.webp/g
+/** 页面分享元信息引用的分享卡片；地址带 ?v= 版本参数，文件按不含查询串的路径导出 */
+const OG_CARD = /\/api\/v1\/og\/[A-Za-z0-9/_-]+\.png/g
 /** 服务器部署 routeRules 中的固定重定向 */
 export const STATIC_REDIRECTS = [{ source: '/articles', destination: '/', statusCode: 301 }]
 
@@ -21,22 +23,23 @@ export function* walk(root) {
   }
 }
 
-/** 产物中引用到的媒体文件地址：每张受管图片的原图与全部宽度变体，以及订阅图标 */
+/** 产物中引用到的媒体文件地址：每张受管图片的原图与全部宽度变体、订阅图标，以及分享卡片 */
 export function mediaReferences(root) {
   const ids = new Set()
-  const favicons = new Set()
+  const files = new Set()
   for (const file of walk(root)) {
     if (!/\.(html|json|xml)$/.test(file)) continue
     const text = readFileSync(file, 'utf8')
     for (const match of text.matchAll(MEDIA)) ids.add(match[1].toLowerCase())
-    for (const match of text.matchAll(FAVICON)) favicons.add(match[0])
+    for (const match of text.matchAll(FAVICON)) files.add(match[0])
+    for (const match of text.matchAll(OG_CARD)) files.add(match[0])
   }
   const paths = []
   for (const id of ids) {
     paths.push(`/api/v1/media/${id}.webp`)
     for (const width of MEDIA_WIDTHS) paths.push(`/api/v1/media/${id}-w${width}.webp`)
   }
-  return [...paths, ...favicons]
+  return [...paths, ...files]
 }
 
 /** 静态托管不需要 SPA 回退：未知地址应返回 404.html；平台自行压缩，删除预压缩副本以减少文件数 */

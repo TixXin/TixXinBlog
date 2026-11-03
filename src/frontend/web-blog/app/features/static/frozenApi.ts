@@ -50,8 +50,13 @@ export function frozenAllKey(path: string) {
   return `${frozenApiKey(path)}#all`
 }
 
-/** cyrb53：稳定、无依赖的 53 位字符串哈希，构建时另行检查碰撞 */
-function hash(value: string) {
+/** 文章正文索引的键：构建时按列表全量逐篇读取公开详情的原始 Markdown，供静态站的正文搜索使用 */
+export function frozenCorpusKey(path: string) {
+  return `${frozenApiKey(path)}#corpus`
+}
+
+/** cyrb53：稳定、无依赖的 53 位字符串哈希，构建时另行检查碰撞；分享卡片地址的版本号同样使用 */
+export function stableHash(value: string) {
   let h1 = 0xdeadbeef,
     h2 = 0x41c6ce57
   for (let index = 0; index < value.length; index++) {
@@ -66,7 +71,7 @@ function hash(value: string) {
 
 /** 冻结接口键对应的产物地址 */
 export function frozenApiFile(key: string) {
-  return `${FROZEN_API_DIRECTORY}/${hash(key)}.json`
+  return `${FROZEN_API_DIRECTORY}/${stableHash(key)}.json`
 }
 
 /** 请求是否带有非空的自由文本查询 */
