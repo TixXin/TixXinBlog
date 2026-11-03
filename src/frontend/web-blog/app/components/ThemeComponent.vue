@@ -53,7 +53,9 @@ function resolveThemeComponent(themeName, componentName) {
   }
   const hostDefault = HOST_DEFAULT_COMPONENTS[componentName]
   if (hostDefault) {
-    return { cacheKey: `host:${componentName}`, loader: async () => ({ default: hostDefault }) }
+    // 宿主默认壳层随宿主静态打包，同步返回组件本身：若走异步包装器，水合后换成真实组件会卸载重挂，
+    // 每张服务端渲染的卡片都会被替换一次（列表节点脱离文档、首屏多一次整列表重建）。
+    return { cacheKey: `host:${componentName}`, loader: async () => ({ default: hostDefault }), component: hostDefault }
   }
   if (import.meta.dev && !OPTIONAL_COMPONENTS.has(componentName) && !warnedComponents.has(componentName)) {
     warnedComponents.add(componentName)
@@ -158,7 +160,7 @@ export default defineComponent({
       }
 
       // 同步路径：从预加载缓存或运行时缓存直接获取（水合关键路径）
-      const preloaded = themeComponentCache.get(resolved.cacheKey)
+      const preloaded = resolved.component ?? themeComponentCache.get(resolved.cacheKey)
       if (preloaded) {
         if (props.name === 'RootLayout') startupContent.value = null
         displayedComponent.value = preloaded

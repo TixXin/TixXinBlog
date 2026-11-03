@@ -320,3 +320,21 @@ test('友链快速刷新与原生历史切换不丢记录，后续推荐筛选�
     contentType: 'application/json',
   })
 })
+
+for (const layout of ['nexus', 'aurora', 'dock']) {
+  test(`${layout} 水合直接接管服务端渲染的文章卡片，不重建列表`, async ({ page, context, baseURL }) => {
+    await context.addCookies([{ name: 'blog-layout-theme', value: layout, url: baseURL! }])
+    // 文档解析完、水合开始前给服务端渲染的卡片打标；水合若替换节点，新节点不带标记。
+    await page.addInitScript(() => {
+      document.addEventListener('DOMContentLoaded', () => {
+        document.querySelectorAll('article.post-item').forEach((node) => node.setAttribute('data-ssr-node', ''))
+      })
+    })
+    await page.goto('/?page=3&tag=示例标签&category=示例专栏')
+    await expect(page.locator('html')).toHaveClass(/app-client-ready/)
+    await expect(page.locator(`.theme-${layout}`)).toBeVisible()
+    const cards = page.locator('.post-list article.post-item')
+    await expect(cards).toHaveCount(15)
+    await expect(page.locator('.post-list article.post-item[data-ssr-node]')).toHaveCount(15)
+  })
+}
