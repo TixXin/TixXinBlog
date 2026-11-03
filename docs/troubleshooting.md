@@ -56,7 +56,7 @@ sudo tixxin logs edge frontend backend --tail 100
 | 「安装脚本不会覆盖已有站点」                         | 已有站点用 `sudo tixxin update`；另装一套换用 `--dir`、`--project`，见[提示安装目录或数据卷已存在](quick-start.md#提示安装目录或数据卷已存在)                                        |
 | 安装中途失败，再次安装被拒绝                         | 修复原因后按输出提示执行 `sudo tixxin update <版本>` 继续；首次迁移即失败、还没有数据时可追加 `--skip-backup`                                                                        |
 | 「部署包 SHA256 校验失败」                           | 不要绕过校验；核对下载源是否可信、文件是否完整，重新下载                                                                                                                             |
-| 部署包或镜像下载、拉取失败                           | 检查网络与镜像仓库权限；国内网络见[国内网络](quick-start.md#国内网络)                                                                                                                |
+| 部署包或镜像下载、拉取失败                           | 镜像拉取已自动重试 3 次；仍失败时检查网络与镜像仓库权限，国内网络见[国内网络](quick-start.md#国内网络)                                                                               |
 | 「已有 tixxin 操作在进行」                           | 先确认没有其他升级、回退或备份进程仍在运行，再按提示手动删除 `<安装目录>/.tixxin.lock` 目录；不要在操作进行中删除                                                                    |
 | `tixxin update` 或 `rollback` 未完成                 | 按输出的失败阶段排查；输出会说明站点是否已被修改，并给出对应的 `tixxin rollback <版本> --database-compatible` 命令。应用回退不能代替数据恢复，见[备份与恢复](backup-and-recovery.md) |
 | 忘记博主密码                                         | `sudo tixxin reset-password`，见[忘记密码](quick-start.md#忘记密码)                                                                                                                  |

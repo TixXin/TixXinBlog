@@ -120,6 +120,20 @@ image_refs() {
   env_get CADDY_IMAGE
 }
 
+# 拉取单个镜像。镜像仓库偶发连接中断（EOF、超时）时间隔 5 秒、10 秒重试，共 3 次；
+# 仍失败时打印最后一次的错误并返回非零，由调用方给出排查提示。
+pull_image() {
+  local image=$1 attempt output=''
+  for attempt in 1 2 3; do
+    if output=$(docker pull --quiet "$image" 2>&1); then return 0; fi
+    [ "$attempt" -lt 3 ] || break
+    warn "镜像 $image 第 ${attempt} 次拉取失败，$((attempt * 5)) 秒后重试：$(printf '%s\n' "$output" | tail -n 1)"
+    sleep $((attempt * 5))
+  done
+  printf '%s\n' "$output" >&2
+  return 1
+}
+
 # 拉取或核对指定版本的全部镜像（含 worker：备份在 worker 镜像内执行）。
 prepare_images() {
   local version=$1 image
@@ -129,7 +143,7 @@ prepare_images() {
       docker image inspect "$image" > /dev/null 2>&1 || fail "本机缺少镜像 ${image}（已指定 --no-pull）"
     else
       info "拉取镜像 $image"
-      docker pull --quiet "$image" > /dev/null || fail "镜像 $image 拉取失败；请检查网络与仓库权限，国内网络可把 .env 中的 *_IMAGE_REPOSITORY 改为可信镜像仓库"
+      pull_image "$image" || fail "镜像 $image 拉取 3 次均失败；请检查网络与仓库权限，国内网络可把 .env 中的 *_IMAGE_REPOSITORY 改为可信镜像仓库"
     fi
   done < <(image_refs "$version")
 }
@@ -400,7 +414,7 @@ create_backup() {
   worker_image="$(env_get WORKER_IMAGE_REPOSITORY):$(current_version)"
   docker image inspect "$worker_image" > /dev/null 2>&1 || {
     if [ "$NO_PULL" = 1 ]; then fail "本机缺少备份所需的 worker 镜像 $worker_image"; fi
-    docker pull --quiet "$worker_image" > /dev/null || fail "备份所需的 worker 镜像 $worker_image 拉取失败"
+    pull_image "$worker_image" || fail "备份所需的 worker 镜像 $worker_image 拉取 3 次均失败"
   }
   info "创建完整备份 ${name}（数据库一致快照 + 登记媒体）…"
   compose run --rm --no-deps --pull never -T worker \
