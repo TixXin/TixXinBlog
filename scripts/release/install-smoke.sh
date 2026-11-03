@@ -64,7 +64,7 @@ check_setup_status() {
   body=$(printf '%s' "$response" | sed '$d')
   case $status in
     200)
-      printf '%s' "$body" | grep -q "\"needsSetup\":$expected" || fail "setup/status 应返回 needsSetup=${expected}：$body"
+      grep -q "\"needsSetup\":$expected" <<< "$body" || fail "setup/status 应返回 needsSetup=${expected}：$body"
       log "setup/status needsSetup=$expected"
       ;;
     *) fail "setup/status 返回 $status" ;;
@@ -149,7 +149,7 @@ grep -qx "TIXXIN_NETWORK_SUBNET=$next_subnet" "$site/.env" || fail '升级未写
 [ "$(psql_value 'select count(*) from mikro_orm_migrations')" = "$migrations_before" ] || fail '同版本升级产生了新迁移记录'
 [ "$(docker volume inspect --format '{{.CreatedAt}}' "${project}_database")" = "$volume_before" ] || fail '数据库卷被重建'
 headers=$(curl_site -o /dev/null -D - "$origin/api/v1/posts?pageSize=1" | tr -d '\r')
-printf '%s\n' "$headers" | grep -qi "^x-tixxin-release: $version\$" || fail '升级后版本头不符'
+grep -qi "^x-tixxin-release: $version\$" <<< "$headers" || fail '升级后版本头不符'
 check_setup_status false
 "$site/deploy/tixxin" status
 
@@ -173,14 +173,15 @@ done
 bash "$root/scripts/release/package-deploy.sh" --version "$next" --repository TixXin/TixXinBlog \
   --image-prefix "$prefix" --output "$work/download/v$next" > /dev/null
 "$site/deploy/tixxin" update "$next" --yes --no-pull
-curl_site -o /dev/null -D - "$origin/api/v1/posts?pageSize=1" | tr -d '\r' | grep -qi "^x-tixxin-release: $next\$" ||
-  fail '跨版本升级后版本头不符'
+# 先取完整响应头再匹配：grep -q 提前退出会让 tr 收到 SIGPIPE，pipefail 下把命中判为失败。
+headers=$(curl_site -o /dev/null -D - "$origin/api/v1/posts?pageSize=1" | tr -d '\r')
+grep -qi "^x-tixxin-release: $next\$" <<< "$headers" || fail '跨版本升级后版本头不符'
 if "$site/deploy/tixxin" rollback "$version" --yes --no-pull > "$work/rollback.log" 2>&1; then
   fail '缺少 --database-compatible 的回退未被拒绝'
 fi
 "$site/deploy/tixxin" rollback "$version" --database-compatible --yes --no-pull
-curl_site -o /dev/null -D - "$origin/api/v1/posts?pageSize=1" | tr -d '\r' | grep -qi "^x-tixxin-release: $version\$" ||
-  fail '回退后版本头不符'
+headers=$(curl_site -o /dev/null -D - "$origin/api/v1/posts?pageSize=1" | tr -d '\r')
+grep -qi "^x-tixxin-release: $version\$" <<< "$headers" || fail '回退后版本头不符'
 [ "$(psql_value 'select count(*) from admin_user')" = "$admins_before" ] || fail '升级与回退后管理员数量变化'
 [ "$(docker volume inspect --format '{{.CreatedAt}}' "${project}_database")" = "$volume_before" ] || fail '数据库卷被重建'
 

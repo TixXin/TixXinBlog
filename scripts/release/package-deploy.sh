@@ -81,7 +81,9 @@ EOF
 
 asset="tixxin-blog-$version.tar.gz"
 # 关闭 macOS 扩展属性；GNU tar 下额外固定排序与属主，便于复现。
-if tar --version 2> /dev/null | grep -q 'GNU tar'; then
+# 先取完整输出再匹配，避免 grep -q 提前退出让 tar 收到 SIGPIPE、在 pipefail 下误判为非 GNU tar
+tar_version=$(tar --version 2> /dev/null || true)
+if grep -q 'GNU tar' <<< "$tar_version"; then
   (cd "$stage" && tar --sort=name --owner=0 --group=0 --numeric-owner -cf - compose.production.yaml deploy) |
     gzip -n > "$output/$asset"
 else

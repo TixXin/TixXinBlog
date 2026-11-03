@@ -223,7 +223,8 @@ require_docker() {
 port_in_use() {
   local port=$1
   if command -v ss > /dev/null 2>&1; then
-    ss -Hltn "sport = :$port" 2> /dev/null | grep -q .
+    # 不把输出接给 grep -q：它提前退出会让上游收到 SIGPIPE，在 pipefail 下把命中误判为失败。
+    [ -n "$(ss -Hltn "sport = :$port" 2> /dev/null)" ]
   elif command -v lsof > /dev/null 2>&1; then
     lsof -nP -iTCP:"$port" -sTCP:LISTEN > /dev/null 2>&1
   elif command -v nc > /dev/null 2>&1; then
@@ -435,7 +436,10 @@ download_package() {
     esac
     case $entry in */../* | ../* | */..) fail '部署包包含上级路径' ;; esac
   done < <(tar -tzf "$WORK_DIR/$asset")
-  if tar -tvzf "$WORK_DIR/$asset" | cut -c1 | grep -qv '^[-d]$'; then fail '部署包包含链接或特殊文件'; fi
+  # 先取完整的条目类型再匹配：grep -q 在管道末端提前退出会让 tar/cut 收到 SIGPIPE，
+  # pipefail 下整个条件变假，恰好在发现链接或特殊文件时漏报。
+  entry_types=$(tar -tvzf "$WORK_DIR/$asset" | cut -c1)
+  if grep -qv '^[-d]$' <<< "$entry_types"; then fail '部署包包含链接或特殊文件'; fi
   mkdir "$WORK_DIR/package"
   tar -xzf "$WORK_DIR/$asset" -C "$WORK_DIR/package"
   for entry in compose.production.yaml deploy/Caddyfile deploy/Caddyfile.local deploy/compose.local.yaml \
@@ -614,7 +618,7 @@ print_summary() {
   info "站点地址：$SITE_URL"
   info "版本：$VERSION"
   info "安装目录：$INSTALL_DIR"
-  if [ "$status" = 200 ] && printf '%s' "$body" | grep -q '"needsSetup":true'; then
+  if [ "$status" = 200 ] && grep -q '"needsSetup":true' <<< "$body"; then
     info ''
     info '打开下面的链接设置博主账号（链接含一次性初始化令牌，请勿分享）：'
     info "  $SITE_URL/setup?token=$token"

@@ -291,7 +291,11 @@ fetch_package() {
     esac
     case $entry in */../* | ../* | */..) rm -rf "$work" && fail '部署包包含上级路径' ;; esac
   done < <(tar -tzf "$work/$asset")
-  if tar -tvzf "$work/$asset" | cut -c1 | grep -qv '^[-d]$'; then
+  # 先取完整的条目类型再匹配：grep -q 在管道末端提前退出会让 tar/cut 收到 SIGPIPE，
+  # pipefail 下整个条件变假，恰好在发现链接或特殊文件时漏报。
+  local entry_types
+  entry_types=$(tar -tvzf "$work/$asset" | cut -c1)
+  if grep -qv '^[-d]$' <<< "$entry_types"; then
     rm -rf "$work"
     fail '部署包包含链接或特殊文件'
   fi
@@ -395,7 +399,9 @@ check_entry() {
 # ---------- 发布流程（与 release.mjs 的阶段一致） ----------
 
 worker_running() {
-  compose ps --status running --services 2> /dev/null | grep -qx worker
+  local services
+  services=$(compose ps --status running --services 2> /dev/null) || return 1
+  grep -qx worker <<< "$services"
 }
 
 # ---------- 完整备份 ----------

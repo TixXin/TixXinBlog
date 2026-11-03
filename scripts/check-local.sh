@@ -72,7 +72,8 @@ all_flag=''
 [ "$run_all" = 1 ] && all_flag=--all
 # shellcheck disable=SC2086
 integration=$(printf '%s\n' "$files" | node scripts/ci/integration-tests.mjs $all_flag)
-if printf '%s\n' "$integration" | grep -q '^[^#]'; then
+# here-string 而非管道：grep -q 提前退出会让 printf 收到 SIGPIPE，pipefail 下悄悄跳过集成测试
+if grep -q '^[^#]' <<< "$integration"; then
   printf '%s\n' "$integration" | sed -n 's/^# /提示：/p'
   built_before=${#failed[@]}
   step '后端构建（集成测试使用）' corepack pnpm --filter server-main build
