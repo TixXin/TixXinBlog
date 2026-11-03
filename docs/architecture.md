@@ -162,6 +162,8 @@ HTTP 启动不执行迁移、seed 或任务循环。生产后端 Dockerfile 提�
 
 访问 JWT 有效期 15 分钟，仅保存在前端内存。刷新凭据是随机串，数据库仅保存 SHA-256 哈希，浏览器以 `tixxin_rt` Cookie 保存：`HttpOnly`、`SameSite=Lax`、`Path=/api/v1/auth`、有效期 7 天；除显式 `development/test` 外均带 `Secure`。刷新时撤销旧记录、签发新凭据，并延长持久会话有效期。SSR 不恢复登录态；客户端在 `app:mounted` 后先读取 `/auth/session`，确认有有效会话才刷新。
 
+登录、刷新与登出在各标签页之间串行执行（Web Locks 加 localStorage 短期标记）。发起方若在请求完成前卸载（刷新页面、跳转），keepalive 请求仍会落地，但标记来不及清除。为此后端每次改写 `tixxin_rt` 结束时（含被拒绝）同时换新 `tixxin_rv` 版本 Cookie：随机值、不含凭据、非 HttpOnly、`Path=/`。标记记下发起时的版本，其他文档看到版本变化即开始下一次改写，不必等满约 10 秒的上限，也不会拿已轮换的旧凭据触发重放撤销。Nitro 中间件在页面缓存与转发之前剥离该 Cookie，它不参与 SSR 缓存分键。
+
 ```mermaid
 sequenceDiagram
     participant Browser as 浏览器（内存与 Cookie）

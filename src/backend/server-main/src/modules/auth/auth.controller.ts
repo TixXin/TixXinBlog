@@ -25,7 +25,8 @@ import { CurrentAdmin } from '../../common/decorators/current-admin.decorator'
 import { AdminAuthGuard } from '../../common/guards/admin-auth.guard'
 import { RequestLocale } from '../../common/decorators/request-locale.decorator'
 import type { ApiLocale } from '../../common/i18n'
-import { getRefreshCookieOptions, REFRESH_COOKIE_NAME } from './auth.constants'
+import { REFRESH_COOKIE_NAME } from './auth.constants'
+import { clearRefreshCookie, settleRefreshCookie, writeRefreshCookie } from './auth-cookies'
 import { AuthService, LoginResult } from './auth.service'
 import { LoginDto } from './dto/login.dto'
 import { ChangePasswordDto } from './dto/change-password.dto'
@@ -81,7 +82,7 @@ export class AuthController {
   ) {
     const sessionId = id.toLowerCase()
     const result = await this.sessions.revoke(admin.id, sessionId, admin.sessionId)
-    if (sessionId === admin.sessionId) res.clearCookie(REFRESH_COOKIE_NAME, { path: getRefreshCookieOptions().path })
+    if (sessionId === admin.sessionId) clearRefreshCookie(res)
     return { ...result, current: sessionId === admin.sessionId }
   }
   @Post('sessions/revoke-others')
@@ -103,11 +104,13 @@ export class AuthController {
     @Req() req: Request,
     @Res({ passthrough: true }) res: Response,
   ): Promise<AuthPayload> {
-    const result = await this.authService.login(dto.username, dto.password, req.headers['user-agent'])
+    const result = await settleRefreshCookie(res, () =>
+      this.authService.login(dto.username, dto.password, req.headers['user-agent']),
+    )
     const auditRequest = req as AuditRequest
     auditRequest.auditActor = { id: result.user.id, name: result.user.username }
     auditRequest.auditResourceId = result.user.id
-    res.cookie(REFRESH_COOKIE_NAME, result.refreshTokenPlain, getRefreshCookieOptions())
+    writeRefreshCookie(res, result.refreshTokenPlain)
     return toPayload(result)
   }
 
@@ -115,8 +118,10 @@ export class AuthController {
   @HttpCode(HttpStatus.OK)
   async refresh(@Req() req: Request, @Res({ passthrough: true }) res: Response): Promise<AuthPayload> {
     const cookie = (req.cookies as Record<string, string> | undefined)?.[REFRESH_COOKIE_NAME] ?? ''
-    const result = await this.authService.refresh(cookie, req.headers['user-agent'], getTraceId(req))
-    res.cookie(REFRESH_COOKIE_NAME, result.refreshTokenPlain, getRefreshCookieOptions())
+    const result = await settleRefreshCookie(res, () =>
+      this.authService.refresh(cookie, req.headers['user-agent'], getTraceId(req)),
+    )
+    writeRefreshCookie(res, result.refreshTokenPlain)
     return toPayload(result)
   }
 
@@ -125,13 +130,13 @@ export class AuthController {
   async logout(@Req() req: Request, @Res({ passthrough: true }) res: Response): Promise<{ ok: true; revoked: number }> {
     const cookie = (req.cookies as Record<string, string> | undefined)?.[REFRESH_COOKIE_NAME]
     const bearer = req.headers.authorization?.startsWith('Bearer ') ? req.headers.authorization.slice(7) : undefined
-    const actor = await this.authService.logout(cookie, bearer)
+    const actor = await settleRefreshCookie(res, () => this.authService.logout(cookie, bearer))
     const auditRequest = req as AuditRequest
     if (actor) {
       auditRequest.auditActor = actor
       auditRequest.auditResourceId = actor.sessionId
     }
-    res.clearCookie(REFRESH_COOKIE_NAME, { path: getRefreshCookieOptions().path })
+    clearRefreshCookie(res)
     return { ok: true, revoked: actor?.revoked ?? 0 }
   }
 
@@ -154,7 +159,7 @@ export class AuthController {
       body.currentPassword,
       body.newPassword,
     )
-    res.clearCookie(REFRESH_COOKIE_NAME, { path: getRefreshCookieOptions().path })
+    clearRefreshCookie(res)
     return result
   }
 }

@@ -10,6 +10,7 @@ import { AuthOriginGuard } from '../../common/guards/auth-origin.guard'
 import type { AuditRequest } from '../audit/audit-request'
 import { REFRESH_COOKIE_NAME, REFRESH_TOKEN_TTL_MS } from './auth.constants'
 import { AuthController } from './auth.controller'
+import { REFRESH_VERSION_COOKIE_NAME } from './auth-cookies'
 import type { AuthService, LoginResult } from './auth.service'
 import type { AuthSessionsService } from './auth-sessions.service'
 
@@ -56,13 +57,30 @@ function request(headers: Request['headers'] = {}, cookies?: Record<string, stri
   return { headers, cookies } as AuditRequest
 }
 
+function cookieNames(response: ReturnType<typeof setup>['response']) {
+  return response.cookie.mock.calls.map(([name]) => name as string)
+}
+
+/** 每次改写刷新凭据结束都换新一次可读版本 Cookie，值随机、不等于凭据 */
+function expectVersionCookie(response: ReturnType<typeof setup>['response']) {
+  const calls = response.cookie.mock.calls.filter(([name]) => name === REFRESH_VERSION_COOKIE_NAME)
+  expect(calls).toHaveLength(1)
+  const [, value, options] = calls[0] as [string, string, Record<string, unknown>]
+  expect(value).toMatch(/^[0-9a-f-]{36}$/)
+  expect(value).not.toBe(loginResult.refreshTokenPlain)
+  expect(options).toEqual(
+    expect.objectContaining({ httpOnly: false, sameSite: 'lax', path: '/', maxAge: REFRESH_TOKEN_TTL_MS }),
+  )
+}
+
 function expectRefreshCookie(response: ReturnType<typeof setup>['response']) {
-  expect(response.cookie).toHaveBeenCalledTimes(1)
+  expect(cookieNames(response)).toEqual([REFRESH_COOKIE_NAME, REFRESH_VERSION_COOKIE_NAME])
   expect(response.cookie).toHaveBeenCalledWith(
     REFRESH_COOKIE_NAME,
     loginResult.refreshTokenPlain,
     expect.objectContaining({ httpOnly: true, sameSite: 'lax', path: '/api/v1/auth', maxAge: REFRESH_TOKEN_TTL_MS }),
   )
+  expectVersionCookie(response)
 }
 
 describe('AuthController', () => {
@@ -86,7 +104,7 @@ describe('AuthController', () => {
     expect(req.auditResourceId).toBe(admin.id)
   })
 
-  it('登录失败传播原异常，不签发 Cookie 或记录成功身份', async () => {
+  it('登录失败传播原异常，不签发刷新凭据或记录成功身份，只换新版本 Cookie', async () => {
     const { controller, auth, response, res } = setup()
     const error = new UnauthorizedException('账号或密码错误')
     auth.login.mockRejectedValue(error)
@@ -94,7 +112,8 @@ describe('AuthController', () => {
 
     await expect(controller.login({ username: 'blogger', password: 'wrong-password' }, req, res)).rejects.toBe(error)
 
-    expect(response.cookie).not.toHaveBeenCalled()
+    expect(cookieNames(response)).toEqual([REFRESH_VERSION_COOKIE_NAME])
+    expectVersionCookie(response)
     expect(req.auditActor).toBeUndefined()
     expect(req.auditResourceId).toBeUndefined()
   })
@@ -113,16 +132,20 @@ describe('AuthController', () => {
     expectRefreshCookie(response)
   })
 
-  it.each([undefined, {}])('缺少刷新 Cookie（%p）时由认证服务拒绝，不写入替代凭据', async (cookies) => {
-    const { controller, auth, response, res } = setup()
-    const error = new UnauthorizedException('刷新令牌无效')
-    auth.refresh.mockRejectedValue(error)
+  it.each([undefined, {}])(
+    '缺少刷新 Cookie（%p）时由认证服务拒绝，不写入替代凭据，只换新版本 Cookie',
+    async (cookies) => {
+      const { controller, auth, response, res } = setup()
+      const error = new UnauthorizedException('刷新令牌无效')
+      auth.refresh.mockRejectedValue(error)
 
-    await expect(controller.refresh(request({ 'x-trace-id': 'missing-cookie' }, cookies), res)).rejects.toBe(error)
+      await expect(controller.refresh(request({ 'x-trace-id': 'missing-cookie' }, cookies), res)).rejects.toBe(error)
 
-    expect(auth.refresh).toHaveBeenCalledWith('', undefined, 'missing-cookie')
-    expect(response.cookie).not.toHaveBeenCalled()
-  })
+      expect(auth.refresh).toHaveBeenCalledWith('', undefined, 'missing-cookie')
+      expect(cookieNames(response)).toEqual([REFRESH_VERSION_COOKIE_NAME])
+      expectVersionCookie(response)
+    },
+  )
 
   it('登出同时转交 Cookie 与 Bearer，清除认证路径 Cookie 并记录撤销会话', async () => {
     const { controller, auth, response, res } = setup()
@@ -134,6 +157,7 @@ describe('AuthController', () => {
 
     expect(auth.logout).toHaveBeenCalledWith('refresh-token', 'access-token')
     expect(response.clearCookie).toHaveBeenCalledWith(REFRESH_COOKIE_NAME, { path: '/api/v1/auth' })
+    expectVersionCookie(response)
     expect(req.auditActor).toEqual(actor)
     expect(req.auditResourceId).toBe(admin.sessionId)
   })
@@ -153,8 +177,8 @@ describe('AuthController', () => {
     },
   )
 
-  it('登出撤销失败时传播原异常，不伪造成功结果或审计身份', async () => {
-    const { controller, auth, res } = setup()
+  it('登出撤销失败时传播原异常，不伪造成功结果或审计身份，保留刷新 Cookie 并换新版本', async () => {
+    const { controller, auth, response, res } = setup()
     const error = new Error('撤销失败')
     auth.logout.mockRejectedValue(error)
     const req = request()
@@ -162,6 +186,8 @@ describe('AuthController', () => {
     await expect(controller.logout(req, res)).rejects.toBe(error)
 
     expect(req.auditActor).toBeUndefined()
+    expect(response.clearCookie).not.toHaveBeenCalled()
+    expect(cookieNames(response)).toEqual([REFRESH_VERSION_COOKIE_NAME])
   })
 
   it.each([
@@ -197,6 +223,7 @@ describe('AuthController', () => {
 
     expect(auth.changePassword).toHaveBeenCalledWith(admin.id, 3, ' old password ', ' new password ')
     expect(response.clearCookie).toHaveBeenCalledWith(REFRESH_COOKIE_NAME, { path: '/api/v1/auth' })
+    expectVersionCookie(response)
   })
 
   it.each([new BadRequestException('当前密码不正确'), new UnauthorizedException('登录已失效')])(
@@ -235,6 +262,7 @@ describe('AuthController', () => {
 
     expect(sessions.revoke).toHaveBeenCalledWith(admin.id, admin.sessionId, admin.sessionId)
     expect(response.clearCookie).toHaveBeenCalledWith(REFRESH_COOKIE_NAME, { path: '/api/v1/auth' })
+    expectVersionCookie(response)
   })
 
   it('撤销其他会话保留当前 Cookie，明确返回 current 为 false', async () => {
@@ -248,6 +276,7 @@ describe('AuthController', () => {
 
     expect(sessions.revoke).toHaveBeenCalledWith(admin.id, otherSessionId, admin.sessionId)
     expect(response.clearCookie).not.toHaveBeenCalled()
+    expect(response.cookie).not.toHaveBeenCalled()
   })
 
   it('撤销当前会话失败时不提前清理 Cookie', async () => {

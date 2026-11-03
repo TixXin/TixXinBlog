@@ -24,10 +24,13 @@ try {
       },
       ...(body === undefined ? {} : { body: JSON.stringify(body) }),
     })
+    const setCookies = response.headers.getSetCookie().map((item) => item.split(';')[0])
     return {
       status: response.status,
       body: await response.json(),
-      cookie: response.headers.get('set-cookie')?.split(';')[0],
+      cookie: setCookies.find((item) => item.startsWith('tixxin_rt=')),
+      // 每次改写刷新凭据结束（含被拒绝）都换新的可读版本 Cookie，供前端跨标签页判断改写已落地
+      version: setCookies.find((item) => item.startsWith('tixxin_rv='))?.slice('tixxin_rv='.length),
     }
   }
   async function login(username = fixture.username) {
@@ -55,13 +58,18 @@ try {
   )
   const refreshed = await request('/auth/refresh', { method: 'POST', cookie: first.cookie })
   assert.equal(refreshed.status, 200)
+  assert.match(refreshed.version ?? '', /^[0-9a-f-]{36}$/)
   assert.equal(decode(refreshed.body.data.accessToken).sid, firstId)
   first.token = refreshed.body.data.accessToken
   first.cookie = refreshed.cookie
   assert.equal((await request(`/auth/sessions/${decode(other.token).sid}`, { ...first, method: 'DELETE' })).status, 404)
   assert.equal((await request(`/auth/sessions/${secondId}`, { ...first, method: 'DELETE' })).status, 200)
   assert.equal((await request('/admin/posts', second)).status, 401, '撤销后旧访问令牌立即拒绝')
-  assert.equal((await request('/auth/refresh', { cookie: second.cookie, method: 'POST' })).status, 401)
+  const rejected = await request('/auth/refresh', { cookie: second.cookie, method: 'POST' })
+  assert.equal(rejected.status, 401)
+  assert.equal(rejected.cookie, undefined, '拒绝刷新不签发新凭据')
+  assert.match(rejected.version ?? '', /^[0-9a-f-]{36}$/, '拒绝刷新仍换新版本 Cookie')
+  assert.notEqual(rejected.version, refreshed.version)
   assert.equal((await request('/auth/session', { cookie: second.cookie })).body.data.authenticated, false)
   assert.equal((await request('/admin/posts', first)).status, 200)
   assert.equal((await request('/admin/posts', other)).status, 200, '不影响其他账号')

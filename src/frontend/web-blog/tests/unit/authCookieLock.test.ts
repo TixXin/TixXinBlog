@@ -45,6 +45,27 @@ describe('认证 Cookie 请求协调', () => {
     await vi.advanceTimersByTimeAsync(100)
     expect(await result).toBe(true)
   })
+  it('上一文档卸载前未清标记时，版本 Cookie 变化即结束等待；版本未变仍等到期', async () => {
+    document.cookie = 'tixxin_rv=before; path=/'
+    localStorage.setItem(key, JSON.stringify({ id: 'unloaded-document', until: Date.now() + 10000, version: 'before' }))
+    const operation = vi.fn(async () => true)
+    const result = withAuthCookieRead(operation)
+    await vi.advanceTimersByTimeAsync(500)
+    expect(operation).not.toHaveBeenCalled()
+    document.cookie = 'tixxin_rv=after; path=/'
+    await vi.advanceTimersByTimeAsync(100)
+    expect(await result).toBe(true)
+    document.cookie = 'tixxin_rv=; path=/; max-age=0'
+  })
+  it('写入时记下当前版本，不在标记里保存其他 Cookie', async () => {
+    document.cookie = 'tixxin_rv=v1; path=/'
+    let seen = ''
+    await withAuthCookieLock(async () => {
+      seen = localStorage.getItem(key) || ''
+    })
+    expect(JSON.parse(seen)).toEqual({ id: expect.any(String), until: expect.any(Number), version: 'v1' })
+    document.cookie = 'tixxin_rv=; path=/; max-age=0'
+  })
   it('失败释放标记，不阻止后续登录或读取', async () => {
     await expect(
       withAuthCookieLock(async () => {
