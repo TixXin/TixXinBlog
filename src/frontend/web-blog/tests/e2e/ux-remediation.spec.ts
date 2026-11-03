@@ -194,8 +194,12 @@ for (const layout of ['nexus', 'aurora', 'dock']) {
     await cards.last().click()
     await expect(page).toHaveURL(/\/articles\/\d+$/)
     await page.getByRole('button', { name: '返回上一页', exact: true }).click()
-    await expect(cards).toHaveCount(30)
-    expect(await cards.evaluateAll((nodes) => nodes.map((node) => node.getAttribute('href')))).toEqual(collection)
+    // 返回后滚动位置恢复在列表底部，加载哨兵可见时会照常续载下一页；要求的是已加载的前缀按原顺序完整补齐、
+    // 不重复，续载与否取决于时序，不作为断言条件。
+    await expect.poll(() => cards.count()).toBeGreaterThanOrEqual(30)
+    const restored = await cards.evaluateAll((nodes) => nodes.map((node) => node.getAttribute('href')))
+    expect(restored.slice(0, collection.length)).toEqual(collection)
+    expect(new Set(restored).size).toBe(restored.length)
     await page.screenshot({ animations: 'disabled', path: testInfo.outputPath(`${layout}-history-restored.png`) })
   })
 }
