@@ -1,7 +1,8 @@
 /**
  * @file og-theme.ts
- * @description 分享卡片的地址取值范围与配色：主题、语言、内容类型白名单，以及按布局主题取色的浅色卡片色板。
- * 色值取自前端 app/assets/styles/_variables.scss 的浅色站点色板与 themes/aurora 的渐变；Dock 没有独立配色，与 Nexus 共用站点色板。
+ * @description 分享卡片的地址取值范围与配色：主题、语言、内容类型白名单，以及按布局主题取色的卡片色板。
+ * 色值只取自前端 app/assets/styles/_variables.scss 的站点设计令牌：Nexus 与 Dock 用浅色（:root），
+ * Aurora 用博客默认的深色（.dark），与 Aurora 主题的深色表面一致；不使用主题里兜底的紫色渐变。
  * @author TixXin
  * @since 2026-11-03
  */
@@ -20,7 +21,7 @@ export const OG_HEIGHT = 630
 export interface OgPalette {
   /** 背景 SVG 片段（铺满画布），由渲染模块放进 <svg> 中 */
   background: string
-  /** 内容面板的填充与描边；渐变底色上用半透明玻璃面板 */
+  /** 内容面板的填充与描边，对应 --surface-1 与边框令牌 */
   panelFill: string
   panelStroke: string
   text: string
@@ -32,17 +33,22 @@ export interface OgPalette {
   avatarFill: string
   avatarText: string
   divider: string
+  /** 面板投影的不透明度（黑色系投影） */
+  shadowOpacity: number
 }
 
-const siteDots = [
-  '<defs><pattern id="dots" width="24" height="24" patternUnits="userSpaceOnUse">',
-  '<circle cx="12" cy="12" r="1.6" fill="#bcc6d3"/></pattern></defs>',
-  '<rect width="100%" height="100%" fill="#ebeff4"/><rect width="100%" height="100%" fill="url(#dots)"/>',
-].join('')
+/** 点阵底纹：对应 --bg、--bg-dot 与 --bg-dot-size */
+function dottedBackground(background: string, dot: string, size: number) {
+  return [
+    `<defs><pattern id="dots" width="${size}" height="${size}" patternUnits="userSpaceOnUse">`,
+    `<circle cx="${size / 2}" cy="${size / 2}" r="1.6" fill="${dot}"/></pattern></defs>`,
+    `<rect width="100%" height="100%" fill="${background}"/><rect width="100%" height="100%" fill="url(#dots)"/>`,
+  ].join('')
+}
 
-/** Nexus 与 Dock 共用的站点浅色色板 */
+/** 站点浅色令牌（:root）：Nexus 与 Dock */
 const sitePalette: OgPalette = {
-  background: siteDots,
+  background: dottedBackground('#ebeff4', '#bcc6d3', 24),
   panelFill: '#ffffff',
   panelStroke: 'rgba(203, 213, 225, 0.9)',
   text: '#1e293b',
@@ -53,30 +59,30 @@ const sitePalette: OgPalette = {
   avatarFill: '#334155',
   avatarText: '#ffffff',
   divider: '#e2e8f0',
+  shadowOpacity: 0.1,
 }
 
-const auroraPalette: OgPalette = {
-  background: [
-    '<defs><linearGradient id="aurora" x1="0" y1="0" x2="1" y2="1">',
-    '<stop offset="0" stop-color="#667eea"/><stop offset="1" stop-color="#764ba2"/></linearGradient></defs>',
-    '<rect width="100%" height="100%" fill="url(#aurora)"/>',
-  ].join(''),
-  panelFill: 'rgba(255, 255, 255, 0.12)',
-  panelStroke: 'rgba(255, 255, 255, 0.28)',
-  text: '#ffffff',
-  muted: '#ffffff',
-  mutedAlpha: 80,
-  pillFill: 'rgba(255, 255, 255, 0.2)',
-  pillText: '#ffffff',
-  avatarFill: 'rgba(255, 255, 255, 0.24)',
-  avatarText: '#ffffff',
-  divider: 'rgba(255, 255, 255, 0.24)',
+/** 站点深色令牌（.dark）：博客默认颜色模式，Aurora 使用 */
+const siteDarkPalette: OgPalette = {
+  // 深色点阵在 #23272f 上的合成色，等同 rgba(126, 138, 156, 0.16)
+  background: dottedBackground('#23272f', '#323740', 28),
+  panelFill: '#2a2f37',
+  panelStroke: 'rgba(100, 116, 139, 0.4)',
+  text: '#e2e8f0',
+  muted: '#a0aec0',
+  mutedAlpha: 100,
+  pillFill: '#313741',
+  pillText: '#cbd5e1',
+  avatarFill: '#383f4a',
+  avatarText: '#e2e8f0',
+  divider: 'rgba(100, 116, 139, 0.32)',
+  shadowOpacity: 0.3,
 }
 
 export const OG_PALETTES: Readonly<Record<OgTheme, OgPalette>> = {
   nexus: sitePalette,
   dock: sitePalette,
-  aurora: auroraPalette,
+  aurora: siteDarkPalette,
 }
 
 export function isOgTheme(value: string): value is OgTheme {

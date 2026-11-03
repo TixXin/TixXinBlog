@@ -210,7 +210,7 @@ function backgroundSvg(palette: OgPalette, pillWidth: number, letterAvatar: bool
       `<svg xmlns="http://www.w3.org/2000/svg" width="${OG_WIDTH}" height="${OG_HEIGHT}">`,
       palette.background,
       '<defs><filter id="shadow" x="-10%" y="-10%" width="120%" height="130%">',
-      '<feDropShadow dx="0" dy="14" stdDeviation="18" flood-color="#0f172a" flood-opacity="0.10"/></filter></defs>',
+      `<feDropShadow dx="0" dy="14" stdDeviation="18" flood-color="#0f172a" flood-opacity="${palette.shadowOpacity}"/></filter></defs>`,
       `<rect x="${x}" y="${y}" width="${width}" height="${height}" rx="${radius}" fill="${palette.panelFill}"`,
       ` stroke="${palette.panelStroke}" stroke-width="2" filter="url(#shadow)"/>`,
       pillWidth
