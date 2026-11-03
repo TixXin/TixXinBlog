@@ -6,8 +6,7 @@
  */
 
 import MarkdownIt from 'markdown-it'
-// markdown-it-task-lists 无 TS 类型声明，运行时是合法 markdown-it 插件
-// @ts-expect-error -- markdown-it-task-lists 未发布 .d.ts 类型声明
+// 插件未发布类型声明，本地声明见 app/types/markdown-it-task-lists.d.ts
 import taskLists from 'markdown-it-task-lists'
 import DOMPurify from 'isomorphic-dompurify'
 import { markdownTaskLabels } from '~/utils/markdownTaskLabels'

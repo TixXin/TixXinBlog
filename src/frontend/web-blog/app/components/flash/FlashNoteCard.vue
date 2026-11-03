@@ -29,7 +29,7 @@
       </span>
     </div>
 
-    <!-- eslint-disable-next-line vue/no-v-html -->
+    <!-- eslint-disable-next-line vue/no-v-html -- renderFlashMarkdown 不解析内联 HTML，输出已通过 DOMPurify 净化 -->
     <div ref="contentRef" class="fnc__content" v-html="renderedContent" />
     <CommonMarkdownImages :root="contentRef" :html="renderedContent" />
 

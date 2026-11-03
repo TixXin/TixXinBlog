@@ -13,7 +13,7 @@
       <ArticleCodeCopyButton :code="code" />
     </div>
     <!-- 只有 Shiki 生成的受控 HTML 进入 v-html；失败或未知语言时以 Vue 文本节点输出。 -->
-    <!-- eslint-disable-next-line vue/no-v-html -->
+    <!-- eslint-disable-next-line vue/no-v-html -- 只渲染 Shiki 生成的高亮 HTML，代码文本已由 Shiki 转义 -->
     <div v-if="highlightedHtml" class="article-content__pre" v-html="highlightedHtml" />
     <div v-else class="article-content__pre">
       <pre tabindex="0"><code>{{ code }}</code></pre>

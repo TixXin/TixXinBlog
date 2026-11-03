@@ -5,7 +5,7 @@
                复制按钮在客户端挂载到代码块标题栏及正文标题，正文图片点击打开文章灯箱
 -->
 <template>
-  <!-- eslint-disable-next-line vue/no-v-html -->
+  <!-- eslint-disable-next-line vue/no-v-html -- renderArticleMarkdown 不解析内联 HTML，输出已通过 DOMPurify 净化 -->
   <article ref="rootRef" v-bind="$attrs" class="article-markdown" @click="openImage" v-html="html" />
   <CommonMarkdownImages :root="rootRef" :html="html" />
   <Teleport v-for="block in codeBlocks" :key="block.key" :to="block.target">
