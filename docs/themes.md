@@ -20,6 +20,7 @@
 - **cookie `blog-layout-theme` 是唯一事实源**：`path: '/'`、`maxAge: 一年`、`sameSite: 'lax'`，**只允许客户端写**。服务端写 `Set-Cookie` 会进入 SSR 缓存响应并重放给同缓存键的访客。
 - `localStorage['theme-engine:storage']` 沿用引擎旧键，只作**降级备份**，用于 cookie 丢失（会话清理、换浏览器策略）后恢复访客偏好，不是第二事实源。
 - 解析优先级：`?theme=` → cookie → localStorage → 默认主题 `nexus`。服务端只能看到 query 与 cookie，localStorage 不参与 SSR 决策；纯客户端首启（如关闭 SSR）才读 localStorage。
+- 静态发布（`staticSite`）在构建时固定主题：`static:build --theme` 经 `STATIC_LAYOUT_THEME` 写入 `runtimeConfig.public.layoutDefaultTheme`，SSR 与浏览器都直接采用它，不读写 query、cookie 与 localStorage，非法值回退 `nexus`。
 - 空串、未知名称、大小写不符、前后空格、数组/对象、原型链键等一律视为无效值，按优先级继续回退，最终回退 `nexus`；可激活主题以 `registeredThemeIds`（引擎已发现且宿主已登记）为准。
 - **水合期只信任 SSR payload**：客户端首次运行不读 localStorage、不覆盖状态；payload 异常时回退默认主题。任何“水合前从 localStorage 纠正主题”的做法都会重新引入首屏错主题与水合 mismatch。
 - 水合完成后在 `app:suspense:resolve` 对账一次：

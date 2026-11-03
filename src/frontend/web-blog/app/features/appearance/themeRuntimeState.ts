@@ -53,6 +53,20 @@ export function resolveLayoutTheme(
   return { theme: defaultTheme, source: 'default' }
 }
 
+/**
+ * 静态发布在构建时固定布局主题（STATIC_LAYOUT_THEME → runtimeConfig.public.layoutDefaultTheme）：
+ * 不读 query、cookie 与本机备份，也不写回；返回 null 表示按常规优先级解析。配置非法时回退默认主题。
+ */
+export function fixedLayoutTheme(
+  staticSite: boolean,
+  configured: unknown,
+  knownIds: readonly string[],
+  defaultTheme: string,
+): string | null {
+  if (!staticSite) return null
+  return isLayoutThemeId(configured, knownIds) ? configured : defaultTheme
+}
+
 /** query 主题是预览，不参与持久化；用户手动切换后转为可持久化来源 */
 export function isPreviewLayoutThemeSource(source: LayoutThemeSource): boolean {
   return source === 'query'

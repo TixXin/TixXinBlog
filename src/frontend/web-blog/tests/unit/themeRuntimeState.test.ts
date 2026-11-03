@@ -6,6 +6,7 @@
 import { describe, expect, it } from 'vitest'
 import type { LayoutThemeSource, ThemeStorageLike } from '../../app/features/appearance/themeRuntimeState'
 import {
+  fixedLayoutTheme,
   isLayoutThemeId,
   isLayoutThemeSource,
   LAYOUT_THEME_COOKIE_KEY,
@@ -264,5 +265,18 @@ describe('parseQueryLayoutTheme', () => {
       theme: defaultTheme,
       source: 'default',
     })
+  })
+})
+
+describe('静态发布固定主题', () => {
+  it('服务器部署不固定，按常规优先级解析', () => {
+    expect(fixedLayoutTheme(false, 'aurora', knownIds, defaultTheme)).toBeNull()
+  })
+
+  it('静态发布采用构建主题，非法配置回退默认主题', () => {
+    expect(fixedLayoutTheme(true, 'aurora', knownIds, defaultTheme)).toBe('aurora')
+    expect(fixedLayoutTheme(true, 'dock', knownIds, defaultTheme)).toBe('dock')
+    expect(fixedLayoutTheme(true, 'retro', knownIds, defaultTheme)).toBe(defaultTheme)
+    expect(fixedLayoutTheme(true, undefined, knownIds, defaultTheme)).toBe(defaultTheme)
   })
 })

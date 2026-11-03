@@ -9,6 +9,7 @@
 import type { Ref } from 'vue'
 import { DEFAULT_LAYOUT_THEME_ID, registeredThemeIds } from '~/features/appearance/themeRegistry'
 import {
+  fixedLayoutTheme,
   isLayoutThemeId,
   isLayoutThemeSource,
   isPreviewLayoutThemeSource,
@@ -65,8 +66,21 @@ export function useThemeRuntime(): ThemeRuntime {
   const reconciled = useState<boolean>(LAYOUT_THEME_RECONCILE_KEY, () => false)
   const cookie = useCookie<string | null>(LAYOUT_THEME_COOKIE_KEY, layoutThemeCookieOptions())
   const storage = getSafeStorage()
+  const config = useRuntimeConfig().public
+  const fixedTheme = fixedLayoutTheme(
+    config.staticSite === true,
+    config.layoutDefaultTheme,
+    registeredThemeIds,
+    DEFAULT_LAYOUT_THEME_ID,
+  )
 
-  if (import.meta.server) {
+  if (fixedTheme) {
+    // 静态发布：主题在构建时固定，SSR 与浏览器都不读写 cookie、query 与本机备份，切换入口已隐藏
+    currentTheme.value = fixedTheme
+    currentSource.value = 'default'
+    bootstrapped.value = true
+    reconciled.value = true
+  } else if (import.meta.server) {
     // 服务端按请求解析：query 预览 → cookie → 默认主题；localStorage 对服务端不可见，不参与 SSR 决策
     const resolution = resolveLayoutTheme(
       {
@@ -115,7 +129,7 @@ export function useThemeRuntime(): ThemeRuntime {
   }
 
   function setTheme(id: string): boolean {
-    if (!isLayoutThemeId(id, registeredThemeIds)) return false
+    if (fixedTheme || !isLayoutThemeId(id, registeredThemeIds)) return false
     if (currentTheme.value === id && currentSource.value !== 'query') return true
     currentSource.value = 'user'
     currentTheme.value = id
