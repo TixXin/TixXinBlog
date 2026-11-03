@@ -108,7 +108,7 @@ test('创建编辑上架推荐排序下架删除跨刷新与另一上下文一�
     await reader.reload()
     await expect(card).toContainText('整理设计与开发资料')
     await page.goto(`/admin/links?q=${encodeURIComponent(name)}`)
-    const row = page.locator('.admin-links__list > li').filter({ hasText: name })
+    const row = page.locator('.admin-collection-list > li').filter({ hasText: name })
     await row.getByRole('button', { name: '设为推荐', exact: true }).click()
     await expect(row.getByRole('button', { name: '取消推荐', exact: true })).toBeVisible()
     await row.getByRole('button', { name: '提高排序', exact: true }).click()
@@ -126,7 +126,7 @@ test('创建编辑上架推荐排序下架删除跨刷新与另一上下文一�
     await page.getByRole('button', { name: '退出登录', exact: true }).click()
     await login(page)
     await page.goto(`/admin/links?q=${encodeURIComponent(name)}`)
-    await expect(page.locator('.admin-links__list > li')).toHaveCount(0)
+    await expect(page.locator('.admin-collection-list > li')).toHaveCount(0)
     expect((await call(`/admin/links?q=${encodeURIComponent(name)}`)).total).toBe(0)
   } finally {
     await context.close()

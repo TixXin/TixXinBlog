@@ -82,7 +82,7 @@ test('创建上传发布编辑排序撤回删除在刷新与另一个上下文�
     await reader.reload()
     await expect(reader.getByRole('dialog')).toContainText('再次整理后的作品说明')
     await page.goto(`/admin/gallery?q=${encodeURIComponent(title)}`)
-    const row = page.locator('.admin-gallery__list > li').filter({ hasText: title })
+    const row = page.locator('.admin-collection-list > li').filter({ hasText: title })
     await row.getByRole('button', { name: '提高排序', exact: true }).click()
     await expect(row).toContainText('排序 1')
     await captureMotion(reader, testInfo, 'gallery-published.png')
@@ -99,7 +99,7 @@ test('创建上传发布编辑排序撤回删除在刷新与另一个上下文�
     await page.getByRole('button', { name: '退出登录', exact: true }).click()
     await login(page)
     await page.goto(`/admin/gallery?q=${encodeURIComponent(title)}`)
-    await expect(page.locator('.admin-gallery__list > li')).toHaveCount(0)
+    await expect(page.locator('.admin-collection-list > li')).toHaveCount(0)
     expect(errors).toEqual([])
   } finally {
     await other.close()

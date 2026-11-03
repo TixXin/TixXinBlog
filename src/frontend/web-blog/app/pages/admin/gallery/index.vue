@@ -63,93 +63,61 @@
         <p v-if="notice" role="status">{{ notice }}</p>
         <p v-if="stale" role="status">{{ $t('admin-media.galleryList.stale') }}</p>
         <p v-if="!pending && !error && data?.total === 0">{{ $t('admin-media.galleryList.empty') }}</p>
-        <ul class="admin-gallery__list">
-          <li v-for="photo in data?.items ?? []" :key="photo.id">
-            <CommonImageFrame
-              :src="photo.src"
-              :alt="photo.title"
-              :width="photo.width"
-              :height="photo.height"
-              fit="contain"
-            />
-            <div>
-              <h2>{{ photo.title }}</h2>
-              <p>
-                {{
-                  $t('admin-media.galleryList.meta', {
-                    status: $t(`admin-media.galleryList.statusLabel.${photo.status}`),
-                    category: photo.category || $t('admin-media.galleryList.uncategorized'),
-                    sort: photo.sortOrder,
-                    revision: photo.revision,
-                  })
-                }}
-              </p>
-              <p>{{ photo.description }}</p>
-              <div class="admin-gallery__actions">
-                <NuxtLink :to="`/admin/gallery/${photo.id}`">{{ $t('admin-media.galleryList.edit') }}</NuxtLink
-                ><NuxtLink v-if="photo.status === 'published'" :to="`/gallery?photo=${photo.id}`">{{
-                  $t('admin-media.galleryList.viewPublished')
-                }}</NuxtLink
-                ><button
-                  v-if="photo.status !== 'published'"
-                  type="button"
-                  :disabled="pending || busy.includes(photo.id)"
-                  @click="mutate(photo, { status: 'published' })"
-                >
-                  {{ $t('admin-media.galleryList.publish') }}</button
-                ><button
-                  v-if="photo.status === 'published'"
-                  type="button"
-                  :disabled="pending || busy.includes(photo.id)"
-                  @click="mutate(photo, { status: 'withdrawn' })"
-                >
-                  {{ $t('admin-media.galleryList.withdraw') }}</button
-                ><button
-                  type="button"
-                  :disabled="pending || busy.includes(photo.id) || photo.sortOrder >= 1000000"
-                  @click="mutate(photo, { sortOrder: photo.sortOrder + 1 })"
-                >
-                  {{ $t('admin-media.galleryList.raiseSort') }}</button
-                ><button
-                  type="button"
-                  :disabled="pending || busy.includes(photo.id) || photo.sortOrder <= -1000000"
-                  @click="mutate(photo, { sortOrder: photo.sortOrder - 1 })"
-                >
-                  {{ $t('admin-media.galleryList.lowerSort') }}</button
-                ><button
-                  class="admin-btn admin-btn--danger"
-                  type="button"
-                  :disabled="pending || busy.includes(photo.id)"
-                  @click="mutate(photo)"
-                >
-                  {{ $t('admin-media.galleryList.delete') }}
-                </button>
-              </div>
-            </div>
-          </li>
+        <ul class="admin-collection-list">
+          <AdminCollectionItem
+            v-for="photo in data?.items ?? []"
+            :key="photo.id"
+            :title="photo.title"
+            :meta="
+              $t('admin-media.galleryList.meta', {
+                status: $t(`admin-media.galleryList.statusLabel.${photo.status}`),
+                category: photo.category || $t('admin-media.galleryList.uncategorized'),
+                sort: photo.sortOrder,
+                revision: photo.revision,
+              })
+            "
+            :description="photo.description"
+          >
+            <template #media>
+              <CommonImageFrame
+                :src="photo.src"
+                :alt="photo.title"
+                :width="photo.width"
+                :height="photo.height"
+                fit="contain"
+              />
+            </template>
+            <template #actions>
+              <AdminCollectionActions
+                :edit-to="`/admin/gallery/${photo.id}`"
+                :view-to="`/gallery?photo=${photo.id}`"
+                :published="photo.status === 'published'"
+                :sort-order="photo.sortOrder"
+                :disabled="pending || busy.includes(photo.id)"
+                :labels="actionLabels"
+                @update="mutate(photo, $event)"
+                @remove="mutate(photo)"
+              />
+            </template>
+          </AdminCollectionItem>
         </ul>
-        <nav
-          v-if="data && (data.total > 12 || query.page > 1)"
-          class="admin-gallery__actions"
-          :aria-label="$t('admin-media.galleryList.pagination')"
-        >
-          <button type="button" :disabled="pending || query.page <= 1" @click="filter({ page: query.page - 1 })">
-            {{ $t('admin-media.galleryList.previous') }}</button
-          ><span>{{
+        <AdminCollectionPagination
+          v-if="data"
+          :page="query.page"
+          :total="data.total"
+          :disabled="pending"
+          :label="$t('admin-media.galleryList.pagination')"
+          :prev-label="$t('admin-media.galleryList.previous')"
+          :next-label="$t('admin-media.galleryList.next')"
+          :summary="
             $t('admin-media.galleryList.pageSummary', {
               page: query.page,
               pages: Math.max(1, Math.ceil(data.total / 12)),
               total: data.total,
             })
-          }}</span
-          ><button
-            type="button"
-            :disabled="pending || query.page * 12 >= data.total"
-            @click="filter({ page: query.page + 1 })"
-          >
-            {{ $t('admin-media.galleryList.next') }}
-          </button>
-        </nav>
+          "
+          @go="filter({ page: $event })"
+        />
       </template>
       <p v-else-if="!restoringPending">{{ $t('admin-media.galleryList.loginRequired') }}</p></ClientOnly
     >
@@ -161,6 +129,15 @@ const { t } = useI18n()
 useSeoMeta({ title: () => t('admin-media.galleryList.title'), robots: 'noindex, nofollow' })
 const { data, pending, error, notice, busy, query, filter, load, mutate, isLoggedIn, restoringPending, stale } =
   useAdminGallery()
+const actionLabels = computed(() => ({
+  edit: t('admin-media.galleryList.edit'),
+  view: t('admin-media.galleryList.viewPublished'),
+  publish: t('admin-media.galleryList.publish'),
+  withdraw: t('admin-media.galleryList.withdraw'),
+  raise: t('admin-media.galleryList.raiseSort'),
+  lower: t('admin-media.galleryList.lowerSort'),
+  remove: t('admin-media.galleryList.delete'),
+}))
 </script>
 <style scoped lang="scss">
 .admin-gallery__filters {
@@ -173,47 +150,14 @@ const { data, pending, error, notice, busy, query, filter, load, mutate, isLogge
   gap: 1rem;
   overflow-wrap: anywhere;
 }
-.admin-gallery__actions {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 0.75rem;
-}
-h2 {
-  font-size: 1rem;
-  font-weight: 600;
-}
 p {
   color: var(--text-muted);
   margin-block: 0.5rem;
-}
-a:not(.admin-btn) {
-  color: var(--accent);
 }
 label {
   display: grid;
   gap: 0.3rem;
   min-width: 0;
-}
-
-.admin-gallery__list {
-  display: grid;
-  gap: 1rem;
-  list-style: none;
-  padding: 0;
-}
-.admin-gallery__list li {
-  display: grid;
-  grid-template-columns: 160px minmax(0, 1fr);
-  gap: 1rem;
-  padding: 1rem;
-  border: 1px solid var(--admin-card-border);
-  border-radius: var(--admin-radius-card);
-  background: var(--admin-card-bg);
-  box-shadow: var(--admin-card-shadow);
-}
-.admin-gallery__list p {
-  white-space: pre-wrap;
 }
 @media (max-width: 600px) {
   .admin-gallery__filters > label,
@@ -224,12 +168,6 @@ label {
   .admin-gallery__filters select,
   .admin-gallery__filters button {
     width: 100%;
-  }
-  .admin-gallery__list li {
-    grid-template-columns: minmax(0, 1fr);
-  }
-  .admin-gallery__list :deep(.image-frame) {
-    max-width: 260px;
   }
 }
 </style>

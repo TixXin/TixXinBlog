@@ -321,6 +321,13 @@ $file: '#{$scope} input#{$own}:where([type="file"])';
   align-items: center;
   gap: 0.5rem;
 }
+// 集合列表（图库、项目、友链）：卡片项见 AdminCollectionItem
+#{$scope} .admin-collection-list {
+  display: grid;
+  gap: 1rem;
+  list-style: none;
+  padding: 0;
+}
 // 状态徽章：微光状态小灯点与精致胶囊
 #{$scope} .admin-badge {
   display: inline-flex;

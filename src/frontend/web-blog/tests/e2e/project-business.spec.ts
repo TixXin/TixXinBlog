@@ -105,7 +105,7 @@ test('无封面项目创建发布与进展独立，刷新重新登录和另一�
     await expect(card).toContainText('开发中')
     await captureMotion(reader, testInfo, 'project-without-cover.png')
     await page.goto(`/admin/projects?q=${encodeURIComponent(title)}`)
-    const row = page.locator('.admin-projects__list > li').filter({ hasText: title })
+    const row = page.locator('.admin-collection-list > li').filter({ hasText: title })
     await row.getByRole('button', { name: '提高排序', exact: true }).click()
     await expect(row).toContainText('排序 1')
     await row.getByRole('button', { name: '撤回项目', exact: true }).click()
@@ -118,7 +118,7 @@ test('无封面项目创建发布与进展独立，刷新重新登录和另一�
     await page.getByRole('button', { name: '退出登录', exact: true }).click()
     await login(page)
     await page.goto(`/admin/projects?q=${encodeURIComponent(title)}`)
-    await expect(page.locator('.admin-projects__list > li')).toHaveCount(0)
+    await expect(page.locator('.admin-collection-list > li')).toHaveCount(0)
     expect(errors).toEqual([])
   } finally {
     await other.close()

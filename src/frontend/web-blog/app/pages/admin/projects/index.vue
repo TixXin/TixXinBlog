@@ -73,104 +73,71 @@
         <p v-if="notice" role="status">{{ notice }}</p>
         <p v-if="stale" role="status">{{ $t('admin-media.projectList.stale') }}</p>
         <p v-if="!pending && !error && data?.total === 0">{{ $t('admin-media.projectList.empty') }}</p>
-        <ul class="admin-projects__list">
-          <li v-for="project in data?.items ?? []" :key="project.id">
-            <CommonImageFrame
-              v-if="project.cover"
-              :src="project.cover"
-              :alt="project.title"
-              :width="project.width ?? undefined"
-              :height="project.height ?? undefined"
-              fit="contain"
-            />
-            <div v-else class="admin-projects__no-cover">
-              <Icon name="lucide:panels-top-left" />{{ $t('admin-media.projectList.noCover') }}
-            </div>
-            <div>
-              <h2>{{ project.title }}</h2>
-              <p>
-                {{
-                  $t('admin-media.projectList.meta', {
-                    status: projectStatusLabel(project.status, t),
-                    progress: projectProgressLabel(project.progress, t),
-                    sort: project.sortOrder,
-                    revision: project.revision,
-                  })
-                }}
-              </p>
-              <p>{{ project.description }}</p>
-              <p>
-                {{
-                  project.tags.map((tag) => tag.label).join($t('admin-media.projectList.tagSeparator')) ||
-                  $t('admin-media.projectList.noTags')
-                }}
-              </p>
-              <div class="admin-projects__actions">
-                <NuxtLink :to="`/admin/projects/${project.id}`">{{ $t('admin-media.projectList.edit') }}</NuxtLink
-                ><NuxtLink
-                  v-if="project.status === 'published'"
-                  :to="`/projects?q=${encodeURIComponent(project.title)}`"
-                  >{{ $t('admin-media.projectList.viewProject') }}</NuxtLink
-                ><button
-                  v-if="project.status !== 'published'"
-                  type="button"
-                  :disabled="pending || busy.includes(project.id)"
-                  @click="mutate(project, { status: 'published' })"
-                >
-                  {{ $t('admin-media.projectList.publish') }}</button
-                ><button
-                  v-if="project.status === 'published'"
-                  type="button"
-                  :disabled="pending || busy.includes(project.id)"
-                  @click="mutate(project, { status: 'withdrawn' })"
-                >
-                  {{ $t('admin-media.projectList.withdraw') }}</button
-                ><button
-                  type="button"
-                  :disabled="pending || busy.includes(project.id) || project.sortOrder >= 1000000"
-                  @click="mutate(project, { sortOrder: project.sortOrder + 1 })"
-                >
-                  {{ $t('admin-media.projectList.raise') }}</button
-                ><button
-                  type="button"
-                  :disabled="pending || busy.includes(project.id) || project.sortOrder <= -1000000"
-                  @click="mutate(project, { sortOrder: project.sortOrder - 1 })"
-                >
-                  {{ $t('admin-media.projectList.lower') }}</button
-                ><button
-                  class="admin-btn admin-btn--danger"
-                  type="button"
-                  :disabled="pending || busy.includes(project.id)"
-                  @click="mutate(project)"
-                >
-                  {{ $t('admin-media.projectList.remove') }}
-                </button>
+        <ul class="admin-collection-list">
+          <AdminCollectionItem
+            v-for="project in data?.items ?? []"
+            :key="project.id"
+            :title="project.title"
+            :meta="
+              $t('admin-media.projectList.meta', {
+                status: projectStatusLabel(project.status, t),
+                progress: projectProgressLabel(project.progress, t),
+                sort: project.sortOrder,
+                revision: project.revision,
+              })
+            "
+            :description="project.description"
+          >
+            <template #media>
+              <CommonImageFrame
+                v-if="project.cover"
+                :src="project.cover"
+                :alt="project.title"
+                :width="project.width ?? undefined"
+                :height="project.height ?? undefined"
+                fit="contain"
+              />
+              <div v-else class="admin-projects__no-cover">
+                <Icon name="lucide:panels-top-left" />{{ $t('admin-media.projectList.noCover') }}
               </div>
-            </div>
-          </li>
+            </template>
+            <p>
+              {{
+                project.tags.map((tag) => tag.label).join($t('admin-media.projectList.tagSeparator')) ||
+                $t('admin-media.projectList.noTags')
+              }}
+            </p>
+            <template #actions>
+              <AdminCollectionActions
+                :edit-to="`/admin/projects/${project.id}`"
+                :view-to="`/projects?q=${encodeURIComponent(project.title)}`"
+                :published="project.status === 'published'"
+                :sort-order="project.sortOrder"
+                :disabled="pending || busy.includes(project.id)"
+                :labels="actionLabels"
+                @update="mutate(project, $event)"
+                @remove="mutate(project)"
+              />
+            </template>
+          </AdminCollectionItem>
         </ul>
-        <nav
-          v-if="data && (data.total > 12 || query.page > 1)"
-          class="admin-projects__actions"
-          :aria-label="$t('admin-media.projectList.pagination')"
-        >
-          <button type="button" :disabled="pending || query.page <= 1" @click="filter({ page: query.page - 1 })">
-            {{ $t('admin-media.projectList.prev') }}</button
-          ><span>{{
+        <AdminCollectionPagination
+          v-if="data"
+          :page="query.page"
+          :total="data.total"
+          :disabled="pending"
+          :label="$t('admin-media.projectList.pagination')"
+          :prev-label="$t('admin-media.projectList.prev')"
+          :next-label="$t('admin-media.projectList.next')"
+          :summary="
             $t('admin-media.projectList.pageInfo', {
               page: query.page,
               pages: Math.max(1, Math.ceil(data.total / 12)),
               total: data.total,
             })
-          }}</span
-          ><button
-            type="button"
-            :disabled="pending || query.page * 12 >= data.total"
-            @click="filter({ page: query.page + 1 })"
-          >
-            {{ $t('admin-media.projectList.next') }}
-          </button>
-        </nav>
+          "
+          @go="filter({ page: $event })"
+        />
       </template>
       <p v-else-if="!restoringPending">{{ $t('admin-media.projectList.loginRequired') }}</p></ClientOnly
     >
@@ -190,6 +157,15 @@ const projectStatuses = Object.keys(projectStatusLabels) as ProjectPublicationSt
 useSeoMeta({ title: () => t('admin-media.projectList.title'), robots: 'noindex, nofollow' })
 const { data, pending, error, notice, busy, query, filter, load, mutate, isLoggedIn, restoringPending, stale } =
   useAdminProjects()
+const actionLabels = computed(() => ({
+  edit: t('admin-media.projectList.edit'),
+  view: t('admin-media.projectList.viewProject'),
+  publish: t('admin-media.projectList.publish'),
+  withdraw: t('admin-media.projectList.withdraw'),
+  raise: t('admin-media.projectList.raise'),
+  lower: t('admin-media.projectList.lower'),
+  remove: t('admin-media.projectList.remove'),
+}))
 </script>
 <style scoped lang="scss">
 .admin-projects__filters {
@@ -202,47 +178,14 @@ const { data, pending, error, notice, busy, query, filter, load, mutate, isLogge
   gap: 1rem;
   overflow-wrap: anywhere;
 }
-.admin-projects__actions {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 0.75rem;
-}
-h2 {
-  font-size: 1rem;
-  font-weight: 600;
-}
 p {
   color: var(--text-muted);
   margin-block: 0.5rem;
-}
-a:not(.admin-btn) {
-  color: var(--accent);
 }
 label {
   display: grid;
   gap: 0.3rem;
   min-width: 0;
-}
-
-.admin-projects__list {
-  display: grid;
-  gap: 1rem;
-  list-style: none;
-  padding: 0;
-}
-.admin-projects__list li {
-  display: grid;
-  grid-template-columns: 160px minmax(0, 1fr);
-  gap: 1rem;
-  padding: 1rem;
-  border: 1px solid var(--admin-card-border);
-  border-radius: var(--admin-radius-card);
-  background: var(--admin-card-bg);
-  box-shadow: var(--admin-card-shadow);
-}
-.admin-projects__list p {
-  white-space: pre-wrap;
 }
 .admin-projects__no-cover {
   display: flex;
@@ -263,12 +206,6 @@ label {
   .admin-projects__filters select,
   .admin-projects__filters button {
     width: 100%;
-  }
-  .admin-projects__list li {
-    grid-template-columns: minmax(0, 1fr);
-  }
-  .admin-projects__list :deep(.image-frame) {
-    max-width: 260px;
   }
 }
 </style>
