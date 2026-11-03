@@ -20,6 +20,7 @@ import { PostRevision } from '../../entities/post-revision.entity'
 import { QueryPostDto } from './dto/query-post.dto'
 import { resolveContentRelations } from '../content-relations/content-relations'
 import { msg } from '../../common/i18n'
+import { contentMatchWindow } from './post-search-match'
 import {
   ArticleDetailDto,
   POST_NOT_FOUND,
@@ -70,11 +71,26 @@ export class PostService {
     })
 
     return {
-      items: posts.map(toPostItemDto),
+      items: await this.withContentMatches(posts.map(toPostItemDto), query.search),
       total,
       page: query.page,
       pageSize: query.pageSize,
     }
+  }
+
+  /** 搜索时只为本页条目补读正文，生成命中片段；列表主查询仍不取回长正文 */
+  private async withContentMatches(items: PostItemDto[], search?: string): Promise<PostItemDto[]> {
+    if (!search?.trim() || !items.length) return items
+    const bodies = await this.em.find(
+      Post,
+      { id: { $in: items.map((item) => item.id) } },
+      { fields: ['id', 'contentRaw'] },
+    )
+    const raw = new Map(bodies.map((post) => [post.id, post.contentRaw]))
+    return items.map((item) => {
+      const contentMatch = contentMatchWindow(raw.get(item.id), search)
+      return contentMatch ? { ...item, contentMatch } : item
+    })
   }
 
   async findDetail(id: number): Promise<ArticleDetailDto> {

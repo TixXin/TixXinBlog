@@ -28,6 +28,8 @@ export interface PostItemDto {
   date: string
   folder: string
   pinned: boolean
+  /** 仅在带关键词搜索且正文命中时出现：首个命中位置附近的原始 Markdown 片段，由前端生成摘录 */
+  contentMatch?: string
 }
 
 /** 详情，字段对齐前端 ArticleDetail（含 toc 扩展） */

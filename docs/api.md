@@ -153,7 +153,7 @@
 | `GET /admin/flashes/comments`、`PATCH /admin/flashes/:id/comments/:commentId`                | 跨闪念评论审核列表与单条通过/隐藏          |
 | `POST /admin/flashes/comments/batch/moderation`、`POST /admin/flashes/comments/batch/delete` | 按提交状态逐条校验的闪念评论批量审核与删除 |
 
-文章公开列表只读取列表所需字段，正文检索仍由后端执行。
+文章公开列表只读取列表所需字段，正文检索仍由后端执行。带 `search` 时，正文命中的条目额外返回 `contentMatch`：首个命中位置前 80 个、后 160 个字符的原始 Markdown 片段（边界不拆开代理对），只为当前页补读正文；只命中标题、摘要或标签的条目不带此字段。前端据此去掉 Markdown 语法并截取摘录，静态发布在浏览器内按同一规则截取。
 
 `GET /posts/:id/navigation` 接受可选 `scope`：省略或 `all` 保持全站顺序，`folder` 只查询当前文章所属专栏，`auto` 先查同专栏、专栏两侧均为空（或文章无专栏）时在同一请求内回退全站，其他值返回 400。查询参数按 DTO 白名单校验（全局 `forbidNonWhitelisted`），除 `scope` 外携带任何其他查询参数（如统计或缓存用的附加参数）同样返回 400，调用方不要追加未声明的参数。响应为 `{ prev, next }`，每侧为文章摘要或 `null`；`auto` 另带 `fallback`，`true` 表示结果来自全站。仅包含已发布且未回收文章，当前文章不可公开时返回 404。沿用发布时间、编号倒序的列表顺序：`prev` 是较新的最近一篇，`next` 是较旧的最近一篇，同发布时间按编号区分。`folder` 模式下当前文章无专栏或专栏内无其他公开文章时返回双 `null`，接口自身不回退全站。文章详情页使用 `auto`：数字地址与详情并行请求，自定义地址在详情解析出编号后请求；`fallback` 为 `false` 且文章有专栏时按详情的专栏名标注，否则不标注。专栏内只有一侧有相邻文章时保留另一侧为空；请求失败显示加载错误，不当作空结果。
 

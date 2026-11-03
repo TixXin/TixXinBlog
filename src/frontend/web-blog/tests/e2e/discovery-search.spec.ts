@@ -139,3 +139,25 @@ for (const width of [320, 390, 1024]) {
     await captureMotion(page, testInfo, `search-${width}.png`, { target: dialog, animations: 'disabled' })
   })
 }
+
+test('只在正文命中的文章显示去掉 Markdown 的命中片段并高亮关键词', async ({ page, request }) => {
+  const write = await admin(request),
+    keyword = '正文锚点' + randomUUID().slice(0, 8)
+  const contentRaw = [
+    '## 第一节',
+    '前文铺垫。'.repeat(30),
+    `这里提到 **${keyword}** 与 [链接文字](https://example.com/hidden-url)。`,
+    '后续展开。'.repeat(40),
+  ].join('\n\n')
+  await write('/posts', { title: '片段验收', summary: '这是摘要而不是正文', contentRaw, status: 'published' })
+  await page.goto('/search?' + new URLSearchParams({ q: keyword, type: 'post' }))
+  const item = page.locator('.search-page__group[data-search-type="post"] li')
+  await expect(item).toHaveCount(1)
+  const description = item.locator('p')
+  await expect(description).toContainText(`这里提到 ${keyword} 与 链接文字。`)
+  await expect(description.locator('mark')).toHaveText(keyword)
+  await expect(description).toHaveText(/^….*…$/)
+  await expect(description).not.toContainText('这是摘要')
+  await expect(description).not.toContainText('hidden-url')
+  await expect(description).not.toContainText('**')
+})

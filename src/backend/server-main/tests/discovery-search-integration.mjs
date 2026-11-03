@@ -115,7 +115,14 @@ try {
     }
     if (domain.name === 'post') {
       assert.equal(records[0].title, '正文索引')
-      assert.equal((await ok(query(marker))).items[0].title, '正文索引', '匹配只出现在正文时仍可找到文章')
+      const [hit] = (await ok(query(marker))).items
+      assert.equal(hit.title, '正文索引', '匹配只出现在正文时仍可找到文章')
+      assert.equal(hit.contentMatch, marker, '正文命中时返回命中位置附近的原文片段')
+      const byTitle = await ok('/posts?' + new URLSearchParams({ search: '正文索引', pageSize: '10' }))
+      assert(
+        byTitle.items.length > 0 && byTitle.items.every((item) => !('contentMatch' in item)),
+        '只命中标题时不带片段',
+      )
     }
     if (domain.name === 'flash') await em.execute('update flash_note set is_archived=true where id=?', [records[0].id])
     else await em.execute(`update ${domain.table} set deleted_at=now() where id=?`, [records[0].id])

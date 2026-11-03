@@ -39,6 +39,8 @@ export interface PostItem {
   date: string
   folder: string
   pinned?: boolean
+  /** 仅搜索结果：正文命中位置附近的原始 Markdown 片段，见 features/search/contentMatch.ts */
+  contentMatch?: string
 }
 
 export interface PostTab {

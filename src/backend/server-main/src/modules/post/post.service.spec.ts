@@ -46,7 +46,9 @@ function serviceFor(post: ReturnType<typeof postRow> | null, revisedAt: Date | n
 describe('公开文章搜索', () => {
   function setup(rows: ReturnType<typeof postRow>[] = [], total = rows.length) {
     const findAndCount = jest.fn().mockResolvedValue([rows, total])
-    return { service: new PostService({ findAndCount } as unknown as EntityManager), findAndCount }
+    // 命中片段只补读本页正文
+    const find = jest.fn().mockResolvedValue(rows.map((row) => ({ id: row.id, contentRaw: row.contentRaw })))
+    return { service: new PostService({ findAndCount, find } as unknown as EntityManager), findAndCount, find }
   }
 
   it.each([
@@ -149,6 +151,7 @@ describe('公开文章搜索', () => {
           date: '2026-03-01T00:00:00.000Z',
           folder: '随笔',
           pinned: false,
+          contentMatch: '## 开始\n\n第一段正文用于摘要兜底。',
         },
       ],
       total: 9,
@@ -160,6 +163,21 @@ describe('公开文章搜索', () => {
     expect(options.fields).not.toEqual(expect.arrayContaining(['contentRaw']))
     expect(options.fields).not.toEqual(expect.arrayContaining(['contentSections']))
     expect(options).toMatchObject({ limit: 1, offset: 1 })
+  })
+
+  it('正文命中时只为本页条目补读正文并返回命中片段，未命中正文与未搜索时不带片段', async () => {
+    const rows = [postRow(), postRow({ id: 8, contentRaw: '没有关键词' }), postRow({ id: 9, contentRaw: undefined })]
+    const { service, find } = setup(rows)
+    const result = await service.findMany(Object.assign(new QueryPostDto(), { search: '第一段' }))
+    expect(find).toHaveBeenCalledWith(Post, { id: { $in: [7, 8, 9] } }, { fields: ['id', 'contentRaw'] })
+    expect(result.items[0]!.contentMatch).toBe('## 开始\n\n第一段正文用于摘要兜底。')
+    expect(result.items[1]).not.toHaveProperty('contentMatch')
+    expect(result.items[2]).not.toHaveProperty('contentMatch')
+
+    const plain = setup(rows)
+    const listed = await plain.service.findMany(new QueryPostDto())
+    expect(plain.find).not.toHaveBeenCalled()
+    expect(listed.items.every((item) => !('contentMatch' in item))).toBe(true)
   })
 
   it.each([

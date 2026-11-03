@@ -459,10 +459,7 @@
   },
   "app/composables/useSearch.ts": {
     "max-lines-per-function": {
-      "count": 2
-    },
-    "max-params": {
-      "count": 2
+      "count": 1
     }
   },
   "app/composables/useSiteInfo.ts": {
