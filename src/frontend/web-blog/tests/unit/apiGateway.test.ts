@@ -51,6 +51,26 @@ it('仅精确媒体 GET/HEAD 的 200/304 可保留验证缓存', () => {
   for (const status of [400, 404, 429, 503]) expect(canCacheMediaResponse(path, 'GET', status)).toBe(false)
 })
 
+it('分享卡片只有白名单地址可保留后端缓存头', () => {
+  for (const path of [
+    'og/nexus/zh-CN/site.png',
+    'og/aurora/en/post/12.png',
+    'og/dock/zh-CN/flash/0c5d3f8e-1b2a-4c3d-9e8f-001122334455.png',
+    'og/nexus/en/moment/legacy_id-01.png',
+  ])
+    expect(canCacheMediaResponse(path, 'GET', 200), path).toBe(true)
+  for (const path of [
+    'og/retro/zh-CN/site.png',
+    'og/nexus/ja/site.png',
+    'og/nexus/zh-CN/post/0.png',
+    'og/nexus/zh-CN/gallery/1.png',
+    'og/nexus/zh-CN/flash/a.b.png',
+    'og/nexus/zh-CN/site.webp',
+  ])
+    expect(canCacheMediaResponse(path, 'GET', 200), path).toBe(false)
+  expect(canCacheMediaResponse('og/nexus/zh-CN/site.png', 'GET', 404)).toBe(false)
+})
+
 it('真实网关保留媒体 304 和 Retry-After，拒绝伪造地址，其他响应不缓存', async () => {
   const path = 'media/08c765c3-e450-48ed-bd57-c73cd4aa7001.webp'
   let deleted = false
@@ -250,4 +270,36 @@ it('初始化向导经同源网关转发：状态查询与提交放行，跨站�
   expect((await submit('https://other.example.com')).status).toBe(403)
   expect((await submit(gateway, 'setupx')).status).toBe(404)
   expect(received).toHaveLength(2)
+})
+
+it('分享卡片经同源网关转发，保留版本参数与后端缓存头，相近路径拒绝', async () => {
+  const received: string[] = []
+  const backend = await listen(
+    createServer((request, response) => {
+      received.push(request.url ?? '')
+      response.setHeader('cache-control', 'public, max-age=86400')
+      response.setHeader('etag', '"og-1"')
+      response.setHeader('content-type', 'image/png')
+      response.end('png-bytes')
+    }),
+  )
+  for (const [key, value] of Object.entries(h3)) vi.stubGlobal(key, value)
+  runtimeConfig.apiBaseUrl = `${backend}/api/v1`
+  runtimeConfig.trustedProxyCidrs = ''
+  const handler = (await import('../../server/api/v1/[...path]')).default
+  const app = h3.createApp().use(
+    h3.eventHandler((event: Parameters<typeof handler>[0]) => {
+      event.context.params = { path: event.path.slice('/api/v1/'.length).split('?')[0] }
+      return handler(event)
+    }),
+  )
+  const gateway = await listen(createServer(h3.toNodeListener(app)))
+  const card = await fetch(`${gateway}/api/v1/og/nexus/zh-CN/post/12.png?v=abc`)
+  expect(card.status).toBe(200)
+  expect(await card.text()).toBe('png-bytes')
+  expect(card.headers.get('cache-control')).toBe('public, max-age=86400')
+  expect(card.headers.get('content-type')).toBe('image/png')
+  expect(received).toEqual(['/api/v1/og/nexus/zh-CN/post/12.png?v=abc'])
+  expect((await fetch(`${gateway}/api/v1/ogx/nexus/zh-CN/site.png`)).status).toBe(404)
+  expect(received).toHaveLength(1)
 })

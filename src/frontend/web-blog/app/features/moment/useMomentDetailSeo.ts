@@ -18,6 +18,7 @@ export function useMomentDetailSeo(options: MomentDetailSeoOptions) {
   const { id, moment, ownerName } = options
   const { t } = useI18n()
   const site = useSiteUrl()
+  const { contentCard } = useShareCard()
 
   function truncate(value: string, max: number) {
     return value.length > max ? value.slice(0, max) + '…' : value
@@ -39,6 +40,9 @@ export function useMomentDetailSeo(options: MomentDetailSeoOptions) {
     type: 'article',
     canonical: () => momentUrl.value,
     image: () => momentImages.value[0],
+    // 没有配图时用朋友圈分享卡片（正文与发布时间）
+    fallbackImage: () =>
+      moment.value ? contentCard('moment', moment.value.id, [moment.value.content, moment.value.date]) : undefined,
     imageAlt: () => moment.value?.imageAlts?.[0] || pageTitle.value,
   })
 

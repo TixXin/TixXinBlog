@@ -29,14 +29,18 @@ const { settings } = useSiteSettings()
 const { t, locale } = useI18n()
 
 const siteUrl = useSiteUrl()
+const profileImage = useDefaultShareImage()
 const aboutDescription = computed(() => settings.value.ownerTitle || settings.value.description)
 usePageSeo({
   title: () => t('misc.about.page.title'),
   shareTitle: () => t('misc.about.page.shareTitle', { name: settings.value.name }),
   description: () => aboutDescription.value,
   type: 'profile',
+  // 博主头像为位图时作为分享图（方形，用小卡片）；否则沿用全站的站点分享卡片
+  image: () => profileImage.value?.url,
+  imageAlt: () => profileImage.value?.alt,
+  imageCard: 'summary',
 })
-const profileImage = useDefaultShareImage()
 useJsonLd('profile', () => {
   const sameAs = socialProfiles(settings.value.socials)
   return {

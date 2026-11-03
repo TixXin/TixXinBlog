@@ -1,8 +1,9 @@
 /**
  * @file usePageSeo.ts
  * @description 页面级分享元信息：标题、描述、canonical、绝对分享图与 JSON-LD 的统一出口。
- * 站点级兜底（og:title、og:url、默认分享图、twitter:card 等）由 app.vue 输出，页面只覆盖自己掌握的字段；
+ * 站点级兜底（og:title、og:url、站点分享卡片、twitter:card 等）由 app.vue 输出，页面只覆盖自己掌握的字段；
  * 页面未提供或无法转为绝对地址的值不输出，交回全局兜底，绝不输出空的 og:image。
+ * 页面自己的图片（封面、配图）优先，缺图时可用 fallbackImage 指定内容分享卡片。
  * @author TixXin
  * @since 2026-10-18
  */
@@ -19,7 +20,11 @@ export interface PageSeoOptions {
   shareTitle?: SeoValue
   /** 分享图，可为站内相对地址 */
   image?: SeoValue
+  /** 分享图缺失或不可分享时改用的图片，通常是内容分享卡片（useShareCard） */
+  fallbackImage?: SeoValue
   imageAlt?: SeoValue
+  /** 有分享图时的 Twitter 卡片类型，缺省为大图；方形头像等用 summary */
+  imageCard?: 'summary' | 'summary_large_image'
   type?: MaybeRefOrGetter<'website' | 'article' | 'profile' | undefined>
   /** canonical 路径或绝对地址；缺省沿用 app.vue 的「站点地址 + 当前路径」 */
   canonical?: SeoValue
@@ -32,7 +37,7 @@ export function useSiteUrl(): string {
   return String(useRuntimeConfig().public.siteUrl).replace(/\/$/, '')
 }
 
-/** 站点默认分享图：仅博主头像为位图时可用；SVG 或缺失时返回 undefined，不输出 og:image */
+/** 博主头像作为分享图：仅为位图时可用；SVG 或缺失时返回 undefined。全站兜底改用站点分享卡片（useShareCard） */
 export function useDefaultShareImage() {
   const { settings } = useSiteSettings()
   const site = useSiteUrl()
@@ -50,8 +55,11 @@ function filled(value: string | null | undefined) {
 export function usePageSeo(options: PageSeoOptions) {
   const site = useSiteUrl()
   const image = computed(() => {
-    const url = absoluteUrl(toValue(options.image), site)
-    return isShareableImage(url) ? url : undefined
+    for (const candidate of [toValue(options.image), toValue(options.fallbackImage)]) {
+      const url = absoluteUrl(candidate, site)
+      if (isShareableImage(url)) return url
+    }
+    return undefined
   })
   const canonical = computed(() => absoluteUrl(toValue(options.canonical), site))
   const shareTitle = () => filled(toValue(options.shareTitle)) ?? filled(toValue(options.title))
@@ -63,11 +71,11 @@ export function usePageSeo(options: PageSeoOptions) {
     meta.ogDescription = () => filled(toValue(options.description))
   }
   if (options.type !== undefined) meta.ogType = () => toValue(options.type)
-  if (options.image !== undefined) {
+  if (options.image !== undefined || options.fallbackImage !== undefined) {
     meta.ogImage = () => image.value
-    // 分享图存在时才覆盖替代文本与大图卡片，否则沿用全局默认分享图的小卡片
+    // 分享图存在时才覆盖替代文本与卡片类型，否则沿用全局的站点分享卡片
     meta.ogImageAlt = () => (image.value ? filled(toValue(options.imageAlt)) : undefined)
-    meta.twitterCard = () => (image.value ? 'summary_large_image' : undefined)
+    meta.twitterCard = () => (image.value ? (options.imageCard ?? 'summary_large_image') : undefined)
   }
   if (options.canonical !== undefined) meta.ogUrl = () => canonical.value
   if (options.robots !== undefined) meta.robots = () => filled(toValue(options.robots))

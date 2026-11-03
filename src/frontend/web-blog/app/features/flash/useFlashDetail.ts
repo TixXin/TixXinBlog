@@ -84,6 +84,7 @@ export function useFlashDetail() {
   })
 
   const site = useSiteUrl()
+  const { contentCard } = useShareCard()
   const flashUrl = computed(() => `${site}/flash/${encodeURIComponent(id.value)}`)
   const flashImage = computed(() => absoluteUrl(note.value?.images?.[0], site))
 
@@ -95,6 +96,9 @@ export function useFlashDetail() {
     type: 'article',
     canonical: () => flashUrl.value,
     image: () => flashImage.value,
+    // 没有配图时用闪念分享卡片（正文与发布时间）
+    fallbackImage: () =>
+      note.value ? contentCard('flash', note.value.id, [note.value.content, note.value.createdAt]) : undefined,
     imageAlt: () => note.value?.imageAlts?.[0] || pageTitle.value,
     robots: () => (localOnly ? 'noindex, follow' : undefined),
   })

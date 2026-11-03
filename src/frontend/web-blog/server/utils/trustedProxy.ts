@@ -47,11 +47,16 @@ export function resolveProxyClientIp(
   return client
 }
 
-/** 仅已存在的受管媒体读取可以保留后端的条件缓存头。 */
+/** 分享卡片地址，与后端 modules/og/og.controller.ts 的白名单一致 */
+const OG_CARD_PATH =
+  /^og\/(?:nexus|aurora|dock)\/(?:zh-CN|en)\/(?:site|post\/[1-9][0-9]{0,9}|(?:flash|moment)\/[A-Za-z0-9_-]{1,64})\.png$/
+
+/** 仅已存在的受管媒体与分享卡片读取可以保留后端的条件缓存头。 */
 export function canCacheMediaResponse(path: string, method: string, status: number): boolean {
   return (
     ['GET', 'HEAD'].includes(method) &&
     [200, 304].includes(status) &&
-    /^media\/[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}\.webp$/i.test(path)
+    (/^media\/[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}\.webp$/i.test(path) ||
+      OG_CARD_PATH.test(path))
   )
 }

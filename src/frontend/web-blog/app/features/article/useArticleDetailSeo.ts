@@ -13,6 +13,7 @@ export function useArticleDetailSeo(options: {
 }) {
   const { article, articleExcerpt, canonicalUrl, publicSite, siteSettings } = options
   const { t, locale } = useI18n()
+  const { contentCard } = useShareCard()
 
   const seoDescription = computed(() => article.value.seoDescription || articleExcerpt.value)
 
@@ -22,6 +23,8 @@ export function useArticleDetailSeo(options: {
     type: 'article',
     canonical: () => canonicalUrl.value,
     image: () => article.value.cover,
+    // 没有封面时用文章分享卡片（标题与发布日期）
+    fallbackImage: () => contentCard('post', article.value.id, [article.value.title, article.value.date]),
     imageAlt: () => article.value.coverAlt || article.value.title,
     // 可索引时不写 robots，保留模块默认的 max-image-preview 等指令
     robots: () => (article.value.seoNoindex ? 'noindex, follow' : undefined),

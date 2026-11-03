@@ -55,7 +55,7 @@ watch(
 const { settings: siteSettings } = useSiteSettings()
 const route = useRoute()
 const siteUrl = useSiteUrl()
-const defaultShareImage = useDefaultShareImage()
+const { siteCard } = useShareCard()
 const siteTwitter = computed(() => twitterHandle(siteSettings.value.socials))
 const siteDescription = computed(() => siteSettings.value.seoDescription || siteSettings.value.description || undefined)
 const { locale, t } = useI18n()
@@ -78,9 +78,10 @@ useSeoMeta({
   ogType: 'website',
   ogLocale: () => (isSupportedLocale(locale.value) ? OG_LOCALES[locale.value] : undefined),
   ogUrl: () => siteUrl + route.path,
-  ogImage: () => defaultShareImage.value?.url,
-  ogImageAlt: () => defaultShareImage.value?.alt,
-  twitterCard: 'summary',
+  // 站点分享卡片：后端按站点名、简介与头像渲染的 1200×630 PNG，静态发布构建时导出为同名文件
+  ogImage: () => siteCard(),
+  ogImageAlt: () => siteSettings.value.name,
+  twitterCard: 'summary_large_image',
   twitterSite: () => siteTwitter.value,
   twitterCreator: () => siteTwitter.value,
   // 博主关闭搜索引擎收录时全站 noindex；页面自己声明的 robots（后台、预览、搜索页等）后注册，仍以页面为准且同为 noindex。

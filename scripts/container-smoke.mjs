@@ -178,6 +178,13 @@ try {
   const sitemap = await (await fetch(`${origin}/sitemap.xml`)).text()
   assert(!sitemap.includes('/admin') && !sitemap.includes('_theme-engine-devtools'))
   assert((await (await fetch(`${origin}/rss.xml`)).text()).includes('https://smoke.invalid'))
+  // 分享卡片：生产镜像内的 sharp（Pango）与随镜像交付的中文字体能渲染 PNG，robots 对卡片爬虫放行
+  const card = await fetch(`${origin}/api/v1/og/nexus/zh-CN/site.png`)
+  assert.equal(card.status, 200)
+  assert.equal(card.headers.get('content-type'), 'image/png')
+  const png = Buffer.from(await card.arrayBuffer())
+  assert.deepEqual([png.readUInt32BE(16), png.readUInt32BE(20)], [1200, 630])
+  assert((await (await fetch(`${origin}/robots.txt`)).text()).includes('Allow: /api/v1/og/'))
 
   docker(['stop', '--time', '2', names.pg])
   const status = docker([

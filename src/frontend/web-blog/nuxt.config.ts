@@ -304,6 +304,8 @@ export default {
       qqAvatarEnabled: process.env.NUXT_PUBLIC_QQ_AVATAR_ENABLED !== 'false',
       // 静态发布形态：没有后端与访客身份，公开读取改读冻结接口，互动与外观切换入口隐藏。
       staticSite: false,
+      // 构建时的默认布局主题：分享卡片按它取色（服务器镜像为 nexus，静态发布为 --theme）。
+      layoutDefaultTheme: layoutThemeRuntimeConfig.defaultTheme,
     },
   },
   // sitemap 与 robots 的构建期站点标识；地址由部署环境经 NUXT_PUBLIC_SITE_URL 注入。
@@ -321,8 +323,8 @@ export default {
     cacheMaxAgeSeconds: 0,
   },
   robots: {
-    // 受管媒体经 /api/v1/media/ 提供，文章封面与分享图需对搜索引擎和分享卡片爬虫保持可抓取（最长匹配优先）
-    allow: ['/', '/api/v1/media/'],
+    // 受管媒体经 /api/v1/media/、分享卡片经 /api/v1/og/ 提供，需对搜索引擎和分享卡片爬虫保持可抓取（最长匹配优先）
+    allow: ['/', '/api/v1/media/', '/api/v1/og/'],
     // /admin 无斜杠形式同样屏蔽；其余 /api/ 为接口转发，不作为页面收录
     disallow: ['/admin', '/admin/', '/api/', '/_theme-engine-devtools', '/posts/preview', '/setup'],
   },
