@@ -6,6 +6,13 @@
 
 ## [未发布]
 
+## [0.5.0] - 2026-11-03
+
+### 升级说明
+
+- 无数据迁移，环境变量与编排不变；`tixxin update 0.5.0` 换用新镜像即可。分享卡片所需字体随后端镜像交付，服务器不需要另装字体
+- 浏览器会多出一个刷新凭据版本 Cookie `tixxin_rv`（不含凭据，只用于跨标签页协调），旧前端留下的协调标记仍按原规则处理，升级时不需要重新登录
+
 ### 新增
 
 - 搜索结果显示正文命中片段：文章只在正文命中时，显示关键词前后一段去掉 Markdown 语法的摘录并高亮，不再只显示与关键词无关的摘要；闪念与朋友圈同样显示正文中的命中处。`GET /posts` 带 `search` 时，正文命中的列表项新增 `contentMatch`（命中位置附近的原始 Markdown 片段）
@@ -250,7 +257,8 @@
 - 无多语言支持，界面与内容均为中文
 - 定位为单博主博客，不计划扩展多租户、访客账号或协作能力
 
-[未发布]: https://github.com/TixXin/TixXinBlog/compare/v0.4.0...HEAD
+[未发布]: https://github.com/TixXin/TixXinBlog/compare/v0.5.0...HEAD
+[0.5.0]: https://github.com/TixXin/TixXinBlog/compare/v0.4.0...v0.5.0
 [0.4.0]: https://github.com/TixXin/TixXinBlog/compare/v0.3.0...v0.4.0
 [0.3.0]: https://github.com/TixXin/TixXinBlog/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/TixXin/TixXinBlog/releases/tag/v0.2.0
