@@ -39,7 +39,6 @@ coverage/
 **/var/backups/
 
 # 可选编辑器与代理工具（只在本机保留）
-/.agents/
 /.claude/
 /.cursor/
 /.vscode/

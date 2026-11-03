@@ -34,7 +34,7 @@ corepack pnpm static:build --site-url https://<域名>   # 静态发布，需要
 
 - 先核对 Git 改动、运行服务、数据库目标与实际代码；保护用户已有修改、账号、环境配置和数据。
 - `dev` 只启动前端，真实接口开发使用 `dev:all`；启动不隐式迁移、seed 或 reset。
-- macOS 上由代理启动长期开发服务时，先运行 `dev:check`；已就绪则复用，否则通过 `corepack pnpm dev:terminal` 为前后端分别打开独立 Terminal.app 窗口（单独启动用 `dev:terminal:api` / `dev:terminal:web`）。Ctrl+C 仅停止对应窗口的服务。启动后再次自检，不把窗口打开当成服务就绪。可选本机技能位于 `.agents/skills/tixxinblog-dev-session/SKILL.md`，缺失时仍按本条和开发指南操作。
+- macOS 上由代理启动长期开发服务时，先运行 `dev:check`；已就绪则复用，否则通过 `corepack pnpm dev:terminal` 为前后端分别打开独立 Terminal.app 窗口（单独启动用 `dev:terminal:api` / `dev:terminal:web`）。Ctrl+C 仅停止对应窗口的服务。启动后再次自检，不把窗口打开当成服务就绪。对应项目技能位于 `.agents/skills/tixxinblog-dev-session/SKILL.md`，不支持技能的客户端按本条和开发指南操作。
 - 改动安装、升级或部署脚本时，用 `corepack pnpm trial` 以当前代码在本机走一遍一键安装与升级（项目 `tixxin-dev`，与官方试用隔离），结束后 `trial:down` 清理。
 - 使用项目 `build/generate` 命令保留开发与生产中间目录隔离，运行方式见 [开发指南](docs/development.md)。
 - 多页出现502时检查后端 `/ready` 与同源API，恢复真实链路，不切换Mock掩盖故障。
@@ -67,5 +67,5 @@ corepack pnpm static:build --site-url https://<域名>   # 静态发布，需要
 - `docs/` 只维护当前操作与架构契约，不继续积累任务提示、完成率、阶段报告、执行日志或历史归档。历史变更通过Git追溯。
 - 已调研、未排期的方向记在 [docs/backlog.md](docs/backlog.md)。开工前先读对应条目，沿用其中的结论和已核实的事实，只复核标为“会变”的外部信息（价格、额度、版本）。开工后把结论转进设计稿或正式文档，并删掉该条。
 - 截图、录屏、trace、机器报告、性能采样、临时计划和本机复现档案写入 `.artifacts/` 或 `.playwright-mcp/`，不强制加入版本库。
-- 可选编辑器和代理客户端配置保留本机；项目安装、构建和验证不能依赖它们。
+- 项目代理技能 `.agents/skills/` 随仓库维护，改动启动流程、主题契约等对应约定时同步更新；其余可选编辑器和代理客户端配置保留本机。项目安装、构建和验证不能依赖它们。
 - 不批量忽略图片或JSON等扩展名，不把正式测试、fixture素材或许可文件误当运行产物删除。
