@@ -9,6 +9,6 @@ import { LocalMediaStorage, MediaStorage } from './media-storage'
 @Module({
   controllers: [AdminMediaController, PublicMediaController],
   providers: [MediaService, { provide: MediaStorage, useClass: LocalMediaStorage }],
-  exports: [MediaStorage],
+  exports: [MediaStorage, MediaService],
 })
 export class MediaModule {}

@@ -20,6 +20,6 @@ import { AdminFlashCommentService } from './admin-flash-comment.service'
   imports: [MikroOrmModule.forFeature([FlashNote, FlashComment, FlashLike])],
   controllers: [FlashController, AdminFlashController],
   providers: [FlashService, AdminFlashService, AdminFlashCommentService],
-  exports: [AdminFlashService],
+  exports: [AdminFlashService, FlashService],
 })
 export class FlashModule {}

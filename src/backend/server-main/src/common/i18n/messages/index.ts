@@ -23,6 +23,7 @@ import { packageMessages } from './package.messages'
 import { operationsMessages } from './operations.messages'
 import { auditMessages } from './audit.messages'
 import { setupMessages } from './setup.messages'
+import { ogMessages } from './og.messages'
 
 /** 各域字典；单测据此检查 key 前缀与跨域重复 */
 export const MESSAGE_TABLES = {
@@ -45,6 +46,7 @@ export const MESSAGE_TABLES = {
   operations: operationsMessages,
   audit: auditMessages,
   setup: setupMessages,
+  og: ogMessages,
 } as const
 
 export const MESSAGES = {
@@ -67,4 +69,5 @@ export const MESSAGES = {
   ...operationsMessages,
   ...auditMessages,
   ...setupMessages,
+  ...ogMessages,
 }

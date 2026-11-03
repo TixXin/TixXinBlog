@@ -37,6 +37,6 @@ import { PostPreviewService } from './post-preview.service'
     PostBatchService,
     PostPreviewService,
   ],
-  exports: [AdminPostService],
+  exports: [AdminPostService, PostService],
 })
 export class PostModule {}

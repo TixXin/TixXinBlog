@@ -37,6 +37,7 @@ import { BackupModule } from './modules/backup/backup.module'
 import { ContentRelationsModule } from './modules/content-relations/content-relations.module'
 import { ClientErrorModule } from './modules/client-error/client-error.module'
 import { SetupModule } from './modules/setup/setup.module'
+import { OgModule } from './modules/og/og.module'
 
 @Module({
   imports: [
@@ -79,6 +80,7 @@ import { SetupModule } from './modules/setup/setup.module'
     ContentRelationsModule,
     ClientErrorModule,
     SetupModule,
+    OgModule,
   ],
   providers: [
     { provide: APP_GUARD, useClass: RateLimitGuard },

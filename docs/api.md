@@ -291,6 +291,9 @@
 | `GET /site`                                                                           | 公共站点资料，剔除隐藏关于字段与隐藏外链，不缓存；提供内容上下文 |
 | `GET/PATCH /admin/site`、`GET /admin/site/revisions`                                  | 完整资料、版本化保存与历史                                       |
 | `GET /admin/site/revisions/:revision`、`POST /admin/site/revisions/:revision/restore` | 读取指定历史版本与恢复资料                                       |
+| `GET /og/:theme/:lang/:file`、`GET /og/:theme/:lang/:kind/:file`                      | 公开分享卡片 PNG：站点卡（`file` 为 `site.png`）与内容卡         |
+
+分享卡片为 1200×630 PNG。`theme` 只接受 `nexus`、`aurora`、`dock`，`lang` 只接受 `zh-CN`、`en`；内容卡的 `kind` 为 `post`、`flash` 或 `moment`，`file` 为编号加 `.png`，文章编号是正整数，闪念与朋友圈编号只含字母、数字、`_` 与 `-`（≤64），其余取值一律 404。卡片文字只来自后端经公开详情读到的数据，草稿、删除与不公开的内容同样 404；地址上的其他查询参数（前端用作版本号的 `v`）被忽略。头像只读受管媒体，外链头像改用首字母，后端不请求外部地址。响应带 `ETag` 与 `Cache-Control: public, max-age=86400`，支持 304 与 HEAD；Nexus 与 Dock 共用站点色板，Aurora 使用渐变底色，字体为随镜像交付的 Noto Sans SC Bold。
 
 站点资料含可选的 `presenceLabel`（≤20）、`presenceSignature`（≤60）、`presenceStatus`（空串、`online`、`idle`、`busy`）与 `launchedAt`（`YYYY-MM-DD` 或空）：前两者驱动名片的在线状态与签名，都为空时保持离线；`presenceStatus` 决定状态点的类型，空串时按在线展示；`launchedAt` 决定 `GET /posts/metadata` 里 `stats.siteAgeDays` 的起点，缺省回退到最早公开文章的发布日。旧客户端与旧内容包可不携带这几项，缺省按空串处理且保存时沿用当前值。
 
