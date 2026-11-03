@@ -19,6 +19,12 @@ Vue 3.5.42 在异步子树尚未就绪、父节点又发生更新时，为 `asyn
 
 `pageRequestBoundary.test.ts` 使用实际安装的 Vue，覆盖未完成子树的父属性更新、卸载后的有标记取消、普通错误、同文案但无标记错误，以及成功解析后保留最新父属性。未应用补丁的负对照会产生额外未处理拒绝；浏览器快速导航仍必须满足零页面错误。
 
+## Vue 水合时 v-html 无条件重写
+
+Vue 3.5.42 水合元素时，会对编译期列入动态属性的键强制调用 `patchProp`。`v-html` 编译后的 `innerHTML` 正在其中，因此即使服务端输出与客户端结果逐字相同，容器也会被重新赋值，全部子节点重新解析并替换。文章正文、闪念、朋友圈、代码块与评论的服务端节点在每次首屏都会被丢弃一次（长文尤其明显，正文里的图片节点也会重建）。原实现只为 `src` 这类资源属性做了相等跳过。
+
+补丁在同一处增加 `isUnchangedContentProp`：键为 `innerHTML` 或 `textContent` 且当前 DOM 值与客户端值的字符串形式相同时跳过；不同时照常重写，保留上游纠正不一致的行为。客户端值可能是 TrustedHTML 对象，所以按字符串比较。ESM 与 CommonJS 的开发、生产产物使用同一修正，和异步页面辅助更新等待的修正放在同一个补丁文件里。`vueHydrationInnerHtml.test.ts` 使用实际安装的 Vue 覆盖内容一致时保留原节点、不一致时纠正，以及水合后内容变化正常更新；用旧补丁做负对照时第一条失败。
+
 ## Vue SSR 插槽中的 Teleport 标记
 
 `@vue/server-renderer` 的 `ssrRenderSlotInner` 会把输出里只有注释的插槽当作空插槽丢弃。`<Teleport>` 在原位只留下 `<!--teleport start--><!--teleport end-->` 两条标记，内容已经进入目标缓冲，因此"插槽里只有一个 Teleport"会被整体丢掉：目标里有内容、原位却没有标记，客户端水合时找不到 Teleport 锚点，表现为 `Hydration completed but contains mismatches`。本项目的页面右侧栏正是通过 `CommonPageFrame` 的 `overlays` 插槽 Teleport 到布局挂载点并由 `sidebar-teleport.server.ts` 注入 SSR 内容。

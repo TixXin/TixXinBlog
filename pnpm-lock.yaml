@@ -39,7 +39,7 @@ patchedDependencies:
     hash: zhzarzpffmi4t327vs57dgb6li
     path: patches/@nuxt__nitro-server@4.5.2.patch
   '@vue/runtime-core@3.5.42':
-    hash: ddgyyazj6i53zw2foerc7fih34
+    hash: eksfbueq5i5p2ghtqcgxr4oaa4
     path: patches/@vue__runtime-core@3.5.42.patch
   '@vue/server-renderer@3.5.42':
     hash: keyo2objuu2o3lwmpzs7vn5qi4
@@ -12056,7 +12056,7 @@ snapshots:
     dependencies:
       '@vue/shared': 3.5.42
 
-  '@vue/runtime-core@3.5.42(patch_hash=ddgyyazj6i53zw2foerc7fih34)':
+  '@vue/runtime-core@3.5.42(patch_hash=eksfbueq5i5p2ghtqcgxr4oaa4)':
     dependencies:
       '@vue/reactivity': 3.5.42
       '@vue/shared': 3.5.42
@@ -12064,7 +12064,7 @@ snapshots:
   '@vue/runtime-dom@3.5.42':
     dependencies:
       '@vue/reactivity': 3.5.42
-      '@vue/runtime-core': 3.5.42(patch_hash=ddgyyazj6i53zw2foerc7fih34)
+      '@vue/runtime-core': 3.5.42(patch_hash=eksfbueq5i5p2ghtqcgxr4oaa4)
       '@vue/shared': 3.5.42
       csstype: 3.2.3
 
