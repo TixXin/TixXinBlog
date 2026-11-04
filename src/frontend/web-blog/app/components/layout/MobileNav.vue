@@ -55,6 +55,7 @@
 </template>
 
 <script setup lang="ts">
+import { MOBILE_PRIMARY_PATHS } from '~/features/nav/routes'
 const route = useRoute()
 const { navItems } = useNavItems()
 const { activeTheme, currentThemeId } = useLayoutTheme()
@@ -72,9 +73,7 @@ function loginFromMenu(close: () => void) {
   close()
   openLogin('login', true)
 }
-const primaryItems = computed(() =>
-  navItems.value.filter((item) => ['/', '/archive', '/flash', '/guestbook'].includes(item.to)),
-)
+const primaryItems = computed(() => navItems.value.filter((item) => MOBILE_PRIMARY_PATHS.includes(item.to)))
 
 function isActive(to: string) {
   const path = route.path.replace(/\/$/, '') || '/'

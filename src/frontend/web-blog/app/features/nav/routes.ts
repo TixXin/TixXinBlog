@@ -21,6 +21,9 @@ export const SITE_NAV_KEYS: readonly SiteNavKey[] = [
   'tabs',
 ]
 
+/** 移动端底部导航常驻的主入口；其余栏目收在“更多”菜单里 */
+export const MOBILE_PRIMARY_PATHS: readonly string[] = ['/', '/archive', '/flash', '/guestbook']
+
 /** 内置模块名称的字典 key；名称跟随界面语言，由代码维护 */
 export const navLabelKeys: Record<SiteNavKey, string> = {
   home: 'layout.nav.home',
