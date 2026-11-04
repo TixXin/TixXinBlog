@@ -30,6 +30,7 @@ export default defineNuxtPlugin(() => {
   }
   // 水合完成后再推进时钟，避免与服务端渲染结果不一致。
   onNuxtReady(() => {
-    watch(() => settings.value.presenceExpiresAt, schedule, { immediate: true })
+    // 站点资料尚未就绪（或单元测试替换了数据源）时视为没有到期时间。
+    watch(() => settings?.value?.presenceExpiresAt, schedule, { immediate: true })
   })
 })
