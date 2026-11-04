@@ -119,6 +119,33 @@ describe('心跳循环', () => {
     handle.stop()
   })
 
+  it('页面加载后的第一次浏览附带站外来源域名，之后的心跳与站内跳转不再携带；本站来源不计', async () => {
+    const referrer = vi.spyOn(document, 'referrer', 'get').mockReturnValue('https://www.google.com/search?q=blog')
+    const { fetcher, handle, go } = setup()
+    await vi.advanceTimersByTimeAsync(0)
+    expect(bodies(fetcher)[0]).toMatchObject({ view: true, referrer: 'www.google.com' })
+    await vi.advanceTimersByTimeAsync(HEARTBEAT_MS)
+    go('/links')
+    handle.pageView()
+    await vi.advanceTimersByTimeAsync(0)
+    expect(
+      bodies(fetcher)
+        .slice(1)
+        .every((body) => !('referrer' in body)),
+    ).toBe(true)
+    handle.stop()
+    referrer.mockReturnValue(`${window.location.origin}/articles/1`)
+    const internal = setup()
+    await vi.advanceTimersByTimeAsync(0)
+    expect('referrer' in bodies(internal.fetcher)[0]).toBe(false)
+    internal.handle.stop()
+    referrer.mockReturnValue('')
+    const direct = setup()
+    await vi.advanceTimersByTimeAsync(0)
+    expect(bodies(direct.fetcher)[0]).toMatchObject({ referrer: '' })
+    direct.handle.stop()
+  })
+
   it('页面隐藏时暂停，回到前台立即补发并恢复定时', async () => {
     const { fetcher, handle } = setup()
     await vi.advanceTimersByTimeAsync(0)

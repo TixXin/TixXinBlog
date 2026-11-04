@@ -32,6 +32,7 @@ export const adminNavigation: AdminNavigationItem[] = [
     tabKey: 'admin-system.nav.tabs.notifications',
   },
   { path: '/admin/operations', labelKey: 'admin-system.nav.operations', icon: 'lucide:activity', group: 'workspace' },
+  { path: '/admin/traffic', labelKey: 'admin-system.nav.traffic', icon: 'lucide:chart-column', group: 'workspace' },
   {
     path: '/admin/posts',
     labelKey: 'admin-system.nav.posts',

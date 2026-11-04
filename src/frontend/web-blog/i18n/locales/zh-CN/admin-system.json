@@ -21,6 +21,7 @@
       "overview": "管理概览",
       "notifications": "互动通知",
       "operations": "运行状态",
+      "traffic": "访问统计",
       "posts": "文章管理",
       "comments": "评论管理",
       "flashes": "闪念管理",
@@ -930,13 +931,54 @@
     },
     "presence": {
       "title": "实时在线与访问统计",
-      "hint": "开关切换后立即生效，与上方站点资料分开保存。统计只保存匿名访客标识的哈希与按日汇总的数字，不保存 IP 或访问路径。",
+      "hint": "开关切换后立即生效，与上方站点资料分开保存。统计只保存匿名访客标识的哈希与按日汇总的数字（含页面路径、来源域名与设备大类的计数），不保存 IP、完整 User-Agent 或完整来源地址。",
       "autoPresence": "自动在线状态：状态类型为“自动”时，按你最近的活动显示“在线”或“N 小时前在线”",
       "publicStats": "公开访问统计：在底栏显示当前在线人数，在站点统计卡显示访客数、今日浏览与累计浏览",
       "lastSeen": "最后在线：{time}",
       "neverSeen": "尚无在线记录",
       "loadFailed": "无法读取设置，请刷新重试",
       "saveFailed": "保存失败，已恢复原设置"
+    },
+    "traffic": {
+      "title": "访问统计",
+      "intro": "按北京时间汇总的浏览、访客、热门页面、来源与设备；只保存匿名汇总数字，访问构成保留 365 天。",
+      "rangeLabel": "统计范围",
+      "ranges": {
+        "7": "近 7 天",
+        "30": "近 30 天",
+        "90": "近 90 天"
+      },
+      "refresh": "刷新",
+      "loading": "正在读取访问统计…",
+      "loadFailed": "访问统计读取失败，请稍后重试",
+      "empty": "这段时间还没有访问记录。访客浏览公开页面后，数字会出现在这里。",
+      "views": "浏览",
+      "visitors": "访客",
+      "dailyAverage": "日均浏览",
+      "visitorsHint": "访客按日去重后相加，同一访客跨天会重复计",
+      "trendViews": "每日浏览",
+      "trendVisitors": "每日访客",
+      "pages": "热门页面",
+      "referrers": "来源",
+      "devices": "设备",
+      "browsers": "浏览器",
+      "direct": "直接访问",
+      "otherPages": "其他页面",
+      "otherReferrers": "其他来源",
+      "noData": "暂无数据",
+      "period": "{from} 至 {to}",
+      "share": "占 {percent}%",
+      "deviceNames": {
+        "desktop": "桌面",
+        "mobile": "移动"
+      },
+      "browserNames": {
+        "chrome": "Chrome",
+        "safari": "Safari",
+        "firefox": "Firefox",
+        "edge": "Edge",
+        "other": "其他"
+      }
     }
   }
 }

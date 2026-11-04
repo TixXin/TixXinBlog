@@ -21,6 +21,7 @@
       "overview": "Overview",
       "notifications": "Notifications",
       "operations": "System status",
+      "traffic": "Traffic",
       "posts": "Posts",
       "comments": "Comments",
       "flashes": "Flashes",
@@ -930,13 +931,54 @@
     },
     "presence": {
       "title": "Live presence and visit stats",
-      "hint": "Changes take effect immediately and are saved separately from the site profile above. Stats keep only hashed anonymous visitor IDs and daily totals, never IP addresses or visited paths.",
+      "hint": "Changes take effect immediately and are saved separately from the site profile above. Statistics keep only a hash of the anonymous visitor ID and daily totals (including counts by page path, source domain and device type); IP addresses, full User-Agent strings and full source URLs are never stored.",
       "autoPresence": "Automatic presence: when the status type is “Automatic”, show “Online” or “Last seen …” from your recent activity",
       "publicStats": "Public visit stats: show visitors online in the footer, and visitors, today’s views and all-time views in the site stats card",
       "lastSeen": "Last seen: {time}",
       "neverSeen": "No activity recorded yet",
       "loadFailed": "Could not load settings. Refresh and try again.",
       "saveFailed": "Could not save. The previous setting was restored."
+    },
+    "traffic": {
+      "title": "Traffic",
+      "intro": "Views, visitors, top pages, sources and devices summarized by Beijing time. Only anonymous totals are stored; traffic breakdowns are kept for 365 days.",
+      "rangeLabel": "Range",
+      "ranges": {
+        "7": "Last 7 days",
+        "30": "Last 30 days",
+        "90": "Last 90 days"
+      },
+      "refresh": "Refresh",
+      "loading": "Loading traffic…",
+      "loadFailed": "Couldn't load traffic. Try again later.",
+      "empty": "No visits in this period yet. Numbers appear here once visitors browse public pages.",
+      "views": "Views",
+      "visitors": "Visitors",
+      "dailyAverage": "Daily average views",
+      "visitorsHint": "Visitors are counted once per day and summed, so returning visitors count again on later days",
+      "trendViews": "Daily views",
+      "trendVisitors": "Daily visitors",
+      "pages": "Top pages",
+      "referrers": "Sources",
+      "devices": "Devices",
+      "browsers": "Browsers",
+      "direct": "Direct",
+      "otherPages": "Other pages",
+      "otherReferrers": "Other sources",
+      "noData": "No data yet",
+      "period": "{from} to {to}",
+      "share": "{percent}%",
+      "deviceNames": {
+        "desktop": "Desktop",
+        "mobile": "Mobile"
+      },
+      "browserNames": {
+        "chrome": "Chrome",
+        "safari": "Safari",
+        "firefox": "Firefox",
+        "edge": "Edge",
+        "other": "Other"
+      }
     }
   }
 }
