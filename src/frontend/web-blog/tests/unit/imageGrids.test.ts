@@ -67,7 +67,8 @@ describe('图片网格的失败恢复', () => {
     expect(image.attributes('sizes')).toBe('240px')
     expect(image.attributes('srcset')).toContain(`${source}?w=320 320w`)
     expect(wrapper.get(previewSelector).attributes('type')).toBe('button')
-    expect(wrapper.get('[data-lightbox]').attributes('data-visible')).toBe('false')
+    // 灯箱首次打开前不挂载，列表卡片水合后不再各自创建实例
+    expect(wrapper.find('[data-lightbox]').exists()).toBe(false)
 
     await image.trigger('error')
     expect(wrapper.text()).toContain('图片加载失败')
@@ -80,7 +81,7 @@ describe('图片网格的失败恢复', () => {
     // 原生按钮的键盘激活会派发 detail 为 0 的 click，重试不应冒泡到预览入口。
     await retry.trigger('keydown', { key: 'Enter' })
     await retry.trigger('click', { detail: 0 })
-    expect(wrapper.get('[data-lightbox]').attributes('data-visible')).toBe('false')
+    expect(wrapper.find('[data-lightbox]').exists()).toBe(false)
     expect(wrapper.get('.image-frame img').element).not.toBe(image.element)
     expect(wrapper.find(previewSelector).exists()).toBe(false)
 
@@ -96,6 +97,7 @@ describe('图片网格的失败恢复', () => {
     expect(wrapper.get(previewSelector).attributes('type')).toBe('button')
 
     await wrapper.get(previewSelector).trigger('click', { detail: 0 })
+    await flushPromises()
     expect(wrapper.get('[data-lightbox]').attributes('data-visible')).toBe('true')
   })
 })

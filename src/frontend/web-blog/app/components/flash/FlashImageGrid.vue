@@ -25,16 +25,15 @@
       />
     </div>
 
-    <ClientOnly>
-      <FlashImageLightBox
-        :images="images"
-        :descriptions="descriptions"
-        :current-index="currentIndex"
-        :visible="lightBoxVisible"
-        @close="lightBoxVisible = false"
-        @change="currentIndex = $event"
-      />
-    </ClientOnly>
+    <FlashImageLightBox
+      v-if="lightBoxMounted"
+      :images="images"
+      :descriptions="descriptions"
+      :current-index="currentIndex"
+      :visible="lightBoxVisible"
+      @close="closeLightBox"
+      @change="currentIndex = $event"
+    />
   </div>
 </template>
 
@@ -47,8 +46,13 @@ const props = withDefaults(
   { descriptions: () => [] },
 )
 
-const lightBoxVisible = ref(false)
-const currentIndex = ref(0)
+const {
+  mounted: lightBoxMounted,
+  visible: lightBoxVisible,
+  index: currentIndex,
+  open,
+  close: closeLightBox,
+} = useLazyLightBox()
 // 独立预览按钮在失败时退让给重试，键盘和指针都不会误开灯箱。
 const imageFailures = ref<Record<string, boolean>>({})
 function updateImageFailure(key: string, state: 'loading' | 'ready' | 'error' | 'empty') {
@@ -72,11 +76,6 @@ const imageSizes = computed(
       'flash-grid--3': '(max-width: 480px) 26vw, 130px',
     })[gridClass.value],
 )
-
-function open(idx: number) {
-  currentIndex.value = idx
-  lightBoxVisible.value = true
-}
 </script>
 
 <style lang="scss" scoped>

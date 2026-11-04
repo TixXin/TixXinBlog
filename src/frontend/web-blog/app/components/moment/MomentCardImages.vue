@@ -26,16 +26,15 @@
     </div>
   </div>
 
-  <!-- 多图灯箱 -->
-  <ClientOnly>
-    <MomentLightBox
-      :images="images ?? []"
-      :current-index="lightBoxIndex"
-      :visible="lightBoxVisible"
-      @close="closeLightBox"
-      @change="onLightBoxChange"
-    />
-  </ClientOnly>
+  <!-- 多图灯箱：首次打开才挂载 -->
+  <MomentLightBox
+    v-if="lightBoxMounted"
+    :images="images ?? []"
+    :current-index="lightBoxIndex"
+    :visible="lightBoxVisible"
+    @close="closeLightBox"
+    @change="lightBoxIndex = $event"
+  />
 </template>
 
 <script setup lang="ts">
@@ -73,18 +72,13 @@ const imageSizes = computed(
     })[gridClass.value],
 )
 
-const lightBoxVisible = ref(false),
-  lightBoxIndex = ref(0)
-function openLightBox(index: number) {
-  lightBoxIndex.value = index
-  lightBoxVisible.value = true
-}
-function closeLightBox() {
-  lightBoxVisible.value = false
-}
-function onLightBoxChange(index: number) {
-  lightBoxIndex.value = index
-}
+const {
+  mounted: lightBoxMounted,
+  visible: lightBoxVisible,
+  index: lightBoxIndex,
+  open: openLightBox,
+  close: closeLightBox,
+} = useLazyLightBox()
 </script>
 
 <style lang="scss" scoped>
