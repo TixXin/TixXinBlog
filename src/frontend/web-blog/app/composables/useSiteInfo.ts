@@ -22,6 +22,7 @@ import {
   poweredByItems,
 } from '~/features/site/footer'
 import { currentTranslate, type Translate } from '~/utils/format'
+import { resolveOwnerPresence } from '~/features/presence/ownerPresence'
 
 /** 将 ISO 时间字符串转为相对时间描述 */
 function formatDuration(since: string, t: Translate): string {
@@ -36,18 +37,6 @@ function formatDuration(since: string, t: Translate): string {
   return t('layout.presence.daysAgo', { count: days })
 }
 
-/** 状态类型未配文案时的默认展示；取值时按当前界面语言翻译 */
-export const presenceStatusLabels = {
-  get online() {
-    return currentTranslate()('layout.presence.online')
-  },
-  get idle() {
-    return currentTranslate()('layout.presence.idle')
-  },
-  get busy() {
-    return currentTranslate()('layout.presence.busy')
-  },
-} as const
 /** 获取站点页脚信息 */
 export function useSiteInfo() {
   const { settings, available } = useSiteSettings()
@@ -70,14 +59,12 @@ export function useSiteInfo() {
     pingMs: null,
     statusText: available.value ? t('layout.footer.statusSynced') : t('layout.footer.statusUnavailable'),
   }))
-  // 在线状态、签名与状态类型由博主在站点资料里维护；文案都为空时保持“离线”且不展示签名
-  const ownerPresence = computed<OwnerPresenceInfo>(() => {
-    const label = settings.value.presenceLabel?.trim() ?? ''
-    const signature = settings.value.presenceSignature?.trim() ?? ''
-    if (!label && !signature) return { status: 'offline', label: t('layout.presence.unset'), signature: '', since: '' }
-    const status = settings.value.presenceStatus || 'online'
-    return { status, label: label || presenceStatusLabels[status], signature, since: '' }
-  })
+  // 在线状态：手动状态类型优先；“自动”时按博主心跳显示在线或“N 前在线”；没有可展示内容时文案为空，界面隐藏状态行。
+  // 心跳结果只在客户端出现，SSR 与水合首帧按站点资料计算，二者一致。
+  const live = useLivePresenceState()
+  const ownerPresence = computed<OwnerPresenceInfo>(() =>
+    resolveOwnerPresence(settings.value, live.value?.owner ?? null, Date.now(), t),
+  )
   const ownerCard = computed<OwnerCardInfo>(() => ({
     name: settings.value.ownerName,
     title: settings.value.ownerTitle,

@@ -39,6 +39,7 @@
         </template>
       </div>
       <div class="footer__divider" aria-hidden="true" />
+      <CommonLiveOnlineBadge class="footer__online" />
       <CommonTooltip :content="$t('layout.footer.apiLatencyTip')" placement="top">
         <div class="footer__status" role="status" tabindex="0">
           <span v-if="pingMs !== null" class="footer__ping"

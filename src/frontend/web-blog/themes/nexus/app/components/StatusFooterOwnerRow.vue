@@ -14,7 +14,7 @@
           <span class="nexus-bar__owner-name">{{ displayName }}</span>
           <span class="nexus-bar__owner-title">{{ displayTitle }}</span>
         </div>
-        <div class="nexus-bar__owner-status-line">
+        <div v-if="effectivePresence.label || effectivePresence.signature" class="nexus-bar__owner-status-line">
           <span
             class="nexus-bar__owner-status-dot"
             :class="`nexus-bar__owner-status-dot--${effectivePresence.status}`"
@@ -78,7 +78,7 @@ const displayTitle = computed(() => {
   return ownerCard.value.title
 })
 
-// 在线状态只取站点资料：博主登录后看到的与访客一致，不再因登录强制显示“在线”而与资料卡矛盾。
+// 在线状态取 useSiteInfo：手动状态类型优先，“自动”时按博主心跳；登录与否看到的一致。
 const effectivePresence = computed(() => ownerPresence.value)
 
 const showSocials = computed(() => !isLoggedIn.value || currentUser.value?.role === 'owner')

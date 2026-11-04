@@ -37,6 +37,14 @@
       "staleNotice": "仍显示上次成功读取或默认的站点资料。"
     },
     "presence": {
+      "onlineCountLabel": "当前在线人数",
+      "onlineCount": "{count} 人在线",
+      "lastSeenLongAgo": "超过 {days} 天没在线",
+      "lastSeenDays": "{count} 天前在线",
+      "lastSeenHours": "{count} 小时前在线",
+      "lastSeenMinutes": "{count} 分钟前在线",
+      "lastSeenJustNow": "刚刚在线",
+      "auto": "自动（按博主最近活动显示在线）",
       "justNow": "刚刚",
       "minutesAgo": "{count} 分钟前",
       "hoursAgo": "{count} 小时前",
@@ -44,7 +52,6 @@
       "online": "在线",
       "idle": "离开",
       "busy": "忙碌",
-      "unset": "未提供在线状态",
       "auto": "自动（有状态文案时显示在线）"
     },
     "mobileNav": {
@@ -302,7 +309,10 @@
         "articles": "文章",
         "views": "浏览",
         "comments": "评论",
-        "tags": "标签"
+        "tags": "标签",
+        "visitors": "访客",
+        "todayViews": "今日浏览",
+        "totalViews": "累计浏览"
       },
       "filters": {
         "unavailable": "标签和分类暂时不可用",

@@ -32,18 +32,43 @@
       </div>
     </div>
 
+    <!-- 访问统计来自实时在线心跳：SSR 与首个结果到达前显示占位，后台关闭公开统计时隐藏 -->
+    <div v-if="liveVisible" class="stats-card__grid stats-card__grid--live">
+      <div v-for="item in liveItems" :key="item.label" class="stats-card__item">
+        <span class="stats-card__value">{{ item.value }}</span>
+        <span class="stats-card__label">{{ item.label }}</span>
+      </div>
+    </div>
+
     <SidebarHeatmapGrid v-if="stats.activity?.length" :activity="stats.activity" />
   </section>
 </template>
 
 <script setup lang="ts">
 import type { SiteStats } from '~/features/stats/types'
+import { useLivePresenceState } from '~/composables/useLivePresence'
+import { formatNumber } from '~/utils/format'
 
 const props = defineProps<{
   stats: SiteStats
 }>()
 
 const { t } = useI18n()
+const live = useLivePresenceState()
+const config = useRuntimeConfig().public
+// 静态发布与纯 Mock 演示没有心跳；心跳返回 stats 为 null 表示后台关闭了公开统计。
+const liveVisible = computed(
+  () => !config.staticSite && !config.useMockRepo && (live.value === null || live.value.stats !== null),
+)
+const liveItems = computed(() => {
+  const stats = live.value?.stats
+  const value = (count: number | undefined) => (count === undefined ? '—' : formatNumber(count))
+  return [
+    { label: t('layout.sidebar.stats.visitors'), value: value(stats?.visitors) },
+    { label: t('layout.sidebar.stats.todayViews'), value: value(stats?.todayViews) },
+    { label: t('layout.sidebar.stats.totalViews'), value: value(stats?.totalViews) },
+  ]
+})
 const statItems = computed(() => [
   { label: t('layout.sidebar.stats.articles'), value: props.stats.articles },
   { label: t('layout.sidebar.stats.views'), value: props.stats.views },
@@ -136,6 +161,10 @@ const statItems = computed(() => [
   @media (min-width: $breakpoint-md) and (max-width: #{$breakpoint-xl - 1px}) {
     gap: 0.35rem;
   }
+}
+
+.stats-card__grid--live {
+  grid-template-columns: repeat(3, 1fr);
 }
 
 .stats-card__item {

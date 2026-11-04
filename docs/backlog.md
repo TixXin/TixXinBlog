@@ -34,3 +34,26 @@
 | Cloudflare Pages 文档建议新项目从 Workers 起步，Pages 仍可使用                                                                                                                                                                                   | 官方 | 是   | [Pages 文档](https://developers.cloudflare.com/pages/)                                                                                                                 |
 | Workers 免费版每天 10 万次请求、单次 10ms CPU、128MB 内存；D1 免费 5GB；R2 免费 10GB，出站流量不计费                                                                                                                                             | 摘要 | 是   | [Workers 套餐](https://workers.cloudflare.com/plans)、[D1](https://developers.cloudflare.com/d1/platform/pricing/)、[R2](https://developers.cloudflare.com/r2/pricing) |
 | Nuxt Content 在 Cloudflare 上做 SSR 需要 D1；纯静态部署会把内容数据库下发到浏览器                                                                                                                                                                | 官方 | 是   | [Workers 部署](https://content.nuxt.com/docs/deploy/cloudflare-workers)、[静态部署](https://content.nuxt.com/docs/deploy/static)                                       |
+
+## 站点时区设置（全站日期按站点时区分日）
+
+状态：已确认方向，未排期。记录于 2026-11-05。
+
+### 背景
+
+全站按 UTC 分日：归档、闪念与朋友圈日历、活跃度热力图、留言统计、后台日期筛选等十余处，界面上标注“UTC”。当初是为了 SSR 与客户端分日一致。国内读者看到的“今天”从北京时间 8 点才开始。实时访问统计（“今日浏览”）已按北京时间切日，与其余 UTC 分日并存。
+
+### 结论
+
+- 做成站点设置“站点时区”，默认 `Asia/Shanghai`，不写死北京时间（项目对外开源）。
+- 分日在后端按站点时区计算，或由后端随数据给出日期；前端只展示，不在浏览器按本机时区自行切日，保持 SSR 与客户端一致。
+- 实时访问统计改为读取站点时区，与其余分日统一。
+
+### 待定问题
+
+- 修改时区后，已按旧时区汇总的按日统计（访问统计的每日行）是否重算，还是只影响之后的日期。
+- 内容包是否携带时区设置（属于站点设置，倾向携带）。
+
+### 第一步
+
+列出全部按 UTC 分日或展示“UTC”的位置（前端 `timeZone: 'UTC'`、`toISOString().slice(0, 10)`、后端 SQL 的日期截断），确定统一的取日入口。

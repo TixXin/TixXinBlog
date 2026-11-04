@@ -927,6 +927,16 @@
           "avatarUnreadable": "This image cannot be read. Choose a PNG, JPEG or WebP image."
         }
       }
+    },
+    "presence": {
+      "title": "Live presence and visit stats",
+      "hint": "Changes take effect immediately and are saved separately from the site profile above. Stats keep only hashed anonymous visitor IDs and daily totals, never IP addresses or visited paths.",
+      "autoPresence": "Automatic presence: when the status type is “Automatic”, show “Online” or “Last seen …” from your recent activity",
+      "publicStats": "Public visit stats: show visitors online in the footer, and visitors, today’s views and all-time views in the site stats card",
+      "lastSeen": "Last seen: {time}",
+      "neverSeen": "No activity recorded yet",
+      "loadFailed": "Could not load settings. Refresh and try again.",
+      "saveFailed": "Could not save. The previous setting was restored."
     }
   }
 }

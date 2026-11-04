@@ -75,7 +75,8 @@ afterEach(() => {
   wrappers.splice(0).forEach((wrapper) => wrapper.unmount())
 })
 async function mountPage() {
-  const wrapper = await mountSuspended(SitePage)
+  // 实时在线开关自行读写 /admin/presence，有独立测试；这里只表征站点页结构。
+  const wrapper = await mountSuspended(SitePage, { global: { stubs: { AdminPresenceSettings: true } } })
   wrappers.push(wrapper)
   await flushPromises()
   return wrapper

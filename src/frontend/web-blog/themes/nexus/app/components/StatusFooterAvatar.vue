@@ -27,7 +27,11 @@
       @error="onAvatarError"
     />
     <span v-else class="nexus-bar__avatar-fallback">{{ avatarFallback }}</span>
-    <span class="nexus-bar__presence-badge" :class="`nexus-bar__presence-badge--${effectivePresence.status}`">
+    <span
+      v-if="effectivePresence.label"
+      class="nexus-bar__presence-badge"
+      :class="`nexus-bar__presence-badge--${effectivePresence.status}`"
+    >
       <span class="nexus-bar__presence-badge-dot" />
       <span class="nexus-bar__presence-badge-text">{{ presenceBadgeText }}</span>
     </span>
@@ -66,7 +70,7 @@ const avatarFallback = computed(() => {
   return name.slice(0, 2).toUpperCase()
 })
 
-// 在线状态只取站点资料：博主登录后看到的与访客一致，不再因登录强制显示“在线”而与资料卡矛盾。
+// 在线状态取 useSiteInfo：手动状态类型优先，“自动”时按博主心跳；登录与否看到的一致。文案为空时不显示徽标。
 const effectivePresence = computed(() => ownerPresence.value)
 
 const avatarGlowColor = computed(() => GLOW_COLOR_MAP[effectivePresence.value.status])
@@ -78,6 +82,7 @@ const presenceBadgeText = computed(() => {
 
 const avatarLinkLabel = computed(() => {
   const { label } = effectivePresence.value
+  if (!label) return t('theme.nexus.statusBar.avatarLinkPlain', { name: displayName.value })
   const status =
     label === presenceBadgeText.value
       ? label

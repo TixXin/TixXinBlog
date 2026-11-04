@@ -10,7 +10,7 @@ import { buildNavItems, navRouteCatalog } from '../../app/features/nav/routes'
 import { buildFooterLinks, defaultQuotes } from '../../app/features/site/footer'
 import { defaultSiteSettings, presenceStatusOptions } from '../../app/features/site/settings'
 import { COLOR_MODE_LABELS, CONTENT_TRANSITION_OPTIONS } from '../../app/features/appearance/types'
-import { presenceStatusLabels } from '../../app/composables/useSiteInfo'
+import { resolveOwnerPresence } from '../../app/features/presence/ownerPresence'
 import SkipLinks from '../../app/components/layout/SkipLinks.vue'
 import ImageFailure from '../../app/components/common/ImageFailure.vue'
 import HeatmapGrid from '../../app/components/sidebar/HeatmapGrid.vue'
@@ -48,7 +48,9 @@ describe('外壳英文冒烟', () => {
     const copy = structuredClone(defaultSiteSettings)
     expect(copy.avatarAlt).toBe('Author avatar')
     expect(copy.footerLinks[0]?.label).toBe('About this site')
-    expect(presenceStatusLabels.idle).toBe('Away')
+    const translate = (key: string, params?: Record<string, unknown>) => i18n().t(key, params ?? {})
+    // 只选状态类型、不填文案时显示状态名
+    expect(resolveOwnerPresence({ presenceStatus: 'idle' }, null, 0, translate).label).toBe('Away')
     expect(presenceStatusOptions.map((option) => option.label)).toContain('Busy')
     expect(COLOR_MODE_LABELS.system).toBe('System')
     expect(CONTENT_TRANSITION_OPTIONS.find((option) => option.value === 'none')?.label).toBe('No animation')

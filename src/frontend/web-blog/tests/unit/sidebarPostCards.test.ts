@@ -269,8 +269,12 @@ describe('站点统计卡片', () => {
       }),
     )
     expect(wrapper.get('.stats-card__uptime-days').text()).toBe('0 天')
-    expect(wrapper.findAll('.stats-card__value').map((value) => value.text())).toEqual(['0', '0', '0', '0'])
-    expect(wrapper.findAll('.stats-card__label').map((label) => label.text())).toEqual(['文章', '浏览', '评论', '标签'])
+    expect(
+      wrapper.findAll('.stats-card__grid:not(.stats-card__grid--live) .stats-card__value').map((value) => value.text()),
+    ).toEqual(['0', '0', '0', '0'])
+    expect(
+      wrapper.findAll('.stats-card__grid:not(.stats-card__grid--live) .stats-card__label').map((label) => label.text()),
+    ).toEqual(['文章', '浏览', '评论', '标签'])
     expect(wrapper.findComponent({ name: 'SidebarHeatmapGrid' }).exists()).toBe(false)
   })
 
@@ -285,7 +289,9 @@ describe('站点统计卡片', () => {
     const activity = [{ date: '2026-10-18', articles: 1, comments: 2 }]
     await wrapper.setProps({ stats: { articles: 7, views: '1.2K', comments: 23, tags: 4, siteAgeDays: 365, activity } })
     expect(wrapper.get('.stats-card__uptime-days').text()).toBe('365 天')
-    expect(wrapper.findAll('.stats-card__value').map((value) => value.text())).toEqual(['7', '1.2K', '23', '4'])
+    expect(
+      wrapper.findAll('.stats-card__grid:not(.stats-card__grid--live) .stats-card__value').map((value) => value.text()),
+    ).toEqual(['7', '1.2K', '23', '4'])
     expect(wrapper.getComponent({ name: 'SidebarHeatmapGrid' }).props('activity')).toEqual(activity)
     await wrapper.setProps({ stats: zeroStats })
     expect(wrapper.findComponent({ name: 'SidebarHeatmapGrid' }).exists()).toBe(false)

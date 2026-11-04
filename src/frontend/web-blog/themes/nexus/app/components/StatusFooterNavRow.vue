@@ -26,6 +26,7 @@
         <span>{{ item.label }}</span>
       </NuxtLink>
     </nav>
+    <CommonLiveOnlineBadge class="nexus-bar__online" />
     <Transition name="nexus-progress-fade">
       <button
         v-if="showProgress"
@@ -135,6 +136,16 @@ function onProgressClick() {
   flex-shrink: 0;
   background: var(--border-soft);
   opacity: 0.8;
+}
+
+.nexus-bar__online {
+  flex-shrink: 0;
+  padding: 0 0.5rem;
+
+  // 窄屏导航已占满，隐藏在线人数
+  @media (max-width: #{$breakpoint-md - 1px}) {
+    display: none;
+  }
 }
 
 .nexus-bar__nav {

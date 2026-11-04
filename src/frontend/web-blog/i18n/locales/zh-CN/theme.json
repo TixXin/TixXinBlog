@@ -64,6 +64,7 @@
         },
         "presenceDetail": "{short}，{label}",
         "avatarLink": "返回首页，当前：{name}，状态：{status}",
+        "avatarLinkPlain": "返回首页，当前：{name}",
         "userMenu": "用户菜单：{name}",
         "profile": "个人中心",
         "managePosts": "管理文章",

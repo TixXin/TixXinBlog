@@ -189,6 +189,7 @@ exports[`冲突、待核对提交、保留副本与历史预览 1`] = `
       <!--teleport end-->
     </footer>
   </form>
+  <admin-presence-settings-stub></admin-presence-settings-stub>
   <section aria-label="站点配置冲突">
     <section class="site-preview" aria-label="最新服务器资料">
       <h2>最新服务器资料</h2>
@@ -443,6 +444,7 @@ exports[`编辑状态：资料、社交、搜索、导航、关于与预览 1`] 
       <!--teleport end-->
     </footer>
   </form>
+  <admin-presence-settings-stub></admin-presence-settings-stub>
   <!--v-if-->
   <!--v-if-->
   <section class="admin-site__history" aria-label="站点配置历史">

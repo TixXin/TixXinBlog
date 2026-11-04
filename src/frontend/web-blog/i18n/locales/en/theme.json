@@ -64,6 +64,7 @@
         },
         "presenceDetail": "{short}, {label}",
         "avatarLink": "Back to home. Current: {name}, status: {status}",
+        "avatarLinkPlain": "Back to home. Current: {name}",
         "userMenu": "User menu: {name}",
         "profile": "Profile",
         "managePosts": "Manage posts",

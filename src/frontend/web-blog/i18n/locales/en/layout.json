@@ -37,6 +37,14 @@
       "staleNotice": "Showing the last loaded or default site info."
     },
     "presence": {
+      "onlineCountLabel": "Visitors online now",
+      "onlineCount": "{count} online",
+      "lastSeenLongAgo": "Not seen for over {days} days",
+      "lastSeenDays": "Last seen {count}d ago",
+      "lastSeenHours": "Last seen {count}h ago",
+      "lastSeenMinutes": "Last seen {count}m ago",
+      "lastSeenJustNow": "Last seen just now",
+      "auto": "Automatic (based on recent activity)",
       "justNow": "just now",
       "minutesAgo": "{count} minute ago | {count} minutes ago",
       "hoursAgo": "{count} hour ago | {count} hours ago",
@@ -44,7 +52,6 @@
       "online": "Online",
       "idle": "Away",
       "busy": "Busy",
-      "unset": "No status shared",
       "auto": "Automatic (online when a status is set)"
     },
     "mobileNav": {
@@ -302,7 +309,10 @@
         "articles": "Posts",
         "views": "Views",
         "comments": "Comments",
-        "tags": "Tags"
+        "tags": "Tags",
+        "visitors": "Visitors",
+        "todayViews": "Today",
+        "totalViews": "All-time"
       },
       "filters": {
         "unavailable": "Tags and categories are unavailable right now",

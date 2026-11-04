@@ -20,6 +20,7 @@
         @error="photoFailed = true"
       />
       <span
+        v-if="ownerPresence.label"
         class="owner-profile-card__presence-dot"
         :class="`--${ownerPresence.status}`"
         :title="ownerPresence.label"
@@ -30,7 +31,7 @@
     <h2 class="owner-profile-card__name">{{ ownerCard.name }}</h2>
 
     <!-- 状态签名 -->
-    <p class="owner-profile-card__status-line">
+    <p v-if="ownerPresence.label || ownerPresence.signature" class="owner-profile-card__status-line">
       <span class="owner-profile-card__status-label">{{ ownerPresence.label }}</span>
       <span v-if="ownerPresence.signature" class="owner-profile-card__status-sep">&middot;</span>
       <span class="owner-profile-card__status-sig">{{ ownerPresence.signature }}</span>

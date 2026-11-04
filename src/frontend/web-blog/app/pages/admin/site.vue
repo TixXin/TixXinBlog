@@ -54,6 +54,7 @@
             ></AdminActionBar
           >
         </form>
+        <AdminPresenceSettings />
         <section v-if="conflict" :aria-label="t('admin-system.site.page.conflictLabel')">
           <AdminSiteSettingsPreview :value="conflict" :label="t('admin-system.site.page.latestPreview')" /><button
             type="button"
