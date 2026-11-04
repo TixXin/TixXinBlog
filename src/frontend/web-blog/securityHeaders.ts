@@ -24,5 +24,7 @@ export function securityHeaders(production: boolean): Record<string, string> {
     'X-Content-Type-Options': 'nosniff',
     'X-Frame-Options': 'DENY',
     'Referrer-Policy': 'strict-origin-when-cross-origin',
+    // 站点不使用这些浏览器能力，统一禁用；此前只由自带 Caddy 下发，面板反代与静态发布缺失。
+    'Permissions-Policy': 'camera=(), microphone=(), geolocation=(), payment=(), usb=()',
   }
 }

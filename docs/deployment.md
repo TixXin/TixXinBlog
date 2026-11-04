@@ -198,7 +198,7 @@ if (-not (Test-Path ../tixxin-private/production.env)) {
 
 API 未设置 `NODE_ENV` 时按 `production` 处理：限流生效、刷新 Cookie 带 `Secure`、日志级别缺省 `info`，且 `MEDIA_DIRECTORY` 必须是绝对路径，否则拒绝启动。镜像已设置 `NODE_ENV=production` 与 `MEDIA_DIRECTORY=/app/var/media`。只有显式的 `development`/`test` 才允许通过 `RATE_LIMIT_DISABLED=true` 关闭限流，生产忽略该开关。
 
-数据库不发布宿主端口，API 由前端同源网关访问。Caddy 转发到前端，前端再转发 `/api/v1` 到 API；版本响应头为 `X-TixXin-Release`。Caddy 在真实域名下会申请证书，正式启用前准备 DNS 和 HTTP/HTTPS 入口。隔离验证使用内部 CA，并真实校验证书，不关闭 TLS 检查或修改系统信任。
+数据库不发布宿主端口，API 由前端同源网关访问。Caddy 转发到前端，前端再转发 `/api/v1` 到 API；前端为页面与接口响应下发版本头 `X-TixXin-Release`（取自 `RELEASE_VERSION`），验收以它核对实际运行的版本。Caddy 在真实域名下会申请证书，正式启用前准备 DNS 和 HTTP/HTTPS 入口。隔离验证使用内部 CA，并真实校验证书，不关闭 TLS 检查或修改系统信任。
 
 #### 可信代理、读取配额与媒体缓存
 
@@ -409,7 +409,7 @@ docker compose --env-file $releaseEnv -f compose.production.yaml --profile worke
 
 每个 API 响应带 `X-Request-Id`，与响应体 `traceId`、访问日志 `req.id` 及管理审计的 trace 编号一致；上游 `x-trace-id` 仅接受 UUID 或不超过 64 位的 `[A-Za-z0-9._-]`，否则重新生成。未知异常和 5xx 在服务端日志记录堆栈与 `traceId`，客户端只收到通用提示。API 收到 `SIGTERM`/`SIGINT` 后 `/ready` 立即返回 503，再继续原有关闭流程；启动失败记录错误并以非零码退出。
 
-Caddy 入口为响应追加 `Strict-Transport-Security: max-age=86400`（不含子域和 preload）与禁用摄像头、麦克风、定位、支付和 USB 的 `Permissions-Policy`；API 不返回 `X-Powered-By`。
+Caddy 入口为响应追加 `Strict-Transport-Security: max-age=86400`（不含子域和 preload）；禁用摄像头、麦克风、定位、支付和 USB 的 `Permissions-Policy` 与 CSP 等安全头由前端下发，静态发布同样写入；API 不返回 `X-Powered-By`。
 
 HSTS 生效后，访客浏览器在有效期内只用 HTTPS 访问本站，证书过期或配置错误时显示不可绕过的错误页，也无法临时退回 HTTP；撤销需改为 `max-age=0` 且只对再次通过 HTTPS 访问的浏览器生效。因此先用一天观察证书自动续期与迁移流程，确认稳定（建议至少一至两周、经历一次续期）后再在 `deploy/Caddyfile` 中改为 `max-age=31536000`。只有确认所有子域长期支持 HTTPS 时才考虑 `includeSubDomains`；`preload` 撤销需等待浏览器版本更新，个人站点一般不需要。
 

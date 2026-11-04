@@ -280,6 +280,8 @@ export default {
     apiBaseUrl: '',
     // 仅信任实际前置代理的地址/CIDR，默认忽略访客提交的转发头。
     trustedProxyCidrs: '',
+    // 应用版本，生产编排通过 NUXT_RELEASE_VERSION 注入，用作 X-TixXin-Release 响应头；留空不下发。
+    releaseVersion: '',
     public: {
       // 公开站点地址，部署时由 NUXT_PUBLIC_SITE_URL 注入；默认值仅供本机开发。
       siteUrl: process.env.NUXT_PUBLIC_SITE_URL || 'http://localhost:3456',

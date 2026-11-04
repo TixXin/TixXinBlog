@@ -321,7 +321,7 @@ try {
   await writeEnvironment()
   await writeFile(
     join(directory, 'Caddyfile'),
-    `https://localhost {\n tls internal\n header X-TixXin-Release {$RELEASE_VERSION}\n reverse_proxy frontend:3000\n}\nhttp://localhost {\n redir ${origin}{uri} 308\n}\n`,
+    `https://localhost {\n tls internal\n reverse_proxy frontend:3000\n}\nhttp://localhost {\n redir ${origin}{uri} 308\n}\n`,
   )
   await writeOverride()
   await stage('构建四类生产镜像', async () => {

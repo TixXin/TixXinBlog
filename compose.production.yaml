@@ -113,6 +113,8 @@ services:
       NUXT_API_BASE_URL: http://backend:3000/api/v1
       # 同 API：未设置或为空时信任项目内部网络，填写了具体地址时原样生效。
       NUXT_TRUSTED_PROXY_CIDRS: ${WEB_TRUSTED_PROXY_CIDRS:-${TIXXIN_NETWORK_SUBNET:-172.31.250.0/24}}
+      # 应用版本响应头 X-TixXin-Release 由前端下发，供安装、升级与 status 验收。
+      NUXT_RELEASE_VERSION: ${RELEASE_VERSION:?请配置版本}
       NUXT_PUBLIC_API_BASE_URL: /api/v1
       NUXT_PUBLIC_SITE_URL: ${SITE_URL:?请配置 HTTPS 站点地址}
       NUXT_PUBLIC_USE_MOCK_REPO: 'false'
@@ -134,7 +136,6 @@ services:
     networks: [app]
     environment:
       SITE_HOST: ${SITE_HOST:?请配置站点域名}
-      RELEASE_VERSION: ${RELEASE_VERSION}
     ports:
       - '${HTTPS_BIND_ADDRESS:-127.0.0.1}:${HTTPS_PORT:-443}:443'
       - '${HTTPS_BIND_ADDRESS:-127.0.0.1}:${HTTP_PORT:-80}:80'

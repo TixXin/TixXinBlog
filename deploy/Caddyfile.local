@@ -11,10 +11,6 @@
 localhost {
   tls internal
   encode zstd gzip
-  header {
-    X-TixXin-Release {$RELEASE_VERSION}
-    Permissions-Policy "camera=(), microphone=(), geolocation=(), payment=(), usb=()"
-  }
   reverse_proxy frontend:3000 {
     # 与正式入口一致：重建地址，不继承请求中伪造的代理链。
     header_up X-Forwarded-For {http.request.remote.host}
