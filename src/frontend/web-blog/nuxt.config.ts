@@ -10,6 +10,7 @@ import auroraHostConfig from './themes/aurora/theme.config'
 import dockHostConfig from './themes/dock/theme.config'
 import { readFileSync, readdirSync } from 'node:fs'
 import { securityHeaders } from './securityHeaders'
+import { chunkReportPlugin, clientRolldownOutput } from './clientChunking'
 import { SSR_CACHED_PAGES } from './server/utils/ssrCacheRoutes'
 import { DICTIONARY_DOMAINS, LOCALE_COOKIE_KEY, resolveDefaultLocale } from './i18n/localeOptions'
 
@@ -415,6 +416,11 @@ export default {
     build: {
       commonjsOptions: { include: [/node_modules/, /subscription-domain/] },
     },
+    // 生产客户端分块合并（规则与取舍见 clientChunking.ts）；dev 不打包，SSR 构建不受影响
+    environments: {
+      client: { build: { rolldownOptions: { output: clientRolldownOutput() } } },
+    },
+    plugins: process.env.CHUNK_REPORT ? [chunkReportPlugin(process.env.CHUNK_REPORT)] : [],
     css: {
       preprocessorOptions: {
         scss: {
