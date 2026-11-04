@@ -1,10 +1,11 @@
-<!-- @file ArticleStatsBar.vue @description 文章详情页阅读量、点赞、收藏、评论计数与分享按钮组 -->
+<!-- @file ArticleStatsBar.vue @description 文章详情页阅读量、正在阅读、点赞、收藏、评论计数与分享按钮组 -->
 <template>
   <div class="article-page__stats">
     <span v-if="interactive" class="article-page__stat">
       <Icon name="lucide:eye" size="14" />
       {{ formatCount(views) }}
     </span>
+    <ArticleReaders v-if="interactive" class="article-page__stat" />
     <button
       v-if="interactive"
       type="button"

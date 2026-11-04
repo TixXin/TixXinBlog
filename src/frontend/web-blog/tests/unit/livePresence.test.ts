@@ -1,10 +1,11 @@
-/** @file livePresence.test.ts @description 博主在线状态展示规则、心跳循环（首次计浏览、定时、后台暂停、跳转、令牌）与站点统计卡访问统计行 */
+/** @file livePresence.test.ts @description 博主在线状态展示规则、心跳循环（首次计浏览、定时、后台暂停、跳转、令牌、离开上报、往返缓存恢复）、正在阅读规则与站点统计卡访问统计行 */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { mountSuspended } from '@nuxt/test-utils/runtime'
 import { ref } from 'vue'
 import { lastSeenLabel, resolveOwnerPresence } from '../../app/features/presence/ownerPresence'
 import { HEARTBEAT_MS, startLivePresence, useLivePresenceState } from '../../app/composables/useLivePresence'
 import type { LivePresence } from '../../app/features/presence/types'
+import { readersOnPage } from '../../app/features/presence/readers'
 import SiteStatsCard from '../../app/components/sidebar/SiteStatsCard.vue'
 
 const zh: Record<string, string> = {
@@ -108,7 +109,7 @@ describe('心跳循环', () => {
     expect(fetcher.mock.calls[0]![0]).toBe('/api/v1/presence')
     expect(bodies(fetcher)[0]).toMatchObject({ path: '/', view: true })
     expect(bodies(fetcher)[0].session).toMatch(/^[a-f0-9]{32}$/)
-    expect(state.value).toEqual(result)
+    expect(state.value).toEqual({ ...result, path: '/' })
     await vi.advanceTimersByTimeAsync(HEARTBEAT_MS)
     expect(fetcher).toHaveBeenCalledTimes(2)
     expect(bodies(fetcher)[1]).toMatchObject({ view: false })
@@ -152,10 +153,57 @@ describe('心跳循环', () => {
     await vi.advanceTimersByTimeAsync(0)
     fetcher.mockRejectedValueOnce(new Error('network'))
     await vi.advanceTimersByTimeAsync(HEARTBEAT_MS)
-    expect(state.value).toEqual(result)
+    expect(state.value).toEqual({ ...result, path: '/' })
     await vi.advanceTimersByTimeAsync(HEARTBEAT_MS)
     expect(fetcher).toHaveBeenCalledTimes(3)
     handle.stop()
+  })
+
+  it('页面关闭时用 sendBeacon 上报离开并停止定时；从往返缓存恢复时立即重新上线', async () => {
+    const beacon = vi.fn().mockReturnValue(true)
+    Object.defineProperty(navigator, 'sendBeacon', { value: beacon, configurable: true })
+    const { fetcher, handle } = setup()
+    await vi.advanceTimersByTimeAsync(0)
+    const session = bodies(fetcher)[0].session
+    window.dispatchEvent(new Event('pagehide'))
+    expect(beacon).toHaveBeenCalledTimes(1)
+    expect(beacon.mock.calls[0]![0]).toBe('/api/v1/presence/leave')
+    expect(JSON.parse(await (beacon.mock.calls[0]![1] as Blob).text())).toEqual({ session })
+    await vi.advanceTimersByTimeAsync(HEARTBEAT_MS * 2)
+    expect(fetcher).toHaveBeenCalledTimes(1)
+    const restored = new Event('pageshow') as PageTransitionEvent
+    Object.defineProperty(restored, 'persisted', { value: true })
+    window.dispatchEvent(restored)
+    // 恢复时 visibilitychange 往往紧接着触发，1 秒内不重复补发
+    document.dispatchEvent(new Event('visibilitychange'))
+    await vi.advanceTimersByTimeAsync(0)
+    expect(fetcher).toHaveBeenCalledTimes(2)
+    expect(bodies(fetcher)[1].session).toBe(session)
+    await vi.advanceTimersByTimeAsync(HEARTBEAT_MS)
+    expect(fetcher).toHaveBeenCalledTimes(3)
+    handle.stop()
+    window.dispatchEvent(new Event('pagehide'))
+    expect(beacon).toHaveBeenCalledTimes(1)
+  })
+})
+
+describe('正在阅读', () => {
+  const live = (readers: number | null, path = '/articles/1'): LivePresence => ({
+    online: 3,
+    owner: null,
+    stats: null,
+    readers,
+    path,
+  })
+
+  it('结果属于当前页面且至少两人时显示人数，只有自己、关闭统计或换页后的旧结果不显示', () => {
+    expect(readersOnPage(live(3), '/articles/1')).toBe(3)
+    expect(readersOnPage(live(2, '/articles/1/'), '/articles/1')).toBe(2)
+    expect(readersOnPage(live(1), '/articles/1')).toBeNull()
+    expect(readersOnPage(live(null), '/articles/1')).toBeNull()
+    expect(readersOnPage(live(3), '/articles/2')).toBeNull()
+    expect(readersOnPage({ online: 1, owner: null, stats: null }, '/articles/1')).toBeNull()
+    expect(readersOnPage(null, '/articles/1')).toBeNull()
   })
 })
 

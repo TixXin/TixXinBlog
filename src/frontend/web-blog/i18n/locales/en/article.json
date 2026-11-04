@@ -108,7 +108,9 @@
       "breadcrumbHome": "Home",
       "notFound": "Post not found",
       "loadFailed": "The post failed to load. Please try again later.",
-      "defaultExcerpt": "Read posts on this site"
+      "defaultExcerpt": "Read posts on this site",
+      "readers": "{count} reading now",
+      "readersLabel": "People reading this post right now, including you"
     },
     "interaction": {
       "viewSyncFailed": "The view count hasn't synced yet. You can retry.",

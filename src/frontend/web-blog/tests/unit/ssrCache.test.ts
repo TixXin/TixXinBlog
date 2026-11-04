@@ -104,6 +104,7 @@ describe('purgeSsrCache', () => {
   it('实时在线心跳不清空缓存；后台开关保存与相似路径照常清空', () => {
     expect(shouldPurgeSsrCache('POST', '/api/v1/presence')).toBe(false)
     expect(shouldPurgeSsrCache('POST', '/api/v1/presence/')).toBe(false)
+    expect(shouldPurgeSsrCache('POST', '/api/v1/presence/leave')).toBe(false)
     expect(shouldPurgeSsrCache('PATCH', '/api/v1/admin/presence')).toBe(true)
     expect(shouldPurgeSsrCache('POST', '/api/v1/presence-other')).toBe(true)
   })

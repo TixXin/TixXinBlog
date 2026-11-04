@@ -1,4 +1,4 @@
-/** @file live-presence.spec.ts @description 隔离库中验收实时在线与访问统计：底栏在线人数、统计卡访问统计、博主上线后访客看到在线、三主题页脚与公开统计开关 */
+/** @file live-presence.spec.ts @description 隔离库中验收实时在线与访问统计：底栏在线人数、统计卡访问统计、博主上线后访客看到在线、三主题页脚、文章页正在阅读与离开上报、公开统计开关 */
 import { expect, test } from '@playwright/test'
 import type { Browser, Page } from '@playwright/test'
 
@@ -66,6 +66,33 @@ for (const theme of ['aurora', 'dock'] as const) {
     await page.context().close()
   })
 }
+
+test('同一篇文章有两人时三主题都显示正在阅读；只有自己时不显示；离开页面后立即移出', async ({ browser, baseURL }) => {
+  const alone = await visitor(browser, baseURL!)
+  const posts = await alone.request.get('/api/v1/posts?page=1&pageSize=1')
+  const id = ((await posts.json()).data as { items: { id: number }[] }).items[0]!.id
+  const path = `/articles/${id}`
+  const readers = async (page: Page) =>
+    (await (await page.request.get(`/api/v1/presence/readers?path=${encodeURIComponent(path)}`)).json()).data.readers
+
+  const self = await openWithHeartbeat(alone, path)
+  expect(self.readers).toBeGreaterThanOrEqual(1)
+  if (self.readers === 1) await expect(alone.locator('.article-readers')).toHaveCount(0)
+
+  for (const theme of ['nexus', 'aurora', 'dock'] as const) {
+    const other = await visitor(browser, baseURL!, theme)
+    const data = await openWithHeartbeat(other, path)
+    expect(data.readers).toBeGreaterThanOrEqual(2)
+    await expect(other.locator('.article-readers')).toHaveText(`${data.readers} 人正在阅读`)
+    // 离开页面触发 pagehide，sendBeacon 上报离开，人数立即回落，不等 90 秒窗口。
+    // 跳到空白页而不是关闭页面：WebKit 驱动关闭页面时不派发 pagehide，空白页也不会再发心跳。
+    const before = await readers(alone)
+    await other.goto('about:blank')
+    await expect.poll(() => readers(alone), { timeout: 10_000 }).toBe(before - 1)
+    await other.context().close()
+  }
+  await alone.context().close()
+})
 
 test('后台关闭公开统计后底栏与统计卡隐藏，重新开启后恢复', async ({ browser, baseURL, request }) => {
   const loginResponse = await request.post('/api/v1/auth/login', {

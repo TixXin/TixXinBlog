@@ -1,7 +1,8 @@
 /**
  * @file useLivePresence.ts
  * @description 实时在线心跳：每个标签页约 30 秒向 /presence 发送一次，页面不可见时暂停、回到前台立即补发；
- *   首次进入页面与站内跳转后的第一次心跳带 view 计浏览。结果存共享状态，SSR 与水合首帧为 null。
+ *   首次进入页面与站内跳转后的第一次心跳带 view 计浏览。页面关闭（pagehide）时用 sendBeacon 上报离开，
+ *   从往返缓存恢复时重新上线。结果连同对应路径存共享状态，SSR 与水合首帧为 null。
  *   访客统计用独立的本地匿名 ID（blog-reader-id），不生成互动用的访客 ID，不改变“本设备是否有互动记录”的判断。
  */
 import type { LivePresence } from '~/features/presence/types'
@@ -49,13 +50,14 @@ export interface LivePresenceOptions {
 async function requestPresence(
   options: LivePresenceOptions,
   ids: { session: () => string; reader: () => string },
+  path: string,
   view: boolean,
 ): Promise<LivePresence | null> {
   const token = options.token()
   try {
     const result = await (options.fetcher ?? $fetch)<{ data: LivePresence }>(`${options.apiBase}/presence`, {
       method: 'POST',
-      body: { session: ids.session(), path: options.path(), view },
+      body: { session: ids.session(), path, view },
       headers: { 'X-Visitor-Id': ids.reader(), ...(token ? { Authorization: `Bearer ${token}` } : {}) },
       timeout: 10000,
       retry: 0,
@@ -63,6 +65,33 @@ async function requestPresence(
     return result.data
   } catch {
     return null
+  }
+}
+
+/** 页面关闭时用 sendBeacon 上报离开；尽力而为，失败时由后端 90 秒窗口兜底 */
+function sendLeave(apiBase: string, session: string) {
+  const body = new Blob([JSON.stringify({ session })], { type: 'application/json' })
+  try {
+    navigator.sendBeacon?.(`${apiBase}/presence/leave`, body)
+  } catch {
+    /* 浏览器拒绝排队时忽略。 */
+  }
+}
+
+/** 监听可见性与页面生命周期，返回取消监听的函数 */
+function watchPage(handlers: { hidden: () => void; visible: () => void; leave: () => void }) {
+  const onVisibility = () => (document.visibilityState === 'hidden' ? handlers.hidden() : handlers.visible())
+  // 进入往返缓存后恢复时 persisted 为 true，需要重新上线。
+  const onShow = (event: PageTransitionEvent) => {
+    if (event.persisted && document.visibilityState !== 'hidden') handlers.visible()
+  }
+  document.addEventListener('visibilitychange', onVisibility)
+  window.addEventListener('pagehide', handlers.leave)
+  window.addEventListener('pageshow', onShow)
+  return () => {
+    document.removeEventListener('visibilitychange', onVisibility)
+    window.removeEventListener('pagehide', handlers.leave)
+    window.removeEventListener('pageshow', onShow)
   }
 }
 
@@ -77,33 +106,40 @@ export function startLivePresence(state: Ref<LivePresence | null>, options: Live
   let timer: ReturnType<typeof setTimeout> | null = null
   let pendingView = true
   let stopped = false
+  let lastSentAt = -Infinity
 
   async function send() {
     const view = pendingView
     pendingView = false
-    const result = await requestPresence(options, ids, view)
-    if (result && !stopped) state.value = result
+    lastSentAt = Date.now()
+    const path = options.path()
+    const result = await requestPresence(options, ids, path, view)
+    if (result && !stopped) state.value = { ...result, path }
+  }
+
+  function pause() {
+    if (timer) clearTimeout(timer)
+    timer = null
   }
 
   function schedule() {
-    if (timer) clearTimeout(timer)
-    timer = null
+    pause()
     if (stopped || document.visibilityState === 'hidden') return
     timer = setTimeout(() => {
       void send().finally(schedule)
     }, HEARTBEAT_MS)
   }
 
-  function onVisibility() {
-    if (document.visibilityState === 'hidden') {
-      if (timer) clearTimeout(timer)
-      timer = null
-      return
-    }
-    void send().finally(schedule)
-  }
-
-  document.addEventListener('visibilitychange', onVisibility)
+  const unwatch = watchPage({
+    hidden: pause,
+    // 回到前台与从往返缓存恢复常常接连触发，1 秒内只补发一次。
+    visible: () => (Date.now() - lastSentAt < 1000 ? schedule() : void send().finally(schedule)),
+    leave: () => {
+      pause()
+      lastSentAt = -Infinity
+      sendLeave(options.apiBase, ids.session())
+    },
+  })
   if (document.visibilityState !== 'hidden') void send().finally(schedule)
 
   return {
@@ -114,8 +150,8 @@ export function startLivePresence(state: Ref<LivePresence | null>, options: Live
     },
     stop() {
       stopped = true
-      if (timer) clearTimeout(timer)
-      document.removeEventListener('visibilitychange', onVisibility)
+      pause()
+      unwatch()
     },
   }
 }

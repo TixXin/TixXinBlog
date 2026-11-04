@@ -26,4 +26,8 @@ export interface LivePresence {
   owner: LiveOwner | null
   /** 访问统计；后台关闭公开统计时为 null */
   stats: LiveStats | null
+  /** 与本次心跳同一页面的在线会话数（含自己）；关闭公开统计或页面不计浏览时为 null */
+  readers?: number | null
+  /** 前端记录：这次结果对应的页面路径，用于判断 readers 是否属于当前页面 */
+  path?: string
 }

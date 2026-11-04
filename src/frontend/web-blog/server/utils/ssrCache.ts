@@ -14,8 +14,8 @@ export function shouldPurgeSsrCache(method: string, path: string): boolean {
   if (!pathname.startsWith('/api/v1/')) return false
   // 客户端错误上报只记录日志，不改变公开页面内容。
   if (method === 'POST' && /^\/api\/v1\/client-errors\/?$/.test(pathname)) return false
-  // 实时在线心跳约 30 秒一次，只更新运行统计，不改变页面内容；清缓存会让 SSR 缓存形同虚设。
-  if (method === 'POST' && /^\/api\/v1\/presence\/?$/.test(pathname)) return false
+  // 实时在线心跳约 30 秒一次、离开上报随页面关闭发出，只更新运行统计，不改变页面内容；清缓存会让 SSR 缓存形同虚设。
+  if (method === 'POST' && /^\/api\/v1\/presence(?:\/leave)?\/?$/.test(pathname)) return false
   return !IGNORED.some((pattern) => pattern.test(pathname))
 }
 

@@ -108,7 +108,9 @@
       "breadcrumbHome": "首页",
       "notFound": "文章不存在",
       "loadFailed": "文章加载失败，请稍后重试",
-      "defaultExcerpt": "阅读本站的文章"
+      "defaultExcerpt": "阅读本站的文章",
+      "readers": "{count} 人正在阅读",
+      "readersLabel": "此刻同时在看这篇文章的人数（含你）"
     },
     "interaction": {
       "viewSyncFailed": "浏览计数暂未同步，可以重试",
