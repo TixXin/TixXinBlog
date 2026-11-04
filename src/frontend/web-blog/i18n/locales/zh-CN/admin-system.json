@@ -254,7 +254,9 @@
         "historicalPreview": "历史版本 {revision} 预览",
         "loadHistorical": "载入历史资料编辑",
         "restoreHistorical": "恢复此版本到服务器",
-        "extrasInvalid": "导航与页脚有需要修改的输入，请按提示修正后再保存"
+        "extrasInvalid": "导航与页脚有需要修改的输入，请按提示修正后再保存",
+        "presenceExpiresHint": "到期后状态类型与状态文案失效，回到自动状态；签名保留。留空为长期有效。",
+        "presenceExpiresClear": "长期有效"
       },
       "editor": {
         "fields": {
@@ -284,7 +286,8 @@
           "aboutOrder": "关于栏目顺序",
           "aboutSection": "{section}栏目",
           "fallback": "站点资料",
-          "separator": "、"
+          "separator": "、",
+          "presenceExpiresAt": "状态有效期至"
         },
         "recoveryLocked": "原恢复副本格式不完整，已保留；当前新输入无法写入恢复副本，请先保留当前页面。",
         "recoverySaveFailed": "恢复副本无法保存，请保留当前页面。",
@@ -937,7 +940,8 @@
       "lastSeen": "最后在线：{time}",
       "neverSeen": "尚无在线记录",
       "loadFailed": "无法读取设置，请刷新重试",
-      "saveFailed": "保存失败，已恢复原设置"
+      "saveFailed": "保存失败，已恢复原设置",
+      "invisible": "隐身：照常记录我的活动，但对访客显示离线，也不公开最后在线时间"
     },
     "traffic": {
       "title": "访问统计",

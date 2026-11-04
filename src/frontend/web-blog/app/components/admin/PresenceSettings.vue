@@ -1,6 +1,6 @@
 <!--
   @file PresenceSettings.vue
-  @description 后台“实时在线与访问统计”开关：切换即保存（独立于站点资料版本），显示博主最后在线时间
+  @description 后台“实时在线与访问统计”开关（自动在线、公开统计、隐身）：切换即保存（独立于站点资料版本），显示博主最后在线时间
 -->
 
 <template>
@@ -23,6 +23,14 @@
       />
       {{ t('admin-system.presence.publicStats') }}
     </label>
+    <label class="presence-settings__toggle">
+      <input
+        type="checkbox"
+        :checked="settings.invisible"
+        @change="save({ invisible: ($event.target as HTMLInputElement).checked })"
+      />
+      {{ t('admin-system.presence.invisible') }}
+    </label>
     <p class="presence-settings__meta">
       {{
         settings.ownerLastSeenAt
@@ -40,12 +48,18 @@ import { formatDateTime } from '~/utils/format'
 interface PresenceSettingsData {
   autoPresence: boolean
   publicStats: boolean
+  invisible: boolean
   ownerLastSeenAt: string | null
 }
 
 const { t } = useI18n()
 const adminApi = useAdminApi()
-const settings = ref<PresenceSettingsData>({ autoPresence: true, publicStats: true, ownerLastSeenAt: null })
+const settings = ref<PresenceSettingsData>({
+  autoPresence: true,
+  publicStats: true,
+  invisible: false,
+  ownerLastSeenAt: null,
+})
 const loaded = ref(false)
 const pending = ref(false)
 const error = ref('')
@@ -60,7 +74,7 @@ async function load() {
   }
 }
 
-async function save(patch: Partial<Pick<PresenceSettingsData, 'autoPresence' | 'publicStats'>>) {
+async function save(patch: Partial<Pick<PresenceSettingsData, 'autoPresence' | 'publicStats' | 'invisible'>>) {
   const previous = settings.value
   settings.value = { ...previous, ...patch }
   pending.value = true

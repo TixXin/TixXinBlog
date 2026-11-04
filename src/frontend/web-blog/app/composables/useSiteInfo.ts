@@ -23,6 +23,7 @@ import {
 } from '~/features/site/footer'
 import { currentTranslate, type Translate } from '~/utils/format'
 import { resolveOwnerPresence } from '~/features/presence/ownerPresence'
+import { activeManualPresence } from '~/features/presence/manualExpiry'
 
 /** 将 ISO 时间字符串转为相对时间描述 */
 function formatDuration(since: string, t: Translate): string {
@@ -35,6 +36,11 @@ function formatDuration(since: string, t: Translate): string {
   if (hours < 24) return t('layout.presence.hoursAgo', { count: hours })
   const days = Math.floor(hours / 24)
   return t('layout.presence.daysAgo', { count: days })
+}
+
+/** 判断手动状态是否到期所用的时钟（毫秒）；只在到期时刻推进，避免频繁重算 */
+export function usePresenceClock() {
+  return useState<number>('presence-clock', () => Date.now())
 }
 
 /** 获取站点页脚信息 */
@@ -62,8 +68,10 @@ export function useSiteInfo() {
   // 在线状态：手动状态类型优先；“自动”时按博主心跳显示在线或“N 前在线”；没有可展示内容时文案为空，界面隐藏状态行。
   // 心跳结果只在客户端出现，SSR 与水合首帧按站点资料计算，二者一致。
   const live = useLivePresenceState()
+  // 手动状态的到期按共享时钟判断：SSR 写入、水合沿用同一值，到期时由 presence-expiry 插件推进，不会水合不一致。
+  const clock = usePresenceClock()
   const ownerPresence = computed<OwnerPresenceInfo>(() =>
-    resolveOwnerPresence(settings.value, live.value?.owner ?? null, Date.now(), t),
+    resolveOwnerPresence(activeManualPresence(settings.value, clock.value), live.value?.owner ?? null, Date.now(), t),
   )
   const ownerCard = computed<OwnerCardInfo>(() => ({
     name: settings.value.ownerName,

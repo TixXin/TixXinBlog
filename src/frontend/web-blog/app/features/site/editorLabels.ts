@@ -21,6 +21,7 @@ const FIELDS = [
   'presenceSignature',
   'launchedAt',
   'presenceStatus',
+  'presenceExpiresAt',
   'navigation',
   'footerLinks',
   'quotes',

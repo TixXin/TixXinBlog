@@ -15,6 +15,8 @@ export interface ManualPresence {
   presenceSignature?: string
   /** 空串表示“自动” */
   presenceStatus?: '' | 'online' | 'idle' | 'busy'
+  /** 手动状态的到期时间（ISO），空串为长期有效；到期规则见 manualExpiry.ts */
+  presenceExpiresAt?: string
 }
 
 /** “N 分钟/小时/天前在线”；超过 30 天为“超过 30 天没在线”；从未出现返回空串 */

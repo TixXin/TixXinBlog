@@ -1,4 +1,4 @@
-/** @file live-presence.spec.ts @description 隔离库中验收实时在线与访问统计：底栏在线人数、统计卡访问统计、博主上线后访客看到在线、三主题页脚、文章页正在阅读与离开上报、公开统计开关 */
+/** @file live-presence.spec.ts @description 隔离库中验收实时在线与访问统计：底栏在线人数、统计卡访问统计、博主上线后访客看到在线、三主题页脚、文章页正在阅读与离开上报、手动状态到期与隐身、公开统计开关 */
 import { expect, test } from '@playwright/test'
 import type { Browser, Page } from '@playwright/test'
 
@@ -113,5 +113,56 @@ test('后台关闭公开统计后底栏与统计卡隐藏，重新开启后恢�
     await page.context().close()
   } finally {
     expect((await save(true)).status()).toBe(200)
+  }
+})
+
+test('手动状态到期后不刷新页面也回到自动状态，签名保留；隐身时博主在线访客也看不到状态', async ({
+  browser,
+  baseURL,
+  request,
+}) => {
+  const loginResponse = await request.post('/api/v1/auth/login', {
+    data: { username: process.env.E2E_USERNAME, password: process.env.E2E_PASSWORD },
+  })
+  const token = (await loginResponse.json()).data.accessToken
+  const headers = { Authorization: `Bearer ${token}` }
+  const saveSite = async (patch: Record<string, unknown>) => {
+    const current = (await (await request.get('/api/v1/admin/site', { headers })).json()).data
+    const { updatedAt: _updatedAt, announcementUpdatedAt: _announcementUpdatedAt, ...values } = current
+    const response = await request.patch('/api/v1/admin/site', { headers, data: { ...values, ...patch } })
+    expect(response.status(), await response.text()).toBe(200)
+  }
+  try {
+    await saveSite({
+      presenceStatus: 'busy',
+      presenceLabel: '出门了',
+      presenceSignature: '晚点回复',
+      presenceExpiresAt: new Date(Date.now() + 15_000).toISOString(),
+    })
+    const page = await visitor(browser, baseURL!)
+    await page.goto('/')
+    const card = page.locator('.owner-profile-card')
+    await expect(card.locator('.owner-profile-card__status-label')).toHaveText('出门了')
+    // 到期时刻由前端定时器推进，不刷新页面状态文案自动消失，签名仍在。
+    await expect(card).not.toContainText('出门了', { timeout: 40_000 })
+    await expect(card).toContainText('晚点回复')
+    await page.context().close()
+
+    // 隐身：博主心跳照常记录，但对访客返回离线且不带最后在线时间
+    expect((await request.patch('/api/v1/admin/presence', { headers, data: { invisible: true } })).status()).toBe(200)
+    const owner = await request.post('/api/v1/presence', {
+      headers: { ...headers, 'User-Agent': DESKTOP },
+      data: { session: 'a'.repeat(32), path: '/' },
+    })
+    expect((await owner.json()).data.owner).toEqual({ status: 'away', lastSeenAt: null })
+    await saveSite({ presenceStatus: '', presenceLabel: '', presenceSignature: '', presenceExpiresAt: '' })
+    const hidden = await visitor(browser, baseURL!)
+    const data = await openWithHeartbeat(hidden, '/')
+    expect(data.owner).toEqual({ status: 'away', lastSeenAt: null })
+    await expect(hidden.locator('.owner-profile-card__status-line')).toHaveCount(0)
+    await hidden.context().close()
+  } finally {
+    await request.patch('/api/v1/admin/presence', { headers, data: { invisible: false } })
+    await saveSite({ presenceStatus: '', presenceLabel: '', presenceSignature: '', presenceExpiresAt: '' })
   }
 })

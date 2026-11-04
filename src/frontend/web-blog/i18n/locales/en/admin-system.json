@@ -254,7 +254,9 @@
         "historicalPreview": "Preview of revision {revision}",
         "loadHistorical": "Load into editor",
         "restoreHistorical": "Restore this revision on server",
-        "extrasInvalid": "Some navigation and footer fields need attention. Fix them as indicated and save again."
+        "extrasInvalid": "Some navigation and footer fields need attention. Fix them as indicated and save again.",
+        "presenceExpiresHint": "When it expires, the status type and text are dropped and the automatic status returns; the signature stays. Leave empty to keep it indefinitely.",
+        "presenceExpiresClear": "No expiry"
       },
       "editor": {
         "fields": {
@@ -284,7 +286,8 @@
           "aboutOrder": "About section order",
           "aboutSection": "{section} section",
           "fallback": "Site profile",
-          "separator": ", "
+          "separator": ", ",
+          "presenceExpiresAt": "Status expires at"
         },
         "recoveryLocked": "The existing recovery copy is incomplete and has been kept; new input can't be written to it. Keep this page open for now.",
         "recoverySaveFailed": "Couldn't save a recovery copy. Keep this page open.",
@@ -937,7 +940,8 @@
       "lastSeen": "Last seen: {time}",
       "neverSeen": "No activity recorded yet",
       "loadFailed": "Could not load settings. Refresh and try again.",
-      "saveFailed": "Could not save. The previous setting was restored."
+      "saveFailed": "Could not save. The previous setting was restored.",
+      "invisible": "Invisible: keep recording my activity, but show me as offline to visitors and hide my last-seen time"
     },
     "traffic": {
       "title": "Traffic",

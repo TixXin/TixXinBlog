@@ -29,6 +29,8 @@ export interface SiteSettingsData {
   launchedAt: string
   /** 状态类型：空串时有状态文案即按在线展示；idle 为离开，busy 为忙碌 */
   presenceStatus: PresenceStatusSetting
+  /** 手动状态（状态类型与状态文案）的到期时间，UTC 的 ISO 字符串；空串表示长期有效，签名不受影响 */
+  presenceExpiresAt: string
   /** 导航：内置模块显隐与顺序，以及少量外链 */
   navigation: SiteNavEntry[]
   /** 页脚链接 */
@@ -67,6 +69,7 @@ export const defaultSiteSettings: SiteSettingsData = {
   presenceSignature: '',
   launchedAt: '',
   presenceStatus: '',
+  presenceExpiresAt: '',
   navigation: defaultNavigation(),
   get footerLinks() {
     return defaultFooterLinks()

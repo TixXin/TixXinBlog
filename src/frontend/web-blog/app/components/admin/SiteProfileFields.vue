@@ -1,6 +1,6 @@
 <!--
   @file SiteProfileFields.vue
-  @description 站点设置的公开资料：站名、简介、博主身份、头像、在线状态与建站日期；头像可从媒体库选择
+  @description 站点设置的公开资料：站名、简介、博主身份、头像、在线状态（含到期时间）与建站日期；头像可从媒体库选择
 -->
 <template>
   <fieldset class="admin-site__grid" :disabled="disabled">
@@ -46,6 +46,14 @@
       </select></label
     >
     <label
+      >{{ t('admin-system.site.editor.fields.presenceExpiresAt')
+      }}<input v-model="expiresLocal" type="datetime-local" :aria-describedby="expiresHintId" />
+      <small :id="expiresHintId" class="admin-site__hint">{{ t('admin-system.site.page.presenceExpiresHint') }}</small>
+      <button v-if="draft.presenceExpiresAt" type="button" class="admin-site__pick" @click="expiresLocal = ''">
+        {{ t('admin-system.site.page.presenceExpiresClear') }}
+      </button></label
+    >
+    <label
       >{{ t('admin-system.site.editor.fields.launchedAt')
       }}<CommonDatePicker
         v-model="draft.launchedAt"
@@ -56,11 +64,18 @@
 </template>
 <script setup lang="ts">
 import { presenceStatusOptions, type SiteSettingsData } from '~/features/site/settings'
+import { fromLocalDateTimeInput, toLocalDateTimeInput } from '~/features/presence/manualExpiry'
 
 defineProps<{ disabled: boolean }>()
 const draft = defineModel<SiteSettingsData>({ required: true })
 const emit = defineEmits<{ pick: [] }>()
 const { t } = useI18n()
+const expiresHintId = useId()
+// 输入框按本机时区显示与编辑，保存为 UTC 的 ISO 字符串；清空表示长期有效。
+const expiresLocal = computed({
+  get: () => toLocalDateTimeInput(draft.value.presenceExpiresAt ?? ''),
+  set: (value: string) => (draft.value.presenceExpiresAt = fromLocalDateTimeInput(value)),
+})
 </script>
 <style scoped lang="scss">
 @use '~/assets/styles/admin-site' as site;
