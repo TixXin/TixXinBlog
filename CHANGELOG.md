@@ -6,6 +6,12 @@
 
 ## [未发布]
 
+## [0.5.2-beta.1] - 2026-11-04
+
+### 升级说明
+
+- 测试版，不标记为最新版本：`install.sh` 与 `tixxin update` 默认仍取 0.5.1，需显式执行 `tixxin update 0.5.2-beta.1`。无数据迁移，环境文件与编排不变
+
 ### 修复
 
 - 博主登录后，Nexus 底栏头像显示为默认的“TX”图、在线状态固定显示“在线”，与左侧资料卡矛盾：登录后的展示名与头像写死为登录名与默认头像，底栏又优先使用它们，并在登录时强制显示“在线”。现在登录后的展示名与头像取站点资料（后台修改即时生效，缺省时才回退登录名与默认头像），底栏在线状态无论是否登录都按站点资料显示，与资料卡和访客所见一致
@@ -284,7 +290,8 @@
 - 无多语言支持，界面与内容均为中文
 - 定位为单博主博客，不计划扩展多租户、访客账号或协作能力
 
-[未发布]: https://github.com/TixXin/TixXinBlog/compare/v0.5.1...HEAD
+[未发布]: https://github.com/TixXin/TixXinBlog/compare/v0.5.2-beta.1...HEAD
+[0.5.2-beta.1]: https://github.com/TixXin/TixXinBlog/compare/v0.5.1...v0.5.2-beta.1
 [0.5.1]: https://github.com/TixXin/TixXinBlog/compare/v0.5.0...v0.5.1
 [0.5.0]: https://github.com/TixXin/TixXinBlog/compare/v0.4.0...v0.5.0
 [0.4.0]: https://github.com/TixXin/TixXinBlog/compare/v0.3.0...v0.4.0
