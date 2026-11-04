@@ -1,8 +1,8 @@
 # 外部反向代理模式覆盖（install.sh --behind-proxy）：叠加在 compose.production.yaml 之后。
 # 服务器上已有 1Panel、宝塔或自建 Nginx/OpenResty 占用 80/443 时使用：不启动自带的 Caddy 入口，
 # 前端只发布到本机回环端口，由外层代理终止 HTTPS 并转发。外层代理必须：
-#   - 把 Host 设为站点域名，并设置 X-Forwarded-Proto: https（同源写入检查依赖二者）；
-#   - 用访客真实地址覆盖 X-Forwarded-For（不追加），前端只信任项目内部网络的网关。
+#   - 把 Host 设为站点域名，X-Forwarded-Proto 为 https（同源写入检查依赖二者）；
+#   - 让 X-Forwarded-For 的最后一项是访客地址：前端只信任项目内部网络的网关，从右向左只剥离这一跳。
 # 不改动数据库、应用与数据卷定义；证书卷照常声明但不使用。
 services:
   frontend:

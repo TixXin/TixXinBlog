@@ -417,8 +417,8 @@ public_write_status() {
 
 proxy_requirements() {
   warn "请确认外层反向代理把 $(site_url) 转发到 $(proxy_origin)，并且："
-  warn '  - Host 设为站点域名，X-Forwarded-Proto 设为 https；'
-  warn '  - 用访客真实地址覆盖 X-Forwarded-For（不追加）；前面有 CDN 时取 CDN 提供的访客地址，并只允许 CDN 回源访问；'
+  warn "  - Host 为站点域名，X-Forwarded-Proto 为 https（面板终止 HTTPS 时默认的 \$scheme 即可，CDN 以 HTTP 回源时须写死 https）；"
+  warn '  - X-Forwarded-For 的最后一项是访客地址（面板直接面对访客时默认写法即可；前面有 CDN 时先还原访客地址，并只允许 CDN 回源访问）；'
   warn '  - 访客侧为 HTTPS（证书与 HTTP 跳转由面板或 CDN 负责）。'
   warn "配置片段：$TIXXIN_DIR/proxy/nginx.conf.example；说明见部署指南「服务器已有面板或反向代理」。"
 }
@@ -854,7 +854,12 @@ deploy_release() {
   if [ "$(site_mode)" = proxy ]; then
     info "验收本机入口 $(proxy_origin)（同源 API、版本头）…"
     check_entry "$version" || fail "本机入口验收未通过：$(proxy_origin)/api/v1/posts 未返回 200 或版本头不是 $version"
-    report_public_entry "$version" "$PUBLIC_BEFORE" || true
+    if [ "$action" = initial ]; then
+      # 首次安装时外层代理通常尚未配置；完整说明由安装脚本在结束时给出，这里只报告状态。
+      if public_entry_once "$version"; then info "公开入口：通过（$(site_url)）"; else info "公开入口：暂未通过（外层代理配置见安装结束时的说明）"; fi
+    else
+      report_public_entry "$version" "$PUBLIC_BEFORE" || true
+    fi
   else
     info "验收 $(site_url)（HTTPS、同源 API、版本头）…"
     check_entry "$version" || fail "入口验收未通过：$(site_url)/api/v1/posts 未返回 200 或版本头不是 $version"

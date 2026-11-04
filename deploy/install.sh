@@ -29,6 +29,10 @@ SUBNET=''
 PUBLIC_IP_URL=''
 HTTP_PORT=''
 HTTPS_PORT=''
+# 外部反向代理模式：PROXY_BIND 为 --bind 原值，PROXY_PORT 为最终选定端口。
+PROXY_MODE=0
+PROXY_BIND=''
+PROXY_PORT=''
 REPOSITORY=''
 WORK_DIR=''
 DIR_CREATED=0
@@ -63,6 +67,10 @@ usage() {
 本机试用（https://localhost:<端口>，Caddy 内部证书，无需域名）：
   bash install.sh --local
 
+服务器已有 1Panel、宝塔或其他 Nginx/OpenResty 占用 80/443（外部反向代理模式）：
+  sudo bash install.sh --behind-proxy
+  前端只监听本机端口，由面板或已有反代终止 HTTPS 并转发；安装结束时打印需要的反代配置。
+
 选项：
   --yes                 非交互：不询问，使用参数与默认值（正式安装须同时给出 --domain）
   --domain 域名         站点域名，例如 blog.example.com
@@ -74,6 +82,8 @@ usage() {
   --local               本机试用模式
   --http-port 端口      宿主机 HTTP 端口（正式默认 80，本机试用默认 8080）
   --https-port 端口     宿主机 HTTPS 端口（正式默认 443，本机试用默认 8443）
+  --behind-proxy        外部反向代理模式：不启动自带 Caddy，前端只监听本机端口
+  --bind 地址:端口      外部反向代理模式的监听地址（只能是 127.0.0.1；默认 3456，被占用时向上顺延）
   --project 名称        Compose 项目名（默认 ${DEFAULT_PROJECT}，决定数据卷名称，安装后不可更改）
   --subnet CIDR         Compose 内部网络子网（私有地址段，如 172.31.250.0/24）；同机运行多套站点时各用一段
   --check-public-ip URL 额外访问该 https 地址获取本机出口 IP 用于核对域名解析（默认关闭；会把本机 IP 暴露给该服务）
@@ -96,9 +106,10 @@ parse_args() {
         ;;
       -y | --yes) ASSUME_YES=1 ;;
       --local) LOCAL_MODE=1 ;;
+      --behind-proxy) PROXY_MODE=1 ;;
       --no-pull) NO_PULL=1 ;;
       --install-docker) INSTALL_DOCKER=1 ;;
-      --domain | --locale | --dir | --version | --registry | --download-base | --project | --http-port | --https-port | --subnet | --check-public-ip)
+      --domain | --locale | --dir | --version | --registry | --download-base | --project | --http-port | --https-port | --bind | --subnet | --check-public-ip)
         need_value "$@"
         case $1 in
           --domain) DOMAIN=$2 ;;
@@ -112,6 +123,7 @@ parse_args() {
           --check-public-ip) PUBLIC_IP_URL=$2 ;;
           --http-port) HTTP_PORT=$2 ;;
           --https-port) HTTPS_PORT=$2 ;;
+          --bind) PROXY_BIND=$2 ;;
         esac
         shift
         ;;
@@ -268,13 +280,34 @@ check_port() {
   # 正式安装不建议停止占用者：服务器上的 Nginx/OpenResty 往往同时承载其他站点。
   panel=$(detect_panel)
   if [ -n "${panel}" ]; then
-    fail "端口 $1 已被占用${who}，本机装有 ${panel}。不要为安装停止它：面板的 OpenResty/Nginx 承载着本机其他站点，停止会让它们一起下线。本项目暂不支持安装在面板或已有反向代理之后，说明见 ${PANEL_DOC_URL}"
+    fail "端口 $1 已被占用${who}，本机装有 ${panel}。不要为安装停止它：面板的 OpenResty/Nginx 承载着本机其他站点，停止会让它们一起下线。请在原命令后追加 --behind-proxy 改用外部反向代理模式，装好后在面板里把域名反向代理到提示的本机端口，说明见 ${PANEL_DOC_URL}"
   fi
   case ${owner} in
     nginx | openresty | caddy | httpd | apache2 | haproxy | traefik | docker-proxy)
-      fail "端口 $1 已被占用${who}。它可能正在为本机其他站点提供服务，不要直接停止；本项目暂不支持安装在已有反向代理之后，说明见 ${PANEL_DOC_URL}" ;;
+      fail "端口 $1 已被占用${who}。它可能正在为本机其他站点提供服务，不要直接停止；可在原命令后追加 --behind-proxy，由它反向代理到本站，说明见 ${PANEL_DOC_URL}" ;;
   esac
-  fail "端口 $1 已被占用${who}。先确认占用者的用途：本机其他站点在用的 Web 服务不要停止（见 ${PANEL_DOC_URL}）；确认不再需要后再停止它并重新运行安装"
+  fail "端口 $1 已被占用${who}。先确认占用者的用途：本机其他站点在用的 Web 服务不要停止，可改用 --behind-proxy（见 ${PANEL_DOC_URL}）；确认不再需要后再停止它并重新运行安装"
+}
+
+# 外部反向代理模式的监听端口：--bind 显式指定时被占用即报错；未指定时从 3456 起向上顺延取第一个空闲端口。
+# 不用随机端口：结果可预期，也不会落进系统临时端口段与出站连接冲突。
+choose_proxy_port() {
+  local port owner
+  if [ -n "$PROXY_BIND" ]; then
+    if port_in_use "$PROXY_PORT"; then
+      owner=$(port_owner "$PROXY_PORT")
+      fail "--bind 指定的端口 ${PROXY_PORT} 已被占用${owner:+（占用进程：${owner}）}；请换一个空闲端口，或去掉 --bind 自动选择"
+    fi
+    return 0
+  fi
+  for port in $(seq 3456 3556); do
+    if ! port_in_use "$port"; then
+      PROXY_PORT=$port
+      [ "$port" = 3456 ] || info "端口 3456 已被占用，改用 ${port}"
+      return 0
+    fi
+  done
+  fail '3456 到 3556 的端口都已被占用；请用 --bind 127.0.0.1:<端口> 指定空闲端口'
 }
 
 # ---------- 配置收集 ----------
@@ -360,6 +393,23 @@ validate_subnet() {
 }
 
 collect_settings() {
+  if [ "$PROXY_MODE" = 1 ]; then
+    [ "$LOCAL_MODE" = 0 ] || fail '--behind-proxy 不能与 --local 同时使用'
+    [ -z "$HTTP_PORT$HTTPS_PORT" ] || fail '--behind-proxy 不使用 --http-port/--https-port；监听端口用 --bind 指定'
+    local bind_address=127.0.0.1
+    if [ -n "$PROXY_BIND" ]; then
+      bind_address=${PROXY_BIND%:*}
+      PROXY_PORT=${PROXY_BIND##*:}
+      [ "$bind_address:$PROXY_PORT" = "$PROXY_BIND" ] || fail "--bind 格式应为 127.0.0.1:<端口>"
+      # 只允许回环地址：对外开放时外网直连也表现为网关地址，访客可伪造转发头绕过按 IP 限流。
+      [ "$bind_address" = 127.0.0.1 ] || fail '--bind 只能使用回环地址 127.0.0.1；外部访问由面板或反向代理转发'
+      case $PROXY_PORT in '' | *[!0-9]*) fail "--bind 端口 ${PROXY_PORT} 不合法" ;; esac
+      [ "$PROXY_PORT" -ge 1 ] && [ "$PROXY_PORT" -le 65535 ] || fail "--bind 端口 ${PROXY_PORT} 不合法"
+    fi
+    PROXY_BIND_ADDRESS=$bind_address
+  elif [ -n "$PROXY_BIND" ]; then
+    fail '--bind 只用于 --behind-proxy'
+  fi
   if [ "$LOCAL_MODE" = 1 ]; then
     [ -z "$DOMAIN" ] || [ "$DOMAIN" = localhost ] || fail '--local 模式固定使用 localhost，不能同时指定 --domain'
     DOMAIN=localhost
@@ -372,8 +422,10 @@ collect_settings() {
     fi
     DOMAIN=$(printf '%s' "$DOMAIN" | tr '[:upper:]' '[:lower:]')
     validate_domain "$DOMAIN"
-    HTTP_PORT=${HTTP_PORT:-80}
-    HTTPS_PORT=${HTTPS_PORT:-443}
+    if [ "$PROXY_MODE" = 0 ]; then
+      HTTP_PORT=${HTTP_PORT:-80}
+      HTTPS_PORT=${HTTPS_PORT:-443}
+    fi
   fi
   if [ -z "$LOCALE" ]; then
     if [ "$ASSUME_YES" = 1 ]; then
@@ -399,8 +451,11 @@ collect_settings() {
   [ -z "$SUBNET" ] || validate_subnet "$SUBNET"
   case $PUBLIC_IP_URL in '' | https://*) ;; *) fail '--check-public-ip 只接受 https:// 地址' ;; esac
   printf '%s' "$PROJECT" | grep -Eq '^[a-z0-9][a-z0-9_-]+$' || fail '项目名只能包含小写字母、数字、下划线与连字符'
-  [ "$HTTP_PORT" != "$HTTPS_PORT" ] || fail 'HTTP 与 HTTPS 端口不能相同'
-  if [ "$LOCAL_MODE" = 1 ]; then
+  [ "$PROXY_MODE" = 1 ] || [ "$HTTP_PORT" != "$HTTPS_PORT" ] || fail 'HTTP 与 HTTPS 端口不能相同'
+  if [ "$PROXY_MODE" = 1 ]; then
+    # DNS 常指向 CDN 或面板所在入口，不与本机地址比对；HTTPS 由外层代理负责。
+    SITE_URL=https://$DOMAIN
+  elif [ "$LOCAL_MODE" = 1 ]; then
     if [ "$HTTPS_PORT" = 443 ]; then SITE_URL=https://localhost; else SITE_URL=https://localhost:$HTTPS_PORT; fi
     BIND_ADDRESS=127.0.0.1
   else
@@ -481,6 +536,9 @@ download_package() {
     deploy/production.env.example deploy/tixxin deploy/package.env; do
     [ -f "$WORK_DIR/package/$entry" ] || fail "部署包缺少 $entry"
   done
+  if [ "$PROXY_MODE" = 1 ] && [ ! -f "$WORK_DIR/package/deploy/compose.proxy.yaml" ]; then
+    fail "版本 $VERSION 不支持 --behind-proxy（部署包没有 compose.proxy.yaml）；请安装更新的版本"
+  fi
   PACKAGE_VERSION=$(awk -F= '$1 == "TIXXIN_PACKAGE_VERSION" { print $2 }' "$WORK_DIR/package/deploy/package.env")
   [ "$PACKAGE_VERSION" = "$VERSION" ] || fail "部署包版本 $PACKAGE_VERSION 与请求版本 $VERSION 不一致"
   PACKAGE_IMAGE_PREFIX=$(awk -F= '$1 == "TIXXIN_IMAGE_PREFIX" { print $2 }' "$WORK_DIR/package/deploy/package.env")
@@ -528,11 +586,22 @@ random_hex() {
   printf '%s' "$value"
 }
 
+site_mode() {
+  if [ "$LOCAL_MODE" = 1 ]; then
+    echo local
+  elif [ "$PROXY_MODE" = 1 ]; then
+    echo proxy
+  else
+    echo public
+  fi
+}
+
 # 以部署包中的环境模板为底稿，只替换安装需要的键，其余注释与缺省值保持原样。
 write_env() {
   local prefix=${REGISTRY:-$PACKAGE_IMAGE_PREFIX} values env_temp compose_file
   compose_file=compose.production.yaml
   [ "$LOCAL_MODE" = 0 ] || compose_file=compose.production.yaml:deploy/compose.local.yaml
+  [ "$PROXY_MODE" = 0 ] || compose_file=compose.production.yaml:deploy/compose.proxy.yaml
   values=$(mktemp)
   {
     printf 'RELEASE_PROJECT=%s\n' "$PROJECT"
@@ -547,13 +616,18 @@ write_env() {
     printf 'SETUP_TOKEN=%s\n' "$(random_hex 24)"
     printf 'SITE_HOST=%s\n' "$DOMAIN"
     printf 'SITE_URL=%s\n' "$SITE_URL"
-    printf 'HTTPS_BIND_ADDRESS=%s\n' "$BIND_ADDRESS"
-    printf 'HTTP_PORT=%s\n' "$HTTP_PORT"
-    printf 'HTTPS_PORT=%s\n' "$HTTPS_PORT"
+    if [ "$PROXY_MODE" = 1 ]; then
+      printf 'PROXY_BIND_ADDRESS=%s\n' "$PROXY_BIND_ADDRESS"
+      printf 'PROXY_PORT=%s\n' "$PROXY_PORT"
+    else
+      printf 'HTTPS_BIND_ADDRESS=%s\n' "$BIND_ADDRESS"
+      printf 'HTTP_PORT=%s\n' "$HTTP_PORT"
+      printf 'HTTPS_PORT=%s\n' "$HTTPS_PORT"
+    fi
     printf 'NUXT_PUBLIC_DEFAULT_LOCALE=%s\n' "$LOCALE"
     [ -z "$SUBNET" ] || printf 'TIXXIN_NETWORK_SUBNET=%s\n' "$SUBNET"
     printf 'COMPOSE_FILE=%s\n' "$compose_file"
-    printf 'TIXXIN_MODE=%s\n' "$([ "$LOCAL_MODE" = 1 ] && echo local || echo public)"
+    printf 'TIXXIN_MODE=%s\n' "$(site_mode)"
     printf 'TIXXIN_REPOSITORY=%s\n' "$REPOSITORY"
     printf 'TIXXIN_DOWNLOAD_BASE=%s\n' "$DOWNLOAD_BASE"
   } > "$values"
@@ -592,6 +666,50 @@ install_files() {
   cp "$WORK_DIR/package/deploy/"* "$INSTALL_DIR/deploy/"
   chmod 755 "$INSTALL_DIR/deploy/tixxin"
   write_env
+  [ "$PROXY_MODE" = 0 ] || write_proxy_snippet
+}
+
+# 外部反向代理模式：写出 Nginx/OpenResty 配置片段供面板使用；只生成文件，不修改面板或系统配置。
+write_proxy_snippet() {
+  mkdir -p "$INSTALL_DIR/proxy"
+  cat > "$INSTALL_DIR/proxy/nginx.conf.example" << EOF
+# TixXinBlog 外部反向代理配置片段（Nginx / OpenResty / 1Panel / 宝塔）
+# 站点：${SITE_URL}    本机监听：http://${PROXY_BIND_ADDRESS}:${PROXY_PORT}
+#
+# 用法：在面板中为域名 ${DOMAIN} 建反向代理站点、目标 http://${PROXY_BIND_ADDRESS}:${PROXY_PORT}，并开启 HTTPS。
+# 面板直接面对访客、由面板终止 HTTPS 时，1Panel 等面板默认生成的反代配置
+# （Host \$host、X-Forwarded-Proto \$scheme、X-Forwarded-For \$proxy_add_x_forwarded_for）即可使用，
+# 只需补上 client_max_body_size。自行编写配置时可参考下面的 location。
+
+location / {
+    proxy_pass http://${PROXY_BIND_ADDRESS}:${PROXY_PORT};
+    proxy_http_version 1.1;
+
+    # 同源写入检查依赖这两行：Host 必须是站点域名，协议必须为 https，否则登录、评论等写操作返回 403。
+    # 面板终止 HTTPS 时 \$scheme 即为 https；CDN 以 HTTP 回源到本机时须写死 https。
+    proxy_set_header Host \$host;
+    proxy_set_header X-Forwarded-Proto https;
+
+    # 最后一项必须是访客地址（前端只剥离本机这一跳）；直接面对访客时 \$remote_addr 与默认的追加写法等效。
+    proxy_set_header X-Forwarded-For \$remote_addr;
+    proxy_set_header X-Real-IP "";
+    proxy_set_header Forwarded "";
+
+    # 与内容包导入上限（50 MB）对齐。
+    client_max_body_size 64m;
+}
+
+# 前面还有 CDN（由 CDN 终止 HTTPS、回源到本机 80 端口）时：
+#   1. \$remote_addr 是 CDN 节点地址，所有访客会被识别为少数几个节点。用 set_real_ip_from <CDN 回源网段>
+#      加 real_ip_header <CDN 的访客地址头> 先还原访客地址，上面的 X-Forwarded-For 行保持不变；
+#      回源网段与头名以 CDN 官方文档为准。
+#   2. 只允许 CDN 回源地址访问该站点（allow/deny 或 CDN 的回源鉴权），否则直连源站即可伪造访客地址。
+#   3. 回源是 HTTP，\$scheme 为 http，X-Forwarded-Proto 必须写死 https；同时在 CDN 控制台开启「强制 HTTPS」。
+#   4. 缓存规则按源站响应头处理（页面为 no-cache、接口为 no-store），不要对整站强制缓存。
+#
+# HSTS 由面板或 CDN 下发（自带 Caddy 默认 max-age=86400，确认稳定后再逐步加长）。
+EOF
+  chmod 644 "$INSTALL_DIR/proxy/nginx.conf.example"
 }
 
 link_command() {
@@ -631,7 +749,11 @@ on_exit() {
     info '排查命令：'
     info "  ${sudo_hint}$INSTALL_DIR/deploy/tixxin status"
     info "  ${sudo_hint}$INSTALL_DIR/deploy/tixxin logs backend"
-    info "  ${sudo_hint}$INSTALL_DIR/deploy/tixxin logs edge"
+    if [ "$PROXY_MODE" = 1 ]; then
+      info "  ${sudo_hint}$INSTALL_DIR/deploy/tixxin logs frontend"
+    else
+      info "  ${sudo_hint}$INSTALL_DIR/deploy/tixxin logs edge"
+    fi
     info "  cd $INSTALL_DIR && ${sudo_hint}docker compose ps -a"
     info '修复后可执行 '"${sudo_hint}"'tixxin update '"$VERSION"' 继续（会先完整备份；首次迁移即失败时可追加 --skip-backup）。'
   } >&2
@@ -639,6 +761,12 @@ on_exit() {
 
 setup_status() {
   local cacert=()
+  if [ "$PROXY_MODE" = 1 ]; then
+    # 外层代理可能尚未配置：经本机端口读取，模拟代理应发送的 Host 与协议头。
+    curl -sS --max-time 15 -w '\n%{http_code}' -H "Host: $DOMAIN" -H 'X-Forwarded-Proto: https' \
+      "http://$PROXY_BIND_ADDRESS:$PROXY_PORT/api/v1/setup/status" 2> /dev/null || true
+    return 0
+  fi
   [ "$LOCAL_MODE" = 0 ] || cacert=(--cacert "$INSTALL_DIR/local-ca.crt")
   curl ${cacert[@]+"${cacert[@]}"} -sS --proto '=https' --max-time 15 -w '\n%{http_code}' "$SITE_URL/api/v1/setup/status" 2> /dev/null || true
 }
@@ -653,6 +781,17 @@ print_summary() {
   info "站点地址：$SITE_URL"
   info "版本：$VERSION"
   info "安装目录：$INSTALL_DIR"
+  if [ "$PROXY_MODE" = 1 ]; then
+    info ''
+    info "部署形态：外部反向代理。前端监听 http://$PROXY_BIND_ADDRESS:$PROXY_PORT，不占用 80/443。"
+    info "下一步：在面板或已有反代中把 https://$DOMAIN 反向代理到 http://$PROXY_BIND_ADDRESS:${PROXY_PORT}，并且："
+    info '  - Host 保持站点域名，X-Forwarded-Proto 为 https（否则写操作返回 403；CDN 以 HTTP 回源时须写死 https）；'
+    info '  - X-Forwarded-For 的最后一项是访客地址；前面有 CDN 时先还原访客地址，并只允许 CDN 回源；'
+    info '  - 访客侧开启 HTTPS（证书、HTTP 跳转与 HSTS 由面板或 CDN 负责）。'
+    info "配置片段：$INSTALL_DIR/proxy/nginx.conf.example"
+    info "配好后运行 $(admin_prefix)$LINK_HINT status，「公开入口：通过」即表示反代正确。"
+    info '初始化链接需在反代与 HTTPS 生效后打开（登录凭据只在 HTTPS 下生效）。'
+  fi
   if [ "$status" = 200 ] && grep -q '"needsSetup":true' <<< "$body"; then
     info ''
     info '打开下面的链接设置博主账号（链接含一次性初始化令牌，请勿分享）：'
@@ -685,9 +824,14 @@ main() {
   resolve_version
   # 先识别已有安装，再查端口：已有站点占用端口时应提示 tixxin update，而不是端口冲突。
   check_existing
-  check_port "$HTTP_PORT"
-  check_port "$HTTPS_PORT"
+  if [ "$PROXY_MODE" = 1 ]; then
+    choose_proxy_port
+  else
+    check_port "$HTTP_PORT"
+    check_port "$HTTPS_PORT"
+  fi
   info "将安装 TixXinBlog ${VERSION}（${ARCH}）到 ${INSTALL_DIR}（站点 ${SITE_URL}，语言 ${LOCALE}）"
+  [ "$PROXY_MODE" = 0 ] || info "外部反向代理模式：前端监听 http://${PROXY_BIND_ADDRESS}:${PROXY_PORT}，不启动自带 HTTPS 入口"
   if [ "$ASSUME_YES" = 0 ]; then ask_yes_no '确认开始安装？' || fail '已取消'; fi
   trap on_exit EXIT
   step '下载并校验部署包'
