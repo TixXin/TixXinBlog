@@ -61,6 +61,8 @@ export function parsePackageSiteSettings(rawSite: unknown, version: number): Con
         ...(version >= 12 ? SITE_EXTRA_KEYS : []),
         // v14 起可选携带搜索引擎收录开关；v1–v13 出现即按未知字段拒绝。
         ...(version >= 14 ? ['searchIndexing'] : []),
+        // v15 起可选携带手动状态的到期时间；v1–v14 出现即按未知字段拒绝。
+        ...(version >= 15 ? ['presenceExpiresAt'] : []),
       ]),
       revision: 0,
     },

@@ -130,7 +130,7 @@
 - `devices`、`browsers`：当日首次到访访客的设备（`desktop`、`mobile`）与浏览器大类（`chrome`、`safari`、`firefox`、`edge`、`other`）分布，由 `User-Agent` 当场归类，不保存原文。
 - 每天每个维度最多登记 1000 个不同路径或 200 个不同来源，超出的计入 `(other)`。访问构成（页面、来源、设备）按日汇总在 `site_traffic_daily`，保留 365 天，在计浏览时顺带清理；每日浏览与访客汇总不清理。
 
-`GET /admin/presence` 返回 `{ autoPresence, publicStats, ownerLastSeenAt }`；`PATCH /admin/presence` 接受可选的布尔字段 `autoPresence` 与 `publicStats`，未提交的字段保持现值。两个开关默认开启，与站点资料分开存储，不随内容包迁移。
+`GET /admin/presence` 返回 `{ autoPresence, publicStats, invisible, ownerLastSeenAt }`；`PATCH /admin/presence` 接受可选的布尔字段 `autoPresence`、`publicStats` 与 `invisible`，未提交的字段保持现值。自动在线与公开统计默认开启，隐身默认关闭；三者与站点资料分开存储，不随内容包迁移。隐身时博主心跳照常记录（后台仍能看到最后在线时间），但心跳响应的 `owner` 对所有人都是 `{ status: 'away', lastSeenAt: null }`。
 
 ## 写入版本与幂等
 
@@ -330,6 +330,8 @@
 分享卡片为 1200×630 PNG。`theme` 只接受 `nexus`、`aurora`、`dock`，`lang` 只接受 `zh-CN`、`en`；内容卡的 `kind` 为 `post`、`flash` 或 `moment`，`file` 为编号加 `.png`，文章编号是正整数，闪念与朋友圈编号只含字母、数字、`_` 与 `-`（≤64），其余取值一律 404。卡片文字只来自后端经公开详情读到的数据，草稿、删除与不公开的内容同样 404；地址上的其他查询参数（前端用作版本号的 `v`）被忽略。头像只读受管媒体，外链头像改用首字母，后端不请求外部地址。响应带 `ETag` 与 `Cache-Control: public, max-age=86400`，支持 304 与 HEAD；配色只取站点设计令牌：Nexus 与 Dock 用浅色，Aurora 用博客默认的深色，字体为随镜像交付的 Noto Sans SC Bold。
 
 站点资料含可选的 `presenceLabel`（≤20）、`presenceSignature`（≤60）、`presenceStatus`（空串、`online`、`idle`、`busy`）与 `launchedAt`（`YYYY-MM-DD` 或空）：前两者驱动名片的在线状态与签名，都为空时保持离线；`presenceStatus` 决定状态点的类型，空串时按在线展示；`launchedAt` 决定 `GET /posts/metadata` 里 `stats.siteAgeDays` 的起点，缺省回退到最早公开文章的发布日。旧客户端与旧内容包可不携带这几项，缺省按空串处理且保存时沿用当前值。
+
+站点资料另含可选的 `presenceExpiresAt`：空串表示手动状态长期有效，否则为带时区的 ISO 8601 时间，保存时统一为 UTC，不带时区返回 400。到期后 `GET /site` 返回的 `presenceStatus` 与 `presenceLabel` 为空串（回到按心跳的自动状态），`presenceSignature` 与 `presenceExpiresAt` 照常返回，前端据此在到期时刻自动隐藏已渲染的状态；`GET /admin/site` 始终返回保存的原值。旧客户端与旧内容包不携带该字段时保存沿用当前值。
 
 站点资料还包含 `navigation`（`{ type: 'route', key, visible }` 或 `{ type: 'external', label, url, newTab, visible }`，`key` 限内置模块白名单且不重复，`home` 不可隐藏，外链 ≤4 个且仅 http(s)，缺失的内置模块按显示追加）、`footerLinks`（≤8 个 `{ label, url, newTab }`，`url` 为站内路径或 http(s)，不重复）、`quotes`（≤30 条、每条 1–120 字、去首尾空白后不重复）、`icpNumber`（≤40）、`icpUrl`（空或 http(s)，≤300）与 `copyright`（≤200，不含换行）。这些字段同样可选：未提交时沿用当前值，历史记录缺失时读取按缺省值补齐（缺省等于此前前端内置的导航、页脚链接与一言）。导航隐藏只影响展示，不做访问控制；公开 `GET /site` 不返回隐藏的外链，隐藏的内置模块仍保留条目以维持显隐与顺序。
 

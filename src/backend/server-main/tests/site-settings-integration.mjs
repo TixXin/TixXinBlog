@@ -171,8 +171,47 @@ try {
     revision: hiddenAbout.revision,
   })
   assert.deepEqual(restoredAbout.about, about)
+
+  // 手动状态到期：保存时统一为 UTC；公开资料在到期后回到自动状态、签名保留，后台仍返回原值；不带时区的时间拒绝
+  const presenceBase = await ok('/admin/site')
+  const status = { presenceStatus: 'busy', presenceLabel: '出门了', presenceSignature: '晚点回复' }
+  assert.equal(
+    (
+      await request('/admin/site', 'PATCH', {
+        ...editable(presenceBase),
+        ...status,
+        presenceExpiresAt: '2026-11-05T18:00',
+      })
+    ).status,
+    400,
+  )
+  const future = await ok('/admin/site', 'PATCH', {
+    ...editable(presenceBase),
+    ...status,
+    presenceExpiresAt: '2099-01-01T08:00:00+08:00',
+  })
+  assert.equal(future.presenceExpiresAt, '2099-01-01T00:00:00.000Z')
+  assert.equal((await ok('/site', 'GET', undefined, false)).presenceLabel, '出门了')
+  const expired = await ok('/admin/site', 'PATCH', {
+    ...editable(future),
+    presenceExpiresAt: new Date(Date.now() - 60_000).toISOString(),
+  })
+  const publicExpired = await ok('/site', 'GET', undefined, false)
+  assert.deepEqual(
+    {
+      status: publicExpired.presenceStatus,
+      label: publicExpired.presenceLabel,
+      signature: publicExpired.presenceSignature,
+    },
+    { status: '', label: '', signature: '晚点回复' },
+  )
+  assert.equal(expired.presenceLabel, '出门了')
+  assert.equal((await ok('/admin/site')).presenceStatus, 'busy')
+  const forever = await ok('/admin/site', 'PATCH', { ...editable(expired), presenceExpiresAt: '' })
+  assert.equal(forever.presenceExpiresAt, '')
+  assert.equal((await ok('/site', 'GET', undefined, false)).presenceLabel, '出门了')
   process.stdout.write(
-    '站点设置集成通过：权限、字段/URL 校验、运行时持久化、版本并发、历史恢复、失败回滚和头像历史引用保护\n',
+    '站点设置集成通过：权限、字段/URL 校验、运行时持久化、版本并发、历史恢复、失败回滚、头像历史引用保护和手动状态到期\n',
   )
 } finally {
   await fixture.close()

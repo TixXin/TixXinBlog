@@ -38,6 +38,7 @@ export interface PresenceResult {
 export interface PresenceSettings {
   autoPresence: boolean
   publicStats: boolean
+  invisible: boolean
   ownerLastSeenAt: string | null
 }
 
@@ -104,6 +105,7 @@ export class PresenceService {
     return {
       autoPresence: row.autoPresence,
       publicStats: row.publicStats,
+      invisible: row.invisible,
       ownerLastSeenAt: this.lastSeen(row)?.toISOString() ?? null,
     }
   }
@@ -114,6 +116,7 @@ export class PresenceService {
       // 缺省的开关保持现值，便于以后只改其中一项。
       if (input.autoPresence !== undefined) row.autoPresence = input.autoPresence
       if (input.publicStats !== undefined) row.publicStats = input.publicStats
+      if (input.invisible !== undefined) row.invisible = input.invisible
       row.updatedAt = new Date()
     })
     this.settingsCache = null
@@ -121,6 +124,8 @@ export class PresenceService {
   }
 
   private ownerState(settings: SitePresence, now: number): PresenceResult['owner'] {
+    // 隐身时对访客始终按离线处理，也不给出最后在线时间；后台读取的最后在线时间不受影响。
+    if (settings.invisible) return { status: 'away', lastSeenAt: null }
     if (this.store.ownerOnline(now)) {
       return { status: 'online', lastSeenAt: new Date(this.store.ownerLastSeen()!).toISOString() }
     }
@@ -218,6 +223,7 @@ export class PresenceService {
       id: 'default',
       autoPresence: true,
       publicStats: true,
+      invisible: false,
       ownerLastSeenAt: null,
       updatedAt: new Date(),
     })

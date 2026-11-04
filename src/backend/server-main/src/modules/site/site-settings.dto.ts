@@ -38,6 +38,10 @@ class SiteSocialDto {
   ])
   icon!: string
 }
+/** 空串或带时区的 ISO 8601 时间（精确到分钟或秒，可带毫秒） */
+export const PRESENCE_EXPIRES_PATTERN =
+  /^(?:\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(?::\d{2}(?:\.\d{1,3})?)?(?:Z|[+-]\d{2}:\d{2}))?$/
+
 export class ExpectedSiteRevisionDto {
   @IsInt() @Min(0) revision!: number
 }
@@ -81,6 +85,11 @@ export class SaveSiteSettingsDto extends ExpectedSiteRevisionDto {
   @ValidateIf((_object, value) => value !== undefined)
   @IsIn(['', 'online', 'idle', 'busy'])
   presenceStatus?: '' | 'online' | 'idle' | 'busy'
+  // 手动状态的到期时间：空串为长期有效；必须带时区，避免服务器与浏览器按不同时区理解
+  @ValidateIf((_object, value) => value !== undefined)
+  @IsString()
+  @Matches(PRESENCE_EXPIRES_PATTERN, { message: '状态到期时间需为带时区的 ISO 8601 时间' })
+  presenceExpiresAt?: string
   // 是否允许搜索引擎收录：缺省时沿用当前值，从未设置过的站点按允许处理
   @ValidateIf((_object, value) => value !== undefined)
   @IsBoolean()

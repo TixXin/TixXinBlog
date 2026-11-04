@@ -1,4 +1,4 @@
-/** @file presence-integration.mjs @description 隔离验收实时在线与访问统计：在线人数、正在阅读、离开上报、浏览去重、访客计数、访问构成与后台统计、博主识别、自动化客户端、开关与鉴权。 */
+/** @file presence-integration.mjs @description 隔离验收实时在线与访问统计：在线人数、正在阅读、离开上报、浏览去重、访客计数、访问构成与后台统计、博主识别与隐身与隐身、自动化客户端、开关与鉴权。 */
 import assert from 'node:assert/strict'
 import { randomBytes, randomUUID } from 'node:crypto'
 import { setTimeout as delay } from 'node:timers/promises'
@@ -48,7 +48,7 @@ try {
   assert.equal((await call('/admin/presence', { method: 'GET' })).status, 401)
   assert.deepEqual(
     { ...(await call('/admin/presence', { method: 'GET', admin: true })).body.data, ownerLastSeenAt: null },
-    { autoPresence: true, publicStats: true, ownerLastSeenAt: null },
+    { autoPresence: true, publicStats: true, invisible: false, ownerLastSeenAt: null },
   )
 
   // 访问统计：空库返回补零的 30 天与空排行；只接受 7/30/90 天；需要登录
@@ -194,6 +194,22 @@ try {
     body: JSON.stringify({ session: session() }),
   })
   assert.equal(forged.status, 200)
+
+  // 隐身：博主照常记录活动，访客看到离线且没有最后在线时间；关闭后恢复
+  assert.equal((await call('/admin/presence', { method: 'PATCH', admin: true, body: { invisible: true } })).status, 200)
+  data = await beat({ session: session() }, { admin: true })
+  assert.deepEqual(data.owner, { status: 'away', lastSeenAt: null })
+  data = await beat({ session: session() })
+  assert.deepEqual(data.owner, { status: 'away', lastSeenAt: null })
+  const hidden = (await call('/admin/presence', { method: 'GET', admin: true })).body.data
+  assert.equal(hidden.invisible, true)
+  assert.ok(hidden.ownerLastSeenAt, '隐身时后台仍能看到最后在线时间')
+  assert.equal(
+    (await call('/admin/presence', { method: 'PATCH', admin: true, body: { invisible: 'yes' } })).status,
+    400,
+  )
+  await call('/admin/presence', { method: 'PATCH', admin: true, body: { invisible: false } })
+  assert.equal((await beat({ session: session() })).owner.status, 'online')
 
   // 统计按北京时间日期落库
   const [row] = await fixture.testOrm.em

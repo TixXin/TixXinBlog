@@ -38,6 +38,7 @@ const publicValues = {
   copyright: '© {year} {siteName}',
   // 收录开关需要公开，前端据此输出 robots noindex 与 robots.txt 规则
   searchIndexing: false,
+  presenceExpiresAt: '',
 }
 // 博主隐藏的外链不得出现在公开响应中。
 const hiddenExternal: SiteNavItem = {
@@ -118,6 +119,7 @@ describe('GET /site 公开响应白名单', () => {
     delete settings.values.presenceStatus
     delete settings.values.launchedAt
     delete settings.values.searchIndexing
+    delete settings.values.presenceExpiresAt
     expect(JSON.parse(JSON.stringify(await service.get(true)))).toStrictEqual({
       ...publicValues,
       about: { visible: false, introduction: '', sections: [] },
@@ -126,7 +128,31 @@ describe('GET /site 公开响应白名单', () => {
       presenceStatus: '',
       launchedAt: '',
       searchIndexing: true,
+      presenceExpiresAt: '',
       updatedAt: '2026-10-02T00:00:00.000Z',
+    })
+  })
+
+  it('手动状态到期后公开资料回到自动状态，签名保留；后台读取仍返回原值', async () => {
+    const { settings, service } = fixture()
+    Object.assign(settings.values, {
+      presenceStatus: 'busy',
+      presenceLabel: '出门了',
+      presenceSignature: '晚点回复',
+      presenceExpiresAt: '2026-11-05T10:00:00.000Z',
+    })
+    const before = await service.get(true, new Date('2026-11-05T09:59:59.000Z'))
+    expect(before).toMatchObject({ presenceStatus: 'busy', presenceLabel: '出门了', presenceSignature: '晚点回复' })
+    const after = await service.get(true, new Date('2026-11-05T10:00:00.000Z'))
+    expect(after).toMatchObject({
+      presenceStatus: '',
+      presenceLabel: '',
+      presenceSignature: '晚点回复',
+      presenceExpiresAt: '2026-11-05T10:00:00.000Z',
+    })
+    expect(await service.get(false, new Date('2026-11-06T00:00:00.000Z'))).toMatchObject({
+      presenceStatus: 'busy',
+      presenceLabel: '出门了',
     })
   })
 

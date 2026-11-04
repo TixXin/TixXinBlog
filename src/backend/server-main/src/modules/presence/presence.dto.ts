@@ -36,6 +36,7 @@ export class TrafficQueryDto {
 export class SavePresenceSettingsDto {
   @IsOptional() @IsBoolean() autoPresence?: boolean
   @IsOptional() @IsBoolean() publicStats?: boolean
+  @IsOptional() @IsBoolean() invisible?: boolean
 }
 
 /** 计入浏览的站内页面路径：以 / 开头、不含查询与片段，排除后台、预览、初始化与接口路径 */

@@ -26,10 +26,25 @@ export function withPresenceDefaults(values: SiteSettingsValues) {
     presenceSignature: values.presenceSignature ?? '',
     launchedAt: values.launchedAt ?? '',
     presenceStatus: values.presenceStatus ?? '',
+    presenceExpiresAt: values.presenceExpiresAt ?? '',
     // 旧记录与旧内容包没有收录开关，等同于此前一直允许搜索引擎收录
     searchIndexing: values.searchIndexing ?? true,
   })
 }
+/** 手动状态是否已到期；空串或无法解析时视为长期有效 */
+export function presenceExpired(expiresAt: string | undefined, now: Date): boolean {
+  const at = expiresAt ? Date.parse(expiresAt) : Number.NaN
+  return Number.isFinite(at) && at <= now.getTime()
+}
+
+/** 到期时间统一存为 UTC 的 ISO 字符串；空串保持空串，无法解析的值拒绝 */
+export function normalizeExpiry(value: string): string {
+  if (!value) return ''
+  const at = Date.parse(value)
+  if (!Number.isFinite(at)) throw new BadRequestException(msg('site.presenceExpiresInvalid'))
+  return new Date(at).toISOString()
+}
+
 /** 校验导航、页脚、每日一言与备案字段；内容包解析与后台保存共用同一规则 */
 export function validateSiteExtras(input: Parameters<typeof normalizeSiteExtrasInput>[0]) {
   try {
@@ -45,11 +60,15 @@ export class SiteSettingsService {
   async context() {
     return this.em.findOneOrFail(ContentContext, { id: 'default' }, { refresh: true })
   }
-  async get(publicView = false) {
+  async get(publicView = false, now = new Date()) {
     const settings = await this.em.findOneOrFail(SiteSettings, { id: 'default' }, { refresh: true })
     const values = withPresenceDefaults(settings.values)
     return {
       ...values,
+      // 公开资料不再给出已到期的手动状态，访客看到的回到自动状态；后台仍返回原值便于修改。
+      ...(publicView && presenceExpired(values.presenceExpiresAt, now)
+        ? { presenceLabel: '', presenceStatus: '' }
+        : {}),
       ...(publicView ? { navigation: publicSiteNavigation(values.navigation) } : {}),
       about: publicView ? publicAbout(settings.values.about) : (settings.values.about ?? emptyAbout()),
       ...(publicView ? {} : { revision: settings.revision }),
@@ -106,6 +125,7 @@ export class SiteSettingsService {
         presenceSignature: input.presenceSignature ?? settings.values.presenceSignature ?? '',
         launchedAt: input.launchedAt ?? settings.values.launchedAt ?? '',
         presenceStatus: input.presenceStatus ?? settings.values.presenceStatus ?? '',
+        presenceExpiresAt: normalizeExpiry(input.presenceExpiresAt ?? settings.values.presenceExpiresAt ?? ''),
         searchIndexing: input.searchIndexing ?? settings.values.searchIndexing ?? true,
         navigation: extras.navigation ?? current.navigation,
         footerLinks: extras.footerLinks ?? current.footerLinks,

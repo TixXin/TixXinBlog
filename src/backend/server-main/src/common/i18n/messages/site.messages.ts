@@ -10,6 +10,11 @@ import { defineMessages } from './types'
 export const siteMessages = defineMessages({
   // DTO 的 @Matches 自定义文案；过滤器按中文反查翻译。
   'site.launchedAtFormat': { zh: '上线日期需为 YYYY-MM-DD', en: 'The launch date must be in YYYY-MM-DD format' },
+  'site.presenceExpiresFormat': {
+    zh: '状态到期时间需为带时区的 ISO 8601 时间',
+    en: 'The status expiry must be an ISO 8601 time with a time zone',
+  },
+  'site.presenceExpiresInvalid': { zh: '状态到期时间无法识别', en: 'The status expiry time is not a valid date' },
   'site.avatarUrlInvalid': {
     zh: '头像需要 HTTP(S) 地址或站内图片路径',
     en: 'The avatar must be an HTTP(S) URL or an on-site image path',

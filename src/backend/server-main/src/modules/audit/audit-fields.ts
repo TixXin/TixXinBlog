@@ -31,6 +31,7 @@ export const fields: Readonly<Record<string, MessageKey>> = {
   announcement: 'audit.field.announcement',
   socials: 'audit.field.socials',
   searchIndexing: 'audit.field.searchIndexing',
+  presenceExpiresAt: 'audit.field.presenceExpiresAt',
   alt: 'audit.field.alt',
   label: 'audit.field.label',
   color: 'audit.field.color',
