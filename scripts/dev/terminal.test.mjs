@@ -15,7 +15,7 @@ import {
 import { join } from 'node:path'
 import { tmpdir } from 'node:os'
 import { fileURLToPath } from 'node:url'
-import { terminalCommand, terminalAppleScript } from './terminal.mjs'
+import { terminalCommand, terminalAppleScript, launcherCommand, typedCommandLimit } from './terminal.mjs'
 
 test('开窗前只关闭同一服务的空闲旧窗口，关闭逻辑先于新建窗口', () => {
   const script = terminalAppleScript('echo ok', 'api', [0, 0, 100, 100])
@@ -70,6 +70,28 @@ test(
     assert(output.includes('配置检查失败'))
     assert.deepEqual(JSON.parse(output.trim().split('\n').at(-1)), ['api', '--logs'])
     assert.equal(readFileSync(logPath, 'utf8'), '此前的启动记录\n' + output)
+  },
+)
+
+test(
+  '超长PATH写入启动脚本，终端键入的命令短于规范输入上限且执行完整链路',
+  { skip: process.platform === 'win32' },
+  (t) => {
+    const fixture = loggedFixture(
+      t,
+      `console.log(JSON.stringify({ args: process.argv.slice(2), path: process.env.PATH }))`,
+    )
+    const path = ['/usr/bin', '/bin', ...Array.from({ length: 80 }, (_, i) => `/opt/长路径/工具-${i}/bin`)].join(':')
+    const logPath = join(fixture.directory, 'long-path.log')
+    const scriptPath = join(fixture.directory, "启动 ' $(false).sh")
+    const full = terminalCommand({ ...fixture, path, logPath })
+    assert(Buffer.byteLength(full) > typedCommandLimit)
+    writeFileSync(scriptPath, full + '\n')
+    const typed = launcherCommand(scriptPath)
+    assert(Buffer.byteLength(typed) < typedCommandLimit)
+    const output = execFileSync('/bin/sh', ['-c', typed], { encoding: 'utf8' })
+    assert.deepEqual(JSON.parse(output.trim().split('\n').at(-1)), { args: ['api', '--logs'], path })
+    assert.throws(() => launcherCommand('/' + 'x'.repeat(typedCommandLimit)), /过长/)
   },
 )
 

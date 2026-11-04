@@ -27,6 +27,16 @@ export function terminalCommand({ root, node, pnpm, path, service, logPath }) {
   return logPath ? `( ${command} ) 2>&1 | /usr/bin/tee -a -i ${shellQuote(logPath)}` : command
 }
 
+// macOS 终端规范输入上限 MAX_CANON 为 1024 字节：shell 进入行编辑前键入的超长命令会被截断并丢失回车。
+// 完整命令（含 PATH）写入启动脚本，终端里只键入短的脚本调用，长度不随 PATH 增长。
+export const typedCommandLimit = 1024
+
+export function launcherCommand(scriptPath) {
+  const command = `/bin/sh ${shellQuote(scriptPath)}`
+  if (Buffer.byteLength(command) >= typedCommandLimit) throw new Error('启动脚本路径过长，无法在终端中键入')
+  return command
+}
+
 export async function terminalBounds(service) {
   if (!Object.hasOwn(labels, service)) throw new Error('服务必须为 api 或 web')
   // 优先首块副屏；索引 0 为主屏，不随当前焦点窗口改变。保留多屏的负坐标。
@@ -100,7 +110,7 @@ async function main() {
     console.log('macOS：前后端各开独立 Terminal.app 窗口；已就绪服务复用。Ctrl+C 仅停止本窗口的服务。')
     console.log('窗口默认在首块副屏左侧上下排列；没有副屏时使用主屏。')
     console.log('配置读取终端环境和项目 .env 文件；调用方临时业务环境变量不转发。其他系统使用 dev:all。')
-    console.log('启动命令输出写入 .artifacts/dev-terminal/；--dry-run 只预览，不创建日志文件。')
+    console.log('启动脚本与命令输出写入 .artifacts/dev-terminal/；--dry-run 只预览，不创建脚本或日志文件。')
     return
   }
   if (args.some((arg) => arg !== '--dry-run' && !/^--service=(all|api|web)$/.test(arg)))
@@ -141,8 +151,13 @@ async function main() {
     const logPath = logPathFor(mode)
     mkdirSync(logDirectory, { recursive: true, mode: 0o700 })
     writeFileSync(logPath, '', { flag: 'wx', mode: 0o600 })
+    const scriptPath = join(logDirectory, `${launchId}-${mode}.sh`)
+    writeFileSync(scriptPath, terminalCommand({ ...options, service: mode, logPath }) + '\n', {
+      flag: 'wx',
+      mode: 0o600,
+    })
     console.log(`${labels[mode]}：启动日志 ${logPath}`)
-    const id = await openTerminal(terminalCommand({ ...options, service: mode, logPath }), mode)
+    const id = await openTerminal(launcherCommand(scriptPath), mode)
     console.log(`${labels[mode]}：已打开窗口 ${id}，等待服务就绪`)
     const deadline = Date.now() + config.timeout
     while (true) {
