@@ -27,7 +27,11 @@ export async function createBrowserTestApp(corsOrigin, options = {}) {
   require('reflect-metadata')
   require('../dist/config/environment.js').loadLocalEnvironment()
   const sourceUrl = new URL(process.env.DATABASE_URL)
-  assert(['localhost', '127.0.0.1', '[::1]'].includes(sourceUrl.hostname), '仅允许使用本机数据库创建浏览器测试库')
+  // CI 的容器任务通过服务名访问同一台机器上的数据库服务，只在 CI 中按显式变量放行该主机名。
+  const allowedHosts = ['localhost', '127.0.0.1', '[::1]']
+  if (process.env.CI === 'true' && process.env.TEST_DATABASE_SERVICE_HOST)
+    allowedHosts.push(process.env.TEST_DATABASE_SERVICE_HOST)
+  assert(allowedHosts.includes(sourceUrl.hostname), '仅允许使用本机数据库创建浏览器测试库')
   const { MikroORM } = require('@mikro-orm/postgresql')
   const { mikroOrmOptions } = require('../dist/config/mikro-orm.options.js')
   const admin = await MikroORM.init({ ...mikroOrmOptions, debug: false })
