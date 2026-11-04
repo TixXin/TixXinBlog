@@ -323,6 +323,9 @@ export default {
     exclude: ['/admin', '/admin/**', '/_theme-engine-devtools', '/search', '/tabs', '/posts/preview', '/setup'],
     sources: ['/api/__sitemap__/urls'],
     cacheMaxAgeSeconds: 0,
+    // 不输出 XSLT 样式表：Chromium 正在移除 XSLT，带样式表的 sitemap 会在浏览器顶部弹出弃用警告；
+    // 搜索引擎只读 XML 本身，关闭后浏览器按原始 XML 树显示。
+    xsl: false,
   },
   robots: {
     // 受管媒体经 /api/v1/media/、分享卡片经 /api/v1/og/ 提供，需对搜索引擎和分享卡片爬虫保持可抓取（最长匹配优先）
