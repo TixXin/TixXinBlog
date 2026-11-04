@@ -2,9 +2,10 @@
 # @file check-local.sh
 # @description 推送前在本机按改动自动挑选并运行与 CI 对应的检查：能本地完成的先在本地完成，减少推送后才发现 CI 失败。
 #   改动范围 = 相对 origin/main 的已提交改动 + 工作区未提交改动 + 未跟踪文件。
-#   用法：corepack pnpm check:local [--e2e] [--all]
-#     --e2e  额外运行改动涉及的浏览器 spec（会先构建前后端，较慢）；改动了应用代码但没有改 spec 时运行全量
-#     --all  不按改动挑选，运行全部本地检查（含全部后端 HTTP 集成测试，需要本机 PostgreSQL）
+#   用法：corepack pnpm check:local [--e2e | --e2e-full] [--all]
+#     --e2e       额外运行改动涉及的浏览器 spec（会先构建前后端）；没有改动 spec 时只提示，完整浏览器回归交给 CI
+#     --e2e-full  在本机运行全部浏览器 spec（约 20 分钟，一般不需要；CI 与 Release 门禁都会跑全量）
+#     --all       不按改动挑选，运行全部本地检查（含全部后端 HTTP 集成测试，需要本机 PostgreSQL）
 set -euo pipefail
 
 root=$(cd "$(dirname "$0")/.." && pwd -P)
@@ -14,9 +15,10 @@ run_all=0
 for arg in "$@"; do
   case $arg in
     --e2e) run_e2e=1 ;;
+    --e2e-full) run_e2e=full ;;
     --all) run_all=1 ;;
     -h | --help)
-      sed -n '2,7p' "$0" | sed 's/^# \{0,1\}//'
+      sed -n '2,8p' "$0" | sed 's/^# \{0,1\}//'
       exit 0
       ;;
     *)
@@ -103,16 +105,19 @@ if changed '^(scripts/dev/|scripts/db/|scripts/static/)'; then
   step '开发启动器与静态发布脚本单测' corepack pnpm test:dev
 fi
 
-if [ "$run_e2e" = 1 ]; then
+# 完整浏览器回归由 CI（8 片并行）与 Release 门禁负责；本地默认只跑改动涉及的 spec，避免重复等待。
+if [ "$run_e2e" = full ]; then
+  step '浏览器回归（全量）' corepack pnpm test:e2e
+elif [ "$run_e2e" = 1 ]; then
   specs=$(printf '%s\n' "$files" | sed -n 's#^src/frontend/web-blog/tests/e2e/\([^/]*\.spec\.ts\)$#\1#p' | tr '\n' ' ')
   if [ -n "$specs" ]; then
     # shellcheck disable=SC2086
     step "浏览器回归：${specs}" corepack pnpm test:e2e $specs
   elif changed '^(src/|patches/|pnpm-lock\.yaml$)'; then
-    step '浏览器回归（全量）' corepack pnpm test:e2e
+    printf '\n提示：没有改动 spec。按改动手动跑相关用例：corepack pnpm test:e2e:run <spec>（需先构建两端）；完整回归交给 CI，确需本地全量时用 --e2e-full。\n'
   fi
 elif changed '^(src/|patches/|pnpm-lock\.yaml$)'; then
-  printf '\n提示：改动涉及应用代码，CI 会跑浏览器回归；需要先在本地跑时加 --e2e，或用 corepack pnpm test:e2e:run <spec>。\n'
+  printf '\n提示：改动涉及应用代码，CI 会跑完整浏览器回归；推送前按改动跑相关 spec：corepack pnpm test:e2e:run <spec>，或加 --e2e 跑改动过的 spec。\n'
 fi
 
 if [ "${#failed[@]}" -gt 0 ]; then
