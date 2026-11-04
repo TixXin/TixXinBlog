@@ -1,6 +1,7 @@
 /**
  * @file live-presence.client.ts
- * @description 启动实时在线心跳：应用挂载后才发送第一次心跳，结果不参与水合；站内跳转到新路径时计一次浏览。
+ * @description 启动实时在线心跳：等应用完全就绪（含 Suspense 内的异步水合）才发送第一次心跳，结果不参与水合；
+ *   站内跳转到新路径时计一次浏览。
  *   静态发布与纯 Mock 演示没有后端，不启动。
  */
 import { startLivePresence, useLivePresenceState } from '~/composables/useLivePresence'
@@ -14,7 +15,9 @@ export default defineNuxtPlugin({
     const accessToken = useState<string | null>('auth-access-token', () => null)
     const router = useRouter()
     let handle: ReturnType<typeof startLivePresence> | null = null
-    app.hook('app:mounted', () => {
+    // 不能用 app:mounted：此时 Suspense 内的页面可能仍在水合，心跳结果若先到会改动在线状态与统计卡，
+    // 造成水合不一致（WebKit 快速刷新与前进后退时可复现）。onNuxtReady 在水合完成且浏览器空闲后执行。
+    onNuxtReady(() => {
       handle = startLivePresence(state, {
         apiBase: String(config.apiBaseUrl || '/api/v1'),
         path: () => router.currentRoute.value.path,

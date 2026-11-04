@@ -445,7 +445,9 @@ test('公开整理表单仅本机复制，失败和刷新保留输入且无申�
     if (
       request.method() === 'POST' &&
       new URL(request.url()).pathname.startsWith('/api/v1/') &&
-      !new URL(request.url()).pathname.startsWith('/api/v1/auth/')
+      !new URL(request.url()).pathname.startsWith('/api/v1/auth/') &&
+      // 实时在线心跳每个页面都会发送，不属于业务写入。
+      new URL(request.url()).pathname !== '/api/v1/presence'
     )
       posts.push(request.url())
   })
