@@ -106,25 +106,59 @@ jobs:
           if-no-files-found: error
           retention-days: 7
 
-  # 同一标签提交上并行复用完整 CI 与 Backend CI，全部通过后才构建镜像。
+  # 标签提交在 main 上已有全部任务成功（无跳过）的 CI / Backend CI 时复用其结果，不重跑对应门禁；
+  # 条件不满足或查询失败一律回到完整门禁。判断规则见 scripts/ci/release-reuse.sh。
+  reuse:
+    name: Reuse Main CI Results
+    needs: prepare
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions:
+      actions: read
+      contents: read
+    outputs:
+      ci: ${{ steps.check.outputs.ci }}
+      backend: ${{ steps.check.outputs.backend }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          # 后端复用需要比较历史提交之间的改动。
+          fetch-depth: 0
+          persist-credentials: false
+      - id: check
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: bash scripts/ci/release-reuse.sh "$GITHUB_REPOSITORY" "$GITHUB_SHA" | tee -a "$GITHUB_OUTPUT"
+
+  # 不能复用时，在同一标签提交上并行运行完整 CI 与 Backend CI，全部通过后才构建镜像。
   # 调用 job 的 permissions 是被调用工作流的上限；两份工作流自身声明 contents: read，缓存与产物上传使用运行时令牌，不需要额外权限。
   verify:
     name: Verify Full CI
-    needs: prepare
+    needs: [prepare, reuse]
+    if: needs.reuse.outputs.ci != 'true'
     permissions:
       contents: read
     uses: ./.github/workflows/ci.yml
 
   verify-backend:
     name: Verify Full Backend CI
-    needs: prepare
+    needs: [prepare, reuse]
+    if: needs.reuse.outputs.backend != 'true'
     permissions:
       contents: read
     uses: ./.github/workflows/backend-ci.yml
 
   build:
     name: Build ${{ matrix.image.name }} (${{ matrix.platform.arch }})
-    needs: [prepare, verify, verify-backend]
+    needs: [prepare, reuse, verify, verify-backend]
+    # 门禁跳过只在复用判断明确为 true 时视为通过；其余情况必须实际运行并成功。
+    if: >-
+      !cancelled() &&
+      needs.prepare.result == 'success' &&
+      needs.reuse.result == 'success' &&
+      (needs.verify.result == 'success' || (needs.verify.result == 'skipped' && needs.reuse.outputs.ci == 'true')) &&
+      (needs.verify-backend.result == 'success' || (needs.verify-backend.result == 'skipped' && needs.reuse.outputs.backend == 'true'))
     runs-on: ${{ matrix.platform.runner }}
     timeout-minutes: 60
     permissions:

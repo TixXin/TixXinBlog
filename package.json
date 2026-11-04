@@ -43,7 +43,7 @@
     "lint": "corepack pnpm --filter web-blog exec eslint . && node scripts/check-file-size.mjs",
     "lint:size": "node scripts/check-file-size.mjs",
     "lint:fix": "corepack pnpm --filter web-blog exec eslint . --fix",
-    "lint:shell": "shellcheck deploy/install.sh deploy/tixxin scripts/release/package-deploy.sh scripts/release/install-smoke.sh scripts/release/local-trial.sh scripts/check-ai-attribution.sh scripts/check-local.sh scripts/ci/detect-changes.sh",
+    "lint:shell": "shellcheck deploy/install.sh deploy/tixxin scripts/release/package-deploy.sh scripts/release/install-smoke.sh scripts/release/local-trial.sh scripts/check-ai-attribution.sh scripts/check-local.sh scripts/ci/detect-changes.sh scripts/ci/release-reuse.sh",
     "format": "prettier --write \"src/**/*.{vue,ts,js,scss,json,md}\"",
     "prepare": "husky",
     "check:secrets": "node scripts/check-secrets.mjs",
