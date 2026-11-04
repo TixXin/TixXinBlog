@@ -15,7 +15,7 @@ Public site and writing dashboard in one app · Three themes with light and dark
 [![NestJS](https://img.shields.io/badge/NestJS-11-E0234E?logo=nestjs&logoColor=white)](https://nestjs.com/)
 [![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-4169E1?logo=postgresql&logoColor=white)](https://www.postgresql.org/)
 
-[Author's blog](https://tix.xin) · [Five-minute deployment](docs/en/quick-start.md) · [Docs](docs/en/README.md) · [Changelog](CHANGELOG.md) · [中文](README.md)
+[Author's blog](https://blog.tix.xin) · [Five-minute deployment](docs/en/quick-start.md) · [Docs](docs/en/README.md) · [Changelog](CHANGELOG.md) · [中文](README.md)
 
 </div>
 

@@ -15,7 +15,7 @@
 [![NestJS](https://img.shields.io/badge/NestJS-11-E0234E?logo=nestjs&logoColor=white)](https://nestjs.com/)
 [![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-4169E1?logo=postgresql&logoColor=white)](https://www.postgresql.org/)
 
-[作者博客](https://tix.xin) · [5 分钟部署](docs/quick-start.md) · [文档](docs/README.md) · [更新日志](CHANGELOG.md) · [English](README.en.md)
+[作者博客](https://blog.tix.xin) · [5 分钟部署](docs/quick-start.md) · [文档](docs/README.md) · [更新日志](CHANGELOG.md) · [English](README.en.md)
 
 </div>
 
