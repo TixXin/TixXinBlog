@@ -169,7 +169,7 @@ jobs:
       matrix:
         image:
           - name: web
-            file: Dockerfile
+            file: src/frontend/web-blog/Dockerfile
             target: runtime
             description: TixXinBlog Nuxt 前端
           - name: api

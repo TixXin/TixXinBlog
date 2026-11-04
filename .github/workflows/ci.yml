@@ -223,7 +223,7 @@ jobs:
           node-version: 26
 
       - name: Frontend Docker Build
-        run: docker build -t tixxin-blog-web:ci .
+        run: docker build -f src/frontend/web-blog/Dockerfile -t tixxin-blog-web:ci .
 
       - name: Backend and Migration Docker Build
         run: |

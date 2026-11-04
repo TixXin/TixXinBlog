@@ -116,7 +116,7 @@ cd TixXinBlog
 
 | 镜像      | 构建方式                                                   | 作用                                                                     |
 | --------- | ---------------------------------------------------------- | ------------------------------------------------------------------------ |
-| web       | 根 `Dockerfile`（`runtime`）                               | Nuxt 前端与同源 API 网关                                                 |
+| web       | `src/frontend/web-blog/Dockerfile`（`runtime`）                               | Nuxt 前端与同源 API 网关                                                 |
 | api       | `src/backend/server-main/Dockerfile` 的 `runtime` target   | 只启动 HTTP                                                              |
 | migration | `src/backend/server-main/Dockerfile` 的 `migration` target | 只执行正式迁移                                                           |
 | worker    | `src/backend/server-main/Dockerfile` 的 `worker` target    | 携带生产依赖、维护脚本和 PostgreSQL 16 客户端，直接运行镜像时只读 status |
@@ -174,7 +174,7 @@ fork 的仓库推送自己的 `v*` 标签即可得到同名规则的镜像；首
 
 ```sh
 release_version="$(git rev-parse HEAD)"
-docker build -t "tixxin-blog-web:$release_version" .
+docker build -f src/frontend/web-blog/Dockerfile -t "tixxin-blog-web:$release_version" .
 docker build -f src/backend/server-main/Dockerfile --target runtime -t "tixxin-blog-api:$release_version" .
 docker build -f src/backend/server-main/Dockerfile --target migration -t "tixxin-blog-migration:$release_version" .
 docker build -f src/backend/server-main/Dockerfile --target worker -t "tixxin-blog-worker:$release_version" .
@@ -184,7 +184,7 @@ PowerShell：
 
 ```powershell
 $releaseVersion = git rev-parse HEAD
-docker build -t "tixxin-blog-web:$releaseVersion" .
+docker build -f src/frontend/web-blog/Dockerfile -t "tixxin-blog-web:$releaseVersion" .
 docker build -f src/backend/server-main/Dockerfile --target runtime -t "tixxin-blog-api:$releaseVersion" .
 docker build -f src/backend/server-main/Dockerfile --target migration -t "tixxin-blog-migration:$releaseVersion" .
 docker build -f src/backend/server-main/Dockerfile --target worker -t "tixxin-blog-worker:$releaseVersion" .

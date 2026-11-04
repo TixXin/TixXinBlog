@@ -1,6 +1,6 @@
 # Lighthouse 性能预算
 
-在 GitHub Actions 中选择 **Lighthouse CI → Run workflow** 手动运行；工作流需先合入默认分支才会显示手动入口。配置位于 [`.lighthouserc.cjs`](../.lighthouserc.cjs)，流程位于 [`lighthouse.yml`](../.github/workflows/lighthouse.yml)。它不自动随 push 或 PR 执行，也不部署产物。
+在 GitHub Actions 中选择 **Lighthouse CI → Run workflow** 手动运行；工作流需先合入默认分支才会显示手动入口。配置位于 [`scripts/lighthouse/lighthouserc.cjs`](../scripts/lighthouse/lighthouserc.cjs)，流程位于 [`lighthouse.yml`](../.github/workflows/lighthouse.yml)。它不自动随 push 或 PR 执行，也不部署产物。
 
 CI 使用 Node 26、pnpm 9.15.0 和项目 `corepack pnpm build` 生成生产产物，直接运行 `.output/server/index.mjs`。前端与只读夹具仅监听 runner 的 `127.0.0.1:4173/4174`，不需要后端、数据库或 secrets。Lighthouse 通过 `npx --yes --package=@lhci/cli@0.15.1` 调用，不修改项目依赖或锁文件；浏览器复用现有 Playwright 锁定的 Chromium。
 

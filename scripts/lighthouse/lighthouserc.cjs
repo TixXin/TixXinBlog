@@ -1,5 +1,5 @@
 /**
- * @file .lighthouserc.cjs
+ * @file lighthouserc.cjs
  * @description 默认 Nexus 主题的移动端性能预算；采集前由手动 CI 启动生产产物并核验页面。
  * 初始门槛及演示数据边界见 docs/lighthouse-ci.md。
  */

@@ -272,7 +272,7 @@ async function freezeSource() {
   const paths = [...new Set(listed)]
     .filter(
       (path) =>
-        ['package.json', 'pnpm-lock.yaml', 'pnpm-workspace.yaml', 'Dockerfile', '.dockerignore'].includes(path) ||
+        ['package.json', 'pnpm-lock.yaml', 'pnpm-workspace.yaml', '.dockerignore'].includes(path) ||
         path.startsWith('patches/') ||
         path.startsWith('src/'),
     )
@@ -334,7 +334,7 @@ try {
           'build',
           '--progress=plain',
           '-f',
-          join(context, role === 'web' ? 'Dockerfile' : 'src/backend/server-main/Dockerfile'),
+          join(context, role === 'web' ? 'src/frontend/web-blog/Dockerfile' : 'src/backend/server-main/Dockerfile'),
           '--target',
           role === 'api' || role === 'web' ? 'runtime' : role,
           '-t',

@@ -120,7 +120,7 @@ The application consists of four images. They must be built from the same commit
 
 | Image     | Build method                                               | Purpose                                                                                                                                           |
 | --------- | ---------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
-| web       | Root `Dockerfile` (`runtime`)                              | Nuxt frontend and same-origin API gateway                                                                                                         |
+| web       | `src/frontend/web-blog/Dockerfile` (`runtime`)                              | Nuxt frontend and same-origin API gateway                                                                                                         |
 | api       | `runtime` target in `src/backend/server-main/Dockerfile`   | Starts HTTP only                                                                                                                                  |
 | migration | `migration` target in `src/backend/server-main/Dockerfile` | Runs formal migrations only                                                                                                                       |
 | worker    | `worker` target in `src/backend/server-main/Dockerfile`    | Includes production dependencies, maintenance scripts, and the PostgreSQL 16 client; running the image directly performs a read-only status check |
@@ -178,7 +178,7 @@ Build all four images from the same commit in a clean checkout on the target hos
 
 ```sh
 release_version="$(git rev-parse HEAD)"
-docker build -t "tixxin-blog-web:$release_version" .
+docker build -f src/frontend/web-blog/Dockerfile -t "tixxin-blog-web:$release_version" .
 docker build -f src/backend/server-main/Dockerfile --target runtime -t "tixxin-blog-api:$release_version" .
 docker build -f src/backend/server-main/Dockerfile --target migration -t "tixxin-blog-migration:$release_version" .
 docker build -f src/backend/server-main/Dockerfile --target worker -t "tixxin-blog-worker:$release_version" .
@@ -188,7 +188,7 @@ PowerShell:
 
 ```powershell
 $releaseVersion = git rev-parse HEAD
-docker build -t "tixxin-blog-web:$releaseVersion" .
+docker build -f src/frontend/web-blog/Dockerfile -t "tixxin-blog-web:$releaseVersion" .
 docker build -f src/backend/server-main/Dockerfile --target runtime -t "tixxin-blog-api:$releaseVersion" .
 docker build -f src/backend/server-main/Dockerfile --target migration -t "tixxin-blog-migration:$releaseVersion" .
 docker build -f src/backend/server-main/Dockerfile --target worker -t "tixxin-blog-worker:$releaseVersion" .

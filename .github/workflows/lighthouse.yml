@@ -68,16 +68,16 @@ jobs:
           }
           trap cleanup EXIT
           node scripts/lighthouse/ci.mjs check-pages
-          npx --yes --package=@lhci/cli@0.15.1 lhci collect --config=.lighthouserc.cjs
+          npx --yes --package=@lhci/cli@0.15.1 lhci collect --config=scripts/lighthouse/lighthouserc.cjs
 
       - name: 执行预算断言
         id: budgets
-        run: npx --yes --package=@lhci/cli@0.15.1 lhci assert --config=.lighthouserc.cjs
+        run: npx --yes --package=@lhci/cli@0.15.1 lhci assert --config=scripts/lighthouse/lighthouserc.cjs
 
       # 预算失败也导出可读报告，断言步骤的非零状态继续令工作流失败。
       - name: 导出 HTML 与 JSON 报告
         if: ${{ !cancelled() && steps.budgets.outcome != 'skipped' }}
-        run: npx --yes --package=@lhci/cli@0.15.1 lhci upload --config=.lighthouserc.cjs
+        run: npx --yes --package=@lhci/cli@0.15.1 lhci upload --config=scripts/lighthouse/lighthouserc.cjs
 
       - name: 保存报告与启动日志
         if: always()

@@ -110,7 +110,7 @@ dev_version() {
 build_images() {
   local version=$1 image
   step "构建镜像 ${IMAGE_PREFIX}-*:${version}（首次约 10–15 分钟，之后使用缓存）"
-  docker build -t "$IMAGE_PREFIX-web:$version" "$ROOT"
+  docker build -f "$ROOT/src/frontend/web-blog/Dockerfile" -t "$IMAGE_PREFIX-web:$version" "$ROOT"
   docker build -f "$ROOT/src/backend/server-main/Dockerfile" -t "$IMAGE_PREFIX-api:$version" "$ROOT"
   docker build -f "$ROOT/src/backend/server-main/Dockerfile" --target migration -t "$IMAGE_PREFIX-migration:$version" "$ROOT"
   docker build -f "$ROOT/src/backend/server-main/Dockerfile" --target worker -t "$IMAGE_PREFIX-worker:$version" "$ROOT"
