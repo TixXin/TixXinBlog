@@ -10,7 +10,8 @@ export default defineNuxtPlugin({
   name: 'live-presence',
   setup(app) {
     const config = useRuntimeConfig().public
-    if (config.staticSite || config.useMockRepo) return
+    // 单元测试环境不发心跳：否则会混入其他用例对请求、fetch 次数与 sessionStorage 的断言；心跳逻辑另有直接调用的单测。
+    if (config.staticSite || config.useMockRepo || import.meta.test) return
     const state = useLivePresenceState()
     const accessToken = useState<string | null>('auth-access-token', () => null)
     const router = useRouter()
