@@ -339,18 +339,18 @@ corepack pnpm test:e2e:run accessibility.spec.ts
 
 CI 先由 `changes` 任务按改动文件决定跳过哪些重任务（[`scripts/ci/detect-changes.sh`](../scripts/ci/detect-changes.sh)）：只有全部改动都属于部署脚本、开发与数据库脚本、提交钩子、其他工作流、代理技能（`.agents/`）和说明文件这类明确无关的路径时，才跳过浏览器回归、类型检查、单测与构建；部署脚本、`Dockerfile` 与编排之外的改动还会跳过镜像构建、容器冒烟与安装冒烟。未列入的路径一律全量，新建分支或强制推送无法确定范围时也全量；Release 通过 `workflow_call` 调用时始终全量。推送前用 `corepack pnpm check:local` 在本地先跑对应检查，见[根脚本说明](scripts.md)。
 
-[CI](../.github/workflows/ci.yml) 的 `browser-e2e` 矩阵任务按默认 [Playwright 配置](../src/frontend/web-blog/playwright.config.ts) 跑 Chromium 全量，分 4 片并行。该配置没有 `projects`，`browserName` 默认为 `chromium`，`workers` 为 1，命令行 `--browser=webkit` 会覆盖这次运行的浏览器。WebKit 核心冒烟与全量回归并行，范围是 `blog.spec.ts` 与 `hydration-history.spec.ts` 两个完整文件：前者覆盖分页、发布撤回、评论、三主题移动端和后台闭环，后者覆盖水合与原生历史。每个文件单独调用隔离运行器，避免写入互相影响。`performance-admin.spec.ts` 固定断言 Chromium，留在全量分片中。`playwright.motion.config.ts` 的多浏览器项目只用于单独的动效验收，默认 CI 配置仍是 `playwright.config.ts`。准备好当前源码的两端生产构建、PostgreSQL 和 WebKit 后，可复现相同范围：
+[CI](../.github/workflows/ci.yml) 的 `browser-e2e` 矩阵任务按默认 [Playwright 配置](../src/frontend/web-blog/playwright.config.ts) 跑 Chromium 全量，分 8 片并行。该配置没有 `projects`，`browserName` 默认为 `chromium`，`workers` 为 1，命令行 `--browser=webkit` 会覆盖这次运行的浏览器。WebKit 核心冒烟与全量回归并行，范围是 `blog.spec.ts` 与 `hydration-history.spec.ts` 两个完整文件：前者覆盖分页、发布撤回、评论、三主题移动端和后台闭环，后者覆盖水合与原生历史。每个文件单独调用隔离运行器，避免写入互相影响。`performance-admin.spec.ts` 固定断言 Chromium，留在全量分片中。`playwright.motion.config.ts` 的多浏览器项目只用于单独的动效验收，默认 CI 配置仍是 `playwright.config.ts`。准备好当前源码的两端生产构建、PostgreSQL 和 WebKit 后，可复现相同范围：
 
 ```sh
 corepack pnpm test:e2e:run blog.spec.ts --browser=webkit
 corepack pnpm test:e2e:run hydration-history.spec.ts --browser=webkit
 ```
 
-全量分片由运行器按文件完成，每个文件仍各用独立进程和隔离库，不使用 Playwright 自带的 `--shard`，后者会把同一文件拆到不同分片。运行器读取 [`shard-weights.json`](../src/frontend/web-blog/tests/e2e/shard-weights.json) 中各 spec 的 CI 实测秒数，按“最长处理时间优先”贪心算法确定性分配；未收录的新文件取中位数权重，不会漏跑。`lint-and-build` 用 `--list-shards 4` 校验 4 片并集等于全部 spec 且互不重复。各片独立报告，失败产物以 `browser-e2e-failure-<片号>` 上传，本机目录名带 `-s<片号>of<总数>` 后缀。准备好两端生产构建后，可在本机复现某一片或查看分片清单：
+全量分片由运行器按文件完成，每个文件仍各用独立进程和隔离库，不使用 Playwright 自带的 `--shard`，后者会把同一文件拆到不同分片。运行器读取 [`shard-weights.json`](../src/frontend/web-blog/tests/e2e/shard-weights.json) 中各 spec 的 CI 实测秒数，按“最长处理时间优先”贪心算法确定性分配；未收录的新文件取中位数权重，不会漏跑。`lint-and-build` 用 `--list-shards 8` 校验 8 片并集等于全部 spec 且互不重复。镜像构建、容器冒烟与安装冒烟在独立的 `container-images` 任务中与之并行。各片独立报告，失败产物以 `browser-e2e-failure-<片号>` 上传，本机目录名带 `-s<片号>of<总数>` 后缀。准备好两端生产构建后，可在本机复现某一片或查看分片清单：
 
 ```sh
-E2E_SHARD=2/4 corepack pnpm test:e2e:run
-node src/backend/server-main/tests/browser-runner.mjs --list-shards 4
+E2E_SHARD=2/8 corepack pnpm test:e2e:run
+node src/backend/server-main/tests/browser-runner.mjs --list-shards 8
 ```
 
 不设置 `E2E_SHARD` 时运行器照旧跑全量。新增文件或某文件耗时明显变化后，用最近一次全量通过的 CI 日志更新权重表：每个文件的权重取上一文件结束到该文件 `N passed (时长)` 行之间的墙钟秒数，包含建库、迁移、写样本和启动预览；同时更新 `source` 字段，并确认各片预计耗时接近。调整分片数时同步修改 `browser-e2e` 的 matrix、`E2E_SHARD` 总数和覆盖校验中的片数。

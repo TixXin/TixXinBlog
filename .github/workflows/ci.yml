@@ -131,14 +131,14 @@ jobs:
       # browser-e2e 按权重表分片，这里确认各片并集正好是全部 spec 且互不重复，防止分片漏跑。
       - name: Browser E2E Shard Coverage
         run: |
-          node src/backend/server-main/tests/browser-runner.mjs --list-shards 4 > "$RUNNER_TEMP/e2e-shards.json"
+          node src/backend/server-main/tests/browser-runner.mjs --list-shards 8 > "$RUNNER_TEMP/e2e-shards.json"
           node --input-type=module -e '
             import { readFileSync, readdirSync } from "node:fs"
             const shards = JSON.parse(readFileSync(process.argv[1], "utf8"))
             const listed = shards.flatMap((shard) => shard.files)
             const expected = readdirSync("src/frontend/web-blog/tests/e2e").filter((name) => name.endsWith(".spec.ts")).sort()
             const actual = [...listed].sort()
-            if (shards.length !== 4) throw new Error(`分片数应为 4，实际 ${shards.length}`)
+            if (shards.length !== 8) throw new Error(`分片数应为 8，实际 ${shards.length}`)
             if (new Set(listed).size !== listed.length) throw new Error("分片之间存在重复文件")
             if (JSON.stringify(actual) !== JSON.stringify(expected)) throw new Error(`分片与 spec 全集不一致：${JSON.stringify({ expected, actual })}`)
             for (const shard of shards) console.log(`分片 ${shard.shard}：${shard.files.length} 个文件，预计 ${Math.round(shard.weight)} 秒`)
@@ -203,18 +203,34 @@ jobs:
       - name: Isolated PostgreSQL Startup
         run: pnpm test:dev:postgres
 
+      - name: Audit Dependencies
+        run: pnpm audit --prod --audit-level=high
+
+  # 镜像构建、容器冒烟与安装冒烟与 lint-and-build 并行：原先串行接在单测与构建之后，是门禁最慢的一段。
+  # 只用到 Docker、Node 与 bash，不需要安装项目依赖。
+  container-images:
+    name: Container Images and Install Smoke
+    needs: changes
+    if: needs.changes.outputs.images == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: 26
+
       - name: Frontend Docker Build
-        if: needs.changes.outputs.images == 'true'
         run: docker build -t tixxin-blog-web:ci .
 
       - name: Backend and Migration Docker Build
-        if: needs.changes.outputs.images == 'true'
         run: |
           docker build -f src/backend/server-main/Dockerfile -t tixxin-blog-api:ci .
           docker build -f src/backend/server-main/Dockerfile --target migration -t tixxin-blog-migration:ci .
 
       - name: Production Container Smoke
-        if: needs.changes.outputs.images == 'true'
         env:
           WEB_IMAGE: tixxin-blog-web:ci
           API_IMAGE: tixxin-blog-api:ci
@@ -223,12 +239,10 @@ jobs:
 
       # 与 API 共用构建阶段缓存；一键安装的备份在 worker 镜像内执行。
       - name: Worker Docker Build
-        if: needs.changes.outputs.images == 'true'
         run: docker build -f src/backend/server-main/Dockerfile --target worker -t tixxin-blog-worker:ci .
 
       # 用本次镜像与本地部署包运行 install.sh --local --yes，再验收备份、同版本升级、失败升级、跨版本升级与回退。
       - name: Install Script Smoke
-        if: needs.changes.outputs.images == 'true'
         env:
           SMOKE_WEB_IMAGE: tixxin-blog-web:ci
           SMOKE_API_IMAGE: tixxin-blog-api:ci
@@ -236,12 +250,9 @@ jobs:
           SMOKE_WORKER_IMAGE: tixxin-blog-worker:ci
         run: bash scripts/release/install-smoke.sh
 
-      - name: Audit Dependencies
-        run: pnpm audit --prod --audit-level=high
-
-  # 全部浏览器 spec 按文件分 4 片并行；每片各自构建，文件仍逐个使用独立进程与隔离库。
+  # 全部浏览器 spec 按文件分 8 片并行；每片各自构建，文件仍逐个使用独立进程与隔离库。
   browser-e2e:
-    name: Browser E2E (${{ matrix.shard }}/4)
+    name: Browser E2E (${{ matrix.shard }}/8)
     needs: changes
     if: needs.changes.outputs.app == 'true'
     runs-on: ubuntu-latest
@@ -250,7 +261,7 @@ jobs:
       # 各片独立报告，一片失败不取消其余分片。
       fail-fast: false
       matrix:
-        shard: [1, 2, 3, 4]
+        shard: [1, 2, 3, 4, 5, 6, 7, 8]
     env:
       DATABASE_URL: postgres://tixxin:tixxin@localhost:5432/tixxin_blog
     services:
@@ -314,7 +325,7 @@ jobs:
 
       - name: Browser E2E on Isolated Database
         env:
-          E2E_SHARD: ${{ matrix.shard }}/4
+          E2E_SHARD: ${{ matrix.shard }}/8
         run: pnpm test:e2e:run
 
       - name: Browser Failure Artifacts
