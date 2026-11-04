@@ -6,6 +6,13 @@
 
 ## [未发布]
 
+## [0.5.1] - 2026-11-04
+
+### 升级说明
+
+- 无数据迁移，环境文件不需要改动；`tixxin update 0.5.1` 换用新镜像与新部署包即可。编排为前端新增 `NUXT_RELEASE_VERSION`（取自已有的 `RELEASE_VERSION`），版本响应头改由前端下发，升级验收照常核对
+- 已有站点继续使用自带 Caddy，不会切换为外部反向代理模式；外部反向代理模式只用于新安装（`install.sh --behind-proxy`），代理模式站点不能回退到 0.5.0 及更早版本
+
 ### 新增
 
 - 一键安装支持外部反向代理模式 `install.sh --behind-proxy`：服务器上已有 1Panel、宝塔或其他 Nginx/OpenResty 占用 80/443 时，不再需要停止它们。自带 Caddy 不启动，前端只监听 `127.0.0.1`（默认 3456，被占用时向上顺延，或用 `--bind` 指定），由面板终止 HTTPS 并转发；安装结束时打印反代要求并生成 `proxy/nginx.conf.example`。`tixxin status` 分别报告本机入口与公开入口，公开入口还会确认同源写入未被拒绝；升级与回退沿用该模式，并拒绝回退到不支持它的旧版本。说明见部署指南「服务器已有面板或反向代理」
@@ -14,6 +21,7 @@
 
 - 版本响应头 `X-TixXin-Release` 与 `Permissions-Policy` 改由前端下发（此前只由自带的 Caddy 入口添加），为在面板或已有反向代理之后部署做准备；静态发布也开始写入 `Permissions-Policy`。编排为前端新增 `NUXT_RELEASE_VERSION`（取自 `RELEASE_VERSION`），环境文件无需改动
 - 一键安装发现 80/443 被占用时不再一律提示“停止占用该端口的服务”：正式安装会显示占用进程，识别到 1Panel、宝塔面板或 Nginx、OpenResty 等 Web 服务时，说明停止它会让本机其他站点下线，并建议改用 `--behind-proxy`；本机试用改为提示用 `--http-port`/`--https-port` 换端口
+- 搜索、快捷键帮助、登录弹窗与开发调试面板改为异步组件：它们只在交互后才用到，此前由根组件静态导入，页面水合前要先下载执行它们及其依赖，现在首屏入口随之变小
 - 朋友圈与闪念列表的图片灯箱改为首次打开时才创建：此前每张朋友圈卡片（含无图卡片）和每个闪念图片网格在页面加载后都会各挂一个隐藏的灯箱与全局键盘监听，一页 15 条朋友圈就多出 15 个。首次打开仍有淡入过渡，焦点与 Esc 关闭不变
 
 ### 修复
@@ -272,7 +280,8 @@
 - 无多语言支持，界面与内容均为中文
 - 定位为单博主博客，不计划扩展多租户、访客账号或协作能力
 
-[未发布]: https://github.com/TixXin/TixXinBlog/compare/v0.5.0...HEAD
+[未发布]: https://github.com/TixXin/TixXinBlog/compare/v0.5.1...HEAD
+[0.5.1]: https://github.com/TixXin/TixXinBlog/compare/v0.5.0...v0.5.1
 [0.5.0]: https://github.com/TixXin/TixXinBlog/compare/v0.4.0...v0.5.0
 [0.4.0]: https://github.com/TixXin/TixXinBlog/compare/v0.3.0...v0.4.0
 [0.3.0]: https://github.com/TixXin/TixXinBlog/compare/v0.2.0...v0.3.0

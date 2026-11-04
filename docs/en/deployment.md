@@ -51,7 +51,7 @@ The reverse proxy configuration that 1Panel generates when it terminates HTTPS a
 
 The public entry is only checked and reported; it does not decide whether an install or upgrade succeeds, because the outer proxy is configured separately by the site administrator. If the public entry worked before an upgrade and fails afterwards, `tixxin` warns more strongly but does not roll back automatically. Open the setup link only after the panel and HTTPS are working; sign-in credentials only work over HTTPS.
 
-External reverse proxy mode is available from v0.6.0. A site in this mode cannot roll back to an earlier version: `tixxin rollback` refuses before switching, so that an old script does not start Caddy and take over ports 80/443. Switching an existing normal site to this mode in place is not supported yet.
+External reverse proxy mode is available from v0.5.1. A site in this mode cannot roll back to an earlier version: `tixxin rollback` refuses before switching, so that an old script does not start Caddy and take over ports 80/443. Switching an existing normal site to this mode in place is not supported yet.
 
 This flow has been verified on Linux with Nginx standing in for the panel, covering install, setup, sign-in, visitor addresses, and the rollback guard (see the install smoke test `scripts/release/install-smoke.sh`). Upgrade and uninstall have not yet been fully verified on a real 1Panel.
 
