@@ -202,13 +202,16 @@ sudo tixxin update 0.3.0
 
 ### A Port Is Already in Use
 
-When the installer reports that port 80 or 443 is in use, find the program holding it, stop it and run the installation again:
+When the installer reports that port 80 or 443 is in use, first find out what holds it instead of stopping it right away. The installer shows the process name when it can read it; you can also check yourself:
 
 ```sh
 sudo ss -ltnp '( sport = :80 or sport = :443 )'
 ```
 
-A production installation must use HTTPS port 443. A local trial can switch ports with `--http-port` and `--https-port`. If the port is held by the OpenResty/Nginx of a panel such as 1Panel or BT Panel, do not just stop it; see [Servers with an existing panel or reverse proxy](deployment.md#servers-with-an-existing-panel-or-reverse-proxy-such-as-1panel).
+- If the port is held by the OpenResty/Nginx of a panel such as 1Panel or BT Panel, or by an Nginx, Caddy or other web server that serves other sites on this machine, stopping it takes those sites offline. The project does not yet support installing behind a panel or an existing reverse proxy; see [Servers with an existing panel or reverse proxy](deployment.md#servers-with-an-existing-panel-or-reverse-proxy-such-as-1panel). The installer says so directly when it detects a panel.
+- Stop the program and run the installation again only after confirming it is no longer needed.
+
+A production installation must use HTTPS port 443. A local trial can switch ports with `--http-port` and `--https-port`.
 
 ### The Certificate Is Not Issued
 

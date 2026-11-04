@@ -234,12 +234,47 @@ port_in_use() {
   fi
 }
 
+# 占用端口的进程名；ss -p 需要 root，取不到时返回空，只影响提示的详细程度。
+port_owner() {
+  local listing
+  command -v ss > /dev/null 2>&1 || return 0
+  listing=$(ss -Hltnp "sport = :$1" 2> /dev/null) || return 0
+  case $listing in
+    *'users:(("'*) listing=${listing#*users:((\"} && printf '%s' "${listing%%\"*}" ;;
+  esac
+}
+
+# 识别本机的服务器面板；只看安装痕迹，不调用面板接口。
+detect_panel() {
+  if command -v 1pctl > /dev/null 2>&1 || [ -d /opt/1panel ]; then
+    printf '1Panel'
+  elif command -v bt > /dev/null 2>&1 || [ -d /www/server/panel ]; then
+    printf '宝塔面板'
+  fi
+}
+
+PANEL_DOC_URL='https://github.com/TixXin/TixXinBlog/blob/main/docs/deployment.md#服务器已有面板或反向代理如-1panel'
+
 check_port() {
+  local owner panel who
   case $1 in '' | *[!0-9]*) fail "端口 $1 不合法" ;; esac
   [ "$1" -ge 1 ] && [ "$1" -le 65535 ] || fail "端口 $1 不合法"
-  if port_in_use "$1"; then
-    fail "端口 $1 已被占用；请停止占用该端口的服务$([ "$LOCAL_MODE" = 1 ] && printf '，或用 --http-port/--https-port 改用其他端口')"
+  port_in_use "$1" || return 0
+  owner=$(port_owner "$1")
+  who=${owner:+（占用进程：${owner}）}
+  if [ "$LOCAL_MODE" = 1 ]; then
+    fail "端口 $1 已被占用${who}；请用 --http-port/--https-port 改用其他端口"
   fi
+  # 正式安装不建议停止占用者：服务器上的 Nginx/OpenResty 往往同时承载其他站点。
+  panel=$(detect_panel)
+  if [ -n "${panel}" ]; then
+    fail "端口 $1 已被占用${who}，本机装有 ${panel}。不要为安装停止它：面板的 OpenResty/Nginx 承载着本机其他站点，停止会让它们一起下线。本项目暂不支持安装在面板或已有反向代理之后，说明见 ${PANEL_DOC_URL}"
+  fi
+  case ${owner} in
+    nginx | openresty | caddy | httpd | apache2 | haproxy | traefik | docker-proxy)
+      fail "端口 $1 已被占用${who}。它可能正在为本机其他站点提供服务，不要直接停止；本项目暂不支持安装在已有反向代理之后，说明见 ${PANEL_DOC_URL}" ;;
+  esac
+  fail "端口 $1 已被占用${who}。先确认占用者的用途：本机其他站点在用的 Web 服务不要停止（见 ${PANEL_DOC_URL}）；确认不再需要后再停止它并重新运行安装"
 }
 
 # ---------- 配置收集 ----------
