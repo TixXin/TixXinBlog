@@ -116,7 +116,7 @@
 - `readers`：与本次心跳同一路径的在线会话数（含自己），路径口径与浏览去重相同；路径不计浏览时为 `null`。
 - 后台关闭“公开访问统计”时 `online`、`stats` 与 `readers` 为 `null`；关闭“自动在线状态”时 `owner` 为 `null`。
 
-`POST /presence/leave` 接受 `{ session }`（约束同上），页面关闭（`pagehide`）时由 `navigator.sendBeacon` 发送，立即把该会话移出在线人数与正在阅读，成功返回 204；与心跳共用限流配额。`GET /presence/readers?path=` 返回 `{ readers }`，口径同心跳响应，只查询不登记心跳，按普通读取限流。
+`POST /presence/leave` 接受 `{ session }`（约束同上），页面关闭（`pagehide`）时由 `navigator.sendBeacon` 发送，立即把该会话移出在线人数与正在阅读，成功返回 204；与心跳共用限流配额。`GET /presence/readers` 以查询参数 `path`（≤512 字符）指定页面，返回 `{ readers }`，口径同心跳响应，只查询不登记心跳，按普通读取限流。
 
 缺少 `User-Agent` 或命中常见爬虫、监控与脚本客户端标识的请求不计入在线人数与浏览，但照常返回数字。只保存访客标识的 SHA-256 哈希、首次到访时间与最后到访日期，以及按日期汇总的浏览与访客数；不保存 IP、`User-Agent` 或访问路径。这些运行数据随完整备份保存，不进入内容包。
 
