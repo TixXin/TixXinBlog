@@ -254,17 +254,18 @@ export default {
     preference: 'dark',
     fallback: 'dark',
   },
-  // NuxtLink prefetch 策略：此处配置会与 Nuxt 默认的 visibility: true 深合并，
-  // 因此可见即预取始终生效；生产下这只是在空闲时预载各栏目的路由块（HTTP/2，约数百 KB），
-  // 换来切页免等代码加载。hover/focus 预取作为补充。dev 下 Nuxt 不预载路由块，
-  // 悬停预取由 plugins/route-prefetch.client.ts 单独处理。
+  // NuxtLink prefetch 策略：只在悬停/聚焦时预取目标页代码，不再按链接进入视口批量预取。
+  // 此处配置会与 Nuxt 默认的 visibility: true 深合并，必须显式写 false 才能关闭。
+  // 原因：可见即预取让每次访问额外下载导航里其他页面的代码（实测每页 550–700KB，含后台布局），
+  // 多数访客并不会点开这些页面。代价：触屏没有悬停，点击导航时目标页代码临时加载。
+  // dev 下 Nuxt 不预载路由块，悬停预取由 plugins/route-prefetch.client.ts 单独处理。
   experimental: {
     // 关闭 payload 提取：Nuxt 会把带缓存规则的路由当作可预取 payload 的页面，每个可见链接都会让
     // 服务端完整渲染一次目标页并打一轮后端接口，瞬间触发后端限流。本站不预渲染，客户端切页走接口即可。
     payloadExtraction: false,
     defaults: {
       nuxtLink: {
-        prefetchOn: { visibility: true, interaction: true },
+        prefetchOn: { visibility: false, interaction: true },
       },
     },
   },
