@@ -18,13 +18,14 @@
   <NuxtLayout />
   <ClientOnly>
     <CommonToastContainer />
-    <CommonSearchModal v-model:visible="isSearchOpen" />
-    <CommonKeyboardShortcutsHelp v-model:visible="isShortcutHelpOpen" />
-    <AuthModal />
+    <!-- 交互后才用到的浮层走异步组件：代码不进入根组件的静态依赖，首屏水合不必等它们及其依赖下载 -->
+    <LazyCommonSearchModal v-model:visible="isSearchOpen" />
+    <LazyCommonKeyboardShortcutsHelp v-model:visible="isShortcutHelpOpen" />
+    <LazyAuthModal />
     <!-- Dev 调试面板：仅 dev 模式渲染，prod 构建被 DevOnly 整段 tree-shake -->
     <DevOnly>
-      <DevDebugPanel />
-      <DevPreviewBadge />
+      <LazyDevDebugPanel />
+      <LazyDevPreviewBadge />
     </DevOnly>
   </ClientOnly>
 </template>
