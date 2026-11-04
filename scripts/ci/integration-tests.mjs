@@ -1,7 +1,8 @@
 /**
  * @file integration-tests.mjs
  * @description 按改动文件挑选后端 HTTP 集成测试，供 check:local 在推送前本地运行；测试清单取自 server-main 的 test:integration，与 CI 保持一致。
- *   用法：git diff --name-only ... | node scripts/ci/integration-tests.mjs [--all]
+ *   用法：git diff --name-only ... | node scripts/ci/integration-tests.mjs [--all] [--shard=i/n]
+ *   CI 用 `--all --shard=i/n` 把全量清单轮流分到 n 个并行任务。
  *   输出：选中的测试文件名（每行一个），以及以 # 开头的提示行。
  */
 import { readFileSync } from 'node:fs'
@@ -59,11 +60,23 @@ export function selectIntegrationTests(files, available, { all = false } = {}) {
   return { tests: available.filter((test) => selected.has(test)), notes }
 }
 
+/** 按 i/n 轮流取出第 i 片，保持 CI 顺序；各测试文件自建隔离库，分片之间互不依赖 */
+export function shardTests(tests, spec) {
+  const match = /^(\d+)\/(\d+)$/.exec(spec ?? '')
+  if (!match) throw new Error(`分片格式应为 i/n：${spec}`)
+  const index = Number(match[1]),
+    total = Number(match[2])
+  if (total < 1 || index < 1 || index > total) throw new Error(`分片编号超出范围：${spec}`)
+  return tests.filter((_, position) => position % total === index - 1)
+}
+
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
   const packageJson = JSON.parse(readFileSync(new URL(`../../${backend}package.json`, import.meta.url), 'utf8'))
   const available = integrationTests(packageJson.scripts['test:integration'])
   const files = readFileSync(0, 'utf8').split('\n').filter(Boolean)
-  const { tests, notes } = selectIntegrationTests(files, available, { all: process.argv.includes('--all') })
+  const { tests: selected, notes } = selectIntegrationTests(files, available, { all: process.argv.includes('--all') })
+  const shard = process.argv.find((arg) => arg.startsWith('--shard='))?.slice('--shard='.length)
+  const tests = shard ? shardTests(selected, shard) : selected
   for (const note of notes) process.stdout.write(`# ${note}\n`)
   for (const test of tests) process.stdout.write(`${test}\n`)
 }
