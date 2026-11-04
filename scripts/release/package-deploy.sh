@@ -68,7 +68,7 @@ trap 'rm -rf "$stage"' EXIT
 
 mkdir -p "$stage/deploy"
 cp "$root/compose.production.yaml" "$stage/"
-cp "$root"/deploy/Caddyfile* "$root/deploy/compose.local.yaml" "$root/deploy/production.env.example" \
+cp "$root"/deploy/Caddyfile* "$root/deploy/compose.local.yaml" "$root/deploy/compose.proxy.yaml" "$root/deploy/production.env.example" \
   "$root/deploy/tixxin" "$stage/deploy/"
 chmod 644 "$stage/compose.production.yaml" "$stage"/deploy/*
 chmod 755 "$stage/deploy/tixxin"

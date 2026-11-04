@@ -13,6 +13,8 @@ ASSUME_YES=0
 NO_PULL=0
 LOCK_HELD=0
 STAGE=''
+# 代理模式：操作前公开入口是否可用（1/0），空表示未检查。
+PUBLIC_BEFORE=''
 
 # ---------- 输出 ----------
 
@@ -87,12 +89,19 @@ env_keys() {
   sed -n 's/^[[:space:]]*\(export[[:space:]]\{1,\}\)\{0,1\}\([A-Za-z_][A-Za-z0-9_]*\)=.*/\2/p' "$ENV_FILE"
 }
 
+site_mode() { env_get TIXXIN_MODE; }
+
 compose_file_args() {
-  if [ "$(env_get TIXXIN_MODE)" = 'local' ]; then
-    printf '%s\n' -f "$TIXXIN_DIR/compose.production.yaml" -f "$TIXXIN_DIR/deploy/compose.local.yaml"
-  else
-    printf '%s\n' -f "$TIXXIN_DIR/compose.production.yaml"
-  fi
+  case $(site_mode) in
+    local) printf '%s\n' -f "$TIXXIN_DIR/compose.production.yaml" -f "$TIXXIN_DIR/deploy/compose.local.yaml" ;;
+    proxy) printf '%s\n' -f "$TIXXIN_DIR/compose.production.yaml" -f "$TIXXIN_DIR/deploy/compose.proxy.yaml" ;;
+    *) printf '%s\n' -f "$TIXXIN_DIR/compose.production.yaml" ;;
+  esac
+}
+
+# 对外入口相关的应用服务：代理模式不启动自带 Caddy（edge），由外层面板或反代承担 HTTPS。
+entry_services() {
+  if [ "$(site_mode)" = proxy ]; then printf '%s\n' backend frontend; else printf '%s\n' backend frontend edge; fi
 }
 
 # 与 release.mjs 一致：只以 .env 为插值来源，清除当前 shell 中同名变量与 COMPOSE_* 覆盖。
@@ -222,7 +231,7 @@ print_diagnostics() {
   info '现场已保留（未删除容器、数据卷与备份）。排查命令：'
   info "  tixxin status"
   info "  tixxin logs backend"
-  info "  tixxin logs edge"
+  if [ "$(site_mode)" = proxy ]; then info "  tixxin logs frontend"; else info "  tixxin logs edge"; fi
   info "  cd $TIXXIN_DIR && docker compose ps -a"
 }
 
@@ -371,13 +380,86 @@ curl_site() {
   fi
 }
 
-# 与 release.mjs 对齐：HTTPS 同源公开 API 返回 200，且入口版本头等于目标版本；不跟随跳转。
-check_entry_once() {
-  local version=$1 headers status release
-  headers=$(curl_site -sS --proto '=https' --max-time 15 -o /dev/null -D - "$(site_url)/api/v1/posts?pageSize=1" 2> /dev/null) || return 1
+# 从响应头判定：状态 200 且版本头等于目标版本。
+entry_headers_ok() {
+  local version=$1 headers=$2 status release
   status=$(printf '%s\n' "$headers" | awk 'toupper($1) ~ /^HTTP\// { code = $2 } END { print code }')
   release=$(printf '%s\n' "$headers" | tr -d '\r' | awk 'tolower($1) == "x-tixxin-release:" { print $2 }' | tail -n 1)
   [ "$status" = 200 ] && [ "$release" = "$version" ]
+}
+
+# 与 release.mjs 对齐：HTTPS 同源公开 API 返回 200，且入口版本头等于目标版本；不跟随跳转。
+public_entry_once() {
+  local headers
+  headers=$(curl_site -sS --proto '=https' --max-time 15 -o /dev/null -D - "$(site_url)/api/v1/posts?pageSize=1" 2> /dev/null) || return 1
+  entry_headers_ok "$1" "$headers"
+}
+
+proxy_origin() { printf 'http://%s:%s' "$(env_get PROXY_BIND_ADDRESS)" "$(env_get PROXY_PORT)"; }
+
+# 代理模式的本机入口：模拟外层代理应发送的 Host 与 X-Forwarded-Proto，不依赖面板是否已配置。
+local_entry_once() {
+  local headers
+  headers=$(curl -sS --max-time 15 -o /dev/null -D - -H "Host: $(env_get SITE_HOST)" -H 'X-Forwarded-Proto: https' \
+    "$(proxy_origin)/api/v1/posts?pageSize=1" 2> /dev/null) || return 1
+  entry_headers_ok "$1" "$headers"
+}
+
+check_entry_once() {
+  if [ "$(site_mode)" = proxy ]; then local_entry_once "$1"; else public_entry_once "$1"; fi
+}
+
+# 经外层代理的同源写入：无凭据刷新应得到 401；403 说明代理没有把 Host 设为站点域名或没有设置 X-Forwarded-Proto: https。
+public_write_status() {
+  curl_site -sS --proto '=https' --max-time 15 -o /dev/null -w '%{http_code}' -X POST -H "Origin: $(site_url)" \
+    "$(site_url)/api/v1/auth/refresh" 2> /dev/null || true
+}
+
+proxy_requirements() {
+  warn "请确认外层反向代理把 $(site_url) 转发到 $(proxy_origin)，并且："
+  warn '  - Host 设为站点域名，X-Forwarded-Proto 设为 https；'
+  warn '  - 用访客真实地址覆盖 X-Forwarded-For（不追加）；前面有 CDN 时取 CDN 提供的访客地址，并只允许 CDN 回源访问；'
+  warn '  - 访客侧为 HTTPS（证书与 HTTP 跳转由面板或 CDN 负责）。'
+  warn "配置片段：$TIXXIN_DIR/proxy/nginx.conf.example；说明见部署指南「服务器已有面板或反向代理」。"
+}
+
+# 代理模式的公开入口只做检查与提示，不判定失败：外层代理由站点管理员另行配置。
+# 参数 previous 为操作前公开入口是否通过（1/0/空）；此前通过而现在失败时加重提示。
+report_public_entry() {
+  local version=$1 previous=${2:-} attempt write
+  for attempt in 1 2 3; do
+    public_entry_once "$version" && break
+    [ "$attempt" = 3 ] || sleep 3
+  done
+  if ! public_entry_once "$version"; then
+    if [ "$previous" = 1 ]; then
+      warn "公开入口 $(site_url) 在本次操作前可用，现在未通过（未返回 200 或版本头不是 ${version}）；本机入口正常，请优先检查外层代理与 CDN"
+    else
+      warn "公开入口 $(site_url) 暂未通过：外层代理尚未配置、DNS 或 CDN 未就绪，或 HTTPS 未生效"
+    fi
+    proxy_requirements
+    return 1
+  fi
+  write=$(public_write_status)
+  if [ "$write" = 403 ]; then
+    warn "公开入口可以访问，但写操作被拒绝（403）：外层代理没有把 Host 设为站点域名，或没有设置 X-Forwarded-Proto: https"
+    proxy_requirements
+    return 1
+  fi
+  info "公开入口：通过（$(site_url) 返回 200，版本头 ${version}，同源写入未被拒绝）"
+}
+
+# 代理模式下记录操作前公开入口是否可用，供操作后对比。
+public_entry_before() {
+  [ "$(site_mode)" = proxy ] || return 0
+  if public_entry_once "$(current_version)"; then PUBLIC_BEFORE=1; else PUBLIC_BEFORE=0; fi
+}
+
+# 代理模式需要目标版本的部署包带有 compose.proxy.yaml；旧版不认识代理模式，切换后会启动 Caddy 抢占 80/443。
+require_mode_support() {
+  [ "$(site_mode)" = proxy ] || return 0
+  [ -f "$TIXXIN_DIR/releases/$1/deploy/compose.proxy.yaml" ] ||
+    fail "版本 $1 不支持外部反向代理模式（部署包没有 compose.proxy.yaml），不能在本站点使用"
 }
 
 # 证书签发与前端预热需要时间，在固定窗口内重试；超时即报告失败，不放宽判定。
@@ -546,6 +628,16 @@ cmd_status() {
   info ''
   if [ "$(env_get TIXXIN_MODE)" = 'local' ] && [ ! -f "$TIXXIN_DIR/local-ca.crt" ]; then export_local_ca || true; fi
   [ "$check_update" = 0 ] || report_update "$version"
+  if [ "$(site_mode)" = proxy ]; then
+    info "部署形态：外部反向代理（前端监听 $(proxy_origin)，不启动自带 HTTPS 入口）"
+    if ! local_entry_once "$version"; then
+      info '本机入口：未通过（服务未运行或版本头不一致）'
+      return 1
+    fi
+    info "本机入口：通过（同源 API 200，版本头 ${version}）"
+    report_public_entry "$version" || true
+    return 0
+  fi
   if check_entry_once "$version"; then
     info "入口验收：通过（HTTPS 同源 API 200，版本头 ${version}）"
   else
@@ -712,8 +804,10 @@ EOF
   else
     fetch_package "$target"
   fi
+  require_mode_support "$target"
   STAGE='pulling-images'
   prepare_images "$target"
+  public_entry_before
   STAGE='activating'
   backup_env_file "$target"
   OP_ACTIVATED=1
@@ -748,11 +842,23 @@ deploy_release() {
     MIGRATED=1
   fi
   STAGE='starting-application'
-  info '启动 API、前端与 HTTPS 入口…'
-  compose up -d --no-build --pull never --wait --wait-timeout 300 backend frontend edge
+  local services=() line
+  while IFS= read -r line; do services+=("$line"); done < <(entry_services)
+  if [ "$(site_mode)" = proxy ]; then
+    info "启动 API 与前端（外部反向代理模式，前端监听 $(proxy_origin)）…"
+  else
+    info '启动 API、前端与 HTTPS 入口…'
+  fi
+  compose up -d --no-build --pull never --wait --wait-timeout 300 "${services[@]}"
   STAGE='checking-entry'
-  info "验收 $(site_url)（HTTPS、同源 API、版本头）…"
-  check_entry "$version" || fail "入口验收未通过：$(site_url)/api/v1/posts 未返回 200 或版本头不是 $version"
+  if [ "$(site_mode)" = proxy ]; then
+    info "验收本机入口 $(proxy_origin)（同源 API、版本头）…"
+    check_entry "$version" || fail "本机入口验收未通过：$(proxy_origin)/api/v1/posts 未返回 200 或版本头不是 $version"
+    report_public_entry "$version" "$PUBLIC_BEFORE" || true
+  else
+    info "验收 $(site_url)（HTTPS、同源 API、版本头）…"
+    check_entry "$version" || fail "入口验收未通过：$(site_url)/api/v1/posts 未返回 200 或版本头不是 $version"
+  fi
   if [ "$restart_worker" = 1 ]; then
     STAGE='restarting-worker'
     compose up -d --no-build --pull never --wait worker
@@ -810,8 +916,10 @@ EOF
     STAGE='downloading'
     fetch_package "$target"
   fi
+  require_mode_support "$target"
   STAGE='pulling-images'
   prepare_images "$target"
+  public_entry_before
   STAGE='activating'
   backup_env_file "$target"
   OP_ACTIVATED=1
@@ -829,7 +937,8 @@ cmd_restart() {
     return 0
     ;;
   esac
-  local services=(backend frontend edge)
+  local services=() line
+  while IFS= read -r line; do services+=("$line"); done < <(entry_services)
   worker_running && services+=(worker)
   compose restart "${services[@]}"
   compose up -d --no-build --pull never --wait --wait-timeout 300 "${services[@]}"
