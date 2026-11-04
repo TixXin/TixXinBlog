@@ -11,8 +11,11 @@ import { createRequire } from 'node:module'
 import { setTimeout as delay } from 'node:timers/promises'
 import config from './lighthouserc.cjs'
 import { SAFE_INITIAL_SITE_VALUES } from '../../src/backend/server-main/src/modules/site/initial-profile.ts'
-import { defaultNavigation } from '../../src/frontend/web-blog/app/features/nav/routes.ts'
-import { defaultFooterLinks, defaultQuotes } from '../../src/frontend/web-blog/app/features/site/footer.ts'
+import { loadAppModules, zhTranslate } from './app-modules.mjs'
+
+// 前端领域模块使用 Nuxt 别名，须在 app-modules 注册解析钩子后加载
+const { defaultNavigation, defaultFooterLinks, defaultQuotes } = await loadAppModules()
+const t = zhTranslate()
 
 // 复用正式中性资料与导航契约，仅补充明确属于 CI 演示的自然内容；不修改应用默认值。
 export const site = {
@@ -23,8 +26,8 @@ export const site = {
   ownerTitle: '记录技术与日常',
   presenceStatus: '',
   navigation: defaultNavigation(),
-  footerLinks: defaultFooterLinks(),
-  quotes: defaultQuotes(),
+  footerLinks: defaultFooterLinks(t),
+  quotes: defaultQuotes(t),
   icpNumber: '',
   icpUrl: '',
   copyright: '',
