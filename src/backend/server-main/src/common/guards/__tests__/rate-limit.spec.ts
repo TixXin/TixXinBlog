@@ -4,7 +4,13 @@
  */
 import { ConfigService } from '@nestjs/config'
 import type { ExecutionContext } from '@nestjs/common'
-import { RateLimitGuard, RateLimitStore, SETUP_RATE_LIMIT, rateLimitClientKey } from '../rate-limit.guard'
+import {
+  RateLimitGuard,
+  RateLimitStore,
+  PRESENCE_RATE_LIMIT,
+  SETUP_RATE_LIMIT,
+  rateLimitClientKey,
+} from '../rate-limit.guard'
 
 describe('RateLimitStore', () => {
   it('突发请求超过配额时给出重试时间，过期后恢复', () => {
@@ -82,6 +88,19 @@ describe('RateLimitGuard', () => {
     expect(() => request('192.0.2.7', '/api/v1/setup')).toThrow('操作过于频繁')
     jest.spyOn(Date, 'now').mockReturnValue(10 * 60000 + 1)
     expect(request('192.0.2.7', '/api/v1/setup')).toBe(true)
+  })
+
+  it('实时在线心跳按 IP 每分钟 60 次，独立于普通写入配额', () => {
+    jest.spyOn(Date, 'now').mockReturnValue(0)
+    const request = createClientErrorProbe()
+    for (let index = 0; index < PRESENCE_RATE_LIMIT; index++)
+      expect(request('192.0.2.9', '/api/v1/presence')).toBe(true)
+    expect(() => request('192.0.2.9', '/api/v1/presence')).toThrow('操作过于频繁')
+    expect(request('192.0.2.10', '/api/v1/presence')).toBe(true)
+    // 心跳耗尽配额后，同一 IP 的评论、留言等普通写入不受影响。
+    expect(request('192.0.2.9', '/api/v1/guestbook')).toBe(true)
+    jest.spyOn(Date, 'now').mockReturnValue(60000)
+    expect(request('192.0.2.9', '/api/v1/presence')).toBe(true)
   })
 
   it('多个客户端共享单实例每分钟 100 次上限', () => {

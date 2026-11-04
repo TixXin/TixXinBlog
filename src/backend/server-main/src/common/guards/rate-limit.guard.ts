@@ -76,6 +76,9 @@ function expandIpv6(value: string): string[] | null {
 /** 初始化向导每个客户端在一个窗口内的提交次数上限，比登录（每分钟 5 次）更严格 */
 export const SETUP_RATE_LIMIT = 5
 
+/** 实时在线心跳每个客户端每分钟上限：约十个标签页同时浏览，或同一出口下的多位访客 */
+export const PRESENCE_RATE_LIMIT = 60
+
 /** 限流关闭开关：仅 development/test 且显式 true 时生效。 */
 function rateLimitDisabled(config: ConfigService): boolean {
   const environment = config.get<string>('NODE_ENV') ?? 'production'
@@ -104,16 +107,11 @@ export class RateLimitGuard implements CanActivate {
       return true
     }
     // 初始化向导提交：令牌是高熵随机值，配额只需挡住滥用；按 IP 每 10 分钟 5 次，独立于登录与普通写入。
-    if (request.method === 'POST' && /^\/api\/v1\/setup\/?$/.test(request.path)) {
-      const setupWindowMs = this.config.get<string>('NODE_ENV') === 'test' ? 1000 : 600000
-      const retryAfter = this.store.consume(
-        `setup:${rateLimitClientKey(request.ip ?? request.socket.remoteAddress)}`,
-        SETUP_RATE_LIMIT,
-        setupWindowMs,
-      )
-      if (retryAfter) this.reject(context, retryAfter)
-      return true
-    }
+    if (request.method === 'POST' && /^\/api\/v1\/setup\/?$/.test(request.path))
+      return this.consumeScoped(context, request, { scope: 'setup', limit: SETUP_RATE_LIMIT, windowMs: 600000 })
+    // 实时在线心跳：每个标签页约 30 秒一次，加上站内跳转；与评论等普通写入分开计数，避免同一出口 IP 的多位访客互相挤占。
+    if (request.method === 'POST' && /^\/api\/v1\/presence\/?$/.test(request.path))
+      return this.consumeScoped(context, request, { scope: 'presence', limit: PRESENCE_RATE_LIMIT, windowMs: 60000 })
     const login = request.path.endsWith('/auth/login') || request.path.endsWith('/auth/password')
     const refresh = request.path.endsWith('/auth/refresh')
     const view = request.path.endsWith('/view')
@@ -140,12 +138,20 @@ export class RateLimitGuard implements CanActivate {
                   ? 'admin-read'
                   : 'read'
     const limit = upload ? 20 : login ? 5 : refresh ? 30 : view ? 60 : write ? 10 : media ? 600 : admin ? 300 : 120
-    // 仅测试环境可缩短窗口，生产不能通过错误配置关闭限流。
-    const windowMs = this.config.get<string>('NODE_ENV') === 'test' ? 1000 : 60000
+    return this.consumeScoped(context, request, { scope, limit, windowMs: 60000 })
+  }
+
+  /** 按配额作用域与客户端 IP 计数；仅测试环境可缩短窗口为 1 秒，生产不能通过错误配置关闭限流 */
+  private consumeScoped(
+    context: ExecutionContext,
+    request: Request,
+    quota: { scope: string; limit: number; windowMs: number },
+  ) {
+    const window = this.config.get<string>('NODE_ENV') === 'test' ? 1000 : quota.windowMs
     const retryAfter = this.store.consume(
-      `${scope}:${rateLimitClientKey(request.ip ?? request.socket.remoteAddress)}`,
-      limit,
-      windowMs,
+      `${quota.scope}:${rateLimitClientKey(request.ip ?? request.socket.remoteAddress)}`,
+      quota.limit,
+      window,
     )
     if (retryAfter) this.reject(context, retryAfter)
     return true

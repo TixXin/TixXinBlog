@@ -38,6 +38,7 @@ import { ContentRelationsModule } from './modules/content-relations/content-rela
 import { ClientErrorModule } from './modules/client-error/client-error.module'
 import { SetupModule } from './modules/setup/setup.module'
 import { OgModule } from './modules/og/og.module'
+import { PresenceModule } from './modules/presence/presence.module'
 
 @Module({
   imports: [
@@ -81,6 +82,7 @@ import { OgModule } from './modules/og/og.module'
     ClientErrorModule,
     SetupModule,
     OgModule,
+    PresenceModule,
   ],
   providers: [
     { provide: APP_GUARD, useClass: RateLimitGuard },

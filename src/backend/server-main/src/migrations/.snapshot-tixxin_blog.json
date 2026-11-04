@@ -9225,6 +9225,290 @@
         }
       },
       "comment": null
+    },
+    {
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": true,
+          "nullable": false,
+          "unique": false,
+          "length": null,
+          "precision": null,
+          "scale": null,
+          "default": null,
+          "comment": null,
+          "enumItems": [],
+          "mappedType": "text"
+        },
+        "auto_presence": {
+          "name": "auto_presence",
+          "type": "bool",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
+          "unique": false,
+          "length": null,
+          "precision": null,
+          "scale": null,
+          "default": "true",
+          "comment": null,
+          "enumItems": [],
+          "mappedType": "boolean"
+        },
+        "public_stats": {
+          "name": "public_stats",
+          "type": "bool",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
+          "unique": false,
+          "length": null,
+          "precision": null,
+          "scale": null,
+          "default": "true",
+          "comment": null,
+          "enumItems": [],
+          "mappedType": "boolean"
+        },
+        "owner_last_seen_at": {
+          "name": "owner_last_seen_at",
+          "type": "timestamptz(6)",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": true,
+          "unique": false,
+          "length": 6,
+          "precision": null,
+          "scale": null,
+          "default": null,
+          "comment": null,
+          "enumItems": [],
+          "mappedType": "datetime"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamptz(6)",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
+          "unique": false,
+          "length": 6,
+          "precision": null,
+          "scale": null,
+          "default": null,
+          "comment": null,
+          "enumItems": [],
+          "mappedType": "datetime"
+        }
+      },
+      "name": "site_presence",
+      "schema": "public",
+      "indexes": [
+        {
+          "columnNames": ["id"],
+          "composite": false,
+          "constraint": false,
+          "keyName": "site_presence_pkey",
+          "unique": true,
+          "primary": true
+        }
+      ],
+      "checks": [],
+      "foreignKeys": {},
+      "nativeEnums": {
+        "flash_type": {
+          "name": "flash_type",
+          "schema": "public",
+          "items": ["idea", "todo", "memo"]
+        },
+        "post_category": {
+          "name": "post_category",
+          "schema": "public",
+          "items": ["tech", "life"]
+        },
+        "post_status": {
+          "name": "post_status",
+          "schema": "public",
+          "items": ["draft", "published", "archived"]
+        }
+      },
+      "comment": null
+    },
+    {
+      "columns": {
+        "visitor_hash": {
+          "name": "visitor_hash",
+          "type": "text",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": true,
+          "nullable": false,
+          "unique": false,
+          "length": null,
+          "precision": null,
+          "scale": null,
+          "default": null,
+          "comment": null,
+          "enumItems": [],
+          "mappedType": "text"
+        },
+        "first_seen_at": {
+          "name": "first_seen_at",
+          "type": "timestamptz(6)",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
+          "unique": false,
+          "length": 6,
+          "precision": null,
+          "scale": null,
+          "default": null,
+          "comment": null,
+          "enumItems": [],
+          "mappedType": "datetime"
+        },
+        "last_seen_day": {
+          "name": "last_seen_day",
+          "type": "date",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
+          "unique": false,
+          "length": 0,
+          "precision": null,
+          "scale": null,
+          "default": null,
+          "comment": null,
+          "enumItems": [],
+          "mappedType": "date"
+        }
+      },
+      "name": "site_visitor",
+      "schema": "public",
+      "indexes": [
+        {
+          "columnNames": ["visitor_hash"],
+          "composite": false,
+          "constraint": false,
+          "keyName": "site_visitor_pkey",
+          "unique": true,
+          "primary": true
+        }
+      ],
+      "checks": [],
+      "foreignKeys": {},
+      "nativeEnums": {
+        "flash_type": {
+          "name": "flash_type",
+          "schema": "public",
+          "items": ["idea", "todo", "memo"]
+        },
+        "post_category": {
+          "name": "post_category",
+          "schema": "public",
+          "items": ["tech", "life"]
+        },
+        "post_status": {
+          "name": "post_status",
+          "schema": "public",
+          "items": ["draft", "published", "archived"]
+        }
+      },
+      "comment": null
+    },
+    {
+      "columns": {
+        "day": {
+          "name": "day",
+          "type": "date",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": true,
+          "nullable": false,
+          "unique": false,
+          "length": 0,
+          "precision": null,
+          "scale": null,
+          "default": null,
+          "comment": null,
+          "enumItems": [],
+          "mappedType": "date"
+        },
+        "views": {
+          "name": "views",
+          "type": "int4",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
+          "unique": false,
+          "length": null,
+          "precision": 32,
+          "scale": 0,
+          "default": "0",
+          "comment": null,
+          "enumItems": [],
+          "mappedType": "integer"
+        },
+        "visitors": {
+          "name": "visitors",
+          "type": "int4",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
+          "unique": false,
+          "length": null,
+          "precision": 32,
+          "scale": 0,
+          "default": "0",
+          "comment": null,
+          "enumItems": [],
+          "mappedType": "integer"
+        }
+      },
+      "name": "site_daily_stats",
+      "schema": "public",
+      "indexes": [
+        {
+          "columnNames": ["day"],
+          "composite": false,
+          "constraint": false,
+          "keyName": "site_daily_stats_pkey",
+          "unique": true,
+          "primary": true
+        }
+      ],
+      "checks": [],
+      "foreignKeys": {},
+      "nativeEnums": {
+        "flash_type": {
+          "name": "flash_type",
+          "schema": "public",
+          "items": ["idea", "todo", "memo"]
+        },
+        "post_category": {
+          "name": "post_category",
+          "schema": "public",
+          "items": ["tech", "life"]
+        },
+        "post_status": {
+          "name": "post_status",
+          "schema": "public",
+          "items": ["draft", "published", "archived"]
+        }
+      },
+      "comment": null
     }
   ],
   "nativeEnums": {

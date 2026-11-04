@@ -38,6 +38,9 @@ import { ImagePrompt } from '../entities/image-prompt.entity'
 import { FriendLink } from '../entities/friend-link.entity'
 import { FriendLinkApplication } from '../entities/friend-link-application.entity'
 import { LinkSettings } from '../entities/link-settings.entity'
+import { SitePresence } from '../entities/site-presence.entity'
+import { SiteVisitor } from '../entities/site-visitor.entity'
+import { SiteDailyStats } from '../entities/site-daily-stats.entity'
 import { Post } from '../entities/post.entity'
 import { PostFolder } from '../entities/post-folder.entity'
 import { PostRevision } from '../entities/post-revision.entity'
@@ -103,6 +106,9 @@ const ORM_ENTITIES = [
   FriendLink,
   FriendLinkApplication,
   LinkSettings,
+  SitePresence,
+  SiteVisitor,
+  SiteDailyStats,
 ] as const
 
 export const mikroOrmOptions = defineConfig({
