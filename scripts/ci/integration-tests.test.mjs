@@ -2,7 +2,7 @@
 import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
 import { test } from 'node:test'
-import { integrationTests, selectIntegrationTests } from './integration-tests.mjs'
+import { integrationTests, selectIntegrationTests, shardTests } from './integration-tests.mjs'
 
 const backend = 'src/backend/server-main/'
 const available = integrationTests(
@@ -55,4 +55,14 @@ test('与后端接口无关的改动不选测试，--all 选中全部', () => {
     notes: [],
   })
   assert.deepEqual(selectIntegrationTests([], available, { all: true }).tests, available)
+})
+
+test('分片轮流分配，合起来正好是全量且不重复', () => {
+  const parts = [1, 2, 3].map((index) => shardTests(available, `${index}/3`))
+  assert.deepEqual(parts.flat().sort(), [...available].sort())
+  assert.equal(parts[0][0], available[0])
+  assert.equal(parts[1][0], available[1])
+  assert.throws(() => shardTests(available, '0/2'))
+  assert.throws(() => shardTests(available, '3/2'))
+  assert.throws(() => shardTests(available, '1-2'))
 })
