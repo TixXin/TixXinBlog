@@ -24,16 +24,45 @@ The sections below on environment variables, trusted proxies, the internal netwo
 
 ### Servers with an existing panel or reverse proxy (such as 1Panel)
 
-Both methods use the bundled Caddy on ports 80/443. When the OpenResty/Nginx of a panel such as 1Panel or BT Panel already holds these ports, the one-command install exits at the port check; the project does not currently provide a panel app package. If you put the site behind the panel's reverse proxy yourself, or build a panel app package later, observe these constraints (based on the 1Panel v2.3.2 source and local simulation):
+By default the one-command install uses the bundled Caddy on ports 80/443. When the OpenResty/Nginx of a panel such as 1Panel or BT Panel, or a self-managed Nginx or Caddy, already holds these ports, do not stop it (it serves the other sites on the machine). Install in external reverse proxy mode instead:
 
-- **Source address and trusted proxies**: 1Panel's OpenResty runs on the host network and reaches the frontend container through `127.0.0.1:<port>`, so the container sees the gateway of the Compose project network as the source. Set the frontend and API trusted proxies to the project subnet (`TIXXIN_NETWORK_SUBNET`). Do not also attach the frontend to a shared network such as `1panel-network`: with several networks, port mapping uses the gateway of the network whose name sorts first, and the trusted proxies no longer match.
-- **Bind the port to localhost only**: map the frontend port as `127.0.0.1:<port>:3000`. If it is opened externally, Docker's userland proxy makes direct external requests appear to come from the gateway as well, and visitors can forge `X-Forwarded-For` to bypass per-IP rate limits.
-- **HTTPS with the protocol header is required**: the API always issues Secure cookies in production, and the frontend same-origin write check reads `X-Forwarded-Proto`. If the proxy does not forward this header or serves plain HTTP, submissions return 403 (cross-site writes not allowed).
+```sh
+sudo bash install.sh --behind-proxy
+```
+
+- The bundled Caddy is not started, and the frontend listens only on `127.0.0.1:<port>`. The port defaults to 3456; if it is taken, the installer moves up to the first free port. You can also set it with `--bind 127.0.0.1:<port>`, in which case an occupied port is an error. Only the loopback address is accepted.
+- Ports 80/443 are not checked, and the domain's DNS is not compared with local addresses (the domain often points at a CDN or the panel's entry). Certificates, the HTTP redirect, and HSTS are handled by the panel or CDN.
+- At the end the installer prints the required reverse proxy settings and writes `<install dir>/proxy/nginx.conf.example`. `tixxin update`, `backup`, `rollback`, `restart`, and `status` work as usual; `.env` records `TIXXIN_MODE=proxy` and the listening port, and upgrades keep them.
+
+In the panel, create a reverse proxy site for the domain that targets the printed local address, enable HTTPS, and check three things:
+
+1. **`Host` is the site domain and `X-Forwarded-Proto` is `https`.** The frontend same-origin write check relies on both; otherwise sign-in, comments, guestbook messages and other writes return 403 (cross-site writes not allowed). When the panel terminates HTTPS, its default `$scheme` is fine; when a CDN connects back to the panel over HTTP, `$scheme` is `http`, so set the header to `https` explicitly.
+2. **The last entry of `X-Forwarded-For` is the visitor's address.** The frontend trusts only the gateway of the project network and strips just this local hop from the right. When the panel faces visitors directly, overwriting with `$remote_addr` and the panel's default append with `$proxy_add_x_forwarded_for` behave the same, and any prefix forged by a visitor is discarded. With a CDN in front, the last entry is a CDN node and all visitors collapse into a few addresses: restore the visitor address first with `set_real_ip_from <CDN origin-pull ranges>` and `real_ip_header <CDN visitor address header>`, and allow only the CDN to reach the site (otherwise connecting to the origin directly lets anyone forge addresses). Take the ranges and the header name from the CDN's official documentation.
+3. **The request body limit is at least 64 MB** (`client_max_body_size 64m`), in line with the 50 MB content package import limit.
+
+The reverse proxy configuration that 1Panel generates when it terminates HTTPS already satisfies the first two points; only add the body limit. Then run `sudo tixxin status`:
+
+| Output                                               | Meaning                                                                                                          |
+| ---------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------- |
+| Local entry passed (`本机入口：通过`)                | The application works; if not, troubleshoot as for a normal site (`tixxin logs backend`, `tixxin logs frontend`) |
+| Public entry passed (`公开入口：通过`)               | HTTPS through the panel works, the release header matches, and same-origin writes are not rejected               |
+| Public entry not yet passing (`公开入口 … 暂未通过`) | The panel is not configured, DNS or the CDN is not ready, or HTTPS is not in effect                              |
+| Writes rejected (`写操作被拒绝（403）`)              | The panel does not set `Host` to the site domain, or `X-Forwarded-Proto` is not `https`                          |
+
+The public entry is only checked and reported; it does not decide whether an install or upgrade succeeds, because the outer proxy is configured separately by the site administrator. If the public entry worked before an upgrade and fails afterwards, `tixxin` warns more strongly but does not roll back automatically. Open the setup link only after the panel and HTTPS are working; sign-in credentials only work over HTTPS.
+
+External reverse proxy mode is available from v0.6.0. A site in this mode cannot roll back to an earlier version: `tixxin rollback` refuses before switching, so that an old script does not start Caddy and take over ports 80/443. Switching an existing normal site to this mode in place is not supported yet.
+
+This flow has been verified on Linux with Nginx standing in for the panel, covering install, setup, sign-in, visitor addresses, and the rollback guard (see the install smoke test `scripts/release/install-smoke.sh`). Upgrade and uninstall have not yet been fully verified on a real 1Panel.
+
+#### Constraints for a panel app package
+
+The project does not provide a panel app store package. If one is built later, also note (based on the 1Panel v2.3.2 source and local simulation):
+
+- **Do not attach the frontend to the panel's shared network** (such as `1panel-network`): with several networks, port mapping uses the gateway of the network whose name sorts first, and the trusted proxies no longer match.
 - **Panels only run `docker compose up`**: an app package cannot run migrations separately, so migrations must be part of startup. This departs from the project's rule that startup never migrates implicitly, and a backup before every upgrade is mandatory. 1Panel v2 writes the install form's restart policy (default `always`) to a random service, so a one-off migration service cannot rely on `service_completed_successfully`; otherwise about one in four installs waits forever.
 - **Do not use panel-generated random values as secrets**: the `random` default of 1Panel form fields has only about 33 bits of entropy and is not hexadecimal, which does not meet the requirements of `POSTGRES_PASSWORD` and `JWT_ACCESS_SECRET`. Generate them in the install script with `openssl rand -hex` and store them with mode 600.
 - **The parameter file may be rewritten**: 1Panel v1 rewrites `.env` from the recorded form parameters during upgrades, dropping extra keys such as the subnet; v2 keeps them.
-
-These conclusions have not yet been fully verified with install, upgrade, and uninstall on 1Panel running on real Linux.
 
 ## Advanced: Manual Release (release.mjs)
 

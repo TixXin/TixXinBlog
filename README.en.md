@@ -50,7 +50,7 @@ Public site and writing dashboard in one app · Three themes with light and dark
 
 ## One-command deployment
 
-Prepare a Linux server (amd64 or arm64), point your domain at it, open ports 80 and 443, then run:
+Prepare a Linux server (amd64 or arm64), point your domain at it, open ports 80 and 443 (if a panel such as 1Panel or BT Panel already holds them, add `--behind-proxy`; see the [deployment guide](docs/en/deployment.md#servers-with-an-existing-panel-or-reverse-proxy-such-as-1panel)), then run:
 
 ```sh
 curl -fsSL https://github.com/TixXin/TixXinBlog/releases/latest/download/install.sh -o install.sh

@@ -50,7 +50,7 @@
 
 ## 一条命令部署
 
-准备一台 Linux 服务器（amd64 或 arm64），把域名解析到它并开放 80 / 443 端口，然后执行：
+准备一台 Linux 服务器（amd64 或 arm64），把域名解析到它并开放 80 / 443 端口（已有 1Panel、宝塔等面板占用时加 `--behind-proxy`，见[部署指南](docs/deployment.md#服务器已有面板或反向代理如-1panel)），然后执行：
 
 ```sh
 curl -fsSL https://github.com/TixXin/TixXinBlog/releases/latest/download/install.sh -o install.sh

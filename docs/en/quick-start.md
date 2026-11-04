@@ -12,7 +12,7 @@ One-command installation is available from **v0.3.0**. Earlier versions have no 
 - Docker Engine and the Docker Compose v2 plugin (`docker compose`). Optional: if Docker is not installed, the script offers to run Docker's official install script (`get.docker.com`); you can also install it yourself first by following the [Docker documentation](https://docs.docker.com/engine/install/).
 - `bash`, `curl`, `tar` and `sha256sum` (or `shasum`) on the host; common distributions ship them by default.
 - The domain's A/AAAA records point at this server.
-- Ports 80 and 443 are reachable from the internet and not used by any other program. On a cloud server, also allow both ports in the security group.
+- Ports 80 and 443 are reachable from the internet and not used by any other program. On a cloud server, also allow both ports in the security group. If 1Panel, BT Panel or another Nginx already holds these ports, see [A Port Is Already in Use](#a-port-is-already-in-use).
 
 The examples use `blog.example.com`; replace it with your own domain.
 
@@ -161,23 +161,25 @@ sudo bash install.sh --version 0.3.0 --download-base https://mirror.example.com/
 sudo bash install.sh --yes --domain blog.example.com --locale en --dir /opt/tixxin-blog
 ```
 
-| Option                  | Description                                                                                                       |
-| ----------------------- | ----------------------------------------------------------------------------------------------------------------- |
-| `--yes`                 | Do not prompt; use the options and defaults                                                                       |
-| `--domain DOMAIN`       | Site domain                                                                                                       |
-| `--locale zh-CN\|en`    | Default site language, `zh-CN` by default                                                                         |
-| `--dir DIR`             | Install directory, `/opt/tixxin-blog` by default; `~/tixxin-blog` for `--local` as a regular user                 |
-| `--version VERSION`     | Pinned version to install; defaults to the release the script belongs to                                          |
-| `--registry PREFIX`     | Replace the application image prefix; see [Networks in Mainland China](#networks-in-mainland-china)               |
-| `--download-base URL`   | Replace the deployment package source; see [Networks in Mainland China](#networks-in-mainland-china)              |
-| `--local`               | Local trial mode                                                                                                  |
-| `--http-port PORT`      | Host HTTP port (80 for production, 8080 for a local trial)                                                        |
-| `--https-port PORT`     | Host HTTPS port (8443 for a local trial); must be 443 for production                                              |
-| `--project NAME`        | Compose project name, `tixxin-production` by default; it determines volume names and cannot change after install  |
-| `--subnet CIDR`         | Internal network subnet, `172.31.250.0/24` by default; give each site on the same host its own range              |
-| `--check-public-ip URL` | Also query this https address for the public IP to check DNS; off by default, and it exposes this host's IP to it |
-| `--no-pull`             | Use images already on the host; do not pull                                                                       |
-| `--install-docker`      | Run Docker's official install script without asking when Docker is missing                                        |
+| Option                  | Description                                                                                                                                                         |
+| ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `--yes`                 | Do not prompt; use the options and defaults                                                                                                                         |
+| `--domain DOMAIN`       | Site domain                                                                                                                                                         |
+| `--locale zh-CN\|en`    | Default site language, `zh-CN` by default                                                                                                                           |
+| `--dir DIR`             | Install directory, `/opt/tixxin-blog` by default; `~/tixxin-blog` for `--local` as a regular user                                                                   |
+| `--version VERSION`     | Pinned version to install; defaults to the release the script belongs to                                                                                            |
+| `--registry PREFIX`     | Replace the application image prefix; see [Networks in Mainland China](#networks-in-mainland-china)                                                                 |
+| `--download-base URL`   | Replace the deployment package source; see [Networks in Mainland China](#networks-in-mainland-china)                                                                |
+| `--local`               | Local trial mode                                                                                                                                                    |
+| `--http-port PORT`      | Host HTTP port (80 for production, 8080 for a local trial)                                                                                                          |
+| `--https-port PORT`     | Host HTTPS port (8443 for a local trial); must be 443 for production                                                                                                |
+| `--behind-proxy`        | External reverse proxy mode for servers where a panel or Nginx already holds 80/443: the bundled Caddy is not started and the frontend listens on a local port only |
+| `--bind 127.0.0.1:PORT` | Listening address in external reverse proxy mode; defaults to 3456 and moves up when the port is taken                                                              |
+| `--project NAME`        | Compose project name, `tixxin-production` by default; it determines volume names and cannot change after install                                                    |
+| `--subnet CIDR`         | Internal network subnet, `172.31.250.0/24` by default; give each site on the same host its own range                                                                |
+| `--check-public-ip URL` | Also query this https address for the public IP to check DNS; off by default, and it exposes this host's IP to it                                                   |
+| `--no-pull`             | Use images already on the host; do not pull                                                                                                                         |
+| `--install-docker`      | Run Docker's official install script without asking when Docker is missing                                                                                          |
 
 In non-interactive mode a missing Docker is not installed automatically; pass `--install-docker` as well. The output of `bash install.sh --help` (in Chinese) is the authoritative usage.
 
@@ -208,7 +210,7 @@ When the installer reports that port 80 or 443 is in use, first find out what ho
 sudo ss -ltnp '( sport = :80 or sport = :443 )'
 ```
 
-- If the port is held by the OpenResty/Nginx of a panel such as 1Panel or BT Panel, or by an Nginx, Caddy or other web server that serves other sites on this machine, stopping it takes those sites offline. The project does not yet support installing behind a panel or an existing reverse proxy; see [Servers with an existing panel or reverse proxy](deployment.md#servers-with-an-existing-panel-or-reverse-proxy-such-as-1panel). The installer says so directly when it detects a panel.
+- If the port is held by the OpenResty/Nginx of a panel such as 1Panel or BT Panel, or by an Nginx, Caddy or other web server that serves other sites on this machine, stopping it takes those sites offline. Use the external reverse proxy mode instead: `sudo bash install.sh --behind-proxy`. The frontend listens on a local port only; after installing, point the domain at it with a reverse proxy in the panel. The installer prints the required settings at the end. See [Servers with an existing panel or reverse proxy](deployment.md#servers-with-an-existing-panel-or-reverse-proxy-such-as-1panel).
 - Stop the program and run the installation again only after confirming it is no longer needed.
 
 A production installation must use HTTPS port 443. A local trial can switch ports with `--http-port` and `--https-port`.

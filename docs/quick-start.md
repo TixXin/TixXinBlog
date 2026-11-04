@@ -10,7 +10,7 @@
 - Docker Engine 与 Docker Compose v2 插件（`docker compose`）。可选：没有安装 Docker 时，脚本会询问是否运行 Docker 官方安装脚本（`get.docker.com`）；也可以自己先按 [Docker 文档](https://docs.docker.com/engine/install/)安装。
 - 宿主机有 `bash`、`curl`、`tar` 和 `sha256sum`（或 `shasum`），常见发行版默认自带。
 - 域名的 A/AAAA 记录已指向这台服务器。
-- 公网可以访问服务器的 80 和 443 端口，且没有其他程序占用。云服务器还要在安全组里放行这两个端口。
+- 公网可以访问服务器的 80 和 443 端口，且没有其他程序占用。云服务器还要在安全组里放行这两个端口。服务器上已有 1Panel、宝塔或其他 Nginx 占用这两个端口时，见[端口被占用](#端口被占用)。
 
 下文以 `blog.example.com` 为例，请替换为自己的域名。
 
@@ -159,23 +159,25 @@ sudo bash install.sh --version 0.3.0 --download-base https://mirror.example.com/
 sudo bash install.sh --yes --domain blog.example.com --locale en --dir /opt/tixxin-blog
 ```
 
-| 参数                    | 说明                                                                              |
-| ----------------------- | --------------------------------------------------------------------------------- |
-| `--yes`                 | 不询问，使用参数与默认值                                                          |
-| `--domain 域名`         | 站点域名                                                                          |
-| `--locale zh-CN\|en`    | 站点默认语言，默认 `zh-CN`                                                        |
-| `--dir 目录`            | 安装目录，默认 `/opt/tixxin-blog`；普通用户使用 `--local` 时默认 `~/tixxin-blog`  |
-| `--version 版本`        | 安装的固定版本，默认为脚本所属的发布版本                                          |
-| `--registry 前缀`       | 替换应用镜像前缀，见[国内网络](#国内网络)                                         |
-| `--download-base 地址`  | 替换部署包下载源，见[国内网络](#国内网络)                                         |
-| `--local`               | 本机试用模式                                                                      |
-| `--http-port 端口`      | 宿主机 HTTP 端口（正式默认 80，本机试用默认 8080）                                |
-| `--https-port 端口`     | 宿主机 HTTPS 端口（本机试用默认 8443）；正式安装必须为 443                        |
-| `--project 名称`        | Compose 项目名，默认 `tixxin-production`，决定数据卷名称，安装后不可更改          |
-| `--subnet CIDR`         | 内部网络子网，缺省 `172.31.250.0/24`；同机运行多套站点时各用一段                  |
-| `--check-public-ip URL` | 额外访问该 https 地址获取出口 IP 核对域名解析；默认关闭，会把本机 IP 暴露给该服务 |
-| `--no-pull`             | 使用本机已有镜像，不拉取                                                          |
-| `--install-docker`      | 未安装 Docker 时直接运行 Docker 官方安装脚本，不再询问                            |
+| 参数                    | 说明                                                                                              |
+| ----------------------- | ------------------------------------------------------------------------------------------------- |
+| `--yes`                 | 不询问，使用参数与默认值                                                                          |
+| `--domain 域名`         | 站点域名                                                                                          |
+| `--locale zh-CN\|en`    | 站点默认语言，默认 `zh-CN`                                                                        |
+| `--dir 目录`            | 安装目录，默认 `/opt/tixxin-blog`；普通用户使用 `--local` 时默认 `~/tixxin-blog`                  |
+| `--version 版本`        | 安装的固定版本，默认为脚本所属的发布版本                                                          |
+| `--registry 前缀`       | 替换应用镜像前缀，见[国内网络](#国内网络)                                                         |
+| `--download-base 地址`  | 替换部署包下载源，见[国内网络](#国内网络)                                                         |
+| `--local`               | 本机试用模式                                                                                      |
+| `--http-port 端口`      | 宿主机 HTTP 端口（正式默认 80，本机试用默认 8080）                                                |
+| `--https-port 端口`     | 宿主机 HTTPS 端口（本机试用默认 8443）；正式安装必须为 443                                        |
+| `--behind-proxy`        | 外部反向代理模式：服务器已有面板或 Nginx 占用 80/443 时使用，不启动自带 Caddy，前端只监听本机端口 |
+| `--bind 127.0.0.1:端口` | 外部反向代理模式的监听地址；默认 3456，被占用时向上顺延                                           |
+| `--project 名称`        | Compose 项目名，默认 `tixxin-production`，决定数据卷名称，安装后不可更改                          |
+| `--subnet CIDR`         | 内部网络子网，缺省 `172.31.250.0/24`；同机运行多套站点时各用一段                                  |
+| `--check-public-ip URL` | 额外访问该 https 地址获取出口 IP 核对域名解析；默认关闭，会把本机 IP 暴露给该服务                 |
+| `--no-pull`             | 使用本机已有镜像，不拉取                                                                          |
+| `--install-docker`      | 未安装 Docker 时直接运行 Docker 官方安装脚本，不再询问                                            |
 
 非交互模式下缺少 Docker 时不会自动安装，需要同时传入 `--install-docker`。完整用法以 `bash install.sh --help` 的输出为准。
 
@@ -206,7 +208,7 @@ sudo tixxin update 0.3.0
 sudo ss -ltnp '( sport = :80 or sport = :443 )'
 ```
 
-- 占用者是 1Panel、宝塔等面板的 OpenResty/Nginx，或本机其他站点在用的 Nginx、Caddy 等 Web 服务时，停止它会让这些站点一起下线。本项目暂不支持安装在面板或已有反向代理之后，见[服务器已有面板或反向代理](deployment.md#服务器已有面板或反向代理如-1panel)。安装器检测到面板时会直接说明。
+- 占用者是 1Panel、宝塔等面板的 OpenResty/Nginx，或本机其他站点在用的 Nginx、Caddy 等 Web 服务时，停止它会让这些站点一起下线。改用外部反向代理模式：`sudo bash install.sh --behind-proxy`，前端只监听本机端口，装好后在面板里把域名反向代理过去，安装结束时会打印需要的设置。详见[服务器已有面板或反向代理](deployment.md#服务器已有面板或反向代理如-1panel)。
 - 确认占用者是不再需要的服务后，再停止它并重新运行安装。
 
 正式安装的 HTTPS 端口必须是 443。本机试用可用 `--http-port`、`--https-port` 换端口。
