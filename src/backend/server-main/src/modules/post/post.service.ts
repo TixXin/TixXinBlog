@@ -21,6 +21,8 @@ import { QueryPostDto } from './dto/query-post.dto'
 import { resolveContentRelations } from '../content-relations/content-relations'
 import { msg } from '../../common/i18n'
 import { contentMatchWindow } from './post-search-match'
+// 文章浏览与站点访问统计共用同一去重窗口
+import { VIEW_DEDUPE_MS as POST_VIEW_DEDUPE_MS } from '../presence/presence-store'
 import {
   ArticleDetailDto,
   POST_NOT_FOUND,
@@ -166,7 +168,7 @@ export class PostService {
   }
 
   /**
-   * 浏览计数按整点小时桶去重，所有增量由行锁串行保护。
+   * 浏览计数按 30 分钟滚动窗口去重（与站点访问统计同一口径），所有增量由文章行锁串行保护。
    * 同时返回当前访客的点赞状态，文章页挂载后一次请求即可同步互动计数。
    */
   async addView(id: number, visitorIdHash: string): Promise<PostViewResult> {
@@ -177,13 +179,16 @@ export class PostService {
         { lockMode: LockMode.PESSIMISTIC_WRITE },
       )
       if (!post) throw new BusinessException(POST_NOT_FOUND, msg('post.notFound'), HttpStatus.NOT_FOUND)
-      const hourBucket = new Date()
-      hourBucket.setMinutes(0, 0, 0)
+      const now = new Date()
       // 事务内共用一条连接，逐条查询，不用 Promise.all。
-      const seen = await em.findOne(PostView, { post, visitorIdHash, hourBucket })
+      const seen = await em.findOne(
+        PostView,
+        { post, visitorIdHash, createdAt: { $gt: new Date(now.getTime() - POST_VIEW_DEDUPE_MS) } },
+        { fields: ['id'] },
+      )
       const like = await em.findOne(PostLike, { post, visitorIdHash }, { fields: ['id'] })
       if (!seen) {
-        em.create(PostView, { post, visitorIdHash, hourBucket, createdAt: new Date() })
+        em.create(PostView, { post, visitorIdHash, createdAt: now })
         post.views += 1
         await em.flush()
       }

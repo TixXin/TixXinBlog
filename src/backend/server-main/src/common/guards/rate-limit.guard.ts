@@ -109,8 +109,8 @@ export class RateLimitGuard implements CanActivate {
     // 初始化向导提交：令牌是高熵随机值，配额只需挡住滥用；按 IP 每 10 分钟 5 次，独立于登录与普通写入。
     if (request.method === 'POST' && /^\/api\/v1\/setup\/?$/.test(request.path))
       return this.consumeScoped(context, request, { scope: 'setup', limit: SETUP_RATE_LIMIT, windowMs: 600000 })
-    // 实时在线心跳：每个标签页约 30 秒一次，加上站内跳转；与评论等普通写入分开计数，避免同一出口 IP 的多位访客互相挤占。
-    if (request.method === 'POST' && /^\/api\/v1\/presence\/?$/.test(request.path))
+    // 实时在线心跳与离开上报：每个标签页约 30 秒一次，加上站内跳转与关闭；与评论等普通写入分开计数，避免同一出口 IP 的多位访客互相挤占。
+    if (request.method === 'POST' && /^\/api\/v1\/presence(?:\/leave)?\/?$/.test(request.path))
       return this.consumeScoped(context, request, { scope: 'presence', limit: PRESENCE_RATE_LIMIT, windowMs: 60000 })
     const login = request.path.endsWith('/auth/login') || request.path.endsWith('/auth/password')
     const refresh = request.path.endsWith('/auth/refresh')

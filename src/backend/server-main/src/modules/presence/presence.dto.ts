@@ -1,16 +1,26 @@
 /**
  * @file presence.dto.ts
- * @description 心跳与后台开关的输入边界；页面路径只用于浏览去重，不落库
+ * @description 心跳、离开、正在阅读查询与后台开关的输入边界；页面路径只用于浏览去重与按页计数，不落库
  */
 import { IsBoolean, IsOptional, IsString, Matches, MaxLength } from 'class-validator'
 
 export class PresenceHeartbeatDto {
   /** 浏览器会话 ID：sessionStorage 中的 32 位十六进制随机值，只用于在线人数 */
   @IsString() @Matches(/^[a-f0-9]{32}$/) session!: string
-  /** 当前页面路径；只在 view 为 true 时参与浏览去重 */
+  /** 当前页面路径：用于“正在阅读”按页计数，view 为 true 时同时参与浏览去重 */
   @IsOptional() @IsString() @MaxLength(512) path?: string
   /** 首次进入页面或站内跳转后的第一次心跳为 true */
   @IsOptional() @IsBoolean() view?: boolean
+}
+
+/** 页面关闭时由 sendBeacon 发送的离开上报：只携带会话 ID */
+export class PresenceLeaveDto {
+  @IsString() @Matches(/^[a-f0-9]{32}$/) session!: string
+}
+
+/** 查询某个页面正在阅读的人数 */
+export class PresenceReadersQueryDto {
+  @IsString() @MaxLength(512) path!: string
 }
 
 export class SavePresenceSettingsDto {

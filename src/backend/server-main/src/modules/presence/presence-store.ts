@@ -53,19 +53,69 @@ class ExpiringSet {
   }
 }
 
+/** 在线会话表：按最后心跳时间有序，并记住会话当前所在的页面路径，供“正在阅读”按路径计数 */
+class SessionTable {
+  private readonly entries = new Map<string, { at: number; path: string | null }>()
+
+  constructor(
+    private readonly windowMs: number,
+    private readonly capacity: number,
+  ) {}
+
+  get size(): number {
+    return this.entries.size
+  }
+
+  prune(now: number): void {
+    for (const [key, entry] of this.entries) {
+      if (now - entry.at < this.windowMs) break
+      this.entries.delete(key)
+    }
+  }
+
+  touch(key: string, path: string | null, now: number): void {
+    this.prune(now)
+    const existed = this.entries.delete(key)
+    if (!existed && this.entries.size >= this.capacity) return
+    this.entries.set(key, { at: now, path })
+  }
+
+  remove(key: string): void {
+    this.entries.delete(key)
+  }
+
+  /** 停留在指定路径上的在线会话数；在线人数上限 10 万，线性遍历可以接受 */
+  countPath(path: string, now: number): number {
+    this.prune(now)
+    let count = 0
+    for (const entry of this.entries.values()) if (entry.path === path) count += 1
+    return count
+  }
+}
+
 export class PresenceStore {
-  private readonly sessions: ExpiringSet
+  private readonly sessions: SessionTable
   private readonly views: ExpiringSet
   private ownerSeenAt: number | null = null
 
   constructor(capacity = PRESENCE_CAPACITY) {
-    this.sessions = new ExpiringSet(ONLINE_WINDOW_MS, capacity)
+    this.sessions = new SessionTable(ONLINE_WINDOW_MS, capacity)
     this.views = new ExpiringSet(VIEW_DEDUPE_MS, capacity)
   }
 
-  /** 登记一次会话心跳，刷新其最后活动时间 */
-  heartbeat(session: string, now: number): void {
-    this.sessions.touch(session, now, true)
+  /** 登记一次会话心跳，刷新其最后活动时间与当前页面（不计浏览的路径记为 null） */
+  heartbeat(session: string, path: string | null, now: number): void {
+    this.sessions.touch(session, path, now)
+  }
+
+  /** 页面关闭时主动下线，不再等 90 秒窗口过期 */
+  leave(session: string): void {
+    this.sessions.remove(session)
+  }
+
+  /** 当前停留在该路径上的在线会话数 */
+  readers(path: string, now: number): number {
+    return this.sessions.countPath(path, now)
   }
 
   /** 当前在线会话数 */

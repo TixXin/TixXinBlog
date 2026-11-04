@@ -28,6 +28,8 @@ export interface PresenceResult {
   owner: { status: 'online' | 'away'; lastSeenAt: string | null } | null
   /** 访问统计；关闭公开统计时为 null */
   stats: PresenceStats | null
+  /** 与本次心跳同一页面的在线会话数（含自己）；关闭公开统计或路径不计数时为 null */
+  readers: number | null
 }
 
 export interface PresenceSettings {
@@ -56,9 +58,10 @@ export class PresenceService {
     const now = context.now ?? new Date()
     const ms = now.getTime()
     const settings = await this.loadSettings(ms)
-    if (!context.automated) this.store.heartbeat(input.session, ms)
+    const page = countablePath(input.path)
+    if (!context.automated) this.store.heartbeat(input.session, page, ms)
     if (context.isOwner) await this.touchOwner(now)
-    const path = input.view ? countablePath(input.path) : null
+    const path = input.view ? page : null
     if (path && !context.automated && context.visitorHash && this.store.claimView(context.visitorHash, path, ms)) {
       await this.recordView(context.visitorHash, now)
       this.statsCache = null
@@ -67,7 +70,20 @@ export class PresenceService {
       online: settings.publicStats ? this.store.online(ms) : null,
       owner: settings.autoPresence ? this.ownerState(settings, ms) : null,
       stats: settings.publicStats ? await this.loadStats(now) : null,
+      readers: settings.publicStats && page ? this.store.readers(page, ms) : null,
     }
+  }
+
+  /** 页面关闭时主动下线 */
+  leave(session: string): void {
+    this.store.leave(session)
+  }
+
+  /** 指定页面正在阅读的人数；关闭公开统计或路径不计数时为 null */
+  async readers(path: string, now = new Date()): Promise<{ readers: number | null }> {
+    const settings = await this.loadSettings(now.getTime())
+    const page = countablePath(path)
+    return { readers: settings.publicStats && page ? this.store.readers(page, now.getTime()) : null }
   }
 
   async settings(): Promise<PresenceSettings> {

@@ -1,15 +1,15 @@
 /**
  * @file post-view.entity.ts
- * @description 文章浏览记录，(post, visitorIdHash, hourBucket) 联合唯一实现 1 小时去重
+ * @description 文章浏览记录：同一访客对同一文章 30 分钟内只计一次，由服务层在文章行锁内按 (post, visitorIdHash, createdAt) 索引查询
  * @author TixXin
  * @since 2026-07-20
  */
 
-import { Entity, ManyToOne, PrimaryKey, Property, Unique } from '@mikro-orm/core'
+import { Entity, Index, ManyToOne, PrimaryKey, Property } from '@mikro-orm/core'
 import { Post } from './post.entity'
 
 @Entity({ tableName: 'post_view' })
-@Unique({ properties: ['post', 'visitorIdHash', 'hourBucket'] })
+@Index({ properties: ['post', 'visitorIdHash', 'createdAt'] })
 export class PostView {
   @PrimaryKey({ type: 'integer', autoincrement: true })
   id!: number
@@ -19,10 +19,6 @@ export class PostView {
 
   @Property({ type: 'text' })
   visitorIdHash!: string
-
-  /** 整点时间桶：date_trunc('hour') 语义，应用层归一化后写入 */
-  @Property({ type: 'datetime' })
-  hourBucket!: Date
 
   @Property({ type: 'datetime' })
   createdAt: Date = new Date()

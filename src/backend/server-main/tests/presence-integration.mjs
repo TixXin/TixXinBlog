@@ -1,4 +1,4 @@
-/** @file presence-integration.mjs @description 隔离验收实时在线与访问统计：在线人数、浏览去重、访客计数、博主识别、自动化客户端、开关与鉴权。 */
+/** @file presence-integration.mjs @description 隔离验收实时在线与访问统计：在线人数、正在阅读、离开上报、浏览去重、访客计数、博主识别、自动化客户端、开关与鉴权。 */
 import assert from 'node:assert/strict'
 import { randomBytes, randomUUID } from 'node:crypto'
 import { setTimeout as delay } from 'node:timers/promises'
@@ -27,7 +27,8 @@ try {
         },
         ...(body === undefined ? {} : { body: JSON.stringify(body) }),
       })
-      const result = await response.json()
+      const text = await response.text()
+      const result = text ? JSON.parse(text) : null
       if (response.status === 429 && attempt < 3) {
         await delay(1100)
         continue
@@ -70,7 +71,30 @@ try {
   // 访客 A 换页面计浏览不计新访客；访客 B 计新访客；后台与预览页不计
   data = await beat({ session: second, path: '/articles/1', view: true }, { visitor: visitorA })
   assert.deepEqual(data.stats, { visitors: 1, todayViews: 2, totalViews: 2 })
-  data = await beat({ session: session(), path: '/articles/1', view: true }, { visitor: randomUUID() })
+  const readerB = session()
+  data = await beat({ session: readerB, path: '/articles/1', view: true }, { visitor: randomUUID() })
+  assert.deepEqual(data.stats, { visitors: 2, todayViews: 3, totalViews: 3 })
+
+  // 正在阅读：心跳返回同页在线会话数（含自己），查询接口不登记心跳；离开上报后立即移出
+  assert.equal(data.readers, 2)
+  const readers = async (path) => {
+    const result = await call('/presence/readers?path=' + encodeURIComponent(path), { method: 'GET' })
+    assert.equal(result.status, 200, JSON.stringify(result.body))
+    return result.body.data.readers
+  }
+  assert.equal(await readers('/articles/1'), 2)
+  assert.equal(await readers('/articles/1?from=list#comments'), 2)
+  assert.equal(await readers('/articles/2'), 0)
+  assert.equal(await readers('/admin/posts'), null)
+  assert.equal((await call('/presence/readers', { method: 'GET' })).status, 400)
+  const onlineBeforeLeave = (await beat({ session: readerB, path: '/articles/1' })).online
+  const left = await call('/presence/leave', { body: { session: readerB } })
+  assert.equal(left.status, 204)
+  assert.equal(await readers('/articles/1'), 1)
+  assert.equal((await call('/presence/leave', { body: { session: 'not-hex' } })).status, 400)
+  data = await beat({ session: second, path: '/articles/1' }, { visitor: visitorA })
+  assert.equal(data.online, onlineBeforeLeave - 1)
+  assert.equal(data.readers, 1)
   assert.deepEqual(data.stats, { visitors: 2, todayViews: 3, totalViews: 3 })
   data = await beat({ session: session(), path: '/admin/posts', view: true }, { visitor: randomUUID() })
   data = await beat({ session: session(), path: '/posts/preview', view: true }, { visitor: randomUUID() })
@@ -115,6 +139,8 @@ try {
   data = await beat({ session: session() })
   assert.equal(data.online, null)
   assert.equal(data.stats, null)
+  assert.equal(data.readers, null)
+  assert.equal(await readers('/articles/1'), null)
   assert.equal(data.owner.status, 'online')
   await call('/admin/presence', { method: 'PATCH', admin: true, body: { autoPresence: false, publicStats: true } })
   data = await beat({ session: session() })
@@ -122,7 +148,7 @@ try {
   assert.notEqual(data.online, null)
   assert.equal((await call('/admin/presence', { method: 'PATCH', admin: true, body: { publicStats: 'yes' } })).status, 400)
 
-  console.log('presence integration: 在线人数、浏览去重、访客计数、博主识别、自动化客户端、北京时间切日与开关通过')
+  console.log('presence integration: 在线人数、正在阅读、离开上报、浏览去重、访客计数、博主识别、自动化客户端、北京时间切日与开关通过')
 } finally {
   await fixture.close()
 }

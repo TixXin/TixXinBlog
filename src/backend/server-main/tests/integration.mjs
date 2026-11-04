@@ -322,6 +322,18 @@ try {
   await delay(1100)
   await Promise.all([0, 1, 2, 3].map(() => request(`/api/v1/posts/${id}/view`, { method: 'POST' })))
   assert.equal((await request(`/api/v1/posts/${id}`)).body.data.views, 1)
+  // 30 分钟滚动去重：上次浏览在窗口内不再计数，超出窗口后重新计一次
+  const backdateViews = (minutes) =>
+    em
+      .fork()
+      .getConnection()
+      .execute(`update post_view set created_at = now() - interval '${minutes} minutes' where post_id = ?`, [id])
+  await backdateViews(29)
+  await request(`/api/v1/posts/${id}/view`, { method: 'POST' })
+  assert.equal((await request(`/api/v1/posts/${id}`)).body.data.views, 1)
+  await backdateViews(31)
+  await request(`/api/v1/posts/${id}/view`, { method: 'POST' })
+  assert.equal((await request(`/api/v1/posts/${id}`)).body.data.views, 2)
   const beforeArchive = (await request(`/api/v1/admin/posts/${id}`, { token })).body.data.revision
   assert.equal(
     (await request(`/api/v1/admin/posts/${id}?revision=${beforeArchive}`, { method: 'DELETE', token })).status,
@@ -381,7 +393,7 @@ try {
   assert.equal(restoredHistory.body.data.folder, '集成专栏重命名')
   assert.deepEqual(restoredHistory.body.data.tags, ['集成标签重命名'])
   assert.equal(restoredHistory.body.data.revision, beforeHistoryRestore + 1)
-  assert.equal((await em.fork().findOne(Post, { id })).views, 1)
+  assert.equal((await em.fork().findOne(Post, { id })).views, 2)
   assert.equal(
     (await request(`/api/v1/admin/posts/${id}/restore?revision=${beforeRestore}`, { method: 'POST', token })).status,
     409,
