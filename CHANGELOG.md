@@ -6,6 +6,14 @@
 
 ## [未发布]
 
+## [0.5.2-beta.2] - 2026-11-05
+
+### 升级说明
+
+- 测试版，不标记为最新版本：`install.sh` 与 `tixxin update` 默认仍取 0.5.1，需显式执行 `tixxin update 0.5.2-beta.2`
+- 含一项数据库迁移：新增实时在线与访问统计的三张运行表（`site_presence`、`site_visitor`、`site_daily_stats`），不改动已有数据；`tixxin update` 会先做完整备份再迁移。回退到更早版本时这三张表保留，旧版本不读取它们
+- 环境文件与编排不变
+
 ### 新增
 
 - 实时在线与访问统计：底栏显示当前在线人数；左侧“站点统计”卡新增看过本站的访客数、今日浏览（按北京时间）与累计浏览（从本版本起计）；博主在线状态的类型为“自动”时，按博主最近的活动显示“在线”或“N 分钟/小时/天前在线”，超过 30 天显示“超过 30 天没在线”。浏览器约 30 秒发送一次心跳，页面不可见时暂停；同一访客同一页面 30 分钟内只计一次浏览，爬虫与脚本客户端不计入。只保存匿名访客标识的哈希与按日汇总的数字，不保存 IP、User-Agent 或访问路径。后台“站点资料”新增“自动在线状态”与“公开访问统计”两个开关（默认开启），统计与开关随完整备份保存、不进入内容包。静态发布不显示这些内容。接口见 `POST /presence`、`GET/PATCH /admin/presence`
@@ -304,7 +312,8 @@
 - 无多语言支持，界面与内容均为中文
 - 定位为单博主博客，不计划扩展多租户、访客账号或协作能力
 
-[未发布]: https://github.com/TixXin/TixXinBlog/compare/v0.5.2-beta.1...HEAD
+[未发布]: https://github.com/TixXin/TixXinBlog/compare/v0.5.2-beta.2...HEAD
+[0.5.2-beta.2]: https://github.com/TixXin/TixXinBlog/compare/v0.5.2-beta.1...v0.5.2-beta.2
 [0.5.2-beta.1]: https://github.com/TixXin/TixXinBlog/compare/v0.5.1...v0.5.2-beta.1
 [0.5.1]: https://github.com/TixXin/TixXinBlog/compare/v0.5.0...v0.5.1
 [0.5.0]: https://github.com/TixXin/TixXinBlog/compare/v0.4.0...v0.5.0
