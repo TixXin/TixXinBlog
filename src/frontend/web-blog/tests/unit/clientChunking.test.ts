@@ -215,11 +215,12 @@ describe('块报告插件', () => {
         code: '中文',
         isDynamicEntry: true,
         moduleIds: [app('app.vue')],
+        imports: ['_nuxt/b.js'],
       },
       'a.css': { type: 'asset', fileName: '_nuxt/a.css' },
     })
     expect(JSON.parse(readFileSync(target, 'utf8'))).toEqual([
-      { file: '_nuxt/a.js', bytes: 6, entry: true, modules: ['app/app.vue'] },
+      { file: '_nuxt/a.js', bytes: 6, entry: true, main: false, imports: ['_nuxt/b.js'], modules: ['app/app.vue'] },
     ])
   })
 })

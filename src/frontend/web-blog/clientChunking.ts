@@ -209,9 +209,13 @@ interface ReportChunk {
   isEntry?: boolean
   isDynamicEntry?: boolean
   moduleIds?: string[]
+  imports?: string[]
 }
 
-/** 验收用：输出每个 JS 块包含的源码模块，路径相对 web-blog 目录 */
+/**
+ * 输出每个 JS 块的源码模块与静态导入的块，模块路径相对 web-blog 目录。
+ * main 标记应用主入口；按 imports 闭包即可推算页面首屏必载的块，供 scripts/ci/check-client-chunks.mjs 检查。
+ */
 export function chunkReportPlugin(target: string) {
   return {
     name: 'tixxin:chunk-report',
@@ -224,6 +228,8 @@ export function chunkReportPlugin(target: string) {
           file: item.fileName,
           bytes: Buffer.byteLength(item.code ?? ''),
           entry: Boolean(item.isEntry || item.isDynamicEntry),
+          main: Boolean(item.isEntry),
+          imports: item.imports ?? [],
           modules: (item.moduleIds ?? []).map((id) => id.replace(/^.*?[\\/]web-blog[\\/]/, '')),
         }))
       writeFileSync(target, JSON.stringify(chunks, null, 2))

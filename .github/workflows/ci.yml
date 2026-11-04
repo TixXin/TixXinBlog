@@ -191,7 +191,14 @@ jobs:
 
       - name: Build
         if: needs.changes.outputs.app == 'true'
+        env:
+          # 构建时输出客户端块与模块对照表，供下一步检查分块预算
+          CHUNK_REPORT: ${{ runner.temp }}/client-chunks.json
         run: pnpm build
+
+      - name: Client Chunk Budget
+        if: needs.changes.outputs.app == 'true'
+        run: node scripts/ci/check-client-chunks.mjs "$RUNNER_TEMP/client-chunks.json"
 
       - name: Build Backend for Browser Tests
         if: needs.changes.outputs.app == 'true'
