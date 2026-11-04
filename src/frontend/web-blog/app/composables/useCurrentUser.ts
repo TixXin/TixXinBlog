@@ -21,7 +21,21 @@ export function useCurrentUser() {
   const nuxtApp = useNuxtApp()
   // 静态发布没有认证接口，访客始终匿名。
   const staticSite = useStaticSite()
-  const currentUser = useState<CurrentUser | null>('current-user', () => null)
+  const account = useState<CurrentUser | null>('current-user', () => null)
+  const { settings } = useSiteSettings()
+  // 单博主站点：登录的就是博主本人，展示名与头像取站点资料（后台修改后即时生效），
+  // 认证响应只有登录名，站点资料缺省时才回退到登录名与默认头像。
+  const currentUser = computed<CurrentUser | null>({
+    get: () =>
+      account.value && {
+        ...account.value,
+        nickname: settings.value.ownerName?.trim() || account.value.nickname,
+        avatar: settings.value.avatar?.trim() || account.value.avatar,
+      },
+    set: (value) => {
+      account.value = value
+    },
+  })
   const accessToken = useState<string | null>('auth-access-token', () => null)
   const initialized = useState('auth-initialized', () => false)
   const authError = useState('auth-error', () => '')

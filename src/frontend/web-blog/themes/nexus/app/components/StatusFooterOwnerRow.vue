@@ -78,17 +78,8 @@ const displayTitle = computed(() => {
   return ownerCard.value.title
 })
 
-const effectivePresence = computed(() => {
-  if (isLoggedIn.value && currentUser.value) {
-    return {
-      status: 'online' as const,
-      label: t('theme.nexus.statusBar.presence.online'),
-      signature: currentUser.value.signature ?? '',
-      since: ownerPresence.value.since,
-    }
-  }
-  return ownerPresence.value
-})
+// 在线状态只取站点资料：博主登录后看到的与访客一致，不再因登录强制显示“在线”而与资料卡矛盾。
+const effectivePresence = computed(() => ownerPresence.value)
 
 const showSocials = computed(() => !isLoggedIn.value || currentUser.value?.role === 'owner')
 

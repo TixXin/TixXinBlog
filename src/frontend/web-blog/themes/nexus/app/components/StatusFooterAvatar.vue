@@ -43,7 +43,7 @@ defineEmits<{
 }>()
 
 const { ownerPresence, ownerCard } = useSiteInfo()
-const { isLoggedIn, currentUser } = useCurrentUser()
+const { currentUser } = useCurrentUser()
 const { t } = useI18n()
 
 const avatarWrapRef = ref<ComponentPublicInstance | null>(null)
@@ -57,26 +57,17 @@ const GLOW_COLOR_MAP: Record<OwnerPresence, string> = {
   offline: 'transparent',
 }
 
-const defaultAvatarUrl = computed(() => ownerCard.value.avatar || '/avatar.svg')
-const displayAvatarUrl = computed(() => currentUser.value?.avatar || defaultAvatarUrl.value)
-const displayName = computed(() => currentUser.value?.nickname || ownerCard.value.name)
+// 头像与名称取站点资料；登录态的 currentUser 同样由站点资料补全，两者一致。
+const displayAvatarUrl = computed(() => ownerCard.value.avatar || currentUser.value?.avatar || '/avatar.svg')
+const displayName = computed(() => ownerCard.value.name || currentUser.value?.nickname || '')
 
 const avatarFallback = computed(() => {
   const name = displayName.value || 'TX'
   return name.slice(0, 2).toUpperCase()
 })
 
-const effectivePresence = computed(() => {
-  if (isLoggedIn.value && currentUser.value) {
-    return {
-      status: 'online' as const,
-      label: t('theme.nexus.statusBar.presence.online'),
-      signature: currentUser.value.signature ?? '',
-      since: ownerPresence.value.since,
-    }
-  }
-  return ownerPresence.value
-})
+// 在线状态只取站点资料：博主登录后看到的与访客一致，不再因登录强制显示“在线”而与资料卡矛盾。
+const effectivePresence = computed(() => ownerPresence.value)
 
 const avatarGlowColor = computed(() => GLOW_COLOR_MAP[effectivePresence.value.status])
 
