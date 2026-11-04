@@ -1,4 +1,4 @@
-/** @file presence-integration.mjs @description 隔离验收实时在线与访问统计：在线人数、正在阅读、离开上报、浏览去重、访客计数、博主识别、自动化客户端、开关与鉴权。 */
+/** @file presence-integration.mjs @description 隔离验收实时在线与访问统计：在线人数、正在阅读、离开上报、浏览去重、访客计数、访问构成与后台统计、博主识别、自动化客户端、开关与鉴权。 */
 import assert from 'node:assert/strict'
 import { randomBytes, randomUUID } from 'node:crypto'
 import { setTimeout as delay } from 'node:timers/promises'
@@ -51,6 +51,38 @@ try {
     { autoPresence: true, publicStats: true, ownerLastSeenAt: null },
   )
 
+  // 访问统计：空库返回补零的 30 天与空排行；只接受 7/30/90 天；需要登录
+  const sql = (text, params = []) => fixture.testOrm.em.fork().getConnection().execute(text, params)
+  const beijing = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Shanghai' }).format(new Date())
+  const daysAgo = (n) => {
+    const date = new Date(`${beijing}T00:00:00Z`)
+    date.setUTCDate(date.getUTCDate() - n)
+    return date.toISOString().slice(0, 10)
+  }
+  // 超出 365 天保留期的访问构成在当天第一次计浏览时清理
+  await sql(`insert into site_traffic_daily (id, day, dimension, key, count) values (?, ?, 'page', '/expired', 3)`, [
+    randomUUID(),
+    daysAgo(400),
+  ])
+  const report = async (days) => {
+    const result = await call(`/admin/presence/traffic${days ? `?days=${days}` : ''}`, { method: 'GET', admin: true })
+    assert.equal(result.status, 200, JSON.stringify(result.body))
+    return result.body.data
+  }
+  let traffic = await report()
+  assert.equal(traffic.days.length, 30)
+  assert.equal(traffic.to, beijing)
+  assert.equal(traffic.from, daysAgo(29))
+  assert.ok(traffic.days.every((day) => day.views === 0 && day.visitors === 0))
+  assert.deepEqual(
+    { totals: traffic.totals, pages: traffic.pages, referrers: traffic.referrers, devices: traffic.devices },
+    { totals: { views: 0, visitors: 0 }, pages: [], referrers: [], devices: [] },
+  )
+  assert.equal((await report(7)).days.length, 7)
+  assert.equal((await report(90)).days.length, 90)
+  assert.equal((await call('/admin/presence/traffic?days=15', { method: 'GET', admin: true })).status, 400)
+  assert.equal((await call('/admin/presence/traffic', { method: 'GET' })).status, 401)
+
   // 未带访客 ID：计入在线人数，不计浏览与访客
   const first = session()
   let data = await beat({ session: first, path: '/', view: true })
@@ -61,7 +93,7 @@ try {
   // 访客 A 进入首页：计一次浏览与一位访客；同页重复与定时心跳不再计数
   const visitorA = randomUUID()
   const second = session()
-  data = await beat({ session: second, path: '/', view: true }, { visitor: visitorA })
+  data = await beat({ session: second, path: '/', view: true, referrer: 'WWW.Google.com' }, { visitor: visitorA })
   assert.equal(data.online, 2)
   assert.deepEqual(data.stats, { visitors: 1, todayViews: 1, totalViews: 1 })
   data = await beat({ session: second, path: '/?ref=rss', view: true }, { visitor: visitorA })
@@ -72,7 +104,7 @@ try {
   data = await beat({ session: second, path: '/articles/1', view: true }, { visitor: visitorA })
   assert.deepEqual(data.stats, { visitors: 1, todayViews: 2, totalViews: 2 })
   const readerB = session()
-  data = await beat({ session: readerB, path: '/articles/1', view: true }, { visitor: randomUUID() })
+  data = await beat({ session: readerB, path: '/articles/1', view: true, referrer: '' }, { visitor: randomUUID() })
   assert.deepEqual(data.stats, { visitors: 2, todayViews: 3, totalViews: 3 })
 
   // 正在阅读：心跳返回同页在线会话数（含自己），查询接口不登记心跳；离开上报后立即移出
@@ -99,6 +131,46 @@ try {
   data = await beat({ session: session(), path: '/admin/posts', view: true }, { visitor: randomUUID() })
   data = await beat({ session: session(), path: '/posts/preview', view: true }, { visitor: randomUUID() })
   assert.deepEqual(data.stats, { visitors: 2, todayViews: 3, totalViews: 3 })
+
+  // 单日访问构成：页面按路径计浏览，来源只计落地浏览（空串为直接访问），设备按当日访客计；过期构成已清理
+  traffic = await report()
+  assert.deepEqual(traffic.days.at(-1), { date: beijing, views: 3, visitors: 2 })
+  assert.deepEqual(traffic.totals, { views: 3, visitors: 2 })
+  assert.deepEqual(traffic.pages, [
+    { key: '/articles/1', count: 2 },
+    { key: '/', count: 1 },
+  ])
+  assert.deepEqual(traffic.referrers, [
+    { key: '', count: 1 },
+    { key: 'google.com', count: 1 },
+  ])
+  assert.deepEqual(traffic.devices, [{ key: 'desktop', count: 2 }])
+  assert.deepEqual(traffic.browsers, [{ key: 'safari', count: 2 }])
+  assert.equal((await sql(`select count(*)::int as n from site_traffic_daily where key = '/expired'`))[0].n, 0)
+  // 非法来源不计来源但照常计浏览
+  assert.equal(
+    (await call('/presence', { body: { session: session(), path: '/', view: true, referrer: 'a'.repeat(254) } }))
+      .status,
+    400,
+  )
+
+  // 每天每个维度的不同键有上限，新来源超出后计入 (other)
+  for (let index = 0; index < 200; index++)
+    await sql(`insert into site_traffic_daily (id, day, dimension, key, count) values (?, ?, 'referrer', ?, 0)`, [
+      randomUUID(),
+      beijing,
+      `filler-${index}.example`,
+    ])
+  await beat({ session: session(), path: '/links', view: true, referrer: 'new.example' }, { visitor: randomUUID() })
+  const capped = await sql(
+    `select key, count from site_traffic_daily where day = ? and dimension = 'referrer' and key in ('new.example', '(other)')`,
+    [beijing],
+  )
+  assert.deepEqual(
+    capped.map((row) => ({ ...row })),
+    [{ key: '(other)', count: 1 }],
+  )
+  data = await beat({ session: session(), path: '/', view: false })
   const onlineBeforeBot = data.online
 
   // 自动化客户端不计在线与浏览，但照常拿到数字
@@ -107,7 +179,7 @@ try {
     { visitor: randomUUID(), agent: 'Mozilla/5.0 (compatible; Googlebot/2.1)' },
   )
   assert.equal(data.online, onlineBeforeBot)
-  assert.deepEqual(data.stats, { visitors: 2, todayViews: 3, totalViews: 3 })
+  assert.deepEqual(data.stats, { visitors: 3, todayViews: 4, totalViews: 4 })
 
   // 博主令牌：显示在线并记录最后在线时间；无效令牌按普通访客处理
   assert.equal((await call('/presence', { body: { session: session() }, admin: false })).status, 200)
@@ -128,8 +200,7 @@ try {
     .fork()
     .getConnection()
     .execute(`select to_char(day, 'YYYY-MM-DD') as day, views, visitors from site_daily_stats`)
-  const beijing = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Shanghai' }).format(new Date())
-  assert.deepEqual({ ...row }, { day: beijing, views: 3, visitors: 2 })
+  assert.deepEqual({ ...row }, { day: beijing, views: 4, visitors: 3 })
 
   // 开关：关闭公开统计后不返回在线人数与统计；关闭自动在线后不返回博主状态
   const saved = await call('/admin/presence', { method: 'PATCH', admin: true, body: { publicStats: false } })
@@ -146,9 +217,14 @@ try {
   data = await beat({ session: session() })
   assert.equal(data.owner, null)
   assert.notEqual(data.online, null)
-  assert.equal((await call('/admin/presence', { method: 'PATCH', admin: true, body: { publicStats: 'yes' } })).status, 400)
+  assert.equal(
+    (await call('/admin/presence', { method: 'PATCH', admin: true, body: { publicStats: 'yes' } })).status,
+    400,
+  )
 
-  console.log('presence integration: 在线人数、正在阅读、离开上报、浏览去重、访客计数、博主识别、自动化客户端、北京时间切日与开关通过')
+  console.log(
+    'presence integration: 在线人数、正在阅读、离开上报、浏览去重、访客计数、访问构成与后台统计、博主识别、自动化客户端、北京时间切日与开关通过',
+  )
 } finally {
   await fixture.close()
 }

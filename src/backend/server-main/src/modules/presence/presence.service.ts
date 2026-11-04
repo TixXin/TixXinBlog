@@ -3,12 +3,15 @@
  * @description 实时在线与访问统计：心跳登记在线会话与博主活动，首次进入页面计浏览，返回在线人数、博主状态与统计。
  *   统计结果与开关短时缓存，博主最后在线时间节流写库；浏览与访客只存哈希和北京时间日期。
  */
+import { randomUUID } from 'node:crypto'
 import { Injectable } from '@nestjs/common'
 import { EntityManager } from '@mikro-orm/postgresql'
 import { SitePresence } from '../../entities/site-presence.entity'
 import { PresenceStore } from './presence-store'
 import { beijingDay } from './presence-time'
 import { countablePath, type PresenceHeartbeatDto, type SavePresenceSettingsDto } from './presence.dto'
+import { deviceKey, normalizeReferrer } from './traffic-keys'
+import { TrafficService } from './traffic.service'
 
 /** 统计与开关缓存时长：心跳频繁，数字允许短暂滞后 */
 const CACHE_MS = 10_000
@@ -42,6 +45,8 @@ export interface HeartbeatContext {
   visitorHash: string
   isOwner: boolean
   automated: boolean
+  /** 只用于归类设备与浏览器大类，不保存 */
+  userAgent?: string
   now?: Date
 }
 
@@ -52,7 +57,10 @@ export class PresenceService {
   private statsCache: { value: PresenceStats; expires: number } | null = null
   private ownerPersistedAt = 0
 
-  constructor(private readonly em: EntityManager) {}
+  constructor(
+    private readonly em: EntityManager,
+    private readonly traffic: TrafficService,
+  ) {}
 
   async heartbeat(input: PresenceHeartbeatDto, context: HeartbeatContext): Promise<PresenceResult> {
     const now = context.now ?? new Date()
@@ -63,8 +71,13 @@ export class PresenceService {
     if (context.isOwner) await this.touchOwner(now)
     const path = input.view ? page : null
     if (path && !context.automated && context.visitorHash && this.store.claimView(context.visitorHash, path, ms)) {
-      await this.recordView(context.visitorHash, now)
+      await this.recordView(context.visitorHash, now, {
+        path,
+        referrer: normalizeReferrer(input.referrer),
+        userAgent: context.userAgent,
+      })
       this.statsCache = null
+      await this.traffic.prune(beijingDay(now))
     }
     return {
       online: settings.publicStats ? this.store.online(ms) : null,
@@ -138,8 +151,12 @@ export class PresenceService {
     if (this.settingsCache) this.settingsCache.value.ownerLastSeenAt = now
   }
 
-  /** 计一次浏览；访客当天首次出现时同时计入当日访客数 */
-  private async recordView(visitorHash: string, now: Date): Promise<void> {
+  /** 计一次浏览；访客当天首次出现时同时计入当日访客数与设备分布；页面与来源计入访问构成 */
+  private async recordView(
+    visitorHash: string,
+    now: Date,
+    page: { path: string; referrer: string | null; userAgent?: string },
+  ): Promise<void> {
     const day = beijingDay(now)
     await this.em.fork().transactional(async (em) => {
       const connection = em.getConnection()
@@ -153,13 +170,18 @@ export class PresenceService {
         em.getTransactionContext(),
       )
       await connection.execute(
-        `insert into site_daily_stats (day, views, visitors) values (?, 1, ?)
+        `insert into site_daily_stats (id, day, views, visitors) values (?, ?, 1, ?)
          on conflict (day) do update set views = site_daily_stats.views + 1,
            visitors = site_daily_stats.visitors + excluded.visitors`,
-        [day, firstToday.length > 0 ? 1 : 0],
+        [randomUUID(), day, firstToday.length > 0 ? 1 : 0],
         'run',
         em.getTransactionContext(),
       )
+      await this.traffic.record(em, day, {
+        path: page.path,
+        referrer: page.referrer,
+        device: firstToday.length > 0 ? deviceKey(page.userAgent) : null,
+      })
     })
   }
 

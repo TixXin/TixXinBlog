@@ -41,6 +41,7 @@ import { LinkSettings } from '../entities/link-settings.entity'
 import { SitePresence } from '../entities/site-presence.entity'
 import { SiteVisitor } from '../entities/site-visitor.entity'
 import { SiteDailyStats } from '../entities/site-daily-stats.entity'
+import { SiteTrafficDaily } from '../entities/site-traffic-daily.entity'
 import { Post } from '../entities/post.entity'
 import { PostFolder } from '../entities/post-folder.entity'
 import { PostRevision } from '../entities/post-revision.entity'
@@ -109,6 +110,7 @@ const ORM_ENTITIES = [
   SitePresence,
   SiteVisitor,
   SiteDailyStats,
+  SiteTrafficDaily,
 ] as const
 
 export const mikroOrmOptions = defineConfig({

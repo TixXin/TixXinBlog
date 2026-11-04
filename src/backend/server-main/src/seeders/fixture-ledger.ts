@@ -24,6 +24,8 @@ export const FIXTURE_TABLES = {
   'link-application': 'friend_link_application',
   notification: 'owner_notification',
   task: 'background_task',
+  'traffic-day': 'site_daily_stats',
+  traffic: 'site_traffic_daily',
 } as const
 export type FixtureKind = keyof typeof FIXTURE_TABLES
 export async function fixtureRow(em: EntityManager, kind: FixtureKind, id: string) {

@@ -1,6 +1,6 @@
 /**
  * @file presence.controller.ts
- * @description 公开心跳、离开上报、正在阅读查询与后台开关接口。心跳不要求登录：携带有效博主访问令牌时记为博主在线，
+ * @description 公开心跳、离开上报、正在阅读查询，以及后台开关与访问统计接口。心跳不要求登录：携带有效博主访问令牌时记为博主在线，
  *   令牌缺失、过期或无效都按普通访客处理，不返回错误。
  */
 import { Body, Controller, Get, HttpCode, Patch, Post, Query, Req, UseGuards } from '@nestjs/common'
@@ -16,8 +16,10 @@ import {
   PresenceLeaveDto,
   PresenceReadersQueryDto,
   SavePresenceSettingsDto,
+  TrafficQueryDto,
 } from './presence.dto'
 import { PresenceService } from './presence.service'
+import { TrafficService } from './traffic.service'
 
 @Controller('presence')
 export class PresenceController {
@@ -37,6 +39,7 @@ export class PresenceController {
       visitorHash,
       isOwner: await this.isOwner(request.headers.authorization),
       automated: isAutomatedClient(request.headers['user-agent']),
+      userAgent: request.headers['user-agent'],
     })
   }
 
@@ -68,7 +71,10 @@ export class PresenceController {
 @Controller('admin/presence')
 @UseGuards(AdminAuthGuard)
 export class AdminPresenceController {
-  constructor(private readonly presence: PresenceService) {}
+  constructor(
+    private readonly presence: PresenceService,
+    private readonly traffic: TrafficService,
+  ) {}
 
   @Get() settings() {
     return this.presence.settings()
@@ -76,5 +82,10 @@ export class AdminPresenceController {
 
   @Patch() save(@Body() body: SavePresenceSettingsDto) {
     return this.presence.saveSettings(body)
+  }
+
+  /** 近 7/30/90 天的访问趋势、热门页面、来源与设备分布 */
+  @Get('traffic') report(@Query() query: TrafficQueryDto) {
+    return this.traffic.report(query.days)
   }
 }

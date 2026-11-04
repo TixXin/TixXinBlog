@@ -15,6 +15,7 @@ import {
   LINK_APPLICATION_FIXTURE_COUNT,
 } from './link-application-fixtures'
 import { seedPromptFixtures, PROMPT_DATASET, PROMPT_FIXTURE_COUNT } from './prompt-fixtures'
+import { seedTrafficFixtures, TRAFFIC_DATASET, TRAFFIC_FIXTURE_COUNT } from './traffic-fixtures'
 import {
   seedGalleryExternalFixtures,
   GALLERY_EXTERNAL_DATASET,
@@ -84,6 +85,13 @@ export const DEVELOPMENT_DATASETS = [
     count: LINK_APPLICATION_FIXTURE_COUNT,
     scope: '友链申请的待审、已通过（含生成的友链草稿）与已拒绝；不改动申请开关',
     seed: seedLinkApplicationFixtures,
+  },
+  {
+    id: TRAFFIC_DATASET,
+    count: TRAFFIC_FIXTURE_COUNT,
+    scope:
+      '访问统计：截至昨天的 30 天按日汇总、工作日与周末起伏、热门页面、直接访问与站外来源、桌面与移动；只补没有真实记录的日期',
+    seed: seedTrafficFixtures,
   },
   {
     id: GALLERY_EXTERNAL_DATASET,

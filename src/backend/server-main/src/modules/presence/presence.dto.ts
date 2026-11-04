@@ -1,8 +1,9 @@
 /**
  * @file presence.dto.ts
- * @description 心跳、离开、正在阅读查询与后台开关的输入边界；页面路径只用于浏览去重与按页计数，不落库
+ * @description 心跳、离开、正在阅读查询、后台访问统计与开关的输入边界；路径与来源只以汇总形式落库
  */
-import { IsBoolean, IsOptional, IsString, Matches, MaxLength } from 'class-validator'
+import { Type } from 'class-transformer'
+import { IsBoolean, IsIn, IsOptional, IsString, Matches, MaxLength } from 'class-validator'
 
 export class PresenceHeartbeatDto {
   /** 浏览器会话 ID：sessionStorage 中的 32 位十六进制随机值，只用于在线人数 */
@@ -11,6 +12,8 @@ export class PresenceHeartbeatDto {
   @IsOptional() @IsString() @MaxLength(512) path?: string
   /** 首次进入页面或站内跳转后的第一次心跳为 true */
   @IsOptional() @IsBoolean() view?: boolean
+  /** 页面加载后的首次浏览才携带：站外来源的域名，空串为直接访问；只保存规范化的域名 */
+  @IsOptional() @IsString() @MaxLength(253) referrer?: string
 }
 
 /** 页面关闭时由 sendBeacon 发送的离开上报：只携带会话 ID */
@@ -21,6 +24,13 @@ export class PresenceLeaveDto {
 /** 查询某个页面正在阅读的人数 */
 export class PresenceReadersQueryDto {
   @IsString() @MaxLength(512) path!: string
+}
+
+/** 后台访问统计的时间范围（天） */
+export const TRAFFIC_RANGES = [7, 30, 90] as const
+
+export class TrafficQueryDto {
+  @IsOptional() @Type(() => Number) @IsIn(TRAFFIC_RANGES) days: (typeof TRAFFIC_RANGES)[number] = 30
 }
 
 export class SavePresenceSettingsDto {

@@ -9428,6 +9428,22 @@
           "enumItems": [],
           "mappedType": "date"
         },
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
+          "unique": false,
+          "length": null,
+          "precision": null,
+          "scale": null,
+          "default": null,
+          "comment": null,
+          "enumItems": [],
+          "mappedType": "uuid"
+        },
         "views": {
           "name": "views",
           "type": "int4",
@@ -9465,10 +9481,142 @@
       "schema": "public",
       "indexes": [
         {
+          "columnNames": ["id"],
+          "composite": false,
+          "constraint": true,
+          "keyName": "site_daily_stats_id_unique",
+          "unique": true,
+          "primary": false
+        },
+        {
           "columnNames": ["day"],
           "composite": false,
           "constraint": false,
           "keyName": "site_daily_stats_pkey",
+          "unique": true,
+          "primary": true
+        }
+      ],
+      "checks": [],
+      "foreignKeys": {},
+      "nativeEnums": {
+        "flash_type": {
+          "name": "flash_type",
+          "schema": "public",
+          "items": ["idea", "todo", "memo"]
+        },
+        "post_category": {
+          "name": "post_category",
+          "schema": "public",
+          "items": ["tech", "life"]
+        },
+        "post_status": {
+          "name": "post_status",
+          "schema": "public",
+          "items": ["draft", "published", "archived"]
+        }
+      },
+      "comment": null
+    },
+    {
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": true,
+          "nullable": false,
+          "unique": false,
+          "length": null,
+          "precision": null,
+          "scale": null,
+          "default": null,
+          "comment": null,
+          "enumItems": [],
+          "mappedType": "uuid"
+        },
+        "day": {
+          "name": "day",
+          "type": "date",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
+          "unique": false,
+          "length": 0,
+          "precision": null,
+          "scale": null,
+          "default": null,
+          "comment": null,
+          "enumItems": [],
+          "mappedType": "date"
+        },
+        "dimension": {
+          "name": "dimension",
+          "type": "text",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
+          "unique": false,
+          "length": null,
+          "precision": null,
+          "scale": null,
+          "default": null,
+          "comment": null,
+          "enumItems": [],
+          "mappedType": "text"
+        },
+        "key": {
+          "name": "key",
+          "type": "text",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
+          "unique": false,
+          "length": null,
+          "precision": null,
+          "scale": null,
+          "default": null,
+          "comment": null,
+          "enumItems": [],
+          "mappedType": "text"
+        },
+        "count": {
+          "name": "count",
+          "type": "int4",
+          "unsigned": false,
+          "autoincrement": false,
+          "primary": false,
+          "nullable": false,
+          "unique": false,
+          "length": null,
+          "precision": 32,
+          "scale": 0,
+          "default": "0",
+          "comment": null,
+          "enumItems": [],
+          "mappedType": "integer"
+        }
+      },
+      "name": "site_traffic_daily",
+      "schema": "public",
+      "indexes": [
+        {
+          "columnNames": ["day", "dimension", "key"],
+          "composite": true,
+          "constraint": true,
+          "keyName": "site_traffic_daily_day_dimension_key_unique",
+          "unique": true,
+          "primary": false
+        },
+        {
+          "columnNames": ["id"],
+          "composite": false,
+          "constraint": false,
+          "keyName": "site_traffic_daily_pkey",
           "unique": true,
           "primary": true
         }
