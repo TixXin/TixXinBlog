@@ -1,6 +1,6 @@
 /**
  * @file content-package-characterization.spec.ts
- * @description 内容包导出、迁入计划与迁入流程的特征快照：以内存实体覆盖各内容域、关系、媒体引用、草稿与回收状态，固定 v14 导出字节及 v14/v13 迁入计划。
+ * @description 内容包导出、迁入计划与迁入流程的特征快照：以内存实体覆盖各内容域、关系、媒体引用、草稿与回收状态，固定当前版本导出字节及当前版本/v13 迁入计划。
  */
 import 'reflect-metadata'
 import { createHash } from 'node:crypto'
@@ -634,13 +634,18 @@ const legacyV13 = (value: ContentPackage) => {
   delete copy.site.searchIndexing
   delete copy.site.presenceExpiresAt
   delete copy.site.timeZone
+  // v18 才有的订阅试用到期日与结束日
+  for (const item of copy.subscriptions as { values: Record<string, unknown> }[]) {
+    delete item.values.trialEndDate
+    delete item.values.endDate
+  }
   copy.version = 13
   return copy
 }
 const parse = (value: unknown) => parseContentPackage(Buffer.from(JSON.stringify(value)))
 
 describe('内容包导出特征', () => {
-  it('v17 导出的字节与读取顺序保持不变', async () => {
+  it('v18 导出的字节与读取顺序保持不变', async () => {
     const calls: Calls = []
     const { result, em } = await exportPackage(false, calls)
     expect(JSON.stringify(result)).toMatchSnapshot()
@@ -704,8 +709,8 @@ describe('内容包导出特征', () => {
 
 describe('内容包迁入计划特征', () => {
   it.each([
-    ['v17 跳过相同内容', false, 'skip', false],
-    ['v17 复制并包含设置', false, 'copy', true],
+    ['v18 跳过相同内容', false, 'skip', false],
+    ['v18 复制并包含设置', false, 'copy', true],
     ['v13 复制并包含设置', true, 'copy', true],
     ['v13 跳过且不含设置', true, 'skip', false],
   ] as const)('%s', async (_name, legacy, strategy, includeSettings) => {

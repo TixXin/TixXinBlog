@@ -36,7 +36,7 @@
         <p v-if="mode === 'local' && !local.ready.value" role="status">
           {{ $t('misc.subscription.page.localNotReady') }}
         </p>
-        <SubscriptionStats v-if="stats" :stats="stats" :currency="currency" />
+        <SubscriptionStats v-if="stats" :stats="stats" :currency="currency" :rates="rates" :estimate="estimate" />
         <section
           class="subscription-list"
           :aria-label="$t('misc.subscription.page.listLabel', { currency })"
@@ -78,6 +78,7 @@
             :key="`${mode}:${item.id}`"
             :item="item"
             :today="stats?.asOf ?? today"
+            :roll-forward="mode === 'blog'"
             :editable="mode === 'local' || auth.isLoggedIn.value"
             :local="mode === 'local'"
             :busy="local.saving.value"
@@ -108,6 +109,8 @@
           :next-renewal="nextRenewal"
           :renewal-day-hint="renewalDayHint"
           :overdue-count="overdueCount"
+          :records="records"
+          :today="stats.asOf"
         />
         <ClientOnly>
           <SubscriptionLocalPanel
@@ -175,6 +178,9 @@ const {
   searchText,
   query,
   stats,
+  records,
+  rates,
+  estimate,
   total,
   items,
   currency,

@@ -38,6 +38,16 @@ const DOMAIN_ERRORS: Record<string, string> = {
   订阅分类或状态无效: 'categoryOrStatusInvalid',
   订阅日期无效: 'dateInvalid',
   下次扣费不能早于订阅开始日期: 'nextBeforeStart',
+  试用到期不能早于订阅开始日期: 'trialEndBeforeStart',
+  结束日期不能早于订阅开始日期: 'endBeforeStart',
+  日期无效: 'dateInvalid',
+  日期超出范围: 'billingDateOutOfRange',
+  汇率格式无效: 'ratesInvalid',
+  '汇率必须大于 0': 'ratesInvalid',
+  汇率配置无效: 'ratesInvalid',
+  基准币种无效: 'ratesInvalid',
+  汇率币种无效: 'ratesInvalid',
+  折合金额超出安全范围: 'statsOverflow',
 }
 
 /**

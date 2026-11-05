@@ -71,7 +71,7 @@ export async function parseContentPackage(buffer: Buffer): Promise<ContentPackag
   const relations = (value: unknown, path: string, type: ContentRelation['type'], id: number) =>
     parsePackageRelations(version, value, path, type, id)
 
-  const subscriptions = parsePackageSubscriptions(version >= 11 ? source.subscriptions : [])
+  const subscriptions = parsePackageSubscriptions(version >= 11 ? source.subscriptions : [], version)
   const mediaIncluded = boolean(source.mediaIncluded, 'mediaIncluded')
 
   const { posts, commentsCount: postComments } = parsePackagePosts(source.posts, relations)
@@ -96,7 +96,7 @@ export async function parseContentPackage(buffer: Buffer): Promise<ContentPackag
 
   return {
     format: 'tixxin-content',
-    version: 17,
+    version: 18,
     omittedRelations,
     exportedAt: date(source.exportedAt, 'package.fieldExportedAt'),
     mediaIncluded,

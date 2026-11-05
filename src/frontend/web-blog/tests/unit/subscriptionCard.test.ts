@@ -26,6 +26,8 @@ const item: SubscriptionItem = {
   billingCycle: 'monthly',
   startDate: null,
   nextBillingDate: null,
+  trialEndDate: null,
+  endDate: null,
   subscriptionStatus: 'active',
   iconUrl: '/api/v1/subscriptions/favicons/existing-icon.webp',
   faviconUrl: '/api/v1/subscriptions/favicons/existing-icon.webp',
@@ -48,9 +50,14 @@ afterEach(() => {
   hosts.splice(0).forEach((host) => host.remove())
   vi.restoreAllMocks()
 })
-async function setup(overrides: Partial<SubscriptionItem> = {}, today = '2026-10-15', attachTo?: HTMLElement) {
+async function setup(
+  overrides: Partial<SubscriptionItem> = {},
+  today = '2026-10-15',
+  attachTo?: HTMLElement,
+  rollForward = false,
+) {
   const wrapper = await mountSuspended(Card, {
-    props: { item: { ...item, ...overrides }, today },
+    props: { item: { ...item, ...overrides }, today, rollForward },
     attachTo,
     global: { stubs: { SubscriptionHistory: true } },
   })
@@ -289,5 +296,37 @@ describe('订阅行英文界面', () => {
     } finally {
       await i18n().setLocale('zh-CN')
     }
+  })
+})
+
+describe('订阅行的公开推算与逾期边界', () => {
+  const stale = { startDate: '2026-01-31', nextBillingDate: '2026-08-31' }
+  it('博主视角保留原日期并标记逾期', async () => {
+    const wrapper = await setup(stale, '2026-10-15')
+    expect(wrapper.find('.subscription-list-date').text()).toContain('2026-08-31')
+    expect(wrapper.find('.subscription-list-date--overdue').exists()).toBe(true)
+  })
+  it('公开视角按周期推算下一次扣费且不标逾期，保留月底锚点', async () => {
+    const wrapper = await setup(stale, '2026-10-15', undefined, true)
+    expect(wrapper.find('.subscription-list-date').text()).toContain('2026-10-31')
+    expect(wrapper.find('.subscription-list-date--overdue').exists()).toBe(false)
+  })
+  it('暂停与已结束的记录即使日期已过也不提示逾期', async () => {
+    for (const overrides of [
+      { ...stale, subscriptionStatus: 'paused' as const },
+      { ...stale, endDate: '2026-08-31' },
+    ]) {
+      const wrapper = await setup(overrides, '2026-10-15')
+      expect(wrapper.find('.subscription-list-date--overdue').exists()).toBe(false)
+    }
+  })
+  it('试用记录在公开视角显示转正日', async () => {
+    const wrapper = await setup(
+      { subscriptionStatus: 'trial', startDate: '2026-10-01', trialEndDate: '2026-10-20' },
+      '2026-10-15',
+      undefined,
+      true,
+    )
+    expect(wrapper.find('.subscription-list-date').text()).toContain('2026-10-20')
   })
 })

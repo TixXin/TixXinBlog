@@ -13,7 +13,7 @@ import { ensureFixture } from './fixture-ledger'
 import type { FixtureProgress } from './fixture-ledger'
 
 export const SUBSCRIPTION_DATASET = 'subscription-v1'
-export const SUBSCRIPTION_RECORD_COUNT = 15
+export const SUBSCRIPTION_RECORD_COUNT = 20
 export const SUBSCRIPTION_FIXTURE_COUNT = SUBSCRIPTION_RECORD_COUNT + 1
 const definitions: [string, Currency, number, BillingCycle, SubscriptionCategory, SubscriptionStatus, string | null][] =
   [
@@ -32,7 +32,21 @@ const definitions: [string, Currency, number, BillingCycle, SubscriptionCategory
     ['Vue 生态赞助', 'CNY', 35000, 'one-time', 'design', 'active', 'https://vuejs.org/'],
     ['微信读书 无限卡', 'CNY', 2900, 'monthly', 'other', 'active', 'https://weread.qq.com/'],
     ['スタディサプリ ENGLISH', 'JPY', 2000, 'yearly', 'education', 'active', 'https://eigosapuri.jp/'],
+    // 以下为多年/半年周期、带到期日的试用与有结束日的取消记录，追加在末尾以便已有开发库增量补齐
+    ['Cloudflare 域名注册', 'USD', 2088, 'biennial', 'development', 'active', 'https://www.cloudflare.com/'],
+    ['腾讯云 轻量应用服务器', 'CNY', 29700, 'semiannual', 'cloud', 'active', 'https://cloud.tencent.com/'],
+    ['Raycast Pro', 'USD', 800, 'monthly', 'productivity', 'trial', 'https://www.raycast.com/'],
+    ['Netflix 標準方案', 'HKD', 9300, 'monthly', 'entertainment', 'cancelled', 'https://www.netflix.com/'],
+    ['Hetzner 存储盒', 'EUR', 13900, 'triennial', 'cloud', 'active', 'https://www.hetzner.com/'],
   ]
+/** 序号 15 起的样本日期：多年周期、试用到期与结束日；早期样本沿用原有日期规则 */
+function laterSchedule(index: number, today: string) {
+  if (index === 15) return { startDate: addMonths(daysFrom(today, 25), -24), nextBillingDate: daysFrom(today, 25) }
+  if (index === 16) return { startDate: addMonths(daysFrom(today, 60), -12), nextBillingDate: daysFrom(today, 60) }
+  if (index === 17) return { startDate: daysFrom(today, -4), trialEndDate: daysFrom(today, 10) }
+  if (index === 18) return { startDate: addMonths(today, -14), endDate: addMonths(today, -2) }
+  return { startDate: addMonths(daysFrom(today, 200), -36), nextBillingDate: daysFrom(today, 200) }
+}
 function daysFrom(date: string, offset: number) {
   const value = new Date(date + 'T00:00:00.000Z')
   value.setUTCDate(value.getUTCDate() + offset)
@@ -81,8 +95,16 @@ export async function seedSubscriptionFixtures(
       async () => {
         if (index === 6 && !available) return null
         const dated = index < 9 || index === 13
-        const nextBillingDate = dated ? daysFrom(today, index === 2 ? -4 : index === 13 ? 40 : index + 3) : null
-        const startDate = index === 13 ? daysFrom(today, 40) : dated ? addMonths(nextBillingDate!, -12) : null
+        const early = {
+          nextBillingDate: dated ? daysFrom(today, index === 2 ? -4 : index === 13 ? 40 : index + 3) : null,
+        }
+        const schedule =
+          index >= 15
+            ? laterSchedule(index, today)
+            : {
+                ...early,
+                startDate: index === 13 ? daysFrom(today, 40) : dated ? addMonths(early.nextBillingDate!, -12) : null,
+              }
         let saved = await service.save(null, {
           requestId: randomUUID(),
           name,
@@ -111,10 +133,16 @@ export async function seedSubscriptionFixtures(
                   ? '试用期内，到期前决定要不要转正式订阅。'
                   : index === 13
                     ? '还在犹豫要不要长期续，先记一笔，下个月再看使用频率。'
-                    : '',
+                    : index === 17
+                      ? '试用两周，到期后按月付转正，先看看剪贴板历史和窗口管理顺不顺手。'
+                      : index === 18
+                        ? '追完想看的剧就退了，到期后不再续费。'
+                        : '',
           notes: '',
-          startDate,
-          nextBillingDate,
+          startDate: schedule.startDate,
+          nextBillingDate: schedule.nextBillingDate ?? null,
+          trialEndDate: 'trialEndDate' in schedule ? schedule.trialEndDate : null,
+          endDate: 'endDate' in schedule ? schedule.endDate : null,
           iconMediaId: index === 6 ? mediaId : null,
           status: index === 13 ? 'draft' : index === 14 ? 'withdrawn' : 'published',
           sortOrder: 100 - index,

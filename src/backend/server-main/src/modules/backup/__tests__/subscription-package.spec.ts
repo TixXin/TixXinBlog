@@ -1,8 +1,11 @@
-/** @file subscription-package.spec.ts @description v11 格式升版、历史事实、单位及管理身份的严格迁入边界。 */
+/** @file subscription-package.spec.ts @description v11 格式升版、历史事实、单位及管理身份的严格迁入边界；v18 起的试用到期日与结束日。 */
 import 'reflect-metadata'
 import { parseContentPackage } from '../content-package'
 import { subscriptionContentHash } from '../content-import-plan'
-import { parsePackageSubscriptions } from '../content-package-subscriptions'
+import { parsePackageSubscriptions, SUBSCRIPTION_SCHEDULE_VERSION } from '../content-package-subscriptions'
+
+/** 不含试用到期日与结束日的旧格式版本 */
+const LEGACY = SUBSCRIPTION_SCHEDULE_VERSION - 1
 
 const event = (overrides = {}) => ({
   id: '6459bac0-801f-44cd-91ae-5729bef9a110',
@@ -78,8 +81,10 @@ const parse = (input: unknown) => parseContentPackage(Buffer.from(JSON.stringify
 describe('平台订阅内容包 v11', () => {
   it('保存价格事实和管理备注，开始日期不会伪造更早的历史价格', async () => {
     const parsed = await parse(bundle())
-    expect(parsed.version).toBe(17)
-    expect(parsed.subscriptions).toEqual([subscription()])
+    expect(parsed.version).toBe(18)
+    expect(parsed.subscriptions).toEqual([
+      { ...subscription(), values: { ...subscription().values, trialEndDate: null, endDate: null } },
+    ])
     expect(parsed.subscriptions[0]?.values.priceHistory[0]?.effectiveAt).toBe('2026-10-01T10:00:00.000Z')
   })
   it.each([1, 2, 3, 4, 5, 6, 7, 8, 9, 10])('兼容 v%i 的原字段集，不在旧格式偷偷增加订阅', async (version) => {
@@ -112,12 +117,15 @@ describe('平台订阅内容包 v11', () => {
     await expect(parse({ ...bundle(), subscriptions: [...subscriptions, ...subscriptions] })).rejects.toThrow()
     for (const key of ['requestId', 'requestHash', 'revision', 'updatedAt', 'priceChangeReason'])
       expect(() =>
-        parsePackageSubscriptions([{ ...subscription(), values: { ...subscription().values, [key]: 'private' } }]),
+        parsePackageSubscriptions(
+          [{ ...subscription(), values: { ...subscription().values, [key]: 'private' } }],
+          LEGACY,
+        ),
       ).toThrow()
     for (const key of Object.keys(subscription().values)) {
       const values: Record<string, unknown> = { ...subscription().values }
       delete values[key]
-      expect(() => parsePackageSubscriptions([{ ...subscription(), values }])).toThrow()
+      expect(() => parsePackageSubscriptions([{ ...subscription(), values }], LEGACY)).toThrow()
     }
   })
   it.each([
@@ -138,7 +146,7 @@ describe('平台订阅内容包 v11', () => {
     { faviconDomain: '127.0.0.1', url: 'http://127.0.0.1/' },
   ])('拒绝非法业务值 %j', (patch) => {
     expect(() =>
-      parsePackageSubscriptions([{ ...subscription(), values: { ...subscription().values, ...patch } }]),
+      parsePackageSubscriptions([{ ...subscription(), values: { ...subscription().values, ...patch } }], LEGACY),
     ).toThrow()
   })
   it('JPY 金额不做乘除，零金额和公开域名可以原样保留', () => {
@@ -149,10 +157,10 @@ describe('平台订阅内容包 v11', () => {
       faviconDomain: 'example.org',
       priceHistory: [event({ amount: 1000, currency: 'JPY' })],
     }
-    expect(parsePackageSubscriptions([{ ...subscription(), values }])[0]?.values.amount).toBe(1000)
+    expect(parsePackageSubscriptions([{ ...subscription(), values }], LEGACY)[0]?.values.amount).toBe(1000)
     values.amount = 0
     values.priceHistory = [event({ amount: 0, currency: 'JPY' })]
-    expect(parsePackageSubscriptions([{ ...subscription(), values }])[0]?.values.amount).toBe(0)
+    expect(parsePackageSubscriptions([{ ...subscription(), values }], LEGACY)[0]?.values.amount).toBe(0)
   })
   it('拒绝空历史、重复事件、未来生效、倒序、未知字段或末条与当前值不符', () => {
     for (const priceHistory of [
@@ -165,13 +173,13 @@ describe('平台订阅内容包 v11', () => {
       [event(), event({ id: '18b60bc1-f79e-44c0-89a1-8101a6f5c782', effectiveAt: '2026-09-01T10:00:00.000Z' })],
     ])
       expect(() =>
-        parsePackageSubscriptions([{ ...subscription(), values: { ...subscription().values, priceHistory } }]),
+        parsePackageSubscriptions([{ ...subscription(), values: { ...subscription().values, priceHistory } }], LEGACY),
       ).toThrow()
   })
   it('拒绝尚未发生的价格记录，不让未来历史锁死后续变价', () => {
     const future = new Date(Date.now() + 86400000).toISOString()
     const values = { ...subscription().values, priceHistory: [event({ effectiveAt: future, recordedAt: future })] }
-    expect(() => parsePackageSubscriptions([{ ...subscription(), values }])).toThrow()
+    expect(() => parsePackageSubscriptions([{ ...subscription(), values }], LEGACY)).toThrow()
   })
   it('同日多次变价与跨币种、周期变化按事实保留，不自动追加事件', () => {
     const priceHistory = [
@@ -187,10 +195,12 @@ describe('平台订阅内容包 v11', () => {
       }),
     ]
     const values = { ...subscription().values, currency: 'JPY', amount: 1000, billingCycle: 'yearly', priceHistory }
-    expect(parsePackageSubscriptions([{ ...subscription(), values }])[0]?.values.priceHistory).toEqual(priceHistory)
+    expect(parsePackageSubscriptions([{ ...subscription(), values }], LEGACY)[0]?.values.priceHistory).toEqual(
+      priceHistory,
+    )
   })
   it('去重包含历史和业务状态；发布状态与可再生缓存不造成重复迁入', () => {
-    const values = subscription().values
+    const values = { ...subscription().values, trialEndDate: null, endDate: null }
     expect(subscriptionContentHash(values)).toBe(
       subscriptionContentHash({ ...values, status: 'draft', faviconDomain: 'example.org' }),
     )
@@ -200,5 +210,43 @@ describe('平台订阅内容包 v11', () => {
     expect(subscriptionContentHash(values)).not.toBe(
       subscriptionContentHash({ ...values, priceHistory: [event({ reason: '真实变更说明' })] }),
     )
+  })
+  it('去重区分试用到期日与结束日', () => {
+    const values = { ...subscription().values, trialEndDate: null, endDate: null }
+    expect(subscriptionContentHash(values)).not.toBe(subscriptionContentHash({ ...values, endDate: '2026-12-31' }))
+  })
+})
+
+describe('平台订阅内容包 v18 日程字段', () => {
+  const scheduled = (patch: Record<string, unknown> = {}) => [
+    { ...subscription(), values: { ...subscription().values, trialEndDate: null, endDate: '2026-12-31', ...patch } },
+  ]
+  it('v18 起必须携带试用到期日与结束日，并原样保留', () => {
+    const [parsed] = parsePackageSubscriptions(scheduled({ trialEndDate: '2020-02-14' }), SUBSCRIPTION_SCHEDULE_VERSION)
+    expect(parsed?.values).toMatchObject({ trialEndDate: '2020-02-14', endDate: '2026-12-31' })
+    expect(() => parsePackageSubscriptions([subscription()], SUBSCRIPTION_SCHEDULE_VERSION)).toThrow()
+  })
+  it('旧版本夹带新字段按未知字段拒绝，缺省时规范为 null', () => {
+    expect(() => parsePackageSubscriptions(scheduled(), LEGACY)).toThrow()
+    expect(parsePackageSubscriptions([subscription()], LEGACY)[0]?.values).toMatchObject({
+      trialEndDate: null,
+      endDate: null,
+    })
+  })
+  it.each([
+    { trialEndDate: '2019-12-31' },
+    { endDate: '2019-12-31' },
+    { endDate: '2026-02-30' },
+    { billingCycle: 'weekly' },
+  ])('拒绝早于开始日或不存在的日程日期 %j', (patch) => {
+    expect(() => parsePackageSubscriptions(scheduled(patch), SUBSCRIPTION_SCHEDULE_VERSION)).toThrow()
+  })
+  it('接受新的多年与半年周期', () => {
+    for (const billingCycle of ['semiannual', 'biennial', 'triennial']) {
+      const values = { billingCycle, priceHistory: [event({ billingCycle })] }
+      expect(parsePackageSubscriptions(scheduled(values), SUBSCRIPTION_SCHEDULE_VERSION)[0]?.values.billingCycle).toBe(
+        billingCycle,
+      )
+    }
   })
 })

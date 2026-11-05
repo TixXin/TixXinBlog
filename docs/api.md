@@ -303,18 +303,26 @@
 
 ## 平台订阅费
 
-| 方法与路径                                                                   | 作用                                                  |
-| ---------------------------------------------------------------------------- | ----------------------------------------------------- |
-| `GET /subscriptions`、`GET /subscriptions/stats`、`GET /subscriptions/:id`   | 公开记录、全部匹配记录的分币种统计及详情              |
-| `GET /subscriptions/favicons/:key`                                           | 读取已缓存的 favicon 图片                             |
-| `GET/POST /admin/subscriptions`、`GET/PATCH/DELETE /admin/subscriptions/:id` | 管理列表、幂等创建、版本化编辑与软删除                |
-| `GET /admin/subscriptions/submissions/:requestId`                            | 核查原创建结果，不复活已删除提交                      |
-| `PATCH /admin/subscriptions/sort`                                            | 显式编号、目标排序值及 revision 的事务更新            |
-| `POST /admin/subscriptions/fetch-favicon`                                    | 管理员触发受限 favicon 代理；不抓取任意官网或图片地址 |
+| 方法与路径                                                                   | 作用                                                        |
+| ---------------------------------------------------------------------------- | ----------------------------------------------------------- |
+| `GET /subscriptions`、`GET /subscriptions/stats`、`GET /subscriptions/:id`   | 公开记录、全部匹配记录的分币种统计及详情                    |
+| `GET /subscriptions/favicons/:key`                                           | 读取已缓存的 favicon 图片                                   |
+| `GET/POST /admin/subscriptions`、`GET/PATCH/DELETE /admin/subscriptions/:id` | 管理列表、幂等创建、版本化编辑与软删除                      |
+| `GET /admin/subscriptions/submissions/:requestId`                            | 核查原创建结果，不复活已删除提交                            |
+| `PATCH /admin/subscriptions/sort`                                            | 显式编号、目标排序值及 revision 的事务更新                  |
+| `POST /admin/subscriptions/fetch-favicon`                                    | 管理员触发受限 favicon 代理；不抓取任意官网或图片地址       |
+| `GET /subscriptions/settings`                                                | 博主公开的参考汇率（仅用于标注“估算”的折合金额）            |
+| `GET/PATCH /admin/subscriptions/settings`                                    | 读取与版本化保存参考汇率，并返回续费日历是否开启            |
+| `POST/DELETE /admin/subscriptions/calendar-token`                            | 生成新的续费日历令牌（原文只返回一次）或停用日历            |
+| `GET /subscriptions/calendar.ics`                                            | 博主私密续费日历（iCalendar），查询参数 `token`，无效时 404 |
 
 列表支持 `q/category/currency/subscriptionStatus/page/pageSize/sort`，默认每页 12、最大 48；管理端另有 `status=all|draft|published|withdrawn`。公开接口仅返回 published 且未删除记录，使用白名单排除管理备注、发布状态、revision 和提交身份。金额排序按币种分组，统计覆盖全部匹配记录，与分页无关。
 
-`amount` 为币种最小单位的非负整数，上限 2147483647；支持 CNY、USD、EUR、GBP、JPY、HKD、TWD。JPY 无小数位；不同币种从不直接合计。`billingCycle` 为 monthly/quarterly/yearly/lifetime/one-time，`subscriptionStatus` 为 active/paused/cancelled/trial/expired，后者与发布 `status` 独立。active、已开始的月/季/年付记录进入当前预算；一次性、买断和其他状态不重复计费。日期为真实 `YYYY-MM-DD`，未知留 null，不读取时自动推进逾期日期。
+`amount` 为币种最小单位的非负整数，上限 2147483647；支持 CNY、USD、EUR、GBP、JPY、HKD、TWD。JPY 无小数位；不同币种从不直接合计。`billingCycle` 为 monthly/quarterly/semiannual/yearly/biennial/triennial/lifetime/one-time，`subscriptionStatus` 为 active/paused/cancelled/trial/expired，后者与发布 `status` 独立。active、已开始且未到 `endDate` 的周期付费记录进入当前预算，年化按 ×72 精确累加后取整；一次性、买断和其他状态不重复计费。日期为真实 `YYYY-MM-DD`，未知留 null；`trialEndDate`（试用到期即首次扣费）与 `endDate`（当天及之后不再扣费）均不能早于 `startDate`。读取从不回写日期。
+
+公开统计按站点时区的当天计算，预测与近期扣费把博主未及时更新的过去日期按周期推算到今天之后，不对访客报逾期；带 `trialEndDate` 的试用记录从到期日起进入预测并标记 `trial`。响应另含：`spending`（按扣费币种的累计花费估算与逐年金额，价格按 `priceHistory` 分段取当期价，缺少日期的记录计入 `unknownCount`）、`priceChanges`（同币种同周期的调价记录）以及 `records`（计算日程所需的公开字段，前端据此按访客当天重算，静态发布冻结接口后日期仍然正确）。
+
+参考汇率存于运行配置表 `subscription_settings`：`baseCurrency` 为空表示未启用，`rates` 为“1 单位该币种折合多少基准币种”的十进制字符串（大于 0，最多 8 位小数），`ratesUpdatedAt` 为博主核对日期。服务端从不抓取汇率，分币种统计不受影响。续费日历包含全部未删除、未撤回的记录（含草稿），输出未来 12 个月的全天扣费事件并提前一天提醒；令牌只存 SHA-256，响应 `no-store` 且 `noindex`。
 
 `priceHistory` 由服务端创建初始事件并在价格、币种或周期变化时原子追加；普通 PATCH 禁止覆盖历史和系统字段，未传字段保持原值。`priceChangeReason` 可说明此次变化，不改变价格的文字编辑不新增事件。历史事件包含 id、effectiveAt、recordedAt、amount、currency、billingCycle、可选 reason；内容包通过专门校验保留真实历史。
 

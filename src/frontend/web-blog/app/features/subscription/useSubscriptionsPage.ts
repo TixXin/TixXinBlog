@@ -37,9 +37,28 @@ export function useSubscriptionsPage(
 
   const query = computed(() => (mode.value === 'blog' ? feed.query.value : localQuery))
   const localFiltered = computed(() => filterSubscriptions(local.data.value.items, localQuery))
+  // 服务端统计按请求当天计算；访客的“今天”已变（如静态发布冻结了接口）时用 records 重算，不报逾期。
+  const blogStats = computed<SubscriptionStats | null>(() => {
+    const server = feed.stats.value
+    if (!server?.records || server.asOf === today.value) return server
+    try {
+      return { ...statistics(server.records, today.value, { rollForward: true }), records: server.records }
+    } catch {
+      return server
+    }
+  })
   const stats = computed<SubscriptionStats | null>(() =>
-    mode.value === 'blog' ? feed.stats.value : local.ready.value ? statistics(localFiltered.value, today.value) : null,
+    mode.value === 'blog' ? blogStats.value : local.ready.value ? statistics(localFiltered.value, today.value) : null,
   )
+  /** 年度账单与累计花费所用的记录：公开为当前筛选的全部记录，本机为筛选后的本机记录 */
+  const records = computed(() =>
+    mode.value === 'blog' ? (blogStats.value?.records ?? []) : local.ready.value ? localFiltered.value : [],
+  )
+  const { config: rates, estimate } = useSubscriptionEstimate({
+    mode,
+    localItems: computed(() => (local.ready.value ? local.data.value.items : [])),
+    today,
+  })
   const total = computed(() =>
     mode.value === 'blog' ? feed.total.value : local.ready.value ? localFiltered.value.length : null,
   )
@@ -184,6 +203,9 @@ export function useSubscriptionsPage(
     searchText,
     query,
     stats,
+    records,
+    rates,
+    estimate,
     total,
     items,
     currency,

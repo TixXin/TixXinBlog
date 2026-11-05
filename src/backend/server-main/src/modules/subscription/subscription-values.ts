@@ -40,12 +40,17 @@ export function faviconDomain(input: string): string {
     throw new BadRequestException(msg('subscription.faviconDomainInvalid'))
   return domain
 }
-export function validateSubscriptionDates(value: { startDate?: string | null; nextBillingDate?: string | null }) {
-  for (const date of [value.startDate, value.nextBillingDate])
+type SubscriptionDates = Partial<Record<'startDate' | 'nextBillingDate' | 'trialEndDate' | 'endDate', string | null>>
+export function validateSubscriptionDates(value: SubscriptionDates) {
+  for (const date of [value.startDate, value.nextBillingDate, value.trialEndDate, value.endDate])
     if (date !== undefined && date !== null && !isDate(date))
       throw new BadRequestException(msg('subscription.dateInvalid'))
   if (value.startDate && value.nextBillingDate && value.nextBillingDate < value.startDate)
     throw new BadRequestException(msg('subscription.nextBillingBeforeStart'))
+  if (value.startDate && value.trialEndDate && value.trialEndDate < value.startDate)
+    throw new BadRequestException(msg('subscription.trialEndBeforeStart'))
+  if (value.startDate && value.endDate && value.endDate < value.startDate)
+    throw new BadRequestException(msg('subscription.endBeforeStart'))
 }
 export function subscriptionValues(input: SaveSubscriptionDto) {
   const values = Object.fromEntries(

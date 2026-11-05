@@ -34,6 +34,7 @@ import { GalleryPhoto } from '../entities/gallery-photo.entity'
 import { GallerySettings } from '../entities/gallery-settings.entity'
 import { Project } from '../entities/project.entity'
 import { Subscription } from '../entities/subscription.entity'
+import { SubscriptionSettings } from '../entities/subscription-settings.entity'
 import { ImagePrompt } from '../entities/image-prompt.entity'
 import { FriendLink } from '../entities/friend-link.entity'
 import { FriendLinkApplication } from '../entities/friend-link-application.entity'
@@ -103,6 +104,7 @@ const ORM_ENTITIES = [
   GallerySettings,
   Project,
   Subscription,
+  SubscriptionSettings,
   ImagePrompt,
   FriendLink,
   FriendLinkApplication,

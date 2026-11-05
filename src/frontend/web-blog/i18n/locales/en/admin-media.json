@@ -795,7 +795,9 @@
       "updated": "Subscription updated.",
       "removed": "Subscription deleted.",
       "mutateFailed": "The action failed",
-      "conflictSuffix": "; reload the current version before trying again."
+      "conflictSuffix": "; reload the current version before trying again.",
+      "overdue": "The next billing date {date} has passed and was not updated",
+      "renewed": "Renewed — move to {date}"
     },
     "release": {
       "beta": "Beta",
@@ -820,6 +822,41 @@
       "copied": "Copied",
       "copyFailed": "Copy failed. Select the command and copy it manually.",
       "viewOnGithub": "View on GitHub"
+    },
+    "subscriptionSettings": {
+      "title": "Subscription settings",
+      "loading": "Loading subscription settings",
+      "loadFailed": "Could not load subscription settings",
+      "summaryRates": "Reference rates: base {base}",
+      "summaryNoRates": "Reference rates off",
+      "ratesTitle": "Reference rates",
+      "ratesNote": "Enter how many units of the base currency one unit of each currency is worth. The public page uses them for amounts marked as estimates; per-currency totals are unaffected, and rates are never fetched automatically.",
+      "base": "Base currency",
+      "disabled": "Off",
+      "updatedAt": "Checked on",
+      "rateFor": "1 {code} = ? {base}",
+      "ratePlaceholder": "e.g. 7.1",
+      "save": "Save rates",
+      "saved": "Reference rates saved",
+      "saveFailed": "Could not save reference rates",
+      "calendarTitle": "Renewal calendar",
+      "calendarNote": "Create a private iCalendar link to subscribe to billing dates for the next 12 months (with a reminder one day before), drafts included. Anyone with the link can read it, so keep it private.",
+      "calendarOn": "Renewal calendar on",
+      "calendarOff": "Renewal calendar off",
+      "calendarOnce": "This link is shown only once. Copy or subscribe now; if you lose it, create a new one.",
+      "calendarUrl": "Renewal calendar link",
+      "copy": "Copy link",
+      "copied": "Link copied",
+      "copyFailed": "Copy failed. Select the link and copy it manually.",
+      "subscribe": "Subscribe in a calendar app",
+      "rotate": "Create a new link",
+      "enable": "Create calendar link",
+      "disable": "Turn off renewal calendar",
+      "rotateConfirm": "The old link stops working immediately. Continue?",
+      "disableConfirm": "Subscribed calendars will stop updating. Turn it off?",
+      "rotated": "New renewal calendar link created",
+      "disabledNotice": "Renewal calendar turned off",
+      "calendarFailed": "Renewal calendar action failed"
     }
   }
 }

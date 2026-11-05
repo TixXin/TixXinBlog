@@ -52,7 +52,7 @@
               >{{ item.date
               }}<span v-if="item.overdue" class="subscription-forecast__overdue">
                 · {{ $t('misc.subscription.card.overdue') }}</span
-              ></span
+              ><span v-else-if="item.trial"> · {{ $t('misc.subscription.forecast.trialConversion') }}</span></span
             >
           </div>
           <strong>{{ formatAmount(item.amount, currency) }}</strong>

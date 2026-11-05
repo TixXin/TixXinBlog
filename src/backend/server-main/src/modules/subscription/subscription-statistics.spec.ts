@@ -55,6 +55,9 @@ describe('订阅统计与分币种查询', () => {
       recurringCount: 0,
       categoryCount: 0,
       currencies: [],
+      spending: [],
+      priceChanges: [],
+      records: [],
     })
   })
 
@@ -244,7 +247,9 @@ describe('订阅统计与分币种查询', () => {
     expect(beforeStart.currencies[0]).toMatchObject({
       annualAmount: 0,
       monthlyAmount: 0,
-      upcoming: [{ id: 1, name: '云空间 1', date: '2026-10-19', amount: 100, currency: 'USD', overdue: false }],
+      upcoming: [
+        { id: 1, name: '云空间 1', date: '2026-10-19', amount: 100, currency: 'USD', overdue: false, trial: false },
+      ],
     })
     expect(beforeStart.currencies[0]!.forecast[0]).toEqual({ month: '2026-10', amount: 100 })
 
@@ -254,14 +259,14 @@ describe('订阅统计与分币种查询', () => {
     expect(atStart.currencies[0]).toMatchObject({ annualAmount: 1200, monthlyAmount: 100 })
   })
 
-  it('预测保留月底锚点和逾期提示，读取不推进实体扣费日期或写库', async () => {
+  it('公开统计保留月底锚点，把未更新的扣费日推算到今天之后而不报逾期，读取不推进实体日期或写库', async () => {
     const item = record(1, { startDate: '2026-08-31', nextBillingDate: '2026-09-30' })
     const previous = structuredClone(item)
     const { em, service } = fixture([item])
     const result = await service.stats(new SubscriptionQuery())
 
     expect(result.currencies[0]!.upcoming).toEqual([
-      { id: 1, name: '云空间 1', date: '2026-09-30', amount: 100, currency: 'USD', overdue: true },
+      { id: 1, name: '云空间 1', date: '2026-10-31', amount: 100, currency: 'USD', overdue: false, trial: false },
     ])
     expect(result.currencies[0]!.forecast).toHaveLength(12)
     expect(result.currencies[0]!.forecast[0]).toEqual({ month: '2026-10', amount: 100 })

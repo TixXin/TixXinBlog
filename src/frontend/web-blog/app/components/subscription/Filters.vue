@@ -60,14 +60,14 @@
   </div>
 </template>
 <script setup lang="ts">
-import { categoryLabels, stateLabels, currencyOptions } from '~/features/subscription/types'
+import { categoryOptions, stateOptions, currencyOptions } from '~/features/subscription/types'
 import type { SubscriptionCategory, SubscriptionQuery, SubscriptionState } from '~/features/subscription/types'
 import { categoryLabel, stateLabel } from '~/features/subscription/labels'
 defineProps<{ query: SubscriptionQuery; disabled?: boolean; compact?: boolean }>()
 const emit = defineEmits<{ change: [value: Record<string, string | number | undefined>] }>()
 const { t } = useI18n()
-const categoryKeys = Object.keys(categoryLabels) as SubscriptionCategory[],
-  stateKeys = Object.keys(stateLabels) as SubscriptionState[]
+const categoryKeys: readonly SubscriptionCategory[] = categoryOptions,
+  stateKeys: readonly SubscriptionState[] = stateOptions
 function change(key: string, event: Event) {
   emit('change', { [key]: (event.target as HTMLInputElement).value || undefined })
 }

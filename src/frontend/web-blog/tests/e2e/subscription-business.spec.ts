@@ -5,6 +5,7 @@ import { randomUUID } from 'node:crypto'
 import { setTimeout as delay } from 'node:timers/promises'
 import { captureMotion, prepareMotionCapture } from './motionScreenshot'
 import { pickDate } from './datePicker'
+import { addDays, addMonths, advanceBilling, todayDate } from '@tixxin/subscription-domain'
 
 test.beforeEach(({ page, browserName }) => {
   expect(process.env.E2E_ISOLATED).toBe('true')
@@ -203,7 +204,7 @@ test('已加载的统计在真实布局切换、普通动效和返回导航中�
   await page.emulateMedia({ reducedMotion: 'no-preference' })
   await page.goto('/subscriptions?currency=USD')
   const stats = page.getByRole('region', { name: '订阅费用统计' })
-  await expect(stats).toContainText('USD 529.00')
+  await expect(stats).toContainText('USD 539.44')
   for (const [id, name] of [
     ['aurora', 'Aurora 双栏'],
     ['dock', 'Dock 浮岛'],
@@ -212,7 +213,7 @@ test('已加载的统计在真实布局切换、普通动效和返回导航中�
     await page.getByRole('button', { name: '界面设置', exact: true }).click()
     await page.getByRole('button', { name: `${name} 布局主题`, exact: true }).click()
     await expect(page.locator(`.theme-${id}`)).toBeVisible()
-    await expect(stats).toContainText('USD 529.00')
+    await expect(stats).toContainText('USD 539.44')
     await expect(page.locator('[data-subscription-chart][data-chart-ready="true"]')).toHaveCount(1)
     await expect(page).toHaveURL(/currency=USD/)
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1)).toBe(true)
@@ -235,14 +236,14 @@ for (const theme of ['nexus', 'aurora', 'dock']) {
       await expect(page.locator(`.theme-${theme}`)).toBeVisible()
       await expect(page.getByRole('heading', { name: '平台订阅费', exact: true })).toBeVisible()
       const stats = page.getByRole('region', { name: '订阅费用统计' })
-      await expect(stats).toContainText('USD 529.00')
+      await expect(stats).toContainText('USD 539.44')
       await expect(stats).toHaveAttribute('data-currency', 'USD')
       await expect(stats.getByRole('heading', { name: 'USD 月均预算', exact: true })).toHaveCount(1)
       await expect(page.locator('[data-subscription-chart][data-chart-ready="true"]').first()).toBeVisible()
       await expect(page.getByRole('article', { name: 'ChatGPT Plus', exact: true })).toContainText('USD 20.00')
       await verifyForecast(page, 'USD')
       const live = await request.get('/api/v1/subscriptions/stats?currency=USD')
-      expect((await live.json()).data.currencies[0].annualAmount).toBe(52900)
+      expect((await live.json()).data.currencies[0].annualAmount).toBe(53944)
       expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1)).toBe(true)
       await currencyButton(page, 'JPY').click()
       await expect(page).toHaveURL(/currency=JPY/)
@@ -255,7 +256,7 @@ for (const theme of ['nexus', 'aurora', 'dock']) {
       await expect(yenDetail.getByRole('heading', { name: /第 .* 段/ })).toHaveCount(2)
       await closeDetail(page, 'Kindle Unlimited（日本）')
       await currencyButton(page, 'USD').click()
-      await expect(stats).toContainText('USD 529.00')
+      await expect(stats).toContainText('USD 539.44')
       await currencyButton(page, 'USD').scrollIntoViewIfNeeded()
       if ([390, 1440].includes(width)) await captureMotion(page, testInfo, `subscription-${theme}-${width}-light.png`)
       // nexus 窄屏的明暗切换收在底栏“更多导航”里，切换后关闭菜单再继续
@@ -265,7 +266,7 @@ for (const theme of ['nexus', 'aurora', 'dock']) {
       await expect(page.locator('html')).toHaveClass(/dark/)
       if (await page.getByRole('dialog', { name: '更多导航', exact: true }).isVisible())
         await page.keyboard.press('Escape')
-      await expect(stats).toContainText('USD 529.00')
+      await expect(stats).toContainText('USD 539.44')
       await expect(page.locator('[data-subscription-chart][data-chart-ready="true"]').first()).toBeVisible()
       expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1)).toBe(true)
       if ([390, 1440].includes(width)) await captureMotion(page, testInfo, `subscription-${theme}-${width}-dark.png`)
@@ -518,4 +519,83 @@ test('金额上限和长名称在窄屏及动态缩放下保留精确预算与�
   await expect(card).toContainText('USD 21,474,836.47')
   await expect(stats).toContainText('USD 257,698,037.64')
   expect(errors).toEqual([])
+})
+
+test('公开页不报逾期、后台一键续费、年度账单、参考汇率折合与私密续费日历闭环', async ({ page, request }) => {
+  const api = await adminApi(request),
+    name = `山间云盘 ${randomUUID()}`
+  // 隔离库站点时区缺省为 Asia/Shanghai，与公开统计的“今天”一致
+  const today = todayDate('Asia/Shanghai'),
+    stale = addDays(today, -5)
+  const created = await api('/admin/subscriptions', 'POST', {
+    requestId: randomUUID(),
+    name,
+    currency: 'USD',
+    amount: 1000,
+    billingCycle: 'monthly',
+    startDate: addMonths(stale, -3),
+    nextBillingDate: stale,
+    subscriptionStatus: 'active',
+    status: 'published',
+  })
+  const settingsBefore = await api('/admin/subscriptions/settings')
+  try {
+    await page.goto(`/subscriptions?q=${encodeURIComponent(name)}`)
+    const card = page.getByRole('article', { name, exact: true })
+    await expect(card).not.toContainText('已逾期')
+    await expect(card).not.toContainText(stale)
+
+    await login(page)
+    await page.goto(`/admin/subscriptions?q=${encodeURIComponent(name)}`)
+    const row = page.locator('.subscription-admin-list > li').filter({ hasText: name })
+    await expect(row).toContainText(`下次扣费日 ${stale} 已过`)
+    const next = advanceBilling(created)!
+    await row.getByRole('button', { name: `已续费，下次改为 ${next}`, exact: true }).click()
+    await expect.poll(async () => (await api(`/admin/subscriptions/${created.id}`)).nextBillingDate).toBe(next)
+    await expect(row).not.toContainText('已过，尚未更新')
+
+    const saved = await api('/admin/subscriptions/settings', 'PATCH', {
+      revision: settingsBefore.revision,
+      baseCurrency: 'CNY',
+      rates: { USD: '7.1' },
+      ratesUpdatedAt: today,
+    })
+    expect(saved).toMatchObject({ baseCurrency: 'CNY', rates: { USD: '7.1' } })
+    await page.reload()
+    await expect(page.getByText('参考汇率：基准 CNY', { exact: false })).toBeVisible()
+
+    await page.goto(`/subscriptions?q=${encodeURIComponent(name)}`)
+    const stats = page.getByRole('region', { name: '订阅费用统计', exact: true })
+    await expect(stats).toContainText('折合约 CNY')
+    await expect(stats).toContainText('累计已花约 USD')
+    await page.getByRole('button', { name: '年度账单', exact: true }).click()
+    const annual = page.getByRole('dialog', { name: '年度账单', exact: true })
+    await expect(annual.getByRole('region', { name: 'USD 年度账单', exact: true })).toContainText(name)
+    await annual.getByRole('button', { name: '关闭年度账单', exact: true }).click()
+    await expect(annual).toHaveCount(0)
+
+    const { token } = await api('/admin/subscriptions/calendar-token', 'POST')
+    const calendar = await request.get(`/api/v1/subscriptions/calendar.ics?token=${token}`)
+    expect(calendar.status()).toBe(200)
+    expect(calendar.headers()['content-type']).toContain('text/calendar')
+    expect(calendar.headers()['cache-control']).toBe('no-store')
+    // RFC 5545 按 75 字节折行，展开后再比对
+    const body = (await calendar.text()).replace(/\r\n /g, '')
+    expect(body).toContain(`SUMMARY:续费：${name} USD 10.00`)
+    expect(body).toContain(`DTSTART;VALUE=DATE:${next.replace(/-/g, '')}`)
+    expect((await request.get(`/api/v1/subscriptions/calendar.ics?token=${'x'.repeat(43)}`)).status()).toBe(404)
+    expect((await request.get('/api/v1/subscriptions/settings')).ok()).toBe(true)
+    await api('/admin/subscriptions/calendar-token', 'DELETE')
+    expect((await request.get(`/api/v1/subscriptions/calendar.ics?token=${token}`)).status()).toBe(404)
+  } finally {
+    const current = await api('/admin/subscriptions/settings')
+    await api('/admin/subscriptions/settings', 'PATCH', {
+      revision: current.revision,
+      baseCurrency: settingsBefore.baseCurrency,
+      rates: settingsBefore.rates,
+      ratesUpdatedAt: settingsBefore.ratesUpdatedAt,
+    })
+    const latest = await api(`/admin/subscriptions/${created.id}`)
+    await api(`/admin/subscriptions/${created.id}?revision=${latest.revision}`, 'DELETE')
+  }
 })

@@ -475,14 +475,20 @@
         "quarterly": "季付",
         "yearly": "年付",
         "lifetime": "买断",
-        "oneTime": "一次性"
+        "oneTime": "一次性",
+        "semiannual": "半年付",
+        "biennial": "两年付",
+        "triennial": "三年付"
       },
       "cycleSuffix": {
         "monthly": "/ 月",
         "quarterly": "/ 季",
         "yearly": "/ 年",
         "lifetime": "买断",
-        "oneTime": "一次性"
+        "oneTime": "一次性",
+        "semiannual": "/ 半年",
+        "biennial": "/ 两年",
+        "triennial": "/ 三年"
       },
       "state": {
         "active": "活跃",
@@ -546,7 +552,8 @@
         "editLocal": "编辑我的订阅",
         "saveLocal": "保存到当前浏览器",
         "addOwner": "记录一个平台订阅",
-        "confirmSwitchSource": "本地编辑输入会保留在此页，确定切换数据来源吗？"
+        "confirmSwitchSource": "本地编辑输入会保留在此页，确定切换数据来源吗？",
+        "annual": "年度账单"
       },
       "card": {
         "iconAlt": "{name}图标",
@@ -572,7 +579,13 @@
         "visitWebsite": "访问官网",
         "newTab": "（在新标签页打开）",
         "edit": "编辑订阅",
-        "remove": "删除订阅"
+        "remove": "删除订阅",
+        "trialEnd": "试用到期",
+        "endDate": "结束日期",
+        "spent": "累计花费（估算）",
+        "spentUnknown": "缺少开始日期，无法估算",
+        "spentNone": "尚无扣费",
+        "spentValue": "约 {amount}（{count} 次扣费）"
       },
       "filters": {
         "search": "搜索订阅",
@@ -640,7 +653,13 @@
         "methodLabel": "预算统计口径",
         "methodScope": "统计截至 {asOf}（站点时区日期），涵盖当前筛选下全部匹配的 {currency} 订阅，共 {count} 条。不同币种分别计算，不做汇率换算。",
         "methodRecurring": "持续费用仅计入已开始的活跃月付、季付、年付订阅。月均为年化预算除以 12，实际扣费按计费周期发生；暂停、取消、试用、过期和未来开始的记录不计入当前预算。",
-        "methodOneTime": "一次性与买断不计入持续费用，记录金额为 {amount}，不代表已支付总额。"
+        "methodOneTime": "一次性与买断不计入持续费用，记录金额为 {amount}，不代表已支付总额。",
+        "converted": "折合约 {amount} / 月（参考汇率）",
+        "spent": "累计已花约 {amount}",
+        "spentUnknown": "{count} 条缺少日期未计入",
+        "estimateTotal": "全部币种月均合计约 {amount}",
+        "estimateMissing": "{currencies} 未填汇率，未计入",
+        "ratesAsOf": "汇率核对于 {date}"
       },
       "forecast": {
         "label": "{currency}续费预测",
@@ -657,7 +676,8 @@
         "noPayments": "当前筛选没有可用的扣费日期。",
         "notesSummary": "预测与扣费说明",
         "notesEstimate": "截至 {asOf}（站点时区日期），按当前价格、状态和有效扣费日期估算，并非实际历史支出。试用、暂停、取消和过期记录不生成续费预测；缺少可靠日期的记录不会猜测扣款时间。",
-        "notesPayments": "清单展示每项订阅的下一次扣费日期，逾期记录保留原日期。这里只提供页面提醒，不会自动扣款或发送通知；其他币种需要切换后分别查看。"
+        "notesPayments": "清单展示每项订阅的下一次扣费日期，逾期记录保留原日期。这里只提供页面提醒，不会自动扣款或发送通知；其他币种需要切换后分别查看。",
+        "trialConversion": "试用转正"
       },
       "fields": {
         "name": "服务名称",
@@ -677,7 +697,7 @@
         "status": "订阅状态",
         "startDate": "开始日期",
         "nextBillingDate": "下次扣费日期",
-        "dateNote": "日期未设置时不推测扣款；逾期日期保留原值。试用不假定结束后必然收费。",
+        "dateNote": "日期未设置时不推测扣款；逾期日期保留原值。试用只在填写到期日时按到期日转正估算；结束日当天起不再扣费。",
         "priceChangeReason": "变价原因",
         "priceChangeReasonPlaceholder": "可选，例如套餐调整",
         "priceChangeNote": "保存后追加当前新价格快照；既有价格历史保持只读。",
@@ -695,7 +715,9 @@
         "publication": "发布状态",
         "publicationLabel": "订阅发布状态",
         "sortOrder": "排序值（越大越靠前）",
-        "sortOrderLabel": "订阅排序值"
+        "sortOrderLabel": "订阅排序值",
+        "trialEndDate": "试用到期（首次扣费）",
+        "endDate": "结束日期"
       },
       "editor": {
         "editTitle": "编辑订阅",
@@ -764,7 +786,9 @@
         "removeFailed": "删除未完成",
         "mergeDeleted": "正在编辑的记录已被另一标签页删除。请保留输入，取消后新建记录。",
         "merged": "已合并最新记录：保留本页改动，其余字段采用最新值。请核对后手动保存。",
-        "confirmLeave": "本地订阅有未保存输入，确定离开吗？"
+        "confirmLeave": "本地订阅有未保存输入，确定离开吗？",
+        "trialEndBeforeStart": "试用到期日期不能早于订阅开始日期",
+        "endBeforeStart": "结束日期不能早于订阅开始日期"
       },
       "repository": {
         "unavailable": "订阅服务暂时不可用，请稍后重试",
@@ -794,7 +818,24 @@
         "statsDateInvalid": "统计日期无效",
         "categoryOrStatusInvalid": "订阅分类或状态无效",
         "dateInvalid": "订阅日期无效",
-        "nextBeforeStart": "下次扣费不能早于订阅开始日期"
+        "nextBeforeStart": "下次扣费不能早于订阅开始日期",
+        "trialEndBeforeStart": "试用到期日期不能早于订阅开始日期",
+        "endBeforeStart": "结束日期不能早于订阅开始日期",
+        "ratesInvalid": "参考汇率无效：汇率须大于 0，最多 8 位小数"
+      },
+      "annual": {
+        "label": "{currency} 年度账单",
+        "eyebrow": "{currency} · 按已发生的扣费估算",
+        "title": "年度账单",
+        "empty": "{currency} 暂无可估算的扣费记录",
+        "yearLabel": "选择年份",
+        "summary": "{count} 次扣费，涉及 {services} 项服务",
+        "rankingLabel": "当年各项花费",
+        "chargeCount": "{count} 次",
+        "changesLabel": "当年调价记录",
+        "changesTitle": "当年调价",
+        "noChanges": "当年没有调价",
+        "note": "按开始日、试用到期日与价格历史推算到 {asOf}；暂停期间无法得知，按记录日期估算，仅供参考。"
       }
     },
     "tab": {

@@ -1,6 +1,6 @@
 /** @file editor.ts @description 订阅字段白名单、精确金额输入及上下文恢复副本 */
 import { amountInput, parseAmount } from '@tixxin/subscription-domain'
-import { categoryLabels, cycleLabels, stateLabels, publicationLabels, currencyOptions } from './types'
+import { categoryOptions, currencyOptions, cycleOptions, isOneOf, publicationOptions, stateOptions } from './types'
 import type { ManagedSubscription, SubscriptionEditable, SubscriptionForm } from './types'
 export function subscriptionForm(value?: Partial<SubscriptionEditable> & Partial<SubscriptionForm>): SubscriptionForm {
   return {
@@ -14,6 +14,8 @@ export function subscriptionForm(value?: Partial<SubscriptionEditable> & Partial
     billingCycle: value?.billingCycle ?? 'monthly',
     startDate: value?.startDate ?? null,
     nextBillingDate: value?.nextBillingDate ?? null,
+    trialEndDate: value?.trialEndDate ?? null,
+    endDate: value?.endDate ?? null,
     subscriptionStatus: value?.subscriptionStatus ?? 'active',
     notes: value?.notes ?? '',
     iconMediaId: value?.iconMediaId ?? null,
@@ -38,16 +40,18 @@ export function validSubscriptionForm(value: unknown): value is SubscriptionForm
     v.notes.length <= 5000 &&
     typeof v.amountInput === 'string' &&
     v.amountInput.length <= 40 &&
-    currencyOptions.includes(v.currency) &&
-    Object.hasOwn(categoryLabels, v.category) &&
-    Object.hasOwn(cycleLabels, v.billingCycle) &&
-    Object.hasOwn(stateLabels, v.subscriptionStatus) &&
-    Object.hasOwn(publicationLabels, v.status) &&
+    isOneOf(currencyOptions, v.currency) &&
+    isOneOf(categoryOptions, v.category) &&
+    isOneOf(cycleOptions, v.billingCycle) &&
+    isOneOf(stateOptions, v.subscriptionStatus) &&
+    isOneOf(publicationOptions, v.status) &&
     Number.isInteger(v.sortOrder) &&
     Math.abs(v.sortOrder) <= 1000000 &&
     [v.url, v.platform, v.startDate, v.nextBillingDate, v.iconMediaId].every(
       (field) => field === null || typeof field === 'string',
     ) &&
+    // 试用到期与结束日为后加字段，旧恢复副本缺省视为未填写
+    [v.trialEndDate, v.endDate].every((field) => field === undefined || field === null || typeof field === 'string') &&
     (v.priceChangeReason === undefined || typeof v.priceChangeReason === 'string')
   )
 }

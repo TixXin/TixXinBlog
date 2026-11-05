@@ -28,6 +28,8 @@ export const socialAuditActionKeys: Readonly<Record<string, MessageKey>> = {
   'subscription.delete': 'audit.action.subscriptionDelete',
   'subscription.sort': 'audit.action.subscriptionSort',
   'subscription.favicon': 'audit.action.subscriptionFavicon',
+  'subscription.settings': 'audit.action.subscriptionSettings',
+  'subscription.calendar': 'audit.action.subscriptionCalendar',
   'link.create': 'audit.action.linkCreate',
   'link.update': 'audit.action.linkUpdate',
   'link.delete': 'audit.action.linkDelete',

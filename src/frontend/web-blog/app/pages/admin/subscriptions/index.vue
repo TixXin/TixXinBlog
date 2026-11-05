@@ -1,4 +1,4 @@
-<!-- @file index.vue @description 订阅管理列表：筛选、发布、撤回、版本化排序和软删除 -->
+<!-- @file index.vue @description 订阅管理列表：筛选、发布、撤回、版本化排序、软删除、逾期续费与订阅设置 -->
 <template>
   <section class="subscription-ui subscription-stack">
     <header class="subscription-row">
@@ -10,6 +10,7 @@
       ><NuxtLink to="/subscriptions">{{ $t('admin-media.subscriptionList.viewPublic') }}</NuxtLink>
     </header>
     <ClientOnly>
+      <SubscriptionAdminSettings />
       <SubscriptionFilters :query="admin.query.value" @change="admin.filter" />
       <div class="subscription-row">
         <label
@@ -69,6 +70,16 @@
             }}
           </p>
           <p>{{ item.description || $t('admin-media.subscriptionList.noDescription') }}</p>
+          <p v-if="isOverdue(item, today)" class="subscription-admin-overdue" role="note">
+            {{ $t('admin-media.subscriptionList.overdue', { date: item.nextBillingDate }) }}
+            <button
+              type="button"
+              :disabled="busy(item.id)"
+              @click="admin.mutate(item, { nextBillingDate: advanceBilling(item) })"
+            >
+              {{ $t('admin-media.subscriptionList.renewed', { date: advanceBilling(item) }) }}
+            </button>
+          </p>
           <div class="subscription-row">
             <NuxtLink :to="`/admin/subscriptions/${item.id}`">{{ $t('admin-media.subscriptionList.edit') }}</NuxtLink
             ><button
@@ -132,12 +143,13 @@
   </section>
 </template>
 <script setup lang="ts">
-import { formatAmount } from '@tixxin/subscription-domain'
+import { advanceBilling, formatAmount, isOverdue } from '@tixxin/subscription-domain'
 import { categoryLabel, cycleLabel, publicationLabel, stateLabel } from '~/features/subscription/labels'
-import { publicationLabels, type SubscriptionPublication } from '~/features/subscription/types'
+import { publicationOptions } from '~/features/subscription/types'
 definePageMeta({ layout: 'admin' })
 const { t } = useI18n()
-const publications = Object.keys(publicationLabels) as SubscriptionPublication[]
+const publications = publicationOptions
+const today = useSubscriptionToday()
 useSeoMeta({ title: () => t('admin-media.subscriptionList.title'), robots: 'noindex, nofollow' })
 const admin = useAdminSubscriptions()
 const busy = (id: number) => admin.pending.value || admin.busy.value.includes(id)
@@ -153,5 +165,12 @@ const busy = (id: number) => admin.pending.value || admin.busy.value.includes(id
 }
 header > div {
   margin-right: auto;
+}
+.subscription-admin-overdue {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  color: var(--danger);
 }
 </style>

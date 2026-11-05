@@ -730,7 +730,21 @@ export async function restoreFullBackup(path, { output } = {}) {
       )
       if (invalid) throw new Error('恢复后的订阅图标引用、提交身份或样本归属校验失败')
       // 全表摘要证明字节一致；再逐批验证每条业务值和完整历史，不能只抽验当前价格。
-      const { parsePackageSubscriptions } = require('../dist/modules/backup/content-package-subscriptions.js')
+      const { parsePackageSubscriptions, SUBSCRIPTION_SCHEDULE_VERSION } = require(
+        '../dist/modules/backup/content-package-subscriptions.js',
+      )
+      // 已迁移到含试用到期日与结束日的库按新格式逐条校验；恢复较旧的备份时这两列尚不存在。
+      const scheduleColumns =
+        (
+          await psql(
+            container,
+            database,
+            user,
+            password,
+            "select count(*) from information_schema.columns where table_schema='public' and table_name='subscription' and column_name in ('trial_end_date','end_date');",
+          )
+        ).trim() === '2'
+      const packageVersion = scheduleColumns ? SUBSCRIPTION_SCHEDULE_VERSION : SUBSCRIPTION_SCHEDULE_VERSION - 1
       let lastId = 0,
         verifiedRecords = 0,
         historyEvents = 0
@@ -744,7 +758,9 @@ export async function restoreFullBackup(path, { output } = {}) {
             `select coalesce(json_agg(s),'[]'::json) from (
           select id as "sourceId",created_at as "createdAt",published_at as "publishedAt",deleted_at is not null as deleted,
             json_build_object('name',name,'description',description,'url',url,'platform',platform,'category',category,
-              'currency',currency,'amount',amount,'billingCycle',billing_cycle,'startDate',start_date,'nextBillingDate',next_billing_date,
+              'currency',currency,'amount',amount,'billingCycle',billing_cycle,'startDate',start_date,'nextBillingDate',next_billing_date,${
+                scheduleColumns ? "'trialEndDate',trial_end_date,'endDate',end_date," : ''
+              }
               'subscriptionStatus',subscription_status,'notes',notes,'iconMediaId',icon_media_id,'faviconDomain',favicon_domain,
               'priceHistory',price_history,'status',status,'sortOrder',sort_order) as values
           from subscription where id>${lastId} order by id limit 8) s;`,
@@ -752,7 +768,7 @@ export async function restoreFullBackup(path, { output } = {}) {
         )
         if (!rows.length) break
         try {
-          parsePackageSubscriptions(rows)
+          parsePackageSubscriptions(rows, packageVersion)
         } catch {
           throw new Error('恢复后的订阅金额、日期、状态或价格历史校验失败')
         }

@@ -795,7 +795,9 @@
       "updated": "订阅已更新。",
       "removed": "订阅已删除。",
       "mutateFailed": "操作失败",
-      "conflictSuffix": "；请重新读取当前版本后再操作。"
+      "conflictSuffix": "；请重新读取当前版本后再操作。",
+      "overdue": "下次扣费日 {date} 已过，尚未更新",
+      "renewed": "已续费，下次改为 {date}"
     },
     "release": {
       "beta": "测试版",
@@ -820,6 +822,41 @@
       "copied": "已复制",
       "copyFailed": "复制失败，请手动选中命令复制",
       "viewOnGithub": "在 GitHub 查看"
+    },
+    "subscriptionSettings": {
+      "title": "订阅设置",
+      "loading": "正在读取订阅设置",
+      "loadFailed": "订阅设置读取失败",
+      "summaryRates": "参考汇率：基准 {base}",
+      "summaryNoRates": "未启用参考汇率",
+      "ratesTitle": "参考汇率",
+      "ratesNote": "手填“1 单位该币种折合多少基准币种”，公开页据此显示标注“估算”的折合金额；分币种统计不受影响，本站不会自动抓取汇率。",
+      "base": "基准币种",
+      "disabled": "不启用",
+      "updatedAt": "核对日期",
+      "rateFor": "1 {code} = ? {base}",
+      "ratePlaceholder": "例如 7.1",
+      "save": "保存汇率",
+      "saved": "参考汇率已保存",
+      "saveFailed": "参考汇率保存失败",
+      "calendarTitle": "续费日历",
+      "calendarNote": "生成私密的 iCalendar 订阅链接，可在日历应用中订阅未来 12 个月的扣费日（提前一天提醒），包含草稿记录。链接即凭据，请勿公开。",
+      "calendarOn": "续费日历已开启",
+      "calendarOff": "续费日历未开启",
+      "calendarOnce": "链接只显示这一次，请立即复制或订阅；遗失后重新生成即可。",
+      "calendarUrl": "续费日历链接",
+      "copy": "复制链接",
+      "copied": "链接已复制",
+      "copyFailed": "复制失败，请手动选择链接复制",
+      "subscribe": "在日历应用中订阅",
+      "rotate": "重新生成链接",
+      "enable": "生成日历链接",
+      "disable": "停用续费日历",
+      "rotateConfirm": "重新生成后旧链接立即失效，确定继续吗？",
+      "disableConfirm": "停用后已订阅的日历将无法更新，确定停用吗？",
+      "rotated": "新的续费日历链接已生成",
+      "disabledNotice": "续费日历已停用",
+      "calendarFailed": "续费日历操作失败"
     }
   }
 }

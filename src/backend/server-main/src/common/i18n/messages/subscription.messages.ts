@@ -29,6 +29,14 @@ export const subscriptionMessages = defineMessages({
     zh: '下次扣费日期不能早于订阅开始日期',
     en: 'The next billing date cannot be earlier than the subscription start date',
   },
+  'subscription.trialEndBeforeStart': {
+    zh: '试用到期日期不能早于订阅开始日期',
+    en: 'The trial end date cannot be earlier than the subscription start date',
+  },
+  'subscription.endBeforeStart': {
+    zh: '结束日期不能早于订阅开始日期',
+    en: 'The end date cannot be earlier than the subscription start date',
+  },
   'subscription.notFoundOrUnpublished': {
     zh: '订阅不存在或尚未公开',
     en: 'Subscription not found or not yet published',
@@ -86,4 +94,17 @@ export const subscriptionMessages = defineMessages({
     code: ErrorCode.RevisionConflict,
   },
   'subscription.faviconCacheNotFound': { zh: '图标缓存不存在', en: 'Icon cache not found' },
+  'subscription.ratesInvalid': {
+    zh: '参考汇率无效：请选择基准币种，汇率为大于 0、最多 8 位小数的数字',
+    en: 'Invalid reference rates: choose a base currency and use numbers above 0 with at most 8 decimals',
+  },
+  'subscription.settingsChanged': {
+    zh: '订阅设置已被修改，请重新加载后再保存',
+    en: 'Subscription settings have been modified. Reload them before saving.',
+    code: ErrorCode.RevisionConflict,
+  },
+  'subscription.calendarTokenInvalid': {
+    zh: '续费日历链接无效或已停用',
+    en: 'The renewal calendar link is invalid or disabled',
+  },
 })

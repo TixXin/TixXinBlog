@@ -76,9 +76,21 @@
               <div>
                 <dt>{{ $t('misc.subscription.card.nextBilling') }}</dt>
                 <dd :class="{ 'subscription-list-date--overdue': overdue }">
-                  {{ item.nextBillingDate ?? $t('misc.subscription.card.unset')
+                  {{ nextDate ?? $t('misc.subscription.card.unset')
                   }}{{ overdue ? ` · ${t('misc.subscription.card.overdue')}` : '' }}
                 </dd>
+              </div>
+              <div v-if="item.trialEndDate">
+                <dt>{{ $t('misc.subscription.card.trialEnd') }}</dt>
+                <dd>{{ item.trialEndDate }}</dd>
+              </div>
+              <div v-if="item.endDate">
+                <dt>{{ $t('misc.subscription.card.endDate') }}</dt>
+                <dd>{{ item.endDate }}</dd>
+              </div>
+              <div>
+                <dt>{{ $t('misc.subscription.card.spent') }}</dt>
+                <dd>{{ spentText }}</dd>
               </div>
               <div v-if="website">
                 <dt>{{ $t('misc.subscription.card.website') }}</dt>
@@ -114,7 +126,7 @@
 </template>
 
 <script setup lang="ts">
-import { formatAmount } from '@tixxin/subscription-domain'
+import { charges, formatAmount } from '@tixxin/subscription-domain'
 import { categoryLabel, cycleLabel, stateLabel } from '~/features/subscription/labels'
 import type { SubscriptionItem } from '~/features/subscription/types'
 import { safeSubscriptionUrl } from '~/features/subscription/local'
@@ -127,6 +139,8 @@ const props = defineProps<{
   cycleSuffix: string
   future: boolean
   overdue: boolean
+  nextDate: string | null
+  today: string
   editable?: boolean
   local?: boolean
   busy?: boolean
@@ -140,6 +154,16 @@ const emit = defineEmits<{
 }>()
 
 const { t } = useI18n()
+/** 截至今天的累计花费估算：按价格历史取当期价格，币种变更过时分币种列出 */
+const spentText = computed(() => {
+  const list = charges(props.item, props.today)
+  if (list === null) return t('misc.subscription.card.spentUnknown')
+  const totals = new Map<SubscriptionItem['currency'], number>()
+  for (const charge of list) totals.set(charge.currency, (totals.get(charge.currency) ?? 0) + charge.amount)
+  if (!totals.size) return t('misc.subscription.card.spentNone')
+  const amounts = [...totals].map(([currency, amount]) => formatAmount(amount, currency)).join(' + ')
+  return t('misc.subscription.card.spentValue', { amount: amounts, count: list.length }, list.length)
+})
 const dialog = ref<HTMLElement | null>(null)
 
 const website = computed(() => {

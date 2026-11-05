@@ -21,6 +21,23 @@ import type {
 } from './subscription.dto'
 import { readSiteTimeZone } from '../site/site-time-zone'
 const publicSubscriptions = { status: 'published', deletedAt: null } as const
+/** 计算日程与花费所需的公开字段 */
+function scheduleRecord(item: Subscription) {
+  return {
+    id: item.id,
+    name: item.name,
+    category: item.category,
+    currency: item.currency,
+    amount: item.amount,
+    billingCycle: item.billingCycle,
+    subscriptionStatus: item.subscriptionStatus,
+    startDate: item.startDate ?? null,
+    nextBillingDate: item.nextBillingDate ?? null,
+    trialEndDate: item.trialEndDate ?? null,
+    endDate: item.endDate ?? null,
+    priceHistory: item.priceHistory,
+  }
+}
 @Injectable()
 export class SubscriptionService {
   constructor(private readonly em: EntityManager) {}
@@ -38,6 +55,8 @@ export class SubscriptionService {
       billingCycle: item.billingCycle,
       startDate: item.startDate ?? null,
       nextBillingDate: item.nextBillingDate ?? null,
+      trialEndDate: item.trialEndDate ?? null,
+      endDate: item.endDate ?? null,
       subscriptionStatus: item.subscriptionStatus,
       iconUrl: item.iconMedia ? mediaUrl(item.iconMedia.id) : automaticIcon,
       faviconUrl: automaticIcon,
@@ -96,15 +115,11 @@ export class SubscriptionService {
   async stats(query: SubscriptionQuery) {
     // 单次完整筛选读取，不以当前分页冒充统计全集。
     const items = await this.em.find(Subscription, this.where(query))
-    return statistics(
-      items.map((item) => ({
-        ...item,
-        startDate: item.startDate ?? null,
-        nextBillingDate: item.nextBillingDate ?? null,
-      })),
-      // 扣费提醒与统计的“今天”按站点时区
-      todayDate(await readSiteTimeZone(this.em)),
-    )
+    const records = items.map((item) => scheduleRecord(item))
+    // 扣费提醒与统计的“今天”按站点时区；公开展示推算下一次扣费，不对访客报逾期。
+    const stats = statistics(records, todayDate(await readSiteTimeZone(this.em)), { rollForward: true })
+    // records 供前端按访客当天重算（静态发布冻结接口后日期仍然正确），只含公开字段。
+    return { ...stats, records }
   }
   async detail(id: number, admin = false) {
     subscriptionId(id)

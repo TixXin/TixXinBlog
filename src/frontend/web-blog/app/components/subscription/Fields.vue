@@ -113,6 +113,24 @@
           clearable
           @update:model-value="change('nextBillingDate', $event || null)"
       /></label>
+      <label v-if="value.subscriptionStatus === 'trial' || value.trialEndDate"
+        >{{ $t('misc.subscription.fields.trialEndDate')
+        }}<CommonDatePicker
+          :model-value="value.trialEndDate ?? ''"
+          :min="value.startDate ?? undefined"
+          :aria-label="$t('misc.subscription.fields.trialEndDate')"
+          clearable
+          @update:model-value="change('trialEndDate', $event || null)"
+      /></label>
+      <label
+        >{{ $t('misc.subscription.fields.endDate')
+        }}<CommonDatePicker
+          :model-value="value.endDate ?? ''"
+          :min="value.startDate ?? undefined"
+          :aria-label="$t('misc.subscription.fields.endDate')"
+          clearable
+          @update:model-value="change('endDate', $event || null)"
+      /></label>
     </div>
     <p class="subscription-note">{{ $t('misc.subscription.fields.dateNote') }}</p>
     <label v-if="changed"
@@ -192,10 +210,10 @@
 </template>
 <script setup lang="ts">
 import {
-  categoryLabels,
-  cycleLabels,
-  stateLabels,
-  publicationLabels,
+  categoryOptions,
+  cycleOptions,
+  stateOptions,
+  publicationOptions,
   currencyOptions,
 } from '~/features/subscription/types'
 import type {
@@ -218,10 +236,10 @@ defineProps<{
 }>()
 const emit = defineEmits<{ change: [value: Partial<SubscriptionForm>]; favicon: [] }>()
 const { t } = useI18n()
-const categoryKeys = Object.keys(categoryLabels) as SubscriptionCategory[],
-  cycleKeys = Object.keys(cycleLabels) as SubscriptionCycle[],
-  stateKeys = Object.keys(stateLabels) as SubscriptionState[],
-  publicationKeys = Object.keys(publicationLabels) as SubscriptionPublication[]
+const categoryKeys: readonly SubscriptionCategory[] = categoryOptions,
+  cycleKeys: readonly SubscriptionCycle[] = cycleOptions,
+  stateKeys: readonly SubscriptionState[] = stateOptions,
+  publicationKeys: readonly SubscriptionPublication[] = publicationOptions
 const mediaOpen = ref(false)
 const input = (event: Event) => (event.target as HTMLInputElement).value
 function change<K extends keyof SubscriptionForm>(key: K, value: SubscriptionForm[K]) {

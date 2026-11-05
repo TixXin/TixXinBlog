@@ -1,6 +1,6 @@
 <!--
   @file SubscriptionFooter.vue
-  @description 订阅页底部栏：支出预测抽屉入口、下期续费概要与逾期筛选快捷入口
+  @description 订阅页底部栏：支出预测与年度账单抽屉入口、下期续费概要与逾期筛选快捷入口
   @author TixXin
   @since 2026-04-20
 -->
@@ -13,6 +13,18 @@
       icon="lucide:calendar-days"
     >
       <SubscriptionForecast :stats="stats" :currency="currency" />
+    </CommonContextDrawer>
+    <CommonContextDrawer
+      v-model:open="annualOpen"
+      :label="$t('misc.subscription.page.annual')"
+      icon="lucide:receipt-text"
+    >
+      <SubscriptionAnnual
+        :records="records"
+        :price-changes="stats.priceChanges ?? []"
+        :currency="currency"
+        :today="today"
+      />
     </CommonContextDrawer>
     <p class="subscription-note">
       <template v-if="nextRenewal">{{
@@ -33,6 +45,7 @@
 
 <script setup lang="ts">
 import { formatAmount } from '@tixxin/subscription-domain'
+import type { SubscriptionLike } from '@tixxin/subscription-domain'
 import type { SubscriptionCurrency, SubscriptionStats } from '~/features/subscription/types'
 
 defineProps<{
@@ -41,9 +54,13 @@ defineProps<{
   nextRenewal?: { name: string; date: string; amount: number }
   renewalDayHint: string
   overdueCount: number
+  /** 年度账单所用记录与统计日 */
+  records: readonly SubscriptionLike[]
+  today: string
 }>()
 
-const forecastOpen = ref(false)
+const forecastOpen = ref(false),
+  annualOpen = ref(false)
 </script>
 
 <style scoped lang="scss">

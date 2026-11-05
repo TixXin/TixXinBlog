@@ -122,6 +122,8 @@ export function exportSubscriptionItems(subscriptions: Subscription[]): ContentP
       billingCycle: subscription.billingCycle,
       startDate: subscription.startDate ?? null,
       nextBillingDate: subscription.nextBillingDate ?? null,
+      trialEndDate: subscription.trialEndDate ?? null,
+      endDate: subscription.endDate ?? null,
       subscriptionStatus: subscription.subscriptionStatus,
       notes: subscription.notes,
       iconMediaId: subscription.iconMedia?.id ?? null,

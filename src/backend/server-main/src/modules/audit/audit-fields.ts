@@ -59,6 +59,8 @@ export const fields: Readonly<Record<string, MessageKey>> = {
   subscriptionStatus: 'audit.field.subscriptionStatus',
   startDate: 'audit.field.startDate',
   nextBillingDate: 'audit.field.nextBillingDate',
+  trialEndDate: 'audit.field.trialEndDate',
+  endDate: 'audit.field.endDate',
   iconMediaId: 'audit.field.iconMediaId',
   notes: 'audit.field.notes',
   priceChangeReason: 'audit.field.priceChangeReason',

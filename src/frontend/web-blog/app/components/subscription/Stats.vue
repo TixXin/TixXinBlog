@@ -36,6 +36,26 @@
             )
           }}</span>
         </p>
+        <p v-if="converted !== null && rates" class="subscription-budget__annual">
+          {{ $t('misc.subscription.stats.converted', { amount: formatAmount(converted, rates.base) }) }}
+        </p>
+        <p v-if="spending" class="subscription-budget__annual">
+          {{ $t('misc.subscription.stats.spent', { amount: formatAmount(spending.amount, currency) })
+          }}<span v-if="spending.unknownCount">
+            ·
+            {{
+              $t('misc.subscription.stats.spentUnknown', { count: spending.unknownCount }, spending.unknownCount)
+            }}</span
+          >
+        </p>
+        <p v-if="estimate && estimate.monthly" class="subscription-budget__estimate">
+          {{ $t('misc.subscription.stats.estimateTotal', { amount: formatAmount(estimate.monthly, estimate.base) })
+          }}<span v-if="estimate.missing.length">
+            · {{ $t('misc.subscription.stats.estimateMissing', { currencies: estimate.missing.join(' / ') }) }}</span
+          ><small v-if="estimate.updatedAt">{{
+            $t('misc.subscription.stats.ratesAsOf', { date: estimate.updatedAt })
+          }}</small>
+        </p>
       </div>
       <figure class="subscription-breakdown">
         <figcaption>{{ $t('misc.subscription.stats.breakdownTitle', { currency }) }}</figcaption>
@@ -107,16 +127,32 @@
   </section>
 </template>
 <script setup lang="ts">
-import { formatAmount, amountInput } from '@tixxin/subscription-domain'
+import { formatAmount, amountInput, convertAmount } from '@tixxin/subscription-domain'
+import type { RateConfig } from '@tixxin/subscription-domain'
 import { categoryLabel } from '~/features/subscription/labels'
 import type { SubscriptionStats, SubscriptionCurrency } from '~/features/subscription/types'
-const props = defineProps<{ stats: SubscriptionStats; currency: SubscriptionCurrency }>()
+import type { SubscriptionEstimate } from '~/composables/useSubscriptionEstimate'
+const props = defineProps<{
+  stats: SubscriptionStats
+  currency: SubscriptionCurrency
+  /** 博主参考汇率；未启用为 null */
+  rates?: RateConfig | null
+  /** 全部币种折合基准币种的月均合计 */
+  estimate?: SubscriptionEstimate | null
+}>()
 const { t } = useI18n()
 const methodId = useId(),
   methodOpen = ref(false)
 const selected = computed(() => props.stats.currencies.find((item) => item.currency === props.currency))
 const monthlyAmount = computed(() => selected.value?.monthlyAmount ?? 0)
 const annualAmount = computed(() => selected.value?.annualAmount ?? 0)
+/** 当前币种月均折合基准币种；当前就是基准币种或缺汇率时不显示 */
+const converted = computed(() =>
+  props.rates && props.rates.base !== props.currency
+    ? convertAmount(monthlyAmount.value, props.currency, props.rates)
+    : null,
+)
+const spending = computed(() => props.stats.spending?.find((item) => item.currency === props.currency) ?? null)
 const amountNumber = (amount: number) => formatAmount(amount, props.currency).slice(props.currency.length + 1)
 const monthlyNumber = computed(() => amountNumber(monthlyAmount.value))
 const orderedCategories = computed(() =>
@@ -126,6 +162,15 @@ const positiveCategories = computed(() => orderedCategories.value.filter((item) 
 const chartHeight = computed(() => Math.max(108, positiveCategories.value.length * 42 + 12))
 </script>
 <style scoped lang="scss">
+.subscription-budget__estimate {
+  margin: 0.35rem 0 0;
+  font-size: 0.85rem;
+  color: var(--text-soft);
+  small {
+    margin-left: 0.4rem;
+    opacity: 0.8;
+  }
+}
 .subscription-overview {
   min-width: 0;
   color: var(--text-main);
@@ -210,6 +255,9 @@ summary:focus-visible {
   line-height: 1.7;
   color: var(--text-soft);
   overflow-wrap: anywhere;
+  & + & {
+    margin-top: 0.1rem;
+  }
 }
 .subscription-budget__annual > span:last-child {
   white-space: nowrap;

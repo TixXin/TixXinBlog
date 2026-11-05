@@ -1,6 +1,6 @@
 /** @file local.ts @description 访客订阅的版本化存储校验；损坏数据保留原文，历史迁移不补造过去价格 */
 import { appendPriceHistory, isDate, validatePricing, validatePriceHistory } from '@tixxin/subscription-domain'
-import { categoryLabels, stateLabels } from './types'
+import { categoryOptions, isOneOf, stateOptions } from './types'
 import { currentTranslate } from '~/utils/format'
 import type { SubscriptionEditable, SubscriptionItem } from './types'
 export const subscriptionStorageKey = 'blog-my-subscriptions'
@@ -49,18 +49,22 @@ export function validateLocalFields(value: SubscriptionEditable) {
     typeof value.notes !== 'string' ||
     value.notes.length > 5000 ||
     (value.platform !== null && (typeof value.platform !== 'string' || value.platform.length > 160)) ||
-    !Object.hasOwn(categoryLabels, value.category) ||
-    !Object.hasOwn(stateLabels, value.subscriptionStatus)
+    !isOneOf(categoryOptions, value.category) ||
+    !isOneOf(stateOptions, value.subscriptionStatus)
   )
     throw localError('fieldsInvalid')
   safeSubscriptionUrl(value.url)
   if (
-    (value.startDate !== null && !isDate(value.startDate)) ||
-    (value.nextBillingDate !== null && !isDate(value.nextBillingDate))
+    [value.startDate, value.nextBillingDate, value.trialEndDate, value.endDate].some(
+      (date) => date !== null && !isDate(date),
+    )
   )
     throw localError('dateInvalid')
   if (value.startDate && value.nextBillingDate && value.nextBillingDate < value.startDate)
     throw localError('nextBeforeStart')
+  if (value.startDate && value.trialEndDate && value.trialEndDate < value.startDate)
+    throw localError('trialEndBeforeStart')
+  if (value.startDate && value.endDate && value.endDate < value.startDate) throw localError('endBeforeStart')
   if (value.priceChangeReason && value.priceChangeReason.length > 500) throw localError('reasonTooLong', { max: 500 })
 }
 export function parseLocalSubscriptions(raw: string | null, now = new Date().toISOString()): LocalSubscriptions {
@@ -76,9 +80,11 @@ export function parseLocalSubscriptions(raw: string | null, now = new Date().toI
     )
       throw new Error('version')
     const ids = new Set<string>()
-    const items = envelope.items.map((entry) => {
-      if (!entry || typeof entry.id !== 'string' || !entry.id || ids.has(entry.id)) throw new Error('id')
-      ids.add(entry.id)
+    const items = envelope.items.map((raw) => {
+      if (!raw || typeof raw.id !== 'string' || !raw.id || ids.has(raw.id)) throw new Error('id')
+      ids.add(raw.id)
+      // 试用到期与结束日是后加字段，旧记录缺省为未填写，不提升存储版本。
+      const entry = { ...raw, trialEndDate: raw.trialEndDate ?? null, endDate: raw.endDate ?? null }
       const migrated =
         envelope.version === 1
           ? {

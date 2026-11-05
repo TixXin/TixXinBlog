@@ -52,7 +52,7 @@
           class="subscription-list-date"
           :class="{ 'subscription-list-date--overdue': overdue }"
         >
-          <span>{{ item.nextBillingDate ?? $t('misc.subscription.card.billingDateUnset') }}</span>
+          <span>{{ nextDate ?? $t('misc.subscription.card.billingDateUnset') }}</span>
           <span v-if="overdue" class="subscription-list-date-note">{{ $t('misc.subscription.card.overdue') }}</span>
           <span v-else-if="dueHint" class="subscription-list-date-note subscription-list-date-note--soon">{{
             dueHint
@@ -71,6 +71,8 @@
       :cycle-suffix="cycleSuffix"
       :future="future"
       :overdue="overdue"
+      :next-date="nextDate"
+      :today="today"
       :editable="editable"
       :local="local"
       :busy="busy"
@@ -83,7 +85,7 @@
 </template>
 
 <script setup lang="ts">
-import { formatAmount } from '@tixxin/subscription-domain'
+import { formatAmount, isOverdue, nextChargeDate } from '@tixxin/subscription-domain'
 import { categoryLabel, cycleSuffix as cycleSuffixLabel, stateLabel } from '~/features/subscription/labels'
 import type { SubscriptionItem } from '~/features/subscription/types'
 import CardDetailDialog from './CardDetailDialog.vue'
@@ -91,6 +93,8 @@ import CardDetailDialog from './CardDetailDialog.vue'
 const props = defineProps<{
   item: SubscriptionItem
   today: string
+  /** 公开展示：按周期推算下一次扣费，不把博主未更新的日期标成逾期 */
+  rollForward?: boolean
   editable?: boolean
   local?: boolean
   busy?: boolean
@@ -103,10 +107,17 @@ const open = ref(false),
   imageFailed = ref(false),
   icon = computed(() => props.item.iconUrl || props.item.faviconUrl)
 const future = computed(() => !!props.item.startDate && props.item.startDate > props.today),
-  overdue = computed(() => !!props.item.nextBillingDate && props.item.nextBillingDate < props.today)
+  // 只有活跃的周期记录才可能逾期；暂停、取消或已结束的记录不提示
+  overdue = computed(() => !props.rollForward && isOverdue(props.item, props.today)),
+  // 公开展示推算下一次；试用记录显示转正日；推算不出时回退记录值
+  nextDate = computed(() =>
+    props.rollForward
+      ? (nextChargeDate(props.item, props.today) ?? props.item.nextBillingDate)
+      : props.item.nextBillingDate,
+  )
 /** 7 天内的扣费给出相对提示；日期均为 YYYY-MM-DD，按日期键计算差值避免时区偏移 */
 const dueHint = computed(() => {
-  const next = props.item.nextBillingDate
+  const next = nextDate.value
   if (!next || overdue.value) return ''
   const days = Math.round((Date.parse(`${next}T00:00:00Z`) - Date.parse(`${props.today}T00:00:00Z`)) / 86_400_000)
   if (!Number.isFinite(days) || days > 7) return ''

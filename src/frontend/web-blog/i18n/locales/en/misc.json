@@ -475,14 +475,20 @@
         "quarterly": "Quarterly",
         "yearly": "Yearly",
         "lifetime": "Lifetime",
-        "oneTime": "One-time"
+        "oneTime": "One-time",
+        "semiannual": "Semiannual",
+        "biennial": "Every 2 years",
+        "triennial": "Every 3 years"
       },
       "cycleSuffix": {
         "monthly": "/ mo",
         "quarterly": "/ qtr",
         "yearly": "/ yr",
         "lifetime": "lifetime",
-        "oneTime": "one-time"
+        "oneTime": "one-time",
+        "semiannual": "/ 6 mo",
+        "biennial": "/ 2 yr",
+        "triennial": "/ 3 yr"
       },
       "state": {
         "active": "Active",
@@ -546,7 +552,8 @@
         "editLocal": "Edit my subscription",
         "saveLocal": "Save to this browser",
         "addOwner": "Record a subscription",
-        "confirmSwitchSource": "Your local edits will stay on this page. Switch data source?"
+        "confirmSwitchSource": "Your local edits will stay on this page. Switch data source?",
+        "annual": "Annual bill"
       },
       "card": {
         "iconAlt": "{name} icon",
@@ -572,7 +579,13 @@
         "visitWebsite": "Visit website",
         "newTab": "(opens in a new tab)",
         "edit": "Edit subscription",
-        "remove": "Delete subscription"
+        "remove": "Delete subscription",
+        "trialEnd": "Trial ends",
+        "endDate": "End date",
+        "spent": "Total spent (estimate)",
+        "spentUnknown": "No start date, cannot estimate",
+        "spentNone": "No charges yet",
+        "spentValue": "About {amount} ({count} charge) | About {amount} ({count} charges)"
       },
       "filters": {
         "search": "Search subscriptions",
@@ -640,7 +653,13 @@
         "methodLabel": "Budget methodology",
         "methodScope": "As of {asOf} (site time zone date), covering the {count} {currency} subscription matching the current filters. Each currency is calculated separately with no exchange-rate conversion. | As of {asOf} (site time zone date), covering all {count} {currency} subscriptions matching the current filters. Each currency is calculated separately with no exchange-rate conversion.",
         "methodRecurring": "Recurring costs include only active monthly, quarterly and yearly subscriptions that have started. The monthly figure is the annual budget divided by 12; actual charges follow each billing cycle. Paused, cancelled, trial, expired and not-yet-started records are excluded from the current budget.",
-        "methodOneTime": "One-time and lifetime purchases are excluded from recurring costs. They total {amount} on record, which doesn't represent the total amount paid."
+        "methodOneTime": "One-time and lifetime purchases are excluded from recurring costs. They total {amount} on record, which doesn't represent the total amount paid.",
+        "converted": "About {amount} / mo at reference rates",
+        "spent": "About {amount} spent so far",
+        "spentUnknown": "{count} record without dates not counted | {count} records without dates not counted",
+        "estimateTotal": "All currencies: about {amount} / mo",
+        "estimateMissing": "{currencies} have no rate and are not counted",
+        "ratesAsOf": "Rates checked {date}"
       },
       "forecast": {
         "label": "{currency} renewal forecast",
@@ -657,7 +676,8 @@
         "noPayments": "No usable billing dates under the current filters.",
         "notesSummary": "About forecasts and charges",
         "notesEstimate": "As of {asOf} (site time zone date), estimated from current prices, statuses and valid billing dates — not actual past spending. Trial, paused, cancelled and expired records produce no forecast, and records without a reliable date are never assigned a guessed charge date.",
-        "notesPayments": "The list shows each subscription's next billing date; overdue records keep their original date. This is only an on-page reminder — nothing is charged or notified automatically. Switch currencies to see the others."
+        "notesPayments": "The list shows each subscription's next billing date; overdue records keep their original date. This is only an on-page reminder — nothing is charged or notified automatically. Switch currencies to see the others.",
+        "trialConversion": "Trial converts"
       },
       "fields": {
         "name": "Service name",
@@ -677,7 +697,7 @@
         "status": "Status",
         "startDate": "Start date",
         "nextBillingDate": "Next billing date",
-        "dateNote": "Without a date, no charge is assumed; overdue dates are kept as entered. Trials aren't assumed to convert into paid plans.",
+        "dateNote": "Without a date, no charge is assumed; overdue dates are kept as entered. A trial converts on its end date only when one is set; charges stop from the end date.",
         "priceChangeReason": "Price change reason",
         "priceChangeReasonPlaceholder": "Optional, e.g. plan change",
         "priceChangeNote": "Saving appends a snapshot of the new price; existing price history stays read-only.",
@@ -695,7 +715,9 @@
         "publication": "Publication status",
         "publicationLabel": "Subscription publication status",
         "sortOrder": "Sort order (higher comes first)",
-        "sortOrderLabel": "Subscription sort order"
+        "sortOrderLabel": "Subscription sort order",
+        "trialEndDate": "Trial ends (first charge)",
+        "endDate": "End date"
       },
       "editor": {
         "editTitle": "Edit subscription",
@@ -764,7 +786,9 @@
         "removeFailed": "Couldn't finish deleting",
         "mergeDeleted": "The record you're editing was deleted in another tab. Keep your input, then cancel and create a new record.",
         "merged": "Merged the latest record: your changes on this page were kept and other fields use the latest values. Review and save manually.",
-        "confirmLeave": "Your local subscription has unsaved input. Leave anyway?"
+        "confirmLeave": "Your local subscription has unsaved input. Leave anyway?",
+        "trialEndBeforeStart": "The trial end date cannot be earlier than the start date",
+        "endBeforeStart": "The end date cannot be earlier than the start date"
       },
       "repository": {
         "unavailable": "The subscription service is temporarily unavailable. Please try again later",
@@ -794,7 +818,24 @@
         "statsDateInvalid": "Invalid statistics date",
         "categoryOrStatusInvalid": "Invalid subscription category or status",
         "dateInvalid": "Invalid subscription date",
-        "nextBeforeStart": "Next billing can't be earlier than the subscription start date"
+        "nextBeforeStart": "Next billing can't be earlier than the subscription start date",
+        "trialEndBeforeStart": "The trial end date cannot be earlier than the start date",
+        "endBeforeStart": "The end date cannot be earlier than the start date",
+        "ratesInvalid": "Invalid reference rate: use a number above 0 with at most 8 decimals"
+      },
+      "annual": {
+        "label": "{currency} annual bill",
+        "eyebrow": "{currency} · estimated from past charges",
+        "title": "Annual bill",
+        "empty": "No charges to estimate in {currency} yet",
+        "yearLabel": "Choose a year",
+        "summary": "{count} charge across {services} services | {count} charges across {services} services",
+        "rankingLabel": "Spending by service",
+        "chargeCount": "{count} charge | {count} charges",
+        "changesLabel": "Price changes this year",
+        "changesTitle": "Price changes",
+        "noChanges": "No price changes this year",
+        "note": "Estimated up to {asOf} from start dates, trial end dates and price history. Paused periods are unknown, so treat this as a rough guide."
       }
     },
     "tab": {

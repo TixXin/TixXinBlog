@@ -63,6 +63,8 @@ export class SaveSubscriptionDto {
   @ValidateIf(provided) @IsIn(BILLING_CYCLES) billingCycle?: BillingCycle
   @ValidateIf(nullable) @IsString() @MaxLength(10) startDate?: string | null
   @ValidateIf(nullable) @IsString() @MaxLength(10) nextBillingDate?: string | null
+  @ValidateIf(nullable) @IsString() @MaxLength(10) trialEndDate?: string | null
+  @ValidateIf(nullable) @IsString() @MaxLength(10) endDate?: string | null
   @ValidateIf(provided) @IsIn(SUBSCRIPTION_STATUSES) subscriptionStatus?: SubscriptionStatus
   @ValidateIf(provided) @IsString() @MaxUtf16Length(5000) notes?: string
   @ValidateIf(nullable) @IsUUID('4') iconMediaId?: string | null
@@ -85,6 +87,15 @@ export class SubscriptionSortDto {
   @ValidateNested({ each: true })
   @Type(() => SubscriptionSortItemDto)
   items!: SubscriptionSortItemDto[]
+}
+export class SaveSubscriptionSettingsDto {
+  @IsInt() @Min(0) @Max(2147483647) revision!: number
+  @ValidateIf(nullable) @IsIn(CURRENCIES) baseCurrency!: Currency | null
+  @IsObject() rates!: Partial<Record<Currency, string>>
+  @ValidateIf(nullable) @IsString() @MaxLength(10) ratesUpdatedAt!: string | null
+}
+export class CalendarQueryDto {
+  @IsString() @MinLength(20) @MaxLength(128) token!: string
 }
 export class FetchFaviconDto {
   @IsString() @MinLength(1) @MaxLength(2048) url!: string

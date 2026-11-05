@@ -38,7 +38,7 @@ const flashNote = () => ({
 
 const base = () => ({
   format: 'tixxin-content',
-  version: 17,
+  version: 18,
   omittedRelations: 0,
   exportedAt: '2026-10-16T12:00:00.000Z',
   mediaIncluded: false,
@@ -208,7 +208,7 @@ describe('内容包版本门禁', () => {
 
   it('v10 不带 v11 字段仍可导入', async () => {
     const parsed = await parse(legacy(10))
-    expect(parsed.version).toBe(17)
+    expect(parsed.version).toBe(18)
     expect(parsed.site.presenceLabel).toBeUndefined()
     expect(parsed.guestbook[0]?.browser).toBeUndefined()
   })
@@ -235,7 +235,7 @@ describe('内容包 v12 站点导航与页脚门禁', () => {
 
   it('v11 不带 v12 字段仍可导入，新字段留空由目标站沿用现值', async () => {
     const parsed = await parse(legacy(11))
-    expect(parsed.version).toBe(17)
+    expect(parsed.version).toBe(18)
     expect(parsed.site.navigation).toBeUndefined()
     expect(parsed.site.quotes).toBeUndefined()
     expect(parsed.subscriptions).toEqual([])
@@ -294,7 +294,7 @@ describe('内容包 v13 闪念评论审核状态门禁', () => {
 
   it.each(versions)('v%i 不带 status 仍可导入，闪念评论按已发布处理', async (version) => {
     const parsed = await parse(legacy(version))
-    expect(parsed.version).toBe(17)
+    expect(parsed.version).toBe(18)
     expect(parsed.flashes[0]?.comments).toEqual([
       { author: '小林', avatar: '', content: '待审的评论', status: 'published', createdAt: '2026-10-10T09:00:00.000Z' },
     ])
@@ -324,7 +324,7 @@ describe('内容包 v14 搜索引擎收录开关门禁', () => {
 
   it.each(versions)('v%i 不带收录开关仍可导入，字段保持缺省以沿用目标站现值', async (version) => {
     const parsed = await parse(legacy(version))
-    expect(parsed.version).toBe(17)
+    expect(parsed.version).toBe(18)
     expect(parsed.site.searchIndexing).toBeUndefined()
   })
 
@@ -355,7 +355,7 @@ describe('内容包 v15 手动状态到期时间门禁', () => {
 
   it.each(versions)('v%i 不带到期时间仍可导入，字段保持缺省以沿用目标站现值', async (version) => {
     const parsed = await parse(legacy(version))
-    expect(parsed.version).toBe(17)
+    expect(parsed.version).toBe(18)
     expect(parsed.site.presenceExpiresAt).toBeUndefined()
   })
 
@@ -386,7 +386,7 @@ describe('内容包 v16 站点时区门禁', () => {
 
   it.each(versions)('v%i 不带时区仍可导入，字段保持缺省以沿用目标站现值', async (version) => {
     const parsed = await parse(legacy(version))
-    expect(parsed.version).toBe(17)
+    expect(parsed.version).toBe(18)
     expect(parsed.site.timeZone).toBeUndefined()
   })
 

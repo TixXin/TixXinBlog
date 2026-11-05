@@ -1,10 +1,12 @@
 /** @file useSubscriptionRepository.ts @description 订阅真实接口，公开统计与管理认证请求分离 */
 import type {
+  AdminSubscriptionSettings,
   ManagedSubscription,
   SubscriptionEditable,
   SubscriptionItem,
   SubscriptionPage,
   SubscriptionQuery,
+  SubscriptionSettings,
   SubscriptionStats,
 } from '~/features/subscription/types'
 import { apiConflictKind } from '~/utils/apiError'
@@ -56,6 +58,14 @@ export function useSubscriptionRepository() {
     stats: (query: SubscriptionQuery, signal?: AbortSignal) =>
       read<SubscriptionStats>('/subscriptions/stats', query, signal),
     detail: (id: number, signal?: AbortSignal) => read<SubscriptionItem>(`/subscriptions/${id}`, undefined, signal),
+    settings: (signal?: AbortSignal) => read<SubscriptionSettings>('/subscriptions/settings', undefined, signal),
+    adminSettings: () => manage<AdminSubscriptionSettings>('/admin/subscriptions/settings'),
+    saveSettings: (body: SubscriptionSettings & { revision: number }) =>
+      manage<AdminSubscriptionSettings>('/admin/subscriptions/settings', { method: 'PATCH', body }),
+    rotateCalendar: () =>
+      manage<AdminSubscriptionSettings & { token: string }>('/admin/subscriptions/calendar-token', { method: 'POST' }),
+    disableCalendar: () =>
+      manage<AdminSubscriptionSettings>('/admin/subscriptions/calendar-token', { method: 'DELETE' }),
     adminList: (query: SubscriptionQuery & { status?: string }) =>
       manage<SubscriptionPage<ManagedSubscription>>('/admin/subscriptions', { query: { ...query } }),
     adminDetail: (id: number) => manage<ManagedSubscription>(`/admin/subscriptions/${id}`),

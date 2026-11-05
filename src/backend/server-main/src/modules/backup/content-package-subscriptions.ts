@@ -1,4 +1,4 @@
-/** @file content-package-subscriptions.ts @description v11 订阅格式严格校验，保存价格事实并拒绝管理身份与伪造缓存来源。 */
+/** @file content-package-subscriptions.ts @description v11 起的订阅格式严格校验，保存价格事实并拒绝管理身份与伪造缓存来源；v18 起携带试用到期日与结束日。 */
 import { BadRequestException } from '@nestjs/common'
 import { plainToInstance } from 'class-transformer'
 import { isISO8601, validateSync } from 'class-validator'
@@ -27,6 +27,8 @@ export interface PackageSubscription {
     category: SubscriptionCategory
     startDate: string | null
     nextBillingDate: string | null
+    trialEndDate: string | null
+    endDate: string | null
     subscriptionStatus: SubscriptionStatus
     notes: string
     iconMediaId: string | null
@@ -36,6 +38,9 @@ export interface PackageSubscription {
     sortOrder: number
   }
 }
+/** 订阅 values 携带 trialEndDate、endDate 的首个内容包版本；更早版本出现即按未知字段拒绝 */
+export const SUBSCRIPTION_SCHEDULE_VERSION = 18
+const scheduleKeys = ['trialEndDate', 'endDate']
 const valueKeys = [
   'name',
   'description',
@@ -75,22 +80,28 @@ function timestamp(value: unknown, path: string) {
     return fail(path)
   return new Date(value).toISOString()
 }
-export function parsePackageSubscriptions(input: unknown): PackageSubscription[] {
+/** 源编号必须是范围内且不重复的正整数 */
+function sourceId(value: unknown, seen: Set<number>, path: string): number {
+  const id = Number(value)
+  if (!Number.isSafeInteger(value) || id < 1 || id > 2147483647 || seen.has(id))
+    throw new BadRequestException(msg('package.subscriptionIdInvalid', { path }))
+  seen.add(id)
+  return id
+}
+/** 旧版本没有试用到期日与结束日，规范为 null，使新旧包与现有记录的内容哈希可比 */
+function scheduleDates(values: { trialEndDate?: string | null; endDate?: string | null }) {
+  return { trialEndDate: values.trialEndDate ?? null, endDate: values.endDate ?? null }
+}
+export function parsePackageSubscriptions(input: unknown, version: number): PackageSubscription[] {
+  const keys = version >= SUBSCRIPTION_SCHEDULE_VERSION ? [...valueKeys, ...scheduleKeys] : valueKeys
   if (!Array.isArray(input) || input.length > 3000) return fail('subscriptions')
   const seen = new Set<number>()
   return input.map((value, index): PackageSubscription => {
     const path = `subscriptions[${index}]`
     const row = strictRecord(value, ['sourceId', 'createdAt', 'publishedAt', 'deleted', 'values'], path)
-    if (
-      !Number.isSafeInteger(row.sourceId) ||
-      Number(row.sourceId) < 1 ||
-      Number(row.sourceId) > 2147483647 ||
-      seen.has(Number(row.sourceId))
-    )
-      throw new BadRequestException(msg('package.subscriptionIdInvalid', { path }))
-    seen.add(Number(row.sourceId))
+    const id = sourceId(row.sourceId, seen, path)
     if (typeof row.deleted !== 'boolean') fail(`${path}.deleted`)
-    const raw = strictRecord(row.values, valueKeys, `${path}.values`)
+    const raw = strictRecord(row.values, keys, `${path}.values`)
     const { priceHistory, faviconDomain: domain, ...editable } = raw
     const dto = plainToInstance(SaveSubscriptionDto, editable)
     if (validateSync(dto, { whitelist: true, forbidNonWhitelisted: true }).length) fail(`${path}.values`)
@@ -107,12 +118,13 @@ export function parsePackageSubscriptions(input: unknown): PackageSubscription[]
       throw new BadRequestException(msg('package.subscriptionHistoryInvalid', { path }))
     }
     return {
-      sourceId: Number(row.sourceId),
+      sourceId: id,
       createdAt: timestamp(row.createdAt, `${path}.createdAt`),
       publishedAt: row.publishedAt === null ? null : timestamp(row.publishedAt, `${path}.publishedAt`),
       deleted: row.deleted,
       values: {
         ...normalized,
+        ...scheduleDates(normalized),
         iconMediaId: normalized.iconMediaId?.toLowerCase() ?? null,
         priceHistory: history,
         faviconDomain: domain,

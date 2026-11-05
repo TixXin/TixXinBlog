@@ -39,6 +39,10 @@ export class Subscription {
   @Property({ type: 'text' }) billingCycle!: BillingCycle
   @Property({ type: 'date', nullable: true }) startDate?: string | null
   @Property({ type: 'date', nullable: true }) nextBillingDate?: string | null
+  /** 试用到期（首次扣费）日 */
+  @Property({ type: 'date', nullable: true }) trialEndDate?: string | null
+  /** 服务结束日：当天及之后不再扣费 */
+  @Property({ type: 'date', nullable: true }) endDate?: string | null
   @Property({ type: 'text', default: 'active' }) subscriptionStatus: SubscriptionStatus = 'active'
   @Property({ type: 'text', default: '' }) notes = ''
   @ManyToOne({ entity: () => MediaAsset, nullable: true, deleteRule: 'restrict' }) iconMedia?: MediaAsset | null

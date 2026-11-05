@@ -4,9 +4,10 @@ import { AuthModule } from '../auth/auth.module'
 import { AdminSubscriptionController, SubscriptionController } from './subscription.controller'
 import { SubscriptionService } from './subscription.service'
 import { SubscriptionFaviconService } from './subscription-favicon.service'
+import { SubscriptionSettingsService } from './subscription-settings.service'
 @Module({
   imports: [AuthModule],
   controllers: [SubscriptionController, AdminSubscriptionController],
-  providers: [SubscriptionService, SubscriptionFaviconService],
+  providers: [SubscriptionService, SubscriptionFaviconService, SubscriptionSettingsService],
 })
 export class SubscriptionModule {}
