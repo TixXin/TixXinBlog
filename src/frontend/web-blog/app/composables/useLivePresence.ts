@@ -40,8 +40,8 @@ export interface LivePresenceOptions {
   apiBase: string
   /** 当前页面路径（不含查询与片段） */
   path: () => string
-  /** 博主访问令牌；未登录为 null */
-  token: () => string | null
+  /** 博主访问令牌；未登录为 null。可异步：发送前可先续期快过期的令牌 */
+  token: () => string | null | Promise<string | null>
   /** 测试注入 */
   fetcher?: typeof $fetch
 }
@@ -52,7 +52,10 @@ async function requestPresence(
   ids: { session: () => string; reader: () => string },
   page: { path: string; view: boolean; referrer?: string },
 ): Promise<LivePresence | null> {
-  const token = options.token()
+  // 取令牌（含续期）失败时按访客心跳发送，不影响在线人数与统计
+  const token = await Promise.resolve()
+    .then(() => options.token())
+    .catch(() => null)
   try {
     const result = await (options.fetcher ?? $fetch)<{ data: LivePresence }>(`${options.apiBase}/presence`, {
       method: 'POST',

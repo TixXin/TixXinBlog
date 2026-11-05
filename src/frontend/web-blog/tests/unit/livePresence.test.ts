@@ -175,6 +175,24 @@ describe('心跳循环', () => {
     expect(fetcher).toHaveBeenCalledTimes(2)
   })
 
+  it('令牌可异步获取（发送前续期）；获取失败时按访客心跳照常发送', async () => {
+    const fetcher = vi.fn().mockResolvedValue({ data: result })
+    let calls = 0
+    const token = () => (calls++ === 0 ? Promise.resolve('renewed-token') : Promise.reject(new Error('refresh failed')))
+    const handle = startLivePresence(ref<LivePresence | null>(null), {
+      apiBase: '/api/v1',
+      path: () => '/',
+      token,
+      fetcher: fetcher as unknown as typeof $fetch,
+    })
+    await vi.advanceTimersByTimeAsync(0)
+    expect(fetcher.mock.calls[0]![1].headers.Authorization).toBe('Bearer renewed-token')
+    await vi.advanceTimersByTimeAsync(HEARTBEAT_MS)
+    expect(fetcher).toHaveBeenCalledTimes(2)
+    expect(fetcher.mock.calls[1]![1].headers.Authorization).toBeUndefined()
+    handle.stop()
+  })
+
   it('请求失败保留上一次结果，下一次心跳照常发送', async () => {
     const { fetcher, state, handle } = setup()
     await vi.advanceTimersByTimeAsync(0)
