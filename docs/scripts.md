@@ -73,14 +73,14 @@
 
 ## 前端构建与运行
 
-| 命令                  | 实际执行                                   |
-| --------------------- | ------------------------------------------ |
-| `build`、`build:blog` | `corepack pnpm --filter web-blog build`    |
-| `generate`            | `corepack pnpm --filter web-blog generate` |
-| `preview`             | `corepack pnpm --filter web-blog preview`  |
-| `start`               | `corepack pnpm --filter web-blog start`    |
+| 命令                  | 实际执行                                                                           |
+| --------------------- | ---------------------------------------------------------------------------------- |
+| `build`、`build:blog` | `node scripts/dev/with-lock.mjs build -- corepack pnpm --filter web-blog build`    |
+| `generate`            | `node scripts/dev/with-lock.mjs build -- corepack pnpm --filter web-blog generate` |
+| `preview`             | `corepack pnpm --filter web-blog preview`                                          |
+| `start`               | `corepack pnpm --filter web-blog start`                                            |
 
-- `build` 与别名 `build:blog`：子项目执行 `nuxt build --envName production-build`，中间文件在 `src/frontend/web-blog/.nuxt-production/`，产物在前端 `.output/`。不构建后端、不启动服务、不部署；后端构建使用 `corepack pnpm --filter server-main build`。
+- `build` 与别名 `build:blog`：子项目执行 `nuxt build --envName production-build`，中间文件在 `src/frontend/web-blog/.nuxt-production/`，产物在前端 `.output/`。不构建后端、不启动服务、不部署；后端构建使用 `corepack pnpm --filter server-main build`。与 `generate`、`test:e2e`、`test:e2e:run`、`check:local` 共用本机 `build` 锁，多会话同时运行时排队，见[多会话串行](development.md#多会话串行)。
 - `generate`：子项目执行 `nuxt generate --envName production-build`，同样使用 `.nuxt-production/`，静态产物在前端 `.output/public/`。后台、认证和持久化 API 不会因此静态化，真实业务仍需后端服务。
 - `preview`：用 `nuxt preview` 预览已有的前端生产构建，先执行 `build`；不重新构建，也不启动后端或数据库。
 - `start`：子项目先执行 `corepack pnpm build`，成功后运行 `node .output/server/index.mjs`。每次都会重新构建，且只启动前端。
@@ -89,16 +89,17 @@
 
 ## 代码规范与提交准备
 
-| 命令            | 实际执行                                               |
-| --------------- | ------------------------------------------------------ |
-| `lint`          | 前端 ESLint，随后运行 `lint:size`                      |
-| `lint:size`     | `node scripts/check-file-size.mjs`                     |
-| `lint:fix`      | `corepack pnpm --filter web-blog exec eslint . --fix`  |
-| `format`        | `prettier --write "src/**/*.{vue,ts,js,scss,json,md}"` |
-| `prepare`       | `husky`                                                |
-| `check:secrets` | `node scripts/check-secrets.mjs`                       |
-| `check:local`   | `bash scripts/check-local.sh`                          |
-| `lint:shell`    | `shellcheck` 检查安装、管理、打包、冒烟与试装脚本      |
+| 命令            | 实际执行                                                                |
+| --------------- | ----------------------------------------------------------------------- |
+| `lint`          | 前端 ESLint，随后运行 `lint:size`                                       |
+| `lint:size`     | `node scripts/check-file-size.mjs`                                      |
+| `lint:fix`      | `corepack pnpm --filter web-blog exec eslint . --fix`                   |
+| `format`        | `prettier --write "src/**/*.{vue,ts,js,scss,json,md}"`                  |
+| `prepare`       | `husky`                                                                 |
+| `check:secrets` | `node scripts/check-secrets.mjs`                                        |
+| `check:local`   | `bash scripts/check-local.sh`                                           |
+| `push:main`     | `node scripts/dev/with-lock.mjs push -- node scripts/dev/push-main.mjs` |
+| `lint:shell`    | `shellcheck` 检查安装、管理、打包、冒烟与试装脚本                       |
 
 - `lint`：检查前端子项目的 ESLint 规则，不修复文件，随后执行 `lint:size`；不包含后端 lint、类型检查或单元测试。
 - `lint:size`：检查前后端源码文件体量，新文件不得超过上限，存量超限文件只许变短；拆分后加 `--update` 收紧基线。上限与例外见[代码组织与模块化](code-organization.md#文件体量上限)。
@@ -107,17 +108,21 @@
 - `prepare`：初始化 Husky Git hooks，通常由依赖安装的生命周期自动执行。提交钩子运行 lint-staged，对暂存的前端脚本执行 ESLint 修复，对 `src/` 下匹配文件执行 Prettier。它与前端 `postinstall` 执行的 `nuxt prepare` 不同。
 - `lint:shell`：用 shellcheck 检查 `deploy/install.sh`、`deploy/tixxin` 与 `scripts/release/` 下的打包、安装冒烟和本地试装脚本，以及提交署名检查 `scripts/check-ai-attribution.sh`；需要本机安装 shellcheck，CI 固定使用 v0.11.0。
 - `check:local`：推送前按相对 `origin/main` 的改动（含未提交与未跟踪文件）自动挑选并运行与 CI 对应的本地检查；`--e2e` 额外运行改动涉及的浏览器 spec（先构建两端）；改动影响全站外壳或构建产物（构建配置、分块规则、根组件、布局、插件、主题、全局样式、补丁、锁文件）时加跑主题切换、切页与水合、首页、搜索弹窗和无障碍的冒烟 spec，规则见 [`scripts/ci/e2e-specs.mjs`](../scripts/ci/e2e-specs.mjs)；其余没有改动 spec 时只提示，完整回归交给 CI，`--e2e-full` 在本机跑全部浏览器 spec，`--all` 不按改动挑选。后端改动还会构建 server-main 并运行对应的 HTTP 集成测试：`modules/<模块>/` 选中名称以该模块开头的测试，`operations`、`post`、`backup` 另有映射，改动测试文件本身只跑该测试；公共代码、实体、迁移或测试辅助文件只跑通用的 `integration.mjs` 并提示用 `--all` 跑全量。测试清单取自 server-main 的 `test:integration`，规则见 [`scripts/ci/integration-tests.mjs`](../scripts/ci/integration-tests.mjs)；这些测试在开发库所在的 PostgreSQL 上各自建临时库，需要本机数据库可用。有失败项时返回非零。挑选规则与 CI 共用 `scripts/ci/detect-changes.sh` 的分类思路。
+- `push:main`：在本机 `push` 锁内依次 fetch、确认本地包含远端最新提交（不自动 rebase）、列出待推送提交、运行 `check:local`（参数原样转交，如 `--e2e`）、推送到 `origin/main`；任一步失败即停止。待推送提交是否都属于本会话仍需运行前确认。
 - `check:secrets`：扫描 Git 已跟踪及未被忽略的未跟踪文件，查找已知 Context7/GitHub 凭据格式和私钥头；命中时只报告文件和行号并返回非零状态。规则有限，不保证发现所有敏感信息，超过 5 MiB 的文件会跳过。
 
 ## 业务与浏览器测试
 
 | 命令                       | 实际执行                                                                                                                                     |
 | -------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
-| `test:e2e`                 | `corepack pnpm --filter server-main build && corepack pnpm --filter web-blog build && node src/backend/server-main/tests/browser-runner.mjs` |
-| `test:e2e:run`             | `node src/backend/server-main/tests/browser-runner.mjs`                                                                                      |
+| `test:e2e`                 | `node scripts/dev/with-lock.mjs build -- corepack pnpm run test:e2e:steps`                                                                   |
+| `test:e2e:steps`           | `corepack pnpm --filter server-main build && corepack pnpm --filter web-blog build && node src/backend/server-main/tests/browser-runner.mjs` |
+| `test:e2e:run`             | `node scripts/dev/with-lock.mjs build -- node src/backend/server-main/tests/browser-runner.mjs`                                              |
 | `test:subscription-domain` | `corepack pnpm --filter @tixxin/subscription-domain test`                                                                                    |
 
 `test:e2e` 依次构建后端和前端，再由浏览器运行器启动隔离环境执行 Playwright 回归，例如 `corepack pnpm test:e2e sustainable-admin.spec.ts --browser=all`；点名多个 spec 时每个文件各用一套隔离环境，与全量运行一致。需要 PostgreSQL、创建临时数据库的权限和对应的 Playwright 浏览器；测试写入隔离数据、启动临时前后端，运行器只清理本次拥有的资源。
+
+`test:e2e` 与 `test:e2e:run` 在本机 `build` 锁内运行（CI 不加锁），另一会话正在构建或回归时排队；`test:e2e:steps` 是锁内执行的步骤，不直接调用。
 
 `test:e2e:run` 省略两端构建，参数和隔离要求相同；必须已有与当前源码一致的两端生产构建，不能把旧构建的结果当成最新源码的验证。
 

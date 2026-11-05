@@ -29,6 +29,12 @@ for arg in "$@"; do
   esac
 done
 
+# 多会话共用工作区：整轮检查持有本机 build 锁（与 build、test:e2e 同一把），避免与其他会话的构建互相覆盖产物、抢端口。
+# 已在锁内（例如经 push:main 或嵌套调用）时 with-lock 直接执行，不会自锁。
+if [ -z "${CHECK_LOCAL_LOCKED:-}" ]; then
+  CHECK_LOCAL_LOCKED=1 exec node "$root/scripts/dev/with-lock.mjs" build -- bash "$root/scripts/check-local.sh" "$@"
+fi
+
 base=origin/main
 git rev-parse --verify --quiet "$base" > /dev/null || base=HEAD
 files=$(
@@ -102,7 +108,7 @@ if changed '^(deploy/|scripts/release/|scripts/ci/|scripts/check-[^/]+\.sh$|\.hu
     printf '\n! 跳过 Shell 检查：本机没有 shellcheck，也没有可用的 Docker；CI 会照常检查\n'
   fi
 fi
-if changed '^(scripts/dev/|scripts/db/|scripts/static/)'; then
+if changed '^(scripts/dev/|scripts/db/|scripts/static/|scripts/content-repo/)'; then
   step '开发启动器与静态发布脚本单测' corepack pnpm test:dev
 fi
 

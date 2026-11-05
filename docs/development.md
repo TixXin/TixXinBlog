@@ -152,6 +152,17 @@ corepack pnpm preview
 
 开发环境默认不可索引；正式与预发布环境的运行时索引设置见[部署指南](deployment.md)。
 
+### 多会话串行
+
+多个会话共用同一工作区时，构建产物（`dist/`、`.output/`、`.nuxt-production/`）、浏览器回归端口和推送都只有一份。根脚本 `build`、`build:blog`、`generate`、`test:e2e`、`test:e2e:run` 与 `check:local` 持有本机 `build` 锁，`push:main` 持有 `push` 锁，被占用时打印持有进程与命令并排队等待：
+
+```sh
+node scripts/dev/with-lock.mjs build -- corepack pnpm --filter server-main build   # 包住未经根脚本的构建
+corepack pnpm push:main --e2e                                                          # fetch → 检查 → 推送
+```
+
+锁文件位于 Git 公共目录的 `tixxin-locks/`，记录持有进程；进程退出后下一个等待者自动接管，不设超时，也不要手动删除正在使用的锁。同名锁可重入（经 `TIXXIN_LOCKS_HELD` 传递），CI（`CI=true`）不加锁。lint、类型检查和单测单独运行时不加锁；`check:local` 整轮持锁，所以两个会话的推送前检查会排队。`push:main` 不自动 rebase 或改动工作区，待推送提交是否都属于本会话仍需运行前确认。
+
 ## 界面文案与多语言
 
 界面提供 `zh-CN`（默认）与 `en` 两种语言，基于 `@nuxtjs/i18n` 的 `no_prefix` 策略，地址不带语言前缀。语言常量、cookie 名与字典域清单集中在 `src/frontend/web-blog/i18n/localeOptions.ts`；站点默认语言由部署变量 `NUXT_PUBLIC_DEFAULT_LOCALE` 决定，见[部署指南](deployment.md)。首屏语言取有效的 `blog-locale` cookie，否则用站点默认语言，不读取 `Accept-Language`；只有访客在界面设置中主动切换时才写 cookie。
