@@ -128,6 +128,10 @@ jobs:
       - name: Check Secrets
         run: pnpm check:secrets
 
+      # 内容仓库转换依赖根工作区的 yaml，放在安装依赖之后运行。
+      - name: Content Repository
+        run: node --test scripts/content-repo/*.test.mjs
+
       # browser-e2e 按权重表分片，这里确认各片并集正好是全部 spec 且互不重复，防止分片漏跑。
       - name: Browser E2E Shard Coverage
         run: |

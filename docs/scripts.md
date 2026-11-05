@@ -39,19 +39,21 @@
 
 ## 启动器与框架补丁测试
 
-| 命令                   | 实际执行                                                                                                   |
-| ---------------------- | ---------------------------------------------------------------------------------------------------------- |
-| `test:dev`             | `node --test scripts/dev/*.test.mjs scripts/db/*.test.mjs scripts/ci/*.test.mjs scripts/static/*.test.mjs` |
-| `test:dev:integration` | `node scripts/dev/integration.mjs`                                                                         |
-| `test:dev:postgres`    | `node scripts/dev/postgres-integration.mjs`                                                                |
-| `static:build`         | `node scripts/static/build.mjs`                                                                            |
-| `static:serve`         | `node scripts/static/serve.mjs`                                                                            |
+| 命令                   | 实际执行                                                                                                                                   |
+| ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
+| `test:dev`             | `node --test scripts/dev/*.test.mjs scripts/db/*.test.mjs scripts/ci/*.test.mjs scripts/static/*.test.mjs scripts/content-repo/*.test.mjs` |
+| `test:dev:integration` | `node scripts/dev/integration.mjs`                                                                                                         |
+| `test:dev:postgres`    | `node scripts/dev/postgres-integration.mjs`                                                                                                |
+| `static:build`         | `node scripts/static/build.mjs`                                                                                                            |
+| `static:serve`         | `node scripts/static/serve.mjs`                                                                                                            |
+| `content:repo`         | `node scripts/content-repo/cli.mjs`                                                                                                        |
 
-- `test:dev`：开发配置、进程托管、服务复用、终端命令生成、初始化沙盒参数与库名校验、数据库菜单及 `check:local` 集成测试挑选规则的测试。部分用例会创建短时进程并监听本机临时端口，不等同于真实数据库集成测试。
+- `test:dev`：开发配置、进程托管、服务复用、终端命令生成、初始化沙盒参数与库名校验、数据库菜单、`check:local` 集成测试挑选规则及内容仓库转换的测试。部分用例会创建短时进程并监听本机临时端口，不等同于真实数据库集成测试。
 - `test:dev:integration`：用真实 Nuxt、NestJS 和隔离数据库验证冷启动、就绪、复用及退出清理。需要可用 PostgreSQL 和创建临时数据库的权限，会启动临时服务并产生运行产物。
 - `test:dev:postgres`：验证 PostgreSQL Compose 启动、容器归属及连接配置不匹配时的拒绝行为。需要 Docker 和 Docker Compose，只使用本次测试的临时容器和数据卷。
 - `static:build`：从运行中的真实后端读取公开数据，预渲染全部公开页面，用浏览器录制冻结接口与媒体，写入托管平台配置并完整校验一遍；任何失败都不产出站点。参数与产物见[静态发布](static-publish.md)。
 - `static:serve`：按静态托管的规则在本机提供静态产物，用于预览与排查。
+- `content:repo`：把后台导出的内容包展开成可用 Git 管理的 Markdown/YAML 目录（`export`），或把目录打回内容包（`pack`）、只校验（`check`）。只读写指定的本机文件，不访问后端；目录结构与迁回规则见[内容仓库](content-repo.md)。
 - `test:nuxt-patches`：固定版本 Nuxt 路由启动补丁的回归测试，覆盖原生历史、查询参数、hash 及 SSR/SSG 行为。需先安装依赖并应用 pnpm 补丁；不是完整浏览器回归。
 
 ## 数据库与开发样本
