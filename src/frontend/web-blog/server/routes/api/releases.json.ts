@@ -59,12 +59,14 @@ async function refresh(): Promise<void> {
 export default defineEventHandler(async (event): Promise<ReleaseSummary> => {
   assertMethod(event, ['GET', 'HEAD'])
   const current = String(useRuntimeConfig(event).releaseVersion || '').trim() || null
+  setResponseHeader(event, 'cache-control', 'private, max-age=300')
+  // 本机开发与浏览器回归没有注入发布版本，不查询 GitHub：无从比较新旧，也让测试不依赖外网与线上 Release 数量
+  if (!current) return summarizeReleases([], null)
   const manual = getQuery(event).refresh === '1' && !!cached && Date.now() - cached.attemptedAt >= MANUAL_MIN_INTERVAL
   if (!cached || cached.expiresAt <= Date.now() || manual) {
     pending ??= refresh().finally(() => (pending = null))
     await pending
   }
-  setResponseHeader(event, 'cache-control', 'private, max-age=300')
   return summarizeReleases(cached!.releases, current, {
     checkedAt: cached!.checkedAt,
     error: cached!.error,

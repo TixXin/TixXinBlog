@@ -75,7 +75,7 @@ Run `sudo tixxin restart` to apply it (this recreates the API, the frontend, and
 
 The admin header shows the running version (from `RELEASE_VERSION`). Clicking it opens the version list: the current and latest versions, release notes, whether a release includes database migrations, and for newer versions the upgrade command (`sudo tixxin update <version>`) to copy and run on the server. Stable sites are notified only of newer stable releases; beta sites are notified of both beta and stable releases.
 
-The frontend server queries the GitHub Releases API and caches the result for 6 hours on success and 30 minutes on failure; the browser only calls the site's own `/api/releases.json`. If the server cannot reach GitHub, only the current version is shown. Forks can set `NUXT_RELEASE_REPOSITORY=<owner>/<repo>` on the frontend container. The admin does not run upgrades itself.
+The frontend server queries the GitHub Releases API and caches the result for 6 hours on success and 30 minutes on failure; the browser only calls the site's own `/api/releases.json`. If the server cannot reach GitHub, only the current version is shown; local development without a release version does not query GitHub. Forks can set `NUXT_RELEASE_REPOSITORY=<owner>/<repo>` on the frontend container. The admin does not run upgrades itself.
 
 #### Constraints for a panel app package
 

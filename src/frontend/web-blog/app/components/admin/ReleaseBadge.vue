@@ -20,8 +20,15 @@
       <span v-if="summary?.channel === 'beta'" class="release-badge__beta">{{ $t('admin-media.release.beta') }}</span>
       <span v-if="summary?.latest" class="release-badge__dot" aria-hidden="true" />
     </button>
-    <dialog ref="dialog" class="release-dialog" aria-labelledby="release-dialog-title" @click.self="close">
-      <div class="release-dialog__panel">
+    <dialog
+      ref="dialog"
+      class="release-dialog"
+      aria-labelledby="release-dialog-title"
+      @click.self="close"
+      @close="opened = false"
+    >
+      <!-- 关闭时不渲染内容：版本说明含表格等结构，常驻 DOM 会混进后台页面的元素查询，也省去每页渲染 Markdown -->
+      <div v-if="opened" class="release-dialog__panel">
         <header class="release-dialog__header">
           <h2 id="release-dialog-title">{{ $t('admin-media.release.title') }}</h2>
           <button
@@ -55,6 +62,7 @@ const { t } = useI18n()
 const { summary, loading, failed, load } = useReleaseInfo()
 const timeZone = useSiteTimeZone()
 const dialog = ref<HTMLDialogElement | null>(null)
+const opened = ref(false)
 
 onMounted(() => void load())
 
@@ -80,7 +88,9 @@ const checkedText = computed(() =>
     : '',
 )
 
-function open() {
+async function open() {
+  opened.value = true
+  await nextTick()
   dialog.value?.showModal()
 }
 function close() {

@@ -71,7 +71,7 @@ services:
 
 后台顶栏显示当前运行版本（来自 `RELEASE_VERSION`），点击打开版本列表：当前与最新版本、更新说明、是否含数据库迁移，以及比当前新的版本的升级命令（`sudo tixxin update <版本>`，复制后在服务器执行）。正式版站点只提示新的正式版，测试版站点同时提示测试版与正式版。
 
-版本列表由前端服务向 GitHub Releases 接口查询，成功缓存 6 小时、失败 30 分钟内不重试，浏览器只访问本站的 `/api/releases.json`。服务器访问不了 GitHub 时只显示当前版本。fork 可在前端容器设置 `NUXT_RELEASE_REPOSITORY=<所有者>/<仓库>`。后台不直接执行升级，原因与后续方向见 [待办](backlog.md)。
+版本列表由前端服务向 GitHub Releases 接口查询，成功缓存 6 小时、失败 30 分钟内不重试，浏览器只访问本站的 `/api/releases.json`。服务器访问不了 GitHub 时只显示当前版本；没有注入版本号的本机开发环境不查询。fork 可在前端容器设置 `NUXT_RELEASE_REPOSITORY=<所有者>/<仓库>`。后台不直接执行升级，原因与后续方向见 [待办](backlog.md)。
 
 #### 面板应用包的约束
 
