@@ -348,7 +348,7 @@ corepack pnpm test:e2e:run blog.spec.ts --browser=webkit
 corepack pnpm test:e2e:run hydration-history.spec.ts --browser=webkit
 ```
 
-全量分片由运行器按文件完成，每个文件仍各用独立进程和隔离库，不使用 Playwright 自带的 `--shard`，后者会把同一文件拆到不同分片。运行器读取 [`shard-weights.json`](../src/frontend/web-blog/tests/e2e/shard-weights.json) 中各 spec 的 CI 实测秒数，按“最长处理时间优先”贪心算法确定性分配；未收录的新文件取中位数权重，不会漏跑。`lint-and-build` 用 `--list-shards 8` 校验 8 片并集等于全部 spec 且互不重复。镜像构建、容器冒烟与安装冒烟在独立的 `container-images` 任务中与之并行。各片独立报告，失败产物以 `browser-e2e-failure-<片号>` 上传，本机目录名带 `-s<片号>of<总数>` 后缀。准备好两端生产构建后，可在本机复现某一片或查看分片清单：
+全量分片由运行器按文件完成，每个文件仍各用独立进程和隔离库，不使用 Playwright 自带的 `--shard`，后者会把同一文件拆到不同分片。运行器读取 [`shard-weights.json`](../src/frontend/web-blog/tests/e2e/shard-weights.json) 中各 spec 的 CI 实测秒数，按“最长处理时间优先”贪心算法确定性分配；未收录的新文件取中位数权重，不会漏跑。`lint-and-build` 用 `--list-shards 8` 校验 8 片并集等于全部 spec 且互不重复。镜像构建、容器冒烟与安装冒烟在独立的 `container-images` 任务中与之并行。前端单测在 `frontend-unit` 任务中用 `vitest --shard` 分 3 片并行，每片带覆盖率并输出 blob 报告，`frontend-coverage` 再用 `vitest --merge-reports --coverage` 合并后上传为 `frontend-coverage` 产物；它与浏览器回归并行，不延长整体耗时。本机复现某一片：`corepack pnpm --filter web-blog exec vitest run --shard=2/3`。各片独立报告，失败产物以 `browser-e2e-failure-<片号>` 上传，本机目录名带 `-s<片号>of<总数>` 后缀。准备好两端生产构建后，可在本机复现某一片或查看分片清单：
 
 ```sh
 E2E_SHARD=2/8 corepack pnpm test:e2e:run

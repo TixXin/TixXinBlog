@@ -33,6 +33,7 @@ test-results/
 playwright-report/
 blob-report/
 coverage/
+.vitest-reports/
 
 # 运行时媒体
 **/var/media/

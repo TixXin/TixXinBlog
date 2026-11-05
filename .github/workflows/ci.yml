@@ -175,19 +175,7 @@ jobs:
         if: needs.changes.outputs.app == 'true'
         run: pnpm test:subscription-domain
 
-      # 单测只跑带覆盖率的一遍：用例失败照常阻断，覆盖率只收集与上传，不设阈值门禁。
-      - name: Test with Coverage
-        if: needs.changes.outputs.app == 'true'
-        run: pnpm --filter web-blog exec vitest run --coverage
-
-      - name: Frontend Coverage Report
-        if: always() && needs.changes.outputs.app == 'true'
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
-        with:
-          name: frontend-coverage
-          path: src/frontend/web-blog/coverage
-          if-no-files-found: ignore
-          retention-days: 7
+      # 前端单测在 frontend-unit 任务中分 3 片并行，见下方。
 
       - name: Build
         if: needs.changes.outputs.app == 'true'
@@ -212,6 +200,93 @@ jobs:
 
       - name: Audit Dependencies
         run: pnpm audit --prod --audit-level=high
+
+  # 前端单测分 3 片并行（曾在 lint-and-build 中串行约 5.5 分钟，是整个 CI 的最长路径）。
+  # 每片带覆盖率并输出 blob 报告；用例失败照常阻断，覆盖率由 frontend-coverage 合并后上传，不设阈值门禁。
+  frontend-unit:
+    name: Frontend Unit (${{ matrix.shard }}/3)
+    needs: changes
+    if: needs.changes.outputs.app == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    strategy:
+      # 各片独立报告，一片失败不取消其余分片。
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3]
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+
+      - uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4.3.0
+
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: 26
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
+
+      - name: Install Corepack
+        run: npm install --global corepack@0.34.6
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: Test with Coverage
+        run: pnpm --filter web-blog exec vitest run --coverage --shard=${{ matrix.shard }}/3 --reporter=default --reporter=blob
+
+      - name: Upload Blob Report
+        if: ${{ !cancelled() }}
+        # 与下方 download-artifact v8 配对，同 release.yml
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: frontend-unit-blob-${{ matrix.shard }}
+          path: src/frontend/web-blog/.vitest-reports
+          include-hidden-files: true
+          if-no-files-found: ignore
+          retention-days: 1
+
+  # 合并 3 片的覆盖率并上传；与浏览器回归并行，不延长整体耗时。
+  frontend-coverage:
+    name: Frontend Coverage Report
+    needs: [changes, frontend-unit]
+    if: ${{ !cancelled() && needs.changes.outputs.app == 'true' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+
+      - uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4.3.0
+
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: 26
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
+
+      - name: Install Corepack
+        run: npm install --global corepack@0.34.6
+
+      - run: pnpm install --frozen-lockfile
+
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          pattern: frontend-unit-blob-*
+          path: src/frontend/web-blog/.vitest-reports
+          merge-multiple: true
+
+      - name: Merge Coverage
+        run: pnpm --filter web-blog exec vitest --merge-reports --coverage --reporter=default
+
+      - name: Upload Coverage
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: frontend-coverage
+          path: src/frontend/web-blog/coverage
+          if-no-files-found: ignore
+          retention-days: 7
 
   # 镜像构建、容器冒烟与安装冒烟与 lint-and-build 并行：原先串行接在单测与构建之后，是门禁最慢的一段。
   # 只用到 Docker、Node 与 bash，不需要安装项目依赖。
