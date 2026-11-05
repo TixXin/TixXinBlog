@@ -25,7 +25,7 @@
           <div class="recent-post-item__meta">
             <span class="meta-item">
               <Icon name="lucide:calendar" size="12" />
-              {{ formatRelativeDate(post.date, $t) }}
+              {{ formatRelativeDate(post.date, $t, timeZone) }}
             </span>
             <span class="meta-item">
               <Icon name="lucide:folder" size="12" />
@@ -64,6 +64,8 @@ import { formatRelativeDate } from '~/composables/useRelativeDate'
 defineProps<{
   posts: PostItem[]
 }>()
+// “今天”按站点时区判断
+const timeZone = useSiteTimeZone()
 const coverFailures = ref<Record<string, boolean>>({})
 function updateCoverFailure(key: string, state: 'loading' | 'ready' | 'error' | 'empty') {
   // 失败后的重试仍让出封面区域，成功后才恢复覆盖链接。

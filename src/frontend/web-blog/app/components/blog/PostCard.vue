@@ -55,7 +55,9 @@ const props = defineProps<{
 
 const coverError = ref(false)
 const { t } = useI18n()
-const formattedDate = computed(() => formatRelativeDate(props.post.date, t))
+// “今天”按站点时区判断，与归档分月一致，SSR 与浏览器结果相同
+const timeZone = useSiteTimeZone()
+const formattedDate = computed(() => formatRelativeDate(props.post.date, t, timeZone.value))
 </script>
 
 <style lang="scss" scoped>

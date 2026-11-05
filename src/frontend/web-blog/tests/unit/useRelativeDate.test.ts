@@ -67,3 +67,26 @@ describe('formatRelativeDate', () => {
     expect(formatRelativeDate('2026-04-10')).toBe('发布于 2026-04-10')
   })
 })
+
+describe('按站点时区的相对日期', () => {
+  afterEach(() => {
+    vi.useRealTimers()
+  })
+
+  it('UTC 16:30 已是北京时间次日：北京时间按“今天/昨天”计算，UTC 仍是前一天', () => {
+    vi.useFakeTimers()
+    vi.setSystemTime(new Date('2026-04-02T16:30:00Z'))
+    expect(formatRelativeDate('2026-04-03', undefined, 'Asia/Shanghai')).toBe('发布于今天')
+    expect(formatRelativeDate('2026-04-02', undefined, 'Asia/Shanghai')).toBe('发布于昨天')
+    expect(formatRelativeDate('2026-04-02', undefined, 'UTC')).toBe('发布于今天')
+    expect(formatRelativeDate('2026-04-02T16:10:00Z', undefined, 'Asia/Shanghai')).toBe('发布于今天')
+    expect(formatRelativeDate('2026-03-20', undefined, 'Asia/Shanghai')).toBe('发布于 2026-03-20')
+  })
+
+  it('日历日期按站点时区换算，非法纯日期与空值显示未知', () => {
+    expect(formatCalendarDate('2026-03-20T18:20:00.000Z', undefined, 'Asia/Shanghai')).toBe('2026-03-21')
+    expect(formatCalendarDate('2026-03-20T18:20:00.000Z', undefined, 'UTC')).toBe('2026-03-20')
+    expect(formatCalendarDate('2026-02-30', undefined, 'UTC')).toBe('日期未知')
+    expect(formatRelativeDate('', undefined, 'UTC')).toBe('发布日期未知')
+  })
+})

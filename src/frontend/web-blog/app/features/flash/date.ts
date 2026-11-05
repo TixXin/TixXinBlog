@@ -12,14 +12,14 @@ export const FLASH_TYPE_META: Record<string, { icon: string; labelKey: string } 
   todo: { icon: 'lucide:check-square', labelKey: 'flash-moment.flashType.todo' },
 }
 
-/** 闪念日历日期（未挂载时使用站点时区日期防抖，SSR 与水合首帧一致；挂载后使用 formatCalendarDate） */
+/** 闪念日历日期：挂载前后都按站点时区，SSR 与水合首帧一致 */
 export function formatFlashCalendarDate(
   iso: string,
   clockReady: boolean,
   t: (key: string) => string,
   timeZone = DEFAULT_SITE_TIME_ZONE,
 ): string {
-  if (clockReady) return formatCalendarDate(iso, t)
+  if (clockReady) return formatCalendarDate(iso, t, timeZone)
   return siteDayKey(iso, timeZone) || t('common.date.unknown')
 }
 
