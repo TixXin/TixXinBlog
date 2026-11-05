@@ -5,7 +5,8 @@
  *              只给一个参数时按 shell 命令行执行（便于在 package.json 里串联 &&）。
  *              锁文件放在 Git 公共目录的 tixxin-locks/ 下，记录持有进程；持有进程已退出即视为过期并接管，不设超时。
  *              同名锁可重入：子命令再次申请已持有的锁时直接执行（经环境变量 TIXXIN_LOCKS_HELD 传递）。
- *              CI 环境（CI=true）每个任务独占机器，直接执行不加锁。
+ *              CI 环境（CI=true）每个任务独占机器，直接执行不加锁；没有 Git 或不在仓库里（如 Docker 镜像构建）时
+ *              不存在共用工作区的会话，同样直接执行。
  */
 import { spawn, execFileSync } from 'node:child_process'
 import { mkdirSync, openSync, writeSync, closeSync, readFileSync, statSync, unlinkSync } from 'node:fs'
@@ -16,10 +17,21 @@ import { setTimeout as delay } from 'node:timers/promises'
 
 const HELD_ENV = 'TIXXIN_LOCKS_HELD'
 
-/** 锁目录：TIXXIN_LOCK_DIR 优先（测试用），否则取 Git 公共目录，worktree 之间也共享。 */
+/**
+ * 锁目录：TIXXIN_LOCK_DIR 优先（测试用），否则取 Git 公共目录，worktree 之间也共享。
+ * 没有 git 命令或不在仓库里时返回 null，由调用方直接执行命令。
+ */
 export function lockDir(env = process.env) {
   if (env.TIXXIN_LOCK_DIR) return env.TIXXIN_LOCK_DIR
-  const common = execFileSync('git', ['rev-parse', '--git-common-dir'], { encoding: 'utf8' }).trim()
+  let common
+  try {
+    common = execFileSync('git', ['rev-parse', '--git-common-dir'], {
+      encoding: 'utf8',
+      stdio: ['ignore', 'pipe', 'ignore'],
+    }).trim()
+  } catch {
+    return null
+  }
   return join(resolve(common), 'tixxin-locks')
 }
 
@@ -138,6 +150,7 @@ async function main(argv) {
   if (process.env.CI === 'true' || held.includes(name)) return runChild(command, process.env)
 
   const dir = lockDir()
+  if (!dir) return runChild(command, process.env)
   mkdirSync(dir, { recursive: true })
   const file = join(dir, `${name}.lock`)
   const owner = {

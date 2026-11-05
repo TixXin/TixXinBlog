@@ -88,3 +88,17 @@ test('参数不完整时给出用法并返回 2', async (t) => {
   assert.equal((await run(['build'], env)).code, 2)
   assert.equal((await run(['build', 'x', '--', 'true'], env)).code, 2)
 })
+
+test('不在 Git 仓库且未指定锁目录时直接执行，不报错', async (t) => {
+  const { dir, env } = setup(t)
+  delete env.TIXXIN_LOCK_DIR
+  const result = await new Promise((done) => {
+    const child = spawn(process.execPath, [script, 'build', '--', process.execPath, '-e', 'process.exit(4)'], {
+      cwd: dir,
+      env: { ...env, GIT_CEILING_DIRECTORIES: dirname(dir) },
+      stdio: 'ignore',
+    })
+    child.on('exit', (code) => done(code))
+  })
+  assert.equal(result, 4)
+})
