@@ -9,7 +9,7 @@ import { Post } from '../../entities/post.entity'
 import { MediaReference } from '../../entities/media-reference.entity'
 import type { SaveMomentDto } from './moment.dto'
 import { MomentReadService } from './moment-read.service'
-import { momentValues, submissionHash } from './moment-values'
+import { assertSecureEmbeds, momentValues, submissionHash } from './moment-values'
 import { lockMedia, synchronizeMediaReferences } from '../media/media-references'
 import { msg } from '../../common/i18n'
 
@@ -42,6 +42,7 @@ export class MomentWriteService {
         : em.create(Moment, { content: input.content!, requestId: input.requestId, requestHash: hash })
       if (!note) throw new NotFoundException(msg('moment.notFoundOrDeleted'))
       if (id && note.revision !== input.revision) throw new ConflictException(msg('moment.updatedKeepInput'))
+      assertSecureEmbeds(values, id ? note : null)
       const { linkedArticleId, ...fields } = values
       if (linkedArticleId !== undefined) {
         // 已建立的引用允许随文章撤回保留，公开序列化仍隐藏其信息；新增引用必须指向公开文章。

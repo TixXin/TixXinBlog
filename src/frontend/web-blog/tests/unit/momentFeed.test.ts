@@ -22,12 +22,16 @@ beforeEach(() => {
     isLiked: false,
   }))
   mocks.list.mockReset().mockImplementation(async (query: MomentQuery) => {
+    // 与后端一致：有可用游标时从锚点之后读取，否则按页码与页大小偏移
     const filtered = dataset.filter((note) => !query.q || note.content.includes(query.q))
+    const size = query.pageSize ?? 15
+    const anchor = query.after ? filtered.findIndex((note) => note.id === query.after!.split('.')[1]) : -1
+    const start = anchor >= 0 ? anchor + 1 : (query.page - 1) * size
     return {
-      items: filtered.slice((query.page - 1) * 15, query.page * 15).map((note) => ({ ...note })),
+      items: filtered.slice(start, start + size).map((note) => ({ ...note })),
       total: filtered.length,
       page: query.page,
-      pageSize: 15,
+      pageSize: size,
     }
   })
 })
@@ -75,6 +79,40 @@ describe('朋友圈数据请求', () => {
     options.page.value = 2
     await vi.waitFor(() => expect(state.moments.value).toHaveLength(30))
     expect(state.moments.value[0]).toMatchObject({ likes: 1, isLiked: true })
+  })
+  it('追加时带上最后一条的游标，翻页期间新发布的动态不会造成重复', async () => {
+    const { state, options } = await setup()
+    dataset.unshift({ id: 'moment-new', content: '新动态', date: '2026-09-10', likes: 0, isLiked: false })
+    mocks.list.mockClear()
+    options.page.value = 2
+    await vi.waitFor(() => expect(state.moments.value).toHaveLength(30))
+    expect(mocks.list.mock.calls[0]![0]).toMatchObject({ page: 2, pageSize: 15, after: '0.moment-14' })
+    const ids = state.moments.value.map((note) => note.id)
+    expect(new Set(ids).size).toBe(30)
+    expect(ids.slice(15, 17)).toEqual(['moment-15', 'moment-16'])
+  })
+  it('直接打开深页码按批读取，后续批次用游标续读', async () => {
+    dataset = Array.from({ length: 400 }, (_, index) => ({
+      id: `moment-${index}`,
+      content: `动态 ${index}`,
+      date: '2026-09-09',
+      likes: 0,
+      isLiked: false,
+    }))
+    const { state } = await setup(true, 25)
+    expect(mocks.list.mock.calls.map(([query]) => [query.page, query.pageSize, query.after])).toEqual([
+      [1, 150, undefined],
+      [2, 150, '0.moment-149'],
+      [3, 150, '0.moment-299'],
+    ])
+    expect(state.moments.value).toHaveLength(375)
+    expect(state.moments.value.at(-1)?.id).toBe('moment-374')
+  })
+  it('页码超过实际页数时读到末尾即停止', async () => {
+    const { state } = await setup(true, 5)
+    expect(mocks.list).toHaveBeenCalledTimes(1)
+    expect(mocks.list.mock.calls[0]![0]).toMatchObject({ page: 1, pageSize: 75 })
+    expect(state.moments.value).toHaveLength(31)
   })
   it('迟到响应无法复活已删除动态，完整刷新会重新核对已缓存页', async () => {
     const { state, store } = await setup()
@@ -154,7 +192,8 @@ describe('朋友圈数据请求', () => {
     dataset = dataset.filter((note) => note.id !== 'moment-0')
     mocks.list.mockClear()
     await second.state.refresh()
-    expect(mocks.list.mock.calls.map((call) => call[0].page)).toEqual([1, 2])
+    // 完整前缀一次读出，不再逐页串行
+    expect(mocks.list.mock.calls.map((call) => [call[0].page, call[0].pageSize])).toEqual([[1, 30]])
     expect(second.state.moments.value).toHaveLength(30)
     expect(second.state.moments.value.some((note) => note.id === 'moment-0')).toBe(false)
   })

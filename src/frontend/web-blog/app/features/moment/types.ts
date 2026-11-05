@@ -88,6 +88,7 @@ export interface MomentPage {
   total: number
   page: number
   pageSize: number
+  nextCursor?: string | null
 }
 export interface MomentOverview {
   stats: { totalMoments: number; totalLikes: number; totalComments: number }
@@ -99,6 +100,8 @@ export interface MomentOverview {
 export interface MomentQuery {
   page: number
   pageSize?: number
+  /** 键集游标 `<置顶 0|1>.<动态编号>`，从该条之后读取 */
+  after?: string
   q?: string
   topic?: string
   date?: string

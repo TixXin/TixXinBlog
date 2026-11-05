@@ -140,7 +140,9 @@ describe('朋友圈公开 GET 响应白名单', () => {
     const { service, em, execute } = setup()
     const result = route === 'list' ? await service.list(new QueryMomentsDto()) : await service.detail('moment-public')
     expect(json(result)).toStrictEqual(
-      route === 'detail' ? expectedNote : { items: [expectedNote], total: 1, page: 1, pageSize: 15 },
+      route === 'detail'
+        ? expectedNote
+        : { items: [expectedNote], total: 1, page: 1, pageSize: 15, nextCursor: '1.moment-public' },
     )
     if (route === 'list') {
       expect(em.findAndCount.mock.calls[0]![1]).toEqual({ $and: [publicWhere] })

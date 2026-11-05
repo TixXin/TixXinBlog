@@ -1,6 +1,6 @@
 /**
  * @file momentLightBox.test.ts
- * @description 朋友圈灯箱的键盘边界、模态焦点与图片加载恢复回归测试
+ * @description 朋友圈灯箱的键盘边界、触摸滑动、模态焦点、替代文本与图片加载恢复回归测试
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { mountSuspended } from '@nuxt/test-utils/runtime'
@@ -188,7 +188,49 @@ describe('朋友圈灯箱键盘与焦点', () => {
   })
 })
 
+describe('朋友圈灯箱触摸滑动', () => {
+  function pointer(type: string, x: number, y: number, pointerType = 'touch') {
+    const target = document.querySelector('.moment-lightbox__content')!
+    // happy-dom 的 PointerEvent 不带坐标初始化，按浏览器字段补齐
+    const event = new Event(type, { bubbles: true, cancelable: true })
+    Object.assign(event, { clientX: x, clientY: y, pointerType })
+    target.dispatchEvent(event)
+  }
+  async function swipe(dx: number, dy: number, pointerType = 'touch') {
+    pointer('pointerdown', 200, 200, pointerType)
+    pointer('pointerup', 200 + dx, 200 + dy, pointerType)
+    await nextTick()
+  }
+
+  it('左滑看下一张、右滑看上一张，首尾不越界', async () => {
+    const { wrapper } = await lightbox({ currentIndex: 1 })
+    await swipe(-120, 10)
+    expect(wrapper.emitted('change')).toEqual([[2]])
+    await swipe(120, -8)
+    expect(wrapper.emitted('change')).toEqual([[2], [0]])
+    await wrapper.setProps({ currentIndex: 2 })
+    await swipe(-120, 0)
+    expect(wrapper.emitted('change')).toEqual([[2], [0]])
+  })
+
+  it('位移不足、纵向拖动与鼠标拖动都不切换，也不关闭', async () => {
+    const { wrapper } = await lightbox({ currentIndex: 1 })
+    await swipe(-30, 0)
+    await swipe(-80, 120)
+    await swipe(-150, 0, 'mouse')
+    expect(wrapper.emitted('change')).toBeUndefined()
+    expect(wrapper.emitted('close')).toBeUndefined()
+  })
+})
+
 describe('朋友圈灯箱图片', () => {
+  it('放大图沿用卡片的替代文本，缺省项按序号描述', async () => {
+    const { wrapper } = await lightbox({ alts: ['湖面倒映雪山', ''] })
+    expect(dialog().get('img').attributes('alt')).toBe('湖面倒映雪山')
+    await wrapper.setProps({ currentIndex: 1 })
+    expect(dialog().get('img').attributes('alt')).toBe('动态配图 2')
+  })
+
   it.each([
     ['外链', external],
     ['受管媒体', managed],
@@ -196,7 +238,7 @@ describe('朋友圈灯箱图片', () => {
     const { wrapper } = await lightbox({ images: [src] })
     const image = dialog().get('img')
     expect(image.attributes('src')).toBe(src)
-    expect(image.attributes('alt')).toBe('预览图片')
+    expect(image.attributes('alt')).toBe('动态配图 1')
     expect(image.attributes('loading')).toBe('eager')
     expect(image.attributes('referrerpolicy')).toBe('no-referrer')
     expect(image.attributes('srcset')).toBeUndefined()
@@ -220,7 +262,7 @@ describe('朋友圈灯箱图片', () => {
     expect(frame.attributes('aria-busy')).toBe('false')
     expect(frame.text()).toContain('图片加载失败')
     const failedImage = frame.get('img').element
-    await frame.get('[aria-label="重新加载图片：预览图片"]').trigger('click')
+    await frame.get('[aria-label="重新加载图片：动态配图 1"]').trigger('click')
     expect(wrapper.emitted('close')).toBeUndefined()
     expect(frame.get('img').element).not.toBe(failedImage)
     expect(frame.get('img').attributes('src')).toBe(src)

@@ -44,6 +44,22 @@ export function momentUrl(value: string, allowMedia = false, allowAvatar = false
     throw new BadRequestException(msg('moment.linkInvalid'))
   }
 }
+/**
+ * 后台保存时页面内嵌的图片地址（配图、链接卡片图片与图标）只收 HTTPS 或本站媒体：HTTP 图片在 HTTPS 站点上
+ * 会被浏览器按混合内容拦截。编辑时原记录已有的地址照常保留；内容包迁入与样本沿用 momentValues，不受此限制。
+ */
+export function assertSecureEmbeds(
+  values: Pick<SaveMomentDto, 'images' | 'linkedLink'>,
+  existing: { images?: string[]; linkedLink?: { image?: string; favicon?: string } | null } | null,
+) {
+  const kept = new Set([
+    ...(existing?.images ?? []),
+    ...[existing?.linkedLink?.image, existing?.linkedLink?.favicon].filter((value): value is string => !!value),
+  ])
+  const embeds = [...(values.images ?? []), values.linkedLink?.image, values.linkedLink?.favicon]
+  for (const url of embeds)
+    if (url && url.startsWith('http:') && !kept.has(url)) throw new BadRequestException(msg('moment.imageInsecure'))
+}
 export function momentValues(input: SaveMomentDto) {
   const values = Object.fromEntries(
     Object.entries(input).filter(([name, value]) => !['requestId', 'revision'].includes(name) && value !== undefined),

@@ -127,6 +127,7 @@
 </template>
 
 <script setup lang="ts">
+import { momentFeedPages } from '~/features/moment/feed'
 import { mockPostTabs } from '~/features/post/mock'
 
 const pageScope = usePageRequestScope()
@@ -159,8 +160,8 @@ const hasMore = computed(() => moments.value.length < total.value)
 const advancing = ref(false)
 watch(moments, interactions.seed, { immediate: true })
 watch([total, feedPending, feedError], () => {
-  if (!feedPending.value && !feedError.value && page.value > Math.max(1, Math.ceil(total.value / 15)))
-    void setPage(Math.max(1, Math.ceil(total.value / 15)), true)
+  if (!feedPending.value && !feedError.value && page.value > momentFeedPages(total.value))
+    void setPage(momentFeedPages(total.value), true)
 })
 async function loadMore() {
   if (advancing.value || feedPending.value || feedError.value || !hasMore.value) return

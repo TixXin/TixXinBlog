@@ -90,4 +90,17 @@
   .moment-editor__actions {
     padding: 1rem 0;
   }
+  .moment-editor__hint {
+    margin: 0.25rem 0;
+    color: var(--text-muted);
+    font-size: 0.8125rem;
+  }
+  .moment-editor__warning {
+    margin: 0.25rem 0;
+    color: var(--warning-text);
+    font-size: 0.8125rem;
+  }
+  .moment-editor__preview-title {
+    font-size: 0.875rem;
+  }
 }

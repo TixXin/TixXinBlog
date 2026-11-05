@@ -5,6 +5,7 @@ exports[`外链字段的结构与补全 1`] = `
   "<fieldset><label>动态正文<textarea aria-label="动态正文" rows="8" maxlength="10000" required="" placeholder="记录此刻的想法，支持 Markdown" value="晚风吹过河岸"></textarea></label><small>6 / 10000</small><label>话题（逗号分隔，最多10个）<input aria-label="动态话题" value=""></label>
   <section class="moment-editor__media" aria-label="动态配图">
     <h2>配图（0 / 9）</h2><button type="button">选择或上传图片</button>
+    <!--v-if-->
     <div class="moment-editor__images"></div>
   </section>
   <div class="moment-editor__row"><label>地点<input maxlength="160" value=""></label><label>设备<input maxlength="80" value=""></label><label>心情<input maxlength="80" value=""></label></div><label>引用内容<select aria-label="动态引用类型" value="link">
@@ -13,7 +14,19 @@ exports[`外链字段的结构与补全 1`] = `
       <option value="link">外部链接</option>
     </select></label>
   <!--v-if-->
+  <p class="moment-editor__hint">服务器不会抓取外部网页。请在浏览器里打开原网页，复制标题、描述和图片地址后填写；图片与图标需使用 HTTPS 地址。</p>
   <div class="moment-editor__row"><label>链接地址<input type="url" maxlength="2048" aria-label="引用链接地址" value="https://example.com/"></label><label>链接标题<input maxlength="160" aria-label="引用链接标题" value="示例"></label><label>链接描述<input maxlength="500"></label><label>站点名称<input maxlength="80" value="例站"></label><label>卡片图片链接（可选）<input maxlength="2048"></label><label>站点图标链接（可选）<input maxlength="2048"></label></div>
+  <!--v-if-->
+  <section aria-label="卡片预览">
+    <h2 class="moment-editor__preview-title">卡片预览</h2>
+    <div class="moment-link-card">
+      <!--v-if--><a href="https://example.com/" target="_blank" rel="noopener noreferrer" class="moment-link-card__body">
+        <div class="moment-link-card__head"><span class="iconify i-lucide:link moment-link-card__favicon-fallback" aria-hidden="true" style="font-size: 12px;"></span><span class="moment-link-card__site">例站</span><span class="iconify i-lucide:external-link moment-link-card__external" aria-hidden="true" style="font-size: 12px;"></span></div>
+        <div class="moment-link-card__title">示例</div>
+        <!--v-if-->
+      </a>
+    </div>
+  </section>
   <div class="moment-editor__row"><label>保存状态<select aria-label="动态保存状态" value="draft">
         <option value="draft">草稿</option>
         <option value="published">已发布</option>
@@ -56,6 +69,7 @@ exports[`已发布动态带恢复副本、服务器版本、配图、文章引�
   <fieldset><label>动态正文<textarea aria-label="动态正文" rows="8" maxlength="10000" required="" placeholder="记录此刻的想法，支持 Markdown" value="晚风吹过河岸"></textarea></label><small>6 / 10000</small><label>话题（逗号分隔，最多10个）<input aria-label="动态话题" value="夜跑，城市"></label>
     <section class="moment-editor__media" aria-label="动态配图">
       <h2>配图（2 / 9）</h2><button type="button">选择或上传图片</button>
+      <!--v-if-->
       <div class="moment-editor__images">
         <figure><img src="/a.webp" alt="动态配图 1"><button type="button" aria-label="移除配图 1">移除此配图</button></figure>
         <figure><img src="/b.webp" alt="动态配图 2"><button type="button" aria-label="移除配图 2">移除此配图</button></figure>
@@ -74,6 +88,9 @@ exports[`已发布动态带恢复副本、服务器版本、配图、文章引�
           <option value="13">江边散步</option>
         </select></label>
     </section>
+    <!--v-if-->
+    <!--v-if-->
+    <!--v-if-->
     <!--v-if-->
     <div class="moment-editor__row"><label>保存状态<select aria-label="动态保存状态" value="published">
           <option value="draft">草稿</option>
@@ -96,6 +113,7 @@ exports[`父组件不回写时，引用类型与文章搜索词保留在表单�
   "<fieldset><label>动态正文<textarea aria-label="动态正文" rows="8" maxlength="10000" required="" placeholder="记录此刻的想法，支持 Markdown" value="晚风吹过河岸"></textarea></label><small>6 / 10000</small><label>话题（逗号分隔，最多10个）<input aria-label="动态话题" value=""></label>
   <section class="moment-editor__media" aria-label="动态配图">
     <h2>配图（0 / 9）</h2><button type="button">选择或上传图片</button>
+    <!--v-if-->
     <div class="moment-editor__images"></div>
   </section>
   <div class="moment-editor__row"><label>地点<input maxlength="160" value=""></label><label>设备<input maxlength="80" value=""></label><label>心情<input maxlength="80" value=""></label></div><label>引用内容<select aria-label="动态引用类型" value="article">
@@ -109,6 +127,9 @@ exports[`父组件不回写时，引用类型与文章搜索词保留在表单�
         <option value="">请选择已公开文章</option>
       </select></label>
   </section>
+  <!--v-if-->
+  <!--v-if-->
+  <!--v-if-->
   <!--v-if-->
   <div class="moment-editor__row"><label>保存状态<select aria-label="动态保存状态" value="draft">
         <option value="draft">草稿</option>
@@ -178,6 +199,7 @@ exports[`空表单与载入中的结构 1`] = `
   <fieldset><label>动态正文<textarea aria-label="动态正文" rows="8" maxlength="10000" required="" placeholder="记录此刻的想法，支持 Markdown" value=""></textarea></label><small>0 / 10000</small><label>话题（逗号分隔，最多10个）<input aria-label="动态话题" value=""></label>
     <section class="moment-editor__media" aria-label="动态配图">
       <h2>配图（0 / 9）</h2><button type="button">选择或上传图片</button>
+      <!--v-if-->
       <div class="moment-editor__images"></div>
     </section>
     <div class="moment-editor__row"><label>地点<input maxlength="160" value=""></label><label>设备<input maxlength="80" value=""></label><label>心情<input maxlength="80" value=""></label></div><label>引用内容<select aria-label="动态引用类型" value="none">
@@ -185,6 +207,9 @@ exports[`空表单与载入中的结构 1`] = `
         <option value="article">站内文章</option>
         <option value="link">外部链接</option>
       </select></label>
+    <!--v-if-->
+    <!--v-if-->
+    <!--v-if-->
     <!--v-if-->
     <!--v-if-->
     <div class="moment-editor__row"><label>保存状态<select aria-label="动态保存状态" value="draft">
@@ -214,6 +239,7 @@ exports[`空表单与载入中的结构 1`] = `
   <fieldset disabled=""><label>动态正文<textarea aria-label="动态正文" rows="8" maxlength="10000" required="" placeholder="记录此刻的想法，支持 Markdown" value="晚风吹过河岸"></textarea></label><small>6 / 10000</small><label>话题（逗号分隔，最多10个）<input aria-label="动态话题" value=""></label>
     <section class="moment-editor__media" aria-label="动态配图">
       <h2>配图（0 / 9）</h2><button type="button">选择或上传图片</button>
+      <!--v-if-->
       <div class="moment-editor__images"></div>
     </section>
     <div class="moment-editor__row"><label>地点<input maxlength="160" value=""></label><label>设备<input maxlength="80" value=""></label><label>心情<input maxlength="80" value=""></label></div><label>引用内容<select aria-label="动态引用类型" value="none">
@@ -221,6 +247,9 @@ exports[`空表单与载入中的结构 1`] = `
         <option value="article">站内文章</option>
         <option value="link">外部链接</option>
       </select></label>
+    <!--v-if-->
+    <!--v-if-->
+    <!--v-if-->
     <!--v-if-->
     <!--v-if-->
     <div class="moment-editor__row"><label>保存状态<select aria-label="动态保存状态" value="draft">

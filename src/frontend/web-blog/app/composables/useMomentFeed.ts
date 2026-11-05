@@ -1,5 +1,6 @@
 /** @file useMomentFeed.ts @description 连续动态流只缓存公开编号快照，实体与个人互动继续由原仓储接纳 */
 import type { MomentItem, MomentQuery } from '~/features/moment/types'
+import { MOMENT_FEED_PAGE_SIZE, readMomentFeedPages } from '~/features/moment/feed'
 
 export async function useMomentFeed(options: {
   page: Ref<number>
@@ -15,6 +16,7 @@ export async function useMomentFeed(options: {
   const chunks = new Map<number, string[]>()
   let acceptedPage = 0,
     acceptedScope = '',
+    acceptedCursor: string | undefined,
     prefixReadAt = 0
   const scopeKey = computed(() =>
     JSON.stringify({ topic: options.topic.value, date: options.date.value, q: options.q.value }),
@@ -35,13 +37,15 @@ export async function useMomentFeed(options: {
     prefixReadAt: number
     ids: string[]
     chunks: { page: number; ids: string[] }[]
+    /** 已读最后一条的续读游标 */
+    cursor?: string
   }
   const result = usePublicReadData(
     'moment-feed',
     async (_app, { signal }): Promise<FeedResult> => {
       const query: MomentQuery = {
         page: options.page.value,
-        pageSize: 15,
+        pageSize: MOMENT_FEED_PAGE_SIZE,
         topic: options.topic.value || undefined,
         date: options.date.value || undefined,
         q: options.q.value || undefined,
@@ -56,23 +60,23 @@ export async function useMomentFeed(options: {
         query.page === acceptedPage + 1 &&
         acceptedPage > 0 &&
         now - prefixReadAt < 30_000 &&
+        !!acceptedCursor &&
         Array.from({ length: acceptedPage }, (_, index) => index + 1).every((page) => chunks.has(page))
       const pages = appending ? new Map(chunks) : new Map<number, string[]>()
       const fresh: MomentItem[] = []
-      let count: number | null = pages.size ? total.value : null
+      const count: number | null = pages.size ? total.value : null
       requestedScope.value = currentScope
-      for (let page = 1; page <= query.page; page++) {
-        if (ownedSignal.aborted) throw new DOMException('动态读取已取消', 'AbortError')
-        if (count !== null && page > Math.max(1, Math.ceil(count / 15))) break
-        if (pages.has(page) && page !== query.page) continue
-        const data = await repo.list({ ...query, page }, ownedSignal)
-        count = data.total
-        pages.set(
-          page,
-          data.items.map((item) => item.id),
-        )
-        fresh.push(...data.items)
-      }
+      const read = await readMomentFeedPages({
+        list: (input) => repo.list({ ...query, ...input }, ownedSignal),
+        signal: ownedSignal,
+        targetPage: query.page,
+        startPage: appending ? query.page : 1,
+        cursor: appending ? acceptedCursor : undefined,
+        count,
+        pages,
+      })
+      fresh.push(...read.items)
+      const cursor = read.cursor
       // 实体不进入页缓存；取消或代次变化时也不能先写回原实体仓储。
       if (ownedSignal.aborted || generation !== store.generation.value)
         throw new DOMException('动态读取已失效', 'AbortError')
@@ -84,13 +88,14 @@ export async function useMomentFeed(options: {
         )
       return {
         page: query.page,
-        pageSize: 15,
-        total: count ?? 0,
+        pageSize: MOMENT_FEED_PAGE_SIZE,
+        total: read.count,
         scope: currentScope,
         generation,
         prefixReadAt: appending ? prefixReadAt : now,
         ids: [...pages].sort(([a], [b]) => a - b).flatMap(([, items]) => items),
         chunks: [...pages].map(([page, ids]) => ({ page, ids })),
+        cursor,
       }
     },
     {
@@ -121,6 +126,7 @@ export async function useMomentFeed(options: {
     total.value = value.total
     acceptedPage = value.page
     acceptedScope = value.scope
+    acceptedCursor = value.cursor
     prefixReadAt = value.prefixReadAt
     chunks.clear()
     value.chunks.forEach((chunk) => chunks.set(chunk.page, chunk.ids))
@@ -133,6 +139,7 @@ export async function useMomentFeed(options: {
       ids.value = []
       total.value = 0
       acceptedPage = 0
+      acceptedCursor = undefined
       prefixReadAt = 0
     },
     { flush: 'sync' },

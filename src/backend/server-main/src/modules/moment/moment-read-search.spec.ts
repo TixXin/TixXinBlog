@@ -123,6 +123,7 @@ describe('朋友圈公开搜索', () => {
       total: 7,
       page: 2,
       pageSize: 2,
+      nextCursor: '0.moment-1',
     })
     expect(connection.execute).toHaveBeenCalledTimes(2)
   })
@@ -138,6 +139,7 @@ describe('朋友圈公开搜索', () => {
       total,
       page,
       pageSize: 10,
+      nextCursor: null,
     })
 
     expectPublicSearch(em.findAndCount.mock.calls[0]![1], '%海边%')

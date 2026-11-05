@@ -1,6 +1,6 @@
 <!--
   @file MomentLightBox.vue
-  @description 朋友圈多图轮播灯箱，支持左右切换与键盘导航
+  @description 朋友圈多图轮播灯箱，支持左右切换、键盘导航与触摸滑动；放大图沿用卡片上的替代文本
   @author TixXin
   @since 2026-04-10
 -->
@@ -40,10 +40,16 @@
         </button>
 
         <!-- 图片内容 -->
-        <div class="moment-lightbox__content" @click.self="onClose">
+        <div
+          class="moment-lightbox__content"
+          @click.self="onClose"
+          @pointerdown="onPointerDown"
+          @pointerup="onPointerUp"
+          @pointercancel="swipeStart = null"
+        >
           <CommonImageFrame
             :src="images[currentIndex]"
-            :alt="$t('flash-moment.lightbox.imageAlt')"
+            :alt="alts?.[currentIndex] || $t('flash-moment.momentCard.imageAlt', { index: currentIndex + 1 })"
             class="moment-lightbox__img"
             fit="contain"
             loading="eager"
@@ -73,6 +79,8 @@
 <script setup lang="ts">
 const props = defineProps<{
   images: string[]
+  /** 与 images 一一对应的替代文本；缺省时按序号描述 */
+  alts?: string[]
   currentIndex: number
   visible: boolean
 }>()
@@ -96,6 +104,23 @@ function onNext() {
   if (props.currentIndex < props.images.length - 1) {
     emit('change', props.currentIndex + 1)
   }
+}
+
+// 触摸与触控笔左右滑动切换：水平位移超过阈值且明显大于垂直位移才算，单击仍交给关闭逻辑
+const SWIPE_MIN_PX = 48
+const swipeStart = ref<{ x: number; y: number } | null>(null)
+function onPointerDown(e: PointerEvent) {
+  swipeStart.value = e.pointerType === 'mouse' ? null : { x: e.clientX, y: e.clientY }
+}
+function onPointerUp(e: PointerEvent) {
+  const start = swipeStart.value
+  swipeStart.value = null
+  if (!start) return
+  const dx = e.clientX - start.x,
+    dy = e.clientY - start.y
+  if (Math.abs(dx) < SWIPE_MIN_PX || Math.abs(dx) < Math.abs(dy) * 1.5) return
+  if (dx < 0) onNext()
+  else onPrev()
 }
 
 function onKeydown(e: KeyboardEvent) {
@@ -199,6 +224,8 @@ onUnmounted(() => {
   max-width: 56rem;
   max-height: 90vh;
   width: 100%;
+  // 水平滑动交给切换逻辑，保留纵向滚动与双指缩放
+  touch-action: pan-y pinch-zoom;
 }
 
 .moment-lightbox__img {

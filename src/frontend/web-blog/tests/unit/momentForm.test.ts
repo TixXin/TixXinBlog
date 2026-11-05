@@ -191,6 +191,31 @@ describe('动态表单', () => {
     expect(linkedLink.title).toBe('散步手记')
   })
 
+  it('外链卡片说明需手动填写，HTTP 图片地址即时提示，并用前台卡片预览', async () => {
+    const linkedLink = { url: 'https://example.com/walk', title: '散步手记', image: 'https://example.com/river.webp' }
+    const wrapper = await setup({ value: currentValue({ linkedLink }) })
+    expect(wrapper.text()).toContain('服务器不会抓取外部网页')
+    expect(wrapper.find('.moment-editor__warning').exists()).toBe(false)
+    expect(wrapper.get('[aria-label="卡片预览"]').text()).toContain('散步手记')
+    await wrapper.setProps({
+      value: currentValue({ linkedLink: { ...linkedLink, favicon: 'http://example.com/i.ico' } }),
+    })
+    expect(wrapper.get('.moment-editor__warning').text()).toContain('混合内容')
+    await wrapper.setProps({ value: currentValue({ linkedLink: { url: 'https://example.com', title: '' } }) })
+    expect(wrapper.find('[aria-label="卡片预览"]').exists()).toBe(false)
+  })
+
+  it('存量 HTTP 配图给出数量提示，HTTPS 与媒体库图片不提示', async () => {
+    const wrapper = await setup({
+      value: currentValue({
+        images: ['/api/v1/media/a.webp', 'http://old.example.com/a.webp', 'https://x.example/b.webp'],
+      }),
+    })
+    expect(wrapper.get('.moment-editor__warning').text()).toContain('有 1 张配图使用 HTTP 地址')
+    await wrapper.setProps({ value: currentValue({ images: ['https://x.example/b.webp'] }) })
+    expect(wrapper.find('.moment-editor__warning').exists()).toBe(false)
+  })
+
   it('配图事件只采用地址，忽略重复与超过九张的选择，并允许按位置移除', async () => {
     const value = currentValue({ images: ['/river.webp'] })
     const wrapper = await setup({ value })

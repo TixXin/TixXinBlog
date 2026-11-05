@@ -35,7 +35,15 @@ export class MomentPageQuery {
 export class QueryAdminMomentCommentsDto extends MomentPageQuery {
   @IsOptional() @IsIn(['all', ...MOMENT_COMMENT_STATUSES]) status?: 'all' | MomentCommentStatus
 }
-export class QueryMomentsDto extends MomentPageQuery {
+/** 公开动态流单次最多 150 条：直接打开较深页码时一次读出前 10 页，不逐页串行请求 */
+export const MOMENT_FEED_MAX_PAGE_SIZE = 150
+export class QueryMomentsDto {
+  @Type(() => Number) @IsInt() @Min(1) @Max(10000) page: number = 1
+  @Type(() => Number) @IsInt() @Min(1) @Max(MOMENT_FEED_MAX_PAGE_SIZE) pageSize: number = 15
+  /** 键集游标 `<置顶 0|1>.<锚点动态编号>`：从锚点之后读取，追加时新发布或删除的动态不会造成重复或漏条 */
+  @IsOptional()
+  @Matches(/^[01]\.[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i)
+  after?: string
   @Transform(({ value }) => (value === 'false' ? false : value === 'true' ? true : value))
   @IsBoolean()
   pinnedFirst: boolean = true

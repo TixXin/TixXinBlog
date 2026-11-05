@@ -34,6 +34,10 @@ export const momentMessages = defineMessages({
     zh: '链接只允许完整 HTTP(S) 地址或本站媒体资源',
     en: 'Links must be full HTTP(S) URLs or media from this site',
   },
+  'moment.imageInsecure': {
+    zh: '图片地址需要使用 HTTPS，HTTP 图片会被浏览器拦截',
+    en: 'Image URLs must use HTTPS; browsers block HTTP images on this site',
+  },
   'moment.referenceExclusive': {
     zh: '站内文章和外链引用只能选择一种',
     en: 'Choose either a site post or an external link to reference, not both',

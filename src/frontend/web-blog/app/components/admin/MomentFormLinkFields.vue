@@ -43,6 +43,7 @@
       </select></label
     >
   </section>
+  <p v-if="value.linkedLink" class="moment-editor__hint">{{ $t('admin-content.momentForm.linkManualHint') }}</p>
   <div v-if="value.linkedLink" class="moment-editor__row">
     <label
       >{{ $t('admin-content.momentForm.linkUrl')
@@ -90,6 +91,16 @@
         @input="changeLink({ favicon: ($event.target as HTMLInputElement).value })"
     /></label>
   </div>
+  <p v-if="insecureLink" class="moment-editor__warning" role="status">
+    {{ $t('admin-content.momentForm.linkInsecure') }}
+  </p>
+  <section
+    v-if="value.linkedLink?.url && value.linkedLink.title"
+    :aria-label="$t('admin-content.momentForm.linkPreview')"
+  >
+    <h2 class="moment-editor__preview-title">{{ $t('admin-content.momentForm.linkPreview') }}</h2>
+    <MomentLinkCard :key="`${value.linkedLink.image}|${value.linkedLink.favicon}`" :link="value.linkedLink" />
+  </section>
 </template>
 <script setup lang="ts">
 import type { MomentEditable, MomentLinkedLink } from '~/features/moment/types'
@@ -103,6 +114,9 @@ const props = defineProps<{
 const emit = defineEmits<{ change: [value: Partial<MomentEditable>]; 'search-articles': [query: string] }>()
 const linkMode = ref('none'),
   articleSearch = ref('')
+const insecureLink = computed(() =>
+  [props.value.linkedLink?.image, props.value.linkedLink?.favicon].some((url) => url?.trim().startsWith('http:')),
+)
 function changeLink(value: Partial<MomentLinkedLink>) {
   emit('change', { linkedLink: { url: '', title: '', ...props.value.linkedLink, ...value } })
 }

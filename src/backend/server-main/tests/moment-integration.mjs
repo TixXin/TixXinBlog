@@ -120,6 +120,41 @@ try {
   assert.equal((await request(`/moments/${draft.id}/navigation`, 'GET', undefined, false)).status, 404)
   assert.equal((await ok('/moments?pageSize=1', 'GET', undefined, false)).items[0].id, first.id)
   assert.equal((await ok('/moments?pageSize=1&page=2', 'GET', undefined, false)).items[0].id, second.id)
+  // 键集游标：先读第一页，此后发布新动态，按页码读第二页会重复，按游标读不重复也不漏
+  const firstPage = await ok('/moments?pageSize=2', 'GET', undefined, false)
+  assert.deepEqual(
+    firstPage.items.map((item) => item.id),
+    [first.id, second.id],
+  )
+  assert.equal(firstPage.nextCursor, `0.${second.id}`)
+  const third = await ok('/admin/moments', 'POST', {
+    content: '翻页期间新发布的动态',
+    requestId: randomUUID(),
+    status: 'published',
+  })
+  assert.equal((await ok('/moments?pageSize=2&page=2', 'GET', undefined, false)).items[0].id, second.id)
+  const afterCursor = await ok(`/moments?pageSize=2&page=2&after=${firstPage.nextCursor}`, 'GET', undefined, false)
+  assert.deepEqual(afterCursor.items, [])
+  assert.equal(afterCursor.total, 3)
+  assert.deepEqual(
+    (await ok(`/moments?pageSize=5&after=1.${first.id}`, 'GET', undefined, false)).items.map((item) => item.id),
+    [third.id, second.id],
+  )
+  // 纯时间排序同样按游标续读；锚点不是公开动态时退回页码读取
+  assert.deepEqual(
+    (await ok(`/moments?pinnedFirst=false&pageSize=5&after=0.${third.id}`, 'GET', undefined, false)).items.map(
+      (item) => item.id,
+    ),
+    [second.id, first.id],
+  )
+  assert.equal(
+    (await ok(`/moments?pageSize=1&page=2&after=0.${draft.id}`, 'GET', undefined, false)).items[0].id,
+    third.id,
+  )
+  assert.equal((await request('/moments?after=1.not-a-uuid', 'GET', undefined, false)).status, 400)
+  assert.equal((await request('/moments?pageSize=151', 'GET', undefined, false)).status, 400)
+  assert.equal((await ok('/moments?pageSize=150', 'GET', undefined, false)).items.length, 3)
+  await ok(`/admin/moments/${third.id}?revision=${third.revision}`, 'DELETE')
   assert.equal((await ok('/moments?q=%25', 'GET', undefined, false)).total, 1)
   assert.equal((await ok('/moments?topic=' + encodeURIComponent('技术'), 'GET', undefined, false)).total, 1)
   // 日期筛选按站点时区（缺省 Asia/Shanghai）切日；直接截取 UTC 日期会在北京时间 0–8 点跑测试时查空

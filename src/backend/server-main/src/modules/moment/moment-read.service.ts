@@ -44,19 +44,52 @@ export class MomentReadService {
         ...(admin && 'status' in query && query.status && query.status !== 'all' ? [{ status: query.status }] : []),
       ],
     }
-    const [items, total] = await this.em.findAndCount(Moment, where, {
-      populate: ['linkedArticle'],
+    const pinnedFirst = query.pinnedFirst !== false
+    const keyset = await this.keyset(query.after, pinnedFirst)
+    const options = {
+      populate: ['linkedArticle'] as const,
       fields: [...LINKED_ARTICLE_FIELDS],
       orderBy: {
-        ...(query.pinnedFirst !== false ? { isPinned: 'desc' as const } : {}),
-        publishedAt: 'desc',
-        createdAt: 'desc',
-        id: 'desc',
+        ...(pinnedFirst ? { isPinned: 'desc' as const } : {}),
+        publishedAt: 'desc' as const,
+        createdAt: 'desc' as const,
+        id: 'desc' as const,
       },
       limit: query.pageSize,
-      offset: (query.page - 1) * query.pageSize,
-    })
-    return { items: await this.serialize(items, visitor, admin), total, page: query.page, pageSize: query.pageSize }
+    }
+    // 游标读取时总数仍按整个筛选范围统计，页码只回显
+    const [items, total] = keyset
+      ? await Promise.all([this.em.find(Moment, { $and: [where, keyset] }, options), this.em.count(Moment, where)])
+      : await this.em.findAndCount(Moment, where, { ...options, offset: (query.page - 1) * query.pageSize })
+    const last = items.at(-1)
+    return {
+      items: await this.serialize(items, visitor, admin),
+      total,
+      page: query.page,
+      pageSize: query.pageSize,
+      nextCursor: last ? `${last.isPinned ? 1 : 0}.${last.id}` : null,
+    }
+  }
+
+  /**
+   * 键集条件：排在锚点之后的动态。置顶状态取游标里的快照（锚点之后被取消置顶也不错位），
+   * 时间与编号从数据库按原精度比较（JS Date 只有毫秒，会漏掉同一毫秒内的动态）。
+   * 锚点不存在时返回 null，调用方退回按页码读取。
+   */
+  private async keyset(after: string | undefined, pinnedFirst: boolean): Promise<FilterQuery<Moment> | null> {
+    if (!after) return null
+    const [flag, id] = after.split('.') as [string, string]
+    const anchor = await this.em.count(Moment, { id, publishedAt: { $ne: null } })
+    if (!anchor) return null
+    const left = (alias: string) =>
+      pinnedFirst
+        ? `(${alias}.is_pinned, ${alias}.published_at, ${alias}.created_at, ${alias}.id)`
+        : `(${alias}.published_at, ${alias}.created_at, ${alias}.id)`
+    const right = pinnedFirst
+      ? '(select ?::boolean, m.published_at, m.created_at, m.id from moment m where m.id = ?)'
+      : '(select m.published_at, m.created_at, m.id from moment m where m.id = ?)'
+    const params = pinnedFirst ? [flag === '1', id] : [id]
+    return { [raw((alias) => `(${left(alias)} < ${right})`, params)]: true } as FilterQuery<Moment>
   }
 
   async require(id: string, admin = false) {

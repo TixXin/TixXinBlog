@@ -30,6 +30,7 @@
   <MomentLightBox
     v-if="lightBoxMounted"
     :images="images ?? []"
+    :alts="images?.map((_, idx) => imageAlts?.[idx] ?? '')"
     :current-index="lightBoxIndex"
     :visible="lightBoxVisible"
     @close="closeLightBox"

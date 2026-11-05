@@ -2,7 +2,8 @@
 import { plainToInstance } from 'class-transformer'
 import { validateSync } from 'class-validator'
 import { SaveMomentDto, QueryMomentsDto } from './moment.dto'
-import { momentUrl, momentValues, submissionHash } from './moment-values'
+import { BadRequestException } from '@nestjs/common'
+import { assertSecureEmbeds, momentUrl, momentValues, submissionHash } from './moment-values'
 
 describe('朋友圈输入与提交边界', () => {
   it.each(['content', 'images', 'topics', 'status', 'isPinned', 'revision', 'requestId'])(
@@ -72,7 +73,50 @@ describe('朋友圈输入与提交边界', () => {
     )
   })
   it('日期拒绝不存在的公历日，页面大小有上限', () => {
-    expect(validateSync(plainToInstance(QueryMomentsDto, { date: '2026-02-30', pageSize: 100 }))).toHaveLength(2)
-    expect(validateSync(plainToInstance(QueryMomentsDto, { date: '2026-02-28', pageSize: 15 }))).toHaveLength(0)
+    expect(validateSync(plainToInstance(QueryMomentsDto, { date: '2026-02-30', pageSize: 151 }))).toHaveLength(2)
+    expect(validateSync(plainToInstance(QueryMomentsDto, { date: '2026-02-28', pageSize: 150 }))).toHaveLength(0)
+    expect(
+      validateSync(plainToInstance(QueryMomentsDto, { after: '1.3b8ada68-c31e-458a-9bde-12cf04e2473e' })),
+    ).toHaveLength(0)
+    for (const after of ['2.3b8ada68-c31e-458a-9bde-12cf04e2473e', '1.not-a-uuid', '1;drop'])
+      expect(validateSync(plainToInstance(QueryMomentsDto, { after }))).toHaveLength(1)
+  })
+})
+
+describe('后台保存的内嵌图片只收 HTTPS', () => {
+  const media = '/api/v1/media/3b8ada68-c31e-458a-9bde-12cf04e2473e.webp'
+  it('新动态的 HTTP 配图、链接卡片图片或图标被拒绝，HTTPS 与本站媒体通过', () => {
+    expect(() => assertSecureEmbeds({ images: ['http://example.com/a.webp'] }, null)).toThrow(BadRequestException)
+    expect(() =>
+      assertSecureEmbeds(
+        { linkedLink: { url: 'http://example.com', title: 'x', image: 'http://example.com/i.png' } },
+        null,
+      ),
+    ).toThrow(BadRequestException)
+    expect(() =>
+      assertSecureEmbeds(
+        { linkedLink: { url: 'http://example.com', title: 'x', favicon: 'http://example.com/f.ico' } },
+        null,
+      ),
+    ).toThrow(BadRequestException)
+    // 链接目标本身可以是 HTTP，只限制页面里要加载的图片
+    expect(() =>
+      assertSecureEmbeds(
+        { images: ['https://example.com/a.webp', media], linkedLink: { url: 'http://example.com', title: 'x' } },
+        null,
+      ),
+    ).not.toThrow()
+  })
+  it('编辑时原记录已有的 HTTP 地址照常保留，新加的仍被拒绝', () => {
+    const existing = {
+      images: ['http://old.example.com/a.webp'],
+      linkedLink: { image: 'http://old.example.com/i.png' },
+    }
+    expect(() =>
+      assertSecureEmbeds({ images: ['http://old.example.com/a.webp', 'http://old.example.com/i.png'] }, existing),
+    ).not.toThrow()
+    expect(() =>
+      assertSecureEmbeds({ images: ['http://old.example.com/a.webp', 'http://new.example.com/b.webp'] }, existing),
+    ).toThrow(BadRequestException)
   })
 })

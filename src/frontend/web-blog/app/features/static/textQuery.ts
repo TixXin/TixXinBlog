@@ -6,7 +6,8 @@ import { staticFetchError, type LoadFrozen } from './staticFetch'
 const sourcePaths: Record<string, string> = { '/flashes/search': '/flashes' }
 /** 查询参数名与列表条目字段名不一致时的映射；未列出的参数按同名字段比较 */
 const fieldAliases: Record<string, string> = { featured: 'isFeatured', tag: 'tags', folder: 'folder' }
-const paging = new Set(['page', 'pageSize', 'limit', 'cursor', 'before'])
+// after 为朋友圈键集游标：全量回退按页码与页大小切片，结果与服务端游标读取一致
+const paging = new Set(['page', 'pageSize', 'limit', 'cursor', 'before', 'after'])
 /** 只影响排序或展示的参数，不参与过滤 */
 const ignored = new Set(['pinnedFirst', 'sort', 'order', 'mode', 'includeArchive', 'scope'])
 

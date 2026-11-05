@@ -124,6 +124,7 @@ describe('朋友圈列表与详情读取', () => {
       total: 8,
       page: 3,
       pageSize: 15,
+      nextCursor: null,
     })
     expect(em.findAndCount.mock.calls[0]![2].orderBy).toEqual({ publishedAt: 'desc', createdAt: 'desc', id: 'desc' })
     expect(connection.execute).not.toHaveBeenCalled()
