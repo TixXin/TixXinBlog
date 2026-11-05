@@ -6,6 +6,17 @@
 
 ## [未发布]
 
+## [0.5.2-beta.6] - 2026-11-06
+
+### 升级说明
+
+- 测试版，不标记为最新版本：`install.sh` 与 `tixxin update` 默认仍取 0.5.1，需显式执行 `tixxin update 0.5.2-beta.6`
+- 环境文件与编排不变，不含数据库迁移，内容包仍为 v16
+
+### 变更
+
+- 友链页改版：卡片改为左侧统一尺寸图标、右侧名称/两行描述/域名的横向紧凑布局，整张卡片可点击在新标签页打开；列数按主栏宽度自动排列；推荐筛选由下拉框改为“全部 / 推荐 / 其他”分段按钮，与结果数同行；页头新增“申请友链”，直接跳到申请区
+
 ## [0.5.2-beta.5] - 2026-11-06
 
 ### 升级说明
@@ -369,7 +380,8 @@
 - 无多语言支持，界面与内容均为中文
 - 定位为单博主博客，不计划扩展多租户、访客账号或协作能力
 
-[未发布]: https://github.com/TixXin/TixXinBlog/compare/v0.5.2-beta.5...HEAD
+[未发布]: https://github.com/TixXin/TixXinBlog/compare/v0.5.2-beta.6...HEAD
+[0.5.2-beta.6]: https://github.com/TixXin/TixXinBlog/compare/v0.5.2-beta.5...v0.5.2-beta.6
 [0.5.2-beta.5]: https://github.com/TixXin/TixXinBlog/compare/v0.5.2-beta.4...v0.5.2-beta.5
 [0.5.2-beta.4]: https://github.com/TixXin/TixXinBlog/compare/v0.5.2-beta.3...v0.5.2-beta.4
 [0.5.2-beta.3]: https://github.com/TixXin/TixXinBlog/compare/v0.5.2-beta.2...v0.5.2-beta.3
