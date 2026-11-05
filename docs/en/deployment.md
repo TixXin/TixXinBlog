@@ -120,7 +120,7 @@ The application consists of four images. They must be built from the same commit
 
 | Image     | Build method                                               | Purpose                                                                                                                                           |
 | --------- | ---------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
-| web       | `src/frontend/web-blog/Dockerfile` (`runtime`)                              | Nuxt frontend and same-origin API gateway                                                                                                         |
+| web       | `src/frontend/web-blog/Dockerfile` (`runtime`)             | Nuxt frontend and same-origin API gateway                                                                                                         |
 | api       | `runtime` target in `src/backend/server-main/Dockerfile`   | Starts HTTP only                                                                                                                                  |
 | migration | `migration` target in `src/backend/server-main/Dockerfile` | Runs formal migrations only                                                                                                                       |
 | worker    | `worker` target in `src/backend/server-main/Dockerfile`    | Includes production dependencies, maintenance scripts, and the PostgreSQL 16 client; running the image directly performs a read-only status check |

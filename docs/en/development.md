@@ -134,6 +134,8 @@ Development samples must cover common states, pagination, relationships, recent 
 
 The representative platform subscription sample set is `subscription-v1` (15 subscriptions and 1 managed icon with source and license information). It covers seven currencies, five billing cycles, both states, price history, and recent dates. Amounts are representative development values only; they do not describe the blogger's actual spending or vendors' current prices. Preview with `corepack pnpm db:dev seed-data --dataset subscription-v1`, then follow this section's backup and target-confirmation procedure to write. Vendor responses for the icon proxy are controlled by isolated tests; preparing samples does not make third-party network requests.
 
+The representative visit statistics sample set is `traffic-v1`: 30 days of daily summaries up to yesterday (in the site time zone), with weekday and weekend variation, one spike from a shared link, popular pages (home, archive, Moments, links and the three latest public posts), direct visits and external referrers, and desktop and mobile devices. Each day's views equal the sum over pages, and each day's visitors equal the sum over devices. Dates that already have real statistics are skipped and today is never written, so the samples never mix with live counts. The figures are representative development values; preview with `corepack pnpm db:dev seed-data --dataset traffic-v1`.
+
 Repeated seeding does not overwrite user edits, rewrite dates, or recreate deleted records. Targeted cleanup protects user changes, external interactions, relationships across datasets, and historical media references; records with unknown relationships are retained. The ownership ledger remains in place to prevent later seeding from recreating deleted content.
 
 When sample definitions change and an already seeded database needs to catch up, ordinary cleanup followed by seeding will not work: the ownership ledger survives cleanup, so seeding treats these records as user-deleted and skips them. In this case, use `remove-data --dataset <dataset> --forget-ownership` to clear ownership entries that no longer have corresponding records while cleaning up; the dataset can then be seeded again. This also recreates samples that were genuinely deleted earlier, so use this switch only for rebuilding, not everyday cleanup. Ownership entries for records that still exist are retained, and user-edited content is not overwritten.
@@ -304,16 +306,17 @@ corepack pnpm --filter server-main test:integration
 
 Choose checks that match the changes. Database, migration, and write/recovery behavior cannot be verified through frontend unit tests alone.
 
-| Scope                                          | Command                                                                                                       |
-| ---------------------------------------------- | ------------------------------------------------------------------------------------------------------------- |
-| Startup lifecycle                              | `corepack pnpm test:dev`                                                                                      |
-| Isolated Nuxt/Nest cold startup and reuse      | `corepack pnpm test:dev:integration`                                                                          |
-| PostgreSQL startup ownership                   | `corepack pnpm test:dev:postgres`                                                                             |
-| Pinned-version Nuxt patches                    | `corepack pnpm test:nuxt-patches`                                                                             |
-| Subscription business logic and content import | Backend `test:subscriptions`; shared calculations: `corepack pnpm test:subscription-domain`                   |
-| Database tools and sample ownership            | Backend `test:database-dev`, `test:development-data`                                                          |
-| Backups and runtime tasks                      | Backend `test:backup-integrity`, `test:backup-restore`, `test:operations`                                     |
-| Browser                                        | `corepack pnpm test:e2e`, or `corepack pnpm test:e2e:run` after production builds of both sides are available |
+| Scope                                             | Command                                                                                                                            |
+| ------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
+| Startup lifecycle                                 | `corepack pnpm test:dev`                                                                                                           |
+| Isolated Nuxt/Nest cold startup and reuse         | `corepack pnpm test:dev:integration`                                                                                               |
+| PostgreSQL startup ownership                      | `corepack pnpm test:dev:postgres`                                                                                                  |
+| Static publishing build and hosting configuration | `corepack pnpm test:dev`; for the full path, `corepack pnpm static:build`, see [Static publishing](../static-publish.md) (Chinese) |
+| Pinned-version Nuxt patches                       | `corepack pnpm test:nuxt-patches`                                                                                                  |
+| Subscription business logic and content import    | Backend `test:subscriptions`; shared calculations: `corepack pnpm test:subscription-domain`                                        |
+| Database tools and sample ownership               | Backend `test:database-dev`, `test:development-data`                                                                               |
+| Backups and runtime tasks                         | Backend `test:backup-integrity`, `test:backup-restore`, `test:operations`                                                          |
+| Browser                                           | `corepack pnpm test:e2e`, or `corepack pnpm test:e2e:run` after production builds of both sides are available                      |
 
 The browser runner requires a PostgreSQL user that can create temporary databases. Select the scope by spec and browser:
 
