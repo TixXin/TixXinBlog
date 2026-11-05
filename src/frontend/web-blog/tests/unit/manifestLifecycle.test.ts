@@ -9,9 +9,15 @@ import { afterEach, beforeEach, expect, it, vi } from 'vitest'
 const require = createRequire(import.meta.url)
 const pluginPath = new URL('./plugins/payload.client.js', pathToFileURL(require.resolve('nuxt/app')))
 // 只替换模块依赖；运行已安装且经过 pnpm 补丁的原插件，不复制被测定时器实现。
-const source = readFileSync(pluginPath, 'utf8')
-  .replace(/^import .*;\r?\n/gm, '')
-  .replace('export { plugin as default };', 'return plugin;')
+// Nuxt 4.6 起插件改用 internal/prefetch-util 判断网络；一并执行已安装的原实现，让它读取下面注入的 navigator。
+const prefetchUtil = readFileSync(new URL('../internal/prefetch-util.js', pluginPath), 'utf8')
+  .replace(/^export \{.*\};?\r?\n?/m, '')
+  .replaceAll('import.meta.server', 'false')
+const source =
+  prefetchUtil +
+  readFileSync(pluginPath, 'utf8')
+    .replace(/^import .*;\r?\n/gm, '')
+    .replace('export { plugin as default };', 'return plugin;')
 const loadPlugin = new Function(
   'defineNuxtPlugin',
   'useRouter',
@@ -25,6 +31,7 @@ const loadPlugin = new Function(
   'prefetchPreloadTags',
   'purgeCachedData',
   'withoutFragment',
+  'usePrefetchScheduler',
   'window',
   'navigator',
   'setTimeout',
@@ -53,6 +60,7 @@ function setup(effectiveType = '4g') {
     false,
     true,
     (value: string) => value.split('#')[0],
+    () => ({ schedule: vi.fn() }),
     browser,
     { connection: { effectiveType } },
     setTimeout,

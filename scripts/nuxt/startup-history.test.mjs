@@ -160,6 +160,15 @@ function harness({
     _routes: [],
     handleHotUpdate: () => {},
     getRouteRules: () => ({}),
+    // Nuxt 4.6 新增依赖：关闭服务端路径回退与追踪，路由规则不禁用脚本
+    serverPathFallback: false,
+    tracingChannelNuxt: false,
+    _routeRulesMatcher: () => ({}),
+    withBase: (path) => path,
+    NavigationFailureType: { aborted: 4, cancelled: 8 },
+    isNavigationFailure: () => false,
+    createErrorFromThrown: (value) => value,
+    traceAsync: (_name, _data, callback) => callback(),
   }
   const { plugin, createCurrentLocation } = new Function(...Object.keys(dependencies), source)(
     ...Object.values(dependencies),

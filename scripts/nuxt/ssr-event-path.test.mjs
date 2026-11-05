@@ -9,15 +9,17 @@ const require = createRequire(new URL('../../src/frontend/web-blog/package.json'
 const nuxtRequire = createRequire(require.resolve('nuxt/package.json'))
 const serverPackage = nuxtRequire.resolve('@nuxt/nitro-server/package.json')
 const serverRequire = createRequire(serverPackage)
-const { decodePath, encodePath } = serverRequire('ufo')
-// 只截取函数本体执行；函数来自实际安装的补丁产物，不另写一份实现。
-const source = readFileSync(join(dirname(serverPackage), 'dist/runtime/utils/renderer/app.mjs'), 'utf8')
-const body = source.match(/function encodeEventPath\(path\) \{[\s\S]*?\n\}/)?.[0]
-assert.ok(body, '未找到 encodeEventPath，升级 Nuxt 后需重新核对补丁')
-const encodeEventPath = new Function('decodePath', 'encodePath', `${body}\nreturn encodeEventPath`)(
-  decodePath,
-  encodePath,
+const { decodePath } = serverRequire('ufo')
+// 只截取编码函数及其正则执行；代码来自实际安装的补丁产物，不另写一份实现。
+const source = readFileSync(join(dirname(serverPackage), 'dist/runtime/utils/event.mjs'), 'utf8')
+const start = source.indexOf('const ENC_PIPE_RE')
+const end = source.match(/function encodeVueRouterPath\(path\) \{[\s\S]*?\n\}/)
+assert.ok(
+  start !== -1 && end && source.includes('decodePath(path'),
+  '未找到打过补丁的 encodeEventPath，升级 Nuxt 后需重新核对补丁',
 )
+const body = source.slice(start, end.index + end[0].length)
+const encodeEventPath = new Function('decodePath', `${body}\nreturn encodeEventPath`)(decodePath)
 
 test('已编码的中文路径不再二次编码，查询串原样保留', () => {
   assert.equal(encodeEventPath('/tags/%E7%94%9F%E6%B4%BB'), '/tags/%E7%94%9F%E6%B4%BB')

@@ -1,8 +1,8 @@
 diff --git a/dist/runtime-core.cjs.js b/dist/runtime-core.cjs.js
-index 08899205dfe52109b460e9b8fc9847eb5b3241f7..36499fc2cdf40528e9a6c76bd3cf75ddcd366e8b 100644
+index 22ac138660bbb14a381fde29e0d4a7ffbe33bd6f..c394e9b3a21216ba848de587a1acd3a3c312a65a 100644
 --- a/dist/runtime-core.cjs.js
 +++ b/dist/runtime-core.cjs.js
-@@ -2201,7 +2201,7 @@ Server rendered element contains more child nodes than client vdom.`
+@@ -2317,7 +2317,7 @@ Server rendered element contains more child nodes than client vdom.`
              }
              if (forcePatch && (key.endsWith("value") || key === "indeterminate") || shared.isOn(key) && !shared.isReservedProp(key) || // force hydrate v-bind with .prop modifiers
              key[0] === "." || isCustomElement && !shared.isReservedProp(key) || dynamicProps && dynamicProps.includes(key)) {
@@ -11,7 +11,7 @@ index 08899205dfe52109b460e9b8fc9847eb5b3241f7..36499fc2cdf40528e9a6c76bd3cf75dd
                  continue;
                }
                patchProp(el, key, null, props[key], namespace, parentComponent);
-@@ -2387,6 +2387,15 @@ Server rendered element contains fewer child nodes than client vdom.`
+@@ -2503,6 +2503,15 @@ Server rendered element contains fewer child nodes than client vdom.`
    return [hydrate, hydrateNode];
  }
  const resourceProps = /* @__PURE__ */ new Set(["src", "srcset", "href", "poster"]);
@@ -27,21 +27,21 @@ index 08899205dfe52109b460e9b8fc9847eb5b3241f7..36499fc2cdf40528e9a6c76bd3cf75dd
  function isUnchangedResourceProp(el, key, clientValue) {
    if (!resourceProps.has(key)) {
      return false;
-@@ -6243,6 +6252,9 @@ function baseCreateRenderer(options, createHydrationFns) {
-               queuePostRenderEffect(() => {
-                 if (!instance.isUnmounted) update();
-               }, parentSuspense);
+@@ -6410,6 +6419,9 @@ function baseCreateRenderer(options, createHydrationFns) {
+               };
+               retry.flags = 16 | 32;
+               queuePostRenderEffect(retry, parentSuspense);
 +            }, (error) => {
 +              // Suspense 已统一报告 setup 错误，辅助更新等待不能再制造未处理的拒绝分支。
-+              if (!nonHydratedAsyncRoot.suspense) handleError(error, nonHydratedAsyncRoot, 0);
++              if (!unresolvedAsyncRoot.suspense) handleError(error, unresolvedAsyncRoot, 0);
              });
              return;
            }
 diff --git a/dist/runtime-core.cjs.prod.js b/dist/runtime-core.cjs.prod.js
-index 8b2db9c0e26d3d18bf71bbf0922b61c555018708..0dba8b6cc97386d125289c1b960c5ba6ef77106d 100644
+index 0306b53f39f4959b19e3192bc4162731c9368331..c59449c64ebe8c677e45e606250dc988aee98c42 100644
 --- a/dist/runtime-core.cjs.prod.js
 +++ b/dist/runtime-core.cjs.prod.js
-@@ -1663,7 +1663,7 @@ function createHydrationFunctions(rendererInternals) {
+@@ -1761,7 +1761,7 @@ function createHydrationFunctions(rendererInternals) {
            for (const key in props) {
              if (forcePatch && (key.endsWith("value") || key === "indeterminate") || shared.isOn(key) && !shared.isReservedProp(key) || // force hydrate v-bind with .prop modifiers
              key[0] === "." || isCustomElement && !shared.isReservedProp(key) || dynamicProps && dynamicProps.includes(key)) {
@@ -50,7 +50,7 @@ index 8b2db9c0e26d3d18bf71bbf0922b61c555018708..0dba8b6cc97386d125289c1b960c5ba6
                  continue;
                }
                patchProp(el, key, null, props[key], namespace, parentComponent);
-@@ -1845,6 +1845,15 @@ function createHydrationFunctions(rendererInternals) {
+@@ -1943,6 +1943,15 @@ function createHydrationFunctions(rendererInternals) {
    return [hydrate, hydrateNode];
  }
  const resourceProps = /* @__PURE__ */ new Set(["src", "srcset", "href", "poster"]);
@@ -66,21 +66,21 @@ index 8b2db9c0e26d3d18bf71bbf0922b61c555018708..0dba8b6cc97386d125289c1b960c5ba6
  function isUnchangedResourceProp(el, key, clientValue) {
    if (!resourceProps.has(key)) {
      return false;
-@@ -4783,6 +4792,9 @@ function baseCreateRenderer(options, createHydrationFns) {
-               queuePostRenderEffect(() => {
-                 if (!instance.isUnmounted) update();
-               }, parentSuspense);
+@@ -4932,6 +4941,9 @@ function baseCreateRenderer(options, createHydrationFns) {
+               };
+               retry.flags = 16 | 32;
+               queuePostRenderEffect(retry, parentSuspense);
 +            }, (error) => {
 +              // Suspense 已统一报告 setup 错误，辅助更新等待不能再制造未处理的拒绝分支。
-+              if (!nonHydratedAsyncRoot.suspense) handleError(error, nonHydratedAsyncRoot, 0);
++              if (!unresolvedAsyncRoot.suspense) handleError(error, unresolvedAsyncRoot, 0);
              });
              return;
            }
 diff --git a/dist/runtime-core.esm-bundler.js b/dist/runtime-core.esm-bundler.js
-index f0905f8afe50421feed03b208b19afb26e4bbb73..f24c03fc763a4f3687055b6ba92afebaef1fabd9 100644
+index b1e3a1c30f54a82cf63b655f89125622412044a4..cde69d11f9ac18ff1734a1faec136e19e901f846 100644
 --- a/dist/runtime-core.esm-bundler.js
 +++ b/dist/runtime-core.esm-bundler.js
-@@ -2206,7 +2206,7 @@ Server rendered element contains more child nodes than client vdom.`
+@@ -2322,7 +2322,7 @@ Server rendered element contains more child nodes than client vdom.`
              }
              if (forcePatch && (key.endsWith("value") || key === "indeterminate") || isOn(key) && !isReservedProp(key) || // force hydrate v-bind with .prop modifiers
              key[0] === "." || isCustomElement && !isReservedProp(key) || dynamicProps && dynamicProps.includes(key)) {
@@ -89,7 +89,7 @@ index f0905f8afe50421feed03b208b19afb26e4bbb73..f24c03fc763a4f3687055b6ba92afeba
                  continue;
                }
                patchProp(el, key, null, props[key], namespace, parentComponent);
-@@ -2403,6 +2403,15 @@ Server rendered element contains fewer child nodes than client vdom.`
+@@ -2519,6 +2519,15 @@ Server rendered element contains fewer child nodes than client vdom.`
    return [hydrate, hydrateNode];
  }
  const resourceProps = /* @__PURE__ */ new Set(["src", "srcset", "href", "poster"]);
@@ -105,13 +105,13 @@ index f0905f8afe50421feed03b208b19afb26e4bbb73..f24c03fc763a4f3687055b6ba92afeba
  function isUnchangedResourceProp(el, key, clientValue) {
    if (!resourceProps.has(key)) {
      return false;
-@@ -6304,6 +6313,9 @@ function baseCreateRenderer(options, createHydrationFns) {
-               queuePostRenderEffect(() => {
-                 if (!instance.isUnmounted) update();
-               }, parentSuspense);
+@@ -6471,6 +6480,9 @@ function baseCreateRenderer(options, createHydrationFns) {
+               };
+               retry.flags = 16 | 32;
+               queuePostRenderEffect(retry, parentSuspense);
 +            }, (error) => {
 +              // Suspense 已统一报告 setup 错误，辅助更新等待不能再制造未处理的拒绝分支。
-+              if (!nonHydratedAsyncRoot.suspense) handleError(error, nonHydratedAsyncRoot, 0);
++              if (!unresolvedAsyncRoot.suspense) handleError(error, unresolvedAsyncRoot, 0);
              });
              return;
            }

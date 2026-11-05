@@ -1,11 +1,11 @@
 diff --git a/dist/app/plugins/payload.client.js b/dist/app/plugins/payload.client.js
-index 98e0ece07aac4cb2f98955abaf2afb40456f7551..990041c1745282ad8d6ee9a8031bfa62fda40a64 100644
+index 3bed0ef7456b97074bd3c13ea26a444ad105798b..b2254b394ea3628e29aa8797090c9707cc589a0f 100644
 --- a/dist/app/plugins/payload.client.js
 +++ b/dist/app/plugins/payload.client.js
-@@ -15,6 +15,52 @@ const plugin = /* @__PURE__ */ defineNuxtPlugin({
- 	setup(nuxtApp) {
+@@ -57,6 +57,52 @@ const plugin = /* @__PURE__ */ defineNuxtPlugin({
  		const staticKeysToRemove = /* @__PURE__ */ new Set();
  		const router = useRouter();
+ 		const { schedule } = usePrefetchScheduler(nuxtApp);
 +		let manifestTimer;
 +		let manifestReady = false;
 +		let manifestPaused = false;
@@ -27,7 +27,7 @@ index 98e0ece07aac4cb2f98955abaf2afb40456f7551..990041c1745282ad8d6ee9a8031bfa62
 +		function scheduleManifestPrefetch() {
 +			clearTimeout(manifestTimer);
 +			manifestTimer = void 0;
-+			if (appManifest && manifestReady && !manifestPaused && !disposed && navigator.connection?.effectiveType !== "slow-2g") manifestTimer = setTimeout(() => {
++			if (appManifest && manifestReady && !manifestPaused && !disposed && canPrefetch()) manifestTimer = setTimeout(() => {
 +				manifestTimer = void 0;
 +				syncBeforeUnloadGuard();
 +				if (manifestPaused || disposed) return;
@@ -53,32 +53,32 @@ index 98e0ece07aac4cb2f98955abaf2afb40456f7551..990041c1745282ad8d6ee9a8031bfa62
 +			});
 +		}
  		if (prefetchPreloadTags) router.afterEach(() => {
- 			for (const entry of forwardedPrefetchEntries.values()) entry.dispose();
- 			forwardedPrefetchEntries.clear();
-@@ -52,7 +98,8 @@ const plugin = /* @__PURE__ */ defineNuxtPlugin({
- 					forwardedPrefetchEntries.set(pathname, entry);
- 				}
+ 			for (const entry of [...forwardedHintEntries]) disposeHint(entry);
+ 			forwardedHintHrefs.clear();
+@@ -126,7 +172,8 @@ const plugin = /* @__PURE__ */ defineNuxtPlugin({
  			});
--			if (appManifest && navigator.connection?.effectiveType !== "slow-2g") setTimeout(getAppManifest, 1e3);
+ 		});
+ 		onNuxtReady(() => {
+-			if (appManifest && canPrefetch()) setTimeout(getAppManifest, 1e3);
 +			manifestReady = true;
 +			scheduleManifestPrefetch();
  		});
  	}
  });
 diff --git a/dist/pages/runtime/plugins/router.js b/dist/pages/runtime/plugins/router.js
-index 8a3025bfe8a0bf35d9903a5cc2470cd49490bcd8..57287f971fd1174ee9cd9b77862fad1d73b1181c 100644
+index 5aaf8dae2a763856524d82534675c590f95fb45d..8ea462700a09b32db106fb74b9445e5d836425a9 100644
 --- a/dist/pages/runtime/plugins/router.js
 +++ b/dist/pages/runtime/plugins/router.js
-@@ -1,7 +1,7 @@
- import { navigationDiagnostics } from "../../../app/diagnostics/navigation.js";
+@@ -2,7 +2,7 @@ import { navigationDiagnostics } from "../../../app/diagnostics/navigation.js";
  import { generateRouteKey, toArray } from "../utils.js";
  import { isReadonly, reactive, shallowReactive, shallowRef } from "vue";
--import { isSamePath, withoutBase } from "ufo";
-+import { isSamePath, parseURL, withoutBase } from "ufo";
+ import { serverPathFallback, tracingChannelNuxt } from "#build/nuxt.config.mjs";
+-import { isSamePath, withBase, withoutBase } from "ufo";
++import { isSamePath, parseURL, withBase, withoutBase } from "ufo";
  import { defineNuxtPlugin, useRuntimeConfig } from "#app/nuxt";
+ import _routeRulesMatcher from "#build/route-rules.mjs";
  import routerOptions, { hashMode } from "#build/router.options.mjs";
- import { pageIslandRoutes } from "#build/components.islands.mjs";
-@@ -22,7 +22,8 @@ function createCurrentLocation(base, location, renderedPath) {
+@@ -26,7 +26,8 @@ function createCurrentLocation(base, location, renderedPath) {
  		return withoutBase(pathFromHash, "");
  	}
  	const displayedPath = withoutBase(pathname, base);
@@ -88,7 +88,7 @@ index 8a3025bfe8a0bf35d9903a5cc2470cd49490bcd8..57287f971fd1174ee9cd9b77862fad1d
  	return path + (path.includes("?") ? "" : search) + hash;
  }
  const plugin = defineNuxtPlugin({
-@@ -31,6 +32,19 @@ const plugin = defineNuxtPlugin({
+@@ -35,6 +36,19 @@ const plugin = defineNuxtPlugin({
  	async setup(nuxtApp) {
  		let routerBase = useRuntimeConfig().app.baseURL;
  		if (hashMode && !routerBase.includes("#")) routerBase += "#";
@@ -108,7 +108,7 @@ index 8a3025bfe8a0bf35d9903a5cc2470cd49490bcd8..57287f971fd1174ee9cd9b77862fad1d
  		const history = routerOptions.history?.(routerBase) ?? (import.meta.client ? hashMode ? createWebHashHistory(routerBase) : createWebHistory(routerBase) : createMemoryHistory(routerBase));
  		const routes = routerOptions.routes ? await routerOptions.routes(_routes) ?? _routes : _routes;
  		let startPosition;
-@@ -198,8 +212,10 @@ const plugin = defineNuxtPlugin({
+@@ -237,8 +251,10 @@ const plugin = defineNuxtPlugin({
  			})));
  		});
  		nuxtApp.hooks.hookOnce("app:created", async () => {
@@ -120,21 +120,27 @@ index 8a3025bfe8a0bf35d9903a5cc2470cd49490bcd8..57287f971fd1174ee9cd9b77862fad1d
  				if (import.meta.client && router.currentRoute.value.fullPath !== prePluginRoutePath) {} else if (hasDeferredRoute) {
  					const payloadRoute = router.resolve(nuxtApp.payload.path);
  					if ("name" in payloadRoute) payloadRoute.name = void 0;
-@@ -208,24 +224,34 @@ const plugin = defineNuxtPlugin({
+@@ -247,27 +263,37 @@ const plugin = defineNuxtPlugin({
  						force: true
  					});
  					const restoreDeferredRoute = () => {
 +						stopNativeHistory();
  						if (!nuxtApp["~restoreDeferredRoute"]) return;
  						nuxtApp["~restoreDeferredRoute"] = void 0;
--						router.currentRoute.value = router.resolve(initialURL);
+-						const currentRoute = router.currentRoute;
+-						const restoredRoute = router.resolve(initialURL);
+-						if (restoredRoute.matched.at(-1) === currentRoute.value.matched.at(-1)) restoredRoute.meta = currentRoute.value.meta;
+-						currentRoute.value = restoredRoute;
 -						syncCurrentRoute();
 +						// 已完成的新导航优先；尚未由路由器接管的 popstate 仍须使用最新原生目标。
 +						if (router.currentRoute.value.fullPath !== payloadRoute.fullPath) return;
 +						const restoreRoute = nativeHistoryURL === void 0 ? startupRoute : router.resolve(nativeHistoryURL);
 +						if ("name" in restoreRoute) restoreRoute.name = void 0;
 +						if (nativeHistoryURL === void 0) {
-+							router.currentRoute.value = router.resolve(initialURL);
++							const currentRoute = router.currentRoute;
++							const restoredRoute = router.resolve(initialURL);
++							if (restoredRoute.matched.at(-1) === currentRoute.value.matched.at(-1)) restoredRoute.meta = currentRoute.value.meta;
++							currentRoute.value = restoredRoute;
 +							syncCurrentRoute();
 +						}
  						router.replace({

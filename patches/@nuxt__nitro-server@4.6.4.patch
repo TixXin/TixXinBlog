@@ -1,0 +1,49 @@
+diff --git a/dist/index.mjs b/dist/index.mjs
+index 8d28274a692ee22789d93a87f70ee1c46a92b186..68800d5f9065ec4e2aa1ddf2f9be1482af3a4c1a 100644
+--- a/dist/index.mjs
++++ b/dist/index.mjs
+@@ -7,7 +7,7 @@ import { randomUUID } from "node:crypto";
+ import { addRoute, createRouter, findAllRoutes, routeNodeKeys } from "rou3";
+ import { compileRouterToString } from "rou3/compiler";
+ import { dirname, isAbsolute, join, normalize, relative, resolve } from "pathe";
+-import { joinURL, withTrailingSlash, withoutTrailingSlash } from "ufo";
++import { decodePath, joinURL, withTrailingSlash, withoutTrailingSlash } from "ufo";
+ import nuxtPkg from "nuxt/package.json" with { type: "json" };
+ import { build, copyPublicAssets, createDevServer, createNitro, prepare, prerender, writeTypes } from "nitropack";
+ import { addPlugin, addTemplate, addTypeTemplate, addVitePlugin, ensureDependencyInstalled, findPath, getAddDependencyCommand, getDirectory, getLayerDirectories, logger, resolveAlias, resolveIgnorePatterns, resolveNuxtModule, resolveTypePaths } from "@nuxt/kit";
+@@ -515,9 +515,10 @@ const ENC_ENC_SLASH_RE = /%252F/gi;
+ const HASH_RE = /#/g;
+ const QUESTION_MARK_RE = /\?/g;
+ function encodeEventPath(path) {
++	// h3 1.x 的 event.path 已是百分号编码，先解码再编码，避免 vue-router 拿到二次编码的参数
+ 	const queryIndex = path.indexOf("?");
+-	if (queryIndex === -1) return encodeVueRouterPath(path);
+-	return encodeVueRouterPath(path.slice(0, queryIndex)) + path.slice(queryIndex);
++	if (queryIndex === -1) return encodeVueRouterPath(decodePath(path));
++	return encodeVueRouterPath(decodePath(path.slice(0, queryIndex))) + path.slice(queryIndex);
+ }
+ function encodeVueRouterPath(path) {
+ 	return encodeURI(path).replace(ENC_PIPE_RE, "|").replace(ENC_BRACKET_OPEN_RE, "[").replace(ENC_BRACKET_CLOSE_RE, "]").replace(HASH_RE, "%23").replace(QUESTION_MARK_RE, "%3F").replace(ENC_ENC_SLASH_RE, "%2F");
+diff --git a/dist/runtime/utils/event.mjs b/dist/runtime/utils/event.mjs
+index 36293889827459ebded7ebd4f8361f27707b9983..1d29a2b74c8877bf72184d4f7ae5e38dac2bdad2 100644
+--- a/dist/runtime/utils/event.mjs
++++ b/dist/runtime/utils/event.mjs
+@@ -1,4 +1,5 @@
+ import { createError, getRequestHost, getRequestProtocol, getRequestURL, readRawBody } from "h3";
++import { decodePath } from "ufo";
+ // src/runtime/utils/event.ts
+ const ENC_PIPE_RE = /%7C/g;
+ const ENC_BRACKET_OPEN_RE = /%5B/g;
+@@ -8,9 +9,10 @@ const HASH_RE = /#/g;
+ const QUESTION_MARK_RE = /\?/g;
+ const DOT_SEGMENT_RE = /(?:^|\/)\.{1,2}(?:\/|$)/;
+ function encodeEventPath(path) {
++	// h3 1.x 的 event.path 已是百分号编码，先解码再编码，避免 vue-router 拿到二次编码的参数
+ 	const queryIndex = path.indexOf("?");
+-	if (queryIndex === -1) return encodeVueRouterPath(path);
+-	return encodeVueRouterPath(path.slice(0, queryIndex)) + path.slice(queryIndex);
++	if (queryIndex === -1) return encodeVueRouterPath(decodePath(path));
++	return encodeVueRouterPath(decodePath(path.slice(0, queryIndex))) + path.slice(queryIndex);
+ }
+ function encodeVueRouterPath(path) {
+ 	return encodeURI(path).replace(ENC_PIPE_RE, "|").replace(ENC_BRACKET_OPEN_RE, "[").replace(ENC_BRACKET_CLOSE_RE, "]").replace(HASH_RE, "%23").replace(QUESTION_MARK_RE, "%3F").replace(ENC_ENC_SLASH_RE, "%2F");
