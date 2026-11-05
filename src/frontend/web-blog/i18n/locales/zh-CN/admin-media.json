@@ -796,6 +796,30 @@
       "removed": "订阅已删除。",
       "mutateFailed": "操作失败",
       "conflictSuffix": "；请重新读取当前版本后再操作。"
+    },
+    "release": {
+      "beta": "测试版",
+      "title": "版本与更新",
+      "close": "关闭",
+      "development": "开发版",
+      "label": "当前版本 {current}，查看版本列表",
+      "labelUpdate": "当前版本 {current}，有新版本 {latest}，查看版本列表",
+      "loading": "正在检查新版本…",
+      "failed": "暂时无法从 GitHub 获取版本列表，下面是上次成功检查的结果。",
+      "noVersion": "当前是本机开发环境，没有注入发布版本号。",
+      "available": "有新版本 v{latest} 可以升级。",
+      "upToDate": "已是当前通道的最新版本。",
+      "empty": "暂无版本信息。",
+      "refresh": "重新检查",
+      "checkedAt": "上次检查：{time}",
+      "current": "当前",
+      "latest": "最新",
+      "migration": "含数据库迁移",
+      "commandHint": "在服务器上执行下面的命令升级；会先自动做完整备份，失败时按提示回退。手动发布（release.mjs）的站点见部署文档。",
+      "copy": "复制",
+      "copied": "已复制",
+      "copyFailed": "复制失败，请手动选中命令复制",
+      "viewOnGithub": "在 GitHub 查看"
     }
   }
 }

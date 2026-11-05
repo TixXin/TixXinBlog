@@ -71,6 +71,12 @@ services:
 
 Run `sudo tixxin restart` to apply it (this recreates the API, the frontend, and a running worker), then check with `docker stats`. The database is not recreated by `restart`, and limiting it is not recommended; if you must, run `tixxin backup` before recreating it with `docker compose` in the install directory. A memory limit that is too low makes the service get killed and restart repeatedly, so leave headroom above the actual usage shown by `docker stats`. The override file can change any service setting; use it only for local adjustments such as resource limits, not for images, ports, or networks.
 
+#### Version Notice in the Admin
+
+The admin header shows the running version (from `RELEASE_VERSION`). Clicking it opens the version list: the current and latest versions, release notes, whether a release includes database migrations, and for newer versions the upgrade command (`sudo tixxin update <version>`) to copy and run on the server. Stable sites are notified only of newer stable releases; beta sites are notified of both beta and stable releases.
+
+The frontend server queries the GitHub Releases API and caches the result for 6 hours on success and 30 minutes on failure; the browser only calls the site's own `/api/releases.json`. If the server cannot reach GitHub, only the current version is shown. Forks can set `NUXT_RELEASE_REPOSITORY=<owner>/<repo>` on the frontend container. The admin does not run upgrades itself.
+
 #### Constraints for a panel app package
 
 The project does not provide a panel app store package. If one is built later, also note (based on the 1Panel v2.3.2 source and local simulation):

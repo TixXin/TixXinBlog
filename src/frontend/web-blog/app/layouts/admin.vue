@@ -17,7 +17,7 @@
         {{ t('admin-system.layout.jumpToActions') }}<Icon name="lucide:arrow-down-to-line" />
       </button>
       <ClientOnly
-        ><button
+        ><AdminReleaseBadge v-if="isLoggedIn && !isLogin && !isSetup" /><button
           type="button"
           class="admin-header__icon"
           :aria-label="t('admin-system.layout.toggleColor')"

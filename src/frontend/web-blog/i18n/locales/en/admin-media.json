@@ -796,6 +796,30 @@
       "removed": "Subscription deleted.",
       "mutateFailed": "The action failed",
       "conflictSuffix": "; reload the current version before trying again."
+    },
+    "release": {
+      "beta": "Beta",
+      "title": "Versions and updates",
+      "close": "Close",
+      "development": "Development",
+      "label": "Current version {current}. View versions",
+      "labelUpdate": "Current version {current}, new version {latest} available. View versions",
+      "loading": "Checking for updates…",
+      "failed": "Could not fetch the version list from GitHub. Showing the last successful check.",
+      "noVersion": "This is a local development environment without a release version.",
+      "available": "Version v{latest} is available.",
+      "upToDate": "You are on the latest version of this channel.",
+      "empty": "No version information yet.",
+      "refresh": "Check again",
+      "checkedAt": "Last checked: {time}",
+      "current": "Current",
+      "latest": "Latest",
+      "migration": "Database migration",
+      "commandHint": "Run the command below on the server to upgrade. A full backup is taken first; follow the prompts to roll back if it fails. For sites published manually with release.mjs, see the deployment guide.",
+      "copy": "Copy",
+      "copied": "Copied",
+      "copyFailed": "Copy failed. Select the command and copy it manually.",
+      "viewOnGithub": "View on GitHub"
     }
   }
 }
