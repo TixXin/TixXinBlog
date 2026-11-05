@@ -97,6 +97,8 @@ compose_file_args() {
     proxy) printf '%s\n' -f "$TIXXIN_DIR/compose.production.yaml" -f "$TIXXIN_DIR/deploy/compose.proxy.yaml" ;;
     *) printf '%s\n' -f "$TIXXIN_DIR/compose.production.yaml" ;;
   esac
+  # 站点自有覆盖（如 CPU、内存上限）：放在安装目录，不属于部署包，升级不会替换；最后加载，优先级最高。
+  if [ -f "$TIXXIN_DIR/compose.override.yaml" ]; then printf '%s\n' -f "$TIXXIN_DIR/compose.override.yaml"; fi
 }
 
 # 对外入口相关的应用服务：代理模式不启动自带 Caddy（edge），由外层面板或反代承担 HTTPS。
@@ -628,6 +630,7 @@ cmd_status() {
   info ''
   if [ "$(env_get TIXXIN_MODE)" = 'local' ] && [ ! -f "$TIXXIN_DIR/local-ca.crt" ]; then export_local_ca || true; fi
   [ "$check_update" = 0 ] || report_update "$version"
+  if [ -f "$TIXXIN_DIR/compose.override.yaml" ]; then info '站点覆盖：已加载 compose.override.yaml'; fi
   if [ "$(site_mode)" = proxy ]; then
     info "部署形态：外部反向代理（前端监听 $(proxy_origin)，不启动自带 HTTPS 入口）"
     if ! local_entry_once "$version"; then

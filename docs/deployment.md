@@ -51,6 +51,22 @@ sudo bash install.sh --behind-proxy
 
 以上流程已在 Linux 上用 Nginx 模拟面板验证安装、初始化、登录、访客地址与回退保护（见安装冒烟 `scripts/release/install-smoke.sh`），尚未在真实 1Panel 中完整验证升级与卸载。
 
+#### 资源上限与站点覆盖
+
+一键安装的编排默认不限制容器的 CPU 与内存。需要限制时，在安装目录新建 `compose.override.yaml`，`tixxin` 会在内置编排之后加载它（`tixxin status` 显示“站点覆盖：已加载 compose.override.yaml”）。它不属于部署包，升级与回退都不会替换或删除。例如：
+
+```yaml
+services:
+  backend:
+    cpus: 2
+    mem_limit: 1g
+  frontend:
+    cpus: 1
+    mem_limit: 768m
+```
+
+保存后执行 `sudo tixxin restart` 生效（重建 API、前端与运行中的 worker），再用 `docker stats` 核对。数据库不随 `restart` 重建，不建议给它设上限；确需设置时在安装目录执行 `docker compose` 前先 `tixxin backup`。内存上限过低会让服务被系统终止并反复重启，先按 `docker stats` 的实际占用留出余量。覆盖文件可以改动任何服务设置，只用于资源上限这类站点本地调整，不要在里面改镜像、端口或网络。
+
 #### 面板应用包的约束
 
 项目不提供面板应用商店包。将来制作时还需注意（据 1Panel v2.3.2 源码与本机模拟验证）：

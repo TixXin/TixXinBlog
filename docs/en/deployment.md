@@ -55,6 +55,22 @@ External reverse proxy mode is available from v0.5.1. A site in this mode cannot
 
 This flow has been verified on Linux with Nginx standing in for the panel, covering install, setup, sign-in, visitor addresses, and the rollback guard (see the install smoke test `scripts/release/install-smoke.sh`). Upgrade and uninstall have not yet been fully verified on a real 1Panel.
 
+#### Resource Limits and Site Overrides
+
+The one-command install does not limit container CPU or memory by default. To add limits, create `compose.override.yaml` in the install directory. `tixxin` loads it after the built-in compose files (`tixxin status` shows that the site override is loaded). It is not part of the deployment package, so upgrades and rollbacks never replace or delete it. For example:
+
+```yaml
+services:
+  backend:
+    cpus: 2
+    mem_limit: 1g
+  frontend:
+    cpus: 1
+    mem_limit: 768m
+```
+
+Run `sudo tixxin restart` to apply it (this recreates the API, the frontend, and a running worker), then check with `docker stats`. The database is not recreated by `restart`, and limiting it is not recommended; if you must, run `tixxin backup` before recreating it with `docker compose` in the install directory. A memory limit that is too low makes the service get killed and restart repeatedly, so leave headroom above the actual usage shown by `docker stats`. The override file can change any service setting; use it only for local adjustments such as resource limits, not for images, ports, or networks.
+
 #### Constraints for a panel app package
 
 The project does not provide a panel app store package. If one is built later, also note (based on the 1Panel v2.3.2 source and local simulation):
