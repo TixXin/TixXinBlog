@@ -116,7 +116,7 @@ cd TixXinBlog
 
 | 镜像      | 构建方式                                                   | 作用                                                                     |
 | --------- | ---------------------------------------------------------- | ------------------------------------------------------------------------ |
-| web       | `src/frontend/web-blog/Dockerfile`（`runtime`）                               | Nuxt 前端与同源 API 网关                                                 |
+| web       | `src/frontend/web-blog/Dockerfile`（`runtime`）            | Nuxt 前端与同源 API 网关                                                 |
 | api       | `src/backend/server-main/Dockerfile` 的 `runtime` target   | 只启动 HTTP                                                              |
 | migration | `src/backend/server-main/Dockerfile` 的 `migration` target | 只执行正式迁移                                                           |
 | worker    | `src/backend/server-main/Dockerfile` 的 `worker` target    | 携带生产依赖、维护脚本和 PostgreSQL 16 客户端，直接运行镜像时只读 status |
