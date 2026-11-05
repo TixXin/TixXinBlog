@@ -128,7 +128,6 @@
       "seoDescription": "浏览博主维护的友情链接与站点资料",
       "searchLabel": "搜索友链",
       "searchPlaceholder": "搜索站点、介绍或地址...",
-      "featuredFilter": "推荐筛选",
       "featuredFilterLabel": "筛选推荐友链",
       "filterAll": "全部友链",
       "filterFeatured": "推荐友链",
@@ -151,7 +150,8 @@
       "serviceUnavailable": "友链服务暂时不可用，请稍后重试",
       "notFound": "友链不存在或尚未上架",
       "invalid": "操作未完成，请核对输入后重试",
-      "requestIncomplete": "友链请求未完成"
+      "requestIncomplete": "友链请求未完成",
+      "applyEntry": "申请友链"
     },
     "linkCard": {
       "noImage": "未设置站点图片",

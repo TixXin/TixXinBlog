@@ -20,18 +20,11 @@ defineProps<{
 </script>
 
 <style lang="scss" scoped>
+// 列数按主栏实际宽度自动排：三套主题主栏宽窄不同，按窗口断点会在窄主栏里挤成三列
 .link-grid {
   display: grid;
-  grid-template-columns: repeat(1, 1fr);
-  gap: 1.25rem;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 16.5rem), 1fr));
+  gap: 0.875rem;
   margin-bottom: 0;
-
-  @media (min-width: $breakpoint-sm) {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
-  @media (min-width: $breakpoint-lg) {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-  }
 }
 </style>

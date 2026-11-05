@@ -653,7 +653,10 @@ for (const theme of ['nexus', 'aurora', 'dock']) {
       await expect(page).not.toHaveURL(/page=2/)
       await page.goForward()
       await expect(page).toHaveURL(/page=2/)
-      await page.getByRole('combobox', { name: '筛选推荐友链', exact: true }).selectOption('true')
+      await page
+        .getByRole('group', { name: '筛选推荐友链', exact: true })
+        .getByRole('button', { name: '推荐友链', exact: true })
+        .click()
       await expect(page).toHaveURL(/featured=true/)
       await expect(page).not.toHaveURL(/page=2/)
       const featured = (await (await request.get('/api/v1/links?featured=true')).json()).data as LinkPage
@@ -671,3 +674,24 @@ for (const theme of ['nexus', 'aurora', 'dock']) {
     })
   }
 }
+
+test('页头申请入口滚动到申请区并移交焦点，整张友链卡片可点击打开站点', async ({ page, context }) => {
+  await page.setViewportSize({ width: 1440, height: 900 })
+  await page.goto('/links')
+  await expect(page.locator('.link-card').first()).toBeVisible()
+  await page.getByRole('button', { name: '申请友链', exact: true }).click()
+  const apply = page.locator('#link-apply')
+  await expect(apply).toBeFocused()
+  await expect(apply).toBeInViewport()
+  await page.getByRole('button', { name: '全部友链', exact: true }).scrollIntoViewIfNeeded()
+  const card = page.locator('.link-card').first()
+  const href = await card.locator('.link-card__name').getAttribute('href')
+  // 描述被整卡链接的覆盖层盖住（这正是整卡可点），在描述所在位置点击卡片本身
+  const descPosition = async () => {
+    const [cardBox, descBox] = [await card.boundingBox(), await card.locator('.link-card__desc').boundingBox()]
+    return { x: descBox!.x - cardBox!.x + 10, y: descBox!.y - cardBox!.y + 5 }
+  }
+  const [tab] = await Promise.all([context.waitForEvent('page'), card.click({ position: await descPosition() })])
+  await expect(tab).toHaveURL(href!)
+  await tab.close()
+})

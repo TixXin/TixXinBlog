@@ -303,7 +303,10 @@ test('友链快速刷新与原生历史切换不丢记录，后续推荐筛选�
       new URL(response.url()).pathname === '/api/v1/links' &&
       new URL(response.url()).searchParams.get('featured') === 'true',
   )
-  await page.getByRole('combobox', { name: '筛选推荐友链', exact: true }).selectOption('true')
+  await page
+    .getByRole('group', { name: '筛选推荐友链', exact: true })
+    .getByRole('button', { name: '推荐友链', exact: true })
+    .click()
   const response = await read
   expect(response.status()).toBe(200)
   const data = (await response.json()).data as { items: { id: number }[] }

@@ -128,7 +128,6 @@
       "seoDescription": "Browse the friend links and site details curated by the author",
       "searchLabel": "Search links",
       "searchPlaceholder": "Search by site, description or URL...",
-      "featuredFilter": "Featured",
       "featuredFilterLabel": "Filter featured links",
       "filterAll": "All links",
       "filterFeatured": "Featured links",
@@ -151,7 +150,8 @@
       "serviceUnavailable": "The links service is unavailable. Please try again later.",
       "notFound": "This link does not exist or is not published yet",
       "invalid": "The request did not go through. Check your input and try again.",
-      "requestIncomplete": "The links request did not finish"
+      "requestIncomplete": "The links request did not finish",
+      "applyEntry": "Apply for a link"
     },
     "linkCard": {
       "noImage": "No site image",

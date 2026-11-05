@@ -8,39 +8,22 @@
         icon="lucide:link"
       >
         <template #action>
-          <CommonSearchBox
-            v-model="keyword"
-            :label="t('interaction.links.searchLabel')"
-            :placeholder="t('interaction.links.searchPlaceholder')"
-          />
+          <div class="links-actions">
+            <CommonSearchBox
+              v-model="keyword"
+              :label="t('interaction.links.searchLabel')"
+              :placeholder="t('interaction.links.searchPlaceholder')"
+            />
+            <button type="button" class="links-apply-entry btn-primary" @click="scrollToApply">
+              <Icon name="lucide:send" size="15" aria-hidden="true" />
+              {{ t('interaction.links.applyEntry') }}
+            </button>
+          </div>
         </template>
       </CommonPageHeader>
     </template>
     <template #default>
       <CommonCustomScrollbar class="links-body" viewport-class="links-viewport" :show-back-to-top="false" primary>
-        <div class="links-filters">
-          <label>
-            {{ t('interaction.links.featuredFilter') }}
-            <select
-              :value="query.featured ?? ''"
-              :aria-label="t('interaction.links.featuredFilterLabel')"
-              :disabled="!ready"
-              @change="changeQuery({ featured: ($event.target as HTMLSelectElement).value || undefined })"
-            >
-              <option value="">{{ t('interaction.links.filterAll') }}</option>
-              <option value="true">{{ t('interaction.links.filterFeatured') }}</option>
-              <option value="false">{{ t('interaction.links.filterOthers') }}</option>
-            </select>
-          </label>
-          <button
-            v-if="query.q || query.featured"
-            type="button"
-            :disabled="!ready"
-            @click="changeQuery({ q: undefined, featured: undefined })"
-          >
-            {{ t('interaction.links.clearFilters') }}
-          </button>
-        </div>
         <CommonRequestFeedback
           v-if="pending || error"
           :pending="pending"
@@ -48,10 +31,15 @@
           :title="error?.message || t('interaction.links.loading')"
           @retry="refresh()"
         />
-        <p v-if="stale" role="status" class="links-result">{{ t('interaction.links.stale') }}</p>
-        <p v-else-if="total !== null" role="status" class="links-result">
-          {{ t('interaction.links.summary', { total, page: query.page }, total) }}
-        </p>
+        <LinkToolbar
+          :featured="query.featured"
+          :page="query.page"
+          :total="total"
+          :stale="stale"
+          :ready="ready"
+          :filtered="!!(query.q || query.featured)"
+          @change="changeQuery"
+        />
         <CommonStateBlock
           v-if="!pending && !error && !links.length"
           icon="lucide:link"
@@ -63,27 +51,13 @@
           @action="changeQuery({ q: undefined, featured: undefined })"
         />
         <LinkGrid v-else :links="links" />
-        <nav
+        <LinkPagination
           v-if="total !== null && (total > 12 || query.page > 1)"
-          class="links-pagination"
-          :aria-label="t('interaction.links.pagination')"
-        >
-          <button
-            type="button"
-            :disabled="!ready || pending || query.page <= 1"
-            @click="changeQuery({ page: query.page - 1 })"
-          >
-            {{ t('interaction.links.prev') }}
-          </button>
-          <span>{{ query.page }} / {{ Math.max(1, Math.ceil(total / 12)) }}</span>
-          <button
-            type="button"
-            :disabled="!ready || pending || query.page * 12 >= total"
-            @click="changeQuery({ page: query.page + 1 })"
-          >
-            {{ t('interaction.links.next') }}
-          </button>
-        </nav>
+          :page="query.page"
+          :total="total"
+          :disabled="!ready || pending"
+          @change="(page) => changeQuery({ page })"
+        />
         <details class="links-compact-info" :class="`links-compact-info--${sidebarPlacement}`">
           <summary>
             <Icon name="lucide:chevron-right" size="16" class="links-compact-info__chevron" aria-hidden="true" />
@@ -97,20 +71,23 @@
             @retry-metadata="refreshMetadata()"
           />
         </details>
-        <LinkApplicationForm v-if="metadata?.applicationsEnabled && !useStaticSite()" />
-        <LinkForm
-          v-else
-          :value="local.draft.value"
-          :ready="local.ready.value"
-          :valid="local.valid.value"
-          :copying="local.copying.value"
-          :error="local.error.value"
-          :notice="local.notice.value"
-          :storage-error="local.storageError.value"
-          @change="local.change"
-          @copy="local.copy"
-          @persist="local.persist"
-        />
+        <!-- 页头「申请友链」滚动到这里；申请关闭时是整理资料表单 -->
+        <div id="link-apply" ref="applyRef" class="links-apply" tabindex="-1">
+          <LinkApplicationForm v-if="metadata?.applicationsEnabled && !useStaticSite()" />
+          <LinkForm
+            v-else
+            :value="local.draft.value"
+            :ready="local.ready.value"
+            :valid="local.valid.value"
+            :copying="local.copying.value"
+            :error="local.error.value"
+            :notice="local.notice.value"
+            :storage-error="local.storageError.value"
+            @change="local.change"
+            @copy="local.copy"
+            @persist="local.persist"
+          />
+        </div>
       </CommonCustomScrollbar>
     </template>
     <template #overlays>
@@ -159,6 +136,15 @@ usePageSeo({
   description: () => t('interaction.links.seoDescription'),
   type: 'website',
 })
+// 申请区在列表与分页之后，从页头直接跳过去并把焦点交给它，读屏用户同样能到达
+const applyRef = ref<HTMLElement | null>(null)
+function scrollToApply() {
+  const target = applyRef.value
+  if (!target) return
+  const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+  target.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'start' })
+  target.focus({ preventScroll: true })
+}
 const keyword = computed({
   get: () => (!ready.value ? (query.value.q ?? '') : typeof route.query.q === 'string' ? route.query.q : ''),
   set: (q: string) => {
@@ -174,68 +160,34 @@ const keyword = computed({
 :deep(.links-viewport) {
   padding: 1.5rem 2rem 2rem;
 }
-.links-filters,
-.links-pagination {
+.links-actions {
   display: flex;
-  flex-wrap: wrap;
-  gap: 0.75rem;
   align-items: center;
-  margin-bottom: 1rem;
+  gap: 0.5rem;
+  min-width: 0;
 }
-.links-filters label {
-  display: grid;
-  gap: 0.35rem;
-  color: var(--text-muted);
+.links-apply-entry {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  flex-shrink: 0;
+  min-height: 40px;
+  padding: 0 0.875rem;
+  border-radius: $radius-full;
   font-size: 0.8125rem;
-}
-select,
-.links-filters button,
-.links-pagination button {
-  min-height: 44px;
-  max-width: 100%;
-  border: 1px solid var(--border);
-  border-radius: 0.5rem;
-  padding: 0.5rem 0.75rem;
-  background: var(--surface-2);
-  color: var(--text-main);
-  // 与页面其余控件保持同一字号，避免浏览器默认字号显得突兀
-  font-size: 0.8125rem;
+  white-space: nowrap;
   cursor: var(--interaction-cursor, pointer);
-  transition: $transition-colors;
-  @media (prefers-reduced-motion: reduce) {
-    transition: none;
-  }
-
-  &:not(:disabled):hover {
-    border-color: var(--accent);
-    color: var(--accent-text);
-  }
-
   &:focus-visible {
     outline: 2px solid var(--accent);
     outline-offset: 2px;
   }
 }
-button:disabled,
-select:disabled {
-  opacity: 0.5;
-  cursor: var(--interaction-cursor, not-allowed);
-}
-.links-pagination span {
-  min-width: 3.5rem;
-  text-align: center;
-  font-size: 0.8125rem;
-  color: var(--text-soft);
-  font-variant-numeric: tabular-nums;
-}
-.links-result {
-  margin-bottom: 1rem;
-  color: var(--text-soft);
-  font-size: 0.8125rem;
-}
-.links-pagination {
-  justify-content: center;
-  margin-top: 1rem;
+.links-apply {
+  margin-top: 1.5rem;
+  scroll-margin-top: 1rem;
+  &:focus {
+    outline: none;
+  }
 }
 .links-compact-info summary {
   display: flex;
