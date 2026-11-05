@@ -6,6 +6,17 @@
 
 ## [未发布]
 
+## [0.5.2-beta.5] - 2026-11-06
+
+### 升级说明
+
+- 测试版，不标记为最新版本：`install.sh` 与 `tixxin update` 默认仍取 0.5.1，需显式执行 `tixxin update 0.5.2-beta.5`
+- 环境文件与编排不变，不含数据库迁移，内容包仍为 v16
+
+### 新增
+
+- `tixxin` 在内置编排之后加载安装目录中的 `compose.override.yaml`，用于站点自设容器 CPU 与内存上限等本地调整；该文件不属于部署包，升级与回退不会替换或删除，`tixxin status` 会提示已加载。用法见[部署](docs/deployment.md)
+
 ## [0.5.2-beta.4] - 2026-11-05
 
 ### 升级说明
@@ -358,7 +369,9 @@
 - 无多语言支持，界面与内容均为中文
 - 定位为单博主博客，不计划扩展多租户、访客账号或协作能力
 
-[未发布]: https://github.com/TixXin/TixXinBlog/compare/v0.5.2-beta.3...HEAD
+[未发布]: https://github.com/TixXin/TixXinBlog/compare/v0.5.2-beta.5...HEAD
+[0.5.2-beta.5]: https://github.com/TixXin/TixXinBlog/compare/v0.5.2-beta.4...v0.5.2-beta.5
+[0.5.2-beta.4]: https://github.com/TixXin/TixXinBlog/compare/v0.5.2-beta.3...v0.5.2-beta.4
 [0.5.2-beta.3]: https://github.com/TixXin/TixXinBlog/compare/v0.5.2-beta.2...v0.5.2-beta.3
 [0.5.2-beta.2]: https://github.com/TixXin/TixXinBlog/compare/v0.5.2-beta.1...v0.5.2-beta.2
 [0.5.2-beta.1]: https://github.com/TixXin/TixXinBlog/compare/v0.5.1...v0.5.2-beta.1
