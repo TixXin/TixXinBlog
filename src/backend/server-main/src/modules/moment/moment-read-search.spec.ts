@@ -125,7 +125,7 @@ describe('朋友圈公开搜索', () => {
       pageSize: 2,
       nextCursor: '0.moment-1',
     })
-    expect(connection.execute).toHaveBeenCalledTimes(2)
+    expect(connection.execute).toHaveBeenCalledTimes(3)
   })
 
   it.each([

@@ -39,6 +39,8 @@ export function useAdminMomentComments(ctx: AdminMomentCommentsContext) {
     replyDraft = ref(''),
     replyRequest = ref(''),
     replyBody = ref('')
+  // 指定回复对象；未指定时作为对动态的直接评论
+  const replyTarget = ref<{ id: string; author: string } | null>(null)
 
   let commentsVersion = 0,
     commentsLinkVersion = 0
@@ -56,6 +58,7 @@ export function useAdminMomentComments(ctx: AdminMomentCommentsContext) {
       replyDraft.value = ''
       replyRequest.value = ''
       replyBody.value = ''
+      replyTarget.value = null
     }
     const current = ++commentsVersion
     const requestedPath = route.fullPath,
@@ -102,6 +105,7 @@ export function useAdminMomentComments(ctx: AdminMomentCommentsContext) {
     commentsVersion++
     commentNote.value = null
     replyDraft.value = ''
+    replyTarget.value = null
     commentsPending.value = false
     return true
   }
@@ -183,24 +187,37 @@ export function useAdminMomentComments(ctx: AdminMomentCommentsContext) {
     })
   }
 
+  function startReply(comment: MomentCommentItem) {
+    replyTarget.value = { id: comment.id, author: comment.author }
+  }
+  function cancelReply() {
+    replyTarget.value = null
+  }
   async function reply() {
     const actor = auth.currentUser.value?.id
     const note = commentNote.value,
-      content = replyDraft.value.trim()
+      content = replyDraft.value.trim(),
+      replyToId = replyTarget.value?.id
     if (!note || !content) return
-    if (replyBody.value !== content) {
-      replyBody.value = content
+    const body = JSON.stringify([content, replyToId ?? null])
+    if (replyBody.value !== body) {
+      replyBody.value = body
       replyRequest.value = crypto.randomUUID()
     }
     await ctx.perform(note, async () => {
       replyPending.value = true
       try {
-        const result = await repo.comment(note.id, { requestId: replyRequest.value, content }, true)
+        const result = await repo.comment(
+          note.id,
+          { requestId: replyRequest.value, content, ...(replyToId ? { replyToId } : {}) },
+          true,
+        )
         invalidateComments(note.id, result.commentCount)
         if (actor === auth.currentUser.value?.id) {
           if (replyDraft.value.trim() === content) replyDraft.value = ''
           replyRequest.value = ''
           replyBody.value = ''
+          replyTarget.value = null
           await openComments(note, Math.max(1, Math.ceil((commentTotal.value + 1) / 15)))
           await ctx.load()
           toast.success(t('admin-content.moments.replySent'))
@@ -217,6 +234,7 @@ export function useAdminMomentComments(ctx: AdminMomentCommentsContext) {
     replyDraft.value = ''
     replyBody.value = ''
     replyRequest.value = ''
+    replyTarget.value = null
     commentsVersion++
     commentsLinkVersion++
     commentsLinkPending.value = false
@@ -242,6 +260,9 @@ export function useAdminMomentComments(ctx: AdminMomentCommentsContext) {
     commentsFocusVersion,
     replyPending,
     replyDraft,
+    replyTarget,
+    startReply,
+    cancelReply,
     openComments,
     closeComments,
     openLinkedComments,

@@ -1,4 +1,4 @@
-/** @file moment-comment.entity.ts @description 朋友圈评论、审核状态和提交去重，访客原始标识不入库 */
+/** @file moment-comment.entity.ts @description 朋友圈评论、回复关系、审核状态和提交去重，访客原始标识不入库 */
 import { Entity, Index, ManyToOne, OptionalProps, PrimaryKey, Property, Unique } from '@mikro-orm/core'
 import { randomUUID } from 'node:crypto'
 import { Moment } from './moment.entity'
@@ -17,6 +17,9 @@ export class MomentComment {
   @Property({ type: 'text' }) author!: string
   @Property({ type: 'text' }) avatar!: string
   @Property({ type: 'text' }) content!: string
+  /** 回复的同一动态下的评论；评论平铺展示为“A 回复 B”，目标被删除记录时置空 */
+  @ManyToOne({ entity: () => MomentComment, nullable: true, deleteRule: 'set null', index: true })
+  replyTo?: MomentComment | null
   @Property({ type: 'boolean', default: false }) isOwner: boolean = false
   @Property({ type: 'text', default: 'published' }) status: MomentCommentStatus = 'published'
   @Property({ type: 'text', nullable: true }) requestId?: string

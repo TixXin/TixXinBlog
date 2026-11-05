@@ -76,6 +76,8 @@ export interface PackageMoment {
     status: MomentCommentStatus
     deleted: boolean
     createdAt: string
+    /** v19 起：回复同一动态下的评论来源编号；旧包读取为 null */
+    replyToId: string | null
   }[]
 }
 
@@ -171,7 +173,7 @@ export interface PackageLink {
 
 export interface ContentPackage {
   format: 'tixxin-content'
-  version: 18
+  version: 19
   omittedRelations: number
   exportedAt: string
   mediaIncluded: boolean

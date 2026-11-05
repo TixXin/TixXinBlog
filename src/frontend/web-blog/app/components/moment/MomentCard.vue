@@ -69,6 +69,12 @@
         @toggle-comments="toggleComments"
         @like="handleLike"
       />
+      <MomentReactions
+        v-if="!staticSite"
+        :reactions="moment.reactions ?? []"
+        :pending="state?.reactionPending"
+        @react="$emit('react', { id: moment.id, ...$event })"
+      />
 
       <!-- 评论区 -->
       <Transition name="comment-slide">
@@ -111,6 +117,7 @@ const emit = defineEmits<{
   draft: [value: { id: string; value: string }]
   comment: [submission: MomentCommentSubmission]
   comments: [id: string]
+  react: [value: { id: string; emoji: string; reacted: boolean }]
 }>()
 
 // 与日期筛选和日历采用同一站点时区日期键。

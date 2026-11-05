@@ -52,6 +52,7 @@ export async function useMomentOverview(options: { immediate?: boolean } = {}) {
   const momentDates = computed(() => Object.keys(momentDateCounts.value))
   const moments = computed(() => metadata.value?.recollections ?? [])
   const photoWallImages = computed(() => metadata.value?.photos ?? [])
+  const momentLocations = computed(() => metadata.value?.locations ?? [])
   return {
     metadata,
     moments,
@@ -62,6 +63,7 @@ export async function useMomentOverview(options: { immediate?: boolean } = {}) {
     momentDates,
     momentDateCounts,
     photoWallImages,
+    momentLocations,
     pending: result.pending,
     error: result.error,
     refresh: result.refresh,

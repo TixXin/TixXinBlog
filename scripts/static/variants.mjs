@@ -64,6 +64,7 @@ export async function staticVariants(read) {
   for (const currency of stats.currencies ?? []) urls.add(query('/subscriptions', { currency: currency.currency }))
   for (const day of moments.dates ?? []) urls.add(query('/moments', { date: day.date }))
   for (const topic of moments.topics ?? []) urls.add(query('/moments', { topic: topic.name }))
+  for (const place of moments.locations ?? []) urls.add(query('/moments', { location: place.name }))
   for (const day of new Set(guestbook.map((message) => String(message.createdAt ?? '').slice(0, 10))))
     if (/^\d{4}-\d{2}-\d{2}$/.test(day)) urls.add(query('/guestbook', { date: day }))
   // 自由文本查询与未枚举的分页组合走列表全量回退，校验爬取要覆盖到这几条路径。

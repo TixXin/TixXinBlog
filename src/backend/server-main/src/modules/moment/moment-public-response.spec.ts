@@ -109,6 +109,7 @@ const expectedComment = {
   time: date.toISOString(),
   isOwner: false,
   moderationStatus: 'published',
+  replyTo: null,
 }
 const expectedNote = {
   id: 'moment-public',
@@ -122,6 +123,7 @@ const expectedNote = {
   topics: ['阅读'],
   likes: 3,
   isLiked: false,
+  reactions: [],
   isPinned: true,
   commentCount: 1,
   comments: [expectedComment],
@@ -161,7 +163,7 @@ describe('朋友圈公开 GET 响应白名单', () => {
       'linkedArticle.deletedAt',
     ])
     expect(execute.mock.calls[0]![0]).toContain(
-      "deleted_at is null and (status='published' or (status='pending' and visitor_id_hash=?))",
+      "c.deleted_at is null and (c.status='published' or (c.status='pending' and c.visitor_id_hash=?))",
     )
     expect(execute.mock.calls[0]![1]).toEqual(['moment-public', '__anonymous__'])
     expect(execute.mock.calls[1]![0]).toContain("and status='published' and deleted_at is null")
@@ -231,7 +233,9 @@ describe('朋友圈公开 GET 响应白名单', () => {
     const { service, execute } = setup()
     await service.detail('moment-public', visitor)
     expect(execute.mock.calls[0]![1]).toEqual(['moment-public', visitor])
-    expect(execute.mock.calls[0]![0]).toContain("(status='published' or (status='pending' and visitor_id_hash=?))")
+    expect(execute.mock.calls[0]![0]).toContain(
+      "(c.status='published' or (c.status='pending' and c.visitor_id_hash=?))",
+    )
     expect(execute.mock.calls[1]![0]).toContain("status='published' and deleted_at is null")
   })
 
@@ -275,6 +279,7 @@ describe('朋友圈公开 GET 响应白名单', () => {
       .mockResolvedValueOnce([{ totalMoments: 1, totalLikes: 3, totalComments: 1 }])
       .mockResolvedValueOnce([{ name: '阅读', count: 1 }])
       .mockResolvedValueOnce([{ date: '2026-10-18', count: 1 }])
+      .mockResolvedValueOnce([{ name: '杭州', count: 1 }])
     const reader = {
       find: jest.fn().mockResolvedValue([note]),
       findOne: jest.fn().mockResolvedValue(null),
@@ -284,6 +289,7 @@ describe('朋友圈公开 GET 响应白名单', () => {
       stats: { totalMoments: 1, totalLikes: 3, totalComments: 1 },
       topics: [{ name: '阅读', count: 1 }],
       dates: [{ date: '2026-10-18', count: 1 }],
+      locations: [{ name: '杭州', count: 1 }],
       photos: [{ src: 'https://example.invalid/bookstore.webp', momentId: 'moment-public' }],
       recollections: [{ id: 'moment-public', content: note.content, date: date.toISOString() }],
     })

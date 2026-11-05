@@ -46,6 +46,7 @@ async function setup(reset = true, initialPage = 1) {
     topic: ref<string | null>(null),
     date: ref<string | null>(null),
     q: ref(''),
+    location: ref<string | null>(null),
   }
   let state!: Awaited<ReturnType<typeof useMomentFeed>>, store!: ReturnType<typeof useMomentStore>
   wrappers.push(
@@ -113,6 +114,18 @@ describe('朋友圈数据请求', () => {
     expect(mocks.list).toHaveBeenCalledTimes(1)
     expect(mocks.list.mock.calls[0]![0]).toMatchObject({ page: 1, pageSize: 75 })
     expect(state.moments.value).toHaveLength(31)
+  })
+  it('足迹地点筛选随查询发送并重新读取，清除后回到未筛选的缓存键', async () => {
+    const { state, options } = await setup()
+    const ids = state.moments.value.map((note) => note.id)
+    mocks.list.mockClear()
+    options.location.value = '杭州'
+    await vi.waitFor(() => expect(mocks.list).toHaveBeenCalledTimes(1))
+    expect(mocks.list.mock.calls[0]![0]).toMatchObject({ page: 1, location: '杭州' })
+    options.location.value = null
+    // 未筛选范围的快照仍在缓存里，直接恢复，不重新请求
+    await vi.waitFor(() => expect(state.moments.value.map((note) => note.id)).toEqual(ids))
+    expect(mocks.list).toHaveBeenCalledTimes(1)
   })
   it('迟到响应无法复活已删除动态，完整刷新会重新核对已缓存页', async () => {
     const { state, store } = await setup()

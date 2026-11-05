@@ -29,6 +29,7 @@ import { Comment } from '../entities/comment.entity'
 import { Moment } from '../entities/moment.entity'
 import { MomentComment } from '../entities/moment-comment.entity'
 import { MomentLike } from '../entities/moment-like.entity'
+import { MomentReaction, type MomentReactionKind } from '../entities/moment-reaction.entity'
 import { GuestbookMessage } from '../entities/guestbook-message.entity'
 import { GuestbookReaction } from '../entities/guestbook-reaction.entity'
 import type { GuestbookReactionKind } from '../entities/guestbook-reaction.entity'
@@ -143,6 +144,10 @@ const COMMENT_COUNT = [...COMMENTS.values()].reduce(
 const POST_LIKE_COUNT = SHOWCASE_POSTS.reduce((sum, post) => sum + post.likes, 0)
 const MOMENT_COMMENT_COUNT = SHOWCASE_MOMENTS.reduce((sum, moment) => sum + moment.comments.length, 0)
 const MOMENT_LIKE_COUNT = SHOWCASE_MOMENTS.reduce((sum, moment) => sum + moment.likes, 0)
+const MOMENT_REACTION_COUNT = SHOWCASE_MOMENTS.reduce(
+  (sum, moment) => sum + Object.values(moment.reactions ?? {}).reduce((total, count) => total + (count ?? 0), 0),
+  0,
+)
 // 当天两条访客留言、一条博主回复，以及首条留言上的回应。
 const TODAY_GUESTBOOK = [
   {
@@ -170,6 +175,7 @@ export const SHOWCASE_FIXTURE_COUNT =
   SHOWCASE_MOMENTS.length +
   MOMENT_COMMENT_COUNT +
   MOMENT_LIKE_COUNT +
+  MOMENT_REACTION_COUNT +
   GALLERY_PHOTOS.length +
   TODAY_GUESTBOOK.length +
   TODAY_GUESTBOOK.filter((item) => 'reply' in item).length +
@@ -644,8 +650,10 @@ async function seedMoments(
       progress,
     )
     if (!momentId) continue
+    // 记下各评论的编号，后面的评论按索引回复前面的评论；被删除的目标不再关联
+    const commentIds: (string | number | null)[] = []
     for (const [index, comment] of moment.comments.entries())
-      await ensureFixture(
+      commentIds[index] = await ensureFixture(
         em,
         SHOWCASE_DATASET,
         `${moment.key}/${index}`,
@@ -660,6 +668,10 @@ async function seedMoments(
             author: comment.owner ? site.values.ownerName : comment.author,
             avatar,
             content: comment.content,
+            replyTo:
+              comment.replyTo !== undefined && commentIds[comment.replyTo]
+                ? em.getReference(MomentComment, String(commentIds[comment.replyTo]))
+                : null,
             status: 'published',
             isOwner: !!comment.owner,
             createdAt: new Date(Math.min(when.getTime() + comment.hoursAfter * 3600000, now.getTime() - 1800000)),
@@ -692,6 +704,22 @@ async function seedMoments(
       progress,
     )
     target.likes = await em.count(MomentLike, { moment: target })
+    const reactions = Object.entries(moment.reactions ?? {}).flatMap(([emoji, count]) =>
+      Array.from({ length: count ?? 0 }, (_item, index) => `${moment.key}/${emoji}/${index}`),
+    )
+    await ensureMany(
+      em,
+      'moment-reaction',
+      reactions,
+      (scenario) =>
+        em.create(MomentReaction, {
+          moment: target,
+          visitorIdHash: visitor(`reaction/${scenario}`),
+          emoji: scenario.split('/')[1] as MomentReactionKind,
+          createdAt: new Date(when.getTime() + span / 2),
+        }),
+      progress,
+    )
   }
   await em.flush()
 }

@@ -8,6 +8,8 @@ import type { VisitorSubmissionFields } from '~/features/visitor/types'
 
 export interface MomentCommentSubmission extends VisitorSubmissionFields {
   id: string
+  /** 回复同一动态下的评论 */
+  replyToId?: string
 }
 
 /** 用户简要信息，用于 hover 信息卡展示 */
@@ -27,6 +29,8 @@ export interface MomentCommentItem {
   time: string
   isOwner?: boolean
   moderationStatus?: 'published' | 'pending' | 'hidden'
+  /** 回复的评论；目标不可见时 id 与 author 为 null，只显示“回复了一条不可见的评论” */
+  replyTo?: { id: string | null; author: string | null } | null
   /** 评论者详细信息，用于 hover 卡片 */
   profile?: MomentUserProfile
 }
@@ -78,8 +82,16 @@ export interface MomentItem {
   linkedLink?: MomentLinkedLink | null
   /** 是否置顶（在列表中前置展示） */
   isPinned?: boolean
+  /** 表情回应：按固定顺序列出有记录的表情，reacted 为当前访客是否已回应 */
+  reactions?: MomentReaction[]
   /** 心情标签（emoji + 短文，例如 "🌧️ 微凉"） */
   mood?: string
+}
+
+export interface MomentReaction {
+  emoji: string
+  count: number
+  reacted: boolean
 }
 
 export type MomentStatus = 'draft' | 'published' | 'archived'
@@ -94,6 +106,8 @@ export interface MomentOverview {
   stats: { totalMoments: number; totalLikes: number; totalComments: number }
   topics: { name: string; count: number }[]
   dates: { date: string; count: number }[]
+  /** 足迹：公开动态出现过的地点（最多 20 个） */
+  locations?: { name: string; count: number }[]
   photos: { src: string; momentId: string }[]
   recollections: Pick<MomentItem, 'id' | 'content' | 'date'>[]
 }
@@ -105,6 +119,7 @@ export interface MomentQuery {
   q?: string
   topic?: string
   date?: string
+  location?: string
 }
 export interface MomentCommentPage {
   items: MomentCommentItem[]

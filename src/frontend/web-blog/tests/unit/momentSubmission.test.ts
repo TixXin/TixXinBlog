@@ -7,11 +7,12 @@ import { mockNuxtImport, mountSuspended } from '@nuxt/test-utils/runtime'
 import { useMomentInteractions } from '~/composables/useMomentInteractions'
 const mocks = vi.hoisted(() => ({
   comment: vi.fn(),
+  react: vi.fn(),
   patch: vi.fn(),
   owner: false,
   identity: undefined as unknown as Ref<boolean>,
 }))
-mockNuxtImport('useMomentRepository', () => () => ({ comment: mocks.comment }))
+mockNuxtImport('useMomentRepository', () => () => ({ comment: mocks.comment, react: mocks.react }))
 mockNuxtImport('useMomentStore', () => () => ({ entries: ref({}), patch: mocks.patch }))
 mockNuxtImport('useCurrentUser', () => () => ({
   initialized: ref(true),
@@ -92,4 +93,29 @@ it('博主评论不向管理写入混入防垃圾字段', async () => {
   expect(mocks.comment.mock.calls[0]?.[1]).not.toHaveProperty('website')
   expect(mocks.comment.mock.calls[0]?.[1]).not.toHaveProperty('formElapsedMs')
   expect(mocks.comment.mock.calls[0]?.[2]).toBe(true)
+})
+it('回复目标随提交传给仓储，换了回复对象视为新的业务提交', async () => {
+  const { flow, id } = await setup()
+  mocks.comment.mockRejectedValueOnce(new Error('提交失败，请稍后重试'))
+  await flow.submit({ id, website: '', formElapsedMs: 3000, replyToId: 'c-1' })
+  const first = mocks.comment.mock.calls[0]![1]
+  expect(first).toMatchObject({ replyToId: 'c-1', content: '回复草稿' })
+  expect(first).not.toHaveProperty('id')
+  await flow.submit({ id, website: '', formElapsedMs: 3000, replyToId: 'c-2' })
+  expect(mocks.comment.mock.calls[1]![1]).toMatchObject({ replyToId: 'c-2' })
+  expect(mocks.comment.mock.calls[1]![1].requestId).not.toBe(first.requestId)
+})
+it('表情回应以服务端返回的完整计数替换，提交中不重复请求', async () => {
+  const { flow, id } = await setup()
+  let finish!: (value: unknown) => void
+  mocks.react.mockImplementationOnce(() => new Promise((resolve) => (finish = resolve)))
+  const reacting = flow.react({ id, emoji: '❤️', reacted: true })
+  await flow.react({ id, emoji: '💡', reacted: true })
+  expect(mocks.react).toHaveBeenCalledTimes(1)
+  expect(mocks.react).toHaveBeenCalledWith(id, '❤️', true)
+  const reactions = [{ emoji: '❤️', count: 4, reacted: true }]
+  finish({ id, reactions })
+  await reacting
+  expect(mocks.patch).toHaveBeenCalledWith(id, { reactions })
+  expect(flow.states[id]?.reactionPending).toBe(false)
 })

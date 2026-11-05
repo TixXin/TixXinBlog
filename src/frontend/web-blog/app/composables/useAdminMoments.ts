@@ -227,6 +227,9 @@ export function useAdminMoments() {
     removeComment: comments.removeComment,
     replyDraft: comments.replyDraft,
     replyPending: comments.replyPending,
+    replyTarget: comments.replyTarget,
+    startReply: comments.startReply,
+    cancelReply: comments.cancelReply,
     reply: comments.reply,
   }
 }

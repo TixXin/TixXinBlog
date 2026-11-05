@@ -1,4 +1,4 @@
-/** @file content-import-moments.ts @description 在内容迁入事务中创建朋友圈草稿、映射文章并重建媒体引用，不迁入访客身份或点赞 */
+/** @file content-import-moments.ts @description 在内容迁入事务中创建朋友圈草稿、映射文章、重建评论回复关系与媒体引用，不迁入访客身份、点赞或回应 */
 import type { EntityManager } from '@mikro-orm/postgresql'
 import { createHash, randomUUID } from 'node:crypto'
 import { ConflictException } from '@nestjs/common'
@@ -36,9 +36,11 @@ export async function importMoments(
     await synchronizeMediaReferences(em, `moment:${note.id}`, 'moment', [note.content, note.images, note.linkedLink], {
       moment: note,
     })
+    // 先建全部评论再回填回复关系；回复的评论已删除（未迁入）时不关联
+    const created = new Map<string, MomentComment>()
     for (const comment of source.comments) {
       if (comment.deleted) continue
-      const created = em.create(MomentComment, {
+      const createdComment = em.create(MomentComment, {
         moment: note,
         content: comment.content,
         author: comment.author,
@@ -49,12 +51,25 @@ export async function importMoments(
         visitorIdHash: createHash('sha256').update(randomUUID()).digest('hex'),
       })
       await em.flush()
-      await synchronizeMediaReferences(em, `moment-comment:${created.id}`, 'moment-comment', [created.avatar], {
-        moment: note,
-        momentComment: created,
-      })
+      await synchronizeMediaReferences(
+        em,
+        `moment-comment:${createdComment.id}`,
+        'moment-comment',
+        [createdComment.avatar],
+        {
+          moment: note,
+          momentComment: createdComment,
+        },
+      )
+      created.set(comment.sourceId, createdComment)
       result.comments++
     }
+    for (const comment of source.comments) {
+      const reply = comment.replyToId ? created.get(comment.replyToId) : undefined
+      const own = created.get(comment.sourceId)
+      if (reply && own) own.replyTo = reply
+    }
+    await em.flush()
     result.moments.push({ sourceId: source.sourceId, id: note.id })
   }
 }

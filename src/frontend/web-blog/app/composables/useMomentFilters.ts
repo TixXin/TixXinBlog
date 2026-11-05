@@ -1,6 +1,6 @@
 /**
  * @file useMomentFilters.ts
- * @description 朋友圈搜索、话题与日期以URL共享，列表和主题侧栏使用同一状态
+ * @description 朋友圈搜索、话题、日期与地点（足迹）以URL共享，列表和主题侧栏使用同一状态
  * @author TixXin
  * @since 2026-04-11
  */
@@ -39,6 +39,12 @@ export function useMomentFilters() {
       void update('topic', value)
     },
   })
+  const selectedLocation = computed({
+    get: () => read('location').slice(0, 160) || null,
+    set: (value: string | null) => {
+      void update('location', value)
+    },
+  })
   const searchKeyword = computed({
     get: () => read('q'),
     set: (value: string) => {
@@ -47,7 +53,7 @@ export function useMomentFilters() {
   })
   function clearFilters() {
     const query = Object.fromEntries(
-      Object.entries(route.query).filter(([key]) => !['date', 'topic', 'q', 'page'].includes(key)),
+      Object.entries(route.query).filter(([key]) => !['date', 'topic', 'q', 'location', 'page'].includes(key)),
     )
     return router.push({ path: '/moments', query })
   }
@@ -61,6 +67,7 @@ export function useMomentFilters() {
         ['q', searchKeyword.value],
         ['topic', selectedTopic.value ?? ''],
         ['date', selectedDate.value ?? ''],
+        ['location', selectedLocation.value ?? ''],
         ['page', page.value > 1 ? String(page.value) : ''],
       ].filter(([, value]) => !!value),
     ),
@@ -68,5 +75,5 @@ export function useMomentFilters() {
   function setPage(value: number, replace = false) {
     return update('page', value > 1 ? String(value) : null, replace)
   }
-  return { selectedDate, selectedTopic, searchKeyword, page, setPage, filterQuery, clearFilters }
+  return { selectedDate, selectedTopic, selectedLocation, searchKeyword, page, setPage, filterQuery, clearFilters }
 }

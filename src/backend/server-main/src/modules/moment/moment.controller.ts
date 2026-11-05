@@ -2,7 +2,13 @@
 import { Body, Controller, Get, Param, Post, Put, Query } from '@nestjs/common'
 import { VisitorIdHash } from '../../common/decorators/visitor-id.decorator'
 import { validateVisitorSubmission } from '../../common/validation/visitor-submission'
-import { CreateMomentCommentDto, MomentPageQuery, QueryMomentsDto, SetMomentLikeDto } from './moment.dto'
+import {
+  CreateMomentCommentDto,
+  MomentPageQuery,
+  QueryMomentsDto,
+  SetMomentLikeDto,
+  SetMomentReactionDto,
+} from './moment.dto'
 import { MomentReadService } from './moment-read.service'
 import { MomentInteractionService } from './moment-interaction.service'
 
@@ -43,5 +49,9 @@ export class MomentController {
   @Put(':id/like')
   like(@Param('id') id: string, @Body() body: SetMomentLikeDto, @VisitorIdHash() visitor: string) {
     return this.interactions.setLike(id, visitor, body.liked)
+  }
+  @Put(':id/reactions')
+  reaction(@Param('id') id: string, @Body() body: SetMomentReactionDto, @VisitorIdHash() visitor: string) {
+    return this.interactions.react(id, visitor, body)
   }
 }

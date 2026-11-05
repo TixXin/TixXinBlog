@@ -352,6 +352,11 @@
         "likes": "点赞",
         "comments": "公开评论"
       },
+      "locations": {
+        "title": "足迹",
+        "all": "全部",
+        "count": "{count} 条"
+      },
       "topics": {
         "title": "热门话题",
         "all": "全部"

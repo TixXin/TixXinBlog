@@ -10,6 +10,7 @@ import type {
   MomentOverview,
   MomentPage,
   MomentQuery,
+  MomentReaction,
 } from './types'
 
 export interface MomentRepository {
@@ -19,9 +20,16 @@ export interface MomentRepository {
   navigation(id: string, signal?: AbortSignal): Promise<MomentNavigation>
   comments(id: string, page: number, signal?: AbortSignal): Promise<MomentCommentPage>
   like(id: string, liked: boolean): Promise<{ isLiked: boolean; likes: number }>
+  react(id: string, emoji: string, reacted: boolean): Promise<{ id: string; reactions: MomentReaction[] }>
   comment(
     id: string,
-    value: { requestId: string; content: string; author?: string; avatar?: string } & VisitorSubmissionFields,
+    value: {
+      requestId: string
+      content: string
+      author?: string
+      avatar?: string
+      replyToId?: string
+    } & VisitorSubmissionFields,
     owner: boolean,
   ): Promise<MomentCommentItem & { commentCount: number }>
   adminList(query: MomentQuery & { status?: string }): Promise<MomentPage & { items: ManagedMoment[] }>

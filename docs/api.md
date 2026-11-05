@@ -223,23 +223,26 @@
 
 ## 朋友圈
 
-| 方法与路径                                                       | 作用                                                                   |
-| ---------------------------------------------------------------- | ---------------------------------------------------------------------- |
-| `GET /moments`                                                   | `page/pageSize/q/topic/date/after`；每页最大 150 条，返回 `nextCursor` |
-| `GET /moments/overview`                                          | 公开动态、评论、点赞、话题、日期、照片与回顾聚合                       |
-| `GET /moments/:id`、`GET /moments/:id/navigation`                | 公开详情与按时间排列的前后动态                                         |
-| `GET/POST /moments/:id/comments`                                 | 分页评论与访客提交；可见自己的待审评论                                 |
-| `PUT /moments/:id/like`                                          | 设置目标点赞状态                                                       |
-| `GET/POST /admin/moments`、`GET/PATCH/DELETE /admin/moments/:id` | 管理、版本化编辑和创建去重                                             |
-| `GET /admin/moments/submissions/:requestId`                      | 核查未知创建结果                                                       |
-| `GET /admin/moments/comments`                                    | 跨动态分页管理评论                                                     |
-| `GET/POST /admin/moments/:id/comments`                           | 管理评论与博主回复                                                     |
-| `GET /admin/moments/:id/comments/:commentId/location`            | 定位指定评论所在分页                                                   |
-| `PATCH/DELETE /admin/moments/:id/comments/:commentId`            | 审核与删除；审核使用目标和 `expectedStatus` 比较                       |
+| 方法与路径                                                       | 作用                                                                            |
+| ---------------------------------------------------------------- | ------------------------------------------------------------------------------- |
+| `GET /moments`                                                   | `page/pageSize/q/topic/date/location/after`；每页最大 150 条，返回 `nextCursor` |
+| `GET /moments/overview`                                          | 公开动态、评论、点赞、话题、日期、足迹地点、照片与回顾聚合                      |
+| `GET /moments/:id`、`GET /moments/:id/navigation`                | 公开详情与按时间排列的前后动态                                                  |
+| `GET/POST /moments/:id/comments`                                 | 分页评论与访客提交；可选 `replyToId` 回复已公开评论；可见自己的待审评论         |
+| `PUT /moments/:id/like`                                          | 设置目标点赞状态                                                                |
+| `PUT /moments/:id/reactions`                                     | `{ emoji, reacted }` 设置本人某种表情回应，返回该动态的全部回应计数             |
+| `GET/POST /admin/moments`、`GET/PATCH/DELETE /admin/moments/:id` | 管理、版本化编辑和创建去重                                                      |
+| `GET /admin/moments/submissions/:requestId`                      | 核查未知创建结果                                                                |
+| `GET /admin/moments/comments`                                    | 跨动态分页管理评论                                                              |
+| `GET/POST /admin/moments/:id/comments`                           | 管理评论与博主回复                                                              |
+| `GET /admin/moments/:id/comments/:commentId/location`            | 定位指定评论所在分页                                                            |
+| `PATCH/DELETE /admin/moments/:id/comments/:commentId`            | 审核与删除；审核使用目标和 `expectedStatus` 比较                                |
 
 状态为 `draft/published/archived`，公开入口排除非公开和删除项。列表默认按置顶、发布时间、创建时间、ID 倒序；`pinnedFirst=false` 用于纯时间订阅。日期筛选为 `YYYY-MM-DD`，按站点时区的日边界取半开区间。
 
 动态列表默认置顶优先、再按发布时间倒序。`after` 是键集游标 `<置顶 0|1>.<动态编号>`（即上一页响应的 `nextCursor`），从该条之后读取：翻页期间有新发布或删除也不会重复、漏条；锚点不是公开动态时按 `page/pageSize` 偏移读取，总数始终按整个筛选范围统计。前台动态流地址栏仍用 `?page=N`，向下加载带游标，直接打开深页码时每次读 10 页。后台保存时配图、外链卡片图片与图标只接受 HTTPS 或本站媒体，编辑时原有的 HTTP 地址保留；内容包迁入不受此限制。
+
+评论平铺展示，可用 `replyToId` 回复同一动态下已公开、未删除的评论（访客与博主一致）；评论投影的 `replyTo` 只在目标仍公开时给出编号与昵称，目标待审、隐藏或删除后为 `{ id: null, author: null }`，不泄露原作者与正文，管理端可见全部。动态与列表项携带 `reactions`（固定的 6 种表情，按顺序列出有记录的项，`reacted` 为当前访客状态），与点赞分别计数，不进内容包。`location` 按地点精确筛选，概览 `locations` 列出公开动态出现最多的 20 个地点。
 
 评论按动态、服务端访客身份和 `requestId` 去重，隐藏/删除后的旧提交不能重新公开。编辑可以保留已失效的原文章关系，新关系只允许可选择目标；公开投影不泄露私有文章，引用文章只读取卡片所需的标题、摘要、封面、地址与可见性列，不读取正文。`GET /moments/overview` 的 `dates` 包含全部有公开动态的站点时区日期（日历可翻到任意历史月份并计算连续天数），`recollections` 不含引用文章。源码见[moment](../src/backend/server-main/src/modules/moment/)。
 

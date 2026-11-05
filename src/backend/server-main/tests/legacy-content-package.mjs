@@ -1,5 +1,11 @@
-/** @file legacy-content-package.mjs @description 维护回归显式构造v18之前的真实字段集，不放宽生产解析器 */
+/** @file legacy-content-package.mjs @description 维护回归显式构造v19之前的真实字段集，不放宽生产解析器 */
+export function stripV19Fields(value) {
+  // v19 才引入的朋友圈评论回复关系：旧包必须显式移除，解析器按 null 读取。
+  for (const note of value.moments ?? []) for (const comment of note.comments ?? []) delete comment.replyToId
+  return value
+}
 export function stripV18Fields(value) {
+  stripV19Fields(value)
   // v18 才引入的订阅试用到期日与结束日：旧包必须显式移除，解析器按 null 读取。
   for (const row of value.subscriptions ?? []) {
     delete row.values.trialEndDate

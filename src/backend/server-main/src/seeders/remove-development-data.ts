@@ -105,6 +105,7 @@ export async function removeDevelopmentData(
         'post-like',
         'flash-like',
         'moment-like',
+        'moment-reaction',
         'comment',
         'flash-comment',
         'moment-comment',

@@ -134,11 +134,11 @@ describe('MomentInteractionService 评论身份、审核与媒体通知', () => 
       { id: note.id, status: 'published', deletedAt: null },
       { lockMode: LockMode.PESSIMISTIC_WRITE },
     )
-    expect(em.findOne).toHaveBeenCalledWith(MomentComment, {
-      moment: note,
-      visitorIdHash: 'visitor-1',
-      requestId: input.requestId,
-    })
+    expect(em.findOne).toHaveBeenCalledWith(
+      MomentComment,
+      { moment: note, visitorIdHash: 'visitor-1', requestId: input.requestId },
+      { populate: ['replyTo'] },
+    )
     expect(em.findOne).toHaveBeenCalledWith(CommentPolicy, { id: 'default' }, { refresh: true })
     expect(em.findOneOrFail).not.toHaveBeenCalled()
     expect(em.create).toHaveBeenCalledWith(MomentComment, {
@@ -147,6 +147,7 @@ describe('MomentInteractionService 评论身份、审核与媒体通知', () => 
       author: input.author,
       avatar: '/api/v1/media/aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa.webp',
       content: input.content,
+      replyTo: null,
       isOwner: false,
       status: scenario.status,
       requestId: input.requestId,
@@ -177,6 +178,7 @@ describe('MomentInteractionService 评论身份、审核与媒体通知', () => 
       time: createdAt.toISOString(),
       isOwner: false,
       moderationStatus: scenario.status,
+      replyTo: null,
       commentCount: 3,
     })
   })
@@ -196,11 +198,11 @@ describe('MomentInteractionService 评论身份、审核与媒体通知', () => 
     const { service, em, note, settings } = setup({ requireApproval: true })
     const result = await service.comment(note.id, { ...input, avatar: 'javascript:alert(1)' }, 'visitor-1', 'owner-1')
     expect(em.findOneOrFail).toHaveBeenCalledWith(SiteSettings, { id: 'default' })
-    expect(em.findOne).toHaveBeenCalledWith(MomentComment, {
-      moment: note,
-      visitorIdHash: 'admin:owner-1',
-      requestId: input.requestId,
-    })
+    expect(em.findOne).toHaveBeenCalledWith(
+      MomentComment,
+      { moment: note, visitorIdHash: 'admin:owner-1', requestId: input.requestId },
+      { populate: ['replyTo'] },
+    )
     expect(em.create).toHaveBeenCalledWith(
       MomentComment,
       expect.objectContaining({

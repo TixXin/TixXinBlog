@@ -7,6 +7,8 @@ export async function useMomentFeed(options: {
   topic: Ref<string | null>
   date: Ref<string | null>
   q: Ref<string>
+  /** 足迹地点筛选；话题页等不提供时视为不筛选 */
+  location?: Ref<string | null>
 }) {
   const repo = useMomentRepository(),
     store = useMomentStore(),
@@ -19,7 +21,13 @@ export async function useMomentFeed(options: {
     acceptedCursor: string | undefined,
     prefixReadAt = 0
   const scopeKey = computed(() =>
-    JSON.stringify({ topic: options.topic.value, date: options.date.value, q: options.q.value }),
+    JSON.stringify({
+      topic: options.topic.value,
+      date: options.date.value,
+      q: options.q.value,
+      // 地点只在筛选时进入范围键，未筛选时缓存键与原来一致
+      ...(options.location?.value ? { location: options.location.value } : {}),
+    }),
   )
   const requestedScope = ref(scopeKey.value),
     scheduled = ref(false)
@@ -48,6 +56,7 @@ export async function useMomentFeed(options: {
         pageSize: MOMENT_FEED_PAGE_SIZE,
         topic: options.topic.value || undefined,
         date: options.date.value || undefined,
+        location: options.location?.value || undefined,
         q: options.q.value || undefined,
       }
       const currentScope = scopeKey.value,
@@ -149,11 +158,12 @@ export async function useMomentFeed(options: {
     ([_current, page], [previous, previousPage]) => {
       if (timer) clearTimeout(timer)
       requestedScope.value = scopeKey.value
-      const before = JSON.parse(previous) as { q: string; topic: string | null; date: string | null }
+      const before = JSON.parse(previous) as { q: string; topic: string | null; date: string | null; location?: string }
       const onlySearch =
         before.q !== options.q.value &&
         before.topic === options.topic.value &&
         before.date === options.date.value &&
+        (before.location ?? null) === (options.location?.value || null) &&
         page === previousPage
       scheduled.value = onlySearch
       if (onlySearch)

@@ -94,3 +94,23 @@ it('换账号清理旧草稿，旧回复迟到成功不会覆盖新账号输入'
   expect(state.replyDraft.value).toBe('新账号输入')
   expect(state.commentNote.value).toBeNull()
 })
+it('指定回复对象随博主回复提交，成功或关闭面板后回到直接评论，换对象视为新提交', async () => {
+  const state = await setup()
+  mocks.comment.mockRejectedValueOnce(new Error('网络失败'))
+  state.replyDraft.value = '谢谢'
+  state.startReply({ id: 'c-1', author: '远山', avatar: '', content: '晚霞', time: '' })
+  await state.reply().catch(() => {})
+  const first = mocks.comment.mock.calls[0]!
+  expect(first[1]).toMatchObject({ content: '谢谢', replyToId: 'c-1' })
+  expect(first[2]).toBe(true)
+  state.startReply({ id: 'c-2', author: '读者', avatar: '', content: '同感', time: '' })
+  mocks.comment.mockResolvedValueOnce({ id: 'reply', commentCount: 2 })
+  await state.reply()
+  const second = mocks.comment.mock.calls[1]![1]
+  expect(second).toMatchObject({ replyToId: 'c-2' })
+  expect(second.requestId).not.toBe(first[1].requestId)
+  expect(state.replyTarget.value).toBeNull()
+  state.startReply({ id: 'c-1', author: '远山', avatar: '', content: '晚霞', time: '' })
+  state.closeComments()
+  expect(state.replyTarget.value).toBeNull()
+})

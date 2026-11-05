@@ -14,7 +14,9 @@ import { msg } from '../../common/i18n'
 import { readSiteTimeZone, zonedDayStart, zonedParts } from '../site/site-time-zone'
 import {
   CommentRow,
+  ReactionRow,
   LINKED_ARTICLE_FIELDS,
+  MOMENT_LOCATIONS_SQL,
   MomentProjection,
   RECOLLECTION_FIELDS,
   formatMomentItem,
@@ -144,7 +146,7 @@ export class MomentReadService {
         ...(query.status && query.status !== 'all' ? { status: query.status } : {}),
       },
       {
-        populate: ['moment'],
+        populate: ['moment', 'replyTo'],
         orderBy: { createdAt: 'desc', id: 'desc' },
         limit: query.pageSize,
         offset: (query.page - 1) * query.pageSize,
@@ -152,7 +154,7 @@ export class MomentReadService {
     )
     return {
       items: items.map((comment) => ({
-        ...momentCommentDto(comment),
+        ...momentCommentDto(comment, true),
         momentId: comment.moment.id,
         momentContent: comment.moment.content.slice(0, 160),
         momentStatus: comment.moment.status,
@@ -168,11 +170,17 @@ export class MomentReadService {
     const where: FilterQuery<MomentComment> = { moment: id, deletedAt: null }
     if (!admin) where.$or = [{ status: 'published' }, { status: 'pending', visitorIdHash: visitor || '__anonymous__' }]
     const [items, total] = await this.em.findAndCount(MomentComment, where, {
+      populate: ['replyTo'],
       orderBy: { createdAt: 'asc', id: 'asc' },
       limit: query.pageSize,
       offset: (query.page - 1) * query.pageSize,
     })
-    return { items: items.map(momentCommentDto), total, page: query.page, pageSize: query.pageSize }
+    return {
+      items: items.map((comment) => momentCommentDto(comment, admin)),
+      total,
+      page: query.page,
+      pageSize: query.pageSize,
+    }
   }
 
   async commentLocation(id: string, commentId: string) {
@@ -195,7 +203,7 @@ export class MomentReadService {
     // 各聚合互不依赖，并发执行；均为事务外只读查询，各自从连接池取连接。
     // 照片与回顾按不同字段部分加载，可能命中同一条动态；各用独立 fork 的身份映射，
     // 避免并发合并部分实体，也不污染请求级 EntityManager。
-    const [[stats], topics, dates, photos, recent, anniversary] = await Promise.all([
+    const [[stats], topics, dates, photos, recent, anniversary, locations] = await Promise.all([
       connection.execute<{ totalMoments: number; totalLikes: number; totalComments: number }[]>(`
       select count(*)::int as "totalMoments", coalesce(sum(likes),0)::int as "totalLikes",
       (select count(*)::int from moment_comment c join moment m on m.id=c.moment_id
@@ -234,12 +242,14 @@ export class MomentReadService {
               { fields: [...RECOLLECTION_FIELDS], orderBy: { publishedAt: 'desc', id: 'desc' } },
             )
         : Promise.resolve(null),
+      connection.execute<{ name: string; count: number }[]>(MOMENT_LOCATIONS_SQL),
     ])
     if (anniversary && !recent.some((item) => item.id === anniversary.id)) recent.push(anniversary)
     return {
       stats,
       topics,
       dates,
+      locations,
       photos: photos.map((note) => ({ src: note.images[0], momentId: note.id })),
       recollections: recent.map((note) => ({
         id: note.id,
@@ -254,11 +264,13 @@ export class MomentReadService {
     const ids = items.map((item) => item.id)
     const marks = ids.map(() => '?').join(',')
     const connection = this.em.getConnection()
-    const visibility = admin ? 'true' : "(status='published' or (status='pending' and visitor_id_hash=?))"
+    const visibility = admin ? 'true' : "(c.status='published' or (c.status='pending' and c.visitor_id_hash=?))"
     const comments = await connection.execute<CommentRow[]>(
       `
-      select * from (select c.*,row_number() over(partition by moment_id order by created_at desc,id desc) as sequence
-      from moment_comment c where moment_id in (${marks}) and deleted_at is null and ${visibility}) ranked where sequence <= 3`,
+      select * from (select c.*,r.author as reply_author,r.status as reply_status,r.deleted_at as reply_deleted_at,
+      row_number() over(partition by c.moment_id order by c.created_at desc,c.id desc) as sequence
+      from moment_comment c left join moment_comment r on r.id=c.reply_to_id
+      where c.moment_id in (${marks}) and c.deleted_at is null and ${visibility}) ranked where sequence <= 3`,
       [...ids, ...(admin ? [] : [visitor || '__anonymous__'])],
     )
     const counts = await connection.execute<{ moment_id: string; count: number }[]>(
@@ -267,11 +279,16 @@ export class MomentReadService {
       and status='published' and deleted_at is null group by moment_id`,
       ids,
     )
+    const reactions = await connection.execute<ReactionRow[]>(
+      `select moment_id,emoji,count(*)::int as count,bool_or(visitor_id_hash=?) as reacted from moment_reaction
+      where moment_id in (${marks}) group by moment_id,emoji`,
+      [visitor || '__anonymous__', ...ids],
+    )
     const likes = visitor ? await this.em.find(MomentLike, { moment: { $in: ids }, visitorIdHash: visitor }) : []
     const liked = new Set(likes.map((like) => like.moment.id))
     const mediaIds = managedMediaIds(items.map((item) => item.images))
     const media = mediaIds.length ? await this.em.find(MediaAsset, { id: { $in: mediaIds } }) : []
     const alts = new Map(media.map((asset) => [asset.id, asset.alt]))
-    return items.map((note) => formatMomentItem(note, comments, counts, liked, alts, admin))
+    return items.map((note) => formatMomentItem(note, comments, counts, liked, alts, admin, reactions))
   }
 }

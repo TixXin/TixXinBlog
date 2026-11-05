@@ -16,6 +16,7 @@ export function momentWhere(
 ): FilterQuery<Moment> {
   const where: FilterQuery<Moment> = admin ? { deletedAt: null } : { ...publicMoments }
   if (query.topic) where.topics = { $contains: [query.topic] }
+  if (query.location) where.location = query.location
   // 单日筛选按站点时区的日边界，与日历分组一致
   if (query.date) where.publishedAt = siteDayRange(query.date, query.date, timeZone)
   if (query.q) {

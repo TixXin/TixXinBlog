@@ -19,6 +19,7 @@ import {
   ValidateNested,
   ValidateIf,
 } from 'class-validator'
+import { MOMENT_REACTIONS, type MomentReactionKind } from '../../entities/moment-reaction.entity'
 import { MOMENT_STATUSES } from '../../entities/moment.entity'
 import type { MomentStatus } from '../../entities/moment.entity'
 import { MOMENT_COMMENT_STATUSES } from '../../entities/moment-comment.entity'
@@ -50,6 +51,8 @@ export class QueryMomentsDto {
 
   @IsOptional() @IsString() @MaxLength(200) @Transform(trim) q?: string
   @IsOptional() @IsString() @MinLength(1) @MaxLength(40) @Transform(trim) topic?: string
+  /** 足迹：按地点精确筛选 */
+  @IsOptional() @IsString() @MinLength(1) @MaxLength(160) @Transform(trim) location?: string
   @IsOptional() @Matches(/^\d{4}-\d{2}-\d{2}$/) @IsDateString({ strict: true }) date?: string
 }
 export class QueryAdminMomentsDto extends QueryMomentsDto {
@@ -90,11 +93,17 @@ export class SaveMomentDto {
 export class MomentRevisionDto {
   @Transform(numberFromString) @IsInt() @Min(0) revision!: number
 }
+export class SetMomentReactionDto {
+  @IsIn(MOMENT_REACTIONS) emoji!: MomentReactionKind
+  @IsBoolean() reacted!: boolean
+}
 export class SetMomentLikeDto {
   @IsBoolean() liked!: boolean
 }
 export class MomentCommentBody {
   @IsUUID('4') requestId!: string
+  /** 回复同一动态下已公开的评论 */
+  @IsOptional() @IsUUID() replyToId?: string
   @IsString() @MinLength(1) @MaxLength(1000) @Transform(trim) content!: string
 }
 export class CreateMomentCommentDto extends MomentCommentBody {

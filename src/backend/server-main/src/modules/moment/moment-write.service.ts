@@ -7,6 +7,7 @@ import { MomentComment } from '../../entities/moment-comment.entity'
 import { MomentLike } from '../../entities/moment-like.entity'
 import { Post } from '../../entities/post.entity'
 import { MediaReference } from '../../entities/media-reference.entity'
+import { MomentReaction } from '../../entities/moment-reaction.entity'
 import type { SaveMomentDto } from './moment.dto'
 import { MomentReadService } from './moment-read.service'
 import { assertSecureEmbeds, momentValues, submissionHash } from './moment-values'
@@ -85,6 +86,7 @@ export class MomentWriteService {
       note.likes = 0
       await em.nativeUpdate(MomentComment, { moment: note, deletedAt: null }, { deletedAt: new Date() })
       await em.nativeDelete(MomentLike, { moment: note })
+      await em.nativeDelete(MomentReaction, { moment: note })
       await em.nativeDelete(MediaReference, { moment: note })
       await em.flush()
       return { ok: true }

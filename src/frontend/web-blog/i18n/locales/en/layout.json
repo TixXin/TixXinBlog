@@ -352,6 +352,11 @@
         "likes": "Likes",
         "comments": "Comments"
       },
+      "locations": {
+        "title": "Places",
+        "all": "All",
+        "count": "{count}"
+      },
       "topics": {
         "title": "Trending topics",
         "all": "All"

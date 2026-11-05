@@ -14,6 +14,7 @@ export const FIXTURE_TABLES = {
   'post-like': 'post_like',
   'flash-like': 'flash_like',
   'moment-like': 'moment_like',
+  'moment-reaction': 'moment_reaction',
   guestbook: 'guestbook_message',
   'guestbook-reaction': 'guestbook_reaction',
   gallery: 'gallery_photo',

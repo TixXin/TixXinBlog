@@ -261,6 +261,8 @@ const momentComments = [
     status: 'hidden',
     deletedAt: at(7),
     createdAt: at(7),
+    // v19 的回复关系：回复第一条评论
+    replyTo: { id: 'c1111111-1111-4111-8111-111111111111' },
   },
 ]
 const guestbook = [
@@ -634,6 +636,9 @@ const legacyV13 = (value: ContentPackage) => {
   delete copy.site.searchIndexing
   delete copy.site.presenceExpiresAt
   delete copy.site.timeZone
+  // v19 才有的动态评论回复关系
+  for (const note of copy.moments as { comments: Record<string, unknown>[] }[])
+    for (const comment of note.comments) delete comment.replyToId
   // v18 才有的订阅试用到期日与结束日
   for (const item of copy.subscriptions as { values: Record<string, unknown> }[]) {
     delete item.values.trialEndDate
@@ -645,7 +650,7 @@ const legacyV13 = (value: ContentPackage) => {
 const parse = (value: unknown) => parseContentPackage(Buffer.from(JSON.stringify(value)))
 
 describe('内容包导出特征', () => {
-  it('v18 导出的字节与读取顺序保持不变', async () => {
+  it('v19 导出的字节与读取顺序保持不变', async () => {
     const calls: Calls = []
     const { result, em } = await exportPackage(false, calls)
     expect(JSON.stringify(result)).toMatchSnapshot()
@@ -709,8 +714,8 @@ describe('内容包导出特征', () => {
 
 describe('内容包迁入计划特征', () => {
   it.each([
-    ['v18 跳过相同内容', false, 'skip', false],
-    ['v18 复制并包含设置', false, 'copy', true],
+    ['v19 跳过相同内容', false, 'skip', false],
+    ['v19 复制并包含设置', false, 'copy', true],
     ['v13 复制并包含设置', true, 'copy', true],
     ['v13 跳过且不含设置', true, 'skip', false],
   ] as const)('%s', async (_name, legacy, strategy, includeSettings) => {

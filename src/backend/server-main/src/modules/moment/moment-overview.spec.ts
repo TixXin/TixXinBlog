@@ -55,7 +55,11 @@ describe('朋友圈公开概览', () => {
 
     await service.overview()
 
-    expect(execute).toHaveBeenCalledTimes(3)
+    expect(execute).toHaveBeenCalledTimes(4)
+    // 足迹只统计公开动态的非空地点，按次数与名称排序并限量
+    const locationSql = String(execute.mock.calls[3][0]).replace(/\s+/g, ' ').trim()
+    expect(locationSql).toContain("where status='published' and deleted_at is null and coalesce(location,'')<>''")
+    expect(locationSql).toContain('group by location order by count desc,location asc limit 20')
     const sql = String(execute.mock.calls[0][0]).replace(/\s+/g, ' ').trim()
     expect(sql).toContain('count(*)::int as "totalMoments"')
     expect(sql).toContain('coalesce(sum(likes),0)::int as "totalLikes"')

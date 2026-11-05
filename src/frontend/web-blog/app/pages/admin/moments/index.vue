@@ -87,8 +87,10 @@
               :comment="comment"
               :targeted="commentTargetId === comment.id"
               :busy="busyIds.includes(commentNote.id)"
+              :replyable="commentNote.status === 'published'"
               @moderate="moderate(comment, $event)"
               @remove="removeComment(comment)"
+              @reply="startReply(comment)"
             />
           </ul>
           <nav
@@ -113,6 +115,10 @@
             </button>
           </nav>
           <form v-if="commentNote.status === 'published'" @submit.prevent="reply">
+            <p v-if="replyTarget" role="status">
+              {{ $t('admin-content.moments.replyingTo', { author: replyTarget.author }) }}
+              <button type="button" @click="cancelReply">{{ $t('admin-content.moments.cancelReply') }}</button>
+            </p>
             <label
               >{{ $t('admin-content.moments.replyLabel')
               }}<textarea v-model="replyDraft" :aria-label="$t('admin-content.moments.replyAria')" maxlength="1000" />
@@ -172,6 +178,9 @@ const {
   removeComment,
   replyDraft,
   replyPending,
+  replyTarget,
+  startReply,
+  cancelReply,
   reply,
 } = useAdminMoments()
 const commentsPanel = ref<HTMLElement | null>(null)

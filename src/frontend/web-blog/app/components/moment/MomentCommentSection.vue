@@ -1,6 +1,6 @@
 <!--
   @file MomentCommentSection.vue
-  @description 朋友圈评论区，含头像、折叠展开与输入框
+  @description 朋友圈评论区，含头像、折叠展开、回复与输入框
   @author TixXin
   @since 2026-04-10
 -->
@@ -22,6 +22,13 @@
         </MomentUserPopover>
         <div class="moment-comments__body">
           <span class="moment-comments__author" :class="{ 'is-owner': c.isOwner }">{{ c.author }}</span>
+          <template v-if="c.replyTo">
+            <span class="moment-comments__reply-word">{{ $t('flash-moment.momentComments.replyWord') }}</span>
+            <span v-if="c.replyTo.author" class="moment-comments__author">{{ c.replyTo.author }}</span>
+            <span v-else class="moment-comments__reply-word">{{
+              $t('flash-moment.momentComments.replyUnavailable')
+            }}</span>
+          </template>
           <span class="moment-comments__sep" aria-hidden="true">{{ $t('flash-moment.momentComments.separator') }}</span>
           <!-- eslint-disable vue/no-v-html -- 评论 Markdown 已通过 DOMPurify 净化 -->
           <span
@@ -32,6 +39,15 @@
           <!-- eslint-enable vue/no-v-html -->
           <CommonMarkdownImages :root="commentRoots.get(c.id) ?? null" :html="c.html" />
           <small v-if="c.moderationStatus === 'pending'">{{ $t('flash-moment.momentComments.pendingSelf') }}</small>
+          <button
+            v-else-if="c.moderationStatus !== 'hidden'"
+            type="button"
+            class="moment-comments__reply"
+            :aria-label="$t('flash-moment.momentComments.replyTo', { author: c.author })"
+            @click="startReply(c)"
+          >
+            {{ $t('flash-moment.momentComments.reply') }}
+          </button>
         </div>
       </div>
     </div>
@@ -60,6 +76,7 @@
       <p v-if="notice" role="status" class="moment-comments__notice">{{ notice }}</p>
     </div>
     <CommonSubmissionTrap v-model="website" />
+    <MomentCommentReplyBar v-if="replyTarget" :author="replyTarget.author" @cancel="cancelReply" />
     <div class="moment-comments__input-wrap" :aria-busy="submitting">
       <input
         ref="inputRef"
@@ -67,7 +84,11 @@
         type="text"
         :aria-label="$t('flash-moment.momentComments.input')"
         class="moment-comments__input"
-        :placeholder="$t('flash-moment.momentComments.placeholder')"
+        :placeholder="
+          replyTarget
+            ? $t('flash-moment.momentComments.replyPlaceholder', { author: replyTarget.author })
+            : $t('flash-moment.momentComments.placeholder')
+        "
         maxlength="1000"
         @input="$emit('update:draft', ($event.target as HTMLInputElement).value)"
         @keydown.enter="onEnter"
@@ -78,7 +99,7 @@
         :aria-busy="submitting"
         :disabled="!draft.trim() || submitting"
         :aria-label="submitting ? $t('flash-moment.momentComments.sending') : $t('flash-moment.momentComments.send')"
-        @click="$emit('submit', visitorForm.fields())"
+        @click="submit"
       >
         <Icon :name="submitting ? 'lucide:loader-circle' : 'lucide:send'" size="14" />
       </button>
@@ -103,7 +124,7 @@ const props = defineProps<{
 }>()
 const emit = defineEmits<{
   'update:draft': [value: string]
-  submit: [fields: VisitorSubmissionFields]
+  submit: [fields: VisitorSubmissionFields & { replyToId?: string }]
   'load-more': []
 }>()
 const visitorForm = useVisitorSubmissionForm({ submitting: () => !!props.submitting, error: () => props.submitError })
@@ -144,11 +165,35 @@ function setCommentRoot(id: string, element: Element | ComponentPublicInstance |
 function onEnter(event: KeyboardEvent) {
   if (event.isComposing || props.submitting || !props.draft.trim()) return
   event.preventDefault()
-  emit('submit', visitorForm.fields())
+  submit()
 }
+const { replyTarget, startReply, cancelReply, submit } = useMomentCommentReply({
+  input: inputRef,
+  submitting: () => !!props.submitting,
+  succeeded: () => !props.draft.trim() && !props.submitError,
+  emit: (fields) => emit('submit', { ...visitorForm.fields(), ...fields }),
+})
 </script>
 
 <style lang="scss" scoped>
+.moment-comments__reply-word {
+  color: var(--text-soft);
+  margin: 0 0.25rem;
+}
+.moment-comments__reply {
+  margin-left: 0.375rem;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--text-soft);
+  font-size: 0.75rem;
+  cursor: var(--interaction-cursor, pointer);
+
+  &:hover,
+  &:focus-visible {
+    color: var(--accent);
+  }
+}
 .moment-comments__notice {
   color: var(--text-soft);
   font-size: 0.75rem;

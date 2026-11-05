@@ -81,7 +81,7 @@ const parse = (input: unknown) => parseContentPackage(Buffer.from(JSON.stringify
 describe('平台订阅内容包 v11', () => {
   it('保存价格事实和管理备注，开始日期不会伪造更早的历史价格', async () => {
     const parsed = await parse(bundle())
-    expect(parsed.version).toBe(18)
+    expect(parsed.version).toBe(19)
     expect(parsed.subscriptions).toEqual([
       { ...subscription(), values: { ...subscription().values, trialEndDate: null, endDate: null } },
     ])

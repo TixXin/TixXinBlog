@@ -36,6 +36,7 @@
       :syncing="pending"
       :detail-query="detailQuery"
       @like="$emit('like', $event)"
+      @react="$emit('react', $event)"
       @draft="$emit('draft', $event)"
       @comment="$emit('comment', $event)"
       @comments="$emit('comments', $event)"
@@ -89,6 +90,7 @@ const emit = defineEmits<{
   comments: [id: string]
   draft: [value: { id: string; value: string }]
   like: [value: { id: string; liked: boolean; complete: (success: boolean) => void }]
+  react: [value: { id: string; emoji: string; reacted: boolean }]
 }>()
 const sentinelRef = ref<HTMLElement | null>(null),
   hydrated = ref(false),

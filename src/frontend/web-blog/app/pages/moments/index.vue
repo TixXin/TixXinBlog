@@ -38,12 +38,12 @@
               @retry="refreshOverview()"
             />
             <SidebarMomentTopicCard :topics="momentTopics" :active-topic="selectedTopic" @select="onTopicSelect" />
-            <button
-              v-if="searchKeyword || selectedTopic || selectedDate"
-              type="button"
-              class="filter-clear"
-              @click="clearFilters"
-            >
+            <SidebarMomentLocationCard
+              :locations="momentLocations"
+              :active-location="selectedLocation"
+              @select="selectedLocation = $event"
+            />
+            <button v-if="hasFilters" type="button" class="filter-clear" @click="clearFilters">
               {{ $t('flash-moment.moments.clearFilters') }}
             </button>
             <SidebarMomentPhotoWallCard :images="photoWallImages" @select-moment="onPhotoSelect" />
@@ -63,11 +63,7 @@
     </template>
     <template #default>
       <!-- 头部 Tab 栏 + 搜索筛选摘要 -->
-      <MomentFilterSummary
-        :visible="!!(searchKeyword || selectedTopic || selectedDate)"
-        :filter-summary="filterSummary"
-        @clear="clearFilters"
-      />
+      <MomentFilterSummary :visible="hasFilters" :filter-summary="filterSummary" @clear="clearFilters" />
       <CommonCustomScrollbar class="moments-body" viewport-class="moments-viewport" primary>
         <div class="moments-content">
           <MomentList
@@ -77,11 +73,12 @@
             :pending="feedPending"
             :error-message="feedError?.message"
             :has-more="hasMore"
-            :filtered="!!(searchKeyword || selectedTopic || selectedDate)"
+            :filtered="hasFilters"
             :detail-query="filterQuery"
             @retry="retryFeed"
             @more="loadMore"
             @like="interactions.like"
+            @react="interactions.react"
             @draft="interactions.draft"
             @comment="interactions.submit"
             @comments="interactions.comments"
@@ -119,6 +116,11 @@
             @select-date="onDateSelect"
           />
           <SidebarMomentTopicCard :topics="momentTopics" :active-topic="selectedTopic" @select="onTopicSelect" />
+          <SidebarMomentLocationCard
+            :locations="momentLocations"
+            :active-location="selectedLocation"
+            @select="selectedLocation = $event"
+          />
           <SidebarMomentTimeCapsuleCard :moments="recollections" />
         </SidebarRightSidebar>
       </CommonThemeSidebarPortal>
@@ -131,10 +133,20 @@ import { momentFeedPages } from '~/features/moment/feed'
 import { mockPostTabs } from '~/features/post/mock'
 
 const pageScope = usePageRequestScope()
-const { searchKeyword, selectedTopic, selectedDate, page, setPage, filterQuery, clearFilters } = useMomentFilters()
+const { searchKeyword, selectedTopic, selectedDate, selectedLocation, page, setPage, filterQuery, clearFilters } =
+  useMomentFilters()
+const hasFilters = computed(
+  () => !!(searchKeyword.value || selectedTopic.value || selectedDate.value || selectedLocation.value),
+)
 const interactions = useMomentInteractions()
 const overviewRequest = useMomentOverview()
-const feedRequest = useMomentFeed({ page, q: searchKeyword, topic: selectedTopic, date: selectedDate })
+const feedRequest = useMomentFeed({
+  page,
+  q: searchKeyword,
+  topic: selectedTopic,
+  date: selectedDate,
+  location: selectedLocation,
+})
 const [overview, feed] = await Promise.all([overviewRequest, feedRequest])
 pageScope.assertActive()
 const {
@@ -146,6 +158,7 @@ const {
   momentDates,
   momentDateCounts,
   photoWallImages,
+  momentLocations,
   moments: recollections,
   error: overviewError,
   pending: overviewPending,
@@ -181,6 +194,7 @@ const filterSummary = computed(() =>
     searchKeyword.value ? t('flash-moment.moments.filterKeyword', { keyword: searchKeyword.value }) : '',
     selectedTopic.value ? '#' + selectedTopic.value : '',
     selectedDate.value,
+    selectedLocation.value ? t('flash-moment.moments.filterLocation', { location: selectedLocation.value }) : '',
   ]
     .filter(Boolean)
     .join(' · '),

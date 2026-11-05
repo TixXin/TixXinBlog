@@ -59,6 +59,22 @@ export function useMomentInteractions() {
       if (epoch === session.epoch) state.likePending = false
     }
   }
+  /** 切换表情回应；服务端返回该动态的完整回应计数，直接替换 */
+  async function react({ id, emoji, reacted }: { id: string; emoji: string; reacted: boolean }) {
+    const state = stateFor(id)
+    if (!state || state.reactionPending) return
+    state.reactionPending = true
+    const epoch = session.epoch
+    try {
+      const result = await repo.react(id, emoji, reacted)
+      if (epoch === session.epoch) store.patch(id, { reactions: result.reactions })
+    } catch (cause) {
+      if (epoch === session.epoch)
+        toast.error(cause instanceof Error ? cause.message : t('flash-moment.interactions.reactionFailed'))
+    } finally {
+      if (epoch === session.epoch) state.reactionPending = false
+    }
+  }
   async function comments(id: string, reset = false) {
     const state = stateFor(id)
     if (!state || state.loading) return
@@ -84,7 +100,7 @@ export function useMomentInteractions() {
     }
   }
   async function submit(submission: MomentCommentSubmission) {
-    const { id, ...fields } = submission
+    const { id, replyToId, ...fields } = submission
     const state = stateFor(id)
     if (!state || state.submitting || !state.draft.trim()) return
     if (!auth.initialized.value || auth.restoringPending.value) {
@@ -101,6 +117,7 @@ export function useMomentInteractions() {
     const owner = auth.isLoggedIn.value
     const value = {
       content,
+      ...(replyToId ? { replyToId } : {}),
       ...(owner ? {} : { author: identity.guestIdentity.value!.nickname, avatar: identity.resolveAvatar() }),
     }
     const key = JSON.stringify({ ...value, owner })
@@ -163,6 +180,7 @@ export function useMomentInteractions() {
     seed,
     draft,
     like,
+    react,
     comments,
     submit,
     identityVisible,

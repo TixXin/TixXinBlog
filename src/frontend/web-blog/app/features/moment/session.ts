@@ -15,6 +15,7 @@ export interface MomentInteractionState {
   submitError: string
   notice: string
   likePending: boolean
+  reactionPending: boolean
   requestId: string
   requestBody: string
 }
@@ -42,6 +43,7 @@ export function seedMomentState(session: Session, note: MomentItem) {
       submitError: '',
       notice: '',
       likePending: false,
+      reactionPending: false,
       requestId: '',
       requestBody: '',
     }
@@ -60,6 +62,7 @@ export function clearMomentDrafts(app: object) {
       submitting: false,
       loading: false,
       likePending: false,
+      reactionPending: false,
       requestId: '',
       requestBody: '',
       submitError: '',

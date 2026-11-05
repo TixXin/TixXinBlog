@@ -237,6 +237,7 @@ describe('朋友圈公开与管理投影', () => {
       time: publishedAt.toISOString(),
       isOwner: false,
       moderationStatus: 'pending',
+      replyTo: null,
     })
     expect(second).toMatchObject({
       id: 'moment-2',
@@ -261,11 +262,14 @@ describe('朋友圈公开与管理投影', () => {
     })
     expect(em.find).toHaveBeenNthCalledWith(2, MediaAsset, { id: { $in: [mediaId, missingMediaId] } })
     const calls = connection.execute.mock.calls as [string, unknown[]][]
-    expect(calls).toHaveLength(2)
+    expect(calls).toHaveLength(3)
+    // 回应按动态与表情汇总，访客身份只用于判断本人是否已回应
+    expect(calls[2]![0]).toContain('from moment_reaction')
+    expect(calls[2]![1]).toEqual([visitor, 'moment-1', 'moment-2'])
     expect(calls[0]![1]).toEqual(['moment-1', 'moment-2', visitor])
-    expect(calls[0]![0]).toContain('moment_id in (?,?) and deleted_at is null')
-    expect(calls[0]![0]).toContain("(status='published' or (status='pending' and visitor_id_hash=?))")
-    expect(calls[0]![0]).toContain('partition by moment_id order by created_at desc,id desc')
+    expect(calls[0]![0]).toContain('c.moment_id in (?,?) and c.deleted_at is null')
+    expect(calls[0]![0]).toContain("(c.status='published' or (c.status='pending' and c.visitor_id_hash=?))")
+    expect(calls[0]![0]).toContain('partition by c.moment_id order by c.created_at desc,c.id desc')
     expect(calls[0]![0]).toContain('sequence <= 3')
     expect(calls[1]![1]).toEqual(['moment-1', 'moment-2'])
     expect(calls[1]![0]).toContain("and status='published' and deleted_at is null group by moment_id")
@@ -379,7 +383,7 @@ describe('朋友圈评论分页', () => {
         deletedAt: null,
         ...(admin ? {} : { $or: [{ status: 'published' }, { status: 'pending', visitorIdHash: identity }] }),
       },
-      { orderBy: { createdAt: 'asc', id: 'asc' }, limit: 5, offset: 5 },
+      { populate: ['replyTo'], orderBy: { createdAt: 'asc', id: 'asc' }, limit: 5, offset: 5 },
     )
     expect(result).toEqual({
       items: [
@@ -391,6 +395,7 @@ describe('朋友圈评论分页', () => {
           time: createdAt.toISOString(),
           isOwner: false,
           moderationStatus: 'published',
+          replyTo: null,
         },
       ],
       total: 18,
@@ -431,7 +436,7 @@ describe('朋友圈评论分页', () => {
       expect(em.findAndCount).toHaveBeenCalledWith(
         MomentComment,
         { deletedAt: null, moment: { deletedAt: null }, ...(status && status !== 'all' ? { status } : {}) },
-        { populate: ['moment'], orderBy: { createdAt: 'desc', id: 'desc' }, limit: 10, offset: 10 },
+        { populate: ['moment', 'replyTo'], orderBy: { createdAt: 'desc', id: 'desc' }, limit: 10, offset: 10 },
       )
       expect(result).toEqual({
         items: [
@@ -443,6 +448,7 @@ describe('朋友圈评论分页', () => {
             time: createdAt.toISOString(),
             isOwner: false,
             moderationStatus: status && status !== 'all' ? status : 'published',
+            replyTo: null,
             momentId: note.id,
             momentContent: '晚霞'.repeat(80),
             momentStatus: 'archived',

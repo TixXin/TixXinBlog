@@ -65,11 +65,12 @@ export function useMomentRepository(): MomentRepository {
     navigation: (id, signal) => request(path(id) + '/navigation', { signal }),
     comments: (id, page, signal) => request(path(id) + '/comments', { query: { page, pageSize: 15 }, signal }),
     like: (id, liked) => request(path(id) + '/like', { method: 'PUT', body: { liked } }),
+    react: (id, emoji, reacted) => request(path(id) + '/reactions', { method: 'PUT', body: { emoji, reacted } }),
     comment: (id, value, owner) =>
       owner
         ? manage('/admin' + path(id) + '/comments', {
             method: 'POST',
-            body: { content: value.content, requestId: value.requestId },
+            body: { content: value.content, requestId: value.requestId, replyToId: value.replyToId },
           })
         : request(path(id) + '/comments', { method: 'POST', body: value }),
     adminList: (query) => manage('/admin/moments', { query: { ...query } }),

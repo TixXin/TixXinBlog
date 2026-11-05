@@ -278,9 +278,102 @@ try {
   assert.equal(overview.dates[0].count, 2)
   assert.equal(overview.recollections.length, 2)
   assert(overview.recollections.every((item) => Object.keys(item).sort().join(',') === 'content,date,id'))
+  // 评论回复：只能回复同一动态下已公开的评论；目标删除后只标明不可见，不泄露原作者
+  assert.equal(
+    (
+      await request(
+        `/moments/${first.id}/comments`,
+        'POST',
+        { requestId: randomUUID(), author: '访客乙', content: '回复待审', replyToId: pending.id },
+        false,
+      )
+    ).status,
+    400,
+  )
+  assert.equal(
+    (
+      await request(
+        `/moments/${second.id}/comments`,
+        'POST',
+        { requestId: randomUUID(), author: '访客乙', content: '跨动态回复', replyToId: comments[0].id },
+        false,
+      )
+    ).status,
+    400,
+  )
+  const visitorReply = await ok(
+    `/moments/${first.id}/comments`,
+    'POST',
+    { requestId: randomUUID(), author: '访客乙', content: '同感', replyToId: comments[0].id },
+    false,
+  )
+  assert.deepEqual(visitorReply.replyTo, { id: comments[0].id, author: '访客' })
+  // 审核开启时访客回复先待审，通过后才能被回复
+  assert.equal(visitorReply.moderationStatus, 'pending')
+  await ok(`/admin/moments/${first.id}/comments/${visitorReply.id}`, 'PATCH', {
+    status: 'published',
+    expectedStatus: 'pending',
+  })
+  const ownerReply = await ok(`/admin/moments/${first.id}/comments`, 'POST', {
+    requestId: randomUUID(),
+    content: '谢谢',
+    replyToId: visitorReply.id,
+  })
+  assert.deepEqual(ownerReply.replyTo, { id: visitorReply.id, author: '访客乙' })
+  const card = await ok(`/moments/${first.id}`, 'GET', undefined, false)
+  assert.deepEqual(card.comments.at(-1).replyTo, { id: visitorReply.id, author: '访客乙' })
+  // 表情回应：同种回应每人一条，重复设置幂等，取消后计数回落；未列出的表情拒绝
+  const reacted = await Promise.all([
+    ok(`/moments/${second.id}/reactions`, 'PUT', { emoji: '❤️', reacted: true }, false),
+    ok(`/moments/${second.id}/reactions`, 'PUT', { emoji: '❤️', reacted: true }, false),
+  ])
+  assert(reacted.every((value) => value.reactions[0].count === 1 && value.reactions[0].reacted))
+  await ok(`/moments/${second.id}/reactions`, 'PUT', { emoji: '🎉', reacted: true }, false, other)
+  const listed = (await ok('/moments?pageSize=50', 'GET', undefined, false)).items.find((item) => item.id === second.id)
+  assert.deepEqual(listed.reactions, [
+    { emoji: '❤️', count: 1, reacted: true },
+    { emoji: '🎉', count: 1, reacted: false },
+  ])
+  assert.deepEqual(
+    (await ok(`/moments/${second.id}/reactions`, 'PUT', { emoji: '❤️', reacted: false }, false)).reactions,
+    [{ emoji: '🎉', count: 1, reacted: false }],
+  )
+  assert.equal(
+    (await request(`/moments/${second.id}/reactions`, 'PUT', { emoji: '👍', reacted: true }, false)).status,
+    400,
+  )
+  assert.equal(
+    (await request(`/moments/${draft.id}/reactions`, 'PUT', { emoji: '❤️', reacted: true }, false)).status,
+    404,
+  )
+  // 足迹：概览列出公开动态的地点，列表按地点精确筛选
+  const placed = await ok('/admin/moments', 'POST', {
+    content: '在湖边',
+    requestId: randomUUID(),
+    status: 'published',
+    location: '杭州·西湖',
+  })
+  assert.deepEqual((await ok('/moments/overview', 'GET', undefined, false)).locations, [
+    { name: '杭州·西湖', count: 1 },
+  ])
+  const located = await ok(`/moments?location=${encodeURIComponent('杭州·西湖')}`, 'GET', undefined, false)
+  assert.deepEqual(
+    located.items.map((item) => item.id),
+    [placed.id],
+  )
+  assert.equal((await ok(`/moments?location=${encodeURIComponent('杭州')}`, 'GET', undefined, false)).total, 0)
+  await ok(`/admin/moments/${placed.id}?revision=${placed.revision}`, 'DELETE')
   const edited = await ok(`/admin/moments/${first.id}`, 'PATCH', { revision: pinned.revision, images: [] })
   assert.equal((await ok(`/admin/media/${image.id}/references`)).total, 1)
-  assert.equal((await ok(`/admin/moments/${first.id}/comments/${comments[0].id}`, 'DELETE')).commentCount, 2)
+  // 新增访客回复与博主回复各一条公开评论
+  assert.equal((await ok(`/admin/moments/${first.id}/comments/${comments[0].id}`, 'DELETE')).commentCount, 4)
+  const afterDelete = await ok(`/moments/${first.id}/comments?pageSize=50`, 'GET', undefined, false)
+  assert.deepEqual(afterDelete.items.find((item) => item.id === visitorReply.id).replyTo, { id: null, author: null })
+  assert.equal(
+    (await ok(`/admin/moments/${first.id}/comments?pageSize=50`)).items.find((item) => item.id === visitorReply.id)
+      .replyTo.author,
+    '访客',
+  )
   assert.equal((await request(`/moments/${first.id}/comments`, 'POST', commentInput, false)).status, 409)
   assert.equal((await ok(`/admin/media/${image.id}/references`)).total, 0)
   await ok(`/admin/media/${image.id}`, 'DELETE')

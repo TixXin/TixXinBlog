@@ -66,33 +66,44 @@ exports[`列表、分页与评论面板（已发布与未发布）的结构，�
   <!--v-if-->
   <!--v-if-->
   <ul>
-    <li data-comment-id="1" data-comment-target="false"><strong>访客1（博主）</strong><span> · 已公开</span>
+    <li data-comment-id="1" data-comment-target="false"><strong>访客1（博主）</strong>
+      <!--v-if--><span> · 已公开</span>
       <p>评论 1
         换行</p>
-      <div class="admin-moments__actions">
+      <div class="admin-moments__actions"><button type="button">回复</button>
         <!--v-if--><button type="button">隐藏评论</button><button type="button">删除评论</button>
       </div>
     </li>
-    <li data-comment-id="2" data-comment-target="false"><strong>访客2</strong><span> · 已隐藏</span>
+    <li data-comment-id="2" data-comment-target="false"><strong>访客2</strong>
+      <!--v-if--><span> · 已隐藏</span>
       <p>评论 2
         换行</p>
-      <div class="admin-moments__actions"><button type="button">公开评论</button>
+      <div class="admin-moments__actions">
+        <!--v-if--><button type="button">公开评论</button>
         <!--v-if--><button type="button">删除评论</button>
       </div>
     </li>
-    <li data-comment-id="3" data-comment-target="true" tabindex="-1"><strong>访客3</strong><span> · 待审核</span>
+    <li data-comment-id="3" data-comment-target="true" tabindex="-1"><strong>访客3</strong>
+      <!--v-if--><span> · 待审核</span>
       <p>评论 3
         换行</p>
-      <div class="admin-moments__actions"><button type="button">公开评论</button><button type="button">隐藏评论</button><button type="button">删除评论</button></div>
+      <div class="admin-moments__actions">
+        <!--v-if--><button type="button">公开评论</button><button type="button">隐藏评论</button><button type="button">删除评论</button>
+      </div>
     </li>
-    <li data-comment-id="4" data-comment-target="false"><strong>访客4</strong><span> · 已公开</span>
+    <li data-comment-id="4" data-comment-target="false"><strong>访客4</strong>
+      <!--v-if--><span> · 已公开</span>
       <p>评论 4
         换行</p>
-      <div class="admin-moments__actions"><button type="button">公开评论</button><button type="button">隐藏评论</button><button type="button">删除评论</button></div>
+      <div class="admin-moments__actions">
+        <!--v-if--><button type="button">公开评论</button><button type="button">隐藏评论</button><button type="button">删除评论</button>
+      </div>
     </li>
   </ul>
   <nav class="admin-moments__actions" aria-label="动态评论分页"><button type="button" disabled="">上一页评论</button><span>1 / 2</span><button type="button">下一页评论</button></nav>
-  <form><label>博主回复<textarea aria-label="动态博主回复" maxlength="1000"></textarea></label><button aria-busy="false" type="submit" disabled="">发送博主回复</button></form>
+  <form>
+    <!--v-if--><label>博主回复<textarea aria-label="动态博主回复" maxlength="1000"></textarea></label><button aria-busy="false" type="submit" disabled="">发送博主回复</button>
+  </form>
 </section>",
   "<section tabindex="-1" class="admin-moments__comments" aria-label="动态评论管理">
   <h2>动态评论</h2>
@@ -102,29 +113,39 @@ exports[`列表、分页与评论面板（已发布与未发布）的结构，�
   <p class="feedback">正在加载评论</p>
   <!--v-if-->
   <ul>
-    <li data-comment-id="1" data-comment-target="false"><strong>访客1（博主）</strong><span> · 已公开</span>
+    <li data-comment-id="1" data-comment-target="false"><strong>访客1（博主）</strong>
+      <!--v-if--><span> · 已公开</span>
       <p>评论 1
         换行</p>
       <div class="admin-moments__actions">
+        <!--v-if-->
         <!--v-if--><button type="button">隐藏评论</button><button type="button">删除评论</button>
       </div>
     </li>
-    <li data-comment-id="2" data-comment-target="false"><strong>访客2</strong><span> · 已隐藏</span>
+    <li data-comment-id="2" data-comment-target="false"><strong>访客2</strong>
+      <!--v-if--><span> · 已隐藏</span>
       <p>评论 2
         换行</p>
-      <div class="admin-moments__actions"><button type="button">公开评论</button>
+      <div class="admin-moments__actions">
+        <!--v-if--><button type="button">公开评论</button>
         <!--v-if--><button type="button">删除评论</button>
       </div>
     </li>
-    <li data-comment-id="3" data-comment-target="true" tabindex="-1"><strong>访客3</strong><span> · 待审核</span>
+    <li data-comment-id="3" data-comment-target="true" tabindex="-1"><strong>访客3</strong>
+      <!--v-if--><span> · 待审核</span>
       <p>评论 3
         换行</p>
-      <div class="admin-moments__actions"><button type="button">公开评论</button><button type="button">隐藏评论</button><button type="button">删除评论</button></div>
+      <div class="admin-moments__actions">
+        <!--v-if--><button type="button">公开评论</button><button type="button">隐藏评论</button><button type="button">删除评论</button>
+      </div>
     </li>
-    <li data-comment-id="4" data-comment-target="false"><strong>访客4</strong><span> · 已公开</span>
+    <li data-comment-id="4" data-comment-target="false"><strong>访客4</strong>
+      <!--v-if--><span> · 已公开</span>
       <p>评论 4
         换行</p>
-      <div class="admin-moments__actions"><button type="button">公开评论</button><button type="button">隐藏评论</button><button type="button">删除评论</button></div>
+      <div class="admin-moments__actions">
+        <!--v-if--><button type="button">公开评论</button><button type="button">隐藏评论</button><button type="button">删除评论</button>
+      </div>
     </li>
   </ul>
   <!--v-if-->

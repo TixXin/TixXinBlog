@@ -9,6 +9,7 @@ import { MediaReference } from '../../entities/media-reference.entity'
 import { Moment } from '../../entities/moment.entity'
 import { MomentComment } from '../../entities/moment-comment.entity'
 import { MomentLike } from '../../entities/moment-like.entity'
+import { MomentReaction } from '../../entities/moment-reaction.entity'
 import { Post } from '../../entities/post.entity'
 import { SaveMomentDto } from './moment.dto'
 import type { MomentReadService } from './moment-read.service'
@@ -325,8 +326,9 @@ describe('朋友圈管理写入', () => {
     expect(em.findOne).toHaveBeenCalledWith(Moment, { id: note.id }, { lockMode: LockMode.PESSIMISTIC_WRITE })
     expect(note).toMatchObject({ deletedAt: now, revision: 4, likes: 0, requestId, requestHash: 'original-hash' })
     expect(em.nativeUpdate).toHaveBeenCalledWith(MomentComment, { moment: note, deletedAt: null }, { deletedAt: now })
-    expect(em.nativeDelete).toHaveBeenCalledTimes(2)
+    expect(em.nativeDelete).toHaveBeenCalledTimes(3)
     expect(em.nativeDelete).toHaveBeenCalledWith(MomentLike, { moment: note })
+    expect(em.nativeDelete).toHaveBeenCalledWith(MomentReaction, { moment: note })
     expect(em.nativeDelete).toHaveBeenCalledWith(MediaReference, { moment: note })
     expect(em.flush).toHaveBeenCalledTimes(1)
     expect(read.detail).not.toHaveBeenCalled()

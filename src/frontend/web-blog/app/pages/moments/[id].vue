@@ -76,6 +76,7 @@
                 :syncing="detailPending"
                 :detail-query="filterQuery"
                 @like="interactions.like"
+                @react="interactions.react"
                 @draft="interactions.draft"
                 @comment="interactions.submit"
                 @comments="interactions.comments"

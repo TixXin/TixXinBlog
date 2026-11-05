@@ -3,7 +3,7 @@ import { plainToInstance } from 'class-transformer'
 import { validateSync } from 'class-validator'
 import { SaveMomentDto, QueryMomentsDto } from './moment.dto'
 import { BadRequestException } from '@nestjs/common'
-import { assertSecureEmbeds, momentUrl, momentValues, submissionHash } from './moment-values'
+import { assertSecureEmbeds, momentUrl, momentValues, momentWhere, submissionHash } from './moment-values'
 
 describe('朋友圈输入与提交边界', () => {
   it.each(['content', 'images', 'topics', 'status', 'isPinned', 'revision', 'requestId'])(
@@ -80,6 +80,14 @@ describe('朋友圈输入与提交边界', () => {
     ).toHaveLength(0)
     for (const after of ['2.3b8ada68-c31e-458a-9bde-12cf04e2473e', '1.not-a-uuid', '1;drop'])
       expect(validateSync(plainToInstance(QueryMomentsDto, { after }))).toHaveLength(1)
+  })
+})
+
+describe('足迹按地点精确筛选', () => {
+  it('地点参数去首尾空白后精确匹配，空值与超长拒绝', () => {
+    expect(momentWhere(plainToInstance(QueryMomentsDto, { location: ' 杭州 ' }))).toMatchObject({ location: '杭州' })
+    expect(validateSync(plainToInstance(QueryMomentsDto, { location: '' }))).toHaveLength(1)
+    expect(validateSync(plainToInstance(QueryMomentsDto, { location: 'x'.repeat(161) }))).toHaveLength(1)
   })
 })
 

@@ -125,6 +125,10 @@ export const packageContentMessages = defineMessages({
     zh: '内容包字段不合法：重复动态评论编号',
     en: 'Invalid content package field: duplicate moment comment ID',
   },
+  'package.fieldMomentCommentReply': {
+    zh: '内容包字段不合法：动态评论回复的评论缺失或循环',
+    en: 'Invalid content package field: missing or circular moment comment reply',
+  },
   'package.fieldMomentId': { zh: '内容包字段不合法：动态编号', en: 'Invalid content package field: moment ID' },
   'package.fieldMomentCreatedAt': {
     zh: '内容包字段不合法：动态创建时间',

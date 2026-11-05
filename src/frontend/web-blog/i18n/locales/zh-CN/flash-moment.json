@@ -200,6 +200,13 @@
       "like": "点赞动态"
     },
     "momentComments": {
+      "reply": "回复",
+      "replyWord": "回复",
+      "replyTo": "回复 {author}",
+      "replyingTo": "回复 {author}",
+      "replyPlaceholder": "回复 {author}…",
+      "cancelReply": "取消回复，改为直接评论",
+      "replyUnavailable": "了一条不可见的评论",
       "separator": "：",
       "pendingSelf": "（待审核，仅自己可见）",
       "loading": "正在加载评论…",
@@ -208,6 +215,11 @@
       "placeholder": "写评论...",
       "sending": "正在发送评论",
       "send": "发送评论"
+    },
+    "reactions": {
+      "group": "表情回应",
+      "chip": "{name}，{count} 人",
+      "add": "添加回应"
     },
     "momentList": {
       "loading": "正在加载动态",
@@ -245,6 +257,7 @@
       "publish": "发布",
       "filterCurrent": "当前筛选：{summary}",
       "filterKeyword": "关键词：{keyword}",
+      "filterLocation": "地点：{location}",
       "seoTitle": "朋友圈",
       "seoDescription": "记录生活点滴，分享日常碎片",
       "shareTitle": "{name} 的朋友圈"
@@ -279,6 +292,7 @@
       "publicStats": "公开动态统计"
     },
     "interactions": {
+      "reactionFailed": "回应失败，请稍后重试",
       "likeFailed": "点赞失败，请重试",
       "commentsLoadFailed": "评论加载失败，请重试",
       "authPending": "正在确认登录状态，请稍后再次发送；输入已保留。",

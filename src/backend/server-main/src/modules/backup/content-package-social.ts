@@ -170,7 +170,12 @@ export function parsePackageMoments(
           'status',
           'deleted',
           'createdAt',
+          // v19 起评论携带回复关系；更早的版本夹带按未知字段拒绝
+          ...(version >= 19 ? ['replyToId'] : []),
         ])
+        if (version >= 19 && !('replyToId' in comment)) fail('package.fieldMomentCommentReply')
+        if (comment.replyToId !== undefined && comment.replyToId !== null && typeof comment.replyToId !== 'string')
+          fail('package.fieldMomentCommentReply')
         if (!MOMENT_COMMENT_STATUSES.includes(comment.status as MomentCommentStatus))
           fail('package.fieldMomentCommentStatus')
         return {
@@ -182,11 +187,13 @@ export function parsePackageMoments(
           status: comment.status as MomentCommentStatus,
           deleted: boolean(comment.deleted, 'package.fieldMomentCommentDeleted'),
           createdAt: date(comment.createdAt, 'package.fieldMomentCommentCreatedAt'),
+          replyToId: (comment.replyToId as string | null | undefined) ?? null,
         }
       },
     )
     if (new Set(comments.map((comment) => comment.sourceId)).size !== comments.length)
       fail('package.fieldMomentCommentIdDuplicate')
+    assertMomentReplies(comments)
     commentsTotal += comments.length
     return {
       sourceId: text(row.sourceId, 'package.fieldMomentId', 120, 1),
@@ -199,6 +206,20 @@ export function parsePackageMoments(
   })
   if (new Set(moments.map((note) => note.sourceId)).size !== moments.length) fail('package.fieldMomentIdDuplicate')
   return { moments, commentsCount: commentsTotal }
+}
+
+/** 回复只能指向同一动态下的其他评论，且不能成环 */
+function assertMomentReplies(comments: PackageMoment['comments']) {
+  const targets = new Map(comments.map((comment) => [comment.sourceId, comment.replyToId]))
+  for (const comment of comments) {
+    const seen = new Set([comment.sourceId])
+    let next = comment.replyToId
+    while (next !== null) {
+      if (!targets.has(next) || seen.has(next)) fail('package.fieldMomentCommentReply')
+      seen.add(next)
+      next = targets.get(next) ?? null
+    }
+  }
 }
 
 export function parsePackageGuestbook(rawGuestbook: unknown, version: number): PackageGuestbook[] {

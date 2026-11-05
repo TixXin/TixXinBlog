@@ -27,6 +27,7 @@ import { FlashNote } from '../entities/flash-note.entity'
 import { Moment } from '../entities/moment.entity'
 import { MomentComment } from '../entities/moment-comment.entity'
 import { MomentLike } from '../entities/moment-like.entity'
+import { MomentReaction } from '../entities/moment-reaction.entity'
 import { DevelopmentFixture } from '../entities/development-fixture.entity'
 import { GuestbookMessage } from '../entities/guestbook-message.entity'
 import { GuestbookReaction } from '../entities/guestbook-reaction.entity'
@@ -97,6 +98,7 @@ const ORM_ENTITIES = [
   Moment,
   MomentComment,
   MomentLike,
+  MomentReaction,
   DevelopmentFixture,
   GuestbookMessage,
   GuestbookReaction,

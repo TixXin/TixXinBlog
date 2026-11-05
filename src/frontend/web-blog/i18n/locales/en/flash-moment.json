@@ -200,6 +200,13 @@
       "like": "Like this moment"
     },
     "momentComments": {
+      "reply": "Reply",
+      "replyWord": "replied to",
+      "replyTo": "Reply to {author}",
+      "replyingTo": "Replying to {author}",
+      "replyPlaceholder": "Reply to {author}…",
+      "cancelReply": "Cancel reply and comment directly",
+      "replyUnavailable": "a comment that is no longer visible",
       "separator": ": ",
       "pendingSelf": "(pending review, visible only to you)",
       "loading": "Loading comments…",
@@ -208,6 +215,11 @@
       "placeholder": "Write a comment...",
       "sending": "Sending comment",
       "send": "Send comment"
+    },
+    "reactions": {
+      "group": "Reactions",
+      "chip": "{name}, {count}",
+      "add": "Add a reaction"
     },
     "momentList": {
       "loading": "Loading moments",
@@ -245,6 +257,7 @@
       "publish": "Post",
       "filterCurrent": "Filters: {summary}",
       "filterKeyword": "Keyword: {keyword}",
+      "filterLocation": "Place: {location}",
       "seoTitle": "Moments",
       "seoDescription": "Little moments from everyday life",
       "shareTitle": "{name}'s moments"
@@ -279,6 +292,7 @@
       "publicStats": "Public moment stats"
     },
     "interactions": {
+      "reactionFailed": "Could not save the reaction. Please try again.",
       "likeFailed": "Couldn't like. Please try again",
       "commentsLoadFailed": "Couldn't load comments. Please try again",
       "authPending": "Checking your sign-in status. Please send again shortly; your input has been kept.",
