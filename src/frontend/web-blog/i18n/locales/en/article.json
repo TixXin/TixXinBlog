@@ -253,7 +253,22 @@
       "subscribe": "Subscribe to {label} RSS",
       "posts": "Posts",
       "flash": "Flash notes",
-      "moments": "Moments"
+      "moments": "Moments",
+      "modal": {
+        "title": "Subscribe",
+        "description": "Add the address below to any RSS reader to get updates as soon as they are published.",
+        "feedGroup": "Choose a feed",
+        "urlLabel": "Feed URL",
+        "copy": "Copy link",
+        "copied": "Copied",
+        "copySuccess": "Feed URL copied",
+        "copyFailed": "Copy failed, please copy the address manually",
+        "readers": "Subscribe in a reader",
+        "viewSource": "View source in a new tab",
+        "otherFormats": "Other formats:",
+        "emailNote": "Email subscription is not available yet.",
+        "close": "Close"
+      }
     },
     "subscribe": {
       "title": "Subscribe",

@@ -253,7 +253,22 @@
       "subscribe": "订阅{label} RSS",
       "posts": "文章",
       "flash": "闪念",
-      "moments": "朋友圈"
+      "moments": "朋友圈",
+      "modal": {
+        "title": "订阅更新",
+        "description": "把下面的地址添加到任意 RSS 阅读器，就能第一时间收到更新。",
+        "feedGroup": "选择订阅源",
+        "urlLabel": "订阅地址",
+        "copy": "复制链接",
+        "copied": "已复制",
+        "copySuccess": "订阅地址已复制",
+        "copyFailed": "复制失败，请手动复制地址",
+        "readers": "在阅读器中订阅",
+        "viewSource": "在新标签页查看源文件",
+        "otherFormats": "其他格式：",
+        "emailNote": "邮件订阅尚未开放。",
+        "close": "关闭"
+      }
     },
     "subscribe": {
       "title": "订阅更新",
