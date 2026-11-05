@@ -1,6 +1,6 @@
 /**
  * @file flash.service.ts
- * @description 闪念业务:列表与搜索(置顶前置,可按标签/类型/UTC 日期组合筛选)、公开概览聚合、详情、点赞切换、访客评论;
+ * @description 闪念业务:列表与搜索(置顶前置,可按标签/类型/站点时区日期组合筛选)、公开概览聚合、详情、点赞切换、访客评论;
  *   评论按评论策略决定先审后发,公开读取只返回已发布评论与当前访客本人的待审评论
  * @author TixXin
  * @since 2026-07-20
@@ -24,6 +24,7 @@ import { momentUrl } from '../moment/moment-values'
 import { recordOwnerEvent } from '../operations/owner-events'
 import { SITE_OWNER_ID } from '../../common/constants/site'
 import { msg } from '../../common/i18n'
+import { DEFAULT_SITE_TIME_ZONE, readSiteTimeZone, siteDay, zonedDayStart, zonedParts } from '../site/site-time-zone'
 import {
   DEFAULT_AVATAR,
   FLASH_NOT_FOUND,
@@ -64,9 +65,14 @@ export class FlashService {
     return { items: await this.serialize(notes, visitor), total, page: query.page, pageSize: query.pageSize }
   }
 
+  /** 带日期筛选时才读取站点时区,无日期筛选的列表不多一次查询 */
+  private async filterZone(query: QueryFlashDto): Promise<string> {
+    return query.date || query.from || query.to ? readSiteTimeZone(this.em) : DEFAULT_SITE_TIME_ZONE
+  }
+
   /** 列表:草稿不对外;置顶前置 + createdAt 倒序(对齐前端 LocalFlashRepository.list) */
   async findMany(query: QueryFlashDto, visitor = ''): Promise<FlashListResult> {
-    return this.page(buildFlashPublicWhere(query), query, visitor)
+    return this.page(buildFlashPublicWhere(query, await this.filterZone(query)), query, visitor)
   }
 
   async findOne(id: string, visitor = ''): Promise<FlashNoteDto> {
@@ -84,7 +90,7 @@ export class FlashService {
    * 排序与列表一致(置顶前置),相同创建时间按编号稳定分页。
    */
   async search(query: SearchFlashDto, visitor = ''): Promise<FlashListResult> {
-    return this.page(buildFlashSearchWhere(query), query, visitor)
+    return this.page(buildFlashSearchWhere(query, await this.filterZone(query)), query, visitor)
   }
 
   /**
@@ -93,10 +99,13 @@ export class FlashService {
    */
   async overview(visitor = '', now = new Date()): Promise<FlashOverview> {
     const connection = this.em.getConnection()
-    const monthStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1))
-    const nextMonth = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, 1))
-    const yearStart = new Date(Date.UTC(now.getUTCFullYear(), 0, 1))
-    const monthDay = now.toISOString().slice(5, 10)
+    // 本月、往年今日与日期分组均按站点时区
+    const zone = await readSiteTimeZone(this.em)
+    const today = zonedParts(now, zone)
+    const monthStart = zonedDayStart(today.year, today.month, 1, zone)
+    const nextMonth = zonedDayStart(today.year, today.month + 1, 1, zone)
+    const yearStart = zonedDayStart(today.year, 1, 1, zone)
+    const monthDay = siteDay(now, zone).slice(5, 10)
     const owner = SITE_OWNER_ID
     const excerpt = `id, left(content, ${RECOLLECTION_EXCERPT}) as content, created_at`
     // 各聚合互不依赖,并发执行;均为事务外只读查询
@@ -108,9 +117,9 @@ export class FlashService {
         [monthStart, nextMonth, owner],
       ),
       connection.execute<{ date: string; count: number }[]>(
-        `select to_char(created_at at time zone 'UTC', 'YYYY-MM-DD') as date, count(*)::int as count
+        `select to_char(created_at at time zone ?, 'YYYY-MM-DD') as date, count(*)::int as count
         from flash_note where ${PUBLIC_SQL} group by date order by date desc`,
-        [owner],
+        [zone, owner],
       ),
       connection.execute<{ name: string; count: number }[]>(
         `select tag as name, count(*)::int as count
@@ -120,9 +129,9 @@ export class FlashService {
       ),
       connection.execute<RecollectionRow[]>(
         `select ${excerpt} from flash_note where ${PUBLIC_SQL}
-        and to_char(created_at at time zone 'UTC', 'MM-DD') = ? and created_at < ?
+        and to_char(created_at at time zone ?, 'MM-DD') = ? and created_at < ?
         order by created_at desc, id desc limit 1`,
-        [owner, monthDay, yearStart],
+        [owner, zone, monthDay, yearStart],
       ),
       connection.execute<RecollectionRow[]>(
         `select ${excerpt} from flash_note where ${PUBLIC_SQL} order by random() limit ${RECOLLECTION_LIMIT}`,

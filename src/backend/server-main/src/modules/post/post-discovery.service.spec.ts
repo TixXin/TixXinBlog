@@ -97,7 +97,9 @@ describe('文章统计读取范围', () => {
       expect(sql).toMatch(/\b(?:p\.)?deleted_at is null/)
     }
     const activitySql = execute.mock.calls.find(([sql]) => sql.includes('with days as'))?.[0] ?? ''
-    expect(activitySql).toContain("articles as (select (published_at at time zone 'UTC')::date")
+    expect(activitySql).toContain(
+      "articles as (select (published_at at time zone (select coalesce(nullif(values->>'timeZone',''),'Asia/Shanghai') from site_settings where id='default'))::date",
+    )
     expect(activitySql).toContain("from post where status='published' and deleted_at is null")
     expect(activitySql).toContain("from comment c join post p on p.id=c.post_id where p.status='published'")
     expect(activitySql).toContain('p.deleted_at is null')
@@ -246,7 +248,9 @@ describe('文章按年分页归档', () => {
     expect(execute).toHaveBeenCalledTimes(1)
     const sql = (execute.mock.calls[0][0] as string).replace(/\s+/g, ' ').trim()
     expect(sql).toContain("from post p where p.status='published' and p.deleted_at is null")
-    expect(sql).toContain("extract(year from p.published_at at time zone 'UTC')::int as year")
+    expect(sql).toContain(
+      "extract(year from p.published_at at time zone (select coalesce(nullif(values->>'timeZone',''),'Asia/Shanghai') from site_settings where id='default'))::int as year",
+    )
     expect(sql).toContain('selected as ( select public_posts.* from public_posts cross join period')
     expect(sql).toContain('where period.start_date is null or (')
     expect(sql).toContain('page_items as (select * from selected order by published_at desc,id desc limit ? offset ?)')
@@ -310,11 +314,15 @@ describe('文章归档年月范围', () => {
     expect(execute).toHaveBeenCalledTimes(1)
     const [sql, parameters] = execute.mock.calls[0] as [string, unknown[]]
     expect(parameters).toEqual([...expected, 50, 50])
-    // 由数据库构造 UTC 左闭右开范围，避免本机时区及 JavaScript 对 1–99 年的特殊处理。
+    // 由数据库按站点时区构造左闭右开范围，避免本机时区及 JavaScript 对 1–99 年的特殊处理。
     expect(sql).toContain('make_date(?::int,coalesce(?::int,1),1)')
     expect(sql).toContain("case when ?::int is null then interval '1 year' else interval '1 month' end")
-    expect(sql).toContain("published_at >= period.start_date::timestamp at time zone 'UTC'")
-    expect(sql).toContain("published_at < (period.start_date + period.duration) at time zone 'UTC'")
+    expect(sql).toContain(
+      "published_at >= period.start_date::timestamp at time zone (select coalesce(nullif(values->>'timeZone',''),'Asia/Shanghai') from site_settings where id='default')",
+    )
+    expect(sql).toContain(
+      "published_at < (period.start_date + period.duration) at time zone (select coalesce(nullif(values->>'timeZone',''),'Asia/Shanghai') from site_settings where id='default')",
+    )
     expect(sql).toContain('where period.start_date is null or')
     expect(sql).toContain("from post p where p.status='published' and p.deleted_at is null")
     expect(sql).toContain('page_items as (select * from selected order by published_at desc,id desc limit ? offset ?)')

@@ -1,7 +1,7 @@
 /**
  * @file query-flash.dto.ts
  * @description GET /flashes 与 GET /flashes/search 查询参数 DTO(api.md §7.6);
- *   标签、类型与 UTC 日期筛选在列表与搜索间通用,可与分页任意组合
+ *   标签、类型与 站点时区日期筛选在列表与搜索间通用,可与分页任意组合
  * @author TixXin
  * @since 2026-07-20
  */
@@ -22,8 +22,8 @@ import {
 } from 'class-validator'
 import { FLASH_TYPES, type FlashType } from '../../../entities/flash-note.entity'
 
-/** UTC 日:只接受 YYYY-MM-DD 且必须是真实存在的公历日 */
-const UTC_DAY = /^\d{4}-\d{2}-\d{2}$/
+/** 站点时区的日:只接受 YYYY-MM-DD 且必须是真实存在的公历日 */
+const SITE_DAY = /^\d{4}-\d{2}-\d{2}$/
 
 export class QueryFlashDto {
   @Type(() => Number)
@@ -53,20 +53,20 @@ export class QueryFlashDto {
   @IsOptional()
   type?: FlashType
 
-  /** 单日筛选(UTC),与前端发布日历的分组口径一致 */
-  @Matches(UTC_DAY)
+  /** 单日筛选(站点时区),与前端发布日历的分组口径一致 */
+  @Matches(SITE_DAY)
   @IsDateString({ strict: true })
   @IsOptional()
   date?: string
 
-  /** 起始日(UTC,含当天) */
-  @Matches(UTC_DAY)
+  /** 起始日(站点时区,含当天) */
+  @Matches(SITE_DAY)
   @IsDateString({ strict: true })
   @IsOptional()
   from?: string
 
-  /** 截止日(UTC,含当天) */
-  @Matches(UTC_DAY)
+  /** 截止日(站点时区,含当天) */
+  @Matches(SITE_DAY)
   @IsDateString({ strict: true })
   @IsOptional()
   to?: string

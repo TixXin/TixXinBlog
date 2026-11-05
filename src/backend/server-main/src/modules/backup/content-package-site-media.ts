@@ -63,6 +63,8 @@ export function parsePackageSiteSettings(rawSite: unknown, version: number): Con
         ...(version >= 14 ? ['searchIndexing'] : []),
         // v15 起可选携带手动状态的到期时间；v1–v14 出现即按未知字段拒绝。
         ...(version >= 15 ? ['presenceExpiresAt'] : []),
+        // v16 起可选携带站点时区；v1–v15 出现即按未知字段拒绝。
+        ...(version >= 16 ? ['timeZone'] : []),
       ]),
       revision: 0,
     },

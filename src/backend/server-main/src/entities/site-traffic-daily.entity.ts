@@ -1,6 +1,6 @@
 /**
  * @file site-traffic-daily.entity.ts
- * @description 按北京时间日期汇总的访问构成：页面（路径的浏览次数）、来源（落地浏览的来源域名，空串为直接访问）、
+ * @description 按站点时区日期汇总的访问构成：页面（路径的浏览次数）、来源（落地浏览的来源域名，空串为直接访问）、
  *   设备（当日首次到访访客的“设备/浏览器大类”）。只存汇总数字，不存 IP、完整 User-Agent 或完整来源地址；保留 365 天。
  */
 import { Entity, PrimaryKey, Property, Unique } from '@mikro-orm/core'

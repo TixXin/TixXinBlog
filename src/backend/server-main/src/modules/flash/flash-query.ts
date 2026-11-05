@@ -9,12 +9,12 @@ import { msg } from '../../common/i18n'
 import type { FlashComment, FlashCommentStatus } from '../../entities/flash-comment.entity'
 import type { FlashNote, FlashType } from '../../entities/flash-note.entity'
 import type { QueryFlashDto, SearchFlashDto } from './dto/query-flash.dto'
+import { zonedDayStart } from '../site/site-time-zone'
 
 /** 域错误码(api.md 附录 A):3001 闪念不存在 */
 export const FLASH_NOT_FOUND = 3001
 
 export const DEFAULT_AVATAR = '/avatar.svg'
-export const DAY_MS = 86_400_000
 /** 时间胶囊摘录长度与随机候选数:前端卡片只展示 60 字,留出余量 */
 export const RECOLLECTION_EXCERPT = 300
 export const RECOLLECTION_LIMIT = 12
@@ -24,9 +24,10 @@ export const PUBLIC_SQL = 'user_id = ? and is_draft = false and is_archived = fa
 /** 列表与搜索共用的排序:置顶前置,再按创建时间与编号倒序保证分页稳定 */
 export const PUBLIC_ORDER = [{ isPinned: 'desc' }, { createdAt: 'desc' }, { id: 'desc' }] as const
 
-/** UTC 日起点 */
-export function utcDay(value: string): Date {
-  return new Date(value + 'T00:00:00.000Z')
+/** 站点时区某日（YYYY-MM-DD）的起点；offset 为向后顺延的天数 */
+export function siteDayStart(value: string, timeZone: string, offset = 0): Date {
+  const [year, month, day] = value.split('-').map(Number)
+  return zonedDayStart(year!, month!, day! + offset, timeZone)
 }
 
 export interface RecollectionRow {
@@ -83,13 +84,13 @@ export interface FlashRecollection {
 export interface FlashOverview {
   /** 公开闪念总数 */
   total: number
-  /** 当前 UTC 自然月新增数 */
+  /** 当前站点时区自然月新增数 */
   monthCount: number
-  /** 有闪念的 UTC 日期与条数,日期倒序;日历可翻任意历史月份并计算连续天数 */
+  /** 有闪念的日期（站点时区）与条数,日期倒序;日历可翻任意历史月份并计算连续天数 */
   dates: Array<{ date: string; count: number }>
   /** 标签出现次数,次数倒序、同次数按名称 */
   tags: Array<{ name: string; count: number }>
-  /** 往年今日(UTC 月日相同、年份更早)最近的一条 */
+  /** 往年今日(站点时区月日相同、年份更早)最近的一条 */
   onThisDay: FlashRecollection | null
   /** 随机回顾候选,最多 RECOLLECTION_LIMIT 条 */
   recollections: FlashRecollection[]
@@ -104,16 +105,20 @@ export interface FlashListResult {
   pageSize: number
 }
 
-/** 公开条件:仅站点所有者的已发布、未归档闪念,叠加标签(精确)、类型与 UTC 日期范围 */
-export function buildFlashPublicWhere(query: QueryFlashDto): FilterQuery<FlashNote> {
+/** 公开条件:仅站点所有者的已发布、未归档闪念,叠加标签(精确)、类型与站点时区的日期范围 */
+export function buildFlashPublicWhere(query: QueryFlashDto, timeZone: string): FilterQuery<FlashNote> {
   if (query.archived) throw new BadRequestException(msg('flash.archivedAdminOnly'))
   if (query.userId && query.userId !== SITE_OWNER_ID) throw new BadRequestException(msg('flash.ownerOnly'))
   const where: FilterQuery<FlashNote> = { userId: SITE_OWNER_ID, isDraft: false, isArchived: false }
   if (query.tag) where.tags = { $contains: [query.tag] }
   if (query.type) where.type = query.type
-  // date 与 from/to 可同时出现,取交集;均按 UTC 日边界,与前端日历一致
-  const starts = [query.date, query.from].filter((day): day is string => !!day).map((day) => utcDay(day).getTime())
-  const ends = [query.date, query.to].filter((day): day is string => !!day).map((day) => utcDay(day).getTime() + DAY_MS)
+  // date 与 from/to 可同时出现,取交集;均按站点时区的日边界,与前端日历一致
+  const starts = [query.date, query.from]
+    .filter((day): day is string => !!day)
+    .map((day) => siteDayStart(day, timeZone).getTime())
+  const ends = [query.date, query.to]
+    .filter((day): day is string => !!day)
+    .map((day) => siteDayStart(day, timeZone, 1).getTime())
   if (starts.length || ends.length) {
     where.createdAt = {
       ...(starts.length ? { $gte: new Date(Math.max(...starts)) } : {}),
@@ -124,7 +129,7 @@ export function buildFlashPublicWhere(query: QueryFlashDto): FilterQuery<FlashNo
 }
 
 /** 关键词搜索条件构造:正文或任一标签包含关键词(不区分大小写),与 tag/type/日期筛选组合 */
-export function buildFlashSearchWhere(query: SearchFlashDto): FilterQuery<FlashNote> {
+export function buildFlashSearchWhere(query: SearchFlashDto, timeZone: string): FilterQuery<FlashNote> {
   const kw = '%' + query.q.replace(/[\\%_]/g, (char) => '\\' + char) + '%'
   const matched: FilterQuery<FlashNote> = {
     $or: [
@@ -137,7 +142,7 @@ export function buildFlashSearchWhere(query: SearchFlashDto): FilterQuery<FlashN
       },
     ],
   }
-  return { $and: [buildFlashPublicWhere(query), matched] }
+  return { $and: [buildFlashPublicWhere(query, timeZone), matched] }
 }
 
 export function formatFlashRecollection(row: RecollectionRow): FlashRecollection {

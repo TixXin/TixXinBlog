@@ -11,6 +11,7 @@ import type { QueryAdminMomentsDto, QueryMomentsDto, MomentPageQuery, QueryAdmin
 import { momentWhere, publicMoments } from './moment-values'
 import { managedMediaIds } from '../media/media-references'
 import { msg } from '../../common/i18n'
+import { readSiteTimeZone, zonedDayStart, zonedParts } from '../site/site-time-zone'
 import {
   CommentRow,
   LINKED_ARTICLE_FIELDS,
@@ -21,6 +22,16 @@ import {
 } from './moment-query'
 
 export { momentCommentDto }
+
+/** 站点时区下“去年今日”的半开区间（日历同样按站点时区分日）；去年没有这一天（2 月 29 日）时返回 null */
+function anniversaryWindow(now: Date, zone: string): { from: Date; until: Date } | null {
+  const today = zonedParts(now, zone)
+  if (new Date(Date.UTC(today.year - 1, today.month - 1, today.day)).getUTCDate() !== today.day) return null
+  return {
+    from: zonedDayStart(today.year - 1, today.month, today.day, zone),
+    until: zonedDayStart(today.year - 1, today.month, today.day + 1, zone),
+  }
+}
 
 @Injectable()
 export class MomentReadService {
@@ -146,8 +157,8 @@ export class MomentReadService {
 
   async overview() {
     const connection = this.em.getConnection()
-    const today = new Date()
-    const from = new Date(Date.UTC(today.getUTCFullYear() - 1, today.getUTCMonth(), today.getUTCDate()))
+    const zone = await readSiteTimeZone(this.em)
+    const window = anniversaryWindow(new Date(), zone)
     // 各聚合互不依赖，并发执行；均为事务外只读查询，各自从连接池取连接。
     // 照片与回顾按不同字段部分加载，可能命中同一条动态；各用独立 fork 的身份映射，
     // 避免并发合并部分实体，也不污染请求级 EntityManager。
@@ -161,9 +172,11 @@ export class MomentReadService {
       select topic as name,count(*)::int as count from moment cross join lateral jsonb_array_elements_text(topics) topic
       where status='published' and deleted_at is null group by topic order by count desc,topic asc`),
       // 日历可翻到任意历史月份并统计连续天数，因此保留全部有动态的日期（每天一行，体量随天数线性增长）。
-      connection.execute<{ date: string; count: number }[]>(`
-      select to_char(published_at at time zone 'UTC','YYYY-MM-DD') as date,count(*)::int as count
-      from moment where status='published' and deleted_at is null group by date order by date desc`),
+      connection.execute<{ date: string; count: number }[]>(
+        `select to_char(published_at at time zone ?,'YYYY-MM-DD') as date,count(*)::int as count
+      from moment where status='published' and deleted_at is null group by date order by date desc`,
+        [zone],
+      ),
       this.em.fork().find(
         Moment,
         { ...publicMoments, [raw((alias) => `jsonb_array_length(${alias}.images)`)]: { $gt: 0 } },
@@ -179,12 +192,12 @@ export class MomentReadService {
         orderBy: { [raw('random()')]: 'asc' },
         limit: 12,
       }),
-      from.getUTCMonth() === today.getUTCMonth()
+      window
         ? this.em
             .fork()
             .findOne(
               Moment,
-              { ...publicMoments, publishedAt: { $gte: from, $lt: new Date(from.getTime() + 86400000) } },
+              { ...publicMoments, publishedAt: { $gte: window.from, $lt: window.until } },
               { fields: [...RECOLLECTION_FIELDS], orderBy: { publishedAt: 'desc', id: 'desc' } },
             )
         : Promise.resolve(null),

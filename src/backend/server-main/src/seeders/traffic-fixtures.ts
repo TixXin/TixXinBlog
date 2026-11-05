@@ -1,12 +1,12 @@
 /**
  * @file traffic-fixtures.ts
- * @description 访问统计开发样本：截至昨天（北京时间）的 30 天按日汇总，含工作日与周末起伏、热门页面、
+ * @description 访问统计开发样本：截至昨天（站点时区）的 30 天按日汇总，含工作日与周末起伏、热门页面、
  *   直接访问与站外来源、桌面与移动设备；只补没有真实记录的日期，不改动今天的实时计数。
  *   数字为开发代表值；每日浏览等于各页面浏览之和，每日访客等于各设备访客之和。
  */
 import type { EntityManager } from '@mikro-orm/postgresql'
 import { randomUUID } from 'node:crypto'
-import { beijingDay } from '../modules/presence/presence-time'
+import { readSiteTimeZone, siteDay } from '../modules/site/site-time-zone'
 import { shiftDay } from '../modules/presence/traffic-keys'
 import type { TrafficDimension } from '../entities/site-traffic-daily.entity'
 import { ensureFixture } from './fixture-ledger'
@@ -88,7 +88,7 @@ export async function seedTrafficFixtures(em: EntityManager, _storage: unknown, 
     ...STATIC_PAGES,
     ...posts.map((post, index) => [`/articles/${post.id}`, ARTICLE_WEIGHTS[index]!] as [string, number]),
   ]
-  const yesterday = shiftDay(beijingDay(new Date()), -1)
+  const yesterday = shiftDay(siteDay(new Date(), await readSiteTimeZone(em)), -1)
   for (let offset = 0; offset < TRAFFIC_DAYS; offset++) {
     const day = shiftDay(yesterday, offset - (TRAFFIC_DAYS - 1))
     const visitors = dailyVisitors(day, offset)

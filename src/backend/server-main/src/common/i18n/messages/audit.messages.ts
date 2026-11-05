@@ -103,6 +103,7 @@ export const auditMessages = defineMessages({
   'audit.field.socials': { zh: '社交链接', en: 'Social links' },
   'audit.field.searchIndexing': { zh: '搜索引擎收录', en: 'Search engine indexing' },
   'audit.field.presenceExpiresAt': { zh: '状态到期时间', en: 'Status expiry' },
+  'audit.field.timeZone': { zh: '站点时区', en: 'Site time zone' },
   'audit.field.alt': { zh: '图片说明', en: 'Image description' },
   'audit.field.label': { zh: '名称', en: 'Name' },
   'audit.field.color': { zh: '颜色', en: 'Color' },

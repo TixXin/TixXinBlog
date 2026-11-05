@@ -9,6 +9,7 @@ import { visibleCommentSql } from '../comment/comment-visibility'
 import type { QueryPostArchiveDto } from './dto/query-post-archive.dto'
 import type { PostNavigationScope } from './dto/query-post-navigation.dto'
 import { msg } from '../../common/i18n'
+import { SITE_TIME_ZONE_SQL } from '../site/site-time-zone'
 
 interface ArchiveRow {
   slug?: string
@@ -78,14 +79,14 @@ export class PostDiscoveryService {
         `select count(*)::int as count from comment c join post p on p.id=c.post_id where p.status='published' and p.deleted_at is null and ${visibleCommentSql('c')}`,
       ),
       this.em.execute<Array<{ date: string; articles: number; comments: number }>>(`
-        with days as (select generate_series(date_trunc('week',now() at time zone 'UTC') - interval '98 days', date_trunc('week',now() at time zone 'UTC') + interval '6 days', interval '1 day')::date as day),
-        articles as (select (published_at at time zone 'UTC')::date as day,count(*)::int as total from post where status='published' and deleted_at is null and published_at >= (date_trunc('week',now() at time zone 'UTC') - interval '98 days') at time zone 'UTC' group by 1),
-        comments as (select (c.created_at at time zone 'UTC')::date as day,count(*)::int as total from comment c join post p on p.id=c.post_id where p.status='published' and p.deleted_at is null and ${visibleCommentSql('c')} and c.created_at >= (date_trunc('week',now() at time zone 'UTC') - interval '98 days') at time zone 'UTC' group by 1)
+        with days as (select generate_series(date_trunc('week',now() at time zone ${SITE_TIME_ZONE_SQL}) - interval '98 days', date_trunc('week',now() at time zone ${SITE_TIME_ZONE_SQL}) + interval '6 days', interval '1 day')::date as day),
+        articles as (select (published_at at time zone ${SITE_TIME_ZONE_SQL})::date as day,count(*)::int as total from post where status='published' and deleted_at is null and published_at >= (date_trunc('week',now() at time zone ${SITE_TIME_ZONE_SQL}) - interval '98 days') at time zone ${SITE_TIME_ZONE_SQL} group by 1),
+        comments as (select (c.created_at at time zone ${SITE_TIME_ZONE_SQL})::date as day,count(*)::int as total from comment c join post p on p.id=c.post_id where p.status='published' and p.deleted_at is null and ${visibleCommentSql('c')} and c.created_at >= (date_trunc('week',now() at time zone ${SITE_TIME_ZONE_SQL}) - interval '98 days') at time zone ${SITE_TIME_ZONE_SQL} group by 1)
         select to_char(d.day,'YYYY-MM-DD') as date,coalesce(a.total,0)::int as articles,coalesce(c.total,0)::int as comments from days d left join articles a using(day) left join comments c using(day) order by d.day
       `),
       // 站点上线日期优先取站点资料，未填写时按最早公开文章推算
       this.em.execute<Array<{ launched_at: string | null; first_published: string | null }>>(
-        "select nullif(s.values->>'launchedAt','') as launched_at, to_char(min(p.published_at) at time zone 'UTC','YYYY-MM-DD') as first_published from site_settings s left join post p on p.status='published' and p.deleted_at is null where s.id='default' group by s.values",
+        `select nullif(s.values->>'launchedAt','') as launched_at, to_char(min(p.published_at) at time zone ${SITE_TIME_ZONE_SQL},'YYYY-MM-DD') as first_published from site_settings s left join post p on p.status='published' and p.deleted_at is null where s.id='default' group by s.values`,
       ),
     ])
     return {
@@ -110,7 +111,7 @@ export class PostDiscoveryService {
     >(
       `with public_posts as (
         select p.id,p.slug,p.seo_noindex,p.title,p.folder,p.published_at,${CONTENT_UPDATED_AT_SQL},
-          extract(year from p.published_at at time zone 'UTC')::int as year
+          extract(year from p.published_at at time zone ${SITE_TIME_ZONE_SQL})::int as year
         from post p where p.status='published' and p.deleted_at is null
       ), period as (
         select make_date(?::int,coalesce(?::int,1),1) as start_date,
@@ -118,8 +119,8 @@ export class PostDiscoveryService {
       ), selected as (
         select public_posts.* from public_posts cross join period
         where period.start_date is null or (
-          published_at >= period.start_date::timestamp at time zone 'UTC'
-          and published_at < (period.start_date + period.duration) at time zone 'UTC'
+          published_at >= period.start_date::timestamp at time zone ${SITE_TIME_ZONE_SQL}
+          and published_at < (period.start_date + period.duration) at time zone ${SITE_TIME_ZONE_SQL}
         )
       ),
       page_items as (select * from selected order by published_at desc,id desc limit ? offset ?),

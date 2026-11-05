@@ -5,7 +5,7 @@ import { createBrowserTestApp } from './test-app.mjs'
 import { loadLocalEnvironment } from '../src/config/environment'
 import { TRAFFIC_DATASET, TRAFFIC_DAYS, distribute } from '../src/seeders/traffic-fixtures'
 import { TrafficService } from '../src/modules/presence/traffic.service'
-import { beijingDay } from '../src/modules/presence/presence-time'
+import { readSiteTimeZone, siteDay } from '../src/modules/site/site-time-zone'
 import { shiftDay } from '../src/modules/presence/traffic-keys'
 
 async function main() {
@@ -33,7 +33,7 @@ async function main() {
       ],
     )
     const em = fixture.testOrm.em.fork()
-    const today = beijingDay(new Date())
+    const today = siteDay(new Date(), await readSiteTimeZone(em))
     const realDay = shiftDay(today, -5)
     // 该日已有真实统计：样本跳过，不覆盖也不记为不可用
     await em.execute(`insert into site_daily_stats (id, day, views, visitors) values (?, ?::date, 7, 3)`, [

@@ -1,5 +1,11 @@
-/** @file legacy-content-package.mjs @description 维护回归显式构造v15之前的真实字段集，不放宽生产解析器 */
+/** @file legacy-content-package.mjs @description 维护回归显式构造v16之前的真实字段集，不放宽生产解析器 */
+export function stripV16Fields(value) {
+  // v16 才引入的站点时区：旧包必须显式移除，迁入设置时沿用目标站现值。
+  if (value.site) delete value.site.timeZone
+  return value
+}
 export function stripV15Fields(value) {
+  stripV16Fields(value)
   // v15 才引入的手动状态到期时间：旧包必须显式移除，迁入设置时沿用目标站现值。
   if (value.site) delete value.site.presenceExpiresAt
   return value

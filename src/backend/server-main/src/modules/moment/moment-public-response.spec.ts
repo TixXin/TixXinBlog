@@ -91,6 +91,7 @@ function setup() {
     findOne: jest.fn().mockResolvedValue(note),
     find: jest.fn().mockResolvedValue([]),
     getConnection: () => ({ execute }),
+    execute: jest.fn().mockResolvedValue([]),
     fork: jest.fn(),
   }
   return { service: new MomentReadService(em as unknown as EntityManager), em, execute, note }

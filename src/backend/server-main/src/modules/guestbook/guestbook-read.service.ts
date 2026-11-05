@@ -17,6 +17,9 @@ import {
   unansweredGuestbookSql,
 } from './guestbook-values'
 import { DEFAULT_API_LOCALE, msg, type ApiLocale } from '../../common/i18n'
+import { SITE_TIME_ZONE_SQL } from '../site/site-time-zone'
+/** “今日留言”按站点时区分日 */
+const SITE_DAY_ZONE = `${SITE_TIME_ZONE_SQL} as zone(name)`
 
 @Injectable()
 export class GuestbookReadService {
@@ -125,7 +128,7 @@ export class GuestbookReadService {
   }
   async metadata(visitor = '', locale: ApiLocale = DEFAULT_API_LOCALE) {
     const [stats] = await this.em.execute<{ messages: number; members: number; recent: number; today: number }[]>(
-      `select count(*)::int as messages,count(distinct case when is_owner then '__owner__' else visitor_id_hash end)::int as members,count(*) filter(where created_at>=now()-interval '30 days')::int as recent,count(*) filter(where (created_at at time zone 'UTC')::date=(now() at time zone 'UTC')::date)::int as today from guestbook_message where status='published' and deleted_at is null`,
+      `select count(*)::int as messages,count(distinct case when is_owner then '__owner__' else visitor_id_hash end)::int as members,count(*) filter(where created_at>=now()-interval '30 days')::int as recent,count(*) filter(where (created_at at time zone zone.name)::date=(now() at time zone zone.name)::date)::int as today from guestbook_message cross join ${SITE_DAY_ZONE} where status='published' and deleted_at is null`,
     )
     const members = await this.em.execute<
       { member: string; author: string; avatar: string; count: number; is_owner: boolean }[]

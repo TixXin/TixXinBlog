@@ -40,7 +40,7 @@ export function deviceKey(userAgent: string | undefined): `${DeviceKind}/${Brows
   return `${device}/${browser}`
 }
 
-/** 北京时间日期往前推 n 天（YYYY-MM-DD 运算，不受服务器时区影响） */
+/** 站点时区日期往前推 n 天（YYYY-MM-DD 运算，不受服务器时区影响） */
 export function shiftDay(day: string, offset: number): string {
   const date = new Date(`${day}T00:00:00Z`)
   date.setUTCDate(date.getUTCDate() + offset)

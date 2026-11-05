@@ -288,7 +288,7 @@ describe('留言公开投影与引用隐私', () => {
 })
 
 describe('留言侧栏成员统计与公开置顶', () => {
-  it('统计与成员仅查询公开未删除记录，博主身份合并，今日按 UTC 日期计算', async () => {
+  it('统计与成员仅查询公开未删除记录，博主身份合并，今日按站点时区日期计算', async () => {
     const { em, service } = setup()
     const stats = { messages: 12, members: 3, recent: 8, today: 2 }
     em.execute.mockResolvedValueOnce([stats]).mockResolvedValueOnce([
@@ -317,7 +317,8 @@ describe('留言侧栏成员统计与公开置顶', () => {
     const statsSql = em.execute.mock.calls[0]![0] as string
     expect(statsSql).toContain("count(distinct case when is_owner then '__owner__' else visitor_id_hash end)")
     expect(statsSql).toContain("created_at>=now()-interval '30 days'")
-    expect(statsSql).toContain("(created_at at time zone 'UTC')::date=(now() at time zone 'UTC')::date")
+    expect(statsSql).toContain('(created_at at time zone zone.name)::date=(now() at time zone zone.name)::date')
+    expect(statsSql).toContain("coalesce(nullif(values->>'timeZone',''),'Asia/Shanghai') from site_settings")
     expect(statsSql).toContain("where status='published' and deleted_at is null")
     const membersSql = em.execute.mock.calls[1]![0] as string
     expect(membersSql).toContain("case when is_owner then '__owner__' else visitor_id_hash end as member")

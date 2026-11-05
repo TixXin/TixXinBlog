@@ -52,6 +52,8 @@ function setup() {
     findOne: jest.fn().mockResolvedValue(fixture()),
     find: jest.fn().mockResolvedValue([]),
     getConnection: () => ({ execute }),
+    // 站点时区读取：未设置时按默认 Asia/Shanghai
+    execute: jest.fn().mockResolvedValue([]),
   }
   const service = new FlashService(
     em as unknown as EntityManager,
@@ -164,9 +166,7 @@ describe('闪念公开 GET 响应白名单', () => {
     expect(sql).toHaveLength(6)
     expect(sql.every((statement) => /is_draft = false and (?:n\.)?is_archived = false/.test(statement))).toBe(true)
     expect(sql[0]).toContain('select count(*)::int as total, (count(*) filter')
-    expect(sql[1]).toContain(
-      "select to_char(created_at at time zone 'UTC', 'YYYY-MM-DD') as date, count(*)::int as count",
-    )
+    expect(sql[1]).toContain("select to_char(created_at at time zone ?, 'YYYY-MM-DD') as date, count(*)::int as count")
     expect(sql[2]).toContain('select tag as name, count(*)::int as count')
     expect(sql[5]).toContain('select l.flash_note_id as id')
     expect(execute.mock.calls[5]![1]).toEqual([visitor, 'tixxin'])

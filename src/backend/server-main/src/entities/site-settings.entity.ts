@@ -29,6 +29,8 @@ export interface SiteSettingsValues extends Partial<SiteExtrasValues> {
   presenceStatus?: '' | 'online' | 'idle' | 'busy'
   /** 手动状态（状态类型与状态文案）的到期时间，ISO 8601；空串表示长期有效。到期后回到自动状态，签名不受影响 */
   presenceExpiresAt?: string
+  /** 站点时区（IANA 名）：全站按它分日；后加字段，旧记录缺失时按 Asia/Shanghai 读取 */
+  timeZone?: string
   /** 是否允许搜索引擎收录本站；后加字段，旧记录缺失时按 true（允许）读取 */
   searchIndexing?: boolean
 }

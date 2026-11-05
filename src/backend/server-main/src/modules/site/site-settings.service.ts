@@ -18,6 +18,7 @@ import {
   SiteExtrasError,
   withSiteExtrasDefaults,
 } from './site-navigation'
+import { siteTimeZoneOf } from './site-time-zone'
 /** 后加字段在历史记录中可能缺失，读取时统一补空串；导航与页脚等按缺省值补齐 */
 export function withPresenceDefaults(values: SiteSettingsValues) {
   return withSiteExtrasDefaults({
@@ -27,6 +28,8 @@ export function withPresenceDefaults(values: SiteSettingsValues) {
     launchedAt: values.launchedAt ?? '',
     presenceStatus: values.presenceStatus ?? '',
     presenceExpiresAt: values.presenceExpiresAt ?? '',
+    // 旧记录与旧内容包没有时区，按默认的 Asia/Shanghai 分日
+    timeZone: siteTimeZoneOf(values),
     // 旧记录与旧内容包没有收录开关，等同于此前一直允许搜索引擎收录
     searchIndexing: values.searchIndexing ?? true,
   })
@@ -126,6 +129,7 @@ export class SiteSettingsService {
         launchedAt: input.launchedAt ?? settings.values.launchedAt ?? '',
         presenceStatus: input.presenceStatus ?? settings.values.presenceStatus ?? '',
         presenceExpiresAt: normalizeExpiry(input.presenceExpiresAt ?? settings.values.presenceExpiresAt ?? ''),
+        timeZone: input.timeZone ?? siteTimeZoneOf(settings.values),
         searchIndexing: input.searchIndexing ?? settings.values.searchIndexing ?? true,
         navigation: extras.navigation ?? current.navigation,
         footerLinks: extras.footerLinks ?? current.footerLinks,

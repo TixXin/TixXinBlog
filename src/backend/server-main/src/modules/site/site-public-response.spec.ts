@@ -39,6 +39,8 @@ const publicValues = {
   // 收录开关需要公开，前端据此输出 robots noindex 与 robots.txt 规则
   searchIndexing: false,
   presenceExpiresAt: '',
+  // 站点时区需要公开，前端按它展示日期，与后端分日一致
+  timeZone: 'Asia/Shanghai',
 }
 // 博主隐藏的外链不得出现在公开响应中。
 const hiddenExternal: SiteNavItem = {
@@ -120,6 +122,7 @@ describe('GET /site 公开响应白名单', () => {
     delete settings.values.launchedAt
     delete settings.values.searchIndexing
     delete settings.values.presenceExpiresAt
+    delete settings.values.timeZone
     expect(JSON.parse(JSON.stringify(await service.get(true)))).toStrictEqual({
       ...publicValues,
       about: { visible: false, introduction: '', sections: [] },

@@ -1,4 +1,4 @@
-/** @file moment-overview.spec.ts @description 朋友圈概览的公开聚合、最小投影、身份映射隔离与 UTC 纪念日边界 */
+/** @file moment-overview.spec.ts @description 朋友圈概览的公开聚合、最小投影、身份映射隔离与按站点时区的纪念日边界 */
 import type { EntityManager } from '@mikro-orm/postgresql'
 import { Moment } from '../../entities/moment.entity'
 import { MomentReadService } from './moment-read.service'
@@ -16,7 +16,7 @@ function recollection(id: string, overrides: Partial<RecollectionProjection> = {
   }
 }
 
-function setup() {
+function setup(zone = 'UTC') {
   const stats = { totalMoments: 0, totalLikes: 0, totalComments: 0 }
   const execute = jest.fn().mockResolvedValueOnce([stats]).mockResolvedValueOnce([]).mockResolvedValueOnce([])
   const photoEm = { find: jest.fn().mockResolvedValue([]) }
@@ -24,6 +24,8 @@ function setup() {
   const anniversaryEm = { findOne: jest.fn().mockResolvedValue(null) }
   const em = {
     getConnection: jest.fn().mockReturnValue({ execute }),
+    // 站点时区读取
+    execute: jest.fn().mockResolvedValue([{ time_zone: zone }]),
     fork: jest.fn().mockReturnValueOnce(photoEm).mockReturnValueOnce(recentEm).mockReturnValueOnce(anniversaryEm),
     find: jest.fn(),
     findOne: jest.fn(),
@@ -85,7 +87,8 @@ describe('朋友圈公开概览', () => {
       "where status='published' and deleted_at is null group by topic order by count desc,topic asc",
     )
     const dateSql = String(execute.mock.calls[2][0]).replace(/\s+/g, ' ').trim()
-    expect(dateSql).toContain("to_char(published_at at time zone 'UTC','YYYY-MM-DD') as date")
+    expect(dateSql).toContain("to_char(published_at at time zone ?,'YYYY-MM-DD') as date")
+    expect(execute.mock.calls[2][1]).toEqual(['UTC'])
     expect(dateSql).toContain("where status='published' and deleted_at is null group by date order by date desc")
     expect(dateSql).not.toMatch(/\blimit\b|\boffset\b|\bcurrent_date\b|\binterval\b|published_at\s*[<>]/i)
   })
@@ -173,9 +176,26 @@ describe('朋友圈公开概览', () => {
     ['2026-01-01T00:15:00.000Z', '2025-01-01T00:00:00.000Z', '2025-01-02T00:00:00.000Z'],
     ['2025-02-28T23:59:00.000Z', '2024-02-28T00:00:00.000Z', '2024-02-29T00:00:00.000Z'],
     ['2025-03-01T00:00:00.000Z', '2024-03-01T00:00:00.000Z', '2024-03-02T00:00:00.000Z'],
-  ])('在 %s 仅查去年同一 UTC 日的半开区间', async (now, from, to) => {
+  ])('站点时区为 UTC 时，在 %s 仅查去年同一日的半开区间', async (now, from, to) => {
     jest.setSystemTime(new Date(now))
     const { service, anniversaryEm } = setup()
+
+    await service.overview()
+
+    expect(anniversaryEm.findOne).toHaveBeenCalledWith(
+      Moment,
+      { status: 'published', deletedAt: null, publishedAt: { $gte: new Date(from), $lt: new Date(to) } },
+      { fields: ['id', 'content', 'publishedAt', 'createdAt'], orderBy: { publishedAt: 'desc', id: 'desc' } },
+    )
+  })
+
+  it.each([
+    // UTC 23:45 已是北京时间次日
+    ['2026-10-18T23:45:00.000Z', '2025-10-18T16:00:00.000Z', '2025-10-19T16:00:00.000Z'],
+    ['2026-10-18T03:00:00.000Z', '2025-10-17T16:00:00.000Z', '2025-10-18T16:00:00.000Z'],
+  ])('站点时区为 Asia/Shanghai 时，在 %s 按北京时间的去年同日查询', async (now, from, to) => {
+    jest.setSystemTime(new Date(now))
+    const { service, anniversaryEm } = setup('Asia/Shanghai')
 
     await service.overview()
 

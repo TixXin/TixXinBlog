@@ -1,14 +1,14 @@
 /**
  * @file presence.service.ts
  * @description 实时在线与访问统计：心跳登记在线会话与博主活动，首次进入页面计浏览，返回在线人数、博主状态与统计。
- *   统计结果与开关短时缓存，博主最后在线时间节流写库；浏览与访客只存哈希和北京时间日期。
+ *   统计结果与开关短时缓存，博主最后在线时间节流写库；浏览与访客只存哈希和站点时区下的日期。
  */
 import { randomUUID } from 'node:crypto'
 import { Injectable } from '@nestjs/common'
 import { EntityManager } from '@mikro-orm/postgresql'
 import { SitePresence } from '../../entities/site-presence.entity'
 import { PresenceStore } from './presence-store'
-import { beijingDay } from './presence-time'
+import { SiteDayClock } from './presence-time'
 import { countablePath, type PresenceHeartbeatDto, type SavePresenceSettingsDto } from './presence.dto'
 import { deviceKey, normalizeReferrer } from './traffic-keys'
 import { TrafficService } from './traffic.service'
@@ -58,10 +58,14 @@ export class PresenceService {
   private statsCache: { value: PresenceStats; expires: number } | null = null
   private ownerPersistedAt = 0
 
+  private readonly clock: SiteDayClock
+
   constructor(
     private readonly em: EntityManager,
     private readonly traffic: TrafficService,
-  ) {}
+  ) {
+    this.clock = new SiteDayClock(em)
+  }
 
   async heartbeat(input: PresenceHeartbeatDto, context: HeartbeatContext): Promise<PresenceResult> {
     const now = context.now ?? new Date()
@@ -78,7 +82,7 @@ export class PresenceService {
         userAgent: context.userAgent,
       })
       this.statsCache = null
-      await this.traffic.prune(beijingDay(now))
+      await this.traffic.prune(await this.clock.day(now))
     }
     return {
       online: settings.publicStats ? this.store.online(ms) : null,
@@ -162,7 +166,7 @@ export class PresenceService {
     now: Date,
     page: { path: string; referrer: string | null; userAgent?: string },
   ): Promise<void> {
-    const day = beijingDay(now)
+    const day = await this.clock.day(now)
     await this.em.fork().transactional(async (em) => {
       const connection = em.getConnection()
       const firstToday = await connection.execute<{ visitor_hash: string }[]>(
@@ -199,7 +203,7 @@ export class PresenceService {
         `select (select count(*)::int from site_visitor) as visitors,
                 coalesce((select views from site_daily_stats where day = ?), 0)::int as today,
                 coalesce((select sum(views) from site_daily_stats), 0)::int as total`,
-        [beijingDay(now)],
+        [await this.clock.day(now)],
       )
     const value = { visitors: row?.visitors ?? 0, todayViews: row?.today ?? 0, totalViews: row?.total ?? 0 }
     this.statsCache = { value, expires: now.getTime() + CACHE_MS }

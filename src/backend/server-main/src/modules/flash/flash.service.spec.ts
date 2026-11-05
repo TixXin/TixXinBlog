@@ -120,7 +120,7 @@ const query = (input: Record<string, unknown>) => plainToInstance(QueryFlashDto,
 const searchQuery = (input: Record<string, unknown>) => plainToInstance(SearchFlashDto, input)
 
 describe('FlashService 公开列表与搜索筛选', () => {
-  it('类型、标签与单日筛选组合，日期按 UTC 日边界，排序置顶优先', async () => {
+  it('类型、标签与单日筛选组合，日期按站点时区（缺省 Asia/Shanghai）日边界，排序置顶优先', async () => {
     const { service, em } = setup()
     await service.findMany(query({ type: 'idea', tag: '技术', date: '2026-10-14', page: '2', pageSize: '5' }))
     const [, where, options] = em.findAndCount.mock.calls[0]!
@@ -130,7 +130,7 @@ describe('FlashService 公开列表与搜索筛选', () => {
       isArchived: false,
       tags: { $contains: ['技术'] },
       type: 'idea',
-      createdAt: { $gte: new Date('2026-10-14T00:00:00.000Z'), $lt: new Date('2026-10-15T00:00:00.000Z') },
+      createdAt: { $gte: new Date('2026-10-13T16:00:00.000Z'), $lt: new Date('2026-10-14T16:00:00.000Z') },
     })
     expect(options).toMatchObject({
       orderBy: [{ isPinned: 'desc' }, { createdAt: 'desc' }, { id: 'desc' }],
@@ -139,20 +139,36 @@ describe('FlashService 公开列表与搜索筛选', () => {
     })
   })
 
-  it('from/to 为含首尾的 UTC 日范围，与 date 同时出现时取交集', async () => {
+  it('from/to 为含首尾的站点时区日范围，与 date 同时出现时取交集', async () => {
     const { service, em } = setup()
     await service.findMany(query({ from: '2026-09-01', to: '2026-09-30' }))
     expect(em.findAndCount.mock.calls[0]![1].createdAt).toEqual({
-      $gte: new Date('2026-09-01T00:00:00.000Z'),
-      $lt: new Date('2026-10-01T00:00:00.000Z'),
+      $gte: new Date('2026-08-31T16:00:00.000Z'),
+      $lt: new Date('2026-09-30T16:00:00.000Z'),
     })
     await service.findMany(query({ from: '2026-09-01', date: '2026-09-15' }))
     expect(em.findAndCount.mock.calls[1]![1].createdAt).toEqual({
+      $gte: new Date('2026-09-14T16:00:00.000Z'),
+      $lt: new Date('2026-09-15T16:00:00.000Z'),
+    })
+    await service.findMany(query({ to: '2026-09-30' }))
+    expect(em.findAndCount.mock.calls[2]![1].createdAt).toEqual({ $lt: new Date('2026-09-30T16:00:00.000Z') })
+  })
+
+  it('站点设置了其他时区时按该时区的日边界筛选', async () => {
+    const { service, em } = setup()
+    em.execute.mockResolvedValueOnce([{ time_zone: 'UTC' }])
+    await service.findMany(query({ date: '2026-09-15' }))
+    expect(em.findAndCount.mock.calls[0]![1].createdAt).toEqual({
       $gte: new Date('2026-09-15T00:00:00.000Z'),
       $lt: new Date('2026-09-16T00:00:00.000Z'),
     })
-    await service.findMany(query({ to: '2026-09-30' }))
-    expect(em.findAndCount.mock.calls[2]![1].createdAt).toEqual({ $lt: new Date('2026-10-01T00:00:00.000Z') })
+    em.execute.mockResolvedValueOnce([{ time_zone: 'America/New_York' }])
+    await service.findMany(query({ date: '2026-09-15' }))
+    expect(em.findAndCount.mock.calls[1]![1].createdAt).toEqual({
+      $gte: new Date('2026-09-15T04:00:00.000Z'),
+      $lt: new Date('2026-09-16T04:00:00.000Z'),
+    })
   })
 
   it('搜索与标签、类型、日期组合，关键词转义通配符，排序与列表一致', async () => {
@@ -161,7 +177,7 @@ describe('FlashService 公开列表与搜索筛选', () => {
     const [, where, options] = em.findAndCount.mock.calls[0]!
     const [base, matched] = where.$and
     expect(base).toMatchObject({ tags: { $contains: ['生活'] }, type: 'memo', isDraft: false, isArchived: false })
-    expect(base.createdAt.$gte).toEqual(new Date('2026-10-14T00:00:00.000Z'))
+    expect(base.createdAt.$gte).toEqual(new Date('2026-10-13T16:00:00.000Z'))
     expect(matched.$or[0]).toEqual({ content: { $ilike: '%100\\%\\_好%' } })
     // 检查标签分支的实际 SQL 和绑定参数，避免仅存在片段却未正确转义。
     const keys = Object.keys(matched.$or[1])
@@ -319,7 +335,7 @@ describe('FlashService 公开概览', () => {
       .mockResolvedValueOnce(liked)
   }
 
-  it('聚合结果映射为契约形状，本月与往年今日按 UTC 计算，未带访客头不查点赞', async () => {
+  it('聚合结果映射为契约形状，本月与往年今日按站点时区计算，未带访客头不查点赞', async () => {
     const { service, em } = setup()
     withRows(em)
     const result = await service.overview('', now)
@@ -343,9 +359,10 @@ describe('FlashService 公开概览', () => {
     expect(em.flush).not.toHaveBeenCalled()
     expect(calls.every(([sql]) => /^\s*select/i.test(sql))).toBe(true)
     expect(calls.every(([sql]) => sql.includes('is_draft = false and is_archived = false'))).toBe(true)
-    expect(calls[0]![1]).toEqual([new Date('2026-10-01T00:00:00.000Z'), new Date('2026-11-01T00:00:00.000Z'), 'tixxin'])
-    expect(calls[1]![0]).toContain("at time zone 'UTC'")
-    expect(calls[3]![1]).toEqual(['tixxin', '10-18', new Date('2026-01-01T00:00:00.000Z')])
+    expect(calls[0]![1]).toEqual([new Date('2026-09-30T16:00:00.000Z'), new Date('2026-10-31T16:00:00.000Z'), 'tixxin'])
+    expect(calls[1]![0]).toContain('at time zone ?')
+    expect(calls[1]![1]).toEqual(['Asia/Shanghai', 'tixxin'])
+    expect(calls[3]![1]).toEqual(['tixxin', 'Asia/Shanghai', '10-18', new Date('2025-12-31T16:00:00.000Z')])
   })
 
   it('携带访客时只返回该访客对公开闪念的点赞编号', async () => {

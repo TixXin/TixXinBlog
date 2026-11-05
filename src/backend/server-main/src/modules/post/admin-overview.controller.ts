@@ -1,6 +1,6 @@
 /**
  * @file admin-overview.controller.ts
- * @description 服务端汇总六域创作、真实互动待办与近 30 天按日趋势（UTC 日期，新建内容与收到的互动）；
+ * @description 服务端汇总六域创作、真实互动待办与近 30 天按日趋势（站点时区日期，新建内容与收到的互动）；
  *              分区失败不伪装为零
  */
 import { Controller, Get, UseGuards } from '@nestjs/common'

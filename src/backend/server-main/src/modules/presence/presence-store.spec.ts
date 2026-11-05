@@ -1,7 +1,6 @@
-/** @file presence-store.spec.ts @description 在线会话过期、浏览去重窗口、博主在线判定、容量上限与北京时间切日 */
+/** @file presence-store.spec.ts @description 在线会话过期、浏览去重窗口、博主在线判定与容量上限 */
 import { expectDtoInvalid, expectDtoValid } from '../../common/testing/dto-validation'
 import { ONLINE_WINDOW_MS, OWNER_ONLINE_WINDOW_MS, PresenceStore, VIEW_DEDUPE_MS } from './presence-store'
-import { beijingDay } from './presence-time'
 import { countablePath, isAutomatedClient, PresenceHeartbeatDto } from './presence.dto'
 
 const session = (n: number) => n.toString(16).padStart(32, '0')
@@ -61,14 +60,6 @@ describe('PresenceStore', () => {
     expect(store.readers('/articles/2', 1000)).toBe(0)
     expect(store.online(1000)).toBe(2)
     expect(store.readers('/articles/1', ONLINE_WINDOW_MS)).toBe(0)
-  })
-})
-
-describe('北京时间切日', () => {
-  it('UTC 16:00 是北京时间次日 00:00', () => {
-    expect(beijingDay(new Date('2026-11-04T15:59:59Z'))).toBe('2026-11-04')
-    expect(beijingDay(new Date('2026-11-04T16:00:00Z'))).toBe('2026-11-05')
-    expect(beijingDay(new Date('2026-12-31T16:00:00Z'))).toBe('2027-01-01')
   })
 })
 

@@ -171,7 +171,7 @@ export interface PackageLink {
 
 export interface ContentPackage {
   format: 'tixxin-content'
-  version: 15
+  version: 16
   omittedRelations: number
   exportedAt: string
   mediaIncluded: boolean

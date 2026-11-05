@@ -7,7 +7,7 @@ import { randomUUID } from 'node:crypto'
 import { Injectable } from '@nestjs/common'
 import { EntityManager } from '@mikro-orm/postgresql'
 import type { TrafficDimension } from '../../entities/site-traffic-daily.entity'
-import { beijingDay } from './presence-time'
+import { readSiteTimeZone, siteDay } from '../site/site-time-zone'
 import { OTHER_KEY, shiftDay, TRAFFIC_KEYS_PER_DAY, TRAFFIC_RETENTION_DAYS } from './traffic-keys'
 
 export interface TrafficInput {
@@ -57,7 +57,7 @@ export class TrafficService {
   }
 
   async report(days: number, now = new Date()): Promise<TrafficReport> {
-    const to = beijingDay(now)
+    const to = siteDay(now, await readSiteTimeZone(this.em.fork()))
     const from = shiftDay(to, -(days - 1))
     const connection = this.em.fork().getConnection()
     const daily = await connection.execute<{ day: string; views: number; visitors: number }[]>(

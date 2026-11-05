@@ -6,6 +6,7 @@ import { EntityManager } from '@mikro-orm/postgresql'
 import { Injectable } from '@nestjs/common'
 import { unansweredCommentSql, visibleCommentSql } from '../comment/comment-visibility'
 import { unansweredGuestbookSql } from '../guestbook/guestbook-values'
+import { SITE_TIME_ZONE_SQL } from '../site/site-time-zone'
 
 export interface TrendDay {
   date: string
@@ -97,11 +98,11 @@ export class AdminOverviewService {
       // 每日新建内容（六域）与收到的互动（四类评论与留言），已删除的不计
       connection.execute<TrendDay[]>(`
         with days as (
-          select generate_series((now() at time zone 'UTC')::date - ${TREND_DAYS - 1}, (now() at time zone 'UTC')::date, interval '1 day')::date as day
+          select generate_series((now() at time zone ${SITE_TIME_ZONE_SQL})::date - ${TREND_DAYS - 1}, (now() at time zone ${SITE_TIME_ZONE_SQL})::date, interval '1 day')::date as day
         ),
-        since as (select ((now() at time zone 'UTC')::date - ${TREND_DAYS - 1})::timestamp at time zone 'UTC' as at),
+        since as (select ((now() at time zone ${SITE_TIME_ZONE_SQL})::date - ${TREND_DAYS - 1})::timestamp at time zone ${SITE_TIME_ZONE_SQL} as at),
         content as (
-          select (created_at at time zone 'UTC')::date as day, count(*)::int as total from (
+          select (created_at at time zone ${SITE_TIME_ZONE_SQL})::date as day, count(*)::int as total from (
             select created_at from post where deleted_at is null
             union all select created_at from flash_note
             union all select created_at from moment where deleted_at is null
@@ -111,7 +112,7 @@ export class AdminOverviewService {
           ) items where created_at >= (select at from since) group by 1
         ),
         interactions as (
-          select (created_at at time zone 'UTC')::date as day, count(*)::int as total from (
+          select (created_at at time zone ${SITE_TIME_ZONE_SQL})::date as day, count(*)::int as total from (
             select created_at from comment
             union all select created_at from moment_comment where deleted_at is null
             union all select created_at from flash_comment
