@@ -159,38 +159,7 @@ export function parsePackageMoments(
     const values = momentValues(rawValues)
     if (values.linkedArticleId && !posts.some((post) => post.sourceId === values.linkedArticleId))
       fail('package.fieldMomentArticleMissing')
-    const comments = array(row.comments, `${path}.comments`, 10000).map(
-      (commentVal): PackageMoment['comments'][number] => {
-        const comment = record(commentVal, 'package.fieldMomentComment', [
-          'sourceId',
-          'author',
-          'avatar',
-          'content',
-          'isOwner',
-          'status',
-          'deleted',
-          'createdAt',
-          // v19 起评论携带回复关系；更早的版本夹带按未知字段拒绝
-          ...(version >= 19 ? ['replyToId'] : []),
-        ])
-        if (version >= 19 && !('replyToId' in comment)) fail('package.fieldMomentCommentReply')
-        if (comment.replyToId !== undefined && comment.replyToId !== null && typeof comment.replyToId !== 'string')
-          fail('package.fieldMomentCommentReply')
-        if (!MOMENT_COMMENT_STATUSES.includes(comment.status as MomentCommentStatus))
-          fail('package.fieldMomentCommentStatus')
-        return {
-          sourceId: text(comment.sourceId, 'package.fieldMomentCommentId', 120, 1),
-          author: text(comment.author, 'package.fieldMomentCommentAuthor', 80, 1),
-          avatar: momentUrl(text(comment.avatar, 'package.fieldMomentCommentAvatar', 2048), true, true),
-          content: text(comment.content, 'package.fieldMomentCommentContent', 1000, 1),
-          isOwner: boolean(comment.isOwner, 'package.fieldMomentCommentIsOwner'),
-          status: comment.status as MomentCommentStatus,
-          deleted: boolean(comment.deleted, 'package.fieldMomentCommentDeleted'),
-          createdAt: date(comment.createdAt, 'package.fieldMomentCommentCreatedAt'),
-          replyToId: (comment.replyToId as string | null | undefined) ?? null,
-        }
-      },
-    )
+    const comments = array(row.comments, `${path}.comments`, 10000).map((item) => parseMomentComment(item, version))
     if (new Set(comments.map((comment) => comment.sourceId)).size !== comments.length)
       fail('package.fieldMomentCommentIdDuplicate')
     assertMomentReplies(comments)
@@ -206,6 +175,37 @@ export function parsePackageMoments(
   })
   if (new Set(moments.map((note) => note.sourceId)).size !== moments.length) fail('package.fieldMomentIdDuplicate')
   return { moments, commentsCount: commentsTotal }
+}
+
+/** 单条动态评论：v19 起必须携带 replyToId（null 或同动态下的评论来源编号），更早的版本夹带按未知字段拒绝 */
+function parseMomentComment(value: unknown, version: number): PackageMoment['comments'][number] {
+  const comment = record(value, 'package.fieldMomentComment', [
+    'sourceId',
+    'author',
+    'avatar',
+    'content',
+    'isOwner',
+    'status',
+    'deleted',
+    'createdAt',
+    // v19 起评论携带回复关系；更早的版本夹带按未知字段拒绝
+    ...(version >= 19 ? ['replyToId'] : []),
+  ])
+  if (version >= 19 && !('replyToId' in comment)) fail('package.fieldMomentCommentReply')
+  if (comment.replyToId !== undefined && comment.replyToId !== null && typeof comment.replyToId !== 'string')
+    fail('package.fieldMomentCommentReply')
+  if (!MOMENT_COMMENT_STATUSES.includes(comment.status as MomentCommentStatus)) fail('package.fieldMomentCommentStatus')
+  return {
+    sourceId: text(comment.sourceId, 'package.fieldMomentCommentId', 120, 1),
+    author: text(comment.author, 'package.fieldMomentCommentAuthor', 80, 1),
+    avatar: momentUrl(text(comment.avatar, 'package.fieldMomentCommentAvatar', 2048), true, true),
+    content: text(comment.content, 'package.fieldMomentCommentContent', 1000, 1),
+    isOwner: boolean(comment.isOwner, 'package.fieldMomentCommentIsOwner'),
+    status: comment.status as MomentCommentStatus,
+    deleted: boolean(comment.deleted, 'package.fieldMomentCommentDeleted'),
+    createdAt: date(comment.createdAt, 'package.fieldMomentCommentCreatedAt'),
+    replyToId: (comment.replyToId as string | null | undefined) ?? null,
+  }
 }
 
 /** 回复只能指向同一动态下的其他评论，且不能成环 */

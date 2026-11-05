@@ -19,6 +19,14 @@ import { lockMedia, synchronizeMediaReferences } from '../media/media-references
 import { recordOwnerEvent } from '../operations/owner-events'
 import { msg } from '../../common/i18n'
 
+/** 只能回复同一动态下已公开的评论；待审、隐藏或删除的评论不能作为回复目标 */
+async function replyTarget(em: EntityManager, note: Moment, replyToId: string | undefined) {
+  if (!replyToId) return null
+  const target = await em.findOne(MomentComment, { id: replyToId, moment: note, status: 'published', deletedAt: null })
+  if (!target) throw new BadRequestException(msg('moment.replyTargetUnavailable'))
+  return target
+}
+
 @Injectable()
 export class MomentInteractionService {
   constructor(private readonly em: EntityManager) {}
@@ -72,11 +80,7 @@ export class MomentInteractionService {
           commentCount: await em.count(MomentComment, { moment: note, status: 'published', deletedAt: null }),
         }
       }
-      // 只能回复同一动态下已公开的评论；待审、隐藏或删除的评论不能作为回复目标
-      const replyTo = body.replyToId
-        ? await em.findOne(MomentComment, { id: body.replyToId, moment: note, status: 'published', deletedAt: null })
-        : null
-      if (body.replyToId && !replyTo) throw new BadRequestException(msg('moment.replyTargetUnavailable'))
+      const replyTo = await replyTarget(em, note, body.replyToId)
       const settings = adminId ? await em.findOneOrFail(SiteSettings, { id: 'default' }) : null
       const policy = await em.findOne(CommentPolicy, { id: 'default' }, { refresh: true })
       const author = settings ? settings.values.ownerName : (body as CreateMomentCommentDto).author

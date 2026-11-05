@@ -60,6 +60,11 @@ export const MOMENT_LOCATIONS_SQL = `select location as name,count(*)::int as co
 where status='published' and deleted_at is null and coalesce(location,'')<>''
 group by location order by count desc,location asc limit 20`
 
+/** 回顾卡片：截断正文与发布日期 */
+export function recollectionDto(note: Pick<Moment, 'id' | 'content' | 'publishedAt' | 'createdAt'>) {
+  return { id: note.id, content: note.content.slice(0, 300), date: (note.publishedAt ?? note.createdAt).toISOString() }
+}
+
 // 回顾卡片只展示截断正文与日期。
 export const RECOLLECTION_FIELDS = ['id', 'content', 'publishedAt', 'createdAt'] as const
 

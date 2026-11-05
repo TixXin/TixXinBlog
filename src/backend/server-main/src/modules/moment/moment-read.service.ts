@@ -17,6 +17,7 @@ import {
   ReactionRow,
   LINKED_ARTICLE_FIELDS,
   MOMENT_LOCATIONS_SQL,
+  recollectionDto,
   MomentProjection,
   RECOLLECTION_FIELDS,
   formatMomentItem,
@@ -251,11 +252,7 @@ export class MomentReadService {
       dates,
       locations,
       photos: photos.map((note) => ({ src: note.images[0], momentId: note.id })),
-      recollections: recent.map((note) => ({
-        id: note.id,
-        content: note.content.slice(0, 300),
-        date: (note.publishedAt ?? note.createdAt).toISOString(),
-      })),
+      recollections: recent.map(recollectionDto),
     }
   }
 

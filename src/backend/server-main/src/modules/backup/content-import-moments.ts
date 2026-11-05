@@ -6,7 +6,7 @@ import { Moment } from '../../entities/moment.entity'
 import { MomentComment } from '../../entities/moment-comment.entity'
 import { Post } from '../../entities/post.entity'
 import type { ContentImportPlan, ContentImportResult } from '../../entities/content-import.entity'
-import type { ContentPackage } from './content-package'
+import type { ContentPackage, PackageMoment } from './content-package'
 import { msg } from '../../common/i18n'
 import { synchronizeMediaReferences } from '../media/media-references'
 
@@ -36,40 +36,38 @@ export async function importMoments(
     await synchronizeMediaReferences(em, `moment:${note.id}`, 'moment', [note.content, note.images, note.linkedLink], {
       moment: note,
     })
-    // 先建全部评论再回填回复关系；回复的评论已删除（未迁入）时不关联
-    const created = new Map<string, MomentComment>()
-    for (const comment of source.comments) {
-      if (comment.deleted) continue
-      const createdComment = em.create(MomentComment, {
-        moment: note,
-        content: comment.content,
-        author: comment.author,
-        avatar: comment.avatar || '/avatar.svg',
-        isOwner: comment.isOwner,
-        status: comment.status,
-        createdAt: new Date(comment.createdAt),
-        visitorIdHash: createHash('sha256').update(randomUUID()).digest('hex'),
-      })
-      await em.flush()
-      await synchronizeMediaReferences(
-        em,
-        `moment-comment:${createdComment.id}`,
-        'moment-comment',
-        [createdComment.avatar],
-        {
-          moment: note,
-          momentComment: createdComment,
-        },
-      )
-      created.set(comment.sourceId, createdComment)
-      result.comments++
-    }
-    for (const comment of source.comments) {
-      const reply = comment.replyToId ? created.get(comment.replyToId) : undefined
-      const own = created.get(comment.sourceId)
-      if (reply && own) own.replyTo = reply
-    }
-    await em.flush()
+    result.comments += await importMomentComments(em, note, source.comments)
     result.moments.push({ sourceId: source.sourceId, id: note.id })
   }
+}
+
+/** 迁入一条动态的评论：先建全部未删除评论再回填回复关系，回复的评论已删除（未迁入）时不关联；返回迁入条数 */
+async function importMomentComments(em: EntityManager, note: Moment, comments: PackageMoment['comments']) {
+  const created = new Map<string, MomentComment>()
+  for (const comment of comments) {
+    if (comment.deleted) continue
+    const value = em.create(MomentComment, {
+      moment: note,
+      content: comment.content,
+      author: comment.author,
+      avatar: comment.avatar || '/avatar.svg',
+      isOwner: comment.isOwner,
+      status: comment.status,
+      createdAt: new Date(comment.createdAt),
+      visitorIdHash: createHash('sha256').update(randomUUID()).digest('hex'),
+    })
+    await em.flush()
+    await synchronizeMediaReferences(em, `moment-comment:${value.id}`, 'moment-comment', [value.avatar], {
+      moment: note,
+      momentComment: value,
+    })
+    created.set(comment.sourceId, value)
+  }
+  for (const comment of comments) {
+    const reply = comment.replyToId ? created.get(comment.replyToId) : undefined
+    const own = created.get(comment.sourceId)
+    if (reply && own) own.replyTo = reply
+  }
+  await em.flush()
+  return created.size
 }
