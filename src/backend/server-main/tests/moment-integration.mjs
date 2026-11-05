@@ -122,7 +122,9 @@ try {
   assert.equal((await ok('/moments?pageSize=1&page=2', 'GET', undefined, false)).items[0].id, second.id)
   assert.equal((await ok('/moments?q=%25', 'GET', undefined, false)).total, 1)
   assert.equal((await ok('/moments?topic=' + encodeURIComponent('技术'), 'GET', undefined, false)).total, 1)
-  assert.equal((await ok('/moments?date=' + first.date.slice(0, 10), 'GET', undefined, false)).total, 2)
+  // 日期筛选按站点时区（缺省 Asia/Shanghai）切日；直接截取 UTC 日期会在北京时间 0–8 点跑测试时查空
+  const siteDay = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Shanghai' }).format(new Date(first.date))
+  assert.equal((await ok('/moments?date=' + siteDay, 'GET', undefined, false)).total, 2)
   assert.equal((await request('/moments?date=2026-02-30', 'GET', undefined, false)).status, 400)
   assert.equal((await request('/moments?page=10001', 'GET', undefined, false)).status, 400)
   assert.equal(
