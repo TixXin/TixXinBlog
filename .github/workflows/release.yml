@@ -108,6 +108,7 @@ jobs:
 
   # 标签提交在 main 上已有全部任务成功（无跳过）的 CI / Backend CI 时复用其结果，不重跑对应门禁；
   # 条件不满足或查询失败一律回到完整门禁。判断规则见 scripts/ci/release-reuse.sh。
+  # 预发布（版本号带 -beta 等后缀）由维护者决定不走 CI 门禁，直接构建发布；容器冒烟仍会执行。正式版始终走门禁。
   reuse:
     name: Reuse Main CI Results
     needs: prepare
@@ -129,7 +130,14 @@ jobs:
         shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
-        run: bash scripts/ci/release-reuse.sh "$GITHUB_REPOSITORY" "$GITHUB_SHA" | tee -a "$GITHUB_OUTPUT"
+          PRERELEASE: ${{ needs.prepare.outputs.prerelease }}
+        run: |
+          if [ "$PRERELEASE" = 'true' ]; then
+            echo '预发布不走 CI 门禁，直接构建发布'
+            printf 'ci=true\nbackend=true\n' | tee -a "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          bash scripts/ci/release-reuse.sh "$GITHUB_REPOSITORY" "$GITHUB_SHA" | tee -a "$GITHUB_OUTPUT"
 
   # 不能复用时，在同一标签提交上并行运行完整 CI 与 Backend CI，全部通过后才构建镜像。
   # 调用 job 的 permissions 是被调用工作流的上限；两份工作流自身声明 contents: read，缓存与产物上传使用运行时令牌，不需要额外权限。

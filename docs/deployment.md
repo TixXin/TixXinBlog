@@ -131,6 +131,8 @@ cd TixXinBlog
 
 标签提交在 main 上已有**全部任务成功且没有任务被跳过**的 CI 或 Backend CI 时，Release 复用该结果，不再重跑对应门禁（判断见 [`release-reuse.sh`](../scripts/ci/release-reuse.sh)）。main 上的 CI 会按改动跳过任务，有任何任务跳过即不复用；Backend CI 在同一提交没有运行时，可复用最近一次成功运行，前提是那次提交是标签提交的祖先，且之后的改动不涉及 Backend CI 的触发路径。运行未完成、查询失败或条件不满足时一律完整运行门禁。因此先等 main 的 CI 全绿再推标签，发布最快（只剩镜像构建、冒烟与发布）。
 
+预发布标签（版本号带后缀，如 `v0.5.2-beta.3`）不走上述 CI 门禁：校验版本、main 与 CHANGELOG 后直接构建镜像，经容器冒烟后发布为预发布，不更新 latest。正式版标签始终走完整门禁或复用 main 上的全绿结果。
+
 平时推送到 main 或提交 PR 时，CI、CodeQL 与 Security 按路径过滤：只改 `docs/`、根目录 Markdown、许可证、Issue/PR 模板与 README 时不触发；`docs/api.md` 由后端单测核对，改动它会触发 Backend CI。路径过滤不影响定时扫描，也不影响 Release 通过 `workflow_call` 调用的完整门禁。CI 触发后还会按改动跳过无关的重任务（例如只改部署脚本时不跑浏览器回归），Release 调用时同样不跳过，见[开发指南](development.md#验证入口)。
 
 随后在原生 amd64/arm64 托管机上构建四个镜像，以无标签摘要推送到 GHCR，两个平台的 web/api/migration 都通过容器冒烟后，才合并为多架构清单、打上版本标签并创建 GitHub Release。镜像地址为 `ghcr.io/<所有者>/<仓库名>-<镜像>`（全小写），本仓库即 `ghcr.io/tixxin/tixxinblog-web`、`-api`、`-migration`、`-worker`。
