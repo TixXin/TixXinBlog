@@ -104,7 +104,7 @@ const open = ref(false),
   icon = computed(() => props.item.iconUrl || props.item.faviconUrl)
 const future = computed(() => !!props.item.startDate && props.item.startDate > props.today),
   overdue = computed(() => !!props.item.nextBillingDate && props.item.nextBillingDate < props.today)
-/** 7 天内的扣费给出相对提示；日期均为 YYYY-MM-DD，按 UTC 日计算差值避免时区偏移 */
+/** 7 天内的扣费给出相对提示；日期均为 YYYY-MM-DD，按日期键计算差值避免时区偏移 */
 const dueHint = computed(() => {
   const next = props.item.nextBillingDate
   if (!next || overdue.value) return ''

@@ -617,7 +617,7 @@
         "perYear": "{amount} / yr",
         "noCategories": "No category records match the current filters.",
         "methodLabel": "Budget methodology",
-        "methodScope": "As of {asOf} (UTC date), covering the {count} {currency} subscription matching the current filters. Each currency is calculated separately with no exchange-rate conversion. | As of {asOf} (UTC date), covering all {count} {currency} subscriptions matching the current filters. Each currency is calculated separately with no exchange-rate conversion.",
+        "methodScope": "As of {asOf} (site time zone date), covering the {count} {currency} subscription matching the current filters. Each currency is calculated separately with no exchange-rate conversion. | As of {asOf} (site time zone date), covering all {count} {currency} subscriptions matching the current filters. Each currency is calculated separately with no exchange-rate conversion.",
         "methodRecurring": "Recurring costs include only active monthly, quarterly and yearly subscriptions that have started. The monthly figure is the annual budget divided by 12; actual charges follow each billing cycle. Paused, cancelled, trial, expired and not-yet-started records are excluded from the current budget.",
         "methodOneTime": "One-time and lifetime purchases are excluded from recurring costs. They total {amount} on record, which doesn't represent the total amount paid."
       },
@@ -635,7 +635,7 @@
         "payments": "Upcoming charges",
         "noPayments": "No usable billing dates under the current filters.",
         "notesSummary": "About forecasts and charges",
-        "notesEstimate": "As of {asOf} (UTC date), estimated from current prices, statuses and valid billing dates — not actual past spending. Trial, paused, cancelled and expired records produce no forecast, and records without a reliable date are never assigned a guessed charge date.",
+        "notesEstimate": "As of {asOf} (site time zone date), estimated from current prices, statuses and valid billing dates — not actual past spending. Trial, paused, cancelled and expired records produce no forecast, and records without a reliable date are never assigned a guessed charge date.",
         "notesPayments": "The list shows each subscription's next billing date; overdue records keep their original date. This is only an on-page reminder — nothing is charged or notified automatically. Switch currencies to see the others."
       },
       "fields": {

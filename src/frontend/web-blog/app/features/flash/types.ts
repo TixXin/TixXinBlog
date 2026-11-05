@@ -118,7 +118,7 @@ export interface FlashPublicPageQuery {
   q?: string
   /** 按类型筛选（type=） */
   type?: FlashType
-  /** 按 UTC 日筛选（date=YYYY-MM-DD），与发布日历口径一致 */
+  /** 按站点时区的日筛选（date=YYYY-MM-DD），与发布日历口径一致 */
   date?: string
 }
 
@@ -133,13 +133,13 @@ export interface FlashRecollection {
 export interface FlashOverview {
   /** 闪念总数 */
   total: number
-  /** 当前 UTC 自然月新增数 */
+  /** 当前站点时区自然月新增数 */
   monthCount: number
-  /** 有闪念的 UTC 日期与条数 */
+  /** 有闪念的日期（站点时区）与条数 */
   dates: { date: string; count: number }[]
   /** 标签计数，次数倒序 */
   tags: { name: string; count: number }[]
-  /** 往年今日（UTC 月日相同、年份更早）最近一条 */
+  /** 往年今日（站点时区月日相同、年份更早）最近一条 */
   onThisDay: FlashRecollection | null
   /** 随机回顾候选 */
   recollections: FlashRecollection[]

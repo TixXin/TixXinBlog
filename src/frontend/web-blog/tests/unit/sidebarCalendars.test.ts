@@ -1,12 +1,21 @@
 /**
  * @file sidebarCalendars.test.ts
- * @description 侧栏日历覆盖空态、失败、UTC 月日与连续天数、筛选恢复和原生按钮可访问性
+ * @description 侧栏日历覆盖空态、失败、按站点时区的月日与连续天数、筛选恢复和原生按钮可访问性
  */
 import { mount, type VueWrapper } from '@vue/test-utils'
 import { nextTick } from 'vue'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import FlashCalendarCard from '../../app/components/sidebar/FlashCalendarCard.vue'
 import MomentCalendarCard from '../../app/components/sidebar/MomentCalendarCard.vue'
+import { mockNuxtImport } from '@nuxt/test-utils/runtime'
+
+// 站点时区：这些用例检验日界机制，默认设为 UTC；个别用例切到 Asia/Shanghai 检验站点时区口径
+const siteZone = vi.hoisted(() => ({ value: 'UTC' }))
+mockNuxtImport('useSiteTimeZone', () => () => ({
+  get value() {
+    return siteZone.value
+  },
+}))
 
 const mounted: { wrapper: VueWrapper; host: HTMLElement }[] = []
 type CalendarKind = 'moment' | 'flash'
@@ -34,6 +43,7 @@ beforeEach(() => {
 })
 
 afterEach(() => {
+  siteZone.value = 'UTC'
   mounted.splice(0).forEach(({ wrapper, host }) => {
     wrapper.unmount()
     host.remove()
@@ -63,6 +73,15 @@ describe.each<CalendarKind>(['moment', 'flash'])('%s 侧栏日历', (kind) => {
     expect(emptyDay.element.disabled).toBe(true)
     emptyDay.element.click()
     expect(wrapper.emitted('select-date')).toBeUndefined()
+  })
+
+  it('站点时区为 Asia/Shanghai 时同一时刻已是三月一日', async () => {
+    siteZone.value = 'Asia/Shanghai'
+    const wrapper = await mountCalendar(kind, [{ date: '2024-02-29', count: 1 }])
+    expect(wrapper.get(`${prefix}__month`).text()).toBe('2024年3月')
+    expect(wrapper.get(`${prefix}__day.is-today`).text()).toBe('1')
+    // 昨天（2 月 29 日）有发布，连续天数仍计入
+    expect(wrapper.get(`${prefix}__streak`).text()).toBe('连续 1 天')
   })
 
   it('只累计显示月份并按 UTC 跨闰日计算连续发布天数', async () => {
@@ -156,10 +175,10 @@ describe('朋友圈日历数据来源与不可用状态', () => {
   it('概览加载失败时显示未知数量，恢复后展示真实聚合', async () => {
     const wrapper = await mountCalendar('moment')
     await wrapper.setProps({ available: false })
-    expect(wrapper.get('.moment-calendar-card__legend').text()).toBe('本月 — 条动态 · UTC')
+    expect(wrapper.get('.moment-calendar-card__legend').text()).toBe('本月 — 条动态')
     expect(wrapper.find('.has-moment').exists()).toBe(false)
     await wrapper.setProps({ available: true, dateCounts: { '2024-02-29': 4 } })
-    expect(wrapper.get('.moment-calendar-card__legend').text()).toBe('本月 4 条动态 · UTC')
+    expect(wrapper.get('.moment-calendar-card__legend').text()).toBe('本月 4 条动态')
     expect(wrapper.get('.has-moment').attributes('aria-label')).toBe('2024年2月29日，4 条动态')
   })
 

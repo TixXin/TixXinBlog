@@ -38,11 +38,12 @@ function tooltip() {
 }
 
 describe('侧栏热力图', () => {
-  it('空数据不生成样本日期，仍提供 UTC 说明与方向键操作名称', async () => {
+  it('空数据不生成样本日期，提供周数说明与方向键操作名称', async () => {
     const wrapper = await setup()
     expect(wrapper.findAll('button')).toHaveLength(0)
     expect(wrapper.get('[role="group"]').attributes('aria-label')).toBe('每日公开内容，方向键选择日期')
-    expect(wrapper.text()).toContain('最近 15 周 · UTC')
+    expect(wrapper.text()).toContain('最近 15 周')
+    expect(wrapper.text()).not.toContain('UTC')
     expect(wrapper.findAll('.heatmap__legend-dot')).toHaveLength(5)
     expect(tooltip().style.opacity).toBe('0')
   })

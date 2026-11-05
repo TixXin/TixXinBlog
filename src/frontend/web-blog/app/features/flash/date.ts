@@ -4,6 +4,7 @@
  * @author TixXin
  * @since 2026-10-21
  */
+import { DEFAULT_SITE_TIME_ZONE, siteDayKey } from '~/features/site/timeZone'
 
 // 类型元信息：idea/todo 显示，memo 默认态隐藏避免冗余
 export const FLASH_TYPE_META: Record<string, { icon: string; labelKey: string } | undefined> = {
@@ -11,22 +12,33 @@ export const FLASH_TYPE_META: Record<string, { icon: string; labelKey: string } 
   todo: { icon: 'lucide:check-square', labelKey: 'flash-moment.flashType.todo' },
 }
 
-/** 闪念日历日期（未挂载时使用 UTC 日期防抖，挂载后使用 formatCalendarDate） */
-export function formatFlashCalendarDate(iso: string, clockReady: boolean, t: (key: string) => string): string {
+/** 闪念日历日期（未挂载时使用站点时区日期防抖，SSR 与水合首帧一致；挂载后使用 formatCalendarDate） */
+export function formatFlashCalendarDate(
+  iso: string,
+  clockReady: boolean,
+  t: (key: string) => string,
+  timeZone = DEFAULT_SITE_TIME_ZONE,
+): string {
   if (clockReady) return formatCalendarDate(iso, t)
-  const time = new Date(iso).getTime()
-  return Number.isFinite(time) ? new Date(time).toISOString().slice(0, 10) : t('common.date.unknown')
+  return siteDayKey(iso, timeZone) || t('common.date.unknown')
+}
+
+/** 渲染时钟：未挂载时使用随 payload 下发的时刻与站点时区日期，挂载后换成本机时钟 */
+export interface FlashClock {
+  now: number
+  ready: boolean
+  timeZone?: string
 }
 
 /** 相对时间展示：首屏水合一致，挂载后换成本机时钟 */
 export function formatFlashRelative(
   iso: string,
-  now: number,
-  clockReady: boolean,
+  clock: FlashClock,
   t: (key: string, values?: Record<string, unknown>, count?: number) => string,
 ): string {
+  const { now, ready: clockReady, timeZone = DEFAULT_SITE_TIME_ZONE } = clock
   const created = new Date(iso).getTime()
-  if (!Number.isFinite(created) || created > now) return formatFlashCalendarDate(iso, clockReady, t)
+  if (!Number.isFinite(created) || created > now) return formatFlashCalendarDate(iso, clockReady, t, timeZone)
   const diff = now - created
   const minute = 60 * 1000
   const hour = 60 * minute
@@ -40,5 +52,5 @@ export function formatFlashRelative(
   if (diff < 2 * day) return t('flash-moment.noteCard.yesterday')
   if (diff < 7 * day)
     return t('flash-moment.noteCard.daysAgo', { count: Math.floor(diff / day) }, Math.floor(diff / day))
-  return formatFlashCalendarDate(iso, clockReady, t)
+  return formatFlashCalendarDate(iso, clockReady, t, timeZone)
 }

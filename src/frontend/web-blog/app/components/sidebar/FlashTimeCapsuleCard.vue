@@ -47,11 +47,12 @@
 </template>
 
 <script setup lang="ts">
+import { siteDayKey } from '~/features/site/timeZone'
 import { markdownPlainText } from '~/utils/markdownPlainText'
 import type { FlashRecollection } from '~/features/flash/types'
 
 const props = defineProps<{
-  /** 往年今日（UTC 月日相同、年份更早）最近一条，由闪念概览提供 */
+  /** 往年今日（站点时区月日相同、年份更早）最近一条，由闪念概览提供 */
   onThisDay: FlashRecollection | null
   /** 随机回顾候选（概览接口随机抽取的摘录） */
   recollections: FlashRecollection[]
@@ -90,9 +91,10 @@ function truncate(s: string, n: number) {
   return t.length > n ? `${t.slice(0, n)}…` : t
 }
 
-/** 日期按 UTC 展示，与发布日历和“往年今日”的匹配口径一致 */
+/** 日期按站点时区展示，与发布日历和“往年今日”的匹配口径一致 */
+const timeZone = useSiteTimeZone()
 function formatDate(iso: string) {
-  return new Date(iso).toISOString().slice(0, 10)
+  return siteDayKey(iso, timeZone.value)
 }
 </script>
 

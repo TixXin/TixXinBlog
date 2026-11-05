@@ -23,7 +23,7 @@
         >{{ note.isOwner ? $t('admin-media.guestbook.ownerSuffix') : '' }} ·
         {{ $t(`admin-media.guestbook.status.${note.moderationStatus}`)
         }}{{ note.isPinned ? $t('admin-media.guestbook.pinnedSuffix') : '' }} ·
-        {{ $t('admin-media.guestbook.utcTime', { time: note.createdAt.slice(0, 16).replace('T', ' ') }) }}
+        {{ siteDateTime(note.createdAt, timeZone) }}
         <span v-if="note.browser || note.region" class="admin-guestbook__client"
           >· {{ [note.browser, note.region].filter(Boolean).join(' · ') }}</span
         >
@@ -73,7 +73,10 @@
 </template>
 
 <script setup lang="ts">
+import { siteDateTime } from '~/features/site/timeZone'
 import type { ManagedGuestbookRecord } from '~/features/guestbook/types'
+// 时间按站点时区显示，与前台留言分组一致
+const timeZone = useSiteTimeZone()
 
 defineProps<{
   note: ManagedGuestbookRecord

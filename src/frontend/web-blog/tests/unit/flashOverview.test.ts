@@ -1,6 +1,6 @@
 /**
  * @file flashOverview.test.ts
- * @description 本地闪念概览与后端 /flashes/overview 同口径：UTC 日期与本月、标签计数排序、往年今日与访客已赞
+ * @description 本地闪念概览与后端 /flashes/overview 同口径：站点时区的日期与本月、标签计数排序、往年今日与访客已赞
  */
 import { describe, expect, it } from 'vitest'
 import { summarizeFlashNotes } from '../../app/features/flash/overview'
@@ -25,7 +25,7 @@ function note(id: string, createdAt: string, tags: string[] = [], liked = false)
 describe('summarizeFlashNotes', () => {
   const now = new Date('2026-10-18T03:00:00.000Z')
 
-  it('日期与本月按 UTC 分组，跨时区边界不偏移', () => {
+  it('日期与本月按站点时区（缺省 Asia/Shanghai）分组', () => {
     const result = summarizeFlashNotes(
       [
         note('a', '2026-10-17T23:30:00.000Z'),
@@ -34,6 +34,26 @@ describe('summarizeFlashNotes', () => {
         note('d', '2026-11-01T00:00:00.000Z'),
       ],
       now,
+    )
+    expect(result.monthCount).toBe(3)
+    expect(result.dates).toEqual([
+      { date: '2026-11-01', count: 1 },
+      { date: '2026-10-18', count: 1 },
+      { date: '2026-10-17', count: 1 },
+      { date: '2026-10-01', count: 1 },
+    ])
+  })
+
+  it('站点时区为 UTC 时按 UTC 分组，跨时区边界不偏移', () => {
+    const result = summarizeFlashNotes(
+      [
+        note('a', '2026-10-17T23:30:00.000Z'),
+        note('b', '2026-10-17T01:00:00.000Z'),
+        note('c', '2026-09-30T23:59:59.000Z'),
+        note('d', '2026-11-01T00:00:00.000Z'),
+      ],
+      now,
+      'UTC',
     )
     expect(result.total).toBe(4)
     expect(result.monthCount).toBe(2)

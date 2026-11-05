@@ -8,6 +8,7 @@
 import type { ComputedRef, Ref } from 'vue'
 import type { FlashNote, FlashType } from '~/features/flash/types'
 import type { FlashPublicFilter } from '~/features/flash/publicFilter'
+import { siteDayKey } from '~/features/site/timeZone'
 
 export interface FlashFilterStateOptions {
   notes: Ref<FlashNote[]>
@@ -21,6 +22,7 @@ export interface FlashFilterStateOptions {
 export function useFlashFilterState(options: FlashFilterStateOptions) {
   const { notes, archivedNotes, showArchive, pagedPublic, total, setPublicFilter } = options
   const { t } = useI18n()
+  const timeZone = useSiteTimeZone()
 
   const activeTag = ref<string | null>(null)
   const selectedDate = ref<string | null>(null)
@@ -55,7 +57,7 @@ export function useFlashFilterState(options: FlashFilterStateOptions) {
       .join(' · '),
   )
 
-  /** 在已取得的集合上叠加 type/标签/日期/搜索关键词（私有视图与归档箱使用；日期按 UTC 日） */
+  /** 在已取得的集合上叠加 type/标签/日期/搜索关键词（私有视图与归档箱使用；日期按站点时区的日） */
   function filterLocal(source: FlashNote[]) {
     let result = source
     if (typeFilter.value) {
@@ -65,7 +67,7 @@ export function useFlashFilterState(options: FlashFilterStateOptions) {
       result = result.filter((n) => n.tags.includes(activeTag.value!))
     }
     if (selectedDate.value) {
-      result = result.filter((n) => n.createdAt.slice(0, 10) === selectedDate.value)
+      result = result.filter((n) => siteDayKey(n.createdAt, timeZone.value) === selectedDate.value)
     }
     if (debouncedQuery.value) {
       const q = debouncedQuery.value.toLowerCase()
@@ -76,7 +78,7 @@ export function useFlashFilterState(options: FlashFilterStateOptions) {
     return result
   }
 
-  /** 公开视图的筛选全部交给后端分页：类型、标签、UTC 日期与关键词可任意组合 */
+  /** 公开视图的筛选全部交给后端分页：类型、标签、站点时区日期与关键词可任意组合 */
   watch([pagedPublic, typeFilter, activeTag, selectedDate, debouncedQuery], () => {
     if (!pagedPublic.value) return
     setPublicFilter({ tag: activeTag.value, q: debouncedQuery.value, type: typeFilter.value, date: selectedDate.value })

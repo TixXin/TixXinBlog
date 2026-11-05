@@ -13,7 +13,7 @@ export interface FlashPublicFilter {
   tag: string | null
   q: string
   type?: FlashType | null
-  /** UTC 日（YYYY-MM-DD） */
+  /** 站点时区的日（YYYY-MM-DD） */
   date?: string | null
 }
 

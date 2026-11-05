@@ -531,7 +531,7 @@
         "hidden": "Hidden"
       },
       "unanswered": "Awaiting owner reply only",
-      "date": "Date · UTC",
+      "date": "Date · site time zone",
       "dateLabel": "Message date",
       "filter": "Filter",
       "unansweredHint": "Shows only published, undeleted top-level visitor messages without a public direct reply from the owner; they count again if that reply is hidden or deleted.",
@@ -541,7 +541,6 @@
       "selectLabel": "Select message from {author}: {content}",
       "ownerSuffix": " · Owner",
       "pinnedSuffix": " · Pinned",
-      "utcTime": "{time} UTC",
       "quote": "Quoting {author}: {content}",
       "quoteBody": "{author}: {content}",
       "view": "View message",

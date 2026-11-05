@@ -222,7 +222,7 @@ describe('订阅续费预测抽屉', () => {
     expect(wrapper.get('.subscription-forecast__payments').text()).not.toContain('2026-10-01')
   })
 
-  it('文字明细与预测说明使用原生折叠区，并保留 UTC 日期及提醒边界说明', async () => {
+  it('文字明细与预测说明使用原生折叠区，并保留站点时区日期及提醒边界说明', async () => {
     const wrapper = await setup(stats([]))
     const disclosures = wrapper.findAll('details')
     expect(disclosures).toHaveLength(2)
@@ -232,7 +232,7 @@ describe('订阅续费预测抽屉', () => {
     ])
     expect(disclosures.every((details) => details.attributes('open') === undefined)).toBe(true)
     expect(disclosures[0]!.text()).toContain('暂无可展示的月份记录。')
-    expect(disclosures[1]!.text()).toContain('截至 2026-10-16（UTC 日期）')
+    expect(disclosures[1]!.text()).toContain('截至 2026-10-16（站点时区日期）')
     expect(disclosures[1]!.text()).toContain('并非实际历史支出')
     expect(disclosures[1]!.text()).toContain('试用、暂停、取消和过期记录不生成续费预测')
     expect(disclosures[1]!.text()).toContain('缺少可靠日期的记录不会猜测扣款时间')

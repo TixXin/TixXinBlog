@@ -1,6 +1,6 @@
 <!--
   @file SiteProfileFields.vue
-  @description 站点设置的公开资料：站名、简介、博主身份、头像、在线状态（含到期时间）与建站日期；头像可从媒体库选择
+  @description 站点设置的公开资料：站名、简介、博主身份、头像、在线状态（含到期时间）、站点时区与建站日期；头像可从媒体库选择
 -->
 <template>
   <fieldset class="admin-site__grid" :disabled="disabled">
@@ -54,6 +54,13 @@
       </button></label
     >
     <label
+      >{{ t('admin-system.site.editor.fields.timeZone')
+      }}<select v-model="draft.timeZone" :aria-describedby="timeZoneHintId">
+        <option v-for="zone in timeZoneOptions" :key="zone" :value="zone">{{ zone }}</option>
+      </select>
+      <small :id="timeZoneHintId" class="admin-site__hint">{{ t('admin-system.site.page.timeZoneHint') }}</small></label
+    >
+    <label
       >{{ t('admin-system.site.editor.fields.launchedAt')
       }}<CommonDatePicker
         v-model="draft.launchedAt"
@@ -65,12 +72,15 @@
 <script setup lang="ts">
 import { presenceStatusOptions, type SiteSettingsData } from '~/features/site/settings'
 import { fromLocalDateTimeInput, toLocalDateTimeInput } from '~/features/presence/manualExpiry'
+import { siteTimeZoneOptions } from '~/features/site/timeZone'
 
 defineProps<{ disabled: boolean }>()
 const draft = defineModel<SiteSettingsData>({ required: true })
 const emit = defineEmits<{ pick: [] }>()
 const { t } = useI18n()
 const expiresHintId = useId()
+const timeZoneHintId = useId()
+const timeZoneOptions = computed(() => siteTimeZoneOptions(draft.value.timeZone))
 // 输入框按本机时区显示与编辑，保存为 UTC 的 ISO 字符串；清空表示长期有效。
 const expiresLocal = computed({
   get: () => toLocalDateTimeInput(draft.value.presenceExpiresAt ?? ''),

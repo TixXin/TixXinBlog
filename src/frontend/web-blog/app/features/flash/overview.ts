@@ -6,6 +6,7 @@
  */
 
 import type { FlashNote, FlashOverview, FlashRecollection } from './types'
+import { DEFAULT_SITE_TIME_ZONE, siteDayKey } from '~/features/site/timeZone'
 
 /** 摘录长度与后端一致 */
 const EXCERPT_LENGTH = 300
@@ -14,25 +15,25 @@ function recollection(note: FlashNote): FlashRecollection {
   return { id: note.id, content: note.content.slice(0, EXCERPT_LENGTH), createdAt: note.createdAt }
 }
 
-/** UTC 日期键（YYYY-MM-DD），与发布日历分组口径一致 */
-export function flashUtcDay(iso: string): string {
-  return new Date(iso).toISOString().slice(0, 10)
-}
-
 /**
- * 由完整集合计算概览：日期、本月数与往年今日均按 UTC；标签按次数倒序、同次数按名称。
+ * 由完整集合计算概览：日期、本月数与往年今日均按站点时区，与后端概览口径一致；标签按次数倒序、同次数按名称。
  * 随机回顾候选取全部条目，由卡片在挂载后随机挑选。
  */
-export function summarizeFlashNotes(notes: FlashNote[], now = new Date()): FlashOverview {
+export function summarizeFlashNotes(
+  notes: FlashNote[],
+  now = new Date(),
+  timeZone = DEFAULT_SITE_TIME_ZONE,
+): FlashOverview {
   const dates = new Map<string, number>()
   const tags = new Map<string, number>()
-  const month = now.toISOString().slice(0, 7)
-  const monthDay = now.toISOString().slice(5, 10)
-  const year = now.getUTCFullYear()
+  const today = siteDayKey(now, timeZone)
+  const month = today.slice(0, 7)
+  const monthDay = today.slice(5, 10)
+  const year = Number(today.slice(0, 4))
   let monthCount = 0
   let onThisDay: FlashNote | null = null
   for (const note of notes) {
-    const day = flashUtcDay(note.createdAt)
+    const day = siteDayKey(note.createdAt, timeZone)
     dates.set(day, (dates.get(day) ?? 0) + 1)
     note.tags.forEach((tag) => tags.set(tag, (tags.get(tag) ?? 0) + 1))
     if (day.startsWith(month)) monthCount += 1

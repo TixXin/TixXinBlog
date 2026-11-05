@@ -256,7 +256,8 @@
         "restoreHistorical": "恢复此版本到服务器",
         "extrasInvalid": "导航与页脚有需要修改的输入，请按提示修正后再保存",
         "presenceExpiresHint": "到期后状态类型与状态文案失效，回到自动状态；签名保留。留空为长期有效。",
-        "presenceExpiresClear": "长期有效"
+        "presenceExpiresClear": "长期有效",
+        "timeZoneHint": "日历、归档、热力图与各项按日统计都按这个时区切日。修改后只影响之后的日期，已汇总的每日访问统计不重算。"
       },
       "editor": {
         "fields": {
@@ -287,7 +288,8 @@
           "aboutSection": "{section}栏目",
           "fallback": "站点资料",
           "separator": "、",
-          "presenceExpiresAt": "状态有效期至"
+          "presenceExpiresAt": "状态有效期至",
+          "timeZone": "站点时区"
         },
         "recoveryLocked": "原恢复副本格式不完整，已保留；当前新输入无法写入恢复副本，请先保留当前页面。",
         "recoverySaveFailed": "恢复副本无法保存，请保留当前页面。",
@@ -705,8 +707,8 @@
       "allActions": "全部操作",
       "stateFilter": "处理结果",
       "allStates": "全部结果",
-      "from": "开始日期（UTC）",
-      "to": "结束日期（UTC）",
+      "from": "开始日期（站点时区）",
+      "to": "结束日期（站点时区）",
       "submit": "筛选审计记录",
       "clear": "清除筛选",
       "refresh": "刷新记录",

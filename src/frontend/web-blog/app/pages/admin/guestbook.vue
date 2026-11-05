@@ -206,8 +206,9 @@ function closeDetail() {
     if (detailTrigger?.isConnected) detailTrigger.focus({ preventScroll: true })
   })
 }
+const timeZone = useSiteTimeZone()
 function reply(note: ManagedGuestbookRecord) {
-  interactions.setReply(guestbookDisplay(note))
+  interactions.setReply(guestbookDisplay(note, undefined, timeZone.value))
   nextTick(() => {
     composer.value?.scrollIntoView({ block: 'nearest' })
     composer.value?.querySelector('textarea')?.focus()

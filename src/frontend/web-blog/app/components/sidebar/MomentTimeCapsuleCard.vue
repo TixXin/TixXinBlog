@@ -49,6 +49,7 @@
 </template>
 
 <script setup lang="ts">
+import { siteDayKey } from '~/features/site/timeZone'
 import { markdownPlainText } from '~/utils/markdownPlainText'
 import type { MomentItem } from '~/features/moment/types'
 type Recollection = Pick<MomentItem, 'id' | 'content' | 'date'>
@@ -57,20 +58,14 @@ const props = defineProps<{
   moments: Recollection[]
 }>()
 
-// 去年今日：找出"月日"匹配且年份更早的最近一条
+const timeZone = useSiteTimeZone()
+// 去年今日：按站点时区找出“月日”相同、年份为去年的最近一条
 const throwback = computed<Recollection | null>(() => {
-  const today = new Date()
-  const mm = String(today.getUTCMonth() + 1).padStart(2, '0')
-  const dd = String(today.getUTCDate()).padStart(2, '0')
-  const todayMd = `${mm}-${dd}`
-  const todayYear = today.getUTCFullYear()
+  const today = siteDayKey(Date.now(), timeZone.value)
+  const lastYear = `${Number(today.slice(0, 4)) - 1}${today.slice(4)}`
 
   const hits = props.moments
-    .filter((m) => {
-      const d = new Date(m.date)
-      const md = `${String(d.getUTCMonth() + 1).padStart(2, '0')}-${String(d.getUTCDate()).padStart(2, '0')}`
-      return md === todayMd && d.getUTCFullYear() === todayYear - 1
-    })
+    .filter((m) => siteDayKey(m.date, timeZone.value) === lastYear)
     .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
 
   return hits[0] ?? null
@@ -108,9 +103,9 @@ function truncate(s: string, n: number) {
   return t.length > n ? `${t.slice(0, n)}…` : t
 }
 
-/** 日期按 UTC 展示，与去年今日的匹配口径一致。 */
+/** 日期按站点时区展示，与去年今日的匹配口径一致。 */
 function formatDate(iso: string) {
-  return new Date(iso).toISOString().slice(0, 10)
+  return siteDayKey(iso, timeZone.value)
 }
 </script>
 

@@ -20,7 +20,7 @@
     <template #meta>
       <p>
         <strong>{{ item.authorName }}</strong> · {{ labels[item.moderationStatus] }} ·
-        {{ item.createdAt.slice(0, 16).replace('T', ' ') }} UTC
+        {{ siteDateTime(item.createdAt, timeZone) }}
       </p>
     </template>
     <template #content>
@@ -59,7 +59,10 @@
 </template>
 
 <script setup lang="ts">
+import { siteDateTime } from '~/features/site/timeZone'
 import type { ManagedFlashComment } from '~/features/flash/types'
+// 时间按站点时区显示
+const timeZone = useSiteTimeZone()
 
 defineProps<{
   item: ManagedFlashComment

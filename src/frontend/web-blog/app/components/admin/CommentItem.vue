@@ -26,7 +26,7 @@
       <p>
         <strong>{{ comment.author }}</strong>
         {{ comment.isOwner ? `· ${t('admin-content.comments.owner')}` : '' }} ·
-        {{ comment.createdAt.slice(0, 10) }}
+        {{ siteDayKey(comment.createdAt, timeZone) }}
       </p>
     </template>
     <template #content>
@@ -89,6 +89,9 @@
 
 <script setup lang="ts">
 import type { AdminCommentRow, CommentStatus } from '~/features/article/types'
+import { siteDayKey } from '~/features/site/timeZone'
+// 评论日期按站点时区显示，与日期筛选一致
+const timeZone = useSiteTimeZone()
 
 defineProps<{
   comment: AdminCommentRow

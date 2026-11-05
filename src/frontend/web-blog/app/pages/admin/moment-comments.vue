@@ -39,7 +39,7 @@
             <p>
               <strong>{{ item.author }}</strong
               >{{ item.isOwner ? ` · ${t('admin-content.momentComments.owner')}` : '' }} ·
-              {{ labels[item.moderationStatus] }} · {{ item.time.slice(0, 16).replace('T', ' ') }} UTC
+              {{ labels[item.moderationStatus] }} · {{ siteDateTime(item.time, timeZone) }}
             </p>
           </template>
           <template #content>
@@ -99,7 +99,10 @@
   </section>
 </template>
 <script setup lang="ts">
+import { siteDateTime } from '~/features/site/timeZone'
 import type { ManagedMomentComment } from '~/features/moment/types'
+// 时间按站点时区显示
+const timeZone = useSiteTimeZone()
 definePageMeta({ layout: 'admin' })
 const { t } = useI18n()
 useSeoMeta({ title: () => t('admin-content.momentComments.title'), robots: 'noindex, nofollow' })

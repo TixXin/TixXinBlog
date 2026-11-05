@@ -216,7 +216,7 @@ describe('后台项目、订阅与留言英文冒烟', () => {
 
       const guestbook = await mountSuspended(AdminGuestbookPage, { global: { stubs } })
       expect(guestbook.get('h1').text()).toBe('Guestbook')
-      expect(guestbook.text()).toContain('Pending review · Pinned · 2026-10-01 08:30 UTC')
+      expect(guestbook.text()).toContain('Pending review · Pinned · 2026-10-01 16:30')
       expect(guestbook.text()).toContain('Unpin')
       expect(guestbook.text()).toContain('messages')
       guestbook.unmount()

@@ -25,6 +25,7 @@ import type {
 import type { CommentDraft, CommentList } from './commentController'
 import { postPreviewError, postPreviewToken } from './preview'
 import { ensureVisitorId } from '~/utils/visitorId'
+import { currentSiteTimeZone, siteDayKey } from '~/features/site/timeZone'
 
 /** 后端统一响应包装，业务错误与 HTTP 状态分别处理。 */
 interface ApiEnvelope<T> {
@@ -58,9 +59,9 @@ function unwrap<T>(envelope: ApiEnvelope<T>): T {
   return envelope.data
 }
 
-/** 后端 date 为 ISO 串,列表展示层期望 YYYY-MM-DD,统一在边界归一化 */
-function normalizePostItem(item: PostItem): PostItem {
-  return { ...item, date: item.date.slice(0, 10) }
+/** 后端 date 为 ISO 串,列表展示层期望站点时区下的 YYYY-MM-DD(与归档分月一致),统一在边界归一化 */
+function postDay<T extends { date: string }>(item: T, zone: string): T {
+  return { ...item, date: siteDayKey(item.date, zone) }
 }
 
 /** 后端分页与筛选，保留 total 供页码和瀑布流使用。 */
@@ -76,6 +77,7 @@ export async function fetchPostPage(
   } = {},
   signal?: AbortSignal,
 ): Promise<PostPage> {
+  const zone = currentSiteTimeZone()
   const base = requireBaseUrl(baseUrl)
   const envelope = await $fetch<ApiEnvelope<ApiPostListData>>(`${base}/posts`, {
     query: { page: 1, pageSize: 15, ...query },
@@ -84,7 +86,7 @@ export async function fetchPostPage(
     retry: 0,
   })
   const data = unwrap(envelope)
-  return { ...data, items: data.items.map(normalizePostItem) }
+  return { ...data, items: data.items.map((item) => postDay(item, zone)) }
 }
 
 export async function fetchPostMetadata(baseUrl: string, signal?: AbortSignal): Promise<PostSummary> {
@@ -103,7 +105,8 @@ export async function fetchPostArchive(
   query: PostArchiveQuery,
   signal?: AbortSignal,
 ): Promise<PostArchivePage> {
-  return unwrap(
+  const zone = currentSiteTimeZone()
+  const page = unwrap(
     await $fetch<ApiEnvelope<PostArchivePage>>(`${requireBaseUrl(baseUrl)}/posts/archive`, {
       query,
       signal,
@@ -111,6 +114,7 @@ export async function fetchPostArchive(
       retry: 0,
     }),
   )
+  return { ...page, items: page.items.map((item) => postDay(item, zone)) }
 }
 
 export async function fetchPostNavigation(
@@ -130,6 +134,7 @@ export async function fetchPostNavigation(
 }
 
 export async function fetchRelatedPosts(baseUrl: string, id: string, signal?: AbortSignal): Promise<RelatedPost[]> {
+  const zone = currentSiteTimeZone()
   const data = unwrap(
     await $fetch<ApiEnvelope<RelatedPost[]>>(`${requireBaseUrl(baseUrl)}/posts/${encodeURIComponent(id)}/related`, {
       signal,
@@ -137,7 +142,7 @@ export async function fetchRelatedPosts(baseUrl: string, id: string, signal?: Ab
       retry: 0,
     }),
   )
-  return data.map((post) => ({ ...post, date: post.date.slice(0, 10) }))
+  return data.map((post) => postDay(post, zone))
 }
 
 export async function fetchPostInteraction(
@@ -182,6 +187,7 @@ export async function togglePostLike(baseUrl: string, id: string): Promise<{ lik
 
 /** 拉取文章详情(正文块 + TOC) */
 export async function fetchArticleDetail(baseUrl: string, id: string, signal?: AbortSignal): Promise<ApiArticleDetail> {
+  const zone = currentSiteTimeZone()
   const base = requireBaseUrl(baseUrl)
   const endpoint = /^\d+$/.test(id) ? `/posts/${encodeURIComponent(id)}` : `/posts/by-slug/${encodeURIComponent(id)}`
   const envelope = await $fetch<ApiEnvelope<ApiArticleDetail>>(`${base}${endpoint}`, {
@@ -190,7 +196,7 @@ export async function fetchArticleDetail(baseUrl: string, id: string, signal?: A
     retry: 0,
   })
   const detail = unwrap(envelope)
-  return { ...detail, date: detail.date.slice(0, 10) }
+  return postDay(detail, zone)
 }
 
 /** 预览每次读取最新保存正文，不复用公开缓存或发送访客互动身份。 */
@@ -200,6 +206,7 @@ export async function fetchPostPreview(
   signal?: AbortSignal,
 ): Promise<PostPreviewDetail> {
   if (!postPreviewToken(token)) throw postPreviewError({ statusCode: 400 })
+  const zone = currentSiteTimeZone()
   try {
     const detail = unwrap(
       await $fetch<ApiEnvelope<PostPreviewDetail>>(`${requireBaseUrl(baseUrl)}/posts/preview`, {
@@ -211,30 +218,31 @@ export async function fetchPostPreview(
         retry: 0,
       }),
     )
-    return { ...detail, date: detail.date.slice(0, 10) }
+    return postDay(detail, zone)
   } catch (error) {
     throw postPreviewError(error)
   }
 }
 
-/** 评论 time 为 ISO 串,展示层沿用 mock 的 YYYY-MM-DD 习惯,递归归一化 */
-function normalizeComment(item: CommentItem): CommentItem {
+/** 评论 time 为 ISO 串,展示层沿用 mock 的 YYYY-MM-DD 习惯(站点时区),递归归一化 */
+function normalizeComment(item: CommentItem, zone: string): CommentItem {
   return {
     ...item,
-    time: item.time.slice(0, 10),
-    replies: item.replies?.map(normalizeComment),
+    time: siteDayKey(item.time, zone),
+    replies: item.replies?.map((reply) => normalizeComment(reply, zone)),
   }
 }
 
 /** 拉取文章评论树 */
 export async function fetchComments(baseUrl: string, id: string, signal?: AbortSignal): Promise<CommentList> {
   const base = requireBaseUrl(baseUrl)
+  const zone = currentSiteTimeZone()
   const envelope = await $fetch<ApiEnvelope<{ items: CommentItem[]; total: number }>>(
     `${base}/posts/${encodeURIComponent(id)}/comments`,
     { headers: commentVisitorHeaders(), signal, timeout: 10000, retry: 0 },
   )
   const data = unwrap(envelope)
-  return { items: data.items.map(normalizeComment), total: data.total }
+  return { items: data.items.map((item) => normalizeComment(item, zone)), total: data.total }
 }
 
 /** SSR 读取不携带设备身份；客户端重新读取以恢复个人点赞状态。 */
@@ -245,6 +253,7 @@ function commentVisitorHeaders(): Record<string, string> {
 
 export async function createComment(baseUrl: string, id: string, draft: CommentDraft): Promise<CommentItem> {
   const headers = commentVisitorHeaders()
+  const zone = currentSiteTimeZone()
   // 提交凭据跨响应丢失与刷新保留；不在存储键中保存评论正文或访客原始身份。
   const businessDraft = { ...draft }
   delete businessDraft.website
@@ -265,7 +274,7 @@ export async function createComment(baseUrl: string, id: string, draft: CommentD
     `${requireBaseUrl(baseUrl)}/posts/${encodeURIComponent(id)}/comments`,
     { method: 'POST', body: { ...draft, requestId }, headers, timeout: 10000, retry: 0 },
   )
-  const value = normalizeComment(unwrap(envelope))
+  const value = normalizeComment(unwrap(envelope), zone)
   try {
     sessionStorage.removeItem(key)
   } catch {

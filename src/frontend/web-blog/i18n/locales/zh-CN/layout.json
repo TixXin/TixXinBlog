@@ -371,8 +371,8 @@
         "streak": "连续 {count} 天",
         "flashDayLabel": "{date}，{count} 条闪念",
         "momentDayLabel": "{date}，{count} 条动态",
-        "flashMonthCount": "本月 {count} 条 · UTC",
-        "momentMonthCount": "本月 {count} 条动态 · UTC",
+        "flashMonthCount": "本月 {count} 条",
+        "momentMonthCount": "本月 {count} 条动态",
         "flashTooltip": "{date} · {count}条",
         "momentTooltip": "{date} · {count}条动态",
         "weekdays": {
@@ -387,7 +387,7 @@
       },
       "heatmap": {
         "title": "活跃度",
-        "subtitle": "最近 {weeks} 周 · UTC",
+        "subtitle": "最近 {weeks} 周",
         "gridLabel": "每日公开内容，方向键选择日期",
         "cellLabel": "{date}，{articles} 篇公开文章，{comments} 条公开评论",
         "level": "公开内容数量",

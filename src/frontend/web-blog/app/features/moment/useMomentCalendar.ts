@@ -1,9 +1,11 @@
 /**
  * @file useMomentCalendar.ts
- * @description 朋友圈日历状态计算与交互组合函数，支持 UTC 月份切换、按日动态聚合与连续打卡统计
+ * @description 朋友圈日历状态计算与交互组合函数：按站点时区确定今天与当前月，支持月份切换、按日动态聚合与连续打卡统计
  * @author TixXin
  * @since 2026-04-20
  */
+
+import { dayStreak, siteDayKey, siteYearMonth } from '~/features/site/timeZone'
 
 export interface MomentCalendarProps {
   momentDates?: string[]
@@ -42,8 +44,12 @@ export function useMomentCalendar(
     })
   }
 
-  const viewYear = ref(new Date().getUTCFullYear())
-  const viewMonth = ref(new Date().getUTCMonth())
+  const zone = useSiteTimeZone()
+  const current = () => siteYearMonth(Date.now(), zone.value)
+  /** 站点时区的今天 */
+  const today = computed(() => siteDayKey(Date.now(), zone.value))
+  const viewYear = ref(current().year)
+  const viewMonth = ref(current().month)
 
   // 侧栏与抽屉切换会重新挂载日历；从共享筛选恢复月份，避免选中日期离开可见月份。
   watch(
@@ -63,8 +69,8 @@ export function useMomentCalendar(
   )
 
   const isCurrentMonth = computed(() => {
-    const now = new Date()
-    return viewYear.value === now.getUTCFullYear() && viewMonth.value === now.getUTCMonth()
+    const now = current()
+    return viewYear.value === now.year && viewMonth.value === now.month
   })
 
   function prevMonth() {
@@ -88,9 +94,9 @@ export function useMomentCalendar(
 
   /** 回到今天 */
   function goToday() {
-    const now = new Date()
-    viewYear.value = now.getUTCFullYear()
-    viewMonth.value = now.getUTCMonth()
+    const now = current()
+    viewYear.value = now.year
+    viewMonth.value = now.month
   }
 
   /** 按日期聚合动态数量 */
@@ -112,8 +118,7 @@ export function useMomentCalendar(
 
     // Monday=0 offset
     const startOffset = (firstDay.getUTCDay() + 6) % 7
-    const today = new Date()
-    const todayStr = today.toISOString().slice(0, 10)
+    const todayStr = today.value
 
     const result: (CalendarDay | null)[] = []
 
@@ -146,33 +151,8 @@ export function useMomentCalendar(
       .reduce((sum, [, count]) => sum + count, 0)
   })
 
-  /** 计算最近连续发布天数 */
-  const streak = computed(() => {
-    const sortedDates = [...momentDateMap.value.keys()].sort().reverse()
-    const latest = sortedDates[0]
-    if (!latest) return 0
-
-    const today = new Date()
-    today.setUTCHours(0, 0, 0, 0)
-
-    // 从今天或最近一条动态开始往回数
-    let count = 0
-    const startDate = new Date(latest)
-    startDate.setUTCHours(0, 0, 0, 0)
-
-    // 如果最近的动态不是今天或昨天，不算连续
-    const diffDays = Math.floor((today.getTime() - startDate.getTime()) / 86400000)
-    if (diffDays > 1) return 0
-
-    const dateSet = new Set(sortedDates)
-    const checkDate = new Date(startDate)
-    while (dateSet.has(checkDate.toISOString().slice(0, 10))) {
-      count++
-      checkDate.setUTCDate(checkDate.getUTCDate() - 1)
-    }
-
-    return count
-  })
+  /** 计算截至今天或昨天的连续发布天数 */
+  const streak = computed(() => dayStreak(momentDateMap.value.keys(), today.value))
 
   /** 当前视图月份中某天的月日文字，如「10月19日」 */
   function monthDay(num: number) {

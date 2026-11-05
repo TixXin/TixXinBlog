@@ -169,7 +169,7 @@ describe('订阅费用统计', () => {
     const region = wrapper.get('[role="region"][aria-label="预算统计口径"]')
     expect(button.attributes('aria-expanded')).toBe('true')
     expect(button.attributes('aria-controls')).toBe(region.attributes('id'))
-    expect(region.text()).toContain('统计截至 2026-10-16（UTC 日期）')
+    expect(region.text()).toContain('统计截至 2026-10-16（站点时区日期）')
     expect(region.text()).toContain('JPY 订阅，共 3 条')
     expect(region.text()).toContain('不同币种分别计算，不做汇率换算')
     expect(region.text()).toContain('暂停、取消、试用、过期和未来开始的记录不计入当前预算')

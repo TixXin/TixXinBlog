@@ -10,6 +10,7 @@ import type { CommentList, CommentTransport } from '~/features/post/commentContr
 import { mockComments } from '~/features/post/mock'
 import { getCommentSession, rememberCommentSession } from '~/features/post/commentSession'
 import { hasStoredVisitorId } from '~/utils/visitorId'
+import { siteDayKey } from '~/features/site/timeZone'
 
 export async function useArticleComments(id: string) {
   const initialRequest = usePageRequestScope()
@@ -33,6 +34,8 @@ export async function useArticleComments(id: string) {
     items.reduce((sum, item) => sum + 1 + count(item.replies ?? []), 0)
   mockData.total = count(mockData.items)
   let mockId = Date.now()
+  // 演示评论的日期与站点时区一致
+  const timeZone = useSiteTimeZone()
   const transport: CommentTransport = useMock
     ? {
         load: async () => structuredClone(mockData),
@@ -42,7 +45,7 @@ export async function useArticleComments(id: string) {
             author: input.author,
             avatar: input.avatar || '/avatar.svg',
             content: input.content,
-            time: new Date().toISOString().slice(0, 10),
+            time: siteDayKey(Date.now(), timeZone.value),
             likes: 0,
             liked: false,
             isOwner: false,

@@ -120,7 +120,7 @@ const liked = computed(() => !!props.note.liked)
 const commentCount = computed(() => publishedCommentCount(props.note))
 const canInteract = computed(() => props.interactive && !props.note.isDraft && !props.note.isArchived)
 
-// 列表由 SSR 直出：服务端与水合首帧使用随 payload 下发的同一时刻和 UTC 日历日期，
+// 列表由 SSR 直出：服务端与水合首帧使用随 payload 下发的同一时刻和站点时区的日历日期，
 // 挂载后再换成本机时钟与本地时区，相对时间和日期不会因时钟或时区差异产生水合不一致。
 const renderClock = useState('flash-render-clock', () => Date.now())
 const clockReady = ref(false)
@@ -128,9 +128,10 @@ onMounted(() => {
   clockReady.value = true
 })
 
+const timeZone = useSiteTimeZone()
 const relativeTime = computed(() => {
   const now = clockReady.value ? Date.now() : renderClock.value
-  return formatFlashRelative(props.note.createdAt, now, clockReady.value, t)
+  return formatFlashRelative(props.note.createdAt, { now, ready: clockReady.value, timeZone: timeZone.value }, t)
 })
 
 const typeMeta = computed(() => {

@@ -24,6 +24,7 @@ import {
 import { currentTranslate, type Translate } from '~/utils/format'
 import { resolveOwnerPresence } from '~/features/presence/ownerPresence'
 import { activeManualPresence } from '~/features/presence/manualExpiry'
+import { DEFAULT_SITE_TIME_ZONE, siteDayKey } from '~/features/site/timeZone'
 
 /** 将 ISO 时间字符串转为相对时间描述 */
 function formatDuration(since: string, t: Translate): string {
@@ -95,7 +96,8 @@ export function useSiteInfo() {
           {
             id: 'site',
             content: settings.value.announcement,
-            date: settings.value.announcementUpdatedAt.slice(0, 10),
+            // 公告日期按站点时区
+            date: siteDayKey(settings.value.announcementUpdatedAt, settings.value.timeZone || DEFAULT_SITE_TIME_ZONE),
             pinned: true,
           },
         ]

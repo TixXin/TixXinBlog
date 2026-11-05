@@ -92,9 +92,10 @@ const visitorForm = useVisitorSubmissionForm({ active: () => props.open })
 const { website } = visitorForm
 const commentSending = ref(false)
 
+const timeZone = useSiteTimeZone()
 function formatCommentTime(iso: string): string {
   const now = props.clockReady ? Date.now() : props.renderClock
-  return formatFlashRelative(iso, now, props.clockReady, t)
+  return formatFlashRelative(iso, { now, ready: props.clockReady, timeZone: timeZone.value }, t)
 }
 
 function canDeleteComment(_authorId: string): boolean {

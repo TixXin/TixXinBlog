@@ -1,6 +1,6 @@
 /**
  * @file sidebarTimeCapsules.test.ts
- * @description 侧栏时间胶囊覆盖空态、UTC 回顾、原生交互、候选更新与随机切换
+ * @description 侧栏时间胶囊覆盖空态、按站点时区的回顾、原生交互、候选更新与随机切换
  */
 import { mount, type VueWrapper } from '@vue/test-utils'
 import { defineComponent, h, nextTick } from 'vue'
@@ -9,6 +9,15 @@ import FlashTimeCapsuleCard from '../../app/components/sidebar/FlashTimeCapsuleC
 import MomentTimeCapsuleCard from '../../app/components/sidebar/MomentTimeCapsuleCard.vue'
 import type { FlashRecollection } from '../../app/features/flash/types'
 import type { MomentItem } from '../../app/features/moment/types'
+import { mockNuxtImport } from '@nuxt/test-utils/runtime'
+
+// 站点时区：这些用例检验日界机制，默认设为 UTC；个别用例切到 Asia/Shanghai 检验站点时区口径
+const siteZone = vi.hoisted(() => ({ value: 'UTC' }))
+mockNuxtImport('useSiteTimeZone', () => () => ({
+  get value() {
+    return siteZone.value
+  },
+}))
 
 type MomentRecollection = Pick<MomentItem, 'id' | 'content' | 'date'>
 const mounted: { wrapper: VueWrapper; host: HTMLElement }[] = []
@@ -46,6 +55,7 @@ beforeEach(() => {
 })
 
 afterEach(() => {
+  siteZone.value = 'UTC'
   mounted.splice(0).forEach(({ wrapper, host }) => {
     wrapper.unmount()
     host.remove()
@@ -121,17 +131,20 @@ describe.each<'moment' | 'flash'>(['moment', 'flash'])('%s 时间胶囊', (kind)
     expect(wrapper.find('section').exists()).toBe(false)
   })
 
-  it('文本压缩空白并限制摘录长度，日期按 UTC 展示', async () => {
+  it('文本压缩空白并限制摘录长度，日期按站点时区展示', async () => {
     const wrapper = await mountCapsule(kind, [
       { id: 'long', content: `雨后\n\t小路 ${'风'.repeat(70)}`, date: '2023-01-01T00:30:00+08:00' },
     ])
     expect(wrapper.get(`${prefix}__excerpt`).text()).toBe(`${`雨后 小路 ${'风'.repeat(70)}`.slice(0, 60)}…`)
     expect(wrapper.get(`${prefix}__meta`).text()).toBe('2022-12-31')
+    siteZone.value = 'Asia/Shanghai'
+    const shanghai = await mountCapsule(kind, [{ id: 'long', content: '雨后', date: '2023-01-01T00:30:00+08:00' }])
+    expect(shanghai.get(`${prefix}__meta`).text()).toBe('2023-01-01')
   })
 })
 
 describe('朋友圈去年今日', () => {
-  it('使用 UTC 月日而非本地日期，并选出去年同日较晚的记录', async () => {
+  it('站点时区为 UTC 时使用 UTC 月日而非本地日期，并选出去年同日较晚的记录', async () => {
     vi.setSystemTime(new Date('2025-01-01T00:30:00+08:00'))
     const wrapper = await mountCapsule('moment', [
       { id: 'wrong-day', content: '本地新年', date: '2024-01-01T00:00:00Z' },
@@ -143,6 +156,17 @@ describe('朋友圈去年今日', () => {
     const block = wrapper.get('.moment-capsule-card__block')
     expect(block.text()).toContain('去年今日')
     expect(block.get('a').attributes('href')).toBe('/moments/late')
+  })
+
+  it('站点时区为 Asia/Shanghai 时按北京时间的月日匹配去年今日', async () => {
+    siteZone.value = 'Asia/Shanghai'
+    vi.setSystemTime(new Date('2025-01-01T00:30:00+08:00'))
+    const wrapper = await mountCapsule('moment', [
+      { id: 'utc-new-year-eve', content: '北京时间元旦早晨', date: '2023-12-31T23:30:00Z' },
+      { id: 'utc-new-year', content: '北京时间元旦午后', date: '2024-01-01T06:00:00Z' },
+      { id: 'beijing-eve', content: '北京时间除夕', date: '2023-12-31T10:00:00Z' },
+    ])
+    expect(wrapper.get('.moment-capsule-card__block').get('a').attributes('href')).toBe('/moments/utc-new-year')
   })
 
   it('闰年二月二十九日不把去年二月二十八日视为同一天', async () => {

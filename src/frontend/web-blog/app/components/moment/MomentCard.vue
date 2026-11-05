@@ -92,6 +92,7 @@
 </template>
 
 <script setup lang="ts">
+import { siteDayKey } from '~/features/site/timeZone'
 import type { MomentCommentSubmission, MomentItem, MomentUserProfile } from '~/features/moment/types'
 import type { MomentInteractionState } from '~/features/moment/session'
 import { renderMomentMarkdown } from '~/composables/useMomentMarkdown'
@@ -112,8 +113,9 @@ const emit = defineEmits<{
   comments: [id: string]
 }>()
 
-// 与日期筛选和日历采用同一 UTC 日期键。
-const formattedDate = computed(() => props.moment.date.slice(0, 10))
+// 与日期筛选和日历采用同一站点时区日期键。
+const timeZone = useSiteTimeZone()
+const formattedDate = computed(() => siteDayKey(props.moment.date, timeZone.value))
 const siteUrl = useSiteUrl()
 const { t } = useI18n()
 const renderedContent = computed(() => renderMomentMarkdown(props.moment.content, { siteUrl, t }))

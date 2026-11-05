@@ -113,7 +113,7 @@
 
 - `online`：90 秒内有心跳的会话数。只在单个后端实例的内存中计算，实例重启后清零。
 - `owner`：`{ status: 'online' | 'away', lastSeenAt }`。博主心跳 2 分钟内为 `online`；否则为 `away`，`lastSeenAt` 为最后一次心跳的时间（从未出现时为 `null`）。最后在线时间每 5 分钟最多写一次数据库，重启后仍可读出。
-- `stats`：`{ visitors, todayViews, totalViews }`。`visitors` 为看过本站的不同访客数；`todayViews` 与 `totalViews` 为全站页面浏览次数，“今日”按北京时间切日，累计从功能上线起计。同一访客、同一路径 30 分钟内重复进入只计一次；查询参数、片段与末尾斜杠不区分路径；`/admin`、`/setup`、`/api`、`/posts/preview` 不计浏览。统计结果最多缓存 10 秒。
+- `stats`：`{ visitors, todayViews, totalViews }`。`visitors` 为看过本站的不同访客数；`todayViews` 与 `totalViews` 为全站页面浏览次数，“今日”按站点时区切日，累计从功能上线起计。同一访客、同一路径 30 分钟内重复进入只计一次；查询参数、片段与末尾斜杠不区分路径；`/admin`、`/setup`、`/api`、`/posts/preview` 不计浏览。统计结果最多缓存 10 秒。
 - `readers`：与本次心跳同一路径的在线会话数（含自己），路径口径与浏览去重相同；路径不计浏览时为 `null`。
 - 后台关闭“公开访问统计”时 `online`、`stats` 与 `readers` 为 `null`；关闭“自动在线状态”时 `owner` 为 `null`。
 
@@ -123,7 +123,7 @@
 
 该接口使用独立内存限流：每个 IPv4 地址或 IPv6 `/64` 网段每分钟最多 60 次，不消耗普通业务写入配额；超限返回 429 与 `Retry-After`。
 
-`GET /admin/presence/traffic` 以查询参数 `days`（`7`、`30` 或 `90`，默认 `30`）返回北京时间截至今天的访问统计 `{ from, to, days, totals, pages, referrers, devices, browsers }`：
+`GET /admin/presence/traffic` 以查询参数 `days`（`7`、`30` 或 `90`，默认 `30`）返回站点时区截至今天的访问统计 `{ from, to, days, totals, pages, referrers, devices, browsers }`：
 
 - `days`：逐日 `{ date, views, visitors }`，没有记录的日期补 0；`totals` 为区间合计，访客是每日访客之和（同一访客跨天会重复计）。
 - `pages`、`referrers`：区间内浏览最多的前 10 个路径与来源，元素为 `{ key, count }`。来源只计页面加载后的第一次浏览，`key` 为去掉 `www.` 的小写域名，空串表示直接访问。
@@ -157,7 +157,7 @@
 | 方法与路径                                                                                   | 作用                                       |
 | -------------------------------------------------------------------------------------------- | ------------------------------------------ |
 | `GET /posts`、`GET /posts/metadata`                                                          | 公开列表、搜索、分页与真实目录聚合         |
-| `GET /posts/archive`                                                                         | 按 UTC 年月筛选的稳定分页归档              |
+| `GET /posts/archive`                                                                         | 按站点时区年月筛选的稳定分页归档           |
 | `GET /posts/:id`、`GET /posts/by-slug/:slug`                                                 | 公开文章详情及地址解析                     |
 | `GET /posts/:id/navigation`                                                                  | 前后文章，支持 `scope=all/folder/auto`     |
 | `GET /posts/:id/related`                                                                     | 规则相关文章                               |
@@ -211,9 +211,9 @@
 
 批量任务绑定具体 ID、版本和影响范围，有执行期限及逐项结果；重复执行查询原结果。单次预览和执行最多 50 个编号。管理列表没有按筛选条件批量的接口，选择全部筛选结果由前端分页读取（单页最多 100、合计最多 500 篇）后按上述上限分批提交。软删除与发布状态分开，永久删除需确认关联集合。媒体不会因删除文章而直接从磁盘移除。
 
-`GET /flashes` 接受 `page`（默认 1）、`pageSize`（默认 20，最大 100）及可任意组合的筛选：`tag`（标签精确匹配）、`type`（`idea`/`todo`/`memo`）、`date`（`YYYY-MM-DD`，按 UTC 日）、`from`/`to`（`YYYY-MM-DD`，含首尾的 UTC 日范围，与 `date` 同时出现取交集）；日期须为真实存在的公历日，非法参数返回 400。`GET /flashes/search` 另需 `q`（1–200 字），匹配正文或任一标签包含关键词（不区分大小写，`%`/`_` 按字面处理），并可与上述筛选组合。列表与搜索只返回本站已发布、未归档的闪念，均按置顶优先、`createdAt` 倒序、编号倒序稳定分页，响应为 `{ items, total, page, pageSize }`，`total` 为筛选后的总数；带 `X-Visitor-Id` 时 `items[].liked` 反映该访客的点赞状态。
+`GET /flashes` 接受 `page`（默认 1）、`pageSize`（默认 20，最大 100）及可任意组合的筛选：`tag`（标签精确匹配）、`type`（`idea`/`todo`/`memo`）、`date`（`YYYY-MM-DD`，按站点时区的日）、`from`/`to`（`YYYY-MM-DD`，含首尾的站点时区日范围，与 `date` 同时出现取交集）；日期须为真实存在的公历日，非法参数返回 400。`GET /flashes/search` 另需 `q`（1–200 字），匹配正文或任一标签包含关键词（不区分大小写，`%`/`_` 按字面处理），并可与上述筛选组合。列表与搜索只返回本站已发布、未归档的闪念，均按置顶优先、`createdAt` 倒序、编号倒序稳定分页，响应为 `{ items, total, page, pageSize }`，`total` 为筛选后的总数；带 `X-Visitor-Id` 时 `items[].liked` 反映该访客的点赞状态。
 
-`GET /flashes/overview` 一次返回闪念页侧栏所需的聚合，全部由数据库聚合或限量查询得到、只读：`total`（公开总数）、`monthCount`（当前 UTC 自然月新增）、`dates`（有闪念的 UTC 日期 `{ date, count }`，日期倒序，覆盖全部历史以支持日历翻月与连续天数）、`tags`（`{ name, count }`，次数倒序、同次数按名称）、`onThisDay`（UTC 月日与今天相同且年份更早的最近一条，无则 `null`）、`recollections`（随机抽取的最多 12 条回顾）与 `likedIds`（当前访客已点赞的公开闪念编号，未带 `X-Visitor-Id` 时为空数组）。`onThisDay` 与 `recollections` 只含 `{ id, content, createdAt }`，`content` 截取前 300 字。响应按访客区分，`Cache-Control: private, no-store`；限流与其他公开读取接口相同。公开闪念页 SSR 直出第一页列表，挂载后读取概览补齐侧栏与首屏个人点赞状态，类型、日期、标签与关键词筛选均走后端分页。
+`GET /flashes/overview` 一次返回闪念页侧栏所需的聚合，全部由数据库聚合或限量查询得到、只读：`total`（公开总数）、`monthCount`（当前站点时区自然月新增）、`dates`（有闪念的站点时区日期 `{ date, count }`，日期倒序，覆盖全部历史以支持日历翻月与连续天数）、`tags`（`{ name, count }`，次数倒序、同次数按名称）、`onThisDay`（站点时区月日与今天相同且年份更早的最近一条，无则 `null`）、`recollections`（随机抽取的最多 12 条回顾）与 `likedIds`（当前访客已点赞的公开闪念编号，未带 `X-Visitor-Id` 时为空数组）。`onThisDay` 与 `recollections` 只含 `{ id, content, createdAt }`，`content` 截取前 300 字。响应按访客区分，`Cache-Control: private, no-store`；限流与其他公开读取接口相同。公开闪念页 SSR 直出第一页列表，挂载后读取概览补齐侧栏与首屏个人点赞状态，类型、日期、标签与关键词筛选均走后端分页。
 
 闪念评论与文章、朋友圈评论共用站点评论策略（`/admin/comments/policy`）：`POST /flashes/:id/comments` 在开启先审后发时创建 `pending` 评论，否则为 `published`，响应带 `moderationStatus`（`published`/`pending`/`hidden`，与朋友圈评论同名同取值），并按状态写入 `flash-comment` 站内通知（`pending_review`/`new_comment`）。公开列表、搜索与详情的 `comments` 只返回已发布评论，以及携带 `X-Visitor-Id` 时该访客本人提交的待审评论（仅提交者本机可见，SSR 匿名读取不含待审）；`commentCount` 只计已发布评论。隐藏评论不公开。存量评论与旧内容包迁入的评论按已发布处理。
 
@@ -237,9 +237,9 @@
 | `GET /admin/moments/:id/comments/:commentId/location`            | 定位指定评论所在分页                             |
 | `PATCH/DELETE /admin/moments/:id/comments/:commentId`            | 审核与删除；审核使用目标和 `expectedStatus` 比较 |
 
-状态为 `draft/published/archived`，公开入口排除非公开和删除项。列表默认按置顶、发布时间、创建时间、ID 倒序；`pinnedFirst=false` 用于纯时间订阅。UTC 日期为 `YYYY-MM-DD`，筛选使用半开区间。
+状态为 `draft/published/archived`，公开入口排除非公开和删除项。列表默认按置顶、发布时间、创建时间、ID 倒序；`pinnedFirst=false` 用于纯时间订阅。日期筛选为 `YYYY-MM-DD`，按站点时区的日边界取半开区间。
 
-评论按动态、服务端访客身份和 `requestId` 去重，隐藏/删除后的旧提交不能重新公开。编辑可以保留已失效的原文章关系，新关系只允许可选择目标；公开投影不泄露私有文章，引用文章只读取卡片所需的标题、摘要、封面、地址与可见性列，不读取正文。`GET /moments/overview` 的 `dates` 包含全部有公开动态的 UTC 日期（日历可翻到任意历史月份并计算连续天数），`recollections` 不含引用文章。源码见[moment](../src/backend/server-main/src/modules/moment/)。
+评论按动态、服务端访客身份和 `requestId` 去重，隐藏/删除后的旧提交不能重新公开。编辑可以保留已失效的原文章关系，新关系只允许可选择目标；公开投影不泄露私有文章，引用文章只读取卡片所需的标题、摘要、封面、地址与可见性列，不读取正文。`GET /moments/overview` 的 `dates` 包含全部有公开动态的站点时区日期（日历可翻到任意历史月份并计算连续天数），`recollections` 不含引用文章。源码见[moment](../src/backend/server-main/src/modules/moment/)。
 
 ## 留言
 
@@ -332,6 +332,8 @@
 站点资料含可选的 `presenceLabel`（≤20）、`presenceSignature`（≤60）、`presenceStatus`（空串、`online`、`idle`、`busy`）与 `launchedAt`（`YYYY-MM-DD` 或空）：前两者驱动名片的在线状态与签名，都为空时保持离线；`presenceStatus` 决定状态点的类型，空串时按在线展示；`launchedAt` 决定 `GET /posts/metadata` 里 `stats.siteAgeDays` 的起点，缺省回退到最早公开文章的发布日。旧客户端与旧内容包可不携带这几项，缺省按空串处理且保存时沿用当前值。
 
 站点资料另含可选的 `presenceExpiresAt`：空串表示手动状态长期有效，否则为带时区的 ISO 8601 时间，保存时统一为 UTC，不带时区返回 400。到期后 `GET /site` 返回的 `presenceStatus` 与 `presenceLabel` 为空串（回到按心跳的自动状态），`presenceSignature` 与 `presenceExpiresAt` 照常返回，前端据此在到期时刻自动隐藏已渲染的状态；`GET /admin/site` 始终返回保存的原值。旧客户端与旧内容包不携带该字段时保存沿用当前值。
+
+站点资料另含可选的 `timeZone`（站点时区，IANA 名：`UTC` 或“地区/城市”，缩写与偏移量返回 400），公开 `GET /site` 一并返回，从未设置过的站点按 `Asia/Shanghai` 读取。全站分日都按它计算：闪念、朋友圈与留言的日期筛选和日历、往年今日、今日留言、文章归档年月与热力图、建站天数、后台概览趋势、后台评论与审计的日期范围、订阅统计的当天，以及访问统计的今日浏览、每日汇总与保留期清理。接口里的 `YYYY-MM-DD` 都是站点时区下的日期；时刻字段仍为 ISO UTC。修改时区只影响之后的日期，已按日汇总的访问统计不重算。
 
 站点资料还包含 `navigation`（`{ type: 'route', key, visible }` 或 `{ type: 'external', label, url, newTab, visible }`，`key` 限内置模块白名单且不重复，`home` 不可隐藏，外链 ≤4 个且仅 http(s)，缺失的内置模块按显示追加）、`footerLinks`（≤8 个 `{ label, url, newTab }`，`url` 为站内路径或 http(s)，不重复）、`quotes`（≤30 条、每条 1–120 字、去首尾空白后不重复）、`icpNumber`（≤40）、`icpUrl`（空或 http(s)，≤300）与 `copyright`（≤200，不含换行）。这些字段同样可选：未提交时沿用当前值，历史记录缺失时读取按缺省值补齐（缺省等于此前前端内置的导航、页脚链接与一言）。导航隐藏只影响展示，不做访问控制；公开 `GET /site` 不返回隐藏的外链，隐藏的内置模块仍保留条目以维持显隐与顺序。
 

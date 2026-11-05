@@ -7,7 +7,7 @@ export interface OverviewContent {
   status: 'draft' | 'published' | 'archived' | 'withdrawn'
   updatedAt: string
 }
-/** 近 30 天按日（UTC）的新建内容与收到的互动 */
+/** 近 30 天按日（站点时区）的新建内容与收到的互动 */
 export interface OverviewTrendDay {
   date: string
   content: number

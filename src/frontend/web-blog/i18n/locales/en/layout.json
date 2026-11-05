@@ -371,8 +371,8 @@
         "streak": "{count}-day streak",
         "flashDayLabel": "{date}, {count} flash | {date}, {count} flashes",
         "momentDayLabel": "{date}, {count} moment | {date}, {count} moments",
-        "flashMonthCount": "{count} this month · UTC",
-        "momentMonthCount": "{count} moment this month · UTC | {count} moments this month · UTC",
+        "flashMonthCount": "{count} this month",
+        "momentMonthCount": "{count} moment this month | {count} moments this month",
         "flashTooltip": "{date} · {count}",
         "momentTooltip": "{date} · {count} moment | {date} · {count} moments",
         "weekdays": {
@@ -387,7 +387,7 @@
       },
       "heatmap": {
         "title": "Activity",
-        "subtitle": "Last {weeks} weeks · UTC",
+        "subtitle": "Last {weeks} weeks",
         "gridLabel": "Daily public content; use arrow keys to choose a date",
         "cellLabel": "{date}: {articles} public posts, {comments} public comments",
         "level": "Public content",

@@ -8,6 +8,7 @@ import { defaultNavigation } from '~/features/nav/routes'
 import type { SiteFooterLinkSetting } from './types'
 import { currentTranslate } from '~/utils/format'
 import { defaultFooterLinks, defaultQuotes } from './footer'
+import { DEFAULT_SITE_TIME_ZONE } from './timeZone'
 export interface SiteSettingsData {
   about?: AboutSettings
   name: string
@@ -43,6 +44,8 @@ export interface SiteSettingsData {
   icpUrl: string
   /** 自定义版权文案，空串使用默认格式 */
   copyright: string
+  /** 站点时区（IANA 名）：全站按它分日与展示日期，与后端统计口径一致 */
+  timeZone: string
   /** 是否允许搜索引擎收录本站；关闭时公开页面输出 noindex，robots.txt 禁止抓取全站 */
   searchIndexing: boolean
   revision: number
@@ -80,6 +83,7 @@ export const defaultSiteSettings: SiteSettingsData = {
   icpNumber: '',
   icpUrl: '',
   copyright: '',
+  timeZone: DEFAULT_SITE_TIME_ZONE,
   searchIndexing: true,
   revision: 0,
   updatedAt: '',

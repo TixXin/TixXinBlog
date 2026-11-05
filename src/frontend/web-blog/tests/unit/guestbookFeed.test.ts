@@ -112,7 +112,7 @@ it('快速改换查询后只接收最终条件', async () => {
   options.q.value = '留言 2'
   await vi.waitFor(() => expect(feed.items.value.map((item) => item.content)).toEqual(['留言 2']))
 })
-it('两种显示顺序使用同一记录与UTC日期，且不修改源数组', () => {
+it('两种显示顺序使用同一记录与站点时区日期，且不修改源数组', () => {
   const before = [...data]
   expect(guestbookGroups(data, true)[0]!.messages[0]!.id).toBe(1)
   expect(guestbookGroups(data, false)[0]!.messages[0]!.id).toBe(41)

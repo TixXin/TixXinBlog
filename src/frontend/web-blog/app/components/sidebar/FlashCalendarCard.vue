@@ -100,7 +100,7 @@ import {
 import { useFlashCalendarNav } from '~/features/flash/useFlashCalendarNav'
 
 const props = defineProps<{
-  /** 有闪念的 UTC 日期与条数（来自闪念概览），可覆盖任意历史月份 */
+  /** 有闪念的日期（站点时区）与条数（来自闪念概览），可覆盖任意历史月份 */
   dates: { date: string; count: number }[]
   selectedDate?: string | null
 }>()
@@ -121,19 +121,19 @@ function dayLabel(dateStr: string) {
   return formatDate(Date.UTC(year, month - 1, day), { timeZone: 'UTC', year: 'numeric', month: 'long', day: 'numeric' })
 }
 
-const { viewYear, viewMonth, monthLabel, isCurrentMonth, prevMonth, nextMonth, goToday } = useFlashCalendarNav(
+const { viewYear, viewMonth, today, monthLabel, isCurrentMonth, prevMonth, nextMonth, goToday } = useFlashCalendarNav(
   toRef(props, 'selectedDate'),
 )
 
 const noteDateMap = computed(() => buildNoteDateMap(props.dates))
 
 const calendarDays = computed<(CalendarDay | null)[]>(() =>
-  buildCalendarDays(viewYear.value, viewMonth.value, noteDateMap.value),
+  buildCalendarDays(viewYear.value, viewMonth.value, noteDateMap.value, today.value),
 )
 
 const monthNoteCount = computed(() => calculateMonthNoteCount(props.dates, viewYear.value, viewMonth.value))
 
-const streak = computed(() => calculateFlashStreak(noteDateMap.value))
+const streak = computed(() => calculateFlashStreak(noteDateMap.value, today.value))
 
 /** 当前视图月份中某天的月日文字，如「10月19日」 */
 function monthDay(num: number) {

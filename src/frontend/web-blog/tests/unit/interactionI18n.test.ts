@@ -54,7 +54,7 @@ describe('互动域英文界面', () => {
     expect(bubble.text()).toContain('The quoted message is not visible')
     expect(bubble.text()).toContain('Awaiting review, visible only to you')
     expect(bubble.find('.message-bubble__reaction').attributes('aria-label')).toBe('Like, 2 reactions')
-    expect(bubble.find('.message-bubble__content').attributes('aria-label')).toBe('Mia (author), 09/09, 10:05')
+    expect(bubble.find('.message-bubble__content').attributes('aria-label')).toBe('Mia (author), 09/09, 18:05')
     expect(bubble.find('.message-bubble__avatar').attributes('alt')).toBe('Avatar of Mia')
   })
 
@@ -67,7 +67,7 @@ describe('互动域英文界面', () => {
       },
     })
     expect(overview.text()).toContain('Public messages')
-    expect(overview.text()).toContain('Today · UTC')
+    expect(overview.text()).toContain('Today')
     expect(overview.text()).toContain('House rules')
   })
 
@@ -111,7 +111,7 @@ describe('互动域英文界面', () => {
   it('默认中文保持原文', async () => {
     const bubble = await mountSuspended(GuestbookMessageBubble, { props: { message: guestbookDisplay(record) } })
     expect(bubble.find('.message-bubble__reaction').attributes('aria-label')).toBe('赞，2 次回应')
-    expect(bubble.find('.message-bubble__content').attributes('aria-label')).toBe('Mia（博主），09/09 10:05')
+    expect(bubble.find('.message-bubble__content').attributes('aria-label')).toBe('Mia（博主），09/09 18:05')
     const info = linkSiteInfo(
       { ...defaultSiteSettings, name: '站点', description: '介绍' },
       true,

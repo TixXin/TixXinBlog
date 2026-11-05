@@ -81,7 +81,7 @@ describe('外壳英文冒烟', () => {
       props: { activity: [{ date: '2026-01-05', articles: 1, comments: 2 }] },
     })
     wrappers.push(heatmap)
-    expect(heatmap.text()).toContain('Last 15 weeks · UTC')
+    expect(heatmap.text()).toContain('Last 15 weeks')
     // 明细分隔符前后空白必须保留
     expect(i18n().t('layout.sidebar.heatmap.separator')).toBe(', ')
     expect(heatmap.get('button').attributes('aria-label')).toBe('2026-01-05: 1 public posts, 2 public comments')

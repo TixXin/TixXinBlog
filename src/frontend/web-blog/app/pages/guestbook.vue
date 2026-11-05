@@ -178,7 +178,10 @@ const reply = (message: GuestMessage) => {
 }
 
 const { settings: siteSettings } = useSiteSettings()
-const groups = computed(() => guestbookGroups(feed.items.value, isChatMode.value, siteSettings.value.avatar))
+const timeZone = useSiteTimeZone()
+const groups = computed(() =>
+  guestbookGroups(feed.items.value, isChatMode.value, siteSettings.value.avatar, timeZone.value),
+)
 const { messageCountText, historyComplete, pinned } = useGuestbookStats(
   overview.data,
   feed.hasMore,

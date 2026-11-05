@@ -1,6 +1,6 @@
 <!--
   @file audit.vue
-  @description 管理操作只读审计：按操作、结果和 UTC 日期检索。
+  @description 管理操作只读审计：按操作、结果和站点时区日期检索。
 -->
 <template>
   <section class="admin-audit">

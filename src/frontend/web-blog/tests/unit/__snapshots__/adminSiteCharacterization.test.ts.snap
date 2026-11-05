@@ -22,7 +22,11 @@ exports[`冲突、待核对提交、保留副本与历史预览 1`] = `
           <option value="busy">忙碌</option>
         </select></label><label>状态有效期至<input type="datetime-local" aria-describedby="<id>"><small id="<id>" class="admin-site__hint">到期后状态类型与状态文案失效，回到自动状态；签名保留。留空为长期有效。</small>
         <!--v-if-->
-      </label><label>站点上线日期<div class="date-picker">
+      </label><label>站点时区<select aria-describedby="<id>">
+          <option value="UTC">UTC</option>
+          <option value="Asia/Shanghai">Asia/Shanghai</option>
+          <option value="Europe/Berlin">Europe/Berlin</option>
+        </select><small id="<id>" class="admin-site__hint">日历、归档、热力图与各项按日统计都按这个时区切日。修改后只影响之后的日期，已汇总的每日访问统计不重算。</small></label><label>站点上线日期<div class="date-picker">
           <div class="input-field date-picker__field"><input class="date-picker__input" type="text" inputmode="numeric" autocomplete="off" spellcheck="false" role="combobox" aria-haspopup="dialog" aria-expanded="false" placeholder="留空按最早公开文章推算" value=""><button type="button" class="date-picker__toggle" aria-label="打开日历"><span class="iconify i-lucide:calendar-days" aria-hidden="true"></span></button></div>
           <transition-stub name="date-picker-pop" appear="false" persisted="false" css="true">
             <!--v-if-->
@@ -279,7 +283,11 @@ exports[`编辑状态：资料、社交、搜索、导航、关于与预览 1`] 
           <option value="busy">忙碌</option>
         </select></label><label>状态有效期至<input type="datetime-local" aria-describedby="<id>"><small id="<id>" class="admin-site__hint">到期后状态类型与状态文案失效，回到自动状态；签名保留。留空为长期有效。</small>
         <!--v-if-->
-      </label><label>站点上线日期<div class="date-picker">
+      </label><label>站点时区<select aria-describedby="<id>">
+          <option value="UTC">UTC</option>
+          <option value="Asia/Shanghai">Asia/Shanghai</option>
+          <option value="Europe/Berlin">Europe/Berlin</option>
+        </select><small id="<id>" class="admin-site__hint">日历、归档、热力图与各项按日统计都按这个时区切日。修改后只影响之后的日期，已汇总的每日访问统计不重算。</small></label><label>站点上线日期<div class="date-picker">
           <div class="input-field date-picker__field"><input class="date-picker__input" type="text" inputmode="numeric" autocomplete="off" spellcheck="false" role="combobox" aria-haspopup="dialog" aria-expanded="false" placeholder="留空按最早公开文章推算" value=""><button type="button" class="date-picker__toggle" aria-label="打开日历"><span class="iconify i-lucide:calendar-days" aria-hidden="true"></span></button></div>
           <transition-stub name="date-picker-pop" appear="false" persisted="false" css="true">
             <!--v-if-->

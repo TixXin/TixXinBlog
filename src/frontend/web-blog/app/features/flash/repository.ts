@@ -24,7 +24,7 @@ export interface FlashNoteRepository {
   listPublic?(): Promise<FlashNote[]>
   /**
    * 公开列表单页读取（服务端分页）：无关键词走 GET /flashes，有关键词走 GET /flashes/search，
-   * 标签、类型与 UTC 日期可与之任意组合；仅真实接口实现，本地演示仓库沿用整表读取。
+   * 标签、类型与站点时区日期可与之任意组合；仅真实接口实现，本地演示仓库沿用整表读取。
    */
   listPublicPage?(query: FlashPublicPageQuery): Promise<FlashPublicPage>
   /** 公开概览（GET /flashes/overview）：侧栏聚合与访客已赞编号；仅真实接口实现 */

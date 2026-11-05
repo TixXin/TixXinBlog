@@ -60,10 +60,13 @@
 import { formatAmount, amountInput } from '@tixxin/subscription-domain'
 import { cycleLabel } from '~/features/subscription/labels'
 import type { SubscriptionPrice } from '~/features/subscription/types'
+import { siteDateTime } from '~/features/site/timeZone'
 const props = defineProps<{ history: SubscriptionPrice[] }>(),
   expanded = ref(false)
 const { t } = useI18n()
-const displayTime = (value: string) => value.replace('T', ' ').replace('.000Z', ' UTC').replace(/Z$/, ' UTC')
+// 价格生效时间按站点时区显示
+const timeZone = useSiteTimeZone()
+const displayTime = (value: string) => siteDateTime(value, timeZone.value)
 const segments = computed(() => {
   const groups: SubscriptionPrice[][] = []
   for (const entry of props.history) {

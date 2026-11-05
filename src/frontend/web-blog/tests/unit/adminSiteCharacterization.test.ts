@@ -9,6 +9,13 @@ import { defaultSiteSettings, type SiteSettingsData } from '../../app/features/s
 
 const state = vi.hoisted(() => ({ editor: {} as Record<string, unknown> }))
 mockNuxtImport('useSiteSettingsEditor', () => () => state.editor)
+// 可选时区来自运行环境的 ICU 数据，版本不同列表就不同；表征快照只固定几项，选项本身由 siteTimeZone 单测覆盖
+vi.mock('../../app/features/site/timeZone', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('../../app/features/site/timeZone')>()),
+  siteTimeZoneOptions: (current = '') => [
+    ...new Set(['UTC', 'Asia/Shanghai', 'Europe/Berlin', current].filter(Boolean)),
+  ],
+}))
 
 const at = '2026-10-19T08:30:00.000Z'
 const settings = (overrides: Partial<SiteSettingsData> = {}): SiteSettingsData => ({

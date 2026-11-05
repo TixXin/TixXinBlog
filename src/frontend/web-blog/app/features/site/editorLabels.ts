@@ -22,6 +22,7 @@ const FIELDS = [
   'launchedAt',
   'presenceStatus',
   'presenceExpiresAt',
+  'timeZone',
   'navigation',
   'footerLinks',
   'quotes',

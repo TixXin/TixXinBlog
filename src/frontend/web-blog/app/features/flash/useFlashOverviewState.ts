@@ -76,10 +76,11 @@ export function useFlashOverviewState(ctx: FlashOverviewStateContext) {
     }
   }
 
-  /** 侧栏聚合：公开分页视图用概览接口，私有视图与本地演示由已持有的完整集合计算 */
+  const timeZone = useSiteTimeZone()
+  /** 侧栏聚合：公开分页视图用概览接口，私有视图与本地演示由已持有的完整集合计算（按站点时区分日） */
   const overviewData = computed<FlashOverview | null>(() => {
     if (pagedPublic.value) return overview.value
-    return loaded.value ? summarizeFlashNotes(notes.value) : null
+    return loaded.value ? summarizeFlashNotes(notes.value, new Date(), timeZone.value) : null
   })
   const aggregatesReady = computed(() => (pagedPublic.value ? overviewLoaded.value : loaded.value))
   /** 公开闪念总数：概览就绪前用首屏分页返回的总数 */
@@ -91,7 +92,7 @@ export function useFlashOverviewState(ctx: FlashOverviewStateContext) {
   /** 标签聚合：按出现次数倒序 */
   const tagCloud = computed<{ name: string; count: number }[]>(() => overviewData.value?.tags ?? [])
 
-  /** 本月（UTC）新增数量 */
+  /** 本月（站点时区）新增数量 */
   const monthlyCount = computed(() => overviewData.value?.monthCount ?? 0)
 
   return {

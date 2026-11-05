@@ -531,7 +531,7 @@
         "hidden": "已隐藏"
       },
       "unanswered": "仅待博主回复",
-      "date": "日期 · UTC",
+      "date": "日期 · 站点时区",
       "dateLabel": "留言日期",
       "filter": "筛选",
       "unansweredHint": "仅显示已公开、未删除且尚无公开博主直接回复的游客根留言；隐藏或删除回复后重新计入。",
@@ -541,7 +541,6 @@
       "selectLabel": "选择 {author} 的留言：{content}",
       "ownerSuffix": " · 博主",
       "pinnedSuffix": " · 置顶",
-      "utcTime": "{time} UTC",
       "quote": "引用 {author}：{content}",
       "quoteBody": "{author}：{content}",
       "view": "查看留言",

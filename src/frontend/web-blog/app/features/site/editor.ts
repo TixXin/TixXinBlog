@@ -15,7 +15,7 @@ const comparable = (value: unknown): unknown => {
   return value
 }
 const equal = (left: unknown, right: unknown) => JSON.stringify(comparable(left)) === JSON.stringify(comparable(right))
-/** 导航、页脚、每日一言、备案、版权、收录开关与状态到期时间为后加字段：旧恢复副本或旧接口可能缺失，规范化时按缺省值补齐 */
+/** 导航、页脚、每日一言、备案、版权、收录开关、状态到期时间与站点时区为后加字段：旧恢复副本或旧接口可能缺失，规范化时按缺省值补齐 */
 const LATER_KEYS = [
   'navigation',
   'footerLinks',
@@ -25,6 +25,7 @@ const LATER_KEYS = [
   'copyright',
   'searchIndexing',
   'presenceExpiresAt',
+  'timeZone',
 ] as const
 export const normalizeSiteSettings = (value: SiteSettingsData): SiteSettingsData => {
   // 设置只含 JSON 数据；Vue 响应式代理不能直接 structuredClone。

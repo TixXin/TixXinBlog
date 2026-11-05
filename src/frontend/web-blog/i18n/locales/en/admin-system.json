@@ -256,7 +256,8 @@
         "restoreHistorical": "Restore this revision on server",
         "extrasInvalid": "Some navigation and footer fields need attention. Fix them as indicated and save again.",
         "presenceExpiresHint": "When it expires, the status type and text are dropped and the automatic status returns; the signature stays. Leave empty to keep it indefinitely.",
-        "presenceExpiresClear": "No expiry"
+        "presenceExpiresClear": "No expiry",
+        "timeZoneHint": "Calendars, archives, heatmaps and daily statistics start each day in this time zone. Changes apply to later days; daily visit totals already recorded are not recalculated."
       },
       "editor": {
         "fields": {
@@ -287,7 +288,8 @@
           "aboutSection": "{section} section",
           "fallback": "Site profile",
           "separator": ", ",
-          "presenceExpiresAt": "Status expires at"
+          "presenceExpiresAt": "Status expires at",
+          "timeZone": "Site time zone"
         },
         "recoveryLocked": "The existing recovery copy is incomplete and has been kept; new input can't be written to it. Keep this page open for now.",
         "recoverySaveFailed": "Couldn't save a recovery copy. Keep this page open.",
@@ -705,8 +707,8 @@
       "allActions": "All actions",
       "stateFilter": "Result",
       "allStates": "All results",
-      "from": "Start date (UTC)",
-      "to": "End date (UTC)",
+      "from": "Start date (site time zone)",
+      "to": "End date (site time zone)",
       "submit": "Filter records",
       "clear": "Clear filters",
       "refresh": "Refresh records",

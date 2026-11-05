@@ -55,7 +55,7 @@ describe('订阅价格历史组件', () => {
     expect(wrapper.findAllComponents(Chart)).toHaveLength(0)
   })
 
-  it('只读列表保留初始价格、后续变价、UTC 时间和原因，不把未知旧价格补成记录', async () => {
+  it('只读列表保留初始价格、后续变价、站点时区时间和原因，不把未知旧价格补成记录', async () => {
     const wrapper = await setup([
       entry('initial'),
       entry('changed', {
@@ -70,10 +70,10 @@ describe('订阅价格历史组件', () => {
     expect(rows).toHaveLength(2)
     expect(rows[0]!.get('strong').text()).toBe('初始记录：USD 20.00 / 月付')
     expect(rows[0]!.findAll('p')).toHaveLength(1)
-    expect(rows[0]!.get('p').text()).toBe('生效 2026-01-01 00:00:00 UTC · 记录 2026-01-02 08:30:00 UTC')
+    expect(rows[0]!.get('p').text()).toBe('生效 2026-01-01 08:00 · 记录 2026-01-02 16:30')
     expect(rows[1]!.get('strong').text()).toBe('价格变更：USD 25.00 / 年付')
     expect(rows[1]!.findAll('p').map((paragraph) => paragraph.text())).toEqual([
-      '生效 2026-02-01 00:00:00 UTC · 记录 2026-02-02 12:00:00 UTC',
+      '生效 2026-02-01 08:00 · 记录 2026-02-02 20:00',
       '升级创作套餐',
     ])
     expect(wrapper.text()).toContain('首次录入之前的价格未知；变更币种或周期会分段展示。')
@@ -114,7 +114,7 @@ describe('订阅价格历史组件', () => {
     expect(charts).toHaveLength(4)
     expect(charts.map((chart) => chart.props('values'))).toEqual([[20, 25.55], [1200], [12000], [30]])
     expect(charts.map((chart) => chart.props('currency'))).toEqual(['USD', 'JPY', 'JPY', 'USD'])
-    expect(charts[0]!.props('labels')).toEqual(['2026-01-01 00:00:00 UTC', '2026-02-01 00:00:00 UTC'])
+    expect(charts[0]!.props('labels')).toEqual(['2026-01-01 08:00', '2026-02-01 08:00'])
     expect(charts[2]!.props('label')).toBe('JPY 年付价格历史阶梯图')
     for (const chart of charts) {
       expect(chart.props('kind')).toBe('line')

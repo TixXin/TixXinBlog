@@ -10,7 +10,7 @@ exports[`列表、分页与评论面板（已发布与未发布）的结构，�
     </div><a href="/admin/moments/new">发布新动态</a>
   </header>
   <div>
-    <form class="admin-moments__filters"><input aria-label="搜索动态" maxlength="200" placeholder="搜索内容或地点"><input aria-label="筛选动态话题" maxlength="40" placeholder="话题"><label>发布日期（UTC）<input class="date" aria-label="筛选动态日期" clearable="" value=""></label><select aria-label="筛选动态状态">
+    <form class="admin-moments__filters"><input aria-label="搜索动态" maxlength="200" placeholder="搜索内容或地点"><input aria-label="筛选动态话题" maxlength="40" placeholder="话题"><label>发布日期（站点时区）<input class="date" aria-label="筛选动态日期" clearable="" value=""></label><select aria-label="筛选动态状态">
         <option value="all">全部状态</option>
         <option value="published">已发布</option>
         <option value="draft">草稿</option>
@@ -138,7 +138,7 @@ exports[`列表、分页与评论面板（已发布与未发布）的结构，�
     </div><a href="/admin/moments/new">发布新动态</a>
   </header>
   <div>
-    <form class="admin-moments__filters"><input aria-label="搜索动态" maxlength="200" placeholder="搜索内容或地点"><input aria-label="筛选动态话题" maxlength="40" placeholder="话题"><label>发布日期（UTC）<input class="date" aria-label="筛选动态日期" clearable="" value=""></label><select aria-label="筛选动态状态">
+    <form class="admin-moments__filters"><input aria-label="搜索动态" maxlength="200" placeholder="搜索内容或地点"><input aria-label="筛选动态话题" maxlength="40" placeholder="话题"><label>发布日期（站点时区）<input class="date" aria-label="筛选动态日期" clearable="" value=""></label><select aria-label="筛选动态状态">
         <option value="all">全部状态</option>
         <option value="published">已发布</option>
         <option value="draft">草稿</option>
@@ -160,7 +160,7 @@ exports[`列表、分页与评论面板（已发布与未发布）的结构，�
     </div><a href="/admin/moments/new">发布新动态</a>
   </header>
   <div>
-    <form class="admin-moments__filters"><input aria-label="搜索动态" maxlength="200" placeholder="搜索内容或地点"><input aria-label="筛选动态话题" maxlength="40" placeholder="话题"><label>发布日期（UTC）<input class="date" aria-label="筛选动态日期" clearable="" value=""></label><select aria-label="筛选动态状态">
+    <form class="admin-moments__filters"><input aria-label="搜索动态" maxlength="200" placeholder="搜索内容或地点"><input aria-label="筛选动态话题" maxlength="40" placeholder="话题"><label>发布日期（站点时区）<input class="date" aria-label="筛选动态日期" clearable="" value=""></label><select aria-label="筛选动态状态">
         <option value="all">全部状态</option>
         <option value="published">已发布</option>
         <option value="draft">草稿</option>
