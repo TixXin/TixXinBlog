@@ -1,6 +1,6 @@
 <!--
   @file FlashPageHeader.vue
-  @description 闪念页面头部操作区：标题、RSS 订阅、归档箱切换与展开式搜索框
+  @description 闪念页面头部操作区：标题、归档箱切换与展开式搜索框
   @author TixXin
   @since 2026-10-21
 -->
@@ -19,9 +19,8 @@
       </div>
     </div>
 
-    <!-- 右侧操作区：RSS 订阅、归档箱与搜索切换 -->
+    <!-- 右侧操作区：归档箱与搜索切换；RSS 订阅统一由首页订阅卡进入 -->
     <div class="page-actions">
-      <BlogRssLink href="/flash.xml" :label="$t('article.rss.flash')" compact />
       <button
         v-if="isLoggedIn"
         type="button"

@@ -250,7 +250,6 @@
       "readLabel": "阅读文章：{title}"
     },
     "rss": {
-      "subscribe": "订阅{label} RSS",
       "posts": "文章",
       "flash": "闪念",
       "moments": "朋友圈",
@@ -272,7 +271,8 @@
     },
     "subscribe": {
       "title": "订阅更新",
-      "description": "使用 RSS 阅读器分别订阅文章、闪念和朋友圈更新，邮件订阅尚未开放。"
+      "description": "使用 RSS 阅读器分别订阅文章、闪念和朋友圈更新，邮件订阅尚未开放。",
+      "button": "订阅 RSS"
     },
     "themeSwitcher": {
       "label": "切换主题（当前：{current}）"

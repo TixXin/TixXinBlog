@@ -1,6 +1,7 @@
 <!--
   @file SubscribeCard.vue
-  @description 文章、闪念与朋友圈 RSS 订阅入口，并说明邮件订阅尚未开放；embedded 用于侧栏隐藏时的紧凑抽屉
+  @description 全站唯一的 RSS 订阅入口：一个按钮打开订阅弹窗，在弹窗内选择文章、闪念或朋友圈订阅源，并说明邮件订阅尚未开放；
+               embedded 用于侧栏隐藏时的紧凑抽屉
   @author TixXin
   @since 2025-03-17
 -->
@@ -16,11 +17,11 @@
         {{ $t('article.subscribe.title') }}
       </h3>
       <p class="subscribe-card__desc">{{ $t('article.subscribe.description') }}</p>
-      <div class="subscribe-card__feeds">
-        <BlogRssLink href="/rss.xml" :label="$t('article.rss.posts')" />
-        <BlogRssLink href="/flash.xml" :label="$t('article.rss.flash')" />
-        <BlogRssLink href="/moments.xml" :label="$t('article.rss.moments')" />
-      </div>
+      <!-- 全站唯一的订阅按钮：保留原生地址，普通点击由 rss-subscribe-links 插件改为打开订阅弹窗（内含三个订阅源） -->
+      <a href="/rss.xml" type="application/rss+xml" class="subscribe-card__button btn-primary" aria-haspopup="dialog">
+        <Icon name="lucide:rss" size="16" aria-hidden="true" />
+        <span>{{ $t('article.subscribe.button') }}</span>
+      </a>
     </div>
   </section>
 </template>
@@ -94,9 +95,20 @@ withDefaults(defineProps<{ embedded?: boolean }>(), { embedded: false })
   margin-bottom: 1rem;
 }
 
-.subscribe-card__feeds {
+.subscribe-card__button {
   display: flex;
-  flex-direction: column;
+  align-items: center;
+  justify-content: center;
   gap: 0.5rem;
+  min-height: 44px;
+  width: 100%;
+  border-radius: $radius-md;
+  text-decoration: none;
+  cursor: var(--interaction-cursor, pointer);
+
+  &:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+  }
 }
 </style>

@@ -25,7 +25,8 @@
       </div>
     </div>
 
-    <footer class="rss-links__footer">
+    <!-- data-rss-native：源文件与其他格式保持原生链接，不被全站订阅链接接管 -->
+    <footer class="rss-links__footer" data-rss-native>
       <a :href="feed.path" target="_blank" rel="noopener" type="application/rss+xml" class="rss-links__raw">
         <Icon name="lucide:file-code" size="14" aria-hidden="true" />
         {{ $t('article.rss.modal.viewSource') }}

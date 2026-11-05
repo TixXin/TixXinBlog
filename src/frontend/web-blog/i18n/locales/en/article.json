@@ -250,7 +250,6 @@
       "readLabel": "Read post: {title}"
     },
     "rss": {
-      "subscribe": "Subscribe to {label} RSS",
       "posts": "Posts",
       "flash": "Flash notes",
       "moments": "Moments",
@@ -272,7 +271,8 @@
     },
     "subscribe": {
       "title": "Subscribe",
-      "description": "Follow posts, flash notes and moments separately in your RSS reader. Email subscriptions are not available yet."
+      "description": "Follow posts, flash notes and moments separately in your RSS reader. Email subscriptions are not available yet.",
+      "button": "Subscribe via RSS"
     },
     "themeSwitcher": {
       "label": "Switch color mode (current: {current})"

@@ -13,7 +13,6 @@
         <h1 class="sr-only">{{ $t('flash-moment.moments.title') }}</h1>
         <BlogPostTabs :tabs="tabs" model-value="moments" />
         <div class="page-actions">
-          <BlogRssLink href="/moments.xml" :label="$t('article.rss.moments')" compact />
           <CommonSearchBox
             v-model="searchKeyword"
             :placeholder="$t('flash-moment.moments.searchPlaceholder')"

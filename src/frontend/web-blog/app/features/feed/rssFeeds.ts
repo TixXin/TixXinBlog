@@ -1,6 +1,7 @@
 /**
  * @file rssFeeds.ts
- * @description 公开 RSS 订阅源清单、完整订阅地址与第三方阅读器添加链接的纯逻辑；订阅弹窗与 RSS 入口共用
+ * @description 公开 RSS 订阅源清单、本站订阅链接识别、完整订阅地址与第三方阅读器添加链接的纯逻辑；
+ *              订阅弹窗与全站订阅链接接管插件共用
  * @author TixXin
  * @since 2026-11-05
  */
@@ -47,6 +48,31 @@ export function rssFeedByKey(key: RssFeedKey): RssFeed {
 export function feedKeyFromHref(href: string): RssFeedKey | null {
   const path = href.split(/[?#]/)[0]
   return RSS_FEEDS.find((feed) => feed.path === path)?.key ?? null
+}
+
+/** 解析任意写法的链接（相对路径或本站完整地址），只有指向本站订阅文件时返回订阅源 */
+export function feedKeyFromLink(href: string, base: string, ownOrigins: readonly string[]): RssFeedKey | null {
+  let url: URL
+  try {
+    url = new URL(href, base)
+  } catch {
+    return null
+  }
+  return ownOrigins.includes(url.origin) ? feedKeyFromHref(url.pathname) : null
+}
+
+/**
+ * 判断一次点击是否应改为打开订阅弹窗：只接管无修饰键的左键点击；
+ * 修饰键、中键、下载链接与标记 data-rss-native 的区域（如弹窗里的「查看源文件」）保持原生行为
+ */
+export function feedKeyFromClick(event: MouseEvent, base: string, ownOrigins: readonly string[]): RssFeedKey | null {
+  if (event.defaultPrevented || event.button !== 0) return null
+  if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return null
+  const target = event.target
+  if (!(target instanceof Element)) return null
+  const anchor = target.closest('a[href]')
+  if (!anchor || anchor.hasAttribute('download') || anchor.closest('[data-rss-native]')) return null
+  return feedKeyFromLink(anchor.getAttribute('href') ?? '', base, ownOrigins)
 }
 
 /** 拼出阅读器可直接使用的完整订阅地址；站点地址缺失时退回浏览器当前域名 */

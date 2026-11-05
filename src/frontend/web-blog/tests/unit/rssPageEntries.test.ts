@@ -1,4 +1,4 @@
-/** @file rssPageEntries.test.ts @description 挂载真实闪念与朋友圈页面，验证 RSS 页头入口不依赖登录态。 */
+/** @file rssPageEntries.test.ts @description 挂载真实闪念与朋友圈页面，验证 RSS 订阅统一由首页订阅卡进入，页头在各登录态下都不再放订阅按钮。 */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed, defineComponent, h, nextTick, ref } from 'vue'
 import type { Ref } from 'vue'
@@ -101,9 +101,9 @@ afterEach(() => {
 
 describe('公开页面 RSS 入口', () => {
   it.each([
-    { label: '闪念', href: '/flash.xml', route: '/flash', component: FlashPage },
-    { label: '朋友圈', href: '/moments.xml', route: '/moments', component: MomentsPage },
-  ])('$label 页头在游客和博主登录状态下都显示同一订阅地址', async ({ label, href, route, component }) => {
+    { label: '闪念', route: '/flash', component: FlashPage },
+    { label: '朋友圈', route: '/moments', component: MomentsPage },
+  ])('$label 页头在游客、博主与加载失败状态下都不放订阅按钮，操作区照常渲染', async ({ route, component }) => {
     const wrapper = await mountSuspended(component, {
       route,
       global: {
@@ -116,26 +116,19 @@ describe('公开页面 RSS 入口', () => {
       },
     })
     wrappers.push(wrapper)
-    const assertEntry = () => {
-      const link = wrapper.get<HTMLAnchorElement>(`header .page-actions a[href="${href}"]`)
-      expect(link.attributes('aria-label')).toBe(`订阅${label} RSS`)
-      expect(link.attributes('type')).toBe('application/rss+xml')
-      expect(link.text()).toBe('RSS')
-      expect(link.element.tabIndex).toBe(0)
-      expect(link.get('[class~="i-lucide:rss"]').attributes('aria-hidden')).toBe('true')
+    const assertNoEntry = () => {
+      expect(wrapper.find('header .page-actions').exists()).toBe(true)
+      expect(wrapper.find('header a[href$=".xml"]').exists()).toBe(false)
+      expect(wrapper.find('header [class~="i-lucide:rss"]').exists()).toBe(false)
     }
-    assertEntry()
+    assertNoEntry()
     mocks.auth.currentUser.value = { id: 'owner' }
     mocks.auth.isLoggedIn.value = true
     await nextTick()
-    assertEntry()
-    mocks.auth.currentUser.value = null
-    mocks.auth.isLoggedIn.value = false
-    await nextTick()
-    assertEntry()
+    assertNoEntry()
     const data = route === '/flash' ? mocks.flashNotes() : mocks.momentFeed()
     data.error.value = new Error('内容暂时无法加载')
     await nextTick()
-    assertEntry()
+    assertNoEntry()
   })
 })

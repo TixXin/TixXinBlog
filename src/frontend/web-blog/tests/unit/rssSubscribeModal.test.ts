@@ -1,21 +1,28 @@
-/** @file rssSubscribeModal.test.ts @description RSS 入口打开订阅弹窗、切换订阅源、复制地址与关闭的 DOM 回归。 */
+/** @file rssSubscribeModal.test.ts @description 订阅卡、页脚与资料卡等本站订阅链接打开订阅弹窗，切换订阅源、复制地址与关闭的 DOM 回归。 */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent, h, nextTick } from 'vue'
 import { mockNuxtImport, mountSuspended } from '@nuxt/test-utils/runtime'
-import RssLink from '../../app/components/blog/RssLink.vue'
+import SubscribeCard from '../../app/components/blog/SubscribeCard.vue'
 import RssSubscribeModal from '../../app/components/blog/RssSubscribeModal.vue'
 
 const toast = vi.hoisted(() => ({ success: vi.fn(), error: vi.fn() }))
 mockNuxtImport('useToast', () => () => toast)
 
-// 页面上的入口与根组件挂载的弹窗共用同一份状态
+// 订阅卡、页脚链接（相对地址、新标签页）、资料卡社交链接（站点完整地址）与站外同名文件，和根组件挂载的弹窗共用同一份状态
 const Host = defineComponent({
-  setup: () => () =>
-    h('div', [
-      h(RssLink, { href: '/rss.xml', label: '文章' }),
-      h(RssLink, { href: '/flash.xml', label: '闪念', compact: true }),
-      h(RssSubscribeModal),
-    ]),
+  setup() {
+    const siteUrl = useSiteUrl()
+    return () =>
+      h('div', [
+        h(SubscribeCard, { embedded: true }),
+        h('footer', [
+          h('a', { href: '/moments.xml', target: '_blank', rel: 'noopener', class: 'footer-rss' }, 'RSS 订阅'),
+        ]),
+        h('nav', [h('a', { href: `${siteUrl}/flash.xml`, target: '_blank', class: 'social-rss' }, 'RSS')]),
+        h('a', { href: 'https://example.com/rss.xml', class: 'foreign-rss' }, '站外订阅'),
+        h(RssSubscribeModal),
+      ])
+  },
 })
 const wrappers: { unmount(): void }[] = []
 const dialog = () => document.querySelector<HTMLElement>('[role="dialog"]')
@@ -36,27 +43,59 @@ afterEach(() => {
 })
 
 describe('RSS 订阅弹窗', () => {
-  it('普通点击不跳转 XML，打开弹窗并选中被点击的订阅源', async () => {
-    const wrapper = await mountHost()
-    const link = wrapper.get('a[href="/flash.xml"]')
-    expect(link.attributes('aria-haspopup')).toBe('dialog')
-    const event = new MouseEvent('click', { bubbles: true, cancelable: true, button: 0 })
-    link.element.dispatchEvent(event)
-    await nextTick()
+  // 记录全站接管插件处理后的结果，再阻止测试环境里的真实跳转与新窗口
+  function click(selector: string, init: MouseEventInit = {}) {
+    const event = new MouseEvent('click', { bubbles: true, cancelable: true, button: 0, ...init })
+    let handled = false
+    const settle = (settled: Event) => {
+      handled = settled.defaultPrevented
+      settled.preventDefault()
+    }
+    document.addEventListener('click', settle, { once: true })
+    document.querySelector(selector)!.dispatchEvent(event)
+    return { defaultPrevented: handled }
+  }
+  const activeFeed = () => document.querySelector('.rss-modal__feed--active')?.textContent?.trim()
 
+  it.each([
+    { name: '订阅卡按钮', selector: '.subscribe-card__button', feed: '文章', path: '/rss.xml' },
+    { name: '页脚相对地址链接', selector: '.footer-rss', feed: '朋友圈', path: '/moments.xml' },
+    { name: '资料卡站点完整地址链接', selector: '.social-rss', feed: '闪念', path: '/flash.xml' },
+  ])('$name 普通点击不跳转 XML，打开弹窗并选中对应订阅源', async ({ selector, feed, path }) => {
+    await mountHost()
+    const event = click(selector)
+    await nextTick()
     expect(event.defaultPrevented).toBe(true)
     expect(dialog()?.getAttribute('aria-modal')).toBe('true')
-    expect(document.querySelector('[aria-pressed="true"]')?.textContent?.trim()).toBe('闪念')
-    expect(urlInput().value).toMatch(/^https?:\/\/[^/]+\/flash\.xml$/)
+    expect(activeFeed()).toBe(feed)
+    expect(urlInput().value).toMatch(new RegExp(`^https?://[^/]+${path.replace('.', '\\.')}$`))
   })
 
-  it.each(['metaKey', 'ctrlKey', 'shiftKey'] as const)('按住 %s 点击保留原生链接行为', async (key) => {
-    const wrapper = await mountHost()
-    const event = new MouseEvent('click', { bubbles: true, cancelable: true, button: 0, [key]: true })
-    wrapper.get('a[href="/rss.xml"]').element.dispatchEvent(event)
+  it.each(['metaKey', 'ctrlKey', 'shiftKey', 'altKey'] as const)('按住 %s 点击保留原生链接行为', async (key) => {
+    await mountHost()
+    const event = click('.subscribe-card__button', { [key]: true })
     await nextTick()
     expect(event.defaultPrevented).toBe(false)
     expect(dialog()).toBeNull()
+  })
+
+  it('站外同名订阅文件与中键点击不接管', async () => {
+    await mountHost()
+    const foreign = click('.foreign-rss')
+    const middle = click('.footer-rss', { button: 1 })
+    await nextTick()
+    expect(foreign.defaultPrevented).toBe(false)
+    expect(middle.defaultPrevented).toBe(false)
+    expect(dialog()).toBeNull()
+  })
+
+  it('弹窗里的查看源文件链接保持原生跳转，不再次接管', async () => {
+    await mountHost()
+    useRssSubscribe().openFeed('posts')
+    await nextTick()
+    const event = click('.rss-links__raw')
+    expect(event.defaultPrevented).toBe(false)
+    expect(activeFeed()).toBe('文章')
   })
 
   it('切换订阅源后地址、阅读器链接与源文件链接随之变化，文章源列出其他格式', async () => {
