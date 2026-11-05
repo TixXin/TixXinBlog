@@ -38,6 +38,9 @@ export function siteConflictLabels(paths: string[], t: Translate): string {
     'about.visible': t(`${S}.fields.aboutVisible`),
     'about.introduction': t(`${S}.fields.aboutIntroduction`),
     'about.sections.order': t(`${S}.fields.aboutOrder`),
+    'about.en': t(`${S}.fields.aboutEnglish`),
+    'about.showSiteInfo': t(`${S}.fields.aboutSiteInfo`),
+    'about.support': t(`${S}.fields.aboutSupport`),
     ...Object.fromEntries(
       (Object.keys(aboutSectionLabelKeys) as (keyof typeof aboutSectionLabelKeys)[]).map((kind) => [
         `about.${kind}`,

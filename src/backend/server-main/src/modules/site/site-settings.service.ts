@@ -11,7 +11,7 @@ import type { SiteSettingsValues } from '../../entities/site-settings.entity'
 import type { SaveSiteSettingsDto } from './site-settings.dto'
 import { lockMedia, synchronizeMediaReferences } from '../media/media-references'
 import { ContentContext } from '../../entities/content-context.entity'
-import { emptyAbout, publicAbout } from './about-settings'
+import { emptyAbout, publicAbout, siteImageValues } from './about-settings'
 import {
   normalizeSiteExtrasInput,
   publicSiteNavigation,
@@ -149,12 +149,12 @@ export class SiteSettingsService {
       settings.revision += 1
       settings.updatedAt = now
       em.create(SiteSettingsRevision, { revision: settings.revision, values: settings.values, reason, createdAt: now })
-      await synchronizeMediaReferences(em, 'site:default', 'site', [settings.values.avatar], {})
+      await synchronizeMediaReferences(em, 'site:default', 'site', siteImageValues(settings.values), {})
       await synchronizeMediaReferences(
         em,
         `site-revision:${settings.revision}`,
         'site-revision',
-        [settings.values.avatar],
+        siteImageValues(settings.values),
         { revision: settings.revision },
       )
       await em.flush()

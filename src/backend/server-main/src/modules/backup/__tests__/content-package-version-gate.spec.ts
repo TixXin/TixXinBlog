@@ -38,7 +38,7 @@ const flashNote = () => ({
 
 const base = () => ({
   format: 'tixxin-content',
-  version: 16,
+  version: 17,
   omittedRelations: 0,
   exportedAt: '2026-10-16T12:00:00.000Z',
   mediaIncluded: false,
@@ -68,7 +68,7 @@ const base = () => ({
     seoDescription: '',
     announcement: '',
     socials: [],
-    about: { visible: false, introduction: '', sections: [] },
+    about: v17About(),
     presenceLabel: '在线',
     presenceSignature: '写点东西',
     presenceStatus: 'online',
@@ -79,6 +79,59 @@ const base = () => ({
     timeZone: 'Europe/Berlin',
   },
 })
+
+/** v17 关于页：条目链接与英文资料、“现在”栏目及更新日期、本站信息开关与支持方式 */
+function v17About() {
+  return {
+    visible: true,
+    introduction: '记录技术实践',
+    en: { introduction: 'Notes on web development' },
+    showSiteInfo: true,
+    support: {
+      visible: true,
+      message: '请我喝杯咖啡',
+      messageEn: 'Buy me a coffee',
+      methods: [{ label: 'Ko-fi', url: 'https://ko-fi.com/example', image: '' }],
+    },
+    sections: [
+      {
+        kind: 'skill',
+        visible: true,
+        items: [
+          {
+            title: 'Vue',
+            detail: '',
+            period: '',
+            visible: true,
+            url: 'https://vuejs.org/',
+            en: { title: 'Vue', detail: '', period: '' },
+          },
+        ],
+      },
+      {
+        kind: 'now',
+        visible: true,
+        updatedAt: '2026-11-01',
+        items: [{ title: '整理博客', detail: '', period: '', visible: true }],
+      },
+    ],
+  }
+}
+
+/** 去掉 v17 才有的关于页字段，得到 v8–v16 可携带的资料 */
+function stripV17About(about: ReturnType<typeof v17About>) {
+  return {
+    visible: about.visible,
+    introduction: about.introduction,
+    sections: about.sections
+      .filter((section) => !['now', 'uses'].includes(section.kind))
+      .map((section) => ({
+        kind: section.kind,
+        visible: section.visible,
+        items: section.items.map(({ title, detail, period, visible }) => ({ title, detail, period, visible })),
+      })),
+  }
+}
 
 /** v12 引入的站点字段：导航、页脚链接、每日一言、备案号与版权文案 */
 function v12Site() {
@@ -102,6 +155,8 @@ function legacy(version: number) {
   const input = base() as unknown as Record<string, unknown>
   const site = input.site as Record<string, unknown>
   input.version = version
+  if (version >= 17) return input
+  site.about = stripV17About(site.about as ReturnType<typeof v17About>)
   if (version >= 16) return input
   delete site.timeZone
   if (version >= 15) return input
@@ -153,7 +208,7 @@ describe('内容包版本门禁', () => {
 
   it('v10 不带 v11 字段仍可导入', async () => {
     const parsed = await parse(legacy(10))
-    expect(parsed.version).toBe(16)
+    expect(parsed.version).toBe(17)
     expect(parsed.site.presenceLabel).toBeUndefined()
     expect(parsed.guestbook[0]?.browser).toBeUndefined()
   })
@@ -180,7 +235,7 @@ describe('内容包 v12 站点导航与页脚门禁', () => {
 
   it('v11 不带 v12 字段仍可导入，新字段留空由目标站沿用现值', async () => {
     const parsed = await parse(legacy(11))
-    expect(parsed.version).toBe(16)
+    expect(parsed.version).toBe(17)
     expect(parsed.site.navigation).toBeUndefined()
     expect(parsed.site.quotes).toBeUndefined()
     expect(parsed.subscriptions).toEqual([])
@@ -239,7 +294,7 @@ describe('内容包 v13 闪念评论审核状态门禁', () => {
 
   it.each(versions)('v%i 不带 status 仍可导入，闪念评论按已发布处理', async (version) => {
     const parsed = await parse(legacy(version))
-    expect(parsed.version).toBe(16)
+    expect(parsed.version).toBe(17)
     expect(parsed.flashes[0]?.comments).toEqual([
       { author: '小林', avatar: '', content: '待审的评论', status: 'published', createdAt: '2026-10-10T09:00:00.000Z' },
     ])
@@ -269,7 +324,7 @@ describe('内容包 v14 搜索引擎收录开关门禁', () => {
 
   it.each(versions)('v%i 不带收录开关仍可导入，字段保持缺省以沿用目标站现值', async (version) => {
     const parsed = await parse(legacy(version))
-    expect(parsed.version).toBe(16)
+    expect(parsed.version).toBe(17)
     expect(parsed.site.searchIndexing).toBeUndefined()
   })
 
@@ -300,7 +355,7 @@ describe('内容包 v15 手动状态到期时间门禁', () => {
 
   it.each(versions)('v%i 不带到期时间仍可导入，字段保持缺省以沿用目标站现值', async (version) => {
     const parsed = await parse(legacy(version))
-    expect(parsed.version).toBe(16)
+    expect(parsed.version).toBe(17)
     expect(parsed.site.presenceExpiresAt).toBeUndefined()
   })
 
@@ -331,7 +386,7 @@ describe('内容包 v16 站点时区门禁', () => {
 
   it.each(versions)('v%i 不带时区仍可导入，字段保持缺省以沿用目标站现值', async (version) => {
     const parsed = await parse(legacy(version))
-    expect(parsed.version).toBe(16)
+    expect(parsed.version).toBe(17)
     expect(parsed.site.timeZone).toBeUndefined()
   })
 
@@ -347,4 +402,65 @@ describe('内容包 v16 站点时区门禁', () => {
       await expect(parse(input)).rejects.toThrow('内容包字段不合法')
     },
   )
+})
+
+describe('内容包 v17 关于页门禁', () => {
+  const versions = [8, 9, 10, 11, 12, 13, 14, 15, 16]
+  const injections: [string, (about: Record<string, unknown>) => void][] = [
+    ['英文简介', (about) => (about.en = { introduction: 'Hi' })],
+    ['本站信息开关', (about) => (about.showSiteInfo = true)],
+    ['支持方式', (about) => (about.support = { visible: false, message: '', methods: [] })],
+    ['“现在”栏目', (about) => (about.sections as unknown[]).push({ kind: 'now', visible: true, items: [] })],
+    [
+      '条目链接',
+      (about) => {
+        const [section] = about.sections as { items: Record<string, unknown>[] }[]
+        section!.items[0]!.url = 'https://vuejs.org/'
+      },
+    ],
+  ]
+  it.each(versions.flatMap((version) => injections.map(([name, inject]) => [version, name, inject] as const)))(
+    'v%i 拒绝夹带%s',
+    async (version, _name, inject) => {
+      const input = legacy(version)
+      inject((input.site as { about: Record<string, unknown> }).about)
+      await expect(parse(input)).rejects.toThrow('内容包字段不合法')
+    },
+  )
+
+  it.each(versions)('v%i 不带新字段仍可导入', async (version) => {
+    const parsed = await parse(legacy(version))
+    expect(parsed.site.about?.support).toBeUndefined()
+  })
+
+  it('v17 保留关于页新字段', async () => {
+    const about = (await parse(base())).site.about!
+    expect(about.en).toEqual({ introduction: 'Notes on web development' })
+    expect(about.showSiteInfo).toBe(true)
+    expect(about.support?.methods[0]!.url).toBe('https://ko-fi.com/example')
+    expect(about.sections.map((section) => section.kind)).toEqual(['skill', 'now'])
+    expect(about.sections[1]!.updatedAt).toBe('2026-11-01')
+    expect(about.sections[0]!.items[0]!.url).toBe('https://vuejs.org/')
+  })
+
+  it.each([
+    [
+      '非 http 条目链接',
+      (about: ReturnType<typeof v17About>) =>
+        ((about.sections[0]!.items[0] as { url?: string }).url = 'javascript:alert(1)'),
+    ],
+    [
+      '带账号的链接',
+      (about: ReturnType<typeof v17About>) => (about.support.methods[0]!.url = 'https://a:b@x.example/'),
+    ],
+    [
+      '非法收款图地址',
+      (about: ReturnType<typeof v17About>) => (about.support.methods[0]!.image = '//evil.example/a.png'),
+    ],
+    ['非法更新日期', (about: ReturnType<typeof v17About>) => (about.sections[1]!.updatedAt = '昨天')],
+  ])('v17 拒绝%s', async (_name, mutate) => {
+    const input = base()
+    mutate(input.site.about)
+    await expect(parse(input)).rejects.toThrow('内容包字段不合法')
+  })
 })

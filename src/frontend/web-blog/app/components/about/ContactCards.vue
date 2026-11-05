@@ -6,10 +6,19 @@
 -->
 
 <template>
-  <div class="contact-cards">
-    <h3 class="contact-cards__title"><Icon name="lucide:send" size="18" /> {{ $t('misc.about.contact.title') }}</h3>
+  <section class="contact-cards" aria-labelledby="about-contact-title">
+    <!-- 与资料栏目同为 h2，保持标题层级连续 -->
+    <h2 id="about-contact-title" class="contact-cards__title">
+      <Icon name="lucide:send" size="18" /> {{ $t('misc.about.contact.title') }}
+    </h2>
     <div class="contact-cards__grid">
-      <a v-for="c in contacts" :key="c.type" :href="c.href" class="contact-cards__item" target="_blank" rel="noopener">
+      <a
+        v-for="(c, index) in contacts"
+        :key="`${index}-${c.href}`"
+        :href="c.href"
+        class="contact-cards__item"
+        v-bind="externalLinkAttrs(c.href)"
+      >
         <div class="contact-cards__icon">
           <Icon :name="c.icon" size="20" />
         </div>
@@ -18,21 +27,36 @@
           <p class="contact-cards__value">{{ c.value }}</p>
         </div>
       </a>
+      <!-- 留言板入口：静态发布没有后端、导航隐藏留言板时不出现 -->
+      <NuxtLink v-if="guestbook" to="/guestbook" class="contact-cards__item">
+        <div class="contact-cards__icon">
+          <Icon name="lucide:message-square" size="20" />
+        </div>
+        <div class="contact-cards__text">
+          <p class="contact-cards__type">{{ $t('misc.about.contact.guestbook') }}</p>
+          <p class="contact-cards__value">{{ $t('misc.about.contact.guestbookValue') }}</p>
+        </div>
+      </NuxtLink>
     </div>
-    <p v-if="contacts.length === 0">{{ $t('misc.about.contact.empty') }}</p>
-  </div>
+  </section>
 </template>
 
 <script setup lang="ts">
 import type { ContactItem } from '~/features/about/types'
+import { externalLinkAttrs } from '~/features/about/links'
 
 defineProps<{
   contacts: ContactItem[]
+  guestbook?: boolean
 }>()
 </script>
 
 <style lang="scss" scoped>
 /* 标题与卡片网格沿用资料栏目（经历、技能、书单）的版式，保持整页节奏一致 */
+.contact-cards {
+  margin-block: 2rem;
+}
+
 .contact-cards__title {
   font-size: 1.1rem;
   font-weight: 600;

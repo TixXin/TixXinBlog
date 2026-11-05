@@ -10,11 +10,31 @@
     <label
       >{{ t('admin-system.siteAbout.introduction') }}<textarea v-model="value.introduction" maxlength="5000" rows="6" />
     </label>
+    <p>{{ t('admin-system.siteAbout.introductionHint') }}</p>
+    <details :open="!!value.en">
+      <summary>{{ t('admin-system.siteAbout.englishLegend') }}</summary>
+      <p>{{ t('admin-system.siteAbout.englishHint') }}</p>
+      <label
+        >{{ t('admin-system.siteAbout.introductionEn')
+        }}<textarea v-model="introductionEn" maxlength="5000" rows="4" lang="en" />
+      </label>
+    </details>
+    <label class="about-fields__toggle"
+      ><input v-model="showSiteInfo" type="checkbox" />{{ t('admin-system.siteAbout.showSiteInfo') }}</label
+    >
     <fieldset v-for="(section, sectionIndex) in value.sections" :key="section.kind">
       <legend>{{ sectionName(section.kind) }}</legend>
       <label class="about-fields__toggle"
         ><input v-model="section.visible" type="checkbox" />{{ t('admin-system.siteAbout.sectionVisible') }}</label
       >
+      <div v-if="section.kind === 'now'" class="about-fields__actions">
+        <label class="about-fields__inline"
+          >{{ t('admin-system.siteAbout.updatedAt') }}<input v-model="section.updatedAt" type="date"
+        /></label>
+        <button type="button" @click="section.updatedAt = today()">
+          {{ t('admin-system.siteAbout.updatedToday') }}
+        </button>
+      </div>
       <div class="about-fields__actions">
         <button
           type="button"
@@ -37,11 +57,7 @@
         <legend>
           {{ t('admin-system.siteAbout.itemLegend', { section: sectionName(section.kind), index: index + 1 }) }}
         </legend>
-        <label>{{ t('admin-system.siteAbout.itemTitle') }}<input v-model="item.title" maxlength="120" /></label>
-        <label>{{ t('admin-system.siteAbout.itemPeriod') }}<input v-model="item.period" maxlength="80" /></label>
-        <label
-          >{{ t('admin-system.siteAbout.itemDetail') }}<textarea v-model="item.detail" maxlength="1000" rows="3" />
-        </label>
+        <AdminAboutItemFields v-model="section.items[index]!" :kind="section.kind" />
         <label class="about-fields__toggle"
           ><input v-model="item.visible" type="checkbox" />{{ t('admin-system.siteAbout.itemVisible') }}</label
         >
@@ -89,6 +105,10 @@
         {{ t('admin-system.siteAbout.addSection', { section: sectionName(kind) }) }}
       </button>
     </div>
+    <AdminAboutSupportFields v-if="value.support" v-model="value.support" />
+    <button v-else type="button" @click="value.support = { ...emptySupport(), visible: true }">
+      {{ t('admin-system.siteAbout.support.setup') }}
+    </button>
     <section :aria-label="t('admin-system.siteAbout.previewLabel')">
       <h2>{{ t('admin-system.siteAbout.previewTitle') }}</h2>
       <p v-if="!value.visible">{{ t('admin-system.siteAbout.notPublic') }}</p>
@@ -98,13 +118,33 @@
 </template>
 <script setup lang="ts">
 import type { AboutSettings, AboutSection } from '~/features/about/types'
-import { aboutSectionLabel, aboutSectionLabelKeys } from '~/features/about/settings'
+import { aboutSectionLabel, aboutSectionLabelKeys, emptySupport } from '~/features/about/settings'
 const { t } = useI18n()
 const value = defineModel<AboutSettings>({ required: true })
 const sectionName = (kind: AboutSection['kind']) => aboutSectionLabel(kind, t)
 const itemName = (title: string, index: number) =>
   title || t('admin-system.siteAbout.itemFallback', { index: index + 1 })
 defineProps<{ disabled?: boolean }>()
+/** 英文简介为空时删除 en；开关为关时删除键，保存的数据与未用过新功能的旧资料一致 */
+const introductionEn = computed({
+  get: () => value.value.en?.introduction ?? '',
+  set: (introduction: string) => {
+    if (introduction) value.value.en = { introduction }
+    else delete value.value.en
+  },
+})
+const showSiteInfo = computed({
+  get: () => value.value.showSiteInfo === true,
+  set: (on: boolean) => {
+    if (on) value.value.showSiteInfo = true
+    else delete value.value.showSiteInfo
+  },
+})
+/** 本地日期 YYYY-MM-DD，作为“现在”栏目的更新日期 */
+function today() {
+  const now = new Date()
+  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`
+}
 const movement = ref('')
 const keys = new WeakMap<object, number>()
 let nextKey = 0
@@ -163,6 +203,18 @@ label {
 .about-fields__toggle {
   display: flex;
   align-items: center;
+}
+.about-fields__inline {
+  display: flex;
+  align-items: center;
+  margin-block: 0;
+}
+details {
+  margin-block: 0.75rem;
+  summary {
+    cursor: pointer;
+    color: var(--text-muted);
+  }
 }
 .about-fields__actions {
   display: flex;

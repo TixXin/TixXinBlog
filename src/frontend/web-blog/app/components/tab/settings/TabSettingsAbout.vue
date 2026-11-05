@@ -10,7 +10,7 @@
     <h3 class="tsd-section__title">{{ $t('misc.tab.settings.about.title') }}</h3>
     <div class="tsd-row">
       <span class="tsd-row__label">{{ $t('misc.tab.settings.about.version') }}</span>
-      <span class="tsd-row__value tsd-row__value--mono">v1.0.0</span>
+      <span class="tsd-row__value tsd-row__value--mono">v{{ appVersion }}</span>
     </div>
     <div class="tsd-row">
       <span class="tsd-row__label">{{ $t('misc.tab.settings.about.author') }}</span>
@@ -27,6 +27,8 @@ import { useSiteInfo } from '~/composables/useSiteInfo'
 
 // 关于卡片的署名沿用博主维护的站点资料，不在组件里写死
 const { ownerCard } = useSiteInfo()
+// 版本在构建期取自 package.json，不再写死
+const appVersion = useRuntimeConfig().public.appVersion
 </script>
 
 <style lang="scss" scoped>

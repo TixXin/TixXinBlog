@@ -1,6 +1,6 @@
 /**
  * @file projectGalleryAboutI18n.test.ts
- * @description 项目、图库与关于页的英文冒烟：卡片、技术栈、灯箱、打赏卡与栏目名称随界面语言切换，
+ * @description 项目、图库与关于页的英文冒烟：卡片、技术栈、灯箱、支持方式卡片与栏目名称随界面语言切换，
  *              图片地址校验在无翻译函数时保持中文兜底且与 zh-CN 字典逐字一致
  * @author TixXin
  * @since 2026-10-19
@@ -103,9 +103,28 @@ describe('项目、图库与关于页英文界面', () => {
       expect(dialog?.textContent).toContain('Next')
       expect(dialog?.querySelector('.lightbox__close')?.getAttribute('aria-label')).toBe('Close')
       box.unmount()
-      const donate = await mountSuspended(DonateCard)
-      expect(donate.text()).toContain('Thanks for your support')
-      donate.unmount()
+      const { settings } = useSiteSettings()
+      const previous = settings.value.about
+      settings.value.about = {
+        visible: false,
+        introduction: '',
+        sections: [],
+        support: {
+          visible: true,
+          message: '请我喝杯咖啡',
+          methods: [{ label: 'Ko-fi', url: 'https://ko-fi.com/x', image: '' }],
+        },
+      }
+      try {
+        const donate = await mountSuspended(DonateCard)
+        // 没有英文感谢语时回退到中文原文，标题与读屏说明随界面语言
+        expect(donate.text()).toContain('Thanks for your support')
+        expect(donate.text()).toContain('请我喝杯咖啡')
+        expect(donate.text()).toContain('(opens in a new tab)')
+        donate.unmount()
+      } finally {
+        settings.value.about = previous
+      }
       const profile = await mountSuspended(ProfileContent, {
         props: {
           value: {

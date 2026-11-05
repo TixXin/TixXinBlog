@@ -9,32 +9,33 @@
   <div class="about-hero">
     <CommonContentImage
       :src="profile.avatar"
-      :alt="profile.name"
+      :alt="profile.avatarAlt || profile.name"
       class="about-hero__avatar"
       width="112"
       height="112"
       format="webp"
     />
     <h1 class="about-hero__name">{{ profile.name }}</h1>
-    <p class="about-hero__bio">{{ profile.bio }}</p>
-    <div class="about-hero__socials">
+    <p v-if="profile.bio" class="about-hero__bio">{{ profile.bio }}</p>
+    <!-- 只放主要社交主页；完整联系方式在下方联系卡片。网页主页带 rel="me" 声明同一身份，供 Mastodon 等验证 -->
+    <nav v-if="profile.socials.length" class="about-hero__socials" :aria-label="$t('misc.about.hero.profiles')">
       <a
-        v-for="s in profile.socials"
-        :key="s.label"
+        v-for="(s, index) in profile.socials"
+        :key="`${index}-${s.href}`"
         :href="s.href"
         class="about-hero__social"
         :class="{ 'about-hero__social--primary': s.primary }"
-        target="_blank"
-        rel="noopener"
+        v-bind="linkAttrs(s.href)"
       >
         <Icon :name="s.icon" size="16" /> {{ s.label }}
       </a>
-    </div>
+    </nav>
   </div>
 </template>
 
 <script setup lang="ts">
 import type { Profile } from '~/features/about/types'
+import { externalLinkAttrs as linkAttrs } from '~/features/about/links'
 
 defineProps<{
   profile: Profile
@@ -73,6 +74,7 @@ defineProps<{
 
 .about-hero__socials {
   display: flex;
+  flex-wrap: wrap;
   justify-content: center;
   gap: 0.75rem;
   margin-top: 1.25rem;

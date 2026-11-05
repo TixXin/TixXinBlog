@@ -35,6 +35,7 @@ import type { SiteSettingsValues } from '../../entities/site-settings.entity'
 import { normalizeImage } from '../media/media-image'
 import { lockMedia, mediaUrl, synchronizeMediaReferences } from '../media/media-references'
 import { MediaStorage } from '../media/media-storage'
+import { siteImageValues } from '../site/about-settings'
 import { SetupDto } from './setup.dto'
 import {
   SETUP_CLOSED_MESSAGE,
@@ -201,12 +202,12 @@ export class SetupService {
       createdAt: now,
     })
     // 与后台保存一致：新修订同样登记头像的媒体引用，历史恢复与媒体回收不因此缺失引用。
-    await synchronizeMediaReferences(tx, 'site:default', 'site', [settings.values.avatar], {})
+    await synchronizeMediaReferences(tx, 'site:default', 'site', siteImageValues(settings.values), {})
     await synchronizeMediaReferences(
       tx,
       `site-revision:${settings.revision}`,
       'site-revision',
-      [settings.values.avatar],
+      siteImageValues(settings.values),
       { revision: settings.revision },
     )
     const labels: Partial<Record<keyof SiteSettingsValues, string>> = {

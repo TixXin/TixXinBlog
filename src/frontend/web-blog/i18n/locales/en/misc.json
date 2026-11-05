@@ -9,16 +9,37 @@
         "experience": "Experience",
         "skill": "Skills",
         "interest": "Interests",
-        "reading": "Reading list"
+        "reading": "Reading list",
+        "now": "Now",
+        "uses": "Uses"
       },
       "contact": {
         "title": "Get in touch",
-        "empty": "No public contact details yet"
+        "guestbook": "Guestbook",
+        "guestbookValue": "Leave me a message"
       },
-      "donate": {
+      "now": {
+        "updated": "Updated {date}"
+      },
+      "hero": {
+        "profiles": "Profiles"
+      },
+      "siteInfo": {
+        "title": "About this site",
+        "days": "Running for {days} day | Running for {days} days",
+        "launched": "Launched {date}",
+        "articles": "Posts",
+        "comments": "Comments",
+        "tags": "Tags",
+        "views": "Views",
+        "version": "Version"
+      },
+      "support": {
         "title": "Thanks for your support",
         "description": "If a post helped you, bookmarking, sharing, or leaving a note is the best support there is.",
-        "unavailable": "Tips aren't open yet"
+        "methods": "Ways to support",
+        "imageAlt": "{label} payment code",
+        "opensNewTab": " (opens in a new tab)"
       }
     },
     "gallery": {

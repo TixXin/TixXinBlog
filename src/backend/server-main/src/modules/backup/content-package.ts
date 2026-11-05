@@ -96,7 +96,7 @@ export async function parseContentPackage(buffer: Buffer): Promise<ContentPackag
 
   return {
     format: 'tixxin-content',
-    version: 16,
+    version: 17,
     omittedRelations,
     exportedAt: date(source.exportedAt, 'package.fieldExportedAt'),
     mediaIncluded,

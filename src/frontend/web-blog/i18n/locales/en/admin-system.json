@@ -289,7 +289,10 @@
           "fallback": "Site profile",
           "separator": ", ",
           "presenceExpiresAt": "Status expires at",
-          "timeZone": "Site time zone"
+          "timeZone": "Site time zone",
+          "aboutEnglish": "About page English version",
+          "aboutSiteInfo": "About page site info",
+          "aboutSupport": "Support options"
         },
         "recoveryLocked": "The existing recovery copy is incomplete and has been kept; new input can't be written to it. Keep this page open for now.",
         "recoverySaveFailed": "Couldn't save a recovery copy. Keep this page open.",
@@ -326,7 +329,6 @@
       "moveSectionDownLabel": "Move {section} section down",
       "itemLegend": "{section} entry {index}",
       "itemTitle": "Title",
-      "itemPeriod": "Date or period (optional)",
       "itemDetail": "Details (optional)",
       "itemVisible": "Publish this entry",
       "itemFallback": "entry {index}",
@@ -342,7 +344,41 @@
       "previewTitle": "About page preview",
       "notPublic": "This content isn't public yet.",
       "moved": "Moved to position {position}",
-      "removed": "Entry removed"
+      "removed": "Entry removed",
+      "introductionHint": "Markdown is supported: bold, links, lists and so on. Single line breaks are kept.",
+      "englishLegend": "English version (optional)",
+      "englishHint": "The English interface shows these first; empty fields fall back to Chinese.",
+      "introductionEn": "Introduction (English)",
+      "itemTitleEn": "Title (English)",
+      "itemPeriodEn": "Date or period (English)",
+      "itemDetailEn": "Details (English)",
+      "itemUrl": "Link (optional, http or https)",
+      "periodLabel": {
+        "experience": "Period (optional)",
+        "skill": "Level or years (optional)",
+        "interest": "Note (optional)",
+        "reading": "Author (optional)",
+        "now": "Stage (optional)",
+        "uses": "Category (optional)"
+      },
+      "updatedAt": "Last updated",
+      "updatedToday": "Set to today",
+      "showSiteInfo": "Show site info on the About page (uptime and content stats)",
+      "support": {
+        "legend": "Support",
+        "hint": "When on, it appears on the About page and in the post sidebar. Hidden when off or when no method is usable.",
+        "visible": "Publish support options",
+        "message": "Thank-you note (leave empty for the default)",
+        "messageEn": "Thank-you note in English (optional)",
+        "methodLegend": "Option {index}",
+        "methodLabel": "Name (e.g. WeChat, Ko-fi)",
+        "methodUrl": "Link (optional, http or https)",
+        "methodImage": "Payment code image URL (optional, site media or https)",
+        "add": "Add support option",
+        "remove": "Remove option",
+        "removeLabel": "Remove {name}",
+        "setup": "Set up support options"
+      }
     },
     "shared": {
       "readFailed": "Couldn't load. Please try again.",

@@ -8,6 +8,7 @@ import { createHash } from 'node:crypto'
 import sharp from 'sharp'
 import { SaveSiteSettingsDto } from '../site/site-settings.dto'
 import { normalizeSiteExtrasInput, SiteExtrasError } from '../site/site-navigation'
+import { aboutUsesV17Fields } from '../site/about-settings'
 import { POST_TAG_COLORS } from '../../entities/post-tag.entity'
 import type { PostTagColor } from '../../entities/post-tag.entity'
 import { msg } from '../../common/i18n'
@@ -39,7 +40,19 @@ export function parsePackageTaxonomies(
   return { folders, tags }
 }
 
+/** v17 起关于页可选携带条目链接、英文资料、“现在”与“装备与工具”栏目、本站信息开关与支持方式；v1–v16 出现即按未知字段拒绝。 */
+function assertAboutVersion(rawSite: unknown, version: number) {
+  if (
+    version < 17 &&
+    rawSite &&
+    typeof rawSite === 'object' &&
+    aboutUsesV17Fields((rawSite as { about?: unknown }).about)
+  )
+    fail('package.fieldSite')
+}
+
 export function parsePackageSiteSettings(rawSite: unknown, version: number): ContentPackage['site'] {
+  assertAboutVersion(rawSite, version)
   const siteData = dto(
     SaveSiteSettingsDto,
     {
@@ -80,6 +93,7 @@ export function parsePackageSiteSettings(rawSite: unknown, version: number): Con
   if (site.about && new Set(site.about.sections.map((section) => section.kind)).size !== site.about.sections.length)
     fail('package.fieldAboutSectionDuplicate')
   if (ignoredRevision !== 0 || !packageImageUrl(site.avatar)) fail('package.fieldSiteAvatar')
+  if (site.about?.support?.methods.some((method) => !packageImageUrl(method.image))) fail('package.fieldSite')
   for (const social of site.socials) {
     let valid = /^mailto:[^\s?@]+@[^\s?@]+\.[^\s?@]+$/.test(social.href)
     try {

@@ -82,6 +82,9 @@ function themeRuntimeHygieneModule(_inlineOptions: unknown, nuxt: ThemeRuntimeNu
 }
 
 const startupGuard = readFileSync(new URL('./public/startup-guard.js', import.meta.url), 'utf8')
+/** 应用版本，随发版同步 package.json；构建期写入，关于页“本站信息”与标签页设置展示 */
+const appVersion = (JSON.parse(readFileSync(new URL('./package.json', import.meta.url), 'utf8')) as { version: string })
+  .version
 // 站点资料不可用时的中性站名，与 app/features/site/settings.ts 的 defaultSiteSettings.name 保持一致；
 // 运行时以博主在 /admin/site 维护的站名为准（app.vue 与 error.vue 动态覆盖）。
 const fallbackSiteName = 'My Blog'
@@ -294,6 +297,7 @@ export default {
       },
       // 构建期常量：dev 调试面板「环境」tab 显示用，prod 时面板被 tree-shake，字段闲置
       buildTime: new Date().toISOString(),
+      appVersion,
       nuxtVersion: '4',
       // 数据仓库切换：true=mock 实现；false=HTTP 实现（对接 server-main）
       // 环境变量 NUXT_PUBLIC_USE_MOCK_REPO=false 时走后端；详见 app/plugins/repositories.ts

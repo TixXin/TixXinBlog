@@ -6,6 +6,7 @@ import { createHash } from 'node:crypto'
 import type { ContentImportPlan } from '../../entities/content-import.entity'
 import type { ContentPackage } from './content-package'
 import { managedMediaIds } from '../media/media-references'
+import { siteImageValues } from '../site/about-settings'
 import type { MediaStorage } from '../media/media-storage'
 import { zh } from '../../common/i18n'
 
@@ -17,7 +18,7 @@ export async function makeMediaImportPlan(
   includeSettings: boolean,
   errors: string[],
 ): Promise<ContentImportPlan['media']> {
-  if (includeSettings) requiredValues.push(input.site.avatar)
+  if (includeSettings) requiredValues.push(...siteImageValues(input.site))
   const required = new Set(managedMediaIds(requiredValues))
   const incoming = new Map(input.media.map((item) => [item.id, item]))
   const present = new Map(current.media.map((item) => [item.id, item]))

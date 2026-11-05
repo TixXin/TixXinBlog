@@ -284,7 +284,7 @@ describe('关于页嵌套写入 DTO', () => {
     expectDtoInvalid(AboutItemDto, { ...aboutItem, id: 1 }, 'id', 'whitelistValidation')
   })
 
-  it.each(['experience', 'skill', 'interest', 'reading'])('接受栏目枚举 %s', (kind) => {
+  it.each(['experience', 'skill', 'interest', 'reading', 'now', 'uses'])('接受栏目枚举 %s', (kind) => {
     expectDtoValid(AboutSectionDto, { ...aboutSection, kind })
   })
 
@@ -292,11 +292,11 @@ describe('关于页嵌套写入 DTO', () => {
     expectDtoInvalid(AboutSectionDto, { ...aboutSection, kind }, 'kind', 'isIn')
   })
 
-  it('最多四个栏目，每个栏目最多三十个条目', () => {
-    expectDtoValid(AboutSettingsDto, { ...about, sections: Array.from({ length: 4 }, () => ({ ...aboutSection })) })
+  it('最多六个栏目，每个栏目最多三十个条目', () => {
+    expectDtoValid(AboutSettingsDto, { ...about, sections: Array.from({ length: 6 }, () => ({ ...aboutSection })) })
     expectDtoInvalid(
       AboutSettingsDto,
-      { ...about, sections: Array.from({ length: 5 }, () => ({ ...aboutSection })) },
+      { ...about, sections: Array.from({ length: 7 }, () => ({ ...aboutSection })) },
       'sections',
       'arrayMaxSize',
     )

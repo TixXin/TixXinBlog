@@ -681,9 +681,6 @@
   "app/features/site/editor.ts": {
     "complexity": {
       "count": 1
-    },
-    "max-lines-per-function": {
-      "count": 1
     }
   },
   "app/features/subscription/editor.ts": {

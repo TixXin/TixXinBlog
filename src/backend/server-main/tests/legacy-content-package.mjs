@@ -1,5 +1,22 @@
-/** @file legacy-content-package.mjs @description 维护回归显式构造v16之前的真实字段集，不放宽生产解析器 */
+/** @file legacy-content-package.mjs @description 维护回归显式构造v17之前的真实字段集，不放宽生产解析器 */
+export function stripV17Fields(value) {
+  // v17 才引入的关于页字段：条目链接与英文资料、“现在”与“装备与工具”栏目、更新日期、本站信息开关与支持方式。
+  const about = value.site?.about
+  if (about) {
+    for (const key of ['en', 'showSiteInfo', 'support']) delete about[key]
+    about.sections = (about.sections ?? []).filter((section) => !['now', 'uses'].includes(section.kind))
+    for (const section of about.sections) {
+      delete section.updatedAt
+      for (const item of section.items ?? []) {
+        delete item.url
+        delete item.en
+      }
+    }
+  }
+  return value
+}
 export function stripV16Fields(value) {
+  stripV17Fields(value)
   // v16 才引入的站点时区：旧包必须显式移除，迁入设置时沿用目标站现值。
   if (value.site) delete value.site.timeZone
   return value

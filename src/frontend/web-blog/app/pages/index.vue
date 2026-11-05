@@ -95,6 +95,8 @@ import { isCanonicalPageParam } from '~/features/post/listQuery'
 import { useHomeSeo } from '~/features/post/useHomeSeo'
 
 const route = useRoute()
+// 首页代表博主本人：声明网页主页 rel="me"，Mastodon 等以站点首页回链验证身份
+useRelMeLinks()
 // 目录在下方与文章并行读取。标题先注册，目录返回后再把 slug 换成标签名称。
 const postSummary = shallowRef<{ tags: Array<{ label: string; slug: string }> } | null>(null)
 const { siteSettings } = useHomeSeo({ postSummary })

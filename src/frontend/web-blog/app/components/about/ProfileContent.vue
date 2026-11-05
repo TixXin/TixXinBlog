@@ -1,17 +1,28 @@
-<!-- @file ProfileContent.vue @description 仅展示已选择公开的个人资料，空栏目不占位；经历、技能、兴趣、书单各用贴合内容的版式 -->
+<!--
+  @file ProfileContent.vue
+  @description 仅展示已选择公开的个人资料，空栏目不占位；简介按 Markdown 渲染并净化，英文界面优先取英文资料。
+               经历用时间线，“现在”带更新日期，兴趣用标签，技能、书单与装备用两列卡片；条目有链接时标题即外链。
+-->
 <template>
   <div v-if="visible.visible" class="profile-content">
-    <p v-if="visible.introduction" class="profile-content__intro">{{ visible.introduction }}</p>
+    <!-- eslint-disable-next-line vue/no-v-html -- renderFlashMarkdown 不解析内联 HTML，输出已通过 DOMPurify 净化 -->
+    <div v-if="introHtml" class="profile-content__intro" v-html="introHtml" />
     <section v-for="section in visible.sections" :key="section.kind" class="profile-content__section">
       <h2 class="profile-content__heading">
         <Icon :name="sectionIcons[section.kind]" size="18" /> {{ aboutSectionLabel(section.kind, t) }}
       </h2>
-      <!-- 经历：时间线，时间段作为标签 -->
-      <ol v-if="section.kind === 'experience'" class="profile-timeline">
+      <p v-if="section.kind === 'now' && section.updatedAt" class="profile-content__updated">
+        <Icon name="lucide:calendar-clock" size="14" />
+        <time :datetime="section.updatedAt">{{
+          t('misc.about.now.updated', { date: formatDay(section.updatedAt) })
+        }}</time>
+      </p>
+      <!-- 经历与“现在”：时间线，时间段作为标签 -->
+      <ol v-if="section.kind === 'experience' || section.kind === 'now'" class="profile-timeline">
         <li v-for="(item, index) in section.items" :key="index" class="profile-timeline__item">
           <span class="profile-timeline__dot" aria-hidden="true" />
           <p v-if="item.period" class="profile-timeline__period">{{ item.period }}</p>
-          <h3 class="profile-timeline__title">{{ item.title }}</h3>
+          <h3 class="profile-timeline__title"><AboutItemTitle :item="item" /></h3>
           <p v-if="item.detail" class="profile-content__detail">{{ item.detail }}</p>
         </li>
       </ol>
@@ -19,7 +30,16 @@
       <ul v-else-if="section.kind === 'interest'" class="profile-chips">
         <li v-for="(item, index) in section.items" :key="index">
           <CommonTooltip :content="item.detail || undefined" :disabled="!item.detail">
+            <a
+              v-if="item.url"
+              :href="item.url"
+              class="profile-chips__item profile-chips__item--link"
+              v-bind="linkAttrs"
+            >
+              {{ item.title }}
+            </a>
             <span
+              v-else
               class="profile-chips__item"
               :class="{ 'profile-chips__item--detail': item.detail }"
               :tabindex="item.detail ? 0 : undefined"
@@ -29,7 +49,7 @@
           </CommonTooltip>
         </li>
       </ul>
-      <!-- 技能与书单：两列卡片；书单的时间段字段作为作者 -->
+      <!-- 技能、书单与装备：两列卡片；时间段字段在书单里是作者、在装备里是类别 -->
       <ul v-else class="profile-grid">
         <li v-for="(item, index) in section.items" :key="index" class="profile-grid__item">
           <div class="profile-grid__head">
@@ -39,7 +59,7 @@
                 class="profile-grid__icon"
                 name="lucide:book-open"
                 size="14"
-              /><span>{{ item.title }}</span>
+              /><AboutItemTitle :item="item" />
             </h3>
             <span v-if="item.period" class="profile-grid__meta">{{ item.period }}</span>
           </div>
@@ -51,13 +71,22 @@
 </template>
 <script setup lang="ts">
 import type { AboutSettings } from '~/features/about/types'
-import { aboutSectionLabel, publicAbout } from '~/features/about/settings'
-const { t } = useI18n()
+import { aboutSectionLabel, localizeAbout, publicAbout } from '~/features/about/settings'
+import { renderFlashMarkdown } from '~/utils/flashMarkdown'
+const { t, locale } = useI18n()
+const siteUrl = useSiteUrl()
 const props = defineProps<{ value?: AboutSettings }>()
-const visible = computed(() => publicAbout(props.value))
+const visible = computed(() => localizeAbout(publicAbout(props.value), locale.value))
+const introHtml = computed(() => renderFlashMarkdown(visible.value.introduction, { siteUrl, t }))
+const linkAttrs = { target: '_blank', rel: 'noopener' }
+/** 日期按 UTC 解析 YYYY-MM-DD，避免时区让 SSR 与客户端差一天 */
+const formatDay = (day: string) =>
+  new Intl.DateTimeFormat(locale.value, { dateStyle: 'medium', timeZone: 'UTC' }).format(new Date(`${day}T00:00:00Z`))
 const sectionIcons = {
+  now: 'lucide:compass',
   experience: 'lucide:clock',
   skill: 'lucide:zap',
+  uses: 'lucide:laptop',
   interest: 'lucide:heart',
   reading: 'lucide:book-open',
 } as const
@@ -68,9 +97,35 @@ const sectionIcons = {
   margin-bottom: 2rem;
 }
 .profile-content__intro {
-  white-space: pre-wrap;
   line-height: 1.9;
   color: var(--text-main);
+  :deep(p) {
+    margin-block: 0 0.75rem;
+  }
+  :deep(a) {
+    color: var(--accent-action);
+    text-decoration: underline;
+    text-underline-offset: 0.2em;
+  }
+  :deep(ul),
+  :deep(ol) {
+    padding-left: 1.5rem;
+    margin-block: 0 0.75rem;
+  }
+}
+.profile-content__updated {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  margin: -0.5rem 0 1rem;
+  font-size: 0.75rem;
+  color: var(--text-soft);
+}
+.profile-chips__item--link {
+  text-decoration: none;
+  &:hover {
+    border-color: var(--border-hover);
+  }
 }
 .profile-content__section {
   margin-block: 2rem;

@@ -1,6 +1,6 @@
 /** @file editor.ts @description 站点配置按字段及栏目三方合并；恢复副本严格校验，不凭条目索引猜测身份 */
-import { emptyAbout, aboutSectionLabelKeys } from '../about/settings'
-import type { AboutSection } from '../about/types'
+import { emptyAbout } from '../about/settings'
+import { isAboutSettings, mergeAbout } from '../about/editor'
 import { defaultSiteSettings } from './settings'
 import type { SiteSettingsData } from './settings'
 
@@ -55,41 +55,10 @@ export function mergeSiteSettings(base: SiteSettingsData, local: SiteSettingsDat
     if (['revision', 'updatedAt', 'announcementUpdatedAt', 'about'].includes(key)) continue
     Object.assign(merged, { [key]: choose(base[key], local[key], server[key], key) })
   }
-  const before = base.about ?? emptyAbout(),
-    input = local.about ?? emptyAbout(),
-    latest = server.about ?? emptyAbout()
-  const sections = new Map<AboutSection['kind'], AboutSection>()
-  for (const kind of Object.keys(aboutSectionLabelKeys) as AboutSection['kind'][]) {
-    const section = choose(
-      before.sections.find((item) => item.kind === kind),
-      input.sections.find((item) => item.kind === kind),
-      latest.sections.find((item) => item.kind === kind),
-      `about.${kind}`,
-    )
-    if (section) sections.set(kind, section)
-  }
-  // 共同存在的栏目顺序才可比较；新增栏目追加，删除不被误认为重排。
-  const common = before.sections
-    .map((section) => section.kind)
-    .filter(
-      (kind) => input.sections.some((item) => item.kind === kind) && latest.sections.some((item) => item.kind === kind),
-    )
-  const order = (items: AboutSection[]) => items.map((section) => section.kind).filter((kind) => common.includes(kind))
-  const localReordered = !equal(order(before.sections), order(input.sections))
-  if (
-    localReordered &&
-    !equal(order(before.sections), order(latest.sections)) &&
-    !equal(order(input.sections), order(latest.sections))
+  merged.about = mergeAbout(
+    { base: base.about, local: local.about, server: server.about },
+    { choose, equal, conflicts },
   )
-    conflicts.push('about.sections.order')
-  const ordered = [...(localReordered ? input.sections : latest.sections), ...input.sections, ...latest.sections]
-  merged.about = {
-    visible: choose(before.visible, input.visible, latest.visible, 'about.visible'),
-    introduction: choose(before.introduction, input.introduction, latest.introduction, 'about.introduction'),
-    sections: [...new Set(ordered.map((section) => section.kind))].flatMap((kind) =>
-      sections.has(kind) ? [sections.get(kind)!] : [],
-    ),
-  }
   return { merged, conflicts }
 }
 
@@ -174,36 +143,7 @@ function isSettings(value: unknown): value is SiteSettingsData {
     )
   )
     return false
-  if (item.about === undefined) return true
-  const about = item.about
-  return (
-    !!about &&
-    typeof about.visible === 'boolean' &&
-    typeof about.introduction === 'string' &&
-    about.introduction.length <= 5000 &&
-    Array.isArray(about.sections) &&
-    about.sections.length <= 4 &&
-    new Set(about.sections.map((section) => section?.kind)).size === about.sections.length &&
-    about.sections.every(
-      (section) =>
-        section &&
-        Object.hasOwn(aboutSectionLabelKeys, section.kind) &&
-        typeof section.visible === 'boolean' &&
-        Array.isArray(section.items) &&
-        section.items.length <= 30 &&
-        section.items.every(
-          (entry) =>
-            entry &&
-            typeof entry.visible === 'boolean' &&
-            typeof entry.title === 'string' &&
-            entry.title.length <= 120 &&
-            typeof entry.period === 'string' &&
-            entry.period.length <= 80 &&
-            typeof entry.detail === 'string' &&
-            entry.detail.length <= 1000,
-        ),
-    )
-  )
+  return isAboutSettings(item.about)
 }
 export function parseSiteSettingsRecovery(raw: string): SiteSettingsRecovery | null {
   if (raw.length > 2_000_000) return null

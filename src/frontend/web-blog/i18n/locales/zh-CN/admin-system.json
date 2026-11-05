@@ -289,7 +289,10 @@
           "fallback": "站点资料",
           "separator": "、",
           "presenceExpiresAt": "状态有效期至",
-          "timeZone": "站点时区"
+          "timeZone": "站点时区",
+          "aboutEnglish": "关于页英文资料",
+          "aboutSiteInfo": "关于页本站信息",
+          "aboutSupport": "支持方式"
         },
         "recoveryLocked": "原恢复副本格式不完整，已保留；当前新输入无法写入恢复副本，请先保留当前页面。",
         "recoverySaveFailed": "恢复副本无法保存，请保留当前页面。",
@@ -326,7 +329,6 @@
       "moveSectionDownLabel": "下移{section}栏目",
       "itemLegend": "{section}条目 {index}",
       "itemTitle": "名称",
-      "itemPeriod": "时间或阶段（选填）",
       "itemDetail": "说明（选填）",
       "itemVisible": "公开此条目",
       "itemFallback": "条目 {index}",
@@ -342,7 +344,41 @@
       "previewTitle": "关于页预览",
       "notPublic": "以下资料尚未公开。",
       "moved": "已移至第 {position} 项",
-      "removed": "条目已移除"
+      "removed": "条目已移除",
+      "introductionHint": "支持 Markdown：加粗、链接、列表等，单个换行会保留。",
+      "englishLegend": "英文资料（选填）",
+      "englishHint": "英文界面优先显示这里的内容，留空的字段显示中文。",
+      "introductionEn": "英文介绍",
+      "itemTitleEn": "英文名称",
+      "itemPeriodEn": "英文时间或阶段",
+      "itemDetailEn": "英文说明",
+      "itemUrl": "链接（选填，http 或 https）",
+      "periodLabel": {
+        "experience": "时间段（选填）",
+        "skill": "熟练程度或年限（选填）",
+        "interest": "补充（选填）",
+        "reading": "作者（选填）",
+        "now": "阶段（选填）",
+        "uses": "类别（选填）"
+      },
+      "updatedAt": "更新日期",
+      "updatedToday": "设为今天",
+      "showSiteInfo": "在关于页展示本站信息（运行天数与内容统计）",
+      "support": {
+        "legend": "支持方式",
+        "hint": "开启后显示在关于页和文章页侧栏；未开启或没有可用的方式时不显示。",
+        "visible": "公开支持方式",
+        "message": "感谢语（留空使用默认文案）",
+        "messageEn": "英文感谢语（选填）",
+        "methodLegend": "支持方式 {index}",
+        "methodLabel": "名称（如 微信、Ko-fi）",
+        "methodUrl": "链接（选填，http 或 https）",
+        "methodImage": "收款码图片地址（选填，站内媒体或 https）",
+        "add": "添加支持方式",
+        "remove": "移除支持方式",
+        "removeLabel": "移除{name}",
+        "setup": "设置支持方式"
+      }
     },
     "shared": {
       "readFailed": "读取失败，请重试",
