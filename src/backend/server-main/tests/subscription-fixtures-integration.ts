@@ -76,7 +76,7 @@ async function main() {
     const catalog = await inspectDataCatalog(em, 'subscriptions')
     assert.equal(catalog.ready, true, JSON.stringify(catalog))
     assert.equal(catalog.domains[0].counts.total, SUBSCRIPTION_RECORD_COUNT)
-    assert.equal(catalog.domains[0].counts.published, 13)
+    assert.equal(catalog.domains[0].counts.published, 18)
     assert.equal(catalog.domains[0].counts.drafts, 1)
     assert.equal(catalog.domains[0].counts.withdrawn, 1)
     assert.equal(catalog.domains[0].counts.managed, catalog.domains[0].counts.references)
@@ -86,17 +86,27 @@ async function main() {
       state: 'normal-empty-filter',
     })
     const first = await get('/subscriptions?pageSize=8'),
-      second = await get('/subscriptions?page=2&pageSize=8')
-    assert.equal(first.total, 13)
+      second = await get('/subscriptions?page=2&pageSize=8'),
+      third = await get('/subscriptions?page=3&pageSize=8')
+    assert.equal(first.total, 18)
     assert.equal(first.items.length, 8)
-    assert.equal(second.items.length, 5)
-    const records = [...first.items, ...second.items]
-    assert.equal(new Set(records.map((item) => item.id)).size, 13)
+    assert.equal(second.items.length, 8)
+    assert.equal(third.items.length, 2)
+    const records = [...first.items, ...second.items, ...third.items]
+    assert.equal(new Set(records.map((item) => item.id)).size, 18)
     assert(records.every((item) => !('notes' in item) && !('status' in item) && !('revision' in item)))
     assert(records.every((item) => !/开发示例|测试数据|演示用途/.test(item.name + item.description)))
     const stats = await get('/subscriptions/stats?currency=USD&pageSize=1')
-    assert.equal(stats.total, 3)
-    assert.equal(stats.currencies[0].annualAmount, 52900)
+    assert.equal(stats.total, 5)
+    // 两年付域名 USD 20.88 按年折算 10.44；试用不计入预算
+    assert.equal(stats.currencies[0].annualAmount, 53944)
+    const byName = (name: string) => records.find((item) => item.name === name)
+    assert.equal(byName('Cloudflare 域名注册').billingCycle, 'biennial')
+    assert.equal(byName('Hetzner 存储盒').billingCycle, 'triennial')
+    assert.equal(byName('腾讯云 轻量应用服务器').billingCycle, 'semiannual')
+    assert.match(byName('Raycast Pro').trialEndDate, /^\d{4}-\d{2}-\d{2}$/)
+    assert.equal(byName('Netflix 標準方案').subscriptionStatus, 'cancelled')
+    assert.match(byName('Netflix 標準方案').endDate, /^\d{4}-\d{2}-\d{2}$/)
     assert.equal((await get('/subscriptions?currency=JPY')).items[0].amount, 1000)
     const withMedia = records.find((item) => item.name === 'Vue 开源支持')
     assert(withMedia.iconUrl.startsWith('/api/v1/media/'))
@@ -199,7 +209,7 @@ async function main() {
     assert.equal((await seed()).created.length, 0)
     assert.equal((await fixture.testOrm.schema.getUpdateSchemaSQL({ wrap: false })).trim(), '')
     process.stdout.write(
-      '订阅样本通过：15订阅/1图标、预览与备份、事务补偿、真实分页统计、受管与自动图标、日期历史幂等、编辑删除保护、缺失文件与引用诊断、跨模块引用保护、清理不复活\n',
+      `订阅样本通过：${SUBSCRIPTION_RECORD_COUNT}订阅/1图标、预览与备份、事务补偿、真实分页统计、受管与自动图标、日期历史幂等、编辑删除保护、缺失文件与引用诊断、跨模块引用保护、清理不复活\n`,
     )
   } finally {
     if (reconnected) await fixture.testOrm.close(true)

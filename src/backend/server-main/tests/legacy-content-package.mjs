@@ -1,5 +1,14 @@
-/** @file legacy-content-package.mjs @description 维护回归显式构造v17之前的真实字段集，不放宽生产解析器 */
+/** @file legacy-content-package.mjs @description 维护回归显式构造v18之前的真实字段集，不放宽生产解析器 */
+export function stripV18Fields(value) {
+  // v18 才引入的订阅试用到期日与结束日：旧包必须显式移除，解析器按 null 读取。
+  for (const row of value.subscriptions ?? []) {
+    delete row.values.trialEndDate
+    delete row.values.endDate
+  }
+  return value
+}
 export function stripV17Fields(value) {
+  stripV18Fields(value)
   // v17 才引入的关于页字段：条目链接与英文资料、“现在”与“装备与工具”栏目、更新日期、本站信息开关与支持方式。
   const about = value.site?.about
   if (about) {
