@@ -5,6 +5,7 @@ import type { GuestbookMessage } from '../../entities/guestbook-message.entity'
 import type { GuestbookFilters } from './guestbook.dto'
 import { submissionHash } from '../moment/moment-values'
 import { DEFAULT_API_LOCALE, msg, translate, type ApiLocale } from '../../common/i18n'
+import { DEFAULT_SITE_TIME_ZONE, siteDayRange } from '../site/site-time-zone'
 export const PUBLIC_GUESTBOOK = { status: 'published' as const, deletedAt: null }
 /** 留言独立公开；只将尚无公开博主直接回复的游客根留言计入待回复。 */
 export function unansweredGuestbookSql(alias = 'g'): string {
@@ -30,16 +31,17 @@ export function visibleGuestbook(visitor: string): FilterQuery<GuestbookMessage>
     $or: [{ status: 'published' }, ...(visitor ? [{ status: 'pending' as const, visitorIdHash: visitor }] : [])],
   }
 }
-export function guestbookFilter(query: GuestbookFilters): FilterQuery<GuestbookMessage> {
+export function guestbookFilter(
+  query: GuestbookFilters,
+  timeZone = DEFAULT_SITE_TIME_ZONE,
+): FilterQuery<GuestbookMessage> {
   const where: FilterQuery<GuestbookMessage> = {}
   if (query.q) {
     const value = '%' + query.q.replace(/[\\%_]/g, (char) => '\\' + char) + '%'
     where.$or = [{ content: { $ilike: value } }, { author: { $ilike: value } }]
   }
-  if (query.date) {
-    const from = new Date(query.date + 'T00:00:00.000Z')
-    where.createdAt = { $gte: from, $lt: new Date(from.getTime() + 86400000) }
-  }
+  // 单日筛选按站点时区的日边界，与留言日期分组一致
+  if (query.date) where.createdAt = siteDayRange(query.date, query.date, timeZone)
   return where
 }
 const scope = (query: GuestbookFilters) => submissionHash({ q: query.q ?? '', date: query.date ?? '' })

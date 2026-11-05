@@ -10,6 +10,7 @@ const {
   isDate,
   statistics,
   appendPriceHistory,
+  todayDate,
   validatePriceHistory,
 } = require('../index.cjs')
 const item = (overrides = {}) => ({
@@ -150,4 +151,12 @@ test('未来历史不能进入导入或本地记录，时间回拨不会追加�
   assert.throws(() => validatePriceHistory(initial, item(), '2026-10-12T09:59:00.000Z'), /时间无效/)
   assert.throws(() => appendPriceHistory(initial, item({ amount: 2500 }), options('2026-10-12T09:59:00.000Z')), /顺序/)
   assert.equal(initial.length, 1)
+})
+
+test('当天日期按指定时区切日，缺省按 UTC', () => {
+  const now = new Date('2026-11-04T16:30:00.000Z')
+  assert.equal(todayDate('Asia/Shanghai', now), '2026-11-05')
+  assert.equal(todayDate('UTC', now), '2026-11-04')
+  assert.equal(todayDate(undefined, now), '2026-11-04')
+  assert.equal(todayDate('America/New_York', now), '2026-11-04')
 })

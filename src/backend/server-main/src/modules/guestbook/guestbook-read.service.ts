@@ -17,7 +17,7 @@ import {
   unansweredGuestbookSql,
 } from './guestbook-values'
 import { DEFAULT_API_LOCALE, msg, type ApiLocale } from '../../common/i18n'
-import { SITE_TIME_ZONE_SQL } from '../site/site-time-zone'
+import { readSiteTimeZone, SITE_TIME_ZONE_SQL } from '../site/site-time-zone'
 /** “今日留言”按站点时区分日 */
 const SITE_DAY_ZONE = `${SITE_TIME_ZONE_SQL} as zone(name)`
 
@@ -36,8 +36,12 @@ export class GuestbookReadService {
   async detail(id: number, visitor = '', admin = false) {
     return (await this.serialize([await this.require(id, visitor, admin)], visitor, admin))[0]!
   }
+  /** 带日期筛选时才读取站点时区 */
+  private async dateZone(query: { date?: string }) {
+    return query.date ? readSiteTimeZone(this.em) : undefined
+  }
   async list(query: QueryGuestbookDto, visitor = '') {
-    const filters = [visibleGuestbook(visitor), guestbookFilter(query)]
+    const filters = [visibleGuestbook(visitor), guestbookFilter(query, await this.dateZone(query))]
     const total = await this.em.count(GuestbookMessage, { $and: filters })
     const rows = await this.em.find(
       GuestbookMessage,
@@ -57,7 +61,7 @@ export class GuestbookReadService {
       {
         $and: [
           { deletedAt: null },
-          guestbookFilter(query),
+          guestbookFilter(query, await this.dateZone(query)),
           ...(query.status && query.status !== 'all' ? [{ status: query.status }] : []),
           ...(query.unanswered === 'true'
             ? [

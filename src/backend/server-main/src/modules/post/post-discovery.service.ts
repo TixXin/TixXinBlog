@@ -9,7 +9,7 @@ import { visibleCommentSql } from '../comment/comment-visibility'
 import type { QueryPostArchiveDto } from './dto/query-post-archive.dto'
 import type { PostNavigationScope } from './dto/query-post-navigation.dto'
 import { msg } from '../../common/i18n'
-import { SITE_TIME_ZONE_SQL } from '../site/site-time-zone'
+import { SITE_TIME_ZONE_SQL, siteDay, siteTimeZoneOf } from '../site/site-time-zone'
 
 interface ArchiveRow {
   slug?: string
@@ -47,12 +47,20 @@ function archiveItem(row: ArchiveRow) {
 const CONTENT_UPDATED_AT_SQL = `greatest(p.published_at, coalesce((select r.created_at from post_revision r
   where r.post_id = p.id and r.revision = p.revision), p.published_at)) as updated_at`
 
-/** 从上线日期到今天的整天数，无效或未来日期按 0 */
-function siteAgeDays(launchedAt: string | null): number {
+interface LaunchRow {
+  launched_at: string | null
+  first_published: string | null
+  time_zone: string | null
+}
+/** 从上线日期（未填写时取最早公开文章）到站点时区“今天”的整天数，无效或未来日期按 0 */
+function siteAgeDays(row: LaunchRow | undefined): number {
+  const launchedAt = row?.launched_at ?? row?.first_published
   if (!launchedAt) return 0
+  const timeZone = siteTimeZoneOf({ timeZone: row?.time_zone ?? undefined })
   const start = Date.parse(`${launchedAt}T00:00:00Z`)
   if (Number.isNaN(start)) return 0
-  return Math.max(0, Math.floor((Date.now() - start) / 86400000))
+  const today = Date.parse(`${siteDay(new Date(Date.now()), timeZone)}T00:00:00Z`)
+  return Math.max(0, Math.round((today - start) / 86400000))
 }
 @Injectable()
 export class PostDiscoveryService {
@@ -85,8 +93,8 @@ export class PostDiscoveryService {
         select to_char(d.day,'YYYY-MM-DD') as date,coalesce(a.total,0)::int as articles,coalesce(c.total,0)::int as comments from days d left join articles a using(day) left join comments c using(day) order by d.day
       `),
       // 站点上线日期优先取站点资料，未填写时按最早公开文章推算
-      this.em.execute<Array<{ launched_at: string | null; first_published: string | null }>>(
-        `select nullif(s.values->>'launchedAt','') as launched_at, to_char(min(p.published_at) at time zone ${SITE_TIME_ZONE_SQL},'YYYY-MM-DD') as first_published from site_settings s left join post p on p.status='published' and p.deleted_at is null where s.id='default' group by s.values`,
+      this.em.execute<LaunchRow[]>(
+        `select nullif(s.values->>'launchedAt','') as launched_at, to_char(min(p.published_at) at time zone ${SITE_TIME_ZONE_SQL},'YYYY-MM-DD') as first_published, ${SITE_TIME_ZONE_SQL} as time_zone from site_settings s left join post p on p.status='published' and p.deleted_at is null where s.id='default' group by s.values`,
       ),
     ])
     return {
@@ -98,7 +106,7 @@ export class PostDiscoveryService {
         views: sums[0]?.views ?? 0,
         comments: commentCount[0]?.count ?? 0,
         tags: tags.length,
-        siteAgeDays: siteAgeDays(launch[0]?.launched_at ?? launch[0]?.first_published ?? null),
+        siteAgeDays: siteAgeDays(launch[0]),
       },
       ...(archive ? { archive: archive.map(archiveItem) } : {}),
     }

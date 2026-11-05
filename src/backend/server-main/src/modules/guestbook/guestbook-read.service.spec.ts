@@ -86,7 +86,7 @@ describe('留言公开读取与分页', () => {
     expect(em.execute).not.toHaveBeenCalled()
   })
 
-  it('关键词按字面转义，日期按 UTC 半开区间筛选，总数与列表使用相同可见范围', async () => {
+  it('关键词按字面转义，日期按站点时区（缺省 Asia/Shanghai）的半开区间筛选，总数与列表使用相同可见范围', async () => {
     const { em, service } = setup()
     const query = { pageSize: 2, q: '100%_\\', date: '2026-10-18' }
 
@@ -95,7 +95,7 @@ describe('留言公开读取与分页', () => {
       { deletedAt: null, $or: [{ status: 'published' }, { status: 'pending', visitorIdHash: 'reader-hash' }] },
       {
         $or: [{ content: { $ilike: '%100\\%\\_\\\\%' } }, { author: { $ilike: '%100\\%\\_\\\\%' } }],
-        createdAt: { $gte: new Date('2026-10-18T00:00:00.000Z'), $lt: new Date('2026-10-19T00:00:00.000Z') },
+        createdAt: { $gte: new Date('2026-10-17T16:00:00.000Z'), $lt: new Date('2026-10-18T16:00:00.000Z') },
       },
     ]
     expect(em.count).toHaveBeenCalledWith(GuestbookMessage, { $and: filters })
@@ -104,7 +104,9 @@ describe('留言公开读取与分页', () => {
       { $and: filters },
       { populate: ['replyTo'], orderBy: { createdAt: 'desc', id: 'desc' }, limit: 3 },
     )
-    expect(em.execute).not.toHaveBeenCalled()
+    // 只读取一次站点时区，没有留言时不查询回应
+    expect(em.execute).toHaveBeenCalledTimes(1)
+    expect(em.execute.mock.calls[0]![0]).toContain("values->>'timeZone'")
   })
 
   it('多取一条判断后页，游标使用最后返回记录并以编号稳定区分同一时间的留言', async () => {

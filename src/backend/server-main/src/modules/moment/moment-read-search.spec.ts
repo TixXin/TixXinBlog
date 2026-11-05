@@ -13,6 +13,8 @@ function createService(items: Moment[] = [], total = items.length) {
     findAndCount: jest.fn().mockResolvedValue([items, total]),
     find: jest.fn().mockResolvedValue([]),
     getConnection: jest.fn().mockReturnValue(connection),
+    // 站点时区读取：未设置时按默认 Asia/Shanghai
+    execute: jest.fn().mockResolvedValue([]),
   }
   return { service: new MomentReadService(em as unknown as EntityManager), em, connection }
 }
@@ -66,7 +68,7 @@ describe('朋友圈公开搜索', () => {
     expectPublicSearch(em.findAndCount.mock.calls[0]![1], pattern)
   })
 
-  it('关键词与精确话题、UTC 日期筛选共同约束列表和总数', async () => {
+  it('关键词与精确话题、站点时区日期筛选共同约束列表和总数', async () => {
     const { service, em } = createService()
 
     await service.list(
@@ -76,7 +78,7 @@ describe('朋友圈公开搜索', () => {
     expect(em.findAndCount).toHaveBeenCalledTimes(1)
     expectPublicSearch(em.findAndCount.mock.calls[0]![1], '%海边%', {
       topics: { $contains: ['散步'] },
-      publishedAt: { $gte: new Date('2026-09-12T00:00:00.000Z'), $lt: new Date('2026-09-13T00:00:00.000Z') },
+      publishedAt: { $gte: new Date('2026-09-11T16:00:00.000Z'), $lt: new Date('2026-09-12T16:00:00.000Z') },
     })
     expect(em.findAndCount.mock.calls[0]![2]).toEqual(expect.objectContaining({ limit: 5, offset: 5 }))
   })

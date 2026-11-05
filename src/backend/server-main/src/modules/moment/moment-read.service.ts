@@ -40,7 +40,7 @@ export class MomentReadService {
   async list(query: QueryMomentsDto | QueryAdminMomentsDto, visitor = '', admin = false) {
     const where: FilterQuery<Moment> = {
       $and: [
-        momentWhere(query, admin),
+        momentWhere(query, admin, query.date ? await readSiteTimeZone(this.em) : undefined),
         ...(admin && 'status' in query && query.status && query.status !== 'all' ? [{ status: query.status }] : []),
       ],
     }

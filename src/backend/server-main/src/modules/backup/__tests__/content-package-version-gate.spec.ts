@@ -339,9 +339,12 @@ describe('内容包 v16 站点时区门禁', () => {
     expect((await parse(base())).site.timeZone).toBe('Europe/Berlin')
   })
 
-  it.each(['Asia/Beijing', '+08:00', 'CST', '', 8, null])('v16 拒绝无法识别的时区：%j', async (value) => {
-    const input = base()
-    ;(input.site as Record<string, unknown>).timeZone = value
-    await expect(parse(input)).rejects.toThrow('内容包字段不合法')
-  })
+  it.each(['Asia/Beijing', '+08:00', 'CST', 'EST5EDT', 'asia/shanghai', '', 8, null])(
+    'v16 拒绝无法识别的时区：%j',
+    async (value) => {
+      const input = base()
+      ;(input.site as Record<string, unknown>).timeZone = value
+      await expect(parse(input)).rejects.toThrow('内容包字段不合法')
+    },
+  )
 })

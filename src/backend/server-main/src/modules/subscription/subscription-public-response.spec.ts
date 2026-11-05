@@ -65,6 +65,8 @@ function fixture() {
     findAndCount: jest.fn().mockResolvedValue([[item], 1]),
     findOne: jest.fn().mockResolvedValue(item),
     find: jest.fn().mockResolvedValue([item]),
+    // 站点时区读取：未设置时按默认 Asia/Shanghai
+    execute: jest.fn().mockResolvedValue([]),
   }
   return { item, em, service: new SubscriptionService(em as unknown as EntityManager) }
 }

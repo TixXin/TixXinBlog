@@ -11,6 +11,7 @@ import {
   IsInt,
   IsObject,
   IsString,
+  IsTimeZone,
   Matches,
   MaxLength,
   Min,
@@ -19,7 +20,7 @@ import {
   ValidateIf,
 } from 'class-validator'
 import { AboutSettingsDto } from './about-settings'
-import { siteTimeZoneOptions } from './site-time-zone'
+import { SITE_TIME_ZONE_PATTERN } from './site-time-zone'
 import { SITE_LIMITS, SITE_NAV_KEYS, SiteFooterLinkDto, SiteNavItemDto } from './site-navigation'
 /** 内置模块数加外链上限 */
 const SITE_NAV_LIMIT = SITE_NAV_KEYS.length + SITE_LIMITS.externalNav
@@ -93,7 +94,9 @@ export class SaveSiteSettingsDto extends ExpectedSiteRevisionDto {
   presenceExpiresAt?: string
   // 站点时区：全站分日依据；缺省时沿用当前值，从未设置过的站点按 Asia/Shanghai 处理
   @ValidateIf((_object, value) => value !== undefined)
-  @IsIn(siteTimeZoneOptions(), { message: '站点时区需为 IANA 时区名' })
+  @IsString()
+  @Matches(SITE_TIME_ZONE_PATTERN, { message: '站点时区需为 IANA 时区名' })
+  @IsTimeZone({ message: '站点时区需为 IANA 时区名' })
   timeZone?: string
   // 是否允许搜索引擎收录：缺省时沿用当前值，从未设置过的站点按允许处理
   @ValidateIf((_object, value) => value !== undefined)

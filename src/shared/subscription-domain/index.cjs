@@ -26,8 +26,9 @@ function isDate(value) {
   const parsed = new Date(value + 'T00:00:00.000Z')
   return Number.isFinite(parsed.getTime()) && parsed.toISOString().slice(0, 10) === value
 }
-function todayDate() {
-  return new Date().toISOString().slice(0, 10)
+/** 指定时区（IANA 名）的当天日期；不传时区按 UTC */
+function todayDate(timeZone = 'UTC', now = new Date()) {
+  return new Intl.DateTimeFormat('en-CA', { timeZone, year: 'numeric', month: '2-digit', day: '2-digit' }).format(now)
 }
 function daysInMonth(year, month) {
   return [

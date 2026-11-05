@@ -41,7 +41,9 @@ async function main() {
     assert.equal(overviewResponse.status, 200)
     const overview = (await overviewResponse.json()).data
     assert(overview.photos.length > 0 && overview.topics.length > 0 && overview.recollections.length > 0)
-    assert(overview.dates.some((item) => item.date === new Date(latestDate).toISOString().slice(0, 10)))
+    // 概览日期按站点时区（缺省 Asia/Shanghai）分日
+    const latestSiteDay = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Shanghai' }).format(new Date(latestDate))
+    assert(overview.dates.some((item: { date: string }) => item.date === latestSiteDay))
     const again = await run('seed-moments', true)
     assert.equal(again.samplesToAdd, 0)
     assert.equal('backup' in again, false)

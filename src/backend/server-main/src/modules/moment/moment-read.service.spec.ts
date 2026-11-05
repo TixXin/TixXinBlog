@@ -65,12 +65,14 @@ function setup() {
     findOne: jest.fn().mockResolvedValue(null),
     find: jest.fn().mockResolvedValue([]),
     getConnection: jest.fn(() => connection),
+    // 站点时区读取：未设置时按默认 Asia/Shanghai
+    execute: jest.fn().mockResolvedValue([]),
   }
   return { em, connection, service: new MomentReadService(em as unknown as EntityManager) }
 }
 
 describe('朋友圈列表与详情读取', () => {
-  it('组合话题、UTC 日期和字面关键词筛选，稳定分页且只加载文章卡片列', async () => {
+  it('组合话题、站点时区日期和字面关键词筛选，稳定分页且只加载文章卡片列', async () => {
     const { em, service } = setup()
     em.findAndCount.mockResolvedValue([[moment()], 16])
     const query = Object.assign(new QueryMomentsDto(), {
@@ -90,7 +92,7 @@ describe('朋友圈列表与详情读取', () => {
       status: 'published',
       deletedAt: null,
       topics: { $contains: ['生活'] },
-      publishedAt: { $gte: new Date('2026-10-18T00:00:00Z'), $lt: new Date('2026-10-19T00:00:00Z') },
+      publishedAt: { $gte: new Date('2026-10-17T16:00:00Z'), $lt: new Date('2026-10-18T16:00:00Z') },
     })
     const predicates = where.$and[0].$or as Record<string, unknown>[]
     expect(predicates).toHaveLength(3)

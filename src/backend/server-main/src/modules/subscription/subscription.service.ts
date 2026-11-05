@@ -19,6 +19,7 @@ import type {
   SubscriptionQuery,
   SubscriptionSortDto,
 } from './subscription.dto'
+import { readSiteTimeZone } from '../site/site-time-zone'
 const publicSubscriptions = { status: 'published', deletedAt: null } as const
 @Injectable()
 export class SubscriptionService {
@@ -101,7 +102,8 @@ export class SubscriptionService {
         startDate: item.startDate ?? null,
         nextBillingDate: item.nextBillingDate ?? null,
       })),
-      todayDate(),
+      // 扣费提醒与统计的“今天”按站点时区
+      todayDate(await readSiteTimeZone(this.em)),
     )
   }
   async detail(id: number, admin = false) {

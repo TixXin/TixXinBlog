@@ -6,15 +6,18 @@ import { raw } from '@mikro-orm/core'
 import { Moment } from '../../entities/moment.entity'
 import type { QueryMomentsDto, SaveMomentDto } from './moment.dto'
 import { msg } from '../../common/i18n'
+import { DEFAULT_SITE_TIME_ZONE, siteDayRange } from '../site/site-time-zone'
 
 export const publicMoments = { status: 'published' as const, deletedAt: null }
-export function momentWhere(query: QueryMomentsDto, admin = false): FilterQuery<Moment> {
+export function momentWhere(
+  query: QueryMomentsDto,
+  admin = false,
+  timeZone = DEFAULT_SITE_TIME_ZONE,
+): FilterQuery<Moment> {
   const where: FilterQuery<Moment> = admin ? { deletedAt: null } : { ...publicMoments }
   if (query.topic) where.topics = { $contains: [query.topic] }
-  if (query.date) {
-    const from = new Date(query.date + 'T00:00:00.000Z')
-    where.publishedAt = { $gte: from, $lt: new Date(from.getTime() + 86400000) }
-  }
+  // 单日筛选按站点时区的日边界，与日历分组一致
+  if (query.date) where.publishedAt = siteDayRange(query.date, query.date, timeZone)
   if (query.q) {
     const value = `%${query.q.replace(/[\\%_]/g, (character) => '\\' + character)}%`
     where.$or = [

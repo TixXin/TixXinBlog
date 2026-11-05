@@ -153,12 +153,26 @@ describe('站点年龄边界', () => {
   ])('$name', async ({ launchedAt, firstPublished, expected }) => {
     jest.spyOn(Date, 'now').mockReturnValue(Date.parse('2026-03-10T23:59:59Z'))
     const execute = jest.fn(async (sql: string) =>
-      sql.includes('from site_settings s') ? [{ launched_at: launchedAt, first_published: firstPublished }] : [],
+      sql.includes('from site_settings s')
+        ? [{ launched_at: launchedAt, first_published: firstPublished, time_zone: 'UTC' }]
+        : [],
     )
     const service = new PostDiscoveryService({ execute } as unknown as EntityManager)
 
     expect((await service.metadata(false)).stats.siteAgeDays).toBe(expected)
   })
+})
+
+it('站点年龄按站点时区的“今天”计算：UTC 23:59 已是北京时间次日', async () => {
+  jest.spyOn(Date, 'now').mockReturnValue(Date.parse('2026-03-10T23:59:59Z'))
+  const execute = jest.fn(async (sql: string) =>
+    sql.includes('from site_settings s')
+      ? [{ launched_at: '2026-03-10', first_published: null, time_zone: 'Asia/Shanghai' }]
+      : [],
+  )
+  const service = new PostDiscoveryService({ execute } as unknown as EntityManager)
+  expect((await service.metadata(false)).stats.siteAgeDays).toBe(1)
+  jest.restoreAllMocks()
 })
 
 describe('文章按年分页归档', () => {

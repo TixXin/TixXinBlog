@@ -13,6 +13,7 @@ import { CommentService } from './comment.service'
 import type { CommentStatus } from '../../entities/comment.entity'
 import { CommentModerationService } from './comment-moderation.service'
 import { unansweredCommentSql, visibleCommentWhere } from './comment-visibility'
+import { readSiteTimeZone, siteDayRange } from '../site/site-time-zone'
 import { msg } from '../../common/i18n'
 
 /** 批量操作的单条结果：not_found 表示评论已不存在，conflict 表示提交版本与当前版本不一致 */
@@ -49,11 +50,8 @@ export class AdminCommentService {
     if (query.postId) where.post = query.postId
     if (query.search) where.content = { $ilike: `%${query.search}%` }
     if (query.status) where.status = query.status
-    if (query.from || query.to)
-      where.createdAt = {
-        ...(query.from ? { $gte: new Date(query.from) } : {}),
-        ...(query.to ? { $lt: new Date(new Date(query.to).getTime() + 86400000) } : {}),
-      }
+    // 日期范围按站点时区的日边界，含首尾两天
+    if (query.from || query.to) where.createdAt = siteDayRange(query.from, query.to, await readSiteTimeZone(this.em))
     if (query.unanswered === 'true') {
       where.$and = [
         { [raw((alias) => `${alias}.id in (select c.id from comment c where ${unansweredCommentSql('c')})`)]: true },

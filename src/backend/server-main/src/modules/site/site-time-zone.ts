@@ -8,15 +8,22 @@ import type { EntityManager } from '@mikro-orm/postgresql'
 
 export const DEFAULT_SITE_TIME_ZONE = 'Asia/Shanghai'
 
-/** 可选的时区：运行时支持的 IANA 时区名，外加 UTC */
-export function siteTimeZoneOptions(): string[] {
-  return ['UTC', ...Intl.supportedValuesOf('timeZone')]
-}
+/**
+ * IANA 时区名的形态：UTC，或“地区/城市”。排除 CST、EST5EDT 这类缩写和 +08:00 这类偏移量——
+ * 它们虽能被 Intl 识别，但含义含糊或不随夏令时变化；别名（如 Asia/Kolkata 与 Asia/Calcutta）都接受，
+ * 不按某个运行环境的规范名单做白名单，避免浏览器给出的写法被服务器拒绝。
+ */
+export const SITE_TIME_ZONE_PATTERN = /^(?:UTC|[A-Z][A-Za-z_-]+(?:\/[A-Za-z0-9_+-]+)+)$/
 
-const SUPPORTED = new Set(siteTimeZoneOptions())
-
+/** 站点时区校验：形态为 IANA 名，且运行环境能识别（PostgreSQL 的 at time zone 使用同一套 tz 数据） */
 export function isSiteTimeZone(value: unknown): value is string {
-  return typeof value === 'string' && SUPPORTED.has(value)
+  if (typeof value !== 'string' || !SITE_TIME_ZONE_PATTERN.test(value)) return false
+  try {
+    new Intl.DateTimeFormat('en-US', { timeZone: value })
+    return true
+  } catch {
+    return false
+  }
 }
 
 /** 历史记录或旧内容包没有时区时按默认值读取；无法识别的值同样回到默认值，避免分日查询报错 */
@@ -99,4 +106,16 @@ export function zonedDayStart(year: number, month: number, day: number, timeZone
 export function zonedDayStartOf(value: string, timeZone: string): Date {
   const [year, month, day] = value.split('-').map(Number)
   return zonedDayStart(year!, month!, day!, timeZone)
+}
+
+/**
+ * 站点时区下 [from, to] 两个日期（含首尾，YYYY-MM-DD）对应的时刻范围，供 createdAt 等字段做半开区间筛选；
+ * 只给一端时只返回该端
+ */
+export function siteDayRange(from: string | undefined, to: string | undefined, timeZone: string) {
+  const end = to ? to.split('-').map(Number) : null
+  return {
+    ...(from ? { $gte: zonedDayStartOf(from, timeZone) } : {}),
+    ...(end ? { $lt: zonedDayStart(end[0]!, end[1]!, end[2]! + 1, timeZone) } : {}),
+  }
 }

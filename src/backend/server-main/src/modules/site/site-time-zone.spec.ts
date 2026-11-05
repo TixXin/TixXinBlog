@@ -9,11 +9,15 @@ import {
 } from './site-time-zone'
 
 describe('站点时区校验', () => {
-  it('接受 IANA 时区名与 UTC，拒绝缩写、偏移量和不存在的名称', () => {
+  it('接受 IANA 时区名、别名与 UTC，拒绝缩写、偏移量、大小写不规范和不存在的名称', () => {
     expect(isSiteTimeZone('Asia/Shanghai')).toBe(true)
+    expect(isSiteTimeZone('Asia/Kolkata')).toBe(true)
+    expect(isSiteTimeZone('Asia/Calcutta')).toBe(true)
+    expect(isSiteTimeZone('Etc/GMT-8')).toBe(true)
     expect(isSiteTimeZone('America/New_York')).toBe(true)
     expect(isSiteTimeZone('UTC')).toBe(true)
-    for (const value of ['Asia/Beijing', 'CST', '+08:00', '', null, 8]) expect(isSiteTimeZone(value)).toBe(false)
+    for (const value of ['Asia/Beijing', 'CST', 'EST5EDT', '+08:00', 'asia/shanghai', '', null, 8])
+      expect(isSiteTimeZone(value)).toBe(false)
   })
 
   it('缺失或无法识别时回到默认的 Asia/Shanghai', () => {

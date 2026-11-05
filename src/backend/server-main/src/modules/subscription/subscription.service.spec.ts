@@ -24,7 +24,8 @@ function fixture() {
     findOne: jest.fn().mockResolvedValue(item),
     find: jest.fn().mockResolvedValue([item]),
     findAndCount: jest.fn().mockResolvedValue([[item], 1]),
-    execute: jest.fn(),
+    // 站点时区读取：未设置时按默认 Asia/Shanghai
+    execute: jest.fn().mockResolvedValue([]),
     flush: jest.fn(),
     nativeDelete: jest.fn(),
     transactional: jest.fn(),

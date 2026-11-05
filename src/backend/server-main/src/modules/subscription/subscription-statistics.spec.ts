@@ -21,8 +21,10 @@ function record(id: number, values: Partial<Subscription> = {}) {
   })
 }
 
-function fixture(items: Subscription[] = []) {
+function fixture(items: Subscription[] = [], timeZone = 'UTC') {
   const em = {
+    // 站点时区读取；多数用例按 UTC 断言日期边界
+    execute: jest.fn().mockResolvedValue([{ time_zone: timeZone }]),
     find: jest.fn().mockResolvedValue(items),
     findAndCount: jest.fn().mockResolvedValue([items.slice(0, 1), items.length]),
     flush: jest.fn(),
@@ -39,7 +41,12 @@ describe('订阅统计与分币种查询', () => {
     jest.useRealTimers()
   })
 
-  it('空结果返回明确的零统计，统计日期取 UTC 当日', async () => {
+  it('统计日期按站点时区：UTC 23:30 已是北京时间次日', async () => {
+    const { service } = fixture([], 'Asia/Shanghai')
+    expect((await service.stats(new SubscriptionQuery())).asOf).toBe('2026-10-19')
+  })
+
+  it('空结果返回明确的零统计，站点时区为 UTC 时统计日期取 UTC 当日', async () => {
     const { service } = fixture()
     await expect(service.stats(new SubscriptionQuery())).resolves.toEqual({
       asOf: '2026-10-18',

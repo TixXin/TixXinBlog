@@ -60,7 +60,8 @@ export interface SubscriptionStats {
   currencies: CurrencyStats[]
 }
 export function isDate(value: unknown): value is string
-export function todayDate(): string
+/** 指定时区（IANA 名）的当天日期 YYYY-MM-DD；不传时区按 UTC */
+export function todayDate(timeZone?: string, now?: Date): string
 export function addMonths(date: string, months: number, anchorDay?: number): string
 export function parseAmount(input: string, currency: Currency): number
 export function amountInput(amount: number, currency: Currency): string

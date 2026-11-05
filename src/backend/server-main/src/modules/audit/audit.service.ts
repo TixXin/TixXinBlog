@@ -10,6 +10,7 @@ import { AuditEntry } from '../../entities/audit-entry.entity'
 import type { AuditState, AuditSummary } from '../../entities/audit-entry.entity'
 import { auditActionLabel, auditFieldLabel } from './audit-description'
 import { msg, translate, translateStored, type ApiLocale } from '../../common/i18n'
+import { readSiteTimeZone, siteDayRange } from '../site/site-time-zone'
 export interface AuditActor {
   id: string
   name?: string
@@ -114,11 +115,8 @@ export class AuditService implements OnModuleDestroy {
     const where: FilterQuery<AuditEntry> = {}
     if (query.action) where.action = query.action
     if (query.state) where.state = query.state
-    if (query.from || query.to)
-      where.createdAt = {
-        ...(query.from ? { $gte: new Date(query.from) } : {}),
-        ...(query.to ? { $lt: new Date(new Date(query.to).getTime() + 86400000) } : {}),
-      }
+    // 日期范围按站点时区的日边界，含首尾两天
+    if (query.from || query.to) where.createdAt = siteDayRange(query.from, query.to, await readSiteTimeZone(this.em))
     const [items, total] = await this.em.findAndCount(AuditEntry, where, {
       orderBy: { createdAt: 'desc', id: 'desc' },
       limit: 20,
