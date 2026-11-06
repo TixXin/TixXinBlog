@@ -13,7 +13,7 @@ export interface LiveOwner {
 export interface LiveStats {
   /** 看过本站的不同访客数 */
   visitors: number
-  /** 北京时间今日浏览次数 */
+  /** 站点时区下今日浏览次数 */
   todayViews: number
   /** 功能上线以来的累计浏览次数 */
   totalViews: number

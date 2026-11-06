@@ -1004,7 +1004,7 @@
     },
     "traffic": {
       "title": "Traffic",
-      "intro": "Views, visitors, top pages, sources and devices summarized by Beijing time. Only anonymous totals are stored; traffic breakdowns are kept for 365 days.",
+      "intro": "Views, visitors, top pages, sources and devices summarized by the site time zone. Only anonymous totals are stored; traffic breakdowns are kept for 365 days.",
       "rangeLabel": "Range",
       "ranges": {
         "7": "Last 7 days",

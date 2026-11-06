@@ -15,7 +15,7 @@ export interface TrafficEntry {
 }
 
 export interface TrafficReport {
-  /** 起止日期（北京时间，含两端） */
+  /** 起止日期（站点时区，含两端） */
   from: string
   to: string
   /** 逐日浏览与访客，缺数据的日期补 0 */
