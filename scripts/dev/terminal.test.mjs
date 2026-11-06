@@ -112,7 +112,7 @@ test('dry-run只预览包装命令，不创建日志目录或启动服务', { sk
   const fixture = loggedFixture(t, '')
   const scripts = join(fixture.root, 'scripts/dev')
   mkdirSync(scripts)
-  for (const file of ['terminal.mjs', 'config.mjs', 'checks.mjs'])
+  for (const file of ['terminal.mjs', 'config.mjs', 'checks.mjs', 'restart.mjs'])
     copyFileSync(fileURLToPath(new URL(file, import.meta.url)), join(scripts, file))
   writeFileSync(fixture.pnpm, '')
   const output = execFileSync(

@@ -58,10 +58,12 @@ corepack pnpm static:build --site-url https://<域名>   # 静态发布，需要
 - 按关联模块验证并及时本地提交；提交范围遵循当前会话授权，部署和真实外部投递分别需要对应授权。
 - 工作区可能有多个会话并行：提交一律用 `git commit -- <路径>` 只带本会话的文件，不用不带路径的 `git commit`，也不 `git add -A`/`git add .`；暂存区里可能有别人的改动（`git mv` 会立即暂存改名）。撤销提交前先看 `git reflog`，用确定的 SHA 而不是 `HEAD~1`。
 - 多会话共用工作区时不执行影响整个工作区的命令（`git stash`、`checkout`/`switch`、`reset --hard`、`clean`、`restore .`）；远端有新提交需要 rebase 时先确认没有别人未提交的改动。遇到 `index.lock: File exists` 说明另一个会话正在执行 git 写操作，等几秒重试，不删锁文件。
+- 多会话协调（规则见[开发指南](docs/development.md#多会话协作)）：开工前用 `corepack pnpm session claim <会话名> <任务> <路径或通配…>` 在 `.artifacts/COORDINATION.md` 认领要改的目录，完成后 `session done <会话名> <结果>`；提交时加 `TIXXIN_SESSION=<会话名>`，提交前检查会拒绝改到别人认领的文件，并列出共享文件（语言包、package.json、文档等）的改动行，确认没有混进别人同一文件里的未提交改动后再提交。`session who` 列出待推送提交的归属。
+- 共用的开发服务坏了（`dev:check` 失败，或端口通但页面报错，常见于依赖升级后）由发现的会话负责恢复：`corepack pnpm dev:terminal --service=<api|web> --restart` 只停本启动器起的进程再重开，恢复后自检并告知其他会话；不要因“共用”而放着不管。
 - 构建、浏览器回归与 `check:local` 共用本机 `build` 锁（`scripts/dev/with-lock.mjs`，锁文件在 `.git/tixxin-locks/`），被占用时自动排队；直接运行 `--filter server-main build` 等未经根脚本的构建时用 `node scripts/dev/with-lock.mjs build -- <命令>` 包住。
 - 推送（维护者 2026-10-20 授权）：满足下列条件的普通提交可直接推送到 main，推送后简要告知维护者：
   - 时机：完成一个完整的功能、修复或一组相关改动后推送，多个提交攒成一次推送；不推半成品。结束工作前把已完成的提交推上去。只改文档可随时推送。
-  - 推送前：用 `corepack pnpm push:main [--e2e]` 推送，它在本机 `push` 锁内依次 fetch、确认本地包含远端最新提交、运行 `check:local`、推送，检查不通过不推送。`check:local` 须全部通过。它按改动自动挑选对应的本地检查，能在本地完成的检查都先在本地完成；改动涉及界面或流程时跑相关 spec（`check:local --e2e` 跑改动过的 spec，或 `test:e2e:run <spec>` 点名）。完整浏览器回归交给 CI（8 片并行）与 Release 门禁，本地不跑全量，确需时用 `--e2e-full`。
+  - 推送前：用 `corepack pnpm push:main [--e2e]` 推送，它在本机 `push` 锁内依次 fetch、确认本地包含远端最新提交、列出待推送提交及其归属、运行 `check:local`、推送，检查不通过不推送；工作区有未提交改动时自动在临时 worktree 中检查待推送提交，不受别人改了一半的代码影响。`check:local` 须全部通过。它按改动自动挑选对应的本地检查，能在本地完成的检查都先在本地完成；改动涉及界面或流程时跑相关 spec（`check:local --e2e` 跑改动过的 spec，或 `test:e2e:run <spec>` 点名）。完整浏览器回归交给 CI（8 片并行）与 Release 门禁，本地不跑全量，确需时用 `--e2e-full`。
   - 只推自己的提交：先 `git fetch`，再用 `git log origin/main..main` 确认待推送的全是本会话的提交；混有其他会话的提交时停下，与维护者或该会话确认。工作区不得混入他人未提交的文件。
   - 推送后：留意 CI 结果，变红优先修复，不在红的基础上继续堆推送（修复本身的推送除外）。
   - 每次都需维护者单独确认：强制推送与改写历史、删除远程分支或标签。
@@ -70,7 +72,7 @@ corepack pnpm static:build --site-url https://<域名>   # 静态发布，需要
   - 打与以往一致的附注标签 `v<版本号>` 并推送，触发 Release 工作流；校验条件见 [部署](docs/deployment.md)。正式版先等该提交在 main 上的 CI 全绿再打标签；beta 等预发布不走 CI 门禁（维护者 2026-11-05 决定），版本提交推送后即可打标签。
   - 后台跟踪 Release 结果并告知维护者；失败时查明原因并修复，不覆盖或复用已发布的版本标签。
   - 待推送提交混有其他会话的提交，或发正式版时 main 的 CI 未结束或变红，先停下说明，不硬发。
-- 更新日志随提交维护：用户可感知的新增、变更、修复，以及数据库迁移、内容包版本、环境文件或编排变化，在同一提交里写进 `CHANGELOG.md` 的「未发布」段落（迁移与兼容性写在「升级说明」下）；纯测试、重构与内部文档不写。发版时只把「未发布」改成版本段落并补充核对，不再事后按提交说明补写。
+- 更新日志随提交维护：用户可感知的新增、变更、修复，以及数据库迁移、内容包版本、环境文件或编排变化，在同一提交里于 `changes/` 新建一个片段文件（格式见 [changes/README.md](changes/README.md)，迁移与兼容性写在「升级说明」下），不直接改 `CHANGELOG.md`，多会话各写各的文件不会混改；纯测试、重构与内部文档不写。发版时 `release:prepare` 把片段合进版本段落并删除。
 - 使用中文 Conventional Commits，并在标题后的空行下用正文说明原因；不添加AI署名或emoji trailer。格式及PR说明见 [贡献指南](CONTRIBUTING.md)。
 - Git保留运行、复现和维护所需的源码、正式测试、迁移/快照、锁文件、补丁、配置模板、运行素材及许可证。
 - `docs/` 只维护当前操作与架构契约，不继续积累任务提示、完成率、阶段报告、执行日志或历史归档。历史变更通过Git追溯。

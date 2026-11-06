@@ -1,1 +1,6 @@
-corepack pnpm exec lint-staged
+#!/bin/sh
+
+# 多会话共用工作区：先提示改到他人认领的文件与共享文件的改动行，再格式化暂存文件。
+# lint-staged 不建备份 stash（--no-stash）：备份与失败回滚会改写整个工作区，可能覆盖其他会话正在编辑的文件。
+node scripts/dev/commit-guard.mjs
+corepack pnpm exec lint-staged --no-stash

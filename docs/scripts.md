@@ -33,7 +33,7 @@
 
 统一启动器（`dev:all`、`dev:session:api` 及下文的 `dev:terminal` 系列）启动的 API 默认注入 `RATE_LIMIT_DISABLED=true` 并固定 `NODE_ENV=development`；需要验证限流时在后端 `.env.local` 显式写 `RATE_LIMIT_DISABLED=false`。
 
-`dev:terminal` 仅用于 macOS，为后端和前端分别打开独立 Terminal.app 窗口并显示日志：先处理后端，就绪后再处理前端，已就绪的本项目服务直接复用。`--help` 查看帮助，`--dry-run` 只显示启动命令而不开窗或写日志。启动前后都运行 `dev:check`；Ctrl+C 只停止对应窗口创建的服务。窗口启动日志在 `.artifacts/dev-terminal/`，服务会话日志在 `.artifacts/dev/`。新终端读取自己的环境和项目配置，不转发调用方临时设置的业务环境变量。`dev:terminal:api`、`dev:terminal:web` 只为单个服务开窗，其余行为相同；单独开前端前需准备好后端和数据库。
+`dev:terminal` 仅用于 macOS，为后端和前端分别打开独立 Terminal.app 窗口并显示日志：先处理后端，就绪后再处理前端，已就绪的本项目服务直接复用。`--help` 查看帮助，`--dry-run` 只显示启动命令而不开窗或写日志，`--restart` 先停止本启动器登记的对应服务再重开（页面报错、依赖升级后恢复共用 dev 用，手动起的进程不碰）。启动前后都运行 `dev:check`；Ctrl+C 只停止对应窗口创建的服务。窗口启动日志在 `.artifacts/dev-terminal/`，服务会话日志在 `.artifacts/dev/`。新终端读取自己的环境和项目配置，不转发调用方临时设置的业务环境变量。`dev:terminal:api`、`dev:terminal:web` 只为单个服务开窗，其余行为相同；单独开前端前需准备好后端和数据库。
 
 `dev:setup` 在当前终端托管初始化沙盒：在日常 PostgreSQL 实例上创建或复用固定空库 `tixxin_blog_setup_sandbox` 并执行正式迁移，不写样本；以随机 `SETUP_TOKEN` 启动沙盒 API（3467）和指向它的热更新前端（3466），就绪后打印初始化链接与首页地址。端口被占用时报错退出，不复用也不结束占用进程；可选 `--web-port=`、`--api-port=` 与 `--logs`。Ctrl+C 只结束本次启动的两个服务，沙盒库保留。`dev:setup:reset` 删除并重建为空库，`dev:setup:down` 删除沙盒库；两者都只作用于该固定库名，沙盒端口仍有服务或沙盒库还有其他连接时拒绝。沙盒变量只通过子进程环境传入，不改写环境文件；限流、Cookie 与目录隔离见[初始化沙盒](development.md#初始化沙盒)。
 
@@ -82,7 +82,7 @@
 | `preview`             | `corepack pnpm --filter web-blog preview`                                          |
 | `start`               | `corepack pnpm --filter web-blog start`                                            |
 
-- `build` 与别名 `build:blog`：子项目执行 `nuxt build --envName production-build`，中间文件在 `src/frontend/web-blog/.nuxt-production/`，产物在前端 `.output/`。不构建后端、不启动服务、不部署；后端构建使用 `corepack pnpm --filter server-main build`。与 `generate`、`test:e2e`、`test:e2e:run`、`check:local` 共用本机 `build` 锁，多会话同时运行时排队，见[多会话串行](development.md#多会话串行)。
+- `build` 与别名 `build:blog`：子项目执行 `nuxt build --envName production-build`，中间文件在 `src/frontend/web-blog/.nuxt-production/`，产物在前端 `.output/`。不构建后端、不启动服务、不部署；后端构建使用 `corepack pnpm --filter server-main build`。与 `generate`、`test:e2e`、`test:e2e:run`、`check:local` 共用本机 `build` 锁，多会话同时运行时排队，见[多会话协作](development.md#构建与推送排队)。
 - `generate`：子项目执行 `nuxt generate --envName production-build`，同样使用 `.nuxt-production/`，静态产物在前端 `.output/public/`。后台、认证和持久化 API 不会因此静态化，真实业务仍需后端服务。
 - `preview`：用 `nuxt preview` 预览已有的前端生产构建，先执行 `build`；不重新构建，也不启动后端或数据库。
 - `start`：子项目先执行 `corepack pnpm build`，成功后运行 `node .output/server/index.mjs`。每次都会重新构建，且只启动前端。
@@ -101,6 +101,7 @@
 | `check:secrets`   | `node scripts/check-secrets.mjs`                                        |
 | `check:local`     | `bash scripts/check-local.sh`                                           |
 | `push:main`       | `node scripts/dev/with-lock.mjs push -- node scripts/dev/push-main.mjs` |
+| `session`         | `node scripts/dev/session.mjs`                                          |
 | `release:prepare` | `node scripts/dev/release-prepare.mjs`                                  |
 | `lint:shell`      | `shellcheck` 检查安装、管理、打包、冒烟与试装脚本                       |
 
@@ -111,8 +112,9 @@
 - `prepare`：初始化 Husky Git hooks，通常由依赖安装的生命周期自动执行。提交钩子运行 lint-staged，对暂存的前端脚本执行 ESLint 修复，对 `src/` 下匹配文件执行 Prettier。它与前端 `postinstall` 执行的 `nuxt prepare` 不同。
 - `lint:shell`：用 shellcheck 检查 `deploy/install.sh`、`deploy/tixxin` 与 `scripts/release/` 下的打包、安装冒烟和本地试装脚本，以及提交署名检查 `scripts/check-ai-attribution.sh`；需要本机安装 shellcheck，CI 固定使用 v0.11.0。
 - `check:local`：推送前按相对 `origin/main` 的改动（含未提交与未跟踪文件）自动挑选并运行与 CI 对应的本地检查；`--e2e` 额外运行改动涉及的浏览器 spec（先构建两端）；改动影响全站外壳或构建产物（构建配置、分块规则、根组件、布局、插件、主题、全局样式、补丁、锁文件）时加跑主题切换、切页与水合、首页、搜索弹窗和无障碍的冒烟 spec，规则见 [`scripts/ci/e2e-specs.mjs`](../scripts/ci/e2e-specs.mjs)；其余没有改动 spec 时只提示，完整回归交给 CI，`--e2e-full` 在本机跑全部浏览器 spec，`--all` 不按改动挑选。后端改动还会构建 server-main 并运行对应的 HTTP 集成测试：`modules/<模块>/` 选中名称以该模块开头的测试，`operations`、`post`、`backup` 另有映射，改动测试文件本身只跑该测试；公共代码、实体、迁移或测试辅助文件只跑通用的 `integration.mjs` 并提示用 `--all` 跑全量。测试清单取自 server-main 的 `test:integration`，规则见 [`scripts/ci/integration-tests.mjs`](../scripts/ci/integration-tests.mjs)；这些测试在开发库所在的 PostgreSQL 上各自建临时库，需要本机数据库可用。有失败项时返回非零。挑选规则与 CI 共用 `scripts/ci/detect-changes.sh` 的分类思路。
-- `push:main`：在本机 `push` 锁内依次 fetch、确认本地包含远端最新提交（不自动 rebase）、列出待推送提交、运行 `check:local`（参数原样转交，如 `--e2e`）、推送到 `origin/main`；任一步失败即停止。待推送提交是否都属于本会话仍需运行前确认。
-- `release:prepare <版本> [--dry-run] [--push] [--tag]`：发版准备。校验新版本大于上一个标签、三处 `package.json` 版本一致且无未提交改动；把 `CHANGELOG.md` 的「未发布」改成带日期的版本段落，并在「升级说明」补上可从改动推出的陈述（测试版提示、未改动的环境与编排、无迁移、内容包版本未变）；自上一个标签以来新增迁移、改了 `deploy/` 与编排或内容包升版，而「未发布」没有写明时拒绝；列出没改更新日志的 feat/fix 提交供核对。只用 `git commit -- <文件>` 提交这几个文件。`--push` 接着运行 `push:main`，`--tag` 再打附注标签并推送（只用于预发布；正式版等 CI 全绿后手动打标签）。`check:local` 遇到只改版本号与更新日志的提交时只做敏感信息与署名检查。
+- `push:main`：在本机 `push` 锁内依次 fetch、确认本地包含远端最新提交（不自动 rebase）、列出待推送提交及归属、运行 `check:local`（参数原样转交，如 `--e2e`）、推送到 `origin/main`；任一步失败即停止。工作区有未提交改动时，检查在临时 worktree 中对待推送提交运行（`--in-place` 强制原地，`--keep-worktree` 保留现场），推送检查过的提交号。待推送提交是否都属于本会话仍需运行前确认。
+- `session claim|done|list|who|own`：多会话认领与提交归属，认领写在本机 `.artifacts/COORDINATION.md`，归属记在 Git 公共目录 `tixxin-sessions/`，见[认领与提交归属](development.md#认领与提交归属)。
+- `release:prepare <版本> [--dry-run] [--push] [--tag]`：发版准备。校验新版本大于上一个标签、三处 `package.json` 版本一致且无未提交改动；把 `changes/` 下的片段合进 `CHANGELOG.md` 的「未发布」，改成带日期的版本段落（用过的片段随版本提交删除），并在「升级说明」补上可从改动推出的陈述（测试版提示、未改动的环境与编排、无迁移、内容包版本未变）；自上一个标签以来新增迁移、改了 `deploy/` 与编排或内容包升版，而「未发布」没有写明时拒绝；列出没改更新日志的 feat/fix 提交供核对。只用 `git commit -- <文件>` 提交这几个文件。`--push` 接着运行 `push:main`，`--tag` 再打附注标签并推送（只用于预发布；正式版等 CI 全绿后手动打标签）。`check:local` 遇到只改版本号与更新日志的提交时只做敏感信息与署名检查。
 - `check:secrets`：扫描 Git 已跟踪及未被忽略的未跟踪文件，查找已知 Context7/GitHub 凭据格式和私钥头；命中时只报告文件和行号并返回非零状态。规则有限，不保证发现所有敏感信息，超过 5 MiB 的文件会跳过。
 
 ## 业务与浏览器测试

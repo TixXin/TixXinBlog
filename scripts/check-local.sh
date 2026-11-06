@@ -64,6 +64,8 @@ step() {
 printf '检查范围（相对 %s）：%s 个文件\n' "$base" "$(printf '%s\n' "$files" | grep -c .)"
 
 step '敏感信息扫描' corepack pnpm check:secrets
+# 后端与共享包改动不触发前端 lint，UTC 截日检查很快，每次都跑
+step 'UTC 截日检查' node scripts/check-utc-day.mjs
 [ "$base" = HEAD ] || step '提交信息 AI 署名' bash scripts/check-ai-attribution.sh "$base..HEAD"
 
 # 发版的版本提交只改 CHANGELOG.md 与各 package.json 的 version 行，不影响构建与测试，跳过其余检查（--all/--e2e 时照常运行）。

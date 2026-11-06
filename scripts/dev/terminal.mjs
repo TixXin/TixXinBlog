@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-/** @file terminal.mjs @description 在 macOS 可见终端运行完整开发链路；用法：corepack pnpm dev:terminal [--dry-run|--help] */
+/** @file terminal.mjs @description 在 macOS 可见终端运行完整开发链路；用法：corepack pnpm dev:terminal [--service=…] [--restart] [--dry-run|--help] */
 import { execFile } from 'node:child_process'
 import { mkdirSync, writeFileSync } from 'node:fs'
 import { promisify } from 'node:util'
@@ -8,6 +8,7 @@ import { join } from 'node:path'
 import { setTimeout as delay } from 'node:timers/promises'
 import { workspace, pnpmCommand, readConfig } from './config.mjs'
 import { inspectService } from './checks.mjs'
+import { stopOwnedService } from './restart.mjs'
 
 const execute = promisify(execFile)
 export const shellQuote = (value) => "'" + String(value).replaceAll("'", "'\\''") + "'"
@@ -106,14 +107,17 @@ export async function openTerminal(command, service) {
 async function main() {
   const args = process.argv.slice(2).filter((arg) => arg !== '--')
   if (args.includes('--help')) {
-    console.log('用法：corepack pnpm dev:terminal [--service=all|api|web] [--dry-run]')
+    console.log('用法：corepack pnpm dev:terminal [--service=all|api|web] [--restart] [--dry-run]')
+    console.log(
+      '--restart：先停止本启动器启动的对应服务（页面报错、依赖升级后需要重启时用），再开新窗口；手动起的进程不碰。',
+    )
     console.log('macOS：前后端各开独立 Terminal.app 窗口；已就绪服务复用。Ctrl+C 仅停止本窗口的服务。')
     console.log('窗口默认在首块副屏左侧上下排列；没有副屏时使用主屏。')
     console.log('配置读取终端环境和项目 .env 文件；调用方临时业务环境变量不转发。其他系统使用 dev:all。')
     console.log('启动脚本与命令输出写入 .artifacts/dev-terminal/；--dry-run 只预览，不创建脚本或日志文件。')
     return
   }
-  if (args.some((arg) => arg !== '--dry-run' && !/^--service=(all|api|web)$/.test(arg)))
+  if (args.some((arg) => arg !== '--dry-run' && arg !== '--restart' && !/^--service=(all|api|web)$/.test(arg)))
     throw new Error('未知参数；请运行 dev:terminal --help')
   const serviceArgs = args.filter((arg) => arg.startsWith('--service='))
   if (serviceArgs.length > 1) throw new Error('--service 只能指定一次')
@@ -139,6 +143,18 @@ async function main() {
   for (const mode of modes) {
     const status = await inspectService(config[mode])
     if (status.state === 'foreign') throw new Error(`${labels[mode]}：${status.detail}`)
+  }
+  if (args.includes('--restart')) {
+    for (const mode of modes) {
+      if ((await inspectService(config[mode])).state === 'stopped') continue
+      const pid = stopOwnedService(workspace, mode)
+      console.log(`${labels[mode]}：已请求进程 ${pid} 退出，等待端口释放`)
+      const deadline = Date.now() + 30_000
+      while ((await inspectService(config[mode])).state !== 'stopped') {
+        if (Date.now() >= deadline) throw new Error(`${labels[mode]}：进程 ${pid} 30 秒内未退出，请检查原终端窗口`)
+        await delay(500)
+      }
+    }
   }
   for (const mode of modes) {
     const service = config[mode]

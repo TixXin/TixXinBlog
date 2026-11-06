@@ -1,0 +1,4 @@
+#!/bin/sh
+
+# 登记本次提交属于哪个会话（TIXXIN_SESSION 或按认领推断），写入本机台账，供 push:main 与 session who 显示。
+node scripts/dev/session.mjs record

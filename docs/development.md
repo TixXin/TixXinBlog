@@ -152,7 +152,11 @@ corepack pnpm preview
 
 开发环境默认不可索引；正式与预发布环境的运行时索引设置见[部署指南](deployment.md)。
 
-### 多会话串行
+### 多会话协作
+
+多个会话（Claude Code 会话、子代理、agy 派出的 Gemini）共用同一工作区与同一套开发服务，直接在 `main` 上小步提交、各自推送，改动在共用的 dev 里立即可见。下面几项分别解决构建与推送互相覆盖、改到别人正在改的文件、把别人的改动带进提交、检查被别人改了一半的代码拖红。
+
+#### 构建与推送排队
 
 多个会话共用同一工作区时，构建产物（`dist/`、`.output/`、`.nuxt-production/`）、浏览器回归端口和推送都只有一份。根脚本 `build`、`build:blog`、`generate`、`test:e2e`、`test:e2e:run` 与 `check:local` 持有本机 `build` 锁，`push:main` 持有 `push` 锁，被占用时打印持有进程与命令并排队等待：
 
@@ -162,6 +166,57 @@ corepack pnpm push:main --e2e                                                   
 ```
 
 锁文件位于 Git 公共目录的 `tixxin-locks/`，记录持有进程；进程退出后下一个等待者自动接管，不设超时，也不要手动删除正在使用的锁。同名锁可重入（经 `TIXXIN_LOCKS_HELD` 传递），CI（`CI=true`）不加锁。lint、类型检查和单测单独运行时不加锁；`check:local` 整轮持锁，所以两个会话的推送前检查会排队。`push:main` 不自动 rebase 或改动工作区，待推送提交是否都属于本会话仍需运行前确认。
+
+#### 推送前在干净 worktree 中检查
+
+`push:main` 先列出待推送提交与归属，再运行 `check:local`。工作区有未提交改动时（多会话共用时常见），检查自动改在 `$TMPDIR/tixxin-push-<提交号>` 临时 worktree 中进行：检出待推送提交、复制本机 `.env*` 环境文件、离线优先安装依赖后运行，结束即删除；推送的是检查过的提交号。检查失败说明问题就在待推送提交里。`--in-place` 强制在当前工作区检查，`--keep-worktree` 保留现场排查。
+
+#### 认领与提交归属
+
+```sh
+corepack pnpm session claim rss-modal "RSS 订阅弹窗" 'src/frontend/web-blog/app/components/blog/**' 'i18n/locales/*/article.json'
+corepack pnpm session list                       # 进行中的认领
+TIXXIN_SESSION=rss-modal git commit -F msg -- <路径…>
+corepack pnpm session who                        # 待推送提交及归属（默认 origin/main..HEAD）
+corepack pnpm session done rss-modal "已合入 abc1234"
+```
+
+认领写在本机 `.artifacts/COORDINATION.md` 的认领表（任务面板同一数据源），路径支持 `**`、`*`、`{a,b}` 与相对子项目的写法。提交后 `post-commit` 钩子把提交归属记入 Git 公共目录的 `tixxin-sessions/commits.json`：有 `TIXXIN_SESSION` 时按它记录，否则按认领推断（只在全部文件属于同一认领者时记录）；`session own <会话名> [<提交>]` 可手动补登。推断只是参考，跨认领范围的提交会显示“未登记”。
+
+#### 只提交自己的改动
+
+`git commit -- <路径>` 提交的是这些文件在工作区的全部内容，同一文件里别人未提交的改动也会被一起提交。`pre-commit` 先运行 `scripts/dev/commit-guard.mjs`：
+
+- 改到别人进行中认领的文件时提示；提交时声明了 `TIXXIN_SESSION` 且不是认领者时拒绝。
+- 含共享文件（语言包、`package.json`、`nuxt.config.ts`、`CHANGELOG.md`、`AGENTS.md`、`docs/`、迁移快照）时列出改动行，核对其中没有别人的改动。
+
+发现混进了别人的改动时，等对方提交后再提交，或只提交自己的那几行：用临时索引从 `HEAD` 版本出发只套用自己的改动，生成提交后再把真实暂存区中这些路径同步到新的 `HEAD`，工作区与别人的改动保持不动：
+
+```sh
+export GIT_INDEX_FILE=$(mktemp); git read-tree HEAD
+git show HEAD:<文件> > /tmp/own && <只把自己的改动写进 /tmp/own>
+git update-index --cacheinfo 100644,$(git hash-object -w /tmp/own),<文件>
+tree=$(git write-tree); unset GIT_INDEX_FILE
+git update-ref refs/heads/main "$(git commit-tree "$tree" -p HEAD -F msg)" HEAD
+git reset -q -- <文件>                               # 只同步这些路径的暂存区，不动工作区
+```
+
+确认核对无误、确需跳过检查时用 `TIXXIN_GUARD=off`。`lint-staged` 以 `--no-stash` 运行：它的备份 stash 与失败回滚会改写整个工作区，可能覆盖别的会话正在编辑的文件。
+
+#### 共用开发服务的恢复
+
+共用的 dev 坏了（`dev:check` 失败，或端口通但页面报错，常见于依赖升级后）由发现的会话负责恢复，不要放着不管：
+
+```sh
+corepack pnpm dev:terminal --service=web --restart   # 只停本启动器登记的进程（.artifacts/dev/*/session.json），再开新窗口
+corepack pnpm dev:check
+```
+
+`--restart` 只停止命令为本仓库 `scripts/dev.mjs` 且模式一致的进程；手动起的或其他程序占用的端口不碰，此时提示到原终端按 Ctrl+C。恢复后告知其他会话。
+
+#### 时区相关的写法
+
+全站按站点时区（默认 `Asia/Shanghai`）分日，`.slice(0, 10)` 截取 ISO 时间得到的是 UTC 日期，在北京时间 0–8 点两者相差一天，这类问题只在凌晨暴露。`scripts/check-utc-day.mjs`（`lint` 与 `check:local` 都会运行）以 `scripts/utc-day-baseline.json` 为棘轮基线，新增截取会被拒绝：改用站点时区工具（前端 `app/features/site/timeZone.ts` 的 `siteDayKey` 等），确为 UTC 日期或本就是纯日期字符串时在该行或上一行注释 `utc-day-ok：原因`；存量减少后运行 `node scripts/check-utc-day.mjs --update` 收紧基线。
 
 ## 界面文案与多语言
 

@@ -3,10 +3,12 @@ import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import {
   compareVersions,
+  mergeFragments,
   releaseChangelog,
   unreleasedBody,
   upgradeNotes,
   versionOnlyChange,
+  withUnreleased,
 } from './release-prepare.mjs'
 
 const changelog = `# 更新日志
@@ -77,4 +79,30 @@ test('只改了 CHANGELOG 与 version 行才算版本提交', () => {
   assert.equal(versionOnlyChange(['CHANGELOG.md', 'package.json', 'src/a.ts'], diff), false)
   assert.equal(versionOnlyChange(['package.json'], diff + '+    "lint": "x",\n'), false)
   assert.equal(versionOnlyChange([], ''), false)
+})
+
+test('更新日志片段按固定小节顺序合进「未发布」，同名小节的条目依次拼接', () => {
+  const body = '### 修复\n\n- 已有修复'
+  const merged = mergeFragments(body, [
+    ['changes/a.md', '### 新增\n\n- 片段甲新增\n\n### 升级说明\n\n- 含一项数据库迁移：新增表'],
+    ['changes/b.md', '### 新增\n\n- 片段乙新增\n  续行说明\n\n### 修复\n\n- 片段乙修复'],
+  ])
+  assert.equal(
+    merged,
+    '### 升级说明\n\n- 含一项数据库迁移：新增表\n\n### 新增\n\n- 片段甲新增\n- 片段乙新增\n  续行说明\n\n### 修复\n\n- 已有修复\n- 片段乙修复',
+  )
+  assert.throws(() => mergeFragments('', [['changes/c.md', '- 没有小节标题']]), /changes\/c\.md 的条目必须写在/)
+})
+
+test('合并后的正文写回「未发布」，空正文时保持空段落', () => {
+  const merged = withUnreleased(changelog, '### 新增\n\n- 新功能\n- 片段新增')
+  assert.match(merged, /## \[未发布\]\n\n### 新增\n\n- 新功能\n- 片段新增\n\n## \[0\.5\.2-beta\.7\]/)
+  const empty = withUnreleased('# 更新日志\n\n## [未发布]\n\n## [0.1.0] - 2026-01-01\n', '')
+  assert.equal(empty, '# 更新日志\n\n## [未发布]\n\n## [0.1.0] - 2026-01-01\n')
+})
+
+test('版本提交删除的片段文件不影响“只改版本号”判断', () => {
+  const diff = '-  "version": "0.5.2-beta.8",\n+  "version": "0.5.2-beta.9",'
+  assert.equal(versionOnlyChange(['CHANGELOG.md', 'package.json', 'changes/rss.md'], diff), true)
+  assert.equal(versionOnlyChange(['CHANGELOG.md', 'scripts/x.mjs'], diff), false)
 })

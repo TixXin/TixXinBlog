@@ -1,0 +1,21 @@
+{
+  "src/backend/server-main/src/modules/backup/backup.controller.ts": 1,
+  "src/backend/server-main/src/modules/presence/traffic-keys.ts": 1,
+  "src/backend/server-main/src/modules/subscription/subscription-calendar.ts": 1,
+  "src/backend/server-main/src/seeders/gallery-fixtures.ts": 2,
+  "src/backend/server-main/src/seeders/showcase-fixtures.ts": 1,
+  "src/backend/server-main/src/seeders/subscription-fixtures.ts": 1,
+  "src/backend/server-main/tests/database-dev-integration.ts": 2,
+  "src/backend/server-main/tests/presence-integration.mjs": 1,
+  "src/frontend/web-blog/app/components/admin/MomentListItem.vue": 1,
+  "src/frontend/web-blog/app/components/common/SiteAnnouncement.vue": 1,
+  "src/frontend/web-blog/app/composables/useRelativeDate.ts": 1,
+  "src/frontend/web-blog/app/features/flash/calendar.ts": 1,
+  "src/frontend/web-blog/app/features/flash/useFlashCalendarNav.ts": 1,
+  "src/frontend/web-blog/app/features/moment/useMomentCalendar.ts": 2,
+  "src/frontend/web-blog/app/features/post/archive.ts": 1,
+  "src/frontend/web-blog/app/features/site/timeZone.ts": 1,
+  "src/shared/subscription-domain/dates.cjs": 2,
+  "src/shared/subscription-domain/index.cjs": 1,
+  "src/shared/subscription-domain/spending.cjs": 3
+}

@@ -13,6 +13,7 @@ description: 在 TixXinBlog 启动、复用、停止或排查本地开发服务�
 2. 两端已就绪时直接复用自检输出的地址，不为同一服务再开窗口。自检非零时先区分未运行、数据库故障、端口冲突或待迁移。
 3. 配置正确、需要启动时，macOS 执行 `corepack pnpm dev:terminal`，让长期服务显示在用户可见的 Terminal.app 中。不要把长期服务藏在代理工具的后台执行会话里。其他系统在本地终端运行 `corepack pnpm dev:all --logs`。
 4. 观察终端输出并再次运行 `corepack pnpm dev:check`；窗口创建成功不等于服务已就绪。只有 API `/ready` 与前端同源业务接口通过后才报告启动成功。
+5. 服务在运行却坏了（页面模块报错、依赖或补丁升级后未生效）时，由发现的会话用 `corepack pnpm dev:terminal --service=<api|web> --restart` 恢复：只停本启动器在 `.artifacts/dev/*/session.json` 登记的进程再重开，手动起的进程不碰；恢复后自检并告知其他会话。
 
 终端入口先启动或复用后端，再启动前端，各用一个独立窗口（标题分别为后端 API、前端网站），默认在首块副屏左侧一列上下排列（未连接副屏时使用主屏），后端在上、前端在下，不层叠遮挡。单独启动或恢复使用 `corepack pnpm dev:terminal:api` / `corepack pnpm dev:terminal:web`。已就绪的服务直接复用，不重复开窗。每端独立保留 `.artifacts/dev/<会话>/` 日志与 `session.json`（PID、mode、会话与复用状态）。成功巡检静默，普通请求与错误日志保留。
 

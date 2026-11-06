@@ -1,6 +1,7 @@
 /**
  * @file release-prepare.mjs
- * @description 发版准备：校验新版本号、同步三处 package.json、把 CHANGELOG「未发布」整理成版本段落并补齐可从改动推出的升级说明，
+ * @description 发版准备：校验新版本号、同步三处 package.json、把 changes/ 下的更新日志片段合进 CHANGELOG「未发布」，
+ *              再整理成版本段落并补齐可从改动推出的升级说明；用过的片段随版本提交一起删除。
  *              只用 `git commit -- <文件>` 提交这几个文件；可选接着 push:main 并打附注标签。
  *              用法：corepack pnpm release:prepare <版本> [--date YYYY-MM-DD] [--dry-run] [--push] [--tag]
  *                --dry-run  只打印将写入的版本段落与检查结果，不改文件
@@ -10,7 +11,7 @@
  *              相对基准只改了 CHANGELOG.md 与各 package.json 的 version 行时返回 0。
  */
 import { execFileSync, spawnSync } from 'node:child_process'
-import { readFileSync, writeFileSync } from 'node:fs'
+import { existsSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs'
 import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
@@ -24,6 +25,48 @@ const CONTENT_TYPES = 'src/backend/server-main/src/modules/backup/content-packag
 const MIGRATIONS = 'src/backend/server-main/src/migrations/'
 const DEPLOY_PATHS = ['deploy/', 'compose.production.yaml', '.env.example', 'src/backend/server-main/.env.example']
 const VERSION = /^(\d+)\.(\d+)\.(\d+)(?:-([0-9A-Za-z.]+))?$/
+/** 更新日志片段目录：每个改动一个文件，避免多会话同时改 CHANGELOG.md 的同一段落 */
+export const CHANGES_DIR = 'changes'
+const SECTION_ORDER = ['升级说明', '新增', '变更', '修复', '移除', '安全']
+
+/** 把「### 小节」与其下条目拆开：[[小节, 条目文本], ...]，保持出现顺序 */
+export function splitSections(text, source = '「未发布」') {
+  const sections = []
+  let current = null
+  for (const line of text.split('\n')) {
+    const heading = /^###\s+(.+?)\s*$/.exec(line)
+    if (heading) {
+      current = [heading[1], []]
+      sections.push(current)
+    } else if (line.trim()) {
+      if (!current) throw new Error(`${source} 的条目必须写在「### 小节」标题下：${line.slice(0, 40)}`)
+      current[1].push(line)
+    }
+  }
+  return sections.map(([title, body]) => [title, body.join('\n')])
+}
+
+/** 把多个片段按小节合进「未发布」正文：小节按固定顺序排列，同名小节的条目依次拼接 */
+export function mergeFragments(body, fragments) {
+  const merged = new Map()
+  for (const [source, text] of [['「未发布」', body], ...fragments]) {
+    for (const [title, entries] of splitSections(text, source)) {
+      if (!entries.trim()) continue
+      merged.set(title, [...(merged.get(title) ?? []), entries])
+    }
+  }
+  const titles = [...merged.keys()].sort((a, b) => {
+    const [x, y] = [SECTION_ORDER.indexOf(a), SECTION_ORDER.indexOf(b)]
+    return (x < 0 ? 99 : x) - (y < 0 ? 99 : y)
+  })
+  return titles.map((title) => `### ${title}\n\n${merged.get(title).join('\n')}`).join('\n\n')
+}
+
+/** 用合并后的正文替换 CHANGELOG 的「未发布」段落 */
+export function withUnreleased(changelog, body) {
+  const { bodyStart, bodyEnd } = unreleasedBody(changelog)
+  return `${changelog.slice(0, bodyStart)}\n${body ? `${body}\n\n` : ''}${changelog.slice(bodyEnd).replace(/^\n+/, '')}`
+}
 
 /** 语义化版本比较；预发布标识按点分段，数字段按数值比较，正式版高于同号预发布 */
 export function compareVersions(a, b) {
@@ -97,9 +140,11 @@ export function releaseChangelog(changelog, version, date, notes) {
   return `${head}## [未发布]\n\n## [${version}] - ${date}\n\n${section}\n\n${changelog.slice(bodyEnd).replace(/^\n+/, '')}`
 }
 
-/** check:local 用：改动只涉及 CHANGELOG.md 与各 package.json 的 version 行 */
+/** check:local 用：改动只涉及 CHANGELOG.md、更新日志片段与各 package.json 的 version 行 */
 export function versionOnlyChange(files, packageDiff) {
-  if (!files.length || !files.every((file) => file === 'CHANGELOG.md' || VERSION_FILES.includes(file))) return false
+  const allowed = (file) =>
+    file === 'CHANGELOG.md' || VERSION_FILES.includes(file) || file.startsWith(`${CHANGES_DIR}/`)
+  if (!files.length || !files.every(allowed)) return false
   const lines = packageDiff.split('\n').filter((line) => /^[+-]/.test(line) && !/^(\+\+\+|---) /.test(line))
   return lines.every((line) => /^[+-]\s*"version": "[^"]+",?$/.test(line))
 }
@@ -122,15 +167,26 @@ function contentVersion(ref) {
   return Number(/version: (\d+)/.exec(text)?.[1])
 }
 
-/** 自上一个标签以来、类型为 feat/fix/perf 却没有改 CHANGELOG 的提交，提醒核对是否漏写 */
+/** 自上一个标签以来、类型为 feat/fix/perf 却既没有写片段也没有改 CHANGELOG 的提交，提醒核对是否漏写 */
 function commitsWithoutChangelog(last) {
   return lines(git('log', '--format=%h%x09%s', `${last}..HEAD`)).filter((line) => {
     const [sha, subject] = line.split('\t')
+    const files = lines(git('show', '--name-only', '--format=', sha))
     return (
       /^(feat|fix|perf)(\(|:|!)/.test(subject) &&
-      !lines(git('show', '--name-only', '--format=', sha)).includes('CHANGELOG.md')
+      !files.some((file) => file === 'CHANGELOG.md' || file.startsWith(`${CHANGES_DIR}/`))
     )
   })
+}
+
+/** 已提交的片段文件（README 除外）：[[相对路径, 内容], ...] */
+function readFragments() {
+  const dir = join(root, CHANGES_DIR)
+  if (!existsSync(dir)) return []
+  return readdirSync(dir)
+    .filter((name) => name.endsWith('.md') && name !== 'README.md')
+    .sort()
+    .map((name) => [`${CHANGES_DIR}/${name}`, readFileSync(join(dir, name), 'utf8')])
 }
 
 function parseArgs(argv) {
@@ -165,8 +221,10 @@ function main(argv) {
   if (argv[0] === '--version-only') return versionOnlyCli(argv[1] ?? 'origin/main')
   const options = parseArgs(argv)
   if (git('rev-parse', '--abbrev-ref', 'HEAD') !== 'main') throw new Error('只在 main 上准备发版')
-  if (git('diff', '--name-only', 'HEAD', '--', 'CHANGELOG.md', ...VERSION_FILES))
-    throw new Error('CHANGELOG.md 或 package.json 有未提交改动（可能是其他会话的），先处理再发版')
+  if (git('diff', '--name-only', 'HEAD', '--', 'CHANGELOG.md', CHANGES_DIR, ...VERSION_FILES))
+    throw new Error('CHANGELOG.md、changes/ 或 package.json 有未提交改动（可能是其他会话的），先处理再发版')
+  if (lines(git('ls-files', '--others', '--exclude-standard', '--', CHANGES_DIR)).length)
+    throw new Error('changes/ 有未提交的片段（可能是其他会话的），等它随功能提交后再发版')
   const tags = lines(git('tag', '-l', 'v*'))
     .map((tag) => tag.slice(1))
     .filter((tag) => VERSION.test(tag))
@@ -188,7 +246,9 @@ function main(argv) {
     contentBefore: last ? contentVersion(base) : contentVersion(),
     contentAfter: contentVersion(),
   }
-  const changelog = readFileSync(join(root, 'CHANGELOG.md'), 'utf8')
+  const fragments = readFragments()
+  const original = readFileSync(join(root, 'CHANGELOG.md'), 'utf8')
+  const changelog = withUnreleased(original, mergeFragments(unreleasedBody(original).body, fragments))
   const { notes, errors } = upgradeNotes(facts, unreleasedBody(changelog).body)
   const missing = last ? commitsWithoutChangelog(base) : []
   if (missing.length)
@@ -204,6 +264,7 @@ function main(argv) {
     return 0
   }
   writeFileSync(join(root, 'CHANGELOG.md'), next)
+  for (const [file] of fragments) rmSync(join(root, file))
   for (const file of VERSION_FILES) {
     const path = join(root, file)
     writeFileSync(
@@ -212,8 +273,9 @@ function main(argv) {
     )
   }
   const kind = isPrerelease(options.version) ? '测试版' : '正式版'
-  const message = `chore(release): 准备 v${options.version}\n\n${kind} ${options.version}：${notes.at(-1) ?? '升级说明见更新日志'}。\n更新日志「未发布」整理为版本段落，三处 package.json 同步版本号。\n`
-  execFileSync('git', ['commit', '-q', '-F', '-', '--', 'CHANGELOG.md', ...VERSION_FILES], {
+  const message = `chore(release): 准备 v${options.version}\n\n${kind} ${options.version}：${notes.at(-1) ?? '升级说明见更新日志'}。\n更新日志片段（${fragments.length} 个）合入「未发布」并整理为版本段落，三处 package.json 同步版本号。\n`
+  const fragmentFiles = fragments.map(([file]) => file)
+  execFileSync('git', ['commit', '-q', '-F', '-', '--', 'CHANGELOG.md', ...VERSION_FILES, ...fragmentFiles], {
     cwd: root,
     input: message,
   })
