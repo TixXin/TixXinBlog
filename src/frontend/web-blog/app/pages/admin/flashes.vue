@@ -99,14 +99,10 @@
       <ul class="admin-flashes__list">
         <li v-for="note in items" :key="note.id">
           <div class="admin-flashes__meta">
-            <span>{{
-              note.isArchived
-                ? $t('admin-content.flashes.status.archived')
-                : note.isDraft
-                  ? $t('admin-content.flashes.status.draft')
-                  : $t('admin-content.flashes.status.published')
-            }}</span
-            ><span v-if="note.isPinned"><Icon name="lucide:pin" />{{ $t('admin-content.flashes.pinned') }}</span
+            <AdminStatusBadge
+              :status="flashStatus(note)"
+              :label="$t(`admin-content.flashes.status.${flashStatus(note)}`)"
+            /><span v-if="note.isPinned"><Icon name="lucide:pin" />{{ $t('admin-content.flashes.pinned') }}</span
             ><time>{{ formatTime(note.updatedAt) }}</time>
           </div>
           <p class="admin-flashes__content">{{ note.content }}</p>
@@ -161,6 +157,9 @@
 </template>
 <script setup lang="ts">
 definePageMeta({ layout: 'admin' })
+// 归档优先于草稿，与筛选项一致
+const flashStatus = (note: { isArchived?: boolean; isDraft?: boolean }) =>
+  note.isArchived ? 'archived' : note.isDraft ? 'draft' : 'published'
 const { t } = useI18n()
 useSeoMeta({ title: () => t('admin-content.flashes.title'), robots: 'noindex, nofollow' })
 const {

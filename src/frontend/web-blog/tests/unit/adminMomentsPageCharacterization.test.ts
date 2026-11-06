@@ -181,7 +181,10 @@ it('筛选、卡片操作、分页与评论操作的调用参数', async () => {
 
 it('打开评论面板时焦点移到面板，关闭后回到触发按钮；定位版本变化时聚焦目标评论', async () => {
   const wrapper = await mountPage()
-  const trigger = wrapper.findAll('.admin-moments__list > li')[0]!.findAll('button').at(-2)!
+  const trigger = wrapper
+    .findAll('.admin-moments__list > li')[0]!
+    .findAll('button')
+    .find((button) => button.text() === '管理评论')!
   vi.mocked(state().openComments).mockImplementation(() => {
     state().commentNote.value = state().items.value[0]!
     return Promise.resolve()

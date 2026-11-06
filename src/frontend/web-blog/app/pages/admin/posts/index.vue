@@ -36,52 +36,54 @@
           {{ error }} <button type="button" @click="load">{{ $t('admin-content.postList.retry') }}</button>
         </p>
         <AdminListSkeleton v-if="pending" :label="$t('admin-content.postList.loading')" :rows="items.length ? 0 : 5" />
-        <AdminPostListBatchBar
-          v-model:action="batchAction"
-          :all-selected="allSelected"
-          :partially-selected="partiallySelected"
-          :selected-count="selectedCount"
-          :selecting-all="selectingAll"
-          :disabled="selectionDisabled"
-          :has-items="items.length > 0"
-          :total="total"
-          :batch-pending="batch.pending.value"
-          @toggle-page="togglePage"
-          @clear="clearSelection"
-          @select-all="selectAllFiltered"
-          @review="reviewBatch"
-        />
-        <p v-if="selectionError" role="alert">{{ selectionError }}</p>
-        <AdminPostListTable
-          :items="items"
-          :is-selected="selection.isSelected"
-          :selection-disabled="selectionDisabled"
-          :navigation-disabled="navigationDisabled"
-          @toggle="togglePost"
-          @archive="archive"
-          @restore="restorePost"
-        />
-        <AdminEmptyState
-          v-if="!pending && !error && !items.length"
-          icon="lucide:file-text"
-          :title="$t('admin-content.postList.empty')"
-        >
-          <template #actions>
-            <button type="button" class="admin-btn admin-btn--ghost" @click="clearFilters">
-              {{ $t('admin-content.postList.clearFilters') }}
-            </button>
-            <NuxtLink class="admin-btn admin-btn--primary" to="/admin/posts/new">{{
-              $t('admin-content.postList.newPost')
-            }}</NuxtLink>
-          </template>
-        </AdminEmptyState>
-        <AdminPostListPagination
-          :page="page"
-          :total-pages="totalPages"
-          :total="total"
-          :disabled="navigationDisabled"
-          @go="goToPage"
-        />
+        <template v-if="!firstLoad">
+          <AdminPostListBatchBar
+            v-model:action="batchAction"
+            :all-selected="allSelected"
+            :partially-selected="partiallySelected"
+            :selected-count="selectedCount"
+            :selecting-all="selectingAll"
+            :disabled="selectionDisabled"
+            :has-items="items.length > 0"
+            :total="total"
+            :batch-pending="batch.pending.value"
+            @toggle-page="togglePage"
+            @clear="clearSelection"
+            @select-all="selectAllFiltered"
+            @review="reviewBatch"
+          />
+          <p v-if="selectionError" role="alert">{{ selectionError }}</p>
+          <AdminPostListTable
+            :items="items"
+            :is-selected="selection.isSelected"
+            :selection-disabled="selectionDisabled"
+            :navigation-disabled="navigationDisabled"
+            @toggle="togglePost"
+            @archive="archive"
+            @restore="restorePost"
+          />
+          <AdminEmptyState
+            v-if="!pending && !error && !items.length"
+            icon="lucide:file-text"
+            :title="$t('admin-content.postList.empty')"
+          >
+            <template #actions>
+              <button type="button" class="admin-btn admin-btn--ghost" @click="clearFilters">
+                {{ $t('admin-content.postList.clearFilters') }}
+              </button>
+              <NuxtLink class="admin-btn admin-btn--primary" to="/admin/posts/new">{{
+                $t('admin-content.postList.newPost')
+              }}</NuxtLink>
+            </template>
+          </AdminEmptyState>
+          <AdminPostListPagination
+            :page="page"
+            :total-pages="totalPages"
+            :total="total"
+            :disabled="navigationDisabled"
+            @go="goToPage"
+          />
+        </template>
         <AdminPostBatch
           v-model:open="batch.open.value"
           v-model:acknowledgement="batch.acknowledgement.value"
@@ -138,6 +140,8 @@ const query = useAdminPostListQuery({
 const { search, status, category, folder, tag, sort, order, page, applyOrdering, clearFilters } = query
 const list = useAdminPostListData({ api, page, applied: query.currentApplied, replacePage: query.replacePage })
 const { items, total, pending, error, filters, filterError, load, loadFilters } = list
+// 首次加载、还没有任何条目时只显示占位，不露出空表头与“共 0 篇”
+const firstLoad = computed(() => pending.value && !items.value.length)
 const picker = useAdminPostListSelection({ items, api, isDisabled: () => selectionDisabled.value })
 const { selection, selectingAll, selectionError, clearSelection, togglePost, togglePage } = picker
 const { count: selectedCount, allSelected, partiallySelected } = selection

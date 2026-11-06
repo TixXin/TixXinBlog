@@ -19,6 +19,12 @@
   }
   header,
   .admin-moments__actions,
+  .admin-moments__meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.65rem;
+    align-items: center;
+  }
   header {
     justify-content: space-between;
   }
@@ -30,7 +36,7 @@
   input,
   select,
   textarea,
-  .admin-moments__actions a,
+  .admin-moments__actions > a,
   header > a {
     padding: 0.6rem;
     border: 1px solid var(--border);

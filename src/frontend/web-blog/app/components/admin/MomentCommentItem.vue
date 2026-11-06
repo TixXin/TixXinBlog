@@ -8,7 +8,11 @@
           ? $t('admin-content.moments.repliedTo', { author: comment.replyTo.author })
           : $t('admin-content.moments.repliedUnavailable')
       }}</span
-    ><span> · {{ $t(`admin-content.moments.commentStatus.${comment.moderationStatus ?? 'published'}`) }}</span>
+    >
+    <AdminStatusBadge
+      :status="comment.moderationStatus ?? 'published'"
+      :label="$t(`admin-content.moments.commentStatus.${comment.moderationStatus ?? 'published'}`)"
+    />
     <p>{{ comment.content }}</p>
     <div class="admin-moments__actions">
       <button

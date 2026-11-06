@@ -71,10 +71,13 @@ test('发布编辑置顶撤回删除跨刷新与另一浏览器上下文一致',
     prepareMotionCapture(reader, testInfo.project.name)
     await reader.waitForTimeout(300)
     await captureMotion(reader, testInfo, 'moment-published.png')
+    // 改状态与删除收在卡片的“更多”菜单里
+    await row.getByText('更多', { exact: true }).click()
     await row.getByRole('button', { name: '转为草稿', exact: true }).click()
     await expect(row.locator('p').first()).toContainText('草稿')
     expect((await request.get(`/api/v1/moments/${id}`)).status()).toBe(404)
     page.once('dialog', (dialog) => dialog.accept())
+    await row.getByText('更多', { exact: true }).click()
     await row.getByRole('button', { name: '删除动态', exact: true }).click()
     await expect(row).toHaveCount(0)
     await page.getByRole('button', { name: '退出登录', exact: true }).click()

@@ -57,6 +57,7 @@
       "tabsLabel": "Quick navigation"
     },
     "layout": {
+      "more": "More",
       "filters": "List filters",
       "clearFilters": "Clear filters",
       "brandSuffix": "Admin",

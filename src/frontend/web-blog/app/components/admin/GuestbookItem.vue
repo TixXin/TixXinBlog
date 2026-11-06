@@ -21,8 +21,10 @@
       <p>
         <strong>{{ note.author }}</strong
         >{{ note.isOwner ? $t('admin-media.guestbook.ownerSuffix') : '' }} ·
-        {{ $t(`admin-media.guestbook.status.${note.moderationStatus}`)
-        }}{{ note.isPinned ? $t('admin-media.guestbook.pinnedSuffix') : '' }} ·
+        <AdminStatusBadge
+          :status="note.moderationStatus"
+          :label="$t(`admin-media.guestbook.status.${note.moderationStatus}`)"
+        />{{ note.isPinned ? $t('admin-media.guestbook.pinnedSuffix') : '' }} ·
         {{ siteDateTime(note.createdAt, timeZone) }}
         <span v-if="note.browser || note.region" class="admin-guestbook__client"
           >· {{ [note.browser, note.region].filter(Boolean).join(' · ') }}</span

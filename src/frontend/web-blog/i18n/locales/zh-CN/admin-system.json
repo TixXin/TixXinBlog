@@ -57,6 +57,7 @@
       "tabsLabel": "快捷导航"
     },
     "layout": {
+      "more": "更多",
       "filters": "列表筛选",
       "clearFilters": "清除筛选",
       "brandSuffix": "管理后台",

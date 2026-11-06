@@ -28,36 +28,47 @@ exports[`列表、分页与评论面板（已发布与未发布）的结构，�
     <!--v-if-->
     <ul class="admin-moments__list">
       <li>
-        <p>已发布 <span>· 已置顶</span> · 2026-10-11</p>
+        <p class="admin-moments__meta"><span class="admin-badge is-success">已发布</span><span>已置顶</span><span>2026-10-11</span></p>
         <p class="admin-moments__content">动态 a
           第二行</p>
         <p>#散步 #夜跑</p>
-        <div class="admin-moments__actions"><a href="/admin/moments/a">编辑动态</a><a href="/moments/a">查看公开动态</a><button type="button">取消置顶</button>
-          <!--v-if--><button type="button">转为草稿</button><button type="button">归档</button><button type="button">管理评论</button><button type="button">删除动态</button>
+        <div class="admin-moments__actions"><a href="/admin/moments/a">编辑动态</a><button type="button">取消置顶</button><button type="button">管理评论</button>
+          <details class="admin-more">
+            <summary class="admin-btn"><span class="iconify i-lucide:ellipsis" aria-hidden="true"></span>更多</summary>
+            <div class="admin-more__menu"><a href="/moments/a">查看公开动态</a><button type="button">转为草稿</button><button type="button">归档</button><button type="button" class="admin-more__danger">删除动态</button></div>
+          </details>
         </div>
       </li>
       <li>
-        <p>草稿
-          <!--v-if--> · 2026-10-11
+        <p class="admin-moments__meta"><span class="admin-badge is-warning">草稿</span>
+          <!--v-if--><span>2026-10-11</span>
         </p>
         <p class="admin-moments__content">动态 b
           第二行</p>
         <p></p>
-        <div class="admin-moments__actions"><a href="/admin/moments/b">编辑动态</a>
-          <!--v-if--><button type="button">置顶</button><button type="button">发布</button>
-          <!--v-if--><button type="button">归档</button><button type="button">管理评论</button><button type="button">删除动态</button>
+        <div class="admin-moments__actions"><a href="/admin/moments/b">编辑动态</a><button type="button">置顶</button><button type="button">管理评论</button>
+          <details class="admin-more">
+            <summary class="admin-btn"><span class="iconify i-lucide:ellipsis" aria-hidden="true"></span>更多</summary>
+            <div class="admin-more__menu">
+              <!--v-if--><button type="button">发布</button><button type="button">归档</button><button type="button" class="admin-more__danger">删除动态</button>
+            </div>
+          </details>
         </div>
       </li>
       <li>
-        <p>已归档
-          <!--v-if--> · 2026-10-11
+        <p class="admin-moments__meta"><span class="admin-badge">已归档</span>
+          <!--v-if--><span>2026-10-11</span>
         </p>
         <p class="admin-moments__content">动态 c
           第二行</p>
         <p>#散步 #夜跑</p>
-        <div class="admin-moments__actions"><a href="/admin/moments/c">编辑动态</a>
-          <!--v-if--><button type="button" disabled="">置顶</button><button type="button" disabled="">发布</button><button type="button" disabled="">转为草稿</button>
-          <!--v-if--><button type="button" disabled="">管理评论</button><button type="button" disabled="">删除动态</button>
+        <div class="admin-moments__actions"><a href="/admin/moments/c">编辑动态</a><button type="button" disabled="">置顶</button><button type="button" disabled="">管理评论</button>
+          <details class="admin-more">
+            <summary class="admin-btn"><span class="iconify i-lucide:ellipsis" aria-hidden="true"></span>更多</summary>
+            <div class="admin-more__menu">
+              <!--v-if--><button type="button" disabled="">发布</button><button type="button" disabled="">转为草稿</button><button type="button" class="admin-more__danger" disabled="">删除动态</button>
+            </div>
+          </details>
         </div>
       </li>
     </ul>
@@ -74,7 +85,7 @@ exports[`列表、分页与评论面板（已发布与未发布）的结构，�
   <!--v-if-->
   <ul>
     <li data-comment-id="1" data-comment-target="false"><strong>访客1（博主）</strong>
-      <!--v-if--><span> · 已公开</span>
+      <!--v-if--><span class="admin-badge is-success">已公开</span>
       <p>评论 1
         换行</p>
       <div class="admin-moments__actions"><button type="button">回复</button>
@@ -82,7 +93,7 @@ exports[`列表、分页与评论面板（已发布与未发布）的结构，�
       </div>
     </li>
     <li data-comment-id="2" data-comment-target="false"><strong>访客2</strong>
-      <!--v-if--><span> · 已隐藏</span>
+      <!--v-if--><span class="admin-badge is-danger">已隐藏</span>
       <p>评论 2
         换行</p>
       <div class="admin-moments__actions">
@@ -91,7 +102,7 @@ exports[`列表、分页与评论面板（已发布与未发布）的结构，�
       </div>
     </li>
     <li data-comment-id="3" data-comment-target="true" tabindex="-1"><strong>访客3</strong>
-      <!--v-if--><span> · 待审核</span>
+      <!--v-if--><span class="admin-badge is-warning">待审核</span>
       <p>评论 3
         换行</p>
       <div class="admin-moments__actions">
@@ -99,7 +110,7 @@ exports[`列表、分页与评论面板（已发布与未发布）的结构，�
       </div>
     </li>
     <li data-comment-id="4" data-comment-target="false"><strong>访客4</strong>
-      <!--v-if--><span> · 已公开</span>
+      <!--v-if--><span class="admin-badge is-success">已公开</span>
       <p>评论 4
         换行</p>
       <div class="admin-moments__actions">
@@ -121,7 +132,7 @@ exports[`列表、分页与评论面板（已发布与未发布）的结构，�
   <!--v-if-->
   <ul>
     <li data-comment-id="1" data-comment-target="false"><strong>访客1（博主）</strong>
-      <!--v-if--><span> · 已公开</span>
+      <!--v-if--><span class="admin-badge is-success">已公开</span>
       <p>评论 1
         换行</p>
       <div class="admin-moments__actions">
@@ -130,7 +141,7 @@ exports[`列表、分页与评论面板（已发布与未发布）的结构，�
       </div>
     </li>
     <li data-comment-id="2" data-comment-target="false"><strong>访客2</strong>
-      <!--v-if--><span> · 已隐藏</span>
+      <!--v-if--><span class="admin-badge is-danger">已隐藏</span>
       <p>评论 2
         换行</p>
       <div class="admin-moments__actions">
@@ -139,7 +150,7 @@ exports[`列表、分页与评论面板（已发布与未发布）的结构，�
       </div>
     </li>
     <li data-comment-id="3" data-comment-target="true" tabindex="-1"><strong>访客3</strong>
-      <!--v-if--><span> · 待审核</span>
+      <!--v-if--><span class="admin-badge is-warning">待审核</span>
       <p>评论 3
         换行</p>
       <div class="admin-moments__actions">
@@ -147,7 +158,7 @@ exports[`列表、分页与评论面板（已发布与未发布）的结构，�
       </div>
     </li>
     <li data-comment-id="4" data-comment-target="false"><strong>访客4</strong>
-      <!--v-if--><span> · 已公开</span>
+      <!--v-if--><span class="admin-badge is-success">已公开</span>
       <p>评论 4
         换行</p>
       <div class="admin-moments__actions">

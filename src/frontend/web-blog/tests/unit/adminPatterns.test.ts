@@ -4,7 +4,7 @@
  */
 import { afterEach, describe, expect, it } from 'vitest'
 import { mountSuspended } from '@nuxt/test-utils/runtime'
-import { h } from 'vue'
+import { h, nextTick } from 'vue'
 import PageHeader from '../../app/components/admin/PageHeader.vue'
 import StatusBadge from '../../app/components/admin/StatusBadge.vue'
 import EmptyState from '../../app/components/admin/EmptyState.vue'
@@ -84,5 +84,32 @@ describe('后台通用列表模式', () => {
     await wrapper.setProps({ active: true })
     await wrapper.findAll('button').at(-1)!.trigger('click')
     expect(wrapper.emitted('reset')).toHaveLength(1)
+  })
+})
+
+describe('“更多”操作菜单', () => {
+  it('选择一项后收起，点击菜单外收起，Esc 收起并把焦点还给“更多”', async () => {
+    const MoreMenu = (await import('../../app/components/admin/MoreMenu.vue')).default
+    const wrapper = await mount(MoreMenu, {
+      attachTo: document.body,
+      slots: { default: () => h('button', { type: 'button' }, '删除动态') },
+    })
+    const details = wrapper.element as HTMLDetailsElement
+    const open = async () => {
+      details.open = true
+      details.dispatchEvent(new Event('toggle'))
+      await nextTick()
+    }
+    expect(wrapper.get('summary').text()).toContain('更多')
+    await open()
+    await wrapper.get('.admin-more__menu button').trigger('click')
+    expect(details.open).toBe(false)
+    await open()
+    document.body.dispatchEvent(new Event('pointerdown', { bubbles: true }))
+    expect(details.open).toBe(false)
+    await open()
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }))
+    expect(details.open).toBe(false)
+    expect(document.activeElement).toBe(wrapper.get('summary').element)
   })
 })
