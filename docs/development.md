@@ -181,7 +181,7 @@ corepack pnpm session who                        # 待推送提交及归属（�
 corepack pnpm session done rss-modal "已合入 abc1234"
 ```
 
-认领写在本机 `.artifacts/COORDINATION.md` 的认领表（任务面板同一数据源），路径支持 `**`、`*`、`{a,b}` 与相对子项目的写法。提交后 `post-commit` 钩子把提交归属记入 Git 公共目录的 `tixxin-sessions/commits.json`：有 `TIXXIN_SESSION` 时按它记录，否则按认领推断（只在全部文件属于同一认领者时记录）；`session own <会话名> [<提交>]` 可手动补登。推断只是参考，跨认领范围的提交会显示“未登记”。
+认领写在本机 `.artifacts/COORDINATION.md` 的认领表（任务面板同一数据源），路径支持 `**`、`*`、`{a,b}` 与相对子项目的写法。提交后 `post-commit` 钩子把提交归属记入 Git 公共目录的 `tixxin-sessions/commits.json`：有 `TIXXIN_SESSION` 时按它记录，否则按认领推断（只在全部文件属于同一认领者时记录）；`session own <会话名> [<提交>]` 可手动补登。`session who` 只把提交时写入台账的归属当真；未登记的提交显示“未登记”，若文件落在某个进行中的认领里再附“当前认领匹配”作提示（认领可能晚于提交，不据此判定归属）。
 
 #### 只提交自己的改动
 

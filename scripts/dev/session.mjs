@@ -37,12 +37,15 @@ function readBoard() {
   return existsSync(boardPath) ? readFileSync(boardPath, 'utf8') : ''
 }
 
-/** 某提交的归属：先看台账，再按进行中的认领推断 */
+/**
+ * 某提交的归属：只信提交时由 post-commit 或 own 写入的台账；未登记的提交只附“当前认领匹配”作弱提示，
+ * 因为认领可能是在提交之后才登记的，用现在的认领事后推断旧提交并不可靠
+ */
 function ownerOf(sha, commits = readCommits(commitsFile(commonDir)), claims = parseClaims(readBoard())) {
   if (commits[sha]) return commits[sha].owner
   const files = git('show', '--name-only', '--format=', sha).split('\n').filter(Boolean)
   const inferred = inferOwner(files, claims)
-  return inferred ? `${inferred}（按认领推断）` : null
+  return inferred ? `未登记，当前认领匹配 ${inferred}` : '未登记'
 }
 
 function usage() {
@@ -95,7 +98,7 @@ function main([command, ...args]) {
       if (!rows.length) return console.log(`${range} 没有提交。`)
       for (const row of rows) {
         const [sha, short, subject] = row.split('\t')
-        console.log(`${short} [${ownerOf(sha, commits, claims) ?? '未登记'}] ${subject}`)
+        console.log(`${short} [${ownerOf(sha, commits, claims)}] ${subject}`)
       }
       return
     }
