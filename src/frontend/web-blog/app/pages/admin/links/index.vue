@@ -1,12 +1,8 @@
 <!-- @file index.vue @description 友链管理入口，发布、推荐、排序与删除均使用服务端版本校验 -->
 <template>
   <section class="admin-links">
-    <header class="admin-page-header">
-      <div>
-        <h1>{{ $t('admin-media.linkList.title') }}</h1>
-        <p>{{ $t('admin-media.linkList.intro') }}</p>
-      </div>
-      <div class="admin-toolbar">
+    <AdminPageHeader :title="$t('admin-media.linkList.title')" :intro="$t('admin-media.linkList.intro')">
+      <template #actions>
         <NuxtLink class="admin-btn admin-btn--primary" to="/admin/links/new">{{
           $t('admin-media.linkEditor.createTitle')
         }}</NuxtLink
@@ -17,8 +13,8 @@
           $t('admin-media.linkSettings.title')
         }}</NuxtLink
         ><NuxtLink class="admin-btn admin-btn--ghost" to="/links">{{ $t('admin-media.linkList.viewPublic') }}</NuxtLink>
-      </div>
-    </header>
+      </template>
+    </AdminPageHeader>
     <ClientOnly
       ><template v-if="isLoggedIn"
         ><div class="admin-card admin-toolbar admin-links__filters">
@@ -56,16 +52,16 @@
             {{ $t('admin-media.linkList.clearFilters') }}
           </button>
         </div>
-        <CommonRequestFeedback
-          v-if="pending || error"
-          :pending="pending"
-          :compact="!!data"
-          :title="error || $t('admin-media.linkList.loading')"
-          @retry="load"
+        <AdminListSkeleton
+          v-if="pending && !error"
+          :label="$t('admin-media.linkList.loading')"
+          :rows="!!data ? 0 : 4"
+          variant="cards"
         />
+        <CommonRequestFeedback v-if="error" :compact="!!data" :pending="pending" :title="error" @retry="load" />
         <p v-if="notice" role="status">{{ notice }}</p>
         <p v-if="stale" role="status">{{ $t('admin-media.linkList.stale') }}</p>
-        <p v-if="!pending && !error && data?.total === 0">{{ $t('admin-media.linkList.empty') }}</p>
+        <AdminEmptyState v-if="!pending && !error && data?.total === 0" :title="$t('admin-media.linkList.empty')" />
         <ul class="admin-collection-list">
           <AdminCollectionItem
             v-for="link in data?.items ?? []"

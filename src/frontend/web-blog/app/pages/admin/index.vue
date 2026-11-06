@@ -22,13 +22,13 @@
         <Icon :name="domain.icon" />{{ t(`admin-system.overview.create.${domain.domain}`) }}
       </NuxtLink>
     </nav>
-    <CommonRequestFeedback
-      v-if="pending || error"
-      :pending="pending"
-      :compact="!!data"
-      :title="error || t('admin-system.overview.loading')"
-      @retry="load"
+    <AdminListSkeleton
+      v-if="pending && !error"
+      :label="t('admin-system.overview.loading')"
+      :rows="!!data ? 0 : 4"
+      variant="cards"
     />
+    <CommonRequestFeedback v-if="error" :compact="!!data" :pending="pending" :title="error" @retry="load" />
     <p v-if="error && data" role="status">{{ t('admin-system.overview.stale') }}</p>
     <template v-if="data">
       <AdminOverviewMetrics :overview="data" />

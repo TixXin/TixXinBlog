@@ -4,12 +4,7 @@
 -->
 <template>
   <section class="admin-media">
-    <header class="admin-page-header">
-      <div>
-        <h1>{{ $t('admin-media.mediaPage.title') }}</h1>
-        <p>{{ $t('admin-media.mediaPage.intro') }}</p>
-      </div>
-    </header>
+    <AdminPageHeader :title="$t('admin-media.mediaPage.title')" :intro="$t('admin-media.mediaPage.intro')" />
     <ClientOnly><AdminMediaWorkspace /></ClientOnly>
   </section>
 </template>

@@ -4,12 +4,13 @@
 -->
 <template>
   <section class="admin-posts">
-    <header class="admin-page-header">
-      <h1>{{ $t('admin-content.postList.title') }}</h1>
-      <NuxtLink class="admin-btn admin-btn--primary" to="/admin/posts/new"
-        ><Icon name="lucide:plus" aria-hidden="true" />{{ $t('admin-content.postList.newPost') }}</NuxtLink
-      >
-    </header>
+    <AdminPageHeader :title="$t('admin-content.postList.title')">
+      <template #actions>
+        <NuxtLink class="admin-btn admin-btn--primary" to="/admin/posts/new"
+          ><Icon name="lucide:plus" aria-hidden="true" />{{ $t('admin-content.postList.newPost') }}</NuxtLink
+        >
+      </template>
+    </AdminPageHeader>
     <ClientOnly>
       <div v-if="isLoggedIn" class="admin-posts__body">
         <AdminPostListFilters
@@ -34,7 +35,7 @@
         <p v-if="error" role="alert">
           {{ error }} <button type="button" @click="load">{{ $t('admin-content.postList.retry') }}</button>
         </p>
-        <p v-if="pending" role="status">{{ $t('admin-content.postList.loading') }}</p>
+        <AdminListSkeleton v-if="pending" :label="$t('admin-content.postList.loading')" :rows="items.length ? 0 : 5" />
         <AdminPostListBatchBar
           v-model:action="batchAction"
           :all-selected="allSelected"
@@ -60,7 +61,20 @@
           @archive="archive"
           @restore="restorePost"
         />
-        <p v-if="!pending && !error && !items.length">{{ $t('admin-content.postList.empty') }}</p>
+        <AdminEmptyState
+          v-if="!pending && !error && !items.length"
+          icon="lucide:file-text"
+          :title="$t('admin-content.postList.empty')"
+        >
+          <template #actions>
+            <button type="button" class="admin-btn admin-btn--ghost" @click="clearFilters">
+              {{ $t('admin-content.postList.clearFilters') }}
+            </button>
+            <NuxtLink class="admin-btn admin-btn--primary" to="/admin/posts/new">{{
+              $t('admin-content.postList.newPost')
+            }}</NuxtLink>
+          </template>
+        </AdminEmptyState>
         <AdminPostListPagination
           :page="page"
           :total-pages="totalPages"

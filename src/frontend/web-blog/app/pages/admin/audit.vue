@@ -4,12 +4,7 @@
 -->
 <template>
   <section class="admin-audit">
-    <header class="admin-page-header">
-      <div>
-        <h1>{{ t('admin-system.audit.title') }}</h1>
-        <p>{{ t('admin-system.audit.intro') }}</p>
-      </div>
-    </header>
+    <AdminPageHeader :title="t('admin-system.audit.title')" :intro="t('admin-system.audit.intro')" />
     <ClientOnly>
       <form class="admin-audit__filters" @submit.prevent="navigate(1)">
         <label
@@ -45,10 +40,10 @@
         {{ t('admin-system.audit.health', { waiting: health.waitingResults, queued: health.retryQueue })
         }}{{ health.droppedRetries ? t('admin-system.audit.healthDropped') : '' }}
       </p>
-      <p v-if="pending" role="status">{{ t('admin-system.audit.loading') }}</p>
+      <AdminListSkeleton v-if="pending" :label="t('admin-system.audit.loading')" :rows="items.length ? 0 : 5" />
       <p v-if="error" role="alert">{{ error }}</p>
       <AdminAuditLog :items="items" />
-      <p v-if="!pending && !error && !items.length">{{ t('admin-system.audit.empty') }}</p>
+      <AdminEmptyState v-if="!pending && !error && !items.length" :title="t('admin-system.audit.empty')" />
       <nav class="admin-audit__pagination" :aria-label="t('admin-system.audit.pagination')">
         <button type="button" :disabled="pending || page <= 1" @click="navigate(page - 1)">
           {{ t('admin-system.audit.prev') }}</button

@@ -4,17 +4,15 @@
 -->
 <template>
   <section class="admin-flashes">
-    <header class="admin-page-header">
-      <div>
-        <h1>{{ $t('admin-content.flashes.title') }}</h1>
-        <p>{{ $t('admin-content.flashes.intro') }}</p>
-      </div>
-      <button type="button" :disabled="working || !editorReady" @click="openEditor()">
-        <Icon name="lucide:plus" />{{ $t('admin-content.flashes.create') }}
-      </button>
-    </header>
+    <AdminPageHeader :title="$t('admin-content.flashes.title')" :intro="$t('admin-content.flashes.intro')">
+      <template #actions>
+        <button type="button" class="admin-btn--primary" :disabled="working || !editorReady" @click="openEditor()">
+          <Icon name="lucide:plus" />{{ $t('admin-content.flashes.create') }}
+        </button>
+      </template>
+    </AdminPageHeader>
     <ClientOnly>
-      <form class="admin-flashes__filters" @submit.prevent="resetPage">
+      <AdminFilterBar class="admin-flashes__filters" :label="$t('admin-system.layout.filters')" @submit="resetPage">
         <input
           v-model="search"
           :aria-label="$t('admin-content.flashes.searchLabel')"
@@ -25,17 +23,19 @@
           <option value="published">{{ $t('admin-content.flashes.status.published') }}</option>
           <option value="draft">{{ $t('admin-content.flashes.status.draft') }}</option>
           <option value="archived">{{ $t('admin-content.flashes.status.archived') }}</option></select
-        ><button :aria-busy="pending" type="submit" :disabled="pending">
-          {{ $t('admin-content.flashes.search') }}
-        </button>
-      </form>
+        ><template #actions>
+          <button :aria-busy="pending" type="submit" :disabled="pending">
+            {{ $t('admin-content.flashes.search') }}
+          </button>
+        </template>
+      </AdminFilterBar>
       <p v-if="error" role="alert">
         {{ error }}
         <button type="button" :disabled="pending || working" @click="retryRead">
           {{ $t('admin-content.flashes.retry') }}
         </button>
       </p>
-      <p v-if="pending" role="status">{{ $t('admin-content.flashes.loading') }}</p>
+      <AdminListSkeleton v-if="pending" :label="$t('admin-content.flashes.loading')" :rows="items.length ? 0 : 4" />
       <section
         v-if="editorOpen"
         ref="editorPanel"
@@ -91,7 +91,11 @@
           </li>
         </ul>
       </section>
-      <p v-if="!pending && !error && !items.length">{{ $t('admin-content.flashes.empty') }}</p>
+      <AdminEmptyState
+        v-if="!pending && !error && !items.length"
+        icon="lucide:zap"
+        :title="$t('admin-content.flashes.empty')"
+      />
       <ul class="admin-flashes__list">
         <li v-for="note in items" :key="note.id">
           <div class="admin-flashes__meta">
@@ -221,7 +225,6 @@ h2 {
 }
 header,
 footer,
-.admin-flashes__filters,
 .admin-flashes__actions,
 .admin-flashes__meta {
   display: flex;

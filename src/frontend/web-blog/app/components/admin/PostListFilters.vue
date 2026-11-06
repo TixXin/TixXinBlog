@@ -4,7 +4,7 @@
                只回写表单值并发出提交、排序与清空事件，跳转由页面负责
 -->
 <template>
-  <form class="admin-card admin-toolbar admin-posts__filters" @submit.prevent="emit('apply')">
+  <AdminFilterBar class="admin-posts__filters" :label="$t('admin-system.layout.filters')" @submit="emit('apply')">
     <input
       v-model="search"
       class="admin-posts__search"
@@ -44,13 +44,15 @@
       <option value="desc">{{ $t('admin-content.postList.desc') }}</option>
       <option value="asc">{{ $t('admin-content.postList.asc') }}</option>
     </select>
-    <button :aria-busy="pending" type="submit" :disabled="pending">
-      {{ $t('admin-content.postList.search') }}
-    </button>
-    <button type="button" class="admin-btn admin-btn--ghost" :disabled="pending" @click="emit('clear')">
-      {{ $t('admin-content.postList.clearFilters') }}
-    </button>
-  </form>
+    <template #actions>
+      <button :aria-busy="pending" type="submit" :disabled="pending">
+        {{ $t('admin-content.postList.search') }}
+      </button>
+      <button type="button" class="admin-btn admin-btn--ghost" :disabled="pending" @click="emit('clear')">
+        {{ $t('admin-content.postList.clearFilters') }}
+      </button>
+    </template>
+  </AdminFilterBar>
 </template>
 <script setup lang="ts">
 defineProps<{ folders: string[]; tags: string[]; pending: boolean }>()
@@ -67,16 +69,3 @@ function emitOrdering(kind: 'sort' | 'order', event: Event) {
   emit('ordering', kind, (event.target as HTMLSelectElement).value)
 }
 </script>
-<style scoped lang="scss">
-.admin-posts__filters {
-  padding: 0.75rem;
-}
-.admin-posts__search {
-  flex: 1 1 14rem;
-}
-@media (max-width: 700px) {
-  .admin-posts__filters > * {
-    width: 100%;
-  }
-}
-</style>

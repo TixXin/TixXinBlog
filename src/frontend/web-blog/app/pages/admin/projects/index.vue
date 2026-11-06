@@ -1,20 +1,16 @@
 <!-- @file index.vue @description 项目管理列表，项目进展与内容发布状态分别筛选和维护 -->
 <template>
   <section class="admin-projects">
-    <header class="admin-page-header">
-      <div>
-        <h1>{{ $t('admin-media.projectList.title') }}</h1>
-        <p>{{ $t('admin-media.projectList.intro') }}</p>
-      </div>
-      <div class="admin-toolbar">
+    <AdminPageHeader :title="$t('admin-media.projectList.title')" :intro="$t('admin-media.projectList.intro')">
+      <template #actions>
         <NuxtLink class="admin-btn admin-btn--primary" to="/admin/projects/new">{{
           $t('admin-media.projectList.create')
         }}</NuxtLink
         ><NuxtLink class="admin-btn admin-btn--ghost" to="/projects">{{
           $t('admin-media.projectList.viewPublic')
         }}</NuxtLink>
-      </div>
-    </header>
+      </template>
+    </AdminPageHeader>
     <ClientOnly
       ><template v-if="isLoggedIn"
         ><div class="admin-card admin-toolbar admin-projects__filters">
@@ -63,16 +59,16 @@
             {{ $t('admin-media.projectList.clearFilters') }}
           </button>
         </div>
-        <CommonRequestFeedback
-          v-if="pending || error"
-          :pending="pending"
-          :compact="!!data"
-          :title="error || $t('admin-media.projectList.loading')"
-          @retry="load"
+        <AdminListSkeleton
+          v-if="pending && !error"
+          :label="$t('admin-media.projectList.loading')"
+          :rows="!!data ? 0 : 4"
+          variant="cards"
         />
+        <CommonRequestFeedback v-if="error" :compact="!!data" :pending="pending" :title="error" @retry="load" />
         <p v-if="notice" role="status">{{ notice }}</p>
         <p v-if="stale" role="status">{{ $t('admin-media.projectList.stale') }}</p>
-        <p v-if="!pending && !error && data?.total === 0">{{ $t('admin-media.projectList.empty') }}</p>
+        <AdminEmptyState v-if="!pending && !error && data?.total === 0" :title="$t('admin-media.projectList.empty')" />
         <ul class="admin-collection-list">
           <AdminCollectionItem
             v-for="project in data?.items ?? []"

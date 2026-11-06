@@ -4,11 +4,7 @@
 -->
 <template>
   <section class="account">
-    <header class="admin-page-header">
-      <div>
-        <h1>{{ t('admin-system.account.title') }}</h1>
-      </div>
-    </header>
+    <AdminPageHeader :title="t('admin-system.account.title')" />
     <ClientOnly>
       <p v-if="profile">
         {{ t('admin-system.account.currentAccount') }}<strong>{{ profile.username }}</strong>

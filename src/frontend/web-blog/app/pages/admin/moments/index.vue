@@ -1,13 +1,13 @@
 <!-- @file index.vue @description 朋友圈管理页面，包含状态筛选、版本化操作与评论审核 -->
 <template>
   <section class="admin-moments">
-    <header class="admin-page-header">
-      <div>
-        <h1>{{ $t('admin-content.moments.title') }}</h1>
-        <p>{{ $t('admin-content.moments.intro') }}</p>
-      </div>
-      <NuxtLink to="/admin/moments/new">{{ $t('admin-content.moments.create') }}</NuxtLink>
-    </header>
+    <AdminPageHeader :title="$t('admin-content.moments.title')" :intro="$t('admin-content.moments.intro')">
+      <template #actions>
+        <NuxtLink class="admin-btn admin-btn--primary" to="/admin/moments/new">{{
+          $t('admin-content.moments.create')
+        }}</NuxtLink>
+      </template>
+    </AdminPageHeader>
     <ClientOnly>
       <template v-if="isLoggedIn">
         <AdminMomentListFilters
@@ -15,16 +15,21 @@
           v-model:topic="topic"
           v-model:date="date"
           v-model:status="status"
-          @submit.prevent="applyFilters"
+          @apply="applyFilters"
+        />
+        <AdminListSkeleton
+          v-if="pending && !error"
+          :label="$t('admin-content.moments.loading')"
+          :rows="items.length > 0 ? 0 : 4"
         />
         <CommonRequestFeedback
-          v-if="pending || error"
-          :pending="pending"
+          v-if="error"
           :compact="items.length > 0"
-          :title="error || $t('admin-content.moments.loading')"
+          :pending="pending"
+          :title="error"
           @retry="load"
         />
-        <p v-if="!pending && !error && !items.length">{{ $t('admin-content.moments.empty') }}</p>
+        <AdminEmptyState v-if="!pending && !error && !items.length" :title="$t('admin-content.moments.empty')" />
         <CommonRequestFeedback
           v-if="commentsLinkPending || commentsLinkError"
           compact

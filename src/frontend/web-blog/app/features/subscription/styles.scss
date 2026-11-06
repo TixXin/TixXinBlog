@@ -20,7 +20,8 @@
     color: var(--text-muted);
     margin-block: 0.4rem;
   }
-  a {
+  // 后台按钮样式的链接（.admin-btn）保持按钮自己的文字颜色
+  a:not(.admin-btn) {
     color: var(--accent);
   }
   button,

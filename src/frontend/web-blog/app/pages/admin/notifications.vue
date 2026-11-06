@@ -8,13 +8,12 @@
       </div>
     </header>
     <AdminNotificationToolbar :filter="filter" />
-    <CommonRequestFeedback
-      v-if="pending || error"
-      :pending="pending"
-      :title="error || t('admin-system.notifications.loading')"
-      :compact="!!data"
-      @retry="refresh"
+    <AdminListSkeleton
+      v-if="pending && !error"
+      :label="t('admin-system.notifications.loading')"
+      :rows="!!data ? 0 : 4"
     />
+    <CommonRequestFeedback v-if="error" :compact="!!data" :pending="pending" :title="error" @retry="refresh" />
     <p v-if="error && data">{{ t('admin-system.notifications.stale') }}</p>
     <p v-if="actionError" role="alert">
       {{ actionError }} <button type="button" @click="refreshAll">{{ t('admin-system.notifications.recheck') }}</button>
@@ -53,7 +52,7 @@
         </button>
       </div>
       <p class="notifications__status" role="status">{{ statusMessage }}</p>
-      <p v-if="!data.items.length">{{ t('admin-system.notifications.empty') }}</p>
+      <AdminEmptyState v-if="!data.items.length" :title="t('admin-system.notifications.empty')" />
       <ol ref="list" class="notifications__list">
         <AdminNotificationItem
           v-for="item in data.items"

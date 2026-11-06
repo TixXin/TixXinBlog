@@ -4,9 +4,7 @@
 -->
 <template>
   <section class="maintenance">
-    <header class="admin-page-header">
-      <h1>{{ t('admin-system.maintenance.title') }}</h1>
-    </header>
+    <AdminPageHeader :title="t('admin-system.maintenance.title')" />
     <ClientOnly>
       <AdminMaintenanceDiagnostics
         :pending="diagnostics.pending.value"

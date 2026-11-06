@@ -7,15 +7,22 @@ exports[`列表、分页与评论面板（已发布与未发布）的结构，�
     <div>
       <h1>朋友圈管理</h1>
       <p>管理公开动态、草稿、归档及互动。</p>
-    </div><a href="/admin/moments/new">发布新动态</a>
+    </div>
+    <div class="admin-toolbar"><a href="/admin/moments/new" class="admin-btn admin-btn--primary">发布新动态</a></div>
   </header>
   <div>
-    <form class="admin-moments__filters"><input aria-label="搜索动态" maxlength="200" placeholder="搜索内容或地点"><input aria-label="筛选动态话题" maxlength="40" placeholder="话题"><label>发布日期（站点时区）<input class="date" aria-label="筛选动态日期" clearable="" value=""></label><select aria-label="筛选动态状态">
-        <option value="all">全部状态</option>
-        <option value="published">已发布</option>
-        <option value="draft">草稿</option>
-        <option value="archived">已归档</option>
-      </select><button type="submit">筛选</button></form>
+    <form class="admin-filter-bar admin-moments__filters" role="search" aria-label="列表筛选">
+      <div class="admin-filter-bar__fields"><input aria-label="搜索动态" maxlength="200" placeholder="搜索内容或地点"><input aria-label="筛选动态话题" maxlength="40" placeholder="话题"><label>发布日期（站点时区）<input class="date" aria-label="筛选动态日期" clearable="" value=""></label><select aria-label="筛选动态状态">
+          <option value="all">全部状态</option>
+          <option value="published">已发布</option>
+          <option value="draft">草稿</option>
+          <option value="archived">已归档</option>
+        </select></div>
+      <div class="admin-filter-bar__actions"><button type="submit">筛选</button>
+        <!--v-if-->
+      </div>
+    </form>
+    <!--v-if-->
     <!--v-if-->
     <!--v-if-->
     <!--v-if-->
@@ -156,15 +163,22 @@ exports[`列表、分页与评论面板（已发布与未发布）的结构，�
     <div>
       <h1>朋友圈管理</h1>
       <p>管理公开动态、草稿、归档及互动。</p>
-    </div><a href="/admin/moments/new">发布新动态</a>
+    </div>
+    <div class="admin-toolbar"><a href="/admin/moments/new" class="admin-btn admin-btn--primary">发布新动态</a></div>
   </header>
   <div>
-    <form class="admin-moments__filters"><input aria-label="搜索动态" maxlength="200" placeholder="搜索内容或地点"><input aria-label="筛选动态话题" maxlength="40" placeholder="话题"><label>发布日期（站点时区）<input class="date" aria-label="筛选动态日期" clearable="" value=""></label><select aria-label="筛选动态状态">
-        <option value="all">全部状态</option>
-        <option value="published">已发布</option>
-        <option value="draft">草稿</option>
-        <option value="archived">已归档</option>
-      </select><button type="submit">筛选</button></form>
+    <form class="admin-filter-bar admin-moments__filters" role="search" aria-label="列表筛选">
+      <div class="admin-filter-bar__fields"><input aria-label="搜索动态" maxlength="200" placeholder="搜索内容或地点"><input aria-label="筛选动态话题" maxlength="40" placeholder="话题"><label>发布日期（站点时区）<input class="date" aria-label="筛选动态日期" clearable="" value=""></label><select aria-label="筛选动态状态">
+          <option value="all">全部状态</option>
+          <option value="published">已发布</option>
+          <option value="draft">草稿</option>
+          <option value="archived">已归档</option>
+        </select></div>
+      <div class="admin-filter-bar__actions"><button type="submit">筛选</button>
+        <!--v-if-->
+      </div>
+    </form>
+    <!--v-if-->
     <p class="feedback">读取失败</p>
     <!--v-if-->
     <p class="feedback">定位失败</p>
@@ -178,17 +192,28 @@ exports[`列表、分页与评论面板（已发布与未发布）的结构，�
     <div>
       <h1>朋友圈管理</h1>
       <p>管理公开动态、草稿、归档及互动。</p>
-    </div><a href="/admin/moments/new">发布新动态</a>
+    </div>
+    <div class="admin-toolbar"><a href="/admin/moments/new" class="admin-btn admin-btn--primary">发布新动态</a></div>
   </header>
   <div>
-    <form class="admin-moments__filters"><input aria-label="搜索动态" maxlength="200" placeholder="搜索内容或地点"><input aria-label="筛选动态话题" maxlength="40" placeholder="话题"><label>发布日期（站点时区）<input class="date" aria-label="筛选动态日期" clearable="" value=""></label><select aria-label="筛选动态状态">
-        <option value="all">全部状态</option>
-        <option value="published">已发布</option>
-        <option value="draft">草稿</option>
-        <option value="archived">已归档</option>
-      </select><button type="submit">筛选</button></form>
+    <form class="admin-filter-bar admin-moments__filters" role="search" aria-label="列表筛选">
+      <div class="admin-filter-bar__fields"><input aria-label="搜索动态" maxlength="200" placeholder="搜索内容或地点"><input aria-label="筛选动态话题" maxlength="40" placeholder="话题"><label>发布日期（站点时区）<input class="date" aria-label="筛选动态日期" clearable="" value=""></label><select aria-label="筛选动态状态">
+          <option value="all">全部状态</option>
+          <option value="published">已发布</option>
+          <option value="draft">草稿</option>
+          <option value="archived">已归档</option>
+        </select></div>
+      <div class="admin-filter-bar__actions"><button type="submit">筛选</button>
+        <!--v-if-->
+      </div>
+    </form>
     <!--v-if-->
-    <p>当前条件下暂无动态。</p>
+    <!--v-if-->
+    <div class="admin-empty"><span class="iconify i-lucide:inbox admin-empty__icon" aria-hidden="true" style="font-size: 28px;"></span>
+      <p class="admin-empty__title">当前条件下暂无动态。</p>
+      <!--v-if-->
+      <!--v-if-->
+    </div>
     <p class="feedback">定位失败</p>
     <ul class="admin-moments__list"></ul>
     <!--v-if-->
@@ -200,7 +225,8 @@ exports[`列表、分页与评论面板（已发布与未发布）的结构，�
     <div>
       <h1>朋友圈管理</h1>
       <p>管理公开动态、草稿、归档及互动。</p>
-    </div><a href="/admin/moments/new">发布新动态</a>
+    </div>
+    <div class="admin-toolbar"><a href="/admin/moments/new" class="admin-btn admin-btn--primary">发布新动态</a></div>
   </header>
   <div>
     <p>请先登录博主账号。</p>
@@ -221,9 +247,7 @@ exports[`打开评论面板时焦点移到面板，关闭后回到触发按钮�
 exports[`筛选、卡片操作、分页与评论操作的调用参数 1`] = `
 {
   "applyFilters": [
-    [
-      "<Event:submit>",
-    ],
+    [],
   ],
   "disabled": [
     [

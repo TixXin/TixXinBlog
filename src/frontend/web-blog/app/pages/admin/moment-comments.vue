@@ -6,12 +6,10 @@
 -->
 <template>
   <section class="moment-comments">
-    <header class="admin-page-header">
-      <div>
-        <h1>{{ t('admin-content.momentComments.title') }}</h1>
-        <p>{{ t('admin-content.momentComments.intro') }}</p>
-      </div>
-    </header>
+    <AdminPageHeader
+      :title="t('admin-content.momentComments.title')"
+      :intro="t('admin-content.momentComments.intro')"
+    />
     <nav class="moment-comments__actions" :aria-label="t('admin-content.momentComments.filters')">
       <NuxtLink
         v-for="(label, value) in labels"
@@ -22,17 +20,19 @@
       >
       <NuxtLink to="/admin/moments">{{ t('admin-content.momentComments.manageMoments') }}</NuxtLink>
     </nav>
-    <CommonRequestFeedback
-      v-if="pending || error"
-      :pending="pending"
-      :compact="!!data"
-      :title="error || t('admin-content.momentComments.loading')"
-      @retry="load"
+    <AdminListSkeleton
+      v-if="pending && !error"
+      :label="t('admin-content.momentComments.loading')"
+      :rows="!!data ? 0 : 4"
     />
+    <CommonRequestFeedback v-if="error" :compact="!!data" :pending="pending" :title="error" @retry="load" />
     <p v-if="stale && data" role="status">{{ t('admin-content.momentComments.stale') }}</p>
     <p v-if="notice" role="status">{{ notice }}</p>
     <template v-if="data">
-      <p v-if="!pending && !error && !data.items.length">{{ t('admin-content.momentComments.empty') }}</p>
+      <AdminEmptyState
+        v-if="!pending && !error && !data.items.length"
+        :title="t('admin-content.momentComments.empty')"
+      />
       <ul class="moment-comments__list">
         <AdminModerationItem v-for="item in data.items" :key="item.id" actions-class="moment-comments__actions">
           <template #meta>

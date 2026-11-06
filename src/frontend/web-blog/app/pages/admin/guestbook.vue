@@ -6,40 +6,40 @@
 -->
 <template>
   <section class="admin-guestbook">
-    <header class="admin-page-header">
-      <h1>{{ $t('admin-media.guestbook.title') }}</h1>
-      <NuxtLink to="/guestbook">{{ $t('admin-media.guestbook.viewPublic') }}</NuxtLink>
-    </header>
+    <AdminPageHeader :title="$t('admin-media.guestbook.title')">
+      <template #actions
+        ><NuxtLink class="admin-btn admin-btn--ghost" to="/guestbook">{{
+          $t('admin-media.guestbook.viewPublic')
+        }}</NuxtLink></template
+      >
+    </AdminPageHeader>
     <ClientOnly>
       <template v-if="isLoggedIn">
-        <form class="admin-guestbook__filters" @submit.prevent="apply">
-          <input
-            v-model="q"
-            :aria-label="$t('admin-media.guestbook.searchLabel')"
-            :placeholder="$t('admin-media.guestbook.searchPlaceholder')"
-            maxlength="200"
-          />
-          <select v-model="status" :aria-label="$t('admin-media.guestbook.statusLabel')">
-            <option value="all">{{ $t('admin-media.guestbook.allStatus') }}</option>
-            <option value="published">{{ $t('admin-media.guestbook.status.published') }}</option>
-            <option value="pending">{{ $t('admin-media.guestbook.status.pending') }}</option>
-            <option value="hidden">{{ $t('admin-media.guestbook.status.hidden') }}</option>
-          </select>
-          <label><input v-model="unanswered" type="checkbox" />{{ $t('admin-media.guestbook.unanswered') }}</label>
-          <label
-            >{{ $t('admin-media.guestbook.date')
-            }}<CommonDatePicker v-model="date" :aria-label="$t('admin-media.guestbook.dateLabel')" clearable /></label
-          ><button type="submit">{{ $t('admin-media.guestbook.filter') }}</button>
-        </form>
+        <AdminGuestbookFilters
+          v-model:q="q"
+          v-model:status="status"
+          v-model:unanswered="unanswered"
+          v-model:date="date"
+          @apply="apply"
+        />
         <p v-if="unanswered">{{ $t('admin-media.guestbook.unansweredHint') }}</p>
+        <AdminListSkeleton
+          v-if="pending && !error"
+          :label="$t('admin-media.guestbook.loading')"
+          :rows="items.length ? 0 : 4"
+        />
         <CommonRequestFeedback
-          v-if="pending || error"
+          v-if="error"
           :compact="items.length > 0"
           :pending="pending"
-          :title="error || $t('admin-media.guestbook.loading')"
+          :title="error"
           @retry="load"
         />
-        <p v-if="!pending && !error && !items.length">{{ $t('admin-media.guestbook.empty') }}</p>
+        <AdminEmptyState
+          v-if="!pending && !error && !items.length"
+          icon="lucide:messages-square"
+          :title="$t('admin-media.guestbook.empty')"
+        />
         <AdminBatchBar
           v-if="items.length"
           :noun="(count: number) => $t('admin-media.guestbook.batchNoun', count)"
@@ -229,7 +229,6 @@ onBeforeRouteLeave(() => {
   overflow-wrap: anywhere;
 }
 .admin-guestbook header,
-.admin-guestbook__filters,
 .admin-guestbook__actions {
   display: flex;
   gap: 0.6rem;

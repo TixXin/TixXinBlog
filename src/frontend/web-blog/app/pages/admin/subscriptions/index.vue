@@ -1,14 +1,19 @@
 <!-- @file index.vue @description 订阅管理列表：筛选、发布、撤回、版本化排序、软删除、逾期续费与订阅设置 -->
 <template>
   <section class="subscription-ui subscription-stack">
-    <header class="subscription-row">
-      <div>
-        <h1>{{ $t('admin-media.subscriptionList.title') }}</h1>
-        <p>{{ $t('admin-media.subscriptionList.intro') }}</p>
-      </div>
-      <NuxtLink to="/admin/subscriptions/new">{{ $t('admin-media.subscriptionList.create') }}</NuxtLink
-      ><NuxtLink to="/subscriptions">{{ $t('admin-media.subscriptionList.viewPublic') }}</NuxtLink>
-    </header>
+    <AdminPageHeader
+      :title="$t('admin-media.subscriptionList.title')"
+      :intro="$t('admin-media.subscriptionList.intro')"
+    >
+      <template #actions>
+        <NuxtLink class="admin-btn admin-btn--primary" to="/admin/subscriptions/new">{{
+          $t('admin-media.subscriptionList.create')
+        }}</NuxtLink
+        ><NuxtLink class="admin-btn admin-btn--ghost" to="/subscriptions">{{
+          $t('admin-media.subscriptionList.viewPublic')
+        }}</NuxtLink>
+      </template>
+    </AdminPageHeader>
     <ClientOnly>
       <SubscriptionAdminSettings />
       <SubscriptionFilters :query="admin.query.value" @change="admin.filter" />
@@ -39,16 +44,23 @@
           {{ $t('admin-media.subscriptionList.clearFilters') }}
         </button>
       </div>
+      <AdminListSkeleton
+        v-if="admin.pending.value && !admin.error.value"
+        :label="$t('admin-media.subscriptionList.loading')"
+        :rows="admin.data.value ? 0 : 4"
+      />
       <CommonRequestFeedback
-        v-if="admin.pending.value || admin.error.value"
+        v-if="admin.error.value"
         :pending="admin.pending.value"
-        :title="admin.error.value || $t('admin-media.subscriptionList.loading')"
+        :title="admin.error.value"
         @retry="admin.load"
       />
       <p v-if="admin.notice.value" role="status">{{ admin.notice.value }}</p>
-      <p v-if="admin.data.value?.total === 0 && !admin.pending.value">
-        {{ $t('admin-media.subscriptionList.empty') }}
-      </p>
+      <AdminEmptyState
+        v-if="admin.data.value?.total === 0 && !admin.pending.value"
+        icon="lucide:credit-card"
+        :title="$t('admin-media.subscriptionList.empty')"
+      />
       <p v-if="admin.data.value" class="subscription-note">
         {{ $t('admin-media.subscriptionList.total', { total: admin.data.value.total }, admin.data.value.total) }}
       </p>
@@ -162,9 +174,6 @@ const busy = (id: number) => admin.pending.value || admin.busy.value.includes(id
   padding: 0;
   display: grid;
   gap: 1rem;
-}
-header > div {
-  margin-right: auto;
 }
 .subscription-admin-overdue {
   display: flex;

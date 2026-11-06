@@ -6,9 +6,7 @@
 -->
 <template>
   <section class="admin-comments">
-    <header class="admin-page-header">
-      <h1>{{ t('admin-content.comments.title') }}</h1>
-    </header>
+    <AdminPageHeader :title="t('admin-content.comments.title')" />
     <ClientOnly>
       <AdminCommentPolicy
         v-model:require-approval="requireApproval"
@@ -93,7 +91,10 @@
           @moderate="c.moderate"
         />
       </ul>
-      <p v-if="!c.pending.value && !c.error.value && !c.items.value.length">{{ t('admin-content.comments.empty') }}</p>
+      <AdminEmptyState
+        v-if="!c.pending.value && !c.error.value && !c.items.value.length"
+        :title="t('admin-content.comments.empty')"
+      />
       <AdminModerationPagination
         class="admin-comments__pagination"
         :aria-label="t('admin-content.comments.pagination')"

@@ -1,12 +1,8 @@
 <!-- @file index.vue @description 图库管理入口，公开状态与媒体文件保留范围清晰分离 -->
 <template>
   <section class="admin-gallery">
-    <header class="admin-page-header">
-      <div>
-        <h1>{{ $t('admin-media.galleryList.title') }}</h1>
-        <p>{{ $t('admin-media.galleryList.intro') }}</p>
-      </div>
-      <div class="admin-toolbar">
+    <AdminPageHeader :title="$t('admin-media.galleryList.title')" :intro="$t('admin-media.galleryList.intro')">
+      <template #actions>
         <NuxtLink class="admin-btn admin-btn--primary" to="/admin/gallery/new">{{
           $t('admin-media.galleryList.create')
         }}</NuxtLink
@@ -16,8 +12,8 @@
         ><NuxtLink class="admin-btn admin-btn--ghost" to="/gallery">{{
           $t('admin-media.galleryList.viewPublic')
         }}</NuxtLink>
-      </div>
-    </header>
+      </template>
+    </AdminPageHeader>
     <ClientOnly
       ><template v-if="isLoggedIn">
         <div class="admin-card admin-toolbar admin-gallery__filters">
@@ -53,16 +49,16 @@
             {{ $t('admin-media.galleryList.clearFilters') }}
           </button>
         </div>
-        <CommonRequestFeedback
-          v-if="pending || error"
-          :pending="pending"
-          :compact="!!data"
-          :title="error || $t('admin-media.galleryList.loading')"
-          @retry="load"
+        <AdminListSkeleton
+          v-if="pending && !error"
+          :label="$t('admin-media.galleryList.loading')"
+          :rows="!!data ? 0 : 4"
+          variant="cards"
         />
+        <CommonRequestFeedback v-if="error" :compact="!!data" :pending="pending" :title="error" @retry="load" />
         <p v-if="notice" role="status">{{ notice }}</p>
         <p v-if="stale" role="status">{{ $t('admin-media.galleryList.stale') }}</p>
-        <p v-if="!pending && !error && data?.total === 0">{{ $t('admin-media.galleryList.empty') }}</p>
+        <AdminEmptyState v-if="!pending && !error && data?.total === 0" :title="$t('admin-media.galleryList.empty')" />
         <ul class="admin-collection-list">
           <AdminCollectionItem
             v-for="photo in data?.items ?? []"

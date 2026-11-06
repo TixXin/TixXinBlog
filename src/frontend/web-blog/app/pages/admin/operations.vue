@@ -1,24 +1,14 @@
 <!-- @file operations.vue @description 管理运行状态、备份校验与投递结果，保留失败和不确定状态 -->
 <template>
   <section class="operations">
-    <header class="admin-page-header">
-      <div>
-        <h1>{{ t('admin-system.operations.title') }}</h1>
-        <p>{{ t('admin-system.operations.intro') }}</p>
-      </div>
-    </header>
+    <AdminPageHeader :title="t('admin-system.operations.title')" :intro="t('admin-system.operations.intro')" />
     <nav class="operations__toolbar" :aria-label="t('admin-system.operations.toolbar')">
       <NuxtLink to="/admin/notifications">{{ t('admin-system.nav.notifications') }}</NuxtLink
       ><NuxtLink to="/admin/maintenance">{{ t('admin-system.nav.maintenance') }}</NuxtLink
       ><button type="button" :disabled="pending" @click="refresh">{{ t('admin-system.operations.refresh') }}</button>
     </nav>
-    <CommonRequestFeedback
-      v-if="pending || error"
-      :pending="pending"
-      :title="error || t('admin-system.operations.loading')"
-      :compact="!!data"
-      @retry="refresh"
-    />
+    <AdminListSkeleton v-if="pending && !error" :label="t('admin-system.operations.loading')" :rows="!!data ? 0 : 4" />
+    <CommonRequestFeedback v-if="error" :compact="!!data" :pending="pending" :title="error" @retry="refresh" />
     <p v-if="error && data" role="status">{{ t('admin-system.operations.stale') }}</p>
     <p v-if="actionError" role="alert">{{ actionError }}</p>
     <template v-if="data">

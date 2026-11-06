@@ -1,12 +1,10 @@
 <!-- @file applications.vue @description 友链申请审核：公开开关、待审与已处理筛选，通过时建立友链草稿 -->
 <template>
   <section class="admin-link-applications">
-    <header class="admin-page-header">
-      <div>
-        <h1>{{ $t('admin-media.linkApplications.title') }}</h1>
-        <p>{{ $t('admin-media.linkApplications.intro') }}</p>
-      </div>
-    </header>
+    <AdminPageHeader
+      :title="$t('admin-media.linkApplications.title')"
+      :intro="$t('admin-media.linkApplications.intro')"
+    />
     <AdminBackLink to="/admin/links">{{ $t('admin-media.linkSettings.back') }}</AdminBackLink>
     <ClientOnly
       ><template v-if="isLoggedIn"
@@ -55,9 +53,11 @@
           @retry="load"
         />
         <p v-if="notice" role="status">{{ notice }}</p>
-        <p v-if="!pending && !error && data?.total === 0">
-          {{ $t(`admin-media.linkApplications.empty.${query.status}`) }}
-        </p>
+        <AdminEmptyState
+          v-if="!pending && !error && data?.total === 0"
+          icon="lucide:mail-open"
+          :title="$t(`admin-media.linkApplications.empty.${query.status}`)"
+        />
         <ul class="admin-link-applications__list">
           <AdminLinkApplicationItem
             v-for="item in data?.items ?? []"

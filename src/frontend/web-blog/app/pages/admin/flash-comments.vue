@@ -6,12 +6,7 @@
 -->
 <template>
   <section class="flash-comments">
-    <header class="admin-page-header">
-      <div>
-        <h1>{{ t('admin-content.flashComments.title') }}</h1>
-        <p>{{ t('admin-content.flashComments.intro') }}</p>
-      </div>
-    </header>
+    <AdminPageHeader :title="t('admin-content.flashComments.title')" :intro="t('admin-content.flashComments.intro')" />
     <nav class="flash-comments__actions" :aria-label="t('admin-content.flashComments.filters')">
       <NuxtLink
         v-for="(label, value) in labels"
@@ -27,17 +22,19 @@
       {{ t('admin-content.flashComments.singleNotice')
       }}<NuxtLink to="/admin/flash-comments">{{ t('admin-content.flashComments.viewAll') }}</NuxtLink>
     </p>
-    <CommonRequestFeedback
-      v-if="pending || error"
-      :pending="pending"
-      :compact="!!data"
-      :title="error || t('admin-content.flashComments.loading')"
-      @retry="load"
+    <AdminListSkeleton
+      v-if="pending && !error"
+      :label="t('admin-content.flashComments.loading')"
+      :rows="!!data ? 0 : 4"
     />
+    <CommonRequestFeedback v-if="error" :compact="!!data" :pending="pending" :title="error" @retry="load" />
     <p v-if="stale && data" role="status">{{ t('admin-content.flashComments.stale') }}</p>
     <p v-if="notice" role="status">{{ notice }}</p>
     <template v-if="data">
-      <p v-if="!pending && !error && !data.items.length">{{ t('admin-content.flashComments.empty') }}</p>
+      <AdminEmptyState
+        v-if="!pending && !error && !data.items.length"
+        :title="t('admin-content.flashComments.empty')"
+      />
       <AdminBatchBar
         v-if="data.items.length"
         :noun="(count: number) => t('admin-content.flashComments.batch.noun', count)"

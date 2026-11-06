@@ -1,0 +1,131 @@
+/**
+ * @file _admin-patterns.scss
+ * @description 后台通用列表模式的外观：筛选栏（AdminFilterBar）、空状态（AdminEmptyState）与加载占位（AdminListSkeleton）。
+ *              与 _admin.scss 同一作用域与优先级约定，颜色取自全站主题变量，随明暗模式切换
+ * @author TixXin
+ * @since 2026-11-06
+ */
+
+@use 'tokens' as *;
+
+$scope: ':where(.admin-ui)';
+
+// ---------- 筛选栏 ----------
+#{$scope} .admin-filter-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: var(--admin-gap);
+  padding: 0.75rem;
+  border: 1px solid var(--admin-card-border);
+  border-radius: var(--admin-radius-card);
+  background: var(--admin-card-bg);
+}
+#{$scope} .admin-filter-bar__fields,
+#{$scope} .admin-filter-bar__actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+}
+#{$scope} .admin-filter-bar__fields {
+  flex: 1 1 18rem;
+  min-width: 0;
+
+  > input:where([type='search'], :not([type])) {
+    flex: 1 1 12rem;
+    min-width: 0;
+  }
+}
+@media (max-width: 600px) {
+  #{$scope} .admin-filter-bar__fields > * {
+    flex: 1 1 100%;
+  }
+  #{$scope} .admin-filter-bar__actions {
+    width: 100%;
+
+    > * {
+      flex: 1 1 auto;
+    }
+  }
+}
+
+// ---------- 空状态 ----------
+#{$scope} .admin-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 2.5rem 1rem;
+  border: 1px dashed var(--admin-card-border);
+  border-radius: var(--admin-radius-card);
+  color: var(--text-muted);
+  text-align: center;
+}
+#{$scope} .admin-empty__icon {
+  color: var(--text-soft);
+}
+#{$scope} .admin-empty__title {
+  margin: 0;
+  color: var(--text);
+  font-size: 0.9375rem;
+  font-weight: 600;
+}
+#{$scope} .admin-empty__description {
+  margin: 0;
+  max-width: 32rem;
+  font-size: 0.875rem;
+}
+#{$scope} .admin-empty__actions {
+  justify-content: center;
+  margin-top: 0.5rem;
+}
+
+// ---------- 加载占位 ----------
+#{$scope} .admin-skeleton {
+  display: grid;
+  gap: 0.625rem;
+  margin-bottom: var(--admin-gap);
+}
+#{$scope} .admin-skeleton--cards {
+  grid-template-columns: repeat(auto-fill, minmax(15rem, 1fr));
+  gap: 1rem;
+}
+#{$scope} .admin-skeleton__item {
+  display: grid;
+  gap: 0.5rem;
+  padding: 0.875rem 1rem;
+  border: 1px solid var(--admin-card-border);
+  border-radius: var(--admin-radius-card);
+  background: var(--admin-card-bg);
+}
+#{$scope} .admin-skeleton--cards .admin-skeleton__item {
+  min-height: 8rem;
+}
+#{$scope} .admin-skeleton__line {
+  display: block;
+  height: 0.75rem;
+  width: 70%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, var(--surface-2) 25%, var(--surface-3) 50%, var(--surface-2) 75%);
+  background-size: 200% 100%;
+  animation: admin-skeleton-shimmer 1.4s ease-in-out infinite;
+
+  @media (prefers-reduced-motion: reduce) {
+    animation: none;
+  }
+}
+#{$scope} .admin-skeleton__line--title {
+  width: 40%;
+  height: 0.9375rem;
+}
+@keyframes admin-skeleton-shimmer {
+  from {
+    background-position: 100% 0;
+  }
+  to {
+    background-position: -100% 0;
+  }
+}

@@ -3,7 +3,11 @@
 exports[`导入结果：数量、关联、检查入口与票据读取 1`] = `
 "<section class="maintenance">
   <header class="admin-page-header">
-    <h1>备份与维护</h1>
+    <div>
+      <h1>备份与维护</h1>
+      <!--v-if-->
+    </div>
+    <!--v-if-->
   </header>
   <section aria-label="运行诊断">
     <h2>运行诊断</h2>
@@ -103,7 +107,11 @@ corepack pnpm --filter server-main run backup:restore --directory &lt;备份目�
 exports[`导入预览：计划明细、设置预览、确认输入与操作接线 1`] = `
 "<section class="maintenance">
   <header class="admin-page-header">
-    <h1>备份与维护</h1>
+    <div>
+      <h1>备份与维护</h1>
+      <!--v-if-->
+    </div>
+    <!--v-if-->
   </header>
   <section aria-label="运行诊断">
     <h2>运行诊断</h2>
@@ -226,7 +234,11 @@ corepack pnpm --filter server-main run backup:restore --directory &lt;备份目�
 exports[`空闲状态：诊断待加载、无票据、最近记录为空 1`] = `
 "<section class="maintenance">
   <header class="admin-page-header">
-    <h1>备份与维护</h1>
+    <div>
+      <h1>备份与维护</h1>
+      <!--v-if-->
+    </div>
+    <!--v-if-->
   </header>
   <section aria-label="运行诊断">
     <h2>运行诊断</h2>
@@ -279,7 +291,11 @@ corepack pnpm --filter server-main run backup:restore --directory &lt;备份目�
 exports[`诊断结果、媒体问题、已选文件与处理中提示 1`] = `
 "<section class="maintenance">
   <header class="admin-page-header">
-    <h1>备份与维护</h1>
+    <div>
+      <h1>备份与维护</h1>
+      <!--v-if-->
+    </div>
+    <!--v-if-->
   </header>
   <section aria-label="运行诊断">
     <h2>运行诊断</h2>
