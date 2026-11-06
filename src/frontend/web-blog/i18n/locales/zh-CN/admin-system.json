@@ -375,11 +375,16 @@
         "methodLegend": "支持方式 {index}",
         "methodLabel": "名称（如 微信、Ko-fi）",
         "methodUrl": "链接（选填，http 或 https）",
-        "methodImage": "收款码图片地址（选填，站内媒体或 https）",
+        "methodImage": "或填写外部收款码图片地址（选填，https）",
         "add": "添加支持方式",
         "remove": "移除支持方式",
         "removeLabel": "移除{name}",
-        "setup": "设置支持方式"
+        "setup": "设置支持方式",
+        "pickImage": "从媒体库选择收款码",
+        "pickImageLabel": "为{name}从媒体库选择收款码",
+        "clearImage": "移除图片",
+        "clearImageLabel": "移除{name}的收款码图片",
+        "imagePreview": "{name}收款码预览"
       }
     },
     "shared": {

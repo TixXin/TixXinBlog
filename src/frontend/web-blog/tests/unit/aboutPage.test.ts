@@ -10,6 +10,7 @@ import ContactCards from '../../app/components/about/ContactCards.vue'
 import DonateCard from '../../app/components/about/DonateCard.vue'
 import ProfileContent from '../../app/components/about/ProfileContent.vue'
 import AboutItemFields from '../../app/components/admin/AboutItemFields.vue'
+import AboutSupportFields from '../../app/components/admin/AboutSupportFields.vue'
 import { isAboutSettings, mergeAbout } from '../../app/features/about/editor'
 import { externalLinkAttrs } from '../../app/features/about/links'
 import { introductionSummary, localizeAbout, publicAbout, publicSupport } from '../../app/features/about/settings'
@@ -196,6 +197,34 @@ describe('关于页组件', () => {
     expect(item.en).toEqual({ title: 'The Design of Everyday Things', detail: '', period: '' })
     await inputs[3]!.setValue('')
     expect('en' in item).toBe(false)
+    wrapper.unmount()
+  })
+
+  it('后台支持方式：从媒体库选择收款码回填对应方式，可移除图片', async () => {
+    const support = reactive({
+      visible: true,
+      message: '',
+      methods: [
+        { label: '微信', url: '', image: '' },
+        { label: 'Ko-fi', url: 'https://ko-fi.com/x', image: '' },
+      ],
+    })
+    const wrapper = await mountSuspended(AboutSupportFields, {
+      props: { modelValue: support, 'onUpdate:modelValue': () => {} },
+    })
+    await wrapper.find('button[aria-label="为Ko-fi从媒体库选择收款码"]').trigger('click')
+    const picker = wrapper.findComponent({ name: 'AdminMediaPicker' })
+    expect(picker.props('open')).toBe(true)
+    picker.vm.$emit('selected', {
+      id: 'a1111111-1111-4111-8111-111111111111',
+      url: '/api/v1/media/a1111111-1111-4111-8111-111111111111.webp',
+    })
+    await wrapper.vm.$nextTick()
+    expect(support.methods[0]!.image).toBe('')
+    expect(support.methods[1]!.image).toBe('/api/v1/media/a1111111-1111-4111-8111-111111111111.webp')
+    expect(wrapper.find('img.about-support__thumb').attributes('src')).toBe(support.methods[1]!.image)
+    await wrapper.find('button[aria-label="移除Ko-fi的收款码图片"]').trigger('click')
+    expect(support.methods[1]!.image).toBe('')
     wrapper.unmount()
   })
 })

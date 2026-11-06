@@ -375,11 +375,16 @@
         "methodLegend": "Option {index}",
         "methodLabel": "Name (e.g. WeChat, Ko-fi)",
         "methodUrl": "Link (optional, http or https)",
-        "methodImage": "Payment code image URL (optional, site media or https)",
+        "methodImage": "Or an external payment code image URL (optional, https)",
         "add": "Add support option",
         "remove": "Remove option",
         "removeLabel": "Remove {name}",
-        "setup": "Set up support options"
+        "setup": "Set up support options",
+        "pickImage": "Choose payment code from media",
+        "pickImageLabel": "Choose payment code for {name} from media",
+        "clearImage": "Remove image",
+        "clearImageLabel": "Remove payment code image for {name}",
+        "imagePreview": "{name} payment code preview"
       }
     },
     "shared": {
