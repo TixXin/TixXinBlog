@@ -6,7 +6,7 @@ import { flushPromises } from '@vue/test-utils'
 import { mockNuxtImport, mountSuspended } from '@nuxt/test-utils/runtime'
 import { appendPriceHistory } from '@tixxin/subscription-domain'
 import { useAdminSubscriptionEditor } from '../../app/composables/useAdminSubscriptionEditor'
-import { subscriptionBody, subscriptionForm } from '../../app/features/subscription/editor'
+import { parseSubscriptionRecovery, subscriptionBody, subscriptionForm } from '../../app/features/subscription/editor'
 import type { ManagedSubscription } from '../../app/features/subscription/types'
 const mocks = vi.hoisted(() => ({
   repo: { adminDetail: vi.fn(), save: vi.fn(), submission: vi.fn() },
@@ -212,4 +212,40 @@ it('服务器内容库冲突不会读取或合并同编号新记录，私密视�
   await editor.load()
   expect(mocks.repo.adminDetail).not.toHaveBeenCalled()
   expect(sessionStorage.getItem('blog-subscription-editor:owner:1:subscriptions-library')).toContain('旧内容库的输入')
+})
+
+describe('订阅表单与恢复副本的试用到期日、结束日', () => {
+  const recovery = (form: Record<string, unknown>) =>
+    JSON.stringify({
+      version: 1,
+      context: 'ctx',
+      id: null,
+      revision: null,
+      requestId: '6459bac0-801f-44cd-91ae-5729bef9a110',
+      form,
+      pendingCreate: null,
+      savedAt: '2026-11-06T00:00:00.000Z',
+    })
+  it('表单与提交正文携带两个日期，缺省为 null', () => {
+    expect(subscriptionForm()).toMatchObject({ trialEndDate: null, endDate: null })
+    const body = subscriptionBody(
+      subscriptionForm({ name: '工具', amountInput: '1', trialEndDate: '2026-12-01', endDate: '2027-01-01' }),
+    )
+    expect(body).toMatchObject({ trialEndDate: '2026-12-01', endDate: '2027-01-01' })
+  })
+  it('旧恢复副本没有新字段时仍可恢复并补为 null，新副本原样恢复', () => {
+    const legacy = { ...subscriptionForm({ name: '旧副本' }) } as Record<string, unknown>
+    delete legacy.trialEndDate
+    delete legacy.endDate
+    expect(parseSubscriptionRecovery(recovery(legacy))?.form).toMatchObject({ trialEndDate: null, endDate: null })
+    const current = subscriptionForm({ name: '新副本', trialEndDate: '2026-12-01', endDate: '2027-01-01' })
+    expect(parseSubscriptionRecovery(recovery(current))?.form).toMatchObject({
+      trialEndDate: '2026-12-01',
+      endDate: '2027-01-01',
+    })
+  })
+  it('新日期字段类型错误时拒绝整份副本', () => {
+    expect(parseSubscriptionRecovery(recovery({ ...subscriptionForm(), endDate: 20270101 }))).toBeNull()
+    expect(parseSubscriptionRecovery(recovery({ ...subscriptionForm(), trialEndDate: {} }))).toBeNull()
+  })
 })

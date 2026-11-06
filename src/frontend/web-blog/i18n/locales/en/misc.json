@@ -585,7 +585,8 @@
         "spent": "Total spent (estimate)",
         "spentUnknown": "No start date, cannot estimate",
         "spentNone": "No charges yet",
-        "spentValue": "About {amount} ({count} charge) | About {amount} ({count} charges)"
+        "spentValue": "About {amount} ({count} charge) | About {amount} ({count} charges)",
+        "renew": "Renewed — move to {date}"
       },
       "filters": {
         "search": "Search subscriptions",
@@ -788,7 +789,9 @@
         "merged": "Merged the latest record: your changes on this page were kept and other fields use the latest values. Review and save manually.",
         "confirmLeave": "Your local subscription has unsaved input. Leave anyway?",
         "trialEndBeforeStart": "The trial end date cannot be earlier than the start date",
-        "endBeforeStart": "The end date cannot be earlier than the start date"
+        "endBeforeStart": "The end date cannot be earlier than the start date",
+        "renewed": "Renewed. Next billing moved to {date}",
+        "renewWhileEditing": "This subscription has unsaved edits. Save or cancel them before marking it renewed."
       },
       "repository": {
         "unavailable": "The subscription service is temporarily unavailable. Please try again later",

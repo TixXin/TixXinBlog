@@ -108,6 +108,11 @@
               <button v-if="editable" type="button" :disabled="busy" @click="$emit('edit')">
                 <Icon name="lucide:pencil" size="15" aria-hidden="true" />{{ $t('misc.subscription.card.edit') }}
               </button>
+              <button v-if="local && renewDate" type="button" :disabled="busy" @click="$emit('renew')">
+                <Icon name="lucide:calendar-check" size="15" aria-hidden="true" />{{
+                  $t('misc.subscription.card.renew', { date: renewDate })
+                }}
+              </button>
               <button
                 v-if="local"
                 type="button"
@@ -126,7 +131,7 @@
 </template>
 
 <script setup lang="ts">
-import { charges, formatAmount } from '@tixxin/subscription-domain'
+import { advanceBilling, charges, formatAmount } from '@tixxin/subscription-domain'
 import { categoryLabel, cycleLabel, stateLabel } from '~/features/subscription/labels'
 import type { SubscriptionItem } from '~/features/subscription/types'
 import { safeSubscriptionUrl } from '~/features/subscription/local'
@@ -151,6 +156,7 @@ const emit = defineEmits<{
   'image-error': []
   edit: []
   remove: []
+  renew: []
 }>()
 
 const { t } = useI18n()
@@ -164,6 +170,8 @@ const spentText = computed(() => {
   const amounts = [...totals].map(([currency, amount]) => formatAmount(amount, currency)).join(' + ')
   return t('misc.subscription.card.spentValue', { amount: amounts, count: list.length }, list.length)
 })
+/** 本机逾期记录可一键续费：显示推进一个周期后的日期 */
+const renewDate = computed(() => (props.overdue ? advanceBilling(props.item) : null))
 const dialog = ref<HTMLElement | null>(null)
 
 const website = computed(() => {

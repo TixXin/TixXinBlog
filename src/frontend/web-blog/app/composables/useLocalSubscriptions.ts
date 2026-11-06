@@ -3,6 +3,7 @@ import { appendPriceHistory } from '@tixxin/subscription-domain'
 import { subscriptionForm, subscriptionBody } from '~/features/subscription/editor'
 import {
   parseLocalSubscriptions,
+  renewLocalSubscription,
   serializeLocalSubscriptions,
   safeSubscriptionUrl,
   subscriptionStorageKey,
@@ -179,6 +180,26 @@ export function useLocalSubscriptions() {
       saving.value = false
     }
   }
+  /** 逾期记录一键“已续费”；正在编辑同一条且有未保存输入时拒绝，避免覆盖 */
+  async function renew(item: LocalSubscription) {
+    if (!ready.value || saving.value || conflict.value) return
+    if (dirty.value && editingId.value === item.id) {
+      error.value = t('misc.subscription.local.renewWhileEditing')
+      return
+    }
+    const next = renewLocalSubscription(item, new Date().toISOString())
+    if (!next) return
+    saving.value = true
+    try {
+      await write((items) => items.map((record) => (record.id === item.id ? next : record)))
+      notice.value = t('misc.subscription.local.renewed', { date: next.nextBillingDate })
+      error.value = ''
+    } catch (cause) {
+      error.value = subscriptionErrorMessage(cause, t) ?? t('misc.subscription.local.saveFailed')
+    } finally {
+      saving.value = false
+    }
+  }
   function mergeLatest() {
     const before = JSON.parse(baseline.value) as typeof form
     const localInput = subscriptionForm(form)
@@ -241,6 +262,7 @@ export function useLocalSubscriptions() {
     cancel,
     save,
     remove,
+    renew,
     mergeLatest,
   }
 }

@@ -165,6 +165,11 @@ export function useSubscriptionsPage(
     }
   }
 
+  function renewLocal(item: SubscriptionItem) {
+    const record = local.data.value.items.find((row) => row.id === item.id)
+    if (record) void local.renew(record)
+  }
+
   function removeLocal(item: SubscriptionItem) {
     const record = local.data.value.items.find((row) => row.id === item.id)
     if (record) void local.remove(record)
@@ -225,6 +230,7 @@ export function useSubscriptionsPage(
     openOwner,
     editItem,
     removeLocal,
+    renewLocal,
     ownerSaved,
     addLocal,
     saveLocal,

@@ -7,6 +7,7 @@ import { useLocalSubscriptions } from '../../app/composables/useLocalSubscriptio
 import { subscriptionForm, subscriptionBody } from '../../app/features/subscription/editor'
 import {
   parseLocalSubscriptions,
+  renewLocalSubscription,
   serializeLocalSubscriptions,
   subscriptionStorageKey,
   safeSubscriptionUrl,
@@ -356,5 +357,91 @@ describe('访客订阅格式与筛选', () => {
     expect(filtered.map((row) => row.id)).toEqual(['cny', 'usd2', item.id])
     expect(filterSubscriptions(rows, subscriptionQuery({ currency: 'USD' }))).toHaveLength(2)
     expect(subscriptionQuery({ sort: 'default' }).sort).toBe('manual')
+  })
+})
+
+describe('访客订阅的试用到期、结束日与一键续费', () => {
+  it('保存并刷新保留试用到期日与结束日，早于开始日时拒绝且不写入', async () => {
+    const local = await setup()
+    local.edit()
+    Object.assign(local.form, {
+      name: '短期工具',
+      currency: 'USD',
+      amountInput: '8',
+      subscriptionStatus: 'trial',
+      startDate: '2026-11-01',
+      trialEndDate: '2026-11-15',
+      endDate: '2027-11-15',
+    })
+    await local.save()
+    expect(local.error.value).toBe('')
+    wrappers.pop()!.unmount()
+    const reopened = await setup()
+    expect(reopened.data.value.items[0]).toMatchObject({ trialEndDate: '2026-11-15', endDate: '2027-11-15' })
+    reopened.edit(reopened.data.value.items[0]!)
+    reopened.form.endDate = '2026-10-01'
+    await reopened.save()
+    expect(reopened.error.value).not.toBe('')
+    expect(reopened.data.value.items[0]!.endDate).toBe('2027-11-15')
+  })
+  it('旧记录没有新日期字段时按未填写读取，不提升存储版本', () => {
+    const local = parseLocalSubscriptions(serializeLocalSubscriptions({ version: 2, revision: 'r', items: [] }))
+    expect(local.items).toEqual([])
+    const legacy = JSON.parse(
+      serializeLocalSubscriptions({
+        version: 2,
+        revision: 'r',
+        items: [
+          {
+            ...subscriptionBody(subscriptionForm({ name: '旧记录', currency: 'USD', amountInput: '1' })),
+            id: 'a',
+            revision: 0,
+            createdAt: '2026-10-01T00:00:00.000Z',
+            updatedAt: '2026-10-01T00:00:00.000Z',
+            iconUrl: null,
+            faviconUrl: null,
+            publishedAt: null,
+            priceHistory: [
+              {
+                id: '6459bac0-801f-44cd-91ae-5729bef9a110',
+                effectiveAt: '2026-10-01T00:00:00.000Z',
+                recordedAt: '2026-10-01T00:00:00.000Z',
+                amount: 100,
+                currency: 'USD',
+                billingCycle: 'monthly',
+              },
+            ],
+          },
+        ],
+      }),
+    )
+    for (const item of legacy.items) {
+      delete item.trialEndDate
+      delete item.endDate
+    }
+    const parsed = parseLocalSubscriptions(JSON.stringify(legacy))
+    expect(parsed.version).toBe(2)
+    expect(parsed.items[0]).toMatchObject({ trialEndDate: null, endDate: null })
+  })
+  it('一键续费按周期推进下次扣费并保留月底锚点，价格历史不变', async () => {
+    const local = await setup(),
+      item = await create(local)
+    expect(renewLocalSubscription({ ...item, nextBillingDate: null }, 'x')).toBeNull()
+    await local.renew(item)
+    const renewed = local.data.value.items[0]!
+    expect(renewed.nextBillingDate).toBe('2026-11-30')
+    expect(renewed.revision).toBe(item.revision + 1)
+    expect(renewed.priceHistory).toEqual(item.priceHistory)
+    expect(local.notice.value).toContain('2026-11-30')
+  })
+  it('同一条有未保存编辑时拒绝续费，不覆盖输入', async () => {
+    const local = await setup(),
+      item = await create(local)
+    local.edit(item)
+    local.form.name = '改到一半'
+    await local.renew(item)
+    expect(local.error.value).not.toBe('')
+    expect(local.data.value.items[0]!.nextBillingDate).toBe('2026-10-31')
+    expect(local.form.name).toBe('改到一半')
   })
 })

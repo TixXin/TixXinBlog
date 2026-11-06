@@ -1,5 +1,11 @@
 /** @file local.ts @description 访客订阅的版本化存储校验；损坏数据保留原文，历史迁移不补造过去价格 */
-import { appendPriceHistory, isDate, validatePricing, validatePriceHistory } from '@tixxin/subscription-domain'
+import {
+  advanceBilling,
+  appendPriceHistory,
+  isDate,
+  validatePricing,
+  validatePriceHistory,
+} from '@tixxin/subscription-domain'
 import { categoryOptions, isOneOf, stateOptions } from './types'
 import { currentTranslate } from '~/utils/format'
 import type { SubscriptionEditable, SubscriptionItem } from './types'
@@ -133,6 +139,13 @@ export function parseLocalSubscriptions(raw: string | null, now = new Date().toI
   } catch {
     throw localError('corrupted')
   }
+}
+
+/** “已续费”：下次扣费日推进一个周期并递增版本；无周期或没有下次扣费日时返回 null，不改价格历史 */
+export function renewLocalSubscription(item: LocalSubscription, now: string): LocalSubscription | null {
+  const nextBillingDate = advanceBilling(item)
+  if (!nextBillingDate) return null
+  return { ...item, nextBillingDate, revision: item.revision + 1, updatedAt: now }
 }
 
 /** 写入和读取使用相同边界，拒绝制造刷新后无法读取的本机内容。 */

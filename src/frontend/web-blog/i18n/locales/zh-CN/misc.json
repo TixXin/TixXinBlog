@@ -585,7 +585,8 @@
         "spent": "累计花费（估算）",
         "spentUnknown": "缺少开始日期，无法估算",
         "spentNone": "尚无扣费",
-        "spentValue": "约 {amount}（{count} 次扣费）"
+        "spentValue": "约 {amount}（{count} 次扣费）",
+        "renew": "已续费，下次改为 {date}"
       },
       "filters": {
         "search": "搜索订阅",
@@ -788,7 +789,9 @@
         "merged": "已合并最新记录：保留本页改动，其余字段采用最新值。请核对后手动保存。",
         "confirmLeave": "本地订阅有未保存输入，确定离开吗？",
         "trialEndBeforeStart": "试用到期日期不能早于订阅开始日期",
-        "endBeforeStart": "结束日期不能早于订阅开始日期"
+        "endBeforeStart": "结束日期不能早于订阅开始日期",
+        "renewed": "已续费，下次扣费改为 {date}",
+        "renewWhileEditing": "这条订阅有未保存的编辑，请先保存或取消再标记续费"
       },
       "repository": {
         "unavailable": "订阅服务暂时不可用，请稍后重试",

@@ -80,6 +80,7 @@
       @image-error="imageFailed = true"
       @edit="requestEdit"
       @remove="requestRemove"
+      @renew="requestRenew"
     />
   </article>
 </template>
@@ -99,7 +100,7 @@ const props = defineProps<{
   local?: boolean
   busy?: boolean
 }>()
-const emit = defineEmits<{ edit: []; remove: [] }>()
+const emit = defineEmits<{ edit: []; remove: []; renew: [] }>()
 const { t } = useI18n()
 const rowId = useId()
 const open = ref(false),
@@ -149,6 +150,12 @@ async function requestEdit() {
   open.value = false
   await nextTick()
   emit('edit')
+}
+async function requestRenew() {
+  if (!props.local || props.busy || !overdue.value) return
+  open.value = false
+  await nextTick()
+  emit('renew')
 }
 async function requestRemove() {
   if (!props.local || props.busy) return

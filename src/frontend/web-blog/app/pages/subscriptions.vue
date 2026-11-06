@@ -84,6 +84,7 @@
             :busy="local.saving.value"
             @edit="editItem(item)"
             @remove="removeLocal(item)"
+            @renew="renewLocal(item)"
           />
         </section>
         <nav
@@ -200,6 +201,7 @@ const {
   openOwner,
   editItem,
   removeLocal,
+  renewLocal,
   ownerSaved,
   addLocal,
   saveLocal,

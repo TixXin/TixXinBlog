@@ -599,3 +599,45 @@ test('公开页不报逾期、后台一键续费、年度账单、参考汇率�
     await api(`/admin/subscriptions/${created.id}?revision=${latest.revision}`, 'DELETE')
   }
 })
+
+test('后台订阅设置面板：在界面上保存参考汇率、生成与停用续费日历', async ({ page, request }) => {
+  const api = await adminApi(request)
+  const before = await api('/admin/subscriptions/settings')
+  try {
+    await login(page)
+    await page.goto('/admin/subscriptions')
+    const panel = page.getByRole('region', { name: '订阅设置', exact: true })
+    await panel.getByText('订阅设置', { exact: true }).click()
+    await panel.getByRole('combobox', { name: '基准币种', exact: true }).selectOption('CNY')
+    await panel.getByRole('textbox', { name: '1 USD = ? CNY', exact: true }).fill('7.1')
+    await panel.getByRole('textbox', { name: '1 JPY = ? CNY', exact: true }).fill('abc')
+    await panel.getByRole('button', { name: '保存汇率', exact: true }).click()
+    await expect(panel.getByRole('status')).toContainText('参考汇率无效')
+    await panel.getByRole('textbox', { name: '1 JPY = ? CNY', exact: true }).fill('')
+    await panel.getByRole('button', { name: '保存汇率', exact: true }).click()
+    await expect(panel.getByRole('status')).toHaveText('参考汇率已保存')
+    expect(await api('/admin/subscriptions/settings')).toMatchObject({ baseCurrency: 'CNY', rates: { USD: '7.1' } })
+    expect((await (await request.get('/api/v1/subscriptions/settings')).json()).data.rates).toEqual({ USD: '7.1' })
+
+    await panel.getByRole('button', { name: '生成日历链接', exact: true }).click()
+    const link = panel.getByRole('textbox', { name: '续费日历链接', exact: true })
+    await expect(link).toHaveValue(/\/api\/v1\/subscriptions\/calendar\.ics\?token=/)
+    const url = new URL(await link.inputValue())
+    expect((await request.get(url.pathname + url.search)).status()).toBe(200)
+    await expect(panel.getByRole('link', { name: '在日历应用中订阅', exact: true })).toHaveAttribute('href', /^webcal:/)
+    page.once('dialog', (dialog) => dialog.accept())
+    await panel.getByRole('button', { name: '停用续费日历', exact: true }).click()
+    await expect(panel.getByRole('status')).toHaveText('续费日历已停用')
+    await expect(link).toHaveCount(0)
+    expect((await request.get(url.pathname + url.search)).status()).toBe(404)
+  } finally {
+    const current = await api('/admin/subscriptions/settings')
+    await api('/admin/subscriptions/settings', 'PATCH', {
+      revision: current.revision,
+      baseCurrency: before.baseCurrency,
+      rates: before.rates,
+      ratesUpdatedAt: before.ratesUpdatedAt,
+    })
+    if (current.calendarEnabled && !before.calendarEnabled) await api('/admin/subscriptions/calendar-token', 'DELETE')
+  }
+})
