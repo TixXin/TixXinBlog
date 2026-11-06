@@ -1,6 +1,6 @@
 {
   "name": "server-main",
-  "version": "0.5.2-beta.6",
+  "version": "0.5.2-beta.7",
   "private": true,
   "description": "TixXinBlog 后端服务：NestJS + MikroORM + PostgreSQL",
   "scripts": {
