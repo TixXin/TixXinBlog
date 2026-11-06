@@ -549,3 +549,16 @@ test('320至1024px均能使用文章筛选、目录、书签分组和登录', as
     expect(overflow).toBe(false)
   }
 })
+
+test('中文标签页直接打开与刷新都由服务端渲染出文章，不返回 404', async ({ page }) => {
+  const path = `/tags/${encodeURIComponent('示例标签')}`
+  for (const load of [() => page.goto(path), () => page.reload()]) {
+    const response = await load()
+    expect(response?.status()).toBe(200)
+    await expect(page.locator('h1')).toContainText('示例标签')
+    await expect(page.locator('a[href^="/articles/"]').first()).toBeVisible()
+  }
+  // 未编码的中文地址同样可达
+  expect((await page.goto('/tags/示例标签'))?.status()).toBe(200)
+  await expect(page.locator('h1')).toContainText('示例标签')
+})
