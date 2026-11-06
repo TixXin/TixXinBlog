@@ -7,6 +7,7 @@ import { Injectable } from '@nestjs/common'
 import { unansweredCommentSql, visibleCommentSql } from '../comment/comment-visibility'
 import { unansweredGuestbookSql } from '../guestbook/guestbook-values'
 import { SITE_TIME_ZONE_SQL } from '../site/site-time-zone'
+import { PENDING_COUNT_SQL, PENDING_COUNTS_QUERY, type PendingCounts } from './admin-pending'
 
 export interface TrendDay {
   date: string
@@ -44,6 +45,12 @@ export interface AdminOverviewData {
 export class AdminOverviewService {
   constructor(private readonly em: EntityManager) {}
 
+  /** 导航徽章用的待审数量，单条查询 */
+  async pendingCounts(): Promise<PendingCounts> {
+    const [row] = await this.em.getConnection().execute<PendingCounts[]>(PENDING_COUNTS_QUERY)
+    return row!
+  }
+
   async getOverview(): Promise<AdminOverviewData> {
     const connection = this.em.getConnection()
     const [counts, recent, trends] = await Promise.allSettled([
@@ -56,7 +63,7 @@ export class AdminOverviewService {
           (select count(*)::int from post where status='archived' and deleted_at is null) as "archived",
           (select coalesce(sum(views),0)::int from post where status='published' and deleted_at is null) as "views",
           (select count(*)::int from comment) as "comments",
-          (select count(*)::int from comment where status='pending') as "pendingComments",
+          ${PENDING_COUNT_SQL.pendingComments} as "pendingComments",
           (select count(*)::int from comment where status='spam') as "spamComments",
           (select count(*)::int from comment c join post p on p.id=c.post_id
             where p.status='published' and p.deleted_at is null and ${visibleCommentSql('c')}) as "publicComments",
@@ -71,11 +78,10 @@ export class AdminOverviewService {
           (select count(*)::int from project where status='draft' and deleted_at is null) as "projectDrafts",
           (select count(*)::int from friend_link where deleted_at is null) as "links",
           (select count(*)::int from friend_link where status='draft' and deleted_at is null) as "linkDrafts",
-          (select count(*)::int from guestbook_message where status='pending' and deleted_at is null) as "pendingGuestbook",
+          ${PENDING_COUNT_SQL.pendingGuestbook} as "pendingGuestbook",
           (select count(*)::int from guestbook_message g where ${unansweredGuestbookSql('g')}) as "unansweredGuestbook",
-          (select count(*)::int from moment_comment c join moment m on m.id=c.moment_id
-            where c.status='pending' and c.deleted_at is null and m.deleted_at is null) as "pendingMomentComments",
-          (select count(*)::int from flash_comment where status='pending') as "pendingFlashComments"
+          ${PENDING_COUNT_SQL.pendingMomentComments} as "pendingMomentComments",
+          ${PENDING_COUNT_SQL.pendingFlashComments} as "pendingFlashComments"
       `),
       // 每域先限量再合并，应用端只接收全局最近十二项，不拉取完整内容。
       connection.execute<RecentContent[]>(`

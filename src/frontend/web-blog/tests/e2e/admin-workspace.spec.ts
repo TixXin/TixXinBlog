@@ -173,7 +173,10 @@ for (const theme of ['nexus', 'aurora', 'dock']) {
       await page.goto(path!)
       await expect(page.getByRole('button', { name: '退出登录', exact: true })).toBeVisible()
       await expect(page.getByRole('main').getByText(/^正在(?:读取|加载|确认)/)).toHaveCount(0)
-      await expect(page.locator('.admin-sidebar nav [aria-current="page"]')).toHaveText(title!)
+      // 当前项是该页面；审核类入口可能带待审徽章（数字与读屏说明），只放行标题后的徽章文字
+      await expect(page.locator('.admin-sidebar nav [aria-current="page"]')).toHaveText(
+        new RegExp(`^${title!}(?:(?:\\d+|99\\+)，\\d+ 条(?:待处理|未读))?$`),
+      )
       await expect(page.getByRole('main', { name: '管理内容' })).toBeVisible()
       await noOverflow(page)
     }

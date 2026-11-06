@@ -12,6 +12,12 @@ import { AdminOverviewService } from './admin-overview.service'
 export class AdminOverviewController {
   constructor(private readonly overviewService: AdminOverviewService) {}
 
+  /** 导航徽章：只返回待审数量，不计算趋势与最近内容 */
+  @Get('pending')
+  pending() {
+    return this.overviewService.pendingCounts()
+  }
+
   @Get()
   async overview() {
     const data = await this.overviewService.getOverview()

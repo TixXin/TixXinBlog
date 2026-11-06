@@ -17,7 +17,9 @@
         {{ t('admin-system.layout.jumpToActions') }}<Icon name="lucide:arrow-down-to-line" />
       </button>
       <ClientOnly
-        ><AdminReleaseBadge v-if="isLoggedIn && !isLogin && !isSetup" /><button
+        ><AdminCommandPaletteTrigger v-if="workspace" @open="paletteOpen = true" /><AdminReleaseBadge
+          v-if="workspace"
+        /><button
           type="button"
           class="admin-header__icon"
           :aria-label="t('admin-system.layout.toggleColor')"
@@ -57,6 +59,7 @@
       </div>
     </main>
     <AdminShellTabBar v-if="!isLogin" v-model:open="drawerOpen" />
+    <ClientOnly><AdminCommandPalette v-if="workspace" v-model:open="paletteOpen" /></ClientOnly>
   </div>
 </template>
 <script setup lang="ts">
@@ -100,6 +103,11 @@ const leaving = ref(false)
 const isLogin = computed(() => route.path === '/admin/login' || route.path === '/setup')
 // 初始化向导是安装后的第一个页面：不显示面包屑，顶栏只留主题切换
 const isSetup = computed(() => route.path === '/setup')
+// 已登录的后台工作区才提供命令面板与快捷键，登录页和初始化向导不提供
+const workspace = computed(() => isLoggedIn.value && !isLogin.value && !isSetup.value)
+const paletteOpen = ref(false)
+useAdminShortcuts(paletteOpen)
+watch(workspace, (value) => value || (paletteOpen.value = false))
 const activePath = computed(() => adminModule(route.path)?.path)
 const activeItem = computed(() => navigation.find((item) => item.path === activePath.value))
 const pageTitle = computed(() =>

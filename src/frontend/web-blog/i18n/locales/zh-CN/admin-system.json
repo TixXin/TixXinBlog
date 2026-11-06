@@ -18,6 +18,7 @@
     "nav": {
       "label": "管理导航",
       "unread": "，{count} 条未读",
+      "pending": "，{count} 条待处理",
       "overview": "管理概览",
       "notifications": "互动通知",
       "operations": "运行状态",
@@ -1071,6 +1072,32 @@
         "saveFailed": "近期访问开关保存失败，请稍后重试",
         "disableConfirm": "关闭后会立即删除已记录的近期访问明细，确定关闭吗？"
       }
+    },
+    "command": {
+      "open": "搜索或跳转",
+      "shortcut": "按 {key} 打开",
+      "dialog": "命令面板",
+      "input": "搜索页面、新建内容或文章标题",
+      "placeholder": "输入页面名、“新建”或文章标题…",
+      "groups": {
+        "create": "新建",
+        "pages": "页面",
+        "posts": "文章"
+      },
+      "create": {
+        "post": "新建文章",
+        "moment": "发布动态",
+        "flash": "新建闪念",
+        "gallery": "新建照片作品",
+        "project": "新建项目",
+        "link": "新建友链",
+        "subscription": "新建订阅"
+      },
+      "searching": "正在搜索文章…",
+      "postsFailed": "文章搜索失败，其他结果仍可使用",
+      "empty": "没有匹配的结果",
+      "hint": "↑↓ 选择 · Enter 打开 · Esc 关闭",
+      "results": "{count} 个结果"
     }
   }
 }

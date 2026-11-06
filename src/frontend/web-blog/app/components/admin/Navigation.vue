@@ -1,4 +1,4 @@
-<!-- @file Navigation.vue @description 桌面与移动共用管理导航：按工作台、内容、互动、站点、系统分组，活动项只滚动导航自身；互动通知显示未读徽章 -->
+<!-- @file Navigation.vue @description 桌面与移动共用管理导航：按工作台、内容、互动、站点、系统分组，活动项只滚动导航自身；互动通知显示未读数，审核类入口显示待审数 -->
 <template>
   <nav ref="nav" class="admin-navigation" :aria-label="t('admin-system.nav.label')">
     <div
@@ -17,9 +17,9 @@
         :aria-current="activePath === item.path ? 'page' : undefined"
       >
         <Icon :name="item.icon" />{{ t(item.labelKey)
-        }}<span v-if="item.path === '/admin/notifications' && unread" class="admin-navigation__badge"
-          ><span aria-hidden="true">{{ unread > 99 ? '99+' : unread }}</span
-          ><span class="sr-only">{{ t('admin-system.nav.unread', { count: unread }) }}</span></span
+        }}<span v-if="badges[item.path]" class="admin-navigation__badge"
+          ><span aria-hidden="true">{{ badgeText(badges[item.path]!.count) }}</span
+          ><span class="sr-only">{{ badges[item.path]!.label }}</span></span
         >
       </NuxtLink>
     </div>
@@ -27,6 +27,7 @@
 </template>
 <script setup lang="ts">
 import { adminNavigation, adminNavigationGroups, adminModule } from '~/features/admin/navigation'
+import { ADMIN_PENDING_BY_PATH, badgeText } from '~/features/admin/pending'
 const { t } = useI18n()
 const uid = useId()
 const groups = adminNavigationGroups.map((id) => ({ id, items: adminNavigation.filter((item) => item.group === id) }))
@@ -34,6 +35,21 @@ const route = useRoute()
 const nav = ref<HTMLElement | null>(null)
 const activePath = computed(() => adminModule(route.path)?.path)
 const { unread, refresh: refreshUnread } = useAdminNotificationUnread()
+const pending = useAdminPendingCounts()
+// 各入口的徽章：通知显示未读数，审核类入口显示待审数；为零或未读到时不显示
+const badges = computed(() => {
+  const result: Record<string, { count: number; label: string }> = {}
+  if (unread.value)
+    result['/admin/notifications'] = {
+      count: unread.value,
+      label: t('admin-system.nav.unread', { count: unread.value }),
+    }
+  for (const [path, key] of Object.entries(ADMIN_PENDING_BY_PATH)) {
+    const count = pending.counts.value?.[key]
+    if (count) result[path] = { count, label: t('admin-system.nav.pending', { count }) }
+  }
+  return result
+})
 const auth = useCurrentUser()
 async function reveal() {
   await nextTick()
@@ -55,16 +71,26 @@ async function reveal() {
 onMounted(() => {
   void reveal()
   void refreshUnread(false)
+  void pending.refresh(false)
 })
 watch(activePath, reveal)
 // 切换后台页面时按需刷新（60 秒内复用），登录恢复后立即读取。
 watch(
   () => route.path,
-  () => void refreshUnread(false),
+  (path, previous) => {
+    void refreshUnread(false)
+    // 离开审核页时可能刚处理过待审项，立即重读；其余切页 60 秒内复用
+    void pending.refresh(Object.keys(ADMIN_PENDING_BY_PATH).some((item) => previous?.startsWith(item)))
+  },
 )
 watch(auth.isLoggedIn, (value) => {
-  if (value) void refreshUnread()
-  else unread.value = null
+  if (value) {
+    void refreshUnread()
+    void pending.refresh()
+  } else {
+    unread.value = null
+    pending.clear()
+  }
 })
 </script>
 <style scoped lang="scss">

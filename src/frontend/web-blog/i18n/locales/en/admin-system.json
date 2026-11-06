@@ -18,6 +18,7 @@
     "nav": {
       "label": "Admin navigation",
       "unread": ", {count} unread",
+      "pending": ", {count} pending",
       "overview": "Overview",
       "notifications": "Notifications",
       "operations": "System status",
@@ -1071,6 +1072,32 @@
         "saveFailed": "Couldn't save the recent visits setting. Try again later.",
         "disableConfirm": "Turning this off deletes the recorded visits right away. Turn it off?"
       }
+    },
+    "command": {
+      "open": "Search or jump",
+      "shortcut": "Press {key} to open",
+      "dialog": "Command palette",
+      "input": "Search pages, create content or find posts by title",
+      "placeholder": "Type a page, “new”, or a post title…",
+      "groups": {
+        "create": "Create",
+        "pages": "Pages",
+        "posts": "Posts"
+      },
+      "create": {
+        "post": "New post",
+        "moment": "New moment",
+        "flash": "New flash note",
+        "gallery": "New photo",
+        "project": "New project",
+        "link": "New link",
+        "subscription": "New subscription"
+      },
+      "searching": "Searching posts…",
+      "postsFailed": "Post search failed; other results are still available",
+      "empty": "No matching results",
+      "hint": "↑↓ to select · Enter to open · Esc to close",
+      "results": "{count} results"
     }
   }
 }

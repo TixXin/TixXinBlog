@@ -139,6 +139,7 @@ test('留言页批量隐藏，通知页全部已读后导航徽章消失', async
   await expect(readAll).toBeVisible()
   await readAll.click()
   await expect(page.getByText(/^未读 0 条/)).toBeVisible()
-  await expect(page.locator('.admin-navigation__badge')).toHaveCount(0)
+  // 只看通知入口的未读徽章；审核类入口可能仍有待审数量徽章
+  await expect(page.locator('.admin-navigation a[href="/admin/notifications"] .admin-navigation__badge')).toHaveCount(0)
   await expect(page.getByRole('heading', { name: '互动通知', level: 1 })).toBeFocused()
 })

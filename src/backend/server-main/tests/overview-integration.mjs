@@ -169,6 +169,19 @@ try {
   assert.equal(overview.counts.pendingGuestbook, 1)
   assert.equal(overview.counts.unansweredGuestbook, 20)
   assert.equal(overview.counts.pendingMomentComments, 22)
+  // 导航徽章的待审数量接口与工作台统计一致，且不对未登录请求开放
+  assert.equal((await request('/admin/overview/pending', 'GET', undefined, false)).status, 401)
+  const pending = await ok('/admin/overview/pending')
+  assert.deepEqual(Object.keys(pending).sort(), [
+    'pendingComments',
+    'pendingFlashComments',
+    'pendingGuestbook',
+    'pendingLinkApplications',
+    'pendingMomentComments',
+  ])
+  for (const key of ['pendingComments', 'pendingFlashComments', 'pendingGuestbook', 'pendingMomentComments'])
+    assert.equal(pending[key], overview.counts[key], key)
+  assert.equal(pending.pendingLinkApplications, (await ok('/admin/links/applications?status=pending')).total)
   assert.equal(overview.counts.unanswered, 1)
   assert.equal((await ok('/admin/guestbook?unanswered=true&page=2&pageSize=15')).items.length, 5)
   assert.equal((await ok('/admin/guestbook?unanswered=true&status=pending')).total, 0)
