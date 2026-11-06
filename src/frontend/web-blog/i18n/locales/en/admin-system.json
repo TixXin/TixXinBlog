@@ -641,7 +641,21 @@
       "quotes": "Daily quotes: {text}",
       "quoteCount": "{count} quote | {count} quotes",
       "copyright": "Copyright: {text}",
-      "icpNumber": "ICP number: {text}"
+      "icpNumber": "ICP number: {text}",
+      "introductionEn": "Introduction (English): {text}",
+      "siteInfoOn": "Site info: shown",
+      "siteInfoOff": "Site info: hidden",
+      "updatedAt": "Updated: {text}",
+      "url": "Link: {text}",
+      "titleEn": "Title (English): {text}",
+      "support": "Support options: {state}",
+      "supportOff": "off",
+      "supportOn": "on",
+      "supportMessage": "Thank-you note: {text}",
+      "supportMethod": "{label}: {detail}",
+      "supportLink": "link",
+      "supportImage": "payment code",
+      "supportDefault": "default text"
     },
     "notifications": {
       "title": "Notifications",

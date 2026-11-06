@@ -122,8 +122,10 @@ export function useFlashDetail() {
           ...(note.value.updatedAt ? { dateModified: note.value.updatedAt } : {}),
           ...(note.value.tags.length ? { keywords: note.value.tags.join(', ') } : {}),
           ...(flashImage.value ? { image: [flashImage.value] } : {}),
+          // 与首页、关于页同一 @id，搜索引擎据此把作者关联到同一个人
           author: {
             '@type': 'Person',
+            '@id': `${site}/#person`,
             name: siteSettings.value.ownerName || siteSettings.value.name,
             url: site + '/about',
           },

@@ -6,6 +6,7 @@ import ArticleStatsBar from '../../app/components/article/ArticleStatsBar.vue'
 import MomentCardFooter from '../../app/components/moment/MomentCardFooter.vue'
 import FlashNoteCardFooter from '../../app/components/flash/FlashNoteCardFooter.vue'
 import GuestbookComposer from '../../app/components/guestbook/GuestbookComposer.vue'
+import AboutPage from '../../app/pages/about.vue'
 import { useSetupStatus } from '../../app/composables/useSetupStatus'
 import type { FlashNote } from '../../app/features/flash/types'
 
@@ -108,5 +109,29 @@ describe('需要后端的请求', () => {
     )
     await expect(check()).resolves.toBe(false)
     expect(fetch).not.toHaveBeenCalled()
+  })
+})
+
+describe('关于页', () => {
+  it('静态发布不显示留言板入口，服务器部署照常显示；网页主页仍声明 rel="me"', async () => {
+    const { settings } = useSiteSettings()
+    const previous = structuredClone(toRaw(settings.value))
+    settings.value.socials = [
+      { label: 'GitHub', href: 'https://github.com/example', icon: 'lucide:github' },
+      { label: '邮箱', href: 'mailto:hi@example.org', icon: 'lucide:mail' },
+    ]
+    settings.value.navigation = [{ type: 'route', key: 'guestbook', visible: true }]
+    try {
+      const live = await mount(AboutPage, {})
+      expect(live.find('a[href="/guestbook"]').exists()).toBe(true)
+      expect(live.find('a[href="https://github.com/example"]').attributes('rel')).toBe('me noopener')
+      mocks.staticSite = true
+      const frozen = await mount(AboutPage, {})
+      expect(frozen.find('a[href="/guestbook"]').exists()).toBe(false)
+      expect(frozen.find('a[href="mailto:hi@example.org"]').exists()).toBe(true)
+      expect(frozen.find('a[href="https://github.com/example"]').attributes('rel')).toBe('me noopener')
+    } finally {
+      settings.value = previous
+    }
   })
 })

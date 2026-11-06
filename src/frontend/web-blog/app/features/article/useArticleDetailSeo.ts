@@ -59,8 +59,9 @@ export function useArticleDetailSeo(options: {
     ...(articleTags.value.length ? { keywords: articleTags.value.join(',') } : {}),
     ...(article.value.category ? { articleSection: article.value.category } : {}),
     inLanguage: locale.value,
-    author: { '@type': 'Person', name: authorName.value, url: publicSite + '/about' },
-    publisher: { '@type': 'Person', name: authorName.value, url: publicSite + '/' },
+    // 作者与发布者即博主本人，与首页、关于页同一 @id
+    author: { '@type': 'Person', '@id': `${publicSite}/#person`, name: authorName.value, url: publicSite + '/about' },
+    publisher: { '@type': 'Person', '@id': `${publicSite}/#person`, name: authorName.value, url: publicSite + '/' },
   }))
 
   useJsonLd('breadcrumb', () => ({

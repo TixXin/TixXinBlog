@@ -641,7 +641,21 @@
       "quotes": "每日一言：{text}",
       "quoteCount": "{count} 条",
       "copyright": "版权：{text}",
-      "icpNumber": "备案号：{text}"
+      "icpNumber": "备案号：{text}",
+      "introductionEn": "英文介绍：{text}",
+      "siteInfoOn": "本站信息：展示",
+      "siteInfoOff": "本站信息：不展示",
+      "updatedAt": "更新于：{text}",
+      "url": "链接：{text}",
+      "titleEn": "英文名称：{text}",
+      "support": "支持方式：{state}",
+      "supportOff": "未开启",
+      "supportOn": "已开启",
+      "supportMessage": "感谢语：{text}",
+      "supportMethod": "{label}：{detail}",
+      "supportLink": "链接",
+      "supportImage": "收款码",
+      "supportDefault": "使用默认文案"
     },
     "notifications": {
       "title": "互动通知",

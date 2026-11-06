@@ -63,7 +63,8 @@ export function useMomentDetailSeo(options: MomentDetailSeoOptions) {
           datePublished: moment.value.date,
           ...(momentImages.value.length ? { image: momentImages.value } : {}),
           ...(moment.value.topics?.length ? { keywords: moment.value.topics.join(', ') } : {}),
-          author: { '@type': 'Person', name: ownerName.value, url: site + '/about' },
+          // 与首页、关于页同一 @id
+          author: { '@type': 'Person', '@id': `${site}/#person`, name: ownerName.value, url: site + '/about' },
         }
       : null,
   )

@@ -7,9 +7,11 @@ import { expect, test } from '@playwright/test'
 import type { Page } from '@playwright/test'
 import { randomUUID } from 'node:crypto'
 import { LOCALE_COOKIE_KEY } from '../../i18n/localeOptions'
+import { captureMotion, prepareMotionCapture } from './motionScreenshot'
 
-test.beforeEach(() => {
+test.beforeEach(({ page, browserName }) => {
   expect(process.env.E2E_ISOLATED).toBe('true')
+  prepareMotionCapture(page, browserName)
 })
 
 async function admin(page: Page) {
@@ -147,3 +149,58 @@ test('支持方式关闭时关于页与文章页都不显示占位卡片', async
     await setSite(api, original)
   }
 })
+
+for (const theme of ['nexus', 'aurora', 'dock']) {
+  test(`${theme} 关于页新区块在窄屏到宽屏都不横向溢出`, async ({ page, context }, testInfo) => {
+    const api = await admin(page),
+      original = await api('/admin/site')
+    await context.addCookies([{ name: 'blog-layout-theme', value: theme, url: process.env.E2E_BASE_URL! }])
+    try {
+      await setSite(api, {
+        about: {
+          ...about,
+          // 长标题与长链接检验换行
+          sections: [
+            ...about.sections,
+            {
+              kind: 'experience',
+              visible: true,
+              items: [
+                {
+                  title: '负责一个名字很长很长的项目'.repeat(3),
+                  detail: '',
+                  period: '2024 — 至今',
+                  visible: true,
+                  url: 'https://example.org/' + 'very-long-path-segment/'.repeat(6),
+                },
+              ],
+            },
+          ],
+        },
+        socials: [
+          { label: 'GitHub', href: 'https://github.com/example', icon: 'lucide:github' },
+          { label: 'Mastodon', href: 'https://mastodon.social/@example', icon: 'lucide:globe' },
+          { label: 'Bluesky', href: 'https://bsky.app/profile/example', icon: 'lucide:link' },
+          { label: '邮箱', href: 'mailto:hi@example.org', icon: 'lucide:mail' },
+        ],
+      })
+      for (const width of [320, 390, 760, 761, 1440]) {
+        await page.setViewportSize({ width, height: 900 })
+        await page.goto('/about')
+        const body = page.locator('.about-body')
+        await expect(body.getByRole('heading', { name: '关于本站', exact: true })).toBeVisible()
+        await expect(body.locator('.profile-content__updated')).toBeVisible()
+        expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1), `${width}px`).toBe(
+          true,
+        )
+        expect(
+          await page.locator('.about-viewport').evaluate((element) => element.scrollWidth <= element.clientWidth + 1),
+          `${width}px 正文区`,
+        ).toBe(true)
+      }
+      await captureMotion(page, testInfo, `about-page-${theme}.png`)
+    } finally {
+      await setSite(api, original)
+    }
+  })
+}

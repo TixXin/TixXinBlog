@@ -69,6 +69,16 @@
           })
         }}
       </p>
+      <p v-if="value.about.en?.introduction">
+        {{ t('admin-system.sitePreview.introductionEn', { text: value.about.en.introduction }) }}
+      </p>
+      <p>
+        {{
+          value.about.showSiteInfo
+            ? t('admin-system.sitePreview.siteInfoOn')
+            : t('admin-system.sitePreview.siteInfoOff')
+        }}
+      </p>
       <p v-if="!value.about.sections.length">{{ t('admin-system.sitePreview.noSections') }}</p>
       <section v-for="section in value.about.sections" :key="section.kind">
         <h4>
@@ -77,15 +87,52 @@
             section.visible ? t('admin-system.sitePreview.sectionPublic') : t('admin-system.sitePreview.sectionHidden')
           }}
         </h4>
+        <p v-if="section.updatedAt">{{ t('admin-system.sitePreview.updatedAt', { text: section.updatedAt }) }}</p>
         <p v-if="!section.items.length">{{ t('admin-system.sitePreview.noItems') }}</p>
         <ol v-else>
           <li v-for="(item, index) in section.items" :key="index">
             <strong>{{ item.title || t('admin-system.sitePreview.untitled') }}</strong> ·
             {{ item.visible ? t('admin-system.sitePreview.itemPublic') : t('admin-system.sitePreview.itemHidden') }}
             <p v-if="item.period">{{ t('admin-system.sitePreview.period', { text: item.period }) }}</p>
+            <p v-if="item.en?.title">{{ t('admin-system.sitePreview.titleEn', { text: item.en.title }) }}</p>
+            <p v-if="item.url">{{ t('admin-system.sitePreview.url', { text: item.url }) }}</p>
             <p>
               {{ t('admin-system.sitePreview.detail', { text: item.detail || t('admin-system.sitePreview.empty') }) }}
             </p>
+          </li>
+        </ol>
+      </section>
+      <section v-if="value.about.support">
+        <h4>
+          {{
+            t('admin-system.sitePreview.support', {
+              state: value.about.support.visible
+                ? t('admin-system.sitePreview.supportOn')
+                : t('admin-system.sitePreview.supportOff'),
+            })
+          }}
+        </h4>
+        <p>
+          {{
+            t('admin-system.sitePreview.supportMessage', {
+              text: value.about.support.message || t('admin-system.sitePreview.supportDefault'),
+            })
+          }}
+        </p>
+        <ol v-if="value.about.support.methods.length">
+          <li v-for="(method, index) in value.about.support.methods" :key="index">
+            {{
+              t('admin-system.sitePreview.supportMethod', {
+                label: method.label || t('admin-system.sitePreview.untitled'),
+                detail:
+                  [
+                    method.url && t('admin-system.sitePreview.supportLink'),
+                    method.image && t('admin-system.sitePreview.supportImage'),
+                  ]
+                    .filter(Boolean)
+                    .join(' + ') || t('admin-system.sitePreview.empty'),
+              })
+            }}
           </li>
         </ol>
       </section>
